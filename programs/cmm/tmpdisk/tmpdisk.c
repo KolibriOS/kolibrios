@@ -1,7 +1,12 @@
 #define MEMSIZE 0xA0000
 #include "..\lib\kolibri.h" 
-#include "..\lib\strings.h" 
+#include "..\lib\mem.h" 
+#include "..\lib\strings.h"
 #include "..\lib\file_system.h"
+
+#include "..\lib\dll.h"
+#include "..\lib\lib.obj\libio_lib.h"
+#include "..\lib\lib.obj\libini.h"
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -42,11 +47,13 @@ del_disk_struc del_disk;
 
 int driver_handle;
 
+dword disk_sizes[10];
+
 /////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////                    Code                    ////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////
 #include "t_console.c"
-#include "t_window.c"
+#include "t_gui.c"
 
 
 void main()
@@ -54,19 +61,43 @@ void main()
 	driver_handle = LoadDriver("tmpdisk");
 	if (driver_handle==0)
 	{
-		notify("error: /rd1/1/drivers/tmpdisk.obj driver loading failed");
-		notify("virtual disk wouldn't be added");
+		notify("'TmpDisk\nError: /rd1/1/drivers/tmpdisk.obj driver loading failed\nvirtual disk wouldn't be added' -tE");
 		ExitProcess();
 	}
 
+	GetDiskSizesFromIni();
 	
 	if (param)
 		Console_Work();
 	else
 		Main_Window();
 		
-	
+	SaveDiskSizesToIni();
 	ExitProcess();
 }
+
+
+void GetDiskSizesFromIni()
+{
+	char i, key[2];
+	if (load_dll2(libini, #lib_init,1)!=0) notify("Error: library doesn't exists - libini");
+	for (i=0; i<=9; i++)
+	{
+		key[0]=i+'0';
+		ini_get_int stdcall ("/sys/settings/tmpdisk.ini", "DiskSizes", #key, 0); 
+		disk_sizes[i] = EAX;
+	}
+}
+
+void SaveDiskSizesToIni()
+{
+	char i, key[2];
+	for (i=0; i<=9; i++)
+	{
+		key[0]=i+'0';
+		ini_set_int stdcall ("/sys/settings/tmpdisk.ini", "DiskSizes", #key, disk_sizes[i]);
+	}
+}
+
 
 stop:

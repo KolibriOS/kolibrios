@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////                консоль                     ////////////////////
+/////////////////////////                 Console                    ////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef LANG_RUS
@@ -38,7 +38,6 @@ char Console_Work()
 	char size_t[256];
 
 	strlwr(#param);
-//	debug(#param);
 	
 	switch (param[0])
 	{
@@ -58,6 +57,7 @@ char Console_Work()
 			ioctl.inp_size = sizeof(del_disk);
 			ioctl.output   = 0;
 			ioctl.out_size = 0;
+			disk_sizes[del_disk.DiskId] = 0;
 			break;
 		case 'a': //добавить диск
 			debugln(ADD_DISK_TEXT);
@@ -80,6 +80,7 @@ char Console_Work()
 			ioctl.inp_size = sizeof(add_disk);
 			ioctl.output   = 0;
 			ioctl.out_size = 0;
+			disk_sizes[add_disk.DiskId] = add_disk.DiskSize * 512;
 			break;
 		default:
 			debugln("unknown command line parameters");
