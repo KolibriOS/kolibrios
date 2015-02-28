@@ -35,6 +35,7 @@ dd  0x24498086
 dd  0x0
 
 db  'RTL8169',0
+dd  0x816710ec
 dd  0x816810ec
 dd  0x816910ec
 dd  0x011616ec
