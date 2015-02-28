@@ -1,0 +1,44 @@
+Building AC97SND on windows.
+
+1. Tools required:
+
+- Microsoft Visual Studio (version 2005 or later)
+
+- Flat assembler 
+Download and install fasm for windows from http://www.flatassembler.net
+Add fasm directory to windows PATH variable.
+(To check if this worked, open CMD and type fasm. Fasm's help messages should be visible now.)
+
+- pe2kos.exe 
+Can be found in some subdirectorys of SVN, official location unknown.
+This file will need to be placed in the same directory as dependecies, to build the final kolibrios executable
+
+2. Collecting the dependencies:
+
+- sound.lib 
+Source code can be found at SVN\programs\develop\sdk\trunk\sound\src
+Building this is beyond the scope of this document for now.
+If you cant figure it out, or are lazy, you can download latest compiled version from autobuild server.
+http://builds.kolibrios.org/eng/data/programs/develop/sdk/trunk/sound/src/sound.lib
+
+- ufmod.obj
+Source code is at SVN\programs\develop\libraries\ufmod
+Build using makeobj.bat
+Or as above, download from:
+http://builds.kolibrios.org/eng/data/programs/develop/libraries/ufmod/ufmod.obj
+
+- mpg.obj
+Open ac97snd solution in visual studio, select mpg project and click build -> build mpg
+
+
+3. Building AC97SND binary
+
+You will need to copy all previously mentioned dependecies into the folder that visual studio expects to find them.
+This can be for example: SVN\programs\media\ac97snd\release\
+Alternatively, you can add another directory to 'Additional Library Directorys' in Projects Linker options.
+Now select AC97SND project, and click build -> build AC97SND
+
+
+good luck!
+
+
