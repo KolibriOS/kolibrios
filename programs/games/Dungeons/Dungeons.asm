@@ -735,6 +735,21 @@ endp
 ; ============================================================================ ;
 
 ; ============================================================================ ;
+; < eax = key scancode (1 byte)                                                ;
+; ============================================================================ ;
+macro wait_for_scancode
+{
+        local   .wait
+
+.wait:
+        mcall   2
+        test    al, al
+        jnz     .wait
+
+        shr     eax, 8
+}
+
+; ============================================================================ ;
 ; < eax = key scancode / 0 - no keys                                           ;
 ; ============================================================================ ;
 proc get_key
@@ -750,8 +765,10 @@ proc get_key
 
         cmp     eax, 0E1h
         jne     @f
-        mcall   2
-        mcall   2
+
+        wait_for_scancode
+        wait_for_scancode
+
         xor     eax, eax
         jmp     .exit
 
@@ -761,8 +778,9 @@ proc get_key
 
         cmp     eax, 0E0h
         jne     @f
-        mcall   2
-        shr     eax, 8
+
+        wait_for_scancode
+
         mov     ecx, eax
         or      eax, 0E000h
         mov     ebx, 128
@@ -794,6 +812,7 @@ proc get_key
         mov     [PressedKeys + ebx * 4], edx
 
 .exit:
+        ;DEBUGF  DEBUG_FINE, 'get_key: %x\n', eax:4
         ret
 endp
 ; ============================================================================ ;
