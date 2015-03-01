@@ -273,3 +273,16 @@ enum
   strcat(#size_prefix, #size_nm);
   return #size_prefix;
 }
+
+:dword ConvertSizeToKb(unsigned int bytes)
+{
+	unsigned char size[25]=0;
+	unsigned int kb;
+	dword kb_line;
+
+	kb_line = itoa(bytes / 1024);
+	strcpy(#size, kb_line);
+	strcat(#size, " Kb");
+
+	return #size;
+}

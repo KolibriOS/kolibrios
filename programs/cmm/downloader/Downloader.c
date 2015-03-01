@@ -86,7 +86,7 @@ void main()
 				sc.get();
 				DefineAndDrawWindow(215,100,WIN_W,WIN_H,0x73,sc.work,#header,0);
 				GetProcessInfo(#Form, SelfInfo);
-				if (Form.status_window>2) return;
+				if (Form.status_window>2) break;
 				if (Form.height<120) MoveSize(OLD,OLD,OLD,120);
 				if (Form.width<280) MoveSize(OLD,OLD,280,OLD);
 				diagram.Init(20, 87, Form.cwidth - 40, Form.cheight - 87 - 28);
@@ -105,7 +105,7 @@ void main()
 					http_transfer=0;
 					strcpy(#filepath, "/tmp0/1/");
 					strcat(#filepath, #URL+strrchr(#URL, '/'));
-					if (WriteFile(bufsize, bufpointer, #filepath))
+					if (!WriteFile(bufsize, bufpointer, #filepath))
 					{
 						strcpy(#notify_message, "File saved as ");
 					}
@@ -235,7 +235,7 @@ void StartDownloading()
 	}
 	else
 	{
-		notify("File adress should starts form http://");
+		notify("File adress should starts from http://");
 	}
 }
 

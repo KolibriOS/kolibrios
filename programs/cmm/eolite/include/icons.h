@@ -19,7 +19,7 @@ char *ext[]={
 "nes", 18, "smc", 18,
 "gif", 19, "bmp", 19, "tga", 19, "pcx", 19, "png", 19, "pnm", 19, "jpg", 19, "xcf", 19, "ai",  19,
 "jpeg",19, "raw", 11, "psd", 19, "wbmp",19, "tiff",19, "tif", 19, 
-"3ds", 20, "ico", 20, "cur", 20, "ani", 20, "vox", 20,
+"3ds", 20, "asc", 20, "ico", 20, "cur", 20, "ani", 20, "vox", 20,
 "img", 21, "ima", 21,
 "dll", 22, "obj", 22, "dict",22,
 "rar", 23, "zip", 23, "cab", 23, "tar", 23, "ajr", 23, "jar", 23, "7z", 23, "gz", 23, "kexp", 23,

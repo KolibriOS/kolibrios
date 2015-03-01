@@ -29,17 +29,17 @@
 //useful patterns
 #include "..\lib\patterns\libimg_load_skin.h"
 
-char homepage[] = FROM "html\homepage.htm";
+char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.0 Beta 6.2";
+	char version[]=" Текстовый браузер 1.0";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.0 Beta 6.2";
+	char version[]=" Text-based Browser 1.0";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -77,6 +77,7 @@ byte souce_mode = false;
 #include "menu_rmb.h"
 #include "history.h"
 #include "show_src.h"
+#include "downloader.h"
 
 char editURL[sizeof(URL)];
 int	mouse_twb;
@@ -133,8 +134,10 @@ void main()
 	Form.width=WIN_W;
 	Form.height=WIN_H;
 	SetElementSizes();
-	if (!URL) strcpy(#URL, URL_SERVICE_HOME);
+	if (param) strcpy(#URL, #param); else strcpy(#URL, URL_SERVICE_HOME);
 	OpenPage();
+
+	CreateDir("/tmp0/1/downloads");
 
 	SetEventMask(0xa7);
 	loop()
@@ -376,6 +379,11 @@ void Scan(int id)
 			OpenPage();
 			return;
 
+		case 006: //download manager
+			DL_URL[0] = 0;
+			CreateThread(#Downloader,#downloader_stak+4092);
+			return;
+
 		case BACK:
 			if (!BrowserHistory.GoBack()) return;
 			OpenPage();
@@ -416,9 +424,6 @@ void Scan(int id)
 			MoveSize(190,80,OLD,OLD);
 			RunProgram(#program_path, #URL);
 			return;
-			
-		case HOME:
-			strcpy(#editURL, "http://kolibrios.org/");
 		case GOTOURL:
 		case 0x0D: //enter
 			if (!editURL[0]) return;
@@ -525,10 +530,19 @@ void ProcessLinks(int id)
 	
 	PageLinks.GetAbsoluteURL(#URL);
 	
-	if (!strcmp(#URL + strlen(#URL) - 4, ".gif")) || (!strcmp(#URL + strlen(#URL) - 4, ".png")) || (!strcmp(#URL + strlen(#URL) - 4, ".jpg"))
+	if (UrlExtIs(".png")==1) || (UrlExtIs(".gif")==1) || (UrlExtIs(".jpg")==1) || (UrlExtIs(".zip")==1)
+	|| (UrlExtIs(".7z")==1) || (UrlExtIs("netcfg")==1) 
 	{
-		//if (strstr(#URL,"http:")) 
-		RunProgram("/sys/media/kiv", #URL);
+		notify(#URL);
+		if (strcmpn(#URL,"http://:", 8)==0)
+		{
+			strcpy(#DL_URL, #URL);
+			CreateThread(#Downloader,#downloader_stak+4092);
+		}
+		else
+		{
+			RunProgram("@open", #URL);
+		}
 		strcpy(#editURL, BrowserHistory.CurrentUrl());
 		strcpy(#URL, BrowserHistory.CurrentUrl());
 		return;
@@ -651,7 +665,14 @@ void ShowPage()
 	if (!strcmp(#version, #header)) DrawTitle(#header);
 }
 
+byte UrlExtIs(dword ext)
+{
+	if (strcmpi(#URL + strlen(#URL) - strlen(ext), ext)==0) return 1; else return 0;
+}
+
 
 
 
 stop:
+
+char downloader_stak[4096];

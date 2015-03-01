@@ -10,11 +10,13 @@ char *ITEMS_LIST[]={
 "Редактировать исходник F4",53,
 "Очистить кэш картинок"    ,02,
 "История"                  ,03,
+"Менеджер загрузок"        ,06,
 #else
 "View source            F3",52,
 "Edit source            F4",53,
 "Free image cache"         ,09,
 "History"                  ,03,
+"Download Manager"         ,06,
 #endif
 0}; 
 

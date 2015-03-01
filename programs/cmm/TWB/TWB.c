@@ -2,7 +2,7 @@ dword bufpointer;
 dword o_bufpointer;
 dword bufsize;
 
-#define URL param
+char URL[10000];
 
 scroll_bar scroll_wv = { 15,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
@@ -422,6 +422,11 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 	}
 	if (isTag("div")) || (isTag("header")) || (isTag("article")) || (isTag("footer")) {
 		IF(oldtag[0] <>'h') NewLine();
+		if (!strcmp(#parametr, "bgcolor="))
+		{
+			bg_color=GetColor(#options);
+			DrawBuf.Fill(bg_color);
+		}
 		return;
 	}
 	if (isTag("p")) {
