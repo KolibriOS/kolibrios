@@ -247,7 +247,6 @@ struct  device          ETH_DEVICE
         irq_line        db ?
                         rb 3 ; align 4
         mmio_addr       dd ? ; memory map physical address
-        chipset         dd ?
         pcfg            dd ?
         mcfg            dd ?
         cur_rx          dd ? ; Index into the Rx descriptor buffer of next Rx pkt
@@ -256,6 +255,7 @@ struct  device          ETH_DEVICE
         RxDescArrays    dd ? ; Index of Rx Descriptor buffer
         TxDescArray     dd ? ; Index of 256-alignment Tx Descriptor buffer
         RxDescArray     dd ? ; Index of 256-alignment Rx Descriptor buffer
+        mac_version     dd ?
 
         rb 0x100-($ and 0xff)   ; align 256
         tx_ring         rb NUM_TX_DESC * sizeof.tx_desc * 2
@@ -536,63 +536,33 @@ init_board:
         ; Check that the chip has finished the reset
         mov     ecx, 1000
         set_io  [ebx + device.io_addr], REG_ChipCmd
-    @@: in      al, dx
+  @@:
+        in      al, dx
         test    al, CMD_Reset
         jz      @f
         udelay  10
         loop    @b
-    @@:
-        ; identify config method
+  @@:
+
+
         set_io  [ebx + device.io_addr], REG_TxConfig
         in      eax, dx
-        and     eax, 0x7c800000
-        DEBUGF  1,"init_board: TxConfig & 0x7c800000 = 0x%x\n", eax
-        mov     esi, mac_info-8
-    @@: add     esi, 8
+        mov     esi, MAC_VERSION_LIST
+  @@:
         mov     ecx, eax
-        and     ecx, [esi]
-        cmp     ecx, [esi]
-        jne     @b
-        mov     eax, [esi+4]
-        mov     [ebx + device.mcfg], eax
+        and     ecx, dword[esi]
+        cmp     ecx, dword[esi+4]
+        je      @f
+        add     esi, 4*4
+        jmp     @r
+  @@:
 
-        mov     [ebx + device.pcfg], PCFG_METHOD_3
-        READ_GMII_REG 3
-        and     al, 0x0f
-        or      al, al
-        jnz     @f
-        mov     [ebx + device.pcfg], PCFG_METHOD_1
-        jmp     .pconf
-    @@: dec     al
-        jnz     .pconf
-        mov     [ebx + device.pcfg], PCFG_METHOD_2
-  .pconf:
-
-        ; identify chip attached to board
-        mov     ecx, 10
-        mov     eax, [ebx + device.mcfg]
-    @@: dec     ecx
-        js      @f
-        cmp     eax, [rtl_chip_info + ecx*8]
-        jne     @b
-        mov     [ebx + device.chipset], ecx
-        jmp     .match
-    @@:
-        ; if unknown chip, assume array element #0, original RTL-8169 in this case
-        DEBUGF  1,"init_board: PCI device: unknown chip version, assuming RTL-8169\n"
-        set_io  [ebx + device.io_addr], REG_TxConfig
-        in      eax, dx
-        DEBUGF  1,"init_board: PCI device: TxConfig = 0x%x\n", eax
-
-        mov     [ebx + device.chipset],  0
+        mov     eax, [esi+8]
+        mov     [ebx + device.mac_version], eax
+        mov     eax, [esi+12]
+        mov     [ebx + device.name], eax
 
         xor     eax, eax
-        inc     eax
-        ret
-
-  .match:
-        DEBUGF  1,"init_board: chipset=%u\n", ecx
-        xor     eax,eax
         ret
 
 
@@ -806,8 +776,7 @@ set_rx_mode:
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], REG_RxConfig
         in      eax, dx
-        mov     ecx, [ebx + device.chipset]
-        and     eax, [rtl_chip_info + ecx * 8 + 4] ; RxConfigMask
+        and     eax, 0xff7e1880
         or      eax, rx_config or (RXM_AcceptBroadcast or RXM_AcceptMulticast or RXM_AcceptMyPhys)
         out     dx, eax
 
@@ -910,8 +879,7 @@ hw_start:
         ; Set Rx Config register
         set_io  [ebx + device.io_addr], REG_RxConfig
         in      ax, dx
-        mov     ecx, [ebx + device.chipset]
-        and     eax, [rtl_chip_info + ecx * 8 + 4] ; RxConfigMask
+        and     eax, 0xff7e1880
         or      eax, rx_config
         out     dx, eax
 
@@ -1289,37 +1257,143 @@ my_service    db 'RTL8169',0                    ; max 16 chars include zero
 
 include_debug_strings                           ; All data wich FDO uses will be included here
 
-rtl_chip_info dd \
-  MCFG_METHOD_01, 0xff7e1880, \ ; RTL8169
-  MCFG_METHOD_02, 0xff7e1880, \ ; RTL8169s/8110s
-  MCFG_METHOD_03, 0xff7e1880, \ ; RTL8169s/8110s
-  MCFG_METHOD_04, 0xff7e1880, \ ; RTL8169sb/8110sb
-  MCFG_METHOD_05, 0xff7e1880, \ ; RTL8169sc/8110sc
-  MCFG_METHOD_11, 0xff7e1880, \ ; RTL8168b/8111b   // PCI-E
-  MCFG_METHOD_12, 0xff7e1880, \ ; RTL8168b/8111b   // PCI-E
-  MCFG_METHOD_13, 0xff7e1880, \ ; RTL8101e         // PCI-E 8139
-  MCFG_METHOD_14, 0xff7e1880, \ ; RTL8100e         // PCI-E 8139
-  MCFG_METHOD_15, 0xff7e1880    ; RTL8100e         // PCI-E 8139
+MAC_VERSION_LIST:
 
-mac_info dd \
-  0x38800000, MCFG_METHOD_15, \
-  0x38000000, MCFG_METHOD_12, \
-  0x34000000, MCFG_METHOD_13, \
-  0x30800000, MCFG_METHOD_14, \
-  0x30000000, MCFG_METHOD_11, \
-  0x18000000, MCFG_METHOD_05, \
-  0x10000000, MCFG_METHOD_04, \
-  0x04000000, MCFG_METHOD_03, \
-  0x00800000, MCFG_METHOD_02, \
-  0x00000000, MCFG_METHOD_01    ; catch-all
+; 8168EP family.
+dd 0x7cf00000, 0x50200000, 51, name_49
+dd 0x7cf00000, 0x50100000, 50, name_49
+dd 0x7cf00000, 0x50000000, 49, name_49
 
-name_01         db "RTL8169", 0
-name_02_03      db "RTL8169s/8110s", 0
-name_04         db "RTL8169sb/8110sb", 0
-name_05         db "RTL8169sc/8110sc", 0
-name_11_12      db "RTL8168b/8111b", 0  ; PCI-E
-name_13         db "RTL8101e", 0        ; PCI-E 8139
-name_14_15      db "RTL8100e", 0        ; PCI-E 8139
+; 8168H family.
+dd 0x7cf00000, 0x54100000, 46, name_45
+dd 0x7cf00000, 0x54000000, 45, name_45
+
+; 8168G family.
+dd 0x7cf00000, 0x5c800000, 44, name_44
+dd 0x7cf00000, 0x50900000, 42, name_40
+dd 0x7cf00000, 0x4c100000, 41, name_40
+dd 0x7cf00000, 0x4c000000, 40, name_40
+
+; 8168F family.
+dd 0x7c800000, 0x48800000, 38, name_38
+dd 0x7cf00000, 0x48100000, 36, name_35
+dd 0x7cf00000, 0x48000000, 35, name_35
+
+; 8168E family.
+dd 0x7c800000, 0x2c800000, 34, name_34
+dd 0x7cf00000, 0x2c200000, 33, name_32
+dd 0x7cf00000, 0x2c100000, 32, name_32
+dd 0x7c800000, 0x2c000000, 33, name_32
+
+; 8168D family.
+dd 0x7cf00000, 0x28300000, 26, name_25
+dd 0x7cf00000, 0x28100000, 25, name_25
+dd 0x7c800000, 0x28000000, 26, name_25
+
+; 8168DP family.
+dd 0x7cf00000, 0x28800000, 27, name_27
+dd 0x7cf00000, 0x28a00000, 28, name_27
+
+; 8168C family.
+dd 0x7cf00000, 0x3cb00000, 24, name_23
+dd 0x7cf00000, 0x3c900000, 23, name_23
+dd 0x7cf00000, 0x3c800000, 18, name_18
+dd 0x7c800000, 0x3c800000, 24, name_23
+dd 0x7cf00000, 0x3c000000, 19, name_19
+dd 0x7cf00000, 0x3c200000, 20, name_19
+dd 0x7cf00000, 0x3c300000, 21, name_19
+dd 0x7cf00000, 0x3c400000, 22, name_19
+dd 0x7c800000, 0x3c000000, 22, name_19
+
+; 8168B family.
+dd 0x7cf00000, 0x38000000, 12, name_11
+dd 0x7cf00000, 0x38500000, 17, name_10
+dd 0x7c800000, 0x38000000, 17, name_10
+dd 0x7c800000, 0x30000000, 11, name_11
+
+; 8101 family.
+dd 0x7cf00000, 0x34a00000, 09, name_07
+dd 0x7cf00000, 0x24a00000, 09, name_07
+dd 0x7cf00000, 0x34900000, 08, name_07
+dd 0x7cf00000, 0x24900000, 08, name_07
+dd 0x7cf00000, 0x34800000, 07, name_07
+dd 0x7cf00000, 0x24800000, 07, name_07
+dd 0x7cf00000, 0x34000000, 13, name_10
+dd 0x7cf00000, 0x34300000, 10, name_10
+dd 0x7cf00000, 0x34200000, 16, name_11
+dd 0x7c800000, 0x34800000, 09, name_07
+dd 0x7c800000, 0x24800000, 09, name_07
+dd 0x7c800000, 0x34000000, 16, name_11
+dd 0xfc800000, 0x38800000, 15, name_14
+dd 0xfc800000, 0x30800000, 14, name_14
+
+; 8110 family.
+dd 0xfc800000, 0x98000000, 06, name_05
+dd 0xfc800000, 0x18000000, 05, name_05
+dd 0xfc800000, 0x10000000, 04, name_04
+dd 0xfc800000, 0x04000000, 03, name_03
+dd 0xfc800000, 0x00800000, 02, name_02
+dd 0xfc800000, 0x00000000, 01, name_01
+
+; Catch-all
+dd 0x00000000, 0x00000000, 0, name_unknown
+
+; PCI-devices
+name_01 db "RTL8169",0
+name_02 db "RTL8169s",0
+name_03 db "RTL8110s",0
+name_04 db "RTL8169sb/8110sb",0
+name_05 db "RTL8169sc/8110sc",0
+;name_06 db "RTL8169sc/8110sc",0
+
+; PCI-E devices
+name_07 db "RTL8102e",0
+;name_08 db "RTL8102e",0
+;name_09 db "RTL8102e",0
+name_10 db "RTL8101e",0
+name_11 db "RTL8168b/8111b",0
+;name_12 db "RTL8168b/8111b",0
+;name_13 db "RTL8101e",0
+name_14 db "RTL8100e",0
+;name_15 db "RTL8100e",0
+;name_16 db "RTL8168b/8111b",0
+;name_17 db "RTL8101e",0
+name_18 db "RTL8168cp/8111cp",0
+name_19 db "RTL8168c/8111c",0
+;name_20 db "RTL8168c/8111c",0
+;name_21 db "RTL8168c/8111c",0
+;name_22 db "RTL8168c/8111c",0
+name_23 db "RTL8168cp/8111cp",0
+;name_24 db "RTL8168cp/8111cp",0
+name_25 db "RTL8168d/8111d",0
+;name_26 db "RTL8168d/8111d",0
+name_27 db "RTL8168dp/8111dp",0
+;name_28 db "RTL8168dp/8111dp",0
+name_29 db "RTL8105e",0
+;name_30 db "RTL8105e",0
+;name_31 db "RTL8168dp/8111dp",0
+name_32 db "RTL8168e/8111e",0
+;name_33 db "RTL8168e/8111e",0
+name_34 db "RTL8168evl/8111evl",0
+name_35 db "RTL8168f/8111f",0
+;name_36 db "RTL8168f/8111f",0
+name_37 db "RTL8402",0
+name_38 db "RTL8411",0
+name_39 db "RTL8106e",0
+name_40 db "RTL8168g/8111g",0
+;name_41 db "RTL8168g/8111g",0
+;name_42 db "RTL8168g/8111g",0
+;name_43 db "RTL8106e",0
+name_44 db "RTL8411",0
+name_45 db "RTL8168h/8111h",0
+;name_46 db "RTL8168h/8111h",0
+name_47 db "RTL8107e",0
+;name_48 db "RTL8107e",0
+name_49 db "RTL8168ep/8111ep",0
+;name_50 db "RTL8168ep/8111ep",0
+;name_51 db "RTL8168ep/8111ep",0
+
+name_unknown db "unknown RTL8169 clone",0
 
 align 4
 devices         dd 0
