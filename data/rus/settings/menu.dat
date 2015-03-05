@@ -109,7 +109,6 @@ HEX-редактор              /sys/develop/heed
 #14    **** Сеть ****
 Серверы            >      /@18
 Клиенты            >      /@16
-Авто (network.ini)        /sys/network/zeroconf
 Настройки сети           /sys/network/netcfg
 Статус подключения        /sys/network/netstat
 #15   **** Сеть -> Серверы ****

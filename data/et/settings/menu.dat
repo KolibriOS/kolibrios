@@ -98,7 +98,6 @@ Hex-Editor                /sys/develop/heed
 #12    **** NET ****
 Teenused           >      /@13
 Kliendid           >      /@14
-Zero-Config               /sys/network/zeroconf
 Võrgu seadistus           /sys/network/netcfg
 Võrgu staatus             /sys/network/netstat
 #13    **** SERVERS ****

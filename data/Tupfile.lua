@@ -369,7 +369,7 @@ tup.append_table(img_files, {
  {"NETWORK/SYNERGYC", PROGS .. "/network/synergyc/synergyc"},
  {"NETWORK/TCPSERV", PROGS .. "/network/tcpserv/tcpserv"},
  {"NETWORK/TELNET", PROGS .. "/network/telnet/telnet"},
- {"NETWORK/ZEROCONF", PROGS .. "/network/zeroconf/zeroconf"},
+ {"NETWORK/@ZEROCONF", PROGS .. "/network/zeroconf/zeroconf"},
  {"NETWORK/FTPC", PROGS .. "/network/ftpc/ftpc"},
  {"NETWORK/FTPD", PROGS .. "/network/ftpd/ftpd"},
  {"NETWORK/TFTPC", PROGS .. "/network/tftpc/tftpc"},

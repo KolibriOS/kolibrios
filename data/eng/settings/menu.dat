@@ -98,8 +98,7 @@ Hex-Editor                /sys/develop/heed
 #12    **** NET ****
 Servers            >      /@13
 Clients            >      /@14
-Zero-Config               /sys/network/zeroconf
-Network Config            /sys/network/netcfg
+Network devices           /sys/network/netcfg
 Network status            /sys/network/netstat
 #13    **** SERVERS ****
 FTP daemon                /sys/network/ftpd
