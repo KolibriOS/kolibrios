@@ -29,7 +29,7 @@ endif
 
 CC_CMD = $(QUIET_CC) $(CC) $(CFLAGS) -o $@ -c $<
 AR_CMD = $(QUIET_AR) $(AR) cru $@ $^
-LINK_CMD = $(QUIET_LINK) ld $(LDFLAGS) -o $@ $(MENUETDEV)/stub/crt0.o $^ build/snprintf.o $(LIBS)
+LINK_CMD = $(QUIET_LINK) ld $(LDFLAGS) -o $@ include/stub/crt0.o $^ build/snprintf.o $(LIBS)
 MKDIR_CMD = $(QUIET_MKDIR) mkdir -p $@
 
 # --- Rules ---

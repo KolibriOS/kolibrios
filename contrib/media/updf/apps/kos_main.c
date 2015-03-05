@@ -102,6 +102,7 @@ const char *help[] = {
 	"+/- - zoom in/out",
 	"[ or l - rotate page 90 deg to the left",
 	"] or r - rotate page 90 deg to the right",
+	"g - greyscale on/off",
 	"  ",
 	"Press Escape to hide help",
 	0
@@ -274,8 +275,9 @@ int main (void)
 			if (key==ASCII_KEY_PGUP) pdfapp_onkey(&gapp, '[');
 			if (key==ASCII_KEY_HOME) pdfapp_onkey(&gapp, 'g');
 			if (key==ASCII_KEY_END ) pdfapp_onkey(&gapp, 'G');
-			if ((key=='[' ) || (key=='l')) pdfapp_onkey(&gapp, 'L');
-			if ((key==']' ) || (key=='r')) pdfapp_onkey(&gapp, 'R');
+			if (key=='g' ) pdfapp_onkey(&gapp, 'c');
+			if ((key=='[' ) || (key=='l')) PageRotateLeft();
+			if ((key==']' ) || (key=='r')) PageRotateRight();
 			if (key==ASCII_KEY_DOWN ) PageScrollDown();
 			if (key==ASCII_KEY_UP ) PageScrollUp();
 			if (key=='-') PageZoomOut();
@@ -291,16 +293,14 @@ int main (void)
 			if(butt==13) //show help
 			{
 				__menuet__bar(0, TOOLBAR_HEIGHT, Form.client_width, Form.client_height - TOOLBAR_HEIGHT, 0xF2F2F2);	
-				__menuet__write_text(20, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.0", 0);
-				__menuet__write_text(21, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.0", 0);
+				__menuet__write_text(20, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.01", 0);
+				__menuet__write_text(21, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.01", 0);
 				for (ii=0; help[ii]!=0; ii++) {
 					__menuet__write_text(20, TOOLBAR_HEIGHT + 60 + ii * 15, 0x80000000, help[ii], 0);
 				}
 			}
 			if(butt==14) pdfapp_onkey(&gapp, '['); //previous page
 			if(butt==15) pdfapp_onkey(&gapp, ']'); //next page
-			//if(butt==8) pdfapp_onkey(&gapp, 'j'); //move up
-			//if(butt==9) pdfapp_onkey(&gapp, 'k'); //move down
 			break;
 
 		case evMouse:
@@ -374,6 +374,7 @@ void DrawToolbarButton(int x, int y, int w, int h, char image_id)
 
 void PageScrollDown(void)
 {
+	//pdfapp_onkey(&gapp, 'k'); //move down
 	if (gapp.image->h - gapp.pany - SCROLL_H < Form.client_height - TOOLBAR_HEIGHT)
 	{
 		pdfapp_onkey(&gapp, '.');
@@ -387,12 +388,13 @@ void PageScrollDown(void)
 
 void PageScrollUp(void)
 {
+	//pdfapp_onkey(&gapp, 'j'); //move up
 	if (gapp.pany >= SCROLL_H) {
 		gapp.pany -= SCROLL_H;
 		winblit(&gapp);					
 	}
 	else {
-		//need to avoid double repaint in future
+		//not very nice way of using do_not_blit, but it simple
 		if (gapp.pageno == 1) return;
 		do_not_blit = 1;
 		pdfapp_onkey(&gapp, ',');
@@ -419,4 +421,15 @@ void PageZoomOut(void)
 	DrawPageSides();
 }
 
+void PageRotateLeft(void)
+{
+	pdfapp_onkey(&gapp, 'L');
+	DrawPageSides();
+}
+
+void PageRotateRight(void)
+{
+	pdfapp_onkey(&gapp, 'R');
+	DrawPageSides();
+}
 

@@ -9,7 +9,6 @@ rm build/kos_main.o
 rm build/mupdf
 
 echo "${red}Building updf...${reset}"
-export MENUETDEV=me
 make
 
 echo "${red}Converting to KolibriOS binnary...${reset}"
