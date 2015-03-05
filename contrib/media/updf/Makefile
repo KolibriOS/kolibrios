@@ -1,8 +1,6 @@
 # GNU Makefile
 
-build ?= debug
-
-OUT := build/$(build)
+OUT := build
 GEN := generated
 
 # --- Variables, Commands, etc... ---
@@ -31,7 +29,7 @@ endif
 
 CC_CMD = $(QUIET_CC) $(CC) $(CFLAGS) -o $@ -c $<
 AR_CMD = $(QUIET_AR) $(AR) cru $@ $^
-LINK_CMD = $(QUIET_LINK) ld $(LDFLAGS) -o $@ include/crt0.o $^ build/debug/snprintf.o $(LIBS)
+LINK_CMD = $(QUIET_LINK) ld $(LDFLAGS) -o $@ $(MENUETDEV)/stub/crt0.o $^ build/snprintf.o $(LIBS)
 MKDIR_CMD = $(QUIET_MKDIR) mkdir -p $@
 
 # --- Rules ---
@@ -80,7 +78,7 @@ libs: $(MUXPS_LIB) $(MUPDF_LIB) $(FITZ_LIB) $(THIRD_LIBS)
 # --- Generated CMAP and FONT files ---
 
 CMAPDUMP := scripts/cmapdump
-FONTDUMP := scripts/fontdump 
+# FONTDUMP := scripts/fontdump 
 
 CMAP_CNS_SRC := $(wildcard cmaps/cns/*)
 CMAP_GB_SRC := $(wildcard cmaps/gb/*)
