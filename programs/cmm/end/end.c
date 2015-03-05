@@ -1,6 +1,6 @@
 #define MEMSIZE 0x3E80
 #include "..\lib\kolibri.h" 
-#include "..\lib\figures.h" 
+#include "..\lib\gui.h" 
 #include "..\lib\strings.h" 
 #include "..\lib\random.h" 
 #include "..\lib\mem.h" 

@@ -5,7 +5,7 @@
 #include "..\lib\kolibri.h" 
 #include "..\lib\strings.h" 
 #include "..\lib\mem.h" 
-#include "..\lib\figures.h" 
+#include "..\lib\gui.h" 
 
 dword shadow_buf_24, shadow_buf_32, lighter_pixel1, lighter_pixel2;
 

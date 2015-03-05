@@ -3,9 +3,9 @@
 #include "..\lib\strings.h"
 #include "..\lib\mem.h"
 #include "..\lib\file_system.h"
-#include "..\lib\figures.h"
+#include "..\lib\gui.h"
 #include "..\lib\dll.h"
-#include "..\lib\lib.obj\box_lib.h"
+#include "..\lib\obj\box_lib.h"
 
 
 unsigned char speaker[23*40*3]= FROM "speaker.raw";
@@ -35,7 +35,7 @@ void main()
 {   
 	int id, key;
    	mem_Init();
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("Error while loading GUI library /sys/lib/boxlib.obj");
+	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("Error while loading GUI library /sys/lib/boxobj");
 
 	dict_folder = abspath(DICT_DIRECROTY);
 	OpenDictionary(0);

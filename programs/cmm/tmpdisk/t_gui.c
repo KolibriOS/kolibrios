@@ -2,8 +2,8 @@
 /////////////////////////                   GUI                      ////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////
 
-#include "..\lib\figures.h"
-#include "..\lib\lib.obj\box_lib.h"
+#include "..\lib\gui.h"
+#include "..\lib\obj\box_lib.h"
 
 #ifdef LANG_RUS
 	unsigned char *but_text[]={

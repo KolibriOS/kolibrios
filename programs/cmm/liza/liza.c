@@ -7,19 +7,19 @@
 #include "../lib/mem.h"
 #include "../lib/dll.h"
 #include "../lib/encoding.h"
-#include "../lib/figures.h"
+#include "../lib/gui.h"
 #include "../lib/file_system.h"
 #include "../lib/list_box.h"
-#include "../lib/socket_new.h"
+#include "../lib/socket.h"
 #include "../lib/draw_buf.h"
 #include "../lib/cursor.h"
 //*.obj libraries
-#include "../lib/lib.obj/box_lib.h"
-#include "../lib/lib.obj/network.h"
-#include "../lib/lib.obj/libio_lib.h"
-#include "../lib/lib.obj/libimg_lib.h"
-#include "../lib/lib.obj/netcode.h"
-#include "../lib/lib.obj/iconv.h"
+#include "../lib/obj/box_lib.h"
+#include "../lib/obj/network.h"
+#include "../lib/obj/libio_lib.h"
+#include "../lib/obj/libimg_lib.h"
+#include "../lib/obj/netcode.h"
+#include "../lib/obj/iconv.h"
 //images
 byte letter_icons[sizeof(file "img/letter_icons.raw")] = FROM "img/letter_icons.raw";
 #include "img/letter_icons.h"
@@ -102,7 +102,7 @@ char version[]=" WebView 0.1";
 void main() {
 	mem_Init();
 	CursorPointer.Load(#CursorFile);
-	if (load_dll2(boxlib, #box_lib_init,0)!=0)	        notify("Error while loading library - box_lib.obj");
+	if (load_dll2(boxlib, #box_lib_init,0)!=0)	        notify("Error while loading library - box_obj");
 	if (load_dll2(network_lib, #network_lib_init,0)!=0)	notify("Error while loading library - network.obj");
 	if (load_dll2(netcode_lib, #base64_encode,0)!=0)	notify("Error while loading library - netcode.obj");
 	if (load_dll2(iconv_lib, #iconv_open,0)!=0)	      { notify("Error while loading library - iconv.obj"); use_iconv=2; }

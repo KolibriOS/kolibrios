@@ -63,7 +63,6 @@
 	}
 }
 
-
 :void MoreLessBox(dword x,y,s, bt_id_more, bt_id_less, color_border, color_button, color_text, value, text)
 {
 	#define VALUE_FIELD_W 26;
@@ -76,7 +75,6 @@
 	DrawCaptButton(VALUE_FIELD_W + x + s + 2, y, s, s, bt_id_less, color_button, color_text, "-");
 	WriteText(x+VALUE_FIELD_W+s+s+10, s / 2 + y -3, 0x80, color_text, text);
 }
-
 
 :void DrawProgressBar(dword st_x, st_y, st_w, st_h, col_fon, col_border, col_fill, col_text, progress_percent)
 {
@@ -106,7 +104,6 @@
 	DrawBar(x,y+8,w,1,0x4E00E7);
 }
 
-
 :void PutShadow(dword x,y,w,h,skinned,strength)
 {
 	proc_info wForm;
@@ -119,14 +116,6 @@
 	mem_Free(shadow_buf);
 }
 
-:void DrawPopupShadow(dword x,y,w,h,skinned)
-{
-	PutShadow(w+x+1,y,1,h+2,skinned,2);
-	PutShadow(w+x+2,y+1,1,h+2,skinned,1);
-	PutShadow(x,y+h+2,w+2,1,skinned,2);
-	PutShadow(x+1,y+h+3,w+1,1,skinned,1);
-}
-
 :void DrawPopup(dword x,y,w,h,skinned, col_work,col_border)
 {
 	DrawRectangle(x,y,w,h,col_border);
@@ -134,6 +123,14 @@
 	DrawBar(x+1,y+2,1,h-2,0xFFFfff);
 	if (col_work!=-1) DrawBar(x+2,y+2,w-2,h-2,col_work);
 	DrawPopupShadow(x,y,w,h-1,skinned);
+}
+
+:void DrawPopupShadow(dword x,y,w,h,skinned)
+{
+	PutShadow(w+x+1,y,1,h+2,skinned,2);
+	PutShadow(w+x+2,y+1,1,h+2,skinned,1);
+	PutShadow(x,y+h+2,w+2,1,skinned,2);
+	PutShadow(x+1,y+h+3,w+1,1,skinned,1);
 }
 
 :void GrayScaleImage(dword color_image, w, h)

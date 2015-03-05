@@ -8,11 +8,11 @@ SOFTWARE CENTER v2.31
 #include "..\lib\mem.h" 
 #include "..\lib\file_system.h"
 #include "..\lib\dll.h"
-#include "..\lib\figures.h"
+#include "..\lib\gui.h"
 
-#include "..\lib\lib.obj\libio_lib.h"
-#include "..\lib\lib.obj\libimg_lib.h"
-#include "..\lib\lib.obj\libini.h"
+#include "..\lib\obj\libio_lib.h"
+#include "..\lib\obj\libimg_lib.h"
+#include "..\lib\obj\libini.h"
 
 #include "..\lib\patterns\libimg_load_skin.h"
 

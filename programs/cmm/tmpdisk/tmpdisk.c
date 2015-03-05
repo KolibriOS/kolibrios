@@ -5,8 +5,8 @@
 #include "..\lib\file_system.h"
 
 #include "..\lib\dll.h"
-#include "..\lib\lib.obj\libio_lib.h"
-#include "..\lib\lib.obj\libini.h"
+#include "..\lib\obj\libio_lib.h"
+#include "..\lib\obj\libini.h"
 
 #ifndef AUTOBUILD
 #include "lang.h--"

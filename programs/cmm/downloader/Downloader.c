@@ -2,7 +2,7 @@
 //libraries
 #include "..\lib\kolibri.h"
 #include "..\lib\strings.h"
-#include "..\lib\figures.h"
+#include "..\lib\gui.h"
 #include "..\lib\encoding.h"
 #include "..\lib\draw_buf.h"
 #include "..\lib\file_system.h"
@@ -10,9 +10,9 @@
 #include "..\lib\dll.h"
 #include "..\lib\list_box.h"
 //*.obj libraries
-#include "..\lib\lib.obj\box_lib.h"
-#include "..\lib\lib.obj\libio_lib.h"
-#include "..\lib\lib.obj\http.h"
+#include "..\lib\obj\box_lib.h"
+#include "..\lib\obj\libio_lib.h"
+#include "..\lib\obj\http.h"
 
 char header[]="New Downloader v0.6";
 
@@ -49,7 +49,7 @@ void main()
 	char notify_message[4296];
 	
 	mem_Init();
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) {notify("System Error: library doesn't exists /rd/1/lib/box_lib.obj"); ExitProcess();}
+	if (load_dll2(boxlib, #box_lib_init,0)!=0) {notify("System Error: library doesn't exists /rd/1/lib/box_obj"); ExitProcess();}
 	if (load_dll2(libio, #libio_init,1)!=0) notify("Error: library doesn't exists - libio");
 	if (load_dll2(libHTTP, #http_lib_init,1)!=0) notify("Error: library doesn't exists - http");	
 	if (!URL) strcpy(#URL, "http://builds.kolibrios.org/eng/latest-iso.7z");

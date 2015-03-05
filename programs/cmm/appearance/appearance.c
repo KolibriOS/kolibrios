@@ -11,8 +11,8 @@
 #include "..\lib\dll.h"
 #include "..\lib\file_system.h"
 #include "..\lib\list_box.h"
-#include "..\lib\figures.h"
-#include "..\lib\lib.obj\box_lib.h"
+#include "..\lib\gui.h"
+#include "..\lib\obj\box_lib.h"
 
 #ifdef LANG_RUS
 	?define WINDOW_HEADER "Усправление темой"
@@ -165,7 +165,7 @@ void main()
 
 	mem_Init();
 	SetEventMask(0x27);
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("'Fatal Error: library doesn't exists /rd/1/lib/box_lib.obj' -E");
+	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("'Fatal Error: library doesn't exists /rd/1/lib/box_obj' -E");
 	list[SKINS].current = list[WALLPAPERS].current = -1;
 	list[SKINS].first = list[WALLPAPERS].first = 0;
 	TabClick(WALLPAPERS);

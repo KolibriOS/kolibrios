@@ -11,12 +11,12 @@
 #include "..\lib\dll.h"
 #include "..\lib\file_system.h"
 #include "..\lib\list_box.h"
-#include "..\lib\figures.h"
+#include "..\lib\gui.h"
 
-#include "..\lib\lib.obj\box_lib.h"
-#include "..\lib\lib.obj\libio_lib.h"
-#include "..\lib\lib.obj\libimg_lib.h"
-#include "..\lib\lib.obj\libini.h"
+#include "..\lib\obj\box_lib.h"
+#include "..\lib\obj\libio_lib.h"
+#include "..\lib\obj\libimg_lib.h"
+#include "..\lib\obj\libini.h"
 
 #include "..\lib\patterns\libimg_load_skin.h"
 
