@@ -249,12 +249,10 @@ struct  device          ETH_DEVICE
         mmio_addr       dd ? ; memory map physical address
         pcfg            dd ?
         mcfg            dd ?
+
         cur_rx          dd ? ; Index into the Rx descriptor buffer of next Rx pkt
         cur_tx          dd ? ; Index into the Tx descriptor buffer of next Rx pkt
-        TxDescArrays    dd ? ; Index of Tx Descriptor buffer
-        RxDescArrays    dd ? ; Index of Rx Descriptor buffer
-        TxDescArray     dd ? ; Index of 256-alignment Tx Descriptor buffer
-        RxDescArray     dd ? ; Index of 256-alignment Rx Descriptor buffer
+        last_tx         dd ?
         mac_version     dd ?
 
         rb 0x100-($ and 0xff)   ; align 256
@@ -663,14 +661,6 @@ reset:
 
         DEBUGF  1,"resetting\n"
 
-        lea     eax, [ebx + device.tx_ring]
-        mov     [ebx + device.TxDescArrays], eax
-        mov     [ebx + device.TxDescArray], eax
-
-        lea     eax, [ebx + device.rx_ring]
-        mov     [ebx + device.RxDescArrays], eax
-        mov     [ebx + device.RxDescArray], eax
-
         call    init_ring
         call    hw_start
 
@@ -682,9 +672,7 @@ reset:
         rep     stosd
 
         mov     [ebx + device.mtu], 1500
-
-; Set link state to unknown
-        mov     [ebx + device.state], ETH_LINK_UNKNOWN
+        call    detect_link
 
         DEBUGF  2,"init OK!\n"
         xor     eax, eax
@@ -798,22 +786,23 @@ init_ring:
         xor     eax, eax
         mov     [ebx + device.cur_rx], eax
         mov     [ebx + device.cur_tx], eax
+        mov     [ebx + device.last_tx], eax
 
         lea     edi, [ebx + device.tx_ring]
-        mov     ecx, (NUM_TX_DESC * sizeof.tx_desc) / 4
+        mov     ecx, (NUM_TX_DESC * sizeof.tx_desc) / 4 * 2
         rep     stosd
 
         lea     edi, [ebx + device.rx_ring]
         mov     ecx, (NUM_RX_DESC * sizeof.rx_desc) / 4
         rep     stosd
 
-        mov     edi, [ebx + device.RxDescArray]
+        lea     edi, [ebx + device.rx_ring]
         mov     ecx, NUM_RX_DESC
   .loop:
         push    ecx
         invoke  KernelAlloc, RX_BUF_SIZE
         mov     dword [edi + rx_desc.buf_soft_addr], eax
-        invoke  GetPgAddr
+        invoke  GetPhysAddr
         mov     dword [edi + rx_desc.buf_addr], eax
         mov     [edi + rx_desc.status], DSB_OWNbit or RX_BUF_SIZE
         add     edi, sizeof.rx_desc
@@ -973,7 +962,8 @@ read_mac:
         mov     ecx, 6
 
         ; Get MAC address. FIXME: read EEPROM
-    @@: in      al, dx
+    @@:
+        in      al, dx
         stosb
         inc     edx
         loop    @r
@@ -1026,6 +1016,12 @@ proc transmit stdcall bufferptr, buffersize
 
         DEBUGF  1,"Using TX desc: %x\n", esi
 
+;----------------------------------
+; Check if the descriptor is in use
+
+        test    [esi + tx_desc.status], DSB_OWNbit
+        jnz     .desc
+
 ;---------------------------
 ; Program the packet pointer
 
@@ -1038,11 +1034,13 @@ proc transmit stdcall bufferptr, buffersize
 ; Program the packet size
 
         mov     eax, [buffersize]
-    @@: or      eax, DSB_OWNbit or DSB_FSbit or DSB_LSbit
+    @@:
+        or      eax, DSB_OWNbit or DSB_FSbit or DSB_LSbit
         cmp     [ebx + device.cur_tx], NUM_TX_DESC - 1
         jne     @f
         or      eax, DSB_EORbit
-    @@: mov     [esi + tx_desc.status], eax
+    @@:
+        mov     [esi + tx_desc.status], eax
 
 ;-----------------------------------------
 ; Set the polling bit (start transmission)
@@ -1070,6 +1068,8 @@ proc transmit stdcall bufferptr, buffersize
         xor     eax, eax
         ret
 
+  .desc:
+        DEBUGF  2,"Descriptor is still in use!\n"
   .fail:
         DEBUGF  2,"Transmit failed\n"
         invoke  KernelFree, [bufferptr]
@@ -1079,8 +1079,6 @@ proc transmit stdcall bufferptr, buffersize
 
 endp
 
-
-;;;DSB_OWNbit
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -1108,6 +1106,9 @@ int_handler:
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], REG_IntrStatus
         in      ax, dx
+        out     dx, ax                                  ; ACK all interrupts
+        cmp     ax, 0xffff                              ; if so, hardware is no longer present
+        je      .nothing
         test    ax, ax
         jnz     .got_it
   .continue:
@@ -1121,15 +1122,10 @@ int_handler:
         ret                                             ; If no device was found, abort (The irq was probably for a device, not registered to this driver)
 
   .got_it:
-
         DEBUGF  1,"Device: %x Status: %x\n", ebx, ax
-
-        cmp     ax, 0xFFFF      ; if so, hardware is no longer present
-        je      .fail
 
 ;--------
 ; Receive
-
         test    ax, ISB_RxOK
         jz      .no_rx
 
@@ -1145,7 +1141,7 @@ int_handler:
         DEBUGF  1,"RxDesc.status = 0x%x\n", [esi + rx_desc.status]
         mov     eax, [esi + rx_desc.status]
         test    eax, DSB_OWNbit ;;;
-        jnz     .rx_return
+        jnz     .no_own
 
         DEBUGF  1,"cur_rx = %u\n", [ebx + device.cur_rx]
 
@@ -1159,8 +1155,7 @@ int_handler:
         push    eax
         DEBUGF  1,"data length = %u\n", ax
 
-;-------------
-; Update stats
+        ; Update stats
 
         add     dword [ebx + device.bytes_rx], eax
         adc     dword [ebx + device.bytes_rx + 4], 0
@@ -1168,16 +1163,14 @@ int_handler:
 
         pushd   [esi + rx_desc.buf_soft_addr]
 
-;----------------------
-; Allocate a new buffer
+        ; Allocate a new buffer
 
         invoke  KernelAlloc, RX_BUF_SIZE
         mov     [esi + rx_desc.buf_soft_addr], eax
         invoke  GetPhysAddr
         mov     dword [esi + rx_desc.buf_addr], eax
 
-;---------------
-; re set OWN bit
+        ; reset OWN bit
 
         mov     eax, DSB_OWNbit or RX_BUF_SIZE
         cmp     [ebx + device.cur_rx], NUM_RX_DESC - 1
@@ -1186,62 +1179,107 @@ int_handler:
     @@:
         mov     [esi + rx_desc.status], eax
 
-;--------------
-; Update rx ptr
+        ; Update rx ptr
 
         inc     [ebx + device.cur_rx]
         and     [ebx + device.cur_rx], NUM_RX_DESC - 1
 
         jmp     [Eth_input]
   .rx_return:
-
+        DEBUGF  1,"RX error!\n"
+  .no_own:
         pop     ax
   .no_rx:
 
-;---------
-; Transmit
+;-----------------
+; Transmit cleanup
 
-        test    ax, ISB_TxOK
+        test    ax, ISB_TxOK or ISB_TxErr or ISB_TxDescUnavail
         jz      .no_tx
-        push    ax
 
-        DEBUGF  1,"TX ok!\n"
-
-        mov     ecx, NUM_TX_DESC
-        lea     esi, [ebx + device.tx_ring]
+        DEBUGF  1,"TX done!\n"
   .txloop:
+        mov     esi, [ebx + device.last_tx]
+        imul    esi, sizeof.tx_desc
+        lea     esi, [ebx + device.tx_ring + esi]
+
         cmp     dword [esi + tx_desc.buf_soft_addr], 0
-        jz      .maybenext
+        je      .no_tx
 
         test    [esi + tx_desc.status], DSB_OWNbit
-        jnz     .maybenext
+        jnz     .no_tx
 
-        push    ecx
-        DEBUGF  1,"Freeing up TX desc: %x\n", esi
-        invoke  KernelFree, [esi + tx_desc.buf_soft_addr]
-        pop     ecx
+        DEBUGF  1,"Freeing up TX desc: 0x%x\n", esi
+        DEBUGF  1,"buff: 0x%x\n", [esi + tx_desc.buf_soft_addr]
+        push    eax
+        push    dword [esi + tx_desc.buf_soft_addr]
         and     dword [esi + tx_desc.buf_soft_addr], 0
+        invoke  KernelFree
+        pop     eax
 
-  .maybenext:
-        add     esi, sizeof.tx_desc
-        dec     ecx
-        jnz     .txloop
-
-        pop     ax
+        inc     [ebx + device.last_tx]
+        and     [ebx + device.last_tx], NUM_TX_DESC-1
+        jmp     .txloop
   .no_tx:
 
-;-------
-; Finish
+        test    ax, ISB_LinkChg
+        jz      .no_linkchange
+        DEBUGF  2, "Link change detected\n"
+        call    detect_link
+  .no_linkchange:
 
-        set_io  [ebx + device.io_addr], 0
-        set_io  [ebx + device.io_addr], REG_IntrStatus
-        out     dx, ax                  ; ACK all interrupts
-
-  .fail:
         pop     edi esi ebx
         xor     eax, eax
         inc     eax
 
+        ret
+
+
+
+align 4
+detect_link:
+
+        set_io  [ebx + device.io_addr], 0
+
+;        set_io  [ebx + device.io_addr], REG_TBICSR
+;        in      eax, dx
+;        test    eax, TBI_LinkOK
+;        jz      .down
+
+;        mov     [ebx + device.state], ETH_LINK_UNKNOWN
+;        invoke  NetLinkChanged
+;        ret
+
+        set_io  [ebx + device.io_addr], REG_PHYstatus
+        in      al, dx
+        test    al, PHYS_LinkStatus
+        jz      .down
+        DEBUGF  2, "Link is up, phystatus=0x%x\n", al
+        xor     ecx, ecx
+        test    al, PHYS_10bps
+        jz      @f
+        or      cl, ETH_LINK_10M
+  @@:
+        test    al, PHYS_100bps
+        jz      @f
+        or      cl, ETH_LINK_100M
+  @@:
+        test    al, PHYS_1000bpsF
+        jz      @f
+        or      cl, ETH_LINK_1G ;or ETH_LINK_FD
+  @@:
+        test    al, PHYS_FullDup
+        jz      @f
+        or      cl, ETH_LINK_FD
+  @@:
+        mov     [ebx + device.state], ecx
+        invoke  NetLinkChanged
+        ret
+
+  .down:
+        DEBUGF  2, "Link is down\n"
+        mov     [ebx + device.state], ETH_LINK_DOWN
+        invoke  NetLinkChanged
         ret
 
 

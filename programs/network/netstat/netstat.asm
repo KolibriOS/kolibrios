@@ -301,12 +301,12 @@ draw_stats:
         mov     edx, str_100mfd
         jmp     .print_link
   @@:
-        cmp     al, 10000b
+        cmp     al, 1100b
         jnz     @f
         mov     edx, str_1g
         jmp     .print_link
   @@:
-        cmp     al, 10010b
+        cmp     al, 1110b
         jnz     @f
         mov     edx, str_1gfd
         jmp     .print_link
@@ -842,14 +842,14 @@ str_dumped      db 'Packets dumped:',0
 str_queued      db 'Packets queued:',0
 str_link        db 'Link state:',0
 
-str_down        db 'down', 0
-str_unknown     db 'unknown', 0
-str_10m         db '10 Mbit Half duplex', 0
-str_10mfd       db '10 Mbit Full duplex', 0
+str_down        db 'disconnected        ', 0
+str_unknown     db 'unknown             ', 0
+str_10m         db '10 Mbit Half duplex ', 0
+str_10mfd       db '10 Mbit Full duplex ', 0
 str_100m        db '100 Mbit Half duplex', 0
 str_100mfd      db '100 Mbit Full duplex', 0
-str_1g          db '1 Gbit Half duplex', 0
-str_1gfd        db '1 Gbit Full duplex', 0
+str_1g          db '1 Gbit Half duplex  ', 0
+str_1gfd        db '1 Gbit Full duplex  ', 0
 
 str_ARP_legend  db 'IP-address        MAC-address         Status    TTL', 0
 str_ARP_entry   db '   .   .   .        -  -  -  -  -', 0
