@@ -45,7 +45,6 @@ img_files = {
  {"SETTINGS/TASKBAR.INI", build_type .. "/settings/taskbar.ini"},
  {"SETTINGS/DOCKY.INI", "common/settings/docky.ini"},
  {"SETTINGS/ASSOC.INI", "common/settings/assoc.ini"},
- {"SETTINGS/GAME_CENTER.INI", "common/settings/game_center.ini"},
  {"SETTINGS/SYSTEM_PANEL.INI", "common/settings/system_panel.ini"},
  {"NOTIFY3.PNG", "common/notify3.png"},
  {"SETTINGS/SETUP.DAT", build_type .. "/settings/setup.dat"},
@@ -74,6 +73,7 @@ img_files = {
 if build_type == "rus" then tup.append_table(img_files, {
  {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/russian/dos_kolibri/kfm_keys.txt"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/rus/.shell"},
+ {"SETTINGS/GAME_CENTER.INI", "rus/settings/game_center.ini"},
  {"SETTINGS/MYKEY.INI", PROGS .. "/system/MyKey/trunk/mykey.ini"},
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/rus/example.asm"},
  {"PIPETKA", build_type .. "/pipetka"},
@@ -85,6 +85,7 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"GAMES/WHOWTBAM", build_type .. "/games/whowtbam"},
 }) else tup.append_table(img_files, {
  {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
+ {"SETTINGS/GAME_CENTER.INI", "common/settings/game_center.ini"},
  {"GAMES/SKIN.RAW", PROGS .. "/games/soko/trunk/SKIN.RAW"},
  {"GAMES/SOKO-4.LEV", PROGS .. "/games/soko/trunk/SOKO-4.LEV"},
  {"GAMES/SOKO-5.LEV", PROGS .. "/games/soko/trunk/SOKO-5.LEV"},
