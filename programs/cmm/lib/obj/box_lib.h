@@ -1,6 +1,6 @@
 //BOX_LIB - Asper
 dword boxlib = #aEdit_box_lib;
-char aEdit_box_lib[]="/sys/lib/box_obj";
+char aEdit_box_lib[]="/sys/lib/box_lib.obj";
 
 dword box_lib_init   = #aboxlib_init;
 
