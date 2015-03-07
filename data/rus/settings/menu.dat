@@ -107,7 +107,7 @@ FSPEED скорость ФС        /sys/fspeed
 Построение графиков       /sys/graph
 HEX-редактор              /sys/develop/heed
 #14    **** Сеть ****
-Серверы            >      /@18
+Серверы            >      /@15
 Клиенты            >      /@16
 Настройки сети           /sys/network/netcfg
 Статус подключения        /sys/network/netstat
