@@ -1,3 +1,6 @@
+#ifndef AUTOBUILD
+#include "lang.h--"
+#endif
 
 #define MEMSIZE 0x23E80
 #include "..\lib\kolibri.h" 
@@ -14,6 +17,43 @@
 #include "..\lib\patterns\libimg_load_skin.h"
 
 #define WINDOW_TITLE "Taskbar and Docky configuration"
+
+#ifdef LANG_RUS
+	?define MIN_LEFT_BUTTON "Кнопка скрытия слева"
+	?define MIN_RIGHT_BUTTON "Кнопка скрытия справа"
+	?define SOFTEN_UP   "Сглаживание сверху"
+	?define SOFTEN_DOWN "Сглаживание снизу"
+	?define CLOCK    "Часы"
+	?define CPU_USAGE "Загрузка ЦП"
+	?define CHANGE_LANG "Язык ввода"
+	?define MENU_BUTTON "Кнопка меню"
+	?define PANEL_HEIGHT "Высота панели"
+	?define SOFTEN_HEIGHT "Высота сглаживания"
+	?define BUTTON_OFFSET "Поле вокруг кнопок"
+	?define FSIZE "Режим панели"
+	?define ASHOW "Не скрывать"
+	?define CHANGE_POS "Нажмите на изображение для смены позиции"
+	?define ERROR_1 "Ошибка при загрузке библиотеки /rd/1/lib/box_lib.obj"
+	?define ERROR_2 "Ошибка при загрузке библиотеки /rd/1/lib/libini.obj"
+#else
+	?define MIN_LEFT_BUTTON "Min Left Button"
+	?define MIN_RIGHT_BUTTON "Min Right Button"
+	?define SOFTEN_UP   "Soften Up"
+	?define SOFTEN_DOWN "Soften Down"
+	?define CLOCK    "Clock"
+	?define CPU_USAGE "Cpu Usage"
+	?define CHANGELANG "Change Language"
+	?define MENU_BUTTON "Menu Button"
+	?define PANEL_HEIGHT "Panel Height"
+	?define SOFTEN_HEIGHT "Soften Height"
+	?define BUTTON_OFFSET "Button Offset"
+	?define FSIZE "Full width"
+	?define ASHOW "Always show"
+	?define CHANGE_POS "Click on image to change position"
+	?define ERROR_1 "Error while loading library /rd/1/lib/box_lib.obj"
+	?define ERROR_2 "Error while loading library /rd/1/lib/libini.obj"
+#endif
+
 
 frame taskbar_frame = { 0, 000, 10, 188, 14, 0x000111, 0xFFFfff, 1, " Taskbar ", 0, 0, 6, 0x000111, 0xCCCccc };
 frame docky_frame = { 0, 000, 10, 73, 217, 0x000111, 0xFFFfff, 1, " Docky ", 0, 0, 6, 0x000111, 0xCCCccc };
@@ -52,8 +92,8 @@ void main()
 	dword id, key;
 
 	mem_Init();
-	if (load_dll2(libini, #lib_init,1)!=0) notify("Error: library doesn't exists - libini");
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("Eror: library doesn't exists - boxlib");
+	if (load_dll2(libini, #lib_init,1)!=0) notify(ERROR_2);
+	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(ERROR_1);
 
 	LoadCfg();
 
@@ -110,7 +150,7 @@ void main()
 			
 		case evReDraw:
 				sc.get();
-				DefineAndDrawWindow(130, 150, 390, 300+GetSkinHeight(),0x34,sc.work,WINDOW_TITLE);
+				DefineAndDrawWindow(130, 150, 400, 300+GetSkinHeight(),0x34,sc.work,WINDOW_TITLE);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window>2) break;
 				taskbar_frame.size_x = docky_frame.size_x = - taskbar_frame.start_x * 2 + Form.cwidth;
@@ -129,27 +169,27 @@ void DrawWindowContent()
   frame_draw stdcall (#taskbar_frame);
 	DefineButton(22, taskbar_frame.start_y + 12, panels_img.w-1, 27-1, 100 + BT_HIDE, 0);
 	_PutImage(22, taskbar_frame.start_y + 12,  37, 27, taskbar_cfg.Attachment * 37 * 27 * 3 + panels_img.data);
-	WriteText(68, taskbar_frame.start_y + 20, 0x80, 0x333222, "Click on image to change position");
-	PanelCfg_CheckBox(22, taskbar_frame.start_y +  48, 105, "Soften Up", taskbar_cfg.SoftenUp);
-	PanelCfg_CheckBox(22, taskbar_frame.start_y +  68, 106, "Soften Down", taskbar_cfg.SoftenDown);
-	PanelCfg_CheckBox(22, taskbar_frame.start_y +  88, 107, "Min Left Button", taskbar_cfg.MinLeftButton);
-	PanelCfg_CheckBox(22, taskbar_frame.start_y + 108, 108, "Min Right Button", taskbar_cfg.MinRightButton);
+	WriteText(68, taskbar_frame.start_y + 20, 0x80, 0x333222, CHANGE_POS);
+	PanelCfg_CheckBox(22, taskbar_frame.start_y +  48, 105, SOFTEN_UP, taskbar_cfg.SoftenUp);
+	PanelCfg_CheckBox(22, taskbar_frame.start_y +  68, 106, SOFTEN_DOWN, taskbar_cfg.SoftenDown);
+	PanelCfg_CheckBox(22, taskbar_frame.start_y +  88, 107, MIN_LEFT_BUTTON, taskbar_cfg.MinLeftButton);
+	PanelCfg_CheckBox(22, taskbar_frame.start_y + 108, 108, MIN_RIGHT_BUTTON, taskbar_cfg.MinRightButton);
 	win_center_x = Form.cwidth / 2;
-	PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y +  48, 111, "Clock", taskbar_cfg.Clock);
-	PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y +  68, 112, "Cpu Usage", taskbar_cfg.CpuUsage);
-	PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y +  88, 113, "Change Language", taskbar_cfg.ChangeLang);
-	PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y + 108, 114, "Menu Button", taskbar_cfg.MenuButton);	
-	PanelCfg_MoreLessBox(22, taskbar_frame.start_y + 131, 120, 121, taskbar_cfg.PanelHeight, "Panel Height");
-	PanelCfg_MoreLessBox(win_center_x, taskbar_frame.start_y + 131, 122, 123, taskbar_cfg.SoftenHeight, "Soften Height");
-	PanelCfg_MoreLessBox(22, taskbar_frame.start_y + 159, 124, 125, taskbar_cfg.ButtonOffset, "Button Offset");
+	PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y +  48, 111, CLOCK, taskbar_cfg.Clock);
+	PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y +  68, 112, CPU_USAGE, taskbar_cfg.CpuUsage);
+	PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y +  88, 113, CHANGE_LANG, taskbar_cfg.ChangeLang);
+	PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y + 108, 114, MENU_BUTTON, taskbar_cfg.MenuButton);	
+	PanelCfg_MoreLessBox(22, taskbar_frame.start_y + 131, 120, 121, taskbar_cfg.PanelHeight, PANEL_HEIGHT);
+	PanelCfg_MoreLessBox(win_center_x, taskbar_frame.start_y + 131, 122, 123, taskbar_cfg.SoftenHeight, SOFTEN_HEIGHT);
+	PanelCfg_MoreLessBox(22, taskbar_frame.start_y + 159, 124, 125, taskbar_cfg.ButtonOffset, BUTTON_OFFSET);
 
   frame_draw stdcall (#docky_frame);
 	DefineButton(22, docky_frame.start_y + 12, panels_img.w-1, 27-1, 200 + BT_HIDE, 0);
 	_PutImage(22, docky_frame.start_y + 12,  37, 27, docky_cfg.location + 1 * 37 * 27 * 3 + panels_img.data);
-	WriteText(68, docky_frame.start_y + 20, 0x80, 0x333222, "Click on image to change position");
+	WriteText(68, docky_frame.start_y + 20, 0x80, 0x333222, CHANGE_POS);
 
-	PanelCfg_CheckBox(22, docky_frame.start_y + 48, 201, "Full width",  docky_cfg.fsize);
-	PanelCfg_CheckBox(win_center_x, docky_frame.start_y + 48, 202, "Always show", docky_cfg.ashow);
+	PanelCfg_CheckBox(22, docky_frame.start_y + 48, 201, FSIZE,  docky_cfg.fsize);
+	PanelCfg_CheckBox(win_center_x, docky_frame.start_y + 48, 202, ASHOW, docky_cfg.ashow);
 }
 
 void LoadCfg()
