@@ -102,7 +102,7 @@ char version[]=" WebView 0.1";
 void main() {
 	mem_Init();
 	CursorPointer.Load(#CursorFile);
-	if (load_dll2(boxlib, #box_lib_init,0)!=0)	        notify("Error while loading library - box_obj");
+	if (load_dll2(boxlib, #box_lib_init,0)!=0)	        notify("Error while loading library - box_lib.obj");
 	if (load_dll2(network_lib, #network_lib_init,0)!=0)	notify("Error while loading library - network.obj");
 	if (load_dll2(netcode_lib, #base64_encode,0)!=0)	notify("Error while loading library - netcode.obj");
 	if (load_dll2(iconv_lib, #iconv_open,0)!=0)	      { notify("Error while loading library - iconv.obj"); use_iconv=2; }

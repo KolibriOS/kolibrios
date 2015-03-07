@@ -35,7 +35,7 @@ void main()
 {   
 	int id, key;
    	mem_Init();
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("Error while loading GUI library /sys/lib/boxobj");
+	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("Error while loading GUI library /sys/lib/box_lib.obj");
 
 	dict_folder = abspath(DICT_DIRECROTY);
 	OpenDictionary(0);

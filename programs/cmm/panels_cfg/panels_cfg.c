@@ -16,9 +16,10 @@
 
 #include "..\lib\patterns\libimg_load_skin.h"
 
-#define WINDOW_TITLE "Taskbar and Docky configuration"
-
 #ifdef LANG_RUS
+	?define WINDOW_TITLE "Настройки панели задач и Дока"
+    ?define TASK_FRAME_T " Панель задач "
+	?define DOCK_FRAME_T " Док "
 	?define MIN_LEFT_BUTTON "Кнопка скрытия слева"
 	?define MIN_RIGHT_BUTTON "Кнопка скрытия справа"
 	?define SOFTEN_UP   "Сглаживание сверху"
@@ -33,9 +34,12 @@
 	?define FSIZE "Режим панели"
 	?define ASHOW "Не скрывать"
 	?define CHANGE_POS "Нажмите на изображение для смены позиции"
-	?define ERROR_1 "Ошибка при загрузке библиотеки /rd/1/lib/box_lib.obj"
-	?define ERROR_2 "Ошибка при загрузке библиотеки /rd/1/lib/libini.obj"
+	?define BOX_LIB_LOAD_ERR "Ошибка при загрузке библиотеки /rd/1/lib/box_lib.obj"
+	?define LIBINI_LOAD_ERR "Ошибка при загрузке библиотеки /rd/1/lib/libini.obj"
 #else
+	?define WINDOW_TITLE "Taskbar and Docky configuration"
+    ?define TASK_FRAME_T " Taskbar "
+	?define DOCK_FRAME_T " Docky "
 	?define MIN_LEFT_BUTTON "Min Left Button"
 	?define MIN_RIGHT_BUTTON "Min Right Button"
 	?define SOFTEN_UP   "Soften Up"
@@ -50,13 +54,13 @@
 	?define FSIZE "Full width"
 	?define ASHOW "Always show"
 	?define CHANGE_POS "Click on image to change position"
-	?define ERROR_1 "Error while loading library /rd/1/lib/box_lib.obj"
-	?define ERROR_2 "Error while loading library /rd/1/lib/libini.obj"
+	?define BOX_LIB_LOAD_ERR "Error while loading library /rd/1/lib/box_lib.obj"
+	?define LIBINI_LOAD_ERR "Error while loading library /rd/1/lib/libini.obj"
 #endif
 
 
-frame taskbar_frame = { 0, 000, 10, 188, 14, 0x000111, 0xFFFfff, 1, " Taskbar ", 0, 0, 6, 0x000111, 0xCCCccc };
-frame docky_frame = { 0, 000, 10, 73, 217, 0x000111, 0xFFFfff, 1, " Docky ", 0, 0, 6, 0x000111, 0xCCCccc };
+frame taskbar_frame = { 0, 000, 10, 188, 14, 0x000111, 0xFFFfff, 1, TASK_FRAME_T, 0, 0, 6, 0x000111, 0xCCCccc };
+frame docky_frame = { 0, 000, 10, 73, 217, 0x000111, 0xFFFfff, 1, DOCK_FRAME_T, 0, 0, 6, 0x000111, 0xCCCccc };
 
 char taskbar_ini_path[] = "/sys/settings/taskbar.ini";
 char taskbar_c_flags[] = "Flags";
@@ -92,8 +96,8 @@ void main()
 	dword id, key;
 
 	mem_Init();
-	if (load_dll2(libini, #lib_init,1)!=0) notify(ERROR_2);
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(ERROR_1);
+	if (load_dll2(libini, #lib_init,1)!=0) notify(LIBINI_LOAD_ERR);
+	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(BOX_LIB_LOAD_ERR);
 
 	LoadCfg();
 
