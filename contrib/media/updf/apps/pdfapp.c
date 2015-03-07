@@ -398,9 +398,9 @@ static void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repai
 
 	if (drawpage)
 	{
-		sprintf(buf, "%s - %d/%d (%d dpi)", app->doctitle,
-				app->pageno, app->pagecount, app->resolution);
-		wintitle(app, buf);
+		// sprintf(buf, "%s - %d/%d (%d dpi)", app->doctitle,
+		// 		app->pageno, app->pagecount, app->resolution);
+		// wintitle(app, buf);
 
 		ctm = pdfapp_viewctm(app);
 		bbox = fz_round_rect(fz_transform_rect(ctm, app->page_bbox));
@@ -429,7 +429,7 @@ static void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repai
 
 		if (app->shrinkwrap)
 		{
-			__menuet__debug_out ("SHRINK\n");
+			// __menuet__debug_out ("SHRINK\n");
 			int w = app->image->w;
 			int h = app->image->h;
 			if (app->winw == w)

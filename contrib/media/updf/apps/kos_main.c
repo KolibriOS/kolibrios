@@ -88,7 +88,15 @@ struct process_table_entry Form;
 #define DOCUMENT_BORDER 0x979797
 #define DOCUMENT_BG 0xABABAB
 
-#define SCROLL_H 17
+#define SCROLL_H 25
+
+short show_area_w = 65;
+short show_area_x;
+
+char key_mode_enter_page_number;
+int new_page_number;
+
+static short window_center, draw_h, draw_w;
 
 const char *help[] = {
 	"Keys:",
@@ -102,7 +110,7 @@ const char *help[] = {
 	"+/- - zoom in/out",
 	"[ or l - rotate page 90 deg to the left",
 	"] or r - rotate page 90 deg to the right",
-	"g - greyscale on/off",
+	"g - grayscale on/off",
 	"  ",
 	"Press Escape to hide help",
 	0
@@ -168,9 +176,10 @@ void winrepaint(pdfapp_t *app)
 
 void winblit(pdfapp_t *app)
 {
-	signed short window_center, draw_w;
 
 	if (do_not_blit) return;
+
+	if (key_mode_enter_page_number==1) HandleNewPageNumber(0); else DrawPagination();
 
 	if (Form.client_width > gapp.image->w) window_center = (Form.client_width - gapp.image->w) / 2; else window_center = 0;
 
@@ -213,15 +222,34 @@ void winblit(pdfapp_t *app)
 			);
 			free(color);
 		}
-	} 
-	if (gapp.image->h - gapp.pany < Form.client_height - TOOLBAR_HEIGHT)
-	{
-		if (gapp.image->w < Form.client_width) draw_w = gapp.image->w; else draw_w = Form.client_width;
-		__menuet__bar(window_center, gapp.image->h - gapp.pany + TOOLBAR_HEIGHT, draw_w, 1, DOCUMENT_BORDER);
-		__menuet__bar(window_center, gapp.image->h - gapp.pany + TOOLBAR_HEIGHT + 1, draw_w, Form.client_height - gapp.image->h - TOOLBAR_HEIGHT + gapp.pany - 1, DOCUMENT_BG);
 	}
-	DrawPagination();
 }
+
+
+void DrawPageSides(void)
+{
+	if (Form.client_width > gapp.image->w) window_center = (Form.client_width - gapp.image->w) / 2; else window_center = 0;
+	if (gapp.image->h < Form.client_height - TOOLBAR_HEIGHT) draw_h = gapp.image->h - gapp.pany; else draw_h = Form.client_height - TOOLBAR_HEIGHT;
+	if (gapp.image->w < Form.client_width)
+	{
+		__menuet__bar(0, TOOLBAR_HEIGHT, window_center-1, Form.client_height - TOOLBAR_HEIGHT, DOCUMENT_BG);
+		__menuet__bar(window_center-1, TOOLBAR_HEIGHT, 1, draw_h, DOCUMENT_BORDER);
+		__menuet__bar(window_center + gapp.image->w, TOOLBAR_HEIGHT, 1, draw_h, DOCUMENT_BORDER);
+		__menuet__bar(window_center + gapp.image->w+1, TOOLBAR_HEIGHT, Form.client_width - window_center - gapp.image->w - 1, Form.client_height - TOOLBAR_HEIGHT, DOCUMENT_BG);
+	}
+	if (gapp.image->w < Form.client_width) 
+	{
+		draw_w = gapp.image->w + 2;
+	}
+	else
+	{
+		window_center = 1;
+		draw_w = Form.client_width;
+	}
+	__menuet__bar(window_center - 1, gapp.image->h - gapp.pany + TOOLBAR_HEIGHT, draw_w, 1, DOCUMENT_BORDER);
+	__menuet__bar(window_center - 1, gapp.image->h - gapp.pany + TOOLBAR_HEIGHT + 1, draw_w, Form.client_height - gapp.image->h - TOOLBAR_HEIGHT + gapp.pany - 1, DOCUMENT_BG);
+}
+
 
 
 int main (void)
@@ -243,10 +271,10 @@ int main (void)
 	__menuet__debug_out("PDF Open\n");
 	pdfapp_open(&gapp, original_command_line, 0, 0);
 	__menuet__debug_out("PDF Opened\n");
+	wintitle(&gapp, 0);
 	
  
 	__menuet__debug_out("Inital paint\n");
-	//if (gapp.image) gapp.shrinkwrap = 0;
 	
 	int butt, key, screen_max_x, screen_max_y;
 	__menuet__get_screen_max(&screen_max_x, &screen_max_y);
@@ -258,6 +286,7 @@ int main (void)
 	switch(__menuet__wait_for_event())
 	{
 		case evReDraw:
+			// gapp.shrinkwrap = 2;
 			__menuet__window_redraw(1);
 			__menuet__define_window(screen_max_x / 2 - 350, screen_max_y / 2 - 300, 700, 600, 0x73000000, 0x800000FF, Title);
 			__menuet__window_redraw(2);
@@ -270,6 +299,11 @@ int main (void)
 
 		case evKey:
 			key = __menuet__getkey(); 
+			if (key_mode_enter_page_number)
+			{
+				HandleNewPageNumber(key);
+				break;
+			}
 			if (key==ASCII_KEY_ESC)  DrawWindow(); //close help 
 			if (key==ASCII_KEY_PGDN) pdfapp_onkey(&gapp, ']');
 			if (key==ASCII_KEY_PGUP) pdfapp_onkey(&gapp, '[');
@@ -293,14 +327,17 @@ int main (void)
 			if(butt==13) //show help
 			{
 				__menuet__bar(0, TOOLBAR_HEIGHT, Form.client_width, Form.client_height - TOOLBAR_HEIGHT, 0xF2F2F2);	
-				__menuet__write_text(20, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.01", 0);
-				__menuet__write_text(21, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.01", 0);
+				__menuet__write_text(20, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.2", 0);
+				__menuet__write_text(21, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.2", 0);
 				for (ii=0; help[ii]!=0; ii++) {
 					__menuet__write_text(20, TOOLBAR_HEIGHT + 60 + ii * 15, 0x80000000, help[ii], 0);
 				}
 			}
 			if(butt==14) pdfapp_onkey(&gapp, '['); //previous page
 			if(butt==15) pdfapp_onkey(&gapp, ']'); //next page
+			if(butt==16) PageRotateLeft();
+			if(butt==17) PageRotateRight();
+			if(butt==20) GetNewPageNumber();
 			break;
 
 		case evMouse:
@@ -318,56 +355,88 @@ int main (void)
 }
 
 
-
-void DrawPageSides(void)
+void GetNewPageNumber(void)
 {
-	short window_center;
-	if (Form.client_width > gapp.image->w) window_center = (Form.client_width - gapp.image->w) / 2; else window_center = 0;
-	if (gapp.image->w < Form.client_width)
-	{
-		__menuet__bar(0, TOOLBAR_HEIGHT, window_center-1, Form.client_height - TOOLBAR_HEIGHT, DOCUMENT_BG);
-		__menuet__bar(window_center-1, TOOLBAR_HEIGHT, 1, Form.client_height - TOOLBAR_HEIGHT, DOCUMENT_BORDER);
-		__menuet__bar(window_center + gapp.image->w, TOOLBAR_HEIGHT, 1, Form.client_height - TOOLBAR_HEIGHT, DOCUMENT_BORDER);
-		__menuet__bar(window_center + gapp.image->w+1, TOOLBAR_HEIGHT, Form.client_width - window_center - gapp.image->w - 1, Form.client_height - TOOLBAR_HEIGHT, DOCUMENT_BG);
-	}
+	new_page_number = gapp.pageno;
+	key_mode_enter_page_number = 1;
+	HandleNewPageNumber(0);
 }
 
+void HandleNewPageNumber(unsigned char key)
+{
+	char label_new_page[8];
+
+	if ((key >= '0') && (key <= '9')) 
+	{
+		new_page_number = new_page_number * 10 + key - '0';
+	}
+	if (key == ASCII_KEY_BS)
+	{
+		new_page_number /= 10;
+	}
+	if (key == ASCII_KEY_ENTER)
+	{
+		ApplyNewPageNumber();
+		return;
+	}
+	if (key==ASCII_KEY_ESC) 
+	{
+		key_mode_enter_page_number = 0;
+		DrawWindow();
+		return;
+	}
+
+	itoa(new_page_number, label_new_page, 10);
+	strcat(label_new_page, "_");
+	__menuet__bar(show_area_x,  6, show_area_w, 22, 0xFDF88E);
+	__menuet__write_text(show_area_x + show_area_w/2 - strlen(label_new_page)*6/2, 14, 0x000000, label_new_page, strlen(label_new_page));
+
+	if (new_page_number > gapp.pagecount) ApplyNewPageNumber();
+}
+
+void ApplyNewPageNumber(void)
+{
+	key_mode_enter_page_number = 0;
+	gapp.pageno = new_page_number -1;
+	pdfapp_onkey(&gapp, ']');
+}
 
 void DrawPagination(void)
 {
 	char pages_display[12];
-	short show_area_w = 65;
-	short show_area_x = Form.client_width - show_area_w - 34;
-
-	DrawToolbarButton(show_area_x - 26,5,26,24,4); //prev page
-	DrawToolbarButton(show_area_x + show_area_w,5,26,24,5); //nex page 
-	__menuet__bar(show_area_x,  5, show_area_w, 1, 0xA4A4A4);
 	__menuet__bar(show_area_x,  6, show_area_w, 22, 0xF4F4F4);
-	__menuet__bar(show_area_x, 28, show_area_w, 1, 0xA4A4A4);
 	sprintf (pages_display, "%d/%d", gapp.pageno, gapp.pagecount);
 	__menuet__write_text(show_area_x + show_area_w/2 - strlen(pages_display)*6/2, 14, 0x000000, pages_display, strlen(pages_display));
 }
+
+
 
 
 void DrawWindow(void)
 {
 	__menuet__bar(0, 0, Form.client_width, TOOLBAR_HEIGHT - 1, 0xe1e1e1); // bar on the top (buttons holder)
 	__menuet__bar(0, TOOLBAR_HEIGHT - 1, Form.client_width, 1, 0x7F7F7F);
-	DrawToolbarButton(8,5,26,24,0); //open_folder
-	DrawToolbarButton(42,5,26,24,1); //magnify -
-	DrawToolbarButton(67,5,26,24,2);  //magnify +
-	DrawToolbarButton(Form.client_width - 160,5,26,24,3); //show help
+	DrawToolbarButton(8,0); //open_folder
+	DrawToolbarButton(42,1); //magnify -
+	DrawToolbarButton(67,2);  //magnify +
+	DrawToolbarButton(101,6); //rotate left
+	DrawToolbarButton(126,7); //rotate right
+	DrawToolbarButton(Form.client_width - 160,3); //show help
+	show_area_x = Form.client_width - show_area_w - 34;
+	DrawToolbarButton(show_area_x - 26,4); //prev page
+	DrawToolbarButton(show_area_x + show_area_w,5); //nex page
+	__menuet__make_button(show_area_x-1,  5, show_area_w+1, 23, 20 + BT_HIDE, 0xA4A4A4);
+	__menuet__bar(show_area_x,  5, show_area_w, 1, 0xA4A4A4);
+	__menuet__bar(show_area_x, 28, show_area_w, 1, 0xA4A4A4);
 	winblit(&gapp);
 	DrawPageSides();
 }
 
-
-void DrawToolbarButton(int x, int y, int w, int h, char image_id)
+void DrawToolbarButton(int x, char image_id)
 {
-	__menuet__make_button(x, y, w-1, h-1, 10 + image_id + BT_HIDE, 0);
-	__menuet__putimage(x, y, w, h, image_id * 24 * 26 * 3 + toolbar_image);
+	__menuet__make_button(x, 5, 26-1, 24-1, 10 + image_id + BT_HIDE, 0);
+	__menuet__putimage(x, 5, 26, 24, image_id * 24 * 26 * 3 + toolbar_image);
 }
-
 
 
 /* Actions */
