@@ -46,7 +46,7 @@
 	?define SOFTEN_DOWN "Soften Down"
 	?define CLOCK    "Clock"
 	?define CPU_USAGE "Cpu Usage"
-	?define CHANGELANG "Change Language"
+	?define CHANGE_LANG "Change Language"
 	?define MENU_BUTTON "Menu Button"
 	?define PANEL_HEIGHT "Panel Height"
 	?define SOFTEN_HEIGHT "Soften Height"
