@@ -1,5 +1,4 @@
 //flac
-//open last folder at start up
 //do not open multiple threads
 //edit list manually
 
@@ -41,7 +40,8 @@ int player_run_id,
 
 int current_playing_file_n;
 
-word win_x, win_y;
+word win_x_normal, win_y_normal;
+word win_x_small, win_y_small;
 
 byte window_mode;
 enum {
@@ -143,7 +143,7 @@ void main()
 				} while (drag_mouse.lkm);
 			}
 			if (m.pkm) && (m.y > skin.h) 
-				notify("'Pixies Player v1.01\nChange sound volume: Left/Right key\nChange skin: F1/F2\nMute: M key' -St\n");
+				notify("'Pixies Player v1.1\nChange sound volume: Left/Right key\nChange skin: F1/F2\nMute: M key' -St\n");
 	  		break;
 
 		case evButton:
@@ -161,21 +161,32 @@ void main()
 					if (window_mode == WINDOW_MODE_NORMAL)
 					{
 						window_mode = WINDOW_MODE_SMALL;
+						win_x_normal = Form.left;
+						win_y_normal = Form.top;
 						MoveSize(OLD, OLD, 99, skin.h - 1);
-						MoveSize(OLD, GetClientHeight() - skin.h + 1, OLD, OLD);
-						MoveSize(2000, OLD, OLD, OLD);
+						MoveSize(OLD, win_y_small, OLD, OLD);
+						MoveSize(win_x_small, OLD, OLD, OLD);
 					}
 					else
 					{
 						window_mode = WINDOW_MODE_NORMAL;
-						MoveSize(30,80,skin.w -1 ,skin.h + list.h);
+						win_x_small = Form.left;
+						win_y_small = Form.top;
+						MoveSize(win_x_normal, win_y_normal, skin.w -1 ,skin.h + list.h);
 					}
 					break;
 				case BUTTON_PLAYBACK_PREV:
-					if (list.KeyUp()) StartPlayingMp3();
+					if (list.KeyUp()) {
+						current_playing_file_n = list.current;
+						StartPlayingMp3();
+					}
 					break;
 				case BUTTON_PLAYBACK_NEXT:
-					if (list.KeyDown()) StartPlayingMp3();
+					if (list.KeyDown()) 
+					{
+						current_playing_file_n = list.current;
+						StartPlayingMp3();
+					}
 					break;
 				case BUTTON_PLAYBACK_PLAY_PAUSE:
 					if (playback_mode == PLAYBACK_MODE_PLAYING) 
@@ -210,8 +221,8 @@ void main()
 			break;
 
 		case evReDraw:
-			if (window_mode == WINDOW_MODE_NORMAL) DefineAndDrawWindow(win_x, win_y, skin.w - 1, skin.h + list.h, 0x01,0,0,0);
-			if (window_mode == WINDOW_MODE_SMALL) DefineAndDrawWindow(win_x, win_y, 99, skin.h - 1, 0x01,0,0,0);
+			if (window_mode == WINDOW_MODE_NORMAL) DefineAndDrawWindow(win_x_normal, win_y_normal, skin.w - 1, skin.h + list.h, 0x01,0,0,0);
+			if (window_mode == WINDOW_MODE_SMALL) DefineAndDrawWindow(win_x_small, win_y_small, 99, skin.h - 1, 0x01,0,0,0);
 			DrawWindow();
 			break;
 
@@ -220,13 +231,8 @@ void main()
 			{
 				if (current_playing_file_n < list.count) 
 				{
-					//пиздец тут быдлокод пошёл
-					id = list.current;
-					current_playing_file_n++;
-					list.current = current_playing_file_n;
+					current_playing_file_n = list.current;
 					StartPlayingMp3();
-					list.current = id;
-					DrawPlayList();
 				}
 				else
 				{

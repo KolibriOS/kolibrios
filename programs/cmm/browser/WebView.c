@@ -533,7 +533,7 @@ void ProcessLinks(int id)
 	if (UrlExtIs(".png")==1) || (UrlExtIs(".gif")==1) || (UrlExtIs(".jpg")==1) || (UrlExtIs(".zip")==1)
 	|| (UrlExtIs(".7z")==1) || (UrlExtIs("netcfg")==1) 
 	{
-		notify(#URL);
+		//notify(#URL);
 		if (strcmpn(#URL,"http://:", 8)==0)
 		{
 			strcpy(#DL_URL, #URL);
