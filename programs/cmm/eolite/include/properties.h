@@ -73,12 +73,51 @@ void GetSizeDir(dword way)
 	}
 }
 
+void GetSizeMoreFiles(dword way)
+{
+	int all_file_count, all_dir_count, all_size;
+	char cur_file[4096];
+	dword selected_offset2;
+	
+	all_file_count = 0;
+	all_dir_count = 0; 
+	all_size = 0;
+	
+	for (i=0; i<files.count; i++) 
+    {
+        selected_offset2 = file_mas[i]*304 + buf+32 + 7;
+        if (ESBYTE[selected_offset2]) {
+            strcpy(#cur_file, way);
+            strcat(#cur_file, file_mas[i]*304+buf+72);
+
+			GetFileInfo(#cur_file, #file_info_general);
+			if ( file_info_general.isfolder )
+			{
+				GetSizeDir(#cur_file);
+				all_file_count = all_file_count + file_count;
+				all_dir_count = all_dir_count + dir_count +1;
+				all_size = all_size + size_dir;
+			}
+			else
+			{
+				all_file_count++;
+				all_size = all_size + file_info_general.sizelo;
+			}
+        }
+	}  
+	file_count = all_file_count;
+	dir_count = all_dir_count;
+	size_dir = all_size;
+}
+
 void properties_dialog()
 {
 	byte id;
 	byte key;
 	dword file_name_off;
 	dword element_size;
+	dword selected_offset2;
+	int cont = 0;
 	char element_size_label[32];
 	proc_info settings_form;
 	
@@ -86,13 +125,23 @@ void properties_dialog()
 	file_count = 0;
 	dir_count = 0;	
 	size_dir = 0;
-	GetFileInfo(#file_path, #file_info_general);
-	strcpy(#file_name2, #file_name);
-	file_name_ed.size = strlen(#file_name2);
+	
+	for (i=0; i<files.count; i++) 
+	{
+		selected_offset2 = file_mas[i]*304 + buf+32 + 7;
+		if (ESBYTE[selected_offset2]) cont++;
+	}
+			
+	if (cont) GetSizeMoreFiles(#path);
+	else
+	{
+		GetFileInfo(#file_path, #file_info_general);
+		strcpy(#file_name2, #file_name);
+		file_name_ed.size = strlen(#file_name2);	
+		if (itdir) GetSizeDir(#file_path);
+	}
 	strcpy(#path_to_file, #path);
 	path_to_file_ed.size = strlen(#path_to_file);
-
-	if (itdir) GetSizeDir(#file_path);
 	
 	SetEventMask(0x27);
 	loop() switch(WaitEvent())
@@ -120,54 +169,74 @@ void properties_dialog()
 				GetProcessInfo(#settings_form, SelfInfo);
 				DrawFlatButton(settings_form.cwidth - 70 - 13, settings_form.cheight - 34, 70, 22, 10, 0xE4DFE1, BTN_CLOSE);
 				DrawBar(10, 10, 32, 32, 0xFFFfff);
-				if ( file_info_general.isfolder ) 
-					Put_icon("<DIR>", 18, 20, 0xFFFfff, 0);
-				else 
-					Put_icon(#file_name2+strrchr(#file_name2,'.'), 18, 20, 0xFFFfff, 0);
-
-				WriteText(50, 13, 0x80, 0x000000, PR_T_NAME);				
-				edit_box_draw stdcall (#file_name_ed);
-
+				
 				WriteText(10, 50, 0x80, 0x000000, PR_T_DEST);
 				edit_box_draw stdcall (#path_to_file_ed);
 
 				WriteText(10, 65, 0x80, 0x000000, PR_T_SIZE);
-				if (!itdir)
+				
+				if (cont)
 				{
-					element_size = file_info_general.sizelo;
-				}
-				else
-				{
-					WriteText(10, 80, 0x80, 0x000000, PR_T_CONTAINS);				
+					Put_icon('', 18, 20, 0xFFFfff, 0);
 					strcpy(#folder_info, SET_6);
 					strcat(#folder_info, itoa(file_count));
 					strcat(#folder_info, SET_7);
 					strcat(#folder_info, itoa(dir_count));
-					WriteText(100, 80, 0x80, 0x000000, #folder_info);
-					element_size = size_dir;
+					WriteText(50, 23, 0x80, 0x000000, #folder_info);
+					EAX = ConvertSize(size_dir);
+					strcpy(#element_size_label, EAX);
+					strcat(#element_size_label, " (");
+					strcat(#element_size_label, itoa(size_dir));
+					strcat(#element_size_label, " b)");
+					WriteText(100, 65, 0x80, 0x000000, #element_size_label);
 				}
+				else
+				{
+					if ( file_info_general.isfolder ) 
+						Put_icon("<DIR>", 18, 20, 0xFFFfff, 0);
+					else 
+						Put_icon(#file_name2+strrchr(#file_name2,'.'), 18, 20, 0xFFFfff, 0);
 
-				WriteText(10,  95, 0x80, 0x000000, SET_3);
-				WriteText(10, 110, 0x80, 0x000000, SET_4);
-				WriteText(10, 125, 0x80, 0x000000, SET_5);
-				DrawDate(100,  95, 0, #file_info_general.datecreate);
-				DrawDate(100, 110, 0, #file_info_general.datelastaccess);
-				DrawDate(100, 125, 0, #file_info_general.datelastedit);
-
-				EAX = ConvertSize(element_size);
-				strcpy(#element_size_label, EAX);
-				strcat(#element_size_label, " (");
-				strcat(#element_size_label, itoa(element_size));
-				strcat(#element_size_label, " b)");
-				WriteText(100, 65, 0x80, 0x000000, #element_size_label);
-
-				flags_frame.size_x = - flags_frame.start_x * 2 + settings_form.cwidth - 2;
-				flags_frame.font_color = sc.work_text;
-				flags_frame.font_backgr_color = sc.work;
-				flags_frame.ext_col = sc.work_graph;
-				frame_draw stdcall (#flags_frame);
-
-				DrawPropertiesCheckBoxes();
+					WriteText(50, 13, 0x80, 0x000000, PR_T_NAME);				
+					edit_box_draw stdcall (#file_name_ed);
+					
+					if (!itdir)
+					{
+						element_size = file_info_general.sizelo;
+					}
+					else
+					{
+						WriteText(10, 80, 0x80, 0x000000, PR_T_CONTAINS);				
+						strcpy(#folder_info, SET_6);
+						strcat(#folder_info, itoa(file_count));
+						strcat(#folder_info, SET_7);
+						strcat(#folder_info, itoa(dir_count));
+						WriteText(100, 80, 0x80, 0x000000, #folder_info);
+						element_size = size_dir;
+					}
+	
+					WriteText(10,  95, 0x80, 0x000000, SET_3);
+					WriteText(10, 110, 0x80, 0x000000, SET_4);
+					WriteText(10, 125, 0x80, 0x000000, SET_5);
+					DrawDate(100,  95, 0, #file_info_general.datecreate);
+					DrawDate(100, 110, 0, #file_info_general.datelastaccess);
+					DrawDate(100, 125, 0, #file_info_general.datelastedit);
+	
+					EAX = ConvertSize(element_size);
+					strcpy(#element_size_label, EAX);
+					strcat(#element_size_label, " (");
+					strcat(#element_size_label, itoa(element_size));
+					strcat(#element_size_label, " b)");
+					WriteText(100, 65, 0x80, 0x000000, #element_size_label);
+	
+					flags_frame.size_x = - flags_frame.start_x * 2 + settings_form.cwidth - 2;
+					flags_frame.font_color = sc.work_text;
+					flags_frame.font_backgr_color = sc.work;
+					flags_frame.ext_col = sc.work_graph;
+					frame_draw stdcall (#flags_frame);
+	
+					DrawPropertiesCheckBoxes();
+				}
 	}
 }
 
