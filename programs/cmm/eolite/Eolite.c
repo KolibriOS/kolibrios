@@ -83,8 +83,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.61"
-#define ABOUT_TITLE "Eolite v2.61"
+#define TITLE "Eolite File Manager v2.62"
+#define ABOUT_TITLE "Eolite v2.62"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -147,7 +147,6 @@ void main()
 	dword selected_offset;
 	rand_n = random(40);
 
-	files.line_h=18;
 	mem_Init();
 	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(ERROR_1);
     if (load_dll2(libini, #lib_init,1)!=0) notify("Error: library doesn't exists - libini");
@@ -359,7 +358,7 @@ void main()
 							id=key-110;
 							IF (id-100>=disc_num) break;
 							GOTO DEVICE_MARK;
-					case 008:
+					case ASCII_KEY_BS:
 							//GoBack();
 							Dir_Up();
 							break; 
@@ -381,10 +380,10 @@ void main()
 					case 022: //Ctrl+V
 							CreateThread(#Paste,#copy_stak+4092);
 							break;
-					case 027: //Esc
+					case ASCII_KEY_ESC:
 							IF (rename_active==1) ReName(false);
 							break;
-					case 013: //Enter
+					case ASCII_KEY_ENTER:
 							IF (rename_active==1) {ReName(true); break;}
 							Open(0);
 							break; 
@@ -397,28 +396,28 @@ void main()
 							if (!itdir) ShowOpenWithDialog();
 							else Open(1);
 							break;
-					case 178: //up
+					case ASCII_KEY_UP:
 							List_Current(-1);
 							break;
-					case 177: //down
+					case ASCII_KEY_DOWN:
 							List_Current(1);
 							break;
-					case 180: //home
+					case ASCII_KEY_HOME:
 							if (files.KeyHome()) List_ReDraw();
 							break;
-					case 181: //end
+					case ASCII_KEY_END:
 							if (files.KeyEnd()) List_ReDraw();
 							break;
-					case 183: //Page Down
+					case ASCII_KEY_PGDN:
 							List_Current(files.visible-1);
 							break;
-					case 184: //Page Up
+					case ASCII_KEY_PGUP:
 							List_Current(-files.visible+1);
 							break;
-					case 182: //del
+					case ASCII_KEY_DEL:
 							Del_Form();
 							break;
-					case 185: //ins
+					case ASCII_KEY_INS:
 							selected_offset = file_mas[files.current+files.first]*304 + buf+32 + 7;
 							if (ESBYTE[selected_offset]) ESBYTE[selected_offset]=0; else ESBYTE[selected_offset] = 1;
 							List_Current(1);
@@ -512,7 +511,6 @@ void draw_window()
 	DrawFlatButton(files.x+files.w,onTop(22,0),16,16,0,sc.work,"\x19");
 	Open_Dir(#path,ONLY_SHOW);
 	if (del_active) Del_Form();
-	//if (itdir) ShowMessage(WAIT_DELETING_FOLDER, 0);
 	if (rename_active) FnProcess(2);
 }
 
@@ -527,7 +525,7 @@ void KEdit()
 }
 
 
-void List_Current(int cur)
+void List_Current(signed int cur)
 {
 	if (cur<=0) //up
 	{
@@ -549,7 +547,11 @@ void List_Current(int cur)
 	}
 	else  //down
 	{
-		IF (files.first==files.count-files.visible) && (files.current==files.visible-1) return;
+		IF (files.first==files.count-files.visible) && (files.current==files.visible-1) 
+		{
+			Line_ReDraw(col_selec, files.current);
+			return;
+		}
 		IF (files.visible-files.current>cur)
 		{
 			Line_ReDraw(0xFFFFFF, files.current);
