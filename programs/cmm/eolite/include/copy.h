@@ -17,45 +17,38 @@ Clipboard clipboard;
 
 void Copy(dword pcth, char cut)
 {
-        dword selected_offset2;
-        byte copy_t[4096];
-        int cont = 0;
-        dword buff_data;
-        int ind = 0;
-        
+    dword selected_offset2;
+    byte copy_t[4096];
+    dword buff_data;
+    int ind = 0;
+      
+    if (selected_count)
+	{
+        buff_data = malloc(selected_count*4096+10);
+        ESDWORD[buff_data] = selected_count*4096+10;
+        ESDWORD[buff_data+4] = 3;
+        ESINT[buff_data+8] = selected_count;
         for (i=0; i<files.count; i++) 
         {
-                selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-                if (ESBYTE[selected_offset2]) cont++;
-        }
-		if (!cont)
-		{
-            buff_data = malloc(4106);
-            ESDWORD[buff_data] = 4106;
-            ESDWORD[buff_data+4] = 3;
-            ESINT[buff_data+8] = 1;
-            strlcpy(buff_data+10, #file_path, 4096);;
-			clipboard.SetSlotData(4106, buff_data);
-	    }
-		else
-		{
-            buff_data = malloc(cont*4096+10);
-            ESDWORD[buff_data] = cont*4096+10;
-            ESDWORD[buff_data+4] = 3;
-            ESINT[buff_data+8] = cont;
-            for (i=0; i<files.count; i++) 
-            {
-                    selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-                    if (ESBYTE[selected_offset2]) {
-                            strcpy(#copy_t, #path);
-                            strcat(#copy_t, file_mas[i]*304+buf+72);
-                            
-                            strlcpy(ind*4096+buff_data+10, #copy_t, 4096);;
-                            ind++;
-                    }
+            selected_offset2 = file_mas[i]*304 + buf+32 + 7;
+            if (ESBYTE[selected_offset2]) {
+                strcpy(#copy_t, #path);
+                strcat(#copy_t, file_mas[i]*304+buf+72);                         
+                strlcpy(ind*4096+buff_data+10, #copy_t, 4096);;
+                ind++;
             }
-			clipboard.SetSlotData(cont*4096+10, buff_data);
-		}
+        }
+		clipboard.SetSlotData(selected_count*4096+10, buff_data);
+	}
+	else
+	{
+		buff_data = malloc(4106);
+        ESDWORD[buff_data] = 4106;
+        ESDWORD[buff_data+4] = 3;
+        ESINT[buff_data+8] = 1;
+        strlcpy(buff_data+10, #file_path, 4096);;
+		clipboard.SetSlotData(4106, buff_data);
+	}
 	cut_active = cut;
 	free(buff_data);
 }

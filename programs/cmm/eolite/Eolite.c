@@ -89,8 +89,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.63"
-#define ABOUT_TITLE "Eolite v2.63"
+#define TITLE "Eolite File Manager v2.64"
+#define ABOUT_TITLE "Eolite v2.64"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -131,6 +131,7 @@ dword file_mas[6898];
 int j, i;
 int action_buf;
 int rand_n;
+int selected_count;
 
 edit_box edit2 = {250,213,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xffffff,0,248,#file_name,#mouse_dd,64,6,6};
 PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 0};
@@ -392,6 +393,7 @@ void main()
 							{
 								selected_offset = file_mas[i]*304 + buf+32 + 7;
 								ESBYTE[selected_offset] = 1;
+								selected_count++;
 							}
 							List_ReDraw();
 							break;
@@ -402,6 +404,7 @@ void main()
 								selected_offset = file_mas[i]*304 + buf+32 + 7;
 								ESBYTE[selected_offset] = 0;
 							}
+							selected_count = 0;
 							List_ReDraw();
 							break;
 					case ASCII_KEY_ESC:
@@ -443,7 +446,16 @@ void main()
 							break;
 					case ASCII_KEY_INS:
 							selected_offset = file_mas[files.current+files.first]*304 + buf+32 + 7;
-							if (ESBYTE[selected_offset]) ESBYTE[selected_offset]=0; else ESBYTE[selected_offset] = 1;
+							if (ESBYTE[selected_offset])
+							{
+								ESBYTE[selected_offset]=0;
+								selected_count--;
+							}
+							else
+							{
+								ESBYTE[selected_offset] = 1;
+								selected_count++;
+							}
 							List_Current(1);
 							break;
 					case 048...059: //F1-F10
@@ -831,7 +843,6 @@ void Del_File(byte dodel)
 	byte del_from[4096];
 	dword selected_offset2;
 	int tst, count, i;
-	int cont = 0;
 	
 	if (dodel==true)
 	{
@@ -839,27 +850,21 @@ void Del_File(byte dodel)
 		if (itdir) ShowMessage(WAIT_DELETING_FOLDER, 0);
 		del_error = 0;
 		
-		for (i=0; i<files.count; i++) 
-        {
-            selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-            if (ESBYTE[selected_offset2]) cont++;
-        }
-		if (!cont)
+		if (selected_count)
 		{
-		    Del_File2(#file_path);
+   		   for (i=0; i<files.count; i++) 
+           {
+                selected_offset2 = file_mas[i]*304 + buf+32 + 7;
+                if (ESBYTE[selected_offset2]) {
+                    strcpy(#del_from, #path);
+                    strcat(#del_from, file_mas[i]*304+buf+72);
+                    Del_File2(#del_from);
+                }
+            }
 		}
 		else
 		{
-		   for (i=0; i<files.count; i++) 
-            {
-                    selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-                    if (ESBYTE[selected_offset2]) {
-                            strcpy(#del_from, #path);
-                            strcat(#del_from, file_mas[i]*304+buf+72);
-                            Del_File2(#del_from);
-                    }
-            }
-			
+		   Del_File2(#file_path);			
 		}
 		if (del_error) Write_Error(del_error);
  	}
@@ -938,6 +943,7 @@ void Dir_Up()
 void Open(byte rez)
 {
 	byte temp[4096];
+	selected_count = 0;
 	if (rez)
 	{
 		if (!strcmp(#file_name,"..")) return;

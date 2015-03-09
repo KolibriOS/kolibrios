@@ -117,7 +117,6 @@ void properties_dialog()
 	dword file_name_off;
 	dword element_size;
 	dword selected_offset2;
-	int cont = 0;
 	char element_size_label[32];
 	proc_info settings_form;
 	
@@ -125,14 +124,8 @@ void properties_dialog()
 	file_count = 0;
 	dir_count = 0;	
 	size_dir = 0;
-	
-	for (i=0; i<files.count; i++) 
-	{
-		selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-		if (ESBYTE[selected_offset2]) cont++;
-	}
 			
-	if (cont) GetSizeMoreFiles(#path);
+	if (selected_count) GetSizeMoreFiles(#path);
 	else
 	{
 		GetFileInfo(#file_path, #file_info_general);
@@ -175,7 +168,7 @@ void properties_dialog()
 
 				WriteText(10, 65, 0x80, 0x000000, PR_T_SIZE);
 				
-				if (cont)
+				if (selected_count)
 				{
 					Put_icon('', 18, 20, 0xFFFfff, 0);
 					strcpy(#folder_info, SET_6);
