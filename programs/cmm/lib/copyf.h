@@ -1,11 +1,10 @@
 //copyf - copy file or folder with content
-#define WIN_COPY_W 300
-#define WIN_COPY_H 50
+
 :int copyf(dword from1, in1)
 {
 	dword error;
 	BDVK CopyFile_atr1;
-	DefineAndDrawWindow(Form.left+Form.width-200,Form.top+90,WIN_COPY_W,GetSkinHeight()+WIN_COPY_H-1,0x34,sc.work,T_PASTE_WINDOW);
+
 	if (!from1) || (!in1)
 	{
 		notify("Error: too less copyf params!");
@@ -25,11 +24,6 @@
 		copyf_Draw_Progress(from1+strchr(from1, '/'));
 		return CopyFile(from1, in1);
 	}
-	if (CheckEvent()==evButton) 
-	{
-		notify(T_CANCEL_PASTE);
-		CopyExit();
-	} 
 }
 
 :int CopyFile(dword copy_from3, copy_in3)
