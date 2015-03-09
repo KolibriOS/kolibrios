@@ -170,7 +170,7 @@ void properties_dialog()
 				
 				if (selected_count)
 				{
-					Put_icon('', 18, 20, 0xFFFfff, 0);
+					Put_icon('', 18, 19, 0xFFFfff, 0);
 					strcpy(#folder_info, SET_6);
 					strcat(#folder_info, itoa(file_count));
 					strcat(#folder_info, SET_7);
@@ -186,9 +186,9 @@ void properties_dialog()
 				else
 				{
 					if ( file_info_general.isfolder ) 
-						Put_icon("<DIR>", 18, 20, 0xFFFfff, 0);
+						Put_icon("<DIR>", 18, 19, 0xFFFfff, 0);
 					else 
-						Put_icon(#file_name2+strrchr(#file_name2,'.'), 18, 20, 0xFFFfff, 0);
+						Put_icon(#file_name2+strrchr(#file_name2,'.'), 18, 19, 0xFFFfff, 0);
 
 					WriteText(50, 13, 0x80, 0x000000, PR_T_NAME);				
 					edit_box_draw stdcall (#file_name_ed);

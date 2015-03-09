@@ -1,14 +1,6 @@
-//Leency 2008-2014
-
-#ifdef LANG_RUS
-	?define INFO_AFTER_COPY "Копирование завершено"
-#elif LANG_EST
-	?define INFO_AFTER_COPY "Copy finished"
-#else
-	?define INFO_AFTER_COPY "Copy finished"
-#endif
 
 byte copy_to[4096];
+byte copy_from[4096];
 byte cut_active=0;
 
 enum {NOCUT, CUT, COPY_PASTE_END};
@@ -53,25 +45,18 @@ void Copy(dword pcth, char cut)
 	free(buff_data);
 }
 
-void copyf_Draw_Progress(dword filename) {
-	DrawRectangle(0,0,WIN_COPY_W-5, 15,sc.work);
-	WriteText(5,8, 0x80, sc.work_text, T_PASTE_WINDOW_TEXT);
-	DrawBar(5, 26, WIN_COPY_W-10, 10, sc.work);
-	WriteText(5,26, 0x80, sc.work_text, filename);
-}
 
 void Paste()
 {
 	char copy_rezult;
-	byte copy_from[4096];
 	int j;
-    int cnt = 0;
+	int cnt = 0;
 	dword buf;
 	
 	buf = clipboard.GetSlotData(clipboard.GetSlotCount()-1);
-    if (DSDWORD[buf+4] != 3) return;
+	if (DSDWORD[buf+4] != 3) return;
 	cnt = ESINT[buf+8];
-    for (j = 0; j < cnt; j++) {
+	for (j = 0; j < cnt; j++) {
 		strlcpy(#copy_from, j*4096+buf+10, 4096);
 		if (!copy_from) CopyExit();
 		strcpy(#copy_to, #path);
@@ -87,11 +72,13 @@ void Paste()
 			notify("Copy directory into itself is a bad idea...");
 			CopyExit();
 		}
+
+		DisplayCopyfForm();
+
 		if (copy_rezult = copyf(#copy_from,#copy_to))
 		{
 			Write_Error(copy_rezult);
 		}
-	
 		else if (cut_active)
 		{
 			strcpy(#file_path, #copy_from);
@@ -107,9 +94,40 @@ void Paste()
 	CopyExit();
 }
 
-void CopyExit()
+#define WIN_COPY_W 345
+#define WIN_COPY_H 80
+proc_info Copy_Form;
+
+void DisplayCopyfForm()
 {
+	  switch(CheckEvent())
+	  {
+		 case evButton:
+			notify(T_CANCEL_PASTE);
+			CopyExit();
+			break;
+		 
+		case evReDraw:
+			DefineAndDrawWindow(Form.left+Form.width-200,Form.top+90,WIN_COPY_W,GetSkinHeight()+WIN_COPY_H,0x34,sc.work,T_PASTE_WINDOW_TITLE);
+			GetProcessInfo(#Copy_Form, SelfInfo);
+			WriteText(45, 11, 0x80, sc.work_text, T_PASTE_WINDOW_TEXT);
+			DrawFlatButton(Copy_Form.cwidth - 90, Copy_Form.cheight - 32, 80, 22, 10, sc.work_button, T_PASTE_WINDOW_BUTTON);
+			DrawBar(8, 10, 32, 32, 0xFFFfff);
+			break;
+	  }
+}
+
+void CopyExit() {
 	action_buf = COPY_PASTE_END;
 	ActivateWindow(GetProcessSlot(Form.ID));
 	ExitProcess();
+}
+
+
+void copyf_Draw_Progress(dword copying_filename) {
+	if (Copy_Form.cwidth==0) return;
+	DisplayCopyfForm();
+	Put_icon(copying_filename+strrchr(copying_filename,'.'), 16, 19, 0xFFFfff, 0);
+	DrawBar(45, 29, Copy_Form.cwidth-40, 10, sc.work);
+	WriteText(45, 29, 0x80, sc.work_text, copying_filename);
 }

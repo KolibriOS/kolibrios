@@ -39,11 +39,13 @@
 	?define NOT_CREATE_FOLDER "Не удалось создать папку."
 	?define NOT_CREATE_FILE "Не удалось создать файл."
 	?define ERROR_1 "Ошибка при загрузке библиотеки /rd/1/lib/box_lib.obj"
-	?define T_PASTE_WINDOW "Копирую..."
+	?define T_PASTE_WINDOW_TITLE "Копирую..."
 	?define T_PASTE_WINDOW_TEXT "Копируется файл:"
+	?define T_PASTE_WINDOW_BUTTON "Прервать"	
+	?define INFO_AFTER_COPY "Копирование завершено"
 	?define T_CANCEL_PASTE "Копирование прекращено. Папка скопирована не полностью."
 	?define T_SELECT_APP_TO_OPEN_WITH "Выберите программу для открытия файла"
-	?define DEL_MORE_FILES_1 "эти элементы ("
+	?define DEL_MORE_FILES_1 "выбранные элементы ("
 	?define DEL_MORE_FILES_2 " шт.)?"
 #elif LANG_EST
 	?define T_FILE "Fail"
@@ -59,12 +61,14 @@
 	?define NOT_CREATE_FOLDER "Kataloogi ei saa luua."
 	?define NOT_CREATE_FILE "Faili ei saa luua."
 	?define ERROR_1 "Viga teegi laadimisel /rd/1/lib/box_lib.obj"
-	?define T_PASTE_WINDOW "Kopeerin..."
+	?define T_PASTE_WINDOW_TITLE "Kopeerin..."
 	?define T_PASTE_WINDOW_TEXT "Kopeerin faili:"
+	?define T_PASTE_WINDOW_BUTTON "Abort"
+	?define INFO_AFTER_COPY "Copy finished"
 	?define T_CANCEL_PASTE "Copy process terminated. Folder copied incompletely."
 	?define T_SELECT_APP_TO_OPEN_WITH "Select application to open file"
-	?define DEL_MORE_FILES_1 "эти элементы ("
-	?define DEL_MORE_FILES_2 " шт.)?"
+	?define DEL_MORE_FILES_1 "selected items("
+	?define DEL_MORE_FILES_2 " pcs.)?"
 #else
 	?define T_FILE "File"
 	?define T_TYPE "Type"
@@ -79,18 +83,20 @@
 	?define NOT_CREATE_FOLDER "Folder can not be created."
 	?define NOT_CREATE_FILE "File can not be created."
 	?define ERROR_1 "Error while loading library /rd/1/lib/box_lib.obj"
-	?define T_PASTE_WINDOW "Copying..."
+	?define T_PASTE_WINDOW_TITLE "Copying..."
 	?define T_PASTE_WINDOW_TEXT "Copying file:"
+	?define T_PASTE_WINDOW_BUTTON "Abort"
+	?define INFO_AFTER_COPY "Copy finished"
 	?define T_CANCEL_PASTE "Copy process terminated. Folder copied incompletely."
 	?define T_SELECT_APP_TO_OPEN_WITH "Select application to open file"
-	?define DEL_MORE_FILES_1 "эти элементы ("
-	?define DEL_MORE_FILES_2 " шт.)?"
+	?define DEL_MORE_FILES_1 "selected items("
+	?define DEL_MORE_FILES_2 " pcs.)?"
 #endif
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.64"
-#define ABOUT_TITLE "Eolite v2.64"
+#define TITLE "Eolite File Manager v2.65"
+#define ABOUT_TITLE "Eolite v2.65"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
