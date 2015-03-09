@@ -43,6 +43,8 @@
 	?define T_PASTE_WINDOW_TEXT "Копируется файл:"
 	?define T_CANCEL_PASTE "Копирование прекращено. Папка скопирована не полностью."
 	?define T_SELECT_APP_TO_OPEN_WITH "Выберите программу для открытия файла"
+	?define DEL_MORE_FILES_1 "эти элементы ("
+	?define DEL_MORE_FILES_2 " шт.)?"
 #elif LANG_EST
 	?define T_FILE "Fail"
 	?define T_TYPE "T№№p"
@@ -61,6 +63,8 @@
 	?define T_PASTE_WINDOW_TEXT "Kopeerin faili:"
 	?define T_CANCEL_PASTE "Copy process terminated. Folder copied incompletely."
 	?define T_SELECT_APP_TO_OPEN_WITH "Select application to open file"
+	?define DEL_MORE_FILES_1 "эти элементы ("
+	?define DEL_MORE_FILES_2 " шт.)?"
 #else
 	?define T_FILE "File"
 	?define T_TYPE "Type"
@@ -79,12 +83,14 @@
 	?define T_PASTE_WINDOW_TEXT "Copying file:"
 	?define T_CANCEL_PASTE "Copy process terminated. Folder copied incompletely."
 	?define T_SELECT_APP_TO_OPEN_WITH "Select application to open file"
+	?define DEL_MORE_FILES_1 "эти элементы ("
+	?define DEL_MORE_FILES_2 " шт.)?"
 #endif
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.62"
-#define ABOUT_TITLE "Eolite v2.62"
+#define TITLE "Eolite File Manager v2.63"
+#define ABOUT_TITLE "Eolite v2.63"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -379,6 +385,24 @@ void main()
 							break;
 					case 022: //Ctrl+V
 							CreateThread(#Paste,#copy_stak+4092);
+							break;
+					case 001: //Ctrl+A
+							debugln("press Ctrl+A");
+							for (i=0; i<files.count; i++) 
+							{
+								selected_offset = file_mas[i]*304 + buf+32 + 7;
+								ESBYTE[selected_offset] = 1;
+							}
+							List_ReDraw();
+							break;
+					case 021: //Ctrl+U
+							debugln("press Ctrl+A");
+							for (i=0; i<files.count; i++) 
+							{
+								selected_offset = file_mas[i]*304 + buf+32 + 7;
+								ESBYTE[selected_offset] = 0;
+							}
+							List_ReDraw();
 							break;
 					case ASCII_KEY_ESC:
 							IF (rename_active==1) ReName(false);
@@ -728,6 +752,9 @@ inline Sorting()
 
 void Del_Form()
 {
+	dword selected_offset2;
+	int cont = 0;
+	byte f_count[128];
 	int dform_x=files.w-220/2+files.x;
 	if (strcmp(#file_name,".")==0) || (strcmp(#file_name,"..")==0) return;
 	if (del_active==2)
@@ -739,16 +766,31 @@ void Del_Form()
 		if (!files.count) return;
 		DrawPopup(dform_x,160,220,80,1,sc.work,sc.work_graph);
 		WriteText(-strlen(T_DELETE_FILE)*3+110+dform_x,175,0x80,sc.work_text,T_DELETE_FILE);
-		IF (strlen(#file_name)<28) 
+		for (i=0; i<files.count; i++) 
 		{
-			WriteText(strlen(#file_name)*3+110+dform_x+2,190,0x80,sc.work_text,"?");
-			WriteText(-strlen(#file_name)*3+110+dform_x,190,0x80,sc.work_text,#file_name);
+			selected_offset2 = file_mas[i]*304 + buf+32 + 7;
+			if (ESBYTE[selected_offset2]) cont++;
+		}
+		if (cont)
+		{
+			strcpy(#f_count, DEL_MORE_FILES_1);
+			strcat(#f_count, itoa(cont));
+			strcat(#f_count, DEL_MORE_FILES_2);
+			WriteText(-strlen(#f_count)*3+110+dform_x,190,0x80,sc.work_text,#f_count);
 		}
 		else
 		{
-			WriteText(164+dform_x,190,0x80,0,"...?");
-			ESI = 24;
-			WriteText(dform_x+20,190,0,0,#file_name);
+			IF (strlen(#file_name)<28) 
+			{
+				WriteText(strlen(#file_name)*3+110+dform_x+2,190,0x80,sc.work_text,"?");
+				WriteText(-strlen(#file_name)*3+110+dform_x,190,0x80,sc.work_text,#file_name);
+			}
+			else
+			{
+				WriteText(164+dform_x,190,0x80,0,"...?");
+				ESI = 24;
+				WriteText(dform_x+20,190,0,0,#file_name);
+			}
 		}
 		DrawFlatButton(dform_x+27,208,70,20,301,0xFFB6B5,T_YES);
 		DrawFlatButton(dform_x+120,208,70,20,302,0xC6DFC6,T_NO);		

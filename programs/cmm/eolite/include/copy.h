@@ -61,17 +61,10 @@ void Copy(dword pcth, char cut)
 }
 
 void copyf_Draw_Progress(dword filename) {
-	#define WIN_W 300
-	#define WIN_H 50
-	DefineAndDrawWindow(Form.left+Form.width-200,Form.top+90,WIN_W,GetSkinHeight()+WIN_H-1,0x34,sc.work,T_PASTE_WINDOW);
+	DrawRectangle(0,0,WIN_COPY_W-5, 15,sc.work);
 	WriteText(5,8, 0x80, sc.work_text, T_PASTE_WINDOW_TEXT);
-	DrawBar(5, 26, WIN_W-10, 10, sc.work);
+	DrawBar(5, 26, WIN_COPY_W-10, 10, sc.work);
 	WriteText(5,26, 0x80, sc.work_text, filename);
-	if (CheckEvent()==evButton) 
-	{
-		notify(T_CANCEL_PASTE);
-		CopyExit();
-	} 
 }
 
 void Paste()
