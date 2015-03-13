@@ -178,6 +178,7 @@ if DEBUG eq 1
 end if
 
  ;; trim params
+    stdcall string.to_lower_case, params
     stdcall string.trim_last, params
     stdcall string.trim_first, params
     mov     [param_s], eax
