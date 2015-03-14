@@ -170,25 +170,26 @@ int __stdcall picture_utf8(unsigned char *s, stbtt_fontinfo *buffer, char *scree
 	return 0;
 }
 
+
 void __stdcall SetBackColor(int back_color, int width, int height, char *from_zone)
 {
-	int i,j;
-	unsigned char bcr,bcg,bcb;
-	
-	bcr=back_color<<16;
-	bcg=back_color<<8;
-	bcb=back_color;
-		
-	for (j=0;j<height ;j++)
+	unsigned char bcr = back_color>>16;
+	unsigned char bcg = back_color>>8;
+	unsigned char bcb = back_color;
+
+	unsigned int i;
+	unsigned int max_i = width * height * 3;
+	for (i=0; i < max_i; i+=3) 
 	{
-		for (i=0;i<width ;i++)
-		{
-			from_zone[(j*width+i)*3]=back_color;
-			from_zone[(j*width+i)*3+1]=back_color>>8;
-			from_zone[(j*width+i)*3+2]=back_color>>16;
-		}
+		from_zone[i]   = bcb;
+		from_zone[i+1] = bcg;
+		from_zone[i+2] = bcr;		
 	}
+
 }
+
+
+
 
 int __stdcall text_out(char *string, char *buffer, int height, int color,int back_color, int x, int y) {
 	unsigned char *from_zone;
