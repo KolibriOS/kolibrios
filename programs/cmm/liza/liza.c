@@ -87,7 +87,7 @@ dword col_bg;
 dword panel_color;
 dword border_color;
 
-progress_bar progress_bar = {0, 10, 83, 150, 12, 0, 0, 100, 0xeeeEEE, 8072B7EBh, 0x9F9F9F};
+progress_bar wv_progress_bar = {0, 10, 83, 150, 12, 0, 0, 100, 0xeeeEEE, 8072B7EBh, 0x9F9F9F};
 
 int http_transfer;
 char version[]=" WebView 0.1";

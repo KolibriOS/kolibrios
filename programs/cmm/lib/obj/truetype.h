@@ -1,7 +1,6 @@
-char fontinfo[28]; 
- 
+// Truetype library
+
 dword libtruetype = #att_libtruetype;
- 
 char att_libtruetype[22] = "/sys/lib/truetype.obj\0";
  
 dword truetype = #att_truetype;      // truetype(unsigned char *s, stbtt_fontinfo *buffer, char *screen1, int width, int height)
@@ -10,19 +9,19 @@ dword get_width  = #att_get_width;   // get_width_utf8(unsigned char *s, stbtt_f
 dword text_out = #att_text_out;      // text_out(unsigned char *string, char *buffer, int height, int color,int back_color, int x, int y)
 dword init_font = #att_init_font;    // init_font(stbtt_fontinfo *font,unsigned char *FontData)
 dword text_out_mem = #att_text_out_mem; // text_out_mem(unsigned char *string, stbtt_fontinfo *buffer, int height, int color,int back_color)
-dword text_scale_EM = #att_text_scale;  // scale_EM(stbtt_fontinfo *buffer, int size)
 $DD 2 dup 0
  
 char att_truetype[]     = "truetype";
 char att_get_length[]   = "get_length";
 char att_get_width[]    = "get_width";
 char att_text_out[]     = "text_out";
-char att_init_font[]    = "init_font";
 char att_text_out_mem[] = "text_out_mem";
-char att_text_scale[]   = "scale_EM";
+char att_init_font[]    = "init_font";
 
 //============================================================
 //============================================================
+
+char fontinfo[28]; 
 
 struct stbtt_fontinfo
 {

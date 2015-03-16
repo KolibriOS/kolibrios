@@ -29,7 +29,7 @@ dword frame_draw = #aFrame_draw;
 
 $DD 2 dup 0
 
-char aEdit_box_draw []     = "edit_box";
+char aEdit_box_draw []    = "edit_box";
 char aEdit_box_key  []    = "edit_box_key";
 char aEdit_box_mouse[]    = "edit_box_mouse";
 char aVersion_ed    []    = "version_ed";
