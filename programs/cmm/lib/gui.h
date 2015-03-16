@@ -29,13 +29,13 @@
 	WriteText(-strlen(text)*6+w/2+x+1,y,0x80,color_t,text);
 }
 
-:void DrawCircle(int x, y, r)
+:void DrawCircle(int x, y, r, color)
 {
 	int i;
 	float px=0, py=r, ii = r * 3.1415926 * 2;
 	FOR (i = 0; i < ii; i++)
 	{
-        PutPixel(px + x, y - py, 0);
+        PutPixel(px + x, y - py, color);
         px = py / r + px;
         py = -px / r + py;
 	}

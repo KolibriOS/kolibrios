@@ -6,12 +6,14 @@ char *ITEMS_LIST[]={
 "KOI                Ctrl+K",11,
 "UTF                Ctrl+U",21,
 #ifdef LANG_RUS
+"Zoom 2x                 Z",122,
 "Посмотреть исходник    F3",52,
 "Редактировать исходник F4",53,
 "Очистить кэш картинок"    ,02,
 "История"                  ,03,
 "Менеджер загрузок"        ,06,
 #else
+"Zoom 2x                 Z",122,
 "View source            F3",52,
 "Edit source            F4",53,
 "Free image cache"         ,09,
@@ -78,8 +80,9 @@ void DrawMenuList()
 		WriteText(18,N*menu.line_h+8,0x80,0x000000,ITEMS_LIST[N*2]);
 	}
 	if (cur_encoding!=_DEFAULT)
-	{
-		DrawBar(7, cur_encoding*menu.line_h+9, 4, 4, 0x444444); //show current encoding
-	}
-	else DrawBar(7, _DOS*menu.line_h+9, 4, 4, 0x444444); //show current encoding
+		WriteText(5, cur_encoding*menu.line_h+7, 0x80, 0x777777, "\x10"); //show current encoding
+	else 
+		WriteText(5, _DOS*menu.line_h+7, 0x80, 0x777777, "\x10"); //show current encoding
+
+	if (WB1.DrawBuf.zoomf == 2) DrawBar(6, 4*menu.line_h+8, 6, 6, 0x777777);
 }

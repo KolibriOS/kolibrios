@@ -32,14 +32,14 @@
 char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.0";
+	char version[]=" Текстовый браузер 1.1";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.0";
+	char version[]=" Text-based Browser 1.1";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -48,8 +48,8 @@ char homepage[] = FROM "html\\homepage.htm";
 #endif
 
 proc_info Form;
-#define WIN_W 640
-#define WIN_H 480
+#define WIN_W 799
+#define WIN_H 559
 
 char search_path[]="http://nigma.ru/index.php?s=";
 char str_location[]="location\0";
@@ -65,12 +65,12 @@ dword http_buffer;
 dword TAB_H = false; //19;
 dword TAB_W = 150;
 dword TOOLBAR_H = 31; //50;
-dword STATUSBAR_H =15;
+dword STATUSBAR_H = 15;
 dword col_bg;
 dword panel_color;
 dword border_color;
 
-progress_bar progress_bar = {0, 10, 83, 150, 12, 0, 0, 100, 0xeeeEEE, 8072B7EBh, 0x9F9F9F};
+progress_bar wv_progress_bar = {0, 10, 83, 150, 12, 0, 0, 100, 0xeeeEEE, 8072B7EBh, 0x9F9F9F};
 byte souce_mode = false;
 
 #include "..\TWB\TWB.c"
@@ -98,21 +98,21 @@ int SetSkinColors()
 	col_bg = DSDWORD[image_data];
 	panel_color  = DSDWORD[skin.w*4*4 + image_data];
 	border_color = DSDWORD[skin.w*4*7 + image_data];
-	progress_bar.progress_color = DSDWORD[skin.w*4*10 + image_data];
+	wv_progress_bar.progress_color = DSDWORD[skin.w*4*10 + image_data];
 	$and col_bg, 0x00ffffff
 	$and panel_color, 0x00ffffff
 	$and border_color, 0x00ffffff
-	$and progress_bar.progress_color, 0x00ffffff
+	$and wv_progress_bar.progress_color, 0x00ffffff
 }
 
 void DrawProgress()
 {
 	unsigned long btn;
-	//progressbar_draw stdcall(#progress_bar);
-	progress_bar.width = progress_bar.left = 0;
+	//progressbar_draw stdcall(#wv_progress_bar);
+	wv_progress_bar.width = wv_progress_bar.left = 0;
 	if (http_transfer == 0) return;
-	if (progress_bar.max) btn = address_box.width*progress_bar.value/progress_bar.max; else btn = 30;
-	DrawBar(address_box.left-1, address_box.top+14, btn, 2, progress_bar.progress_color);
+	if (wv_progress_bar.max) btn = address_box.width*wv_progress_bar.value/wv_progress_bar.max; else btn = 30;
+	DrawBar(address_box.left-1, address_box.top+14, btn, 2, wv_progress_bar.progress_color);
 }
 
 
@@ -131,6 +131,7 @@ void main()
 	Libimg_LoadImage(#skin, abspath("wv_skin.png"));
 	SetSkinColors();
 	
+	WB1.DrawBuf.zoomf = 1;
 	Form.width=WIN_W;
 	Form.height=WIN_H;
 	SetElementSizes();
@@ -183,6 +184,7 @@ void main()
 				}				
 				if (scroll_used)
 				{
+					m.y = m.y / WB1.DrawBuf.zoomf + 5;
 					half_scroll_size = WB1.list.h - 16 * WB1.list.visible / WB1.list.count - 3 /2;
 					if (half_scroll_size+WB1.list.y>m.y) || (m.y<0) || (m.y>4000) m.y=half_scroll_size+WB1.list.y;
 					btn=WB1.list.first;
@@ -200,7 +202,7 @@ void main()
 				key = GetKey();
 				
 				if (address_box.flags & 0b10) SWITCH(key)
-					{ CASE 52: CASE 53: CASE 54: CASE 180: CASE 181: goto _EDIT_MARK; } 
+					{ CASE 52: CASE 53: CASE 54: CASE 180: CASE 181: CASE 122: goto _EDIT_MARK; } 
 
 				Scan(key);
 				
@@ -222,10 +224,10 @@ void main()
 					http_process stdcall (http_transfer);
 					$push EAX
 					ESI = http_transfer;
-					progress_bar.max = ESI.http_msg.content_length;
-					if (progress_bar.value != ESI.http_msg.content_received)
+					wv_progress_bar.max = ESI.http_msg.content_length;
+					if (wv_progress_bar.value != ESI.http_msg.content_received)
 					{
-						progress_bar.value = ESI.http_msg.content_received;	
+						wv_progress_bar.value = ESI.http_msg.content_received;	
 						DrawProgress();
 					}
 					$pop EAX
@@ -288,7 +290,7 @@ void SetElementSizes()
 {
 	address_box.top = TOOLBAR_H-TAB_H/2-7+TAB_H;
 	address_box.width = Form.cwidth - address_box.left - 25 - 22;
-	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x, Form.cheight - TOOLBAR_H - STATUSBAR_H, 0, 11);
+	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x / WB1.DrawBuf.zoomf, Form.cheight - TOOLBAR_H - STATUSBAR_H / WB1.DrawBuf.zoomf, 0, 11);
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / 6;
 	WB1.list.visible = WB1.list.h - 5 / WB1.list.line_h;
 	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.line_h);
@@ -329,7 +331,7 @@ void Draw_Window()
 	//status bar
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, col_bg);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, border_color);
-	progress_bar.top = Form.cheight - STATUSBAR_H + 4;
+	wv_progress_bar.top = Form.cheight - STATUSBAR_H + 4;
 	ShowPage();
 	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, scroll_wv.bckg_col);
 	DrawProgress();
@@ -380,8 +382,10 @@ void Scan(int id)
 			return;
 
 		case 006: //download manager
-			DL_URL[0] = 0;
-			CreateThread(#Downloader,#downloader_stak+4092);
+			if (!downloader_opened) {
+				strcpy(#DL_URL, "http://");
+				CreateThread(#Downloader,#downloader_stak+4092);
+			}
 			return;
 
 		case BACK:
@@ -485,6 +489,10 @@ void Scan(int id)
 			m.y = TOOLBAR_H-6;
 			m.x = Form.cwidth - 167;
 			CreateThread(#menu_rmb,#stak+4092);
+			return;
+		case 122:
+			if (WB1.DrawBuf.zoomf==1) WB1.DrawBuf.zoomf=2; else WB1.DrawBuf.zoomf=1;
+			Draw_Window(); 
 	}
 }
 
@@ -530,11 +538,11 @@ void ProcessLinks(int id)
 	
 	PageLinks.GetAbsoluteURL(#URL);
 	
-	if (UrlExtIs(".png")==1) || (UrlExtIs(".gif")==1) || (UrlExtIs(".jpg")==1) || (UrlExtIs(".zip")==1)
+	if (UrlExtIs(".png")==1) || (UrlExtIs(".gif")==1) || (UrlExtIs(".jpg")==1) || (UrlExtIs(".zip")==1) || (UrlExtIs(".kex")==1)
 	|| (UrlExtIs(".7z")==1) || (UrlExtIs("netcfg")==1) 
 	{
 		//notify(#URL);
-		if (strcmpn(#URL,"http://:", 8)==0)
+		if (strcmpn(#URL,"http://", 7)==0)
 		{
 			strcpy(#DL_URL, #URL);
 			CreateThread(#Downloader,#downloader_stak+4092);
@@ -572,7 +580,7 @@ void StopLoading()
 		bufsize = 0;
 		bufpointer = mem_Free(bufpointer);
 	}
-	progress_bar.value = 0;
+	wv_progress_bar.value = 0;
 	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-2, 17, skin.h, 52, 0);
 }
 
