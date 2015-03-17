@@ -344,13 +344,11 @@ stack_handler:
 
 align 4
 NET_BUFF_alloc:
-        add     dword[esp+4], NET_BUFF.data
         jmp     kernel_alloc
 
 
 align 4
 NET_BUFF_free:
-        and     dword[esp+4], not 0xfff
         jmp     kernel_free
 
 

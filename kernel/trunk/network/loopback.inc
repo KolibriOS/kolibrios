@@ -127,6 +127,7 @@ LOOP_output:
         ja      .too_large
 
         push    ecx edi
+        add     ecx, NET_BUFF.data
         stdcall NET_BUFF_alloc, ecx
         test    eax, eax
         jz      .out_of_ram
