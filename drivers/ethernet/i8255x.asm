@@ -18,8 +18,6 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: use separate descriptors in memory instead of placing them in front of packets!
-
 
 format PE DLL native
 entry START
@@ -77,6 +75,8 @@ CmdConfigure    = 0x0002
 CmdTx           = 0x0004
 CmdTxFlex       = 0x0008
 Cmdsuspend      = 0x4000
+
+CmdRxFlex       = 0x0008
 
 reg_scb_status  = 0
 reg_scb_cmd     = 2
@@ -487,6 +487,8 @@ reset:
 ; Create RX and TX descriptors
 
         call    create_ring
+        test    eax, eax
+        jz      .error
 
 ; RX start
 
@@ -494,6 +496,7 @@ reset:
         set_io  [ebx + device.io_addr], reg_scb_ptr
         mov     eax, [ebx + device.rx_desc]
         invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         out     dx, eax
 
         mov     ax, INT_MASK + RX_START
@@ -580,6 +583,10 @@ reset:
         xor     eax, eax        ; indicate that we have successfully reset the card
         ret
 
+  .error:
+        or      eax, -1
+        ret
+
 
 align 4
 create_ring:
@@ -589,15 +596,18 @@ create_ring:
 ;---------------------
 ; build rxfd structure
 
-        invoke  KernelAlloc, 2000
+        invoke  NetAlloc, 2000
+        test    eax, eax
+        jz      .out_of_mem
         mov     [ebx + device.rx_desc], eax
         mov     esi, eax
         invoke  GetPhysAddr
-        mov     [esi + rxfd.status], 0x0000
-        mov     [esi + rxfd.command], 0x0000
-        mov     [esi + rxfd.link], eax
-        mov     [esi + rxfd.count], 0
-        mov     [esi + rxfd.size], 1528
+        add     eax, NET_BUFF.data
+        mov     [esi + sizeof.NET_BUFF + rxfd.status], 0x0000
+        mov     [esi + sizeof.NET_BUFF + rxfd.command], 0x0000
+        mov     [esi + sizeof.NET_BUFF + rxfd.link], eax
+        mov     [esi + sizeof.NET_BUFF + rxfd.count], 0
+        mov     [esi + sizeof.NET_BUFF + rxfd.size], 1528
 
 ;-----------------------
 ; build txfd structure
@@ -609,6 +619,8 @@ create_ring:
         lea     eax, [ebx + device.txfd.buf_addr0]
         invoke  GetPhysAddr
         mov     [ebx + device.txfd.desc_addr], eax
+
+  .out_of_mem:
 
         ret
 
@@ -622,33 +634,37 @@ create_ring:
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-proc transmit stdcall bufferptr, buffersize
+proc transmit stdcall bufferptr
 
         pushf
         cli
 
-        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [buffersize]
-        mov     eax, [bufferptr]
+        mov     esi, [bufferptr]
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
+        lea     eax, [esi + NET_BUFF.data]
         DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
         [eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
         [eax+13]:2,[eax+12]:2
 
-        cmp     [buffersize], 1514
+        cmp     [esi + NET_BUFF.length], 1514
         ja      .fail
-        cmp     [buffersize], 60
+        cmp     [esi + NET_BUFF.length], 60
         jb      .fail
 
         ;;; TODO: check if current descriptor is in use
         ; fill in buffer address and size
+        mov     eax, [bufferptr]
         mov     [ebx + device.last_tx_buffer], eax
+        add     eax, [eax + NET_BUFF.offset]
         invoke  GetPhysAddr
         mov     [ebx + device.txfd.buf_addr0], eax
-        mov     ecx, [buffersize]
+        mov     ecx, [bufferptr]
+        mov     ecx, [ecx + NET_BUFF.length]
         mov     [ebx + device.txfd.buf_size0], ecx
 
         mov     [ebx + device.txfd.status], 0
-        mov     [ebx + device.txfd.command], Cmdsuspend + CmdTx + CmdTxFlex + 1 shl 15 ;;; EL bit
+        mov     [ebx + device.txfd.command], Cmdsuspend + CmdTx + CmdTxFlex ;+ 1 shl 15 ;;; EL bit
  ;       mov     [txfd.count], 0x02208000   ;;;;;;;;;;;
 
         ; Inform device of the new/updated transmit descriptor
@@ -666,7 +682,6 @@ proc transmit stdcall bufferptr, buffersize
 
 ; Update stats
         inc     [ebx + device.packets_tx]
-        mov     ecx, [buffersize]
         add     dword[ebx + device.bytes_tx], ecx
         adc     dword[ebx + device.bytes_tx + 4], 0
 
@@ -676,7 +691,7 @@ proc transmit stdcall bufferptr, buffersize
         ret
 
   .fail:
-        invoke  KernelFree, [bufferptr]
+        invoke  NetFree, [bufferptr]
         popf
         or      eax, -1
         ret
@@ -738,19 +753,20 @@ int_handler:
         pop     ebx
 
         mov     esi, [ebx + device.rx_desc]
-        cmp     [esi + rxfd.status], 0        ; we could also check bits C and OK (bit 15 and 13)
+        cmp     [esi + sizeof.NET_BUFF + rxfd.status], 0        ; we could also check bits C and OK (bit 15 and 13)
         je      .nodata
 
-        DEBUGF  1,"rxfd status=0x%x\n", [esi + rxfd.status]:4
+        DEBUGF  1,"rxfd status=0x%x\n", [esi + sizeof.NET_BUFF + rxfd.status]:4
 
-        movzx   ecx, [esi + rxfd.count]
+        movzx   ecx, [esi + sizeof.NET_BUFF + rxfd.count]
         and     ecx, 0x3fff
 
         push    ebx
         push    .rx_loop
-        push    ecx
-        add     esi, rxfd.packet
         push    esi
+        mov     [esi + NET_BUFF.length], ecx
+        mov     [esi + NET_BUFF.device], ebx
+        mov     [esi + NET_BUFF.offset], NET_BUFF.data + rxfd.packet
 
 ; Update stats
         add     dword [ebx + device.bytes_rx], ecx
@@ -759,15 +775,16 @@ int_handler:
 
 ; allocate new descriptor
 
-        invoke  KernelAlloc, 2000
+        invoke  NetAlloc, 2000
         mov     [ebx + device.rx_desc], eax
         mov     esi, eax
         invoke  GetPhysAddr
-        mov     [esi + rxfd.status], 0x0000
-        mov     [esi + rxfd.command], 0xc000    ; End of list + Suspend
-        mov     [esi + rxfd.link], eax
-        mov     [esi + rxfd.count], 0
-        mov     [esi + rxfd.size], 1528
+        add     eax, NET_BUFF.data
+        mov     [esi + sizeof.NET_BUFF + rxfd.status], 0x0000
+        mov     [esi + sizeof.NET_BUFF + rxfd.command], 0xc000    ; End of list + Suspend
+        mov     [esi + sizeof.NET_BUFF + rxfd.link], eax
+        mov     [esi + sizeof.NET_BUFF + rxfd.count], 0
+        mov     [esi + sizeof.NET_BUFF + rxfd.size], 1528
 
 ; restart RX
 
@@ -783,7 +800,7 @@ int_handler:
         call    cmd_wait
 
 ; And give packet to kernel
-        jmp     [Eth_input]
+        jmp     [EthInput]
 
   .nodata:
         DEBUGF  1, "no more data\n"

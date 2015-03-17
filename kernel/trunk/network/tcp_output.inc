@@ -522,7 +522,6 @@ endl
         pop     esi                     ; headersize
         add     esp, esi                ; remove it from stack
 
-        push    edx                     ; packet size for send proc
         push    eax                     ; packet ptr for send proc
 
         mov     edx, edi                ; begin of data
@@ -537,7 +536,7 @@ endl
 ; ecx = buffer size
 ; edi = ptr to buffer
 
-        mov     eax, [esp + 16]                 ; get socket ptr
+        mov     eax, [esp + 12]                 ; get socket ptr
 
         push    edx
         push    [eax + TCP_SOCKET.SND_NXT]      ; we'll need this for timing the transmission
@@ -552,7 +551,7 @@ endl
         pop     edi
         pop     esi                             ; begin of data
         pop     ecx                             ; full packet size
-        mov     eax, [esp + 12]                 ; socket ptr
+        mov     eax, [esp + 8]                  ; socket ptr
 
 ;----------------------------------
 ; initialize retransmit timer (400)

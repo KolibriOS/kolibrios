@@ -472,7 +472,6 @@ unload:
         ; - Remove all allocated structures and buffers the card used
 
         or      eax, -1
-
         ret
 
 
@@ -560,8 +559,9 @@ init_rx:
         lea     edi, [ebx + device.rx_desc]
         mov     ecx, RX_RING_SIZE
   .loop:
-        push    ecx edi
-        invoke  KernelAlloc, MAX_PKT_SIZE
+        push    ecx
+        push    edi
+        invoke  NetAlloc, MAX_PKT_SIZE+NET_BUFF.data
         test    eax, eax
         jz      .out_of_mem
         DEBUGF  1,"RX buffer: 0x%x\n", eax
@@ -570,6 +570,7 @@ init_rx:
         push    edi
         invoke  GetPhysAddr
         pop     edi
+        add     eax, NET_BUFF.data
         mov     [edi + RDESC.addr_l], eax
         mov     [edi + RDESC.addr_h], 0
         mov     [edi + RDESC.status_l], 0
@@ -707,25 +708,27 @@ read_mac:
 ;;                                         ;;
 ;; Transmit                                ;;
 ;;                                         ;;
-;; In: pointer to device structure in ebx  ;;
+;; In:  ebx = pointer to device structure  ;;
+;; Out: eax = 0 on success                 ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-proc transmit stdcall bufferptr, buffersize
+proc transmit stdcall bufferptr
 
         pushf
         cli
 
-        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [buffersize]
-        mov     eax, [bufferptr]
+        mov     esi, [bufferptr]
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
+        lea     eax, [esi + NET_BUFF.data]
         DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
         [eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
         [eax+13]:2,[eax+12]:2
 
-        cmp     [buffersize], 1514
+        cmp     [esi + NET_BUFF.length], 1514
         ja      .fail
-        cmp     [buffersize], 60
+        cmp     [esi + NET_BUFF.length], 60
         jb      .fail
 
 ; Program the descriptor (use legacy mode)
@@ -733,12 +736,14 @@ proc transmit stdcall bufferptr, buffersize
         DEBUGF  1, "Using TX desc: %u\n", edi
         shl     edi, 4                                          ; edi = edi * sizeof.TDESC
         lea     edi, [ebx + device.tx_desc + edi]
+        mov     eax, esi
         mov     dword[edi + TX_RING_SIZE*sizeof.TDESC], eax     ; Store the data location (for driver)
+        add     eax, [eax + NET_BUFF.offset]
         invoke  GetPhysAddr
         mov     [edi + TDESC.addr_l], eax                       ; Data location (for hardware)
         mov     [edi + TDESC.addr_h], 0
 
-        mov     ecx, [buffersize]
+        mov     ecx, [esi + NET_BUFF.length]
         or      ecx, TXDESC_EOP + TXDESC_IFCS + TXDESC_RS
         mov     [edi + TDESC.length_cso_cmd], ecx
         mov     [edi + TDESC.status], 0
@@ -753,7 +758,7 @@ proc transmit stdcall bufferptr, buffersize
 
 ; Update stats
         inc     [ebx + device.packets_tx]
-        mov     eax, [buffersize]
+        mov     eax, [esi + NET_BUFF.length]
         add     dword[ebx + device.bytes_tx], eax
         adc     dword[ebx + device.bytes_tx + 4], 0
 
@@ -767,7 +772,7 @@ proc transmit stdcall bufferptr, buffersize
         call    clean_tx
 
         DEBUGF  2,"Send failed\n"
-        invoke  KernelFree, [bufferptr]
+        invoke  NetFree, [bufferptr]
         popf
         or      eax, -1
         ret
@@ -833,8 +838,11 @@ int_handler:
         push    .retaddr
         movzx   ecx, word[esi + 8]                      ; Get the packet length
         DEBUGF  1,"got %u bytes\n", ecx
-        push    ecx
-        push    dword[esi + RX_RING_SIZE*sizeof.RDESC]  ; Get packet pointer
+        mov     eax, [esi + RX_RING_SIZE*sizeof.RDESC]  ; Get packet pointer
+        push    eax
+        mov     [eax + NET_BUFF.length], ecx
+        mov     [eax + NET_BUFF.device], ebx
+        mov     [eax + NET_BUFF.offset], NET_BUFF.data
 
 ; Update stats
         add     dword[ebx + device.bytes_rx], ecx
@@ -843,12 +851,13 @@ int_handler:
 
 ; Allocate new descriptor
         push    esi
-        invoke  KernelAlloc, MAX_PKT_SIZE
+        invoke  NetAlloc, MAX_PKT_SIZE+NET_BUFF.data
         pop     esi
         test    eax, eax
         jz      .out_of_mem
         mov     dword[esi + RX_RING_SIZE*sizeof.RDESC], eax
         invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         mov     [esi + RDESC.addr_l], eax
         mov     [esi + RDESC.status_l], 0
         mov     [esi + RDESC.status_h], 0
@@ -862,7 +871,7 @@ int_handler:
         inc     [ebx + device.cur_rx]
         and     [ebx + device.cur_rx], RX_RING_SIZE-1
 
-        jmp     [Eth_input]
+        jmp     [EthInput]
 
   .out_of_mem:
         DEBUGF  2,"Out of memory!\n"
@@ -871,7 +880,7 @@ int_handler:
         inc     [ebx + device.cur_rx]
         and     [ebx + device.cur_rx], RX_RING_SIZE-1
 
-        jmp     [Eth_input]
+        jmp     [EthInput]
   .no_rx:
 
 ;--------------
@@ -918,7 +927,7 @@ clean_tx:
         push    ebx
         push    dword[edi + TX_RING_SIZE*sizeof.TDESC]
         mov     dword[edi + TX_RING_SIZE*sizeof.TDESC], 0
-        invoke  KernelFree
+        invoke  NetFree
         pop     ebx
 
         inc     [ebx + device.last_tx]

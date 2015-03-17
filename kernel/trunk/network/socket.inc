@@ -179,8 +179,8 @@ ends
 struct  socket_queue_entry
 
         data_ptr                dd ?
-        buf_ptr                 dd ?
         data_size               dd ?
+        buf_ptr                 dd ?
 
 ends
 
@@ -822,7 +822,7 @@ SOCKET_receive_dgram:
         rep movsd
   .nd:
 
-        call    NET_packet_free
+        call    NET_BUFF_free
         pop     ecx eax                                         ; return number of bytes copied to application
         xor     ebx, ebx
         ret
@@ -1441,7 +1441,6 @@ SOCKET_check_port:
 ;       ecx = data size
 ;       esi = ptr to data
 ;       [esp] = ptr to buf
-;       [esp + 4] = buf size
 ;
 ;  OUT: /
 ;
@@ -1451,7 +1450,7 @@ SOCKET_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_input: socket=%x, data=%x size=%u\n", eax, esi, ecx
 
-        mov     [esp+4], ecx
+        push    ecx
         push    esi
         mov     esi, esp
 
@@ -1475,16 +1474,13 @@ SOCKET_input:
         call    mutex_unlock
         popa
 
-        call    NET_packet_free
-        add     esp, 8
-
+        call    NET_BUFF_free
         ret
 
 
 ;--------------------------
 ;
-; IN: eax = ptr to ring struct (just a buffer of the right size)
-; OUT: eax = unchanged / 0 on error
+; eax = ptr to ring struct (just a buffer of the right size)
 ;
 align 4
 SOCKET_ring_create:

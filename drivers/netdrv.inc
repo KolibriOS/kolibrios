@@ -122,6 +122,19 @@ struct  NET_DEVICE
 ends
 
 
+struct  NET_BUFF
+
+        NextPtr         dd ?    ; pointer to next frame in list
+        PrevPtr         dd ?    ; pointer to previous frame in list
+        device          dd ?    ; ptr to NET_DEVICE structure
+        type            dd ?    ; data type (e.g. Ethernet)
+        length          dd ?    ; data length
+        offset          dd ?    ; offset to actual data (24 bytes for default frame)
+        data            rb 0
+
+ends
+
+
 struct  ETH_DEVICE      NET_DEVICE
 
         mac             dp ?

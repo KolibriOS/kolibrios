@@ -414,8 +414,7 @@ unload:
         ; - Remove all allocated structures and buffers the card used
 
         or      eax, -1
-
-ret
+        ret
 
 ;***************************************************************************
 ;
@@ -612,12 +611,13 @@ reset:
         mov     dword [esi + 4], RX_BUFF_SZ             ; size
 
         push    ecx esi
-        invoke  KernelAlloc, RX_BUFF_SZ
+        invoke  NetAlloc, RX_BUFF_SZ+NET_BUFF.data
         pop     esi ecx
         test    eax, eax
         jz      .fail
         mov     dword [esi + 12], eax                   ; address
         invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         mov     dword [esi + 8], eax                    ; real address
         add     esi, 16
         dec     ecx
@@ -1006,21 +1006,22 @@ write_mac:
 ;***************************************************************************
 align 4
 
-proc transmit stdcall bufferptr, buffersize
+proc transmit stdcall bufferptr
 
         pushf
         cli
 
-        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [buffersize]
-        mov     eax, [bufferptr]
+        mov     esi, [bufferptr]
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
+        lea     eax, [esi + NET_BUFF.data]
         DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
         [eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
         [eax+13]:2,[eax+12]:2
 
-        cmp     [buffersize], 1514
+        cmp     [esi + NET_BUFF.length], 1514
         ja      .fail
-        cmp     [buffersize], 60
+        cmp     [esi + NET_BUFF.length], 60
         jb      .fail
 
         movzx   ecx, [ebx + device.cur_tx]
@@ -1030,12 +1031,13 @@ proc transmit stdcall bufferptr, buffersize
         test    dword[ecx + 4], 0x80000000              ; card owns descriptor ?
         jnz     .fail
 
-        mov     eax, [bufferptr]
+        mov     eax, esi
         mov     dword[ecx + 12], eax
+        add     eax, [eax + NET_BUFF.offset]
         invoke  GetPhysAddr
         mov     dword[ecx + 8], eax                     ; buffer address
 
-        mov     eax, [buffersize]
+        mov     eax, [esi + NET_BUFF.length]
         and     eax, DSIZE
         or      eax, 0x80000000                         ; card owns descriptor
         mov     dword[ecx + 4], eax                     ; status field
@@ -1050,7 +1052,7 @@ proc transmit stdcall bufferptr, buffersize
         and     [ebx + device.cur_tx], NUM_TX_DESC-1
 
 ; update stats
-        mov     ecx, [buffersize]
+        mov     ecx, [esi + NET_BUFF.length]
         inc     [ebx + device.packets_tx]
         add     dword [ebx + device.bytes_tx], ecx
         adc     dword [ebx + device.bytes_tx + 4], 0
@@ -1062,7 +1064,7 @@ proc transmit stdcall bufferptr, buffersize
 
   .fail:
         DEBUGF  2,"Transmit failed\n"
-        invoke  KernelFree, [bufferptr]
+        invoke  NetFree, [bufferptr]
         popf
         or      eax, -1
         ret
@@ -1151,16 +1153,19 @@ int_handler:
         adc     dword [ebx + device.bytes_rx + 4], 0
 
         push    ebx
-        push    .return
-        push    ecx                                     ; packet size
-        pushd   [ebx + device.rxd + eax + 12]           ; packet ptr
+        push    .return                                 ; return addr
+        mov     eax, [ebx + device.rxd + eax + 12]
+        push    eax                                     ; packet ptr
+        mov     [eax + NET_BUFF.length], ecx
+        mov     [eax + NET_BUFF.device], ebx
+        mov     [eax + NET_BUFF.offset], NET_BUFF.data
         DEBUGF  1, "Packet received OK\n"
-        jmp     [Eth_input]
+        jmp     [EthInput]
   .return:
         pop     ebx
 
 ; Reset status, allow ethernet card access to descriptor
-        invoke  KernelAlloc, RX_BUFF_SZ
+        invoke  NetAlloc, RX_BUFF_SZ + NET_BUFF.data
         test    eax, eax
         jz      .fail
         movzx   ecx, [ebx + device.cur_rx]
@@ -1168,6 +1173,7 @@ int_handler:
         lea     ecx, [ebx + device.rxd + ecx]
         mov     dword [ecx + 12], eax
         invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         mov     dword [ecx + 8], eax
         mov     dword [ecx + 4], RX_BUFF_SZ
 
@@ -1204,7 +1210,7 @@ int_handler:
         DEBUGF  1, "Freeing packet = %x\n", [ecx + 12]:8
         push    dword[ecx + 12]
         mov     dword[ecx + 12], 0
-        invoke  KernelFree
+        invoke  NetFree
 
         inc     [ebx + device.last_tx]
         and     [ebx + device.last_tx], NUM_TX_DESC-1

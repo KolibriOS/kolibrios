@@ -124,9 +124,8 @@ struct  TCP_queue_entry
         segment_ptr             dd ?
         segment_size            dd ?
         device_ptr              dd ?
-
-        buffer_ptr              dd ?
         timestamp               dd ?
+        buffer_ptr              dd ?
 
 ends
 

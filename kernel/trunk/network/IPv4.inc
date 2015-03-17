@@ -225,10 +225,10 @@ macro IPv4_checksum ptr {
 align 4
 IPv4_input:                                                     ; TODO: add IPv4 raw sockets support
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input, packet from: %u.%u.%u.%u ",\
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: packet from %u.%u.%u.%u ",\
         [edx + IPv4_header.SourceAddress + 0]:1,[edx + IPv4_header.SourceAddress + 1]:1,\
         [edx + IPv4_header.SourceAddress + 2]:1,[edx + IPv4_header.SourceAddress + 3]:1
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "to: %u.%u.%u.%u\n",\
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "to %u.%u.%u.%u\n",\
         [edx + IPv4_header.DestinationAddress + 0]:1,[edx + IPv4_header.DestinationAddress + 1]:1,\
         [edx + IPv4_header.DestinationAddress + 2]:1,[edx + IPv4_header.DestinationAddress + 3]:1
 
@@ -323,8 +323,7 @@ IPv4_input:                                                     ; TODO: add IPv4
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: dumping\n"
         inc     [IPv4_packets_dumped]                           ; FIXME: use correct interface
-        call    NET_packet_free
-        add     esp, 4                                          ; pop (balance stack)
+        call    NET_BUFF_free
         ret
 
 
@@ -371,7 +370,6 @@ IPv4_input:                                                     ; TODO: add IPv4
         mov     [eax + IPv4_FRAGMENT_entry.PrevPtr], edi
         mov     [eax + IPv4_FRAGMENT_entry.Owner], ebx
 
-        add     esp, 4
         ret
 
 
@@ -405,7 +403,6 @@ IPv4_input:                                                     ; TODO: add IPv4
         mov     [eax + IPv4_FRAGMENT_entry.PrevPtr], -1
         mov     [eax + IPv4_FRAGMENT_entry.Owner], ebx
 
-        add     esp, 4                                          ; balance stack and exit
         ret
 
 
@@ -506,7 +503,7 @@ IPv4_input:                                                     ; TODO: add IPv4
         push    [edx + IPv4_FRAGMENT_entry.NextPtr]                                     ; Set edx to the next pointer
         push    edx                                                                     ; Push pointer to fragment onto stack
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Next Fragment: 0x%x\n", edx
-        call    NET_packet_free                                                         ; free the previous fragment buffer (this uses the value from stack)
+        call    NET_BUFF_free                                                          ; free the previous fragment buffer (this uses the value from stack)
         pop     edx ebx eax
         cmp     edx, -1                                                                 ; Check if it is last fragment in chain
         jne     .rebuild_packet_loop
@@ -654,7 +651,7 @@ IPv4_output:
         ret
 
   .loopback:
-        mov     dword [esp + 2], eax            ; change source IP to dest IP
+        mov     dword [esp], eax                        ; set source IP to dest IP
         mov     ecx, [esp + 10]
         add     ecx, sizeof.IPv4_header
         mov     edi, AF_INET4
@@ -749,7 +746,6 @@ IPv4_output_raw:
 ;
 ;
 ; IN: dword [esp] = pointer to buffer containing ipv4 packet to be fragmented
-;     dword [esp+4] = buffer size
 ;     esi = pointer to ip header in that buffer
 ;     ecx = max size of fragments
 ;
@@ -857,9 +853,7 @@ IPv4_fragment:
         add     esp, 12 + 4 + 6
       .err2:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "Ipv4_fragment: dumping\n"
-        call    NET_packet_free
-        add     esp, 4
-
+        call    NET_BUFF_free
         ret
 
 

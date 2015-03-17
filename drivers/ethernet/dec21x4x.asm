@@ -594,8 +594,6 @@ reset:
   @@:
 
 
-;;; Find connected mii xceivers? 993-1043
-
 ; Reset the xcvr interface and turn on heartbeat.
         cmp     [ebx + device.id], DC21041
         jne     @f
@@ -869,19 +867,23 @@ init_ring:
         DEBUGF  1,"RX descriptor 0x%x\n", edi
         add     edx, sizeof.desc
         mov     [edi + desc.status], DES0_OWN
-        mov     [edi + desc.length], 1536
+        mov     [edi + desc.length], 1514
         push    edx edi ecx
-        invoke  KernelAlloc, 1536
+        invoke  NetAlloc, 1514+NET_BUFF.data
         pop     ecx edi edx
         test    eax, eax
         jz      .out_of_mem
         mov     [edi + RX_RING_SIZE*sizeof.desc], eax
+        push    edx
         invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
+        pop     edx
         mov     [edi + desc.buffer1], eax
         mov     [edi + desc.buffer2], edx
         add     edi, sizeof.desc
         dec     ecx
         jnz     .loop_rx_des
+
 ; set last descriptor as LAST
         or      [edi - sizeof.desc + desc.length], RDES1_RER           ; EndOfRing
         pop     [edi - sizeof.desc + desc.buffer2]                     ; point it to the first descriptor
@@ -917,6 +919,7 @@ init_ring:
         mov     [ebx + device.last_tx], eax
         mov     [ebx + device.cur_rx], eax
 
+;        xor     eax, eax
         ret
 
   .out_of_mem:
@@ -1043,13 +1046,15 @@ create_setup_frame:
 
         DEBUGF  1,"Creating setup packet\n"
 
-        invoke  KernelAlloc, 192
+        invoke  NetAlloc, 192 + NET_BUFF.data
         test    eax, eax
         jz      .err
+        mov     [eax + NET_BUFF.device], ebx
+        mov     [eax + NET_BUFF.length], 192
 
         push    eax
 
-        mov     edi, eax
+        lea     edi, [eax + NET_BUFF.data]
         xor     eax, eax
         dec     ax
         stosd
@@ -1071,18 +1076,22 @@ create_setup_frame:
         DEBUGF  1, "attaching setup packet 0x%x to descriptor 0x%x\n", eax, edi
         mov     [edi + TX_RING_SIZE*sizeof.desc], eax
         invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         mov     [edi + desc.buffer1], eax
-        mov     [edi + desc.length], TDES1_SET + 192        ; size must be EXACTLY 192 bytes + TDES1_IC
+        mov     [edi + desc.length], TDES1_SET or 192       ; size must be EXACTLY 192 bytes + TDES1_IC
         mov     [edi + desc.status], DES0_OWN
         DEBUGF  1, "descriptor 0x%x\n", edi
 
 ; go to next descriptor
         inc     [ebx + device.cur_tx]
+        and     [ebx + device.cur_tx], TX_RING_SIZE-1
 
+        xor     eax, eax
         ret
 
   .err:
         DEBUGF  2, "Out of memory!\n"
+        or      eax, -1
         ret
 
 
@@ -1091,50 +1100,51 @@ create_setup_frame:
 ;;                                         ;;
 ;; Transmit                                ;;
 ;;                                         ;;
-;; In: buffer pointer in [esp+4]           ;;
-;;     size of buffer in [esp+8]           ;;
-;;     pointer to device structure in ebx  ;;
+;; In:  ebx = pointer to device structure  ;;
+;; Out: eax = 0 on success                 ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-proc transmit stdcall bufferptr, buffersize
+proc transmit stdcall bufferptr
 
         pushf
         cli
 
-        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [buffersize]
-        mov     eax, [bufferptr]
+        mov     esi, [bufferptr]
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
+        lea     eax, [esi + NET_BUFF.data]
         DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
         [eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
         [eax+13]:2,[eax+12]:2
 
-        cmp     [buffersize], 1514
+        cmp     [esi + NET_BUFF.length], 1514
         ja      .fail
+        cmp     [esi + NET_BUFF.length], 60
+        jb      .fail
 
         mov     eax, [ebx + device.cur_tx]
         mov     edx, sizeof.desc
         mul     edx
-        lea     esi, [ebx + device.tx_ring + eax]
-        test    [esi + desc.status], DES0_OWN
+        lea     edi, [ebx + device.tx_ring + eax]
+        test    [edi + desc.status], DES0_OWN
         jnz     .fail
 
-        DEBUGF  1, "Descriptor is free\n"
-
         mov     eax, [bufferptr]
-        mov     [esi + TX_RING_SIZE*sizeof.desc], eax
+        mov     [edi + TX_RING_SIZE*sizeof.desc], eax
+        add     eax, [eax + NET_BUFF.offset]
         invoke  GetPhysAddr
-        mov     [esi + desc.buffer1], eax
+        mov     [edi + desc.buffer1], eax
 
 ; set packet size
-        mov     eax, [esi + desc.length]
+        mov     eax, [edi + desc.length]
         and     eax, TDES1_TER                          ; preserve 'End of Ring' bit
-        or      eax, [buffersize]                       ; set size
+        or      eax, [esi + NET_BUFF.length]            ; set size
         or      eax, TDES1_FS or TDES1_LS or TDES1_IC   ; first descr, last descr, interrupt on complete
-        mov     [esi + desc.length], eax
+        mov     [edi + desc.length], eax
 
 ; set descriptor status
-        mov     [esi + desc.status], DES0_OWN           ; say it is now owned by the 21x4x
+        mov     [edi + desc.status], DES0_OWN            ; say it is now owned by the 21x4x
 
 ; Check if transmitter is running
         set_io  [ebx + device.io_addr], 0
@@ -1155,8 +1165,8 @@ proc transmit stdcall bufferptr, buffersize
 
 ; Update stats
         inc     [ebx + device.packets_tx]
-        mov     eax, [buffersize]
-        add     dword [ebx + device.bytes_tx], eax
+        mov     ecx, [esi + NET_BUFF.length]
+        add     dword [ebx + device.bytes_tx], ecx
         adc     dword [ebx + device.bytes_tx + 4], 0
 
 ; go to next descriptor
@@ -1169,8 +1179,8 @@ proc transmit stdcall bufferptr, buffersize
         ret
 
   .fail:
-        DEBUGF  2,"Transmit failed\n"
-        invoke  KernelFree, [bufferptr]
+        DEBUGF  1,"Transmit failed\n"
+        invoke  NetFree, [bufferptr]
         popf
         or      eax, -1
         ret
@@ -1240,8 +1250,8 @@ int_handler:
         je      .end_tx
 
         mov     [eax + desc.buffer1], 0
-        DEBUGF  1,"Free buffer 0x%x\n", [eax + TX_RING_SIZE*sizeof.desc]
-        invoke  KernelFree, [eax + TX_RING_SIZE*sizeof.desc]
+        DEBUGF  1, "Free buffer 0x%x\n", [eax + TX_RING_SIZE*sizeof.desc]
+        invoke  NetFree, [eax + TX_RING_SIZE*sizeof.desc]
 
         ; advance to next descriptor
         inc     [ebx + device.last_tx]
@@ -1254,7 +1264,6 @@ int_handler:
 
 ;----------------------------------
 ; RX irq
-
         test    eax, CSR5_RI
         jz      .not_rx
         push    eax esi ecx
@@ -1265,13 +1274,13 @@ int_handler:
   .rx_loop:
         pop     ebx
 
-; get current descriptor
+        ; get current descriptor
         mov     eax, [ebx + device.cur_rx]
         mov     edx, sizeof.desc
         mul     edx
         lea     edi, [ebx + device.rx_ring + eax]
 
-; Check current RX descriptor status
+        ; now check status
         mov     eax, [edi + desc.status]
 
         test    eax, DES0_OWN
@@ -1290,11 +1299,14 @@ int_handler:
         sub     ecx, 4                                  ; throw away the CRC
         DEBUGF  1,"got %u bytes\n", ecx
 
-; Push arguments for Eth_input (and some more...)
+; Push arguments for EthInput (and some more...)
         push    ebx
         push    .rx_loop                                ; return addr
-        push    ecx                                     ; packet size
-        push    dword[edi + RX_RING_SIZE*sizeof.desc]   ; packet ptr
+        mov     eax, dword[edi + RX_RING_SIZE*sizeof.desc]
+        push    eax
+        mov     [eax + NET_BUFF.length], ecx
+        mov     [eax + NET_BUFF.device], ebx
+        mov     [eax + NET_BUFF.offset], NET_BUFF.data
 
 ; update statistics
         inc     [ebx + device.packets_rx]
@@ -1303,10 +1315,12 @@ int_handler:
 
 ; Allocate new descriptor
         push    edi ebx
-        invoke  KernelAlloc, 1536                       ; Allocate a buffer to put packet into
+        invoke  NetAlloc, 1514 + NET_BUFF.data          ; Allocate a buffer to put packet into
         pop     ebx edi
+        jz      .fail
         mov     [edi + RX_RING_SIZE*sizeof.desc], eax
         invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         mov     [edi + desc.buffer1], eax
         mov     [edi + desc.status], DES0_OWN           ; mark descriptor as being free
 
@@ -1314,8 +1328,10 @@ int_handler:
         inc     [ebx + device.cur_rx]                   ; next descriptor
         and     [ebx + device.cur_rx], RX_RING_SIZE-1
 
-        jmp     [Eth_input]
+        jmp     [EthInput]
   .end_rx:
+  .fail:
+        pop     ecx esi eax
   .not_rx:
 
         pop     edi esi ebx

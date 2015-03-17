@@ -23,7 +23,6 @@ $Revision$
 ;       Add a segment to the incoming TCP queue
 ;
 ;  IN:  [esp] = ptr to buffer
-;       [esp+4] = buffer size (dont care)
 ;       ebx = ptr to device struct
 ;       ecx = segment size
 ;       esi = ptr to TCP segment
@@ -37,10 +36,8 @@ align 4
 TCP_input:
 
 ; record the current time
-        mov     eax, [timer_ticks]      ; in 1/100 seconds
-        mov     [esp + 4], eax
-
-        push    ebx ecx esi edi         ; mind the order
+        push    [timer_ticks]           ; in 1/100 seconds
+        push    ebx ecx esi edi         ; mind the order (see TCP_queue_entry struct)
         mov     esi, esp
 
         add_to_queue TCP_queue, TCP_QUEUE_SIZE, sizeof.TCP_queue_entry, .fail
@@ -64,11 +61,8 @@ TCP_input:
         inc     [TCP_segments_missed + edi]
 
         add     esp, sizeof.TCP_queue_entry - 8
-        call    NET_packet_free
-        add     esp, 4
-
+        call    NET_BUFF_free
         ret
-
 
 
 
@@ -1595,7 +1589,7 @@ align 4
   .done:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: dumping\n"
 
-        call    NET_packet_free
+        call    NET_BUFF_free
         jmp     .loop
 
 
@@ -1714,7 +1708,7 @@ align 4
   .drop_no_socket:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Drop (no socket)\n"
 
-        call    NET_packet_free
+        call    NET_BUFF_free
         jmp     .loop
 
 endp

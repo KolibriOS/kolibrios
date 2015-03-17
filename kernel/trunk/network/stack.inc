@@ -155,6 +155,10 @@ NET_LINK_IEEE802.11     = 3     ; IEEE 802.11 (WiFi)
 NET_HWACC_TCP_IPv4_IN   = 1 shl 0
 NET_HWACC_TCP_IPv4_OUT  = 1 shl 1
 
+; Network frame types
+NET_BUFF_LOOPBACK      = 0
+NET_BUFF_ETH           = 1
+
 struct  NET_DEVICE
 
         device_type     dd ?    ; Type field
@@ -172,6 +176,18 @@ struct  NET_DEVICE
 
         link_state      dd ?    ; link state (0 = no link)
         hwacc           dd ?    ; bitmask stating enabled HW accelerations (offload engines)
+
+ends
+
+struct  NET_BUFF
+
+        NextPtr         dd ?    ; pointer to next frame in list
+        PrevPtr         dd ?    ; pointer to previous frame in list
+        device          dd ?    ; ptr to NET_DEVICE structure
+        type            dd ?    ; encapsulation type: e.g. Ethernet
+        length          dd ?    ; size of encapsulated data
+        offset          dd ?    ; offset to actual data (24 bytes for default frame)
+        data            rb 0
 
 ends
 
@@ -327,7 +343,13 @@ stack_handler:
 
 
 align 4
-NET_packet_free:
+NET_BUFF_alloc:
+        add     dword[esp+4], NET_BUFF.data
+        jmp     kernel_alloc
+
+
+align 4
+NET_BUFF_free:
         and     dword[esp+4], not 0xfff
         jmp     kernel_free
 
@@ -482,8 +504,10 @@ NET_ptr_to_num:
 align 4
 NET_ptr_to_num4:                ; Todo, place number in device structure so we only need to verify?
 
-        push    ecx
+        test    ebx, ebx
+        jz      .fail
 
+        push    ecx
         mov     ecx, NET_DEVICES_MAX
         mov     edi, NET_DRV_LIST
   .loop:
@@ -493,8 +517,9 @@ NET_ptr_to_num4:                ; Todo, place number in device structure so we o
         dec     ecx
         jnz     .loop
 
-        or      edi, -1
         pop     ecx
+  .fail:
+        or      edi, -1
         ret
 
   .found:

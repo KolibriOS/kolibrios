@@ -346,7 +346,7 @@ NIC_LB_NONE             = 0x00
 NIC_LB_INTERNAL         = 0x01
 NIC_LB_PHY              = 0x02    ; MII or Internal-10BaseT loopback
 
-PKT_BUF_SZ              = 1536    ; Size of each temporary Rx buffer.
+PKT_BUF_SZ              = 1514
 
 PCI_REG_MODE3           = 0x53
 MODE3_MIION             = 0x04    ; in PCI_REG_MOD3 OF PCI space
@@ -929,11 +929,7 @@ reset:
         DEBUGF  1,"Attaching int handler to irq %x\n", eax:1
         invoke  AttachIntHandler, eax, int_handler, ebx
         test    eax, eax
-        jnz     @f
-        DEBUGF  2,"Could not attach int handler!\n"
-        or      eax, -1
-        ret
-       @@:
+        jz      .err
 
 ; Soft reset the chip.
         set_io  [ebx + device.io_addr], 0
@@ -945,6 +941,8 @@ reset:
 
 ; Initialize rings
         call    init_ring
+        test    eax, eax
+        jnz     .err
 
 ; Set Multicast
         call    set_rx_mode
@@ -968,7 +966,6 @@ reset:
         out     dx, al
 
 ; Set Fulldupex
-
         call    QueryAuto
         test    eax, eax        ; full duplex?
         jz      @f
@@ -1005,6 +1002,11 @@ reset:
 
 ; say reset was successful
         xor     eax, eax
+        ret
+
+  .err:
+        DEBUGF  2,"Error!\n"
+        or      eax, -1
         ret
 
 
@@ -1073,10 +1075,13 @@ init_ring:
         mov     [edi + rx_head.status], RX_SBITS_OWN_BIT
         mov     [edi + rx_head.control], PKT_BUF_SZ
         push    ecx
-        invoke  KernelAlloc, PKT_BUF_SZ
+        invoke  NetAlloc, PKT_BUF_SZ+NET_BUFF.data
         pop     ecx
+        test    eax, eax
+        jz      .out_of_mem
         mov     [edi + rx_head.buff_addr_virt], eax
         invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         mov     [edi + rx_head.buff_addr], eax                        ; buffer ptr
         mov     [edi + rx_head.next_desc], esi                        ; next head
         add     edi, sizeof.rx_head
@@ -1120,6 +1125,12 @@ init_ring:
         mov     [ebx + device.cur_tx], ax
         mov     [ebx + device.last_tx], ax
 
+        xor     eax, eax
+        ret
+
+  .out_of_mem:
+        add     esp, 4
+        or      eax, -1
         ret
 
 
@@ -1349,8 +1360,8 @@ set_rx_mode:
         out     dx, eax
 
         set_io  [ebx + device.io_addr], byRCR
-        mov     al, 0x6C                ;rx_mode = 0x0C;
-        out     dx, al          ;outb(0x60 /* thresh */ | rx_mode, byRCR );
+        mov     al, 0x6C                ; thresh or rx_mode
+        out     dx, al
 
         ret
 
@@ -1393,26 +1404,26 @@ read_mac:
 ;; Transmit                                ;;
 ;;                                         ;;
 ;; In: buffer pointer in [esp+4]           ;;
-;;     size of buffer in [esp+8]           ;;
 ;;     pointer to device structure in ebx  ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 4
-proc transmit stdcall bufferptr, buffersize
+proc transmit stdcall bufferptr
 
         pushf
         cli
 
-        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [buffersize]
-        mov     eax, [bufferptr]
+        mov     esi, [bufferptr]
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
+        lea     eax, [esi + NET_BUFF.data]
         DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
         [eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
         [eax+13]:2,[eax+12]:2
 
-        cmp     [buffersize], 1514
+        cmp     [esi + NET_BUFF.length], 1514
         ja      .fail
-        cmp     [buffersize], 60
+        cmp     [esi + NET_BUFF.length], 60
         jb      .fail
 
         movzx   eax, [ebx + device.cur_tx]
@@ -1424,11 +1435,12 @@ proc transmit stdcall bufferptr, buffersize
         cmp     [edi + tx_head.buff_addr_virt], 0
         jne     .fail
 
-        mov     eax, [bufferptr]
+        mov     eax, esi
         mov     [edi + tx_head.buff_addr_virt], eax
+        add     eax, [eax + NET_BUFF.offset]
         invoke  GetPhysAddr
         mov     [edi + tx_head.buff_addr], eax
-        mov     ecx, [buffersize]
+        mov     ecx, [esi + NET_BUFF.length]
         and     ecx, TX_CBITS_TX_BUF_SIZE
         or      ecx,  0x00E08000
         mov     [edi + tx_head.control], ecx
@@ -1447,7 +1459,7 @@ proc transmit stdcall bufferptr, buffersize
 
 ; Update stats
         inc     [ebx + device.packets_tx]
-        mov     ecx, [buffersize]
+        mov     ecx, [esi + NET_BUFF.length]
         add     dword [ebx + device.bytes_tx], ecx
         adc     dword [ebx + device.bytes_tx + 4], 0
 
@@ -1458,7 +1470,7 @@ proc transmit stdcall bufferptr, buffersize
 
   .fail:
         DEBUGF  2,"Transmit failed\n"
-        invoke  KernelFree, [bufferptr]
+        invoke  NetFree, [bufferptr]
         popf
         or      eax, -1
         ret
@@ -1481,7 +1493,6 @@ int_handler:
         DEBUGF  1,"INT\n"
 
 ; Find pointer of device which made IRQ occur
-
         mov     ecx, [devices]
         test    ecx, ecx
         jz      .nothing
@@ -1506,9 +1517,7 @@ int_handler:
         ret                             ; If no device was found, abort (The irq was probably for a device, not registered to this driver)
 
 
-
   .got_it:
-
         DEBUGF  1, "status=0x%x\n", ax
 
         push    ax
@@ -1521,7 +1530,6 @@ int_handler:
         pop     ebx
 
 ; Get the current descriptor pointer
-
         movzx   eax, [ebx + device.cur_rx]
         mov     ecx, sizeof.rx_head
         mul     ecx
@@ -1529,57 +1537,51 @@ int_handler:
         add     edi, eax
 
 ; Check it's status
-
         test    [edi + rx_head.status], RX_SBITS_OWN_BIT
-        jnz     .not_bit_own
+        jnz     .not_RX
 
         DEBUGF  1, "Packet status = 0x%x\n", [edi + rx_head.status]
 
 ; TODO: check error bits
 
 ; get length
-
         mov     ecx, [edi + rx_head.status]
         and     ecx, RX_SBITS_FRAME_LENGTH
         shr     ecx, 16
-        sub     ecx, 4  ; We dont want CRC
+        sub     ecx, 4                          ; We dont want CRC
 
 ; Update stats
-
         add     dword [ebx + device.bytes_rx], ecx
         adc     dword [ebx + device.bytes_rx + 4], 0
         inc     [ebx + device.packets_rx]
 
-; Push packet size and pointer, kernel will need it..
-
+; Push packet pointer, kernel will need it..
         push    ebx
-        push    .more_RX        ; return ptr
-
-        push    ecx             ; full packet size
-        push    [edi + rx_head.buff_addr_virt]
+        push    .more_RX                        ; return ptr
+        mov     eax, [edi + rx_head.buff_addr_virt]
+        push    eax
+        mov     [eax + NET_BUFF.length], ecx
+        mov     [eax + NET_BUFF.device], ebx
+        mov     [eax + NET_BUFF.offset], NET_BUFF.data
 
 ; reset the RX descriptor
-
         push    edi
-        invoke  KernelAlloc, PKT_BUF_SZ
+        invoke  NetAlloc, PKT_BUF_SZ+NET_BUFF.data
         pop     edi
         mov     [edi + rx_head.buff_addr_virt], eax
         invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         mov     [edi + rx_head.buff_addr], eax
         mov     [edi + rx_head.status], RX_SBITS_OWN_BIT
 
 ; Use next descriptor next time
-
         inc     [ebx + device.cur_rx]
         and     [ebx + device.cur_rx], RX_RING_SIZE - 1
 
 ; At last, send packet to kernel
+        jmp     [EthInput]
 
-        jmp     [Eth_input]
-
-  .not_bit_own:
   .not_RX:
-
         pop     ax
 
         test    ax, IntrTxDone
@@ -1602,7 +1604,7 @@ int_handler:
 
         push    [edi + tx_head.buff_addr_virt]
         mov     [edi + tx_head.buff_addr_virt], 0
-        invoke  KernelFree
+        invoke  NetFree
 
         inc     [ebx + device.last_tx]
         and     [ebx + device.last_tx], TX_RING_SIZE - 1
@@ -1613,12 +1615,12 @@ int_handler:
 
         ; On Rhine-II, Bit 3 indicates Tx descriptor write-back race.
 if 0
-        cmp     [ebx + device.chip_id], 0x3065 ;if (tp->chip_id == 0x3065)
+        cmp     [ebx + device.chip_id], 0x3065
         jne     @f
         push    ax
         xor     eax, eax
         set_io  [ebx + device.io_addr], IntrStatus2
-        in      al, dx ;  intr_status |= inb(nic->ioaddr + IntrStatus2) << 16;
+        in      al, dx
         shl     eax, 16
         pop     ax
     @@:

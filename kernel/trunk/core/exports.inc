@@ -122,7 +122,9 @@ __exports:
           NET_remove_device,     'NetUnRegDev',        \
           NET_ptr_to_num,        'NetPtrToNum',        \
           NET_link_changed,      'NetLinkChanged',     \
-          ETH_input,             'Eth_input',          \
+          ETH_input,             'EthInput',           \
+          NET_BUFF_alloc,        'NetAlloc',           \
+          NET_BUFF_free,         'NetFree',            \
 \
           get_pcidev_list,       'GetPCIList',         \
 \

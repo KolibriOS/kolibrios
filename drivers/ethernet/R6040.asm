@@ -137,7 +137,7 @@ PHY_ST          = 0x8A                  ; PHY status register
 MAC_SM          = 0xAC                  ; MAC status machine
 MAC_ID          = 0xBE                  ; Identifier register
 
-MAX_BUF_SIZE    = 0x600                 ; 1536
+MAX_BUF_SIZE    = 1514
 
 MBCR_DEFAULT    = 0x012A                ; MAC Bus Control Register
 MCAST_MAX       = 3                     ; Max number multicast addresses to filter
@@ -396,13 +396,12 @@ unload:
         ;
         ; - Stop the device
         ; - Detach int handler
-        ; - Remove device from local list (RTL8139_LIST)
+        ; - Remove device from local list (device_list)
         ; - call unregister function in kernel
         ; - Remove all allocated structures and buffers the card used
 
-        or      eax,-1
-
-ret
+        or      eax, -1
+        ret
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -430,7 +429,7 @@ probe:
         jnz     @f
         mov     ax, 0x9F07
         out     dx, ax
-     @@:
+  @@:
 
         call    read_mac
 
@@ -441,7 +440,7 @@ probe:
         jnz     @f
         DEBUGF  2, "MAC address not initialized!\n"
 
-     @@:
+  @@:
         ; Init RDC private data
         mov     [ebx + device.mcr0], MCR0_XMTEN or MCR0_RCVEN
         mov     [ebx + device.phy_addr], PHY1_ADDR
@@ -452,9 +451,10 @@ probe:
         cmp     ax, 0xFFFF
         jne     @f
         DEBUGF  2, "Failed to detect an attached PHY!\n"
+  .err:
         mov     eax, -1
         ret
-     @@:
+  @@:
 
         ; Set MAC address
         call    init_mac_regs
@@ -462,6 +462,8 @@ probe:
         ; Initialize and alloc RX/TX buffers
         call    init_txbufs
         call    init_rxbufs
+        test    eax, eax
+        jnz     .err
 
         ; Read the PHY ID
         mov     [ebx + device.phy_mode], MCR0_FD
@@ -471,7 +473,7 @@ probe:
         jne     @f
         stdcall phy_write, 29, 31, 0x175C ; Enable registers
         jmp     .phy_readen
-      @@:
+  @@:
 
         ; PHY Mode Check
         stdcall phy_write, [ebx + device.phy_addr], 4, PHY_CAP
@@ -487,7 +489,7 @@ probe:
         mov     [ebx + device.phy_mode], 0
       end if
 
-      .phy_readen:
+  .phy_readen:
 
         ; Set duplex mode
         mov     ax, [ebx + device.phy_mode]
@@ -530,7 +532,7 @@ reset:
         DEBUGF  2,"Could not attach int handler!\n"
         or      eax, -1
         ret
-       @@:
+  @@:
 
         ;Reset RDC MAC
         mov     eax, MAC_RST
@@ -632,7 +634,7 @@ init_txbufs:
         invoke  GetPhysAddr
         mov     ecx, TX_RING_SIZE
 
-    .next_desc:
+  .next_desc:
         mov     [esi + x_head.ndesc], eax
         mov     [esi + x_head.skb_ptr], 0
         mov     [esi + x_head.status], DSC_OWNER_MAC
@@ -660,21 +662,21 @@ init_rxbufs:
         mov     edx, eax
         mov     ecx, RX_RING_SIZE
 
-    .next_desc:
+  .next_desc:
         mov     [esi + x_head.ndesc], edx
-
         push    esi ecx edx
-        invoke  KernelAlloc, MAX_BUF_SIZE
+        invoke  NetAlloc, MAX_BUF_SIZE+NET_BUFF.data
         pop     edx ecx esi
-
+        test    eax, eax
+        jz      .out_of_mem
         mov     [esi + x_head.skb_ptr], eax
         invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         mov     [esi + x_head.buf], eax
         mov     [esi + x_head.status], DSC_OWNER_MAC
 
         add     edx, sizeof.x_head
         add     esi, sizeof.x_head
-
         dec     ecx
         jnz     .next_desc
 
@@ -683,6 +685,11 @@ init_rxbufs:
         invoke  GetPhysAddr
         mov     dword[ebx + device.rx_ring + sizeof.x_head*(RX_RING_SIZE-1) + x_head.ndesc], eax
 
+        xor     eax, eax
+        ret
+
+  .out_of_mem:
+        or      eax, -1
         ret
 
 
@@ -734,21 +741,22 @@ phy_mode_chk:
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-proc transmit stdcall bufferptr, buffersize
+proc transmit stdcall bufferptr
 
         pushf
         cli
 
-        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [buffersize]
-        mov     eax, [bufferptr]
+        mov     esi, [bufferptr]
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
+        lea     eax, [esi + NET_BUFF.data]
         DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
         [eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
         [eax+13]:2,[eax+12]:2
 
-        cmp     [buffersize], 1514
+        cmp     [esi + NET_BUFF.length], 1514
         ja      .fail
-        cmp     [buffersize], 60
+        cmp     [esi + NET_BUFF.length], 60
         jb      .fail
 
         movzx   edi, [ebx + device.cur_tx]
@@ -764,11 +772,12 @@ proc transmit stdcall bufferptr, buffersize
   .do_send:
         DEBUGF  1,"Sending now\n"
 
-        mov     eax, [bufferptr]
-        mov     [edi + x_head.skb_ptr], eax
+        mov     [edi + x_head.skb_ptr], esi
+        mov     eax, esi
+        add     eax, [eax + NET_BUFF.offset]
         invoke  GetPhysAddr
         mov     [edi + x_head.buf], eax
-        mov     ecx, [buffersize]
+        mov     ecx, [esi + NET_BUFF.length]
         mov     [edi + x_head.len], cx
         mov     [edi + x_head.status], DSC_OWNER_MAC
 
@@ -783,7 +792,7 @@ proc transmit stdcall bufferptr, buffersize
 
 ; Update stats
         inc     [ebx + device.packets_tx]
-        mov     eax, [buffersize]
+        mov     eax, [esi + NET_BUFF.length]
         add     dword[ebx + device.bytes_tx], eax
         adc     dword[ebx + device.bytes_tx + 4], 0
 
@@ -793,22 +802,25 @@ proc transmit stdcall bufferptr, buffersize
 
   .wait_to_send:
         DEBUGF  1,"Waiting for TX buffer\n"
-
         invoke  GetTimerTicks           ; returns in eax
         lea     edx, [eax + 100]
-     .l2:
+  .l2:
+        mov     esi, [bufferptr]
         test    [edi + x_head.status], DSC_OWNER_MAC
         jz      .do_send
+        popf
         mov     esi, 10
         invoke  Sleep
         invoke  GetTimerTicks
+        pushf
+        cli
         cmp     edx, eax
         jb      .l2
 
         DEBUGF  2,"Send timeout\n"
   .fail:
         DEBUGF  2,"Send failed\n"
-        invoke  KernelFree, [bufferptr]
+        invoke  NetFree, [bufferptr]
         popf
         or      eax, -1
         ret
@@ -890,26 +902,29 @@ int_handler:
         and     ecx, 0xFFF
         sub     ecx, 4                  ; Do not count the CRC
 
+        DEBUGF  1,"packet ptr=0x%x size=%u\n", [edx + x_head.skb_ptr], ecx
+
         ; Update stats
         add     dword[ebx + device.bytes_rx], ecx
         adc     dword[ebx + device.bytes_rx + 4], 0
         inc     dword[ebx + device.packets_rx]
 
-        ; Push packet size and pointer, kernel will need it..
         push    ebx
+        ; Push packet ptr and return addr for Eth_input
         push    .more_RX
+        mov     eax, [edx + x_head.skb_ptr]
+        push    eax
+        mov     [eax + NET_BUFF.length], ecx
+        mov     [eax + NET_BUFF.device], ebx
+        mov     [eax + NET_BUFF.offset], NET_BUFF.data
 
-        push    ecx
-        push    [edx + x_head.skb_ptr]
-
-        DEBUGF  1,"packet ptr=0x%x\n", [edx + x_head.skb_ptr]
-
-        ; reset the RX descriptor
+        ; reset the RX descriptor (alloc new buffer)
         push    edx
-        invoke  KernelAlloc, MAX_BUF_SIZE
+        invoke  NetAlloc, MAX_BUF_SIZE+NET_BUFF.data
         pop     edx
         mov     [edx + x_head.skb_ptr], eax
         invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         mov     [edx + x_head.buf], eax
         mov     [edx + x_head.status], DSC_OWNER_MAC
 
@@ -918,15 +933,14 @@ int_handler:
         and     [ebx + device.cur_rx], RX_RING_SIZE - 1
 
         ; At last, send packet to kernel
-        jmp     [Eth_input]
+        jmp     [EthInput]
 
 
   .no_RX:
-
         test    word[esp], TX_FINISH
         jz      .no_TX
 
-      .loop_tx:
+  .loop_tx:
         movzx   edi, [ebx + device.last_tx]
         shl     edi, 5
         lea     edi, [ebx + device.tx_ring + edi]
@@ -941,7 +955,7 @@ int_handler:
 
         push    [edi + x_head.skb_ptr]
         mov     [edi + x_head.skb_ptr], 0
-        invoke  KernelFree
+        invoke  NetFree
 
         inc     [ebx + device.last_tx]
         and     [ebx + device.last_tx], TX_RING_SIZE - 1
@@ -1106,13 +1120,13 @@ read_mac:
         lea     edi, [ebx + device.mac]
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], MID_0L
-     .mac:
+  .loop:
         in      ax, dx
         stosw
         inc     dx
         inc     dx
         dec     cx
-        jnz     .mac
+        jnz     .loop
 
         DEBUGF  1,"%x-%x-%x-%x-%x-%x\n",\
         [edi-6]:2, [edi-5]:2, [edi-4]:2, [edi-3]:2, [edi-2]:2, [edi-1]:2

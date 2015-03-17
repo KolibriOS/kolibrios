@@ -404,8 +404,7 @@ unload:
         ; - Remove all allocated structures and buffers the card used
 
         or      eax, -1
-
-ret
+        ret
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -628,27 +627,26 @@ reset:
 ;;                                         ;;
 ;; Transmit                                ;;
 ;;                                         ;;
-;; In: buffer pointer in [esp+4]           ;;
-;;     size of buffer in [esp+8]           ;;
-;;     pointer to device structure in ebx  ;;
+;; In: pointer to device structure in ebx  ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-proc transmit stdcall bufferptr, buffersize
+proc transmit stdcall bufferptr
 
         pushf
         cli
 
-        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [buffersize]
-        mov     eax, [bufferptr]
+        mov     esi, [bufferptr]
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
+        lea     eax, [esi + NET_BUFF.data]
         DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
         [eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
         [eax+13]:2,[eax+12]:2
 
-        cmp     [buffersize], 1514
+        cmp     [esi + NET_BUFF.length], 1514
         ja      .fail
-        cmp     [buffersize], 60
+        cmp     [esi + NET_BUFF.length], 60
         jb      .fail
 
 ; check if we own the current discriptor
@@ -662,28 +660,29 @@ proc transmit stdcall bufferptr, buffersize
         jz      .wait_to_send
 
   .send_packet:
+; Set the buffer address
+        set_io  [ebx + device.io_addr], REG_TSAD0
+        mov     [ebx + device.TX_DESC+ecx], esi
+        mov     eax, esi
+        add     eax, [eax + NET_BUFF.offset]
+        invoke  GetPhysAddr
+        out     dx, eax
+
+; And the size of the buffer
+        set_io  [ebx + device.io_addr], REG_TSD0
+        mov     eax, [esi + NET_BUFF.length]
+        or      eax, (ERTXTH shl BIT_ERTXTH)    ; Early threshold
+        out     dx, eax
+
 ; get next descriptor
         inc     [ebx + device.curr_tx_desc]
         and     [ebx + device.curr_tx_desc], NUM_TX_DESC-1
 
 ; Update stats
         inc     [ebx + device.packets_tx]
-        mov     eax, [buffersize]
-        add     dword [ebx + device.bytes_tx], eax
+        mov     ecx, [esi + NET_BUFF.length]
+        add     dword [ebx + device.bytes_tx], ecx
         adc     dword [ebx + device.bytes_tx+4], 0
-
-; Set the buffer address
-        set_io  [ebx + device.io_addr], REG_TSAD0
-        mov     eax, [bufferptr]
-        mov     [ebx + device.TX_DESC+ecx], eax
-        invoke  GetPhysAddr
-        out     dx, eax
-
-; And the size of the buffer
-        set_io  [ebx + device.io_addr], REG_TSD0
-        mov     eax, [buffersize]
-        or      eax, (ERTXTH shl BIT_ERTXTH)    ; Early threshold
-        out     dx, eax
 
         DEBUGF  1, "Packet Sent!\n"
         popf
@@ -710,7 +709,7 @@ proc transmit stdcall bufferptr, buffersize
 
   .fail:
         DEBUGF  2, "transmit failed!\n"
-        invoke  KernelFree, [bufferptr]
+        invoke  NetFree, [bufferptr]
         popf
         or      eax, -1
         ret
@@ -795,18 +794,21 @@ int_handler:
         DEBUGF  1, "Received %u bytes\n", ecx
 
         push    ebx eax ecx
-        invoke  KernelAlloc, ecx                ; Allocate a buffer to put packet into
+        add     ecx, NET_BUFF.data
+        invoke  NetAlloc, ecx                   ; Allocate a buffer to put packet into
         pop     ecx
         test    eax, eax                        ; Test if we allocated succesfully
         jz      .abort
+        mov     [eax + NET_BUFF.length], ecx
+        mov     [eax + NET_BUFF.device], ebx
+        mov     [eax + NET_BUFF.offset], NET_BUFF.data
 
-        mov     edi, eax                        ; Where we will copy too
-
+        lea     edi, [eax + NET_BUFF.data]      ; Where we will copy too
         mov     esi, [esp]                      ; The buffer we will copy from
         add     esi, 4                          ; Dont copy CRC
 
-        push    dword .abort                    ; Kernel will return to this address after EthReceiver
-        push    ecx edi                         ; Save buffer pointer and size, to pass to kernel
+        push    .abort                          ; return addr for Eth_input
+        push    eax                             ; buffer ptr for Eth_input
 
   .copy:
         shr     ecx, 1
@@ -821,7 +823,7 @@ int_handler:
         rep     movsd
   .nd:
 
-        jmp     [Eth_input]                     ; Send it to kernel
+        jmp     [EthInput]                      ; Send it to kernel
 
   .abort:
         pop     eax ebx
@@ -923,7 +925,7 @@ int_handler:
   .no_tok:
         DEBUGF  1, "free transmit buffer 0x%x\n", [ebx + device.TX_DESC+ecx]:8
         push    ecx ebx
-        invoke  KernelFree, [ebx + device.TX_DESC+ecx]
+        invoke  NetFree, [ebx + device.TX_DESC+ecx]
         pop     ebx ecx
         mov     [ebx + device.TX_DESC+ecx], 0
 

@@ -104,7 +104,8 @@ kernel_export \
               NetUnRegDev,\
               NetPtrToNum,\
               NetLinkChanged,\
-              Eth_input,\
-              IPv4_input,\
+              NetAlloc,\
+              NetFree,\
+              EthInput,\
 \
               GetPCIList

@@ -292,7 +292,7 @@ TCP_respond:
         call    IPv4_output
         jz      .error
         pop     esi cx
-        push    edx eax
+        push    eax
 
 ;-----------------------------------------------
 ; Fill in the TCP header by using the socket ptr
@@ -376,7 +376,7 @@ TCP_respond_segment:
         jz      .error
         pop     esi cx
 
-        push    edx eax
+        push    eax
 
 ;---------------------------------------------------
 ; Fill in the TCP header by using a received segment

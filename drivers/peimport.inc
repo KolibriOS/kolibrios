@@ -155,8 +155,9 @@ import core,\
               NetUnRegDev,\
               NetPtrToNum,\
               NetLinkChanged,\
-              Eth_input,\
-              IPv4_input,\
+              EthInput,\
+              NetAlloc,\
+              NetFree,\
 \
               GetPCIList
 end data

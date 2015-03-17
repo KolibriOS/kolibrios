@@ -665,17 +665,18 @@ reset:
 ;***************************************************************************
 ;   Function
 ;      transmit
-; buffer in [esp+4], size in [esp+8], pointer to device struct in ebx
+; buffer in [esp+4], pointer to device struct in ebx
 ;***************************************************************************
 
-proc transmit stdcall buffer_ptr, buffer_size
+proc transmit stdcall buffer_ptr
 
         pushf
         cli
 
         mov     esi, [buffer_ptr]
-        mov     ecx, [buffer_size]
-        DEBUGF  1, "Transmitting packet, buffer:%x, size:%u\n", esi, ecx
+        mov     ecx, [esi + NET_BUFF.length]
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", esi, ecx
+        lea     eax, [esi + NET_BUFF.data]
         DEBUGF  1, "To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [esi+0]:2,[esi+1]:2,[esi+2]:2,[esi+3]:2,[esi+4]:2,[esi+5]:2,[esi+6]:2,[esi+7]:2,[esi+8]:2,[esi+9]:2,[esi+10]:2,[esi+11]:2,[esi+13]:2,[esi+12]:2
 
@@ -686,9 +687,10 @@ proc transmit stdcall buffer_ptr, buffer_size
 
         movzx   edi, [ebx + device.tx_start]
         shl     edi, 8
-        push    cx
+        add     esi, [esi + NET_BUFF.offset]
+        push    ecx
         call    PIO_write
-        pop     cx
+        pop     ecx
 
         set_io  [ebx + device.io_addr], 0
 ;        set_io  [ebx + device.io_addr], P0_COMMAND
@@ -714,18 +716,17 @@ proc transmit stdcall buffer_ptr, buffer_size
         DEBUGF  1, "Packet Sent!\n"
 
         inc     [ebx + device.packets_tx]
-        mov     eax, [buffer_size]
-        add     dword[ebx + device.bytes_tx], eax
+        add     dword[ebx + device.bytes_tx], ecx
         adc     dword[ebx + device.bytes_tx + 4], 0
 
-        invoke  KernelFree, [buffer_ptr]
+        invoke  NetFree, [buffer_ptr]
         popf
         xor     eax, eax
         ret
 
   .err:
         DEBUGF  2, "Transmit error!\n"
-        invoke  KernelFree, [buffer_ptr]
+        invoke  NetFree, [buffer_ptr]
         popf
         or      eax, -1
         ret
@@ -785,14 +786,15 @@ int_handler:
         jz      .no_rx          ; FIXME: Only PIO mode supported for now
 
 ; allocate a buffer
-        invoke  KernelAlloc, ETH_FRAME_LEN
+        invoke  NetAlloc, ETH_FRAME_LEN+NET_BUFF.data
         test    eax, eax
         jz      .rx_fail_2
 
 ; Push return address and packet ptr to stack
         pushd   .no_rx
-        pushd   0               ; Reserve some space for the packet size
         push    eax
+        mov     [eax + NET_BUFF.device], ebx
+        mov     [eax + NET_BUFF.offset], NET_BUFF.data
 
 ; read offset for current packet from device
         set_io  [ebx + device.io_addr], 0
@@ -809,7 +811,7 @@ int_handler:
         mov     al, CMD_PS1
         out     dx, al
         set_io  [ebx + device.io_addr], P1_CURR
-        in      al, dx                          ; get current page in cl
+        in      al, dx                                  ; get current page in cl
         mov     cl, al
 
         set_io  [ebx + device.io_addr], P1_COMMAND
@@ -823,11 +825,11 @@ int_handler:
 
         cmp     cl, ch
         je      .rx_fail
-        movzx   esi, ch                         ; we are using 256 byte pages
-        shl     esi, 8                          ; esi now holds the offset for current packet
+        movzx   esi, ch                                 ; we are using 256 byte pages
+        shl     esi, 8                                  ; esi now holds the offset for current packet
 
-; Get packet header in ecx
-        push    ecx                             ; reserve 4 bytes on stack to put packet header in
+; Write packet header to frame header size field
+        push    ecx
         mov     edi, esp
         mov     cx, 4
         call    PIO_read
@@ -839,8 +841,9 @@ int_handler:
 
 ; calculate packet length in ecx
         shr     ecx, 16
-        sub     ecx, 4                          ; CRC doesnt count as data byte
-        mov     [esp + 8], ecx
+        sub     ecx, 4                                  ; CRC doesnt count as data byte
+        mov     edi, [esp+4]
+        mov     [edi + NET_BUFF.length], ecx
 
 ; check if packet size is ok
         cmp     ecx, ETH_ZLEN
@@ -856,7 +859,7 @@ int_handler:
 
 ; update read and write pointers
         add     esi, 4
-        mov     edi, [esp + 4]
+        add     edi, NET_BUFF.data
 
 ; now check if we can read all data at once (if we cross the end boundary, we need to wrap back to the beginning)
         xor     eax, eax
@@ -894,7 +897,7 @@ int_handler:
         out     dx, al
 
 ; now send the data to the kernel
-        jmp     [Eth_input]
+        jmp     [EthInput]
 
   .rx_fail_3:
         add     esp, 4

@@ -106,8 +106,7 @@ PPPoE_discovery_input:
         popa
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, 'PPPoE_discovery_input: dumping\n'
-        call    NET_packet_free
-        add     esp, 4
+        call    NET_BUFF_free
         ret
 
 
@@ -232,10 +231,8 @@ PPPoE_session_input:
 
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_input: dumping\n"
-        call    NET_packet_free
-        add     esp, 4
+        call    NET_BUFF_free
         ret
-
 
 
 

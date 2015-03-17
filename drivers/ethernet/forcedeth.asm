@@ -35,7 +35,7 @@ entry START
         MAX_DEVICES             = 16
 
         RBLEN                   = 0     ; Receive buffer size: 0=4K 1=8k 2=16k 3=32k 4=64k
-                                        ; FIXME: option 1 and 2 will not allocate buffer correctly causing data loss!
+                                        ; FIXME: option 1 and 2 may allocate a non contiguous buffer causing data loss!
 
         DEBUG                   = 1
         __DEBUG__               = 1
@@ -1371,7 +1371,7 @@ align 4
 init_ring:
 
         DEBUGF  1,"init rings\n"
-        push    eax esi ecx
+        push    esi ecx
 
         mov     [ebx + device.cur_tx], 0
         mov     [ebx + device.last_tx], 0
@@ -1392,10 +1392,13 @@ init_ring:
         lea     esi, [ebx + device.rx_ring]
   .rx_loop:
         push    ecx esi
-        invoke  KernelAlloc, 4096 shl RBLEN             ; push/pop esi not needed, but just in case...
+        invoke  NetAlloc, (4096 shl RBLEN) + NET_BUFF.data             ; push/pop esi not needed, but just in case...
         pop     esi
+        test    eax, eax
+        jz      .out_of_mem
         mov     [esi + RX_RING*sizeof.RxDesc], eax
         invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         mov     [esi + RxDesc.PacketBuffer], eax
         mov     [esi + RxDesc.FlagLen], (4096 shl RBLEN or NV_RX_AVAIL)
         add     esi, sizeof.RxDesc
@@ -1403,8 +1406,14 @@ init_ring:
         dec     ecx
         jnz     .rx_loop
         
-        pop     ecx esi eax
+        pop     ecx esi
 
+        xor     eax, eax
+        ret
+
+  .out_of_mem:
+        add     esp, 12
+        or      eax, -1
         ret
 
 
@@ -1781,41 +1790,42 @@ read_mac:
 ;; Transmit                                ;;
 ;;                                         ;;
 ;; In: buffer pointer in [esp+4]           ;;
-;;     size of buffer in [esp+8]           ;;
 ;;     pointer to device structure in ebx  ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-proc transmit stdcall bufferptr, buffersize
+proc transmit stdcall bufferptr
 
         pushf
         cli
 
-        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [buffersize]
-        mov     eax, [bufferptr]
+        mov     esi, [bufferptr]
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
+        lea     eax, [esi + NET_BUFF.data]
         DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
         [eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
         [eax+13]:2,[eax+12]:2
 
-        cmp     [buffersize], 1514
+        cmp     [esi + NET_BUFF.length], 1514
         ja      .fail
-        cmp     [buffersize], 60
+        cmp     [esi + NET_BUFF.length], 60
         jb      .fail
 
 ; get the descriptor address
         mov     eax, [ebx + device.cur_tx]
         shl     eax, 3                                  ; TX descriptor is 8 bytes.
-        lea     esi, [ebx + device.tx_ring + eax]
+        lea     edi, [ebx + device.tx_ring + eax]
 
         mov     eax, [bufferptr]
-        mov     [esi + TX_RING*sizeof.TxDesc], eax
+        mov     [edi + TX_RING*sizeof.TxDesc], eax
+        add     eax, [eax + NET_BUFF.offset]
         invoke  GetPhysAddr                             ; Does not change esi/ebx :)
-        mov     [esi + TxDesc.PacketBuffer], eax
+        mov     [edi + TxDesc.PacketBuffer], eax
 
-        mov     eax, [buffersize]
-        or      eax, [ebx + device.txflags]
-        mov     [esi + TxDesc.FlagLen], eax
+        mov     ecx, [esi + NET_BUFF.length]
+        or      ecx, [ebx + device.txflags]
+        mov     [edi + TxDesc.FlagLen], ecx
 
         mov     edi, [ebx + device.mmio_addr]
         mov     eax, [ebx + device.desc_ver]
@@ -1829,8 +1839,7 @@ proc transmit stdcall bufferptr, buffersize
 
 ; Update stats
         inc     [ebx + device.packets_tx]
-        mov     eax, [buffersize]
-        add     dword[ebx + device.bytes_tx], eax
+        add     dword[ebx + device.bytes_tx], ecx
         adc     dword[ebx + device.bytes_tx + 4], 0
 
         popf
@@ -1839,7 +1848,7 @@ proc transmit stdcall bufferptr, buffersize
 
   .fail:
         DEBUGF  2,"Send failed\n"
-        invoke  KernelFree, [bufferptr]
+        invoke  NetFree, [bufferptr]
         popf
         or      eax, -1
         ret
@@ -1896,33 +1905,33 @@ int_handler:
         mov     cx, sizeof.RxDesc
         mul     cx
         lea     esi, [ebx + device.rx_ring + eax]
-        mov     eax, [esi + RxDesc.FlagLen]
+        mov     ecx, [esi + RxDesc.FlagLen]
 
-        test    eax, NV_RX_AVAIL        ; still owned by hardware
+        test    ecx, NV_RX_AVAIL        ; still owned by hardware
         jnz     .no_rx
 
         cmp     [ebx + device.desc_ver], DESC_VER_1
         jne     @f
-        test    eax, NV_RX_DESCRIPTORVALID
+        test    ecx, NV_RX_DESCRIPTORVALID
         jz      .no_rx
         jmp     .next
   @@:
-        test    eax, NV_RX2_DESCRIPTORVALID
+        test    ecx, NV_RX2_DESCRIPTORVALID
         jz      .no_rx
 
   .next:
         cmp     dword[ebx + device.desc_ver], DESC_VER_1
         jne     @f
-        and     eax, LEN_MASK_V1
+        and     ecx, LEN_MASK_V1
         jmp     .next2
    @@:
-        and     eax, LEN_MASK_V2
+        and     ecx, LEN_MASK_V2
 
   .next2:
-        DEBUGF  1,"Received %u bytes\n", eax
+        DEBUGF  1,"Received %u bytes\n", ecx
 
         ; Update stats
-        add     dword[ebx + device.bytes_rx], eax
+        add     dword[ebx + device.bytes_rx], ecx
         adc     dword[ebx + device.bytes_rx + 4], 0
         inc     dword[ebx + device.packets_rx]
 
@@ -1930,14 +1939,18 @@ int_handler:
         push    ebx
         push    .more_rx
 
+        mov     eax, [esi + RX_RING*sizeof.RxDesc]
         push    eax
-        push    dword[esi + RX_RING*sizeof.RxDesc]
+        mov     [eax + NET_BUFF.device], ebx
+        mov     [eax + NET_BUFF.length], ecx
+        mov     [eax + NET_BUFF.offset], NET_BUFF.data
         DEBUGF  1,"packet ptr=0x%x\n", [esi + RX_RING*sizeof.RxDesc]
 
         ; Allocate new buffer for this descriptor
-        invoke  KernelAlloc, 4096 shl RBLEN
+        invoke  NetAlloc, (4096 shl RBLEN) + NET_BUFF.data
         mov     [esi + RX_RING*sizeof.RxDesc], eax
         invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         mov     [esi + RxDesc.PacketBuffer], eax
         mov     [esi + RxDesc.FlagLen], (4096 shl RBLEN or NV_RX_AVAIL)
 
@@ -1945,7 +1958,7 @@ int_handler:
         inc     [ebx + device.cur_rx]
         and     [ebx + device.cur_rx], (RX_RING-1)
 
-        jmp     [Eth_input]
+        jmp     [EthInput]
 
   .no_rx:
         test    eax, IRQ_RX_ERROR
@@ -1999,7 +2012,7 @@ int_handler:
         DEBUGF  1,"Freeing buffer 0x%x\n", [esi + TX_RING*sizeof.TxDesc]:8
         push    dword[esi + TX_RING*sizeof.TxDesc]
         mov     dword[esi + TX_RING*sizeof.TxDesc], 0
-        invoke  KernelFree
+        invoke  NetFree
 
         inc     [ebx + device.last_tx]
         and     [ebx + device.last_tx], TX_RING - 1

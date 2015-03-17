@@ -473,8 +473,7 @@ unload:
         ; - Remove all allocated structures and buffers the card used
 
         or      eax, -1
-
-ret
+        ret
 
 
 ;-------
@@ -627,6 +626,8 @@ reset:
         out     dx, eax
 
         call    init_ring
+        test    eax, eax
+        jnz     .err
 
 ; Initialize other registers.
 ; Configure the PCI bus bursts and FIFO thresholds.
@@ -637,7 +638,7 @@ reset:
         jne     @f
         or      [ebx + device.bcrvalue], 0x200       ; set PROG bit
         or      [ebx + device.crvalue], 0x02000000   ; set enhanced bit
-       @@:
+  @@:
         or      [ebx + device.crvalue], RxEnable + TxThreshold + TxEnable
 
         call    set_rx_mode
@@ -676,13 +677,18 @@ reset:
         xor     eax, eax
         ret
 
+  .err:
+        DEBUGF  2, "Error!\n"
+        or      eax, -1
+        ret
+
 
 
 
 align 4
 init_ring:
 
-        DEBUGF  1,"initializing rx and tx ring\n"
+        DEBUGF  1, "initializing rx and tx ring\n"
 
 ; Initialize all Rx descriptors
         lea     esi, [ebx + device.rx_desc]
@@ -690,7 +696,7 @@ init_ring:
         mov     ecx, NUM_RX_DESC
   .rx_desc_loop:
         mov     [esi + descriptor.status], RXOWN
-        mov     [esi + descriptor.control], 1536 shl RBSShift
+        mov     [esi + descriptor.control], 1514 shl RBSShift
 
         lea     eax, [esi + sizeof.descriptor]
         mov     [esi + descriptor.next_desc_logical], eax
@@ -698,11 +704,14 @@ init_ring:
         invoke  GetPhysAddr
         mov     [esi + descriptor.next_desc], eax
 
-        invoke  KernelAlloc, 1536
-        pop     esi
-        push    esi
+        invoke  NetAlloc, 1514+NET_BUFF.data
+        pop     esi ecx
+        test    eax, eax
+        jz      .out_of_mem
+        push    ecx esi
         mov     [esi + descriptor.skbuff], eax
         invoke  GetPgAddr
+        add     eax, NET_BUFF.data
         pop     esi ecx
         mov     [esi + descriptor.buffer], eax
 
@@ -746,10 +755,15 @@ init_ring:
         pop     esi
         mov     [esi - sizeof.descriptor + descriptor.next_desc], eax
 
-        set_io  [ebx + device.io_addr],   0
-        set_io  [ebx + device.io_addr],   TXLBA
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], TXLBA
         out     dx, eax
 
+        xor     eax, eax
+        ret
+
+  .out_of_mem:
+        or      eax, -1
         ret
 
 
@@ -924,25 +938,25 @@ getlinktype:
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-proc transmit stdcall bufferptr, buffersize
+proc transmit stdcall bufferptr
 
         pushf
         cli
 
-        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [buffersize]
-        mov     eax, [bufferptr]
+        mov     esi, [bufferptr]
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
+        lea     eax, [esi + NET_BUFF.data]
         DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
         [eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
         [eax+13]:2,[eax+12]:2
 
-        cmp     [buffersize], 1514
+        cmp     [esi + NET_BUFF.length], 1514
         ja      .fail
-        cmp     [buffersize], 60
+        cmp     [esi + NET_BUFF.length], 60
         jb      .fail
 
         mov     esi, [ebx + device.cur_tx]
-
         test    [esi + descriptor.status], TXOWN
         jnz     .fail
 
@@ -951,10 +965,12 @@ proc transmit stdcall bufferptr, buffersize
 
         mov     eax, [bufferptr]
         mov     [esi + descriptor.skbuff], eax
+        add     eax, [eax + NET_BUFF.offset]
         invoke  GetPhysAddr
         mov     [esi + descriptor.buffer], eax
 
-        mov     eax, [buffersize]
+        mov     eax, [bufferptr]
+        mov     eax, [eax + NET_BUFF.length]
         mov     ecx, eax
         shl     eax, PKTSShift               ; packet size
         shl     ecx, TBSShift
@@ -965,8 +981,9 @@ proc transmit stdcall bufferptr, buffersize
 
 ; Update stats
         inc     [ebx + device.packets_tx]
-        mov     eax, [buffersize]
-        add     dword[ebx + device.bytes_tx], eax
+        mov     eax, [bufferptr]
+        mov     ecx, [eax + NET_BUFF.length]
+        add     dword[ebx + device.bytes_tx], ecx
         adc     dword[ebx + device.bytes_tx + 4], 0
 
 ; TX Poll
@@ -982,7 +999,7 @@ proc transmit stdcall bufferptr, buffersize
 
   .fail:
         DEBUGF  2,"Transmit failed\n"
-        invoke  KernelFree, [bufferptr]
+        invoke  NetFree, [bufferptr]
         popf
         or      eax, -1
         ret
@@ -1068,26 +1085,32 @@ int_handler:
         mov     ecx, [esi + descriptor.status]
         shr     ecx, FLNGShift
         sub     ecx, 4                  ; we dont need CRC
-        push    ecx
         DEBUGF  1,"Received %u bytes\n", ecx
+        mov     eax, [esi + descriptor.skbuff]
+        push    eax
+        mov     [eax + NET_BUFF.length], ecx
+        mov     [eax + NET_BUFF.device], ebx
+        mov     [eax + NET_BUFF.offset], NET_BUFF.data
 
 ; Update stats
         add     dword[ebx + device.bytes_rx], ecx
         adc     dword[ebx + device.bytes_rx + 4], 0
         inc     [ebx + device.packets_rx]
 
-        push    [esi + descriptor.skbuff]
-        jmp     [Eth_input]
+        jmp     [EthInput]
 
   .rx_complete:
         pop     ebx
         mov     esi, [ebx + device.cur_rx]
-        mov     [esi + descriptor.control], 1536 shl RBSShift
+        mov     [esi + descriptor.control], 1514 shl RBSShift
         push    esi
-        invoke  KernelAlloc, 1536
+        invoke  NetAlloc, 1514+NET_BUFF.data
         pop     esi
+;        test    eax, eax
+;        jz      .rx_loop
         mov     [esi + descriptor.skbuff], eax
-        invoke  GetPgAddr
+        invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         mov     [esi + descriptor.buffer], eax
         mov     [esi + descriptor.status], RXOWN
 
@@ -1122,7 +1145,7 @@ int_handler:
         je      .skip_this_one
         mov     [esi + descriptor.skbuff], 0
         DEBUGF  1,"freeing buffer: 0x%x\n", eax
-        invoke  KernelFree, eax
+        invoke  NetFree, eax
   .skip_this_one:
         mov     esi, [esi + descriptor.next_desc_logical]
         loop    .tx_loop

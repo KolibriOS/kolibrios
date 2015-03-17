@@ -131,7 +131,6 @@ macro ICMP_init {
 ;   and insert packets into sockets when needed
 ;
 ;  IN:  Pointer to buffer in [esp]
-;       size of buffer in [esp+4]
 ;       ebx = pointer to device struct
 ;       ecx = ICMP Packet size
 ;       esi = ptr to ICMP Packet data
@@ -143,10 +142,9 @@ macro ICMP_init {
 align 4
 ICMP_input:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP_input:\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP_input\n"
 
-; First, check the checksum (altough some implementations ignore it)
-
+; Check the checksum
         push    esi ecx
         push    [esi + ICMP_header.Checksum]
         mov     [esi + ICMP_header.Checksum], 0
@@ -155,100 +153,34 @@ ICMP_input:
         call    checksum_2
         pop     si
         cmp     dx, si
-        pop     ecx edx
+        pop     ecx esi
         jne     .checksum_mismatch
 
-; Check packet type
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP_input: Checksum OK\n"
 
-        cmp     [edx + ICMP_header.Type], ICMP_ECHO             ; Is this an echo request?
-        jne     .check_sockets
-
-; Update stats (and validate device ptr)
+; Ualidate device ptr
+        mov     eax, edi
         call    NET_ptr_to_num4
         cmp     edi, -1
         je      .dump
+
+; Update stats
         inc     [ICMP_PACKETS_RX + edi]
 
-; We well re-use the packet so we can create the response as fast as possible
-; Notice: this only works on pure ethernet
+; Is this an echo request?
+        cmp     [esi + ICMP_header.Type], ICMP_ECHO
+        je      .echo_request
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "got echo request\n"
-        mov     [edx + ICMP_header.Type], ICMP_ECHOREPLY        ; Change Packet type to reply
-
-        mov     esi, [esp]                                      ; Start of buffer
-        cmp     ebx, LOOPBACK_DEVICE
-        je      .loopback
-
-; FIXME: dont assume device is an ethernet device!
-
-; exchange dest and source address in IP header
-; exchange dest and source MAC in ETH header
-        push    dword [esi + ETH_header.DstMAC]
-        push    dword [esi + ETH_header.SrcMAC]
-        pop     dword [esi + ETH_header.DstMAC]
-        pop     dword [esi + ETH_header.SrcMAC]
-        push    word [esi + ETH_header.DstMAC + 4]
-        push    word [esi + ETH_header.SrcMAC + 4]
-        pop     word [esi + ETH_header.DstMAC + 4]
-        pop     word [esi + ETH_header.SrcMAC + 4]
-        add     esi, sizeof.ETH_header-4
-
-  .loopback:
-        add     esi, 4
-        push    [esi + IPv4_header.SourceAddress]
-        push    [esi + IPv4_header.DestinationAddress]
-        pop     [esi + IPv4_header.SourceAddress]
-        pop     [esi + IPv4_header.DestinationAddress]
-
-; Recalculate ip header checksum
-        movzx   ecx, [esi + IPv4_header.VersionAndIHL]          ; Calculate IP Header length by using IHL field
-        and     ecx, 0x0f
-        shl     cx, 2
-        mov     edi, ecx                                        ; IP header length
-        mov     eax, edx                                        ; ICMP packet start addr
-
-        push    esi                                             ; Calculate the IP checksum
-        xor     edx, edx                                        ;
-        call    checksum_1                                      ;
-        call    checksum_2                                      ;
-        pop     esi                                             ;
-        mov     [esi + IPv4_header.HeaderChecksum], dx          ;
-
-; Recalculate ICMP CheckSum
-        movzx   ecx, [esi + IPv4_header.TotalLength]            ; Find length of IP Packet
-        xchg    ch, cl                                          ;
-        sub     ecx, edi                                        ; IP packet length - IP header length = ICMP packet length
-
-        mov     esi, eax                                        ; Calculate ICMP checksum
-        xor     edx, edx                                        ;
-        call    checksum_1                                      ;
-        call    checksum_2                                      ;
-        mov     [eax + ICMP_header.Checksum], dx                ;
-
-; Transmit the packet (notice that packet ptr and packet size have been on stack since start of the procedure!)
-        call    [ebx + NET_DEVICE.transmit]
-        test    eax, eax
-        jnz     @f
-        call    NET_ptr_to_num4
-        inc     [ICMP_PACKETS_TX + edi]
-       @@:
-        ret
-
-
-
-
-       .check_sockets:
-        ; Look for an open ICMP socket
-
+; Look for an open ICMP socket
         pusha
         mov     ecx, socket_mutex
         call    mutex_lock
         popa
 
-        mov     esi, [edi]              ; ipv4 source address
+        mov     edx, [eax]              ; ipv4 source address
         mov     eax, net_sockets
   .try_more:
-;        mov      , [edx + ICMP_header.Identifier]
+;        mov      , [esi + ICMP_header.Identifier]
   .next_socket:
         mov     eax, [eax + SOCKET.NextPtr]
         or      eax, eax
@@ -260,17 +192,11 @@ ICMP_input:
         cmp     [eax + SOCKET.Protocol], IP_PROTO_ICMP
         jne     .next_socket
 
-        cmp     [eax + IP_SOCKET.RemoteIP], esi
+        cmp     [eax + IP_SOCKET.RemoteIP], edx
         jne     .next_socket
 
 ;        cmp     [eax + ICMP_SOCKET.Identifier],
 ;        jne     .next_socket
-
-; Update stats (and validate device ptr)
-        call    NET_ptr_to_num4
-        cmp     edi, -1
-        je      .dump_
-        inc     [ICMP_PACKETS_RX + edi]
 
         pusha
         mov     ecx, socket_mutex
@@ -284,11 +210,82 @@ ICMP_input:
         call    mutex_lock
         popa
 
-        mov     esi, edx
         jmp     SOCKET_input
 
-  .dump_:
 
+
+  .echo_request:
+
+; We'll reuse the packet so we can create the response as fast as possible
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP echo request\n"
+
+; Change Packet type to reply
+        mov     [esi + ICMP_header.Type], ICMP_ECHOREPLY
+
+        mov     eax, [esp]
+        lea     esi, [eax + NET_BUFF.data]
+
+; Check frame type
+        cmp     [eax + NET_BUFF.type], NET_BUFF_ETH
+        jne     .not_ethernet
+
+; exchange dest and source MAC in ETH header
+        push    dword [esi + ETH_header.DstMAC]
+        push    dword [esi + ETH_header.SrcMAC]
+        pop     dword [esi + ETH_header.DstMAC]
+        pop     dword [esi + ETH_header.SrcMAC]
+        push    word [esi + ETH_header.DstMAC + 4]
+        push    word [esi + ETH_header.SrcMAC + 4]
+        pop     word [esi + ETH_header.DstMAC + 4]
+        pop     word [esi + ETH_header.SrcMAC + 4]
+        add     esi, sizeof.ETH_header
+
+  .not_ethernet:
+; Exchange dest and source address in IP header
+        push    [esi + IPv4_header.SourceAddress]
+        push    [esi + IPv4_header.DestinationAddress]
+        pop     [esi + IPv4_header.SourceAddress]
+        pop     [esi + IPv4_header.DestinationAddress]
+
+; Calculate IP header length
+        movzx   ecx, [esi + IPv4_header.VersionAndIHL]
+        and     ecx, 0x0f
+        shl     cx, 2
+        mov     edi, ecx                        ; put it in edi for later
+
+; Calculate IP checksum
+        mov     eax, esi
+        mov     [eax + IPv4_header.HeaderChecksum], 0
+        xor     edx, edx
+        call    checksum_1
+        call    checksum_2
+        mov     [eax + IPv4_header.HeaderChecksum], dx
+
+; Calculate ICMP packet length
+        movzx   ecx, [eax + IPv4_header.TotalLength]
+        xchg    ch, cl
+        sub     ecx, edi                        ; IP packet length - IP header length = ICMP packet length
+
+; Calculate ICMP checkSum
+        mov     eax, esi
+        mov     [esi + ICMP_header.Checksum], 0
+        xor     edx, edx
+        call    checksum_1
+        call    checksum_2
+        mov     [eax + ICMP_header.Checksum], dx
+
+; Transmit the frame
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP transmitting reply\n"
+        call    [ebx + NET_DEVICE.transmit]
+        test    eax, eax
+        jnz     @f
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP transmit failed\n"
+        call    NET_ptr_to_num4
+        inc     [ICMP_PACKETS_TX + edi]
+       @@:
+        ret
+
+  .dump_:
         pusha
         mov     ecx, socket_mutex
         call    mutex_unlock
@@ -297,16 +294,12 @@ ICMP_input:
         DEBUGF  DEBUG_NETWORK_ERROR, "ICMP_input: no socket found\n"
         jmp     .dump
 
-
   .checksum_mismatch:
         DEBUGF  DEBUG_NETWORK_ERROR, "ICMP_input: checksum mismatch\n"
 
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP_input: dumping\n"
-
-        call    NET_packet_free
-        add     esp, 4 ; pop (balance stack)
-
+        call    NET_BUFF_free
         ret
 
 
@@ -400,7 +393,6 @@ ICMP_output_raw:
         jz      .exit
 
         pop     esi
-        push    edx
         push    eax
 
         push    edi ecx
@@ -426,7 +418,6 @@ ICMP_output_raw:
         ret
   .exit:
         DEBUGF  DEBUG_NETWORK_ERROR, "Creating ICMP Packet failed\n"
-        add     esp, 4
         ret
 
 

@@ -491,7 +491,7 @@ proc service_proc stdcall, ioctl:dword
 
   .destroy:
         ; todo: reset device into virgin state
-
+        add     eax, NET_BUFF.data
         dec     [devices]
   .err:
         DEBUGF  2,"Error, removing all data !\n"
@@ -521,9 +521,8 @@ unload:
         ; - call unregister function in kernel
         ; - Remove all allocated structures and buffers the card used
 
-        or      eax,-1
-
-ret
+        or      eax, -1
+        ret
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -868,6 +867,8 @@ reset:
         movsw
 
         call    init_ring
+        test    eax, eax
+        jnz     .fail
 
         mov     edx, [ebx + device.io_addr]   ; init ring destroys edx
 
@@ -923,6 +924,7 @@ reset:
 
         DEBUGF  1,"reset complete\n"
         xor     eax, eax
+  .fail:
         ret
 
 
@@ -938,10 +940,13 @@ init_ring:
         mov     ecx, RX_RING_SIZE
   .rx_init:
         push    ecx
-        invoke  KernelAlloc, PKT_BUF_SZ
+        invoke  NetAlloc, PKT_BUF_SZ+NET_BUFF.data
         pop     ecx
+        test    eax, eax
+        jz      .out_of_mem
         mov     [edi + descriptor.virtual], eax
         invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         mov     [edi + descriptor.base], eax
         mov     [edi + descriptor.length], - PKT_BUF_SZ
         mov     [edi + descriptor.status], RXSTAT_OWN
@@ -967,6 +972,13 @@ init_ring:
         mov     [ebx + device.last_tx], 0
         mov     [ebx + device.cur_rx], 0
 
+        xor     eax, eax
+        ret
+
+  .out_of_mem:
+        DEBUGF  2,"Out of memory!\n"
+
+        or      eax, -1
         ret
 
 
@@ -980,38 +992,40 @@ init_ring:
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-proc transmit stdcall bufferptr, buffersize
+proc transmit stdcall bufferptr
 
         pushf
         cli
 
-        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [buffersize]
-        mov     eax, [bufferptr]
+        mov     esi, [bufferptr]
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
+        lea     eax, [esi + NET_BUFF.data]
         DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
         [eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
         [eax+13]:2,[eax+12]:2
 
-        cmp     [buffersize], 1514
+        cmp     [esi + NET_BUFF.length], 1514
         ja      .fail
-        cmp     [buffersize], 60
+        cmp     [esi + NET_BUFF.length], 60
         jb      .fail
 
 ; check descriptor
         lea     edi, [ebx + device.tx_ring]
-        movzx   eax, [ebx + device.cur_tx]
-        shl     eax, 4
-        add     edi, eax
+        movzx   ecx, [ebx + device.cur_tx]
+        shl     ecx, 4
+        add     edi, ecx
 
         test    [edi + descriptor.status], TXCTL_OWN
         jnz     .fail
 ; descriptor is free, use it
-        mov     eax, [bufferptr]
-        mov     [edi + descriptor.virtual], eax
+        mov     [edi + descriptor.virtual], esi
+        mov     eax, esi
+        add     eax, [eax + NET_BUFF.offset]
         invoke  GetPhysAddr
         mov     [edi + descriptor.base], eax
 ; set length
-        mov     eax, [buffersize]
+        mov     eax, [esi + NET_BUFF.length]
         neg     eax
         mov     [edi + descriptor.length], ax
 ; put to transfer queue
@@ -1030,7 +1044,7 @@ proc transmit stdcall bufferptr, buffersize
 
 ; Update stats
         inc     [ebx + device.packets_tx]
-        mov     eax, [buffersize]
+        mov     eax, [esi + NET_BUFF.length]
         add     dword[ebx + device.bytes_tx], eax
         adc     dword[ebx + device.bytes_tx + 4], 0
 
@@ -1041,7 +1055,7 @@ proc transmit stdcall bufferptr, buffersize
 
   .fail:
         DEBUGF  2, "Send failed\n"
-        invoke  KernelFree, [bufferptr]
+        invoke  NetFree, [bufferptr]
         popf
         or      eax, -1
         ret
@@ -1124,8 +1138,11 @@ int_handler:
         push    ebx
 
         push    .rx_loop                                ; return address
-        push    ecx                                     ; packet size
-        push    [edi + descriptor.virtual]              ; packet address
+        mov     eax, [edi + descriptor.virtual]
+        push    eax                                     ; packet address
+        mov     [eax + NET_BUFF.length], ecx
+        mov     [eax + NET_BUFF.device], ebx
+        mov     [eax + NET_BUFF.offset], NET_BUFF.data
 
 ; Update stats
         add     dword[ebx + device.bytes_rx], ecx
@@ -1133,16 +1150,27 @@ int_handler:
         inc     [ebx + device.packets_rx]
 
 ; now allocate a new buffer
-        invoke  KernelAlloc, PKT_BUF_SZ                 ; Allocate a buffer for the next packet
+        invoke  NetAlloc, PKT_BUF_SZ+NET_BUFF.data      ; Allocate a buffer for the next packet
+        test    eax, eax
+        jz      .out_of_mem
         mov     [edi + descriptor.virtual], eax         ; set virtual address
         invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         mov     [edi + descriptor.base], eax            ; and physical address
         mov     [edi + descriptor.status], RXSTAT_OWN   ; give it back to PCnet controller
 
         inc     [ebx + device.cur_rx]                   ; set next receive descriptor
         and     [ebx + device.cur_rx], RX_RING_SIZE - 1
 
-        jmp     [Eth_input]
+        jmp     [EthInput]
+
+  .out_of_mem:
+        DEBUGF  2,"Out of memory!\n"
+
+        inc     [ebx + device.cur_rx]                   ; set next receive descriptor
+        and     [ebx + device.cur_rx], RX_RING_SIZE - 1
+
+        jmp     [EthInput]
 
   .not_receive:
         pop     ax
@@ -1167,7 +1195,7 @@ int_handler:
 
         DEBUGF  1,"Removing packet %x from memory\n", eax
 
-        invoke  KernelFree, eax
+        invoke  NetFree, eax
 
         inc     [ebx + device.last_tx]
         and     [ebx + device.last_tx], TX_RING_SIZE - 1

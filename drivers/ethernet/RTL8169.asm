@@ -175,10 +175,10 @@ include '../netdrv.inc'
         DSB_FSbit               = 0x20000000
         DSB_LSbit               = 0x10000000
 
-        RX_BUF_SIZE             = 1536          ; Rx Buffer size
+        RX_BUF_SIZE             = 1514          ; Rx Buffer size
 
 ; max supported gigabit ethernet frame size -- must be at least (dev->mtu+14+4)
-        MAX_ETH_FRAME_SIZE      = 1536
+        MAX_ETH_FRAME_SIZE      = 1514
 
         TX_FIFO_THRESH          = 256           ; In bytes
 
@@ -200,7 +200,7 @@ include '../netdrv.inc'
 
         ETH_HDR_LEN             = 14
         DEFAULT_MTU             = 1500
-        DEFAULT_RX_BUF_LEN      = 1536
+        DEFAULT_RX_BUF_LEN      = 1514
 
 
 ;ifdef   JUMBO_FRAME_SUPPORT
@@ -662,6 +662,9 @@ reset:
         DEBUGF  1,"resetting\n"
 
         call    init_ring
+        test    eax, eax
+        jnz     .err
+
         call    hw_start
 
 ; clear packet/byte counters
@@ -678,7 +681,10 @@ reset:
         xor     eax, eax
         ret
 
-
+  .err:
+        DEBUGF  2,"failed!\n"
+        or      eax, -1
+        ret
 
 
 
@@ -800,9 +806,12 @@ init_ring:
         mov     ecx, NUM_RX_DESC
   .loop:
         push    ecx
-        invoke  KernelAlloc, RX_BUF_SIZE
+        invoke  NetAlloc, RX_BUF_SIZE+NET_BUFF.data
+        test    eax, eax
+        jz      .err
         mov     dword [edi + rx_desc.buf_soft_addr], eax
         invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         mov     dword [edi + rx_desc.buf_addr], eax
         mov     [edi + rx_desc.status], DSB_OWNbit or RX_BUF_SIZE
         add     edi, sizeof.rx_desc
@@ -811,8 +820,13 @@ init_ring:
         jnz     .loop
         or      [edi - sizeof.rx_desc + rx_desc.status], DSB_EORbit
 
+        xor     eax, eax
         ret
 
+  .err:
+        pop     eax
+        or      eax, -1
+        ret
 
 align 4
 hw_start:
@@ -990,21 +1004,22 @@ write_mac:
 ;
 ;***************************************************************************
 
-proc transmit stdcall bufferptr, buffersize
+proc transmit stdcall bufferptr
 
         pushf
         cli
 
-        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [buffersize]
-        mov     eax, [bufferptr]
+        mov     esi, [bufferptr]
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
+        lea     eax, [esi + NET_BUFF.data]
         DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
         [eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
         [eax+13]:2,[eax+12]:2
 
-        cmp     [buffersize], 1514
+        cmp     [esi + NET_BUFF.length], 1514
         ja      .fail
-        cmp     [buffersize], 60
+        cmp     [esi + NET_BUFF.length], 60
         jb      .fail
 
 ;----------------------------------
@@ -1026,15 +1041,16 @@ proc transmit stdcall bufferptr, buffersize
 ; Program the packet pointer
 
         mov     eax, [bufferptr]
+        mov     ecx, [eax + NET_BUFF.length]
         mov     [esi + tx_desc.buf_soft_addr], eax
+        add     eax, [eax + NET_BUFF.offset]
         invoke  GetPhysAddr
         mov     dword [esi + tx_desc.buf_addr], eax
 
 ;------------------------
 ; Program the packet size
 
-        mov     eax, [buffersize]
-    @@:
+        mov     eax, ecx
         or      eax, DSB_OWNbit or DSB_FSbit or DSB_LSbit
         cmp     [ebx + device.cur_tx], NUM_TX_DESC - 1
         jne     @f
@@ -1060,8 +1076,7 @@ proc transmit stdcall bufferptr, buffersize
 ; Update stats
 
         inc     [ebx + device.packets_tx]
-        mov     eax, [buffersize]
-        add     dword [ebx + device.bytes_tx], eax
+        add     dword [ebx + device.bytes_tx], ecx
         adc     dword [ebx + device.bytes_tx + 4], 0
 
         popf
@@ -1072,7 +1087,7 @@ proc transmit stdcall bufferptr, buffersize
         DEBUGF  2,"Descriptor is still in use!\n"
   .fail:
         DEBUGF  2,"Transmit failed\n"
-        invoke  KernelFree, [bufferptr]
+        invoke  NetFree, [bufferptr]
         popf
         or      eax, -1
         ret
@@ -1139,38 +1154,44 @@ int_handler:
         lea     esi, [ebx + device.rx_ring + eax]
 
         DEBUGF  1,"RxDesc.status = 0x%x\n", [esi + rx_desc.status]
-        mov     eax, [esi + rx_desc.status]
-        test    eax, DSB_OWNbit ;;;
-        jnz     .no_own
+        mov     ecx, [esi + rx_desc.status]
+        test    ecx, DSB_OWNbit ;;;
+        jnz     .rx_return
 
         DEBUGF  1,"cur_rx = %u\n", [ebx + device.cur_rx]
 
-        test    eax, SD_RxRES
+        test    ecx, SD_RxRES
         jnz     .rx_return      ;;;;; RX error!
 
         push    ebx
         push    .check_more
-        and     eax, 0x00001FFF
-        add     eax, -4                         ; we dont need CRC
+        and     ecx, 0x00001FFF
+        add     ecx, -4                         ; we dont need CRC
+        DEBUGF  1,"data length = %u\n", ecx
+        mov     eax, [esi + rx_desc.buf_soft_addr]
         push    eax
-        DEBUGF  1,"data length = %u\n", ax
+        mov     [eax + NET_BUFF.length], ecx
+        mov     [eax + NET_BUFF.device], ebx
+        mov     [eax + NET_BUFF.offset], NET_BUFF.data
 
-        ; Update stats
+;-------------
+; Update stats
 
         add     dword [ebx + device.bytes_rx], eax
         adc     dword [ebx + device.bytes_rx + 4], 0
         inc     [ebx + device.packets_rx]
 
-        pushd   [esi + rx_desc.buf_soft_addr]
+;----------------------
+; Allocate a new buffer
 
-        ; Allocate a new buffer
-
-        invoke  KernelAlloc, RX_BUF_SIZE
+        invoke  NetAlloc, RX_BUF_SIZE+NET_BUFF.data
         mov     [esi + rx_desc.buf_soft_addr], eax
         invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         mov     dword [esi + rx_desc.buf_addr], eax
 
-        ; reset OWN bit
+;---------------
+; re set OWN bit
 
         mov     eax, DSB_OWNbit or RX_BUF_SIZE
         cmp     [ebx + device.cur_rx], NUM_RX_DESC - 1
@@ -1179,15 +1200,15 @@ int_handler:
     @@:
         mov     [esi + rx_desc.status], eax
 
-        ; Update rx ptr
+;--------------
+; Update rx ptr
 
         inc     [ebx + device.cur_rx]
         and     [ebx + device.cur_rx], NUM_RX_DESC - 1
 
-        jmp     [Eth_input]
+        jmp     [EthInput]
   .rx_return:
-        DEBUGF  1,"RX error!\n"
-  .no_own:
+
         pop     ax
   .no_rx:
 
@@ -1196,30 +1217,31 @@ int_handler:
 
         test    ax, ISB_TxOK or ISB_TxErr or ISB_TxDescUnavail
         jz      .no_tx
+        push    ax
 
         DEBUGF  1,"TX done!\n"
-  .txloop:
-        mov     esi, [ebx + device.last_tx]
-        imul    esi, sizeof.tx_desc
-        lea     esi, [ebx + device.tx_ring + esi]
 
+        mov     ecx, NUM_TX_DESC
+        lea     esi, [ebx + device.tx_ring]
+  .txloop:
         cmp     dword [esi + tx_desc.buf_soft_addr], 0
-        je      .no_tx
+        jz      .maybenext
 
         test    [esi + tx_desc.status], DSB_OWNbit
-        jnz     .no_tx
+        jnz     .maybenext
 
-        DEBUGF  1,"Freeing up TX desc: 0x%x\n", esi
-        DEBUGF  1,"buff: 0x%x\n", [esi + tx_desc.buf_soft_addr]
-        push    eax
-        push    dword [esi + tx_desc.buf_soft_addr]
+        push    ecx
+        DEBUGF  1,"Freeing up TX desc: %x\n", esi
+        invoke  NetFree, [esi + tx_desc.buf_soft_addr]
+        pop     ecx
         and     dword [esi + tx_desc.buf_soft_addr], 0
-        invoke  KernelFree
-        pop     eax
 
-        inc     [ebx + device.last_tx]
-        and     [ebx + device.last_tx], NUM_TX_DESC-1
-        jmp     .txloop
+  .maybenext:
+        add     esi, sizeof.tx_desc
+        dec     ecx
+        jnz     .txloop
+
+        pop     ax
   .no_tx:
 
         test    ax, ISB_LinkChg
@@ -1333,10 +1355,10 @@ dd 0x7cf00000, 0x28800000, 27, name_27
 dd 0x7cf00000, 0x28a00000, 28, name_27
 
 ; 8168C family.
-dd 0x7cf00000, 0x3cb00000, 24, name_23
-dd 0x7cf00000, 0x3c900000, 23, name_23
+dd 0x7cf00000, 0x3cb00000, 24, name_18
+dd 0x7cf00000, 0x3c900000, 23, name_18
 dd 0x7cf00000, 0x3c800000, 18, name_18
-dd 0x7c800000, 0x3c800000, 24, name_23
+dd 0x7c800000, 0x3c800000, 24, name_18
 dd 0x7cf00000, 0x3c000000, 19, name_19
 dd 0x7cf00000, 0x3c200000, 20, name_19
 dd 0x7cf00000, 0x3c300000, 21, name_19
@@ -1401,7 +1423,7 @@ name_19 db "RTL8168c/8111c",0
 ;name_20 db "RTL8168c/8111c",0
 ;name_21 db "RTL8168c/8111c",0
 ;name_22 db "RTL8168c/8111c",0
-name_23 db "RTL8168cp/8111cp",0
+;name_23 db "RTL8168cp/8111cp",0
 ;name_24 db "RTL8168cp/8111cp",0
 name_25 db "RTL8168d/8111d",0
 ;name_26 db "RTL8168d/8111d",0

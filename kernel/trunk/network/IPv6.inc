@@ -147,9 +147,7 @@ IPv6_input:
 
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv6_input - dumping\n"
-        call    kernel_free
-        add     esp, 4
-
+        call    NET_BUFF_free
         ret
 
   .dump_options:

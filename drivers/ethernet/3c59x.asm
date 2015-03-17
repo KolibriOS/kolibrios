@@ -289,9 +289,7 @@ include '../netdrv.inc'
         RxBroadcast             = 4
         RxProm                  = 8
 
-; RX/TX buffers sizes
-        MAX_ETH_PKT_SIZE        = 1536          ; max packet size
-        MAX_ETH_FRAME_SIZE      = 1520          ; size of ethernet frame + bytes alignment
+        MAX_ETH_FRAME_SIZE      = 1514
 
 
 struct  tx_desc
@@ -806,6 +804,9 @@ end if
         call    set_active_port
 
         call    create_rx_ring
+        test    eax, eax
+        jnz     .err
+
         call    rx_reset
         call    tx_reset
 
@@ -816,11 +817,13 @@ end if
         mov     ecx, 6
         rep     stosd
 
-
+        xor     eax, eax
         ret
 
-
-
+  .err:
+        DEBUGF  2,"reset failed\n"
+        or      eax, -1
+        ret
 
 
 align 4
@@ -901,7 +904,8 @@ start_device:
         mov     [ebx + device.mtu], 1514
 
 ; Set link state to unknown
-        mov     [ebx + device.state], ETH_LINK_UNKNOWN  
+        mov     [ebx + device.state], ETH_LINK_UNKNOWN
+        xor     eax, eax
 
         ret
 
@@ -997,10 +1001,13 @@ create_rx_ring:
         mov     [edx + rx_desc.next_ptr], edi
 
         push    ecx edx
-        invoke  KernelAlloc, MAX_ETH_FRAME_SIZE
+        invoke  NetAlloc, MAX_ETH_FRAME_SIZE+NET_BUFF.data
         pop     edx ecx
+        test    eax, eax
+        jz      .out_of_mem
         mov     [esi + rx_desc.realaddr], eax
-        invoke  GetPgAddr
+        invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         mov     [esi + rx_desc.frag_addr], eax
         and     [esi + rx_desc.pkt_status], 0
         mov     [esi + rx_desc.frag_len], MAX_ETH_FRAME_SIZE or (1 shl 31)
@@ -1014,6 +1021,11 @@ create_rx_ring:
         dec     ecx
         jnz     .loop
 
+        xor     eax, eax
+        ret
+
+  .out_of_mem:
+        or      eax, -1
         ret
 
 
@@ -1039,15 +1051,14 @@ try_link_detect:
         DEBUGF  1,"Trying to detect link\n"
 
 ; create self-directed packet
-        invoke  KernelAlloc, 20 ; create a buffer for the self-directed packet
+        invoke  NetAlloc, 20+NET_BUFF.data     ; create a buffer for the self-directed packet
         test    eax, eax
         jz      .fail
 
-        pushd   20              ; Packet parameters for device.transmit
-        push    eax             ;
+        push    eax
+        mov     [eax + NET_BUFF.length], 20
 
-        mov     edi, eax
-
+        lea     edi, [eax + NET_BUFF.data]
         lea     esi, [ebx + device.mac]
         movsw
         movsd
@@ -1092,10 +1103,12 @@ try_link_detect:
         jz      @f
         or      byte [ebx + device.internal_link+1], 100b
        @@:
+        xor     eax, eax
         ret
 
   .fail:
         DEBUGF  1,"No link detected!\n"
+        or      eax, -1
         ret
 
 
@@ -1135,7 +1148,7 @@ try_phy:
 
 ; wait for reset to complete
         mov     esi, 2000
-        invoke  Sleep      ; 2s
+        invoke  Sleep           ; 2s FIXME
         mov     eax, [esp]
         call    mdio_read       ; returns with window #4
         test    ah, 0x80
@@ -1144,7 +1157,7 @@ try_phy:
 
 ; wait for a while after reset
         mov     esi, 20
-        invoke  Sleep      ; 20ms
+        invoke  Sleep           ; 20ms
         mov     eax, [esp]
         mov     al , MII_BMSR
         call    mdio_read        ; returns with window #4
@@ -1407,14 +1420,15 @@ test_packet:
         call    tx_reset
 
 ; create self-directed packet
-        invoke  KernelAlloc, 20 ; create a buffer for the self-directed packet
+        invoke  NetAlloc, 20 + NET_BUFF.data   ; create a buffer for the self-directed packet
         test    eax, eax
         jz      .fail
 
-        pushd   20              ; Packet parameters for device.transmit
-        push    eax             ;
+        push    eax
+        mov     [eax + NET_BUFF.length], 20
+;        mov     [eax + NET_BUFF.device], ebx
 
-        mov     edi, eax
+        lea     edi, [eax + NET_BUFF.data]
         lea     esi, [ebx + device.mac]
         movsw
         movsd
@@ -1428,7 +1442,7 @@ test_packet:
         call    [ebx + device.transmit]
 
 ; wait for 2s
-        mov     esi, 2000
+        mov     esi, 2000       ; FIXME
         invoke  Sleep
 
 ; check if self-directed packet is received
@@ -2124,26 +2138,26 @@ check_tx_status:
 ;; Transmit (vortex)                       ;;
 ;;                                         ;;
 ;; In: buffer pointer in [esp+4]           ;;
-;;     size of buffer in [esp+8]           ;;
 ;;     pointer to device structure in ebx  ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-proc vortex_transmit stdcall bufferptr, buffersize
+proc vortex_transmit stdcall bufferptr
 
         pushf
         cli
 
-        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [buffersize]
-        mov     eax, [bufferptr]
+        mov     esi, [bufferptr]
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
+        lea     eax, [esi + NET_BUFF.data]
         DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
         [eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
         [eax+13]:2,[eax+12]:2
 
-        cmp     [buffersize], 1514
+        cmp     [esi + NET_BUFF.length], 1514
         ja      .fail
-        cmp     [buffersize], 60
+        cmp     [esi + NET_BUFF.length], 60
         jb      .fail
 
         call    check_tx_status
@@ -2153,20 +2167,25 @@ proc vortex_transmit stdcall bufferptr, buffersize
         set_io  [ebx + device.io_addr], REG_COMMAND
         mov     ax, SELECT_REGISTER_WINDOW+7
         out     dx, ax
+
 ; check for master operation in progress
         set_io  [ebx + device.io_addr], REG_MASTER_STATUS
         in      ax, dx
         test    ah, 0x80
         jnz     .fail ; no DMA for sending
+
 ; program frame address to be sent
         set_io  [ebx + device.io_addr], REG_MASTER_ADDRESS
-        mov     eax, [bufferptr]
+        mov     eax, esi
+        add     eax, [eax + NET_BUFF.offset]
         invoke  GetPhysAddr
         out     dx, eax
+
 ; program frame length
         set_io  [ebx + device.io_addr], REG_MASTER_LEN
-        mov     eax, [buffersize]
+        mov     eax, [esi + NET_BUFF.length]
         out     dx, ax
+
 ; start DMA Down
         set_io  [ebx + device.io_addr], REG_COMMAND
         mov     ax, (10100b shl 11) + 1 ; StartDMADown
@@ -2178,7 +2197,7 @@ proc vortex_transmit stdcall bufferptr, buffersize
 
   .fail:
         DEBUGF  2,"Send failed\n"
-        invoke  KernelFree, [bufferptr]
+        invoke  NetFree, [bufferptr]
         popf
         or      eax, -1
         ret
@@ -2190,38 +2209,38 @@ endp
 ;; Transmit (boomerang)                    ;;
 ;;                                         ;;
 ;; In: buffer pointer in [esp+4]           ;;
-;;     size of buffer in [esp+8]           ;;
 ;;     pointer to device structure in ebx  ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-proc boomerang_transmit stdcall bufferptr, buffersize
+proc boomerang_transmit stdcall bufferptr
 
         pushf
         cli
 
-        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [buffersize]
-        mov     eax, [bufferptr]
+        mov     esi, [bufferptr]
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [esi + NET_BUFF.length]
+        lea     eax, [esi + NET_BUFF.data]
         DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
         [eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
         [eax+13]:2,[eax+12]:2
 
-        cmp     [buffersize], 1514
+        cmp     [esi + NET_BUFF.length], 1514
         ja      .fail
-        cmp     [buffersize], 60
+        cmp     [esi + NET_BUFF.length], 60
         jb      .fail
 
         call    check_tx_status                         ; Reset TX engine if needed
 
 ; calculate descriptor address
-        mov     esi, [ebx + device.curr_tx]
-        DEBUGF  1,"Previous TX desc: %x\n", esi
-        add     esi, sizeof.tx_desc
+        mov     edi, [ebx + device.curr_tx]
+        DEBUGF  1,"Previous TX desc: %x\n", edi
+        add     edi, sizeof.tx_desc
         lea     ecx, [ebx + device.tx_desc_buffer + (NUM_TX_DESC)*sizeof.tx_desc]
-        cmp     esi, ecx
+        cmp     edi, ecx
         jb      @f
-        lea     esi, [ebx + device.tx_desc_buffer]      ; Wrap if needed
+        lea     edi, [ebx + device.tx_desc_buffer]      ; Wrap if needed
        @@:
         DEBUGF  1,"Using TX desc: %x\n", esi
 
@@ -2239,31 +2258,32 @@ proc boomerang_transmit stdcall bufferptr, buffersize
 
 ; update statistics
         inc     [ebx + device.packets_tx]
-        mov     ecx, [buffersize]
+        mov     ecx, [esi + NET_BUFF.length]
         add     dword [ebx + device.bytes_tx], ecx
         adc     dword [ebx + device.bytes_tx + 4], 0
 
 ; program DPD
-        and     [esi + tx_desc.next_ptr], 0
+        and     [edi + tx_desc.next_ptr], 0
         mov     eax, [bufferptr]
-        mov     [esi + tx_desc.realaddr], eax
+        mov     [edi + tx_desc.realaddr], eax
+        add     eax, [eax + NET_BUFF.offset]
         invoke  GetPhysAddr
-        mov     [esi + tx_desc.frag_addr], eax
-        mov     ecx, [buffersize]
+        mov     [edi + tx_desc.frag_addr], eax
+;;;        mov     ecx, [buffersize]
         or      ecx, 0x80000000         ; last fragment flag
-        mov     [esi + tx_desc.frag_len], ecx
+        mov     [edi + tx_desc.frag_len], ecx
 
-        mov     ecx, [buffersize]       ; packet size
+;;;        mov     ecx, [buffersize]       ; packet size
         or      ecx, 0x80008000         ; set OWN bit + transmission complete notification flag
 ;        test    byte [ebx + device.has_hwcksm], 0xff
 ;        jz      @f
 ;        or      ecx, (1 shl 26)         ; set AddTcpChecksum
 ;@@:
-        mov     [esi + tx_desc.frame_start_hdr], ecx
-        DEBUGF  1,"TX desc: lin=%x phys=%x len=%x start hdr=%x\n", [esi+tx_desc.realaddr]:8, [esi+tx_desc.frag_addr]:8, [esi+tx_desc.frag_len]:8, [esi+tx_desc.frame_start_hdr]:8
+        mov     [edi + tx_desc.frame_start_hdr], ecx
+        DEBUGF  1,"TX desc: lin=%x phys=%x len=%x start hdr=%x\n", [edi+tx_desc.realaddr]:8, [edi+tx_desc.frag_addr]:8, [edi+tx_desc.frag_len]:8, [edi+tx_desc.frame_start_hdr]:8
 
 ; calculate physical address of tx descriptor
-        mov     eax, esi
+        mov     eax, edi
         invoke  GetPhysAddr
         cmp     [ebx + device.dn_list_ptr_cleared], 0
         je      .add_to_list
@@ -2318,14 +2338,14 @@ proc boomerang_transmit stdcall bufferptr, buffersize
         out     dx, ax
 
   .finish:
-        mov     [ebx + device.curr_tx], esi
+        mov     [ebx + device.curr_tx], edi
         popf
         xor     eax, eax
         ret
 
   .fail:
         DEBUGF  2,"Send failed\n"
-        invoke  KernelFree, [bufferptr]
+        invoke  NetFree, [bufferptr]
         popf
         or      eax, -1
         ret
@@ -2493,7 +2513,7 @@ int_vortex:
 
   .check_length:
         and     eax, 0x1fff
-        cmp     eax, MAX_ETH_PKT_SIZE
+        cmp     eax, MAX_ETH_FRAME_SIZE
         ja      .discard_frame ; frame is too long discard it
 
   .check_dma:
@@ -2513,15 +2533,18 @@ int_vortex:
   .read_frame:
 ; program buffer address to read in
         push    ecx
-        invoke  KernelAlloc, MAX_ETH_FRAME_SIZE
+        invoke  NetAlloc, MAX_ETH_FRAME_SIZE + NET_BUFF.data
         pop     ecx
         test    eax, eax
         jz      .finish
 
         push    .discard_frame
-        push    ecx
         push    eax
-;        zero_to_dma eax
+        mov     [eax + NET_BUFF.length], ecx
+        mov     [eax + NET_BUFF.device], ebx
+        mov     [eax + NET_BUFF.offset], NET_BUFF.data
+        invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         set_io  [ebx + device.io_addr], REG_MASTER_ADDRESS
         out     dx, eax
 
@@ -2543,7 +2566,7 @@ int_vortex:
         jnz     .dma_loop
 
 ; registrate the received packet to kernel
-        jmp     Eth_input
+        jmp     [EthInput]
 
 ; discard the top frame received
   .discard_frame:
@@ -2555,7 +2578,7 @@ int_vortex:
   .finish:
 
 
-.noRX:
+  .noRX:
 
         test    ax, DMADone
         jz      .noDMA
@@ -2579,11 +2602,11 @@ int_vortex:
 
 
 
-.noDMA:
+  .noDMA:
 
 
 
-.ACK:
+  .ACK:
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], REG_COMMAND
         mov     ax, AckIntr + IntReq + IntLatch
@@ -2678,8 +2701,11 @@ int_boomerang:
         DEBUGF  1, "Received %u bytes in buffer %x\n", ecx, [esi + rx_desc.realaddr]:8
 
         push    dword .loop ;.finish
-        push    ecx
-        push    [esi + rx_desc.realaddr]
+        mov     eax, [esi + rx_desc.realaddr]
+        push    eax
+        mov     [eax + NET_BUFF.length], ecx
+        mov     [eax + NET_BUFF.device], ebx
+        mov     [eax + NET_BUFF.offset], NET_BUFF.data
 
 ; update statistics
         inc     [ebx + device.packets_rx]
@@ -2687,9 +2713,10 @@ int_boomerang:
         adc     dword [ebx + device.bytes_rx + 4], 0
 
 ; update rx descriptor (Alloc new buffer for next packet)
-        invoke  KernelAlloc, MAX_ETH_FRAME_SIZE
+        invoke  NetAlloc, MAX_ETH_FRAME_SIZE + NET_BUFF.data
         mov     [esi + rx_desc.realaddr], eax
         invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         mov     [esi + rx_desc.frag_addr], eax
         and     [esi + rx_desc.pkt_status], 0
         mov     [esi + rx_desc.frag_len], MAX_ETH_FRAME_SIZE or (1 shl 31)
@@ -2704,7 +2731,7 @@ int_boomerang:
         mov     [ebx + device.curr_rx], esi
         DEBUGF  1, "Next RX desc: %x\n", esi
 
-        jmp     [Eth_input]
+        jmp     [EthInput]
   .loop:
 
         mov     ebx, [esp]
@@ -2742,7 +2769,7 @@ int_boomerang:
 
         and     [esi+tx_desc.frame_start_hdr], 0
         push    ecx
-        invoke  KernelFree, [esi+tx_desc.realaddr]
+        invoke  NetFree, [esi+tx_desc.realaddr]
         pop     ecx
 
   .maybenext:
