@@ -264,7 +264,7 @@ stack_init:
 ; Init the network drivers list
         xor     eax, eax
         mov     edi, NET_RUNNING
-        mov     ecx, (NET_DEVICES_MAX + 2)
+        mov     ecx, (NET_DEVICES_MAX + 1)
         rep stosd
 
         ETH_init
