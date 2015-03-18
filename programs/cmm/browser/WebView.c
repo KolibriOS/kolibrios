@@ -32,14 +32,14 @@
 char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.11";
+	char version[]=" Текстовый браузер 1.12";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.11";
+	char version[]=" Text-based Browser 1.12";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -200,8 +200,9 @@ void main()
 				break;
 			case evKey:
 				key = GetKey();		
-				if (address_box.flags & 0b10) && (key!=ASCII_KEY_ENTER)  
+				if (address_box.flags & 0b10)  
 				{
+					if (key==ASCII_KEY_ENTER) Scan(key); else
 					if (key<>0x0d) && (key<>183) && (key<>184) {EAX=key<<8; edit_box_key stdcall(#address_box);}
 				}
 				else Scan(key);
