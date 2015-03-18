@@ -5,22 +5,24 @@
 #ifdef LANG_RUS
 	?define EDIT_FILE_ASSOCIATIONS "Редактировать ассоциации файлов"
 	?define TITLE_SETT "Настройки"
-	?define SET_1 "Выводить названия класса устройств"
-	?define SET_2 "Показывать имена файлов не меняя регистр"
-	?define SET_3 "Высота строки в списке"
-	?define SET_4 "Уведомлять о завершении копирования"
+	?define SHOW_DEVICE_CLASS "Выводить названия класса устройств"
+	?define SHOW_REAL_NAMES "Показывать имена файлов не меняя регистр"
+	?define LIST_LINE_HEIGHT "Высота строки в списке"
+	?define NOTIFY_COPY_END "Уведомлять о завершении копирования"
 	?define CANCEL_T "Отмена"
 	?define APPLY_T "Применить"
 #else
 	?define EDIT_FILE_ASSOCIATIONS "Edit file associations"
 	?define TITLE_SETT "Settings"
-	?define SET_1 "Show device class name"
-	?define SET_2 "Show real file names without changing case"
-	?define SET_3 "List line height"
-	?define SET_4 "To notify the completion of the copy"
+	?define SHOW_DEVICE_CLASS "Show device class name"
+	?define SHOW_REAL_NAMES "Show real file names without changing case"
+	?define LIST_LINE_HEIGHT "List line height"
+	?define NOTIFY_COPY_END "Notify when copying finished"
 	?define CANCEL_T "Cancel"
 	?define APPLY_T "Apply"
 #endif
+
+char confir_section = "Config";
 
 
 void settings_dialog()
@@ -65,7 +67,7 @@ void settings_dialog()
 				key = GetKey();
 				if (key==27)
 				{
-					active_settings=0;
+					active_settings = 0;
 					action_buf = 300;
 					ExitProcess();
 				}
@@ -74,11 +76,8 @@ void settings_dialog()
 		case evReDraw:
 				DefineAndDrawWindow(Form.left + 100, 150, 300, 210+GetSkinHeight(),0x34,sc.work,TITLE_SETT);
 				GetProcessInfo(#settings_form, SelfInfo);
-
 				DrawSettingsCheckBoxes();
-
-				DrawFlatButton(9, 127, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
-
+				DrawFlatButton(9, 116, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
 				DrawFlatButton(128, settings_form.cheight - 34, 70, 22, 10, 0xE4DFE1, APPLY_T);
 				DrawFlatButton(208, settings_form.cheight - 34, 70, 22, 11, 0xE4DFE1, CANCEL_T);
 	}
@@ -86,34 +85,34 @@ void settings_dialog()
 
 void DrawSettingsCheckBoxes()
 {
-	CheckBox2(10, 11, 20, SET_1,  show_dev_name);
-	CheckBox2(10, 33, 21, SET_2,  real_files_names_case);
-	CheckBox2(10, 55, 22, SET_4,  info_after_copy);
-	MoreLessBox(10, 82, 18, 25, 26, sc.work_graph, 0xD2D3D3, 0x000000, files.line_h, SET_3);
+	CheckBox2(10, 11, 20, SHOW_DEVICE_CLASS,  show_dev_name);
+	CheckBox2(10, 33, 21, SHOW_REAL_NAMES,  real_files_names_case);
+	CheckBox2(10, 55, 22, NOTIFY_COPY_END,  info_after_copy);
+	MoreLessBox(10, 82, 18, 25, 26, sc.work_graph, 0xD2D3D3, 0x000000, files.line_h, LIST_LINE_HEIGHT);
 }
 
 
 void LoadIniSettings()
 {
-	ini_get_color stdcall (eolite_ini_path, "Config", "SelectionColor", 0x94AECE);
+	ini_get_color stdcall (eolite_ini_path, #confir_section, "SelectionColor", 0x94AECE);
 	edit2.shift_color = EAX;
 	col_selec = EAX;
-	ini_get_int stdcall (eolite_ini_path, "Config", "LineHeight", 18);
+	ini_get_int stdcall (eolite_ini_path, #confir_section, "LineHeight", 18);
 	files.line_h = EAX;
-	ini_get_int stdcall (eolite_ini_path, "Config", "ShowDeviceName", 1);
+	ini_get_int stdcall (eolite_ini_path, #confir_section, "ShowDeviceName", 1);
 	show_dev_name = EAX;
-	ini_get_int stdcall (eolite_ini_path, "Config", "RealFileNamesCase", 0);
+	ini_get_int stdcall (eolite_ini_path, #confir_section, "RealFileNamesCase", 0);
 	real_files_names_case = EAX;
-	ini_get_int stdcall (eolite_ini_path, "Config", "InfoAfterCopy", 0);
+	ini_get_int stdcall (eolite_ini_path, #confir_section, "InfoAfterCopy", 0);
 	info_after_copy = EAX;
 }
 
 void SaveIniSettings()
 {
-	ini_set_int stdcall (eolite_ini_path, "Config", "ShowDeviceName", show_dev_name);
-	ini_set_int stdcall (eolite_ini_path, "Config", "RealFileNamesCase", real_files_names_case);
-	ini_set_int stdcall (eolite_ini_path, "Config", "InfoAfterCopy", info_after_copy);
-	ini_set_int stdcall (eolite_ini_path, "Config", "LineHeight", files.line_h);
+	ini_set_int stdcall (eolite_ini_path, #confir_section, "ShowDeviceName", show_dev_name);
+	ini_set_int stdcall (eolite_ini_path, #confir_section, "RealFileNamesCase", real_files_names_case);
+	ini_set_int stdcall (eolite_ini_path, #confir_section, "InfoAfterCopy", info_after_copy);
+	ini_set_int stdcall (eolite_ini_path, #confir_section, "LineHeight", files.line_h);
 }
 
 

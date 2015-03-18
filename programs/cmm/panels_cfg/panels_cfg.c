@@ -271,7 +271,7 @@ void PanelCfg_CheckBox(dword x, y, id, text, byte value) {
 }
 
 void PanelCfg_MoreLessBox(dword x, y, id_more, id_less; byte value; dword text) {
-	MoreLessBox(x, y, 18, id_more, id_less, sc.work_graph, sc.work_button, sc.work_button_text, value, text);
+	MoreLessBox(x, y, 18, id_more, id_less, sc.work_graph, sc.work_button, sc.work_text, value, text);
 }
 
 

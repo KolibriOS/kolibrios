@@ -132,9 +132,6 @@ void DrawSystemDiscs()
 			case 't':
 				dev_icon=4;
 				strcpy(#disc_name, "RAM disk ");
-				DefineButton(17+143,i*16+74,16,16,dev_name[4]+130-48+BT_HIDE+BT_NOFRAME,0xFFFFFF);
-				WriteText(45+121,i*16+79,0x80,0xD63535,"-");
-				WriteText(45+121,i*16+79+1,0x80,0xBC2424,"-");
 				break;
 			default:
 				dev_icon=3; //по-умолчанию устройство выглядит как жестяк но это неправильно

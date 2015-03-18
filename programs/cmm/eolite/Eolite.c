@@ -95,12 +95,11 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.65"
-#define ABOUT_TITLE "Eolite v2.65"
+#define TITLE "Eolite File Manager v2.66"
+#define ABOUT_TITLE "Eolite v2.66"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
-char tmp_disk_del_param[]="d0";
 struct path_string { char Item[4096]; };
 
 byte active_about=0;
@@ -337,15 +336,6 @@ void main()
 						Open_Dir(#path,WITH_REDRAW);
 						pause(5);
 						DrawRectangle(17,id-100*16+74,159,16, 0xFFFFFF);
-						break;
-				case 130...160:
-						tmp_disk_del_param[1] = id - 130 + 48;
-						RunProgram("/sys/tmpdisk", #tmp_disk_del_param);
-						pause(10);
-						GetSystemDiscs();
-						Open_Dir(#path,WITH_REDRAW);
-						DrawLeftPanel();
-						//m.get();
 						break;
 			}
 			break;

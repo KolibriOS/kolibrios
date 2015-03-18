@@ -54,12 +54,14 @@
 	else if (is_checked == 1)
 	{
 		DrawRectangle(x+1, y+1, w-2, h-2, 0xffffff);
-		DrawBar(x+2, y+2, w-3, h-3, graph_color);
+		DrawRectangle(x+2, y+2, w-4, h-4, 0xffffff);
+		DrawBar(x+3, y+3, w-5, h-5, graph_color);
 	}
 	else if (is_checked == 2) //not active
 	{
 		DrawRectangle(x+1, y+1, w-2, h-2, 0xffffff);
-		DrawBar(x+2, y+2, w-3, h-3, 0x888888);	
+		DrawRectangle(x+2, y+2, w-4, h-4, 0xffffff);
+		DrawBar(x+3, y+3, w-5, h-5, 0x888888);
 	}
 }
 
@@ -69,7 +71,7 @@
 	DrawRectangle(x, y, VALUE_FIELD_W, s, color_border);
 	DrawRectangle3D(x+1, y+1, VALUE_FIELD_W-2, s-2, 0xDDDddd, 0xffffff);
 	DrawBar(x+2, y+2, VALUE_FIELD_W-3, s-3, 0xffffff);
-	WriteText(x+6, s / 2 + y -3, 0x80, color_text, itoa(value));
+	WriteText(x+6, s / 2 + y -3, 0x80, 0x000000, itoa(value));
 
 	DrawCaptButton(VALUE_FIELD_W + x + 1,     y, s, s, bt_id_more, color_button, color_text, "+");
 	DrawCaptButton(VALUE_FIELD_W + x + s + 2, y, s, s, bt_id_less, color_button, color_text, "-");
