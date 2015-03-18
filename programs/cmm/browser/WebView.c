@@ -32,14 +32,14 @@
 char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.1";
+	char version[]=" Текстовый браузер 1.11";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.1";
+	char version[]=" Text-based Browser 1.11";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -199,16 +199,14 @@ void main()
 				Scan(btn);
 				break;
 			case evKey:
-				key = GetKey();
-				
-				if (address_box.flags & 0b10) SWITCH(key)
-					{ CASE 52: CASE 53: CASE 54: CASE 180: CASE 181: CASE 122: goto _EDIT_MARK; } 
-
-				Scan(key);
-				
-				_EDIT_MARK:
-				if (key<>0x0d) && (key<>183) && (key<>184) {EAX=key<<8; edit_box_key stdcall(#address_box);}
+				key = GetKey();		
+				if (address_box.flags & 0b10) && (key!=ASCII_KEY_ENTER)  
+				{
+					if (key<>0x0d) && (key<>183) && (key<>184) {EAX=key<<8; edit_box_key stdcall(#address_box);}
+				}
+				else Scan(key);
 				break;
+
 			case evReDraw:
 				if (action_buf) Scan(action_buf);
 				DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2,WIN_W,WIN_H,0x73,col_bg,0,0);
@@ -388,6 +386,7 @@ void Scan(int id)
 			}
 			return;
 
+		case ASCII_KEY_BS:
 		case BACK:
 			if (!BrowserHistory.GoBack()) return;
 			OpenPage();
