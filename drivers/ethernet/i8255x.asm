@@ -28,6 +28,8 @@ entry START
 
         MAX_DEVICES             = 16
 
+        TX_RING_SIZE            = 16
+
         DEBUG                   = 1
         __DEBUG__               = 1
         __DEBUG_LEVEL__         = 2             ; 1 = verbose, 2 = errors only
@@ -122,18 +124,20 @@ struct  rxfd
 
 ends
 
-struc   txfd {
+struct  txfd
 
-        .status         dw ?
-        .command        dw ?
-        .link           dd ?
-        .desc_addr      dd ?
-        .count          dd ?
+        status          dw ?
+        command         dw ?
+        link            dd ?
+        desc_addr       dd ?
+        count           dd ?
 
-        .buf_addr0      dd ?
-        .buf_size0      dd ?
+        buf_addr        dd ?
+        buf_size        dd ?
+        virt_addr       dd ?
+                        dd ?            ; alignment
 
-}
+ends
 
 struc   confcmd {
 
@@ -172,12 +176,13 @@ struct  device          ETH_DEVICE
         pci_bus         dd ?
         pci_dev         dd ?
         rx_desc         dd ?
-        last_tx_buffer  dd ?
+        cur_tx          dd ?
+        last_tx         dd ?
         ee_bus_width    db ?
         irq_line        db ?
 
         rb 0x100 - ($ and 0xff) ; align 256
-        txfd            txfd
+        tx_ring         rb TX_RING_SIZE*sizeof.txfd
 
         rb 0x100 - ($ and 0xff) ; align 256
         confcmd         confcmd
@@ -466,31 +471,37 @@ reset:
         set_io  [ebx + device.io_addr], reg_scb_ptr
         out     dx, eax
 
-        mov     ax, INT_MASK + CU_STATSADDR
         set_io  [ebx + device.io_addr], reg_scb_cmd
+        mov     ax, CU_STATSADDR or INT_MASK
         out     dx, ax
         call    cmd_wait
 
-;-----------------
-; setup RX
+;------------------------
+; setup RX base addr to 0
 
         set_io  [ebx + device.io_addr], reg_scb_ptr
         xor     eax, eax
         out     dx, eax
 
         set_io  [ebx + device.io_addr], reg_scb_cmd
-        mov     ax, INT_MASK + RX_ADDR_LOAD
+        mov     ax, RX_ADDR_LOAD or INT_MASK
         out     dx, ax
         call    cmd_wait
 
 ;-----------------------------
 ; Create RX and TX descriptors
 
-        call    create_ring
+        call    init_rx_ring
         test    eax, eax
         jz      .error
 
-; RX start
+        call    init_tx_ring
+
+
+;---------
+; Start RX
+
+        DEBUGF  1, "Starting RX"
 
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], reg_scb_ptr
@@ -499,11 +510,12 @@ reset:
         add     eax, NET_BUFF.data
         out     dx, eax
 
-        mov     ax, INT_MASK + RX_START
         set_io  [ebx + device.io_addr], reg_scb_cmd
+        mov     ax, RX_START or INT_MASK
         out     dx, ax
         call    cmd_wait
 
+;----------
 ; Set-up TX
 
         set_io  [ebx + device.io_addr], reg_scb_ptr
@@ -511,15 +523,39 @@ reset:
         out     dx, eax
 
         set_io  [ebx + device.io_addr], reg_scb_cmd
-        mov     ax, INT_MASK + CU_CMD_BASE
+        mov     ax, CU_CMD_BASE or INT_MASK
         out     dx, ax
         call    cmd_wait
 
-;  --------------------
+;-------------------------
+; Individual address setup
+
+        mov     [ebx + device.confcmd.command], CmdIASetup + Cmdsuspend
+        mov     [ebx + device.confcmd.status], 0
+        lea     eax, [ebx + device.tx_ring]
+        invoke  GetPhysAddr
+        mov     [ebx + device.confcmd.link], eax
+        lea     edi, [ebx + device.confcmd.data]
+        lea     esi, [ebx + device.mac]
+        movsd
+        movsw
+
+        set_io  [ebx + device.io_addr], reg_scb_ptr
+        lea     eax, [ebx + device.confcmd.status]
+        invoke  GetPhysAddr
+        out     dx, eax
+
+        set_io  [ebx + device.io_addr], reg_scb_cmd
+        mov     ax, CU_START or INT_MASK
+        out     dx, ax
+        call    cmd_wait
+
+;-------------
+; Configure CU
 
         mov     [ebx + device.confcmd.command], CmdConfigure + Cmdsuspend
         mov     [ebx + device.confcmd.status], 0
-        lea     eax, [ebx + device.txfd.status]
+        lea     eax, [ebx + device.confcmd.status]
         invoke  GetPhysAddr
         mov     [ebx + device.confcmd.link], eax
 
@@ -535,46 +571,17 @@ reset:
         mov     byte[ebx + device.confcmd.data + 19], 0x80
         mov     byte[ebx + device.confcmd.data + 21], 0x05
 
-        mov     [ebx + device.txfd.command], CmdIASetup
-        mov     [ebx + device.txfd.status], 0
-        lea     eax, [ebx + device.confcmd.status]
-        invoke  GetPhysAddr
-        mov     [ebx + device.txfd.link], eax
-
-;;; copy in our MAC
-
-        lea     edi, [ebx + device.txfd.desc_addr]
-        lea     esi, [ebx + device.mac]
-        movsd
-        movsw
-
         set_io  [ebx + device.io_addr], reg_scb_ptr
-        lea     eax, [ebx + device.txfd.status]
+        lea     eax, [ebx + device.confcmd.status]
         invoke  GetPhysAddr
         out     dx, eax
 
-; Start CU & enable ints
-
         set_io  [ebx + device.io_addr], reg_scb_cmd
-        mov     ax, CU_START
+        mov     ax, CU_START                            ; expect Interrupts from now on
         out     dx, ax
         call    cmd_wait
 
-;-----------------------
-; build txfd structure (again!)
-
-        lea     eax, [ebx + device.txfd.status]
-        invoke  GetPhysAddr
-        mov     [ebx + device.txfd.link], eax
-        mov     [ebx + device.txfd.count], 0x02208000
-        lea     eax, [ebx + device.txfd.buf_addr0]
-        invoke  GetPhysAddr
-        mov     [ebx + device.txfd.desc_addr], eax
-
-; Indicate that we have successfully reset the card
-
         DEBUGF  1,"Reset complete\n"
-
         mov     [ebx + device.mtu], 1514
 
 ; Set link state to unknown
@@ -589,7 +596,7 @@ reset:
 
 
 align 4
-create_ring:
+init_rx_ring:
 
         DEBUGF  1,"Creating ring\n"
 
@@ -609,21 +616,44 @@ create_ring:
         mov     [esi + sizeof.NET_BUFF + rxfd.count], 0
         mov     [esi + sizeof.NET_BUFF + rxfd.size], 1528
 
-;-----------------------
-; build txfd structure
-
-        lea     eax, [ebx + device.txfd.status]
-        invoke  GetPhysAddr
-        mov     [ebx + device.txfd.link], eax
-        mov     [ebx + device.txfd.count], 0x01208000
-        lea     eax, [ebx + device.txfd.buf_addr0]
-        invoke  GetPhysAddr
-        mov     [ebx + device.txfd.desc_addr], eax
+        ret
 
   .out_of_mem:
 
         ret
 
+
+
+
+align 4
+init_tx_ring:
+
+        DEBUGF  1,"Creating TX ring\n"
+
+        lea     esi, [ebx + device.tx_ring]
+        mov     eax, esi
+        invoke  GetPhysAddr
+        mov     ecx, TX_RING_SIZE
+  .next_desc:
+        mov     [esi + txfd.status], 0
+        mov     [esi + txfd.command], 0
+        lea     edx, [eax + txfd.buf_addr]
+        mov     [esi + txfd.desc_addr], edx
+        add     eax, sizeof.txfd
+        mov     [esi + txfd.link], eax
+        mov     [esi + txfd.count], 0x01208000          ; One buffer, 0x20 bytes of transmit threshold, end of frame
+        add     esi, sizeof.txfd
+        dec     ecx
+        jnz     .next_desc
+
+        lea     eax, [ebx + device.tx_ring]
+        invoke  GetPhysAddr
+        mov     dword[ebx + device.tx_ring + sizeof.txfd*(TX_RING_SIZE-1) + txfd.link], eax
+
+        mov     [ebx + device.cur_tx], 0
+        mov     [ebx + device.last_tx], 0
+
+        ret
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -652,38 +682,54 @@ proc transmit stdcall bufferptr
         cmp     [esi + NET_BUFF.length], 60
         jb      .fail
 
-        ;;; TODO: check if current descriptor is in use
-        ; fill in buffer address and size
-        mov     eax, [bufferptr]
-        mov     [ebx + device.last_tx_buffer], eax
-        add     eax, [eax + NET_BUFF.offset]
-        invoke  GetPhysAddr
-        mov     [ebx + device.txfd.buf_addr0], eax
-        mov     ecx, [bufferptr]
-        mov     ecx, [ecx + NET_BUFF.length]
-        mov     [ebx + device.txfd.buf_size0], ecx
+        ; Get current TX descriptor
+        mov     edi, [ebx + device.cur_tx]
+        mov     eax, sizeof.txfd
+        mul     edi
+        lea     edi, [ebx + device.tx_ring + eax]
 
-        mov     [ebx + device.txfd.status], 0
-        mov     [ebx + device.txfd.command], Cmdsuspend + CmdTx + CmdTxFlex ;+ 1 shl 15 ;;; EL bit
- ;       mov     [txfd.count], 0x02208000   ;;;;;;;;;;;
+        ; Check if current descriptor is free or still in use
+        cmp     [edi + txfd.status], 0
+        jne     .fail
+
+        ; Fill in status and command values
+        mov     [edi + txfd.status], 0
+        mov     [edi + txfd.command], Cmdsuspend + CmdTx + CmdTxFlex ;;;+ 1 shl 15 ;;; EL bit
+        mov     [edi + txfd.count], 0x01208000
+
+        ; Fill in buffer address and size
+        mov     [edi + txfd.virt_addr], esi
+        mov     eax, esi
+        add     eax, [esi + NET_BUFF.offset]
+        push    edi
+        invoke  GetPhysAddr
+        pop     edi
+        mov     [edi + txfd.buf_addr], eax
+        mov     ecx, [esi + NET_BUFF.length]
+        mov     [edi + txfd.buf_size], ecx
 
         ; Inform device of the new/updated transmit descriptor
-        lea     eax, [ebx + device.txfd.status]
+        mov     eax, edi
         invoke  GetPhysAddr
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], reg_scb_ptr
         out     dx, eax
 
         ; Start the transmit
-        mov     ax, CU_START
         set_io  [ebx + device.io_addr], reg_scb_cmd
+        mov     ax, CU_START
         out     dx, ax
-        call    cmd_wait
 
-; Update stats
+        ; Update stats
         inc     [ebx + device.packets_tx]
         add     dword[ebx + device.bytes_tx], ecx
         adc     dword[ebx + device.bytes_tx + 4], 0
+
+        ; Wait for command to complete
+        call    cmd_wait
+
+        inc     [ebx + device.cur_tx]
+        and     [ebx + device.cur_tx], TX_RING_SIZE - 1
 
         DEBUGF  1,"Transmit OK\n"
         popf
@@ -691,6 +737,7 @@ proc transmit stdcall bufferptr
         ret
 
   .fail:
+        DEBUGF  2,"Transmit failed!\n"
         invoke  NetFree, [bufferptr]
         popf
         or      eax, -1
@@ -808,18 +855,37 @@ int_handler:
 
   .no_rx:
 
-; Cleanup after TX
-        cmp     [ebx + device.txfd.status], 0
-        je      .done
-        cmp     [ebx + device.last_tx_buffer], 0
-        je      .done
-        push    ax
-        DEBUGF  1, "Removing packet 0x%x from RAM!\n", [ebx + device.last_tx_buffer]
-        invoke  KernelFree, [ebx + device.last_tx_buffer]
-        mov     [ebx + device.last_tx_buffer], 0
-        pop     ax
+        test    ax, 1 shl 13
+        jz      .no_tx
+        DEBUGF  1, "Command completed\n"
 
-  .done:
+        push    eax
+  .loop_tx:
+        mov     edi, [ebx + device.last_tx]
+        mov     eax, sizeof.txfd
+        mul     eax
+        lea     edi, [ebx + device.tx_ring + eax]
+
+        cmp     [edi + txfd.status], 0
+        je      .tx_done
+
+        cmp     [edi + txfd.virt_addr], 0
+        je      .tx_done
+
+        DEBUGF  1,"Freeing buffer 0x%x\n", [edi + txfd.virt_addr]
+
+        push    [edi + txfd.virt_addr]
+        mov     [edi + txfd.virt_addr], 0
+        invoke  NetFree
+
+        inc     [ebx + device.last_tx]
+        and     [ebx + device.last_tx], TX_RING_SIZE - 1
+
+        jmp     .loop_tx
+  .tx_done:
+        pop     eax
+  .no_tx:
+
         and     ax, 00111100b
         cmp     ax, 00001000b
         jne     .fail
