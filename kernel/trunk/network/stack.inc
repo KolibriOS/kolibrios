@@ -32,6 +32,8 @@ DEBUG_NETWORK_ERROR     = 1
 DEBUG_NETWORK_VERBOSE   = 0
 
 NET_DEVICES_MAX         = 16
+NET_BUFFERS             = 512
+NET_BUFFER_SIZE         = 2048
 ARP_BLOCK               = 1             ; true or false
 
 EPHEMERAL_PORT_MIN      = 49152
@@ -146,7 +148,7 @@ NET_DEVICE_ETH          = 1
 NET_DEVICE_SLIP         = 2
 
 ; Network link types (link protocols)
-NET_LINK_LOOPBACK       = 0     ;;; Really a link type?
+NET_LINK_LOOPBACK       = 0
 NET_LINK_MAC            = 1     ; Media access control (ethernet, isdn, ...)
 NET_LINK_PPP            = 2     ; Point to Point Protocol (PPPoE, ...)
 NET_LINK_IEEE802.11     = 3     ; IEEE 802.11 (WiFi)
@@ -242,8 +244,11 @@ include "socket.inc"
 uglobal
 align 4
 
-        NET_RUNNING     dd  ?
-        NET_DRV_LIST    rd  NET_DEVICES_MAX
+        NET_RUNNING     dd ?
+        NET_DRV_LIST    rd NET_DEVICES_MAX
+
+        NET_BUFFS_FREE  rd NET_BUFFERS
+        .current        dd ?
 
 endg
 
@@ -260,6 +265,23 @@ endg
 ;-----------------------------------------------------------------
 align 4
 stack_init:
+
+; allocate network buffers
+        stdcall kernel_alloc, NET_BUFFER_SIZE*NET_BUFFERS
+        test    eax, eax
+        jz      .fail
+
+        mov     edi, NET_BUFFS_FREE
+        mov     ecx, NET_BUFFERS
+        cld
+  .loop:
+        stosd
+        add     eax, NET_BUFFER_SIZE
+        dec     ecx
+        jnz     .loop
+
+        mov     eax, NET_BUFFS_FREE
+        stosd
 
 ; Init the network drivers list
         xor     eax, eax
@@ -284,7 +306,10 @@ stack_init:
         LOOP_init
 
         mov     [net_tmr_count], 0
+        ret
 
+  .fail:
+        DEBUGF  DEBUG_NETWORK_ERROR, "Stack init failed!\n"
         ret
 
 
@@ -343,13 +368,53 @@ stack_handler:
 
 
 align 4
-NET_BUFF_alloc:
-        jmp     kernel_alloc
+proc NET_BUFF_alloc stdcall, buffersize
+        cmp     [buffersize], NET_BUFFER_SIZE
+        ja      .too_large
+
+        spin_lock_irqsave
+
+        mov     eax, [NET_BUFFS_FREE.current]
+        cmp     eax, NET_BUFFS_FREE+NET_BUFFERS*4
+        jae     .out_of_mem
+        mov     eax, [eax]
+        add     [NET_BUFFS_FREE.current], 4
+
+        spin_unlock_irqrestore
+
+        DEBUGF  1, "net alloc: 0x%x\n", eax
+        ret
+
+  .out_of_mem:
+        spin_unlock_irqrestore
+
+        xor     eax, eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "NET_BUFF_alloc: out of mem!\n"
+        ret
+
+  .too_large:
+        xor     eax, eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "NET_BUFF_alloc: too large!\n"
+        ret
+endp
 
 
 align 4
-NET_BUFF_free:
-        jmp     kernel_free
+proc NET_BUFF_free stdcall, buffer
+
+        DEBUGF  1, "net free: 0x%x\n", [buffer]
+
+        spin_lock_irqsave
+
+        sub     [NET_BUFFS_FREE.current], 4
+        mov     eax, [NET_BUFFS_FREE.current]
+        push    [buffer]
+        pop     dword[eax]
+
+        spin_unlock_irqrestore
+
+        ret
+endp
 
 
 align 4
