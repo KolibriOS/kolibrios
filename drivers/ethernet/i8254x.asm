@@ -26,7 +26,7 @@ entry START
         __DEBUG__               = 1
         __DEBUG_LEVEL__         = 2             ; 1 = verbose, 2 = errors only
 
-        MAX_PKT_SIZE            = 4096          ; Maximum packet size
+        MAX_PKT_SIZE            = 1514          ; Maximum packet size
 
         RX_RING_SIZE            = 8             ; Must be a power of 2, and minimum 8
         TX_RING_SIZE            = 8             ; Must be a power of 2, and minimum 8
