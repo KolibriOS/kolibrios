@@ -7,6 +7,7 @@
 	?define TITLE_SETT "Настройки"
 	?define SHOW_DEVICE_CLASS "Выводить названия класса устройств"
 	?define SHOW_REAL_NAMES "Показывать имена файлов не меняя регистр"
+	?define USE_BIG_FONTS "Использовать увеличенные шрифты"
 	?define LIST_LINE_HEIGHT "Высота строки в списке"
 	?define NOTIFY_COPY_END "Уведомлять о завершении копирования"
 	?define CANCEL_T "Отмена"
@@ -16,6 +17,7 @@
 	?define TITLE_SETT "Settings"
 	?define SHOW_DEVICE_CLASS "Show device class name"
 	?define SHOW_REAL_NAMES "Show real file names without changing case"
+	?define USE_BIG_FONTS "Use big fonts"
 	?define LIST_LINE_HEIGHT "List line height"
 	?define NOTIFY_COPY_END "Notify when copying finished"
 	?define CANCEL_T "Cancel"
@@ -58,6 +60,7 @@ void settings_dialog()
 				if (id==20) show_dev_name ^= 1;
 				if (id==21) real_files_names_case ^= 1;
 				if (id==22) info_after_copy ^= 1;
+				if (id==23) use_big_fonts ^= 1;
 				if (id==25) files.line_h++;
 				if (id==26) && (files.line_h>8) files.line_h--;
 				DrawSettingsCheckBoxes();
@@ -74,10 +77,10 @@ void settings_dialog()
 				break;
 			
 		case evReDraw:
-				DefineAndDrawWindow(Form.left + 100, 150, 300, 210+GetSkinHeight(),0x34,sc.work,TITLE_SETT);
+				DefineAndDrawWindow(Form.left + 100, 150, 300, 232+GetSkinHeight(),0x34,sc.work,TITLE_SETT);
 				GetProcessInfo(#settings_form, SelfInfo);
 				DrawSettingsCheckBoxes();
-				DrawFlatButton(9, 116, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
+				DrawFlatButton(9, 138, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
 				DrawFlatButton(128, settings_form.cheight - 34, 70, 22, 10, 0xE4DFE1, APPLY_T);
 				DrawFlatButton(208, settings_form.cheight - 34, 70, 22, 11, 0xE4DFE1, CANCEL_T);
 	}
@@ -88,23 +91,32 @@ void DrawSettingsCheckBoxes()
 	CheckBox2(10, 11, 20, SHOW_DEVICE_CLASS,  show_dev_name);
 	CheckBox2(10, 33, 21, SHOW_REAL_NAMES,  real_files_names_case);
 	CheckBox2(10, 55, 22, NOTIFY_COPY_END,  info_after_copy);
-	MoreLessBox(10, 82, 18, 25, 26, sc.work_graph, 0xD2D3D3, 0x000000, files.line_h, LIST_LINE_HEIGHT);
+	CheckBox2(10, 77, 23, USE_BIG_FONTS,  use_big_fonts);
+	MoreLessBox(10, 104, 18, 25, 26, sc.work_graph, 0xD2D3D3, 0x000000, files.line_h, LIST_LINE_HEIGHT);
 }
 
 
 void LoadIniSettings()
 {
-	ini_get_color stdcall (eolite_ini_path, #confir_section, "SelectionColor", 0x94AECE);
-	edit2.shift_color = EAX;
-	col_selec = EAX;
-	ini_get_int stdcall (eolite_ini_path, #confir_section, "LineHeight", 18);
-	files.line_h = EAX;
-	ini_get_int stdcall (eolite_ini_path, #confir_section, "ShowDeviceName", 1);
-	show_dev_name = EAX;
-	ini_get_int stdcall (eolite_ini_path, #confir_section, "RealFileNamesCase", 0);
-	real_files_names_case = EAX;
-	ini_get_int stdcall (eolite_ini_path, #confir_section, "InfoAfterCopy", 0);
-	info_after_copy = EAX;
+	ini_get_color stdcall (eolite_ini_path, #confir_section, "SelectionColor",   0x94AECE); edit2.shift_color = col_selec = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #confir_section, "ShowDeviceName",    1); show_dev_name = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #confir_section, "RealFileNamesCase", 0); real_files_names_case = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #confir_section, "InfoAfterCopy",     0); info_after_copy = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #confir_section, "UseBigFonts",       0); use_big_fonts = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #confir_section, "LineHeight",       18); files.line_h = EAX;
+
+	if (use_big_fonts) 
+	{
+		font_type = 0x90;
+		PathShow.font_size_x = FileShow.font_size_x = 8;
+		PathShow.font_number = FileShow.font_number = 1;
+	}
+	else
+	{
+		font_type=0x80;
+		PathShow.font_size_x = FileShow.font_size_x = 8;
+		PathShow.font_number = FileShow.font_number = 0;
+	} 
 }
 
 void SaveIniSettings()
@@ -112,6 +124,7 @@ void SaveIniSettings()
 	ini_set_int stdcall (eolite_ini_path, #confir_section, "ShowDeviceName", show_dev_name);
 	ini_set_int stdcall (eolite_ini_path, #confir_section, "RealFileNamesCase", real_files_names_case);
 	ini_set_int stdcall (eolite_ini_path, #confir_section, "InfoAfterCopy", info_after_copy);
+	ini_set_int stdcall (eolite_ini_path, #confir_section, "UseBigFonts", use_big_fonts);
 	ini_set_int stdcall (eolite_ini_path, #confir_section, "LineHeight", files.line_h);
 }
 

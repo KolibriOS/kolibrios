@@ -173,7 +173,7 @@ void DrawWindowContent()
   frame_draw stdcall (#taskbar_frame);
 	DefineButton(22, taskbar_frame.start_y + 12, panels_img.w-1, 27-1, 100 + BT_HIDE, 0);
 	_PutImage(22, taskbar_frame.start_y + 12,  37, 27, taskbar_cfg.Attachment * 37 * 27 * 3 + panels_img.data);
-	WriteText(68, taskbar_frame.start_y + 20, 0x80, 0x333222, CHANGE_POS);
+	WriteText(68, taskbar_frame.start_y + 20, 0x80, work_text, CHANGE_POS);
 	PanelCfg_CheckBox(22, taskbar_frame.start_y +  48, 105, SOFTEN_UP, taskbar_cfg.SoftenUp);
 	PanelCfg_CheckBox(22, taskbar_frame.start_y +  68, 106, SOFTEN_DOWN, taskbar_cfg.SoftenDown);
 	PanelCfg_CheckBox(22, taskbar_frame.start_y +  88, 107, MIN_LEFT_BUTTON, taskbar_cfg.MinLeftButton);
@@ -190,7 +190,7 @@ void DrawWindowContent()
   frame_draw stdcall (#docky_frame);
 	DefineButton(22, docky_frame.start_y + 12, panels_img.w-1, 27-1, 200 + BT_HIDE, 0);
 	_PutImage(22, docky_frame.start_y + 12,  37, 27, docky_cfg.location + 1 * 37 * 27 * 3 + panels_img.data);
-	WriteText(68, docky_frame.start_y + 20, 0x80, 0x333222, CHANGE_POS);
+	WriteText(68, docky_frame.start_y + 20, 0x80, work_text, CHANGE_POS);
 
 	PanelCfg_CheckBox(22, docky_frame.start_y + 48, 201, FSIZE,  docky_cfg.fsize);
 	PanelCfg_CheckBox(win_center_x, docky_frame.start_y + 48, 202, ASHOW, docky_cfg.ashow);

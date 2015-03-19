@@ -95,8 +95,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.66"
-#define ABOUT_TITLE "Eolite v2.66"
+#define TITLE "Eolite File Manager v2.7"
+#define ABOUT_TITLE "Eolite v2.7"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -121,6 +121,8 @@ byte
 	del_active=0,
 	show_dev_name=1,
 	real_files_names_case=0,
+	use_big_fonts=0,
+	font_type,
 	info_after_copy=0,
 	sort_num=2,
 	itdir;
@@ -130,7 +132,7 @@ dword eolite_ini_path;
 proc_info Form;
 system_colors sc;
 mouse m;
-int mouse_dd, scroll_used, scroll_size, sorting_arrow_x, kolibrios_drive;
+int mouse_dd, scroll_used, sc_slider_h, sorting_arrow_x, kolibrios_drive;
 dword buf;
 dword file_mas[6898];
 int j, i;
@@ -270,9 +272,9 @@ void main()
 			
 			if (scroll_used)
 			{
-				IF (scroll_size/2+files.y>m.y) || (m.y<0) || (m.y>4000) m.y=scroll_size/2+files.y; //anee eo?ni? iaa ieiii
+				IF (sc_slider_h/2+files.y>m.y) || (m.y<0) || (m.y>4000) m.y=sc_slider_h/2+files.y; //anee eo?ni? iaa ieiii
 				id=files.first;
-				j= scroll_size/2;
+				j= sc_slider_h/2;
 				files.first = m.y -j -files.y * files.count;
 				files.first /= onTop(22,files.y);
 				IF (files.visible+files.first>files.count) files.first=files.count-files.visible;
@@ -653,7 +655,7 @@ void Line_ReDraw(dword color, filenum){
 	if (! TestBit(attr, 4) ) //file or folder?
 	{	
 		Put_icon(file_name_off+_strrchr(file_name_off,'.'), files.x+3, files.line_h/2-7+y, color, 0);
-		WriteText(7-strlen(ConvertSize(file.sizelo))*6+Form.cwidth - 76,files.line_h-6/2+y,0x80,0,ConvertSize(file.sizelo));
+		WriteText(7-strlen(ConvertSize(file.sizelo))*6+Form.cwidth - 76,files.line_h-6/2+y,font_type,0,ConvertSize(file.sizelo));
 	}
 	else
 	{
