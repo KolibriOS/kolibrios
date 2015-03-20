@@ -25,7 +25,8 @@ FLAG_CONNECTED          = 1 shl 5
 
 ; user options
 FLAG_KEEPALIVE          = 1 shl 8
-FLAG_MULTIBUFF          = 1 shl 9
+FLAG_STREAM             = 1 shl 9
+FLAG_REUSE_BUFFER       = 1 shl 10
 
 ; error
 FLAG_INVALID_HEADER     = 1 shl 16

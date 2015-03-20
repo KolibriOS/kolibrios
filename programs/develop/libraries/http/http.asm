@@ -200,7 +200,7 @@ locals
         port            dd ?
 endl
 
-        and     [flags], FLAG_KEEPALIVE or FLAG_MULTIBUFF       ; filter out invalid flags
+        and     [flags], 0xff00       ; filter out invalid flags
 
         pusha
 
@@ -343,7 +343,7 @@ locals
         port            dd ?
 endl
 
-        and     [flags], FLAG_KEEPALIVE or FLAG_MULTIBUFF       ; filter out invalid flags
+        and     [flags], 0xff00         ; filter out invalid flags
 
         pusha
 ; split the URL into hostname and pageaddr
@@ -486,7 +486,7 @@ locals
         port            dd ?
 endl
 
-        and     [flags], FLAG_KEEPALIVE or FLAG_MULTIBUFF       ; filter out invalid flags
+        and     [flags], 0xff00       ; filter out invalid flags
 
         pusha
 ; split the URL into hostname and pageaddr
@@ -646,15 +646,25 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
         cmp     [ebp + http_msg.buffer_length], 0
         jne     .receive
 
-        test    [ebp + http_msg.flags], FLAG_MULTIBUFF
+        test    [ebp + http_msg.flags], FLAG_STREAM
         jz      .err_header
 
+        test    [ebp + http_msg.flags], FLAG_REUSE_BUFFER
+        jz      .new_buffer
+
+        mov     eax, [ebp + http_msg.content_ptr]
+        mov     [ebp + http_msg.write_ptr], eax
+        mov     [ebp + http_msg.buffer_length], BUFFERSIZE
+        jmp     .receive
+
+  .new_buffer:
         invoke  mem.alloc, BUFFERSIZE
         test    eax, eax
         jz      .err_no_ram
         mov     [ebp + http_msg.content_ptr], eax
         mov     [ebp + http_msg.write_ptr], eax
         mov     [ebp + http_msg.buffer_length], BUFFERSIZE
+        DEBUGF  1, "New buffer: 0x%x\n", eax
 
 ; Receive some data
   .receive:
@@ -836,8 +846,8 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
 
   .no_content:
         DEBUGF  1, "Content-length not found.\n"
-
 ; We didnt find 'content-length', maybe server is using chunked transfer encoding?
+  .multibuffer:
 ; Try to find 'transfer-encoding' header.
         stdcall HTTP_find_header_field, ebp, str_te
         test    eax, eax
@@ -943,7 +953,7 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
         mov     edx, esi
         sub     edx, [ebp + http_msg.chunk_ptr]         ; edx is now length of chunkline
         sub     [ebp + http_msg.write_ptr], edx
-        test    [ebp + http_msg.flags], FLAG_MULTIBUFF
+        test    [ebp + http_msg.flags], FLAG_STREAM
         jnz     .dont_resize
 ; Realloc buffer, make it 'chunksize' bigger.
         lea     edx, [ebx + BUFFERSIZE]
@@ -992,7 +1002,7 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
         ret
 
   .buffer_full:
-        test    [ebp + http_msg.flags], FLAG_MULTIBUFF
+        test    [ebp + http_msg.flags], FLAG_STREAM
         jnz     .multibuff
         mov     eax, [ebp + http_msg.write_ptr]
         add     eax, BUFFERSIZE
@@ -1107,6 +1117,11 @@ endp
 
 
 alloc_contentbuff:
+
+        test    [ebp + http_msg.flags], FLAG_STREAM
+        jz      @f
+        mov     edx, BUFFERSIZE
+  @@:
 
 ; Allocate content buffer
         invoke  mem.alloc, edx
