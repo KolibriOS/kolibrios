@@ -382,7 +382,7 @@ proc NET_BUFF_alloc stdcall, buffersize
 
         spin_unlock_irqrestore
 
-        DEBUGF  1, "net alloc: 0x%x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "net alloc: 0x%x\n", eax
         ret
 
   .out_of_mem:
@@ -402,7 +402,7 @@ endp
 align 4
 proc NET_BUFF_free stdcall, buffer
 
-        DEBUGF  1, "net free: 0x%x\n", [buffer]
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "net free: 0x%x\n", [buffer]
 
         spin_lock_irqsave
 
