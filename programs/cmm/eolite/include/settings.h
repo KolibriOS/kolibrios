@@ -91,8 +91,8 @@ void DrawSettingsCheckBoxes()
 	CheckBox2(10, 11, 20, SHOW_DEVICE_CLASS,  show_dev_name);
 	CheckBox2(10, 33, 21, SHOW_REAL_NAMES,  real_files_names_case);
 	CheckBox2(10, 55, 22, NOTIFY_COPY_END,  info_after_copy);
-	CheckBox2(10, 77, 23, USE_BIG_FONTS,  use_big_fonts);
-	MoreLessBox(10, 104, 18, 25, 26, sc.work_graph, 0xD2D3D3, 0x000000, files.line_h, LIST_LINE_HEIGHT);
+	CheckBox2(10, 77, 23, USE_BIG_FONTS,  use_big_fonts); 
+	MoreLessBox(10, 104, 18, 25, 26, #sc, files.line_h, LIST_LINE_HEIGHT);
 }
 
 
@@ -149,6 +149,7 @@ void SetAppColors()
 	sc.work = 0xE4DFE1;
 	sc.work_text = 0;
 	sc.work_graph  = 0x9098B0; //A0A0B8; //0x819FC5;
+	sc.work_button = 0xD2D3D3;
 	sc.work_button_text = 0x000000;
 	col_padding = 0xC8C9C9;
 	//col_selec   = 0x94AECE;

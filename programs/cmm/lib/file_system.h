@@ -156,7 +156,25 @@
 	$mov eax,70
 	$mov ebx,#write_file_70.func
 	$int 0x40
-}       
+}
+
+//////////////////////////////////////////
+//     WriteInFileThatAlredyExists      //
+//////////////////////////////////////////
+:f70 write_file_offset_70; 
+:int WriteFileWithOffset(dword write_data_size, write_buffer, write_file_path, offset)
+{
+	write_file_offset_70.func = 3;
+	write_file_offset_70.param1 = offset;
+	write_file_offset_70.param2 = 0;
+	write_file_offset_70.param3 = write_data_size;
+	write_file_offset_70.param4 = write_buffer;
+	write_file_offset_70.rezerv = 0;
+	write_file_offset_70.name = write_file_path;
+	$mov eax,70
+	$mov ebx,#write_file_offset_70.func
+	$int 0x40
+}   
 
 ///////////////////////////
 //    Прочитать папку    //
