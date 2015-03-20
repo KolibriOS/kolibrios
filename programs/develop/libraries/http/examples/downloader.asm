@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2009-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2009-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  downloader.asm - HTTP client for KolibriOS                     ;;
@@ -63,13 +63,13 @@ START:
         test    eax, eax
         jnz     exit
 ;---------------------------------------------------------------------
-	mov	edi,filename_area
-	mov	esi,start_temp_file_name
-	call	copy_file_name_path
+        mov     edi,filename_area
+        mov     esi,start_temp_file_name
+        call    copy_file_name_path
 
-	mov	edi,fname_buf
-	mov	esi,start_file_path
-	call	copy_file_name_path
+        mov     edi,fname_buf
+        mov     esi,start_file_path
+        call    copy_file_name_path
 
 ;OpenDialog     initialisation
         push    dword OpenDialog_data
@@ -86,7 +86,7 @@ START:
         inc     [silently]
 
 download:
-	call	download_1
+        call    download_1
 
         test    [silently], 0xff
         jnz     save
@@ -151,7 +151,7 @@ button:
         cmp     ah, 1   ; button id=1 ?
         je      exit
 
-	call	download_1
+        call    download_1
         jmp     save
 ;---------------------------------------------------------------------
 mouse:
@@ -168,16 +168,16 @@ fail:
 download_1:
         DEBUGF  1, "Starting download\n"
 
-        invoke  HTTP_get, params, 0
+        invoke  HTTP_get, 0, 0, params, 0
         test    eax, eax
         jz      fail
         mov     [identifier], eax
 
   .loop:
-        invoke  HTTP_process, [identifier]
+        invoke  HTTP_receive, [identifier]
         test    eax, eax
         jnz     .loop
-	ret
+        ret
 ;---------------------------------------------------------------------
 save:
         mov     ebp, [identifier]
@@ -199,14 +199,14 @@ save:
         jmp     still
 ;---------------------------------------------------------------------
 copy_file_name_path:
-	xor	eax,eax
-	cld
+        xor     eax,eax
+        cld
 @@:
-	lodsb
-	stosb
-	test	eax,eax
-	jnz	@r
-	ret
+        lodsb
+        stosb
+        test    eax,eax
+        jnz     @r
+        ret
 ;---------------------------------------------------------------------
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
@@ -225,23 +225,23 @@ draw_window:
         mcall   0, <50, 370>, <350, 170>, , 0, title
 ;-----------------------------------
 ; draw frames
-	mov	[frame_data.x],dword frame_1.x shl 16+frame_1.width
-	mov	[frame_data.y],dword frame_1.y shl 16+frame_1.height
-	mov	[frame_data.text_pointer],dword select_addr_text
-	mov	eax,[sc.work]
-	mov	[frame_data.font_backgr_color],eax
-	mov	eax,[sc.work_text]
-	mov	[frame_data.font_color],eax
-	
-	push	dword frame_data
-	call	[Frame_draw]
+        mov     [frame_data.x],dword frame_1.x shl 16+frame_1.width
+        mov     [frame_data.y],dword frame_1.y shl 16+frame_1.height
+        mov     [frame_data.text_pointer],dword select_addr_text
+        mov     eax,[sc.work]
+        mov     [frame_data.font_backgr_color],eax
+        mov     eax,[sc.work_text]
+        mov     [frame_data.font_color],eax
+        
+        push    dword frame_data
+        call    [Frame_draw]
 ;-----------------------------------
-	mov	[frame_data.x],dword frame_2.x shl 16+frame_2.width
-	mov	[frame_data.y],dword frame_2.y shl 16+frame_2.height
-	mov	[frame_data.text_pointer],dword select_path_text
+        mov     [frame_data.x],dword frame_2.x shl 16+frame_2.width
+        mov     [frame_data.y],dword frame_2.y shl 16+frame_2.height
+        mov     [frame_data.text_pointer],dword select_path_text
 
-	push	dword frame_data
-	call	[Frame_draw]
+        push    dword frame_data
+        call    [Frame_draw]
 ;-----------------------------------
 ; draw "url:" text
         mov     ecx, [sc.work_text]
@@ -255,7 +255,7 @@ draw_window:
 ; draw buttons
         mcall   8,<frame_1.x+frame_1.width-(68+15+50+15),68>,<frame_1.y+30,16>,22,[sc.work_button] ; reload
         mcall   ,<frame_1.x+frame_1.width-(50+15),50>,<frame_1.y+30,16>, 24 ; stop
-	
+        
         mcall   , <frame_2.x+frame_2.width-(54+15),54>,<frame_2.y+30,16>,26 ; save
 ;-----------------------------------
 ; draw buttons text
@@ -264,11 +264,11 @@ draw_window:
         mcall   4, <frame_1.x+frame_1.width-(68+15+50+15)+10,frame_1.y+35>, , button_text.1
         mcall   , <frame_1.x+frame_1.width-(50+15)+15,frame_1.y+35>, , button_text.2
         mcall   , <frame_2.x+frame_2.width-(54+15)+10,frame_2.y+35>, , button_text.3
-	
+        
         mcall   13,<frame_2.x+17,frame_2.width-15*2>,<frame_2.y+10,15>,0xffffff
         push    dword PathShow_data_1
         call    [PathShow_draw]
-	
+        
         mcall   12, 2   ; end window redraw
 
         ret
@@ -283,8 +283,8 @@ library lib_http,       'http.obj', \
         proc_lib,       'proc_lib.obj'
 
 import  lib_http, \
-        HTTP_get                , 'get' , \
-        HTTP_process            , 'process'     ,\
+        HTTP_get                , 'get', \
+        HTTP_receive            , 'receive', \
         HTTP_free               , 'free'
 
 import  box_lib, \
@@ -330,22 +330,22 @@ select_addr_text db ' NETWORK ADDRESS: ',0
 select_path_text db ' PATH TO SAVE FILE: ',0
 ;---------------------------------------------------------------------
 frame_data:
-.type			dd 0 ;+0
+.type                   dd 0 ;+0
 .x:
-.x_size			dw 0 ;+4
-.x_start		dw 0 ;+6
+.x_size                 dw 0 ;+4
+.x_start                dw 0 ;+6
 .y:
-.y_size			dw 0 ;+8
-.y_start		dw 0 ;+10
-.ext_fr_col		dd 0x0 ;+12
-.int_fr_col		dd 0xffffff ;+16
-.draw_text_flag		dd 1 ;+20
-.text_pointer		dd 0 ;+24
-.text_position		dd 0 ;+28
-.font_number		dd 0 ;+32
-.font_size_y		dd 9 ;+36
-.font_color		dd 0x0 ;+40
-.font_backgr_color	dd 0xffffff ;+44
+.y_size                 dw 0 ;+8
+.y_start                dw 0 ;+10
+.ext_fr_col             dd 0x0 ;+12
+.int_fr_col             dd 0xffffff ;+16
+.draw_text_flag         dd 1 ;+20
+.text_pointer           dd 0 ;+24
+.text_position          dd 0 ;+28
+.font_number            dd 0 ;+32
+.font_size_y            dd 9 ;+36
+.font_color             dd 0x0 ;+40
+.font_backgr_color      dd 0xffffff ;+44
 ;---------------------------------------------------------------------
 PathShow_data_1:
 .type                   dd 0    ;+0

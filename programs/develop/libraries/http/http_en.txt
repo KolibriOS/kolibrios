@@ -1,20 +1,26 @@
 
-get(*url, *add_header);
+get(*url, identifier, flags, *add_header);
 	*url = pointer to ASCIIZ URL
+	identifier = identified of previously opened connection, or 0 to open a new one
+	flags = bit flags (see http.inc user flags)
 	*add_header = pointer to ASCIIZ additional header parameters, or null for none.
 			Every additional parameter must end with CR LF bytes, including the last line.
 Initiates a HTTP connection, using 'GET' method.
  - returns 0 on error, identifier otherwise.
 
-head(*url, *add_header);
+head(*url, identifier, flags, *add_header);
 	*url = pointer to ASCIIZ URL
+	identifier = identified of previously opened connection, or 0 to open a new one
+	flags = bit flags (see http.inc user flags)
 	*add_header = pointer to ASCIIZ additional header parameters, or null for none.	
 			Every additional parameter must end with CR LF bytes, including the last line.	
 Initiate a HTTP connection, using 'HEAD' method.
  - returns 0 on error, identifier otherwise
 
-post(*url, *add_header, *content-type, content-length);
+post(*url, identifier, flags, *add_header, *content-type, content-length);
 	*url = pointer to ASCIIZ URL
+	identifier = identified of previously opened connection, or 0 to open a new one
+	flags = bit flags (see http.inc user flags)
 	*add_header = pointer to ASCIIZ additional header parameters, or null for none.	
 			Every additional parameter must end with CR LF bytes, including the last line.
 	*content-type = pointer to ASCIIZ string containing content type.

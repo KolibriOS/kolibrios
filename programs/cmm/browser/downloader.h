@@ -88,7 +88,7 @@ void Downloader()
 				
 			default:
 				if (DL_Form.width==0) || (DL_http_transfer <= 0) break;
-				http_process stdcall (DL_http_transfer);
+				http_receive stdcall (DL_http_transfer);
 				$push EAX
 				ESI = DL_http_transfer;
 				DL_progress_bar.max = ESI.http_msg.content_length;
@@ -220,7 +220,7 @@ void StartDownloading()
 	{
 		download_state = STATE_IN_PROGRESS;
 		DL_address_box.color = DL_address_box.blur_border_color = DL_address_box.focus_border_color = 0xdddDDD;
-		http_get stdcall (#DL_URL, #accept_language);
+		http_get stdcall (#DL_URL, 0, 0, #accept_language);
 		DL_http_transfer = EAX;
 		DL_progress_bar.value = 0;
 		DL_Draw_Window();

@@ -8,9 +8,10 @@ dword http_get            = #aHTTPget;
 dword http_head           = #aHTTPhead;
 dword http_post           = #aHTTPpost;
 dword http_find_header_field = #aFHF;
-dword http_process        = #aHTTPprocess;
+dword http_send           = #aHTTPsend;
+dword http_receive        = #aHTTPreceive;
+dword http_disconnect     = #aHTTPdisconnect;
 dword http_free           = #aHTTPfree;
-dword http_stop           = #aHTTPstop;
 dword uri_escape          = #aURIescape;
 dword uri_unescape        = #aURIunescape;
 $DD 2 dup 0
@@ -20,12 +21,14 @@ char aHTTPget[4]               = "get\0";
 char aHTTPhead[5]              = "head\0";
 char aHTTPpost[5]              = "post\0";
 char aFHF[18]                  = "find_header_field\0";
-char aHTTPprocess[8]           = "process\0";
+char aHTTPsend[5]              = "send\0";
+char aHTTPreceive[8]           = "receive\0";
+char aHTTPdisconnect[11]       = "disconnect\0";
 char aHTTPfree[5]              = "free\0";
-char aHTTPstop[5]              = "stop\0";
 char aURIescape[7]             = "escape\0";
 char aURIunescape[9]           = "unescape\0";
 
+// status flags
 #define FLAG_HTTP11             1 << 0
 #define FLAG_GOT_HEADER         1 << 1
 #define FLAG_GOT_ALL_DATA       1 << 2
@@ -33,7 +36,11 @@ char aURIunescape[9]           = "unescape\0";
 #define FLAG_CHUNKED            1 << 4
 #define FLAG_CONNECTED          1 << 5
 
-// error flags go into the upper word
+// user flags
+#define FLAG_KEEPALIVE          1 << 8
+#define FLAG_MULTIBUFF			1 << 9
+
+// error flags
 #define FLAG_INVALID_HEADER     1 << 16
 #define FLAG_NO_RAM             1 << 17
 #define FLAG_SOCKET_ERROR       1 << 18

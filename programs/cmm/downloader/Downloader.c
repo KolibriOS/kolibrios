@@ -96,7 +96,7 @@ void main()
 			default:
 				if (Form.width==0) break;
 				if (http_transfer <= 0) break;
-				http_process stdcall (http_transfer);
+				http_receive stdcall (http_transfer);
 				if (EAX == 0) {
 					ESI = http_transfer;
 					bufpointer = ESI.http_msg.content_ptr;
@@ -222,7 +222,7 @@ void StartDownloading()
 	if (strncmp(#URL,"http:",5)==0)
 	{
 		address_box.color = address_box.blur_border_color = address_box.focus_border_color = 0xededed;
-		http_get stdcall (#URL, #accept_language);
+		http_get stdcall (#URL, 0, 0, #accept_language);
 		http_transfer = EAX;
 		Draw_Window();
 		if (http_transfer == 0)

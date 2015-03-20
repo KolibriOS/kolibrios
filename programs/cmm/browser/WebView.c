@@ -220,7 +220,7 @@ void main()
 				
 			case evNetwork:
 				if (http_transfer > 0) {
-					http_process stdcall (http_transfer);
+					http_receive stdcall (http_transfer);
 					$push EAX
 					ESI = http_transfer;
 					wv_progress_bar.max = ESI.http_msg.content_length;
@@ -618,7 +618,7 @@ void OpenPage()
 	if (strncmp(#URL,"http:",5)==0)
 	{
 		img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-2, 17, skin.h, 131, 0);
-		http_get stdcall (#URL, #accept_language);
+		http_get stdcall (#URL, 0, 0, #accept_language);
 		http_transfer = EAX;
 		if (http_transfer == 0)
 		{

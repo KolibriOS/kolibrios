@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  HTTP library for KolibriOS                                     ;;
@@ -54,13 +54,15 @@ local   .copyloop, .copydone
   .copydone:
 }
 
-macro HTTP_init_buffer buffer, socketnum {
+macro HTTP_init_buffer buffer, socketnum, flags {
 
         mov     eax, buffer
         push    socketnum
         popd    [eax + http_msg.socket]
         lea     esi, [eax + http_msg.http_header]
-        mov     [eax + http_msg.flags], FLAG_CONNECTED
+        push    flags
+        pop     [eax + http_msg.flags]
+        or      [eax + http_msg.flags], FLAG_CONNECTED
         mov     [eax + http_msg.write_ptr], esi
         mov     [eax + http_msg.buffer_length], BUFFERSIZE -  http_msg.http_header
         mov     [eax + http_msg.chunk_ptr], 0
@@ -176,24 +178,29 @@ proc HTTP_free identifier ;/////////////////////////////////////////////////////
 
 endp
 
+
+
 ;;================================================================================================;;
-proc HTTP_get URL, add_header ;///////////////////////////////////////////////////////////////////;;
+proc HTTP_get URL, identifier, flags, add_header ;////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? Initiates a HTTP connection, using 'GET' method.                                               ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> URL          = pointer to ASCIIZ URL                                                           ;;
-;> add_header   = pointer to additional header parameters (ASCIIZ), or null for none.             ;;
+;> URL                  = pointer to ASCIIZ URL                                                   ;;
+;> identifier           = Identifier of an already open connection, or NULL to create a new one.  ;;
+;> flags                = Flags indicating how to threat the connection.                          ;;
+;> add_header           = pointer to additional header parameters (ASCIIZ), or NULL for none.     ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = 0 (error) / buffer ptr                                                                   ;;
 ;;================================================================================================;;
 locals
         hostname        dd ?
         pageaddr        dd ?
-        sockaddr        dd ?
         socketnum       dd ?
         buffer          dd ?
         port            dd ?
 endl
+
+        and     [flags], FLAG_KEEPALIVE or FLAG_MULTIBUFF       ; filter out invalid flags
 
         pusha
 
@@ -205,13 +212,24 @@ endl
         mov     [pageaddr], ebx
         mov     [port], ecx
 
+        mov     eax, [identifier]
+        test    eax, eax
+        jz      .open_new
+        test    [eax + http_msg.flags], FLAG_CONNECTED
+        jz      .error
+        mov     eax, [eax + http_msg.socket]
+        mov     [socketnum], eax
+        jmp     .send_request
+
 ; Connect to the other side.
+  .open_new:
         stdcall open_connection, [hostname], [port]
         test    eax, eax
         jz      .error
         mov     [socketnum], eax
 
 ; Create the HTTP request.
+  .send_request:
         invoke  mem.alloc, BUFFERSIZE
         test    eax, eax
         jz      .error
@@ -256,6 +274,11 @@ endl
 
         mov     esi, str_close
         mov     ecx, str_close.length
+        test    [flags], FLAG_KEEPALIVE
+        jz      @f
+        mov     esi, str_keep
+        mov     ecx, str_keep.length
+  @@:
         rep     movsb
 
         mov     byte[edi], 0
@@ -275,10 +298,18 @@ endl
         jz      .error
         DEBUGF  1, "Request has been sent to server.\n"
 
-        HTTP_init_buffer [buffer], [socketnum]
+        cmp     [identifier], 0
+        jne     .old_connection
+        HTTP_init_buffer [buffer], [socketnum], [flags]
 
         popa
         mov     eax, [buffer]   ; return buffer ptr
+        ret
+
+  .old_connection:
+        invoke  mem.free, [buffer]
+        popa
+        mov     eax, [identifier]
         ret
 
   .error:
@@ -292,24 +323,27 @@ endp
 
 
 ;;================================================================================================;;
-proc HTTP_head URL, add_header ;//////////////////////////////////////////////////////////////////;;
+proc HTTP_head URL, identifier, flags, add_header ;///////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? Initiates a HTTP connection, using 'HEAD' method.                                              ;;
 ;? This will only return HTTP header and status, no content                                       ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> URL          = pointer to ASCIIZ URL                                                           ;;
-;> add_header   = pointer to additional header parameters (ASCIIZ), or null for none.             ;;
+;> URL                  = pointer to ASCIIZ URL                                                   ;;
+;> identifier           = Identifier of an already open connection, or NULL to create a new one.  ;;
+;> flags                = Flags indicating how to threat the connection.                          ;;
+;> add_header           = pointer to additional header parameters (ASCIIZ), or NULL for none.     ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = 0 (error) / buffer ptr                                                                   ;;
 ;;================================================================================================;;
 locals
         hostname        dd ?
         pageaddr        dd ?
-        sockaddr        dd ?
         socketnum       dd ?
         buffer          dd ?
         port            dd ?
 endl
+
+        and     [flags], FLAG_KEEPALIVE or FLAG_MULTIBUFF       ; filter out invalid flags
 
         pusha
 ; split the URL into hostname and pageaddr
@@ -320,13 +354,24 @@ endl
         mov     [pageaddr], ebx
         mov     [port], ecx
 
+        mov     eax, [identifier]
+        test    eax, eax
+        jz      .open_new
+        test    [eax + http_msg.flags], FLAG_CONNECTED
+        jz      .error
+        mov     eax, [eax + http_msg.socket]
+        mov     [socketnum], eax
+        jmp     .send_request
+
 ; Connect to the other side.
+  .open_new:
         stdcall open_connection, [hostname], [port]
         test    eax, eax
         jz      .error
         mov     [socketnum], eax
 
 ; Create the HTTP request.
+  .send_request:
         invoke  mem.alloc, BUFFERSIZE
         test    eax, eax
         jz      .error
@@ -371,11 +416,15 @@ endl
 
         mov     esi, str_close
         mov     ecx, str_close.length
+        test    [flags], FLAG_KEEPALIVE
+        jz      @f
+        mov     esi, str_keep
+        mov     ecx, str_keep.length
+  @@:
         rep     movsb
 
         mov     byte[edi], 0
         DEBUGF  1, "Request:\n%s", [buffer]
-
 
 ; Free unused memory
         push    edi
@@ -391,11 +440,19 @@ endl
         jz      .error
         DEBUGF  1, "Request has been sent to server.\n"
 
-        HTTP_init_buffer [buffer], [socketnum]
+        cmp     [identifier], 0
+        jne     .old_connection
+        HTTP_init_buffer [buffer], [socketnum], [flags]
 
         popa
-        mov     eax, [buffer]
-        ret                     ; return buffer ptr
+        mov     eax, [buffer]   ; return buffer ptr
+        ret
+
+  .old_connection:
+        invoke  mem.free, [buffer]
+        popa
+        mov     eax, [identifier]
+        ret
 
   .error:
         DEBUGF  1, "Error!\n"
@@ -407,26 +464,29 @@ endp
 
 
 ;;================================================================================================;;
-proc HTTP_post URL, add_header, content_type, content_length ;////////////////////////////////////;;
+proc HTTP_post URL, identifier, flags, add_header, content_type, content_length ;/////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? Initiates a HTTP connection, using 'POST' method.                                              ;;
 ;? This method is used to send data to the HTTP server                                            ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;> URL                  = pointer to ASCIIZ URL                                                   ;;
-;> add_header           = pointer to additional header parameters (ASCIIZ), or null for none.     ;;
+;> identifier           = Identifier of an already open connection, or NULL to create a new one.  ;;
+;> flags                = Flags indicating how to threat the connection.                          ;;
+;> add_header           = pointer to additional header parameters (ASCIIZ), or NULL for none.     ;;
 ;> content_type         = pointer to ASCIIZ string containing content type                        ;;
 ;> content_length       = length of content (in bytes)                                            ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = 0 (error) / buffer ptr                                                                   ;;
+;< eax = 0 (error) / buffer ptr (aka Identifier)                                                  ;;
 ;;================================================================================================;;
 locals
         hostname        dd ?
         pageaddr        dd ?
-        sockaddr        dd ?
         socketnum       dd ?
         buffer          dd ?
         port            dd ?
 endl
+
+        and     [flags], FLAG_KEEPALIVE or FLAG_MULTIBUFF       ; filter out invalid flags
 
         pusha
 ; split the URL into hostname and pageaddr
@@ -437,13 +497,24 @@ endl
         mov     [pageaddr], ebx
         mov     [port], ecx
 
+        mov     eax, [identifier]
+        test    eax, eax
+        jz      .open_new
+        test    [eax + http_msg.flags], FLAG_CONNECTED
+        jz      .error
+        mov     eax, [eax + http_msg.socket]
+        mov     [socketnum], eax
+        jmp     .send_request
+
 ; Connect to the other side.
+  .open_new:
         stdcall open_connection, [hostname], [port]
         test    eax, eax
         jz      .error
         mov     [socketnum], eax
 
 ; Create the HTTP request.
+  .send_request:
         invoke  mem.alloc, BUFFERSIZE
         test    eax, eax
         jz      .error
@@ -502,6 +573,11 @@ endl
 
         mov     esi, str_close
         mov     ecx, str_close.length
+        test    [flags], FLAG_KEEPALIVE
+        jz      @f
+        mov     esi, str_keep
+        mov     ecx, str_keep.length
+  @@:
         rep     movsb
 
         mov     byte[edi], 0
@@ -521,11 +597,22 @@ endl
         jz      .error
         DEBUGF  1, "Request has been sent to server.\n"
 
-        HTTP_init_buffer [buffer], [socketnum]
+        cmp     [identifier], 0
+        jne     .old_connection
+        HTTP_init_buffer [buffer], [socketnum], [flags]
 
         popa
-        mov     eax, [buffer]
-        ret                     ; return buffer ptr
+        mov     eax, [buffer]   ; return buffer ptr
+        ret
+
+  .old_connection:
+        invoke  mem.free, [buffer]
+        mov     ebx, [flags]
+        mov     eax, [identifier]
+        or      [eax + http_msg.flags], ebx
+        popa
+        mov     eax, [identifier]
+        ret
 
   .error:
         DEBUGF  1, "Error!\n"
@@ -555,7 +642,22 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
         test    [ebp + http_msg.flags], FLAG_CONNECTED
         jz      .connection_closed
 
+; If the buffer is full, allocate a new one
+        cmp     [ebp + http_msg.buffer_length], 0
+        jne     .receive
+
+        test    [ebp + http_msg.flags], FLAG_MULTIBUFF
+        jz      .err_header
+
+        invoke  mem.alloc, BUFFERSIZE
+        test    eax, eax
+        jz      .err_no_ram
+        mov     [ebp + http_msg.content_ptr], eax
+        mov     [ebp + http_msg.write_ptr], eax
+        mov     [ebp + http_msg.buffer_length], BUFFERSIZE
+
 ; Receive some data
+  .receive:
         mcall   recv, [ebp + http_msg.socket], [ebp + http_msg.write_ptr], \
                       [ebp + http_msg.buffer_length], MSG_DONTWAIT
         cmp     eax, 0xffffffff
@@ -841,6 +943,8 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
         mov     edx, esi
         sub     edx, [ebp + http_msg.chunk_ptr]         ; edx is now length of chunkline
         sub     [ebp + http_msg.write_ptr], edx
+        test    [ebp + http_msg.flags], FLAG_MULTIBUFF
+        jnz     .dont_resize
 ; Realloc buffer, make it 'chunksize' bigger.
         lea     edx, [ebx + BUFFERSIZE]
         mov     [ebp + http_msg.buffer_length], edx     ; remaining space in new buffer
@@ -853,6 +957,7 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
         jz      .err_no_ram
         call    recalculate_pointers                    ; Because it's possible that buffer begins on another address now
         add     esi, eax                                ; recalculate esi too!
+  .dont_resize:
 ; Remove chunk header (aka chunkline) from the buffer by shifting all received data after chunkt_ptr to the left
         mov     edi, [ebp + http_msg.chunk_ptr]
         rep movsb
@@ -887,7 +992,8 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
         ret
 
   .buffer_full:
-        ; Lets make it bigger..
+        test    [ebp + http_msg.flags], FLAG_MULTIBUFF
+        jnz     .multibuff
         mov     eax, [ebp + http_msg.write_ptr]
         add     eax, BUFFERSIZE
         sub     eax, [ebp + http_msg.content_ptr]
@@ -900,6 +1006,12 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
         popa
         xor     eax, eax
         dec     eax
+        ret
+
+  .multibuff:
+        ; This buffer is full
+        popa
+        xor     eax, eax
         ret
 
   .need_more_data_for_header:
@@ -1151,24 +1263,22 @@ endp
 
 
 ;;================================================================================================;;
-proc HTTP_escape URI ;////////////////////////////////////////////////////////////////////////////;;
+proc HTTP_escape URI, length ;////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;?                                                                                                ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> URI = ptr to ASCIIZ URI                                                                        ;;
+;> URI = ptr to ASCIIZ URI/data                                                                   ;;
+;> length = length of URI/data                                                                    ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = 0 (error) / ptr to ASCIIZ URI/data                                                       ;;
 ;< ebx = length of escaped URI/data                                                               ;;
 ;;================================================================================================;;
 
-
-; TODO: instead of static buffer allocation, make it 4096 bytes and larger only if needed
-
         DEBUGF  1, "HTTP_escape: %s\n", [URI]
 
         pusha
 
-        invoke  mem.alloc, URLMAXLEN
+        invoke  mem.alloc, URLMAXLEN            ; FIXME: use length provided by caller to guess final size.
         test    eax, eax
         jz      .error
         mov     [esp + 7 * 4], eax              ; return ptr in eax
@@ -1227,7 +1337,7 @@ endp
 
 
 ;;================================================================================================;;
-proc HTTP_unescape URI ;//////////////////////////////////////////////////////////////////////////;;
+proc HTTP_unescape URI, length ;//////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;?                                                                                                ;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -1239,7 +1349,7 @@ proc HTTP_unescape URI ;////////////////////////////////////////////////////////
         DEBUGF  1, "HTTP_unescape: %s\n", [URI]
         pusha
 
-        invoke  mem.alloc, URLMAXLEN
+        invoke  mem.alloc, URLMAXLEN            ; FIXME: use length provided by caller
         test    eax, eax
         jz      .error
         mov     [esp + 7 * 4], eax              ; return ptr in eax
@@ -1768,7 +1878,9 @@ str_post_ct     db 13, 10, 'Content-Type: '
   .length       = $ - str_post_ct
 str_proxy_auth  db 13, 10, 'Proxy-Authorization: Basic '
   .length       = $ - str_proxy_auth
-str_close       db 'User-Agent: KolibriOS libHTTP/1.0', 13, 10, 'Connection: Close', 13, 10, 13, 10
+str_close       db 'User-Agent: KolibriOS libHTTP/1.1', 13, 10, 'Connection: Close', 13, 10, 13, 10
+  .length       = $ - str_close
+str_keep        db 'User-Agent: KolibriOS libHTTP/1.1', 13, 10, 'Connection: Keepalive', 13, 10, 13, 10
   .length       = $ - str_close
 
 str_http        db 'http://', 0

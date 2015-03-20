@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2014. All rights reserved.         ;;
+;; Copyright (C) KolibriOS team 2014-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  pasta.asm - Paste something to paste.kolibrios.org using POST  ;;
@@ -42,13 +42,13 @@ START:
         test    eax, eax
         jnz     exit
 
-        invoke  HTTP_get, sz_url, 0
+        invoke  HTTP_get, sz_url, 0, 0, 0
         test    eax, eax
         jz      error
         mov     [identifier], eax
 
   .again:
-        invoke  HTTP_process, [identifier]
+        invoke  HTTP_receive, [identifier]
         test    eax, eax
         jnz     .again
 
@@ -78,7 +78,7 @@ START:
 
         invoke  HTTP_free, [identifier]
 
-        invoke  HTTP_post, sz_url, sz_cookie, sz_ctype, sz_paste.length
+        invoke  HTTP_post, sz_url, 0, 0, sz_cookie, sz_ctype, sz_paste.length
         test    eax, eax
         jz      error
         mov     [identifier], eax
@@ -87,7 +87,7 @@ START:
         mcall   75, 6, , sz_paste, sz_paste.length, 0
 
   .again2:
-        invoke  HTTP_process, [identifier]
+        invoke  HTTP_receive, [identifier]
         test    eax, eax
         jnz     .again2
 
@@ -142,11 +142,10 @@ library lib_http,       'http.obj'
 
 import  lib_http, \
         HTTP_get,       'get', \
-        HTTP_process,   'process', \
-        HTTP_free,      'free', \
-        HTTP_stop,      'stop', \
         HTTP_post,      'post', \
-        HTTP_find_header_field, 'find_header_field'
+        HTTP_receive,   'receive', \
+        HTTP_find_header_field, 'find_header_field', \
+        HTTP_free,      'free'
 
 
 identifier      dd 0
