@@ -13,12 +13,12 @@ extern int mem_ReAlloc();
 
 int (* __stdcall http_init)(void);
 // On the next line, we should tell the C compiler that this procedure actually returns a pointer. (to the http_msg struct)
-unsigned int (* __stdcall http_get) (char * url, char * add_head); //yay, it's NOT uint, but hey, C is stubborn, and I'm dumb
+unsigned int (* __stdcall http_get) (char * url, unsigned int identifier, unsigned int flags, char * add_head); //yay, it's NOT uint, but hey, C is stubborn, and I'm dumb
 int (* __stdcall http_receive) (unsigned int identifier);
 void (* __stdcall http_free) (unsigned int identifier);
-char * (* __stdcall http_find_header_field) (struct http_msg *http_ahoy, char *field_name); //This is crazzzzzzyyyyyy
+char * (* __stdcall http_find_header_field) (struct http_msg *http_ahoy, char *field_name); 
 char * (* __stdcall http_unescape_url) (char * url_asciiz);
-char * (* __stdcall http_post) (char *url, char *headers, char *content_type, int content_length);
+char * (* __stdcall http_post) (char *url, unsigned int identifier, unsigned int flags, char *headers, char *content_type, int content_length);
 int (* __stdcall http_send) (struct http_msg *handle, char *data, unsigned int length);
 void (* __stdcall http_disconnect) (struct http_msg *handle);
 

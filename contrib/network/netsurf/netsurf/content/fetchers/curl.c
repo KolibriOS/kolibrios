@@ -682,7 +682,7 @@ bool fetch_curl_initiate_fetch(struct curl_fetch_info *fetch, struct http_msg *h
 	if(fetch->post_urlenc)
 	  {
 	    LOG(("http_post on %s with headers: %s", zz, fetch->post_urlenc));
-	    wererat = http_post(zz, NULL, "application/x-www-form-urlencoded", strlen(fetch->post_urlenc));
+	    wererat = http_post(zz, NULL, NULL, NULL, "application/x-www-form-urlencoded", strlen(fetch->post_urlenc));
 
 	    if(wererat == 0)
 	      {
@@ -699,7 +699,7 @@ bool fetch_curl_initiate_fetch(struct curl_fetch_info *fetch, struct http_msg *h
 	else /* GET Request */
 	  {   	    
 	    LOG(("http_get on URL : %s", zz));
-	    wererat = http_get(zz, NULL); /* Initiates the GET on the handle we want to initiate for */
+	    wererat = http_get(zz, NULL, NULL, NULL); /* Initiates the GET on the handle we want to initiate for */
 	    
 	    if(wererat == 0)               /* http_get failed. Something wrong. Can't do anything here  */
 	      {
