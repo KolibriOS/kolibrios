@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2014. All rights reserved.         ;;
+;; Copyright (C) KolibriOS team 2014-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  pasta.asm - Paste text to paste.kolibrios.org from a file or   ;;
@@ -101,13 +101,13 @@ escape:
         pop     [clipboard_data]
 
 ; Connect to the server
-        invoke  HTTP_get, sz_url, 0
+        invoke  HTTP_get, sz_url, 0, 0, 0
         test    eax, eax
         jz      error_free_clip
         mov     [identifier], eax
 
   .again:
-        invoke  HTTP_process, [identifier]
+        invoke  HTTP_receive, [identifier]
         test    eax, eax
         jnz     .again
 
@@ -139,7 +139,7 @@ escape:
 
         mov     ecx, [clipboard_data_length]
         add     ecx, sz_paste_head.length + sz_paste_tail.length
-        invoke  HTTP_post, sz_url, sz_cookie, sz_ctype, ecx
+        invoke  HTTP_post, sz_url, 0, 0, sz_cookie, sz_ctype, ecx
         test    eax, eax
         jz      error_free_clip
         mov     [identifier], eax
@@ -154,7 +154,7 @@ escape:
         mcall   68, 13, [clipboard_data]
 
   .again2:
-        invoke  HTTP_process, [identifier]
+        invoke  HTTP_receive, [identifier]
         test    eax, eax
         jnz     .again2
 
@@ -224,11 +224,10 @@ library lib_http,               'http.obj'
 
 import  lib_http, \
         HTTP_get,               'get', \
-        HTTP_process,           'process', \
-        HTTP_free,              'free', \
-        HTTP_stop,              'stop', \
         HTTP_post,              'post', \
+        HTTP_receive,           'receive', \
         HTTP_find_header_field, 'find_header_field', \
+        HTTP_free,              'free', \
         HTTP_escape,            'escape'
 
 IM_END:
