@@ -1,28 +1,24 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2009-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2014-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  downloader.asm - HTTP client for KolibriOS                     ;;
 ;;                                                                 ;;
-;;  Based on HTTPC.asm for menuetos by ville turjanmaa             ;;
-;;                                                                 ;;
-;;  Programmers: Barsuk, Clevermouse, Marat Zakiyanov,             ;;
-;;      Kirill Lipatov, dunkaist, HidnPlayr                        ;;
+;;      hidnplayr@kolibrios.org                                    ;;
 ;;                                                                 ;;
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
 ;;             Version 2, June 1991                                ;;
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-URLMAXLEN       = 1024
-BUFFERSIZE      = 4096
+URLMAXLEN       = 65535
 
 __DEBUG__       = 1
 __DEBUG_LEVEL__ = 1
 
-format binary as ""
 
+format binary as ""
 use32
         org     0x0
 
@@ -32,18 +28,23 @@ use32
         dd      IM_END          ; image size
         dd      I_END+0x1000    ; required memory
         dd      I_END+0x1000    ; esp
-        dd      params          ; I_PARAM
+        dd      url
         dd      0x0             ; I_Path
+
 
 include '../../macros.inc'
 include '../../proc32.inc'
-include '../../network.inc'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../dll.inc'
 include '../../debug-fdo.inc'
+include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/http/http.inc'
+
+virtual at 0
+        http_msg http_msg
+end virtual
+
 
 START:
-
         mcall   68, 11                  ; init heap so we can allocate memory dynamically
 
 ; load libraries
@@ -51,1033 +52,340 @@ START:
         test    eax, eax
         jnz     exit
 
-; prepare webAddr area
-        mov     al, ' '
-        mov     edi, webAddr
-        mov     ecx, URLMAXLEN
-        rep     stosb
-        xor     eax, eax
-        stosb
+; wanted events
+        mcall   40, EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER
 
-; prepare document area 
-        mov     al, '/'
-        mov     edi, document
-        stosb
-        mov     al, ' '
-        mov     ecx, URLMAXLEN-1
-        rep     stosb
-
-; load proxy settings
-        invoke  ini.get_str, inifile, sec_proxy, key_proxy, proxyAddr, 256, proxyAddr
-        invoke  ini.get_int, inifile, sec_proxy, key_proxyport, 80
-        mov     [proxyPort], eax
-        invoke  ini.get_str, inifile, sec_proxy, key_user, proxyUser, 256, proxyUser
-        invoke  ini.get_str, inifile, sec_proxy, key_password, proxyPassword, 256, proxyPassword
-
-; check parameters
-        cmp     byte[params], 0         ; no parameters ?
-        je      reset_events            ; load the GUI
-
-; we have an url, copy untill space or 0
-        mov     esi, params
-        mov     edi, document_user
-        mov     ecx, 1024               ; max parameter size
-        mov     [shared_name], 0
-  .copy_param:
+; prepare filename buffers
+        mov     edi, fname_buf
+        mov     esi, download_file_path
+  @@:
         lodsb
+        stosb
         test    al, al
-        jz      .done
+        jnz     @r
 
-        cmp     al, ' '
-        jz      .done_with_shared
+; Initialise OpenDialog
+        invoke  OpenDialog_Init, OpenDialog_data
 
-        stosb
-        dec     ecx
-        jnz     .copy_param
-        DEBUGF  2, "Invalid parameters\n"
-        jmp     exit
+; If user provided parameters, start download right away!
+        cmp     byte[url], 0
+        jne     download
 
-  .done_with_shared:
-        mov     [shared_name], esi
-  .done:
-        xor     al, al
-        stosb
-
-
-download:
-
-        DEBUGF  1, "Starting download\n"
-
-        call    parse_url
-
-        cmp     [server_ip], 0
-        je      dns_error
-
-        call    open_socket
-        call    send_request
-
-        mcall   68, 12, BUFFERSIZE      ; create buffer, we'll resize it later if needed..
-        mov     [buf_ptr], eax
-        mov     [buf_size], 0
-
-        call    read_incoming_data
-
-        mcall   close, [socketnum]
-
-        call    parse_result
-        call    save
-
-        mcall   68, 13, [final_buffer]  ; free buffer
-
-dns_error:
-        cmp     byte [params], 0
-        jne     exit
-
-reset_events:
-
-        DEBUGF  1, "resetting events\n"
-
-; Report events
-; defaults + mouse
-        mcall   40,EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER
+        mov     [OpenDialog_data.draw_window], draw_window
 
 redraw:
         call    draw_window
 
-still:
-        DEBUGF  1, "waiting for events\n"
-
+mainloop:
         mcall   10      ; wait here for event
-
         cmp     eax, EV_REDRAW
         je      redraw
-
         cmp     eax, EV_KEY
-        je      key
-
+        je      .key
         cmp     eax, EV_BUTTON
-        je      button
-        
+        je      .button
         cmp     eax, EV_MOUSE
-        je      mouse
+        je      .mouse
+        jmp     mainloop
 
-        jmp     still
-
-key:
+  .key:
         mcall   2       ; read key
-
-        stdcall [edit_box_key], dword edit1
-
+        invoke  edit_box_key, edit1
         cmp     ax, 13 shl 8
         je      download
-        
-        jmp     still
-        
-button:
+        jmp     mainloop
 
+  .button:
         mcall   17      ; get id
-
-        cmp     ah, 26
-        jne     @f
-        call    save_to_file
-        jmp     still
-  @@:
         cmp     ah, 1   ; button id=1 ?
         je      exit
 
-        jmp     download
+        cmp     [btn_text], sz_download
+        je      download
 
-mouse:
-        stdcall [edit_box_mouse], edit1
-        jmp     still
+        cmp     [btn_text], sz_open
+        je      open_file
+
+  .mouse:
+        invoke  edit_box_mouse, edit1
+        jmp     mainloop
+
+open_file:
+;        mcall   70, ...
+        jmp     mainloop
 
 exit:
-        DEBUGF  1, "Exiting\n"
-        or      eax, -1 ; close this program
-        mcall
+error:
+        mcall   -1      ; exit
 
-
-save:
-        cmp     [shared_name], 0
-        je      .use_file
-
-        call    save_in_shared
-        jmp     .done
-
-  .use_file:
-
-        call    save_to_file
-
+download:
+;        int 3
+; Extract the filename from URL
+        mov     edi, url
+        xor     al, al
+        mov     ecx, URLMAXLEN
+        repne scasb
+        mov     esi, edi
+        dec     esi
+        dec     esi
+        std
+  .loop:
+        lodsb
+        cmp     al, '/'
+        je      .done
+        test    al, al
+        jnz     .loop
   .done:
+        cld
+        mov     ecx, edi
+        sub     ecx, esi
+        inc     esi
+        inc     esi
+        mov     edi, filename_area
+        rep movsb
 
-; if called from command line, then exit
-        cmp     byte[params], 0
-        jne     exit
+; invoke OpenDialog
+        invoke  OpenDialog_Start, OpenDialog_data
+        mcall   40, EVM_REDRAW + EVM_BUTTON + EVM_STACK
+        call    draw_window
 
-        mov     ecx, [sc.work_text]
-        or      ecx, 0x80000000
-        mcall   4, <10, 93>, , download_complete
-
-        ret
-
-save_in_shared:
-
-; open the shared memory area
-        mov     esi, 1
-        mcall   68, 22, [shared_name], , 1 ; SHM_OPEN+SHM_WRITE
+; Create the file
+        mov     [fileinfo], 2           ; create/write to file
+        xor     eax, eax
+        mov     [fileinfo.offset], eax
+        mov     [fileinfo.offset+4], eax
+        mov     [fileinfo.size], eax
+        mcall   70, fileinfo
         test    eax, eax
-        jz      exit
+        jnz     error                   ; TODO: print error message
 
-        mov     ecx, [final_size]
-; store the size
-        mov     [eax], ecx
+; And start the download
+        invoke  HTTP_get, url, 0, FLAG_STREAM or FLAG_REUSE_BUFFER, 0
+        test    eax, eax
+        jz      error                   ; TODO: print error message
+        mov     [identifier], eax
+        mov     [offset], 0
+        mov     [btn_text], sz_cancel
 
-; now copy the data
-        lea     edi, [eax+4]
-        mov     esi, [final_buffer]
-        mov     eax, ecx
-        shr     ecx, 2
-        rep     movsd
-        mov     ecx, eax
-        and     ecx, 3
-        rep     movsb
+        or      [edit1.flags], ed_figure_only
+        call    draw_window
 
-        ret
+download_loop:
+        mcall   10
+        cmp     eax, EV_REDRAW
+        je      .redraw
+        cmp     eax, EV_BUTTON
+        je      .button
 
+        invoke  HTTP_receive, [identifier]
+        test    eax, eax
+        jz      save_chunk
 
-;****************************************************************************
-;    Function
-;       save_to_file
-;
-;   Description
-;
-;
-;****************************************************************************
+        mov     eax, [identifier]
+        push    [eax + http_msg.content_length]
+        pop     [pb.max]
+        push    [eax + http_msg.content_received]
+        pop     [pb.value]
 
-save_to_file:
+        invoke  progressbar_draw, pb
+        jmp     download_loop
 
-        DEBUGF  2, "Saving to file\n"
+  .redraw:
+        call    draw_window
+        jmp     download_loop
+
+  .button:
+        jmp     http_free
+
+save_chunk:
+        mov     ebp, [identifier]
+        test    [ebp + http_msg.flags], 0xffff0000      ; error?
+        jnz     http_free
+
+        cmp     [fileinfo], 3
+        je      @f
+        DEBUGF  1, "new file size=%u\n", [ebp + http_msg.content_length]
+        mov     [fileinfo], 4                           ; set end of file
+        mov     eax, [ebp + http_msg.content_length]
+        mov     [fileinfo.offset], eax                  ; new file size
         mcall   70, fileinfo
 
-        ret
-
-
-;****************************************************************************
-;    Function
-;       send_request
-;
-;   Description
-;       Transmits the GET request to the server.
-;       This is done as GET then URL then HTTP/1.1', 13, 10, 13, 10 in 3 packets
-;
-;****************************************************************************
-send_request:
-
-        DEBUGF  1, "Sending request\n"
-
-        mov     esi, string0
-        mov     edi, request
-        movsd
-; If proxy is used, make absolute URI - prepend http://<host>
-        cmp     byte[proxyAddr], 0
-        jz      .noproxy
-        mov     dword[edi], 'http'
-        mov     byte[edi+4], ':'
-        mov     word[edi+5], '//'
-        add     edi, 7
-        mov     esi, webAddr
-
-  .copy_host_loop:
-        lodsb
-        cmp     al, ' '
-        jz      .noproxy
-        stosb
-        jmp     .copy_host_loop
-
-  .noproxy:
-        xor     edx, edx ; 0
-
-  .next_edx:
-; Determine the length of the url to send in the GET request
-        mov     al, [edx+document]
-        cmp     al, ' '
-        jbe     .document_done
-        mov     [edi], al
-        inc     edi
-        inc     edx
-        jmp     .next_edx
-
-  .document_done:
-        mov     esi, stringh
-        mov     ecx, stringh_end-stringh
-        rep     movsb
-        xor     edx, edx ; 0
-
-  .webaddr_next:
-        mov     al, [webAddr + edx]
-        cmp     al, ' '
-        jbe     .webaddr_done
-        mov     [edi], al
-        inc     edi
-        inc     edx
-        jmp     .webaddr_next
-
-  .webaddr_done:
-        cmp     byte[proxyUser], 0
-        jz      @f
-        call    append_proxy_auth_header
-    @@:
-        mov     esi, connclose
-        mov     ecx, connclose_end-connclose
-        rep     movsb
-
-        pusha   
-        mov     eax, 63
-        mov     ebx, 1
-        mov     edx, request
-    @@:
-        mov     cl, [edx]
-        cmp     edx, edi
-        jz      @f
-        mcall
-        inc     edx
-        jmp     @b
-    @@:
-        popa
-
-        mov     esi, edi
-        sub     esi, request    ; length
-        xor     edi, edi        ; flags
-        mcall   send, [socketnum], request  ;' HTTP/1.1 .. '
-
-        ret
-
-;****************************************************************************
-;    Function
-;       read_incoming_data
-;
-;   Description
-;       receive the web page from the server, storing it without processing
-;
-;****************************************************************************
-read_incoming_data:
-
-        DEBUGF  1, "Reading incoming data\n"
-
-        mov     eax, [buf_ptr]
-        mov     [pos], eax
-  .read:
-        mcall   recv, [socketnum], [pos], BUFFERSIZE, 0
-        inc     eax             ; -1 = error (socket closed?)
-        jz      .error
-        dec     eax             ; 0 bytes means the remote end closed the connection
-        jz      .no_more_data
-
-        DEBUGF  1, "Got chunk of %u bytes\n", eax
-
-        add     [buf_size], eax
-        add     [pos], eax
-        push    eax
-        mov     ecx, [buf_size]
-        add     ecx, BUFFERSIZE
-        mcall   68, 20, , [buf_ptr]     ; reallocate memory block (make bigger)
-        ; TODO: parse header and resize buffer only once
-        pop     eax
-        jmp     .read
-
-  .error:
-        DEBUGF  1, "Socket error: %u\n", ebx
-        
-  .no_more_data:
-        mov     eax, [buf_ptr]
-        sub     [pos], eax
-
-        DEBUGF  1, "No more data\n"
-
-        ret
-        
-
-        
-; this function cuts header, and removes chunk sizes if doc is chunked
-; in: buf_ptr, pos; out: buf_ptr, pos.
-        
-parse_result:
-
-        mov     edi, [buf_ptr]
-        mov     edx, [pos]
-;        mov     [buf_size], edx
-;       mcall   70, fileinfo_tmp
-        DEBUGF  1, "Parsing result (%u bytes)\n", edx
-
-; first, find end of headers
-  .next_byte:
-        cmp     dword[edi], 0x0a0d0a0d
-        je      .end_of_headers
-        inc     edi
-        dec     edx
-        ja      .next_byte
-        DEBUGF  1, "Uh-oh, there's no end of header!\n"
-; no end of headers. it's an error. let client see all those headers.
-        ret
-
-  .end_of_headers:
-; here we look at headers and search content-length or transfer-encoding headers
-        DEBUGF  1, "Found end of header\n"
-
-        sub     edi, [buf_ptr]
-        add     edi, 4
-        mov     [body_pos], edi  ; store position where document body starts
-        mov     [is_chunked], 0
-; find content-length in headers
-; not good method, but should work for 'Content-Length:'
-        mov     esi, [buf_ptr]
-        mov     edi, s_contentlength
-        mov     ebx, [body_pos]
-        xor     edx, edx ; 0
-  .cl_next:
-        mov     al, [esi]
-        cmp     al, [edi + edx]
-        jne     .cl_fail
-        inc     edx
-        cmp     edx, len_contentlength
-        je      .cl_found
-        jmp     .cl_incr
-  .cl_fail:
-        xor     edx, edx ; 0
-  .cl_incr:
-        inc     esi
-        dec     ebx
-        je      .cl_error
-        jmp     .cl_next
-  .cl_error:
-        DEBUGF  1, "content-length not found\n"
-
-; find 'chunked'
-; да, я копирую код, это ужасно, но мне хочется, чтобы поскорее заработало
-; а там уж отрефакторю
-        mov     esi, [buf_ptr]
-        mov     edi, s_chunked
-        mov     ebx, [body_pos]
-        xor     edx, edx ; 0
-
-  .ch_next:
-        mov     al, [esi]
-        cmp     al, [edi + edx]
-        jne     .ch_fail
-        inc     edx
-        cmp     edx, len_chunked
-        je      .ch_found
-        jmp     .ch_incr
-
-  .ch_fail:
-        xor     edx, edx ; 0
-
-  .ch_incr:
-        inc     esi
-        dec     ebx
-        je      .ch_error
-        jmp     .ch_next
-
-  .ch_error:
-; if neither of the 2 headers is found, it's an error
-;       DEBUGF  1, "transfer-encoding: chunked not found\n"
-        mov     eax, [pos]
-        sub     eax, [body_pos]
-        jmp     .write_final_size
-
-  .ch_found:
-        mov     [is_chunked], 1
-        mov     eax, [body_pos]
-        add     eax, [buf_ptr]
-        sub     eax, 2
-        mov     [prev_chunk_end], eax
-        jmp     parse_chunks
-        
-  .cl_found:
-        call    read_number     ; eax = number from *esi
-        DEBUGF  1, "Content length: %u\n", eax
-
-  .write_final_size:
-        
-        mov     ebx, [buf_size]
-        sub     ebx, [body_pos]
-        cmp     eax, ebx
-        jbe     .size_ok
-        sub     eax, ebx
-        DEBUGF  2, "%u bytes of data are missing!\n", eax
-        mov     eax, ebx
-  .size_ok:
-        mov     [final_size], eax
-
-        mov     ebx, [body_pos]
-        add     ebx, [buf_ptr]
-        mov     [final_buffer], ebx
-
-        ret
-        
-parse_chunks:
-        DEBUGF  1, "parse chunks\n"
-        ; we have to look through the data and remove sizes of chunks we see
-        ; 1. read size of next chunk
-        ; 2. if 0, it's end. if not, continue.
-        ; 3. make a good buffer and copy a chunk there
-        xor     eax, eax
-        mov     [final_buffer], eax      ; 0
-        mov     [final_size], eax        ; 0
-        
-.read_size:
-        mov     eax, [prev_chunk_end]
-        mov     ebx, eax
-        sub     ebx, [buf_ptr]
-        mov     edx, eax
-        DEBUGF  1, "rs "
-        cmp     ebx, [pos]
-        jae     chunks_end      ; not good
-        
-        call    read_hex        ; in: eax=pointer to text. out:eax=hex number, ebx=end of text.
-        cmp     eax, 0
-        jz      chunks_end
-
-        add     ebx, 1
-        mov     edx, ebx ; edx = size of size of chunk
-        
-        add     ebx, eax
-        mov     [prev_chunk_end], ebx
-        
-        DEBUGF  1, "sz "
-
-; do copying: from buf_ptr+edx to final_buffer+prev_final_size count eax
-; realloc final buffer
-        push    eax
-        push    edx
-        push    dword [final_size]
-        add     [final_size], eax
-        mcall   68, 20, [final_size], [final_buffer]
-        mov     [final_buffer], eax
-        DEBUGF  1, "re "
-        pop     edi
-        pop     esi
-        pop     ecx
-;       add     [pos], ecx
-        add     edi, [final_buffer]
-        DEBUGF  1, "cp "
-
-        rep     movsb
-        jmp     .read_size
-        
-chunks_end:
-        DEBUGF  1, "chunks end\n"
-        mcall   68, 13, [buf_ptr]       ; free old buffer
-
-        ret
-
-; reads content-length from [edi+ecx], result in eax
-read_number:
-        push    ebx
-        xor     eax, eax
-        xor     ebx, ebx
-
-  .next:
-        mov     bl, [esi]
-
-        cmp     bl, '0'
-        jb      .not_number
-        cmp     bl, '9'
-        ja      .not_number
-        sub     bl, '0'
-        shl     eax, 1
-        lea     eax, [eax + eax * 4]     ; eax *= 10
-        add     eax, ebx
-
-  .not_number:
-        cmp     bl, 13
-        je      .done
-        inc     esi
-        jmp     .next
-
-  .done:
-        pop     ebx
-        ret
-        
-; reads hex from eax, result in eax, end of text in ebx
-read_hex:
-        add     eax, 2
-        mov     ebx, eax
-        mov     eax, [ebx]
-        mov     [deba], eax
-
-        xor     eax, eax
-        xor     ecx, ecx
-  .next:
-        mov     cl, [ebx]
-        inc     ebx
-        
-        cmp     cl, 0x0d
-        jz      .done
-
-        or      cl, 0x20
-        sub     cl, '0'
-        jb      .bad
-
-        cmp     cl, 0x9
-        jbe     .adding
-
-        sub     cl, 'a'-'0'-10
-        cmp     cl, 0x0a
-        jb      .bad
-
-        cmp     cl, 0x0f
-        ja      .bad
-
-  .adding:
-        shl     eax, 4
-        or      eax, ecx
-  .bad:
-        jmp     .next
-  .done:
-
-        ret
-
-;****************************************************************************
-;    Function
-;       open_socket
-;
-;   Description
-;       opens the socket
-;
-;****************************************************************************
-open_socket:
-
-        DEBUGF  1, "opening socket\n"
-
-        mov     edx, 80
-        cmp     byte [proxyAddr], 0
-        jz      @f
-        mov     eax, [proxyPort]
-        xchg    al, ah
-        mov     [server_port], ax
-    @@:
-
-        mcall   socket, AF_INET4, SOCK_STREAM, 0
-        mov     [socketnum], eax
-        mcall   connect, [socketnum], sockaddr1, 18
-
-        ret
-
-
-;****************************************************************************
-;    Function
-;       parse_url
-;
-;   Description
-;       parses the full url typed in by the user into a web address ( that
-;       can be turned into an IP address by DNS ) and the page to display
-;       DNS will be used to translate the web address into an IP address, if
-;       needed.
-;       url is at document_user and will be space terminated.
-;       web address goes to webAddr and is space terminated.
-;       ip address goes to server_ip
-;       page goes to document and is space terminated.
-;
-;       Supported formats:
-;       <protocol://>address<page>
-;       <protocol> is optional, removed and ignored - only http supported
-;       <address> is required. It can be an ip address or web address
-;       <page> is optional and must start with a leading / character
-;
-;****************************************************************************
-parse_url:
-; First, reset destination variables
-        mov     al, ' '
-        mov     edi, document
-        mov     ecx, URLMAXLEN
-        rep     stosb
-        mov     edi, webAddr
-        mov     ecx, URLMAXLEN
-        rep     stosb
-
-        mov     al, '/'
-        mov     [document], al
-
-        mov     esi, document_user
-; remove any leading protocol text
-        mov     ecx, URLMAXLEN
-        mov     ax, '//'
-
-pu_000:
-        cmp     [esi], byte ' '         ; end of text?
-        je      pu_002                  ; yep, so not found
-        cmp     [esi], ax
-        je      pu_001                  ; Found it, so esi+2 is start
-        inc     esi
-        loop    pu_000
-
-pu_002:
-; not found, so reset esi to start
-        mov     esi, document_user-2
-
-pu_001:
-        add     esi, 2
-        mov     ebx, esi ; save address of start of web address
-        mov     edi, document_user + URLMAXLEN   ; end of string
-; look for page delimiter - it's a '/' character
-pu_003:
-        cmp     [esi], byte ' '  ; end of text?
-        je      pu_004          ; yep, so none found
-        cmp     esi, edi         ; end of string?
-        je      pu_004          ; yep, so none found
-        cmp     [esi], byte '/'  ; delimiter?
-        je      pu_005          ; yep - process it
-        inc     esi
-        jmp     pu_003
-
-pu_005:
-; copy page to document address
-; esi = delimiter
-        push    esi
-        mov     ecx, edi         ; end of document_user
-        mov     edi, document
-
-pu_006:
-        movsb
-        cmp     esi, ecx
-        je      pu_007          ; end of string?
-        cmp     [esi], byte ' '  ; end of text
-;       je      pu_007          ; дзен-ассемблер
-;       jmp     pu_006          ; не надо плодить сущности по напрасну
-        jne     pu_006
-
-pu_007:
-        pop     esi     ; point esi to '/' delimiter
-
-pu_004:
-; copy web address to webAddr
-; start in ebx, end in esi-1
-        mov     ecx, esi
-        mov     esi, ebx
-        mov     edi, webAddr
+        mov     [fileinfo], 3                           ; write to existing file
   @@:
-        movsb
-        cmp     esi, ecx
-        jne     @r
-        mov     byte [edi], 0
+        mov     ecx, [ebp + http_msg.content_received]
+        sub     ecx, [offset]
+        mov     [fileinfo.size], ecx
+        mov     eax, [ebp + http_msg.content_ptr]
+        mov     [fileinfo.buffer], eax
+        mov     ebx, [offset]
+        mov     [fileinfo.offset], ebx
+        DEBUGF  1, "Writing to disk: size=%u offset=%u\n", ecx, ebx
+        mcall   70, fileinfo
 
-pu_009:
-; For debugging, display resulting strings
-        DEBUGF  2, "Downloadng %s\n", document_user
+        mov     eax, [ebp + http_msg.content_received]
+        mov     [offset], eax
 
-; Look up the ip address, or was it specified?
-        mov     al, [proxyAddr]
-        cmp     al, 0
-        jnz     pu_015
-        mov     al, [webAddr]
-pu_015:
-        cmp     al, '0'
-        jb      pu_010  ; Resolve address
-        cmp     al, '9'
-        ja      pu_010  ; Resolve address
+        test    [ebp + http_msg.flags], FLAG_GOT_ALL_DATA
+        jz      download_loop
 
-        DEBUGF  1, "GotIP\n"
+        mov     [pb.progress_color], 0x0000c800         ; green
 
-; Convert address
-; If proxy is given, get proxy address instead of server
-        mov     esi, proxyAddr-1
-        cmp     byte[esi+1], 0
-        jne     pu_020
-        mov     esi, webAddr-1
+http_free:
+        mcall   40, EVM_REDRAW + EVM_BUTTON
+        push    [ebp + http_msg.content_received]
+        pop     [pb.value]
 
-pu_020:
-        mov     edi, server_ip
-        xor     eax, eax
-
-ip1:
-        inc     esi
-        cmp     [esi], byte '0'
-        jb      ip2
-        cmp     [esi], byte '9'
-        ja      ip2
-        imul    eax, 10
-        movzx   ebx, byte [esi]
-        sub     ebx, 48
-        add     eax, ebx
-        jmp     ip1
-
-ip2:
-        mov     [edi], al
-        xor     eax, eax
-        inc     edi
-        cmp     edi, server_ip+3
-        jbe     ip1
-
-        ret
-
-pu_010:
-        DEBUGF  1, "Resolving %s\n", webAddr
-
-; resolve name
-        push    esp     ; reserve stack place
-        push    esp     ; fourth parameter
-        push    0       ; third parameter
-        push    0       ; second parameter
-        push    webAddr
-        call    [getaddrinfo]
-        pop     esi
-        test    eax, eax
-        jnz     .fail_dns
-
-; fill in ip
-        mov     eax, [esi + addrinfo.ai_addr]
-        mov     eax, [eax + sockaddr_in.sin_addr]
-        mov     [server_ip], eax
-
-; free allocated memory
-        push    esi
-        call    [freeaddrinfo]
-
-        DEBUGF  1, "Resolved to %u.%u.%u.%u\n", [server_ip]:1, [server_ip + 1]:1, [server_ip + 2]:1, [server_ip + 3]:1
-
-        ret
-
-  .fail_dns:
-        DEBUGF  1, "DNS resolution failed\n"
-        mov     [server_ip], 0
-
-        ret
-
-;***************************************************************************
-;   Function
-;       append_proxy_auth_header
-;
-;   Description
-;       Append header to HTTP request for proxy authentification
-;
-;***************************************************************************
-append_proxy_auth_header:
-        mov     esi, proxy_auth_basic
-        mov     ecx, proxy_auth_basic_end - proxy_auth_basic
-        rep     movsb
-; base64-encode string <user>:<password>
-        mov     esi, proxyUser
-
-apah000:
-        lodsb
-        test    al, al
-        jz      apah001
-        call    encode_base64_byte
-        jmp     apah000
-
-apah001:
-        mov     al, ':'
-        call    encode_base64_byte
-        mov     esi, proxyPassword
-
-apah002:
-        lodsb
-        test    al, al
-        jz      apah003
-        call    encode_base64_byte
-        jmp     apah002
-
-apah003:
-        call    encode_base64_final
-        ret
-
-encode_base64_byte:
-        inc     ecx
-        shl     edx, 8
-        mov     dl, al
-        cmp     ecx, 3
-        je      ebb001
-        ret
-
-ebb001:
-        shl     edx, 8
-        inc     ecx
-
-ebb002:
-        rol     edx, 6
-        xor     eax, eax
-        xchg    al, dl
-        mov     al, [base64_table+eax]
-        stosb
-        loop    ebb002
-        ret
-
-encode_base64_final:
-        mov     al, 0
+        mov     ecx, [ebp + http_msg.content_ptr]
         test    ecx, ecx
-        jz      ebf000
-        call    encode_base64_byte
-        test    ecx, ecx
-        jz      ebf001
-        call    encode_base64_byte
-        mov     byte [edi-2], '='
+        jz      @f
+        mcall   68, 13                                  ; free the buffer
+  @@:
 
-ebf001:
-        mov     byte [edi-1], '='
+        invoke  HTTP_free, [identifier]                 ; free headers and connection
 
-ebf000:
-        ret
+        mov     [btn_text], sz_open
+        call    draw_window
+        jmp     mainloop
 
-;   *********************************************
-;   *******  WINDOW DEFINITIONS AND DRAW ********
-;   *********************************************
+
 
 draw_window:
+        mcall   12, 1   ; start window draw
 
-        mcall   12, 1
+; get system colors
+        mcall   48, 3, sc, 40
 
-        mcall   48, 3, sc, 40 ;get system colors
-
+; draw window
         mov     edx, [sc.work]
         or      edx, 0x34000000
-        mcall   0, <50, 370>, <350, 140>, , 0, title   ;draw window
-        
-        mov     ecx, [sc.work_text]
-        or      ecx, 80000000h
-        mcall   4, <14, 14>, , type_pls ;"URL:"
+        mcall   0, <50, 320>, <350, 110>, , 0, title
 
-        edit_boxes_set_sys_color edit1, editboxes_end, sc
-        stdcall [edit_box_draw], edit1
+; draw button
+        mcall   8, <229,75>, <60,16>, 22, [sc.work_button]      ; download
 
-; RELOAD
-        mcall   8, <90, 68>, <54, 16>, 22, [sc.work_button]
-; STOP
-        mcall   , <166, 50>, <54, 16>, 24
-; SAVE
-        mcall   , <224, 54>, , 26
-; BUTTON TEXT
+; draw button text
         mov     ecx, [sc.work_button_text]
         or      ecx, 80000000h
-        mcall   4, <102, 59>, , button_text
+        mcall   4, <240,65>, , [btn_text]
 
-        mcall   12, 2 ; end window redraw
+; draw editbox
+        edit_boxes_set_sys_color edit1, editboxes_end, sc
+        invoke  edit_box_draw, edit1
 
+        cmp     [identifier], 0
+        je     @f
+; draw progressbar
+        invoke  progressbar_draw, pb
+  @@:
+        mcall   12, 2   ; end window draw
         ret
 
 
-;-----------------------------------------------------------------------------
+dont_draw:
+
+        ret
+
+;---------------------------------------------------------------------
 ; Data area
 ;-----------------------------------------------------------------------------
 align   4
 @IMPORT:
 
-library libini, 'libini.obj', \
-        box_lib, 'box_lib.obj', \
-        network, 'network.obj'
+library lib_http,       'http.obj', \
+        box_lib,        'box_lib.obj', \
+        proc_lib,       'proc_lib.obj'
 
-import  libini, \
-        ini.get_str, 'ini_get_str', \
-        ini.get_int, 'ini_get_int'
+import  lib_http, \
+        HTTP_get,       'get', \
+        HTTP_receive,   'receive', \
+        HTTP_free,      'free'
 
 import  box_lib, \
-        edit_box_draw, 'edit_box', \
-        edit_box_key, 'edit_box_key', \
-        edit_box_mouse, 'edit_box_mouse'
+        edit_box_draw,    'edit_box', \
+        edit_box_key,     'edit_box_key', \
+        edit_box_mouse,   'edit_box_mouse', \
+        progressbar_draw, 'progressbar_draw', \
+        progressbar_prog, 'progressbar_progress'
 
-import  network,\
-        getaddrinfo,    'getaddrinfo',\
-        freeaddrinfo,   'freeaddrinfo',\
-        inet_ntoa,      'inet_ntoa'
+import  proc_lib, \
+        OpenDialog_Init,  'OpenDialog_init', \
+        OpenDialog_Start, 'OpenDialog_start'
 
-;---------------------------------------------------------------------
-fileinfo        dd 2, 0, 0
-final_size      dd 0
-final_buffer    dd 0
-                db '/rd/1/.download', 0
-        
-body_pos        dd 0
-buf_size        dd 0
-buf_ptr         dd 0
 
-deba            dd 0
+fileinfo        dd 2
+  .offset       dd 0, 0
+  .size         dd 0
+  .buffer       dd 0
                 db 0
+                dd fname_buf
 
-;---------------------------------------------------------------------
-
-mouse_dd        dd 0
-edit1           edit_box 295, 48, 10, 0xffffff, 0xff, 0x80ff, 0, 0x8000, URLMAXLEN, document_user, mouse_dd, ed_focus+ed_always_focus, 7, 7
+edit1           edit_box 299, 5, 10, 0xffffff, 0x0000ff, 0x0080ff, 0x000000, 0x8000, URLMAXLEN, url, mouse_dd, ed_focus+ed_always_focus, 0, 0
 editboxes_end:
 
-;---------------------------------------------------------------------
+identifier      dd 0
+btn_text        dd sz_download
+sz_download     db 'Download', 0
+sz_cancel       db ' Cancel ', 0
+sz_open         db '  Open  ', 0
+title           db 'HTTP Downloader', 0
+
+OpenDialog_data:
+.type                   dd 1    ; Save
+.procinfo               dd procinfo
+.com_area_name          dd communication_area_name
+.com_area               dd 0
+.opendir_path           dd temp_dir_path
+.dir_default_path       dd communication_area_default_path
+.start_path             dd open_dialog_path
+.draw_window            dd dont_draw
+.status                 dd 0
+.openfile_patch         dd fname_buf
+.filename_area          dd filename_area
+.filter_area            dd filter
+.x:
+.x_size                 dw 420  ; Window X size
+.x_start                dw 200  ; Window X position
+.y:
+.y_size                 dw 320  ; Window y size
+.y_start                dw 120  ; Window Y position
+
+communication_area_name         db 'FFFFFFFF_open_dialog',0
+open_dialog_path                db '/sys/File Managers/opendial',0
+communication_area_default_path db '/sys',0
+
+filter:
+dd      0
+db      0
+
+pb:
+.value          dd 0
+.left           dd 5
+.top            dd 35
+.width          dd 300
+.height         dd 16
+.style          dd 1
+.min            dd 0
+.max            dd 0
+.back_color     dd 0xefefef
+.progress_color dd 0xc8c8c8
+.frame_color    dd 0x94aece
+.frame_color2   dd 0xffffff
 
 include_debug_strings
 
-;---------------------------------------------------------------------
+download_file_path db '/tmp0/1/', 0
 
-type_pls        db 'URL:', 0
-button_text     db 'DOWNLOAD     STOP     RESAVE', 0
-download_complete db 'File saved as /rd/1/.download', 0
-title           db 'HTTP Downloader', 0
-
-;---------------------------------------------------------------------
-s_contentlength db 'Content-Length:'
-len_contentlength = 15
-
-s_chunked       db 'Transfer-Encoding: chunked'
-len_chunked     = $ - s_chunked
-
-string0:        db 'GET '
-
-stringh                 db ' HTTP/1.1', 13, 10, 'Host: '
-stringh_end:
-proxy_auth_basic        db 13, 10, 'Proxy-Authorization: Basic '
-proxy_auth_basic_end:
-connclose               db 13, 10, 'User-Agent: Kolibrios Downloader', 13, 10, 'Connection: Close', 13, 10, 13, 10
-connclose_end:
-
-base64_table    db 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
-                db '0123456789+/'
-
-inifile         db '/sys/settings/network.ini', 0
-
-sec_proxy:
-key_proxy       db 'proxy', 0
-key_proxyport   db 'port', 0
-key_user        db 'user', 0
-key_password    db 'password', 0
-
-sockaddr1:
-                dw AF_INET4
-server_port     dw 0x5000       ; 80
-server_ip       dd 0
-                rb 10
-
-proxyPort       dd 80
-
-shared_name     dd 0
-
-;---------------------------------------------------------------------
-document_user   db 'http://', 0
-;---------------------------------------------------------------------
 IM_END:
-;---------------------------------------------------------------------
-                rb URLMAXLEN-(IM_END - document_user)
-;---------------------------------------------------------------------
-                sc system_colors
-;---------------------------------------------------------------------
-align 4
-document        rb URLMAXLEN
-;---------------------------------------------------------------------
-align 4
-webAddr         rb URLMAXLEN+1
-;---------------------------------------------------------------------
-pos             dd ?
-socketnum       dd ?
-is_chunked      dd ?
-prev_chunk_end  dd ?
-cur_chunk_size  dd ?
-;---------------------------------------------------------------------
 
-params          rb 1024
+url             rb URLMAXLEN
+sc              system_colors
+offset          dd ?
+mouse_dd        dd ?
 
-request         rb 256
-
-proxyAddr       rb 256
-proxyUser       rb 256
-proxyPassword   rb 256
+filename_area   rb 256
+temp_dir_path   rb 4096
+procinfo        rb 1024
+fname_buf       rb 4096
+text_work_area  rb 1024
 
 I_END:
-
-
-
