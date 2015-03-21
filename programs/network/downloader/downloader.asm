@@ -50,7 +50,7 @@ START:
 ; load libraries
         stdcall dll.Load, @IMPORT
         test    eax, eax
-        jnz     exit
+        jnz     mainloop.exit
 
 ; wanted events
         mcall   40, EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER
@@ -98,7 +98,7 @@ mainloop:
   .button:
         mcall   17      ; get id
         cmp     ah, 1   ; button id=1 ?
-        je      exit
+        je      .exit
 
         cmp     [btn_text], sz_download
         je      download
@@ -106,20 +106,20 @@ mainloop:
         cmp     [btn_text], sz_open
         je      open_file
 
+  .exit:
+        mcall   -1      ; exit
+
   .mouse:
         invoke  edit_box_mouse, edit1
         jmp     mainloop
 
+
 open_file:
-;        mcall   70, ...
+        mcall   70, fileopen
         jmp     mainloop
 
-exit:
-error:
-        mcall   -1      ; exit
 
 download:
-;        int 3
 ; Extract the filename from URL
         mov     edi, url
         xor     al, al
@@ -149,7 +149,7 @@ download:
         mcall   40, EVM_REDRAW + EVM_BUTTON + EVM_STACK
         call    draw_window
 
-; Create the file
+; Create the local file
         mov     [fileinfo], 2           ; create/write to file
         xor     eax, eax
         mov     [fileinfo.offset], eax
@@ -157,18 +157,34 @@ download:
         mov     [fileinfo.size], eax
         mcall   70, fileinfo
         test    eax, eax
-        jnz     error                   ; TODO: print error message
+        jnz     create_error
 
-; And start the download
+; Start the download
         invoke  HTTP_get, url, 0, FLAG_STREAM or FLAG_REUSE_BUFFER, 0
         test    eax, eax
-        jz      error                   ; TODO: print error message
+        jz      get_error
+
         mov     [identifier], eax
         mov     [offset], 0
         mov     [btn_text], sz_cancel
-
+        mov     [status], sz_downloading
         or      [edit1.flags], ed_figure_only
+        and     [edit1.flags], not ed_focus
+        push    [sc.work]
+        pop     [edit1.color]
         call    draw_window
+
+        jmp     download_loop
+
+get_error:
+        mov     [btn_text], sz_exit
+        mov     [status], sz_err_http
+        jmp     redraw
+
+create_error:
+        mov     [btn_text], sz_exit
+        mov     [status], sz_err_create
+        jmp     redraw
 
 download_loop:
         mcall   10
@@ -179,15 +195,7 @@ download_loop:
 
         invoke  HTTP_receive, [identifier]
         test    eax, eax
-        jz      save_chunk
-
-        mov     eax, [identifier]
-        push    [eax + http_msg.content_length]
-        pop     [pb.max]
-        push    [eax + http_msg.content_received]
-        pop     [pb.value]
-
-        invoke  progressbar_draw, pb
+        jz      got_data
         jmp     download_loop
 
   .redraw:
@@ -197,23 +205,34 @@ download_loop:
   .button:
         jmp     http_free
 
-save_chunk:
+got_data:
         mov     ebp, [identifier]
         test    [ebp + http_msg.flags], 0xffff0000      ; error?
-        jnz     http_free
+        jnz     http_error
 
-        cmp     [fileinfo], 3
-        je      @f
-        DEBUGF  1, "new file size=%u\n", [ebp + http_msg.content_length]
-        mov     [fileinfo], 4                           ; set end of file
+        cmp     [fileinfo], 3                           ; Did we write before?
+        je      .write
+
+        test    [ebp + http_msg.flags], FLAG_CONTENT_LENGTH
+        jz      .first_write
+
         mov     eax, [ebp + http_msg.content_length]
+        mov     [pb.max], eax
+
+        DEBUGF  1, "new file size=%u\n", eax
+        mov     [fileinfo], 4                           ; set end of file
         mov     [fileinfo.offset], eax                  ; new file size
         mcall   70, fileinfo
+        test    eax, eax
+        jnz     write_error
 
+
+  .first_write:
         mov     [fileinfo], 3                           ; write to existing file
-  @@:
+  .write:
         mov     ecx, [ebp + http_msg.content_received]
         sub     ecx, [offset]
+        jz      download_loop                           ; more then 0 data bytes?
         mov     [fileinfo.size], ecx
         mov     eax, [ebp + http_msg.content_ptr]
         mov     [fileinfo.buffer], eax
@@ -221,14 +240,37 @@ save_chunk:
         mov     [fileinfo.offset], ebx
         DEBUGF  1, "Writing to disk: size=%u offset=%u\n", ecx, ebx
         mcall   70, fileinfo
+        test    eax, eax                                ; check error code
+        jnz     write_error
+        cmp     ebx, ecx                                ; check if all bytes were written to disk
+        jne     write_error
 
         mov     eax, [ebp + http_msg.content_received]
         mov     [offset], eax
+        mov     [pb.value], eax
+
+        invoke  progressbar_draw, pb
 
         test    [ebp + http_msg.flags], FLAG_GOT_ALL_DATA
         jz      download_loop
 
+; Download completed successfully
+        mov     [status], sz_complete
         mov     [pb.progress_color], 0x0000c800         ; green
+        mov     [btn_text], sz_open
+        jmp     http_free
+
+write_error:
+        mov     [status], sz_err_full
+        mov     [pb.progress_color], 0x00c80000         ; red
+        mov     [btn_text], sz_exit
+        jmp     http_free
+
+http_error:
+        mov     [status], sz_err_http
+        mov     [pb.progress_color], 0x00c80000         ; red
+        mov     [btn_text], sz_exit
+;        jmp     http_free
 
 http_free:
         mcall   40, EVM_REDRAW + EVM_BUTTON
@@ -240,14 +282,8 @@ http_free:
         jz      @f
         mcall   68, 13                                  ; free the buffer
   @@:
-
         invoke  HTTP_free, [identifier]                 ; free headers and connection
-
-        mov     [btn_text], sz_open
-        call    draw_window
-        jmp     mainloop
-
-
+        jmp     redraw
 
 draw_window:
         mcall   12, 1   ; start window draw
@@ -261,12 +297,17 @@ draw_window:
         mcall   0, <50, 320>, <350, 110>, , 0, title
 
 ; draw button
-        mcall   8, <229,75>, <60,16>, 22, [sc.work_button]      ; download
+        mcall   8, <229,75>, <60,16>, 22, [sc.work_button]
 
 ; draw button text
         mov     ecx, [sc.work_button_text]
         or      ecx, 80000000h
         mcall   4, <240,65>, , [btn_text]
+
+; draw status text
+        mov     ecx, [sc.work_text]
+        or      ecx, 80000000h
+        mcall   4, <10,65>, , [status]
 
 ; draw editbox
         edit_boxes_set_sys_color edit1, editboxes_end, sc
@@ -278,11 +319,8 @@ draw_window:
         invoke  progressbar_draw, pb
   @@:
         mcall   12, 2   ; end window draw
-        ret
-
 
 dont_draw:
-
         ret
 
 ;---------------------------------------------------------------------
@@ -319,14 +357,30 @@ fileinfo        dd 2
                 db 0
                 dd fname_buf
 
+fileopen        dd 7
+                dd 0                    ; flags
+                dd fname_buf            ; parameters
+                dd 0                    ; reserved
+                dd 0                    ; reserved
+                db "/sys/@open", 0      ; path
+
 edit1           edit_box 299, 5, 10, 0xffffff, 0x0000ff, 0x0080ff, 0x000000, 0x8000, URLMAXLEN, url, mouse_dd, ed_focus+ed_always_focus, 0, 0
 editboxes_end:
 
 identifier      dd 0
 btn_text        dd sz_download
+status          dd sz_null
 sz_download     db 'Download', 0
 sz_cancel       db ' Cancel ', 0
 sz_open         db '  Open  ', 0
+sz_exit         db '  Exit  ', 0
+
+sz_null         db 0
+sz_downloading  db 'Downloading..', 0
+sz_complete     db 'Download completed', 0
+sz_err_create   db 'Could not create the local file!', 0
+sz_err_full     db 'Disk full!', 0
+sz_err_http     db 'HTTP error!', 0
 title           db 'HTTP Downloader', 0
 
 OpenDialog_data:
