@@ -279,7 +279,7 @@ getaddrinfo:                                                                 ;;
 ;;---------------------------------------------------------------------------;;
 ;> first parameter (optional) = host name                                    ;;
 ;> second parameter (optional) = service name (decimal number for now)       ;;
-;> third parameter (optional) = hints for socketnum type                        ;;
+;> third parameter (optional) = hints for socket type                        ;;
 ;> fourth parameter = pointer to result (head of L1-list)                    ;;
 ;;---------------------------------------------------------------------------;;
 ;< eax = 0 on success / one of EAI_ codes on error                           ;;
