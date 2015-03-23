@@ -88,51 +88,39 @@ endp
 
 align 4
 proc detect
-           locals
-            last_bus dd ?
-           endl
 
         mov     esi, msgSearch
         invoke  SysMsgBoardStr
 
-        xor     eax, eax
-        mov     [bus], eax
-        inc     eax
-        invoke  PciApi          ; get last bus
-        cmp     eax, -1
-        je      .error
-        mov     [last_bus], eax
+        invoke  GetPCIList
+        mov     edx, eax
 
-  .next_bus:
-        and     [devfn], 0
-  .next_dev:
-        invoke  PciRead16, [bus], [devfn], PCI_header.subclass  ; subclass/vendor
-        cmp     ax, 0x0300      ; display controller - vga compatable controller
+  .loop:
+        mov     ebx, [eax + PCIDEV.class]
+        cmp     bx, 0x0300      ; display controller - vga compatible controller
         je      .found
-        cmp     ax, 0x0302      ; display controller - 3d controller
+        cmp     bx, 0x0302      ; display controller - 3d controller
         je      .found
-        cmp     ax, 0x0380      ; display controller - other display controller
+        cmp     bx, 0x0380      ; display controller - other display controller
         je      .found
 
   .next:
-        inc     [devfn]
-        cmp     [devfn], 256
-        jb      .next_dev
-        mov     eax, [bus]
-        inc     eax
-        mov     [bus], eax
-        cmp     eax, [last_bus]
-        jna     .next_bus
+        mov     eax, [eax + PCIDEV.fd]
+        cmp     eax, edx
+        jne     .loop
 
-  .error:
-        mov     esi, msgFail
+        mov     esi, msgDone
         invoke  SysMsgBoardStr
 
-        xor     eax, eax
-        inc     eax
+        or      eax, -1
         ret
 
   .found:
+        push    eax edx
+        movzx   ebx, [eax + PCIDEV.bus]
+        mov     [bus], ebx
+        movzx   ebx, [eax + PCIDEV.devfn]
+        mov     [devfn], ebx
         invoke  PciRead8, [bus], [devfn], PCI_header00.prog_if
         test    al, 1 shl 4                             ; got capabilities list?
         jnz     .got_capabilities_list
@@ -140,6 +128,7 @@ proc detect
         ; TODO: Do it the old way: detect device and check with a list of known capabilities
         ; stupid pre PCI 2.2 board....
 
+        pop     edx eax
         jmp     .next
 
   .got_capabilities_list:
@@ -176,7 +165,9 @@ proc detect
         test    al, 10b
         jnz     .010b
         test    al, 1b
-        jz      .error
+
+        pop     edx eax
+        jz      .next
 
   .001b:
         mov     [cmd], 001b
@@ -247,7 +238,8 @@ end if
         mov     esi, msgOK
         invoke  SysMsgBoardStr
 
-        ret
+        pop     edx eax
+        jmp     .next
 
 endp
 
@@ -263,7 +255,7 @@ my_service      db 'AGP', 0                             ; max 16 chars include z
 
 msgInit         db 'AGP driver loaded.', 13, 10, 0
 msgSearch       db 'Searching for AGP card...', 13, 10, 0
-msgFail         db 'device not found', 13, 10, 0
+msgDone         db 'Done', 13, 10, 0
 msgOK           db 'AGP device enabled', 13, 10, 0
 msgAGP2         db 'AGP2 device found', 13, 10, 0
 msgAGP3         db 'AGP3 device found', 13, 10, 0
