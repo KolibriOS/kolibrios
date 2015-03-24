@@ -636,7 +636,7 @@ atof_convertFractionalPart:
 draw_window:
         mcall   12, 1
 
-        mcall   48, 3, sc, 192
+        mcall   48, 3, sc, sizeof.system_colors
 
         mcall   48, 4
 
@@ -644,7 +644,7 @@ draw_window:
         xor     eax, eax                     
         mov     ebx, 200 shl 16 + 256
         add     ecx, 200 shl 16 + 158
-        mov     edx, [sc.win_body]
+        mov     edx, [sc.work]
         or      edx, 0x34000000
         mov     edi, title
         mcall
@@ -653,7 +653,7 @@ draw_window:
         mov     ebx, 19 shl 16 + 28
         mov     ecx, 49 shl 16 + 18
         mov     edx, 6
-        mov     esi, [sc.btn_face]
+        mov     esi, [sc.work_button]
         mov     edi, 7
 newbutton:
         dec     edi
@@ -672,7 +672,7 @@ no_new_row:
         mcall   , <220,  8>, < 7,  8>, 3        ; 'dec-bin-hex'
 
 
-        mov     ecx, [sc.btn_text]
+        mov     ecx, [sc.work_button_text]
         mov     edx, text
         mov     edi, 55 - 20
 next_line:
@@ -704,19 +704,19 @@ next_button:
 
 print_display:
         pusha
-        mcall   13, < 20, 207>, <21, 17>, [sc.gui_face]
-        mcall   38, < 19, 227>, <20, 20>, [sc.gui_frame]
-        mcall   38, < 19, 227>, <38, 38>, [sc.gui_frame]
-        mcall   38, < 19,  19>, <21, 37>, [sc.gui_frame]
-        mcall   38, <227, 227>, <21, 37>, [sc.gui_frame]
+        mcall   13, < 20, 207>, <21, 17>, 0xFFFfff
+        mcall   38, < 19, 227>, <20, 20>, [sc.work_graph]
+        mcall   38, < 19, 227>, <38, 38>, [sc.work_graph]
+        mcall   38, < 19,  19>, <21, 37>, [sc.work_graph]
+        mcall   38, <227, 227>, <21, 37>, [sc.work_graph]
 
         mov     eax, 4
         mov     ebx, 135 shl 16 + 7
-        mov     ecx, [sc.gui_text]
+        mov     ecx, [sc.work_text]
         or      ecx, 0x40000000
         mov     edx, calc
         mov     esi, 1
-        mov     edi, [sc.win_body]
+        mov     edi, [sc.work]
         mcall
 
         mov     ebx, 198 shl 16 + 8
@@ -724,7 +724,7 @@ print_display:
         shl     edx, 2
         add     edx, display_type_text
         mov     esi, 3
-        mov     edi, [sc.win_body]
+        mov     edi, [sc.work]
         mcall
 
         cmp     [dsign], byte '+'
@@ -841,6 +841,6 @@ butid:  db 12, 13, 14, 19, 20, 21, 26, 27, 28, 34, 15, 39, 22, 36, 29, 35, 35, 1
 
 I_END:
 
-sc      sys_colors_new
+sc      system_colors
 rb      0x200	; stack
 E_END:
