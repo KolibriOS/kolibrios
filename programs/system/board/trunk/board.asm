@@ -20,7 +20,7 @@ P_LEN        equ 11
 include '../../../macros.inc'
 include '../../../debug.inc'
 purge       newline
-MAXSTRINGS  = 16
+MAXSTRINGS  = 45
 TMP = 80*(MAXSTRINGS+1)
 ;------------------------------------------------------------------------------
     START:
@@ -218,6 +218,9 @@ draw_window:
         mcall   8,,<4,13>,3,[sc.btn_face]
         mov     edx, [vmode]
         lea     edx, [edx*4+duk]
+		mov     ecx, 0x80
+		shr     ecx, 24
+		add     ecx, [sc.btn_text]
         mcall   4,<300,7>,,,4
         call    draw_text
         mcall   12, 2                     ; 2, end of draw
