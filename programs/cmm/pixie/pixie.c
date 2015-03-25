@@ -62,6 +62,9 @@ enum {
 	THEME_LIGHT
 };
 
+char work_folder[4096],
+     current_filename[256];
+
 
 #include "get_files_list.h"
 #include "settings.h"
@@ -89,7 +92,11 @@ void main()
 		strcpy(#work_folder, #param);
 		work_folder[strrchr(#work_folder, '/')-1]='\0';
 	}
-	if (work_folder) OpenDirectory(#work_folder);
+	if (work_folder) 
+	{
+		OpenDirectory(#work_folder);
+		SetOpenedFileFirst(#param);
+	}
 
 	StartPlayingMp3();
 	list.SetSizes(1, skin.h, skin.w-1, 198, 40, 18);
@@ -143,7 +150,7 @@ void main()
 				} while (drag_mouse.lkm);
 			}
 			if (m.pkm) && (m.y > skin.h) 
-				notify("'Pixies Player v1.1\nChange sound volume: Left/Right key\nChange skin: F1/F2\nMute: M key' -St\n");
+				notify("'Pixies Player v1.11\nChange sound volume: Left/Right key\nChange skin: F1/F2\nMute: M key' -St\n");
 	  		break;
 
 		case evButton:
@@ -232,7 +239,7 @@ void main()
 				if (current_playing_file_n < list.count) 
 				{
 					current_playing_file_n = list.current;
-					StartPlayingMp3();
+					if (list.KeyDown()) StartPlayingMp3();
 				}
 				else
 				{
@@ -249,6 +256,7 @@ void DrawPlayList()
 {
 	int i;
 	int yyy;
+	char temp_filename[4096];
 	
 	for (i=0; i<list.visible; i++;)
 	{

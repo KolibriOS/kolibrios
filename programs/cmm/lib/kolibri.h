@@ -589,3 +589,10 @@ inline fastcall void DeleteButton( EDX)
 	EDX += BT_DEL;
 	$int 0x40;
 }
+
+inline fastcall dword GetStartTime()
+{
+	$mov eax,26
+	$mov ebx,9
+	$int 0x40
+}

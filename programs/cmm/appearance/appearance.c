@@ -79,10 +79,12 @@ void Draw_List()
 {
 	int i;
 	int yyy;
+	int list_last;
 	list[SKINS].SetSizes(0, PANEL_H, Form.cwidth-scroll1.size_x-1, Form.cheight-PANEL_H, 40, 20);
 	list[WALLPAPERS].SetSizes(0, PANEL_H, Form.cwidth-scroll1.size_x-1, Form.cheight-PANEL_H, 40, 20);
-	
-	for (i=0; i<list[active].visible; i++;)
+	if (list[active].count > list[active].visible) list_last = list[active].visible; else list_last = list[active].count;
+
+	for (i=0; i<list_last; i++;)
 	{
 		cur = list[active].first;
 		strcpy(#temp_filename, files_mas[i+cur]*304 + buf+72);
@@ -94,12 +96,12 @@ void Draw_List()
 			if (sc.work_button<>sc.work)
 			{
 				DrawBar(0, yyy, list[active].w, list[active].line_h, sc.work_button);
-				WriteText(12,yyy+list[active].text_y,0x80,sc.work_button_text, #temp_filename);
+				if (i<list[active].count) WriteText(12,yyy+list[active].text_y,0x80,sc.work_button_text, #temp_filename);
 			}
 			else
 			{
 				DrawBar(0, yyy, list[active].w, list[active].line_h, sc.grab_button);
-				WriteText(12,yyy+list[active].text_y,0x80,sc.grab_button_text, #temp_filename);
+				if (i<list[active].count) WriteText(12,yyy+list[active].text_y,0x80,sc.grab_button_text, #temp_filename);
 			}
 		}
 		else
@@ -108,7 +110,7 @@ void Draw_List()
 			WriteText(12,yyy+list[active].text_y,0x80,0, #temp_filename);
 		}
 	}
-	DrawBar(0,list[active].visible*list[active].line_h+list[active].y, list[active].w, -list[active].visible*list[active].line_h+ list[active].h, 0xFFFfff);
+	DrawBar(0,list_last*list[active].line_h+list[active].y, list[active].w, -list_last*list[active].line_h+ list[active].h, 0xFFFfff);
 	DrawScroller();
 }
 

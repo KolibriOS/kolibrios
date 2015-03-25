@@ -1,6 +1,3 @@
-char temp_filename[4096],
-     work_folder[4096],
-     current_filename[256];
 int files_mas[2000];
 dword buf;
 
@@ -8,10 +5,11 @@ dword buf;
 void OpenDirectory(dword folder_path)
 {
 	int cur;
+	char temp_filename[4096];
 	dword j, filesnum, end_pointer;
 
 	list.count = 0;
-	//free(buf);
+	if (buf) free(buf);
 	if (GetDir(#buf, #filesnum, folder_path, DIRS_ONLYREAL)==0)
 	if (filesnum==0)
 	{
@@ -28,7 +26,6 @@ void OpenDirectory(dword folder_path)
 		list.count++;
 	}
 	SortByName(0, list.count-1);
-	SetOpenedFileFirst();
 }
 
 void SortByName(int a, b)
@@ -41,10 +38,10 @@ void SortByName(int a, b)
 	SortByName(i, b);
 }
 
-void SetOpenedFileFirst()
+void SetOpenedFileFirst(dword in_name)
 {
 	int i;
-	dword opened_filename = #param + strrchr(#param, '/');
+	dword opened_filename = in_name + strrchr(in_name, '/');
 	for (i=0; i<list.count; i++)
 	{
 		if (strcmpi(opened_filename,files_mas[i]*304 + buf+72)==0) { files_mas[0]><files_mas[i]; return; }

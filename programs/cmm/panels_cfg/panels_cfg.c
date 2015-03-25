@@ -15,6 +15,7 @@
 #include "..\lib\obj\box_lib.h"
 
 #include "..\lib\patterns\libimg_load_skin.h"
+#include "..\lib\patterns\restart_process.h"
 
 #ifdef LANG_RUS
 	?define WINDOW_TITLE "Настройки панели задач и Дока"
@@ -246,20 +247,17 @@ void SaveCfg(byte panel_type)
 
 void RestartProcess(byte panel_type)
 {
-	int i;
-	dword proc_name;
-	proc_info Process;
-	if (panel_type == TASKBAR) proc_name = "@taskbar";
-	if (panel_type == DOCKY) proc_name = "@docky";
-	for (i=0; i<1000; i++;)
+	dword proc_name1;
+	if (panel_type == TASKBAR)
 	{
-		GetProcessInfo(#Process, i);
-		if (strcmpi(#Process.name, proc_name)==0) { KillProcess(Process.ID); break; }
+		RestartProcessByName("@taskbar", SINGLE);
+		pause(50);
 	}
-	RunProgram(proc_name, "");
-
-	if (panel_type == TASKBAR) pause(50);
-	if (panel_type == DOCKY) pause(120);
+	else
+	{
+		RestartProcessByName("@docky", SINGLE);
+		pause(120);
+	}
 	GetProcessInfo(#Form, SelfInfo);
 	ActivateWindow(GetProcessSlot(Form.ID));
 }
