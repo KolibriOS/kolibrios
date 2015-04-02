@@ -95,8 +95,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.7"
-#define ABOUT_TITLE "Eolite v2.7"
+#define TITLE "Eolite File Manager v2.72"
+#define ABOUT_TITLE "Eolite v2.72"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -140,6 +140,10 @@ int action_buf;
 int rand_n;
 int selected_count;
 
+mouse gestures;
+signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
+byte stats;
+
 edit_box edit2 = {250,213,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xffffff,0,248,#file_name,#mouse_dd,64,6,6};
 PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 0};
 PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
@@ -160,7 +164,7 @@ void main()
 	word key, id, can_show, can_select, m_selected;
 	dword selected_offset;
 	rand_n = random(40);
-
+	gestures.get();
 	mem_Init();
 	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(ERROR_1);
     if (load_dll2(libini, #lib_init,1)!=0) notify("Error: library doesn't exists - libini");
@@ -186,6 +190,52 @@ void main()
 			if (rename_active) { edit_box_mouse stdcall(#edit2); break; }
 			
 			m.get();
+			
+			
+			gestures.get();
+			if (gestures.mkm) && (stats==0)
+			{
+				x_old = gestures.x;
+				y_old = gestures.y;
+				stats = 1;
+			}
+			if (gestures.mkm) && (stats==1)
+			{
+				dif_x = gestures.x-x_old;
+				dif_y = gestures.y-y_old;
+				
+				if (dif_x<0) adif_x = -dif_x;
+				else adif_x = dif_x;
+				if (dif_y<0) adif_y = -dif_y;
+				else adif_y = dif_y;
+				
+				if (adif_x>adif_y)
+				{
+					if (dif_x > 150)
+					{
+						if (HistoryPath(GO_FORWARD))
+							{
+								files.first=files.current=NULL; //aaa?o nienea
+								Open_Dir(#path,WITH_REDRAW);
+							}
+						stats = 0;
+					}
+					if (dif_x < -150)
+					{
+						GoBack();
+						stats = 0;
+					}
+				}
+				else
+				{
+					if (dif_y < -150)
+					{
+						Dir_Up();
+						stats = 0;
+					}
+				}
+			}
+			
 
 			if (files.MouseOver(m.x, m.y)) && (!can_select)
 			{

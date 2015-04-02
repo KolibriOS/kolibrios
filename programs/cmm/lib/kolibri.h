@@ -59,7 +59,7 @@ char program_path[4096];
 
 :struct mouse
 {
-	signed x,y,lkm,pkm,hor,vert;
+	signed x,y,lkm,mkm,pkm,hor,vert;
 	void get();
 };
 
@@ -79,11 +79,15 @@ char program_path[4096];
 	EBX = 2;
 	$int	0x40
 	$mov	ebx, eax
+	$mov	ecx, eax
 	$and	eax, 0x00000001
 	$shr	ebx, 1
 	$and	ebx, 0x00000001
+	$shr	ecx, 2
+	$and	ecx, 0x00000001
 	lkm = EAX;
 	pkm = EBX;
+	mkm = ECX;
 	EAX = 37; //скролл
 	EBX = 7;
 	$int	0x40

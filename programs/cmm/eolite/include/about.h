@@ -48,7 +48,7 @@ void about_dialog()
 				break;
 				
 		case evReDraw:
-				DefineAndDrawWindow(600,150,181,228+GetSkinHeight(),0x34,sc.work,INTRO_TEXT_1);
+				DefineAndDrawWindow(Form.left + 200,150,181,228+GetSkinHeight(),0x34,sc.work,INTRO_TEXT_1);
 				GetProcessInfo(#about_form, SelfInfo);
 				if (Form.status_window>2) break;
 				DrawBar(0,0,about_form.cwidth,50,0x8494C4);
