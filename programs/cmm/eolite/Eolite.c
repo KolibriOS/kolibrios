@@ -95,8 +95,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.72"
-#define ABOUT_TITLE "Eolite v2.72"
+#define TITLE "Eolite File Manager v2.73"
+#define ABOUT_TITLE "Eolite v2.73"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -193,6 +193,7 @@ void main()
 			
 			
 			gestures.get();
+			if (!gestures.mkm) && (stats>0) stats = 0;
 			if (gestures.mkm) && (stats==0)
 			{
 				x_old = gestures.x;
@@ -203,11 +204,8 @@ void main()
 			{
 				dif_x = gestures.x-x_old;
 				dif_y = gestures.y-y_old;
-				
-				if (dif_x<0) adif_x = -dif_x;
-				else adif_x = dif_x;
-				if (dif_y<0) adif_y = -dif_y;
-				else adif_y = dif_y;
+				adif_x = fabs(dif_x);
+				adif_y = fabs(dif_y);
 				
 				if (adif_x>adif_y)
 				{
@@ -215,7 +213,7 @@ void main()
 					{
 						if (HistoryPath(GO_FORWARD))
 							{
-								files.first=files.current=NULL; //aaa?o nienea
+								files.first=files.current=NULL;
 								Open_Dir(#path,WITH_REDRAW);
 							}
 						stats = 0;
@@ -228,7 +226,7 @@ void main()
 				}
 				else
 				{
-					if (dif_y < -150)
+					if (dif_y < -100)
 					{
 						Dir_Up();
 						stats = 0;
