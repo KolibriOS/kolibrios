@@ -35,7 +35,7 @@ STOP_BIT_15 = 1 shl 11
 STOP_BIT_2  = 2 shl 11
   ;break type
 BREAK_OFF   = 0 shl 14
-BREAK_OFF   = 1 shl 14
+BREAK_ON    = 1 shl 14
   ;number of bits has to be at lower byte
   
 ;Flow control
@@ -178,3 +178,4 @@ ends
 struc in_buf_map
 pid         dd ? ; Should be PID of application using this file
 dev_handle  dd ? ; Should be value acquired from one of dev_list's nodes
+ends
