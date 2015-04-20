@@ -54,7 +54,7 @@ typedef struct
 
 
 static inline
-void DefineButton(uint32_t x_w, uint32_t y_h, uint32_t id, uint32_t color)
+void define_button(uint32_t x_w, uint32_t y_h, uint32_t id, uint32_t color)
 {
     __asm__ __volatile__(
     "int $0x40"
@@ -63,9 +63,8 @@ void DefineButton(uint32_t x_w, uint32_t y_h, uint32_t id, uint32_t color)
       "c"(y_h),
       "d"(id),
       "S"(color));
-
-
 };
+static inline void DefineButton(void) __attribute__ ((alias ("define_button")));
 
 static inline
 uint32_t get_skin_height(void)
