@@ -69,6 +69,24 @@
 }
 
 ///////////////////////////
+//   Изменение параметров файла    //
+///////////////////////////
+:f70 setinfo_file_70;
+:dword SetFileInfo(dword file_path, bdvk_struct)
+{    
+    setinfo_file_70.func = 6;
+    setinfo_file_70.param1 = 
+    setinfo_file_70.param2 = 
+    setinfo_file_70.param3 = 0;
+    setinfo_file_70.param4 = bdvk_struct;
+    setinfo_file_70.rezerv = 0;
+    setinfo_file_70.name = file_path;
+    $mov eax,70
+    $mov ebx,#setinfo_file_70.func
+    $int 0x40
+}
+
+///////////////////////////
 //   Запуск программы    //
 ///////////////////////////
 :f70 run_file_70;

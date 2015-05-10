@@ -44,6 +44,17 @@ char folder_info[200];
 BDVK file_info_general;
 BDVK file_info_dirsize;
 
+void SetProperties(byte id)
+{
+	if (selected_count) return;
+	else
+	{
+		if (id==20) file_info_general.readonly ^= 1;
+		if (id==21) file_info_general.hidden ^= 1;
+		if (id==22) file_info_general.system ^= 1;
+		SetFileInfo(#file_path, #file_info_general);
+	}
+}
 
 void GetSizeDir(dword way)
 {
@@ -142,6 +153,10 @@ void properties_dialog()
 		case evButton: 
 				id=GetButtonID();
 				IF (id==1) || (id==10) ExitProcess();
+				if (id==20) SetProperties(id);
+				if (id==21) SetProperties(id);
+				if (id==22) SetProperties(id);
+				DrawPropertiesCheckBoxes();
 				break;
 				
 		case evMouse:
