@@ -34,6 +34,8 @@
 	?define T_DELETE_FILE "Вы действительно хотите удалить"
 	?define T_YES "Да"
 	?define T_NO "Нет"
+	?define T_CANCEL "Отмена"
+	?define T_CREATE "Создать"
 	?define T_DEL_ERROR_1 "Ошибка. Папка не пустая."
 	?define WAIT_DELETING_FOLDER "Удаляется папка. Подожите..."
 	?define NOT_CREATE_FOLDER "Не удалось создать папку."
@@ -95,8 +97,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.75"
-#define ABOUT_TITLE "Eolite v2.75"
+#define TITLE "Eolite File Manager v2.77"
+#define ABOUT_TITLE "Eolite v2.77"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -115,10 +117,12 @@ byte
 	path[4096],
 	file_path[4096],
 	file_name[256],
+	new_element_name[256],
 	temp[4096];	 
 byte
 	rename_active=0,
 	del_active=0,
+	new_element_active=0,
 	show_dev_name=1,
 	real_files_names_case=0,
 	use_big_fonts=0,
@@ -145,6 +149,7 @@ signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
 byte stats;
 
 edit_box edit2 = {250,213,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xffffff,0,248,#file_name,#mouse_dd,64,6,6};
+edit_box new_file_ed = {150,213,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xffffff,0,248,#new_element_name,#mouse_dd,64,6,6};
 PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 0};
 PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 
@@ -172,6 +177,8 @@ void main()
 	LoadIniSettings();
 	GetSystemDiscs();
 	SetAppColors();
+	strcpy(#new_element_name, T_NEW_FILE);
+	new_file_ed.size = strlen(T_NEW_FILE);
 	if (param)
 	{
 		strcpy(#path, #param);
@@ -187,6 +194,11 @@ void main()
 	{
 		case evMouse:
 			if (del_active) || (!CheckActiveProcess(Form.ID)) || (Form.status_window>2) break;
+			if (new_element_active) || (!CheckActiveProcess(Form.ID)) || (Form.status_window>2)
+			{
+				edit_box_mouse stdcall(#new_file_ed);
+				break;
+			}				
 			if (rename_active) { edit_box_mouse stdcall(#edit2); break; }
 			
 			m.get();
@@ -343,6 +355,11 @@ void main()
 				IF (id==301) || (id==302) Del_File(302-id);
 				break;
 			}
+			if (new_element_active)
+			{
+				IF (id==301) || (id==302) NewElement(302-id);
+				break;
+			}
 			
 			switch(id) 
 			{
@@ -397,6 +414,13 @@ void main()
 			{
 				IF (key==013) Del_File(true);
 				IF (key==027) Del_File(false);
+				break;
+			}
+			IF (new_element_active)
+			{
+				IF (key==027) NewElement(0);
+				EAX=key<<8;
+				edit_box_key stdcall (#new_file_ed);
 				break;
 			}
 			IF (edit2.flags!=64) && (key!=13) && (key!=27)
@@ -593,6 +617,7 @@ void draw_window()
 	DrawFlatButton(files.x+files.w,onTop(22,0),16,16,0,sc.work,"\x19");
 	Open_Dir(#path,ONLY_SHOW);
 	if (del_active) Del_Form();
+	if (new_element_active) NewElement_Form();
 	if (rename_active) FnProcess(2);
 }
 
@@ -1030,6 +1055,57 @@ void ShowOpenWithDialog()
 	RunProgram("/sys/@open", #param);
 }
 
+void NewElement(byte newf)
+{
+	if (newf)
+	{
+		strcpy(#temp, #path);
+		strcat(#temp, new_file_ed.text);
+		if (new_element_active==1)
+		{
+			WriteFile(0, 0, #temp);
+			if (EAX)
+			{
+				Write_Error(EAX);
+				ShowMessage(NOT_CREATE_FILE, 150);
+			}
+		}
+		else
+		{
+			CreateDir(#temp);
+			if (EAX)
+			{
+				Write_Error(EAX);
+				ShowMessage(NOT_CREATE_FOLDER, 150);
+			}
+		}
+	}
+	new_element_active = 0;
+	SelectFile(new_file_ed.text);
+}
+
+void NewElement_Form(byte crt)
+{
+	int dform_x=files.w-220/2+files.x;
+	new_element_active = crt;
+	if (new_element_active==1)
+	{
+		strcpy(#new_element_name, T_NEW_FILE);
+		new_file_ed.size = strlen(T_NEW_FILE);
+	}
+	else
+	{
+		strcpy(#new_element_name, T_NEW_FOLDER);
+		new_file_ed.size = strlen(T_NEW_FOLDER);
+	}
+	DrawPopup(dform_x,160,220,80,1,sc.work,sc.work_graph);
+	new_file_ed.left = dform_x+27;
+	new_file_ed.top = 180;
+	edit_box_draw  stdcall (#new_file_ed);
+	DrawFlatButton(dform_x+27,208,70,20,301,0xFFB6B5,T_CREATE);
+	DrawFlatButton(dform_x+120,208,70,20,302,0xC6DFC6,T_CANCEL);
+}
+
 void FnProcess(char N)
 {
 	switch(N)
@@ -1073,7 +1149,7 @@ void FnProcess(char N)
 			DrawLeftPanel();
 			break;
 		case 6:
-			strcpy(#temp, #path);
+			/*strcpy(#temp, #path);
 			strcat(#temp, T_NEW_FOLDER);
 			CreateDir(#temp);
 			if (!EAX){
@@ -1084,10 +1160,11 @@ void FnProcess(char N)
 			{
 				Write_Error(EAX);
 				ShowMessage(NOT_CREATE_FOLDER, 150);
-			}
+			}*/
+			NewElement_Form(2);
 			break;
 		case 7:
-			strcpy(#temp, #path);
+			/*strcpy(#temp, #path);
 			strcat(#temp, T_NEW_FILE);
 			WriteFile(0, 0, #temp);
 			if (!EAX){
@@ -1098,7 +1175,8 @@ void FnProcess(char N)
 			{
 				Write_Error(EAX);
 				ShowMessage(NOT_CREATE_FILE, 150);
-			}
+			}*/
+			NewElement_Form(1);
 			break;
 		case 8:
 			SwitchToAnotherThread();
