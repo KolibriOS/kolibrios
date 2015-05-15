@@ -36,6 +36,8 @@
 	?define T_NO "Нет"
 	?define T_CANCEL "Отмена"
 	?define T_CREATE "Создать"
+	?define FILE_EXISTS "Файл с таким именем существует"
+	?define FOLDER_EXISTS "Папка с таким именем существует"
 	?define T_DEL_ERROR_1 "Ошибка. Папка не пустая."
 	?define WAIT_DELETING_FOLDER "Удаляется папка. Подожите..."
 	?define NOT_CREATE_FOLDER "Не удалось создать папку."
@@ -60,6 +62,8 @@
 	?define T_NO "Ei"
 	?define T_CANCEL "Cancel"
 	?define T_CREATE "Create"
+	?define FILE_EXISTS "The file with the same name exists"
+	?define FOLDER_EXISTS "A folder with the same name exists"
 	?define T_DEL_ERROR_1 "Viga. Kataloog ei ole t№hi."
 	?define WAIT_DELETING_FOLDER "Deleting folder. Please, wait..."
 	?define NOT_CREATE_FOLDER "Kataloogi ei saa luua."
@@ -84,6 +88,8 @@
 	?define T_NO "No"
 	?define T_CANCEL "Cancel"
 	?define T_CREATE "Create"
+	?define FILE_EXISTS "The file with the same name exists"
+	?define FOLDER_EXISTS "A folder with the same name exists"
 	?define T_DEL_ERROR_1 "Error. Folder isn't empty."
 	?define WAIT_DELETING_FOLDER "Deleting folder. Please, wait..."
 	?define NOT_CREATE_FOLDER "Folder can not be created."
@@ -101,8 +107,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.77"
-#define ABOUT_TITLE "Eolite v2.77"
+#define TITLE "Eolite File Manager v2.78"
+#define ABOUT_TITLE "Eolite v2.78"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -152,8 +158,8 @@ mouse gestures;
 signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
 byte stats;
 
-edit_box edit2 = {250,213,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xffffff,0,248,#file_name,#mouse_dd,64,6,6};
-edit_box new_file_ed = {150,213,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xffffff,0,248,#new_element_name,#mouse_dd,64,6,6};
+edit_box edit2 = {250,213,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xFFFFFF,0,248,#file_name,#mouse_dd,64,6,6};
+edit_box new_file_ed = {150,213,80,0xFFFFFF,0x94AECE,0x000000,0xFFFFFF,0,248,#new_element_name,#mouse_dd,100000000000010b,6,0};
 PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 0};
 PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 
@@ -423,6 +429,7 @@ void main()
 			IF (new_element_active)
 			{
 				IF (key==027) NewElement(0);
+				IF (key==013) NewElement(1);
 				EAX=key<<8;
 				edit_box_key stdcall (#new_file_ed);
 				break;
@@ -621,7 +628,7 @@ void draw_window()
 	DrawFlatButton(files.x+files.w,onTop(22,0),16,16,0,sc.work,"\x19");
 	Open_Dir(#path,ONLY_SHOW);
 	if (del_active) Del_Form();
-	if (new_element_active) NewElement_Form();
+	if (new_element_active) NewElement_Form(new_element_active);
 	if (rename_active) FnProcess(2);
 }
 
@@ -1061,46 +1068,72 @@ void ShowOpenWithDialog()
 
 void NewElement(byte newf)
 {
+	BDVK element_info;
+	//char edit_name[256];
+	//strcpy(#edit_name, #file_name);
 	if (newf)
 	{
 		strcpy(#temp, #path);
+		//strcpy(#edit_name, new_file_ed.text);
 		strcat(#temp, new_file_ed.text);
 		if (new_element_active==1)
 		{
-			WriteFile(0, 0, #temp);
-			if (EAX)
+			GetFileInfo(#temp, #element_info);
+			if (EAX==5)
 			{
-				Write_Error(EAX);
-				ShowMessage(NOT_CREATE_FILE, 150);
+				WriteFile(0, 0, #temp);
+				if (EAX)
+				{
+					Write_Error(EAX);
+					ShowMessage(NOT_CREATE_FILE, 150);
+				}
+			}
+			else
+			{
+				notify(FILE_EXISTS);
 			}
 		}
 		else
 		{
-			CreateDir(#temp);
-			if (EAX)
+			GetFileInfo(#temp, #element_info);
+			if (EAX==5)
 			{
-				Write_Error(EAX);
-				ShowMessage(NOT_CREATE_FOLDER, 150);
+				CreateDir(#temp);
+				if (EAX)
+				{
+					Write_Error(EAX);
+					ShowMessage(NOT_CREATE_FOLDER, 150);
+				}
+			}
+			else
+			{
+				notify(FOLDER_EXISTS);
 			}
 		}
+		new_element_active = 0;
+		Open_Dir(#path,WITH_REDRAW);
+		SelectFile(new_file_ed.text);
 	}
 	new_element_active = 0;
-	SelectFile(new_file_ed.text);
+	Open_Dir(#path,WITH_REDRAW);
 }
 
 void NewElement_Form(byte crt)
 {
 	int dform_x=files.w-220/2+files.x;
-	new_element_active = crt;
-	if (new_element_active==1)
+	if (!new_element_active)
 	{
-		strcpy(#new_element_name, T_NEW_FILE);
-		new_file_ed.size = strlen(T_NEW_FILE);
-	}
-	else
-	{
-		strcpy(#new_element_name, T_NEW_FOLDER);
-		new_file_ed.size = strlen(T_NEW_FOLDER);
+		new_element_active = crt;
+		if (new_element_active==1)
+		{
+			strcpy(#new_element_name, T_NEW_FILE);
+			new_file_ed.size = new_file_ed.pos = strlen(T_NEW_FILE);
+		}
+		else
+		{
+			strcpy(#new_element_name, T_NEW_FOLDER);
+			new_file_ed.size = new_file_ed.pos = strlen(T_NEW_FOLDER);
+		}
 	}
 	DrawPopup(dform_x,160,220,80,1,sc.work,sc.work_graph);
 	new_file_ed.left = dform_x+27;
