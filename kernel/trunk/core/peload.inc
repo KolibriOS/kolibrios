@@ -42,6 +42,7 @@ proc load_PE stdcall, file_name:dword
         jz      .cleanup
 
         mov     [base], eax
+        DEBUGF 1,'K : driver %s mapped to %x\n',[file_name],[base]
 
         push    ebx ebp
         mov     ebx, [image]
