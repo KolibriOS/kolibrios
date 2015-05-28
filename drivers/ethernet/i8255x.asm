@@ -18,6 +18,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;TODO: use more RX buffers
 
 format PE DLL native
 entry START
@@ -376,9 +377,8 @@ unload:
         ; - call unregister function in kernel
         ; - Remove all allocated structures and buffers the card used
 
-        or      eax,-1
-
-ret
+        or      eax, -1
+        ret
 
 
 ;-------------
@@ -611,7 +611,7 @@ init_rx_ring:
         invoke  GetPhysAddr
         add     eax, NET_BUFF.data
         mov     [esi + sizeof.NET_BUFF + rxfd.status], 0x0000
-        mov     [esi + sizeof.NET_BUFF + rxfd.command], 0x0000
+        mov     [esi + sizeof.NET_BUFF + rxfd.command], 0xc000    ; End of list + Suspend
         mov     [esi + sizeof.NET_BUFF + rxfd.link], eax
         mov     [esi + sizeof.NET_BUFF + rxfd.count], 0
         mov     [esi + sizeof.NET_BUFF + rxfd.size], 1528
@@ -619,7 +619,6 @@ init_rx_ring:
         ret
 
   .out_of_mem:
-
         ret
 
 
@@ -837,8 +836,9 @@ int_handler:
 
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], reg_scb_ptr
-;        lea     eax, [ebx + device.rx_desc]
+;        mov     eax, [ebx + device.rx_desc]
 ;        invoke  GetPhysAddr
+;        add     eax, NET_BUFF.data
         out     dx, eax
 
         set_io  [ebx + device.io_addr], reg_scb_cmd
@@ -890,27 +890,18 @@ int_handler:
         cmp     ax, 00001000b
         jne     .fail
 
-        DEBUGF  1, "out of resources!\n"
-; Restart the RX
+        DEBUGF  2, "Out of resources!\n"
 
-; allocate new descriptor
-
-        invoke  KernelAlloc, 2000
-        mov     [ebx + device.rx_desc], eax
-        mov     esi, eax
-        invoke  GetPhysAddr
-        mov     [esi + rxfd.status], 0x0000
-        mov     [esi + rxfd.command], 0xc000    ; End of list + Suspend
-        mov     [esi + rxfd.link], eax
-        mov     [esi + rxfd.count], 0
-        mov     [esi + rxfd.size], 1528
+;        call    init_rx_ring
+;        test    eax, eax
+;        jz      .fail
 
 ; restart RX
-
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], reg_scb_ptr
-;        lea     eax, [ebx + device.rx_desc]
-;        invoke  GetPhysAddr
+        mov     eax, [ebx + device.rx_desc]
+        invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
         out     dx, eax
 
         set_io  [ebx + device.io_addr], reg_scb_cmd
