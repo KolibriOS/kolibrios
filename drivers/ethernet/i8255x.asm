@@ -822,6 +822,8 @@ int_handler:
 ; allocate new descriptor
 
         invoke  NetAlloc, 2000
+        test    eax, eax
+        jz      .out_of_mem
         mov     [ebx + device.rx_desc], eax
         mov     esi, eax
         invoke  GetPhysAddr
@@ -845,6 +847,7 @@ int_handler:
         mov     ax, RX_START
         out     dx, ax
         call    cmd_wait
+  .out_of_mem:
 
 ; And give packet to kernel
         jmp     [EthInput]
