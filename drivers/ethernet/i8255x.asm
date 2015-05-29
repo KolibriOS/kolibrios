@@ -45,10 +45,10 @@ include '../netdrv.inc'
 
 ; Serial EEPROM
 
-EE_SK           = 1 shl 0      ; serial clock
-EE_CS           = 1 shl 1      ; chip select
-EE_DI           = 1 shl 2      ; data in
-EE_DO           = 1 shl 3      ; data out
+EE_SK           = 1 shl 0       ; serial clock
+EE_CS           = 1 shl 1       ; chip select
+EE_DI           = 1 shl 2       ; data in
+EE_DO           = 1 shl 3       ; data out
 EE_MASK         = EE_SK + EE_CS + EE_DI + EE_DO
 
 ; opcodes, first bit is start bit and must be 1
@@ -73,45 +73,50 @@ RX_RESUMENR     = 0x0007
 INT_MASK        = 0x0100
 DRVR_INT        = 0x0200        ; Driver generated interrupt
 
-CmdIASetup      = 0x0001
-CmdConfigure    = 0x0002
-CmdTx           = 0x0004
-CmdTxFlex       = 0x0008
-Cmdsuspend      = 0x4000
+REG_SCB_STATUS  = 0
+REG_SCB_CMD     = 2
+REG_SCB_PTR     = 4
+REG_PORT        = 8
+REG_EEPROM      = 14
+REG_MDI_CTRL    = 16
 
-CmdRxFlex       = 0x0008
+PHY_100a        = 0x000003E0
+PHY_100c        = 0x035002A8
+PHY_82555_tx    = 0x015002A8
+PHY_nsc_tx      = 0x5C002000
+PHY_82562_et    = 0x033002A8
+PHY_82562_em    = 0x032002A8
+PHY_82562_ek    = 0x031002A8
+PHY_82562_eh    = 0x017002A8
+PHY_82552_v     = 0xd061004d
+PHY_unknown     = 0xFFFFFFFF
 
-reg_scb_status  = 0
-reg_scb_cmd     = 2
-reg_scb_ptr     = 4
-reg_port        = 8
-reg_eeprom      = 14
-reg_mdi_ctrl    = 16
+MAC_82557_D100_A        = 0
+MAC_82557_D100_B        = 1
+MAC_82557_D100_C        = 2
+MAC_82558_D101_A4       = 4
+MAC_82558_D101_B0       = 5
+MAC_82559_D101M         = 8
+MAC_82559_D101S         = 9
+MAC_82550_D102          = 12
+MAC_82550_D102_C        = 13
+MAC_82551_E             = 14
+MAC_82551_F             = 15
+MAC_82551_10            = 16
+MAC_unknown             = 0xFF
 
-phy_100a        = 0x000003E0
-phy_100c        = 0x035002A8
-phy_82555_tx    = 0x015002A8
-phy_nsc_tx      = 0x5C002000
-phy_82562_et    = 0x033002A8
-phy_82562_em    = 0x032002A8
-phy_82562_ek    = 0x031002A8
-phy_82562_eh    = 0x017002A8
-phy_82552_v     = 0xd061004d
-phy_unknown     = 0xFFFFFFFF
-
-mac_82557_D100_A        = 0
-mac_82557_D100_B        = 1     
-mac_82557_D100_C        = 2     
-mac_82558_D101_A4       = 4     
-mac_82558_D101_B0       = 5     
-mac_82559_D101M         = 8     
-mac_82559_D101S         = 9     
-mac_82550_D102          = 12    
-mac_82550_D102_C        = 13    
-mac_82551_E             = 14    
-mac_82551_F             = 15    
-mac_82551_10            = 16    
-mac_unknown             = 0xFF
+SCB_STATUS_RUS          = 111100b       ; RU Status
+RU_STATUS_IDLE          = 0000b shl 2
+RU_STATUS_SUSPENDED     = 0001b shl 2
+RU_STATUS_NO_RESOURCES  = 0010b shl 2
+RU_STATUS_READY         = 0100b shl 2
+SCB_STATUS_FCP          = 1 shl 8       ; Flow Control Pause
+SCB_STATUS_SWI          = 1 shl 10      ; Software Interrupt
+SCB_STATUS_MDI          = 1 shl 11      ; MDI read/write complete
+SCB_STATUS_RNR          = 1 shl 12      ; Receiver Not Ready
+SCB_STATUS_CNA          = 1 shl 13      ; Command unit Not Active
+SCB_STATUS_FR           = 1 shl 14      ; Frame received
+SCB_STATUS_CX_TNO       = 1 shl 15      ; Command finished / Transmit Not Okay
 
 struct  rxfd
 
@@ -124,6 +129,24 @@ struct  rxfd
         packet          rb 1500
 
 ends
+
+RXFD_STATUS_RC          = 1 shl 0       ; Receive collision
+RXFD_STATUS_IA          = 1 shl 1       ; IA mismatch
+RXFD_STATUS_NA          = 1 shl 2       ; No address match
+RXFD_STATUS_RE          = 1 shl 4       ; Receive Error
+RXFD_STATUS_TL          = 1 shl 5       ; Type/length
+RXFD_STATUS_FS          = 1 shl 7       ; Frame too short
+RXFD_STATUS_DMA_FAIL    = 1 shl 8       ; DMA overrun failure
+RXFD_STATUS_NR          = 1 shl 9       ; Out of buffer space; no resources
+RXFD_STATUS_MISA        = 1 shl 10      ; Alignment error
+RXFD_STATUS_CRC_ERR     = 1 shl 11      ; CRC error in aligned frame
+RXFD_STATUS_OK          = 1 shl 13      ; Frame received and stored
+RXFD_STATUS_C           = 1 shl 15      ; Completion of frame reception
+
+RXFD_CMD_SF             = 1 shl 3
+RXFD_CMD_H              = 1 shl 4       ; Header RFD
+RXFD_CMD_SUSPEND        = 1 shl 14      ; Suspends RU after receiving the frame
+RXFD_CMD_EL             = 1 shl 15      ; Last RFD in RFA
 
 struct  txfd
 
@@ -139,6 +162,12 @@ struct  txfd
                         dd ?            ; alignment
 
 ends
+
+TXFD_CMD_IA             = 1 shl 0
+TXFD_CMD_CFG            = 1 shl 1
+TXFD_CMD_TX             = 1 shl 2
+TXFD_CMD_TX_FLEX        = 1 shl 3
+TXFD_CMD_SUSPEND        = 1 shl 14
 
 struc   confcmd {
 
@@ -455,7 +484,7 @@ reset:
 ; reset the card
 
         set_io  [ebx + device.io_addr], 0
-        set_io  [ebx + device.io_addr], reg_port
+        set_io  [ebx + device.io_addr], REG_PORT
         xor     eax, eax        ; Software Reset
         out     dx, eax
 
@@ -468,10 +497,10 @@ reset:
         lea     eax, [ebx + device.lstats.tx_good_frames]      ; lstats
         invoke  GetPhysAddr
         set_io  [ebx + device.io_addr], 0
-        set_io  [ebx + device.io_addr], reg_scb_ptr
+        set_io  [ebx + device.io_addr], REG_SCB_PTR
         out     dx, eax
 
-        set_io  [ebx + device.io_addr], reg_scb_cmd
+        set_io  [ebx + device.io_addr], REG_SCB_CMD
         mov     ax, CU_STATSADDR or INT_MASK
         out     dx, ax
         call    cmd_wait
@@ -479,11 +508,11 @@ reset:
 ;------------------------
 ; setup RX base addr to 0
 
-        set_io  [ebx + device.io_addr], reg_scb_ptr
+        set_io  [ebx + device.io_addr], REG_SCB_PTR
         xor     eax, eax
         out     dx, eax
 
-        set_io  [ebx + device.io_addr], reg_scb_cmd
+        set_io  [ebx + device.io_addr], REG_SCB_CMD
         mov     ax, RX_ADDR_LOAD or INT_MASK
         out     dx, ax
         call    cmd_wait
@@ -504,13 +533,13 @@ reset:
         DEBUGF  1, "Starting RX"
 
         set_io  [ebx + device.io_addr], 0
-        set_io  [ebx + device.io_addr], reg_scb_ptr
+        set_io  [ebx + device.io_addr], REG_SCB_PTR
         mov     eax, [ebx + device.rx_desc]
         invoke  GetPhysAddr
         add     eax, NET_BUFF.data
         out     dx, eax
 
-        set_io  [ebx + device.io_addr], reg_scb_cmd
+        set_io  [ebx + device.io_addr], REG_SCB_CMD
         mov     ax, RX_START or INT_MASK
         out     dx, ax
         call    cmd_wait
@@ -518,11 +547,11 @@ reset:
 ;----------
 ; Set-up TX
 
-        set_io  [ebx + device.io_addr], reg_scb_ptr
+        set_io  [ebx + device.io_addr], REG_SCB_PTR
         xor     eax, eax
         out     dx, eax
 
-        set_io  [ebx + device.io_addr], reg_scb_cmd
+        set_io  [ebx + device.io_addr], REG_SCB_CMD
         mov     ax, CU_CMD_BASE or INT_MASK
         out     dx, ax
         call    cmd_wait
@@ -530,7 +559,7 @@ reset:
 ;-------------------------
 ; Individual address setup
 
-        mov     [ebx + device.confcmd.command], CmdIASetup + Cmdsuspend
+        mov     [ebx + device.confcmd.command], TXFD_CMD_IA + TXFD_CMD_SUSPEND
         mov     [ebx + device.confcmd.status], 0
         lea     eax, [ebx + device.tx_ring]
         invoke  GetPhysAddr
@@ -540,12 +569,12 @@ reset:
         movsd
         movsw
 
-        set_io  [ebx + device.io_addr], reg_scb_ptr
+        set_io  [ebx + device.io_addr], REG_SCB_PTR
         lea     eax, [ebx + device.confcmd.status]
         invoke  GetPhysAddr
         out     dx, eax
 
-        set_io  [ebx + device.io_addr], reg_scb_cmd
+        set_io  [ebx + device.io_addr], REG_SCB_CMD
         mov     ax, CU_START or INT_MASK
         out     dx, ax
         call    cmd_wait
@@ -553,7 +582,7 @@ reset:
 ;-------------
 ; Configure CU
 
-        mov     [ebx + device.confcmd.command], CmdConfigure + Cmdsuspend
+        mov     [ebx + device.confcmd.command], TXFD_CMD_CFG + TXFD_CMD_SUSPEND
         mov     [ebx + device.confcmd.status], 0
         lea     eax, [ebx + device.confcmd.status]
         invoke  GetPhysAddr
@@ -571,12 +600,12 @@ reset:
         mov     byte[ebx + device.confcmd.data + 19], 0x80
         mov     byte[ebx + device.confcmd.data + 21], 0x05
 
-        set_io  [ebx + device.io_addr], reg_scb_ptr
+        set_io  [ebx + device.io_addr], REG_SCB_PTR
         lea     eax, [ebx + device.confcmd.status]
         invoke  GetPhysAddr
         out     dx, eax
 
-        set_io  [ebx + device.io_addr], reg_scb_cmd
+        set_io  [ebx + device.io_addr], REG_SCB_CMD
         mov     ax, CU_START                            ; expect Interrupts from now on
         out     dx, ax
         call    cmd_wait
@@ -610,8 +639,8 @@ init_rx_ring:
         mov     esi, eax
         invoke  GetPhysAddr
         add     eax, NET_BUFF.data
-        mov     [esi + sizeof.NET_BUFF + rxfd.status], 0x0000
-        mov     [esi + sizeof.NET_BUFF + rxfd.command], 0xc000    ; End of list + Suspend
+        mov     [esi + sizeof.NET_BUFF + rxfd.status], 0
+        mov     [esi + sizeof.NET_BUFF + rxfd.command], RXFD_CMD_EL or RXFD_CMD_SUSPEND
         mov     [esi + sizeof.NET_BUFF + rxfd.link], eax
         mov     [esi + sizeof.NET_BUFF + rxfd.count], 0
         mov     [esi + sizeof.NET_BUFF + rxfd.size], 1528
@@ -693,7 +722,7 @@ proc transmit stdcall bufferptr
 
         ; Fill in status and command values
         mov     [edi + txfd.status], 0
-        mov     [edi + txfd.command], Cmdsuspend + CmdTx + CmdTxFlex ;;;+ 1 shl 15 ;;; EL bit
+        mov     [edi + txfd.command], TXFD_CMD_SUSPEND + TXFD_CMD_TX + TXFD_CMD_TX_FLEX
         mov     [edi + txfd.count], 0x01208000
 
         ; Fill in buffer address and size
@@ -711,11 +740,11 @@ proc transmit stdcall bufferptr
         mov     eax, edi
         invoke  GetPhysAddr
         set_io  [ebx + device.io_addr], 0
-        set_io  [ebx + device.io_addr], reg_scb_ptr
+        set_io  [ebx + device.io_addr], REG_SCB_PTR
         out     dx, eax
 
         ; Start the transmit
-        set_io  [ebx + device.io_addr], reg_scb_cmd
+        set_io  [ebx + device.io_addr], REG_SCB_CMD
         mov     ax, CU_START
         out     dx, ax
 
@@ -767,10 +796,10 @@ int_handler:
   .nextdevice:
         mov     ebx, [esi]
 
-;        set_io  [ebx + device.io_addr], 0              ; reg_scb_status = 0
-        set_io  [ebx + device.io_addr], reg_scb_status
+;        set_io  [ebx + device.io_addr], 0      ; REG_SCB_STATUS = 0
+        set_io  [ebx + device.io_addr], REG_SCB_STATUS
         in      ax, dx
-        out     dx, ax                              ; send it back to ACK
+        out     dx, ax                          ; send it back to ACK
         test    ax, ax
         jnz     .got_it
   .continue:
@@ -781,13 +810,13 @@ int_handler:
         pop     edi esi ebx
         xor     eax, eax
 
-        ret                                         ; If no device was found, abort (The irq was probably for a device, not registered to this driver)
+        ret                                     ; If no device was found, abort (The irq was probably for a device, not registered to this driver)
 
   .got_it:
 
         DEBUGF  1,"Device: %x Status: %x\n", ebx, ax
 
-        test    ax, 1 shl 14    ; did we receive a frame?
+        test    ax, SCB_STATUS_FR               ; did we receive a frame?
         jz      .no_rx
 
         push    ax
@@ -799,8 +828,10 @@ int_handler:
         pop     ebx
 
         mov     esi, [ebx + device.rx_desc]
-        cmp     [esi + sizeof.NET_BUFF + rxfd.status], 0        ; we could also check bits C and OK (bit 15 and 13)
-        je      .nodata
+        test    [esi + sizeof.NET_BUFF + rxfd.status], RXFD_STATUS_C            ; Completed?
+        jz      .no_rx_
+        test    [esi + sizeof.NET_BUFF + rxfd.status], RXFD_STATUS_OK           ; OK?
+        jz      .not_ok
 
         DEBUGF  1,"rxfd status=0x%x\n", [esi + sizeof.NET_BUFF + rxfd.status]:4
 
@@ -828,8 +859,8 @@ int_handler:
         mov     esi, eax
         invoke  GetPhysAddr
         add     eax, NET_BUFF.data
-        mov     [esi + sizeof.NET_BUFF + rxfd.status], 0x0000
-        mov     [esi + sizeof.NET_BUFF + rxfd.command], 0xc000    ; End of list + Suspend
+        mov     [esi + sizeof.NET_BUFF + rxfd.status], 0
+        mov     [esi + sizeof.NET_BUFF + rxfd.command], RXFD_CMD_EL or RXFD_CMD_SUSPEND
         mov     [esi + sizeof.NET_BUFF + rxfd.link], eax
         mov     [esi + sizeof.NET_BUFF + rxfd.count], 0
         mov     [esi + sizeof.NET_BUFF + rxfd.size], 1528
@@ -837,28 +868,50 @@ int_handler:
 ; restart RX
 
         set_io  [ebx + device.io_addr], 0
-        set_io  [ebx + device.io_addr], reg_scb_ptr
+        set_io  [ebx + device.io_addr], REG_SCB_PTR
 ;        mov     eax, [ebx + device.rx_desc]
 ;        invoke  GetPhysAddr
 ;        add     eax, NET_BUFF.data
         out     dx, eax
 
-        set_io  [ebx + device.io_addr], reg_scb_cmd
+        set_io  [ebx + device.io_addr], REG_SCB_CMD
         mov     ax, RX_START
         out     dx, ax
         call    cmd_wait
   .out_of_mem:
 
-; And give packet to kernel
+; Hand the frame over to the kernel
         jmp     [EthInput]
 
-  .nodata:
+  .not_ok:
+; Reset the FD
+        mov     [esi + sizeof.NET_BUFF + rxfd.status], 0
+        mov     [esi + sizeof.NET_BUFF + rxfd.command], RXFD_CMD_EL or RXFD_CMD_SUSPEND
+        mov     [esi + sizeof.NET_BUFF + rxfd.count], 0
+
+; Restart RX
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], REG_SCB_PTR
+        mov     eax, esi
+        invoke  GetPhysAddr
+        add     eax, NET_BUFF.data
+        out     dx, eax
+
+        set_io  [ebx + device.io_addr], REG_SCB_CMD
+        mov     ax, RX_START
+        out     dx, ax
+        call    cmd_wait
+
+        push    ebx
+        jmp     .rx_loop
+
+  .no_rx_:
         DEBUGF  1, "no more data\n"
         pop     ax
 
   .no_rx:
 
-        test    ax, 1 shl 13
+        test    ax, SCB_STATUS_CNA
         jz      .no_tx
         DEBUGF  1, "Command completed\n"
 
@@ -889,28 +942,10 @@ int_handler:
         pop     eax
   .no_tx:
 
-        and     ax, 00111100b
-        cmp     ax, 00001000b
+        test    ax, RU_STATUS_NO_RESOURCES
         jne     .fail
 
         DEBUGF  2, "Out of resources!\n"
-
-;        call    init_rx_ring
-;        test    eax, eax
-;        jz      .fail
-
-; restart RX
-        set_io  [ebx + device.io_addr], 0
-        set_io  [ebx + device.io_addr], reg_scb_ptr
-        mov     eax, [ebx + device.rx_desc]
-        invoke  GetPhysAddr
-        add     eax, NET_BUFF.data
-        out     dx, eax
-
-        set_io  [ebx + device.io_addr], reg_scb_cmd
-        mov     ax, RX_START
-        out     dx, ax
-        call    cmd_wait
 
   .fail:
         pop     edi esi ebx
@@ -942,7 +977,7 @@ ee_read:        ; esi = address to read
         DEBUGF  1,"Eeprom read from 0x%x\n", esi
 
         set_io  [ebx + device.io_addr], 0
-        set_io  [ebx + device.io_addr], reg_eeprom
+        set_io  [ebx + device.io_addr], REG_EEPROM
 
 ;-----------------------------------------------------
 ; Prepend start bit + read opcode to the address field
@@ -1020,7 +1055,7 @@ ee_write:       ; esi = address to write to, di = data
         DEBUGF  1,"Eeprom write 0x%x to 0x%x\n", di, esi
 
         set_io  [ebx + device.io_addr], 0
-        set_io  [ebx + device.io_addr], reg_eeprom
+        set_io  [ebx + device.io_addr], REG_EEPROM
 
 ;-----------------------------------------------------
 ; Prepend start bit + write opcode to the address field
@@ -1090,7 +1125,7 @@ align 4
 ee_get_width:
 
         set_io  [ebx + device.io_addr], 0
-        set_io  [ebx + device.io_addr], reg_eeprom
+        set_io  [ebx + device.io_addr], REG_EEPROM
 
         mov     al, EE_CS      ; activate eeprom
         out     dx, al
@@ -1167,7 +1202,7 @@ mdio_read:
         or      eax, 10b shl 26         ; read opcode
 
         set_io  [ebx + device.io_addr], 0
-        set_io  [ebx + device.io_addr], reg_mdi_ctrl
+        set_io  [ebx + device.io_addr], REG_MDI_CTRL
         out     dx, eax
 
   .wait:
@@ -1199,7 +1234,7 @@ mdio_write:
         or      eax, 01b shl 26         ; write opcode
 
         set_io  [ebx + device.io_addr], 0
-        set_io  [ebx + device.io_addr], reg_mdi_ctrl
+        set_io  [ebx + device.io_addr], REG_MDI_CTRL
         out     dx, eax
 
   .wait:
