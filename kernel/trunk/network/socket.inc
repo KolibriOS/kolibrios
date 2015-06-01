@@ -1508,9 +1508,9 @@ SOCKET_ring_create:
         add     eax, SOCKET_MAXDATA
         mov     [esi + RING_BUFFER.end_ptr], eax
         mov     eax, esi
-        pop     esi
 
   .fail:
+        pop     esi
         ret
 
 ;-----------------------------------------------------------------
