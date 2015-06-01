@@ -1,6 +1,6 @@
 
 SRC_DIR:=$(SDK_DIR)/sources
-MESA_SRC:= $(SRC_DIR)/Mesa/src
+MESA_SRC:= $(SRC_DIR)/Mesa/mesa-9.2.5/src
 
 CFLAGS_OPT = -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -U_MSC_VER -Os 
 CFLAGS_OPT+= -fomit-frame-pointer -fno-ident -mno-ms-bitfields
@@ -8,7 +8,7 @@ CFLAGS   = -c $(CFLAGS_OPT)
 
 LDFLAGS = -nostdlib -shared -s --image-base 0 -T $(SRC_DIR)/newlib/dll.lds --out-implib libGL.dll.a -e _DllStartup
 
-INC_MESA:= -I$(SRC_DIR)/newlib/libc/include -I$(SRC_DIR)/Mesa/include
+INC_MESA:= -I$(SRC_DIR)/newlib/libc/include -I$(SRC_DIR)/Mesa/mesa-9.2.5/include
 INC_MESA+= -I./src -I$(MESA_SRC)/glsl -I$(MESA_SRC)/mesa -I$(MESA_SRC)/mapi
 
 

@@ -4,7 +4,7 @@ export AR = kos32-ar
 export LD = kos32-ld
 export STRIP = kos32-strip
 
-export SDK_DIR:= $(abspath ../..)
+export SDK_DIR:= $(abspath ../../..)
 
 EGL = egl
 
@@ -12,13 +12,13 @@ CFLAGS_OPT = -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -U_MSC_VER -Os
 CFLAGS_OPT+= -fomit-frame-pointer -fno-ident -mno-ms-bitfields
 CFLAGS   = -c $(CFLAGS_OPT)
 
-LDFLAGS = -nostdlib -shared -s --image-base 0 -T ../newlib/dll.lds -e _DllStartup
+LDFLAGS = -nostdlib -shared -s --image-base 0 -T ../../newlib/dll.lds -e _DllStartup
 LDFLAGS+= --out-implib lib$(EGL).dll.a 
 
-INC_MESA=  -I../newlib/libc/include -I./include -I./src -I./src/glsl -I./src/mesa -I./src/mapi
-INC_EGL=   -I../newlib/libc/include -I../../includes -I./include -I../libdrm -I../libdrm/include/drm -I./src/egl/main -I./src/gbm/backends/dri -I./src/gbm/main
+INC_MESA=  -I../../newlib/libc/include -I./include -I./src -I./src/glsl -I./src/mesa -I./src/mapi
+INC_EGL=   -I../../newlib/libc/include -I../../../includes -I./include -I../../libdrm -I../../libdrm/include/drm -I./src/egl/main -I./src/gbm/backends/dri -I./src/gbm/main
 
-LIBPATH:= -L../../lib -L/home/autobuild/tools/win32/mingw32/lib
+LIBPATH:= -L../../../lib -L/home/autobuild/tools/win32/mingw32/lib
 
 LIBS:=  -ldll -ldrm.dll -lc.dll -lgcc
 
@@ -43,19 +43,19 @@ $(EGL).dll: $(EGL_OBJS) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ egl.def $(EGL_OBJS) $(LIBS)
 #	$(STRIP) $@
 #	sed -e "s/ @[^ ]*//" egl1.def > egl.def
-	mv -f $@ ../../bin
-	mv -f lib$(EGL).dll.a ../../lib   
+	mv -f $@ ../../../bin
+	mv -f lib$(EGL).dll.a ../../../lib   
 
 libglsl.a : $(GLSL_OBJS) Makefile
 	$(AR) libglsl.a $(GLSL_OBJS) 
-	mv -f libglsl.a ../../lib
+	mv -f libglsl.a ../../../lib
 
 libGL.dll: $(LIBGL_OBJS) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(LIBGL_OBJS) $(LIBS)
 #	$(STRIP) $@
 #	sed -e "s/ @[^ ]*//" egl1.def > egl.def
 	mv -f $@ ../../bin
-	mv -f libGL.dll.a ../../lib   
+	mv -f libGL.dll.a ../../../lib   
 
 src/glsl/glcpp/%.o : src/glsl/glcpp/%.c Makefile
 	$(CC) $(CFLAGS) -std=c99 $(MESA_DEFS) $(INC_MESA) -o $@ $<

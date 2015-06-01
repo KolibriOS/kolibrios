@@ -1,6 +1,6 @@
 
 SRC_DIR:=$(SDK_DIR)/sources
-MESA_SRC:= $(SRC_DIR)/Mesa/src
+MESA_SRC:= $(SRC_DIR)/Mesa/mesa-9.2.5/src
 
 CFLAGS_OPT = -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -U_MSC_VER -Os
 CFLAGS_OPT+= -fomit-frame-pointer -fno-ident -msse2 -mno-ms-bitfields
@@ -8,7 +8,7 @@ CFLAGS   = -c $(CFLAGS_OPT)
 
 LDFLAGS = -nostdlib -shared -s --image-base 0 -T $(SRC_DIR)/newlib/dll.lds -e _DllStartup
 
-INC_MESA:= -I$(SRC_DIR)/newlib/libc/include -I$(SRC_DIR)/Mesa/include -I$(MESA_SRC)/mesa
+INC_MESA:= -I$(SRC_DIR)/newlib/libc/include -I$(SRC_DIR)/Mesa/mesa-9.2.5/include -I$(MESA_SRC)/mesa
 INC_MESA+= -I$(MESA_SRC)/gallium/include -I$(MESA_SRC)/gallium/auxiliary
 INC_MESA+= -I$(MESA_SRC)/gallium/winsys -I$(MESA_SRC)/gallium/drivers
 INC_MESA+= -I$(MESA_SRC)/gallium/state_trackers/gbm -I$(MESA_SRC)/gbm/main
