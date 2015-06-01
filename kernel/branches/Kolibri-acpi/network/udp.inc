@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  UDP.INC                                                        ;;
@@ -154,7 +154,7 @@ UDP_input:
   .next_socket:
         mov     eax, [eax + SOCKET.NextPtr]
         or      eax, eax
-        jz      .dump_
+        jz      .unlock_dump
 
         cmp     [eax + SOCKET.Domain], AF_INET4
         jne     .next_socket
@@ -213,27 +213,22 @@ UDP_input:
         mov     [eax + UDP_SOCKET.RemotePort], cx
         jmp     .updatesock
 
-  .dump_:
-
+  .unlock_dump:
         pusha
         mov     ecx, socket_mutex
         call    mutex_unlock
         popa
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: no socket found\n"
-
         jmp     .dump
 
   .checksum_mismatch:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: checksum mismatch\n"
 
   .dump:
-        call    NET_packet_free
-        add     esp, 4 ; pop (balance stack)
-        DEBUGF  DEBUG_NETWORK_VERBOSE,"UDP_input: dumping\n"
-
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: dumping\n"
+        call    NET_BUFF_free
         ret
-
 
 
 
@@ -260,7 +255,7 @@ UDP_output:
         mov     dx, [eax + UDP_SOCKET.LocalPort]
         DEBUGF  DEBUG_NETWORK_VERBOSE, "local port=%x\n", dx
 
-        sub     esp, 8                                          ; Data ptr and data size will be placed here
+        sub     esp, 4                                          ; Data ptr will be placed here
         push    edx esi
         mov     edx, [eax + IP_SOCKET.LocalIP]
         mov     eax, [eax + IP_SOCKET.RemoteIP]
@@ -269,7 +264,6 @@ UDP_output:
         call    IPv4_output
         jz      .fail
         mov     [esp + 8], eax                                  ; pointer to buffer start
-        mov     [esp + 8 + 4], edx                              ; buffer size
 
         mov     [edi + UDP_header.Length], cx
         rol     [edi + UDP_header.Length], 8

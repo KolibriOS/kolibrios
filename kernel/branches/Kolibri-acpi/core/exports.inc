@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -45,6 +45,11 @@ __exports:
           release_pages,         'ReleasePages',       \
           alloc_dma24,           'AllocDMA24',         \      ; stdcall
 \
+          init_rwsem,            'InitRwsem',          \      ; gcc fastcall
+          down_read,             'DownRead',           \      ; gcc fastcall
+          down_write,            'DownWrite',          \      ; gcc fastcall
+          up_read,               'UpRead',             \      ; gcc fastcall
+          up_write,              'UpWrite',            \      ; gcc fastacll
           mutex_init,            'MutexInit',          \      ; gcc fastcall
           mutex_lock,            'MutexLock',          \      ; gcc fastcall
           mutex_unlock,          'MutexUnlock',        \      ; gcc fastcall
@@ -117,7 +122,9 @@ __exports:
           NET_remove_device,     'NetUnRegDev',        \
           NET_ptr_to_num,        'NetPtrToNum',        \
           NET_link_changed,      'NetLinkChanged',     \
-          ETH_input,             'Eth_input',          \
+          ETH_input,             'EthInput',           \
+          NET_BUFF_alloc,        'NetAlloc',           \
+          NET_BUFF_free,         'NetFree',            \
 \
           get_pcidev_list,       'GetPCIList',         \
 \

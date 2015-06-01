@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2011. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;                                                              ;;
@@ -308,7 +308,7 @@ show_error_parameters:
         mov     ecx, ebx
         shr     ecx, 10
         mov     edx, [master_tab+ecx*4]
-        test    edx, PG_MAP
+        test    edx, PG_READ
         jz      .fail             ;page table is not created
                                   ;incorrect address in the program
 

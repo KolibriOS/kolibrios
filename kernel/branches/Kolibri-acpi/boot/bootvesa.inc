@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -218,7 +218,7 @@ calc_vmodes_table:
         test    [es:mi.ModeAttributes], 10000000b  ;LFB ?
         jz      @f
 
-        cmp     [es:mi.BitsPerPixel], 32   ;It show only videomodes to have support 24 and 32 bpp
+        cmp     [es:mi.BitsPerPixel], 16   ;List only supported videomodes (16, 24 and 32 bpp)
         jb      @f
 
 ; 16 bpp might actually be 15 bpp

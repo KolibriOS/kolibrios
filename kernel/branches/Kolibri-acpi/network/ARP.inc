@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ARP.INC                                                        ;;
@@ -293,12 +293,9 @@ ARP_input:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: IP address conflict detected!\n"
 
   .exit:
-        call    NET_packet_free
-        add     esp, 4                                          ; pop (balance stack)
-
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: exiting\n"
+        call    NET_BUFF_free
         ret
-
 
 ;---------------------------------------------------------------------------
 ;
@@ -347,7 +344,7 @@ ARP_output_request:
         movsd                                   ;
         popd    [edi]                           ; DestIP
 
-        push    edx eax
+        push    eax
         call    [ebx + NET_DEVICE.transmit]
         ret
 

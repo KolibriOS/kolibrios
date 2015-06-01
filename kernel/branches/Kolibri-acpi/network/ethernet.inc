@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ETHERNET.INC                                                   ;;
@@ -33,29 +33,24 @@ struct  ETH_DEVICE      NET_DEVICE
 
 ends
 
-struct  ETH_queue_entry
-
-        device          dd ?
-        packet          dd ?
-        size            dd ?
-
-ends
-
 iglobal
 align 4
 
-        ETH_BROADCAST   dp  0xffffffffffff
+        ETH_BROADCAST   dp 0xffffffffffff
+
+        ETH_frame_queued        dd 0    ; Number of queued frames
+
+        ETH_frame_head          dd ETH_frame_head       ; Pointer to next frame in the linked list
+        ETH_frame_tail          dd ETH_frame_head       ; Pointer to last frame in the linked list
+
 endg
 
 uglobal
 align 4
         ETH_input_event dd ?
-        ETH_queue       rd (ETH_QUEUE_SIZE*sizeof.ETH_queue_entry + sizeof.queue)/4
 endg
 
 macro   ETH_init {
-
-        init_queue ETH_queue
 
         movi    ebx, 1
         mov     ecx, ETH_process_input
@@ -72,23 +67,36 @@ macro   ETH_init {
 ; ETH_input
 ;
 ;  This function is called by ethernet drivers,
-;  It pushes the received ethernet packets onto the eth_in_queue
+;  It pushes the received ethernet packets onto the ethernet input queue
 ;
 ;  IN:   [esp]  = Pointer to buffer
-;       [esp+4] = size of buffer
-;         ebx   = pointer to eth_device
+;
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
 align 4
 ETH_input:
 
-        push    ebx
-        mov     esi, esp
+        pop     eax
+        pushf
+        cli
 
-        add_to_queue ETH_queue, ETH_QUEUE_SIZE, sizeof.ETH_queue_entry, .fail
-        add     esp, sizeof.ETH_queue_entry
+        cmp     [ETH_frame_queued], ETH_QUEUE_SIZE
+        jae     .full
+        inc     [ETH_frame_queued]
 
+; Add frame to the end of the linked list
+        mov     [eax + NET_BUFF.NextPtr], ETH_frame_head
+
+        mov     ebx, [ETH_frame_tail]
+        mov     [eax + NET_BUFF.PrevPtr], ebx
+
+        mov     [ETH_frame_tail], eax
+        mov     [ebx + NET_BUFF.NextPtr], eax
+
+        popf
+
+; Now queue an event to process it
         xor     edx, edx
         mov     eax, [ETH_input_event]
         mov     ebx, [eax + EVENT.id]
@@ -97,13 +105,11 @@ ETH_input:
 
         ret
 
-  .fail:
+  .full:
         DEBUGF  DEBUG_NETWORK_ERROR, "ETH incoming queue is full, discarding packet!\n"
-
-        pop     ebx
-        call    NET_packet_free
-        add     esp, 4
-
+        popf
+        push    eax
+        call    NET_BUFF_free
         ret
 
 
@@ -116,29 +122,46 @@ ETH_process_input:
         mov     ecx, MANUAL_DESTROY
         call    create_event
         mov     [ETH_input_event], eax
-
+        pushf
   .wait:
+        popf
         mov     eax, [ETH_input_event]
         mov     ebx, [eax + EVENT.id]
         call    wait_event
 
   .loop:
-        get_from_queue ETH_queue, ETH_QUEUE_SIZE, sizeof.ETH_queue_entry, .wait
+        pushf
+        cli
+        cmp     [ETH_frame_queued], 0
+        je      .wait
 
-        mov     eax, [esi + ETH_queue_entry.packet]
-        mov     ecx, [esi + ETH_queue_entry.size]
-        mov     ebx, [esi + ETH_queue_entry.device]
+        dec     [ETH_frame_queued]
 
-        pushd   .loop   ; return address
-        push    ecx eax
+        mov     esi, [ETH_frame_head]
+        mov     ebx, [esi + NET_BUFF.NextPtr]
+
+        mov     [ETH_frame_head], ebx
+        mov     [ebx + NET_BUFF.PrevPtr], ETH_frame_head
+
+        popf
+
+        mov     eax, [esi + NET_BUFF.offset]
+        add     eax, esi
+        mov     ecx, [esi + NET_BUFF.length]
+        mov     ebx, [esi + NET_BUFF.device]
+
+        pushd   .loop           ; return address for protocol handler
+        push    esi             ; keep pointer to NET_BUFF on stack
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_input: size=%u\n", ecx
         sub     ecx, sizeof.ETH_header
         jb      .dump
 
+; Set registers for protocol handlers
         lea     edx, [eax + sizeof.ETH_header]
         mov     ax, [eax + ETH_header.Type]
 
+; Place protocol handlers here
         cmp     ax, ETHER_PROTO_IPv4
         je      IPv4_input
 
@@ -158,8 +181,7 @@ ETH_process_input:
 
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_input: dumping\n"
-        call    NET_packet_free
-        add     esp, 4
+        call    NET_BUFF_free
         ret
 
 ;-----------------------------------------------------------------
@@ -171,11 +193,10 @@ ETH_process_input:
 ;     ecx = payload size
 ;     edx = pointer to destination mac
 ;
-; OUT: eax = start of ethernet frame / 0 on error
+; OUT: eax = start of net frame / 0 on error
 ;      ebx = device ptr
 ;      ecx = payload size
-;      edx = ethernet frame size
-;      edi = start of ethernet payload
+;      edi = start of payload
 ;
 ;-----------------------------------------------------------------
 align 4
@@ -189,11 +210,14 @@ ETH_output:
         push    ecx
         push    ax edx
 
-        add     ecx, sizeof.ETH_header
-        stdcall kernel_alloc, ecx
+        add     ecx, sizeof.ETH_header + NET_BUFF.data
+        stdcall NET_BUFF_alloc, ecx
         test    eax, eax
         jz      .out_of_ram
-        mov     edi, eax
+        mov     [eax + NET_BUFF.type], NET_BUFF_ETH
+        mov     [eax + NET_BUFF.device], ebx
+        mov     [eax + NET_BUFF.offset], NET_BUFF.data
+        lea     edi, [eax + NET_BUFF.data]
 
         pop     esi
         movsd
@@ -204,13 +228,14 @@ ETH_output:
         pop     ax
         stosw
 
-        lea     eax, [edi - sizeof.ETH_header]  ; Set eax to buffer start
+        lea     eax, [edi - sizeof.ETH_header - NET_BUFF.data]  ; Set eax to buffer start
         pop     ecx
-        lea     edx, [ecx + sizeof.ETH_header]  ; Set edx to complete buffer size
 
+        lea     edx, [ecx + sizeof.ETH_header]  ; Set edx to complete buffer size
         cmp     edx, ETH_FRAME_MINIMUM
         jbe     .adjust_size
   .done:
+        mov     [eax + NET_BUFF.length], edx
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_output: ptr=%x size=%u\n", eax, edx
         ret
 
@@ -272,7 +297,7 @@ ETH_api:
   .read_mac:
         movzx   ebx, word [eax + ETH_DEVICE.mac]
         mov     eax, dword [eax + ETH_DEVICE.mac + 2]
-        mov     [esp+20+4], ebx                         ; TODO: fix this ugly code
+        mov     [esp+20+4], ebx                         ; FIXME
         ret
 
 

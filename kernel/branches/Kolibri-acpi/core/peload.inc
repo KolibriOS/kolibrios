@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -42,6 +42,7 @@ proc load_PE stdcall, file_name:dword
         jz      .cleanup
 
         mov     [base], eax
+        DEBUGF 1,'K : driver %s mapped to %x\n',[file_name],[base]
 
         push    ebx ebp
         mov     ebx, [image]

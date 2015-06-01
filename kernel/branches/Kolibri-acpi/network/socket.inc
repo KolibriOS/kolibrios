@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -98,9 +98,9 @@ struct  TCP_SOCKET              IP_SOCKET
 ;----------------------
 ; Transmit timing stuff
         t_idle                  dd ?
-        t_rtt                   dd ?
+        t_rtt                   dd ?    ; round trip time
         t_rtseq                 dd ?
-        t_srtt                  dd ?
+        t_srtt                  dd ?    ; smoothed round trip time
         t_rttvar                dd ?
         t_rttmin                dd ?
         max_sndwnd              dd ?
@@ -179,8 +179,8 @@ ends
 struct  socket_queue_entry
 
         data_ptr                dd ?
-        buf_ptr                 dd ?
         data_size               dd ?
+        buf_ptr                 dd ?
 
 ends
 
@@ -754,7 +754,7 @@ SOCKET_receive:
         pop     edi
 
         test    [eax + SOCKET.state], SS_CANTRCVMORE
-        jnz     .return
+        jnz     .last_data
 
         cmp     ebx, EWOULDBLOCK
         jne     .return
@@ -779,6 +779,11 @@ SOCKET_receive:
         mov     [esp+32], ecx
         ret
 
+  .last_data:
+        test    ecx, ecx
+        jz      .return
+        call    SOCKET_notify
+        jmp     .return
 
 
 
@@ -817,7 +822,7 @@ SOCKET_receive_dgram:
         rep movsd
   .nd:
 
-        call    NET_packet_free
+        call    NET_BUFF_free
         pop     ecx eax                                         ; return number of bytes copied to application
         xor     ebx, ebx
         ret
@@ -874,6 +879,13 @@ SOCKET_receive_stream:
         call    SOCKET_ring_free                                ; free read memory
         pop     eax
 
+        cmp     [eax + STREAM_SOCKET.rcv + RING_BUFFER.size], 0
+        jne     .more_data
+        xor     ebx, ebx                                        ; errorcode = 0 (no error)
+        ret
+
+  .more_data:
+        call    SOCKET_notify                                   ; Queue another network event
         xor     ebx, ebx                                        ; errorcode = 0 (no error)
         ret
 
@@ -1429,7 +1441,6 @@ SOCKET_check_port:
 ;       ecx = data size
 ;       esi = ptr to data
 ;       [esp] = ptr to buf
-;       [esp + 4] = buf size
 ;
 ;  OUT: /
 ;
@@ -1439,7 +1450,7 @@ SOCKET_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_input: socket=%x, data=%x size=%u\n", eax, esi, ecx
 
-        mov     [esp+4], ecx
+        push    ecx
         push    esi
         mov     esi, esp
 
@@ -1463,16 +1474,13 @@ SOCKET_input:
         call    mutex_unlock
         popa
 
-        call    NET_packet_free
-        add     esp, 8
-
+        call    NET_BUFF_free
         ret
 
 
 ;--------------------------
 ;
-; IN: eax = ptr to ring struct (just a buffer of the right size)
-; OUT: eax = unchanged / 0 on error
+; eax = ptr to ring struct (just a buffer of the right size)
 ;
 align 4
 SOCKET_ring_create:
@@ -1481,7 +1489,7 @@ SOCKET_ring_create:
         mov     esi, eax
 
         push    edx
-        stdcall create_ring_buffer, SOCKET_MAXDATA, PG_SW
+        stdcall create_ring_buffer, SOCKET_MAXDATA, PG_SWR
         pop     edx
         test    eax, eax
         jz      .fail
@@ -1962,14 +1970,8 @@ SOCKET_free:
         jnz     .no_tcp
 
         mov     ebx, eax
-        cmp     [ebx + STREAM_SOCKET.rcv.start_ptr], 0
-        je      @f
         stdcall kernel_free, [ebx + STREAM_SOCKET.rcv.start_ptr]
-  @@:
-        cmp     [ebx + STREAM_SOCKET.snd.start_ptr], 0
-        je      @f
         stdcall kernel_free, [ebx + STREAM_SOCKET.snd.start_ptr]
-  @@:
         mov     eax, ebx
   .no_tcp:
 

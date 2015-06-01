@@ -836,7 +836,7 @@ Remarks:
     at pressing the minimization button (for skinned windows
     it is defined automatically by function 0,
     for other windows it can be defined manually by function 8),
-    restore of a window is done by the application '@panel'.
+    restore of a window is done by the application '@taskbar'.
 
 ======================================================================
  Function 18, subfunction 11 - get information on the disk subsystem.
@@ -1213,9 +1213,9 @@ Remarks:
   * To get layout and country identifier use
     subfunction 2 of function 26.
   * Country identifier is global system variable, which is not used
-    by the kernel itself; however the application '@panel' displays
+    by the kernel itself; however the application '@taskbar' displays
     the corresponding icon.
-  * The application @panel switches layouts on user request.
+  * The application @taskbar switches layouts on user request.
 
 ======================================================================
 ========== Function 21, subfunction 5 - set system language. =========
@@ -1228,7 +1228,7 @@ Returned value:
   * eax = 0
 Remarks:
   * System language is global system variable and is not used
-    by the kernel itself, however application @panel draws the
+    by the kernel itself, however application @taskbar draws the
     appropriate icon.
   * Function does not check for correctness, as the kernel does not
     use this variable.
@@ -1422,9 +1422,9 @@ Remarks:
   * To set layout and country identifier use
     subfunction 2 of function 21.
   * Country identifier is global system variable, which is not used
-    by the kernel itself; however the application '@panel' displays
+    by the kernel itself; however the application '@taskbar' displays
     the corresponding icon (using this function).
-  * The application @panel switches layouts on user request.
+  * The application @taskbar switches layouts on user request.
 
 ======================================================================
 ========== Function 26, subfunction 5 - get system language. =========
@@ -1436,7 +1436,7 @@ Returned value:
   * eax = system language (1=eng, 2=fi, 3=ger, 4=rus)
 Remarks:
   * System language is global system variable and is not used
-    by the kernel itself, however application @panel draws the
+    by the kernel itself, however application @taskbar draws the
     appropriate icon (using this function).
   * To set system language use subfunction 5 of function 21.
 
@@ -1996,7 +1996,7 @@ Remarks:
   * The screen working area defines position and coordinates of
     a maximized window.
   * The screen working area in view of normal work is all screen
-    without system panel (the application '@panel').
+    without taskbar ('@taskbar' application).
   * (left,top) are coordinates of the left upper corner,
     (right,bottom) are coordinates of the right lower one.
     Thus the size of working area on x axis can be calculated by
@@ -2018,8 +2018,8 @@ Returned value:
 Remarks:
   * The screen working area defines position and coordinates of
     a maximized window.
-  * This function is used only by the application '@panel',
-    which set working area to all screen without system panel.
+  * This function is used only by the application '@taskbar',
+    which set working area to all screen without taskbar.
   * (left,top) are coordinates of the left upper corner,
     (right,bottom) are coordinates of the right lower one.
     Thus the size of working area on x axis can be calculated by

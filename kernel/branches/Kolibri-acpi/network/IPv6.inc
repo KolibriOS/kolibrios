@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2012-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2012-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  IPv6.INC                                                       ;;
@@ -14,7 +14,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 3251 $
+$Revision: 5522 $
 
 
 struct  IPv6_header
@@ -147,9 +147,7 @@ IPv6_input:
 
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv6_input - dumping\n"
-        call    kernel_free
-        add     esp, 4
-
+        call    NET_BUFF_free
         ret
 
   .dump_options:

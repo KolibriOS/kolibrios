@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -489,7 +489,7 @@ proc create_process stdcall, app_size:dword,img_base:dword,img_size:dword
         cmp     eax, ecx
         jbe     @B
 
-        mov     [edi-4096+PROC.ht_next], 1      ;reserve handle 0
+        mov     [edi-4096+PROC.ht_next], 3      ;reserve handles for stdin stdout and stderr
         mov     eax, edi
         call    get_pg_addr
         mov     [edi-4096+PROC.pdt_0_phys], eax
@@ -503,16 +503,13 @@ proc create_process stdcall, app_size:dword,img_base:dword,img_size:dword
         rep movsd
 
         mov     eax, [edi-8192+PROC.pdt_0_phys]
-        or      eax, PG_SW
+        or      eax, PG_SWR
         mov     [edi-4096+(page_tabs shr 20)], eax
 
         lea     eax, [edi-8192]
         call    set_cr3
 
-        mov     ecx, [app_tabs]
-        test    ecx, ecx
-        jz      .done
-
+        mov     edx, [app_tabs]
         xor     edi, edi
 @@:
         call    alloc_page
@@ -521,7 +518,8 @@ proc create_process stdcall, app_size:dword,img_base:dword,img_size:dword
 
         stdcall map_page_table, edi, eax
         add     edi, 0x00400000
-        loop    @B
+        dec     edx
+        jnz     @B
 
         mov     edi, page_tabs
 
@@ -530,13 +528,9 @@ proc create_process stdcall, app_size:dword,img_base:dword,img_size:dword
         xor     eax, eax
         rep stosd
 
-        xor     edx, edx
         mov     ecx, [img_pages]
-        jcxz    .bss
-
-        sub     [app_pages], ecx
-
-        mov     ebx, PG_UW
+        mov     ebx, PG_UWR
+        xor     edx, edx
         mov     esi, [img_base]
         shr     esi, 10
         add     esi, page_tabs
@@ -547,21 +541,23 @@ proc create_process stdcall, app_size:dword,img_base:dword,img_size:dword
         or      eax, ebx; force user level r/w access
         stosd
         add     edx, 0x1000
-        loop    .remap
-.bss:
-        mov     ebx, [app_pages]
-        test    ebx, ebx
+        dec     [app_pages]
+        dec     ecx
+        jnz     .remap
+
+        mov     ecx, [app_pages]
+        test    ecx, ecx
         jz      .done
 
-.map_bss:
+.alloc:
         call    alloc_page
         test    eax, eax
         jz      .fail
 
-        stdcall map_page, edx, eax, dword PG_UW
+        stdcall map_page, edx, eax, dword PG_UWR
         add     edx, 0x1000
-        dec     ebx
-        jnz     .map_bss
+        dec     [app_pages]
+        jnz     .alloc
 
 .done:
         mov     ecx, pg_data.mutex
@@ -647,7 +643,7 @@ align 4
         test    eax, 1
         jz      .next
         and     eax, not 0xFFF
-        stdcall map_page, [tmp_task_ptab], eax, PG_SW
+        stdcall map_page, [tmp_task_ptab], eax, PG_SWR
         stdcall destroy_page_table, [tmp_task_ptab]
         mov     eax, [esi]
         call    free_page
@@ -792,7 +788,7 @@ proc read_process_memory
 
         push    ecx
         stdcall map_memEx, [proc_mem_map], \
-                [slot], ebx, ecx, PG_MAP
+                [slot], ebx, ecx, PG_READ
         pop     ecx
 
         mov     esi, [offset]
@@ -863,7 +859,7 @@ proc write_process_memory
       ;     add ebx, new_app_base
         push    ecx
         stdcall map_memEx, [proc_mem_map], \
-                [slot], ebx, ecx, PG_SW
+                [slot], ebx, ecx, PG_SWR
         pop     ecx
 
         mov     edi, [offset]
@@ -1145,9 +1141,9 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         xor     eax, eax
         mov     [ecx+0], dword eax
         mov     [ecx+4], dword eax
-        mov     eax, [Screen_Max_X]
+        mov     eax, [screen_workarea.right]
         mov     [ecx+8], eax
-        mov     eax, [Screen_Max_Y]
+        mov     eax, [screen_workarea.bottom]
         mov     [ecx+12], eax
 
         mov     ebx, [pl0_stack]

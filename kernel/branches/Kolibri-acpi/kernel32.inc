@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;; KERNEL32.INC                                                 ;;
@@ -111,9 +111,9 @@ struct  PROC
         io_map_0        rd 1
         io_map_1        rd 1
 
-        ht_lock         rd 1
-        ht_next         rd 1
-        htab            rd (4096-$)/4
+        ht_lock         rd 1            ;htab[0] stdin
+        ht_next         rd 1            ;htab[1] stdout
+        htab            rd (4096-$)/4   ;htab[2] stderr
         pdt_0           rd 1024
 ends
 

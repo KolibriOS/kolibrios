@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -115,7 +115,7 @@ save_draw_mouse:
 ;        mul     ecx
         mov     eax, [d_width_calc_area + eax*4]
 
-        add     eax, [_WinMapAddress]
+        add     eax, [_display.win_map]
         movzx   edx, byte [ebx+eax]
         shl     edx, 8
         mov     esi, [edx+SLOT_BASE+APPDATA.cursor]
@@ -501,9 +501,10 @@ proc set_mouse_data stdcall uses edx, BtnState:dword, XMoving:dword, YMoving:dwo
         mul     edx
         shr     eax, 15
  .check_x:
-        cmp     ax, word[Screen_Max_X]
+        cmp     ax, word[_display.width]
         jl      .set_x
-        mov     ax, word[Screen_Max_X]
+        mov     ax, word[_display.width]
+        dec     ax
  .set_x:
         mov     [MOUSE_X], ax
 ;--------------------------------------
@@ -522,9 +523,10 @@ proc set_mouse_data stdcall uses edx, BtnState:dword, XMoving:dword, YMoving:dwo
         mul     edx
         shr     eax, 15
  .check_y:
-        cmp     ax, word[Screen_Max_Y]
+        cmp     ax, word[_display.height]
         jl      .set_y
-        mov     ax, word[Screen_Max_Y]
+        mov     ax, word[_display.height]
+        dec     ax
  .set_y:
         mov     [MOUSE_Y], ax
 ;--------------------------------------

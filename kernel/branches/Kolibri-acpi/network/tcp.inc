@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -124,9 +124,8 @@ struct  TCP_queue_entry
         segment_ptr             dd ?
         segment_size            dd ?
         device_ptr              dd ?
-
-        buffer_ptr              dd ?
         timestamp               dd ?
+        buffer_ptr              dd ?
 
 ends
 

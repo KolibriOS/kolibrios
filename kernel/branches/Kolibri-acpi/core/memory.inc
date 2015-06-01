@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -127,8 +127,8 @@ align 4
 map_page:
         push    ebx
         mov     eax, [esp+12]               ; phis_addr
-        and     eax, not 0xFFF
         or      eax, [esp+16]              ; flags
+        and     eax, [pte_valid_mask]
         mov     ebx, [esp+8]               ; lin_addr
         shr     ebx, 12
         mov     [page_tabs+ebx*4], eax
@@ -191,8 +191,8 @@ proc map_io_mem stdcall, base:dword, size:dword, flags:dword
         mov     edx, [base]
         shr     eax, 12
         shr     ecx, 12
-        and     edx, -4096
         or      edx, [flags]
+        and     edx, [pte_valid_mask]
 @@:
         mov     [page_tabs+eax*4], edx
         invlpg  [ebx]
@@ -229,6 +229,7 @@ commit_pages:
         pop     ecx
         pop     eax
 
+        and     eax, [pte_valid_mask ]
         mov     edi, ebx
         shr     edi, 12
         lea     edi, [page_tabs+edi*4]
@@ -340,7 +341,7 @@ proc map_page_table stdcall, lin_addr:dword, phis_addr:dword
         shr     ebx, 22
         mov     eax, [phis_addr]
         and     eax, not 0xFFF
-        or      eax, PG_UW        ;+PG_NOCACHE
+        or      eax, PG_UWR
         mov     dword [master_tab+ebx*4], eax
         mov     eax, [lin_addr]
         shr     eax, 10
@@ -420,7 +421,7 @@ proc init_LFB
         call    alloc_page
         stdcall map_page_table, LFB_BASE, eax
         pop     eax
-        or      eax, PG_UW
+        or      eax, PG_UWR
         mov     ebx, LFB_BASE
 ; max VGA=640*480*4=1228800 bytes
 ; + 32*640*4=81920 bytes for mouse pointer
@@ -447,7 +448,7 @@ proc init_LFB
 
         bt      [cpu_caps], CAPS_PSE
         jnc     .map_page_tables
-        or      esi, PG_LARGE+PG_UW
+        or      esi, PDE_LARGE+PG_UWR
         mov     edx, sys_proc+PROC.pdt_0+(LFB_BASE shr 20)
 @@:
         mov     [edx], esi
@@ -476,14 +477,14 @@ proc init_LFB
 
         mov     eax, [LFBAddress]
         mov     edi, page_tabs + (LFB_BASE shr 10)
-        or      eax, PG_UW
+        or      eax, PG_GLOBAL+PG_UWR
+        and     eax, [pte_valid_mask]
         mov     ecx, [pg_count]
         cld
 @@:
         stosd
         add     eax, 0x1000
-        dec     ecx
-        jnz     @B
+        loop    @B
 
         mov     dword [LFBAddress], LFB_BASE
         mov     eax, cr3                      ;flush TLB
@@ -679,7 +680,7 @@ end if
         ret
 
 .user_space:
-        test    eax, PG_MAP
+        test    eax, PG_READ
         jnz     .err_access       ;Страница присутствует
                                   ;Ошибка доступа ?
 
@@ -687,7 +688,7 @@ end if
         mov     ecx, ebx
         shr     ecx, 10
         mov     edx, [master_tab+ecx*4]
-        test    edx, PG_MAP
+        test    edx, PG_READ
         jz      .fail             ;таблица страниц не создана
                                   ;неверный адрес в программе
 
@@ -700,7 +701,7 @@ end if
         test    eax, eax
         jz      .fail
 
-        stdcall map_page, [.err_addr], eax, PG_UW
+        stdcall map_page, [.err_addr], eax, PG_UWR
 
         mov     edi, [.err_addr]
         and     edi, 0xFFFFF000
@@ -737,7 +738,7 @@ end if
         call    alloc_page
         test    eax, eax
         jz      .fail
-        stdcall map_page, ebx, eax, PG_UW
+        stdcall map_page, ebx, eax, PG_UWR
         mov     edi, ebx
         mov     ecx, 1024
         sub     ebx, [esi+HDLL.base]
@@ -748,7 +749,7 @@ end if
         jmp     .exit
 
 .kernel_space:
-        test    eax, PG_MAP
+        test    eax, PG_READ
         jz      .fail   ;страница не присутствует
 
         test    eax, 12 ;U/S (+below)
@@ -774,7 +775,7 @@ end if
         jz      .fail
 
         push    eax
-        stdcall map_page, [.err_addr], eax, dword PG_SW
+        stdcall map_page, [.err_addr], eax, dword PG_SWR
         pop     eax
         mov     edi, [.err_addr]
         and     edi, -4096
@@ -783,7 +784,7 @@ end if
         mov     ebx, esi
         shr     ebx, 12
         mov     edx, [current_slot]
-        or      eax, PG_SW
+        or      eax, PG_SWR
         mov     [edx+APPDATA.io_map+ebx*4], eax
 
         add     esi, [default_io_map]
@@ -818,7 +819,7 @@ proc map_mem_ipc stdcall, lin_addr:dword,slot:dword,\
         mov     esi, [ipc_ptab]
         and     eax, 0xFFFFF000
         jz      .exit
-        stdcall map_page, esi, eax, PG_SW
+        stdcall map_page, esi, eax, PG_SWR
 @@:
         mov     edi, [lin_addr]
         and     edi, 0xFFFFF000
@@ -849,7 +850,7 @@ proc map_mem_ipc stdcall, lin_addr:dword,slot:dword,\
         and     eax, 0xFFFFF000
         jz      .exit
 
-        stdcall map_page, esi, eax, PG_SW
+        stdcall map_page, esi, eax, PG_SWR
         xor     edx, edx
         jmp     .map
 .exit:
@@ -881,7 +882,7 @@ proc map_memEx stdcall, lin_addr:dword,slot:dword,\
         mov     esi, [proc_mem_tab]
         and     eax, 0xFFFFF000
         jz      .exit
-        stdcall map_page, esi, eax, PG_SW
+        stdcall map_page, esi, eax, PG_SWR
 @@:
         mov     edi, [lin_addr]
         and     edi, 0xFFFFF000
@@ -912,7 +913,7 @@ proc map_memEx stdcall, lin_addr:dword,slot:dword,\
         and     eax, 0xFFFFF000
         jz      .exit
 
-        stdcall map_page, esi, eax, PG_SW
+        stdcall map_page, esi, eax, PG_SWR
         xor     edx, edx
         jmp     .map
 .exit:
@@ -927,7 +928,7 @@ endp
 ; destroys: only eax
 proc safe_map_page stdcall, slot:dword, req_access:dword, ofs:dword
         mov     eax, [esi+edx*4]
-        test    al, PG_MAP
+        test    al, PG_READ
         jz      .not_present
         test    al, PG_WRITE
         jz      .resolve_readonly
@@ -947,7 +948,7 @@ proc safe_map_page stdcall, slot:dword, req_access:dword, ofs:dword
         pop     ecx
         test    eax, eax
         jz      .fail
-        or      al, PG_UW
+        or      al, PG_UWR
         mov     [esi+edx*4], eax
         jmp     .map
 .resolve_readonly:
@@ -989,7 +990,7 @@ proc safe_map_page stdcall, slot:dword, req_access:dword, ofs:dword
         call    alloc_page
         test    eax, eax
         jz      .no_hdll
-        or      al, PG_UW
+        or      al, PG_UWR
         mov     [esi+edx*4], eax
         stdcall map_page, edi, eax, [req_access]
         push    esi edi
@@ -1090,7 +1091,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
 @@:
         mov     [used_buf], ecx
         stdcall map_mem_ipc, ecx, [dst_slot], \
-                edi, esi, PG_SW
+                edi, esi, PG_SWR
 
         mov     edi, [dst_offset]
         add     edi, [used_buf]

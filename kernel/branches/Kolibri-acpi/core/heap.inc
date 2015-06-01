@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -130,7 +130,7 @@ proc init_kernel_heap
 
         stdcall alloc_pages, dword 32
 
-        or      eax, PG_SW
+        or      eax, PG_SWR
         mov     ebx, HEAP_BASE
         mov     ecx, 32
         call    commit_pages
@@ -492,7 +492,7 @@ proc kernel_alloc stdcall, size:dword
         jz      .err
 
         mov     ecx, ebx
-        or      eax, PG_SW
+        or      eax, PG_GLOBAL+PG_SWR
         mov     ebx, [lin_addr]
         call    commit_pages
 
@@ -506,7 +506,7 @@ proc kernel_alloc stdcall, size:dword
         test    eax, eax
         jz      .err
 
-        stdcall map_page, edx, eax, dword PG_SW
+        stdcall map_page, edx, eax, dword (PG_GLOBAL+PG_SWR)
         add     edx, 0x1000
         dec     ebx
         jnz     @B
@@ -1451,7 +1451,7 @@ align 4
         mov     edx, [access]
         or      edx, [owner_access]
         shl     edx, 1
-        or      edx, PG_USER+PG_SHARED
+        or      edx, PG_SHARED+PG_UR
 @@:
         lodsd
         and     eax, 0xFFFFF000

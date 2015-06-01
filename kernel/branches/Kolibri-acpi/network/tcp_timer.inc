@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -14,7 +14,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 5013 $
+$Revision: 5442 $
 
 timer_flag_retransmission       = 1 shl 0
 timer_flag_keepalive            = 1 shl 1
@@ -53,6 +53,8 @@ local   .exit
 ;        mov     eax, ebx                                ;;
 ;        call    TCP_output                              ;;
         pop     ebx
+
+        inc     [TCPS_delack]                   ; update stats
 
         jmp     .loop
 

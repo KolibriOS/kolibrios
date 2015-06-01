@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -116,8 +116,6 @@ do_change_task:
         Mov     [tss._esp0],eax,[ebx+APPDATA.saved_esp0]
 
         mov     edx, [ebx+APPDATA.tls_base]
-        cmp     edx, [esi+APPDATA.tls_base]
-        je      @f
 
         mov     [tls_data_l+2], dx
         shr     edx, 16
@@ -126,7 +124,7 @@ do_change_task:
 
         mov     dx, app_tls
         mov     fs, dx
-@@:
+
 ; set gs selector unconditionally
         Mov     gs,ax,graph_data
       ; set CR0.TS
@@ -155,21 +153,23 @@ do_change_task:
 ;end.
 
 
-
 struct  MUTEX_WAITER
         list    LHEAD
         task    dd ?
+        type    dd ?
 ends
+
+RWSEM_WAITING_FOR_WRITE equ 0
+RWSEM_WAITING_FOR_READ  equ 1
 
 ;void  __fastcall mutex_init(struct mutex *lock)
 
 align 4
 mutex_init:
-        mov     [ecx+MUTEX.lhead.next], ecx
-        mov     [ecx+MUTEX.lhead.prev], ecx
+        mov     [ecx+MUTEX.wait_list.next], ecx
+        mov     [ecx+MUTEX.wait_list.prev], ecx
         mov     [ecx+MUTEX.count], 1
         ret
-
 
 ;void  __fastcall mutex_lock(struct mutex *lock)
 
@@ -200,15 +200,13 @@ mutex_lock:
         call    change_task
         jmp     .forever
 @@:
-        mov     edx, [esp+MUTEX_WAITER.list.next]
-        mov     eax, [esp+MUTEX_WAITER.list.prev]
+        mov     eax, ecx
+        list_del esp
 
-        mov     [eax+MUTEX_WAITER.list.next], edx
-        mov     [edx+MUTEX_WAITER.list.prev], eax
-        cmp     [ecx+MUTEX.lhead.next], ecx
+        cmp     [eax+MUTEX.wait_list.next], eax
         jne     @F
 
-        mov     [ecx+MUTEX.count], 0
+        mov     [eax+MUTEX.count], 0
 @@:
         add     esp, sizeof.MUTEX_WAITER
 
@@ -224,7 +222,7 @@ mutex_unlock:
         pushfd
         cli
 
-        mov     eax, [ecx+MUTEX.lhead.next]
+        mov     eax, [ecx+MUTEX.wait_list.next]
         cmp     eax, ecx
         mov     [ecx+MUTEX.count], 1
         je      @F
@@ -236,7 +234,166 @@ mutex_unlock:
         ret
 
 
+;void __fastcall init_rwsem(struct rw_semaphore *sem)
+
+align 4
+init_rwsem:
+        mov     [ecx+RWSEM.wait_list.next], ecx
+        mov     [ecx+RWSEM.wait_list.prev], ecx
+        mov     [ecx+RWSEM.count], 0
+        ret
+
+;void __fastcall down_read(struct rw_semaphore *sem)
+
+align 4
+down_read:
+        pushfd
+        cli
+
+        mov     eax, [ecx+RWSEM.count]
+        test    eax, eax
+        js      @F
+
+        cmp     ecx, [ecx+RWSEM.wait_list.next]
+        je      .ok
+@@:
+        sub     esp, sizeof.MUTEX_WAITER
+
+        mov     eax, [TASK_BASE]
+        mov     [esp+MUTEX_WAITER.task], eax
+        mov     [esp+MUTEX_WAITER.type], RWSEM_WAITING_FOR_READ
+        mov     [eax+TASKDATA.state], 1
+
+        list_add_tail esp, ecx      ;esp= new waiter, ecx= list head
+
+        call    change_task
+
+        add     esp, sizeof.MUTEX_WAITER
+        popfd
+        ret
+.ok:
+        inc     eax
+        mov     [ecx+RWSEM.count], eax
+
+        popfd
+        ret
+
+;void __fastcall down_write(struct rw_semaphore *sem)
+
+align 4
+down_write:
+        pushfd
+        cli
+        sub     esp, sizeof.MUTEX_WAITER
+
+        mov     edx, [TASK_BASE]
+        mov     [esp+MUTEX_WAITER.task], edx
+        mov     [esp+MUTEX_WAITER.type], RWSEM_WAITING_FOR_WRITE
+        mov     [edx+TASKDATA.state], 1
+
+        list_add_tail esp, ecx      ;esp= new waiter, ecx= list head
+
+        xor     eax, eax
+        not     eax
+
+.forever:
+        test    eax, [ecx+RWSEM.count]
+        jz      @F
+
+        mov     [edx+TASKDATA.state], 1
+        call    change_task
+        jmp     .forever
+@@:
+        mov     [ecx+RWSEM.count], eax
+        list_del esp
+
+        add     esp, sizeof.MUTEX_WAITER
+        popfd
+        ret
+
+;void __fastcall up_read(struct rw_semaphore *sem)
+
+align 4
+up_read:
+        pushfd
+        cli
+
+        dec     [ecx+RWSEM.count]
+        jnz     @F
+
+        mov     eax, [ecx+RWSEM.wait_list.next]
+        cmp     eax, ecx
+        je      @F
+
+        mov     eax, [eax+MUTEX_WAITER.task]
+        mov     [eax+TASKDATA.state], 0
+@@:
+        popfd
+        ret
+
+;void __fastcall up_write(struct rw_semaphore *sem)
+
+align 4
+up_write:
+
+        pushfd
+        cli
+
+        mov     eax, [ecx+RWSEM.wait_list.next]
+        mov     [ecx+RWSEM.count], 0
+
+        cmp     ecx, eax
+        je      .done
+
+        mov     edx, [eax+MUTEX_WAITER.type]
+        test    edx, edx
+        jnz     .wake
+
+        mov     eax, [eax+MUTEX_WAITER.task]
+        mov     [eax+TASKDATA.state], 0
+.done:
+        popfd
+        ret
+
+.wake:
+        push    ebx
+        push    esi
+        push    edi
+
+        xor     esi, esi
+        mov     edi, ecx
+
+.wake_list:
+
+        mov     ebx, [eax+MUTEX_WAITER.list.next]
+        list_del eax
+        mov     edx, [eax+MUTEX_WAITER.task]
+        mov     [edx+TASKDATA.state], 0
+        inc     esi
+        cmp     edi, ebx
+        je      .wake_done
+
+        mov     ecx, [ebx+MUTEX_WAITER.type]
+        test    ecx, ecx
+        jz      .wake_done
+
+        mov     eax, ebx
+        jmp     .wake_list
+
+.wake_done:
+        add     [edi+RWSEM.count], esi
+
+        pop     edi
+        pop     esi
+        pop     ebx
+        popfd
+        ret
+
+
 purge MUTEX_WAITER
+purge RWSEM_WAITING_FOR_WRITE
+purge RWSEM_WAITING_FOR_READ
+
 
 MAX_PRIORITY      = 0   ; highest, used for kernel tasks
 USER_PRIORITY     = 1   ; default

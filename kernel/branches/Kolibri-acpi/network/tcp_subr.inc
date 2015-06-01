@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -14,7 +14,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 5015 $
+$Revision: 5522 $
 
 align 4
 iglobal
@@ -292,7 +292,7 @@ TCP_respond:
         call    IPv4_output
         jz      .error
         pop     esi cx
-        push    edx eax
+        push    eax
 
 ;-----------------------------------------------
 ; Fill in the TCP header by using the socket ptr
@@ -376,7 +376,7 @@ TCP_respond_segment:
         jz      .error
         pop     esi cx
 
-        push    edx eax
+        push    eax
 
 ;---------------------------------------------------
 ; Fill in the TCP header by using a received segment

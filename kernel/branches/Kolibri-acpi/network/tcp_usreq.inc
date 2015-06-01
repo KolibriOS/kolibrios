@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -14,7 +14,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 4850 $
+$Revision: 5442 $
 
 
 ;-------------------------
@@ -88,6 +88,8 @@ TCP_connect:
 
         test    [eax + SOCKET.state], SS_ISCONNECTED
         jnz     .eisconn
+
+        inc     [TCPS_connattempt]                      ; update stats
 
         push    eax edx
         lea     ecx, [eax + SOCKET.mutex]

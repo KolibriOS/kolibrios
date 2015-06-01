@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -98,6 +98,9 @@ CAPS_ALTMOVCR8 equ    74 ;
 MSR_SYSENTER_CS         equ     0x174
 MSR_SYSENTER_ESP        equ     0x175
 MSR_SYSENTER_EIP        equ     0x176
+MSR_CR_PAT              equ     0x277
+MSR_MTRR_DEF_TYPE       equ     0x2FF
+
 MSR_AMD_EFER            equ     0xC0000080      ; Extended Feature Enable Register
 MSR_AMD_STAR            equ     0xC0000081      ; SYSCALL/SYSRET Target Address Register
 
@@ -271,16 +274,35 @@ REG_RET             equ (RING0_STACK_SIZE-56)  ;irq0.return
 PAGE_SIZE           equ 4096
 
 PG_UNMAP            equ 0x000
-PG_MAP              equ 0x001
+PG_READ             equ 0x001
 PG_WRITE            equ 0x002
-PG_SW               equ 0x003
-PG_USER             equ 0x005
-PG_UW               equ 0x007
-PG_NOCACHE          equ 0x018
-PG_LARGE            equ 0x080
+PG_USER             equ 0x004
+PG_PCD              equ 0x008
+PG_PWT              equ 0x010
+PG_ACCESSED         equ 0x020
+PG_DIRTY            equ 0x040
+PG_PAT              equ 0x080
 PG_GLOBAL           equ 0x100
-
 PG_SHARED           equ 0x200
+
+PG_SWR              equ 0x003 ; (PG_WRITE+PG_READ)
+PG_UR               equ 0x005 ; (PG_USER+PG_READ)
+PG_UWR              equ 0x007 ; (PG_USER+PG_WRITE+PG_READ)
+PG_NOCACHE          equ 0x018 ; (PG_PCD+PG_PWT)
+
+PDE_LARGE           equ 0x080
+
+PAT_WB              equ 0x000
+PAT_WC              equ 0x008
+PAT_UCM             equ 0x010
+PAT_UC              equ 0x018
+
+PAT_TYPE_UC         equ 0
+PAT_TYPE_WC         equ 1
+PAT_TYPE_WB         equ 6
+PAT_TYPE_UCM        equ 7
+
+PAT_VALUE           equ 0x00070106; (UC<<24)|(UCM<<16)|(WC<<8)|WB
 
 ;;;;;;;;;;;boot time variables
 
@@ -425,38 +447,6 @@ struct  HDLL
         parent          dd ?   ;DLLDESCR
 ends
 
-struct  display_t
-        x               dd ?
-        y               dd ?
-        width           dd ?
-        height          dd ?
-        bits_per_pixel  dd ?
-        vrefresh        dd ?
-        pitch           dd ?
-        lfb             dd ?
-
-        modes           dd ?
-        ddev            dd ?
-        connector       dd ?
-        crtc            dd ?
-
-        cr_list.next    dd ?
-        cr_list.prev    dd ?
-
-        cursor          dd ?
-
-        init_cursor     dd ?
-        select_cursor   dd ?
-        show_cursor     dd ?
-        move_cursor     dd ?
-        restore_cursor  dd ?
-        disable_mouse   dd ?
-        mask_seqno      dd ?
-        check_mouse     dd ?
-        check_m_pixel   dd ?
-
-        bytes_per_pixel dd ?
-ends
 
 struct  BOOT_DATA
         bpp             dd ?
@@ -497,9 +487,53 @@ struct  LHEAD
 ends
 
 struct  MUTEX
-        lhead   LHEAD
+        wait_list       LHEAD
+        count           dd ?
+ends
+
+struct  RWSEM
+        wait_list       LHEAD
         count   dd ?
 ends
+
+struct  display_t
+        x               dd ?
+        y               dd ?
+        width           dd ?
+        height          dd ?
+        bits_per_pixel  dd ?
+        vrefresh        dd ?
+        lfb             dd ?
+        lfb_pitch       dd ?
+
+        win_map_lock    RWSEM
+        win_map         dd ?
+        win_map_pitch   dd ?
+        win_map_size    dd ?
+
+        modes           dd ?
+        ddev            dd ?
+        connector       dd ?
+        crtc            dd ?
+
+        cr_list.next    dd ?
+        cr_list.prev    dd ?
+
+        cursor          dd ?
+
+        init_cursor     dd ?
+        select_cursor   dd ?
+        show_cursor     dd ?
+        move_cursor     dd ?
+        restore_cursor  dd ?
+        disable_mouse   dd ?
+        mask_seqno      dd ?
+        check_mouse     dd ?
+        check_m_pixel   dd ?
+
+        bytes_per_pixel dd ?
+ends
+
 
 struct  PCIDEV
         bk              dd ?

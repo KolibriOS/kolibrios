@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -528,7 +528,7 @@ proc restore_24 stdcall, x:dword, y:dword
 align 4
 @@:
         mov     edi, ebx
-        add     ebx, [_display.pitch]
+        add     ebx, [_display.lfb_pitch]
 
         mov     ecx, [esp]
         rep movsb
@@ -563,7 +563,7 @@ proc restore_32 stdcall, x:dword, y:dword
 align 4
 @@:
         mov     edi, ebx
-        add     ebx, [_display.pitch]
+        add     ebx, [_display.lfb_pitch]
 
         mov     ecx, [cur.w]
         rep movsd
@@ -597,7 +597,7 @@ proc restore_16 stdcall, x:dword, y:dword
 align 4
 @@:
         mov     edi, ebx
-        add     ebx, [_display.pitch]
+        add     ebx, [_display.lfb_pitch]
 
         mov     ecx, [cur.w]
         rep movsw
@@ -659,24 +659,18 @@ proc move_cursor_24 stdcall, hcursor:dword, x:dword, y:dword
         cmp     ebx, [_display.width]
         jb      @F
         mov     ebx, [_display.width]
-        dec     ebx
 ;--------------------------------------
 align 4
 @@:
         cmp     edi, [_display.height]
         jb      @F
         mov     edi, [_display.height]
-        dec     edi
 ;--------------------------------------
 align 4
 @@:
-        mov     [cur.right], ebx
-        mov     [cur.bottom], edi
 
         sub     ebx, [x]
         sub     edi, [y]
-        inc     ebx
-        inc     edi
         sub     ebx, [_dx]
         sub     edi, [_dy]
 
@@ -690,7 +684,7 @@ align 4
 align 4
 @@:
         mov     esi, edx
-        add     edx, [_display.pitch]
+        add     edx, [_display.lfb_pitch]
         mov     ecx, [cur.w]
         lea     ecx, [ecx+ecx*2]
         rep movsb
@@ -713,7 +707,7 @@ align 4
         mov     esi, edx
         mov     edi, ebx
         add     edx, 32*4
-        add     ebx, [_display.pitch]
+        add     ebx, [_display.lfb_pitch]
 ;--------------------------------------
 align 4
 .pix:
@@ -779,24 +773,17 @@ proc move_cursor_32 stdcall, hcursor:dword, x:dword, y:dword
         cmp     ebx, [_display.width]
         jb      @F
         mov     ebx, [_display.width]
-        dec     ebx
 ;--------------------------------------
 align 4
 @@:
         cmp     edi, [_display.height]
         jb      @F
         mov     edi, [_display.height]
-        dec     edi
 ;--------------------------------------
 align 4
 @@:
-        mov     [cur.right], ebx
-        mov     [cur.bottom], edi
-
         sub     ebx, [x]
         sub     edi, [y]
-        inc     ebx
-        inc     edi
         sub     ebx, [_dx]
         sub     edi, [_dy]
 
@@ -810,7 +797,7 @@ align 4
 align 4
 @@:
         mov     esi, edx
-        add     edx, [_display.pitch]
+        add     edx, [_display.lfb_pitch]
         mov     ecx, [cur.w]
         rep movsd
         dec     eax
@@ -832,7 +819,7 @@ align 4
         mov     esi, edx
         mov     edi, ebx
         add     edx, 32*4
-        add     ebx, [_display.pitch]
+        add     ebx, [_display.lfb_pitch]
 ;--------------------------------------
 align 4
 .pix:
@@ -893,25 +880,20 @@ proc move_cursor_16 stdcall, hcursor:dword, x:dword, y:dword
         lea     edx, [LFB_BASE+eax+ecx*2]
         mov     [cur_saved_base], edx
 
-        cmp     ebx, [Screen_Max_X]
-        jbe     @F
-        mov     ebx, [Screen_Max_X]
+        cmp     ebx, [_display.width]
+        jb      @F
+        mov     ebx, [_display.width]
 ;--------------------------------------
 align 4
 @@:
-        cmp     edi, [Screen_Max_Y]
-        jbe     @F
-        mov     edi, [Screen_Max_Y]
+        cmp     edi, [_display.height]
+        jb      @F
+        mov     edi, [_display.height]
 ;--------------------------------------
 align 4
 @@:
-        mov     [cur.right], ebx
-        mov     [cur.bottom], edi
-
         sub     ebx, [x]
         sub     edi, [y]
-        inc     ebx
-        inc     edi
         sub     ebx, [_dx]
         sub     edi, [_dy]
 
@@ -925,7 +907,7 @@ align 4
 align 4
 @@:
         mov     esi, edx
-        add     edx, [_display.pitch]
+        add     edx, [_display.lfb_pitch]
         mov     ecx, [cur.w]
 
         rep movsw
@@ -948,7 +930,7 @@ align 4
         mov     esi, edx
         mov     edi, ebx
         add     edx, 32*4
-        add     ebx, [_display.pitch]
+        add     ebx, [_display.lfb_pitch]
 ;--------------------------------------
 align 4
 .pix:

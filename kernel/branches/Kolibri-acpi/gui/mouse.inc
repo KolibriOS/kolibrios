@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2010-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2010-2015. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -407,7 +407,7 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
     @@:
         add     eax, [mouse.active_sys_window.new_box.height]
         cmp     eax, [_display.height]
-        jle     .call_window_handler
+        jl     .call_window_handler
         sub     eax, [_display.height]
         sub     [mouse.active_sys_window.new_box.top], eax
         jmp     .call_window_handler
@@ -486,10 +486,10 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
         add     eax, [mouse.active_sys_window.new_box.left]
         cmp     eax, [_display.width]
         jl      .call_window_handler
-        sub     eax, [_display.height]
+        sub     eax, [_display.width]
         neg     eax
         add     [mouse.active_sys_window.new_box.width], eax
-        mov     ecx, [_display.height]
+        mov     ecx, [_display.width]
         cmp     ecx, eax
         jg      .call_window_handler
         mov     [mouse.active_sys_window.new_box.width], ecx
@@ -526,7 +526,7 @@ mouse._.find_sys_window_under_cursor: ;////////////////////////////////////////
         mov     esi, [mouse.state.pos.y]
         mov     esi, [d_width_calc_area + esi*4]
 
-        add     esi, [_WinMapAddress]
+        add     esi, [_display.win_map]
         add     esi, [mouse.state.pos.x]
         movzx   esi, byte[esi]
         mov     edi, esi

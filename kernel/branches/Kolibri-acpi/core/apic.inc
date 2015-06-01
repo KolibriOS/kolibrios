@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -63,7 +63,7 @@ APIC_init:
         call    IRQ_mask_all
 
 ; IOAPIC init
-        stdcall map_io_mem, [acpi_ioapic_base], 0x20, PG_SW+PG_NOCACHE
+        stdcall map_io_mem, [acpi_ioapic_base], 0x20, PG_GLOBAL+PG_NOCACHE+PG_SWR
         mov     [IOAPIC_base], eax
 
         mov     eax, IOAPIC_VER
@@ -127,7 +127,7 @@ LAPIC_init:
         cmp     [LAPIC_BASE], 0
         jne     .done
 
-        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_SW+PG_NOCACHE
+        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_GLOBAL+PG_NOCACHE+PG_SWR
         mov     [LAPIC_BASE], eax
         mov     esi, eax
 

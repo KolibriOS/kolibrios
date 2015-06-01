@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -351,15 +351,26 @@ high_code:
         mov     fs, cx
         mov     gs, bx
 
+        xor     eax, eax
+        mov     ebx, 0xFFFFF000+PG_SHARED+PG_NOCACHE+PG_UWR
+        bt      [cpu_caps], CAPS_PAT
+        setc    al
+        shl     eax, 7
+        or      ebx, eax
+
+        mov     eax, PG_GLOBAL
         bt      [cpu_caps], CAPS_PGE
         jnc     @F
 
-        or      dword [sys_proc+PROC.pdt_0+(OS_BASE shr 20)], PG_GLOBAL
+        or      [sys_proc+PROC.pdt_0+(OS_BASE shr 20)], eax
+        or      ebx, eax
 
-        mov     ebx, cr4
-        or      ebx, CR4_PGE
-        mov     cr4, ebx
+        mov     eax, cr4
+        or      eax, CR4_PGE
+        mov     cr4, eax
 @@:
+        mov     [pte_valid_mask], ebx
+
         xor     eax, eax
         mov     dword [sys_proc+PROC.pdt_0], eax
         mov     dword [sys_proc+PROC.pdt_0+4], eax
@@ -444,13 +455,11 @@ high_code:
         mov     [_display.width], eax
         mov     [display_width_standard], eax
         dec     eax
-        mov     [Screen_Max_X], eax
         mov     [screen_workarea.right], eax
         movzx   eax, word [BOOT_VARS+BOOT_Y_RES]; Y max
         mov     [_display.height], eax
         mov     [display_height_standard], eax
         dec     eax
-        mov     [Screen_Max_Y], eax
         mov     [screen_workarea.bottom], eax
         movzx   eax, word [BOOT_VARS+BOOT_VESA_MODE] ; screen mode
         mov     dword [SCR_MODE], eax
@@ -463,10 +472,10 @@ high_code:
         je      @f
         movzx   eax, word[BOOT_VARS+BOOT_PITCH]      ; for other modes
 @@:
-        mov     [_display.pitch], eax
+        mov     [_display.lfb_pitch], eax
         mov     eax, [_display.width]
         mul     [_display.height]
-        mov     [_WinMapSize], eax
+        mov     [_display.win_map_size], eax
 
         call    calculate_fast_getting_offset_for_WinMapAddress
 ; for Qemu or non standart video cards
@@ -577,11 +586,11 @@ setvideomode:
 .noSYSCALL:
 ; -----------------------------------------
         stdcall alloc_page
-        stdcall map_page, tss-0xF80, eax, PG_SW
+        stdcall map_page, tss-0xF80, eax, PG_SWR
         stdcall alloc_page
-        stdcall map_page, tss+0x80, eax, PG_SW
+        stdcall map_page, tss+0x80, eax, PG_SWR
         stdcall alloc_page
-        stdcall map_page, tss+0x1080, eax, PG_SW
+        stdcall map_page, tss+0x1080, eax, PG_SWR
 
 ; LOAD IDT
 
@@ -661,8 +670,8 @@ setvideomode:
         mov     [graph_data_l+4], al
         mov     [graph_data_l+7], ah
 
-        stdcall kernel_alloc, [_WinMapSize]
-        mov     [_WinMapAddress], eax
+        stdcall kernel_alloc, [_display.win_map_size]
+        mov     [_display.win_map], eax
 
         xor     eax, eax
         inc     eax
@@ -756,7 +765,7 @@ endg
         mov     edi, OS_BASE + 8000h
         mov     ecx, (ap_init16_size + 3) / 4
         rep movsd
-        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_SW+PG_NOCACHE
+        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_GLOBAL+PG_NOCACHE+PG_SWR
         mov     [LAPIC_BASE], eax
         lea     edi, [eax+300h]
         mov     esi, smpt+4
@@ -1061,14 +1070,14 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
 ;protect io permission map
 
         mov     esi, [default_io_map]
-        stdcall map_page, esi, [SLOT_BASE+256+APPDATA.io_map], PG_MAP
+        stdcall map_page, esi, [SLOT_BASE+256+APPDATA.io_map], PG_READ
         add     esi, 0x1000
-        stdcall map_page, esi, [SLOT_BASE+256+APPDATA.io_map+4], PG_MAP
+        stdcall map_page, esi, [SLOT_BASE+256+APPDATA.io_map+4], PG_READ
 
         stdcall map_page, tss._io_map_0, \
-                [SLOT_BASE+256+APPDATA.io_map], PG_MAP
+                [SLOT_BASE+256+APPDATA.io_map], PG_READ
         stdcall map_page, tss._io_map_1, \
-                [SLOT_BASE+256+APPDATA.io_map+4], PG_MAP
+                [SLOT_BASE+256+APPDATA.io_map+4], PG_READ
 
 ; SET KEYBOARD PARAMETERS
         mov     al, 0xf6       ; reset keyboard, scan enabled
@@ -2114,7 +2123,7 @@ restore_default_cursor_before_killing:
         movzx   ebx, word [MOUSE_X]
         mov     eax, [d_width_calc_area + eax*4]
 
-        add     eax, [_WinMapAddress]
+        add     eax, [_display.win_map]
         movzx   edx, byte [ebx+eax]
         shl     edx, 8
         mov     esi, [edx+SLOT_BASE+APPDATA.cursor]
@@ -2406,10 +2415,10 @@ sysfn_centermouse:      ; 18.15 = mouse centered
 ;* mouse centered - start code- Mario79
 ;mouse_centered:
 ;        push  eax
-        mov     eax, [Screen_Max_X]
+        mov     eax, [_display.width]
         shr     eax, 1
         mov     [MOUSE_X], ax
-        mov     eax, [Screen_Max_Y]
+        mov     eax, [_display.height]
         shr     eax, 1
         mov     [MOUSE_Y], ax
         call    wakeup_osloop
@@ -2451,11 +2460,11 @@ sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
 ;     cmp  ecx,4  ; set mouse pointer position
         dec     ecx
         jnz     .set_mouse_button
-        cmp     dx, word[Screen_Max_Y]
-        ja      .end
+        cmp     dx, word[_display.height]
+        jae     .end
         rol     edx, 16
-        cmp     dx, word[Screen_Max_X]
-        ja      .end
+        cmp     dx, word[_display.width]
+        jae     .end
         mov     [MOUSE_X], edx
         mov     [mouse_active], 1
         call    wakeup_osloop
@@ -2541,7 +2550,7 @@ sysfn_set_screen_sizes:
         pushfd
         cli
         mov     eax, ecx
-        mov     ecx, [_display.pitch]
+        mov     ecx, [_display.lfb_pitch]
         mov     [_display.width], eax
         dec     eax
         mov     [_display.height], edx
@@ -2804,7 +2813,7 @@ align 4
 align 4
 @@:
         mov     eax, [page_tabs+esi*4]
-        or      al, PG_UW
+        or      al, PG_UWR
         mov     [page_tabs+ebx*4], eax
         mov     eax, ebx
         shl     eax, 12
@@ -2882,8 +2891,10 @@ nosb8:
         jnz     nosb9
 ; ecx = [left]*65536 + [right]
 ; edx = [top]*65536 + [bottom]
-        mov     eax, [Screen_Max_X]
-        mov     ebx, [Screen_Max_Y]
+        mov     eax, [_display.width]
+        mov     ebx, [_display.height]
+        dec     eax
+        dec     ebx
 ; check [right]
         cmp     cx, ax
         ja      .exit
@@ -2935,8 +2946,10 @@ force_redraw_background:
         and     [draw_data+32 + RECT.left], 0
         and     [draw_data+32 + RECT.top], 0
         push    eax ebx
-        mov     eax, [Screen_Max_X]
-        mov     ebx, [Screen_Max_Y]
+        mov     eax, [_display.width]
+        mov     ebx, [_display.height]
+        dec     eax
+        dec     ebx
         mov     [draw_data+32 + RECT.right], eax
         mov     [draw_data+32 + RECT.bottom], ebx
         pop     ebx eax
@@ -3298,9 +3311,11 @@ sys_redrawstat:
         add     edx, draw_data - CURRENT_TASK
         mov     [edx + RECT.left], 0
         mov     [edx + RECT.top], 0
-        mov     eax, [Screen_Max_X]
+        mov     eax, [_display.width]
+        dec     eax
         mov     [edx + RECT.right], eax
-        mov     eax, [Screen_Max_Y]
+        mov     eax, [_display.height]
+        dec     eax
         mov     [edx + RECT.bottom], eax
 
   srl1:
@@ -3819,7 +3834,7 @@ align 4
 .start_x:
         add     eax, ecx
         mov     ebp, [d_width_calc_area + ebx*4]
-        add     ebp, [_WinMapAddress]
+        add     ebp, [_display.win_map]
         movzx   ebp, byte[eax+ebp] ; get value for current point
         cmp     ebp, edi
         jne     @f
@@ -3864,9 +3879,9 @@ not_this_task:
 ;-----------------------------------------------------------------------------
 align 4
 calculatebackground:   ; background
-        mov     edi, [_WinMapAddress]              ; set os to use all pixels
+        mov     edi, [_display.win_map]              ; set os to use all pixels
         mov     eax, 0x01010101
-        mov     ecx, [_WinMapSize]
+        mov     ecx, [_display.win_map_size]
         shr     ecx, 2
         rep stosd
 
@@ -4793,9 +4808,9 @@ endg
         jnz     @f
         mov     word [msg_board_pos+2], (42*6)
         add     word [msg_board_pos], 10
-        mov     ax, word [Screen_Max_Y]
+        mov     ax, word [_display.width]
         cmp     word [msg_board_pos], ax
-        jbe     @f
+        jb      @f
         mov     word [msg_board_pos], 10
 @@:
 ; // end if
@@ -5012,10 +5027,9 @@ sys_gs:                         ; direct screen access
 
 
 .1:                             ; resolution
-        mov     eax, [Screen_Max_X]
+        mov     eax, [_display.width]
         shl     eax, 16
-        mov     ax, word [Screen_Max_Y]
-        add     eax, 0x00010001
+        mov     ax, word [_display.height]
         mov     [esp+32], eax
         ret
 .2:                             ; bits per pixel
@@ -5023,7 +5037,7 @@ sys_gs:                         ; direct screen access
         mov     [esp+32], eax
         ret
 .3:                             ; bytes per scanline
-        mov     eax, [_display.pitch]
+        mov     eax, [_display.lfb_pitch]
         mov     [esp+32], eax
         ret
 
@@ -5100,9 +5114,11 @@ syscall_drawrect:                       ; DrawRect
 
 align 4
 syscall_getscreensize:                  ; GetScreenSize
-        mov     ax, word [Screen_Max_X]
+        mov     ax, word [_display.width]
+        dec     ax
         shl     eax, 16
-        mov     ax, word [Screen_Max_Y]
+        mov     ax, word [_display.height]
+        dec     ax
         mov     [esp + 32], eax
         ret
 ;-----------------------------------------------------------------------------
@@ -5178,17 +5194,17 @@ syscall_cdaudio:
 ;-----------------------------------------------------------------------------
 align 4
 syscall_getpixel_WinMap:                       ; GetPixel WinMap
-        cmp     ebx, [Screen_Max_X]
-        jbe     @f
-        cmp     ecx, [Screen_Max_Y]
-        jbe     @f
+        cmp     ebx, [_display.width]
+        jb      @f
+        cmp     ecx, [_display.height]
+        jb      @f
         xor     eax, eax
         jmp     .store
 ;--------------------------------------
 align 4
 @@:
         mov     eax, [d_width_calc_area + ecx*4]
-        add     eax, [_WinMapAddress]
+        add     eax, [_display.win_map]
         movzx   eax, byte[eax+ebx]        ; get value for current point
 ;--------------------------------------
 align 4
@@ -5198,8 +5214,7 @@ align 4
 ;-----------------------------------------------------------------------------
 align 4
 syscall_getpixel:                       ; GetPixel
-        mov     ecx, [Screen_Max_X]
-        inc     ecx
+        mov     ecx, [_display.width]
         xor     edx, edx
         mov     eax, ebx
         div     ecx
@@ -5328,7 +5343,7 @@ align 4
 
         pushad
         mov     edx, [d_width_calc_area + ebx*4]
-        add     edx, [_WinMapAddress]
+        add     edx, [_display.win_map]
         movzx   edx, byte [eax+edx]
         cmp     dl, byte 1
         jne     @f
@@ -5429,7 +5444,7 @@ calculate_fast_getting_offset_for_LFB:
         cld
 @@:
         stosd
-        add     eax, [_display.pitch]
+        add     eax, [_display.lfb_pitch]
         dec     ecx
         jnz     @r
         ret
@@ -5444,9 +5459,7 @@ set_screen:
         pushfd
         cli
 
-        mov     [Screen_Max_X], eax
-        mov     [Screen_Max_Y], edx
-        mov     [_display.pitch], ecx
+        mov     [_display.lfb_pitch], ecx
 
         mov     [screen_workarea.right], eax
         mov     [screen_workarea.bottom], edx
@@ -5460,14 +5473,14 @@ set_screen:
         cmp     [do_not_touch_winmap], 1
         je      @f
 
-        stdcall kernel_free, [_WinMapAddress]
+        stdcall kernel_free, [_display.win_map]
 
         mov     eax, [_display.width]
         mul     [_display.height]
-        mov     [_WinMapSize], eax
+        mov     [_display.win_map_size], eax
 
         stdcall kernel_alloc, eax
-        mov     [_WinMapAddress], eax
+        mov     [_display.win_map], eax
         test    eax, eax
         jz      .epic_fail
 ; store for f.18.24
@@ -5487,8 +5500,10 @@ set_screen:
         call    repos_windows
         xor     eax, eax
         xor     ebx, ebx
-        mov     ecx, [Screen_Max_X]
-        mov     edx, [Screen_Max_Y]
+        mov     ecx, [_display.width]
+        mov     edx, [_display.height]
+        dec     ecx
+        dec     edx
         call    calculatescreen
         pop     edi
         pop     esi
@@ -5650,10 +5665,10 @@ end if
 .rsdp_found:
         mov     esi, [eax+16]   ; esi contains physical address of the RSDT
         mov     ebp, [ipc_tmp]
-        stdcall map_page, ebp, esi, PG_MAP
+        stdcall map_page, ebp, esi, PG_READ
         lea     eax, [esi+1000h]
         lea     edx, [ebp+1000h]
-        stdcall map_page, edx, eax, PG_MAP
+        stdcall map_page, edx, eax, PG_READ
         and     esi, 0xFFF
         add     esi, ebp
         cmp     dword [esi], 'RSDT'
@@ -5667,10 +5682,10 @@ end if
         lodsd
         mov     ebx, eax
         lea     eax, [ebp+2000h]
-        stdcall map_page, eax, ebx, PG_MAP
+        stdcall map_page, eax, ebx, PG_READ
         lea     eax, [ebp+3000h]
         add     ebx, 0x1000
-        stdcall map_page, eax, ebx, PG_MAP
+        stdcall map_page, eax, ebx, PG_READ
         and     ebx, 0xFFF
         lea     ebx, [ebx+ebp+2000h]
         cmp     dword [ebx], 'FACP'
@@ -5681,10 +5696,10 @@ end if
 ; ebx is linear address of FADT
         mov     edi, [ebx+40] ; physical address of the DSDT
         lea     eax, [ebp+4000h]
-        stdcall map_page, eax, edi, PG_MAP
+        stdcall map_page, eax, edi, PG_READ
         lea     eax, [ebp+5000h]
         lea     esi, [edi+0x1000]
-        stdcall map_page, eax, esi, PG_MAP
+        stdcall map_page, eax, esi, PG_READ
         and     esi, 0xFFF
         sub     edi, esi
         cmp     dword [esi+ebp+4000h], 'DSDT'
@@ -5732,8 +5747,8 @@ end if
         add     edi, 0x1000
         push    eax
         lea     eax, [ebp+4000h]
-        stdcall map_page, eax, edi, PG_MAP
-        push    PG_MAP
+        stdcall map_page, eax, edi, PG_READ
+        push    PG_READ
         lea     eax, [edi+1000h]
         push    eax
         lea     eax, [ebp+5000h]

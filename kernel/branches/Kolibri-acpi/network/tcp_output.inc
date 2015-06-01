@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -14,7 +14,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 3289 $
+$Revision: 5522 $
 
 ;-----------------------------------------------------------------
 ;
@@ -90,10 +90,9 @@ endl
 
         cmp     ebx, [eax + STREAM_SOCKET.snd.size]
         jae     @f
-
         and     dl, not (TH_FIN)
-
        @@:
+
         inc     ecx
         jmp     .no_force
 
@@ -112,7 +111,6 @@ endl
         mov     esi, ecx
        @@:
         sub     esi, ebx
-
 
 ;------------------------
 ; check for window shrink (107)
@@ -146,7 +144,6 @@ endl
 
         cmp     esi, [eax + TCP_SOCKET.t_maxseg]
         jbe     @f
-
         mov     esi, [eax + TCP_SOCKET.t_maxseg]
         or      [temp_bits], TCP_BIT_SENDALOT
        @@:
@@ -160,7 +157,6 @@ endl
         cmp     edi, [eax + STREAM_SOCKET.snd.size]
         jae     @f
         and     dl, not (TH_FIN)
-
        @@:
 
 ;-------------------------------
@@ -403,6 +399,50 @@ endl
         or      [temp_bits], TCP_BIT_SENDALOT
   .no_overflow:
 
+; Update stats
+        test    esi, esi
+        jz      .zero_data
+
+        cmp     [eax + TCP_SOCKET.t_force], 1
+        jne     @f
+        cmp     esi, 1
+        jne     @f
+        inc     [TCPS_sndprobe]
+        jmp     .eos
+  @@:
+
+        mov     ebx, [eax + TCP_SOCKET.SND_NXT]
+        cmp     ebx, [eax + TCP_SOCKET.SND_MAX]
+        jae     @f
+        inc     [TCPS_sndrexmitpack]
+        add     [TCPS_sndrexmitbyte], esi
+        jmp     .eos
+  @@:
+        inc     [TCPS_sndpack]
+        add     [TCPS_sndbyte], esi
+        jmp     .eos
+
+  .zero_data:
+        test    [eax + TCP_SOCKET.t_flags], TF_ACKNOW
+        jz      @f
+        inc     [TCPS_sndacks]
+        jmp     .eos
+  @@:
+        test    dl, TH_SYN + TH_FIN + TH_RST
+        jz      @f
+        inc     [TCPS_sndctrl]
+        jmp     .eos
+  @@:
+        mov     ebx, [eax + TCP_SOCKET.SND_UP]
+        cmp     ebx, [eax + TCP_SOCKET.SND_UNA]
+        jb      @f
+        inc     [TCPS_sndurg]
+        jmp     .eos
+  @@:
+        inc     [TCPS_sndwinup]
+
+  .eos:
+
 ;----------------------------------------------------
 ; Calculate the receive window.
 ; Dont shrink window, but avoid silly window syndrome
@@ -469,8 +509,8 @@ endl
         call    IPv4_output
         jz      .ip_error
 
-;-----------------------------------------
-; Move TCP header from stack to TCP packet
+;------------------------------------------
+; Move TCP header from stack to TCP segment
 
         push    ecx
         mov     ecx, [esp + 4]
@@ -482,7 +522,6 @@ endl
         pop     esi                     ; headersize
         add     esp, esi                ; remove it from stack
 
-        push    edx                     ; packet size for send proc
         push    eax                     ; packet ptr for send proc
 
         mov     edx, edi                ; begin of data
@@ -497,14 +536,14 @@ endl
 ; ecx = buffer size
 ; edi = ptr to buffer
 
-        mov     eax, [esp + 16]                 ; get socket ptr
+        mov     eax, [esp + 12]                 ; get socket ptr
 
         push    edx
         push    [eax + TCP_SOCKET.SND_NXT]      ; we'll need this for timing the transmission
         test    ecx, ecx
         jz      .nodata
         mov     edx, [eax + TCP_SOCKET.SND_NXT]
-        add     [eax + TCP_SOCKET.SND_NXT], ecx ; update sequence number <<< CHECKME
+        add     [eax + TCP_SOCKET.SND_NXT], ecx ; update sequence number
         sub     edx, [eax + TCP_SOCKET.SND_UNA] ; offset
         add     eax, STREAM_SOCKET.snd
         call    SOCKET_ring_read
@@ -512,7 +551,7 @@ endl
         pop     edi
         pop     esi                             ; begin of data
         pop     ecx                             ; full packet size
-        mov     eax, [esp + 12]                 ; socket ptr
+        mov     eax, [esp + 8]                  ; socket ptr
 
 ;----------------------------------
 ; initialize retransmit timer (400)
@@ -536,7 +575,7 @@ endl
         je      @f
         mov     [eax + TCP_SOCKET.t_rtt], 1                     ; nope, start transmission timer
         mov     [eax + TCP_SOCKET.t_rtseq], edi
-;TODO: update stats
+        inc     [TCPS_segstimed]
        @@:
 
 ; set retransmission timer if not already set, and not doing an ACK or keepalive probe
@@ -584,6 +623,7 @@ endl
 
         call    NET_ptr_to_num4
         inc     [TCP_segments_tx + edi]
+        inc     [TCPS_sndtotal]
 
 ; update advertised receive window
         test    ecx, ecx

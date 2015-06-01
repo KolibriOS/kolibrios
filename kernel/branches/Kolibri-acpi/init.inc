@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -139,7 +139,7 @@ proc init_mem
 
         mov     ebx, cr4
         or      ebx, CR4_PSE
-        mov     eax, PG_LARGE+PG_SW
+        mov     eax, PDE_LARGE+PG_SWR
         mov     cr4, ebx
         dec     [pg_data.kernel_tables-OS_BASE]
 
@@ -149,7 +149,7 @@ proc init_mem
         mov     edi, [tmp_page_tabs]
         jmp     .map_kernel_heap        ; new kernel fits to the first 4Mb - nothing to do with ".map_low"
 .no_PSE:
-        mov     eax, PG_SW
+        mov     eax, PG_SWR
         mov     ecx, [tmp_page_tabs]
         shr     ecx, 12
 .map_low:
@@ -168,7 +168,7 @@ proc init_mem
 
         mov     ecx, [pg_data.kernel_tables-OS_BASE]
         mov     eax, [tmp_page_tabs]
-        or      eax, PG_SW
+        or      eax, PG_SWR
         mov     edi, edx
 
 .map_kernel_tabs:
@@ -177,7 +177,7 @@ proc init_mem
         dec     ecx
         jnz     .map_kernel_tabs
 
-        mov     dword [sys_proc-OS_BASE+PROC.pdt_0+(page_tabs shr 20)], sys_proc+PROC.pdt_0+PG_SW-OS_BASE
+        mov     dword [sys_proc-OS_BASE+PROC.pdt_0+(page_tabs shr 20)], sys_proc+PROC.pdt_0+PG_SWR-OS_BASE
 
         mov     edi, (sys_proc+PROC.pdt_0-OS_BASE)
         lea     esi, [edi+(OS_BASE shr 20)]

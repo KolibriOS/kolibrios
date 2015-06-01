@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -361,6 +361,7 @@ next_memblock       rd 1
 
 mst                 MEM_STATE
 
+pte_valid_mask      rd 1
 page_start          rd 1
 page_end            rd 1
 sys_page_map        rd 1
@@ -375,12 +376,8 @@ align 16
 
 _display            display_t
 
-_WinMapAddress      rd 1
-_WinMapSize         rd 1
 
 LFBAddress          dd ?
-Screen_Max_X        dd ?
-Screen_Max_Y        dd ?
 
 SCR_MODE            rw 2
 
@@ -425,8 +422,6 @@ cur_saved_base      rd 1
 cur.lock            rd 1   ;1 - lock update, 2- hide
 cur.left            rd 1   ;cursor clip box
 cur.top             rd 1
-cur.right           rd 1
-cur.bottom          rd 1
 cur.w               rd 1
 cur.h               rd 1
 

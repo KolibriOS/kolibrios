@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  VESA20.INC                                                  ;;
@@ -236,12 +236,11 @@ end virtual
         add     eax, [putimg.arg_0]
         mov     [putimg.line_increment], eax
 ; winmap new line increment
-        mov     eax, [Screen_Max_X]
-        inc     eax
+        mov     eax, [_display.width]
         sub     eax, [putimg.real_sx]
         mov     [putimg.winmap_newline], eax
 ; screen new line increment
-        mov     eax, [_display.pitch]
+        mov     eax, [_display.lfb_pitch]
         mov     ebx, [_display.bytes_per_pixel]
         imul    ecx, ebx
         sub     eax, ecx
@@ -262,7 +261,7 @@ end virtual
         mov     eax, [d_width_calc_area + eax*4]
 
         add     eax, [putimg.abs_cx]
-        add     eax, [_WinMapAddress]
+        add     eax, [_display.win_map]
         xchg    eax, ebp
 
         mov     ecx, [putimg.real_sx]
@@ -876,16 +875,16 @@ align 4
 __sys_putpixel:
 
         pushad
-        cmp     [Screen_Max_X], eax
-        jb      .exit
-        cmp     [Screen_Max_Y], ebx
-        jb      .exit
+        cmp     eax, [_display.width]
+        jge     .exit
+        cmp     ebx, [_display.height]
+        jge     .exit
         test    edi, 1           ; force ?
         jnz     .forced
 
 ; not forced
         mov     edx, [d_width_calc_area + ebx*4]
-        add     edx, [_WinMapAddress]
+        add     edx, [_display.win_map]
         movzx   edx, byte [eax+edx]
         cmp     edx, [CURRENT_TASK]
         jne     .exit
@@ -1441,16 +1440,15 @@ end virtual
   .end_y:
         mov     [drbar.real_sy], ebx
 ; line_inc_map
-        mov     eax, [Screen_Max_X]
+        mov     eax, [_display.width]
         sub     eax, [drbar.real_sx]
-        inc     eax
         mov     [drbar.line_inc_map], eax
 ; line_inc_scr
         mov     eax, [drbar.real_sx]
         mov     ebx, [_display.bytes_per_pixel]
         imul    eax, ebx
         neg     eax
-        add     eax, [_display.pitch]
+        add     eax, [_display.lfb_pitch]
         mov     [drbar.line_inc_scr], eax
 ; pointer to screen
         mov     edx, [drbar.abs_cy]
@@ -1466,7 +1464,7 @@ end virtual
         mov     eax, [d_width_calc_area + eax*4]
 
         add     eax, [drbar.abs_cx]
-        add     eax, [_WinMapAddress]
+        add     eax, [_display.win_map]
         xchg    eax, ebp
 
         mov     ebx, [drbar.real_sx]
@@ -2036,7 +2034,7 @@ vesa20_drawbackground_tiled:
 ; ebp:=Y*BytesPerScanLine+X*BytesPerPixel+AddrLFB
         call    calculate_edi
         xchg    edi, ebp
-        add     ebp, [_WinMapAddress]
+        add     ebp, [_display.win_map]
 ; Now eax=x, ebx=y, edi->output, ebp=offset in WinMapAddress
 ; 2) Calculate offset in background memory block
         push    eax
@@ -2149,20 +2147,20 @@ vesa20_drawbackground_stretch:
         mov     eax, [BgrDataWidth]
         dec     eax
         xor     edx, edx
-        div     dword [Screen_Max_X]
+        div     dword [screen_workarea.right]
         push    eax     ; high
         xor     eax, eax
-        div     dword [Screen_Max_X]
+        div     dword [screen_workarea.right]
         push    eax     ; low
 
 ; the same for height
         mov     eax, [BgrDataHeight]
         dec     eax
         xor     edx, edx
-        div     dword [Screen_Max_Y]
+        div     dword [screen_workarea.bottom]
         push    eax     ; high
         xor     eax, eax
-        div     dword [Screen_Max_Y]
+        div     dword [screen_workarea.bottom]
         push    eax     ; low
 
 ; External loop for all y from start to end
@@ -2258,7 +2256,7 @@ vesa20_drawbackground_stretch:
 ; qword [esp+36] = 2^32*(BgrDataWidth-1)/(ScreenWidth-1)
 
   sdp3a:
-        mov     eax, [_WinMapAddress]
+        mov     eax, [_display.win_map]
         cmp     [ebp+eax], byte 1
         jnz     snbgp
         mov     eax, [bgr_cur_line+esi]
@@ -2323,8 +2321,7 @@ vesa20_drawbackground_stretch:
 ; advance edi, ebp to next scan line
         sub     eax, [draw_data+32+RECT.left]
         sub     ebp, eax
-        add     ebp, [Screen_Max_X]
-        add     ebp, 1
+        add     ebp, [_display.width]
         sub     edi, eax
         sub     edi, eax
         cmp     byte [_display.bytes_per_pixel], 2
@@ -2335,7 +2332,7 @@ vesa20_drawbackground_stretch:
         sub     edi, eax
 
   @@:
-        add     edi, [_display.pitch]
+        add     edi, [_display.lfb_pitch]
 ; restore ecx,edx; advance esi to next background line
         mov     eax, [esp+28]
         mov     ebx, [esp+32]
@@ -2356,8 +2353,7 @@ vesa20_drawbackground_stretch:
         push    edi
         mov     esi, bgr_next_line
         mov     edi, bgr_cur_line
-        mov     ecx, [Screen_Max_X]
-        inc     ecx
+        mov     ecx, [_display.width]
         rep movsd
         jmp     bgr_resmooth1
 

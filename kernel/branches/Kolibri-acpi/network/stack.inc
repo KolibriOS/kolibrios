@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  STACK.INC                                                      ;;
@@ -32,6 +32,8 @@ DEBUG_NETWORK_ERROR     = 1
 DEBUG_NETWORK_VERBOSE   = 0
 
 NET_DEVICES_MAX         = 16
+NET_BUFFERS             = 512
+NET_BUFFER_SIZE         = 2048
 ARP_BLOCK               = 1             ; true or false
 
 EPHEMERAL_PORT_MIN      = 49152
@@ -146,7 +148,7 @@ NET_DEVICE_ETH          = 1
 NET_DEVICE_SLIP         = 2
 
 ; Network link types (link protocols)
-NET_LINK_LOOPBACK       = 0     ;;; Really a link type?
+NET_LINK_LOOPBACK       = 0
 NET_LINK_MAC            = 1     ; Media access control (ethernet, isdn, ...)
 NET_LINK_PPP            = 2     ; Point to Point Protocol (PPPoE, ...)
 NET_LINK_IEEE802.11     = 3     ; IEEE 802.11 (WiFi)
@@ -154,6 +156,10 @@ NET_LINK_IEEE802.11     = 3     ; IEEE 802.11 (WiFi)
 ; Hardware acceleration bits
 NET_HWACC_TCP_IPv4_IN   = 1 shl 0
 NET_HWACC_TCP_IPv4_OUT  = 1 shl 1
+
+; Network frame types
+NET_BUFF_LOOPBACK      = 0
+NET_BUFF_ETH           = 1
 
 struct  NET_DEVICE
 
@@ -172,6 +178,18 @@ struct  NET_DEVICE
 
         link_state      dd ?    ; link state (0 = no link)
         hwacc           dd ?    ; bitmask stating enabled HW accelerations (offload engines)
+
+ends
+
+struct  NET_BUFF
+
+        NextPtr         dd ?    ; pointer to next frame in list
+        PrevPtr         dd ?    ; pointer to previous frame in list
+        device          dd ?    ; ptr to NET_DEVICE structure
+        type            dd ?    ; encapsulation type: e.g. Ethernet
+        length          dd ?    ; size of encapsulated data
+        offset          dd ?    ; offset to actual data (24 bytes for default frame)
+        data            rb 0
 
 ends
 
@@ -226,8 +244,11 @@ include "socket.inc"
 uglobal
 align 4
 
-        NET_RUNNING     dd  ?
-        NET_DRV_LIST    rd  NET_DEVICES_MAX
+        NET_RUNNING     dd ?
+        NET_DRV_LIST    rd NET_DEVICES_MAX
+
+        NET_BUFFS_FREE  rd NET_BUFFERS
+        .current        dd ?
 
 endg
 
@@ -245,10 +266,27 @@ endg
 align 4
 stack_init:
 
+; allocate network buffers
+        stdcall kernel_alloc, NET_BUFFER_SIZE*NET_BUFFERS
+        test    eax, eax
+        jz      .fail
+
+        mov     edi, NET_BUFFS_FREE
+        mov     ecx, NET_BUFFERS
+        cld
+  .loop:
+        stosd
+        add     eax, NET_BUFFER_SIZE
+        dec     ecx
+        jnz     .loop
+
+        mov     eax, NET_BUFFS_FREE
+        stosd
+
 ; Init the network drivers list
         xor     eax, eax
         mov     edi, NET_RUNNING
-        mov     ecx, (NET_DEVICES_MAX + 2)
+        mov     ecx, (NET_DEVICES_MAX + 1)
         rep stosd
 
         ETH_init
@@ -268,7 +306,10 @@ stack_init:
         LOOP_init
 
         mov     [net_tmr_count], 0
+        ret
 
+  .fail:
+        DEBUGF  DEBUG_NETWORK_ERROR, "Stack init failed!\n"
         ret
 
 
@@ -327,9 +368,53 @@ stack_handler:
 
 
 align 4
-NET_packet_free:
-        and     dword[esp+4], not 0xfff
-        jmp     kernel_free
+proc NET_BUFF_alloc stdcall, buffersize
+        cmp     [buffersize], NET_BUFFER_SIZE
+        ja      .too_large
+
+        spin_lock_irqsave
+
+        mov     eax, [NET_BUFFS_FREE.current]
+        cmp     eax, NET_BUFFS_FREE+NET_BUFFERS*4
+        jae     .out_of_mem
+        mov     eax, [eax]
+        add     [NET_BUFFS_FREE.current], 4
+
+        spin_unlock_irqrestore
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "net alloc: 0x%x\n", eax
+        ret
+
+  .out_of_mem:
+        spin_unlock_irqrestore
+
+        xor     eax, eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "NET_BUFF_alloc: out of mem!\n"
+        ret
+
+  .too_large:
+        xor     eax, eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "NET_BUFF_alloc: too large!\n"
+        ret
+endp
+
+
+align 4
+proc NET_BUFF_free stdcall, buffer
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "net free: 0x%x\n", [buffer]
+
+        spin_lock_irqsave
+
+        sub     [NET_BUFFS_FREE.current], 4
+        mov     eax, [NET_BUFFS_FREE.current]
+        push    [buffer]
+        pop     dword[eax]
+
+        spin_unlock_irqrestore
+
+        ret
+endp
 
 
 align 4
@@ -482,8 +567,10 @@ NET_ptr_to_num:
 align 4
 NET_ptr_to_num4:                ; Todo, place number in device structure so we only need to verify?
 
-        push    ecx
+        test    ebx, ebx
+        jz      .fail
 
+        push    ecx
         mov     ecx, NET_DEVICES_MAX
         mov     edi, NET_DRV_LIST
   .loop:
@@ -493,8 +580,9 @@ NET_ptr_to_num4:                ; Todo, place number in device structure so we o
         dec     ecx
         jnz     .loop
 
-        or      edi, -1
         pop     ecx
+  .fail:
+        or      edi, -1
         ret
 
   .found:
