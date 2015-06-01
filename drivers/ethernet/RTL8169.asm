@@ -167,7 +167,12 @@ include '../netdrv.inc'
         MT_1000_Full            = 0x10
 
         ; _TBICSRBit
-        TBI_LinkOK              = 0x02000000
+        TBI_RESET               = 0x80000000
+        TBI_LOOPBACK            = 0x40000000
+        TBI_NW_ENABLE           = 0x20000000
+        TBI_NW_RESTART          = 0x10000000
+        TBI_LINK_OK             = 0x02000000
+        TBI_NW_COMPLETE         = 0x01000000
 
         ; _DescStatusBit
         DSB_OWNbit              = 0x80000000
@@ -559,6 +564,7 @@ init_board:
         mov     [ebx + device.mac_version], eax
         mov     eax, [esi+12]
         mov     [ebx + device.name], eax
+        DEBUGF  2, "Detected chip: %s\n", eax
 
         xor     eax, eax
         ret
@@ -1147,7 +1153,7 @@ int_handler:
         push    ax
         push    ebx
 
-  .check_more:
+  .rx_loop:
         pop     ebx
         mov     eax, sizeof.rx_desc
         mul     [ebx + device.cur_rx]
@@ -1155,16 +1161,15 @@ int_handler:
 
         DEBUGF  1,"RxDesc.status = 0x%x\n", [esi + rx_desc.status]
         mov     ecx, [esi + rx_desc.status]
-        test    ecx, DSB_OWNbit ;;;
+        test    ecx, DSB_OWNbit
         jnz     .rx_return
 
         DEBUGF  1,"cur_rx = %u\n", [ebx + device.cur_rx]
-
         test    ecx, SD_RxRES
-        jnz     .rx_return      ;;;;; RX error!
+        jnz     .rx_reuse
 
         push    ebx
-        push    .check_more
+        push    .rx_loop
         and     ecx, 0x00001FFF
         add     ecx, -4                         ; we dont need CRC
         DEBUGF  1,"data length = %u\n", ecx
@@ -1184,7 +1189,10 @@ int_handler:
 ;----------------------
 ; Allocate a new buffer
 
+        mov     [esi + rx_desc.status], 0
         invoke  NetAlloc, RX_BUF_SIZE+NET_BUFF.data
+        test    eax, eax
+        jz      .no_more_buffers
         mov     [esi + rx_desc.buf_soft_addr], eax
         invoke  GetPhysAddr
         add     eax, NET_BUFF.data
@@ -1200,6 +1208,7 @@ int_handler:
     @@:
         mov     [esi + rx_desc.status], eax
 
+  .no_more_buffers:
 ;--------------
 ; Update rx ptr
 
@@ -1207,8 +1216,18 @@ int_handler:
         and     [ebx + device.cur_rx], NUM_RX_DESC - 1
 
         jmp     [EthInput]
-  .rx_return:
 
+  .rx_reuse:
+        mov     eax, DSB_OWNbit or RX_BUF_SIZE
+        cmp     [ebx + device.cur_rx], NUM_RX_DESC - 1
+        jne     @f
+        or      eax, DSB_EORbit
+    @@:
+        mov     [esi + rx_desc.status], eax
+        push    ebx
+        jmp     .rx_loop
+
+  .rx_return:
         pop     ax
   .no_rx:
 
