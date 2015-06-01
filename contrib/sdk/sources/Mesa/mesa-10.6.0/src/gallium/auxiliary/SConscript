@@ -1,0 +1,59 @@
+Import('*')
+
+from sys import executable as python_cmd
+
+env.Append(CPPPATH = [
+    '#src',
+    'indices',
+    'util',
+])
+
+env = env.Clone()
+
+env.MSVC2008Compat()
+
+env.CodeGenerate(
+    target = 'indices/u_indices_gen.c', 
+    script = 'indices/u_indices_gen.py', 
+    source = [],
+    command = python_cmd + ' $SCRIPT > $TARGET'
+)
+
+env.CodeGenerate(
+    target = 'indices/u_unfilled_gen.c', 
+    script = 'indices/u_unfilled_gen.py', 
+    source = [],
+    command = python_cmd + ' $SCRIPT > $TARGET'
+)
+
+env.CodeGenerate(
+    target = 'util/u_format_table.c',
+    script = '#src/gallium/auxiliary/util/u_format_table.py',
+    source = ['#src/gallium/auxiliary/util/u_format.csv'],
+    command = python_cmd + ' $SCRIPT $SOURCE > $TARGET'
+)
+
+env.Depends('util/u_format_table.c', [
+    '#src/gallium/auxiliary/util/u_format_parse.py',
+    'util/u_format_pack.py', 
+])
+
+source = env.ParseSourceList('Makefile.sources', [
+    'C_SOURCES',
+    'VL_STUB_SOURCES',
+    'GENERATED_SOURCES'
+])
+
+if env['llvm']:
+    source += env.ParseSourceList('Makefile.sources', [
+        'GALLIVM_SOURCES',
+    ])
+
+gallium = env.ConvenienceLibrary(
+    target = 'gallium',
+    source = source,
+)
+
+env.Alias('gallium', gallium)
+
+Export('gallium')

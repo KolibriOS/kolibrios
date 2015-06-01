@@ -1,0 +1,56 @@
+import common
+
+Import('*')
+
+from sys import executable as python_cmd
+
+env = env.Clone()
+
+env.MSVC2008Compat()
+
+env.Prepend(CPPPATH = [
+    '#include',
+    '#src',
+    '#src/mapi',
+    '#src/mesa',
+    '#src/gallium/include',
+    '#src/gallium/auxiliary',
+    '#src/util',
+])
+
+env.CodeGenerate(
+    target = 'format_srgb.c',
+    script = 'format_srgb.py',
+    source = [],
+    command = python_cmd + ' $SCRIPT > $TARGET'
+)
+
+# parse Makefile.sources
+source_lists = env.ParseSourceList('Makefile.sources')
+
+mesautil_sources = (
+    source_lists['MESA_UTIL_FILES'] +
+    source_lists['MESA_UTIL_GENERATED_FILES']
+)
+
+# XXX We don't yet have scons support for detecting any of the various
+# HAVE_SHA1_* definitions, so for now simply disable the shader cache.
+if False:
+    mesautil_sources += source_lists['MESA_UTIL_SHADER_CACHE_FILES']
+
+mesautil = env.ConvenienceLibrary(
+    target = 'mesautil',
+    source = mesautil_sources,
+)
+
+env.Alias('mesautil', mesautil)
+Export('mesautil')
+
+
+# http://www.scons.org/wiki/UnitTests
+u_atomic_test = env.Program(
+    target = 'u_atomic_test',
+    source = ['u_atomic_test.c'],
+)
+alias = env.Alias("u_atomic_test", u_atomic_test, u_atomic_test[0].abspath)
+AlwaysBuild(alias)

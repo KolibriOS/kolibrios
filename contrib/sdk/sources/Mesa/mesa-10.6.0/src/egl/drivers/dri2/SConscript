@@ -1,0 +1,40 @@
+Import('*')
+
+env = env.Clone()
+
+env.Append(CPPDEFINES = [
+	'DEFAULT_DRIVER_DIR=\\"\\"'
+])
+
+env.Append(CPPPATH = [
+	'#/include',
+	'#/src/egl/main',
+	'#/src/loader',
+])
+
+sources = [
+	'egl_dri2.c',
+]
+
+if env['x11']:
+	sources.append('platform_x11.c')
+	env.Append(CPPDEFINES = [
+		'HAVE_X11_PLATFORM',
+	])
+	#env.Append(CPPPATH = [
+	#	'XCB_DRI2_CFLAGS',
+	#])
+
+if env['drm']:
+	env.PkgUseModules('DRM')
+
+env.Prepend(LIBS = [
+	libloader,
+])
+
+egl_dri2 = env.ConvenienceLibrary(
+	target = 'egl_dri2',
+	source = sources,
+)
+
+Export('egl_dri2')

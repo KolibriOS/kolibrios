@@ -1,0 +1,14 @@
+Import('*')
+
+env = env.Clone()
+
+env.MSVC2008Compat()
+
+softpipe = env.ConvenienceLibrary(
+	target = 'softpipe',
+	source = env.ParseSourceList('Makefile.sources', 'C_SOURCES')
+	)
+
+env.Alias('softpipe', softpipe)
+
+Export('softpipe')

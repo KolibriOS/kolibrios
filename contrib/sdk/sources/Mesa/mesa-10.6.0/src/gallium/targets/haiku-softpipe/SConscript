@@ -1,0 +1,48 @@
+Import('*')
+
+env.Prepend(LIBS = [
+    ws_haiku,
+    st_haiku,
+    trace,
+    rbug,
+    mesautil,
+    mesa,
+    glsl,
+    gallium
+])
+
+if True:
+    env.Append(CPPDEFINES = [
+        'GALLIUM_SOFTPIPE',
+        'GALLIUM_RBUG',
+        'GALLIUM_TRACE',
+    ])
+    env.Prepend(LIBS = [softpipe])
+
+env.Prepend(LIBS = [libgl])
+
+env.Append(CPPPATH = [
+    '#/src/mapi',
+    '#/src/mesa',
+    '#/src/mesa/main',
+    '#/include/HaikuGL',
+    '#/src/gallium/winsys',
+    '#/src/gallium/state_trackers/hgl',
+    '/boot/system/develop/headers/private',
+])
+
+if env['llvm']:
+    env.Append(CPPDEFINES = ['GALLIUM_LLVMPIPE'])
+    env.Prepend(LIBS = [llvmpipe])
+
+softpipe_sources = [
+    'GalliumContext.cpp',
+    'SoftwareRenderer.cpp'
+]
+
+# libswpipe gets turned into "Softpipe" by the haiku package system
+module = env.LoadableModule(
+    target ='swpipe',
+    source = softpipe_sources,
+)
+

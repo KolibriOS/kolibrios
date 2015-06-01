@@ -1,0 +1,23 @@
+#######################################################################
+# SConscript for kms-dri winsys
+
+
+Import('*')
+
+if env['platform'] not in ('linux'):
+    Return()
+
+env = env.Clone()
+
+env.PkgUseModules('DRM')
+
+env.Append(CPPPATH = [
+    '#/src/gallium/include',
+    '#/src/gallium/auxiliary',
+])
+
+ws_kms_dri = env.ConvenienceLibrary(
+    target = 'ws_kms_dri',
+    source = env.ParseSourceList('Makefile.sources', 'C_SOURCES'),
+)
+Export('ws_kms_dri')

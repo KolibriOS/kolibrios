@@ -1,0 +1,52 @@
+#######################################################################
+# SConscript for EGL
+
+
+Import('*')
+
+env = env.Clone()
+
+env.Append(CPPDEFINES = [
+    '_EGL_DRIVER_SEARCH_DIR=\\"\\"',
+])
+
+if env['platform'] == 'haiku':
+    env.Append(CPPDEFINES = [
+        '_EGL_NATIVE_PLATFORM=_EGL_PLATFORM_HAIKU',
+        '_EGL_OS_UNIX',
+        '_EGL_BUILT_IN_DRIVER_HAIKU',
+    ])
+    env.Prepend(LIBS = [
+        egl_haiku,
+        libloader,
+    ])
+else:
+    env.Append(CPPDEFINES = [
+        '_EGL_NATIVE_PLATFORM=_EGL_PLATFORM_X11',
+        '_EGL_OS_UNIX',
+    ])
+    if env['dri']:
+        env.Prepend(LIBS = [
+            egl_dri2,
+            libloader,
+        ])
+    # Disallow undefined symbols
+    if env['platform'] != 'darwin':
+        env.Append(SHLINKFLAGS = ['-Wl,-z,defs'])
+
+env.Append(CPPPATH = [
+    '#/include',
+])
+
+
+# parse Makefile.sources
+egl_sources = env.ParseSourceList('Makefile.sources', 'LIBEGL_C_FILES')
+
+egl = env.SharedLibrary(
+    target = 'EGL',
+    source = egl_sources,
+)
+
+egl = env.InstallSharedLibrary(egl, version=(1, 0, 0))
+
+env.Alias('egl', egl)

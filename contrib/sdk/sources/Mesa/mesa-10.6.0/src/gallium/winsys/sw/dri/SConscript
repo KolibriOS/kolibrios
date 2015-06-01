@@ -1,0 +1,20 @@
+#######################################################################
+# SConscript for xlib winsys
+
+
+Import('*')
+
+if env['platform'] in ('linux', 'sunos'):
+
+    env = env.Clone()
+
+    env.Append(CPPPATH = [
+        '#/src/gallium/include',
+        '#/src/gallium/auxiliary',
+    ])
+
+    ws_dri = env.ConvenienceLibrary(
+        target = 'ws_dri',
+        source = env.ParseSourceList('Makefile.sources', 'C_SOURCES'),
+    )
+    Export('ws_dri')

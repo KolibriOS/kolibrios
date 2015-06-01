@@ -1,0 +1,101 @@
+Import('env')
+
+# 
+# Auxiliary modules
+#
+
+SConscript('auxiliary/SConscript')
+
+#
+# Drivers
+#
+
+# These are common and work across all platforms
+SConscript([
+    'drivers/llvmpipe/SConscript',
+    'drivers/rbug/SConscript',
+    'drivers/softpipe/SConscript',
+    'drivers/svga/SConscript',
+    'drivers/trace/SConscript',
+])
+
+#
+# Winsys
+#
+
+SConscript([
+    'winsys/sw/null/SConscript',
+    'winsys/sw/wrapper/SConscript',
+])
+
+if env['x11']:
+    SConscript([
+        'winsys/sw/xlib/SConscript',
+    ])
+
+if env['platform'] == 'windows':
+    SConscript([
+        'winsys/sw/gdi/SConscript',
+    ])
+
+if env['platform'] == 'haiku':
+    SConscript([
+        'winsys/sw/hgl/SConscript',
+    ])
+
+if env['dri']:
+    SConscript([
+        'winsys/sw/dri/SConscript',
+        'winsys/sw/kms-dri/SConscript',
+        'winsys/svga/drm/SConscript',
+    ])
+
+
+#
+# State trackers and targets
+#
+
+SConscript([
+    'targets/graw-null/SConscript',
+])
+
+if not env['embedded']:
+    SConscript([
+        'state_trackers/osmesa/SConscript',
+        'targets/osmesa/SConscript',
+    ])
+
+    if env['x11']:
+        SConscript([
+            'state_trackers/glx/xlib/SConscript',
+            'targets/graw-xlib/SConscript',
+            'targets/libgl-xlib/SConscript',
+        ])
+
+    if env['platform'] == 'windows':
+        SConscript([
+            'state_trackers/wgl/SConscript',
+            'targets/graw-gdi/SConscript',
+            'targets/libgl-gdi/SConscript',
+        ])
+
+    if env['platform'] == 'haiku':
+        SConscript([
+            'state_trackers/hgl/SConscript',
+            'targets/haiku-softpipe/SConscript',
+        ])
+
+    if env['dri']:
+        SConscript([
+            'state_trackers/dri/SConscript',
+            'targets/dri/SConscript',
+        ])
+
+
+#
+# Unit tests & tools
+#
+
+if not env['embedded']:
+    SConscript('tests/unit/SConscript')
+    SConscript('tests/graw/SConscript')

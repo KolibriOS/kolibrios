@@ -1,0 +1,16 @@
+common_SOURCES := \
+	dri_context.c \
+	dri_context.h \
+	dri_drawable.c \
+	dri_drawable.h \
+	dri_query_renderer.c \
+	dri_query_renderer.h \
+	dri_screen.c \
+	dri_screen.h
+
+dri2_SOURCES := \
+	dri2.c \
+	dri2_buffer.h
+
+drisw_SOURCES := \
+	drisw.c

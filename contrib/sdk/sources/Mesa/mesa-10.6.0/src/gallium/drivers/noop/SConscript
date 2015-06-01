@@ -1,0 +1,13 @@
+#######################################################################
+# SConscript for noop convenience library
+
+Import('*')
+
+env = env.Clone()
+
+noop = env.ConvenienceLibrary(
+	target = 'noop',
+	source = env.ParseSourceList('Makefile.sources', 'C_SOURCES')
+	) + extra
+
+Export('noop')

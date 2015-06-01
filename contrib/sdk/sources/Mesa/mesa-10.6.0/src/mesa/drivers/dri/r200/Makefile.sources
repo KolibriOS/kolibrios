@@ -1,0 +1,60 @@
+R200_COMMON_FILES = \
+	radeon_buffer_objects.c \
+	radeon_buffer_objects.h \
+	radeon_cmdbuf.h \
+	radeon_common.c \
+	radeon_common.h \
+	radeon_common_context.c \
+	radeon_common_context.h \
+	radeon_debug.c \
+	radeon_debug.h \
+	radeon_dma.c \
+	radeon_dma.h \
+	radeon_fbo.c \
+	radeon_fog.c \
+	radeon_fog.h \
+	radeon_mipmap_tree.c \
+	radeon_mipmap_tree.h \
+	radeon_pixel_read.c \
+	radeon_queryobj.c \
+	radeon_queryobj.h \
+	radeon_span.c \
+	radeon_span.h \
+	radeon_tex_copy.c \
+	radeon_texture.c \
+	radeon_texture.h \
+	radeon_tile.c \
+	radeon_tile.h
+
+DRIVER_FILES = \
+	r200_blit.c \
+	r200_blit.h \
+	r200_cmdbuf.c \
+	r200_context.c \
+	r200_context.h \
+	r200_fragshader.c \
+	r200_ioctl.c \
+	r200_ioctl.h \
+	r200_maos.c \
+	r200_maos.h \
+	r200_reg.h \
+	r200_sanity.c \
+	r200_sanity.h \
+	r200_state.c \
+	r200_state.h \
+	r200_state_init.c \
+	r200_swtcl.c \
+	r200_swtcl.h \
+	r200_tcl.c \
+	r200_tcl.h \
+	r200_tex.c \
+	r200_tex.h \
+	r200_texstate.c \
+	r200_vertprog.c \
+	r200_vertprog.h \
+	radeon_chipset.h \
+	radeon_screen.c \
+	radeon_screen.h \
+	server/radeon_reg.h
+
+R200_C_FILES = $(R200_COMMON_FILES) $(DRIVER_FILES)

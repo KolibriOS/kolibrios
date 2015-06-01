@@ -1,0 +1,643 @@
+.. _context:
+
+Context
+=======
+
+A Gallium rendering context encapsulates the state which effects 3D
+rendering such as blend state, depth/stencil state, texture samplers,
+etc.
+
+Note that resource/texture allocation is not per-context but per-screen.
+
+
+Methods
+-------
+
+CSO State
+^^^^^^^^^
+
+All Constant State Object (CSO) state is created, bound, and destroyed,
+with triplets of methods that all follow a specific naming scheme.
+For example, ``create_blend_state``, ``bind_blend_state``, and
+``destroy_blend_state``.
+
+CSO objects handled by the context object:
+
+* :ref:`Blend`: ``*_blend_state``
+* :ref:`Sampler`: Texture sampler states are bound separately for fragment,
+  vertex, geometry and compute shaders with the ``bind_sampler_states``
+  function.  The ``start`` and ``num_samplers`` parameters indicate a range
+  of samplers to change.  NOTE: at this time, start is always zero and
+  the CSO module will always replace all samplers at once (no sub-ranges).
+  This may change in the future.
+* :ref:`Rasterizer`: ``*_rasterizer_state``
+* :ref:`depth-stencil-alpha`: ``*_depth_stencil_alpha_state``
+* :ref:`Shader`: These are create, bind and destroy methods for vertex,
+  fragment and geometry shaders.
+* :ref:`vertexelements`: ``*_vertex_elements_state``
+
+
+Resource Binding State
+^^^^^^^^^^^^^^^^^^^^^^
+
+This state describes how resources in various flavours (textures,
+buffers, surfaces) are bound to the driver.
+
+
+* ``set_constant_buffer`` sets a constant buffer to be used for a given shader
+  type. index is used to indicate which buffer to set (some apis may allow
+  multiple ones to be set, and binding a specific one later, though drivers
+  are mostly restricted to the first one right now).
+
+* ``set_framebuffer_state``
+
+* ``set_vertex_buffers``
+
+* ``set_index_buffer``
+
+
+Non-CSO State
+^^^^^^^^^^^^^
+
+These pieces of state are too small, variable, and/or trivial to have CSO
+objects. They all follow simple, one-method binding calls, e.g.
+``set_blend_color``.
+
+* ``set_stencil_ref`` sets the stencil front and back reference values
+  which are used as comparison values in stencil test.
+* ``set_blend_color``
+* ``set_sample_mask``
+* ``set_min_samples`` sets the minimum number of samples that must be run.
+* ``set_clip_state``
+* ``set_polygon_stipple``
+* ``set_scissor_states`` sets the bounds for the scissor test, which culls
+  pixels before blending to render targets. If the :ref:`Rasterizer` does
+  not have the scissor test enabled, then the scissor bounds never need to
+  be set since they will not be used.  Note that scissor xmin and ymin are
+  inclusive, but  xmax and ymax are exclusive.  The inclusive ranges in x
+  and y would be [xmin..xmax-1] and [ymin..ymax-1]. The number of scissors
+  should be the same as the number of set viewports and can be up to
+  PIPE_MAX_VIEWPORTS.
+* ``set_viewport_states``
+* ``set_tess_state`` configures the default tessellation parameters:
+  * ``default_outer_level`` is the default value for the outer tessellation
+    levels. This corresponds to GL's ``PATCH_DEFAULT_OUTER_LEVEL``.
+  * ``default_inner_level`` is the default value for the inner tessellation
+    levels. This corresponds to GL's ``PATCH_DEFAULT_INNER_LEVEL``.
+
+
+Sampler Views
+^^^^^^^^^^^^^
+
+These are the means to bind textures to shader stages. To create one, specify
+its format, swizzle and LOD range in sampler view template.
+
+If texture format is different than template format, it is said the texture
+is being cast to another format. Casting can be done only between compatible
+formats, that is formats that have matching component order and sizes.
+
+Swizzle fields specify they way in which fetched texel components are placed
+in the result register. For example, ``swizzle_r`` specifies what is going to be
+placed in first component of result register.
+
+The ``first_level`` and ``last_level`` fields of sampler view template specify
+the LOD range the texture is going to be constrained to. Note that these
+values are in addition to the respective min_lod, max_lod values in the
+pipe_sampler_state (that is if min_lod is 2.0, and first_level 3, the first mip
+level used for sampling from the resource is effectively the fifth).
+
+The ``first_layer`` and ``last_layer`` fields specify the layer range the
+texture is going to be constrained to. Similar to the LOD range, this is added
+to the array index which is used for sampling.
+
+* ``set_sampler_views`` binds an array of sampler views to a shader stage.
+  Every binding point acquires a reference
+  to a respective sampler view and releases a reference to the previous
+  sampler view.
+
+* ``create_sampler_view`` creates a new sampler view. ``texture`` is associated
+  with the sampler view which results in sampler view holding a reference
+  to the texture. Format specified in template must be compatible
+  with texture format.
+
+* ``sampler_view_destroy`` destroys a sampler view and releases its reference
+  to associated texture.
+
+Shader Resources
+^^^^^^^^^^^^^^^^
+
+Shader resources are textures or buffers that may be read or written
+from a shader without an associated sampler.  This means that they
+have no support for floating point coordinates, address wrap modes or
+filtering.
+
+Shader resources are specified for all the shader stages at once using
+the ``set_shader_resources`` method.  When binding texture resources,
+the ``level``, ``first_layer`` and ``last_layer`` pipe_surface fields
+specify the mipmap level and the range of layers the texture will be
+constrained to.  In the case of buffers, ``first_element`` and
+``last_element`` specify the range within the buffer that will be used
+by the shader resource.  Writes to a shader resource are only allowed
+when the ``writable`` flag is set.
+
+Surfaces
+^^^^^^^^
+
+These are the means to use resources as color render targets or depthstencil
+attachments. To create one, specify the mip level, the range of layers, and
+the bind flags (either PIPE_BIND_DEPTH_STENCIL or PIPE_BIND_RENDER_TARGET).
+Note that layer values are in addition to what is indicated by the geometry
+shader output variable XXX_FIXME (that is if first_layer is 3 and geometry
+shader indicates index 2, the 5th layer of the resource will be used). These
+first_layer and last_layer parameters will only be used for 1d array, 2d array,
+cube, and 3d textures otherwise they are 0.
+
+* ``create_surface`` creates a new surface.
+
+* ``surface_destroy`` destroys a surface and releases its reference to the
+  associated resource.
+
+Stream output targets
+^^^^^^^^^^^^^^^^^^^^^
+
+Stream output, also known as transform feedback, allows writing the primitives
+produced by the vertex pipeline to buffers. This is done after the geometry
+shader or vertex shader if no geometry shader is present.
+
+The stream output targets are views into buffer resources which can be bound
+as stream outputs and specify a memory range where it's valid to write
+primitives. The pipe driver must implement memory protection such that any
+primitives written outside of the specified memory range are discarded.
+
+Two stream output targets can use the same resource at the same time, but
+with a disjoint memory range.
+
+Additionally, the stream output target internally maintains the offset
+into the buffer which is incremented everytime something is written to it.
+The internal offset is equal to how much data has already been written.
+It can be stored in device memory and the CPU actually doesn't have to query
+it.
+
+The stream output target can be used in a draw command to provide
+the vertex count. The vertex count is derived from the internal offset
+discussed above.
+
+* ``create_stream_output_target`` create a new target.
+
+* ``stream_output_target_destroy`` destroys a target. Users of this should
+  use pipe_so_target_reference instead.
+
+* ``set_stream_output_targets`` binds stream output targets. The parameter
+  offset is an array which specifies the internal offset of the buffer. The
+  internal offset is, besides writing, used for reading the data during the
+  draw_auto stage, i.e. it specifies how much data there is in the buffer
+  for the purposes of the draw_auto stage. -1 means the buffer should
+  be appended to, and everything else sets the internal offset.
+
+NOTE: The currently-bound vertex or geometry shader must be compiled with
+the properly-filled-in structure pipe_stream_output_info describing which
+outputs should be written to buffers and how. The structure is part of
+pipe_shader_state.
+
+Clearing
+^^^^^^^^
+
+Clear is one of the most difficult concepts to nail down to a single
+interface (due to both different requirements from APIs and also driver/hw
+specific differences).
+
+``clear`` initializes some or all of the surfaces currently bound to
+the framebuffer to particular RGBA, depth, or stencil values.
+Currently, this does not take into account color or stencil write masks (as
+used by GL), and always clears the whole surfaces (no scissoring as used by
+GL clear or explicit rectangles like d3d9 uses). It can, however, also clear
+only depth or stencil in a combined depth/stencil surface.
+If a surface includes several layers then all layers will be cleared.
+
+``clear_render_target`` clears a single color rendertarget with the specified
+color value. While it is only possible to clear one surface at a time (which can
+include several layers), this surface need not be bound to the framebuffer.
+
+``clear_depth_stencil`` clears a single depth, stencil or depth/stencil surface
+with the specified depth and stencil values (for combined depth/stencil buffers,
+is is also possible to only clear one or the other part). While it is only
+possible to clear one surface at a time (which can include several layers),
+this surface need not be bound to the framebuffer.
+
+``clear_buffer`` clears a PIPE_BUFFER resource with the specified clear value
+(which may be multiple bytes in length). Logically this is a memset with a
+multi-byte element value starting at offset bytes from resource start, going
+for size bytes. It is guaranteed that size % clear_value_size == 0.
+
+
+Drawing
+^^^^^^^
+
+``draw_vbo`` draws a specified primitive.  The primitive mode and other
+properties are described by ``pipe_draw_info``.
+
+The ``mode``, ``start``, and ``count`` fields of ``pipe_draw_info`` specify the
+the mode of the primitive and the vertices to be fetched, in the range between
+``start`` to ``start``+``count``-1, inclusive.
+
+Every instance with instanceID in the range between ``start_instance`` and
+``start_instance``+``instance_count``-1, inclusive, will be drawn.
+
+If there is an index buffer bound, and ``indexed`` field is true, all vertex
+indices will be looked up in the index buffer.
+
+In indexed draw, ``min_index`` and ``max_index`` respectively provide a lower
+and upper bound of the indices contained in the index buffer inside the range
+between ``start`` to ``start``+``count``-1.  This allows the driver to
+determine which subset of vertices will be referenced during te draw call
+without having to scan the index buffer.  Providing a over-estimation of the
+the true bounds, for example, a ``min_index`` and ``max_index`` of 0 and
+0xffffffff respectively, must give exactly the same rendering, albeit with less
+performance due to unreferenced vertex buffers being unnecessarily DMA'ed or
+processed.  Providing a underestimation of the true bounds will result in
+undefined behavior, but should not result in program or system failure.
+
+In case of non-indexed draw, ``min_index`` should be set to
+``start`` and ``max_index`` should be set to ``start``+``count``-1.
+
+``index_bias`` is a value added to every vertex index after lookup and before
+fetching vertex attributes.
+
+When drawing indexed primitives, the primitive restart index can be
+used to draw disjoint primitive strips.  For example, several separate
+line strips can be drawn by designating a special index value as the
+restart index.  The ``primitive_restart`` flag enables/disables this
+feature.  The ``restart_index`` field specifies the restart index value.
+
+When primitive restart is in use, array indexes are compared to the
+restart index before adding the index_bias offset.
+
+If a given vertex element has ``instance_divisor`` set to 0, it is said
+it contains per-vertex data and effective vertex attribute address needs
+to be recalculated for every index.
+
+  attribAddr = ``stride`` * index + ``src_offset``
+
+If a given vertex element has ``instance_divisor`` set to non-zero,
+it is said it contains per-instance data and effective vertex attribute
+address needs to recalculated for every ``instance_divisor``-th instance.
+
+  attribAddr = ``stride`` * instanceID / ``instance_divisor`` + ``src_offset``
+
+In the above formulas, ``src_offset`` is taken from the given vertex element
+and ``stride`` is taken from a vertex buffer associated with the given
+vertex element.
+
+The calculated attribAddr is used as an offset into the vertex buffer to
+fetch the attribute data.
+
+The value of ``instanceID`` can be read in a vertex shader through a system
+value register declared with INSTANCEID semantic name.
+
+
+Queries
+^^^^^^^
+
+Queries gather some statistic from the 3D pipeline over one or more
+draws.  Queries may be nested, though not all state trackers exercise this.
+
+Queries can be created with ``create_query`` and deleted with
+``destroy_query``. To start a query, use ``begin_query``, and when finished,
+use ``end_query`` to end the query.
+
+``create_query`` takes a query type (``PIPE_QUERY_*``), as well as an index,
+which is the vertex stream for ``PIPE_QUERY_PRIMITIVES_GENERATED`` and
+``PIPE_QUERY_PRIMITIVES_EMITTED``, and allocates a query structure.
+
+``begin_query`` will clear/reset previous query results.
+
+``get_query_result`` is used to retrieve the results of a query.  If
+the ``wait`` parameter is TRUE, then the ``get_query_result`` call
+will block until the results of the query are ready (and TRUE will be
+returned).  Otherwise, if the ``wait`` parameter is FALSE, the call
+will not block and the return value will be TRUE if the query has
+completed or FALSE otherwise.
+
+The interface currently includes the following types of queries:
+
+``PIPE_QUERY_OCCLUSION_COUNTER`` counts the number of fragments which
+are written to the framebuffer without being culled by
+:ref:`depth-stencil-alpha` testing or shader KILL instructions.
+The result is an unsigned 64-bit integer.
+This query can be used with ``render_condition``.
+
+In cases where a boolean result of an occlusion query is enough,
+``PIPE_QUERY_OCCLUSION_PREDICATE`` should be used. It is just like
+``PIPE_QUERY_OCCLUSION_COUNTER`` except that the result is a boolean
+value of FALSE for cases where COUNTER would result in 0 and TRUE
+for all other cases.
+This query can be used with ``render_condition``.
+
+``PIPE_QUERY_TIME_ELAPSED`` returns the amount of time, in nanoseconds,
+the context takes to perform operations.
+The result is an unsigned 64-bit integer.
+
+``PIPE_QUERY_TIMESTAMP`` returns a device/driver internal timestamp,
+scaled to nanoseconds, recorded after all commands issued prior to
+``end_query`` have been processed.
+This query does not require a call to ``begin_query``.
+The result is an unsigned 64-bit integer.
+
+``PIPE_QUERY_TIMESTAMP_DISJOINT`` can be used to check the
+internal timer resolution and whether the timestamp counter has become
+unreliable due to things like throttling etc. - only if this is FALSE
+a timestamp query (within the timestamp_disjoint query) should be trusted.
+The result is a 64-bit integer specifying the timer resolution in Hz,
+followed by a boolean value indicating whether the timestamp counter
+is discontinuous or disjoint.
+
+``PIPE_QUERY_PRIMITIVES_GENERATED`` returns a 64-bit integer indicating
+the number of primitives processed by the pipeline (regardless of whether
+stream output is active or not).
+
+``PIPE_QUERY_PRIMITIVES_EMITTED`` returns a 64-bit integer indicating
+the number of primitives written to stream output buffers.
+
+``PIPE_QUERY_SO_STATISTICS`` returns 2 64-bit integers corresponding to
+the result of
+``PIPE_QUERY_PRIMITIVES_EMITTED`` and
+the number of primitives that would have been written to stream output buffers
+if they had infinite space available (primitives_storage_needed), in this order.
+XXX the 2nd value is equivalent to ``PIPE_QUERY_PRIMITIVES_GENERATED`` but it is
+unclear if it should be increased if stream output is not active.
+
+``PIPE_QUERY_SO_OVERFLOW_PREDICATE`` returns a boolean value indicating
+whether the stream output targets have overflowed as a result of the
+commands issued between ``begin_query`` and ``end_query``.
+This query can be used with ``render_condition``.
+
+``PIPE_QUERY_GPU_FINISHED`` returns a boolean value indicating whether
+all commands issued before ``end_query`` have completed. However, this
+does not imply serialization.
+This query does not require a call to ``begin_query``.
+
+``PIPE_QUERY_PIPELINE_STATISTICS`` returns an array of the following
+64-bit integers:
+Number of vertices read from vertex buffers.
+Number of primitives read from vertex buffers.
+Number of vertex shader threads launched.
+Number of geometry shader threads launched.
+Number of primitives generated by geometry shaders.
+Number of primitives forwarded to the rasterizer.
+Number of primitives rasterized.
+Number of fragment shader threads launched.
+Number of tessellation control shader threads launched.
+Number of tessellation evaluation shader threads launched.
+If a shader type is not supported by the device/driver,
+the corresponding values should be set to 0.
+
+Gallium does not guarantee the availability of any query types; one must
+always check the capabilities of the :ref:`Screen` first.
+
+
+Conditional Rendering
+^^^^^^^^^^^^^^^^^^^^^
+
+A drawing command can be skipped depending on the outcome of a query
+(typically an occlusion query, or streamout overflow predicate).
+The ``render_condition`` function specifies the query which should be checked
+prior to rendering anything. Functions always honoring render_condition include
+(and are limited to) draw_vbo, clear, clear_render_target, clear_depth_stencil.
+The blit function (but not resource_copy_region, which seems inconsistent)
+can also optionally honor the current render condition.
+
+If ``render_condition`` is called with ``query`` = NULL, conditional
+rendering is disabled and drawing takes place normally.
+
+If ``render_condition`` is called with a non-null ``query`` subsequent
+drawing commands will be predicated on the outcome of the query.
+Commands will be skipped if ``condition`` is equal to the predicate result
+(for non-boolean queries such as OCCLUSION_QUERY, zero counts as FALSE,
+non-zero as TRUE).
+
+If ``mode`` is PIPE_RENDER_COND_WAIT the driver will wait for the
+query to complete before deciding whether to render.
+
+If ``mode`` is PIPE_RENDER_COND_NO_WAIT and the query has not yet
+completed, the drawing command will be executed normally.  If the query
+has completed, drawing will be predicated on the outcome of the query.
+
+If ``mode`` is PIPE_RENDER_COND_BY_REGION_WAIT or
+PIPE_RENDER_COND_BY_REGION_NO_WAIT rendering will be predicated as above
+for the non-REGION modes but in the case that an occlusion query returns
+a non-zero result, regions which were occluded may be ommitted by subsequent
+drawing commands.  This can result in better performance with some GPUs.
+Normally, if the occlusion query returned a non-zero result subsequent
+drawing happens normally so fragments may be generated, shaded and
+processed even where they're known to be obscured.
+
+
+Flushing
+^^^^^^^^
+
+``flush``
+
+
+``flush_resource``
+
+Flush the resource cache, so that the resource can be used
+by an external client. Possible usage:
+- flushing a resource before presenting it on the screen
+- flushing a resource if some other process or device wants to use it
+This shouldn't be used to flush caches if the resource is only managed
+by a single pipe_screen and is not shared with another process.
+(i.e. you shouldn't use it to flush caches explicitly if you want to e.g.
+use the resource for texturing)
+
+
+
+Resource Busy Queries
+^^^^^^^^^^^^^^^^^^^^^
+
+``is_resource_referenced``
+
+
+
+Blitting
+^^^^^^^^
+
+These methods emulate classic blitter controls.
+
+These methods operate directly on ``pipe_resource`` objects, and stand
+apart from any 3D state in the context.  Blitting functionality may be
+moved to a separate abstraction at some point in the future.
+
+``resource_copy_region`` blits a region of a resource to a region of another
+resource, provided that both resources have the same format, or compatible
+formats, i.e., formats for which copying the bytes from the source resource
+unmodified to the destination resource will achieve the same effect of a
+textured quad blitter.. The source and destination may be the same resource,
+but overlapping blits are not permitted.
+This can be considered the equivalent of a CPU memcpy.
+
+``blit`` blits a region of a resource to a region of another resource, including
+scaling, format conversion, and up-/downsampling, as well as a destination clip
+rectangle (scissors). It can also optionally honor the current render condition
+(but either way the blit itself never contributes anything to queries currently
+gathering data).
+As opposed to manually drawing a textured quad, this lets the pipe driver choose
+the optimal method for blitting (like using a special 2D engine), and usually
+offers, for example, accelerated stencil-only copies even where
+PIPE_CAP_SHADER_STENCIL_EXPORT is not available.
+
+
+Transfers
+^^^^^^^^^
+
+These methods are used to get data to/from a resource.
+
+``transfer_map`` creates a memory mapping and the transfer object
+associated with it.
+The returned pointer points to the start of the mapped range according to
+the box region, not the beginning of the resource. If transfer_map fails,
+the returned pointer to the buffer memory is NULL, and the pointer
+to the transfer object remains unchanged (i.e. it can be non-NULL).
+
+``transfer_unmap`` remove the memory mapping for and destroy
+the transfer object. The pointer into the resource should be considered
+invalid and discarded.
+
+``transfer_inline_write`` performs a simplified transfer for simple writes.
+Basically transfer_map, data write, and transfer_unmap all in one.
+
+
+The box parameter to some of these functions defines a 1D, 2D or 3D
+region of pixels.  This is self-explanatory for 1D, 2D and 3D texture
+targets.
+
+For PIPE_TEXTURE_1D_ARRAY and PIPE_TEXTURE_2D_ARRAY, the box::z and box::depth
+fields refer to the array dimension of the texture.
+
+For PIPE_TEXTURE_CUBE, the box:z and box::depth fields refer to the
+faces of the cube map (z + depth <= 6).
+
+For PIPE_TEXTURE_CUBE_ARRAY, the box:z and box::depth fields refer to both
+the face and array dimension of the texture (face = z % 6, array = z / 6).
+
+
+.. _transfer_flush_region:
+
+transfer_flush_region
+%%%%%%%%%%%%%%%%%%%%%
+
+If a transfer was created with ``FLUSH_EXPLICIT``, it will not automatically
+be flushed on write or unmap. Flushes must be requested with
+``transfer_flush_region``. Flush ranges are relative to the mapped range, not
+the beginning of the resource.
+
+
+
+.. _texture_barrier:
+
+texture_barrier
+%%%%%%%%%%%%%%%
+
+This function flushes all pending writes to the currently-set surfaces and
+invalidates all read caches of the currently-set samplers.
+
+
+
+.. _memory_barrier:
+
+memory_barrier
+%%%%%%%%%%%%%%%
+
+This function flushes caches according to which of the PIPE_BARRIER_* flags
+are set.
+
+
+
+.. _pipe_transfer:
+
+PIPE_TRANSFER
+^^^^^^^^^^^^^
+
+These flags control the behavior of a transfer object.
+
+``PIPE_TRANSFER_READ``
+  Resource contents read back (or accessed directly) at transfer create time.
+
+``PIPE_TRANSFER_WRITE``
+  Resource contents will be written back at transfer_unmap time (or modified
+  as a result of being accessed directly).
+
+``PIPE_TRANSFER_MAP_DIRECTLY``
+  a transfer should directly map the resource. May return NULL if not supported.
+
+``PIPE_TRANSFER_DISCARD_RANGE``
+  The memory within the mapped region is discarded.  Cannot be used with
+  ``PIPE_TRANSFER_READ``.
+
+``PIPE_TRANSFER_DISCARD_WHOLE_RESOURCE``
+  Discards all memory backing the resource.  It should not be used with
+  ``PIPE_TRANSFER_READ``.
+
+``PIPE_TRANSFER_DONTBLOCK``
+  Fail if the resource cannot be mapped immediately.
+
+``PIPE_TRANSFER_UNSYNCHRONIZED``
+  Do not synchronize pending operations on the resource when mapping. The
+  interaction of any writes to the map and any operations pending on the
+  resource are undefined. Cannot be used with ``PIPE_TRANSFER_READ``.
+
+``PIPE_TRANSFER_FLUSH_EXPLICIT``
+  Written ranges will be notified later with :ref:`transfer_flush_region`.
+  Cannot be used with ``PIPE_TRANSFER_READ``.
+
+``PIPE_TRANSFER_PERSISTENT``
+  Allows the resource to be used for rendering while mapped.
+  PIPE_RESOURCE_FLAG_MAP_PERSISTENT must be set when creating
+  the resource.
+  If COHERENT is not set, memory_barrier(PIPE_BARRIER_MAPPED_BUFFER)
+  must be called to ensure the device can see what the CPU has written.
+
+``PIPE_TRANSFER_COHERENT``
+  If PERSISTENT is set, this ensures any writes done by the device are
+  immediately visible to the CPU and vice versa.
+  PIPE_RESOURCE_FLAG_MAP_COHERENT must be set when creating
+  the resource.
+
+Compute kernel execution
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+A compute program can be defined, bound or destroyed using
+``create_compute_state``, ``bind_compute_state`` or
+``destroy_compute_state`` respectively.
+
+Any of the subroutines contained within the compute program can be
+executed on the device using the ``launch_grid`` method.  This method
+will execute as many instances of the program as elements in the
+specified N-dimensional grid, hopefully in parallel.
+
+The compute program has access to four special resources:
+
+* ``GLOBAL`` represents a memory space shared among all the threads
+  running on the device.  An arbitrary buffer created with the
+  ``PIPE_BIND_GLOBAL`` flag can be mapped into it using the
+  ``set_global_binding`` method.
+
+* ``LOCAL`` represents a memory space shared among all the threads
+  running in the same working group.  The initial contents of this
+  resource are undefined.
+
+* ``PRIVATE`` represents a memory space local to a single thread.
+  The initial contents of this resource are undefined.
+
+* ``INPUT`` represents a read-only memory space that can be
+  initialized at ``launch_grid`` time.
+
+These resources use a byte-based addressing scheme, and they can be
+accessed from the compute program by means of the LOAD/STORE TGSI
+opcodes.  Additional resources to be accessed using the same opcodes
+may be specified by the user with the ``set_compute_resources``
+method.
+
+In addition, normal texture sampling is allowed from the compute
+program: ``bind_sampler_states`` may be used to set up texture
+samplers for the compute stage and ``set_sampler_views`` may
+be used to bind a number of sampler views to it.

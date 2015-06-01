@@ -1,0 +1,58 @@
+RADEON_COMMON_FILES = \
+	radeon_buffer_objects.c \
+	radeon_buffer_objects.h \
+	radeon_cmdbuf.h \
+	radeon_common.c \
+	radeon_common_context.c \
+	radeon_common_context.h \
+	radeon_common.h \
+	radeon_debug.c \
+	radeon_debug.h \
+	radeon_dma.c \
+	radeon_dma.h \
+	radeon_fbo.c \
+	radeon_fog.c \
+	radeon_fog.h \
+	radeon_mipmap_tree.c \
+	radeon_mipmap_tree.h \
+	radeon_pixel_read.c \
+	radeon_queryobj.c \
+	radeon_queryobj.h \
+	radeon_span.c \
+	radeon_span.h \
+	radeon_tex_copy.c \
+	radeon_texture.c \
+	radeon_texture.h \
+	radeon_tile.c \
+	radeon_tile.h
+
+DRIVER_FILES = \
+	radeon_blit.c \
+	radeon_blit.h \
+	radeon_context.c \
+	radeon_context.h \
+	radeon_chipset.h \
+	radeon_ioctl.c \
+	radeon_ioctl.h \
+	radeon_maos.c \
+	radeon_maos.h \
+	radeon_maos_vbtmp.h \
+	radeon_sanity.c \
+	radeon_sanity.h \
+	radeon_screen.c \
+	radeon_screen.h \
+	radeon_state.c \
+	radeon_state.h \
+	radeon_state_init.c \
+	radeon_swtcl.c \
+	radeon_swtcl.h \
+	radeon_tcl.c \
+	radeon_tcl.h \
+	radeon_tex.c \
+	radeon_tex.h \
+	radeon_texstate.c \
+	server/radeon_reg.h
+
+RADEON_C_FILES = \
+	$(RADEON_COMMON_FILES) \
+	$(DRIVER_FILES)

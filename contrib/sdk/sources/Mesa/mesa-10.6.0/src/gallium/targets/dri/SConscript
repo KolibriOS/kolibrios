@@ -1,0 +1,66 @@
+Import('*')
+
+env = drienv.Clone()
+
+if env['suncc']:
+    print 'warning: not building dri-vmwgfx'
+    Return()
+
+env.Append(CPPPATH = [
+    '#/src/loader',
+    '#/src/mapi',
+    '#/src/mesa',
+    '#/src/mesa/drivers/dri/common',
+    '#/src/gallium/state_trackers/dri',
+])
+
+if env['build'] == 'release':
+    env.Append(CPPDEFINES = ['GALLIUM_RBUG'])
+    env.Prepend(LIBS = [rbug])
+else:
+    env.Append(CPPDEFINES = ['GALLIUM_TRACE', 'GALLIUM_RBUG'])
+    env.Prepend(LIBS = [trace, rbug])
+
+if env['llvm']:
+    env.Append(CPPDEFINES = 'GALLIUM_LLVMPIPE')
+    env.Prepend(LIBS = [llvmpipe])
+
+env.Append(CPPDEFINES = [
+    'GALLIUM_VMWGFX',
+    'GALLIUM_SOFTPIPE',
+    'DRI_TARGET',
+    'HAVE_LIBDRM',
+])
+
+env.Prepend(LIBS = [
+    st_dri,
+    svgadrm,
+    svga,
+    ws_dri,
+    ws_kms_dri,
+    softpipe,
+    libloader,
+    mesautil,
+    mesa,
+    glsl,
+    gallium,
+    megadrivers_stub,
+    dri_common,
+])
+
+module = env.LoadableModule(
+    target = 'gallium_dri.so',
+    source = 'target.c',
+    SHLIBPREFIX = '',
+)
+
+# vmwgfx_dri.so
+env.Command('vmwgfx_dri.so', 'gallium_dri.so', "ln -f ${SOURCE} ${TARGET}")
+# swrast_dri.so
+env.Command('swrast_dri.so', 'gallium_dri.so', "ln -f ${SOURCE} ${TARGET}")
+# kms_swrast_dri.so
+env.Command('kms_swrast_dri.so', 'gallium_dri.so', "ln -f ${SOURCE} ${TARGET}")
+
+env.Alias('dri-vmwgfx', module)
+env.Alias('dri-swrast', module)
+env.Alias('dri-kms-swrast', module)

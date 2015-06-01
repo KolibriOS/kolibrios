@@ -1,0 +1,22 @@
+DRI_COMMON_FILES := \
+	utils.c \
+	utils.h \
+	dri_util.c \
+	dri_util.h \
+	xmlconfig.c \
+	xmlconfig.h
+
+# Paths are relative to MESA_TOP.
+mesa_dri_common_INCLUDES := \
+	include \
+	src/egl/drivers/dri \
+	src/egl/main \
+	src/mapi \
+	src/mesa \
+	src/mesa/drivers/dri/common
+
+test_stubs_FILES := \
+	dri_test.c
+
+megadriver_stub_FILES := \
+	megadriver_stub.c

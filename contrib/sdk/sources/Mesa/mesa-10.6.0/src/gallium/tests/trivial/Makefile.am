@@ -1,0 +1,31 @@
+include $(top_srcdir)/src/gallium/Automake.inc
+
+PIPE_SRC_DIR = $(top_builddir)/src/gallium/targets/pipe-loader
+
+AM_CFLAGS = \
+	$(GALLIUM_CFLAGS)
+
+AM_CPPFLAGS = \
+	-I$(top_srcdir)/src/gallium/drivers \
+	-I$(top_srcdir)/src/gallium/winsys \
+	-DPIPE_SEARCH_DIR=\"$(PIPE_SRC_DIR)/.libs\" \
+	$(GALLIUM_PIPE_LOADER_DEFINES)
+
+LDADD = \
+	$(top_builddir)/src/gallium/auxiliary/pipe-loader/libpipe_loader_client.la \
+	$(top_builddir)/src/gallium/auxiliary/libgallium.la \
+	$(top_builddir)/src/util/libmesautil.la \
+	$(GALLIUM_PIPE_LOADER_WINSYS_LIBS) \
+	$(GALLIUM_PIPE_LOADER_CLIENT_LIBS) \
+	$(GALLIUM_COMMON_LIB_DEPS)
+
+noinst_PROGRAMS = compute tri quad-tex
+
+compute_SOURCES = compute.c
+
+tri_SOURCES = tri.c
+
+quad_tex_SOURCES = quad-tex.c
+
+clean-local:
+	-rm -f result.bmp

@@ -1,0 +1,18 @@
+#######################################################################
+# SConscript for xlib state_tracker
+
+Import('*')
+
+env = env.Clone()
+
+env.Append(CPPPATH = [
+    '#/src',
+    '#/src/mapi',
+    '#/src/mesa',
+])
+
+st_xlib = env.ConvenienceLibrary(
+    target = 'st_xlib',
+    source = env.ParseSourceList('Makefile.sources', 'C_SOURCES')
+)
+Export('st_xlib')

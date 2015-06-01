@@ -1,0 +1,13 @@
+EXPORTS
+	OSMesaCreateContext = OSMesaCreateContext@8
+	OSMesaCreateContextExt = OSMesaCreateContextExt@20
+	OSMesaDestroyContext = OSMesaDestroyContext@4
+	OSMesaMakeCurrent = OSMesaMakeCurrent@20
+	OSMesaGetCurrentContext = OSMesaGetCurrentContext@0
+	OSMesaPixelStore = OSMesaPixelStore@8
+	OSMesaGetIntegerv = OSMesaGetIntegerv@8
+	OSMesaGetDepthBuffer = OSMesaGetDepthBuffer@20
+	OSMesaGetColorBuffer = OSMesaGetColorBuffer@20
+	OSMesaGetProcAddress = OSMesaGetProcAddress@4
+	OSMesaColorClamp = OSMesaColorClamp@4
+	OSMesaPostprocess = OSMesaPostprocess@12

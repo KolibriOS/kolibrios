@@ -1,0 +1,43 @@
+Import('*')
+
+env = env.Clone()
+
+env.Prepend(CPPPATH = [
+    '#src/mapi',
+    '#src/mesa',
+    #Dir('../../../mapi'), # src/mapi build path for python-generated GL API files/headers
+])
+
+env.Prepend(LIBS = [
+    st_osmesa,
+    ws_null,
+    glapi,
+    mesa,
+    gallium,
+    trace,
+    glsl,
+    mesautil,
+    softpipe
+])
+
+env.Append(CPPDEFINES = ['GALLIUM_TRACE', 'GALLIUM_SOFTPIPE'])
+
+sources = ['target.c']
+
+if env['llvm']:
+    env.Append(CPPDEFINES = 'GALLIUM_LLVMPIPE')
+    env.Prepend(LIBS = [llvmpipe])
+
+if env['platform'] == 'windows':
+    if env['gcc'] and env['machine'] != 'x86_64':
+        sources += ['osmesa.mingw.def']
+    else:
+        sources += ['osmesa.def']
+
+gallium_osmesa = env.SharedLibrary(
+    target ='osmesa',
+    source = sources,
+    LIBS = env['LIBS'],
+)
+
+env.Alias('osmesa', gallium_osmesa)
