@@ -13,6 +13,8 @@ Q5. I'm sure that I want to build the entire system.
     The autobuild server does this, after all.
 Q6. I don't want to keep a zoo of compilers and tools required for Q5,
     but I still want to build as many programs as possible with what I have.
+Q7. I have modified the source code of the kernel, one driver or one program
+    and want to test changes.
 
 -------------------------------------------------------------------------------
 
@@ -177,6 +179,7 @@ A4. Why? Even the person who has configured the autobuild server does not build
 
     If you want to create your own image of the system, it is much simpler to
     start from existing one and modify it, building only what is necessary.
+    Look for Q7/A7 for details of that approach.
     If you don't know how to modify an image, don't expect that the build
     system will magically do it for you. The build system uses mtools for
     image manipulation; if you have configured mtools, you can just use them
@@ -240,3 +243,39 @@ A6.
   * Run
         tup
     anywhere inside repository.
+
+Q7. I have modified the source code of the kernel, one driver or one program
+    and want to test changes.
+A7. First, you need to build the corresponding binary as described in Q1/A1 or
+    Q2/A2.
+    To test a program, it is sufficient to put it to some place accessible
+    to the working KolibriOS and just run it from there. Drivers are loaded
+    from the folder /rd/1/drivers/, which is initialized from kolibri.img,
+    so testing a driver requires either copying the compiled binary to
+    /rd/1/drivers manually between KolibriOS startup and loading driver or
+    inserting the driver to the image kolibri.img outside of KolibriOS.
+    Testing the kernel or an auto-loading driver requires modifying the image.
+
+    There are several possible approaches for writing to kolibri.img.
+  * From inside KolibriOS, write to /rd/1 and then save the ramdisk image.
+  * On Linux, there is a package named "mtools",
+    https://www.gnu.org/software/mtools/ . It can be available in the
+    repository of your Linux distribution or it can be compiled manually.
+    Compiling mtools for Windows is not impossible, but not supported either.
+    Using mtools:
+        mdir -i kolibri.img [<dir>]
+    lists contents of the given directory of the image or the root directory
+    if <dir> is omitted;
+        mcopy -moi kolibri.img <file> ::<imgfile>
+    inserts the file <file> to the image using the name <imgfile>; with
+    reverse order of the arguments, it extracts the corresponding file.
+  * On Linux with root privileges, the standard mount command can be used:
+        mount -t vfat -o loop kolibri.img <dir>
+    maps contents of kolibri.img under the directory <dir>, which must exist,
+    hiding whatever was in <dir>. When done, use
+        umount <dir>
+  * On Windows with administrator privileges, the driver ImDisk
+    http://www.ltr-data.se/opencode.html/#ImDisk can be used:
+        imdisk -a -m A: -t file -f kolibri.img
+    maps contents of kolibri.img to the virtual disk A:. When done, use
+        imdisk -d -m A:
