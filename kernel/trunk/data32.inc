@@ -533,7 +533,6 @@ align 65536
 SB16Buffer                      rb 65536
 
 align 4096
-_IDE_DMA                        rb 16*512
 BUTTON_INFO                     rb 64*1024
 RESERVED_PORTS:                 rb 64*1024
 

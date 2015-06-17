@@ -229,7 +229,6 @@ SLOT_BASE           equ (OS_BASE+0x0080000)
 VGABasePtr          equ (OS_BASE+0x00A0000)
 
 CLEAN_ZONE          equ (_CLEAN_ZONE-OS_BASE)
-IDE_DMA             equ (_IDE_DMA-OS_BASE)
 
 UPPER_KERNEL_PAGES  equ (OS_BASE+0x0400000)
 

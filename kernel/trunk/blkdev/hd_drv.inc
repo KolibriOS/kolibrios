@@ -7,28 +7,25 @@
 
 $Revision$
 
+; HDD driver
 
-; Low-level driver for HDD access
-; DMA support by Mario79
-; LBA48 support by Mario79
-;-----------------------------------------------------------------------------
 struct HD_DATA
 hdbase  dd      ?
 hdid    dd      ?
 hdpos   dd      ?
 ends
-;-----------------------------------------------------------------------------
+;-----------------------------------------------------------------
 iglobal
 align 4
 ide_callbacks:
-        dd      ide_callbacks.end - ide_callbacks       ; strucsize
-        dd      0       ; no close function
-        dd      0       ; no closemedia function
+        dd      ide_callbacks.end - ide_callbacks   ; strucsize
+        dd      0   ; no close function
+        dd      0   ; no closemedia function
         dd      ide_querymedia
         dd      ide_read
         dd      ide_write
-        dd      0       ; no flush function
-        dd      0       ; use default cache size
+        dd      0   ; no flush function
+        dd      0   ; use default cache size
 .end:
 
 hd0_data        HD_DATA         ?,    0, 1
@@ -52,7 +49,7 @@ ide_mutex_table:
         dd ide_channel5_mutex
         dd ide_channel6_mutex
 endg
-;-----------------------------------------------------------------------------
+;-----------------------------------------------------------------
 uglobal
 ide_mutex               MUTEX
 ide_channel1_mutex      MUTEX
@@ -61,9 +58,17 @@ ide_channel3_mutex      MUTEX
 ide_channel4_mutex      MUTEX
 ide_channel5_mutex      MUTEX
 ide_channel6_mutex      MUTEX
+blockSize:
+rb 4
+sector:
+rb 6
+allow_dma_access        db ?
+IDE_common_irq_param    db ?
+eventPointer            dd ?
+eventID                 dd ?
 endg
-;-----------------------------------------------------------------------------
-proc ide_read stdcall uses edi, \
+;-----------------------------------------------------------------
+proc ide_read stdcall uses esi edi ebx, \
         hd_data, buffer, startsector:qword, numsectors
         ; hd_data = pointer to hd*_data
         ; buffer = pointer to buffer for data
@@ -74,16 +79,14 @@ locals
 sectors_todo    dd      ?
 channel_lock    dd      ?
 endl
-; 1. Initialize number of sectors: get number of requested sectors
-; and say that no sectors were read yet.
+; get number of requested sectors and say that no sectors were read yet
         mov     ecx, [numsectors]
         mov     eax, [ecx]
         mov     dword [ecx], 0
         mov     [sectors_todo], eax
-; 2. Acquire the global lock.
+; acquire the global lock
         mov     ecx, ide_mutex
         call    mutex_lock
-
         mov     ecx, [hd_data]
         mov     ecx, [ecx+HD_DATA.hdpos]
         dec     ecx
@@ -92,13 +95,7 @@ endl
         mov     ecx, [ecx + ide_mutex_table]
         mov     [channel_lock], ecx
         call    mutex_lock
-; 3. Convert parameters to the form suitable for worker procedures.
-; Underlying procedures do not know about 64-bit sectors.
-; Worker procedures use global variables and edi for [buffer].
-        cmp     dword [startsector+4], 0
-        jnz     .fail
-
-        and     [hd_error], 0
+; prepare worker procedures variables
         mov     ecx, [hd_data]
         mov     eax, [ecx+HD_DATA.hdbase]
         mov     [hdbase], eax
@@ -107,72 +104,60 @@ endl
         mov     eax, [ecx+HD_DATA.hdpos]
         mov     [hdpos], eax
         mov     eax, dword [startsector]
-        mov     edi, [buffer]
-; 4. Worker procedures take one sectors per time, so loop over all sectors to read.
-.sectors_loop:
-; DMA read is permitted if [allow_dma_access]=1 or 2
-        cmp     [allow_dma_access], 2
-        ja      .nodma
-
-        push    eax ecx
+        mov     [sector], eax
+        mov     ax, word [startsector+4]
+        mov     [sector+4], ax
+        mov     esi, [buffer]
+        mov     bl, 25h     ; READ DMA EXT
         mov     ecx, [hdpos]
         dec     ecx
         shr     ecx, 2
         imul    ecx, sizeof.IDE_DATA
         add     ecx, IDE_controller_1
         mov     [IDE_controller_pointer], ecx
-
         mov     eax, [hdpos]
         dec     eax
         and     eax, 11b
         shr     eax, 1
         add     eax, ecx
         cmp     [eax+IDE_DATA.dma_hdd_channel_1], 1
-        pop     ecx eax
-        jnz     .nodma
-
-        call    hd_read_dma
-        jmp     @f
-;--------------------------------------
-.nodma:
-        call    hd_read_pio
-;--------------------------------------
+        jz      .next
+        dec     bl      ; READ SECTOR(S) EXT
+        mov     edi, esi
+; worker procedures take max 8000h sectors per time
+; loop until all sectors will be processed
+.next:
+        mov     ecx, 8000h
+        cmp     ecx, [sectors_todo]
+        jbe     @f
+        mov     ecx, [sectors_todo]
 @@:
-        cmp     [hd_error], 0
-        jnz     .fail
-
-        mov     ecx, [numsectors]
-        inc     dword [ecx]     ; one more sector is read
-        dec     [sectors_todo]
-        jz      .done
-
-        inc     eax
-        jnz     .sectors_loop
-;--------------------------------------
-; 5. Loop is done, either due to error or because everything is done.
-; Release the global lock and return the corresponding status.
-.fail:
+        mov     [blockSize], ecx
+        push    ecx
+        call    IDE_transfer
+        pop     ecx
+        jc      .out
+        mov     eax, [numsectors]
+        add     [eax], ecx
+        sub     [sectors_todo], ecx
+        jz      .out
+        add     [sector], ecx
+        adc     word [sector+4], 0
+        jmp     .next
+; loop is done, either due to error or because everything is done
+; release the global lock and return the corresponding status
+.out:
+        sbb     eax, eax
+        push    eax
         mov     ecx, [channel_lock]
         call    mutex_unlock
-
         mov     ecx, ide_mutex
         call    mutex_unlock
-
-        or      eax, -1
-        ret
-;--------------------------------------
-.done:
-        mov     ecx, [channel_lock]
-        call    mutex_unlock
-
-        mov     ecx, ide_mutex
-        call    mutex_unlock
-
-        xor     eax, eax
+        pop     eax
         ret
 endp
-;-----------------------------------------------------------------------------
-proc ide_write stdcall uses esi edi, \
+;-----------------------------------------------------------------
+proc ide_write stdcall uses esi edi ebx, \
         hd_data, buffer, startsector:qword, numsectors
         ; hd_data = pointer to hd*_data
         ; buffer = pointer to buffer with data
@@ -183,16 +168,14 @@ locals
 sectors_todo    dd      ?
 channel_lock    dd      ?
 endl
-; 1. Initialize number of sectors: get number of requested sectors
-; and say that no sectors were read yet.      
+; get number of requested sectors and say that no sectors were read yet
         mov     ecx, [numsectors]
         mov     eax, [ecx]
         mov     dword [ecx], 0
         mov     [sectors_todo], eax
-; 2. Acquire the global lock.
+; acquire the global lock
         mov     ecx, ide_mutex
         call    mutex_lock
-
         mov     ecx, [hd_data]
         mov     ecx, [ecx+HD_DATA.hdpos]
         dec     ecx
@@ -201,13 +184,7 @@ endl
         mov     ecx, [ecx + ide_mutex_table]
         mov     [channel_lock], ecx
         call    mutex_lock
-; 3. Convert parameters to the form suitable for worker procedures.
-; Underlying procedures do not know about 64-bit sectors.
-; Worker procedures use global variables and esi for [buffer].
-        cmp     dword [startsector+4], 0
-        jnz     .fail
-
-        and     [hd_error], 0
+; prepare worker procedures variables
         mov     ecx, [hd_data]
         mov     eax, [ecx+HD_DATA.hdbase]
         mov     [hdbase], eax
@@ -215,89 +192,60 @@ endl
         mov     [hdid], eax
         mov     eax, [ecx+HD_DATA.hdpos]
         mov     [hdpos], eax
+        mov     eax, dword [startsector]
+        mov     [sector], eax
+        mov     ax, word [startsector+4]
+        mov     [sector+4], ax
         mov     esi, [buffer]
-        lea     edi, [startsector]
-        mov     [cache_chain_ptr], edi
-; 4. Worker procedures take max 16 sectors per time,
-; loop until all sectors will be processed.
-.sectors_loop:
-        mov     ecx, 16
-        cmp     ecx, [sectors_todo]
-        jbe     @f
-
-        mov     ecx, [sectors_todo]
-;--------------------------------------
-@@:
-        mov     [cache_chain_size], cl
-; DMA write is permitted only if [allow_dma_access]=1
-        cmp     [allow_dma_access], 2
-        jae     .nodma
-
-        push    eax ecx
+        mov     bl, 35h     ; WRITE DMA EXT
         mov     ecx, [hdpos]
         dec     ecx
         shr     ecx, 2
         imul    ecx, sizeof.IDE_DATA
         add     ecx, IDE_controller_1
         mov     [IDE_controller_pointer], ecx
-
         mov     eax, [hdpos]
         dec     eax
         and     eax, 11b
         shr     eax, 1
         add     eax, ecx
         cmp     [eax+IDE_DATA.dma_hdd_channel_1], 1
-        pop     ecx eax
-        jnz     .nodma
-
-        call    cache_write_dma
-        jmp     .common
-;--------------------------------------
-.nodma:
-        mov     [cache_chain_size], 1
-        call    cache_write_pio
-;--------------------------------------
-.common:
-        cmp     [hd_error], 0
-        jnz     .fail
-
-        movzx   ecx, [cache_chain_size]
+        jz      .next
+        dec     bl      ; WRITE SECTOR(S) EXT
+; worker procedures take max 8000h sectors per time
+; loop until all sectors will be processed
+.next:
+        mov     ecx, 8000h
+        cmp     ecx, [sectors_todo]
+        jbe     @f
+        mov     ecx, [sectors_todo]
+@@:
+        mov     [blockSize], ecx
+        push    ecx
+        call    IDE_transfer
+        pop     ecx
+        jc      .out
         mov     eax, [numsectors]
         add     [eax], ecx
         sub     [sectors_todo], ecx
-        jz      .done
-
-        add     [edi], ecx
-        jc      .fail
-
-        shl     ecx, 9
-        add     esi, ecx
-        jmp     .sectors_loop
-;--------------------------------------
-; 5. Loop is done, either due to error or because everything is done.
-; Release the global lock and return the corresponding status.
-.fail:
+        jz      .out
+        add     [sector], ecx
+        adc     word [sector+4], 0
+        jmp     .next
+; loop is done, either due to error or because everything is done
+; release the global lock and return the corresponding status
+.out:
+        sbb     eax, eax
+        push    eax
         mov     ecx, [channel_lock]
         call    mutex_unlock
-
         mov     ecx, ide_mutex
         call    mutex_unlock
-
-        or      eax, -1
-        ret
-;--------------------------------------
-.done:
-        mov     ecx, [channel_lock]
-        call    mutex_unlock
-
-        mov     ecx, ide_mutex
-        call    mutex_unlock
-
-        xor     eax, eax
+        pop     eax
         ret
 endp
-;-----------------------------------------------------------------------------
-; This is a stub.
+;-----------------------------------------------------------------
+; this is a stub
 proc ide_querymedia stdcall, hd_data, mediainfo
         mov     eax, [mediainfo]
         mov     [eax+DISKMEDIAINFO.Flags], 0
@@ -307,931 +255,316 @@ proc ide_querymedia stdcall, hd_data, mediainfo
         xor     eax, eax
         ret
 endp
-;-----------------------------------------------------------------------------
-align 4
-; input: eax = sector, edi -> buffer
-; output: edi = edi + 512
-hd_read_pio:
-        push    eax edx
-; Select the desired drive
+;-----------------------------------------------------------------
+; input: esi -> buffer, bl = command, [sector], [blockSize]
+; output: esi -> next block in buffer
+; for pio read esi equal edi
+IDE_transfer:
         mov     edx, [hdbase]
-        add     edx, 6   ;адрес регистра головок
+        add     edx, 6
         mov     al, byte [hdid]
-        add     al, 128+64+32
-        out     dx, al; номер головки/номер диска
-        
-        call    wait_for_hd_idle
-
-        cmp     [hd_error], 0
-        jne     hd_read_error
-; ATA with 28 or 48 bit for sector number?
-        mov     eax, [esp+4]
-        cmp     eax, 0x10000000
-        jae     .lba48
-;--------------------------------------
-.lba28:
-        pushfd
+        add     al, 224
+        out     dx, al  ; select the desired drive
+        call    save_hd_wait_timeout
+        inc     edx
+@@:
+        call    check_hd_wait_timeout
+        jc      .hd_error
+        in      al, dx
+        test    al, 128 ; ready for command?
+        jnz     @b
+        pushfd          ; fill the ports
         cli
-        xor     eax, eax
         mov     edx, [hdbase]
         inc     edx
-        out     dx, al ; ATA Features регистр "особенностей"
         inc     edx
-        inc     eax
-        out     dx, al ; ATA Sector Counter счётчик секторов
+        mov     al, [blockSize+1]
+        out     dx, al  ; Sector count (15:8)
         inc     edx
-        mov     eax, [esp+4+4]
-        out     dx, al ; LBA Low LBA (7:0)
+        mov     eax, [sector+3]
+        out     dx, al  ; LBA (31:24)
+        inc     edx
         shr     eax, 8
+        out     dx, al  ; LBA (39:32)
         inc     edx
-        out     dx, al ; LBA Mid LBA (15:8)
         shr     eax, 8
+        out     dx, al  ; LBA (47:40)
+        sub     edx, 3
+        mov     al, [blockSize]
+        out     dx, al  ; Sector count (7:0)
         inc     edx
-        out     dx, al ; LBA High LBA (23:16)
+        mov     eax, [sector]
+        out     dx, al  ; LBA (7:0)
+        inc     edx
         shr     eax, 8
+        out     dx, al  ; LBA (15:8)
         inc     edx
-        and     al, 1+2+4+8 ; LBA (27:24)
-        add     al, byte [hdid]
-        add     al, 128+64+32
-        out     dx, al ; номер головки/номер диска
-        inc     edx
-        mov     al, 20h ; READ SECTOR(S)
-        out     dx, al ; ATACommand регистр команд
-        popfd
-        jmp     .continue
-;--------------------------------------
-.lba48:
-        pushfd
-        cli
-        xor     eax, eax
-        mov     edx, [hdbase]
-        inc     edx
-        out     dx, al ; Features Previous Reserved
-        out     dx, al ; Features Current Reserved
-        inc     edx
-        out     dx, al ; Sector Count Previous Sector count (15:8)
-        inc     eax
-        out     dx, al ; Sector Count Current Sector count (7:0)
-        inc     edx
-        mov     eax, [esp+4+4]
-        rol     eax, 8
-        out     dx, al ; LBA Low Previous LBA (31:24)
-        xor     eax, eax ; because only 32 bit cache
-        inc     edx
-        out     dx, al ; LBA Mid Previous LBA (39:32)
-        inc     edx
-        out     dx, al ; LBA High Previous LBA (47:40)
-        sub     edx, 2
-        mov     eax, [esp+4+4]
-        out     dx, al ; LBA Low Current LBA (7:0)
         shr     eax, 8
-        inc     edx
-        out     dx, al ; LBA Mid Current LBA (15:8)
-        shr     eax, 8
-        inc     edx
-        out     dx, al ; LBA High Current LBA (23:16)
+        out     dx, al  ; LBA (23:16)
         inc     edx
         mov     al, byte [hdid]
-        add     al, 128+64+32
-        out     dx, al ; номер головки/номер диска
-        inc     edx
-        mov     al, 24h ; READ SECTOR(S) EXT
-        out     dx, al ; ATACommand регистр команд
+        add     al, 224
+        out     dx, al
+        test    bl, 1
+        jz      .PIO
+; DMA
+        mov     dword [esp], 0x1000
+        call    kernel_alloc
+        mov     edi, eax
+        push    eax
+        shl     dword [blockSize], 9
+        mov     eax, esi
+        add     eax, [blockSize]
+        push    eax
+; check buffer pages physical addresses and fill the scatter-gather list
+; buffer may be not aligned and may have size not divisible by page size
+; [edi] = block physical address, [edi+4] = block size in bytes
+; block addresses can not cross 10000h borders
+        mov     ecx, esi
+        and     ecx, 0xFFF
+        jz      .aligned
+        mov     eax, esi
+        call    get_pg_addr
+        add     eax, ecx
+        neg     ecx
+        add     ecx, 0x1000
+        mov     [edi], eax
+        cmp     ecx, [blockSize]
+        jnc     .end
+        mov     [edi+4], ecx
+        add     esi, 0x1000
+        add     edi, 8
+        sub     [blockSize], ecx
+.aligned:
+        mov     eax, esi
+        call    get_pg_addr
+        mov     ecx, eax
+        mov     [edi], eax
+        and     ecx, 0xFFFF
+        neg     ecx
+        add     ecx, 0x10000
+        cmp     [blockSize], ecx
+        jnc     @f
+        mov     ecx, [blockSize]
+        and     ecx, 0xF000
+        jz      .end
+@@:
+        push    ecx
+@@:
+        add     esi, 0x1000
+        add     eax, 0x1000
+        sub     ecx, 0x1000
+        jz      @f
+        mov     edx, eax
+        mov     eax, esi
+        call    get_pg_addr
+        cmp     eax, edx
+        jz      @b
+@@:
+        pop     edx
+        sub     edx, ecx
+        mov     [edi+4], edx
+        add     edi, 8
+        sub     [blockSize], edx
+        jnz     .aligned
+        sub     edi, 8
+        jmp     @f
+.end:
+        mov     ecx, [blockSize]
+        mov     [edi+4], ecx
+@@:
+        mov     byte [edi+7], 80h   ; list end
+        pop     esi
+        pop     edi
+; select controller Primary or Secondary
+        mov     ecx, [IDE_controller_pointer]
+        mov     dx, [ecx+IDE_DATA.RegsBaseAddres]
+        mov     eax, [hdpos]
+        dec     eax
+        test    eax, 10b
+        jz      @f
+        add     edx, 8
+@@:
+        add     edx, 2      ; Bus Master IDE Status register
+        mov     al, 6
+        out     dx, al      ; clear Error bit and Interrupt bit
+
+        add     edx, 2      ; Bus Master IDE PRD Table Address
+        mov     eax, edi
+        call    get_pg_addr
+        out     dx, eax     ; send scatter-gather list physical address
+
+        push    edx
+        mov     edx, [hdbase]
+        add     edx, 7      ; ATACommand
+        mov     al, bl
+        out     dx, al      ; Start hard drive
+        pop     edx
+
+        sub     edx, 4      ; Bus Master IDE Command register
+        mov     al, 1       ; set direction
+        cmp     bl, 35h     ; write
+        jz      @f
+        add     al, 8       ; read
+@@:
+        out     dx, al      ; Start Bus Master
+        mov     [IDE_common_irq_param], 14
+        mov     eax, [hdpos]
+        dec     eax
+        test    eax, 10b
+        jz      @f
+        inc     [IDE_common_irq_param]
+@@:
+        push    edi esi ebx
+        xor     ecx, ecx
+        xor     esi, esi
+        call    create_event
+        mov     [eventPointer], eax
+        mov     [eventID], edx
+        sti
+        mov     ebx, edx
+        mov     ecx, 300
+        call    wait_event_timeout
+        test    eax, eax
+        jnz     @f
+        mov     [IDE_common_irq_param], 0
+        mov     eax, [eventPointer]
+        mov     ebx, [eventID]
+        call    destroy_event
+        mov     [eventPointer], 0
+@@:
+        pop     ebx esi
+        call    kernel_free
+        cmp     [eventPointer], 0
+        jz      .hd_error
+        ret
+.PIO:
+        inc     edx     ; ATACommand
+        mov     al, bl
+        out     dx, al  ; Start hard drive
         popfd
-;--------------------------------------
-.continue:
-        call    wait_for_sector_buffer
-
-        cmp     [hd_error], 0
-        jne     hd_read_error
-
+.sectorTransfer:
+        call    save_hd_wait_timeout
+        in      al, dx
+        in      al, dx
+        in      al, dx
+        in      al, dx
+@@:
+        call    check_hd_wait_timeout
+        jc      .hd_error
+        in      al, dx
+        test    al, 8   ; ready for transfer?
+        jz      @b
+        cmp     [hd_setup], 1   ; do not mark error for setup request
+        jz      @f
+        test    al, 1   ; previous command ended up with an error
+        jnz     .hd_error
+@@:
         pushfd
         cli
+        cld
         mov     ecx, 256
         mov     edx, [hdbase]
-        cld
+        cmp     bl, 34h
+        jz      .write
         rep insw
-        popfd
-
-        pop     edx eax
-        ret
-;-----------------------------------------------------------------------------
-align 4
-; edi -> sector, esi -> data
-cache_write_pio:
-; Select the desired drive
-        mov     edx, [hdbase]
-        add     edx, 6   ;адрес регистра головок
-        mov     al, byte [hdid]
-        add     al, 128+64+32
-        out     dx, al ; номер головки/номер диска
-
-        call    wait_for_hd_idle
-
-        cmp     [hd_error], 0
-        jne     hd_write_error
-
-; ATA with 28 or 48 bit for sector number?
-        mov     eax, [edi]
-        cmp     eax, 0x10000000
-        jae     .lba48
-;--------------------------------------
-.lba28:
-        pushfd
-        cli
-        xor     eax, eax
-        mov     edx, [hdbase]
-        inc     edx
-        out     dx, al ; ATA Features регистр "особенностей"
-        inc     edx
-        inc     eax
-        out     dx, al ; ATA Sector Counter счётчик секторов
-        inc     edx
-        mov     eax, [edi]      ; eax = sector to write
-        out     dx, al ; LBA Low LBA (7:0)
-        shr     eax, 8
-        inc     edx
-        out     dx, al ; LBA Mid LBA (15:8)
-        shr     eax, 8
-        inc     edx
-        out     dx, al ; LBA High LBA (23:16)
-        shr     eax, 8
-        inc     edx
-        and     al, 1+2+4+8 ; LBA (27:24)
-        add     al, byte [hdid]
-        add     al, 128+64+32
-        out     dx, al ; номер головки/номер диска
-        inc     edx
-        mov     al, 30h ; WRITE SECTOR(S)
-        out     dx, al ; ATACommand регистр команд
-        jmp     .continue
-;--------------------------------------
-.lba48:
-        pushfd
-        cli
-        xor     eax, eax
-        mov     edx, [hdbase]
-        inc     edx
-        out     dx, al ; Features Previous Reserved
-        out     dx, al ; Features Current Reserved
-        inc     edx
-        out     dx, al ; Sector Count Previous Sector count (15:8)
-        inc     eax
-        out     dx, al ; Sector Count Current Sector count (7:0)
-        inc     edx
-        mov     eax, [edi]
-        rol     eax, 8
-        out     dx, al ; LBA Low Previous LBA (31:24)
-        xor     eax, eax ; because only 32 bit cache
-        inc     edx
-        out     dx, al ; LBA Mid Previous LBA (39:32)
-        inc     edx
-        out     dx, al ; LBA High Previous LBA (47:40)
-        sub     edx, 2
-        mov     eax, [edi]
-        out     dx, al ; LBA Low Current LBA (7:0)
-        shr     eax, 8
-        inc     edx
-        out     dx, al ; LBA Mid Current LBA (15:8)
-        shr     eax, 8
-        inc     edx
-        out     dx, al ; LBA High Current LBA (23:16)
-        inc     edx
-        mov     al, byte [hdid]
-        add     al, 128+64+32
-        out     dx, al ; номер головки/номер диска
-        inc     edx
-        mov     al, 34h ; WRITE SECTOR(S) EXT
-        out     dx, al ; ATACommand регистр команд
-;--------------------------------------
-.continue:
-        popfd
-        call    wait_for_sector_buffer
-
-        cmp     [hd_error], 0
-        jne     hd_write_error
-
-        push    ecx esi
-
-        pushfd
-        cli
-        mov     ecx, 256
-        mov     edx, [hdbase]
-        cld
+        jmp     @f
+.write:
         rep outsw
+@@:
         popfd
-
-        pop     esi ecx
+        add     edx, 7
+        dec     dword [blockSize]
+        jnz     .sectorTransfer
         ret
-;-----------------------------------------------------------------------------
-align 4
-save_hd_wait_timeout:
-        push    eax
-        mov     eax, [timer_ticks]
-        add     eax, 300        ; 3 sec timeout
-        mov     [hd_wait_timeout], eax
-        pop     eax
-        ret
-;-----------------------------------------------------------------------------
-align 4
-check_hd_wait_timeout:
-        push    eax
-        mov     eax, [hd_wait_timeout]
-        cmp     [timer_ticks], eax
-        jg      hd_timeout_error
-
-        pop     eax
-        mov     [hd_error], 0
-        ret
-;-----------------------------------------------------------------------------
-hd_timeout_error:
-        if lang eq sp
-        DEBUGF 1,"K : FS - HD tiempo de espera agotado\n"
-        else
-        DEBUGF 1,"K : FS - HD timeout\n"
-        end if
-        mov     [hd_error], 1
-        pop     eax
-        ret
-;-----------------------------------------------------------------------------
+.hd_error:
+        cmp     bl, 30h
+        jnc     hd_write_error
+;-----------------------------------------------------------------
 hd_read_error:
         if lang eq sp
         DEBUGF 1,"K : FS - HD error de lectura\n"
         else
         DEBUGF 1,"K : FS - HD read error\n"
         end if
-        pop     edx eax
+        stc
         ret
-;-----------------------------------------------------------------------------
-hd_write_error_dma:
-        pop     esi
+;-----------------------------------------------------------------
 hd_write_error:
         if lang eq sp
         DEBUGF 1,"K : FS - HD error de escritura\n"
         else
         DEBUGF 1,"K : FS - HD write error\n"
         end if
+        stc
         ret
-;-----------------------------------------------------------------------------
-align 4
-wait_for_hd_idle:
-        push    eax edx
-
-        call    save_hd_wait_timeout
-
-        mov     edx, [hdbase]
-        add     edx, 0x7
-;--------------------------------------
-align 4
-wfhil1:
-        call    check_hd_wait_timeout
-
-        cmp     [hd_error], 0
-        jne     @f
-
-        in      al, dx
-        test    al, 128
-        jnz     wfhil1
-;--------------------------------------
+;-----------------------------------------------------------------
+save_hd_wait_timeout:
+        mov     eax, [timer_ticks]
+        add     eax, 300        ; 3 sec timeout
+        mov     [hd_wait_timeout], eax
+        ret
+;-----------------------------------------------------------------
+check_hd_wait_timeout:
+        mov     eax, [timer_ticks]
+        cmp     [hd_wait_timeout], eax
+        jc      @f
+        ret
 @@:
-        pop     edx eax
+        if lang eq sp
+        DEBUGF 1,"K : FS - HD tiempo de espera agotado\n"
+        else
+        DEBUGF 1,"K : FS - HD timeout\n"
+        end if
+        stc
         ret
-;-----------------------------------------------------------------------------
-align 4
-wait_for_sector_buffer:
-        push    eax edx
-
-        mov     edx, [hdbase]
-        add     edx, 0x7
-
-        call    save_hd_wait_timeout
-;--------------------------------------
-align 4
-hdwait_sbuf:                  ; wait for sector buffer to be ready
-        call    check_hd_wait_timeout
-
-        cmp     [hd_error], 0
-        jne     @f
-
-        in      al, dx
-        test    al, 8
-        jz      hdwait_sbuf
-
-        mov     [hd_error], 0
-
-        cmp     [hd_setup], 1   ; do not mark error for setup request
-        je      buf_wait_ok
-
-        test    al, 1           ; previous command ended up with an error
-        jz      buf_wait_ok
-;--------------------------------------
-@@:
-        mov     [hd_error], 1
-;--------------------------------------
-buf_wait_ok:
-        pop     edx eax
-        ret
-;-----------------------------------------------------------------------------
-irq14_num equ byte 14
-irq15_num equ byte 15
-;-----------------------------------------------------------------------------
-align 4
-wait_for_sector_dma_ide0:
-        push    eax
-        push    edx
-        call    save_hd_wait_timeout
-;--------------------------------------
-align 4
-.wait:
-        call    change_task
-
-        cmp     [IDE_common_irq_param], 0
-        jz      .done
-
-        call    check_hd_wait_timeout
-
-        cmp     [hd_error], 0
-        jz      .wait
-
-        mov     [IDE_common_irq_param], 0
-;--------------------------------------
-.done:
-        pop     edx
-        pop     eax
-        ret
-;-----------------------------------------------------------------------------
-align 4
-wait_for_sector_dma_ide1:
-        push    eax
-        push    edx
-        call    save_hd_wait_timeout
-;--------------------------------------
-align 4
-.wait:
-        call    change_task
-
-        cmp     [IDE_common_irq_param], 0
-        jz      .done
-
-        call    check_hd_wait_timeout
-
-        cmp     [hd_error], 0
-        jz      .wait
-
-        mov     [IDE_common_irq_param], 0
-;--------------------------------------
-.done:
-        pop     edx
-        pop     eax
-        ret
-;-----------------------------------------------------------------------------
-iglobal
-align 4
-; note that IDE descriptor table must be 4-byte aligned
-; and do not cross 4K boundary
-IDE_descriptor_table:
-        dd IDE_DMA
-        dw 0x2000
-        dw 0x8000
-
-dma_cur_sector  dd not 40h
-dma_hdpos       dd 0
-IDE_common_irq_param db 0
-endg
-;-----------------------------------------------------------------------------
-uglobal
-; all uglobals are zeroed at boot
-cache_chain_ptr     dd 0
-cache_chain_size    db 0
-allow_dma_access    db 0
-endg
-;-----------------------------------------------------------------------------
+;-----------------------------------------------------------------
 align 4
 IDE_irq_14_handler:
-;        DEBUGF  1, 'K : IDE_irq_14_handler %x\n', [IDE_common_irq_param]:2
-        cmp     [IDE_common_irq_param], irq14_num
-        jne     .exit
-
-        pushfd
-        cli
-        pushad
-        mov     [IDE_common_irq_param], 0
-        mov     ecx, [IDE_controller_pointer]
-        mov     dx, [ecx+IDE_DATA.RegsBaseAddres]
-; test whether it is our interrupt?
-        add     edx, 2
-        in      al, dx
-        test    al, 100b
-        jz      @f
-; clear Bus Master IDE Status register
-; clear Interrupt bit
-        out     dx, al
-; clear Bus Master IDE Command register
-        sub     edx, 2
-        xor     eax, eax
-        out     dx, al
-; read status register and remove the interrupt request
-        mov     edx, [hdbase]
-        add     edx, 0x7
-        in      al, dx
-        popad
-        popfd
-        mov     al, 1
-        ret
-;--------------------------------------
-@@:
-        popad
-        popfd
-;--------------------------------------
-.exit:
-        mov     al, 0
-        ret
-;-----------------------------------------------------------------------------
-align 4
 IDE_irq_15_handler:
-;        DEBUGF  1, 'K : IDE_irq_15_handler %x\n', [IDE_common_irq_param]:2
-        cmp     [IDE_common_irq_param], irq15_num
-        jne     .exit
-
-        pushfd
-        cli
-        pushad
-        mov     [IDE_common_irq_param], 0
-        mov     ecx, [IDE_controller_pointer]
-        mov     dx, [ecx+IDE_DATA.RegsBaseAddres]
-        add     dx, 8
-; test whether it is our interrupt?
-        add     edx, 2
-        in      al, dx
-        test    al, 100b
-        jz      @f
-; clear Bus Master IDE Status register
-; clear Interrupt bit
-        out     dx, al
-; clear Bus Master IDE Command register
-        sub     edx, 2
-        mov     al, 0
-        out     dx, al
-; read status register and remove the interrupt request
-        mov     edx, [hdbase]
-        add     edx, 0x7
-        in      al, dx
-        popad
-        popfd
-        mov     al, 1
-        ret
-;--------------------------------------
-@@:
-        popad
-        popfd
-;--------------------------------------
-.exit:
-        mov     al, 0
-        ret
-;-----------------------------------------------------------------------------
-align 4
 IDE_common_irq_handler:
-;        DEBUGF  1, 'K : IDE_common_irq_handler %x\n', [IDE_common_irq_param]:2
-        pushfd
-        cli
+; DEBUGF  1, 'K : IDE_irq_handler %x\n', [IDE_common_irq_param]:2
         cmp     [IDE_common_irq_param], 0
-        je      .exit
-
+        jz      .exit
+        pushfd
+        cli
         pushad
-        xor     ebx, ebx
         mov     ecx, [IDE_controller_pointer]
         mov     dx, [ecx+IDE_DATA.RegsBaseAddres]
-        mov     eax, IDE_common_irq_param
-        cmp     [eax], irq14_num
-        mov     [eax], bl
-        je      @f
-
-        add     dx, 8
-;--------------------------------------
-@@:
-; test whether it is our interrupt?
-        add     edx, 2
-        in      al, dx
-        test    al, 100b
+        cmp     [IDE_common_irq_param], 14
         jz      @f
-; clear Bus Master IDE Status register
-; clear Interrupt bit
-        out     dx, al
-; clear Bus Master IDE Command register
+        add     dx, 8
+@@:
+        add     edx, 2  ; Bus Master IDE Status register
+        in      al, dx
+        test    al, 4
+        jz      @f
+        mov     [IDE_common_irq_param], 0
+        out     dx, al  ; clear Interrupt bit
         sub     edx, 2
         xor     eax, eax
-        out     dx, al
-; read status register and remove the interrupt request
+        out     dx, al  ; clear Bus Master IDE Command register
         mov     edx, [hdbase]
-        add     edx, 0x7
-        in      al, dx
+        add     edx, 7
+        in      al, dx  ; read status register
+        mov     eax, [eventPointer]
+        mov     ebx, [eventID]
+        xor     edx, edx
+        xor     esi, esi
+        call    raise_event
         popad
         popfd
-        mov     al, 1
+        mov     al, 1   ; remove the interrupt request
         ret
-;--------------------------------------
 @@:
         popad
-;--------------------------------------
+        popfd
 .exit:
-        popfd
-        mov     al, 0
+        xor     eax, eax    ; not our interrupt
         ret
-;-----------------------------------------------------------------------------
-align 4
-hd_read_dma:
-        push    eax
-        push    edx
-        mov     edx, [dma_hdpos]
-        cmp     edx, [hdpos]
-        jne     .notread
-
-        mov     edx, [dma_cur_sector]
-        cmp     eax, edx
-        jb      .notread
-
-        add     edx, 15
-        cmp     [esp+4], edx
-        ja      .notread
-
-        mov     eax, [esp+4]
-        sub     eax, [dma_cur_sector]
-        shl     eax, 9
-        add     eax, (OS_BASE+IDE_DMA)
-
-        push    ecx esi
-        mov     esi, eax
-        mov     ecx, 512/4
-        cld
-        rep movsd
-        pop     esi ecx
-
-        pop     edx
-        pop     eax
-        ret
-;--------------------------------------
-.notread:
-; set data for PRD Table
-        mov     eax, IDE_descriptor_table
-        mov     dword [eax], IDE_DMA
-        mov     word [eax+4], 0x2000
-        sub     eax, OS_BASE
-; select controller Primary or Secondary
-        mov     ecx, [IDE_controller_pointer]
-        mov     dx, [ecx+IDE_DATA.RegsBaseAddres]
-
-        push    eax
-        mov     eax, [hdpos]
-        dec     eax
-        test    eax, 10b
-        pop     eax
-        jz      @f
-
-        add     edx, 8
-;--------------------------------------
-@@:
-        push    edx
-; Bus Master IDE PRD Table Address
-        add     edx, 4
-; save IDE_descriptor_table
-        out     dx, eax
-        pop     edx
-; clear Bus Master IDE Command register
-        mov     al, 0
-        out     dx, al
-; clear Bus Master IDE Status register
-; clear Error bit and Interrupt bit
-        add     edx, 2
-        mov     al, 6 ; 110b
-        out     dx, al
-; Select the desired drive
-        mov     edx, [hdbase]
-        add     edx, 6   ; адрес регистра головок
-        mov     al, byte [hdid]
-        add     al, 128+64+32
-        out     dx, al ; номер головки/номер диска
-
-        call    wait_for_hd_idle
-
-        cmp     [hd_error], 0
-        jnz     hd_read_error
-; ATA with 28 or 48 bit for sector number?
-        mov     eax, [esp+4]
-; -10h because the PreCache hits the boundary between lba28 and lba48
-; 10h = 16  - size of PreCache
-        cmp     eax, 0x10000000-10h
-        jae     .lba48
-;--------------------------------------
-.lba28:
-        pushfd
-        cli
-        xor     eax, eax
-        mov     edx, [hdbase]
-        inc     edx
-        out     dx, al ; ATA Features регистр "особенностей"
-        inc     edx
-        mov     eax, 10h ; Sector Counter = 16 ; PreCache
-        out     dx, al ; ATA Sector Counter счётчик секторов
-        inc     edx
-        mov     eax, [esp+4+4]
-        out     dx, al ; LBA Low LBA (7:0)
-        shr     eax, 8
-        inc     edx
-        out     dx, al ; LBA Mid LBA (15:8)
-        shr     eax, 8
-        inc     edx
-        out     dx, al ; LBA High LBA (23:16)
-        shr     eax, 8
-        inc     edx
-        and     al, 0xF ; LBA (27:24)
-        add     al, byte [hdid]
-        add     al, 11100000b
-        out     dx, al ; номер головки/номер диска
-        inc     edx
-        mov     al, 0xC8 ; READ DMA
-        out     dx, al ; ATACommand регистр команд
-        jmp     .continue
-;--------------------------------------
-.lba48:
-        pushfd
-        cli
-        xor     eax, eax
-        mov     edx, [hdbase]
-        inc     edx
-        out     dx, al ; Features Previous Reserved
-        out     dx, al ; Features Current Reserved
-        inc     edx
-        out     dx, al ; Sector Count Previous Sector count (15:8)
-        mov     eax, 10h ; Sector Counter = 16 PreCache
-        out     dx, al ; Sector Count Current Sector count (7:0)
-        inc     edx
-        mov     eax, [esp+4+4]
-        rol     eax, 8
-        out     dx, al ; LBA Low Previous LBA (31:24)
-        xor     eax, eax ; because only 32 bit cache
-        inc     edx
-        out     dx, al ; LBA Mid Previous LBA (39:32)
-        inc     edx
-        out     dx, al ; LBA High Previous LBA (47:40)
-        sub     edx, 2
-        mov     eax, [esp+4+4]
-        out     dx, al ; LBA Low Current LBA (7:0)
-        shr     eax, 8
-        inc     edx
-        out     dx, al ; LBA Mid Current LBA (15:8)
-        shr     eax, 8
-        inc     edx
-        out     dx, al ; LBA High Current LBA (23:16)
-        inc     edx
-        mov     al, byte [hdid]
-        add     al, 128+64+32
-        out     dx, al ; номер головки/номер диска
-        inc     edx
-        mov     al, 25h ; READ DMA EXT
-        out     dx, al ; ATACommand регистр команд
-;--------------------------------------
-.continue:
-; select controller Primary or Secondary
-        mov     ecx, [IDE_controller_pointer]
-        mov     dx, [ecx+IDE_DATA.RegsBaseAddres]
-
-        mov     eax, [hdpos]
-        dec     eax
-        test    eax, 10b
-        jz      @f
-
-        add     dx, 8
-;--------------------------------------
-@@:
-; set write to memory and Start Bus Master
-        mov     al, 9
-        out     dx, al
-
-        mov     eax, [hdpos]
-        dec     eax
-        test    eax, 10b
-        jnz     .ide1
-
-        mov     [IDE_common_irq_param], irq14_num
-        jmp     @f
-;--------------------------------------
-.ide1:
-        mov     [IDE_common_irq_param], irq15_num
-;--------------------------------------
-@@:
-        popfd
-; wait for interrupt
-        mov     eax, [hdpos]
-        dec     eax
-        test    eax, 10b
-        jnz     .wait_ide1
-
-        call    wait_for_sector_dma_ide0
-        jmp     @f
-;--------------------------------------
-.wait_ide1:
-        call    wait_for_sector_dma_ide1
-;--------------------------------------
-@@:
-        cmp     [hd_error], 0
-        jnz     hd_read_error
-
-        mov     eax, [hdpos]
-        mov     [dma_hdpos], eax
-        pop     edx
-        pop     eax
-
-        mov     [dma_cur_sector], eax
-        jmp     hd_read_dma
-;-----------------------------------------------------------------------------
-cache_write_dma:
-        mov     eax, [cache_chain_ptr] ; for what?
-        push    esi
-; set data for PRD Table
-        mov     eax, IDE_descriptor_table
-        mov     edx, eax
-
-        pusha
-        mov     edi, (OS_BASE+IDE_DMA)
-        mov     dword [edx], IDE_DMA
-        movzx   ecx, [cache_chain_size]
-        shl     ecx, 9
-        mov     word [edx+4], cx
-        shr     ecx, 2
-        cld
-        rep movsd
-        popa
-
-        sub     eax, OS_BASE
-; select controller Primary or Secondary
-        mov     ecx, [IDE_controller_pointer]
-        mov     dx, [ecx+IDE_DATA.RegsBaseAddres]
-
-        push    eax
-        mov     eax, [hdpos]
-        dec     eax
-        test    eax, 10b
-        pop     eax
-        jz      @f
-
-        add     edx, 8
-;--------------------------------------
-@@:
-        push    edx
-; Bus Master IDE PRD Table Address
-        add     edx, 4
-; save IDE_descriptor_table
-        out     dx, eax
-        pop     edx
-; clear Bus Master IDE Command register
-        mov     al, 0
-        out     dx, al
-; clear Bus Master IDE Status register
-; clear Error bit and Interrupt bit
-        add     edx, 2
-        mov     al, 6
-        out     dx, al
-; Select the desired drive
-        mov     edx, [hdbase]
-        add     edx, 6   ; адрес регистра головок
-        mov     al, byte [hdid]
-        add     al, 128+64+32
-        out     dx, al ; номер головки/номер диска
-
-        call    wait_for_hd_idle
-
-        cmp     [hd_error], 0
-        jnz     hd_write_error_dma
-; ATA with 28 or 48 bit for sector number?
-        mov     esi, [cache_chain_ptr]
-        mov     eax, [esi]
-; -40h because the PreCache hits the boundary between lba28 and lba48
-; 40h = 64  - the maximum number of sectors to be written for one command
-        cmp     eax, 0x10000000-40h
-        jae     .lba48
-;--------------------------------------
-.lba28:
-        pushfd
-        cli
-        xor     eax, eax
-        mov     edx, [hdbase]
-        inc     edx
-        out     dx, al ; ATA Features регистр "особенностей"
-        inc     edx
-        mov     al, [cache_chain_size] ; Sector Counter
-        out     dx, al ; ATA Sector Counter счётчик секторов
-        inc     edx
-        mov     eax, [esi]
-        out     dx, al ; LBA Low LBA (7:0)
-        shr     eax, 8
-        inc     edx
-        out     dx, al ; LBA Mid LBA (15:8)
-        shr     eax, 8
-        inc     edx
-        out     dx, al ; LBA High LBA (23:16)
-        shr     eax, 8
-        inc     edx
-        and     al, 0xF ; LBA (27:24)
-        add     al, byte [hdid]
-        add     al, 11100000b
-        out     dx, al ; номер головки/номер диска
-        inc     edx
-        mov     al, 0xCA ; WRITE DMA
-        out     dx, al ; ATACommand регистр команд
-        jmp     .continue
-;--------------------------------------
-.lba48:
-        pushfd
-        cli
-        xor     eax, eax
-        mov     edx, [hdbase]
-        inc     edx
-        out     dx, al ; Features Previous Reserved
-        out     dx, al ; Features Current Reserved
-        inc     edx
-        out     dx, al ; Sector Count Previous Sector count (15:8)
-        mov     al, [cache_chain_size] ; Sector Counter
-        out     dx, al ; Sector Count Current Sector count (7:0)
-        inc     edx
-        mov     eax, [esi]
-        rol     eax, 8
-        out     dx, al ; LBA Low Previous LBA (31:24)
-        xor     eax, eax ; because only 32 bit cache
-        inc     edx
-        out     dx, al ; LBA Mid Previous LBA (39:32)
-        inc     edx
-        out     dx, al ; LBA High Previous LBA (47:40)
-        sub     edx, 2
-        mov     eax, [esi]
-        out     dx, al ; LBA Low Current LBA (7:0)
-        shr     eax, 8
-        inc     edx
-        out     dx, al ; LBA Mid Current LBA (15:8)
-        shr     eax, 8
-        inc     edx
-        out     dx, al ; LBA High Current LBA (23:16)
-        inc     edx
-        mov     al, byte [hdid]
-        add     al, 128+64+32
-        out     dx, al ; номер головки/номер диска
-        inc     edx
-        mov     al, 35h ; WRITE DMA EXT
-        out     dx, al ; ATACommand регистр команд
-;--------------------------------------
-.continue:
-; select controller Primary or Secondary
-        mov     ecx, [IDE_controller_pointer]
-        mov     dx, [ecx+IDE_DATA.RegsBaseAddres]
-
-        mov     eax, [hdpos]
-        dec     eax
-        test    eax, 10b
-        jz      @f
-
-        add     dx, 8
-;--------------------------------------
-@@:
-; set write to device and Start Bus Master
-        mov     al, 1
-        out     dx, al
-
-        mov     eax, [hdpos]
-        dec     eax
-        test    eax, 10b
-        jnz     .ide1
-
-        mov     [IDE_common_irq_param], irq14_num
-        jmp     @f
-;--------------------------------------
-.ide1:
-        mov     [IDE_common_irq_param], irq15_num
-;--------------------------------------
-@@:
-        popfd
-; wait for interrupt
-        mov     [dma_cur_sector], not 0x40
-
-        mov     eax, [hdpos]
-        dec     eax
-        test    eax, 10b
-        jnz     .wait_ide1
-
-        call    wait_for_sector_dma_ide0
-
-        jmp     @f
-;--------------------------------------
-.wait_ide1:
-        call    wait_for_sector_dma_ide1
-;--------------------------------------
-@@:
-        cmp     [hd_error], 0
-        jnz     hd_write_error_dma
-        pop     esi
-        ret
-;-----------------------------------------------------------------------------
+;-----------------------------------------------------------------
 proc clear_pci_ide_interrupts
         mov     esi, pcidev_list
-;--------------------------------------
 align 4
 .loop:
         mov     esi, [esi+PCIDEV.fd]
@@ -1265,8 +598,6 @@ align 4
         in      al, dx
         DEBUGF 1,'-> %x\n',al
         jmp     .loop
-;--------------------------------------
 .done:
         ret
 endp
-;-----------------------------------------------------------------------------
