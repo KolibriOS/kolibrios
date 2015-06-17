@@ -68,17 +68,27 @@ eventPointer            dd ?
 eventID                 dd ?
 endg
 ;-----------------------------------------------------------------
-proc ide_read stdcall uses esi edi ebx, \
+ide_read:
+        mov     al, 25h     ; READ DMA EXT
+        jmp     ide_read_write
+
+ide_write:
+        mov     al, 35h     ; WRITE DMA EXT
+; fall through to ide_read_write
+
+proc ide_read_write stdcall uses esi edi ebx, \
         hd_data, buffer, startsector:qword, numsectors
         ; hd_data = pointer to hd*_data
-        ; buffer = pointer to buffer for data
+        ; buffer = pointer to buffer with/for data
         ; startsector = 64-bit start sector
         ; numsectors = pointer to number of sectors on input,
-        ;  must be filled with number of sectors really read
+        ;  must be filled with number of sectors really read/written
 locals
 sectors_todo    dd      ?
 channel_lock    dd      ?
+operation       db      ?
 endl
+        mov     [operation], al
 ; get number of requested sectors and say that no sectors were read yet
         mov     ecx, [numsectors]
         mov     eax, [ecx]
@@ -108,96 +118,8 @@ endl
         mov     ax, word [startsector+4]
         mov     [sector+4], ax
         mov     esi, [buffer]
-        mov     bl, 25h     ; READ DMA EXT
-        mov     ecx, [hdpos]
-        dec     ecx
-        shr     ecx, 2
-        imul    ecx, sizeof.IDE_DATA
-        add     ecx, IDE_controller_1
-        mov     [IDE_controller_pointer], ecx
-        mov     eax, [hdpos]
-        dec     eax
-        and     eax, 11b
-        shr     eax, 1
-        add     eax, ecx
-        cmp     [eax+IDE_DATA.dma_hdd_channel_1], 1
-        jz      .next
-        dec     bl      ; READ SECTOR(S) EXT
         mov     edi, esi
-; worker procedures take max 8000h sectors per time
-; loop until all sectors will be processed
-.next:
-        mov     ecx, 8000h
-        cmp     ecx, [sectors_todo]
-        jbe     @f
-        mov     ecx, [sectors_todo]
-@@:
-        mov     [blockSize], ecx
-        push    ecx
-        call    IDE_transfer
-        pop     ecx
-        jc      .out
-        mov     eax, [numsectors]
-        add     [eax], ecx
-        sub     [sectors_todo], ecx
-        jz      .out
-        add     [sector], ecx
-        adc     word [sector+4], 0
-        jmp     .next
-; loop is done, either due to error or because everything is done
-; release the global lock and return the corresponding status
-.out:
-        sbb     eax, eax
-        push    eax
-        mov     ecx, [channel_lock]
-        call    mutex_unlock
-        mov     ecx, ide_mutex
-        call    mutex_unlock
-        pop     eax
-        ret
-endp
-;-----------------------------------------------------------------
-proc ide_write stdcall uses esi edi ebx, \
-        hd_data, buffer, startsector:qword, numsectors
-        ; hd_data = pointer to hd*_data
-        ; buffer = pointer to buffer with data
-        ; startsector = 64-bit start sector
-        ; numsectors = pointer to number of sectors on input,
-        ;  must be filled with number of sectors really written
-locals
-sectors_todo    dd      ?
-channel_lock    dd      ?
-endl
-; get number of requested sectors and say that no sectors were read yet
-        mov     ecx, [numsectors]
-        mov     eax, [ecx]
-        mov     dword [ecx], 0
-        mov     [sectors_todo], eax
-; acquire the global lock
-        mov     ecx, ide_mutex
-        call    mutex_lock
-        mov     ecx, [hd_data]
-        mov     ecx, [ecx+HD_DATA.hdpos]
-        dec     ecx
-        shr     ecx, 1
-        shl     ecx, 2
-        mov     ecx, [ecx + ide_mutex_table]
-        mov     [channel_lock], ecx
-        call    mutex_lock
-; prepare worker procedures variables
-        mov     ecx, [hd_data]
-        mov     eax, [ecx+HD_DATA.hdbase]
-        mov     [hdbase], eax
-        mov     eax, [ecx+HD_DATA.hdid]
-        mov     [hdid], eax
-        mov     eax, [ecx+HD_DATA.hdpos]
-        mov     [hdpos], eax
-        mov     eax, dword [startsector]
-        mov     [sector], eax
-        mov     ax, word [startsector+4]
-        mov     [sector+4], ax
-        mov     esi, [buffer]
-        mov     bl, 35h     ; WRITE DMA EXT
+        mov     bl, [operation]
         mov     ecx, [hdpos]
         dec     ecx
         shr     ecx, 2
@@ -211,7 +133,7 @@ endl
         add     eax, ecx
         cmp     [eax+IDE_DATA.dma_hdd_channel_1], 1
         jz      .next
-        dec     bl      ; WRITE SECTOR(S) EXT
+        dec     ebx     ; READ/WRITE SECTOR(S) EXT
 ; worker procedures take max 8000h sectors per time
 ; loop until all sectors will be processed
 .next:
