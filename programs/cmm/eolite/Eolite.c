@@ -36,6 +36,7 @@
 	?define T_NO "Нет"
 	?define T_CANCEL "Отмена"
 	?define T_CREATE "Создать"
+	?define T_RENAME "Переименовать"
 	?define FILE_EXISTS "Файл с таким именем существует"
 	?define FOLDER_EXISTS "Папка с таким именем существует"
 	?define T_DEL_ERROR_1 "Ошибка. Папка не пустая."
@@ -62,6 +63,7 @@
 	?define T_NO "Ei"
 	?define T_CANCEL "Cancel"
 	?define T_CREATE "Create"
+	?define T_RENAME "Rename"
 	?define FILE_EXISTS "The file with the same name exists"
 	?define FOLDER_EXISTS "A folder with the same name exists"
 	?define T_DEL_ERROR_1 "Viga. Kataloog ei ole t№hi."
@@ -88,6 +90,7 @@
 	?define T_NO "No"
 	?define T_CANCEL "Cancel"
 	?define T_CREATE "Create"
+	?define T_RENAME "Rename"
 	?define FILE_EXISTS "The file with the same name exists"
 	?define FOLDER_EXISTS "A folder with the same name exists"
 	?define T_DEL_ERROR_1 "Error. Folder isn't empty."
@@ -107,8 +110,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.78"
-#define ABOUT_TITLE "Eolite v2.78"
+#define TITLE "Eolite File Manager v2.8"
+#define ABOUT_TITLE "Eolite v2.8"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -130,7 +133,6 @@ byte
 	new_element_name[256],
 	temp[4096];	 
 byte
-	rename_active=0,
 	del_active=0,
 	new_element_active=0,
 	show_dev_name=1,
@@ -209,7 +211,6 @@ void main()
 				edit_box_mouse stdcall(#new_file_ed);
 				break;
 			}				
-			if (rename_active) { edit_box_mouse stdcall(#edit2); break; }
 			
 			m.get();
 			
@@ -359,7 +360,6 @@ void main()
 				KillProcess(about_window);
 				ExitProcess();
 			}
-			if (rename_active) break;
 			if (del_active)
 			{
 				IF (id==301) || (id==302) Del_File(302-id);
@@ -489,10 +489,9 @@ void main()
 							List_ReDraw();
 							break;
 					case ASCII_KEY_ESC:
-							IF (rename_active==1) ReName(false);
 							break;
 					case ASCII_KEY_ENTER:
-							IF (rename_active==1) {ReName(true); break;}
+							//IF (rename_active==1) {ReName(true); break;}
 							Open(0);
 							break; 
 					case 074: //menu
@@ -629,7 +628,6 @@ void draw_window()
 	Open_Dir(#path,ONLY_SHOW);
 	if (del_active) Del_Form();
 	if (new_element_active) NewElement_Form(new_element_active);
-	if (rename_active) FnProcess(2);
 }
 
 
@@ -957,47 +955,6 @@ void Del_File(byte dodel)
 }
 
 
-void ReName(byte rename)
-{
-	int del_rezult, copy_rezult;
-	char edit_name[256];
-	rename_active=0;
-	edit2.flags=64;
-	if (rename==true)
-	{
-		strcpy(#temp, #path);
-		strcpy(#edit_name, #file_name); //save edit name to select it later
-		strcat(#temp, #file_name);
-		if (strcmpi(#file_path,#temp)!=0) && (file_name)
-		if (itdir)
-		{
-			if (del_rezult = DeleteFile(#file_path))
-			{
-				Write_Error(del_rezult);
-				ShowMessage(T_DEL_ERROR_1, 150);
-				return;
-			}
-			if (CreateDir(#temp)) CreateDir(#file_path);
-			Open_Dir(#path,WITH_REDRAW);
-			SelectFile(#edit_name);
-		}
-		else
-		{
-			if (copy_rezult = CopyFile(#file_path,#temp))
-			{
-				Write_Error(copy_rezult);
-			}
-			else
-			{
-				Del_File(true);
-				SelectFile(#edit_name);
-			}
-		}
-	}
-	Line_ReDraw(col_selec,files.current);
-}
-
-
 void SelectFile(dword that_file)
 {
 	files.first=files.current=0;
@@ -1069,46 +1026,76 @@ void ShowOpenWithDialog()
 void NewElement(byte newf)
 {
 	BDVK element_info;
-	//char edit_name[256];
-	//strcpy(#edit_name, #file_name);
+	int del_rezult, copy_rezult;
 	if (newf)
 	{
 		strcpy(#temp, #path);
-		//strcpy(#edit_name, new_file_ed.text);
 		strcat(#temp, new_file_ed.text);
-		if (new_element_active==1)
+		switch(new_element_active)
 		{
-			GetFileInfo(#temp, #element_info);
-			if (EAX==5)
-			{
-				WriteFile(0, 0, #temp);
-				if (EAX)
+			case 1:
+				GetFileInfo(#temp, #element_info);
+				if (EAX==5)
 				{
-					Write_Error(EAX);
-					ShowMessage(NOT_CREATE_FILE, 150);
+					WriteFile(0, 0, #temp);
+					if (EAX)
+					{
+						Write_Error(EAX);
+						ShowMessage(NOT_CREATE_FILE, 150);
+					}
 				}
-			}
-			else
-			{
-				notify(FILE_EXISTS);
-			}
-		}
-		else
-		{
-			GetFileInfo(#temp, #element_info);
-			if (EAX==5)
-			{
-				CreateDir(#temp);
-				if (EAX)
+				else
 				{
-					Write_Error(EAX);
-					ShowMessage(NOT_CREATE_FOLDER, 150);
+					notify(FILE_EXISTS);
 				}
-			}
-			else
-			{
-				notify(FOLDER_EXISTS);
-			}
+			case 2:
+				GetFileInfo(#temp, #element_info);
+				if (EAX==5)
+				{
+					CreateDir(#temp);
+					if (EAX)
+					{
+						Write_Error(EAX);
+						ShowMessage(NOT_CREATE_FOLDER, 150);
+					}
+				}
+				else
+				{
+					notify(FOLDER_EXISTS);
+				}
+			case 3:
+				GetFileInfo(#temp, #element_info);
+				if (EAX==5)
+				{
+					if (itdir)
+					{
+						if (del_rezult = DeleteFile(#file_path))
+						{
+							Write_Error(del_rezult);
+							ShowMessage(T_DEL_ERROR_1, 150);
+							return;
+						}
+						if (CreateDir(#temp)) CreateDir(#file_path);
+						Open_Dir(#path,WITH_REDRAW);
+						SelectFile(new_file_ed.text);
+					}
+					else
+					{
+						if (copy_rezult = CopyFile(#file_path,#temp))
+						{
+							Write_Error(copy_rezult);
+						}
+						else
+						{
+							Del_File(true);
+							SelectFile(new_file_ed.text);
+						}
+					}
+				}
+				else
+				{
+					notify(FILE_EXISTS);
+				}
 		}
 		new_element_active = 0;
 		Open_Dir(#path,WITH_REDRAW);
@@ -1118,28 +1105,21 @@ void NewElement(byte newf)
 	Open_Dir(#path,WITH_REDRAW);
 }
 
-void NewElement_Form(byte crt)
+void NewElement_Form(byte crt, dword strng)
 {
 	int dform_x=files.w-220/2+files.x;
 	if (!new_element_active)
 	{
 		new_element_active = crt;
-		if (new_element_active==1)
-		{
-			strcpy(#new_element_name, T_NEW_FILE);
-			new_file_ed.size = new_file_ed.pos = strlen(T_NEW_FILE);
-		}
-		else
-		{
-			strcpy(#new_element_name, T_NEW_FOLDER);
-			new_file_ed.size = new_file_ed.pos = strlen(T_NEW_FOLDER);
-		}
+		strcpy(#new_element_name, strng);
+		new_file_ed.size = new_file_ed.pos = strlen(strng);
 	}
 	DrawPopup(dform_x,160,220,80,1,sc.work,sc.work_graph);
 	new_file_ed.left = dform_x+27;
 	new_file_ed.top = 180;
 	edit_box_draw  stdcall (#new_file_ed);
-	DrawFlatButton(dform_x+27,208,70,20,301,0xFFB6B5,T_CREATE);
+	IF (new_element_active==3) DrawFlatButton(dform_x+22,208,85,20,301,0xFFB6B5,T_RENAME);
+	ELSE DrawFlatButton(dform_x+27,208,70,20,301,0xFFB6B5,T_CREATE);
 	DrawFlatButton(dform_x+120,208,70,20,302,0xC6DFC6,T_CANCEL);
 }
 
@@ -1161,14 +1141,15 @@ void FnProcess(char N)
 			break;
 		case 2:
 			if (!files.count) break;
-			edit2.flags = 100000000000010b; //set active
-			edit2.left = files.x + 21;
-			edit2.width = files.w - 26;
-			edit2.top=files.current*files.line_h+59;
-			edit2.size=edit2.pos=strlen(#file_name);
-			edit_box_draw  stdcall (#edit2);
-			DrawBar(edit2.left,files.current*files.line_h+58,edit2.width+1,1,0xFFFFCC); //bg
-			rename_active=1;
+			//edit2.flags = 100000000000010b; //set active
+			//edit2.left = files.x + 21;
+			//edit2.width = files.w - 26;
+			//edit2.top=files.current*files.line_h+59;
+			//edit2.size=edit2.pos=strlen(#file_name);
+			//edit_box_draw  stdcall (#edit2);
+			//DrawBar(edit2.left,files.current*files.line_h+58,edit2.width+1,1,0xFFFFCC); //bg
+			//rename_active=1;
+			NewElement_Form(3, #file_name);
 			break;
 		case 3:
 			IF (!itdir) RunProgram("/sys/tinypad", #file_path);
@@ -1198,7 +1179,7 @@ void FnProcess(char N)
 				Write_Error(EAX);
 				ShowMessage(NOT_CREATE_FOLDER, 150);
 			}*/
-			NewElement_Form(2);
+			NewElement_Form(2, T_NEW_FOLDER);
 			break;
 		case 7:
 			/*strcpy(#temp, #path);
@@ -1213,7 +1194,7 @@ void FnProcess(char N)
 				Write_Error(EAX);
 				ShowMessage(NOT_CREATE_FILE, 150);
 			}*/
-			NewElement_Form(1);
+			NewElement_Form(1, T_NEW_FILE);
 			break;
 		case 8:
 			SwitchToAnotherThread();
