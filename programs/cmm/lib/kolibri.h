@@ -32,6 +32,11 @@ char program_path[4096];
 #define BT_HIDE     0x40000000
 #define BT_NOFRAME  0x20000000
 
+//Button mouse
+#define MOUSE_LEFT 100b
+#define MOUSE_RIGHT 001b
+#define MOUSE_CENTER 010b
+
 //ASCII KEYS
 #define ASCII_KEY_BS    008
 #define ASCII_KEY_TAB   009
@@ -57,9 +62,23 @@ char program_path[4096];
 	dword w, h, data;
 };
 
+/**
+ *  The structure of the mouse
+ *  x - coordinate X
+ *  є - coordinate ╙
+ *  xx and yy - time coordinates
+ *  lkm - left mouse button
+ *  pkm - right mouse button
+ *  mkm - mouse wheel
+ *  key - keycode button
+ *  tmp - time keycode 
+ *  down - key event press
+ *  up - key release events
+ *  move - event mouse movements
+ */
 :struct mouse
 {
-	signed x,y,lkm,mkm,pkm,hor,vert;
+	signed x,y,xx,yy,lkm,mkm,pkm,key,tmp,hor,vert,down,up,move;
 	void get();
 };
 
@@ -80,6 +99,7 @@ char program_path[4096];
 	$int	0x40
 	$mov	ebx, eax
 	$mov	ecx, eax
+	key = EAX;
 	$and	eax, 0x00000001
 	$shr	ebx, 1
 	$and	ebx, 0x00000001
@@ -88,6 +108,34 @@ char program_path[4096];
 	lkm = EAX;
 	pkm = EBX;
 	mkm = ECX;
+	
+	//when you release the mouse button
+	if((down)&&!(key)){
+		up = true;
+		down = false;
+		
+		//returns the key code
+		key = tmp;
+		lkm = 1&tmp;
+		pkm = 2&tmp;
+		pkm >>= 1;
+		mkm = 4&tmp;
+		mkm >>= 2;
+	}
+	
+	//when you press the mouse button
+	else {
+		up = false;
+		down = key;
+		if(down)tmp=key;
+		if((xx!=x)||(yy!=y)){
+			move = true;
+			xx = x;
+			yy = y;
+		}
+		else move = false;
+	}
+	
 	EAX = 37; //скролл
 	EBX = 7;
 	$int	0x40
