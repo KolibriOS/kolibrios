@@ -5,7 +5,7 @@
 
 char   os_name[8]   = {'M','E','N','U','E','T','0','1'};
 dword  os_version   = 0x00000001;
-dword  start_addr   = #main;
+dword  start_addr   = #load_init_main;
 dword  final_addr   = #stop+32;
 dword  alloc_mem    = MEMSIZE;
 dword  x86esp_reg   = MEMSIZE;
@@ -33,9 +33,9 @@ char program_path[4096];
 #define BT_NOFRAME  0x20000000
 
 //Button mouse
-#define MOUSE_LEFT 100b
-#define MOUSE_RIGHT 001b
-#define MOUSE_CENTER 010b
+#define MOUSE_LEFT 001b
+#define MOUSE_RIGHT 010b
+#define MOUSE_CENTER 100b
 
 //ASCII KEYS
 #define ASCII_KEY_BS    008
@@ -75,10 +75,14 @@ char program_path[4096];
  *  down - key event press
  *  up - key release events
  *  move - event mouse movements
+ *  click - when clicked
+ *  dblclick - double-click the default 50 ms
  */
+
+dword __TMP_TIME,MOUSE_TIME;
 :struct mouse
 {
-	signed x,y,xx,yy,lkm,mkm,pkm,key,tmp,hor,vert,down,up,move;
+	signed x,y,xx,yy,lkm,mkm,pkm,key,tmp,tmp_time,hor,vert,down,up,move,click,dblclick;
 	void get();
 };
 
@@ -114,7 +118,10 @@ char program_path[4096];
 	if((down)&&!(key)){
 		up = true;
 		down = false;
-		
+		if(!move) click = true;
+		__TMP_TIME = GetStartTime();
+		if(__TMP_TIME-tmp_time<=MOUSE_TIME) dblclick = true;
+		tmp_time = __TMP_TIME;
 		//returns the key code
 		key = tmp;
 		lkm = 1&tmp;
@@ -127,9 +134,14 @@ char program_path[4096];
 	//when you press the mouse button
 	else {
 		up = false;
-		if(key) down = true;
+		click = false;
+		dblclick = false;
+		if(key)
+		{
+			down = true;
+			tmp = key;
+		}
 		else down = false;
-		if(down) tmp = key;
 		if((xx!=x)||(yy!=y)){
 			move = true;
 			xx = x;
@@ -650,4 +662,14 @@ inline fastcall dword GetStartTime()
 	$mov eax,26
 	$mov ebx,9
 	$int 0x40
+}
+
+dword __generator;  // random number generator - для генерации случайных чисел
+
+//The initialization of the initial data before running
+void load_init_main()
+{
+	MOUSE_TIME = 50; //Default 50 ms.
+	__generator = GetStartTime();
+	main();
 }

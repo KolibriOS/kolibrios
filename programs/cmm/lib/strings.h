@@ -39,7 +39,7 @@ inline fastcall signed int strcmp( ESI, EDI)
 }
 */
 
-int strspn(dword text1,text2)
+inline int strspn(dword text1,text2)
 {
 	dword beg;
 	char s1,s2;
@@ -64,7 +64,7 @@ int strspn(dword text1,text2)
 	return ret;
 }
 
-dword strpbrk(dword text1,text2)
+inline dword strpbrk(dword text1,text2)
 {
 	char s,ss;
 	dword beg;
@@ -112,8 +112,15 @@ inline fastcall unsigned int strlen( EDI)
     EAX-=2+ECX;
 }
 
+inline strnlen(dword str, dword maxlen)
+{
+	dword cp;
+	for (cp = str; (maxlen != 0) && (DSBYTE[cp] != '\0'); cp++, maxlen--);
+	return cp - str;
+}
 
-signed int strcmp(dword text1, text2)
+
+inline signed int strcmp(dword text1, text2)
 {
 	char s1,s2;
 	dword p1,p2;
@@ -136,6 +143,30 @@ signed int strcmp(dword text1, text2)
 	return 0;
 }
 
+/*
+signed int strncmp(dword s1, s2, signed n)
+unsigned char _s1,_s2;
+{
+	if (n == 0)
+		return 0;
+	do {
+		_s1 = DSBYTE[s1];
+		_s2 = DSBYTE[s2];
+		if (_s1 != _s2)
+		{
+			$dec s2
+			return _s1 - _s2;
+		}
+		$inc s2
+		if (_s1 == 0)
+			break;
+		$inc s1
+		$dec n
+	} while (n);
+	return 0;
+}
+*/
+
 
 inline fastcall void strcpy( EDI, ESI)
 {
@@ -147,7 +178,7 @@ L2:
     $jnz L2
 }
 
-void strncpy(dword text1, text2, signed len)
+inline dword strncpy(dword text1, text2, signed len)
 	signed o1,o2;
 {
 	o1 = len/4;
@@ -164,6 +195,8 @@ void strncpy(dword text1, text2, signed len)
 		$inc text2 
 		$dec o2
 	}
+	ESBYTE[text1] = 0;
+	return text1;
 }
 
 inline fastcall int strlcpy(dword ESI, EDI, EBX)
@@ -198,7 +231,7 @@ inline fastcall void strtrim( ESI)
 */
 
 byte __isWhite(int s){ if (s==13)||(s==32)||(s==10)||(s==9) return true; return false; }
-void strltrim(dword text){
+inline void strltrim(dword text){
 	int s;
 	dword back_text;
 	back_text = text;
@@ -218,7 +251,7 @@ void strltrim(dword text){
 	};
 }
 
-void strrtrim(dword text)
+inline void strrtrim(dword text)
 {
 	int s;
 	dword p;
@@ -240,7 +273,7 @@ void strrtrim(dword text)
 	if(__isWhite(s)) ESBYTE[p] = 0;
 }
 
-void strtrim(dword text){
+inline void strtrim(dword text){
 	int s;
 	dword p,back_text;
 	back_text = text;
@@ -578,7 +611,7 @@ F3:
 }
 */
 	
-dword itoa(signed long number)
+inline dword itoa(signed long number)
 {
 	unsigned char buf[11];
 	dword ret;
@@ -653,12 +686,26 @@ F3:
     return EBX;
 } 
 
-dword strdup(dword text)
+inline dword strdup(dword text)
 {
     dword l = strlen(text);
     dword ret = malloc(l+1);
     strncpy(ret,text,l);
     return ret;
+}
+
+inline dword strndup(dword str, signed maxlen)
+{
+	dword copy,len;
+
+	len = strnlen(str, maxlen);
+	copy = malloc(len + 1);
+	if (copy != NULL)
+	{
+		memcpy(copy, str, len);
+		DSBYTE[len+copy] = '\0';
+	}
+	return copy;
 }
 
 void debugi(dword d_int)

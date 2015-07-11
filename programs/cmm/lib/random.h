@@ -19,8 +19,6 @@
 
 *******************************************************************************/
 
-dword generator;  // random number generator - для генерации случайных чисел
-
 inline fastcall int random( ECX)
 // get pseudo-random number - получить псевдослучайное число
 {
@@ -30,11 +28,11 @@ inline fastcall int random( ECX)
   $xor eax,edx
   $not eax
 
-  EBX = generator;
+  EBX = __generator;
   $ror ebx,3
   $xor ebx,0xdeadbeef
   EBX += EAX;
-  generator = EBX;
+  __generator = EBX;
   
   EAX += EBX;
   EAX = EAX % ECX;
@@ -43,7 +41,7 @@ inline fastcall int random( ECX)
 }
 
 inline fastcall randomize()
-// initialize random number generator - инициализировать генератор случайных чисел
+// initialize random number __generator - инициализировать генератор случайных чисел
 {
   asm
   {
@@ -51,5 +49,6 @@ inline fastcall randomize()
     int 0x40
     ror eax,16
   }
-  generator = EAX;
+  __generator = EAX;
 }
+

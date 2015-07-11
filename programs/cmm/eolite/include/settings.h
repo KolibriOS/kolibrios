@@ -104,7 +104,8 @@ void LoadIniSettings()
 	ini_get_int stdcall   (eolite_ini_path, #confir_section, "InfoAfterCopy",     0); info_after_copy = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #confir_section, "UseBigFonts",       0); use_big_fonts = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #confir_section, "LineHeight",       18); files.line_h = EAX;
-
+	ini_get_int stdcall   (eolite_ini_path, #confir_section, "TimeDoubleClick",  50); MOUSE_TIME = EAX;
+	
 	if (use_big_fonts) 
 	{
 		font_type = 0x90;

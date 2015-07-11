@@ -257,7 +257,7 @@ void main()
 				}
 			}
 			
-
+			/*
 			if (files.MouseOver(m.x, m.y)) && (!can_select)
 			{
 				m_selected = m.y - files.y / files.line_h;
@@ -304,6 +304,40 @@ void main()
 				break;
 			}
 			// } file menu
+			*/
+			
+			if (files.MouseOver(m.x, m.y))&&(m.up)
+			{
+				//select/open file {
+				if (m.key&MOUSE_LEFT)
+				{
+					if (m.y>=files.y)//&&(m.click)
+					{
+						id = m.y - files.y / files.line_h;
+						if (files.current!=id)
+						{
+							if (id<files.visible) List_Current(id-files.current);
+						}
+						else if(m.dblclick)Open(0);
+					}
+				}
+				// } select/open file
+				else
+				//file menu {
+				if (m.key&MOUSE_RIGHT)
+				{
+					menu_call_mouse = 1;
+					if (m.y>=files.y)&&(m.click)
+					{
+						id = m.y - files.y / files.line_h;
+						if (files.current!=id) List_Current(id-files.current);
+						SwitchToAnotherThread();
+						CreateThread(#FileMenu,#menu_stak+4092);
+					}
+					break;
+				}
+				// } file menu
+			}
 
 			if (m.vert)
 			{
