@@ -65,7 +65,7 @@ char program_path[4096];
 /**
  *  The structure of the mouse
  *  x - coordinate X
- *  є - coordinate ╙
+ *  y - coordinate Y
  *  xx and yy - time coordinates
  *  lkm - left mouse button
  *  pkm - right mouse button
@@ -82,6 +82,7 @@ char program_path[4096];
 	void get();
 };
 
+//get new attributes mouse
 :void mouse::get()
 {
 	EAX = 37;
@@ -126,8 +127,9 @@ char program_path[4096];
 	//when you press the mouse button
 	else {
 		up = false;
-		down = key;
-		if(down)tmp=key;
+		if(key) down = true;
+		else down = false;
+		if(down) tmp = key;
 		if((xx!=x)||(yy!=y)){
 			move = true;
 			xx = x;
@@ -136,7 +138,8 @@ char program_path[4096];
 		else move = false;
 	}
 	
-	EAX = 37; //скролл
+	//scroll
+	EAX = 37;
 	EBX = 7;
 	$int	0x40
 	$mov	ebx, eax
