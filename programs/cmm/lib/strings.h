@@ -1,4 +1,6 @@
 //------------------------------------------------------------------------------
+// strspn(dword text1,text2) --- example: strspn("12 year","1234567890") -> return 2
+// strpbrk(dword text1,text2) --- example: strpbrk("this test", " ckfi") -> return "is test"
 // strcmp( ESI, EDI)
 // strlen( EDI)
 // strcpy( EDI, ESI) --- 0 if ==
@@ -37,6 +39,48 @@ inline fastcall signed int strcmp( ESI, EDI)
 }
 */
 
+int strspn(dword text1,text2)
+{
+	dword beg;
+	char s1,s2;
+	int ret;
+	ret = 0;
+	beg = text2;
+	do {
+		s1 = ESBYTE[text1];
+		text2 = beg;
+		do {
+			s2 = ESBYTE[text2];
+			if(s1==s2)
+			{
+				if(!s2)break;
+				$inc ret
+				break;
+			}
+			else $inc text2
+		} while(s2);
+		$inc text1
+	} while(s1);
+	return ret;
+}
+
+dword strpbrk(dword text1,text2)
+{
+	char s,ss;
+	dword beg;
+	beg = text2;
+	do {
+		s = ESBYTE[text1];
+		text2 = beg;
+		do {
+			ss = ESBYTE[text2];
+			if(ss==s) return text1;
+			$inc text2
+		} while(ss);
+		$inc text1
+	} while(s);
+	return text1;
+}
 
 inline fastcall signed int strncmp( ESI, EDI, ECX)
 {
@@ -84,8 +128,7 @@ signed int strcmp(dword text1, text2)
 			if(s1==0) return 0;
 		}
 		else {
-			
-			return -1;
+			return s1-s2;
 		}
 		$inc text1 
 		$inc text2
