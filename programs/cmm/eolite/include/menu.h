@@ -72,16 +72,16 @@ void FileMenu()
 	loop() switch(WaitEvent())
 	{
 		case evMouse:
-				if (!CheckActiveProcess(MenuForm.ID)) ExitProcess();
 				mm.get();
-				if (menu.ProcessMouse(mm.x, mm.y)) MenuListRedraw();
-				if (mm.key&MOUSE_LEFT)&&(m.click) {action_buf = cur_action_buf; pause(5); ExitProcess(); }
-				break;
+				if (!CheckActiveProcess(MenuForm.ID)){ cmd_free=1; ExitProcess();}
+				else if (mm.move)&&(menu.ProcessMouse(mm.x, mm.y)) MenuListRedraw();
+				else if (mm.key&MOUSE_LEFT)&&(mm.down) {action_buf = cur_action_buf; pause(5); cmd_free=1; ExitProcess(); }
+		break;
 				
 		case evKey:
 				key = GetKey();
-				if (key==27) ExitProcess();
-				if (key == 13) {action_buf = cur_action_buf; ExitProcess(); }
+				if (key==27){cmd_free=1;ExitProcess();}
+				else if (key == 13) {action_buf = cur_action_buf; cmd_free=1; ExitProcess(); }
 				if (menu.ProcessKey(key)) MenuListRedraw();
 				break;
 				

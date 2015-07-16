@@ -12,6 +12,7 @@
 	?define NOTIFY_COPY_END "Уведомлять о завершении копирования"
 	?define CANCEL_T "Отмена"
 	?define APPLY_T "Применить"
+	?define T_DOUBLE_CLICK "Время двойного клик  (в сотых)"
 #else
 	?define EDIT_FILE_ASSOCIATIONS "Edit file associations"
 	?define TITLE_SETT "Settings"
@@ -22,6 +23,7 @@
 	?define NOTIFY_COPY_END "Notify when copying finished"
 	?define CANCEL_T "Cancel"
 	?define APPLY_T "Apply"
+	?define T_DOUBLE_CLICK "Time double click (in hundredths)"
 #endif
 
 char confir_section = "Config";
@@ -33,11 +35,16 @@ void settings_dialog()
 	unsigned int key;
 	proc_info settings_form;
 	
-	if (active_settings) ExitProcess();
+	if (active_settings){cmd_free = 4;ExitProcess();}
 	active_settings=1;
-
-	loop() switch(WaitEvent())
+	SetEventMask(0x27);
+	
+	loop(){
+	switch(WaitEvent())
 	{
+		case evMouse:
+			
+		break;
 		case evButton: 
 				id=GetButtonID();
 				if (id==10)
@@ -45,11 +52,13 @@ void settings_dialog()
 					SaveIniSettings();
 					active_settings=0;
 					action_buf = 300;
+					cmd_free = 4;
 					ExitProcess();
 				}					
 				if (id==1) || (id==11) 
 				{
 					active_settings=0;
+					cmd_free = 4;
 					ExitProcess();
 				}
 				if (id==5)
@@ -63,6 +72,8 @@ void settings_dialog()
 				if (id==23) use_big_fonts ^= 1;
 				if (id==25) files.line_h++;
 				if (id==26) && (files.line_h>8) files.line_h--;
+				if (id==27) MOUSE_TIME++;
+				if (id==28) && (MOUSE_TIME>30) MOUSE_TIME--;
 				DrawSettingsCheckBoxes();
 				break;
 				
@@ -72,17 +83,19 @@ void settings_dialog()
 				{
 					active_settings = 0;
 					action_buf = 300;
+					cmd_free = 4;
 					ExitProcess();
 				}
 				break;
 			
 		case evReDraw:
-				DefineAndDrawWindow(Form.left + 100, 150, 300, 232+GetSkinHeight(),0x34,sc.work,TITLE_SETT);
+				DefineAndDrawWindow(Form.left + Form.width/2, Form.top + Form.height/2 - 75, 300, 232+GetSkinHeight(),0x34,sc.work,TITLE_SETT);
 				GetProcessInfo(#settings_form, SelfInfo);
 				DrawSettingsCheckBoxes();
-				DrawFlatButton(9, 138, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
-				DrawFlatButton(128, settings_form.cheight - 34, 70, 22, 10, 0xE4DFE1, APPLY_T);
-				DrawFlatButton(208, settings_form.cheight - 34, 70, 22, 11, 0xE4DFE1, CANCEL_T);
+				DrawFlatButton(9, 168, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
+				DrawFlatButton(128, settings_form.cheight - 30, 70, 22, 10, 0xE4DFE1, APPLY_T);
+				DrawFlatButton(208, settings_form.cheight - 30, 70, 22, 11, 0xE4DFE1, CANCEL_T);
+	}
 	}
 }
 
@@ -93,6 +106,7 @@ void DrawSettingsCheckBoxes()
 	CheckBox2(10, 55, 22, NOTIFY_COPY_END,  info_after_copy);
 	CheckBox2(10, 77, 23, USE_BIG_FONTS,  use_big_fonts); 
 	MoreLessBox(10, 104, 18, 25, 26, #sc, files.line_h, LIST_LINE_HEIGHT);
+	MoreLessBox(10, 134, 18, 27, 28, #sc, MOUSE_TIME, T_DOUBLE_CLICK);
 }
 
 
@@ -127,6 +141,7 @@ void SaveIniSettings()
 	ini_set_int stdcall (eolite_ini_path, #confir_section, "InfoAfterCopy", info_after_copy);
 	ini_set_int stdcall (eolite_ini_path, #confir_section, "UseBigFonts", use_big_fonts);
 	ini_set_int stdcall (eolite_ini_path, #confir_section, "LineHeight", files.line_h);
+	ini_set_int stdcall (eolite_ini_path, #confir_section, "TimeDoubleClick", MOUSE_TIME);
 }
 
 
@@ -137,11 +152,9 @@ void Write_Error(int error_number)
 	dword ii;
 	if (files.current>=0) Line_ReDraw(0xFF0000, files.current);
 	pause(5);
-	strcpy(#error_message, "\"Eolite\n");
-	ii = get_error(error_number);
-	strcat(#error_message, ii);
-	strcat(#error_message, "\" -tE");
+	sprintf(#error_message,"\"%s\n%s\" -%s","Eolite",get_error(error_number),"tE");
 	notify(#error_message);
+	
 }
 
 

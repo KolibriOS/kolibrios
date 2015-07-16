@@ -178,24 +178,31 @@ L2:
     $jnz L2
 }
 
-inline dword strncpy(dword text1, text2, signed len)
+:inline dword strncpy(dword text1, text2, signed len)
 	signed o1,o2;
 {
+	if(!text1)||(!len) return text1;
+	if(len<4)
+	{
+		o2 = len;
+		goto RUN_BYTE;
+	}
 	o1 = len/4;
 	o2 = len-4*o1;
 	while(o1){
-		ESDWORD[text1] = ESDWORD[text2];
+		DSDWORD[text1] = DSDWORD[text2];
 		text1 += 4;
 		text2 += 4;
 		$dec o1
 	}
+	RUN_BYTE:
 	while(o2){
-		ESBYTE[text1] = ESBYTE[text2];
+		DSBYTE[text1] = DSBYTE[text2];
 		$inc text1 
 		$inc text2 
 		$dec o2
 	}
-	ESBYTE[text1] = 0;
+	DSBYTE[text1] = 0;
 	return text1;
 }
 
@@ -339,25 +346,26 @@ void strncat(dword text1, text2, signed len)
 	signed o1,o2;
 	char s;
 {
-	s = ESBYTE[text1];
+	s = DSBYTE[text1];
 	while(s){
 		$inc text1
-		s = ESBYTE[text1];
+		s = DSBYTE[text1];
 	}
 	o1 = len/4;
 	o2 = len-4*o1;
 	while(o1){
-		ESDWORD[text1] = ESDWORD[text2];
+		DSDWORD[text1] = DSDWORD[text2];
 		text1 += 4;
 		text2 += 4;
 		$dec o1
 	}
 	while(o2){
-		ESBYTE[text1] = ESBYTE[text2];
+		DSBYTE[text1] = DSBYTE[text2];
 		$inc text1 
 		$inc text2 
 		$dec o2
 	}
+	DSBYTE[text1] = 0;
 }
 
 inline fastcall void chrcat(ESI, BL)
@@ -614,22 +622,23 @@ F3:
 inline dword itoa(signed long number)
 {
 	unsigned char buf[11];
-	dword ret;
+	dword ret,p;
 	byte cmd;
 	long mask,tmp;
 	mask = 1000000000;
 	cmd = true;
+	p = #buf;
 	if(!number){
-		ESBYTE[buf] = '0';
-		ESBYTE[buf+1] = 0;
-		return buf;
+		ESBYTE[p] = '0';
+		ESBYTE[p+1] = 0;
+		return p;
 	}
-	ret = buf;
+	ret = p;
 	if(number<0)
 	{
 		$neg number
-		ESBYTE[buf] = '-';
-		$inc buf
+		ESBYTE[p] = '-';
+		$inc p
 	}
 	while(mask)
 	{
@@ -638,22 +647,22 @@ inline dword itoa(signed long number)
 		
 		if(cmd){
 			if(tmp){
-				ESBYTE[buf] = tmp + '0';
-				$inc buf
+				ESBYTE[p] = tmp + '0';
+				$inc p
 				cmd = false;
 			}
 		}
 		else {
-			ESBYTE[buf] = tmp + '0';
-			$inc buf
+			ESBYTE[p] = tmp + '0';
+			$inc p
 		}
 		mask /= 10;
 	}
-	ESBYTE[buf] = 0;
+	ESBYTE[p] = 0;
 	return ret;
 }
-	
-inline fastcall itoa_(signed int EDI, ESI)
+
+:inline fastcall itoa_(signed int EDI, ESI)
 {
     $pusha
     EBX = EDI;
@@ -686,15 +695,27 @@ F3:
     return EBX;
 } 
 
-inline dword strdup(dword text)
+:inline dword memchr(dword s,int c,signed len)
+{
+	if(!len) return NULL;
+	do {
+		if(DSBYTE[s] == c) return s;
+		$inc s
+		$dec len
+	} while(len);
+	return NULL;
+}
+
+:inline dword strdup(dword text)
 {
     dword l = strlen(text);
     dword ret = malloc(l+1);
+	if(!ret) return NULL;
     strncpy(ret,text,l);
     return ret;
 }
 
-inline dword strndup(dword str, signed maxlen)
+:inline dword strndup(dword str, signed maxlen)
 {
 	dword copy,len;
 
@@ -702,10 +723,94 @@ inline dword strndup(dword str, signed maxlen)
 	copy = malloc(len + 1);
 	if (copy != NULL)
 	{
-		memcpy(copy, str, len);
+		strncpy(copy, str, len);
 		DSBYTE[len+copy] = '\0';
 	}
 	return copy;
+}
+
+:inline cdecl int sprintf(dword buf, format,...)
+{
+	byte s;
+	char X[10];
+	dword ret, tmp, l;
+	dword arg = #format;
+	ret = buf;
+	s = DSBYTE[format];
+	while(s){
+		if(s=='%'){
+			arg+=4;
+			tmp = DSDWORD[arg];
+			if(tmp==END_ARGS)goto END_FUNC_SPRINTF;
+			$inc format
+			s = DSBYTE[format];
+			if(!s)goto END_FUNC_SPRINTF;
+			switch(s)
+			{
+				case 's':
+					l = tmp;
+					s = DSBYTE[tmp];
+					while(s)
+					{
+						DSBYTE[buf] = s;
+						$inc tmp
+						$inc buf
+						s = DSBYTE[tmp];
+					}
+				break;
+				case 'c':
+					DSBYTE[buf] = tmp;
+					$inc buf
+				break;
+				case 'u': //if(tmp<0)return ret;
+				case 'd':
+				case 'i':
+					tmp = itoa(tmp);
+					if(!DSBYTE[tmp])goto END_FUNC_SPRINTF;
+					l = strlen(tmp);
+					strncpy(buf,tmp,l);
+					buf += l;
+				break;
+				case 'a':
+				case 'A':
+					strncpy(buf,"0x00000000",10);
+					buf+=10;
+					l=buf;
+					while(tmp)
+					{
+						$dec buf
+						s=tmp&0xF;
+						if(s>9)DSBYTE[buf]='A'+s-10;
+						else DSBYTE[buf]='0'+s;
+						tmp>>=4;
+					}
+					buf=l;
+				break;
+				case 'p':
+					tmp = itoa(#tmp);
+					if(!DSBYTE[tmp])goto END_FUNC_SPRINTF;
+					l = strlen(tmp);
+					strncpy(buf,tmp,l);
+					buf += l;
+				break;
+				case '%':
+					DSBYTE[buf] = '%';
+					$inc buf
+				break;
+				default:
+				goto END_FUNC_SPRINTF;
+			}
+		}
+		else {
+			DSBYTE[buf] = s;
+			$inc buf
+		}
+		$inc format
+		s = DSBYTE[format];
+	}
+	END_FUNC_SPRINTF:
+	DSBYTE[buf] = 0;
+	return buf-ret;
 }
 
 void debugi(dword d_int)

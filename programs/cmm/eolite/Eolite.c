@@ -164,7 +164,7 @@ edit_box edit2 = {250,213,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xFFFFFF,0,248,#file_nam
 edit_box new_file_ed = {150,213,80,0xFFFFFF,0x94AECE,0x000000,0xFFFFFF,0,248,#new_element_name,#mouse_dd,100000000000010b,6,0};
 PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 0};
 PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
-
+byte cmd_free;
 #include "include\copy.h"
 #include "include\gui.h"
 #include "include\sorting.h"
@@ -175,6 +175,8 @@ PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #t
 #include "include\about.h"
 #include "include\settings.h"
 #include "include\properties.h"
+
+dword menu_stak,about_stak,properties_stak,settings_stak,copy_stak;
 
 void main() 
 {
@@ -202,7 +204,7 @@ void main()
 	}
 	Open_Dir(#path,ONLY_OPEN);
 	SetEventMask(0x27);
-	loop() switch(WaitEvent())
+	loop(){ switch(WaitEvent())
 	{
 		case evMouse:
 			if (del_active) || (!CheckActiveProcess(Form.ID)) || (Form.status_window>2) break;
@@ -255,67 +257,18 @@ void main()
 						stats = 0;
 					}
 				}
-			}
-			
-			/*
-			if (files.MouseOver(m.x, m.y)) && (!can_select)
-			{
-				m_selected = m.y - files.y / files.line_h;
-				if (m.lkm) can_select = 1;
-				if (m.pkm)
-				{
-					can_show = 1;
-					if (m.y - files.y / files.line_h != files.current) can_select = 1;
-				}
-			}
-
-			//select/open file {
-			if (!m.lkm) && (!m.pkm) && (can_select)
-			{
-				can_select = 0;
-				if (m.y>=files.y)
-				{
-					id = m.y - files.y / files.line_h;
-					if (id!=m_selected)
-					{
-						can_show=0;
-						break;
-					}
-					if (files.current!=id)
-					{
-						if (id<files.visible) List_Current(id-files.current);
-					}
-					else
-						Open(0);
-				}
-			};
-			// } select/open file
-
-			//file menu {
-			if (!m.pkm) && (!m.lkm) && (can_show)
-			{
-				can_show = 0;
-				menu_call_mouse = 1;
-				if (m.y>=files.y)
-				{
-					SwitchToAnotherThread();
-					CreateThread(#FileMenu,#menu_stak+4092);
-				}
-				break;
-			}
-			// } file menu
-			*/
-			
-			if (files.MouseOver(m.x, m.y))&&(m.up)
+			}	
+			if (files.MouseOver(m.x, m.y))&&((m.up)||(m.down)||(m.dblclick))
 			{
 				//select/open file {
-				if (m.key&MOUSE_LEFT)
+				if (m.key&MOUSE_LEFT)&&((m.down)||(m.dblclick))
 				{
 					if (m.y>=files.y)//&&(m.click)
 					{
 						id = m.y - files.y / files.line_h;
 						if (files.current!=id)
 						{
+							m.clearTime();
 							if (id<files.visible) List_Current(id-files.current);
 						}
 						else if(m.dblclick)Open(0);
@@ -324,15 +277,16 @@ void main()
 				// } select/open file
 				else
 				//file menu {
-				if (m.key&MOUSE_RIGHT)
+				if (m.key&MOUSE_RIGHT)&&(m.up)
 				{
 					menu_call_mouse = 1;
-					if (m.y>=files.y)&&(m.click)
+					if (m.y>=files.y)//&&(m.click)
 					{
 						id = m.y - files.y / files.line_h;
 						if (files.current!=id) List_Current(id-files.current);
-						SwitchToAnotherThread();
-						CreateThread(#FileMenu,#menu_stak+4092);
+						//SwitchToAnotherThread();
+						menu_stak = malloc(4096);
+						CreateThread(#FileMenu,menu_stak+4092);
 					}
 					break;
 				}
@@ -427,7 +381,8 @@ void main()
 						Copy(#file_path, NOCUT);
 						break;
 				case 26: //paste
-						CreateThread(#Paste,#copy_stak+4092);
+						copy_stak = malloc(4096);
+						CreateThread(#Paste,copy_stak+4092);
 						break;
 				case 31...33: //sort
 						IF(sort_num==1) DrawFilledBar(sorting_arrow_x,42,6,10);
@@ -500,7 +455,8 @@ void main()
 							Copy(#file_path, NOCUT);
 							break;
 					case 022: //Ctrl+V
-							CreateThread(#Paste,#copy_stak+4092);
+							copy_stak = malloc(4096);
+							CreateThread(#Paste,copy_stak+4092);
 							break;
 					case 001: //Ctrl+A
 							debugln("press Ctrl+A");
@@ -530,8 +486,9 @@ void main()
 							break; 
 					case 074: //menu
 							menu_call_mouse=0;
-							SwitchToAnotherThread();
-							CreateThread(#FileMenu,#menu_stak+4092);
+							//SwitchToAnotherThread();
+							menu_stak = malloc(4096);
+							CreateThread(#FileMenu,menu_stak+4092);
 							break;
 					case 173: //Ctrl+Enter
 							if (!itdir) ShowOpenWithDialog();
@@ -591,6 +548,15 @@ void main()
 			draw_window();
 			if (action_buf) { menu_action(action_buf); action_buf=0;}
 	}
+		if(cmd_free){
+			if(cmd_free==1)     free(menu_stak);
+			else if(cmd_free==2)free(about_stak);
+			else if(cmd_free==3)free(properties_stak);
+			else if(cmd_free==4)free(settings_stak);
+			else if(cmd_free==5)free(copy_stak);
+			cmd_free = 0;
+		}
+	}
 }
 
 
@@ -619,7 +585,7 @@ void menu_action(dword id)
 	if (id==203) FnProcess(4); //F4
 	if (id==104) Copy(#file_path, NOCUT);
 	if (id==105) Copy(#file_path, CUT);
-	if (id==106) CreateThread(#Paste,#copy_stak+4092);
+	if (id==106) { copy_stak = malloc(4096); CreateThread(#Paste,copy_stak+4092);}
 	if (id==207) FnProcess(2);
 	if (id==108) Del_Form();
 	if (id==109) FnProcess(5);
@@ -645,7 +611,7 @@ void draw_window()
 	DrawBar(246,0,Form.cwidth - 297,12, sc.work); //upper editbox
 	DrawBar(246,29,Form.cwidth - 297,5,sc.work);  //under editbox
 	DrawRectangle(246,12,Form.cwidth - 303,16,sc.work_graph);
-	DefineButton(Form.cwidth - 25,6,27,28,51+BT_HIDE+BT_NOFRAME,0); //about
+	DefineButton(Form.cwidth - 32,6,27,28,51+BT_HIDE+BT_NOFRAME,0); //about
 	PutPaletteImage(#goto_about,56,34,Form.width-65,0,8,#goto_about_pal);
 	//main rectangles
 	DrawRectangle(1,40,Form.cwidth-3,onTop(46,0),sc.work_graph);
@@ -899,9 +865,10 @@ void Del_Form()
 		}
 		if (cont)
 		{
-			strcpy(#f_count, DEL_MORE_FILES_1);
+			/*strcpy(#f_count, DEL_MORE_FILES_1);
 			strcat(#f_count, itoa(cont));
-			strcat(#f_count, DEL_MORE_FILES_2);
+			strcat(#f_count, DEL_MORE_FILES_2);*/
+			sprintf(#f_count,"%s%d%s",DEL_MORE_FILES_1,cont,DEL_MORE_FILES_2);
 			WriteText(-strlen(#f_count)*3+110+dform_x,190,0x80,sc.work_text,#f_count);
 		}
 		else
@@ -1157,15 +1124,16 @@ void NewElement_Form(byte crt, dword strng)
 	DrawFlatButton(dform_x+120,208,70,20,302,0xC6DFC6,T_CANCEL);
 }
 
-void FnProcess(char N)
+void FnProcess(byte N)
 {
 	switch(N)
 	{
 		case 1:
 			if (!active_about) 
 			{
-				SwitchToAnotherThread();
-				about_window=CreateThread(#about_dialog,#about_stak+4092);
+				//SwitchToAnotherThread();
+				about_stak = malloc(4096);
+				about_window = CreateThread(#about_dialog,about_stak+4092);
 				break;
 			}
 			else
@@ -1231,14 +1199,16 @@ void FnProcess(char N)
 			NewElement_Form(1, T_NEW_FILE);
 			break;
 		case 8:
-			SwitchToAnotherThread();
-			CreateThread(#properties_dialog, #properties_stak+4092);
+			//SwitchToAnotherThread();
+			properties_stak = malloc(8096);
+			CreateThread(#properties_dialog, properties_stak+8092);
 			break;
 		case 10: //F10
 			if (!active_settings) 
 			{
-				SwitchToAnotherThread();
-				settings_window=CreateThread(#settings_dialog, #settings_stak+4092);
+				//SwitchToAnotherThread();
+				settings_stak = malloc(4096);
+				settings_window = CreateThread(#settings_dialog, settings_stak+4092);
 				break;
 			}
 			else
@@ -1254,10 +1224,3 @@ dword onTop(dword down,up) {EAX=Form.height-GetSkinHeight()-down-up;}
 
 
 stop:
-
-char menu_stak[4096];
-char copy_stak[4096];
-char open_with_stak[4096];
-char about_stak[4096];
-char properties_stak[4096];
-char settings_stak[4096];

@@ -3,17 +3,17 @@
 dword libHTTP = #alibHTTP;
 char alibHTTP[23] = "/sys/lib/http.obj\0";
 
-dword http_lib_init       = #aLib_init;
-dword http_get            = #aHTTPget;
-dword http_head           = #aHTTPhead;
-dword http_post           = #aHTTPpost;
+dword http_lib_init          = #aLib_init;
+dword http_get               = #aHTTPget;
+dword http_head              = #aHTTPhead;
+dword http_post              = #aHTTPpost;
 dword http_find_header_field = #aFHF;
-dword http_send           = #aHTTPsend;
-dword http_receive        = #aHTTPreceive;
-dword http_disconnect     = #aHTTPdisconnect;
-dword http_free           = #aHTTPfree;
-dword uri_escape          = #aURIescape;
-dword uri_unescape        = #aURIunescape;
+dword http_send              = #aHTTPsend;
+dword http_receive           = #aHTTPreceive;
+dword http_disconnect        = #aHTTPdisconnect;
+dword http_free              = #aHTTPfree;
+dword uri_escape             = #aURIescape;
+dword uri_unescape           = #aURIunescape;
 $DD 2 dup 0
 
 char aLib_init[9]              = "lib_init\0";
@@ -61,3 +61,8 @@ struct  http_msg{
         dword   content_received;
         char    http_header;
 };
+
+:dword file_get_contents(dword url,...)
+{
+	http_get(url,FLAG_HTTP11,"");
+}

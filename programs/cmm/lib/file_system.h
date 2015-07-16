@@ -31,8 +31,9 @@
 };
 
 
-:void DrawDate(dword x, y, color, dword in_date)
+:void DrawDate(dword x, y, color, in_date)
 {
+	//char text[10];
 	EDI = in_date;
 	EAX = 47;
 	EBX = 2<<16;
@@ -47,6 +48,9 @@
 	EBX = 4<<16;
 	ECX = EDI.date.year;
 	$int 0x40;
+	
+	//sprintf(#text,"%d.%d.%d",EDI.date.day,EDI.date.month,EDI.date.year);
+	//WriteText(x, y, 0x80, 0x80<<24+color, #text);
 }
 
 
@@ -297,16 +301,17 @@ enum
 	return #absolute_path;
 }
 
-:dword ConvertSize(unsigned int bytes)
+:dword ConvertSize(dword bytes)
 {
-  unsigned char size_prefix[8], size_nm[4];
-  if (bytes>=1073741824) strcpy(#size_nm, " Gb");
-  else if (bytes>=1048576) strcpy(#size_nm, " Mb");
-  else if (bytes>=1024) strcpy(#size_nm, " Kb");
-  else strcpy(#size_nm, " b ");
+  byte size_prefix[8], size_nm[4];
+  if (bytes>=1073741824) strcpy(#size_nm, "Gb");
+  else if (bytes>=1048576) strcpy(#size_nm, "Mb");
+  else if (bytes>=1024) strcpy(#size_nm, "Kb");
+  else strcpy(#size_nm, "b");
   while (bytes>1023) bytes/=1024;
   itoa_(#size_prefix, bytes);
   strcat(#size_prefix, #size_nm);
+  //sprintf(#size_prefix,"%s","123");
   return #size_prefix;
 }
 

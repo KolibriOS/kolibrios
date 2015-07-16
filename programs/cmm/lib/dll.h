@@ -1,12 +1,32 @@
 char a_libdir[43]  = "/sys/lib/\0";
 
+:inline void error_init(dword text)
+{
+	dword l,ll;
+	dword TEXT_ERROR = malloc(1024);
+	#ifdef LANG_RUS
+		strcpy(TEXT_ERROR,"'Ошибка при загрузке библиотеки `");
+	#elif LANG_EST
+		strcpy(TEXT_ERROR,"'Viga teegi laadimisel `");
+	#else
+		strcpy(TEXT_ERROR,"'Error while loading library `");
+	#endif
+	ll = strlen(TEXT_ERROR);
+	strcpy(TEXT_ERROR+ll,text);
+	l = strlen(text);
+	strncpy(TEXT_ERROR+ll+l,"`' -E",4);
+	notify(TEXT_ERROR);
+	free(TEXT_ERROR);
+	ExitProcess();
+}
+
 // stdcall with 1 parameter
 void dll_Load() {
 asm {
         push    ebp
         mov     ebp, esp
         mov     esi, SSDWORD[EBP+8]
-@next_lib:    
+		@next_lib:    
         mov     edx, DSDWORD[ESI]
         or      edx, edx
         jz      exit
@@ -213,4 +233,5 @@ int load_dll2(dword dllname, import_table, byte need_init)
         return 0;
 @exit01:
         return -1;
+		//error_init(dllname);
 }

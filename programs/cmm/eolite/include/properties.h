@@ -66,9 +66,7 @@ void GetSizeDir(dword way)
 		for (i=0; i<fcount; i++)
 		{
 			filename = i*304+dirbuf+72;
-			strcpy(#cur_file, way);
-			chrcat(#cur_file, '/');
-			strcat(#cur_file, filename);
+			sprintf(#cur_file,"%s/%s",way,filename);
 			if ( TestBit(ESDWORD[filename-40], 4) )
 			{
 				dir_count++;
@@ -98,8 +96,7 @@ void GetSizeMoreFiles(dword way)
     {
         selected_offset2 = file_mas[i]*304 + buf+32 + 7;
         if (ESBYTE[selected_offset2]) {
-            strcpy(#cur_file, way);
-            strcat(#cur_file, file_mas[i]*304+buf+72);
+			sprintf(#cur_file,way,file_mas[i]*304+buf+72);
 
 			GetFileInfo(#cur_file, #file_info_general);
 			if ( file_info_general.isfolder )
@@ -128,10 +125,10 @@ void properties_dialog()
 	dword file_name_off;
 	dword element_size;
 	dword selected_offset2;
-	char element_size_label[32];
+	char element_size_label[32],tmp;
 	proc_info settings_form;
 	
-	strcpy(#folder_info, "\0");
+	DSBYTE[#folder_info]=0;
 	file_count = 0;
 	dir_count = 0;	
 	size_dir = 0;
@@ -152,7 +149,7 @@ void properties_dialog()
 	{
 		case evButton: 
 				id=GetButtonID();
-				IF (id==1) || (id==10) ExitProcess();
+				IF (id==1) || (id==10){cmd_free=3;ExitProcess();}
 				if (id==20) SetProperties(id);
 				if (id==21) SetProperties(id);
 				if (id==22) SetProperties(id);
@@ -166,7 +163,7 @@ void properties_dialog()
 			
 		case evKey:
 				key = GetKey();
-				IF (key==27) ExitProcess();
+				IF (key==27){cmd_free=3;ExitProcess();}
 				EAX=key<<8;
 				edit_box_key stdcall(#file_name_ed);
 				edit_box_key stdcall(#path_to_file_ed);
@@ -186,16 +183,15 @@ void properties_dialog()
 				if (selected_count)
 				{
 					Put_icon('', 18, 19, 0xFFFfff, 0);
-					strcpy(#folder_info, SET_6);
-					strcat(#folder_info, itoa(file_count));
-					strcat(#folder_info, SET_7);
-					strcat(#folder_info, itoa(dir_count));
+					sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
 					WriteText(50, 23, 0x80, 0x000000, #folder_info);
 					EAX = ConvertSize(size_dir);
 					strcpy(#element_size_label, EAX);
 					strcat(#element_size_label, " (");
 					strcat(#element_size_label, itoa(size_dir));
 					strcat(#element_size_label, " b)");
+					//tmp = ConvertSize(size_dir);
+					//sprintf(#element_size_label," ( byte)");
 					WriteText(100, 65, 0x80, 0x000000, #element_size_label);
 				}
 				else
@@ -215,10 +211,7 @@ void properties_dialog()
 					else
 					{
 						WriteText(10, 80, 0x80, 0x000000, PR_T_CONTAINS);				
-						strcpy(#folder_info, SET_6);
-						strcat(#folder_info, itoa(file_count));
-						strcat(#folder_info, SET_7);
-						strcat(#folder_info, itoa(dir_count));
+						sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
 						WriteText(100, 80, 0x80, 0x000000, #folder_info);
 						element_size = size_dir;
 					}
@@ -235,6 +228,9 @@ void properties_dialog()
 					strcat(#element_size_label, " (");
 					strcat(#element_size_label, itoa(element_size));
 					strcat(#element_size_label, " b)");
+					//sprintf(#element_size_label,"%s (%d byte)","",element_size);
+					//tmp = ConvertSize(element_size);
+					//sprintf(#element_size_label,"%s (%d byte)",tmp,element_size);
 					WriteText(100, 65, 0x80, 0x000000, #element_size_label);
 	
 					flags_frame.size_x = - flags_frame.start_x * 2 + settings_form.cwidth - 2;

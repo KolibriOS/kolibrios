@@ -9,6 +9,15 @@
 		60, "Н†бваЃ©™®", "F10",
 		0,0,0
 	};
+	?define T_PROG "ПаЃ£а†ђђл "
+	?define T_SYS  "С®бв•ђ† "
+	?define T_UNC  "Н•®ІҐ•бв≠Ѓ "
+	?define T_CD   "CD-ROM "
+	?define T_FD   "Д®б™•в† "
+	?define T_HD   "Ж•бв™®© §®б™ "
+	?define T_SATA "SATA §®б™ "
+	?define T_USB  "USB §®б™ "
+	?define T_RAM  "RAM §®б™ "
 #elif LANG_EST
 	?define T_DEVICES "Seadmed"
 	?define T_ACTIONS "Toimingud"
@@ -18,6 +27,15 @@
 		60, "Seaded", "F10",
 		0,0,0
 	};
+	?define T_PROG "Programs "
+	?define T_SYS  "System "
+	?define T_UNC  "Unknown "
+	?define T_CD   "CD-ROM "
+	?define T_FD   "Floppy disk "
+	?define T_HD   "Hard disk "
+	?define T_SATA "SATA disk"
+	?define T_USB  "USB disk"
+	?define T_RAM  "RAM disk"
 #else
 	?define T_DEVICES "Devices"
 	?define T_ACTIONS "Actions"
@@ -27,6 +45,15 @@
 		60, "Settings", "F10",
 		0,0,0
 	};
+	?define T_PROG "Programs "
+	?define T_SYS  "System "
+	?define T_UNC  "Unknown "
+	?define T_CD   "CD-ROM "
+	?define T_FD   "Floppy disk "
+	?define T_HD   "Hard disk "
+	?define T_SATA "SATA disk"
+	?define T_USB  "USB disk"
+	?define T_RAM  "RAM disk"
 #endif
 
 
@@ -50,7 +77,7 @@ dword devbuf;
 void GetSystemDiscs()
 {
 	char dev_name[10], sys_discs[10];
-	int i1, j1, dev_num, dev_disc_num;
+	int i1, j1, dev_num, dev_disc_num,l;
 	disc_num=0;
 	if (devbuf) free(devbuf);
 	devbuf = malloc(10000); //буфер где-то на 10 девайсов в левой панели
@@ -58,28 +85,25 @@ void GetSystemDiscs()
 	dev_num = EBX;
 	for (i1=0; i1<dev_num; i1++)
 	{
-		strcpy(#dev_name, "/");               // /
-		strcat(#dev_name, i1*304+ devbuf+72); // /rd
-		strcat(#dev_name, "/");               // /rd/
+		sprintf(#dev_name,"/%s/",i1*304+ devbuf+72);
 		Open_Dir(#dev_name, ONLY_OPEN);
 		dev_disc_num = files.count;
 		//if (files.count<=0) copystr(#dev_name,#disk_list[disc_num].Item); else
 		for (j1=0; j1<dev_disc_num; j1++;)
 		{
-			strcpy(#sys_discs, #dev_name);           // /rd/
-			strcat(#sys_discs, j1*304+ buf+72);      // /rd/1
-			strcat(#sys_discs, "/");                 // /rd/1/
-			strcpy(#disk_list[disc_num].Item, #sys_discs);
+			l=sprintf(#sys_discs,"%s%s/",#dev_name,j1*304+ buf+72);
+			strncpy(#disk_list[disc_num].Item, #sys_discs,l);
 			disc_num++;
 		}
-		if (strcmp(#sys_discs, "/rd/1/")==0) 
+		if (strncmp(#sys_discs, "/rd/1/",6)==0) 
 		{
 			if (isdir("/kolibrios"))
 			{
-				strcpy(#disk_list[disc_num].Item, "/kolibrios/");
+				strncpy(#disk_list[disc_num].Item, "/kolibrios/",11);
 				kolibrios_drive = true;
 				disc_num++;	
-			} else kolibrios_drive = false;
+			}
+			else kolibrios_drive = false;
 		}
 	}
 }
@@ -102,40 +126,40 @@ void DrawSystemDiscs()
 		{
 			case 'k':
 				dev_icon=0;
-				strcpy(#disc_name, "Programs ");
+				strcpy(#disc_name, T_PROG);
 				break;
 			case 'r':
 				dev_icon=0;
-				strcpy(#disc_name, "System ");
+				strcpy(#disc_name, T_SYS);
 				break;
 			case 'c':
 				dev_icon=1;
-				strcpy(#disc_name, "CD-ROM ");
+				strcpy(#disc_name, T_CD);
 				break;
 			case 'f':
 				dev_icon=2;
-				strcpy(#disc_name, "Floppy disk ");
+				strcpy(#disc_name, T_FD);
 				break;
 			case 'h':
 			case 'b':
 				dev_icon=3;
-				strcpy(#disc_name, "Hard disk ");
+				strcpy(#disc_name, T_HD);
 				break;
 			case 's':
 				dev_icon=3;
-				strcpy(#disc_name, "SATA disk ");
+				strcpy(#disc_name, T_SATA);
 				break;
 			case 'u':
 				dev_icon=5;
-				strcpy(#disc_name, "USB flash ");
+				strcpy(#disc_name, T_USB);
 				break;
 			case 't':
 				dev_icon=4;
-				strcpy(#disc_name, "RAM disk ");
+				strcpy(#disc_name, T_RAM);
 				break;
 			default:
 				dev_icon=3; //по-умолчанию устройство выгл€дит как жест€к но это неправильно
-				strcpy(#disc_name, "Unknown ");				
+				strcpy(#disc_name, T_UNC);				
 		}
 		strcat(#disc_name, #dev_name);
 		if (show_dev_name) WriteText(45,i*16+79,0x80,0,#disc_name); else WriteText(45,i*16+79,0x80,0,#dev_name);
