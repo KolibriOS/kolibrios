@@ -589,91 +589,61 @@ proc key.ctrl_v
 	call	get_from_clipboard
 @@:
 	cmp	[copy_size],0
-	je	.exit
-
+	je	.exit_1
 	call	delete_selection
-
 	mov	eax,[copy_size]
+	sub	eax,sizeof.EDITOR_LINE_DATA
 	call	editor_realloc_lines
-
-	mov	ebx,[cur_editor.Lines.Size]
-	add	ebx,[copy_size]
-	mov	[cur_editor.Lines.Size],ebx
-	stdcall mem.ReAlloc,[cur_editor.Lines],ebx
-	mov	[cur_editor.Lines],eax
-
 	mov	ecx,[cur_editor.Caret.Y]
 	call	get_line_offset
-	pushd	[esi+EDITOR_LINE_DATA.Size] esi
 	mov	ecx,[cur_editor.Caret.X]
 	call	line_add_spaces
-	add	[esp],eax
-	add	esi,eax
-	mov	ecx,[copy_size]
-	mov	edi,[copy_count]
-	test	edi,edi
-	dec	edi
-	jnz	@f
-	sub	ecx,sizeof.EDITOR_LINE_DATA
-@@:
+	pushd	[esi+EDITOR_LINE_DATA.Size]
+	push	esi
+	lea	eax,[esi+ecx+sizeof.EDITOR_LINE_DATA]
 	mov	edi,[cur_editor.Lines]
-	add	edi,[cur_editor.Lines.Size] ;*** add edi,[edi-4]
+	add	edi,[cur_editor.Lines.Size]
 	dec	edi
-	mov	eax,esi
+	mov	ecx,[copy_size]
+	sub	ecx,sizeof.EDITOR_LINE_DATA
 	mov	esi,edi
 	sub	esi,ecx
-	lea	ecx,[eax+sizeof.EDITOR_LINE_DATA]
-	add	ecx,[cur_editor.Caret.X]
-	neg	ecx
-	lea	ecx,[esi+ecx+1]
-	mov	[size_of_moving_area],ecx
+	neg	eax
+	lea	ecx,[esi+eax+1]
 	std
 	rep	movsb
-
+	cld
+	pop	edi
+	mov	esi,[copy_buf]
+	mov	eax,[esi+EDITOR_LINE_DATA.Size]
+	add	esi,sizeof.EDITOR_LINE_DATA
 	mov	ecx,[copy_count]
 	dec	ecx
 	jz	.single_line
 
-	cld
-	pop	edi
-	add	edi,sizeof.EDITOR_LINE_DATA
-	mov	esi,[copy_buf]
-	mov	eax,[esi+EDITOR_LINE_DATA.Size]
-	add	esi,sizeof.EDITOR_LINE_DATA
-
-	mov	ebx,[cur_editor.Caret.X]
-	add	eax,ebx
-	mov	[edi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Size],eax
-	mov	[edi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
-	sub	eax,ebx
+	add	eax,[cur_editor.Caret.X]
+	mov	[edi+EDITOR_LINE_DATA.Size],eax
+	mov	[edi+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
+	sub	eax,[cur_editor.Caret.X]
 	call	.check_columns
-	add	edi,ebx
-    @@: push	ecx
+	add	edi,[cur_editor.Caret.X]
+@@:
+	push	ecx
 	mov	ecx,eax
+	add	edi,sizeof.EDITOR_LINE_DATA
 	rep	movsb
 	mov	eax,[esi+EDITOR_LINE_DATA.Size]
 	add	esi,sizeof.EDITOR_LINE_DATA
 	mov	[edi+EDITOR_LINE_DATA.Size],eax
 	mov	[edi+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
-	add	edi,sizeof.EDITOR_LINE_DATA
 	pop	ecx
 	loop	@b
 
 	pop	ecx
-	sub	ecx,ebx
-	ja	@f
-
-	pusha
-	mov	esi,edi
-	sub	edi,sizeof.EDITOR_LINE_DATA
-	mov	ecx,[size_of_moving_area]
-	cld
-	rep	movsb
-	popa
-	jmp	.save_cur_editor_values
-@@:
-	add	[edi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Size],ecx
+	sub	ecx,[cur_editor.Caret.X]
+	add	[edi+EDITOR_LINE_DATA.Size],ecx
 	call	.check_columns
+	add	edi,sizeof.EDITOR_LINE_DATA
 	mov	ecx,eax
 	rep	movsb
 .save_cur_editor_values:
@@ -684,53 +654,40 @@ proc key.ctrl_v
 	add	[cur_editor.Caret.Y],eax
 	add	[cur_editor.SelStart.Y],eax
 	add	[cur_editor.Lines.Count],eax
-
 	mov	[cur_editor.Modified],1
 	jmp	.exit
 
-  .single_line:
-	cld
-	pop	edi
-	add	edi,sizeof.EDITOR_LINE_DATA
-	mov	esi,[copy_buf]
-	mov	eax,[esi+EDITOR_LINE_DATA.Size]
-	add	esi,sizeof.EDITOR_LINE_DATA
-	add	[edi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Size],eax
-	and	[edi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Flags],not EDITOR_LINE_FLAG_SAVED
-	or	[edi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
+.single_line:
+	add	[edi+EDITOR_LINE_DATA.Size],eax
+	mov	[edi+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
 	call	.check_columns
+	add	edi,sizeof.EDITOR_LINE_DATA
 	add	edi,[cur_editor.Caret.X]
-	add	esp,4
+	pop	ecx
 	mov	ecx,eax
 	rep	movsb
-
 	add	[cur_editor.Caret.X],eax
 	add	[cur_editor.SelStart.X],eax
-
 	mov	[cur_editor.Modified],1
-
-  .exit:
+.exit:
 	cmp	[replace_mode],0
 	jne	.exit_1
-
-	cmp	[copy_size],0
-	je	.exit_1
-; remove unnecessary memory area
+	stdcall	mem.Free,[copy_buf]
 	xor	eax,eax
+	mov	[copy_buf],eax
 	mov	[copy_size],eax
-        mov     [copy_count],eax
-        stdcall mem.ReAlloc,[copy_buf],eax
-        mov     [copy_buf],eax
+	mov	[copy_count],eax
 .exit_1:
 	ret
 
-  .check_columns:
+.check_columns:
 	push	eax
-	mov	eax,[edi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Size]
+	mov	eax,[edi+EDITOR_LINE_DATA.Size]
 	cmp	eax,[cur_editor.Columns.Count]
 	jbe	@f
 	mov	[cur_editor.Columns.Count],eax
-    @@: pop	eax
+@@:
+	pop	eax
 	ret
 endp
 ;-----------------------------------------------------------------------------
@@ -812,101 +769,91 @@ endp
 ;-----------------------------------------------------------------------------
 proc key.up ;///// GO TO PREVIOUS LINE ///////////////////////////////////////
 ;-----------------------------------------------------------------------------
-	call	clear_selection
-
+	call	key.shift_up
+	jmp	clear_selection
 ;-----------------------------------------------------------------------------
      key.shift_up: ;///// GO TO PREVIOUS LINE, WITH SELECTION ////////////////
 ;-----------------------------------------------------------------------------
-	mov	eax,[cur_editor.Caret.Y]
-	dec	eax
-	jns	@f
-	xor	eax,eax
-    @@: mov	ecx,[cur_editor.TopLeft.Y]
-	cmp	eax,ecx
-	jae	@f
+	mov	ecx,[cur_editor.Caret.Y]
 	dec	ecx
-	jns	@f
-	xor	ecx,ecx
-    @@: test	[chr],KM_SHIFT
-	jnz	@f
-	mov	[cur_editor.SelStart.Y],eax
-    @@: mov	[cur_editor.Caret.Y],eax
-	mov	[cur_editor.TopLeft.Y],ecx
-
-  .exit:
+	js	.exit
+	mov	[cur_editor.Caret.Y],ecx
+	call	get_line_offset
+	mov	eax,[esi]
+	cmp	eax,[cur_editor.Caret.X]
+	jnc	.exit
+	mov	[cur_editor.Caret.X],eax
+.exit:
 	ret
 endp
 
 ;-----------------------------------------------------------------------------
 proc key.down ;///// GO TO NEXT LINE /////////////////////////////////////////
 ;-----------------------------------------------------------------------------
-	call	clear_selection
-
+	call	key.shift_down
+	jmp	clear_selection
 ;-----------------------------------------------------------------------------
      key.shift_down: ;///// GO TO NEXT LINE, WITH SELECTION //////////////////
 ;-----------------------------------------------------------------------------
-
-	mov	eax,[cur_editor.Caret.Y]
-	inc	eax
-	cmp	eax,[cur_editor.Lines.Count]
-	jb	@f
-	dec	eax
-    @@: mov	ecx,[cur_editor.TopLeft.Y]
-	mov	edx,eax
-	sub	edx,ecx
-	cmp	edx,[lines.scr]
-	jb	@f
+	mov	ecx,[cur_editor.Caret.Y]
 	inc	ecx
-    @@: test	[chr],KM_SHIFT
-	jnz	@f
-	mov	[cur_editor.SelStart.Y],eax
-    @@: mov	[cur_editor.Caret.Y],eax
-	mov	[cur_editor.TopLeft.Y],ecx
-
-  .exit:
+	cmp	[cur_editor.Lines.Count],ecx
+	jz	.exit
+	mov	[cur_editor.Caret.Y],ecx
+	call	get_line_offset
+	mov	eax,[esi]
+	cmp	eax,[cur_editor.Caret.X]
+	jnc	.exit
+	mov	[cur_editor.Caret.X],eax
+.exit:
 	ret
 endp
 
 ;-----------------------------------------------------------------------------
 proc key.left ;///// GO TO PREVIOUS CHAR /////////////////////////////////////
 ;-----------------------------------------------------------------------------
-	call	clear_selection
-
+	call	key.shift_left
+	jmp	clear_selection
 ;-----------------------------------------------------------------------------
      key.shift_left: ;///// GO TO PREVIOUS CHAR, WITH SELECTION //////////////
 ;-----------------------------------------------------------------------------
 	mov	eax,[cur_editor.Caret.X]
 	dec	eax
 	jns	@f
-	inc	eax
-    @@: test	[chr],KM_SHIFT
-	jnz	@f
-	mov	[cur_editor.SelStart.X],eax
-    @@: mov	[cur_editor.Caret.X],eax
-
-  .exit:
+	mov	ecx,[cur_editor.Caret.Y]
+	dec	ecx
+	js	.exit
+	mov	[cur_editor.Caret.Y],ecx
+	call	get_line_offset
+	mov	eax,[esi]
+@@:
+	mov	[cur_editor.Caret.X],eax
+.exit:
 	ret
 endp
 
 ;-----------------------------------------------------------------------------
 proc key.right ;///// GO TO NEXT CHAR ////////////////////////////////////////
 ;-----------------------------------------------------------------------------
-	call	clear_selection
-
+	call	key.shift_right
+	jmp	clear_selection
 ;-----------------------------------------------------------------------------
      key.shift_right: ;///// GO TO NEXT CHAR, WITH SELECTION /////////////////
 ;-----------------------------------------------------------------------------
+	mov	ecx,[cur_editor.Caret.Y]
+	call	get_line_offset
 	mov	eax,[cur_editor.Caret.X]
 	inc	eax
-	cmp	eax,[cur_editor.Columns.Count]
-	jbe	@f
-	dec	eax
-    @@: test	[chr],KM_SHIFT
-	jnz	@f
-	mov	[cur_editor.SelStart.X],eax
-    @@: mov	[cur_editor.Caret.X],eax
-
-  .exit:
+	cmp	[esi],eax
+	jnc	@f
+	inc	ecx
+	cmp	[cur_editor.Lines.Count],ecx
+	jz	.exit
+	xor	eax,eax
+	mov	[cur_editor.Caret.Y],ecx
+@@:
+	mov	[cur_editor.Caret.X],eax
+.exit:
 	ret
 endp
 
@@ -1631,33 +1578,28 @@ endp
 ;-----------------------------------------------------------------------------
 proc key.f3 ;///// FIND NEXT MATCH ///////////////////////////////////////////
 ;-----------------------------------------------------------------------------
-	call	search
-	jc	@f
-    @@: ret
-endp
-
-;-----------------------------------------------------------------------------
-proc key.f9 ;///// COMPILE AND RUN ///////////////////////////////////////////
-;-----------------------------------------------------------------------------
-	mov	bl,1
-	call	start_fasm
-	ret
-endp
-
-;-----------------------------------------------------------------------------
-proc key.f10 ;///// COMPILE AND RUN UNDER DEBUG //////////////////////////////
-;-----------------------------------------------------------------------------
-	mov	bl,2
-	call	start_fasm
-	ret
+	jmp	search
 endp
 
 ;-----------------------------------------------------------------------------
 proc key.ctrl_f9 ;///// COMPILE //////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	mov	bl,0
-	call	start_fasm
-	ret
+	jmp	start_fasm
+endp
+
+;-----------------------------------------------------------------------------
+proc key.f9 ;///// COMPILE AND RUN ///////////////////////////////////////////
+;-----------------------------------------------------------------------------
+	mov	bl,1
+	jmp	start_fasm
+endp
+
+;-----------------------------------------------------------------------------
+proc key.f10 ;///// COMPILE AND RUN UNDER DEBUG //////////////////////////////
+;-----------------------------------------------------------------------------
+	mov	bl,2
+	jmp	start_fasm
 endp
 
 ;-----------------------------------------------------------------------------

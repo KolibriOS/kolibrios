@@ -197,10 +197,11 @@ mouse:
 	mov	ecx,6
 	idiv	ecx
     @@: add	eax,[cur_editor.TopLeft.X]
-
-	cmp	eax,[cur_editor.Columns.Count]
+	mov	ecx, ebx
+	call	get_line_offset
+	cmp	eax,[esi]
 	jl	@f
-	mov	eax,[cur_editor.Columns.Count]
+	mov	eax,[esi]
     @@: cmp	ebx,[cur_editor.Lines.Count]
 	jl	@f
 	mov	ebx,[cur_editor.Lines.Count]

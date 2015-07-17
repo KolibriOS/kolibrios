@@ -1,288 +1,184 @@
-;-----------------------------------------------------------------------------
+
 put_to_clipboard:
-; we have allocated memory?
 	mov	edi,[clipboard_buf]
 	test	edi,edi
 	jz	.end
-; convert from Tinypad format to the kernel clipboard format
-	add	edi,3*4
+	add	edi,12
 	mov	esi,[copy_buf]
-	mov	ecx,[copy_count]
+	mov	edx,[copy_count]
+	mov	ax,0x0a0d	; End of String
 	cld
-;--------------------------------------
-@@:
-	push	ecx
-	lodsd
-	mov	ecx,eax
-	lodsw
-	rep	movsb
-	mov	ax,0x0a0d ; EOS (end of string)
+@@:	; convert format from Tinypad to clipboard
+	mov	ecx,[esi]
+	add	esi,sizeof.EDITOR_LINE_DATA
+	rep movsb
 	stosw
-;	mov	ax,0x0d
-;	stosb
-	pop	ecx
-	dec	ecx
+	dec	edx
 	jnz	@b
 
-	sub	edi,2 ; delete last EOS (0x0a0d)
+	sub	edi,2		; delete last EoS
 	xor	eax,eax
 	stosb
-; building the clipboard slot header
+; build the clipboard slot header
 	mov	esi,[clipboard_buf]
 	sub	edi,esi
-	mov	[esi],edi ; clipboard area size
+	mov	[esi],edi	; clipboard area size
 	xor	eax,eax
-	mov	[esi+4],eax ;	; type 'text'
+	mov	[esi+4],eax	; type 'text'
 	inc	eax
 	mov	[esi+8],eax	; cp866 text encoding
 ; put slot to the kernel clipboard
 	mov	edx,[clipboard_buf]
 	mov	ecx,[edx]
 	mcall	54,2
-; remove unnecessary memory area
+	stdcall mem.Free,[clipboard_buf]
+	stdcall mem.Free,[copy_buf]
 	xor	eax,eax
-        stdcall mem.ReAlloc,[clipboard_buf],eax
-        mov     [clipboard_buf],eax
-	xor	eax,eax
+	mov	[copy_buf],eax
 	mov	[copy_size],eax
-        mov     [copy_count],eax
-        stdcall mem.ReAlloc,[copy_buf],eax
-        mov     [copy_buf],eax
-;--------------------------------------
+	mov	[copy_count],eax
+	mov	[clipboard_buf],eax
 .end:
 	ret
-;-----------------------------------------------------------------------------
+;---------------------------------------------------------------
 get_from_clipboard:
+	mov	[copy_size],0
 	pushad
 	mcall	54,0
-; no slots of clipboard ?
 	test	eax,eax
-	jz	.exit
-; main list area not found ?	
+	jz	.exit	; no slots of clipboard
 	inc	eax
-	test	eax,eax
-	jz	.exit
-
+	jz	.exit	; main list area not found
 	sub	eax,2
 	mov	ecx,eax
 	mcall	54,1
-; main list area not found ?
 	inc	eax
-	test	eax,eax
-	jz	.exit
-; error ?
+	jz	.exit	; main list area not found
 	sub	eax,2
-	test	eax,eax
-	jz	.exit
-	
+	jz	.exit	; error
 	inc	eax
 	mov	[clipboard_buf],eax
 ; check contents of container
 	mov	ebx,[eax+4]
-; check for text
 	test	ebx,ebx
-	jnz	.no_valid_text
-	
+	jnz	.freeMemory	; not text
 	mov	ebx,[eax+8]
-; check for cp866
-	cmp	bl,1
-	jz	.yes_valid_text
-	
-.no_valid_text:
-	xor	eax,eax
-	mov	[copy_size],eax
-	jmp	.remove_area
-;--------------------------------------	
-.yes_valid_text:
-	call	know_number_line_breaks
-        mov     [copy_count],ebx
-; correction of erroneous buffer size
-	mov	eax,[clipboard_buf]
-	sub	esi,eax
-	mov	[eax],esi
-; multiple by 6
-	shl	ebx,1
-	lea	ebx,[ebx*3]
-; calculating a desired size
-	mov	eax,[clipboard_buf]
-	mov	eax,[eax]
-	sub	eax,4*3
-	add	eax,ebx
-        mov     [copy_size],eax	
-
-        stdcall mem.ReAlloc,[copy_buf],eax
-        mov     [copy_buf],eax
-
-	call	convert_clipboard_buf_to_copy_buf
-; remove unnecessary memory area
-.remove_area:
-	xor	eax,eax
-        stdcall mem.ReAlloc,[clipboard_buf],eax
-        mov     [clipboard_buf],eax
-;--------------------------------------
+	dec	ebx
+	jnz	.freeMemory	; not cp866
+	mov	edi,[clipboard_buf]
+	mov	al, 10
+	mov	ecx,[edi]
+	add	edi,12
+	sub	ecx,12
+	jbe	.freeMemory
+	cmp	byte[edi],0
+	jz	.freeMemory
+@@:
+	dec	ecx
+	cmp	byte[edi+ecx],0
+	jz	@b
+	inc	ecx
+	push	ecx
+	cld
+@@:	; count strings
+	repnz scasb
+	inc	ebx
+	test	ecx,ecx
+	jnz	@b
+	dec	edi
+	cmp	byte[edi],10
+	jnz	@f
+	inc	ebx
+@@:
+	mov	[copy_count],ebx
+	lea	eax,[ebx*4+ebx+2]
+	add	eax,[esp]
+	stdcall mem.Alloc,eax
+	mov	[copy_buf],eax
+	mov	esi,eax
+	mov	edi,[clipboard_buf]
+	add	edi,12
+	pop	ecx
+	mov	ebx,ecx
+	mov	al, 10
+.stringSize:	; convert format from clipboard to Tinypad
+	repnz scasb
+	sub	ebx,ecx
+	mov	edx,edi
+	sub	edi,ebx
+	dec	ebx
+	test	ecx,ecx
+	jnz	.stringEnd
+.lastString:
+	cmp	byte[edi+ebx],10
+	jz	.stringEnd
+	cmp	byte[edi+ebx],0
+	jnz	@f
+	dec	ebx
+	jmp	.lastString
+.stringEnd:
+	dec	ebx
+	cmp	byte[edi+ebx],13
+	jz	.copyString
+@@:
+	inc	ebx
+.copyString:
+	mov	[esi],ebx
+	add	esi,sizeof.EDITOR_LINE_DATA
+	xchg	ebx,ecx
+	xchg	esi,edi
+	rep movsb
+	mov	ecx,ebx
+	jcxz	.done
+	mov	esi,edi
+	mov	edi,edx
+	jmp	.stringSize
+.done:
+	cmp	esi,edx
+	jz	@f
+	inc	ecx
+	mov	[edi],ecx
+	add	edi,sizeof.EDITOR_LINE_DATA
+	mov	byte[edi],' '
+	inc	edi
+@@:
+	sub	edi,[copy_buf]
+	mov	[copy_size],edi
+.freeMemory:
+	stdcall mem.Free,[clipboard_buf]
+	mov	[clipboard_buf],0
 .exit:
 	popad
 	ret
-;-----------------------------------------------------------------------------
+;---------------------------------------------------------------
 check_clipboard_for_popup:
 	pushad
 	mov	[popup_valid_text],0
 	mcall	54,0
-; no slots of clipboard ?
 	test	eax,eax
-	jz	.exit
-; main list area not found ?	
+	jz	.exit	; no slots of clipboard
 	inc	eax
-	test	eax,eax
-	jz	.exit
-
+	jz	.exit	; main list area not found
 	sub	eax,2
 	mov	ecx,eax
 	mcall	54,1
-; main list area not found ?
 	inc	eax
-	test	eax,eax
-	jz	.exit
-; error ?
+	jz	.exit	; main list area not found
 	sub	eax,2
-	test	eax,eax
-	jz	.exit
-	
+	jz	.exit	; error
 	inc	eax
 	mov	[clipboard_buf],eax
 ; check contents of container
 	mov	ebx,[eax+4]
-; check for text
 	test	ebx,ebx
-	jnz	.remove_area
-	
+	jnz	.freeMemory	; not text
 	mov	ebx,[eax+8]
-; check for cp866
-	cmp	bl,1
-	jnz	.remove_area
-
-.yes_valid_text:
+	dec	ebx
+	jnz	.freeMemory	; not cp866
 	mov	[popup_valid_text],1
-; remove unnecessary memory area
-.remove_area:
-	xor	eax,eax
-        stdcall mem.ReAlloc,[clipboard_buf],eax
-        mov     [clipboard_buf],eax
-;--------------------------------------
+.freeMemory:
+	stdcall mem.Free,[clipboard_buf]
+	mov	[clipboard_buf],0
 .exit:
 	popad
 	ret
-;-----------------------------------------------------------------------------
-convert_clipboard_buf_to_copy_buf:
-	mov	edi,[copy_buf]
-	mov	ebx,edi
-	add	edi,6
-	mov	eax,[clipboard_buf]
-	mov	esi,eax
-	add	esi,4*3
-	mov	ecx,[eax]
-	sub	ecx,4*3-1
-	xor	edx,edx
-	cld
-;--------------------------------------
-.loop:
-	lodsb
-
-	test	al,al
-	jz	.end_of_data
-	
-	cmp	al,0x0d
-	je	.check_0x0a
-	
-	cmp	al,0x0a
-	je	.inc_counter
-
-	dec	ecx
-	jz	.end_of_data
-	
-	stosb
-	jmp	.loop
-;--------------------------------------
-.check_0x0a:
-	dec	ecx
-	jz	.end_of_data
-	
-	cmp	[esi],byte 0x0a
-	jne	@f
-	
-	lodsb
-;--------------------------------------
-.inc_counter:
-	dec	ecx
-	jz	.end_of_data
-;--------------------------------------
-@@:
-	mov	eax,edi
-	sub	eax,ebx
-	sub	eax,6
-	mov	[ebx],eax ; size of current string
-	mov	ebx,edi
-	add	edi,6
-	inc	edx
-	jmp	.loop
-;--------------------------------------	
-.end_of_data:
-	mov	eax,edi
-	sub	eax,ebx
-	sub	eax,6
-	mov	[ebx],eax ; size of current string
-	sub	edi,[copy_buf]
-        mov     [copy_size],edi	
-	ret
-;-----------------------------------------------------------------------------
-know_number_line_breaks:
-; to know the number of line breaks
-	mov	eax,[clipboard_buf]
-	mov	esi,eax
-	add	esi,4*3
-	mov	ecx,[eax]
-	sub	ecx,4*3
-	xor	ebx,ebx
-	cld
-;--------------------------------------
-@@:
-	lodsb
-	
-	test	al,al
-	jz	.end_of_data
-	
-	cmp	al,0x0d
-	je	.check_0x0a
-	
-	cmp	al,0x0a
-	je	.inc_counter
-	
-	dec	ecx
-	jnz	@b
-	
-	jmp	.end_of_data
-;--------------------------------------
-.check_0x0a:
-	inc	ebx
-	dec	ecx
-	jz	.end_of_data
-	
-	cmp	[esi],byte 0x0a
-	jne	@b
-	
-	lodsb
-	dec	ecx
-	jnz	@b
-	
-	jmp	.end_of_data
-;--------------------------------------	
-.inc_counter:
-	inc	ebx
-	dec	ecx
-	jnz	@b
-;--------------------------------------	
-.end_of_data:
-	add	ebx,2
-	inc	esi
-	ret
-;-----------------------------------------------------------------------------
