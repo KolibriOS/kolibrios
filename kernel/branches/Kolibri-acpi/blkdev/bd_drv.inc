@@ -7,8 +7,7 @@
 
 $Revision: 4420 $
 
-
-; Access through BIOS by diamond
+; Disk access through BIOS
 iglobal
 align 4
 bd_callbacks:
@@ -23,6 +22,16 @@ bd_callbacks:
 .end:
 endg
 
+uglobal
+bios_hdpos          dd 0
+bios_cur_sector     dd ?
+bios_read_len       dd ?
+cache_chain_ptr     dd ?
+int13_regs_in       rb sizeof.v86_regs
+int13_regs_out      rb sizeof.v86_regs
+cache_chain_size    db ?
+endg
+;-----------------------------------------------------------------
 proc bd_read_interface stdcall uses edi, \
         userdata, buffer, startsector:qword, numsectors
         ; userdata = old [hdpos] = 80h + index in NumBiosDisks
@@ -76,7 +85,7 @@ endl
         xor     eax, eax
         ret
 endp
-
+;-----------------------------------------------------------------
 proc bd_write_interface stdcall uses esi edi, \
         userdata, buffer, startsector:qword, numsectors
         ; userdata = old [hdpos] = 80h + index in NumBiosDisks
@@ -142,7 +151,7 @@ endl
         xor     eax, eax
         ret
 endp
-
+;-----------------------------------------------------------------
 ; This is a stub.
 proc bd_querymedia stdcall, hd_data, mediainfo
         mov     eax, [mediainfo]
@@ -153,16 +162,7 @@ proc bd_querymedia stdcall, hd_data, mediainfo
         xor     eax, eax
         ret
 endp
-
-;-----------------------------------------------------------------------------
-; \begin{diamond}
-uglobal
-bios_hdpos      dd 0       ; 0 is invalid value for [hdpos]
-bios_cur_sector dd ?
-bios_read_len   dd ?
-endg
-;-----------------------------------------------------------------------------
-align 4
+;-----------------------------------------------------------------
 bd_read:
         push    eax
         push    edx
@@ -209,8 +209,7 @@ bd_read:
 .v86err:
         mov     [hd_error], 1
         jmp     hd_read_error
-;-----------------------------------------------------------------------------
-align 4
+;-----------------------------------------------------------------
 bd_write_cache_chain:
         pusha
         mov     edi, OS_BASE + 0x9A000
@@ -234,13 +233,7 @@ bd_write_cache_chain:
         popa
         mov     [hd_error], 1
         jmp     hd_write_error
-;-----------------------------------------------------------------------------
-uglobal
-int13_regs_in   rb sizeof.v86_regs
-int13_regs_out  rb sizeof.v86_regs
-endg
-;-----------------------------------------------------------------------------
-align 4
+;-----------------------------------------------------------------
 int13_call:
 ; Because this code uses fixed addresses,
 ; it can not be run simultaniously by many threads.
@@ -290,4 +283,3 @@ int13_call:
         mov     edx, ecx
 @@:
         ret
-; \end{diamond}

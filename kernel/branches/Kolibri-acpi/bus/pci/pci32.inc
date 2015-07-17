@@ -165,7 +165,6 @@ pci_read_reg:
 
         call    pci_make_config_cmd
         mov     ebx, eax
-                ; get current state
         mov     dx, 0xcf8
         in      eax, dx
         push    eax
@@ -692,7 +691,7 @@ end virtual
         test    eax, eax
         jz      .nomemory
         mov     edi, eax
-        mov     [edi+PCIDEV.vid_did], ecx
+        mov     [edi+PCIDEV.vendor_device_id], ecx
         mov     edx, pcidev_list
         list_add_tail edi, edx
         mov     eax, dword [.devfn]
@@ -704,19 +703,19 @@ end virtual
         shr     eax, 8                                ;FIXME use byte mask
         mov     [edi+PCIDEV.class], eax
 
-        mov     ah, [.bus]
-        mov     bh, byte [.devfn]
-        mov     al, 2
-        mov     bl, PCI_SUBSYSTEM_VENDOR_ID
-        call    pci_read_reg
-        mov     [edi+PCIDEV.svid_sdid], eax
+;        mov     ah, [.bus]
+;        mov     bh, byte [.devfn]
+;        mov     al, 2
+;        mov     bl, PCI_SUBSYSTEM_VENDOR_ID
+;        call    pci_read_reg
+;        mov     [edi+PCIDEV.svid_sdid], eax
 
-        mov     ah, [.bus]
-        mov     al, 0
-        mov     bh, [.devfn]
-        mov     bl, PCI_IRQ_LINE
-        call    pci_read_reg
-        mov     [edi+PCIDEV.irq_line], al
+;        mov     ah, [.bus]
+;        mov     al, 0
+;        mov     bh, [.devfn]
+;        mov     bl, PCI_IRQ_LINE
+;        call    pci_read_reg
+;        mov     [edi+PCIDEV.irq_line], al
 
         test    byte [.devfn], 7
         jnz     .next_func
@@ -739,6 +738,11 @@ end virtual
         ret
 endp
 
+; Export for drivers. Just returns the pointer to the pci-devices list.
+proc get_pcidev_list
+        mov     eax, pcidev_list
+        ret
+endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

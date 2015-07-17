@@ -281,7 +281,7 @@ blit_32:
         mov     ebp, [d_width_calc_area+ebp*4]
 
         add     ebp, ebx
-        add     ebp, [_WinMapAddress]
+        add     ebp, [_display.win_map]
 
         mov     eax, [esp+BLITTER.src_y]
         imul    eax, [esp+BLITTER.stride]
@@ -370,7 +370,7 @@ align 4
         jnz     .inner32
 
         add     esi, [esp+BLITTER.stride]
-        add     edi, [_display.pitch]
+        add     edi, [_display.lfb_pitch]
         add     ebp, [_display.width]
         inc     dword [esp+.x_y]
 
@@ -432,7 +432,7 @@ align 4
         jnz     .inner32
 
         add     esi, [esp+BLITTER.stride]
-        add     edi, [_display.pitch]
+        add     edi, [_display.lfb_pitch]
         add     ebp, [_display.width]
         inc     dword [esp+.x_y]
 

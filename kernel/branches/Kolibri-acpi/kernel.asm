@@ -702,11 +702,30 @@ setvideomode:
         mov     esi, boot_setostask
         call    boot_log
 
-        mov     edi, sys_proc
-        list_init edi
-        lea     ecx, [edi+PROC.thr_list]
-        list_init ecx
-        mov     [edi+PROC.pdt_0_phys], sys_proc-OS_BASE+PROC.pdt_0
+        mov     eax, sys_proc
+        lea     edi, [eax+PROC.heap_lock]
+        mov     ecx, (PROC.ht_free-PROC.heap_lock)/4
+
+        list_init eax
+        add     eax, PROC.thr_list
+        list_init eax
+
+        xor     eax, eax
+        cld
+        rep stosd
+
+        mov     [edi], dword (PROC.pdt_0 - PROC.htab)/4 - 3
+        mov     [edi+4], dword 3           ;reserve handles for stdin stdout and stderr
+        mov     ecx, (PROC.pdt_0 - PROC.htab)/4
+        add     edi, 8
+        inc     eax
+@@:
+        stosd
+        inc     eax
+        cmp     eax, ecx
+        jbe     @B
+
+        mov     [sys_proc+PROC.pdt_0_phys], sys_proc-OS_BASE+PROC.pdt_0
 
         mov     eax, -1
         mov     edi, thr_slot_map+4
@@ -806,7 +825,6 @@ endg
         mov     eax, [cr3_ap+OS_BASE]
         call    free_page
 .no_wake_cpus:
-
 
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
         mov     esi, boot_initirq
