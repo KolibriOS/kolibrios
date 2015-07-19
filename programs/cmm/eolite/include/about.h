@@ -1,6 +1,6 @@
 //Leency 2008-2013
 
-#define BROWSER_PATH    "/sys/htmlv"
+#define BROWSER_PATH    "/sys/network/webview"
 #define BROWSER_LINK    "http://kolibri-n.org/index.php"
 
 #ifdef LANG_RUS

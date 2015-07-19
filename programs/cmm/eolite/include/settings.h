@@ -12,7 +12,7 @@
 	?define NOTIFY_COPY_END "Уведомлять о завершении копирования"
 	?define CANCEL_T "Отмена"
 	?define APPLY_T "Применить"
-	?define T_DOUBLE_CLICK "Время двойного клик  (в сотых)"
+	?define T_DOUBLE_CLICK "Время двойного клика (в сотых)"
 #else
 	?define EDIT_FILE_ASSOCIATIONS "Edit file associations"
 	?define TITLE_SETT "Settings"
@@ -23,7 +23,7 @@
 	?define NOTIFY_COPY_END "Notify when copying finished"
 	?define CANCEL_T "Cancel"
 	?define APPLY_T "Apply"
-	?define T_DOUBLE_CLICK "Time double click (in hundredths)"
+	?define T_DOUBLE_CLICK "Double click time (in hundredths)"
 #endif
 
 char confir_section = "Config";
@@ -89,10 +89,10 @@ void settings_dialog()
 				break;
 			
 		case evReDraw:
-				DefineAndDrawWindow(Form.left + Form.width/2, Form.top + Form.height/2 - 75, 300, 232+GetSkinHeight(),0x34,sc.work,TITLE_SETT);
+				DefineAndDrawWindow(Form.left + Form.width/2, Form.top + Form.height/2 - 75, 300, 234+GetSkinHeight(),0x34,sc.work,TITLE_SETT);
 				GetProcessInfo(#settings_form, SelfInfo);
 				DrawSettingsCheckBoxes();
-				DrawFlatButton(9, 168, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
+				DrawFlatButton(9, 166, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
 				DrawFlatButton(128, settings_form.cheight - 30, 70, 22, 10, 0xE4DFE1, APPLY_T);
 				DrawFlatButton(208, settings_form.cheight - 30, 70, 22, 11, 0xE4DFE1, CANCEL_T);
 	}
