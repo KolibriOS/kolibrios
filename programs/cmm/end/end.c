@@ -50,7 +50,7 @@ int PANEL_X, PANEL_Y;
 void main()
 {   
 	int key;
-	dword s1,s2, s3, s4, sides_w;
+	dword s1,s2, s3, s4, sides_w,i;
 
 	mem_Init();
 	WIN_SIZE_X=GetScreenWidth()+1;
@@ -106,11 +106,15 @@ void main()
 			sc.get();
 			DefineAndDrawWindow(0,0,WIN_SIZE_X, WIN_SIZE_Y, 0x01, 0, 0, 0x01fffFFF);
 			//_PutImage(0,0,WIN_SIZE_X,WIN_SIZE_Y,shadow_buf);
-			_PutImage(0,0,WIN_SIZE_X, PANEL_Y,s1);
+			if(!i){
+				_PutImage(0,0,WIN_SIZE_X, PANEL_Y,s1);
+				
+				_PutImage(0,PANEL_Y,sides_w, PANEL_SIZE_Y+1,s2);
+				_PutImage(sides_w+PANEL_SIZE_X+1,PANEL_Y,sides_w-1, PANEL_SIZE_Y+1,s3);
+				_PutImage(0,PANEL_Y+PANEL_SIZE_Y+1,WIN_SIZE_X, PANEL_Y-1,s4);
+				//i = 1;
+			}
 			draw_main_area(PANEL_X, PANEL_Y, PANEL_SIZE_X, PANEL_SIZE_Y);
-			_PutImage(0,PANEL_Y,sides_w, PANEL_SIZE_Y+1,s2);
-			_PutImage(sides_w+PANEL_SIZE_X+1,PANEL_Y,sides_w-1, PANEL_SIZE_Y+1,s3);
-			_PutImage(0,PANEL_Y+PANEL_SIZE_Y+1,WIN_SIZE_X, PANEL_Y-1,s4);
 			break;
 		default: _DRAW:
 			draw_stars();

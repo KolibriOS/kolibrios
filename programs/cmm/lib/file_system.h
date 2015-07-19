@@ -33,8 +33,8 @@
 
 :void DrawDate(dword x, y, color, in_date)
 {
-	//char text[10];
-	EDI = in_date;
+	char text[15];
+	/*EDI = in_date;
 	EAX = 47;
 	EBX = 2<<16;
 	EDX = x<<16+y;
@@ -47,10 +47,10 @@
 	EDX += 18<<16;
 	EBX = 4<<16;
 	ECX = EDI.date.year;
-	$int 0x40;
-	
-	//sprintf(#text,"%d.%d.%d",EDI.date.day,EDI.date.month,EDI.date.year);
-	//WriteText(x, y, 0x80, 0x80<<24+color, #text);
+	$int 0x40;*/
+
+	//sprintf(#text,"%s","ddf");
+	WriteText(x, y, 0x80, color, "adas\0");
 }
 
 

@@ -46,7 +46,7 @@ inline fastcall int random( ECX)
   $pop ebx  
 }
 
-:inline long unirand0(void)
+inline long unirand0(void)
 {
 	 long k,ans,tmp,save;
 	 save = __generator;
@@ -63,7 +63,7 @@ inline fastcall int random( ECX)
 }
 
 :long RAND_A,RAND_C,RAND_TMP;
-:inline long rand(signed long x1,x2)
+inline long rand(signed long x1,x2)
 {
 	long tmp,xx;
 	RAND_A = __generator;

@@ -1,6 +1,6 @@
 //CODED by Veliant, Leency, Nable. GNU GPL licence.
 
-#define LIB_KOLIBRI_H
+#define INCLUDE_KOLIBRI_H
 
 #startaddress 0
 #code32 TRUE
@@ -92,10 +92,10 @@ char program_path[4096];
  *  up - key release events
  *  move - event mouse movements
  *  click - when clicked
- *  dblclick - double-click the default 50 ms
+ *  dblclick - double-click the default 50 (500 ms)
  */
 
-dword __TMP_TIME,MOUSE_TIME;
+:dword __TMP_TIME,MOUSE_TIME;
 :struct mouse
 {
 	signed x,y,xx,yy,lkm,mkm,pkm,key,tmp,tmp_time,hor,vert,down,up,move,click,dblclick,left,top;
@@ -296,7 +296,7 @@ dword __TMP_TIME,MOUSE_TIME;
 }
 
 //------------------------------------------------------------------------------
-dword wait_event_code;
+:dword wait_event_code;
 inline fastcall dword WaitEvent()
 {
 	$mov eax,10
@@ -373,6 +373,18 @@ inline fastcall dword GetFreeRAM()
 	$mov ebx, 16
 	$int 0x40
 	//return eax = размер свободной памяти в килобайтах
+}
+
+inline void draw_line(dword x1,y1,x2,y2,color)
+{
+	x2--;y2--;y1--;
+	$mov EAX,38
+	EBX = x1<<16;
+	EBX |= x2;
+	ECX = y1<<16;
+	ECX |= y2;
+	$mov EDX,color
+	$int 0x40
 }
 
 inline fastcall dword LoadDriver(ECX) //ECX - имя драйвера
@@ -761,6 +773,19 @@ void DefineButton(dword x,y,w,h,EDX,ESI)
 	$int 0x40
 }
 
+inline RefreshWindow(dword ID_REFRESH,ID_ACTIVE)
+{
+	EAX = 18;
+	EBX = 22;
+	ECX = 3;
+	EDX = ID_REFRESH;
+	$int 0x40
+	EAX = 18;
+	EBX = 3;
+	EDX = ID_ACTIVE;
+	$int 0x40
+}
+
 void UnsafeDefineButton(dword x,y,w,h,EDX,ESI)
 {
 	EAX = 8;
@@ -808,15 +833,31 @@ inline fastcall dword GetStartTime()
 	return mem;
 }
 
+:struct _screen
+{
+	dword width,height;
+} screen;
+
+:struct _skin
+{
+	dword width,height;
+} skin;
+
 dword __generator;  // random number generator - для генерации случайных чисел
 
-dword program_path_length;
+:dword program_path_length;
 
 //The initialization of the initial data before running
 void load_init_main()
 {
-	//program_path_length = strlen(program_path);
+	skin.height   = GetSkinHeight();
+	
+	screen.width  = GetScreenWidth();
+	screen.height = GetScreenHeight();
+	
+	//program_path_length = strlen(I_Path);
 	MOUSE_TIME = 50; //Default 500 ms.
 	__generator = GetStartTime();
+	//mem_Init();
 	main();
 }

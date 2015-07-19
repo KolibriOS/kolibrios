@@ -178,7 +178,7 @@ L2:
     $jnz L2
 }
 
-:inline dword strncpy(dword text1, text2, signed len)
+inline dword strncpy(dword text1, text2, signed len)
 	signed o1,o2;
 {
 	if(!text1)||(!len) return text1;
@@ -237,7 +237,7 @@ inline fastcall void strtrim( ESI)
 }
 */
 
-byte __isWhite(int s){ if (s==13)||(s==32)||(s==10)||(s==9) return true; return false; }
+inline byte __isWhite(int s){ if (s==13)||(s==32)||(s==10)||(s==9) return true; return false; }
 inline void strltrim(dword text){
 	int s;
 	dword back_text;
@@ -451,7 +451,7 @@ LS3:
   }
 }
 
-dword strcmpi(dword cmp1, cmp2)
+inline dword strcmpi(dword cmp1, cmp2)
 {
     char si, ue;
 
@@ -470,7 +470,7 @@ dword strcmpi(dword cmp1, cmp2)
     }
 }
 
-dword strstri(dword searchin, usestr_s)
+inline dword strstri(dword searchin, usestr_s)
 {
     dword usestr_e = usestr_s;
     char si, ue;
@@ -489,7 +489,7 @@ dword strstri(dword searchin, usestr_s)
 }
 
 
-unsigned int strcpyb(dword search_in, copyin, startstr, endstr)
+inline unsigned int strcpyb(dword search_in, copyin, startstr, endstr)
 {
     dword startp, endp;
     dword copyin_start_off = copyin;
@@ -662,7 +662,7 @@ inline dword itoa(signed long number)
 	return ret;
 }
 
-:inline fastcall itoa_(signed int EDI, ESI)
+inline fastcall itoa_(signed int EDI, ESI)
 {
     $pusha
     EBX = EDI;
@@ -695,7 +695,7 @@ F3:
     return EBX;
 } 
 
-:inline dword memchr(dword s,int c,signed len)
+inline dword memchr(dword s,int c,signed len)
 {
 	if(!len) return NULL;
 	do {
@@ -706,7 +706,7 @@ F3:
 	return NULL;
 }
 
-:inline dword strdup(dword text)
+inline dword strdup(dword text)
 {
     dword l = strlen(text);
     dword ret = malloc(l+1);
@@ -715,7 +715,7 @@ F3:
     return ret;
 }
 
-:inline dword strndup(dword str, signed maxlen)
+inline dword strndup(dword str, signed maxlen)
 {
 	dword copy,len;
 
@@ -729,7 +729,36 @@ F3:
 	return copy;
 }
 
-:inline cdecl int sprintf(dword buf, format,...)
+inline dword hexdec(dword text)
+{
+	char s;
+	dword ret,l;
+	//l = strlen(text);
+	ret = 0;
+	s = DSBYTE[text];
+	//if(l==6) 
+	while(s)
+	{	
+		ret <<= 4;
+		if(s>='A')&&(s<='F')ret |= s-'A'+10;
+		else if(s>='a')&&(s<='f')ret |= s-'a'+10;
+		else if(s>='0')&&(s<='9')ret |= s-'a'+10;
+		text++;
+		s = DSBYTE[text];
+	}
+	/*else if(l==3) while(s)
+	{	
+		ret <<= 4;
+		if(s>='A')&&(s<='F')ret |= s-'A'+10;
+		else if(s>='a')&&(s<='f')ret |= s-'a'+10;
+		else if(s>='0')&&(s<='9')ret |= s-'a'+10;
+		text++;
+		s = DSBYTE[text];
+	}*/
+	return ret;
+}
+
+inline cdecl int sprintf(dword buf, format,...)
 {
 	byte s;
 	char X[10];
@@ -813,7 +842,7 @@ F3:
 	return buf-ret;
 }
 
-void debugi(dword d_int)
+inline void debugi(dword d_int)
 {
     char tmpch[12];
     itoa_(#tmpch, d_int);
