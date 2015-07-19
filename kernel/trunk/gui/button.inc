@@ -112,9 +112,11 @@ syscall_button: ;///// system function 8 //////////////////////////////////////
         add     ebx, [eax - twdw + WDATA.box.left]
         add     ecx, [eax - twdw + WDATA.box.top]
         mov     eax, ebx
+        inc     eax
         shl     eax, 16
         mov     ax, bx
         add     ax, word[esp + 16]
+        dec     ax
         mov     ebx, ecx
         shl     ebx, 16
         mov     bx, cx
@@ -128,6 +130,8 @@ syscall_button: ;///// system function 8 //////////////////////////////////////
         ; set button height counter
     @@:
         mov     edx, edi
+        add     ebx, 0x00010001
+        dec     edx
 
   .next_line:
         call    button._.button_dececx
@@ -192,6 +196,7 @@ syscall_button: ;///// system function 8 //////////////////////////////////////
         mov     ecx, esi
         call    button._.incecx
 ;        call    [draw_line]
+        dec     ebx
         call    __sys_draw_line
 
         ; right border
