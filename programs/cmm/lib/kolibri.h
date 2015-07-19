@@ -841,7 +841,7 @@ inline fastcall dword GetStartTime()
 :struct _skin
 {
 	dword width,height;
-} skin;
+} SKIN;
 
 dword __generator;  // random number generator - для генерации случайных чисел
 
@@ -850,7 +850,7 @@ dword __generator;  // random number generator - для генерации случайных чисел
 //The initialization of the initial data before running
 void load_init_main()
 {
-	skin.height   = GetSkinHeight();
+	SKIN.height   = GetSkinHeight();
 	
 	screen.width  = GetScreenWidth();
 	screen.height = GetScreenHeight();
