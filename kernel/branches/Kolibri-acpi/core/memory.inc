@@ -1481,6 +1481,8 @@ align 4
         ret
 
 align 4
+;ecx futex handle
+;edx new value
 .futex_wait:
         cmp     ecx, 3
         jb      .epicfail
@@ -1496,12 +1498,13 @@ align 4
         jne     .epicfail
 
         mov     ecx, [edi+FUTEX.pointer]
-        mov     edx, 1
-        mov     eax, [ecx]
-        test    eax, eax
-        jnz     .wait_slow
-        lock cmpxchg [ecx], edx
-        jz      .ok
+
+        mov     eax, edx
+        lock cmpxchg [ecx], edx         ;wait until old_value == new_value
+        jz .wait_slow
+
+        mov     [esp+SYSCALL_STACK._eax], 0
+        ret
 
 .wait_slow:
         pushfd
@@ -1518,25 +1521,56 @@ align 4
 .again:
         call    change_task
 
-        mov     eax, [ecx]
-        test    eax, eax
-        jnz     .again
         lock cmpxchg [ecx], edx
-        jnz     .again
+        jz .again
 
         list_del esp
         add     esp, sizeof.MUTEX_WAITER
 
         popfd
-.ok:
-        mov     [esp+32], eax
+        mov     [esp+SYSCALL_STACK._eax], 0
         ret
 
 .epicfail:
-        mov     [esp+32], dword -1
+        mov     [esp+SYSCALL_STACK._eax], -1
         ret
 
 align 4
 .futex_wake:
+        cmp     ecx, 3
+        jb      .epicfail
+        cmp     ecx, (PROC.pdt_0 - PROC.htab)/4
+        jae     .epicfail
+
+        mov     esi, [current_process]
+        mov     edi, [esi+PROC.htab+ecx*4]
+
+        cmp     [edi+FUTEX.magic], 'FUTX'
+        jne     .epicfail
+        cmp     [edi+FUTEX.handle], ecx
+        jne     .epicfail
+
+        xor     ecx, ecx
+
+        pushfd
+        cli
+
+        lea     ebx, [edi+FUTEX.wait_list]
+        mov     esi, [edi+FUTEX.wait_list.next]
+@@:
+        cmp     esi, ebx
+        je      @F
+
+        mov     eax, [esi+MUTEX_WAITER.task]
+        mov     [eax+TASKDATA.state], 0
+
+        mov     esi, [esi+MUTEX_WAITER.list.next]
+        inc     ecx
+        cmp     ecx, edx
+        jb      @B
+@@:
+        popfd
+        mov     [esp+SYSCALL_STACK._eax], ecx
         ret
+
 

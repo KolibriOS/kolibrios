@@ -202,6 +202,19 @@ struct  IDE_DEVICE
         UDMA_set_mode        db ?
 ends
 
+struct SYSCALL_STACK
+        _eip            dd ?
+        _edi            dd ?    ;  +4
+        _esi            dd ?    ;  +8
+        _ebp            dd ?    ; +12
+        _esp            dd ?    ; +16
+        _ebx            dd ?    ; +20
+        _edx            dd ?    ; +24
+        _ecx            dd ?    ; +28
+        _eax            dd ?    ; +32
+ends
+
+
 ; Core functions
 include "core/sync.inc"     ; macros for synhronization objects
 include "core/sys32.inc"    ; process management
