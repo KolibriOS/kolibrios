@@ -569,6 +569,7 @@ IPv4_find_fragment_slot:
 ; IPv4_output
 ;
 ; IN:   eax = Destination IP
+;       ebx = device ptr (or 0 to let IP layer decide)
 ;       ecx = data length
 ;       edx = Source IP
 ;        di = TTL shl 8 + protocol
@@ -863,6 +864,7 @@ IPv4_fragment:
 ; IPv4_route
 ;
 ; IN:   eax = Destination IP
+;       ebx = outgoing device / 0
 ;       edx = Source IP
 ; OUT:  eax = Destination IP (or gateway IP)
 ;       edx = Source IP
@@ -873,6 +875,9 @@ IPv4_fragment:
 ;---------------------------------------------------------------------------
 align 4
 IPv4_route:     ; TODO: return error if no valid route found
+
+        test    ebx, ebx
+        jnz     .got_device
 
         cmp     eax, 0xffffffff
         je      .broadcast
@@ -901,6 +906,27 @@ IPv4_route:     ; TODO: return error if no valid route found
         mov     edx, [IP_LIST + edi]
   @@:
 
+        ret
+
+  .got_device:
+; Validate device ptr and convert to device number
+        call    NET_ptr_to_num4
+        cmp     edi, -1
+        je      .fail
+
+        mov     edx, [IP_LIST + edi]            ; Source IP
+
+; Check if we should route to gateway or not
+        mov     ebx, [IP_LIST + edi]
+        and     ebx, [SUBNET_LIST + edi]
+        mov     ecx, eax
+        and     ecx, [SUBNET_LIST + edi]
+        je      @f
+        mov     eax, [GATEWAY_LIST + edi]
+  @@:
+        ret
+
+  .fail:
         ret
 
 

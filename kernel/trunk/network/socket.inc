@@ -1160,7 +1160,7 @@ SOCKET_set_opt:
         cmp     dword[edx+8], 0
         je      .unbind
 
-        movzx   edx, byte[edx + 9]
+        movzx   edx, byte[edx + 12]
         cmp     edx, NET_DEVICES_MAX
         ja      .invalid
 
@@ -1169,7 +1169,7 @@ SOCKET_set_opt:
         jz      .already
         mov     [eax + SOCKET.device], edx
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_set_opt: Bound socket %x to device %x\n",eax, edx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_set_opt: Bound socket %x to device %x\n", eax, edx
 
         mov     dword[esp+32], 0        ; success!
         ret

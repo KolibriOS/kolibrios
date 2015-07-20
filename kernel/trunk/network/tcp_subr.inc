@@ -287,6 +287,7 @@ TCP_respond:
         push    cx ebx
         mov     eax, [ebx + IP_SOCKET.RemoteIP]
         mov     edx, [ebx + IP_SOCKET.LocalIP]
+        mov     ebx, [ebx + IP_SOCKET.device]
         mov     ecx, sizeof.TCP_header
         mov     di, IP_PROTO_TCP shl 8 + 128
         call    IPv4_output
@@ -372,6 +373,7 @@ TCP_respond_segment:
         mov     eax, [edi]
         mov     ecx, sizeof.TCP_header
         mov     di, IP_PROTO_TCP shl 8 + 128
+        xor     ebx, ebx                        ;;; fixme
         call    IPv4_output
         jz      .error
         pop     esi cx

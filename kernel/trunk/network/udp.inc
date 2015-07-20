@@ -258,6 +258,7 @@ UDP_output:
         sub     esp, 4                                          ; Data ptr will be placed here
         push    edx esi
         mov     edx, [eax + IP_SOCKET.LocalIP]
+        mov     ebx, [eax + IP_SOCKET.device]
         mov     eax, [eax + IP_SOCKET.RemoteIP]
         mov     di, IP_PROTO_UDP shl 8 + 128
         add     ecx, sizeof.UDP_header
