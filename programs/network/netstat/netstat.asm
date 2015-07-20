@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2014. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  netstat.asm - Network Status Tool for KolibriOS                ;;
@@ -29,13 +29,30 @@ use32
         dd     (I_END+0x1000)   ; esp
         dd     0, 0             ; I_Param, I_Path
 
+include '../../proc32.inc'
 include '../../macros.inc'
+include '../../dll.inc'
+include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+
 include '../../network.inc'
 
+include 'ipcfg.inc'
+
 START:
+
+        mcall   68, 11
+
+        stdcall dll.Load, @IMPORT
+        or      eax, eax
+        jnz     exit
+
         mcall   40, EVM_REDRAW + EVM_BUTTON + EVM_STACK2 + EVM_KEY
 
 window_redraw:
+
+; get system colors
+        mcall   48, 3, sc, 40
+
 ; Notify kernel of start of window draw
         mcall   12, 1
 
@@ -134,6 +151,12 @@ redraw:
         mov     edx, str_bytes_rx
         mcall
         add     ebx, 18
+        mov     edx, str_speed_tx
+        mcall
+        add     ebx, 18
+        mov     edx, str_speed_rx
+        mcall
+        add     ebx, 18
         mov     edx, str_link
         mcall
 
@@ -150,7 +173,7 @@ redraw:
         push    eax
         push    bx
 
-        mov     edx, 134 shl 16 + 35 + 5*18
+        mov     edx, 134 shl 16 + 35 + 7*18
         call    draw_mac
         jmp     end_of_draw
 
@@ -208,6 +231,12 @@ redraw:
 
         add     edx, 18
         call    draw_ip
+
+        cmp     [device], 0
+        je      end_of_draw
+
+        mcall   8, 128 shl 16 + 100, 150 shl 16 + 20, 2, [sc.work_button]
+        mcall   4, 150 shl 16 + 157, [sc.work_button_text], str_ip_cfg, str_ip_cfg.len
 
         jmp     end_of_draw
 
@@ -275,38 +304,65 @@ draw_stats:
         cmp     bl, 10
         jbe     @r
 
-        pop     eax
-        test    al, al
+        pop     ecx
+
+        push    [time]
+        pop     [delta_time]
+        mcall   26, 9
+        mov     [time], eax
+        sub     eax, [delta_time]
+        jnz     @f
+        inc     eax             ; Zero time units? Lets make it at least one.
+  @@:
+        mov     [delta_time], eax
+
+        mov     eax, [esp+4]    ; bytes received
+        push    eax
+        sub     eax, [prev_rx]
+        pop     [prev_rx]
+        xor     edx, edx
+        div     [delta_time]
+        push    eax
+
+        mov     eax, [esp+4]    ; bytes sent
+        push    eax
+        sub     eax, [prev_tx]
+        pop     [prev_tx]
+        xor     edx, edx
+        div     [delta_time]
+        push    eax
+
+        test    cl, cl
         jnz     @f
         mov     edx, str_down
         jmp     .print_link
   @@:
-        cmp     al, 100b
+        cmp     cl, 100b
         jnz     @f
         mov     edx, str_10m
         jmp     .print_link
   @@:
-        cmp     al, 110b
+        cmp     cl, 110b
         jnz     @f
         mov     edx, str_10mfd
         jmp     .print_link
   @@:
-        cmp     al, 1000b
+        cmp     cl, 1000b
         jnz     @f
         mov     edx, str_100m
         jmp     .print_link
   @@:
-        cmp     al, 1010b
+        cmp     cl, 1010b
         jnz     @f
         mov     edx, str_100mfd
         jmp     .print_link
   @@:
-        cmp     al, 1100b
+        cmp     cl, 1100b
         jnz     @f
         mov     edx, str_1g
         jmp     .print_link
   @@:
-        cmp     al, 1110b
+        cmp     cl, 1110b
         jnz     @f
         mov     edx, str_1gfd
         jmp     .print_link
@@ -314,25 +370,39 @@ draw_stats:
         mov     edx, str_unknown
 
   .print_link:
-        mov     ebx, 134 shl 16 + 35 + 4*18
+        mov     ebx, 134 shl 16 + 35 + 6*18
         mov     ecx, 0xc0000000
         mov     edi, 0x00f3f3f3
         mcall   4
 
+; speed tx
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 134 shl 16 + 35 + 3*18
+        mov     edx, 134 shl 16 + 35 + 5*18
         mov     esi, 0x40000000
         mcall   47
 
+; speed rx
         sub     edx, 18
         pop     ecx
         mcall
 
+; bytes received
         sub     edx, 18
         pop     ecx
         mcall
 
+; bytes sent
+        sub     edx, 18
+        pop     ecx
+        mcall
+
+; packets received
+        sub     edx, 18
+        pop     ecx
+        mcall
+
+; packets sent
         sub     edx, 18
         pop     ecx
         mcall
@@ -646,11 +716,17 @@ button:                         ; button
         mcall   17              ; get id
         cmp     ah, 1
         je      exit
+        cmp     ah, 2
+        je      .ipcfg
         cmp     ah, 0
         je      .interface
         shr     ax, 8
         mov     [mode], ax
         jmp     redraw
+
+  .ipcfg:
+        mcall   51, 1, ipcfg, I_END+0x1000
+        jmp     mainloop
 
   .interface:
         shr     eax, 16
@@ -818,6 +894,31 @@ draw_interfaces:
 
 ; DATA AREA
 
+align 16
+@IMPORT:
+
+library box_lib         , 'box_lib.obj', \
+        libini          , 'libini.obj'
+
+import  libini, \
+        ini.get_str     , 'ini_get_str'         ,\
+        ini.set_str     , 'ini_set_str'         ,\
+        ini.enum_sections, 'ini_enum_sections'
+
+import  box_lib                                 ,\
+        edit_box_draw   , 'edit_box'            ,\
+        edit_box_key    , 'edit_box_key'        ,\
+        edit_box_mouse  , 'edit_box_mouse'      ,\
+        edit_set_text   , 'edit_box_set_text'   ,\
+        version_ed      , 'version_ed'          ,\
+        init_checkbox   , 'init_checkbox2'      ,\
+        check_box_draw  , 'check_box_draw2'     ,\
+        check_box_mouse , 'check_box_mouse2'    ,\
+        version_ch      , 'version_ch2'         ,\
+        option_box_draw , 'option_box_draw'     ,\
+        option_box_mouse, 'option_box_mouse'    ,\
+        version_op      , 'version_op'
+
 name            db 'Network status', 0
 mode            dw 101          ; currently selected protocol
 device          db 1            ; currently selected device
@@ -837,10 +938,14 @@ str_subnet      db 'Subnet mask:            .   .   .', 0
 str_gateway     db 'Standard gateway:       .   .   .', 0
 str_arp         db 'ARP entrys:', 0
 str_conflicts   db 'ARP conflicts:', 0
-str_missed      db 'Packets missed:',0
-str_dumped      db 'Packets dumped:',0
-str_queued      db 'Packets queued:',0
-str_link        db 'Link state:',0
+str_missed      db 'Packets missed:', 0
+str_dumped      db 'Packets dumped:', 0
+str_queued      db 'Packets queued:', 0
+str_link        db 'Link state:', 0
+str_speed_tx    db 'Upload (kb/s):', 0
+str_speed_rx    db 'Download (kb/s):', 0
+str_ip_cfg      db 'Configure'
+.len = $ - str_ip_cfg
 
 str_down        db 'disconnected        ', 0
 str_unknown     db 'unknown             ', 0
@@ -854,7 +959,14 @@ str_1gfd        db '1 Gbit Full duplex  ', 0
 str_ARP_legend  db 'IP-address        MAC-address         Status    TTL', 0
 str_ARP_entry   db '   .   .   .        -  -  -  -  -', 0
 
+prev_rx         dd ?
+prev_tx         dd ?
+time            dd ?
+delta_time      dd ?
+
 namebuf         rb 64
 arp_buf         ARP_entry
+
+sc              system_colors
 
 I_END:
