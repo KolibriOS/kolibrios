@@ -655,7 +655,7 @@ start_i8254x:
         mov     eax, [esi + REG_ICR]                    ; Clear pending interrupts
 
         mov     [ebx + device.mtu], 1514
-        mov     [ebx + device.state], ETH_LINK_UNKNOWN  ; Set link state to unknown
+        call    link_status
 
         xor     eax, eax
         ret
@@ -701,6 +701,41 @@ read_mac:
         [ebx + device.mac+0]:2,[ebx + device.mac+1]:2,[ebx + device.mac+2]:2,\
         [ebx + device.mac+3]:2,[ebx + device.mac+4]:2,[ebx + device.mac+5]:2
 
+        ret
+
+
+link_status:
+
+        DEBUGF  1,"Verifying link status\n"
+
+        xor     ecx, ecx                        ; ETH_LINK_DOWN
+        mov     esi, [ebx + device.mmio_addr]
+        mov     eax, [esi + REG_STATUS]
+        test    eax, STATUS_LU
+        jz      .ok
+
+        test    eax, STATUS_FD
+        jz      @f
+        or      cl, ETH_LINK_FD
+  @@:
+        shr     eax, STATUS_SPEED_SHIFT
+        and     al, 3
+        test    al, al
+        jnz     @f
+        or      cl, ETH_LINK_10M
+        jmp     .ok
+  @@:
+        cmp     al, 1
+        jne     @f
+        or      cl, ETH_LINK_100M
+        jmp     .ok
+  @@:
+        or      cl, ETH_LINK_1G
+;        jmp     .ok
+
+  .ok:
+        mov     [ebx + device.state], ecx
+        invoke  NetLinkChanged
         ret
 
 
@@ -890,6 +925,8 @@ int_handler:
         jz      .no_link
 
         DEBUGF  2,"Link Changed\n"
+
+        call    link_status
 
   .no_link:
 
