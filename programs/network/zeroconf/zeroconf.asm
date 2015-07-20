@@ -462,7 +462,7 @@ request_sent:
         mov     ebx, API_IPv4 + 3
         mov     bh, byte[ebp + interface.number]
         mcall   76, , [ebp + interface.ip]            ; ip
-        mov     bl, 5
+        mov     bl, 7
         mcall   76, , [ebp + interface.subnet]        ; subnet
         mov     bl, 9
         mcall   76, , [ebp + interface.gateway]       ; gateway
@@ -475,8 +475,9 @@ request_sent:
         cmp     eax, 'stat'
         je      static.dns
   @@:
+        mov     ebx, API_IPv4 + 5
+        mov     bh, byte[ebp + interface.number]
         mcall   76, , [ebp + interface.dns]           ; dns
-        mov     bl, 7
 
         jmp     link_up
 
