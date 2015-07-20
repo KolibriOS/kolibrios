@@ -32,16 +32,20 @@ ipcfg:
         invoke  ini.get_str, net_ini, str_ini_int, str_ini_ip_type, ini_buf, 16, sz_0
 ;        test    eax, eax
 ;        jz      .disabled
-        cmp     dword[ini_buf], 'dhcp'
-        jne      @f
+        mov     eax, dword[ini_buf]
+        or      eax, 0x20202020
+        cmp     eax, 'stat'
+        je      @f
         mov     [option_ip], op_ip_auto
   @@:
 
 ; Read DNS type
         mov     [option_dns], op_dns_static
         invoke  ini.get_str, net_ini, str_ini_int, str_ini_dns_type, ini_buf, 16, sz_0
-        cmp     dword[ini_buf], 'dhcp'
-        jne     @f
+        mov     eax, dword[ini_buf]
+        or      eax, 0x20202020
+        cmp     eax, 'stat'
+        je      @f
         mov     [option_dns], op_dns_auto
   @@:
 
