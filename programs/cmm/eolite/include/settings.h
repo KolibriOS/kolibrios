@@ -57,15 +57,10 @@ void settings_dialog()
 	save_files_h = files.line_h;
 	save_DBLTime = MOUSE_TIME;
 	
-	//SetEventMask(0x27);
-	
 	loop(){
-	switch(WaitEvent())
-	{
-		/*case evMouse:
-			
-		break;*/
-		case evButton: 
+		switch(WaitEvent())
+		{
+			case evButton: 
 				id=GetButtonID();
 				if (id==10)
 				{
@@ -75,29 +70,31 @@ void settings_dialog()
 					cmd_free = 4;
 					ExitProcess();
 				}					
-				if (id==1) || (id==11) 
+				else if (id==1) || (id==11) 
 				{
 					active_settings=0;
 					goto EXIT_SETTING;
 				}
-				if (id==5)
+				else if (id==5)
 				{
 					RunProgram("tinypad", "/sys/settings/assoc.ini");
 					break;
 				}
-				if (id==20) show_dev_name ^= 1;
-				if (id==21) real_files_names_case ^= 1;
-				if (id==22) info_after_copy ^= 1;
-				if (id==23) use_big_fonts ^= 1;
-				if (id==25) files.line_h++;
-				if (id==26) && (files.line_h>8) files.line_h--;
-				if (id==27) MOUSE_TIME++;
-				if (id==28) && (MOUSE_TIME>30) MOUSE_TIME--;
-				RefreshWindow(Form.ID,settings_form.ID);
+				else if (id==20) show_dev_name ^= 1;
+				else if (id==21) real_files_names_case ^= 1;
+				else if (id==22) info_after_copy ^= 1;
+				else if (id==23) use_big_fonts ^= 1;
+				else if (id==25) files.line_h++;
+				else if (id==26) && (files.line_h>14) files.line_h--;
+				else if (id==27) MOUSE_TIME++;
+				else if (id==28) && (MOUSE_TIME>29) MOUSE_TIME--;
+				//CMD_REFRESH = true;
+				MoveSize(-1,-1,-1,settings_form.height+1);
+				MoveSize(-1,-1,-1,settings_form.height);
 				DrawSettingsCheckBoxes();
-				break;
-				
-		case evKey:
+			break;
+					
+			case evKey:
 				key = GetKey();
 				if (key==27)
 				{
@@ -106,15 +103,15 @@ void settings_dialog()
 					goto EXIT_SETTING;
 				}
 				break;
-			
-		case evReDraw:
+				
+			case evReDraw:
 				DefineAndDrawWindow(Form.left + Form.width/2, Form.top + Form.height/2 - 75, 300, 234+GetSkinHeight(),0x34,sc.work,TITLE_SETT);
 				GetProcessInfo(#settings_form, SelfInfo);
 				DrawSettingsCheckBoxes();
 				DrawFlatButton(9, 166, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
 				DrawFlatButton(128, settings_form.cheight - 30, 70, 22, 10, 0xE4DFE1, APPLY_T);
 				DrawFlatButton(208, settings_form.cheight - 30, 70, 22, 11, 0xE4DFE1, CANCEL_T);
-	}
+		}
 	}
 }
 

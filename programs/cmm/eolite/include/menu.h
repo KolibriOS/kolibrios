@@ -75,7 +75,7 @@ void FileMenu()
 				mm.get();
 				if (!CheckActiveProcess(MenuForm.ID)){ cmd_free=1; ExitProcess();}
 				else if (mm.move)&&(menu.ProcessMouse(mm.x, mm.y)) MenuListRedraw();
-				else if (mm.key&MOUSE_LEFT)&&(mm.down) {action_buf = cur_action_buf; pause(5); cmd_free=1; ExitProcess(); }
+				else if (mm.key&MOUSE_LEFT)&&(mm.up) {action_buf = cur_action_buf; cmd_free=1; ExitProcess(); }
 		break;
 				
 		case evKey:

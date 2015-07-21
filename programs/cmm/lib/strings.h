@@ -618,16 +618,15 @@ F3:
     return #buffer;
 }
 */
-	
+:unsigned char BUF_ITOA[11];
 inline dword itoa(signed long number)
 {
-	unsigned char buf[11];
 	dword ret,p;
 	byte cmd;
 	long mask,tmp;
 	mask = 1000000000;
 	cmd = true;
-	p = #buf;
+	p = #BUF_ITOA;
 	if(!number){
 		ESBYTE[p] = '0';
 		ESBYTE[p+1] = 0;

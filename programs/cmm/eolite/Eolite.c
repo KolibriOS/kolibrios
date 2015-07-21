@@ -156,6 +156,7 @@ int j, i;
 int action_buf;
 int rand_n;
 int selected_count;
+byte CMD_REFRESH;
 
 mouse gestures;
 signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
@@ -183,6 +184,9 @@ void main()
 {
 	word key, id, can_show, can_select, m_selected;
 	dword selected_offset;
+	dword IPC_LEN,IPC_ID;
+	char IPC_BUF[10];
+	dword tmp;
 	rand_n = random(40);
 	gestures.get();
 	mem_Init();
@@ -194,365 +198,383 @@ void main()
 	SetAppColors();
 	if (param)
 	{
-		strcpy(#path, #param);
-		if (path[strlen(#path)-1]!='/') chrcat(#path, '/'); //add "/" to the end of the string
+		tmp = strlen(#path);
+		strncpy(#path, #param, tmp);
+		$dec tmp
+		if (path[tmp]!='/') DSBYTE[#path+tmp] = '/'; //add "/" to the end of the string
 	}
 	else
 	{
-		strcpy(#path, "/rd/1/");		
+		strncpy(#path, "/rd/1/", 6);		
 	}
 	Open_Dir(#path,ONLY_OPEN);
 	SetEventMask(0x27);
-	loop(){ switch(WaitEvent())
-	{
-		case evMouse:
-			if (del_active) || (!CheckActiveProcess(Form.ID)) || (Form.status_window>2) break;
-			if (new_element_active) || (!CheckActiveProcess(Form.ID)) || (Form.status_window>2)
-			{
-				edit_box_mouse stdcall(#new_file_ed);
-				break;
-			}				
-			
-			m.get();
-			
-			
-			gestures.get();
-			if (!gestures.mkm) && (stats>0) stats = 0;
-			if (gestures.mkm) && (stats==0)
-			{
-				x_old = gestures.x;
-				y_old = gestures.y;
-				stats = 1;
-			}
-			if (gestures.mkm) && (stats==1)
-			{
-				dif_x = gestures.x-x_old;
-				dif_y = gestures.y-y_old;
-				adif_x = fabs(dif_x);
-				adif_y = fabs(dif_y);
-				
-				if (adif_x>adif_y)
+	loop(){
+		switch(WaitEvent())
+		{
+			case evMouse:
+				if (del_active) || (!CheckActiveProcess(Form.ID)) || (Form.status_window>2) break;
+				if (new_element_active) || (!CheckActiveProcess(Form.ID)) || (Form.status_window>2)
 				{
-					if (dif_x > 150)
-					{
-						if (HistoryPath(GO_FORWARD))
-							{
-								files.first=files.current=NULL;
-								Open_Dir(#path,WITH_REDRAW);
-							}
-						stats = 0;
-					}
-					if (dif_x < -150)
-					{
-						GoBack();
-						stats = 0;
-					}
-				}
-				else
-				{
-					if (dif_y < -100)
-					{
-						Dir_Up();
-						stats = 0;
-					}
-				}
-			}	
-			if (files.MouseOver(m.x, m.y))&&((m.up)||(m.down)||(m.dblclick))
-			{
-				//select/open file {
-				if (m.key&MOUSE_LEFT)&&((m.down)||(m.dblclick))
-				{
-					if (m.y>=files.y)//&&(m.click)
-					{
-						id = m.y - files.y / files.line_h;
-						if (files.current!=id)
-						{
-							m.clearTime();
-							if (id<files.visible) List_Current(id-files.current);
-						}
-						else if(m.dblclick)Open(0);
-					}
-				}
-				// } select/open file
-				else
-				//file menu {
-				if (m.key&MOUSE_RIGHT)&&(m.up)
-				{
-					menu_call_mouse = 1;
-					if (m.y>=files.y)//&&(m.click)
-					{
-						id = m.y - files.y / files.line_h;
-						if (files.current!=id) List_Current(id-files.current);
-						//SwitchToAnotherThread();
-						menu_stak = malloc(4096);
-						CreateThread(#FileMenu,menu_stak+4092);
-					}
+					edit_box_mouse stdcall(#new_file_ed);
 					break;
-				}
-				// } file menu
-			}
-
-			if (m.vert)
-			{
-				if (files.MouseScroll(m.vert)) List_ReDraw();
-				break;
-			}
-
-			if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>40) && (m.y<files.y)
-			{
-				IF (m.lkm==1) DrawRectangle3D(Form.cwidth - 17,41,14,14,0xC7C7C7,0xFFFFFF);
-				WHILE (m.lkm==1) && (files.first>0)
+				}				
+				
+				m.get();
+				
+				
+				gestures.get();
+				if (!gestures.mkm) && (stats>0) stats = 0;
+				if (gestures.mkm) && (stats==0)
 				{
-					pause(8);
-					files.first--;
-					List_ReDraw();
-					m.get();
+					x_old = gestures.x;
+					y_old = gestures.y;
+					stats = 1;
 				}
-				DrawRectangle3D(Form.cwidth - 17,41,14,14,0xFFFFFF,0xC7C7C7);
-			}
-
-			if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>onTop(22,0)+1) && (m.y<onTop(22,0)+16)
-			{
-				IF (m.lkm==1) DrawRectangle3D(Form.cwidth - 17,onTop(21,0),14,14,0xC7C7C7,0xFFFFFF);
-				while (m.lkm==1) && (files.first<files.count-files.visible)
+				if (gestures.mkm) && (stats==1)
 				{
-					pause(8);
-					files.first++;
-					List_ReDraw();
-					m.get();
-				}
-				DrawRectangle3D(Form.cwidth - 17,onTop(21,0),14,14,0xFFFFFF,0xC7C7C7);
-			}
-
-			//Scrooll
-			if (!m.lkm) && (scroll_used) { scroll_used=NULL; Scroll(); }
-			if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>56) && (m.y<Form.height) && (m.lkm) && (!scroll_used) {scroll_used=1;Scroll();}
-			
-			if (scroll_used)
-			{
-				IF (sc_slider_h/2+files.y>m.y) || (m.y<0) || (m.y>4000) m.y=sc_slider_h/2+files.y; //anee eo?ni? iaa ieiii
-				id=files.first;
-				j= sc_slider_h/2;
-				files.first = m.y -j -files.y * files.count;
-				files.first /= onTop(22,files.y);
-				IF (files.visible+files.first>files.count) files.first=files.count-files.visible;
-				IF (id!=files.first) List_ReDraw();
-			}
-			break;  
-//Button pressed-----------------------------------------------------------------------------
-		case evButton:
-			id=GetButtonID();
-			if (id==1)
-			{
-				KillProcess(about_window);
-				ExitProcess();
-			}
-			if (del_active)
-			{
-				IF (id==301) || (id==302) Del_File(302-id);
-				break;
-			}
-			if (new_element_active)
-			{
-				IF (id==301) || (id==302) NewElement(302-id);
-				break;
-			}
-			
-			switch(id) 
-			{
-				case 21: //Back
-						GoBack();
-						break;
-				case 22: //Forward
-						if (HistoryPath(GO_FORWARD))
+					dif_x = gestures.x-x_old;
+					dif_y = gestures.y-y_old;
+					adif_x = fabs(dif_x);
+					adif_y = fabs(dif_y);
+					
+					if (adif_x>adif_y)
+					{
+						if (dif_x > 150)
 						{
-							files.first=files.current=NULL; //aaa?o nienea
-							Open_Dir(#path,WITH_REDRAW);
+							if (HistoryPath(GO_FORWARD))
+								{
+									files.first=files.current=NULL;
+									Open_Dir(#path,WITH_REDRAW);
+								}
+							stats = 0;
 						}
-						break;
-				case 23: //up!
-						Dir_Up();
-						break;
-				case 24: //cut
-						Copy(#file_path, CUT);
-						break;
-				case 25: //copy
-						Copy(#file_path, NOCUT);
-						break;
-				case 26: //paste
-						copy_stak = malloc(4096);
-						CreateThread(#Paste,copy_stak+4092);
-						break;
-				case 31...33: //sort
-						IF(sort_num==1) DrawFilledBar(sorting_arrow_x,42,6,10);
-						IF(sort_num==2) DrawFilledBar(sorting_arrow_x,42,6,10);
-						IF(sort_num==3) DrawFilledBar(sorting_arrow_x,42,6,10);
-						sort_num=id-30;
-						Open_Dir(#path,WITH_REDRAW);
-						break;
-				case 50...60: //Actions
-						FnProcess(id-50);
-						break;
-				case 100...120:
-					DEVICE_MARK:
-						DrawRectangle(17,id-100*16+74,159,16, 0); //auaaeaiea
-						strcpy(#path, #disk_list[id-100].Item);
-						files.first=files.current=0;
-						Open_Dir(#path,WITH_REDRAW);
-						pause(5);
-						DrawRectangle(17,id-100*16+74,159,16, 0xFFFFFF);
-						break;
-			}
-			break;
-//Key pressed-----------------------------------------------------------------------------
-		case evKey:
-			key = GetKey();
-			if (Form.status_window>2) break;
-			IF (del_active)
-			{
-				IF (key==013) Del_File(true);
-				IF (key==027) Del_File(false);
-				break;
-			}
-			IF (new_element_active)
-			{
-				IF (key==027) NewElement(0);
-				IF (key==013) NewElement(1);
-				EAX=key<<8;
-				edit_box_key stdcall (#new_file_ed);
-				break;
-			}
-			IF (edit2.flags!=64) && (key!=13) && (key!=27)
-			{
-				EAX=key<<8;
-				edit_box_key stdcall (#edit2);
-				break;
-			}
-			switch (key)
-			{
-					case 209...217:
-							id=key-110;
-							IF (id-100>=disc_num) break;
-							GOTO DEVICE_MARK;
-					case ASCII_KEY_BS:
-							//GoBack();
+						if (dif_x < -150)
+						{
+							GoBack();
+							stats = 0;
+						}
+					}
+					else
+					{
+						if (dif_y < -100)
+						{
 							Dir_Up();
-							break; 
-					case 004: //Ctrl+D set as bg
-							strcpy(#temp, "\\S__");
-							strcat(#temp, #file_path);
-							RunProgram("/sys/media/kiv", #temp);
-							break;
-					case 014: //Ctrl+N new window
-							IF (Form.left==98) MoveSize(Form.left-20,Form.top-20,OLD,OLD);
-							RunProgram("/sys/File Managers/Eolite", #path);
-							break; 
-					case 024: //Ctrl+X
-							Copy(#file_path, CUT);
-							break;
-					case 003: //Ctrl+C
-							Copy(#file_path, NOCUT);
-							break;
-					case 022: //Ctrl+V
-							copy_stak = malloc(4096);
-							CreateThread(#Paste,copy_stak+4092);
-							break;
-					case 001: //Ctrl+A
-							debugln("press Ctrl+A");
-							for (i=0; i<files.count; i++) 
+							stats = 0;
+						}
+					}
+				}	
+				if (files.MouseOver(m.x, m.y))&&((m.up)||(m.down)||(m.dblclick))
+				{
+					//select/open file {
+					if (m.key&MOUSE_LEFT)&&((m.down)||(m.dblclick))
+					{
+						if (m.y>=files.y)//&&(m.click)
+						{
+							id = m.y - files.y / files.line_h;
+							if (files.current!=id)
 							{
-								selected_offset = file_mas[i]*304 + buf+32 + 7;
-								ESBYTE[selected_offset] = 1;
-								selected_count++;
+								m.clearTime();
+								if (id<files.visible) List_Current(id-files.current);
 							}
-							List_ReDraw();
-							break;
-					case 021: //Ctrl+U
-							debugln("press Ctrl+A");
-							for (i=0; i<files.count; i++) 
-							{
-								selected_offset = file_mas[i]*304 + buf+32 + 7;
-								ESBYTE[selected_offset] = 0;
-							}
-							selected_count = 0;
-							List_ReDraw();
-							break;
-					case ASCII_KEY_ESC:
-							break;
-					case ASCII_KEY_ENTER:
-							Open(0);
-							break; 
-					case 074: //menu
-							menu_call_mouse=0;
+							else if(m.dblclick)Open(0);
+						}
+					}
+					// } select/open file
+					else
+					//file menu {
+					if (m.key&MOUSE_RIGHT)&&(m.up)
+					{
+						menu_call_mouse = 1;
+						if (m.y>=files.y)//&&(m.click)
+						{
+							id = m.y - files.y / files.line_h;
+							if (files.current!=id) List_Current(id-files.current);
 							//SwitchToAnotherThread();
 							menu_stak = malloc(4096);
 							CreateThread(#FileMenu,menu_stak+4092);
+						}
+						break;
+					}
+					// } file menu
+				}
+
+				if (m.vert)
+				{
+					if (files.MouseScroll(m.vert)) List_ReDraw();
+					break;
+				}
+
+				if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>40) && (m.y<files.y)
+				{
+					if (m.lkm==1) DrawRectangle3D(Form.cwidth - 17,41,14,14,0xC7C7C7,0xFFFFFF);
+					WHILE (m.lkm==1) && (files.first>0)
+					{
+						pause(8);
+						files.first--;
+						List_ReDraw();
+						m.get();
+					}
+					DrawRectangle3D(Form.cwidth - 17,41,14,14,0xFFFFFF,0xC7C7C7);
+				}
+
+				if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>onTop(22,0)+1) && (m.y<onTop(22,0)+16)
+				{
+					if (m.lkm==1) DrawRectangle3D(Form.cwidth - 17,onTop(21,0),14,14,0xC7C7C7,0xFFFFFF);
+					while (m.lkm==1) && (files.first<files.count-files.visible)
+					{
+						pause(8);
+						files.first++;
+						List_ReDraw();
+						m.get();
+					}
+					DrawRectangle3D(Form.cwidth - 17,onTop(21,0),14,14,0xFFFFFF,0xC7C7C7);
+				}
+
+				//Scrooll
+				if (!m.lkm) && (scroll_used) { scroll_used=NULL; Scroll(); }
+				if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>56) && (m.y<Form.height) && (m.lkm) && (!scroll_used) {scroll_used=1;Scroll();}
+				
+				if (scroll_used)
+				{
+					if (sc_slider_h/2+files.y>m.y) || (m.y<0) || (m.y>4000) m.y=sc_slider_h/2+files.y; //anee eo?ni? iaa ieiii
+					id=files.first;
+					j= sc_slider_h/2;
+					files.first = m.y -j -files.y * files.count;
+					files.first /= onTop(22,files.y);
+					if (files.visible+files.first>files.count) files.first=files.count-files.visible;
+					if (id!=files.first) List_ReDraw();
+				}
+				break;  
+	//Button pressed-----------------------------------------------------------------------------
+			case evButton:
+				id=GetButtonID();
+				if (id==1)
+				{
+					KillProcess(about_window);
+					ExitProcess();
+				}
+				if (del_active)
+				{
+					if (id==301) || (id==302) Del_File(302-id);
+					break;
+				}
+				if (new_element_active)
+				{
+					if (id==301) || (id==302) NewElement(302-id);
+					break;
+				}
+				
+				switch(id) 
+				{
+					case 21: //Back
+							GoBack();
 							break;
-					case 173: //Ctrl+Enter
-							if (!itdir) ShowOpenWithDialog();
-							else Open(1);
-							break;
-					case ASCII_KEY_UP:
-							List_Current(-1);
-							break;
-					case ASCII_KEY_DOWN:
-							List_Current(1);
-							break;
-					case ASCII_KEY_HOME:
-							if (files.KeyHome()) List_ReDraw();
-							break;
-					case ASCII_KEY_END:
-							if (files.KeyEnd()) List_ReDraw();
-							break;
-					case ASCII_KEY_PGDN:
-							List_Current(files.visible-1);
-							break;
-					case ASCII_KEY_PGUP:
-							List_Current(-files.visible+1);
-							break;
-					case ASCII_KEY_DEL:
-							Del_Form();
-							break;
-					case ASCII_KEY_INS:
-							selected_offset = file_mas[files.current+files.first]*304 + buf+32 + 7;
-							if (ESBYTE[selected_offset])
+					case 22: //Forward
+							if (HistoryPath(GO_FORWARD))
 							{
-								ESBYTE[selected_offset]=0;
-								selected_count--;
+								files.first=files.current=NULL; //aaa?o nienea
+								Open_Dir(#path,WITH_REDRAW);
 							}
-							else
-							{
-								ESBYTE[selected_offset] = 1;
-								selected_count++;
-							}
-							List_Current(1);
 							break;
-					case 048...059: //F1-F10
-							FnProcess(key-49);
-							break; 
-					default:    
-							for (i=files.current+files.first+1; i<files.count; i++)
-							{
-								strcpy(#temp, file_mas[i]*304+buf+72);
-								IF (temp[0]==key) || (temp[0]==key-32)
+					case 23: //up!
+							Dir_Up();
+							break;
+					case 24: //cut
+							Copy(#file_path, CUT);
+							break;
+					case 25: //copy
+							Copy(#file_path, NOCUT);
+							break;
+					case 26: //paste
+							copy_stak = malloc(4096);
+							CreateThread(#Paste,copy_stak+4092);
+							break;
+					case 31...33: //sort
+							if(sort_num==1) DrawFilledBar(sorting_arrow_x,42,6,10);
+							if(sort_num==2) DrawFilledBar(sorting_arrow_x,42,6,10);
+							if(sort_num==3) DrawFilledBar(sorting_arrow_x,42,6,10);
+							sort_num=id-30;
+							Open_Dir(#path,WITH_REDRAW);
+							break;
+					case 50...60: //Actions
+							FnProcess(id-50);
+							break;
+					case 100...120:
+						DEVICE_MARK:
+							DrawRectangle(17,id-100*16+74,159,16, 0); //auaaeaiea
+							strcpy(#path, #disk_list[id-100].Item);
+							files.first=files.current=0;
+							Open_Dir(#path,WITH_REDRAW);
+							pause(5);
+							DrawRectangle(17,id-100*16+74,159,16, 0xFFFFFF);
+							break;
+				}
+				break;
+	//Key pressed-----------------------------------------------------------------------------
+			case evKey:
+				key = GetKey();
+				if (Form.status_window>2) break;
+				if (del_active)
+				{
+					if (key==013) Del_File(true);
+					if (key==027) Del_File(false);
+					break;
+				}
+				if (new_element_active)
+				{
+					if (key==027) NewElement(0);
+					if (key==013) NewElement(1);
+					EAX=key<<8;
+					edit_box_key stdcall (#new_file_ed);
+					break;
+				}
+				if (edit2.flags!=64) && (key!=13) && (key!=27)
+				{
+					EAX=key<<8;
+					edit_box_key stdcall (#edit2);
+					break;
+				}
+				switch (key)
+				{
+						case 209...217:
+								id=key-110;
+								if (id-100>=disc_num) break;
+								GOTO DEVICE_MARK;
+						case ASCII_KEY_BS:
+								//GoBack();
+								Dir_Up();
+								break; 
+						case 004: //Ctrl+D set as bg
+								strncpy(#temp, "\\S__",4);
+								strcat(#temp, #file_path);
+								RunProgram("/sys/media/kiv", #temp);
+								break;
+						case 014: //Ctrl+N new window
+								if (Form.left==98) MoveSize(Form.left-20,Form.top-20,OLD,OLD);
+								RunProgram("/sys/File Managers/Eolite", #path);
+								break; 
+						case 024: //Ctrl+X
+								Copy(#file_path, CUT);
+								break;
+						case 003: //Ctrl+C
+								Copy(#file_path, NOCUT);
+								break;
+						case 022: //Ctrl+V
+								copy_stak = malloc(4096);
+								CreateThread(#Paste,copy_stak+4092);
+								break;
+						case 001: //Ctrl+A
+								debugln("press Ctrl+A");
+								for (i=0; i<files.count; i++) 
 								{
-									List_Current(i-files.current-files.first);
-									break;
+									selected_offset = file_mas[i]*304 + buf+32 + 7;
+									ESBYTE[selected_offset] = 1;
+									selected_count++;
 								}
-							}
-			}                         
+								List_ReDraw();
+								break;
+						case 021: //Ctrl+U
+								debugln("press Ctrl+A");
+								for (i=0; i<files.count; i++) 
+								{
+									selected_offset = file_mas[i]*304 + buf+32 + 7;
+									ESBYTE[selected_offset] = 0;
+								}
+								selected_count = 0;
+								List_ReDraw();
+								break;
+						case ASCII_KEY_ESC:
+								break;
+						case ASCII_KEY_ENTER:
+								Open(0);
+								break; 
+						case 074: //menu
+								menu_call_mouse=0;
+								//SwitchToAnotherThread();
+								menu_stak = malloc(4096);
+								CreateThread(#FileMenu,menu_stak+4092);
+								break;
+						case 173: //Ctrl+Enter
+								if (!itdir) ShowOpenWithDialog();
+								else Open(1);
+								break;
+						case ASCII_KEY_UP:
+								List_Current(-1);
+								break;
+						case ASCII_KEY_DOWN:
+								List_Current(1);
+								break;
+						case ASCII_KEY_HOME:
+								if (files.KeyHome()) List_ReDraw();
+								break;
+						case ASCII_KEY_END:
+								if (files.KeyEnd()) List_ReDraw();
+								break;
+						case ASCII_KEY_PGDN:
+								List_Current(files.visible-1);
+								break;
+						case ASCII_KEY_PGUP:
+								List_Current(-files.visible+1);
+								break;
+						case ASCII_KEY_DEL:
+								Del_Form();
+								break;
+						case ASCII_KEY_INS:
+								selected_offset = file_mas[files.current+files.first]*304 + buf+32 + 7;
+								if (ESBYTE[selected_offset])
+								{
+									ESBYTE[selected_offset]=0;
+									selected_count--;
+								}
+								else
+								{
+									ESBYTE[selected_offset] = 1;
+									selected_count++;
+								}
+								List_Current(1);
+								break;
+						case 048...059: //F1-F10
+								FnProcess(key-49);
+								break; 
+						default:    
+								for (i=files.current+files.first+1; i<files.count; i++)
+								{
+									strcpy(#temp, file_mas[i]*304+buf+72);
+									if (temp[0]==key) || (temp[0]==key-32)
+									{
+										List_Current(i-files.current-files.first);
+										break;
+									}
+								}
+				}                         
 			break;
-		case evReDraw:
-			draw_window();
-			if (action_buf) { menu_action(action_buf); action_buf=0;}
-	}
-		if(cmd_free){
+			case evReDraw:
+				DRAW_WINDOW:
+				draw_window();
+				if (action_buf) 
+				{
+					menu_action(action_buf); 
+					action_buf=0;
+				}
+			break;
+			/*default:
+				if(CMD_REFRESH)
+				{
+					CMD_REFRESH = false;
+					goto DRAW_WINDOW;
+				}
+			*/
+		}
+		
+		if(cmd_free)
+		{
 			if(cmd_free==1)     free(menu_stak);
 			else if(cmd_free==2)free(about_stak);
 			else if(cmd_free==3)free(properties_stak);
 			else if(cmd_free==4)free(settings_stak);
 			else if(cmd_free==5)free(copy_stak);
-			cmd_free = 0;
+			cmd_free = false;
 		}
 	}
 }
@@ -561,10 +583,10 @@ void main()
 inline fastcall signed int _strrchr( ESI,BL)
 {
 	int jj=0, last=strlen(ESI);
-	do{
+	do {
 		jj++;
 		$lodsb
-		IF(AL==BL) last=jj;
+		if(AL==BL) last=jj;
 	} while(AL!=0);
 	return last;
 }
@@ -583,12 +605,20 @@ void menu_action(dword id)
 	if (id==203) FnProcess(4); //F4
 	if (id==104) Copy(#file_path, NOCUT);
 	if (id==105) Copy(#file_path, CUT);
-	if (id==106) { copy_stak = malloc(4096); CreateThread(#Paste,copy_stak+4092);}
+	if (id==106)
+	{
+		copy_stak = malloc(4096); 
+		CreateThread(#Paste,copy_stak+4092);
+	}
 	if (id==207) FnProcess(2);
 	if (id==108) Del_Form();
 	if (id==109) FnProcess(5);
 	if (id==110) FnProcess(8);
-	if (id==300) { FnProcess(5); List_ReDraw(); }
+	if (id==300)
+	{ 
+		FnProcess(5); 
+		List_ReDraw(); 
+	}
 }
 
 
@@ -643,30 +673,8 @@ void List_Current(signed int cur)
 {
 	if (cur<=0) //up
 	{
-		IF (files.first==0) && (files.current<=0) return;
-		IF (-cur-1<files.current)
-		{
-			Line_ReDraw(0xFFFFFF, files.current);
-			files.current+=cur;
-			Line_ReDraw(col_selec, files.current);
-			return;
-		}
-		ELSE
-		{
-			IF (-cur<files.first) files.first+=cur; ELSE files.first=0;
-			files.current=0;
-			List_ReDraw();
-			return;
-		}
-	}
-	else  //down
-	{
-		IF (files.first==files.count-files.visible) && (files.current==files.visible-1) 
-		{
-			Line_ReDraw(col_selec, files.current);
-			return;
-		}
-		IF (files.visible-files.current>cur)
+		if (files.first==0) && (files.current<=0) return;
+		if (-cur-1<files.current)
 		{
 			Line_ReDraw(0xFFFFFF, files.current);
 			files.current+=cur;
@@ -675,18 +683,40 @@ void List_Current(signed int cur)
 		}
 		else
 		{
-			IF(files.first+files.current+cur>=files.count)
+			if (-cur<files.first) files.first+=cur; else files.first=0;
+			files.current=0;
+			List_ReDraw();
+			return;
+		}
+	}
+	else  //down
+	{
+		if (files.first==files.count-files.visible) && (files.current==files.visible-1) 
+		{
+			Line_ReDraw(col_selec, files.current);
+			return;
+		}
+		if (files.visible-files.current>cur)
+		{
+			Line_ReDraw(0xFFFFFF, files.current);
+			files.current+=cur;
+			Line_ReDraw(col_selec, files.current);
+			return;
+		}
+		else
+		{
+			if(files.first+files.current+cur>=files.count)
 			{
 				files.first=files.count-files.visible;
 				files.current=cur-files.first+files.current;
 				}
-			ELSE
+			else
 			{
 				files.first+=cur+files.current-files.visible+1;
 				files.current=files.visible-1;
 			}
 			
-			IF (files.current<0) || (files.current>files.visible)
+			if (files.current<0) || (files.current>files.visible)
 			{
 				files.current=files.visible-1;
 			}
@@ -793,15 +823,15 @@ void Open_Dir(dword dir_path, redraw){
 		KEdit();
 		HistoryPath(ADD_NEW_PATH);
 		files.visible = files.h / files.line_h;
-		IF (files.count < files.visible) files.visible = files.count;
-		IF (sort_num==1) sorting_arrow_x = Form.width+60/2;
-		IF (sort_num==2) sorting_arrow_x = Form.width-115;
-		IF (sort_num==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
+		if (files.count < files.visible) files.visible = files.count;
+		if (sort_num==1) sorting_arrow_x = Form.width+60/2;
+		if (sort_num==2) sorting_arrow_x = Form.width-115;
+		if (sort_num==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
 		WriteText(sorting_arrow_x,45,0x80,sc.work_graph,"\x19");
-		IF (redraw!=ONLY_SHOW) Sorting();
-		IF (redraw!=ONLY_OPEN) List_ReDraw();
+		if (redraw!=ONLY_SHOW) Sorting();
+		if (redraw!=ONLY_OPEN) List_ReDraw();
 	}
-	IF (files.count==-1) && (redraw!=ONLY_OPEN) {files.visible=files.count=0; List_ReDraw();}
+	if (files.count==-1) && (redraw!=ONLY_OPEN) {files.visible=files.count=0; List_ReDraw();}
 }
 
 
@@ -812,10 +842,10 @@ inline Sorting()
 	int i;
 	if (!strcmp(#path,"/")) //do not sort
 	{
-		FOR(k=1;k<files.count;k++;) file_mas[k]=k;
+		for(k=1;k<files.count;k++;) file_mas[k]=k;
 		return;
 	}
-	FOR (j=files.count-1, file_off=files.count-1*304+buf+32; j>=0; j--, file_off-=304;)  //files | folders
+	for (j=files.count-1, file_off=files.count-1*304+buf+32; j>=0; j--, file_off-=304;)  //files | folders
 	{
 		if (!real_files_names_case) strttl(file_off+40);
 		if (TestBit(ESDWORD[file_off],4)) //directory?
@@ -831,12 +861,12 @@ inline Sorting()
 	}
 	//sorting: files first, then folders
 	Sort_by_Name(0,k-1);
-	IF (sort_num==1) Sort_by_Name(k,files.count-1);
-	IF (sort_num==2) Sort_by_Type(k,files.count-1);
-	IF (sort_num==3) Sort_by_Size(k,files.count-1);
+	if (sort_num==1) Sort_by_Name(k,files.count-1);
+	if (sort_num==2) Sort_by_Type(k,files.count-1);
+	if (sort_num==3) Sort_by_Size(k,files.count-1);
 	//make ".." first item in list
-	IF (k>0) && (strcmp(file_mas[0]*304+buf+72,"..")!=0)
-		FOR(k--; k>0; k--;) IF (!strcmp(file_mas[k]*304+buf+72,"..")) {file_mas[k]><file_mas[0]; break;}
+	if (k>0) && (strcmp(file_mas[0]*304+buf+72,"..")!=0)
+		for(k--; k>0; k--;) if (!strcmp(file_mas[k]*304+buf+72,"..")) {file_mas[k]><file_mas[0]; break;}
 }
 
 
@@ -846,7 +876,7 @@ void Del_Form()
 	int cont = 0;
 	byte f_count[128];
 	int dform_x = files.w - 220 / 2 + files.x;
-	if (strcmp(#file_name,".")==0) || (strcmp(#file_name,"..")==0) return;
+	if (!strncmp(#file_name,".",1)) || (!strncmp(#file_name,"..",2)) return;
 	if (del_active==2)
 	{
 		if (itdir) ShowMessage(WAIT_DELETING_FOLDER, 0);
@@ -868,7 +898,7 @@ void Del_Form()
 		}
 		else
 		{
-			IF (strlen(#file_name)<28) 
+			if (strlen(#file_name)<28) 
 			{
 				WriteText(strlen(#file_name)*3+110+dform_x+2,190,0x80,sc.work_text,"?");
 				WriteText(-strlen(#file_name)*3+110+dform_x,190,0x80,sc.work_text,#file_name);
@@ -899,9 +929,10 @@ int Del_File2(dword way)
 		{
 			if (CheckEvent()==evReDraw) draw_window();
 			filename = i*304+dirbuf+72;
-			strcpy(#del_from, way);
+			/*strcpy(#del_from, way);
 			chrcat(#del_from, '/');
-			strcat(#del_from, filename);
+			strcat(#del_from, filename);*/
+			sprintf(#del_from,"%s/%s",way,filename);
 			if ( TestBit(ESDWORD[filename-40], 4) )
 			{
 				Del_File2(#del_from);
@@ -934,8 +965,9 @@ void Del_File(byte dodel)
            {
                 selected_offset2 = file_mas[i]*304 + buf+32 + 7;
                 if (ESBYTE[selected_offset2]) {
-                    strcpy(#del_from, #path);
-                    strcat(#del_from, file_mas[i]*304+buf+72);
+                    /*strcpy(#del_from, #path);
+                    strcat(#del_from, file_mas[i]*304+buf+72);*/
+					sprintf(#del_from,"%s%s",#path,file_mas[i]*304+buf+72);
                     Del_File2(#del_from);
                 }
             }
@@ -983,7 +1015,7 @@ void Open(byte rez)
 	selected_count = 0;
 	if (rez)
 	{
-		if (!strcmp(#file_name,"..")) return;
+		if (!strncmp(#file_name,"..",2)) return;
 		strcpy(#temp, #file_path);
 		if (path[strlen(#temp)-1]!='/') chrcat(#temp, '/'); //need "/" in the end
 		RunProgram("/sys/File Managers/Eolite", #temp);
@@ -996,7 +1028,7 @@ void Open(byte rez)
 	} 
 	else
 	{
-		if (!strcmp(#file_name,"..")) { Dir_Up(); return; }
+		if (!strncmp(#file_name,"..",2)) { Dir_Up(); return; }
 		strcpy(#path, #file_path);
 		if (path[strlen(#path)-1]!='/') chrcat(#path, '/'); //need "/" in the end
 		files.first=files.current=0;
@@ -1015,9 +1047,10 @@ inline fastcall void GoBack()
 void ShowOpenWithDialog()
 {
 	byte param[4097];
-	param[0] = '~';
+	/*param[0] = '~';
 	param[1] = '\0';
-	strcat(#param, #file_path);
+	strcat(#param, #file_path);*/
+	sprintf(#param,"~%s",#file_path);
 	RunProgram("/sys/@open", #param);
 }
 
@@ -1027,8 +1060,9 @@ void NewElement(byte newf)
 	byte del_rezult, copy_rezult, info_result;
 	if (newf)
 	{
-		strcpy(#temp, #path);
-		strcat(#temp, new_file_ed.text);
+		/*strcpy(#temp, #path);
+		strcat(#temp, new_file_ed.text);*/
+		sprintf(#temp,"%s%s",#path,new_file_ed.text);
 		info_result = GetFileInfo(#temp, #element_info);
 		switch(new_element_active)
 		{
@@ -1117,8 +1151,8 @@ void NewElement_Form(byte crt, dword strng)
 	edit_box_draw  stdcall (#new_file_ed);
 	DrawRectangle(new_file_ed.left-1, new_file_ed.top-1, new_file_ed.width+2, 16, 0xFFFfff);
 	DrawRectangle(new_file_ed.left-2, new_file_ed.top-2, new_file_ed.width+4, 18, sc.work_graph);
-	IF (new_element_active==3) DrawFlatButton(dform_x+22,208,85,22,301,0xFFB6B5,T_RENAME);
-	ELSE DrawFlatButton(dform_x+27,208,70,22,301,0xFFB6B5,T_CREATE);
+	if (new_element_active==3) DrawFlatButton(dform_x+22,208,85,22,301,0xFFB6B5,T_RENAME);
+	else DrawFlatButton(dform_x+27,208,70,22,301,0xFFB6B5,T_CREATE);
 	DrawFlatButton(dform_x+120,208,70,22,302,0xC6DFC6,T_CANCEL);
 }
 
@@ -1144,10 +1178,10 @@ void FnProcess(byte N)
 			NewElement_Form(RENAME_ITEM, #file_name);
 			break;
 		case 3:
-			IF (!itdir) RunProgram("/sys/tinypad", #file_path);
+			if (!itdir) RunProgram("/sys/tinypad", #file_path);
 			break;
 		case 4:
-			IF (!itdir) RunProgram("/sys/develop/heed", #file_path);
+			if (!itdir) RunProgram("/sys/develop/heed", #file_path);
 			break;
 		case 5: //refresh cur dir & devs
 			Tip(56, T_DEVICES, 55, "-");

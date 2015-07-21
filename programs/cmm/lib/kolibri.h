@@ -302,6 +302,8 @@ inline fastcall dword WaitEvent()
 	$mov eax,10
 	$int 0x40
 	wait_event_code = EAX;
+	//if(wait_event_code==evMouse) MOUSE.get();
+	//return wait_event_code;
 }
 
 inline fastcall dword CheckEvent()
@@ -786,6 +788,20 @@ inline RefreshWindow(dword ID_REFRESH,ID_ACTIVE)
 	$int 0x40
 }
 
+inline getIPC(ECX,EDX)
+{
+	$mov EAX,60
+	$mov EBX,2
+	$int 0x40
+}
+
+inline sendIPC(ECX,EDX,ESI)
+{
+	$mov EAX,60
+	$mov EBX,1
+	$int 0x40
+}
+
 void UnsafeDefineButton(dword x,y,w,h,EDX,ESI)
 {
 	EAX = 8;
@@ -818,6 +834,7 @@ inline fastcall dword GetStartTime()
 			DefineAndDrawWindow(215,100,250,200,0x34,0xFFFFFF,"Alert");
 			WriteTextB(5,5,0x90,0x0,ALERT_TEXT);
 		break;
+		case evKey:
 		case evButton:
 			id=GetButtonID();
 			if (id==1) ExitProcess();

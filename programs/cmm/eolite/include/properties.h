@@ -14,6 +14,7 @@
 	?define PR_T_HIDDEN "Скрытый"
 	?define PR_T_SYSTEM "Системный"
 	?define PR_T_ONLY_READ "Только чтение"
+	?define SET_BYTE_LANG "байт"
 #else
 	?define WINDOW_TITLE_PROPERTIES "Properties"
 	?define BTN_CLOSE "Close"
@@ -30,6 +31,7 @@
 	?define PR_T_HIDDEN "Hidden"
 	?define PR_T_SYSTEM "System"
 	?define PR_T_ONLY_READ "Read-only"
+	?define SET_BYTE_LANG "byte"
 #endif
 
 dword mouse_ddd2;
@@ -49,9 +51,9 @@ void SetProperties(byte id)
 	if (selected_count) return;
 	else
 	{
-		if (id==20) file_info_general.readonly ^= 1;
-		if (id==21) file_info_general.hidden ^= 1;
-		if (id==22) file_info_general.system ^= 1;
+		if (id==20) file_info_general.readonly ^= true;
+		if (id==21) file_info_general.hidden ^= true;
+		if (id==22) file_info_general.system ^= true;
 		SetFileInfo(#file_path, #file_info_general);
 	}
 }
@@ -59,26 +61,30 @@ void SetProperties(byte id)
 void GetSizeDir(dword way)
 {
 	dword dirbuf, fcount, i, filename;
-	char cur_file[4096];
+	dword cur_file;
 	if (isdir(way))
 	{
+		cur_file = malloc(4096);
+		// In the process of recursive descent, memory must be allocated dynamically, because the static memory -> was a bug !!! But unfortunately pass away to sacrifice speed.
 		GetDir(#dirbuf, #fcount, way, DIRS_ONLYREAL);
 		for (i=0; i<fcount; i++)
 		{
 			filename = i*304+dirbuf+72;
-			sprintf(#cur_file,"%s/%s",way,filename);
-			if ( TestBit(ESDWORD[filename-40], 4) )
+			sprintf(cur_file,"%s/%s",way,filename);
+			
+			if (TestBit(ESDWORD[filename-40], 4) )
 			{
 				dir_count++;
-				GetSizeDir(#cur_file);
+				GetSizeDir(cur_file);
 			}
 			else
 			{
-				GetFileInfo(#cur_file, #file_info_dirsize);
-				size_dir = size_dir + file_info_dirsize.sizelo;
+				GetFileInfo(cur_file, #file_info_dirsize);
+				size_dir += file_info_dirsize.sizelo;
 				file_count++;
 			}
 		}
+		free(cur_file);
 	}
 }
 
@@ -96,7 +102,7 @@ void GetSizeMoreFiles(dword way)
     {
         selected_offset2 = file_mas[i]*304 + buf+32 + 7;
         if (ESBYTE[selected_offset2]) {
-			sprintf(#cur_file,way,file_mas[i]*304+buf+72);
+			sprintf(#cur_file,"%s/%s",way,file_mas[i]*304+buf+72);
 
 			GetFileInfo(#cur_file, #file_info_general);
 			if ( file_info_general.isfolder )
@@ -138,8 +144,8 @@ void properties_dialog()
 	{
 		GetFileInfo(#file_path, #file_info_general);
 		strcpy(#file_name2, #file_name);
-		file_name_ed.size = strlen(#file_name2);	
-		if (itdir) GetSizeDir(#file_path);
+		file_name_ed.size = strlen(#file_name2);   
+		if(itdir) GetSizeDir(#file_path);
 	}
 	strcpy(#path_to_file, #path);
 	path_to_file_ed.size = strlen(#path_to_file);
@@ -149,7 +155,11 @@ void properties_dialog()
 	{
 		case evButton: 
 				id=GetButtonID();
-				IF (id==1) || (id==10){cmd_free=3;ExitProcess();}
+				if (id==1) || (id==10)
+				{
+					cmd_free=3;
+					ExitProcess();
+				}
 				if (id==20) SetProperties(id);
 				if (id==21) SetProperties(id);
 				if (id==22) SetProperties(id);
@@ -163,7 +173,11 @@ void properties_dialog()
 			
 		case evKey:
 				key = GetKey();
-				IF (key==27){cmd_free=3;ExitProcess();}
+				if (key==27)
+				{
+					cmd_free=3;
+					ExitProcess();
+				}
 				EAX=key<<8;
 				edit_box_key stdcall(#file_name_ed);
 				edit_box_key stdcall(#path_to_file_ed);
@@ -185,60 +199,43 @@ void properties_dialog()
 					Put_icon('', 18, 19, 0xFFFfff, 0);
 					sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
 					WriteText(50, 23, 0x80, 0x000000, #folder_info);
-					EAX = ConvertSize(size_dir);
-					strcpy(#element_size_label, EAX);
-					strcat(#element_size_label, " (");
-					strcat(#element_size_label, itoa(size_dir));
-					strcat(#element_size_label, " b)");
-					//tmp = ConvertSize(size_dir);
-					//sprintf(#element_size_label," ( byte)");
+					sprintf(#element_size_label,"%s (%d %s)",ConvertSize(size_dir),size_dir,SET_BYTE_LANG);
 					WriteText(100, 65, 0x80, 0x000000, #element_size_label);
 				}
 				else
 				{
-					if ( file_info_general.isfolder ) 
-						Put_icon("<DIR>", 18, 19, 0xFFFfff, 0);
-					else 
-						Put_icon(#file_name2+strrchr(#file_name2,'.'), 18, 19, 0xFFFfff, 0);
+					if ( file_info_general.isfolder )
+							Put_icon("<DIR>", 18, 19, 0xFFFfff, 0);
+					else
+							Put_icon(#file_name2+strrchr(#file_name2,'.'), 18, 19, 0xFFFfff, 0);
 
-					WriteText(50, 13, 0x80, 0x000000, PR_T_NAME);				
+					WriteText(50, 13, 0x80, 0x000000, PR_T_NAME);                          
 					edit_box_draw stdcall (#file_name_ed);
 					
-					if (!itdir)
-					{
-						element_size = file_info_general.sizelo;
-					}
+					if (!itdir) element_size = file_info_general.sizelo;
 					else
 					{
-						WriteText(10, 80, 0x80, 0x000000, PR_T_CONTAINS);				
+						WriteText(10, 80, 0x80, 0x000000, PR_T_CONTAINS);                              
 						sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
 						WriteText(100, 80, 0x80, 0x000000, #folder_info);
 						element_size = size_dir;
 					}
-	
 					WriteText(10,  95, 0x80, 0x000000, SET_3);
-					WriteText(10, 110, 0x80, 0x000000, SET_4);
-					WriteText(10, 125, 0x80, 0x000000, SET_5);
+                    WriteText(10, 110, 0x80, 0x000000, SET_4);
+                    WriteText(10, 125, 0x80, 0x000000, SET_5);
 					DrawDate(100,  95, 0, #file_info_general.datecreate);
-					DrawDate(100, 110, 0, #file_info_general.datelastaccess);
-					DrawDate(100, 125, 0, #file_info_general.datelastedit);
-	
-					EAX = ConvertSize(element_size);
-					strcpy(#element_size_label, EAX);
-					strcat(#element_size_label, " (");
-					strcat(#element_size_label, itoa(element_size));
-					strcat(#element_size_label, " b)");
-					//sprintf(#element_size_label,"%s (%d byte)","",element_size);
-					//tmp = ConvertSize(element_size);
-					//sprintf(#element_size_label,"%s (%d byte)",tmp,element_size);
+                    DrawDate(100, 110, 0, #file_info_general.datelastaccess);
+                    DrawDate(100, 125, 0, #file_info_general.datelastedit);
+
+					sprintf(#element_size_label,"%s (%d %s)",ConvertSize(element_size),element_size,SET_BYTE_LANG);
 					WriteText(100, 65, 0x80, 0x000000, #element_size_label);
-	
+					
 					flags_frame.size_x = - flags_frame.start_x * 2 + settings_form.cwidth - 2;
 					flags_frame.font_color = sc.work_text;
 					flags_frame.font_backgr_color = sc.work;
 					flags_frame.ext_col = sc.work_graph;
 					frame_draw stdcall (#flags_frame);
-	
+
 					DrawPropertiesCheckBoxes();
 				}
 	}

@@ -33,8 +33,8 @@
 
 :void DrawDate(dword x, y, color, in_date)
 {
-	char text[15];
-	/*EDI = in_date;
+	//char text[15];
+	EDI = in_date;
 	EAX = 47;
 	EBX = 2<<16;
 	EDX = x<<16+y;
@@ -47,10 +47,11 @@
 	EDX += 18<<16;
 	EBX = 4<<16;
 	ECX = EDI.date.year;
-	$int 0x40;*/
-
-	//sprintf(#text,"%s","ddf");
-	WriteText(x, y, 0x80, color, "adas\0");
+	$int 0x40;
+	PutPixel(x+14,y+6,color);
+	PutPixel(x+32,y+6,color);
+	//sprintf(#text,"%d",EDI.date.year);
+	//WriteText(x, y, 0x80, 0x000000, #text);
 }
 
 
@@ -301,18 +302,17 @@ enum
 	return #absolute_path;
 }
 
+:byte ConvertSize_size_prefix[8];
 :dword ConvertSize(dword bytes)
 {
-  byte size_prefix[8], size_nm[4];
-  if (bytes>=1073741824) strcpy(#size_nm, "Gb");
-  else if (bytes>=1048576) strcpy(#size_nm, "Mb");
-  else if (bytes>=1024) strcpy(#size_nm, "Kb");
-  else strcpy(#size_nm, "b");
+  byte size_nm[4];
+  if (bytes>=1073741824) strncpy(#size_nm, "Gb",2);
+  else if (bytes>=1048576) strncpy(#size_nm, "Mb",2);
+  else if (bytes>=1024) strncpy(#size_nm, "Kb",2);
+  else strncpy(#size_nm, "b ",2);
   while (bytes>1023) bytes/=1024;
-  itoa_(#size_prefix, bytes);
-  strcat(#size_prefix, #size_nm);
-  //sprintf(#size_prefix,"%s","123");
-  return #size_prefix;
+  sprintf(#ConvertSize_size_prefix,"%d %s",bytes,#size_nm);
+  return #ConvertSize_size_prefix;
 }
 
 :dword ConvertSizeToKb(unsigned int bytes)
