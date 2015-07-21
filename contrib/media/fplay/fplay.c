@@ -23,6 +23,7 @@ volatile enum player_state sound_state   = STOP;
 uint32_t win_width, win_height;
 
 void decoder();
+int fplay_init_context(AVCodecContext *avctx);
 
 AVFormatContext *pFormatCtx;
 AVCodecContext  *pCodecCtx;
@@ -53,11 +54,8 @@ extern double audio_base;
 
 double get_audio_base()
 {
-
   return (double)av_q2d(pFormatCtx->streams[audioStream]->time_base)*1000;
-
 };
-
 
 
 int main( int argc, char *argv[])
@@ -78,44 +76,11 @@ int main( int argc, char *argv[])
 
     /* register all codecs, demux and protocols */
 
-#if 0
-    {
-        int fd, i;
-        char *buff;
-        uint32_t start, stop;
-
-        fd = open(movie_file,O_RDONLY);
-
-        if(fd < 0)
-            return 0;
-
-        buff = user_alloc(65536);
-        memset(buff, 0, 65536);
-
-        start = get_tick_count();
-
-        for(i = 0; i < 1024*1024*1024; i+=65536)
-        {
-            if(read(fd, buff, 65536) < 0)
-                break;
-
-        };
-        stop = get_tick_count();
-
-        printf("average speed %d Kbytes/c\n", ((i/1024)*100)/(stop-start));
-    };
-    return 0;
-};
-
-#else
-
     av_log_set_level(AV_LOG_FATAL);
 
     avcodec_register_all();
     avdevice_register_all();
     av_register_all();
-
-//    init_pixlib(HW_BIT_BLIT|HW_TEX_BLIT);
 
     if( avformat_open_input(&pFormatCtx, movie_file, NULL, NULL) < 0)
     {
@@ -176,43 +141,14 @@ int main( int argc, char *argv[])
         return -1; // Didn't find a video stream
     };
 
-#if 0
-    {
-        AVPacket  packet;
-        int psize = 0;
-        uint32_t start, stop;
-
-        int err;
-        start = get_tick_count();
-
-        while(psize < 1024*1024*1024)
-        {
-            err = av_read_frame(pFormatCtx, &packet);
-            if(err != 0)
-                break;
-            psize+= packet.size;
-            av_free_packet(&packet);
-        };
-
-        stop = get_tick_count();
-
-        printf("average speed %d Kbytes/c\n", ((psize/1024)*100)/(stop-start));
-
-        return 1;
-    };
-};
-#else
-
-
   //   __asm__ __volatile__("int3");
 
     // Get a pointer to the codec context for the video stream
-    pCodecCtx=pFormatCtx->streams[videoStream]->codec;
-    aCodecCtx=pFormatCtx->streams[audioStream]->codec;
+    pCodecCtx = pFormatCtx->streams[videoStream]->codec;
+    aCodecCtx = pFormatCtx->streams[audioStream]->codec;
 
   // Find the decoder for the video stream
 
-//    init_hw_context(pCodecCtx);
 
     pCodec=avcodec_find_decoder(pCodecCtx->codec_id);
 
@@ -380,6 +316,8 @@ void decoder()
 
     int64_t   min_pos, max_pos;
 
+//    av_log_set_level(AV_LOG_DEBUG);
+
     while( player_state != CLOSED )
     {
         int err;
@@ -505,5 +443,4 @@ void decoder()
     player_state = CLOSED;
     delay(300);
 };
-#endif
-#endif
+

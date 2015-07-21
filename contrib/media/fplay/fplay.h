@@ -134,8 +134,7 @@ static inline void GetNotify(void *event)
     ::"a"(68),"b"(14),"c"(event));
 }
 
-
+int fplay_vaapi_init(void);
 int init_fontlib();
-//int draw_text_ext(void *pixmap, uint32_t pitch, FT_Face face, char *text, rect_t *rc, int color);
 char *get_moviefile();
 

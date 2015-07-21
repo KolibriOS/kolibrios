@@ -11,6 +11,7 @@
 #include <math.h>
 
 int fplay_blit_bitmap(bitmap_t *bitmap, int dst_x, int dst_y,int w, int h);
+void draw_va_picture(render_t *render, AVPicture *picture);
 
 extern int res_pause_btn[];
 extern int res_pause_btn_pressed[];
