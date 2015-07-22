@@ -354,6 +354,10 @@ EVENT_EXTENDED     equ 0x00000400
 
 EV_INTR            equ 1
 
+STDIN_FILENO    equ 0
+STDOUT_FILENO   equ 1
+STDERR_FILENO   equ 2
+
 struct SYSCALL_STACK
         _eip            dd ?
         _edi            dd ?    ;  +4
@@ -399,8 +403,9 @@ struct  FUTEX
 ends
 
 FUTEX_INIT      equ 0
-FUTEX_WAIT      equ 1
-FUTEX_WAKE      equ 2
+FUTEX_DESTROY   equ 1
+FUTEX_WAIT      equ 2
+FUTEX_WAKE      equ 3
 
 struct  PROC
         list            LHEAD

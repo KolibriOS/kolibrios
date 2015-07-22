@@ -28,27 +28,77 @@ create_futex:
 .fail:
         ret
 
+align 4
+;int __fastcall destroy_futex(struct futex *futex)
+destroy_futex:
+        push    esi
+        mov     esi, [current_process]
+        mov     edx, [ecx+FUTEX.handle]
+
+        pushfd
+        cli
+
+        lea     eax, [ecx+FUTEX.wait_list]
+        cmp     eax, [eax+LHEAD.next]
+        jne     .fail
+
+        mov     eax, [esi+PROC.ht_next]
+        mov     [esi+PROC.htab+edx*4], eax
+        mov     [esi+PROC.ht_next], edx
+        inc     [esi+PROC.ht_free]
+
+        popfd
+        pop     esi
+
+        mov     eax, ecx
+        call    free
+        xor     eax, eax
+        ret
+
+.fail:
+        popfd
+        pop     esi
+        mov     eax, -1
+        ret
+
+
 iglobal
 align 4
 f77call:
         dd f77.futex_init     ;0
-        dd f77.futex_wait     ;1
-        dd f77.futex_wake     ;2
+        dd f77.futex_destroy  ;1
+        dd f77.futex_wait     ;2
+        dd f77.futex_wake     ;3
 .end:
 endg
 
 align 4
 sys_synchronization:
 f77:
+        test    ebx, ebx
+        jz      .futex_init
+
         cmp     ebx, (f77call.end-f77call)/4
-        jae .fail
+        jae     .fail
+
+        cmp     ecx, STDERR_FILENO
+        jbe     .fail
+        cmp     ecx, (PROC.pdt_0 - PROC.htab)/4
+        jae     .fail
+
+        mov     esi, [current_process]
+        mov     edi, [esi+PROC.htab+ecx*4]
+
+        cmp     [edi+FUTEX.magic], 'FUTX'
+        jne     .fail
+        cmp     [edi+FUTEX.handle], ecx
+        jne     .fail
 
         jmp     dword [f77call+ebx*4]
 
 .fail:
         mov     [esp+SYSCALL_STACK._eax], -1
         ret
-
 
 align 4
 .futex_init:
@@ -60,25 +110,24 @@ align 4
         mov     [esp+SYSCALL_STACK._eax], eax
         ret
 
+
 align 4
 ;ecx futex handle
+;esi current process
+;edi futex object
+.futex_destroy:
+        mov     ecx, edi
+        call    destroy_futex
+        mov     [esp+SYSCALL_STACK._eax], eax
+        ret
+
+align 4
+;ecx futex handle
+;esi current process
+;edi futex object
 ;edx control value
 .futex_wait:
-        cmp     ecx, 3
-        jb      .epicfail
-        cmp     ecx, (PROC.pdt_0 - PROC.htab)/4
-        jae     .epicfail
-
-        mov     esi, [current_process]
-        mov     edi, [esi+PROC.htab+ecx*4]
-
-        cmp     [edi+FUTEX.magic], 'FUTX'
-        jne     .epicfail
-        cmp     [edi+FUTEX.handle], ecx
-        jne     .epicfail
-
         mov     ecx, [edi+FUTEX.pointer]
-
         mov     eax, edx
         lock cmpxchg [ecx], edx         ;wait until old_value == new_value
         jz .wait_slow
@@ -111,26 +160,12 @@ align 4
         mov     [esp+SYSCALL_STACK._eax], 0
         ret
 
-.epicfail:
-        mov     [esp+SYSCALL_STACK._eax], -1
-        ret
-
 align 4
 ;ecx futex handle
+;esi current process
+;edi futex object
 ;edx threads count
 .futex_wake:
-        cmp     ecx, 3
-        jb      .epicfail
-        cmp     ecx, (PROC.pdt_0 - PROC.htab)/4
-        jae     .epicfail
-
-        mov     esi, [current_process]
-        mov     edi, [esi+PROC.htab+ecx*4]
-
-        cmp     [edi+FUTEX.magic], 'FUTX'
-        jne     .epicfail
-        cmp     [edi+FUTEX.handle], ecx
-        jne     .epicfail
 
         xor     ecx, ecx
 
@@ -138,7 +173,7 @@ align 4
         cli
 
         lea     ebx, [edi+FUTEX.wait_list]
-        mov     esi, [edi+FUTEX.wait_list.next]
+        mov     esi, [ebx+LHEAD.next]
 @@:
         cmp     esi, ebx
         je      @F
