@@ -3,13 +3,12 @@
 ;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
-;;  FAT32.INC                                                      ;;
-;;                                                                 ;;
 ;;  FAT functions for KolibriOS                                    ;;
 ;;                                                                 ;;
 ;;  Copyright 2002 Paolo Minazzi, paolo.minazzi@inwind.it          ;;
 ;;                                                                 ;;
 ;;  See file COPYING for details                                   ;;
+;;  06.2015 fs_read64 - pathoswithin                            ;;
 ;;  04.02.2007 LFN create folder - diamond                         ;;
 ;;  08.10.2006 LFN delete file/folder - diamond                    ;;
 ;;  20.08.2006 LFN set file size (truncate/extend) - diamond       ;;
@@ -34,17 +33,15 @@
 ;;  30.10.2004 file_read return also dirsize in bytes - ATV        ;;
 ;;  20.10.2004 Makedir/Removedir - ATV                             ;;
 ;;  14.10.2004 Partition chain/Fat16 - ATV (thanks drh3xx)         ;;
-;;  06.9.2004  Fix free space by Mario79 added - MH                ;;
-;;  24.5.2004  Write back buffer for File_write -VT                ;;
-;;  20.5.2004  File_read function to work with syscall 58 - VT     ;;
-;;  30.3.2004  Error parameters at function return - VT            ;;
-;;  01.5.2002  Bugfix in device write - VT                         ;;
-;;  20.5.2002  Hd status check - VT                                ;;
-;;  29.6.2002  Improved fat32 verification - VT                    ;;
+;;  06.09.2004 Fix free space - Mario79                         ;;
+;;  24.05.2004 Write back buffer for File_write - VT            ;;
+;;  20.05.2004 File_read function to work with syscall 58 - VT  ;;
+;;  30.03.2004 Error parameters at function return - VT         ;;
+;;  29.06.2002 Improved fat32 verification - VT                 ;;
+;;  20.05.2002 Hd status check - VT                             ;;
+;;  01.05.2002 Bugfix in device write - VT                      ;;
 ;;                                                                 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-$Revision: 4273 $
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 cache_max equ 1919      ; max. is 1919*512+0x610000=0x6ffe00
@@ -62,11 +59,9 @@ struct FAT PARTITION
 fs_type              db ?
 fat16_root           db 0       ; flag for fat16 rootdir
 fat_change           db 0       ; 1=fat has changed
-                     db ?       ; alignment
+                     rb 1
 Lock                 MUTEX ?    ; currently operations with one partition
-                                ; can not be executed in parallel since the
-                                ; legacy code is not ready; this mutex guards
-                                ; all operations
+; can not be executed in parallel since the legacy code is not ready
 SECTORS_PER_FAT      dd 0x1f3a
 NUMBER_OF_FATS       dd 0x2
 SECTORS_PER_CLUSTER  dd 0x8
@@ -85,19 +80,16 @@ fatEND               dd 0x0FFFFFF8
 fatMASK              dd 0x0FFFFFFF
 
 fatStartScan         dd 2
-
 cluster_tmp          dd 0       ; used by analyze_directory
                                 ; and analyze_directory_to_write
-
 longname_sec1        dd 0       ; used by analyze_directory to save 2 previous
 longname_sec2        dd 0       ; directory sectors for delete long filename
-
 fat_in_cache         dd -1
 
 ; For FAT16/FAT32, this points to 512-byte buffer for the current sector of FAT.
 ; For FAT12, the entire FAT structure is read
 ; and unpacked from 12bit per cluster to word per cluster.
-;
+
 ; Note: work with unpacked copy of FAT12 means
 ; additional memory and additional code for packing/unpacking.
 ; I'm not sure that the economy justifies the cost, but anyway,
@@ -111,19 +103,17 @@ ends
 uglobal
 align 4
 partition_count      dd 0       ; partitions found by set_FAT32_variables
-
-hd_error             dd 0       ; set by wait_for_sector_buffer
+hd_error             dd 0
 hd_setup             dd 0
 hd_wait_timeout      dd 0
-
 cache_search_start   dd 0       ; used by find_empty_slot
 endg
 
 uglobal
 align 4
- Sector512:                      ; label for dev_hdcd.inc
-  buffer:
-                times 512 db 0
+Sector512:      ; label for dev_hdcd.inc
+buffer:
+rb 512
 endg
 
 iglobal
@@ -1788,14 +1778,12 @@ fat_Read:
         jnz     @f
 .noaccess:
         pop     edi
-.noaccess_2:
         call    fat_unlock
         or      ebx, -1
         mov     eax, ERROR_ACCESS_DENIED
         ret
-
 @@:
-        stdcall hd_find_lfn, [esp+4+4]
+        stdcall hd_find_lfn, [esp+8]
         jnc     .found
         pop     edi
         push    eax
@@ -1803,27 +1791,25 @@ fat_Read:
         pop     eax
         or      ebx, -1
         ret
-
 .found:
-        test    byte [edi+11], 0x10; do not allow read directories
+        test    byte [edi+11], 0x10     ; do not allow read directories
         jnz     .noaccess
         cmp     dword [ebx+8], 0
         jz      @f
         xor     ebx, ebx
-.reteof:
         call    fat_unlock
         mov     eax, ERROR_END_OF_FILE
         pop     edi
         ret
 @@:
+        mov     edx, [ebx+4]    ; file offset
         mov     ecx, [ebx+12]   ; size
-        mov     edx, [ebx+16]   ; pointer
-        mov     ebx, [ebx+4]    ; file offset
-        push    edx
+        mov     ebx, [ebx+16]   ; buffer
+        push    ebx
         push    0
         mov     eax, [edi+28]
-        sub     eax, ebx
-        jb      .eof
+        sub     eax, edx
+        jb      .fileEnd
         cmp     eax, ecx
         jae     @f
         mov     ecx, eax
@@ -1831,87 +1817,145 @@ fat_Read:
 @@:
         mov     eax, [edi+20-2]
         mov     ax, [edi+26]
-; now eax=cluster, ebx=position, ecx=count, edx=buffer for data
-.new_cluster:
-        jecxz   .new_sector
-        cmp     eax, 2
-        jb      .eof
-        cmp     eax, [ebp+FAT.fatRESERVED]
-        jae     .eof
-        mov     [ebp+FAT.cluster_tmp], eax
-        dec     eax
-        dec     eax
+; now eax=cluster, ebx=buffer for data, ecx=count, edx=position
         mov     edi, [ebp+FAT.SECTORS_PER_CLUSTER]
-        imul    eax, edi
+        shl     edi, 9
+@@:
+        cmp     eax, 2
+        jb      .fileEnd
+        cmp     eax, [ebp+FAT.fatRESERVED]
+        jae     .fileEnd
+        sub     edx, edi
+        jc      @f
+        call    get_FAT
+        jc      .noaccess2
+        jmp     @b
+@@:
+        mov     esi, eax
+        dec     eax
+        dec     eax
+        imul    eax, [ebp+FAT.SECTORS_PER_CLUSTER]
         add     eax, [ebp+FAT.DATA_START]
-.new_sector:
-        test    ecx, ecx
-        jz      .done
-        sub     ebx, 512
-        jae     .skip
-        add     ebx, 512
-        jnz     .force_buf
-        cmp     ecx, 512
-        jb      .force_buf
-; we may read directly to given buffer
-        push    eax ebx
-        mov     ebx, edx
-        call    fs_read32_app
-        test    eax, eax
-        pop     ebx eax
-        jne     .noaccess_1
-        add     edx, 512
-        sub     ecx, 512
-        jmp     .skip
-.force_buf:
-; we must read sector to temporary buffer and then copy it to destination
+        add     edx, edi
+        jz      .alignedCluster
+        mov     edi, edx
+        shr     edi, 9
+        add     eax, edi
+        and     edx, 511
+        jz      .alignedSector
+.sectorPiece:
         push    eax ebx
         lea     ebx, [ebp+FAT.buffer]
         call    fs_read32_app
         test    eax, eax
         mov     eax, ebx
         pop     ebx
-        jne     .noaccess_3
-        add     eax, ebx
+        jne     .noaccess3
+        add     eax, edx
         push    ecx
-        add     ecx, ebx
+        add     ecx, edx
         cmp     ecx, 512
         jbe     @f
         mov     ecx, 512
 @@:
-        sub     ecx, ebx
-        mov     ebx, edx
+        sub     ecx, edx
         call    memmove
-        add     edx, ecx
         sub     [esp], ecx
-        pop     ecx
-        pop     eax
-        xor     ebx, ebx
-.skip:
+        add     ebx, ecx
+        pop     ecx eax
+        xor     edx, edx
+        inc     edi
         inc     eax
-        dec     edi
-        jnz     .new_sector
-        mov     eax, [ebp+FAT.cluster_tmp]
+        test    ecx, ecx
+        jz      .done
+.alignedSector:
+        cmp     ecx, 512
+        jc      .sectorPiece
+        shl     edi, 9
+        add     ecx, edi
+        mov     edi, [ebp+FAT.SECTORS_PER_CLUSTER]
+        shl     edi, 9
+.alignedCluster:
+        cmp     ecx, 512
+        jc      .sectorPiece
+        mov     edx, eax
+        mov     eax, esi
+@@:
+        sub     ecx, edi
+        jbe     .readEnd
         call    get_FAT
-        jc      .noaccess_1
-
-        jmp     .new_cluster
-.noaccess_3:
+        jc      .noaccess4
+        cmp     eax, 2
+        jb      .fileEnd2
+        cmp     eax, [ebp+FAT.fatRESERVED]
+        jae     .fileEnd2
+        inc     esi
+        cmp     eax, esi
+        jz      @b
+.fragmentEnd:
+        xchg    eax, esi
+        dec     eax
+        dec     eax
+        imul    eax, [ebp+FAT.SECTORS_PER_CLUSTER]
+        add     eax, [ebp+FAT.DATA_START]
+        sub     eax, edx
+.readFragment:
+        push    ecx
+        mov     ecx, eax
+        mov     eax, edx
+        xor     edx, edx
+        push    eax
+        call    fs_read64_app
+        add     [esp], ecx
+        shl     ecx, 9
+        add     ebx, ecx
+        test    eax, eax
         pop     eax
-.noaccess_1:
+        jnz     .noaccess3
+        pop     ecx
+        xor     edx, edx
+        jcxz    .done
+        cmp     ecx, 512
+        jc      .sectorPiece
+        mov     eax, esi
+        dec     eax
+        dec     eax
+        imul    eax, [ebp+FAT.SECTORS_PER_CLUSTER]
+        add     eax, [ebp+FAT.DATA_START]
+        jmp     .alignedCluster
+.readEnd:
+        add     ecx, edi
+        mov     edi, ecx
+        and     ecx, 511
+        shr     edi, 9
+        dec     eax
+        dec     eax
+        imul    eax, [ebp+FAT.SECTORS_PER_CLUSTER]
+        add     eax, [ebp+FAT.DATA_START]
+        sub     eax, edx
+        add     eax, edi
+        jmp     .readFragment
+.noaccess3:
         pop     eax
-        push    ERROR_DEVICE
+.noaccess2:
+        mov     byte [esp], ERROR_DEVICE
 .done:
-        mov     ebx, edx
         call    fat_unlock
         pop     eax edx edi
         sub     ebx, edx
         ret
-.eof:
-        mov     ebx, edx
-        pop     eax edx
-        sub     ebx, edx
-        jmp     .reteof
+.fileEnd:
+        mov     byte [esp], ERROR_END_OF_FILE
+        jmp     .done
+.noaccess4:
+        mov     byte [esp], ERROR_DEVICE
+        jmp     @f
+.fileEnd2:
+        mov     byte [esp], ERROR_END_OF_FILE
+@@:
+        inc     esi
+        xor     ecx, ecx
+        jmp     .fragmentEnd
 
 ;----------------------------------------------------------------
 ; fat_ReadFolder - FAT implementation of reading a folder

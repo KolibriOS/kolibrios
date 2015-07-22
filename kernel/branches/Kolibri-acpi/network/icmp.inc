@@ -388,6 +388,7 @@ ICMP_output_raw:
 
         mov     di, IP_PROTO_ICMP SHL 8 + 128  ; TTL
         mov     edx, [eax + IP_SOCKET.LocalIP]
+        mov     ebx, [eax + IP_SOCKET.device]
         mov     eax, [eax + IP_SOCKET.RemoteIP]
         call    IPv4_output
         jz      .exit

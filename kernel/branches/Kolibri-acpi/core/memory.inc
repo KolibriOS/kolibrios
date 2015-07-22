@@ -1445,7 +1445,3 @@ proc print_mem
 .done:
         ret
 endp
-
-
-
-

@@ -1132,21 +1132,22 @@ check_ATAPI_device_event:
         mov     [ignore_CD_eject_wait], 0
         ret
 ;-----------------------------------------------------------------------------
-iglobal
-timer_ATAPI_check dd 0
-ATAPI_IDE0_lock db 0
-ATAPI_IDE1_lock db 0
-ATAPI_IDE2_lock db 0
-ATAPI_IDE3_lock db 0
-ATAPI_IDE4_lock db 0
-ATAPI_IDE5_lock db 0
-ATAPI_IDE6_lock db 0
-ATAPI_IDE7_lock db 0
-ATAPI_IDE8_lock db 0
-ATAPI_IDE9_lock db 0
-ATAPI_IDE10_lock db 0
-ATAPI_IDE11_lock db 0
-ignore_CD_eject_wait db 0
+uglobal
+align 4
+timer_ATAPI_check dd ?
+ATAPI_IDE0_lock db ?
+ATAPI_IDE1_lock db ?
+ATAPI_IDE2_lock db ?
+ATAPI_IDE3_lock db ?
+ATAPI_IDE4_lock db ?
+ATAPI_IDE5_lock db ?
+ATAPI_IDE6_lock db ?
+ATAPI_IDE7_lock db ?
+ATAPI_IDE8_lock db ?
+ATAPI_IDE9_lock db ?
+ATAPI_IDE10_lock db ?
+ATAPI_IDE11_lock db ?
+ignore_CD_eject_wait db ?
 endg
 ;-----------------------------------------------------------------------------
 ;*************************************************

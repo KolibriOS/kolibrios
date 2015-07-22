@@ -469,7 +469,6 @@ proc create_process stdcall, app_size:dword,img_base:dword,img_size:dword
         stdcall kernel_alloc, 0x2000
         test    eax, eax
         jz      .fail
-
         mov     [process], eax
 
         lea     edi, [eax+PROC.heap_lock]
