@@ -1,3 +1,9 @@
+#ifndef INCLUDE_DRAW_BUF_H
+#define INCLUDE_DRAW_BUF_H
+
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
 
 dword buf_data;
 dword zbuf_data;
@@ -149,3 +155,5 @@ void DrawBufer::Show()
 		PutPaletteImage(zbuf_data+8, zbufw, zbufh, zbufx, zbufy, 32, 0);
 	}		
 }
+
+#endif

@@ -1,4 +1,10 @@
 //list_box
+#ifndef INCLUDE_LIST_BOX_H
+#define INCLUDE_LIST_BOX_H
+
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
 
 struct llist
 {
@@ -151,3 +157,5 @@ int llist::KeyEnd()
 	first=count-visible;
 	return 1;
 }
+
+#endif

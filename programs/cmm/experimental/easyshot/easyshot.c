@@ -1,8 +1,8 @@
 #define MEMSIZE 0xFFFFF
-#include "..\lib\kolibri.h" 
-#include "..\lib\strings.h" 
-#include "..\lib\mem.h" 
-#include "..\lib\gui.h" 
+#include "../lib/kolibri.h" 
+#include "../lib/strings.h" 
+#include "../lib/mem.h" 
+#include "../lib/gui.h" 
 
 #ifndef AUTOBUILD
 	#include "lang.h--"

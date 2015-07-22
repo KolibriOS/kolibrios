@@ -1,4 +1,14 @@
 //HTTP library
+#ifndef INCLUDE_LIBHTTP_H
+#define INCLUDE_LIBHTTP_H
+
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
+
+#ifndef INCLUDE_DLL_H
+#include "../lib/dll.h"
+#endif
 
 dword libHTTP = #alibHTTP;
 char alibHTTP[23] = "/sys/lib/http.obj\0";
@@ -66,3 +76,5 @@ struct  http_msg{
 {
 	http_get(url,FLAG_HTTP11,"");
 }
+
+#endif

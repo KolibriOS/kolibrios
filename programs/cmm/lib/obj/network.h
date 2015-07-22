@@ -1,5 +1,14 @@
 //Network library
+#ifndef INCLUDE_NETWORK_H
+#define INCLUDE_NETWORK_H
 
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
+
+#ifndef INCLUDE_DLL_H
+#include "../lib/dll.h"
+#endif
 dword network_lib = #a_network_lib;
 char a_network_lib[21]="/sys/lib/network.obj\0";
 
@@ -61,3 +70,5 @@ struct addrinfo {
     struct addrinfo *ai_next;
 }; 
 */
+
+#endif

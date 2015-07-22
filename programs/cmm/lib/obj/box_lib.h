@@ -1,4 +1,15 @@
 //BOX_LIB - Asper
+#ifndef INCLUDE_BOX_LIB_H
+#define INCLUDE_BOX_LIB_H
+
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
+
+#ifndef INCLUDE_DLL_H
+#include "../lib/dll.h"
+#endif
+
 dword boxlib = #aEdit_box_lib;
 char aEdit_box_lib[]="/sys/lib/box_lib.obj";
 
@@ -170,3 +181,5 @@ struct frame
 	dword font_color;            
 	dword font_backgr_color;
 };     
+
+#endif

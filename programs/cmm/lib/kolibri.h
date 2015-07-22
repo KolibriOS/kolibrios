@@ -1,5 +1,5 @@
 //CODED by Veliant, Leency, Nable. GNU GPL licence.
-
+#ifndef INCLUDE_KOLIBRI_H
 #define INCLUDE_KOLIBRI_H
 
 #startaddress 0
@@ -878,3 +878,5 @@ void load_init_main()
 	//mem_Init();
 	main();
 }
+
+#endif

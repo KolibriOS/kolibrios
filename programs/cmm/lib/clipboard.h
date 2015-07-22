@@ -1,3 +1,10 @@
+#ifndef INCLUDE_CLIPBOARD_H
+#define INCLUDE_CLIPBOARD_H
+
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
+
 struct buffer_data
 {
 	dword	size;
@@ -50,3 +57,5 @@ dword Clipboard::ResetBlockingBuffer()
 	$mov ebx, 3
 	$int 0x40
 }
+
+#endif

@@ -1,10 +1,10 @@
 #define MEMSIZE 397113
-#include "..\lib\kolibri.h" 
-#include "..\lib\strings.h" 
-#include "..\lib\mem.h" 
-#include "..\lib\file_system.h"
-#include "..\lib\dll.h"
-#include "..\lib\obj\truetype.h"
+#include "../lib/kolibri.h" 
+#include "../lib/strings.h" 
+#include "../lib/mem.h" 
+#include "../lib/file_system.h"
+#include "../lib/dll.h"
+#include "../lib/obj/truetype.h"
 
 proc_info Form;
 dword font_data;

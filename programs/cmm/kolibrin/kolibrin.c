@@ -1,5 +1,4 @@
 #define MEMSIZE 0x9000
-#include "..\lib\kolibri.h" 
 #include "..\lib\strings.h" 
 #include "..\lib\mem.h"
 #include "..\lib\file_system.h"

@@ -1,3 +1,6 @@
+#ifndef INCLUDE_DLL_H
+#define INCLUDE_DLL_H
+
 char a_libdir[43]  = "/sys/lib/\0";
 
 :inline void error_init(dword text)
@@ -65,7 +68,7 @@ asm {
         add     esi, 8
         jmp     next_lib
 @exit:
-        xor     eax, eax
+	xor     eax, eax
         leave
         ret     4
         
@@ -235,3 +238,6 @@ int load_dll2(dword dllname, import_table, byte need_init)
         return -1;
 		//error_init(dllname);
 }
+
+
+#endif

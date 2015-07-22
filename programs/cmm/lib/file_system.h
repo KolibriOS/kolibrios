@@ -1,3 +1,13 @@
+#ifndef INCLUDE_FILESYSTEM_H
+#define INCLUDE_FILESYSTEM_H
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
+
+#ifndef INCLUDE_STRING_H
+#include "../lib/strings.h"
+#endif
+
 :struct f70{
 	dword	func;
 	dword	param1;
@@ -327,3 +337,4 @@ enum
 
 	return #size;
 }
+#endif

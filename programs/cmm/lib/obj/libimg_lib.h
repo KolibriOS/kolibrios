@@ -1,4 +1,24 @@
 //Asper
+#ifndef INCLUDE_LIBIMG_H
+#define INCLUDE_LIBIMG_H
+
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
+
+#ifndef INCLUDE_MEM_H
+#include "../lib/mem.h"
+#endif
+
+#ifndef INCLUDE_DLL_H
+#include "../lib/dll.h"
+#endif
+
+#ifndef INCLUDE_LIBIO_H
+#include "../lib/obj/libio_lib.h"
+#endif
+
+:byte init_imglib_check;
 
 //library
 dword libimg = #alibimg;
@@ -100,3 +120,5 @@ dword load_image(dword filename)
         $stc
         return 0;
 }
+
+#endif

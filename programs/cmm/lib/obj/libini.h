@@ -1,3 +1,14 @@
+#ifndef INCLUDE_LIBINI_H
+#define INCLUDE_LIBINI_H
+
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
+
+#ifndef INCLUDE_DLL_H
+#include "../lib/dll.h"
+#endif
+
 dword libini = #alibini;
 char alibini[] = "/sys/lib/libini.obj";
 
@@ -23,3 +34,5 @@ char aini_set_int[] = "ini_set_int";
 //char aini_get_shortcut[] = "ini_get_shortcut";
 char aini_get_color[] = "ini_get_color";
 //char aini_set_color[] = "ini_set_color";
+
+#endif

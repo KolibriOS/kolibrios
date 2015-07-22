@@ -1,5 +1,14 @@
 // Truetype library
+#ifndef INCLUDE_LIBTRUETYPE_H
+#define INCLUDE_LIBTRUETYPE_H
 
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
+
+#ifndef INCLUDE_DLL_H
+#include "../lib/dll.h"
+#endif
 dword libtruetype = #att_libtruetype;
 char att_libtruetype[22] = "/sys/lib/truetype.obj\0";
  
@@ -35,3 +44,5 @@ struct stbtt_fontinfo
 	int index_map;                     // a cmap mapping for our chosen character encoding
 	int indexToLocFormat;              // format needed to map from glyph index to glyph
 };
+
+#endif

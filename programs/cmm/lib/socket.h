@@ -1,3 +1,10 @@
+#ifndef INCLUDE_SOCKET_H
+#define INCLUDE_SOCKET_H
+
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
+
 #define SOCK_STREAM 1
 #define	SOCK_DGRAM 2
 
@@ -8,7 +15,8 @@
 
 dword errorcode;
 
-struct 	sockaddr_in{
+struct 	sockaddr_in
+{
         word    sin_family; 
         word    sin_port; 
         dword   sin_addr;
@@ -94,3 +102,5 @@ inline fastcall dword Receive(ECX, EDX, ESI, EDI)
 	errorcode = EBX;
 	$pop	ebx
 }
+
+#endif

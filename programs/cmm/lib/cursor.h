@@ -1,4 +1,10 @@
 // cursor file should be 32x32 in default MS Windows .cur format
+#ifndef INCLUDE_CURSOR_H
+#define INCLUDE_CURSOR_H
+
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
 
 struct CustomCursor
 {
@@ -43,3 +49,5 @@ void CustomCursor::Delete()
     ECX = CursorPointer;
     $int 0x40
 }
+
+#endif

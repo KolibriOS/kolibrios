@@ -1,8 +1,5 @@
 #define MEMSIZE 0x3E80
-#include "..\lib\kolibri.h" 
 #include "..\lib\strings.h" 
-#include "..\lib\mem.h" 
-#include "..\lib\file_system.h"
 
 void main()
 {   
@@ -19,7 +16,7 @@ void main()
       
         case evKey:
 			key = GetKey();
-			IF (key==013){ //Enter
+			if (key==013){ //Enter
 				WriteText(50,90,0x80,0xFF00FF,"Pressed Enter");
 			}
 			break;

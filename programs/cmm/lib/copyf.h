@@ -1,4 +1,10 @@
 //copyf - copy file or folder with content
+#ifndef INCLUDE_COPYF_H
+#define INCLUDE_COPYF_H
+
+#ifndef INCLUDE_FILESYSTEM_H
+#include "../lib/file_system.h"
+#endif
 
 :int copyf(dword from1, in1)
 {
@@ -75,16 +81,12 @@
 	for (i=0; i<fcount; i++)
 	{
 		filename = i*304+dirbuf+72;
-		strcpy(#copy_from2, from2);
-		chrcat(#copy_from2, '/');
-		strcat(#copy_from2, filename);
-		strcpy(#copy_in2, in2);
-		chrcat(#copy_in2, '/');
-		strcat(#copy_in2, filename);
+		sprintf(#copy_from2,"%s/%s",from2,filename);
+		sprintf(#copy_in2,"%s/%s",in2,filename);
 
 		if ( TestBit(ESDWORD[filename-40], 4) ) //isdir?
 		{
-			if ( (!strcmp(filename, ".")) || (!strcmp(filename, "..")) ) continue;
+			if ( (!strncmp(filename, ".",1)) || (!strncmp(filename, "..",2)) ) continue;
 			CopyFolder(#copy_from2, #copy_in2);
 		}
 		else
@@ -145,15 +147,8 @@
 {
 	char error[256];  
 	N = fabs(N);
-	if (N<=33)
-	{
-		strcpy(#error, ERROR_TEXT[N]);
-	}
-	else
-	{
-		strcpy(#error, itoa(N));
-		strcat(#error, " - Unknown error number O_o");
-	}
+	if (N<=33) strcpy(#error, ERROR_TEXT[N]);
+	else sprintf(#error,"%d%s",N," - Unknown error number O_o");
 	return #error;
 }
 
@@ -162,3 +157,5 @@
 	if (path) debugln(path);
 	debugln(get_error(error_number));
 }
+
+#endif

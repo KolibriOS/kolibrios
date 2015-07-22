@@ -1,3 +1,13 @@
+#ifndef INCLUDE_PROCLIB_H
+#define INCLUDE_PROCLIB_H
+
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
+
+#ifndef INCLUDE_DLL_H
+#include "../lib/dll.h"
+#endif
 dword Proc_lib = #aProc_lib;
 char aProc_lib[]                 = "/sys/lib/proc_lib.obj";
 
@@ -31,3 +41,4 @@ struct opendialog
   word y_start;
 };
 
+#endif

@@ -95,7 +95,7 @@ void GetSystemDiscs()
 			strncpy(#disk_list[disc_num].Item, #sys_discs,l);
 			disc_num++;
 		}
-		if (strncmp(#sys_discs, "/rd/1/",6)==0) 
+		if (!strncmp(#sys_discs, "/rd/1/",6)) 
 		{
 			if (isdir("/kolibrios"))
 			{

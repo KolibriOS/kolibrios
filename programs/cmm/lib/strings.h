@@ -1,3 +1,14 @@
+#ifndef INCLUDE_STRING_H
+#define INCLUDE_STRING_H
+
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
+
+#ifndef INCLUDE_MEM_H
+#include "../lib/mem.h"
+#endif
+
 //------------------------------------------------------------------------------
 // strspn(dword text1,text2) --- example: strspn("12 year","1234567890") -> return 2
 // strpbrk(dword text1,text2) --- example: strpbrk("this test", " ckfi") -> return "is test"
@@ -38,6 +49,8 @@ inline fastcall signed int strcmp( ESI, EDI)
     }
 }
 */
+
+
 
 inline int strspn(dword text1,text2)
 {
@@ -376,7 +389,7 @@ inline fastcall void chrcat(ESI, BL)
 }
 
 
-inline fastcall signed int strchr( ESI,BL)
+/*inline fastcall signed int strchr( ESI,BL)
 {
     int jj=0;
     do{
@@ -385,8 +398,19 @@ inline fastcall signed int strchr( ESI,BL)
         IF(AL==BL) return jj;
     } while(AL!=0);
     return 0;
-}
+}*/
 
+inline dword strchr(dword shb;char s)
+{
+	char ss;
+	loop()
+	{
+		ss = DSBYTE[shb];
+		if(!ss)return 0;
+		if(ss==s)return shb;
+		shb++;
+	}
+}
 
 inline fastcall signed int strrchr( ESI,BL)
 {
@@ -732,28 +756,50 @@ inline dword hexdec(dword text)
 {
 	char s;
 	dword ret,l;
-	//l = strlen(text);
 	ret = 0;
 	s = DSBYTE[text];
-	//if(l==6) 
 	while(s)
 	{	
 		ret <<= 4;
 		if(s>='A')&&(s<='F')ret |= s-'A'+10;
 		else if(s>='a')&&(s<='f')ret |= s-'a'+10;
-		else if(s>='0')&&(s<='9')ret |= s-'a'+10;
+		else if(s>='0')&&(s<='9')ret |= s-'0';
 		text++;
 		s = DSBYTE[text];
 	}
-	/*else if(l==3) while(s)
+	return ret;
+}
+
+inline signed csshexdec(dword text)
+{
+	char s;
+	dword ret,l;
+	byte tmp;
+	l = strlen(text);
+	ret = 0;
+	s = DSBYTE[text];
+	tmp = 0;
+	if(l==6) while(s)
 	{	
 		ret <<= 4;
 		if(s>='A')&&(s<='F')ret |= s-'A'+10;
 		else if(s>='a')&&(s<='f')ret |= s-'a'+10;
-		else if(s>='0')&&(s<='9')ret |= s-'a'+10;
+		else if(s>='0')&&(s<='9')ret |= s-'0';
 		text++;
 		s = DSBYTE[text];
-	}*/
+	}
+	else if(l==3) while(s)
+	{	
+		ret |= tmp;
+		ret <<= 4;
+		ret |= tmp;
+		ret <<= 4;
+		if(s>='A')&&(s<='F')tmp = s-'A'+10;
+		else if(s>='a')&&(s<='f')tmp = s-'a'+10;
+		else if(s>='0')&&(s<='9')tmp = s-'0';
+		text++;
+		s = DSBYTE[text];
+	}
 	return ret;
 }
 
@@ -841,6 +887,19 @@ inline cdecl int sprintf(dword buf, format,...)
 	return buf-ret;
 }
 
+inline signed strcoll(dword text1,text2)
+{
+	char s,ss;
+	loop()
+	{
+		s = DSBYTE[text2];
+		ss=strchr(text1,s);
+		if(ss)return ss;
+		text2++;
+	}
+	return 0;
+}
+
 inline void debugi(dword d_int)
 {
     char tmpch[12];
@@ -854,3 +913,4 @@ inline void debugi(dword d_int)
 #define stricmp strcmpi
 #define strcmpn strncmp
 
+#endif

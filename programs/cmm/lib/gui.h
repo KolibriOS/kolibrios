@@ -1,4 +1,13 @@
-//#include "strings.h"
+#ifndef INCLUDE_GUI_H
+#define INCLUDE_GUI_H
+
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
+
+#ifndef INCLUDE_STRING_H
+#include "../lib/strings.h"
+#endif
 
 :void DrawRectangle(dword x,y,w,h,color1)
 {
@@ -169,3 +178,5 @@
 		DSBYTE[color_image] = col;
 	}
 }
+
+#endif

@@ -1,4 +1,14 @@
 //Asper
+#ifndef INCLUDE_LIBIO_H
+#define INCLUDE_LIBIO_H
+
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
+
+#ifndef INCLUDE_DLL_H
+#include "../lib/dll.h"
+#endif
 
 //library
 dword libio = #alibio;
@@ -32,3 +42,5 @@ char afile_close[12] = "file_close\0";
 #define SEEK_SET  0
 #define SEEK_CUR  1
 #define SEEK_END  2
+
+#endif

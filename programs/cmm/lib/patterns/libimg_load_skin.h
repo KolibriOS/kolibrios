@@ -1,3 +1,10 @@
+#ifndef INCLUDE_LIBIMG_LOAD_SKIN_H
+#define INCLUDE_LIBIMG_LOAD_SKIN_H
+
+#ifndef INCLUDE_LIBIMG_H
+#include "../lib/obj/libimg_lib.h"
+#endif
+
 struct libimg_image {
 	dword image, w, h;
 };
@@ -19,3 +26,5 @@ struct libimg_image {
 	max_i =  w * h * 4 + image_data;
 	for (i = image_data; i < max_i; i += 4)	if (DSDWORD[i]==0) DSDWORD[i] = new_transparent_color;
 }
+
+#endif

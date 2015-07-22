@@ -1,4 +1,14 @@
 //convert text characters
+#ifndef INCLUDE_LIBICONV_H
+#define INCLUDE_LIBICONV_H
+
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
+
+#ifndef INCLUDE_DLL_H
+#include "../lib/dll.h"
+#endif
 
 dword iconv_lib = #a_iconv_lib;
 char a_iconv_lib[19]="/sys/lib/iconv.obj\0";
@@ -57,3 +67,5 @@ enum {
 	CH_ISO8859_5,
 	CH_CP866
 };
+
+#endif

@@ -1,3 +1,13 @@
+#ifndef INCLUDE_LIBXML_H
+#define INCLUDE_LIBXML_H
+
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
+
+#ifndef INCLUDE_DLL_H
+#include "../lib/dll.h"
+#endif
 dword XML = #aXML_lib;
 char aXML_lib[]               = "/sys/lib/xml.obj";
 
@@ -124,3 +134,5 @@ struct AXParseContext
   dword reserved1;              // (int)
   AXElement reserved2;          // (AXElement)
 };
+
+#endif
