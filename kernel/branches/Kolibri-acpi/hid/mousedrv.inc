@@ -35,10 +35,10 @@ endg
 iglobal
 ;--------------------------------------
 align 4
-mouse_delay        dd 10
+mouse_delay             dd 10
 mouse_speed_factor:
-                    dd 3
-mouse_timer_ticks  dd 0
+                        dd 3
+mouse_timer_ticks       dd 0
 endg
 
 ;-----------------------------------------------------------------------------
@@ -175,7 +175,7 @@ drm:
         add     eax, ecx        ; save picture under mouse
         add     ebx, edx
         push    ecx
-        or      ecx, 0x04000000  ; don't load to mouseunder area
+        or      ecx, 0x04000000 ; don't load to mouseunder area
         push    eax ebx edx edi
         call    [GETPIXEL]
         pop     edi edx ebx eax
@@ -190,12 +190,12 @@ drm:
         and     ebx, 0xffffff
         mov     [eax], ebx
         pop     ecx
-        mov     edi, edx     ; y cycle
-        shl     edi, 4     ; *16 bytes per row
-        add     edi, ecx     ; x cycle
+        mov     edi, edx        ; y cycle
+        shl     edi, 4          ; *16 bytes per row
+        add     edi, ecx        ; x cycle
         mov     esi, edi
         add     edi, esi
-        add     edi, esi      ; *3
+        add     edi, esi        ; *3
         add     edi, [MOUSE_PICTURE]    ; we have our str address
         mov     esi, edi
         add     esi, 16*24*3
@@ -209,19 +209,19 @@ drm:
         pop     ecx
         pop     ebx
         pop     eax
-        add     eax, ecx     ; we have x coord+cycle
-        add     ebx, edx     ; and y coord+cycle
+        add     eax, ecx        ; we have x coord+cycle
+        add     ebx, edx        ; and y coord+cycle
         push    ecx
         mov     ecx, [MOUSE_COLOR_MEM]
         mov     edi, 1 ; force
-        or      ecx, 0x04000000  ; don't save to mouseunder area
+        or      ecx, 0x04000000 ; don't save to mouseunder area
 ;        call    [putpixel]
         call    __sys_putpixel
         pop     ecx
         mov     ebx, [esp+0]    ; pure y coord again
         mov     eax, [esp+4]    ; and x
-        inc     ecx         ; +1 cycle
-        cmp     ecx, 16     ; if more than 16
+        inc     ecx             ; +1 cycle
+        cmp     ecx, 16         ; if more than 16
         jnz     drm
         xor     ecx, ecx
         inc     edx
@@ -314,11 +314,11 @@ check_mouse_area_for_getpixel:
         push    eax ebx
 ; check for Y
         xor     ecx, ecx
-        mov     cx, [Y_UNDER]  ; [MOUSE_Y]
+        mov     cx, [Y_UNDER]   ; [MOUSE_Y]
 
         cmp     ebx, ecx
         jb      .no_mouse_area
-        add     ecx, 23  ; mouse cursor Y size
+        add     ecx, 23         ; mouse cursor Y size
         cmp     ebx, ecx
         ja      .no_mouse_area
 ; offset Y
@@ -329,7 +329,7 @@ check_mouse_area_for_getpixel:
         mov     cx, [X_UNDER]   ; [MOUSE_X]
         cmp     eax, ecx
         jb      .no_mouse_area
-        add     ecx, 15  ; mouse cursor X size
+        add     ecx, 15         ; mouse cursor X size
         cmp     eax, ecx
         ja      .no_mouse_area
 ; offset X
@@ -363,10 +363,10 @@ check_mouse_area_for_putpixel:
 ; eax = new color
         push    eax
 ; check for Y
-        mov     ax, [Y_UNDER]  ; [MOUSE_Y]
+        mov     ax, [Y_UNDER]   ; [MOUSE_Y]
         cmp     cx, ax
         jb      .no_mouse_area
-        add     ax, 23  ; mouse cursor Y size
+        add     ax, 23          ; mouse cursor Y size
         cmp     cx, ax
         ja      .no_mouse_area
 ; offset Y
@@ -379,7 +379,7 @@ check_mouse_area_for_putpixel:
         shr     ecx, 16
         cmp     cx, ax
         jb      .no_mouse_area
-        add     ax, 15  ; mouse cursor X size
+        add     ax, 15          ; mouse cursor X size
         cmp     cx, ax
         ja      .no_mouse_area
 ; offset X
@@ -407,10 +407,10 @@ check_mouse_area_for_putpixel:
 
         push    esi edi
         rol     eax, 16
-        movzx   edi, ax     ; y cycle
-        shl     edi, 4     ; *16 bytes per row
+        movzx   edi, ax         ; y cycle
+        shl     edi, 4          ; *16 bytes per row
         shr     eax, 16
-        add     edi, eax     ; x cycle
+        add     edi, eax        ; x cycle
         lea     edi, [edi*3]
         add     edi, [MOUSE_PICTURE]    ; we have our str address
         mov     esi, edi

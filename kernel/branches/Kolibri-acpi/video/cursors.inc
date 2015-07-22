@@ -305,7 +305,7 @@ align 4
 align 4
 .end:
         mov     [redrawmouse_unconditional], 1
-        call    __sys_draw_pointer        
+        call    __sys_draw_pointer
         ret
 endp
 ;------------------------------------------------------------------------------

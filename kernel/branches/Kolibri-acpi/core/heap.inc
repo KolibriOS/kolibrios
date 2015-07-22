@@ -321,11 +321,11 @@ proc alloc_kernel_space stdcall, size:dword
         sub     [edi+block_size], edx
 
         mov     eax, [edi+block_size]
-           calc_index eax
+        calc_index eax
         cmp     eax, [block_ind]
         je      .add_used
 
-           list_del edi
+        list_del edi
 
         mov     ecx, [block_ind]
         lea     edx, [mem_block_list+ecx*8]
@@ -335,7 +335,7 @@ proc alloc_kernel_space stdcall, size:dword
 @@:
         bts     [mem_block_mask], eax
         lea     edx, [mem_block_list+eax*8]  ;edx= list head
-           list_add edi, edx
+        list_add edi, edx
 .add_used:
 
         call    md.add_to_used
@@ -348,7 +348,7 @@ proc alloc_kernel_space stdcall, size:dword
         ret
 
 .m_eq_size:
-           list_del edi
+        list_del edi
         lea     edx, [mem_block_list+ebx*8]
         cmp     edx, [edx]
         jnz     @f

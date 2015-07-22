@@ -5,9 +5,6 @@
 ;;                                                              ;;
 ;; Synhronization for MenuetOS.                                 ;;
 ;; Author: Halyavin Andrey, halyavin@land.ru                    ;;
-;;                                                              ;;
-;;                                                              ;;
-;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 $Revision$
@@ -389,7 +386,6 @@ up_write:
         ret
 
 
-purge MUTEX_WAITER
 purge RWSEM_WAITING_FOR_WRITE
 purge RWSEM_WAITING_FOR_READ
 

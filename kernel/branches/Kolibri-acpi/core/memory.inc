@@ -126,7 +126,7 @@ align 4
 ;proc map_page stdcall,lin_addr:dword,phis_addr:dword,flags:dword
 map_page:
         push    ebx
-        mov     eax, [esp+12]               ; phis_addr
+        mov     eax, [esp+12]              ; phis_addr
         or      eax, [esp+16]              ; flags
         and     eax, [pte_valid_mask]
         mov     ebx, [esp+8]               ; lin_addr
@@ -487,7 +487,7 @@ proc init_LFB
         loop    @B
 
         mov     dword [LFBAddress], LFB_BASE
-        mov     eax, cr3                      ;flush TLB
+        mov     eax, cr3      ;flush TLB
         mov     cr3, eax
 
         ret
@@ -1313,9 +1313,10 @@ f68:
         mov     [esp+32], eax
         ret
 
-iglobal
+
 align 4
-f68call:
+f68call:   ; keep this table closer to main code
+
            dd f68.11   ; init_heap
            dd f68.12   ; user_alloc
            dd f68.13   ; user_free
@@ -1333,7 +1334,7 @@ f68call:
            dd f68.25   ; unmask exception
            dd f68.26   ; user_unmap
            dd f68.27   ; load_file_umode
-endg
+
 
 align 4
 proc load_pe_driver stdcall, file:dword, cmdline:dword

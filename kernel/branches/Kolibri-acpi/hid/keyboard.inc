@@ -470,7 +470,7 @@ send_scancode:
         mov     bl, '/'
         jmp     .dowrite
 @@:
-        
+
         cmp     ch, 55
         jne     @f
         

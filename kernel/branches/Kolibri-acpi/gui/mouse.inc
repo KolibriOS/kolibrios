@@ -407,7 +407,7 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
     @@:
         add     eax, [mouse.active_sys_window.new_box.height]
         cmp     eax, [_display.height]
-        jl     .call_window_handler
+        jl      .call_window_handler
         sub     eax, [_display.height]
         sub     [mouse.active_sys_window.new_box.top], eax
         jmp     .call_window_handler

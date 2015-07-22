@@ -34,6 +34,92 @@ proc get_notify stdcall, p_ev:dword
         jmp     .wait
 endp
 
+align 4
+proc pci_read32 stdcall, bus:dword, devfn:dword, reg:dword
+        push    ebx
+        xor     eax, eax
+        xor     ebx, ebx
+        mov     ah, byte [bus]
+        mov     al, 6
+        mov     bh, byte [devfn]
+        mov     bl, byte [reg]
+        call    pci_read_reg
+        pop     ebx
+        ret
+endp
+
+align 4
+proc pci_read16 stdcall, bus:dword, devfn:dword, reg:dword
+        push    ebx
+        xor     eax, eax
+        xor     ebx, ebx
+        mov     ah, byte [bus]
+        mov     al, 5
+        mov     bh, byte [devfn]
+        mov     bl, byte [reg]
+        call    pci_read_reg
+        pop     ebx
+        ret
+endp
+
+align 4
+proc pci_read8 stdcall, bus:dword, devfn:dword, reg:dword
+        push    ebx
+        xor     eax, eax
+        xor     ebx, ebx
+        mov     ah, byte [bus]
+        mov     al, 4
+        mov     bh, byte [devfn]
+        mov     bl, byte [reg]
+        call    pci_read_reg
+        pop     ebx
+        ret
+endp
+
+align 4
+proc pci_write8 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
+        push    ebx
+        xor     eax, eax
+        xor     ebx, ebx
+        mov     ah, byte [bus]
+        mov     al, 8
+        mov     bh, byte [devfn]
+        mov     bl, byte [reg]
+        mov     ecx, [val]
+        call    pci_write_reg
+        pop     ebx
+        ret
+endp
+
+align 4
+proc pci_write16 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
+        push    ebx
+        xor     eax, eax
+        xor     ebx, ebx
+        mov     ah, byte [bus]
+        mov     al, 9
+        mov     bh, byte [devfn]
+        mov     bl, byte [reg]
+        mov     ecx, [val]
+        call    pci_write_reg
+        pop     ebx
+        ret
+endp
+
+align 4
+proc pci_write32 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
+        push    ebx
+        xor     eax, eax
+        xor     ebx, ebx
+        mov     ah, byte [bus]
+        mov     al, 10
+        mov     bh, byte [devfn]
+        mov     bl, byte [reg]
+        mov     ecx, [val]
+        call    pci_write_reg
+        pop     ebx
+        ret
+endp
 
 handle     equ  IOCTL.handle
 io_code    equ  IOCTL.io_code
@@ -1341,10 +1427,8 @@ destroy_kernel_object:
         call    free           ;release object memory
         ret
 
-
-
 ; param
-;  eñõ= size
+;  ecx= size
 
 align 4
 create_object:
@@ -1390,6 +1474,4 @@ create_object:
         pop     esi
         xor     eax, eax
         ret
-
-
 

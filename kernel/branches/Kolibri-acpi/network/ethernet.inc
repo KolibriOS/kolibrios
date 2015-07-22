@@ -14,7 +14,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 3346 $
+$Revision: 5522 $
 
 ETH_FRAME_MINIMUM       = 60
 ETH_QUEUE_SIZE          = 255
@@ -69,7 +69,7 @@ macro   ETH_init {
 ;  This function is called by ethernet drivers,
 ;  It pushes the received ethernet packets onto the ethernet input queue
 ;
-;  IN:   [esp]  = Pointer to buffer
+;  IN:  [esp] = Pointer to buffer
 ;
 ;  OUT: /
 ;
@@ -241,7 +241,7 @@ ETH_output:
 
   .adjust_size:
         mov     edx, ETH_FRAME_MINIMUM
-        test    edx, edx        ; clear zero flag
+        test    edx, edx                        ; clear zero flag
         jmp     .done
 
   .out_of_ram:

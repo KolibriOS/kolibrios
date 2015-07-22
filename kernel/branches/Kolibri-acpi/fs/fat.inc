@@ -1,38 +1,38 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
-;; Distributed under terms of the GNU General Public License       ;;
-;;                                                                 ;;
-;;  FAT functions for KolibriOS                                    ;;
-;;                                                                 ;;
-;;  Copyright 2002 Paolo Minazzi, paolo.minazzi@inwind.it          ;;
-;;                                                                 ;;
-;;  See file COPYING for details                                   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;  FAT functions for KolibriOS                                 ;;
+;;                                                              ;;
+;;  Copyright 2002 Paolo Minazzi, paolo.minazzi@inwind.it       ;;
+;;                                                              ;;
+;;  See file COPYING for details                                ;;
 ;;  06.2015 fs_read64 - pathoswithin                            ;;
-;;  04.02.2007 LFN create folder - diamond                         ;;
-;;  08.10.2006 LFN delete file/folder - diamond                    ;;
-;;  20.08.2006 LFN set file size (truncate/extend) - diamond       ;;
-;;  17.08.2006 LFN write/append to file - diamond                  ;;
-;;  23.06.2006 LFN start application - diamond                     ;;
-;;  15.06.2006 LFN get/set file/folder info - diamond              ;;
-;;  27.05.2006 LFN create/rewrite file - diamond                   ;;
-;;  04.05.2006 LFN read folder - diamond                           ;;
-;;  29.04.2006 Elimination of hangup after the                     ;;
-;;             expiration hd_wait_timeout -  Mario79               ;;
-;;  23.04.2006 LFN read file - diamond                             ;;
-;;  28.01.2006 find all Fat16/32 partition in all input point      ;;
-;;             to MBR, see file part_set.inc - Mario79             ;;
-;;  15.01.2005 get file size/attr/date, file_append - ATV          ;;
-;;  04.12.2004 skip volume label, file delete bug fixed - ATV      ;;
-;;  29.11.2004 get_free_FAT changed, append dir bug fixed - ATV    ;;
-;;  23.11.2004 don't allow overwrite dir with file - ATV           ;;
-;;  18.11.2004 get_disk_info and more error codes - ATV            ;;
-;;  17.11.2004 set_FAT/get_FAT and disk cache rewritten - ATV      ;;
-;;  10.11.2004 removedir clear whole directory structure - ATV     ;;
-;;  08.11.2004 rename - ATV                                        ;;
-;;  30.10.2004 file_read return also dirsize in bytes - ATV        ;;
-;;  20.10.2004 Makedir/Removedir - ATV                             ;;
-;;  14.10.2004 Partition chain/Fat16 - ATV (thanks drh3xx)         ;;
+;;  04.02.2007 LFN create folder - diamond                      ;;
+;;  08.10.2006 LFN delete file/folder - diamond                 ;;
+;;  20.08.2006 LFN set file size (truncate/extend) - diamond    ;;
+;;  17.08.2006 LFN write/append to file - diamond               ;;
+;;  23.06.2006 LFN start application - diamond                  ;;
+;;  15.06.2006 LFN get/set file/folder info - diamond           ;;
+;;  27.05.2006 LFN create/rewrite file - diamond                ;;
+;;  04.05.2006 LFN read folder - diamond                        ;;
+;;  29.04.2006 Elimination of hangup after the                  ;;
+;;             expiration hd_wait_timeout - Mario79             ;;
+;;  23.04.2006 LFN read file - diamond                          ;;
+;;  28.01.2006 find all Fat16/32 partition in all input point   ;;
+;;             to MBR, see file part_set.inc - Mario79          ;;
+;;  15.01.2005 get file size/attr/date, file_append - ATV       ;;
+;;  04.12.2004 skip volume label, file delete bug fixed - ATV   ;;
+;;  29.11.2004 get_free_FAT changed, append dir bug fixed - ATV ;;
+;;  23.11.2004 don't allow overwrite dir with file - ATV        ;;
+;;  18.11.2004 get_disk_info and more error codes - ATV         ;;
+;;  17.11.2004 set_FAT/get_FAT and disk cache rewritten - ATV   ;;
+;;  10.11.2004 removedir clear whole directory structure - ATV  ;;
+;;  08.11.2004 rename - ATV                                     ;;
+;;  30.10.2004 file_read return also dirsize in bytes - ATV     ;;
+;;  20.10.2004 Makedir/Removedir - ATV                          ;;
+;;  14.10.2004 Partition chain/Fat16 - ATV (thanks drh3xx)      ;;
 ;;  06.09.2004 Fix free space - Mario79                         ;;
 ;;  24.05.2004 Write back buffer for File_write - VT            ;;
 ;;  20.05.2004 File_read function to work with syscall 58 - VT  ;;
@@ -40,9 +40,10 @@
 ;;  29.06.2002 Improved fat32 verification - VT                 ;;
 ;;  20.05.2002 Hd status check - VT                             ;;
 ;;  01.05.2002 Bugfix in device write - VT                      ;;
-;;                                                                 ;;
+;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+$Revision: 5578 $
 
 cache_max equ 1919      ; max. is 1919*512+0x610000=0x6ffe00
 
@@ -60,7 +61,7 @@ fs_type              db ?
 fat16_root           db 0       ; flag for fat16 rootdir
 fat_change           db 0       ; 1=fat has changed
                      rb 1
-Lock                 MUTEX ?    ; currently operations with one partition
+Lock            MUTEX   ?       ; currently operations with one partition
 ; can not be executed in parallel since the legacy code is not ready
 SECTORS_PER_FAT      dd 0x1f3a
 NUMBER_OF_FATS       dd 0x2

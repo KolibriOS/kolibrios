@@ -5,7 +5,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 5164 $
+$Revision: 5363 $
 
 
 struct  BLITTER_BLOCK
@@ -37,7 +37,7 @@ block_clip:
 ;esi= clip RECT ptr
 ;edi= RECT ptr
 ;return code:
-;eax= 0 - draw, 1 - don't draw
+;CF= 0 - draw, 1 - don't draw
 
         push    ebx
 
@@ -53,18 +53,15 @@ block_clip:
         jl      .fail
 
         cmp     eax, ecx                ;left >= clip.left
-        jae     @F
+        jge     @F
 
-        mov     eax, ecx
+        mov     [edi+RECT.left], ecx
 @@:
-        mov     [edi+RECT.left], eax
-
         cmp     ebx, edx                ;right <= clip.right
         jle     @f
-        mov     ebx, edx
-@@:
-        mov     [edi+RECT.right], ebx
 
+        mov     [edi+RECT.right], edx
+@@:
         mov     eax, [edi+RECT.top]
         mov     ebx, [edi+RECT.bottom]
         mov     ecx, [esi+RECT.top]     ;clip.top
@@ -77,28 +74,29 @@ block_clip:
         jl      .fail
 
         cmp     eax, ecx                ;top >= clip.top
-        jae     @F
+        jge     @F
 
-        mov     eax, ecx
+        mov     [edi+RECT.top], ecx
 @@:
-        mov     [edi+RECT.top], eax
-
         cmp     ebx, edx                ;bottom <= clip.bottom
         jle     @f
-        mov     ebx, edx
+
+        mov     [edi+RECT.bottom], edx
 @@:
-        mov     [edi+RECT.bottom], ebx
         pop     ebx
-        xor     eax, eax
+        clc
         ret
 .fail:
         pop     ebx
-        mov     eax, 1
+        stc
         ret
 
 
 align 4
 blit_clip:
+
+;return code:
+;CF= 0 - draw, 1 - don't draw
 
 .sx0   equ 8
 .sy0   equ 12
@@ -130,9 +128,7 @@ blit_clip:
         lea     esi, [ebx+BLITTER.sc]
 
         call    block_clip
-        test    eax, eax
-        mov     esi, 1
-        jnz     .done
+        jc      .done
 
         mov     edi, [esp+.sx0]
         mov     edx, [ebx+BLITTER.dst_x]
@@ -157,9 +153,7 @@ blit_clip:
         lea     edi, [esp+.dx0]
         lea     esi, [ebx+BLITTER.dc]
         call    block_clip
-        test    eax, eax
-        mov     esi, 1
-        jnz     .done
+        jc      .done
 
         mov     edx, [esp+.dx0]
         mov     eax, [esp+.dx1]
@@ -182,9 +176,8 @@ blit_clip:
         mov     [ebx+BLITTER.src_y], ecx
         mov     [ebx+BLITTER.dst_x], edx
         mov     [ebx+BLITTER.dst_y], eax
-        xor     esi, esi
+        clc
 .done:
-        mov     eax, esi
         add     esp, 40
         pop     ebx
         pop     esi
@@ -205,16 +198,17 @@ purge .dy1
 
 align 4
 blit_32:
-
-.x_y        equ  72
-.tmp_x_y    equ  76
-
-
         push    ebp
         push    edi
         push    esi
         push    ebx
-        sub     esp, 80
+virtual at sizeof.BLITTER
+.position       dd      ? ; (x shl 16) + y
+; ???
+.extra_var1     dd      ?
+.local_vars_size = $
+end virtual
+        sub     esp, .local_vars_size
 
         mov     eax, [TASK_BASE]
         mov     ebx, [eax-twdw + WDATA.box.width]
@@ -254,14 +248,13 @@ blit_32:
 
 
         mov     eax, [ecx+32]
-        mov     [esp+56], eax
+        mov     [esp+BLITTER.bitmap], eax
         mov     eax, [ecx+36]
-        mov     [esp+60], eax
+        mov     [esp+BLITTER.stride], eax
 
         mov     ecx, esp
         call    blit_clip
-        test    eax, eax
-        jne     .done
+        jc      .L57
 
         mov     eax, [TASK_BASE]
 
@@ -271,13 +264,21 @@ blit_32:
         add     ebp, [eax-twdw + WDATA.box.top]
 
         mov     ecx, ebx
+        add     ecx, [esp+BLITTER.w]
         shl     ecx, 16
         mov     cx, bp
-        mov     [esp+.x_y], ecx
+        add     ecx, [esp+BLITTER.h]
+
+        mov     eax, ebx
+        shl     eax, 16
+        mov     ax, bp
+        mov     [esp+.position], eax
 
         mov     edi, ebp
 
+;        imul    edi, [_display.pitch]
         mov     edi, [BPSLine_calc_area+edi*4]
+;        imul    ebp, [_display.width]
         mov     ebp, [d_width_calc_area+ebp*4]
 
         add     ebp, ebx
@@ -289,155 +290,236 @@ blit_32:
         lea     esi, [eax+esi*4]
         add     esi, [esp+BLITTER.bitmap]
 
+        mov     eax, ecx
         mov     ecx, [esp+BLITTER.h]
         mov     edx, [esp+BLITTER.w]
 
         test    ecx, ecx    ;FIXME check clipping
-        jz      .done
+        jz      .L57
 
         test    edx, edx
-        jz      .done
+        jz      .L57
+
+        cmp     [_display.bits_per_pixel], 32
+        jne     .core_24
 
         lea     edi, [edi+ebx*4]
 
-;        xchg bx, bx
-
         mov     ebx, [CURRENT_TASK]
-        mov     ecx, [esp+80]
-        shr     ecx, 4
-        and     ecx, 3
-
-        jmp     dword [.tbl_32+ecx*4]
+; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        je      .core_32.software_cursor
+        cmp     [_display.select_cursor], 0
+        jne     .core_32.hardware_cursor
+;--------------------------------------
+.core_32.software_cursor:
+align 4
+.outer32:
 
 align 4
-.tbl_32 dd blit_copy_32
-        dd blit_copy_32_bgr
-        dd blit_trans_32
-        dd blit_trans_32_bgr
+.inner32:
+        cmp     [ebp], bl
+        jne     .skip
+;--------------------------------------
+        mov     eax, [esi]
+
+        mov     ecx, [esp+.position]
+
+; check mouse area for putpixel
+        call    [_display.check_mouse]
+;--------------------------------------
+; store to real LFB
+        mov     [LFB_BASE+edi], eax
+;--------------------------------------
+align 4
+.skip:
+        add     esi, 4
+        add     edi, 4
+        inc     ebp
+        add     [esp+.position], 1 shl 16
+        dec     edx
+        jnz     .inner32
+
+        add     esi, [esp+BLITTER.stride]
+        add     edi, [_display.lfb_pitch]
+        add     ebp, [_display.width]
+
+        mov     edx, [esp+BLITTER.w]
+        mov     eax, edx
+        inc     [esp+.position]
+        sub     ebp, edx
+        shl     eax, 2
+        sub     esi, eax
+        sub     edi, eax
+        shl     eax, 16-2
+        sub     [esp+.position], eax
+        dec     [esp+BLITTER.h]
+        jnz     .outer32
+        jmp     .done
+.core_32.hardware_cursor:
+align 4
+.hw.outer32:
+        xor     ecx, ecx
+
+align 4
+.hw.inner32:
+        cmp     [ebp+ecx], bl
+        jne     .hw.skip
+        mov     eax, [esi+ecx*4]
+        mov     [LFB_BASE+edi+ecx*4], eax
+
+align 4
+.hw.skip:
+        inc     ecx
+        dec     edx
+        jnz     .hw.inner32
+
+        add     esi, [esp+BLITTER.stride]
+        add     edi, [_display.lfb_pitch]
+        add     ebp, [_display.width]
+
+        mov     edx, [esp+BLITTER.w]
+        dec     [esp+BLITTER.h]
+        jnz     .hw.outer32
 
 .done:
-        add     esp, 80
+;        call    [draw_pointer]
+;        call    __sys_draw_pointer
+.L57:
+        add     esp, .local_vars_size
         pop     ebx
         pop     esi
         pop     edi
         pop     ebp
         ret
 
-align 4
-blit_copy_32_bgr:
-       mov      ebx, 1
+.core_24:
+        cmp     [_display.bits_per_pixel], 24
+        jne     .core_16
+
+        lea     ebx, [ebx+ebx*2]
+        lea     edi, [LFB_BASE+edi+ebx]
+        mov     ebx, [CURRENT_TASK]
 
 align 4
-blit_copy_32:
-
-.outer32:
-        mov     eax, [esp+.x_y]
-        mov     [esp+.tmp_x_y], eax
+.outer24:
+        mov     [esp+.extra_var1], edi
         xor     ecx, ecx
+
 align 4
-.inner32:
-        cmp     [ebp+ecx], bl
-        jne     .skip
+.inner24:
+        cmp     [ebp+ecx], bl           ; Does the process own this pixel?
+        jne     .skip_1
 ;--------------------------------------
+        push    eax
         mov     eax, [esi+ecx*4]
+
+        lea     edi, [edi+ecx*2]
 
 ; check for hardware cursor
         cmp     [_display.select_cursor], select_cursor
         je      @f
         cmp     [_display.select_cursor], 0
-        jne     .no_mouseunder
-;--------------------------------------
-align 4
-@@:
-        push    ecx
-        mov     ecx, [esp+4+.tmp_x_y]
-
-; check mouse area for putpixel
-        call    [_display.check_mouse]
-        pop     ecx
-
-;--------------------------------------
-align 4
-.no_mouseunder:
-; store to real LFB
-        mov     [LFB_BASE+edi+ecx*4], eax
-;--------------------------------------
-align 4
-.skip:
-        add     [esp+.tmp_x_y], dword 0x10000
-        inc     ecx
-        dec     edx
-        jnz     .inner32
-
-        add     esi, [esp+BLITTER.stride]
-        add     edi, [_display.lfb_pitch]
-        add     ebp, [_display.width]
-        inc     dword [esp+.x_y]
-
-        mov     edx, [esp+BLITTER.w]
-        dec     [esp+BLITTER.h]
-        jnz     .outer32
-
-        jmp     blit_32.done
-
-
-align 4
-blit_trans_32_bgr:
-       mov  ebx, 1
-
-align 4
-blit_trans_32:
-
-.outer32:
-        mov     eax, [esp+.x_y]
-        mov     [esp+.tmp_x_y], eax
-        xor     ecx, ecx
-
-align 4
-.inner32:
-
-        cmp     [ebp+ecx], bl
-        jne     .skip
-;--------------------------------------
-        mov     eax, [esi+ecx*4]
-        test    eax, 0xFF000000
-        jz      .skip
-
-; check for hardware cursor
-        cmp     [_display.select_cursor], select_cursor
-        je      @f
-        cmp     [_display.select_cursor], 0
-        jne     .no_mouseunder
+        jne     .no_mouseunder_1
 ;--------------------------------------
 align 4
 @@:
         push    ecx
 
-        mov     ecx, [esp+4+.tmp_x_y]
+        mov     ecx, [esp+4]
+        ror     ecx, 16
+        sub     ecx, edx
+        rol     ecx, 16
+        sub     ecx, [esp+BLITTER.h + 8]
 
 ; check mouse area for putpixel
         call    [_display.check_mouse]
         pop     ecx
 ;--------------------------------------
 align 4
-.no_mouseunder:
-; store to real LFB
-        mov     [LFB_BASE+edi+ecx*4], eax
+.no_mouseunder_1:
+        mov     [edi+ecx], ax
+        shr     eax, 16
+        mov     [edi+ecx+2], al
+
+        pop     eax
 ;--------------------------------------
 align 4
-.skip:
-        add     [esp+.tmp_x_y], dword 0x10000
+.skip_1:
         inc     ecx
         dec     edx
-        jnz     .inner32
+        jnz     .inner24
 
         add     esi, [esp+BLITTER.stride]
+        mov     edi, [esp+.extra_var1]
         add     edi, [_display.lfb_pitch]
         add     ebp, [_display.width]
-        inc     dword [esp+.x_y]
 
         mov     edx, [esp+BLITTER.w]
         dec     [esp+BLITTER.h]
-        jnz     .outer32
+        jnz     .outer24
 
-        jmp     blit_32.done
+        jmp     .done
+
+
+.core_16:
+        lea     edi, [LFB_BASE+edi+ebx*2]
+        mov     ebx, [CURRENT_TASK]
+
+  .outer16:
+        mov     [esp+.extra_var1], edi
+        xor     ecx, ecx
+
+  .inner16:
+        cmp     [ebp+ecx], bl                   ; Does the process own this pixel?
+        jne     .skip_2
+;--------------------------------------
+        push    eax
+        mov     eax, [esi+ecx*4]
+
+; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        je      @f
+        cmp     [_display.select_cursor], 0
+        jne     .no_mouseunder_2
+;--------------------------------------
+  @@:
+        push    ecx
+
+        mov     ecx, [esp+4]
+        ror     ecx, 16
+        sub     ecx, edx
+        rol     ecx, 16
+        sub     ecx, [esp+BLITTER.h + 8]
+
+; check mouse area for putpixel
+        call    [_display.check_mouse]
+        pop     ecx
+;--------------------------------------
+  .no_mouseunder_2:
+; convert to 16 bpp and store to LFB
+        and     eax, 00000000111110001111110011111000b
+        shr     ah, 2
+        shr     ax, 3
+        ror     eax, 8
+        add     al, ah
+        rol     eax, 8
+        mov     [edi+ecx*2], ax
+        pop     eax
+;--------------------------------------
+  .skip_2:
+        inc     ecx
+        dec     edx
+        jnz     .inner16
+
+        add     esi, [esp+BLITTER.stride]
+        mov     edi, [esp+.extra_var1]
+        add     edi, [_display.lfb_pitch]
+        add     ebp, [_display.width]
+
+        mov     edx, [esp+BLITTER.w]
+        dec     [esp+BLITTER.h]
+        jnz     .outer16
+
+        jmp     .done
+

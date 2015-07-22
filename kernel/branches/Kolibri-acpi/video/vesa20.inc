@@ -84,7 +84,7 @@ Vesa20_getpixel24:
   @@:
 
         ; check mouse area for putpixel
-        test    ecx, 0x04000000  ; don't load to mouseunder area
+        test    ecx, 0x04000000         ; don't load to mouseunder area
         jnz     .no_mouseunder
         call    [_display.check_m_pixel]
         test    ecx, ecx                ; 0xff000000
@@ -94,7 +94,7 @@ Vesa20_getpixel24:
 ;        imul    ebx, [BytesPerScanLine] ; ebx = y * y multiplier
         mov     ebx, [BPSLine_calc_area+ebx*4]
         lea     edi, [eax+eax*2]        ; edi = x*3
-        add     edi, ebx      ; edi = x*3+(y*y multiplier)
+        add     edi, ebx                ; edi = x*3+(y*y multiplier)
 
         mov     ecx, [LFB_BASE+edi]
   @@:
@@ -116,7 +116,7 @@ Vesa20_getpixel32:
   @@:
 
         ; check mouse area for putpixel
-        test    ecx, 0x04000000  ; don't load to mouseunder area
+        test    ecx, 0x04000000         ; don't load to mouseunder area
         jnz     .no_mouseunder
         call    [_display.check_m_pixel]
         test    ecx, ecx                ; 0xff000000
@@ -879,7 +879,7 @@ __sys_putpixel:
         jge     .exit
         cmp     ebx, [_display.height]
         jge     .exit
-        test    edi, 1           ; force ?
+        test    edi, 1          ; force ?
         jnz     .forced
 
 ; not forced
@@ -1175,46 +1175,46 @@ dl_dy equ esp+0
 
         pusha
 
-        xor     edx, edx   ; clear edx
-        xor     esi, esi   ; unpack arguments
+        xor     edx, edx        ; clear edx
+        xor     esi, esi        ; unpack arguments
         xor     ebp, ebp
-        mov     si, ax     ; esi = x2
-        mov     bp, bx     ; ebp = y2
-        shr     eax, 16    ; eax = x1
-        shr     ebx, 16    ; ebx = y1
-        push    eax        ; save x1
-        push    ebx        ; save y1
-        push    esi        ; save x2
-        push    ebp        ; save y2
+        mov     si, ax          ; esi = x2
+        mov     bp, bx          ; ebp = y2
+        shr     eax, 16         ; eax = x1
+        shr     ebx, 16         ; ebx = y1
+        push    eax             ; save x1
+        push    ebx             ; save y1
+        push    esi             ; save x2
+        push    ebp             ; save y2
 ; checking x-axis...
-        sub     esi, eax   ; esi = x2-x1
-        push    esi        ; save y2-y1
-        jl      .x2lx1     ; is x2 less than x1 ?
-        jg      .no_vline  ; x1 > x2 ?
-        mov     edx, ebp   ; else (if x1=x2)
+        sub     esi, eax        ; esi = x2-x1
+        push    esi             ; save y2-y1
+        jl      .x2lx1          ; is x2 less than x1 ?
+        jg      .no_vline       ; x1 > x2 ?
+        mov     edx, ebp        ; else (if x1=x2)
         call    vline
-        push    edx ; necessary to rightly restore stack frame at .exit
+        push    edx             ; necessary to rightly restore stack frame at .exit
         jmp     .exit
 
   .x2lx1:
-        neg     esi         ; get esi absolute value
+        neg     esi             ; get esi absolute value
 
   .no_vline:
 ; checking y-axis...
-        sub     ebp, ebx    ; ebp = y2-y1
-        push    ebp         ; save y2-y1
-        jl      .y2ly1      ; is y2 less than y1 ?
-        jg      .no_hline   ; y1 > y2 ?
+        sub     ebp, ebx        ; ebp = y2-y1
+        push    ebp             ; save y2-y1
+        jl      .y2ly1          ; is y2 less than y1 ?
+        jg      .no_hline       ; y1 > y2 ?
         mov     edx, [dl_x2]    ; else (if y1=y2)
         call    hline
         jmp     .exit
 
   .y2ly1:
-        neg     ebp         ; get ebp absolute value
+        neg     ebp             ; get ebp absolute value
 
   .no_hline:
         cmp     ebp, esi
-        jle     .x_rules    ; |y2-y1| < |x2-x1|  ?
+        jle     .x_rules        ; |y2-y1| < |x2-x1|  ?
         cmp     [dl_y2], ebx    ; make sure y1 is at the begining
         jge     .no_reverse1
         neg     dword [dl_dx]
@@ -1227,9 +1227,9 @@ dl_dy equ esp+0
 
   .no_reverse1:
         mov     eax, [dl_dx]
-        cdq                 ; extend eax sing to edx
-        shl     eax, 16     ; using 16bit fix-point maths
-        idiv    ebp         ; eax = ((x2-x1)*65536)/(y2-y1)
+        cdq                     ; extend eax sing to edx
+        shl     eax, 16         ; using 16bit fix-point maths
+        idiv    ebp             ; eax = ((x2-x1)*65536)/(y2-y1)
 
 ; correction for the remainder of the division
         shl     edx, 1
@@ -1237,12 +1237,12 @@ dl_dy equ esp+0
         jb      @f
         inc     eax
   @@:
-        mov     edx, ebp    ; edx = counter (number of pixels to draw)
+        mov     edx, ebp        ; edx = counter (number of pixels to draw)
         mov     ebp, 1 shl 16   ; ebp = dy = 1.0
-        mov     esi, eax    ; esi = dx
+        mov     esi, eax        ; esi = dx
         jmp     .y_rules
   .x_rules:
-        cmp     [dl_x2], eax ; make sure x1 is at the begining
+        cmp     [dl_x2], eax    ; make sure x1 is at the begining
         jge     .no_reverse2
         neg     dword [dl_dy]
         mov     edx, [dl_x2]
@@ -1254,18 +1254,18 @@ dl_dy equ esp+0
   .no_reverse2:
         xor     edx, edx
         mov     eax, [dl_dy]
-        cdq                 ; extend eax sing to edx
-        shl     eax, 16     ; using 16bit fix-point maths
-        idiv    esi         ; eax = ((y2-y1)*65536)/(x2-x1)
+        cdq                     ; extend eax sing to edx
+        shl     eax, 16         ; using 16bit fix-point maths
+        idiv    esi             ; eax = ((y2-y1)*65536)/(x2-x1)
 ; correction for the remainder of the division
         shl     edx, 1
         cmp     esi, edx
         jb      @f
         inc     eax
   @@:
-        mov     edx, esi    ; edx = counter (number of pixels to draw)
+        mov     edx, esi        ; edx = counter (number of pixels to draw)
         mov     esi, 1 shl 16   ; esi = dx = 1.0
-        mov     ebp, eax    ; ebp = dy
+        mov     ebp, eax        ; ebp = dy
 
   .y_rules:
         mov     eax, [dl_x1]
@@ -2015,7 +2015,7 @@ vesa20_drawbackground_tiled:
   dp2:
         mov     ebp, [draw_data+32+RECT.left]   ; x start
 ; 1) Calculate pointers in WinMapAddress (does pixel belong to OS thread?) [ebp]
-;                       and LFB data (output for our function) [edi]
+;    and LFB data (output for our function) [edi]
 ;        mov     eax, [BytesPerScanLine]
 ;        mul     ebx
         mov     eax, [BPSLine_calc_area+ebx*4]
