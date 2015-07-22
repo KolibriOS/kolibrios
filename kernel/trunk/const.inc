@@ -495,6 +495,17 @@ struct  RWSEM
         count           dd ?
 ends
 
+struct  FUTEX
+        list            LHEAD
+        magic           dd ?
+        handle          dd ?
+        destroy         dd ?
+
+        wait_list       LHEAD
+        pointer         dd ?
+        flags           dd ?
+ends
+
 struct  display_t
         x               dd ?
         y               dd ?

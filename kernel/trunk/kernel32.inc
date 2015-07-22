@@ -111,7 +111,8 @@ struct  PROC
         io_map_0        rd 1
         io_map_1        rd 1
 
-        ht_lock         rd 1            ;htab[0] stdin
+        ht_lock         rd 1
+        ht_free         rd 1            ;htab[0] stdin
         ht_next         rd 1            ;htab[1] stdout
         htab            rd (4096-$)/4   ;htab[2] stderr
         pdt_0           rd 1024

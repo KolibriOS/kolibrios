@@ -1426,3 +1426,52 @@ destroy_kernel_object:
 
         call    free           ;release object memory
         ret
+
+; param
+;  ecx= size
+
+align 4
+create_object:
+
+        push    esi
+        push    edi
+        pushfd
+        cli
+
+        mov     esi, [current_process]
+        mov     eax, [esi+PROC.ht_free]
+        mov     edi, [esi+PROC.ht_next]
+        dec     eax
+        js      .err0
+
+        mov     [esi+PROC.ht_free], eax
+        mov     eax, [esi+PROC.htab+edi*4]
+        mov     [esi+PROC.ht_next], eax
+        popfd
+
+        mov     eax, ecx
+        call    malloc
+        test    eax, eax
+        jz      .err1
+
+        mov     [eax+FUTEX.handle], edi
+        mov     [esi+PROC.htab+edi*4], eax
+        pop     edi
+        pop     esi
+        ret
+
+.err1:
+        pushfd
+        cli
+
+        mov     eax, [esi+PROC.ht_next]
+        mov     [esi+PROC.htab+edi*4], eax
+        mov     [esi+PROC.ht_next], edi
+        inc     [esi+PROC.ht_free]
+.err0:
+        popfd
+        pop     edi
+        pop     esi
+        xor     eax, eax
+        ret
+
