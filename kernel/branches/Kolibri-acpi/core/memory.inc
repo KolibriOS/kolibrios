@@ -1313,10 +1313,9 @@ f68:
         mov     [esp+32], eax
         ret
 
-
+iglobal
 align 4
-f68call:   ; keep this table closer to main code
-
+f68call:
            dd f68.11   ; init_heap
            dd f68.12   ; user_alloc
            dd f68.13   ; user_free
@@ -1334,7 +1333,7 @@ f68call:   ; keep this table closer to main code
            dd f68.25   ; unmask exception
            dd f68.26   ; user_unmap
            dd f68.27   ; load_file_umode
-
+endg
 
 align 4
 proc load_pe_driver stdcall, file:dword, cmdline:dword
@@ -1447,130 +1446,6 @@ proc print_mem
         ret
 endp
 
-FUTEX_INIT      equ 0
-FUTEX_WAIT      equ 1
-FUTEX_WAKE      equ 2
 
-align 4
-f77call:
-        dd f77.futex_init     ;0
-        dd f77.futex_wait     ;1
-        dd f77.futex_wake     ;2
-
-align 4
-sys_synchronization:
-f77:
-        cmp     ebx, FUTEX_WAKE
-        ja .fail
-
-        jmp     dword [f77call+ebx*4]
-
-.fail:
-        mov     [esp+32], dword 0
-        ret
-
-
-align 4
-.futex_init:
-        call    create_futex
-        test    eax, eax
-        jz      @F
-        mov     eax, [eax+FUTEX.handle]
-@@:
-        mov     [esp+32], eax
-        ret
-
-align 4
-;ecx futex handle
-;edx new value
-.futex_wait:
-        cmp     ecx, 3
-        jb      .epicfail
-        cmp     ecx, (PROC.pdt_0 - PROC.htab)/4
-        jae     .epicfail
-
-        mov     esi, [current_process]
-        mov     edi, [esi+PROC.htab+ecx*4]
-
-        cmp     [edi+FUTEX.magic], 'FUTX'
-        jne     .epicfail
-        cmp     [edi+FUTEX.handle], ecx
-        jne     .epicfail
-
-        mov     ecx, [edi+FUTEX.pointer]
-
-        mov     eax, edx
-        lock cmpxchg [ecx], edx         ;wait until old_value == new_value
-        jz .wait_slow
-
-        mov     [esp+SYSCALL_STACK._eax], 0
-        ret
-
-.wait_slow:
-        pushfd
-        cli
-
-        sub     esp, sizeof.MUTEX_WAITER
-        mov     ebx, [TASK_BASE]
-        mov     [ebx+TASKDATA.state], 1
-        mov     [esp+MUTEX_WAITER.task], ebx
-        lea     esi, [edi+FUTEX.wait_list]
-
-        list_add_tail esp, esi      ;esp= new waiter, esi= list head
-
-.again:
-        call    change_task
-
-        lock cmpxchg [ecx], edx
-        jz .again
-
-        list_del esp
-        add     esp, sizeof.MUTEX_WAITER
-
-        popfd
-        mov     [esp+SYSCALL_STACK._eax], 0
-        ret
-
-.epicfail:
-        mov     [esp+SYSCALL_STACK._eax], -1
-        ret
-
-align 4
-.futex_wake:
-        cmp     ecx, 3
-        jb      .epicfail
-        cmp     ecx, (PROC.pdt_0 - PROC.htab)/4
-        jae     .epicfail
-
-        mov     esi, [current_process]
-        mov     edi, [esi+PROC.htab+ecx*4]
-
-        cmp     [edi+FUTEX.magic], 'FUTX'
-        jne     .epicfail
-        cmp     [edi+FUTEX.handle], ecx
-        jne     .epicfail
-
-        xor     ecx, ecx
-
-        pushfd
-        cli
-
-        lea     ebx, [edi+FUTEX.wait_list]
-        mov     esi, [edi+FUTEX.wait_list.next]
-@@:
-        cmp     esi, ebx
-        je      @F
-
-        mov     eax, [esi+MUTEX_WAITER.task]
-        mov     [eax+TASKDATA.state], 0
-
-        mov     esi, [esi+MUTEX_WAITER.list.next]
-        inc     ecx
-        cmp     ecx, edx
-        jb      @B
-@@:
-        popfd
-        mov     [esp+SYSCALL_STACK._eax], ecx
-        ret
 
 

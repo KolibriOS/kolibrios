@@ -354,17 +354,205 @@ EVENT_EXTENDED     equ 0x00000400
 
 EV_INTR            equ 1
 
-struct  THR_DATA
-                        rb (8192-512)
-;       pl0_stack
-        fpu_state       rb 512
-        tls_page        rb 4096
-        pdbr            rb 4096
+struct SYSCALL_STACK
+        _eip            dd ?
+        _edi            dd ?    ;  +4
+        _esi            dd ?    ;  +8
+        _ebp            dd ?    ; +12
+        _esp            dd ?    ; +16
+        _ebx            dd ?    ; +20
+        _edx            dd ?    ; +24
+        _ecx            dd ?    ; +28
+        _eax            dd ?    ; +32
 ends
 
-virtual at (OS_BASE-sizeof.THR_DATA)
-  thr_data  THR_DATA
-end virtual
+struct  LHEAD
+        next            dd ?   ;next object in list
+        prev            dd ?   ;prev object in list
+ends
+
+struct  MUTEX_WAITER
+        list    LHEAD
+        task    dd ?
+        type    dd ?
+ends
+
+struct  MUTEX
+        wait_list       LHEAD
+        count           dd ?
+ends
+
+struct  RWSEM
+        wait_list       LHEAD
+        count           dd ?
+ends
+
+struct  FUTEX
+        list            LHEAD
+        magic           dd ?
+        handle          dd ?
+        destroy         dd ?
+
+        wait_list       LHEAD
+        pointer         dd ?
+        flags           dd ?
+ends
+
+FUTEX_INIT      equ 0
+FUTEX_WAIT      equ 1
+FUTEX_WAKE      equ 2
+
+struct  PROC
+        list            LHEAD
+        thr_list        LHEAD
+        heap_lock       MUTEX
+        heap_base       rd 1
+        heap_top        rd 1
+        mem_used        rd 1
+        dlls_list_ptr   rd 1
+        pdt_0_phys      rd 1
+        pdt_1_phys      rd 1
+        io_map_0        rd 1
+        io_map_1        rd 1
+
+        ht_lock         rd 1
+        ht_free         rd 1            ;htab[0] stdin
+        ht_next         rd 1            ;htab[1] stdout
+        htab            rd (4096-$)/4   ;htab[2] stderr
+        pdt_0           rd 1024
+ends
+
+struct  DBG_REGS
+        dr0             dd ?
+        dr1             dd ?
+        dr2             dd ?
+        dr3             dd ?
+        dr7             dd ?
+ends
+
+struct  POINT
+        x       dd ?
+        y       dd ?
+ends
+
+struct  RECT
+        left    dd ?
+        top     dd ?
+        right   dd ?
+        bottom  dd ?
+ends
+
+struct  BOX
+        left    dd ?
+        top     dd ?
+        width   dd ?
+        height  dd ?
+ends
+
+struct  APPDATA
+        app_name        rb 11
+                        rb 5
+
+        list            LHEAD           ;+16
+        process         dd ?            ;+24
+        fpu_state       dd ?            ;+28
+        exc_handler     dd ?            ;+32
+        except_mask     dd ?            ;+36
+        pl0_stack       dd ?            ;+40
+        cursor          dd ?            ;+44
+        fd_ev           dd ?            ;+48
+        bk_ev           dd ?            ;+52
+        fd_obj          dd ?            ;+56
+        bk_obj          dd ?            ;+60
+        saved_esp       dd ?            ;+64
+        io_map          rd 2            ;+68
+        dbg_state       dd ?            ;+76
+        cur_dir         dd ?            ;+80
+        wait_timeout    dd ?            ;+84
+        saved_esp0      dd ?            ;+88
+        wait_begin      dd ?            ;+92   +++
+        wait_test       dd ?            ;+96   +++
+        wait_param      dd ?            ;+100  +++
+        tls_base        dd ?            ;+104
+                        dd ?            ;+108
+        event_filter    dd ?            ;+112
+        draw_bgr_x      dd ?            ;+116
+        draw_bgr_y      dd ?            ;+120
+                        dd ?            ;+124
+
+        wnd_shape       dd ?            ;+128
+        wnd_shape_scale dd ?            ;+132
+                        dd ?            ;+136
+                        dd ?            ;+140
+        saved_box       BOX             ;+144
+        ipc_start       dd ?            ;+160
+        ipc_size        dd ?            ;+164
+        event_mask      dd ?            ;+168
+        debugger_slot   dd ?            ;+172
+        terminate_protection dd ?       ;+176
+        keyboard_mode   db ?            ;+180
+                        rb 3
+                        dd ?            ;+184
+        dbg_event_mem   dd ?            ;+188
+        dbg_regs        DBG_REGS        ;+192
+        wnd_caption     dd ?            ;+212
+        wnd_clientbox   BOX             ;+216
+        priority        dd ?            ;+232
+        in_schedule     LHEAD           ;+236
+ends
+
+APP_OBJ_OFFSET  equ 48
+APP_EV_OFFSET   equ 40
+
+struct  TASKDATA
+        event_mask      dd ?
+        pid             dd ?
+                        dw ?
+        state           db ?
+                        db ?
+                        dw ?
+        wnd_number      db ?
+                        db ?
+        mem_start       dd ?
+        counter_sum     dd ?
+        counter_add     dd ?
+        cpu_usage       dd ?
+ends
+
+TSTATE_RUNNING        = 0
+TSTATE_RUN_SUSPENDED  = 1
+TSTATE_WAIT_SUSPENDED = 2
+TSTATE_ZOMBIE         = 3
+TSTATE_TERMINATING    = 4
+TSTATE_WAITING        = 5
+TSTATE_FREE           = 9
+
+; constants definition
+WSTATE_NORMAL    = 00000000b
+WSTATE_MAXIMIZED = 00000001b
+WSTATE_MINIMIZED = 00000010b
+WSTATE_ROLLEDUP  = 00000100b
+
+WSTATE_REDRAW    = 00000001b
+WSTATE_WNDDRAWN  = 00000010b
+
+WSTYLE_HASCAPTION     = 00010000b
+WSTYLE_CLIENTRELATIVE = 00100000b
+
+; structures definition
+struct  WDATA
+        box             BOX
+        cl_workarea     dd ?
+        cl_titlebar     dd ?
+        cl_frames       dd ?
+        reserved        db ?
+        fl_wstate       db ?
+        fl_wdrawn       db ?
+        fl_redraw       db ?
+ends
+
+label WDATA.fl_wstyle byte at WDATA.cl_workarea + 3
+
 
 struct  SYS_VARS
         bpp             dd ?
@@ -381,9 +569,6 @@ struct  APPOBJ                  ; common object header
         bk              dd ?    ; prev object in list
         pid             dd ?    ; owner id
 ends
-
-APP_OBJ_OFFSET  equ 48
-APP_EV_OFFSET   equ 40
 
 struct  CURSOR          APPOBJ
         base            dd ?   ;allocated memory
@@ -480,33 +665,6 @@ struct  BOOT_DATA
                         dd ?
 ends
 
-struct  LHEAD
-        next            dd ?   ;next object in list
-        prev            dd ?   ;prev object in list
-ends
-
-struct  MUTEX
-        wait_list       LHEAD
-        count           dd ?
-ends
-
-struct  RWSEM
-        wait_list       LHEAD
-        count           dd ?
-ends
-
-struct  FUTEX
-        list            LHEAD
-        magic           dd ?
-        handle          dd ?
-        destroy         dd ?
-
-        wait_list       LHEAD
-        pointer         dd ?
-        flags           dd ?
-ends
-
-
 struct  display_t
         x               dd ?
         y               dd ?
@@ -545,6 +703,13 @@ struct  display_t
         bytes_per_pixel dd ?
 ends
 
+struct  DISPMODE
+        width   dw ?
+        height  dw ?
+        bpp     dw ?
+        freq    dw ?
+ends
+
 
 struct  PCIDEV
         bk              dd ?
@@ -555,6 +720,37 @@ struct  PCIDEV
         bus             db ?
                         rb 2
         owner           dd ? ; pointer to SRV or 0
+ends
+
+struct  IDE_DATA
+        ProgrammingInterface dd ?
+        Interrupt            dw ?
+        RegsBaseAddres       dw ?
+        BAR0_val             dw ?
+        BAR1_val             dw ?
+        BAR2_val             dw ?
+        BAR3_val             dw ?
+        dma_hdd_channel_1    db ?
+        dma_hdd_channel_2    db ?
+ends
+
+struct  IDE_CACHE
+        pointer              dd ?
+        size                 dd ?   ; not use
+        data_pointer         dd ?
+        system_data_size     dd ?   ; not use
+        appl_data_size       dd ?   ; not use
+        system_data          dd ?
+        appl_data            dd ?
+        system_sad_size      dd ?
+        appl_sad_size        dd ?
+        search_start         dd ?
+        appl_search_start    dd ?
+ends
+
+struct  IDE_DEVICE
+        UDMA_possible_modes  db ?
+        UDMA_set_mode        db ?
 ends
 
 ; The following macro assume that we are on uniprocessor machine.

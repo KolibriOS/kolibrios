@@ -1392,22 +1392,4 @@ create_object:
         ret
 
 
-align 4
-;struct futex*  __fastcall create_futex(int *ptr)
-create_futex:
-        push    ecx
-        mov     ecx, sizeof.FUTEX
-        call    create_object
-        pop     ecx
-        test    eax, eax
-        jz .fail
-
-        mov     [eax+FUTEX.magic], 'FUTX'
-        mov     [eax+FUTEX.destroy], 0
-        mov     [eax+FUTEX.pointer], ecx
-        lea     ecx, [eax+FUTEX.wait_list]
-        list_init ecx
-        mov     [eax+FUTEX.flags], 0
-.fail:
-        ret
 
