@@ -86,7 +86,7 @@ ends
 struct  interface
         number          dd ?
         state           dd ?    ; 0 - disconnected, 1 - connected
-        mode            dd ?    ; 0 - static, 1 - dhcp, 2 - auto (zero config)
+        mode            dd ?    ; 0 - disabled, 1 - static, 2 - dhcp, 3 - auto (zero config)
         tries           dd ?
         lease           dd ?
         ServerIP        dd ?
@@ -175,22 +175,25 @@ mainloop:
 
         invoke  ini.get_str, ini_path, str_ini_int, str_ip_type, inibuf, 16, str_null
         test    eax, eax
-        jnz     .fail
+        jnz     .invalid
         mov     eax, dword[inibuf]
         or      eax, 0x20202020
         mov     [ebp + interface.mode], 0
+        cmp     eax, 'disa'
+        je      .next
+        mov     [ebp + interface.mode], 1
         cmp     eax, 'stat'
         je      static
-        mov     [ebp + interface.mode], 1
+        mov     [ebp + interface.mode], 2
         cmp     eax, 'dhcp'
         je      dhcp
-        mov     [ebp + interface.mode], 2
+        mov     [ebp + interface.mode], 3
         cmp     eax, 'auto'
         je      dhcp
 
-  .fail:
-        DEBUGF  2, "Invalid network.ini settings\n"
-        mcall   -1                      ; Give up
+  .invalid:
+        DEBUGF  2, "Invalid settings for interface: %s.\n", str_ini_int
+        jmp     .next
 
   .maintain_link:
 
@@ -593,7 +596,7 @@ dhcp_fail:
 
 dhcp_error:
         DEBUGF  1, "DHCP failed\n"
-        cmp     [ebp + interface.mode], 2               ; zero config mode?
+        cmp     [ebp + interface.mode], 3               ; zero config mode?
         jne     link_up
 
 link_local:
