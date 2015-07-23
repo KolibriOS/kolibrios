@@ -39,23 +39,26 @@ void settings_dialog()
 	
 	if (active_settings){
 		EXIT_SETTING: 
-		show_dev_name = save_show_dev_name;
+		
+		show_dev_name         = save_show_dev_name;
 		real_files_names_case = save_real_files_names_case;
-		info_after_copy = save_info_after_copy;
-		use_big_fonts = save_use_big_fonts;
-		files.line_h = save_files_h;
-		MOUSE_TIME = save_DBLTime;
+		info_after_copy       = save_info_after_copy;
+		use_big_fonts         = save_use_big_fonts;
+		files.line_h          = save_files_h;
+		MOUSE_TIME            = save_DBLTime;
+		
 		cmd_free = 4;
+		
 		ExitProcess();
 	}
 	active_settings=1;
 	
-	save_show_dev_name = show_dev_name;
+	save_show_dev_name         = show_dev_name;
 	save_real_files_names_case = real_files_names_case;
-	save_info_after_copy = info_after_copy;
-	save_use_big_fonts = use_big_fonts;
-	save_files_h = files.line_h;
-	save_DBLTime = MOUSE_TIME;
+	save_info_after_copy       = info_after_copy;
+	save_use_big_fonts         = use_big_fonts;
+	save_files_h               = files.line_h;
+	save_DBLTime               = MOUSE_TIME;
 	
 	loop(){
 		switch(WaitEvent())
@@ -64,7 +67,7 @@ void settings_dialog()
 				id=GetButtonID();
 				if (id==10)
 				{
-					SaveIniSettings();
+					//SaveIniSettings();
 					active_settings=0;
 					action_buf = 300;
 					cmd_free = 4;
@@ -88,9 +91,7 @@ void settings_dialog()
 				else if (id==26) && (files.line_h>14) files.line_h--;
 				else if (id==27) MOUSE_TIME++;
 				else if (id==28) && (MOUSE_TIME>29) MOUSE_TIME--;
-				//CMD_REFRESH = true;
-				MoveSize(-1,-1,-1,settings_form.height+1);
-				MoveSize(-1,-1,-1,settings_form.height);
+				EventRedrawWindow(Form.left,Form.top);
 				DrawSettingsCheckBoxes();
 			break;
 					

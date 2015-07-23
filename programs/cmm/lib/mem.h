@@ -1,6 +1,10 @@
 #ifndef INCLUDE_MEM_H
 #define INCLUDE_MEM_H
 
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/kolibri.h"
+#endif
+
 dword mem_init()
 {
 	$push    ebx

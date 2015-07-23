@@ -122,7 +122,7 @@ byte active_about=0;
 word about_window;
 byte active_settings=0;
 word settings_window;
-
+dword _not_draw = false;
 byte menu_call_mouse=0;
 
 llist files;
@@ -208,7 +208,7 @@ void main()
 		strncpy(#path, "/rd/1/", 6);		
 	}
 	Open_Dir(#path,ONLY_OPEN);
-	SetEventMask(0x27);
+	SetEventMask(1100111b);
 	loop(){
 		switch(WaitEvent())
 		{
@@ -558,13 +558,9 @@ void main()
 					action_buf=0;
 				}
 			break;
-			/*default:
-				if(CMD_REFRESH)
-				{
-					CMD_REFRESH = false;
-					goto DRAW_WINDOW;
-				}
-			*/
+			case evIPC:
+				goto DRAW_WINDOW;
+			break;
 		}
 		
 		if(cmd_free)
@@ -769,7 +765,7 @@ void Line_ReDraw(dword color, filenum){
 	}
 	else
 	{
-		if (strcmp("..",file_name_off)==0) ext1=".."; else ext1="<DIR>";
+		if (!strncmp(file_name_off,"..",3)) ext1=".."; else ext1="<DIR>";
 		Put_icon(ext1, files.x+3, files.line_h/2-7+y, color, 0);		
 	}
 
@@ -778,8 +774,7 @@ void Line_ReDraw(dword color, filenum){
 	{
 		itdir = TestBit(attr, 4);
 		strcpy(#file_name, file_name_off);
-		strcpy(#file_path, #path);
-		strcat(#file_path, #file_name);
+		sprintf(#file_path,"%s%s",#path,file_name_off);
 		if (text_col==0xA6A6B7) text_col=0xFFFFFF;
 	}
 	if (file.selected) text_col=0xFF0000;
@@ -820,7 +815,7 @@ void Open_Dir(dword dir_path, redraw){
 	}
 	if (files.count!=-1)
 	{
-		KEdit();
+		if(!_not_draw)KEdit();
 		HistoryPath(ADD_NEW_PATH);
 		files.visible = files.h / files.line_h;
 		if (files.count < files.visible) files.visible = files.count;
@@ -829,9 +824,9 @@ void Open_Dir(dword dir_path, redraw){
 		if (sort_num==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
 		WriteText(sorting_arrow_x,45,0x80,sc.work_graph,"\x19");
 		if (redraw!=ONLY_SHOW) Sorting();
-		if (redraw!=ONLY_OPEN) List_ReDraw();
+		if (redraw!=ONLY_OPEN)&&(!_not_draw) List_ReDraw();
 	}
-	if (files.count==-1) && (redraw!=ONLY_OPEN) {files.visible=files.count=0; List_ReDraw();}
+	if (files.count==-1) && (redraw!=ONLY_OPEN) {files.visible=files.count=0; if(!_not_draw)List_ReDraw();}
 }
 
 
@@ -840,7 +835,7 @@ inline Sorting()
 	dword k=0, l=1;
 	dword file_off;
 	int i;
-	if (!strcmp(#path,"/")) //do not sort
+	if (!strncmp(#path,"/",2)) //do not sort
 	{
 		for(k=1;k<files.count;k++;) file_mas[k]=k;
 		return;
@@ -865,8 +860,8 @@ inline Sorting()
 	if (sort_num==2) Sort_by_Type(k,files.count-1);
 	if (sort_num==3) Sort_by_Size(k,files.count-1);
 	//make ".." first item in list
-	if (k>0) && (strcmp(file_mas[0]*304+buf+72,"..")!=0)
-		for(k--; k>0; k--;) if (!strcmp(file_mas[k]*304+buf+72,"..")) {file_mas[k]><file_mas[0]; break;}
+	if (k>0) && (!strncmp(file_mas[0]*304+buf+72,"..",3))
+		for(k--; k>0; k--;) if (!strncmp(file_mas[k]*304+buf+72,"..",3)) {file_mas[k]><file_mas[0]; break;}
 }
 
 
@@ -876,7 +871,7 @@ void Del_Form()
 	int cont = 0;
 	byte f_count[128];
 	int dform_x = files.w - 220 / 2 + files.x;
-	if (!strncmp(#file_name,".",1)) || (!strncmp(#file_name,"..",2)) return;
+	if (!strncmp(#file_name,".",2)) || (!strncmp(#file_name,"..",2)) return;
 	if (del_active==2)
 	{
 		if (itdir) ShowMessage(WAIT_DELETING_FOLDER, 0);
@@ -929,9 +924,6 @@ int Del_File2(dword way)
 		{
 			if (CheckEvent()==evReDraw) draw_window();
 			filename = i*304+dirbuf+72;
-			/*strcpy(#del_from, way);
-			chrcat(#del_from, '/');
-			strcat(#del_from, filename);*/
 			sprintf(#del_from,"%s/%s",way,filename);
 			if ( TestBit(ESDWORD[filename-40], 4) )
 			{
@@ -965,8 +957,6 @@ void Del_File(byte dodel)
            {
                 selected_offset2 = file_mas[i]*304 + buf+32 + 7;
                 if (ESBYTE[selected_offset2]) {
-                    /*strcpy(#del_from, #path);
-                    strcat(#del_from, file_mas[i]*304+buf+72);*/
 					sprintf(#del_from,"%s%s",#path,file_mas[i]*304+buf+72);
                     Del_File2(#del_from);
                 }
@@ -1015,7 +1005,7 @@ void Open(byte rez)
 	selected_count = 0;
 	if (rez)
 	{
-		if (!strncmp(#file_name,"..",2)) return;
+		if (!strncmp(#file_name,"..",3)) return;
 		strcpy(#temp, #file_path);
 		if (path[strlen(#temp)-1]!='/') chrcat(#temp, '/'); //need "/" in the end
 		RunProgram("/sys/File Managers/Eolite", #temp);
@@ -1028,7 +1018,7 @@ void Open(byte rez)
 	} 
 	else
 	{
-		if (!strncmp(#file_name,"..",2)) { Dir_Up(); return; }
+		if (!strncmp(#file_name,"..",3)) { Dir_Up(); return; }
 		strcpy(#path, #file_path);
 		if (path[strlen(#path)-1]!='/') chrcat(#path, '/'); //need "/" in the end
 		files.first=files.current=0;
@@ -1047,9 +1037,6 @@ inline fastcall void GoBack()
 void ShowOpenWithDialog()
 {
 	byte param[4097];
-	/*param[0] = '~';
-	param[1] = '\0';
-	strcat(#param, #file_path);*/
 	sprintf(#param,"~%s",#file_path);
 	RunProgram("/sys/@open", #param);
 }
@@ -1060,8 +1047,6 @@ void NewElement(byte newf)
 	byte del_rezult, copy_rezult, info_result;
 	if (newf)
 	{
-		/*strcpy(#temp, #path);
-		strcat(#temp, new_file_ed.text);*/
 		sprintf(#temp,"%s%s",#path,new_file_ed.text);
 		info_result = GetFileInfo(#temp, #element_info);
 		switch(new_element_active)

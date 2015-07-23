@@ -251,6 +251,8 @@ char program_path[4096];
 	vert = EBX;
 }
 
+
+
 :void mouse::slider()
 {
 	signed _x,_y;
@@ -824,6 +826,27 @@ inline fastcall dword GetStartTime()
 	$int 0x40
 }
 
+
+:dword X_EventRedrawWindow,Y_EventRedrawWindow;
+:void _EventRedrawWindow()
+{
+	loop()switch(WaitEvent())
+	{
+		case evReDraw:
+			DefineAndDrawWindow(X_EventRedrawWindow,Y_EventRedrawWindow,100,1,1,0x34,0xFFFFFF,"");
+			pause(10);
+			ExitProcess();
+			break;
+	}
+}
+:void EventRedrawWindow(dword x,y)
+{
+	dword mem = malloc(4096);
+	X_EventRedrawWindow = x;
+	Y_EventRedrawWindow = y;
+	CreateThread(#_EventRedrawWindow,mem+4092);
+}
+
 :dword ALERT_TEXT;
 :void dialog_alert()
 {
@@ -841,7 +864,6 @@ inline fastcall dword GetStartTime()
 		break;
 	}
 }
-
 :dword alert(dword text)
 {
 	dword mem = malloc(4096);

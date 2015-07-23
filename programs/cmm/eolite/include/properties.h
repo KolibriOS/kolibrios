@@ -161,8 +161,16 @@ void properties_dialog()
 					ExitProcess();
 				}
 				if (id==20) SetProperties(id);
-				if (id==21) SetProperties(id);
+				if (id==21)
+				{
+					SetProperties(id);
+					_not_draw = true;
+					Open_Dir(#path,WITH_REDRAW);
+					_not_draw = false;
+					EventRedrawWindow(Form.left,Form.top);
+				}
 				if (id==22) SetProperties(id);
+				
 				DrawPropertiesCheckBoxes();
 				break;
 				
@@ -235,7 +243,6 @@ void properties_dialog()
 					flags_frame.font_backgr_color = sc.work;
 					flags_frame.ext_col = sc.work_graph;
 					frame_draw stdcall (#flags_frame);
-
 					DrawPropertiesCheckBoxes();
 				}
 	}

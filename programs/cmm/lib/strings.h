@@ -116,7 +116,18 @@ L1:
   }
 }
 
-
+/*
+inline signed int strncmp(dword text1,text2,len)
+{
+	
+	loop()
+	{
+		if(DSBYTE[text1]!=DSBYTE[text2])return text1-text2;
+		$dec len 
+		if(!len)return 0;
+	}
+}
+*/
 inline fastcall unsigned int strlen( EDI)
 {
     $xor eax, eax
