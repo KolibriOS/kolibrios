@@ -231,9 +231,9 @@ align 4
 
 align 4
 ;ecx futex handle
-;esi current process
-;edi futex object
-;edx threads count
+;edx numder of threads
+;edi current process
+;ebp futex object
 .futex_wake:
 
         xor     ecx, ecx
@@ -241,11 +241,11 @@ align 4
         pushfd
         cli
 
-        lea     ebx, [edi+FUTEX.wait_list]
+        lea     ebx, [ebp+FUTEX.wait_list]
         mov     esi, [ebx+LHEAD.next]
-@@:
+.wake:
         cmp     esi, ebx
-        je      @F
+        je      .done
 
         mov     eax, [esi+MUTEX_WAITER.task]
         mov     [eax+TASKDATA.state], 0
@@ -253,8 +253,8 @@ align 4
         mov     esi, [esi+MUTEX_WAITER.list.next]
         inc     ecx
         cmp     ecx, edx
-        jb      @B
-@@:
+        jb      .wake
+.done:
         popfd
         mov     [esp+SYSCALL_STACK._eax], ecx
         ret
