@@ -1,10 +1,4 @@
 
-void Paste() {
-	copy_stak = malloc(4096);
-	CreateThread(#PasteThread,copy_stak+4092);
-}
-
-
 byte copy_to[4096];
 byte copy_from[4096];
 byte cut_active=0;
@@ -49,6 +43,12 @@ void Copy(dword pcth, char cut)
 	}
 	cut_active = cut;
 	free(buff_data);
+}
+
+
+void Paste() {
+	copy_stak = malloc(20000);
+	CreateThread(#PasteThread,copy_stak+20000);
 }
 
 

@@ -111,8 +111,8 @@
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 enum { CREATE_FILE=1, CREATE_FOLDER, RENAME_ITEM }; //NewElement
 
-#define TITLE "Eolite File Manager v2.81"
-#define ABOUT_TITLE "Eolite v2.81"
+#define TITLE "Eolite File Manager v2.83"
+#define ABOUT_TITLE "Eolite v2.83"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
