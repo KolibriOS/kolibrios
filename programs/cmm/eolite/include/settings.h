@@ -67,7 +67,7 @@ void settings_dialog()
 				id=GetButtonID();
 				if (id==10)
 				{
-					//SaveIniSettings();
+					SaveIniSettings();
 					active_settings=0;
 					action_buf = 300;
 					cmd_free = 4;
