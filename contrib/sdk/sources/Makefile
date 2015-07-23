@@ -5,9 +5,16 @@ LIB_DIR:= $(abspath ../lib)
 
 # targets 
 
-all: 	newlib zlib libpng freetype pixman cairo	\
+all: 	libsync newlib zlib libpng freetype pixman cairo	\
 	libdrm pixlib ffmpeg libsupc++ libstdc++ gcc_eh expat 	\
-	Mesa eglut sound		
+	Mesa eglut vaapi sound		
+
+libsync: $(LIB_DIR)/libsync.a
+
+$(LIB_DIR)/libsync.a:
+	$(MAKE) -C libsync
+
+#####################################
 
 newlib: $(DLL_DIR)/libc.dll $(LIB_DIR)/libc.dll.a $(LIB_DIR)/libapp.a $(LIB_DIR)/libdll.a
 
@@ -60,10 +67,10 @@ $(DLL_DIR)/libdrm.dll $(LIB_DIR)/libdrm.dll.a $(LIB_DIR)/libdrm.a: newlib
 
 #####################################
 
-pixlib: $(DLL_DIR)/pixlib.dll
+pixlib: $(LIB_DIR)/libpixlib3.a
 
-$(DLL_DIR)/pixlib.dll: newlib libdrm
-	$(MAKE) -C Intel-2D
+$(LIB_DIR)/libpixlib3.a: newlib libdrm Mesa
+	$(MAKE) -C pixlib-3
 
 #####################################
 
@@ -117,7 +124,7 @@ Mesa: $(DLL_DIR)/libGL.dll $(DLL_DIR)/libegl.dll $(DLL_DIR)/i965_dri.drv
 $(DLL_DIR)/libGL.dll $(DLL_DIR)/libegl.dll $(DLL_DIR)/i965_dri.drv \
 	$(LIB_DIR)/libGL.dll.a $(LIB_DIR)/libegl.dll.a \
 	$(LIB_DIR)/libglsl.a: newlib libdrm libsupc++ gcc_eh expat
-	$(MAKE) -C Mesa
+	$(MAKE) -C Mesa/mesa-9.2.5
 
 #####################################
 
@@ -127,6 +134,17 @@ $(DLL_DIR)/libeglut.dll $(LIB_DIR)/libeglut.dll.a $(LIB_DIR)/libeglut.a : newlib
 	$(MAKE) -C eglut
 
 #####################################
+
+vaapi: $(DLL_DIR)/i65-video.dll $(DLL_DIR)/libva.dll
+
+$(DLL_DIR)/i65-video.dll : newlib libdrm
+	$(MAKE) -C vaapi/intel-driver-1.4.1
+
+$(DLL_DIR)/libva.dll : newlib libdrm
+	$(MAKE) -C vaapi/libva-1.4.1
+
+#####################################
+
 
 sound: $(LIB_DIR)/libsound.a 
 
