@@ -146,6 +146,8 @@ byte
 
 dword eolite_ini_path;
 
+dword menu_stak,about_stak,properties_stak,settings_stak,copy_stak;
+
 proc_info Form;
 system_colors sc;
 mouse m;
@@ -178,7 +180,6 @@ byte cmd_free;
 #include "include\settings.h"
 #include "include\properties.h"
 
-dword menu_stak,about_stak,properties_stak,settings_stak,copy_stak;
 
 void main() 
 {
@@ -377,18 +378,17 @@ void main()
 								Open_Dir(#path,WITH_REDRAW);
 							}
 							break;
-					case 23: //up!
+					case 23:
 							Dir_Up();
 							break;
-					case 24: //cut
+					case 24:
 							Copy(#file_path, CUT);
 							break;
-					case 25: //copy
+					case 25:
 							Copy(#file_path, NOCUT);
 							break;
-					case 26: //paste
-							copy_stak = malloc(4096);
-							CreateThread(#Paste,copy_stak+4092);
+					case 26:
+							Paste();
 							break;
 					case 31...33: //sort
 							if(sort_num==1) DrawFilledBar(sorting_arrow_x,42,6,10);
@@ -461,8 +461,7 @@ void main()
 								Copy(#file_path, NOCUT);
 								break;
 						case 022: //Ctrl+V
-								copy_stak = malloc(4096);
-								CreateThread(#Paste,copy_stak+4092);
+								Paste();
 								break;
 						case 001: //Ctrl+A
 								debugln("press Ctrl+A");
@@ -601,11 +600,7 @@ void menu_action(dword id)
 	if (id==203) FnProcess(4); //F4
 	if (id==104) Copy(#file_path, NOCUT);
 	if (id==105) Copy(#file_path, CUT);
-	if (id==106)
-	{
-		copy_stak = malloc(4096); 
-		CreateThread(#Paste,copy_stak+4092);
-	}
+	if (id==106) Paste();
 	if (id==207) FnProcess(2);
 	if (id==108) Del_Form();
 	if (id==109) FnProcess(5);
