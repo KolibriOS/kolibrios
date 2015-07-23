@@ -13,7 +13,7 @@ LDFLAGS+= --file-alignment 256
 INCLUDES= -I. -I../newlib/libc/include 
  
 PXGL_INCLUDES= $(INCLUDES) -I../libdrm/intel -I../libdrm/include
-PXGL_INCLUDES+= -I ../Mesa/include -I../Mesa/src/gbm/main
+PXGL_INCLUDES+= -I ../Mesa/mesa-9.2.5/include -I../Mesa/mesa-9.2.5/src/gbm/main
  
 LIBPATH:= -L../../lib -L/home/autobuild/tools/win32/mingw32/lib
 
