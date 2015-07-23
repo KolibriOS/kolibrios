@@ -30,6 +30,11 @@
  * @{
  */
 
+#define ENTER()   printf("enter %s\n",__FUNCTION__)
+#define LEAVE()   printf("leave %s\n",__FUNCTION__)
+#define FAIL()    printf("fail %s\n",__FUNCTION__)
+
+
 static void destroy_buffers(VADisplay display, VABufferID *buffers, unsigned int n_buffers)
 {
     unsigned int i;
@@ -152,7 +157,7 @@ VASliceParameterBufferBase *ff_vaapi_alloc_slice(struct vaapi_context *vactx, co
 {
     uint8_t *slice_params;
     VASliceParameterBufferBase *slice_param;
-
+ENTER();
     if (!vactx->slice_data)
         vactx->slice_data = buffer;
     if (vactx->slice_data + vactx->slice_data_size != buffer) {
@@ -176,6 +181,7 @@ VASliceParameterBufferBase *ff_vaapi_alloc_slice(struct vaapi_context *vactx, co
 
     vactx->slice_count++;
     vactx->slice_data_size += size;
+LEAVE();
     return slice_param;
 }
 
