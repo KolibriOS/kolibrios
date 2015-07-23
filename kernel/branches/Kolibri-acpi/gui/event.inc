@@ -104,7 +104,8 @@ align 4
         mov     [eax+EVENT.state], ecx
         mov     [eax+EVENT.pid], edx
         inc     [event_uid]
-        Mov     [eax+EVENT.id],edx,[event_uid]
+        mov     edx, [event_uid]
+        mov     [eax+EVENT.id], edx
         or      esi, esi
         jz      RemoveEventTo
         lea     edi, [eax+EVENT.code]
@@ -277,7 +278,8 @@ Wait_events_ex:
         jnz     @f   ;RET
         mov     [esi+APPDATA.wait_test], edx
         mov     [esi+APPDATA.wait_timeout], ebx
-        Mov     [esi+APPDATA.wait_begin],eax,[timer_ticks]
+        mov     eax, [timer_ticks]
+        mov     [esi+APPDATA.wait_begin], eax
         mov     eax, [TASK_BASE]
         mov     [eax+TASKDATA.state], 5
         call    change_task

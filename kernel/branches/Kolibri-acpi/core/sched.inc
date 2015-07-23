@@ -16,7 +16,8 @@ $Revision$
 align 32
 irq0:
         pushad
-        Mov     ds, ax, app_data
+        mov     ax, app_data
+        mov     ds, ax
         mov     es, ax
         inc     [timer_ticks]
         mov     eax, [timer_ticks]
@@ -101,8 +102,10 @@ do_change_task:
         mov     [esi+APPDATA.saved_esp], esp
         mov     esp, [ebx+APPDATA.saved_esp]
 ; set new thread io-map
-        Mov     dword [page_tabs+((tss._io_map_0 and -4096) shr 10)],eax,[ebx+APPDATA.io_map]
-        Mov     dword [page_tabs+((tss._io_map_1 and -4096) shr 10)],eax,[ebx+APPDATA.io_map+4]
+        mov     eax, [ebx+APPDATA.io_map]
+        mov     dword [page_tabs+((tss._io_map_0 and -4096) shr 10)], eax
+        mov     eax, [ebx+APPDATA.io_map+4]
+        mov     dword [page_tabs+((tss._io_map_1 and -4096) shr 10)], eax
 ; set new thread memory-map
         mov     eax, [ebx+APPDATA.process]
         cmp     eax, [current_process]
@@ -113,7 +116,8 @@ do_change_task:
 @@:
 ; set tss.esp0
 
-        Mov     [tss._esp0],eax,[ebx+APPDATA.saved_esp0]
+        mov     eax, [ebx+APPDATA.saved_esp0]
+        mov     [tss._esp0], eax
 
         mov     edx, [ebx+APPDATA.tls_base]
 
@@ -126,7 +130,8 @@ do_change_task:
         mov     fs, dx
 
 ; set gs selector unconditionally
-        Mov     gs,ax,graph_data
+        Mov     ax, graph_data
+        Mov     gs, ax
       ; set CR0.TS
         cmp     bh, byte[fpu_owner] ;bh == incoming task (new)
         clts                        ;clear a task switch flag
@@ -280,7 +285,7 @@ proc find_next_task
         call    [ebx+APPDATA.wait_test]
         mov     [esp+28], eax
         popad
-        or      eax, eax
+        test    eax, eax
         jnz     @f
       ; testing for timeout
         mov     eax, [timer_ticks]

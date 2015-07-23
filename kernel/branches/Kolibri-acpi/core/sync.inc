@@ -86,12 +86,12 @@ f77:
         cmp     ecx, (PROC.pdt_0 - PROC.htab)/4
         jae     .fail
 
-        mov     esi, [current_process]
-        mov     edi, [esi+PROC.htab+ecx*4]
+        mov     edi, [current_process]
+        mov     ebp, [edi+PROC.htab+ecx*4]
 
-        cmp     [edi+FUTEX.magic], 'FUTX'
+        cmp     [ebp+FUTEX.magic], 'FUTX'
         jne     .fail
-        cmp     [edi+FUTEX.handle], ecx
+        cmp     [ebp+FUTEX.handle], ecx
         jne     .fail
 
         jmp     dword [f77call+ebx*4]
@@ -113,21 +113,24 @@ align 4
 
 align 4
 ;ecx futex handle
-;esi current process
-;edi futex object
+;edi current process
+;ebp futex object
 .futex_destroy:
-        mov     ecx, edi
+        mov     ecx, ebp
         call    destroy_futex
         mov     [esp+SYSCALL_STACK._eax], eax
         ret
 
 align 4
 ;ecx futex handle
-;esi current process
-;edi futex object
 ;edx control value
+;esi timeout
+;edi current process
+;ebp futex object
 .futex_wait:
-        mov     ecx, [edi+FUTEX.pointer]
+        test    esi, esi
+        jnz     .futex_wait_timeout
+        mov     ecx, [ebp+FUTEX.pointer]
         mov     eax, edx
         lock cmpxchg [ecx], edx         ;wait until old_value == new_value
         jz .wait_slow
@@ -143,7 +146,7 @@ align 4
         mov     ebx, [TASK_BASE]
         mov     [ebx+TASKDATA.state], 1
         mov     [esp+MUTEX_WAITER.task], ebx
-        lea     esi, [edi+FUTEX.wait_list]
+        lea     esi, [ebp+FUTEX.wait_list]
 
         list_add_tail esp, esi      ;esp= new waiter, esi= list head
 
@@ -159,6 +162,72 @@ align 4
         popfd
         mov     [esp+SYSCALL_STACK._eax], 0
         ret
+
+align 4
+;ecx futex handle
+;edx control value
+;esi timeout
+;edi current process
+;ebp futex object
+
+.futex_wait_timeout:
+        mov     ecx, [ebp+FUTEX.pointer]
+        mov     eax, edx
+        lock cmpxchg [ecx], edx         ;wait until old_value == new_value
+        jz .wait_slow_timeout
+
+        mov     [esp+SYSCALL_STACK._eax], 0
+        ret
+
+align 4
+.wait_test:
+        xor     eax, eax
+        ret
+
+.wait_slow_timeout:
+        pushfd
+        cli
+
+        sub     esp, sizeof.MUTEX_WAITER
+
+        mov     ebx, [current_slot]
+        mov     [ebx+APPDATA.wait_test], f77.wait_test
+        mov     [ebx+APPDATA.wait_timeout], esi
+        mov     [ebx+APPDATA.wait_param], ebp
+        mov     eax, [timer_ticks]
+        mov     [ebx+APPDATA.wait_begin], eax
+        mov     eax, [TASK_BASE]
+        mov     [eax+TASKDATA.state], 5
+
+        mov     [esp+MUTEX_WAITER.task], ebx
+        lea     esi, [ebp+FUTEX.wait_list]
+
+        list_add_tail esp, esi      ;esp= new waiter, esi= list head
+
+.again_timeout:
+        call    change_task
+        mov     eax, [ebx+APPDATA.wait_param]
+        test    eax, eax
+        jz      .timeout
+
+        lock cmpxchg [ecx], edx
+        jz .again_timeout
+@@:
+        list_del esp
+        add     esp, sizeof.MUTEX_WAITER
+
+        popfd
+        mov     [esp+SYSCALL_STACK._eax], 0
+        ret
+
+.timeout:
+        list_del esp
+        add     esp, sizeof.MUTEX_WAITER
+
+        popfd
+        mov     [esp+SYSCALL_STACK._eax], -1
+        ret
+
 
 align 4
 ;ecx futex handle
