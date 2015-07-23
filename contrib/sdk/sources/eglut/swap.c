@@ -80,6 +80,9 @@ void render_swap_and_blit(struct render *render)
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, render->tx_buffers[render->back_buffer]);
 
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, render->tx_mask);
+
     xscale = 1.0/render->scr_width;
     yscale = 1.0/render->scr_height;
 
@@ -100,6 +103,7 @@ void render_swap_and_blit(struct render *render)
     vertices[3*2+1] = t5;
 
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glFinish();
 
 err1:
     eglMakeCurrent(render->dpy, draw, read, context);
