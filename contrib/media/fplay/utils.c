@@ -10,36 +10,91 @@
 
 extern uint32_t  hw2d ;
 
-void mutex_lock(volatile uint32_t *val)
+#if 0
+#define FUTEX_INIT      0
+#define FUTEX_DESTROY   1
+#define FUTEX_WAIT      2
+#define FUTEX_WAKE      3
+
+int __fastcall mutex_init(mutex_t *mutex)
 {
-    uint32_t tmp;
+    unsigned int handle;
 
-    __asm__ __volatile__ (
-"0:\n\t"
-    "mov %0, %1\n\t"
-    "testl %1, %1\n\t"
-    "jz 1f\n\t"
+    mutex->lock = 0;
 
-    "movl $68, %%eax\n\t"
-    "movl $1,  %%ebx\n\t"
-    "int  $0x40\n\t"
-    "jmp 0b\n\t"
-"1:\n\t"
-    "incl %1\n\t"
-    "xchgl %0, %1\n\t"
-    "testl %1, %1\n\t"
-    "jnz 0b\n"
-    : "+m" (*val), "=&r"(tmp)
-    ::"eax","ebx" );
+    asm volatile(
+    "int $0x40\t"
+    :"=a"(handle)
+    :"a"(77),"b"(FUTEX_INIT),"c"(mutex));
+    mutex->handle = handle;
+
+    return handle;
+};
+
+int __fastcall mutex_destroy(mutex_t *mutex)
+{
+    int retval;
+
+    asm volatile(
+    "int $0x40\t"
+    :"=a"(retval)
+    :"a"(77),"b"(FUTEX_DESTROY),"c"(mutex->handle));
+
+    return retval;
+};
+
+#define exchange_acquire(ptr, new) \
+  __atomic_exchange_4((ptr), (new), __ATOMIC_ACQUIRE)
+
+#define exchange_release(ptr, new) \
+  __atomic_exchange_4((ptr), (new), __ATOMIC_RELEASE)
+
+void __fastcall mutex_lock(mutex_t *mutex)
+{
+    int tmp;
+
+    if( __sync_fetch_and_add(&mutex->lock, 1) == 0)
+        return;
+
+    while (exchange_acquire (&mutex->lock, 2) != 0)
+    {
+        asm volatile(
+        "int $0x40\t"
+        :"=a"(tmp)
+        :"a"(77),"b"(FUTEX_WAIT),
+        "c"(mutex->handle),"d"(2),"S"(0));
+   }
 }
 
+int __fastcall mutex_trylock (mutex_t *mutex)
+{
+  int zero = 0;
+
+  return __atomic_compare_exchange_4(&mutex->lock, &zero, 1,0,__ATOMIC_ACQUIRE,__ATOMIC_RELAXED);
+}
+
+void  __fastcall mutex_unlock(mutex_t *mutex)
+{
+    int prev;
+
+    prev = exchange_release (&mutex->lock, 0);
+
+    if (prev != 1)
+    {
+        asm volatile(
+        "int $0x40\t"
+        :"=a"(prev)
+        :"a"(77),"b"(FUTEX_WAKE),
+        "c"(mutex->handle),"d"(1));
+    };
+};
+#endif
 
 int64_t _lseeki64(int fd, int64_t offset,  int origin )
 {
     int off = offset;
     return lseek(fd, off, origin);
 }
-
 
 int put_packet(queue_t *q, AVPacket *pkt)
 {

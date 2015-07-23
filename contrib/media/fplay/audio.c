@@ -22,7 +22,7 @@ volatile enum player_state player_state;
 volatile enum player_state decoder_state;
 volatile enum player_state sound_state;
 
-extern volatile uint32_t driver_lock;
+extern mutex_t driver_lock;
 
 static SNDBUF hBuff;
 
@@ -287,20 +287,21 @@ int audio_thread(void *param)
     char     *errstr;
     int       active;
 
-
     if((err = CreateBuffer(snd_format|PCM_RING,0, &hBuff)) != 0)
     {
         errstr = "Cannot create sound buffer\n\r";
         goto exit_whith_error;
     };
 
-    SetVolume(hBuff,-1875,-1875);
+    SetVolume(hBuff,-900,-900);
 
     if((err = GetBufferSize(hBuff, &buffsize)) != 0)
     {
         errstr = "Cannot get buffer size\n\r";
         goto exit_whith_error;
     };
+
+    __sync_or_and_fetch(&threads_running,AUDIO_THREAD);
 
     resampler_size = buffsize = buffsize/2;
 
@@ -427,6 +428,8 @@ int audio_thread(void *param)
                 delay(1);
         };
     }
+
+    __sync_and_and_fetch(&threads_running,~AUDIO_THREAD);
 
     StopBuffer(hBuff);
     DestroyBuffer(hBuff);

@@ -46,7 +46,7 @@ int height;
 AVRational video_time_base;
 AVFrame  *Frame;
 
-volatile uint32_t driver_lock;
+extern mutex_t driver_lock;
 
 void get_client_rect(rect_t *rc);
 
@@ -565,16 +565,12 @@ int video_thread(void *param)
     AVCodecContext *ctx = param;
     window_t  *MainWindow;
 
-
-    printf("%s\n", __FUNCTION__);
-
     init_winlib();
 
     MainWindow = create_window(movie_file,0,
                                10,10,width,height+CAPTION_HEIGHT+PANEL_HEIGHT,MainWindowProc);
 
     MainWindow->panel.prg->max = stream_duration;
-//    printf("MainWindow %x\n", MainWindow);
 
     show_window(MainWindow, NORMAL);
 
@@ -587,14 +583,17 @@ int video_thread(void *param)
         return 0;
     };
 
+    __sync_or_and_fetch(&threads_running,VIDEO_THREAD);
+
     render_draw_client(main_render);
     player_state = PLAY;
 
     run_render(MainWindow, main_render);
 
+    __sync_and_and_fetch(&threads_running,~VIDEO_THREAD);
+
     destroy_render(main_render);
     fini_winlib();
-
     player_state = CLOSED;
     return 0;
 };

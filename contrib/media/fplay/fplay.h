@@ -1,5 +1,6 @@
 
 #include "pixlib3.h"
+#include <libsync.h>
 
 #define BLACK_MAGIC_SOUND
 #define BLACK_MAGIC_VIDEO
@@ -64,11 +65,12 @@ enum player_state
 #define ID_VOL_LEVEL        103
 #define ID_VOL_CTRL         104
 
+
 typedef struct
 {
-    volatile uint32_t   lock;
-    char               *buffer;
-    volatile uint32_t   count;
+    mutex_t lock;
+    char    *buffer;
+    int     count;
 }astream_t;
 
 typedef struct
@@ -87,13 +89,18 @@ typedef struct {
     AVPacketList *last_pkt;
     int size;
     int count;
-    volatile uint32_t lock;
+    mutex_t             lock;
 } queue_t;
 
 int put_packet(queue_t *q, AVPacket *pkt);
 int get_packet(queue_t *q, AVPacket *pkt);
 
 
+#define DECODER_THREAD  1
+#define AUDIO_THREAD    2
+#define VIDEO_THREAD    4
+
+extern int threads_running;
 extern astream_t astream;
 extern AVRational video_time_base;
 
@@ -120,12 +127,6 @@ double get_master_clock(void);
 
 int create_thread(int (*proc)(void *param), void *param, int stack_size);
 
-void mutex_lock(volatile uint32_t *val);
-
-static inline void mutex_unlock(volatile uint32_t *val)
-{
-    *val = 0;
-}
 
 static inline void GetNotify(void *event)
 {

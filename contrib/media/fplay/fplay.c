@@ -50,6 +50,9 @@ int64_t  rewind_pos;
 
 int64_t stream_duration;
 
+int threads_running = DECODER_THREAD;
+mutex_t driver_lock;
+
 extern double audio_base;
 
 double get_audio_base()
@@ -169,6 +172,9 @@ int main( int argc, char *argv[])
 
 //    printf("ctx->pix_fmt %d\n", pCodecCtx->pix_fmt);
 
+    mutex_init(&driver_lock);
+    mutex_init(&q_video.lock);
+    mutex_init(&q_audio.lock);
 
     if (aCodecCtx->channels > 0)
             aCodecCtx->request_channels = FFMIN(2, aCodecCtx->channels);
@@ -203,7 +209,7 @@ int main( int argc, char *argv[])
                 decoder_buffer = (uint8_t*)av_mallocz(192000*2+64);
                 if( decoder_buffer != NULL )
                 {
-                    astream.lock   = 0;
+                    mutex_init(&astream.lock);
                     astream.count  = 0;
                     astream.buffer = (char *)av_mallocz(192000*3);
                     if( astream.buffer != NULL )
@@ -224,8 +230,6 @@ int main( int argc, char *argv[])
     if( !init_video(pCodecCtx))
         return 0;
 
-//    __asm__ __volatile__("int3");
-
     decoder();
 
   // Free the YUV frame
@@ -234,13 +238,16 @@ int main( int argc, char *argv[])
 
 //__asm__ __volatile__("int3");
 
-  // Close the codec
- // avcodec_close(pCodecCtx);
+    while( threads_running &
+           (AUDIO_THREAD | VIDEO_THREAD))
+           delay(1);
 
-  // Close the video file
- // av_close_input_file(pFormatCtx);
+    if(astream.lock.handle)
+        mutex_destroy(&astream.lock);
 
-//__asm__ __volatile__("int3");
+    mutex_destroy(&driver_lock);
+    mutex_destroy(&q_video.lock);
+    mutex_destroy(&q_audio.lock);
 
     return 0;
 }
@@ -431,16 +438,5 @@ void decoder()
         }
     };
 
-    ret = 1;
-
-    while( (player_state != CLOSED) && ret)
-    {
-        ret =  decode_video(pCodecCtx, &q_video);
-        ret |= decode_audio(aCodecCtx, &q_audio);
-        delay(1);
-    };
-    delay(50);
-    player_state = CLOSED;
-    delay(300);
 };
 
