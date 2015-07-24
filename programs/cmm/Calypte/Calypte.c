@@ -1,3 +1,7 @@
+#ifndef AUTOBUILD
+	#include "lang.h--"
+#endif
+
 #define MEMSIZE 0x100000
 #include "..\lib\kolibri.h" 
 #include "..\lib\strings.h" 
@@ -8,8 +12,6 @@
 #include "..\lib\obj\box_lib.h"
 #include "..\lib\obj\proc_lib.h"
 #include "..\lib\obj\libio_lib.h"
-
-#include "lang.h--"
 
 #ifdef LANG_RUS
 	?define T_FILE "” ©«"
@@ -59,7 +61,7 @@ struct menu_text_struct
 };
 #endif
 
-#define TITLE "Calypte v0.1"
+#define TITLE "Calypte v0.11"
 
 #define TOPPANELH 19
 #define BOTPANELH 10
@@ -88,7 +90,7 @@ struct filter
 filter filter2;
 menu_text_struct menu_text_area1;
 
-char win_title[4096] = "Calypte v0.1";
+char win_title[4096] = "Calypte v0.11";
 
 int
 	cur_row=0,
@@ -139,6 +141,7 @@ void main()
 	if (load_dll2(libio, #libio_init,1)!=0) notify(ERROR_LOAD_LIBIO);
 	if (load_dll2(Proc_lib, #OpenDialog_init,0)!=0) notify(ERROR_LOAD_PROC_LIB);
 	OpenDialog_init stdcall (#o_dialog);
+	
 	SetEventMask(0x27);
 	loop()
 	{
