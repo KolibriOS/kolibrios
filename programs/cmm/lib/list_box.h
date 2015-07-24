@@ -10,7 +10,7 @@ struct llist
 {
 	int x, y, w, h, min_h, line_h, text_y;
 	int column_max;
-	int count, visible, first, current;
+	int count, visible, first, current; //visible = row_max
 	int active;
 	void ClearList();
 	int ProcessKey(dword key);
@@ -22,21 +22,22 @@ struct llist
 	int KeyEnd();
 	void SetSizes(int xx, yy, ww, hh, min_hh, line_hh);
 	int MouseScroll(dword scroll_state);
-	// void debug_values();
+	int MouseScrollNoSelection(dword scroll_state);
+	void debug_values();
 }; 
 
 
-// void llist::debug_values()
-// {
-// 	debug("current: ");
-// 	debugi(current);
-// 	debug("first: ");
-// 	debugi(first);
-// 	debug("visible: ");
-// 	debugi(visible);
-// 	debug("count: ");
-// 	debugi(count);
-// }
+void llist::debug_values()
+{
+	debug("current: ");
+	debugi(current);
+	debug("first: ");
+	debugi(first);
+	debug("visible: ");
+	debugi(visible);
+	debug("count: ");
+	debugi(count);
+}
 
 
 
@@ -56,6 +57,7 @@ void llist::SetSizes(int xx, yy, ww, hh, min_hh, line_hh)
 	line_h = line_hh;
 	text_y = line_hh / 2 - 4;
 	visible = h / line_h;
+	column_max = w / 6;
 	//if (visible > count) visible=count;
 }
 
@@ -73,6 +75,24 @@ int llist::MouseScroll(dword scroll_state)
 	{
 		if (visible + first == count) return 0;
 		if (visible+first+3 > count) first = count - visible; else first+=2;
+		return 1;
+	}
+	return 0;
+}
+
+int llist::MouseScrollNoSelection(dword scroll_state)
+{
+	if (count<=visible) return 0;
+	if (scroll_state == 65535)
+	{
+		if (current == 0) return 0;
+		if (current > 3) current -= 2; else current=0;
+		return 1;
+	} 
+	if (scroll_state == 1)
+	{
+		if (visible + current == count) return 0;
+		if (visible+current+3 > count) current = count - visible; else current+=2;
 		return 1;
 	}
 	return 0;
