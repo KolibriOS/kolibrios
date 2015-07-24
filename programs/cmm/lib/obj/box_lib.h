@@ -20,6 +20,11 @@ dword edit_box_key   = #aEdit_box_key;
 dword edit_box_mouse = #aEdit_box_mouse;
 dword version_ed     = #aVersion_ed;
 
+dword menu_bar_draw             = #aMenu_bar_draw;
+dword menu_bar_activate         = #aMenu_bar_activate;
+dword menu_bar_mouse            = #aMenu_bar_mouse;
+dword version_menu_bar          = #aVersion_menu_bar;
+
 dword scrollbar_v_draw  = #aScrollbar_v_draw;
 dword scrollbar_v_mouse = #aScrollbar_v_mouse;
 dword scrollbar_h_draw  = #aScrollbar_h_draw;
@@ -44,6 +49,11 @@ char aEdit_box_draw []    = "edit_box";
 char aEdit_box_key  []    = "edit_box_key";
 char aEdit_box_mouse[]    = "edit_box_mouse";
 char aVersion_ed    []    = "version_ed";
+
+char aMenu_bar_draw    []    = "menu_bar_draw";
+char aMenu_bar_activate[]    = "menu_bar_activate";
+char aMenu_bar_mouse   []    = "menu_bar_mouse";
+char aVersion_menu_bar []    = "version_menu_bar";
 
 char aboxlib_init[]        = "lib_init";
 char aScrollbar_v_draw [] = "scrollbar_v_draw";
@@ -91,6 +101,47 @@ PathShow_prepare stdcall(#PathShow);
 PathShow_draw stdcall(#PathShow);
 */
 
+struct menu_data
+{
+	dword type;
+	
+	word size_x;
+	word start_x;
+	
+	word size_y;
+	word start_y;
+	dword text_pointer;
+	dword pos_pointer;
+	dword text_end;
+	dword mouse_pos;
+	dword mouse_keys;
+	
+	word size_x1;
+	word start_x1;
+	
+	word size_y1;
+	word start_y1;
+	dword bckg_col;
+	dword frnt_col;
+	dword menu_col;
+	dword select;
+	dword out_select;
+	dword buf_adress;
+	dword procinfo;
+	dword click;
+	dword cursor;
+	dword cursor_old;
+	dword interval;
+	dword cursor_max;
+	dword extended_key;
+	dword menu_sel_col;
+	dword bckg_text_col;
+	dword frnt_text_col;
+	dword mouse_keys_old;
+	dword font_height;
+	dword cursor_out;
+	dword get_mouse_flag;
+};
 
 struct edit_box{
 dword width, left, top, color, shift_color, focus_border_color, blur_border_color,
