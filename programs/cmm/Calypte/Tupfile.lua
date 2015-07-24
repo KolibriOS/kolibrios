@@ -3,4 +3,4 @@ if tup.getconfig("LANG") == "ru"
 then C_LANG = "LANG_RUS"
 else C_LANG = "LANG_ENG" -- this includes default case without config
 end
-tup.rule("Ready.c", "c-- /D=AUTOBUILD /D=$(C_LANG) %f" .. tup.getconfig("KPACK_CMD"), "Ready.com")
+tup.rule("Calypte.c", "c-- /D=AUTOBUILD /D=$(C_LANG) %f" .. tup.getconfig("KPACK_CMD"), "Calypte.com")
