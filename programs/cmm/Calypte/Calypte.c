@@ -9,6 +9,8 @@
 #include "..\lib\file_system.h"
 #include "..\lib\dll.h"
 #include "..\lib\gui.h"
+#include "..\lib\list_box.h"
+
 #include "..\lib\obj\box_lib.h"
 #include "..\lib\obj\proc_lib.h"
 #include "..\lib\obj\libio_lib.h"
@@ -61,21 +63,25 @@ struct menu_text_struct
 };
 #endif
 
-#define TITLE "Calypte v0.11"
-
 #define TOPPANELH 19
 #define BOTPANELH 10
 #define WIN_W 600
 #define WIN_H 400
 
+#define TITLE "Calypte v0.12"
+char win_title[4096] = TITLE;
 proc_info Form;
 system_colors sc;
+dword old_width,old_height;
+llist tview;
 
 byte active_properties = 0;
 dword properties_window;
 
 #include "include\gui.h"
 #include "include\properties.h"
+// #include "include\top_menu.h"
+// #include "include\open_dial.h"
 
 struct filter
 {
@@ -90,17 +96,8 @@ struct filter
 filter filter2;
 menu_text_struct menu_text_area1;
 
-char win_title[4096] = "Calypte v0.11";
+int read=0;
 
-int
-	cur_row=0,
-	read=0,
-	pos=0,
-	row_num=0,
-	col_count=0,
-	row_count=0;	
-	
-dword old_width,old_height;
 
 proc_info pr_inf;
 char communication_area_name[] = "FFFFFFFF_open_dialog";
@@ -121,6 +118,7 @@ menu_data menudata1 = {0, 40, 2, 15, 2, #menu_text_area1.menu, #menu_text_area1.
 void main()
 {   
 	int id, key;
+	mouse m;
 	
 	strcpy(#filter2.ext1, "TXT");
 	//strcpy(#filter2.ext2, "ASM");
@@ -141,15 +139,17 @@ void main()
 	if (load_dll2(libio, #libio_init,1)!=0) notify(ERROR_LOAD_LIBIO);
 	if (load_dll2(Proc_lib, #OpenDialog_init,0)!=0) notify(ERROR_LOAD_PROC_LIB);
 	OpenDialog_init stdcall (#o_dialog);
-	
 	SetEventMask(0x27);
 	loop()
 	{
       switch(WaitEvent())
       {
 		case evMouse:
-			menu_bar_mouse stdcall (#menudata1);
-			if (menudata1.click==1)
+			m.get();
+			if (tview.MouseScrollNoSelection(m.vert)) DrawText();
+		
+			menu_bar_mouse stdcall (#menudata1);			
+			if (menudata1.click)
 			{
 				switch(menudata1.cursor_out)
 				{
@@ -185,47 +185,35 @@ void main()
 		
         case evButton:
             id=GetButtonID();               
-            if (id==1) || (id==10) ExitProcess();
+            if (id==1) ExitProcess();
 			break;
       
         case evKey:
+			if (Form.status_window>2) break;
 			key = GetKey();
 			switch (key)
 			{
-				if (Form.status_window>2) break;
-				case 015:               //Ctrl+O
+				case 015:  //Ctrl+O
 					OpenDialog_start stdcall (#o_dialog);
 					OpenFile(#openfile_path);
 					Prepare();
 					draw_window();
 					break;
 				case ASCII_KEY_HOME:
-					cur_row = 0;
-					DrawText();
-					break;
 				case ASCII_KEY_END:
-					cur_row = row_num - row_count - 1;
-					DrawText();
-					break;
 				case ASCII_KEY_UP:
-					if (!cur_row) break;
-					else cur_row = cur_row-1;
-					DrawText();
-					break;
 				case ASCII_KEY_DOWN:
-					if (cur_row+row_count>=row_num) break;
-					cur_row = cur_row+1;
-					DrawText();
+					if (tview.ProcessKey(key)) DrawText();
 					break;
 				case ASCII_KEY_PGUP:
-					if (!cur_row) break;
-					if (cur_row<row_count) cur_row = 0;
-					else cur_row = cur_row-row_count;
+					if (!tview.current) break;
+					if (tview.current<tview.visible) tview.current = 0;
+					else tview.current = tview.current-tview.visible;
 					DrawText();
 					break;
 				case ASCII_KEY_PGDN:
-					if (cur_row+row_count>row_num) break;
-					cur_row = cur_row+row_count;
+					if (tview.current+tview.visible>tview.count) break;
+					tview.current = tview.current+tview.visible;
 					DrawText();
 					break;
 			}
@@ -244,6 +232,8 @@ void draw_window()
 	sc.get();
 	DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2,WIN_W,WIN_H,0x73,0xFFFFFF,#win_title);
 	GetProcessInfo(#Form, SelfInfo);
+	if (Form.status_window>2) return;
+	tview.SetSizes(0, TOPPANELH, Form.cwidth, Form.cheight-BOTPANELH-TOPPANELH, 200, 12);
 	DrawBar(0, 0, Form.cwidth, TOPPANELH, sc.work);
 	DrawBar(0, Form.cheight-BOTPANELH, Form.cwidth, BOTPANELH, sc.work);
 	
@@ -254,18 +244,14 @@ void draw_window()
 	{
 		old_width = Form.width;
 		old_height = Form.height;
-		
-		col_count = Form.cwidth/6;
-		row_count = Form.cheight-BOTPANELH-TOPPANELH-2;
-		row_count = row_count/10;
-	
 		if (read==1) Prepare();
+		tview.debug_values();
 	}
 	if (read==1) 
 	{
 		DrawText();
 	}
-	else DrawBar(0, TOPPANELH, Form.cwidth, Form.cheight-BOTPANELH-TOPPANELH, 0xFFFFFF);
+	else DrawBar(tview.x, tview.y, tview.w, tview.h, 0xFFFFFF);
 }
 
 void OpenFile(dword path)
@@ -287,7 +273,7 @@ void OpenFile(dword path)
 void FreeBuf()
 {
 	int i;
-	for (i=0; i<row_num; i++)
+	for (i=0; i<tview.count; i++)
 	{
 		mem_Free(DSDWORD[i*4+draw_sruct]);
 	}
@@ -298,16 +284,17 @@ void FreeBuf()
 void Prepare()
 {
 	int i, sub_pos;
+	static int cur_pos;
 	int len_str = 0;
 	byte do_eof = 0;
 	word bukva[2];
 	dword address;
-	row_num = 0;
+	tview.count = 0;
 	while(1)
 	{
 		while(1)
 		{
-			bukva = DSBYTE[bufpointer+pos+len_str];
+			bukva = DSBYTE[bufpointer+cur_pos+len_str];
 			if (bukva=='\0')
 			{
 				do_eof = 1;
@@ -316,22 +303,22 @@ void Prepare()
 			if (bukva==0x0a) break;
 			else len_str++;
 		}
-		if (len_str<=col_count)
+		if (len_str<=tview.column_max)
 		{
-			pos=pos+len_str+1;
-			row_num++;
+			cur_pos=cur_pos+len_str+1;
+			tview.count++;
 		}
 		else
 		{
-			pos=pos+col_count;
-			row_num++;
+			cur_pos=cur_pos+tview.column_max;
+			tview.count++;
 		}
 		len_str = 0;
 		if (do_eof) break;
 	}
 	mem_Free(draw_sruct);
-	draw_sruct = mem_Alloc(row_num*4);
-	pos=0;
+	draw_sruct = mem_Alloc(tview.count*4);
+	cur_pos=0;
 	sub_pos=0;
 	len_str = 0;
 	do_eof = 0;
@@ -339,7 +326,7 @@ void Prepare()
 	{
 		while(1)
 		{
-			bukva = DSBYTE[bufpointer+pos+len_str];
+			bukva = DSBYTE[bufpointer+cur_pos+len_str];
 			if (bukva=='\0')
 			{
 				do_eof = 1;
@@ -348,44 +335,44 @@ void Prepare()
 			if (bukva==0x0a) break;
 			else len_str++;
 		}
-		if (len_str<=col_count)
+		if (len_str<=tview.column_max)
 		{
 			address = mem_Alloc(len_str+1);
 			ESDWORD[sub_pos*4+draw_sruct] = address;
-			strlcpy(DSDWORD[sub_pos*4+draw_sruct], bufpointer+pos, len_str);
-			pos=pos+len_str+1;
+			strlcpy(DSDWORD[sub_pos*4+draw_sruct], bufpointer+cur_pos, len_str);
+			cur_pos=cur_pos+len_str+1;
 			sub_pos++;
 		}
 		else
 		{
 			address = mem_Alloc(len_str+1);
 			ESDWORD[sub_pos*4+draw_sruct] = address;
-			strlcpy(DSDWORD[sub_pos*4+draw_sruct], bufpointer+pos, col_count);
-			pos=pos+col_count;
+			strlcpy(DSDWORD[sub_pos*4+draw_sruct], bufpointer+cur_pos, tview.column_max);
+			cur_pos=cur_pos+tview.column_max;
 			sub_pos++;
 		}
 		len_str = 0;
-		if (pos>=bufsize-1) break;
+		if (cur_pos>=bufsize-1) break;
 	}
-	pos=0;
+	cur_pos=0;
 }
 
 void DrawText()
 {
 	int i, top, num_line;
-	if (row_num<row_count) top = row_num;
+	if (tview.count<tview.visible) top = tview.count;
 	else
 	{
-		if (row_num-cur_row<=row_count) top = row_num-cur_row-1;
-		else top = row_count;
+		if (tview.count-tview.current<=tview.visible) top = tview.count-tview.current-1;
+		else top = tview.visible;
 	}
-	DrawBar(0, TOPPANELH, Form.cwidth, 3, 0xFFFFFF);
-	for (i=0, num_line = cur_row; i<top; i++, num_line++)
+	DrawBar(tview.x, tview.y, tview.w, 3, 0xFFFFFF);
+	for (i=0, num_line = tview.current; i<top; i++, num_line++)
 	{
-		DrawBar(0, i*10+TOPPANELH+3, Form.cwidth, 10, 0xFFFFFF);
-		WriteText(2, i*10+TOPPANELH+3, 0x80, 0x000000, DSDWORD[num_line*4+draw_sruct]);
+		DrawBar(tview.x, i * tview.line_h + tview.y + 3, tview.w, tview.line_h, 0xFFFFFF);
+		WriteText(tview.x + 2, i * tview.line_h + tview.y + 3, 0x80, 0x000000, DSDWORD[num_line*4+draw_sruct]);
 	}
-	DrawBar(0, i*10+TOPPANELH+3, Form.cwidth, -i*10-TOPPANELH-BOTPANELH+Form.cheight, 0xFFFFFF);
+	DrawBar(0, i * tview.line_h + tview.y + 3, tview.w, -i* tview.line_h + tview.h, 0xFFFFFF);
 }
 
 stop:
