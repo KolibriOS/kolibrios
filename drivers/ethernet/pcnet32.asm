@@ -679,9 +679,7 @@ probe:
         call    [ebx + device.write_bcr]
 
         mov     ecx, CSR_DMACTL
-        call    [ebx + device.read_csr]
-;        and     eax, 0xc00
-;        or      eax, 0xc00
+;        call    [ebx + device.read_csr]
         mov     eax, 0xc00
         call    [ebx + device.write_csr]
 
@@ -1090,8 +1088,7 @@ int_handler:
         call    [ebx + device.read_csr]         ; get IRQ reason
         call    [ebx + device.write_csr]        ; write it back to ACK
         pop     ecx
-;;;        and     ax, CSR_RINT or CSR_TINT
-        test    ax, ax
+        test    ax, CSR_RINT or CSR_TINT
         jnz     .got_it
   .continue:
         add     esi, 4
