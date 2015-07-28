@@ -1842,7 +1842,7 @@ con.thread_exit:
 con.key:
         mov     al, 2
         int     0x40
-		and     eax, 0xffff ; supress scancodes
+        and     eax, 0xffff ; supress scancodes
 ; ah = scancode
         cmp     ah, 0xE0
         jnz     @f
@@ -2038,6 +2038,27 @@ con.getch:
         mov     [con.bGetchRequested], 1
         jmp     con.msg_loop
 con.mouse:
+        push    37
+        pop     eax
+        push    7
+        pop     ebx
+        int     0x40
+        test    eax, eax
+        jz      .no_scrollmouse
+        cwde
+        add     eax, [con.wnd_ypos]
+        jg      @f
+        xor     eax, eax
+@@:
+        mov     ebx, [con.scr_height]
+        sub     ebx, [con.wnd_height]
+        cmp     eax, ebx
+        jb      @f
+        mov     eax, ebx
+@@:
+        mov     [con.wnd_ypos], eax
+        jmp     con.redraw_image
+.no_scrollmouse:
         xor     eax, eax
         xchg    eax, dword [con.bUpPressed]
         mov     dword [con.bUpPressed_saved], eax
