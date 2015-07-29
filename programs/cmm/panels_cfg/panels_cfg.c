@@ -14,7 +14,6 @@
 #include "..\lib\obj\libini.h"
 #include "..\lib\obj\box_lib.h"
 
-#include "..\lib\patterns\libimg_load_skin.h"
 #include "..\lib\patterns\restart_process.h"
 
 #ifdef LANG_RUS
