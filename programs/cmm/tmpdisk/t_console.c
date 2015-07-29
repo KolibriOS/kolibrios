@@ -41,14 +41,14 @@ char Console_Work()
 	
 	switch (param[0])
 	{
-		case '?': //помощь по коммандам
+		case '?':
 		case 'h':
 			debugln("tmpdisk command line parameters:");
 			debugln("a[number]s[size in MB] - add RAM disk");
 			debugln("d[number] - delete RAM disk");
 			ExitProcess();
 			break;
-		case 'd': //удалить диск
+		case 'd':
 			debugln(DELETE_DISK_TEXT);
 			del_disk.DiskId = param[1]-'0';
 			ioctl.handle   = driver_handle;
@@ -59,7 +59,7 @@ char Console_Work()
 			ioctl.out_size = 0;
 			disk_sizes[del_disk.DiskId] = 0;
 			break;
-		case 'a': //добавить диск
+		case 'a':
 			debugln(ADD_DISK_TEXT);
 			disk_size= strchr(#param, 's');
 			if (!disk_size)
@@ -68,7 +68,9 @@ char Console_Work()
 				debugln(DONT_KNOW_DISK_SIZE_TEXT);
 			}				
 			else
-				add_disk.DiskSize = atoi(#param+disk_size)*2048;
+			{
+				add_disk.DiskSize = atoi(disk_size+1)*2048;
+			}
 			strcpy(#size_t, NEW_DISK_TEXT);
 			strcat(#size_t, itoa(add_disk.DiskSize/2048));
 			strcat(#size_t, " MB");

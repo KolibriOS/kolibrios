@@ -121,7 +121,7 @@ byte search_for_id_need_to_run(dword key_value, key_name, sec_name, f_name)
 	if (item_id_need_to_run == current_item_id)
 	{
 		icon_char_pos = strchr(key_value, ',');
-		if (icon_char_pos) ESBYTE[key_value + icon_char_pos - 1] = 0; //delete icon from string
+		if (icon_char_pos) ESBYTE[icon_char_pos] = 0; //delete icon from string
 		RunProgram(key_value, "");
 	}
 	current_item_id++;
@@ -149,7 +149,7 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 	tmp = cell_w/2;
 
 	icon_char_pos = strchr(key_value, ',');
-	if (icon_char_pos) icon_id = atoi(key_value + icon_char_pos); else icon_id = default_icon;
+	if (icon_char_pos) icon_id = atoi(icon_char_pos+1); else icon_id = default_icon;
 	img_draw stdcall(skin.image, col*cell_w+tmp-10, row*cell_h+5 + list_pos, 32, 32, 0, icon_id*32);
 	WriteTextCenter(col*cell_w+7,row*cell_h+47 + list_pos,cell_w,0xDCDCDC,key_name);
 	WriteTextCenter(col*cell_w+6,row*cell_h+46 + list_pos,cell_w,0x000000,key_name);
