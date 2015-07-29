@@ -79,7 +79,7 @@ void main()
 	mem_Init();
 	SetEventMask(0x27);
 	load_dll(boxlib, #box_lib_init,0);
-	load_dll(libio, #libio_init,1)!=0);
+	load_dll(libio, #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libini, #lib_init,1);
 
