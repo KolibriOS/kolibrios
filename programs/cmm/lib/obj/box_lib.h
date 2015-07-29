@@ -13,6 +13,13 @@
 dword boxlib = #aEdit_box_lib;
 char aEdit_box_lib[]="/sys/lib/box_lib.obj";
 
+#ifdef LANG_RUS
+	?define BOX_LIB_LOAD_ERR "Error while loading library /rd/1/lib/box_lib.obj"
+#else
+	?define BOX_LIB_LOAD_ERR "Ошибка при загрузке библиотеки /rd/1/lib/box_lib.obj"
+#endif
+
+
 dword box_lib_init   = #aboxlib_init;
 
 dword edit_box_draw  = #aEdit_box_draw;

@@ -124,10 +124,10 @@ void main()
 	
 	mem_Init();
 	CursorPointer.Load(#CursorFile);
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("Error: library doesn't exists - box_lib");
-	if (load_dll2(libio, #libio_init,1)!=0) notify("Error: library doesn't exists - libio");
-	if (load_dll2(libimg, #libimg_init,1)!=0) notify("Error: library doesn't exists - libimg");
-	if (load_dll2(libHTTP, #http_lib_init,1)!=0) notify("Error: library doesn't exists - http");
+	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(BOX_LIB_LOAD_ERR);
+	if (load_dll2(libio, #libio_init,1)!=0) notify(LIB_IO_LOAD_ERR);
+	if (load_dll2(libimg, #libimg_init,1)!=0) notify(LIB_IMG_LOAD_ERR);
+	if (load_dll2(libHTTP, #http_lib_init,1)!=0) notify(LIB_HTTP_LOAD_ERR);
 	Libimg_LoadImage(#skin, abspath("wv_skin.png"));
 	SetSkinColors();
 	

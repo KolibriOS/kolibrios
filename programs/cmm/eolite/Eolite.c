@@ -42,7 +42,6 @@
 	?define WAIT_DELETING_FOLDER "Удаляется папка. Подожите..."
 	?define NOT_CREATE_FOLDER "Не удалось создать папку."
 	?define NOT_CREATE_FILE "Не удалось создать файл."
-	?define ERROR_1 "Ошибка при загрузке библиотеки /rd/1/lib/box_lib.obj"
 	?define T_PASTE_WINDOW_TITLE "Копирую..."
 	?define T_PASTE_WINDOW_TEXT "Копируется файл:"
 	?define T_PASTE_WINDOW_BUTTON "Прервать"	
@@ -68,7 +67,6 @@
 	?define WAIT_DELETING_FOLDER "Deleting folder. Please, wait..."
 	?define NOT_CREATE_FOLDER "Kataloogi ei saa luua."
 	?define NOT_CREATE_FILE "Faili ei saa luua."
-	?define ERROR_1 "Viga teegi laadimisel /rd/1/lib/box_lib.obj"
 	?define T_PASTE_WINDOW_TITLE "Kopeerin..."
 	?define T_PASTE_WINDOW_TEXT "Kopeerin faili:"
 	?define T_PASTE_WINDOW_BUTTON "Abort"
@@ -94,7 +92,6 @@
 	?define WAIT_DELETING_FOLDER "Deleting folder. Please, wait..."
 	?define NOT_CREATE_FOLDER "Folder can not be created."
 	?define NOT_CREATE_FILE "File can not be created."
-	?define ERROR_1 "Error while loading library /rd/1/lib/box_lib.obj"
 	?define T_PASTE_WINDOW_TITLE "Copying..."
 	?define T_PASTE_WINDOW_TEXT "Copying file:"
 	?define T_PASTE_WINDOW_BUTTON "Abort"
@@ -188,8 +185,8 @@ void main()
 	rand_n = random(40);
 	gestures.get();
 	mem_Init();
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(ERROR_1);
-    if (load_dll2(libini, #lib_init,1)!=0) notify("Error: library doesn't exists - libini");
+	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(BOX_LIB_LOAD_ERR);
+    if (load_dll2(libini, #lib_init,1)!=0) notify(LIB_INI_LOAD_ERR);
 	eolite_ini_path = abspath("Eolite.ini"); 
 	LoadIniSettings();
 	GetSystemDiscs();

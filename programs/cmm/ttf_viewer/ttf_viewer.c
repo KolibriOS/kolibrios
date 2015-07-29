@@ -40,7 +40,7 @@ void main()
 
 	mem_Init();
 	if (load_dll2(libtruetype, #truetype, 1) != 0) notify("Error: library doesn't exists - truetype");
-	if (load_dll2(Proc_lib, #OpenDialog_init,0)!=0) notify("Error: library doesn't exists - Proc_lib (open_dialog)");
+	if (load_dll2(Proc_lib, #OpenDialog_init,0)!=0) notify(LIB_IO_LOAD_ERR);
 	OpenDialog_init stdcall (#o_dialog);
 
 	if (param[0]) OpenFont(#param);

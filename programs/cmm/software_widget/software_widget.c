@@ -65,9 +65,9 @@ void main()
 {   
 	dword id, key;
 	mem_Init();
-	if (load_dll2(libio,  #libio_init,1)!=0) notify("Error: library doesn't exists - libio");
-	if (load_dll2(libimg, #libimg_init,1)!=0) notify("Error: library doesn't exists - libimg");
-	if (load_dll2(libini, #lib_init,1)!=0) notify("Error: library doesn't exists - libini");
+	if (load_dll2(libio,  #libio_init,1)!=0) notify(LIB_IO_LOAD_ERR);
+	if (load_dll2(libimg, #libimg_init,1)!=0) notify(LIB_IMG_LOAD_ERR);
+	if (load_dll2(libini, #lib_init,1)!=0) notify(LIB_INI_LOAD_ERR);
 
 	Libimg_LoadImage(#skin, "/sys/icons32.png");
 	Libimg_FillTransparent(skin.image, skin.w, skin.h, LIST_BACKGROUND_COLOR);

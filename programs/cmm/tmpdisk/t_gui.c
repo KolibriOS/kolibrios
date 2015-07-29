@@ -62,7 +62,7 @@ void Main_Window()
 	int i, x;
 	
    	mem_Init();
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("Eror: library doesn't exists - box_lib");
+	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(BOX_LIB_LOAD_ERR);
 	GetSizeDisk();
 	edit_disk_size.left = strlen(INTRO_TEXT_4)*6 + 10;
 	SetEventMask(0x27);
