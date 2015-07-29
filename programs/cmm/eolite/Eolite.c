@@ -26,47 +26,45 @@
 #include "imgs\icons.txt"
 
 #ifdef LANG_RUS
-	?define T_FILE "î†©´"
-	?define T_TYPE "í®Ø"
-	?define T_SIZE "ê†ß¨•‡"
-	?define T_NEW_FOLDER "çÆ¢†Ô Ø†Ø™†"
-	?define T_NEW_FILE "çÆ¢Î© ‰†©´"
-	?define T_DELETE_FILE "ÇÎ §•©·‚¢®‚•´Ï≠Æ ÂÆ‚®‚• „§†´®‚Ï"
-	?define T_YES "Ñ†"
-	?define T_NO "ç•‚"
-	?define T_CANCEL "é‚¨•≠†"
-	?define T_CREATE "ëÆß§†‚Ï"
-	?define T_RENAME "è•‡•®¨•≠Æ¢†‚Ï"
-	?define FILE_EXISTS "î†©´ · ‚†™®¨ ®¨•≠•¨ ·„È•·‚¢„•‚"
-	?define FOLDER_EXISTS "è†Ø™† · ‚†™®¨ ®¨•≠•¨ ·„È•·‚¢„•‚"
-	?define T_DEL_ERROR_1 "éË®°™†. è†Ø™† ≠• Ø„·‚†Ô."
-	?define WAIT_DELETING_FOLDER "ì§†´Ô•‚·Ô Ø†Ø™†. èÆ§Æ¶®‚•..."
-	?define NOT_CREATE_FOLDER "ç• „§†´Æ·Ï ·Æß§†‚Ï Ø†Ø™„."
-	?define NOT_CREATE_FILE "ç• „§†´Æ·Ï ·Æß§†‚Ï ‰†©´."
-	?define ERROR_1 "éË®°™† Ø‡® ß†£‡„ß™• °®°´®Æ‚•™® /rd/1/lib/box_lib.obj"
-	?define T_PASTE_WINDOW_TITLE "äÆØ®‡„Ó..."
-	?define T_PASTE_WINDOW_TEXT "äÆØ®‡„•‚·Ô ‰†©´:"
-	?define T_PASTE_WINDOW_BUTTON "è‡•‡¢†‚Ï"	
-	?define INFO_AFTER_COPY "äÆØ®‡Æ¢†≠®• ß†¢•‡Ë•≠Æ"
-	?define T_CANCEL_PASTE "äÆØ®‡Æ¢†≠®• Ø‡•™‡†È•≠Æ. è†Ø™† ·™ÆØ®‡Æ¢†≠† ≠• ØÆ´≠Æ·‚ÏÓ."
-	?define T_SELECT_APP_TO_OPEN_WITH "ÇÎ°•‡®‚• Ø‡Æ£‡†¨¨„ §´Ô Æ‚™‡Î‚®Ô ‰†©´†"
-	?define DEL_MORE_FILES_1 "¢Î°‡†≠≠Î• Ì´•¨•≠‚Î ("
-	?define DEL_MORE_FILES_2 " Ë‚.)?"
+	?define T_FILE "–§–∞–π–ª"
+	?define T_TYPE "–¢–∏–ø"
+	?define T_SIZE "–†–∞–∑–º–µ—Ä"
+	?define T_NEW_FOLDER "–ù–æ–≤–∞—è –ø–∞–ø–∫–∞"
+	?define T_NEW_FILE "–ù–æ–≤—ã–π —Ñ–∞–π–ª"
+	?define T_DELETE_FILE "–í—ã –¥–µ–π—Å—Ç–≤–∏—Ç–µ–ª—å–Ω–æ —Ö–æ—Ç–∏—Ç–µ —É–¥–∞–ª–∏—Ç—å"
+	?define T_YES "–î–∞"
+	?define T_NO "–ù–µ—Ç"
+	?define T_CANCEL "–û—Ç–º–µ–Ω–∞"
+	?define T_CREATE "–°–æ–∑–¥–∞—Ç—å"
+	?define T_RENAME "–ü–µ—Ä–µ–∏–º–µ–Ω–æ–≤–∞—Ç—å"
+	?define FS_ITEM_ALREADY_EXISTS "'–≠–ª–µ–º–µ–Ω—Ç —Å —Ç–∞–∫–∏–º –∏–º–µ–Ω–µ–º —É–∂–µ —Å—É—â–µ—Å—Ç–≤—É–µ—Ç' -E"
+	?define T_DEL_ERROR_1 "–û—à–∏–±–∫–∞. –ü–∞–ø–∫–∞ –Ω–µ –ø—É—Å—Ç–∞—è."
+	?define WAIT_DELETING_FOLDER "–£–¥–∞–ª—è–µ—Ç—Å—è –ø–∞–ø–∫–∞. –ü–æ–¥–æ–∂–∏—Ç–µ..."
+	?define NOT_CREATE_FOLDER "–ù–µ —É–¥–∞–ª–æ—Å—å —Å–æ–∑–¥–∞—Ç—å –ø–∞–ø–∫—É."
+	?define NOT_CREATE_FILE "–ù–µ —É–¥–∞–ª–æ—Å—å —Å–æ–∑–¥–∞—Ç—å —Ñ–∞–π–ª."
+	?define ERROR_1 "–û—à–∏–±–∫–∞ –ø—Ä–∏ –∑–∞–≥—Ä—É–∑–∫–µ –±–∏–±–ª–∏–æ—Ç–µ–∫–∏ /rd/1/lib/box_lib.obj"
+	?define T_PASTE_WINDOW_TITLE "–ö–æ–ø–∏—Ä—É—é..."
+	?define T_PASTE_WINDOW_TEXT "–ö–æ–ø–∏—Ä—É–µ—Ç—Å—è —Ñ–∞–π–ª:"
+	?define T_PASTE_WINDOW_BUTTON "–ü—Ä–µ—Ä–≤–∞—Ç—å"	
+	?define INFO_AFTER_COPY "–ö–æ–ø–∏—Ä–æ–≤–∞–Ω–∏–µ –∑–∞–≤–µ—Ä—à–µ–Ω–æ"
+	?define T_CANCEL_PASTE "–ö–æ–ø–∏—Ä–æ–≤–∞–Ω–∏–µ –ø—Ä–µ–∫—Ä–∞—â–µ–Ω–æ. –ü–∞–ø–∫–∞ —Å–∫–æ–ø–∏—Ä–æ–≤–∞–Ω–∞ –Ω–µ –ø–æ–ª–Ω–æ—Å—Ç—å—é."
+	?define T_SELECT_APP_TO_OPEN_WITH "–í—ã–±–µ—Ä–∏—Ç–µ –ø—Ä–æ–≥—Ä–∞–º–º—É –¥–ª—è –æ—Ç–∫—Ä—ã—Ç–∏—è —Ñ–∞–π–ª–∞"
+	?define DEL_MORE_FILES_1 "–≤—ã–±—Ä–∞–Ω–Ω—ã–µ —ç–ª–µ–º–µ–Ω—Ç—ã ("
+	?define DEL_MORE_FILES_2 " —à—Ç.)?"
 #elif LANG_EST
 	?define T_FILE "Fail"
-	?define T_TYPE "T¸¸p"
+	?define T_TYPE "T‚Ññ‚Ññp"
 	?define T_SIZE "Suurus"
 	?define T_NEW_FOLDER "Uus kataloog"
 	?define T_NEW_FILE "Uus fail"
-	?define T_DELETE_FILE "Kas sa tahad tıesti kustutada"
+	?define T_DELETE_FILE "Kas sa tahad t—óesti kustutada"
 	?define T_YES "Jah"
 	?define T_NO "Ei"
 	?define T_CANCEL "Cancel"
 	?define T_CREATE "Create"
 	?define T_RENAME "Rename"
-	?define FILE_EXISTS "The file with the same name exists"
-	?define FOLDER_EXISTS "A folder with the same name exists"
-	?define T_DEL_ERROR_1 "Viga. Kataloog ei ole t¸hi."
+	?define FS_ITEM_ALREADY_EXISTS "'An item with that name already exists' -E"
+	?define T_DEL_ERROR_1 "Viga. Kataloog ei ole t‚Ññhi."
 	?define WAIT_DELETING_FOLDER "Deleting folder. Please, wait..."
 	?define NOT_CREATE_FOLDER "Kataloogi ei saa luua."
 	?define NOT_CREATE_FILE "Faili ei saa luua."
@@ -91,8 +89,7 @@
 	?define T_CANCEL "Cancel"
 	?define T_CREATE "Create"
 	?define T_RENAME "Rename"
-	?define FILE_EXISTS "The file with the same name exists"
-	?define FOLDER_EXISTS "A folder with the same name exists"
+	?define FS_ITEM_ALREADY_EXISTS "'An item with that name already exists' -E"
 	?define T_DEL_ERROR_1 "Error. Folder isn't empty."
 	?define WAIT_DELETING_FOLDER "Deleting folder. Please, wait..."
 	?define NOT_CREATE_FOLDER "Folder can not be created."
@@ -111,8 +108,8 @@
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 enum { CREATE_FILE=1, CREATE_FOLDER, RENAME_ITEM }; //NewElement
 
-#define TITLE "Eolite File Manager v2.83"
-#define ABOUT_TITLE "Eolite v2.83"
+#define TITLE "Eolite File Manager v2.84"
+#define ABOUT_TITLE "Eolite v2.84"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -1058,7 +1055,7 @@ void NewElement(byte newf)
 				}
 				else
 				{
-					notify(FILE_EXISTS);
+					notify(FS_ITEM_ALREADY_EXISTS);
 				}
 				break;
 			case CREATE_FOLDER:
@@ -1073,7 +1070,7 @@ void NewElement(byte newf)
 				}
 				else
 				{
-					notify(FOLDER_EXISTS);
+					notify(FS_ITEM_ALREADY_EXISTS);
 				}
 				break;
 			case RENAME_ITEM:
@@ -1106,7 +1103,7 @@ void NewElement(byte newf)
 				}
 				else
 				{
-					notify(FILE_EXISTS);
+					notify(FS_ITEM_ALREADY_EXISTS);
 				}
 		}
 		new_element_active = 0;

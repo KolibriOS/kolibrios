@@ -170,8 +170,7 @@ void Write_Error(int error_number)
 	if (files.current>=0) Line_ReDraw(0xFF0000, files.current);
 	pause(5);
 	sprintf(#error_message,"\"%s\n%s\" -%s","Eolite",get_error(error_number),"tE");
-	notify(#error_message);
-	
+	notify(#error_message);	
 }
 
 

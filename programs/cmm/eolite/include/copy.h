@@ -48,7 +48,7 @@ void Copy(dword pcth, char cut)
 
 void Paste() {
 	copy_stak = malloc(20000);
-	CreateThread(#PasteThread,copy_stak+20000);
+	CreateThread(#PasteThread,copy_stak+20000-4);
 }
 
 
