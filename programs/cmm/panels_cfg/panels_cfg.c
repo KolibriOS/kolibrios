@@ -88,7 +88,8 @@ struct taskbar_cfg {
 
 enum {
 	TASKBAR,
-	DOCKY
+	DOCKY,
+	ALL
 };
 
 
@@ -162,39 +163,46 @@ void main()
 				taskbar_frame.font_color = docky_frame.font_color = sc.work_text;
 				taskbar_frame.font_backgr_color = docky_frame.font_backgr_color = sc.work;
 				taskbar_frame.ext_col = docky_frame.ext_col = sc.work_graph;
-				DrawWindowContent();
+				DrawWindowContent(ALL);
 	}
 }
 
 
-void DrawWindowContent() 
+void DrawWindowContent(byte panel_type)
 {
 	word win_center_x;
 
-  frame_draw stdcall (#taskbar_frame);
-	DefineButton(22, taskbar_frame.start_y + 12, panels_img.w-1, 27-1, 100 + BT_HIDE, 0);
-	_PutImage(22, taskbar_frame.start_y + 12,  37, 27, taskbar_cfg.Attachment * 37 * 27 * 3 + panels_img.data);
-	WriteText(68, taskbar_frame.start_y + 20, 0x80, sc.work_text, CHANGE_POS);
-	PanelCfg_CheckBox(22, taskbar_frame.start_y +  48, 105, SOFTEN_UP, taskbar_cfg.SoftenUp);
-	PanelCfg_CheckBox(22, taskbar_frame.start_y +  68, 106, SOFTEN_DOWN, taskbar_cfg.SoftenDown);
-	PanelCfg_CheckBox(22, taskbar_frame.start_y +  88, 107, MIN_LEFT_BUTTON, taskbar_cfg.MinLeftButton);
-	PanelCfg_CheckBox(22, taskbar_frame.start_y + 108, 108, MIN_RIGHT_BUTTON, taskbar_cfg.MinRightButton);
-	win_center_x = Form.cwidth / 2;
-	PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y +  48, 111, CLOCK, taskbar_cfg.Clock);
-	PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y +  68, 112, CPU_USAGE, taskbar_cfg.CpuUsage);
-	PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y +  88, 113, CHANGE_LANG, taskbar_cfg.ChangeLang);
-	PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y + 108, 114, MENU_BUTTON, taskbar_cfg.MenuButton);	
-	PanelCfg_MoreLessBox(22, taskbar_frame.start_y + 131, 120, 121, taskbar_cfg.PanelHeight, PANEL_HEIGHT);
-	PanelCfg_MoreLessBox(win_center_x, taskbar_frame.start_y + 131, 122, 123, taskbar_cfg.SoftenHeight, SOFTEN_HEIGHT);
-	PanelCfg_MoreLessBox(22, taskbar_frame.start_y + 159, 124, 125, taskbar_cfg.ButtonOffset, BUTTON_OFFSET);
-
-  frame_draw stdcall (#docky_frame);
-	DefineButton(22, docky_frame.start_y + 12, panels_img.w-1, 27-1, 200 + BT_HIDE, 0);
-	_PutImage(22, docky_frame.start_y + 12,  37, 27, docky_cfg.location + 1 * 37 * 27 * 3 + panels_img.data);
-	WriteText(68, docky_frame.start_y + 20, 0x80, sc.work_text, CHANGE_POS);
-
-	PanelCfg_CheckBox(22, docky_frame.start_y + 48, 201, FSIZE,  docky_cfg.fsize);
-	PanelCfg_CheckBox(win_center_x, docky_frame.start_y + 48, 202, ASHOW, docky_cfg.ashow);
+	if (panel_type==ALL)
+	{
+		frame_draw stdcall (#taskbar_frame);
+		frame_draw stdcall (#docky_frame);
+	}
+	if (panel_type==ALL) || (panel_type==TASKBAR)
+	{
+		DefineButton(22, taskbar_frame.start_y + 12, panels_img.w-1, 27-1, 100 + BT_HIDE, 0);
+		_PutImage(22, taskbar_frame.start_y + 12,  37, 27, taskbar_cfg.Attachment * 37 * 27 * 3 + panels_img.data);
+		WriteText(68, taskbar_frame.start_y + 20, 0x80, sc.work_text, CHANGE_POS);
+		PanelCfg_CheckBox(22, taskbar_frame.start_y +  48, 105, SOFTEN_UP, taskbar_cfg.SoftenUp);
+		PanelCfg_CheckBox(22, taskbar_frame.start_y +  68, 106, SOFTEN_DOWN, taskbar_cfg.SoftenDown);
+		PanelCfg_CheckBox(22, taskbar_frame.start_y +  88, 107, MIN_LEFT_BUTTON, taskbar_cfg.MinLeftButton);
+		PanelCfg_CheckBox(22, taskbar_frame.start_y + 108, 108, MIN_RIGHT_BUTTON, taskbar_cfg.MinRightButton);
+		win_center_x = Form.cwidth / 2;
+		PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y +  48, 111, CLOCK, taskbar_cfg.Clock);
+		PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y +  68, 112, CPU_USAGE, taskbar_cfg.CpuUsage);
+		PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y +  88, 113, CHANGE_LANG, taskbar_cfg.ChangeLang);
+		PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y + 108, 114, MENU_BUTTON, taskbar_cfg.MenuButton);	
+		PanelCfg_MoreLessBox(22, taskbar_frame.start_y + 131, 120, 121, taskbar_cfg.PanelHeight, PANEL_HEIGHT);
+		PanelCfg_MoreLessBox(win_center_x, taskbar_frame.start_y + 131, 122, 123, taskbar_cfg.SoftenHeight, SOFTEN_HEIGHT);
+		PanelCfg_MoreLessBox(22, taskbar_frame.start_y + 159, 124, 125, taskbar_cfg.ButtonOffset, BUTTON_OFFSET);
+	}
+	if (panel_type==ALL) || (panel_type==DOCKY)
+	{
+		DefineButton(22, docky_frame.start_y + 12, panels_img.w-1, 27-1, 200 + BT_HIDE, 0);
+		_PutImage(22, docky_frame.start_y + 12,  37, 27, docky_cfg.location + 1 * 37 * 27 * 3 + panels_img.data);
+		WriteText(68, docky_frame.start_y + 20, 0x80, sc.work_text, CHANGE_POS);
+		PanelCfg_CheckBox(22, docky_frame.start_y + 48, 201, FSIZE,  docky_cfg.fsize);
+		PanelCfg_CheckBox(win_center_x, docky_frame.start_y + 48, 202, ASHOW, docky_cfg.ashow);
+	}
 }
 
 void LoadCfg()
