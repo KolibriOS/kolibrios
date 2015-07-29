@@ -13,7 +13,6 @@
 //library
 dword libio = #alibio;
 char alibio[21] = "/sys/lib/libio.obj\0"; //"libio.obj\0";
-?define LIB_IO_LOAD_ERR "Error while loading library /rd/1/lib/libio.obj"
 
 dword libio_init = #alibio_init;
 dword file_size  = #afile_size;

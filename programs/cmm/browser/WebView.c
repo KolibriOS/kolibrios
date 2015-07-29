@@ -124,10 +124,10 @@ void main()
 	
 	mem_Init();
 	CursorPointer.Load(#CursorFile);
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(BOX_LIB_LOAD_ERR);
-	if (load_dll2(libio, #libio_init,1)!=0) notify(LIB_IO_LOAD_ERR);
-	if (load_dll2(libimg, #libimg_init,1)!=0) notify(LIB_IMG_LOAD_ERR);
-	if (load_dll2(libHTTP, #http_lib_init,1)!=0) notify(LIB_HTTP_LOAD_ERR);
+	load_dll(boxlib, #box_lib_init,0);
+	load_dll(libio, #libio_init,1);
+	load_dll(libimg, #libimg_init,1);
+	load_dll(libHTTP, #http_lib_init,1);
 	Libimg_LoadImage(#skin, abspath("wv_skin.png"));
 	SetSkinColors();
 	

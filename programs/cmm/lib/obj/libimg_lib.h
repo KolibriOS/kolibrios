@@ -23,8 +23,7 @@
 //library
 dword libimg = #alibimg;
 char alibimg[21] = "/sys/lib/libimg.obj\0";
-?define LIB_IMG_LOAD_ERR "Error while loading library /rd/1/lib/libimg.obj"
-
+	
 dword libimg_init = #alibimg_init;
 dword img_is_img  = #aimg_is_img;
 dword img_to_rgb2 = #aimg_to_rgb2;

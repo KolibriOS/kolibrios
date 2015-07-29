@@ -1,11 +1,15 @@
 #ifndef INCLUDE_DLL_H
 #define INCLUDE_DLL_H
 
+#ifndef INCLUDE_KOLIBRI_H
+#include "../lib/file_system.h"
+#endif
+
+
 char a_libdir[43]  = "/sys/lib/\0";
 
 :inline void error_init(dword text)
 {
-	dword l,ll;
 	dword TEXT_ERROR = malloc(1024);
 	#ifdef LANG_RUS
 		strcpy(TEXT_ERROR,"'Ошибка при загрузке библиотеки `");
@@ -14,13 +18,10 @@ char a_libdir[43]  = "/sys/lib/\0";
 	#else
 		strcpy(TEXT_ERROR,"'Error while loading library `");
 	#endif
-	ll = strlen(TEXT_ERROR);
-	strcpy(TEXT_ERROR+ll,text);
-	l = strlen(text);
-	strncpy(TEXT_ERROR+ll+l,"`' -E",4);
+	strcat(TEXT_ERROR,text);
+	strcat(TEXT_ERROR,"`' -E");
 	notify(TEXT_ERROR);
 	free(TEXT_ERROR);
-	ExitProcess();
 }
 
 // stdcall with 1 parameter
@@ -236,7 +237,11 @@ int load_dll2(dword dllname, import_table, byte need_init)
         return 0;
 @exit01:
         return -1;
-		//error_init(dllname);
+}
+
+void load_dll(dword dllname, import_table, byte need_init)
+{
+	if (load_dll2(dllname, import_table, need_init)!=0) error_init(dllname);
 }
 
 

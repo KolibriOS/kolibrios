@@ -185,8 +185,8 @@ void main()
 	rand_n = random(40);
 	gestures.get();
 	mem_Init();
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(BOX_LIB_LOAD_ERR);
-    if (load_dll2(libini, #lib_init,1)!=0) notify(LIB_INI_LOAD_ERR);
+	load_dll(boxlib, #box_lib_init,0);
+    load_dll(libini, #lib_init,1);
 	eolite_ini_path = abspath("Eolite.ini"); 
 	LoadIniSettings();
 	GetSystemDiscs();

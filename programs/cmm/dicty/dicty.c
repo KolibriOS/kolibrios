@@ -35,7 +35,7 @@ void main()
 {   
 	int id, key;
    	mem_Init();
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(BOX_LIB_LOAD_ERR);
+	load_dll(boxlib, #box_lib_init,0);
 
 	dict_folder = abspath(DICT_DIRECROTY);
 	OpenDictionary(0);

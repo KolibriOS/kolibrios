@@ -49,9 +49,9 @@ void main()
 	char notify_message[4296];
 	
 	mem_Init();
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(BOX_LIB_LOAD_ERR);
-	if (load_dll2(libio, #libio_init,1)!=0) notify(LIB_IO_LOAD_ERR);
-	if (load_dll2(libHTTP, #http_lib_init,1)!=0) notify("Error: library doesn't exists - http");	
+	load_dll(boxlib, #box_lib_init,0);
+	load_dll(libio, #libio_init,1);
+	load_dll(libHTTP, #http_lib_init,1);	
 	if (!URL) strcpy(#URL, "http://builds.kolibrios.org/eng/latest-iso.7z");
 	address_box.size = address_box.pos = strlen(#URL);
 

@@ -12,7 +12,6 @@
 
 dword libHTTP = #alibHTTP;
 char alibHTTP[23] = "/sys/lib/http.obj\0";
-?define LIB_HTTP_LOAD_ERR "Error while loading library /rd/1/lib/http.obj"
 
 dword http_lib_init          = #aLib_init;
 dword http_get               = #aHTTPget;

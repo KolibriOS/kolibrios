@@ -78,10 +78,10 @@ void main()
 
 	mem_Init();
 	SetEventMask(0x27);
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("'Error: library doesn't exists - box_lib' -E");
-	if (load_dll2(libio, #libio_init,1)!=0) notify("'Error: library doesn't exists - libio' -E");
-	if (load_dll2(libimg, #libimg_init,1)!=0) notify("'Error: library doesn't exists - libimg' -E");
-	if (load_dll2(libini, #lib_init,1)!=0) notify("'Error: library doesn't exists - libini' -E");
+	load_dll(boxlib, #box_lib_init,0);
+	load_dll(libio, #libio_init,1)!=0);
+	load_dll(libimg, #libimg_init,1);
+	load_dll(libini, #lib_init,1);
 
 	id = abspath("pixie.ini");
 	strcpy(#pixie_ini_path, id);

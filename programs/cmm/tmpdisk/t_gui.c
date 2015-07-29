@@ -58,11 +58,11 @@ edit_box edit_disk_size= {50,0,5,0xffffff,0x94AECE,0x000000,0xffffff,0,4,#new_di
 
 void Main_Window()
 {
-	word id, key, err;
+	word id, key;
 	int i, x;
 	
    	mem_Init();
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(BOX_LIB_LOAD_ERR);
+	load_dll(boxlib, #box_lib_init,0);
 	GetSizeDisk();
 	edit_disk_size.left = strlen(INTRO_TEXT_4)*6 + 10;
 	SetEventMask(0x27);

@@ -11,7 +11,6 @@
 
 dword libini = #alibini;
 char alibini[] = "/sys/lib/libini.obj";
-?define LIB_INI_LOAD_ERR "Error while loading library /rd/1/lib/libini.obj"
 
 dword lib_init = #alib_init;
 dword ini_enum_sections = #aini_enum_sections;

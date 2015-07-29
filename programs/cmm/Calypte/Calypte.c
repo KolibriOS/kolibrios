@@ -24,9 +24,6 @@
 	?define MENU1_SUBMENU2 "Закрыть"
 	?define MENU1_SUBMENU3 "Свойства"
 	?define MENU1_SUBMENU4 "Выход"
-	?define ERROR_LOAD_BOX_LIB "Ошибка при загрузке библиотеки - box_lib.obj"
-	?define ERROR_LOAD_LIBIO "Ошибка при загрузке библиотеки - libio.obj"
-	?define ERROR_LOAD_PROC_LIB "Ошибка при загрузке библиотеки - proc_lib.obj"
 #else
 	?define T_FILE "File"
 	?define T_TYPE "Type"
@@ -36,9 +33,6 @@
 	?define MENU1_SUBMENU2 "Close"
 	?define MENU1_SUBMENU3 "Properties"
 	?define MENU1_SUBMENU4 "Exit"
-	?define ERROR_LOAD_BOX_LIB "Error while loading library - box_lib.obj"
-	?define ERROR_LOAD_LIBIO "Error while loading library - libio.obj"
-	?define ERROR_LOAD_PROC_LIB "Error while loading library - proc_lib.obj"
 #endif
 
 #ifdef LANG_RUS
@@ -135,9 +129,9 @@ void main()
 	menu_text_area1.end = 0;
 	
 	mem_Init();
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(ERROR_LOAD_BOX_LIB);
-	if (load_dll2(libio, #libio_init,1)!=0) notify(ERROR_LOAD_LIBIO);
-	if (load_dll2(Proc_lib, #OpenDialog_init,0)!=0) notify(ERROR_LOAD_PROC_LIB);
+	load_dll(boxlib, #box_lib_init,0);
+	load_dll(libio, #libio_init,1);
+	load_dll(Proc_lib, #OpenDialog_init,0);
 	OpenDialog_init stdcall (#o_dialog);
 	SetEventMask(0x27);
 	loop()

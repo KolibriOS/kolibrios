@@ -102,12 +102,12 @@ char version[]=" WebView 0.1";
 void main() {
 	mem_Init();
 	CursorPointer.Load(#CursorFile);
-	if (load_dll2(boxlib, #box_lib_init,0)!=0)	        notify(BOX_LIB_LOAD_ERR);
-	if (load_dll2(network_lib, #network_lib_init,0)!=0)	notify("Error while loading library - network.obj");
-	if (load_dll2(netcode_lib, #base64_encode,0)!=0)	notify("Error while loading library - netcode.obj");
-	if (load_dll2(iconv_lib, #iconv_open,0)!=0)	      { notify("Error while loading library - iconv.obj"); use_iconv=2; }
-	if (load_dll2(libio, #libio_init,1)!=0)             notify(LIB_IO_LOAD_ERR);
-	if (load_dll2(libimg, #libimg_init,1)!=0)           notify(LIB_IMG_LOAD_ERR);
+	load_dll(boxlib, #box_lib_init,0);
+	load_dll(network_lib, #network_lib_init,0);
+	load_dll(netcode_lib, #base64_encode,0);
+	load_dll(libio, #libio_init,1);
+	load_dll(libimg, #libimg_init,1);
+	if (load_dll2(iconv_lib, #iconv_open,0)!=0)	{ notify("Error while loading library - iconv.obj"); use_iconv=2; }
 	OpenMailDat();
 	SetEventMask(0x27);
 	LoginBoxLoop();
