@@ -136,9 +136,9 @@ void OpenMailDat() {
 	}
 	else
 	{
-		strcpy(#pass_b64, #read_data+strchr(#read_data, '\n')+1);
+		strcpy(#pass_b64, strchr(#read_data, '\n'));
 		base64_decode stdcall (#pass_b64, #pass_text, strlen(#pass_b64));
-		read_data[strchr(#read_data, '\n')-1] = NULL;
+		ESBYTE[strchr(#read_data, '\n')] = NULL;
 		strcpy(#email_text, #read_data);
 	}
 	pass_box.size = pass_box.pos = strlen(#pass_text);

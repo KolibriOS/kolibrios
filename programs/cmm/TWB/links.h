@@ -113,10 +113,10 @@ void LinksArray::GetAbsoluteURL(dword in_URL){
 	IF (!strcmpn(in_URL,"./", 2)) in_URL+=2;
 	strcpy(#newurl, BrowserHistory.CurrentUrl());
 
-	if (ESBYTE[in_URL] == '/')
+	if (ESBYTE[in_URL] == '/') //remove everything after site domain name
 	{
 		i = strchr(#newurl+8, '/');
-		if (i>0) newurl[i+7]=0;
+		if (i) ESBYTE[i]=0;
 		in_URL+=1;
 	}
 		

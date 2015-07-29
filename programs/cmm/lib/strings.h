@@ -400,7 +400,7 @@ inline fastcall void chrcat(ESI, BL)
 }
 
 
-/*inline fastcall signed int strchr( ESI,BL)
+inline fastcall signed int old_strchr( ESI,BL)
 {
     int jj=0;
     do{
@@ -409,7 +409,7 @@ inline fastcall void chrcat(ESI, BL)
         IF(AL==BL) return jj;
     } while(AL!=0);
     return 0;
-}*/
+}
 
 inline dword strchr(dword shb;char s)
 {
@@ -919,7 +919,6 @@ inline void debugi(dword d_int)
 }
 
 
-//#define strncpy strcpyn
 #define strnmov strmovn
 #define stricmp strcmpi
 #define strcmpn strncmp

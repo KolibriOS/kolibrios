@@ -209,13 +209,13 @@ void DrawLoginScreen()
 
 void GetSettings()
 {
-	int at_pos = strchr(#email_text,'@');
-	strlcpy(#login, #email_text, at_pos-1);
-
+	strcpy(#login, #email_text);
+	ESBYTE[strchr(#login,'@')] = NULL;
+	
 	if (checked[CUSTOM])
 	{
 		strcpy(#POP_server_path, "pop.");
-		strcat(#POP_server_path, #email_text+at_pos);
+		strcat(#POP_server_path, strchr(#email_text,'@')+1);
 		POP_server_port = DEFAULT_POP_PORT;
 	}
 	if (checked[MANUAL])
