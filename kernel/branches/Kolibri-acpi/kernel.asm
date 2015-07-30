@@ -283,6 +283,7 @@ B32:
         bts     [cpu_caps-OS_BASE], CAPS_TSC    ;force use rdtsc
 
         call    check_acpi
+        call    init_hpet
         call    init_BIOS32
 ; MEMORY MODEL
         call    mem_test
@@ -696,6 +697,17 @@ setvideomode:
         dec     eax
 @@:
         mov     [clipboard_main_list], eax
+
+        mov eax, [acpi_hpet_base]
+        DEBUGF  1, "K : ACPI HPET base %x\n", eax
+        mov eax, [hpet_base]
+        DEBUGF  1, "K : HPET base %x\n", eax
+        mov eax, [hpet_period]
+        DEBUGF  1, "K : HPET period %d\n", eax
+
+        mov     eax, [hpet_base]
+        stdcall map_io_mem, [hpet_base], 1024, PG_GLOBAL+PAT_UC+PG_SWR
+        mov     [hpet_base], eax
 
 ; SET UP OS TASK
 

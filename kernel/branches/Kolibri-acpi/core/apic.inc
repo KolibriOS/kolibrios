@@ -439,7 +439,27 @@ pci_irq_fixup:
         pop     ebp
         ret
 
+align 4
+get_clock_ns:
+        push    ebx
+        pushfd
+        cli
 
+        mov     ebx, [hpet_base]
+@@:
+        mov     edx, [ebx+0xF4]
+        mov     eax, [ebx+0xF0]
+        mov     ecx, [ebx+0xF4]
+        cmp     ecx, edx
+        jnz     @B
 
+        mov     ecx, [hpet_period]
+        mov     ebx, edx
+        imul    ebx, ecx
+        mul     ecx
+        add     edx, ebx
 
+        popfd
+        pop     ebx
+        ret
 

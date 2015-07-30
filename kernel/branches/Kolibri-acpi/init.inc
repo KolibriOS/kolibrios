@@ -435,6 +435,9 @@ acpi_dsdt_base    rd 1
 acpi_dsdt_size    rd 1
 acpi_madt_base    rd 1
 acpi_ioapic_base  rd 1
+acpi_hpet_base    rd 1
+hpet_base         rd 1
+hpet_period       rd 1
 
 cpu_count         rd 1
 smpt              rd 16
@@ -443,6 +446,8 @@ endg
 ACPI_HI_RSDP_WINDOW_START  equ 0x000E0000
 ACPI_HI_RSDP_WINDOW_END    equ 0x00100000
 ACPI_RSDP_CHECKSUM_LENGTH  equ 20
+
+ACPI_HPET_SIGN             equ 0x54455048
 ACPI_MADT_SIGN             equ 0x43495041
 ACPI_FADT_SIGN             equ 0x50434146
 
@@ -516,7 +521,7 @@ check_acpi:
         jz      .done
 
         mov     ecx, [eax+16]
-        mov     edx, 0x50434146
+        mov     edx, ACPI_FADT_SIGN
         mov     [acpi_rsdt_base-OS_BASE], ecx
         call    rsdt_find
         mov     [acpi_fadt_base-OS_BASE], eax
@@ -527,7 +532,16 @@ check_acpi:
         mov     [acpi_dsdt_base-OS_BASE], eax
         mov     eax, [eax+4]
         mov     [acpi_dsdt_size-OS_BASE], eax
+@@:
+        mov     edx, ACPI_HPET_SIGN
+        mov     ecx, [acpi_rsdt_base-OS_BASE]
+        call    rsdt_find
+        test    eax, eax
+        jz      @F
 
+        mov     [acpi_hpet_base-OS_BASE], eax
+        mov     eax, [eax+44]
+        mov     [hpet_base-OS_BASE], eax
 @@:
         mov     edx, ACPI_MADT_SIGN
         mov     ecx, [acpi_rsdt_base-OS_BASE]
@@ -583,3 +597,33 @@ check_acpi:
         mov     eax, [edx+4]
         mov     [acpi_ioapic_base-OS_BASE], eax
         jmp     .next
+
+HPET_PERIOD             equ 0x004
+HPET_CFG_ENABLE         equ     1
+HPET_CFG                equ 0x010
+
+align 4
+init_hpet:
+        mov     ebx, [hpet_base-OS_BASE]
+
+        mov     eax, [ebx+HPET_PERIOD]
+        mov     edx, 0x431BDE83
+        mul     edx
+        shr     edx, 18
+        mov     [hpet_period-OS_BASE], edx
+
+        mov     eax, [ebx+HPET_CFG]
+        and     eax, not HPET_CFG_ENABLE
+        mov     [ebx+HPET_CFG], eax     ;stop main counter
+
+        xor     ecx, ecx
+        mov     [ebx+0xF0], ecx         ;reset counter
+        mov     [ebx+0xF4], ecx
+
+        or      eax, HPET_CFG_ENABLE
+        mov     [ebx+HPET_CFG], eax     ;and start again
+        ret
+
+
+
+

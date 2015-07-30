@@ -75,6 +75,7 @@ __exports:
           unmap_pages,           'UnmapPages',         \      ; eax, ecx
           sys_msg_board_str,     'SysMsgBoardStr',     \
           sys_msg_board,         'SysMsgBoard',        \
+          get_clock_ns,          'GetClockNs',         \      ;retval edx:eax 64-bit value
           get_timer_ticks,       'GetTimerTicks',      \
           get_stack_base,        'GetStackBase',       \
           delay_hs,              'Delay',              \      ; ebx
