@@ -93,7 +93,7 @@ void main()
 	dword id, key;
 
 	mem_Init();
-	load_dll(boxlib, #box_lib_init,0);
+	load_dll(libini, #lib_init,1);
 	load_dll(boxlib, #box_lib_init,0);
 
 	LoadCfg();
