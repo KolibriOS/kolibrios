@@ -107,7 +107,7 @@ void main() {
 					mouse_cfg.pointer_speed++;
 					SetMouseSpeed(mouse_cfg.pointer_speed);
 				}
-				if (id==121) && (mouse_cfg.pointer_speed>0)
+				if (id==121) && (mouse_cfg.pointer_speed>1)
 				{
 					mouse_cfg.pointer_speed--;
 					SetMouseSpeed(mouse_cfg.pointer_speed);

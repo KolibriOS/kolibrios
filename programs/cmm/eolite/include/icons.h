@@ -44,7 +44,7 @@ void Put_icon(dword extension, xx, yy, fairing_color, icon_n)
 	PutPaletteImage(icon_n*16*15+#ficons,16,15,xx,yy,8,#ficons_pal);
 	if (fairing_color!=0xFFFfff) IconFairing(icon_n, xx, yy, fairing_color);
 	if (use_big_fonts) font_half_width=4; else font_half_width=3;
-	if (icon_n<>17) && (strlen(extension)<9) WriteText(-strlen(extension)*font_half_width+Form.cwidth-120,yy+4,font_type,0,extension);
+	if (icon_n!=17) && (strlen(extension)<9) WriteText(-strlen(extension)*font_half_width+Form.cwidth-120,yy+4,font_type,0,extension);
 }
 
 

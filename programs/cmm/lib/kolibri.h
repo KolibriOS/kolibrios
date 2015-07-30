@@ -826,7 +826,6 @@ inline fastcall dword GetStartTime()
 	$int 0x40
 }
 
-
 :dword X_EventRedrawWindow,Y_EventRedrawWindow;
 :void _EventRedrawWindow()
 {

@@ -291,11 +291,6 @@ enum
 	return error;
 }
 
-:dword notify(dword notify_param)
-{
-	return RunProgram("@notify", notify_param);
-}
-
 :dword abspath(dword relative_path) //GetAbsolutePathFromRelative()
 {
 	char absolute_path[4096];
@@ -324,7 +319,10 @@ enum
   sprintf(#ConvertSize_size_prefix,"%d %s",bytes,#size_nm);
   return #ConvertSize_size_prefix;
 }
-
+:dword notify(dword notify_param)
+{
+	return RunProgram("@notify", notify_param);
+}
 :dword ConvertSizeToKb(unsigned int bytes)
 {
 	unsigned char size[25]=0;

@@ -7,11 +7,9 @@
 
 //libraries
 #define MEMSIZE 0xD0000
-#include "..\lib\kolibri.h"
 #include "..\lib\clipboard.h"
 #include "..\lib\strings.h"
 #include "..\lib\mem.h"
-#include "..\lib\dll.h"
 #include "..\lib\file_system.h"
 #include "..\lib\gui.h"
 #include "..\lib\list_box.h"

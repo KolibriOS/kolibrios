@@ -10,6 +10,7 @@
 #include "../lib/dll.h"
 #endif
 
+dword NOT_INIT_LIBHTTP = true;
 dword libHTTP = #alibHTTP;
 char alibHTTP[23] = "/sys/lib/http.obj\0";
 

@@ -33,15 +33,16 @@ void Sort_by_Type(int a, b)   // для первого вызова: a = 0, b = <элементов в мас
 		filename2 = file_mas[b]*304 + buf+72;
 
 		n=strlen(filename1)-1;
-		WHILE (n>0) && (ESBYTE[filename1+n]<>'.') n--;
+		WHILE (n>0) && (ESBYTE[filename1+n]!='.') n--;
 		if (n) ext1 = filename1+n+1; else ext1=0;
-		n=strlen(filename2)-1;
-		WHILE (n>0) && (ESBYTE[filename2+n]<>'.') n--;
+		n=strlen(filename2);
+		n--;
+		WHILE (n>0) && (ESBYTE[filename2+n]!='.') n--;
 		if (n) ext2 = filename2+n+1; else ext2=0;
 
 		n=strcmp(ext1, ext2);
 		if (n<0) { file_mas[isn] >< file_mas[j];   isn++;} 
-		if (n==0) && (strcmp(filename1, filename2)<=0) { file_mas[isn] >< file_mas[j];   isn++;}
+		if (!n) && (strcmp(filename1, filename2)<=0) { file_mas[isn] >< file_mas[j];   isn++;}
 	}
 	Sort_by_Type(a, isn-2);
 	Sort_by_Type(isn, b);

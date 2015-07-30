@@ -1,25 +1,24 @@
 #ifndef INCLUDE_DLL_H
 #define INCLUDE_DLL_H
 
-#ifndef INCLUDE_KOLIBRI_H
+#ifndef INCLUDE_FILESYSTEM_H
 #include "../lib/file_system.h"
 #endif
 
+#ifdef LANG_RUS
+	#define _TEXT_ERROR_ADD "'Ошибка при загрузке библиотеки"
+#elif LANG_EST
+	#define _TEXT_ERROR_ADD "'Viga teegi laadimisel"
+#else
+	#define _TEXT_ERROR_ADD "'Error while loading library"
+#endif
 
 char a_libdir[43]  = "/sys/lib/\0";
 
 :inline void error_init(dword text)
 {
 	dword TEXT_ERROR = malloc(1024);
-	#ifdef LANG_RUS
-		strcpy(TEXT_ERROR,"'Ошибка при загрузке библиотеки `");
-	#elif LANG_EST
-		strcpy(TEXT_ERROR,"'Viga teegi laadimisel `");
-	#else
-		strcpy(TEXT_ERROR,"'Error while loading library `");
-	#endif
-	strcat(TEXT_ERROR,text);
-	strcat(TEXT_ERROR,"`' -E");
+	sprintf("%s `%s`' -E",_TEXT_ERROR_ADD,text);
 	notify(TEXT_ERROR);
 	free(TEXT_ERROR);
 }
@@ -118,9 +117,9 @@ asm {
         push    ebp
         mov     ebp, esp
         pushad
-        mov     eax, #mem_Alloc
-        mov     ebx, #mem_Free;
-        mov     ecx, #mem_ReAlloc;
+        mov     eax, #malloc
+        mov     ebx, #free;
+        mov     ecx, #realloc;
         mov     edx, #dll_Load;
         call    SSDWORD[EBP+8]
         popad
@@ -239,9 +238,14 @@ int load_dll2(dword dllname, import_table, byte need_init)
         return -1;
 }
 
-void load_dll(dword dllname, import_table, byte need_init)
+byte load_dll(dword dllname, import_table, byte need_init)
 {
-	if (load_dll2(dllname, import_table, need_init)!=0) error_init(dllname);
+	if (load_dll2(dllname, import_table, need_init))
+	{
+		error_init(dllname);
+		return false;
+	}
+	return true;
 }
 
 

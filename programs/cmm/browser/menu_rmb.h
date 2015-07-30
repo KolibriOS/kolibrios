@@ -35,7 +35,8 @@ void menu_rmb()
 	menu.SetSizes(2,2,177,menu.count*19,0,19);
 	SetEventMask(100111b); 
 
-	loop() switch(WaitEvent())
+	_BEGIN_APPLICATION_MENU:
+	switch(WaitEvent())
 	{
 	case evMouse:
 				GetProcessInfo(#MenuForm, SelfInfo);
@@ -43,7 +44,7 @@ void menu_rmb()
 
 				mm.get();
 				if (menu.ProcessMouse(mm.x, mm.y)) DrawMenuList();
-				if (mm.lkm) || (mm.pkm) { action_buf = ITEMS_LIST[menu.current*2+1]; ExitProcess(); }
+				if (mm.lkm)&&(mm.up) { action_buf = ITEMS_LIST[menu.current*2+1]; ExitProcess(); }
 				break;
 				
 		case evKey:
@@ -62,6 +63,7 @@ void menu_rmb()
 				DrawPopup(0,0,menu.w,menu.h+3,0, col_bg,border_color);
 				DrawMenuList();				
 	}
+	goto _BEGIN_APPLICATION_MENU;
 }
 
 void DrawMenuList()

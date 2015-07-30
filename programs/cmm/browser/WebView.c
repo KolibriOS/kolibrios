@@ -9,13 +9,11 @@
 
 //libraries
 #define MEMSIZE 0x100000
-#include "..\lib\kolibri.h"
 #include "..\lib\strings.h"
 #include "..\lib\gui.h"
 #include "..\lib\encoding.h"
 #include "..\lib\file_system.h"
 #include "..\lib\mem.h"
-#include "..\lib\dll.h"
 #include "..\lib\draw_buf.h"
 #include "..\lib\list_box.h"
 #include "..\lib\cursor.h"
@@ -46,6 +44,8 @@ char homepage[] = FROM "html\\homepage.htm";
 	char page_not_found[] = FROM "html\page_not_found_en.htm";
 	char accept_language[]= "Accept-Language: en\n";	
 #endif
+
+
 
 proc_info Form;
 #define WIN_W 799
@@ -141,8 +141,7 @@ void main()
 	CreateDir("/tmp0/1/downloads");
 
 	SetEventMask(0xa7);
-	loop()
-	{
+	BEGIN_LOOP_APPLICATION:
 		WaitEventTimeout(2);
 		switch(EAX & 0xFF)
 		{
@@ -156,13 +155,8 @@ void main()
 				//Menu
 				if (m.y>WB1.list.y) && (m.y<Form.height) && (bufsize)
 				{
-					if (m.pkm)
+					if (m.pkm) && (m.up)
 					{
-						show_menu = 1;
-					}
-					if (!m.pkm) && (show_menu)
-					{
-						show_menu = 0;
 						SwitchToAnotherThread();
 						CreateThread(#menu_rmb,#stak+4092);
 						break; 
@@ -190,7 +184,7 @@ void main()
 					btn=WB1.list.first;
 					WB1.list.first = m.y -half_scroll_size -WB1.list.y * WB1.list.count / WB1.list.h;
 					if (WB1.list.visible+WB1.list.first>WB1.list.count) WB1.list.first=WB1.list.count-WB1.list.visible;
-					if (btn<>WB1.list.first) WB1.Parse();
+					if (btn!=WB1.list.first) WB1.Parse();
 				}
 				break;
 			case evButton:
@@ -203,7 +197,7 @@ void main()
 				if (address_box.flags & 0b10)  
 				{
 					if (key==ASCII_KEY_ENTER) Scan(key); else
-					if (key<>0x0d) && (key<>183) && (key<>184) {EAX=key<<8; edit_box_key stdcall(#address_box);}
+					if (key!=0x0d) && (key!=183) && (key!=184) {EAX=key<<8; edit_box_key stdcall(#address_box);}
 				}
 				else Scan(key);
 				break;
@@ -282,7 +276,7 @@ void main()
 					}
 				}
 		}
-	}
+	goto BEGIN_LOOP_APPLICATION;
 }
 
 void SetElementSizes()
@@ -382,7 +376,7 @@ void Scan(int id)
 
 		case 006: //download manager
 			if (!downloader_opened) {
-				strcpy(#DL_URL, "http://");
+				strncpy(#DL_URL, "http://",7);
 				CreateThread(#Downloader,#downloader_stak+4092);
 			}
 			return;
@@ -402,15 +396,12 @@ void Scan(int id)
 			WB1.Parse();
 			break;
 		case 053: //F4
-			if (strncmp(#URL,"http:",5)==0) 
+			if (!strncmp(#URL,"http:",5)) 
 			{
 				WriteFile(bufsize, bufpointer, "/tmp0/1/WebView_tmp.htm");
-				if (EAX==0) RunProgram("/rd/1/tinypad", "/tmp0/1/WebView_tmp.htm");
+				if (!EAX) RunProgram("/rd/1/tinypad", "/tmp0/1/WebView_tmp.htm");
 			}
-			else
-			{
-				RunProgram("/rd/1/tinypad", #URL);
-			}
+			else RunProgram("/rd/1/tinypad", #URL);
 			return;
 		case 054: //F5
 			IF(address_box.flags & 0b10) return;
@@ -431,18 +422,14 @@ void Scan(int id)
 		case GOTOURL:
 		case 0x0D: //enter
 			if (!editURL[0]) return;
-			if ((strncmp(#editURL,"http:",5)!=0) && (editURL[0]!='/') && ((strncmp(#editURL,"WebView:",8)!=0))
-			{
-				strcpy(#URL,"http://");
-			} 
+			if (strncmp(#editURL,"http:",5)) && (editURL[0]!='/') && (strncmp(#editURL,"WebView:",9)) strncpy(#URL,"http://",7);
 			else
 				URL[0] = 0;
 			strcat(#URL, #editURL);
 			OpenPage();
 			return;
 		case SEARCHWEB:
-			strcpy(#URL, #search_path);
-			strcat(#URL, #editURL);
+			sprintf(#URL,"%s%s",#search_path,#editURL);
 			OpenPage();
 			return;
 
@@ -511,11 +498,11 @@ void ProcessLinks(int id)
 	if (URL[0] == '$')
 	{
 		if (URL[1]=='-') && (condition_href) condition_href--;
-		if (URL[1]=='+') 
+		else if (URL[1]=='+') 
 		{
 			if (condition_href<condition_max) condition_href++; else notify(T_LAST_SLIDE);
 		}
-		if (URL[1]!='-') && (URL[1]!='+') condition_href = atoi(#URL+1);
+		else condition_href = atoi(#URL+1);
 		strcpy(#URL, BrowserHistory.CurrentUrl());
 		ShowPage();
 		return;
@@ -542,20 +529,17 @@ void ProcessLinks(int id)
 	|| (UrlExtIs(".7z")==1) || (UrlExtIs("netcfg")==1) 
 	{
 		//notify(#URL);
-		if (strcmpn(#URL,"http://", 7)==0)
+		if (!strncmp(#URL,"http://", 7))
 		{
 			strcpy(#DL_URL, #URL);
 			CreateThread(#Downloader,#downloader_stak+4092);
 		}
-		else
-		{
-			RunProgram("@open", #URL);
-		}
+		else RunProgram("@open", #URL);
 		strcpy(#editURL, BrowserHistory.CurrentUrl());
 		strcpy(#URL, BrowserHistory.CurrentUrl());
 		return;
 	}
-	if (!strcmpn(#URL,"mailto:", 7))
+	if (!strncmp(#URL,"mailto:", 7))
 	{
 		notify(#URL);
 		strcpy(#editURL, BrowserHistory.CurrentUrl());
@@ -568,17 +552,17 @@ void ProcessLinks(int id)
 
 void StopLoading()
 {
-	if (http_transfer<>0)
+	if (http_transfer)
 	{
 		EAX = http_transfer;
 		EAX = EAX.http_msg.content_ptr;		// get pointer to data
 		$push	EAX							// save it on the stack
 		http_free stdcall (http_transfer);	// abort connection
 		$pop	EAX							
-		mem_Free(EAX);						// free data
+		free(EAX);						// free data
 		http_transfer=0;
 		bufsize = 0;
-		bufpointer = mem_Free(bufpointer);
+		bufpointer = free(bufpointer);
 	}
 	wv_progress_bar.value = 0;
 	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-2, 17, skin.h, 52, 0);
@@ -602,29 +586,23 @@ void OpenPage()
 	souce_mode = false;
 	strcpy(#editURL, #URL);
 	BrowserHistory.AddUrl();
-	if (strncmp(#URL,"WebView:",8)==0)
+	if (!strncmp(#URL,"WebView:",8))
 	{
 		SetPageDefaults();
-		if (strcmp(#URL, URL_SERVICE_HOME)==0) 
-		{
-			WB1.Prepare(#homepage, sizeof(homepage));
-		}
-		if (strcmp(#URL, URL_SERVICE_HISTORY)==0)
-		{
-			ShowHistory();
-		}
+		if (!strcmp(#URL, URL_SERVICE_HOME)) WB1.Prepare(#homepage, sizeof(homepage));
+		else if (!strcmp(#URL, URL_SERVICE_HISTORY)) ShowHistory();
 		return;
 	}
-	if (strncmp(#URL,"http:",5)==0)
+	if (!strncmp(#URL,"http:",5))
 	{
 		img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-2, 17, skin.h, 131, 0);
 		http_get stdcall (#URL, 0, 0, #accept_language);
 		http_transfer = EAX;
-		if (http_transfer == 0)
+		if (!http_transfer)
 		{
 			StopLoading();
 			bufsize = 0;
-			bufpointer = mem_Free(bufpointer);
+			bufpointer = free(bufpointer);
 			ShowPage();
 			return;
 		}
@@ -635,8 +613,8 @@ void OpenPage()
 		bufsize = EBX;
 		if (bufsize)
 		{
-			mem_Free(bufpointer);
-			bufpointer = mem_Alloc(bufsize);
+			free(bufpointer);
+			bufpointer = malloc(bufsize);
 			SetPageDefaults();
 			ReadFile(0, bufsize, bufpointer, #URL);
 			//ShowSource();
@@ -659,7 +637,7 @@ void ShowPage()
 	if (!bufsize)
 	{
 		PageLinks.Clear();
-		if (http_transfer<>0)
+		if (http_transfer)
 		{
 			WB1.Prepare(#loading, sizeof(loading));
 		}
@@ -675,12 +653,10 @@ void ShowPage()
 
 byte UrlExtIs(dword ext)
 {
-	if (strcmpi(#URL + strlen(#URL) - strlen(ext), ext)==0) return 1; else return 0;
+	if (!strcmpi(#URL + strlen(#URL) - strlen(ext), ext)) return true;
+	return false;
 }
 
 
-
-
-stop:
-
 char downloader_stak[4096];
+stop:
