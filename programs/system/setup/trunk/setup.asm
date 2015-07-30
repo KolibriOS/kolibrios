@@ -3,6 +3,11 @@
 ;;          DEVICE SETUP         ;;
 ;;                               ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; version:      1.17
+; last update:  30/07/2015
+; changed by:   Kiril Lipatov, aka Leency
+; changes:      Mouse speed and mouse delay options moved to mouse_cfg
+;---------------------------------------------------------------------
 ; version:      1.16
 ; last update:  12/04/2014
 ; changed by:   Yurii Shevtsov, aka gtament
@@ -48,8 +53,6 @@ apply_all:
 	call	_pci_acc    ;12
 	call	_syslang    ;5
 	call	_keyboard    ;2
-	call	_mouse_speed
-	call	_mouse_delay
 	call	_speaker_mute
 	ret
 ;-------------------------------------------------------------------------------
@@ -99,12 +102,6 @@ get_setup_values:
 
 	mcall	26,12
 	mov	[pci_acc],eax
-
-	mcall	18,19,0
-	mov	[mouse_speed],eax
-
-	mcall	18,19,2
-	mov	[mouse_delay],eax
 
 	mcall	18,8,1
 	mov	[speaker_mute],eax
@@ -267,69 +264,6 @@ nosysp:
 	call	draw_window
 ;--------------------------------------
 nosyss:
-	cmp	ah,132	; SET MOUSE SPEED
-	jnz	.nominus
-	mov	eax,[mouse_speed]
-	sub	eax,2
-	cmp	eax,9
-	jb	@f
-	mov	eax,8
-;--------------------------------------
-@@:
-	inc	eax
-	mov	[mouse_speed],eax
-	call	draw_infotext
-;--------------------------------------
-.nominus:
-	cmp	ah,133
-	jnz	.noplus
-	mov	eax,[mouse_speed]
-	cmp	eax,9
-	jb	@f
-	mov	eax,0
-;--------------------------------------
-@@:
-	inc	eax
-	mov	[mouse_speed],eax
-	call	draw_infotext
-;--------------------------------------
-.noplus:
-	cmp	ah,131
-	jnz	.noapply
-	call	_mouse_speed
-;--------------------------------------
-.noapply:
-mousedelay:
-	cmp	ah,142	      ; SET MOUSE DELAY
-	jnz	.nominus
-	mov	eax,[mouse_delay]
-	sub	eax,2
-	cmp	eax,0xfff
-	jb	@f
-	mov	eax,0xffe
-;--------------------------------------
-@@:
-	inc	eax
-	mov	[mouse_delay],eax
-	call	draw_infotext
-;--------------------------------------
-.nominus:
-	cmp	ah,143
-	jnz	.noplus
-	mov	eax,[mouse_delay]
-	cmp	eax,0xfff
-	jb	@f
-	mov	eax,0
-;--------------------------------------
-@@:
-	inc	eax
-	mov	[mouse_delay],eax
-	call	draw_infotext
-;--------------------------------------
-.noplus:
-	cmp	ah,141
-	jnz	speakermute
-	call	_mouse_delay
 ;--------------------------------------
 speakermute:
 	cmp	ah,152	; SET SPEAKER
@@ -489,9 +423,7 @@ draw_window:
 	pusha
 	mcall	12,1
 
-	xor	eax,eax       ; DRAW WINDOW
-	xor	esi,esi
-	mcall	,<40,(355+BBB)>,<40,(12*16)>,0xB4111199,,title
+	mcall	0,<40,(355+BBB)>,<40,(10*16)>,0xB4111199,0,title ; DRAW WINDOW
 
 	mcall	9,procinfo,-1
 
@@ -499,7 +431,7 @@ draw_window:
 	test	eax,100b
 	jne	.end
 
-	mcall	8,<(350-85),100>,<(5+16*8),12>,100,0x005588dd	; APPLY ALL
+	mcall	8,<(350-85),100>,<(5+16*6),12>,100,0x005588dd	; APPLY ALL
 
 	add	ecx,16*65536	      ; SAVE ALL
 	dec	edx
@@ -523,16 +455,8 @@ draw_window:
 	mov	ecx,5+6*8
 	call	draw_buttons
 
-	mov	edx,131
-	mov	ecx,5+8*8
-	call	draw_buttons
-
-	mov	edx,141
-	mov	ecx,5+10*8
-	call	draw_buttons
-
 	mov	edx,151
-	mov	ecx,5+12*8
+	mov	ecx,5+8*8
 	call	draw_buttons
 
 	call	draw_infotext
@@ -640,17 +564,10 @@ noet5:
 
 	mov	eax,[speaker_mute]
 	call	onoff				; SPEAKER
-	mov	[text00+LLL*6+28],ebx
+	mov	[text00+LLL*4+28],ebx
 
-	mov	eax,[mouse_speed]		; MOUSE SPEED
-	add	al,48
-	mov	[text00+LLL*4+28],al
-
-	mov	eax,[mouse_delay]
-	mov	esi,text00+LLL*5+32
-	call	hexconvert			; MOUSE DELAY
 	call	text_out
-
+	
 	popa
 	ret
 ;-------------------------------------------------------------------------------
@@ -680,31 +597,6 @@ newline:
 	add	edx,esi
 	dec	ebp
 	jnz	@b
-	ret
-;-------------------------------------------------------------------------------
-hexconvert:	     ;converting dec to hex in ascii
-	xor	ebx,ebx
-	mov	bl,al
-	and	bl,15
-	add	ebx,hex
-	mov	cl,[ebx]
-	mov	[esi],cl
-	shr	eax,4
-	xor	ebx,ebx
-	mov	bl,al
-	and	bl,15
-	add	ebx,hex
-	mov	cl,[ebx]
-	dec	esi
-	mov	[esi],cl
-	shr	eax,4
-	xor	ebx,ebx
-	mov	bl,al
-	and	bl,15
-	add	ebx,hex
-	mov	cl,[ebx]
-	dec	esi
-	mov	[esi],cl
 	ret
 ;-------------------------------------------------------------------------------
 onoff:
@@ -743,14 +635,6 @@ _pci_acc:
 ;-------------------------------------------------------------------------------
 _syslang:
 	mcall	21,5,[syslang]
-	ret
-;-------------------------------------------------------------------------------
-_mouse_speed:
-	mcall	18,19,1,[mouse_speed]
-	ret
-;-------------------------------------------------------------------------------
-_mouse_delay:
-	mcall	18,19,3,[mouse_delay]
 	ret
 ;-------------------------------------------------------------------------------
 _speaker_mute:
@@ -806,8 +690,6 @@ textrus:
 	db 'Раскладка клавиатуры      : ENGLISH         - +   Применить'
 	db 'Включить LBA              : OFF             - +   Применить'
 	db 'Доступ к шине PCI         : OFF             - +   Применить'
-	db 'Скорость курсора мыши     : 1               - +   Применить'
-	db 'Задержка ускорения мыши   : 0x00a           - +   Применить'
 	db 'Выключить SPEAKER         : OFF             - +   Применить'
 
 	db 'ВНИМАНИЕ:                                    Применить все '
@@ -818,10 +700,8 @@ texteng:
 	db 'Keyboard layout           : ENGLISH         - +     Apply  '
 	db 'LBA read enabled          : OFF             - +     Apply  '
 	db 'PCI access for appl.      : OFF             - +     Apply  '
-	db 'Mouse pointer speed       : 1               - +     Apply  '
-	db 'Mouse pointer delay       : 0x00a           - +     Apply  '
 	db 'SPEAKER disabled          : OFF             - +     Apply  '
-text1_strings = 7
+text1_strings = 5
 
 	db 'NOTE:                                           Apply all  '
 	db 'SAVE YOUR SETTINGS BEFORE QUITING KOLIBRI       Save all   '
@@ -830,8 +710,6 @@ textet:
 	db 'Klaviatuuri paigutus      : ENGLISH         - +    Kinnita '
 	db 'LBA lugemine lubatud      : V─L.            - +    Kinnita '
 	db 'PCI juurdepффs programm.  : V─L.            - +    Kinnita '
-	db 'Hiire kursori kiirus      : 1               - +    Kinnita '
-	db 'Hiire kursori viide       : 0x00a           - +    Kinnita '
 	db 'SPEAKER disabled          : V─L.            - +    Kinnita '
 	db 'M─RKUS:                                        Kinnita kїik'
 	db 'SALVESTA SEADED ENNE KOLIBRIST V─LJUMIST      Salvesta kїik'
@@ -864,8 +742,6 @@ keyboard	dd 0x0
 syslang 	dd 0x4	; 4 - rus
 lba_read	dd 0x1
 pci_acc 	dd 0x1
-mouse_speed	dd 0x2
-mouse_delay	dd 0xa
 speaker_mute	dd 0	; 0 - enable, 1 - disable
 ;-----------------------------------------------------------------------------
 IM_END:
