@@ -103,8 +103,8 @@
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 enum { CREATE_FILE=1, CREATE_FOLDER, RENAME_ITEM }; //NewElement
 
-#define TITLE "Eolite File Manager v2.84"
-#define ABOUT_TITLE "Eolite v2.84"
+#define TITLE "Eolite File Manager v2.85"
+#define ABOUT_TITLE "Eolite v2.85"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -812,6 +812,7 @@ void Open_Dir(dword dir_path, redraw){
 		WriteText(sorting_arrow_x,45,0x80,sc.work_graph,"\x19");
 		if (redraw!=ONLY_SHOW) Sorting();
 		if (redraw!=ONLY_OPEN)&&(!_not_draw) List_ReDraw();
+		DrawSystemDiscs();
 	}
 	if (files.count==-1) && (redraw!=ONLY_OPEN) {files.visible=files.count=0; if(!_not_draw)List_ReDraw();}
 }
