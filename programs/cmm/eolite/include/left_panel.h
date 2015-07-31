@@ -111,14 +111,15 @@ void GetSystemDiscs()
 
 void DrawSystemDiscs()
 {    
-	char dev_name[15], disc_name[100];
-	int i, dev_icon, pos_y;
+	char dev_name[15], disc_name[100], i, dev_icon, is_active;
+	int pos_y;
 	
 	for (i=disc_num; i<30; i++) DeleteButton(100+i);
 	for (i=0;i<disc_num;i++)
 	{
 		pos_y = i*16+74;
-		DrawBar(17,pos_y,160,17,0xFFFFFF);
+		DrawBar(17,pos_y,6,17,0xFFFFFF);
+		DrawBar(17+6+18,pos_y,160-6-18,17,0xFFFFFF);
 		DefineButton(17,pos_y,159,16,100+i+BT_HIDE,0xFFFFFF);
 		strcpy(#dev_name, #disk_list[i].Item);
 		dev_name[strlen(#dev_name)-1]=NULL;
@@ -161,18 +162,19 @@ void DrawSystemDiscs()
 				dev_icon=3; //по-умолчанию устройство выглядит как жестяк но это неправильно
 				strcpy(#disc_name, T_UNC);				
 		}
+		if (strstr(#path, #dev_name)) is_active=true; else is_active=false;
 		if (show_dev_name)
 		{
 			strcat(#disc_name, #dev_name);
-			if (strstr(#path, #dev_name)) WriteText(45+1,pos_y+5,0x80,0x555555,#disc_name);
-			WriteText(45,pos_y+5,0x80,0,#disc_name);
+			if (is_active) WriteText(46+1,pos_y+5,0x80,0x555555,#disc_name);
+			WriteText(46,pos_y+5,0x80,0,#disc_name);
 		}
 		else
 		{
-			if (strstr(#path, #dev_name)) WriteText(45+1,pos_y+5,0x80,0x555555,#dev_name);
-			WriteText(45,pos_y+5,0x80,0,#dev_name);
+			if (is_active) WriteText(46+1,pos_y+5,0x80,0x555555,#dev_name);
+			WriteText(46,pos_y+5,0x80,0,#dev_name);
 		}
-		_PutImage(23,pos_y+2, 14,13, dev_icon*14*13*3+#devices);
+		_PutImage(23,pos_y, 18,17, is_active*6+dev_icon*17*18*3+#devices);
 	}
 }
 

@@ -18,7 +18,7 @@ dword blue_hl_pal[]= {0x0001699C,0x0000699C,0x00026A9C,0x0002699C,
 0x001E7AA8,0x001C79A6,0x001575A4,0x00207CA8,0x001E7AA7,0x001D79A7,
 0x001976A4,0x00217CA8,0x00227CA8,0x00207BA8,0x001976A5,0x001473A3,0};
 
-unsigned char devices[14*78]= FROM "imgs\dev.raw";
+unsigned char devices[18*204]= FROM "imgs\dev.raw";
 
 unsigned char factions[14*39] = FROM "imgs\actions.raw";
 
