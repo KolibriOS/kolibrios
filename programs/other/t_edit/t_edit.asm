@@ -272,7 +272,7 @@ draw_window:
 	int 0x40
 
 	stdcall [PathShow_draw], dword PathShow_data_1
-	stdcall [menu_bar_draw], dword menu_data_1
+	; stdcall [menu_bar_draw], dword menu_data_1
 
 	call draw_but_toolbar
 
@@ -290,7 +290,7 @@ mouse:
 		stdcall [edit_box_mouse], dword edit2
 	@@:
 	cmp byte[tedit0.panel_id],TED_PANEL_SYNTAX ;if not panel
-	jne .menu_bar_1 ;@f
+	jne @f ;.menu_bar_1
 	stdcall [tl_mouse], tree1
 ;-----------------------------------------------
 .menu_bar_1:

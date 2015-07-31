@@ -4,13 +4,11 @@ draw_but_toolbar: ;функция для рисования панели инструментов
   mov edi,tedit0
 
   mov ecx,0x40000000
-;  mov edx,5*65536+25
-  mov edx,85*65536+2
+  mov edx,5*65536+25
   call draw_but_icon
 
   inc cx
-;  mov edx,30*65536+25
-  mov edx,110*65536+2
+  mov edx,30*65536+25
   call draw_but_icon
 
 stdcall [ted_can_save],edi
@@ -19,8 +17,7 @@ je @f
 and ecx,0xffff
 @@:
   inc cx
-;  mov edx,55*65536+25
-  mov edx,135*65536+2
+  mov edx,55*65536+25
   call draw_but_icon
 or ecx,0x40000000
 
@@ -107,11 +104,11 @@ or ecx,0x40000000
 	call draw_but_icon
 
 	mov cx,18 ;cp 1251 -> 866
-	mov edx,425*65536+2
+	mov edx,480*65536+25
 	call draw_but_icon
 
 	mov cx,19 ;cp 866 -> 1251
-	mov edx,450*65536+2
+	mov edx,505*65536+25
 	call draw_but_icon
 
 	popad
