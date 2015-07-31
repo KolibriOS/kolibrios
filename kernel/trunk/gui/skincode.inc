@@ -22,8 +22,8 @@ read_skin_file:
         jnz     .noskin
 
         xchg    eax, [skin_data]
-        test    eax, eax
-        jz      @f
+        cmp     eax, _skin_file_default
+        je      @f
 
         stdcall kernel_free, eax
 @@:
@@ -86,9 +86,7 @@ ends
 align 4
 load_default_skin:
         mov     [_skinh], 22
-        mov     ebx, _skin_file_default
-        call    read_skin_file
-        ret
+        mov     [skin_data], _skin_file_default
 ;------------------------------------------------------------------------------
 align 4
 parse_skin_data:

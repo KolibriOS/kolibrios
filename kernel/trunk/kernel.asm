@@ -1085,7 +1085,7 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
 
         call    load_default_skin
 
-;protect io permission map
+; Protect I/O permission map
 
         mov     esi, [default_io_map]
         stdcall map_page, esi, [SLOT_BASE+256+APPDATA.io_map], PG_READ

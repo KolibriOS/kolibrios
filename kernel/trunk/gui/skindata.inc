@@ -13,7 +13,7 @@ $Revision$
 ;
 
 iglobal
-  _skin_file_default db '/sys/DEFAULT.SKN',0
+  _skin_file_default file "default.skn"
 endg
 
 struct  SKIN_DATA
