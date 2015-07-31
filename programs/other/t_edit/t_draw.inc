@@ -4,11 +4,11 @@ draw_but_toolbar: ;функция для рисования панели инструментов
   mov edi,tedit0
 
   mov ecx,0x40000000
-  mov edx,5*65536+25
+  mov edx,5*65536+4
   call draw_but_icon
 
   inc cx
-  mov edx,30*65536+25
+  mov edx,30*65536+4
   call draw_but_icon
 
 stdcall [ted_can_save],edi
@@ -17,12 +17,12 @@ je @f
 and ecx,0xffff
 @@:
   inc cx
-  mov edx,55*65536+25
+  mov edx,55*65536+4
   call draw_but_icon
 or ecx,0x40000000
 
   inc cx
-  mov edx,85*65536+25
+  mov edx,85*65536+4
   call draw_but_icon
 
 call [ted_is_select]
@@ -31,23 +31,23 @@ jne @f
 and ecx,0xffff
 @@:
   inc cx ; Cut
-  mov edx,110*65536+25
+  mov edx,110*65536+4
   call draw_but_icon
 
   inc cx ; Copy
-  mov edx,135*65536+25
+  mov edx,135*65536+4
   call draw_but_icon
 
   mov cx,10 ; Upper
-  mov edx,265*65536+25
+  mov edx,265*65536+4
   call draw_but_icon
 
   inc cx ; Lower
-  mov edx,290*65536+25
+  mov edx,290*65536+4
   call draw_but_icon
 
   inc cx ; reverse
-  mov edx,315*65536+25
+  mov edx,315*65536+4
   call draw_but_icon
 or ecx,0x40000000
 
@@ -56,20 +56,20 @@ jne @f
 and ecx,0xffff
 @@:
   mov cx,6 ; Paste
-  mov edx,160*65536+25
+  mov edx,160*65536+4
   call draw_but_icon
 or ecx,0x40000000
 
   inc cx
-  mov edx,185*65536+25
+  mov edx,185*65536+4
   call draw_but_icon
 
   inc cx
-  mov edx,210*65536+25
+  mov edx,210*65536+4
   call draw_but_icon
 
   inc cx
-  mov edx,235*65536+25
+  mov edx,235*65536+4
   call draw_but_icon
 
 mov ebx,ted_tim_undo
@@ -78,7 +78,7 @@ jg @f
 and ecx,0xffff
 @@:
   mov cx,13
-  mov edx,345*65536+25
+  mov edx,345*65536+4
   call draw_but_icon
 or ecx,0x40000000
 
@@ -87,28 +87,28 @@ jge @f
 and ecx,0xffff
 @@:
   inc cx
-  mov edx,370*65536+25
+  mov edx,370*65536+4
   call draw_but_icon
 or ecx,0x40000000
 
 	inc cx
-	mov edx,400*65536+25
+	mov edx,400*65536+4
 	call draw_but_icon
 
 	inc cx
-	mov edx,425*65536+25
+	mov edx,425*65536+4
 	call draw_but_icon
 
 	mov cx,17 ;выбор файла подсветки
-	mov edx,450*65536+25
+	mov edx,450*65536+4
 	call draw_but_icon
 
 	mov cx,18 ;cp 1251 -> 866
-	mov edx,480*65536+25
+	mov edx,480*65536+4
 	call draw_but_icon
 
 	mov cx,19 ;cp 866 -> 1251
-	mov edx,505*65536+25
+	mov edx,505*65536+4
 	call draw_but_icon
 
 	popad
@@ -245,7 +245,7 @@ proc draw_panel_syntax
   mov edx,txtFormatCapt
   int 0x40
 
-  mov ebx,10*65536+30
+  mov ebx,10*65536+40
   add ebx,dword[tree1.box_height]
   add ebx,ted_wnd_t
   mov edx,txtFormatApply
