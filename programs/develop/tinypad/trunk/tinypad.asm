@@ -2,16 +2,17 @@
 ; project name:      TINYPAD
 ; compiler:          flat assembler 1.67.21
 ; memory to compile: 3.0/9.0 MBytes (without/with size optimizations)
-; version:           SVN (4.0.8)
-; last update:       2014-01-22 (Jan 22, 2014)
+; version:           SVN (4.1)
+; last update:       2015-07-17 (Jul 17, 2015)
 ; minimal kernel:    revision #4199 (svn://kolibrios.org/kernel/trunk)
 ;-----------------------------------------------------------------------------
 ; originally by:     Ville Michael Turjanmaa >> villemt@aton.co.jyu.fi
 ; maintained by:     Mike Semenyako          >> mike.dld@gmail.com
 ;                    Ivan Poddubny           >> ivan-yar@bk.ru
 ;                    Marat Zakiyanov aka Mario79
+;                    Pathoswithin
 ;-----------------------------------------------------------------------------
-; TODO (4.1.0):
+; TODO:
 ;   - add vertical selection, undo, goto position, overwrite mode, smart tabulation
 ;   - improve window drawing with small dimensions
 ;   - save/load settings to/from ini file, not executable
@@ -36,7 +37,7 @@ include 'tinypad.inc'
 
 header '01',1,@CODE,TINYPAD_END,STATIC_MEM_END,MAIN_STACK,@PARAMS,ini_path
 
-APP_VERSION equ 'SVN (4.0.8)'
+APP_VERSION equ '4.1'
 
 TRUE = 1
 FALSE = 0
