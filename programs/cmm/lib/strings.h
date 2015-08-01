@@ -1,10 +1,6 @@
 #ifndef INCLUDE_STRING_H
 #define INCLUDE_STRING_H
 
-#ifndef INCLUDE_KOLIBRI_H
-#include "../lib/kolibri.h"
-#endif
-
 #ifndef INCLUDE_MEM_H
 #include "../lib/mem.h"
 #endif

@@ -44,7 +44,7 @@ DrawBufer diagram;
 void main()
 {
 	int key, btn;
-	mouse m;
+
 	char filepath[4096];
 	char notify_message[4296];
 	

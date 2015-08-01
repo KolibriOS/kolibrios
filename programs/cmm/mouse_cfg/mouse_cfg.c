@@ -56,7 +56,6 @@ struct mouse_cfg1 {
 
 void main() {
 	char id, old_button_clicked;
-	mouse m;
 
 	mem_Init();
 	load_dll(boxlib, #box_lib_init,0);
@@ -67,13 +66,13 @@ void main() {
 	loop() switch(WaitEvent())
 	{
 		case evMouse:
-				m.get();
-				if (m.y <= mouse_frame.start_y) || (m.y >= mouse_frame.start_y + mouse_frame.size_y) 
-				|| (m.x >= mouse_frame.start_x + mouse_frame.size_x) || (m.x <= mouse_frame.start_x) break;
+				mouse.get();
+				if (mouse.y <= mouse_frame.start_y) || (mouse.y >= mouse_frame.start_y + mouse_frame.size_y) 
+				|| (mouse.x >= mouse_frame.start_x + mouse_frame.size_x) || (mouse.x <= mouse_frame.start_x) break;
 				old_button_clicked = mouse_cfg.button_clicked;
-				if (m.lkm) mouse_cfg.button_clicked=1;
-				else if (m.pkm) mouse_cfg.button_clicked=2;
-				else if (m.mkm) mouse_cfg.button_clicked=3;
+				if (mouse.lkm) mouse_cfg.button_clicked=1;
+				else if (mouse.pkm) mouse_cfg.button_clicked=2;
+				else if (mouse.mkm) mouse_cfg.button_clicked=3;
 				else mouse_cfg.button_clicked=0;
 				if (mouse_cfg.button_clicked != old_button_clicked) DrawMouseImage();
 				break;

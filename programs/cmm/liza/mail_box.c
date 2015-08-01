@@ -141,7 +141,6 @@ void MailBoxNetworkProcess() {
 
 void MailBoxLoop() {
 	int key, id;
-	mouse m;
 	int panels_drag=0, clicked_list=0;
 	dword line_col, text_col;
 
@@ -160,20 +159,20 @@ void MailBoxLoop() {
 		{
 			case evMouse:
 				IF (!CheckActiveProcess(Form.ID)) break;
-				m.get();
+				mouse.get();
 				
-				if (!m.lkm) panels_drag=0;
-				if (m.lkm) && (m.y>mail_list.y+mail_list.h-1) && (m.y<mail_list.y+mail_list.h+6)
+				if (!mouse.lkm) panels_drag=0;
+				if (mouse.lkm) && (mouse.y>mail_list.y+mail_list.h-1) && (mouse.y<mail_list.y+mail_list.h+6)
 				&& (!scroll1.delta2) && (!scroll_wv.delta2) panels_drag = 1;
 				if (panels_drag)
 				{
-					if (m.y<mail_list.y+mail_list.min_h) || (m.y>Form.cheight-WB1.list.min_h-status_bar_h-LIST_INFO_H) break;
-					mail_list.h = m.y - mail_list.y-2;
+					if (mouse.y<mail_list.y+mail_list.min_h) || (mouse.y>Form.cheight-WB1.list.min_h-status_bar_h-LIST_INFO_H) break;
+					mail_list.h = mouse.y - mail_list.y-2;
 					DrawMailBox();
 					break;
 				}
 
-				PageLinks.Hover(m.x, m.y, link_color_inactive, link_color_active, bg_color);
+				PageLinks.Hover(mouse.x, mouse.y, link_color_inactive, link_color_active, bg_color);
 
 				if (!mail_list.count) break;
 				if (!panels_drag) { scrollbar_v_mouse (#scroll1); scrollbar_v_mouse (#scroll_wv); }
@@ -191,16 +190,16 @@ void MailBoxLoop() {
 					break;
 				};
 				
-				if (mail_list.y+mail_list.h + 10 > m.y)
+				if (mail_list.y+mail_list.h + 10 > mouse.y)
 				{
-					if (mail_list.MouseScroll(m.vert)) DrawMailList();
+					if (mail_list.MouseScroll(mouse.vert)) DrawMailList();
 				}
 				else
 				{
-					if (WB1.list.MouseScroll(m.vert)) DrawLetter();
+					if (WB1.list.MouseScroll(mouse.vert)) DrawLetter();
 				}
-				if (m.lkm) && (mail_list.MouseOver(m.x, m.y)) && (!clicked_list) clicked_list=1;
-				if (!m.lkm) && (clicked_list) if (mail_list.ProcessMouse(m.x, m.y)) 
+				if (mouse.lkm) && (mail_list.MouseOver(mouse.x, mouse.y)) && (!clicked_list) clicked_list=1;
+				if (!mouse.lkm) && (clicked_list) if (mail_list.ProcessMouse(mouse.x, mouse.y)) 
 				{
 					clicked_list = 0;
 					if (aim) break;

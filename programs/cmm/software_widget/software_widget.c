@@ -18,7 +18,6 @@ SOFTWARE CENTER v2.31
 
 system_colors sc;
 proc_info Form;
-mouse m;
 
 byte kolibrios_mounted;
 

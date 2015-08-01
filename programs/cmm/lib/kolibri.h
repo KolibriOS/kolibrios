@@ -36,7 +36,7 @@ char program_path[4096];
 #define BT_HIDE     0x40000000
 #define BT_NOFRAME  0x20000000
 
-//Button mouse
+//Button MOUSE
 #define MOUSE_LEFT   001b
 #define MOUSE_RIGHT  010b
 #define MOUSE_LR     011b
@@ -79,24 +79,24 @@ char program_path[4096];
 };
 
 /**
- *  The structure of the mouse
+ *  The structure of the MOUSE
  *  x - coordinate X
  *  y - coordinate Y
  *  xx and yy - time coordinates
- *  lkm - left mouse button
- *  pkm - right mouse button
- *  mkm - mouse wheel
+ *  lkm - left MOUSE button
+ *  pkm - right MOUSE button
+ *  mkm - MOUSE wheel
  *  key - keycode button
  *  tmp - time keycode 
  *  down - key event press
  *  up - key release events
- *  move - event mouse movements
+ *  move - event MOUSE movements
  *  click - when clicked
  *  dblclick - double-click the default 50 (500 ms)
  */
 
 :dword __TMP_TIME,MOUSE_TIME;
-:struct mouse
+:struct MOUSE
 {
 	signed x,y,xx,yy,lkm,mkm,pkm,key,tmp,tmp_time,hor,vert,down,up,move,click,dblclick,left,top;
 	dword handle,_;
@@ -108,12 +108,12 @@ char program_path[4096];
 	dword hide();
 	void slider();
 	void show();
-};
-:void mouse::clearTime()
+} mouse;
+:void MOUSE::clearTime()
 {
 	tmp_time = GetStartTime()+MOUSE_TIME;
 }
-:void mouse::show()
+:void MOUSE::show()
 {
 	if(!handle)return;
 	ECX = handle;
@@ -121,7 +121,7 @@ char program_path[4096];
 	EBX = 5;
 	$int 0x40;
 }
-:dword mouse::hide()
+:dword MOUSE::hide()
 {
 	if(!_)
 	{
@@ -144,8 +144,8 @@ char program_path[4096];
 	handle = EAX;
 }
 
-//set new attributes mouse
-:void mouse::set()
+//set new attributes MOUSE
+:void MOUSE::set()
 {
 	if((xx!=x)||(yy!=y))
 	{
@@ -167,15 +167,15 @@ char program_path[4096];
 	}
 }
 
-:void mouse::center()
+:void MOUSE::center()
 {
 	EAX = 18;
 	EBX = 15;
 	$int 0x40
 }
 
-//get new attributes mouse
-:void mouse::get()
+//get new attributes MOUSE
+:void MOUSE::get()
 {
 	EAX = 37;
 	EBX = 1;
@@ -202,7 +202,7 @@ char program_path[4096];
 	pkm = EBX;
 	mkm = ECX;
 	
-	//when you release the mouse button
+	//when you release the MOUSE button
 	// Mouse Up Event
 	if((cmd)&&!(key)){
 		up = true;
@@ -222,7 +222,7 @@ char program_path[4096];
 		cmd = false;
 	}
 	
-	//when you press the mouse button
+	//when you press the MOUSE button
 	// Mouse Down Event/Move Event
 	else {
 	    up       = false;
@@ -253,7 +253,7 @@ char program_path[4096];
 
 
 
-:void mouse::slider()
+:void MOUSE::slider()
 {
 	signed _x,_y;
 	if(!handle)hide();
@@ -880,6 +880,29 @@ inline fastcall dword GetStartTime()
 {
 	dword width,height;
 } SKIN;
+
+:void DrawDate(dword x, y, color, in_date)
+{
+	//char text[15];
+	EDI = in_date;
+	EAX = 47;
+	EBX = 2<<16;
+	EDX = x<<16+y;
+	ESI = 0x80<<24+color;
+	ECX = EDI.date.day;
+	$int 0x40;
+	EDX += 18<<16;
+	ECX = EDI.date.month;
+	$int 0x40;
+	EDX += 18<<16;
+	EBX = 4<<16;
+	ECX = EDI.date.year;
+	$int 0x40;
+	PutPixel(x+14,y+6,color);
+	PutPixel(x+32,y+6,color);
+	//sprintf(#text,"%d",EDI.date.year);
+	//WriteText(x, y, 0x80, 0x000000, #text);
+}
 
 dword __generator;  // random number generator - для генерации случайных чисел
 

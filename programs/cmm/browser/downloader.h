@@ -38,7 +38,7 @@ enum { STATE_NOT_STARTED, STATE_IN_PROGRESS, STATE_COMPLETED };
 void Downloader()
 {
 	int key, btn;
-	mouse m;
+	
 	char notify_message[4296];
 	
 	if (DL_URL[0]) {

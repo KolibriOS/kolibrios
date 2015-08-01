@@ -26,7 +26,6 @@ llist menu;
 
 void menu_rmb()
 {
-	mouse mm;
 	proc_info MenuForm;
 	int key;
 
@@ -42,9 +41,9 @@ void menu_rmb()
 				GetProcessInfo(#MenuForm, SelfInfo);
 				if (!CheckActiveProcess(MenuForm.ID)) ExitProcess();
 
-				mm.get();
-				if (menu.ProcessMouse(mm.x, mm.y)) DrawMenuList();
-				if (mm.lkm)&&(mm.up) { action_buf = ITEMS_LIST[menu.current*2+1]; ExitProcess(); }
+				mouse.get();
+				if (menu.ProcessMouse(mouse.x, mouse.y)) DrawMenuList();
+				if (mouse.lkm)&&(mouse.up) { action_buf = ITEMS_LIST[menu.current*2+1]; ExitProcess(); }
 				break;
 				
 		case evKey:
@@ -59,7 +58,7 @@ void menu_rmb()
 				break;
 				
 		case evReDraw:
-				DefineAndDrawWindow(Form.left+m.x-6,Form.top+m.y+GetSkinHeight()+3,menu.w+2,menu.h+4,0x01, 0, 0, 0x01fffFFF);
+				DefineAndDrawWindow(Form.left+mouse.x-6,Form.top+mouse.y+GetSkinHeight()+3,menu.w+2,menu.h+4,0x01, 0, 0, 0x01fffFFF);
 				DrawPopup(0,0,menu.w,menu.h+3,0, col_bg,border_color);
 				DrawMenuList();				
 	}

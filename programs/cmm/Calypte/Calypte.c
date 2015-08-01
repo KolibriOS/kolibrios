@@ -112,7 +112,6 @@ menu_data menudata1 = {0, 40, 2, 15, 2, #menu_text_area1.menu, #menu_text_area1.
 void main()
 {   
 	int id, key;
-	mouse m;
 	
 	strcpy(#filter2.ext1, "TXT");
 	//strcpy(#filter2.ext2, "ASM");
@@ -139,8 +138,8 @@ void main()
       switch(WaitEvent())
       {
 		case evMouse:
-			m.get();
-			if (tview.MouseScrollNoSelection(m.vert)) DrawText();
+			mouse.get();
+			if (tview.MouseScrollNoSelection(mouse.vert)) DrawText();
 		
 			menu_bar_mouse stdcall (#menudata1);			
 			if (menudata1.click)

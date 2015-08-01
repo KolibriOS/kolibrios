@@ -73,9 +73,11 @@ char work_folder[4096],
 
 void main()
 {
-	int id, key, mouse_clicked;
-	mouse m, drag_mouse;
-
+	int id, key;
+	byte mouse_clicked;
+	dword tmp_x,tmp_y;
+	dword z1,z2;
+	
 	mem_Init();
 	SetEventMask(0x27);
 	load_dll(boxlib, #box_lib_init,0);
@@ -112,47 +114,62 @@ void main()
 
 	loop()
 	{
-	  WaitEventTimeout(60);
+	  WaitEventTimeout(10);
+	  
+	  //ActivateWindow(Form.ID);
 	  switch(EAX & 0xFF) {
 	  	case evMouse:
 			if (!CheckActiveProcess(Form.ID)) break;
+			mouse.get();
 			scrollbar_v_mouse (#scroll1);
-			if (list.first <> scroll1.position)
+			if (list.first != scroll1.position)
 			{
 				list.first = scroll1.position;
 				DrawPlayList();
 				break;
 			}
-	  		m.get();
-
-	  		if (m.vert) if (list.MouseScroll(m.vert)) 
-	  		{
-	  			DrawPlayList();
-	  		}
-
-	  		if (mouse_clicked)
-	  		{
-	  			if (!m.lkm) && (list.ProcessMouse(m.x, m.y)) StartPlayingMp3();
-	  			mouse_clicked=0;
-	  		}
-	  		if (m.lkm) && (list.MouseOver(m.x, m.y)) mouse_clicked=1;
-	  		//drag window - emulate windows header
-			if (window_mode == WINDOW_MODE_SMALL) && (m.lkm) && (m.y < skin.h) && (m.x < 13)
+			if(mouse.down)
 			{
-				do {
-					drag_mouse.get();
-					if (drag_mouse.x!=m.x) || (drag_mouse.y!=m.y) 
+				if (mouse.vert) if (list.MouseScroll(mouse.vert)) 
+				{
+					DrawPlayList();
+				}
+				if (list.MouseOver(mouse.x, mouse.y)) mouse_clicked = true;
+				else if(mouse.y < skin.h) && (mouse.x < 13)
+				{
+					//drag window - emulate windows header
+						tmp_x = mouse.x;
+						tmp_y = mouse.y;
+						do {
+							mouse.get();
+							if (tmp_x!=mouse.x) || (tmp_y!=mouse.y) 
+							{
+								z1 = Form.left + mouse.x - tmp_x;
+								z2 = Form.top + mouse.y - tmp_y;
+								if(z1<=10)z1=0;
+								if(z2<=10)z2=0;
+								if(z1>screen.width-Form.width-10)z1=screen.width-Form.width;
+								if(z2>screen.height-Form.height-10)z2=screen.height-Form.height;
+								//if(z2<10)z2=0;
+								MoveSize(z1 , z2, OLD, OLD);
+								DrawWindow();
+							}
+							pause(1);
+						} while (mouse.lkm);
+					if (mouse.pkm) && (mouse.y > skin.h) 
+						notify("'Pixies Player v1.11\nChange sound volume: Left/Right key\nChange skin: F1/F2\nMute: M key' -St\n");
+					break;
+				}
+				else if(mouse.up)
+				{
+					if (mouse_clicked)&&(list.ProcessMouse(mouse.x, mouse.y))
 					{
-						MoveSize(Form.left + drag_mouse.x - m.x, Form.top + drag_mouse.y - m.y, OLD, OLD);
-						DrawWindow();
+						StartPlayingMp3();
+						mouse_clicked = false;
 					}
-					pause(2);
-				} while (drag_mouse.lkm);
+					break;
+				}
 			}
-			if (m.pkm) && (m.y > skin.h) 
-				notify("'Pixies Player v1.11\nChange sound volume: Left/Right key\nChange skin: F1/F2\nMute: M key' -St\n");
-	  		break;
-
 		case evButton:
 			id=GetButtonID();
 			switch(id) {
@@ -217,7 +234,7 @@ void main()
 			if (key==51) SetColorThemeDark();
 			if (key==ASCII_KEY_LEFT) RunProgram("@VOLUME", "-");
 			if (key==ASCII_KEY_RIGHT) RunProgram("@VOLUME", "+");
-			if (key=='m') RunProgram("@VOLUME", "m");
+			if (key=='mouse') RunProgram("@VOLUME", "mouse");
 			if (key==ASCII_KEY_ENTER) StartPlayingMp3();
 			if (key=='p') || (key==ASCII_KEY_SPACE)
 			{
@@ -228,8 +245,8 @@ void main()
 			break;
 
 		case evReDraw:
-			if (window_mode == WINDOW_MODE_NORMAL) DefineAndDrawWindow(win_x_normal, win_y_normal, skin.w - 1, skin.h + list.h, 0x01,0,0,0);
-			if (window_mode == WINDOW_MODE_SMALL) DefineAndDrawWindow(win_x_small, win_y_small, 99, skin.h - 1, 0x01,0,0,0);
+			if (window_mode == WINDOW_MODE_NORMAL) DefineAndDrawWindow(win_x_normal, win_y_normal, skin.w - 1, skin.h + list.h, 0x41,0,0,0);
+			if (window_mode == WINDOW_MODE_SMALL) DefineAndDrawWindow(win_x_small, win_y_small, 99, skin.h - 1, 0x41,0,0,0);
 			DrawWindow();
 			break;
 

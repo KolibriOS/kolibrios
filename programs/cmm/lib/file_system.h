@@ -1,11 +1,8 @@
 #ifndef INCLUDE_FILESYSTEM_H
 #define INCLUDE_FILESYSTEM_H
-#ifndef INCLUDE_KOLIBRI_H
-#include "../lib/kolibri.h"
-#endif
 
-#ifndef INCLUDE_STRING_H
-#include "../lib/strings.h"
+#ifndef INCLUDE_DATE_H
+#include "../lib/date.h"
 #endif
 
 :struct f70{
@@ -16,13 +13,6 @@
 	dword	param4;
 	char	rezerv;
 	dword	name;
-};
-
-:struct date
-{
-	byte day;
-	byte month;
-	word year;
 };
 
 :struct BDVK {
@@ -41,32 +31,11 @@
 };
 
 
-:void DrawDate(dword x, y, color, in_date)
-{
-	//char text[15];
-	EDI = in_date;
-	EAX = 47;
-	EBX = 2<<16;
-	EDX = x<<16+y;
-	ESI = 0x80<<24+color;
-	ECX = EDI.date.day;
-	$int 0x40;
-	EDX += 18<<16;
-	ECX = EDI.date.month;
-	$int 0x40;
-	EDX += 18<<16;
-	EBX = 4<<16;
-	ECX = EDI.date.year;
-	$int 0x40;
-	PutPixel(x+14,y+6,color);
-	PutPixel(x+32,y+6,color);
-	//sprintf(#text,"%d",EDI.date.year);
-	//WriteText(x, y, 0x80, 0x000000, #text);
-}
 
 
-///////////////////////////
-//   Параметры файла    //
+
+  ///////////////////////////
+ //   Параметры файла     //
 ///////////////////////////
 :f70 getinfo_file_70;
 :dword GetFileInfo(dword file_path, bdvk_struct)
@@ -83,9 +52,9 @@
     $int 0x40
 }
 
-///////////////////////////
-//   Изменение параметров файла    //
-///////////////////////////
+  /////////////////////////////////////
+ //   Изменение параметров файла    //
+/////////////////////////////////////
 :f70 setinfo_file_70;
 :dword SetFileInfo(dword file_path, bdvk_struct)
 {    
@@ -101,8 +70,8 @@
     $int 0x40
 }
 
-///////////////////////////
-//   Запуск программы    //
+  ///////////////////////////
+ //   Запуск программы    //
 ///////////////////////////
 :f70 run_file_70;
 :signed int RunProgram(dword run_path, run_param)
@@ -119,8 +88,8 @@
     $int 0x40
 }
 
-///////////////////////////
-//    Создание папки     //
+  ///////////////////////////
+ //    Создание папки     //
 ///////////////////////////
 :f70 create_dir_70;
 :int CreateDir(dword new_folder_path)
@@ -137,8 +106,8 @@
 	$int 0x40
 }
 
-////////////////////////////
-//  Удаление файла/папки  //
+  ////////////////////////////
+ //  Удаление файла/папки  //
 ////////////////////////////
 :f70 del_file_70;	
 :int DeleteFile(dword del_file_path)
@@ -155,8 +124,8 @@
 	$int 0x40
 }
 
-////////////////////////////
-//     Прочитать файл     //
+  ////////////////////////////
+ //     Прочитать файл     //
 ////////////////////////////
 :f70 read_file_70; 
 :int ReadFile(dword read_pos, read_file_size, read_buffer, read_file_path)
@@ -173,9 +142,9 @@
 	$int 0x40
 }
 
-////////////////////////////
-//     Записать файл      //
-////////////////////////////
+  ///////////////////////////
+ //     Записать файл     //
+///////////////////////////
 :f70 write_file_70; 
 :int WriteFile(dword write_file_size, write_buffer, write_file_path)
 {
@@ -191,9 +160,9 @@
 	$int 0x40
 }
 
-//////////////////////////////////////////
-//     WriteInFileThatAlredyExists      //
-//////////////////////////////////////////
+  ////////////////////////////////////////
+ //     WriteInFileThatAlredyExists    //
+////////////////////////////////////////
 :f70 write_file_offset_70; 
 :int WriteFileWithOffset(dword write_data_size, write_buffer, write_file_path, offset)
 {
@@ -209,8 +178,8 @@
 	$int 0x40
 }   
 
-///////////////////////////
-//    Прочитать папку    //
+  ///////////////////////////
+ //    Прочитать папку    //
 ///////////////////////////
 :f70 read_dir_70;
 :int ReadDir(dword file_count, read_buffer, dir_path)

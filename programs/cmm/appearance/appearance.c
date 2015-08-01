@@ -163,7 +163,6 @@ OpenFile()
 void main()
 {   
 	int id, key, mouse_clicked;
-	mouse mm;
 
 	mem_Init();
 	SetEventMask(0x27);
@@ -187,21 +186,21 @@ void main()
 				break;
 			}
 		
-	  		mm.get();
+	  		mouse.get();
 
-	  		if (mm.vert)
+	  		if (mouse.vert)
 	  		{
-	  			if (list[SKINS].active) && (list[SKINS].MouseScroll(mm.vert)) Draw_List();
-	  			if (list[WALLPAPERS].active) && (list[WALLPAPERS].MouseScroll(mm.vert)) Draw_List();
+	  			if (list[SKINS].active) && (list[SKINS].MouseScroll(mouse.vert)) Draw_List();
+	  			if (list[WALLPAPERS].active) && (list[WALLPAPERS].MouseScroll(mouse.vert)) Draw_List();
 	  		} 
 
 	  		if (mouse_clicked)
 	  		{
-	  			if (!mm.lkm) && (list[SKINS].active) && (list[SKINS].ProcessMouse(mm.x, mm.y)) Apply();
-	  			if (!mm.lkm) && (list[WALLPAPERS].active) && (list[WALLPAPERS].ProcessMouse(mm.x, mm.y)) Apply();
+	  			if (!mouse.lkm) && (list[SKINS].active) && (list[SKINS].ProcessMouse(mouse.x, mouse.y)) Apply();
+	  			if (!mouse.lkm) && (list[WALLPAPERS].active) && (list[WALLPAPERS].ProcessMouse(mouse.x, mouse.y)) Apply();
 	  			mouse_clicked=0;
 	  		}
-	  		if (mm.lkm) && (list[SKINS].MouseOver(mm.x, mm.y)) mouse_clicked=1;
+	  		if (mouse.lkm) && (list[SKINS].MouseOver(mouse.x, mouse.y)) mouse_clicked=1;
 	  		break;
 
 

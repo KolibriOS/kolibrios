@@ -142,7 +142,6 @@ dword menu_stak,about_stak,properties_stak,settings_stak,copy_stak;
 
 proc_info Form;
 system_colors sc;
-mouse m;
 int mouse_dd, scroll_used, sc_slider_h, sorting_arrow_x, kolibrios_drive;
 dword buf;
 dword file_mas[6898];
@@ -152,7 +151,6 @@ int rand_n;
 int selected_count;
 byte CMD_REFRESH;
 
-mouse gestures;
 signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
 byte stats;
 
@@ -181,7 +179,6 @@ void main()
 	char IPC_BUF[10];
 	dword tmp;
 	rand_n = random(40);
-	gestures.get();
 	mem_Init();
 	load_dll(boxlib, #box_lib_init,0);
     load_dll(libini, #lib_init,1);
@@ -213,21 +210,19 @@ void main()
 					break;
 				}				
 				
-				m.get();
+				mouse.get();
 				
-				
-				gestures.get();
-				if (!gestures.mkm) && (stats>0) stats = 0;
-				if (gestures.mkm) && (stats==0)
+				if (!mouse.mkm) && (stats>0) stats = 0;
+				if (mouse.mkm) && (stats==0)
 				{
-					x_old = gestures.x;
-					y_old = gestures.y;
+					x_old = mouse.x;
+					y_old = mouse.y;
 					stats = 1;
 				}
-				if (gestures.mkm) && (stats==1)
+				if (mouse.mkm) && (stats==1)
 				{
-					dif_x = gestures.x-x_old;
-					dif_y = gestures.y-y_old;
+					dif_x = mouse.x-x_old;
+					dif_y = mouse.y-y_old;
 					adif_x = fabs(dif_x);
 					adif_y = fabs(dif_y);
 					
@@ -257,31 +252,31 @@ void main()
 						}
 					}
 				}	
-				if (files.MouseOver(m.x, m.y))&&((m.up)||(m.down)||(m.dblclick))
+				if (files.MouseOver(mouse.x, mouse.y))&&((mouse.up)||(mouse.down)||(mouse.dblclick))
 				{
 					//select/open file {
-					if (m.key&MOUSE_LEFT)&&((m.down)||(m.dblclick))
+					if (mouse.key&MOUSE_LEFT)&&((mouse.down)||(mouse.dblclick))
 					{
-						if (m.y>=files.y)//&&(m.click)
+						if (mouse.y>=files.y)//&&(mouse.click)
 						{
-							id = m.y - files.y / files.line_h;
+							id = mouse.y - files.y / files.line_h;
 							if (files.current!=id)
 							{
-								m.clearTime();
+								mouse.clearTime();
 								if (id<files.visible) List_Current(id-files.current);
 							}
-							else if(m.dblclick)Open(0);
+							else if(mouse.dblclick)Open(0);
 						}
 					}
 					// } select/open file
 					else
 					//file menu {
-					if (m.key&MOUSE_RIGHT)&&(m.up)
+					if (mouse.key&MOUSE_RIGHT)&&(mouse.up)
 					{
 						menu_call_mouse = 1;
-						if (m.y>=files.y)//&&(m.click)
+						if (mouse.y>=files.y)//&&(mouse.click)
 						{
-							id = m.y - files.y / files.line_h;
+							id = mouse.y - files.y / files.line_h;
 							if (files.current!=id) List_Current(id-files.current);
 							//SwitchToAnotherThread();
 							menu_stak = malloc(4096);
@@ -292,48 +287,48 @@ void main()
 					// } file menu
 				}
 
-				if (m.vert)
+				if (mouse.vert)
 				{
-					if (files.MouseScroll(m.vert)) List_ReDraw();
+					if (files.MouseScroll(mouse.vert)) List_ReDraw();
 					break;
 				}
 
-				if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>40) && (m.y<files.y)
+				if (mouse.x>=Form.width-26) && (mouse.x<=Form.width-6) && (mouse.y>40) && (mouse.y<files.y)
 				{
-					if (m.lkm==1) DrawRectangle3D(Form.cwidth - 17,41,14,14,0xC7C7C7,0xFFFFFF);
-					WHILE (m.lkm==1) && (files.first>0)
+					if (mouse.lkm==1) DrawRectangle3D(Form.cwidth - 17,41,14,14,0xC7C7C7,0xFFFFFF);
+					WHILE (mouse.lkm==1) && (files.first>0)
 					{
 						pause(8);
 						files.first--;
 						List_ReDraw();
-						m.get();
+						mouse.get();
 					}
 					DrawRectangle3D(Form.cwidth - 17,41,14,14,0xFFFFFF,0xC7C7C7);
 				}
 
-				if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>onTop(22,0)+1) && (m.y<onTop(22,0)+16)
+				if (mouse.x>=Form.width-26) && (mouse.x<=Form.width-6) && (mouse.y>onTop(22,0)+1) && (mouse.y<onTop(22,0)+16)
 				{
-					if (m.lkm==1) DrawRectangle3D(Form.cwidth - 17,onTop(21,0),14,14,0xC7C7C7,0xFFFFFF);
-					while (m.lkm==1) && (files.first<files.count-files.visible)
+					if (mouse.lkm==1) DrawRectangle3D(Form.cwidth - 17,onTop(21,0),14,14,0xC7C7C7,0xFFFFFF);
+					while (mouse.lkm==1) && (files.first<files.count-files.visible)
 					{
 						pause(8);
 						files.first++;
 						List_ReDraw();
-						m.get();
+						mouse.get();
 					}
 					DrawRectangle3D(Form.cwidth - 17,onTop(21,0),14,14,0xFFFFFF,0xC7C7C7);
 				}
 
 				//Scrooll
-				if (!m.lkm) && (scroll_used) { scroll_used=NULL; Scroll(); }
-				if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>56) && (m.y<Form.height) && (m.lkm) && (!scroll_used) {scroll_used=1;Scroll();}
+				if (!mouse.lkm) && (scroll_used) { scroll_used=NULL; Scroll(); }
+				if (mouse.x>=Form.width-26) && (mouse.x<=Form.width-6) && (mouse.y>56) && (mouse.y<Form.height) && (mouse.lkm) && (!scroll_used) {scroll_used=1;Scroll();}
 				
 				if (scroll_used)
 				{
-					if (sc_slider_h/2+files.y>m.y) || (m.y<0) || (m.y>4000) m.y=sc_slider_h/2+files.y; //anee eo?ni? iaa ieiii
+					if (sc_slider_h/2+files.y>mouse.y) || (mouse.y<0) || (mouse.y>4000) mouse.y=sc_slider_h/2+files.y; //anee eo?ni? iaa ieiii
 					id=files.first;
 					j= sc_slider_h/2;
-					files.first = m.y -j -files.y * files.count;
+					files.first = mouse.y -j -files.y * files.count;
 					files.first /= onTop(22,files.y);
 					if (files.visible+files.first>files.count) files.first=files.count-files.visible;
 					if (id!=files.first) List_ReDraw();

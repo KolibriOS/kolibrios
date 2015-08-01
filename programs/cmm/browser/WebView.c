@@ -56,7 +56,7 @@ char str_location[]="location\0";
 int redirected = 0;
 
 char stak[4096];
-mouse m;
+
 int action_buf;
 
 dword http_transfer = 0;
@@ -149,13 +149,13 @@ void main()
 				if (!CheckActiveProcess(Form.ID)) break;
 				//Edit URL
 				edit_box_mouse stdcall (#address_box);
-				m.get();
+				mouse.get();
 				//Links hover
-				if (m.y>WB1.list.y) PageLinks.Hover(m.x, m.y, link_color_inactive, link_color_active, bg_color);
+				if (mouse.y>WB1.list.y) PageLinks.Hover(mouse.x, mouse.y, link_color_inactive, link_color_active, bg_color);
 				//Menu
-				if (m.y>WB1.list.y) && (m.y<Form.height) && (bufsize)
+				if (mouse.y>WB1.list.y) && (mouse.y<Form.height) && (bufsize)
 				{
-					if (m.pkm) && (m.up)
+					if (mouse.pkm) && (mouse.up)
 					{
 						SwitchToAnotherThread();
 						CreateThread(#menu_rmb,#stak+4092);
@@ -163,26 +163,26 @@ void main()
 					}
 				}
 				//Mouse scroll
-				if (m.vert)
+				if (mouse.vert)
 				{
-					if (WB1.list.MouseScroll(m.vert)) WB1.Parse();
+					if (WB1.list.MouseScroll(mouse.vert)) WB1.Parse();
 				}
 				//Drag scroller
 				scroll_wv.all_redraw = 0;
-				if (!m.lkm) scroll_used=0;
-				if (m.x>=scroll_wv.start_x) && (m.x<=scroll_wv.start_x+scroll_wv.size_x) 
-				&& (m.y>=scroll_wv.start_y+scroll_wv.btn_height) && (-scroll_wv.btn_height+scroll_wv.start_y+scroll_wv.size_y>m.y)
-				&& (WB1.list.count>WB1.list.visible) && (m.lkm)
+				if (!mouse.lkm) scroll_used=0;
+				if (mouse.x>=scroll_wv.start_x) && (mouse.x<=scroll_wv.start_x+scroll_wv.size_x) 
+				&& (mouse.y>=scroll_wv.start_y+scroll_wv.btn_height) && (-scroll_wv.btn_height+scroll_wv.start_y+scroll_wv.size_y>mouse.y)
+				&& (WB1.list.count>WB1.list.visible) && (mouse.lkm)
 				{
 					scroll_used=1;
 				}				
 				if (scroll_used)
 				{
-					m.y = m.y / WB1.DrawBuf.zoomf + 5;
+					mouse.y = mouse.y / WB1.DrawBuf.zoomf + 5;
 					half_scroll_size = WB1.list.h - 16 * WB1.list.visible / WB1.list.count - 3 /2;
-					if (half_scroll_size+WB1.list.y>m.y) || (m.y<0) || (m.y>4000) m.y=half_scroll_size+WB1.list.y;
+					if (half_scroll_size+WB1.list.y>mouse.y) || (mouse.y<0) || (mouse.y>4000) mouse.y=half_scroll_size+WB1.list.y;
 					btn=WB1.list.first;
-					WB1.list.first = m.y -half_scroll_size -WB1.list.y * WB1.list.count / WB1.list.h;
+					WB1.list.first = mouse.y -half_scroll_size -WB1.list.y * WB1.list.count / WB1.list.h;
 					if (WB1.list.visible+WB1.list.first>WB1.list.count) WB1.list.first=WB1.list.count-WB1.list.visible;
 					if (btn!=WB1.list.first) WB1.Parse();
 				}
@@ -473,8 +473,8 @@ void Scan(int id)
 			return;
 		case 312:
 			SwitchToAnotherThread();
-			m.y = TOOLBAR_H-6;
-			m.x = Form.cwidth - 167;
+			mouse.y = TOOLBAR_H-6;
+			mouse.x = Form.cwidth - 167;
 			CreateThread(#menu_rmb,#stak+4092);
 			return;
 		case 122:

@@ -80,7 +80,7 @@ void main()
 	goto _DRAW;
 	loop()
    {
-		WaitEventTimeout(330);
+		WaitEventTimeout(7);
 		switch(EAX & 0xFF)
 		{
 		case evButton:
@@ -106,14 +106,10 @@ void main()
 			sc.get();
 			DefineAndDrawWindow(0,0,WIN_SIZE_X, WIN_SIZE_Y, 0x01, 0, 0, 0x01fffFFF);
 			//_PutImage(0,0,WIN_SIZE_X,WIN_SIZE_Y,shadow_buf);
-			if(!i){
-				_PutImage(0,0,WIN_SIZE_X, PANEL_Y,s1);
-				
-				_PutImage(0,PANEL_Y,sides_w, PANEL_SIZE_Y+1,s2);
-				_PutImage(sides_w+PANEL_SIZE_X+1,PANEL_Y,sides_w-1, PANEL_SIZE_Y+1,s3);
-				_PutImage(0,PANEL_Y+PANEL_SIZE_Y+1,WIN_SIZE_X, PANEL_Y-1,s4);
-				//i = 1;
-			}
+			_PutImage(0,0,WIN_SIZE_X, PANEL_Y,s1);
+			_PutImage(0,PANEL_Y,sides_w, PANEL_SIZE_Y+1,s2);
+			_PutImage(sides_w+PANEL_SIZE_X+1,PANEL_Y,sides_w-1, PANEL_SIZE_Y+1,s3);
+			_PutImage(0,PANEL_Y+PANEL_SIZE_Y+1,WIN_SIZE_X, PANEL_Y-1,s4);
 			draw_main_area(PANEL_X, PANEL_Y, PANEL_SIZE_X, PANEL_SIZE_Y);
 			break;
 		default: _DRAW:
