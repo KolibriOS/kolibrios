@@ -264,14 +264,14 @@ draw_window:
 	inc bx
 	int 0x40
 
-	mov eax,4
-	mov ebx,185*65536+9
-	mov ecx,[sc.work_text]
-	or  ecx,0x80000000
-	mov edx,txtFile
-	int 0x40
+	; mov eax,4
+	; mov ebx,185*65536+9
+	; mov ecx,[sc.work_text]
+	; or  ecx,0x80000000
+	; mov edx,txtFile
+	; int 0x40
 
-	stdcall [PathShow_draw], dword PathShow_data_1
+	; stdcall [PathShow_draw], dword PathShow_data_1
 	; stdcall [menu_bar_draw], dword menu_data_1
 
 	call draw_but_toolbar
