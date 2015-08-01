@@ -45,6 +45,8 @@ ted_but_new_file:
 	@@:
 	call On_NewFile
 	.ret_f:
+		mov byte[openfile_path],0
+		mcall 71,1,hed
 	pop ebx eax
 	ret
 
@@ -143,8 +145,6 @@ ted_but_open_file:
 	@@:
 	cmp [OpenDialog_data.status],1
 	jne .ret_f
-		stdcall [PathShow_prepare], PathShow_data_1
-		stdcall [PathShow_draw], PathShow_data_1
 
 		;ищем есть ли файл подсветки для открываемого текстового файла
 		mov esi,[OpenDialog_data.openfile_path]
@@ -193,10 +193,6 @@ proc ted_but_save_file
 	mov [OpenDialog_data.type],1
 	stdcall [OpenDialog_Start],OpenDialog_data
 	cmp [OpenDialog_data.status],1 ;if status==1 then save
-	jne .end_save_file
-		stdcall [PathShow_prepare], PathShow_data_1
-		stdcall [ted_save_file],tedit0,run_file_70,openfile_path
-	.end_save_file:
 	ret
 endp
 
@@ -259,7 +255,6 @@ ted_messages_after_open_file:
 		jl .ret_f
 			stdcall [mb_create],msgbox_1,thread
 	.ret_f:
-	stdcall [PathShow_prepare], PathShow_data_1
 	pop edi ecx
 	ret
 

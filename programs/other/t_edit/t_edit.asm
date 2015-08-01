@@ -120,10 +120,6 @@ mov	ebp,lib0
 
 ; OpenDialog initialisation
 	stdcall [OpenDialog_Init],OpenDialog_data
-	mov eax,[sc.work_button_text]
-	mov [PathShow_data_1.font_color],eax
-	mov eax,[sc.work_button]
-	mov [PathShow_data_1.background_color],eax
 
 ; init toolbar file
 	load_image_file 'te_icon.png', bmp_icon,TOOLBAR_ICONS_SIZE*2 ;умножение на 2 для серых кнопок
@@ -270,9 +266,6 @@ draw_window:
 	; or  ecx,0x80000000
 	; mov edx,txtFile
 	; int 0x40
-
-	; stdcall [PathShow_draw], dword PathShow_data_1
-	; stdcall [menu_bar_draw], dword menu_data_1
 
 	call draw_but_toolbar
 
@@ -503,20 +496,6 @@ button:
 	stdcall dword[tl_data_clear], tree1
 	mcall -1 ;выход из программы
 
-PathShow_data_1:
-.type			dd 0	;+0
-.start_y		dw 9	;+4
-.start_x		dw 222	;+6
-.font_size_x		dw 6	;+8     ; 6 - for font 0, 8 - for font 1
-.area_size_x		dw 200	;+10
-.font_number		dd 0	;+12    ; 0 - monospace, 1 - variable
-.background_flag	dd 1	;+16
-.font_color		dd 0x0	;+20
-.background_color	dd 0xffffff	;+24
-.text_pointer		dd openfile_path	;+28
-.work_area_pointer	dd text_work_area	;+32
-.temp_text_length	dd 0	;+36
-
 edit2 edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_find, mouse_dd, 0
 
 unpac_mem dd 0
@@ -564,7 +543,10 @@ l_libs_start:
 load_lib_end:
 
 IncludeIGlobals
+hed db 'TextEdit '
 i_end:
+	openfile_path: ;полный путь к файлу с которым идет работа
+		rb 4096
 	dir_mem rb 32+304*count_of_dir_list_files
 	wnd_s_pos: ;место для настроек стартовой позиции окна
 		rq 1
@@ -587,8 +569,6 @@ stacktop:
 	syntax_path: ;имя подключаемого файла синтаксиса
 		rb 4096
 	plugin_path:
-		rb 4096
-	openfile_path: ;полный путь к файлу с которым идет работа
 		rb 4096
 	text_work_area: ;путь к файлу, который показывается в окне
 		rb 4096
