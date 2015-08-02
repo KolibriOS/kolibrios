@@ -234,7 +234,7 @@ void main()
 			if (key==51) SetColorThemeDark();
 			if (key==ASCII_KEY_LEFT) RunProgram("@VOLUME", "-");
 			if (key==ASCII_KEY_RIGHT) RunProgram("@VOLUME", "+");
-			if (key=='mouse') RunProgram("@VOLUME", "mouse");
+			if (key=='m') RunProgram("@VOLUME", "m");
 			if (key==ASCII_KEY_ENTER) StartPlayingMp3();
 			if (key=='p') || (key==ASCII_KEY_SPACE)
 			{
