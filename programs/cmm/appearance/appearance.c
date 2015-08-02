@@ -50,10 +50,10 @@ void Open_Dir()
 {
 	int j;
 	list[active].count = 0;
-	io.dir_buffer(#folder_path,DIR_ONLYREAL);
+	io.dir.load(#folder_path,DIR_ONLYREAL);
 	for (j=0; j<io.dir.count; j++)
 	{
-		strcpy(#temp_filename, io.dir_position(j));
+		strcpy(#temp_filename, io.dir.position(j));
 		strlwr(#temp_filename);
 		if (active==SKINS) if (strcmpi(#temp_filename+strlen(#temp_filename)-4,".skn")!=0) continue;
 		if (active==WALLPAPERS) if (strcmpi(#temp_filename+strlen(#temp_filename)-4,".txt")==0) continue;
@@ -76,7 +76,7 @@ void Draw_List()
 	for (i=0; i<list_last; i++;)
 	{
 		cur = list[active].first;
-		strcpy(#temp_filename, io.dir_position(files_mas[i+cur]));
+		strcpy(#temp_filename, io.dir.position(files_mas[i+cur]));
 		temp_filename[strlen(#temp_filename)-4] = 0;
 		yyy = i*list[active].line_h+list[active].y;
 		
@@ -126,7 +126,7 @@ void Apply()
 		strcpy(#cur_file_path, #folder_path);
 		cur = list[SKINS].current;
 		chrcat(#cur_file_path, '/');
-		strcat(#cur_file_path, io.dir_position(files_mas[cur]));
+		strcat(#cur_file_path, io.dir.position(files_mas[cur]));
 		SetSystemSkin(#cur_file_path);
 	} 
 	if (list[WALLPAPERS].active)
@@ -135,7 +135,7 @@ void Apply()
 		strcat(#cur_file_path, #folder_path);
 		cur = list[WALLPAPERS].current;
 		chrcat(#cur_file_path, '/');
-		strcat(#cur_file_path, io.dir_position(files_mas[cur]));
+		strcat(#cur_file_path, io.dir.position(files_mas[cur]));
 		RunProgram("/sys/media/kiv", #cur_file_path);
 		Draw_List();
 	}
