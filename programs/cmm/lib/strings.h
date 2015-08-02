@@ -849,12 +849,12 @@ inline cdecl int sprintf(dword buf, format,...)
 					tmp = itoa(tmp);
 					if(!DSBYTE[tmp])goto END_FUNC_SPRINTF;
 					l = strlen(tmp);
-					strncpy(buf,tmp,l);
+					strlcpy(buf,tmp,l);
 					buf += l;
 				break;
 				case 'a':
 				case 'A':
-					strncpy(buf,"0x00000000",10);
+					strlcpy(buf,"0x00000000",10);
 					buf+=10;
 					l=buf;
 					while(tmp)
@@ -871,7 +871,7 @@ inline cdecl int sprintf(dword buf, format,...)
 					tmp = itoa(#tmp);
 					if(!DSBYTE[tmp])goto END_FUNC_SPRINTF;
 					l = strlen(tmp);
-					strncpy(buf,tmp,l);
+					strlcpy(buf,tmp,l);
 					buf += l;
 				break;
 				case '%':

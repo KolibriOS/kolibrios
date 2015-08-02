@@ -51,7 +51,7 @@
 	__file_F70.rezerv = 0;
 	__file_F70.param3 = file_count;
 	__file_F70.param4 = read_buffer;
-	__file_F70.name = dir_path;
+	__file_F70.name = io.path.path(dir_path);
 	$mov eax,70
 	$mov ebx,#__file_F70.func
 	$int 0x40
@@ -65,7 +65,7 @@
     __file_F70.param3 = 0;
     __file_F70.param4 = bdvk_struct;
     __file_F70.rezerv = 0;
-    __file_F70.name = file_path;
+    __file_F70.name = io.path.path(file_path);
     $mov eax,70
     $mov ebx,#__file_F70.func
     $int 0x40
@@ -102,7 +102,7 @@
     __file_F70.param3 = 0;
     __file_F70.param4 = #io.BDVK;
     __file_F70.rezerv = 0;
-    __file_F70.name = file_path;
+    __file_F70.name = io.path.path(file_path);
     $mov eax,70
     $mov ebx,#__file_F70.func
     $int 0x40
@@ -115,7 +115,7 @@
 	__file_F70.param3 = 
 	__file_F70.param4 = 
 	__file_F70.rezerv = 0;
-	__file_F70.name = PATH;
+	__file_F70.name = io.path.path(PATH);
 	$mov eax,70
 	$mov ebx,#__file_F70.func
 	$int 0x40
@@ -128,7 +128,7 @@
 	__file_F70.param3 = read_file_size;
 	__file_F70.param4 = read_buffer;
 	__file_F70.rezerv = 0;
-	__file_F70.name = read_file_path;
+	__file_F70.name = io.path.path(read_file_path);
 	$mov eax,70
 	$mov ebx,#__file_F70.func
 	$int 0x40
@@ -141,7 +141,7 @@
 	__file_F70.param3 = write_file_size;
 	__file_F70.param4 = write_buffer;
 	__file_F70.rezerv = 0;
-	__file_F70.name = write_file_path;
+	__file_F70.name = io.path.path(write_file_path);
 	$mov eax,70
 	$mov ebx,#__file_F70.func
 	$int 0x40
@@ -149,9 +149,14 @@
 :struct __DIR
 {
 	int make(dword name);
+	dword position(dword i);
 	dword buffer;
 	signed count;
 };
+:dword __DIR::position(dword i)
+{
+	return i*304+buffer+72;
+}
 :int __DIR::make(dword new_folder_path)
 {
 	__file_F70.func = 9;
@@ -160,7 +165,7 @@
 	__file_F70.param3 = 
 	__file_F70.param4 = 
 	__file_F70.rezerv = 0;
-	__file_F70.name = new_folder_path;
+	__file_F70.name = io.path.path(new_folder_path);
 	$mov eax,70
 	$mov ebx,#__file_F70.func
 	$int 0x40
@@ -171,40 +176,28 @@
 	dword file(...);
 	dword path(...);
 };
+
 :char __PATH_NEW[4096];
 :dword __PATH::path(dword PATH)
 {
-	dword _NPT;
-	_NPT = #__PATH_NEW;
-	if(DSBYTE[PATH]=='/')
+	dword pos = PATH;
+	if(DSBYTE[pos]=='/')
 	{
-		if(strcmp(PATH,"sys/",4))
-			if(strcmp(PATH,"hd/",3))
-				if(strcmp(PATH,"rd/",3))
-					if(strcmp(PATH,"tmp/",4))
-						if(strcmp(PATH,"fd/",3))
-							if(strcmp(PATH,"cd/",3)) sprintf(_NPT,"/%s%s","sys",PATH);
+		pos++;
+		if(!strncmp(pos,"sys/",4)) return PATH;
+		if(!strncmp(pos,"hd/",3)) return PATH;
+		if(!strncmp(pos,"fd/",3)) return PATH;
+		if(!strncmp(pos,"rd/",3)) return PATH;
+		if(!strncmp(pos,"tmp/",4)) return PATH;
+		if(!strncmp(pos,"cd/",3)) return PATH;
+		if(!strncmp(pos,"bd/",3)) return PATH;
+		if(!strncmp(pos,"usbhd/",6)) return PATH;
+		sprintf(#__PATH_NEW,"/sys%s",PATH);
+		return #__PATH_NEW;
 	}
-	while(DSBYTE[_NPT])
-	{
-		if(DSBYTE[_NPT]=='.')
-		{
-			if(DSBYTE[_NPT+1]=='.')
-			{
-				if(DSBYTE[_NPT+1]=='/')
-				{
-					
-				}
-			}
-			else if(DSBYTE[_NPT+1]=='/')
-			{
-				_NPT++;
-				sprintf(_NPT,"/%s%s","sys",_NPT);
-			}
-		}
-		_NPT++;
-	}
-	return _NPT;
+	if(!strncmp(PATH,"./",2)) return PATH;
+	sprintf(#__PATH_NEW,"%s/%s",__DIR__,PATH);
+	return #__PATH_NEW;
 }
 
 :dword __PATH::file(dword name)
@@ -230,7 +223,6 @@
 	dword get_size_dir(dword name);
 	signed count(dword path);
 	dword dir_buffer(dword path;byte options);
-	dword dir_position(dword pos);
 	signed int run(dword path,param);
 	byte del(...);
 	dword read(...);
@@ -251,10 +243,10 @@
 	byte size_nm[3];
 	dword bytes;
 	bytes = FILES_SIZE;
-	if (bytes>=1073741824) strncpy(#size_nm, __T__GB,2);
-	else if (bytes>=1048576) strncpy(#size_nm, __T__MB,2);
-	else if (bytes>=1024) strncpy(#size_nm, __T__KB,2);
-	else strncpy(#size_nm, __T___B,1);
+	if (bytes>=1073741824) strlcpy(#size_nm, __T__GB,2);
+	else if (bytes>=1048576) strlcpy(#size_nm, __T__MB,2);
+	else if (bytes>=1024) strlcpy(#size_nm, __T__KB,2);
+	else strlcpy(#size_nm, __T___B,1);
 	while (bytes>1023) bytes/=1024;
 	sprintf(#__ConvertSize_size_prefix,"%d %s",bytes,#size_nm);
 	return #__ConvertSize_size_prefix;
@@ -282,7 +274,7 @@
     __file_F70.param4 = 
     __file_F70.rezerv = 0;
     __file_F70.param2 = rparam;
-    __file_F70.name = rpath;
+    __file_F70.name = path.path(rpath);
     $mov eax,70
     $mov ebx,#__file_F70.func
     $int 0x40
@@ -297,10 +289,7 @@
 	}
 	return -1;
 }
-:dword IO::dir_position(dword pos)
-{
-	return pos*304+dir.buffer+72;
-}
+
 :dword IO::dir_buffer(dword PATH;byte options)
 {
 	count(PATH);

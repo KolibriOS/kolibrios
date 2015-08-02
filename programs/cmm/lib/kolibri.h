@@ -904,15 +904,51 @@ inline fastcall dword GetStartTime()
 	//WriteText(x, y, 0x80, 0x000000, #text);
 }
 
+:void __path_name__(dword BUF,PATH)
+{
+	dword beg = PATH;
+	dword pos = PATH;
+	dword sav = PATH;
+	dword i;
+	while(DSBYTE[pos])
+	{
+		if(DSBYTE[pos]=='/')sav = pos;
+		pos++;
+	}
+	i = sav-beg;
+	while(i)
+	{
+		DSBYTE[BUF] = DSBYTE[beg];
+		beg++;
+		BUF++;
+		i--;
+	}
+	/*while(DSBYTE[beg])
+	{
+		DSBYTE[BUF1] = DSBYTE[beg];
+		beg++;
+		BUF1++;
+	}*/
+	//DSBYTE[BUF1] = 0;
+	DSBYTE[BUF] = 0;
+}
+
 dword __generator;  // random number generator - для генерации случайных чисел
 
 :dword program_path_length;
 
+char __BUF_DIR__[4096];
+
+dword __DIR__;
+
 //The initialization of the initial data before running
 void load_init_main()
 {
-	SKIN.height   = GetSkinHeight();
+	__DIR__ = #__BUF_DIR__;
 	
+	__path_name__(__DIR__,I_Path);
+	
+	SKIN.height   = GetSkinHeight();
 	screen.width  = GetScreenWidth();
 	screen.height = GetScreenHeight();
 	
