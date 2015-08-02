@@ -7,7 +7,7 @@ color_wnd_bord dd 0xc0c0c0
 color_select dd 0x3E3D32
 color_cur_text dd 0x808080
 color_wnd_text:
-	dd 0xF8F8F2
+	dd 0xD0D0D0 ;F8F8F2
 	dd 0xffff00
 	dd 0x00ff00
 	dd 0x00ffff

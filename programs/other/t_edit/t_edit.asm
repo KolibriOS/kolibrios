@@ -121,6 +121,29 @@ mov	ebp,lib0
 ; OpenDialog initialisation
 	stdcall [OpenDialog_Init],OpenDialog_data
 
+; kmenu initialisation	
+	stdcall [kmenu_init], sc
+	
+	stdcall [ksubmenu_new]
+	mov [main_menu], eax
+	
+	stdcall [ksubmenu_new]
+	mov [main_menu_file], eax
+	
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_File_New, 3
+	stdcall [ksubmenu_add], [main_menu_file], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_File_Open, 4
+	stdcall [ksubmenu_add], [main_menu_file], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_File_Save, 5
+	stdcall [ksubmenu_add], [main_menu_file], eax
+	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
+	stdcall [ksubmenu_add], [main_menu_file], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_File_Exit, 199
+	stdcall [ksubmenu_add], [main_menu_file], eax
+	
+	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_File, [main_menu_file]
+	stdcall [ksubmenu_add], [main_menu], eax
+
 ; init toolbar file
 	load_image_file 'te_icon.png', bmp_icon,TOOLBAR_ICONS_SIZE*2 ;умножение на 2 для серых кнопок
 	mov eax,[bmp_icon]
@@ -260,14 +283,9 @@ draw_window:
 	inc bx
 	int 0x40
 
-	; mov eax,4
-	; mov ebx,185*65536+9
-	; mov ecx,[sc.work_text]
-	; or  ecx,0x80000000
-	; mov edx,txtFile
-	; int 0x40
-
 	call draw_but_toolbar
+	
+	stdcall [kmainmenu_draw], [main_menu]
 
 	stdcall [ted_draw], tedit0
 
@@ -276,6 +294,7 @@ draw_window:
 
 align 4
 mouse:
+	stdcall [kmainmenu_dispatch_cursorevent], [main_menu]
 	stdcall [ted_mouse], tedit0
 
 	cmp byte[tedit0.panel_id],TED_PANEL_FIND ;if not panel
@@ -283,30 +302,9 @@ mouse:
 		stdcall [edit_box_mouse], dword edit2
 	@@:
 	cmp byte[tedit0.panel_id],TED_PANEL_SYNTAX ;if not panel
-	jne @f ;.menu_bar_1
+	jne .mouse_end
 	stdcall [tl_mouse], tree1
-;-----------------------------------------------
-.menu_bar_1:
-	mov [menu_data_1.get_mouse_flag],1
-; mouse event for Menu 1
-	stdcall [menu_bar_mouse],dword menu_data_1
-	cmp dword[menu_data_1.click],1
-	jne .mnu_1
-	cmp dword[menu_data_1.cursor_out],4
-	je button.exit	
-	cmp dword[menu_data_1.cursor_out],3
-	jne @f
-		call ted_but_save_file
-	@@:
-	cmp dword[menu_data_1.cursor_out],2
-	jne @f
-		call ted_but_open_file
-	@@:
-	cmp dword[menu_data_1.cursor_out],1
-	jne @f
-		call ted_but_new_file
-	@@:
-.mnu_1:
+.mouse_end:
 	jmp still
 ;---------------------------------------------------------------------
 
@@ -377,11 +375,6 @@ key:
 
 align 4
 button:
-;  cmp [menu_active],1 ;если нажали меню, то сначала реакция на меню
-;  jne @f ;mouse.menu_bar_1
-;    mov [menu_active],0
-;    jmp still
-;  @@:
 
   mcall 17 ;получить код нажатой кнопки
   cmp ah,3
@@ -475,7 +468,12 @@ button:
   @@:
 
   cmp ah,1
-  jne still
+  je .exit
+
+  cmp ah,199
+  je .exit
+  
+  jmp still
 .exit:
 	cmp dword[exit_code],1
 	je @f
@@ -513,6 +511,8 @@ if lang eq ru
   err_message_import_3 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,0
   err_message_found_lib_4 db 'Не найдена библиотека ',39,'libini.obj',39,0
   err_message_import_4 db 'Ошибка при импорте библиотеки ',39,'libini.obj',39,0
+  err_message_found_lib_5 db 'Не найдена библиотека ',39,'libkmenu.obj',39,0
+  err_message_import_5 db 'Ошибка при импорте библиотеки ',39,'libkmenu.obj',39,0
 else
   head_f_i:
   head_f_l db 'System error',0
@@ -526,6 +526,8 @@ else
   err_message_import_3 db 'Error on load import library ',39,'libimg.obj',39,0
   err_message_found_lib_4 db 'Sorry I cannot found library ',39,'libini.obj',39,0
   err_message_import_4 db 'Error on load import library ',39,'libini.obj',39,0
+  err_message_found_lib_5 db 'Sorry I cannot found library ',39,'libkmenu.obj',39,0
+  err_message_import_5 db 'Error on load import library ',39,'libkmenu.obj',39,0
 end if
 
 ;library structures
@@ -540,6 +542,8 @@ l_libs_start:
 		err_message_found_lib_3, head_f_l, import_libimg, err_message_import_3, head_f_i
 	lib4 l_libs lib_name_4, sys_path, file_name, system_dir_4,\
 		err_message_found_lib_4, head_f_l, import_libini, err_message_import_4, head_f_i
+	lib5 l_libs lib_name_5, sys_path, file_name, system_dir_5,\
+		err_message_found_lib_5, head_f_l, import_libkmenu, err_message_import_5, head_f_i
 load_lib_end:
 
 IncludeIGlobals
