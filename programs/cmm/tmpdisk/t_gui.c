@@ -89,18 +89,6 @@ void Main_Window()
             break;
         case evKey:
 			key = GetKey();
-			if (TestBit(edit_disk_size.flags,2))
-			{
-				if (key==185) AddDisk();
-				if (key==13)
-				{
-					edit_disk_size.flags=1000000000000000b;
-					edit_box_draw stdcall (#edit_disk_size);
-				}
-				EAX=key<<8;
-				edit_box_key stdcall(#edit_disk_size);
-				break;
-			}
 			switch(key) 
 			{
 				case 9:
@@ -115,7 +103,8 @@ void Main_Window()
 					if (disk_num<>0) DelDisk();
 					break;
 				case 13:
-					OpenTmpDisk();
+					if ( !asm test edit_disk_size.flags, 2) OpenTmpDisk();
+					else AddDisk();
 					break;
 				case 178:
 					if (selected==0) break;
@@ -138,10 +127,12 @@ void Main_Window()
 					DrawTmpDisks();
 					break;
 			}
+			EAX=key<<8;
+			edit_box_key stdcall(#edit_disk_size);
 			break;
          case evReDraw:			
 			sc.get();
-			DefineAndDrawWindow(170,150,314,270,0x74,sc.work,"Virtual Disk Manager 0.6",0);
+			DefineAndDrawWindow(170,150,314,270,0x74,sc.work,"Virtual Disk Manager 0.61",0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
 

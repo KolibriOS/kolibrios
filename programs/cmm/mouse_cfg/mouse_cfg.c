@@ -22,7 +22,7 @@
 	?define POINTER_SPEED "Скорость указателя мыши"
 	?define POINTER_DELAY "Задержка указателя мыши"
 	?define MOUSE_EMULATION "Эмуляция управления указателем через клавиатуру"
-	?define MADMOUSE "Скрозные для курсора стороны экрана"
+	?define MADMOUSE "Сквозные для курсора стороны экрана"
 #else
 	?define WINDOW_TITLE "Mouse testing and configuration"
 	?define CHECK_MOUSE_1 "Click on this area to"

@@ -9,7 +9,7 @@
 #include "..\lib\mem.h"
 #include "..\lib\strings.h"
 #include "..\lib\dll.h"
-#include "..\lib\file_system.h"
+#include "..\lib\io.h"
 #include "..\lib\list_box.h"
 #include "..\lib\gui.h"
 #include "..\lib\obj\box_lib.h"
@@ -26,9 +26,8 @@
 
 unsigned char icons[]= FROM "icons.raw";
 
-
 #define PANEL_H 30
-#define SKINS_STANDART_PATH "/kolibrios/res/skins"
+#define SKINS_STANDART_PATH "/sys/skins" //"/kolibrios/res/skins"
 #define WALP_STANDART_PATH "/kolibrios/res/wallpapers"
 
 llist list[2];
@@ -39,7 +38,6 @@ char folder_path[4096];
 char cur_file_path[4096];
 char temp_filename[4096];
 int files_mas[100];
-dword buf;
 
 int cur;
 
@@ -48,22 +46,14 @@ proc_info Form;
 
 scroll_bar scroll1 = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
-#include "other.h"
-
-//icons configurate, delete from list, delete from disk, make default
-//remember current
-
 void Open_Dir()
 {
-	int j, filesnum;
-
+	int j;
 	list[active].count = 0;
-	free(buf);
-	if (GetDir(#buf, #filesnum, #folder_path, DIRS_ONLYREAL)!=0) return;
-
-	for (j=0; j<filesnum; j++)
+	io.dir_buffer(#folder_path,DIR_ONLYREAL);
+	for (j=0; j<io.dir.count; j++)
 	{
-		strcpy(#temp_filename, j*304 + buf+72);
+		strcpy(#temp_filename, io.dir_position(j));
 		strlwr(#temp_filename);
 		if (active==SKINS) if (strcmpi(#temp_filename+strlen(#temp_filename)-4,".skn")!=0) continue;
 		if (active==WALLPAPERS) if (strcmpi(#temp_filename+strlen(#temp_filename)-4,".txt")==0) continue;
@@ -72,7 +62,6 @@ void Open_Dir()
 		if (!strcmpi("default.skn",#temp_filename)) files_mas[0]><files_mas[list[active].count];
 		list[active].count++;
 	}
-	Sort_by_Name(0, list[active].count-1); 
 }
 
 void Draw_List()
@@ -87,7 +76,7 @@ void Draw_List()
 	for (i=0; i<list_last; i++;)
 	{
 		cur = list[active].first;
-		strcpy(#temp_filename, files_mas[i+cur]*304 + buf+72);
+		strcpy(#temp_filename, io.dir_position(files_mas[i+cur]));
 		temp_filename[strlen(#temp_filename)-4] = 0;
 		yyy = i*list[active].line_h+list[active].y;
 		
@@ -137,9 +126,8 @@ void Apply()
 		strcpy(#cur_file_path, #folder_path);
 		cur = list[SKINS].current;
 		chrcat(#cur_file_path, '/');
-		strcat(#cur_file_path, files_mas[cur]*304 + buf+72);
+		strcat(#cur_file_path, io.dir_position(files_mas[cur]));
 		SetSystemSkin(#cur_file_path);
-		//Draw_List();
 	} 
 	if (list[WALLPAPERS].active)
 	{
@@ -147,7 +135,7 @@ void Apply()
 		strcat(#cur_file_path, #folder_path);
 		cur = list[WALLPAPERS].current;
 		chrcat(#cur_file_path, '/');
-		strcat(#cur_file_path, files_mas[cur]*304 + buf+72);
+		strcat(#cur_file_path, io.dir_position(files_mas[cur]));
 		RunProgram("/sys/media/kiv", #cur_file_path);
 		Draw_List();
 	}
@@ -261,10 +249,8 @@ void DrawTab(dword x,y, but_id, is_active, text)
 void DrawTabs()
 {
 	DrawBar(0,0, Form.cwidth, PANEL_H-1, sc.work);
-
 	DrawTab(10,7, 2, list[WALLPAPERS].active, T_WALLPAPERS);
 	DrawTab(strlen(T_WALLPAPERS)*6+BT_PADDING+21,7, 3, list[SKINS].active, T_SKINS);
-
 	DrawBar(0,PANEL_H-2, Form.cwidth, 1, sc.work_graph);
 	DrawBar(0,PANEL_H-1, Form.cwidth, 1, 0xEEEeee);
 }
