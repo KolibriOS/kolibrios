@@ -1,8 +1,8 @@
 /*
-SOFTWARE CENTER v2.31
+SOFTWARE CENTER v2.32
 */
 
-#define MEMSIZE 0x3E80
+#define MEMSIZE 0x5000
 #include "..\lib\kolibri.h" 
 #include "..\lib\strings.h" 
 #include "..\lib\mem.h" 
