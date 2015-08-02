@@ -56,7 +56,6 @@ struct mouse_cfg1 {
 void main() {
 	char id, old_button_clicked;
 
-	mem_Init();
 	load_dll(boxlib, #box_lib_init,0);
 
 	LoadCfg();

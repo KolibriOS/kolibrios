@@ -38,7 +38,6 @@ void main()
 {
 	int id, key;
 
-	mem_Init();
 	load_dll(libtruetype, #truetype, 1);
 	load_dll(Proc_lib, #OpenDialog_init,0);
 	OpenDialog_init stdcall (#o_dialog);

@@ -122,7 +122,6 @@ void main()
 	int half_scroll_size;
 	int scroll_used=0, show_menu;
 	
-	mem_Init();
 	CursorPointer.Load(#CursorFile);
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libio, #libio_init,1);

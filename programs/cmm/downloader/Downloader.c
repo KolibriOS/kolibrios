@@ -48,7 +48,6 @@ void main()
 	char filepath[4096];
 	char notify_message[4296];
 	
-	mem_Init();
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libio, #libio_init,1);
 	load_dll(libHTTP, #http_lib_init,1);	

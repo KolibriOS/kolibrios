@@ -179,7 +179,7 @@ void main()
 	char IPC_BUF[10];
 	dword tmp;
 	rand_n = random(40);
-	mem_Init();
+
 	load_dll(boxlib, #box_lib_init,0);
     load_dll(libini, #lib_init,1);
 	eolite_ini_path = abspath("Eolite.ini"); 

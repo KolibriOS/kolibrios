@@ -52,7 +52,6 @@ void main()
 	int key;
 	dword s1,s2, s3, s4, sides_w,i;
 
-	mem_Init();
 	WIN_SIZE_X=GetScreenWidth()+1;
 	WIN_SIZE_Y=GetScreenHeight()+1;
 	PANEL_X=WIN_SIZE_X-PANEL_SIZE_X/2;

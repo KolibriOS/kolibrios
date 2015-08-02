@@ -127,7 +127,6 @@ void main()
 	strcpy(#menu_text_area1.sub_menu4, MENU1_SUBMENU4);
 	menu_text_area1.end = 0;
 	
-	mem_Init();
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libio, #libio_init,1);
 	load_dll(Proc_lib, #OpenDialog_init,0);

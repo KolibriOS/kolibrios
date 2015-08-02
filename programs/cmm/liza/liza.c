@@ -100,7 +100,7 @@ char version[]=" WebView 0.1";
 #include "parselist.c"
 
 void main() {
-	mem_Init();
+
 	CursorPointer.Load(#CursorFile);
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(network_lib, #network_lib_init,0);

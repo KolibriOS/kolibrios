@@ -959,7 +959,14 @@ void ______INIT______()
 	//program_path_length = strlen(I_Path);
 	MOUSE_TIME = 50; //Default 500 ms.
 	__generator = GetStartTime();
-	//mem_Init();
+	
+	$push    ebx
+	$mov     eax, 68
+	$mov     ebx, 11
+	$int     0x40
+	
+	$pop     ebx
+
 	main();
 }
 ______STOP______:

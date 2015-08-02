@@ -63,7 +63,7 @@ void load_config()
 void main()
 {   
 	dword id, key;
-	mem_Init();
+
 	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libini, #lib_init,1);

@@ -164,7 +164,6 @@ void main()
 {   
 	int id, key, mouse_clicked;
 
-	mem_Init();
 	SetEventMask(0x27);
 	load_dll(boxlib, #box_lib_init,0);
 	list[SKINS].current = list[WALLPAPERS].current = -1;

@@ -12,7 +12,6 @@ void main()
 	char install_path[4096];
 	signed int result;
 
-	mem_Init();
 	pause(200);
 	GetDir(#dirbuf, #fcount, "/", DIRS_ONLYREAL);
 

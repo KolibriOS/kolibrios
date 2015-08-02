@@ -34,7 +34,7 @@ edit_box edit1= {200,20,16,0xffffff,0x94AECE,0x94AECE,0x94AECE,0,248,#edword,#mo
 void main()
 {   
 	int id, key;
-   	mem_Init();
+	
 	load_dll(boxlib, #box_lib_init,0);
 
 	dict_folder = abspath(DICT_DIRECROTY);

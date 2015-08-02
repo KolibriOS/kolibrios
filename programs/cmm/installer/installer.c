@@ -14,7 +14,7 @@
 
 void main()
 {
-	mem_Init();
+
 	SetAddApplDir("kolibrios", abspath("kolibrios")+1);
 	RunProgram("/sys/media/kiv", "\\S__/kolibrios/res/Wallpapers/In the wind there is longing.png");
 	copyf(abspath("tmp"), "/tmp0/1");
