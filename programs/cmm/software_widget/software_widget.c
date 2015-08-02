@@ -3,11 +3,9 @@ SOFTWARE CENTER v2.32
 */
 
 #define MEMSIZE 0x5000
-#include "..\lib\kolibri.h" 
 #include "..\lib\strings.h" 
 #include "..\lib\mem.h" 
 #include "..\lib\file_system.h"
-#include "..\lib\dll.h"
 #include "..\lib\gui.h"
 
 #include "..\lib\obj\libio_lib.h"
@@ -124,8 +122,8 @@ byte search_for_id_need_to_run(dword key_value, key_name, sec_name, f_name)
 		RunProgram(key_value, "");
 	}
 	current_item_id++;
-	if (strncmp(key_value, "/kolibrios/", 11)==0) && (!kolibrios_mounted) current_item_id--;
-	return 1;
+	if (!strncmp(key_value, "/kolibrios/", 11)) && (!kolibrios_mounted) current_item_id--;
+	return true;
 }
 
 
@@ -141,7 +139,7 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 	}
 
 	//do not show items located in /kolibrios/ if this directory not mounted
-	if (strncmp(key_value, "/kolibrios/", 11)==0) && (!kolibrios_mounted) return 1;
+	if (!strncmp(key_value, "/kolibrios/", 11)) && (!kolibrios_mounted) return true;
 
 	if (col==0) DrawBar(0, row * cell_h + list_pos, Form.cwidth, cell_h, LIST_BACKGROUND_COLOR);
 	DefineButton(col*cell_w+6,row*cell_h + list_pos,cell_w,cell_h-5,current_item_id + 100 + BT_HIDE,0);
@@ -154,13 +152,13 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 	WriteTextCenter(col*cell_w+6,row*cell_h+46 + list_pos,cell_w,0x000000,key_name);
 	current_item_id++;
 	col++;
-	return 1;
+	return true;
 }
 
 
 byte process_sections(dword sec_name, f_name)
 {
-	if (strcmp(sec_name, "Config")==0) return 1;
+	if (!strcmp(sec_name, "Config")) return true;
 
 	if (item_id_need_to_run!=-1)
 	{
@@ -183,7 +181,7 @@ byte process_sections(dword sec_name, f_name)
 		list_pos += 20;
 		ini_enum_keys stdcall (f_name, sec_name, #draw_icons_from_section);
 	}
-	return 1;
+	return true;
 }
 
 void draw_top_bar()

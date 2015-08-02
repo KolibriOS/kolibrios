@@ -5,10 +5,8 @@
 #endif
 
 #define MEMSIZE 0xFE800
-#include "..\lib\kolibri.h"
 #include "..\lib\mem.h"
 #include "..\lib\strings.h"
-#include "..\lib\dll.h"
 #include "..\lib\io.h"
 #include "..\lib\list_box.h"
 #include "..\lib\gui.h"
@@ -27,7 +25,9 @@
 unsigned char icons[]= FROM "icons.raw";
 
 #define PANEL_H 30
-#define SKINS_STANDART_PATH "/sys/skins" //"/kolibrios/res/skins"
+#define SKINS_STANDART_PATH "/sys/skins"
+							//"/kolibrios/res/skins"
+							
 #define WALP_STANDART_PATH "/kolibrios/res/wallpapers"
 
 llist list[2];
@@ -50,6 +50,7 @@ void Open_Dir()
 {
 	int j;
 	list[active].count = 0;
+	if(io.dir.buffer)free(io.dir.buffer);
 	io.dir.load(#folder_path,DIR_ONLYREAL);
 	for (j=0; j<io.dir.count; j++)
 	{
@@ -82,7 +83,7 @@ void Draw_List()
 		
 		if (list[active].current-list[active].first==i)
 		{
-			if (sc.work_button<>sc.work)
+			if (sc.work_button!=sc.work)
 			{
 				DrawBar(0, yyy, list[active].w, list[active].line_h, sc.work_button);
 				if (i<list[active].count) WriteText(12,yyy+list[active].text_y,0x80,sc.work_button_text, #temp_filename);
@@ -123,19 +124,14 @@ void Apply()
 {
 	if (list[SKINS].active)
 	{
-		strcpy(#cur_file_path, #folder_path);
 		cur = list[SKINS].current;
-		chrcat(#cur_file_path, '/');
-		strcat(#cur_file_path, io.dir.position(files_mas[cur]));
+		sprintf(#cur_file_path,"%s/%s",#folder_path,io.dir.position(files_mas[cur]));
 		SetSystemSkin(#cur_file_path);
 	} 
 	if (list[WALLPAPERS].active)
 	{
-		strcpy(#cur_file_path, "\\S__");
-		strcat(#cur_file_path, #folder_path);
 		cur = list[WALLPAPERS].current;
-		chrcat(#cur_file_path, '/');
-		strcat(#cur_file_path, io.dir.position(files_mas[cur]));
+		sprintf(#cur_file_path,"\\S__%s/%s",#folder_path,io.dir.position(files_mas[cur]));
 		RunProgram("/sys/media/kiv", #cur_file_path);
 		Draw_List();
 	}
@@ -165,15 +161,14 @@ void main()
 	  {
 	  	case evMouse:
 			if (!CheckActiveProcess(Form.ID)) break;
+			mouse.get();
 			scrollbar_v_mouse (#scroll1);
-			if (list[active].first <> scroll1.position)
+			if (list[active].first != scroll1.position)
 			{
 				list[active].first = scroll1.position;
 				Draw_List();
 				break;
 			}
-		
-	  		mouse.get();
 
 	  		if (mouse.vert)
 	  		{
@@ -181,13 +176,13 @@ void main()
 	  			if (list[WALLPAPERS].active) && (list[WALLPAPERS].MouseScroll(mouse.vert)) Draw_List();
 	  		} 
 
-	  		if (mouse_clicked)
+	  		if (mouse.up)&&(mouse_clicked)
 	  		{
-	  			if (!mouse.lkm) && (list[SKINS].active) && (list[SKINS].ProcessMouse(mouse.x, mouse.y)) Apply();
-	  			if (!mouse.lkm) && (list[WALLPAPERS].active) && (list[WALLPAPERS].ProcessMouse(mouse.x, mouse.y)) Apply();
-	  			mouse_clicked=0;
+	  			if (mouse.lkm) &&(list[SKINS].active) && (list[SKINS].ProcessMouse(mouse.x, mouse.y)) Apply();
+	  			if (mouse.lkm) &&(list[WALLPAPERS].active) && (list[WALLPAPERS].ProcessMouse(mouse.x, mouse.y)) Apply();
+	  			mouse_clicked=false;
 	  		}
-	  		if (mouse.lkm) && (list[SKINS].MouseOver(mouse.x, mouse.y)) mouse_clicked=1;
+	  		else if (mouse.down)&&(mouse.lkm) && (list[SKINS].MouseOver(mouse.x, mouse.y)) mouse_clicked=true;
 	  		break;
 
 
