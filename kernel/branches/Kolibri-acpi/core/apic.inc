@@ -441,11 +441,16 @@ pci_irq_fixup:
 
 align 4
 get_clock_ns:
+
+        mov     eax, [hpet_base]
+        test    eax, eax
+        jz      .old_tics
+
         push    ebx
         pushfd
         cli
 
-        mov     ebx, [hpet_base]
+        mov     ebx, eax
 @@:
         mov     edx, [ebx+0xF4]
         mov     eax, [ebx+0xF0]
@@ -461,5 +466,11 @@ get_clock_ns:
 
         popfd
         pop     ebx
+        ret
+
+.old_tics:
+        mov     eax, [timer_ticks]
+        mov     edx, 10000000
+        mul     edx
         ret
 

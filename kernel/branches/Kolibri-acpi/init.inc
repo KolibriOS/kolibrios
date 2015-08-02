@@ -438,6 +438,7 @@ acpi_ioapic_base  rd 1
 acpi_hpet_base    rd 1
 hpet_base         rd 1
 hpet_period       rd 1
+hpet_timers       rd 1
 
 cpu_count         rd 1
 smpt              rd 16
@@ -605,6 +606,14 @@ HPET_CFG                equ 0x010
 align 4
 init_hpet:
         mov     ebx, [hpet_base-OS_BASE]
+        test    ebx, ebx
+        jz      @F
+
+        mov     eax, [ebx]
+        and     ah, 0x1F
+        inc     ah
+        movzx   eax, ah
+        mov     [hpet_timers-OS_BASE], eax
 
         mov     eax, [ebx+HPET_PERIOD]
         mov     edx, 0x431BDE83
@@ -622,6 +631,7 @@ init_hpet:
 
         or      eax, HPET_CFG_ENABLE
         mov     [ebx+HPET_CFG], eax     ;and start again
+@@:
         ret
 
 

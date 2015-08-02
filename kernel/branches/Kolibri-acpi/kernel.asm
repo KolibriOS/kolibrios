@@ -698,17 +698,23 @@ setvideomode:
 @@:
         mov     [clipboard_main_list], eax
 
-        mov eax, [acpi_hpet_base]
-        DEBUGF  1, "K : ACPI HPET base %x\n", eax
-        mov eax, [hpet_base]
+        mov     eax, [hpet_base]
+        test    eax, eax
+        jz      @F
         DEBUGF  1, "K : HPET base %x\n", eax
-        mov eax, [hpet_period]
+        mov     eax, [hpet_period]
         DEBUGF  1, "K : HPET period %d\n", eax
+        mov     eax, [hpet_timers]
+        DEBUGF  1, "K : HPET timers %d\n", eax
 
         mov     eax, [hpet_base]
         stdcall map_io_mem, [hpet_base], 1024, PG_GLOBAL+PAT_UC+PG_SWR
         mov     [hpet_base], eax
 
+        mov     eax, [eax]
+        DEBUGF  1, "K : HPET caps %x\n", eax
+
+@@:
 ; SET UP OS TASK
 
         mov     esi, boot_setostask
