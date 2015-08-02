@@ -245,7 +245,7 @@ proc draw_panel_syntax
   mov edx,txtFormatCapt
   int 0x40
 
-  mov ebx,10*65536+50
+  mov ebx,10*65536+25
   add ebx,dword[tree1.box_height]
   add ebx,ted_wnd_t
   mov edx,txtFormatApply
