@@ -4,7 +4,6 @@
 
 #startaddress 0
 #code32 TRUE
-
 char   os_name[8]   = {'M','E','N','U','E','T','0','1'};
 dword  os_version   = 0x00000001;
 dword  start_addr   = #______INIT______;
@@ -93,12 +92,13 @@ char program_path[4096];
  *  move - event MOUSE movements
  *  click - when clicked
  *  dblclick - double-click the default 50 (500 ms)
+ *  drag - drag the element event
  */
 
 :dword __TMP_TIME,MOUSE_TIME;
 :struct MOUSE
 {
-	signed x,y,xx,yy,lkm,mkm,pkm,key,tmp,tmp_time,hor,vert,down,up,move,click,dblclick,left,top;
+	signed x,y,xx,yy,lkm,mkm,pkm,key,tmp,tmp_time,hor,vert,down,up,move,click,dblclick,drag,left,top;
 	dword handle,_;
 	byte cmd;
 	void clearTime();
@@ -203,14 +203,26 @@ char program_path[4096];
 	mkm = ECX;
 	
 	//when you release the MOUSE button
+	// Mouse Move Event
+	if(xx!=x)||(yy!=y)
+	{
+		move = true;
+		xx = x;
+		yy = y;
+	}
+	else move = false;
 	// Mouse Up Event
-	if((cmd)&&!(key)){
-		up = true;
+	if(cmd)&&(!key){
+		up   = true;
 		down = false;
+		drag = false;
 		if(!move) click = true;
-		move = false;
 		__TMP_TIME = GetStartTime();
-		if(__TMP_TIME-tmp_time<=MOUSE_TIME){ dblclick = true;click = false; }
+		if(__TMP_TIME-tmp_time<=MOUSE_TIME)
+		{ 
+			dblclick = true;
+			click    = false; 
+		}
 		tmp_time = __TMP_TIME;
 		//returns the key code
 		key = tmp;
@@ -224,20 +236,20 @@ char program_path[4096];
 	
 	//when you press the MOUSE button
 	// Mouse Down Event/Move Event
-	else {
+	else 
+	{
 	    up       = false;
 		click    = false;
 		dblclick = false;
 		down     = false;
 		// Mouse Move Event
-		if((xx!=x)||(yy!=y))
+		if(key)if(!cmd) 
 		{
-			move = true;
-			xx = x;
-			yy = y;
+			down = true;
+			if(move)drag = true;
+			cmd = true;
+			tmp=key;
 		}
-		else move = false;
-		if(key)if(!cmd) {down = true;cmd = true;tmp=key;}
 	}
 	
 	//scroll

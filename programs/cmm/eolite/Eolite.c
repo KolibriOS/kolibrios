@@ -189,13 +189,13 @@ void main()
 	if (param)
 	{
 		tmp = strlen(#path);
-		strncpy(#path, #param, tmp);
+		strlcpy(#path, #param, tmp);
 		$dec tmp
 		if (path[tmp]!='/') DSBYTE[#path+tmp] = '/'; //add "/" to the end of the string
 	}
 	else
 	{
-		strncpy(#path, "/rd/1/", 6);		
+		strlcpy(#path, "/rd/1/", 6);		
 	}
 	Open_Dir(#path,ONLY_OPEN);
 	SetEventMask(1100111b);
@@ -213,7 +213,7 @@ void main()
 				mouse.get();
 				
 				if (!mouse.mkm) && (stats>0) stats = 0;
-				if (mouse.mkm) && (stats==0)
+				if (mouse.mkm) && (!stats)
 				{
 					x_old = mouse.x;
 					y_old = mouse.y;
@@ -252,7 +252,7 @@ void main()
 						}
 					}
 				}	
-				if (files.MouseOver(mouse.x, mouse.y))&&((mouse.up)||(mouse.down)||(mouse.dblclick))
+				if (files.MouseOver(mouse.x, mouse.y))&&((mouse.down)||(mouse.dblclick))
 				{
 					//select/open file {
 					if (mouse.key&MOUSE_LEFT)&&((mouse.down)||(mouse.dblclick))
@@ -263,7 +263,7 @@ void main()
 							if (files.current!=id)
 							{
 								mouse.clearTime();
-								if (id<files.visible) List_Current(id-files.current);
+								if(id<files.visible) List_Current(id-files.current);
 							}
 							else if(mouse.dblclick)Open(0);
 						}
