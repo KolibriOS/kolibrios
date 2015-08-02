@@ -7,7 +7,7 @@ void main()
 	int id, key, i;
 	dword file;
 	mem_Init();
-	io.dir_buffer("",DIR_ONLYREAL);
+	io.dir.load(0,DIR_ONLYREAL);
 	loop()
    {
       switch(WaitEvent())
@@ -45,5 +45,3 @@ void draw_window()
 	}
 	WriteText(10,110,0x80,0,#param);
 }
-
-stop:

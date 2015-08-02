@@ -7,8 +7,8 @@
 
 char   os_name[8]   = {'M','E','N','U','E','T','0','1'};
 dword  os_version   = 0x00000001;
-dword  start_addr   = #load_init_main;
-dword  final_addr   = #stop+32;
+dword  start_addr   = #______INIT______;
+dword  final_addr   = #______STOP______+32;
 dword  alloc_mem    = MEMSIZE;
 dword  x86esp_reg   = MEMSIZE;
 dword  I_Param      = #param;
@@ -932,21 +932,25 @@ inline fastcall dword GetStartTime()
 	//DSBYTE[BUF1] = 0;
 	DSBYTE[BUF] = 0;
 }
+char __BUF_DIR__[4096];
+:struct SELF
+{
+	dword dir;
+	dword file;
+	dword path;
+} self;
 
 dword __generator;  // random number generator - для генерации случайных чисел
 
 :dword program_path_length;
 
-char __BUF_DIR__[4096];
-
-dword __DIR__;
-
 //The initialization of the initial data before running
-void load_init_main()
+void ______INIT______()
 {
-	__DIR__ = #__BUF_DIR__;
-	
-	__path_name__(__DIR__,I_Path);
+	self.dir = #__BUF_DIR__;
+	self.file = 0;
+	self.path = I_Path;
+	__path_name__(#__BUF_DIR__,I_Path);
 	
 	SKIN.height   = GetSkinHeight();
 	screen.width  = GetScreenWidth();
@@ -958,5 +962,5 @@ void load_init_main()
 	//mem_Init();
 	main();
 }
-
+______STOP______:
 #endif

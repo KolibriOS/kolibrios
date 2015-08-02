@@ -149,6 +149,7 @@
 :struct __DIR
 {
 	int make(dword name);
+	dword load(...);
 	dword position(dword i);
 	dword buffer;
 	signed count;
@@ -171,6 +172,29 @@
 	$int 0x40
 }
 
+:dword __DIR::load(dword PATH;byte options)
+{
+	io.count(PATH);
+	if(count!=-1)
+	{      
+		buffer = malloc(count+1*304+32);
+		___ReadDir(count, buffer, PATH);
+		if (options == DIR_ONLYREAL)
+		{
+			if (!strcmp(".",buffer+72)){count--; memmov(buffer,buffer+304,count*304);}
+			if (!strcmp("..",buffer+72)){count--; memmov(buffer,buffer+304,count*304);}
+			return buffer;
+		}
+		if (options == DIR_NOROOT)
+		{
+			if (!strcmp(".",buffer+72)) memmov(buffer,buffer+304,count*304-304);
+			return buffer;
+		}
+		return buffer;
+	}
+	return NULL;
+}
+
 :struct __PATH
 {
 	dword file(...);
@@ -180,7 +204,9 @@
 :char __PATH_NEW[4096];
 :dword __PATH::path(dword PATH)
 {
-	dword pos = PATH;
+	dword pos;
+	if(!PATH) return self.dir;
+	pos = PATH;
 	if(DSBYTE[pos]=='/')
 	{
 		pos++;
@@ -196,7 +222,7 @@
 		return #__PATH_NEW;
 	}
 	if(!strncmp(PATH,"./",2)) return PATH;
-	sprintf(#__PATH_NEW,"%s/%s",__DIR__,PATH);
+	sprintf(#__PATH_NEW,"%s/%s",self.dir,PATH);
 	return #__PATH_NEW;
 }
 
@@ -222,7 +248,6 @@
 	double size(...);
 	dword get_size_dir(dword name);
 	signed count(dword path);
-	dword dir_buffer(dword path;byte options);
 	signed int run(dword path,param);
 	byte del(...);
 	dword read(...);
@@ -290,31 +315,6 @@
 	return -1;
 }
 
-:dword IO::dir_buffer(dword PATH;byte options)
-{
-	count(PATH);
-	if(dir.count!=-1)
-	{
-		//if(dir.buffer) dir.buffer = realloc(dir.buffer,dir.count+1*304+32);
-		//else          
-		dir.buffer = malloc(dir.count+1*304+32);
-		___ReadDir(dir.count, dir.buffer, PATH);
-		if (options == DIR_ONLYREAL)
-		{
-			if (!strcmp(".",dir.buffer+72)){dir.count--; memmov(dir.buffer,dir.buffer+304,dir.count*304);}
-			if (!strcmp("..",dir.buffer+72)){dir.count--; memmov(dir.buffer,dir.buffer+304,dir.count*304);}
-			return dir.buffer;
-		}
-		if (options == DIR_NOROOT)
-		{
-			if (!strcmp(".",dir.buffer+72)) memmov(dir.buffer,dir.buffer+304,dir.count*304-304);
-			return dir.buffer;
-		}
-		return dir.buffer;
-	}
-	return NULL;
-}
-
 :double IO::size(dword PATH)
 {
 	dword i,tmp_buf,count_dir,count_file;
@@ -325,7 +325,7 @@
 	if(___GetFileInfo(PATH, #BDVK))return -1;
 	if(BDVK.isfolder)
 	{
-		tmp_buf = dir_buffer(PATH,DIR_ONLYREAL);
+		tmp_buf = dir.load(PATH,DIR_ONLYREAL);
 		if(dir.count<1)return 0;
 		count_dir = dir.count;
 		i = 0;
@@ -359,7 +359,7 @@
 	if(___GetFileInfo(PATH, #BDVK))return false;
 	if(BDVK.isfolder)
 	{
-		tmp_buf = dir_buffer(PATH,DIR_ONLYREAL);
+		tmp_buf = dir.load(PATH,DIR_ONLYREAL);
 		count_dir = dir.count;
 		i = 0;
 		count_file = malloc(4096);
@@ -388,7 +388,7 @@
 	cmd_system = atr&11b;
 	if(BDVK.isfolder)
 	{
-		tmp_buf = dir_buffer(PATH,DIR_ONLYREAL);
+		tmp_buf = dir.load(PATH,DIR_ONLYREAL);
 		count_dir = dir.count;
 		i = 0;
 		count_file = malloc(4096);
@@ -431,7 +431,7 @@
 	{
 		sprintf(_path_,"%s/%s",PATH1,path.file(PATH));
 		dir.make(_path_);
-		tmp_buf = dir_buffer(PATH,DIR_ONLYREAL);
+		tmp_buf = dir.load(PATH,DIR_ONLYREAL);
 		count_dir = dir.count;
 		i = 0;
 		count_file = malloc(4096);
