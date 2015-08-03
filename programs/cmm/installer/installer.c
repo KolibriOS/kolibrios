@@ -1,8 +1,7 @@
 #define MEMSIZE 0xA1000
-#include "..\lib\kolibri.h"
 #include "..\lib\strings.h"
-#include "..\lib\file_system.h"
 #include "..\lib\mem.h"
+#include "..\lib\io.h"
 #include "..\lib\copyf.h"
 
 #include "..\lib\patterns\restart_process.h"
@@ -16,17 +15,18 @@ void main()
 {
 
 	SetAddApplDir("kolibrios", abspath("kolibrios")+1);
-	RunProgram("/sys/media/kiv", "\\S__/kolibrios/res/Wallpapers/In the wind there is longing.png");
-	copyf(abspath("tmp"), "/tmp0/1");
+	io.run("/sys/media/kiv", "\\S__/kolibrios/res/Wallpapers/In the wind there is longing.png");
 	copyf(abspath("sys"), "/sys");
 	RestartProcessByName("@icon", MULTIPLE);
 	RestartProcessByName("@taskbar", SINGLE);
 	RestartProcessByName("@docky", SINGLE);
 	notify(T_END);
+	io.run("/sys/tmpdisk", "a0s10");
+	pause(50);
+	copyf(abspath("tmp"), "/tmp0/1");
 	ExitProcess();
 }
 
 void copyf_Draw_Progress(dword filename) { return; }
-
 
 stop:
