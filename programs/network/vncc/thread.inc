@@ -91,7 +91,7 @@ no_security:
         mcall   send, [socketnum], pixel_format8, 20, 0
         DEBUGF  1, "Sending pixel format\n"
 
-        mcall   send, [socketnum], encodings, 8, 0
+        mcall   send, [socketnum], encodings, 12, 0
         DEBUGF  1, "Sending encoding info\n"
 
         mov     [thread_ready], 1
@@ -165,8 +165,8 @@ rectangle_loop:
 
         cmp     eax, 0
         je      encoding_raw
-;        cmp     eax, 1
-;        je      encoding_copyrect
+        cmp     eax, 1
+        je      encoding_copyrect
 ;        cmp     eax, 2
 ;        je      encoding_RRE
 ;        cmp     eax, 5

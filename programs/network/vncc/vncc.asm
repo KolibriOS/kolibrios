@@ -67,6 +67,7 @@ ends
 
 include "logon.inc"
 include "raw.inc"
+include "copyrect.inc"
 include "thread.inc"
 
 START:
@@ -236,10 +237,13 @@ pixel_format8      db 0         ; setPixelformat
 
 encodings          db 2         ; setEncodings
                    db 0         ; padding
-                   db 0, 1      ; number of encodings
-                   db 0, 0, 0 ,0        ; raw encoding        (DWORD, Big endian order)
-;                   db 1, 0, 0, 0        ; Copyrect encoding
-;                   db
+                   db 0, 2      ; number of encodings
+                   db 0, 0, 0, 0        ; raw encoding        (DWORD, Big endian order)
+                   db 0, 0, 0, 1        ; Copyrect encoding
+;                   db 0, 0, 0, 2        ; RRE
+;                   db 0, 0, 0, 5        ; HexTile
+;                   db 0, 0, 0, 15       ; TRLE
+;                   db 0, 0, 0, 16       ; ZRLE
 
 fbur               db 3         ; frame buffer update request
 .inc               db 0         ; incremental
