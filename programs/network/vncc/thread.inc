@@ -1,13 +1,26 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;; Copyright (C) KolibriOS team 2010-2015. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
+;;  VNC client for KolibriOS                                       ;;
+;;                                                                 ;;
+;;  Written by hidnplayr@kolibrios.org                             ;;
+;;                                                                 ;;
+;;          GNU GENERAL PUBLIC LICENSE                             ;;
+;;             Version 2, June 1991                                ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 thread_start:
 
-        DEBUGF  1, 'I am the thread!\n'
+        DEBUGF  1, "I am the thread!\n"
 
-        mcall   40, 0
+        mcall   40, 0                   ; disable all events
 
 ; resolve name
         push    esp     ; reserve stack place
-        invoke  getaddrinfo, first, 0, 0, esp
+        invoke  getaddrinfo, serveraddr, 0, 0, esp
         pop     esi
 ; test for error
         test    eax, eax
@@ -17,215 +30,245 @@ thread_start:
         mov     eax, [eax+sockaddr_in.sin_addr]
         mov     [sockaddr1.ip], eax
 
-;        DEBUGF  1, 'Connecting to %u.%u.%u.%u:%u\n', \
-;                [server_ip]:1, [server_ip+1]:1, \
-;                [server_ip+2]:1, [server_ip+3]:1, \
-;                [server_port]:2
+        DEBUGF  1, "Connecting to %u.%u.%u.%u:%u\n", \
+                [sockaddr1.ip]:1, [sockaddr1.ip+1]:1, \
+                [sockaddr1.ip+2]:1, [sockaddr1.ip+3]:1, \
+                [sockaddr1.port]:2
 
         mcall   socket, AF_INET4, SOCK_STREAM, 0
+        test    eax, eax
+        jz      exit
+;;;        invoke  freeaddrinfo, ??
         mov     [socketnum], eax
         mcall   connect, [socketnum], sockaddr1, 18
+;;;        test    eax, eax
 
+        ; TODO: implement timeout
         call    wait_for_data
 
-        cmp     dword [receive_buffer], 'RFB '
+        cmp     dword[receive_buffer], "RFB "
         jne     no_rfb
-        DEBUGF  1, 'received: %s\n', receive_buffer
+        DEBUGF  1, "received: %s\n", receive_buffer
         mcall   send, [socketnum], handshake, 12, 0
-        DEBUGF  1, 'Sending handshake: protocol version\n'
+        DEBUGF  1, "Sending handshake: protocol version\n"
 
         call    wait_for_data
 
-        cmp     dword [receive_buffer], 0x00000000
+        cmp     dword[receive_buffer], 0x00000000
         je      invalid_security
 
-        cmp     dword [receive_buffer], 0x01000000
+        cmp     dword[receive_buffer], 0x01000000
         je      no_security
 
-        cmp     dword [receive_buffer], 0x02000000
+        cmp     dword[receive_buffer], 0x02000000
         je      vnc_security
 
+        DEBUGF  1, "Unknown security type\n"
         jmp     exit
 
 vnc_security:
         mov     byte[mode], 1
-        call    red_logon
+        call    logon
 
 no_security:
-        mcall   send, [socketnum], shared, 1, 0
-        DEBUGF  1, 'Sending handshake: shared session?\n'
+        mcall   send, [socketnum], ClientInit, 1, 0
+        DEBUGF  1, "ClientInit sent\n"
 
         call    wait_for_data       ; now the server should send init message
 
-        DEBUGF  1, 'Serverinit: bpp: %u depth: %u bigendian: %u truecolor: %u\n', \
-                [receive_buffer+framebuffer.pixelformat.bpp]:1, \
-                [receive_buffer+framebuffer.pixelformat.depth]:1, \
-                [receive_buffer+framebuffer.pixelformat.big_endian]:1, \
-                [receive_buffer+framebuffer.pixelformat.true_color]:1
+        DEBUGF  1, "Serverinit: bpp: %u depth: %u bigendian: %u truecolor: %u\n", \
+        [receive_buffer+framebuffer.pixelformat.bpp]:1, \
+        [receive_buffer+framebuffer.pixelformat.depth]:1, \
+        [receive_buffer+framebuffer.pixelformat.big_endian]:1, \
+        [receive_buffer+framebuffer.pixelformat.true_color]:1
 
-        mov     eax, dword [receive_buffer]
-        mov     dword [fbur.width], eax
+        mov     eax, dword[receive_buffer+framebuffer.width]
+        mov     dword[fbur.width], eax
         bswap   eax
-        mov     dword [screen], eax
+        mov     dword[screen], eax
+        DEBUGF  1, "Screen width=%u, height=%u\n", [screen.width]:2, [screen.height]:2
 
         mcall   send, [socketnum], pixel_format8, 20, 0
-        DEBUGF  1, 'Sending pixel format\n'
-        call    read_data
+        DEBUGF  1, "Sending pixel format\n"
 
-;    eth.write_tcp [socket],8,encodings
-;    DEBUGF 1,'Sending encoding info\n'
-;    call    read_data
+        mcall   send, [socketnum], encodings, 8, 0
+        DEBUGF  1, "Sending encoding info\n"
 
-        mov     byte [thread_ready], 1
+        mov     [thread_ready], 1
 
-request_rfb:
-        mov     [fbur.inc], 2
+; Request initial update
+        mov     [fbur.inc], 0
+
+request_fbu:
+        DEBUGF  1, "Requesting framebuffer update\n"
         mcall   send, [socketnum], fbur, 10, 0
+        mov     [fbur.inc], 1
 
 thread_loop:
         call    read_data              ; Read the data into the buffer
 
-;        cmp     eax, 2
-;        jb      mainloop
-
-        DEBUGF 1,'Data received, %u bytes\n', eax
-
-        cmp     byte [receive_buffer],0
+        lodsb
+        cmp     al, 0
         je      framebufferupdate
-
-        cmp     byte [receive_buffer],1
+        cmp     al, 1
         je      setcolourmapentries
-
-        cmp     byte [receive_buffer],2
+        cmp     al, 2
         je      bell
-
-        cmp     byte [receive_buffer],3
+        cmp     al, 3
         je      servercuttext
 
+
+        DEBUGF  1, "Unknown server command: %u\n", al
         jmp     thread_loop
 
-align 4
 framebufferupdate:
 
-        mov     ax, word [receive_buffer+2]
+  @@:
+        lea     eax, [esi+6]
+        cmp     [datapointer], eax
+        jae     @f
+        call    read_data.more
+        jmp     @b
+  @@:
+
+        inc     esi     ; padding
+        lodsw
         xchg    al, ah
-        mov     di, ax
-        DEBUGF  1, 'Framebufferupdate: %u frames\n', di
-        mov     esi, receive_buffer+4
-        jmp     rectangle_loop
-
-
-next_rectangle:
-        call    drawbuffer
-
-        dec     di
-        test    di, di
-        jz      request_rfb
+        mov     [rectangles], ax
+        DEBUGF  1, "Framebufferupdate: %u rectangles\n", ax
 
 rectangle_loop:
 
-        mov     edx, [esi]
-        bswap   edx
-        mov     ebx, edx
-        shr     edx, 16
-        mov     [frame.x], dx
-        mov     [frame.y], bx
-        add     esi, 4
-        mov     ecx, [esi]
-        bswap   ecx
-        mov     eax, ecx
-        shr     ecx, 16
-        mov     [frame.width], cx
-        mov     [frame.height], ax
-        add     esi, 4
-        mov     eax, [esi]
-        add     esi, 4
+  @@:
+        lea     eax, [esi+12]
+        cmp     [datapointer], eax
+        jae     @f
+        call    read_data.more
+        jmp     @b
+  @@:
 
-        mov     ebx, esi
-        sub     ebx, receive_buffer+12
-        DEBUGF  1, 'frame: width=%u height=%u x=%u y=%u offset:%u encoding:',\
-                [frame.width]:2, [frame.height]:2, [frame.x]:2, [frame.y]:2, ebx
+        lodsd                           ; position
+        bswap   eax
+        mov     [rectangle.y], ax
+        shr     eax, 16
+        mov     [rectangle.x], ax
+
+        lodsd                           ; size
+        bswap   eax
+        mov     [rectangle.height], ax
+        shr     eax, 16
+        mov     [rectangle.width], ax
+
+        lodsd                           ; encoding
+        DEBUGF  1, "rectangle: width=%u height=%u x=%u y=%u encoding: ",\
+        [rectangle.width]:2, [rectangle.height]:2, [rectangle.x]:2, [rectangle.y]:2
 
         cmp     eax, 0
         je      encoding_raw
 ;        cmp     eax, 1
 ;        je      encoding_copyrect
-        cmp     eax, 2
-        je      encoding_RRE
-        cmp     eax, 5
-        je      encoding_hextile
-        cmp     eax, 16
-        je      encoding_ZRLE
+;        cmp     eax, 2
+;        je      encoding_RRE
+;        cmp     eax, 5
+;        je      encoding_hextile
+;        cmp     eax, 15
+;        je      encoding_TRLE
+;        cmp     eax, 16
+;        je      encoding_ZRLE
 
-        mov     ebx, esi
-        sub     ebx, receive_buffer+8
-        DEBUGF  1, '\nunknown encoding: %u (offset %u)\n', eax, ebx
-        jmp     bell
+        DEBUGF  1, "\nunknown encoding: %u\n", eax
         jmp     thread_loop
 
-encoding_RRE:
+;;        jmp     rectangle_loop
 
-        DEBUGF  1, 'RRE\n'
+next_rectangle:
+        push    esi
+        call    drawbuffer
+        pop     esi
 
-        jmp     next_rectangle
+        dec     [rectangles]
+        jnz     rectangle_loop
+        jmp     request_fbu
 
-encoding_hextile:
-
-        DEBUGF  1, 'hextile\n'
-
-        jmp     next_rectangle
-
-encoding_ZRLE:
-
-        DEBUGF  1, 'ZRLE\n'
-
-        jmp     next_rectangle
 
 setcolourmapentries:
 
-        DEBUGF  1, 'Server sent SetColourMapEntries message\n'
+        DEBUGF  1, "Server sent SetColourMapEntries message\n"
+
+        ; TODO
 
         jmp     thread_loop
 
 
 bell:
         mcall   55, 55, , , beep
-
         jmp     thread_loop
 
 
 servercuttext:
 
-        DEBUGF  1, 'Server cut text\n'
+        DEBUGF  1, "Server cut text\n"
 
+  @@:
+        lea     eax, [esi+7]
+        cmp     [datapointer], eax
+        jae     @f
+        call    read_data.more
+        jmp     @b
+  @@:
+
+        add     esi, 3
+        lodsd
+        bswap   eax
+        mov     ecx, eax
+
+  @@:
+        lea     eax, [esi+ecx]
+        cmp     [datapointer], eax
+        jae     @f
+        call    read_data.more
+        jmp     @b
+  @@:
+
+        ; TODO: paste text to clipboard
+
+        DEBUGF  1, "%u bytes of text\n", ecx
+        add     esi, ecx
         jmp     thread_loop
 
 
 read_data:
         mov     [datapointer], receive_buffer
-  .loop:
+        mov     esi, receive_buffer
+  .more:
+        push    ebx ecx edx esi edi
         mcall   recv, [socketnum], [datapointer], 4096, 0
+        pop     edi esi edx ecx ebx
         cmp     eax, -1
-        je      .done
-
-        add     [datapointer], eax
-
+        je      .error
+        add     [datapointer], eax      ; TODO: check for buffer overflow
         cmp     eax, 4096
-        je      .loop
+        je      .more
+        ret
 
-  .done:
-        mov     eax, [datapointer]
-        sub     eax, receive_buffer
+  .error:
+        DEBUGF  1, "Socket error!\n"
+        mcall   -1
         ret
 
 
 
-wait_for_data:
+wait_for_data:  ; FIXME: add timeout
         mcall   recv, [socketnum], receive_buffer, 4096, 0
         cmp     eax, -1
-        je      wait_for_data
+        je      .error
         test    eax, eax
         jz      wait_for_data
 
+        ret
+
+  .error:
+        DEBUGF  1, "Socket error!\n"
+        mcall   -1
         ret
 

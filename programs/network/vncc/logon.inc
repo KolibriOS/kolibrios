@@ -1,257 +1,135 @@
-red_logon:
-    call draw_window_logon       ; at first, draw the window
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;; Copyright (C) KolibriOS team 2010-2015. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
+;;  VNC client for KolibriOS                                       ;;
+;;                                                                 ;;
+;;  Written by hidnplayr@kolibrios.org                             ;;
+;;                                                                 ;;
+;;          GNU GENERAL PUBLIC LICENSE                             ;;
+;;             Version 2, June 1991                                ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-still_logon:                     ; main cycle of application begins here
-    mov  eax,10     ; wait here for event
-    mcall
+logon:
+        mcall   40, EVM_MOUSE + EVM_MOUSE_FILTER + EVM_REDRAW + EVM_BUTTON + EVM_KEY
 
-checkevent_logon:         ; Check what event was called _logon: this will be used to return from textbox focus
+  .redraw:
+        mcall   12, 1           ; start window draw
+        pusha
+                                                ; DRAW WINDOW
+        xor     eax, eax                        ; function 0 _logon: define and draw window
+        mov     ebx, 160 shl 16 + 330           ; [x start]:[x size]
+        mov     ecx, 160 shl 16 + 100           ; [y start]:[y size]
+        mov     edx, 0x34DDDDDD                 ; color of work area RRGGBB
+        mov     edi, name                       ; WINDOW LABEL
+        mcall
 
-    dec  eax        ; redraw request ?
-    jz   red_logon
-    dec  eax        ; key in buffer ?
-    jz   key_logon
-    dec  eax        ; button in buffer ?
-    jz   button_logon
+        mov     eax, 8                          ; LOGON BUTTON
+        mov     ebx, 220 shl 16 + 85
+        mov     ecx, 47 shl 16 + 16
+        mov     edx, 2
+        mov     esi, 0xCCCCCC
+        mcall
 
-    jmp  still_logon
+        cmp     byte[mode], 0
+        je      .servermode
 
-  key_logon:             ; key event handler
-    mov  al,2            ; eax was zero so will now be 2
-    mcall                ; just read it and ignore
+        mov     eax, 4                          ; function 4 write text to window
+        mov     ebx, 25 shl 16 + 15             ; [x start]:[y start]
+        xor     ecx, ecx
+        mov     edx, userstr                    ; pointer to text beginning
+        mov     esi, passstr-userstr            ; text length
+        mcall
 
-    cmp  ah,13
-    jne  still_logon     ; return to main loop
+        add     bl, 19
+        mov     edx, passstr                    ; pointer to text beginning
+        mov     esi, connectstr-passstr         ; text length
+        mcall
 
-    ret                  ; enter key was pressed => return to logon
+        jmp     .drawtherest
 
-  button_logon:          ; eax was zero so will now be 17
-    mov  al,17           ; get id
-    mcall
+   .servermode:
+        mov     eax, 4                          ; function 4 write text to window
+        mov     ebx, 25 shl 16 + 15             ; [x start] *65536 + [y start]
+        xor     ecx, ecx
+        mov     edx, serverstr                  ; pointer to text beginning
+        mov     esi, userstr-serverstr          ; text length
+        mcall
 
-    cmp  ah,1            ; close ?
-    jz   close_logon
-    cmp  ah,2            ; logon ?
-    je   connect_logon
-    cmp  ah,5            ; first ?
-    jz   dstbtn_logon
+        invoke  edit_box_draw, URLbox
 
-  srcbtn_logon:
-    mov  dword[addr],first
-    jmp  rk_logon
+   .drawtherest:
+        mov     ebx, 240 shl 16 + 49            ; [x start] *65536 + [y start]
+        mov     edx, connectstr                 ; pointer to text beginning
+        mov     esi, connect_e-connectstr       ; text length
+        mcall
 
-  dstbtn_logon:
-    mov  dword[addr],second
+        popa
+        inc     ebx
+        mcall
 
-  rk_logon:
-    mov  edi,[addr]      ; load the address of the string
-    xor  al,al           ; mov  al,0          ; the symbol we will search for
-    mov  ecx,STRLEN+1    ; length of the string (+1)
-    cld                  ; search forward
-  repne  scasb           ; do search now
-    inc  ecx             ; we've found a zero or ecx became 0
-    mov  eax,STRLEN+1
-    sub  eax,ecx         ; eax = address of <0> character
-    mov  [temp],eax      ; position
+  .loop:
+        mcall   10                      ; wait for event
+        dec     eax             ; redraw request ?
+        jz      .redraw
+        dec     eax             ; key in buffer ?
+        jz      .key
+        dec     eax             ; button in buffer ?
+        jz      .btn
+        sub     eax, 3
+        jz      .mouse
+        jmp     .loop
 
-    cmp  dword[addr],dword second
-    jne  @f
-    mov  dword [passlen],eax
-   @@:
+  .key:                         ; key event handler
+        mcall   2               ; read key
 
-    call print_text_logon
+        test    [URLbox.flags], ed_focus
+        jz      mainloop
+        cmp     ah, 13          ; enter (return) key
+        je      .go
+        invoke  edit_box_key, URLbox
+        jmp     .loop
 
-    mov  edi,[addr]      ; address of string
-    add  edi,[temp]      ; cursor position
+  .go:
+        mov     eax, [URLbox.pos]
+        mov     byte[serveraddr+eax], 0
+        ret
 
-  .waitev_logon:
-    mov  eax,10          ; wait for event
-    mcall
-    cmp  eax,2           ; button presed ?
-    jne  checkevent_logon    ; a key is pressed or redraw is nessesary, goto checkevent
-    mcall                ; eax = 2, read button
-    shr  eax,8
-    cmp  eax,8
-    jnz  .nobs_logon     ; BACKSPACE
-    cmp  edi,[addr]
-    jz   .waitev_logon
-    dec  edi
-    mov  byte[edi],0
+  .btn:
+        mcall   17              ; get id
 
-    cmp  dword[addr],second
-    jne  @f
-    dec  [passlen]
-   @@:
+        cmp     ah, 1           ; close ?
+        jz      .close
+        cmp     ah, 2           ; logon ?
+        je      .go
 
-    call print_text_logon
-    jmp  .waitev_logon
-  .nobs_logon:
-    cmp  eax,13        ; ENTER
-    je   still_logon
-    cmp  eax,192
-    jne  .noclear_logon
-    xor  al,al
-    mov  edi,[addr]
-    mov  ecx,STRLEN
-    rep  stosb
-    mov  edi,[addr]
-    call print_text_logon
-    jmp  .waitev_logon
+        jmp     .loop
 
-  .noclear_logon:
-    mov  [edi],al
+  .mouse:
+        mcall   23
+        invoke  edit_box_mouse, URLbox
 
-    cmp  dword[addr],second
-    jne  @f
-    inc  [passlen]
-   @@:
+        jmp     .loop
 
-    call print_text_logon
-
-    inc  edi
-    mov  esi,[addr]
-    add  esi,STRLEN
-    cmp  esi,edi
-    jnz  .waitev_logon
-
-    jmp  still_logon
-
-
-; print strings (source & destination)
-print_text_logon:
-pusha
-
-    mov  eax, 8
-    mov  ebx, 105*65536+200
-    mov  ecx, 31*65536+13
-    mov  edx, 4
-    mov  esi, 0xEBEBEB
-    mcall
-
-    cmp  byte[mode],0
-    je   @f
-
-    mov  ecx, 49*65536+12
-    inc  edx
-    mcall
-
-   @@:
-    mov  eax, 4                         ; function 4 _logon: write text to window
-    mov  ebx, 107*65536+34              ; [x start] *65536 + [y start]
-    xor  ecx, ecx                       ; color of text RRGGBB
-    mov  edx, first                     ; pointer to text beginning
-    mov  esi, STRLEN                    ; text length
-    mcall
-
-    cmp  byte[mode],0
-    je   dont_draw_pass
-
-    add  ebx,16
-    mov  edi,[passlen]
-
-   @@:
-    cmp  edi,0
-    jle  dont_draw_pass
-
-    dec  edi
-    mov  edx, passchar
-    mov  esi, 1
-    mcall
-    add  ebx,6*65536
-    jmp  @r
-
-  dont_draw_pass:
-
-popa
-    ret
-
-close_logon:
-    or  eax,-1
-    mcall
-
-connect_logon:
-    ret
-
-draw_window_logon:
-
-    mcall 12, 1      ; start window draw
-    pusha
-                                        ; DRAW WINDOW
-    xor  eax, eax                       ; function 0 _logon: define and draw window
-    mov  ebx, 160*65536+330             ; [x start] *65536 + [x size]
-    mov  ecx, 160*65536+100             ; [y start] *65536 + [y size]
-    mov  edx, 0x13DDDDDD                ; color of work area RRGGBB
-    mov  edi, title                     ; WINDOW LABEL
-    mcall
-
-    mov  eax, 8                         ; LOGON BUTTON
-    mov  ebx, 220*65536+85
-    mov  ecx, 63*65536+16
-    mov  edx, 2
-    mov  esi, 0xCCCCCC
-    mcall
-
-    
-    call print_text_logon
-                                        
-    cmp  byte[mode], 0
-    je   servermode_
-
-    mov  eax, 4                         ; function 4 write text to window
-    mov  ebx, 25*65536+33               ; [x start] *65536 + [y start]
-    xor  ecx, ecx
-    mov  edx, userstr                   ; pointer to text beginning
-    mov  esi, passstr-userstr           ; text length
-    mcall
-
-    add  bl,19
-    mov  edx, passstr                   ; pointer to text beginning
-    mov  esi, connectstr-passstr           ; text length
-    mcall
-
-    jmp  drawtherest_
-
-   servermode_:
-
-    mov  eax, 4                         ; function 4 write text to window
-    mov  ebx, 25*65536+33               ; [x start] *65536 + [y start]
-    xor  ecx, ecx
-    mov  edx, serverstr                 ; pointer to text beginning
-    mov  esi, userstr-serverstr         ; text length
-    mcall
-
-   drawtherest_:
-
-    mov  ebx, 240*65536+67              ; [x start] *65536 + [y start]
-    mov  edx, connectstr                   ; pointer to text beginning
-    mov  esi, connect_e-connectstr         ; text length
-    mcall
-
-    popa
-    inc   ebx
-    mcall
-
-    ret
+  .close:
+        mcall   -1
 
 
 ; DATA AREA
-title  db 'Kolibrios VNC client by HIDNPLAYR',0
 
-first:        db '192.168.1.5'
-              rb STRLEN
-second:       rb STRLEN
-
-passchar      db '*'
+passchar      db "*"
 passlen       dd 0
 
 addr          dd 0
 temp          dd 0
-mode          db 0 ; 0 = connection details, 1 = authentication
+mode          db 0              ; 0 = connection details, 1 = authentication
 
-serverstr:    db 'server:'
-userstr:      db 'username:'
-passstr:      db 'password:'
-connectstr:   db 'connect !'
+serverstr     db "server:"
+userstr       db "username:"
+passstr       db "password:"
+connectstr    db "connect !"
 connect_e:
 
 I_END_logon:

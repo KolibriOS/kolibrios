@@ -1,153 +1,78 @@
-  encoding_raw:
-    DEBUGF 1,'RAW\n'
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;; Copyright (C) KolibriOS team 2010-2015. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
+;;  VNC client for KolibriOS                                       ;;
+;;                                                                 ;;
+;;  Written by hidnplayr@kolibrios.org                             ;;
+;;                                                                 ;;
+;;          GNU GENERAL PUBLIC LICENSE                             ;;
+;;             Version 2, June 1991                                ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    mov   ax,[frame.y]			      ;
-    mov   bx,[screen.width]		      ;
-    mul   bx				      ;
-    shl   edx,16			      ;
-    mov   dx,ax 			      ; [screen.width]*[frame.y]
-    movzx eax,[frame.x]
-    add   edx,eax			      ; [screen.width]*[frame.y]+[frame.x]
+encoding_raw:
 
-    mov   eax,3 			      ;
-    mul   edx				      ; ([screen.width]*[frame.y]+[frame.x])*3
+        DEBUGF  1,"RAW\n"
 
-    add   eax,framebuffer_data		      ;
-    push  eax				      ; framebuffer_data+([screen.width]*[frame.y]+[frame.x])*3
+        movzx   eax, [rectangle.width]
+        movzx   ebx, [rectangle.height]
+        mul     ebx
+        add     eax, esi
+  @@:
+        cmp     [datapointer], eax
+        jae     @f
+        push    eax
+        call    read_data.more
+        pop     eax
+        jmp     @b
+  @@:
 
-    mov   ax,[frame.width]		      ;
-    mov   bx,3				      ;
-    mul   bx				      ;
-    shl   edx,16			      ;
-    mov   dx,ax 			      ; [frame.width]*3
+        movzx   eax, [rectangle.y]
+        movzx   ebx, [screen.width]
+        mul     ebx                                     ; [screen.width]*[rectangle.y]
+        movzx   ebx, [rectangle.x]
+        add     eax, ebx                                ; [screen.width]*[rectangle.y]+[rectangle.x]
+        lea     edi, [framebuffer_data+eax*3]           ; edi = framebuffer_data+([screen.width]*[rectangle.y]+[rectangle.x])*3
 
-    pop   eax				      ;
-    add   edx,eax			      ; framebuffer_data+([screen.width]*[frame.y]+[frame.x])*3+[frame.width]*3
-    push  eax				      ;
-    push  edx				      ;
+        movzx   eax, [screen.width]
+        sub     ax, [rectangle.width]
+        lea     ebp, [eax*3]                            ; ebp = ([screen.width]-[rectangle.width])*3
 
-    mov   ax,[frame.height]		      ;
-    dec   ax				      ;
-    mov   bx,3				      ;
-    mul   bx				      ;
-    mov   bx,[screen.width]		      ;
-    mul   bx				      ;
-    shl   edx,16			      ;
-    mov   dx,ax 			      ;
-    mov   ecx,edx			      ;
-    pop   edx				      ;
-    add   ecx,edx			      ; mov ecx,edx+([frame.height]-1)*[screen.width]*3
-    pop   ebx
+        mov     bl, 85
 
-   .pixelloop32:
-    cmp   ebx,ecx
-    jge   next_rectangle
+        movzx   edx, [rectangle.height]
 
-;    add   esi,2           ; 32 bit code RAW - OK
-;    mov   al,[esi]        ;
-;    mov   [ebx],al        ;
-;    inc   ebx             ;
-;    dec   esi             ;
-;                          ;
-;    mov   al,[esi]        ;
-;    mov   [ebx],al        ;
-;    inc   ebx             ;
-;    dec   esi             ;
-;                          ;
-;    mov   al,[esi]        ;
-;    mov   [ebx],al        ;
-;    inc   ebx             ;
-;    add   esi,4           ;
+  .lineloop:
+        movzx   ecx, [rectangle.width]
 
-;    push  ecx             ; 16 bit code RAW
-;    mov   cl,51
-;
-;    mov   ax,[esi]        ;
-;        xchg  al,ah
-;    and   al,00011111b    ;
-;        xchg  al,ah
-;    mul   cl
-;    mov   [ebx],al        ;
-;    inc   ebx             ;
-;
-;    mov   ax,[esi]        ;
-;        xchg  al,ah
-;    shr   ax,5            ;
-;        xchg  al,ah
-;    and   al,00011111b    ;
-;    mul   cl
-;    mov   [ebx],al        ;
-;    inc   ebx             ;
-;
-;    mov   ax,[esi]        ;
-;    xchg  al,ah
-;    shr   ax,10           ;
-;    and   al,00011111b    ;
-;    mul   cl
-;    mov   [ebx],al        ;
-;    inc   ebx             ;
-;
-;    inc   esi             ;
-;    inc   esi             ;
-;    pop   ecx
+  .pixelloop:
+        mov     al, [esi]
+        shr     al, 4
+        and     al, 3
+        mul     bl
+        stosb
 
-    push  ecx		  ; 8 bit code RAW - OK
-    mov   cl,85 	  ;
-			  ;
-    mov   al,[esi]	  ;
-    shr   al,4		  ;
-    and   al,3		  ;
-    mul   cl		  ;
-    mov   [ebx],al	  ;
-    inc   ebx		  ;
-			  ;
-    mov   al,[esi]	  ;
-    shr   al,2		  ;
-    and   al,3		  ;
-    mul   cl		  ;
-    mov   [ebx],al	  ;
-    inc   ebx		  ;
-			  ;
-    mov   al,[esi]	  ;
-    and   al,3		  ;
-    mul   cl		  ;
-    mov   byte[ebx],al	  ;
-    inc   ebx		  ;
-    inc   esi		  ;
-    pop   ecx		  ;
+        mov     al, [esi]
+        shr     al, 2
+        and     al, 3
+        mul     bl
+        stosb
 
+        mov     al, [esi]
+        and     al, 3
+        mul     bl
+        stosb
 
-    cmp   ebx,edx
-    jl	  .pixelloop32
+        inc     esi
+        dec     ecx
+        jnz     .pixelloop
 
-    push  edx
-    push  ebx
-    mov   ax,[screen.width]
-    mov   bx,3
-    mul   bx
-    shl   edx,16
-    mov   dx,ax
-    mov   eax,edx
-    pop   ebx
-    pop   edx
-
-    add   ebx,eax ; eax = [screen.width]*3
-    add   edx,eax
-
-    push  edx
-    push  ebx
-    mov   ax,[frame.width]
-    mov   bx,3
-    mul   bx
-    shl   edx,16
-    mov   dx,ax
-    mov   eax,edx
-    pop   ebx
-    pop   edx
-
-    sub   ebx,eax ; eax = [frame.width]*3
-
-    jmp   .pixelloop32
+        add     edi, ebp
+        dec     edx
+        jnz     .lineloop
+        jmp     next_rectangle
 
 
 
