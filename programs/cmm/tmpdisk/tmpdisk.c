@@ -81,6 +81,7 @@ void GetDiskSizesFromIni()
 {
 	char i, key[2];
 	if (load_dll2(libini, #lib_init,1)!=0) notify("Error: library doesn't exists - libini");
+	key[1]=0;
 	for (i=0; i<=9; i++)
 	{
 		key[0]=i+'0';
@@ -92,6 +93,7 @@ void GetDiskSizesFromIni()
 void SaveDiskSizesToIni()
 {
 	char i, key[2];
+	key[1]=0;
 	for (i=0; i<=9; i++)
 	{
 		key[0]=i+'0';
