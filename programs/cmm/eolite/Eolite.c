@@ -103,8 +103,8 @@
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 enum { CREATE_FILE=1, CREATE_FOLDER, RENAME_ITEM }; //NewElement
 
-#define TITLE "Eolite File Manager v2.9"
-#define ABOUT_TITLE "Eolite v2.9"
+#define TITLE "Eolite File Manager v2.91"
+#define ABOUT_TITLE "Eolite v2.91"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -432,12 +432,12 @@ void main()
 								//GoBack();
 								Dir_Up();
 								break; 
-						case 004: //Ctrl+D set as bg
+						case 004: //Ctrl+D - set as bg
 								strncpy(#temp, "\\S__",4);
 								strcat(#temp, #file_path);
 								RunProgram("/sys/media/kiv", #temp);
 								break;
-						case 014: //Ctrl+N new window
+						case 014: //Ctrl+N - create new window
 								if (Form.left==98) MoveSize(Form.left-20,Form.top-20,OLD,OLD);
 								RunProgram("/sys/File Managers/Eolite", #path);
 								break; 
@@ -450,18 +450,17 @@ void main()
 						case 022: //Ctrl+V
 								Paste();
 								break;
-						case 001: //Ctrl+A
-								debugln("press Ctrl+A");
+						case 001: //Ctrl+A - select all files
 								for (i=0; i<files.count; i++) 
 								{
 									selected_offset = file_mas[i]*304 + buf+32 + 7;
+									if (!i) if (!strncmp(selected_offset+33, "..", 2)) continue; //do not selec ".." directory
 									ESBYTE[selected_offset] = 1;
 									selected_count++;
 								}
 								List_ReDraw();
 								break;
-						case 021: //Ctrl+U
-								debugln("press Ctrl+A");
+						case 021: //Ctrl+U - unselect all files
 								for (i=0; i<files.count; i++) 
 								{
 									selected_offset = file_mas[i]*304 + buf+32 + 7;
@@ -508,6 +507,7 @@ void main()
 								break;
 						case ASCII_KEY_INS:
 								selected_offset = file_mas[files.current+files.first]*304 + buf+32 + 7;
+								if (files.current+files.first==0) && (!strncmp(selected_offset+33, "..", 2)) goto _INSERT_END; //do not selec ".." directory
 								if (ESBYTE[selected_offset])
 								{
 									ESBYTE[selected_offset]=0;
@@ -518,6 +518,7 @@ void main()
 									ESBYTE[selected_offset] = 1;
 									selected_count++;
 								}
+								_INSERT_END:
 								List_Current(1);
 								break;
 						case 048...059: //F1-F10
