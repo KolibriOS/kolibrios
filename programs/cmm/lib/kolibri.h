@@ -30,6 +30,8 @@ char program_path[4096];
 #define evNetwork 8
 #define evDebug   9
 
+#define EVENT_MOUSE case 6: mouse.get();
+
 //Button options
 #define BT_DEL      0x80000000
 #define BT_HIDE     0x40000000

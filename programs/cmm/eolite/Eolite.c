@@ -252,7 +252,7 @@ void main()
 						}
 					}
 				}	
-				if (files.MouseOver(mouse.x, mouse.y))&&((mouse.down)||(mouse.dblclick))
+				if (files.MouseOver(mouse.x, mouse.y))&&((mouse.down|mouse.dblclick|mouse.up))
 				{
 					//select/open file {
 					if (mouse.key&MOUSE_LEFT)&&((mouse.down)||(mouse.dblclick))
@@ -260,12 +260,12 @@ void main()
 						if (mouse.y>=files.y)//&&(mouse.click)
 						{
 							id = mouse.y - files.y / files.line_h;
-							if (files.current!=id)
+							IF (files.current!=id)
 							{
 								mouse.clearTime();
-								if(id<files.visible) List_Current(id-files.current);
+								if(!mouse.up)&&(id<files.visible) List_Current(id-files.current);
 							}
-							else if(mouse.dblclick)Open(0);
+							else IF(mouse.dblclick)Open(0);
 						}
 					}
 					// } select/open file
