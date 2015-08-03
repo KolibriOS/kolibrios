@@ -3,7 +3,7 @@
 ;; Copyright (C) KolibriOS team 2010-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
-;;  vncc.asm - VNC client for KolibriOS                            ;;
+;;  VNC client for KolibriOS                                       ;;
 ;;                                                                 ;;
 ;;  Written by hidnplayr@kolibrios.org                             ;;
 ;;                                                                 ;;
@@ -17,11 +17,6 @@ format binary as ""
 __DEBUG__       = 1
 __DEBUG_LEVEL__ = 1
 
-xpos            = 4             ; coordinates of image
-ypos            = 22            ;
-
-TIMEOUT         = 5             ; timeout in seconds
-
 use32
 
         org     0x0
@@ -32,8 +27,7 @@ use32
         dd      I_END           ; size of image
         dd      IM_END          ; memory for app
         dd      IM_END          ; esp
-        dd      0x0 , 0x0       ; I_Param , I_Path
-
+        dd      0x0, 0x0        ; I_Param , I_Path
 
 include "../../macros.inc"
 include "../../debug-fdo.inc"
@@ -65,34 +59,49 @@ struct  framebuffer
         name            rb 256
 ends
 
-include "logon.inc"
+xpos                    = 4
+ypos                    = 22
+
+TIMEOUT                 = 5             ; timeout in seconds
+
+RECEIVE_BUFFER_SIZE     = 8*1024*1024   ; 8 Mib
+
+STATUS_INITIAL          = 0
+STATUS_CONNECTING       = 1
+STATUS_LOGIN            = 2
+STATUS_CONNECTED        = 3
+
+STATUS_DISCONNECTED     = 10
+STATUS_DNS_ERR          = 11
+STATUS_SOCK_ERR         = 12
+STATUS_CONNECT_ERR      = 13
+STATUS_PROTO_ERR        = 14
+STATUS_SECURITY_ERR     = 15
+STATUS_LIB_ERR          = 16
+STATUS_THREAD_ERR       = 17
+
+include "gui.inc"
+include "network.inc"
 include "raw.inc"
 include "copyrect.inc"
-include "thread.inc"
+include "rre.inc"
 
 START:
 
         mcall   68, 11                  ; init heap
 
-; load libraries
+; Load libraries
         stdcall dll.Load, @IMPORT
         test    eax, eax
-        jnz     exit
+        jz      @f
+        mov     [status], STATUS_LIB_ERR
+  @@:
 
-        call    logon
+; Present the user with the GUI and wait for network connection
+        call    draw_gui
 
-        mcall   40, 0                   ; disable all events
-        mcall   67, 0, 0, 0, 0          ; resize the window (hide it)
-        mcall   51, 1, thread_start, thread_stack
-
-        DEBUGF  1,"Thread created: %u\n", eax
-
-      @@:
-        mcall   5, 10
-        cmp     byte[thread_ready], 0
-        je      @r
-
-        mcall   40, EVM_MOUSE + EVM_MOUSE_FILTER + EVM_KEY + EVM_REDRAW + EVM_BUTTON
+; Create main window
+        mcall   71, 1, name             ; reset window caption (add server name)
 
         mov     edx, dword[screen]
         movzx   esi, dx
@@ -101,8 +110,27 @@ START:
         add     esi, ypos+xpos
         mcall   67, 10, 10              ; resize the window
 
+        mcall   40, EVM_MOUSE + EVM_MOUSE_FILTER + EVM_KEY + EVM_REDRAW + EVM_BUTTON
+
+redraw:
+        mcall   12, 1
+
+        mov     ebx, dword[screen]
+        movzx   ecx, bx
+        shr     ebx, 16
+        mov     edx, 0x74ffffff
+        mov     edi, name
+        mcall   0                       ; draw window
+
+        call    drawbuffer
+
+        mcall   12, 2
+
 mainloop:
-        mcall   10                      ; wait for event
+        cmp     [status], STATUS_CONNECTED
+        jne     draw_gui
+
+        mcall   23, 100                 ; Check for event with 1s timeout
 
         dec     eax
         jz      redraw
@@ -114,165 +142,160 @@ mainloop:
         jz      mouse
         jmp     mainloop
 
-key:
+drawbuffer:
+        mcall   7, framebuffer_data, dword[screen], 0
+        ret
 
-;        DEBUGF  1,"Sending key event\n"
+key:
+;        DEBUGF  1, "Sending key event\n"
 
         mcall   2
-        mov     byte[keyevent.key+3], ah
+        mov     byte[KeyEvent.key+3], ah
 
-        mcall   send, [socketnum], keyevent, 8, 0
+        mcall   send, [socketnum], KeyEvent, 8, 0
         jmp     mainloop
 
 mouse:
-
-;        DEBUGF  1,"Sending mouse event\n"
+;        DEBUGF  1, "Sending mouse event\n"
 
         mcall   37, 1           ; get mouse pos
         sub     eax, xpos shl 16 + ypos
         bswap   eax
-        mov     [pointerevent.x], ax
+        mov     [PointerEvent.x], ax
         shr     eax, 16
-        mov     [pointerevent.y], ax
+        mov     [PointerEvent.y], ax
 
         mcall   37, 2           ; get mouse buttons
         test    al, 00000010b   ; test if right button was pressed  (bit 1 in kolibri)
         jz      @f
         add     al, 00000010b   ; in RFB protocol it is bit 2, so if we add bit 2 again, we"ll get bit 3 and bit 1 will remain the same
       @@:
-        mov     [pointerevent.mask],al
+        mov     [PointerEvent.mask], al
 
-        mcall   send, [socketnum], pointerevent, 6, 0
+        mcall   send, [socketnum], PointerEvent, 6, 0
         jmp     mainloop
-
-redraw:
-
-;        DEBUGF  1,"Drawing window\n"
-
-        mcall   12, 1
-
-        mov     ebx, dword[screen]
-        movzx   ecx, bx
-        shr     ebx, 16
-        mov     edx, 0x74ffffff
-        mov     edi, name
-        mcall   0               ; draw window
-
-        call    drawbuffer
-
-        mcall   12, 2
-
-        jmp     mainloop
-
-drawbuffer:
-        mcall   7, framebuffer_data, dword[screen], 0
-        ret
 
 button:
         mcall   17              ; get id
-
-exit:
-        DEBUGF  1, "Closing time!\n"
-        mcall   close, [socketnum]
         mcall   -1
-
-no_rfb:
-        DEBUGF  1, "This is no vnc server!\n"
-        jmp     exit
-
-invalid_security:
-        DEBUGF  1, "Security error: %s\n", receive_buffer+5
-        jmp     exit
 
 
 ; DATA AREA
 
-include_debug_strings    ; ALWAYS present in data section
+include_debug_strings
 
-handshake          db "RFB 003.003", 10
-ClientInit         db 0         ; not shared
-beep               db 0x85, 0x25, 0x85, 0x40, 0
+HandShake               db "RFB 003.003", 10
 
-pixel_format32     db 0         ; setPixelformat
-                   db 0, 0, 0   ; padding
-.bpp               db 32        ; bits per pixel
-.depth             db 32        ; depth
-.big_endian        db 0         ; big-endian flag
-.true_color        db 1         ; true-colour flag
-.red_max           db 0, 255    ; red-max
-.green_max         db 0, 255    ; green-max
-.blue_max          db 0, 255    ; blue-max
-.red_shif          db 0         ; red-shift
-.green_shift       db 8         ; green-shift
-.blue_shift        db 16        ; blue-shift
-                   db 0, 0, 0   ; padding
+ClientInit              db 0            ; not shared
 
-pixel_format16     db 0         ; setPixelformat
-                   db 0, 0, 0   ; padding
-.bpp               db 16        ; bits per pixel
-.depth             db 15        ; depth
-.big_endian        db 0         ; big-endian flag
-.true_color        db 1         ; true-colour flag
-.red_max           db 0, 31     ; red-max
-.green_max         db 0, 31     ; green-max
-.blue_max          db 0, 31     ; blue-max
-.red_shif          db 0         ; red-shift
-.green_shift       db 5         ; green-shift
-.blue_shift        db 10        ; blue-shift
-                   db 0, 0, 0   ; padding
+SetPixelFormat32        db 0            ; setPixelformat
+                        db 0, 0, 0      ; padding
+.bpp                    db 32           ; bits per pixel
+.depth                  db 32           ; depth
+.big_endian             db 0            ; big-endian flag
+.true_color             db 1            ; true-colour flag
+.red_max                db 0, 255       ; red-max
+.green_max              db 0, 255       ; green-max
+.blue_max               db 0, 255       ; blue-max
+.red_shif               db 0            ; red-shift
+.green_shift            db 8            ; green-shift
+.blue_shift             db 16           ; blue-shift
+                        db 0, 0, 0      ; padding
 
-pixel_format8      db 0         ; setPixelformat
-                   db 0, 0, 0   ; padding
-.bpp               db 8         ; bits per pixel
-.depth             db 6         ; depth
-.big_endian        db 0         ; big-endian flag
-.true_color        db 1         ; true-colour flag
-.red_max           db 0, 3      ; red-max
-.green_max         db 0, 3      ; green-max
-.blue_max          db 0, 3      ; blue-max
-.red_shif          db 0         ; red-shift
-.green_shift       db 2         ; green-shift
-.blue_shift        db 4         ; blue-shift
-                   db 0, 0, 0   ; padding
+SetPixelFormat16        db 0            ; setPixelformat
+                        db 0, 0, 0      ; padding
+.bpp                    db 16           ; bits per pixel
+.depth                  db 15           ; depth
+.big_endian             db 0            ; big-endian flag
+.true_color             db 1            ; true-colour flag
+.red_max                db 0, 31        ; red-max
+.green_max              db 0, 31        ; green-max
+.blue_max               db 0, 31        ; blue-max
+.red_shif               db 0            ; red-shift
+.green_shift            db 5            ; green-shift
+.blue_shift             db 10           ; blue-shift
+                        db 0, 0, 0      ; padding
 
-encodings          db 2         ; setEncodings
-                   db 0         ; padding
-                   db 0, 2      ; number of encodings
-                   db 0, 0, 0, 0        ; raw encoding        (DWORD, Big endian order)
-                   db 0, 0, 0, 1        ; Copyrect encoding
-;                   db 0, 0, 0, 2        ; RRE
-;                   db 0, 0, 0, 5        ; HexTile
-;                   db 0, 0, 0, 15       ; TRLE
-;                   db 0, 0, 0, 16       ; ZRLE
+SetPixelFormat8         db 0            ; setPixelformat
+                        db 0, 0, 0      ; padding
+.bpp                    db 8            ; bits per pixel
+.depth                  db 6            ; depth
+.big_endian             db 0            ; big-endian flag
+.true_color             db 1            ; true-colour flag
+.red_max                db 0, 3         ; red-max
+.green_max              db 0, 3         ; green-max
+.blue_max               db 0, 3         ; blue-max
+.red_shif               db 0            ; red-shift
+.green_shift            db 2            ; green-shift
+.blue_shift             db 4            ; blue-shift
+                        db 0, 0, 0      ; padding
 
-fbur               db 3         ; frame buffer update request
-.inc               db 0         ; incremental
-.x                 dw 0
-.y                 dw 0
-.width             dw 0
-.height            dw 0
+SetEncodings            db 2            ; setEncodings
+                        db 0            ; padding
+                        db 0, 2         ; number of encodings
+                        db 0, 0, 0, 0   ; raw encoding        (DWORD, Big endian order)
+                        db 0, 0, 0, 1   ; Copyrect encoding
+;                        db 0, 0, 0, 2   ; RRE
+;                        db 0, 0, 0, 5   ; HexTile
+;                        db 0, 0, 0, 15  ; TRLE
+;                        db 0, 0, 0, 16  ; ZRLE
 
-keyevent           db 4         ; keyevent
-.down              db 0         ; down-flag
-                   dw 0         ; padding
-.key               dd 0         ; key
+FramebufferUpdateRequest        db 3
+.inc                            db 0    ; incremental
+.x                              dw 0
+.y                              dw 0
+.width                          dw 0
+.height                         dw 0
 
-pointerevent       db 5         ; pointerevent
-.mask              db 0         ; button-mask
-.x                 dw 0         ; x-position
-.y                 dw 0         ; y-position
+KeyEvent                db 4            ; keyevent
+.down                   db 0            ; down-flag
+                        dw 0            ; padding
+.key                    dd 0            ; key
+
+PointerEvent            db 5            ; pointerevent
+.mask                   db 0            ; button-mask
+.x                      dw 0            ; x-position
+.y                      dw 0            ; y-position
 
 
 sockaddr1:
-        dw AF_INET4
-.port   dw 0x0c17               ; 5900
-.ip     dd 0
-        rb 10
+                dw AF_INET4
+.port           dw 0x0c17               ; 5900
+.ip             dd 0
+                rb 10
 
-thread_ready    db 0
-mouse_dd        dd ?
+beep            db 0x85, 0x25, 0x85, 0x40, 0
+
+status          dd STATUS_INITIAL
+update_gui      dd 0
+mouse_dd        dd 0
 
 URLbox          edit_box 200, 25, 16, 0xffffff, 0x6f9480, 0, 0, 0, 65535, serveraddr, mouse_dd, ed_focus, 0, 0
+
+serverstr       db "server:"
+userstr         db "username:"
+passstr         db "password:"
+connectstr      db "connect"
+loginstr        db "login"
+loginstr_e:
+
+sz_err_disconnected     db "Server closed connection unexpectedly.", 0
+sz_err_dns              db "Could not resolve hostname.", 0
+sz_err_sock             db "Could not open socket.", 0
+sz_err_connect          db "Could not connect to the server.", 0
+sz_err_proto            db "A protocol error has occured.", 0
+sz_err_security         db "Server requested an unsupported security type.", 0
+sz_err_library          db "Could not load needed libraries.", 0
+sz_err_thread           db "Could not create thread.", 0
+
+err_msg         dd sz_err_disconnected
+                dd sz_err_dns
+                dd sz_err_sock
+                dd sz_err_connect
+                dd sz_err_proto
+                dd sz_err_security
+                dd sz_err_library
+                dd sz_err_thread
 
 ; import
 align 4
@@ -299,8 +322,8 @@ import  box_lib,\
 import  archiver,\
         deflate_unpack,         "deflate_unpack"
 
-name                    db "VNC client "
-name.dash               db 0, " "
+name                    db "VNC viewer "
+.dash                   db 0, " "
 
 I_END:
 
@@ -308,27 +331,34 @@ servername              rb 64+1
 
 socketnum               dd ?
 datapointer             dd ?
+
 rectangles              dw ?
 
 rectangle:
-.width                  dw ?
-.height                 dw ?
-.x                      dw ?
-.y                      dw ?
+.x                      dd ?
+.y                      dd ?
+.width                  dd ?
+.height                 dd ?
+
+subrectangles           dd ?
+
+subrectangle:
+.x                      dd ?
+.y                      dd ?
+.width                  dd ?
+.height                 dd ?
 
 screen:                 ; Remote screen resolution
 .height                 dw ?
 .width                  dw ?
 
 serveraddr              rb 65536
-receive_buffer          rb 5*1024*1024  ; 5 mb buffer for received data (incoming frbupdate etc)
+receive_buffer          rb RECEIVE_BUFFER_SIZE
 framebuffer_data        rb 1024*1024*3  ; framebuffer
 
                         rb 0x1000
 thread_stack:
-
                         rb 0x1000
-
 IM_END:
 
 

@@ -12,7 +12,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-encoding_copyrect:
+encoding_CopyRect:
 
         DEBUGF  1,"CopyRect\n"
 
@@ -35,22 +35,22 @@ encoding_copyrect:
         add     eax, ebx                                ; [screen.width]*[src.y]+[src.x]
         lea     esi, [framebuffer_data+eax*3]           ; esi = framebuffer_data+([screen.width]*[src.y]+[src.x])*3
 
-        movzx   eax, [rectangle.y]
+        mov     eax, [rectangle.y]
         movzx   ebx, [screen.width]
         mul     ebx                                     ; [screen.width]*[rectangle.y]
-        movzx   ebx, [rectangle.x]
+        mov     ebx, [rectangle.x]
         add     eax, ebx                                ; [screen.width]*[rectangle.y]+[rectangle.x]
         lea     edi, [framebuffer_data+eax*3]           ; edi = framebuffer_data+([screen.width]*[rectangle.y]+[rectangle.x])*3
 
         movzx   eax, [screen.width]
-        sub     ax, [rectangle.width]
+        sub     eax, [rectangle.width]
         lea     ebp, [eax*3]                            ; ebp = ([screen.width]-[rectangle.width])*3
 
         cmp     esi, edi
         ja      .copy
 
         ; source pixels come before destination in buffer, copy backwards
-        movzx   eax, [rectangle.height]
+        mov     eax, [rectangle.height]
         movzx   edx, [screen.width]
         mul     edx
         lea     eax, [eax*3-1]
@@ -61,8 +61,8 @@ encoding_copyrect:
         std
   .copy:
 
-        movzx   edx, [rectangle.height]
-        movzx   ecx, [rectangle.width]
+        mov     edx, [rectangle.height]
+        mov     ecx, [rectangle.width]
         lea     ecx, [ecx*3]
   .lineloop:
         push    ecx

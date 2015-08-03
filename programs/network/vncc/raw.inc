@@ -16,8 +16,8 @@ encoding_raw:
 
         DEBUGF  1,"RAW\n"
 
-        movzx   eax, [rectangle.width]
-        movzx   ebx, [rectangle.height]
+        mov     eax, [rectangle.width]
+        mov     ebx, [rectangle.height]
         mul     ebx
         add     eax, esi
   @@:
@@ -29,23 +29,23 @@ encoding_raw:
         jmp     @b
   @@:
 
-        movzx   eax, [rectangle.y]
+        mov     eax, [rectangle.y]
         movzx   ebx, [screen.width]
         mul     ebx                                     ; [screen.width]*[rectangle.y]
-        movzx   ebx, [rectangle.x]
+        mov     ebx, [rectangle.x]
         add     eax, ebx                                ; [screen.width]*[rectangle.y]+[rectangle.x]
         lea     edi, [framebuffer_data+eax*3]           ; edi = framebuffer_data+([screen.width]*[rectangle.y]+[rectangle.x])*3
 
         movzx   eax, [screen.width]
-        sub     ax, [rectangle.width]
+        sub     eax, [rectangle.width]
         lea     ebp, [eax*3]                            ; ebp = ([screen.width]-[rectangle.width])*3
 
         mov     bl, 85
 
-        movzx   edx, [rectangle.height]
+        mov     edx, [rectangle.height]
 
   .lineloop:
-        movzx   ecx, [rectangle.width]
+        mov     ecx, [rectangle.width]
 
   .pixelloop:
         mov     al, [esi]
