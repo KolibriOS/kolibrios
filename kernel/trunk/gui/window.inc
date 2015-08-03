@@ -134,6 +134,10 @@ syscall_display_settings: ;///// system function 48 ///////////////////////////
 ;< ebx = 8
 ;< ecx = pointer to FileInfoBlock struct
 ;> eax = FS error code
+; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;; Set font smoothing:
+;< ebx = 9
+;< ecx = 0 (off) or !0 (on)
 ;------------------------------------------------------------------------------
         cmp     ebx, .sizeof.ftable / 4
         ja      @f
@@ -296,6 +300,11 @@ syscall_display_settings.08:
 ;--------------------------------------
 align 4
 .exit:
+        ret
+;------------------------------------------------------------------------------
+align 4
+syscall_display_settings.09:
+        mov     [fontSmoothing], cl
         ret
 ;------------------------------------------------------------------------------
 align 4
@@ -1400,7 +1409,7 @@ sys_window_moving_handler: ;///////////////////////////////////////////////////
 
 iglobal
   FuncTable syscall_display_settings, ftable, \
-    00, 01, 02, 03, 04, 05, 06, 07, 08
+    00, 01, 02, 03, 04, 05, 06, 07, 08, 09
 
   align 4
   window_topleft dd \

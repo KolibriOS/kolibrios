@@ -7,230 +7,698 @@
 
 $Revision$
 
-;------------------------------------------------------------------------------
-align 4
-dtext_asciiz_esi:                          ; for skins title out
-        push    eax
-        xor     eax, eax
-        inc     eax
-        jmp     dtext.1
-;------------------------------------------------------------------------------
-align 4
+dtext_asciiz_esi:
+        btr     ecx, 31
 dtext:
-; ebx x & y
-; ecx style ( 0xX0000000 ) & color ( 0x00RRGGBB )
-; X = ABnnb:
-; nn = font
-; A = 0 <=> output esi characters; otherwise output ASCIIZ string
-; B = 1 <=> fill background with color eax
-; edx start of text
-; edi 1 force or user area for redirect
-        push    eax
+; edx -> string
+; esi = number of characters
+; ebx = output coordinates XXXXYYYY h
+; ecx = char color and flags flRRGGBB h
+; fl = ZBFFRSSS b
+; Z=1: edx -> zero terminated string, esi = ?
+; B=1: fill background with color eax
+; R=1: edi -> user area for redirect
+; FF=3: UTF-8 8x16, FF=2: UTF-16LE 8x16, FF=0: 866 6x9
+; SSS = (font multiplier)-1
+; edi=1: force output
+        and     eax, 0xFFFFFF
+        bt      ecx, 30
+        jc      @f
         xor     eax, eax
-;--------------------------------------
-align 4
-.1:
-        pushad
-        movsx   eax, bx         ; eax=y
-        sar     ebx, 16         ; ebx=x
-        xchg    eax, ebx        ; eax=x, ebx=y
-        cmp     esi, 255
-        jb      .loop
-
-        mov     esi, 255
-;--------------------------------------
-align 4
-.loop:
-        test    ecx, ecx
-        js      .test_asciiz
-
-        dec     esi
-        js      .end
-
+        dec     eax
+@@:
+        pushd   0 0 0 eax
+        movsx   eax, bx
+        sar     ebx, 16
+        push    eax ebx edi
+        bt      ecx, 27
+        jc      .redirect
+        mov     ebp, [_display.width]
+        xor     edi, edi
         jmp     @f
-;--------------------------------------
-align 4
-.test_asciiz:
-        cmp     byte [edx], 0
-        jz      .end
-
-        cmp     byte [esp+28], 1
-        jne     @f
-
-        dec     esi
-        js      .end
-;--------------------------------------
-align 4
+.redirect:
+        mov     ebp, [edi]
+        add     edi, 8
 @@:
-        inc     edx
-        pushad
-        movzx   edx, byte [edx-1]
-        test    ecx, 0x10000000
-        jnz     .font2
-
-        mov     esi, 9
-        lea     ebp, [FONT_I+8*edx+edx]
-;--------------------------------------
-align 4
-.symloop1:
-        mov     dl, byte [ebp]
-        or      dl, 1 shl 6
-;--------------------------------------
-align 4
-.pixloop1:
-        shr     dl, 1
-        jz      .pixloop1end
-
-        jnc     .nopix
-
-        test    ecx, 0x08000000  ; redirect the output to the user area
-        jz      @f
-
-        call    draw_text_to_user_area
-        jmp     .pixloop1cont
-;--------------------------------------
-align 4
-@@:
-        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
-;        call    [putpixel]
-        call    __sys_putpixel
-        jmp     .pixloop1cont
-;--------------------------------------
-align 4
-.nopix:
-        test    ecx, 0x40000000
-        jz      .pixloop1cont
-
-        push    ecx
-        mov     ecx, [esp+4+20h+20h]
-
-        test    ecx, 0x08000000  ; redirect the output to the user area
-        jz      @f
-
-        call    draw_text_to_user_area
-        pop     ecx
-        jmp     .pixloop1cont
-;--------------------------------------
-align 4
-@@:
-        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
-;        call    [putpixel]
-        call    __sys_putpixel
-        pop     ecx
-;--------------------------------------
-align 4
-.pixloop1cont:
-        inc     eax
-        jmp     .pixloop1
-;--------------------------------------
-align 4
-.pixloop1end:
-        sub     eax, 6
-        inc     ebx
-        inc     ebp
-        dec     esi
-        jnz     .symloop1
-
-        popad
-        add     eax, 6
-        jmp     .loop
-;--------------------------------------
-align 4
-.font2:
-        add     edx, edx
-        lea     ebp, [FONT_II+4*edx+edx+1]
-        push    9
-        movzx   esi, byte [ebp-1]
-;--------------------------------------
-align 4
-.symloop2:
-        mov     dl, byte [ebp]
-        push    esi
-;--------------------------------------
-align 4
-.pixloop2:
-        shr     dl, 1
-        jnc     .nopix2
-
-        test    ecx, 0x08000000  ; redirect the output to the user area
-        jz      @f
-
-        call    draw_text_to_user_area
-        jmp     .pixloop2cont
-;--------------------------------------
-align 4
-@@:
-        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
-;        call    [putpixel]
-        call    __sys_putpixel
-        jmp     .pixloop2cont
-;--------------------------------------
-align 4
-.nopix2:
-        test    ecx, 0x40000000
-        jz      .pixloop2cont
-
-        push    ecx
-        mov     ecx, [esp+12+20h+20h]
-
-        test    ecx, 0x08000000  ; redirect the output to the user area
-        jz      @f
-
-        call    draw_text_to_user_area
-        pop     ecx
-        jmp     .pixloop2cont
-;--------------------------------------
-align 4
-@@:
-        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
-;        call    [putpixel]
-        call    __sys_putpixel
-        pop     ecx
-;--------------------------------------
-align 4
-.pixloop2cont:
-        inc     eax
-        dec     esi
-        jnz     .pixloop2
-
-        pop     esi
-        sub     eax, esi
-        inc     ebx
-        inc     ebp
-        dec     dword [esp]
-        jnz     .symloop2
-
-        pop     eax
-        add     dword [esp+28], esi
-        popad
-        jmp     .loop
-;--------------------------------------
-align 4
-.end:
-        popad
-        pop     eax
-        ret
-;------------------------------------------------------------------------------
-; eax = x coordinate
-; ebx = y coordinate
-; ecx = ?? RR GG BB
-; edi = user area
-align 4
-draw_text_to_user_area:
-        pushad
-        imul    ebx, [edi+0]
+        shl     ebp, 2
+        imul    eax, ebp
+        shl     ebx, 2
         add     eax, ebx
-        shl     eax, 2
-        add     eax, edi
-        add     eax, 8
-        and     ecx, 0xffffff
-        or      ecx, 0xff000000  ; not transparent
-        mov     [eax], ecx       ; store  pixel
-        popad
+        js      .ret
+        add     edi, eax    ; linear address (32bit)
+        mov     eax, ecx
+        mov     ebx, ecx
+        test    ecx, ecx
+        jns     @f
+        mov     esi, 256
+@@:
+        shr     ecx, 24
+        and     cl, 7
+        inc     ecx
+        push    ebp ecx esi
+        mov     esi, edx    ; -> string
+        or      eax, 0xFF000000
+        bt      ebx, 27
+        jc      .bufferReady
+        mov     eax, 9
+        bt      ebx, 29
+        jnc     @f
+        add     eax, 7
+@@:
+        imul    eax, ecx
+        mov     [esp+32], eax
+        imul    ebp, eax
+        stdcall kernel_alloc, ebp
+        mov     ecx, ebp
+        shr     ecx, 2
+        mov     [esp+36], eax
+        sub     edi, eax
+        mov     edx, eax
+        mov     eax, [esp+24]
+        cmp     eax, -1
+        jnz     .background
+        mov     [esp+28], edi
+.background:
+        mov     edi, edx
+        rep stosd
+        mov     edi, edx
+        mov     eax, ebx
+        and     eax, 0xFFFFFF
+.bufferReady:
+        mov     ebp, eax
+        xor     edx, edx
+        bt      ebx, 29
+        jnc     .draw866
+        bt      ebx, 28
+        jc      .drawUTF8
+
+; char counter +0
+fontMultiplier = 4
+widthX = 8
+; edi +12
+; X +16
+; Y +20
+; background +24
+deltaToScreen = 28
+; temp buffer height +32
+; temp buffer +36
+
+.drawUTF16:
+        dec     dword [esp]
+        js      .done
+        xor     ebx, ebx
+        mov     bx, [esi]
+        test    ebx, ebx
+        jz      .done
+        inc     esi
+        inc     esi
+        cmp     bx, 1419
+        jc      @f
+        xor     ebx, ebx
+@@:
+        pushd   esi edi 16
+        shl     ebx, 4
+        add     ebx, fontUni
+        mov     esi, [esp+12+fontMultiplier]
+        call    drawChar
+        imul    esi, 8*4
+        pop     edi
+        pop     edi
+        add     edi, esi
+        pop     esi
+        jmp     .drawUTF16
+.drawUTF8:
+        dec     dword [esp]
+        js      .done
+        xor     ebx, ebx
+        mov     bl, [esi]
+        inc     esi
+        test    bl, bl
+        jz      .done
+        jns     .valid
+        shl     bx, 10
+        shr     bh, 2
+        mov     bl, [esi]
+        shl     bl, 2
+        shr     bx, 2
+        inc     esi
+        cmp     bx, 1419
+        jc      .valid
+        shl     bx, 4
+@@:
+        jns     @f
+        inc     esi
+        shl     bx, 1
+        jmp     @b
+@@:
+        xor     ebx, ebx
+.valid:
+        pushd   esi edi 16
+        shl     ebx, 4
+        add     ebx, fontUni
+        mov     esi, [esp+12+fontMultiplier]
+        call    drawChar
+        imul    esi, 8*4
+        pop     edi
+        pop     edi
+        add     edi, esi
+        pop     esi
+        jmp     .drawUTF8
+.draw866:
+        dec     dword [esp]
+        js      .done
+        xor     ebx, ebx
+        mov     bl, [esi]
+        test    ebx, ebx
+        jz      .done
+        inc     esi
+        pushd   esi edi 9
+        lea     ebx, [ebx*8+ebx+font1]
+        mov     esi, [esp+12+fontMultiplier]
+        call    drawChar
+        imul    esi, 6*4
+        pop     edi
+        pop     edi
+        add     edi, esi
+        pop     esi
+        jmp     .draw866
+.done:
+        mov     ecx, edi
+        pop     eax eax eax esi edx ebx ebp ebp ebp
+        mov     edi, [esp]
+        test    edi, edi
+        jnz     @f
+        pop     eax
         ret
-;------------------------------------------------------------------------------
-align 4
-FONT_I:
+@@:
+        push    eax
+        sub     ecx, edi
+        shr     ecx, 2
+        add     edx, ecx
+        inc     ecx
+        push    ecx
+        push    edi
+.drawPicture:
+        mov     eax, -1
+        repz scasd
+        jcxz    @f
+        mov     eax, edx
+        sub     eax, ecx
+        push    ecx
+        mov     ecx, [edi-4]
+        xchg    esi, edi
+        call    __sys_putpixel
+        xchg    esi, edi
+        pop     ecx
+        jmp     .drawPicture
+@@:
+        pop     edi
+        mov     ecx, [esp]
+        add     edi, [esp+4]
+        inc     ebx
+        push    edi
+        dec     ebp
+        jnz     .drawPicture
+        add     esp, 12
+        call    kernel_free
+        ret
+.ret:
+        add     esp, 28
+        ret
+
+drawChar:
+        mov     dl, [ebx]
+.raw:
+        bsf     eax, edx
+        jz      .nextRaw
+        imul    eax, esi
+        shl     eax, 2
+        push    edi
+        add     edi, eax
+        mov     ecx, esi
+        dec     esi
+        jnz     .square
+        mov     [edi], ebp
+        inc     esi
+        cmp     [fontSmoothing], 0
+        jz      .nextPixel
+.checkLeftSubP:
+        bsf     eax, edx
+        dec     eax
+        js      .checkRightSubP
+        bt      [ebx], eax
+        jc      .checkRightSubP
+        dec     eax
+        js      .checkLeftDownSubP
+        bt      [ebx], eax
+        jc      .checkRightSubP
+.checkLeftDownSubP:
+        inc     eax
+        bt      [ebx+1], eax
+        jnc     .checkLeftUpSubP
+        inc     eax
+        bt      [ebx+1], eax
+        jnc     @f
+        bt      [ebx-1], eax
+        jc      .checkRightSubP
+        dec     eax
+        dec     eax
+        js      @f
+        bt      [ebx+1], eax
+        jnc     @f
+        inc     eax
+.checkLeftUpSubP:
+        bt      [ebx-1], eax
+        jnc     .checkRightSubP
+        inc     eax
+        bt      [ebx-1], eax
+        jnc     @f
+        bt      [ebx+1], eax
+        jc      .checkRightSubP
+        dec     eax
+        dec     eax
+        js      @f
+        bt      [ebx-1], eax
+        jc      .checkRightSubP
+@@:
+        mov     ecx, [esp+20+deltaToScreen]
+        mov     eax, [edi-4]
+        test    ecx, ecx
+        jz      @f
+        pusha
+        lea     ebx, [edi+ecx-4]
+        shr     ebx, 2
+        call    syscall_getpixel
+        popa
+@@:
+        mov     ecx, eax
+        mov     eax, ebp
+        shr     al, 1
+        shr     cl, 1
+        add     al, cl
+        shr     ah, 2
+        shr     ch, 2
+        add     ah, ch
+        add     ah, ch
+        add     ah, ch
+        ror     eax, 8
+        ror     ecx, 8
+        mov     ah, ch
+        rol     eax, 8
+        mov     [edi-4], eax
+.checkRightSubP:
+        bsf     eax, edx
+        inc     eax
+        bt      [ebx], eax
+        jc      .nextPixel
+        inc     eax
+        bt      [ebx], eax
+        jc      .nextPixel
+        dec     eax
+.checkRightDownSubP:
+        bt      [ebx+1], eax
+        jnc     .checkRightUpSubP
+        dec     eax
+        bt      [ebx+1], eax
+        jnc     @f
+        bt      [ebx-1], eax
+        jc      .nextPixel
+        inc     eax
+        inc     eax
+        bt      [ebx+1], eax
+        jnc     @f
+        dec     eax
+.checkRightUpSubP:
+        bt      [ebx-1], eax
+        jnc     .nextPixel
+        dec     eax
+        bt      [ebx-1], eax
+        jnc     @f
+        bt      [ebx+1], eax
+        jc      .nextPixel
+        inc     eax
+        inc     eax
+        bt      [ebx-1], eax
+        jc      .nextPixel
+@@:
+        mov     ecx, [esp+20+deltaToScreen]
+        mov     eax, [edi+4]
+        test    ecx, ecx
+        jz      @f
+        pusha
+        lea     ebx, [edi+ecx+4]
+        shr     ebx, 2
+        call    syscall_getpixel
+        popa
+@@:
+        mov     ecx, eax
+        mov     eax, ebp
+        shr     ah, 2
+        shr     ch, 2
+        add     ah, ch
+        add     ah, ch
+        add     ah, ch
+        mov     al, cl
+        ror     eax, 8
+        ror     ecx, 8
+        shr     ah, 1
+        shr     ch, 1
+        add     ah, ch
+        rol     eax, 8
+        mov     [edi+4], eax
+        jmp     .nextPixel
+.square:
+        mov     eax, esi
+@@:
+        mov     [edi+eax*4], ebp
+        dec     eax
+        jns     @b
+        add     edi, [esp+20+widthX]
+        dec     ecx
+        jnz     .square
+        inc     esi
+        mov     edi, [esp]
+.checkLeft:
+        bsf     eax, edx
+        dec     eax
+        js      .checkRight
+        bt      [ebx], eax
+        jc      .checkRight
+.checkLeftDown:
+        bt      [ebx+1], eax
+        jnc     .checkLeftUp
+        mov     ecx, eax
+        inc     eax
+        bt      [ebx+1], eax
+        jc      @f
+        bt      [ebx-1], eax
+        jnc     .downRightLow
+        bt      [ebx-2], eax
+        jc      .downRightLow
+        dec     eax
+        bt      [ebx-1], eax
+        jc      .downRightLow
+        dec     eax
+        js      .downRightHigh
+        bt      [ebx-2], eax
+        jc      .downRightLow
+        jmp     .downRightHigh
+@@:
+        bt      [ebx-1], eax
+        jc      .checkLeftUp
+        dec     eax
+        dec     eax
+        js      .downRightLow
+        bt      [ebx+1], eax
+        jc      .checkLeftUp
+.downRightLow:
+        imul    ecx, esi
+        shl     ecx, 2
+        add     edi, ecx
+        dec     esi
+        mov     eax, [esp+20+widthX]
+        imul    eax, esi
+        add     edi, eax
+        add     edi, 4
+        mov     ecx, esi
+        dec     ecx
+.drawDownRight:
+        mov     eax, ecx
+@@:
+        mov     [edi+eax*4], ebp
+        dec     eax
+        jns     @b
+        sub     edi, [esp+20+widthX]
+        add     edi, 4
+        dec     ecx
+        jns     .drawDownRight
+        inc     esi
+        mov     edi, [esp]
+        jmp     .checkLeftUp
+.downRightHigh:
+        imul    ecx, esi
+        shl     ecx, 2
+        add     edi, ecx
+        dec     esi
+        mov     eax, [esp+20+widthX]
+        imul    eax, esi
+        add     edi, eax
+        add     edi, 4
+        mov     ecx, esi
+        dec     ecx
+.drawDownRightHigh:
+        mov     eax, ecx
+@@:
+        mov     [edi+eax*4], ebp
+        dec     eax
+        jns     @b
+        sub     edi, [esp+20+widthX]
+        mov     eax, ecx
+@@:
+        mov     [edi+eax*4], ebp
+        dec     eax
+        jns     @b
+        sub     edi, [esp+20+widthX]
+        add     edi, 4
+        dec     ecx
+        jns     .drawDownRightHigh
+        inc     esi
+        mov     edi, [esp]
+.checkLeftUp:
+        bsf     eax, edx
+        dec     eax
+        bt      [ebx-1], eax
+        jnc     .checkRight
+        mov     ecx, eax
+        inc     eax
+        bt      [ebx-1], eax
+        jc      @f
+        bt      [ebx+1], eax
+        jnc     .upRightLow
+        bt      [ebx+2], eax
+        jc      .upRightLow
+        dec     eax
+        bt      [ebx+1], eax
+        jc      .upRightLow
+        dec     eax
+        js      .upRightHigh
+        bt      [ebx+2], eax
+        jc      .upRightLow
+        jmp     .upRightHigh
+@@:
+        bt      [ebx+1], eax
+        jc      .checkRight
+        dec     eax
+        dec     eax
+        js      .upRightLow
+        bt      [ebx-1], eax
+        jc      .checkRight
+.upRightLow:
+        imul    ecx, esi
+        shl     ecx, 2
+        add     edi, ecx
+        add     edi, 4
+        mov     ecx, esi
+        dec     ecx
+        dec     ecx
+.drawUpRight:
+        mov     eax, ecx
+@@:
+        mov     [edi+eax*4], ebp
+        dec     eax
+        jns     @b
+        add     edi, [esp+20+widthX]
+        add     edi, 4
+        dec     ecx
+        jns     .drawUpRight
+        mov     edi, [esp]
+        jmp     .checkRight
+.upRightHigh:
+        imul    ecx, esi
+        shl     ecx, 2
+        add     edi, ecx
+        add     edi, 4
+        mov     ecx, esi
+        dec     ecx
+        dec     ecx
+.drawUpRightHigh:
+        mov     eax, ecx
+@@:
+        mov     [edi+eax*4], ebp
+        dec     eax
+        jns     @b
+        add     edi, [esp+20+widthX]
+        mov     eax, ecx
+@@:
+        mov     [edi+eax*4], ebp
+        dec     eax
+        jns     @b
+        add     edi, [esp+20+widthX]
+        add     edi, 4
+        dec     ecx
+        jns     .drawUpRightHigh
+        mov     edi, [esp]
+.checkRight:
+        bsf     eax, edx
+        inc     eax
+        bt      [ebx], eax
+        jc      .nextPixel
+.checkRightDown:
+        bt      [ebx+1], eax
+        jnc     .checkRightUp
+        mov     ecx, eax
+        dec     eax
+        bt      [ebx+1], eax
+        jc      @f
+        bt      [ebx-1], eax
+        jnc     .downLeftLow
+        bt      [ebx-2], eax
+        jc      .downLeftLow
+        inc     eax
+        bt      [ebx-1], eax
+        jc      .downLeftLow
+        inc     eax
+        bt      [ebx-2], eax
+        jc      .downLeftLow
+        jmp     .downLeftHigh
+@@:
+        bt      [ebx-1], eax
+        jc      .checkRightUp
+        inc     eax
+        inc     eax
+        bt      [ebx+1], eax
+        jc      .checkRightUp
+.downLeftLow:
+        imul    ecx, esi
+        shl     ecx, 2
+        add     edi, ecx
+        dec     esi
+        mov     eax, [esp+20+widthX]
+        imul    eax, esi
+        add     edi, eax
+        mov     ecx, esi
+        dec     ecx
+.drawDownLeft:
+        mov     eax, ecx
+@@:
+        mov     [edi+eax*4], ebp
+        dec     eax
+        jns     @b
+        sub     edi, [esp+20+widthX]
+        dec     ecx
+        jns     .drawDownLeft
+        inc     esi
+        mov     edi, [esp]
+        jmp     .checkRightUp
+.downLeftHigh:
+        imul    ecx, esi
+        shl     ecx, 2
+        add     edi, ecx
+        dec     esi
+        mov     eax, [esp+20+widthX]
+        imul    eax, esi
+        add     edi, eax
+        mov     ecx, esi
+        dec     ecx
+.drawDownLeftHigh:
+        mov     eax, ecx
+@@:
+        mov     [edi+eax*4], ebp
+        dec     eax
+        jns     @b
+        sub     edi, [esp+20+widthX]
+        mov     eax, ecx
+@@:
+        mov     [edi+eax*4], ebp
+        dec     eax
+        jns     @b
+        sub     edi, [esp+20+widthX]
+        dec     ecx
+        jns     .drawDownLeftHigh
+        inc     esi
+        mov     edi, [esp]
+.checkRightUp:
+        bsf     eax, edx
+        inc     eax
+        bt      [ebx-1], eax
+        jnc     .nextPixel
+        mov     ecx, eax
+        dec     eax
+        bt      [ebx-1], eax
+        jc      @f
+        bt      [ebx+1], eax
+        jnc     .upLeftLow
+        bt      [ebx+2], eax
+        jc      .upLeftLow
+        inc     eax
+        bt      [ebx+1], eax
+        jc      .upLeftLow
+        inc     eax
+        bt      [ebx+2], eax
+        jc      .upLeftLow
+        jmp     .upLeftHigh
+@@:
+        bt      [ebx+1], eax
+        jc      .nextPixel
+        inc     eax
+        inc     eax
+        bt      [ebx-1], eax
+        jc      .nextPixel
+.upLeftLow:
+        imul    ecx, esi
+        shl     ecx, 2
+        add     edi, ecx
+        mov     ecx, esi
+        dec     ecx
+        dec     ecx
+.drawUpLeft:
+        mov     eax, ecx
+@@:
+        mov     [edi+eax*4], ebp
+        dec     eax
+        jns     @b
+        add     edi, [esp+20+widthX]
+        dec     ecx
+        jns     .drawUpLeft
+        jmp     .nextPixel
+.upLeftHigh:
+        imul    ecx, esi
+        shl     ecx, 2
+        add     edi, ecx
+        mov     ecx, esi
+        dec     ecx
+        dec     ecx
+.drawUpLeftHigh:
+        mov     eax, ecx
+@@:
+        mov     [edi+eax*4], ebp
+        dec     eax
+        jns     @b
+        add     edi, [esp+20+widthX]
+        mov     eax, ecx
+@@:
+        mov     [edi+eax*4], ebp
+        dec     eax
+        jns     @b
+        add     edi, [esp+20+widthX]
+        dec     ecx
+        jns     .drawUpLeftHigh
+.nextPixel:
+        bsf     eax, edx
+        btr     edx, eax
+        pop     edi
+        jmp     .raw
+.nextRaw:
+        inc     ebx
+        mov     eax, [esp+16+widthX]
+        imul    eax, esi
+        add     edi, eax
+        dec     dword [esp+4]
+        jnz     drawChar
+        ret
+
+fontSmoothing   db  1
+font1:
   if lang eq sp
   file 'char_sp.mt'
   else if lang eq et
@@ -238,14 +706,5 @@ FONT_I:
   else
   file 'char.mt'
   end if
-;------------------------------------------------------------------------------
-align 4
-FONT_II:
-  if lang eq sp
-  file 'char2_sp.mt'
-  else if lang eq et
-  file 'char2_et.mt'
-  else
-  file 'char2.mt'
-  end if
-;------------------------------------------------------------------------------
+fontUni:
+file 'charUni.mt'

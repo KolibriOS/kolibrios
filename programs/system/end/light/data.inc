@@ -8,34 +8,34 @@ if lang eq ru
 
 else if lang eq ge
   label2:
-      db   ' Beenden         Kernel',0
+      db   ' Beenden       Kernel',0
   label3:
-      db   '  Neustart      Abbrechen',0
+      db   ' Neustart    Abbrechen',0
   label4:
       db   'Save your settings (Ctrl-S)',0
 
 else if lang eq it
   label2:
-      db   '   Spegni         Kernel',0
+      db   '  Spegni       Kernel',0
   label3:
-      db   '   Riavvio        Annulla',0
+      db   ' Riavvio      Annulla',0
   label4:
       db   'Salva impostazioni (Ctrl-S)',0
 
 else
   label2:
-      db   ' Power off        Kernel',0
+      db   'Power off      Kernel',0
   label3:
-      db   '   Restart         Cancel',0
+      db   ' Restart       Cancel',0
   label4:
       db   'Save your settings (Ctrl-S)',0
 
 end if
 
   label5:
-      db   '(End)         (Home)',0
+      db   ' (End)                     (Home)',0
   label6:
-      db   '(Enter)         (Esc)',0
+      db   '(Enter)                    (Esc)',0
 
 rdsave:
         dd  7,0,hide,0,0
@@ -90,15 +90,13 @@ aini_get_int db 'ini_get_int',0
 aini_set_int db 'ini_set_int',0
 ;---------------------------------------------------------------------
 
-check1 check_box2 20 shl 16 +8,93 shl 16 +8,6,0xffffff,0,0,label4
+check1 check_box2 20 shl 16 +8,110 shl 16 +8,6,0xffffff,0,0,label4
 
 hide        db 'h',0
 asettings   db 'settings',0
 aautosave   db 'autosave',0
 ini_file db  '/sys/settings/rdsave.ini',0
 
-
-If fade=1
 color1 dd 0x019098d0
 color2 dd 0xFFFFFF
 color3 dd 0xe4dfe1
@@ -108,7 +106,10 @@ color5 dd 0xaa7700
 color6 dd 0x777777
 color7 dd 0x007700
 
-color8 dd 0x90FFFFFF
+color8 dd 0x81FFFFFF
+color9 dd 0x80FFFFFF
+
+If fade=1
 
 color21 dd 0x01505890
 color22 dd 0xbfbfbf
@@ -120,17 +121,8 @@ color26 dd 0x373737
 color27 dd 0x003700
 
 color28 dd 0x90bfbfbf
+
 else
-color1 dd 0x019098d0
-color2 dd 0xFFFFFF
-color3 dd 0xe4dfe1
-
-color4 dd 0x990022
-color5 dd 0xaa7700
-color6 dd 0x777777
-color7 dd 0x007700
-
-color8 dd 0x90FFFFFF
 
 if lang eq ru
   label7:
