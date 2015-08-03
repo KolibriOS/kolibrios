@@ -1,4 +1,25 @@
 //IO library
+
+/*
+	class IO:
+		io.count(path)          - количество файлов в дирректории path
+		io.size(path)           - размер (файла/папки) path
+		io.run(path,param)      - запустить файл path с параметром param
+		io.write(path,data)     - записать файл с данными data в дирректорию path
+		io.read(path)           - прочитать файл path и возвратить указатель на данные
+		io.move(path1,path2)    - переместить (файл/папку) из path1 в path2
+		io.copy(path1,path2)    - копировать (файл/папку) из path1 в path2
+		io.set(path,attribute)  - установить аттрибуты для (файла/папки)
+		io.del(path)            - удалить (файл/папку)
+		
+		io.dir.load(path)       - загрузить в буффер данные папки path (следует очищать буффер сомандой free!!!)
+		io.dir.position(number) - возвратить указатель имени файла по позиции number
+		io.dir.make(path)       - создать папку path
+		
+		io.dir.buffer           - буффер данных загруженной папки ф-цией (io.dir.load)
+		io.dir.count            - количество файлов фагруженной ф-цией (io.count)
+*/
+
 #ifndef INCLUDE_IO_H
 #define INCLUDE_IO_H
 
