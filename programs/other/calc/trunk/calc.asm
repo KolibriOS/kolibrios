@@ -643,7 +643,7 @@ draw_window:
         mov     ecx, eax
         xor     eax, eax                     
         mov     ebx, 200 shl 16 + 256
-        add     ecx, 200 shl 16 + 158
+        add     ecx, 200 shl 16 + 163
         mov     edx, [sc.work]
         or      edx, 0x34000000
         mov     edi, title
@@ -651,7 +651,7 @@ draw_window:
 
         mov     eax, 8
         mov     ebx, 19 shl 16 + 28
-        mov     ecx, 49 shl 16 + 18
+        mov     ecx, 55 shl 16 + 18
         mov     edx, 6
         mov     esi, [sc.work_button]
         mov     edi, 7
@@ -668,13 +668,13 @@ no_new_row:
         cmp     edx, 39
         jbe     newbutton
 
-        mcall   , <199, 28>, <49, 18>, 2        ; 'C'
+        mcall   , <199, 28>, <55, 18>, 2        ; 'C'
         mcall   , <220,  8>, < 7,  8>, 3        ; 'dec-bin-hex'
 
 
         mov     ecx, [sc.work_button_text]
         mov     edx, text
-        mov     edi, 55 - 20
+        mov     edi, 55 - 15
 next_line:
         inc     edx
         and     edi, 0x0000ffff
@@ -704,12 +704,14 @@ next_button:
 
 print_display:
         pusha
-        mcall   13, < 20, 207>, <21, 17>, 0xFFFfff
+        mcall   13, < 21, 206>, <22, 24>, 0xFFFfff
         mcall   38, < 19, 227>, <20, 20>, [sc.work_graph]
-        mcall   38, < 19, 227>, <38, 38>, [sc.work_graph]
-        mcall   38, < 19,  19>, <21, 37>, [sc.work_graph]
-        mcall   38, <227, 227>, <21, 37>, [sc.work_graph]
-
+        mcall   38, < 20, 226>, <21, 21>, 0xE0E0E0 ; internal shadow
+        mcall   38, < 19, 227>, <45, 45>, [sc.work_graph]
+        mcall   38, < 19,  19>, <21, 44>, [sc.work_graph]
+		mcall   38, < 20,  20>, <23, 43>, 0xE0E0E0 ; internal shadow
+        mcall   38, <227, 227>, <21, 44>, [sc.work_graph]
+		
         mov     eax, 4
         mov     ebx, 135 shl 16 + 7
         mov     ecx, [sc.work_text]
@@ -737,19 +739,19 @@ positive:
         cmp     [decimal], 0
         je      whole
 
-        mcall   , <180, 26>, 0, dot, 1
-        mcall   47, <10, 0>, [integer], <120, 22>, 0
-        mcall   , <6, 0>, [decimal], <187, 22>, 0
+        mcall   , <144, 26>, [number_color], dot, 1
+        mcall   47, <10, 0>, [integer], <26, 26>, [number_color]
+        mcall   , <6, 0>, [decimal], <151, 26>, [number_color]
 
         popa
         ret
 
 whole:
-        mcall   , <220, 26>, 0, dot, 1
+        mcall   , <214, 26>, [number_color], dot, 1
 
         cmp     [integer], 0
         je      null
-        mcall   47, <10, 0>, [integer], <160, 26>, 0
+        mcall   47, <10, 0>, [integer], <94, 26>, [number_color]
         popa
         ret
 
@@ -758,19 +760,19 @@ no_display_decimal:
         jne     no_display_hexadecimal
         cmp     [integer], 0
         je      null
-        mcall   47, <8, 256>, [integer], <173, 26>, 0
+        mcall   47, <8, 256>, [integer], <130, 26>, [number_color]
         popa
         ret
 
 no_display_hexadecimal:
         cmp     [integer], 0
         je      null
-        mcall   47, <32, 2*256>, [integer], <32, 26>, 0
+        mcall   47, <32, 2*256>, [integer], <32, 30>, 0
         popa
         ret
 
 null:
-        mcall   47, <1, 0>, 0, <214, 26>, 0
+        mcall   47, <1, 0>, 0, <202, 26>, [number_color]
         popa
         ret
 
@@ -798,14 +800,15 @@ clear_all:
 
 ;data
 
-title   db 'Calc 1.33', 0
+title   db 'Calc 1.35', 0
 
 display_type            dd  0    ; 0 = decimal, 1 = hexadecimal, 2= binary
 entry_multiplier        dd  10
 display_type_text       db  'dec hex bin'
+number_color            dd 0x81333333
 
-dot             db  '.'
-calc            db  ' '
+dot             db  '.',0
+calc            db  ' ',0
 integer         dd  0
 decimal         dd  0
 kymppi          dd  10
