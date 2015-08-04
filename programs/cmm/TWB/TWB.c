@@ -10,7 +10,7 @@ char header[2048];
 
 struct TWebBrowser {
 	llist list;
-	dword draw_line_height, draw_line_width, draw_list_height;
+	dword draw_line_width;
 	DrawBufer DrawBuf;
 	void Prepare();
 	void Parse();
@@ -62,7 +62,8 @@ char anchor[256];
 
 void TWebBrowser::DrawPage()
 {
-	int start_x, start_y, zstart_x, zstart_y, line_length, zline_length, stolbec_len, magrin_left=5;
+	int start_x, start_y, line_length, stolbec_len, magrin_left=5;
+	dword font_type;
 	
 	if (!header)
 	{
@@ -76,23 +77,22 @@ void TWebBrowser::DrawPage()
 	
 	if (stroka >= 0) && (stroka - 2 < list.visible) && (line) && (!anchor)
 	{
-		start_x = stolbec * 6 + list.x + magrin_left;
-		start_y = stroka * list.line_h + list.y + magrin_left;
-		zstart_x = stolbec * 6 + magrin_left * DrawBuf.zoomf + list.x;
-		zstart_y = stroka * list.line_h * DrawBuf.zoomf + magrin_left + list.y;
+		start_x = stolbec * 6 + magrin_left * DrawBuf.zoom + list.x;
+		start_y = stroka * list.line_h + magrin_left + list.y;
 		stolbec_len = strlen(#line);
-		line_length = stolbec_len * 6;
-		zline_length = stolbec_len * 6 * DrawBuf.zoomf;
+		line_length = stolbec_len * 6 * DrawBuf.zoom;
 
-		WriteBufText(start_x, 0, 0x88, text_colors[text_color_index], #line, buf_data);
-		if (b_text)	WriteBufText(start_x+1, 0, 0x88, text_colors[text_color_index], #line, buf_data);
-		if (i_text) { stolbec++; DrawBuf.Skew(start_x, 0, line_length, list.line_h); }
-		if (s_text) DrawBuf.DrawBar(start_x, 4, line_length, 1, text_colors[text_color_index]);
-		if (u_text) DrawBuf.DrawBar(start_x, 8, line_length, 1, text_colors[text_color_index]);
+		if (DrawBuf.zoom==1) font_type = 0x88; else font_type = 0x89;
+
+		WriteBufText(start_x, 0, font_type, text_colors[text_color_index], #line, buf_data);
+		if (b_text)	WriteBufText(start_x+1, 0, font_type, text_colors[text_color_index], #line, buf_data);
+		if (i_text) { stolbec++; DrawBuf.Skew(start_x, 0, line_length, list.line_h); } // bug with zoom>1
+		if (s_text) DrawBuf.DrawBar(start_x, list.line_h / 2 - DrawBuf.zoom, line_length, DrawBuf.zoom, text_colors[text_color_index]);
+		if (u_text) DrawBuf.DrawBar(start_x, list.line_h - DrawBuf.zoom - DrawBuf.zoom, line_length, DrawBuf.zoom, text_colors[text_color_index]);
 		if (link) {
-			DrawBuf.DrawBar(start_x, 8, line_length, 1, text_colors[text_color_index]);
-			UnsafeDefineButton(zstart_x-2, zstart_y-1, zline_length + 3, DrawBuf.zoomf * 10, PageLinks.count + 400 + BT_HIDE, 0xB5BFC9);
-			PageLinks.AddText(#line, zline_length, draw_line_height, UNDERLINE);
+			DrawBuf.DrawBar(start_x, list.line_h - DrawBuf.zoom - DrawBuf.zoom, line_length, DrawBuf.zoom, text_colors[text_color_index]);
+			UnsafeDefineButton(start_x-2, start_y-1, line_length + 3, DrawBuf.zoom * 10, PageLinks.count + 400 + BT_HIDE, 0xB5BFC9);
+			PageLinks.AddText(#line, line_length, list.line_h, UNDERLINE);
 		}
 		stolbec += stolbec_len;
 	}
@@ -149,9 +149,7 @@ void TWebBrowser::Parse(){
 	stolbec = 0;
 	line = 0;
 
-	draw_line_height = list.line_h * DrawBuf.zoomf;
-	draw_line_width = list.w * DrawBuf.zoomf;
-	draw_list_height = list.h * DrawBuf.zoomf;
+	draw_line_width = list.w * DrawBuf.zoom;
 
 	if (pre_text<>2)
 	{
@@ -255,7 +253,7 @@ void TWebBrowser::Parse(){
 			if (stolbec + strlen(#line) > list.column_max) Perenos();
 			DrawPage();
 			line = NULL;
-			if (tag) SetTextStyle(WB1.DrawBuf.zoomf * 5 + list.x, stroka * draw_line_height + list.y + 5); //обработка тегов
+			if (tag) SetTextStyle(WB1.DrawBuf.zoom * 5 + list.x, stroka * list.line_h + list.y + 5); //обработка тегов
 			tag = parametr = tagparam = ignor_param = NULL;
 			break;
 		default:
@@ -273,8 +271,8 @@ void TWebBrowser::Parse(){
 	}
 	DrawPage();
 	NewLine();
-	DrawBar(list.x, stroka * draw_line_height + list.y + 5, draw_line_width, -stroka * draw_line_height + draw_list_height - 5, bg_color);
-	DrawBar(list.x, list.visible * draw_line_height + list.y + 4, draw_line_width, -list.visible * draw_line_height + draw_list_height - 4, bg_color);
+	DrawBar(list.x, stroka * list.line_h + list.y + 5, draw_line_width, -stroka * list.line_h + list.h - 5, bg_color);
+	DrawBar(list.x, list.visible * list.line_h + list.y + 4, draw_line_width, -list.visible * list.line_h + list.h - 4, bg_color);
 	if (list.first == 0) list.count = stroka;
 	if (anchor) //если посреди текста появится новый якорь - будет бесконечный цикл
 	{
@@ -388,7 +386,7 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 					
 					link = 1;
 					text_colors[text_color_index] = link_color_inactive;
-					PageLinks.AddLink(#options, DrawBuf.zoomf * stolbec*6+left1, top1-2);
+					PageLinks.AddLink(#options, DrawBuf.zoom * stolbec*6+left1, top1-DrawBuf.zoom);
 				}
 				if (anchor) && (!strcmp(#parametr, "name="))
 				{
@@ -556,7 +554,8 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 		if (opened)
 		{
 			NewLine();
-			if (stroka > -1) && (stroka - 2 < list.visible) DrawBuf.DrawBar(li_tab * 5 * 6 + list.x, list.line_h/2-2, 2, 2, 0x555555);
+			if (stroka > -1) && (stroka - 2 < list.visible) 
+				DrawBuf.DrawBar(li_tab * 5 * 6 * DrawBuf.zoom + list.x, list.line_h / 2 - DrawBuf.zoom - DrawBuf.zoom, DrawBuf.zoom*2, DrawBuf.zoom*2, 0x555555);
 		}
 		return;
 	}
@@ -618,8 +617,8 @@ void TWebBrowser::DrawScroller()
 	scroll_wv.start_x = list.x + list.w;
 	scroll_wv.start_y = list.y;
 
-	scroll_wv.size_y = list.h * DrawBuf.zoomf;
-	scroll_wv.start_x = list.w * DrawBuf.zoomf + list.x;
+	scroll_wv.size_y = list.h;
+	scroll_wv.start_x = list.w * DrawBuf.zoom + list.x;
 
 	scrollbar_v_draw(#scroll_wv);
 }
@@ -627,19 +626,17 @@ void TWebBrowser::DrawScroller()
 
 void TWebBrowser::NewLine()
 {
-	int onleft, ontop, zontop;
+	int onleft, ontop;
 
 	onleft = list.x + 5;
 	ontop = stroka * list.line_h + list.y + 5;
-	zontop = stroka * list.line_h * DrawBuf.zoomf + list.y + 5;
 	if (!stroka) DrawBar(list.x, list.y, draw_line_width, 5, bg_color);
 	if (t_html) && (!t_body) return;
-	if (ontop>=list.y) && ( ontop < list.h+list.y-10)  && (!anchor)
+	if (stroka * list.line_h + 5 >= 0) && ( stroka + 1 * list.line_h + 5 < list.h) && (!anchor)
 	{
-		if (text_align == ALIGN_CENTER) DrawBuf.AlignCenter(onleft,ontop,list.w,list.line_h,stolbec * 6);
-		if (text_align == ALIGN_RIGHT) DrawBuf.AlignRight(onleft,ontop,list.w,list.line_h,stolbec * 6);
+		if (text_align == ALIGN_CENTER) && (DrawBuf.zoom==1) DrawBuf.AlignCenter(onleft,ontop,list.w,list.line_h,stolbec * 6);
+		if (text_align == ALIGN_RIGHT) && (DrawBuf.zoom==1)  DrawBuf.AlignRight(onleft,ontop,list.w,list.line_h,stolbec * 6);
 		DrawBuf.bufy = ontop;
-		DrawBuf.zbufy = zontop;
 		DrawBuf.Show();
 		DrawBuf.Fill(bg_color);
 	}

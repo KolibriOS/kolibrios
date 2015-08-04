@@ -30,7 +30,7 @@
 char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.12";
+	char version[]=" Текстовый браузер 1.14";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
@@ -130,7 +130,7 @@ void main()
 	Libimg_LoadImage(#skin, abspath("wv_skin.png"));
 	SetSkinColors();
 	
-	WB1.DrawBuf.zoomf = 1;
+	WB1.DrawBuf.zoom = 1;
 	Form.width=WIN_W;
 	Form.height=WIN_H;
 	SetElementSizes();
@@ -177,7 +177,7 @@ void main()
 				}				
 				if (scroll_used)
 				{
-					mouse.y = mouse.y / WB1.DrawBuf.zoomf + 5;
+					mouse.y = mouse.y + 5;
 					half_scroll_size = WB1.list.h - 16 * WB1.list.visible / WB1.list.count - 3 /2;
 					if (half_scroll_size+WB1.list.y>mouse.y) || (mouse.y<0) || (mouse.y>4000) mouse.y=half_scroll_size+WB1.list.y;
 					btn=WB1.list.first;
@@ -282,7 +282,8 @@ void SetElementSizes()
 {
 	address_box.top = TOOLBAR_H-TAB_H/2-7+TAB_H;
 	address_box.width = Form.cwidth - address_box.left - 25 - 22;
-	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x / WB1.DrawBuf.zoomf, Form.cheight - TOOLBAR_H - STATUSBAR_H / WB1.DrawBuf.zoomf, 0, 11);
+	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x / WB1.DrawBuf.zoom, 
+		Form.cheight - TOOLBAR_H - STATUSBAR_H, 0, 11*WB1.DrawBuf.zoom);
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / 6;
 	WB1.list.visible = WB1.list.h - 5 / WB1.list.line_h;
 	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.line_h);
@@ -477,7 +478,7 @@ void Scan(int id)
 			CreateThread(#menu_rmb,#stak+4092);
 			return;
 		case 122:
-			if (WB1.DrawBuf.zoomf==1) WB1.DrawBuf.zoomf=2; else WB1.DrawBuf.zoomf=1;
+			if (WB1.DrawBuf.zoom==1) WB1.DrawBuf.zoom=2; else WB1.DrawBuf.zoom=1;
 			Draw_Window(); 
 	}
 }

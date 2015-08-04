@@ -76,8 +76,8 @@ void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
 		{
 			if (active==i) return;
 			CursorPointer.Set();
-			if (links[active].underline) DrawBar(links[active].x, WB1.list.line_h - WB1.DrawBuf.zoomf * WB1.DrawBuf.zoomf + links[active].y,links[active].w, WB1.DrawBuf.zoomf, link_col_in);
-			if (links[i].underline) DrawBar(links[i].x, WB1.list.line_h - WB1.DrawBuf.zoomf * WB1.DrawBuf.zoomf + links[i].y,links[i].w, WB1.DrawBuf.zoomf, bg_col);
+			if (links[active].underline) DrawBar(links[active].x, WB1.list.line_h - WB1.DrawBuf.zoom + links[active].y,links[active].w, WB1.DrawBuf.zoom, link_col_in);
+			if (links[i].underline) DrawBar(links[i].x, WB1.list.line_h - WB1.DrawBuf.zoom + links[i].y,links[i].w, WB1.DrawBuf.zoom, bg_col);
 			active = i;
 			status_text.start_x = wv_progress_bar.left + wv_progress_bar.width + 10;
 			status_text.start_y = Form.cheight - STATUSBAR_H + 3;
@@ -92,7 +92,7 @@ void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
 	if (active!=-1)
 	{
 		CursorPointer.Restore();
-		if (links[active].underline) DrawBar(links[active].x, WB1.list.line_h - WB1.DrawBuf.zoomf * WB1.DrawBuf.zoomf + links[active].y,links[active].w, WB1.DrawBuf.zoomf, link_col_in);
+		if (links[active].underline) DrawBar(links[active].x, WB1.list.line_h - WB1.DrawBuf.zoom + links[active].y,links[active].w, WB1.DrawBuf.zoom, link_col_in);
 		DrawBar(status_text.start_x, status_text.start_y, status_text.area_size_x, 9, col_bg);
 		active = -1;
 	}

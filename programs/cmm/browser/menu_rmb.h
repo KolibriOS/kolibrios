@@ -85,5 +85,5 @@ void DrawMenuList()
 	else 
 		WriteText(5, _DOS*menu.line_h+7, 0x80, 0x777777, "\x10"); //show current encoding
 
-	if (WB1.DrawBuf.zoomf == 2) DrawBar(6, 4*menu.line_h+8, 6, 6, 0x777777);
+	if (WB1.DrawBuf.zoom == 2) DrawBar(6, 4*menu.line_h+8, 6, 6, 0x777777);
 }
