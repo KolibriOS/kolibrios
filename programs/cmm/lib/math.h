@@ -1,6 +1,7 @@
 //IO library
 #ifndef INCLUDE_MATH_H
 #define INCLUDE_MATH_H
+#print "[include <math.h>]\n"
 
 #ifndef INCLUDE_KOLIBRI_H
 #include "../lib/kolibri.h"

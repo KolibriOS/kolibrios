@@ -1,6 +1,7 @@
 //list_box
 #ifndef INCLUDE_LIST_BOX_H
 #define INCLUDE_LIST_BOX_H
+#print "[include <list_box.h>]\n"
 
 #ifndef INCLUDE_KOLIBRI_H
 #include "../lib/kolibri.h"

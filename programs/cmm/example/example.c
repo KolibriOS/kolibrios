@@ -6,7 +6,6 @@ void main()
 {   
 	int id, key, i;
 	dword file;
-
 	io.dir.load(0,DIR_ONLYREAL);
 	loop()
    {

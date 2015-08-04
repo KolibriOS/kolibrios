@@ -1,5 +1,6 @@
 #ifndef INCLUDE_RANDOM_H
 #define INCLUDE_RANDOM_H
+#print "[include <random.h>]\n"
 
 #ifndef INCLUDE_KOLIBRI_H
 #include "../lib/kolibri.h"

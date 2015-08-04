@@ -1,5 +1,6 @@
 #ifndef INCLUDE_DRAW_BUF_H
 #define INCLUDE_DRAW_BUF_H
+#print "[include <draw_buf.h>]\n"
 
 #ifndef INCLUDE_KOLIBRI_H
 #include "../lib/kolibri.h"

@@ -1,6 +1,7 @@
 //Asper
 #ifndef INCLUDE_LIBIO_H
 #define INCLUDE_LIBIO_H
+#print "[include <obj/libio_lib.h>]\n"
 
 #ifndef INCLUDE_KOLIBRI_H
 #include "../lib/kolibri.h"

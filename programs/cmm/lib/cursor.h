@@ -1,6 +1,7 @@
 // cursor file should be 32x32 in default MS Windows .cur format
 #ifndef INCLUDE_CURSOR_H
 #define INCLUDE_CURSOR_H
+#print "[include <cursor.h>]\n"
 
 #ifndef INCLUDE_KOLIBRI_H
 #include "../lib/kolibri.h"

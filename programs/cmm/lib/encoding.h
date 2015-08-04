@@ -1,5 +1,6 @@
 #ifndef INCLUDE_ENCODING_H
 #define INCLUDE_ENCODING_H
+#print "[include <encoding.h>]\n"
 
 #ifndef INCLUDE_KOLIBRI_H
 #include "../lib/kolibri.h"

@@ -1,5 +1,6 @@
 #ifndef INCLUDE_SOCKET_H
 #define INCLUDE_SOCKET_H
+#print "[include <socket.h>]\n"
 
 #ifndef INCLUDE_KOLIBRI_H
 #include "../lib/kolibri.h"

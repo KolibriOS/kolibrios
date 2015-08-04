@@ -1,6 +1,7 @@
 //BOX_LIB - Asper
 #ifndef INCLUDE_BOX_LIB_H
 #define INCLUDE_BOX_LIB_H
+#print "[include <obj/box_lib.h>]\n"
 
 #ifndef INCLUDE_KOLIBRI_H
 #include "../lib/kolibri.h"

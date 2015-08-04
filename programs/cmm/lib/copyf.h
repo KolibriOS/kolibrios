@@ -1,6 +1,7 @@
 //copyf - copy file or folder with content
 #ifndef INCLUDE_COPYF_H
 #define INCLUDE_COPYF_H
+#print "[include <copyf.h>]\n"
 
 #ifndef INCLUDE_FILESYSTEM_H
 #include "../lib/file_system.h"

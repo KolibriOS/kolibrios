@@ -1,5 +1,6 @@
 #ifndef INCLUDE_SYSTEM_H
 #define INCLUDE_SYSTEM_H
+#print "[include <system.h>]\n"
 
 :struct COLORS
 {

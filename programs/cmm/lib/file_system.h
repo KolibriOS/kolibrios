@@ -1,5 +1,6 @@
 #ifndef INCLUDE_FILESYSTEM_H
 #define INCLUDE_FILESYSTEM_H
+#print "[include <file_system.h>]\n"
 
 #ifndef INCLUDE_DATE_H
 #include "../lib/date.h"

@@ -1,5 +1,6 @@
 #ifndef INCLUDE_GUI_H
 #define INCLUDE_GUI_H
+#print "[include <gui.h>]\n"
 
 #ifndef INCLUDE_KOLIBRI_H
 #include "../lib/kolibri.h"

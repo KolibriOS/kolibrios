@@ -1,6 +1,7 @@
 //convert text characters
 #ifndef INCLUDE_LIBICONV_H
 #define INCLUDE_LIBICONV_H
+#print "[include <obj/iconv.h>]\n"
 
 #ifndef INCLUDE_KOLIBRI_H
 #include "../lib/kolibri.h"

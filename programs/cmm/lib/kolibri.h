@@ -1,9 +1,19 @@
 //CODED by Veliant, Leency, Nable. GNU GPL licence.
 #ifndef INCLUDE_KOLIBRI_H
 #define INCLUDE_KOLIBRI_H
+#print "[include <kolibri.h>]\n"
+
+#pragma option OST
+#pragma option ON
+#pragma option cri-
+#pragma option -CPA
+#initallvar 0
+#jumptomain FALSE
 
 #startaddress 0
+
 #code32 TRUE
+
 char   os_name[8]   = {'M','E','N','U','E','T','0','1'};
 dword  os_version   = 0x00000001;
 dword  start_addr   = #______INIT______;
@@ -21,6 +31,7 @@ char program_path[4096];
 #define false     0
 
 //Events
+
 #define evReDraw  1
 #define evKey     2
 #define evButton  3
