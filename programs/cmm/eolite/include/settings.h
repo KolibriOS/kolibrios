@@ -106,7 +106,7 @@ void settings_dialog()
 				break;
 				
 			case evReDraw:
-				DefineAndDrawWindow(Form.left + Form.width/2, Form.top + Form.height/2 - 75, 300, 234+GetSkinHeight(),0x34,sc.work,TITLE_SETT);
+				DefineAndDrawWindow(Form.left + Form.width/2, Form.top + Form.height/2 - 75, 300, 234+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
 				GetProcessInfo(#settings_form, SelfInfo);
 				DrawSettingsCheckBoxes();
 				DrawFlatButton(9, 166, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
@@ -122,8 +122,8 @@ void DrawSettingsCheckBoxes()
 	CheckBox2(10, 33, 21, SHOW_REAL_NAMES,  real_files_names_case);
 	CheckBox2(10, 55, 22, NOTIFY_COPY_END,  info_after_copy);
 	CheckBox2(10, 77, 23, USE_BIG_FONTS,  use_big_fonts); 
-	MoreLessBox(10, 104, 18, 25, 26, #sc, files.line_h, LIST_LINE_HEIGHT);
-	MoreLessBox(10, 134, 18, 27, 28, #sc, MOUSE_TIME, T_DOUBLE_CLICK);
+	MoreLessBox(10, 104, 18, 25, 26, #system.color, files.line_h, LIST_LINE_HEIGHT);
+	MoreLessBox(10, 134, 18, 27, 28, #system.color, MOUSE_TIME, T_DOUBLE_CLICK);
 }
 
 
@@ -176,11 +176,11 @@ void Write_Error(int error_number)
 
 void SetAppColors()
 {
-	sc.work = 0xE4DFE1;
-	sc.work_text = 0;
-	sc.work_graph  = 0x9098B0; //A0A0B8; //0x819FC5;
-	sc.work_button = 0xD2D3D3;
-	sc.work_button_text = 0x000000;
+	system.color.work = 0xE4DFE1;
+	system.color.work_text = 0;
+	system.color.work_graph  = 0x9098B0; //A0A0B8; //0x819FC5;
+	system.color.work_button = 0xD2D3D3;
+	system.color.work_button_text = 0x000000;
 	col_padding = 0xC8C9C9;
 	//col_selec   = 0x94AECE;
 	col_lpanel  = 0x00699C;
@@ -188,5 +188,5 @@ void SetAppColors()
 
 
 void CheckBox2(dword x, y, id, text, byte value) {
-	CheckBox(x, y, 14, 14, id, text, sc.work_graph, sc.work_text, value);
+	CheckBox(x, y, 14, 14, id, text, system.color.work_graph, system.color.work_text, value);
 }

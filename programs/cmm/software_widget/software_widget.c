@@ -14,7 +14,6 @@ SOFTWARE CENTER v2.32
 
 #include "..\lib\patterns\libimg_load_skin.h"
 
-system_colors sc;
 proc_info Form;
 
 byte kolibrios_mounted;
@@ -97,8 +96,8 @@ void main()
 			break;
 
          case evReDraw:
-			sc.get();
-			DefineAndDrawWindow(GetScreenWidth()-window_width/2,GetScreenHeight()-window_height/2,window_width,window_height,0x74,sc.work,"");
+			system.color.get();
+			DefineAndDrawWindow(GetScreenWidth()-window_width/2,GetScreenHeight()-window_height/2,window_width,window_height,0x74,system.color.work,"");
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) { DrawTitle(#window_title); break; } else DrawTitle("");
 			kolibrios_mounted = isdir("/kolibrios");
@@ -187,9 +186,9 @@ byte process_sections(dword sec_name, f_name)
 void draw_top_bar()
 {
 	int top_position = 25;
-	DrawBar(0,0,Form.cwidth, top_position-1, sc.work);
-	DrawBar(0,top_position-1, Form.cwidth, 1, sc.work_graph);
-	WriteTextB(Form.cwidth/2-70, 9, 0x90, sc.work_text, #window_title);
+	DrawBar(0,0,Form.cwidth, top_position-1, system.color.work);
+	DrawBar(0,top_position-1, Form.cwidth, 1, system.color.work_graph);
+	WriteTextB(Form.cwidth/2-70, 9, 0x90, system.color.work_text, #window_title);
 	list_top = top_position;
 	list_pos = list_top;
 	row = -1;

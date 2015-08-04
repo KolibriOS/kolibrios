@@ -141,7 +141,6 @@ dword eolite_ini_path;
 dword menu_stak,about_stak,properties_stak,settings_stak,copy_stak;
 
 proc_info Form;
-system_colors sc;
 int mouse_dd, scroll_used, sc_slider_h, sorting_arrow_x, kolibrios_drive;
 dword buf;
 dword file_mas[6898];
@@ -603,7 +602,7 @@ void menu_action(dword id)
 
 void draw_window()
 {
-	DefineAndDrawWindow(GetScreenWidth()-550/4+rand_n,rand_n+30,550,500,0x73,sc.work,TITLE,0);
+	DefineAndDrawWindow(GetScreenWidth()-550/4+rand_n,rand_n+30,550,500,0x73,system.color.work,TITLE,0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
 	files.SetSizes(192, 57, Form.cwidth - 210, onTop(57,6), disc_num*16+195,files.line_h);
@@ -612,26 +611,26 @@ void draw_window()
 	GetProcessInfo(#Form, SelfInfo); //if win_size changed
 
 	PutPaletteImage(#toolbar,246,34,0,0,8,#toolbar_pal);
-	DrawBar(127, 8, 1, 25, sc.work_graph);
-	for (j=0; j<3; j++) DefineButton(toolbar_buttons_x[j]+2,5+2,31-5,29-5,21+j+BT_HIDE,sc.work);
-	for (j=3; j<6; j++) DefineButton(toolbar_buttons_x[j],5,31,29,21+j+BT_HIDE,sc.work);
-	DrawBar(246,0,Form.cwidth - 297,12, sc.work); //upper editbox
-	DrawBar(246,29,Form.cwidth - 297,5,sc.work);  //under editbox
-	DrawRectangle(246,12,Form.cwidth - 303,16,sc.work_graph);
+	DrawBar(127, 8, 1, 25, system.color.work_graph);
+	for (j=0; j<3; j++) DefineButton(toolbar_buttons_x[j]+2,5+2,31-5,29-5,21+j+BT_HIDE,system.color.work);
+	for (j=3; j<6; j++) DefineButton(toolbar_buttons_x[j],5,31,29,21+j+BT_HIDE,system.color.work);
+	DrawBar(246,0,Form.cwidth - 297,12, system.color.work); //upper editbox
+	DrawBar(246,29,Form.cwidth - 297,5,system.color.work);  //under editbox
+	DrawRectangle(246,12,Form.cwidth - 303,16,system.color.work_graph);
 	DefineButton(Form.cwidth - 32,6,27,28,51+BT_HIDE+BT_NOFRAME,0); //about
 	PutPaletteImage(#goto_about,56,34,Form.width-65,0,8,#goto_about_pal);
 	//main rectangles
-	DrawRectangle(1,40,Form.cwidth-3,onTop(46,0),sc.work_graph);
+	DrawRectangle(1,40,Form.cwidth-3,onTop(46,0),system.color.work_graph);
 	DrawRectangle(0,39,Form.cwidth-1,onTop(44,0),col_palette[4]); //bg
 	for (i=0; i<5; i++) DrawBar(0, 34+i, Form.cwidth, 1, col_palette[8-i]);	
 	DrawLeftPanel();
 	//ListBox
-	DrawFlatButton(files.x,40,Form.cwidth - files.x - 159,16,31,sc.work,T_FILE);
-	DrawFlatButton(Form.cwidth - 159,40,73,16,32,sc.work,T_TYPE);
-	DrawFlatButton(Form.cwidth - 86,40,68,16,33,sc.work,T_SIZE);
-	DrawBar(files.x+files.w,files.y,1,onTop(22,files.y),sc.work_graph); //line to the left from the scroll
-	DrawFlatButton(files.x+files.w,40,16,16,0,sc.work,"\x18");
-	DrawFlatButton(files.x+files.w,onTop(22,0),16,16,0,sc.work,"\x19");
+	DrawFlatButton(files.x,40,Form.cwidth - files.x - 159,16,31,system.color.work,T_FILE);
+	DrawFlatButton(Form.cwidth - 159,40,73,16,32,system.color.work,T_TYPE);
+	DrawFlatButton(Form.cwidth - 86,40,68,16,33,system.color.work,T_SIZE);
+	DrawBar(files.x+files.w,files.y,1,onTop(22,files.y),system.color.work_graph); //line to the left from the scroll
+	DrawFlatButton(files.x+files.w,40,16,16,0,system.color.work,"\x18");
+	DrawFlatButton(files.x+files.w,onTop(22,0),16,16,0,system.color.work,"\x19");
 	Open_Dir(#path,ONLY_SHOW);
 	if (del_active) Del_Form();
 	if (new_element_active) NewElement_Form(new_element_active, #new_element_name);
@@ -715,8 +714,8 @@ void List_ReDraw()
 	//in the bottom
 	paint_y = j * files.line_h + files.y;
 	DrawBar(files.x,paint_y,files.w,onTop(paint_y,6),0xFFFFFF);
-	DrawBar(Form.cwidth-159,paint_y,1,onTop(paint_y,6),sc.work);
-	DrawBar(Form.cwidth-86,paint_y,1,onTop(paint_y,6),sc.work);
+	DrawBar(Form.cwidth-159,paint_y,1,onTop(paint_y,6),system.color.work);
+	DrawBar(Form.cwidth-86,paint_y,1,onTop(paint_y,6),system.color.work);
 	Scroll();
 }
 
@@ -771,8 +770,8 @@ void Line_ReDraw(dword color, filenum){
 		PathShow_prepare stdcall(#FileShow);
 		PathShow_draw stdcall(#FileShow);
 	}
-	DrawBar(Form.cwidth-159,y,1,files.line_h,sc.work); //gray line 1
-	DrawBar(Form.cwidth-86,y,1,files.line_h,sc.work); //gray line 2
+	DrawBar(Form.cwidth-159,y,1,files.line_h,system.color.work); //gray line 1
+	DrawBar(Form.cwidth-86,y,1,files.line_h,system.color.work); //gray line 2
 }
 
 
@@ -805,7 +804,7 @@ void Open_Dir(dword dir_path, redraw){
 		if (sort_num==1) sorting_arrow_x = Form.width+60/2;
 		if (sort_num==2) sorting_arrow_x = Form.width-115;
 		if (sort_num==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
-		WriteText(sorting_arrow_x,45,0x80,sc.work_graph,"\x19");
+		WriteText(sorting_arrow_x,45,0x80,system.color.work_graph,"\x19");
 		if (redraw!=ONLY_SHOW) Sorting();
 		if (redraw!=ONLY_OPEN)&&(!_not_draw) List_ReDraw();
 		DrawSystemDiscs();
@@ -863,8 +862,8 @@ void Del_Form()
 	else
 	{
 		if (!files.count) return;
-		DrawPopup(dform_x,160,220,85,1,sc.work,sc.work_graph);
-		WriteText(-strlen(T_DELETE_FILE)*3+110+dform_x,175,0x80,sc.work_text,T_DELETE_FILE);
+		DrawPopup(dform_x,160,220,85,1,system.color.work,system.color.work_graph);
+		WriteText(-strlen(T_DELETE_FILE)*3+110+dform_x,175,0x80,system.color.work_text,T_DELETE_FILE);
 		for (i=0; i<files.count; i++) 
 		{
 			selected_offset2 = file_mas[i]*304 + buf+32 + 7;
@@ -873,14 +872,14 @@ void Del_Form()
 		if (cont)
 		{
 			sprintf(#f_count,"%s%d%s",DEL_MORE_FILES_1,cont,DEL_MORE_FILES_2);
-			WriteText(-strlen(#f_count)*3+110+dform_x,190,0x80,sc.work_text,#f_count);
+			WriteText(-strlen(#f_count)*3+110+dform_x,190,0x80,system.color.work_text,#f_count);
 		}
 		else
 		{
 			if (strlen(#file_name)<28) 
 			{
-				WriteText(strlen(#file_name)*3+110+dform_x+2,190,0x80,sc.work_text,"?");
-				WriteText(-strlen(#file_name)*3+110+dform_x,190,0x80,sc.work_text,#file_name);
+				WriteText(strlen(#file_name)*3+110+dform_x+2,190,0x80,system.color.work_text,"?");
+				WriteText(-strlen(#file_name)*3+110+dform_x,190,0x80,system.color.work_text,#file_name);
 			}
 			else
 			{
@@ -1115,11 +1114,11 @@ void NewElement_Form(byte crt, dword strng)
 		strcpy(#new_element_name, strng);
 		new_file_ed.size = new_file_ed.pos = strlen(strng);
 	}
-	DrawPopup(dform_x,160,220,85,1,sc.work,sc.work_graph);
+	DrawPopup(dform_x,160,220,85,1,system.color.work,system.color.work_graph);
 	new_file_ed.left = dform_x+24;
 	edit_box_draw  stdcall (#new_file_ed);
 	DrawRectangle(new_file_ed.left-1, new_file_ed.top-1, new_file_ed.width+2, 16, 0xFFFfff);
-	DrawRectangle(new_file_ed.left-2, new_file_ed.top-2, new_file_ed.width+4, 18, sc.work_graph);
+	DrawRectangle(new_file_ed.left-2, new_file_ed.top-2, new_file_ed.width+4, 18, system.color.work_graph);
 	if (new_element_active==3) DrawFlatButton(dform_x+22,208,85,22,301,0xFFB6B5,T_RENAME);
 	else DrawFlatButton(dform_x+27,208,70,22,301,0xFFB6B5,T_CREATE);
 	DrawFlatButton(dform_x+120,208,70,22,302,0xC6DFC6,T_CANCEL);

@@ -192,7 +192,7 @@ void properties_dialog()
 				break;
 				
 		case evReDraw:
-				DefineAndDrawWindow(Form.left + 150,150,270,285+GetSkinHeight(),0x34,sc.work,WINDOW_TITLE_PROPERTIES);
+				DefineAndDrawWindow(Form.left + 150,150,270,285+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE_PROPERTIES);
 				GetProcessInfo(#settings_form, SelfInfo);
 				DrawFlatButton(settings_form.cwidth - 70 - 13, settings_form.cheight - 34, 70, 22, 10, 0xE4DFE1, BTN_CLOSE);
 				DrawBar(10, 10, 32, 32, 0xFFFfff);
@@ -239,9 +239,9 @@ void properties_dialog()
 					WriteText(100, 65, 0x80, 0x000000, #element_size_label);
 					
 					flags_frame.size_x = - flags_frame.start_x * 2 + settings_form.cwidth - 2;
-					flags_frame.font_color = sc.work_text;
-					flags_frame.font_backgr_color = sc.work;
-					flags_frame.ext_col = sc.work_graph;
+					flags_frame.font_color = system.color.work_text;
+					flags_frame.font_backgr_color = system.color.work;
+					flags_frame.ext_col = system.color.work_graph;
 					frame_draw stdcall (#flags_frame);
 					DrawPropertiesCheckBoxes();
 				}

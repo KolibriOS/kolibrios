@@ -17,7 +17,6 @@
 #endif
 
 proc_info DL_Form;
-system_colors sc;
 char DL_URL[10000];
 dword DL_bufpointer, DL_bufsize, DL_http_transfer, DL_http_buffer;
 char filepath[4096];
@@ -77,8 +76,8 @@ void Downloader()
 				break;
 
 			case evReDraw:
-				sc.get();
-				DefineAndDrawWindow(215, 100, 420, 120, 0x74, sc.work, DL_WINDOW_HEADER, 0);
+				system.color.get();
+				DefineAndDrawWindow(215, 100, 420, 120, 0x74, system.color.work, DL_WINDOW_HEADER, 0);
 				GetProcessInfo(#DL_Form, SelfInfo);
 				if (DL_Form.status_window>2) break;
 				if (DL_Form.height<120) MoveSize(OLD,OLD,OLD,120);
@@ -136,24 +135,24 @@ void Downloader()
 
 void DL_Draw_Window()
 {	
-	DrawBar(0,0, DL_Form.cwidth, DL_Form.cheight, sc.work);
+	DrawBar(0,0, DL_Form.cwidth, DL_Form.cheight, system.color.work);
 	DeleteButton(305);
 	DeleteButton(306);
 	if (download_state == STATE_NOT_STARTED) ||  (download_state == STATE_COMPLETED)
 	{
-		DrawCaptButton(cleft, 50, 130, 27, 301, sc.work_button, sc.work_button_text, START_DOWNLOADING);	
+		DrawCaptButton(cleft, 50, 130, 27, 301, system.color.work_button, system.color.work_button_text, START_DOWNLOADING);	
 	}
 	if (download_state == STATE_IN_PROGRESS)
 	{
-		DrawCaptButton(cleft, 50, 140, 27, 302, sc.work_button, sc.work_button_text, STOP_DOWNLOADING);
+		DrawCaptButton(cleft, 50, 140, 27, 302, system.color.work_button, system.color.work_button_text, STOP_DOWNLOADING);
 		DrawDownloading();
 	}
 	if (download_state == STATE_COMPLETED)
 	{
-		DrawCaptButton(cleft+140, 50, 110, 27, 305, sc.work_button, sc.work_button_text, SHOW_IN_FOLDER);
-		DrawCaptButton(cleft+260, 50, 120, 27, 306, sc.work_button, sc.work_button_text, OPEN_FILE);	
+		DrawCaptButton(cleft+140, 50, 110, 27, 305, system.color.work_button, system.color.work_button_text, SHOW_IN_FOLDER);
+		DrawCaptButton(cleft+260, 50, 120, 27, 306, system.color.work_button, system.color.work_button_text, OPEN_FILE);	
 	} 
-	WriteText(cleft, DL_address_box.top + 4, 0x80, sc.work_text, "URL:");
+	WriteText(cleft, DL_address_box.top + 4, 0x80, system.color.work_text, "URL:");
 	DL_address_box.left = strlen("URL:")*6 + 10 + cleft;
 	DL_address_box.width = DL_Form.cwidth - DL_address_box.left - cleft - 3;
 	DL_address_box.offset=0;
@@ -171,8 +170,8 @@ void DrawDownloading()
 	tmp = ConvertSizeToKb(downloaded_size);
 	strcpy(#bytes_received, tmp);
 	strcat(#bytes_received, KB_RECEIVED);
-	DrawBar(DL_progress_bar.left, DL_progress_bar.top + 17, DL_Form.cwidth - DL_progress_bar.left, 9, sc.work);
-	WriteText(DL_progress_bar.left, DL_progress_bar.top + 17, 0x80, sc.work_text, #bytes_received);
+	DrawBar(DL_progress_bar.left, DL_progress_bar.top + 17, DL_Form.cwidth - DL_progress_bar.left, 9, system.color.work);
+	WriteText(DL_progress_bar.left, DL_progress_bar.top + 17, 0x80, system.color.work_text, #bytes_received);
 	progressbar_draw stdcall(#DL_progress_bar);
 }
 

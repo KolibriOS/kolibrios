@@ -178,18 +178,18 @@ void DrawLoginScreen()
 	panel_x = Form.cwidth - PANEL_W /2;
 	panel_y = Form.cheight - PANEL_H /2 - 5;
 
-	DrawBar(0,0, Form.cwidth, Form.cheight, sc.work);
+	DrawBar(0,0, Form.cwidth, Form.cheight, system.color.work);
 	
-	WriteText(panel_x,panel_y,0x80,sc.work_text,"Your Email:");
-	DrawRectangle(panel_x, panel_y+12, PANEL_W,20, sc.work_graph); //border
+	WriteText(panel_x,panel_y,0x80,system.color.work_text,"Your Email:");
+	DrawRectangle(panel_x, panel_y+12, PANEL_W,20, system.color.work_graph); //border
 	DrawRectangle3D(panel_x+1, panel_y+13, PANEL_W-2,18, 0xDDDddd, 0xFFFfff); //shadow
 	DrawRectangle(panel_x+2, panel_y+14, PANEL_W-4,16, 0xFFFfff);
 	login_box.left = panel_x+3;
 	login_box.top = panel_y+15;
 	edit_box_draw stdcall(#login_box);
 	
-	WriteText(panel_x,panel_y+40,0x80,sc.work_text,"Password:");
-	DrawRectangle(panel_x, panel_y+52, PANEL_W,20, sc.work_graph); //border
+	WriteText(panel_x,panel_y+40,0x80,system.color.work_text,"Password:");
+	DrawRectangle(panel_x, panel_y+52, PANEL_W,20, system.color.work_graph); //border
 	DrawRectangle3D(panel_x+1, panel_y+53, PANEL_W-2,18, 0xDDDddd, 0xFFFfff); //shadow
 	DrawRectangle(panel_x+2, panel_y+54, PANEL_W-4,16, 0xFFFfff);
 	pass_box.left = panel_x+3;
@@ -198,10 +198,10 @@ void DrawLoginScreen()
 	
 	if (!aim)
 	{
-		DrawCaptButton(panel_x,panel_y+90,100,20,11,sc.work_button, sc.work_button_text,"Settings");
-		DrawCaptButton(panel_x+120,panel_y+90,100,20,12,sc.work_button, sc.work_button_text,"Enter >");
+		DrawCaptButton(panel_x,panel_y+90,100,20,11,system.color.work_button, system.color.work_button_text,"Settings");
+		DrawCaptButton(panel_x+120,panel_y+90,100,20,12,system.color.work_button, system.color.work_button_text,"Enter >");
 	} 
-	else DrawCaptButton(panel_x+120,panel_y+90,100,20,12,sc.work_button, sc.work_button_text,"Stop");
+	else DrawCaptButton(panel_x+120,panel_y+90,100,20,12,system.color.work_button, system.color.work_button_text,"Stop");
 	
 	SetLoginStatus(cur_st_text);
 }
@@ -228,6 +228,6 @@ void GetSettings()
 
 void SetLoginStatus(dword text1)
 {
-	if (text1) WriteText(10, Form.cheight-22, 0x80, sc.work_text, text1);
+	if (text1) WriteText(10, Form.cheight-22, 0x80, system.color.work_text, text1);
 	cur_st_text = text1;
 }

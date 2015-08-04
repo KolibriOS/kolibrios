@@ -3,11 +3,9 @@
 #endif
 
 #define MEMSIZE 0x23E80
-#include "..\lib\kolibri.h" 
 #include "..\lib\strings.h" 
 #include "..\lib\mem.h" 
 #include "..\lib\file_system.h"
-#include "..\lib\dll.h"
 #include "..\lib\gui.h"
 #include "..\lib\obj\libio_lib.h"
 #include "..\lib\obj\box_lib.h"
@@ -31,7 +29,7 @@
 	?define POINTER_DELAY "Mouse pointer delay"
 	?define MOUSE_EMULATION "Enable mouse emulation using keyboard NumPad"
 	?define MADMOUSE "Through screen sides for pointer"
-#endif
+	#endif
 
 frame mouse_frame = { 0, 000, 14, 130, 14, 0x000111, 0xFFFfff, 0, 0, 0, 0, 6, 0x000111, 0xCCCccc };
 char pos_x = 22;
@@ -40,7 +38,6 @@ char pos_x = 22;
 unsigned char panels_img_data[] = FROM "mouse_image.raw";
 raw_image panels_img = { 59, 101, #panels_img_data };
 
-system_colors sc;
 proc_info Form;
 
 
@@ -127,8 +124,8 @@ void main() {
 				break;
 			
 		case evReDraw:
-				sc.get();
-				DefineAndDrawWindow(430, 150, 360, 280+GetSkinHeight(),0x34,sc.work,WINDOW_TITLE);
+				system.color.get();
+				DefineAndDrawWindow(430, 150, 360, 280+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window>2) break;
 				SetFrameColors();
@@ -143,12 +140,12 @@ void main() {
 }
 
 void PanelCfg_CheckBox(dword x, y, id, text, byte value) {
-	CheckBox(x, y, 14, 14, id, text, sc.work_graph, sc.work_text, value);
+	CheckBox(x, y, 14, 14, id, text, system.color.work_graph, system.color.work_text, value);
 }
 
 
 void PanelCfg_MoreLessBox(dword x, y, id_more, id_less; byte value; dword text) {
-	MoreLessBox(x, y, 18, id_more, id_less, #sc, value, text);
+	MoreLessBox(x, y, 18, id_more, id_less, #system.color, value, text);
 }
 
 void DrawMouseImage() {
@@ -165,9 +162,9 @@ void DrawControls() {
 
 void SetFrameColors() {
 	mouse_frame.size_x = - mouse_frame.start_x * 2 + Form.cwidth;
-	mouse_frame.font_color = sc.work_text;
-	mouse_frame.font_backgr_color = sc.work;
-	mouse_frame.ext_col = sc.work_graph;
+	mouse_frame.font_color = system.color.work_text;
+	mouse_frame.font_backgr_color = system.color.work;
+	mouse_frame.ext_col = system.color.work_graph;
 }
 
 void LoadCfg() {

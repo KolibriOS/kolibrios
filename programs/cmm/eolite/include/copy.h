@@ -114,10 +114,10 @@ void DisplayCopyfForm()
 			break;
 		 
 		case evReDraw:
-			DefineAndDrawWindow(Form.left+Form.width-200,Form.top+90,WIN_COPY_W,GetSkinHeight()+WIN_COPY_H,0x34,sc.work,T_PASTE_WINDOW_TITLE);
+			DefineAndDrawWindow(Form.left+Form.width-200,Form.top+90,WIN_COPY_W,GetSkinHeight()+WIN_COPY_H,0x34,system.color.work,T_PASTE_WINDOW_TITLE);
 			GetProcessInfo(#Copy_Form, SelfInfo);
-			WriteText(45, 11, 0x80, sc.work_text, T_PASTE_WINDOW_TEXT);
-			DrawFlatButton(Copy_Form.cwidth - 90, Copy_Form.cheight - 32, 80, 22, 10, sc.work_button, T_PASTE_WINDOW_BUTTON);
+			WriteText(45, 11, 0x80, system.color.work_text, T_PASTE_WINDOW_TEXT);
+			DrawFlatButton(Copy_Form.cwidth - 90, Copy_Form.cheight - 32, 80, 22, 10, system.color.work_button, T_PASTE_WINDOW_BUTTON);
 			DrawBar(8, 10, 32, 32, 0xFFFfff);
 			break;
 	  }
@@ -134,6 +134,6 @@ void copyf_Draw_Progress(dword copying_filename) {
 	if (Copy_Form.cwidth==0) return;
 	DisplayCopyfForm();
 	Put_icon(copying_filename+strrchr(copying_filename,'.'), 16, 19, 0xFFFfff, 0);
-	DrawBar(45, 29, Copy_Form.cwidth-40, 10, sc.work);
-	WriteText(45, 29, 0x80, sc.work_text, copying_filename);
+	DrawBar(45, 29, Copy_Form.cwidth-40, 10, system.color.work);
+	WriteText(45, 29, 0x80, system.color.work_text, copying_filename);
 }

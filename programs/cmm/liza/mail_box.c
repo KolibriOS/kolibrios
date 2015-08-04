@@ -62,7 +62,7 @@ void MailBoxNetworkProcess() {
 				break;
 
 		case SEND_NLIST:
-				WriteText(5, Form.cheight-11, 0x80, sc.work_text, "Send LIST, awaiting answer...");
+				WriteText(5, Form.cheight-11, 0x80, system.color.work_text, "Send LIST, awaiting answer...");
 				request_len = GetRequest("LIST", NULL);
 				Send(socketnum, #request, request_len, 0);
 				if (EAX == 0xffffffff) {debugln("Error while sending LIST. Retry..."); break;}
@@ -234,12 +234,12 @@ void MailBoxLoop() {
 				if (id==CHANGE_CHARSET) 
 				{
 					DefineButton(0,0,Form.cwidth,Form.cheight, CLOSE_CHANGE_CHARSET+BT_HIDE+BT_NOFRAME);
-					DrawRectangle(Form.cwidth-100, Form.cheight-status_bar_h- 70, 70, 82, sc.work_graph);
-					DrawRectangle3D(Form.cwidth-99, Form.cheight-status_bar_h- 69, 68, 80, 0xFFFfff, sc.work);
+					DrawRectangle(Form.cwidth-100, Form.cheight-status_bar_h- 70, 70, 82, system.color.work_graph);
+					DrawRectangle3D(Form.cwidth-99, Form.cheight-status_bar_h- 69, 68, 80, 0xFFFfff, system.color.work);
 					for (id=0; id<5; id++)
 					{
-						if (cur_charset==id+1) { line_col=sc.work_button; text_col=sc.work_button_text; }
-						else { line_col=sc.work; text_col=sc.work_text; }
+						if (cur_charset==id+1) { line_col=system.color.work_button; text_col=system.color.work_button_text; }
+						else { line_col=system.color.work; text_col=system.color.work_text; }
 						DrawBar(Form.cwidth-98, id*16+Form.cheight-status_bar_h- 68, 67, 16, line_col);
 						DrawCaptButton(Form.cwidth-100, id*16+Form.cheight-status_bar_h- 68, 70,16, 10+id+BT_HIDE,
 						0, text_col, charsets[id+1]);
@@ -261,8 +261,8 @@ void MailBoxLoop() {
 			case evReDraw: _MB_DRAW:
 				if !(DefineWindow(MAILBOX_HEADER)) break;
 				scroll1.bckg_col = scroll_wv.bckg_col = 0xBBBbbb;
-				scroll1.frnt_col = scroll_wv.frnt_col = sc.work;
-				scroll1.line_col = scroll_wv.line_col = sc.work_graph;
+				scroll1.frnt_col = scroll_wv.frnt_col = system.color.work;
+				scroll1.line_col = scroll_wv.line_col = system.color.work_graph;
 				DrawToolbar();
 				DrawMailBox();
 
@@ -291,12 +291,12 @@ void DrawToolbar() {
 	int toolbar_w = BUT_Y + BUT_H + BUT_Y + 3;
 	mail_list.SetSizes(0, toolbar_w, Form.cwidth - scroll1.size_x - 1, mail_list.h, 60,18);
 
-	DrawBar(0,0, Form.cwidth,toolbar_w-3, sc.work);
-	DrawCaptButton(10                    , BUT_Y, BUT_W, BUT_H, GET_MAIL,    sc.work_button, sc.work_button_text,"Get mail");
-	DrawCaptButton(BUT_W+ 20, BUT_Y, BUT_W+10, BUT_H, SAVE_LETTER, sc.work_button, sc.work_button_text,"Save letter");
-	DrawCaptButton(Form.cwidth-BUT_W - 10, BUT_Y, BUT_W, BUT_H, EXIT_MAIL,   sc.work_button, sc.work_button_text,"< Exit");
+	DrawBar(0,0, Form.cwidth,toolbar_w-3, system.color.work);
+	DrawCaptButton(10                    , BUT_Y, BUT_W, BUT_H, GET_MAIL,    system.color.work_button, system.color.work_button_text,"Get mail");
+	DrawCaptButton(BUT_W+ 20, BUT_Y, BUT_W+10, BUT_H, SAVE_LETTER, system.color.work_button, system.color.work_button_text,"Save letter");
+	DrawCaptButton(Form.cwidth-BUT_W - 10, BUT_Y, BUT_W, BUT_H, EXIT_MAIL,   system.color.work_button, system.color.work_button_text,"< Exit");
 
-	DrawBar(0, mail_list.y-3, mail_list.w,1, sc.work_graph);
+	DrawBar(0, mail_list.y-3, mail_list.w,1, system.color.work_graph);
 	DrawBar(0, mail_list.y-2, mail_list.w,1, 0xdfdfdf);
 	DrawBar(0, mail_list.y-1, mail_list.w,1, 0xf0f0f0);
 }
@@ -328,22 +328,22 @@ void DrawMailList() {
 
 void DrawLetterInfo() {
 	int lt_y = mail_list.y+mail_list.h;
-	DrawBar(0, lt_y, mail_list.w, 1, sc.work_graph);
+	DrawBar(0, lt_y, mail_list.w, 1, system.color.work_graph);
 	DrawBar(0, lt_y+1, Form.cwidth, 1, LBUMP);
-	DrawBar(0, lt_y+2, Form.cwidth, LIST_INFO_H-4, sc.work);
+	DrawBar(0, lt_y+2, Form.cwidth, LIST_INFO_H-4, system.color.work);
 	WriteText(mail_list.w-30/2, lt_y, 0x80, 0x888888, "= = =");
 	WriteText(mail_list.w-30/2, lt_y+1, 0x80, 0xEeeeee, "= = =");
-	DrawBar(0, lt_y+LIST_INFO_H-2, Form.cwidth, 1, sc.work_graph); //bottom
+	DrawBar(0, lt_y+LIST_INFO_H-2, Form.cwidth, 1, system.color.work_graph); //bottom
 	DrawBar(0, lt_y+LIST_INFO_H-1, Form.cwidth, 1, 0xdfdfdf);
 	DrawBar(0, lt_y+LIST_INFO_H  , Form.cwidth, 1, 0xf0f0f0);
-	WriteTextB(10, lt_y+8 , 0x80, sc.work_text, "From:");
-	WriteText (45, lt_y+8 , 0x80, sc.work_text, #from);
-	WriteTextB(10, lt_y+20, 0x80, sc.work_text, "To:");
-	WriteText (45, lt_y+20, 0x80, sc.work_text, #to);
-	WriteTextB(10, lt_y+32, 0x80, sc.work_text, "Date:");
-	WriteText (45, lt_y+32, 0x80, sc.work_text, #date);
-	WriteTextB(10, lt_y+44, 0x80, sc.work_text, "Subj:");
-	WriteText (45, lt_y+44, 0x80, sc.work_text, #subj);
+	WriteTextB(10, lt_y+8 , 0x80, system.color.work_text, "From:");
+	WriteText (45, lt_y+8 , 0x80, system.color.work_text, #from);
+	WriteTextB(10, lt_y+20, 0x80, system.color.work_text, "To:");
+	WriteText (45, lt_y+20, 0x80, system.color.work_text, #to);
+	WriteTextB(10, lt_y+32, 0x80, system.color.work_text, "Date:");
+	WriteText (45, lt_y+32, 0x80, system.color.work_text, #date);
+	WriteTextB(10, lt_y+44, 0x80, system.color.work_text, "Subj:");
+	WriteText (45, lt_y+44, 0x80, system.color.work_text, #subj);
 }
 
 
@@ -383,19 +383,19 @@ void DrawScroller1() {
 
 void DrawStatusBar() {
 	int st_y = Form.cheight -status_bar_h;
-	DrawBar(0, st_y, Form.cwidth, status_bar_h, sc.work);
+	DrawBar(0, st_y, Form.cwidth, status_bar_h, system.color.work);
 	if (aim) {
 		SetMailBoxStatus(cur_st_percent, cur_st_text);
-		DrawCaptButton(240, st_y+1, 36, status_bar_h-3, STOP_LOADING, sc.work_button, sc.work_button_text,"Stop");
+		DrawCaptButton(240, st_y+1, 36, status_bar_h-3, STOP_LOADING, system.color.work_button, system.color.work_button_text,"Stop");
 	}
-	DrawCaptButton(Form.cwidth - 100, st_y+1, 70, status_bar_h-2, CHANGE_CHARSET+BT_HIDE, sc.work, sc.work_text,charsets[cur_charset]);
+	DrawCaptButton(Form.cwidth - 100, st_y+1, 70, status_bar_h-2, CHANGE_CHARSET+BT_HIDE, system.color.work, system.color.work_text,charsets[cur_charset]);
 }
 
 
 
 void SetMailBoxStatus(dword percent1, text1) {
-	DrawProgressBar(3, Form.cheight -status_bar_h + 1, 220, 12, sc.work, 0xC3C3C3, 0x54B1D6, sc.work_text, percent1);
-	WriteText(3, Form.cheight -status_bar_h + 1, 0x80, sc.work_text, text1);
+	DrawProgressBar(3, Form.cheight -status_bar_h + 1, 220, 12, system.color.work, 0xC3C3C3, 0x54B1D6, system.color.work_text, percent1);
+	WriteText(3, Form.cheight -status_bar_h + 1, 0x80, system.color.work_text, text1);
 	cur_st_percent = percent1;
 	cur_st_text = text1;
 }

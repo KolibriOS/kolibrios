@@ -52,7 +52,6 @@ enum {
 #define MAILBOX_HEADER "Mail Box - Email client Liza 0.9.3"
 #define BUFFERSIZE		512	
 proc_info Form;
-system_colors sc;
 #define LBUMP 0xFFFfff
 
 //progress_bar definitions
@@ -115,8 +114,8 @@ void main() {
 
 
 int DefineWindow(dword wtitle) {
-	sc.get();
-	DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2, WIN_W, WIN_H, 0x73,sc.work); 
+	system.color.get();
+	DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2, WIN_W, WIN_H, 0x73,system.color.work); 
 	DrawTitle(wtitle);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return 0; //rolled_up

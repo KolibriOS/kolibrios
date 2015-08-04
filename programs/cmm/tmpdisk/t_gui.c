@@ -1,5 +1,5 @@
-/////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////                   GUI                      ////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////
+ /////////////////////////                   GUI                      ////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////
 
 #include "..\lib\gui.h"
@@ -45,7 +45,6 @@ dword devbuf;
 char disk_num;
 char selected;
 
-system_colors sc;
 proc_info Form;
 
 unsigned char icons[] = FROM "icons.raw";
@@ -131,21 +130,21 @@ void Main_Window()
 			edit_box_key stdcall(#edit_disk_size);
 			break;
          case evReDraw:			
-			sc.get();
-			DefineAndDrawWindow(170,150,314,270,0x74,sc.work,"Virtual Disk Manager 0.62",0);
+			system.color.get();
+			DefineAndDrawWindow(170,150,314,270,0x74,system.color.work,"Virtual Disk Manager 0.62",0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
 
-			DrawBar(0,0,  Form.cwidth,TOPPANELH, sc.work);
-			DrawBar(0,TOPPANELH, Form.cwidth,1,  sc.work_graph);
-			WriteText(6, 9, 0x80, sc.work_text, INTRO_TEXT_4);
-			WriteText(edit_disk_size.left + edit_disk_size.width + 8, 9, 0x80, sc.work_text, "MB.");
+			DrawBar(0,0,  Form.cwidth,TOPPANELH, system.color.work);
+			DrawBar(0,TOPPANELH, Form.cwidth,1,  system.color.work_graph);
+			WriteText(6, 9, 0x80, system.color.work_text, INTRO_TEXT_4);
+			WriteText(edit_disk_size.left + edit_disk_size.width + 8, 9, 0x80, system.color.work_text, "MB.");
 			edit_box_draw stdcall (#edit_disk_size);
 			for (i=0, x=6; i<2; i++, x+=strlen(but_text[i])*6+37)
 			{
-				DefineButton(x,25, strlen(but_text[i])*6+28,19, 10+i, sc.work_button);
+				DefineButton(x,25, strlen(but_text[i])*6+28,19, 10+i, system.color.work_button);
 				_PutImage(x+3,28,  14,14,   i*14*14*3+#icons);
-				WriteText(x+22,31, 0x80, sc.work_button_text, but_text[i]);
+				WriteText(x+22,31, 0x80, system.color.work_button_text, but_text[i]);
 			}		
 			GetDisks();
 			DrawTmpDisks();
@@ -210,12 +209,12 @@ void DrawTmpDisks()
 	int FreeRAM=GetFreeRAM()/1024;
 
 	DrawBar(0,51, Form.cwidth,Form.cheight-TOPPANELH-BOTPANELH-2, 0xFFFFFF);
-	DrawBar(0,Form.cheight-BOTPANELH-1, Form.cwidth,1, sc.work_graph);
-	DrawBar(0,Form.cheight-BOTPANELH, Form.cwidth,BOTPANELH, sc.work);
+	DrawBar(0,Form.cheight-BOTPANELH-1, Form.cwidth,1, system.color.work_graph);
+	DrawBar(0,Form.cheight-BOTPANELH, Form.cwidth,BOTPANELH, system.color.work);
 	strcpy(#free_ram_text, FREE_RAM_TEXT);
 	strcat(#free_ram_text, itoa(FreeRAM));
 	strcat(#free_ram_text, " MB");
-	WriteText(10, Form.cheight-13, 0x80, sc.work_text, #free_ram_text);
+	WriteText(10, Form.cheight-13, 0x80, system.color.work_text, #free_ram_text);
 	if (disk_num==0)
 	{
 		WriteText(17,65,    0x90, 0x777777, INTRO_TEXT_1);

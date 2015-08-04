@@ -66,7 +66,6 @@ char docky_ini_path[] = "/sys/settings/docky.ini";
 unsigned char panels_img_data[] = FROM "panels_image.raw";
 raw_image panels_img = { 37, 27, #panels_img_data };
 
-system_colors sc;
 proc_info Form;
 
 struct docky_cfg {
@@ -149,14 +148,14 @@ void main()
 				break;
 			
 		case evReDraw:
-				sc.get();
-				DefineAndDrawWindow(130, 150, 400, 300+GetSkinHeight(),0x34,sc.work,WINDOW_TITLE);
+				system.color.get();
+				DefineAndDrawWindow(130, 150, 400, 300+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window>2) break;
 				taskbar_frame.size_x = docky_frame.size_x = - taskbar_frame.start_x * 2 + Form.cwidth;
-				taskbar_frame.font_color = docky_frame.font_color = sc.work_text;
-				taskbar_frame.font_backgr_color = docky_frame.font_backgr_color = sc.work;
-				taskbar_frame.ext_col = docky_frame.ext_col = sc.work_graph;
+				taskbar_frame.font_color = docky_frame.font_color = system.color.work_text;
+				taskbar_frame.font_backgr_color = docky_frame.font_backgr_color = system.color.work;
+				taskbar_frame.ext_col = docky_frame.ext_col = system.color.work_graph;
 				DrawWindowContent(ALL);
 	}
 }
@@ -175,7 +174,7 @@ void DrawWindowContent(byte panel_type)
 	{
 		DefineButton(22, taskbar_frame.start_y + 12, panels_img.w-1, 27-1, 100 + BT_HIDE, 0);
 		_PutImage(22, taskbar_frame.start_y + 12,  37, 27, taskbar_cfg.Attachment * 37 * 27 * 3 + panels_img.data);
-		WriteText(68, taskbar_frame.start_y + 20, 0x80, sc.work_text, CHANGE_POS);
+		WriteText(68, taskbar_frame.start_y + 20, 0x80, system.color.work_text, CHANGE_POS);
 		PanelCfg_CheckBox(22, taskbar_frame.start_y +  48, 105, SOFTEN_UP, taskbar_cfg.SoftenUp);
 		PanelCfg_CheckBox(22, taskbar_frame.start_y +  68, 106, SOFTEN_DOWN, taskbar_cfg.SoftenDown);
 		PanelCfg_CheckBox(22, taskbar_frame.start_y +  88, 107, MIN_LEFT_BUTTON, taskbar_cfg.MinLeftButton);
@@ -193,7 +192,7 @@ void DrawWindowContent(byte panel_type)
 	{
 		DefineButton(22, docky_frame.start_y + 12, panels_img.w-1, 27-1, 200 + BT_HIDE, 0);
 		_PutImage(22, docky_frame.start_y + 12,  37, 27, docky_cfg.location + 1 * 37 * 27 * 3 + panels_img.data);
-		WriteText(68, docky_frame.start_y + 20, 0x80, sc.work_text, CHANGE_POS);
+		WriteText(68, docky_frame.start_y + 20, 0x80, system.color.work_text, CHANGE_POS);
 		PanelCfg_CheckBox(22, docky_frame.start_y + 48, 201, FSIZE,  docky_cfg.fsize);
 		PanelCfg_CheckBox(win_center_x, docky_frame.start_y + 48, 202, ASHOW, docky_cfg.ashow);
 	}
@@ -267,11 +266,11 @@ void RestartProcess(byte panel_type)
 
 
 void PanelCfg_CheckBox(dword x, y, id, text, byte value) {
-	CheckBox(x, y, 14, 14, id, text, sc.work_graph, sc.work_text, value);
+	CheckBox(x, y, 14, 14, id, text, system.color.work_graph, system.color.work_text, value);
 }
 
 void PanelCfg_MoreLessBox(dword x, y, id_more, id_less; byte value; dword text) {
-	MoreLessBox(x, y, 18, id_more, id_less, #sc, value, text);
+	MoreLessBox(x, y, 18, id_more, id_less, #system.color, value, text);
 }
 
 

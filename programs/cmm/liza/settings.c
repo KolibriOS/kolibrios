@@ -84,7 +84,7 @@ void SettingsDialog()
 
 			case evReDraw: _OPT_WIN:
 				if !(DefineWindow(OPTIONS_HEADER)) break;
-				DrawBar(0,0, Form.cwidth, Form.cheight, sc.work);
+				DrawBar(0,0, Form.cwidth, Form.cheight, system.color.work);
 				OptionsWindow();
 				break;
 		}
@@ -95,23 +95,23 @@ void OptionsWindow()
 {
 	#define ELEM_X 25
 	int i;
-	DrawBar(0, Form.cheight - 40, Form.cwidth, 1, sc.work_graph);
+	DrawBar(0, Form.cheight - 40, Form.cwidth, 1, system.color.work_graph);
 	DrawBar(0, Form.cheight - 40+1, Form.cwidth, 1, LBUMP);
-	DrawCaptButton(Form.cwidth-79, Form.cheight-32, 70, 25, 19, sc.work_button, sc.work_button_text,"Apply");
+	DrawCaptButton(Form.cwidth-79, Form.cheight-32, 70, 25, 19, system.color.work_button, system.color.work_button_text,"Apply");
 
-	WriteTextB(ELEM_X, 20, 0x90, sc.work_text, "Network settings");
-	CheckBox(ELEM_X, 45, 12, 12, 17, "Use custom settings", sc.work_graph, sc.work_text, checked[0]);
-	CheckBox(ELEM_X, 65, 12, 12, 18, "Manual configuration", sc.work_graph, sc.work_text, checked[1]);
+	WriteTextB(ELEM_X, 20, 0x90, system.color.work_text, "Network settings");
+	CheckBox(ELEM_X, 45, 12, 12, 17, "Use custom settings", system.color.work_graph, system.color.work_text, checked[0]);
+	CheckBox(ELEM_X, 65, 12, 12, 18, "Manual configuration", system.color.work_graph, system.color.work_text, checked[1]);
 	for (i=0; i<4; i++)
 	{
-		WriteText(ELEM_X+40, i*25+4+POP_server_box.top, 0x80, sc.work_text, text1[i]);
-		DrawRectangle(POP_server_box.left-1, i*25+POP_server_box.top-1, POP_server_box.width+2, 16, sc.work_graph);
+		WriteText(ELEM_X+40, i*25+4+POP_server_box.top, 0x80, system.color.work_text, text1[i]);
+		DrawRectangle(POP_server_box.left-1, i*25+POP_server_box.top-1, POP_server_box.width+2, 16, system.color.work_graph);
 	}
 	edit_box_draw stdcall(#POP_server_box);
 	edit_box_draw stdcall(#POP_server_port_box);
 	edit_box_draw stdcall(#SMTP_server_box);
 	edit_box_draw stdcall(#SMTP_server_port_box);
 
-	WriteTextB(ELEM_X, 205, 0x90, sc.work_text, "MailBox settings");
-	CheckBox(ELEM_X, 230,12, 12, 20, "Use iconv library for converting text charsets", sc.work_graph, sc.work_text, use_iconv);
+	WriteTextB(ELEM_X, 205, 0x90, system.color.work_text, "MailBox settings");
+	CheckBox(ELEM_X, 230,12, 12, 20, "Use iconv library for converting text charsets", system.color.work_graph, system.color.work_text, use_iconv);
 }

@@ -77,21 +77,20 @@
 :void MoreLessBox(dword x,y,s, bt_id_more, bt_id_less, colors_pointer, value, text)
 {
 	#define VALUE_FIELD_W 26;
-	system_colors colors;
 	ESI = colors_pointer;
-	colors.work_graph = ESI.system_colors.work_graph;
-	colors.work_text = ESI.system_colors.work_text;
-	colors.work_button = ESI.system_colors.work_button;
-	colors.work_button_text = ESI.system_colors.work_button_text;
+	system.color.work_graph = ESI.COLORS.work_graph;
+	system.color.work_text = ESI.COLORS.work_text;
+	system.color.work_button = ESI.COLORS.work_button;
+	system.color.work_button_text = ESI.COLORS.work_button_text;
 
-	DrawRectangle(x, y, VALUE_FIELD_W, s, colors.work_graph);
+	DrawRectangle(x, y, VALUE_FIELD_W, s, system.color.work_graph);
 	DrawRectangle3D(x+1, y+1, VALUE_FIELD_W-2, s-2, 0xDDDddd, 0xffffff);
 	DrawBar(x+2, y+2, VALUE_FIELD_W-3, s-3, 0xffffff);
 	WriteText(x+6, s / 2 + y -3, 0x80, 0x000000, itoa(value));
 
-	DrawCaptButton(VALUE_FIELD_W + x + 1,     y, s, s, bt_id_more, colors.work_button, colors.work_button_text, "+");
-	DrawCaptButton(VALUE_FIELD_W + x + s + 2, y, s, s, bt_id_less, colors.work_button, colors.work_button_text, "-");
-	WriteText(x+VALUE_FIELD_W+s+s+10, s / 2 + y -3, 0x80, colors.work_text, text);
+	DrawCaptButton(VALUE_FIELD_W + x + 1,     y, s, s, bt_id_more, system.color.work_button, system.color.work_button_text, "+");
+	DrawCaptButton(VALUE_FIELD_W + x + s + 2, y, s, s, bt_id_less, system.color.work_button, system.color.work_button_text, "-");
+	WriteText(x+VALUE_FIELD_W+s+s+10, s / 2 + y -3, 0x80, system.color.work_text, text);
 }
 
 :void DrawProgressBar(dword st_x, st_y, st_w, st_h, col_fon, col_border, col_fill, col_text, progress_percent)

@@ -25,7 +25,7 @@ char header[]="New Downloader v0.6";
 proc_info Form;
 #define WIN_W 400
 #define WIN_H 220
-system_colors sc;
+
 #define URL param
 
 int	mouse_twb;
@@ -82,8 +82,8 @@ void main()
 				break;
 
 			case evReDraw:
-				sc.get();
-				DefineAndDrawWindow(215,100,WIN_W,WIN_H,0x73,sc.work,#header,0);
+				system.color.get();
+				DefineAndDrawWindow(215,100,WIN_W,WIN_H,0x73,system.color.work,#header,0);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window>2) break;
 				if (Form.height<120) MoveSize(OLD,OLD,OLD,120);
@@ -156,34 +156,34 @@ void DrawSpeed()
 	speed_string = ConvertSize(speed[speed_position-1]);
 	strcat(#bytes_received, speed_string);
 	strcat(#bytes_received, " received.");
-	DrawBar(diagram.bufx, diagram.bufy + diagram.bufh + 10, diagram.bufw, 9, sc.work);
-	WriteText(diagram.bufx, diagram.bufy + diagram.bufh + 10, 0x80, sc.work_text, #bytes_received);
+	DrawBar(diagram.bufx, diagram.bufy + diagram.bufh + 10, diagram.bufw, 9, system.color.work);
+	WriteText(diagram.bufx, diagram.bufy + diagram.bufh + 10, 0x80, system.color.work_text, #bytes_received);
 }
 
 void Draw_Window()
 {	
-	DrawBar(0,0,Form.cwidth,Form.cheight,sc.work); //bg
+	DrawBar(0,0,Form.cwidth,Form.cheight,system.color.work); //bg
 	if (http_transfer <= 0)
 	{
-		DrawCaptButton(diagram.bufx, 50, 120, 20, 301, sc.work_button, sc.work_button_text, "Start downloading");	
+		DrawCaptButton(diagram.bufx, 50, 120, 20, 301, system.color.work_button, system.color.work_button_text, "Start downloading");	
 	}
 	else
 	{
-		DrawCaptButton(diagram.bufx, 50, 120, 20, 302, sc.work_button, sc.work_button_text, "Stop downloading");
+		DrawCaptButton(diagram.bufx, 50, 120, 20, 302, system.color.work_button, system.color.work_button_text, "Stop downloading");
 	}
 	if (http_transfer <= 0) && (speed_position>0)
 	{
-		DrawCaptButton(diagram.bufx+130, 50, 120, 20, 305, sc.work_button, sc.work_button_text, "Show in folder");	
+		DrawCaptButton(diagram.bufx+130, 50, 120, 20, 305, system.color.work_button, system.color.work_button_text, "Show in folder");	
 	} 
-	WriteText(diagram.bufx, address_box.top + 4, 0x80, sc.work_text, "URL:");
+	WriteText(diagram.bufx, address_box.top + 4, 0x80, system.color.work_text, "URL:");
 	address_box.left = strlen("URL:")*6 + 10 + diagram.bufx;
 	address_box.width = Form.cwidth - address_box.left - diagram.bufx - 3;
 	address_box.offset=0;
 	edit_box_draw stdcall(#address_box);
 	DrawRectangle(address_box.left-1, address_box.top-1, address_box.width+2, 16,address_box.color);
-	DrawRectangle(address_box.left-2, address_box.top-2, address_box.width+4, 18,sc.work_graph);
+	DrawRectangle(address_box.left-2, address_box.top-2, address_box.width+4, 18,system.color.work_graph);
 
-	DrawRectangle(diagram.bufx-2, diagram.bufy-2, diagram.bufw+2, diagram.bufh+2, sc.work_graph);
+	DrawRectangle(diagram.bufx-2, diagram.bufy-2, diagram.bufw+2, diagram.bufh+2, system.color.work_graph);
 	DrawSpeed();
 }
 

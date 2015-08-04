@@ -16,8 +16,6 @@ char dict_not_found[] = "Dictionary not found";
 char dict_opened[] = "Dictionary loaded";
 char empty_word[] = "Type a word to translate";
 
-
-system_colors sc;
 proc_info Form;
 
 char edword[256], search_word[256], translate_result[4096], cur_dict[256];
@@ -107,24 +105,24 @@ void main()
 
 void DrawWindowContent()
 {
-	sc.get();
-	DefineAndDrawWindow(215,120,400,250,0x73,sc.work,#title);
+	system.color.get();
+	DefineAndDrawWindow(215,120,400,250,0x73,system.color.work,#title);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
 	if (Form.height<140) MoveSize(OLD,OLD,OLD,140);
 	if (Form.width<400) MoveSize(OLD,OLD,400,OLD);
-	edit1.focus_border_color=sc.work_graph;
+	edit1.focus_border_color=system.color.work_graph;
 	edit1.width=Form.width-edit1.left-edit1.left-9;
 
-	DrawBar(0, 0, Form.width-9, 69, sc.work);
+	DrawBar(0, 0, Form.width-9, 69, system.color.work);
 	edit_box_draw stdcall(#edit1);
-	DrawCaptButton(edit1.left+edit1.width-80,35, 80,20, 10, sc.work_button, sc.work_button_text,#translate_caption);
-	DrawBar(0, 69, Form.width-9, 1, sc.work_graph);
+	DrawCaptButton(edit1.left+edit1.width-80,35, 80,20, 10, system.color.work_button, system.color.work_button_text,#translate_caption);
+	DrawBar(0, 69, Form.width-9, 1, system.color.work_graph);
 
-	WriteText(edit1.left,35+7,0x80,sc.work_text,#direction);
-	DefineButton(edit1.left+130,35, 120,20, 11, sc.work_button);
+	WriteText(edit1.left,35+7,0x80,system.color.work_text,#direction);
+	DefineButton(edit1.left+130,35, 120,20, 11, system.color.work_button);
 	DrawBar(edit1.left+130+1,36,  107,19, 0xFFFFFF);
-	WriteText(edit1.left+130+112,35+7,0x80,sc.work_button_text,"\x19");
+	WriteText(edit1.left+130+112,35+7,0x80,system.color.work_button_text,"\x19");
 	WriteText(edit1.left+130+8,35+7,0x80,0x000000,#cur_dict);
 
 	DrawTranslation();
@@ -236,11 +234,11 @@ void ShowDictList()
 	error = GetDir(#dir_buf, #fcount, dict_folder, DIRS_ONLYREAL);
 	if (!error)
 	{
-		DefineButton(0,0, Form.width,Form.height, 12+BT_HIDE+BT_NOFRAME, sc.work_button);
+		DefineButton(0,0, Form.width,Form.height, 12+BT_HIDE+BT_NOFRAME, system.color.work_button);
 		for (j=0; j<fcount; j++;)
 		{
-			DefineButton(edit1.left+130,j+1*20+35, 107,20, 20+j, sc.work_button);
-			WriteText(edit1.left+130+8,j+1*20+35+7,0x80,sc.work_button_text, j*304+dir_buf+72);
+			DefineButton(edit1.left+130,j+1*20+35, 107,20, 20+j, system.color.work_button);
+			WriteText(edit1.left+130+8,j+1*20+35+7,0x80,system.color.work_button_text, j*304+dir_buf+72);
 		}
 	}
 }

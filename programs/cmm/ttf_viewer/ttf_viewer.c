@@ -3,11 +3,9 @@
 #endif
 
 #define MEMSIZE 397113
-#include "..\lib\kolibri.h" 
 #include "..\lib\strings.h" 
 #include "..\lib\mem.h" 
 #include "..\lib\file_system.h"
-#include "..\lib\dll.h"
 #include "..\lib\gui.h"
 #include "..\lib\obj\truetype.h"
 #include "..\lib\obj\proc_lib.h"
@@ -20,7 +18,6 @@ dword font_data;
 stbtt_fontinfo font_info;
 dword font_mem;
 
-system_colors sc;
 proc_info Form;
 char test_text[] = "The quick brown fox jumps over the lazy dog";
 char win_title[4096] = "TTF Viewer v0.1 - ";
@@ -71,7 +68,7 @@ void main()
 
 void draw_window()
 {
-	sc.get();
+	system.color.get();
 	DefineAndDrawWindow(30, 100, 800, 250+GetSkinHeight(), 0x34, 0xFFFfff, #win_title);
 	GetProcessInfo(#Form, SelfInfo);
 	DrawFonts();	
@@ -83,7 +80,7 @@ word DrawFonts()
 	if (!font_data) 
 	{
 		WriteTextCenter(0,85,Form.cwidth,0x555555, T_INTRO);
-		DrawCaptButton(Form.cwidth - 140 / 2, Form.cheight - 30 / 2, 140, 30, 10, sc.work_button, sc.work_button_text, T_INTRO_BUTTON_TEXT);
+		DrawCaptButton(Form.cwidth - 140 / 2, Form.cheight - 30 / 2, 140, 30, 10, system.color.work_button, system.color.work_button_text, T_INTRO_BUTTON_TEXT);
 		return;
 	}
 	text_out stdcall (#test_text, #font_info, 10, 0x000000, 0xFFFfff, 3, 4);

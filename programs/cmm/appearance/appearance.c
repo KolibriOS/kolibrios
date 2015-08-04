@@ -41,7 +41,6 @@ int files_mas[100];
 
 int cur;
 
-system_colors sc;
 proc_info Form;
 
 scroll_bar scroll1 = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
@@ -83,15 +82,15 @@ void Draw_List()
 		
 		if (list[active].current-list[active].first==i)
 		{
-			if (sc.work_button!=sc.work)
+			if (system.color.work_button!=system.color.work)
 			{
-				DrawBar(0, yyy, list[active].w, list[active].line_h, sc.work_button);
-				if (i<list[active].count) WriteText(12,yyy+list[active].text_y,0x80,sc.work_button_text, #temp_filename);
+				DrawBar(0, yyy, list[active].w, list[active].line_h, system.color.work_button);
+				if (i<list[active].count) WriteText(12,yyy+list[active].text_y,0x80,system.color.work_button_text, #temp_filename);
 			}
 			else
 			{
-				DrawBar(0, yyy, list[active].w, list[active].line_h, sc.grab_button);
-				if (i<list[active].count) WriteText(12,yyy+list[active].text_y,0x80,sc.grab_button_text, #temp_filename);
+				DrawBar(0, yyy, list[active].w, list[active].line_h, system.color.grab_button);
+				if (i<list[active].count) WriteText(12,yyy+list[active].text_y,0x80,system.color.grab_button_text, #temp_filename);
 			}
 		}
 		else
@@ -208,7 +207,7 @@ void main()
 			break;
 		 
 		 case evReDraw:
-			sc.get();			
+			system.color.get();			
 			DefineAndDrawWindow(30,80,list[active].w+9,list[active].h+4+GetSkinHeight(),0x73,0xE4DFE1,WINDOW_HEADER,0);
 			GetProcessInfo(#Form, SelfInfo);
 			IF (Form.status_window>=2) break;
@@ -227,15 +226,15 @@ void DrawTab(dword x,y, but_id, is_active, text)
 
 	if (is_active)
 	{
-		col_bg=sc.work_button;
-		col_text=sc.work_button_text;
+		col_bg=system.color.work_button;
+		col_text=system.color.work_button_text;
 	}
 	else
 	{
-		col_bg=sc.work;
-		col_text=sc.work_text;
+		col_bg=system.color.work;
+		col_text=system.color.work_text;
 	} 
-	DrawRectangle(x,y, w,h, sc.work_graph);
+	DrawRectangle(x,y, w,h, system.color.work_graph);
 	DrawCaptButton(x+1,y+1, w-2,h-1, but_id, col_bg, col_text, text);
 	_PutImage(x+6,y+4,  16,15,   but_id-2*16*15*3+#icons);
 }
@@ -243,10 +242,10 @@ void DrawTab(dword x,y, but_id, is_active, text)
 
 void DrawTabs()
 {
-	DrawBar(0,0, Form.cwidth, PANEL_H-1, sc.work);
+	DrawBar(0,0, Form.cwidth, PANEL_H-1, system.color.work);
 	DrawTab(10,7, 2, list[WALLPAPERS].active, T_WALLPAPERS);
 	DrawTab(strlen(T_WALLPAPERS)*6+BT_PADDING+21,7, 3, list[SKINS].active, T_SKINS);
-	DrawBar(0,PANEL_H-2, Form.cwidth, 1, sc.work_graph);
+	DrawBar(0,PANEL_H-2, Form.cwidth, 1, system.color.work_graph);
 	DrawBar(0,PANEL_H-1, Form.cwidth, 1, 0xEEEeee);
 }
 
@@ -272,8 +271,8 @@ void TabClick(int N)
 void DrawScroller()
 {
 	scroll1.bckg_col = 0xBBBbbb;
-	scroll1.frnt_col = sc.work;
-	scroll1.line_col = sc.work_graph;
+	scroll1.frnt_col = system.color.work;
+	scroll1.line_col = system.color.work_graph;
 
 	scroll1.max_area = list[active].count;
 	scroll1.cur_area = list[active].visible;

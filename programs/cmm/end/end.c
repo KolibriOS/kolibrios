@@ -22,8 +22,6 @@
 	0};
 #endif
 
-system_colors sc;
-
 unsigned char moon[6*6] = FROM "moon.raw";
 
 int WIN_SIZE_X, WIN_SIZE_Y;
@@ -102,7 +100,7 @@ void main()
 			break;
          
 		case evReDraw:
-			sc.get();
+			system.color.get();
 			DefineAndDrawWindow(0,0,WIN_SIZE_X, WIN_SIZE_Y, 0x01, 0, 0, 0x01fffFFF);
 			//_PutImage(0,0,WIN_SIZE_X,WIN_SIZE_Y,shadow_buf);
 			_PutImage(0,0,WIN_SIZE_X, PANEL_Y,s1);
@@ -123,12 +121,12 @@ void draw_main_area()
 	int i=0;
 	
 	DrawRectangle(PANEL_X, PANEL_Y, PANEL_SIZE_X, PANEL_SIZE_Y, 0);
-	DrawBar(PANEL_X+1, PANEL_Y+NIGHT_PALEL_HEIGHT+1, PANEL_SIZE_X-1, PANEL_SIZE_Y-NIGHT_PALEL_HEIGHT-1, sc.work);
+	DrawBar(PANEL_X+1, PANEL_Y+NIGHT_PALEL_HEIGHT+1, PANEL_SIZE_X-1, PANEL_SIZE_Y-NIGHT_PALEL_HEIGHT-1, system.color.work);
 	
 	for (i=0; i<3; i++)
 	{
-		DefineButton(PANEL_X+33, i*23 + PANEL_Y+NIGHT_PALEL_HEIGHT+16, 190,19, BUTTONS_CAPTIONS[i*2+1],sc.work_button);
-		WriteText(PANEL_X+59, i*23 + PANEL_Y+NIGHT_PALEL_HEIGHT+22, 0x80,sc.work_button_text, BUTTONS_CAPTIONS[i*2]);
+		DefineButton(PANEL_X+33, i*23 + PANEL_Y+NIGHT_PALEL_HEIGHT+16, 190,19, BUTTONS_CAPTIONS[i*2+1],system.color.work_button);
+		WriteText(PANEL_X+59, i*23 + PANEL_Y+NIGHT_PALEL_HEIGHT+22, 0x80,system.color.work_button_text, BUTTONS_CAPTIONS[i*2]);
 	}
 		
 	draw_stars();

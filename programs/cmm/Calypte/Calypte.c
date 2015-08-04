@@ -65,7 +65,7 @@ struct menu_text_struct
 #define TITLE "Calypte v0.12"
 char win_title[4096] = TITLE;
 proc_info Form;
-system_colors sc;
+
 dword old_width,old_height;
 llist tview;
 
@@ -221,15 +221,15 @@ void main()
 
 void draw_window()
 {
-	sc.get();
+	system.color.get();
 	DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2,WIN_W,WIN_H,0x73,0xFFFFFF,#win_title);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
 	tview.SetSizes(0, TOPPANELH, Form.cwidth, Form.cheight-BOTPANELH-TOPPANELH, 200, 12);
-	DrawBar(0, 0, Form.cwidth, TOPPANELH, sc.work);
-	DrawBar(0, Form.cheight-BOTPANELH, Form.cwidth, BOTPANELH, sc.work);
+	DrawBar(0, 0, Form.cwidth, TOPPANELH, system.color.work);
+	DrawBar(0, Form.cheight-BOTPANELH, Form.cwidth, BOTPANELH, system.color.work);
 	
-	menudata1.bckg_col = sc.work;
+	menudata1.bckg_col = system.color.work;
 	menu_bar_draw stdcall (#menudata1);
 	
 	if (old_width!=Form.width) || (old_height!=Form.height)

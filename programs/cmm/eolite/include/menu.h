@@ -88,7 +88,7 @@ void FileMenu()
 				if (menu_call_mouse) DefineAndDrawWindow(mouse.x+Form.left+5, mouse.y+Form.top+GetSkinHeight(),menu.w+3,menu.h+6,0x01, 0, 0, 0x01fffFFF);
 				else DefineAndDrawWindow(Form.left+files.x+15, files.line_h*files.current+files.y+Form.top+30,menu.w+3,menu.h+6,0x01, 0, 0, 0x01fffFFF);
 				GetProcessInfo(#MenuForm, SelfInfo);
-				DrawRectangle(0,0,menu.w+1,menu.h+2,sc.work_graph);
+				DrawRectangle(0,0,menu.w+1,menu.h+2,system.color.work_graph);
 				DrawBar(1,1,menu.w,1,0xFFFfff);
 				DrawPopupShadow(1,1,menu.w,menu.h,0);
 				MenuListRedraw();
@@ -110,10 +110,10 @@ void MenuListRedraw()
 		}
 		else
 		{
-			DrawBar(2,start_y+2,menu.w-1,menu.line_h,sc.work);
+			DrawBar(2,start_y+2,menu.w-1,menu.line_h,system.color.work);
 			WriteText(8,start_y+menu.text_y+3,0x80,0xf2f2f2,file_captions[index*3]);
 		}
-		WriteText(7,start_y+menu.text_y+2,0x80,sc.work_text,file_captions[index*3]);
+		WriteText(7,start_y+menu.text_y+2,0x80,system.color.work_text,file_captions[index*3]);
 		WriteText(-strlen(file_captions[index*3+1])*6-6+menu.w,start_y+menu.text_y+2,0x80,0x888888,file_captions[index*3+1]);
 		start_y+=menu.line_h;
 	}	

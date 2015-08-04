@@ -44,7 +44,7 @@ char folder_info[200];
 BDVK file_info_general;
 BDVK file_info_dirsize;
 
-byte readonly, hidden, system;
+byte readonly, hidden, System;
 
 void properties_dialog()
 {
@@ -85,7 +85,7 @@ void properties_dialog()
 				break;
 				
 		case evReDraw:
-				DefineAndDrawWindow(Form.left + 150,150,270,285+GetSkinHeight(),0x34,sc.work,WINDOW_TITLE_PROPERTIES);
+				DefineAndDrawWindow(Form.left + 150,150,270,285+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE_PROPERTIES);
 				GetProcessInfo(#settings_form, SelfInfo);
 				DrawFlatButton(settings_form.cwidth - 70 - 13, settings_form.cheight - 34, 70, 22, 10, 0xE4DFE1, BTN_CLOSE);
 	}
