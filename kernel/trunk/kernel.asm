@@ -2313,8 +2313,8 @@ sysfn_deactivate:         ; 18.1 = DEACTIVATE WINDOW
         ret
 ;------------------------------------------------------------------------------
 sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
-        ; cmp     ecx, 2                 ; fix mcall 18,3,1 for desktop requested for @icon by GerdtR
-        ; jb      .nowindowactivate      ; see /viewtopic.php?f=24&t=3097&p=62230#p62225
+        cmp     ecx, 2
+        jb      .nowindowactivate
         cmp     ecx, [TASK_COUNT]
         ja      .nowindowactivate
 ;-------------------------------------
