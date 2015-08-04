@@ -13,29 +13,50 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 pixel_to_24bpp:         ; returns in ecx, destroys eax, ebx
+if BITS_PER_PIXEL = 8
 ; Convert pixel to 24BPP
         mov     bl, 85
         mov     al, [esi]
-        shr     al, 4
+        shr     al, 6
         and     al, 3
         mul     bl
-        mov     cl, al
+        mov     ch, al          ; blue
+        mov     bl, 36
         mov     al, [esi]
-        shr     al, 2
-        and     al, 3
+        shr     al, 3
+        and     al, 7
         mul     bl
-        mov     ch, al
+        mov     cl, al          ; green
         mov     al, [esi]
-        and     al, 3
+        and     al, 7
         mul     bl
-        shl     ecx, 8
+        shr     ecx, 8
+        mov     cl, al          ; red
+        inc     esi
+else if BITS_PER_PIXEL = 16
+        lodsw
         mov     cl, al
+        shl     cl, 3
+        and     cx, 0x00f8      ; blue
+        shl     ecx, 16
+        mov     cx, ax
+        shl     cx, 5
+        and     ch, 0xfc        ; green
+        mov     cl, ah
+        and     al, 0xf8        ; red
+else
+        xor     ecx, ecx
+        mov     cx, [esi]
+        shr     ecx, 8
+        mov     cl, [esi+2]
+        add     esi, 3
+end if
 
         ret
 
 encoding_RRE:
 
-        DEBUGF  1,"RRE\n"
+        DEBUGF  2,"RRE\n"
 
   @@:
         lea     eax, [esi+5]

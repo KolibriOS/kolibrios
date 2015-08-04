@@ -17,6 +17,8 @@ format binary as ""
 __DEBUG__       = 1
 __DEBUG_LEVEL__ = 2
 
+BITS_PER_PIXEL  = 8             ; 8, 16 24
+
 use32
 
         org     0x0
@@ -81,6 +83,7 @@ STATUS_SECURITY_ERR     = 15
 STATUS_LIB_ERR          = 16
 STATUS_THREAD_ERR       = 17
 
+include "keymap.inc"
 include "gui.inc"
 include "network.inc"
 include "raw.inc"
@@ -114,7 +117,8 @@ START:
         mcall   40, EVM_MOUSE + EVM_MOUSE_FILTER + EVM_KEY + EVM_REDRAW + EVM_BUTTON
 
         mcall   66, 1, 1                ; Switch keyboard to scancode mode
-        mcall   26, 2, 1, keymap        ; Read keymap
+
+        call    generate_keymap
 
 redraw:
         mcall   12, 1
@@ -151,6 +155,9 @@ mainloop:
         jmp     mainloop
 
 key:
+        mcall   66, 3
+        mov     ebx, eax
+
         mcall   2
         cmp     ah, 224         ; ext
         je      mainloop        ;; TODO
@@ -162,18 +169,28 @@ key:
   @@:
         mov     byte[KeyEvent.down], al
 
-        shr     eax, 8
-        and     al, 0x7f
-        mov     al, [keymap+eax]
-        mov     byte[KeyEvent.key+3], al
+        shr     eax, 7
+        and     eax, 0x000000fe
 
-        DEBUGF  1, "Sending key: 0x%x\n", al
-
+        test    ebx, 100000b    ; alt?
+        jz      @f
+        add     eax, 512
+        jmp     .key
+  @@:
+        test    ebx, 11b        ; shift?
+        jz      @f
+        add     eax, 256
+  @@:
+  .key:
+        mov     ax, [keymap+eax]
+        mov     word[KeyEvent.key+2], ax
+        DEBUGF  1, "Sending key: 0x%x\n", ax
         mcall   send, [socketnum], KeyEvent, 8, 0
         jmp     mainloop
 
+
 mouse:
-;        DEBUGF  1, "Sending mouse event\n"
+;        DEBUGF  1, "Sending pointer event\n"
 
         mcall   37, 1           ; get mouse pos
         bswap   eax
@@ -193,6 +210,7 @@ mouse:
 
 button:
         mcall   17              ; get id
+        mcall   close, [socketnum]
         mcall   -1
 
 
@@ -218,32 +236,46 @@ SetPixelFormat32        db 0            ; setPixelformat
 .blue_shift             db 16           ; blue-shift
                         db 0, 0, 0      ; padding
 
+SetPixelFormat24        db 0            ; setPixelformat
+                        db 0, 0, 0      ; padding
+.bpp                    db 24           ; bits per pixel
+.depth                  db 24           ; depth
+.big_endian             db 0            ; big-endian flag
+.true_color             db 1            ; true-colour flag
+.red_max                db 0, 255       ; red-max
+.green_max              db 0, 255       ; green-max
+.blue_max               db 0, 255       ; blue-max
+.red_shift              db 16           ; red-shift
+.green_shift            db 8            ; green-shift
+.blue_shift             db 0            ; blue-shift
+                        db 0, 0, 0      ; padding
+
 SetPixelFormat16        db 0            ; setPixelformat
                         db 0, 0, 0      ; padding
 .bpp                    db 16           ; bits per pixel
-.depth                  db 15           ; depth
+.depth                  db 16           ; depth
 .big_endian             db 0            ; big-endian flag
 .true_color             db 1            ; true-colour flag
 .red_max                db 0, 31        ; red-max
-.green_max              db 0, 31        ; green-max
+.green_max              db 0, 63        ; green-max
 .blue_max               db 0, 31        ; blue-max
-.red_shif               db 0            ; red-shift
+.red_shift              db 11           ; red-shift
 .green_shift            db 5            ; green-shift
-.blue_shift             db 10           ; blue-shift
+.blue_shift             db 0            ; blue-shift
                         db 0, 0, 0      ; padding
 
 SetPixelFormat8         db 0            ; setPixelformat
                         db 0, 0, 0      ; padding
 .bpp                    db 8            ; bits per pixel
-.depth                  db 6            ; depth
+.depth                  db 8            ; depth
 .big_endian             db 0            ; big-endian flag
 .true_color             db 1            ; true-colour flag
-.red_max                db 0, 3         ; red-max
-.green_max              db 0, 3         ; green-max
+.red_max                db 0, 7         ; red-max
+.green_max              db 0, 7         ; green-max
 .blue_max               db 0, 3         ; blue-max
-.red_shif               db 0            ; red-shift
-.green_shift            db 2            ; green-shift
-.blue_shift             db 4            ; blue-shift
+.red_shift              db 0            ; red-shift
+.green_shift            db 3            ; green-shift
+.blue_shift             db 6            ; blue-shift
                         db 0, 0, 0      ; padding
 
 SetEncodings            db 2            ; setEncodings
@@ -371,12 +403,14 @@ screen:                 ; Remote screen resolution
 .height                 dw ?
 .width                  dw ?
 
-keymap                  rb 128
+keymap                  rw 128
+keymap_shift            rw 128
+keymap_alt              rw 128
 username                rb 128
 password                rb 128
 serveraddr              rb 65536
 receive_buffer          rb RECEIVE_BUFFER_SIZE
-framebuffer_data        rb 1024*1024*3  ; framebuffer
+framebuffer_data        rb 1280*1024*3  ; framebuffer
 
                         rb 0x1000
 thread_stack:

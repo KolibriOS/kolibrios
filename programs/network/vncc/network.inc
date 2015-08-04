@@ -83,11 +83,17 @@ no_security:
         mov     dword[screen], eax
         DEBUGF  1, "Screen width=%u, height=%u\n", [screen.width]:2, [screen.height]:2
 
-        mcall   send, [socketnum], SetPixelFormat8, 20, 0
         DEBUGF  1, "Sending pixel format\n"
+if BITS_PER_PIXEL = 8
+        mcall   send, [socketnum], SetPixelFormat8, 20, 0
+else if BITS_PER_PIXEL = 16
+        mcall   send, [socketnum], SetPixelFormat16, 20, 0
+else
+        mcall   send, [socketnum], SetPixelFormat24, 20, 0
+end if
 
-        mcall   send, [socketnum], SetEncodings, 12, 0
         DEBUGF  1, "Sending encoding info\n"
+        mcall   send, [socketnum], SetEncodings, 12, 0
 
 ; Set main window caption to servername
         mov     ecx, dword[receive_buffer+framebuffer.name_length]
@@ -125,7 +131,6 @@ thread_loop:
         je      bell
         cmp     al, 3
         je      servercuttext
-
 
         DEBUGF  2, "Unknown server command: %u\n", al
         jmp     thread_loop
@@ -201,8 +206,35 @@ setcolourmapentries:
 
         DEBUGF  1, "Server sent SetColourMapEntries message\n"
 
-        ; TODO
+  @@:
+        lea     eax, [esi+5]
+        cmp     [datapointer], eax
+        jae     @f
+        call    read_data.more
+        jmp     @b
+  @@:
 
+        inc     esi             ; padding
+
+        xor     eax, eax
+        lodsw                   ; first color (just ignore for now)
+
+        lodsw                   ; number of colors (use to find end of message)
+        xchg    al, ah
+        lea     eax, [eax*2+eax]
+        shl     eax, 1
+  @@:
+        push    eax
+        add     eax, esi
+        cmp     [datapointer], eax
+        jae     @f
+        call    read_data.more
+        pop     eax
+        jmp     @b
+  @@:
+        pop     eax
+
+        add     esi, eax        ; Just skip it for now.
         jmp     thread_loop
 
 
@@ -248,36 +280,40 @@ read_data:
         mov     esi, receive_buffer
   .more:
         push    ebx ecx edx esi edi
-        mcall   recv, [socketnum], [datapointer], 4096, 0
+        neg     esi
+        add     esi, receive_buffer + RECEIVE_BUFFER_SIZE
+        jz      .buffer_end_reached
+        xor     edi, edi
+        mcall   recv, [socketnum], [datapointer]
         pop     edi esi edx ecx ebx
         cmp     eax, -1
-        je      err_disconnected
+        je      err_sock
+        test    eax, eax
+        jz      err_disconnected
         add     [datapointer], eax
-; Check for buffer overflow
-        cmp     [datapointer], receive_buffer + RECEIVE_BUFFER_SIZE
-        jbe     @f
+        ret
+
+  .buffer_end_reached:
         ; Buffer is full, first needed data by program is pointed to by esi.
-        ; Move all remaining data, starting from esi, to begin of buffer
+        ; Move all usefull data to begin of buffer
         cmp     esi, receive_buffer
         je      err_proto
         mov     ecx, [datapointer]
         sub     ecx, esi
         mov     edi, receive_buffer
         rep movsb
-        mov     [datapointer], edi
-        mov     esi, receive_buffer
-  @@:
-        cmp     eax, 4096
-        je      .more
-        ret
+        mov     [datapointer], edi      ; new end of data
+        mov     esi, receive_buffer     ; new start of data
+        jmp     .more
+
 
 
 wait_for_data:  ; FIXME: add timeout
-        mcall   recv, [socketnum], receive_buffer, 4096, 0
+        mcall   recv, [socketnum], receive_buffer, 4096, 0      ; MSG_DONTWAIT
         cmp     eax, -1
-        je      err_disconnected
+        je      err_sock
         test    eax, eax
-        jz      wait_for_data
+        jz      err_disconnected
         ret
 
 
