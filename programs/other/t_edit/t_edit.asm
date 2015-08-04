@@ -28,6 +28,7 @@ include '../../system/desktop/trunk/unpacker.inc'
 include 'lang.inc'
 
 include 't_data.inc'
+include 't_menu.inc'
 include 'strlen.inc'
 include 't_draw.inc' ;draw main window functions
 include 't_button.inc' ;text work functions
@@ -129,7 +130,6 @@ mov	ebp,lib0
 	
 	stdcall [ksubmenu_new]
 	mov [main_menu_file], eax
-	
 	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_File_New, 3
 	stdcall [ksubmenu_add], [main_menu_file], eax
 	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_File_Open, 4
@@ -139,11 +139,61 @@ mov	ebp,lib0
 	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
 	stdcall [ksubmenu_add], [main_menu_file], eax
 	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_File_Exit, 199
-	stdcall [ksubmenu_add], [main_menu_file], eax
-	
+	stdcall [ksubmenu_add], [main_menu_file], eax	
 	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_File, [main_menu_file]
 	stdcall [ksubmenu_add], [main_menu], eax
 
+	stdcall [ksubmenu_new]
+	mov [main_menu_changes], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Changes_Undo, 16
+	stdcall [ksubmenu_add], [main_menu_changes], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Changes_Redo, 17
+	stdcall [ksubmenu_add], [main_menu_changes], eax
+	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Changes, [main_menu_changes]
+	stdcall [ksubmenu_add], [main_menu], eax
+	
+	stdcall [ksubmenu_new]
+	mov [main_menu_buf], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Buf_Cut, 7
+	stdcall [ksubmenu_add], [main_menu_buf], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Buf_Copy, 8
+	stdcall [ksubmenu_add], [main_menu_buf], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Buf_Paste, 9
+	stdcall [ksubmenu_add], [main_menu_buf], eax	
+	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Buf, [main_menu_buf]
+	stdcall [ksubmenu_add], [main_menu], eax
+
+	; stdcall [ksubmenu_new]
+	; mov [main_menu_search], eax
+	; stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Search_Text, 10
+	; stdcall [ksubmenu_add], [main_menu_search], eax
+	; stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Search_Keywords, 12
+	; stdcall [ksubmenu_add], [main_menu_search], eax
+	; stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Search, [main_menu_search]
+	; stdcall [ksubmenu_add], [main_menu], eax
+
+	stdcall [ksubmenu_new]
+	mov [main_menu_view], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_UseSyntax, 19
+	stdcall [ksubmenu_add], [main_menu_view], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_ChooseSyntax, 20
+	stdcall [ksubmenu_add], [main_menu_view], eax
+	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
+	stdcall [ksubmenu_add], [main_menu_view], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_LineBreak, 18
+	stdcall [ksubmenu_add], [main_menu_view], eax	
+	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_View, [main_menu_view]
+	stdcall [ksubmenu_add], [main_menu], eax
+
+	stdcall [ksubmenu_new]
+	mov [main_menu_encoding], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Encoding_1251to866, 21
+	stdcall [ksubmenu_add], [main_menu_encoding], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Encoding_866to1251, 22
+	stdcall [ksubmenu_add], [main_menu_encoding], eax	
+	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Encoding, [main_menu_encoding]
+	stdcall [ksubmenu_add], [main_menu], eax
+	
 ; init toolbar file
 	load_image_file 'te_icon.png', bmp_icon,TOOLBAR_ICONS_SIZE*2 ;умножение на 2 для серых кнопок
 	mov eax,[bmp_icon]
@@ -480,7 +530,7 @@ button:
 	stdcall [ted_can_save], tedit0
 	cmp al,1
 	jne @f
-		stdcall [mb_create],msgbox_2,thread ;message: save changes in file?
+		stdcall [mb_create],msgbox_2,thread ;message: save buf in file?
 		stdcall [mb_setfunctions],msgbox_2E_funct
 		jmp still
 	@@:
