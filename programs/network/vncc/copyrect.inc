@@ -14,7 +14,7 @@
 
 encoding_CopyRect:
 
-        DEBUGF  1,"CopyRect\n"
+        DEBUGF  2,"CopyRect\n"
 
   @@:
         lea     eax, [esi+4]

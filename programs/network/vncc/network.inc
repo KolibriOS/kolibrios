@@ -127,7 +127,7 @@ thread_loop:
         je      servercuttext
 
 
-        DEBUGF  1, "Unknown server command: %u\n", al
+        DEBUGF  2, "Unknown server command: %u\n", al
         jmp     thread_loop
 
 framebufferupdate:
@@ -187,14 +187,11 @@ rectangle_loop:
 ;        cmp     eax, 16
 ;        je      encoding_ZRLE
 
-        DEBUGF  1, "\nunknown encoding: %u\n", eax
+        DEBUGF  2, "unknown encoding: %u\n", eax
         jmp     thread_loop
 
 next_rectangle:
-        push    esi
-        call    drawbuffer
-        pop     esi
-
+        inc     [update_framebuffer]
         dec     [rectangles]
         jnz     rectangle_loop
         jmp     request_fbu

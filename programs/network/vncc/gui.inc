@@ -25,10 +25,10 @@ draw_gui:
         mov     edi, name                       ; WINDOW LABEL
         mcall
 
-        cmp     [status], STATUS_INITIAL
-        jne     @f
+        cmp     [status], STATUS_CONNECTING
+        ja      @f
 
-        mov     ebx, 25 shl 16 + 15
+        mov     ebx, 25 shl 16 + 14
         xor     ecx, ecx
         mov     edx, serverstr
         mov     esi, userstr-serverstr
@@ -36,13 +36,16 @@ draw_gui:
 
         invoke  edit_box_draw, URLbox           ; Server textbox
 
+        cmp     [status], STATUS_INITIAL
+        jne     .redraw_done
+
         mov     ebx, 220 shl 16 + 85
         mov     ecx, 47 shl 16 + 16
         mov     edx, 2
         mov     esi, 0xCCCCCC
         mcall   8                               ; Connect button
 
-        mov     ebx, 240 shl 16 + 49
+        mov     ebx, 240 shl 16 + 52
         mov     edx, connectstr
         mov     esi, loginstr-connectstr
         mcall   4                               ; Connect button text
@@ -51,18 +54,24 @@ draw_gui:
 
   @@:
         cmp     [status], STATUS_LOGIN
-        jne     @f
+        ja      @f
 
-        mov     ebx, 25 shl 16 + 15
+        mov     ebx, 25 shl 16 + 14
         xor     ecx, ecx
         mov     edx, userstr
         mov     esi, passstr-userstr
         mcall   4                               ; "user" text
 
-        add     bl, 19
+        add     bl, 20
         mov     edx, passstr
         mov     esi, connectstr-passstr         ; "password" text
         mcall
+
+        invoke  edit_box_draw, USERbox          ; username textbox
+        invoke  edit_box_draw, PASSbox          ; password textbox
+
+        cmp     [status], STATUS_REQ_LOGIN
+        jne     .redraw_done
 
         mov     ebx, 220 shl 16 + 85
         mov     ecx, 47 shl 16 + 16
@@ -78,6 +87,9 @@ draw_gui:
         jmp     .redraw_done
 
   @@:
+        cmp     [status], STATUS_DISCONNECTED
+        jb      .redraw_done
+
         mov     ebx, 25 shl 16 + 15
         mov     ecx, 0x80ca0000                 ; red ASCIIZ string
         mov     edx, [status]
@@ -120,6 +132,13 @@ draw_gui:
         je      .connect
         invoke  edit_box_key, URLbox
   @@:
+        cmp     [status], STATUS_REQ_LOGIN
+        jne     .loop
+        cmp     ah, 13                          ; enter (return) key
+        je      .login
+        invoke  edit_box_key, USERbox
+        invoke  edit_box_key, PASSbox
+  @@:
         jmp     .loop
 
   .btn:
@@ -138,24 +157,33 @@ draw_gui:
         mov     eax, [URLbox.pos]
         mov     byte[serveraddr+eax], 0
 
+        mov     [status], STATUS_CONNECTING
+        inc     [update_gui]
+
 ; Create network thread
         mcall   51, 1, thread_start, thread_stack
         cmp     eax, -1
         jne     @f
         mov     [status], STATUS_THREAD_ERR
-        inc     [update_gui]
+;        inc     [update_gui]
   @@:
         jmp     .loop
 
   .login:
-  ;;;
-        ret
+        mov     [status], STATUS_LOGIN
+        inc     [update_gui]
+        jmp     .loop
 
   .mouse:
         mcall   23
         cmp     [status], STATUS_INITIAL
         jne     @f
         invoke  edit_box_mouse, URLbox
+  @@:
+        cmp     [status], STATUS_REQ_LOGIN
+        jne     @f
+        invoke  edit_box_mouse, USERbox
+        invoke  edit_box_mouse, PASSbox
   @@:
         jmp     .loop
 

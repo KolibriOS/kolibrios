@@ -15,7 +15,7 @@
 format binary as ""
 
 __DEBUG__       = 1
-__DEBUG_LEVEL__ = 1
+__DEBUG_LEVEL__ = 2
 
 use32
 
@@ -60,7 +60,7 @@ struct  framebuffer
 ends
 
 xpos                    = 4
-ypos                    = 22
+ypos                    = 21
 
 TIMEOUT                 = 5             ; timeout in seconds
 
@@ -68,8 +68,9 @@ RECEIVE_BUFFER_SIZE     = 8*1024*1024   ; 8 Mib
 
 STATUS_INITIAL          = 0
 STATUS_CONNECTING       = 1
-STATUS_LOGIN            = 2
-STATUS_CONNECTED        = 3
+STATUS_REQ_LOGIN        = 2
+STATUS_LOGIN            = 3
+STATUS_CONNECTED        = 4
 
 STATUS_DISCONNECTED     = 10
 STATUS_DNS_ERR          = 11
@@ -112,6 +113,9 @@ START:
 
         mcall   40, EVM_MOUSE + EVM_MOUSE_FILTER + EVM_KEY + EVM_REDRAW + EVM_BUTTON
 
+        mcall   66, 1, 1                ; Switch keyboard to scancode mode
+        mcall   26, 2, 1, keymap        ; Read keymap
+
 redraw:
         mcall   12, 1
 
@@ -122,15 +126,19 @@ redraw:
         mov     edi, name
         mcall   0                       ; draw window
 
-        call    drawbuffer
-
         mcall   12, 2
+
+draw_framebuffer:
+        mcall   7, framebuffer_data, dword[screen], 0
+        mov     [update_framebuffer], 0
 
 mainloop:
         cmp     [status], STATUS_CONNECTED
         jne     draw_gui
+        cmp     [update_framebuffer], 0
+        jne     draw_framebuffer
 
-        mcall   23, 100                 ; Check for event with 1s timeout
+        mcall   23, 10                  ; Check for event with 0,1s timeout
 
         dec     eax
         jz      redraw
@@ -142,15 +150,24 @@ mainloop:
         jz      mouse
         jmp     mainloop
 
-drawbuffer:
-        mcall   7, framebuffer_data, dword[screen], 0
-        ret
-
 key:
-;        DEBUGF  1, "Sending key event\n"
-
         mcall   2
-        mov     byte[KeyEvent.key+3], ah
+        cmp     ah, 224         ; ext
+        je      mainloop        ;; TODO
+
+        xor     al, al
+        test    ah, 0x80        ; key up?
+        jnz     @f
+        inc     al
+  @@:
+        mov     byte[KeyEvent.down], al
+
+        shr     eax, 8
+        and     al, 0x7f
+        mov     al, [keymap+eax]
+        mov     byte[KeyEvent.key+3], al
+
+        DEBUGF  1, "Sending key: 0x%x\n", al
 
         mcall   send, [socketnum], KeyEvent, 8, 0
         jmp     mainloop
@@ -159,7 +176,6 @@ mouse:
 ;        DEBUGF  1, "Sending mouse event\n"
 
         mcall   37, 1           ; get mouse pos
-        sub     eax, xpos shl 16 + ypos
         bswap   eax
         mov     [PointerEvent.x], ax
         shr     eax, 16
@@ -266,17 +282,20 @@ sockaddr1:
 
 beep            db 0x85, 0x25, 0x85, 0x40, 0
 
-status          dd STATUS_INITIAL
-update_gui      dd 0
-mouse_dd        dd 0
+status                  dd STATUS_INITIAL
+update_gui              dd 0
+mouse_dd                dd 0
+update_framebuffer      dd 0
 
-URLbox          edit_box 200, 25, 16, 0xffffff, 0x6f9480, 0, 0, 0, 65535, serveraddr, mouse_dd, ed_focus, 0, 0
+URLbox          edit_box 235, 70, 10, 0xffffff, 0x6f9480, 0, 0, 0, 65535, serveraddr, mouse_dd, ed_focus, 0, 0
+USERbox         edit_box 150, 70, 10, 0xffffff, 0x6f9480, 0, 0, 0, 127, username, mouse_dd, ed_focus, 0, 0
+PASSbox         edit_box 150, 90, 10, 0xffffff, 0x6f9480, 0, 0, 0, 127, password, mouse_dd, 0, 0, 0
 
 serverstr       db "server:"
 userstr         db "username:"
 passstr         db "password:"
-connectstr      db "connect"
-loginstr        db "login"
+connectstr      db "Connect"
+loginstr        db "Log in"
 loginstr_e:
 
 sz_err_disconnected     db "Server closed connection unexpectedly.", 0
@@ -352,6 +371,9 @@ screen:                 ; Remote screen resolution
 .height                 dw ?
 .width                  dw ?
 
+keymap                  rb 128
+username                rb 128
+password                rb 128
 serveraddr              rb 65536
 receive_buffer          rb RECEIVE_BUFFER_SIZE
 framebuffer_data        rb 1024*1024*3  ; framebuffer
