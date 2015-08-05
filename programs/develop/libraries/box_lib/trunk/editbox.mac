@@ -8,7 +8,7 @@ macro use_editbox_draw
 edit_box:
 .draw:
         pushad
-.draw_1:	
+.draw_1:        
 ;--- рисуем рамку ---
         mov     edi,dword [esp+36]
         call    .draw_border            ; Функция стабильна
@@ -23,7 +23,7 @@ edit_box:
 ;--- рисуем курсор ---
         ;--- может его не надо рисовать ----
         test    word ed_flags,ed_focus
-        jz     	@f
+        jz      @f
         call    .draw_cursor
 @@:
         call    .draw_text
@@ -46,27 +46,27 @@ edit_box_key:
 pushad
         mov     edi,dword [esp+36]
         test    word ed_flags,ed_focus ; если не в фокусе, выходим
-        je      edit_box.editbox_exit
-        test    word ed_flags,ed_mouse_on
-        jne     edit_box.editbox_exit
+        jz      edit_box.editbox_exit
+        test    word ed_flags,ed_mouse_on or ed_disabled
+        jnz     edit_box.editbox_exit
 
 ;--------------------------------------
 ; this code for Win-keys, works with
 ; kernel SVN r.3356 or later
-	push	eax
-	push	ebx
-	mcall	66,3
-	test	ax,0x200	; LWin
-	jnz	.win_key_pressed
-	test	ax,0x400	; RWin
-	jz	@f
+        push    eax
+        push    ebx
+        mcall   66,3
+        test    ax,0x200        ; LWin
+        jnz     .win_key_pressed
+        test    ax,0x400        ; RWin
+        jz      @f
 .win_key_pressed:
-	pop	ebx
-	pop	eax
-	jmp	edit_box.editbox_exit
+        pop     ebx
+        pop     eax
+        jmp     edit_box.editbox_exit
 @@:
-	pop	ebx
-	pop	eax
+        pop     ebx
+        pop     eax
 ;--------------------------------------
 ;Проверка нажат shift ?
         call    edit_box_key.check_shift_ctrl_alt
@@ -89,14 +89,14 @@ pushad
         jz      edit_box_key.insert
 ; комбинации Ctrl + клавиша
         test    word ed_flags,ed_ctrl_on
-        jz     	@f
+        jz      @f
 ; проверка сканкода
         ror     eax,8
         cmp     ah,46 ; Ctrl + C
         je      edit_box_key.ctrl_c
         cmp     ah,47 ; Ctrl + V
         je      edit_box_key.ctrl_v
-	rol     eax,8
+        rol     eax,8
 @@:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Заглушка на обработку клавиш вверх и вниз т.е. при обнаружении этих кодов происходит выход из обработчика
@@ -130,6 +130,8 @@ macro use_editbox_mouse
 edit_box_mouse:
 pushad
         mov     edi,dword [esp+36]
+        test    word ed_flags,ed_disabled
+        jnz     edit_box.editbox_exit
 ;debug
 ;----------------------------------------------------------
 ;--- получаем состояние кнопок мыши -----------------------
@@ -141,9 +143,9 @@ pushad
         test    eax,1
         jnz     edit_box_mouse.mouse_left_button
         and     word ed_flags,ed_mouse_on_off
-	mov	ebx,dword ed_mouse_variable
-	push	0
-	pop	dword [ebx]
+        mov     ebx,dword ed_mouse_variable
+        push    0
+        pop     dword [ebx]
 ;        mov     dword [ebx],ebx
         jmp     edit_box.editbox_exit
 .mouse_left_button:
@@ -151,8 +153,8 @@ pushad
 ;--- блокировка от фокусировки в других боксах при попадании на них курсора
 ;----------------------------------------------------------
         mov     eax,dword ed_mouse_variable
-	push	dword [eax]
-	pop	eax
+        push    dword [eax]
+        pop     eax
         test    eax,eax
         jz      @f
         cmp     eax,edi
@@ -224,10 +226,10 @@ edit_box.draw_text:
         mov     ecx,ed_text_color
         add     ebx,4
         add     edx,ed_text
-		test    word ed_flags,ed_pass
-		jz      @f
-		call    edit_box.draw_password
-		jmp     .end_f
+                test    word ed_flags,ed_pass
+                jz      @f
+                call    edit_box.draw_password
+                jmp     .end_f
 @@:
         mcall
 .end_f:
@@ -237,20 +239,20 @@ txt_pass db '*',0
 
 proc edit_box.draw_password
 locals
-	s_len dw ? ;длина выводимого текста
+        s_len dw ? ;длина выводимого текста
 endl
-	cmp esi,1
-	jl .end_f ;если строка пустая
-	mov [s_len],si
-	xor esi,esi
-	inc esi
-	lea edx,[txt_pass]
+        cmp esi,1
+        jl .end_f ;если строка пустая
+        mov [s_len],si
+        xor esi,esi
+        inc esi
+        lea edx,[txt_pass]
 @@:
-	mcall
-	add ebx,6 shl 16 ;добавляем стандартную ширину символа
-	dec word[s_len]
-	cmp word[s_len],0
-	jg @b
+        mcall
+        add ebx,6 shl 16 ;добавляем стандартную ширину символа
+        dec word[s_len]
+        cmp word[s_len],0
+        jg @b
 .end_f:
 ret
 endp
@@ -265,6 +267,10 @@ edit_box.draw_bg:
         mov     ebx,ed_left
         add     ebx,1
         mov     edx,ed_color
+        test    word ed_flags, ed_disabled
+        jz      @f
+        mov     edx, 0x00cacaca         ; TODO: add new value disabled_color to editbox struct
+  @@:
         shl     ebx,16
         add     ebx,ed_width
         sub     ebx,1
@@ -398,7 +404,7 @@ pushad
         jmp     edit_box.chk_d
 
 edit_box.sub_8:
-	test    ecx,ecx
+        test    ecx,ecx
         jz      edit_box.sub_min
         cmp     ebx,8
         jbe     edit_box.sub_min
@@ -424,25 +430,25 @@ edit_ex
 align 4
 proc edit_box_set_text, edit:dword, text:dword
 pushad
-	mov edi,dword[edit]
-	mov ecx,ed_max
-	inc ecx ;учитываем будущее обрезание строки для ascii 0
-	mov edi,dword[text]
-	xor al,al
-	cld
-	repne scasb ;поиск в строке edi символа al
-	mov ecx,edi ;ecx = text + мин. значение из: 1) ed_max или 2) длины строки text
+        mov edi,dword[edit]
+        mov ecx,ed_max
+        inc ecx ;учитываем будущее обрезание строки для ascii 0
+        mov edi,dword[text]
+        xor al,al
+        cld
+        repne scasb ;поиск в строке edi символа al
+        mov ecx,edi ;ecx = text + мин. значение из: 1) ed_max или 2) длины строки text
 
-	mov edi,dword[edit]
-	mov esi,dword[text]
-	sub ecx,esi ;ecx = длина строки text (но не больше чем ed_max)
-	dec ecx
-	mov ed_size,ecx ;ставим новый размер строки
-	mov ed_pos,ecx ;ставим курсор в конец новой строки
-	and word ed_flags,ed_shift_cl ;снимаем выделение если оно было
-	mov edi,ed_text
-	repne movsb ;копирование текстовой строки text в edit_box
-	mov byte[edi],0 ;ставим ascii 0 в конце строки
+        mov edi,dword[edit]
+        mov esi,dword[text]
+        sub ecx,esi ;ecx = длина строки text (но не больше чем ed_max)
+        dec ecx
+        mov ed_size,ecx ;ставим новый размер строки
+        mov ed_pos,ecx ;ставим курсор в конец новой строки
+        and word ed_flags,ed_shift_cl ;снимаем выделение если оно было
+        mov edi,ed_text
+        repne movsb ;копирование текстовой строки text в edit_box
+        mov byte[edi],0 ;ставим ascii 0 в конце строки
 popad
 ret
 endp
@@ -462,7 +468,7 @@ edit_box_key.shift: ;;;;;;;SHIFT
         jmp     edit_box.draw_cursor_text
 ;;;;;;;;;;;;;;;;;;;;;
 edit_box_key.f_exit:
-	call	edit_box.check_offset
+        call    edit_box.check_offset
         and     word ed_flags,ed_shift_cl
         call    edit_box_key.enable_null
         jmp     edit_box.draw_cursor_text
@@ -480,7 +486,7 @@ edit_box_key.sh_cl_:
         jmp     edit_box_key.sh_n1
                      ;если иначе
 edit_box_key.sh_n:
-	push    ebx
+        push    ebx
         push    eax
 edit_box_key.sh_n1:
         call    edit_box.check_offset
@@ -663,7 +669,7 @@ edit_box_key.sh_home_end:
         jmp     edit_box_key.sh_e_end
 edit_box_key.sh_exit_:
         call    edit_box.draw_bg
-	call    edit_box.check_offset
+        call    edit_box.check_offset
         ret
 ;функция внесения 0 по адресу ed_size+1
 edit_box_key.enable_null:
@@ -799,12 +805,12 @@ pusha   ;сохраним все регистры
         or      word ed_flags,ed_shift   ;установим флаг Shift
 @@:
         and     word ed_flags,ed_ctrl_off ; очистим флаг Ctrl
-	test    al,1100b
+        test    al,1100b
         je      @f
         or      word ed_flags,ed_ctrl_on   ;установим флаг Ctrl
 @@:
         and     word ed_flags,ed_alt_off ; очистим флаг Alt
-	test    al,110000b
+        test    al,110000b
         je      @f
         or      word ed_flags,ed_alt_on   ;установим флаг Alt
 @@:edit_ex
@@ -938,7 +944,7 @@ popa
         ;--------
         loop    @b
 edit_box_key.In_k:
-	cld
+        cld
         pop eax
         mov al,ah
         stosb
@@ -962,7 +968,7 @@ edit_box_key.insert: test   word ed_flags,ed_insert ;not    word ed_insert
         jmp     edit_box.editbox_exit
 edit_box_key.ins_v:
 ;        dec     dword [ebp+48];ed_size    ;processing is insert
-	dec	dword bp_size
+        dec     dword bp_size
         sub     esi,ecx
         add     esi,ebx
         mov     edi,esi
@@ -1035,7 +1041,7 @@ edit_box_key.draw_all2:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;--- нажата клавиша left ---
 edit_box_key.left:
-	mov     ebx,ed_pos
+        mov     ebx,ed_pos
         test    ebx,ebx
         jz      edit_box_key.sh_st_of
         or      word ed_flags,ed_left_fl
@@ -1046,7 +1052,7 @@ edit_box_key.left:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;--- нажата клавиша right ---
 edit_box_key.right:
-	mov     ebx,ed_pos
+        mov     ebx,ed_pos
         cmp     ebx,ed_size
         je      edit_box_key.sh_st_of
         and     word ed_flags,ed_right_fl
@@ -1077,106 +1083,106 @@ edit_box_key.end:
 ;-----------------------------------------------------------------------------
 edit_box_key.ctrl_c:
 ; add memory area
-	mov	ecx,ed_size
-	add	ecx,3*4
-	mcall	68,12
+        mov     ecx,ed_size
+        add     ecx,3*4
+        mcall   68,12
 ; building the clipboard slot header
-	xor	ecx,ecx
-	mov	[eax+4],ecx ; type 'text'
-	inc	ecx
-	mov	[eax+8],ecx ; cp866 text encoding
-	mov	ecx,ed_size
-	add	ecx,3*4
-	mov	[eax],ecx
-	sub	ecx,3*4
+        xor     ecx,ecx
+        mov     [eax+4],ecx ; type 'text'
+        inc     ecx
+        mov     [eax+8],ecx ; cp866 text encoding
+        mov     ecx,ed_size
+        add     ecx,3*4
+        mov     [eax],ecx
+        sub     ecx,3*4
 ; copy data
-	mov	esi,ed_text
-	push	edi
-	mov	edi,eax
-	add	edi,3*4
-	cld
-	rep	movsb
-	pop	edi
+        mov     esi,ed_text
+        push    edi
+        mov     edi,eax
+        add     edi,3*4
+        cld
+        rep     movsb
+        pop     edi
 ; put slot to the kernel clipboard
-	mov	edx,eax
-	mov	ecx,[edx]
-	push	eax
-	mcall	54,2
-	pop	ecx
+        mov     edx,eax
+        mov     ecx,[edx]
+        push    eax
+        mcall   54,2
+        pop     ecx
 ; remove unnecessary memory area
-	mcall	68,13
+        mcall   68,13
 ;--------------------------------------
 .exit:
         jmp     edit_box.editbox_exit
 ;-----------------------------------------------------------------------------
 edit_box_key.ctrl_v:
-	mcall	54,0
+        mcall   54,0
 ; no slots of clipboard ?
-	test	eax,eax
-	jz	.exit
-; main list area not found ?	
-	inc	eax
-	test	eax,eax
-	jz	.exit
+        test    eax,eax
+        jz      .exit
+; main list area not found ?    
+        inc     eax
+        test    eax,eax
+        jz      .exit
 
-	sub	eax,2
-	mov	ecx,eax
-	mcall	54,1
+        sub     eax,2
+        mov     ecx,eax
+        mcall   54,1
 ; main list area not found ?
-	inc	eax
-	test	eax,eax
-	jz	.exit
+        inc     eax
+        test    eax,eax
+        jz      .exit
 ; error ?
-	sub	eax,2
-	test	eax,eax
-	jz	.exit
+        sub     eax,2
+        test    eax,eax
+        jz      .exit
 
-	inc	eax
+        inc     eax
 ; check contents of container
-	mov	ebx,[eax+4]
+        mov     ebx,[eax+4]
 ; check for text
-	test	ebx,ebx
-	jnz	.no_valid_text
-	
-	mov	ebx,[eax+8]
+        test    ebx,ebx
+        jnz     .no_valid_text
+        
+        mov     ebx,[eax+8]
 ; check for cp866
-	cmp	bl,1
-	jnz	.no_valid_text
-	
-	mov	ecx,[eax]
-	sub	ecx,3*4
-	cmp	ecx,ed_max
-	jb	@f
-	
-	mov	ecx,ed_max
+        cmp     bl,1
+        jnz     .no_valid_text
+        
+        mov     ecx,[eax]
+        sub     ecx,3*4
+        cmp     ecx,ed_max
+        jb      @f
+        
+        mov     ecx,ed_max
 @@:
-	mov	esi,eax
-	add	esi,3*4
-	mov	ed_size,ecx
-	mov	ed_pos,ecx
-	push	eax edi
-	mov	edi,ed_text
-	cld
+        mov     esi,eax
+        add     esi,3*4
+        mov     ed_size,ecx
+        mov     ed_pos,ecx
+        push    eax edi
+        mov     edi,ed_text
+        cld
 @@:
-	lodsb
-	cmp	al,0x0d	; EOS (end of string)
-	je	.replace	
+        lodsb
+        cmp     al,0x0d ; EOS (end of string)
+        je      .replace        
 
-	cmp	al,0x0a ; EOS (end of string)
-	jne	.continue
+        cmp     al,0x0a ; EOS (end of string)
+        jne     .continue
 .replace:
-	mov	al,0x20 ; space
-.continue:	
-	stosb
-	dec	ecx
-	jnz	@b
-;	rep	movsb
-	pop	edi eax
-;--------------------------------------	
+        mov     al,0x20 ; space
+.continue:      
+        stosb
+        dec     ecx
+        jnz     @b
+;       rep     movsb
+        pop     edi eax
+;-------------------------------------- 
 .no_valid_text:
 ; remove unnecessary memory area
-	mov	ecx,eax
-	mcall	68,13
+        mov     ecx,eax
+        mcall   68,13
 ;--------------------------------------
 .exit:
         jmp     edit_box.draw_1
@@ -1348,9 +1354,9 @@ edit_box_mouse._mshift:
 
 ;        mov     dword [mouse_flag],edi          ;установим идентификатор
 
-       	mov	ebx,dword ed_mouse_variable
-	push	edi
-	pop	dword [ebx]
+        mov     ebx,dword ed_mouse_variable
+        push    edi
+        pop     dword [ebx]
 
 
 
@@ -1366,7 +1372,7 @@ edit_box_mouse._mshift:
         call    edit_box_key.sh_cl_
         or      word ed_flags,ed_mous_adn_b     ;установим бит, что мы выделили +shift_on +
 edit_box_mouse.m_sh:
-	call    edit_box.draw_text
+        call    edit_box.draw_text
         call    edit_box.draw_cursor
 ;----------------------------------------------------------
 ;--- процедура установки фокуса ---------------------------
