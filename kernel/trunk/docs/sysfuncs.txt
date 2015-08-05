@@ -199,33 +199,29 @@ Parameters:
   * ebx = [coordinate on axis x]*65536 + [coordinate on axis y]
   * ecx = 0xXYRRGGBB, where
     * RR, GG, BB specify text color
-    * X=ABnn (bits):
-      * nn specifies the used font: 0=system monospaced,
-        1=system font of variable width
-      * A=0 - output esi characters, A=1 - output ASCIIZ-string
+    * X = ABFF (bits):
+      * A=1 - output zero terminated string
       * B=1 - fill background with the color edi
-    * Y = Cnnn
+      * FF specifies the font and encoding:
+        0 = 6x9  cp866
+        2 = 8x16 UTF-16LE
+        3 = 8x16 UTF-8
+    * Y = CDDD (bits):
       * C=1 redirect the output to the user area, specified in edi
-      * nnn - not used in the current, must be 0 (zero)
+      * DDD = (size multiplier)-1, so 0 = x1, 7 = x8
   * edx = pointer to the beginning of the string
-  * esi = for A=0 length of the string, must not exceed 255;
-          for A=1 is ignored
-  * edi = color to fill background, if B=1
-  * edi = pointer to user area, for redirect, if C=1
+  * esi = for A=0 length of the string, for A=1 is ignored
+  * edi = for B=1 color to fill background,
+          for C=1 pointer to user area for redirect
 
 Returned value:
   * function does not return value
 Remarks:
-  * First system font is read out at loading from the file char.mt,
-    second - from char2.mt.
-  * Both fonts have height 9 pixels, width of the monospaced font
-    is equal to 6 pixels.
   * C=1, pixel depth = 32 bits, user area is as follows:
-    dword Xsize
-    dword Ysize
-    rest of the area = Xsize * Y size * 4
-  * You can not use B = 1 and C = 1, at the same time. Since in both
-    cases, the register edi is used for different purposes.
+    Xsize = dword
+    Ysize = dword
+    rest of the area = Xsize*Ysize*4
+  * You can not use B=1 and C=1 at the same time, since both use edi.
 
 ======================================================================
 ========================= Function 5 - delay. ========================
@@ -2072,6 +2068,14 @@ Remarks:
     on ramdisk.
   * User can change the skin statically by creating hisself
     'default.skn' or dynamically with the application 'desktop'.
+
+======================================================================
+======== Function 48, subfunction 9 - font smoothing setting. ========
+======================================================================
+Parameters:
+  * eax = 48 - function number
+  * ebx = 9 - subfunction number
+  * cl=0 - turn off font smoothing, else - turn on
 
 ======================================================================
 =========== Function 49 - Advanced Power Management (APM). ===========
