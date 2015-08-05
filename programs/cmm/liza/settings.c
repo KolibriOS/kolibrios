@@ -12,10 +12,10 @@ unsigned char POP_server1[128]="pop.server.com";
 unsigned char POP_server_port1[5]="110";
 unsigned char SMTP_server1[128]="smtp.server.com";
 unsigned char SMTP_server_port1[5]="25";
-edit_box POP_server_box        = {210,190,90 ,0xffffff,0x94AECE,0xffc90E,0xffffff,0,sizeof(POP_server1),#POP_server1,#mouse_opt,0};
-edit_box POP_server_port_box   = {210,190,115,0xffffff,0x94AECE,0xffc90E,0xffffff,0,5,#POP_server_port1,#mouse_opt,0b1000000000000000};
-edit_box SMTP_server_box       = {210,190,140,0xffffff,0x94AECE,0xffc90E,0xffffff,0,sizeof(SMTP_server1),#SMTP_server1,#mouse_opt,0};
-edit_box SMTP_server_port_box  = {210,190,165,0xffffff,0x94AECE,0xffc90E,0xffffff,0,5,#SMTP_server_port1,#mouse_opt,0b1000000000000000};
+edit_box POP_server_box        = {210,190,90 ,0xffffff,0x94AECE,0xffc90E,0xCACACA,0,sizeof(POP_server1),#POP_server1,#mouse_opt,100000000000b};
+edit_box POP_server_port_box   = {210,190,115,0xffffff,0x94AECE,0xffc90E,0xCACACA,0,5,#POP_server_port1,#mouse_opt,100000000000b};
+edit_box SMTP_server_box       = {210,190,140,0xffffff,0x94AECE,0xffc90E,0xCACACA,0,sizeof(SMTP_server1),#SMTP_server1,#mouse_opt,100000000000b};
+edit_box SMTP_server_port_box  = {210,190,165,0xffffff,0x94AECE,0xffc90E,0xCACACA,0,5,#SMTP_server_port1,#mouse_opt,100000000000b};
 
 
 void SettingsDialog()
@@ -35,7 +35,6 @@ void SettingsDialog()
 		{
 			case evMouse:
 				IF (GetProcessSlot(Form.ID)-GetActiveProcess()!=0) break;
-				if (checked[1]==0) break;
 				edit_box_mouse stdcall(#POP_server_box);
 				edit_box_mouse stdcall(#POP_server_port_box);
 				edit_box_mouse stdcall(#SMTP_server_box);
@@ -50,7 +49,17 @@ void SettingsDialog()
 				{
 					if (checked[id-17]==1) break;
 					checked[0]><checked[1];
-					if (checked[1]) POP_server_box.flags = 0b10;
+					if (checked[1]) {
+						POP_server_box.flags = 0b10;
+						POP_server_port_box.flags = SMTP_server_box.flags = SMTP_server_port_box.flags = 0b;
+						POP_server_box.blur_border_color = POP_server_box.blur_border_color = POP_server_port_box.blur_border_color =
+						 SMTP_server_box.blur_border_color = SMTP_server_port_box.blur_border_color = 0xFFFfff;
+					}
+					else {
+						POP_server_box.flags = POP_server_box.flags = POP_server_port_box.flags = SMTP_server_box.flags = SMTP_server_port_box.flags = 100000000000b;
+						POP_server_box.blur_border_color = POP_server_box.blur_border_color = POP_server_port_box.blur_border_color =
+						 SMTP_server_box.blur_border_color = SMTP_server_port_box.blur_border_color = 0xCACACA;
+					}
 					OptionsWindow();
 				}
 				if (id==20)

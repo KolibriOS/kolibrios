@@ -67,11 +67,8 @@ void Downloader()
 
 			case evKey:
 				key = GetKey();
-				if (DL_address_box.flags & 0b10)
-				{
-					EAX=key<<8; 
-					edit_box_key stdcall(#DL_address_box);
-				}
+				EAX=key<<8; 
+				edit_box_key stdcall(#DL_address_box);
 				if (key==13) DL_Scan(301);
 				break;
 
@@ -208,7 +205,8 @@ void StopDownloading()
 		DL_bufpointer = mem_Free(DL_bufpointer);
 		downloaded_size = full_size = 0;
 	}
-	DL_address_box.color = DL_address_box.blur_border_color = DL_address_box.focus_border_color = 0xFFFfff;
+	DL_address_box.color = DL_address_box.blur_border_color = 0xFFFfff;
+	DL_address_box.flags = 10b;
 	DL_Draw_Window();
 }
 
@@ -218,7 +216,8 @@ void StartDownloading()
 	if (strncmp(#DL_URL,"http:",5)==0)
 	{
 		download_state = STATE_IN_PROGRESS;
-		DL_address_box.color = DL_address_box.blur_border_color = DL_address_box.focus_border_color = 0xdddDDD;
+		DL_address_box.color = DL_address_box.blur_border_color = 0xCACACA;
+		DL_address_box.flags = 100000000000b;
 		http_get stdcall (#DL_URL, 0, 0, #accept_language);
 		DL_http_transfer = EAX;
 		DL_progress_bar.value = 0;
