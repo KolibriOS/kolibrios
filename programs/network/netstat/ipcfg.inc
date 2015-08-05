@@ -152,17 +152,10 @@ ipcfg:
         dec     eax
         jz      .btn
 
-        cmp     [edit_ip.color], 0xcacaca
-        je      @f
         invoke  edit_box_mouse, edit_ip
         invoke  edit_box_mouse, edit_subnet
         invoke  edit_box_mouse, edit_gateway
-  @@:
-
-        cmp     [edit_dns.color], 0xcacaca
-        je      @f
         invoke  edit_box_mouse, edit_dns
-  @@:
 
         push    [option_ip] [option_dns]
         invoke  option_box_mouse, Option_boxs1
@@ -189,8 +182,8 @@ ipcfg:
   .apply:
         xor     edi, edi
 
-        cmp     [edit_ip.color], 0xcacaca
-        je      .skip_ip
+        cmp     [option_ip], op_ip_static
+        jne     .skip_ip
         mov     [edit_ip.color], 0xffffff
         mov     esi, str_edit_ip
         call    validate_ip
@@ -219,8 +212,8 @@ ipcfg:
   @@:
   .skip_ip:
 
-        cmp     [edit_dns.color], 0xcacaca
-        je      .skip_dns
+        cmp     [option_dns], op_dns_static
+        jne     .skip_dns
         mov     [edit_dns.color], 0xffffff
         mov     esi, str_edit_dns
         call    validate_ip
@@ -272,7 +265,7 @@ ipcfg:
   .key:
         mcall   2
 
-; Stupid editbox doesnt allow us to disable edit boxes nor filter input decently, so we do it here.
+; Editbox doesnt allow us to filter input decently, so we do it here.
         cmp     ah, 13
         je      .apply
         cmp     ah, 8
@@ -284,38 +277,31 @@ ipcfg:
         cmp     ah, '9'
         ja      .loop
   @@:
-        cmp     [edit_ip.color], 0xffffff
-        jne     @f
         invoke  edit_box_key, edit_ip
         invoke  edit_box_key, edit_subnet
         invoke  edit_box_key, edit_gateway
-  @@:
-
-        cmp     [edit_dns.color], 0xffffff
-        jne     @f
         invoke  edit_box_key, edit_dns
-  @@:
 
         jmp     .loop
 
 toggle_editboxes:
 
-        mov     [edit_ip.color], 0xffffff
-        mov     [edit_subnet.color], 0xffffff
-        mov     [edit_gateway.color], 0xffffff
+        and     [edit_ip.flags], not ed_disabled
+        and     [edit_subnet.flags], not ed_disabled
+        and     [edit_gateway.flags], not ed_disabled
         cmp     [option_ip], op_ip_static
         je      @f
-        mov     [edit_ip.color], 0xcacaca
-        mov     [edit_subnet.color], 0xcacaca
-        mov     [edit_gateway.color], 0xcacaca
+        or      [edit_ip.flags], ed_disabled
+        or      [edit_subnet.flags], ed_disabled
+        or      [edit_gateway.flags], ed_disabled
   @@:
 
-        mov     [edit_dns.color], 0xcacaca
+        or      [edit_dns.flags], ed_disabled
         cmp     [option_ip], op_ip_disabled
         je      @f
         cmp     [option_dns], op_dns_static
         jne     @f
-        mov     [edit_dns.color], 0xffffff
+        and     [edit_dns.flags], not ed_disabled
   @@:
 
         ret
