@@ -50,18 +50,18 @@ void about_dialog()
 				break;
 				
 		case evReDraw:
-				DefineAndDrawWindow(Form.left+Form.width/2,Form.top+Form.height/2-114,300,228+GetSkinHeight(),0x34,system.color.work,INTRO_TEXT_1);
+				DefineAndDrawWindow(Form.left+Form.width/2,Form.top+Form.height/2-114,300,248+GetSkinHeight(),0x34,system.color.work,INTRO_TEXT_1);
 				GetProcessInfo(#about_form, SelfInfo);
 				if (Form.status_window>2) break;
 				DrawBar(0,0,about_form.cwidth,50,0x8494C4);
-				PutPaletteImage(#logo,85,85,about_form.width/2-43,7,8,#logo_pal);
-				WriteTextB(about_form.width/2-46,100,0x90,0xBF40BF,ABOUT_TITLE);
-				WriteTextCenter(0,120,about_form.cwidth,0,INTRO_TEXT_2);			
-				WriteTextCenter(0,130,about_form.cwidth,0,"Leency Veliant PunkJoker Pavelyakov"); 
-				WriteTextCenter(0,140,about_form.cwidth,0,"KolibriOS Team");
-				WriteTextCenter(0,150,about_form.cwidth,0,"2008-2015");
-				WriteTextCenter(10,170,about_form.width-125,0,INTRO_TEXT_3);			
-				DrawLink(about_form.width/2-15,170,0x80,23, "kolibri-n.org");
-				DrawFlatButton(about_form.width/2-35,about_form.height-60,70,22,10,0xE4DFE1, INTRO_TEXT_4);
+				PutPaletteImage(#logo,85,85,about_form.cwidth/2-43,7,8,#logo_pal);
+				WriteTextB(about_form.cwidth/2-66,100,0x81,0xBF40BF,ABOUT_TITLE);
+				WriteTextCenter(0,130,about_form.cwidth,0,INTRO_TEXT_2);			
+				WriteTextCenter(0,143,about_form.cwidth,0,"Leency Veliant PunkJoker Pavelyakov"); 
+				WriteTextCenter(0,156,about_form.cwidth,0,"KolibriOS Team");
+				WriteTextCenter(0,169,about_form.cwidth,0,"2008-2015");
+				WriteTextCenter(10,182,about_form.width-125,0,INTRO_TEXT_3);			
+				DrawLink(about_form.cwidth/2-15,182,0x80,23, "kolibri-n.org");
+				DrawFlatButton(about_form.cwidth/2-35,about_form.cheight-35,70,22,10,0xE4DFE1, INTRO_TEXT_4);
 	}
 }

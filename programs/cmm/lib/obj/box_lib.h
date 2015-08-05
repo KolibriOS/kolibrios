@@ -145,8 +145,25 @@ struct menu_data
 };
 
 struct edit_box{
-dword width, left, top, color, shift_color, focus_border_color, blur_border_color,
-text_color, max, text, mouse_variable, flags, size, pos, offset, cl_curs_x, cl_curs_y, shift, shift_old;
+dword width, 
+	left,
+	top, 
+	color, 
+	shift_color, 
+	focus_border_color, 
+	blur_border_color,
+	text_color,
+	max,
+	text,
+	mouse_variable,
+	flags,
+	size,
+	pos,
+	offset,
+	cl_curs_x,
+	cl_curs_y,
+	shift,
+	shift_old;
 };
 
 struct checkbox2

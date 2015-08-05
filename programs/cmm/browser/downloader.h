@@ -17,12 +17,9 @@
 #endif
 
 proc_info DL_Form;
-char DL_URL[10000];
-dword DL_bufpointer, DL_bufsize, DL_http_transfer, DL_http_buffer;
 char filepath[4096];
-int downloaded_size, full_size;
 int	mouse_twbi;
-edit_box DL_address_box = {250,20,20,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(DL_URL),#DL_URL,#mouse_twbi,2,19,19};
+edit_box dl_edit = {250,20,20,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(DL_URL),#DL_URL,#mouse_twbi,2,19,19};
 progress_bar DL_progress_bar = {0, 170, 51, 225, 12, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
 
 char save_to[4096] = "/tmp0/1/Downloads/";
@@ -30,26 +27,19 @@ byte cleft = 15;
 
 byte downloader_opened;
 
-byte download_state;
-enum { STATE_NOT_STARTED, STATE_IN_PROGRESS, STATE_COMPLETED };
-
 
 void Downloader()
 {
-	int key, btn;
-	
+	int key;
 	char notify_message[4296];
-	
-	if (DL_URL[0]) {
-		StartDownloading();
-	}
-	else strcpy(#DL_URL, "http://");
-	DL_address_box.size = DL_address_box.pos = DL_address_box.shift = DL_address_box.shift_old = strlen(#DL_URL);
-
-	downloaded_size = full_size = 0;
 	downloader_opened = 1;
-
 	SetEventMask(0x27);
+	
+	if (DL_URL[0]) StartDownloading(); else strcpy(#DL_URL, "http://");
+	dl_edit.size = dl_edit.pos = dl_edit.shift = dl_edit.shift_old = strlen(#DL_URL);
+
+	Downloading_SetDefaults();
+
 	loop()
 	{
 		WaitEventTimeout(40);
@@ -57,18 +47,17 @@ void Downloader()
 		{
 			CASE evMouse:
 				if (!CheckActiveProcess(DL_Form.ID)) break;
-				if (DL_http_transfer <= 0) edit_box_mouse stdcall (#DL_address_box);
+				edit_box_mouse stdcall (#dl_edit);
 				break;
 
 			case evButton:
-				btn=GetButtonID();
-				DL_Scan(btn);
+				DL_Scan(GetButtonID());
 				break;
 
 			case evKey:
 				key = GetKey();
 				EAX=key<<8; 
-				edit_box_key stdcall(#DL_address_box);
+				edit_box_key stdcall(#dl_edit);
 				if (key==13) DL_Scan(301);
 				break;
 
@@ -95,28 +84,20 @@ void Downloader()
 				}
 				$pop EAX
 				if (EAX == 0) {
-					ESI = DL_http_transfer;
-					DL_bufpointer = ESI.http_msg.content_ptr;
-					DL_bufsize = ESI.http_msg.content_received;
-					http_free stdcall (DL_http_transfer);
-					DL_http_transfer=0;
+					Downloading_Completed();
 					strcpy(#filepath, #save_to);
 					strcat(#filepath, #DL_URL+strrchr(#DL_URL, '/'));
 					if (WriteFile(DL_bufsize, DL_bufpointer, #filepath)==0)
 					{
-						strcpy(#notify_message, FILE_SAVED_AS);
-						strcat(#notify_message, #filepath);
-						strcat(#notify_message, "' -Dt");	
+						sprintf(#notify_message, "%s%s%s",FILE_SAVED_AS,#filepath,"' -Dt");
 					}
 					else
 					{
-						strcpy(#notify_message, "'Download manager\nError! Can\96t save file as ");
-						strcat(#notify_message, #filepath);
-						strcat(#notify_message, "' -Et");
+						sprintf(#notify_message, "%s%s%s","'Download manager\nError! Can\96t save file as ",#filepath,"' -Et");
 					}
 					notify(#notify_message);
-					DL_address_box.color = DL_address_box.blur_border_color = DL_address_box.focus_border_color = 0xFFFfff;
-					download_state = STATE_COMPLETED;
+					dl_edit.blur_border_color = 0xFFFfff;
+					dl_edit.flags = 10b;
 					DL_Draw_Window();
 					break;
 				}
@@ -149,13 +130,13 @@ void DL_Draw_Window()
 		DrawCaptButton(cleft+140, 50, 110, 27, 305, system.color.work_button, system.color.work_button_text, SHOW_IN_FOLDER);
 		DrawCaptButton(cleft+260, 50, 120, 27, 306, system.color.work_button, system.color.work_button_text, OPEN_FILE);	
 	} 
-	WriteText(cleft, DL_address_box.top + 4, 0x80, system.color.work_text, "URL:");
-	DL_address_box.left = strlen("URL:")*6 + 10 + cleft;
-	DL_address_box.width = DL_Form.cwidth - DL_address_box.left - cleft - 3;
-	DL_address_box.offset=0;
-	edit_box_draw stdcall(#DL_address_box);
-	DrawRectangle(DL_address_box.left-1, DL_address_box.top-1, DL_address_box.width+2, 16, DL_address_box.color);
-	DrawRectangle(DL_address_box.left-2, DL_address_box.top-2, DL_address_box.width+4, 18, border_color);
+	WriteText(cleft, dl_edit.top + 4, 0x80, system.color.work_text, "URL:");
+	dl_edit.left = strlen("URL:")*6 + 10 + cleft;
+	dl_edit.width = DL_Form.cwidth - dl_edit.left - cleft - 3;
+	dl_edit.offset=0;
+	edit_box_draw stdcall(#dl_edit);
+	DrawRectangle(dl_edit.left-1, dl_edit.top-1, dl_edit.width+2, 16, dl_edit.blur_border_color);
+	DrawRectangle(dl_edit.left-2, dl_edit.top-2, dl_edit.width+4, 18, border_color);
 }
 
 
@@ -191,22 +172,9 @@ void DL_Scan(int id)
 
 void StopDownloading()
 {
-	download_state = STATE_NOT_STARTED;
-	if (DL_http_transfer<>0)
-	{
-		EAX = DL_http_transfer;
-		EAX = EAX.http_msg.content_ptr;		// get pointer to data
-		$push	EAX							// save it on the stack
-		http_free stdcall (DL_http_transfer);	// abort connection
-		$pop	EAX							
-		mem_Free(EAX);						// free data
-		DL_http_transfer=0;
-		DL_bufsize = 0;
-		DL_bufpointer = mem_Free(DL_bufpointer);
-		downloaded_size = full_size = 0;
-	}
-	DL_address_box.color = DL_address_box.blur_border_color = 0xFFFfff;
-	DL_address_box.flags = 10b;
+	Downloading_Stop();
+	dl_edit.blur_border_color = 0xFFFfff;
+	dl_edit.flags = 10b;
 	DL_Draw_Window();
 }
 
@@ -215,11 +183,9 @@ void StartDownloading()
 	StopDownloading();
 	if (strncmp(#DL_URL,"http:",5)==0)
 	{
-		download_state = STATE_IN_PROGRESS;
-		DL_address_box.color = DL_address_box.blur_border_color = 0xCACACA;
-		DL_address_box.flags = 100000000000b;
-		http_get stdcall (#DL_URL, 0, 0, #accept_language);
-		DL_http_transfer = EAX;
+		Downloading_Start();
+		dl_edit.blur_border_color = 0xCACACA;
+		dl_edit.flags = 100000000000b;
 		DL_progress_bar.value = 0;
 		DL_Draw_Window();
 		if (DL_http_transfer == 0)

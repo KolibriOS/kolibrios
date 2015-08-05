@@ -30,14 +30,14 @@
 char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.14";
+	char version[]=" Текстовый браузер 1.15";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.12";
+	char version[]=" Text-based Browser 1.15";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -77,6 +77,7 @@ byte souce_mode = false;
 #include "menu_rmb.h"
 #include "history.h"
 #include "show_src.h"
+#include "network_get.h"
 #include "downloader.h"
 
 char editURL[sizeof(URL)];

@@ -18,7 +18,7 @@ ShowHistory()
 			strcat(history_pointer, BrowserHistory.GetUrl(i));
 			strcat(history_pointer, "</a><br>");
 		}
-		strcat(history_pointer, "</blockquote><h2>Cached images</h2><br>");
+		strcat(history_pointer, "</blockquote><h2>Cached images</h2>");
 		for (i=1; i<ImgCache.pics_count; i++)
 		{
 			strcat(history_pointer, "<img src='");
