@@ -130,6 +130,7 @@ deltaToScreen = 28
 .drawUTF8:
         dec     dword [esp]
         js      .done
+@@:
         xor     ebx, ebx
         mov     bl, [esi]
         inc     esi
@@ -137,6 +138,7 @@ deltaToScreen = 28
         jz      .done
         jns     .valid
         shl     bx, 10
+        jnc     @b
         shr     bh, 2
         mov     bl, [esi]
         shl     bl, 2
