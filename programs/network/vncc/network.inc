@@ -29,9 +29,8 @@ thread_start:
         mov     [sockaddr1.ip], eax
 
         DEBUGF  1, "Connecting to %u.%u.%u.%u:%u\n", \
-                [sockaddr1.ip]:1, [sockaddr1.ip+1]:1, \
-                [sockaddr1.ip+2]:1, [sockaddr1.ip+3]:1, \
-                [sockaddr1.port]:2
+        [sockaddr1.ip]:1, [sockaddr1.ip+1]:1, [sockaddr1.ip+2]:1, [sockaddr1.ip+3]:1, \
+        [sockaddr1.port]:2
 
         invoke  freeaddrinfo, esi
 
@@ -49,25 +48,118 @@ thread_start:
 
         cmp     dword[receive_buffer], "RFB "
         jne     err_proto
-        DEBUGF  1, "received: %s\n", receive_buffer
+        DEBUGF  1, "Sending handshake\n"
         mcall   send, [socketnum], HandShake, 12, 0
-        DEBUGF  1, "Sending handshake: protocol version\n"
-
         call    wait_for_data
 
-        cmp     dword[receive_buffer], 0x01000000
-        je      no_security
-        cmp     dword[receive_buffer], 0x02000000
+        cmp     dword[receive_buffer], 0x01000000       ; no security
+        je      initialize
+        cmp     dword[receive_buffer], 0x02000000       ; VNC security
         je      vnc_security
+
         jmp     err_security
 
 vnc_security:
-        mov     [status], STATUS_LOGIN
-        call    draw_gui
 
-no_security:
+        mov     dword[password], 0
+        mov     dword[password+4], 0
+
+        and     [USERbox.flags], not ed_focus
+        or      [USERbox.flags], ed_disabled
+        or      [PASSbox.flags], ed_focus
+
+        mov     [status], STATUS_REQ_LOGIN
+        inc     [update_gui]
+  @@:
+        mcall   5, 10
+        cmp     [status], STATUS_LOGIN
+        je      @f
+        cmp     [status], STATUS_REQ_LOGIN
+        je      @r
+        mcall   -1
+  @@:
+        DEBUGF  1, "VNC authentication\n"
+
+; Bit reverse the password and create DES keys
+
+        mov     ebx, dword[password]
+        mov     edx, ebx
+        and     ebx, 0xf0f0f0f0
+        shr     ebx, 4
+        and     edx, 0x0f0f0f0f
+        shl     edx, 4
+        or      ebx, edx
+        mov     edx, ebx
+        and     ebx, 0xCCCCCCCC
+        shr     ebx, 2
+        and     edx, 0x33333333
+        shl     edx, 2
+        or      ebx, edx
+        mov     edx, ebx
+        and     ebx, 0xAAAAAAAA
+        shr     ebx, 1
+        and     edx, 0x55555555
+        shl     edx, 1
+        or      ebx, edx
+        bswap   ebx
+
+        mov     eax, dword[password+4]
+        mov     edx, eax
+        and     eax, 0xf0f0f0f0
+        shr     eax, 4
+        and     edx, 0x0f0f0f0f
+        shl     edx, 4
+        or      eax, edx
+        mov     edx, eax
+        and     eax, 0xCCCCCCCC
+        shr     eax, 2
+        and     edx, 0x33333333
+        shl     edx, 2
+        or      eax, edx
+        mov     edx, eax
+        and     eax, 0xAAAAAAAA
+        shr     eax, 1
+        and     edx, 0x55555555
+        shl     edx, 1
+        or      edx, eax
+        bswap   edx
+
+        mov     edi, keys
+        call    DES_create_keys
+
+; Encrypt message with DES
+
+        mov     ebx, dword[receive_buffer+4]
+        mov     edx, dword[receive_buffer+8]
+        call    encrypt_DES
+        mov     dword[receive_buffer+4], ebx
+        mov     dword[receive_buffer+8], edx
+
+        mov     ebx, dword[receive_buffer+12]
+        mov     edx, dword[receive_buffer+16]
+        call    encrypt_DES
+        mov     dword[receive_buffer+12], ebx
+        mov     dword[receive_buffer+16], edx
+
+; Blank out the password and key fields in RAM
+
+        mov     edi, password
+        mov     ecx, 384/4
+        xor     eax, eax
+        rep     stosd
+
+; Send the authentication response to server
+
+        mcall   send, [socketnum], receive_buffer+4, 16, 0
+
+        call    wait_for_data
+        cmp     dword[receive_buffer], 0
+        jne     err_login
+;        jmp     initialize
+
+initialize:
+        DEBUGF  1, "Sending ClientInit\n"
         mcall   send, [socketnum], ClientInit, 1, 0
-        DEBUGF  1, "ClientInit sent\n"
 
         call    wait_for_data       ; now the server should send init message
 
@@ -346,6 +438,12 @@ err_proto:
 
 err_security:
         mov     [status], STATUS_SECURITY_ERR
+        inc     [update_gui]
+        mcall   -1
+        ret
+
+err_login:
+        mov     [status], STATUS_LOGIN_FAILED
         inc     [update_gui]
         mcall   -1
         ret

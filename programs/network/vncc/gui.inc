@@ -79,7 +79,7 @@ draw_gui:
         mov     esi, 0xCCCCCC
         mcall   8                               ; Login button
 
-        mov     ebx, 240 shl 16 + 49
+        mov     ebx, 240 shl 16 + 52
         mov     edx, loginstr
         mov     esi, loginstr_e-loginstr
         mcall   4                               ; Login button text
@@ -175,7 +175,6 @@ draw_gui:
         jmp     .loop
 
   .mouse:
-        mcall   23
         cmp     [status], STATUS_INITIAL
         jne     @f
         invoke  edit_box_mouse, URLbox
@@ -188,4 +187,5 @@ draw_gui:
         jmp     .loop
 
   .close:
+        mov     [status], STATUS_CLOSED
         mcall   -1

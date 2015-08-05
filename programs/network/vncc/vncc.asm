@@ -73,6 +73,7 @@ STATUS_CONNECTING       = 1
 STATUS_REQ_LOGIN        = 2
 STATUS_LOGIN            = 3
 STATUS_CONNECTED        = 4
+STATUS_CLOSED           = 5
 
 STATUS_DISCONNECTED     = 10
 STATUS_DNS_ERR          = 11
@@ -82,6 +83,7 @@ STATUS_PROTO_ERR        = 14
 STATUS_SECURITY_ERR     = 15
 STATUS_LIB_ERR          = 16
 STATUS_THREAD_ERR       = 17
+STATUS_LOGIN_FAILED     = 18
 
 include "keymap.inc"
 include "gui.inc"
@@ -89,6 +91,7 @@ include "network.inc"
 include "raw.inc"
 include "copyrect.inc"
 include "rre.inc"
+include "des.inc"
 
 START:
 
@@ -210,6 +213,7 @@ mouse:
 
 button:
         mcall   17              ; get id
+        mov     [status], STATUS_CLOSED
         mcall   close, [socketnum]
         mcall   -1
 
@@ -320,8 +324,8 @@ mouse_dd                dd 0
 update_framebuffer      dd 0
 
 URLbox          edit_box 235, 70, 10, 0xffffff, 0x6f9480, 0, 0, 0, 65535, serveraddr, mouse_dd, ed_focus, 0, 0
-USERbox         edit_box 150, 70, 10, 0xffffff, 0x6f9480, 0, 0, 0, 127, username, mouse_dd, ed_focus, 0, 0
-PASSbox         edit_box 150, 90, 10, 0xffffff, 0x6f9480, 0, 0, 0, 127, password, mouse_dd, 0, 0, 0
+USERbox         edit_box 200, 90, 10, 0xffffff, 0x6f9480, 0, 0, 0, 127, username, mouse_dd, ed_focus, 0, 0
+PASSbox         edit_box 200, 90, 30, 0xffffff, 0x6f9480, 0, 0, 0, 127, password, mouse_dd, ed_pass, 0, 0
 
 serverstr       db "server:"
 userstr         db "username:"
@@ -338,6 +342,7 @@ sz_err_proto            db "A protocol error has occured.", 0
 sz_err_security         db "Server requested an unsupported security type.", 0
 sz_err_library          db "Could not load needed libraries.", 0
 sz_err_thread           db "Could not create thread.", 0
+sz_err_login_failed     db "Login failed.", 0
 
 err_msg         dd sz_err_disconnected
                 dd sz_err_dns
@@ -347,6 +352,7 @@ err_msg         dd sz_err_disconnected
                 dd sz_err_security
                 dd sz_err_library
                 dd sz_err_thread
+                dd sz_err_login_failed
 
 ; import
 align 4
@@ -408,6 +414,8 @@ keymap_shift            rw 128
 keymap_alt              rw 128
 username                rb 128
 password                rb 128
+keys                    rd 32*2         ; DES keys for VNC authentication
+
 serveraddr              rb 65536
 receive_buffer          rb RECEIVE_BUFFER_SIZE
 framebuffer_data        rb 1280*1024*3  ; framebuffer
