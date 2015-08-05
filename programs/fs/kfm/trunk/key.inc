@@ -92,8 +92,9 @@ key_80:
     jae  @f
 .add_1:
     add  [left_start_draw_cursor_line],10
-    call draw_left_panel_selection
+    call draw_left_panel
     mov  [drawing_panel_folder],1
+	jmp  still
 .all:
     sub  ecx,10 shl 16
     mov  edx,0xffffff
@@ -142,9 +143,9 @@ key_80:
     jae  @f
 .add_2:
     add  [right_start_draw_cursor_line],10
-    call draw_right_panel_selection
+    call draw_right_panel
     mov  [drawing_panel_folder],2
-    jmp  key_80.all
+    jmp  still
 @@:
     mov  eax,[right_folder_block]
     sub  eax,[max_panel_line]
@@ -173,8 +174,9 @@ key_72:
     cmp  [left_panel_y.start_y],ax
     je	 @f
     sub  [left_start_draw_cursor_line],10
-    call draw_left_panel_selection
+    call draw_left_panel
     mov  [drawing_panel_folder],1
+	jmp  still
 .all:    
     add  ecx,10 shl 16
     mov  edx,0xffffff
@@ -195,9 +197,9 @@ key_72:
     cmp  [right_panel_y.start_y],ax
     je	 @f
     sub  [right_start_draw_cursor_line],10
-    call draw_right_panel_selection
+    call draw_right_panel
     mov  [drawing_panel_folder],2
-    jmp  key_72.all
+    jmp  still
 @@:
     cmp  [right_start_draw_line],0
     je	 still

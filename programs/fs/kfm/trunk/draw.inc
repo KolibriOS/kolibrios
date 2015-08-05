@@ -832,7 +832,7 @@ clear_patch_area:
 draw_left_panel_selection:
 	cmp	[select_panel_counter],0
 	jne	.end
-
+	
 	mov	eax,[left_folder_block]
 	sub	eax,[left_start_draw_line]
 	mov	edx,left_start_draw_cursor_line
