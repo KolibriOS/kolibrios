@@ -103,8 +103,8 @@
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 enum { CREATE_FILE=1, CREATE_FOLDER, RENAME_ITEM }; //NewElement
 
-#define TITLE "Eolite File Manager v2.92"
-#define ABOUT_TITLE "Eolite 2.92"
+#define TITLE "Eolite File Manager v2.93"
+#define ABOUT_TITLE "Eolite 2.93"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -132,6 +132,7 @@ byte
 	real_files_names_case=0,
 	use_big_fonts=0,
 	font_type,
+	font_h,
 	info_after_copy=0,
 	sort_num=2,
 	itdir;
@@ -743,7 +744,7 @@ void Line_ReDraw(dword color, filenum){
 	if (! TestBit(attr, 4) ) //file or folder?
 	{	
 		Put_icon(file_name_off+_strrchr(file_name_off,'.'), files.x+3, files.line_h/2-7+y, color, 0);
-		WriteText(7-strlen(ConvertSize(file.sizelo))*6+Form.cwidth - 76,files.line_h-6/2+y,font_type,0,ConvertSize(file.sizelo));
+		WriteText(7-strlen(ConvertSize(file.sizelo))*6+Form.cwidth - 76, files.line_h - font_h/ 2 + y,font_type,0,ConvertSize(file.sizelo));
 	}
 	else
 	{
@@ -764,9 +765,9 @@ void Line_ReDraw(dword color, filenum){
 	{
 		FileShow.start_x = files.x + 23;
 		FileShow.font_color = text_col;
-		FileShow.area_size_x = Form.width - 380;
+		FileShow.area_size_x = files.w - 164;
 		FileShow.text_pointer = file_name_off;
-		FileShow.start_y = files.text_y+y;
+		FileShow.start_y = files.line_h - font_h/ 2 + y;
 		PathShow_prepare stdcall(#FileShow);
 		PathShow_draw stdcall(#FileShow);
 	}

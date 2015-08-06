@@ -7,7 +7,7 @@
 	?define TITLE_SETT "Настройки"
 	?define SHOW_DEVICE_CLASS "Выводить названия класса устройств"
 	?define SHOW_REAL_NAMES "Показывать имена файлов не меняя регистр"
-	?define USE_BIG_FONTS "Использовать увеличенные шрифты"
+	?define USE_BIG_FONTS "Большой шрифт (только английские символы!)"
 	?define LIST_LINE_HEIGHT "Высота строки в списке"
 	?define NOTIFY_COPY_END "Уведомлять о завершении копирования"
 	?define CANCEL_T "Отмена"
@@ -18,7 +18,7 @@
 	?define TITLE_SETT "Settings"
 	?define SHOW_DEVICE_CLASS "Show device class name"
 	?define SHOW_REAL_NAMES "Show real file names without changing case"
-	?define USE_BIG_FONTS "Use big fonts"
+	?define USE_BIG_FONTS "Use big fonts (English characters only!)"
 	?define LIST_LINE_HEIGHT "List line height"
 	?define NOTIFY_COPY_END "Notify when copying finished"
 	?define CANCEL_T "Cancel"
@@ -86,7 +86,7 @@ void settings_dialog()
 				else if (id==20) show_dev_name ^= 1;
 				else if (id==21) real_files_names_case ^= 1;
 				else if (id==22) info_after_copy ^= 1;
-				else if (id==23) use_big_fonts ^= 1;
+				else if (id==23) { use_big_fonts ^= 1; BigFontsChange(); }
 				else if (id==25) files.line_h++;
 				else if (id==26) && (files.line_h>14) files.line_h--;
 				else if (id==27) MOUSE_TIME++;
@@ -136,20 +136,9 @@ void LoadIniSettings()
 	ini_get_int stdcall   (eolite_ini_path, #confir_section, "UseBigFonts",       0); use_big_fonts = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #confir_section, "LineHeight",       18); files.line_h = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #confir_section, "TimeDoubleClick",  50); MOUSE_TIME = EAX;
-	
-	if (use_big_fonts) 
-	{
-		font_type = 0x90;
-		PathShow.font_size_x = FileShow.font_size_x = 8;
-		PathShow.font_number = FileShow.font_number = 1;
-	}
-	else
-	{
-		font_type=0x80;
-		PathShow.font_size_x = FileShow.font_size_x = 8;
-		PathShow.font_number = FileShow.font_number = 0;
-	} 
+	BigFontsChange();
 }
+
 
 void SaveIniSettings()
 {
@@ -184,6 +173,25 @@ void SetAppColors()
 	col_padding = 0xC8C9C9;
 	//col_selec   = 0x94AECE;
 	col_lpanel  = 0x00699C;
+}
+
+
+void BigFontsChange()
+{
+	if (use_big_fonts) 
+	{
+		font_type = 10110000b;
+		font_h = 14;
+		FileShow.font_size_x = 8;
+		FileShow.font_number = 3;
+	}
+	else
+	{
+		font_type=10000000b;
+		font_h = 6;
+		FileShow.font_size_x = 6;
+		FileShow.font_number = 0;
+	} 
 }
 
 
