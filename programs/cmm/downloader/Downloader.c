@@ -3,7 +3,6 @@
 #include "..\lib\kolibri.h"
 #include "..\lib\strings.h"
 #include "..\lib\gui.h"
-#include "..\lib\encoding.h"
 #include "..\lib\draw_buf.h"
 #include "..\lib\file_system.h"
 #include "..\lib\mem.h"

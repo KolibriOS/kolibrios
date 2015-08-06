@@ -6,7 +6,6 @@
 #include "../lib/strings.h"
 #include "../lib/mem.h"
 #include "../lib/dll.h"
-#include "../lib/encoding.h"
 #include "../lib/gui.h"
 #include "../lib/file_system.h"
 #include "../lib/list_box.h"
@@ -106,7 +105,7 @@ void main() {
 	load_dll(netcode_lib, #base64_encode,0);
 	load_dll(libio, #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
-	if (load_dll2(iconv_lib, #iconv_open,0)!=0)	{ notify("Error while loading library - iconv.obj"); use_iconv=2; }
+	load_dll(iconv_lib, #iconv_open,0);
 	OpenMailDat();
 	SetEventMask(0x27);
 	LoginBoxLoop();

@@ -227,7 +227,7 @@ void DrawTmpDisks()
 	for (i=0; i<disk_num; i++)
 	{
 		DefineButton(disk_pos_x[i], disk_pos_y[i], 65, 30, 20+i, 0xFFFfff);
-		WriteText(disk_pos_x[i]+25,disk_pos_y[i]+6,  0x90, 0, #disk_list[i].Item);
+		WriteText(disk_pos_x[i]+25,disk_pos_y[i]+2,  10110000b, 0, #disk_list[i].Item);
 		real_id = disk_list[i].Item[3] - '0';
 		WriteText(disk_pos_x[i]+25,disk_pos_y[i]+19, 0x80, 0x888888, ConvertSize(disk_sizes[real_id]));
 		_PutImage(disk_pos_x[i]+5,disk_pos_y[i]+4, 14,14, 2*14*14*3+#icons);

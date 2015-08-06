@@ -57,8 +57,8 @@ dword ChangeCharset(dword from_chs, to_chs, conv_buf)
 }
 
 
-char *charsets[] = { " ", "UTF-8", "KOI8-RU", "CP1251",  "CP1252", "ISO8859-5", "CP866"};
-int cur_charset;
+:char *charsets[] = { " ", "UTF-8", "KOI8-RU", "CP1251",  "CP1252", "ISO8859-5", "CP866"};
+:int cur_charset;
 enum {
 	CH_NULL,
 	CH_UTF8,

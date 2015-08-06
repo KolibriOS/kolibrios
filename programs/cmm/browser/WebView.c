@@ -11,7 +11,6 @@
 #define MEMSIZE 0x100000
 #include "..\lib\strings.h"
 #include "..\lib\gui.h"
-#include "..\lib\encoding.h"
 #include "..\lib\file_system.h"
 #include "..\lib\mem.h"
 #include "..\lib\draw_buf.h"
@@ -23,6 +22,7 @@
 #include "..\lib\obj\libio_lib.h"
 #include "..\lib\obj\libimg_lib.h"
 #include "..\lib\obj\http.h"
+#include "..\lib\obj\iconv.h"
 
 //useful patterns
 #include "..\lib\patterns\libimg_load_skin.h"
@@ -30,14 +30,14 @@
 char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.15";
+	char version[]=" Текстовый браузер 1.16";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.15";
+	char version[]=" Text-based Browser 1.16";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -128,6 +128,7 @@ void main()
 	load_dll(libio, #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libHTTP, #http_lib_init,1);
+	load_dll(iconv_lib, #iconv_open,0);
 	Libimg_LoadImage(#skin, abspath("wv_skin.png"));
 	SetSkinColors();
 	
@@ -332,7 +333,7 @@ void Draw_Window()
 }
 
 
-void ChangeCharset(byte new_charset)
+void ChangeCharset1(byte new_charset)
 {
 	BufEncode(new_charset);
 	WB1.Parse();	
@@ -349,19 +350,19 @@ void Scan(int id)
 	switch (id)
 	{
 		case 011: //Ctrk+K 
-			ChangeCharset(_KOI);
+			ChangeCharset1(_KOI);
 			return;
 
 		case 021: //Ctrl+U
-			ChangeCharset(_UTF);
+			ChangeCharset1(_UTF);
 			return;
 
 		case 004: //Ctrl+D
-			ChangeCharset(_DOS);
+			ChangeCharset1(_DOS);
 			return;
 
 		case 005: //Win encoding
-			ChangeCharset(_WIN);
+			ChangeCharset1(_WIN);
 			return;
 
 		case 009: //free img cache

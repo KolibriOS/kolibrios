@@ -52,26 +52,17 @@ void ParseMail()
 void ConvertToDOS(dword inbuf, searchin)
 {
 	dword dos_buf=0;
-	if (use_iconv==1)
-	{
-		cur_charset = CH_CP866;
-		if (strstri(searchin, "windows-1251")!=0) || (strstri(searchin, "windows1251")!=0) 
-			{ dos_buf = ChangeCharset("CP1251", "CP866", inbuf);    cur_charset = CH_CP1251;}
-		else if (strstri(searchin, "koi8-")!=0)
-			{ dos_buf = ChangeCharset("KOI8-RU", "CP866", inbuf);   cur_charset = CH_KOI8;}
-		else if (strstri(searchin, "utf-8")!=0) || (strstri(searchin, "utf8")!=0)
-			{ dos_buf = ChangeCharset("UTF-8", "CP866", inbuf);     cur_charset = CH_UTF8;}
-		else if (strstri(searchin, "iso8859-5")!=0) || (strstri(searchin, "iso-8859-5")!=0)
-			{ dos_buf = ChangeCharset("ISO8859-5", "CP866", inbuf); cur_charset = CH_ISO8859_5;}
-		else if (strstri(searchin, "windows-1252")!=0) || (strstri(searchin, "windows1252")!=0) 
-			{ dos_buf = ChangeCharset("CP1252", "CP866", inbuf);    cur_charset = CH_CP1252;}
-	}
-	else
-	{
-		if (strstri(searchin, "windows-1251")!=0) wintodos( inbuf); else
-		if (strstri(searchin, "koi8-")!=0)        koitodos( inbuf); else
-		if (strstri(searchin, "utf-8")!=0)        utf8rutodos( inbuf);
-	}
+	cur_charset = CH_CP866;
+	if (strstri(searchin, "windows-1251")!=0) || (strstri(searchin, "windows1251")!=0) 
+		{ dos_buf = ChangeCharset("CP1251", "CP866", inbuf);    cur_charset = CH_CP1251;}
+	else if (strstri(searchin, "koi8-")!=0)
+		{ dos_buf = ChangeCharset("KOI8-RU", "CP866", inbuf);   cur_charset = CH_KOI8;}
+	else if (strstri(searchin, "utf-8")!=0) || (strstri(searchin, "utf8")!=0)
+		{ dos_buf = ChangeCharset("UTF-8", "CP866", inbuf);     cur_charset = CH_UTF8;}
+	else if (strstri(searchin, "iso8859-5")!=0) || (strstri(searchin, "iso-8859-5")!=0)
+		{ dos_buf = ChangeCharset("ISO8859-5", "CP866", inbuf); cur_charset = CH_ISO8859_5;}
+	else if (strstri(searchin, "windows-1252")!=0) || (strstri(searchin, "windows1252")!=0) 
+		{ dos_buf = ChangeCharset("CP1252", "CP866", inbuf);    cur_charset = CH_CP1252;}
 }
 
 

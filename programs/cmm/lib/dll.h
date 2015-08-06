@@ -19,7 +19,7 @@ char a_libdir[43]  = "/sys/lib/\0";
 :inline void error_init(dword text)
 {
 	dword TEXT_ERROR = malloc(1024);
-	sprintf("%s `%s`' -E",_TEXT_ERROR_ADD,text);
+	sprintf(TEXT_ERROR, "%s `%s`' -E",_TEXT_ERROR_ADD,text);
 	notify(TEXT_ERROR);
 	free(TEXT_ERROR);
 }

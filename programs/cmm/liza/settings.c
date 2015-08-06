@@ -3,7 +3,6 @@
 #define CUSTOM 0
 #define MANUAL 1
 char checked[3] = { 1, 0 };
-int use_iconv = 1;
 
 char *text1[] = {"POP server adress:", "POP server port:", "SMTP server adress:", "SMTP server port:", '\0'};
 
@@ -62,12 +61,6 @@ void SettingsDialog()
 					}
 					OptionsWindow();
 				}
-				if (id==20)
-				{
-					if (use_iconv==2) break;
-					if (use_iconv==1) use_iconv=0; else use_iconv=1;
-					OptionsWindow();
-				}
 				break;
 				
 			case evKey:
@@ -120,7 +113,4 @@ void OptionsWindow()
 	edit_box_draw stdcall(#POP_server_port_box);
 	edit_box_draw stdcall(#SMTP_server_box);
 	edit_box_draw stdcall(#SMTP_server_port_box);
-
-	WriteTextB(ELEM_X, 205, 0x90, system.color.work_text, "MailBox settings");
-	CheckBox(ELEM_X, 230,12, 12, 20, "Use iconv library for converting text charsets", system.color.work_graph, system.color.work_text, use_iconv);
 }

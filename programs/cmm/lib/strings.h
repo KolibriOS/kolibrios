@@ -21,7 +21,7 @@
 // itoa(signed long number) --- convert the number as a string
 // atoi(dword text) --- convert a string as a number
 // strupr( ESI)
-// strlwr( ESI) --- kyrillic symbols may not work
+// strlwr( ESI) --- Cyrillic symbols may not work
 // strttl( EDX)
 // strtok( ESI)
 // strltrim(dword text) --- removes "blank" characters on the left (\r, \n and space)

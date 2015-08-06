@@ -113,9 +113,9 @@ void BufEncode(int set_new_encoding)
 	{
 		strcpy(bufpointer, o_bufpointer);
 	}
-	if (set_new_encoding==_WIN) wintodos(bufpointer);
-	if (set_new_encoding==_UTF) utf8rutodos(bufpointer);
-	if (set_new_encoding==_KOI) koitodos(bufpointer);
+	if (set_new_encoding==_WIN) bufpointer = ChangeCharset("CP1251",  "CP866", bufpointer);
+	if (set_new_encoding==_UTF) bufpointer = ChangeCharset("UTF-8",   "CP866", bufpointer);
+	if (set_new_encoding==_KOI) bufpointer = ChangeCharset("KOI8-RU", "CP866", bufpointer);
 }
 
 void TWebBrowser::Prepare(dword bufpos, in_filesize){
@@ -652,4 +652,20 @@ int isTag(dword text)
 	if (!strcmp(#tag,text)) return 1; else return 0;
 }
 
+
+:dword Hex2Symb(char* htmlcolor)
+{
+  dword j=0, symbol=0;
+  char ch=0x00;
+  for (;j<2;j++)
+  {
+    ch=ESBYTE[htmlcolor+j];
+    if (ch==0x0d) || (ch=='\9') RETURN 0;
+    if ((ch>='0') && (ch<='9')) ch -= '0';
+    if ((ch>='A') && (ch<='F')) ch -= 'A'-10;
+    if ((ch>='a') && (ch<='f')) ch -= 'a'-10;
+    symbol = symbol*0x10 + ch;
+  }
+  AL=symbol;
+}
 
