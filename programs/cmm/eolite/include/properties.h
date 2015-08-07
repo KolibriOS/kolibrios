@@ -187,38 +187,28 @@ void GetSizeDir(dword way)
 
 void GetSizeMoreFiles(dword way)
 {
-	int all_file_count, all_dir_count, all_size;
 	char cur_file[4096];
 	dword selected_offset2;
-	
-	all_file_count = 0;
-	all_dir_count = 0; 
-	all_size = 0;
 	
 	for (i=0; i<files.count; i++) 
     {
         selected_offset2 = file_mas[i]*304 + buf+32 + 7;
         if (ESBYTE[selected_offset2]) {
-			sprintf(#cur_file,"%s/%s",way,file_mas[i]*304+buf+72);
-
-			GetFileInfo(#cur_file, #file_info_general);
-			if ( file_info_general.isfolder )
+			sprintf(#cur_file,"%s%s",way,file_mas[i]*304+buf+72);
+			if (TestBit(ESDWORD[file_mas[i]*304+buf+32], 4) )
 			{
+				debugln(#cur_file);
 				GetSizeDir(#cur_file);
-				all_file_count = all_file_count + file_count;
-				all_dir_count = all_dir_count + dir_count +1;
-				all_size = all_size + size_dir;
+				dir_count++;
 			}
 			else
 			{
-				all_file_count++;
-				all_size = all_size + file_info_general.sizelo;
+				GetFileInfo(#cur_file, #file_info_dirsize);
+				size_dir += file_info_dirsize.sizelo;
+				file_count++;
 			}
         }
 	}  
-	file_count = all_file_count;
-	dir_count = all_dir_count;
-	size_dir = all_size;
 }
 
 void properties_dialog()
@@ -236,6 +226,7 @@ void properties_dialog()
 	if (selected_count)
 	{
 		GetSizeMoreFiles(#path);
+		debugi(size_dir);
 		atr_readonly = 0;
 		atr_hidden = 0;
 		atr_system = 0;
