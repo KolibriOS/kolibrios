@@ -141,6 +141,8 @@ byte
 
 dword eolite_ini_path;
 
+char scroll_used=0;
+
 dword menu_stak,about_stak,properties_stak,settings_stak,copy_stak;
 
 proc_info Form;
@@ -176,7 +178,7 @@ byte cmd_free=0;
 void main() 
 {
 	word key, id;
-	char can_show, can_select, scroll_used, stats;
+	char can_show, can_select, stats;
 	dword selected_offset;
 	dword IPC_LEN,IPC_ID;
 	char IPC_BUF[10];
@@ -325,8 +327,8 @@ void main()
 				}
 
 				//Scrooll
-				if (!mouse.lkm) && (scroll_used) { scroll_used=NULL; Scroll(); }
-				if (mouse.x>=Form.width-26) && (mouse.x<=Form.width-6) && (mouse.y>56) && (mouse.y<Form.height) && (mouse.lkm) && (!scroll_used) {scroll_used=1;Scroll();}
+				if (!mouse.lkm) && (scroll_used) { scroll_used=false; Scroll(); }
+				if (mouse.x>=Form.width-26) && (mouse.x<=Form.width-6) && (mouse.y>56) && (mouse.y<Form.height) && (mouse.lkm) && (!scroll_used) {scroll_used=true; Scroll();}
 				
 				if (scroll_used)
 				{
