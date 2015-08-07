@@ -159,11 +159,11 @@ mainloop:
 
 key:
         mcall   66, 3
-        mov     ebx, eax
+        mov     ebx, eax        ; get modifier keys
 
-        mcall   2
-        cmp     ah, 224         ; ext
-        je      mainloop        ;; TODO
+        mcall   2               ; get key scancode
+        cmp     ah, 224         ; extended keycode?
+        je      .extended
 
         xor     al, al
         test    ah, 0x80        ; key up?
@@ -172,24 +172,44 @@ key:
   @@:
         mov     byte[KeyEvent.down], al
 
-        shr     eax, 7
-        and     eax, 0x000000fe
+        movzx   eax, ah
 
         test    ebx, 100000b    ; alt?
-        jz      @f
-        add     eax, 512
+        jz      .no_alt
+        mov     ax, [keymap_alt+eax*2]
         jmp     .key
-  @@:
+  .no_alt:
+
         test    ebx, 11b        ; shift?
-        jz      @f
-        add     eax, 256
-  @@:
+        jz      .no_shift
+        mov     ax, [keymap_shift+eax*2]
+        jmp     .key
+  .no_shift:
+
+        test    ebx, 10000000b  ; numlock ?
+        jz      .no_numlock
+        cmp     al, 71
+        jb      .no_numlock
+        cmp     al, 83
+        ja      .no_numlock
+        mov     ah, [keymap_numlock+eax-71]
+        xor     al, al
+        jmp     .key
+
+  .extended:                    ; extended keys always use regular keymap
+        mcall   2
+        shr     eax, 8
+        jz      mainloop
+  .no_numlock:
+        mov     ax, [keymap+eax*2]
   .key:
-        mov     ax, [keymap+eax]
+        test    ax, ax
+        jz      mainloop
         mov     word[KeyEvent.key+2], ax
         DEBUGF  1, "Sending key: 0x%x\n", ax
         mcall   send, [socketnum], KeyEvent, 8, 0
         jmp     mainloop
+
 
 
 mouse:
@@ -221,6 +241,12 @@ button:
 ; DATA AREA
 
 include_debug_strings
+
+keymap_numlock:
+        db      '7', '8', '9', '-'
+        db      '4', '5', '6', '+'
+        db      '1', '2', '3'
+        db      '0', '.'
 
 HandShake               db "RFB 003.003", 10
 
@@ -323,9 +349,9 @@ update_gui              dd 0
 mouse_dd                dd 0
 update_framebuffer      dd 0
 
-URLbox          edit_box 235, 70, 10, 0xffffff, 0x6f9480, 0, 0, 0, 65535, serveraddr, mouse_dd, ed_focus, 0, 0
-USERbox         edit_box 200, 90, 10, 0xffffff, 0x6f9480, 0, 0, 0, 127, username, mouse_dd, ed_focus, 0, 0
-PASSbox         edit_box 200, 90, 30, 0xffffff, 0x6f9480, 0, 0, 0, 127, password, mouse_dd, ed_pass, 0, 0
+URLbox          edit_box 235, 70, 20, 0xffffff, 0x6f9480, 0, 0, 0, 65535, serveraddr, mouse_dd, ed_focus, 0, 0
+USERbox         edit_box 215, 90, 10, 0xffffff, 0x6f9480, 0, 0, 0, 127, username, mouse_dd, ed_focus, 0, 0
+PASSbox         edit_box 215, 90, 30, 0xffffff, 0x6f9480, 0, 0, 0, 127, password, mouse_dd, ed_pass, 0, 0
 
 serverstr       db "server:"
 userstr         db "username:"

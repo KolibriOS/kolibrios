@@ -28,7 +28,7 @@ draw_gui:
         cmp     [status], STATUS_CONNECTING
         ja      @f
 
-        mov     ebx, 25 shl 16 + 14
+        mov     ebx, 25 shl 16 + 24
         xor     ecx, ecx
         mov     edx, serverstr
         mov     esi, userstr-serverstr
