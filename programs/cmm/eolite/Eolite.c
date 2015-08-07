@@ -103,8 +103,8 @@
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 enum { CREATE_FILE=1, CREATE_FOLDER, RENAME_ITEM }; //NewElement
 
-#define TITLE "Eolite File Manager v2.96"
-#define ABOUT_TITLE "Eolite 2.96"
+#define TITLE "Eolite File Manager v3.0 beta"
+#define ABOUT_TITLE "Eolite 3.0 beta"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -118,6 +118,8 @@ dword _not_draw = false;
 byte menu_call_mouse=0;
 
 llist files;
+
+byte list_full_redraw;
 
 byte
 	path[4096],
@@ -142,7 +144,7 @@ dword eolite_ini_path;
 dword menu_stak,about_stak,properties_stak,settings_stak,copy_stak;
 
 proc_info Form;
-int mouse_dd, scroll_used, sc_slider_h, sorting_arrow_x, kolibrios_drive;
+int mouse_dd, sc_slider_h, sorting_arrow_x, kolibrios_drive;
 dword buf;
 dword file_mas[6898];
 int j, i;
@@ -152,13 +154,13 @@ int selected_count;
 byte CMD_REFRESH;
 
 signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
-byte stats;
+
 
 edit_box edit2 = {250,213,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xFFFFFF,0,248,#file_name,#mouse_dd,64,6,6};
 edit_box new_file_ed = {171,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0,248,#new_element_name,#mouse_dd,100000000000010b,6,0};
 PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 0};
 PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
-byte cmd_free;
+byte cmd_free=0;
 #include "include\copy.h"
 #include "include\gui.h"
 #include "include\sorting.h"
@@ -173,7 +175,8 @@ byte cmd_free;
 
 void main() 
 {
-	word key, id, can_show, can_select, m_selected;
+	word key, id;
+	char can_show, can_select, scroll_used, stats;
 	dword selected_offset;
 	dword IPC_LEN,IPC_ID;
 	char IPC_BUF[10];
@@ -232,7 +235,7 @@ void main()
 						{
 							if (HistoryPath(GO_FORWARD))
 								{
-									files.first=files.current=NULL;
+									files.KeyHome();
 									Open_Dir(#path,WITH_REDRAW);
 								}
 							stats = 0;
@@ -259,11 +262,14 @@ void main()
 					{
 						if (mouse.y>=files.y)//&&(mouse.click)
 						{
-							id = mouse.y - files.y / files.line_h;
-							IF (files.current!=id)
+							id = mouse.y - files.y / files.line_h + files.first;
+							if (files.current!=id)
 							{
 								mouse.clearTime();
-								if(!mouse.up)&&(id<files.visible) List_Current(id-files.current);
+								if(!mouse.up)&&(id-files.first<files.visible) {
+									files.current = id;
+									List_ReDraw();
+								}
 							}
 							else IF(mouse.dblclick)Open(0);
 						}
@@ -274,13 +280,12 @@ void main()
 					if (mouse.key&MOUSE_RIGHT)&&(mouse.up)
 					{
 						menu_call_mouse = 1;
-						if (mouse.y>=files.y)//&&(mouse.click)
+						
+						if (files.MouseOver(mouse.x, mouse.y))
 						{
-							id = mouse.y - files.y / files.line_h;
-							if (files.current!=id) List_Current(id-files.current);
-							//SwitchToAnotherThread();
+							files.current = mouse.y - files.y / files.line_h + files.first;
 							menu_stak = malloc(4096);
-							CreateThread(#FileMenu,menu_stak+4092);
+							CreateThread(#FileMenu,menu_stak+4092);	
 						}
 						break;
 					}
@@ -361,7 +366,7 @@ void main()
 					case 22: //Forward
 							if (HistoryPath(GO_FORWARD))
 							{
-								files.first=files.current=NULL; //aaa?o nienea
+								files.KeyHome();
 								Open_Dir(#path,WITH_REDRAW);
 							}
 							break;
@@ -391,7 +396,7 @@ void main()
 						DEVICE_MARK:
 							DrawRectangle(17,id-100*16+74,159,16, 0); //auaaeaiea
 							strcpy(#path, #disk_list[id-100].Item);
-							files.first=files.current=0;
+							files.KeyHome();
 							Open_Dir(#path,WITH_REDRAW);
 							pause(5);
 							DrawRectangle(17,id-100*16+74,159,16, 0xFFFFFF);
@@ -420,6 +425,11 @@ void main()
 				{
 					EAX=key<<8;
 					edit_box_key stdcall (#edit2);
+					break;
+				}
+				if (files.ProcessKey(key))
+				{
+					List_ReDraw();
 					break;
 				}
 				switch (key)
@@ -484,30 +494,12 @@ void main()
 								if (!itdir) ShowOpenWithDialog();
 								else Open(1);
 								break;
-						case ASCII_KEY_UP:
-								List_Current(-1);
-								break;
-						case ASCII_KEY_DOWN:
-								List_Current(1);
-								break;
-						case ASCII_KEY_HOME:
-								if (files.KeyHome()) List_ReDraw();
-								break;
-						case ASCII_KEY_END:
-								if (files.KeyEnd()) List_ReDraw();
-								break;
-						case ASCII_KEY_PGDN:
-								List_Current(files.visible-1);
-								break;
-						case ASCII_KEY_PGUP:
-								List_Current(-files.visible+1);
-								break;
 						case ASCII_KEY_DEL:
 								Del_Form();
 								break;
 						case ASCII_KEY_INS:
-								selected_offset = file_mas[files.current+files.first]*304 + buf+32 + 7;
-								if (files.current+files.first==0) && (!strncmp(selected_offset+33, "..", 2)) goto _INSERT_END; //do not selec ".." directory
+								selected_offset = file_mas[files.current]*304 + buf+32 + 7;
+								if (files.current==0) && (!strncmp(selected_offset+33, "..", 2)) goto _INSERT_END; //do not selec ".." directory
 								if (ESBYTE[selected_offset])
 								{
 									ESBYTE[selected_offset]=0;
@@ -519,18 +511,20 @@ void main()
 									selected_count++;
 								}
 								_INSERT_END:
-								List_Current(1);
+								if (files.KeyDown()) List_ReDraw();
 								break;
 						case 048...059: //F1-F10
 								FnProcess(key-49);
 								break; 
 						default:    
-								for (i=files.current+files.first+1; i<files.count; i++)
+								for (i=files.current+1; i<files.count; i++)
 								{
 									strcpy(#temp, file_mas[i]*304+buf+72);
 									if (temp[0]==key) || (temp[0]==key-32)
 									{
-										List_Current(i-files.current-files.first);
+										files.current = i - 1;
+										files.KeyDown();
+										List_ReDraw();
 										break;
 									}
 								}
@@ -580,7 +574,7 @@ void menu_action(dword id)
 	if (id==COPY_PASTE_END)
 	{
 		FnProcess(5);
-		SelectFile(#copy_to+strrchr(#copy_to,'/'));
+		SelectFileByName(#copy_to+strrchr(#copy_to,'/'));
 	}
 	if (id==100) Open(0);
 	if (id==201) ShowOpenWithDialog();
@@ -606,11 +600,10 @@ void draw_window()
 	DefineAndDrawWindow(GetScreenWidth()-550/4+rand_n,rand_n+30,550,500,0x73,system.color.work,TITLE,0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
-	files.SetSizes(192, 57, Form.cwidth - 210, onTop(57,6), disc_num*16+195,files.line_h);
 	if (Form.height < files.min_h) MoveSize(OLD,OLD,OLD,files.min_h);
 	if (Form.width<480) MoveSize(OLD,OLD,480,OLD);
 	GetProcessInfo(#Form, SelfInfo); //if win_size changed
-
+	files.SetSizes(192, 57, Form.cwidth - 210, onTop(57,6), disc_num*16+195,files.line_h);
 	PutPaletteImage(#toolbar,246,34,0,0,8,#toolbar_pal);
 	DrawBar(127, 8, 1, 25, system.color.work_graph);
 	for (j=0; j<3; j++) DefineButton(toolbar_buttons_x[j]+2,5+2,31-5,29-5,21+j+BT_HIDE,system.color.work);
@@ -638,80 +631,31 @@ void draw_window()
 }
 
 
-void KEdit()
-{
-	if (Form.width<480) return;
-	PathShow.area_size_x = Form.cwidth-306;
-	DrawBar(PathShow.start_x-3, PathShow.start_y-4, PathShow.area_size_x+2, 15, 0xFFFfff);
-	PathShow_prepare stdcall(#PathShow);
-	PathShow_draw stdcall(#PathShow);
-}
-
-
-void List_Current(signed int cur)
-{
-	if (cur<=0) //up
-	{
-		if (files.first==0) && (files.current<=0) return;
-		if (-cur-1<files.current)
-		{
-			Line_ReDraw(0xFFFFFF, files.current);
-			files.current+=cur;
-			Line_ReDraw(col_selec, files.current);
-			return;
-		}
-		else
-		{
-			if (-cur<files.first) files.first+=cur; else files.first=0;
-			files.current=0;
-			List_ReDraw();
-			return;
-		}
-	}
-	else  //down
-	{
-		if (files.first==files.count-files.visible) && (files.current==files.visible-1) 
-		{
-			Line_ReDraw(col_selec, files.current);
-			return;
-		}
-		if (files.visible-files.current>cur)
-		{
-			Line_ReDraw(0xFFFFFF, files.current);
-			files.current+=cur;
-			Line_ReDraw(col_selec, files.current);
-			return;
-		}
-		else
-		{
-			if(files.first+files.current+cur>=files.count)
-			{
-				files.first=files.count-files.visible;
-				files.current=cur-files.first+files.current;
-				}
-			else
-			{
-				files.first+=cur+files.current-files.visible+1;
-				files.current=files.visible-1;
-			}
-			
-			if (files.current<0) || (files.current>files.visible)
-			{
-				files.current=files.visible-1;
-			}
-			List_ReDraw();
-		}
-	}
-}
-
-
 void List_ReDraw()
 {
 	int paint_y;
-	//we are in the end of the list => maximize window => there will be white lines after the last element
-	if (files.count-files.first<files.visible) || (files.current>files.visible-1)
-	{ files.first=files.count-files.visible; files.current=files.visible-1; }
-	for (j=0; j<files.visible; j++) if (files.current!=j) Line_ReDraw(0xFFFFFF, j); else Line_ReDraw(col_selec, files.current);
+	static int old_current, old_first;
+
+	files.CheckDoesValuesOkey(); //prevent some shit
+
+	if (list_full_redraw) || (old_first != files.first)
+	{
+		old_current = files.current;
+		old_first = files.first;
+		list_full_redraw = false;
+		goto _ALL_LIST_REDRAW;
+	}
+	if (old_current != files.current)
+	{
+		Line_ReDraw(0xFFFFFF, old_current-files.first);
+		Line_ReDraw(col_selec, files.current-files.first);
+		old_current = files.current;
+		return;
+	}
+
+	_ALL_LIST_REDRAW:
+
+	for (j=0; j<files.visible; j++) if (files.current-files.first!=j) Line_ReDraw(0xFFFFFF, j); else Line_ReDraw(col_selec, files.current-files.first);
 	//in the bottom
 	paint_y = j * files.line_h + files.y;
 	DrawBar(files.x,paint_y,files.w,onTop(paint_y,6),0xFFFFFF);
@@ -794,11 +738,17 @@ void Open_Dir(dword dir_path, redraw){
 		}
 		maxcount = sizeof(file_mas)/sizeof(dword)-1;
 		if (files.count>maxcount) files.count = maxcount;
-		if (files.count>0) && (files.current==-1) files.current=0;
+		if (files.count>0) && (files.current-files.first==-1) files.current=0;
 	}
 	if (files.count!=-1)
 	{
-		if(!_not_draw)KEdit();
+		if(!_not_draw)
+		{
+			PathShow.area_size_x = Form.cwidth-306;
+			DrawBar(PathShow.start_x-3, PathShow.start_y-4, PathShow.area_size_x+2, 15, 0xFFFfff);
+			PathShow_prepare stdcall(#PathShow);
+			PathShow_draw stdcall(#PathShow);
+		}
 		HistoryPath(ADD_NEW_PATH);
 		files.visible = files.h / files.line_h;
 		if (files.count < files.visible) files.visible = files.count;
@@ -807,10 +757,15 @@ void Open_Dir(dword dir_path, redraw){
 		if (sort_num==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
 		WriteText(sorting_arrow_x,45,0x80,system.color.work_graph,"\x19");
 		if (redraw!=ONLY_SHOW) Sorting();
+		list_full_redraw = true;
 		if (redraw!=ONLY_OPEN)&&(!_not_draw) List_ReDraw();
 		DrawSystemDiscs();
 	}
-	if (files.count==-1) && (redraw!=ONLY_OPEN) {files.visible=files.count=0; if(!_not_draw)List_ReDraw();}
+	if (files.count==-1) && (redraw!=ONLY_OPEN) 
+	{
+		files.KeyHome();
+		if(!_not_draw) { list_full_redraw=true; List_ReDraw(); }
+	}
 }
 
 
@@ -959,14 +914,15 @@ void Del_File(byte dodel)
 }
 
 
-void SelectFile(dword that_file)
+void SelectFileByName(dword that_file)
 {
-	files.first=files.current=0;
+	int ind;
+	files.KeyHome();
    	Open_Dir(#path,ONLY_OPEN);
 	if (!real_files_names_case) strttl(that_file);
-	for (i=files.count-1; i>=0; i--;)
-		if (!strcmp(file_mas[i]*304+buf+72,that_file)) break;
-	List_Current(i);
+	for (ind=files.count-1; ind>=0; ind--;) { if (!strcmp(file_mas[ind]*304+buf+72,that_file)) break; }
+	files.current = ind - 1;
+	files.KeyDown();
 	List_ReDraw();
 }
 
@@ -980,7 +936,7 @@ void Dir_Up()
 	i = strrchr(#path, '/');
 	strcpy(#cur_folder, #path+i);
 	path[i]=0x00;
-	SelectFile(#cur_folder);
+	SelectFileByName(#cur_folder);
 }
 
 void Open(byte rez)
@@ -1015,7 +971,7 @@ inline fastcall void GoBack()
 {
 	char cur_folder[4096];
 	strcpy(#cur_folder, GetCurrentFolder());
-	if (HistoryPath(GO_BACK)) SelectFile(#cur_folder);
+	if (HistoryPath(GO_BACK)) SelectFileByName(#cur_folder);
 }
 
 void ShowOpenWithDialog()
@@ -1078,7 +1034,7 @@ void NewElement(byte newf)
 						}
 						if (CreateDir(#temp)) CreateDir(#file_path);
 						Open_Dir(#path,WITH_REDRAW);
-						SelectFile(new_file_ed.text);
+						SelectFileByName(new_file_ed.text);
 					}
 					else
 					{
@@ -1089,7 +1045,7 @@ void NewElement(byte newf)
 						else
 						{
 							Del_File(true);
-							SelectFile(new_file_ed.text);
+							SelectFileByName(new_file_ed.text);
 						}
 					}
 				}
@@ -1100,7 +1056,7 @@ void NewElement(byte newf)
 		}
 		new_element_active = 0;
 		Open_Dir(#path,WITH_REDRAW);
-		SelectFile(new_file_ed.text);
+		SelectFileByName(new_file_ed.text);
 	}
 	new_element_active = 0;
 	Open_Dir(#path,WITH_REDRAW);

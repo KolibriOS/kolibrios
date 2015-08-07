@@ -14,13 +14,16 @@ struct llist
 	int count, visible, first, current; //visible = row_max
 	int active;
 	void ClearList();
-	int ProcessKey(dword key);
 	int MouseOver(int xx, yy);
 	int ProcessMouse(int xx, yy);
+	int ProcessKey(dword key);
 	int KeyDown();
 	int KeyUp();
 	int KeyHome();
 	int KeyEnd();
+	int KeyPgDown();
+	int KeyPgUp();
+	void CheckDoesValuesOkey();
 	void SetSizes(int xx, yy, ww, hh, min_hh, line_hh);
 	int MouseScroll(dword scroll_state);
 	int MouseScrollNoSelection(dword scroll_state);
@@ -30,14 +33,10 @@ struct llist
 
 void llist::debug_values()
 {
-	debug("current: ");
-	debugi(current);
-	debug("first: ");
-	debugi(first);
-	debug("visible: ");
-	debugi(visible);
-	debug("count: ");
-	debugi(count);
+	char yi[128];
+	sprintf(#yi, "%s %d %s %d %s %d %s %d", "current:", current, "first:", first,
+	"visible:", visible, "count:", count);
+	debugln(#yi);
 }
 
 
@@ -56,7 +55,7 @@ void llist::SetSizes(int xx, yy, ww, hh, min_hh, line_hh)
 	h = hh;
 	min_h = min_hh;
 	line_h = line_hh;
-	text_y = line_hh / 2 - 4;
+	text_y = line_h / 2 - 4;
 	visible = h / line_h;
 	column_max = w / 6;
 	//if (visible > count) visible=count;
@@ -128,6 +127,8 @@ int llist::ProcessKey(dword key)
 		case ASCII_KEY_UP:   return KeyUp();
 		case ASCII_KEY_HOME: return KeyHome();
 		case ASCII_KEY_END:  return KeyEnd();
+		case ASCII_KEY_PGUP: return KeyPgUp();
+		case ASCII_KEY_PGDN: return KeyPgDown();
 	}
 	return 0;
 }
@@ -136,29 +137,39 @@ int llist::KeyDown()
 {
 	if (current-first+1<visible)
 	{
-		if (current+1>=count) return 0;
+		if (current + 1 >= count) return 0;
 		current++;
 	}
 	else 
 	{
-		if (visible+first>=count) return 0;
+		if (visible + first >= count) return 0;
 		first++;
 		current++;
+	}
+	if (current < first) || (current > first + visible)
+	{
+		first = current;
+		CheckDoesValuesOkey();
 	}
 	return 1;
 }
 
 int llist::KeyUp()
 {
-	if (current>first) 
+	if (current > first) 
 	{
 		current--;
 	}
 	else
 	{
-		if (first==0) return 0;
+		if (first == 0) return 0;
 		first--;
 		current--;
+	}
+	if (current < first) || (current > first + visible)
+	{
+		first = current;
+		CheckDoesValuesOkey();
 	}
 	return 1;
 }
@@ -166,17 +177,42 @@ int llist::KeyUp()
 int llist::KeyHome()
 {
 	if (current==0) && (first==0) return 0;
-	current=0;
-	first=0;
+	current = first = 0;
 	return 1;
 }
 
 int llist::KeyEnd()
 {
 	if (current==count-1) && (first==count-visible) return 0;
-	current=count-1;
-	first=count-visible;
+	current = count-1;
+	first = count - visible;
 	return 1;
+}
+
+int llist::KeyPgUp()
+{
+	if (count <= visible) return KeyHome();
+	if (first == 0) return 0;
+	first -= visible;
+	CheckDoesValuesOkey();
+	return 1;
+}
+
+int llist::KeyPgDown()
+{
+	if (count <= visible) return KeyEnd();
+	if (first == count - visible) return 0;
+	first += visible;
+	CheckDoesValuesOkey();
+	return 1;
+}
+
+void llist::CheckDoesValuesOkey()
+{
+	if (first < 0) first = 0;
+	if (visible + first > count) first = count - visible;
+	if (current >= count) current = count - 1;
+	if (current < 0) current = 0;
 }
 
 #endif
