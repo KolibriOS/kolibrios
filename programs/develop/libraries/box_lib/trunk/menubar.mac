@@ -160,12 +160,17 @@ m_get_mouse_flag	equ [edi+116]
 	cmp	ebp,m_cursor
 	jne	.no_active_text
 	mov	ecx,m_frnt_text_col
+	mov	eax,m_menu_sel_col
 	jmp	.active_text
 .no_active_text:
 	mov	ecx,m_bckg_text_col
+	mov	eax,m_menu_col
 .active_text:
-	add	ecx,0x80000000
+	add	ecx,0xC0000000
+	push	edi
+	mov	edi,eax
 	mcall	4
+	pop	edi
 	call	.get_next_text
 	inc	ebp
 	add	ebx,m_interval

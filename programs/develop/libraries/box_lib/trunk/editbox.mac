@@ -8,26 +8,24 @@ macro use_editbox_draw
 edit_box:
 .draw:
         pushad
-.draw_1:        
+.draw_1:
 ;--- рисуем рамку ---
         mov     edi,dword [esp+36]
-        call    .draw_border            ; Функция стабильна
+        call    .draw_border
 .draw_bg_cursor_text:
 ;--- изменяем смещение, если надо ---
-        call    .check_offset           ;вычисление позиции курсора стабильна
+        call    .check_offset
 ;--- рисуем внутреннюю область ---
-        call    .draw_bg                ;нарисовать прямоугольник рабочей области
-;---- рисуем выделение, по shift если есть
+        call    .draw_bg
+;--- рисуем выделение, по shift если есть ---
         call    .draw_shift
 .draw_cursor_text:
-;--- рисуем курсор ---
-        ;--- может его не надо рисовать ----
-        test    word ed_flags,ed_focus
-        jz      @f
-        call    .draw_cursor
-@@:
         call    .draw_text
-;        ret
+;--- рисуем курсор ---
+        ;--- может его не надо рисовать ---
+        test    word ed_flags,ed_focus
+        jz      .editbox_exit
+        call    .draw_cursor
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Общий выход из editbox для всех функций и пост обработчиков;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -194,13 +192,13 @@ macro use_general_func
 {
 ;debug_func
 ;----------------------------------------------------------
-;--- процедура прорисовки выделенной части -----------------
+;--- процедура прорисовки выделенной части ----------------
 ;----------------------------------------------------------
 edit_box.draw_shift:
         test    word ed_flags,ed_shift_bac ;установка флага, выделенной области
         jz      @f
         mov     ebp,shift_color
-        mov     ebx,dword       ed_shift_pos
+        mov     ebx,dword ed_shift_pos
         call    edit_box_key.sh_cl_
 @@:     ret
 ;----------------------------------------------------------
@@ -208,14 +206,13 @@ edit_box.draw_shift:
 ;----------------------------------------------------------
 edit_box.draw_text:
 ;--- вычисляем, сколько помещается символов ---
-;--- чтобы мусор не рисовать ---
         call    edit_box.get_n
         mov     esi,ed_size
         mov     ebx,ed_offset
         sub     esi,ebx
         cmp     eax,esi
         jae     @F
-        mov     esi,eax         ;чтобы не выходить за пределы экрана
+        mov     esi,eax
 ;--- рисуем текст ---
 @@:     mov     eax,4
         mov     ebx,ed_left
@@ -226,17 +223,11 @@ edit_box.draw_text:
         mov     ecx,ed_text_color
         add     ebx,4
         add     edx,ed_text
-                test    word ed_flags,ed_pass
-                jz      @f
-                call    edit_box.draw_password
-                jmp     .end_f
-@@:
+        test    word ed_flags,ed_pass
+        jnz     edit_box.draw_password
         mcall
-.end_f:
-ret
-
+        ret
 txt_pass db '*',0
-
 proc edit_box.draw_password
 locals
         s_len dw ? ;длина выводимого текста
@@ -254,7 +245,7 @@ endl
         cmp word[s_len],0
         jg @b
 .end_f:
-ret
+        ret
 endp
 ;----------------------------------------------------------
 ;--- процедура прорисовки фона ----------------------------
@@ -458,10 +449,11 @@ macro use_key_func
 {
 ;Обработка Shift для снятия выделения неизвестной области
 edit_box_key.shift: ;;;;;;;SHIFT
+        call    edit_box.draw_bg
         test    word ed_flags,ed_shift
         je      edit_box_key.f_exit
 
-@@:     mov     ebp,shift_color
+        mov     ebp,shift_color
         or      word ed_flags,ed_shift_bac ;установка флага, выделенной области
         mov     ebx,dword       ed_shift_pos
         call    edit_box_key.sh_cl_
@@ -592,6 +584,7 @@ edit_box_key.sh_st_of:
         jne     @f
         test    word ed_flags,ed_shift_bac
         je      @f
+        call    edit_box.draw_bg
         mov     ebp,ed_color
         mov     ebx,dword       ed_shift_pos
         call    edit_box_key.sh_cl_  ;очистка выделеного фрагмента
@@ -1047,6 +1040,8 @@ edit_box_key.left:
         or      word ed_flags,ed_left_fl
         call    edit_box_key.sh_first_sh
         dec      dword ed_pos
+        call    edit_box.draw_bg
+        call    edit_box.draw_shift
         call    edit_box_key.sh_enable
         jmp     edit_box.draw_cursor_text
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1058,6 +1053,8 @@ edit_box_key.right:
         and     word ed_flags,ed_right_fl
         call    edit_box_key.sh_first_sh
         inc     dword  ed_pos
+        call    edit_box.draw_bg
+        call    edit_box.draw_shift
         call    edit_box_key.sh_enable
         jmp     edit_box.draw_cursor_text
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1068,6 +1065,8 @@ edit_box_key.home:
         call    edit_box_key.sh_first_sh
         xor     eax,eax
         mov     ed_pos,eax
+        call    edit_box.draw_bg
+        call    edit_box.draw_shift
         call    edit_box_key.sh_home_end
         jmp     edit_box.draw_cursor_text
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1078,6 +1077,8 @@ edit_box_key.end:
         call    edit_box_key.sh_first_sh
         mov     eax,ed_size
         mov     ed_pos,eax
+        call    edit_box.draw_bg
+        call    edit_box.draw_shift
         call    edit_box_key.sh_home_end
         jmp     edit_box.draw_cursor_text
 ;-----------------------------------------------------------------------------
@@ -1194,6 +1195,10 @@ macro use_mouse_func
 ;--- Обработка .mouse_wigwag
 ;----------------------------------------------------------
 edit_box_mouse.mouse_wigwag:
+        push    eax
+        call    edit_box.draw_bg
+        call    edit_box.draw_shift
+        pop     eax
         shr     eax,16
         or      word ed_flags,ed_shift_bac+ed_shift_on+ed_shift
 ;;;;;;;;;;;;;;;;;;
@@ -1258,8 +1263,6 @@ edit_box_mouse.m1_shem:
 edit_box_mouse.mwigvag:
         and     word ed_flags,ed_shift_mcl
         jmp     edit_box.draw_cursor_text
-;       popa
-;       ret
 edit_box_mouse.mleft:
         mov     eax,ed_pos
         cmp     eax,0
@@ -1347,26 +1350,20 @@ edit_box_mouse._mshift:
 @@:
         test    word ed_flags,ed_mouse_on
         jne     @f
-
         mov     dword ed_shift_pos,eax
         or      word  ed_flags,ed_mouse_on
         mov     dword ed_pos,eax
-
-;        mov     dword [mouse_flag],edi          ;установим идентификатор
-
         mov     ebx,dword ed_mouse_variable
         push    edi
         pop     dword [ebx]
-
-
-
-
         bts     word ed_flags,1                 ;установка фокуса
+        call    edit_box.draw_bg
         jmp     edit_box_mouse.m_sh
 @@:
         cmp     eax,dword ed_shift_pos  ;если позиции не изменились
         je      edit_box.editbox_exit
         mov     ed_pos,eax
+        call    edit_box.draw_bg
         mov     ebp,dword shift_color
         mov     ebx,dword ed_shift_pos
         call    edit_box_key.sh_cl_

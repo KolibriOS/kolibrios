@@ -187,7 +187,6 @@ fb_draw_panel_selection:
 	mov	fb_start_draw_cursor_line,cx
 	mov	ebx,fb_size_x
 	add	cx,fb_start_y
-;.1:
 	shl	ecx,16
 	mov	cx,fb_line_size_y
 	mov	edx,fb_select_color
@@ -209,7 +208,6 @@ fb_draw_panel_selection:
 	ret
 ;---------------------------------------------------------------------
 fb_for_all_panel_selection:
-;	dec	eax
 	xor	edx,edx
 	mov	dx,fb_line_size_y
 	imul	eax,edx
@@ -258,7 +256,6 @@ fb_draw_folder_data:
 	div	ebx
 	cmp	eax,fb_folder_block
 	je	.end_1
-;.continue_1:
 	popa
 	cmp	eax,fb_max_panel_line
 	je	.end_2
@@ -302,11 +299,10 @@ fb_draw_folder_data:
 	mov	ecx,fb_text_color
 	cmp	fb_marked_file,0
 	je	@f
-	mov	ecx,fb_reduct_text_color	;0xff0000
+	mov	ecx,fb_reduct_text_color
 @@:
 	mov	ax,fb_line_size_y
 	sub	ax,fb_font_size_y
-
 	push	ebx
 	mov	bx,ax
 	shr	ax,1
@@ -315,10 +311,11 @@ fb_draw_folder_data:
 	inc	ax
 @@:
 	pop	ebx
-
 	push	ebx
 	add	bx,ax
 	call	.draw_name_temp_area
+	cmp	fb_temp_counter,0
+	jz	.continue
 	xor	eax,eax
 	mov	ax,fb_font_size_x
 	imul	eax,fb_display_name_max_length
@@ -326,40 +323,9 @@ fb_draw_folder_data:
 	push	edx
 	add	ebx,eax
 	mov	esi,2
-	mov	ecx,fb_reduct_text_color	;0xff0000
+	mov	ecx,fb_reduct_text_color
 	mov	edx,dword fb_truncated_filename_char
-	cmp	fb_temp_counter,0
-	jne	@f
-	mov	edx,dword fb_truncated_filename_clear
-	mov	ecx,fb_text_color
-@@:
-	push	edi
-
-	and	ecx,0x30ffffff
-	add	ecx,0x40000000
-	mov	eax,fb_background_color
-	cmp	fb_draw_panel_selection_flag,1
-	jne	@f
-	mov	eax,fb_select_color
-@@:
-	mov	edi,eax
 	mcall	4
-	pop	edi
-	cmp	fb_temp_counter,0
-	je	.continue_1
-	push	edi
-
-	mov	eax,fb_background_color
-	cmp	fb_draw_panel_selection_flag,1
-	jne	@f
-	mov	eax,fb_select_color
-@@:
-	mov	edi,eax
-
-	add	ebx,1 shl 16
-	mcall	4
-	pop	edi
-.continue_1:
 	pop	edx
 .continue:
 	pop	ebx
@@ -371,42 +337,41 @@ fb_draw_folder_data:
 ;--------------------------------------
 .draw_name_temp_area:
 	pusha
-	mov	ebx,esi
-	mov	eax,dword '    '
-	mov	ecx,256/4
-	cld
-
-	push	edi
-	mov	edi,fb_name_temp_area
-	rep	stosd
-	pop	edi
-
+	mov	eax,fb_max_name_temp_size
+	add	eax,2
+	sub	eax,esi
+	mov	ecx,esi
 	mov	esi,edx
-	mov	ecx,ebx
-	cld
 	mov	edi,fb_name_temp_area
+	cld
+	jcxz	@f
 	rep	movsb
+	cmp	byte [edi-1],0
+	jnz	@f
+	dec	edi
+	inc	eax
+@@:
+	mov	ecx,eax
+	shr	ecx,2
+	mov	eax,dword '    '
+	rep	stosd
 	popa
-
 	pusha
 	mov	edx,fb_name_temp_area
-
 	cmp	fb_all_redraw,2
-	jne	.draw_name_temp_area_1
+	jne	@f
 	mov	esi,fb_max_name_temp_size
-	and	ecx,0xffffff
-	add	ecx,0x40000000
-
+	add	esi,2
+@@:
+	bts	ecx,30
 	mov	eax,fb_background_color
 	cmp	fb_draw_panel_selection_flag,1
 	jne	@f
 	mov	eax,fb_select_color
 @@:
 	mov	edi,eax
-.draw_name_temp_area_1:
 	mcall	4
 	popa
-
 	ret
 ;--------------------------------------
 .end_1:
@@ -414,7 +379,6 @@ fb_draw_folder_data:
 .end_2:
 	cmp	fb_all_redraw,1
 	jne	@f
-
 	mov	ax,fb_start_y
 	add	ax,fb_size_y
 	mov	cx,bx
@@ -433,9 +397,6 @@ fb_draw_folder_data:
 	mov	edx,fb_background_color	;0xffffff
 	mcall	13
 @@:
-
-.end:
-;	mov	fb_draw_scroll_bar,dword 1
 	ret
 ;---------------------------------------------------------------------
 fb_clear_line:
@@ -443,7 +404,6 @@ fb_clear_line:
 	pusha
 	shl	ebx,16
 	shr	ebx,16
-;	dec	ebx
 	cmp	fb_select_panel_counter,0
 	je	.continue
 	mov	ax,fb_start_draw_cursor_line
@@ -459,7 +419,6 @@ fb_clear_line:
 	je	.end
 	mov	ebx,[esp+16]
 	mov	cx,bx
-;	dec	cx
 	rol	ecx,16
 	mov	cx,fb_line_size_y
 	mov	bx,fb_size_x
@@ -484,8 +443,8 @@ fb_draw_type_size_date:
 	mov	fb_extension_size,0
 	jmp	.start
 .copy_type:
-	mov	[eax],dword '	'
-	mov	[eax+4],word '	'
+	mov	[eax],dword '    '
+	mov	[eax+4],word '  '
 .start:
 	mov	esi,edx
 	xor	eax,eax
@@ -499,7 +458,6 @@ fb_draw_type_size_date:
 	mov	fb_temp_counter,esi
 	test	[edx-40],byte	0x10
 	jnz	.size
-;@@:
 	dec	esi
 	dec	edx
 @@:
@@ -583,7 +541,6 @@ fb_draw_type_size_date:
 	jmp	.call_decimal_string
 @@:
 	mov	eax,ebx
-;.size_convert:
 	mov	ebx,fb_type_table
 	add	ebx,6
 	call	fb_decimal_string_4
@@ -638,14 +595,12 @@ fb_draw_type_size_date:
 	mov	ecx,fb_text_color
 	cmp	fb_marked_file,0
 	je	@f
-	mov	ecx,fb_reduct_text_color	;0xff0000
+	mov	ecx,fb_reduct_text_color
 @@:
 	mov	edx,fb_type_table
 	mov	esi,20
-
 	mov	ax,fb_line_size_y
 	sub	ax,fb_font_size_y
-
 	push	ebx
 	mov	bx,ax
 	shr	ax,1
@@ -655,18 +610,13 @@ fb_draw_type_size_date:
 @@:
 	pop	ebx
 	add	bx,ax
-	cmp	fb_all_redraw,2
-	jne	.draw  ;@f
-	and	ecx,0xffffff
-	add	ecx,0x40000000
-
+	bts	ecx,30
 	mov	eax,fb_background_color
 	cmp	fb_draw_panel_selection_flag,1
 	jne	@f
 	mov	eax,fb_select_color
 @@:
 	mov	edi,eax
-.draw:
 	mcall	4
 	popa
 	ret
@@ -687,9 +637,7 @@ fb_draw_icon:
 @@:
 	test	[edx-40],byte 0x10
 	jnz	.draw_dir_pic
-
 	call	fb_get_icon_number
-;	mov	ebx,2
 	imul	ebx,eax	;16*16*3
 	jmp	.draw
 .draw_dir_pic:
@@ -702,22 +650,17 @@ fb_draw_icon:
 	mov	cx,fb_icon_size_x
 	shl	ecx,16
 	mov	cx,fb_icon_size_y
-	
 	mov	edx,[esp+16]
 	ror	edx,16
 	sub	edx,2
 	sub	dx,fb_icon_size_x
 	rol	edx,16
-
 	mov	ax,fb_line_size_y
 	sub	ax,fb_icon_size_y
 	shr	ax,1
 	add	dx,ax
-
 	mov	esi,fb_resolution_raw
-
 	xor	ebp,ebp
-	
 	push	edi
 	mov	edi,fb_palette_raw
 	mcall	65
@@ -926,8 +869,6 @@ fb_char_todown:
 ;---------------------------------------------------------------------
 fb_truncated_filename_char:
 	db	'..'
-fb_truncated_filename_clear:
-	db	'  '
 ;---------------------------------------------------------------------
 ;*****************************************************************************
 ;*****************************************************************************
