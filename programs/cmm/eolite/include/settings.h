@@ -129,7 +129,7 @@ void DrawSettingsCheckBoxes()
 
 void LoadIniSettings()
 {
-	ini_get_color stdcall (eolite_ini_path, #confir_section, "SelectionColor",   0x94AECE); edit2.shift_color = col_selec = EAX;
+	ini_get_color stdcall (eolite_ini_path, #confir_section, "SelectionColor",   0x94AECE); col_selec = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #confir_section, "ShowDeviceName",    1); show_dev_name = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #confir_section, "RealFileNamesCase", 0); real_files_names_case = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #confir_section, "InfoAfterCopy",     0); info_after_copy = EAX;

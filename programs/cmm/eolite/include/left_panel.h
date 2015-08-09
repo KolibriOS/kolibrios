@@ -112,15 +112,11 @@ void GetSystemDiscs()
 void DrawSystemDiscs()
 {    
 	char dev_name[15], disc_name[100], i, dev_icon, is_active;
-	int pos_y;
+	int pos_y, pos_x;
 	
 	for (i=disc_num; i<30; i++) DeleteButton(100+i);
 	for (i=0;i<disc_num;i++)
 	{
-		pos_y = i*16+74;
-		DrawBar(17,pos_y,6,17,0xFFFFFF);
-		DrawBar(17+6+18,pos_y,160-6-18,17,0xFFFFFF);
-		DefineButton(17,pos_y,159,16,100+i+BT_HIDE,0xFFFFFF);
 		strcpy(#dev_name, #disk_list[i].Item);
 		dev_name[strlen(#dev_name)-1]=NULL;
 		switch(dev_name[1])
@@ -159,24 +155,42 @@ void DrawSystemDiscs()
 				strcpy(#disc_name, T_RAM);
 				break;
 			default:
-				dev_icon=3; //по-умолчанию устройство выглядит как жестяк но это неправильно
+				dev_icon=3;
 				strcpy(#disc_name, T_UNC);				
 		}
 		if (strstr(#path, #dev_name)) is_active=true; else is_active=false;
-		if (show_dev_name)
+		if (!two_panels)
 		{
-			strcat(#disc_name, #dev_name);
-			if (is_active) WriteText(46+1,pos_y+5,0x80,0x555555,#disc_name);
-			WriteText(46,pos_y+5,0x80,0,#disc_name);
+			pos_y = i*16+74;
+			DrawBar(17,pos_y,6,17,0xFFFFFF);
+			DrawBar(17+6+18,pos_y,160-6-18,17,0xFFFFFF);
+			DefineButton(17,pos_y,159,16,100+i+BT_HIDE,0xFFFFFF);
+			if (show_dev_name)
+			{
+				strcat(#disc_name, #dev_name);
+				if (is_active) WriteText(46+1,pos_y+5,0x80,0x555555,#disc_name);
+				WriteText(46,pos_y+5,0x80,0,#disc_name);
+			}
+			else
+			{
+				if (is_active) WriteText(46+1,pos_y+5,0x80,0x555555,#dev_name);
+				WriteText(46,pos_y+5,0x80,0,#dev_name);
+			}
+			_PutImage(23,pos_y, 18,17, is_active*6+dev_icon*17*18*3+#devices);
 		}
 		else
 		{
-			if (is_active) WriteText(46+1,pos_y+5,0x80,0x555555,#dev_name);
-			WriteText(46,pos_y+5,0x80,0,#dev_name);
+			pos_y = 41;
+			pos_x = i*80 + files.x;
+			DrawBar(pos_x, pos_y, 80, 17, 0xFFFFFF);
+			DefineButton(pos_x, pos_y, 79, 16, 100+i+BT_HIDE,0xFFFFFF);
+			_PutImage(pos_x + 5, pos_y, 18,17, is_active*6+dev_icon*17*18*3+#devices);
+			WriteText(pos_x + 24, pos_y+5, 0x80, 0, #dev_name);
 		}
-		_PutImage(23,pos_y, 18,17, is_active*6+dev_icon*17*18*3+#devices);
 	}
+	if (two_panels) DrawBar(pos_x + 80, pos_y, files.x + files.w - pos_x - 80 + 17, 17, system.color.work);
 }
+
 
 void ActionsDraw()
 {
@@ -221,4 +235,12 @@ void DrawLeftPanel()
 	DrawSystemDiscs();
 	ActionsDraw();
 	DrawLeftPanelBg();
+}
+
+
+void ClickOnDisk(char diskN)
+{
+	strcpy(#path, #disk_list[diskN].Item);
+	files.KeyHome();
+	Open_Dir(#path,WITH_REDRAW);	
 }

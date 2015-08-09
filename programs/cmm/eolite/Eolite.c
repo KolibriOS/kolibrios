@@ -23,88 +23,9 @@
 #include "imgs\left_p.txt"
 #include "imgs\icons.txt"
 
-#ifdef LANG_RUS
-	?define T_FILE "Файл"
-	?define T_TYPE "Тип"
-	?define T_SIZE "Размер"
-	?define T_NEW_FOLDER "Новая папка"
-	?define T_NEW_FILE "Новый файл"
-	?define T_DELETE_FILE "Вы действительно хотите удалить"
-	?define T_YES "Да"
-	?define T_NO "Нет"
-	?define T_CANCEL "Отмена"
-	?define T_CREATE "Создать"
-	?define T_RENAME "Переименовать"
-	?define FS_ITEM_ALREADY_EXISTS "'Элемент с таким именем уже существует' -E"
-	?define T_DEL_ERROR_1 "Ошибка. Папка не пустая."
-	?define WAIT_DELETING_FOLDER "Удаляется папка. Подожите..."
-	?define NOT_CREATE_FOLDER "Не удалось создать папку."
-	?define NOT_CREATE_FILE "Не удалось создать файл."
-	?define T_PASTE_WINDOW_TITLE "Копирую..."
-	?define T_PASTE_WINDOW_TEXT "Копируется файл:"
-	?define T_PASTE_WINDOW_BUTTON "Прервать"	
-	?define INFO_AFTER_COPY "Копирование завершено"
-	?define T_CANCEL_PASTE "Копирование прекращено. Папка скопирована не полностью."
-	?define T_SELECT_APP_TO_OPEN_WITH "Выберите программу для открытия файла"
-	?define DEL_MORE_FILES_1 "выбранные элементы ("
-	?define DEL_MORE_FILES_2 " шт.)?"
-#elif LANG_EST
-	?define T_FILE "Fail"
-	?define T_TYPE "TтДЦтДЦp"
-	?define T_SIZE "Suurus"
-	?define T_NEW_FOLDER "Uus kataloog"
-	?define T_NEW_FILE "Uus fail"
-	?define T_DELETE_FILE "Kas sa tahad t╤Чesti kustutada"
-	?define T_YES "Jah"
-	?define T_NO "Ei"
-	?define T_CANCEL "Cancel"
-	?define T_CREATE "Create"
-	?define T_RENAME "Rename"
-	?define FS_ITEM_ALREADY_EXISTS "'An item with that name already exists' -E"
-	?define T_DEL_ERROR_1 "Viga. Kataloog ei ole tтДЦhi."
-	?define WAIT_DELETING_FOLDER "Deleting folder. Please, wait..."
-	?define NOT_CREATE_FOLDER "Kataloogi ei saa luua."
-	?define NOT_CREATE_FILE "Faili ei saa luua."
-	?define T_PASTE_WINDOW_TITLE "Kopeerin..."
-	?define T_PASTE_WINDOW_TEXT "Kopeerin faili:"
-	?define T_PASTE_WINDOW_BUTTON "Abort"
-	?define INFO_AFTER_COPY "Copy finished"
-	?define T_CANCEL_PASTE "Copy process terminated. Folder copied incompletely."
-	?define T_SELECT_APP_TO_OPEN_WITH "Select application to open file"
-	?define DEL_MORE_FILES_1 "selected items("
-	?define DEL_MORE_FILES_2 " pcs.)?"
-#else
-	?define T_FILE "File"
-	?define T_TYPE "Type"
-	?define T_SIZE "Size"
-	?define T_NEW_FOLDER "New folder"
-	?define T_NEW_FILE "New file"
-	?define T_DELETE_FILE "Do you really want to delete"
-	?define T_YES "Yes"
-	?define T_NO "No"
-	?define T_CANCEL "Cancel"
-	?define T_CREATE "Create"
-	?define T_RENAME "Rename"
-	?define FS_ITEM_ALREADY_EXISTS "'An item with that name already exists' -E"
-	?define T_DEL_ERROR_1 "Error. Folder isn't empty."
-	?define WAIT_DELETING_FOLDER "Deleting folder. Please, wait..."
-	?define NOT_CREATE_FOLDER "Folder can not be created."
-	?define NOT_CREATE_FILE "File can not be created."
-	?define T_PASTE_WINDOW_TITLE "Copying..."
-	?define T_PASTE_WINDOW_TEXT "Copying file:"
-	?define T_PASTE_WINDOW_BUTTON "Abort"
-	?define INFO_AFTER_COPY "Copy finished"
-	?define T_CANCEL_PASTE "Copy process terminated. Folder copied incompletely."
-	?define T_SELECT_APP_TO_OPEN_WITH "Select application to open file"
-	?define DEL_MORE_FILES_1 "selected items("
-	?define DEL_MORE_FILES_2 " pcs.)?"
-#endif
-
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
-enum { CREATE_FILE=1, CREATE_FOLDER, RENAME_ITEM }; //NewElement
+enum {CREATE_FILE=1, CREATE_FOLDER, RENAME_ITEM }; //NewElement
 
-#define TITLE "Eolite File Manager v3.01 beta"
-#define ABOUT_TITLE "Eolite 3.01 beta"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -117,52 +38,59 @@ word settings_window;
 dword _not_draw = false;
 byte menu_call_mouse=0;
 
+byte del_active=0,
+	new_element_active=0;
+
 llist files;
 
 byte list_full_redraw;
+
+dword buf;
+dword file_mas[6898];
+int selected_count;
+
 
 byte
 	path[4096],
 	file_path[4096],
 	file_name[256],
 	new_element_name[256],
-	temp[4096];	 
-byte
-	del_active=0,
-	new_element_active=0,
-	show_dev_name=1,
-	real_files_names_case=0,
-	use_big_fonts=0,
-	font_type,
-	font_h,
-	info_after_copy=0,
-	sort_num=2,
+	temp[4096],
 	itdir;
+
+//struct t_settings {
+byte use_big_fonts=false,
+	font_type=0x80,
+	font_h=9,
+	sort_num=2,
+	show_dev_name=true,
+	real_files_names_case=false,
+	info_after_copy=false,
+	two_panels=false;
+//} settings;
+
 
 dword eolite_ini_path;
 
-char scroll_used=0;
+char scroll_used=false;
 
 dword menu_stak,about_stak,properties_stak,settings_stak,copy_stak;
 
 proc_info Form;
 int mouse_dd, sc_slider_h, sorting_arrow_x, kolibrios_drive;
-dword buf;
-dword file_mas[6898];
 int j, i;
 int action_buf;
 int rand_n;
-int selected_count;
 byte CMD_REFRESH;
 
 signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
 
 
-edit_box edit2 = {250,213,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xFFFFFF,0,248,#file_name,#mouse_dd,64,6,6};
 edit_box new_file_ed = {171,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0,248,#new_element_name,#mouse_dd,100000000000010b,6,0};
 PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 0};
 PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 byte cmd_free=0;
+#include "include\translations.h"
 #include "include\copy.h"
 #include "include\gui.h"
 #include "include\sorting.h"
@@ -177,7 +105,7 @@ byte cmd_free=0;
 
 void main() 
 {
-	word key,key2, id;
+	word key, key2, id;
 	dword status_key;
 	char can_show, can_select, stats;
 	dword selected_offset;
@@ -396,14 +324,8 @@ void main()
 							FnProcess(id-50);
 							break;
 					case 100...120:
-						DEVICE_MARK:
-							DrawRectangle(17,id-100*16+74,159,16, 0); //auaaeaiea
-							strcpy(#path, #disk_list[id-100].Item);
-							files.KeyHome();
-							Open_Dir(#path,WITH_REDRAW);
-							pause(5);
-							DrawRectangle(17,id-100*16+74,159,16, 0xFFFFFF);
-							break;
+						ClickOnDisk(id-100);
+						break;
 				}
 				break;
 	//Key pressed-----------------------------------------------------------------------------
@@ -413,26 +335,20 @@ void main()
 				$shr  eax,16
 				key2 = AL;
 				status_key = GetStatusKey();
-				
+
 				if (Form.status_window>2) break;
 				if (del_active)
 				{
-					if (key==013) Del_File(true);
-					if (key==027) Del_File(false);
+					if (key == ASCII_KEY_ENTER) Del_File(true);
+					if (key == ASCII_KEY_ESC) Del_File(false);
 					break;
 				}
 				if (new_element_active)
 				{
-					if (key==027) NewElement(0);
-					if (key==013) NewElement(1);
+					if (key == ASCII_KEY_ESC) NewElement(0);
+					if (key == ASCII_KEY_ENTER) NewElement(1);
 					EAX=key<<8;
 					edit_box_key stdcall (#new_file_ed);
-					break;
-				}
-				if (edit2.flags!=64) && (key!=13) && (key!=27)
-				{
-					EAX=key<<8;
-					edit_box_key stdcall (#edit2);
 					break;
 				}
 				if (files.ProcessKey(key))
@@ -440,7 +356,7 @@ void main()
 					List_ReDraw();
 					break;
 				}
-				
+
 				if (TestBit(status_key, 2))
 				{
 					switch(key2)
@@ -485,25 +401,31 @@ void main()
 					}
 					break;
 				}
-				
+
 				switch (key)
 				{
+						case 096:
+								two_panels ^= 1;
+								draw_window();
+								break;
 						case 209...217:
-								id=key-110;
-								if (id-100>=disc_num) break;
-								GOTO DEVICE_MARK;
+								key -= 210;
+								if (key<disc_num)
+								{
+									DrawRectangle(17,key*16+74,159,16, 0); //display click
+									pause(7);
+									ClickOnDisk(key);
+								}
+								break;
 						case ASCII_KEY_BS:
 								//GoBack();
 								Dir_Up();
 								break; 
-						case ASCII_KEY_ESC:
-								break;
 						case ASCII_KEY_ENTER:
 								Open(0);
 								break; 
 						case 074: //menu
 								menu_call_mouse=0;
-								//SwitchToAnotherThread();
 								menu_stak = malloc(4096);
 								CreateThread(#FileMenu,menu_stak+4092);
 								break;
@@ -530,7 +452,7 @@ void main()
 								_INSERT_END:
 								if (files.KeyDown()) List_ReDraw();
 								break;
-						case 048...059: //F1-F10
+						case 049...059: //F1-F10
 								FnProcess(key-49);
 								break; 
 						default:    
@@ -547,18 +469,30 @@ void main()
 								}
 				}                         
 			break;
+			case evIPC:
 			case evReDraw:
-				DRAW_WINDOW:
 				draw_window();
 				if (action_buf) 
 				{
-					menu_action(action_buf); 
+					if (action_buf==COPY_PASTE_END)
+					{
+						FnProcess(5);
+						SelectFileByName(#copy_to+strrchr(#copy_to,'/'));
+					}
+					if (action_buf==100) Open(0);
+					if (action_buf==201) ShowOpenWithDialog();
+					if (action_buf==202) FnProcess(3); //F3
+					if (action_buf==203) FnProcess(4); //F4
+					if (action_buf==104) Copy(#file_path, NOCUT);
+					if (action_buf==105) Copy(#file_path, CUT);
+					if (action_buf==106) Paste();
+					if (action_buf==207) FnProcess(2);
+					if (action_buf==108) Del_Form();
+					if (action_buf==109) FnProcess(5);
+					if (action_buf==110) FnProcess(8);
+					if (action_buf==300) { FnProcess(5); List_ReDraw(); }
 					action_buf=0;
 				}
-			break;
-			case evIPC:
-				goto DRAW_WINDOW;
-			break;
 		}
 		
 		if(cmd_free)
@@ -574,44 +508,6 @@ void main()
 }
 
 
-inline fastcall signed int _strrchr( ESI,BL)
-{
-	int jj=0, last=strlen(ESI);
-	do {
-		jj++;
-		$lodsb
-		if(AL==BL) last=jj;
-	} while(AL!=0);
-	return last;
-}
-
-
-void menu_action(dword id)
-{
-	if (id==COPY_PASTE_END)
-	{
-		FnProcess(5);
-		SelectFileByName(#copy_to+strrchr(#copy_to,'/'));
-	}
-	if (id==100) Open(0);
-	if (id==201) ShowOpenWithDialog();
-	if (id==202) FnProcess(3); //F3
-	if (id==203) FnProcess(4); //F4
-	if (id==104) Copy(#file_path, NOCUT);
-	if (id==105) Copy(#file_path, CUT);
-	if (id==106) Paste();
-	if (id==207) FnProcess(2);
-	if (id==108) Del_Form();
-	if (id==109) FnProcess(5);
-	if (id==110) FnProcess(8);
-	if (id==300)
-	{ 
-		FnProcess(5); 
-		List_ReDraw(); 
-	}
-}
-
-
 void draw_window()
 {
 	DefineAndDrawWindow(GetScreenWidth()-550/4+rand_n,rand_n+30,550,500,0x73,system.color.work,TITLE,0);
@@ -620,7 +516,6 @@ void draw_window()
 	if (Form.height < files.min_h) MoveSize(OLD,OLD,OLD,files.min_h);
 	if (Form.width<480) MoveSize(OLD,OLD,480,OLD);
 	GetProcessInfo(#Form, SelfInfo); //if win_size changed
-	files.SetSizes(192, 57, Form.cwidth - 210, onTop(57,6), disc_num*16+195,files.line_h);
 	PutPaletteImage(#toolbar,246,34,0,0,8,#toolbar_pal);
 	DrawBar(127, 8, 1, 25, system.color.work_graph);
 	for (j=0; j<3; j++) DefineButton(toolbar_buttons_x[j]+2,5+2,31-5,29-5,21+j+BT_HIDE,system.color.work);
@@ -631,20 +526,37 @@ void draw_window()
 	DefineButton(Form.cwidth - 32,6,27,28,51+BT_HIDE+BT_NOFRAME,0); //about
 	PutPaletteImage(#goto_about,56,34,Form.width-65,0,8,#goto_about_pal);
 	//main rectangles
-	DrawRectangle(1,40,Form.cwidth-3,onTop(46,0),system.color.work_graph);
-	DrawRectangle(0,39,Form.cwidth-1,onTop(44,0),col_palette[4]); //bg
+	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42,system.color.work_graph);
+	DrawRectangle(0,39,Form.cwidth-1,Form.cheight - 40,col_palette[4]); //bg
 	for (i=0; i<5; i++) DrawBar(0, 34+i, Form.cwidth, 1, col_palette[8-i]);	
-	DrawLeftPanel();
-	//ListBox
-	DrawFlatButton(files.x,40,Form.cwidth - files.x - 159,16,31,system.color.work,T_FILE);
-	DrawFlatButton(Form.cwidth - 159,40,73,16,32,system.color.work,T_TYPE);
-	DrawFlatButton(Form.cwidth - 86,40,68,16,33,system.color.work,T_SIZE);
-	DrawBar(files.x+files.w,files.y,1,onTop(22,files.y),system.color.work_graph); //line to the left from the scroll
-	DrawFlatButton(files.x+files.w,40,16,16,0,system.color.work,"\x18");
-	DrawFlatButton(files.x+files.w,onTop(22,0),16,16,0,system.color.work,"\x19");
-	Open_Dir(#path,ONLY_SHOW);
+	if (!two_panels)
+	{
+		DrawLeftPanel();
+		files.SetSizes(192, 57, Form.cwidth - 210, Form.cheight - 59, disc_num*16+3,files.line_h);	
+		DrawListColumns();
+		Open_Dir(#path,ONLY_SHOW);
+	}
+	else
+	{
+		files.SetSizes(2, 57+18, Form.cwidth/2-2-17, Form.cheight-59-18, disc_num*16+3,files.line_h);
+		DrawListColumns();
+		Open_Dir(#path,ONLY_SHOW);		
+		files.SetSizes(Form.cwidth/2, 57+18, Form.cwidth/2-17, Form.cheight-59-18, disc_num*16+3,files.line_h);
+		DrawListColumns();
+		Open_Dir(#path,ONLY_SHOW);
+	}
 	if (del_active) Del_Form();
 	if (new_element_active) NewElement_Form(new_element_active, #new_element_name);
+}
+
+void DrawListColumns() 
+{
+	DrawFlatButton(files.x,files.y -  17,  files.w - 141,16,31,system.color.work,T_FILE);
+	DrawFlatButton(files.x + files.w - 141,  files.y-17,73,16,32,system.color.work,T_TYPE);
+	DrawFlatButton(files.x + files.w -  68,  files.y-17,68,16,33,system.color.work,T_SIZE);
+	DrawFlatButton(files.x + files.w,        files.y-17,16,16, 0,system.color.work,"\x18");
+	DrawFlatButton(files.x + files.w,files.y+files.h-16,16,16, 0,system.color.work,"\x19");
+	DrawBar(files.x+files.w,files.y,1,files.h,system.color.work_graph);
 }
 
 
@@ -664,7 +576,7 @@ void List_ReDraw()
 	}
 	if (old_current != files.current)
 	{
-		Line_ReDraw(0xFFFFFF, old_current-files.first);
+		if (old_current-files.first<files.visible) Line_ReDraw(0xFFFFFF, old_current-files.first);
 		Line_ReDraw(col_selec, files.current-files.first);
 		old_current = files.current;
 		return;
@@ -704,7 +616,9 @@ void Line_ReDraw(dword color, filenum){
 
 	if (! TestBit(attr, 4) ) //file or folder?
 	{	
-		Put_icon(file_name_off+_strrchr(file_name_off,'.'), files.x+3, files.line_h/2-7+y, color, 0);
+		ext1 = strrchr(file_name_off,'.') + file_name_off;
+		if (ext1==file_name_off) ext1 = " \0"; //if no extension then show nothing 
+		Put_icon(ext1, files.x+3, files.line_h/2-7+y, color, 0);
 		WriteText(7-strlen(ConvertSize(file.sizelo))*6+Form.cwidth - 76, files.line_h - font_h/ 2 + y,font_type,0,ConvertSize(file.sizelo));
 	}
 	else
@@ -1105,7 +1019,6 @@ void FnProcess(byte N)
 		case 1:
 			if (!active_about) 
 			{
-				//SwitchToAnotherThread();
 				about_stak = malloc(4096);
 				about_window = CreateThread(#about_dialog,about_stak+4092);
 				break;
@@ -1141,14 +1054,12 @@ void FnProcess(byte N)
 			NewElement_Form(CREATE_FILE, T_NEW_FILE);
 			break;
 		case 8:
-			//SwitchToAnotherThread();
 			properties_stak = malloc(8096);
 			CreateThread(#properties_dialog, properties_stak+8092);
 			break;
 		case 10: //F10
 			if (!active_settings) 
 			{
-				//SwitchToAnotherThread();
 				settings_stak = malloc(4096);
 				settings_window = CreateThread(#settings_dialog, settings_stak+4092);
 				break;
