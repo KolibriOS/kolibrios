@@ -214,7 +214,7 @@ void GetSizeMoreFiles(dword way)
 void properties_dialog()
 {
 	byte id;
-	byte key;
+	byte key,key2;
 	dword file_name_off;
 	dword selected_offset2;
 	
@@ -285,17 +285,34 @@ void properties_dialog()
 				break;
 			
 		case evKey:
-				key = GetKey();
+				GetFullKey();
+				key = AH;
+				$shr  eax,16
+				key2 = AL;
+				
 				if (quest_active)
 				{
-					IF (key==013) SetProperties(2);
-					IF (key==027) SetProperties(1);
+					IF (key2==SCAN_CODE_ENTER) SetProperties(2);
+					IF (key2==SCAN_CODE_ESC) SetProperties(1);
 					break;
 				}
-				if (key==27)
+				if (key2==SCAN_CODE_ESC)
 				{
 					cmd_free=3;
 					ExitProcess();
+				}
+				if (key2==SCAN_CODE_ENTER)
+				{
+					if (selected_count) || (itdir)
+					{
+						quest_active = 1;
+						Quest();
+					}
+					else 
+					{
+						SetProperties(0);
+					}
+					break;
 				}
 				EAX=key<<8;
 				edit_box_key stdcall(#file_name_ed);

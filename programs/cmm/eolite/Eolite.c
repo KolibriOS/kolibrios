@@ -339,19 +339,19 @@ void main()
 				if (Form.status_window>2) break;
 				if (del_active)
 				{
-					if (key == ASCII_KEY_ENTER) Del_File(true);
-					if (key == ASCII_KEY_ESC) Del_File(false);
+					if (key2 == SCAN_CODE_ENTER) Del_File(true);
+					if (key2 == SCAN_CODE_ESC) Del_File(false);
 					break;
 				}
 				if (new_element_active)
 				{
-					if (key == ASCII_KEY_ESC) NewElement(0);
-					if (key == ASCII_KEY_ENTER) NewElement(1);
+					if (key2 == SCAN_CODE_ESC) NewElement(0);
+					if (key2 == SCAN_CODE_ENTER) NewElement(1);
 					EAX=key<<8;
 					edit_box_key stdcall (#new_file_ed);
 					break;
 				}
-				if (files.ProcessKey(key))
+				if (files.ProcessKey(key2))
 				{
 					List_ReDraw();
 					break;
@@ -361,6 +361,15 @@ void main()
 				{
 					switch(key2)
 					{
+						case 059...068:
+								key2 -= 59;
+								if (key2<disc_num)
+								{
+									DrawRectangle(17,key2*16+74,159,16, 0); //display click
+									pause(7);
+									ClickOnDisk(key2);
+								}
+								break;
 						case 45:  //Ctrl+X
 								Copy(#file_path, CUT);
 								break;						
@@ -379,6 +388,10 @@ void main()
 								if (Form.left==98) MoveSize(Form.left-20,Form.top-20,OLD,OLD);
 								RunProgram("/sys/File Managers/Eolite", #path);
 								break; 
+						case 028: //Ctrl+Enter
+								if (!itdir) ShowOpenWithDialog();
+								else Open(1);
+								break;
 						case 030: //Ctrl+A - select all files
 								for (i=0; i<files.count; i++) 
 								{
@@ -402,41 +415,28 @@ void main()
 					break;
 				}
 
-				switch (key)
+				switch (key2)
 				{
-						case 096:
+						case 041:
 								two_panels ^= 1;
 								draw_window();
 								break;
-						case 209...217:
-								key -= 210;
-								if (key<disc_num)
-								{
-									DrawRectangle(17,key*16+74,159,16, 0); //display click
-									pause(7);
-									ClickOnDisk(key);
-								}
-								break;
-						case ASCII_KEY_BS:
+						case SCAN_CODE_BS:
 								//GoBack();
 								Dir_Up();
 								break; 
-						case ASCII_KEY_ENTER:
+						case SCAN_CODE_ENTER:
 								Open(0);
 								break; 
-						case 074: //menu
+						case 093: //menu
 								menu_call_mouse=0;
 								menu_stak = malloc(4096);
 								CreateThread(#FileMenu,menu_stak+4092);
 								break;
-						case 173: //Ctrl+Enter
-								if (!itdir) ShowOpenWithDialog();
-								else Open(1);
-								break;
-						case ASCII_KEY_DEL:
+						case SCAN_CODE_DEL:
 								Del_Form();
 								break;
-						case ASCII_KEY_INS:
+						case SCAN_CODE_INS:
 								selected_offset = file_mas[files.current]*304 + buf+32 + 7;
 								if (files.current==0) && (!strncmp(selected_offset+33, "..", 2)) goto _INSERT_END; //do not selec ".." directory
 								if (ESBYTE[selected_offset])
@@ -452,8 +452,8 @@ void main()
 								_INSERT_END:
 								if (files.KeyDown()) List_ReDraw();
 								break;
-						case 049...059: //F1-F10
-								FnProcess(key-49);
+						case 059...068: //F1-F10
+								FnProcess(key2-58);
 								break; 
 						default:    
 								for (i=files.current+1; i<files.count; i++)

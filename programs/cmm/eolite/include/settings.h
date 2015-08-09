@@ -32,7 +32,7 @@ char confir_section = "Config";
 void settings_dialog()
 {   
 	byte id;
-	unsigned int key;
+	unsigned int key, key2;
 	proc_info settings_form;
 	
 	dword save_show_dev_name,save_real_files_names_case, save_info_after_copy, save_use_big_fonts, save_files_h, save_DBLTime;
@@ -96,8 +96,11 @@ void settings_dialog()
 			break;
 					
 			case evKey:
-				key = GetKey();
-				if (key==27)
+				GetFullKey();
+				key = AH;
+				$shr  eax,16
+				key2 = AL;
+				if (key2==SCAN_CODE_ESC)
 				{
 					active_settings = 0;
 					action_buf = 300;

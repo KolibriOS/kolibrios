@@ -123,12 +123,12 @@ int llist::ProcessKey(dword key)
 {
 	switch(key)
 	{
-		case ASCII_KEY_DOWN: return KeyDown();
-		case ASCII_KEY_UP:   return KeyUp();
-		case ASCII_KEY_HOME: return KeyHome();
-		case ASCII_KEY_END:  return KeyEnd();
-		case ASCII_KEY_PGUP: return KeyPgUp();
-		case ASCII_KEY_PGDN: return KeyPgDown();
+		case SCAN_CODE_DOWN: return KeyDown();
+		case SCAN_CODE_UP:   return KeyUp();
+		case SCAN_CODE_HOME: return KeyHome();
+		case SCAN_CODE_END:  return KeyEnd();
+		case SCAN_CODE_PGUP: return KeyPgUp();
+		case SCAN_CODE_PGDN: return KeyPgDown();
 	}
 	return 0;
 }

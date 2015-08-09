@@ -66,6 +66,24 @@ char program_path[4096];
 #define ASCII_KEY_PGDN  183
 #define ASCII_KEY_PGUP  184
 
+//SCAN CODE KEYS
+#define SCAN_CODE_BS    014
+#define SCAN_CODE_TAB   015
+#define SCAN_CODE_ENTER 028
+#define SCAN_CODE_ESC   001
+#define SCAN_CODE_DEL   083
+#define SCAN_CODE_INS   082
+#define SCAN_CODE_SPACE 057
+            
+#define SCAN_CODE_LEFT  075
+#define SCAN_CODE_RIGHT 077
+#define SCAN_CODE_DOWN  080
+#define SCAN_CODE_UP    072
+#define SCAN_CODE_HOME  071
+#define SCAN_CODE_END   079
+#define SCAN_CODE_PGDN  081
+#define SCAN_CODE_PGUP  073
+
 //allow event mask
 #define EVENT_MASK_REDRAW   000000001b
 #define EVENT_MASK_KEYBOARD 000000010b
