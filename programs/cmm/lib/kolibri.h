@@ -130,6 +130,12 @@ inline fastcall ScancodesGeting(){
 	$int 0x40
 }
 
+inline fastcall GetStatusKey(){
+	$mov eax,66
+	$mov ebx,3
+	$int 0x40
+}
+
 inline fastcall word GetKey()  //+Gluk fix
 {
 		$push edx

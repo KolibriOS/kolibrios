@@ -103,8 +103,8 @@
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 enum { CREATE_FILE=1, CREATE_FOLDER, RENAME_ITEM }; //NewElement
 
-#define TITLE "Eolite File Manager v3.0 beta"
-#define ABOUT_TITLE "Eolite 3.0 beta"
+#define TITLE "Eolite File Manager v3.01 beta"
+#define ABOUT_TITLE "Eolite 3.01 beta"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -177,7 +177,8 @@ byte cmd_free=0;
 
 void main() 
 {
-	word key, id;
+	word key,key2, id;
+	dword status_key;
 	char can_show, can_select, stats;
 	dword selected_offset;
 	dword IPC_LEN,IPC_ID;
@@ -407,7 +408,12 @@ void main()
 				break;
 	//Key pressed-----------------------------------------------------------------------------
 			case evKey:
-				key = GetKey();
+				GetFullKey();
+				key = AH;
+				$shr  eax,16
+				key2 = AL;
+				status_key = GetStatusKey();
+				
 				if (Form.status_window>2) break;
 				if (del_active)
 				{
@@ -434,6 +440,52 @@ void main()
 					List_ReDraw();
 					break;
 				}
+				
+				if (TestBit(status_key, 2))
+				{
+					switch(key2)
+					{
+						case 45:  //Ctrl+X
+								Copy(#file_path, CUT);
+								break;						
+						case 46:  //Ctrl+C
+								Copy(#file_path, NOCUT);
+								break;
+						case 47:  //Ctrl+V
+								Paste();
+								break;
+						case 032: //Ctrl+D - set as bg
+								strncpy(#temp, "\\S__",4);
+								strcat(#temp, #file_path);
+								RunProgram("/sys/media/kiv", #temp);
+								break;
+						case 049: //Ctrl+N - create new window
+								if (Form.left==98) MoveSize(Form.left-20,Form.top-20,OLD,OLD);
+								RunProgram("/sys/File Managers/Eolite", #path);
+								break; 
+						case 030: //Ctrl+A - select all files
+								for (i=0; i<files.count; i++) 
+								{
+									selected_offset = file_mas[i]*304 + buf+32 + 7;
+									if (!i) if (!strncmp(selected_offset+33, "..", 2)) continue; //do not selec ".." directory
+									ESBYTE[selected_offset] = 1;
+									selected_count++;
+								}
+								List_ReDraw();
+								break;
+						case 022: //Ctrl+U - unselect all files
+								for (i=0; i<files.count; i++) 
+								{
+									selected_offset = file_mas[i]*304 + buf+32 + 7;
+									ESBYTE[selected_offset] = 0;
+								}
+								selected_count = 0;
+								List_ReDraw();
+								break;
+					}
+					break;
+				}
+				
 				switch (key)
 				{
 						case 209...217:
@@ -444,43 +496,6 @@ void main()
 								//GoBack();
 								Dir_Up();
 								break; 
-						case 004: //Ctrl+D - set as bg
-								strncpy(#temp, "\\S__",4);
-								strcat(#temp, #file_path);
-								RunProgram("/sys/media/kiv", #temp);
-								break;
-						case 014: //Ctrl+N - create new window
-								if (Form.left==98) MoveSize(Form.left-20,Form.top-20,OLD,OLD);
-								RunProgram("/sys/File Managers/Eolite", #path);
-								break; 
-						case 024: //Ctrl+X
-								Copy(#file_path, CUT);
-								break;
-						case 003: //Ctrl+C
-								Copy(#file_path, NOCUT);
-								break;
-						case 022: //Ctrl+V
-								Paste();
-								break;
-						case 001: //Ctrl+A - select all files
-								for (i=0; i<files.count; i++) 
-								{
-									selected_offset = file_mas[i]*304 + buf+32 + 7;
-									if (!i) if (!strncmp(selected_offset+33, "..", 2)) continue; //do not selec ".." directory
-									ESBYTE[selected_offset] = 1;
-									selected_count++;
-								}
-								List_ReDraw();
-								break;
-						case 021: //Ctrl+U - unselect all files
-								for (i=0; i<files.count; i++) 
-								{
-									selected_offset = file_mas[i]*304 + buf+32 + 7;
-									ESBYTE[selected_offset] = 0;
-								}
-								selected_count = 0;
-								List_ReDraw();
-								break;
 						case ASCII_KEY_ESC:
 								break;
 						case ASCII_KEY_ENTER:
