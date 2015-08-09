@@ -538,10 +538,10 @@ void draw_window()
 	}
 	else
 	{
-		files.SetSizes(2, 57+18, Form.cwidth/2-2-17, Form.cheight-59-18, disc_num*16+3,files.line_h);
+		files.SetSizes(2, 57+22, Form.cwidth/2-2-17, Form.cheight-59-22, disc_num*16+3,files.line_h);
 		DrawListColumns();
 		Open_Dir(#path,ONLY_SHOW);		
-		files.SetSizes(Form.cwidth/2, 57+18, Form.cwidth/2-17, Form.cheight-59-18, disc_num*16+3,files.line_h);
+		files.SetSizes(Form.cwidth/2, 57+22, Form.cwidth/2 -17, Form.cheight-59-22, disc_num*16+3,files.line_h);
 		DrawListColumns();
 		Open_Dir(#path,ONLY_SHOW);
 	}

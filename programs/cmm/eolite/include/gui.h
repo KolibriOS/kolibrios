@@ -5,9 +5,9 @@ dword col_palette[14] = {0xD2D3D3,0xD4D4D4,0xD6D5D6,0xD8D7D8,0xDAD8D9,0xDCDADB,
 void Scroll() {
 	dword i;
 
-	word sc_x = Form.cwidth - 18;
-	word sc_y = 57;
-	word sc_h = Form.cheight - 18 - sc_y;
+	word sc_x = files.x + files.w;
+	word sc_y = files.y;
+	word sc_h = files.h - 16;
 	word sc_slider_y;
 
 	if (files.count<=0)
@@ -34,11 +34,11 @@ void Scroll() {
 		DrawBar(sc_x+2, sc_y+1, 14, sc_slider_y-sc_y-1, 0xCED0D0);
 	}
 	//area after slider
-	if (sc_h-sc_slider_h+55>sc_slider_y)
+	if (sc_h-sc_slider_h+sc_y-2>sc_slider_y)
 	{
 		DrawBar(sc_x+1, sc_slider_y + sc_slider_h+1, 15, 1, 0xC7C9C9);
-		DrawBar(sc_x+1, sc_slider_y + sc_slider_h+2,  1, sc_h-sc_slider_h-sc_slider_y+55, 0xC7C9C9);
-		DrawBar(sc_x+2, sc_slider_y + sc_slider_h+2, 14, sc_h-sc_slider_h-sc_slider_y+55, 0xCED0D0);
+		DrawBar(sc_x+1, sc_slider_y + sc_slider_h+2,  1, sc_h-sc_slider_h-sc_slider_y+sc_y-2, 0xC7C9C9);
+		DrawBar(sc_x+2, sc_slider_y + sc_slider_h+2, 14, sc_h-sc_slider_h-sc_slider_y+sc_y-2, 0xCED0D0);
 	}
 }
 
