@@ -31,7 +31,7 @@ img_files = {
  {"MEDIA/PIXIE/MINIMP3", PROGS .. "/cmm/pixie/minimp3"},
  {"NETWORK/WV_SKIN.PNG", PROGS .. "/cmm/browser/wv_skin.png"},
  {"SETTINGS/AUTORUN.DAT", build_type .. "/settings/autorun.dat"},
- {"DEFAULT.SKN", build_type .. "/default.skn"},
+ {"DEFAULT.SKN", "common/default.skn"},
  {"SETTINGS/ICON.INI", build_type .. "/settings/icon.ini"},
  {"ICONS32.PNG", "common/icons32.png"},
  {"INDEX.HTM", build_type .. "/index_htm"},
