@@ -1755,7 +1755,7 @@ draw_window:
         mcall   12, 1
 
         ; define window
-        mcall   0, wnd_x_size, wnd_y_size, (COLOR_BG_NORMAL or 0x33000000), ,caption_str
+        mcall   0, wnd_x_size+10, wnd_y_size+30, (COLOR_BG_NORMAL or 0x33000000), ,caption_str
 
         ; Get actual window size
         mcall   9, thread_info, -1
