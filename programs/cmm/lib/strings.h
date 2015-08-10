@@ -11,6 +11,7 @@
 // strpbrk(dword text1,text2) --- example: strpbrk("this test", " ckfi") -> return "is test"
 // strcmp( ESI, EDI)
 // strlen( EDI)
+// utf8_strlen( ESI)
 // strcpy( EDI, ESI) --- 0 if ==
 // strncpy(dword text1,text2,signed length)
 // strcat( EDI, ESI)
@@ -140,6 +141,22 @@ inline strnlen(dword str, dword maxlen)
 	return cp - str;
 }
 
+inline fastcall unsigned int utf8_strlen( ESI)
+{
+ $xor  ecx, ecx
+  _loop: 
+ $lodsb
+ $test  al, al
+ $jz  _done
+ $and al, 0xc0
+ $cmp al, 0x80
+ $jz  _loop 
+ $inc ecx
+ $jmp _loop
+ 
+  _done:
+ return ECX;
+}
 
 inline signed int strcmp(dword text1, text2)
 {
@@ -913,27 +930,6 @@ inline void debugi(dword d_int)
     char tmpch[12];
     itoa_(#tmpch, d_int);
     debugln(#tmpch);
-}
-
-
-inline fastcall unsigned int utf8_strlen( ESI)
-{
- $xor  ecx, ecx
-  _loop: 
- $lodsb
- $test  al, al
- $jz  _done
- $test al, 0x80
- $jz  _1
- $and al, 0xc0
- $cmp al, 0x80
- $jz  _loop 
-  _1:
- $inc ecx
- $jmp _loop
- 
-  _done:
- return ECX;
 }
 
 

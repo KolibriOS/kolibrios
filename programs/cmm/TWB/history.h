@@ -15,7 +15,7 @@ struct UrlsHistory {
 	void AddUrl();
 	byte GoBack();
 	byte GoForward();
-};
+} BrowserHistory;
 
 dword UrlsHistory::CurrentUrl() {
 	return #history_list[current].Item;
@@ -63,5 +63,3 @@ byte UrlsHistory::GoForward() {
 	strlcpy(#URL, #history_list[current].Item, sizeof(URL));
 	return 1;
 }
-
-UrlsHistory BrowserHistory;

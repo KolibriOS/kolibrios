@@ -403,6 +403,15 @@ void Scan(dword id__)
 			OpenPage();
 			return;
 
+		case REFRESH:
+			if (http_transfer > 0) 
+			{
+				StopLoading();
+				Draw_Window();
+			}
+			else OpenPage();
+			return;
+
 /*
 		case 011: //Ctrk+K 
 			BufEncode(CH_KOI8);
@@ -451,14 +460,7 @@ void Scan(dword id__)
 			return;
 		case 054: //F5
 			IF(address_box.flags & 0b10) return;
-		case REFRESH:
-			if (http_transfer > 0) 
-			{
-				StopLoading();
-				Draw_Window();
-			}
-			else OpenPage();
-			return;
+
 		case 020:
 		case NEWTAB:
 			MoveSize(190,80,OLD,OLD);
