@@ -412,7 +412,7 @@ void main()
 
 				switch (key_scancode)
 				{
-						case 041:
+						case 198:
 								two_panels ^= 1;
 								draw_window();
 								break;

@@ -50,7 +50,6 @@ int cur_action_buf;
 
 void FileMenu()
 {
-	word key,key2;
 	proc_info MenuForm;
 	int index;
 
@@ -78,13 +77,10 @@ void FileMenu()
 		break;
 				
 		case evKey:
-				GetFullKey();
-				key = AH;
-				$shr  eax,16
-				key2 = AL;
-				if (key2==SCAN_CODE_ESC){cmd_free=1;ExitProcess();}
-				else if (key2 == SCAN_CODE_ENTER) {action_buf = cur_action_buf; cmd_free=1; ExitProcess(); }
-				if (menu.ProcessKey(key2)) MenuListRedraw();
+				GetKeys();
+				if (key_scancode==SCAN_CODE_ESC){cmd_free=1;ExitProcess();}
+				else if (key_scancode == SCAN_CODE_ENTER) {action_buf = cur_action_buf; cmd_free=1; ExitProcess(); }
+				if (menu.ProcessKey(key_scancode)) MenuListRedraw();
 				break;
 				
 		case evReDraw: _MENU_DRAW:
