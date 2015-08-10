@@ -76,7 +76,7 @@ void TWebBrowser::DrawPage()
 	{
 		start_x = stolbec * list.font_w + magrin_left * DrawBuf.zoom + list.x;
 		start_y = stroka * list.line_h + magrin_left + list.y;
-		stolbec_len = strlen(#line);
+		stolbec_len = utf8_strlen(#line);
 		line_length = stolbec_len * list.font_w * DrawBuf.zoom;
 
 		WriteBufText(start_x, 0, list.font_type, text_colors[text_color_index], #line, buf_data);
@@ -214,7 +214,7 @@ void TWebBrowser::Parse(){
 			if (tag[strlen(#tag)-1]=='/') tag[strlen(#tag)-1]=NULL; //for br/
 			if (tagparam) GetNextParam();
 
-			if (stolbec + strlen(#line) > list.column_max) Perenos();
+			if (stolbec + utf8_strlen(#line) > list.column_max) Perenos();
 			DrawPage();
 			line = NULL;
 			if (tag) SetTextStyle(WB1.DrawBuf.zoom * 5 + list.x, stroka * list.line_h + list.y + 5); //обработка тегов
@@ -223,7 +223,7 @@ void TWebBrowser::Parse(){
 		default:
 			DEFAULT_MARK:
 			if (bukva<=15) bukva=' ';
-			line_len = strlen(#line);
+			line_len = utf8_strlen(#line);
 			if (!pre_text) && (bukva == ' ')
 			{
 				if (line[line_len-1]==' ') break; //no double spaces
@@ -252,7 +252,7 @@ void TWebBrowser::Perenos()
 	int perenos_num;
 	char new_line_text[4096];
 	perenos_num = strrchr(#line, ' ');
-	if (!perenos_num) && (strlen(#line)>list.column_max) perenos_num=list.column_max;
+	if (!perenos_num) && (utf8_strlen(#line)>list.column_max) perenos_num=list.column_max;
 	strcpy(#new_line_text, #line + perenos_num);
 	line[perenos_num] = 0x00;
 	if (stroka-1 > list.visible) && (list.first <>0) end_parsing=true;
@@ -585,7 +585,7 @@ void BufEncode(int set_new_encoding)
 	{
 		strcpy(bufpointer, o_bufpointer);
 	}
-	bufpointer = ChangeCharset(charsets[set_new_encoding], "CP866", bufpointer);
+	//bufpointer = ChangeCharset(charsets[set_new_encoding], "CP866", bufpointer);
 }
 
 

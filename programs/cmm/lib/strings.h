@@ -916,6 +916,27 @@ inline void debugi(dword d_int)
 }
 
 
+inline fastcall unsigned int utf8_strlen( ESI)
+{
+ $xor  ecx, ecx
+  _loop: 
+ $lodsb
+ $test  al, al
+ $jz  _done
+ $test al, 0x80
+ $jz  _1
+ $and al, 0xc0
+ $cmp al, 0x80
+ $jz  _loop 
+  _1:
+ $inc ecx
+ $jmp _loop
+ 
+  _done:
+ return ECX;
+}
+
+
 #define strnmov strmovn
 #define stricmp strcmpi
 #define strcmpn strncmp

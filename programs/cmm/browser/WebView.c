@@ -30,14 +30,14 @@
 char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.16";
+	char version[]=" Текстовый браузер 1.2";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.16";
+	char version[]=" Text-based Browser 1.2";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -133,7 +133,7 @@ void main()
 	SetSkinColors();
 	
 	WB1.DrawBuf.zoom = 1;
-	WB1.list.SetFont(6, 9, 10001000b);
+	WB1.list.SetFont(8, 14, 10111000b);
 	Form.width=WIN_W;
 	Form.height=WIN_H;
 	SetElementSizes();
@@ -383,12 +383,12 @@ void Scan(dword id__)
 			if (WB1.DrawBuf.zoom==2)
 			{
 				WB1.DrawBuf.zoom=1;
-				WB1.list.SetFont(6, 9, 10001000b);
+				WB1.list.SetFont(8, 14, 10111000b);
 			}
 			else
 			{
 				WB1.DrawBuf.zoom=2;
-				WB1.list.SetFont(6, 9, 10001001b);
+				WB1.list.SetFont(8, 14, 10111001b);
 			}
 			Draw_Window(); 
 			return;
