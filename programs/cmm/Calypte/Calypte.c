@@ -62,7 +62,7 @@ struct menu_text_struct
 #define WIN_W 600
 #define WIN_H 400
 
-#define TITLE "Calypte v0.12"
+#define TITLE "Calypte v0.13"
 char win_title[4096] = TITLE;
 proc_info Form;
 
@@ -111,7 +111,9 @@ menu_data menudata1 = {0, 40, 2, 15, 2, #menu_text_area1.menu, #menu_text_area1.
 
 void main()
 {   
-	int id, key;
+	int id;
+	word key_ascii, key_scancode;
+	dword status_key;
 	
 	strcpy(#filter2.ext1, "TXT");
 	//strcpy(#filter2.ext2, "ASM");
@@ -153,6 +155,7 @@ void main()
 						break;
 					case 2:
 						read = 0;
+						tview.current = 0;
 						strcpy(#win_title, TITLE);
 						FreeBuf();
 						draw_window();
@@ -182,28 +185,40 @@ void main()
       
         case evKey:
 			if (Form.status_window>2) break;
-			key = GetKey();
-			switch (key)
+			GetFullKey();
+			key_ascii = AH;
+			$shr  eax,16
+			key_scancode = AL;
+			status_key = GetStatusKey();
+			if (tview.ProcessKey(key_scancode)) DrawText();
+			if (TestBit(status_key, 2))
 			{
-				case 015:  //Ctrl+O
-					OpenDialog_start stdcall (#o_dialog);
-					OpenFile(#openfile_path);
-					Prepare();
-					draw_window();
-					break;
-				case ASCII_KEY_HOME:
-				case ASCII_KEY_END:
-				case ASCII_KEY_UP:
-				case ASCII_KEY_DOWN:
-					if (tview.ProcessKey(key)) DrawText();
-					break;
-				case ASCII_KEY_PGUP:
+				switch(key_scancode)
+				{
+					case 024:  //Ctrl+O
+						OpenDialog_start stdcall (#o_dialog);
+						OpenFile(#openfile_path);
+						Prepare();
+						draw_window();
+						break;
+				}
+				break;
+			}
+			switch (key_scancode)
+			{
+				/*case SCAN_CODE_HOME:
+				case SCAN_CODE_END:
+				case SCAN_CODE_UP:
+				case SCAN_CODE_DOWN:
+					if (tview.ProcessKey(key_scancode)) DrawText();
+					break;*/
+				case SCAN_CODE_PGUP:
 					if (!tview.current) break;
 					if (tview.current<tview.visible) tview.current = 0;
 					else tview.current = tview.current-tview.visible;
 					DrawText();
 					break;
-				case ASCII_KEY_PGDN:
+				case SCAN_CODE_PGDN:
 					if (tview.current+tview.visible>tview.count) break;
 					tview.current = tview.current+tview.visible;
 					DrawText();

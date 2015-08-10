@@ -73,7 +73,9 @@ char work_folder[4096],
 
 void main()
 {
-	int id, key;
+	int id;
+	word key_ascii, key_scancode;
+
 	byte mouse_clicked;
 	dword tmp_x,tmp_y;
 	dword z1,z2;
@@ -229,19 +231,23 @@ void main()
 			break;
 	  
 		case evKey:
-			key = GetKey();
-			if (key==50) SetColorThemeLight();
-			if (key==51) SetColorThemeDark();
-			if (key==ASCII_KEY_LEFT) RunProgram("@VOLUME", "-");
-			if (key==ASCII_KEY_RIGHT) RunProgram("@VOLUME", "+");
-			if (key=='m') RunProgram("@VOLUME", "m");
-			if (key==ASCII_KEY_ENTER) StartPlayingMp3();
-			if (key=='p') || (key==ASCII_KEY_SPACE)
+			GetFullKey();
+			key_ascii = AH;
+			$shr  eax,16
+			key_scancode = AL;
+			
+			if (key_scancode==003) SetColorThemeLight();
+			if (key_scancode==004) SetColorThemeDark();
+			if (key_scancode==SCAN_CODE_LEFT) RunProgram("@VOLUME", "-");
+			if (key_scancode==SCAN_CODE_RIGHT) RunProgram("@VOLUME", "+");
+			if (key_scancode==050) RunProgram("@VOLUME", "m");
+			if (key_scancode==SCAN_CODE_ENTER) StartPlayingMp3();
+			if (key_scancode==025) || (key_scancode==SCAN_CODE_SPACE)
 			{
 				if (playback_mode == PLAYBACK_MODE_PLAYING) StopPlayingMp3();
 				else StartPlayingMp3();
 			}
-			if (list.ProcessKey(key)) DrawPlayList();
+			if (list.ProcessKey(key_scancode)) DrawPlayList();
 			break;
 
 		case evReDraw:

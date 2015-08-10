@@ -145,7 +145,9 @@ OpenFile()
 
 void main()
 {   
-	int id, key, mouse_clicked;
+	int id, mouse_clicked;
+	word key_ascii, key_scancode;
+	dword status_key;
 
 	SetEventMask(0x27);
 	load_dll(boxlib, #box_lib_init,0);
@@ -193,12 +195,16 @@ void main()
 			break;
 	  
 		case evKey:
-			key = GetKey();
-			if (list[SKINS].active) && (list[SKINS].ProcessKey(key)) Apply();
-			if (list[WALLPAPERS].active) && (list[WALLPAPERS].ProcessKey(key)) Apply();
-			IF (key==013) OpenFile();
-			if (key==9) if (list[SKINS].active) TabClick(WALLPAPERS); else TabClick(SKINS);
-			IF (key==182) //Del
+			GetFullKey();
+			key_ascii = AH;
+			$shr  eax,16
+			key_scancode = AL;
+			status_key = GetStatusKey();
+			if (list[SKINS].active) && (list[SKINS].ProcessKey(key_scancode)) Apply();
+			if (list[WALLPAPERS].active) && (list[WALLPAPERS].ProcessKey(key_scancode)) Apply();
+			IF (key_scancode==SCAN_CODE_ENTER) OpenFile();
+			if (key_scancode==SCAN_CODE_TAB) if (list[SKINS].active) TabClick(WALLPAPERS); else TabClick(SKINS);
+			IF (key_scancode==SCAN_CODE_TAB) //Del
 			{
 				DeleteFile(#cur_file_path);
 				Open_Dir();
