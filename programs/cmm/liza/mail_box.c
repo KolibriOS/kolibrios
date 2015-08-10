@@ -166,7 +166,7 @@ void MailBoxLoop() {
 				&& (!scroll1.delta2) && (!scroll_wv.delta2) panels_drag = 1;
 				if (panels_drag)
 				{
-					if (mouse.y<mail_list.y+mail_list.min_h) || (mouse.y>Form.cheight-WB1.list.min_h-status_bar_h-LIST_INFO_H) break;
+					if (mouse.y<mail_list.y+60) || (mouse.y>Form.cheight-60-status_bar_h-LIST_INFO_H) break;
 					mail_list.h = mouse.y - mail_list.y-2;
 					DrawMailBox();
 					break;
@@ -289,7 +289,7 @@ void DrawToolbar() {
 	#define BUT_H 22
 	#define BUT_W 74
 	int toolbar_w = BUT_Y + BUT_H + BUT_Y + 3;
-	mail_list.SetSizes(0, toolbar_w, Form.cwidth - scroll1.size_x - 1, mail_list.h, 60,18);
+	mail_list.SetSizes(0, toolbar_w, Form.cwidth - scroll1.size_x - 1, mail_list.h, 18);
 
 	DrawBar(0,0, Form.cwidth,toolbar_w-3, system.color.work);
 	DrawCaptButton(10                    , BUT_Y, BUT_W, BUT_H, GET_MAIL,    system.color.work_button, system.color.work_button_text,"Get mail");
@@ -349,7 +349,7 @@ void DrawLetterInfo() {
 
 void InitTWB() {
 	WB1.list.SetSizes(0, mail_list.y+mail_list.h+LIST_INFO_H+1, Form.cwidth - scroll_wv.size_x - 1, 
-		Form.cheight - mail_list.y - mail_list.h - LIST_INFO_H - 1 - status_bar_h, 60, 12);
+		Form.cheight - mail_list.y - mail_list.h - LIST_INFO_H - 1 - status_bar_h, 12);
 	WB1.list.column_max = WB1.list.w - 30 / 6;
 	WB1.list.visible = WB1.list.h / WB1.list.line_h;
 	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h);

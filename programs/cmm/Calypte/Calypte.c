@@ -234,7 +234,7 @@ void draw_window()
 	DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2,WIN_W,WIN_H,0x73,0xFFFFFF,#win_title);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
-	tview.SetSizes(0, TOPPANELH, Form.cwidth, Form.cheight-BOTPANELH-TOPPANELH, 200, 12);
+	tview.SetSizes(0, TOPPANELH, Form.cwidth, Form.cheight-BOTPANELH-TOPPANELH, 12);
 	DrawBar(0, 0, Form.cwidth, TOPPANELH, system.color.work);
 	DrawBar(0, Form.cheight-BOTPANELH, Form.cwidth, BOTPANELH, system.color.work);
 	

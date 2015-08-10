@@ -102,7 +102,7 @@ void main()
 	}
 
 	StartPlayingMp3();
-	list.SetSizes(1, skin.h, skin.w-1, 198, 40, 18);
+	list.SetSizes(1, skin.h, skin.w-1, 198, 18);
 	if (list.count <= list.visible) 
 	{
 		list.h = list.count * list.line_h;

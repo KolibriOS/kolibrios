@@ -9,9 +9,8 @@
 
 struct llist
 {
-	int x, y, w, h, min_h, line_h, text_y;
-	int column_max;
-	int count, visible, first, current; //visible = row_max
+	int x, y, w, h, line_h, char_w, char_h, text_y;
+	int count, visible, first, current, column_max; //visible = row_max
 	int active;
 	void ClearList();
 	int MouseOver(int xx, yy);
@@ -47,17 +46,15 @@ void llist::ClearList()
 }
 
 
-void llist::SetSizes(int xx, yy, ww, hh, min_hh, line_hh)
+void llist::SetSizes(int xx, yy, ww, hh, line_hh)
 {
 	x = xx;
 	y = yy;
 	w = ww;
 	h = hh;
-	min_h = min_hh;
 	line_h = line_hh;
 	text_y = line_h / 2 - 4;
 	visible = h / line_h;
-	column_max = w / 6;
 	//if (visible > count) visible=count;
 }
 

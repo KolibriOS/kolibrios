@@ -54,7 +54,7 @@ void FileMenu()
 	int index;
 
 	menu.ClearList();
-	menu.SetSizes(0,0,10,0,0,18);
+	menu.SetSizes(0,0,10,0,18);
 	for (index=0; file_captions[index]!=0; index+=3)
 	{
 		if (itdir) && (file_captions[index+2]>=200) continue;

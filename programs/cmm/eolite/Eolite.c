@@ -214,6 +214,7 @@ void main()
 						if (files.MouseOver(mouse.x, mouse.y))
 						{
 							files.current = mouse.y - files.y / files.line_h + files.first;
+							List_ReDraw();
 							menu_stak = malloc(4096);
 							CreateThread(#FileMenu,menu_stak+4092);	
 						}
@@ -508,8 +509,8 @@ void draw_window()
 	DefineAndDrawWindow(GetScreenWidth()-550/4+rand_n,rand_n+30,550,500,0x73,system.color.work,TITLE,0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
-	if (Form.height < files.min_h) MoveSize(OLD,OLD,OLD,files.min_h);
-	if (Form.width<480) MoveSize(OLD,OLD,480,OLD);
+	if (Form.height < 350) MoveSize(OLD,OLD,OLD,350);
+	if (Form.width  < 480) MoveSize(OLD,OLD,480,OLD);
 	GetProcessInfo(#Form, SelfInfo); //if win_size changed
 	PutPaletteImage(#toolbar,246,34,0,0,8,#toolbar_pal);
 	DrawBar(127, 8, 1, 25, system.color.work_graph);
@@ -527,16 +528,16 @@ void draw_window()
 	if (!two_panels)
 	{
 		DrawLeftPanel();
-		files.SetSizes(192, 57, Form.cwidth - 210, Form.cheight - 59, disc_num*16+3,files.line_h);	
+		files.SetSizes(192, 57, Form.cwidth - 210, Form.cheight - 59, files.line_h);
 		DrawListColumns();
 		Open_Dir(#path,ONLY_SHOW);
 	}
 	else
 	{
-		files.SetSizes(2, 57+22, Form.cwidth/2-2-17, Form.cheight-59-22, disc_num*16+3,files.line_h);
+		files.SetSizes(2, 57+22, Form.cwidth/2-2-17, Form.cheight-59-22, files.line_h);
 		DrawListColumns();
 		Open_Dir(#path,ONLY_SHOW);		
-		files.SetSizes(Form.cwidth/2, 57+22, Form.cwidth/2 -17, Form.cheight-59-22, disc_num*16+3,files.line_h);
+		files.SetSizes(Form.cwidth/2, 57+22, Form.cwidth/2 -17, Form.cheight-59-22, files.line_h);
 		DrawListColumns();
 		Open_Dir(#path,ONLY_SHOW);
 	}

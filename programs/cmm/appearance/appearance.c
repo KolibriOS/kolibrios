@@ -69,8 +69,8 @@ void Draw_List()
 	int i;
 	int yyy;
 	int list_last;
-	list[SKINS].SetSizes(0, PANEL_H, Form.cwidth-scroll1.size_x-1, Form.cheight-PANEL_H, 40, 20);
-	list[WALLPAPERS].SetSizes(0, PANEL_H, Form.cwidth-scroll1.size_x-1, Form.cheight-PANEL_H, 40, 20);
+	list[SKINS].SetSizes(0, PANEL_H, Form.cwidth-scroll1.size_x-1, Form.cheight-PANEL_H, 20);
+	list[WALLPAPERS].SetSizes(0, PANEL_H, Form.cwidth-scroll1.size_x-1, Form.cheight-PANEL_H, 20);
 	if (list[active].count > list[active].visible) list_last = list[active].visible; else list_last = list[active].count;
 
 	for (i=0; i<list_last; i++;)
@@ -152,8 +152,8 @@ void main()
 	list[SKINS].current = list[WALLPAPERS].current = -1;
 	list[SKINS].first = list[WALLPAPERS].first = 0;
 	TabClick(WALLPAPERS);
-	list[WALLPAPERS].SetSizes(0, 230, 350, 400-PANEL_H, 40, 18);
-	list[SKINS].SetSizes(0, 230, 350, 400-PANEL_H, 40, 18);
+	list[WALLPAPERS].SetSizes(0, 230, 350, 400-PANEL_H, 18);
+	list[SKINS].SetSizes(0, 230, 350, 400-PANEL_H, 18);
 	loop()
 	{
 	  switch(WaitEvent()) 

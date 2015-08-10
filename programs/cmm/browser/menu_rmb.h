@@ -31,7 +31,7 @@ void menu_rmb()
 
 	menu.first = menu.current = 0;
 	while (ITEMS_LIST[menu.count*2]) menu.count++;
-	menu.SetSizes(2,2,177,menu.count*19,0,19);
+	menu.SetSizes(2,2,177,menu.count*19,19);
 	SetEventMask(100111b); 
 
 	_BEGIN_APPLICATION_MENU:
