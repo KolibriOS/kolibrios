@@ -61,7 +61,6 @@ char anchor[256];
 void TWebBrowser::DrawPage()
 {
 	int start_x, start_y, line_length, stolbec_len, magrin_left=5;
-	dword font_type;
 	
 	if (!header)
 	{
@@ -80,16 +79,14 @@ void TWebBrowser::DrawPage()
 		stolbec_len = strlen(#line);
 		line_length = stolbec_len * list.font_w * DrawBuf.zoom;
 
-		if (DrawBuf.zoom==1) font_type = 0x88; else font_type = 0x89;
-
-		WriteBufText(start_x, 0, font_type, text_colors[text_color_index], #line, buf_data);
-		if (b_text)	WriteBufText(start_x+1, 0, font_type, text_colors[text_color_index], #line, buf_data);
+		WriteBufText(start_x, 0, list.font_type, text_colors[text_color_index], #line, buf_data);
+		if (b_text)	WriteBufText(start_x+1, 0, list.font_type, text_colors[text_color_index], #line, buf_data);
 		if (i_text) { stolbec++; DrawBuf.Skew(start_x, 0, line_length, list.line_h); } // bug with zoom>1
 		if (s_text) DrawBuf.DrawBar(start_x, list.line_h / 2 - DrawBuf.zoom, line_length, DrawBuf.zoom, text_colors[text_color_index]);
 		if (u_text) DrawBuf.DrawBar(start_x, list.line_h - DrawBuf.zoom - DrawBuf.zoom, line_length, DrawBuf.zoom, text_colors[text_color_index]);
 		if (link) {
 			DrawBuf.DrawBar(start_x, list.line_h - DrawBuf.zoom - DrawBuf.zoom, line_length, DrawBuf.zoom, text_colors[text_color_index]);
-			UnsafeDefineButton(start_x-2, start_y-1, line_length + 3, DrawBuf.zoom * 10, PageLinks.count + 400 + BT_HIDE, 0xB5BFC9);
+			UnsafeDefineButton(start_x-2, start_y-1, line_length + 3, DrawBuf.zoom * list.font_h, PageLinks.count + 400 + BT_HIDE, 0xB5BFC9);
 			PageLinks.AddText(#line, line_length, list.line_h, UNDERLINE);
 		}
 		stolbec += stolbec_len;
@@ -352,7 +349,7 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 					
 					link = 1;
 					text_colors[text_color_index] = link_color_inactive;
-					PageLinks.AddLink(#options, DrawBuf.zoom * stolbec*6+left1, top1-DrawBuf.zoom);
+					PageLinks.AddLink(#options, DrawBuf.zoom * stolbec * list.font_w + left1, top1-DrawBuf.zoom);
 				}
 				if (anchor) && (!strcmp(#parametr, "name="))
 				{
@@ -521,7 +518,7 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 		{
 			NewLine();
 			if (stroka > -1) && (stroka - 2 < list.visible) 
-				DrawBuf.DrawBar(li_tab * 5 * 6 * DrawBuf.zoom + list.x, list.line_h / 2 - DrawBuf.zoom - DrawBuf.zoom, DrawBuf.zoom*2, DrawBuf.zoom*2, 0x555555);
+				DrawBuf.DrawBar(li_tab * 5 * list.font_w * DrawBuf.zoom + list.x, list.line_h / 2 - DrawBuf.zoom - DrawBuf.zoom, DrawBuf.zoom*2, DrawBuf.zoom*2, 0x555555);
 		}
 		return;
 	}
@@ -588,7 +585,6 @@ void BufEncode(int set_new_encoding)
 	{
 		strcpy(bufpointer, o_bufpointer);
 	}
-	debugln(charsets[set_new_encoding]);
 	bufpointer = ChangeCharset(charsets[set_new_encoding], "CP866", bufpointer);
 }
 
@@ -620,8 +616,8 @@ void TWebBrowser::NewLine()
 	if (t_html) && (!t_body) return;
 	if (stroka * list.line_h + 5 >= 0) && ( stroka + 1 * list.line_h + 5 < list.h) && (!anchor)
 	{
-		if (text_align == ALIGN_CENTER) && (DrawBuf.zoom==1) DrawBuf.AlignCenter(onleft,ontop,list.w,list.line_h,stolbec * 6);
-		if (text_align == ALIGN_RIGHT) && (DrawBuf.zoom==1)  DrawBuf.AlignRight(onleft,ontop,list.w,list.line_h,stolbec * 6);
+		if (text_align == ALIGN_CENTER) && (DrawBuf.zoom==1) DrawBuf.AlignCenter(onleft,ontop,list.w,list.line_h,stolbec * list.font_w);
+		if (text_align == ALIGN_RIGHT) && (DrawBuf.zoom==1)  DrawBuf.AlignRight(onleft,ontop,list.w,list.line_h,stolbec * list.font_w);
 		DrawBuf.bufy = ontop;
 		DrawBuf.Show();
 		DrawBuf.Fill(bg_color);

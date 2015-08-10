@@ -88,7 +88,7 @@ edit_box address_box = {250,55,34,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(U
 #define URL_SERVICE_HOME "WebView://home"
 #define URL_SERVICE_SOURCE "WebView://source:"
 
-enum { BACK=300, FORWARD, REFRESH, HOME, NEWTAB, GOTOURL, SEARCHWEB, INPUT_CH, INPUT_BT, BTN_UP, BTN_DOWN };
+enum { BUTTON_BACK=1000, FORWARD, REFRESH, HOME, NEWTAB, GOTOURL, SEARCHWEB, INPUT_CH, INPUT_BT };
 
 libimg_image skin;
 
@@ -119,7 +119,7 @@ void DrawProgress()
 
 void main()
 {
-	unsigned long key, btn;
+	dword btn;
 	int half_scroll_size;
 	int scroll_used=0, show_menu;
 	
@@ -133,6 +133,7 @@ void main()
 	SetSkinColors();
 	
 	WB1.DrawBuf.zoom = 1;
+	WB1.list.SetFont(6, 9, 10001000b);
 	Form.width=WIN_W;
 	Form.height=WIN_H;
 	SetElementSizes();
@@ -188,19 +189,24 @@ void main()
 					if (btn!=WB1.list.first) WB1.Parse();
 				}
 				break;
+
 			case evButton:
 				btn=GetButtonID();
 				if (btn==1)	ExitProcess();
 				Scan(btn);
 				break;
+
 			case evKey:
-				key = GetKey();		
+				GetKeys();
 				if (address_box.flags & 0b10)  
 				{
-					if (key==ASCII_KEY_ENTER) Scan(key); else
-					if (key!=0x0d) && (key!=183) && (key!=184) {EAX=key<<8; edit_box_key stdcall(#address_box);}
+					if (key_ascii == ASCII_KEY_ENTER) Scan(key_scancode); else
+					if (key_ascii != 0x0d) && (key_ascii != 183) && (key_ascii != 184) {EAX = key_ascii << 8; edit_box_key stdcall(#address_box);}
 				}
-				else Scan(key);
+				else 
+				{
+					Scan(key_scancode);
+				}
 				break;
 
 			case evReDraw:
@@ -285,8 +291,7 @@ void SetElementSizes()
 	address_box.top = TOOLBAR_H-TAB_H/2-7+TAB_H;
 	address_box.width = Form.cwidth - address_box.left - 25 - 22;
 	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x / WB1.DrawBuf.zoom, 
-		Form.cheight - TOOLBAR_H - STATUSBAR_H, 11*WB1.DrawBuf.zoom);
-	WB1.list.SetFont(6, 9, 0x88);
+		Form.cheight - TOOLBAR_H - STATUSBAR_H, WB1.list.font_h + WB1.DrawBuf.zoom + WB1.DrawBuf.zoom * WB1.DrawBuf.zoom);
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w;
 	WB1.list.visible = WB1.list.h - 5 / WB1.list.line_h;
 	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.line_h);
@@ -314,8 +319,8 @@ void Draw_Window()
 	DrawRectangle(address_box.left-1, address_box.top-1, address_box.width+2, 16,address_box.color);
 	DrawRectangle(address_box.left-2, address_box.top-2, address_box.width+4, 18,border_color);
 	// < / >
-	DefineButton(address_box.left-49, address_box.top-1, 23, skin.h-2, 300+BT_HIDE, 0);
-	DefineButton(address_box.left-25, address_box.top-1, 23, skin.h-2, 301+BT_HIDE, 0);
+	DefineButton(address_box.left-49, address_box.top-1, 23, skin.h-2, BUTTON_BACK+BT_HIDE, 0);
+	DefineButton(address_box.left-25, address_box.top-1, 23, skin.h-2, FORWARD+BT_HIDE, 0);
 	img_draw stdcall(skin.image, address_box.left-50, address_box.top-2, 48, skin.h, 3, 0);
 	// refrash
 	DefineButton(address_box.left+address_box.width+1, address_box.top-2, 16, skin.h-1, REFRESH+BT_HIDE+BT_NOFRAME, 0);
@@ -334,16 +339,71 @@ void Draw_Window()
 }
 
 
-void Scan(int id)
+void Scan(dword id__)
 {
 	action_buf=0;
-	if (id >= 400) 
+	if (id__ >= 400) 
 	{
-		ProcessLinks(id);
+		ProcessLinks(id__);
 		return;
 	}
-	switch (id)
+	switch (id__)
 	{
+		case SCAN_CODE_BS:
+		case BUTTON_BACK:
+			if (!BrowserHistory.GoBack()) return;
+			OpenPage();
+			return;
+
+		case FORWARD:
+			if (!BrowserHistory.GoForward()) return;
+			OpenPage();
+			return;
+
+		case SCAN_CODE_HOME:
+		case SCAN_CODE_END:
+		case SCAN_CODE_PGUP:
+		case SCAN_CODE_PGDN:
+			if (WB1.list.ProcessKey(key_scancode)) WB1.Parse();
+			return;
+
+		case SCAN_CODE_UP:
+			if (WB1.list.first <= 0) return;
+			WB1.list.first--;
+			WB1.Parse();
+			return;
+
+		case SCAN_CODE_DOWN:
+			if (WB1.list.visible + WB1.list.first >= WB1.list.count) return;
+			WB1.list.first++;
+			WB1.Parse();
+			return;
+
+		case 44: //Z-key down
+			if (WB1.DrawBuf.zoom==2)
+			{
+				WB1.DrawBuf.zoom=1;
+				WB1.list.SetFont(6, 9, 10001000b);
+			}
+			else
+			{
+				WB1.DrawBuf.zoom=2;
+				WB1.list.SetFont(6, 9, 10001001b);
+			}
+			Draw_Window(); 
+			return;
+
+		case GOTOURL:
+		case SCAN_CODE_ENTER: //enter
+			if (!editURL[0]) return;
+			if (strncmp(#editURL,"http:",5)) && (editURL[0]!='/') && (strncmp(#editURL,"WebView:",9)) strncpy(#URL,"http://",7);
+			else
+				URL[0] = 0;
+			strcat(#URL, #editURL);
+			OpenPage();
+			return;
+
+/*
 		case 011: //Ctrk+K 
 			BufEncode(CH_KOI8);
 			WB1.Parse();
@@ -375,15 +435,7 @@ void Scan(int id)
 				CreateThread(#Downloader,#downloader_stak+4092);
 			}
 			return;
-		case ASCII_KEY_BS:
-		case BACK:
-			if (!BrowserHistory.GoBack()) return;
-			OpenPage();
-			return;
-		case FORWARD:
-			if (!BrowserHistory.GoForward()) return;
-			OpenPage();
-			return;
+
 		case 052: //F3
 			WB1.list.first = 0;
 			ShowSource();
@@ -407,73 +459,24 @@ void Scan(int id)
 			}
 			else OpenPage();
 			return;
-		case 014:
 		case 020:
 		case NEWTAB:
 			MoveSize(190,80,OLD,OLD);
 			RunProgram(#program_path, #URL);
 			return;
-		case GOTOURL:
-		case 0x0D: //enter
-			if (!editURL[0]) return;
-			if (strncmp(#editURL,"http:",5)) && (editURL[0]!='/') && (strncmp(#editURL,"WebView:",9)) strncpy(#URL,"http://",7);
-			else
-				URL[0] = 0;
-			strcat(#URL, #editURL);
-			OpenPage();
-			return;
+
 		case SEARCHWEB:
 			sprintf(#URL,"%s%s",#search_path,#editURL);
 			OpenPage();
 			return;
 
-		case 183: //PgDown
-			if (WB1.list.count < WB1.list.visible) return;
-			IF(WB1.list.first == WB1.list.count - WB1.list.visible) return;
-			WB1.list.first += WB1.list.visible + 2;
-			IF(WB1.list.visible + WB1.list.first > WB1.list.count) WB1.list.first = WB1.list.count - WB1.list.visible;
-			WB1.Parse();
-			return;
-
-		case 184: //PgUp
-			if (WB1.list.count < WB1.list.visible) return;
-			IF(WB1.list.first == 0) return;
-			WB1.list.first -= WB1.list.visible - 2;
-			IF(WB1.list.first < 0) WB1.list.first = 0;
-			WB1.Parse();
-			return;
-
-		case 178:
-		case BTN_UP:
-			if (WB1.list.first <= 0) return;
-			WB1.list.first--;
-			WB1.Parse();
-			return;
-
-		case 177: 
-		case BTN_DOWN:
-			if (WB1.list.visible + WB1.list.first >= WB1.list.count) return;
-			WB1.list.first++;
-			WB1.Parse();
-			return;
-
-		case 180: //home
-			if (WB1.list.KeyHome()) WB1.Parse();
-			return; 
-
-		case 181: //end
-			if (WB1.list.count < WB1.list.visible) return;
-			if (WB1.list.KeyEnd()) WB1.Parse();
-			return;
 		case 312:
 			SwitchToAnotherThread();
 			mouse.y = TOOLBAR_H-6;
 			mouse.x = Form.cwidth - 167;
 			CreateThread(#menu_rmb,#stak+4092);
 			return;
-		case 122:
-			if (WB1.DrawBuf.zoom==1) WB1.DrawBuf.zoom=2; else WB1.DrawBuf.zoom=1;
-			Draw_Window(); 
+*/
 	}
 }
 
