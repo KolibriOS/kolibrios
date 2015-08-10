@@ -26,8 +26,6 @@ byte b_text, i_text, u_text, s_text, pre_text, blq_text, li_text, li_tab,
 	link, ignor_text, cur_encoding, text_align, t_html, t_body;
 byte condition_text_active, condition_text_val, condition_href, condition_max;
 
-enum { _WIN, _DOS, _KOI, _UTF, _DEFAULT };
-
 enum { ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT};
 
 dword text_colors[300];
@@ -100,24 +98,6 @@ void TWebBrowser::DrawPage()
 //=======================================================================
 
 
-void BufEncode(int set_new_encoding)
-{
-	int bufpointer_realsize;
-	cur_encoding = set_new_encoding;
-	if (o_bufpointer==0)
-	{
-		o_bufpointer = malloc(bufsize);
-		strcpy(o_bufpointer, bufpointer);
-	}
-	else
-	{
-		strcpy(bufpointer, o_bufpointer);
-	}
-	if (set_new_encoding==_WIN) bufpointer = ChangeCharset("CP1251",  "CP866", bufpointer);
-	if (set_new_encoding==_UTF) bufpointer = ChangeCharset("UTF-8",   "CP866", bufpointer);
-	if (set_new_encoding==_KOI) bufpointer = ChangeCharset("KOI8-RU", "CP866", bufpointer);
-}
-
 void TWebBrowser::Prepare(dword bufpos, in_filesize){
 	bufsize = in_filesize;
 	bufpointer = bufpos;
@@ -155,7 +135,6 @@ void TWebBrowser::Parse(){
 	{
 		pre_text=0;
 		if (!strcmp(#URL + strlen(#URL) - 4, ".txt")) pre_text = 1;
-		if (!strcmp(#URL + strlen(#URL) - 4, ".mht")) ignor_text = 1;
 	}
 	
 	for ( ; (bufpointer+bufsize > bufpos) && (ESBYTE[bufpos]!=0); bufpos++;)
@@ -183,18 +162,6 @@ void TWebBrowser::Parse(){
 				break;
 			}
 			goto DEFAULT_MARK;		
-		case '=': //quoted printable
-			if (strcmp(#URL + strlen(#URL) - 4, ".mht")<>0) goto DEFAULT_MARK;
-
-			temp[0] = ESBYTE[bufpos+1];
-			temp[1] = ESBYTE[bufpos+2];
-			temp[2] = '\0';
-			if (bukva = Hex2Symb(#temp))
-			{
-				bufpos+=2;
-				goto DEFAULT_MARK;
-			}
-			break;
 			
 		case '&': //&nbsp; and so on
 			bufpos++;
@@ -313,7 +280,6 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 		
 	if (isTag("html"))
 	{
-		IF(!strcmp(#URL + strlen(#URL) - 4, ".mht")) IF (opened==0) ignor_text = 1; ELSE ignor_text = 0;
 		t_html = opened;
 		return;
 	}
@@ -362,10 +328,10 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 				DrawBuf.Fill(bg_color);
 			}
 		} while(GetNextParam());
-		if (opened) && (cur_encoding==_DEFAULT)
+		if (opened) && (cur_encoding==CH_NULL)
 		{
 			debugln("Document has no information about encoding, UTF will be used");
-			BufEncode(_UTF);
+			//BufEncode(CH_UTF8);
 		}
 		return;
 	}
@@ -594,18 +560,38 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 			{
 				strcpy(#options, #options[strrchr(#options, '=')]); //поиск в content=
 				strlwr(#options);
-				meta_encoding = _DEFAULT;
-				if (!strcmp(#options, "utf-8"))  || (!strcmp(#options,"utf8")) meta_encoding = _UTF;
-				if (!strcmp(#options, "koi8-r")) || (!strcmp(#options, "koi8-u")) meta_encoding = _KOI;
-				if (!strcmp(#options, "windows-1251")) || (!strcmp(#options, "windows1251")) meta_encoding = _WIN;
-				if (!strcmp(#options, "dos"))    || (!strcmp(#options, "cp-866"))   meta_encoding = _DOS;
-				if (cur_encoding==_DEFAULT) BufEncode(meta_encoding);
+				meta_encoding = CH_NULL;
+				if (!strcmp(#options, "utf-8"))             || (!strcmp(#options,"utf8"))         meta_encoding = CH_UTF8;
+				else if (!strcmp(#options, "koi8-r"))       || (!strcmp(#options, "koi8-u"))      meta_encoding = CH_KOI8;
+				else if (!strcmp(#options, "windows-1251")) || (!strcmp(#options, "windows1251")) meta_encoding = CH_CP1251;
+				else if (!strcmp(#options, "windows-1252")) || (!strcmp(#options, "windows1252")) meta_encoding = CH_CP1252;
+				else if (!strcmp(#options, "iso-8859-5"))   || (!strcmp(#options, "iso8859-5"))   meta_encoding = CH_ISO8859_5;
+				else if (!strcmp(#options, "dos"))          || (!strcmp(#options, "cp-866"))      meta_encoding = CH_CP866;
+				if (cur_encoding==CH_NULL) BufEncode(meta_encoding);
 				return;
 			}
 		} while(GetNextParam());
 		return;
 	}
 }
+
+void BufEncode(int set_new_encoding)
+{
+	int bufpointer_realsize;
+	cur_encoding = set_new_encoding;
+	if (o_bufpointer==0)
+	{
+		o_bufpointer = malloc(bufsize);
+		strcpy(o_bufpointer, bufpointer);
+	}
+	else
+	{
+		strcpy(bufpointer, o_bufpointer);
+	}
+	debugln(charsets[set_new_encoding]);
+	bufpointer = ChangeCharset(charsets[set_new_encoding], "CP866", bufpointer);
+}
+
 
 void TWebBrowser::DrawScroller()
 {
@@ -650,22 +636,5 @@ void TWebBrowser::NewLine()
 int isTag(dword text) 
 { 
 	if (!strcmp(#tag,text)) return 1; else return 0;
-}
-
-
-:dword Hex2Symb(char* htmlcolor)
-{
-  dword j=0, symbol=0;
-  char ch=0x00;
-  for (;j<2;j++)
-  {
-    ch=ESBYTE[htmlcolor+j];
-    if (ch==0x0d) || (ch=='\9') RETURN 0;
-    if ((ch>='0') && (ch<='9')) ch -= '0';
-    if ((ch>='A') && (ch<='F')) ch -= 'A'-10;
-    if ((ch>='a') && (ch<='f')) ch -= 'a'-10;
-    symbol = symbol*0x10 + ch;
-  }
-  AL=symbol;
 }
 

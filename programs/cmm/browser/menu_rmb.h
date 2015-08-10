@@ -80,10 +80,10 @@ void DrawMenuList()
 		}
 		WriteText(18,N*menu.line_h+8,0x80,0x000000,ITEMS_LIST[N*2]);
 	}
-	if (cur_encoding!=_DEFAULT)
+	if (cur_encoding!=CH_NULL)
 		WriteText(5, cur_encoding*menu.line_h+7, 0x80, 0x777777, "\x10"); //show current encoding
 	else 
-		WriteText(5, _DOS*menu.line_h+7, 0x80, 0x777777, "\x10"); //show current encoding
+		WriteText(5, CH_CP866*menu.line_h+7, 0x80, 0x777777, "\x10"); //show current encoding
 
 	if (WB1.DrawBuf.zoom == 2) DrawBar(6, 4*menu.line_h+8, 6, 6, 0x777777);
 }

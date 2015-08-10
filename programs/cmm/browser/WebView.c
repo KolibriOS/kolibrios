@@ -333,12 +333,6 @@ void Draw_Window()
 }
 
 
-void ChangeCharset1(byte new_charset)
-{
-	BufEncode(new_charset);
-	WB1.Parse();	
-}
-
 void Scan(int id)
 {
 	action_buf=0;
@@ -350,39 +344,36 @@ void Scan(int id)
 	switch (id)
 	{
 		case 011: //Ctrk+K 
-			ChangeCharset1(_KOI);
+			BufEncode(CH_KOI8);
+			WB1.Parse();
 			return;
-
 		case 021: //Ctrl+U
-			ChangeCharset1(_UTF);
+			BufEncode(CH_UTF8);
+			WB1.Parse();
 			return;
-
 		case 004: //Ctrl+D
-			ChangeCharset1(_DOS);
+			BufEncode(CH_CP866);
+			WB1.Parse();
 			return;
-
 		case 005: //Win encoding
-			ChangeCharset1(_WIN);
+			BufEncode(CH_CP1251);
+			WB1.Parse();
 			return;
-
 		case 009: //free img cache
 			ImgCache.Free();
 			notify(IMAGES_CACHE_CLEARED);
 			WB1.Parse();
 			return;
-
 		case 003: //history
 			strcpy(#URL, URL_SERVICE_HISTORY);
 			OpenPage();
 			return;
-
 		case 006: //download manager
 			if (!downloader_opened) {
 				strncpy(#DL_URL, "http://",7);
 				CreateThread(#Downloader,#downloader_stak+4092);
 			}
 			return;
-
 		case ASCII_KEY_BS:
 		case BACK:
 			if (!BrowserHistory.GoBack()) return;
@@ -576,7 +567,7 @@ void SetPageDefaults()
 	pre_text = 0;
 	WB1.list.count = WB1.list.first = 0;
 	stroka = 0;
-	cur_encoding = _DEFAULT;
+	cur_encoding = CH_NULL;
 	if (o_bufpointer) o_bufpointer = free(o_bufpointer);
 	anchor_line_num=WB1.list.first;
 	anchor[0]='|';
