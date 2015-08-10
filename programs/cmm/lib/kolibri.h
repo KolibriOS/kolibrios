@@ -84,6 +84,41 @@ char program_path[4096];
 #define SCAN_CODE_PGDN  081
 #define SCAN_CODE_PGUP  073
 
+
+inline fastcall word GetKey()  //+Gluk fix
+{
+		$push edx
+GETKEY:
+		$mov  eax,2
+		$int  0x40
+		$cmp eax,1
+		$jne GETKEYI
+		$mov ah,dh
+		$jmp GETKEYII //jz?
+GETKEYI:
+		$mov dh,ah
+		$jmp GETKEY
+GETKEYII:
+		$pop edx
+		$shr eax,8
+}
+
+unsigned char key_ascii;
+dword key_scancode, key_modifier;
+int GetKeys()
+{
+	$mov  eax,2
+	$int  0x40
+	key_ascii = AH;
+	$shr  eax,16
+	key_scancode = AL;
+	//get alt/shift/ctrl key status
+	$mov eax,66
+	$mov ebx,3
+	$int 0x40
+	key_modifier = EAX;
+}
+
 //allow event mask
 #define EVENT_MASK_REDRAW   000000001b
 #define EVENT_MASK_KEYBOARD 000000010b
@@ -139,43 +174,6 @@ inline fastcall SetEventMask(EBX)
 {
 	$mov eax,40
 	$int 0x40
-}
-
-inline fastcall ScancodesGeting(){
-	$mov eax,66
-	$mov ebx,1
-	$mov ecx,1 //сканкоды
-	$int 0x40
-}
-
-inline fastcall GetStatusKey(){
-	$mov eax,66
-	$mov ebx,3
-	$int 0x40
-}
-
-inline fastcall word GetKey()  //+Gluk fix
-{
-		$push edx
-GETKEY:
-		$mov  eax,2
-		$int  0x40
-		$cmp eax,1
-		$jne GETKEYI
-		$mov ah,dh
-		$jmp GETKEYII //jz?
-GETKEYI:
-		$mov dh,ah
-		$jmp GETKEY
-GETKEYII:
-		$pop edx
-		$shr eax,8
-}
-
-inline fastcall int GetFullKey()
-{
-	$mov  eax,2
-	$int  0x40
 }
 
 

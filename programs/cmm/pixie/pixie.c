@@ -74,7 +74,6 @@ char work_folder[4096],
 void main()
 {
 	int id;
-	word key_ascii, key_scancode;
 
 	byte mouse_clicked;
 	dword tmp_x,tmp_y;
@@ -231,10 +230,7 @@ void main()
 			break;
 	  
 		case evKey:
-			GetFullKey();
-			key_ascii = AH;
-			$shr  eax,16
-			key_scancode = AL;
+			GetKeys();
 			
 			if (key_scancode==003) SetColorThemeLight();
 			if (key_scancode==004) SetColorThemeDark();

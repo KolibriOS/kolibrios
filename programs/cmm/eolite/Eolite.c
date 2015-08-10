@@ -105,8 +105,7 @@ byte cmd_free=0;
 
 void main() 
 {
-	word key, key2, id;
-	dword status_key;
+	word id;
 	char can_show, can_select, stats;
 	dword selected_offset;
 	dword IPC_LEN,IPC_ID;
@@ -330,44 +329,40 @@ void main()
 				break;
 	//Key pressed-----------------------------------------------------------------------------
 			case evKey:
-				GetFullKey();
-				key = AH;
-				$shr  eax,16
-				key2 = AL;
-				status_key = GetStatusKey();
+				GetKeys();
 
 				if (Form.status_window>2) break;
 				if (del_active)
 				{
-					if (key2 == SCAN_CODE_ENTER) Del_File(true);
-					if (key2 == SCAN_CODE_ESC) Del_File(false);
+					if (key_scancode == SCAN_CODE_ENTER) Del_File(true);
+					if (key_scancode == SCAN_CODE_ESC) Del_File(false);
 					break;
 				}
 				if (new_element_active)
 				{
-					if (key2 == SCAN_CODE_ESC) NewElement(0);
-					if (key2 == SCAN_CODE_ENTER) NewElement(1);
-					EAX=key<<8;
+					if (key_scancode == SCAN_CODE_ESC) NewElement(0);
+					if (key_scancode == SCAN_CODE_ENTER) NewElement(1);
+					EAX= key_ascii << 8;
 					edit_box_key stdcall (#new_file_ed);
 					break;
 				}
-				if (files.ProcessKey(key2))
+				if (files.ProcessKey(key_scancode))
 				{
 					List_ReDraw();
 					break;
 				}
 
-				if (TestBit(status_key, 2))
+				if (TestBit(key_modifier, 2))
 				{
-					switch(key2)
+					switch(key_scancode)
 					{
 						case 059...068:
-								key2 -= 59;
-								if (key2<disc_num)
+								key_scancode -= 59;
+								if (key_scancode<disc_num)
 								{
-									DrawRectangle(17,key2*16+74,159,16, 0); //display click
+									DrawRectangle(17,key_scancode*16+74,159,16, 0); //display click
 									pause(7);
-									ClickOnDisk(key2);
+									ClickOnDisk(key_scancode);
 								}
 								break;
 						case 45:  //Ctrl+X
@@ -415,7 +410,7 @@ void main()
 					break;
 				}
 
-				switch (key2)
+				switch (key_scancode)
 				{
 						case 041:
 								two_panels ^= 1;
@@ -453,13 +448,13 @@ void main()
 								if (files.KeyDown()) List_ReDraw();
 								break;
 						case 059...068: //F1-F10
-								FnProcess(key2-58);
+								FnProcess(key_scancode-58);
 								break; 
 						default:    
 								for (i=files.current+1; i<files.count; i++)
 								{
 									strcpy(#temp, file_mas[i]*304+buf+72);
-									if (temp[0]==key) || (temp[0]==key-32)
+									if (temp[0]==key_ascii) || (temp[0]==key_ascii-32)
 									{
 										files.current = i - 1;
 										files.KeyDown();

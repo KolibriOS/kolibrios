@@ -146,8 +146,6 @@ OpenFile()
 void main()
 {   
 	int id, mouse_clicked;
-	word key_ascii, key_scancode;
-	dword status_key;
 
 	SetEventMask(0x27);
 	load_dll(boxlib, #box_lib_init,0);
@@ -195,11 +193,7 @@ void main()
 			break;
 	  
 		case evKey:
-			GetFullKey();
-			key_ascii = AH;
-			$shr  eax,16
-			key_scancode = AL;
-			status_key = GetStatusKey();
+			GetKeys(); 
 			if (list[SKINS].active) && (list[SKINS].ProcessKey(key_scancode)) Apply();
 			if (list[WALLPAPERS].active) && (list[WALLPAPERS].ProcessKey(key_scancode)) Apply();
 			IF (key_scancode==SCAN_CODE_ENTER) OpenFile();

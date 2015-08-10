@@ -112,8 +112,6 @@ menu_data menudata1 = {0, 40, 2, 15, 2, #menu_text_area1.menu, #menu_text_area1.
 void main()
 {   
 	int id;
-	word key_ascii, key_scancode;
-	dword status_key;
 	
 	strcpy(#filter2.ext1, "TXT");
 	//strcpy(#filter2.ext2, "ASM");
@@ -185,13 +183,9 @@ void main()
       
         case evKey:
 			if (Form.status_window>2) break;
-			GetFullKey();
-			key_ascii = AH;
-			$shr  eax,16
-			key_scancode = AL;
-			status_key = GetStatusKey();
+			GetKeys();
 			if (tview.ProcessKey(key_scancode)) DrawText();
-			if (TestBit(status_key, 2))
+			if (TestBit(key_modifier, 2))
 			{
 				switch(key_scancode)
 				{
