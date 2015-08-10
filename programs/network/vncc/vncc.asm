@@ -317,6 +317,7 @@ SetEncodings            db 2            ; setEncodings
 ;                        db 0, 0, 0, 5   ; HexTile
 ;                        db 0, 0, 0, 15  ; TRLE
 ;                        db 0, 0, 0, 16  ; ZRLE
+  .length = $ - SetEncodings
 
 FramebufferUpdateRequest        db 3
 .inc                            db 0    ; incremental

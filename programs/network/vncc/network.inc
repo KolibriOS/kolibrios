@@ -185,7 +185,7 @@ else
 end if
 
         DEBUGF  1, "Sending encoding info\n"
-        mcall   send, [socketnum], SetEncodings, 12, 0
+        mcall   send, [socketnum], SetEncodings, SetEncodings.length, 0
 
 ; Set main window caption to servername
         mov     ecx, dword[receive_buffer+framebuffer.name_length]
@@ -268,6 +268,7 @@ rectangle_loop:
         mov     [rectangle.height], eax
 
         lodsd                           ; encoding
+        bswap   eax
         DEBUGF  1, "rectangle: width=%u height=%u x=%u y=%u encoding: ",\
         [rectangle.width]:2, [rectangle.height]:2, [rectangle.x]:2, [rectangle.y]:2
 

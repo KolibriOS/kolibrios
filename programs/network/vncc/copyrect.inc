@@ -14,7 +14,7 @@
 
 encoding_CopyRect:
 
-        DEBUGF  2,"CopyRect\n"
+        DEBUGF  1,"CopyRect\n"
 
   @@:
         lea     eax, [esi+4]
@@ -38,8 +38,7 @@ encoding_CopyRect:
         mov     eax, [rectangle.y]
         movzx   ebx, [screen.width]
         mul     ebx                                     ; [screen.width]*[rectangle.y]
-        mov     ebx, [rectangle.x]
-        add     eax, ebx                                ; [screen.width]*[rectangle.y]+[rectangle.x]
+        add     eax, [rectangle.x]                      ; [screen.width]*[rectangle.y]+[rectangle.x]
         lea     edi, [framebuffer_data+eax*3]           ; edi = framebuffer_data+([screen.width]*[rectangle.y]+[rectangle.x])*3
 
         movzx   eax, [screen.width]
@@ -47,28 +46,34 @@ encoding_CopyRect:
         lea     ebp, [eax*3]                            ; ebp = ([screen.width]-[rectangle.width])*3
 
         cmp     esi, edi
-        ja      .copy
+        ja      .not_backwards
 
-        ; source pixels come before destination in buffer, copy backwards
+; Source pixels come before destination in buffer, copy backwards.
+        DEBUGF  1,"backwards\n"
         mov     eax, [rectangle.height]
+        dec     eax
         movzx   edx, [screen.width]
         mul     edx
-        lea     eax, [eax*3-1]
+        add     eax, [rectangle.width]
+        lea     eax, [eax*3-1]                          ; eax = (([rectangle.height]-1)*[screen.width]+[rectangle.width])*3-1
         add     esi, eax
         add     edi, eax
-
         neg     ebp
         std
-  .copy:
+  .not_backwards:
 
+; Do the actual copying
+        mov     eax, [rectangle.width]
+        lea     eax, [eax*3]
+        mov     ebx, eax
+        and     eax, 11b
+        shr     ebx, 2
         mov     edx, [rectangle.height]
-        mov     ecx, [rectangle.width]
-        lea     ecx, [ecx*3]
   .lineloop:
-        push    ecx
-        rep     movsb
-        pop     ecx
-
+        mov     ecx, eax
+        rep movsb
+        mov     ecx, ebx
+        rep movsd
         add     esi, ebp
         add     edi, ebp
         dec     edx
