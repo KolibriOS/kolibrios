@@ -60,8 +60,6 @@ byte
 
 //struct t_settings {
 byte use_big_fonts=false,
-	font_type=0x80,
-	font_h=9,
 	sort_num=2,
 	show_dev_name=true,
 	real_files_names_case=false,
@@ -615,7 +613,7 @@ void Line_ReDraw(dword color, filenum){
 		ext1 = strrchr(file_name_off,'.') + file_name_off;
 		if (ext1==file_name_off) ext1 = " \0"; //if no extension then show nothing 
 		Put_icon(ext1, files.x+3, files.line_h/2-7+y, color, 0);
-		WriteText(7-strlen(ConvertSize(file.sizelo))*6+Form.cwidth - 76, files.line_h - font_h/ 2 + y,font_type,0,ConvertSize(file.sizelo));
+		WriteText(7-strlen(ConvertSize(file.sizelo))*6+Form.cwidth - 76, files.text_y + y,files.font_type,0,ConvertSize(file.sizelo));
 	}
 	else
 	{
@@ -638,7 +636,7 @@ void Line_ReDraw(dword color, filenum){
 		FileShow.font_color = text_col;
 		FileShow.area_size_x = files.w - 164;
 		FileShow.text_pointer = file_name_off;
-		FileShow.start_y = files.line_h - font_h/ 2 + y;
+		FileShow.start_y = files.text_y + y;
 		PathShow_prepare stdcall(#FileShow);
 		PathShow_draw stdcall(#FileShow);
 	}

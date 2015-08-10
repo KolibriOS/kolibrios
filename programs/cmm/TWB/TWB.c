@@ -75,10 +75,10 @@ void TWebBrowser::DrawPage()
 	
 	if (stroka >= 0) && (stroka - 2 < list.visible) && (line) && (!anchor)
 	{
-		start_x = stolbec * 6 + magrin_left * DrawBuf.zoom + list.x;
+		start_x = stolbec * list.font_w + magrin_left * DrawBuf.zoom + list.x;
 		start_y = stroka * list.line_h + magrin_left + list.y;
 		stolbec_len = strlen(#line);
-		line_length = stolbec_len * 6 * DrawBuf.zoom;
+		line_length = stolbec_len * list.font_w * DrawBuf.zoom;
 
 		if (DrawBuf.zoom==1) font_type = 0x88; else font_type = 0x89;
 

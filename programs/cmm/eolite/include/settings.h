@@ -179,16 +179,14 @@ void BigFontsChange()
 {
 	if (use_big_fonts) 
 	{
-		font_type = 10110000b;
-		font_h = 14;
-		FileShow.font_size_x = 8;
+		files.SetFont(8, 14, 10110000b);
+		FileShow.font_size_x = files.font_w;
 		FileShow.font_number = 3;
 	}
 	else
 	{
-		font_type=10000000b;
-		font_h = 6;
-		FileShow.font_size_x = 6;
+		files.SetFont(6, 6, 10000000b);
+		FileShow.font_size_x = files.font_w;
 		FileShow.font_number = 0;
 	} 
 }

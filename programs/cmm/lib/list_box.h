@@ -9,7 +9,8 @@
 
 struct llist
 {
-	int x, y, w, h, line_h, char_w, char_h, text_y;
+	int x, y, w, h, line_h, text_y;
+	dword font_w, font_h, font_type;
 	int count, visible, first, current, column_max; //visible = row_max
 	int active;
 	void ClearList();
@@ -23,7 +24,8 @@ struct llist
 	int KeyPgDown();
 	int KeyPgUp();
 	void CheckDoesValuesOkey();
-	void SetSizes(int xx, yy, ww, hh, min_hh, line_hh);
+	void SetSizes(int xx, yy, ww, hh, line_hh);
+	void SetFont(dword font_ww, font_hh, font_tt);
 	int MouseScroll(dword scroll_state);
 	int MouseScrollNoSelection(dword scroll_state);
 	void debug_values();
@@ -53,9 +55,16 @@ void llist::SetSizes(int xx, yy, ww, hh, line_hh)
 	w = ww;
 	h = hh;
 	line_h = line_hh;
-	text_y = line_h / 2 - 4;
+	text_y = line_h - font_h / 2;
 	visible = h / line_h;
 	//if (visible > count) visible=count;
+}
+
+void llist::SetFont(dword font_ww, font_hh, font_tt)
+{
+	font_w = font_ww;
+	font_h = font_hh;
+	font_type = font_tt;
 }
 
 

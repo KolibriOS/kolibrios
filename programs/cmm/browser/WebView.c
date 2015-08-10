@@ -286,7 +286,8 @@ void SetElementSizes()
 	address_box.width = Form.cwidth - address_box.left - 25 - 22;
 	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x / WB1.DrawBuf.zoom, 
 		Form.cheight - TOOLBAR_H - STATUSBAR_H, 11*WB1.DrawBuf.zoom);
-	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / 6;
+	WB1.list.SetFont(6, 9, 0x88);
+	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w;
 	WB1.list.visible = WB1.list.h - 5 / WB1.list.line_h;
 	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.line_h);
 }
