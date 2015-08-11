@@ -140,7 +140,7 @@ void MailBoxNetworkProcess() {
 
 
 void MailBoxLoop() {
-	int key, id;
+	int id;
 	int panels_drag=0, clicked_list=0;
 	dword line_col, text_col;
 
@@ -249,9 +249,9 @@ void MailBoxLoop() {
 
 				break;				
 			case evKey:
-				key = GetKey();
+				GetKeys();
 
-				if (!aim) && (mail_list.ProcessKey(key))
+				if (!aim) && (mail_list.ProcessKey(key_scancode))
 				{
 					DrawMailList();
 					aim = SEND_RETR;

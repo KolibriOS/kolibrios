@@ -46,9 +46,9 @@ enum {
 #define WIN_H         440
 #define WIN_MIN_W     500
 #define WIN_MIN_H     380
-#define LOGIN_HEADER   "Login - Email client Liza 0.9.3"
-#define OPTIONS_HEADER "Options - Email client Liza 0.9.3"
-#define MAILBOX_HEADER "Mail Box - Email client Liza 0.9.3"
+#define LOGIN_HEADER   "Login - Email client Liza 0.9.4"
+#define OPTIONS_HEADER "Options - Email client Liza 0.9.4"
+#define MAILBOX_HEADER "Mail Box - Email client Liza 0.9.4"
 #define BUFFERSIZE		512	
 proc_info Form;
 #define LBUMP 0xFFFfff

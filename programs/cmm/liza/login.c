@@ -110,7 +110,7 @@ void LoginNetworkProcess()
 
 void LoginBoxLoop()
 {
-	int key, id;
+	int id;
 
 	SetLoginStatus(NULL);
 	goto _LB_DRAW;
@@ -138,8 +138,8 @@ void LoginBoxLoop()
 				break;
 				
 			case evKey:
-				key = GetKey();
-				if (key==9)
+				GetKeys();
+				if (key_scancode==SCAN_CODE_TAB)
 				{
 					if (login_box.flags & 0b10)
 						{ pass_box.flags = 0b11; login_box.flags = 0; }
@@ -149,13 +149,13 @@ void LoginBoxLoop()
 					edit_box_draw stdcall(#pass_box);
 					break;				
 				}
-				if (key==13) && (!aim)
+				if (key_scancode==SCAN_CODE_ENTER) && (!aim)
 				{
 					aim=RESOLVE;
 					GetSettings();
 					DrawLoginScreen();
 				}
-				EAX=key<<8;
+				EAX=key_ascii<<8;
 				edit_box_key stdcall(#login_box);
 				edit_box_key stdcall(#pass_box);
 				break;

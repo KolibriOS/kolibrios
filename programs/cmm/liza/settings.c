@@ -64,10 +64,10 @@ void SettingsDialog()
 				break;
 				
 			case evKey:
-				key = GetKey();
+				GetKeys();;
 
 				if (checked[1]==0) break;
-				if (key==9)
+				if (key_scancode==SCAN_CODE_TAB)
 				{
 					if (POP_server_box.flags & 0b10)       { POP_server_box.flags -= 0b10;         POP_server_port_box.flags += 0b10;  } else
 					if (POP_server_port_box.flags & 0b10)  { POP_server_port_box.flags -= 0b10;    SMTP_server_box.flags += 0b10;      } else
@@ -77,7 +77,7 @@ void SettingsDialog()
 					OptionsWindow();
 				}
 				
-				EAX=key<<8;
+				EAX=key_ascii<<8;
 				edit_box_key stdcall(#POP_server_box);
 				edit_box_key stdcall(#POP_server_port_box);
 				edit_box_key stdcall(#SMTP_server_box);
