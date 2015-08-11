@@ -12,54 +12,70 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-pixel_to_24bpp:         ; returns in ecx, destroys eax, ebx
+pixel_to_24bpp:         ; returns in ecx
+
 if BITS_PER_PIXEL = 8
-; Convert pixel to 24BPP
-        mov     bl, 85
-        mov     al, [esi]
-        shr     al, 6
-        and     al, 3
-        mul     bl
-        mov     ch, al          ; blue
+
+        push    eax ebx
+
         mov     bl, 36
+        mov     al, [esi]
+        and     al, 7
+        mul     bl
+        mov     ch, al          ; red
+
         mov     al, [esi]
         shr     al, 3
         and     al, 7
         mul     bl
         mov     cl, al          ; green
+
+        mov     bl, 85
         mov     al, [esi]
-        and     al, 7
+        shr     al, 6
+        and     al, 3
         mul     bl
-        shr     ecx, 8
-        mov     cl, al          ; red
+        shl     ecx, 8
+        mov     cl, al          ; blue
+
         inc     esi
+        pop     ebx eax
+
 else if BITS_PER_PIXEL = 16
+
+        push    eax
         lodsw
-        mov     cl, al
-        shl     cl, 3
-        and     cx, 0x00f8      ; blue
-        shl     ecx, 16
+        mov     cl, ah
+        and     al, 0xf8        ; red
+
         mov     cx, ax
         shl     cx, 5
         and     ch, 0xfc        ; green
-        mov     cl, ah
-        and     al, 0xf8        ; red
+        shl     ecx, 8
+
+        mov     cl, al
+        shl     cl, 3
+        and     cx, 0x00f8      ; blue
+        pop     eax
+
 else
+
         xor     ecx, ecx
         mov     cx, [esi]
-        shr     ecx, 8
+        shl     ecx, 8
         mov     cl, [esi+2]
         add     esi, 3
+
 end if
 
         ret
 
 encoding_RRE:
 
-        DEBUGF  2,"RRE\n"
+        DEBUGF  1,"RRE\n"
 
   @@:
-        lea     eax, [esi+5]
+        lea     eax, [esi+4+BYTES_PER_PIXEL]
         cmp     [datapointer], eax
         jae     @f
         call    read_data.more
@@ -70,17 +86,23 @@ encoding_RRE:
         bswap   eax
         mov     [subrectangles], eax
 
+        DEBUGF  1, "%u subrectangles\n", eax
+
+; Get background color
         call    pixel_to_24bpp
 
+; Calculate first pixel pos
         movzx   eax, [screen.width]
         mul     [rectangle.y]                           ; [screen.width]*[rectangle.y]
         add     eax, [rectangle.x]                      ; [screen.width]*[rectangle.y]+[rectangle.x]
         lea     edi, [framebuffer_data+eax*3]           ; edi = framebuffer_data+([screen.width]*[rectangle.y]+[rectangle.x])*3
 
+; Calculate offset between two rows of pixels
         movzx   eax, [screen.width]
         sub     eax, [rectangle.width]
         lea     ebp, [eax*3]                            ; ebp = ([screen.width]-[rectangle.width])*3
 
+; Draw background rectangle
         push    edi
         mov     eax, ecx
         mov     edx, [rectangle.height]
@@ -98,17 +120,23 @@ encoding_RRE:
         jnz     .lineloop
         pop     edi
 
+; Any subrectangles at all?
+        cmp     [subrectangles], 0
+        je      next_rectangle
+
   .subrectangle:
   @@:
-        lea     eax, [esi+9]
+        lea     eax, [esi+8+BYTES_PER_PIXEL]
         cmp     [datapointer], eax
         jae     @f
         call    read_data.more
         jmp     @b
   @@:
 
+; Get subrectangle color
         call    pixel_to_24bpp
 
+; Get coordinates
         xor     eax, eax
         lodsw
         xchg    al, ah
@@ -118,17 +146,27 @@ encoding_RRE:
         mov     [subrectangle.y], eax
         lodsw
         xchg    al, ah
-        mov     [subrectangle.height], eax
+        mov     [subrectangle.width], eax
         lodsw
         xchg    al, ah
-        mov     [subrectangle.width], eax
+        mov     [subrectangle.height], eax
+        DEBUGF  1, "Subrectangle: x=%u y=%u width=%u height=%u\n", \
+        [subrectangle.x], [subrectangle.y], [subrectangle.width], [subrectangle.height]
 
+; Calculate pos of first pixel
         push    edi
-        mov     eax, [rectangle.width]
+        movzx   eax, [screen.width]
         mul     [subrectangle.y]
         add     eax, [subrectangle.x]
+        lea     eax, [eax*3]
         add     edi, eax
 
+; Calculate offset between two rows of pixels
+        movzx   eax, [screen.width]
+        sub     eax, [subrectangle.width]
+        lea     ebp, [eax*3]                            ; ebp = ([screen.width]-[rectangle.width])*3
+
+; Draw the subrectangle
         mov     eax, ecx
         mov     edx, [subrectangle.height]
   .lineloop2:
@@ -143,9 +181,7 @@ encoding_RRE:
         add     edi, ebp
         dec     edx
         jnz     .lineloop2
-
         pop     edi
-
         dec     [subrectangles]
         jnz     .subrectangle
         jmp     next_rectangle

@@ -17,7 +17,7 @@ format binary as ""
 __DEBUG__       = 1
 __DEBUG_LEVEL__ = 2
 
-BITS_PER_PIXEL  = 8             ; 8, 16 24
+BITS_PER_PIXEL  = 8            ; 8, 16 24
 
 use32
 
@@ -84,6 +84,8 @@ STATUS_SECURITY_ERR     = 15
 STATUS_LIB_ERR          = 16
 STATUS_THREAD_ERR       = 17
 STATUS_LOGIN_FAILED     = 18
+
+BYTES_PER_PIXEL = (BITS_PER_PIXEL + 7) / 8
 
 include "keymap.inc"
 include "gui.inc"
@@ -310,10 +312,10 @@ SetPixelFormat8         db 0            ; setPixelformat
 
 SetEncodings            db 2            ; setEncodings
                         db 0            ; padding
-                        db 0, 2         ; number of encodings
-                        db 0, 0, 0, 0   ; raw encoding        (DWORD, Big endian order)
+                        db 0, 3         ; number of encodings
                         db 0, 0, 0, 1   ; Copyrect encoding
-;                        db 0, 0, 0, 2   ; RRE
+                        db 0, 0, 0, 2   ; RRE
+                        db 0, 0, 0, 0   ; raw encoding
 ;                        db 0, 0, 0, 5   ; HexTile
 ;                        db 0, 0, 0, 15  ; TRLE
 ;                        db 0, 0, 0, 16  ; ZRLE

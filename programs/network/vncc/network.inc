@@ -16,38 +16,67 @@ thread_start:
 
         mcall   40, 0                   ; disable all events for this thread
 
-; resolve name
+; Extract port number from server address
+        mov     esi, serveraddr
+  @@:
+        lodsb
+        test    al, al
+        jz      .port_done
+        cmp     al, ':'
+        jne     @r
+        mov     byte[esi-1], 0          ; replace colon with 0 byte, we dont want to upset getaddrinfo
+        xor     eax, eax
+        xor     ebx, ebx                ; port number
+  @@:
+        lodsb
+        test    al, al
+        jz      @f
+        sub     al, '0'
+        jb      err_dns
+        cmp     al, 9
+        ja      err_dns
+        lea     ebx, [ebx*4+ebx]
+        lea     ebx, [ebx*2+eax]
+        jmp     @b
+  @@:
+        xchg    bl, bh
+        mov     [sockaddr1.port], bx
+  .port_done:
+
+; Resolve hostname
         push    esp                     ; reserve stack place
         invoke  getaddrinfo, serveraddr, 0, 0, esp
         pop     esi
-; test for error
         test    eax, eax
         jnz     err_dns
 
         mov     eax, [esi+addrinfo.ai_addr]
         mov     eax, [eax+sockaddr_in.sin_addr]
         mov     [sockaddr1.ip], eax
+        invoke  freeaddrinfo, esi
 
         DEBUGF  1, "Connecting to %u.%u.%u.%u:%u\n", \
         [sockaddr1.ip]:1, [sockaddr1.ip+1]:1, [sockaddr1.ip+2]:1, [sockaddr1.ip+3]:1, \
         [sockaddr1.port]:2
 
-        invoke  freeaddrinfo, esi
-
+; Open socket
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
         je      err_sock
-
         mov     [socketnum], eax
+
+; Connect to the server
         mcall   connect, [socketnum], sockaddr1, 18
         cmp     eax, -1
         je      err_connect
 
+; Wait for handshake from server
         ; TODO: implement timeout
         call    wait_for_data
-
         cmp     dword[receive_buffer], "RFB "
         jne     err_proto
+
+; Reply to handshake
         DEBUGF  1, "Sending handshake\n"
         mcall   send, [socketnum], HandShake, 12, 0
         call    wait_for_data
@@ -203,7 +232,7 @@ end if
 ; Tell the main thread we are ready for business!
         mov     [status], STATUS_CONNECTED
 
-; Request initial update
+; Request initial framebuffer update from server
         mov     [FramebufferUpdateRequest.inc], 0
 
 request_fbu:
@@ -269,8 +298,8 @@ rectangle_loop:
 
         lodsd                           ; encoding
         bswap   eax
-        DEBUGF  1, "rectangle: width=%u height=%u x=%u y=%u encoding: ",\
-        [rectangle.width]:2, [rectangle.height]:2, [rectangle.x]:2, [rectangle.y]:2
+        DEBUGF  1, "Rectangle: x=%u y=%u width=%u height=%u encoding: ",\
+        [rectangle.x]:2, [rectangle.y]:2, [rectangle.width]:2, [rectangle.height]:2
 
         cmp     eax, 0
         je      encoding_raw
