@@ -15,13 +15,13 @@
 pixel_to_24bpp:         ; returns in ecx
 
         push    eax
-  @@:
-        lea     eax, [esi+BYTES_PER_PIXEL]
-        cmp     [datapointer], eax
-        jae     @f
-        call    read_data.more
-        jmp     @b
-  @@:
+;  @@:
+;        lea     eax, [esi+BYTES_PER_PIXEL]
+;        cmp     [datapointer], eax
+;        jae     @f
+;        call    read_data.more
+;        jmp     @b
+;  @@:
 
 if BITS_PER_PIXEL = 8
 

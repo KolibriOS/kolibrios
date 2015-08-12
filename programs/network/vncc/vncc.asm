@@ -94,6 +94,7 @@ include "raw.inc"
 include "copyrect.inc"
 include "rre.inc"
 include "trle.inc"
+include "zrle.inc"
 include "des.inc"
 
 START:
@@ -353,6 +354,10 @@ update_gui              dd 0
 mouse_dd                dd 0
 update_framebuffer      dd 0
 
+deflate_buffer          dd 0
+deflate_length          dd ?
+deflate_str             dd ?
+
 URLbox          edit_box 235, 70, 20, 0xffffff, 0x6f9480, 0, 0, 0, 65535, serveraddr, mouse_dd, ed_focus, 0, 0
 USERbox         edit_box 215, 90, 10, 0xffffff, 0x6f9480, 0, 0, 0, 127, username, mouse_dd, ed_focus, 0, 0
 PASSbox         edit_box 215, 90, 30, 0xffffff, 0x6f9480, 0, 0, 0, 127, password, mouse_dd, ed_pass, 0, 0
@@ -407,7 +412,7 @@ import  box_lib,\
         scrollbar_h_mouse,      "scrollbar_h_mouse"
 
 import  archiver,\
-        deflate_unpack,         "deflate_unpack"
+        deflate_unpack2,        "deflate_unpack2"
 
 name                    db "VNC viewer "
 .dash                   db 0, " "
