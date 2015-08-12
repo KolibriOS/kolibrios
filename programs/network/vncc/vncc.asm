@@ -93,6 +93,7 @@ include "network.inc"
 include "raw.inc"
 include "copyrect.inc"
 include "rre.inc"
+include "trle.inc"
 include "des.inc"
 
 START:
@@ -437,6 +438,9 @@ subrectangle:
 screen:                 ; Remote screen resolution
 .height                 dw ?
 .width                  dw ?
+
+palette                 rd 128  ; TRLE/ZRLE
+palettesize             db ?    ; TRLE/ZRLE
 
 keymap                  rw 128
 keymap_shift            rw 128

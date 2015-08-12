@@ -38,8 +38,7 @@ end if
         mov     eax, [rectangle.y]
         movzx   ebx, [screen.width]
         mul     ebx                                     ; [screen.width]*[rectangle.y]
-        mov     ebx, [rectangle.x]
-        add     eax, ebx                                ; [screen.width]*[rectangle.y]+[rectangle.x]
+        add     eax, [rectangle.x]                      ; [screen.width]*[rectangle.y]+[rectangle.x]
         lea     edi, [framebuffer_data+eax*3]           ; edi = framebuffer_data+([screen.width]*[rectangle.y]+[rectangle.x])*3
 
         movzx   eax, [screen.width]

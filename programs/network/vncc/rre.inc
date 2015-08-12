@@ -14,9 +14,18 @@
 
 pixel_to_24bpp:         ; returns in ecx
 
+        push    eax
+  @@:
+        lea     eax, [esi+BYTES_PER_PIXEL]
+        cmp     [datapointer], eax
+        jae     @f
+        call    read_data.more
+        jmp     @b
+  @@:
+
 if BITS_PER_PIXEL = 8
 
-        push    eax ebx
+        push    ebx
 
         mov     bl, 36
         mov     al, [esi]
@@ -39,11 +48,10 @@ if BITS_PER_PIXEL = 8
         mov     cl, al          ; blue
 
         inc     esi
-        pop     ebx eax
+        pop     ebx
 
 else if BITS_PER_PIXEL = 16
 
-        push    eax
         lodsw
         mov     cl, ah
         and     al, 0xf8        ; red
@@ -56,7 +64,6 @@ else if BITS_PER_PIXEL = 16
         mov     cl, al
         shl     cl, 3
         and     cx, 0x00f8      ; blue
-        pop     eax
 
 else
 
@@ -67,6 +74,7 @@ else
         add     esi, 3
 
 end if
+        pop     eax
 
         ret
 
