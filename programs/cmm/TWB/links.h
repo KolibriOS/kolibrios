@@ -24,7 +24,8 @@ struct LinksArray
 	dword GetURL();
 	void Clear();
 	void GetAbsoluteURL();
-};
+	int UrlAbsolute();
+} PageLinks;
 
 void LinksArray::AddLink(dword new_link, int link_x, link_y)
 {
@@ -98,18 +99,33 @@ void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
 	}
 }
 
-char *ABSOLUTE_LINKS[]={ "http:", "mailto:", "ftp:", "/sys/", 
-"/kolibrios/", "/rd/", "/bd", "/hd", "/cd", "/tmp", "/usbhd", "WebView:", 0};
-void LinksArray::GetAbsoluteURL(dword in_URL){
-	int i, len;
+int LinksArray::UrlAbsolute(dword in_URL)
+{
+	if(!strncmp(in_URL,"http:",5)) return 1;
+	if(!strncmp(in_URL,"https:",6)) return 1;
+	if(!strncmp(in_URL,"mailto:",7)) return 1;
+	if(!strncmp(in_URL,"ftp:",4)) return 1;
+	if(!strncmp(in_URL,"WebView:",8)) return 1;
+	if(!strncmp(in_URL,"/sys/",5)) return 1;
+	if(!strncmp(in_URL,"/hd/",4)) return 1;
+	if(!strncmp(in_URL,"/fd/",4)) return 1;
+	if(!strncmp(in_URL,"/rd/",4)) return 1;
+	if(!strncmp(in_URL,"/tmp/",5)) return 1;
+	if(!strncmp(in_URL,"/cd/",4)) return 1;
+	if(!strncmp(in_URL,"/bd/",4)) return 1;
+	if(!strncmp(in_URL,"/usbhd/",7)) return 1;
+	if(!strncmp(in_URL,"/kolibrios/",11)) return 1;
+	return 0;
+}
+
+void LinksArray::GetAbsoluteURL(dword in_URL)
+{
+	int i;
 	dword orig_URL = in_URL;
 	char newurl[sizeof(URL)];
+
+	if (UrlAbsolute(in_URL)) return;
 	
-	for (i=0; ABSOLUTE_LINKS[i]; i++)
-	{
-		len=strlen(ABSOLUTE_LINKS[i]);
-		if (!strcmpn(in_URL, ABSOLUTE_LINKS[i], len)) return;
-	}
 	IF (!strcmpn(in_URL,"./", 2)) in_URL+=2;
 	strcpy(#newurl, BrowserHistory.CurrentUrl());
 
@@ -141,5 +157,3 @@ void LinksArray::GetAbsoluteURL(dword in_URL){
 }
 
 
-
-LinksArray PageLinks;

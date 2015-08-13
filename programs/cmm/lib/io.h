@@ -233,6 +233,7 @@
 	{
 		pos++;
 		if(!strncmp(pos,"sys/",4)) return PATH;
+		if(!strncmp(pos,"kolibrios/",10)) return PATH;
 		if(!strncmp(pos,"hd/",3)) return PATH;
 		if(!strncmp(pos,"fd/",3)) return PATH;
 		if(!strncmp(pos,"rd/",3)) return PATH;

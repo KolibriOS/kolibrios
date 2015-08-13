@@ -64,6 +64,7 @@ void TWebBrowser::DrawPage()
 	
 	if (!header)
 	{
+		ChangeCharset("UTF-8", "CP866", #line);
 		strcpy(#header, #line);
 		strcat(#header, " -");
 		strcat(#header, #version);
@@ -585,7 +586,10 @@ void BufEncode(int set_new_encoding)
 	{
 		strcpy(bufpointer, o_bufpointer);
 	}
-	//bufpointer = ChangeCharset(charsets[set_new_encoding], "CP866", bufpointer);
+	if (set_new_encoding == CH_CP1251)
+	{
+		 bufpointer = ChangeCharset("CP1251", "UTF-8", bufpointer);
+	}
 }
 
 
