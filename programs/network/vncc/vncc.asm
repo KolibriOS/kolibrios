@@ -17,7 +17,8 @@ format binary as ""
 __DEBUG__       = 1
 __DEBUG_LEVEL__ = 2
 
-BITS_PER_PIXEL  = 8            ; 8, 16 24
+BITS_PER_PIXEL  = 8             ; 8, 16 24
+SERVERADDRLEN   = 4096
 
 use32
 
@@ -29,7 +30,7 @@ use32
         dd      I_END           ; size of image
         dd      IM_END          ; memory for app
         dd      IM_END          ; esp
-        dd      0x0, 0x0        ; I_Param , I_Path
+        dd      serveraddr, 0x0 ; I_Param , I_Path
 
 include "../../macros.inc"
 include "../../debug-fdo.inc"
@@ -68,7 +69,7 @@ TIMEOUT                 = 5             ; timeout in seconds
 
 RECEIVE_BUFFER_SIZE     = 8*1024*1024   ; 8 Mib
 
-STATUS_INITIAL          = 0
+STATUS_CONNECT          = 0
 STATUS_CONNECTING       = 1
 STATUS_REQ_LOGIN        = 2
 STATUS_LOGIN            = 3
@@ -84,6 +85,7 @@ STATUS_SECURITY_ERR     = 15
 STATUS_LIB_ERR          = 16
 STATUS_THREAD_ERR       = 17
 STATUS_LOGIN_FAILED     = 18
+STATUS_SECURITY_ERR_C   = 19
 
 BYTES_PER_PIXEL = (BITS_PER_PIXEL + 7) / 8
 
@@ -106,6 +108,19 @@ START:
         test    eax, eax
         jz      @f
         mov     [status], STATUS_LIB_ERR
+  @@:
+
+; Check if we got a server address through parameters
+        cmp     byte[serveraddr], 0
+        je      @f
+        xor     al, al
+        mov     edi, serveraddr
+        mov     ecx, SERVERADDRLEN
+        repne scasb
+        sub     edi, serveraddr+1
+        mov     [URLbox.size], edi
+        mov     [URLbox.pos], edi
+        call    open_connection
   @@:
 
 ; Present the user with the GUI and wait for network connection
@@ -140,6 +155,7 @@ redraw:
         mcall   12, 2
 
 draw_framebuffer:
+        DEBUGF  1, "Drawing framebuffer\n"
         mcall   7, framebuffer_data, dword[screen], 0
         mov     [update_framebuffer], 0
 
@@ -314,13 +330,12 @@ SetPixelFormat8         db 0            ; setPixelformat
 
 SetEncodings            db 2            ; setEncodings
                         db 0            ; padding
-                        db 0, 3         ; number of encodings
-                        db 0, 0, 0, 1   ; Copyrect encoding
-                        db 0, 0, 0, 2   ; RRE
-                        db 0, 0, 0, 0   ; raw encoding
-;                        db 0, 0, 0, 5   ; HexTile
-;                        db 0, 0, 0, 15  ; TRLE
+                        db 0, 4         ; number of encodings
 ;                        db 0, 0, 0, 16  ; ZRLE
+                        db 0, 0, 0, 15  ; TRLE
+                        db 0, 0, 0, 2   ; RRE
+                        db 0, 0, 0, 1   ; Copyrect encoding
+                        db 0, 0, 0, 0   ; raw encoding
   .length = $ - SetEncodings
 
 FramebufferUpdateRequest        db 3
@@ -349,16 +364,17 @@ sockaddr1:
 
 beep            db 0x85, 0x25, 0x85, 0x40, 0
 
-status                  dd STATUS_INITIAL
+status                  dd STATUS_CONNECT
 update_gui              dd 0
 mouse_dd                dd 0
 update_framebuffer      dd 0
+thread_id               dd 0
 
 deflate_buffer          dd 0
 deflate_length          dd ?
 deflate_str             dd ?
 
-URLbox          edit_box 235, 70, 20, 0xffffff, 0x6f9480, 0, 0, 0, 65535, serveraddr, mouse_dd, ed_focus, 0, 0
+URLbox          edit_box 235, 70, 20, 0xffffff, 0x6f9480, 0, 0, 0, SERVERADDRLEN, serveraddr, mouse_dd, ed_focus, 0, 0
 USERbox         edit_box 215, 90, 10, 0xffffff, 0x6f9480, 0, 0, 0, 127, username, mouse_dd, ed_focus, 0, 0
 PASSbox         edit_box 215, 90, 30, 0xffffff, 0x6f9480, 0, 0, 0, 127, password, mouse_dd, ed_pass, 0, 0
 
@@ -367,14 +383,16 @@ userstr         db "username:"
 passstr         db "password:"
 connectstr      db "Connect"
 loginstr        db "Log in"
-loginstr_e:
+cancelstr       db "Cancel"
+okstr           db "OK"
+okstr_e:
 
-sz_err_disconnected     db "Server closed connection unexpectedly.", 0
+sz_err_disconnected     db "The server has closed the connection unexpectedly.", 0
 sz_err_dns              db "Could not resolve hostname.", 0
 sz_err_sock             db "Could not open socket.", 0
 sz_err_connect          db "Could not connect to the server.", 0
 sz_err_proto            db "A protocol error has occured.", 0
-sz_err_security         db "Server requested an unsupported security type.", 0
+sz_err_security         db "An authentication problem has occured.", 0
 sz_err_library          db "Could not load needed libraries.", 0
 sz_err_thread           db "Could not create thread.", 0
 sz_err_login_failed     db "Login failed.", 0
@@ -388,6 +406,7 @@ err_msg         dd sz_err_disconnected
                 dd sz_err_library
                 dd sz_err_thread
                 dd sz_err_login_failed
+                dd sz_err_security_c
 
 ; import
 align 4
@@ -420,6 +439,9 @@ name                    db "VNC viewer "
 I_END:
 
 servername              rb 64+1
+
+serveraddr              db 0
+                        rb SERVERADDRLEN
 
 socketnum               dd ?
 datapointer             dd ?
@@ -454,7 +476,8 @@ username                rb 128
 password                rb 128
 keys                    rd 32*2         ; DES keys for VNC authentication
 
-serveraddr              rb 65536
+sz_err_security_c       rb 512+1
+
 receive_buffer          rb RECEIVE_BUFFER_SIZE
 framebuffer_data        rb 1280*1024*3  ; framebuffer
 

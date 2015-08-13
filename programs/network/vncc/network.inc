@@ -70,25 +70,38 @@ thread_start:
         cmp     eax, -1
         je      err_connect
 
-; Wait for handshake from server
-        ; TODO: implement timeout
+; Verify handshake from server
         call    wait_for_data
         cmp     dword[receive_buffer], "RFB "
         jne     err_proto
+        add     esi, 12
+
+; Did we get an error message already?
+        cmp     eax, 16
+        jb      @f
+        lodsd
+        test    eax, eax
+        je      err_handshake
+  @@:
 
 ; Reply to handshake
         DEBUGF  1, "Sending handshake\n"
         mcall   send, [socketnum], HandShake, 12, 0
+
+; VNC 3.3 protocol: server decides security type
         call    wait_for_data
-
-        cmp     dword[receive_buffer], 0x01000000       ; no security
+        lodsd
+        cmp     eax, 0x00000000
+        je      err_handshake
+        cmp     eax, 0x01000000         ; no security
         je      initialize
-        cmp     dword[receive_buffer], 0x02000000       ; VNC security
+        cmp     eax, 0x02000000         ; VNC security
         je      vnc_security
-
-        jmp     err_security
+        jmp     err_proto
 
 vnc_security:
+
+        push    esi     ; pointer to message
 
         mov     dword[password], 0
         mov     dword[password+4], 0
@@ -110,7 +123,6 @@ vnc_security:
         DEBUGF  1, "VNC authentication\n"
 
 ; Bit reverse the password and create DES keys
-
         mov     ebx, dword[password]
         mov     edx, ebx
         and     ebx, 0xf0f0f0f0
@@ -157,34 +169,36 @@ vnc_security:
         call    DES_create_keys
 
 ; Encrypt message with DES
-
-        mov     ebx, dword[receive_buffer+4]
-        mov     edx, dword[receive_buffer+8]
+        mov     esi, [esp]
+        mov     ebx, dword[esi+0]
+        mov     edx, dword[esi+4]
         call    encrypt_DES
-        mov     dword[receive_buffer+4], ebx
-        mov     dword[receive_buffer+8], edx
+        mov     esi, [esp]
+        mov     dword[esi+0], ebx
+        mov     dword[esi+4], edx
 
-        mov     ebx, dword[receive_buffer+12]
-        mov     edx, dword[receive_buffer+16]
+        mov     ebx, dword[esi+8]
+        mov     edx, dword[esi+12]
         call    encrypt_DES
-        mov     dword[receive_buffer+12], ebx
-        mov     dword[receive_buffer+16], edx
+        mov     esi, [esp]
+        mov     dword[esi+8], ebx
+        mov     dword[esi+12], edx
 
 ; Blank out the password and key fields in RAM
-
         mov     edi, password
         mov     ecx, 384/4
         xor     eax, eax
         rep     stosd
 
 ; Send the authentication response to server
+        pop     edx
+        mcall   send, [socketnum], , 16, 0
 
-        mcall   send, [socketnum], receive_buffer+4, 16, 0
-
+securityresult:
+; Wait for SecurityResult from server
         call    wait_for_data
-        cmp     dword[receive_buffer], 0
+        cmp     dword[receive_buffer], 0        ; OK
         jne     err_login
-;        jmp     initialize
 
 initialize:
         DEBUGF  1, "Sending ClientInit\n"
@@ -307,12 +321,10 @@ rectangle_loop:
         je      encoding_CopyRect
         cmp     eax, 2
         je      encoding_RRE
-;        cmp     eax, 5
-;        je      encoding_hextile
-;        cmp     eax, 15
-;        je      encoding_TRLE
-;        cmp     eax, 16
-;        je      encoding_ZRLE
+        cmp     eax, 15
+        je      encoding_TRLE
+        cmp     eax, 16
+        je      encoding_ZRLE
 
         DEBUGF  2, "unknown encoding: %u\n", eax
         jmp     thread_loop
@@ -416,6 +428,8 @@ read_data:
         ret
 
   .buffer_end_reached:
+        DEBUGF  1, "end of buffer reached, re-organizing\n"
+        pop     edi esi edx ecx ebx
         ; Buffer is full, first needed data by program is pointed to by esi.
         ; Move all usefull data to begin of buffer
         cmp     esi, receive_buffer
@@ -436,6 +450,7 @@ wait_for_data:  ; FIXME: add timeout
         je      err_sock
         test    eax, eax
         jz      err_disconnected
+        mov     esi, receive_buffer
         ret
 
 
@@ -466,8 +481,24 @@ err_proto:
         mcall   -1
         ret
 
-err_security:
+err_handshake:
         mov     [status], STATUS_SECURITY_ERR
+
+        lodsd                   ; Custom message from server?
+        test    eax, eax
+        jz      .no_msg
+        bswap   eax
+        mov     ecx, eax
+        cmp     ecx, 512
+        jb      @f
+        mov     ecx, 512
+  @@:
+        mov     edi, sz_err_security_c
+        rep movsb
+        mov     byte[edi], 0
+        mov     [status], STATUS_SECURITY_ERR_C
+  .no_msg:
+
         inc     [update_gui]
         mcall   -1
         ret
