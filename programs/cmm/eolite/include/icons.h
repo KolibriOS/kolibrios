@@ -44,7 +44,7 @@ void Put_icon(dword extension, xx, yy, fairing_color, icon_n)
 	PutPaletteImage(icon_n*16*15+#ficons,16,15,xx,yy,8,#ficons_pal);
 	if (fairing_color!=0xFFFfff) IconFairing(icon_n, xx, yy, fairing_color);
 	if (use_big_fonts) font_half_height=0; else font_half_height=4;
-	if (icon_n!=17) && (strlen(extension)<9) WriteText(-FileShow.font_size_x/2*strlen(extension)+Form.cwidth-121,yy+font_half_height,files.font_type,0,extension);
+	if (icon_n!=17) && (strlen(extension)<9) WriteText(-FileShow.font_size_x/2*strlen(extension)+files.x+files.w-103,yy+font_half_height,files.font_type,0,extension);
 }
 
 
@@ -53,7 +53,7 @@ void IconFairing(dword filenum, x,y, color)
 	switch(filenum)
 	{
 		case 0...1: //file
-		case 3: //настройки
+		case 3: //Г­Г Г±ГІГ°Г®Г©ГЄГЁ
 			RIGHT_PAINT:
 			PutPixel(x+10,y,color);
 			PutPixel(x+11,y+1,color);
@@ -114,18 +114,18 @@ void IconFairing(dword filenum, x,y, color)
 			DrawBar(x+8,y,8,2,color);
 			IF (filenum==17) PutPixel(x+11,y+1,0x1A7B17); //green arrow part
 			DrawBar(x+1,y+13,15,2,color);
-			PutPixel(x+1,y,color); //.точки
+			PutPixel(x+1,y,color);
 			PutPixel(x+7,y,color);
 			PutPixel(x+15,y+2,color);
 			PutPixel(x+1,y+12,color);
 			PutPixel(x+15,y+12,color);
 			return;
-		case 18: //картридж
+		case 18:
 			DrawBar(x,y+11,1,2,color);
 			DrawBar(x+15,y+11,1,2,color);
 			DrawBar(x,y+13,16,1,color);
 			return;
-		case 24: //образ
+		case 24:
 			DrawBar(x,y,6,1,color);
 			DrawBar(x,y+1,4,1,color);
 			DrawBar(x,y+2,3,1,color);

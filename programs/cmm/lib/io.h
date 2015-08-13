@@ -241,6 +241,7 @@
 		if(!strncmp(pos,"cd/",3)) return PATH;
 		if(!strncmp(pos,"bd/",3)) return PATH;
 		if(!strncmp(pos,"usbhd/",6)) return PATH;
+		if(!strncmp(pos,"kolibrios/",10)) return PATH;
 		sprintf(#__PATH_NEW,"/sys%s",PATH);
 		return #__PATH_NEW;
 	}

@@ -8,6 +8,7 @@
 	?define SHOW_DEVICE_CLASS "Выводить названия класса устройств"
 	?define SHOW_REAL_NAMES "Показывать имена файлов не меняя регистр"
 	?define USE_BIG_FONTS "Большой шрифт (только английские символы!)"
+	?define USE_TWO_PANELS "Две панели"
 	?define LIST_LINE_HEIGHT "Высота строки в списке"
 	?define NOTIFY_COPY_END "Уведомлять о завершении копирования"
 	?define CANCEL_T "Отмена"
@@ -19,6 +20,7 @@
 	?define SHOW_DEVICE_CLASS "Show device class name"
 	?define SHOW_REAL_NAMES "Show real file names without changing case"
 	?define USE_BIG_FONTS "Use big fonts (English characters only!)"
+	?define USE_TWO_PANELS "Two panels"
 	?define LIST_LINE_HEIGHT "List line height"
 	?define NOTIFY_COPY_END "Notify when copying finished"
 	?define CANCEL_T "Cancel"
@@ -34,7 +36,7 @@ void settings_dialog()
 	byte id;
 	proc_info settings_form;
 	
-	dword save_show_dev_name,save_real_files_names_case, save_info_after_copy, save_use_big_fonts, save_files_h, save_DBLTime;
+	dword save_show_dev_name,save_real_files_names_case, save_info_after_copy, save_use_big_fonts, save_two_panels, save_files_h, save_DBLTime;
 	
 	if (active_settings){
 		EXIT_SETTING: 
@@ -43,6 +45,7 @@ void settings_dialog()
 		real_files_names_case = save_real_files_names_case;
 		info_after_copy       = save_info_after_copy;
 		use_big_fonts         = save_use_big_fonts;
+		two_panels            = save_two_panels;
 		files.line_h          = save_files_h;
 		MOUSE_TIME            = save_DBLTime;
 		
@@ -56,6 +59,7 @@ void settings_dialog()
 	save_real_files_names_case = real_files_names_case;
 	save_info_after_copy       = info_after_copy;
 	save_use_big_fonts         = use_big_fonts;
+	two_panels                 = two_panels;
 	save_files_h               = files.line_h;
 	save_DBLTime               = MOUSE_TIME;
 	
@@ -86,6 +90,7 @@ void settings_dialog()
 				else if (id==21) real_files_names_case ^= 1;
 				else if (id==22) info_after_copy ^= 1;
 				else if (id==23) { use_big_fonts ^= 1; BigFontsChange(); }
+				else if (id==24) two_panels ^= 1;
 				else if (id==25) files.line_h++;
 				else if (id==26) && (files.line_h>14) files.line_h--;
 				else if (id==27) MOUSE_TIME++;
@@ -105,10 +110,10 @@ void settings_dialog()
 				break;
 				
 			case evReDraw:
-				DefineAndDrawWindow(Form.left + Form.width/2, Form.top + Form.height/2 - 75, 300, 234+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
+				DefineAndDrawWindow(Form.left + Form.width/2-10, Form.top + Form.height/2 - 75, 300, 254+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
 				GetProcessInfo(#settings_form, SelfInfo);
 				DrawSettingsCheckBoxes();
-				DrawFlatButton(9, 166, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
+				DrawFlatButton(9, 186, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
 				DrawFlatButton(128, settings_form.cheight - 30, 70, 22, 10, 0xE4DFE1, APPLY_T);
 				DrawFlatButton(208, settings_form.cheight - 30, 70, 22, 11, 0xE4DFE1, CANCEL_T);
 		}
@@ -121,8 +126,9 @@ void DrawSettingsCheckBoxes()
 	CheckBox2(10, 33, 21, SHOW_REAL_NAMES,  real_files_names_case);
 	CheckBox2(10, 55, 22, NOTIFY_COPY_END,  info_after_copy);
 	CheckBox2(10, 77, 23, USE_BIG_FONTS,  use_big_fonts); 
-	MoreLessBox(10, 104, 18, 25, 26, #system.color, files.line_h, LIST_LINE_HEIGHT);
-	MoreLessBox(10, 134, 18, 27, 28, #system.color, MOUSE_TIME, T_DOUBLE_CLICK);
+	CheckBox2(10, 99, 24, USE_TWO_PANELS,  two_panels); 
+	MoreLessBox(10, 124, 18, 25, 26, #system.color, files.line_h, LIST_LINE_HEIGHT);
+	MoreLessBox(10, 154, 18, 27, 28, #system.color, MOUSE_TIME, T_DOUBLE_CLICK);
 }
 
 
@@ -133,6 +139,7 @@ void LoadIniSettings()
 	ini_get_int stdcall   (eolite_ini_path, #confir_section, "RealFileNamesCase", 0); real_files_names_case = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #confir_section, "InfoAfterCopy",     0); info_after_copy = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #confir_section, "UseBigFonts",       0); use_big_fonts = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #confir_section, "TwoPanels",         0); two_panels = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #confir_section, "LineHeight",       18); files.line_h = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #confir_section, "TimeDoubleClick",  50); MOUSE_TIME = EAX;
 	BigFontsChange();
@@ -145,6 +152,7 @@ void SaveIniSettings()
 	ini_set_int stdcall (eolite_ini_path, #confir_section, "RealFileNamesCase", real_files_names_case);
 	ini_set_int stdcall (eolite_ini_path, #confir_section, "InfoAfterCopy", info_after_copy);
 	ini_set_int stdcall (eolite_ini_path, #confir_section, "UseBigFonts", use_big_fonts);
+	ini_set_int stdcall (eolite_ini_path, #confir_section, "TwoPanels", two_panels);
 	ini_set_int stdcall (eolite_ini_path, #confir_section, "LineHeight", files.line_h);
 	ini_set_int stdcall (eolite_ini_path, #confir_section, "TimeDoubleClick", MOUSE_TIME);
 }

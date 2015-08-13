@@ -181,7 +181,7 @@ void DrawSystemDiscs()
 		else
 		{
 			pos_y = 43;
-			DrawBar(pos_x, pos_y, 80, 17, 0xFFFFFF);
+			DrawBar(pos_x, pos_y, strlen(#dev_name)*6 + 37, 17, 0xFFFFFF);
 			DefineButton(pos_x+2, pos_y, strlen(#dev_name)*6 + 33, 16, 100+i+BT_HIDE,0xFFFFFF);
 			_PutImage(pos_x + 5, pos_y, 18,17, is_active*6+dev_icon*17*18*3+#devices);
 			WriteText(pos_x + 24, pos_y+5, 0x80, 0, #dev_name);

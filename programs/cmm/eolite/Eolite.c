@@ -6,7 +6,7 @@
 #endif
 
 //libraries
-#define MEMSIZE 500000
+#define MEMSIZE 510000
 #include "..\lib\clipboard.h"
 #include "..\lib\strings.h"
 #include "..\lib\mem.h"
@@ -64,8 +64,12 @@ byte use_big_fonts=false,
 	show_dev_name=true,
 	real_files_names_case=false,
 	info_after_copy=false,
-	two_panels=false;
+	two_panels=false,
+	active_panel=1;
 //} settings;
+
+int active_current, inactive_current, active_first, inactive_first;
+char active_path[4096], inactive_path[4096];
 
 
 dword eolite_ini_path;
@@ -128,6 +132,8 @@ void main()
 	{
 		strlcpy(#path, "/rd/1/", 6);		
 	}
+	strcpy(#active_path, #path);
+	strcpy(#inactive_path, #path);
 	Open_Dir(#path,ONLY_OPEN);
 	SetEventMask(1100111b);
 	loop(){
@@ -255,7 +261,7 @@ void main()
 
 				//Scrooll
 				if (!mouse.lkm) && (scroll_used) { scroll_used=false; Scroll(); }
-				if (mouse.x>=Form.width-26) && (mouse.x<=Form.width-6) && (mouse.y>56) && (mouse.y<Form.height) && (mouse.lkm) && (!scroll_used) {scroll_used=true; Scroll();}
+				if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+18) && (mouse.y>files.y) && (mouse.y<files.y+files.y-18) && (mouse.lkm) && (!scroll_used) {scroll_used=true; Scroll();}
 				
 				if (scroll_used)
 				{
@@ -266,6 +272,38 @@ void main()
 					files.first /= onTop(22,files.y);
 					if (files.visible+files.first>files.count) files.first=files.count-files.visible;
 					if (id!=files.first) List_ReDraw();
+					break;
+				}
+
+				if (two_panels) && (mouse.y > files.y) {
+					if (mouse.x<Form.cwidth/2)
+					{
+						if (active_panel!=1)
+						{
+							active_panel = 1;
+							active_current = inactive_current;
+							inactive_current = files.current;
+							active_first = inactive_first;
+							inactive_first = files.first;
+							strcpy(#active_path, #inactive_path);
+							strcpy(#inactive_path, #path);
+							draw_window();
+						}
+					}
+					else
+					{
+						if (active_panel!=2)
+						{
+							active_panel = 2;
+							active_current = inactive_current;
+							inactive_current = files.current;
+							active_first = inactive_first;
+							inactive_first = files.first;
+							strcpy(#active_path, #inactive_path);
+							strcpy(#inactive_path, #path);
+							draw_window();
+						}
+					}
 				}
 				break;  
 	//Button pressed-----------------------------------------------------------------------------
@@ -312,9 +350,9 @@ void main()
 							Paste();
 							break;
 					case 31...33: //sort
-							if(sort_num==1) DrawFilledBar(sorting_arrow_x,42,6,10);
-							if(sort_num==2) DrawFilledBar(sorting_arrow_x,42,6,10);
-							if(sort_num==3) DrawFilledBar(sorting_arrow_x,42,6,10);
+							if(sort_num==1) DrawFilledBar(sorting_arrow_x,files.y-12,6,10);
+							if(sort_num==2) DrawFilledBar(sorting_arrow_x,files.y-12,6,10);
+							if(sort_num==3) DrawFilledBar(sorting_arrow_x,files.y-12,6,10);
 							sort_num=id-30;
 							Open_Dir(#path,WITH_REDRAW);
 							break;
@@ -411,10 +449,6 @@ void main()
 
 				switch (key_scancode)
 				{
-						case 198:
-								two_panels ^= 1;
-								draw_window();
-								break;
 						case SCAN_CODE_BS:
 								//GoBack();
 								Dir_Up();
@@ -501,7 +535,6 @@ void main()
 	}
 }
 
-
 void draw_window()
 {
 	DefineAndDrawWindow(GetScreenWidth()-550/4+rand_n,rand_n+30,550,500,0x73,system.color.work,TITLE,0);
@@ -527,23 +560,42 @@ void draw_window()
 	{
 		DrawLeftPanel();
 		files.SetSizes(192, 57, Form.cwidth - 210, Form.cheight - 59, files.line_h);
-		DrawListColumns();
-		Open_Dir(#path,ONLY_SHOW);
+		DrawList();
 	}
 	else
 	{
-		files.SetSizes(2, 57+22, Form.cwidth/2-2-17, Form.cheight-59-22, files.line_h);
-		DrawListColumns();
-		Open_Dir(#path,ONLY_SHOW);		
-		files.SetSizes(Form.cwidth/2, 57+22, Form.cwidth/2 -17, Form.cheight-59-22, files.line_h);
-		DrawListColumns();
-		Open_Dir(#path,ONLY_SHOW);
+		if (active_panel==1)
+		{
+			files.current = inactive_current;
+			files.first = inactive_first;
+			strcpy(#path, #inactive_path);
+			files.SetSizes(Form.cwidth/2, 57+22, Form.cwidth/2 -17, Form.cheight-59-22, files.line_h);
+			DrawList();
+			files.current = active_current;
+			files.first = active_first;
+			strcpy(#path, #active_path);
+			files.SetSizes(2, 57+22, Form.cwidth/2-2-17, Form.cheight-59-22, files.line_h);
+			DrawList();
+		}
+		if (active_panel==2)
+		{
+			files.current = inactive_current;
+			files.first = inactive_first;
+			strcpy(#path, #inactive_path);
+			files.SetSizes(2, 57+22, Form.cwidth/2-2-17, Form.cheight-59-22, files.line_h);
+			DrawList();
+			files.current = active_current;
+			files.first = active_first;
+			strcpy(#path, #active_path);
+			files.SetSizes(Form.cwidth/2, 57+22, Form.cwidth/2 -17, Form.cheight-59-22, files.line_h);
+			DrawList();
+		}
 	}
 	if (del_active) Del_Form();
 	if (new_element_active) NewElement_Form(new_element_active, #new_element_name);
 }
 
-void DrawListColumns() 
+void DrawList() 
 {
 	DrawFlatButton(files.x,files.y -  17,  files.w - 141,16,31,system.color.work,T_FILE);
 	DrawFlatButton(files.x + files.w - 141,  files.y-17,73,16,32,system.color.work,T_TYPE);
@@ -551,12 +603,13 @@ void DrawListColumns()
 	DrawFlatButton(files.x + files.w,        files.y-17,16,16, 0,system.color.work,"\x18");
 	DrawFlatButton(files.x + files.w,files.y+files.h-16,16,16, 0,system.color.work,"\x19");
 	DrawBar(files.x+files.w,files.y,1,files.h,system.color.work_graph);
+	Open_Dir(#path,WITH_REDRAW);
 }
 
 
 void List_ReDraw()
 {
-	int paint_y;
+	int all_lines_h;
 	static int old_current, old_first;
 
 	files.CheckDoesValuesOkey(); //prevent some shit
@@ -580,10 +633,10 @@ void List_ReDraw()
 
 	for (j=0; j<files.visible; j++) if (files.current-files.first!=j) Line_ReDraw(0xFFFFFF, j); else Line_ReDraw(col_selec, files.current-files.first);
 	//in the bottom
-	paint_y = j * files.line_h + files.y;
-	DrawBar(files.x,paint_y,files.w,onTop(paint_y,6),0xFFFFFF);
-	DrawBar(Form.cwidth-159,paint_y,1,onTop(paint_y,6),system.color.work);
-	DrawBar(Form.cwidth-86,paint_y,1,onTop(paint_y,6),system.color.work);
+	all_lines_h = j * files.line_h;
+	DrawBar(files.x,all_lines_h + files.y,files.w,files.h - all_lines_h,0xFFFFFF);
+	DrawBar(files.x+files.w-141,all_lines_h + files.y,1,files.h - all_lines_h,system.color.work);
+	DrawBar(files.x+files.w-68,all_lines_h + files.y,1,files.h - all_lines_h,system.color.work);
 	Scroll();
 }
 
@@ -613,7 +666,7 @@ void Line_ReDraw(dword color, filenum){
 		ext1 = strrchr(file_name_off,'.') + file_name_off;
 		if (ext1==file_name_off) ext1 = " \0"; //if no extension then show nothing 
 		Put_icon(ext1, files.x+3, files.line_h/2-7+y, color, 0);
-		WriteText(7-strlen(ConvertSize(file.sizelo))*6+Form.cwidth - 76, files.text_y + y,files.font_type,0,ConvertSize(file.sizelo));
+		WriteText(7-strlen(ConvertSize(file.sizelo))*6+files.x+files.w - 58, files.text_y + y,files.font_type,0,ConvertSize(file.sizelo));
 	}
 	else
 	{
@@ -640,8 +693,8 @@ void Line_ReDraw(dword color, filenum){
 		PathShow_prepare stdcall(#FileShow);
 		PathShow_draw stdcall(#FileShow);
 	}
-	DrawBar(Form.cwidth-159,y,1,files.line_h,system.color.work); //gray line 1
-	DrawBar(Form.cwidth-86,y,1,files.line_h,system.color.work); //gray line 2
+	DrawBar(files.x+files.w-141,y,1,files.line_h,system.color.work); //gray line 1
+	DrawBar(files.x+files.w-68,y,1,files.line_h,system.color.work); //gray line 2
 }
 
 
@@ -680,7 +733,7 @@ void Open_Dir(dword dir_path, redraw){
 		if (sort_num==1) sorting_arrow_x = Form.width+60/2;
 		if (sort_num==2) sorting_arrow_x = Form.width-115;
 		if (sort_num==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
-		WriteText(sorting_arrow_x,45,0x80,system.color.work_graph,"\x19");
+		WriteText(sorting_arrow_x,files.y-12,0x80,system.color.work_graph,"\x19");
 		if (redraw!=ONLY_SHOW) Sorting();
 		list_full_redraw = true;
 		if (redraw!=ONLY_OPEN)&&(!_not_draw) List_ReDraw();
@@ -1033,13 +1086,20 @@ void FnProcess(byte N)
 			if (!itdir) RunProgram("/sys/develop/heed", #file_path);
 			break;
 		case 5: //refresh cur dir & devs
-			Tip(56, T_DEVICES, 55, "-");
-			Open_Dir(#path,WITH_REDRAW);
-			pause(10);
-			LoadIniSettings();
-			GetSystemDiscs();
-			Open_Dir(#path,WITH_REDRAW);
-			DrawLeftPanel();
+			if (two_panels)
+			{
+				draw_window();
+			}
+			else 
+			{
+				Tip(56, T_DEVICES, 55, "-");
+				Open_Dir(#path,WITH_REDRAW);
+				pause(10);
+				LoadIniSettings();
+				GetSystemDiscs();
+				Open_Dir(#path,WITH_REDRAW);
+				DrawLeftPanel();				
+			}
 			break;
 		case 6:
 			NewElement_Form(CREATE_FOLDER, T_NEW_FOLDER);
