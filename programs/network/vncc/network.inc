@@ -71,8 +71,10 @@ thread_start:
         je      err_connect
 
 ; Verify handshake from server
-        call    wait_for_data
-        cmp     dword[receive_buffer], "RFB "
+        call    read_data
+        cmp     eax, 12
+        jb      err_proto
+        cmp     dword[esi], "RFB "
         jne     err_proto
         add     esi, 12
 
@@ -89,7 +91,9 @@ thread_start:
         mcall   send, [socketnum], HandShake, 12, 0
 
 ; VNC 3.3 protocol: server decides security type
-        call    wait_for_data
+        call    read_data
+        cmp     eax, 4
+        jb      err_proto
         lodsd
         cmp     eax, 0x00000000
         je      err_handshake
@@ -100,6 +104,10 @@ thread_start:
         jmp     err_proto
 
 vnc_security:
+
+        lea     eax, [esi+8]
+        cmp     [datapointer], eax
+        jb      err_proto
 
         push    esi     ; pointer to message
 
@@ -196,52 +204,61 @@ vnc_security:
 
 securityresult:
 ; Wait for SecurityResult from server
-        call    wait_for_data
-        cmp     dword[receive_buffer], 0        ; OK
+        call    read_data
+        cmp     eax, 4
+        jb      err_proto
+        cmp     dword[esi], 0           ; OK
         jne     err_login
 
 initialize:
         DEBUGF  1, "Sending ClientInit\n"
         mcall   send, [socketnum], ClientInit, 1, 0
 
-        call    wait_for_data       ; now the server should send init message
+        call    read_data               ; now the server should send init message
+        cmp     eax, ServerInit.name
+        jb      err_proto
 
-        DEBUGF  1, "Serverinit: bpp: %u depth: %u bigendian: %u truecolor: %u\n", \
-        [receive_buffer+framebuffer.pixelformat.bpp]:1, \
-        [receive_buffer+framebuffer.pixelformat.depth]:1, \
-        [receive_buffer+framebuffer.pixelformat.big_endian]:1, \
-        [receive_buffer+framebuffer.pixelformat.true_color]:1
+        DEBUGF  2, "Serverinit: bpp: %u depth: %u bigendian: %u truecolor: %u\n", \
+        [esi+ServerInit.pixelformat.bpp]:1, \
+        [esi+ServerInit.pixelformat.depth]:1, \
+        [esi+ServerInit.pixelformat.big_endian]:1, \
+        [esi+ServerInit.pixelformat.true_color]:1
 
-        mov     eax, dword[receive_buffer+framebuffer.width]
+        mov     eax, dword[esi+ServerInit.width]
         mov     dword[FramebufferUpdateRequest.width], eax
         bswap   eax
         mov     dword[screen], eax
         DEBUGF  1, "Screen width=%u, height=%u\n", [screen.width]:2, [screen.height]:2
+
+; Set main window caption to servername
+        mov     ecx, dword[esi+ServerInit.name_length]
+        bswap   ecx
+        add     esi, ServerInit.name
+        lea     eax, [esi+ecx]
+        cmp     [datapointer], eax
+        jb      err_proto
+        cmp     ecx, 64         ; Limit name length to 64 chars
+        jbe     @f
+        mov     ecx, 64
+  @@:
+        mov     edi, servername
+        rep movsb
+        mov     byte[edi], 0
+        mov     [name.dash], "-"
 
         DEBUGF  1, "Sending pixel format\n"
 if BITS_PER_PIXEL = 8
         mcall   send, [socketnum], SetPixelFormat8, 20, 0
 else if BITS_PER_PIXEL = 16
         mcall   send, [socketnum], SetPixelFormat16, 20, 0
-else
+else if BITS_PER_PIXEL = 24
         mcall   send, [socketnum], SetPixelFormat24, 20, 0
+else
+        mcall   send, [socketnum], SetPixelFormat32, 20, 0
 end if
 
         DEBUGF  1, "Sending encoding info\n"
         mcall   send, [socketnum], SetEncodings, SetEncodings.length, 0
-
-; Set main window caption to servername
-        mov     ecx, dword[receive_buffer+framebuffer.name_length]
-        bswap   ecx
-        cmp     ecx, 64
-        jbe     @f
-        mov     ecx, 64
-  @@:
-        lea     esi, [receive_buffer+framebuffer.name]
-        mov     edi, servername
-        rep movsb
-        mov     byte[edi], 0
-        mov     [name.dash], "-"
 
 ; Tell the main thread we are ready for business!
         mov     [status], STATUS_CONNECTED
@@ -443,17 +460,6 @@ read_data:
         jmp     .more
 
 
-
-wait_for_data:  ; FIXME: add timeout
-        mcall   recv, [socketnum], receive_buffer, 4096, 0      ; MSG_DONTWAIT
-        cmp     eax, -1
-        je      err_sock
-        test    eax, eax
-        jz      err_disconnected
-        mov     esi, receive_buffer
-        ret
-
-
 err_disconnected:
         mov     [status], STATUS_DISCONNECTED
         inc     [update_gui]
@@ -465,6 +471,8 @@ err_dns:
         mcall   -1
 
 err_sock:
+; TODO: distinguish between different socket errors!
+        DEBUGF  2, "Socket error: %u\n", ebx
         mov     [status], STATUS_SOCK_ERR
         inc     [update_gui]
         mcall   -1

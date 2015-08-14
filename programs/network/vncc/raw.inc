@@ -23,6 +23,8 @@ if BITS_PER_PIXEL = 16
         shl     eax, 1
 else if BITS_PER_PIXEL = 24
         lea     eax, [eax*2+eax]
+else if BITS_PER_PIXEL = 32
+        shl     eax, 2
 end if
   @@:
         push    eax
@@ -39,7 +41,7 @@ end if
         movzx   ebx, [screen.width]
         mul     ebx                                     ; [screen.width]*[rectangle.y]
         add     eax, [rectangle.x]                      ; [screen.width]*[rectangle.y]+[rectangle.x]
-        lea     edi, [framebuffer_data+eax*3]           ; edi = framebuffer_data+([screen.width]*[rectangle.y]+[rectangle.x])*3
+        lea     edi, [framebuffer+eax*3]                ; edi = framebuffer_data+([screen.width]*[rectangle.y]+[rectangle.x])*3
 
         movzx   eax, [screen.width]
         sub     eax, [rectangle.width]
@@ -92,6 +94,13 @@ else if BITS_PER_PIXEL = 16
         jnz     .pixelloop
 else if BITS_PER_PIXEL = 24
         rep movsb
+else if BITS_PER_PIXEL = 32
+  .pixelloop:
+        movsw
+        movsb
+        inc     esi
+        dec     ecx
+        jnz     .pixelloop
 end if
 
         add     edi, ebp

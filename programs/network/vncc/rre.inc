@@ -12,16 +12,16 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-pixel_to_24bpp:         ; returns in ecx
+load_pixel_rre:             ; returns in ecx
 
         push    eax
-;  @@:
-;        lea     eax, [esi+BYTES_PER_PIXEL]
-;        cmp     [datapointer], eax
-;        jae     @f
-;        call    read_data.more
-;        jmp     @b
-;  @@:
+  @@:
+        lea     eax, [esi+BYTES_PER_PIXEL]
+        cmp     [datapointer], eax
+        jae     @f
+        call    read_data.more
+        jmp     @b
+  @@:
 
 if BITS_PER_PIXEL = 8
 
@@ -65,13 +65,17 @@ else if BITS_PER_PIXEL = 16
         shl     cl, 3
         and     cx, 0x00f8      ; blue
 
-else
+else if BITS_PER_PIXEL = 24
 
-        xor     ecx, ecx
-        mov     cx, [esi]
-        shl     ecx, 8
-        mov     cl, [esi+2]
+        mov     ecx, [esi]
+        and     ecx, 0x00ffffff
         add     esi, 3
+
+else if BITS_PER_PIXEL = 32
+
+        mov     ecx, [esi]
+        and     ecx, 0x00ffffff
+        add     esi, 4
 
 end if
         pop     eax
@@ -97,13 +101,13 @@ encoding_RRE:
         DEBUGF  1, "%u subrectangles\n", eax
 
 ; Get background color
-        call    pixel_to_24bpp
+        call    load_pixel_rre
 
 ; Calculate first pixel pos
         movzx   eax, [screen.width]
         mul     [rectangle.y]                           ; [screen.width]*[rectangle.y]
         add     eax, [rectangle.x]                      ; [screen.width]*[rectangle.y]+[rectangle.x]
-        lea     edi, [framebuffer_data+eax*3]           ; edi = framebuffer_data+([screen.width]*[rectangle.y]+[rectangle.x])*3
+        lea     edi, [framebuffer+eax*3]                ; edi = framebuffer_data+([screen.width]*[rectangle.y]+[rectangle.x])*3
 
 ; Calculate offset between two rows of pixels
         movzx   eax, [screen.width]
@@ -142,7 +146,7 @@ encoding_RRE:
   @@:
 
 ; Get subrectangle color
-        call    pixel_to_24bpp
+        call    load_pixel_rre
 
 ; Get coordinates
         xor     eax, eax

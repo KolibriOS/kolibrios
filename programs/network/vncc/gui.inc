@@ -234,6 +234,8 @@ draw_gui:
         mcall   18, 18, [thread_id]             ; kill thread
   .ok:
         and     [URLbox.flags], not ed_disabled
+        mov     [USERbox.size], 0
+        mov     [PASSbox.size], 0
         mov     [status], STATUS_CONNECT
         inc     [update_gui]
         jmp     .loop

@@ -20,12 +20,77 @@ create_palette:
         DEBUGF  1, "Loading palette of %u colors\n", dl
         mov     edi, palette
   .loop:
-        call    pixel_to_24bpp
+        call    load_pixel_trle
         mov     [edi], ecx
         add     edi, 4
         dec     dl
         jnz     .loop
         pop     edi edx ecx
+
+        ret
+
+
+load_pixel_trle:         ; returns in ecx
+
+        push    eax
+  @@:
+        lea     eax, [esi+BYTES_PER_PIXEL]
+        cmp     [datapointer], eax
+        jae     @f
+        call    read_data.more
+        jmp     @b
+  @@:
+
+if BITS_PER_PIXEL = 8
+
+        push    ebx
+
+        mov     bl, 36
+        mov     al, [esi]
+        and     al, 7
+        mul     bl
+        mov     ch, al          ; red
+
+        mov     al, [esi]
+        shr     al, 3
+        and     al, 7
+        mul     bl
+        mov     cl, al          ; green
+
+        mov     bl, 85
+        mov     al, [esi]
+        shr     al, 6
+        and     al, 3
+        mul     bl
+        shl     ecx, 8
+        mov     cl, al          ; blue
+
+        inc     esi
+        pop     ebx
+
+else if BITS_PER_PIXEL = 16
+
+        lodsw
+        mov     cl, ah
+        and     al, 0xf8        ; red
+
+        mov     cx, ax
+        shl     cx, 5
+        and     ch, 0xfc        ; green
+        shl     ecx, 8
+
+        mov     cl, al
+        shl     cl, 3
+        and     cx, 0x00f8      ; blue
+
+else    ; 32 BPP gets packed to 24 BPP
+
+        mov     ecx, [esi]
+        and     ecx, 0x00ffffff
+        add     esi, 3
+
+end if
+        pop     eax
 
         ret
 
@@ -62,7 +127,7 @@ encoding_TRLE:
         mul     ebx
         add     eax, [rectangle.x]
         add     eax, [subrectangle.x]
-        lea     edi, [framebuffer_data+eax*3]
+        lea     edi, [framebuffer+eax*3]
 
 ; Calculate offset between two rows of pixels
         movzx   eax, [screen.width]
@@ -197,8 +262,7 @@ encoding_TRLE:
         jmp     .next_tile
 
   .rle_reload:
-        ; load pixel value
-        call    pixel_to_24bpp
+        call    load_pixel_trle
 
   @@:
         lea     eax, [esi+1]
@@ -447,7 +511,7 @@ encoding_TRLE:
   .raw_line:
         mov     ebx, [subrectangle.width]
   .raw_pixel:
-        call    pixel_to_24bpp
+        call    load_pixel_trle
         mov     word[edi], cx
         shr     ecx, 16
         add     edi, 2
@@ -465,7 +529,7 @@ encoding_TRLE:
 ; Single color tile
   .solid:
         DEBUGF  1, "Solid tile\n"
-        call    pixel_to_24bpp
+        call    load_pixel_trle
         mov     eax, ecx
         shr     eax, 16
 

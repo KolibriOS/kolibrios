@@ -17,7 +17,7 @@ format binary as ""
 __DEBUG__       = 1
 __DEBUG_LEVEL__ = 2
 
-BITS_PER_PIXEL  = 8             ; 8, 16 24
+BITS_PER_PIXEL  = 32            ; 8, 16, 24 or 32
 SERVERADDRLEN   = 4096
 
 use32
@@ -40,7 +40,7 @@ include "../../struct.inc"
 include "../../develop/libraries/box_lib/trunk/box_lib.mac"
 include "../../network.inc"
 
-struct  pixel_format
+struct  PixelFormat
         bpp             db ?
         depth           db ?
         big_endian      db ?
@@ -54,12 +54,12 @@ struct  pixel_format
         padding         rb 3
 ends
 
-struct  framebuffer
+struct  ServerInit
         width           dw ?
         height          dw ?
-        pixelformat     pixel_format
+        pixelformat     PixelFormat
         name_length     dd ?
-        name            rb 256
+        name            db ?
 ends
 
 xpos                    = 4
@@ -156,7 +156,7 @@ redraw:
 
 draw_framebuffer:
         DEBUGF  1, "Drawing framebuffer\n"
-        mcall   7, framebuffer_data, dword[screen], 0
+        mcall   7, framebuffer, dword[screen], 0
         mov     [update_framebuffer], 0
 
 mainloop:
@@ -275,15 +275,15 @@ ClientInit              db 0            ; not shared
 SetPixelFormat32        db 0            ; setPixelformat
                         db 0, 0, 0      ; padding
 .bpp                    db 32           ; bits per pixel
-.depth                  db 32           ; depth
+.depth                  db 24           ; depth
 .big_endian             db 0            ; big-endian flag
 .true_color             db 1            ; true-colour flag
 .red_max                db 0, 255       ; red-max
 .green_max              db 0, 255       ; green-max
 .blue_max               db 0, 255       ; blue-max
-.red_shif               db 0            ; red-shift
+.red_shift              db 16           ; red-shift
 .green_shift            db 8            ; green-shift
-.blue_shift             db 16           ; blue-shift
+.blue_shift             db 0            ; blue-shift
                         db 0, 0, 0      ; padding
 
 SetPixelFormat24        db 0            ; setPixelformat
@@ -479,7 +479,7 @@ keys                    rd 32*2         ; DES keys for VNC authentication
 sz_err_security_c       rb 512+1
 
 receive_buffer          rb RECEIVE_BUFFER_SIZE
-framebuffer_data        rb 1280*1024*3  ; framebuffer
+framebuffer             rb 1280*1024*3  ; framebuffer
 
                         rb 0x1000
 thread_stack:

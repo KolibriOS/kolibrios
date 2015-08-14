@@ -33,13 +33,13 @@ encoding_CopyRect:
         movzx   ebx, word[esi]                          ; [src.x]
         xchg    bl, bh
         add     eax, ebx                                ; [screen.width]*[src.y]+[src.x]
-        lea     esi, [framebuffer_data+eax*3]           ; esi = framebuffer_data+([screen.width]*[src.y]+[src.x])*3
+        lea     esi, [framebuffer+eax*3]                ; esi = framebuffer_data+([screen.width]*[src.y]+[src.x])*3
 
         mov     eax, [rectangle.y]
         movzx   ebx, [screen.width]
         mul     ebx                                     ; [screen.width]*[rectangle.y]
         add     eax, [rectangle.x]                      ; [screen.width]*[rectangle.y]+[rectangle.x]
-        lea     edi, [framebuffer_data+eax*3]           ; edi = framebuffer_data+([screen.width]*[rectangle.y]+[rectangle.x])*3
+        lea     edi, [framebuffer+eax*3]                ; edi = framebuffer_data+([screen.width]*[rectangle.y]+[rectangle.x])*3
 
         movzx   eax, [screen.width]
         sub     eax, [rectangle.width]
