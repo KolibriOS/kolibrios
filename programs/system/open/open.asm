@@ -268,22 +268,22 @@ end if
     mov     [win.y], ebx
 
  ;; get colors
-    mcall   48, 3, skin, 192
+    mcall   48, 3, skin, sizeof.system_colors
 
  ;; get opendialog
     invoke  opendialog.init, opendialog
 
  ;; get pathshow
     mov     eax, [param_s]
-    mov     ebx, [skin.win_text]
+    mov     ebx, [skin.work_text]
     mov     [ps_addres.txt], eax
     mov     [ps_addres], ebx
     invoke  pathshow.init, ps_addres
 
  ;; get checkbox
-    mov     eax, [skin.gui_face]
-    mov     ebx, [skin.gui_fcframe]
-    mov     ecx, [skin.win_text]
+    mov     eax, 0xFFFfff
+    mov     ebx, [skin.work_graph]
+    mov     ecx, [skin.work_text]
     mov     [cb_always.color], eax
     mov     [cb_always.border_color], ebx
     mov     [cb_always.text_color], ecx
@@ -296,8 +296,8 @@ end if
     shr     [sb_apps.max_area], 1
     add     [sb_apps.max_area], eax
 
-    mov     eax, [skin.gui_face]
-    mov     ebx, [skin.3d_face]
+    mov     eax, 0xFFFfff
+    mov     ebx, 0xCCCccc ;[skin.3d]
     mov     [sb_apps.bg_color], eax
     mov     [sb_apps.front_color], ebx
     mov     [sb_apps.line_color], ebx
@@ -325,7 +325,7 @@ end if
     mov     ebx, [eax + edi]
     shr     ebx, 24
     cmpne   ebx, 0, @f
-    mov     ecx, [skin.gui_face]
+    mov     ecx, 0xFFFfff
     mov     [eax + edi], ecx
  @@:
     cmpe    edi, 0, @f
@@ -527,7 +527,7 @@ end if
  proc draw_window
     mcall   12, 1
 
-    mov     edx, [skin.win_face]
+    mov     edx, [skin.work]
     or	    edx, 0x34 shl 24
     mcall   0, <[win.x], WIN_WIDTH>, <[win.y], WIN_HEIGHT>, , , win.title
     stdcall draw_list
@@ -535,10 +535,10 @@ end if
     invoke  pathshow.draw, ps_addres
     invoke  checkbox.draw, cb_always
 
-    mcall   13, <207, 66>, <LIST_HEIGHT + 29, 22>, [skin.btn_frame]
-    mcall   8, <208, 63>, <LIST_HEIGHT + 30, 19>, 2, [skin.btn_face]
+    mcall   13, <207, 66>, <LIST_HEIGHT + 29, 22>, [skin.work_graph]
+    mcall   8, <208, 63>, <LIST_HEIGHT + 30, 19>, 2, [skin.work_button]
 ;
-    mov     ecx, [skin.btn_text]
+    mov     ecx, [skin.work_button_text]
     add     ecx, 0x80 shl 24
     mcall   4, <214, LIST_HEIGHT + 37>, , browse_txt
 
@@ -575,11 +575,11 @@ end if
  ;----------------------
 
  proc draw_list
-    mcall   13, <3, LIST_WIDTH + 2 + 12>, <9 + 12, 1>, [skin.gui_fcframe]
+    mcall   13, <3, LIST_WIDTH + 2 + 12>, <9 + 12, 1>, [skin.work_graph]
     mcall     , 			, <LIST_HEIGHT + 9 + 1 + 12, 1>
     mcall     , <3, 1>, <9 + 12, LIST_HEIGHT + 1>
     mcall     , <3 + LIST_WIDTH + 12 + 1, 1>
-    mcall     , <4, LIST_WIDTH>, <10 + 12, LIST_HEIGHT>, [skin.gui_face]
+    mcall     , <4, LIST_WIDTH>, <10 + 12, LIST_HEIGHT>, 0xFFFfff
 
     mov     esi, 1
     mov     edi, LIST_SIZE / 2 - 1
@@ -622,16 +622,16 @@ end if
     shl     ecx, 16
     add     ecx, (10 + 12) shl 16 + LINE_SIZE
 
-    mov     edx, [skin.gui_face]
+    mov     edx, 0xFFFfff
     cmpe    [_sel], 0, @f
-    mov     edx, [skin.gui_fcframe]
+    mov     edx, 0x94AECE
   @@:
     mcall   13
 
  ;; shadows
     push    ecx
     cmpe    [_sel], 1, .after_shadows
-    mov     edx, [skin.3d_face]
+    mov     edx, 0xCCCccc ;[skin.3d]
 
     cmpne   [_x], 0, @f
     imul     ecx, [_y], LINE_SIZE
@@ -670,8 +670,8 @@ end if
   @@:
     mov     edx, [ebx]
     and     edx, 0xFFFFFF
-    cmpne   edx, [skin.gui_face], .not
-    mov     edx, [skin.gui_fcframe]
+    cmpne   edx, 0xFFFFFF, .not
+    mov     edx, 0x94AECE
  .not:
     mov     [eax], edx
     add     eax, 3
@@ -688,9 +688,9 @@ end if
     mov     ebx, edx
     add     ebx, (32 + 6) shl 16 + 32 / 2 - 9 / 2
 
-    mov     ecx, [skin.gui_text]
+    mov     ecx, 0x000000 ; inactive item text
     cmpe    [_sel], 0, @f
-    mov     ecx, [skin.gui_fctext]
+    mov     ecx, 0x000000 ; active item text
   @@:
     add     ecx, 0x80 shl 24
 
@@ -730,7 +730,7 @@ end if
 
  ;===============================
 
- skin sys_colors_new
+ skin system_colors
  list rb 32 * 256
   .icon rd 256
   .size rd 1
