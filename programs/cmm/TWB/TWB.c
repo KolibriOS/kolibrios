@@ -283,6 +283,7 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 	}
 
 	if (isTag("script")) || (isTag("style")) || (isTag("binary")) || (isTag("select")) ignor_text = opened;
+	if (isTag("form")) if (!opened) ignor_text = false;
 
 	if(isTag("title"))
 	{
