@@ -54,6 +54,7 @@ void FileMenu()
 	int index;
 
 	menu.ClearList();
+	menu.SetFont(6, 9, 0x80);
 	menu.SetSizes(0,0,10,0,18);
 	for (index=0; file_captions[index]!=0; index+=3)
 	{
@@ -62,8 +63,8 @@ void FileMenu()
 		menu.count++;
 		menu.visible++;
 	}
-	menu.w = menu.w + 3 * 6 + 50;
-	menu.h = menu.count*menu.line_h;
+	menu.w = menu.w + 3 * menu.font_w + 50;
+	menu.h = menu.count * menu.line_h;
 	SetEventMask(100111b);
 	goto _MENU_DRAW;
 	
@@ -110,10 +111,10 @@ void MenuListRedraw()
 		else
 		{
 			DrawBar(2,start_y+2,menu.w-1,menu.line_h,system.color.work);
-			WriteText(8,start_y+menu.text_y+3,0x80,0xf2f2f2,file_captions[index*3]);
+			WriteText(8,start_y+menu.text_y+4,menu.font_type,0xf2f2f2,file_captions[index*3]);
 		}
-		WriteText(7,start_y+menu.text_y+2,0x80,system.color.work_text,file_captions[index*3]);
-		WriteText(-strlen(file_captions[index*3+1])*6-6+menu.w,start_y+menu.text_y+2,0x80,0x888888,file_captions[index*3+1]);
+		WriteText(7, start_y + menu.text_y + 3, menu.font_type, system.color.work_text, file_captions[index*3]);
+		WriteText(-strlen(file_captions[index*3+1])-1*menu.font_w + menu.w, start_y + menu.text_y + 3, menu.font_type, 0x888888, file_captions[index*3+1]);
 		start_y+=menu.line_h;
 	}	
 }

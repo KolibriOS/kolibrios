@@ -55,7 +55,7 @@ void about_dialog()
 				if (Form.status_window>2) break;
 				DrawBar(0,0,about_form.cwidth,50,0x8494C4);
 				PutPaletteImage(#logo,85,85,about_form.cwidth/2-43,7,8,#logo_pal);
-				WriteTextB(about_form.cwidth/2-66,100,0x81,0xBF40BF,ABOUT_TITLE);
+				WriteTextB(-strlen(ABOUT_TITLE)*12+about_form.cwidth/2,100,0x81,0xBF40BF,ABOUT_TITLE);
 				WriteTextCenter(0,130,about_form.cwidth,0,INTRO_TEXT_2);			
 				WriteTextCenter(0,143,about_form.cwidth,0,"Leency Veliant PunkJoker Pavelyakov"); 
 				WriteTextCenter(0,156,about_form.cwidth,0,"KolibriOS Team");

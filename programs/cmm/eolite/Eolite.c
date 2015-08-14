@@ -233,9 +233,9 @@ void main()
 					break;
 				}
 
-				if (mouse.x>=Form.width-26) && (mouse.x<=Form.width-6) && (mouse.y>40) && (mouse.y<files.y)
+				if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+16) && (mouse.y>files.y-17) && (mouse.y<files.y)
 				{
-					if (mouse.lkm==1) DrawRectangle3D(Form.cwidth - 17,41,14,14,0xC7C7C7,0xFFFFFF);
+					if (mouse.lkm==1) DrawRectangle3D(files.x+files.w+1,files.y-16,14,14,0xC7C7C7,0xFFFFFF);
 					WHILE (mouse.lkm==1) && (files.first>0)
 					{
 						pause(8);
@@ -243,12 +243,12 @@ void main()
 						List_ReDraw();
 						mouse.get();
 					}
-					DrawRectangle3D(Form.cwidth - 17,41,14,14,0xFFFFFF,0xC7C7C7);
+					DrawRectangle3D(files.x+files.w+1,files.y-16,14,14,0xFFFFFF,0xC7C7C7);
 				}
 
-				if (mouse.x>=Form.width-26) && (mouse.x<=Form.width-6) && (mouse.y>onTop(22,0)+1) && (mouse.y<onTop(22,0)+16)
+				if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+16) && (mouse.y>files.y+files.h-16) && (mouse.y<files.y+files.h)
 				{
-					if (mouse.lkm==1) DrawRectangle3D(Form.cwidth - 17,onTop(21,0),14,14,0xC7C7C7,0xFFFFFF);
+					if (mouse.lkm==1) DrawRectangle3D(files.x+files.w+1,files.y+files.h-15,14,14,0xC7C7C7,0xFFFFFF);
 					while (mouse.lkm==1) && (files.first<files.count-files.visible)
 					{
 						pause(8);
@@ -256,20 +256,19 @@ void main()
 						List_ReDraw();
 						mouse.get();
 					}
-					DrawRectangle3D(Form.cwidth - 17,onTop(21,0),14,14,0xFFFFFF,0xC7C7C7);
+					DrawRectangle3D(files.x+files.w+1,files.y+files.h-15,14,14,0xFFFFFF,0xC7C7C7);
 				}
 
 				//Scrooll
 				if (!mouse.lkm) && (scroll_used) { scroll_used=false; Scroll(); }
-				if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+18) && (mouse.y>files.y) && (mouse.y<files.y+files.y-18) && (mouse.lkm) && (!scroll_used) {scroll_used=true; Scroll();}
+				if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+18) && (mouse.y>files.y) && (mouse.y<files.y+files.h-18) && (mouse.lkm) && (!scroll_used) {scroll_used=true; Scroll();}
 				
 				if (scroll_used)
 				{
 					if (sc_slider_h/2+files.y>mouse.y) || (mouse.y<0) || (mouse.y>4000) mouse.y=sc_slider_h/2+files.y; //anee eo?ni? iaa ieiii
-					id=files.first;
-					j= sc_slider_h/2;
-					files.first = mouse.y -j -files.y * files.count;
-					files.first /= onTop(22,files.y);
+					id = files.first;
+					files.first = -sc_slider_h / 2 + mouse.y -j -files.y * files.count;
+					files.first /= Form.cheight - 18 - files.y;
 					if (files.visible+files.first>files.count) files.first=files.count-files.visible;
 					if (id!=files.first) List_ReDraw();
 					break;
@@ -281,13 +280,7 @@ void main()
 						if (active_panel!=1)
 						{
 							active_panel = 1;
-							active_current = inactive_current;
-							inactive_current = files.current;
-							active_first = inactive_first;
-							inactive_first = files.first;
-							strcpy(#active_path, #inactive_path);
-							strcpy(#inactive_path, #path);
-							draw_window();
+							goto __SET_VALS_AND_DRAW;
 						}
 					}
 					else
@@ -295,13 +288,14 @@ void main()
 						if (active_panel!=2)
 						{
 							active_panel = 2;
+							__SET_VALS_AND_DRAW:
 							active_current = inactive_current;
 							inactive_current = files.current;
 							active_first = inactive_first;
 							inactive_first = files.first;
 							strcpy(#active_path, #inactive_path);
 							strcpy(#inactive_path, #path);
-							draw_window();
+							DrawFilePanels();
 						}
 					}
 				}
@@ -397,8 +391,11 @@ void main()
 								key_scancode -= 59;
 								if (key_scancode<disc_num)
 								{
-									DrawRectangle(17,key_scancode*16+74,159,16, 0); //display click
-									pause(7);
+									if (!two_panels)
+									{
+										DrawRectangle(17,key_scancode*16+74,159,16, 0); //display click
+										pause(7);										
+									}
 									ClickOnDisk(key_scancode);
 								}
 								break;
@@ -555,10 +552,32 @@ void draw_window()
 	//main rectangles
 	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42,system.color.work_graph);
 	DrawRectangle(0,39,Form.cwidth-1,Form.cheight - 40,col_palette[4]); //bg
-	for (i=0; i<5; i++) DrawBar(0, 34+i, Form.cwidth, 1, col_palette[8-i]);	
+	for (i=0; i<5; i++) DrawBar(0, 34+i, Form.cwidth, 1, col_palette[8-i]);
+	active_current = files.current;
+	active_first = files.first;
+	strcpy(#active_path, #path);
+	DrawFilePanels();
+	if (del_active) Del_Form();
+	if (new_element_active) NewElement_Form(new_element_active, #new_element_name);
+}
+
+void DrawList() 
+{
+	DrawFlatButton(files.x,files.y -  17,  files.w - 141,16,31,system.color.work,T_FILE);
+	DrawFlatButton(files.x + files.w - 141,  files.y-17,73,16,32,system.color.work,T_TYPE);
+	DrawFlatButton(files.x + files.w -  68,  files.y-17,68,16,33,system.color.work,T_SIZE);
+	DrawFlatButton(files.x + files.w,        files.y-17,16,16, 0,system.color.work,"\x18");
+	DrawFlatButton(files.x + files.w,files.y+files.h-16,16,16, 0,system.color.work,"\x19");
+	DrawBar(files.x+files.w,files.y,1,files.h,system.color.work_graph);
+	if (two_panels) && (files.x<5) DrawBar(files.x+files.w+16,files.y,1,files.h,system.color.work_graph);
+	Open_Dir(#path,WITH_REDRAW);
+}
+
+void DrawFilePanels()
+{
 	if (!two_panels)
 	{
-		DrawLeftPanel();
+		DrawDeviceAndActionsLeftPanel();
 		files.SetSizes(192, 57, Form.cwidth - 210, Form.cheight - 59, files.line_h);
 		DrawList();
 	}
@@ -591,19 +610,6 @@ void draw_window()
 			DrawList();
 		}
 	}
-	if (del_active) Del_Form();
-	if (new_element_active) NewElement_Form(new_element_active, #new_element_name);
-}
-
-void DrawList() 
-{
-	DrawFlatButton(files.x,files.y -  17,  files.w - 141,16,31,system.color.work,T_FILE);
-	DrawFlatButton(files.x + files.w - 141,  files.y-17,73,16,32,system.color.work,T_TYPE);
-	DrawFlatButton(files.x + files.w -  68,  files.y-17,68,16,33,system.color.work,T_SIZE);
-	DrawFlatButton(files.x + files.w,        files.y-17,16,16, 0,system.color.work,"\x18");
-	DrawFlatButton(files.x + files.w,files.y+files.h-16,16,16, 0,system.color.work,"\x19");
-	DrawBar(files.x+files.w,files.y,1,files.h,system.color.work_graph);
-	Open_Dir(#path,WITH_REDRAW);
 }
 
 
@@ -1088,7 +1094,7 @@ void FnProcess(byte N)
 		case 5: //refresh cur dir & devs
 			if (two_panels)
 			{
-				draw_window();
+				DrawFilePanels();
 			}
 			else 
 			{
@@ -1098,7 +1104,7 @@ void FnProcess(byte N)
 				LoadIniSettings();
 				GetSystemDiscs();
 				Open_Dir(#path,WITH_REDRAW);
-				DrawLeftPanel();				
+				DrawDeviceAndActionsLeftPanel();				
 			}
 			break;
 		case 6:
