@@ -32,6 +32,10 @@ typedef struct package
 collection_t* load_collection_file(const char *name);
 collection_t* load_collection_buffer(const char *buffer);
 
+int build_install_list(list_t *list, collection_t *collection);
+int build_download_list(list_t *download, list_t *src);
+char *make_cache_path(const char *path);
+
 #ifdef __cplusplus
 }
 #endif

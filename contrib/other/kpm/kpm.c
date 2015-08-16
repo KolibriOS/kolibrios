@@ -17,10 +17,17 @@ char *make_url(const char *name)
     return url_buf;
 };
 
-char *make_cache_path(const char *path)
+char *make_tmp_path(const char *path)
 {
     static char path_buf[64] = "/tmp0/1/";
     strcpy(&path_buf[8], path);
+    return path_buf;
+};
+
+char *make_cache_path(const char *path)
+{
+    static char path_buf[64] = "/kolibrios/kpm/cache/";
+    strcpy(&path_buf[21], path);
     return path_buf;
 };
 
@@ -63,7 +70,7 @@ int http_load_file(const char *path, const char *url)
             {
                 memcpy(buf+offset, http->content_ptr, count);
                 offset+= count;
-            }     
+            }
             else
             {
                 tail  = count+offset-BUFFSIZE;
@@ -114,32 +121,36 @@ int main(int argc, char *argv[])
 {
     int   count;
     char *cache_path;
+    char *tmp_path;
 
     if(http_init())
         goto err_init;
 
-    cache_path = make_cache_path("packages.xml");
+    tmp_path = make_tmp_path("packages.xml");
 
-    count = http_load_file(cache_path, make_url("packages.xml"));
+    count = http_load_file(tmp_path, make_url("packages.xml"));
 
     if(count)
     {
         collection_t *collection;
-        pkg_group_t *gr;
+        package_t   *pkg;
+        LIST_HEAD(install_list);
+        LIST_HEAD(download_list);
 
-        collection = load_collection_file(cache_path);
+        collection = load_collection_file(tmp_path);
 
-        list_for_each_entry(gr, &collection->groups, list)
+        if(collection && build_install_list(&install_list, collection))
         {
-            package_t   *pkg;
-
-            list_for_each_entry(pkg, &gr->packages, list)
+            if(build_download_list(&download_list, &install_list))
             {
-                printf("package %s-%s\n", pkg->name, pkg->version);
-                cache_path = make_cache_path(pkg->filename);
-                count = http_load_file(cache_path, make_url(pkg->filename));
-                printf("%s loaded %d\n",cache_path, count);
-            }
+                list_for_each_entry(pkg, &download_list, list)
+                {
+                    printf("package %s-%s\n", pkg->name, pkg->version);
+                    cache_path = make_cache_path(pkg->filename);
+                    count = http_load_file(cache_path, make_url(pkg->filename));
+                    printf("%s loaded %d bytes\n",cache_path, count);
+                };
+            };
         };
      }
 
