@@ -1,0 +1,63 @@
+
+NAME= kpm
+
+FASM= fasm.exe
+CC = kos32-gcc
+AR = kos32-ar
+LD = kos32-ld
+CPP= kos32-g++
+STRIP = kos32-strip
+
+CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -Os -fno-ident -fomit-frame-pointer  -mno-ms-bitfields
+ARFLAG = crs
+
+SDK_DIR:= $(abspath ../../sdk)
+LIB_DIR:= $(SDK_DIR)/lib
+
+INCLUDES= -I. -I$(SDK_DIR)/sources/newlib/libc/include
+INCLUDES+=-I$(SDK_DIR)/sources/freetype/include
+
+#DEFINES= -DDEBUG=1
+
+DEFINES= -DNDEBUG
+LIBS:= -lsupc++ -lgcc_eh -lc.dll -lapp -lgcc
+
+LIBPATH:= -L$(LIB_DIR) -L/home/autobuild/tools/win32/mingw32/lib
+
+LDFLAGS = -static -nostdlib --stack 0x30000 -Map kpm.map -T$(SDK_DIR)/sources/newlib/app.lds --image-base 0
+
+SOURCES = 	http.asm			\
+		kpm.c				\
+		collection.cpp			\
+		tinyxml/tinyxml.cpp		\
+		tinyxml/tinystr.cpp		\
+		tinyxml/tinyxmlparser.cpp	\
+		tinyxml/tinyxmlerror.cpp	\
+		$(NULL)
+ 
+OBJECTS =  $(patsubst %.asm, %.o, $(patsubst %.cpp, %.o, $(patsubst %.c, %.o, $(SOURCES))))
+
+# targets 
+
+all:$(NAME)
+
+$(NAME): $(OBJECTS) Makefile
+	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(OBJECTS) $(LIBS)
+	kos32-objcopy $@ -O binary
+
+%.o : %.c Makefile
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
+
+%.o : %.cpp Makefile
+	$(CPP) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
+
+%.o : %.asm Makefile
+	$(FASM) $< $@
+
+
+clean: 
+	-rm -f *.o 
+
+
+
+
