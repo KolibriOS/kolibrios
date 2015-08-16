@@ -65,16 +65,15 @@ int http_load_file(const char *path, const char *url)
         {
             int count;
 
-            if(http->flags & 0xffff0000)
-                break;
+//            if(http->flags & 0xffff0000)
+//                break;
 
             count = http->content_received - received;
             if(count+offset <= BUFFSIZE)
             {
                 memcpy(buf+offset, http->content_ptr, count);
                 offset+= count;
-            }
-            else
+            }            else
             {
                 tail  = count+offset-BUFFSIZE;
                 count = BUFFSIZE - offset;
@@ -148,10 +147,14 @@ int main(int argc, char *argv[])
                 do_download(&download_list);
 
             if(!list_empty(&download_list))
-                remove_packages(&install_list, &download_list);
+                remove_missing_packages(&install_list, &download_list);
 
             list_for_each_entry(pkg, &install_list, list)
                 printf("install package %s-%s\n", pkg->name, pkg->version);
+
+            set_cwd("/tmp0/1");
+
+            do_install(&install_list);
         };
      }
 
@@ -229,11 +232,12 @@ void do_download(list_t *download_list)
         printf("%s loaded %d bytes\n",cache_path, count);
         if( !test_archive(cache_path))
             list_del_pkg(pkg);
-        else /*delete file*/;
+        else
+            unlink(cache_path);
     };
 }
 
-void remove_packages(list_t *install, list_t *missed)
+void remove_missing_packages(list_t *install, list_t *missed)
 {
     package_t   *mpkg, *mtmp, *ipkg, *itmp;
 
@@ -243,10 +247,12 @@ void remove_packages(list_t *install, list_t *missed)
         {
             if(ipkg->id == mpkg->id)
             {
-                printf("skip missed package %s-%s\n", ipkg->name, ipkg->version);
+                printf("skip missing package %s-%s\n", ipkg->name, ipkg->version);
                 list_del_pkg(ipkg);
             };
         }
         list_del_pkg(mpkg);
     };
 };
+
+

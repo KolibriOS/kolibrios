@@ -45,11 +45,11 @@ collection_t* load_collection_buffer(const char *buffer);
 
 int build_install_list(list_t *list, collection_t *collection);
 int build_download_list(list_t *download, list_t *src);
-void remove_packages(list_t *install, list_t *missed);
-
+void remove_missing_packages(list_t *install, list_t *missed);
 char *make_cache_path(const char *path);
 
 void do_download(list_t *download);
+void do_install(list_t *install);
 
 #ifdef __cplusplus
 }
