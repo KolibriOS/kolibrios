@@ -1,6 +1,5 @@
 #include "tinyxml/tinyxml.h"
-#include "collection.h"
-#include <sys/kos_io.h>
+#include "package.h"
 
 const char *key_collection  = "collection";
 const char *key_package     = "package";
@@ -24,6 +23,8 @@ void parse_group(pkg_group_t* gr, TiXmlElement *xmlgroup)
 		package_t *pkg;
 
 		pkg = (package_t*)malloc(sizeof(package_t));
+
+        INIT_LIST_HEAD(&pkg->file_list);
 		pkg->id = package_id++;
         pkg->name = strdup(xmlpkg->Attribute(key_name));
         pkg->version = strdup(xmlpkg->Attribute(key_version));
@@ -71,56 +72,4 @@ collection_t* load_collection_file(const char *name)
 	return collection;
 }
 
-int build_install_list(list_t *list, collection_t *collection)
-{
-    pkg_group_t *gr;
-    int count = 0;
 
-    list_for_each_entry(gr, &collection->groups, list)
-    {
-        package_t   *pkg, *tmp;
-
-        list_for_each_entry(tmp, &gr->packages, list)
-        {
-            pkg = (package_t*)malloc(sizeof(package_t));
-
-            pkg->id       = tmp->id;
-            pkg->name     = strdup(tmp->name);
-            pkg->version  = strdup(tmp->version);
-            pkg->filename = strdup(tmp->filename);
-            pkg->description = strdup(tmp->description);
-            list_add_tail(&pkg->list, list);
-//            printf("add package %s-%s\n", pkg->name, pkg->version);
-
-            count++;
-        }
-    };
-    return count;
-}
-
-int build_download_list(list_t *download, list_t *src)
-{
-    int count = 0;
-    char *cache_path;
-    package_t   *pkg, *tmp;
-    fileinfo_t  info;
-    list_for_each_entry(tmp, src, list)
-    {
-        cache_path = make_cache_path(tmp->filename);
-
-        if( get_fileinfo(cache_path, &info) != 0)
-        {
-            pkg = (package_t*)malloc(sizeof(package_t));
-
-            pkg->id       = tmp->id;
-            pkg->name     = strdup(tmp->name);
-            pkg->version  = strdup(tmp->version);
-            pkg->filename = strdup(tmp->filename);
-            pkg->description = strdup(tmp->description);
-            list_add_tail(&pkg->list, download);
-            count++;
-            printf("add package %s-%s\n", pkg->name, pkg->version);
-        };
-    }
-    return count;
-};

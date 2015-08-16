@@ -1,10 +1,13 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/unistd.h>
 #include <fcntl.h>
 #include <kos32sys.h>
-#include "collection.h"
+#include <sys/kos_io.h>
+
+#include "package.h"
 #include "http.h"
 
 #define BUFFSIZE  (64*1024)
@@ -142,15 +145,13 @@ int main(int argc, char *argv[])
         if(collection && build_install_list(&install_list, collection))
         {
             if(build_download_list(&download_list, &install_list))
-            {
-                list_for_each_entry(pkg, &download_list, list)
-                {
-                    printf("package %s-%s\n", pkg->name, pkg->version);
-                    cache_path = make_cache_path(pkg->filename);
-                    count = http_load_file(cache_path, make_url(pkg->filename));
-                    printf("%s loaded %d bytes\n",cache_path, count);
-                };
-            };
+                do_download(&download_list);
+
+            if(!list_empty(&download_list))
+                remove_packages(&install_list, &download_list);
+
+            list_for_each_entry(pkg, &install_list, list)
+                printf("install package %s-%s\n", pkg->name, pkg->version);
         };
      }
 
@@ -160,3 +161,92 @@ err_init:
     printf("HTTP library initialization failed\n");
     return -1;
 }
+
+int build_install_list(list_t *list, collection_t *collection)
+{
+    pkg_group_t *gr;
+    int count = 0;
+
+    list_for_each_entry(gr, &collection->groups, list)
+    {
+        package_t   *pkg, *tmp;
+
+        list_for_each_entry(tmp, &gr->packages, list)
+        {
+            pkg = (package_t*)malloc(sizeof(package_t));
+
+            INIT_LIST_HEAD(&pkg->file_list);
+            pkg->id       = tmp->id;
+            pkg->name     = strdup(tmp->name);
+            pkg->version  = strdup(tmp->version);
+            pkg->filename = strdup(tmp->filename);
+            pkg->description = strdup(tmp->description);
+            list_add_tail(&pkg->list, list);
+            count++;
+        }
+    };
+    return count;
+}
+
+int build_download_list(list_t *download, list_t *src)
+{
+    int count = 0;
+    char *cache_path;
+    package_t   *pkg, *tmp;
+    fileinfo_t  info;
+    list_for_each_entry(tmp, src, list)
+    {
+        cache_path = make_cache_path(tmp->filename);
+
+        if( get_fileinfo(cache_path, &info) != 0)
+        {
+            pkg = (package_t*)malloc(sizeof(package_t));
+
+            INIT_LIST_HEAD(&pkg->file_list);
+            pkg->id       = tmp->id;
+            pkg->name     = strdup(tmp->name);
+            pkg->version  = strdup(tmp->version);
+            pkg->filename = strdup(tmp->filename);
+            pkg->description = strdup(tmp->description);
+            list_add_tail(&pkg->list, download);
+            count++;
+        };
+    }
+    return count;
+};
+
+void do_download(list_t *download_list)
+{
+    package_t   *pkg, *tmp;
+    char        *cache_path;
+    int         count;
+
+    list_for_each_entry_safe(pkg, tmp, download_list, list)
+    {
+        printf("package %s-%s\n", pkg->name, pkg->version);
+        cache_path = make_cache_path(pkg->filename);
+        count = http_load_file(cache_path, make_url(pkg->filename));
+        printf("%s loaded %d bytes\n",cache_path, count);
+        if( !test_archive(cache_path))
+            list_del_pkg(pkg);
+        else /*delete file*/;
+    };
+}
+
+void remove_packages(list_t *install, list_t *missed)
+{
+    package_t   *mpkg, *mtmp, *ipkg, *itmp;
+
+    list_for_each_entry_safe(mpkg, mtmp, missed, list)
+    {
+        list_for_each_entry_safe(ipkg, itmp, install, list)
+        {
+            if(ipkg->id == mpkg->id)
+            {
+                printf("skip missed package %s-%s\n", ipkg->name, ipkg->version);
+                list_del_pkg(ipkg);
+            };
+        }
+        list_del_pkg(mpkg);
+    };
+};
