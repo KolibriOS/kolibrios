@@ -29,10 +29,11 @@ void parse_group(pkg_group_t* gr, TiXmlElement *xmlgroup)
 
         xmle = xmlpkg->FirstChildElement(key_description);
         pkg->description = strdup(xmle->Attribute(key_title));
-        xmle = xmlpkg->FirstChildElement(key_release);
 
+        xmle = xmlpkg->FirstChildElement(key_release);
         pkg->filename = strdup(xmle->Attribute(key_file));
-		list_add_tail(&pkg->list, &gr->packages);
+
+        list_add_tail(&pkg->list, &gr->packages);
 		xmlpkg = xmlpkg->NextSiblingElement();
 	};
 };
@@ -69,33 +70,4 @@ collection_t* load_collection_file(const char *name)
 	return collection;
 }
 
-collection_t* load_collection_buffer(const char *buffer)
-{
-    TiXmlDocument doc;
-    TiXmlElement *col;
-    collection_t *collection = NULL;
 
-    doc.Parse(buffer);
-    col = doc.FirstChildElement(key_collection);
-    if (col)
-    {
-        collection = (collection_t*)malloc(sizeof(collection_t));
-        INIT_LIST_HEAD(&collection->groups);
-
-        TiXmlElement* xmlgroup = col->FirstChildElement();
-        if (xmlgroup)
-        {
-            pkg_group_t *gr;
-
-            gr = (pkg_group_t*)malloc(sizeof(pkg_group_t));
-            INIT_LIST_HEAD(&gr->list);
-            INIT_LIST_HEAD(&gr->packages);
-
-            gr->name = strdup(xmlgroup->Value());
-            list_add_tail(&gr->list, &collection->groups);
-            parse_group(gr, xmlgroup);
-        };
-    };
-
-    return collection;
-}

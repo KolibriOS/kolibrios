@@ -9,54 +9,20 @@
 
 #define BUFFSIZE  (64*1024)
 
-int http_load_mem(char *buf, const char *url)
+
+char *make_url(const char *name)
 {
-    http_t *http;
-    int offset = 0;
-    int count;
+    static char url_buf[128] = "http://ftp.kolibrios.org/users/Serge/new/OS/";
+    strcpy(&url_buf[44], name);
+    return url_buf;
+};
 
-//    asm volatile("int3");
-    http = http_get(url, NULL,FLAG_STREAM|FLAG_REUSE_BUFFER, NULL);
-    if(http == NULL)
-        goto err_get;
-
-    do
-    {
-//        delay(100);
-        if(http_receive_with_retry(http, 500)==0)
-        {
-            if(http->flags & 0xffff0000)
-                goto err_http;
-
-            count = http->content_received - offset;
-            if(count == 0)
-                continue;
-            memcpy(buf+offset, http->content_ptr, count);
-            offset = http->content_received;
-        }
-        else goto err_http;
-
-    }while( (http->flags & FLAG_GOT_ALL_DATA) == 0);
-
-    if(http->content_ptr)
-        user_free(http->content_ptr);
-    http_free(http);
-
-    return offset;
-
-err_http:
-    if(http->content_ptr)
-        user_free(http->content_ptr);
-    http_free(http);
-
-    printf("HTTP receive failed\n");
-    return offset;
-
-err_get:
-    printf("HTTP GET failed\n");
-    return offset;
-
-}
+char *make_cache_path(const char *path)
+{
+    static char path_buf[64] = "/tmp0/1/";
+    strcpy(&path_buf[8], path);
+    return path_buf;
+};
 
 int http_load_file(const char *path, const char *url)
 {
@@ -147,18 +113,21 @@ err_get:
 int main(int argc, char *argv[])
 {
     int   count;
+    char *cache_path;
 
     if(http_init())
         goto err_init;
 
-    count = http_load_file("/tmp0/1/packages.xml", "http://ftp.kolibrios.org/users/Serge/new/OS/packages.xml");
+    cache_path = make_cache_path("packages.xml");
+
+    count = http_load_file(cache_path, make_url("packages.xml"));
 
     if(count)
     {
         collection_t *collection;
         pkg_group_t *gr;
 
-        collection = load_collection_file("/tmp0/1/packages.xml");
+        collection = load_collection_file(cache_path);
 
         list_for_each_entry(gr, &collection->groups, list)
         {
@@ -167,6 +136,9 @@ int main(int argc, char *argv[])
             list_for_each_entry(pkg, &gr->packages, list)
             {
                 printf("package %s-%s\n", pkg->name, pkg->version);
+                cache_path = make_cache_path(pkg->filename);
+                count = http_load_file(cache_path, make_url(pkg->filename));
+                printf("%s loaded %d\n",cache_path, count);
             }
         };
      }
