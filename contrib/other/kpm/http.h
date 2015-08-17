@@ -52,5 +52,8 @@ unsigned __stdcall con_set_flags(unsigned new_flags);
 void     __stdcall con_cls(void);
 void     __stdcall con_write_asciiz(const char* string);
 
+char *make_url(const char *name);
+char *make_tmp_path(const char *path);
+char *make_cache_path(const char *path);
 
 #endif /* __HTTP_H__ */

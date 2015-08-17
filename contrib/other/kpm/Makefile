@@ -20,14 +20,15 @@ INCLUDES+=-I$(SDK_DIR)/sources/freetype/include
 #DEFINES= -DDEBUG=1
 
 DEFINES= -DNDEBUG
-LIBS:= -lsupc++ -lgcc_eh -lc.dll -lapp -lgcc
+LIBS:= -liberty -lsupc++ -lgcc_eh -lc.dll -lapp -lgcc
 
 LIBPATH:= -L$(LIB_DIR) -L/home/autobuild/tools/win32/mingw32/lib
 
-LDFLAGS = -static -nostdlib --stack 0x30000 -Map kpm.map -T$(SDK_DIR)/sources/newlib/app.lds --image-base 0
+LDFLAGS = -static -nostdlib --stack 0x10000 -Map kpm.map -T$(SDK_DIR)/sources/newlib/app.lds --image-base 0
 
 SOURCES = 	http.asm			\
 		kpm.c				\
+		utils.c				\
 		collection.cpp			\
 		tinyxml/tinyxml.cpp		\
 		tinyxml/tinystr.cpp		\
