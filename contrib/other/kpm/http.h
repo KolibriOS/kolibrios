@@ -26,9 +26,9 @@ typedef struct
 int http_init();
 int http_load(char *buf, const char *path);
 
-http_t* __attribute__ ((stdcall)) http_get(const char *url, http_t *conn, int flags, const char *header);
-int     __attribute__ ((stdcall)) http_receive(http_t *conn);
-void    __attribute__ ((stdcall)) http_free(http_t *conn);
+http_t* __stdcall http_get(const char *url, http_t *conn, int flags, const char *header);
+int     __stdcall http_receive(http_t *conn);
+void    __stdcall http_free(http_t *conn);
 
 static inline int http_receive_with_retry(http_t *http, int retry_count)
 {
@@ -36,12 +36,21 @@ static inline int http_receive_with_retry(http_t *http, int retry_count)
 
     do
     {
-        if(err = http_receive(http))
-            delay(1);
+        err = http_receive(http);
+        if(err)
+            wait_for_event(1);
 
     }while(err && --retry_count);
 
     return err;
 }
+
+void     __stdcall con_init(unsigned w_w, unsigned w_h, unsigned s_w, unsigned s_h, const char* t);
+void     __stdcall con_exit(char bCloseWindow);
+unsigned __stdcall con_get_flags(void);
+unsigned __stdcall con_set_flags(unsigned new_flags);
+void     __stdcall con_cls(void);
+void     __stdcall con_write_asciiz(const char* string);
+
 
 #endif /* __HTTP_H__ */

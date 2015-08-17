@@ -7,6 +7,13 @@ public _http_get@16
 public _http_receive@4
 public _http_free@4
 
+public _con_init@20
+public _con_exit@4
+public _con_get_flags
+public _con_set_flags@4
+public _con_cls
+public _con_write_asciiz@4
+
 section '.text' align 16
 
 
@@ -129,9 +136,20 @@ dll_load:
 
 align 4
 _http_init:
+        push    ebx
+        mov     eax, 40
+        mov     ebx, 1 shl 8
+        int     0x40
+        pop     ebx
 
         push    @IMPORT
         call    dll_load
+        test    eax, eax
+        jnz     .fail
+        push    1
+        call    [con_start]
+        xor     eax, eax
+.fail:
         ret
 
 align 4
@@ -140,11 +158,29 @@ _http_get@16:
 
 align 4
 _http_receive@4:
-        jmp    [HTTP_receive]
+        jmp     [HTTP_receive]
 
 align 4
 _http_free@4:
-        jmp    [HTTP_free]
+        jmp     [HTTP_free]
+
+align 4
+_con_init@20:
+        jmp     [con_init]
+
+align 4
+_con_exit@4:
+        jmp     [con_exit]
+
+align 4
+_con_write_asciiz@4:
+        jmp     [con_write_asciiz]
+
+_con_get_flags:
+_con_set_flags@4:
+_con_cls:
+        ret
+
 
 proc mem.Alloc, size
         push    ebx ecx
@@ -224,12 +260,26 @@ macro import lname,[name,sname]
 align   4
 @IMPORT:
 
-library lib_http,       'http.obj'
+library lib_http,       'http.obj', \
+        console,        'console.obj'
 
-import  lib_http, \
-        HTTP_get,       'get', \
-        HTTP_receive,   'receive', \
+import  lib_http,                   \
+        HTTP_get,       'get',      \
+        HTTP_receive,   'receive',  \
         HTTP_free,      'free'
+
+import  console,                            \
+        con_start,      'START',            \
+        con_init,       'con_init',         \
+        con_write_asciiz,'con_write_asciiz',\
+        con_exit,       'con_exit',         \
+        con_gets,       'con_gets',         \
+        con_cls,        'con_cls',          \
+        con_getch2,     'con_getch2',       \
+        con_set_cursor_pos, 'con_set_cursor_pos',\
+        con_write_string, 'con_write_string',\
+        con_get_flags,  'con_get_flags',    \
+        con_set_flags,  'con_set_flags'
 
 s_libdir:
   db '/sys/lib/'

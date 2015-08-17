@@ -12,6 +12,7 @@
 
 #define BUFFSIZE  (64*1024)
 
+char conbuf[256];
 
 char *make_url(const char *name)
 {
@@ -90,6 +91,10 @@ int http_load_file(const char *path, const char *url)
                     memcpy(buf, http->content_ptr+count, tail);
                     offset = tail;
                 }
+
+                sprintf(conbuf, "%d bytes loaded\r", http->content_received);
+                con_write_asciiz(conbuf);
+
             }
             received = http->content_received;
         }
@@ -118,7 +123,6 @@ err_get:
     return received;
 }
 
-
 int main(int argc, char *argv[])
 {
     int   count;
@@ -127,6 +131,8 @@ int main(int argc, char *argv[])
 
     if(http_init())
         goto err_init;
+
+    con_init(80, 25, 80, 250, "Kolibri package manager");
 
     tmp_path = make_tmp_path("packages.xml");
 
@@ -150,13 +156,18 @@ int main(int argc, char *argv[])
                 remove_missing_packages(&install_list, &download_list);
 
             list_for_each_entry(pkg, &install_list, list)
-                printf("install package %s-%s\n", pkg->name, pkg->version);
+            {
+                sprintf(conbuf,"install package %s-%s\n", pkg->name, pkg->version);
+                con_write_asciiz(conbuf);
+            };
 
             set_cwd("/tmp0/1");
 
             do_install(&install_list);
         };
-     }
+    }
+
+    con_exit(0);
 
     return 0;
 
@@ -226,10 +237,12 @@ void do_download(list_t *download_list)
 
     list_for_each_entry_safe(pkg, tmp, download_list, list)
     {
-        printf("package %s-%s\n", pkg->name, pkg->version);
+        sprintf(conbuf,"package %s-%s\n", pkg->name, pkg->version);
+        con_write_asciiz(conbuf);
         cache_path = make_cache_path(pkg->filename);
         count = http_load_file(cache_path, make_url(pkg->filename));
-        printf("%s loaded %d bytes\n",cache_path, count);
+        sprintf(conbuf,"%s %d bytes loaded\n",cache_path, count);
+        con_write_asciiz(conbuf);
         if( !test_archive(cache_path))
             list_del_pkg(pkg);
         else
@@ -247,7 +260,8 @@ void remove_missing_packages(list_t *install, list_t *missed)
         {
             if(ipkg->id == mpkg->id)
             {
-                printf("skip missing package %s-%s\n", ipkg->name, ipkg->version);
+                sprintf(conbuf,"skip missing package %s-%s\n", ipkg->name, ipkg->version);
+                con_write_asciiz(conbuf);
                 list_del_pkg(ipkg);
             };
         }
