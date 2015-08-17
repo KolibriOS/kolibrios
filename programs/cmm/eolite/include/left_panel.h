@@ -78,6 +78,8 @@ void GetSystemDiscs()
 {
 	char dev_name[10], sys_discs[10];
 	int i1, j1, dev_num, dev_disc_num,l;
+	dword temp_file_count, tempbuf;
+
 	disc_num=0;
 	if (devbuf) free(devbuf);
 	devbuf = malloc(10000); //буфер где-то на 10 девайсов в левой панели
@@ -97,13 +99,15 @@ void GetSystemDiscs()
 		}
 		if (!strncmp(#sys_discs, "/rd/1/",6)) 
 		{
-			if (isdir("/kolibrios"))
+			GetDir(#tempbuf, #temp_file_count, "/kolibrios/", DIRS_ONLYREAL);
+			if (temp_file_count)
 			{
 				strncpy(#disk_list[disc_num].Item, "/kolibrios/",11);
 				kolibrios_drive = true;
 				disc_num++;	
 			}
 			else kolibrios_drive = false;
+			free(tempbuf);
 		}
 	}
 }
