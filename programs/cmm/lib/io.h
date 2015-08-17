@@ -279,13 +279,23 @@
 	byte copy(...);
 	byte move(...);
 	dword set(...);
+	dword readKPACK(dword path1);
 	dword convert_size();
 	__DIR dir;
 	__PATH path;
 	__FILE file;
 	____BDVK BDVK;
 }io;
-
+:dword IO::readKPACK(dword path1)
+{
+	dword sizes;
+	EAX = 68;
+	EBX = 27;
+	ECX = path.path(path1);
+	EDX = sizes;
+	$int 0x40;
+	return EAX;
+}
 :byte __ConvertSize_size_prefix[8];
 :dword IO::convert_size()
 {

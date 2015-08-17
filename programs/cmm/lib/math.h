@@ -15,7 +15,32 @@
 	float sqrt(float x);
 	float tan(float x);
 	float abs(float x);
+	float floor(float x);
+	signed round(float x);
+	signed ceil(float x);
 }math;
+:signed MATH::round(float x)
+{
+	x+=0.6;
+	return x;
+}
+:signed MATH::ceil(float x)
+{
+	dword z;
+	float tmp;
+	z = x;
+	tmp = z;
+	IF(tmp<x)z++;
+	return z;
+}
+:float MATH::floor(float x)
+{
+	signed long z;
+	z = x;
+	IF(z==x)return x;
+	IF(z<0) return z-1;
+	return z;
+}
 :float MATH::abs(float x)
 {
 	IF(x<0)return -x;
