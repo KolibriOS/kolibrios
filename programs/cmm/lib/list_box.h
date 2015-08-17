@@ -221,4 +221,25 @@ void llist::CheckDoesValuesOkey()
 	if (current < 0) current = 0;
 }
 
+void llist_copy(dword dest, src)
+{
+	EDI = dest;
+	ESI = src;
+	EDI.llist.x = ESI.llist.x;
+	EDI.llist.y = ESI.llist.y;
+	EDI.llist.w = ESI.llist.w;
+	EDI.llist.h = ESI.llist.h;
+	EDI.llist.line_h = ESI.llist.line_h;
+	EDI.llist.text_y = ESI.llist.text_y;
+	EDI.llist.font_w = ESI.llist.font_w;
+	EDI.llist.font_h = ESI.llist.font_h;
+	EDI.llist.font_type = ESI.llist.font_type;
+	EDI.llist.count = ESI.llist.count;
+	EDI.llist.visible = ESI.llist.visible;
+	EDI.llist.first = ESI.llist.first;
+	EDI.llist.current = ESI.llist.current;
+	EDI.llist.column_max = ESI.llist.column_max;
+	EDI.llist.active = ESI.llist.active;
+}
+
 #endif

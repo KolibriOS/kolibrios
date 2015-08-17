@@ -38,10 +38,10 @@ word settings_window;
 dword _not_draw = false;
 byte menu_call_mouse=0;
 
-byte del_active=0,
-	new_element_active=0;
+byte del_active=0;
+byte new_element_active=0;
 
-llist files;
+llist files, files_active, files_inactive;
 
 byte list_full_redraw;
 
@@ -68,9 +68,7 @@ byte use_big_fonts=false,
 	active_panel=1;
 //} settings;
 
-int active_current, inactive_current, active_first, inactive_first;
 char active_path[4096], inactive_path[4096];
-
 
 dword eolite_ini_path;
 
@@ -79,7 +77,7 @@ char scroll_used=false;
 dword menu_stak,about_stak,properties_stak,settings_stak,copy_stak;
 
 proc_info Form;
-int mouse_dd, sc_slider_h, sorting_arrow_x, kolibrios_drive;
+int mouse_dd, sc_slider_h, kolibrios_drive;
 int j, i;
 int action_buf;
 int rand_n;
@@ -132,9 +130,9 @@ void main()
 	{
 		strlcpy(#path, "/rd/1/", 6);		
 	}
-	strcpy(#active_path, #path);
-	strcpy(#inactive_path, #path);
 	Open_Dir(#path,ONLY_OPEN);
+	strcpy(#inactive_path, #path);
+	llist_copy(#files_inactive, #files);
 	SetEventMask(1100111b);
 	loop(){
 		switch(WaitEvent())
@@ -289,10 +287,8 @@ void main()
 						{
 							active_panel = 2;
 							__SET_VALS_AND_DRAW:
-							active_current = inactive_current;
-							inactive_current = files.current;
-							active_first = inactive_first;
-							inactive_first = files.first;
+							llist_copy(#files_active, #files_inactive);
+							llist_copy(#files_inactive, #files);
 							strcpy(#active_path, #inactive_path);
 							strcpy(#inactive_path, #path);
 							DrawFilePanels();
@@ -343,11 +339,9 @@ void main()
 					case 26:
 							Paste();
 							break;
-					case 31...33: //sort
-							if(sort_num==1) DrawFilledBar(sorting_arrow_x,files.y-12,6,10);
-							if(sort_num==2) DrawFilledBar(sorting_arrow_x,files.y-12,6,10);
-							if(sort_num==3) DrawFilledBar(sorting_arrow_x,files.y-12,6,10);
-							sort_num=id-30;
+					case 31...33: //sorting
+							sort_num = id - 30;
+							DrawList();
 							Open_Dir(#path,WITH_REDRAW);
 							break;
 					case 50...60: //Actions
@@ -553,8 +547,7 @@ void draw_window()
 	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42,system.color.work_graph);
 	DrawRectangle(0,39,Form.cwidth-1,Form.cheight - 40,col_palette[4]); //bg
 	for (i=0; i<5; i++) DrawBar(0, 34+i, Form.cwidth, 1, col_palette[8-i]);
-	active_current = files.current;
-	active_first = files.first;
+	llist_copy(#files_active, #files);
 	strcpy(#active_path, #path);
 	DrawFilePanels();
 	if (del_active) Del_Form();
@@ -563,14 +556,18 @@ void draw_window()
 
 void DrawList() 
 {
-	DrawFlatButton(files.x,files.y -  17,  files.w - 141,16,31,system.color.work,T_FILE);
-	DrawFlatButton(files.x + files.w - 141,  files.y-17,73,16,32,system.color.work,T_TYPE);
-	DrawFlatButton(files.x + files.w -  68,  files.y-17,68,16,33,system.color.work,T_SIZE);
-	DrawFlatButton(files.x + files.w,        files.y-17,16,16, 0,system.color.work,"\x18");
-	DrawFlatButton(files.x + files.w,files.y+files.h-16,16,16, 0,system.color.work,"\x19");
+	word sorting_arrow_x;
+	DrawFlatButton(files.x, files.y-17, files.w - 141,16,31,system.color.work,T_FILE);
+	DrawFlatButton(files.x + files.w - 141, files.y-17,73,16,32,system.color.work,T_TYPE);
+	DrawFlatButton(files.x + files.w -  68, files.y-17,68,16,33,system.color.work,T_SIZE);
+	DrawFlatButton(files.x + files.w,       files.y-17,16,16, 0,system.color.work,"\x18");
+	DrawFlatButton(files.x + files.w,files.y+files.h-16,16,16,0,system.color.work,"\x19");
+	if (sort_num==1) sorting_arrow_x = files.w - 141 / 2 + files.x + 18;
+	if (sort_num==2) sorting_arrow_x = files.x + files.w - 90;
+	if (sort_num==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
+	WriteText(sorting_arrow_x,files.y-12,0x80,system.color.work_graph,"\x19");
 	DrawBar(files.x+files.w,files.y,1,files.h,system.color.work_graph);
-	if (two_panels) && (files.x<5) DrawBar(files.x+files.w+16,files.y,1,files.h,system.color.work_graph);
-	Open_Dir(#path,WITH_REDRAW);
+	if (two_panels) && (files.x<5) DrawBar(files.x+files.w+16,files.y,1,files.h,system.color.work_graph);	
 }
 
 void DrawFilePanels()
@@ -580,34 +577,37 @@ void DrawFilePanels()
 		DrawDeviceAndActionsLeftPanel();
 		files.SetSizes(192, 57, Form.cwidth - 210, Form.cheight - 59, files.line_h);
 		DrawList();
+		Open_Dir(#path,ONLY_SHOW);
 	}
 	else
 	{
+		llist_copy(#files, #files_inactive);
+		strcpy(#path, #inactive_path);
+		col_selec = 0xCCCccc;
+
 		if (active_panel==1)
 		{
-			files.current = inactive_current;
-			files.first = inactive_first;
-			strcpy(#path, #inactive_path);
 			files.SetSizes(Form.cwidth/2, 57+22, Form.cwidth/2 -17, Form.cheight-59-22, files.line_h);
 			DrawList();
-			files.current = active_current;
-			files.first = active_first;
+			Open_Dir(#path,WITH_REDRAW);
+			llist_copy(#files, #files_active);
 			strcpy(#path, #active_path);
+			col_selec = 0x94AECE;
 			files.SetSizes(2, 57+22, Form.cwidth/2-2-17, Form.cheight-59-22, files.line_h);
 			DrawList();
+			Open_Dir(#path,WITH_REDRAW);
 		}
 		if (active_panel==2)
 		{
-			files.current = inactive_current;
-			files.first = inactive_first;
-			strcpy(#path, #inactive_path);
 			files.SetSizes(2, 57+22, Form.cwidth/2-2-17, Form.cheight-59-22, files.line_h);
 			DrawList();
-			files.current = active_current;
-			files.first = active_first;
+			Open_Dir(#path,WITH_REDRAW);
+			llist_copy(#files, #files_active);
 			strcpy(#path, #active_path);
+			col_selec = 0x94AECE;
 			files.SetSizes(Form.cwidth/2, 57+22, Form.cwidth/2 -17, Form.cheight-59-22, files.line_h);
 			DrawList();
+			Open_Dir(#path,WITH_REDRAW);
 		}
 	}
 }
@@ -736,10 +736,6 @@ void Open_Dir(dword dir_path, redraw){
 		HistoryPath(ADD_NEW_PATH);
 		files.visible = files.h / files.line_h;
 		if (files.count < files.visible) files.visible = files.count;
-		if (sort_num==1) sorting_arrow_x = Form.width+60/2;
-		if (sort_num==2) sorting_arrow_x = Form.width-115;
-		if (sort_num==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
-		WriteText(sorting_arrow_x,files.y-12,0x80,system.color.work_graph,"\x19");
 		if (redraw!=ONLY_SHOW) Sorting();
 		list_full_redraw = true;
 		if (redraw!=ONLY_OPEN)&&(!_not_draw) List_ReDraw();
@@ -757,7 +753,6 @@ inline Sorting()
 {
 	dword k=0, l=1;
 	dword file_off;
-	int i;
 	if (!strncmp(#path,"/",2)) //do not sort
 	{
 		for(k=1;k<files.count;k++;) file_mas[k]=k;
@@ -783,8 +778,8 @@ inline Sorting()
 	if (sort_num==2) Sort_by_Type(k,files.count-1);
 	if (sort_num==3) Sort_by_Size(k,files.count-1);
 	//make ".." first item in list
-	if (k>0) && (!strncmp(file_mas[0]*304+buf+72,"..",3))
-		for(k--; k>0; k--;) if (!strncmp(file_mas[k]*304+buf+72,"..",3)) {file_mas[k]><file_mas[0]; break;}
+	if (k>0) && (strncmp(file_mas[0]*304+buf+72,"..",2)!=0)
+		for(k--; k>0; k--;) if (!strncmp(file_mas[k]*304+buf+72,"..",2)) {file_mas[k]><file_mas[0]; break;}
 }
 
 
