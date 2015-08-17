@@ -27,6 +27,7 @@ FLAG_CONNECTED          = 1 shl 5
 FLAG_KEEPALIVE          = 1 shl 8
 FLAG_STREAM             = 1 shl 9
 FLAG_REUSE_BUFFER       = 1 shl 10
+FLAG_BLOCK              = 1 shl 11
 
 ; error
 FLAG_INVALID_HEADER     = 1 shl 16

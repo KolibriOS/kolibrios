@@ -2,7 +2,7 @@
 get(*url, identifier, flags, *add_header);
 	*url = pointer to ASCIIZ URL
 	identifier = identified of previously opened connection, or 0 to open a new one
-	flags = bit flags (see http.inc user flags)
+	flags = bit flags (see http.inc user flags and the end of this document)
 	*add_header = pointer to ASCIIZ additional header parameters, or null for none.
 			Every additional parameter must end with CR LF bytes, including the last line.
 Initiates a HTTP connection, using 'GET' method.
@@ -11,7 +11,7 @@ Initiates a HTTP connection, using 'GET' method.
 head(*url, identifier, flags, *add_header);
 	*url = pointer to ASCIIZ URL
 	identifier = identified of previously opened connection, or 0 to open a new one
-	flags = bit flags (see http.inc user flags)
+	flags = bit flags (see http.inc user flags and the end of this document)
 	*add_header = pointer to ASCIIZ additional header parameters, or null for none.	
 			Every additional parameter must end with CR LF bytes, including the last line.	
 Initiate a HTTP connection, using 'HEAD' method.
@@ -20,7 +20,7 @@ Initiate a HTTP connection, using 'HEAD' method.
 post(*url, identifier, flags, *add_header, *content-type, content-length);
 	*url = pointer to ASCIIZ URL
 	identifier = identified of previously opened connection, or 0 to open a new one
-	flags = bit flags (see http.inc user flags)
+	flags = bit flags (see http.inc user flags and the end of this document)
 	*add_header = pointer to ASCIIZ additional header parameters, or null for none.	
 			Every additional parameter must end with CR LF bytes, including the last line.
 	*content-type = pointer to ASCIIZ string containing content type.
@@ -35,6 +35,7 @@ receive(identifier);
 This procedure will handle all incoming data for a connection and place it in the buffer.
 As long as the procedure expects more data, -1 is returned and the procedure must be called again.
  - When transfer is done, the procedure will return 0. 
+The receive procedure is non-blocking by default, but can be made to block by setting FLAG_BLOCK.
 
 The HTTP header is placed together with some flags and other attributes in the http_msg structure.
 This structure is defined in http.inc (and not copied here because it might still change.)
@@ -54,5 +55,20 @@ send(identifier, *dataptr, datalength);
 	datalength = length of the data to send (in bytes)
 This procedure can be used to send data to the server (POST)
  - returns number of bytes sent, -1 on error
+ 
+ 
+User flags:
 
-All procedures are non blocking!
+ FLAG_KEEPALIVE will keep the connection open after first GET/POST/.. so you can send a second request on the same TCP session. 
+In this case, the session must be closed manually when done by using the exported disconnect() function.
+
+ FLAG_STREAM will force receive() to put the received content in a series of fixed size buffers, instead of everything in one big buffer.
+This can be used for example to receive an internet radio stream, 
+but also to download larger files for which it does not make sense to put them completely in RAM first.
+
+ FLAG_REUSE_BUFFER is to be used in combination with FLAG_STREAM and will make receive() function re-use the same buffer.
+This, for example, can be used when downloading a file straight to disk.
+
+ FLAG_BLOCK will make receive() function blocking. This is only to be used when receiving one file from a thread that has no other work.
+If however, you want to receive multiple files, or do other things in the program mainloop, 
+you should use system function 10 or 23 to wait for network event before calling one or more receive() functions. 

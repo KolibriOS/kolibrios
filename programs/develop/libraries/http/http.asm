@@ -23,7 +23,7 @@
         TIMEOUT         = 500  ; in 1/100 s
 
         __DEBUG__       = 1
-        __DEBUG_LEVEL__ = 1
+        __DEBUG_LEVEL__ = 2
 
 
 format MS COFF
@@ -117,7 +117,7 @@ lib_init: ;//////////////////////////////////////////////////////////////////;;
         ret
 
   .error:
-        DEBUGF  1, "ERROR loading libraries\n"
+        DEBUGF  2, "ERROR loading http.obj dependencies\n"
         xor     eax, eax
         inc     eax
         ret
@@ -145,7 +145,7 @@ proc HTTP_disconnect identifier ;///////////////////////////////////////////////
         ret
 
   .error:
-        DEBUGF  1, "Cant close already closed connection!\n"
+        DEBUGF  2, "Cant close already closed connection!\n"
         popa
         ret
 
@@ -313,7 +313,7 @@ endl
         ret
 
   .error:
-        DEBUGF  1, "Error!\n"
+        DEBUGF  2, "HTTP GET error!\n"
         popa
         xor     eax, eax        ; return 0 = error
         ret
@@ -455,7 +455,7 @@ endl
         ret
 
   .error:
-        DEBUGF  1, "Error!\n"
+        DEBUGF  2, "HTTP HEAD error!\n"
         popa
         xor     eax, eax        ; return 0 = error
         ret
@@ -615,7 +615,7 @@ endl
         ret
 
   .error:
-        DEBUGF  1, "Error!\n"
+        DEBUGF  1, "HTTP POST error!\n"
         popa
         xor     eax, eax        ; return 0 = error
         ret
@@ -668,8 +668,13 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
 
 ; Receive some data
   .receive:
+        mov     edi, MSG_DONTWAIT
+        test    [ebp + http_msg.flags], FLAG_BLOCK
+        jz      @f
+        xor     edi, edi
+  @@:
         mcall   recv, [ebp + http_msg.socket], [ebp + http_msg.write_ptr], \
-                      [ebp + http_msg.buffer_length], MSG_DONTWAIT
+                      [ebp + http_msg.buffer_length]
         cmp     eax, 0xffffffff
         je      .check_socket
 
@@ -1082,28 +1087,28 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
         jz      .got_all_data
   .err_server_closed:
         pop     eax
-        DEBUGF  1, "ERROR: server closed connection unexpectedly\n"
+        DEBUGF  2, "ERROR: server closed connection unexpectedly\n"
         or      [ebp + http_msg.flags], FLAG_TRANSFER_FAILED
         jmp     .abort
 
   .err_header:
         pop     eax
-        DEBUGF  1, "ERROR: invalid header\n"
+        DEBUGF  2, "ERROR: invalid header\n"
         or      [ebp + http_msg.flags], FLAG_INVALID_HEADER
         jmp     .abort
 
   .err_no_ram:
-        DEBUGF  1, "ERROR: out of RAM\n"
+        DEBUGF  2, "ERROR: out of RAM\n"
         or      [ebp + http_msg.flags], FLAG_NO_RAM
         jmp     .abort
 
   .err_timeout:
-        DEBUGF  1, "ERROR: timeout\n"
+        DEBUGF  2, "ERROR: timeout\n"
         or      [ebp + http_msg.flags], FLAG_TIMEOUT_ERROR
         jmp     .abort
 
   .err_socket:
-        DEBUGF  1, "ERROR: socket error %u\n", ebx
+        DEBUGF  2, "ERROR: socket error %u\n", ebx
         or      [ebp + http_msg.flags], FLAG_SOCKET_ERROR
   .abort:
         and     [ebp + http_msg.flags], not FLAG_CONNECTED
@@ -1268,7 +1273,7 @@ proc HTTP_find_header_field identifier, headername ;////////////////////////////
         ret
 
   .fail:
-        DEBUGF  1, "Header field not found\n"
+        DEBUGF  2, "Header field not found\n"
         pop     edi esi edx ecx ebx
         xor     eax, eax
         ret
@@ -1342,7 +1347,7 @@ proc HTTP_escape URI, length ;//////////////////////////////////////////////////
         ret
 
   .error:
-        DEBUGF  1, "ERROR: out of RAM!\n"
+        DEBUGF  2, "ERROR: out of RAM!\n"
         popa
         xor     eax, eax
         ret
@@ -1405,7 +1410,7 @@ proc HTTP_unescape URI, length ;////////////////////////////////////////////////
         jmp     .loop
 
   .fail:
-        DEBUGF  1, "ERROR: invalid URI!\n"
+        DEBUGF  2, "ERROR: invalid URI!\n"
         jmp     .loop
 
   .done:
@@ -1415,7 +1420,7 @@ proc HTTP_unescape URI, length ;////////////////////////////////////////////////
         ret
 
   .error:
-        DEBUGF  1, "ERROR: out of RAM!\n"
+        DEBUGF  2, "ERROR: out of RAM!\n"
         popa
         xor     eax, eax
         ret
@@ -1659,12 +1664,12 @@ endl
         ret
 
   .no_mem:
-        DEBUGF  1, "Out of memory!\n"
+        DEBUGF  2, "Out of memory!\n"
         xor     eax, eax
         ret
 
   .invalid:
-        DEBUGF  1, "Invalid URL!\n"
+        DEBUGF  2, "Invalid URL!\n"
         xor     eax, eax
         ret
 
