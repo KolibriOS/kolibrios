@@ -279,7 +279,7 @@ void main()
 						if (active_panel!=1)
 						{
 							active_panel = 1;
-							goto __SET_VALS_AND_DRAW;
+							ChangeActivePanel();
 						}
 					}
 					else
@@ -287,12 +287,7 @@ void main()
 						if (active_panel!=2)
 						{
 							active_panel = 2;
-							__SET_VALS_AND_DRAW:
-							llist_copy(#files_active, #files_inactive);
-							llist_copy(#files_inactive, #files);
-							strcpy(#active_path, #inactive_path);
-							strcpy(#inactive_path, #path);
-							DrawFilePanels();
+							ChangeActivePanel();
 						}
 					}
 				}
@@ -448,6 +443,11 @@ void main()
 						case SCAN_CODE_ENTER:
 								Open(0);
 								break; 
+						case SCAN_CODE_TAB:
+								if (!two_panels) break;
+								if (active_panel==1) active_panel=2; else active_panel=1;
+								ChangeActivePanel();
+								break;
 						case 093: //menu
 								menu_call_mouse=0;
 								menu_stak = malloc(4096);
@@ -1126,6 +1126,15 @@ void FnProcess(byte N)
 			}
 			break;
 	}
+}
+
+void ChangeActivePanel()
+{
+	llist_copy(#files_active, #files_inactive);
+	llist_copy(#files_inactive, #files);
+	strcpy(#active_path, #inactive_path);
+	strcpy(#inactive_path, #path);
+	DrawFilePanels();
 }
 
 //need to remove these functiones, they are a very old shit :)

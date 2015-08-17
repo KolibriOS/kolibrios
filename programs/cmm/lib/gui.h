@@ -19,6 +19,15 @@
 	DrawBar(x+w,y,1,h+1,color1);
 }
 
+:void DrawWideRectangle(dword x,y,w,h,boder,color1)
+{
+	if (w<=0) || (h<=0) return;
+	DrawBar(x, y, w, boder, color1);
+	DrawBar(x, y+h-boder, w, boder, color1);
+	DrawBar(x, y+boder, boder, h-boder-boder, color1);
+	DrawBar(x+w-boder, y+boder, boder, h-boder-boder, color1);
+}
+
 :void DrawRectangle3D(dword x,y,w,h,color1,color2)
 {
 	if (w<=0) || (h<=0) return;

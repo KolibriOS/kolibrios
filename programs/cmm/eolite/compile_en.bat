@@ -4,7 +4,7 @@
 @del Eolite
 cls
 c-- Eolite.c
-@kpack Eolite.com
+rem @kpack Eolite.com
 @rename Eolite.com Eolite
 @del warning.txt
 @del lang.h--

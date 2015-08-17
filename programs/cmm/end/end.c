@@ -1,166 +1,78 @@
-#define MEMSIZE 0x3E80
-#include "..\lib\kolibri.h" 
-#include "..\lib\gui.h" 
-#include "..\lib\strings.h" 
-#include "..\lib\random.h" 
-#include "..\lib\mem.h" 
-#include "..\lib\file_system.h"
-
-#ifndef ru
-	char *BUTTONS_CAPTIONS[]={
-	"������������    [Enter]"w, 13,
-	"����������        [End]"w, 181,
-	//"����             [Home]"w, 180,
-	"������            [Esc]"w, 27,
-	0};
-#else
-	char *BUTTONS_CAPTIONS[]={
-	" Reboot        [Enter]",13,
-	" Power off       [End]",181,
-	//" Kernel         [Home]",180,
-	" Close           [Esc]",27,
-	0};
+#ifndef AUTOBUILD
+#include "lang.h--"
 #endif
 
-unsigned char moon[6*6] = FROM "moon.raw";
+#define MEMSIZE 4096*4
+#include "../lib/gui.h"
+#include "../lib/file_system.h"
 
-int WIN_SIZE_X, WIN_SIZE_Y;
-int PANEL_X, PANEL_Y;
+#ifdef LANG_RUS
+#define TEXT_TITLE "Завершение работы"
+#define TEXT_RDSAVE1 "Нажмите Ctrl+S для сохранения изменений"
+#define TEXT_RDSAVE2 "сделанных в процессе работы в системе."
+#define TEXT_REBOOT "Перезагрузка"
+#define TEXT_OFF "Выключение"
+#define TEXT_CANCEL "Отмена"
+#else
+#define TEXT_TITLE "Shutdown computer"
+#define TEXT_RDSAVE1 "Press Ctrl+S to save all changes"
+#define TEXT_RDSAVE2 "that were done during system work."
+#define TEXT_REBOOT "Reboot"
+#define TEXT_OFF "Power off"
+#define TEXT_CANCEL "Close"
+#endif
 
-#define NIGHT_PALEL_HEIGHT	50
-#define STARS_COUNT			25
-
-#define PANEL_SIZE_X		260
-#define PANEL_SIZE_Y		148
-
-:void ShadowScreen(dword img, w, h)
-{
-	dword to = w*h*3 + img;
-	for ( ; img < to; img+=4)
-	{
-		ESDWORD[img] >>= 1;
-		$and ESDWORD[img], 7F7F7F7Fh
-	}
-	//for ( ; img < to; img+=4) { ESDWORD[img] >>= 2;	$and ESDWORD[img], 3F3F3F3Fh }
-}
-
+#define WIN_W 440
+#define WIN_H 200
+#define BOT_PANEL_H 70
 
 void main()
-{   
+{
 	int key;
-	dword s1,s2, s3, s4, sides_w,i;
+	int WIN_X = GetScreenWidth() - WIN_W / 2;
+	int WIN_Y = GetScreenHeight() - WIN_H / 2;
 
-	WIN_SIZE_X=GetScreenWidth()+1;
-	WIN_SIZE_Y=GetScreenHeight()+1;
-	PANEL_X=WIN_SIZE_X-PANEL_SIZE_X/2;
-	PANEL_Y=WIN_SIZE_Y-PANEL_SIZE_Y/2;
-
-	sides_w = WIN_SIZE_X-PANEL_SIZE_X/2;
-	s1 = mem_Alloc(WIN_SIZE_X*PANEL_Y*3);
-	s2 = mem_Alloc(sides_w*PANEL_Y*3);
-	s3 = mem_Alloc(sides_w*PANEL_Y*3);
-	s4 = mem_Alloc(WIN_SIZE_X*PANEL_Y*3);	
-
-	CopyScreen(s1, 0, 0, WIN_SIZE_X, PANEL_Y);
-	ShadowScreen(s1, WIN_SIZE_X, PANEL_Y);
-
-	CopyScreen(s2, 0, PANEL_Y, sides_w, PANEL_SIZE_Y+1);
-	ShadowScreen(s2, sides_w, PANEL_SIZE_Y+1);
-
-	CopyScreen(s3, sides_w+PANEL_SIZE_X+1, PANEL_Y, sides_w-1, PANEL_SIZE_Y+1);
-	ShadowScreen(s3, sides_w, PANEL_SIZE_Y+1);
-
-	CopyScreen(s4, 0, PANEL_Y+PANEL_SIZE_Y+1, WIN_SIZE_X, PANEL_Y-1);
-	ShadowScreen(s4, WIN_SIZE_X, PANEL_Y-1);
-
-
-	goto _DRAW;
 	loop()
-   {
-		WaitEventTimeout(7);
-		switch(EAX & 0xFF)
-		{
-		case evButton:
+	{
+	  switch(WaitEvent())
+	  {
+		 case evButton:
 			key=GetButtonID();               
 			if (key==1) ExitProcess();
 			GOTO _BUTTON_MARK;
-			
+	  
 		case evKey:
 			key = GetKey();
 			_BUTTON_MARK:
-			if (key== 13) ExitSystem(REBOOT);   //ENTER
-			if (key==180) ExitSystem(KERNEL);   //HOME
-			if (key==181) ExitSystem(TURN_OFF); //END
-			if (key== 27) ExitProcess();        //ESC
-			if (key== 19) //CTRL+S
-			{
-				RunProgram("rdsave",0);
-				ExitProcess();
-			}
+			if (key==ASCII_KEY_ENTER) ExitSystem(REBOOT);
+			if (key==ASCII_KEY_END) ExitSystem(TURN_OFF);
+			if (key==ASCII_KEY_ESC) ExitProcess();
+			if (key==19) RunProgram("rdsave",0);
 			break;
-         
-		case evReDraw:
-			system.color.get();
-			DefineAndDrawWindow(0,0,WIN_SIZE_X, WIN_SIZE_Y, 0x01, 0, 0, 0x01fffFFF);
-			//_PutImage(0,0,WIN_SIZE_X,WIN_SIZE_Y,shadow_buf);
-			_PutImage(0,0,WIN_SIZE_X, PANEL_Y,s1);
-			_PutImage(0,PANEL_Y,sides_w, PANEL_SIZE_Y+1,s2);
-			_PutImage(sides_w+PANEL_SIZE_X+1,PANEL_Y,sides_w-1, PANEL_SIZE_Y+1,s3);
-			_PutImage(0,PANEL_Y+PANEL_SIZE_Y+1,WIN_SIZE_X, PANEL_Y-1,s4);
-			draw_main_area(PANEL_X, PANEL_Y, PANEL_SIZE_X, PANEL_SIZE_Y);
+		 
+		 case evReDraw:
+			DefineAndDrawWindow(WIN_X, WIN_Y, WIN_W-1, WIN_H-1, 0x41, 0, 0, 0);
+			DrawWideRectangle(0, 0, WIN_W, WIN_H, 2, 0xA3A7AA);
+			DrawBar(2, 2, WIN_W-4, WIN_H-BOT_PANEL_H-2, 0x202020);
+			DrawBar(2, WIN_H-BOT_PANEL_H-2, WIN_W-4, BOT_PANEL_H, 0x4B4B4B);
+			WriteText(30, 27, 10110001b, 0xFFFfff, TEXT_TITLE);
+			WriteText(30, 70, 10110000b, 0xFFFfff, TEXT_RDSAVE1);
+			WriteText(30, 85, 10110000b, 0xFFFfff, TEXT_RDSAVE2);
+			EndButton( 20, 0x4E91C5, ASCII_KEY_ESC, TEXT_CANCEL, "Esc");
+			EndButton(160, 0x55C891, ASCII_KEY_ENTER, TEXT_REBOOT, "Enter");
+			EndButton(300, 0xC75C54, ASCII_KEY_END, TEXT_OFF, "End");
 			break;
-		default: _DRAW:
-			draw_stars();
-      }
+	  }
    }
 }
 
-
-void draw_main_area()
+void EndButton(dword x, bgcol, id, but_text, hotkey_text)
 {
-	int i=0;
-	
-	DrawRectangle(PANEL_X, PANEL_Y, PANEL_SIZE_X, PANEL_SIZE_Y, 0);
-	DrawBar(PANEL_X+1, PANEL_Y+NIGHT_PALEL_HEIGHT+1, PANEL_SIZE_X-1, PANEL_SIZE_Y-NIGHT_PALEL_HEIGHT-1, system.color.work);
-	
-	for (i=0; i<3; i++)
-	{
-		DefineButton(PANEL_X+33, i*23 + PANEL_Y+NIGHT_PALEL_HEIGHT+16, 190,19, BUTTONS_CAPTIONS[i*2+1],system.color.work_button);
-		WriteText(PANEL_X+59, i*23 + PANEL_Y+NIGHT_PALEL_HEIGHT+22, 0x80,system.color.work_button_text, BUTTONS_CAPTIONS[i*2]);
-	}
-		
-	draw_stars();
+	word buty=WIN_H-60;
+	word butw=116;
+	word buth=43;
+	DrawWideRectangle(x-3, buty-3, butw+6, buth+6, 3, 0x202020);
+	DefineButton(x, buty, butw-1, buth-1, id, bgcol);
+	WriteTextB(-utf8_strlen(but_text)*8 + butw / 2 + x, buty+8, 10110000b, 0xFFFfff, but_text);
+	WriteTextCenter(x, buty+26, butw, 0xFFFfff, hotkey_text);
 }
-
-dword stars_col[4]={0xD2CF19, 0x716900, 0x002041, 0xEAE0DE}; //0x005BFF - �������, �����
-
-void draw_stars()
-{
-
-	int i, x_pic, y_pic, col;
-	
-	DrawBar(PANEL_X+1, PANEL_Y+1, PANEL_SIZE_X-1, NIGHT_PALEL_HEIGHT, 0x002041);
-	
-	for (i=0; i<STARS_COUNT; i++)
-	{
-		x_pic = random(PANEL_SIZE_X-2);
-		y_pic = random(NIGHT_PALEL_HEIGHT-2);
-		col = random(4);
-		PutPixel(PANEL_X+2 +x_pic, PANEL_Y+2 +y_pic, stars_col[col]);
-		if (stars_col[col]==0xD2CF19)
-		{
-			PutPixel(PANEL_X+2 +x_pic+1, PANEL_Y+2 +y_pic, stars_col[col+1]);
-			PutPixel(PANEL_X+2 +x_pic-1, PANEL_Y+2 +y_pic, stars_col[col+1]);
-			PutPixel(PANEL_X+2 +x_pic, PANEL_Y+2 +y_pic-1, stars_col[col+1]);
-			PutPixel(PANEL_X+2 +x_pic, PANEL_Y+2 +y_pic+1, stars_col[col+1]);
-		}
-
-	}
-	_PutImage(PANEL_X+PANEL_SIZE_X-60+random(3),PANEL_Y+10+random(3), 6,6, #moon);
-}
-
-
-
-
-
-stop:
