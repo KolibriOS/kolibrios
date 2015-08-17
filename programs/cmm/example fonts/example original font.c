@@ -4,16 +4,13 @@
 
 byte id,key;
 
-FONT TimeNewRoman = 0;
-FONT Verdana = 0;
 void main()
 {   
 
 	SetEventMask(1100111b);
 	
-	Verdana.load("font/Verdana 15px original");
-	font.load("font/Georgia 45px original");
-	TimeNewRoman.load("font/Times New Roman 30px original");
+	font.load("font/Verdana.kf");
+
 	loop()
    {
       switch(WaitEvent())
@@ -43,24 +40,20 @@ void main()
       }
    }
 }
+char buf[40];
 void draw_window()
 {
 	proc_info Form;
 	
-	int i =0;
+	int i =8;
+	int ii = 0;
 	DefineAndDrawWindow(215,100,450,500,0x33,0xFFFFFF,"Window header");
 	GetProcessInfo(#Form, SelfInfo);
-	
-	font.text(0,0,"Georgia 45px original",0x5522DD);
-	font.text(3,43,"Съешь еще этих мягких французких булок, да выпей чаю. 1234567890",0xDEDEDE);
-	font.text(0,40,"Съешь еще этих мягких французких булок, да выпей чаю. 1234567890",0x0);
-	
-	
-	font.text(0,80,"Times New Roman 30px original",0x993366);
-	TimeNewRoman.text(3,113,"Съешь еще этих мягких французких булок, да выпей чаю. 1234567890",0xDEDEDE);
-	TimeNewRoman.text(0,110,"Съешь еще этих мягких французких булок, да выпей чаю. 1234567890",0x0);
-	
-	Verdana.textarea(0,150,"Этот пример демонстрирует возможности шрифта, \rкоторый создан специально для колибриОС.\rВ ближайшее время активно добавляются шрифты.\rРедактировать шрифты можно на сайте: http://font.ga.\rДля редактирования шрифта, шрифт должен быть в несжатом виде,\rтакже соответствовать стандарту!\rВ планах сделать компактный файл,\rкоторый будет содержать разные размеры одного шрифта.\rОригинальный файл (т.е.) не сжатый файл много занимает места,\rпоэтому рекомендую сжимать kpack. Шрифты на заказ https://vk.com/pavelyakov39\rПрорисовка пока что медленная - временно.Кодировка шрифта ANSII.",0x5522DD);
-	Verdana.text(30,350,"А теперь...",0xAA4444);
-	font.text(60,370,"До встречи!!!",0xDD4444);
+	while(i<=45)
+	{
+		sprintf(#buf,"Размер шрифта/size font %d пикселей.",i);
+		font.text(0,ii,#buf,0,i);
+		ii+=font.height;
+		i++;
+	}
 }
