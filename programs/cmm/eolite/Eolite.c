@@ -272,7 +272,8 @@ void main()
 					break;
 				}
 
-				if (two_panels) && (mouse.y > files.y) {
+
+				if (two_panels) && (mouse.y > files.y) && (mouse.down) {
 					if (mouse.x<Form.cwidth/2)
 					{
 						if (active_panel!=1)
