@@ -8,13 +8,13 @@ use32
 
                 org     0x0
 
-                db      'MENUET00'              ; 8 byte id
-                dd      38                      ; required os
+                db      'MENUET01'              ; 8 byte id
+                dd      1                       ; required os
                 dd      START                   ; program start
                 dd      I_END                   ; program image size
-                dd      0x1000                  ; required amount of memory
-                dd      0x1000                  ; esp
-                dd      0x00000000              ; reserved=no extended header
+                dd      E_END                   ; required amount of memory
+                dd      E_END                   ; esp
+                dd      0, 0                    ; no params, no path
 
 include '..\..\..\..\macros.inc'
 
@@ -37,7 +37,7 @@ still:
     jz   key
 
   button:
-    mov  al,17                 ; get id
+    mov  al,17                  ; get id
     mcall
 
     cmp  ah,1                   ; button id=1 ?
@@ -46,7 +46,7 @@ still:
     mcall
 
   key:                          ; key
-    mov  al,2                  ; just read it and ignore
+    mov  al,2                   ; just read it and ignore
     mcall
     jmp  still
   noclose:
@@ -121,11 +121,9 @@ draw_window:
     mcall
 
                                    ; DRAW WINDOW
-    xor  eax,eax                     ; function 0 : define and draw window
-    mov  ebx,100*65536             ; [x start] *65536 + [x size]
-    mov  ecx,100*65536             ; [y start] *65536 + [y size]
-    mov  bx,word [x_size]
-    mov  cx,word [y_size]
+    xor  eax,eax                   ; function 0 : define and draw window
+    mov  ebx,100*65536+127         ; [x start] *65536 + [x size]
+    mov  ecx,100*65536+127         ; [y start] *65536 + [y size]
     mov  edx,0x00cccc00            ; color of work area RRGGBB,8->color glide
     mov  esi,0x00cccc00            ; color of grab bar  RRGGBB,8->color glide
     mov  edi,0x00cccc00            ; color of frames    RRGGBB
@@ -151,8 +149,7 @@ draw_window:
 ; DATA AREA
 
 
-x_size  dd  127
-y_size  dd  127
-
 
 I_END:
+rb 0x100   ; stack
+E_END:
