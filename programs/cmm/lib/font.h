@@ -22,7 +22,9 @@
 	dword size_file;
 	byte load(...);
 	byte symbol(word x;byte s;dword c);
+	byte symbol_size(byte s);
 	dword text(word x,y;dword text,c;byte size);
+	dword text_width(dword text1;byte size);
 	dword textarea(word x,y;dword text,c;byte size);
 	byte changeSIZE(byte size);
 	void PixelRGB(word x,y);
@@ -70,9 +72,51 @@ FONT font = 0;
 }
 :proc_info Form_SELF_FONTS;
 
-:dword FONT::text(word x,y;dword text1,c;byte size)
+:dword FONT::text_width(dword text1;byte size)
 {
 	dword len=0;
+	IF(size)IF(!changeSIZE(size))return 0;
+	WHILE(DSBYTE[text1])
+	{
+		len += symbol_size(DSBYTE[text1]);
+		text1++;
+	}
+	return len;
+}
+:byte FONT::symbol_size(byte s)
+{
+        dword xi,yi;
+        dword tmp,_;
+        dword iii;
+        byte rw=0;
+        IF(s==32)return width/4;
+		IF(s==9)return width;
+        yi = 0;
+        iii = 0;
+        tmp = 4*block*s;
+        tmp +=data;
+        WHILE(yi<height)
+        {
+                xi = 0;
+                WHILE(xi<width)
+                {
+                        IF(iii%32) _ >>= 1;
+						ELSE
+						{
+                                tmp += 4;
+                                _ = DSDWORD[tmp];
+                        }
+                        IF(_&1) IF(xi>rw)rw=xi;
+                        xi++;
+                        iii++;
+                }
+                yi++;
+        }
+        return rw;
+}
+:dword FONT::text(word x,y;dword text1,c;byte size)
+{
+	signed len=0;
 	IF(size)IF(!changeSIZE(size))return 0;
 	GetProcessInfo(#Form_SELF_FONTS, SelfInfo); 
 	IF(y>Form_SELF_FONTS.cheight) return 0;
@@ -86,14 +130,14 @@ FONT font = 0;
 	b = AL;
 	width_buffer = width;
 	width_buffer *= strlen(text1);
-	IF(!buffer_size)buffer = malloc(width_buffer*height);
-	ELSE IF(buffer_size<width_buffer*height)buffer = realloc(width_buffer*height);
-	width_buffer /= 3;
+	IF(!buffer_size)buffer = malloc(width_buffer*height*3);
+	ELSE IF(buffer_size<width_buffer*height)buffer = realloc(width_buffer*height*3);
 	CopyScreen(buffer,x+Form_SELF_FONTS.left+5,y+Form_SELF_FONTS.top+GetSkinHeight(),width_buffer,height);
 	
 	WHILE(DSBYTE[text1])
 	{
-		len += symbol(len,DSBYTE[text1],c);
+		symbol(len,DSBYTE[text1],c);
+		len+=EAX;
 		text1++;
 	}
 	_PutImage(x,y,width_buffer,height,buffer);
@@ -103,6 +147,7 @@ FONT font = 0;
 {
 	
 }
+
 :byte FONT::symbol(signed x;byte s;dword c)
 {
         dword xi,yi;
@@ -110,6 +155,7 @@ FONT font = 0;
         dword iii;
 		dword ___x;
         byte rw=0;
+		x -= 2;
         IF(s==32)return width/4;
 		IF(s==9)return width;
         yi = 0;
@@ -131,7 +177,7 @@ FONT font = 0;
                         {
                                 IF(xi>rw)rw=xi;
 								___x = x+xi;
-								IF(___x<Form_SELF_FONTS.cwidth)&&(tmp_y+yi<Form_SELF_FONTS.cheight)PixelRGB(x+xi,yi);
+								IF(___x<Form_SELF_FONTS.cwidth)&&(tmp_y+yi<Form_SELF_FONTS.cheight)PixelRGB(___x,yi);
                         }
                         xi++;
                         iii++;
