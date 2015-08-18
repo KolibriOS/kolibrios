@@ -55,7 +55,6 @@ ASCII-koodid              /sys/develop/keyascii
 SCAN-koodid               /sys/develop/scancode
 #6    **** EXAMPLES ****
 Lõimed                    /sys/develop/thread
-IPC                       /sys/develop/ipc
 Color slider              /sys/demos/cslide
 Konsooli näide 1          /sys/develop/testcon2
 Konsooli näide 2          /sys/develop/test_gets

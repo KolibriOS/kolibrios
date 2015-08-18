@@ -57,7 +57,6 @@ ASCII-коды                /sys/develop/keyascii
 SCAN-коды                 /sys/develop/scancode
 #6    **** Разработка -> Примеры ****
 Потоки                    /sys/develop/thread
-IPC                       /sys/develop/ipc
 Color Slider              /sys/demos/cslide
 Консольный пример 1       /sys/develop/testcon2
 Консольный пример 2       /sys/develop/test_gets
