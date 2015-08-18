@@ -15,6 +15,7 @@
 	word width_buffer;
 	dword file_size;
 	dword buffer;
+	dword buffer_size;
 	word block;
 	dword data;
 	dword begin;
@@ -68,13 +69,15 @@ FONT font = 0;
 		return true;
 }
 :proc_info Form_SELF_FONTS;
+
 :dword FONT::text(word x,y;dword text1,c;byte size)
 {
 	dword len=0;
-	if(size)if(!changeSIZE(size))return 0;
+	IF(size)IF(!changeSIZE(size))return 0;
 	GetProcessInfo(#Form_SELF_FONTS, SelfInfo); 
-	//tmp_height = height;
-	//tmp_y = 0;
+	IF(y>Form_SELF_FONTS.cheight) return 0;
+	IF(x>Form_SELF_FONTS.cwidth) return 0;
+	tmp_y = y;
 	AX = c;
 	r = AL;
 	g = AH;
@@ -83,7 +86,8 @@ FONT font = 0;
 	b = AL;
 	width_buffer = width;
 	width_buffer *= strlen(text1);
-	buffer = malloc(width_buffer*height);
+	IF(!buffer_size)buffer = malloc(width_buffer*height);
+	ELSE IF(buffer_size<width_buffer*height)buffer = realloc(width_buffer*height);
 	width_buffer /= 3;
 	CopyScreen(buffer,x+Form_SELF_FONTS.left+5,y+Form_SELF_FONTS.top+GetSkinHeight(),width_buffer,height);
 	
@@ -93,7 +97,6 @@ FONT font = 0;
 		text1++;
 	}
 	_PutImage(x,y,width_buffer,height,buffer);
-	free(buffer);
 	return len;
 }
 :dword FONT::textarea(word x,y;dword text1,c;byte size)
@@ -105,7 +108,7 @@ FONT font = 0;
         dword xi,yi;
         dword tmp,_;
         dword iii;
-		dword ___;
+		dword ___x;
         byte rw=0;
         IF(s==32)return width/4;
 		IF(s==9)return width;
@@ -113,17 +116,11 @@ FONT font = 0;
         iii = 0;
         tmp = 4*block*s;
         tmp +=data;
-        WHILE(yi<height)
+        while(yi<height)
         {
                 xi = 0;
                 WHILE(xi<width)
                 {
-						/*IF(x+width>Form_SELF_FONTS.cwidth)
-						{
-							tmp_y+=height;
-							tmp_height += height;
-							tmp_x = x;
-						}*/
                         IF(iii%32) _ >>= 1;
 						ELSE
 						{
@@ -133,8 +130,8 @@ FONT font = 0;
                         IF(_&1)
                         {
                                 IF(xi>rw)rw=xi;
-								//PixelRGB(x+xi-tmp_x,tmp_y+yi);
-								PixelRGB(x+xi,yi);
+								___x = x+xi;
+								IF(___x<Form_SELF_FONTS.cwidth)&&(tmp_y+yi<Form_SELF_FONTS.cheight)PixelRGB(x+xi,yi);
                         }
                         xi++;
                         iii++;
