@@ -20,7 +20,7 @@ void Scroll() {
 		sc_slider_y = files.first * sc_h / files.count + sc_y;
 		sc_slider_h = sc_h * files.visible - files.visible / files.count;
 		if (sc_slider_h < 20) sc_slider_h = 20; //minimal scroll width
-		if (sc_slider_h > sc_h-sc_slider_y+56) || (files.first+files.visible>=files.count) sc_slider_y=onTop(23+sc_slider_h,0); //для большого списка 
+		if (sc_slider_h > sc_h-sc_slider_y+56) || (files.first+files.visible>=files.count) sc_slider_y= Form.cheight - 19 - sc_slider_h; //для большого списка 
 	}
 	//slider
 	DrawFlatButton(sc_x,sc_slider_y,16,sc_slider_h,0,-1,"");

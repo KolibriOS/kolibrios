@@ -6,7 +6,7 @@
 #endif
 
 //libraries
-#define MEMSIZE 510000
+#define MEMSIZE 530000
 #include "..\lib\clipboard.h"
 #include "..\lib\strings.h"
 #include "..\lib\mem.h"
@@ -15,6 +15,7 @@
 #include "..\lib\list_box.h"
 #include "..\lib\copyf.h"
 #include "..\lib\random.h"
+#include "..\lib\font.h"
 //obj
 #include "..\lib\obj\libini.h"
 #include "..\lib\obj\box_lib.h"
@@ -33,7 +34,6 @@ struct path_string { char Item[4096]; };
 
 byte active_about=0;
 word about_window;
-byte active_settings=0;
 word settings_window;
 dword _not_draw = false;
 byte menu_call_mouse=0;
@@ -59,7 +59,7 @@ byte
 	itdir;
 
 //struct t_settings {
-byte use_big_fonts=false,
+byte font_size=9,
 	sort_num=2,
 	show_dev_name=true,
 	real_files_names_case=false,
@@ -110,21 +110,18 @@ void main()
 	dword selected_offset;
 	dword IPC_LEN,IPC_ID;
 	char IPC_BUF[10];
-	dword tmp;
 	rand_n = random(40);
 
 	load_dll(boxlib, #box_lib_init,0);
     load_dll(libini, #lib_init,1);
-	eolite_ini_path = abspath("Eolite.ini"); 
+	eolite_ini_path = abspath("Eolite.ini");
 	LoadIniSettings();
 	GetSystemDiscs();
 	SetAppColors();
 	if (param)
 	{
-		tmp = strlen(#path);
-		strlcpy(#path, #param, tmp);
-		$dec tmp
-		if (path[tmp]!='/') DSBYTE[#path+tmp] = '/'; //add "/" to the end of the string
+		strcpy(#path, #param);
+		if (path[strlen(#path)-1]!='/') chrcat(#path, '/'); //add "/" to the end of the string
 	}
 	else
 	{
@@ -133,6 +130,7 @@ void main()
 	Open_Dir(#path,ONLY_OPEN);
 	strcpy(#inactive_path, #path);
 	llist_copy(#files_inactive, #files);
+	//font.load("/sys/font/Verdana.kf");
 	SetEventMask(1100111b);
 	loop(){
 		switch(WaitEvent())
@@ -266,8 +264,9 @@ void main()
 					if (sc_slider_h/2+files.y>mouse.y) || (mouse.y<0) || (mouse.y>4000) mouse.y=sc_slider_h/2+files.y; //anee eo?ni? iaa ieiii
 					id = files.first;
 					files.first = -sc_slider_h / 2 + mouse.y -j -files.y * files.count;
-					files.first /= Form.cheight - 18 - files.y;
+					files.first /= files.h - 18;
 					if (files.visible+files.first>files.count) files.first=files.count-files.visible;
+					if (files.first<0) files.first=0;
 					if (id!=files.first) List_ReDraw();
 					break;
 				}
@@ -510,7 +509,6 @@ void main()
 					if (action_buf==108) Del_Form();
 					if (action_buf==109) FnProcess(5);
 					if (action_buf==110) FnProcess(8);
-					if (action_buf==300) { FnProcess(5); List_ReDraw(); }
 					action_buf=0;
 				}
 		}
@@ -1114,7 +1112,7 @@ void FnProcess(byte N)
 			CreateThread(#properties_dialog, properties_stak+8092);
 			break;
 		case 10: //F10
-			if (!active_settings) 
+			if (!settings_window) 
 			{
 				settings_stak = malloc(4096);
 				settings_window = CreateThread(#settings_dialog, settings_stak+4092);
@@ -1136,9 +1134,6 @@ void ChangeActivePanel()
 	strcpy(#inactive_path, #path);
 	DrawFilePanels();
 }
-
-//need to remove these functiones, they are a very old shit :)
-dword onTop(dword down,up) {EAX=Form.height-GetSkinHeight()-down-up;}
 
 
 stop:
