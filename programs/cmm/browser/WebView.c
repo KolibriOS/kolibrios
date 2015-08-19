@@ -30,14 +30,14 @@
 char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.22";
+	char version[]=" Текстовый браузер 1.23";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.22";
+	char version[]=" Text-based Browser 1.23";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -308,6 +308,7 @@ void SetElementSizes()
 	address_box.width = Form.cwidth - address_box.left - 25 - 22;
 	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x / WB1.DrawBuf.zoom, 
 		Form.cheight - TOOLBAR_H - STATUSBAR_H, WB1.list.font_h + WB1.DrawBuf.zoom + WB1.DrawBuf.zoom * WB1.DrawBuf.zoom);
+	WB1.list.wheel_size = 7;
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w;
 	WB1.list.visible = WB1.list.h - 5 / WB1.list.line_h;
 	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.line_h);
@@ -317,6 +318,7 @@ void Draw_Window()
 {
 	int img_off;
 	// tab {
+	/*
 	if (TAB_H)
 	{
 		DrawBar(0, 0, TAB_W, TAB_H+1, panel_color);
@@ -326,7 +328,7 @@ void Draw_Window()
 		DrawBar(TAB_W-1,TAB_H, Form.cwidth-TAB_W+1,1, border_color);
 		img_draw stdcall(skin.image, TAB_W-13, 0, 30, skin.h, 101, 0);
 	} 
-	else DrawBar(0,0, Form.cwidth,1, col_bg);
+	else */ DrawBar(0,0, Form.cwidth,1, col_bg);
 	// }
 	DrawBar(0,TAB_H+1, Form.cwidth,TOOLBAR_H-TAB_H-3, panel_color);
 	DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, 0xD7D0D3);
@@ -494,19 +496,6 @@ void ProcessLinks(int id)
 	}
 
 	strcpy(#URL, PageLinks.GetURL(id-401));	
-	//$1 - Condition Script
-	if (URL[0] == '$')
-	{
-		if (URL[1]=='-') && (condition_href) condition_href--;
-		else if (URL[1]=='+') 
-		{
-			if (condition_href<condition_max) condition_href++; else notify(T_LAST_SLIDE);
-		}
-		else condition_href = atoi(#URL+1);
-		strcpy(#URL, BrowserHistory.CurrentUrl());
-		ShowPage();
-		return;
-	}
 	//#1
 	if (URL[0] == '#')
 	{

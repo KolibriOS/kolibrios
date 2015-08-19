@@ -1,6 +1,4 @@
-dword bufpointer;
-dword o_bufpointer;
-dword bufsize;
+
 
 scroll_bar scroll_wv = { 15,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
@@ -28,6 +26,7 @@ struct TWebBrowser {
 	void LoadInternalPage();
 	void NewLine();
 	void Perenos();
+	void BufEncode();
 	byte end_parsing;
 } WB1;
 
@@ -39,18 +38,10 @@ byte
 	cur_encoding,
 	t_html,
 	t_body;
-/*
-struct _condition {
-byte
-	text_active,
-	text_val,
-	href,
-	max
-} condition;
-*/
 
-byte condition_text_active, condition_text_val, condition_href, condition_max;
-
+dword bufpointer;
+dword o_bufpointer;
+dword bufsize;
 
 dword text_colors[300];
 dword text_color_index;
@@ -78,7 +69,6 @@ char anchor[256];
 #include "..\TWB\unicode_tags.h"
 #include "..\TWB\img_cache.h"
 #include "..\TWB\parce_tag.h"
-#include "..\TWB\table.h"
 
 
 //============================================================================================
@@ -133,10 +123,8 @@ void TWebBrowser::Parse(){
 	int line_len;
 	
 	style.b = style.i = style.u = style.s = style.blq = t_html = t_body =
-	style.li = link = ignor_text = text_color_index = text_colors[0] = 
-	style.li_tab = condition_text_val = condition_text_active = 0; //обнуляем теги
+	style.li = link = ignor_text = text_color_index = text_colors[0] = style.li_tab = 0;
 	end_parsing = false;
-	condition_max = 255;
 	style.align = ALIGN_LEFT;
 	link_color_inactive = 0x0000FF;
 	link_color_active = 0xFF0000;
@@ -150,15 +138,27 @@ void TWebBrowser::Parse(){
 
 	draw_line_width = list.w * DrawBuf.zoom;
 
-	style.pre = 1;
-	if (strstri(bufpointer, "html")) style.pre = 0;
+	//for plaint text use CP866 for other UTF
+	if (strstri(bufpointer, "html")) 
+	{
+		style.pre = 0;
+		cur_encoding = CH_CP866;
+		//WB1.list.SetFont(8, 14, 10111000b);
+		//list.line_h = list.font_h + 4;
+	}
+	else
+	{
+		style.pre = 1;
+		cur_encoding = CH_UTF8;
+		//WB1.list.SetFont(8, 14, 10001000b);
+		//list.line_h = list.font_h + 4;
+	}
 	
 	for ( ; (bufpointer+bufsize > bufpos) && (ESBYTE[bufpos]!=0); bufpos++;)
 	{
 		if (end_parsing) break;
 		bukva = ESBYTE[bufpos];
 		if (ignor_text) && (bukva!='<') continue;
-		if (condition_text_active) && (condition_text_val != condition_href) && (bukva!='<') continue;
 		switch (bukva)
 		{
 		case 0x0a:
@@ -190,7 +190,7 @@ void TWebBrowser::Parse(){
 			if (bukva = GetUnicodeSymbol()) goto DEFAULT_MARK;
 			break;
 		case '<':
-			bufpos++; //промотаем символ <
+			bufpos++;
 			tag = attr = tagparam = ignor_param = NULL;
 			if (ESBYTE[bufpos] == '!') //фильтрация внутри <!-- -->, дерзко
 			{
@@ -226,10 +226,6 @@ void TWebBrowser::Parse(){
 			}
 			strlwr(#tag);
 
-			if (condition_text_active) && (condition_text_val != condition_href) 
-			{
-				if (strcmp(#tag, "/condition")!=0) break;
-			}
 			if (tag[strlen(#tag)-1]=='/') tag[strlen(#tag)-1]=NULL; //for br/
 			if (tagparam) GetNextParam();
 
@@ -292,41 +288,32 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 		 strcpy(#tag, #tag+1);
 	}
 	else opened = 1;
-		
-	if (istag("html"))
-	{
+
+	if (istag("html")) {
 		t_html = opened;
 		return;
 	}
-
-	if (istag("script")) || (istag("style")) || (istag("binary")) || (istag("select")) ignor_text = opened;
+	if (istag("script")) || (istag("style")) || (istag("binary")) || (istag("select")) { ignor_text = opened; return; }
 	if (istag("form")) if (!opened) ignor_text = false;
-
-	if(istag("title"))
-	{
+	if(istag("title")) {
 		if (opened) header=NULL;
 		else if (!stroka) DrawTitle(#header); //тег закрылся - вывели строку
 		return;
 	}
-
 	if (ignor_text) return;
 	
 	IF(istag("q"))
 	{
 		if (opened)	strcat(#line, " \"");
 		if (!opened) strcat(#line, "\" ");
+		return;
 	}
-
-	if (anchor) && (isattr("id=")) //очень плохо!!! потому что если не последний тег, работать не будет
-	{
+	if (anchor) && (isattr("id=")) { //очень плохо!!! потому что если не последний тег, работать не будет
 		if (!strcmp(#anchor, #val))	anchor_line_num=list.first+stroka;
-	}
-	
-	if (istag("body"))
-	{
+	}	
+	if (istag("body")) {
 		t_body = opened;
 		do{
-			if (isattr("condition_max=")) condition_max = atoi(#val);
 			if (isattr("link=")) link_color_inactive = GetColor(#val);
 			if (isattr("alink=")) link_color_active = GetColor(#val);
 			if (isattr("text=")) text_colors[0]=GetColor(#val);
@@ -336,28 +323,19 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 				DrawBuf.Fill(bg_color);
 			}
 		} while(GetNextParam());
-		if (opened) && (cur_encoding==CH_NULL)
-		{
-			debugln("Document has no information about encoding, UTF will be used");
-			//BufEncode(CH_UTF8);
-		}
+		if (opened) && (cur_encoding==CH_NULL) debugln("Document has no information about encoding, UTF will be used");
 		return;
 	}
-
-	if (istag("a"))
-	{
+	if (istag("a")) {
 		if (opened)
 		{
 			if (link) IF(text_color_index > 0) text_color_index--; //если предыдущий тег а не был закрыт
-
 			do{
 				if (isattr("href="))
 				{
 					if (stroka - 1 > list.visible) || (stroka < -2) return;
-					
 					text_color_index++;
 					text_colors[text_color_index] = text_colors[text_color_index-1];
-					
 					link = 1;
 					text_colors[text_color_index] = link_color_inactive;
 					PageLinks.AddLink(#val, DrawBuf.zoom * stolbec * list.font_w + left1, top1-DrawBuf.zoom);
@@ -377,31 +355,20 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 		}
 		return;
 	}
-
-	if (istag("font"))
-	{
+	if (istag("font")) {
 		if (opened)
 		{
 			text_color_index++;
 			text_colors[text_color_index] = text_colors[text_color_index-1];
-		
 			do{
-				if (strcmp(#attr, "color=") == 0) //&& (attr[1] == '#')
-				{
-					text_colors[text_color_index] = GetColor(#val);
-				}
+				if (isattr("color=")) text_colors[text_color_index] = GetColor(#val);
 			} while(GetNextParam());
 		}
-		else
-			if (text_color_index > 0) text_color_index--;
-		return;
-	}
-	if (istag("br")) {
-		NewLine();
+		else if (text_color_index > 0) text_color_index--;
 		return;
 	}
 	if (istag("div")) || (istag("header")) || (istag("article")) || (istag("footer")) {
-		IF(oldtag[0] <>'h') NewLine();
+		IF(oldtag[0] != 'h') NewLine();
 		if (isattr("bgcolor="))
 		{
 			bg_color=GetColor(#val);
@@ -415,50 +382,17 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 		IF(opened) NewLine();
 		return;
 	}
-
-	if(istag("table")) {
-		table.active = opened;
-		NewLine();
-		if (opened)	table.NewTable();
-	}
-
-	if(istag("td")) {
-		if (opened)
-		{
-			table.cur_col++;
-			table.row_h = 0;
-			do {
-				if (isattr("width="))
-				{
-					table.col_w[table.cur_col] = atoi(#val);
-					// NewLine();
-					// strcpy(#line, #val);
-					// NewLine();
-				}
-			} while(GetNextParam());
-		}
-		else
-		{
-			if (table.row_h > table.row_max_h) table.row_max_h = table.row_h;
-		}
-	}
-
-	if(istag("tr")) {
-		if (opened)
-		{
-			table.cur_col = 0;
-			table.row_max_h = 0;
-			table.row_start = stroka;
-		}
-		else
-		{
-			NewLine();
-			if (table.cur_row == 0) table.max_cols = table.cur_col;
-			table.cur_row++;
-			table.max_cols = table.cur_col;
-		}
-	}
-
+	if (istag("br")) { NewLine(); return; }
+	if (istag("tr")) { if (opened) { NewLine(); strcat(#line, "| "); } return; }
+	if (istag("td")) || (istag("th")) { if (!opened) strcat(#line, " | "); return; }
+	if (istag("b")) || (istag("strong")) || (istag("big")) { style.b = opened; return; }
+	if (istag("i")) || (istag("em")) || (istag("subtitle")) { style.i=opened; return; }
+	if (istag("u")) || (istag("ins")) { style.u=opened; return;}
+	if (istag("s")) || (istag("strike")) || (istag("del")) { style.s=opened; return; }
+	if (istag("dd")) { stolbec += 5; return; }
+	if (istag("blockquote")) { style.blq = opened; return; }
+	if (istag("pre")) || (istag("code")) { style.pre = opened; return; }
+	if (istag("img")) { ImgCache.Images( left1, top1, WB1.list.w); return; }
 	/*
 	if (istag("center"))
 	{
@@ -481,7 +415,7 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 		return;
 	}
 	*/
-	if (istag("h1")) || (istag("h2")) || (istag("h3")) || (istag("h4")) {
+	if (istag("h1")) || (istag("h2")) || (istag("h3")) || (istag("h4")) || (istag("caption")) {
 		NewLine();
 		if (opened) && (stroka>1) NewLine();
 		strcpy(#oldtag, #tag);
@@ -500,26 +434,9 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 	}
 	else
 		oldtag=NULL;
-		
-	if (istag("b")) || (istag("strong")) || (istag("big")) {
-		style.b = opened;
-		return;
-	}
-	if(istag("i")) || (istag("em")) || (istag("subtitle")) {
-		style.i = opened;
-		return;
-	}	
-	if (istag("dt"))
-	{
+	if (istag("dt")) {
 		style.li = opened;
-		IF(opened == 0) return;
-		NewLine();
-		return;
-	}
-	if (istag("condition"))
-	{
-		condition_text_active = opened;
-		if (opened) && (isattr("show_if=")) condition_text_val = atoi(#val);
+		if (opened) NewLine();
 		return;
 	}
 	if (istag("li")) || (istag("dt")) //надо сделать вложенные списки
@@ -534,19 +451,16 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 		}
 		return;
 	}
-	if (istag("u")) || (istag("ins")) style.u = opened;
-	if (istag("s")) || (istag("strike")) || (istag("del")) style.s = opened;
-	if (istag("ul")) || (istag("ol")) IF(!opened)
-	{
-		style.li = opened;
-		style.li_tab--;
-		NewLine();
-	} ELSE style.li_tab++;
-	if (istag("dd")) stolbec += 5;
-	if (istag("blockquote")) style.blq = opened;
-	if (istag("pre")) || (istag("code")) style.pre = opened; 
-	if (istag("hr"))
-	{
+	if (istag("ul")) || (istag("ol")) {
+		if (!opened)
+		{
+			style.li = opened;
+			style.li_tab--;
+			NewLine();
+		} 
+		else style.li_tab++;
+	}
+	if (istag("hr")) {
 		if (anchor) || (stroka < -1)
 		{
 			stroka+=2;
@@ -557,26 +471,18 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 		DrawBuf.DrawBar(5, list.line_h/2, list.w-10, 1, hr_color);
 		NewLine();
 	}
-	if (istag("img"))
-	{
-		ImgCache.Images( left1, top1, WB1.list.w);
-		return;
-	}
-	if (istag("meta")) || (istag("?xml"))
-	{
+	if (istag("meta")) || (istag("?xml")) {
 		do{
 			if (isattr("charset=")) || (isattr("content=")) || (isattr("encoding="))
 			{
 				strcpy(#val, #val[strrchr(#val, '=')]); //поиск в content=
 				strlwr(#val);
-				meta_encoding = CH_NULL;
-				if (isval("utf-8"))             || (isval("utf8"))        meta_encoding = CH_UTF8;
+				if      (isval("utf-8"))        || (isval("utf8"))        meta_encoding = CH_UTF8;
 				else if (isval("koi8-r"))       || (isval("koi8-u"))      meta_encoding = CH_KOI8;
 				else if (isval("windows-1251")) || (isval("windows1251")) meta_encoding = CH_CP1251;
-				else if (isval("windows-1252")) || (isval("windows1252")) meta_encoding = CH_CP1252;
 				else if (isval("iso-8859-5"))   || (isval("iso8859-5"))   meta_encoding = CH_ISO8859_5;
 				else if (isval("dos"))          || (isval("cp-866"))      meta_encoding = CH_CP866;
-				if (cur_encoding==CH_NULL) BufEncode(meta_encoding);
+				if (cur_encoding!=meta_encoding) BufEncode(meta_encoding);
 				return;
 			}
 		} while(GetNextParam());
@@ -584,7 +490,7 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 	}
 }
 
-void BufEncode(int set_new_encoding)
+void TWebBrowser::BufEncode(int set_new_encoding)
 {
 	int bufpointer_realsize;
 	cur_encoding = set_new_encoding;
@@ -596,10 +502,6 @@ void BufEncode(int set_new_encoding)
 	else
 	{
 		strcpy(bufpointer, o_bufpointer);
-	}
-	if (set_new_encoding == CH_CP1251)
-	{
-		 bufpointer = ChangeCharset("CP1251", "UTF-8", bufpointer);
 	}
 }
 //============================================================================================

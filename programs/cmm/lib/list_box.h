@@ -12,6 +12,7 @@ struct llist
 	int x, y, w, h, line_h, text_y;
 	dword font_w, font_h, font_type;
 	int count, visible, first, current, column_max; //visible = row_max
+	int wheel_size;
 	int active;
 	void ClearList();
 	int MouseOver(int xx, yy);
@@ -57,6 +58,7 @@ void llist::SetSizes(int xx, yy, ww, hh, line_hh)
 	line_h = line_hh;
 	text_y = line_h - font_h / 2;
 	visible = h / line_h;
+	wheel_size = 3;
 	//if (visible > count) visible=count;
 }
 
@@ -74,13 +76,13 @@ int llist::MouseScroll(dword scroll_state)
 	if (scroll_state == 65535)
 	{
 		if (first == 0) return 0;
-		if (first > 3) first -= 2; else first=0;
+		if (first > wheel_size+1) first -= wheel_size; else first=0;
 		return 1;
 	} 
 	if (scroll_state == 1)
 	{
 		if (visible + first == count) return 0;
-		if (visible+first+3 > count) first = count - visible; else first+=2;
+		if (visible+first+wheel_size+1 > count) first = count - visible; else first+=wheel_size;
 		return 1;
 	}
 	return 0;
