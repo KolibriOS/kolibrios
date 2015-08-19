@@ -1,12 +1,14 @@
+char config_section[] = "Config";
+
 void LoadIniConfig()
 {
-	ini_get_int stdcall (#pixie_ini_path, "Config", "current_theme", THEME_DARK); current_theme = EAX;
-	ini_get_int stdcall (#pixie_ini_path, "Config", "window_mode", WINDOW_MODE_NORMAL); window_mode = EAX;
-	ini_get_int stdcall (#pixie_ini_path, "Config", "win_x_normal", 100); win_x_normal = EAX;
-	ini_get_int stdcall (#pixie_ini_path, "Config", "win_y_normal", 90); win_y_normal = EAX;
-	ini_get_int stdcall (#pixie_ini_path, "Config", "win_x_small", -1); win_x_small = EAX;
-	ini_get_int stdcall (#pixie_ini_path, "Config", "win_y_small", -1); win_y_small = EAX;
-	ini_get_str stdcall (#pixie_ini_path, "Config", "last_folder", #work_folder, sizeof(work_folder), 0);
+	ini_get_int stdcall (#pixie_ini_path, #config_section, "current_theme", THEME_DARK); current_theme = EAX;
+	ini_get_int stdcall (#pixie_ini_path, #config_section, "window_mode", WINDOW_MODE_NORMAL); window_mode = EAX;
+	ini_get_int stdcall (#pixie_ini_path, #config_section, "win_x_normal", 100); win_x_normal = EAX;
+	ini_get_int stdcall (#pixie_ini_path, #config_section, "win_y_normal", 90); win_y_normal = EAX;
+	ini_get_int stdcall (#pixie_ini_path, #config_section, "win_x_small", -1); win_x_small = EAX;
+	ini_get_int stdcall (#pixie_ini_path, #config_section, "win_y_small", -1); win_y_small = EAX;
+	ini_get_str stdcall (#pixie_ini_path, #config_section, "last_folder", #work_folder, sizeof(work_folder), 0);
 
 	if (current_theme == THEME_DARK) SetColorThemeDark(); else SetColorThemeLight();
 	if (win_x_small==-1) win_x_small = 2000;
@@ -25,13 +27,13 @@ void SaveIniConfig()
 		win_x_small = Form.left;
 		win_y_small = Form.top;
 	}
-	ini_set_int stdcall (#pixie_ini_path, "Config", "current_theme", current_theme);
-	ini_set_int stdcall (#pixie_ini_path, "Config", "window_mode", window_mode);
-	ini_set_int stdcall (#pixie_ini_path, "Config", "win_x_normal", win_x_normal);
-	ini_set_int stdcall (#pixie_ini_path, "Config", "win_y_normal", win_y_normal);
-	ini_set_int stdcall (#pixie_ini_path, "Config", "win_x_small", win_x_small);
-	ini_set_int stdcall (#pixie_ini_path, "Config", "win_y_small", win_y_small);
-	ini_set_str stdcall (#pixie_ini_path, "Config", "last_folder", #work_folder, strlen(#work_folder));
+	ini_set_int stdcall (#pixie_ini_path, #config_section, "current_theme", current_theme);
+	ini_set_int stdcall (#pixie_ini_path, #config_section, "window_mode", window_mode);
+	ini_set_int stdcall (#pixie_ini_path, #config_section, "win_x_normal", win_x_normal);
+	ini_set_int stdcall (#pixie_ini_path, #config_section, "win_y_normal", win_y_normal);
+	ini_set_int stdcall (#pixie_ini_path, #config_section, "win_x_small", win_x_small);
+	ini_set_int stdcall (#pixie_ini_path, #config_section, "win_y_small", win_y_small);
+	ini_set_str stdcall (#pixie_ini_path, #config_section, "last_folder", #work_folder, strlen(#work_folder));
 }
 
 struct struct_pixie_colors {

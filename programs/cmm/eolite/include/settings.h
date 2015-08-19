@@ -21,8 +21,8 @@
 	?define T_DOUBLE_CLICK "Double click time (in hundredths)"
 #endif
 
-char confir_section = "Config";
-
+char config_section[] = "Config";
+int WinX, WinY, WinW, WinH;
 
 void settings_dialog()
 {   
@@ -89,14 +89,18 @@ void DrawSettingsCheckBoxes()
 
 void LoadIniSettings()
 {
-	ini_get_color stdcall (eolite_ini_path, #confir_section, "SelectionColor",   0x94AECE); col_selec = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #confir_section, "ShowDeviceName",    1); show_dev_name = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #confir_section, "RealFileNamesCase", 0); real_files_names_case = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #confir_section, "InfoAfterCopy",     0); info_after_copy = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #confir_section, "FontSize",          9); font_size = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #confir_section, "TwoPanels",         0); two_panels = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #confir_section, "LineHeight",       18); files.line_h = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #confir_section, "TimeDoubleClick",  50); MOUSE_TIME = EAX;
+	ini_get_color stdcall (eolite_ini_path, #config_section, "SelectionColor",   0x94AECE); col_selec = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #config_section, "ShowDeviceName",    1); show_dev_name = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #config_section, "RealFileNamesCase", 0); real_files_names_case = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #config_section, "InfoAfterCopy",     0); info_after_copy = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #config_section, "FontSize",          9); font_size = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #config_section, "TwoPanels",         0); two_panels = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #config_section, "LineHeight",       18); files.line_h = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #config_section, "TimeDoubleClick",  50); MOUSE_TIME = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinX", 200); WinX = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinY", 50); WinY = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinW", 550); WinW = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinH", 500); WinH = EAX;
 	BigFontsChange();
 	font.no_bg_copy = true;
 	font.load("/sys/font/Tahoma.kf");
@@ -105,13 +109,17 @@ void LoadIniSettings()
 
 void SaveIniSettings()
 {
-	ini_set_int stdcall (eolite_ini_path, #confir_section, "ShowDeviceName", show_dev_name);
-	ini_set_int stdcall (eolite_ini_path, #confir_section, "RealFileNamesCase", real_files_names_case);
-	ini_set_int stdcall (eolite_ini_path, #confir_section, "InfoAfterCopy", info_after_copy);
-	ini_set_int stdcall (eolite_ini_path, #confir_section, "FontSize", font_size);
-	ini_set_int stdcall (eolite_ini_path, #confir_section, "TwoPanels", two_panels);
-	ini_set_int stdcall (eolite_ini_path, #confir_section, "LineHeight", files.line_h);
-	ini_set_int stdcall (eolite_ini_path, #confir_section, "TimeDoubleClick", MOUSE_TIME);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "ShowDeviceName", show_dev_name);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "RealFileNamesCase", real_files_names_case);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "InfoAfterCopy", info_after_copy);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "FontSize", font_size);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "TwoPanels", two_panels);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "LineHeight", files.line_h);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "TimeDoubleClick", MOUSE_TIME);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "WinX", Form.left);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "WinY", Form.top);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "WinW", Form.width);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "WinH", Form.height);
 }
 
 

@@ -58,16 +58,6 @@ byte
 	temp[4096],
 	itdir;
 
-//struct t_settings {
-byte font_size=9,
-	sort_num=2,
-	show_dev_name=true,
-	real_files_names_case=false,
-	info_after_copy=false,
-	two_panels=false,
-	active_panel=1;
-//} settings;
-
 char active_path[4096], inactive_path[4096];
 
 dword eolite_ini_path;
@@ -83,14 +73,22 @@ int action_buf;
 int rand_n;
 byte CMD_REFRESH;
 
-signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
-
+//struct t_settings {
+byte font_size=9,
+	sort_num=2,
+	show_dev_name=true,
+	real_files_names_case=false,
+	info_after_copy=false,
+	two_panels=false,
+	active_panel=1;
+//} settings;
 
 edit_box new_file_ed = {171,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0,248,#new_element_name,#mouse_dd,100000000000010b,6,0};
 PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 0};
 PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 byte cmd_free=0;
 #include "include\translations.h"
+#include "include\settings.h"
 #include "include\copy.h"
 #include "include\gui.h"
 #include "include\sorting.h"
@@ -99,13 +97,13 @@ byte cmd_free=0;
 #include "include\history.h"
 #include "include\menu.h"
 #include "include\about.h"
-#include "include\settings.h"
 #include "include\properties.h"
 
 
 void main() 
 {
 	word id;
+	signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
 	char can_show, can_select, stats;
 	dword selected_offset;
 	dword IPC_LEN,IPC_ID;
@@ -296,6 +294,7 @@ void main()
 				if (id==1)
 				{
 					KillProcess(about_window);
+					SaveIniSettings();
 					ExitProcess();
 				}
 				if (del_active)
@@ -526,7 +525,7 @@ void main()
 
 void draw_window()
 {
-	DefineAndDrawWindow(GetScreenWidth()-550/4+rand_n,rand_n+30,550,500,0x73,system.color.work,TITLE,0);
+	DefineAndDrawWindow(WinX+rand_n,WinY+rand_n,WinW,WinH,0x73,system.color.work,TITLE,0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
 	if (Form.height < 350) MoveSize(OLD,OLD,OLD,350);
