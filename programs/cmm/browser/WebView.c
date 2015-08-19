@@ -30,14 +30,14 @@
 char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.21";
+	char version[]=" Текстовый браузер 1.22";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.21";
+	char version[]=" Text-based Browser 1.22";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -571,7 +571,6 @@ void StopLoading()
 void SetPageDefaults()
 {
 	strcpy(#header, #version);
-	pre_text = 0;
 	WB1.list.count = WB1.list.first = 0;
 	stroka = 0;
 	cur_encoding = CH_NULL;
@@ -589,7 +588,7 @@ void OpenPage()
 	if (!strncmp(#URL,"WebView:",8))
 	{
 		SetPageDefaults();
-		if (!strcmp(#URL, URL_SERVICE_HOME)) WB1.Prepare(#homepage, sizeof(homepage));
+		if (!strcmp(#URL, URL_SERVICE_HOME)) LoadInternalPage(#homepage, sizeof(homepage));
 		else if (!strcmp(#URL, URL_SERVICE_HISTORY)) ShowHistory();
 		return;
 	}
@@ -639,10 +638,10 @@ void ShowPage()
 		PageLinks.Clear();
 		if (http_transfer)
 		{
-			WB1.Prepare(#loading, sizeof(loading));
+			LoadInternalPage(#loading, sizeof(loading));
 		}
 		else
-			WB1.Prepare(#page_not_found, sizeof(page_not_found));
+			LoadInternalPage(#page_not_found, sizeof(page_not_found));
 	}
 	else
 		WB1.Parse();
@@ -656,6 +655,13 @@ byte UrlExtIs(dword ext)
 	if (!strcmpi(#URL + strlen(#URL) - strlen(ext), ext)) return true;
 	return false;
 }
+
+void LoadInternalPage(dword bufpos, in_filesize){
+	bufsize = in_filesize;
+	bufpointer = bufpos;
+	WB1.Parse();
+}
+
 
 
 char downloader_stak[4096];

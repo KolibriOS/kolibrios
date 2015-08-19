@@ -37,26 +37,20 @@ int ImageCache::GetImage(dword i_path)
 void ImageCache::Images(int left1, top1, width1)
 {
 	dword image;
-    char img_path[4096], alt[4096];
+    char img_path[4096], alt[4096]=0;
     int imgw=0, imgh=0, img_lines_first=0, cur_pic=0;
 	
 	do{
-		if (!strcmp(#parametr,"src="))   //надо объединить с GetNewUrl()
+		if (isattr("src="))
 		{
-			if (http_transfer!=0) 
-				strcpy(#img_path, #history_list[BrowserHistory.current-1].Item); 
-			else
-			{
-				//if (strcmp(#options)) 
-					strcpy(#img_path, #options);
-			}
+			strcpy(#img_path, #val);
 			PageLinks.GetAbsoluteURL(#img_path);
 			cur_pic = GetImage(#img_path);
 		}
-		if (!strcmp(#parametr,"alt="))
+		if (isattr("alt="))
 		{
 			strcpy(#alt, "[");
-			strcat(#alt, #options);
+			strcat(#alt, #val);
 			strcat(#alt, "]");
 		}
 
@@ -65,6 +59,7 @@ void ImageCache::Images(int left1, top1, width1)
 	if (!pics[cur_pic].image) 
 	{
 		if (alt) && (link) strcat(#line, #alt);
+		//cur_pic = GetImage("/sys/network/noimg.png");
 		return;
 	}
 	
