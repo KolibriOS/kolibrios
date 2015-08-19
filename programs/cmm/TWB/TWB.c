@@ -25,6 +25,7 @@ struct TWebBrowser {
 	void SetTextStyle();
 	void DrawPage();
 	void DrawScroller();
+	void LoadInternalPage();
 	void NewLine();
 	void Perenos();
 	byte end_parsing;
@@ -80,9 +81,7 @@ char anchor[256];
 #include "..\TWB\table.h"
 
 
-//=======================================================================
-
-
+//============================================================================================
 void TWebBrowser::DrawPage()
 {
 	int start_x, start_y, line_length, stolbec_len, magrin_left=5;
@@ -106,7 +105,7 @@ void TWebBrowser::DrawPage()
 		line_length = stolbec_len * list.font_w * DrawBuf.zoom;
 
 		WriteBufText(start_x, 0, list.font_type, text_colors[text_color_index], #line, buf_data);
-		if (style.b)	WriteBufText(start_x+1, 0, list.font_type, text_colors[text_color_index], #line, buf_data);
+		if (style.b) WriteBufText(start_x+1, 0, list.font_type, text_colors[text_color_index], #line, buf_data);
 		if (style.i) { stolbec++; DrawBuf.Skew(start_x, 0, line_length, list.line_h); } // bug with zoom>1
 		if (style.s) DrawBuf.DrawBar(start_x, list.line_h / 2 - DrawBuf.zoom, line_length, DrawBuf.zoom, text_colors[text_color_index]);
 		if (style.u) DrawBuf.DrawBar(start_x, list.line_h - DrawBuf.zoom - DrawBuf.zoom, line_length, DrawBuf.zoom, text_colors[text_color_index]);
@@ -118,9 +117,13 @@ void TWebBrowser::DrawPage()
 		stolbec += stolbec_len;
 	}
 }
-//=======================================================================
-
-
+//============================================================================================
+void TWebBrowser::LoadInternalPage(dword bufpos, in_filesize){
+	bufsize = in_filesize;
+	bufpointer = bufpos;
+	Parse();
+}
+//============================================================================================
 void TWebBrowser::Parse(){
 	word bukva[2];
 	int j;
@@ -262,7 +265,7 @@ void TWebBrowser::Parse(){
 	}
 	DrawScroller();
 }
-
+//============================================================================================
 void TWebBrowser::Perenos()
 {
 	int perenos_num;
@@ -276,8 +279,7 @@ void TWebBrowser::Perenos()
 	strcpy(#line, #new_line_text);
 	NewLine();
 }
-
-
+//============================================================================================
 char oldtag[100];
 void TWebBrowser::SetTextStyle(int left1, top1) {
 	dword hr_color;
@@ -527,7 +529,8 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 		{
 			NewLine();
 			if (stroka > -1) && (stroka - 2 < list.visible) 
-				DrawBuf.DrawBar(style.li_tab * 5 * list.font_w * DrawBuf.zoom + list.x, list.line_h / 2 - DrawBuf.zoom - DrawBuf.zoom, DrawBuf.zoom*2, DrawBuf.zoom*2, 0x555555);
+				DrawBuf.DrawBar(style.li_tab * 5 * list.font_w * DrawBuf.zoom + list.x, list.line_h 
+					/ 2 - DrawBuf.zoom - DrawBuf.zoom, DrawBuf.zoom*2, DrawBuf.zoom*2, 0x555555);
 		}
 		return;
 	}
@@ -599,8 +602,7 @@ void BufEncode(int set_new_encoding)
 		 bufpointer = ChangeCharset("CP1251", "UTF-8", bufpointer);
 	}
 }
-
-
+//============================================================================================
 void TWebBrowser::DrawScroller()
 {
 	scroll_wv.max_area = list.count;
@@ -616,8 +618,7 @@ void TWebBrowser::DrawScroller()
 
 	scrollbar_v_draw(#scroll_wv);
 }
-
-
+//============================================================================================
 void TWebBrowser::NewLine()
 {
 	int onleft, ontop;
@@ -638,9 +639,7 @@ void TWebBrowser::NewLine()
 	if (style.blq) stolbec = 6; else stolbec = 0;
 	if (style.li) stolbec = style.li_tab * 5;
 }
-
-
-
+//============================================================================================
 int istag(dword text) { if (!strcmp(#tag,text)) return 1; else return 0; }
 int isattr(dword text) { if (!strcmp(#attr,text)) return 1; else return 0; }
 int isval(dword text) { if (!strcmp(#val,text)) return 1; else return 0; }

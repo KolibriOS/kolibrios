@@ -27,5 +27,5 @@ ShowHistory()
 			strcat(history_pointer, #pics[i].path);
 		}
 		strcat(history_pointer, "</body></html>");
-		LoadInternalPage(history_pointer, strlen(history_pointer));
+		WB1.LoadInternalPage(history_pointer, strlen(history_pointer));
 }

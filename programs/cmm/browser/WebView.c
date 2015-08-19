@@ -588,7 +588,7 @@ void OpenPage()
 	if (!strncmp(#URL,"WebView:",8))
 	{
 		SetPageDefaults();
-		if (!strcmp(#URL, URL_SERVICE_HOME)) LoadInternalPage(#homepage, sizeof(homepage));
+		if (!strcmp(#URL, URL_SERVICE_HOME)) WB1.LoadInternalPage(#homepage, sizeof(homepage));
 		else if (!strcmp(#URL, URL_SERVICE_HISTORY)) ShowHistory();
 		return;
 	}
@@ -638,10 +638,10 @@ void ShowPage()
 		PageLinks.Clear();
 		if (http_transfer)
 		{
-			LoadInternalPage(#loading, sizeof(loading));
+			WB1.LoadInternalPage(#loading, sizeof(loading));
 		}
 		else
-			LoadInternalPage(#page_not_found, sizeof(page_not_found));
+			WB1.LoadInternalPage(#page_not_found, sizeof(page_not_found));
 	}
 	else
 		WB1.Parse();
@@ -654,12 +654,6 @@ byte UrlExtIs(dword ext)
 {
 	if (!strcmpi(#URL + strlen(#URL) - strlen(ext), ext)) return true;
 	return false;
-}
-
-void LoadInternalPage(dword bufpos, in_filesize){
-	bufsize = in_filesize;
-	bufpointer = bufpos;
-	WB1.Parse();
 }
 
 

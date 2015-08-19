@@ -355,14 +355,12 @@ void InitTWB() {
 	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h);
 
 	strcpy(#header, #version);
-	pre_text = 0;
 	WB1.list.first = WB1.list.count = 0;
 }
 
 void DrawLetter() {
-	pre_text = 2;
 	bufsize = strlen(mdata);
-	WB1.Prepare(bufsize, mdata);
+	WB1.LoadInternalPage(bufsize, mdata);
 	if (bufsize) WB1.Parse();
 	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, 0xFFFfff);
 }
