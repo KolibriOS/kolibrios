@@ -23,12 +23,14 @@
 	byte load(...);
 	byte symbol(word x;byte s;dword c);
 	byte symbol_size(byte s);
-	dword text(word x,y;dword text,c;byte size);
+	dword text(word x,y;dword text1,c;byte size);
 	dword text_width(dword text1;byte size);
 	dword textarea(word x,y;dword text,c;byte size);
 	byte changeSIZE(byte size);
 	void PixelRGB(word x,y);
 	dword tmp_y,tmp_height,tmp_x;
+	byte no_bg_copy;
+	dword bg_color;
 };
 FONT font = 0;
 
@@ -128,12 +130,31 @@ FONT font = 0;
 	c>>=16;
 	AX = c;
 	b = AL;
-	width_buffer = width;
-	width_buffer *= strlen(text1);
-	IF(!buffer_size)buffer = malloc(width_buffer*height*3);
-	ELSE IF(buffer_size<width_buffer*height)buffer = realloc(width_buffer*height*3);
-	CopyScreen(buffer,x+Form_SELF_FONTS.left+5,y+Form_SELF_FONTS.top+GetSkinHeight(),width_buffer,height);
-	
+	width_buffer = text_width(text1,size);
+	//width_buffer *= strlen(text1);
+	IF(!buffer_size)
+	{
+		buffer_size = width_buffer*height*3;
+		buffer = malloc(buffer_size);
+	}
+	ELSE IF(buffer_size<width_buffer*height*3)
+	{
+		buffer_size = width_buffer*height*3;
+		buffer = realloc(buffer,buffer_size);
+	}
+	IF (no_bg_copy)
+	{
+		EBX = bg_color;
+		EAX = buffer_size+buffer;
+		EDI = buffer;
+		WHILE (EDI<EAX)
+		{
+			ESDWORD[EDI] = EBX;
+			$add edi,3
+		}
+	}
+	ELSE CopyScreen(buffer,x+Form_SELF_FONTS.left+5,y+Form_SELF_FONTS.top+GetSkinHeight(),width_buffer,height);
+	//width_buffer = text_width(text1);
 	WHILE(DSBYTE[text1])
 	{
 		symbol(len,DSBYTE[text1],c);
@@ -189,8 +210,15 @@ FONT font = 0;
 :byte FONT::load(dword path)
 {
 	dword tmp;
+	buffer_size = 0;
 	IF(data)free(data);
-	tmp = io.read(path);
+	if (io.read(path)!=0)
+	{
+		debug("Error while loading font: ");
+		debugln(path);
+		return 0;
+	}
+	tmp = io.buffer_data;
 	data = tmp;
 	begin = data;
 	size_file = io.FILES_SIZE;

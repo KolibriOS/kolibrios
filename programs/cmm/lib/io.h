@@ -317,12 +317,14 @@
 }
 :dword IO::read(dword PATH)
 {
+	int result;
 	___GetFileInfo(PATH, #BDVK);
 	if(BDVK.isfolder)return 0;
 	FILES_SIZE = BDVK.sizelo;
 	buffer_data = malloc(FILES_SIZE+1);
-	file.read(0,FILES_SIZE,buffer_data,PATH);
-	return buffer_data;
+	result = file.read(0,FILES_SIZE,buffer_data,PATH);
+	if (result!=0) buffer_data = free(buffer_data);	//file read failed
+	return result;
 }
 
 :signed int IO::run(dword rpath,rparam)

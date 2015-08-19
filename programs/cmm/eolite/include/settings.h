@@ -47,8 +47,8 @@ void settings_dialog()
 				else if (id==26) && (files.line_h>18) files.line_h--;
 				else if (id==27) MOUSE_TIME++;
 				else if (id==28) && (MOUSE_TIME>29) MOUSE_TIME--;
-				else if (id==30) && (font_size<30) { font_size++; BigFontsChange(); }
-				else if (id==31) && (font_size>10) { font_size--; BigFontsChange(); }
+				else if (id==30) && (font_size<22) { font_size++; BigFontsChange(); }
+				else if (id==31) && (font_size>9) { font_size--; BigFontsChange(); }
 				SaveIniSettings();
 				EventRedrawWindow(Form.left,Form.top);
 				DrawSettingsCheckBoxes();
@@ -81,9 +81,9 @@ void DrawSettingsCheckBoxes()
 	CheckBox2(10, 33, 21, SHOW_REAL_NAMES,  real_files_names_case);
 	CheckBox2(10, 55, 22, NOTIFY_COPY_END,  info_after_copy);
 	CheckBox2(10, 77, 24, USE_TWO_PANELS,  two_panels); 
-	MoreLessBox(10, 103, 18, 30, 31, #system.color, font_size, FONT_SIZE_LABEL);
+	MoreLessBox(10, 103, 18, 27, 28, #system.color, MOUSE_TIME, T_DOUBLE_CLICK);
 	MoreLessBox(10, 130, 18, 25, 26, #system.color, files.line_h, LIST_LINE_HEIGHT);
-	MoreLessBox(10, 157, 18, 27, 28, #system.color, MOUSE_TIME, T_DOUBLE_CLICK);
+	if (font.data) MoreLessBox(10, 157, 18, 30, 31, #system.color, font_size, FONT_SIZE_LABEL);
 }
 
 
@@ -98,6 +98,8 @@ void LoadIniSettings()
 	ini_get_int stdcall   (eolite_ini_path, #confir_section, "LineHeight",       18); files.line_h = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #confir_section, "TimeDoubleClick",  50); MOUSE_TIME = EAX;
 	BigFontsChange();
+	font.no_bg_copy = true;
+	font.load("/sys/font/Tahoma.kf");
 }
 
 
@@ -142,19 +144,11 @@ void BigFontsChange()
 {
 	files.line_h = font.height + 4;
 	if (files.line_h<18) files.line_h = 18;
+	files_active.line_h = files_inactive.line_h = files.line_h;
 
-	if (font_size!=9) 
-	{
-		files.SetFont(8, 14, 10110000b);
-		FileShow.font_size_x = files.font_w;
-		FileShow.font_number = 3;
-	}
-	else
-	{
-		files.SetFont(6, 6, 10000000b);
-		FileShow.font_size_x = files.font_w;
-		FileShow.font_number = 0;
-	} 
+	files.SetFont(6, 6, 10000000b);
+	FileShow.font_size_x = files.font_w;
+	FileShow.font_number = 0;
 }
 
 

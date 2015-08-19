@@ -130,7 +130,6 @@ void main()
 	Open_Dir(#path,ONLY_OPEN);
 	strcpy(#inactive_path, #path);
 	llist_copy(#files_inactive, #files);
-	//font.load("/sys/font/Verdana.kf");
 	SetEventMask(1100111b);
 	loop(){
 		switch(WaitEvent())
@@ -688,15 +687,23 @@ void Line_ReDraw(dword color, filenum){
 		if (text_col==0xA6A6B7) text_col=0xFFFFFF;
 	}
 	if (file.selected) text_col=0xFF0000;
-	if (Form.width>=480)
+	if (font_size==9) || (!font.data)
 	{
-		FileShow.start_x = files.x + 23;
-		FileShow.font_color = text_col;
-		FileShow.area_size_x = files.w - 164;
-		FileShow.text_pointer = file_name_off;
-		FileShow.start_y = files.text_y + y;
-		PathShow_prepare stdcall(#FileShow);
-		PathShow_draw stdcall(#FileShow);
+		if (Form.width>=480)
+		{
+			FileShow.start_x = files.x + 23;
+			FileShow.font_color = text_col;
+			FileShow.area_size_x = files.w - 164;
+			FileShow.text_pointer = file_name_off;
+			FileShow.start_y = files.text_y + y;
+			PathShow_prepare stdcall(#FileShow);
+			PathShow_draw stdcall(#FileShow);
+		}		
+	}
+	else
+	{
+		font.bg_color = color;
+		font.text(files.x + 23, files.line_h - font.height / 2 - 1 + y, file_name_off, 0, font_size);
 	}
 	DrawBar(files.x+files.w-141,y,1,files.line_h,system.color.work); //gray line 1
 	DrawBar(files.x+files.w-68,y,1,files.line_h,system.color.work); //gray line 2
