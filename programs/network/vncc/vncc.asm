@@ -87,7 +87,17 @@ STATUS_THREAD_ERR       = 17
 STATUS_LOGIN_FAILED     = 18
 STATUS_SECURITY_ERR_C   = 19
 
+WORK_FRAMEBUFFER        = 1 shl 0
+WORK_CURSOR             = 1 shl 1
+WORK_GUI                = 1 shl 2
+
 BYTES_PER_PIXEL = (BITS_PER_PIXEL + 7) / 8
+
+if BITS_PER_PIXEL = 32
+        BYTES_PER_CPIXEL= 3
+else
+        BYTES_PER_CPIXEL= BYTES_PER_PIXEL
+end if
 
 include "keymap.inc"
 include "gui.inc"
@@ -97,7 +107,62 @@ include "copyrect.inc"
 include "rre.inc"
 include "trle.inc"
 include "zrle.inc"
+include "cursor.inc"
 include "des.inc"
+
+
+if BITS_PER_PIXEL = 8
+create_lut:
+        mov     edi, lut_8bpp   ; 332 format
+        xor     eax, eax
+        call    green
+        add     eax, 0x240000
+        call    green
+        add     eax, 0x250000
+        call    green
+        add     eax, 0x240000
+        call    green
+        add     eax, 0x250000
+        call    green
+        add     eax, 0x240000
+        call    green
+        add     eax, 0x250000
+        call    green
+        add     eax, 0x240000
+        call    green
+        ret
+
+green:
+        mov     ah, 0
+        call    blue
+        mov     ah, 36
+        call    blue
+        add     ah, 37
+        call    blue
+        add     ah, 36
+        call    blue
+        add     ah, 37
+        call    blue
+        add     ah, 36
+        call    blue
+        add     ah, 37
+        call    blue
+        add     ah, 36
+        call    blue
+        ret
+
+blue:
+        mov     al, 0
+        stosd
+        mov     al, 85
+        stosd
+        mov     al, 170
+        stosd
+        mov     al, 255
+        stosd
+        ret
+end if
+
 
 START:
 
@@ -108,7 +173,13 @@ START:
         test    eax, eax
         jz      @f
         mov     [status], STATUS_LIB_ERR
+        jmp     draw_gui.first_time
   @@:
+
+; When using 8BPP, create lookup table
+if BITS_PER_PIXEL = 8
+        call    create_lut
+end if
 
 ; Check if we got a server address through parameters
         cmp     byte[serveraddr], 0
@@ -124,7 +195,7 @@ START:
   @@:
 
 ; Present the user with the GUI and wait for network connection
-        call    draw_gui
+        call    draw_gui.first_time
 
 ; Create main window
         mcall   71, 1, name             ; reset window caption (add server name)
@@ -157,15 +228,17 @@ redraw:
 draw_framebuffer:
         DEBUGF  1, "Drawing framebuffer\n"
         mcall   7, framebuffer, dword[screen], 0
-        mov     [update_framebuffer], 0
+        and     [work], not WORK_FRAMEBUFFER
 
 mainloop:
         cmp     [status], STATUS_CONNECTED
         jne     draw_gui
-        cmp     [update_framebuffer], 0
-        jne     draw_framebuffer
+        test    [work], WORK_FRAMEBUFFER
+        jnz     draw_framebuffer
+        test    [work], WORK_CURSOR
+        jnz     update_cursor
 
-        mcall   23, 10                  ; Check for event with 0,1s timeout
+        mcall   23, 10          ; Check for event with 0,1s timeout
 
         dec     eax
         jz      redraw
@@ -258,6 +331,29 @@ button:
         mcall   -1
 
 
+update_cursor:
+
+; load cursor
+        mov     dx, word[cursor.y]
+        shl     edx, 16
+        mov     dx, 2
+        mcall   37, 4, cursor.image
+        test    eax, eax
+        jz      .fail
+
+; set cursor
+        mov     ecx, eax
+        mcall   37, 5
+
+; delete previously set cursor
+        mov     ecx, eax
+        mcall   37, 6
+
+.fail:
+        and     [work], not WORK_CURSOR
+        jmp     mainloop
+
+
 ; DATA AREA
 
 include_debug_strings
@@ -272,7 +368,9 @@ HandShake               db "RFB 003.003", 10
 
 ClientInit              db 0            ; not shared
 
-SetPixelFormat32        db 0            ; setPixelformat
+if BITS_PER_PIXEL = 32
+
+SetPixelFormat          db 0            ; setPixelformat
                         db 0, 0, 0      ; padding
 .bpp                    db 32           ; bits per pixel
 .depth                  db 24           ; depth
@@ -286,7 +384,9 @@ SetPixelFormat32        db 0            ; setPixelformat
 .blue_shift             db 0            ; blue-shift
                         db 0, 0, 0      ; padding
 
-SetPixelFormat24        db 0            ; setPixelformat
+else if BITS_PER_PIXEL = 24
+
+SetPixelFormat          db 0            ; setPixelformat
                         db 0, 0, 0      ; padding
 .bpp                    db 24           ; bits per pixel
 .depth                  db 24           ; depth
@@ -300,7 +400,9 @@ SetPixelFormat24        db 0            ; setPixelformat
 .blue_shift             db 0            ; blue-shift
                         db 0, 0, 0      ; padding
 
-SetPixelFormat16        db 0            ; setPixelformat
+else if BITS_PER_PIXEL = 16
+
+SetPixelFormat          db 0            ; setPixelformat
                         db 0, 0, 0      ; padding
 .bpp                    db 16           ; bits per pixel
 .depth                  db 16           ; depth
@@ -314,7 +416,9 @@ SetPixelFormat16        db 0            ; setPixelformat
 .blue_shift             db 0            ; blue-shift
                         db 0, 0, 0      ; padding
 
-SetPixelFormat8         db 0            ; setPixelformat
+else if BITS_PER_PIXEL = 8
+
+SetPixelFormat          db 0            ; setPixelformat
                         db 0, 0, 0      ; padding
 .bpp                    db 8            ; bits per pixel
 .depth                  db 8            ; depth
@@ -323,18 +427,21 @@ SetPixelFormat8         db 0            ; setPixelformat
 .red_max                db 0, 7         ; red-max
 .green_max              db 0, 7         ; green-max
 .blue_max               db 0, 3         ; blue-max
-.red_shift              db 0            ; red-shift
-.green_shift            db 3            ; green-shift
-.blue_shift             db 6            ; blue-shift
+.red_shift              db 5            ; red-shift
+.green_shift            db 2            ; green-shift
+.blue_shift             db 0            ; blue-shift
                         db 0, 0, 0      ; padding
+
+end if
 
 SetEncodings            db 2            ; setEncodings
                         db 0            ; padding
-                        db 0, 4         ; number of encodings
+                        db 0, 5         ; number of encodings
 ;                        db 0, 0, 0, 16  ; ZRLE
                         db 0, 0, 0, 15  ; TRLE
                         db 0, 0, 0, 2   ; RRE
                         db 0, 0, 0, 1   ; Copyrect encoding
+                        db 0xff, 0xff, 0xff, 0x11       ; Cursor pseudo encoding
                         db 0, 0, 0, 0   ; raw encoding
   .length = $ - SetEncodings
 
@@ -365,9 +472,8 @@ sockaddr1:
 beep            db 0x85, 0x25, 0x85, 0x40, 0
 
 status                  dd STATUS_CONNECT
-update_gui              dd 0
+work                    dd 0
 mouse_dd                dd 0
-update_framebuffer      dd 0
 thread_id               dd 0
 
 deflate_buffer          dd 0
@@ -474,7 +580,17 @@ keymap_shift            rw 128
 keymap_alt              rw 128
 username                rb 128
 password                rb 128
-keys                    rd 32*2         ; DES keys for VNC authentication
+keys                    rd 32*2 ; DES keys for VNC authentication
+
+cursor:
+.y                      db ?
+.x                      db ?
+.image                  rd 32*32
+
+align 4
+if BITS_PER_PIXEL = 8
+lut_8bpp                rd 256
+end if
 
 sz_err_security_c       rb 512+1
 

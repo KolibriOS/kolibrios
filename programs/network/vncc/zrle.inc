@@ -13,74 +13,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-load_pixel_zrle:         ; returns in ecx
-
-        push    eax
-
-;  TODO: check for buffer underrun!
-
-if BITS_PER_PIXEL = 8
-
-        push    ebx
-
-        mov     bl, 36
-        mov     al, [esi]
-        and     al, 7
-        mul     bl
-        mov     ch, al          ; red
-
-        mov     al, [esi]
-        shr     al, 3
-        and     al, 7
-        mul     bl
-        mov     cl, al          ; green
-
-        mov     bl, 85
-        mov     al, [esi]
-        shr     al, 6
-        and     al, 3
-        mul     bl
-        shl     ecx, 8
-        mov     cl, al          ; blue
-
-        inc     esi
-        pop     ebx
-
-else if BITS_PER_PIXEL = 16
-
-        lodsw
-        mov     cl, ah
-        and     al, 0xf8        ; red
-
-        mov     cx, ax
-        shl     cx, 5
-        and     ch, 0xfc        ; green
-        shl     ecx, 8
-
-        mov     cl, al
-        shl     cl, 3
-        and     cx, 0x00f8      ; blue
-
-else    ; 32 BPP gets packed to 24 BPP
-
-        mov     ecx, [esi]
-        and     ecx, 0x00ffffff
-        add     esi, 3
-
-end if
-        pop     eax
-
-        ret
-
-
-
 deflate_callback:
         mov     eax, [deflate_length]
         mov     ecx, [esp+8]
         mov     [ecx], eax
         mov     eax, [deflate_buffer]
         ret     8
-
 
 
 encoding_ZRLE:
@@ -283,9 +221,11 @@ encoding_ZRLE:
         jmp     .next_tile
 
   .rle_reload:
-        call    load_pixel_zrle
+; TODO: check for buffer underrun
 
-;;;
+        ; load pixel value
+        call    load_cpixel
+        mov     ecx, eax
 
         ; load length
         xor     eax, eax
@@ -511,18 +451,16 @@ encoding_ZRLE:
         lea     eax, [eax*3]
         pop     edx
 
-;;;
+; TODO: check for buffer underrun
 
         DEBUGF  1, "RAW tile\n"
   .raw_line:
         mov     ebx, [subrectangle.width]
   .raw_pixel:
-        call    load_pixel_zrle
-        mov     word[edi], cx
-        shr     ecx, 16
-        add     edi, 2
-        mov     byte[edi], cl
-        inc     edi
+        call    load_cpixel
+        stosw
+        shr     eax, 16
+        stosb
         dec     ebx
         jnz     .raw_pixel
         add     edi, ebp
@@ -535,19 +473,21 @@ encoding_ZRLE:
 ; Single color tile
   .solid:
         DEBUGF  1, "Solid tile\n"
-        call    load_pixel_zrle
-        mov     eax, ecx
-        shr     eax, 16
+
+; TODO: check for buffer underrun
+
+        call    load_cpixel
+        mov     ecx, eax
+        shr     ecx, 16
 
         mov     [palettesize], 1
-        mov     [palette], ecx
+        mov     [palette], eax
 
   .solid_line:
         mov     ebx, [subrectangle.width]
   .solid_pixel:
-        mov     [edi], cx
-        add     edi, 2
-        mov     [edi], al
+        stosw
+        mov     [edi], cl
         inc     edi
         dec     ebx
         jnz     .solid_pixel

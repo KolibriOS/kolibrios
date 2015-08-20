@@ -119,7 +119,7 @@ vnc_security:
         or      [PASSbox.flags], ed_focus
 
         mov     [status], STATUS_REQ_LOGIN
-        inc     [update_gui]
+        or      [work], WORK_GUI
   @@:
         mcall   5, 10
         cmp     [status], STATUS_LOGIN
@@ -247,15 +247,7 @@ initialize:
         mov     [name.dash], "-"
 
         DEBUGF  1, "Sending pixel format\n"
-if BITS_PER_PIXEL = 8
-        mcall   send, [socketnum], SetPixelFormat8, 20, 0
-else if BITS_PER_PIXEL = 16
-        mcall   send, [socketnum], SetPixelFormat16, 20, 0
-else if BITS_PER_PIXEL = 24
-        mcall   send, [socketnum], SetPixelFormat24, 20, 0
-else
-        mcall   send, [socketnum], SetPixelFormat32, 20, 0
-end if
+        mcall   send, [socketnum], SetPixelFormat, 20, 0
 
         DEBUGF  1, "Sending encoding info\n"
         mcall   send, [socketnum], SetEncodings, SetEncodings.length, 0
@@ -342,12 +334,14 @@ rectangle_loop:
         je      encoding_TRLE
         cmp     eax, 16
         je      encoding_ZRLE
+        cmp     eax, 0xffffff11
+        je      encoding_cursor
 
         DEBUGF  2, "unknown encoding: %u\n", eax
         jmp     thread_loop
 
 next_rectangle:
-        inc     [update_framebuffer]
+        or      [work], WORK_FRAMEBUFFER
         dec     [rectangles]
         jnz     rectangle_loop
         jmp     request_fbu
@@ -462,30 +456,30 @@ read_data:
 
 err_disconnected:
         mov     [status], STATUS_DISCONNECTED
-        inc     [update_gui]
+        or      [work], WORK_GUI
         mcall   -1
 
 err_dns:
         mov     [status], STATUS_DNS_ERR
-        inc     [update_gui]
+        or      [work], WORK_GUI
         mcall   -1
 
 err_sock:
 ; TODO: distinguish between different socket errors!
         DEBUGF  2, "Socket error: %u\n", ebx
         mov     [status], STATUS_SOCK_ERR
-        inc     [update_gui]
+        or      [work], WORK_GUI
         mcall   -1
 
 err_connect:
         mov     [status], STATUS_CONNECT_ERR
-        inc     [update_gui]
+        or      [work], WORK_GUI
         mcall   -1
         ret
 
 err_proto:
         mov     [status], STATUS_PROTO_ERR
-        inc     [update_gui]
+        or      [work], WORK_GUI
         mcall   -1
         ret
 
@@ -507,12 +501,12 @@ err_handshake:
         mov     [status], STATUS_SECURITY_ERR_C
   .no_msg:
 
-        inc     [update_gui]
+        or      [work], WORK_GUI
         mcall   -1
         ret
 
 err_login:
         mov     [status], STATUS_LOGIN_FAILED
-        inc     [update_gui]
+        or      [work], WORK_GUI
         mcall   -1
         ret

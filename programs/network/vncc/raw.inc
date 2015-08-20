@@ -51,29 +51,15 @@ end if
 
   .lineloop:
         mov     ecx, [rectangle.width]
-if BITS_PER_PIXEL = 24
-        lea     ecx, [ecx*2+ecx]
-end if
 
 if BITS_PER_PIXEL = 8
   .pixelloop:
-        mov     bl, 85
-        mov     al, [esi]
-        shr     al, 6
-        and     al, 3
-        mul     bl
-        stosb                   ; blue
-        mov     bl, 36
-        mov     al, [esi]
-        shr     al, 3
-        and     al, 7
-        mul     bl
-        stosb                   ; green
-        mov     al, [esi]
-        and     al, 7
-        mul     bl
-        stosb                   ; red
-        inc     esi
+        xor     eax, eax
+        lodsb
+        mov     eax, [lut_8bpp+eax*4]
+        stosw
+        shr     eax, 16
+        stosb
         dec     ecx
         jnz     .pixelloop
 else if BITS_PER_PIXEL = 16
@@ -93,6 +79,7 @@ else if BITS_PER_PIXEL = 16
         dec     ecx
         jnz     .pixelloop
 else if BITS_PER_PIXEL = 24
+        lea     ecx, [ecx*2+ecx]
         rep movsb
 else if BITS_PER_PIXEL = 32
   .pixelloop:

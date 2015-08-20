@@ -12,75 +12,47 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-load_pixel_rre:             ; returns in ecx
-
-        push    eax
-  @@:
-        lea     eax, [esi+BYTES_PER_PIXEL]
-        cmp     [datapointer], eax
-        jae     @f
-        call    read_data.more
-        jmp     @b
-  @@:
+load_pixel:                     ; returns in eax
 
 if BITS_PER_PIXEL = 8
 
-        push    ebx
-
-        mov     bl, 36
-        mov     al, [esi]
-        and     al, 7
-        mul     bl
-        mov     ch, al          ; red
-
-        mov     al, [esi]
-        shr     al, 3
-        and     al, 7
-        mul     bl
-        mov     cl, al          ; green
-
-        mov     bl, 85
-        mov     al, [esi]
-        shr     al, 6
-        and     al, 3
-        mul     bl
-        shl     ecx, 8
-        mov     cl, al          ; blue
-
-        inc     esi
-        pop     ebx
+        xor     eax, eax
+        lodsb
+        mov     eax, [lut_8bpp+eax*4]
 
 else if BITS_PER_PIXEL = 16
 
+        push    ebx
         lodsw
-        mov     cl, ah
-        and     al, 0xf8        ; red
+        mov     bx, ax
+        shl     bx, 5
+        and     bh, 0xfc        ; green
 
-        mov     cx, ax
-        shl     cx, 5
-        and     ch, 0xfc        ; green
-        shl     ecx, 8
+        mov     bl, ah
+        and     bl, 0xf8        ; red
+        shl     ebx, 8
 
-        mov     cl, al
-        shl     cl, 3
-        and     cx, 0x00f8      ; blue
+        mov     bl, al
+        shl     bl, 3
+        and     bl, 0xf8        ; blue
+        mov     eax, ebx
+        pop     ebx
 
 else if BITS_PER_PIXEL = 24
 
-        mov     ecx, [esi]
-        and     ecx, 0x00ffffff
+        mov     eax, [esi]
+        and     eax, 0x00ffffff
         add     esi, 3
 
 else if BITS_PER_PIXEL = 32
 
-        mov     ecx, [esi]
-        and     ecx, 0x00ffffff
-        add     esi, 4
+        lodsd
 
 end if
-        pop     eax
 
         ret
+
+
 
 encoding_RRE:
 
@@ -100,9 +72,6 @@ encoding_RRE:
 
         DEBUGF  1, "%u subrectangles\n", eax
 
-; Get background color
-        call    load_pixel_rre
-
 ; Calculate first pixel pos
         movzx   eax, [screen.width]
         mul     [rectangle.y]                           ; [screen.width]*[rectangle.y]
@@ -114,9 +83,11 @@ encoding_RRE:
         sub     eax, [rectangle.width]
         lea     ebp, [eax*3]                            ; ebp = ([screen.width]-[rectangle.width])*3
 
+; Get background color
+        call    load_pixel
+
 ; Draw background rectangle
         push    edi
-        mov     eax, ecx
         mov     edx, [rectangle.height]
   .lineloop:
         mov     ecx, [rectangle.width]
@@ -137,6 +108,7 @@ encoding_RRE:
         je      next_rectangle
 
   .subrectangle:
+        push    edi
   @@:
         lea     eax, [esi+8+BYTES_PER_PIXEL]
         cmp     [datapointer], eax
@@ -146,7 +118,8 @@ encoding_RRE:
   @@:
 
 ; Get subrectangle color
-        call    load_pixel_rre
+        call    load_pixel
+        push    eax
 
 ; Get coordinates
         xor     eax, eax
@@ -166,7 +139,6 @@ encoding_RRE:
         [subrectangle.x], [subrectangle.y], [subrectangle.width], [subrectangle.height]
 
 ; Calculate pos of first pixel
-        push    edi
         movzx   eax, [screen.width]
         mul     [subrectangle.y]
         add     eax, [subrectangle.x]
@@ -179,7 +151,7 @@ encoding_RRE:
         lea     ebp, [eax*3]                            ; ebp = ([screen.width]-[rectangle.width])*3
 
 ; Draw the subrectangle
-        mov     eax, ecx
+        pop     eax
         mov     edx, [subrectangle.height]
   .lineloop2:
         mov     ecx, [subrectangle.width]
@@ -197,3 +169,4 @@ encoding_RRE:
         dec     [subrectangles]
         jnz     .subrectangle
         jmp     next_rectangle
+

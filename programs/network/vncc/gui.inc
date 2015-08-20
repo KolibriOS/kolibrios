@@ -13,6 +13,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 draw_gui:
+        mcall   67, 160, 160, 330, 100          ; resize and move the window
+        mcall   66, 1, 0                        ; switch keyboard to ascii mode
+  .first_time:
         mcall   40, EVM_MOUSE + EVM_MOUSE_FILTER + EVM_REDRAW + EVM_BUTTON + EVM_KEY
 
   .redraw:
@@ -153,12 +156,12 @@ draw_gui:
         mcall   4                               ; OK button text
 
   .redraw_done:
-        mov     [update_gui], 0
+        and     [work], not WORK_GUI
         mcall   12, 2
 
   .loop:
-        cmp     [update_gui], 0
-        jne     .redraw
+        test    [work], WORK_GUI
+        jnz     .redraw
         cmp     [status], STATUS_CONNECTED
         je      .connected
 
@@ -227,17 +230,22 @@ draw_gui:
 
   .login:
         mov     [status], STATUS_LOGIN
-        inc     [update_gui]
+        or      [work], WORK_GUI
         jmp     .loop
 
   .cancel:
         mcall   18, 18, [thread_id]             ; kill thread
   .ok:
+        cmp     [status], STATUS_LIB_ERR
+        je      .close
+
         and     [URLbox.flags], not ed_disabled
         mov     [USERbox.size], 0
         mov     [PASSbox.size], 0
         mov     [status], STATUS_CONNECT
-        inc     [update_gui]
+        mov     [name.dash], 0
+        mcall   71, 1, name                     ; reset window caption
+        or      [work], WORK_GUI
         jmp     .loop
 
   .mouse:
@@ -269,6 +277,6 @@ open_connection:
         mov     [status], STATUS_THREAD_ERR
   @@:
         mov     [thread_id], eax
-        inc     [update_gui]
+        or      [work], WORK_GUI
 
         ret

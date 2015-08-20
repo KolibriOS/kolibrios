@@ -15,82 +15,63 @@
 
 create_palette:
 
-        push    ecx edx edi
-        mov     dl, [palettesize]
-        DEBUGF  1, "Loading palette of %u colors\n", dl
-        mov     edi, palette
-  .loop:
-        call    load_pixel_trle
-        mov     [edi], ecx
-        add     edi, 4
-        dec     dl
-        jnz     .loop
-        pop     edi edx ecx
+        push    eax ecx edi
+        movzx   ecx, [palettesize]
+        lea     ecx, [ecx*BYTES_PER_CPIXEL]
 
-        ret
-
-
-load_pixel_trle:         ; returns in ecx
-
-        push    eax
   @@:
-        lea     eax, [esi+BYTES_PER_PIXEL]
+        lea     eax, [esi+ecx]
         cmp     [datapointer], eax
         jae     @f
         call    read_data.more
         jmp     @b
   @@:
 
+        DEBUGF  1, "Loading palette of %u colors\n", ecx
+        mov     edi, palette
+  .loop:
+        call    load_cpixel
+        stosd
+        dec     ecx
+        jnz     .loop
+        pop     edi ecx eax
+
+        ret
+
+
+load_cpixel:            ; returns in eax
+
 if BITS_PER_PIXEL = 8
 
-        push    ebx
-
-        mov     bl, 36
-        mov     al, [esi]
-        and     al, 7
-        mul     bl
-        mov     ch, al          ; red
-
-        mov     al, [esi]
-        shr     al, 3
-        and     al, 7
-        mul     bl
-        mov     cl, al          ; green
-
-        mov     bl, 85
-        mov     al, [esi]
-        shr     al, 6
-        and     al, 3
-        mul     bl
-        shl     ecx, 8
-        mov     cl, al          ; blue
-
-        inc     esi
-        pop     ebx
+        xor     eax, eax
+        lodsb
+        mov     eax, [lut_8bpp+eax*4]
 
 else if BITS_PER_PIXEL = 16
 
+        push    ebx
         lodsw
-        mov     cl, ah
-        and     al, 0xf8        ; red
+        mov     bx, ax
+        shl     bx, 5
+        and     bh, 0xfc        ; green
 
-        mov     cx, ax
-        shl     cx, 5
-        and     ch, 0xfc        ; green
-        shl     ecx, 8
+        mov     bl, ah
+        and     bl, 0xf8        ; red
+        shl     ebx, 8
 
-        mov     cl, al
-        shl     cl, 3
-        and     cx, 0x00f8      ; blue
+        mov     bl, al
+        shl     bl, 3
+        and     bl, 0xf8        ; blue
+        mov     eax, ebx
+        pop     ebx
 
 else    ; 32 BPP gets packed to 24 BPP
 
-        mov     ecx, [esi]
-        and     ecx, 0x00ffffff
+        mov     eax, [esi]
+        and     eax, 0x00ffffff
         add     esi, 3
 
 end if
-        pop     eax
 
         ret
 
@@ -262,15 +243,16 @@ encoding_TRLE:
         jmp     .next_tile
 
   .rle_reload:
-        call    load_pixel_trle
-
   @@:
-        lea     eax, [esi+1]
+        lea     eax, [esi+BYTES_PER_CPIXEL+1]
         cmp     [datapointer], eax
         jae     @f
         call    read_data.more
         jmp     @b
   @@:
+        ; load pixel value
+        call    load_cpixel
+        mov     ecx, eax
 
         ; load length
         xor     eax, eax
@@ -293,9 +275,9 @@ encoding_TRLE:
   .reuse_palette:
         cmp     [palettesize], 1
         jne     .reuse_palette_
-        mov     ecx, [palette]
-        mov     eax, ecx
-        shr     eax, 16
+        mov     eax, [palette]
+        mov     ecx, eax
+        shr     ecx, 16
         jmp     .solid_line
 
 ; Palette packed tile
@@ -493,30 +475,28 @@ encoding_TRLE:
         push    edx
         mov     eax, [subrectangle.width]
         mul     [subrectangle.height]
-        lea     eax, [eax*3]
-        pop     edx
 
-  @@:
         push    eax
-        add     eax, esi
+        lea     ecx, [eax*BYTES_PER_CPIXEL]
+  @@:
+        lea     eax, [esi+ecx]
         cmp     [datapointer], eax
         jae     @f
         call    read_data.more
-        pop     eax
         jmp     @b
   @@:
         pop     eax
+        lea     eax, [eax*3]
+        pop     edx
 
         DEBUGF  1, "RAW tile\n"
   .raw_line:
         mov     ebx, [subrectangle.width]
   .raw_pixel:
-        call    load_pixel_trle
-        mov     word[edi], cx
-        shr     ecx, 16
-        add     edi, 2
-        mov     byte[edi], cl
-        inc     edi
+        call    load_cpixel
+        stosw
+        shr     eax, 16
+        stosb
         dec     ebx
         jnz     .raw_pixel
         add     edi, ebp
@@ -529,19 +509,25 @@ encoding_TRLE:
 ; Single color tile
   .solid:
         DEBUGF  1, "Solid tile\n"
-        call    load_pixel_trle
-        mov     eax, ecx
-        shr     eax, 16
+  @@:
+        lea     eax, [esi+BYTES_PER_CPIXEL]
+        cmp     [datapointer], eax
+        jae     @f
+        call    read_data.more
+        jmp     @b
+  @@:
+        call    load_cpixel
+        mov     ecx, eax
+        shr     ecx, 16
 
         mov     [palettesize], 1
-        mov     [palette], ecx
+        mov     [palette], eax
 
   .solid_line:
         mov     ebx, [subrectangle.width]
   .solid_pixel:
-        mov     [edi], cx
-        add     edi, 2
-        mov     [edi], al
+        stosw
+        mov     [edi], cl
         inc     edi
         dec     ebx
         jnz     .solid_pixel
