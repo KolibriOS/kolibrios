@@ -35,6 +35,7 @@ struct path_string { char Item[4096]; };
 byte active_about=0;
 word about_window;
 word settings_window;
+byte active_settings=0;
 dword _not_draw = false;
 byte menu_call_mouse=0;
 
@@ -74,8 +75,7 @@ int rand_n;
 byte CMD_REFRESH;
 
 //struct t_settings {
-byte font_size=9,
-	sort_num=2,
+byte sort_num=2,
 	show_dev_name=true,
 	real_files_names_case=false,
 	info_after_copy=false,
@@ -128,6 +128,8 @@ void main()
 	Open_Dir(#path,ONLY_OPEN);
 	strcpy(#inactive_path, #path);
 	llist_copy(#files_inactive, #files);
+	font.no_bg_copy = true;
+	font.load("/sys/font/Tahoma.kf");
 	SetEventMask(1100111b);
 	loop(){
 		switch(WaitEvent())
@@ -686,7 +688,7 @@ void Line_ReDraw(dword color, filenum){
 		if (text_col==0xA6A6B7) text_col=0xFFFFFF;
 	}
 	if (file.selected) text_col=0xFF0000;
-	if (font_size==9) || (!font.data)
+	if (font.size.text==9) || (!font.data)
 	{
 		if (Form.width>=480)
 		{
@@ -702,7 +704,7 @@ void Line_ReDraw(dword color, filenum){
 	else
 	{
 		font.bg_color = color;
-		font.text(files.x + 23, files.line_h - font.height / 2 - 1 + y, file_name_off, 0, font_size);
+		font.text(files.x + 23, files.line_h - font.height / 2 - 1 + y, file_name_off);
 	}
 	DrawBar(files.x+files.w-141,y,1,files.line_h,system.color.work); //gray line 1
 	DrawBar(files.x+files.w-68,y,1,files.line_h,system.color.work); //gray line 2
@@ -1118,7 +1120,7 @@ void FnProcess(byte N)
 			CreateThread(#properties_dialog, properties_stak+8092);
 			break;
 		case 10: //F10
-			if (!settings_window) 
+			if (!active_settings) 
 			{
 				settings_stak = malloc(4096);
 				settings_window = CreateThread(#settings_dialog, settings_stak+4092);

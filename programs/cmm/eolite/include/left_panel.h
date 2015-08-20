@@ -115,7 +115,7 @@ void GetSystemDiscs()
 
 void DrawSystemDiscs()
 {    
-	char dev_name[15], disc_name[100], i, dev_icon, is_active;
+	char dev_name[15], disc_name[100], i, dev_icon, is_active, name_len;
 	int pos_y, pos_x=2;
 	
 	for (i=disc_num; i<30; i++) DeleteButton(100+i);
@@ -185,11 +185,12 @@ void DrawSystemDiscs()
 		else
 		{
 			pos_y = 43;
-			DrawBar(pos_x, pos_y, strlen(#dev_name)*6 + 29, 17, 0xFFFFFF);
-			DefineButton(pos_x+2, pos_y, strlen(#dev_name)*6 + 25, 16, 100+i+BT_HIDE,0xFFFFFF);
+			name_len = strlen(#dev_name)-1*8;
+			DrawBar(pos_x, pos_y, name_len + 31, 17, 0xFFFFFF);
+			DefineButton(pos_x+2, pos_y, name_len + 27, 16, 100+i+BT_HIDE,0xFFFFFF);
 			_PutImage(pos_x + 5, pos_y, 18,17, is_active*6+dev_icon*17*18*3+#devices);
-			WriteText(pos_x + 24, pos_y+5, 0x80, 0, #dev_name);
-			pos_x += strlen(#dev_name)*6 + 29;
+			WriteText(pos_x + 24, pos_y+1, 10110000b, 0, #dev_name+1);
+			pos_x += name_len + 31;
 		}
 	}
 	if (two_panels)
