@@ -262,6 +262,7 @@ key:
         test    ah, 0x80        ; key up?
         jnz     @f
         inc     al
+        and     ah, 0x7f
   @@:
         mov     byte[KeyEvent.down], al
 
@@ -293,6 +294,14 @@ key:
         mcall   2
         shr     eax, 8
         jz      mainloop
+
+        xor     ah, ah
+        test    al, 0x80        ; key up?
+        jnz     @f
+        inc     ah
+  @@:
+        mov     byte[KeyEvent.down], ah
+        and     ax, 0x007f
   .no_numlock:
         mov     ax, [keymap+eax*2]
   .key:
