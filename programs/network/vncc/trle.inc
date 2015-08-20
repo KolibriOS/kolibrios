@@ -299,6 +299,13 @@ encoding_TRLE:
   .palette_1bit_line:
         mov     ebx, [subrectangle.width]
   .palette_1bit_byte:
+  @@:
+        lea     eax, [esi+1]
+        cmp     [datapointer], eax
+        jae     @f
+        call    read_data.more
+        jmp     @b
+  @@:
         lodsb
         rol     al, 1
         mov     ecx, eax
@@ -392,6 +399,13 @@ encoding_TRLE:
   .palette_2bit_line:
         mov     ebx, [subrectangle.width]
   .palette_2bit_byte:
+  @@:
+        lea     eax, [esi+1]
+        cmp     [datapointer], eax
+        jae     @f
+        call    read_data.more
+        jmp     @b
+  @@:
         lodsb
         mov     ecx, eax
         and     eax, 0xc0
@@ -444,6 +458,13 @@ encoding_TRLE:
   .palette_4bit_line:
         mov     ebx, [subrectangle.width]
   .palette_4bit_byte:
+  @@:
+        lea     eax, [esi+1]
+        cmp     [datapointer], eax
+        jae     @f
+        call    read_data.more
+        jmp     @b
+  @@:
         lodsb
         mov     cl, al
         and     eax, 0xf0
