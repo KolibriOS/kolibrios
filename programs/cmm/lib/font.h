@@ -212,7 +212,7 @@ FONT font = 0;
 	dword tmp;
 	buffer_size = 0;
 	IF(data)free(data);
-	if (io.read(path)!=0)
+	if (!io.readKPACK(path))
 	{
 		debug("Error while loading font: ");
 		debugln(path);

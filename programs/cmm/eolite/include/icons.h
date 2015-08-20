@@ -29,7 +29,7 @@ char *ext[]={
 
 void Put_icon(dword extension, xx, yy, fairing_color, icon_n)
 {
-	int i, font_half_height;
+	int i;
 
 	if (extension) for (i=0; ext[i]!=0; i+=2;)
 	{
@@ -43,8 +43,7 @@ void Put_icon(dword extension, xx, yy, fairing_color, icon_n)
 	ficons_pal[0] = fairing_color;
 	PutPaletteImage(icon_n*16*15+#ficons,16,15,xx,yy,8,#ficons_pal);
 	if (fairing_color!=0xFFFfff) IconFairing(icon_n, xx, yy, fairing_color);
-	if (font_size==9) font_half_height=0; else font_half_height=4;
-	if (icon_n!=17) && (strlen(extension)<9) WriteText(-FileShow.font_size_x/2*strlen(extension)+files.x+files.w-103,yy+font_half_height,files.font_type,0,extension);
+	if (icon_n!=17) && (strlen(extension)<9) WriteText(-FileShow.font_size_x/2*strlen(extension)+files.x+files.w-103,yy+4,files.font_type,0,extension);
 }
 
 

@@ -286,16 +286,6 @@
 	__FILE file;
 	____BDVK BDVK;
 }io;
-:dword IO::readKPACK(dword path1)
-{
-	dword sizes;
-	EAX = 68;
-	EBX = 27;
-	ECX = path.path(path1);
-	EDX = sizes;
-	$int 0x40;
-	return EAX;
-}
 :byte __ConvertSize_size_prefix[8];
 :dword IO::convert_size()
 {
@@ -310,7 +300,16 @@
 	sprintf(#__ConvertSize_size_prefix,"%d %s",bytes,#size_nm);
 	return #__ConvertSize_size_prefix;
 }
-	
+:dword IO::readKPACK(dword path1)
+{
+	EAX = 68;
+	EBX = 27;
+	ECX = path1;
+	$int 0x40;
+	FILES_SIZE = EDX;
+	buffer_data = EAX;
+	return buffer_data;
+}	
 :int IO::write(dword PATH,data)
 {
 	file.write(0,strlen(data),data,PATH);
@@ -324,7 +323,7 @@
 	buffer_data = malloc(FILES_SIZE+1);
 	result = file.read(0,FILES_SIZE,buffer_data,PATH);
 	if (result!=0) buffer_data = free(buffer_data);	//file read failed
-	return result;
+	return buffer_data;
 }
 
 :signed int IO::run(dword rpath,rparam)
