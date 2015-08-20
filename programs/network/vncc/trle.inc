@@ -17,10 +17,10 @@ create_palette:
 
         push    eax ecx edi
         movzx   ecx, [palettesize]
-        lea     ecx, [ecx*BYTES_PER_CPIXEL]
+        lea     edi, [ecx*BYTES_PER_CPIXEL]
 
   @@:
-        lea     eax, [esi+ecx]
+        lea     eax, [esi+edi]
         cmp     [datapointer], eax
         jae     @f
         call    read_data.more
