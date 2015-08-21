@@ -13,13 +13,14 @@
 {
 	word width,height;
 	signed offset_x,offset_y;
+	float offset_i,w_italic;
 	byte text;
 	byte TMP_WEIGHT;
 };
 :struct FONT
 {
 	__SIZE size;
-	byte width,height,offsetLine,r,g,b,weight;
+	byte width,height,offsetLine,r,g,b,weight,italic;
 	dword color;
 	dword file_size;
 	dword buffer;
@@ -32,16 +33,30 @@
 	byte symbol(word x;byte s;dword c);
 	byte symbol_size(byte s);
 	dword text(word x,y;dword text1);
+	byte textcenter(word x,y,w,h;dword txt);
 	dword getsize(dword text1);
 	dword textarea(word x,y;dword text,c);
 	byte changeSIZE();
 	void PixelRGB(word x,y);
+	dword GetPixel(word x,y);
 	dword tmp_y,tmp_height,tmp_x;
 	byte no_bg_copy;
 	dword bg_color;
 };
 FONT font = 0;
 
+:dword FONT::GetPixel(word x,y)
+{
+	dword tmp;
+	tmp = y*size.width*3;
+	tmp += x*3;
+	tmp += buffer;
+	r = DSBYTE[tmp];
+	tmp++;
+	g = DSBYTE[tmp];
+	tmp++;
+	b = DSBYTE[tmp];
+}
 :void FONT::PixelRGB(dword x,y)
 {
 	dword tmp;
@@ -80,7 +95,15 @@ FONT font = 0;
 	return true;
 }
 :proc_info Form_SELF_FONTS;
-
+:byte FONT::textcenter(word x,y,w,h;dword txt)
+{
+	getsize(txt);
+	EDX = w/2;
+	ECX = size.width/2;
+	EDX -= ECX;
+	x += EDX;
+	return text(x,y,txt);
+}
 :dword FONT::getsize(dword text1)
 {
 	size.height = size.width = 0;
@@ -97,6 +120,13 @@ FONT font = 0;
 	size.height += size.offset_y;
 	size.width += size.offset_x;
 	size.width++;
+	IF(italic)
+	{
+		size.w_italic = -size.height/3;
+		size.offset_i = -size.w_italic/size.height;
+		size.offset_x+=size.w_italic;
+		size.width += math.ceil(size.w_italic+4);
+	}
 	return size.width;
 }
 :byte FONT::symbol_size(byte s)
@@ -197,7 +227,7 @@ FONT font = 0;
 		}
 	}
 	ELSE CopyScreen(buffer,x+Form_SELF_FONTS.left+5,y+Form_SELF_FONTS.top+GetSkinHeight(),size.width,size.height);
-
+	len = size.offset_x;
 	WHILE(DSBYTE[text1])
 	{
 		IF(DSBYTE[text1]=='_') len--;
@@ -218,11 +248,11 @@ FONT font = 0;
         dword xi,yi;
         dword tmp,_;
         dword iii;
+		float ital = -size.w_italic;
 		dword ___x;
 		word TMP;
 		byte _TMP_WEIGHT;
         byte rw=0;
-		x += size.offset_x;
         IF(s==32)return width/4;
 		IF(s==9)return width;
         yi = 0;
@@ -235,31 +265,33 @@ FONT font = 0;
 				TMP = size.offset_y+yi;
                 while(xi<width)
                 {
-                        IF(iii%32) _ >>= 1;
-						ELSE
-						{
-                                tmp += 4;
-                                _ = DSDWORD[tmp];
-                        }
-                        if(_&1)
-                        {
-                                IF(xi>rw)rw=xi;
-								___x = x+xi;
-								IF(___x<Form_SELF_FONTS.cwidth)&&(tmp_y+yi<Form_SELF_FONTS.cheight)
+					IF(iii%32) _ >>= 1;
+					ELSE
+					{
+							tmp += 4;
+							_ = DSDWORD[tmp];
+					}
+					if(_&1)
+					{
+							IF(xi>rw)rw=xi;
+							___x = x+xi;
+							IF(italic)___x+=math.ceil(ital);
+							if(___x<Form_SELF_FONTS.cwidth)&&(tmp_y+yi<Form_SELF_FONTS.cheight)
+							{
+								PixelRGB(___x,TMP);
+								_TMP_WEIGHT = size.TMP_WEIGHT;
+								WHILE(_TMP_WEIGHT)
 								{
-									PixelRGB(___x,TMP);
-									_TMP_WEIGHT = size.TMP_WEIGHT;
-									WHILE(_TMP_WEIGHT)
-									{
-										IF(weight) PixelRGB(___x+_TMP_WEIGHT,TMP);
-										_TMP_WEIGHT--;
-									}
+									IF(weight) PixelRGB(___x+_TMP_WEIGHT,TMP);
+									_TMP_WEIGHT--;
 								}
-                        }
-                        xi++;
-                        iii++;
+							}
+					}
+					xi++;
+					iii++;
                 }
                 yi++;
+				IF(italic) ital-=size.offset_i;
         }
         return rw;
 }
@@ -268,15 +300,13 @@ FONT font = 0;
 	dword tmp;
 	buffer_size = 0;
 	IF(data)free(data);
-	if (!io.readKPACK(path))
+	if (!io.read(path))
 	{
 		debug("Error while loading font: ");
 		debugln(path);
 		return false;
 	}
-	data = io.buffer_data;
-	tmp = data;
-	begin = data;
+	begin = tmp = data = io.buffer_data;
 	size_file = io.FILES_SIZE;
 	tmp +=size_file;
 	tmp--;
