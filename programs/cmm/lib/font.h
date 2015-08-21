@@ -9,6 +9,10 @@
 #include "../lib/io.h"
 #endif
 
+
+#define CP866 0
+#define ANSI   1
+
 :struct __SIZE
 {
 	word width,height;
@@ -21,6 +25,7 @@
 {
 	__SIZE size;
 	byte width,height,offsetLine,r,g,b,weight,italic;
+	byte encoding;
 	dword color;
 	dword file_size;
 	dword buffer;
@@ -149,6 +154,10 @@ FONT font = 0;
 			IF(weight) size.width+=size.TMP_WEIGHT;
 			return;
 		}
+		IF(!encoding){
+			IF(s>=128)&&(s<=175)s+=64;
+			ELSE IF(s>=224)&&(s<=239)s+=16;
+		}
         yi = 0;
         iii = 0;
         tmp = 4*block*s;
@@ -255,6 +264,11 @@ FONT font = 0;
         byte rw=0;
         IF(s==32)return width/4;
 		IF(s==9)return width;
+		IF(!encoding)
+		{
+			IF(s>=128)&&(s<=175)s+=64;
+			ELSE IF(s>=224)&&(s<=239)s+=16;
+		}
         yi = 0;
         iii = 0;
         tmp = 4*block*s;
