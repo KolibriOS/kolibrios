@@ -122,10 +122,10 @@ FONT font = 0;
 	size.width++;
 	IF(italic)
 	{
-		size.w_italic = -size.height/3;
-		size.offset_i = -size.w_italic/size.height;
-		size.offset_x+=size.w_italic;
-		size.width += math.ceil(size.w_italic+4);
+		size.w_italic = size.height/3;
+		size.offset_i = size.w_italic/size.height;
+		size.width += size.w_italic;
+		size.w_italic = -size.w_italic;
 	}
 	return size.width;
 }
