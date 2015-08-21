@@ -657,12 +657,12 @@ inline fastcall dword GetStartTime()
 			break;
 	}
 }
+:char REDRAW_BUFF_EVENT_[4096];
 :void EventRedrawWindow(dword x,y)
 {
-	dword mem = malloc(4096);
 	X_EventRedrawWindow = x;
 	Y_EventRedrawWindow = y;
-	CreateThread(#_EventRedrawWindow,mem+4092);
+	CreateThread(#_EventRedrawWindow,#REDRAW_BUFF_EVENT_+4092);
 }
 
 :dword ALERT_TEXT;
