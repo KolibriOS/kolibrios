@@ -788,7 +788,7 @@ update_flags:
 	lea	ebx,[ebx*3]
 	lea	ebx,[ebx*5]
 	add	ebx,(SIZE_X+12+70)*65536+28	; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff			; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff			; font 1 & color ( 0xF0RRGGBB )
 	movzx	edx,byte[edi+12]		; current flag
 	shl	edx,2				; * 4 = text length
 	add	edx,dword[edi+13]		; pointer to text beginning
@@ -2977,7 +2977,7 @@ buttons:				      ; draw some buttons (all but navigation and close )
 	lea	ebx,[ebx*3]
 	lea	ebx,[ebx*5]
 	add	ebx,(SIZE_X+12)*65536+28	; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff			; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff			; font 1 & color ( 0xF0RRGGBB )
 	lea	edx,[edi+1]			; pointer to text beginning
 	mov	esi,10				; text length
 	int	0x40
@@ -2991,7 +2991,7 @@ buttons:				      ; draw some buttons (all but navigation and close )
 ;       lea     ebx,[ebx*5]
 ;       add     ebx,(SIZE_X+12+70)*65536+28     ; [x start] *65536 + [y start]
 	add	ebx,70*65536
-;       mov     ecx,0x20ddeeff                  ; font 1 & color ( 0xF0RRGGBB )
+;       mov     ecx,0x00ddeeff                  ; font 1 & color ( 0xF0RRGGBB )
 	movzx	edx,byte[edi+12]		; current flag
 	shl	edx,2				; * 4 = text length
 	add	edx,dword[edi+13]		; pointer to text beginning
@@ -3030,7 +3030,7 @@ ret
 	; ADD VECTOR LABEL      ; add vector buttons - 30 ++
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12)*65536+(168+15*(13+.Y_ADD))   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelvector      ; pointer to text beginning
 	mov	esi,labelvectorend-labelvector	   ; text length
     ;    cmp     [move_flag],2
@@ -3048,7 +3048,7 @@ ret
 	;VECTOR Y- LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+32)*65536+(168+15*(14+.Y_ADD))   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelyminus      ; pointer to text beginning
 	mov	esi,labelyminusend-labelyminus	   ; text length
 	cmp	[move_flag],2
@@ -3066,7 +3066,7 @@ ret
 	;VECTOR Z+ LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+53)*65536+(168+15*(14+.Y_ADD))   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelzplus	    ; pointer to text beginning
 	mov	esi,labelzplusend-labelzplus	 ; text length
    ;     cmp     [move_flag],2
@@ -3085,7 +3085,7 @@ ret
 	;VECTOR x- LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12)*65536+(168+15*(15+.Y_ADD))   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelxminus      ; pointer to text beginning
 	mov	esi,labelxminusend-labelxminus	   ; text length
    ;     cmp     [move_flag],2
@@ -3103,7 +3103,7 @@ ret
 	;VECTOR x+ LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+53)*65536+(168+15*(15+.Y_ADD))   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelxplus	    ; pointer to text beginning
 	mov	esi,labelxplusend-labelxplus	 ; text length
    ;     cmp     [move_flag],2
@@ -3121,7 +3121,7 @@ ret
 	;VECTOR z- LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12)*65536+(168+15*(16+.Y_ADD))   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelzminus      ; pointer to text beginning
 	mov	esi,labelzminusend-labelzminus	   ; text length
    ;     cmp     [move_flag],2
@@ -3139,7 +3139,7 @@ ret
 	;VECTOR Y+ LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+32)*65536+(168+15*(16+.Y_ADD))   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelyplus	    ; pointer to text beginning
 	mov	esi,labelyplusend-labelyplus	 ; text length
    ;     cmp     [move_flag],2

@@ -1633,7 +1633,7 @@ draw_window:
 	; ROTARY  LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12)*65536+28   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelrot	  ; pointer to text beginning
 	mov	esi,labelrotend-labelrot     ; text length
 	int	0x40
@@ -1648,7 +1648,7 @@ draw_window:
 	 ; DRAW MODE LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12)*65536+28+15   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labeldrmod	    ; pointer to text beginning
 	mov	esi,labeldrmodend-labeldrmod	 ; text length
 	int	0x40
@@ -1663,7 +1663,7 @@ draw_window:
 	 ; SPEED MODE LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12)*65536+(28+15*2)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelspeedmod      ; pointer to text beginning
 	mov	esi,labelspeedmodend-labelspeedmod     ; text length
 	int	0x40
@@ -1678,7 +1678,7 @@ draw_window:
 	 ; SCALE- MODE LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12)*65536+(28+15*3)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelzoomout      ; pointer to text beginning
 	mov	esi,labelzoomoutend-labelzoomout     ; text length
 	int	0x40
@@ -1693,14 +1693,14 @@ draw_window:
 	 ; SCALE+ MODE LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12)*65536+(28+15*4)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelzoomin      ; pointer to text beginning
 	mov	esi,labelzoominend-labelzoomin	   ; text length
 	int	0x40
 	; ADD VECTOR LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12)*65536+(28+15*5)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelvector      ; pointer to text beginning
 	mov	esi,labelvectorend-labelvector	   ; text length
 	int	0x40
@@ -1714,7 +1714,7 @@ draw_window:
 	;VECTOR Y- LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12+20)*65536+(28+15*6)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelyminus      ; pointer to text beginning
 	mov	esi,labelyminusend-labelyminus	   ; text length
 	int	0x40
@@ -1728,7 +1728,7 @@ draw_window:
 	;VECTOR Z+ LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12+41)*65536+(28+15*6)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelzplus	    ; pointer to text beginning
 	mov	esi,labelzplusend-labelzplus	 ; text length
 	int	0x40
@@ -1742,7 +1742,7 @@ draw_window:
 	;VECTOR x- LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12)*65536+(28+15*7)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelxminus      ; pointer to text beginning
 	mov	esi,labelxminusend-labelxminus	   ; text length
 	int	0x40
@@ -1756,7 +1756,7 @@ draw_window:
 	;VECTOR x+ LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12+41)*65536+(28+15*7)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelxplus	    ; pointer to text beginning
 	mov	esi,labelxplusend-labelxplus	 ; text length
 	int	0x40
@@ -1770,7 +1770,7 @@ draw_window:
 	;VECTOR z- LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12)*65536+(28+15*8)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelzminus      ; pointer to text beginning
 	mov	esi,labelzminusend-labelzminus	   ; text length
 	int	0x40
@@ -1784,14 +1784,14 @@ draw_window:
 	;VECTOR Y+ LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12+20)*65536+(28+15*8)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelyplus	    ; pointer to text beginning
 	mov	esi,labelyplusend-labelyplus	 ; text length
 	int	0x40
 	; LEAD COLOR LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12)*65536+(28+15*9)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelmaincolor	; pointer to text beginning
 	mov	esi,labelmaincolorend-labelmaincolor	 ; text length
 	int	0x40
@@ -1806,7 +1806,7 @@ draw_window:
 	;RED+  LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12)*65536+(28+15*10)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelredplus      ; pointer to text beginning
 	mov	esi,labelredplusend-labelredplus     ; text length
 	int	0x40
@@ -1820,7 +1820,7 @@ draw_window:
 	;GREEN+ LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12+20)*65536+(28+15*10)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelgreenplus	; pointer to text beginning
 	mov	esi,labelgreenplusend-labelgreenplus	 ; text length
 	int	0x40
@@ -1834,7 +1834,7 @@ draw_window:
 	;BLUE+ LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12+41)*65536+(28+15*10)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelblueplus      ; pointer to text beginning
 	mov	esi,labelblueplusend-labelblueplus     ; text length
 	int	0x40
@@ -1848,7 +1848,7 @@ draw_window:
 	;RED-  LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12)*65536+(28+15*11)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelredminus      ; pointer to text beginning
 	mov	esi,labelredminusend-labelredminus     ; text length
 	int	0x40
@@ -1862,7 +1862,7 @@ draw_window:
 	;GREEN- LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12+20)*65536+(28+15*11)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelgreenminus	 ; pointer to text beginning
 	mov	esi,labelgreenminusend-labelgreenminus	   ; text length
 	int	0x40
@@ -1876,14 +1876,14 @@ draw_window:
 	;BLUE- LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12+41)*65536+(28+15*11)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelblueminus	; pointer to text beginning
 	mov	esi,labelblueminusend-labelblueminus	 ; text length
 	int	0x40
 	; Catmull  LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12)*65536+(28+15*12)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelcatmullmod	 ; pointer to text beginning
 	mov	esi,labelcatmullmodend-labelcatmullmod	   ; text length
 	int	0x40
@@ -1897,7 +1897,7 @@ draw_window:
 	 ; on/off LABEL
 	mov	eax,4		; function 4 : write text to window
 	mov	ebx,(SIZE_X+12)*65536+(28+15*13)   ; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
+	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelonoff	    ; pointer to text beginning
 	mov	esi,labelonoffend-labelonoff	 ; text length
 	int	0x40
