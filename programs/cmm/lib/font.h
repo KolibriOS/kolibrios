@@ -336,7 +336,7 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 	dword tmp;
 	buffer_size = 0;
 	IF(data)free(data);
-	if (!io.read(path))
+	if (!io.readKPACK(path))
 	{
 		debug("Error while loading font: ");
 		debugln(path);

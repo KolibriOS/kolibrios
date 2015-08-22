@@ -129,7 +129,7 @@ void main()
 	strcpy(#inactive_path, #path);
 	llist_copy(#files_inactive, #files);
 	font.no_bg_copy = true;
-	font.load("/sys/font/Tahoma.kf");
+	font.load("/sys/fonts/tahoma.kf");
 	SetEventMask(1100111b);
 	loop(){
 		switch(WaitEvent())

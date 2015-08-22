@@ -25,9 +25,7 @@
 unsigned char icons[]= FROM "icons.raw";
 
 #define PANEL_H 30
-#define SKINS_STANDART_PATH "/sys/skins"
-							//"/kolibrios/res/skins"
-							
+#define SKINS_STANDART_PATH "/kolibrios/res/skins"							
 #define WALP_STANDART_PATH "/kolibrios/res/wallpapers"
 
 llist list[2];

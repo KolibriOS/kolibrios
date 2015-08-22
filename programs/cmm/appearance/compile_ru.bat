@@ -7,3 +7,4 @@ C-- appearance.c
 @del warning.txt
 @del lang.h--
 @pause
+kpack appearance

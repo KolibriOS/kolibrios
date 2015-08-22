@@ -14,16 +14,16 @@
 void main()
 {
 
-	SetAddApplDir("kolibrios", abspath("kolibrios")+1);
+	SetAddApplDir("kolibrios", abspath("install/kolibrios")+1);
 	io.run("/sys/media/kiv", "\\S__/kolibrios/res/Wallpapers/In the wind there is longing.png");
-	copyf(abspath("sys"), "/sys");
+	copyf(abspath("install/sys"), "/sys");
 	RestartProcessByName("@icon", MULTIPLE);
 	RestartProcessByName("@taskbar", SINGLE);
 	RestartProcessByName("@docky", SINGLE);
 	notify(T_END);
 	io.run("/sys/tmpdisk", "a0s10");
 	pause(50);
-	copyf(abspath("tmp"), "/tmp0/1");
+	copyf(abspath("install/tmp"), "/tmp0/1");
 	ExitProcess();
 }
 
