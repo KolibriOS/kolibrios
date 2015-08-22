@@ -27,13 +27,13 @@ int WinX, WinY, WinW, WinH;
 void settings_dialog()
 {   
 	byte id;
-	
+	active_settings=1;
 	loop(){
 		switch(WaitEvent())
 		{
 			case evButton: 
 				id=GetButtonID();
-				if (id==1) ExitSettings();
+				if (id==1) { ExitSettings(); break; }
 				else if (id==5)
 				{
 					RunProgram("tinypad", "/sys/settings/assoc.ini");
@@ -47,9 +47,8 @@ void settings_dialog()
 				else if (id==26) && (files.line_h>18) files.line_h--;
 				else if (id==27) MOUSE_TIME++;
 				else if (id==28) && (MOUSE_TIME>29) MOUSE_TIME--;
-				else if (id==30) && (font.size.text<22) { font.size.text++; BigFontsChange(); }
-				else if (id==31) && (font.size.text>9) { font.size.text--; BigFontsChange(); }
-				SaveIniSettings();
+				else if (id==30) { font.size.text++; IF(!font.changeSIZE()) font.size.text--; BigFontsChange(); }
+				else if (id==31) { font.size.text--; IF(!font.changeSIZE()) font.size.text++; BigFontsChange(); }
 				EventRedrawWindow(Form.left,Form.top);
 				DrawSettingsCheckBoxes();
 			break;
@@ -69,10 +68,9 @@ void settings_dialog()
 
 void ExitSettings()
 {
-	active_settings=0;
+	active_settings = 0;
 	settings_window = 0;
 	cmd_free = 4;
-	SaveIniSettings();
 	ExitProcess();
 }
 
@@ -103,6 +101,9 @@ void LoadIniSettings()
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinW", 550); WinW = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinH", 500); WinH = EAX;
 	BigFontsChange();
+	files.SetFont(6, 6, 10000000b);
+	FileShow.font_size_x = files.font_w;
+	FileShow.font_number = 0;
 }
 
 
@@ -152,10 +153,6 @@ void BigFontsChange()
 	files.line_h = font.height + 4;
 	if (files.line_h<18) files.line_h = 18;
 	files_active.line_h = files_inactive.line_h = files.line_h;
-
-	files.SetFont(6, 6, 10000000b);
-	FileShow.font_size_x = files.font_w;
-	FileShow.font_number = 0;
 }
 
 

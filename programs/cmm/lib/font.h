@@ -244,8 +244,30 @@ FONT font = 0;
 		IF(weight)len+=math.ceil(size.text/17);
 		text1++;
 	}
+	IF (no_bg_copy) && (!color) SmoothFont(buffer, size.width, size.height);
 	_PutImage(x,y,size.width,size.height,buffer);
 	return len;
+}
+inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
+:void SmoothFont(dword color_image, w, h)
+{
+	byte rr,gg,bb;
+	dword i,line_w,to, pixel;
+	line_w = w * 3;
+	to = w*h*3 + color_image - line_w - 3;
+	for (i = color_image; i < to; i+=3)	{
+		if (i-color_image%line_w +3 == line_w) continue;
+		if (b24(i)==0x000000) && (b24(i+3)!=0x000000) && (b24(i+line_w)!=0x000000) && (b24(i+3+line_w)==0x000000)
+		{ 
+			ShadowImage(i+3, 1, 1, 2);
+			ShadowImage(i+line_w, 1, 1, 2);
+		}
+		else if (b24(i)!=0x000000) && (b24(i+3)==0x000000) && (b24(i+line_w)==0x000000) && (b24(i+3+line_w)!=0x000000)
+		{
+			ShadowImage(i, 1, 1, 2);
+			ShadowImage(i+3+line_w, 1, 1, 2);
+		}
+	}
 }
 :dword FONT::textarea(word x,y;dword text1,c;byte size)
 {

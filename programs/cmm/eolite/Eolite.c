@@ -270,7 +270,6 @@ void main()
 					break;
 				}
 
-
 				if (two_panels) && (mouse.y > files.y) && (mouse.down) {
 					if (mouse.x<Form.cwidth/2)
 					{
@@ -586,6 +585,9 @@ void DrawFilePanels()
 
 		if (active_panel==1)
 		{
+			llist_copy(#files, #files_inactive);
+			strcpy(#path, #inactive_path);
+			col_selec = 0xCCCccc;
 			files.SetSizes(Form.cwidth/2, 57+22, Form.cwidth/2 -17, Form.cheight-59-22, files.line_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
@@ -646,7 +648,7 @@ void List_ReDraw()
 }
 
 
-void Line_ReDraw(dword color, filenum){
+void Line_ReDraw(dword bgcol, filenum){
 	dword text_col=0,
 	      ext1, attr,
 	      file_offet,
@@ -654,11 +656,11 @@ void Line_ReDraw(dword color, filenum){
 	      y=filenum*files.line_h+files.y;
 	      BDVK file;
 	if (filenum==-1) return;
-	DrawBar(files.x,y,3,files.line_h,color); 
-	DrawBar(files.x+19,y,files.w-19,files.line_h,color);
-	DrawBar(files.x+3,y+17,16,1,color);
-	if (files.line_h>18) DrawBar(files.x+3,y+18,16,files.line_h-18,color);
-	if (files.line_h>15) DrawBar(files.x+3,y,16,files.line_h-15,color); 
+	DrawBar(files.x,y,3,files.line_h,bgcol); 
+	DrawBar(files.x+19,y,files.w-19,files.line_h,bgcol);
+	DrawBar(files.x+3,y+17,16,1,bgcol);
+	if (files.line_h>18) DrawBar(files.x+3,y+18,16,files.line_h-18,bgcol);
+	if (files.line_h>15) DrawBar(files.x+3,y,16,files.line_h-15,bgcol); 
 
 	file_offet = file_mas[filenum+files.first]*304 + buf+32;
 	attr = ESDWORD[file_offet];
@@ -670,17 +672,17 @@ void Line_ReDraw(dword color, filenum){
 	{	
 		ext1 = strrchr(file_name_off,'.') + file_name_off;
 		if (ext1==file_name_off) ext1 = " \0"; //if no extension then show nothing 
-		Put_icon(ext1, files.x+3, files.line_h/2-7+y, color, 0);
+		Put_icon(ext1, files.x+3, files.line_h/2-7+y, bgcol, 0);
 		WriteText(7-strlen(ConvertSize(file.sizelo))*6+files.x+files.w - 58, files.text_y + y,files.font_type,0,ConvertSize(file.sizelo));
 	}
 	else
 	{
 		if (!strncmp(file_name_off,"..",3)) ext1=".."; else ext1="<DIR>";
-		Put_icon(ext1, files.x+3, files.line_h/2-7+y, color, 0);		
+		Put_icon(ext1, files.x+3, files.line_h/2-7+y, bgcol, 0);		
 	}
 
 	if (TestBit(attr, 1)) || (TestBit(attr, 2)) text_col=0xA6A6B7; //system or hiden?
-	if (color!=0xFFFfff)
+	if (bgcol!=0xFFFfff)
 	{
 		itdir = TestBit(attr, 4);
 		strcpy(#file_name, file_name_off);
@@ -703,7 +705,7 @@ void Line_ReDraw(dword color, filenum){
 	}
 	else
 	{
-		font.bg_color = color;
+		font.bg_color = bgcol;
 		font.text(files.x + 23, files.line_h - font.height / 2 - 1 + y, file_name_off);
 	}
 	DrawBar(files.x+files.w-141,y,1,files.line_h,system.color.work); //gray line 1
@@ -1103,7 +1105,6 @@ void FnProcess(byte N)
 				Tip(56, T_DEVICES, 55, "-");
 				Open_Dir(#path,WITH_REDRAW);
 				pause(10);
-				LoadIniSettings();
 				GetSystemDiscs();
 				Open_Dir(#path,WITH_REDRAW);
 				DrawDeviceAndActionsLeftPanel();				

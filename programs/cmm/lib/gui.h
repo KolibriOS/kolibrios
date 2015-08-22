@@ -162,17 +162,18 @@
 
 :void GrayScaleImage(dword color_image, w, h)
 {
-	dword i,gray,rr,gg,bb;
-	for (i = 0; i < w*h*3; i+=3)
+	dword i,gray,to,rr,gg,bb;
+	to = w*h*3 + color_image;
+	for (i = color_image; i < to; i+=3)
 	{
-		rr = DSBYTE[i+color_image];
-		gg = DSBYTE[i+1+color_image];
-		bb = DSBYTE[i+2+color_image];
+		rr = DSBYTE[i];
+		gg = DSBYTE[i+1];
+		bb = DSBYTE[i+2];
 		gray = rr*rr;
 		gray += gg*gg;
 		gray += bb*bb;
 		gray = sqrt(gray) / 3;
-		DSBYTE[i  +color_image] = DSBYTE[i+1+color_image] = DSBYTE[i+2+color_image] = gray;
+		DSBYTE[i] = DSBYTE[i+1] = DSBYTE[i+2] = gray;
 	}
 }
 
