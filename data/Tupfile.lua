@@ -34,7 +34,7 @@ img_files = {
  {"DEFAULT.SKN", "common/default.skn"},
  {"SETTINGS/ICON.INI", build_type .. "/settings/icon.ini"},
  {"ICONS32.PNG", "common/icons32.png"},
- {"INDEX.HTM", build_type .. "/index_htm"},
+ {"INDEX.HTM", "common/index_htm"},
  {"KERPACK", "common/kerpack"},
  {"SETTINGS/KEYMAP.KEY", build_type .. "/settings/keymap.key"},
  {"SETTINGS/LANG.INI", build_type .. "/settings/lang.ini"},
