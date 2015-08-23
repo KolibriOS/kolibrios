@@ -67,6 +67,8 @@ void Draw_List()
 	int i;
 	int yyy;
 	int list_last;
+	list[SKINS].SetFont(6, 6, 10000000b);
+	list[WALLPAPERS].SetFont(6, 6, 10000000b);
 	list[SKINS].SetSizes(0, PANEL_H, Form.cwidth-scroll1.size_x-1, Form.cheight-PANEL_H, 20);
 	list[WALLPAPERS].SetSizes(0, PANEL_H, Form.cwidth-scroll1.size_x-1, Form.cheight-PANEL_H, 20);
 	if (list[active].count > list[active].visible) list_last = list[active].visible; else list_last = list[active].count;

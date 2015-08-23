@@ -88,7 +88,9 @@ void DrawSettingsCheckBoxes()
 
 void LoadIniSettings()
 {
-	ini_get_color stdcall (eolite_ini_path, #config_section, "SelectionColor",   0x94AECE); col_selec = EAX;
+	files.SetFont(6, 9, 10000000b);
+	FileShow.font_size_x = files.font_w;
+	FileShow.font_number = 0;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "ShowDeviceName",    1); show_dev_name = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "RealFileNamesCase", 0); real_files_names_case = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "InfoAfterCopy",     0); info_after_copy = EAX;
@@ -100,10 +102,6 @@ void LoadIniSettings()
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinY", 50); WinY = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinW", 550); WinW = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinH", 500); WinH = EAX;
-	BigFontsChange();
-	files.SetFont(6, 6, 10000000b);
-	FileShow.font_size_x = files.font_w;
-	FileShow.font_number = 0;
 }
 
 
@@ -143,14 +141,14 @@ void SetAppColors()
 	system.color.work_button = 0xD2D3D3;
 	system.color.work_button_text = 0x000000;
 	col_padding = 0xC8C9C9;
-	//col_selec   = 0x94AECE;
+	col_selec   = 0x94AECE;
 	col_lpanel  = 0x00699C;
 }
 
 
 void BigFontsChange()
 {
-	files.line_h = font.height + 4;
+	files.line_h = font.size.text + 4;
 	if (files.line_h<18) files.line_h = 18;
 	files_active.line_h = files_inactive.line_h = files.line_h;
 }

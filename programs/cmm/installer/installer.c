@@ -16,6 +16,7 @@ void main()
 
 	SetAddApplDir("kolibrios", abspath("install/kolibrios")+1);
 	io.run("/sys/media/kiv", "\\S__/kolibrios/res/Wallpapers/In the wind there is longing.png");
+	io.del("/sys/docpack");
 	copyf(abspath("install/sys"), "/sys");
 	RestartProcessByName("@icon", MULTIPLE);
 	RestartProcessByName("@taskbar", SINGLE);

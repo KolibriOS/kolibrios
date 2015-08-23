@@ -7,3 +7,4 @@ C-- installer.c
 @pause
 @del lang.h--
 @del warning.txt
+kpack installer.kex
