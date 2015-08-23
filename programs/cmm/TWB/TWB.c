@@ -6,7 +6,7 @@ enum { ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT};
 
 struct _style {
 byte
-	b, i, u, s,
+	b, i, u, s, h,
 	pre,
 	blq,
 	li,
@@ -17,7 +17,6 @@ byte
 struct TWebBrowser {
 	llist list;
 	_style style;
-	dword draw_line_width;
 	DrawBufer DrawBuf;
 	void Prepare();
 	void SetStyle();
@@ -59,9 +58,10 @@ char header[2048];
 char line[500];
 char tagparam[10000];
 char tag[100];
+char oldtag[100];
 char attr[1200];
 char val[4096];
-char anchor[256];
+char anchor[256]=0;
 
 #include "..\TWB\history.h"
 #include "..\TWB\links.h"
@@ -91,9 +91,10 @@ void TWebBrowser::DrawStyle()
 	{
 		start_x = stolbec * list.font_w + body_magrin * DrawBuf.zoom + list.x;
 		start_y = stroka * list.line_h + body_magrin;
-		stolbec_len = utf8_strlen(#line);
-		line_length = stolbec_len * list.font_w * DrawBuf.zoom;
+		stolbec_len = utf8_strlen(#line) * DrawBuf.zoom;
+		line_length = stolbec_len * list.font_w;
 
+		if (style.h) stroka++;
 		WriteBufText(start_x, start_y, list.font_type, text_colors[text_color_index], #line, buf_data);
 		if (style.b) WriteBufText(start_x+1, start_y, list.font_type, text_colors[text_color_index], #line, buf_data);
 		if (style.i) { stolbec++; DrawBuf.Skew(start_x, start_y, line_length, list.line_h); } // bug with zoom>1
@@ -122,7 +123,7 @@ void TWebBrowser::Prepare(){
 	dword bufpos = bufpointer;
 	int line_len;
 	
-	style.b = style.i = style.u = style.s = style.blq = t_html = t_body =
+	style.b = style.i = style.u = style.s = style.h = style.blq = t_html = t_body =
 	style.li = link = ignor_text = text_color_index = text_colors[0] = style.li_tab = 0;
 	style.align = ALIGN_LEFT;
 	link_color_inactive = 0x0000FF;
@@ -135,24 +136,18 @@ void TWebBrowser::Prepare(){
 	stolbec = 0;
 	line = 0;
 
-	draw_line_width = list.w * DrawBuf.zoom;
-
 	//for plaint text use CP866 for other UTF
 	if (strstri(bufpointer, "html")) 
 	{
 		style.pre = 0;
 		cur_encoding = CH_CP866;
-		//WB1.list.SetFont(8, 14, 10111000b);
-		//list.line_h = list.font_h + 4;
 	}
 	else
 	{
 		style.pre = 1;
 		cur_encoding = CH_UTF8;
-		//WB1.list.SetFont(8, 14, 10001000b);
-		//list.line_h = list.font_h + 4;
 	}
-	
+
 	for ( ; (bufpointer+bufsize > bufpos) && (ESBYTE[bufpos]!=0); bufpos++;)
 	{
 		bukva = ESBYTE[bufpos];
@@ -189,24 +184,12 @@ void TWebBrowser::Prepare(){
 			break;
 		case '<':
 			bufpos++;
-			tag = attr = tagparam = ignor_param = NULL;
-			if (ESBYTE[bufpos] == '!') //фильтрация внутри <!-- -->, дерзко
+			if (!strncmp(bufpos,"!--",3))
 			{
+				if (!strncmp(bufpos,"-->",3)) || (bufpointer + bufsize <= bufpos) break;
 				bufpos++;
-				if (ESBYTE[bufpos] == '-')
-				{
-				HH_:
-					do
-					{
-						bufpos++;
-						if (bufpointer + bufsize <= bufpos) break 2;
-					}
-					while (ESBYTE[bufpos] <>'-');
-					
-					bufpos++;
-					if (ESBYTE[bufpos] <>'-') goto HH_;
-				}
 			}
+			tag = attr = tagparam = ignor_param = NULL;
 			while (ESBYTE[bufpos] !='>') && (bufpos < bufpointer + bufsize) //получаем тег и его параметры
 			{
 				bukva = ESBYTE[bufpos];
@@ -227,10 +210,11 @@ void TWebBrowser::Prepare(){
 			if (tag[strlen(#tag)-1]=='/') tag[strlen(#tag)-1]=NULL; //for br/
 			if (tagparam) GetNextParam();
 
-			if (stolbec + utf8_strlen(#line) > list.column_max) Perenos();
+			Perenos();
 			DrawStyle();
 			line = NULL;
 			if (tag) SetStyle(WB1.DrawBuf.zoom * 5 + list.x, stroka * list.line_h + list.y + 5); //обработка тегов
+			strcpy(#oldtag, #tag);
 			tag = attr = tagparam = ignor_param = NULL;
 			break;
 		default:
@@ -243,7 +227,7 @@ void TWebBrowser::Prepare(){
 				if (!stolbec) && (!line) break; //no paces at the beginning of the line
 			}
 			if (line_len < sizeof(line)) chrcat(#line, bukva);
-			if (stolbec + line_len > list.column_max) Perenos();
+			Perenos();
 		}
 	}
 	DrawStyle();
@@ -262,6 +246,7 @@ void TWebBrowser::Perenos()
 {
 	int perenos_num;
 	char new_line_text[4096];
+	if (stolbec + utf8_strlen(#line) < list.column_max) return;
 	perenos_num = strrchr(#line, ' ');
 	if (!perenos_num) && (utf8_strlen(#line)>list.column_max) perenos_num=list.column_max;
 	strcpy(#new_line_text, #line + perenos_num);
@@ -271,7 +256,6 @@ void TWebBrowser::Perenos()
 	NewLine();
 }
 //============================================================================================
-char oldtag[100];
 void TWebBrowser::SetStyle(int left1, top1) {
 	dword hr_color;
 	byte opened;
@@ -388,47 +372,25 @@ void TWebBrowser::SetStyle(int left1, top1) {
 	if (istag("blockquote")) { style.blq = opened; return; }
 	if (istag("pre")) || (istag("code")) { style.pre = opened; return; }
 	if (istag("img")) { ImgCache.Images( left1, top1, WB1.list.w); return; }
-	/*
-	if (istag("center"))
-	{
-		if (opened) style.align = ALIGN_CENTER;
-		if (!opened)
-		{
-			NewLine();
-			style.align = ALIGN_LEFT;
-		}
-		return;
-	}
-	if (istag("right"))
-	{
-		if (opened) style.align = ALIGN_RIGHT;
-		if (!opened)
-		{
-			NewLine();
-			style.align = ALIGN_LEFT;
-		}
-		return;
-	}
-	*/
 	if (istag("h1")) || (istag("h2")) || (istag("h3")) || (istag("h4")) || (istag("caption")) {
+		style.h = opened;
 		NewLine();
-		if (opened) && (stroka>1) NewLine();
-		strcpy(#oldtag, #tag);
 		if (opened)
 		{
+			WB1.DrawBuf.zoom=2;
+			WB1.list.SetFont(8, 14, 10111001b);
 			if (isattr("align=")) && (isval("center")) style.align = ALIGN_CENTER;
 			if (isattr("align=")) && (isval("right")) style.align = ALIGN_RIGHT;
-			style.b = 1;
+			if (stroka>1) NewLine();
 		}
-		if (!opened)
+		else
 		{
+			WB1.DrawBuf.zoom=1;
+			WB1.list.SetFont(8, 14, 10111000b);
 			style.align = ALIGN_LEFT;
-			style.b = 0;
 		}
 		return;
 	}
-	else
-		oldtag=NULL;
 	if (istag("dt")) {
 		style.li = opened;
 		if (opened) NewLine();

@@ -30,14 +30,14 @@
 char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.3 UNSTABLE";
+	char version[]=" Текстовый браузер 1.31 UNSTABLE";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.3 UNSTABLE";
+	char version[]=" Text-based Browser 1.31 UNSTABLE";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -78,13 +78,11 @@ enum {
 	FORWARD_BUTTON, 
 	REFRESH_BUTTON, 
 	GOTOURL_BUTTON, 
-	SEARCHWEB_BUTTON, 
 	SANDWICH_BUTTON
 };
 
 enum {
-	ZOOM2x=1100,
-	VIEW_SOURCE,
+	VIEW_SOURCE=1100,
 	EDIT_SOURCE,
 	VIEW_HISTORY,
 	FREE_IMG_CACHE,
@@ -92,7 +90,7 @@ enum {
 };
 
 #include "..\TWB\TWB.c"
-#include "menu_rmb.h"
+#include "menu.h"
 #include "history.h"
 #include "show_src.h"
 #include "network_get.h"
@@ -424,20 +422,6 @@ void Scan(dword id__)
 			CreateThread(#menu_rmb,#stak+4092);
 			return;
 
-		case ZOOM2x:
-			if (WB1.DrawBuf.zoom==2)
-			{
-				WB1.DrawBuf.zoom=1;
-				WB1.list.SetFont(8, 14, 10111000b);
-			}
-			else
-			{
-				WB1.DrawBuf.zoom=2;
-				WB1.list.SetFont(8, 14, 10111001b);
-			}
-			Draw_Window(); 
-			return;
-
 		case VIEW_SOURCE:
 			WB1.list.first = 0;
 			ShowSource();
@@ -605,7 +589,6 @@ void OpenPage()
 			bufpointer = malloc(bufsize);
 			SetPageDefaults();
 			ReadFile(0, bufsize, bufpointer, #URL);
-			//ShowSource();
 		}
 		ShowPage();
 	}
@@ -633,7 +616,9 @@ void ShowPage()
 			WB1.LoadInternalPage(#page_not_found, sizeof(page_not_found));
 	}
 	else
+	{
 		WB1.Prepare();
+	}
 
 	if (!header) strcpy(#header, #version);
 	if (!strcmp(#version, #header)) DrawTitle(#header);

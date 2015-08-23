@@ -2,14 +2,12 @@
 
 char *ITEMS_LIST[]={
 #ifdef LANG_RUS
-"Zoom 2x",
 "Посмотреть исходник",
 "Редактировать исходник",
 "История",
 "Очистить кэш картинок",
 "Менеджер загрузок",
 #else
-"Zoom 2x",
 "View source",
 "Edit source",
 "History",
@@ -72,11 +70,10 @@ void DrawMenuList()
 		}
 		WriteText(18,N*menu.line_h+8,0x80,0x000000,ITEMS_LIST[N]);
 	}
-	if (WB1.DrawBuf.zoom == 2) DrawBar(6, 8, 6, 6, 0x777777);
 }
 
 void ItemClick()
 {
-	action_buf = ZOOM2x + menu.current;
+	action_buf = VIEW_SOURCE + menu.current;
 	ExitProcess();
 }
