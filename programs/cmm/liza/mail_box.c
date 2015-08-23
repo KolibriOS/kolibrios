@@ -361,7 +361,7 @@ void InitTWB() {
 void DrawLetter() {
 	bufsize = strlen(mdata);
 	WB1.LoadInternalPage(bufsize, mdata);
-	if (bufsize) WB1.Parse();
+	if (bufsize) WB1.Prepare();
 	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, 0xFFFfff);
 }
 

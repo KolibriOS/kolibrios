@@ -30,14 +30,14 @@
 char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.23";
+	char version[]=" Текстовый браузер 1.3 UNSTABLE";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.23";
+	char version[]=" Text-based Browser 1.3 UNSTABLE";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -182,7 +182,7 @@ void main()
 				//Mouse scroll
 				if (mouse.vert)
 				{
-					if (WB1.list.MouseScroll(mouse.vert)) WB1.Parse();
+					if (WB1.list.MouseScroll(mouse.vert)) WB1.DrawPage();
 				}
 				//Drag scroller
 				scroll_wv.all_redraw = 0;
@@ -201,7 +201,7 @@ void main()
 					btn=WB1.list.first;
 					WB1.list.first = mouse.y -half_scroll_size -WB1.list.y * WB1.list.count / WB1.list.h;
 					if (WB1.list.visible+WB1.list.first>WB1.list.count) WB1.list.first=WB1.list.count-WB1.list.visible;
-					if (btn!=WB1.list.first) WB1.Parse();
+					if (btn!=WB1.list.first) WB1.DrawPage();
 				}
 				break;
 
@@ -311,7 +311,7 @@ void SetElementSizes()
 	WB1.list.wheel_size = 7;
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w;
 	WB1.list.visible = WB1.list.h - 5 / WB1.list.line_h;
-	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.line_h);
+	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h * 20);
 }
 
 void Draw_Window()
@@ -382,19 +382,19 @@ void Scan(dword id__)
 		case SCAN_CODE_END:
 		case SCAN_CODE_PGUP:
 		case SCAN_CODE_PGDN:
-			if (WB1.list.ProcessKey(key_scancode)) WB1.Parse();
+			if (WB1.list.ProcessKey(key_scancode)) WB1.DrawPage();
 			return;
 
 		case SCAN_CODE_UP:
 			if (WB1.list.first <= 0) return;
 			WB1.list.first--;
-			WB1.Parse();
+			WB1.DrawPage();
 			return;
 
 		case SCAN_CODE_DOWN:
 			if (WB1.list.visible + WB1.list.first >= WB1.list.count) return;
 			WB1.list.first++;
-			WB1.Parse();
+			WB1.DrawPage();
 			return;
 
 		case GOTOURL_BUTTON:
@@ -441,7 +441,7 @@ void Scan(dword id__)
 		case VIEW_SOURCE:
 			WB1.list.first = 0;
 			ShowSource();
-			WB1.Parse();
+			WB1.DrawPage();
 			break;
 
 		case EDIT_SOURCE:
@@ -456,7 +456,7 @@ void Scan(dword id__)
 		case FREE_IMG_CACHE:
 			ImgCache.Free();
 			notify(IMAGES_CACHE_CLEARED);
-			WB1.Parse();
+			WB1.DrawPage();
 			return;
 
 		case VIEW_HISTORY:
@@ -633,7 +633,7 @@ void ShowPage()
 			WB1.LoadInternalPage(#page_not_found, sizeof(page_not_found));
 	}
 	else
-		WB1.Parse();
+		WB1.Prepare();
 
 	if (!header) strcpy(#header, #version);
 	if (!strcmp(#version, #header)) DrawTitle(#header);
