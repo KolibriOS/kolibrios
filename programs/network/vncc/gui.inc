@@ -163,7 +163,7 @@ draw_gui:
         test    [work], WORK_GUI
         jnz     .redraw
         cmp     [status], STATUS_CONNECTED
-        je      .connected
+        je      connected
 
         mcall   23, 10                          ; wait for event
         dec     eax                             ; redraw request ?
@@ -176,8 +176,6 @@ draw_gui:
         jz      .mouse
         jmp     .loop
 
-  .connected:
-        ret
 
   .key:                                         ; key event handler
         mcall   2                               ; read key

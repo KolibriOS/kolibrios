@@ -195,9 +195,10 @@ end if
   @@:
 
 ; Present the user with the GUI and wait for network connection
-        call    draw_gui.first_time
+        jmp     draw_gui.first_time
 
 ; Create main window
+connected:
         mcall   71, 1, name             ; reset window caption (add server name)
 
         mov     edx, dword[screen]
@@ -207,7 +208,7 @@ end if
         add     esi, ypos+xpos
         mcall   67, 10, 10              ; resize the window
 
-        mcall   40, EVM_MOUSE + EVM_MOUSE_FILTER + EVM_KEY + EVM_REDRAW + EVM_BUTTON
+        mcall   40, EVM_CURSOR_FILTER + EVM_MOUSE_FILTER + EVM_MOUSE + EVM_KEY + EVM_REDRAW + EVM_BUTTON
 
         mcall   66, 1, 1                ; Switch keyboard to scancode mode
 
