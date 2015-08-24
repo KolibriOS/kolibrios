@@ -75,6 +75,8 @@ clipboard:
         mcall   54
         cmp     eax, -1
         je      error
+        cmp     eax, 1
+        je      error
 
 ; Verify if we can work with it
         mov     [clipboard_data], eax
@@ -101,7 +103,7 @@ escape:
         pop     [clipboard_data]
 
 ; Connect to the server
-        invoke  HTTP_get, sz_url, 0, 0, 0
+        invoke  HTTP_get, sz_url, 0, FLAG_BLOCK or FLAG_KEEPALIVE, 0
         test    eax, eax
         jz      error_free_clip
         mov     [identifier], eax
@@ -135,14 +137,11 @@ escape:
         xor     al, al
         stosb
 
-        invoke  HTTP_free, [identifier]
-
         mov     ecx, [clipboard_data_length]
         add     ecx, sz_paste_head.length + sz_paste_tail.length
-        invoke  HTTP_post, sz_url, 0, 0, sz_cookie, sz_ctype, ecx
+        invoke  HTTP_post, sz_url, [identifier], FLAG_BLOCK, sz_cookie, sz_ctype, ecx
         test    eax, eax
-        jz      error_free_clip
-        mov     [identifier], eax
+        jz      error_free_clip_disconnect
 
 ; Send the data to the server
         mov     ecx, [eax + http_msg.socket]
@@ -157,6 +156,8 @@ escape:
         invoke  HTTP_receive, [identifier]
         test    eax, eax
         jnz     .again2
+
+        invoke  HTTP_disconnect, [identifier]
 
         mov     ebp, [identifier]
         cmp     [ebp + http_msg.status], 302    ; found
@@ -205,6 +206,9 @@ escape:
 error_free_http:
         invoke  HTTP_free, [identifier]
         jmp     error
+error_free_clip_disconnect:
+        invoke  HTTP_disconnect, [identifier]
+        invoke  HTTP_free, [identifier]
 error_free_clip:
         mcall   68, 13, [clipboard_data]
 error:
@@ -228,7 +232,8 @@ import  lib_http, \
         HTTP_receive,           'receive', \
         HTTP_find_header_field, 'find_header_field', \
         HTTP_free,              'free', \
-        HTTP_escape,            'escape'
+        HTTP_escape,            'escape', \
+        HTTP_disconnect,        'disconnect'
 
 IM_END:
 
