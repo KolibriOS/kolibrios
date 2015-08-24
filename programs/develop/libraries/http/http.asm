@@ -145,7 +145,7 @@ proc HTTP_disconnect identifier ;///////////////////////////////////////////////
         ret
 
   .error:
-        DEBUGF  2, "Cant close already closed connection!\n"
+        DEBUGF  1, "Cant close already closed connection!\n"
         popa
         ret
 
@@ -299,17 +299,14 @@ endl
         DEBUGF  1, "Request has been sent to server.\n"
 
         cmp     [identifier], 0
-        jne     .old_connection
+        je      .new_connection
+        invoke  mem.free, [buffer]
+        mov     eax, [identifier]
+        mov     [buffer], eax
+  .new_connection:
         HTTP_init_buffer [buffer], [socketnum], [flags]
-
         popa
         mov     eax, [buffer]   ; return buffer ptr
-        ret
-
-  .old_connection:
-        invoke  mem.free, [buffer]
-        popa
-        mov     eax, [identifier]
         ret
 
   .error:
@@ -441,17 +438,14 @@ endl
         DEBUGF  1, "Request has been sent to server.\n"
 
         cmp     [identifier], 0
-        jne     .old_connection
+        je      .new_connection
+        invoke  mem.free, [buffer]
+        mov     eax, [identifier]
+        mov     [buffer], eax
+  .new_connection:
         HTTP_init_buffer [buffer], [socketnum], [flags]
-
         popa
         mov     eax, [buffer]   ; return buffer ptr
-        ret
-
-  .old_connection:
-        invoke  mem.free, [buffer]
-        popa
-        mov     eax, [identifier]
         ret
 
   .error:
@@ -598,20 +592,14 @@ endl
         DEBUGF  1, "Request has been sent to server.\n"
 
         cmp     [identifier], 0
-        jne     .old_connection
+        je      .new_connection
+        invoke  mem.free, [buffer]
+        mov     eax, [identifier]
+        mov     [buffer], eax
+  .new_connection:
         HTTP_init_buffer [buffer], [socketnum], [flags]
-
         popa
         mov     eax, [buffer]   ; return buffer ptr
-        ret
-
-  .old_connection:
-        invoke  mem.free, [buffer]
-        mov     ebx, [flags]
-        mov     eax, [identifier]
-        or      [eax + http_msg.flags], ebx
-        popa
-        mov     eax, [identifier]
         ret
 
   .error:
@@ -1055,8 +1043,11 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
   .got_all_data:
         DEBUGF  1, "We got all the data! (%u bytes)\n", [ebp + http_msg.content_received]
         or      [ebp + http_msg.flags], FLAG_GOT_ALL_DATA
-        and     [ebp + http_msg.flags], not FLAG_CONNECTED
+        test    [ebp + http_msg.flags], FLAG_KEEPALIVE
+        jnz     @f
         mcall   close, [ebp + http_msg.socket]
+        and     [ebp + http_msg.flags], not FLAG_CONNECTED
+  @@:
         popa
         xor     eax, eax
         ret
@@ -1901,7 +1892,7 @@ str_proxy_auth  db 13, 10, 'Proxy-Authorization: Basic '
 str_close       db 'User-Agent: KolibriOS libHTTP/1.1', 13, 10, 'Connection: Close', 13, 10, 13, 10
   .length       = $ - str_close
 str_keep        db 'User-Agent: KolibriOS libHTTP/1.1', 13, 10, 'Connection: Keepalive', 13, 10, 13, 10
-  .length       = $ - str_close
+  .length       = $ - str_keep
 
 str_http        db 'http://', 0
 

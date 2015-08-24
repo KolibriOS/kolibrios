@@ -1,8 +1,8 @@
 
 get(*url, identifier, flags, *add_header);
 	*url = pointer to ASCIIZ URL
-	identifier = identified of previously opened connection, or 0 to open a new one
-	flags = bit flags (see http.inc user flags and the end of this document)
+	identifier = identifier of previously opened connection (keep-alive), or 0 to open a new one.
+	flags = bit flags (see end of this document).
 	*add_header = pointer to ASCIIZ additional header parameters, or null for none.
 			Every additional parameter must end with CR LF bytes, including the last line.
 Initiates a HTTP connection, using 'GET' method.
@@ -10,8 +10,8 @@ Initiates a HTTP connection, using 'GET' method.
 
 head(*url, identifier, flags, *add_header);
 	*url = pointer to ASCIIZ URL
-	identifier = identified of previously opened connection, or 0 to open a new one
-	flags = bit flags (see http.inc user flags and the end of this document)
+	identifier = identifier of previously opened connection (keep-alive), or 0 to open a new one.
+	flags = bit flags (see end of this document).
 	*add_header = pointer to ASCIIZ additional header parameters, or null for none.	
 			Every additional parameter must end with CR LF bytes, including the last line.	
 Initiate a HTTP connection, using 'HEAD' method.
@@ -19,8 +19,8 @@ Initiate a HTTP connection, using 'HEAD' method.
 
 post(*url, identifier, flags, *add_header, *content-type, content-length);
 	*url = pointer to ASCIIZ URL
-	identifier = identified of previously opened connection, or 0 to open a new one
-	flags = bit flags (see http.inc user flags and the end of this document)
+	identifier = identifier of previously opened connection (keep-alive), or 0 to open a new one.
+	flags = bit flags (see end of this document).
 	*add_header = pointer to ASCIIZ additional header parameters, or null for none.	
 			Every additional parameter must end with CR LF bytes, including the last line.
 	*content-type = pointer to ASCIIZ string containing content type.
@@ -58,6 +58,8 @@ This procedure can be used to send data to the server (POST)
  
  
 User flags:
+
+For the flag codes themselves, see http.inc file.
 
  FLAG_KEEPALIVE will keep the connection open after first GET/POST/.. so you can send a second request on the same TCP session. 
 In this case, the session must be closed manually when done by using the exported disconnect() function.
