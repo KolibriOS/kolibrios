@@ -13,28 +13,26 @@
 #include "..\lib\draw_buf.h"
 #include "..\lib\list_box.h"
 #include "..\lib\cursor.h"
-
 //*.obj libraries
 #include "..\lib\obj\box_lib.h"
 #include "..\lib\obj\libio_lib.h"
 #include "..\lib\obj\libimg_lib.h"
 #include "..\lib\obj\http.h"
 #include "..\lib\obj\iconv.h"
-
 //useful patterns
 #include "..\lib\patterns\libimg_load_skin.h"
 
 char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.35";
+	char version[]=" Текстовый браузер 1.38";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.35";
+	char version[]=" Text-based Browser 1.38";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -42,14 +40,14 @@ char homepage[] = FROM "html\\homepage.htm";
 	char accept_language[]= "Accept-Language: en\n";	
 #endif
 
+#define URL_SERVICE_HISTORY "WebView://history"
+#define URL_SERVICE_HOME "WebView://home"
+#define URL_SERVICE_SOURCE "WebView://source:"
 
 
 proc_info Form;
-#define WIN_W 799
-#define WIN_H 559
 
 //char search_path[]="http://nigma.ru/index.php?s=";
-char str_location[]="location\0";
 int redirected = 0;
 
 char stak[4096];
@@ -95,12 +93,6 @@ char editURL[sizeof(URL)];
 int	mouse_twb;
 edit_box address_box = {250,56,34,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(URL),#editURL,#mouse_twb,2,19,19};
 
-#define URL_SERVICE_HISTORY "WebView://history"
-#define URL_SERVICE_HOME "WebView://home"
-#define URL_SERVICE_SOURCE "WebView://source:"
-
-libimg_image skin;
-
 
 void main()
 {
@@ -134,12 +126,6 @@ void main()
 					PageLinks.Hover(mouse.x, WB1.list.first*WB1.list.line_h + mouse.y, link_color_inactive, link_color_active, bg_color);
 					if (bufsize) && (mouse.pkm) && (mouse.up) { CreateThread(#menu_rmb,#stak+4092); break; }
 					if (WB1.list.MouseScroll(mouse.vert)) WB1.DrawPage();
-					if (mouse.down) && (PageLinks.active>=0) 
-					{
-						DrawRectangle(PageLinks.links[PageLinks.active].x, PageLinks.links[PageLinks.active].y,
-						PageLinks.links[PageLinks.active].w, PageLinks.links[PageLinks.active].h, 0);
-						ClickLink();
-					}
 				}
 				//Drag scroller
 				scroll_wv.all_redraw = 0;
@@ -180,7 +166,7 @@ void main()
 
 			case evReDraw:
 				if (action_buf) Scan(action_buf);
-				DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2,WIN_W,WIN_H,0x73,col_bg,0,0);
+				DefineAndDrawWindow(GetScreenWidth()-800/2,GetScreenHeight()-600/2,800,600,0x73,col_bg,0,0);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window>2) { DrawTitle(#header); break; }
 				if (Form.height<120) MoveSize(OLD,OLD,OLD,120);
@@ -208,7 +194,7 @@ void main()
 							redirected++;
 							if (redirected<=5)
 							{
-								http_find_header_field stdcall (http_transfer, #str_location);
+								http_find_header_field stdcall (http_transfer, "location\0");
 								if (EAX!=0) {
 									ESI = EAX;
 									EDI = #URL;
@@ -267,7 +253,7 @@ void SetElementSizes()
 	WB1.list.wheel_size = 7;
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w;
 	WB1.list.visible = WB1.list.h - 5 / WB1.list.line_h;
-	if (WB1.list.w!=WB1.DrawBuf.bufw) WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h * 20);
+	if (WB1.list.w!=WB1.DrawBuf.bufw) WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h * 30);
 }
 
 void Draw_Window()
@@ -352,7 +338,7 @@ void Scan(dword id__)
 		case VIEW_SOURCE:
 			WB1.list.first = 0;
 			ShowSource();
-			WB1.DrawPage();
+			WB1.LoadInternalPage(bufpointer, bufsize);
 			break;
 		case EDIT_SOURCE:
 			if (!strncmp(#URL,"http:",5)) 
@@ -389,59 +375,6 @@ void Scan(dword id__)
 	}
 }
 
-
-
-void ClickLink()
-{
-	if (http_transfer > 0) 
-	{
-		StopLoading();
-		BrowserHistory.current--;
-	}
-
-	strcpy(#URL, PageLinks.GetURL(PageLinks.active));	
-	//#1
-	if (URL[0] == '#')
-	{
-		strcpy(#anchor, #URL+strrchr(#URL, '#'));		
-		strcpy(#URL, BrowserHistory.CurrentUrl());
-		WB1.list.first=WB1.list.count-WB1.list.visible;
-		ShowPage();
-		return;
-	}
-	//liner.ru#1
-	if (strrchr(#URL, '#')!=-1)
-	{
-		strcpy(#anchor, #URL+strrchr(#URL, '#'));
-		URL[strrchr(#URL, '#')-1] = 0x00;
-	}
-	
-	PageLinks.GetAbsoluteURL(#URL);
-	
-	if (UrlExtIs(".png")==1) || (UrlExtIs(".gif")==1) || (UrlExtIs(".jpg")==1) || (UrlExtIs(".zip")==1) || (UrlExtIs(".kex")==1)
-	|| (UrlExtIs(".7z")==1) || (UrlExtIs("netcfg")==1) 
-	{
-		//notify(#URL);
-		if (!strncmp(#URL,"http://", 7))
-		{
-			strcpy(#DL_URL, #URL);
-			CreateThread(#Downloader,#downloader_stak+4092);
-		}
-		else RunProgram("@open", #URL);
-		strcpy(#editURL, BrowserHistory.CurrentUrl());
-		strcpy(#URL, BrowserHistory.CurrentUrl());
-		return;
-	}
-	if (!strncmp(#URL,"mailto:", 7))
-	{
-		notify(#URL);
-		strcpy(#editURL, BrowserHistory.CurrentUrl());
-		strcpy(#URL, BrowserHistory.CurrentUrl());
-		return;
-	}
-	OpenPage();
-	return;
-}
 
 void StopLoading()
 {
@@ -531,20 +464,15 @@ void ShowPage()
 	DrawEditBox();
 	if (!bufsize)
 	{
-		PageLinks.Clear();
-		if (http_transfer)
-		{
-			WB1.LoadInternalPage(#loading, sizeof(loading));
-		}
-		else
-			WB1.LoadInternalPage(#page_not_found, sizeof(page_not_found));
+		if (http_transfer) WB1.LoadInternalPage(#loading, sizeof(loading));
+		else WB1.LoadInternalPage(#page_not_found, sizeof(page_not_found));
 	}
 	else
 	{
 		WB1.Prepare();
 	}
 
-	if (!header) strcpy(#header, #version);
+	//if (!header) strcpy(#header, #version);
 	if (!strcmp(#version, #header)) DrawTitle(#header);
 }
 

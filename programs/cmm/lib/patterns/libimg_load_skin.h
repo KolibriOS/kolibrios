@@ -5,9 +5,9 @@
 #include "../lib/obj/libimg_lib.h"
 #endif
 
-struct libimg_image {
+:struct libimg_image {
 	dword image, w, h;
-};
+} skin;
 
 :void Libimg_LoadImage(dword struct_pointer, file_path)
 {

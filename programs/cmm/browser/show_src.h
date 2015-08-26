@@ -10,8 +10,8 @@ dword ShowSource()
 	souce_mode = true;
 	new_buf = malloc(bufsize*5);
 	new_buf_start = new_buf;
-	if (strlen(#header)-strlen(#version)>0) header[strlen(#header)-strlen(#version)-2] = 0; else strcpy(#header, "Source");
-	new_buf += sprintf(new_buf,"<html><head><title>%s</title><body><pre>",#header);
+	header[strrchr(#header, '-')-2]=0;
+	new_buf += sprintf(new_buf,"<html><head><title>Source: %s</title><body><pre>",#header);
 	for (i=bufpointer; i<bufpointer+bufsize; i++) 
 	{
 		ww = ESBYTE[i];

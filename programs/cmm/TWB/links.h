@@ -18,6 +18,7 @@ struct LinksArray {
 	void Hover();
 	void AddLink();
 	void AddText();
+	void ClickLink();
 	dword GetURL();
 	void Clear();
 	void GetAbsoluteURL();
@@ -68,15 +69,17 @@ PathShow_data status_text = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, 0, #temp, 0
 void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
 {
 	int i;
-	signed int WBY =  -WB1.list.first*WB1.list.line_h + WB1.list.line_h - WB1.DrawBuf.zoom;
+	signed int WBY =  -WB1.list.first*WB1.list.line_h - WB1.DrawBuf.zoom;
 	for (i=0; i<count; i++)
 	{
 		if (mx>links[i].x) && (my>links[i].y) && (mx<links[i].x+links[i].w) && (my<links[i].y+links[i].h)
 		{
+			if (mouse.down) DrawRectangle(links[active].x, links[active].y, links[active].w, links[active].h, 0);
+			if (mouse.up) ClickLink();
 			if (active==i) return;
 			CursorPointer.Set();
-			if (links[active].underline) DrawBar(links[active].x, WBY + links[active].y,links[active].w, WB1.DrawBuf.zoom, link_col_in);
-			if (links[i].underline) DrawBar(links[i].x, WBY + links[i].y,links[i].w, WB1.DrawBuf.zoom, bg_col);
+			if (links[active].underline) DrawBar(links[active].x, WBY + links[active].y + links[active].h,links[active].w, WB1.DrawBuf.zoom, link_col_in);
+			if (links[i].underline) DrawBar(links[i].x, WBY + links[i].y + links[i].h,links[i].w, WB1.DrawBuf.zoom, bg_col);
 			active = i;
 			status_text.start_x = wv_progress_bar.left + wv_progress_bar.width + 10;
 			status_text.start_y = Form.cheight - STATUSBAR_H + 3;
@@ -91,7 +94,7 @@ void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
 	if (active!=-1)
 	{
 		CursorPointer.Restore();
-		if (links[active].underline) DrawBar(links[active].x, WBY + links[active].y,links[active].w, WB1.DrawBuf.zoom, link_col_in);
+		if (links[active].underline) DrawBar(links[active].x, WBY + links[active].y  + links[active].h,links[active].w, WB1.DrawBuf.zoom, link_col_in);
 		DrawBar(status_text.start_x, status_text.start_y, status_text.area_size_x, 9, col_bg);
 		active = -1;
 	}
@@ -161,3 +164,54 @@ void LinksArray::GetAbsoluteURL(dword in_URL)
 	strcpy(orig_URL, #newurl);
 }
 
+void LinksArray::ClickLink()
+{
+	if (http_transfer > 0) 
+	{
+		StopLoading();
+		BrowserHistory.current--;
+	}
+
+	strcpy(#URL, PageLinks.GetURL(PageLinks.active));	
+	//#1
+	if (URL[0] == '#')
+	{
+		strcpy(#anchor, #URL+strrchr(#URL, '#'));		
+		strcpy(#URL, BrowserHistory.CurrentUrl());
+		WB1.list.first=WB1.list.count-WB1.list.visible;
+		ShowPage();
+		return;
+	}
+	//liner.ru#1
+	if (strrchr(#URL, '#')!=-1)
+	{
+		strcpy(#anchor, #URL+strrchr(#URL, '#'));
+		URL[strrchr(#URL, '#')-1] = 0x00;
+	}
+	
+	PageLinks.GetAbsoluteURL(#URL);
+	
+	if (UrlExtIs(".png")==1) || (UrlExtIs(".gif")==1) || (UrlExtIs(".jpg")==1) || (UrlExtIs(".zip")==1) || (UrlExtIs(".kex")==1)
+	|| (UrlExtIs(".7z")==1) || (UrlExtIs("netcfg")==1) 
+	{
+		//notify(#URL);
+		if (!strncmp(#URL,"http://", 7))
+		{
+			strcpy(#DL_URL, #URL);
+			CreateThread(#Downloader,#downloader_stak+4092);
+		}
+		else RunProgram("@open", #URL);
+		strcpy(#editURL, BrowserHistory.CurrentUrl());
+		strcpy(#URL, BrowserHistory.CurrentUrl());
+		return;
+	}
+	if (!strncmp(#URL,"mailto:", 7))
+	{
+		notify(#URL);
+		strcpy(#editURL, BrowserHistory.CurrentUrl());
+		strcpy(#URL, BrowserHistory.CurrentUrl());
+		return;
+	}
+	OpenPage();
+	return;
+}

@@ -101,8 +101,8 @@ void TWebBrowser::DrawStyle()
 		if (style.s) DrawBuf.DrawBar(start_x, list.line_h / 2 - DrawBuf.zoom + start_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
 		if (style.u) DrawBuf.DrawBar(start_x, list.line_h - DrawBuf.zoom - DrawBuf.zoom + start_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
 		if (link) {
-			DrawBuf.DrawBar(start_x, list.line_h - DrawBuf.zoom - DrawBuf.zoom + start_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
-			PageLinks.AddText(#line, line_length, list.line_h, UNDERLINE);
+			DrawBuf.DrawBar(start_x, list.line_h*style.h + list.line_h - DrawBuf.zoom - DrawBuf.zoom + start_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
+			PageLinks.AddText(#line, line_length, list.line_h*style.h + list.line_h, UNDERLINE);
 		}
 		stolbec += stolbec_len;
 	}
@@ -118,10 +118,8 @@ void TWebBrowser::Prepare(){
 	word bukva[2];
 	int j;
 	byte ignor_param;
-	char temp[768];
-	dword bufpos = bufpointer;
-	int line_len;
-	
+	dword bufpos;
+	int line_len;	
 	style.b = style.i = style.u = style.s = style.h = style.blq = t_html = t_body =
 	style.li = link = ignor_text = text_color_index = text_colors[0] = style.li_tab = 0;
 	style.align = ALIGN_LEFT;
@@ -134,30 +132,27 @@ void TWebBrowser::Prepare(){
 	stroka = -list.first;
 	stolbec = 0;
 	line = 0;
-
 	//for plaint text use CP866 for other UTF
 	if (strstri(bufpointer, "html")) 
 	{
 		style.pre = 0;
-		cur_encoding = CH_CP866;
+		cur_encoding = CH_UTF8;
 	}
 	else
 	{
 		style.pre = 1;
-		cur_encoding = CH_UTF8;
+		cur_encoding = CH_CP866;
 	}
-
-	for ( ; (bufpointer+bufsize > bufpos) && (ESBYTE[bufpos]!=0); bufpos++;)
+	for (bufpos=bufpointer ; (bufpos < bufpointer+bufsize) && (ESBYTE[bufpos]!=0) ; bufpos++;)
 	{
+		if (ignor_text) && (ESBYTE[bufpos]!='<') continue;
 		bukva = ESBYTE[bufpos];
-		if (ignor_text) && (bukva!='<') continue;
 		switch (bukva)
 		{
 		case 0x0a:
 			if (style.pre)
 			{
 				chrcat(#line, ' ');
-				bukva = temp = NULL;
 				Perenos();
 				break;
 			}
@@ -170,7 +165,6 @@ void TWebBrowser::Prepare(){
 				break;
 			}
 			goto DEFAULT_MARK;		
-			
 		case '&': //&nbsp; and so on
 			bufpos++;
 			tag=0;
@@ -212,7 +206,7 @@ void TWebBrowser::Prepare(){
 			Perenos();
 			DrawStyle();
 			line = NULL;
-			if (tag) SetStyle(WB1.DrawBuf.zoom * 5 + list.x, stroka * list.line_h + list.y + 5); //обработка тегов
+			if (tag) SetStyle(); //обработка тегов
 			strcpy(#oldtag, #tag);
 			tag = attr = tagparam = ignor_param = NULL;
 			break;
@@ -245,9 +239,9 @@ void TWebBrowser::Perenos()
 {
 	int perenos_num;
 	char new_line_text[4096];
-	if (stolbec + utf8_strlen(#line) < list.column_max) return;
+	if (utf8_strlen(#line)*DrawBuf.zoom + stolbec < list.column_max) return;
 	perenos_num = strrchr(#line, ' ');
-	if (!perenos_num) && (utf8_strlen(#line)>list.column_max) perenos_num=list.column_max;
+	if (!perenos_num) && (utf8_strlen(#line)*DrawBuf.zoom>list.column_max) perenos_num=list.column_max/DrawBuf.zoom;
 	strcpy(#new_line_text, #line + perenos_num);
 	line[perenos_num] = 0x00;
 	DrawStyle();
@@ -255,8 +249,9 @@ void TWebBrowser::Perenos()
 	NewLine();
 }
 //============================================================================================
-void TWebBrowser::SetStyle(int left1, top1) {
-	dword hr_color;
+void TWebBrowser::SetStyle() {
+	int left1 = 5 + list.x;
+	int top1 = stroka * list.line_h + list.y + 5;
 	byte opened;
 	byte meta_encoding;
 	//проверяем тег открывается или закрывается
@@ -266,7 +261,6 @@ void TWebBrowser::SetStyle(int left1, top1) {
 		 strcpy(#tag, #tag+1);
 	}
 	else opened = 1;
-
 	if (istag("html")) {
 		t_html = opened;
 		return;
@@ -394,15 +388,14 @@ void TWebBrowser::SetStyle(int left1, top1) {
 		if (opened) NewLine();
 		return;
 	}
-	if (istag("li")) || (istag("dt")) //надо сделать вложенные списки
+	if (istag("li")) || (istag("dt"))
 	{
 		style.li = opened;
 		if (opened)
 		{
 			NewLine();
-			if (stroka > -1) && (stroka - 2 < list.visible) 
-				DrawBuf.DrawBar(style.li_tab * 5 * list.font_w * DrawBuf.zoom + list.x, list.line_h 
-					/ 2 - DrawBuf.zoom - DrawBuf.zoom, DrawBuf.zoom*2, DrawBuf.zoom*2, 0x555555);
+			DrawBuf.DrawBar(style.li_tab * 5 * list.font_w * DrawBuf.zoom + list.x, stroka +1 * list.line_h - 3
+			 - DrawBuf.zoom - DrawBuf.zoom, DrawBuf.zoom*2, DrawBuf.zoom*2, 0x454545);
 		}
 		return;
 	}
@@ -416,15 +409,13 @@ void TWebBrowser::SetStyle(int left1, top1) {
 		else style.li_tab++;
 	}
 	if (istag("hr")) {
-		if (anchor) || (stroka < -1)
-		{
-			stroka+=2;
-			return;
-		}
-		if (strcmp(#attr, "color=") == 0) hr_color = GetColor(#val); else hr_color = 0x999999;
+		if (isattr("color=")) EDI = GetColor(#val); else EDI = 0x999999;
+		$push edi;
 		NewLine();
-		DrawBuf.DrawBar(5, list.line_h/2, list.w-10, 1, hr_color);
+		$pop edi;
+		DrawBuf.DrawBar(5, list.line_h*stroka+4, list.w-10, 1, EDI);
 		NewLine();
+		return;
 	}
 	if (istag("meta")) || (istag("?xml")) {
 		do{
