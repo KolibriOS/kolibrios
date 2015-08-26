@@ -22,7 +22,6 @@
 scroll_bar scroll1 = { 5,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 llist list;
 proc_info Form;
-libimg_image skin;
 
 char pixie_ini_path[4096];
 

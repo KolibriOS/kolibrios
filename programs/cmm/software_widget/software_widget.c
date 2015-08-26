@@ -39,8 +39,6 @@ char window_title[128],
 
 #define LIST_BACKGROUND_COLOR 0xF3F3F3
 
-libimg_image skin;
-
 void load_config()
 {
 	ini_get_str stdcall (#settings_ini_path, "Config", "window_title", #window_title, sizeof(window_title), "Software widget");

@@ -37,8 +37,8 @@ void ShowPopUp()
 			GetProcessInfo(#pop_up, SelfInfo);
 			DrawBar(0, 0, pop_up.width, pop_up.height, theme.color_list_bg);
 			DrawRectangle(0, 0, pop_up.width, pop_up.height, theme.color_list_border);
-			WriteText(10, 20, 0x80, theme.color_list_text, "Pixie is not a default MP3 player.");
-			WriteText(10, 32, 0x80, theme.color_list_text, "Make it default?");
+			WriteText(10, 20, 0x80, theme.color_list_text, "Hey! Pixie is not a default");
+			WriteText(10, 32, 0x80, theme.color_list_text, "MP3 player. Make it default?");
 			DrawCaptButton(10, pop_up.height - 30, 80, 20, 10, theme.color_list_active_bg, theme.color_list_active_text, "Yes");
 			DrawCaptButton(pop_up.width-10-80, pop_up.height - 30, 80, 20, 11, theme.color_list_active_bg, theme.color_list_active_text, "No");
 	}
