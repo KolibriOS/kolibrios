@@ -4,20 +4,17 @@ dword CursorFile = FROM "../TWB/pointer.cur";
 #define NOLINE    0
 #define UNDERLINE 1
 
-
 struct array_link {
 	dword link, text;
 	int x,y,w,h;
 	int underline;
 };
 
-struct LinksArray
-{
-	array_link links[200];
+struct LinksArray {
+	array_link links[400];
 	char page_links[64000];
 	dword buflen;
 	int count, active;
-
 	void Hover();
 	void AddLink();
 	void AddText();
@@ -27,14 +24,14 @@ struct LinksArray
 	int UrlAbsolute();
 } PageLinks;
 
-void LinksArray::AddLink(dword new_link, int link_x, link_y)
+void LinksArray::AddLink(dword lpath, int link_x, link_y)
 {
 	links[count].x = link_x;
 	links[count].y = link_y;
 
 	links[count].link = buflen;
-	strcpy(buflen, new_link);
-	buflen += strlen(new_link)+1;
+	strcpy(buflen, lpath);
+	buflen += strlen(lpath)+1;
 	count++;
 }
 
@@ -71,14 +68,15 @@ PathShow_data status_text = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, 0, #temp, 0
 void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
 {
 	int i;
+	signed int WBY =  -WB1.list.first*WB1.list.line_h + WB1.list.line_h - WB1.DrawBuf.zoom;
 	for (i=0; i<count; i++)
 	{
 		if (mx>links[i].x) && (my>links[i].y) && (mx<links[i].x+links[i].w) && (my<links[i].y+links[i].h)
 		{
 			if (active==i) return;
 			CursorPointer.Set();
-			if (links[active].underline) DrawBar(links[active].x, WB1.list.line_h - WB1.DrawBuf.zoom + links[active].y,links[active].w, WB1.DrawBuf.zoom, link_col_in);
-			if (links[i].underline) DrawBar(links[i].x, WB1.list.line_h - WB1.DrawBuf.zoom + links[i].y,links[i].w, WB1.DrawBuf.zoom, bg_col);
+			if (links[active].underline) DrawBar(links[active].x, WBY + links[active].y,links[active].w, WB1.DrawBuf.zoom, link_col_in);
+			if (links[i].underline) DrawBar(links[i].x, WBY + links[i].y,links[i].w, WB1.DrawBuf.zoom, bg_col);
 			active = i;
 			status_text.start_x = wv_progress_bar.left + wv_progress_bar.width + 10;
 			status_text.start_y = Form.cheight - STATUSBAR_H + 3;
@@ -93,7 +91,7 @@ void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
 	if (active!=-1)
 	{
 		CursorPointer.Restore();
-		if (links[active].underline) DrawBar(links[active].x, WB1.list.line_h - WB1.DrawBuf.zoom + links[active].y,links[active].w, WB1.DrawBuf.zoom, link_col_in);
+		if (links[active].underline) DrawBar(links[active].x, WBY + links[active].y,links[active].w, WB1.DrawBuf.zoom, link_col_in);
 		DrawBar(status_text.start_x, status_text.start_y, status_text.area_size_x, 9, col_bg);
 		active = -1;
 	}
@@ -162,5 +160,4 @@ void LinksArray::GetAbsoluteURL(dword in_URL)
 	strcat(#newurl, in_URL);
 	strcpy(orig_URL, #newurl);
 }
-
 

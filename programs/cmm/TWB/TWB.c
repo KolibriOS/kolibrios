@@ -102,7 +102,6 @@ void TWebBrowser::DrawStyle()
 		if (style.u) DrawBuf.DrawBar(start_x, list.line_h - DrawBuf.zoom - DrawBuf.zoom + start_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
 		if (link) {
 			DrawBuf.DrawBar(start_x, list.line_h - DrawBuf.zoom - DrawBuf.zoom + start_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
-			UnsafeDefineButton(start_x-2, start_y-1 + list.y, line_length + 3, DrawBuf.zoom * list.font_h, PageLinks.count + 400 + BT_HIDE, 0xB5BFC9);
 			PageLinks.AddText(#line, line_length, list.line_h, UNDERLINE);
 		}
 		stolbec += stolbec_len;
@@ -312,7 +311,6 @@ void TWebBrowser::SetStyle(int left1, top1) {
 			do{
 				if (isattr("href="))
 				{
-					if (stroka - 1 > list.visible) || (stroka < -2) return;
 					text_color_index++;
 					text_colors[text_color_index] = text_colors[text_color_index-1];
 					link = 1;
