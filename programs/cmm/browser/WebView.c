@@ -504,6 +504,58 @@ void DrawProgress()
 	DrawBar(address_box.left-2, address_box.top+15, btn, 2, wv_progress_bar.progress_color);
 }
 
+void ClickLink()
+{
+	if (http_transfer > 0) 
+	{
+		StopLoading();
+		BrowserHistory.current--;
+	}
+
+	strcpy(#URL, PageLinks.GetURL(PageLinks.active));	
+	//#1
+	if (URL[0] == '#')
+	{
+		strcpy(#anchor, #URL+strrchr(#URL, '#'));		
+		strcpy(#URL, BrowserHistory.CurrentUrl());
+		WB1.list.first=WB1.list.count-WB1.list.visible;
+		ShowPage();
+		return;
+	}
+	//liner.ru#1
+	if (strrchr(#URL, '#')!=-1)
+	{
+		strcpy(#anchor, #URL+strrchr(#URL, '#'));
+		URL[strrchr(#URL, '#')-1] = 0x00;
+	}
+	
+	PageLinks.GetAbsoluteURL(#URL);
+	
+	if (UrlExtIs(".png")==1) || (UrlExtIs(".gif")==1) || (UrlExtIs(".jpg")==1) || (UrlExtIs(".zip")==1) || (UrlExtIs(".kex")==1)
+	|| (UrlExtIs(".7z")==1) || (UrlExtIs("netcfg")==1) 
+	{
+		//notify(#URL);
+		if (!strncmp(#URL,"http://", 7))
+		{
+			strcpy(#DL_URL, #URL);
+			CreateThread(#Downloader,#downloader_stak+4092);
+		}
+		else RunProgram("@open", #URL);
+		strcpy(#editURL, BrowserHistory.CurrentUrl());
+		strcpy(#URL, BrowserHistory.CurrentUrl());
+		return;
+	}
+	if (!strncmp(#URL,"mailto:", 7))
+	{
+		notify(#URL);
+		strcpy(#editURL, BrowserHistory.CurrentUrl());
+		strcpy(#URL, BrowserHistory.CurrentUrl());
+		return;
+	}
+	OpenPage();
+	return;
+}
+
 
 char downloader_stak[4096];
 stop:
