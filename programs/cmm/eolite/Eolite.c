@@ -673,7 +673,7 @@ void Line_ReDraw(dword bgcol, filenum){
 		ext1 = strrchr(file_name_off,'.') + file_name_off;
 		if (ext1==file_name_off) ext1 = " \0"; //if no extension then show nothing 
 		Put_icon(ext1, files.x+3, files.line_h/2-7+y, bgcol, 0);
-		WriteText(7-strlen(ConvertSize(file.sizelo))*6+files.x+files.w - 58, files.text_y + y,files.font_type,0,ConvertSize(file.sizelo));
+		WriteText(7-strlen(ConvertSize(file.sizelo))*6+files.x+files.w - 58, files.text_y + y +1,files.font_type,0,ConvertSize(file.sizelo));
 	}
 	else
 	{
@@ -698,7 +698,7 @@ void Line_ReDraw(dword bgcol, filenum){
 			FileShow.font_color = text_col;
 			FileShow.area_size_x = files.w - 164;
 			FileShow.text_pointer = file_name_off;
-			FileShow.start_y = files.text_y + y;
+			FileShow.start_y = files.text_y + y + 1;
 			PathShow_prepare stdcall(#FileShow);
 			PathShow_draw stdcall(#FileShow);
 		}		
@@ -706,7 +706,8 @@ void Line_ReDraw(dword bgcol, filenum){
 	else
 	{
 		font.bg_color = bgcol;
-		font.text(files.x + 23, files.line_h - font.height / 2 - 1 + y, file_name_off);
+		font.prepare(0, 0, file_name_off);
+		font.show(files.x + 23, files.line_h - font.size.height / 2 + y);
 	}
 	DrawBar(files.x+files.w-141,y,1,files.line_h,system.color.work); //gray line 1
 	DrawBar(files.x+files.w-68,y,1,files.line_h,system.color.work); //gray line 2

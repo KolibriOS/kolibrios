@@ -1,7 +1,7 @@
-C-- "example original font.c"
-@del "example original font"
-@rename "example original font.com" "example original font"
-kpack "example original"
+C-- "kolibri font viewer.c"
+@del "kolibri font viewer"
+@rename "kolibri font viewer.com" "kolibri font viewer"
+kpack "kolibri font viewer"
 @del warning.txt
 @pause
 @rem ====== Automatically add binnary to kolibri.img and then run QEMU =====

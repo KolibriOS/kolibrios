@@ -43,7 +43,7 @@ void settings_dialog()
 				else if (id==21) { action_buf=109; real_files_names_case ^= 1; }
 				else if (id==22) info_after_copy ^= 1;
 				else if (id==24) two_panels ^= 1;
-				else if (id==25) files.line_h++;
+				else if (id==25) { files.line_h++; files_active.line_h = files_inactive.line_h = files.line_h; }
 				else if (id==26) && (files.line_h>18) files.line_h--;
 				else if (id==27) MOUSE_TIME++;
 				else if (id==28) && (MOUSE_TIME>29) MOUSE_TIME--;

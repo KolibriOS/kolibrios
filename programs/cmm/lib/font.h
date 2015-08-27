@@ -37,7 +37,8 @@
 	byte load(...);
 	byte symbol(word x;byte s;dword c);
 	byte symbol_size(byte s);
-	dword text(word x,y;dword text1);
+	dword prepare(word x,y;dword text1);
+	void show(word x,y);
 	byte textcenter(word x,y,w,h;dword txt);
 	dword getsize(dword text1);
 	dword textarea(word x,y;dword text,c);
@@ -192,7 +193,7 @@ FONT font = 0;
 		IF(s=='_') size.width--;
 		IF(size.offset_x<0)size.offset_x = X;
 }
-:dword FONT::text(word x,y;dword text1)
+:dword FONT::prepare(word x,y;dword text1)
 {
 	signed len=0;
 	dword c;
@@ -245,18 +246,21 @@ FONT font = 0;
 		text1++;
 	}
 	IF (no_bg_copy) && (!color) SmoothFont(buffer, size.width, size.height);
-	_PutImage(x,y,size.width,size.height,buffer);
 	return len;
 }
+:void FONT::show(word x,y)
+{
+	_PutImage(x,y,size.width,size.height,buffer);
+}
 inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
-:void SmoothFont(dword color_image, w, h)
+:void SmoothFont(dword image, w, h)
 {
 	byte rr,gg,bb;
 	dword i,line_w,to, pixel;
 	line_w = w * 3;
-	to = w*h*3 + color_image - line_w - 3;
-	for (i = color_image; i < to; i+=3)	{
-		if (i-color_image%line_w +3 == line_w) continue;
+	to = w*h*3 + image - line_w - 3;
+	for (i = image; i < to; i+=3)	{
+		if (i-image%line_w +3 == line_w) continue;
 		if (b24(i)==0x000000) && (b24(i+3)!=0x000000) && (b24(i+line_w)!=0x000000) && (b24(i+3+line_w)==0x000000)
 		{ 
 			ShadowImage(i+3, 1, 1, 2);
