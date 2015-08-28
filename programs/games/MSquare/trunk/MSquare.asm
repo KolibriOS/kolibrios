@@ -170,6 +170,15 @@ key:
 	cmp	[Difficult],min_dif
 	je	still
 	dec	[Difficult]
+	movzx	eax, [Difficult]
+	cmp	al, [X]
+	jae	@f
+	mov	[X], al
+@@:
+	cmp	al, [Y]
+	jae	@f
+	mov	[Y], al
+@@:
 	jmp	redraw_all
 	jmp	still
 
@@ -272,7 +281,7 @@ key:
 
 show_level:
 	movzx	ecx,[Difficult]
-	mcall	47,0x10000,,<205,5>,(0x50000000+Text_clr),Bckgrd_clr
+	mcall	47,0x80020000,,<205,5>,(0x50000000+Text_clr),Bckgrd_clr
 ret
 
 
