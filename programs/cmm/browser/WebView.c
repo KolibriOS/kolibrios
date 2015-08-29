@@ -112,6 +112,7 @@ void main()
 	if (param) strcpy(#URL, #param); else strcpy(#URL, URL_SERVICE_HOME);
 	WB1.DrawBuf.zoom = 1;
 	WB1.list.SetFont(8, 14, 10111000b);
+	WB1.list.no_selection = true;
 	SetEventMask(0xa7);
 	BEGIN_LOOP_APPLICATION:
 		WaitEventTimeout(2);
@@ -280,7 +281,8 @@ void Draw_Window()
 void Scan(dword id__)
 {
 	action_buf=0;
-	switch (id__)
+	if (WB1.list.ProcessKey(key_scancode)) WB1.DrawPage();
+	else switch (id__)
 	{
 		case SCAN_CODE_BS:
 		case BACK_BUTTON:
@@ -290,22 +292,6 @@ void Scan(dword id__)
 		case FORWARD_BUTTON:
 			if (!BrowserHistory.GoForward()) return;
 			OpenPage();
-			return;
-		case SCAN_CODE_HOME:
-		case SCAN_CODE_END:
-		case SCAN_CODE_PGUP:
-		case SCAN_CODE_PGDN:
-			if (WB1.list.ProcessKey(key_scancode)) WB1.DrawPage();
-			return;
-		case SCAN_CODE_UP:
-			if (WB1.list.first <= 0) return;
-			WB1.list.first--;
-			WB1.DrawPage();
-			return;
-		case SCAN_CODE_DOWN:
-			if (WB1.list.visible + WB1.list.first >= WB1.list.count) return;
-			WB1.list.first++;
-			WB1.DrawPage();
 			return;
 		case GOTOURL_BUTTON:
 		case SCAN_CODE_ENTER:

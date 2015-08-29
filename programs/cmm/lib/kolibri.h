@@ -103,12 +103,24 @@ GETKEYII:
 		$shr eax,8
 }
 
+
 unsigned char key_ascii;
 dword key_scancode, key_modifier;
 int GetKeys()
 {
-	$mov  eax,2
-	$int  0x40
+		$push edx
+GETKEY:
+		$mov  eax,2
+		$int  0x40
+		$cmp eax,1
+		$jne GETKEYI
+		$mov eax,edx
+		$jmp GETKEYII
+GETKEYI:
+		$mov edx,eax
+		$jmp GETKEY
+GETKEYII:
+		$pop edx
 	key_ascii = AH;
 	$shr  eax,16
 	key_scancode = AL;

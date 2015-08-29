@@ -10,10 +10,11 @@
 struct llist
 {
 	int x, y, w, h, line_h, text_y;
-	dword font_w, font_h, font_type;
 	int count, visible, first, current, column_max; //visible = row_max
-	int wheel_size;
-	int active;
+	dword font_w, font_h, font_type;
+	byte wheel_size;
+	byte active;
+	byte no_selection;
 	void ClearList();
 	int MouseOver(int xx, yy);
 	int ProcessMouse(int xx, yy);
@@ -125,7 +126,7 @@ int llist::ProcessKey(dword key)
 
 int llist::KeyDown()
 {
-	if (current-first+1<visible)
+	if (current-first+1<visible) && (!no_selection)
 	{
 		if (current + 1 >= count) return 0;
 		current++;
@@ -146,7 +147,7 @@ int llist::KeyDown()
 
 int llist::KeyUp()
 {
-	if (current > first) 
+	if (current > first) && (!no_selection)
 	{
 		current--;
 	}

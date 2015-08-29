@@ -146,6 +146,7 @@ void MailBoxLoop() {
 
 	mail_list.h = Form.cheight/4;
 	mail_list.ClearList();
+	WB1.list.no_selection = true;
 	SetMailBoxStatus( NULL , NULL);
 	cur_charset = 0;
 	aim = SEND_NSTAT;
