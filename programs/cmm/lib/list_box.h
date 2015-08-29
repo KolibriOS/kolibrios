@@ -28,7 +28,6 @@ struct llist
 	void SetSizes(int xx, yy, ww, hh, line_hh);
 	void SetFont(dword font_ww, font_hh, font_tt);
 	int MouseScroll(dword scroll_state);
-	int MouseScrollNoSelection(dword scroll_state);
 	void debug_values();
 }; 
 
@@ -88,23 +87,6 @@ int llist::MouseScroll(dword scroll_state)
 	return 0;
 }
 
-int llist::MouseScrollNoSelection(dword scroll_state)
-{
-	if (count<=visible) return 0;
-	if (scroll_state == 65535)
-	{
-		if (current == 0) return 0;
-		if (current > 3) current -= 2; else current=0;
-		return 1;
-	} 
-	if (scroll_state == 1)
-	{
-		if (visible + current == count) return 0;
-		if (visible+current+3 > count) current = count - visible; else current+=2;
-		return 1;
-	}
-	return 0;
-}
 
 int llist::MouseOver(int xx, yy)
 {

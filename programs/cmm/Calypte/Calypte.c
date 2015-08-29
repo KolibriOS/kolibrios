@@ -138,7 +138,7 @@ void main()
       {
 		case evMouse:
 			mouse.get();
-			if (tview.MouseScrollNoSelection(mouse.vert)) DrawText();
+			if (tview.MouseScroll(mouse.vert)) DrawText();
 		
 			menu_bar_mouse stdcall (#menudata1);			
 			if (menudata1.click)

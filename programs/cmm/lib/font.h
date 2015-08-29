@@ -158,6 +158,8 @@ FONT font = 0;
 		IF(!encoding){
 			IF(s>=128)&&(s<=175)s+=64;
 			ELSE IF(s>=224)&&(s<=239)s+=16;
+			ELSE IF(s==241)s=184; //yo
+			ELSE IF(s==240)s=168; //YO
 		}
         yi = 0;
         iii = 0;
@@ -294,6 +296,8 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 		{
 			IF(s>=128)&&(s<=175)s+=64;
 			ELSE IF(s>=224)&&(s<=239)s+=16;
+			ELSE IF(s==241)s=184; //yo
+			ELSE IF(s==240)s=168; //YO
 		}
         yi = 0;
         iii = 0;

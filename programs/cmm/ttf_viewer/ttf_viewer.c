@@ -9,8 +9,8 @@
 #include "..\lib\gui.h"
 #include "..\lib\obj\truetype.h"
 #include "..\lib\obj\proc_lib.h"
+#include "..\lib\patterns\simple_open_dialog.h"
 
-#include "simple_open_dialog.h"
 char default_dir[] = "/rd/1";
 od_filter filter2 = {"TTF",0};
 
@@ -48,11 +48,11 @@ void main()
          case evButton:
             id=GetButtonID();               
             if (id==1) ExitProcess();
-            if (id==10)
-            {
-            	OpenDialog_start stdcall (#o_dialog);
-				OpenFont(#openfile_path);
-            }
+			if (id==10)
+			{
+			OpenDialog_start stdcall (#o_dialog);
+			OpenFont(#openfile_path);
+			}
 			break;
       
         case evKey:
