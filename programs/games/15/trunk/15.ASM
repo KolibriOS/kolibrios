@@ -7,8 +7,8 @@
 include 'lang.inc'
 include '..\..\..\macros.inc' ; decreases program size (not required)
 
-StatusColor equ 0x02ffffff
-StatusColor2 equ 0x02dc1e14
+StatusColor equ 0x00ffffff
+StatusColor2 equ 0x00dc1e14
 BgdColor equ 0x14aabbcc
 
 ; Main window dimensions
