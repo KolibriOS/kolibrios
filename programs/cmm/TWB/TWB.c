@@ -38,9 +38,9 @@ byte
 	t_html,
 	t_body;
 
-dword bufpointer;
-dword o_bufpointer;
-dword bufsize;
+dword bufpointer=0;
+dword o_bufpointer=0;
+dword bufsize=0;
 
 dword text_colors[300];
 dword text_color_index;
@@ -152,8 +152,8 @@ void TWebBrowser::Prepare(){
 		case 0x0a:
 			if (style.pre)
 			{
-				chrcat(#line, ' ');
-				Perenos();
+				DrawStyle();
+				NewLine();
 				break;
 			}
 		case '\9':
@@ -370,7 +370,7 @@ void TWebBrowser::SetStyle() {
 		if (opened)
 		{
 			WB1.DrawBuf.zoom=2;
-			WB1.list.SetFont(8, 14, 10111001b);
+			WB1.list.font_type |= 10111001b;
 			if (isattr("align=")) && (isval("center")) style.align = ALIGN_CENTER;
 			if (isattr("align=")) && (isval("right")) style.align = ALIGN_RIGHT;
 			if (stroka>1) NewLine();
@@ -378,7 +378,7 @@ void TWebBrowser::SetStyle() {
 		else
 		{
 			WB1.DrawBuf.zoom=1;
-			WB1.list.SetFont(8, 14, 10111000b);
+			WB1.list.font_type = 10111000b;
 			style.align = ALIGN_LEFT;
 		}
 		return;

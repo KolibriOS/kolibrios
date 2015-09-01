@@ -25,14 +25,14 @@
 char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.38";
+	char version[]=" Текстовый браузер 1.39";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.38";
+	char version[]=" Text-based Browser 1.39";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -281,7 +281,7 @@ void Draw_Window()
 void Scan(dword id__)
 {
 	action_buf=0;
-	if (WB1.list.ProcessKey(key_scancode)) WB1.DrawPage();
+	if (WB1.list.ProcessKey(id__)) WB1.DrawPage();
 	else switch (id__)
 	{
 		case SCAN_CODE_BS:
