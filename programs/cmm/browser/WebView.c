@@ -128,21 +128,12 @@ void main()
 					if (bufsize) && (mouse.pkm) && (mouse.up) { CreateThread(#menu_rmb,#stak+4092); break; }
 					if (WB1.list.MouseScroll(mouse.vert)) WB1.DrawPage();
 				}
-				//Drag scroller
-				scroll_wv.all_redraw = 0;
-				if (!mouse.lkm) scroll_used=0;
-				if (mouse.x>=scroll_wv.start_x) && (mouse.x<=scroll_wv.start_x+scroll_wv.size_x) 
-				&& (mouse.y>=scroll_wv.start_y+scroll_wv.btn_height) && (-scroll_wv.btn_height+scroll_wv.start_y+scroll_wv.size_y>mouse.y)
-				&& (WB1.list.count>WB1.list.visible) && (mouse.lkm) scroll_used=1;
-				if (scroll_used)
+				scrollbar_v_mouse (#scroll_wv);
+				if (WB1.list.first != scroll_wv.position)
 				{
-					mouse.y = mouse.y + 5;
-					half_scroll_size = WB1.list.h - 16 * WB1.list.visible / WB1.list.count - 3 /2;
-					if (half_scroll_size+WB1.list.y>mouse.y) || (mouse.y<0) || (mouse.y>4000) mouse.y=half_scroll_size+WB1.list.y;
-					btn=WB1.list.first;
-					WB1.list.first = mouse.y -half_scroll_size -WB1.list.y * WB1.list.count / WB1.list.h;
-					if (WB1.list.visible+WB1.list.first>WB1.list.count) WB1.list.first=WB1.list.count-WB1.list.visible;
-					if (btn!=WB1.list.first) WB1.DrawPage();
+					WB1.list.first = scroll_wv.position;
+					WB1.DrawPage();
+					break;
 				}
 				break;
 
