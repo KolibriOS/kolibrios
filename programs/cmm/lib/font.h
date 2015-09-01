@@ -20,7 +20,8 @@
 :struct FONT
 {
 	__SIZE size;
-	byte width,height,offsetLine,r,g,b,weight,italic;
+	byte r,g,b,weight,italic;
+	byte width,height;
 	byte encoding;
 	dword color;
 	dword file_size;
@@ -38,7 +39,6 @@
 	void show(word x,y);
 	byte textcenter(word x,y,w,h;dword txt);
 	dword getsize(dword text1);
-	dword textarea(word x,y;dword text,c);
 	byte changeSIZE();
 	void PixelRGB(word x,y);
 	//dword GetPixel(word x,y);
@@ -51,43 +51,37 @@ FONT font = 0;
 {
 	dword tmp = y*size.width*3;
 	tmp += x*3 + buffer;
-	r = DSBYTE[tmp];
-	g = DSBYTE[tmp+1];
-	b = DSBYTE[tmp+2];
+	r = DSBYTE[tmp]; tmp++;
+	g = DSBYTE[tmp]; tmp++;
+	b = DSBYTE[tmp];
 }*/
 :void FONT::PixelRGB(dword x,y)
 {
-	dword tmp = y*size.width*3;
-	tmp += x*3 + buffer;
-	DSBYTE[tmp] = r;
-	DSBYTE[tmp+1] = g;
-	DSBYTE[tmp+2] = b;
+	$push ebx 
+	EBX = y*size.width+x*3 + buffer;
+	DSBYTE[EBX] = r; EBX++;
+	DSBYTE[EBX] = g; EBX++;
+	DSBYTE[EBX] = b;
+	$pop ebx
 }
 :byte FONT::changeSIZE()
 {
 	dword TMP_DATA;
 	dword ofs;
-	byte s;
 	IF(size.text<9) size.text = 8;
-	s = size.text-8;
-	data = begin;
-	TMP_DATA = data;
-	TMP_DATA +=s*4;
+	TMP_DATA = data = begin;
+	TMP_DATA +=size.text-8*4;
 	ofs = DSDWORD[TMP_DATA];
 	IF(ofs==-1)return false;
-	data += ofs;
-	data += 156;
+	data += ofs + 156;
 	TMP_DATA = data;
 	file_size = DSDWORD[TMP_DATA];
-	TMP_DATA += file_size;
-	TMP_DATA--;
-	height = DSBYTE[TMP_DATA];
-	TMP_DATA--;
-	width =  DSBYTE[TMP_DATA];
+	TMP_DATA = data + file_size;
+	height = DSBYTE[TMP_DATA - 1];
+	width =  DSBYTE[TMP_DATA - 2];
 	block = math.ceil(height*width/32);
 	return true;
 }
-:proc_info Form_SELF_FONTS;
 :byte FONT::textcenter(word x,y,w,h;dword txt)
 {
 	getsize(txt);
@@ -184,19 +178,12 @@ FONT font = 0;
 :dword FONT::prepare(word x,y;dword text1)
 {
 	signed len=0;
+	proc_info Form_SELF_FONTS;
 	dword c;
 	c = color;
 	IF(!text1)return false;
 	IF(size.text)IF(!changeSIZE())return false;
-	GetProcessInfo(#Form_SELF_FONTS, SelfInfo); 
-	IF(y>Form_SELF_FONTS.cheight) return false;
-	IF(x>Form_SELF_FONTS.cwidth) return false;
-	AX = c;
-	r = AL;
-	g = AH;
-	c>>=16;
-	AX = c;
-	b = AL;
+	AX = c; r = AL; g = AH; c>>=16; AX = c; b = AL;
 	getsize(text1);
 	y -= size.offset_y;
 	
@@ -222,7 +209,11 @@ FONT font = 0;
 			$add edi,3
 		}
 	}
-	ELSE CopyScreen(buffer,x+Form_SELF_FONTS.left+5,y+Form_SELF_FONTS.top+GetSkinHeight(),size.width,size.height);
+	ELSE
+	{
+		GetProcessInfo(#Form_SELF_FONTS, SelfInfo); 
+		CopyScreen(buffer,x+Form_SELF_FONTS.left+5,y+Form_SELF_FONTS.top+GetSkinHeight(),size.width,size.height);
+	}
 	len = size.offset_x;
 	WHILE(DSBYTE[text1])
 	{
@@ -259,11 +250,6 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 		}
 	}
 }
-:dword FONT::textarea(word x,y;dword text1,c;byte size)
-{
-	
-}
-
 :byte FONT::symbol(signed x;byte s)
 {
         dword xi,yi;
@@ -341,13 +327,12 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 	c = color;
 	IF(!text1)return;
 	IF(size.text)IF(!changeSIZE())return;
-	GetProcessInfo(#Form_SELF_FONTS, SelfInfo); 
 	AX = c; r = AL; g = AH; c>>=16; AX = c; b = AL;
 	getsize(text1);
 	y -= size.offset_y;
 	
 	size.width = w;
-	size.height = y;
+	size.height = h;
 	EDX = size.width*size.height*3;
 	IF(!buffer_size)
 	{
