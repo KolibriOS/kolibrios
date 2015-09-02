@@ -1,10 +1,13 @@
-#define MEMSIZE 0xEE80
+#define MEMSIZE 0x2EE80
 
 #include "../lib/font.h"
 #include "../lib/gui.h"
 
+#define PANELH 30
+
 void main()
 {   
+	proc_info Form;
 	word i, y, btn;
 	char line[256], title[4196];
 	font.no_bg_copy = true;
@@ -23,24 +26,30 @@ void main()
 			if (btn==1) ExitProcess();
 			if (btn==2) font.weight ^=1;
 			if (btn==3) font.italic ^=1;
-			if (btn==4) font.no_bg_copy ^=1;
+			if (btn==4) font.smooth ^=1;
+			goto _DRAW_WINDOW_CONTENT;
 		case evReDraw:
-			DefineAndDrawWindow(215,100,500,320,0x33,0xFFFFFF,#title);
-			DrawBar(0, 0, 500-9, 30, 0xCCCccc);
+			DefineAndDrawWindow(215,100,500,320,0x74,0xFFFFFF,#title);
+			GetProcessInfo(#Form, SelfInfo);
+			_DRAW_WINDOW_CONTENT:
+			DrawBar(0, 0, Form.cwidth, PANELH, 0xCCCccc);
 			CheckBox2(10, 8, 2, "Bold",  font.weight);
 			CheckBox2(70, 8, 3, "Italic",  font.italic);
-			CheckBox2(140, 8, 4, "Smooth",  font.no_bg_copy);
+			CheckBox2(140, 8, 4, "Smooth",  font.smooth);
+			font.buffer_size = free(font.buffer);
 			if (!font.data)
 			{
+				DrawBar(0, PANELH, Form.cwidth, Form.cheight - PANELH, 0xFFFfff);
 				WriteText(10, 50, 0x82, 0xFF00FF, "Font is not loaded.");
-			} 
-			else for (i=10, y=40; i<22; i++, y+=font.height;)
+			}
+			else for (i=10, y=5; i<22; i++, y+=font.height;) //not flexible, need to calculate font count and max line length
 			{
 				font.size.text = i;
 				sprintf(#line,"Размер шрифта/size font %d пикселей.",i);
-				font.prepare(10,y,#line);
-				font.show(10, y);
+				font.prepare_buf(10,y,Form.cwidth,Form.cheight-PANELH, #line);
 			}
+			if (font.smooth) SmoothFont(font.buffer, font.size.width, font.size.height);
+			font.show(0, PANELH);
 	  }
 	}
 }

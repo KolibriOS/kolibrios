@@ -59,7 +59,7 @@ void llist::SetSizes(int xx, yy, ww, hh, line_hh)
 	text_y = line_h - font_h / 2;
 	visible = h / line_h;
 	wheel_size = 3;
-	//if (visible > count) visible=count;
+	CheckDoesValuesOkey();
 }
 
 void llist::SetFont(dword font_ww, font_hh, font_tt)
@@ -214,8 +214,8 @@ int llist::KeyPgDown()
 
 void llist::CheckDoesValuesOkey()
 {
-	if (first < 0) first = 0;
 	if (visible + first > count) first = count - visible;
+	if (first < 0) first = 0;
 	if (current >= count) current = count - 1;
 	if (current < 0) current = 0;
 }

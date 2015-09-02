@@ -20,7 +20,7 @@
 :struct FONT
 {
 	__SIZE size;
-	byte r,g,b,weight,italic;
+	byte r,g,b,weight,italic, smooth;
 	byte width,height;
 	byte encoding;
 	dword color;
@@ -30,9 +30,8 @@
 	word block;
 	dword data;
 	dword begin;
-	dword size_file;
 	byte load(...);
-	byte symbol(word x;byte s;dword c);
+	byte symbol(word x,y;byte s;dword c);
 	byte symbol_size(byte s);
 	dword prepare(word x,y;dword text1);
 	void prepare_buf(word x,y,w,h;dword text1);
@@ -103,10 +102,8 @@ FONT font = 0;
 	}
 	$neg size.offset_y
 	$neg size.offset_x
-	size.height++;
-	size.height += size.offset_y;
-	size.width += size.offset_x;
-	size.width++;
+	size.height += size.offset_y; size.height++;
+	size.width += size.offset_x; size.width++;
 	IF(italic)
 	{
 		size.w_italic = size.height/3;
@@ -142,33 +139,29 @@ FONT font = 0;
 			ELSE IF(s==241)s=184; //yo
 			ELSE IF(s==240)s=168; //YO
 		}
-        yi = 0;
         iii = 0;
         tmp = 4*block*s + data;
-        while(yi<height)
+        for(yi=0; yi<height; yi++)
         {
-                xi = 0;
-                WHILE(xi<width)
-                {
-                        IF(iii%32) _ >>= 1;
-						ELSE
-						{
-                                tmp += 4;
-                                _ = DSDWORD[tmp];
-                        }
-                        IF(_&1)
-						{
-							IF(xi>rw)rw=xi;
-							IF(size.height<yi)size.height = yi;
-							IF(size.offset_y<0)size.offset_y = yi;
-							ELSE IF(yi<size.offset_y)size.offset_y = yi;
-							IF(!X) X = xi;
-							ELSE IF(X>xi)X = xi;
-						}
-                        xi++;
-                        iii++;
+            for(xi=0; xi<width; xi++)
+            {
+                IF(iii%32) _ >>= 1;
+				ELSE
+				{
+                        tmp += 4;
+                        _ = DSDWORD[tmp];
                 }
-                yi++;
+                IF(_&1)
+				{
+					IF(xi>rw)rw=xi;
+					IF(size.height<yi)size.height = yi;
+					IF(size.offset_y<0)size.offset_y = yi;
+					ELSE IF(yi<size.offset_y)size.offset_y = yi;
+					IF(!X) X = xi;
+					ELSE IF(X>xi)X = xi;
+				}
+                iii++;
+            }
         }
 		size.width += rw;
 		IF(weight) size.width+=size.TMP_WEIGHT;
@@ -218,7 +211,7 @@ FONT font = 0;
 	WHILE(DSBYTE[text1])
 	{
 		IF(DSBYTE[text1]=='_') len--;
-		len+=symbol(len,DSBYTE[text1]);
+		len+=symbol(len,0,DSBYTE[text1]);
 		IF(weight)len+=math.ceil(size.text/17);
 		text1++;
 	}
@@ -250,7 +243,7 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 		}
 	}
 }
-:byte FONT::symbol(signed x;byte s)
+:byte FONT::symbol(signed x,y;byte s)
 {
         dword xi,yi;
         dword tmp,_;
@@ -269,15 +262,12 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 			ELSE IF(s==241)s=184; //yo
 			ELSE IF(s==240)s=168; //YO
 		}
-        yi = 0;
         iii = 0;
-        tmp = 4*block*s;
-        tmp +=data;
-        while(yi<height)
+        tmp = 4*block*s + data;
+        for(yi=0; yi<height; yi++)
         {
-            xi = 0;
-			TMP = size.offset_y+yi;
-            while(xi<width)
+			TMP = size.offset_y+yi+y;
+            for(xi=0; xi<width; xi++)
             {
 				IF(iii%32) _ >>= 1;
 				ELSE
@@ -291,17 +281,13 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 						___x = x+xi;
 						IF(italic)___x+=math.ceil(ital);
 						PixelRGB(___x,TMP);
-						_TMP_WEIGHT = size.TMP_WEIGHT;
-						WHILE(_TMP_WEIGHT)
+						for(_TMP_WEIGHT=size.TMP_WEIGHT; _TMP_WEIGHT; _TMP_WEIGHT--)
 						{
 							IF(weight) PixelRGB(___x+_TMP_WEIGHT,TMP);
-							_TMP_WEIGHT--;
 						}
 				}
-				xi++;
 				iii++;
             }
-            yi++;
 			IF(italic) ital-=size.offset_i;
         }
         return rw;
@@ -312,8 +298,7 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 	IF(data)free(data);
 	if (!io.readKPACK(path)) { debug("Error while loading font: "); debugln(path); return false; }
 	begin = data = io.buffer_data;
-	size_file = io.FILES_SIZE;
-	EBX = begin + size_file;
+	EBX = begin + io.FILES_SIZE;
 	height = DSBYTE[EBX - 1];
 	width = DSBYTE[EBX - 2];
 	block = math.ceil(height*width/32);
@@ -322,7 +307,6 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 
 :void FONT::prepare_buf(word x,y,w,h; dword text1)
 {
-	signed len=0;
 	dword c;
 	c = color;
 	IF(!text1)return;
@@ -333,14 +317,16 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 	
 	size.width = w;
 	size.height = h;
+
 	EDX = size.width*size.height*3;
-	IF(!buffer_size)
+	if(buffer_size!=EDX)
 	{
-		buffer_size = EDX;
-		buffer = malloc(buffer_size);
-		EBX = bg_color;
-		EDI = buffer;
-		EAX = buffer_size+EDI;
+		buffer_size = EDX; 
+		free(buffer);
+		buffer = malloc(buffer_size); 
+		EBX = font.bg_color;
+		EDI = font.buffer;
+		EAX = font.buffer_size+font.buffer;
 		WHILE (EDI<EAX)
 		{
 			ESDWORD[EDI] = EBX;
@@ -349,12 +335,11 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 	}
 	WHILE(DSBYTE[text1])
 	{
-		x+=symbol(x,DSBYTE[text1]);
+		x+=symbol(x,y,DSBYTE[text1]);
 		IF(weight)x+=math.ceil(size.text/17);
 		text1++;
 	}
 	return;
 }
-
 
 #endif
