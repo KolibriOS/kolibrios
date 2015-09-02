@@ -234,14 +234,13 @@
 		pos++;
 		if(!strncmp(pos,"sys/",4)) return PATH;
 		if(!strncmp(pos,"kolibrios/",10)) return PATH;
-		if(!strncmp(pos,"hd/",3)) return PATH;
-		if(!strncmp(pos,"fd/",3)) return PATH;
 		if(!strncmp(pos,"rd/",3)) return PATH;
-		if(!strncmp(pos,"tmp/",4)) return PATH;
-		if(!strncmp(pos,"cd/",3)) return PATH;
-		if(!strncmp(pos,"bd/",3)) return PATH;
-		if(!strncmp(pos,"usbhd/",6)) return PATH;
-		if(!strncmp(pos,"kolibrios/",10)) return PATH;
+		if(!strncmp(pos,"fd/",3)) return PATH;
+		if(!strncmp(pos,"cd",2)) return PATH;
+		if(!strncmp(pos,"hd",2)) return PATH;
+		if(!strncmp(pos,"bd",2)) return PATH;
+		if(!strncmp(pos,"tmp",3)) return PATH;
+		if(!strncmp(pos,"usbhd",5)) return PATH;
 		sprintf(#__PATH_NEW,"/sys%s",PATH);
 		return #__PATH_NEW;
 	}
