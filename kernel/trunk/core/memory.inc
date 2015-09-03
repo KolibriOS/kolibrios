@@ -1171,8 +1171,6 @@ endp
 
 align 4
 sysfn_meminfo:
-
-        ;   add ecx, new_app_base
         cmp     ecx, OS_BASE
         jae     .fail
 
