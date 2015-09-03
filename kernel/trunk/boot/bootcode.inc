@@ -159,7 +159,7 @@ FirstDataSector dw      0                       ; begin of data
 ;
 ;=========================================================================
 
-include 'bootvesa.inc'                 ;Include source for boot vesa 
+include 'bootvesa.inc'                 ;Include source for boot vesa
 if defined extended_primary_loader
 include 'parsers.inc'
 end if
@@ -176,9 +176,9 @@ if defined extended_primary_loader
         mov     [bootfs], bx
 
 ; set up stack
-        mov     ax, 3000h
+        mov     ax, TMP_STACK_TOP shr 16
         mov     ss, ax
-        mov     sp, 0EC00h
+        mov     sp, TMP_STACK_TOP and 0xFFFF
 
 ; try to load configuration file
         mov     ax, 1
@@ -293,9 +293,9 @@ else
 no_hd_load:
 
 ; set up stack
-        mov     ax, 3000h
+        mov     ax, TMP_STACK_TOP shr 16
         mov     ss, ax
-        mov     sp, 0EC00h
+        mov     sp, TMP_STACK_TOP and 0xFFFF
 ; set up segment registers
         push    cs
         pop     ds
@@ -534,7 +534,7 @@ end if
         cmp     byte [di+preboot_dma-preboot_device], 1
         adc     byte [di+preboot_dma-preboot_device], 0
         cmp     byte [di+preboot_launcher-preboot_device], 1        ; Start LAUNCHER by default
-        adc     byte [di+preboot_launcher-preboot_device], 0        
+        adc     byte [di+preboot_launcher-preboot_device], 0
 ;        cmp     byte [di+preboot_biosdisk-preboot_device], 1
 ;        adc     byte [di+preboot_biosdisk-preboot_device], 0
 ;; default value for VRR is OFF
@@ -678,7 +678,7 @@ if defined extended_primary_loader
         _ask_question bdev,'12',preboot_device              ; range accepted for answer: 1-2
 else
         _ask_question bdev,'14',preboot_device              ; range accepted for answer: 1-4
-end if        
+end if
         _setcursor 14,0
 
 .d:
