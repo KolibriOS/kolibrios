@@ -435,6 +435,10 @@ acpi_dsdt_base    rd 1
 acpi_dsdt_size    rd 1
 acpi_madt_base    rd 1
 acpi_ioapic_base  rd 1
+acpi_hpet_base    rd 1
+hpet_base         rd 1
+hpet_period       rd 1
+hpet_timers       rd 1
 
 cpu_count         rd 1
 smpt              rd 16
@@ -443,6 +447,8 @@ endg
 ACPI_HI_RSDP_WINDOW_START  equ 0x000E0000
 ACPI_HI_RSDP_WINDOW_END    equ 0x00100000
 ACPI_RSDP_CHECKSUM_LENGTH  equ 20
+
+ACPI_HPET_SIGN             equ 0x54455048
 ACPI_MADT_SIGN             equ 0x43495041
 ACPI_FADT_SIGN             equ 0x50434146
 
@@ -516,7 +522,7 @@ check_acpi:
         jz      .done
 
         mov     ecx, [eax+16]
-        mov     edx, 0x50434146
+        mov     edx, ACPI_FADT_SIGN
         mov     [acpi_rsdt_base-OS_BASE], ecx
         call    rsdt_find
         mov     [acpi_fadt_base-OS_BASE], eax
@@ -527,7 +533,16 @@ check_acpi:
         mov     [acpi_dsdt_base-OS_BASE], eax
         mov     eax, [eax+4]
         mov     [acpi_dsdt_size-OS_BASE], eax
+@@:
+        mov     edx, ACPI_HPET_SIGN
+        mov     ecx, [acpi_rsdt_base-OS_BASE]
+        call    rsdt_find
+        test    eax, eax
+        jz      @F
 
+        mov     [acpi_hpet_base-OS_BASE], eax
+        mov     eax, [eax+44]
+        mov     [hpet_base-OS_BASE], eax
 @@:
         mov     edx, ACPI_MADT_SIGN
         mov     ecx, [acpi_rsdt_base-OS_BASE]
@@ -583,3 +598,58 @@ check_acpi:
         mov     eax, [edx+4]
         mov     [acpi_ioapic_base-OS_BASE], eax
         jmp     .next
+
+HPET_PERIOD             equ 0x0004
+HPET_CFG_ENABLE         equ 0x0001
+HPET_CFG                equ 0x0010
+HPET_COUNTER            equ 0x00f0
+HPET_T0_CFG             equ 0x0100
+
+HPET_TN_LEVEL           equ 0x0002
+HPET_TN_ENABLE          equ 0x0004
+HPET_TN_FSB             equ 0x4000
+
+align 4
+init_hpet:
+        mov     ebx, [hpet_base-OS_BASE]
+        test    ebx, ebx
+        jz      @F
+
+        mov     eax, [ebx]
+        and     ah, 0x1F
+        inc     ah
+        movzx   eax, ah
+        mov     [hpet_timers-OS_BASE], eax
+        mov     ecx, eax
+
+        mov     eax, [ebx+HPET_PERIOD]
+        mov     edx, 0x431BDE83
+        mul     edx
+        shr     edx, 18
+        mov     [hpet_period-OS_BASE], edx
+
+        mov     esi, [ebx+HPET_CFG]
+        and     esi, not HPET_CFG_ENABLE
+        mov     [ebx+HPET_CFG], esi             ;stop main counter
+
+        lea     edx, [ebx+HPET_T0_CFG]
+@@:
+        jcxz    @F
+        mov     eax, [edx]
+        and     eax, not (HPET_TN_ENABLE+HPET_TN_LEVEL+HPET_TN_FSB)
+        mov     [edx], eax
+        add     edx, 0x20
+        dec     ecx
+        jmp     @B
+@@:
+        mov     [ebx+HPET_COUNTER], ecx         ;reset main counter
+        mov     [ebx+HPET_COUNTER+4], ecx
+
+        or      esi, HPET_CFG_ENABLE
+        mov     [ebx+HPET_CFG], esi             ;and start again
+@@:
+        ret
+
+
+
+

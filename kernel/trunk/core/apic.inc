@@ -28,15 +28,15 @@ APIC_ISR        equ 0x100
 APIC_ESR        equ 0x280
 APIC_ICRL       equ 0x300
 APIC_ICRH       equ 0x310
-APIC_LVT_LINT0  equ     0x350
-APIC_LVT_LINT1  equ     0x360
+APIC_LVT_LINT0  equ 0x350
+APIC_LVT_LINT1  equ 0x360
 APIC_LVT_err    equ 0x370
 
 ; APIC timer
-APIC_LVT_timer  equ     0x320
-APIC_timer_div  equ     0x3e0
-APIC_timer_init equ     0x380
-APIC_timer_cur  equ     0x390
+APIC_LVT_timer  equ 0x320
+APIC_timer_div  equ 0x3e0
+APIC_timer_init equ 0x380
+APIC_timer_cur  equ 0x390
 ; IOAPIC
 IOAPIC_ID       equ 0x0
 IOAPIC_VER      equ 0x1
@@ -439,7 +439,38 @@ pci_irq_fixup:
         pop     ebp
         ret
 
+align 4
+get_clock_ns:
 
+        mov     eax, [hpet_base]
+        test    eax, eax
+        jz      .old_tics
 
+        push    ebx
+        pushfd
+        cli
 
+        mov     ebx, eax
+@@:
+        mov     edx, [ebx+0xF4]
+        mov     eax, [ebx+0xF0]
+        mov     ecx, [ebx+0xF4]
+        cmp     ecx, edx
+        jnz     @B
+
+        mov     ecx, [hpet_period]
+        mov     ebx, edx
+        imul    ebx, ecx
+        mul     ecx
+        add     edx, ebx
+
+        popfd
+        pop     ebx
+        ret
+
+.old_tics:
+        mov     eax, [timer_ticks]
+        mov     edx, 10000000
+        mul     edx
+        ret
 
