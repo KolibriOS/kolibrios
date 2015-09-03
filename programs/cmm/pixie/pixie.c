@@ -79,7 +79,6 @@ void main()
 	dword z1,z2;
 	
 	mem_Init();
-	SetEventMask(0x27);
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libio, #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
@@ -101,6 +100,7 @@ void main()
 	}
 
 	StartPlayingMp3();
+	list.SetFont(6, 9, 10000000b);
 	list.SetSizes(1, skin.h, skin.w-1, 198, 18);
 	if (list.count <= list.visible) 
 	{
@@ -112,11 +112,10 @@ void main()
 		list.w -= scroll1.size_x;
 	}
 
+	SetEventMask(0100111b);
 	loop()
 	{
 	  WaitEventTimeout(10);
-	  
-	  //ActivateWindow(Form.ID);
 	  switch(EAX & 0xFF) {
 	  	case evMouse:
 			if (!CheckActiveProcess(Form.ID)) break;
@@ -128,48 +127,36 @@ void main()
 				DrawPlayList();
 				break;
 			}
-			if(mouse.down)
+			if (list.MouseOver(mouse.x, mouse.y))
 			{
-				if (mouse.vert) if (list.MouseScroll(mouse.vert)) 
-				{
-					DrawPlayList();
-				}
-				if (list.MouseOver(mouse.x, mouse.y)) mouse_clicked = true;
-				else if(mouse.y < skin.h) && (mouse.x < 13)
-				{
-					//drag window - emulate windows header
-						tmp_x = mouse.x;
-						tmp_y = mouse.y;
-						do {
-							mouse.get();
-							if (tmp_x!=mouse.x) || (tmp_y!=mouse.y) 
-							{
-								z1 = Form.left + mouse.x - tmp_x;
-								z2 = Form.top + mouse.y - tmp_y;
-								if(z1<=10)z1=0;
-								if(z2<=10)z2=0;
-								if(z1>screen.width-Form.width-10)z1=screen.width-Form.width;
-								if(z2>screen.height-Form.height-10)z2=screen.height-Form.height;
-								//if(z2<10)z2=0;
-								MoveSize(z1 , z2, OLD, OLD);
-								DrawWindow();
-							}
-							pause(1);
-						} while (mouse.lkm);
-					if (mouse.pkm) && (mouse.y > skin.h) 
-						notify("'Pixies Player v1.11\nChange sound volume: Left/Right key\nChange skin: F1/F2\nMute: M key' -St\n");
-					break;
-				}
-				else if(mouse.up)
-				{
-					if (mouse_clicked)&&(list.ProcessMouse(mouse.x, mouse.y))
-					{
-						StartPlayingMp3();
-						mouse_clicked = false;
-					}
-					break;
-				}
+				if (mouse.vert) if (list.MouseScroll(mouse.vert)) DrawPlayList();
+				if (mouse.dblclick) StartPlayingMp3();
+				if (mouse.key&MOUSE_LEFT) if (list.ProcessMouse(mouse.x, mouse.y)) DrawPlayList();
+				if (mouse.key&MOUSE_RIGHT) notify("'Pixies Player v1.2\nChange sound volume: Left/Right key\nChange skin: F1/F2\nMute: M key' -St\n");
 			}
+			//drag window - emulate windows header
+			if(mouse.key&MOUSE_LEFT) && (mouse.y<skin.h) && (mouse.x < 13)
+			{
+				tmp_x = mouse.x;
+				tmp_y = mouse.y;
+				do {
+					mouse.get();
+					if (tmp_x!=mouse.x) || (tmp_y!=mouse.y) 
+					{
+						z1 = Form.left + mouse.x - tmp_x;
+						z2 = Form.top + mouse.y - tmp_y;
+						if(z1<=10)z1=0;
+						if(z2<=10)z2=0;
+						if(z1>screen.width-Form.width-10)z1=screen.width-Form.width;
+						if(z2>screen.height-Form.height-10)z2=screen.height-Form.height;
+						//if(z2<10)z2=0;
+						MoveSize(z1 , z2, OLD, OLD);
+						DrawWindow();
+					}
+					pause(1);
+				} while (mouse.lkm);
+			}
+			break;
 		case evButton:
 			id=GetButtonID();
 			switch(id) {
@@ -231,8 +218,8 @@ void main()
 		case evKey:
 			GetKeys();
 			
-			if (key_scancode==003) SetColorThemeLight();
-			if (key_scancode==004) SetColorThemeDark();
+			if (key_scancode==059) SetColorThemeLight();
+			if (key_scancode==060) SetColorThemeDark();
 			if (key_scancode==SCAN_CODE_LEFT) RunProgram("@VOLUME", "-");
 			if (key_scancode==SCAN_CODE_RIGHT) RunProgram("@VOLUME", "+");
 			if (key_scancode==050) RunProgram("@VOLUME", "m");
@@ -256,8 +243,8 @@ void main()
 			{
 				if (current_playing_file_n < list.count) 
 				{
-					current_playing_file_n = list.current;
-					if (list.KeyDown()) StartPlayingMp3();
+					current_playing_file_n++;
+					StartPlayingMp3();
 				}
 				else
 				{
@@ -315,6 +302,8 @@ void StopPlayingMp3()
 	if (player_run_id) player_run_id = KillProcess(player_run_id);
 	if (notify_run_id) notify_run_id = KillProcess(notify_run_id);
 	playback_mode = PLAYBACK_MODE_STOPED;
+	DrawTopPanel();
+	DrawPlayList();
 }
 
 
