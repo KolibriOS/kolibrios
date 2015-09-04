@@ -1,3 +1,9 @@
+byte current_theme;
+enum {
+	THEME_DARK,
+	THEME_LIGHT
+};
+
 char config_section[] = "Config";
 
 void LoadIniConfig()
@@ -64,7 +70,7 @@ void SetColorThemeDark()
 	scroll1.bckg_col = theme.color_list_bg;
 	scroll1.frnt_col = theme.color_list_border;
 	scroll1.line_col = theme.color_list_border;
-	DrawWindow();
+	draw_window();
 }
 
 
@@ -84,5 +90,5 @@ void SetColorThemeLight()
 	scroll1.bckg_col = theme.color_list_bg;
 	scroll1.frnt_col = theme.color_list_border;
 	scroll1.line_col = theme.color_list_border;
-	DrawWindow();
+	draw_window();
 }

@@ -2,12 +2,13 @@
 //do not open multiple threads
 //edit list manually
 
-
 #define MEMSIZE 0xFFFFF
-#include "..\lib\kolibri.h"
-#include "..\lib\mem.h"
-#include "..\lib\strings.h"
-#include "..\lib\dll.h"
+
+#include "..\lib\obj\proc_lib.h"
+#include "..\lib\patterns\simple_open_dialog.h"
+char default_dir[] = "/rd/1";
+od_filter filter2 = { "MP3", 0 };
+
 #include "..\lib\file_system.h"
 #include "..\lib\list_box.h"
 #include "..\lib\gui.h"
@@ -37,7 +38,7 @@ enum {
 int player_run_id,
     notify_run_id;
 
-int current_playing_file_n;
+int current_playing_file_n=0;
 
 word win_x_normal, win_y_normal;
 word win_x_small, win_y_small;
@@ -55,12 +56,6 @@ enum {
 	PLAYBACK_MODE_PLAYING
 };
 
-byte current_theme;
-enum {
-	THEME_DARK,
-	THEME_LIGHT
-};
-
 char work_folder[4096],
      current_filename[256];
 
@@ -69,6 +64,33 @@ char work_folder[4096],
 #include "settings.h"
 #include "check_default_player.h"
 
+
+void OpenFolder(dword path111)
+{
+	if (ESBYTE[path111]) 
+	{
+		strcpy(#work_folder, path111);
+		work_folder[strrchr(#work_folder, '/')-1]='\0';
+		OpenDirectory(#work_folder);
+		SetOpenedFileFirst(path111);
+	}
+	list.SetFont(6, 9, 10000000b);
+	list.SetSizes(1, skin.h, skin.w-1, 198, 18);
+	if (list.count <= list.visible) 
+	{
+		list.h = list.count * list.line_h;
+		list.visible = list.count;
+	}
+	else
+	{
+		list.w -= scroll1.size_x;
+	}
+	MoveSize(OLD, OLD, OLD, skin.h + list.h);
+	list.KeyHome();
+	current_playing_file_n=0;
+	StopPlayingMp3();
+	StartPlayingMp3();	
+}
 
 void main()
 {
@@ -83,35 +105,14 @@ void main()
 	load_dll(libio, #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libini, #lib_init,1);
+	load_dll(Proc_lib, #OpenDialog_init,0);
+	OpenDialog_init stdcall (#o_dialog);
 
 	id = abspath("pixie.ini");
 	strcpy(#pixie_ini_path, id);
 	LoadIniConfig();
 	CheckDefaultForTheFirstStart();
-	if (param)
-	{
-		strcpy(#work_folder, #param);
-		work_folder[strrchr(#work_folder, '/')-1]='\0';
-	}
-	if (work_folder) 
-	{
-		OpenDirectory(#work_folder);
-		SetOpenedFileFirst(#param);
-	}
-
-	StartPlayingMp3();
-	list.SetFont(6, 9, 10000000b);
-	list.SetSizes(1, skin.h, skin.w-1, 198, 18);
-	if (list.count <= list.visible) 
-	{
-		list.h = list.count * list.line_h;
-		list.visible = list.count;
-	}
-	else
-	{
-		list.w -= scroll1.size_x;
-	}
-
+	OpenFolder(#param);
 	SetEventMask(0100111b);
 	loop()
 	{
@@ -130,9 +131,11 @@ void main()
 			if (list.MouseOver(mouse.x, mouse.y))
 			{
 				if (mouse.vert) if (list.MouseScroll(mouse.vert)) DrawPlayList();
-				if (mouse.dblclick) StartPlayingMp3();
-				if (mouse.key&MOUSE_LEFT) if (list.ProcessMouse(mouse.x, mouse.y)) DrawPlayList();
-				if (mouse.key&MOUSE_RIGHT) notify("'Pixies Player v1.2\nChange sound volume: Left/Right key\nChange skin: F1/F2\nMute: M key' -St\n");
+				if (mouse.dblclick) {current_playing_file_n=list.current; StartPlayingMp3();}
+				if (mouse.down) && (mouse.key&MOUSE_LEFT) if (list.ProcessMouse(mouse.x, mouse.y)) DrawPlayList();
+				if (mouse.down) && (mouse.key&MOUSE_RIGHT) NotifyAndBackFocus(
+					"'Pixies Player v1.3\n\nOpen file: O key\nChange skin: F1/F2\nPlay/Stop: Space or P key\nStart playing selected file: Enter\nChange sound volume: Left/Right key\nMute: M key' -St\n"
+					);
 			}
 			//drag window - emulate windows header
 			if(mouse.key&MOUSE_LEFT) && (mouse.y<skin.h) && (mouse.x < 13)
@@ -151,7 +154,7 @@ void main()
 						if(z2>screen.height-Form.height-10)z2=screen.height-Form.height;
 						//if(z2<10)z2=0;
 						MoveSize(z1 , z2, OLD, OLD);
-						DrawWindow();
+						draw_window();
 					}
 					pause(1);
 				} while (mouse.lkm);
@@ -187,73 +190,57 @@ void main()
 					}
 					break;
 				case BUTTON_PLAYBACK_PREV:
-					if (list.KeyUp()) {
-						current_playing_file_n = list.current;
-						StartPlayingMp3();
-					}
+					current_playing_file_n--;
+					StartPlayingMp3();
 					break;
 				case BUTTON_PLAYBACK_NEXT:
-					if (list.KeyDown()) 
-					{
-						current_playing_file_n = list.current;
-						StartPlayingMp3();
-					}
+					current_playing_file_n++;
+					StartPlayingMp3();
 					break;
 				case BUTTON_PLAYBACK_PLAY_PAUSE:
-					if (playback_mode == PLAYBACK_MODE_PLAYING) 
-					{
-						playback_mode = PLAYBACK_MODE_STOPED;
-						DrawInactivePlayButton();
-						StopPlayingMp3();
-					}
-					else
-					{
-						playback_mode = PLAYBACK_MODE_PLAYING;
-						StartPlayingMp3();
-					}
+					PlayAndPauseClick();
 					break;
 			}
-			break;
-	  
+			break;	  
 		case evKey:
-			GetKeys();
-			
+			GetKeys();			
+			if (key_scancode==024) { OpenDialog_start stdcall (#o_dialog); if (o_dialog.status==1) OpenFolder(#openfile_path); }
 			if (key_scancode==059) SetColorThemeLight();
 			if (key_scancode==060) SetColorThemeDark();
 			if (key_scancode==SCAN_CODE_LEFT) RunProgram("@VOLUME", "-");
 			if (key_scancode==SCAN_CODE_RIGHT) RunProgram("@VOLUME", "+");
 			if (key_scancode==050) RunProgram("@VOLUME", "m");
-			if (key_scancode==SCAN_CODE_ENTER) StartPlayingMp3();
-			if (key_scancode==025) || (key_scancode==SCAN_CODE_SPACE)
-			{
-				if (playback_mode == PLAYBACK_MODE_PLAYING) StopPlayingMp3();
-				else StartPlayingMp3();
-			}
+			if (key_scancode==SCAN_CODE_ENTER) { current_playing_file_n=list.current; StartPlayingMp3(); }
+			if (key_scancode==025) || (key_scancode==SCAN_CODE_SPACE) PlayAndPauseClick();
 			if (list.ProcessKey(key_scancode)) DrawPlayList();
 			break;
-
 		case evReDraw:
 			if (window_mode == WINDOW_MODE_NORMAL) DefineAndDrawWindow(win_x_normal, win_y_normal, skin.w - 1, skin.h + list.h, 0x41,0,0,0);
 			if (window_mode == WINDOW_MODE_SMALL) DefineAndDrawWindow(win_x_small, win_y_small, 99, skin.h - 1, 0x41,0,0,0);
-			DrawWindow();
+			draw_window();
 			break;
-
 		default:
-			if (playback_mode == PLAYBACK_MODE_PLAYING) && (GetProcessSlot(player_run_id)==0)
+			if (playback_mode == PLAYBACK_MODE_PLAYING) && (!GetProcessSlot(player_run_id))
 			{
-				if (current_playing_file_n < list.count) 
-				{
-					current_playing_file_n++;
-					StartPlayingMp3();
-				}
-				else
-				{
-					StopPlayingMp3();
-					DrawWindow();
-				}
+				current_playing_file_n++;
+				StartPlayingMp3();
 			}
 	  }
    }
+}
+
+void PlayAndPauseClick() 
+{
+	if (playback_mode == PLAYBACK_MODE_PLAYING) 
+	{
+		playback_mode = PLAYBACK_MODE_STOPED;
+		StopPlayingMp3();
+	}
+	else
+	{
+		playback_mode = PLAYBACK_MODE_PLAYING;
+		StartPlayingMp3();
+	}
 }
 
 
@@ -262,7 +249,6 @@ void DrawPlayList()
 	int i;
 	int yyy;
 	char temp_filename[4096];
-	
 	for (i=0; i<list.visible; i++;)
 	{
 		strcpy(#temp_filename, files_mas[i + list.first] * 304 + buf + 72);
@@ -307,54 +293,39 @@ void StopPlayingMp3()
 }
 
 
+int NotifyAndBackFocus(dword msg)
+{
+	int nid;
+	nid = notify(msg);
+	pause(5);
+	Form.num_slot = GetProcessSlot(Form.ID);
+	if (Form.ID) ActivateWindow(Form.num_slot);
+	return nid;
+}
+
+
 void StartPlayingMp3()
 {
 	word i;
-	char item_path[4096], notify_message[512];
-	dword item_path_end_pointer;
+	char item_path[4096];
+	char notify_message[512];
 	StopPlayingMp3();
-
-	if (list.current > list.count)
-	{
-		list.current = list.count;
-		return;
-	}
-	if (!list.count)
-	{
-		notify_run_id = notify("'Pixie Player\nStopped, no file specified' -St");
-		return;
-	}
-
-	current_playing_file_n = list.current;
-
+	if (!list.count) { NotifyAndBackFocus("'Pixie Player\nPress O key to open file' -St"); return; }
+	if (current_playing_file_n > list.count) { current_playing_file_n = list.count; return; }
+	if (current_playing_file_n < 0) { current_playing_file_n = 0; return; }
 	playback_mode = PLAYBACK_MODE_PLAYING;
-
 	strlcpy(#current_filename, GetCurrentItemName(), sizeof(current_filename));
-	strcpy(#item_path, "\"");
-	strcat(#item_path, #work_folder);
-	strcat(#item_path, "/");
-	strcat(#item_path, #current_filename);
-	strcat(#item_path, "\"");
-
+	sprintf(#item_path,"\"%s/%s\"",#work_folder,#current_filename);
 	DrawPlayList();
 	DrawTopPanel();
-
-	item_path_end_pointer = #item_path+strlen(#item_path);
-	if (strcmpi(item_path_end_pointer-4,".mp3")!=0)	player_run_id = RunProgram(abspath("minimp3"), #item_path);	
-	strcpy(#notify_message, "'Now playing:\n");
-	strcat(#notify_message, #current_filename);
-	for (i=2; i<strlen(#notify_message); i++) if (notify_message[i]=='\'') notify_message[i]=96;
-	strcat(#notify_message, "' -St");
-	notify_run_id = notify(#notify_message);
+	if (strcmpi(#item_path+strlen(#item_path)-4,".mp3")) player_run_id = RunProgram(abspath("minimp3"), #item_path);	
+	sprintf(#notify_message,"'Now playing:\n%s' -St",#current_filename);
+	for (i=2; i<strlen(#notify_message)-6; i++) if (notify_message[i]=='\'') notify_message[i]=96; //replace ' char to avoid @notify misunderstood
+	notify_run_id = NotifyAndBackFocus(#notify_message);
 }
 
 
-void DrawInactivePlayButton()
-{
-	img_draw stdcall(skin.image, 13, 0, 22, skin.h, 300, 0);
-}
-
-void DrawWindow() {
+void draw_window() {
 	GetProcessInfo(#Form, SelfInfo);
 	DrawTopPanel();
 	IF (Form.status_window>=2) return;
@@ -365,13 +336,12 @@ void DrawWindow() {
 	}
 }
 
-
 void DrawTopPanel()
 {
 	char current_playing_title[245];
 	img_draw stdcall(skin.image, 0, 0, Form.width - 14, skin.h, 0, 0);
 	img_draw stdcall(skin.image, Form.width - 14, 0, 15, skin.h, skin.w - 15, 0);
-	if (playback_mode == PLAYBACK_MODE_STOPED) DrawInactivePlayButton();
+	if (playback_mode == PLAYBACK_MODE_STOPED) img_draw stdcall(skin.image, 13, 0, 22, skin.h, 300, 0);
 	//Playing control buttons
 	DefineButton(13, 1, 21, 21, BUTTON_PLAYBACK_PLAY_PAUSE + BT_HIDE, 0);
 	DefineButton(36, 1, 21, 21, BUTTON_PLAYBACK_PREV + BT_HIDE, 0);
@@ -400,12 +370,10 @@ void DrawScroller()
 	scroll1.max_area = list.count;
 	scroll1.cur_area = list.visible;
 	scroll1.position = list.first;
-
 	scroll1.all_redraw = 0;
 	scroll1.start_x = skin.w - scroll1.size_x - 1;
 	scroll1.start_y = list.y-1;
 	scroll1.size_y = list.h+2;
-
 	if (list.count > list.visible) scrollbar_v_draw(#scroll1);
 }
 
