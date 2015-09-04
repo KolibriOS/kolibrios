@@ -20,7 +20,7 @@ od_filter filter2 = { "MP3", 0 };
 
 #include "..\lib\patterns\libimg_load_skin.h"
 
-#define ABOUT_MESSAGE "'Pixies Player v1.31\n\nOpen file: O key\nChange skin: F1/F2
+#define ABOUT_MESSAGE "'Pixies Player v1.32\n\nOpen file: O key\nChange skin: F1/F2
 Play/Stop: Space or P key\nStart playing selected file: Enter
 Goto next/previous track: Ctrl + Left/Right
 Change sound volume: Left/Right key\nMute: M key' -St\n"
@@ -149,13 +149,12 @@ void main()
 					mouse.get();
 					if (tmp_x!=mouse.x) || (tmp_y!=mouse.y) 
 					{
+						debugi(mouse.x);
+						debugi(tmp_x);
 						z1 = Form.left + mouse.x - tmp_x;
 						z2 = Form.top + mouse.y - tmp_y;
-						if(z1<=10)z1=0;
-						if(z2<=10)z2=0;
-						if(z1>screen.width-Form.width-10)z1=screen.width-Form.width;
-						if(z2>screen.height-Form.height-10)z2=screen.height-Form.height;
-						//if(z2<10)z2=0;
+						if(z1<=10) || (z1>20000) z1=0; else if(z1>screen.width-Form.width-10)z1=screen.width-Form.width;
+						if(z2<=10) || (z2>20000) z2=0; else if(z2>screen.height-Form.height-10)z2=screen.height-Form.height;
 						MoveSize(z1 , z2, OLD, OLD);
 						draw_window();
 					}
