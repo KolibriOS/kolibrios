@@ -176,7 +176,7 @@ if defined extended_primary_loader
         mov     [bootfs], bx
 
 ; set up stack
-        mov     ax, TMP_STACK_TOP shr 16
+        mov     ax, (TMP_STACK_TOP and 0xF0000) shr 4
         mov     ss, ax
         mov     sp, TMP_STACK_TOP and 0xFFFF
 
@@ -293,7 +293,7 @@ else
 no_hd_load:
 
 ; set up stack
-        mov     ax, TMP_STACK_TOP shr 16
+        mov     ax, (TMP_STACK_TOP and 0xF0000) shr 4
         mov     ss, ax
         mov     sp, TMP_STACK_TOP and 0xFFFF
 ; set up segment registers
