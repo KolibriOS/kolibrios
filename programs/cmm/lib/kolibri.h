@@ -84,6 +84,18 @@ char program_path[4096];
 #define SCAN_CODE_PGDN  081
 #define SCAN_CODE_PGUP  073
 
+#define KEY_LSHIFT     00000000001b
+#define KEY_RSHIFT     00000000010b
+#define KEY_LCTRL      00000000100b
+#define KEY_RCTRL      00000001000b
+#define KEY_LALT       00000010000b
+#define KEY_RALT       00000100000b
+#define KEY_CAPSLOCK   00001000000b
+#define KEY_NUMLOCK    00010000000b
+#define KEY_SCROLLLOCK 00100000000b
+#define KEY_LWIN       01000000000b
+#define KEY_RWIN       10000000000b
+
 
 inline fastcall word GetKey()  //+Gluk fix
 {

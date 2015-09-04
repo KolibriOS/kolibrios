@@ -371,7 +371,7 @@ void main()
 					break;
 				}
 
-				if (TestBit(key_modifier, 2))
+				if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL)
 				{
 					switch(key_scancode)
 					{

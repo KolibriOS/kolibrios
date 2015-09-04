@@ -20,6 +20,11 @@ od_filter filter2 = { "MP3", 0 };
 
 #include "..\lib\patterns\libimg_load_skin.h"
 
+#define ABOUT_MESSAGE "'Pixies Player v1.31\n\nOpen file: O key\nChange skin: F1/F2
+Play/Stop: Space or P key\nStart playing selected file: Enter
+Goto next/previous track: Ctrl + Left/Right
+Change sound volume: Left/Right key\nMute: M key' -St\n"
+
 scroll_bar scroll1 = { 5,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 llist list;
 proc_info Form;
@@ -133,9 +138,7 @@ void main()
 				if (mouse.vert) if (list.MouseScroll(mouse.vert)) DrawPlayList();
 				if (mouse.dblclick) {current_playing_file_n=list.current; StartPlayingMp3();}
 				if (mouse.down) && (mouse.key&MOUSE_LEFT) if (list.ProcessMouse(mouse.x, mouse.y)) DrawPlayList();
-				if (mouse.down) && (mouse.key&MOUSE_RIGHT) NotifyAndBackFocus(
-					"'Pixies Player v1.3\n\nOpen file: O key\nChange skin: F1/F2\nPlay/Stop: Space or P key\nStart playing selected file: Enter\nChange sound volume: Left/Right key\nMute: M key' -St\n"
-					);
+				if (mouse.down) && (mouse.key&MOUSE_RIGHT) NotifyAndBackFocus(ABOUT_MESSAGE);
 			}
 			//drag window - emulate windows header
 			if(mouse.key&MOUSE_LEFT) && (mouse.y<skin.h) && (mouse.x < 13)
@@ -189,11 +192,11 @@ void main()
 						MoveSize(win_x_normal, win_y_normal, skin.w -1 ,skin.h + list.h);
 					}
 					break;
-				case BUTTON_PLAYBACK_PREV:
+				case BUTTON_PLAYBACK_PREV: _PLAY_PREVIOUS:
 					current_playing_file_n--;
 					StartPlayingMp3();
 					break;
-				case BUTTON_PLAYBACK_NEXT:
+				case BUTTON_PLAYBACK_NEXT: _PLAY_NEXT:
 					current_playing_file_n++;
 					StartPlayingMp3();
 					break;
@@ -203,7 +206,12 @@ void main()
 			}
 			break;	  
 		case evKey:
-			GetKeys();			
+			GetKeys();
+			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) {
+				if (key_scancode==SCAN_CODE_LEFT) goto _PLAY_PREVIOUS;
+				if (key_scancode==SCAN_CODE_RIGHT) goto _PLAY_NEXT;
+				break;
+			}		
 			if (key_scancode==024) { OpenDialog_start stdcall (#o_dialog); if (o_dialog.status==1) OpenFolder(#openfile_path); }
 			if (key_scancode==059) SetColorThemeLight();
 			if (key_scancode==060) SetColorThemeDark();
