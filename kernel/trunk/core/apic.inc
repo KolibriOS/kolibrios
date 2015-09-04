@@ -447,6 +447,7 @@ get_clock_ns:
         jz      .old_tics
 
         push    ebx
+        push    esi
         pushfd
         cli
 
@@ -456,15 +457,24 @@ get_clock_ns:
         mov     eax, [ebx+0xF0]
         mov     ecx, [ebx+0xF4]
         cmp     ecx, edx
-        jnz     @B
+        jne     @B
 
-        mov     ecx, [hpet_period]
-        mov     ebx, edx
-        imul    ebx, ecx
-        mul     ecx
-        add     edx, ebx
+        mul     [hpet_period]
+        shrd    eax, edx, 10
+        shr     edx, 10
+
+        mov     ebx, eax
+        mov     esi, edx
+
+        mov     eax, ecx
+        mul     [hpet_period]
+        shld    edx, eax, 22
+        shl     eax, 22
+        add     eax, ebx
+        adc     edx, esi
 
         popfd
+        pop     esi
         pop     ebx
         ret
 

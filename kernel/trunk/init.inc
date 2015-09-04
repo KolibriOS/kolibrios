@@ -623,10 +623,12 @@ init_hpet:
         mov     ecx, eax
 
         mov     eax, [ebx+HPET_PERIOD]
-        mov     edx, 0x431BDE83
-        mul     edx
-        shr     edx, 18
-        mov     [hpet_period-OS_BASE], edx
+        xor     edx, edx
+        shld    edx, eax, 10
+        shl     eax, 10
+        mov     esi, 1000000
+        div     esi
+        mov     [hpet_period-OS_BASE], eax
 
         mov     esi, [ebx+HPET_CFG]
         and     esi, not HPET_CFG_ENABLE
