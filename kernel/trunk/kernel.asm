@@ -701,19 +701,11 @@ setvideomode:
         mov     eax, [hpet_base]
         test    eax, eax
         jz      @F
-        DEBUGF  1, "K : HPET base %x\n", eax
-        mov     eax, [hpet_period]
-        DEBUGF  1, "K : HPET period %d\n", eax
-        mov     eax, [hpet_timers]
-        DEBUGF  1, "K : HPET timers %d\n", eax
-
         mov     eax, [hpet_base]
         stdcall map_io_mem, [hpet_base], 1024, PG_GLOBAL+PAT_UC+PG_SWR
         mov     [hpet_base], eax
-
         mov     eax, [eax]
         DEBUGF  1, "K : HPET caps %x\n", eax
-
 @@:
 ; SET UP OS TASK
 
@@ -1041,7 +1033,31 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
         mov     esi, boot_cpufreq
         call    boot_log
 
-        cli                         ;FIXME check IF
+        cli
+        mov     ebx, [hpet_base]
+        test    ebx, ebx
+        jz      @F
+        mov     ebx, [ebx+0xF0]
+
+        rdtsc
+        mov     ecx, 1000
+        sub     eax, [hpet_tsc_start]
+        sbb     edx, [hpet_tsc_start+4]
+        shld    edx, eax, 10
+        shl     eax, 10
+        mov     esi, eax
+        mov     eax, edx
+        mul     ecx
+        xchg    eax, esi
+        mul     ecx
+        adc     edx, esi
+        div     ebx
+        mul     ecx
+        div     [hpet_period]
+        mul     ecx
+        DEBUGF  1, "K : cpu frequency %u Hz\n", eax
+        jmp     .next
+@@:
         rdtsc
         mov     ecx, eax
         mov     esi, 250            ; wait 1/4 a second
@@ -1053,6 +1069,7 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
         xor     edx, edx
         shld    edx, eax, 2
         shl     eax, 2
+.next:
         mov     dword [cpu_freq], eax
         mov     dword [cpu_freq+4], edx
         mov     ebx, 1000000

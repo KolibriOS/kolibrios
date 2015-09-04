@@ -439,7 +439,7 @@ acpi_hpet_base    rd 1
 hpet_base         rd 1
 hpet_period       rd 1
 hpet_timers       rd 1
-
+hpet_tsc_start    rd 2
 cpu_count         rd 1
 smpt              rd 16
 endg
@@ -613,7 +613,7 @@ align 4
 init_hpet:
         mov     ebx, [hpet_base-OS_BASE]
         test    ebx, ebx
-        jz      @F
+        jz      .done
 
         mov     eax, [ebx]
         and     ah, 0x1F
@@ -649,7 +649,12 @@ init_hpet:
 
         or      esi, HPET_CFG_ENABLE
         mov     [ebx+HPET_CFG], esi             ;and start again
-@@:
+
+.done:
+        rdtsc
+        mov     [hpet_tsc_start-OS_BASE], eax
+        mov     [hpet_tsc_start+4-OS_BASE], edx
+
         ret
 
 
