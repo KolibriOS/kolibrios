@@ -1922,8 +1922,18 @@ sys_getsetup:
         ret
 ;--------------------------------------
 @@:
+; F.26.10 - get the time from kernel launch in nanoseconds
+        sub     ebx, 1
+        jnz     @f
+
+        call    get_clock_ns
+        mov     [esp+24], edx
+        mov     [esp+32], eax
+        ret
+;--------------------------------------
+@@:
 ; F.26.11 - Find out whether low-level HD access is enabled
-        sub     ebx, 2
+        sub     ebx, 1
         jnz     @f
 
         mov     eax, [lba_read_enabled]
