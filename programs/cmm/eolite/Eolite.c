@@ -707,7 +707,7 @@ void Line_ReDraw(dword bgcol, filenum){
 	{
 		font.bg_color = bgcol;
 		font.prepare(0, 0, file_name_off);
-		font.show(files.x + 23, files.line_h - font.size.height / 2 + y);
+		font.show(files.x + 23, files.line_h - font.height / 2 + y);
 	}
 	DrawBar(files.x+files.w-141,y,1,files.line_h,system.color.work); //gray line 1
 	DrawBar(files.x+files.w-68,y,1,files.line_h,system.color.work); //gray line 2
