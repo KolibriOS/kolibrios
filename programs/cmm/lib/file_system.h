@@ -281,10 +281,10 @@ enum
 :dword ConvertSize(dword bytes)
 {
   byte size_nm[4];
-  if (bytes>=1073741824) strncpy(#size_nm, "Gb",2);
-  else if (bytes>=1048576) strncpy(#size_nm, "Mb",2);
-  else if (bytes>=1024) strncpy(#size_nm, "Kb",2);
-  else strncpy(#size_nm, "b ",2);
+  if (bytes>=1073741824) strlcpy(#size_nm, "Gb",2);
+  else if (bytes>=1048576) strlcpy(#size_nm, "Mb",2);
+  else if (bytes>=1024) strlcpy(#size_nm, "Kb",2);
+  else strlcpy(#size_nm, "b ",2);
   while (bytes>1023) bytes/=1024;
   sprintf(#ConvertSize_size_prefix,"%d %s",bytes,#size_nm);
   return #ConvertSize_size_prefix;

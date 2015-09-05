@@ -292,7 +292,7 @@ void Scan(dword id__)
 			}
 			else
 			{
-				strncpy(#URL,"http://",7);
+				strlcpy(#URL,"http://",7);
 				strcat(#URL, #editURL);
 			}
 			OpenPage();
@@ -336,7 +336,7 @@ void Scan(dword id__)
 			return;
 		case DOWNLOAD_MANAGER:
 			if (!downloader_opened) {
-				strncpy(#DL_URL, "http://",7);
+				strlcpy(#DL_URL, "http://",7);
 				CreateThread(#Downloader,#downloader_stak+4092);
 			}
 			return; /*

@@ -149,8 +149,6 @@ void main()
 					mouse.get();
 					if (tmp_x!=mouse.x) || (tmp_y!=mouse.y) 
 					{
-						debugi(mouse.x);
-						debugi(tmp_x);
 						z1 = Form.left + mouse.x - tmp_x;
 						z2 = Form.top + mouse.y - tmp_y;
 						if(z1<=10) || (z1>20000) z1=0; else if(z1>screen.width-Form.width-10)z1=screen.width-Form.width;

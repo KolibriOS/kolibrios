@@ -397,7 +397,7 @@ void main()
 								Paste();
 								break;
 						case 032: //Ctrl+D - set as bg
-								strncpy(#temp, "\\S__",4);
+								strlcpy(#temp, "\\S__",4);
 								strcat(#temp, #file_path);
 								RunProgram("/sys/media/kiv", #temp);
 								break;

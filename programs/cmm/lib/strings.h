@@ -13,7 +13,7 @@
 // strlen( EDI)
 // utf8_strlen( ESI)
 // strcpy( EDI, ESI) --- 0 if ==
-// strncpy(dword text1,text2,signed length)
+// strlcpy(dword text1,text2,signed length)
 // strcat( EDI, ESI)
 // strncat(dword text1,text2,signed length) --- pasting the text of a certain length
 // strchr( ESI,BL) --- find first BL
@@ -214,34 +214,6 @@ L2:
     $stosb
     $test al,al
     $jnz L2
-}
-
-inline dword strncpy(dword text1, text2, signed len)
-	signed o1,o2;
-{
-	if(!text1)||(!len) return text1;
-	if(len<4)
-	{
-		o2 = len;
-		goto RUN_BYTE;
-	}
-	o1 = len/4;
-	o2 = len-4*o1;
-	while(o1){
-		DSDWORD[text1] = DSDWORD[text2];
-		text1 += 4;
-		text2 += 4;
-		$dec o1
-	}
-	RUN_BYTE:
-	while(o2){
-		DSBYTE[text1] = DSBYTE[text2];
-		$inc text1 
-		$inc text2 
-		$dec o2
-	}
-	DSBYTE[text1] = 0;
-	return text1;
 }
 
 inline fastcall int strlcpy(dword ESI, EDI, EBX)
@@ -759,7 +731,7 @@ inline dword strdup(dword text)
     dword l = strlen(text);
     dword ret = malloc(l+1);
 	if(!ret) return NULL;
-    strncpy(ret,text,l);
+    strlcpy(ret,text,l);
     return ret;
 }
 
@@ -771,7 +743,7 @@ inline dword strndup(dword str, signed maxlen)
 	copy = malloc(len + 1);
 	if (copy != NULL)
 	{
-		strncpy(copy, str, len);
+		strlcpy(copy, str, len);
 		DSBYTE[len+copy] = '\0';
 	}
 	return copy;

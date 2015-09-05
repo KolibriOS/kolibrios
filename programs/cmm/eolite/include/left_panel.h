@@ -94,7 +94,7 @@ void GetSystemDiscs()
 		for (j1=0; j1<dev_disc_num; j1++;)
 		{
 			l=sprintf(#sys_discs,"%s%s/",#dev_name,j1*304+ buf+72);
-			strncpy(#disk_list[disc_num].Item, #sys_discs,l);
+			strlcpy(#disk_list[disc_num].Item, #sys_discs,l);
 			disc_num++;
 		}
 		if (!strncmp(#sys_discs, "/rd/1/",6)) 
@@ -102,7 +102,7 @@ void GetSystemDiscs()
 			GetDir(#tempbuf, #temp_file_count, "/kolibrios/", DIRS_ONLYREAL);
 			if (temp_file_count)
 			{
-				strncpy(#disk_list[disc_num].Item, "/kolibrios/",11);
+				strlcpy(#disk_list[disc_num].Item, "/kolibrios/",11);
 				kolibrios_drive = true;
 				disc_num++;	
 			}
