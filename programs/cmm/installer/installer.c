@@ -28,6 +28,6 @@ void main()
 	ExitProcess();
 }
 
-void copyf_Draw_Progress(dword filename) { return; }
+void Operation_Draw_Progress(dword filename) { return; }
 
 stop:
