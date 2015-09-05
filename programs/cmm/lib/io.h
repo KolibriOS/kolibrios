@@ -313,11 +313,14 @@
 {
 	file.write(0,strlen(data),data,PATH);
 }
+:char BYTE_HEAD_FILE_KPCK[4];
 :dword IO::read(dword PATH)
 {
 	int result;
 	___GetFileInfo(PATH, #BDVK);
-	if(BDVK.isfolder)return 0;
+	if(BDVK.isfolder)return false;
+	file.read(0,4,#BYTE_HEAD_FILE_KPCK,PATH);
+	IF(DSDWORD[#BYTE_HEAD_FILE_KPCK]=='KCPK')return readKPACK(PATH);
 	FILES_SIZE = BDVK.sizelo;
 	buffer_data = malloc(FILES_SIZE+1);
 	result = file.read(0,FILES_SIZE,buffer_data,PATH);

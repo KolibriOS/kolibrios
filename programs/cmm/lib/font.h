@@ -9,10 +9,14 @@
 #include "../lib/io.h"
 #endif
 
+:struct __OFFSET_FONT
+{
+	signed x,y;
+};
 :struct __SIZE
 {
 	word width,height;
-	signed offset_x,offset_y;
+	__OFFSET_FONT offset;
 	float offset_i,w_italic;
 	byte text;
 	byte TMP_WEIGHT;
@@ -93,17 +97,17 @@ FONT font = 0;
 :dword FONT::getsize(dword text1)
 {
 	size.height = size.width = 0;
-	size.offset_x = size.offset_y = -1;
+	size.offset.x = size.offset.y = -1;
 	IF(size.text)IF(!changeSIZE())return 0;
 	WHILE(DSBYTE[text1])
 	{
 		symbol_size(DSBYTE[text1]);
 		text1++;
 	}
-	$neg size.offset_y
-	$neg size.offset_x
-	size.height += size.offset_y; size.height++;
-	size.width += size.offset_x; size.width++;
+	$neg size.offset.y
+	$neg size.offset.x
+	size.height += size.offset.y; size.height++;
+	size.width += size.offset.x; size.width++;
 	IF(italic)
 	{
 		size.w_italic = size.height/3;
@@ -155,8 +159,8 @@ FONT font = 0;
 				{
 					IF(xi>rw)rw=xi;
 					IF(size.height<yi)size.height = yi;
-					IF(size.offset_y<0)size.offset_y = yi;
-					ELSE IF(yi<size.offset_y)size.offset_y = yi;
+					IF(size.offset.y<0)size.offset.y = yi;
+					ELSE IF(yi<size.offset.y)size.offset.y = yi;
 					IF(!X) X = xi;
 					ELSE IF(X>xi)X = xi;
 				}
@@ -166,7 +170,7 @@ FONT font = 0;
 		size.width += rw;
 		IF(weight) size.width+=size.TMP_WEIGHT;
 		IF(s=='_') size.width--;
-		IF(size.offset_x<0)size.offset_x = X;
+		IF(size.offset.x<0)size.offset.x = X;
 }
 :dword FONT::prepare(word x,y;dword text1)
 {
@@ -178,7 +182,7 @@ FONT font = 0;
 	IF(size.text)IF(!changeSIZE())return false;
 	AX = c; r = AL; g = AH; c>>=16; AX = c; b = AL;
 	getsize(text1);
-	y -= size.offset_y;
+	y -= size.offset.y;
 	
 	EDX = size.width*size.height*3;
 	IF(!buffer_size)
@@ -205,9 +209,10 @@ FONT font = 0;
 	ELSE
 	{
 		GetProcessInfo(#Form_SELF_FONTS, SelfInfo); 
+		y-=size.offset.y;
 		CopyScreen(buffer,x+Form_SELF_FONTS.left+5,y+Form_SELF_FONTS.top+GetSkinHeight(),size.width,size.height);
 	}
-	len = size.offset_x;
+	len = size.offset.x;
 	WHILE(DSBYTE[text1])
 	{
 		IF(DSBYTE[text1]=='_') len--;
@@ -220,6 +225,7 @@ FONT font = 0;
 }
 :void FONT::show(word x,y)
 {
+	y-=size.offset.y;
 	_PutImage(x,y,size.width,size.height,buffer);
 }
 inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
@@ -266,7 +272,7 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
         tmp = 4*block*s + data;
         for(yi=0; yi<height; yi++)
         {
-			TMP = size.offset_y+yi+y;
+			TMP = size.offset.y+yi+y;
             for(xi=0; xi<width; xi++)
             {
 				IF(iii%32) _ >>= 1;
@@ -296,7 +302,7 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 {
 	buffer_size = 0;
 	IF(data)free(data);
-	if (!io.readKPACK(path)) { debug("Error while loading font: "); debugln(path); return false; }
+	if (!io.read(path)) { debug("Error while loading font: "); debugln(path); return false; }
 	begin = data = io.buffer_data;
 	EBX = begin + io.FILES_SIZE;
 	height = DSBYTE[EBX - 1];
@@ -313,7 +319,7 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 	IF(size.text)IF(!changeSIZE())return;
 	AX = c; r = AL; g = AH; c>>=16; AX = c; b = AL;
 	getsize(text1);
-	y -= size.offset_y;
+	y -= size.offset.y;
 	
 	size.width = w;
 	size.height = h;
