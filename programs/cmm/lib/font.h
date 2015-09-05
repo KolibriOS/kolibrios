@@ -235,14 +235,14 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 	dword i,line_w,to, pixel;
 	line_w = w * 3;
 	to = w*h*3 + image - line_w - 3;
-	for (i = image; i < to; i+=3)	{
-		if (i-image%line_w +3 == line_w) continue;
-		if (b24(i)==0x000000) && (b24(i+3)!=0x000000) && (b24(i+line_w)!=0x000000) && (b24(i+3+line_w)==0x000000)
+	for(i = image; i < to; i+=3)	{
+		IF(i-image%line_w +3 == line_w) continue;
+		IF(b24(i)==0x000000) && (b24(i+3)!=0x000000) && (b24(i+line_w)!=0x000000) && (b24(i+3+line_w)==0x000000)
 		{ 
 			ShadowImage(i+3, 1, 1, 2);
 			ShadowImage(i+line_w, 1, 1, 2);
 		}
-		else if (b24(i)!=0x000000) && (b24(i+3)==0x000000) && (b24(i+line_w)==0x000000) && (b24(i+3+line_w)!=0x000000)
+		ELSE IF(b24(i)!=0x000000) && (b24(i+3)==0x000000) && (b24(i+line_w)==0x000000) && (b24(i+3+line_w)!=0x000000)
 		{
 			ShadowImage(i, 1, 1, 2);
 			ShadowImage(i+3+line_w, 1, 1, 2);
@@ -252,11 +252,10 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 :byte FONT::symbol(signed x,y;byte s)
 {
         dword xi,yi;
-        dword tmp,_;
+        dword _;
         dword iii;
 		float ital = -size.w_italic;
 		dword ___x;
-		word TMP;
 		byte _TMP_WEIGHT;
         byte rw=0;
         IF(s==32)return width/4;
@@ -269,32 +268,38 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 			ELSE IF(s==240)s=168; //YO
 		}
         iii = 0;
-        tmp = 4*block*s + data;
-        for(yi=0; yi<height; yi++)
+        EBX = block*s;
+		$shl ebx,2
+		$add ebx,data
+		yi = 0;
+        while(yi<height)
         {
-			TMP = size.offset.y+yi+y;
+			EDI = size.offset.y;
+			$add edi,yi
+			$add edi,y
             for(xi=0; xi<width; xi++)
             {
-				IF(iii%32) _ >>= 1;
+				IF(iii%32) $shr ecx,1
 				ELSE
 				{
-						tmp += 4;
-						_ = DSDWORD[tmp];
+						$add ebx,4
+						ECX = DSDWORD[EBX];
 				}
-				if(_&1)
+				IF(ECX&true)
 				{
 						IF(xi>rw)rw=xi;
 						___x = x+xi;
 						IF(italic)___x+=math.ceil(ital);
-						PixelRGB(___x,TMP);
-						for(_TMP_WEIGHT=size.TMP_WEIGHT; _TMP_WEIGHT; _TMP_WEIGHT--)
+						PixelRGB(___x,EDI);
+						FOR(_TMP_WEIGHT=size.TMP_WEIGHT; _TMP_WEIGHT; _TMP_WEIGHT--)
 						{
-							IF(weight) PixelRGB(___x+_TMP_WEIGHT,TMP);
+							IF(weight) PixelRGB(___x+_TMP_WEIGHT,EDI);
 						}
 				}
 				iii++;
             }
 			IF(italic) ital-=size.offset_i;
+			$inc yi
         }
         return rw;
 }
@@ -302,11 +307,13 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 {
 	buffer_size = 0;
 	IF(data)free(data);
-	if (!io.read(path)) { debug("Error while loading font: "); debugln(path); return false; }
+	IF(!io.read(path)) { debug("Error while loading font: "); debugln(path); return false; }
 	begin = data = io.buffer_data;
 	EBX = begin + io.FILES_SIZE;
-	height = DSBYTE[EBX - 1];
-	width = DSBYTE[EBX - 2];
+	$dec ebx
+	height = DSBYTE[EBX];
+	$dec ebx
+	width = DSBYTE[EBX];
 	block = math.ceil(height*width/32);
 	return true;
 }
@@ -325,7 +332,7 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 	size.height = h;
 
 	EDX = size.width*size.height*3;
-	if(buffer_size!=EDX)
+	IF(buffer_size!=EDX)
 	{
 		buffer_size = EDX; 
 		free(buffer);
