@@ -49,5 +49,5 @@ void SetOpenedFileFirst(dword in_name)
 }
 
 dword GetCurrentItemName() {
-	return files_mas[list.current]*304 + buf+72;
+	return files_mas[current_playing_file_n]*304 + buf+72;
 }
