@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2014. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ping.asm - ICMP echo client for KolibriOS                      ;;
@@ -12,7 +12,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: more precise timer, ttl, user selectable size/number of packets
+; TODO: ttl, user selectable size/number of packets
 
 format binary as ""
 
@@ -24,25 +24,27 @@ use32
 
         db      'MENUET01'      ; signature
         dd      1               ; header version
-        dd      start           ; entry point
+        dd      START           ; entry point
         dd      I_END           ; initialized size
-        dd      mem             ; required memory
-        dd      mem             ; stack pointer
+        dd      IM_END+0x1000   ; required memory
+        dd      IM_END+0x1000   ; stack pointer
         dd      s               ; parameters
         dd      0               ; path
 
-
-; useful includes
+include '../../proc32.inc'
 include '../../macros.inc'
 purge mov,add,sub
-include '../../proc32.inc'
 include '../../dll.inc'
 include '../../network.inc'
 
 include 'icmp.inc'
 
 
-start:
+START:
+; init heap
+        mcall   68, 11
+        test    eax, eax
+        jz      exit
 ; load libraries
         stdcall dll.Load, @IMPORT
         test    eax, eax
@@ -82,7 +84,7 @@ main:
         lodsb
         test    al, al
         jnz     @b
-        mov     byte [esi-2], al
+        mov     [esi-2], al
         pop     esi
 
 ; reset stats
@@ -165,7 +167,7 @@ parse_param:
 
         mcall   connect, [socketnum], sockaddr1, 18
 
-        mcall   40, 1 shl 7 ; + 7
+        mcall   40, EVM_STACK
 ;        call    [con_cls]
 
         push    str3
@@ -184,16 +186,21 @@ mainloop:
         jnz     exit_now
 
         inc     [stats.tx]
-        mcall   26, 9
+        mcall   26, 10                          ; Get high precision timer count
         mov     [time_reference], eax
         mcall   send, [socketnum], icmp_packet, icmp_packet.length, 0
 
         mcall   23, 300 ; 3 seconds time-out
-        mcall   26, 9
+        mcall   26, 10                          ; Get high precision timer count
         sub     eax, [time_reference]
+        jz      @f
         xor     edx, edx
-        mov     cx, 10
-        mul     cx
+        mov     ebx, 100000
+        div     ebx
+        cmp     edx, 50000
+        jb      @f
+        inc     eax
+  @@:
         mov     [time_reference], eax
 
         mcall   recv, [socketnum], buffer_ptr, BUFFERSIZE, MSG_DONTWAIT
@@ -223,9 +230,14 @@ mainloop:
         jne     .miscomp
 
 ; All OK, print to the user!
-        push    [time_reference]
-        movzx   eax, word[buffer_ptr + ICMP_Packet.SequenceNumber]
+        mov     eax, [time_reference]
+        xor     edx, edx
+        mov     ebx, 10
+        div     ebx
+        push    edx
         push    eax
+;        movzx   eax, word[buffer_ptr + ICMP_Packet.SequenceNumber]
+;        push    eax
         push    [recvd]
 
         push    str7
@@ -270,12 +282,17 @@ done:
         cmp     [stats.rx], 0
         jne     @f
         xor     eax, eax
+        xor     edx, edx
         jmp     .zero
   @@:
         xor     edx, edx
         mov     eax, [stats.time]
         div     [stats.rx]
+        xor     edx, edx
+        mov     ebx, 10
+        div     ebx
   .zero:
+        push    edx
         push    eax
         push    [stats.rx]
         push    [stats.tx]
@@ -317,12 +334,12 @@ str6    db      'Could not open socket',10,0
 str13   db      'Invalid parameter(s)',10,0
 
 str11   db      'Answer: ',0
-str7    db      'bytes=%u seq=%u time=%u ms',10,0
-str8    db      'timeout!',10,0
-str9    db      'miscompare at offset %u',10,0
-str10   db      'reply invalid',10,0
+str7    db      'bytes=%u time=%u.%u ms',10,0
+str8    db      'Timeout',10,0
+str9    db      'Miscompare at offset %u',10,0
+str10   db      'Invalid reply',10,0
 
-str12   db      10,'Ping stats:',10,'%u packets sent, %u packets received',10,'average response time=%u ms',10,0
+str12   db      10,'Statistics:',10,'%u packets sent, %u packets received',10,'average response time=%u.%u ms',10,0
 
 sockaddr1:
         dw AF_INET4
@@ -364,7 +381,7 @@ import  console,        \
 
 socketnum       dd ?
 
-icmp_packet:    db 8            ; type
+icmp_packet     db 8            ; type
                 db 0            ; code
                 dw 0            ;
  .id            dw IDENTIFIER   ; identifier
@@ -374,8 +391,8 @@ icmp_packet:    db 8            ; type
 
 I_END:
 
+s               db 0
+                rb 1024
 buffer_ptr      rb BUFFERSIZE
 
-s               rb 1024
-                rb 4096    ; stack
-mem:
+IM_END:
