@@ -28,7 +28,7 @@
 		return CopyFolder(from1, in1);
 	else
 	{
-		copyf_Draw_Progress(from1+strchr(from1, '/'));
+		Operation_Draw_Progress(from1+strchr(from1, '/'));
 		return CopyFile(from1, in1);
 	}
 }
@@ -92,7 +92,7 @@
 		}
 		else
 		{
-			copyf_Draw_Progress(filename);
+			Operation_Draw_Progress(filename);
 			if (error=CopyFile(#copy_from2, #copy_in2)) 
 			{
 				if (fabs(error)==8) { debugln("Stop copying."); break;} //TODO: may be need grobal var like stop_all
