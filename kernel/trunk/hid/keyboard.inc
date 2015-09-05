@@ -25,6 +25,8 @@ VKEY_CONTROL  = 0000000000001100b
 VKEY_ALT      = 0000000000110000b
 
 uglobal
+  align 4
+  kb_state      dd 0
   ext_code      db 0
 
   keyboard_mode db 0
@@ -33,6 +35,7 @@ uglobal
   altmouseb     db 0
   ctrl_alt_del  db 0
 
+  kb_lights     db 0
   old_kb_lights db 0
 
 align 4
@@ -42,13 +45,6 @@ align 4
 endg
 
 iglobal
-  kb_lights     db 2
-  align 4
-  kb_state      dd VKEY_NUMLOCK
-endg
-
-iglobal
-align 4
 hotkey_tests    dd      hotkey_test0
                 dd      hotkey_test1
                 dd      hotkey_test2
