@@ -13,7 +13,6 @@
 #include "..\lib\file_system.h"
 #include "..\lib\gui.h"
 #include "..\lib\list_box.h"
-#include "..\lib\copyf.h"
 #include "..\lib\random.h"
 #include "..\lib\font.h"
 //obj
@@ -65,7 +64,7 @@ dword eolite_ini_path;
 
 char scroll_used=false;
 
-dword menu_stak,about_stak,properties_stak,settings_stak,copy_stak;
+dword menu_stak,about_stak,properties_stak,settings_stak,copy_stak,delete_stak;
 
 proc_info Form;
 int mouse_dd, sc_slider_h, kolibrios_drive;
@@ -88,7 +87,10 @@ PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 
 PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 byte cmd_free=0;
 #include "include\translations.h"
+#include "include\fs.h"
 #include "include\settings.h"
+#include "include\progress_dialog.h"
+#include "..\lib\copyf.h"
 #include "include\copy.h"
 #include "include\gui.h"
 #include "include\sorting.h"
@@ -300,7 +302,7 @@ void main()
 				}
 				if (del_active)
 				{
-					if (id==301) || (id==302) Del_File(302-id);
+					if (id==301) || (id==302)	Del_File(302-id);
 					break;
 				}
 				if (new_element_active)
@@ -492,7 +494,7 @@ void main()
 				draw_window();
 				if (action_buf) 
 				{
-					if (action_buf==COPY_PASTE_END)
+					if (action_buf==OPERATION_END)
 					{
 						FnProcess(5);
 						SelectFileByName(#copy_to+strrchr(#copy_to,'/'));
@@ -800,10 +802,6 @@ void Del_Form()
 	byte f_count[128];
 	int dform_x = files.w - 220 / 2 + files.x;
 	if (!strncmp(#file_name,".",2)) || (!strncmp(#file_name,"..",2)) return;
-	if (del_active==2)
-	{
-		if (itdir) ShowMessage(WAIT_DELETING_FOLDER, 0);
-	}
 	else
 	{
 		if (!files.count) return;
@@ -840,7 +838,7 @@ void Del_Form()
 }
 
 int del_error;
-int Del_File2(dword way)
+int Del_File2(dword way, sh_progr)
 {    
 	dword dirbuf, fcount, i, filename;
 	int error;
@@ -855,10 +853,11 @@ int Del_File2(dword way)
 			sprintf(#del_from,"%s/%s",way,filename);
 			if ( TestBit(ESDWORD[filename-40], 4) )
 			{
-				Del_File2(#del_from);
+				Del_File2(#del_from, 1);
 			}
 			else
 			{
+				if (sh_progr) Operation_Draw_Progress(#del_from);
 				if (error = DeleteFile(#del_from)) del_error = error;
 			}
 		}
@@ -866,19 +865,43 @@ int Del_File2(dword way)
 	if (error = DeleteFile(way)) del_error = error;
 }
 
-
-void Del_File(byte dodel)
+void Del_File_Thread()
 {   
 	byte del_from[4096];
 	dword selected_offset2;
 	int tst, count, i;
 	
-	if (dodel==true)
+	file_count_copy = 0;
+	copy_bar.value = 0; 
+	operation_flag = DELETE_FLAG;
+	
+	if (selected_count)
 	{
-		del_active=2;
-		if (itdir) ShowMessage(WAIT_DELETING_FOLDER, 0);
+   	   for (i=0; i<files.count; i++) 
+          {
+               selected_offset2 = file_mas[i]*304 + buf+32 + 7;
+			    if (ESBYTE[selected_offset2]) {
+					sprintf(#del_from,"%s%s",#path,file_mas[i]*304+buf+72);
+					GetFileInfo(#del_from, #file_info_count);
+					if ( file_info_count.isfolder ) DirFileCount(#del_from);
+					else file_count_copy++;
+				}
+           }
+	}
+	else
+	{
+		if (itdir) DirFileCount(#file_path);
+		else file_count_copy++;
+	}
+	
+	copy_bar.max = file_count_copy;
+	
+	//if (dodel==true)
+	//{
+		//del_active=2;
+		//if (itdir) ShowMessage(WAIT_DELETING_FOLDER, 0);
 		del_error = 0;
-		
+		DisplayOperationForm();
 		if (selected_count)
 		{
    		   for (i=0; i<files.count; i++) 
@@ -886,22 +909,32 @@ void Del_File(byte dodel)
                 selected_offset2 = file_mas[i]*304 + buf+32 + 7;
                 if (ESBYTE[selected_offset2]) {
 					sprintf(#del_from,"%s%s",#path,file_mas[i]*304+buf+72);
-                    Del_File2(#del_from);
+                    Del_File2(#del_from, 1);
                 }
             }
 		}
 		else
 		{
-		   Del_File2(#file_path);			
+		   Del_File2(#file_path, 1);			
 		}
 		if (del_error) Write_Error(del_error);
- 	}
-	del_active=0;
-	DeleteButton(301);
-	DeleteButton(302);
-	Open_Dir(#path,WITH_REDRAW);
+ 	DialogExit();
+	//}
+	//del_active=0;
+	//DeleteButton(301);
+	//DeleteButton(302);
+	//Open_Dir(#path,WITH_REDRAW);
 }
 
+void Del_File(byte dodel) {
+	del_active=0;
+	if (dodel)
+	{
+		delete_stak = malloc(20000);
+		CreateThread(#Del_File_Thread,delete_stak+20000-4);
+	}
+	else draw_window();
+}
 
 void SelectFileByName(dword that_file)
 {
