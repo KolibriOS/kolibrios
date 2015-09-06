@@ -1447,7 +1447,21 @@ Returned value:
 Remarks:
   * Counter takes modulo 2^32, that correspond to a little more
     than 497 days.
-  * To get system time use function 3.
+  * To get system time use function 3.  
+  
+======================================================================
+===================== Function 26, subfunction 10 ====================
+========== Get the value of the high precision time counter. =========
+======================================================================
+Parameters:
+  * eax = 26 - function number
+  * ebx = 10 - subfunction number
+Returned value:
+  * eax = number of nanoseconds since system boot time (lower DWORD)
+  * edx = number of nanoseconds since system boot time (high DWORD)  
+Remarks:
+  * The counter is based on HPET, if HPET is not available, resolution
+    will be reduced to 10 000 000 nanoseconds.
 
 ======================================================================
 ===================== Function 26, subfunction 11 ====================
