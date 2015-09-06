@@ -102,7 +102,7 @@ typedef _fpos64_t fpos64_t;
 #ifdef __BUFSIZ__
 #define	BUFSIZ		__BUFSIZ__
 #else
-#define	BUFSIZ		1024
+#define BUFSIZ      4096
 #endif
 
 #ifdef __FOPEN_MAX__

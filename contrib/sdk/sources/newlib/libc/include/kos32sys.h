@@ -194,6 +194,17 @@ uint32_t get_tick_count(void)
 };
 
 static inline
+uint64_t get_ns_count(void)
+{
+    uint64_t val;
+    __asm__ __volatile__(
+    "int $0x40"
+    :"=A"(val)
+    :"a"(26), "b"(10));
+    return val;
+};
+
+static inline
 oskey_t get_key(void)
 {
     oskey_t val;

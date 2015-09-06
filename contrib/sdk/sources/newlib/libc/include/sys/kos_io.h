@@ -2,6 +2,10 @@
 #ifndef __KOS_IO_H__
 #define __KOS_IO_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #pragma pack(push, 1)
 typedef struct
 {
@@ -65,18 +69,7 @@ int read_file(const char *path, void *buff,
 int write_file(const char *path,const void *buff,
                size_t offset, size_t count, size_t *writes);
 int set_file_size(const char *path, unsigned size);
-void *load_file(const char *path, size_t *len);
 void unpack(void* packed_data, void* unpacked_data) __attribute__((stdcall)) ;
-
-static inline int user_free(void *mem)
-{
-    int  val;
-    __asm__ __volatile__(
-    "int $0x40"
-    :"=a"(val)
-    :"a"(68),"b"(12),"c"(mem));
-    return val;
-}
 
 static inline void set_cwd(const char* cwd)
 {
@@ -85,4 +78,7 @@ static inline void set_cwd(const char* cwd)
     ::"a"(30),"b"(1),"c"(cwd));
 };
 
+#ifdef __cplusplus
+}
+#endif
 #endif
