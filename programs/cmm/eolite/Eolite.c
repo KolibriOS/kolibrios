@@ -531,8 +531,8 @@ void draw_window()
 	DefineAndDrawWindow(WinX+rand_n,WinY+rand_n,WinW,WinH,0x73,system.color.work,TITLE,0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
-	if (Form.height < 350) MoveSize(OLD,OLD,OLD,350);
-	if (Form.width  < 480) MoveSize(OLD,OLD,480,OLD);
+	if (Form.height < 350) { MoveSize(OLD,OLD,OLD,350); return; }
+	if (Form.width  < 480) { MoveSize(OLD,OLD,480,OLD); return; }
 	GetProcessInfo(#Form, SelfInfo); //if win_size changed
 	PutPaletteImage(#toolbar,246,34,0,0,8,#toolbar_pal);
 	DrawBar(127, 8, 1, 25, system.color.work_graph);

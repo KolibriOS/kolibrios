@@ -79,8 +79,8 @@ void FileMenu()
 				
 		case evKey:
 				GetKeys();
-				if (key_scancode==SCAN_CODE_ESC){cmd_free=1;ExitProcess();}
-				else if (key_scancode == SCAN_CODE_ENTER) {action_buf = cur_action_buf; cmd_free=1; ExitProcess(); }
+				if (key_scancode == SCAN_CODE_ESC) {cmd_free=1;ExitProcess();}
+				if (key_scancode == SCAN_CODE_ENTER) {action_buf = cur_action_buf; cmd_free=1; ExitProcess(); }
 				if (menu.ProcessKey(key_scancode)) MenuListRedraw();
 				break;
 				

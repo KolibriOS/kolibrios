@@ -25,14 +25,14 @@
 char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.39";
+	char version[]=" Текстовый браузер 1.40";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.39";
+	char version[]=" Text-based Browser 1.40";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -161,8 +161,8 @@ void main()
 				DefineAndDrawWindow(GetScreenWidth()-800/2,GetScreenHeight()-600/2,800,600,0x73,col_bg,0,0);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window>2) { DrawTitle(#header); break; }
-				if (Form.height<120) MoveSize(OLD,OLD,OLD,120);
-				if (Form.width<280) MoveSize(OLD,OLD,280,OLD);
+				if (Form.height<120) { MoveSize(OLD,OLD,OLD,120); break; }
+				if (Form.width<280) { MoveSize(OLD,OLD,280,OLD); break; }
 				Draw_Window();
 				break;
 				

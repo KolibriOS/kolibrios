@@ -21,7 +21,6 @@ llist menu;
 void menu_rmb()
 {
 	proc_info MenuForm;
-	int key;
 
 	menu.ClearList();
 	while (ITEMS_LIST[menu.count]) menu.count++;
@@ -32,25 +31,24 @@ void menu_rmb()
 	switch(WaitEvent())
 	{
 	case evMouse:
-				GetProcessInfo(#MenuForm, SelfInfo);
-				if (!CheckActiveProcess(MenuForm.ID)) ExitProcess();
-
-				mouse.get();
-				if (menu.ProcessMouse(mouse.x, mouse.y)) DrawMenuList();
-				if (mouse.lkm)&&(mouse.up) ItemClick();
-				break;
+		GetProcessInfo(#MenuForm, SelfInfo);
+		if (!CheckActiveProcess(MenuForm.ID)) ExitProcess();
+		mouse.get();
+		if (menu.ProcessMouse(mouse.x, mouse.y)) DrawMenuList();
+		if (mouse.lkm)&&(mouse.up) ItemClick();
+		break;
 				
-		case evKey:
-				key = GetKey();
-				if (key==27) ExitProcess();
-				if (key==13) ItemClick();
-				if (menu.ProcessKey(key)) DrawMenuList();
-				break;
+	case evKey:
+		GetKeys();
+		if (key_scancode==SCAN_CODE_ESC) ExitProcess();
+		if (key_scancode==SCAN_CODE_ENTER) ItemClick();
+		if (menu.ProcessKey(key_scancode)) DrawMenuList();
+		break;
 				
-		case evReDraw:
-				DefineAndDrawWindow(Form.left+mouse.x-6,Form.top+mouse.y+GetSkinHeight()+3,menu.w+2,menu.h+4,0x01, 0, 0, 0x01fffFFF);
-				DrawPopup(0,0,menu.w,menu.h+3,0, col_bg,border_color);
-				DrawMenuList();				
+	case evReDraw:
+		DefineAndDrawWindow(Form.left+mouse.x-6,Form.top+mouse.y+GetSkinHeight()+3,menu.w+2,menu.h+4,0x01, 0, 0, 0x01fffFFF);
+		DrawPopup(0,0,menu.w,menu.h+3,0, col_bg,border_color);
+		DrawMenuList();				
 	}
 	goto _BEGIN_APPLICATION_MENU;
 }

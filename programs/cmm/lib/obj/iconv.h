@@ -58,7 +58,7 @@ dword ChangeCharset(dword from_chs, to_chs, conv_buf)
 
 
 :int cur_charset;
-:char *charsets[] = { " ", "UTF-8", "KOI8-RU", "CP1251",  "CP1252", "ISO8859-5",   "CP866"  };
-enum { CH_NULL, CH_UTF8, CH_KOI8, CH_CP1251, CH_CP1252, CH_ISO8859_5, CH_CP866 };
+:char *charsets[] = { "UTF-8", "KOI8-RU", "CP1251", "CP1252", "ISO8859-5", "CP866", 0 };
+enum { CH_UTF8, CH_KOI8, CH_CP1251, CH_CP1252, CH_ISO8859_5, CH_CP866, CH_NULL };
 
 #endif
