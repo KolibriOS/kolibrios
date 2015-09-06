@@ -40,8 +40,6 @@
 #  include <io.h> /* declares setmode() */
 # else
 #  define setmode _setmode
-#  undef fileno
-#  define fileno _fileno
 # endif
 # ifdef __DJGPP__
 #  include <unistd.h> /* declares isatty() */
