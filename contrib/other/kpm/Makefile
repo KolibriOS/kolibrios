@@ -8,7 +8,7 @@ LD = kos32-ld
 CPP= kos32-g++
 STRIP = kos32-strip
 
-CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -Os -fno-ident -fomit-frame-pointer  -mno-ms-bitfields
+CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -Os -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-ident -fomit-frame-pointer  -mno-ms-bitfields
 ARFLAG = crs
 
 SDK_DIR:= $(abspath ../../sdk)
@@ -17,10 +17,11 @@ LIB_DIR:= $(SDK_DIR)/lib
 INCLUDES= -I. -I$(SDK_DIR)/sources/newlib/libc/include
 INCLUDES+=-I$(SDK_DIR)/sources/freetype/include
 
-#DEFINES= -DDEBUG=1
+#DEFINES= -DDEBUG=1 -D_7ZIP_PPMD_SUPPPORT
 
 DEFINES= -DNDEBUG
-LIBS:= -liberty -lsupc++ -lgcc_eh -lc.dll -lapp -lgcc
+
+LIBS:= -liberty -lsupc++ -lgcc_eh -lc.dll -lapp -lgcc -lc.dll
 
 LIBPATH:= -L$(LIB_DIR) -L/home/autobuild/tools/win32/mingw32/lib
 
@@ -51,12 +52,11 @@ SOURCES = 	http.asm			\
 		7z/Bra86.c			\
 		7z/BraIA64.c			\
 		7z/7zAlloc.c			\
-		7z/Alloc.c			\
 		$(NULL)
  
 OBJECTS =  $(patsubst %.asm, %.o, $(patsubst %.cpp, %.o, $(patsubst %.c, %.o, $(SOURCES))))
 
-# targets 
+# targets  
 
 all:$(NAME)
 
@@ -68,7 +68,7 @@ $(NAME): $(OBJECTS) Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
 
 %.o : %.cpp Makefile
-	$(CPP) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
+	$(CPP) $(CFLAGS) -fno-rtti -fno-exceptions $(DEFINES) $(INCLUDES) -o $@ $<
 
 %.o : %.asm Makefile
 	$(FASM) $< $@

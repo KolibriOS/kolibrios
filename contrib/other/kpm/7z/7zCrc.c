@@ -69,7 +69,7 @@ void MY_FAST_CALL CrcGenerateTable()
     UInt32 r = g_CrcTable[i - 256];
     g_CrcTable[i] = g_CrcTable[r & 0xFF] ^ (r >> 8);
   }
-
+  
   #if CRC_NUM_TABLES < 4
   
   g_CrcUpdate = CrcUpdateT1;
@@ -79,15 +79,15 @@ void MY_FAST_CALL CrcGenerateTable()
   #ifdef MY_CPU_LE
 
     g_CrcUpdateT4 = CrcUpdateT4;
-    g_CrcUpdate = CrcUpdateT4;
-
+  g_CrcUpdate = CrcUpdateT4;
+  
     #if CRC_NUM_TABLES >= 8
       g_CrcUpdateT8 = CrcUpdateT8;
   
       #ifdef MY_CPU_X86_OR_AMD64
-      if (!CPU_Is_InOrder())
-        g_CrcUpdate = CrcUpdateT8;
-      #endif
+  if (!CPU_Is_InOrder())
+    g_CrcUpdate = CrcUpdateT8;
+  #endif
     #endif
 
   #else

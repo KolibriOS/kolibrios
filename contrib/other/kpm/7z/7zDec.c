@@ -446,7 +446,7 @@ static SRes SzFolder_Decode2(const CSzFolder *folder,
       tempBuf[2] = (Byte *)IAlloc_Alloc(allocMain, tempSizes[2]);
       if (!tempBuf[2] && tempSizes[2] != 0)
         return SZ_ERROR_MEM;
-      
+
       RINOK(LookInStream_SeekTo(inStream, startPos + offset));
       RINOK(SzDecodeCopy(s3Size, inStream, tempBuf[2]));
 
@@ -496,30 +496,30 @@ static SRes SzFolder_Decode2(const CSzFolder *folder,
           Delta_Init(state);
           Delta_Decode(state, (unsigned)(propsData[coder->PropsOffset]) + 1, outBuffer, outSize);
         }
-      }
-      else
-      {
+    }
+    else
+    {
         if (coder->PropsSize != 0)
-          return SZ_ERROR_UNSUPPORTED;
-        switch (coder->MethodID)
+        return SZ_ERROR_UNSUPPORTED;
+      switch (coder->MethodID)
+      {
+        case k_BCJ:
         {
-          case k_BCJ:
-          {
-            UInt32 state;
-            x86_Convert_Init(state);
-            x86_Convert(outBuffer, outSize, 0, &state, 0);
-            break;
-          }
+          UInt32 state;
+          x86_Convert_Init(state);
+          x86_Convert(outBuffer, outSize, 0, &state, 0);
+          break;
+        }
           CASE_BRA_CONV(PPC)
           CASE_BRA_CONV(IA64)
           CASE_BRA_CONV(SPARC)
-          CASE_BRA_CONV(ARM)
+        CASE_BRA_CONV(ARM)
           CASE_BRA_CONV(ARMT)
-          default:
-            return SZ_ERROR_UNSUPPORTED;
-        }
+        default:
+          return SZ_ERROR_UNSUPPORTED;
       }
     }
+  }
     #endif
     else
       return SZ_ERROR_UNSUPPORTED;

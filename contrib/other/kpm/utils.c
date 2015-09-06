@@ -143,6 +143,7 @@ int build_download_list(list_t *download, list_t *src)
             pkg->id       = tmp->id;
             pkg->name     = strdup(tmp->name);
             pkg->version  = strdup(tmp->version);
+            pkg->group    = strdup(tmp->group);
             pkg->filename = strdup(tmp->filename);
             pkg->description = strdup(tmp->description);
             list_add_tail(&pkg->list, download);
@@ -166,6 +167,7 @@ void do_download(list_t *download_list)
         count = http_load_file(cache_path, make_url(pkg->filename));
         sprintf(conbuf,"%s %d bytes loaded\n",cache_path, count);
         con_write_asciiz(conbuf);
+
         if( !test_archive(cache_path))
             list_del_pkg(pkg);
         else
@@ -192,28 +194,24 @@ void remove_missing_packages(list_t *install, list_t *missed)
     };
 };
 
-int build_install_list(list_t *list, collection_t *collection)
+int copy_list(list_t *list, list_t *src)
 {
-    pkg_group_t *gr;
+    package_t   *pkg, *tmp;
     int count = 0;
 
-    list_for_each_entry(gr, &collection->groups, list)
+    list_for_each_entry(tmp, src, list)
     {
-        package_t   *pkg, *tmp;
+        pkg = (package_t*)malloc(sizeof(package_t));
 
-        list_for_each_entry(tmp, &gr->packages, list)
-        {
-            pkg = (package_t*)malloc(sizeof(package_t));
-
-            INIT_LIST_HEAD(&pkg->file_list);
-            pkg->id       = tmp->id;
-            pkg->name     = strdup(tmp->name);
-            pkg->version  = strdup(tmp->version);
-            pkg->filename = strdup(tmp->filename);
-            pkg->description = strdup(tmp->description);
-            list_add_tail(&pkg->list, list);
-            count++;
-        }
+        INIT_LIST_HEAD(&pkg->file_list);
+        pkg->id       = tmp->id;
+        pkg->name     = strdup(tmp->name);
+        pkg->version  = strdup(tmp->version);
+        pkg->group    = strdup(tmp->group);
+        pkg->filename = strdup(tmp->filename);
+        pkg->description = strdup(tmp->description);
+        list_add_tail(&pkg->list, list);
+        count++;
     };
     return count;
 }
@@ -230,25 +228,21 @@ int build_server_list(list_t *slist, const char *path)
 
     if(collection)
     {
-        pkg_group_t *gr;
+        package_t   *pkg, *tmp;
 
-        list_for_each_entry(gr, &collection->groups, list)
+        list_for_each_entry(tmp, &collection->packages, list)
         {
-            package_t   *pkg, *tmp;
+            pkg = (package_t*)malloc(sizeof(package_t));
 
-            list_for_each_entry(tmp, &gr->packages, list)
-            {
-                pkg = (package_t*)malloc(sizeof(package_t));
-
-                INIT_LIST_HEAD(&pkg->file_list);
-                pkg->id       = tmp->id;
-                pkg->name     = strdup(tmp->name);
-                pkg->version  = strdup(tmp->version);
-                pkg->filename = strdup(tmp->filename);
-                pkg->description = strdup(tmp->description);
-                list_add_tail(&pkg->list, slist);
-                count++;
-            }
+            INIT_LIST_HEAD(&pkg->file_list);
+            pkg->id       = tmp->id;
+            pkg->name     = strdup(tmp->name);
+            pkg->version  = strdup(tmp->version);
+            pkg->group    = strdup(tmp->group);
+            pkg->filename = strdup(tmp->filename);
+            pkg->description = strdup(tmp->description);
+            list_add_tail(&pkg->list, slist);
+            count++;
         };
     };
     return count;
@@ -260,7 +254,20 @@ void print_pkg_list(list_t *list)
 
     list_for_each_entry(pkg, list, list)
     {
-        sprintf(conbuf,"%s-%s\n", pkg->name, pkg->version);
+        sprintf(conbuf,"%s-%s-%s\n", pkg->name, pkg->version, pkg->group);
         con_write_asciiz(conbuf);
     }
+}
+
+void process_task(list_t *task)
+{
+    LIST_HEAD(download_list);
+
+    if(build_download_list(&download_list, task))
+        do_download(&download_list);
+
+    if(!list_empty(&download_list))
+        remove_missing_packages(task, &download_list);
+
+    do_install(task);
 }

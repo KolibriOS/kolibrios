@@ -81,8 +81,8 @@ static SRes SzBitUi32s_Alloc(CSzBitUi32s *p, size_t num, ISzAlloc *alloc)
   }
   else
   {
-    MY_ALLOC(Byte, p->Defs, (num + 7) >> 3, alloc);
-    MY_ALLOC(UInt32, p->Vals, num, alloc);
+  MY_ALLOC(Byte, p->Defs, (num + 7) >> 3, alloc);
+  MY_ALLOC(UInt32, p->Vals, num, alloc);
   }
   return SZ_OK;
 }
@@ -593,67 +593,67 @@ SRes SzGetNextFolderItem(CSzFolder *f, CSzData *sd, CSzData *sdSizes)
   {
     Byte streamUsed[k_NumCodersStreams_in_Folder_MAX];
     UInt32 numBonds, numPackStreams;
-    
+
     numBonds = numCoders - 1;
     if (numInStreams < numBonds)
-      return SZ_ERROR_ARCHIVE;
+    return SZ_ERROR_ARCHIVE;
     if (numBonds > SZ_NUM_BONDS_IN_FOLDER_MAX)
-      return SZ_ERROR_UNSUPPORTED;
+    return SZ_ERROR_UNSUPPORTED;
     f->NumBonds = numBonds;
     
     numPackStreams = numInStreams - numBonds;
-    if (numPackStreams > SZ_NUM_PACK_STREAMS_IN_FOLDER_MAX)
-      return SZ_ERROR_UNSUPPORTED;
+  if (numPackStreams > SZ_NUM_PACK_STREAMS_IN_FOLDER_MAX)
+    return SZ_ERROR_UNSUPPORTED;
     f->NumPackStreams = numPackStreams;
   
-    for (i = 0; i < numInStreams; i++)
+  for (i = 0; i < numInStreams; i++)
       streamUsed[i] = False;
     
     if (numBonds != 0)
-    {
+  {
       Byte coderUsed[SZ_NUM_CODERS_IN_FOLDER_MAX];
 
       for (i = 0; i < numCoders; i++)
         coderUsed[i] = False;
-      
+
       for (i = 0; i < numBonds; i++)
       {
         CSzBond *bp = f->Bonds + i;
-        
-        RINOK(SzReadNumber32(sd, &bp->InIndex));
+
+      RINOK(SzReadNumber32(sd, &bp->InIndex));
         if (bp->InIndex >= numInStreams || streamUsed[bp->InIndex])
-          return SZ_ERROR_ARCHIVE;
+        return SZ_ERROR_ARCHIVE;
         streamUsed[bp->InIndex] = True;
         
-        RINOK(SzReadNumber32(sd, &bp->OutIndex));
+      RINOK(SzReadNumber32(sd, &bp->OutIndex));
         if (bp->OutIndex >= numCoders || coderUsed[bp->OutIndex])
-          return SZ_ERROR_ARCHIVE;
+        return SZ_ERROR_ARCHIVE;
         coderUsed[bp->OutIndex] = True;
-      }
+    }
       
       for (i = 0; i < numCoders; i++)
         if (!coderUsed[i])
-        {
+      {
           f->UnpackStream = i;
-          break;
-        }
+        break;
+      }
       
       if (i == numCoders)
-        return SZ_ERROR_ARCHIVE;
-    }
-    
-    if (numPackStreams == 1)
-    {
-      for (i = 0; i < numInStreams; i++)
+      return SZ_ERROR_ARCHIVE;
+  }
+
+  if (numPackStreams == 1)
+  {
+    for (i = 0; i < numInStreams; i++)
         if (!streamUsed[i])
-          break;
-      if (i == numInStreams)
-        return SZ_ERROR_ARCHIVE;
-      f->PackStreams[0] = i;
-    }
-    else
-      for (i = 0; i < numPackStreams; i++)
-      {
+        break;
+    if (i == numInStreams)
+      return SZ_ERROR_ARCHIVE;
+    f->PackStreams[0] = i;
+  }
+  else
+    for (i = 0; i < numPackStreams; i++)
+    {
         UInt32 index;
         RINOK(SzReadNumber32(sd, &index));
         if (index >= numInStreams || streamUsed[index])
@@ -661,7 +661,7 @@ SRes SzGetNextFolderItem(CSzFolder *f, CSzData *sd, CSzData *sdSizes)
         streamUsed[index] = True;
         f->PackStreams[i] = index;
       }
-  }
+    }
 
   for (i = 0; i < numCoders; i++)
   {

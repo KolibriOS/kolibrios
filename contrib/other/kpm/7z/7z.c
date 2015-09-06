@@ -6,6 +6,7 @@
 #include "7zCrc.h"
 #include "7zFile.h"
 #include "7zVersion.h"
+#include "http.h"
 #include "package.h"
 
 #define PERIOD_4 (4 * 365 + 1)
@@ -323,11 +324,11 @@ static void ConvertFileTimeToString(const CNtfsFileTime *nt, char *s)
 }
 
 
-
-void do_install(list_t *install)
+void do_7z_unpack(const char *srcpath)
 {
     CFileInStream archiveStream;
     CLookToRead lookStream;
+
     CSzArEx db;
     SRes res;
     ISzAlloc allocImp;
@@ -335,8 +336,7 @@ void do_install(list_t *install)
     UInt16 *temp = NULL;
     size_t tempSize = 0;
 
-    package_t   *pkg, *tmp;
-    char        *cache_path;
+    memset(&lookStream,0,sizeof(lookStream));
 
     allocImp.Alloc = SzAlloc;
     allocImp.Free = SzFree;
@@ -344,126 +344,136 @@ void do_install(list_t *install)
     allocTempImp.Alloc = SzAllocTemp;
     allocTempImp.Free = SzFreeTemp;
 
+    if (InFile_Open(&archiveStream.file, srcpath))
+        return;
+
+    FileInStream_CreateVTable(&archiveStream);
+    LookToRead_CreateVTable(&lookStream, False);
+
+    lookStream.realStream = &archiveStream.s;
+    LookToRead_Init(&lookStream);
+    CrcGenerateTable();
+    SzArEx_Init(&db);
+
+    res = SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp);
+
+    if (res == SZ_OK)
+    {
+        UInt32 i;
+        UInt32 blockIndex    = 0xFFFFFFFF;  /* it can have any value before first call (if outBuffer = 0) */
+        Byte *outBuffer      = 0;           /* it must be 0 before first call for each new archive. */
+        size_t outBufferSize = 0;           /* it can have any value before first call (if outBuffer = 0) */
+
+        for (i = 0; i < db.NumFiles; i++)
+        {
+            size_t offset = 0;
+            size_t outSizeProcessed = 0;
+            size_t len;
+            unsigned isDir = SzArEx_IsDir(&db, i);
+
+            if ( isDir )
+                continue;
+
+            len = SzArEx_GetFileNameUtf16(&db, i, NULL);
+
+            if (len > tempSize)
+            {
+                SzFree(NULL, temp);
+                tempSize = len;
+                temp = (UInt16 *)SzAlloc(NULL, tempSize * sizeof(temp[0]));
+                if (!temp)
+                {
+                    res = SZ_ERROR_MEM;
+                    break;
+                }
+            }
+
+            SzArEx_GetFileNameUtf16(&db, i, temp);
+            res = PrintString(temp);
+            if (res != SZ_OK)
+                break;
+            printf("\n");
+
+            if (isDir)
+                printf("/");
+            else
+            {
+                res = SzArEx_Extract(&db, &lookStream.s, i,
+                      &blockIndex, &outBuffer, &outBufferSize,
+                      &offset, &outSizeProcessed,
+                       &allocImp, &allocTempImp);
+                if (res != SZ_OK)
+                    break;
+            }
+
+            if (1)
+            {
+                CSzFile outFile;
+                size_t processedSize;
+                size_t j;
+                UInt16 *name = (UInt16 *)temp;
+                const UInt16 *destPath = (const UInt16 *)name;
+
+                for (j = 0; name[j] != 0; j++)
+                    if (name[j] == '/')
+                {
+                    name[j] = 0;
+                    MyCreateDir(name);
+                    name[j] = CHAR_PATH_SEPARATOR;
+                }
+
+                if (isDir)
+                {
+                    MyCreateDir(destPath);
+                    printf("\n");
+                    continue;
+                }
+                else if (OutFile_OpenUtf16(&outFile, destPath))
+                {
+                    PrintError("can not open output file");
+                    res = SZ_ERROR_FAIL;
+                    break;
+                }
+
+                processedSize = outSizeProcessed;
+
+                if (File_Write(&outFile, outBuffer + offset, &processedSize) != 0 || processedSize != outSizeProcessed)
+                {
+                    PrintError("can not write output file\n");
+                    res = SZ_ERROR_FAIL;
+                    break;
+                }
+
+                if (File_Close(&outFile))
+                {
+                    PrintError("can not close output file\n");
+                    res = SZ_ERROR_FAIL;
+                    break;
+                }
+            };
+        };
+        IAlloc_Free(&allocImp, outBuffer);
+    };
+    SzArEx_Free(&db, &allocImp);
+    SzFree(NULL, temp);
+
+    File_Close(&archiveStream.file);
+};
+
+void do_install(list_t *install)
+{
+    package_t   *pkg, *tmp;
+    char        *cache_path;
+
     list_for_each_entry_safe(pkg, tmp, install, list)
     {
         cache_path = make_cache_path(pkg->filename);
 
-        if (InFile_Open(&archiveStream.file, cache_path))
-            continue;
+        sprintf(conbuf,"install package %s-%s\n", pkg->name, pkg->version);
+        con_write_asciiz(conbuf);
 
-        FileInStream_CreateVTable(&archiveStream);
-        LookToRead_CreateVTable(&lookStream, False);
-
-        lookStream.realStream = &archiveStream.s;
-        LookToRead_Init(&lookStream);
-
-        SzArEx_Init(&db);
-
-        res = SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp);
-
-        if (res == SZ_OK)
-        {
-            UInt32 i;
-            UInt32 blockIndex    = 0xFFFFFFFF;  /* it can have any value before first call (if outBuffer = 0) */
-            Byte *outBuffer      = 0;           /* it must be 0 before first call for each new archive. */
-            size_t outBufferSize = 0;           /* it can have any value before first call (if outBuffer = 0) */
-
-            for (i = 0; i < db.NumFiles; i++)
-            {
-                size_t offset = 0;
-                size_t outSizeProcessed = 0;
-                size_t len;
-                unsigned isDir = SzArEx_IsDir(&db, i);
-
-                if ( isDir )
-                    continue;
-
-                len = SzArEx_GetFileNameUtf16(&db, i, NULL);
-
-                if (len > tempSize)
-                {
-                    SzFree(NULL, temp);
-                    tempSize = len;
-                    temp = (UInt16 *)SzAlloc(NULL, tempSize * sizeof(temp[0]));
-                    if (!temp)
-                    {
-                        res = SZ_ERROR_MEM;
-                        break;
-                    }
-                }
-
-                SzArEx_GetFileNameUtf16(&db, i, temp);
-                res = PrintString(temp);
-                if (res != SZ_OK)
-                    break;
-                printf("\n");
-
-                if (isDir)
-                    printf("/");
-                else
-                {
-                    res = SzArEx_Extract(&db, &lookStream.s, i,
-                          &blockIndex, &outBuffer, &outBufferSize,
-                          &offset, &outSizeProcessed,
-                           &allocImp, &allocTempImp);
-                    if (res != SZ_OK)
-                        break;
-                }
-
-                if (1)
-                {
-                    CSzFile outFile;
-                    size_t processedSize;
-                    size_t j;
-                    UInt16 *name = (UInt16 *)temp;
-                    const UInt16 *destPath = (const UInt16 *)name;
-
-                    for (j = 0; name[j] != 0; j++)
-                        if (name[j] == '/')
-                    {
-                        if (1)
-                        {
-                            name[j] = 0;
-                            MyCreateDir(name);
-                            name[j] = CHAR_PATH_SEPARATOR;
-                        }
-                        else
-                            destPath = name + j + 1;
-                    }
-
-                    if (isDir)
-                    {
-                        MyCreateDir(destPath);
-                        printf("\n");
-                        continue;
-                    }
-                    else if (OutFile_OpenUtf16(&outFile, destPath))
-                    {
-                        PrintError("can not open output file");
-                        res = SZ_ERROR_FAIL;
-                        break;
-                    }
-
-                    processedSize = outSizeProcessed;
-
-                    if (File_Write(&outFile, outBuffer + offset, &processedSize) != 0 || processedSize != outSizeProcessed)
-                    {
-                        PrintError("can not write output file");
-                        res = SZ_ERROR_FAIL;
-                        break;
-                    }
-
-                    if (File_Close(&outFile))
-                    {
-                        PrintError("can not close output file");
-                        res = SZ_ERROR_FAIL;
-                        break;
-                    }
-                };
-                continue;
-            };
-        };
+        do_7z_unpack(cache_path);
+        list_del_pkg(pkg);
     };
-
 };
 
