@@ -15,7 +15,7 @@
 };
 :struct __SIZE
 {
-	word width,height;
+	dword width,height;
 	__OFFSET_FONT offset;
 	float offset_i,w_italic;
 	byte text;
@@ -39,12 +39,12 @@
 	byte symbol(word x,y;byte s;dword c);
 	byte symbol_size(byte s);
 	dword prepare(word x,y;dword text1);
-	void prepare_buf(word x,y,w,h;dword text1);
+	void prepare_buf(dword x,y,w,h, text1);
 	void show();
 	byte textcenter(word x,y,w,h;dword txt);
 	dword getsize(dword text1);
 	byte changeSIZE();
-	void PixelRGB(word x,y);
+	void PixelRGB(dword x,y);
 	//dword GetPixel(word x,y);
 	byte no_bg_copy;
 	dword bg_color;
@@ -61,12 +61,10 @@ FONT font = 0;
 }*/
 :void FONT::PixelRGB(dword x,y)
 {
-	$push ebx 
-	EBX = y*size.width+x*3 + buffer;
-	DSBYTE[EBX] = r; EBX++;
-	DSBYTE[EBX] = g; EBX++;
-	DSBYTE[EBX] = b;
-	$pop ebx
+	dword offs = y*size.width+x*3 + buffer;
+	DSBYTE[offs] = r; offs++;
+	DSBYTE[offs] = g; offs++;
+	DSBYTE[offs] = b;
 }
 :byte FONT::changeSIZE()
 {
@@ -320,9 +318,9 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 	return true;
 }
 
-:void FONT::prepare_buf(word x,y,w,h; dword text1)
+:void FONT::prepare_buf(dword x,y,w,h; dword text1)
 {
-	dword c;
+	dword c, new_buffer_size;
 	c = color;
 	IF(!text1)return;
 	IF(size.text)IF(!changeSIZE())return;
@@ -333,15 +331,15 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 	size.width = w;
 	size.height = h;
 
-	EDX = size.width*size.height*3;
-	IF(buffer_size!=EDX)
+	new_buffer_size = w*h*3;
+	IF(buffer_size!=new_buffer_size)
 	{
-		buffer_size = EDX; 
+		buffer_size = new_buffer_size; 
 		free(buffer);
-		buffer = malloc(buffer_size); 
-		EBX = font.bg_color;
-		EDI = font.buffer;
-		EAX = font.buffer_size+font.buffer;
+		buffer = malloc(buffer_size);
+		EBX = bg_color;
+		EDI = buffer;
+		EAX = buffer_size+buffer;
 		WHILE (EDI<EAX)
 		{
 			ESDWORD[EDI] = EBX;
