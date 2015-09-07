@@ -1,5 +1,5 @@
 /*
-SOFTWARE CENTER v2.32
+SOFTWARE CENTER v2.4
 */
 
 #define MEMSIZE 0x9000
@@ -59,6 +59,8 @@ void main()
 {   
 	dword id, key;
 	font.load("/sys/fonts/Tahoma.kf");
+	font.no_bg_copy = true;
+	font.smooth = true;
 	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libini, #lib_init,1);
@@ -150,6 +152,7 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 	font.size = 12;
 	font.color = 0xDCDCDC;
 	font.weight = false;
+	font.bg_color = LIST_BACKGROUND_COLOR;
 	font.textcenter(col*cell_w+7,row*cell_h+47 + list_pos,cell_w,0,key_name);
 	font.show();
 	font.color = 0;
@@ -163,6 +166,7 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 
 byte process_sections(dword sec_name, f_name)
 {
+	int text_len;
 	if (!strcmp(sec_name, "Config")) return true;
 
 	if (item_id_need_to_run!=-1)
@@ -173,7 +177,7 @@ byte process_sections(dword sec_name, f_name)
 	{
 		if ((col==0) && (row==old_row)) 
 		{
-			list_pos -= 25;
+			list_pos -= 28;
 		}
 		else
 		{
@@ -181,13 +185,16 @@ byte process_sections(dword sec_name, f_name)
 		}
 		col = 0;
 		old_row = row;
-		DrawBar(0, row * cell_h + list_pos, Form.cwidth , 26, LIST_BACKGROUND_COLOR);
+		DrawBar(0, row * cell_h + list_pos, Form.cwidth , 29, LIST_BACKGROUND_COLOR);
 		//WriteTextB(10, row * cell_h + 9 + list_pos, 0x90, 0x000000, sec_name);
 		font.size=14;
-		font.weight = true;
-		font.prepare(10, row * cell_h + 9 + list_pos,sec_name);
+		font.weight=true;
+		font.bg_color = LIST_BACKGROUND_COLOR;
+		text_len = font.prepare(10, row * cell_h + 10 + list_pos,sec_name);
 		font.show();
-		list_pos += 26;
+		DrawBar(text_len+20, row * cell_h + list_pos + 20, Form.cwidth-text_len-20, 1, 0xDCDCDC);
+		DrawBar(text_len+20, row * cell_h + list_pos + 21, Form.cwidth-text_len-20, 1, 0xFCFCFC);
+		list_pos += 29;
 		ini_enum_keys stdcall (f_name, sec_name, #draw_icons_from_section);
 	}
 	return true;
@@ -198,13 +205,10 @@ void draw_top_bar()
 	int top_position = 26;
 	DrawBar(0,0,Form.cwidth, top_position-1, system.color.work);
 	DrawBar(0,top_position-1, Form.cwidth, 1, system.color.work_graph);
-	//WriteTextB(Form.cwidth/2-70, 9, 0x90, system.color.work_text, #window_title);
-	font.size = 19;
-	font.getsize(#window_title);
-	ECX = EAX/2;
-	EBX = Form.cwidth/2-ECX;
+	font.size = 17;
 	font.weight = false;
-	font.prepare(EBX,0,#window_title);
+	font.bg_color = system.color.work;
+	font.prepare(Form.cwidth-font.getsize(#window_title)/2,0,#window_title);
 	font.show();
 	list_top = top_position;
 	list_pos = list_top;
