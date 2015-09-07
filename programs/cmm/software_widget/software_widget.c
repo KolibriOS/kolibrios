@@ -2,7 +2,7 @@
 SOFTWARE CENTER v2.32
 */
 
-#define MEMSIZE 0x5000
+#define MEMSIZE 0x9000
 #include "..\lib\strings.h" 
 #include "..\lib\mem.h" 
 #include "..\lib\file_system.h"
@@ -11,7 +11,7 @@ SOFTWARE CENTER v2.32
 #include "..\lib\obj\libio_lib.h"
 #include "..\lib\obj\libimg_lib.h"
 #include "..\lib\obj\libini.h"
-
+#include "..\lib\font.h"
 #include "..\lib\patterns\libimg_load_skin.h"
 
 proc_info Form;
@@ -58,7 +58,7 @@ void load_config()
 void main()
 {   
 	dword id, key;
-
+	font.load("/sys/fonts/Tahoma.kf");
 	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libini, #lib_init,1);
@@ -145,8 +145,16 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 	icon_char_pos = strchr(key_value, ',');
 	if (icon_char_pos) icon_id = atoi(icon_char_pos+1); else icon_id = default_icon;
 	img_draw stdcall(skin.image, col*cell_w+tmp-10, row*cell_h+5 + list_pos, 32, 32, 0, icon_id*32);
-	WriteTextCenter(col*cell_w+7,row*cell_h+47 + list_pos,cell_w,0xDCDCDC,key_name);
-	WriteTextCenter(col*cell_w+6,row*cell_h+46 + list_pos,cell_w,0x000000,key_name);
+	//WriteTextCenter(col*cell_w+7,row*cell_h+47 + list_pos,cell_w,0xDCDCDC,key_name);
+	//WriteTextCenter(col*cell_w+6,row*cell_h+46 + list_pos,cell_w,0x000000,key_name);
+	font.size = 12;
+	font.color = 0xDCDCDC;
+	font.weight = false;
+	font.textcenter(col*cell_w+7,row*cell_h+47 + list_pos,cell_w,0,key_name);
+	font.show();
+	font.color = 0;
+	font.textcenter(col*cell_w+6,row*cell_h+46 + list_pos,cell_w,0,key_name);
+	font.show();
 	current_item_id++;
 	col++;
 	return true;
@@ -165,7 +173,7 @@ byte process_sections(dword sec_name, f_name)
 	{
 		if ((col==0) && (row==old_row)) 
 		{
-			list_pos -= 20;
+			list_pos -= 25;
 		}
 		else
 		{
@@ -173,9 +181,13 @@ byte process_sections(dword sec_name, f_name)
 		}
 		col = 0;
 		old_row = row;
-		DrawBar(0, row * cell_h + list_pos, Form.cwidth , 20, LIST_BACKGROUND_COLOR);
-		WriteTextB(10, row * cell_h + 9 + list_pos, 0x90, 0x000000, sec_name);
-		list_pos += 20;
+		DrawBar(0, row * cell_h + list_pos, Form.cwidth , 26, LIST_BACKGROUND_COLOR);
+		//WriteTextB(10, row * cell_h + 9 + list_pos, 0x90, 0x000000, sec_name);
+		font.size=14;
+		font.weight = true;
+		font.prepare(10, row * cell_h + 9 + list_pos,sec_name);
+		font.show();
+		list_pos += 26;
 		ini_enum_keys stdcall (f_name, sec_name, #draw_icons_from_section);
 	}
 	return true;
@@ -183,10 +195,17 @@ byte process_sections(dword sec_name, f_name)
 
 void draw_top_bar()
 {
-	int top_position = 25;
+	int top_position = 26;
 	DrawBar(0,0,Form.cwidth, top_position-1, system.color.work);
 	DrawBar(0,top_position-1, Form.cwidth, 1, system.color.work_graph);
-	WriteTextB(Form.cwidth/2-70, 9, 0x90, system.color.work_text, #window_title);
+	//WriteTextB(Form.cwidth/2-70, 9, 0x90, system.color.work_text, #window_title);
+	font.size = 19;
+	font.getsize(#window_title);
+	ECX = EAX/2;
+	EBX = Form.cwidth/2-ECX;
+	font.weight = false;
+	font.prepare(EBX,0,#window_title);
+	font.show();
 	list_top = top_position;
 	list_pos = list_top;
 	row = -1;

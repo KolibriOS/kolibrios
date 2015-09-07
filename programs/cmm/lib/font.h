@@ -26,6 +26,7 @@
 	__SIZE size;
 	byte r,g,b,weight,italic, smooth;
 	byte width,height;
+	word left,top;
 	byte encoding;
 	dword color;
 	dword file_size;
@@ -39,7 +40,7 @@
 	byte symbol_size(byte s);
 	dword prepare(word x,y;dword text1);
 	void prepare_buf(word x,y,w,h;dword text1);
-	void show(word x,y);
+	void show();
 	byte textcenter(word x,y,w,h;dword txt);
 	dword getsize(dword text1);
 	byte changeSIZE();
@@ -92,7 +93,7 @@ FONT font = 0;
 	ECX = size.width/2;
 	EDX -= ECX;
 	x += EDX;
-	return text(x,y,txt);
+	prepare(x,y,txt);
 }
 :dword FONT::getsize(dword text1)
 {
@@ -178,12 +179,13 @@ FONT font = 0;
 	proc_info Form_SELF_FONTS;
 	dword c;
 	c = color;
+	left = x;
 	IF(!text1)return false;
 	IF(size.text)IF(!changeSIZE())return false;
 	AX = c; r = AL; g = AH; c>>=16; AX = c; b = AL;
 	getsize(text1);
 	y -= size.offset.y;
-	
+	top = y;
 	EDX = size.width*size.height*3;
 	IF(!buffer_size)
 	{
@@ -209,7 +211,6 @@ FONT font = 0;
 	ELSE
 	{
 		GetProcessInfo(#Form_SELF_FONTS, SelfInfo); 
-		y-=size.offset.y;
 		CopyScreen(buffer,x+Form_SELF_FONTS.left+5,y+Form_SELF_FONTS.top+GetSkinHeight(),size.width,size.height);
 	}
 	len = size.offset.x;
@@ -223,10 +224,9 @@ FONT font = 0;
 	IF (no_bg_copy) && (!color) SmoothFont(buffer, size.width, size.height);
 	return len;
 }
-:void FONT::show(word x,y)
+:void FONT::show()
 {
-	y-=size.offset.y;
-	_PutImage(x,y,size.width,size.height,buffer);
+	_PutImage(left,top,size.width,size.height,buffer);
 }
 inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 :void SmoothFont(dword image, w, h)
@@ -252,12 +252,12 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 :byte FONT::symbol(signed x,y;byte s)
 {
         dword xi,yi;
-        dword _;
         dword iii;
 		float ital = -size.w_italic;
 		dword ___x;
-		byte _TMP_WEIGHT;
+		//byte _TMP_WEIGHT;
         byte rw=0;
+		//_TMP_WEIGHT=2;
         IF(s==32)return width/4;
 		IF(s==9)return width;
 		IF(!encoding)
@@ -291,10 +291,12 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 						___x = x+xi;
 						IF(italic)___x+=math.ceil(ital);
 						PixelRGB(___x,EDI);
-						FOR(_TMP_WEIGHT=size.TMP_WEIGHT; _TMP_WEIGHT; _TMP_WEIGHT--)
-						{
-							IF(weight) PixelRGB(___x+_TMP_WEIGHT,EDI);
-						}
+						//_TMP_WEIGHT = 2;
+						//WHILE(_TMP_WEIGHT)
+						//{
+						//	_TMP_WEIGHT--;
+							IF(weight) PixelRGB(___x+1,EDI);
+						//}
 				}
 				iii++;
             }
