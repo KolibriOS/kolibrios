@@ -1,52 +1,56 @@
+#ifndef AUTOBUILD
+	#include "lang.h--"
+#endif
+
 #define MEMSIZE 0x8000
-#include "..\lib\kolibri.h" 
 #include "..\lib\strings.h"
-#include "..\lib\mem.h"
-#include "..\lib\file_system.h"
+#include "..\lib\io.h"
 #include "..\lib\gui.h"
-#include "..\lib\dll.h"
 #include "..\lib\obj\box_lib.h"
 
-
 unsigned char speaker[23*40*3]= FROM "speaker.raw";
-char title[]= "Dictionary v1.32";
-char direction[] = "Translate direction:";
-char translate_caption[] = "Translate";
-char dict_not_found[] = "Dictionary not found";
-char dict_opened[] = "Dictionary loaded";
-char empty_word[] = "Type a word to translate";
+
+#ifdef LANG_RUS
+  #define WINDOW_TITLE "Словарик 2.0"
+  #define DICTIONARY_NOT_FOUND "Словарь не найден"
+  #define DICTIONARY_LOADED "Словарь загружен"
+  #define WORD_NOT_FOUND "Слово не найдено в словаре"
+  #define ERROR "Ошибка #"
+#else
+  #define WINDOW_TITLE "Dictionary v2.0"
+  #define DICTIONARY_NOT_FOUND "Dictionary not found"
+  #define DICTIONARY_LOADED "Dictionary loaded"
+  #define WORD_NOT_FOUND "Word isn't found in the dictionary"
+  #define ERROR "Error #"
+  #endif
 
 proc_info Form;
-
-char edword[256], search_word[256], translate_result[4096], cur_dict[256];
-dword dict_folder;
-#define DICT_DIRECROTY "dictionaries"
+char edword[256], search_word[256], translate_result[4096];
 #define PRONOUNCED_FILE "/sys/pronounced.txt"
 #define SPEECH_PATH "/kolibrios/media/speech/speech"
-dword dir_buf, file_buf, fsize;
+#define TOPH 44
+
+#define TEXT_ENG_RUS "ENG\26RUS"
+#define TEXT_RUS_ENG "RUS\26ENG"
+#define ENG_RUS 0
+#define RUS_ENG 1
+int active_dict=2;
 
 int mouse_dd, speaker_id;
-edit_box edit1= {200,20,16,0xffffff,0x94AECE,0x94AECE,0x94AECE,0,248,#edword,#mouse_dd,100000000000010b};
+edit_box edit1= {200,16,16,0xffffff,0x94AECE,0xffffff,0x94AECE,0,248,#edword,#mouse_dd,100000000000010b};
 
 
 void main()
 {   
-	int id, key;
-	
+	int id;
 	load_dll(boxlib, #box_lib_init,0);
-
-	dict_folder = abspath(DICT_DIRECROTY);
-	OpenDictionary(0);
-	
+	OpenDictionary(ENG_RUS);
 	if (param)
 	{
 		strcpy(#edword, #param);
 		edit1.size=edit1.pos=strlen(#edword);
 		Translate();
-		DrawTranslation();
-		edit_box_draw stdcall(#edit1);
 	}
-	
 	SetEventMask(0x27);
 	loop()
 	{
@@ -58,10 +62,9 @@ void main()
 
 		case evButton:
             id=GetButtonID();               
-            if (id==1) {KillProcess(speaker_id); ExitProcess();}
-			if (id==10) { Translate(); DrawTranslation(); }
-			if (id==11)	ShowDictList();
-			if (id==12)	DrawWindowContent();
+            if (id==01) { KillProcess(speaker_id); ExitProcess(); }
+			if (id==10) { OpenDictionary(ENG_RUS); DrawLangButtons(); }
+			if (id==11) { OpenDictionary(RUS_ENG); DrawLangButtons(); }
 			if (id==15)
 			{
 				if (GetProcessSlot(speaker_id)!=0))
@@ -75,172 +78,110 @@ void main()
 					pause(50);
 					speaker_id = RunProgram(SPEECH_PATH, PRONOUNCED_FILE);
 				}
-				SpeakerDraw(Form.cwidth-38, Form.cheight-32);
+				SpeakerDraw();
 			}
-			if (id>=20)	OpenDictionary(id - 20);
 			break;
 
         case evKey:
-			key = GetKey();
-			IF (key==013) //Enter
-			{
-				Translate();
-				DrawTranslation();
-			}
-			
-			EAX=key<<8;
-			edit_box_key stdcall(#edit1);
-			
-			// Translate();
-			// DrawTranslation();
+			GetKeys();			
+			EAX=key_ascii<<8;
+			edit_box_key stdcall(#edit1);	
+			Translate();
 			break;
 			
          case evReDraw:
-			DrawWindowContent();
-			break;
+			system.color.get();
+			DefineAndDrawWindow(215,120,400,250,0x73,system.color.work,WINDOW_TITLE);
+			GetProcessInfo(#Form, SelfInfo);
+			if (Form.status_window>2) break;
+			if (Form.height<140) { MoveSize(OLD,OLD,OLD,140); break; }
+			if (Form.width<400) { MoveSize(OLD,OLD,400,OLD); break; }
+			DrawBar(0, 0, Form.width-9, TOPH, system.color.work); //top bg
+			DrawBar(0, TOPH, Form.width-9, 1, system.color.work_graph);
+			edit1.width=Form.width-edit1.left-edit1.left-9 - 116;
+			edit_box_draw stdcall(#edit1);
+			DrawWideRectangle(edit1.left-2, edit1.top-2, edit1.width+3, 19, 2, 0xffffff);
+			DrawRectangle(edit1.left-3, edit1.top-3, edit1.width+4, 20, system.color.work_graph);
+			DrawTranslation();
+			DrawLangButtons();
       }
    }
 }
 
 
-void DrawWindowContent()
+void DrawLangButtons()
 {
-	system.color.get();
-	DefineAndDrawWindow(215,120,400,250,0x73,system.color.work,#title);
-	GetProcessInfo(#Form, SelfInfo);
-	if (Form.status_window>2) return;
-	if (Form.height<140) MoveSize(OLD,OLD,OLD,140);
-	if (Form.width<400) MoveSize(OLD,OLD,400,OLD);
-	edit1.focus_border_color=system.color.work_graph;
-	edit1.width=Form.width-edit1.left-edit1.left-9;
-
-	DrawBar(0, 0, Form.width-9, 69, system.color.work);
-	edit_box_draw stdcall(#edit1);
-	DrawCaptButton(edit1.left+edit1.width-80,35, 80,20, 10, system.color.work_button, system.color.work_button_text,#translate_caption);
-	DrawBar(0, 69, Form.width-9, 1, system.color.work_graph);
-
-	WriteText(edit1.left,35+7,0x80,system.color.work_text,#direction);
-	DefineButton(edit1.left+130,35, 120,20, 11, system.color.work_button);
-	DrawBar(edit1.left+130+1,36,  107,19, 0xFFFFFF);
-	WriteText(edit1.left+130+112,35+7,0x80,system.color.work_button_text,"\x19");
-	WriteText(edit1.left+130+8,35+7,0x80,0x000000,#cur_dict);
-
-	DrawTranslation();
+	DrawCaptButton(Form.width-130, edit1.top-3, 50,19, 10, system.color.work_button, system.color.work_button_text, TEXT_ENG_RUS);
+	DrawCaptButton(Form.width-70, edit1.top-3, 50,19, 11, system.color.work_button, system.color.work_button_text, TEXT_RUS_ENG);
+	PutShadow(-active_dict*60 + Form.width-70, edit1.top-3, 50,19, 1, 2);
+	SpeakerDraw();
 }
 
-void SpeakerDraw(dword x, y)
+void SpeakerDraw()
 {
-	if (!strstr(#cur_dict, "- rus")) return;
-	DefineButton(x-5, y-5, 23+10, 20+9, 15+BT_HIDE+BT_NOFRAME, 0);
-	if (GetProcessSlot(speaker_id)==0)) _PutImage(x, y, 23,20, #speaker); else _PutImage(x, y, 23,20, 23*20*3+#speaker);
+	dword x, y;
+	x = Form.cwidth-38;
+	y = Form.cheight-32;
+	if (active_dict)
+	{
+		DeleteButton(15);
+		DrawBar(x,y,23,20,0xFFFFFF);
+	}
+	else
+	{
+		DefineButton(x-5, y-5, 23+10, 20+9, 15+BT_HIDE+BT_NOFRAME, 0);
+		if (GetProcessSlot(speaker_id)==0)) _PutImage(x, y, 23,20, #speaker); else _PutImage(x, y, 23,20, 23*20*3+#speaker);		
+	}
 }
 
 void Translate()
 {
-	dword tj;
-	char w_native[100], w_translation[100], bukva[1];
-	
-	byte InfType;
-	#define NATIVE_WORD 0
-	#define TRANSLATION 1
-	#define IGNORE      2
-	
-	if (!fsize) return;
-	KillProcess(speaker_id);
-		
-	translate_result = 0;
-	strcpy(#search_word, #edword);
-	strupr(#search_word);
-	
-	if (!edword)
-	{
-		strcpy(#translate_result, #empty_word);
-		return;
-	}
+	dword translation_start, translation_end;
 
-	for (tj=0; tj<fsize; tj++;) 
-	{   
-		bukva = ESBYTE[file_buf+tj];
-		switch (bukva)
-		{
-			case '"':
-				if (w_translation)
-				{
-					if (!strcmp(#w_native, #search_word))
-					{
-					
-						if (translate_result) strcat(#translate_result, ", ");
-						strcat(#translate_result, #w_translation);
-					}
-					else
-						if (translate_result) return;
-										
-					w_translation = w_native = 0;
-				}
-				InfType = TRANSLATION;
-				break;				
-			case 0x0a:
-				InfType = NATIVE_WORD;
-				break;
-			default:
-				if (InfType==NATIVE_WORD)
-				{
-					chrcat(#w_native, bukva);
-					//if (w_native<>search_word) InfType = IGNORE; //хёыш яхЁтр  сєътр эх ёютярфрхЄ шуэюЁшь тё╕ ёыютю
-				}
-				if (InfType==TRANSLATION) chrcat(#w_translation, bukva);
-		}
+	KillProcess(speaker_id);
+	sprintf(#search_word, "\10%s\13", #edword);
+	strupr(#search_word);
+
+	if (!io.FILES_SIZE) || (!edword) goto _TR_END;
+
+	translation_start = strstr(io.buffer_data, #search_word);
+	if (!translation_start) 
+	{
+		strcpy(#translate_result, WORD_NOT_FOUND); 
 	}
-	if (!translate_result) strcpy(#translate_result, "Word is'nt found in the dictionary"); 
+	else 
+	{
+		translation_start = strchr(translation_start, '"') + 1;
+		translation_end = strchr(translation_start, '"');
+		strlcpy(#translate_result, translation_start, translation_end - translation_start);
+	}
+	_TR_END:
+	strcpy(#search_word, #search_word+1);
+	DrawTranslation();
 }
 
 
-void OpenDictionary(dword fileid)
+void OpenDictionary(dword dict_id)
 {
-	char open_file_path[4096];
+	dword res;
+	if (dict_id==active_dict) return;
 	KillProcess(speaker_id);
-	if (!dir_buf) ShowDictList();
-	if (!dir_buf) strcpy(#cur_dict, "none");
-	else strcpy(#cur_dict, fileid*304+dir_buf+72);
-	fsize = ESDWORD[fileid*304 + dir_buf+64];
-
-	free(file_buf);
-	file_buf = malloc(fsize);
-	strcpy(#open_file_path, dict_folder);
-	strcat(#open_file_path, "/");
-	strcat(#open_file_path, #cur_dict);
-	ReadFile(0, fsize, file_buf, #open_file_path);
-	IF (EAX<>0)
+	active_dict = dict_id;
+	if (io.buffer_data) free(io.buffer_data);
+	if (active_dict==ENG_RUS) res=io.read("dictionaries/eng - rus.dict");
+	if (active_dict==RUS_ENG) res=io.read("dictionaries/rus - eng.dict");	
+	if (!io.buffer_data)
 	{
-		fsize = 0;
-		strcpy(#search_word, "Error #");
-		strcat(#search_word, itoa(EAX));
-		strcpy(#translate_result, #dict_not_found);
+		sprintf(#search_word, ERROR, res);
+		strcpy(#translate_result, DICTIONARY_NOT_FOUND);
 	}
 	else
 	{
-		strcpy(#search_word, #cur_dict);
-		strcpy(#translate_result, #dict_opened);
+		if (active_dict==ENG_RUS) strcpy(#search_word, TEXT_ENG_RUS);
+		if (active_dict==RUS_ENG) strcpy(#search_word, TEXT_RUS_ENG);
+		strcpy(#translate_result, DICTIONARY_LOADED);
 	}
-	DrawWindowContent();	
-}
-
-
-void ShowDictList()
-{
-	int j, fcount, error;
-	
-	free(dir_buf);
-	error = GetDir(#dir_buf, #fcount, dict_folder, DIRS_ONLYREAL);
-	if (!error)
-	{
-		DefineButton(0,0, Form.width,Form.height, 12+BT_HIDE+BT_NOFRAME, system.color.work_button);
-		for (j=0; j<fcount; j++;)
-		{
-			DefineButton(edit1.left+130,j+1*20+35, 107,20, 20+j, system.color.work_button);
-			WriteText(edit1.left+130+8,j+1*20+35+7,0x80,system.color.work_button_text, j*304+dir_buf+72);
-		}
-	}
+	DrawTranslation();	
 }
 
 
@@ -249,30 +190,30 @@ void DrawTranslation()
 	int text_break=0;
 	char tt[4096]='';
 	
-	int y_pos=70;
+	int y_pos=TOPH+1;
 	char draw_buf[4096];
 	strcpy(#draw_buf, #translate_result);
 	
 	DrawBar(0, y_pos, Form.width-9, Form.cheight - y_pos, 0xFFFFFF);
 	strttl(#draw_buf);
-	WriteTextB(10+1, y_pos+8, 0x90, 0x800080, #search_word);
+	WriteTextB(10+1, y_pos+8, 10000001b, 0x800080, #search_word);
 	while (draw_buf)
 	{
 		text_break= Form.width/6-6;
 		if (text_break>strlen(#draw_buf))
 		{
-			WriteText(10, y_pos+21, 0x80, 0, #draw_buf);
+			WriteText(10, y_pos+31, 0x80, 0, #draw_buf);
 			break;
 		}
 		while (draw_buf[text_break]<>' ') && (text_break>0) text_break--;
 		strcpy(#tt, #draw_buf+text_break+1);
 		draw_buf[text_break]=0x0;
-		WriteText(10, y_pos+21, 0x80, 0, #draw_buf);
+		WriteText(10, y_pos+31, 0x80, 0, #draw_buf);
 		strcpy(#draw_buf, #tt);
 		y_pos+=12;
-		if (y_pos+24+8>Form.cheight) break; //ўЄюс эх чрыхчрыю эр эшцэшщ юсюфюъ
+		if (y_pos+24+8>Form.cheight) break;
 	}
-	SpeakerDraw(Form.cwidth-38, Form.cheight-32);
+	SpeakerDraw();
 }
 
 
