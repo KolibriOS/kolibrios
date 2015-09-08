@@ -396,7 +396,7 @@ char top10str1[] = "ENTER - имя Ok.";
 char top10str2[] = "ESC - выход в меню";
 #else
 char goWndTitle[] = "Level %U, completed %U%%, lives: %U, scores: %U";
-char goWndTitle[] = "Level %U, completed %U%%, lives: %U, scores: %U, superhero: %U%%";
+char goWndTitleSuperHero[] = "Level %U, completed %U%%, lives: %U, scores: %U, superhero: %U%%";
 char menuStr1[] = "1. Start game";
 char menuStr2[] = "2. Exit";
 char menuStr3[] = "Control: ARROWS - direction of movement.";
