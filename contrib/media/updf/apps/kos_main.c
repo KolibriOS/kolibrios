@@ -183,6 +183,7 @@ void winblit(pdfapp_t *app)
 
 	if (Form.client_width > gapp.image->w) window_center = (Form.client_width - gapp.image->w) / 2; else window_center = 0;
 
+	gapp.panx = 0;
 	if (gapp.image->n == 4)	 		 
 		 	blit(window_center + Form.client_left, 
 		 		Form.client_top + TOOLBAR_HEIGHT, 
@@ -327,8 +328,8 @@ int main (void)
 			if(butt==13) //show help
 			{
 				__menuet__bar(0, TOOLBAR_HEIGHT, Form.client_width, Form.client_height - TOOLBAR_HEIGHT, 0xF2F2F2);	
-				__menuet__write_text(20, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.2", 0);
-				__menuet__write_text(21, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.2", 0);
+				__menuet__write_text(20, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.21", 0);
+				__menuet__write_text(21, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.21", 0);
 				for (ii=0; help[ii]!=0; ii++) {
 					__menuet__write_text(20, TOOLBAR_HEIGHT + 60 + ii * 15, 0x80000000, help[ii], 0);
 				}

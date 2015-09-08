@@ -41,7 +41,8 @@ char *pdfapp_version(pdfapp_t *app)
 
 char *pdfapp_usage(pdfapp_t *app)
 {
-	return
+	return " ";
+	/*
 		"L\t\t-- rotate left\n"
 		"R\t\t-- rotate right\n"
 		"h\t\t-- scroll left\n"
@@ -65,7 +66,7 @@ char *pdfapp_usage(pdfapp_t *app)
 		"n\t\t-- find next search result\n"
 		"N\t\t-- find previous search result\n"
 		"c\t\t-- toggle between color and grayscale\n"
-	;
+	; */
 }
 
 void pdfapp_init(pdfapp_t *app)
