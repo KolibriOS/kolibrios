@@ -93,7 +93,6 @@ s3: mov  eax,9                     ; process info function
     jne  l1                        ; no, do it
     jmp  still
 l1: mov  [picks],edx               ; update left pick color
-    call clear                     ; erase old text
     call draw_picks                ; redraw colors and text
     jmp  still
   right:
@@ -101,7 +100,6 @@ l1: mov  [picks],edx               ; update left pick color
     jne  r1                        ; no, do it
     jmp  still
 r1: mov  [picks+4],edx             ; update right pick color
-    call clear                     ; erase old text
     call draw_picks                ; redraw colors and text
     jmp  still
 
@@ -145,7 +143,7 @@ draw_window:
     mcall 12,1
 
     mov  eax,0                     ; DRAW WINDOW
-    mov  ebx,1*65536+200           ; [x start] *65536 + [x size]
+    mov  ebx,1*65536+(200-1)       ; [x start] *65536 + [x size]
     mov  ecx,200*65536+240         ; [y start] *65536 + [y size]
     mov  edx,0x14000000            ; work area color (type II)
     mov  edi,title                ; frame color
@@ -227,7 +225,8 @@ do_hex:
     mov  ecx,[edi]                 ; save color 1
     mov  ebx,0x60100               ; print 6 hex digits
     mov  edx,esi                   ; copy color
-    mov  esi,0xe1e1e1              ; use white
+    mov  esi,0x40e1e1e1            ; use white
+    xor  edi, edi
     mov  eax,47                    ; print number function
     mcall
 
@@ -252,26 +251,14 @@ do_name:
     mul  ecx                       ; calc pointer
     mov  edx,names                 ; color table
     add  edx,eax                   ; add offset
-    mov  ecx,0xe1e1e1              ; color
+    mov  ecx,0x40e1e1e1            ; color
     mov  esi,15
+    xor  edi, edi
     mov  eax,4                     ; print text function
     mcall
 
     ret
 
-clear:
-    mov  ebx,22*65536+36           ; x and width
-    mov  ecx,196*65536+26          ; y and depth
-    mov  edx,0x000000              ; color
-    mov  eax,13                    ; draw bar funx
-    mcall
-    mov  ebx,96*65536+90           ; x and width
-    mov  ecx,196*65536+26          ; y and depth
-    mov  edx,0x000000              ; color
-    mov  eax,13                    ; draw bar funx
-    mcall
-
-    ret
 
 help:
 	mcall 48,4
@@ -281,7 +268,7 @@ help:
 	sub ecx, eax
 
 	
-    mov  ebx,5*65536+191           ; x and width
+    mov  ebx,5*65536+190           ; x and width
     mov  edx,0x465e8f              ; dark denim color
     mov  eax,13                    ; write text funx
     mcall
