@@ -392,7 +392,7 @@ void kos_DefineAndDrawWindow(
 	Dword mainAreaColour,
 	Byte headerType,
 	Dword headerColour,
-	Dword borderColour
+	char *title
 	)
 {
 	Dword arg1, arg2, arg3, arg4;
@@ -409,7 +409,7 @@ void kos_DefineAndDrawWindow(
 		mov ecx, arg2
 		mov edx, arg3
 		mov esi, arg4
-		mov edi, borderColour
+		mov edi, title
 		int 0x40
 	}
 }
@@ -726,6 +726,17 @@ void kos_DisplayNumberToWindow(
 }
 
 
+// 48, 4 -- get skin height
+Dword kos_GetSkinHeight()
+{
+	__asm{
+		mov eax, 48
+		mov ebx, 4
+		int 0x40
+	}
+}
+
+
 // функция 70 доступ к файловой системе
 Dword kos_FileSystemAccess( kosFileInfo *fileInfo )
 {
@@ -815,6 +826,17 @@ void kos_ChangeWindow( Dword x, Dword y, Dword sizeX, Dword sizeY )
 	}
 }
 
+
+// 71,1 set window caption
+void kos_SetWindowCaption(char *caption)
+{
+	__asm{
+		mov eax, 71
+		mov ebx, 1
+		mov ecx, caption
+		int 0x40
+	}
+}
 
 
 // вызов абстрактного метода

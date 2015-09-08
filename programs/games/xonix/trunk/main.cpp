@@ -189,11 +189,11 @@ int GetCompletePercents();
 
 #define blockSize			8
 
-#define ENTRY_WND_SIZE_X	400
-#define ENTRY_WND_SIZE_Y	144
+#define ENTRY_CLIENT_SIZE_X	(400 - 2)
+#define ENTRY_CLIENT_SIZE_Y	(144 - 2 - 20)
 
-#define TOP10_WND_SIZE_X	176
-#define TOP10_WND_SIZE_Y	144
+#define TOP10_CLIENT_SIZE_X	(176 - 2)
+#define TOP10_CLIENT_SIZE_Y	(144 - 2 - 20)
 
 #define MAX_X_SIZE			96
 #define MIN_X_SIZE			48
@@ -201,8 +201,6 @@ int GetCompletePercents();
 #define MIN_Y_SIZE			28
 
 #define flipMapSize			((mapSizeX * mapSizeY) / 4)
-#define wndXOffet			1
-#define wndYOffset			22
 #define freeSpaceCount		((mapSizeX - 4) * (mapSizeY - 4))
 //
 #define	gmEmpty				0
@@ -378,11 +376,15 @@ struct hiScoreFile
 ///
 hiScoreFile *top10Heroes = NULL;
 
+sProcessInfo process_info;
 
 // çàãîëîâîê ãëàâíîãî îêíà
 char MainWindowTitle[] = "XONIX (C) MMVI by Rabid Rabbit";
+char WindowTitle[128];
+char Top10WndTitle[] = "Top 10";
 #if LANG == RUS
 char goWndTitle[] = "“à®¢¥­ì %U, § ¢¥àè¥­® %U%%, ¦¨§­¥©: %U, áçñâ: %U";
+char goWndTitleSuperHero[] = "“à®¢¥­ì %U, § ¢¥àè¥­® %U%%, ¦¨§­¥©: %U, áçñâ: %U, áã¯¥à£¥à®©: %U%%";
 char menuStr1[] = "1.  ç âì ¨£àã";
 char menuStr2[] = "2. ‚ëå®¤";
 char menuStr3[] = "“¯à ¢«¥­¨¥: ‘’…‹Šˆ - ­ ¯à ¢«¥­¨¥ ¤¢¨¦¥­¨ï.";
@@ -394,6 +396,7 @@ char top10str1[] = "ENTER - ¨¬ï Ok.";
 char top10str2[] = "ESC - ¢ëå®¤ ¢ ¬¥­î";
 #else
 char goWndTitle[] = "Level %U, completed %U%%, lives: %U, scores: %U";
+char goWndTitle[] = "Level %U, completed %U%%, lives: %U, scores: %U, superhero: %U%%";
 char menuStr1[] = "1. Start game";
 char menuStr2[] = "2. Exit";
 char menuStr3[] = "Control: ARROWS - direction of movement.";
@@ -412,8 +415,8 @@ int heroDX = 0, heroDY = 0, lastMoveDirection = 0;
 //
 Byte * worldMap = NULL;
 //
-int	wndSizeX = ENTRY_WND_SIZE_X;
-int	wndSizeY = ENTRY_WND_SIZE_Y;
+int	wndSizeX = 0;
+int	wndSizeY = 0;
 int mapSizeX = 64;
 int mapSizeY = 32;
 int loopDelay = DEFAULT_LOOP_DELAY;
@@ -903,10 +906,11 @@ void checkAndSetBonus1()
 	Dword i;
 
 	//
-	if ( (!bonus1Set)
+	if ((!bonus1Set)
 		&& rtlRand() > 0x80000000
 		&& lifeCount < 2
 		&& GetCompletePercents() > 75 )
+		
 	{
 		//
 		bonus1Set = true;
@@ -1350,7 +1354,7 @@ void ApplyMapDiffs( bool drawTitle )
 	int i, j;
 
 	//
-	kos_WindowRedrawStatus( 1 );
+//	kos_WindowRedrawStatus( 1 );
 	//
 	if ( drawTitle ) drawWndTitleGo();
 	//
@@ -1358,24 +1362,16 @@ void ApplyMapDiffs( bool drawTitle )
 	//
 	for ( i = 0; i < j; i++ )
 	{
-		////
-		//kos_DrawBar(
-		//	wndXOffet + ( ( ( mapDiffList[i].elPtr - worldMap ) % mapSizeX ) * blockSize ),
-		//	wndYOffset + ( ( ( mapDiffList[i].elPtr - worldMap ) / mapSizeX ) * blockSize ),
-		//	blockSize, blockSize,
-		//	mapColours[mapDiffList[i].mapEl]
-		//);
-		//
 		kos_PutImage(
 			mapColours[mapDiffList[i].mapEl],
 			blockSize,
 			blockSize,
-			wndXOffet + ( ( ( mapDiffList[i].elPtr - worldMap ) % mapSizeX ) * blockSize ),
-			wndYOffset + ( ( ( mapDiffList[i].elPtr - worldMap ) / mapSizeX ) * blockSize )
+			( ( mapDiffList[i].elPtr - worldMap ) % mapSizeX ) * blockSize,
+			( ( mapDiffList[i].elPtr - worldMap ) / mapSizeX ) * blockSize
 			);
 	}
 	//
-	kos_WindowRedrawStatus( 2 );
+//	kos_WindowRedrawStatus( 2 );
 	//
 	mapDiffList.Clear();
 }
@@ -1461,20 +1457,21 @@ void SetGameVars()
 	scoreCount = 0;
 	enterName = -1;
 	//
-	wndSizeX = ((mapSizeX*blockSize)+2);
-	wndSizeY = ((mapSizeY*blockSize)+23);
+	wndSizeX = ((mapSizeX*blockSize) + 5*2);
+	wndSizeY = ((mapSizeY*blockSize) + kos_GetSkinHeight() + 5);
 	//
-	kos_ChangeWindow( -1, -1, wndSizeX, wndSizeY );
+	kos_ChangeWindow( -1, -1, wndSizeX-1, wndSizeY-1 );
 }
 
 //
 void SetEntryVars()
 {
 	//
-	wndSizeX = ENTRY_WND_SIZE_X;
-	wndSizeY = ENTRY_WND_SIZE_Y;
+	wndSizeX = ENTRY_CLIENT_SIZE_X + 5*2;
+	wndSizeY = ENTRY_CLIENT_SIZE_Y + kos_GetSkinHeight() + 5;
 	//
-	kos_ChangeWindow( -1, -1, wndSizeX, wndSizeY );
+	kos_SetWindowCaption(MainWindowTitle);
+	kos_ChangeWindow( -1, -1, wndSizeX-1, wndSizeY-1 );
 	kos_SetKeyboardDataMode( KM_SCANS );
 }
 
@@ -1521,8 +1518,10 @@ void SetUpTop10()
 	while ( kos_CheckForEvent() == 2 ) kos_GetKey( keyCode );
 	//
 	kos_SetKeyboardDataMode( KM_CHARS );
+
+	kos_SetWindowCaption(Top10WndTitle);
 	//
-	kos_ChangeWindow( -1, -1, TOP10_WND_SIZE_X, TOP10_WND_SIZE_Y );
+	kos_ChangeWindow(-1, -1, TOP10_CLIENT_SIZE_X + 5 * 2 - 1, TOP10_CLIENT_SIZE_Y + kos_GetSkinHeight() + 5 - 1);
 	//
 	for ( i = 0; i < TOP_TBL_SIZE; i++ )
 	{
@@ -1559,13 +1558,16 @@ void kos_Main()
 	bool workOn = true;
 	char *cPtr;
 
+	wndSizeX = ENTRY_CLIENT_SIZE_X + 5 * 2;
+	wndSizeY = ENTRY_CLIENT_SIZE_Y + kos_GetSkinHeight() + 5;
+
 	// îòäåëÿåì èìÿ ìîäóëÿ îò ïóòè
 	cPtr = strrchr( kosExePath, '/' );
 	// ïðîâåðêà ;)
 	if ( cPtr == NULL )
 	{
 		//
-		rtlDebugOutString( "Invalid path to executable." );
+		rtlDebugOutString( "xonix: Invalid path to executable." );
 		//
 		return;
 	}
@@ -1606,7 +1608,7 @@ void kos_Main()
 					appState = appStateGo;
 					SetGameVars();
 					initWorldMap();
-					DrawAppWindow();
+//					DrawAppWindow();
 					break;
 
 				//
@@ -1645,13 +1647,17 @@ void kos_Main()
 					break;
 				//
 				case BT_LOOP_MINUS:
-					loopDelay++;;
+					loopDelay++;
 					if ( loopDelay > MAX_LOOP_DELAY ) loopDelay = MAX_LOOP_DELAY;
 					break;
 				//
 				case BT_LOOP_PLUS:
-					loopDelay--;;
+					loopDelay--;
 					if ( loopDelay < MIN_LOOP_DELAY ) loopDelay = MIN_LOOP_DELAY;
+					break;
+				case 1:
+					xonixFree();
+					workOn = false;
 					break;
 				//
 				default:
@@ -1803,6 +1809,14 @@ void kos_Main()
 				break;
 
 			//
+			case 3:
+				kos_GetButtonID(buttonID);
+				if (buttonID == 1)
+				{
+					xonixFree();
+					workOn = false;
+				}
+				break;
 			default:
 				//
 				if ( MoveHero() )
@@ -1848,16 +1862,13 @@ void kos_Main()
 				break;
 			//
 			case 3:
-				if ( kos_GetButtonID( buttonID ) )
+				kos_GetButtonID(buttonID);
+				if ( buttonID == 1 )
 				{
 					//
-					if ( buttonID == 1 )
-					{
-						//
-						appState = appStateTop10;
-						SetUpTop10();
-						DrawAppWindow();
-					}
+					appState = appStateTop10;
+					SetUpTop10();
+					DrawAppWindow();
 				}
 			//
 			default:
@@ -1930,6 +1941,14 @@ void kos_Main()
 				//
 				break;
 			//
+			case 3:
+				kos_GetButtonID(buttonID);
+				if (buttonID == 1)
+				{
+					xonixFree();
+					workOn = false;
+				}
+				break;
 			default:
 				break;
 			}
@@ -1951,7 +1970,14 @@ void kos_Main()
 					appState = appStateGo;
 				}
 				break;
-
+			case 3:
+				kos_GetButtonID(buttonID);
+				if (buttonID == 1)
+				{
+					xonixFree();
+					workOn = false;
+				}
+				break;
 			default:
 				break;
 			}
@@ -2021,46 +2047,50 @@ void DrawEntryScreen()
 {
 	PRINTK pr;
 	char line[64];
-
 	//
 	kos_DefineAndDrawWindow(
 		100, 100,
-		wndSizeX, wndSizeY,
+		wndSizeX-1, wndSizeY-1,
+		0x34, 0,
 		0, 0,
-		0, 0x2040A0,
-		0x2040A0
+		MainWindowTitle
 		);
 	//
+	if (process_info.processInfo.window_state & 0x06)
+		return;
+
+	/*
 	kos_WriteTextToWindow(
 		4, 4,
 		0x10, 0x42D2E2,
 		MainWindowTitle,
 		sizeof( MainWindowTitle ) - 1
 		);
+		*/
 	//
 	kos_WriteTextToWindow(
-		8, 32,
+		8-1, 32-21,
 		0x10, 0x12FF12,
 		menuStr1,
 		sizeof( menuStr1 ) - 1
 		);
 	//
 	kos_WriteTextToWindow(
-		8, 48,
+		8-1, 48-21,
 		0x10, 0x12FF12,
 		menuStr2,
 		sizeof( menuStr2 ) - 1
 		);
 	//
 	kos_WriteTextToWindow(
-		8, 80,
+		8-1, 80-21,
 		0x10, 0xD0FF12,
 		menuStr3,
 		sizeof( menuStr3 ) - 1
 		);
 	//
 	kos_WriteTextToWindow(
-		8, 96,
+		8-1, 96-21,
 		0x10, 0xD0FF12,
 		menuStr4,
 		sizeof( menuStr4 ) - 1
@@ -2072,47 +2102,55 @@ void DrawEntryScreen()
 	sprintk( line, &pr );
 	//
 	kos_WriteTextToWindow(
-		8, 112,
+		8-1, 112-21,
 		0x10, 0x12C0D0,
 		line,
 		strlen( line )
 		);
 	// êíîïêè X
+	// xo oo
+	//	  oo
 	kos_DefineButton(
-		ENTRY_WND_SIZE_X - 58, 112,
-		12, 12,
+		ENTRY_CLIENT_SIZE_X - 62, 112-24,
+		13, 13,
 		BT_SIZE_X_MINUS,
 		0xCCCCCC
 		);
 	//
-	kos_PutImage( bmPMButton + 12, 6, 2, ENTRY_WND_SIZE_X - 58 + 3, 117 );
+	kos_PutImage( bmPMButton + 12, 6, 2, ENTRY_CLIENT_SIZE_X - (62-1) + 3, 117-23 );
 	//
+	// ox oo
+	//	  oo
 	kos_DefineButton(
-		ENTRY_WND_SIZE_X - 45, 112,
-		12, 12,
+		ENTRY_CLIENT_SIZE_X - 48, 112-24,
+		13, 13,
 		BT_SIZE_X_PLUS,
 		0xCCCCCC
 		);
 	//
-	kos_PutImage( bmPMButton, 6, 6, ENTRY_WND_SIZE_X - 45 + 3, 115 );
+	kos_PutImage( bmPMButton, 6, 6, ENTRY_CLIENT_SIZE_X - (48-1) + 3, 115-23 );
 	// êíîïêè Y
+	// oo xo
+	//	  oo
 	kos_DefineButton(
-		ENTRY_WND_SIZE_X - 29, 112,
-		12, 12,
+		ENTRY_CLIENT_SIZE_X - 31, 112-24,
+		13, 13,
 		BT_SIZE_Y_MINUS,
 		0xCCCCCC
 		);
 	//
-	kos_PutImage( bmPMButton + 12, 6, 2, ENTRY_WND_SIZE_X - 29 + 3, 117 );
+	kos_PutImage( bmPMButton + 12, 6, 2, ENTRY_CLIENT_SIZE_X - (31-1) + 3, 117-23 );
 	//
+	// oo ox
+	//	  oo
 	kos_DefineButton(
-		ENTRY_WND_SIZE_X - 16, 112,
-		12, 12,
+		ENTRY_CLIENT_SIZE_X - 17, 112-24,
+		13, 13,
 		BT_SIZE_Y_PLUS,
 		0xCCCCCC
 		);
 	//
-	kos_PutImage( bmPMButton, 6, 6, ENTRY_WND_SIZE_X - 16 + 3, 115 );
+	kos_PutImage( bmPMButton, 6, 6, ENTRY_CLIENT_SIZE_X - (17-1) + 3, 115-23 );
 	//
 	//çàäåðæêà â öèêëå âûáîðêè ñîîáùåíèé
 	pr.fmtline = mainLoopDelayStr;
@@ -2120,79 +2158,82 @@ void DrawEntryScreen()
 	sprintk( line, &pr );
 	//
 	kos_WriteTextToWindow(
-		8, 128,
+		8-1, 128-21,
 		0x10, 0x12C0D0,
 		line,
 		strlen( line )
 		);
 	//
 	kos_DefineButton(
-		ENTRY_WND_SIZE_X - 29, 128,
-		12, 12,
+		ENTRY_CLIENT_SIZE_X - 31, 128-23,
+		13, 13,
 		BT_LOOP_MINUS,
 		0xCCCCCC
 		);
 	//
-	kos_PutImage( bmPMButton + 12, 6, 2, ENTRY_WND_SIZE_X - 29 + 3, 133 );
+	kos_PutImage( bmPMButton + 12, 6, 2, ENTRY_CLIENT_SIZE_X - (31-1) + 3, 133-22 );
 	//
 	kos_DefineButton(
-		ENTRY_WND_SIZE_X - 16, 128,
-		12, 12,
+		ENTRY_CLIENT_SIZE_X - 17, 128-23,
+		13, 13,
 		BT_LOOP_PLUS,
 		0xCCCCCC
 		);
 	//
-	kos_PutImage( bmPMButton, 6, 6, ENTRY_WND_SIZE_X - 16 + 3, 131 );
+	kos_PutImage( bmPMButton, 6, 6, ENTRY_CLIENT_SIZE_X - (17-1) + 3, 131-22 );
 }
 
 
 //
 void DrawAppWindow()
 {
-	//
 	kos_WindowRedrawStatus( 1 );
+	kos_ProcessInfo(&process_info, -1);
 
-	switch ( appState )
+	switch (appState)
 	{
-	//
+		//
 	case appStateTop10:
 		DrawTop10Window();
 		break;
-	//
+		//
 	case appStateEntry:
 		//
 		DrawEntryScreen();
 		break;
-	//
+		//
 	case appStateGo:
 	case appStateShowMap:
 	case appStatePause:
+		if (process_info.processInfo.window_state & 0x06)
+		{
+			appState = appStatePause;
+		}
 		drawWorldMap();
 		break;
-	//
+		//
 	case appStateAfterDeath:
 		//
 		drawWorldMap();
 		//
 		kos_DefineButton(
-			( wndSizeX / 2 ) - 64,
-			( wndSizeY / 2 ) - 16,
+			((wndSizeX - 10) / 2) - 64,
+			((wndSizeY - kos_GetSkinHeight() - 5) / 2) - 16,
 			128, 32,
 			1,
 			0x136793
 			);
 		//
 		kos_WriteTextToWindow(
-			( wndSizeX / 2 ) - ( sizeof( thatsAllStr ) * 4 ),
-			( wndSizeY / 2 ) - 4,
+			((wndSizeX - 10) / 2) - (sizeof(thatsAllStr)* 4),
+			((wndSizeY - kos_GetSkinHeight() - 5) / 2) - 4,
 			0x10, 0xFFFFFF,
 			thatsAllStr,
-			sizeof ( thatsAllStr ) - 1
+			sizeof (thatsAllStr)-1
 			);
-
-		//
+			//
 		break;
-	//
+		//
 	case appStateHideMap:
 		drawWorldMapForFlip();
 		break;
@@ -2313,10 +2354,10 @@ void drawWorldMap()
 	//
 	kos_DefineAndDrawWindow(
 		100, 100,
-		wndSizeX, wndSizeY,
+		wndSizeX-1, wndSizeY-1,
+		0x74, 0,
 		0, 0,
-		0, 0x2040A0,
-		0x2040A0
+		MainWindowTitle
 		);
 	//
 	drawWndTitleGo();
@@ -2342,30 +2383,66 @@ int GetCompletePercents()
 void drawWndTitleGo()
 {
 	PRINTK pr;
-	char line[64];
+	static char prev_title[64] = {'\0'};
 
 	//
+	/*
 	kos_DrawBar(
 		1, 1,
 		wndSizeX - 2, 18,
 		0x2040A0
 		);
-
+		*/
 	//
-	pr.fmtline = goWndTitle;
+	//pr.fmtline = goWndTitle;
 	pr.args[0] = currentLevel;
 	pr.args[1] = GetCompletePercents();
 	pr.args[2] = lifeCount;
 	pr.args[3] = scoreCount;
-	sprintk( line, &pr );
+
+	if (bonus1Count > 0)
+	{
+		pr.args[4] = 100*bonus1Count/BONUS1_LIFETIME;
+		pr.fmtline = goWndTitleSuperHero;
+	}
+	else
+	{
+		pr.fmtline = goWndTitle;
+		
+	}
+	sprintk(WindowTitle, &pr);
 	//
+	bool same = true;
+	for (int i = 0; i < 64; i++)
+	{
+		if (WindowTitle[i] != prev_title[i])
+		{
+			same = false;
+			break;
+		}
+		if ((WindowTitle[i] == '\0') || (prev_title[i] == '\0'))
+		{
+			break;
+		}
+
+	}
+
+	if (!same)
+	{
+		kos_SetWindowCaption(WindowTitle);
+		strcpy(prev_title, WindowTitle);
+	}
+	
+		/*
 	kos_WriteTextToWindow(
 		4, 4,
 		0x10, 0x42D2E2,
 		line,
 		strlen( line )
 		);
+		*/
 	//
+	/*
 	if ( bonus1Count > 0 )
 	{
 		//
@@ -2380,7 +2457,8 @@ void drawWndTitleGo()
 			( bonus1Count * ( wndSizeX - 4 ) ) / BONUS1_LIFETIME, BONUS1_IND_HSIZE,
 			0x5720B0
 			);
-	}
+			
+	}*/
 }
 
 //
@@ -2389,26 +2467,20 @@ void drawWorldMapForFlip()
 	int i, j;
 	Byte *mPtr = worldMap;
 
+	if (process_info.processInfo.window_state & 0x06)
+		return;
 	//
 	for ( i = 0; i < mapSizeY; i++ )
 	{
 		//
 		for ( j = 0; j < mapSizeX; j++ )
 		{
-			////
-			//kos_DrawBar(
-			//	wndXOffet + ( j * blockSize ),
-			//	wndYOffset + ( i * blockSize ),
-			//	blockSize, blockSize,
-			//	mapColours[*mPtr]
-			//);
-			//
 			kos_PutImage(
 				mapColours[*mPtr],
 				blockSize,
 				blockSize,
-				wndXOffet + ( j * blockSize ),
-				wndYOffset + ( i * blockSize )
+				j * blockSize,
+				i * blockSize
 				);
 			//
 			mPtr++;
@@ -2446,9 +2518,6 @@ void clearWorldMap()
 
 
 //
-char Top10WndTitle[] = "Top 10";
-
-//
 void DrawTop10Window()
 {
 	int i;
@@ -2456,24 +2525,28 @@ void DrawTop10Window()
 	//
 	kos_DefineAndDrawWindow(
 		100, 100,
-		TOP10_WND_SIZE_X, TOP10_WND_SIZE_Y,
 		0, 0,
-		0, 0x2040A0,
-		0x2040A0
+		0x34, 0,
+		0, 0,
+		Top10WndTitle
 		);
 	//
+	if (process_info.processInfo.window_state & 0x06)
+		return;
+	/*
 	kos_WriteTextToWindow(
 		4, 4,
 		0x0, 0x42D2E2,
 		Top10WndTitle,
 		sizeof( Top10WndTitle ) - 1
 		);
+		*/
 	//
 	for ( i = 0; i < TOP_TBL_SIZE; i++ )
 	{
 		//
 		kos_WriteTextToWindow(
-			6, wndYOffset + 2 + (i * 10),
+			6-1, 2 + (i * 10),
 			0x0, enterName != i ? 0xFFFFFF : 0x00FF00,
 			heroTbl[i].name,
 			sizeof( heroTbl[0].name )
@@ -2482,7 +2555,7 @@ void DrawTop10Window()
 		kos_DisplayNumberToWindow(
 			heroTbl[i].score,
 			8,
-			112, wndYOffset + 2 + (i * 10),
+			112-1, 2 + (i * 10),
 			0xFFFF55,
 			nbDecimal,
 			false
@@ -2490,7 +2563,7 @@ void DrawTop10Window()
 	}
 	//
 	kos_WriteTextToWindow(
-		6, wndYOffset + 6 + (i * 10),
+		6-1, 6 + (i * 10),
 		0x10, 0x1060D0,
 		enterName >= 0 ? top10str1 : top10str2,
 		enterName >= 0 ? sizeof(top10str1) - 1 : sizeof(top10str2) - 1

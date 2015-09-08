@@ -86,6 +86,12 @@ union sProcessInfo
 		Dword x_size;
 		Dword y_size;
 		Word slot_state;
+		Word reserved2;
+		Dword client_x;
+		Dword client_y;
+		Dword client_width;
+		Dword client_height;
+		Byte window_state;
 	} processInfo;
 };
 
@@ -131,7 +137,7 @@ void kos_DefineAndDrawWindow(
 	Word sizeX, Word sizeY,
 	Byte mainAreaType, Dword mainAreaColour,
 	Byte headerType, Dword headerColour,
-	Dword borderColour
+	char *title
 	);
 // функция 1 поставить точку
 void kos_PutPixel( Dword x, Dword y, Dword colour );
@@ -188,6 +194,8 @@ void kos_DisplayNumberToWindow(
    eNumberBase nBase = nbDecimal,
    bool valueIsPointer = false
    );
+// функция 48,4 get skin height
+Dword kos_GetSkinHeight();
 // функция 58 доступ к файловой системе
 Dword kos_FileSystemAccess( kosFileInfo *fileInfo );
 // функция 63
@@ -200,6 +208,8 @@ void kos_ChangeWindow( Dword x, Dword y, Dword sizeX, Dword sizeY );
 bool kos_ApplicationMemoryResize( Dword targetSize );
 // функция 66 режим получения данных от клавиатуры
 void kos_SetKeyboardDataMode( Dword mode );
+// функция 71,1 set window caption
+void kos_SetWindowCaption(char *caption);
 
 //
 void kos_Main();
