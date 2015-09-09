@@ -153,7 +153,7 @@ void main()
 						break;
 					case 2:
 						read = 0;
-						tview.current = 0;
+						tview.cur_y = 0;
 						strcpy(#win_title, TITLE);
 						FreeBuf();
 						draw_window();
@@ -207,14 +207,14 @@ void main()
 					if (tview.ProcessKey(key_scancode)) DrawText();
 					break;*/
 				case SCAN_CODE_PGUP:
-					if (!tview.current) break;
-					if (tview.current<tview.visible) tview.current = 0;
-					else tview.current = tview.current-tview.visible;
+					if (!tview.cur_y) break;
+					if (tview.cur_y<tview.visible) tview.cur_y = 0;
+					else tview.cur_y = tview.cur_y-tview.visible;
 					DrawText();
 					break;
 				case SCAN_CODE_PGDN:
-					if (tview.current+tview.visible>tview.count) break;
-					tview.current = tview.current+tview.visible;
+					if (tview.cur_y+tview.visible>tview.count) break;
+					tview.cur_y = tview.cur_y+tview.visible;
 					DrawText();
 					break;
 			}
@@ -364,16 +364,16 @@ void DrawText()
 	if (tview.count<tview.visible) top = tview.count;
 	else
 	{
-		if (tview.count-tview.current<=tview.visible) top = tview.count-tview.current-1;
+		if (tview.count-tview.cur_y<=tview.visible) top = tview.count-tview.cur_y-1;
 		else top = tview.visible;
 	}
 	DrawBar(tview.x, tview.y, tview.w, 3, 0xFFFFFF);
-	for (i=0, num_line = tview.current; i<top; i++, num_line++)
+	for (i=0, num_line = tview.cur_y; i<top; i++, num_line++)
 	{
-		DrawBar(tview.x, i * tview.line_h + tview.y + 3, tview.w, tview.line_h, 0xFFFFFF);
-		WriteText(tview.x + 2, i * tview.line_h + tview.y + 3, 0x80, 0x000000, DSDWORD[num_line*4+draw_sruct]);
+		DrawBar(tview.x, i * tview.item_h + tview.y + 3, tview.w, tview.item_h, 0xFFFFFF);
+		WriteText(tview.x + 2, i * tview.item_h + tview.y + 3, 0x80, 0x000000, DSDWORD[num_line*4+draw_sruct]);
 	}
-	DrawBar(0, i * tview.line_h + tview.y + 3, tview.w, -i* tview.line_h + tview.h, 0xFFFFFF);
+	DrawBar(0, i * tview.item_h + tview.y + 3, tview.w, -i* tview.item_h + tview.h, 0xFFFFFF);
 }
 
 stop:

@@ -91,13 +91,13 @@ void MailBoxNetworkProcess() {
 				from = to = date = subj = cur_charset = NULL;
 				WB1.list.ClearList();
 				DrawMailBox();
-				request_len = GetRequest("RETR", itoa(mail_list.current+1));
+				request_len = GetRequest("RETR", itoa(mail_list.cur_y+1));
 				if (Send(socketnum, #request, request_len, 0) == 0xffffffff)
 				{
 					StopConnect("Error while trying to get letter from server");
 					break;
 				}
-				mailsize = atr.GetSize(mail_list.current+1) + 1024;
+				mailsize = atr.GetSize(mail_list.cur_y+1) + 1024;
 				free(mailstart);
 				mailstart = malloc(mailsize);
 				mailend = mailstart;
@@ -305,25 +305,25 @@ void DrawToolbar() {
 void DrawMailList() {
 	int i, on_y, on_x, direction;
 	dword sel_col;
-	mail_list.visible = mail_list.h / mail_list.line_h;
+	mail_list.visible = mail_list.h / mail_list.item_h;
 
 	for (i=30; i<150; i++) DeleteButton(i); 
 	for (i=0; (i<mail_list.visible) && (i+mail_list.first<mail_list.count); i++)
 	{
-		on_y = i*mail_list.line_h + mail_list.y;
-		if (mail_list.current==mail_list.first+i) sel_col=0xEEEeee; else sel_col=0xFFFfff;
-		DrawBar(0, on_y, mail_list.w, mail_list.line_h-1, sel_col);
+		on_y = i*mail_list.item_h + mail_list.y;
+		if (mail_list.cur_y==mail_list.first+i) sel_col=0xEEEeee; else sel_col=0xFFFfff;
+		DrawBar(0, on_y, mail_list.w, mail_list.item_h-1, sel_col);
 		direction = atr.GetDirection(i+mail_list.first+1);
 		on_x = strlen(itoa(i+mail_list.first+1))*6;
 		letter_icons_pal[0]=sel_col;
 		PutPaletteImage(sizeof(letter_icons)/3*direction + #letter_icons, 18,12, on_x+18,
-			mail_list.line_h-12/2+ on_y, 8, #letter_icons_pal);
+			mail_list.item_h-12/2+ on_y, 8, #letter_icons_pal);
 		WriteText(on_x + 42, on_y+5, 0x80, 0, atr.GetSubject(i+mail_list.first+1));
-		DrawBar(0, on_y + mail_list.line_h-1, mail_list.w, 1, 0xCCCccc);
+		DrawBar(0, on_y + mail_list.item_h-1, mail_list.w, 1, 0xCCCccc);
 		WriteText(10, on_y+5, 0x80, 0, itoa(i+mail_list.first+1));
 		WriteText(mail_list.w - 40, on_y+5, 0x80, 0, ConvertSize(atr.GetSize(i+mail_list.first+1)));
 	}
-	DrawBar(0, i*mail_list.line_h + mail_list.y, mail_list.w, -i*mail_list.line_h+mail_list.h, 0xFFFfff);
+	DrawBar(0, i*mail_list.item_h + mail_list.y, mail_list.w, -i*mail_list.item_h+mail_list.h, 0xFFFfff);
 	DrawScroller1();
 }
 
@@ -352,7 +352,7 @@ void InitTWB() {
 	WB1.list.SetSizes(0, mail_list.y+mail_list.h+LIST_INFO_H+1, Form.cwidth - scroll_wv.size_x - 1, 
 		Form.cheight - mail_list.y - mail_list.h - LIST_INFO_H - 1 - status_bar_h, 12);
 	WB1.list.column_max = WB1.list.w - 30 / 6;
-	WB1.list.visible = WB1.list.h / WB1.list.line_h;
+	WB1.list.visible = WB1.list.h / WB1.list.item_h;
 	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h);
 
 	strcpy(#header, #version);

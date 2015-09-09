@@ -48,6 +48,6 @@ void SetOpenedFileFirst(dword in_name)
 	}
 }
 
-dword GetCurrentItemName() {
+dword Getcur_yItemName() {
 	return files_mas[current_playing_file_n]*304 + buf+72;
 }

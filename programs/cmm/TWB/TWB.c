@@ -30,7 +30,6 @@ struct TWebBrowser {
 } WB1;
 
 
-
 byte 	
 	link,
 	ignor_text,
@@ -90,19 +89,19 @@ void TWebBrowser::DrawStyle()
 	if (line) && (!anchor)
 	{
 		start_x = stolbec * list.font_w + body_magrin * DrawBuf.zoom + list.x;
-		start_y = stroka * list.line_h + body_magrin;
+		start_y = stroka * list.item_h + body_magrin;
 		stolbec_len = utf8_strlen(#line) * DrawBuf.zoom;
 		line_length = stolbec_len * list.font_w;
 
 		if (style.h) stroka++;
 		WriteBufText(start_x, start_y, list.font_type, text_colors[text_color_index], #line, buf_data);
 		if (style.b) WriteBufText(start_x+1, start_y, list.font_type, text_colors[text_color_index], #line, buf_data);
-		if (style.i) { stolbec++; DrawBuf.Skew(start_x, start_y, line_length, list.line_h); } // bug with zoom>1
-		if (style.s) DrawBuf.DrawBar(start_x, list.line_h / 2 - DrawBuf.zoom + start_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
-		if (style.u) DrawBuf.DrawBar(start_x, list.line_h - DrawBuf.zoom - DrawBuf.zoom + start_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
+		if (style.i) { stolbec++; DrawBuf.Skew(start_x, start_y, line_length, list.item_h); } // bug with zoom>1
+		if (style.s) DrawBuf.DrawBar(start_x, list.item_h / 2 - DrawBuf.zoom + start_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
+		if (style.u) DrawBuf.DrawBar(start_x, list.item_h - DrawBuf.zoom - DrawBuf.zoom + start_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
 		if (link) {
-			DrawBuf.DrawBar(start_x, list.line_h*style.h + list.line_h - DrawBuf.zoom - DrawBuf.zoom + start_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
-			PageLinks.AddText(#line, line_length, list.line_h*style.h + list.line_h, UNDERLINE);
+			DrawBuf.DrawBar(start_x, list.item_h*style.h + list.item_h - DrawBuf.zoom - DrawBuf.zoom + start_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
+			PageLinks.AddText(#line, line_length, list.item_h*style.h + list.item_h, UNDERLINE);
 		}
 		stolbec += stolbec_len;
 	}
@@ -251,7 +250,7 @@ void TWebBrowser::Perenos()
 //============================================================================================
 void TWebBrowser::SetStyle() {
 	int left1 = 5 + list.x;
-	int top1 = stroka * list.line_h + list.y + 5;
+	int top1 = stroka * list.item_h + list.y + 5;
 	byte opened;
 	byte meta_encoding;
 	//проверяем тег открывается или закрывается
@@ -394,7 +393,7 @@ void TWebBrowser::SetStyle() {
 		if (opened)
 		{
 			NewLine();
-			DrawBuf.DrawBar(style.li_tab * 5 * list.font_w * DrawBuf.zoom + list.x, stroka +1 * list.line_h - 3
+			DrawBuf.DrawBar(style.li_tab * 5 * list.font_w * DrawBuf.zoom + list.x, stroka +1 * list.item_h - 3
 			 - DrawBuf.zoom - DrawBuf.zoom, DrawBuf.zoom*2, DrawBuf.zoom*2, 0x454545);
 		}
 		return;
@@ -413,7 +412,7 @@ void TWebBrowser::SetStyle() {
 		$push edi;
 		NewLine();
 		$pop edi;
-		DrawBuf.DrawBar(5, list.line_h*stroka+4, list.w-10, 1, EDI);
+		DrawBuf.DrawBar(5, list.item_h*stroka+4, list.w-10, 1, EDI);
 		NewLine();
 		return;
 	}
@@ -472,12 +471,12 @@ void TWebBrowser::NewLine()
 	int onleft, ontop;
 
 	onleft = list.x + 5;
-	ontop = stroka * list.line_h + list.y + 5;
+	ontop = stroka * list.item_h + list.y + 5;
 	if (t_html) && (!t_body) return;
-	if (stroka * list.line_h + 5 >= 0) && ( stroka + 1 * list.line_h + 5 < list.h) && (!anchor)
+	if (stroka * list.item_h + 5 >= 0) && ( stroka + 1 * list.item_h + 5 < list.h) && (!anchor)
 	{
-		if (style.align == ALIGN_CENTER) && (DrawBuf.zoom==1) DrawBuf.AlignCenter(onleft,ontop,list.w,list.line_h,stolbec * list.font_w);
-		if (style.align == ALIGN_RIGHT) && (DrawBuf.zoom==1)  DrawBuf.AlignRight(onleft,ontop,list.w,list.line_h,stolbec * list.font_w);
+		if (style.align == ALIGN_CENTER) && (DrawBuf.zoom==1) DrawBuf.AlignCenter(onleft,ontop,list.w,list.item_h,stolbec * list.font_w);
+		if (style.align == ALIGN_RIGHT) && (DrawBuf.zoom==1)  DrawBuf.AlignRight(onleft,ontop,list.w,list.item_h,stolbec * list.font_w);
 	}
 	stroka++;
 	if (style.blq) stolbec = 6; else stolbec = 0;
@@ -490,6 +489,6 @@ int isval(dword text) { if (!strcmp(#val,text)) return 1; else return 0; }
 //============================================================================================
 void TWebBrowser::DrawPage()
 {
-	PutPaletteImage(list.first * list.line_h * DrawBuf.bufw * 4 + buf_data+8, DrawBuf.bufw, list.h, DrawBuf.bufx, DrawBuf.bufy, 32, 0);	
+	PutPaletteImage(list.first * list.item_h * DrawBuf.bufw * 4 + buf_data+8, DrawBuf.bufw, list.h, DrawBuf.bufx, DrawBuf.bufy, 32, 0);	
 	DrawScroller();
 }

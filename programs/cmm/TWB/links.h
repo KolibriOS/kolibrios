@@ -68,7 +68,7 @@ PathShow_data status_text = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, 0, #temp, 0
 void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
 {
 	int i;
-	signed int WBY =  -WB1.list.first*WB1.list.line_h - WB1.DrawBuf.zoom;
+	signed int WBY =  -WB1.list.first*WB1.list.item_h - WB1.DrawBuf.zoom;
 	for (i=0; i<count; i++)
 	{
 		if (mx>links[i].x) && (my>links[i].y) && (mx<links[i].x+links[i].w) && (my<links[i].y+links[i].h)
@@ -133,7 +133,7 @@ void LinksArray::GetAbsoluteURL(dword in_URL)
 	}
 	else
 	{
-		strcpy(#newurl, #history_list[BrowserHistory.current-1].Item); 
+		strcpy(#newurl, #history_list[BrowserHistory.cur_y-1].Item); 
 	}
 
 	if (ESBYTE[in_URL] == '/') //remove everything after site domain name

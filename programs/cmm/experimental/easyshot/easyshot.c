@@ -79,7 +79,7 @@ void TakeScreenshot() {
 
 void ZoomImageTo50percent() {
 	dword point_x,
-	      line_h= b_screen_width * 3,
+	      item_h= b_screen_width * 3,
 	      s_off = s_screen + 3,
 	      b_off = b_screen + 6,
 	      b_off_r,
@@ -91,7 +91,7 @@ void ZoomImageTo50percent() {
 
 	while( (s_off < s_screen + s_screen_length) && (b_off < b_screen + b_screen_length ) ) {
 		
-		if (b_off < b_screen + line_h) || (b_off > b_screen + b_screen_length - line_h)
+		if (b_off < b_screen + item_h) || (b_off > b_screen + b_screen_length - item_h)
 		{
 			ESBYTE[s_off]   = ESBYTE[b_off];
 			ESBYTE[s_off+1] = ESBYTE[b_off+1];
@@ -105,9 +105,9 @@ void ZoomImageTo50percent() {
 			b_off_r = b_off;
 			b_off_g = b_off + 1;
 			b_off_b = b_off + 2;
-			rez_r = ESBYTE[b_off_r+3] + ESBYTE[b_off_r] + ESBYTE[b_off_r-3] + ESBYTE[b_off_r-line_h] + ESBYTE[b_off_r+line_h] / 5;
-			rez_g = ESBYTE[b_off_g+3] + ESBYTE[b_off_g] + ESBYTE[b_off_g-3] + ESBYTE[b_off_g-line_h] + ESBYTE[b_off_g+line_h] / 5;
-			rez_b = ESBYTE[b_off_b+3] + ESBYTE[b_off_b] + ESBYTE[b_off_b-3] + ESBYTE[b_off_b-line_h] + ESBYTE[b_off_b+line_h] / 5;
+			rez_r = ESBYTE[b_off_r+3] + ESBYTE[b_off_r] + ESBYTE[b_off_r-3] + ESBYTE[b_off_r-item_h] + ESBYTE[b_off_r+item_h] / 5;
+			rez_g = ESBYTE[b_off_g+3] + ESBYTE[b_off_g] + ESBYTE[b_off_g-3] + ESBYTE[b_off_g-item_h] + ESBYTE[b_off_g+item_h] / 5;
+			rez_b = ESBYTE[b_off_b+3] + ESBYTE[b_off_b] + ESBYTE[b_off_b-3] + ESBYTE[b_off_b-item_h] + ESBYTE[b_off_b+item_h] / 5;
 			ESBYTE[s_off] = rez_r;
 			ESBYTE[s_off+1] = rez_g;
 			ESBYTE[s_off+2] = rez_b;
@@ -120,7 +120,7 @@ void ZoomImageTo50percent() {
 		point_x+=2;
 		if (point_x >= b_screen_width) 
 		{
-			b_off += line_h;
+			b_off += item_h;
 			point_x = 0;
 		}
 	}

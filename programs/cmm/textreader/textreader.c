@@ -23,6 +23,10 @@ char title[4196];
 
 byte help_opened = false;
 
+char char_width[255];
+dword line_offset;
+#define DWORD 4;
+
 enum {
 	OPEN_FILE,
 	MAGNIFY_MINUS,
@@ -119,7 +123,7 @@ void draw_window()
 
 void DrawPage()
 {
-	_PutImage(list.x,list.y,list.w,list.h,list.first*list.line_h*list.w*3 + font.buffer);
+	_PutImage(list.x,list.y,list.w,list.h,list.first*list.item_h*list.w*3 + font.buffer);
 	DrawScroller();
 }
 
@@ -132,17 +136,16 @@ void PreparePage()
 	dword line_length=30;
 	dword stroka_y = 5;
 	dword stroka=0;
-	char ch_width[255];
 	int i, srch_pos;
 	font.changeSIZE();
 	list.w = Form.cwidth-scroll.size_x-1;
 	//get font chars width, need to increase performance
-	for (i=0; i<256; i++) ch_width[i] = font.symbol_size(i);
+	for (i=0; i<256; i++) char_width[i] = font.symbol_size(i);
 	//get font buffer height
 	for (bufoff=io.buffer_data; ESBYTE[bufoff]; bufoff++)
 	{
 		ch = ESBYTE[bufoff];
-		line_length += ch_width[ch];
+		line_length += char_width[ch];
 		if (line_length>=list.w) || (ch==10) {
 			srch_pos = bufoff;
 			loop()
@@ -161,7 +164,7 @@ void PreparePage()
 	list.SetSizes(0, TOOLBAR_H, list.w, Form.cheight-TOOLBAR_H, font.size.text+1);
 	if (list.count < list.visible) list.count = list.visible;
 
-	font.size.height = list.count+1*list.line_h;
+	font.size.height = list.count+1*list.item_h;
 	font.buffer_size = 0;
 
 	line_length = 30;
@@ -169,7 +172,7 @@ void PreparePage()
 	for (bufoff=io.buffer_data; ESBYTE[bufoff]; bufoff++)
 	{
 		ch = ESBYTE[bufoff];
-		line_length += ch_width[ch];
+		line_length += char_width[ch];
 		if (line_length>=list.w) || (ch==10)
 		{
 			//set word break
@@ -183,7 +186,7 @@ void PreparePage()
 			i = bufoff-line_start;
 			strlcpy(#line, line_start, i);
 			font.prepare_buf(8,stroka_y,list.w,font.size.height, #line);
-			stroka_y += list.line_h;
+			stroka_y += list.item_h;
 			line_start = bufoff;
 			line_length = 30;
 		}

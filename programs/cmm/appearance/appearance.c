@@ -78,28 +78,28 @@ void Draw_List()
 		cur = list[active].first;
 		strcpy(#temp_filename, io.dir.position(files_mas[i+cur]));
 		temp_filename[strlen(#temp_filename)-4] = 0;
-		yyy = i*list[active].line_h+list[active].y;
+		yyy = i*list[active].item_h+list[active].y;
 		
-		if (list[active].current-list[active].first==i)
+		if (list[active].cur_y-list[active].first==i)
 		{
 			if (system.color.work_button!=system.color.work)
 			{
-				DrawBar(0, yyy, list[active].w, list[active].line_h, system.color.work_button);
+				DrawBar(0, yyy, list[active].w, list[active].item_h, system.color.work_button);
 				if (i<list[active].count) WriteText(12,yyy+list[active].text_y,0x80,system.color.work_button_text, #temp_filename);
 			}
 			else
 			{
-				DrawBar(0, yyy, list[active].w, list[active].line_h, system.color.grab_button);
+				DrawBar(0, yyy, list[active].w, list[active].item_h, system.color.grab_button);
 				if (i<list[active].count) WriteText(12,yyy+list[active].text_y,0x80,system.color.grab_button_text, #temp_filename);
 			}
 		}
 		else
 		{
-			DrawBar(0,yyy,list[active].w, list[active].line_h, 0xFFFfff);
+			DrawBar(0,yyy,list[active].w, list[active].item_h, 0xFFFfff);
 			WriteText(12,yyy+list[active].text_y,0x80,0, #temp_filename);
 		}
 	}
-	DrawBar(0,list_last*list[active].line_h+list[active].y, list[active].w, -list_last*list[active].line_h+ list[active].h, 0xFFFfff);
+	DrawBar(0,list_last*list[active].item_h+list[active].y, list[active].w, -list_last*list[active].item_h+ list[active].h, 0xFFFfff);
 	DrawScroller();
 }
 
@@ -123,13 +123,13 @@ void Apply()
 {
 	if (list[SKINS].active)
 	{
-		cur = list[SKINS].current;
+		cur = list[SKINS].cur_y;
 		sprintf(#cur_file_path,"%s/%s",#folder_path,io.dir.position(files_mas[cur]));
 		SetSystemSkin(#cur_file_path);
 	} 
 	if (list[WALLPAPERS].active)
 	{
-		cur = list[WALLPAPERS].current;
+		cur = list[WALLPAPERS].cur_y;
 		sprintf(#cur_file_path,"\\S__%s/%s",#folder_path,io.dir.position(files_mas[cur]));
 		RunProgram("/sys/media/kiv", #cur_file_path);
 		Draw_List();
@@ -149,7 +149,7 @@ void main()
 
 	SetEventMask(0x27);
 	load_dll(boxlib, #box_lib_init,0);
-	list[SKINS].current = list[WALLPAPERS].current = -1;
+	list[SKINS].cur_y = list[WALLPAPERS].cur_y = -1;
 	list[SKINS].first = list[WALLPAPERS].first = 0;
 	TabClick(WALLPAPERS);
 	list[WALLPAPERS].SetSizes(0, 230, 350, 400-PANEL_H, 18);

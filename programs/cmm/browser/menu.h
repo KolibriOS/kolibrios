@@ -59,19 +59,19 @@ void DrawMenuList()
 
 	for (N=0; N<menu.count; N++;)
 	{
-		if (N==menu.current) 
-			DrawBar(menu.x, N*menu.line_h+menu.y, menu.w-3, menu.line_h, 0x94AECE);
+		if (N==menu.cur_y) 
+			DrawBar(menu.x, N*menu.item_h+menu.y, menu.w-3, menu.item_h, 0x94AECE);
 		else
 		{
-			DrawBar(menu.x, N*menu.line_h+menu.y, menu.w-3, menu.line_h, col_bg);
-			WriteText(19,N*menu.line_h+9,0x80,0xf2f2f2,ITEMS_LIST[N]);
+			DrawBar(menu.x, N*menu.item_h+menu.y, menu.w-3, menu.item_h, col_bg);
+			WriteText(19,N*menu.item_h+9,0x80,0xf2f2f2,ITEMS_LIST[N]);
 		}
-		WriteText(18,N*menu.line_h+8,0x80,0x000000,ITEMS_LIST[N]);
+		WriteText(18,N*menu.item_h+8,0x80,0x000000,ITEMS_LIST[N]);
 	}
 }
 
 void ItemClick()
 {
-	action_buf = VIEW_SOURCE + menu.current;
+	action_buf = VIEW_SOURCE + menu.cur_y;
 	ExitProcess();
 }

@@ -124,7 +124,7 @@ void main()
 				mouse.get();
 				if (WB1.list.MouseOver(mouse.x, mouse.y))
 				{
-					PageLinks.Hover(mouse.x, WB1.list.first*WB1.list.line_h + mouse.y, link_color_inactive, link_color_active, bg_color);
+					PageLinks.Hover(mouse.x, WB1.list.first*WB1.list.item_h + mouse.y, link_color_inactive, link_color_active, bg_color);
 					if (bufsize) && (mouse.pkm) && (mouse.up) { CreateThread(#menu_rmb,#stak+4092); break; }
 					if (WB1.list.MouseScroll(mouse.vert)) WB1.DrawPage();
 				}
@@ -214,7 +214,7 @@ void main()
 							http_free stdcall (http_transfer);
 							http_transfer=0;
 							PageLinks.GetAbsoluteURL(#URL);
-							BrowserHistory.current--;
+							BrowserHistory.cur_y--;
 							strcpy(#editURL, #URL);
 							DrawEditBox();
 							OpenPage();
@@ -244,7 +244,7 @@ void SetElementSizes()
 		Form.cheight - TOOLBAR_H - STATUSBAR_H, WB1.list.font_h + WB1.DrawBuf.zoom + WB1.DrawBuf.zoom * WB1.DrawBuf.zoom);
 	WB1.list.wheel_size = 7;
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w;
-	WB1.list.visible = WB1.list.h - 5 / WB1.list.line_h;
+	WB1.list.visible = WB1.list.h - 5 / WB1.list.item_h;
 	if (WB1.list.w!=WB1.DrawBuf.bufw) WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h * 30);
 }
 
@@ -486,7 +486,7 @@ void ClickLink()
 	if (http_transfer > 0) 
 	{
 		StopLoading();
-		BrowserHistory.current--;
+		BrowserHistory.cur_y--;
 	}
 
 	strcpy(#URL, PageLinks.GetURL(PageLinks.active));	

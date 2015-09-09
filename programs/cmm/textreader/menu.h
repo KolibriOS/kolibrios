@@ -40,23 +40,23 @@ void DrawMenuList()
 	int N;
 	for (N=0; N<menu.count; N++;)
 	{
-		if (N==menu.current) 
-			DrawBar(menu.x, N*menu.line_h+menu.y, menu.w-3, menu.line_h, 0xFFFfff);
+		if (N==menu.cur_y) 
+			DrawBar(menu.x, N*menu.item_h+menu.y, menu.w-3, menu.item_h, 0xFFFfff);
 		else
 		{
-			DrawBar(menu.x, N*menu.line_h+menu.y, menu.w-3, menu.line_h, 0xE4DFE1);
-			WriteText(19,N*menu.line_h+9,0x80,0xf2f2f2,charsets[N]);
+			DrawBar(menu.x, N*menu.item_h+menu.y, menu.w-3, menu.item_h, 0xE4DFE1);
+			WriteText(19,N*menu.item_h+9,0x80,0xf2f2f2,charsets[N]);
 		}
-		WriteText(18,N*menu.line_h+8,0x80,0x000000,charsets[N]);
+		WriteText(18,N*menu.item_h+8,0x80,0x000000,charsets[N]);
 	}
-	WriteText(5, encoding*menu.line_h+7, 0x80, 0x777777, "\x10");
+	WriteText(5, encoding*menu.item_h+7, 0x80, 0x777777, "\x10");
 }
 
 void ItemClick()
 {
-	if (encoding!=menu.current)
+	if (encoding!=menu.cur_y)
 	{
-		encoding = menu.current;
+		encoding = menu.cur_y;
 		action_buf = true;
 	}
 	ExitProcess();

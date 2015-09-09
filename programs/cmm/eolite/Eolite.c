@@ -193,12 +193,12 @@ void main()
 					{
 						if (mouse.y>=files.y)//&&(mouse.click)
 						{
-							id = mouse.y - files.y / files.line_h + files.first;
-							if (files.current!=id)
+							id = mouse.y - files.y / files.item_h + files.first;
+							if (files.cur_y!=id)
 							{
 								mouse.clearTime();
 								if(!mouse.up)&&(id-files.first<files.visible) {
-									files.current = id;
+									files.cur_y = id;
 									List_ReDraw();
 								}
 							}
@@ -214,7 +214,7 @@ void main()
 						
 						if (files.MouseOver(mouse.x, mouse.y))
 						{
-							files.current = mouse.y - files.y / files.line_h + files.first;
+							files.cur_y = mouse.y - files.y / files.item_h + files.first;
 							List_ReDraw();
 							menu_stak = malloc(4096);
 							CreateThread(#FileMenu,menu_stak+4092);	
@@ -457,8 +457,8 @@ void main()
 								Del_Form();
 								break;
 						case SCAN_CODE_INS:
-								selected_offset = file_mas[files.current]*304 + buf+32 + 7;
-								if (files.current==0) && (!strncmp(selected_offset+33, "..", 2)) goto _INSERT_END; //do not selec ".." directory
+								selected_offset = file_mas[files.cur_y]*304 + buf+32 + 7;
+								if (files.cur_y==0) && (!strncmp(selected_offset+33, "..", 2)) goto _INSERT_END; //do not selec ".." directory
 								if (ESBYTE[selected_offset])
 								{
 									ESBYTE[selected_offset]=0;
@@ -476,12 +476,12 @@ void main()
 								FnProcess(key_scancode-58);
 								break; 
 						default:    
-								for (i=files.current+1; i<files.count; i++)
+								for (i=files.cur_y+1; i<files.count; i++)
 								{
 									strcpy(#temp, file_mas[i]*304+buf+72);
 									if (temp[0]==key_ascii) || (temp[0]==key_ascii-32)
 									{
-										files.current = i - 1;
+										files.cur_y = i - 1;
 										files.KeyDown();
 										List_ReDraw();
 										break;
@@ -575,7 +575,7 @@ void DrawFilePanels()
 	if (!two_panels)
 	{
 		DrawDeviceAndActionsLeftPanel();
-		files.SetSizes(192, 57, Form.cwidth - 210, Form.cheight - 59, files.line_h);
+		files.SetSizes(192, 57, Form.cwidth - 210, Form.cheight - 59, files.item_h);
 		DrawList();
 		Open_Dir(#path,ONLY_SHOW);
 	}
@@ -590,25 +590,25 @@ void DrawFilePanels()
 			llist_copy(#files, #files_inactive);
 			strcpy(#path, #inactive_path);
 			col_selec = 0xCCCccc;
-			files.SetSizes(Form.cwidth/2, 57+22, Form.cwidth/2 -17, Form.cheight-59-22, files.line_h);
+			files.SetSizes(Form.cwidth/2, 57+22, Form.cwidth/2 -17, Form.cheight-59-22, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 			llist_copy(#files, #files_active);
 			strcpy(#path, #active_path);
 			col_selec = 0x94AECE;
-			files.SetSizes(2, 57+22, Form.cwidth/2-2-17, Form.cheight-59-22, files.line_h);
+			files.SetSizes(2, 57+22, Form.cwidth/2-2-17, Form.cheight-59-22, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 		}
 		if (active_panel==2)
 		{
-			files.SetSizes(2, 57+22, Form.cwidth/2-2-17, Form.cheight-59-22, files.line_h);
+			files.SetSizes(2, 57+22, Form.cwidth/2-2-17, Form.cheight-59-22, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 			llist_copy(#files, #files_active);
 			strcpy(#path, #active_path);
 			col_selec = 0x94AECE;
-			files.SetSizes(Form.cwidth/2, 57+22, Form.cwidth/2 -17, Form.cheight-59-22, files.line_h);
+			files.SetSizes(Form.cwidth/2, 57+22, Form.cwidth/2 -17, Form.cheight-59-22, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 		}
@@ -619,30 +619,30 @@ void DrawFilePanels()
 void List_ReDraw()
 {
 	int all_lines_h;
-	static int old_current, old_first;
+	static int old_cur_y, old_first;
 
 	files.CheckDoesValuesOkey(); //prevent some shit
 
 	if (list_full_redraw) || (old_first != files.first)
 	{
-		old_current = files.current;
+		old_cur_y = files.cur_y;
 		old_first = files.first;
 		list_full_redraw = false;
 		goto _ALL_LIST_REDRAW;
 	}
-	if (old_current != files.current)
+	if (old_cur_y != files.cur_y)
 	{
-		if (old_current-files.first<files.visible) Line_ReDraw(0xFFFFFF, old_current-files.first);
-		Line_ReDraw(col_selec, files.current-files.first);
-		old_current = files.current;
+		if (old_cur_y-files.first<files.visible) Line_ReDraw(0xFFFFFF, old_cur_y-files.first);
+		Line_ReDraw(col_selec, files.cur_y-files.first);
+		old_cur_y = files.cur_y;
 		return;
 	}
 
 	_ALL_LIST_REDRAW:
 
-	for (j=0; j<files.visible; j++) if (files.current-files.first!=j) Line_ReDraw(0xFFFFFF, j); else Line_ReDraw(col_selec, files.current-files.first);
+	for (j=0; j<files.visible; j++) if (files.cur_y-files.first!=j) Line_ReDraw(0xFFFFFF, j); else Line_ReDraw(col_selec, files.cur_y-files.first);
 	//in the bottom
-	all_lines_h = j * files.line_h;
+	all_lines_h = j * files.item_h;
 	DrawBar(files.x,all_lines_h + files.y,files.w,files.h - all_lines_h,0xFFFFFF);
 	DrawBar(files.x+files.w-141,all_lines_h + files.y,1,files.h - all_lines_h,system.color.work);
 	DrawBar(files.x+files.w-68,all_lines_h + files.y,1,files.h - all_lines_h,system.color.work);
@@ -655,14 +655,14 @@ void Line_ReDraw(dword bgcol, filenum){
 	      ext1, attr,
 	      file_offet,
 	      file_name_off,
-	      y=filenum*files.line_h+files.y;
+	      y=filenum*files.item_h+files.y;
 	      BDVK file;
 	if (filenum==-1) return;
-	DrawBar(files.x,y,3,files.line_h,bgcol); 
-	DrawBar(files.x+19,y,files.w-19,files.line_h,bgcol);
+	DrawBar(files.x,y,3,files.item_h,bgcol); 
+	DrawBar(files.x+19,y,files.w-19,files.item_h,bgcol);
 	DrawBar(files.x+3,y+17,16,1,bgcol);
-	if (files.line_h>18) DrawBar(files.x+3,y+18,16,files.line_h-18,bgcol);
-	if (files.line_h>15) DrawBar(files.x+3,y,16,files.line_h-15,bgcol); 
+	if (files.item_h>18) DrawBar(files.x+3,y+18,16,files.item_h-18,bgcol);
+	if (files.item_h>15) DrawBar(files.x+3,y,16,files.item_h-15,bgcol); 
 
 	file_offet = file_mas[filenum+files.first]*304 + buf+32;
 	attr = ESDWORD[file_offet];
@@ -674,13 +674,13 @@ void Line_ReDraw(dword bgcol, filenum){
 	{	
 		ext1 = strrchr(file_name_off,'.') + file_name_off;
 		if (ext1==file_name_off) ext1 = " \0"; //if no extension then show nothing 
-		Put_icon(ext1, files.x+3, files.line_h/2-7+y, bgcol, 0);
+		Put_icon(ext1, files.x+3, files.item_h/2-7+y, bgcol, 0);
 		WriteText(7-strlen(ConvertSize(file.sizelo))*6+files.x+files.w - 58, files.text_y + y +1,files.font_type,0,ConvertSize(file.sizelo));
 	}
 	else
 	{
 		if (!strncmp(file_name_off,"..",3)) ext1=".."; else ext1="<DIR>";
-		Put_icon(ext1, files.x+3, files.line_h/2-7+y, bgcol, 0);		
+		Put_icon(ext1, files.x+3, files.item_h/2-7+y, bgcol, 0);		
 	}
 
 	if (TestBit(attr, 1)) || (TestBit(attr, 2)) text_col=0xA6A6B7; //system or hiden?
@@ -708,11 +708,11 @@ void Line_ReDraw(dword bgcol, filenum){
 	else
 	{
 		font.bg_color = bgcol;
-		font.prepare(files.x + 23, files.line_h - font.height / 2 + y, file_name_off);
+		font.prepare(files.x + 23, files.item_h - font.height / 2 + y, file_name_off);
 		font.show();
 	}
-	DrawBar(files.x+files.w-141,y,1,files.line_h,system.color.work); //gray line 1
-	DrawBar(files.x+files.w-68,y,1,files.line_h,system.color.work); //gray line 2
+	DrawBar(files.x+files.w-141,y,1,files.item_h,system.color.work); //gray line 1
+	DrawBar(files.x+files.w-68,y,1,files.item_h,system.color.work); //gray line 2
 }
 
 
@@ -734,7 +734,7 @@ void Open_Dir(dword dir_path, redraw){
 		}
 		maxcount = sizeof(file_mas)/sizeof(dword)-1;
 		if (files.count>maxcount) files.count = maxcount;
-		if (files.count>0) && (files.current-files.first==-1) files.current=0;
+		if (files.count>0) && (files.cur_y-files.first==-1) files.cur_y=0;
 	}
 	if (files.count!=-1)
 	{
@@ -746,7 +746,7 @@ void Open_Dir(dword dir_path, redraw){
 			PathShow_draw stdcall(#PathShow);
 		}
 		HistoryPath(ADD_NEW_PATH);
-		files.visible = files.h / files.line_h;
+		files.visible = files.h / files.item_h;
 		if (files.count < files.visible) files.visible = files.count;
 		if (redraw!=ONLY_SHOW) Sorting();
 		list_full_redraw = true;
@@ -943,7 +943,7 @@ void SelectFileByName(dword that_file)
    	Open_Dir(#path,ONLY_OPEN);
 	if (!real_files_names_case) strttl(that_file);
 	for (ind=files.count-1; ind>=0; ind--;) { if (!strcmp(file_mas[ind]*304+buf+72,that_file)) break; }
-	files.current = ind - 1;
+	files.cur_y = ind - 1;
 	files.KeyDown();
 	List_ReDraw();
 }
@@ -983,7 +983,7 @@ void Open(byte rez)
 		if (!strncmp(#file_name,"..",3)) { Dir_Up(); return; }
 		strcpy(#path, #file_path);
 		if (path[strlen(#path)-1]!='/') chrcat(#path, '/'); //need "/" in the end
-		files.first=files.current=0;
+		files.first=files.cur_y=0;
 		Open_Dir(#path,WITH_REDRAW);
 	}
 }

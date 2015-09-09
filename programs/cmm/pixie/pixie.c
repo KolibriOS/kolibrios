@@ -26,8 +26,9 @@ Goto next/previous track: Ctrl + Left/Right
 Change sound volume: Left/Right key\nMute: M key' -St\n"
 
 scroll_bar scroll1 = { 5,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
-llist list;
+
 proc_info Form;
+llist list;
 
 char pixie_ini_path[4096];
 
@@ -83,7 +84,7 @@ void OpenFolder(dword path111)
 	list.SetSizes(1, skin.h, skin.w-1, 198, 18);
 	if (list.count <= list.visible) 
 	{
-		list.h = list.count * list.line_h;
+		list.h = list.count * list.item_h;
 		list.visible = list.count;
 	}
 	else
@@ -136,7 +137,7 @@ void main()
 			if (list.MouseOver(mouse.x, mouse.y))
 			{
 				if (mouse.vert) if (list.MouseScroll(mouse.vert)) DrawPlayList();
-				if (mouse.dblclick) {current_playing_file_n=list.current; StartPlayingMp3();}
+				if (mouse.dblclick) {current_playing_file_n=list.cur_y; StartPlayingMp3();}
 				if (mouse.down) && (mouse.key&MOUSE_LEFT) if (list.ProcessMouse(mouse.x, mouse.y)) DrawPlayList();
 				if (mouse.down) && (mouse.key&MOUSE_RIGHT) NotifyAndBackFocus(ABOUT_MESSAGE);
 			}
@@ -215,7 +216,7 @@ void main()
 			if (key_scancode==SCAN_CODE_LEFT) RunProgram("@VOLUME", "-");
 			if (key_scancode==SCAN_CODE_RIGHT) RunProgram("@VOLUME", "+");
 			if (key_scancode==050) RunProgram("@VOLUME", "m");
-			if (key_scancode==SCAN_CODE_ENTER) { current_playing_file_n=list.current; StartPlayingMp3(); }
+			if (key_scancode==SCAN_CODE_ENTER) { current_playing_file_n=list.cur_y; StartPlayingMp3(); }
 			if (key_scancode==025) || (key_scancode==SCAN_CODE_SPACE) PlayAndPauseClick();
 			if (list.ProcessKey(key_scancode)) DrawPlayList();
 			break;
@@ -260,30 +261,30 @@ void DrawPlayList()
 		temp_filename[strlen(#temp_filename)-4] = '\0';
 		if (strlen(#temp_filename)>47) strcpy(#temp_filename+44, "..."); 
 		
-		yyy = i*list.line_h+list.y;
+		yyy = i*list.item_h+list.y;
 		
 		//this is selected file
-		if (list.current - list.first == i)
+		if (list.cur_y - list.first == i)
 		{
 			if (i>=list.count) continue;
-			DrawBar(list.x, yyy, list.w, list.line_h, theme.color_list_active_bg);
+			DrawBar(list.x, yyy, list.w, list.item_h, theme.color_list_active_bg);
 			WriteText(12,yyy+list.text_y,0x80, theme.color_list_active_text, #temp_filename);
 		}
 		//this is not selected file
 		else
 		{
 			if (i>=list.count) continue;
-			DrawBar(list.x,yyy,list.w, list.line_h, theme.color_list_bg);
+			DrawBar(list.x,yyy,list.w, list.item_h, theme.color_list_bg);
 			WriteText(12,yyy+list.text_y,0x80, theme.color_list_text, #temp_filename);
 		}
-		//this is current playing file
+		//this is cur_y playing file
 		if (i + list.first == current_playing_file_n) && (playback_mode == PLAYBACK_MODE_PLAYING)
 		{
 			WriteText(3, yyy+list.text_y,0x80, theme.color_list_active_pointer, "\x10");
 			WriteText(12,yyy+list.text_y,0x80, theme.color_list_active_text, #temp_filename);
 		}
 	}
-	DrawBar(list.x,list.visible * list.line_h + list.y, list.w, -list.visible * list.line_h + list.h, theme.color_list_bg);
+	DrawBar(list.x,list.visible * list.item_h + list.y, list.w, -list.visible * list.item_h + list.h, theme.color_list_bg);
 	DrawScroller();
 }
 
@@ -319,7 +320,7 @@ void StartPlayingMp3()
 	if (current_playing_file_n > list.count) { current_playing_file_n = list.count; return; }
 	if (current_playing_file_n < 0) { current_playing_file_n = 0; return; }
 	playback_mode = PLAYBACK_MODE_PLAYING;
-	strlcpy(#current_filename, GetCurrentItemName(), sizeof(current_filename));
+	strlcpy(#current_filename, Getcur_yItemName(), sizeof(current_filename));
 	sprintf(#item_path,"\"%s/%s\"",#work_folder,#current_filename);
 	DrawPlayList();
 	DrawTopPanel();
@@ -343,7 +344,7 @@ void draw_window() {
 
 void DrawTopPanel()
 {
-	char current_playing_title[245];
+	char cur_y_playing_title[245];
 	img_draw stdcall(skin.image, 0, 0, Form.width - 14, skin.h, 0, 0);
 	img_draw stdcall(skin.image, Form.width - 14, 0, 15, skin.h, skin.w - 15, 0);
 	if (playback_mode == PLAYBACK_MODE_STOPED) img_draw stdcall(skin.image, 13, 0, 22, skin.h, 300, 0);
@@ -358,10 +359,10 @@ void DrawTopPanel()
 	if (window_mode == WINDOW_MODE_NORMAL)
 	{
 		DefineButton(Form.width - 26,  1, 12, 11, BUTTON_WINDOW_MINIMIZE + BT_HIDE, 0);
-		strcpy(#current_playing_title, #current_filename);
-		current_playing_title[strlen(#current_playing_title)-4] = '\0';
-		if (strlen(#current_playing_title) > 29) strcpy(#current_playing_title + 26, "..."); 
-		WriteText(90, 9, 0x80, theme.color_top_panel_text, #current_playing_title);
+		strcpy(#cur_y_playing_title, #current_filename);
+		cur_y_playing_title[strlen(#cur_y_playing_title)-4] = '\0';
+		if (strlen(#cur_y_playing_title) > 29) strcpy(#cur_y_playing_title + 26, "..."); 
+		WriteText(90, 9, 0x80, theme.color_top_panel_text, #cur_y_playing_title);
 	}
 	else 
 	{

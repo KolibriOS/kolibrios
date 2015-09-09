@@ -43,8 +43,8 @@ void settings_dialog()
 				else if (id==21) { action_buf=109; real_files_names_case ^= 1; }
 				else if (id==22) info_after_copy ^= 1;
 				else if (id==24) two_panels ^= 1;
-				else if (id==25) { files.line_h++; files_active.line_h = files_inactive.line_h = files.line_h; }
-				else if (id==26) && (files.line_h>18) files.line_h--;
+				else if (id==25) { files.item_h++; files_active.item_h = files_inactive.item_h = files.item_h; }
+				else if (id==26) && (files.item_h>18) files.item_h--;
 				else if (id==27) MOUSE_TIME++;
 				else if (id==28) && (MOUSE_TIME>29) MOUSE_TIME--;
 				else if (id==30) { font.size.text++; IF(!font.changeSIZE()) font.size.text--; BigFontsChange(); }
@@ -81,7 +81,7 @@ void DrawSettingsCheckBoxes()
 	CheckBox2(10, 55, 22, NOTIFY_COPY_END,  info_after_copy);
 	CheckBox2(10, 77, 24, USE_TWO_PANELS,  two_panels); 
 	MoreLessBox(10, 103, 18, 27, 28, #system.color, MOUSE_TIME, T_DOUBLE_CLICK);
-	MoreLessBox(10, 130, 18, 25, 26, #system.color, files.line_h, LIST_LINE_HEIGHT);
+	MoreLessBox(10, 130, 18, 25, 26, #system.color, files.item_h, LIST_LINE_HEIGHT);
 	if (font.data) MoreLessBox(10, 157, 18, 30, 31, #system.color, font.size.text, FONT_SIZE_LABEL);
 }
 
@@ -96,7 +96,7 @@ void LoadIniSettings()
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "InfoAfterCopy",     0); info_after_copy = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "FontSize",          9); font.size.text = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "TwoPanels",         0); two_panels = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #config_section, "LineHeight",       18); files.line_h = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #config_section, "LineHeight",       18); files.item_h = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "TimeDoubleClick",  50); MOUSE_TIME = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinX", 200); WinX = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinY", 50); WinY = EAX;
@@ -112,7 +112,7 @@ void SaveIniSettings()
 	ini_set_int stdcall (eolite_ini_path, #config_section, "InfoAfterCopy", info_after_copy);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "FontSize", font.size.text);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "TwoPanels", two_panels);
-	ini_set_int stdcall (eolite_ini_path, #config_section, "LineHeight", files.line_h);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "LineHeight", files.item_h);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "TimeDoubleClick", MOUSE_TIME);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "WinX", Form.left);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "WinY", Form.top);
@@ -126,7 +126,7 @@ void Write_Error(int error_number)
 {
 	char error_message[500];
 	dword ii;
-	if (files.current>=0) Line_ReDraw(0xFF0000, files.current);
+	if (files.cur_y>=0) Line_ReDraw(0xFF0000, files.cur_y);
 	pause(5);
 	sprintf(#error_message,"\"%s\n%s\" -%s","Eolite",get_error(error_number),"tE");
 	notify(#error_message);	
@@ -148,9 +148,9 @@ void SetAppColors()
 
 void BigFontsChange()
 {
-	files.line_h = font.size.text + 4;
-	if (files.line_h<18) files.line_h = 18;
-	files_active.line_h = files_inactive.line_h = files.line_h;
+	files.item_h = font.size.text + 4;
+	if (files.item_h<18) files.item_h = 18;
+	files_active.item_h = files_inactive.item_h = files.item_h;
 }
 
 

@@ -44,7 +44,7 @@ void ParseMail()
 		debug("ConvertToDOS");
 		ConvertToDOS(mdata, mailstart);
 		debug("SetAtrFromCurr");
-		atr.SetAtrFromCurr(mail_list.current+1);
+		atr.SetAtrFromCurr(mail_list.cur_y+1);
 		DrawMailBox();
 	}
 }

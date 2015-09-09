@@ -64,7 +64,7 @@ void FileMenu()
 		menu.visible++;
 	}
 	menu.w = menu.w + 3 * menu.font_w + 50;
-	menu.h = menu.count * menu.line_h;
+	menu.h = menu.count * menu.item_h;
 	SetEventMask(100111b);
 	goto _MENU_DRAW;
 	
@@ -86,7 +86,7 @@ void FileMenu()
 				
 		case evReDraw: _MENU_DRAW:
 				if (menu_call_mouse) DefineAndDrawWindow(mouse.x+Form.left+5, mouse.y+Form.top+GetSkinHeight(),menu.w+3,menu.h+6,0x01, 0, 0, 0x01fffFFF);
-				else DefineAndDrawWindow(Form.left+files.x+15, files.line_h*files.current+files.y+Form.top+30,menu.w+3,menu.h+6,0x01, 0, 0, 0x01fffFFF);
+				else DefineAndDrawWindow(Form.left+files.x+15, files.item_h*files.cur_y+files.y+Form.top+30,menu.w+3,menu.h+6,0x01, 0, 0, 0x01fffFFF);
 				GetProcessInfo(#MenuForm, SelfInfo);
 				DrawRectangle(0,0,menu.w+1,menu.h+2,system.color.work_graph);
 				DrawBar(1,1,menu.w,1,0xFFFfff);
@@ -102,19 +102,19 @@ void MenuListRedraw()
 	for (index=0; file_captions[index*3]!=0; index++)
 	{
 		if ((itdir) && (file_captions[index*3+2]>=200)) continue;
-		DrawBar(1,start_y+2,1,menu.line_h,0xFFFfff);
-		if (start_y/menu.line_h==menu.current)
+		DrawBar(1,start_y+2,1,menu.item_h,0xFFFfff);
+		if (start_y/menu.item_h==menu.cur_y)
 		{
 			cur_action_buf = file_captions[index*3+2];
-			DrawBar(2,start_y+2,menu.w-1,menu.line_h,0xFFFfff);
+			DrawBar(2,start_y+2,menu.w-1,menu.item_h,0xFFFfff);
 		}
 		else
 		{
-			DrawBar(2,start_y+2,menu.w-1,menu.line_h,system.color.work);
+			DrawBar(2,start_y+2,menu.w-1,menu.item_h,system.color.work);
 			WriteText(8,start_y+menu.text_y+4,menu.font_type,0xf2f2f2,file_captions[index*3]);
 		}
 		WriteText(7, start_y + menu.text_y + 3, menu.font_type, system.color.work_text, file_captions[index*3]);
 		WriteText(-strlen(file_captions[index*3+1])-1*menu.font_w + menu.w, start_y + menu.text_y + 3, menu.font_type, 0x888888, file_captions[index*3+1]);
-		start_y+=menu.line_h;
+		start_y+=menu.item_h;
 	}	
 }
