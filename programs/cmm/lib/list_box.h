@@ -108,11 +108,14 @@ int llist::ProcessMouse(int xx, yy)
 			cur_y = cur_y_temp;
 			ret = 1;
 		}
-		cur_x_temp = xx - x / item_w;
-		if (cur_x_temp != cur_x) && (cur_x_temp<column_max)
-		{
-			cur_x = cur_x_temp;
-			ret = 1;
+		if (horisontal_selelection) 
+		{		
+			cur_x_temp = xx - x / item_w;
+			if (cur_x_temp != cur_x) && (cur_x_temp<column_max)
+			{
+				cur_x = cur_x_temp;
+				ret = 1;
+			}
 		}
 	}
 	return ret;
