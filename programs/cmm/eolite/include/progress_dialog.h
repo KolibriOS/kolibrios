@@ -54,5 +54,5 @@ void Operation_Draw_Progress(dword copying_filename) {
 	progressbar_draw stdcall (#copy_bar);
 	progressbar_progress stdcall (#copy_bar);
 	//copy_bar.value++;
-	pause(50);
+	//pause(50);
 }
