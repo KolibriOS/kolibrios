@@ -50,7 +50,7 @@ pushad
 	shl ebx,16
 	mov bx,prop_wnd_width
 	mov cx,word[procinfo.box.top]
-	add cx,5 ;word[buf_0.t]
+	add cx,42 ;word[buf_0.t]
 	shl ecx,16
 	mov cx,250
 	mov edx,0xffffd0
@@ -167,13 +167,18 @@ prop_button:
 		;копировать в буфер
 		stdcall [tl_node_get_data],tree3
 		pop esi
-		cmp esi,0
-		je .no_select_0
+		or esi,esi
+		jz .no_select_0
 			mov edi,[tedit0.buffer]
+			mov dword[edi],MAX_COLOR_WORD_LEN
+			mov dword[edi+4],0 ;text data
+			mov dword[edi+8],1 ;code 866
+			add edi,12 ;system buffer header size
 			mov byte[edi+MAX_COLOR_WORD_LEN],0
 			mov ecx,MAX_COLOR_WORD_LEN
 			cld
 			rep movsb
+			mcall 54,2,12+MAX_COLOR_WORD_LEN,[tedit0.buffer]
 		.no_select_0:
 	@@:
 
