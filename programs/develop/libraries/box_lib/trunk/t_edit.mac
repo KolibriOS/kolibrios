@@ -2624,7 +2624,13 @@ proc ted_but_copy, edit:dword
 		mov al,byte[edx]
 		mov byte[ebx],al
 		inc ebx
-
+		cmp al,13
+		jne .no_13
+			mov byte[ebx],10 ;делаем конец строки в буфере 13,10 для совместимости с другими программами
+			inc ebx
+			inc ecx
+		.no_13:
+		
 		call ted_iterat_next
 		jmp @b
 	@@:
