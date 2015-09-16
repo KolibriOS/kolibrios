@@ -163,14 +163,14 @@ mov	ebp,lib0
 	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Buf, [main_menu_buf]
 	stdcall [ksubmenu_add], [main_menu], eax
 
-	; stdcall [ksubmenu_new]
-	; mov [main_menu_search], eax
-	; stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Search_Text, 10
-	; stdcall [ksubmenu_add], [main_menu_search], eax
-	; stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Search_Keywords, 12
-	; stdcall [ksubmenu_add], [main_menu_search], eax
-	; stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Search, [main_menu_search]
-	; stdcall [ksubmenu_add], [main_menu], eax
+	stdcall [ksubmenu_new]
+	mov [main_menu_search], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Search_Text, 10
+	stdcall [ksubmenu_add], [main_menu_search], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Search_Keywords, 12
+	stdcall [ksubmenu_add], [main_menu_search], eax
+	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Search, [main_menu_search]
+	stdcall [ksubmenu_add], [main_menu], eax
 
 	stdcall [ksubmenu_new]
 	mov [main_menu_view], eax
@@ -614,7 +614,7 @@ IncludeUGlobals
 	thread:
 	rb 1024
     thread_coords:
-	rb 1024
+	rb 4096
 stacktop:
 	sys_path: ;путь откуда запустился исполняемый файл
 		rb 4096
