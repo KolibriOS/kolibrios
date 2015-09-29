@@ -9,6 +9,7 @@
 	?define LIST_LINE_HEIGHT "Высота строки в списке"
 	?define NOTIFY_COPY_END "Уведомлять о завершении копирования"
 	?define T_DOUBLE_CLICK "Время двойного клика (в сотых)"
+	#define SAVE_PATH_AS_DEFAULT "Сохранить текущий путь по умолчанию"
 #else
 	?define EDIT_FILE_ASSOCIATIONS "Edit file associations"
 	?define TITLE_SETT "Settings"
@@ -19,6 +20,7 @@
 	?define LIST_LINE_HEIGHT "List line height"
 	?define NOTIFY_COPY_END "Notify when copying finished"
 	?define T_DOUBLE_CLICK "Double click time (in hundredths)"
+	#define SAVE_PATH_AS_DEFAULT "Save the current default path"
 #endif
 
 char config_section[] = "Config";
@@ -37,6 +39,11 @@ void settings_dialog()
 				else if (id==5)
 				{
 					RunProgram("tinypad", "/sys/settings/assoc.ini");
+					break;
+				}
+				else if (id==6)
+				{
+					ini_set_str stdcall (eolite_ini_path, #config_section, "DefaultPath", #path,strlen(#path));
 					break;
 				}
 				else if (id==20) show_dev_name ^= 1;
@@ -59,9 +66,10 @@ void settings_dialog()
 				break;
 				
 			case evReDraw:
-				DefineAndDrawWindow(Form.left + Form.width/2-10, Form.top + Form.height/2 - 75, 300, 226+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
+				DefineAndDrawWindow(Form.left + Form.width/2-10, Form.top + Form.height/2 - 75, 300, 246+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
 				DrawSettingsCheckBoxes();
-				DrawFlatButton(9, 186, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
+				DrawFlatButton(9, 186, strlen(SAVE_PATH_AS_DEFAULT)+4*6, 22, 6, 0xE4DFE1, SAVE_PATH_AS_DEFAULT);
+				DrawFlatButton(9, 216, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
 		}
 	}
 }
@@ -102,6 +110,7 @@ void LoadIniSettings()
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinY", 50); WinY = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinW", 550); WinW = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinH", 500); WinH = EAX;
+	ini_get_str stdcall (eolite_ini_path, #config_section, "DefaultPath", #path,4096,"/rd/1/");
 }
 
 

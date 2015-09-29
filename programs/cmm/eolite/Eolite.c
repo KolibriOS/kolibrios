@@ -52,6 +52,7 @@ int selected_count;
 
 byte
 	path[4096],
+	DefaultPath[4096],
 	file_path[4096],
 	file_name[256],
 	new_element_name[256],
@@ -122,11 +123,8 @@ void main()
 	{
 		strcpy(#path, #param);
 		if (path[strlen(#path)-1]!='/') chrcat(#path, '/'); //add "/" to the end of the string
-	}
-	else
-	{
-		strlcpy(#path, "/rd/1/", 6);		
-	}
+	}		
+	
 	Open_Dir(#path,ONLY_OPEN);
 	strcpy(#inactive_path, #path);
 	llist_copy(#files_inactive, #files);

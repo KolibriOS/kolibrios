@@ -18,12 +18,12 @@
 	?define PR_T_SYSTEM "Системный"
 	?define PR_T_ONLY_READ "Только чтение"
 	?define SET_BYTE_LANG "байт"
-#else
+#else // Apply to all subfolders
 	?define WINDOW_TITLE_PROPERTIES "Properties"
 	?define BTN_CLOSE "Close"
 	?define BTN_APPLY "Apply"
-	?define QUEST_1 "Применить ко всем вложенным"
-	?define QUEST_2 "файлам и папкам"
+	?define QUEST_1 "Apply to all subfolders"
+	?define QUEST_2 "files and Folders"
 	?define PR_T_NAME "Name:"
 	?define PR_T_DEST "Destination:"
 	?define PR_T_SIZE "Size:"
