@@ -18,6 +18,9 @@
 //obj
 #include "..\lib\obj\libini.h"
 #include "..\lib\obj\box_lib.h"
+
+byte CMD_ENABLE_SAVE_IMG = false;
+
 //images
 #include "imgs\toolbar.txt"
 #include "imgs\left_p.txt"
@@ -89,6 +92,9 @@ PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #t
 byte cmd_free=0;
 #include "include\translations.h"
 #include "include\fs.h"
+
+char *fd_path_eolite_ini_path;
+
 #include "include\settings.h"
 #include "include\progress_dialog.h"
 #include "..\lib\copyf.h"
@@ -103,9 +109,11 @@ byte cmd_free=0;
 #include "include\properties.h"
 
 
+//char *TMP_PARS,*TMP_PARS2;
 void main() 
 {
 	word id;
+	byte count_sl = 0;
 	signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
 	char can_show, can_select, stats;
 	dword selected_offset;
@@ -116,6 +124,27 @@ void main()
 	load_dll(boxlib, #box_lib_init,0);
     load_dll(libini, #lib_init,1);
 	eolite_ini_path = abspath("Eolite.ini");
+	
+	fd_path_eolite_ini_path = "/fd/1/File Managers/Eolite.ini";
+	/*
+	TMP_PARS2 = #fd_path_eolite_ini_path;
+	WHILE(DSBYTE[TMP_PARS])
+	{
+		IF(count_sl!=1)
+		{
+			DSBYTE[TMP_PARS2] = DSBYTE[TMP_PARS];
+			TMP_PARS2++;
+		}
+		ELSE IF(count_sl==2)
+		{
+			strlcpy(TMP_PARS2,"fd",2);
+			TMP_PARS2+=2;
+		}
+		IF(DSBYTE[TMP_PARS]=='/')count_sl++;
+		TMP_PARS++;
+	}
+	*/
+	
 	LoadIniSettings();
 	GetSystemDiscs();
 	SetAppColors();

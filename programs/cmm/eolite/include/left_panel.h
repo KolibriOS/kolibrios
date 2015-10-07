@@ -109,6 +109,7 @@ void GetSystemDiscs()
 			else kolibrios_drive = false;
 			free(tempbuf);
 		}
+		else if (!strncmp(#sys_discs, "/fd/1/",6)) CMD_ENABLE_SAVE_IMG = true;
 	}
 }
 
