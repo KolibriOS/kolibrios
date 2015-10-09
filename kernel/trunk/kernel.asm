@@ -2231,6 +2231,8 @@ sys_system_table:
         dd      sysfn_min_rest_window   ; 22 = minimize and restore any window
         dd      sysfn_min_windows       ; 23 = minimize all windows
         dd      sysfn_set_screen_sizes  ; 24 = set screen sizes for Vesa
+
+        dd      sysfn_zmodif            ; 25 = get/set window z modifier  ;Fantomer
 sysfn_num = ($ - sys_system_table)/4
 endg
 ;------------------------------------------------------------------------------
@@ -2389,6 +2391,67 @@ sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
         call    waredraw
 .nowindowactivate:
         ret
+;------------------------------------------------------------------------------
+align 4                         ;Fantomer
+sysfn_zmodif:
+;18,25,1 - get z_modif
+;18,25,2 - set z_modif
+;edx = -1(for current task) or TID
+;esi(for 2) = new value z_modif
+;return:
+;1:   eax = z_modif
+;2: eax=0(fail),1(success) for set z_modif
+
+        xor     eax, eax
+
+        cmp     edx, -1
+        jne     @f
+        mov     edx, [CURRENT_TASK]
+     @@:
+        cmp     edx, [TASK_COUNT]
+        ja      .exit
+        cmp     edx, 1
+        je      .exit
+
+
+        shl     edx, 5
+
+        cmp     [edx + CURRENT_TASK + TASKDATA.state], 9
+        je      .exit
+
+        cmp     ecx, 1
+        jnz     .set_zmod
+
+        mov     al, [edx + window_data + WDATA.z_modif]
+
+        jmp     .exit
+align 4
+.set_zmod:
+        cmp     ecx, 2
+        jnz     .exit
+
+        mov     eax, esi
+        mov     esi, edx
+
+        cmp     al, ZPOS_ALWAYS_TOP
+        ja      .exit
+
+        mov     [edx + window_data + WDATA.z_modif], al
+
+        mov     eax, [edx + window_data + WDATA.box.left]
+        mov     ebx, [edx + window_data + WDATA.box.top]
+        mov     ecx, [edx + window_data + WDATA.box.width]
+        mov     edx, [edx + window_data + WDATA.box.height]
+        add     ecx, eax
+        add     edx, ebx
+        call    window._.set_top_wnd
+
+        mov     eax, 1
+align 4
+.exit:
+        mov     [esp+32], eax
+        ret
+
 ;------------------------------------------------------------------------------
 sysfn_getidletime:              ; 18.4 = GET IDLETIME
         mov     eax, [CURRENT_TASK+32+TASKDATA.cpu_usage]

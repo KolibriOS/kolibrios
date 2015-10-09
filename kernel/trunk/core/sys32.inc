@@ -581,7 +581,7 @@ destroy_thread:
         mov     [esi+WDATA.cl_workarea], eax
         mov     [esi+WDATA.cl_titlebar], eax
         mov     [esi+WDATA.cl_frames], eax
-        mov     dword [esi+WDATA.reserved], eax; clear all flags: wstate, redraw, wdrawn
+        mov     dword [esi+WDATA.z_modif], eax; clear all flags: z_modif, wstate, redraw, wdrawn
         lea     edi, [esi-window_data+draw_data]
         mov     ecx, 32/4
         rep stosd

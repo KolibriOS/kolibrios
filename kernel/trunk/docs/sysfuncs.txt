@@ -1145,6 +1145,37 @@ Remarks:
     anything.
 
 ======================================================================
+===================== Function 18, subfunction 25 ====================
+===== Control position of the window relative to other windows. ======
+======================================================================
+
+------------- Subsubfunction 1 - get position  -----------------------
+Parameters:
+  * eax = 18 - function number
+  * ebx = 25 - subfunction number
+  * ecx = 1 - subsubfunction number
+  * edx = -1(for current window) or PID application
+Returned value:
+  * eax = one of the constants window position
+
+------------- Subsubfunction 2 - set position  -----------------------
+Parameters:
+  * eax = 18 - function number
+  * ebx = 25 - subfunction number
+  * ecx = 2 - subsubfunction number
+  * edx = -1(for current window) or PID application
+  * esi = new window position (one of the constants below)
+Returned value:
+  * eax = 0 - error
+  * eax = 1 - success
+
+Constant position of the window relative to other windows:
+ ZPOS_NORMAL      = 0 - normal
+ ZPOS_ALWAYS_BACK = 1 - behind all the windows
+ ZPOS_DESKTOP     = 2 - on the background
+ ZPOS_ALWAYS_TOP  = 3 - on top of all windows
+
+======================================================================
 ==================== Function 20 - MIDI interface. ===================
 ======================================================================
 
