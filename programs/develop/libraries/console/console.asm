@@ -31,6 +31,7 @@ START:
 
 align 4
 con_init:
+		
         pop     eax
         pop     [con.wnd_width]
         pop     [con.wnd_height]
@@ -41,6 +42,8 @@ con_init:
 
         push ebx
 
+		mov [con.init_cmd],1
+		
         mov     ecx, 4
         mov     eax, con.wnd_width
         mov     edx, con.def_wnd_width
@@ -147,8 +150,25 @@ con_set_cursor_height:
         mov     eax, [con.cursor_height]
         ret     4
 
+con_init_check:
+	mov ah,[con.init_cmd]
+	test ah,ah
+	jne cmd_init_yes
+	
+	push con.title_init_console
+	push -1
+	push -1
+	push -1
+	push -1
+	
+	call con_init
+	
+	cmd_init_yes:
+	
+	ret
 ; void __stdcall con_write_asciiz(const char* string);
 con_write_asciiz:
+		call con_init_check
         push    ebx esi
         or      ebx, -1
         mov     esi, [esp+12]
@@ -244,6 +264,7 @@ con.charjump:
 
 ; int __cdecl con_printf(const char* format, ...)
 con_printf:
+		call con_init_check
         xor     eax, eax
         pushad
         call    con.get_data_ptr
@@ -1287,10 +1308,16 @@ end if
         ret
 
 con_exit:
+	
+		mov ah,[con.init_cmd]
+		test ah,ah
+		je .ret
+
         cmp     byte [esp+4], 0
         jz      .noexit
         mov     [con.thread_op], 1
         call    con.wake
+		
         ret     4
 .noexit:
         push    esi
@@ -1359,6 +1386,7 @@ con.force_entered_char:
 
 ; int __stdcall con_getch(void);
 con_getch:
+		call con_init_check
         call    con.force_entered_char
         test    byte [con_flags+1], 2
         jnz     con_getch_closed
@@ -1377,6 +1405,7 @@ con_getch_closed:
 
 ; int __stdcall con_getch2(void);
 con_getch2:
+		call con_init_check
         call    con.force_entered_char
         test    byte [con_flags+1], 2
         jnz     con_getch_closed
@@ -1391,6 +1420,7 @@ con_gets:
         push    eax
 ; char* __stdcall con_gets2(con_gets2_callback callback, char* str, int n);
 con_gets2:
+		call con_init_check
         mov     eax, [esp+8]            ; str
         pushad
         mov     esi, eax                ; str
@@ -1707,10 +1737,27 @@ con_gets2:
 
 ; void __stdcall con_cls();
 con_cls:
+		mov ah,[con.init_cmd]
+		test ah,ah
+		je cmd_init_no
+		
         push    edi
         call    con.write_special_char.cls
         pop     edi
         call    con.update_screen
+		
+		ret
+		
+		cmd_init_no:
+		
+		push con.title_init_console
+		push -1
+		push -1
+		push -1
+		push -1
+		
+		call con_init
+		
         ret
 
 ; void __stdcall con_get_cursor_pos(int* px, int* py);
@@ -2496,6 +2543,8 @@ con.def_scr_height  dd    300
 con.def_wnd_x       dd    200
 con.def_wnd_y       dd    50
 
+con.init_cmd db 0
+con.title_init_console db "Console",0
 
 struc process_info
 {
@@ -2528,7 +2577,7 @@ con.vscroll_pt      dd    -1
 align 16
 EXPORTS:
         dd      szStart,                START
-        dd      szVersion,              0x00020007
+        dd      szVersion,              0x00020008
         dd      szcon_init,             con_init
         dd      szcon_write_asciiz,     con_write_asciiz
         dd      szcon_write_string,     con_write_length
