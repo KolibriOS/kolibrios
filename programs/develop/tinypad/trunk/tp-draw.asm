@@ -38,7 +38,8 @@ proc drawwindow ;///// DRAW WINDOW ///////////////////////////////////////////
 	cld
 	rep	movsd
 
-	cmp	[p_info.client_box.height],LINEH
+	mov	eax,[lineHeight]
+	cmp	[p_info.client_box.height],eax
 	jl	.exit.2
 
 	mov	[tab_bar.Bounds.Left],0
@@ -61,21 +62,6 @@ proc drawwindow ;///// DRAW WINDOW ///////////////////////////////////////////
 
 	call	draw_bottom_dialog
 
-;        mov     [do_not_draw],1 ; do_not_draw = true
-
-;        mov     ebx,eax
-;        sub     ebx,[top_ofs]
-;        sub     ebx,SCRLW*3+AMINS+5
-;        js      .no_draw
-
-;        dec     [do_not_draw]    ; do_not_draw = false
-;        sub     eax,SCRLW+3
-;        sub     eax,[top_ofs]
-;        cdq
-;        mov     ebx,LINEH
-;        div     ebx
-;        mov     [lines.scr],eax
-
 	inc	[top_ofs]
 
 	call	draw_main_menu
@@ -91,7 +77,7 @@ proc drawwindow ;///// DRAW WINDOW ///////////////////////////////////////////
 	push	eax
 	add	eax,-2-SCRLW
 	cdq
-	mov	ebx,LINEH
+	mov	ebx,[lineHeight]
 	idiv	ebx
 	mov	[lines.scr],eax
 	pop	eax
@@ -104,13 +90,13 @@ proc drawwindow ;///// DRAW WINDOW ///////////////////////////////////////////
 
 	dec	eax
 	cdq
-	mov	ebx,LINEH
+	mov	ebx,[lineHeight]
 	idiv	ebx
 	mov	[lines.scr],eax
 
 	mov	eax,[p_info.client_box.width]
 	cdq
-	mov	ebx,6
+	mov	ebx,[charWidth]
 	idiv	ebx
 	mov	[columns.scr],eax
     @@:

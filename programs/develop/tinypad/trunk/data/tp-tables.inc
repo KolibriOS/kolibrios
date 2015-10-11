@@ -83,6 +83,8 @@ accel_table_main dd		    \
   0x00010150,key.shift_down	   ,\ ; Shift+Down
   0x00010151,key.shift_pgdn	   ,\ ; Shift+PageDown
   0x00010153,key.del		   ,\ ; Shift+Delete
+  0x0002000C,key.ctrl_minus	   ,\ ; Ctrl+Minus
+  0x0002000D,key.ctrl_plus	   ,\ ; Ctrl+Plus
   0x0002000F,key.ctrl_tab	   ,\ ; Ctrl+Tab
   0x00020015,key.ctrl_y 	   ,\ ; Ctrl+Y
   0x00020018,key.ctrl_o 	   ,\ ; Ctrl+O
@@ -108,6 +110,7 @@ accel_table_main dd		    \
 \;0x00020150,key.ctrl_down         ,\ ; Ctrl+Down
   0x00020151,key.ctrl_pgdn	   ,\ ; Ctrl+PageDown
   0x00020153,key.del		   ,\ ; Ctrl+Del
+  0x0003000D,key.ctrl_plus	   ,\ ; Ctrl+Plus
   0x0003000F,key.shift_ctrl_tab    ,\ ; Shift+Ctrl+Tab
   0x0003001F,key.shift_ctrl_s	   ,\ ; Shift+Ctrl+S
   0x00030147,key.shift_ctrl_home   ,\ ; Shift+Ctrl+Home

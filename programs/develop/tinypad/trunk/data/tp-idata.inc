@@ -1,11 +1,12 @@
 
-vscrl_capt dd -1
-hscrl_capt dd -1
-body_capt  dd -1
-
-ins_mode db 1
-
-s_status dd 0
+vscrl_capt	dd	-1
+hscrl_capt	dd	-1
+body_capt	dd	-1
+s_status	dd	0
+lineHeight	dd	LINEH
+charWidth	dd	6
+scale		db	0
+ins_mode	db	1
 
 sz app_fasm    ,'/rd/1/develop/fasm',0
 sz app_board   ,'/rd/1/develop/board',0

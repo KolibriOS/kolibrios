@@ -9,12 +9,12 @@ menubar_res main_menu,\
   ru,'Кодировка',mm.Encoding,onshow.recode ,\
   ru,'Опции'	,mm.Options ,onshow.options,\
 \
-  en,'File'    ,mm.File    ,onshow.file   ,\
-  en,'Edit'    ,mm.Edit    ,onshow.edit   ,\
-  en,'Search'  ,mm.Search  ,onshow.search ,\
-  en,'Run'     ,mm.Run	   ,onshow.run	  ,\
-  en,'Encoding',mm.Encoding,onshow.recode ,\
-  en,'Options' ,mm.Options ,onshow.options,\
+  en,'File'	,mm.File    ,onshow.file   ,\
+  en,'Edit'	,mm.Edit    ,onshow.edit   ,\
+  en,'Search'	,mm.Search  ,onshow.search ,\
+  en,'Run'	,mm.Run     ,onshow.run    ,\
+  en,'Encoding'	,mm.Encoding,onshow.recode ,\
+  en,'Options'	,mm.Options ,onshow.options,\
 \
   et,'Fail'	,mm.File    ,onshow.file   ,\
   et,'Muuda'	,mm.Edit    ,onshow.edit   ,\
@@ -23,183 +23,191 @@ menubar_res main_menu,\
   et,'Kodeering',mm.Encoding,onshow.recode ,\
   et,'Seaded'	,mm.Options ,onshow.options,\
 \
-  sp,'Archivo' ,mm.File    ,onshow.file   ,\
-  sp,'Editar'  ,mm.Edit    ,onshow.edit   ,\
-  sp,'Buscar' ,mm.Search  ,onshow.search ,\
-  sp,'Ejecutar'  ,mm.Run     ,onshow.run    ,\
-  sp,'Codificaciєn',mm.Encoding,onshow.recode ,\
-  sp,'Opciones' ,mm.Options ,onshow.options
+  sp,'Archivo'	,mm.File    ,onshow.file   ,\
+  sp,'Editar'	,mm.Edit    ,onshow.edit   ,\
+  sp,'Buscar'	,mm.Search  ,onshow.search ,\
+  sp,'Ejecutar'	,mm.Run     ,onshow.run    ,\
+  sp,'Codificaciєn',mm.Encoding,onshow.recode,\
+  sp,'Opciones'	,mm.Options ,onshow.options
 
 popup_res mm.File,\
-  ru,'Новый'	       ,'Ctrl+N'      ,New   ,\
-  ru,'Открыть...'      ,'Ctrl+O'      ,Open  ,\
-  ru,'Сохранить'       ,'Ctrl+S'      ,Save  ,\
+  ru,'Новый'	 ,'Ctrl+N'	,New	,\
+  ru,'Открыть...','Ctrl+O'	,Open	,\
+  ru,'Сохранить' ,'Ctrl+S'	,Save	,\
   ru,'Сохранить как...','Ctrl+Shift+S',SaveAs,\
-  ru,'-'	       ,''	      ,      ,\
-  ru,'Закрыть'	       ,'Ctrl+F4'     ,Close ,\
-  ru,'-'	       ,''	      ,      ,\
-  ru,'Выход'	       ,'Alt+X'       ,Exit  ,\
+  ru,'-','',,\
+  ru,'Закрыть'	 ,'Ctrl+F4'	,Close	,\
+  ru,'-','',,\
+  ru,'Выход'	 ,'Alt+X'	,Exit	,\
 \
-  en,'New'	 ,'Ctrl+N'	,New   ,\
-  en,'Open...'	 ,'Ctrl+O'	,Open  ,\
-  en,'Save'	 ,'Ctrl+S'	,Save  ,\
-  en,'Save as...','Ctrl+Shift+S',SaveAs,\
-  en,'-'	 ,''		,      ,\
-  en,'Close'	 ,'Ctrl+F4'	,Close ,\
-  en,'-'	 ,''		,      ,\
-  en,'Exit'	 ,'Alt+X'	,Exit,\
+  en,'New'	 ,'Ctrl+N'	,New	,\
+  en,'Open...'	 ,'Ctrl+O'	,Open	,\
+  en,'Save'	 ,'Ctrl+S'	,Save	,\
+  en,'Save as...','Ctrl+Shift+S',SaveAs	,\
+  en,'-','',,\
+  en,'Close'	 ,'Ctrl+F4'	,Close	,\
+  en,'-','',,\
+  en,'Exit'	 ,'Alt+X'	,Exit	,\
 \
-  et,'Uus'		 ,'Ctrl+N'	,New   ,\
-  et,'Ava...'		 ,'Ctrl+O'	,Open  ,\
-  et,'Salvesta' 	 ,'Ctrl+S'	,Save  ,\
+  et,'Uus'	,'Ctrl+N'	,New	,\
+  et,'Ava...'	,'Ctrl+O'	,Open	,\
+  et,'Salvesta'	,'Ctrl+S'	,Save	,\
   et,'Salvesta nimega...','Ctrl+Shift+S',SaveAs,\
-  et,'-'		 ,''		,      ,\
-  et,'Sulge'		 ,'Ctrl+F4'	,Close ,\
-  et,'-'		 ,''		,      ,\
-  et,'Vфlju'		 ,'Alt+X'	,Exit,\
+  et,'-','',,\
+  et,'Sulge'	,'Ctrl+F4'	,Close	,\
+  et,'-','',,\
+  et,'Vфlju'	,'Alt+X'	,Exit	,\
 \
-  sp,'Nuevo'   ,'Ctrl+N'  ,New	 ,\
-  sp,'Abrir...'   ,'Ctrl+O'  ,Open  ,\
-  sp,'Guardar'	,'Ctrl+S'  ,Save  ,\
+  sp,'Nuevo'	,'Ctrl+N' ,New	,\
+  sp,'Abrir...'	,'Ctrl+O' ,Open	,\
+  sp,'Guardar'	,'Ctrl+S' ,Save	,\
   sp,'Guardar como...','Ctrl+Shift+S',SaveAs,\
-  sp,'-'   ,''	  ,	 ,\
-  sp,'Cerrar'	,'Ctrl+F4' ,Close ,\
-  sp,'-'   ,''	  ,	 ,\
-  sp,'Salir'  ,'Alt+X' ,Exit
+  sp,'-','',,\
+  sp,'Cerrar'	,'Ctrl+F4',Close,\
+  sp,'-','',,\
+  sp,'Salir'	,'Alt+X'  ,Exit
 
 popup_res mm.Edit,\
-  ru,'Вырезать'    ,'Ctrl+X',Cut   ,\
-  ru,'Копировать'  ,'Ctrl+C',Copy  ,\
-  ru,'Вставить'    ,'Ctrl+V',Insert,\
-  ru,'Удалить'	   ,''	    ,Delete,\
-  ru,'-'	   ,''	    ,	   ,\
-  ru,'Выделить всё','Ctrl+A',SelAll,\
+  ru,'Вырезать'		,'Ctrl+X',Cut	,\
+  ru,'Копировать'	,'Ctrl+C',Copy	,\
+  ru,'Вставить'		,'Ctrl+V',Insert,\
+  ru,'Удалить'		,''	 ,Delete,\
+  ru,'-','',,\
+  ru,'Выделить всё'	,'Ctrl+A',SelAll,\
 \
-  en,'Cut'	 ,'Ctrl+X',Cut	 ,\
+  en,'Cut'	 ,'Ctrl+X',Cut   ,\
   en,'Copy'	 ,'Ctrl+C',Copy  ,\
   en,'Paste'	 ,'Ctrl+V',Insert,\
   en,'Delete'	 ,''	  ,Delete,\
-  en,'-'	 ,''	  ,	 ,\
+  en,'-','',,\
   en,'Select all','Ctrl+A',SelAll,\
 \
-  et,'Lїika'	 ,'Ctrl+X',Cut	 ,\
-  et,'Kopeeri'	 ,'Ctrl+C',Copy  ,\
-  et,'Kleebi'	 ,'Ctrl+V',Insert,\
-  et,'Kustuta'	 ,''	  ,Delete,\
-  et,'-'	 ,''	  ,	 ,\
-  et,'Vali kїik' ,'Ctrl+A',SelAll,\
+  et,'Lїika'	,'Ctrl+X',Cut	,\
+  et,'Kopeeri'	,'Ctrl+C',Copy	,\
+  et,'Kleebi'	,'Ctrl+V',Insert,\
+  et,'Kustuta'	,''	 ,Delete,\
+  et,'-','',,\
+  et,'Vali kїik','Ctrl+A',SelAll,\
 \
   sp,'Cortar'	,'Ctrl+X',Cut	,\
-  sp,'Copiar'  ,'Ctrl+C',Copy  ,\
-  sp,'Pegar'   ,'Ctrl+V',Insert,\
-  sp,'Eliminar'  ,''	,Delete,\
-  sp,'-'   ,''	  ,  ,\
+  sp,'Copiar'	,'Ctrl+C',Copy	,\
+  sp,'Pegar'	,'Ctrl+V',Insert,\
+  sp,'Eliminar'	,''	 ,Delete,\
+  sp,'-','',,\
   sp,'Seleccionar todo','Ctrl+A',SelAll
 
 popup_res mm.Search,\
   ru,'Перейти...' ,'Ctrl+G',Position,\
-  ru,'-'	  ,''	   ,	    ,\
+  ru,'-','',,\
   ru,'Найти...'   ,'Ctrl+F',Find    ,\
   ru,'Найти далее','F3'    ,FindNext,\
   ru,'Заменить...','Ctrl+H',Replace ,\
 \
   en,'Position...','Ctrl+G',Position,\
-  en,'-'	  ,''	   ,	    ,\
-  en,'Find...'	  ,'Ctrl+F',Find    ,\
+  en,'-','',,\
+  en,'Find...'    ,'Ctrl+F',Find    ,\
   en,'Find next'  ,'F3'    ,FindNext,\
   en,'Replace...' ,'Ctrl+H',Replace ,\
 \
   et,'Positsioon...','Ctrl+G',Position,\
-  et,'-'	    ,''      ,	      ,\
-  et,'Leia...'	    ,'Ctrl+F',Find    ,\
+  et,'-','',,\
+  et,'Leia...'      ,'Ctrl+F',Find    ,\
   et,'Leia jфrgmine','F3'    ,FindNext,\
   et,'Asenda...'    ,'Ctrl+H',Replace ,\
 \
-  sp,'Posiciєn...','Ctrl+G',Position,\
-  sp,'-'    ,''    ,	  ,\
+  sp,'Posiciєn...'  ,'Ctrl+G',Position,\
+  sp,'-','',,\
   sp,'Buscar...'    ,'Ctrl+F',Find    ,\
-  sp,'Buscar siguiente'  ,'F3'	  ,FindNext,\
-  sp,'Reemplazar...' ,'Ctrl+H',Replace
+  sp,'Buscar siguiente','F3' ,FindNext,\
+  sp,'Reemplazar...','Ctrl+H',Replace
 
 popup_res mm.Run,\
-  ru,'Запустить'	,'F9'	  ,Run	   ,\
+  ru,'Запустить'	,'F9'	  ,Run     ,\
   ru,'Запустить в дебаггере','F10',Debug   ,\
   ru,'Компилировать'	,'Ctrl+F9',Compile ,\
-  ru,'-'		,''	  ,	   ,\
+  ru,'-','',,\
   ru,'Доска отладки'	,''	  ,DbgBoard,\
   ru,'Системные функции',''	  ,SysFuncs,\
 \
-  en,'Run'		,'F9'	  ,Run	   ,\
+  en,'Run'		,'F9'	  ,Run     ,\
   en,'Run in debugger'	,'F10'	  ,Debug   ,\
   en,'Compile'		,'Ctrl+F9',Compile ,\
-  en,'-'		,''	  ,	   ,\
+  en,'-','',,\
   en,'Debug board'	,''	  ,DbgBoard,\
-  en,'System functions' ,''	  ,SysFuncs,\
+  en,'System functions'	,''	  ,SysFuncs,\
 \
-  et,'Kфivita'		,'F9'	  ,Run	   ,\
-  et,'Kфivita aastal siluri'	 ,'F10'    ,Debug   ,\
+  et,'Kфivita'		,'F9'	  ,Run     ,\
+  et,'Kфivita aastal siluri','F10',Debug   ,\
   et,'Kompileeri'	,'Ctrl+F9',Compile ,\
-  et,'-'		,''	  ,	   ,\
+  et,'-','',,\
   et,'Silumis paneel'	,''	  ,DbgBoard,\
-  et,'S№steemi funktsioonid' ,''	  ,SysFuncs,\
+  et,'S№steemi funktsioonid',''	  ,SysFuncs,\
 \
-  sp,'Ejecutar'    ,'F9'   ,Run     ,\
-  sp,'Ejecutar en el depurador'     ,'F10'    ,Debug   ,\
-  sp,'Compilar'    ,'Ctrl+F9',Compile ,\
-  sp,'-'    ,''   ,    ,\
-  sp,'Depuraciєn'  ,''	 ,DbgBoard,\
-  sp,'Funciones del sistema' ,''   ,SysFuncs
+  sp,'Ejecutar'		,'F9'	  ,Run     ,\
+  sp,'Ejecutar en el depurador','F10',Debug,\
+  sp,'Compilar'		,'Ctrl+F9',Compile ,\
+  sp,'-','',,\
+  sp,'Depuraciєn'	,''	  ,DbgBoard,\
+  sp,'Funciones del sistema'   ,'',SysFuncs
 
 popup_res mm.Encoding,\
   @!,<'CP866  ',0x1A,' CP1251'>,'',CP866.CP1251,\
   @!,<'CP1251 ',0x1A,' CP866' >,'',CP1251.CP866,\
-  @!,<'-'		      >,'',	       ,\
+  @!,<'-'>,'',,\
   @!,<'CP866  ',0x1A,' KOI8-R'>,'',CP866.KOI8R ,\
   @!,<'KOI8-R ',0x1A,' CP866' >,'',KOI8R.CP866 ,\
-  @!,<'-'		      >,'',	       ,\
+  @!,<'-'>,'',,\
   @!,<'CP1251 ',0x1A,' KOI8-R'>,'',CP1251.KOI8R,\
   @!,<'KOI8-R ',0x1A,' CP1251'>,'',KOI8R.CP1251
 
 popup_res mm.Options,\
-  ru,'Внешний вид...'	     ,'',Appearance  ,\
-  ru,'-'		     ,'',	     ,\
-  ru,'Безопасное выделение'  ,'',SecureSel   ,\
-  ru,'Автоматические скобки' ,'',AutoBrackets,\
-  ru,'Автоматический отступ' ,'',AutoIndents ,\
-  ru,'Умная табуляция'	     ,'',SmartTabs   ,\
-  ru,'Оптимальное сохранение','',OptimalFill ,\
-  ru,'-'		     ,'',	     ,\
-  ru,'Номера строк'	     ,'',LineNumbers ,\
+  ru,'Увеличить'	  ,'Ctrl +',ZoomIn	,\
+  ru,'Уменьшить'	  ,'Ctrl -',ZoomOut	,\
+  ru,'-','',,\
+  ru,'Номера строк'		,'',LineNumbers	,\
+  ru,'Безопасное выделение'	,'',SecureSel	,\
+  ru,'Автоматические скобки'	,'',AutoBrackets,\
+  ru,'Автоматический отступ'	,'',AutoIndents	,\
+  ru,'Умная табуляция'		,'',SmartTabs	,\
+  ru,'Оптимальное сохранение'	,'',OptimalFill	,\
+  ru,'-','',,\
+  ru,'Внешний вид...'		,'',Appearance	,\
 \
-  en,'Appearance...'	     ,'',Appearance  ,\
-  en,'-'		     ,'',	     ,\
-  en,'Secure selection'      ,'',SecureSel   ,\
-  en,'Automatic brackets'    ,'',AutoBrackets,\
-  en,'Automatic indents'     ,'',AutoIndents ,\
-  en,'Smart tabulation'      ,'',SmartTabs   ,\
-  en,'Optimal fill on saving','',OptimalFill ,\
-  en,'-'		     ,'',	     ,\
-  en,'Line numbers'	     ,'',LineNumbers ,\
+  en,'Zoom in'		  ,'Ctrl +',ZoomIn	,\
+  en,'Zoom out'		  ,'Ctrl -',ZoomOut	,\
+  en,'-','',,\
+  en,'Line numbers'		,'',LineNumbers	,\
+  en,'Secure selection'		,'',SecureSel	,\
+  en,'Automatic brackets'	,'',AutoBrackets,\
+  en,'Automatic indents'	,'',AutoIndents	,\
+  en,'Smart tabulation'		,'',SmartTabs	,\
+  en,'Optimal fill on saving'	,'',OptimalFill	,\
+  en,'-','',,\
+  en,'Appearance...'		,'',Appearance	,\
 \
-  et,'Vфlimus...'	     ,'',Appearance  ,\
-  et,'-'		     ,'',	     ,\
-  et,'Turvaline valimine'      ,'',SecureSel   ,\
-  et,'Automaatsed sulud'     ,'',AutoBrackets,\
-  et,'Automaatsed taandread' ,'',AutoIndents ,\
-  et,'Tark tabulatsioon'     ,'',SmartTabs   ,\
-  et,'Optimaalne tфitmine salvestamisel','',OptimalFill ,\
-  et,'-'		     ,'',	     ,\
-  et,'Rea numbrid'	     ,'',LineNumbers ,\
+  et,'Zoom in'		  ,'Ctrl +',ZoomIn	,\
+  et,'Zoom out'		  ,'Ctrl -',ZoomOut	,\
+  et,'-','',,\
+  et,'Rea numbrid'		,'',LineNumbers	,\
+  et,'Turvaline valimine'	,'',SecureSel	,\
+  et,'Automaatsed sulud'	,'',AutoBrackets,\
+  et,'Automaatsed taandread'	,'',AutoIndents	,\
+  et,'Tark tabulatsioon'	,'',SmartTabs	,\
+  et,'Optimaalne tфitmine salvestamisel','',OptimalFill,\
+  et,'-','',,\
+  et,'Vфlimus...'		,'',Appearance	,\
 \
-  sp,'Apariencia...'	   ,'',Appearance  ,\
-  sp,'-'	 ,'',	   ,\
-  sp,'Selecciєn segura'      ,'',SecureSel   ,\
-  sp,'Parщntesis automсticos'	 ,'',AutoBrackets,\
-  sp,'Identaciєn automсtica'	 ,'',AutoIndents ,\
-  sp,'Tabulaciєn inteligente'	   ,'',SmartTabs   ,\
-  sp,'Llenado єptimo al guardar','',OptimalFill ,\
-  sp,'-'	 ,'',	   ,\
-  sp,'N·meros en lэneas'      ,'',LineNumbers
+  sp,'Zoom in'		  ,'Ctrl +',ZoomIn	,\
+  sp,'Zoom out'		  ,'Ctrl -',ZoomOut	,\
+  sp,'-','',,\
+  sp,'N·meros en lэneas'	,'',LineNumbers	,\
+  sp,'Selecciєn segura'		,'',SecureSel	,\
+  sp,'Parщntesis automсticos'	,'',AutoBrackets,\
+  sp,'Identaciєn automсtica'	,'',AutoIndents	,\
+  sp,'Tabulaciєn inteligente'	,'',SmartTabs	,\
+  sp,'Llenado єptimo al guardar','',OptimalFill	,\
+  sp,'-','',,\
+  sp,'Apariencia...'		,'',Appearance
 
 lsz s_defname,\
   en,<'Untitled',0>,\

@@ -37,3 +37,5 @@ define mm.Options.AutoIndents  set_opt.auto_indents
 define mm.Options.SmartTabs    0
 define mm.Options.OptimalFill  set_opt.optimal_fill
 define mm.Options.LineNumbers  set_opt.line_numbers
+define mm.Options.ZoomIn       key.ctrl_plus
+define mm.Options.ZoomOut      key.ctrl_minus

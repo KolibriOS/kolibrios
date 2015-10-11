@@ -29,7 +29,7 @@ proc draw_editor ;///// DRAW EDITOR //////////////////////////////////////////
 	cmp	eax,3
 	jae	@f
 	mov	eax,3
-    @@: imul	eax,6
+    @@: imul	eax,[charWidth]
 	add	eax,8
   .lp1: mov	[cur_editor.Gutter.Width],eax
 	mov	[left_ofs],eax
@@ -40,7 +40,7 @@ proc draw_editor ;///// DRAW EDITOR //////////////////////////////////////////
 	sub	eax,SCRLW+LCHGW+4
 	js	.exit
 	cdq
-	mov	ebx,6
+	mov	ebx,[charWidth]
 	div	ebx
 	mov	[columns.scr],eax
 
@@ -50,7 +50,7 @@ proc draw_editor ;///// DRAW EDITOR //////////////////////////////////////////
 	sub	eax,SCRLW+3
 	js	.exit
 	cdq
-	mov	ebx,LINEH
+	mov	ebx,[lineHeight]
 	div	ebx
 	mov	[lines.scr],eax
 
@@ -106,11 +106,16 @@ proc draw_editor_gutter ;///// DRAW EDITOR GUTTER (LEFT PANEL) ///////////////
 	mov	esi,edi
 	pop	edi edx eax
 	sub	esi,edx
-	imul	eax,esi,6*65536
+	mov	eax,esi
+	imul	eax,[charWidth]
+	shl	eax,16
 	sub	ebx,eax
-	mcall	4,,edi
+	mov	cl, [scale]
+	shl	ecx,24
+	or	ecx,edi
+	mcall	4
 	popad
-	add	ebx,LINEH
+	add	ebx,[lineHeight]
 	inc	ecx
 	cmp	ecx,[cur_editor.Lines.Count]
 	jg	@f
@@ -353,7 +358,7 @@ proc draw_editor_text.part ;///// DRAW EDITOR TEXT (PARTLY) //////////////////
     @@: push	eax
 	mov	eax,[cur_editor.Bounds.Bottom]
 	sub	eax,[cur_editor.Bounds.Top]
-	cmp	eax,LINEH
+	cmp	eax,[lineHeight]
 	pop	eax
 	jge	@f
 	ret
@@ -404,7 +409,7 @@ proc draw_editor_text.part ;///// DRAW EDITOR TEXT (PARTLY) //////////////////
 	mov	ebx,[top_ofs]
 	add	ebx,[left_ofs-2]
 	sub	eax,[cur_editor.TopLeft.Y]
-	imul	eax,LINEH
+	imul	eax,[lineHeight]
 	add	ebx,eax
 
 	imul	ebp,[cur_editor.TopLeft.X],6*65536
@@ -425,7 +430,7 @@ proc draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 	ret
     @@: mov	eax,[cur_editor.Bounds.Bottom]
 	sub	eax,[cur_editor.Bounds.Top]
-	cmp	eax,LINEH
+	cmp	eax,[lineHeight]
 	jge	@f
 	ret
     @@:
@@ -466,7 +471,7 @@ proc draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 
 	mov	ecx,ebx
 	shl	ecx,16
-	mov	cl,LINEH
+	mov	cl,byte[lineHeight]
 	mov	ebx,[cur_editor.Bounds.Right]
 	add	ebx,-SCRLW
 	add	ebx,[left_ofs-2]
@@ -492,7 +497,7 @@ proc draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 	jle	.lp6.2
 	cmp	eax,[columns.scr]
 	jge	.lp6
-	imul	eax,6
+	imul	eax,[charWidth]
 	pushad
 	sub	bx,ax
 	rol	ebx,16
@@ -514,7 +519,7 @@ proc draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 	jle	.lp6
 	cmp	eax,[columns.scr]
 	jg	.lp6.2
-	imul	eax,6
+	imul	eax,[charWidth]
 	pushad
 	sub	bx,ax
 	rol	ebx,16
@@ -539,11 +544,11 @@ proc draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 	cmp	eax,[sel.end.x]
 	je	.lp6
 	sub	eax,[cur_editor.TopLeft.X]
-	imul	eax,6
+	imul	eax,[charWidth]
 	pushad
 	mov	ebx,[sel.end.x]
 	sub	ebx,[sel.begin.x]
-	imul	ebx,6
+	imul	ebx,[charWidth]
 	sal	ebx,16
 	dec	eax
 	add	eax,[left_ofs]
@@ -607,7 +612,9 @@ proc draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 	pop	ebx
 
 	push	ecx
-	mov	ecx,eax
+	mov	cl, [scale]
+	shl	ecx,24
+	or	ecx,eax
 
 	push	esi ebx
 	mov	eax,ebx
@@ -624,7 +631,8 @@ proc draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 	xor	eax,eax
 	jmp	.qqq2
   .qqq:
-	imul	eax,6*65536
+	imul	eax,[charWidth]
+	shl	eax,16
   .qqq2:
 	and	ebx,0x0000FFFF
 	add	eax,[left_ofs-2]
@@ -663,12 +671,14 @@ proc draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 	sub	[esp+4],ecx
     @@: sub	eax,esi
 	add	edx,esi
-	imul	esi,6
+	imul	esi,[charWidth]
 	rol	ebx,16
 	add	bx,si
 	rol	ebx,16
 	mov	esi,eax
-	mov	ecx,[color_tbl.text.sel]
+	mov	cl, [scale]
+	shl	ecx,24
+	or	ecx,[color_tbl.text.sel]
 	mcall	4
 	popad
 	jmp	.draw_t
@@ -693,12 +703,15 @@ proc draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 	pop	ebx
 	pushad
 	mov	esi,eax
-	mov	ecx,[color_tbl.text.sel]
+	mov	cl, [scale]
+	shl	ecx,24
+	or	ecx,[color_tbl.text.sel]
 	mcall	4
 	popad
 	sub	esi,eax
 	add	edx,eax
-	imul	eax,6*65536
+	imul	eax,[charWidth]
+	shl	eax,16
 	add	ebx,eax
 	jmp	.draw_t
 ;----------------------------------------------)-
@@ -726,16 +739,20 @@ proc draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 	sub	eax,esi
 	pushad
 	add	edx,esi
-	imul	esi,6*65536
+	imul	esi,[charWidth]
+	shl	esi,16
 	add	ebx,esi
 	mov	esi,[sel.end.x]
 	sub	esi,[sel.begin.x]
-	mov	ecx,[color_tbl.text.sel]
+	mov	cl, [scale]
+	shl	ecx,24
+	or	ecx,[color_tbl.text.sel]
 	sub	eax,esi
 	push	eax
 	mcall	4
 	add	edx,esi
-	imul	esi,6*65536
+	imul	esi,[charWidth]
+	shl	esi,16
 	add	ebx,esi
 	pop	esi
 	mov	ecx,[esp+4*6]
@@ -748,14 +765,16 @@ proc draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 	cmp	eax,[sel.end.x]
 	jge	.ya2
 ;---[ block inside selection ]-----------------(-
-  .ya4: mov	ecx,[color_tbl.text.sel]
+  .ya4: mov	cl, [scale]
+	shl	ecx,24
+	or	ecx,[color_tbl.text.sel]
 ;----------------------------------------------)-
 
   .draw_t:
 	mcall	4
   .skip_t:
 	pop	eax eax ; ebx esi
-	imul	eax,6
+	imul	eax,[charWidth]
 	add	[esp+4*2+2],ax
 	pop	ecx esi
 	cmp	ecx,[cur_line_len]
@@ -764,7 +783,7 @@ proc draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 	pop	ebx ecx
 	and	ebx,0x0000FFFF
 	add	ebx,[left_ofs-2]
-	add	ebx,LINEH
+	add	ebx,[lineHeight]
 	add	esi,[cur_line_len]
 	inc	dword[esp]
 	dec	ecx
@@ -785,12 +804,13 @@ proc draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 	mov	edx,[color_tbl.back]
 	mov	eax,13
 	mov	ecx,[esp-8]
-	add	ecx,LINEH
+	add	ecx,[lineHeight]
 	shl	ecx,16
 	mov	cx,word[cur_editor.Bounds.Bottom]
 	sub	cx,[esp-8]
-	add	cx,-SCRLW-LINEH
-	jle	@f
+	sub	cx,word[lineHeight]
+	sub	cx,SCRLW
+	js	@f
 	mcall
     @@: mov	ecx,[cur_editor.Bounds.Top-2]
 	mov	cx,2
@@ -938,7 +958,7 @@ proc draw_editor_caret ;///// DRAW EDITOR TEXT CARET /////////////////////////
 	js	@f
 	cmp	ebx,[columns.scr]
 	ja	@f
-	imul	ebx,6
+	imul	ebx,[charWidth]
 	add	ebx,[left_ofs]
 	dec	ebx
 	push	bx
@@ -949,11 +969,12 @@ proc draw_editor_caret ;///// DRAW EDITOR TEXT CARET /////////////////////////
 	js	@f
 	cmp	eax,[lines.scr]
 	jge	@f
-	imul	eax,LINEH
+	imul	eax,[lineHeight]
 	add	eax,[top_ofs]
 	mov	esi,eax
 	shl	esi,16
-	add	eax,LINEH-2
+	add	eax,[lineHeight]
+	sub	eax,2
 	mov	si,ax
 	mov	ecx,2
 	cmp	[ins_mode],0

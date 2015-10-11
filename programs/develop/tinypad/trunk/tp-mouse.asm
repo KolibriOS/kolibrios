@@ -12,7 +12,8 @@ proc check_mouse_in_edit_area
 	sub	[__rc+0x8],SCRLW+6
 	mov	ecx,[cur_editor.Gutter.Width]
 	add	[__rc+0x0],ecx
-	imul	ecx,[lines.scr],LINEH
+	mov	ecx,[lines.scr]
+	imul	ecx,[lineHeight]
 	dec	ecx
 	add	[__rc+0xC],ecx
 	mov	ecx,__rc
@@ -188,13 +189,13 @@ mouse:
 	push	eax
 	mov	eax,ebx
 	cdq
-	mov	ecx,LINEH
+	mov	ecx,[lineHeight]
 	idiv	ecx
     @@: add	eax,[cur_editor.TopLeft.Y]
 	mov	ebx,eax
 	pop	eax
 	cdq
-	mov	ecx,6
+	mov	ecx,[charWidth]
 	idiv	ecx
     @@: add	eax,[cur_editor.TopLeft.X]
 	mov	ecx, ebx
