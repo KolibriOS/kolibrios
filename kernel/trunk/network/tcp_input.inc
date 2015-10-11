@@ -60,7 +60,7 @@ TCP_input:
         call    NET_ptr_to_num4
         inc     [TCP_segments_missed + edi]
 
-        add     esp, sizeof.TCP_queue_entry - 8
+        add     esp, sizeof.TCP_queue_entry - 4
         call    NET_BUFF_free
         ret
 
