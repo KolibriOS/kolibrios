@@ -36,6 +36,9 @@ dtext:
         mov     ebp, [_display.width]
         xor     edi, edi
         jmp     @f
+.ret:
+        add     esp, 28
+        ret
 .redirect:
         mov     ebp, [edi]
         add     edi, 8
@@ -92,6 +95,7 @@ dtext:
         bt      ebx, 28
         jc      .drawUTF8
 
+; Stack map:
 ; char counter +0
 fontMultiplier = 4
 widthX = 8
@@ -101,7 +105,7 @@ widthX = 8
 ; background +24
 deltaToScreen = 28
 ; temp buffer height +32
-; temp buffer +36
+; temp buffer pointer +36
 
 .drawUTF16:
         dec     dword [esp]
@@ -127,6 +131,7 @@ deltaToScreen = 28
         add     edi, esi
         pop     esi
         jmp     .drawUTF16
+
 .drawUTF8:
         dec     dword [esp]
         js      .done
@@ -166,6 +171,7 @@ deltaToScreen = 28
         add     edi, esi
         pop     esi
         jmp     .drawUTF8
+
 .draw866:
         dec     dword [esp]
         js      .done
@@ -184,6 +190,7 @@ deltaToScreen = 28
         add     edi, esi
         pop     esi
         jmp     .draw866
+
 .done:
         mov     ecx, edi
         pop     eax eax eax esi edx ebx ebp ebp ebp
@@ -192,7 +199,7 @@ deltaToScreen = 28
         jnz     @f
         pop     eax
         ret
-@@:
+@@:         ; redraw from buffer to screen
         push    eax
         sub     ecx, edi
         shr     ecx, 2
@@ -224,10 +231,8 @@ deltaToScreen = 28
         add     esp, 12
         call    kernel_free
         ret
-.ret:
-        add     esp, 28
-        ret
 
+; scaling/smoothing algorithm
 drawChar:
         mov     dl, [ebx]
 .raw:
@@ -244,7 +249,7 @@ drawChar:
         inc     esi
         cmp     [fontSmoothing], 0
         jz      .nextPixel
-.checkLeftSubP:
+.checkLeftSubP:     ; subpixel smoothing
         bsf     eax, edx
         dec     eax
         js      .checkRightSubP
@@ -293,21 +298,42 @@ drawChar:
         call    syscall_getpixel
         popa
 @@:
-        mov     ecx, eax
-        mov     eax, ebp
-        shr     al, 1
-        shr     cl, 1
-        add     al, cl
-        shr     ah, 2
-        shr     ch, 2
-        add     ah, ch
-        add     ah, ch
-        add     ah, ch
-        ror     eax, 8
-        ror     ecx, 8
-        mov     ah, ch
-        rol     eax, 8
+        push    ebx edx
+        mov     ebx, ebp
+        xor     ecx, ecx
+        mov     cl, bl
+        lea     edx, [ecx*8+ecx]
+        lea     edx, [ecx*2+edx]
+        mov     cl, al
+        lea     ecx, [ecx*4+ecx]
+        add     edx, ecx
+        shr     edx, 4
+        mov     al, dl
+
+        xor     ecx, ecx
+        mov     cl, ah
+        lea     edx, [ecx*8+ecx]
+        lea     edx, [ecx*2+edx]
+        mov     cl, bh
+        lea     ecx, [ecx*4+ecx]
+        add     edx, ecx
+        shr     edx, 4
+        mov     ah, dl
+
+        rol     eax, 16
+        rol     ebx, 16
+        xor     ecx, ecx
+        mov     cl, al
+        mov     edx, ecx
+        shl     ecx, 3
+        sub     ecx, edx
+        mov     dl, bl
+        add     ecx, edx
+        shr     ecx, 3
+        mov     al, cl
+        rol     eax, 16
         mov     [edi-4], eax
+        pop     edx ebx
 .checkRightSubP:
         bsf     eax, edx
         inc     eax
@@ -353,23 +379,45 @@ drawChar:
         call    syscall_getpixel
         popa
 @@:
-        mov     ecx, eax
-        mov     eax, ebp
-        shr     ah, 2
-        shr     ch, 2
-        add     ah, ch
-        add     ah, ch
-        add     ah, ch
+        push    ebx edx
+        mov     ebx, ebp
+        xor     ecx, ecx
+        mov     cl, al
+        mov     edx, ecx
+        shl     ecx, 3
+        sub     ecx, edx
+        mov     dl, bl
+        add     ecx, edx
+        shr     ecx, 3
         mov     al, cl
-        ror     eax, 8
-        ror     ecx, 8
-        shr     ah, 1
-        shr     ch, 1
-        add     ah, ch
-        rol     eax, 8
+
+        xor     ecx, ecx
+        mov     cl, ah
+        lea     edx, [ecx*8+ecx]
+        lea     edx, [ecx*2+edx]
+        mov     cl, bh
+        lea     ecx, [ecx*4+ecx]
+        add     edx, ecx
+        shr     edx, 4
+        mov     ah, dl
+
+        rol     ebx, 16
+        rol     eax, 16
+        xor     ecx, ecx
+        mov     cl, bl
+        lea     edx, [ecx*8+ecx]
+        lea     edx, [ecx*2+edx]
+        mov     cl, al
+        lea     ecx, [ecx*4+ecx]
+        add     edx, ecx
+        shr     edx, 4
+        mov     al, dl
+        rol     eax, 16
         mov     [edi+4], eax
+        pop     edx ebx
         jmp     .nextPixel
-.square:
+
+.square:    ; scaling
         mov     eax, esi
 @@:
         mov     [edi+eax*4], ebp
@@ -405,6 +453,7 @@ drawChar:
         bt      [ebx-2], eax
         jc      .downRightLow
         jmp     .downRightHigh
+
 @@:
         bt      [ebx-1], eax
         jc      .checkLeftUp
@@ -437,6 +486,7 @@ drawChar:
         inc     esi
         mov     edi, [esp]
         jmp     .checkLeftUp
+
 .downRightHigh:
         imul    ecx, esi
         shl     ecx, 2
@@ -487,6 +537,7 @@ drawChar:
         bt      [ebx+2], eax
         jc      .upRightLow
         jmp     .upRightHigh
+
 @@:
         bt      [ebx+1], eax
         jc      .checkRight
@@ -515,6 +566,7 @@ drawChar:
         jns     .drawUpRight
         mov     edi, [esp]
         jmp     .checkRight
+
 .upRightHigh:
         imul    ecx, esi
         shl     ecx, 2
@@ -563,6 +615,7 @@ drawChar:
         bt      [ebx-2], eax
         jc      .downLeftLow
         jmp     .downLeftHigh
+
 @@:
         bt      [ebx-1], eax
         jc      .checkRightUp
@@ -592,6 +645,7 @@ drawChar:
         inc     esi
         mov     edi, [esp]
         jmp     .checkRightUp
+
 .downLeftHigh:
         imul    ecx, esi
         shl     ecx, 2
@@ -639,6 +693,7 @@ drawChar:
         bt      [ebx+2], eax
         jc      .upLeftLow
         jmp     .upLeftHigh
+
 @@:
         bt      [ebx+1], eax
         jc      .nextPixel
@@ -663,6 +718,7 @@ drawChar:
         dec     ecx
         jns     .drawUpLeft
         jmp     .nextPixel
+
 .upLeftHigh:
         imul    ecx, esi
         shl     ecx, 2
@@ -690,6 +746,7 @@ drawChar:
         btr     edx, eax
         pop     edi
         jmp     .raw
+
 .nextRaw:
         inc     ebx
         mov     eax, [esp+16+widthX]
