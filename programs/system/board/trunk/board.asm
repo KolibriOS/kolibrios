@@ -130,7 +130,7 @@ no13:
         add     esi, [ebp-8]
         add     esi, ebp
         mov     ecx, 80
-        xor     al , al
+        mov     al ,' '
         rep     stosb
     .noypos:
         mov     [targ],text2
