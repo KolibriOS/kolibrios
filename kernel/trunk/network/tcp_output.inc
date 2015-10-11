@@ -503,10 +503,11 @@ endl
 ; Create the IP packet
 
         mov     ecx, esi
-        mov     edx, [eax + IP_SOCKET.LocalIP]  ; source ip
         mov     ebx, [eax + IP_SOCKET.device]
-        mov     eax, [eax + IP_SOCKET.RemoteIP] ; dest ip
-        mov     di, IP_PROTO_TCP shl 8 + 128
+        mov     edx, [eax + IP_SOCKET.LocalIP]  ; source ip
+        mov     edi, [eax + IP_SOCKET.RemoteIP] ; dest ip
+        mov     al, [eax + IP_SOCKET.ttl]
+        mov     ah, IP_PROTO_TCP
         call    IPv4_output
         jz      .ip_error
 

@@ -266,7 +266,7 @@ TCP_outflags:
 
 
 
-;---------------------------------------
+;-----------------------------------------------------------------
 ;
 ; The fast way to send an ACK/RST/keepalive segment
 ;
@@ -275,7 +275,10 @@ TCP_outflags:
 ;  IN:  ebx = socket ptr
 ;        cl = flags
 ;
-;--------------------------------------
+; OUT:  /
+;
+;-----------------------------------------------------------------
+
 align 4
 TCP_respond:
 
@@ -285,11 +288,12 @@ TCP_respond:
 ; Create the IP packet
 
         push    cx ebx
-        mov     eax, [ebx + IP_SOCKET.RemoteIP]
         mov     edx, [ebx + IP_SOCKET.LocalIP]
-        mov     ebx, [ebx + IP_SOCKET.device]
+        mov     edi, [ebx + IP_SOCKET.RemoteIP]
+        mov     al, [ebx + IP_SOCKET.ttl]
+        mov     ah, IP_PROTO_TCP
         mov     ecx, sizeof.TCP_header
-        mov     di, IP_PROTO_TCP shl 8 + 128
+        mov     ebx, [ebx + IP_SOCKET.device]
         call    IPv4_output
         jz      .error
         pop     esi cx
@@ -347,33 +351,32 @@ TCP_respond:
         ret
 
 
-
-
-
-
-
-
-;-------------------------
+;-----------------------------------------------------------------
+;
 ; TCP_respond_segment:
 ;
-;  IN:  edx = segment ptr (a previously received segment)
-;       edi = ptr to dest and src IPv4 addresses
+;  IN:  ebx = device ptr
+;       edx = segment ptr (a previously received segment)
+;       edi = ptr to IPv4 header
 ;        cl = flags
+;
+;  OUT: /
+;
+;-----------------------------------------------------------------
 
 align 4
 TCP_respond_segment:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE,"TCP_respond_segment: frame=%x flags=%x\n", edx, cl
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_respond_segment: frame=%x flags=%x\n", edx, cl
 
 ;---------------------
 ; Create the IP packet
 
         push    cx edx
-        mov     edx, [edi + 4]
-        mov     eax, [edi]
+        mov     edx, [edi + IPv4_header.DestinationAddress]
+        mov     edi, [edi + IPv4_header.SourceAddress]
         mov     ecx, sizeof.TCP_header
-        mov     di, IP_PROTO_TCP shl 8 + 128
-        xor     ebx, ebx                        ;;; fixme
+        mov     ax, IP_PROTO_TCP shl 8 + 128
         call    IPv4_output
         jz      .error
         pop     esi cx

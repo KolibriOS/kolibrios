@@ -53,6 +53,12 @@ IP_PROTO_IP             = 0
 IP_PROTO_ICMP           = 1
 IP_PROTO_TCP            = 6
 IP_PROTO_UDP            = 17
+IP_PROTO_RAW            = 255
+
+; IP options
+IP_TOS                  = 1
+IP_TTL                  = 2
+IP_HDRINCL              = 3
 
 ; PPP protocol numbers
 PPP_PROTO_IPv4          = 0x2100
@@ -71,6 +77,9 @@ SOCK_STREAM             = 1
 SOCK_DGRAM              = 2
 SOCK_RAW                = 3
 
+; Socket level
+SOL_SOCKET              = 0xffff
+
 ; Socket options
 SO_ACCEPTCON            = 1 shl 0
 SO_BROADCAST            = 1 shl 1
@@ -88,10 +97,6 @@ SO_NONBLOCK             = 1 shl 31
 ; Socket flags for user calls
 MSG_PEEK                = 0x02
 MSG_DONTWAIT            = 0x40
-
-; Socket level
-SOL_SOCKET              = 0
-
 
 ; Socket States
 SS_NOFDREF              = 0x0001        ; no file table ref any more

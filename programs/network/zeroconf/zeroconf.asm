@@ -20,7 +20,7 @@ format binary as ""
 
 ; CONFIGURATION
 
-TIMEOUT                 = 3             ; in seconds
+TIMEOUT                 = 5             ; in seconds
 BUFFER                  = 1024          ; in bytes
 DHCP_TRIES              = 3             ; number of times to try contacting DHCP server
 __DEBUG__               = 1             ; enable/disable
@@ -318,8 +318,8 @@ dhcp:
 
         pushd   [ebp + interface.number]
         pushd   4                       ; length of option
-        pushd   1 shl 9                 ; SO_BINDTODEVICE
-        pushd   0                       ; SOL_SOCKET
+        pushd   SO_BINDTODEVICE
+        pushd   SOL_SOCKET
         mcall   75, 8, [ebp + interface.socketNum], esp
         add     esp, 16
         cmp     eax, -1

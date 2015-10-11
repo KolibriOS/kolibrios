@@ -133,8 +133,9 @@ macro ICMP_init {
 ;  IN:  Pointer to buffer in [esp]
 ;       ebx = pointer to device struct
 ;       ecx = ICMP Packet size
+;       edx = ptr to IPv4 header
 ;       esi = ptr to ICMP Packet data
-;       edi = ptr to ipv4 source and dest address
+;       edi = interface number*4
 ;
 ;  OUT: /
 ;
@@ -144,8 +145,13 @@ ICMP_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP_input\n"
 
+; Dump all multicasts and broadcasts
+        mov     eax, [IP_LIST + edi]
+        cmp     eax, [edx + IPv4_header.DestinationAddress]
+        jne     .dump
+
 ; Check the checksum
-        push    esi ecx
+        push    esi ecx edx
         push    [esi + ICMP_header.Checksum]
         mov     [esi + ICMP_header.Checksum], 0
         xor     edx, edx
@@ -153,16 +159,10 @@ ICMP_input:
         call    checksum_2
         pop     si
         cmp     dx, si
-        pop     ecx esi
+        pop     edx ecx esi
         jne     .checksum_mismatch
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP_input: Checksum OK\n"
-
-; Ualidate device ptr
-        mov     eax, edi
-        call    NET_ptr_to_num4
-        cmp     edi, -1
-        je      .dump
 
 ; Update stats
         inc     [ICMP_PACKETS_RX + edi]
@@ -177,10 +177,10 @@ ICMP_input:
         call    mutex_lock
         popa
 
-        mov     edx, [eax]              ; ipv4 source address
+        add     ecx, esi
+        sub     ecx, edx
+        mov     esi, edx
         mov     eax, net_sockets
-  .try_more:
-;        mov      , [esi + ICMP_header.Identifier]
   .next_socket:
         mov     eax, [eax + SOCKET.NextPtr]
         or      eax, eax
@@ -191,12 +191,6 @@ ICMP_input:
 
         cmp     [eax + SOCKET.Protocol], IP_PROTO_ICMP
         jne     .next_socket
-
-        cmp     [eax + IP_SOCKET.RemoteIP], edx
-        jne     .next_socket
-
-;        cmp     [eax + ICMP_SOCKET.Identifier],
-;        jne     .next_socket
 
         pusha
         mov     ecx, socket_mutex
@@ -376,7 +370,7 @@ end if
 ;
 ; IN:  eax = socket ptr
 ;      ecx = data length
-;      esi = data offset
+;      edx = data pointer
 ;
 ;-----------------------------------------------------------------
 align 4
@@ -385,13 +379,13 @@ ICMP_output_raw:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "Creating ICMP Packet for socket %x, data ptr=%x\n", eax, edx
 
         push    edx
-
-        mov     di, IP_PROTO_ICMP SHL 8 + 128  ; TTL
-        mov     edx, [eax + IP_SOCKET.LocalIP]
         mov     ebx, [eax + IP_SOCKET.device]
-        mov     eax, [eax + IP_SOCKET.RemoteIP]
+        mov     edx, [eax + IP_SOCKET.LocalIP]
+        mov     edi, [eax + IP_SOCKET.RemoteIP]
+        mov     al, [eax + IP_SOCKET.ttl]
+        mov     ah, IP_PROTO_ICMP
         call    IPv4_output
-        jz      .exit
+        jz      .fail
 
         pop     esi
         push    eax
@@ -415,10 +409,14 @@ ICMP_output_raw:
         jnz     @f
         call    NET_ptr_to_num4
         inc     [ICMP_PACKETS_TX + edi]
-       @@:
+  @@:
         ret
-  .exit:
+
+  .fail:
+        pop     edx
         DEBUGF  DEBUG_NETWORK_ERROR, "Creating ICMP Packet failed\n"
+        or      eax, -1
+        mov     ebx, EMSGSIZE           ;;; FIXME
         ret
 
 

@@ -11,12 +11,16 @@ IPPROTO_IP      = 0
 IPPROTO_ICMP    = 1
 IPPROTO_TCP     = 6
 IPPROTO_UDP     = 17
+IPPROTO_RAW     = 255
+
+; IP options
+IP_TTL          = 2
 
 ; Address families
 AF_UNSPEC       = 0
 AF_LOCAL        = 1
 AF_INET4        = 2     ; IPv4
-AF_INET6        = 28    ; IPv6 (not supported yet)
+AF_INET6        = 28    ; IPv6
 
 PF_UNSPEC       = AF_UNSPEC
 PF_LOCAL        = AF_LOCAL
@@ -43,8 +47,14 @@ API_ARP         = 5 shl 16
 API_PPPOE       = 6 shl 16
 
 ; Socket flags for user calls
-MSG_PEEK                = 0x02
-MSG_DONTWAIT            = 0x40
+MSG_PEEK        = 0x02
+MSG_DONTWAIT    = 0x40
+
+; Socket levels
+SOL_SOCKET      = 0xffff
+
+; Socket options
+SO_BINDTODEVICE = 1 shl 9
 
 struct sockaddr_in
         sin_family      dw      ?       ; sa_family_t

@@ -27,9 +27,9 @@ struct  SOCKET
 
         PID                     dd ? ; process ID
         TID                     dd ? ; thread ID
-        Domain                  dd ? ; INET/LOCAL/..
+        Domain                  dd ? ; INET4/INET6/LOCAL/..
         Type                    dd ? ; RAW/STREAM/DGRAM
-        Protocol                dd ? ; ICMP/IPv4/ARP/TCP/UDP
+        Protocol                dd ? ; UDP/TCP/ARP/ICMP
         errorcode               dd ?
         device                  dd ? ; driver pointer, socket pointer if it's an LOCAL socket
 
@@ -47,6 +47,8 @@ struct  IP_SOCKET               SOCKET
 
         LocalIP                 rd 4 ; network byte order
         RemoteIP                rd 4 ; network byte order
+        ttl                     db ?
+                                rb 3 ; align
 
 ends
 
@@ -149,14 +151,6 @@ struct  UDP_SOCKET              IP_SOCKET
         RemotePort              dw ? ; network byte order
 
 ends
-
-
-struct  ICMP_SOCKET             IP_SOCKET
-
-        Identifier              dw ?
-
-ends
-
 
 struct  RING_BUFFER
 
@@ -313,6 +307,8 @@ SOCKET_open:
         cmp     ecx, AF_INET4
         jne     .no_inet4
 
+        mov     [eax + IP_SOCKET.ttl], 128
+
         cmp     edx, SOCK_DGRAM
         je      .udp
 
@@ -354,6 +350,10 @@ SOCKET_open:
 
 align 4
   .udp:
+        push    eax
+        init_queue (eax + SOCKET_QUEUE_LOCATION)        ; Set up data receiving queue
+        pop     eax
+
         mov     [eax + SOCKET.Protocol], IP_PROTO_UDP
         mov     [eax + SOCKET.snd_proc], SOCKET_send_udp
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
@@ -373,6 +373,10 @@ align 4
 
 align 4
   .raw_ip:
+        push    eax
+        init_queue (eax + SOCKET_QUEUE_LOCATION)        ; Set up data receiving queue
+        pop     eax
+
         mov     [eax + SOCKET.snd_proc], SOCKET_send_ip
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
         mov     [eax + SOCKET.connect_proc], IPv4_connect
@@ -381,6 +385,10 @@ align 4
 
 align 4
   .raw_icmp:
+        push    eax
+        init_queue (eax + SOCKET_QUEUE_LOCATION)        ; Set up data receiving queue
+        pop     eax
+
         mov     [eax + SOCKET.snd_proc], SOCKET_send_icmp
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
         mov     [eax + SOCKET.connect_proc], IPv4_connect
@@ -975,14 +983,14 @@ SOCKET_send_ip:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: IPv4\n"
 
         mov     [esp+32], ecx
-        call    IPv4_output_raw         ; FIXME: IPv4_output_raw should return error codes!
+        call    IPv4_output_raw
         cmp     eax, -1
         je      .error
         ret
 
   .error:
-        mov     dword[esp+32], -1
-        mov     dword[esp+20], EMSGSIZE
+        mov     dword[esp+32], eax
+        mov     dword[esp+20], ebx
         ret
 
 
@@ -992,14 +1000,14 @@ SOCKET_send_icmp:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: ICMP\n"
 
         mov     [esp+32], ecx
-        call    ICMP_output_raw         ; FIXME: errorcodes
+        call    ICMP_output_raw
         cmp     eax, -1
         je      .error
         ret
 
   .error:
-        mov     dword[esp+32], -1
-        mov     dword[esp+20], EMSGSIZE
+        mov     dword[esp+32], eax
+        mov     dword[esp+20], ebx
         ret
 
 
@@ -1126,17 +1134,23 @@ SOCKET_get_opt:
         ret
 
 
-
 ;-----------------------------------------------------------------
 ;
 ; SOCKET_set_options
 ;
 ;  IN:  ecx = socket number
-;       edx = pointer to the options:
-;               dd      level, optname, optlen, optval
+;       edx = pointer to socket_options
 ;  OUT: -1 on error
 ;
 ;-----------------------------------------------------------------
+
+struct socket_options
+        level   dd ?
+        optname dd ?
+        optlen  dd ?
+        optval  dd ?
+ends
+
 align 4
 SOCKET_set_opt:
 
@@ -1145,22 +1159,20 @@ SOCKET_set_opt:
         call    SOCKET_num_to_ptr
         jz      .invalid
 
-        cmp     dword [edx], SOL_SOCKET
+        cmp     [edx + socket_options.level], IP_PROTO_IP
+        je      .ip
+        cmp     [edx + socket_options.level], SOL_SOCKET
         jne     .invalid
 
-        cmp     dword [edx+4], SO_BINDTODEVICE
-        je      .bind
-
-  .invalid:
-        mov     dword[esp+32], -1
-        mov     dword[esp+20], EINVAL
-        ret
+  .socket:
+        cmp     [edx + socket_options.optname], SO_BINDTODEVICE
+        jne     .invalid
 
   .bind:
-        cmp     dword[edx+8], 0
+        cmp     [edx + socket_options.optlen], 0
         je      .unbind
 
-        movzx   edx, byte[edx + 12]
+        movzx   edx, byte[edx + socket_options.optval]
         cmp     edx, NET_DEVICES_MAX
         ja      .invalid
 
@@ -1180,8 +1192,24 @@ SOCKET_set_opt:
         mov     dword[esp+32], 0        ; success!
         ret
 
+  .ip:
+        cmp     [edx + socket_options.optname], IP_TTL
+        jne     .invalid
+
+  .ttl:
+        mov     bl, byte[edx + socket_options.optval]
+        mov     [eax + IP_SOCKET.ttl], bl
+
+        mov     dword[esp+32], 0        ; success!
+        ret
+
   .already:
         mov     dword[esp+20], EALREADY
+        mov     dword[esp+32], -1
+        ret
+
+  .invalid:
+        mov     dword[esp+20], EINVAL
         mov     dword[esp+32], -1
         ret
 
@@ -1474,6 +1502,7 @@ SOCKET_input:
         call    mutex_unlock
         popa
 
+        add     esp, 8
         call    NET_BUFF_free
         ret
 
