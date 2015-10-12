@@ -126,7 +126,6 @@ tabs_pos  db ?
 secure_sel db ?
 auto_braces db ?
 auto_indent db ?
-smart_tab db ?
 optim_save db ?
 line_nums db ?
 

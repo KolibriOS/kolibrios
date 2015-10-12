@@ -258,28 +258,26 @@ onshow:
   .recode:
 	ret
   .options:
-	;mov     word[mm.Options+0],0
-	mov	byte[mm.Options+5],0
-	or	byte[mm.Options+2],0x02
-	test	[secure_sel],1
-	jnz	@f
-	and	byte[mm.Options+2],0xFD
-    @@: or	byte[mm.Options+3],0x02
-	test	[auto_braces],1
+	or	byte[mm.Options+3],0x02
+	test	[line_nums],1
 	jnz	@f
 	and	byte[mm.Options+3],0xFD
     @@: or	byte[mm.Options+4],0x02
-	test	[auto_indent],1
+	test	[secure_sel],1
 	jnz	@f
 	and	byte[mm.Options+4],0xFD
+    @@: or	byte[mm.Options+5],0x02
+	test	[auto_braces],1
+	jnz	@f
+	and	byte[mm.Options+5],0xFD
     @@: or	byte[mm.Options+6],0x02
-	test	[optim_save],1
+	test	[auto_indent],1
 	jnz	@f
 	and	byte[mm.Options+6],0xFD
-    @@: or	byte[mm.Options+8],0x02
-	test	[line_nums],1
+    @@: or	byte[mm.Options+7],0x02
+	test	[optim_save],1
 	jnz	@f
-	and	byte[mm.Options+8],0xFD
+	and	byte[mm.Options+7],0xFD
     @@: ret
 
 pi_sel	 dd ?

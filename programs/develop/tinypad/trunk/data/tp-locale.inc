@@ -168,7 +168,6 @@ popup_res mm.Options,\
   ru,'Безопасное выделение'	,'',SecureSel	,\
   ru,'Автоматические скобки'	,'',AutoBrackets,\
   ru,'Автоматический отступ'	,'',AutoIndents	,\
-  ru,'Умная табуляция'		,'',SmartTabs	,\
   ru,'Оптимальное сохранение'	,'',OptimalFill	,\
   ru,'-','',,\
   ru,'Внешний вид...'		,'',Appearance	,\
@@ -180,7 +179,6 @@ popup_res mm.Options,\
   en,'Secure selection'		,'',SecureSel	,\
   en,'Automatic brackets'	,'',AutoBrackets,\
   en,'Automatic indents'	,'',AutoIndents	,\
-  en,'Smart tabulation'		,'',SmartTabs	,\
   en,'Optimal fill on saving'	,'',OptimalFill	,\
   en,'-','',,\
   en,'Appearance...'		,'',Appearance	,\
@@ -192,7 +190,6 @@ popup_res mm.Options,\
   et,'Turvaline valimine'	,'',SecureSel	,\
   et,'Automaatsed sulud'	,'',AutoBrackets,\
   et,'Automaatsed taandread'	,'',AutoIndents	,\
-  et,'Tark tabulatsioon'	,'',SmartTabs	,\
   et,'Optimaalne tфitmine salvestamisel','',OptimalFill,\
   et,'-','',,\
   et,'Vфlimus...'		,'',Appearance	,\
@@ -204,7 +201,6 @@ popup_res mm.Options,\
   sp,'Selecciєn segura'		,'',SecureSel	,\
   sp,'Parщntesis automсticos'	,'',AutoBrackets,\
   sp,'Identaciєn automсtica'	,'',AutoIndents	,\
-  sp,'Tabulaciєn inteligente'	,'',SmartTabs	,\
   sp,'Llenado єptimo al guardar','',OptimalFill	,\
   sp,'-','',,\
   sp,'Apariencia...'		,'',Appearance

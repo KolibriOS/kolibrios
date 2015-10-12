@@ -34,7 +34,6 @@ define mm.Options.Appearance   set_opt.dialog
 define mm.Options.SecureSel    set_opt.secure_sel
 define mm.Options.AutoBrackets set_opt.auto_braces
 define mm.Options.AutoIndents  set_opt.auto_indents
-define mm.Options.SmartTabs    0
 define mm.Options.OptimalFill  set_opt.optimal_fill
 define mm.Options.LineNumbers  set_opt.line_numbers
 define mm.Options.ZoomIn       key.ctrl_plus

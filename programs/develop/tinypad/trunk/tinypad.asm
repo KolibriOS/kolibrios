@@ -383,8 +383,6 @@ proc load_settings ;//////////////////////////////////////////////////////////
 	mov	[auto_braces],al
 	invoke	ini.get_int,ini_path,ini_sec_options,ini_options_auto_indent,1
 	mov	[auto_indent],al
-	invoke	ini.get_int,ini_path,ini_sec_options,ini_options_smart_tab,1
-	mov	[smart_tab],al
 	invoke	ini.get_int,ini_path,ini_sec_options,ini_options_optim_save,1
 	mov	[optim_save],al
 	invoke	ini.get_int,ini_path,ini_sec_options,ini_options_line_nums,0
@@ -437,8 +435,6 @@ proc save_settings ;//////////////////////////////////////////////////////////
 	invoke	ini.set_int,ini_path,ini_sec_options,ini_options_auto_braces,eax
 	movzx	eax,[auto_indent]
 	invoke	ini.set_int,ini_path,ini_sec_options,ini_options_auto_indent,eax
-	movzx	eax,[smart_tab]
-	invoke	ini.set_int,ini_path,ini_sec_options,ini_options_smart_tab,eax
 	movzx	eax,[optim_save]
 	invoke	ini.set_int,ini_path,ini_sec_options,ini_options_optim_save,eax
 	movzx	eax,[line_nums]

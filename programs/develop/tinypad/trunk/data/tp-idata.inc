@@ -112,7 +112,6 @@ sz ini_options_tabs_pos,'tabs_pos',0
 sz ini_options_secure_sel,'secure_sel',0
 sz ini_options_auto_braces,'auto_braces',0
 sz ini_options_auto_indent,'auto_indent',0
-sz ini_options_smart_tab,'smart_tab',0
 sz ini_options_optim_save,'optim_save',0
 sz ini_options_line_nums,'line_nums',0
 ;-----------------------------------------------------------------------------
