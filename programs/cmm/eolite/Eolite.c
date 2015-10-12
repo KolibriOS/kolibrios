@@ -34,6 +34,7 @@ dword col_padding, col_selec, col_lpanel;
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
 struct path_string { char Item[4096]; };
 
+byte smooth_font=false;
 byte active_about=0;
 word about_window;
 word settings_window;
@@ -735,6 +736,7 @@ void Line_ReDraw(dword bgcol, filenum){
 	else
 	{
 		font.bg_color = bgcol;
+		font.use_smooth = smooth_font;
 		font.prepare(files.x + 23, files.item_h - font.height / 2 + y, file_name_off);
 		font.show();
 	}

@@ -6,6 +6,7 @@
 	?define SHOW_REAL_NAMES "Показывать имена файлов не меняя регистр"
 	?define FONT_SIZE_LABEL "Размер шрифта"
 	?define USE_TWO_PANELS "Две панели"
+	?define USE_SMOOTH_FONT "Использовать сглаженный шрифт"
 	?define LIST_LINE_HEIGHT "Высота строки в списке"
 	?define NOTIFY_COPY_END "Уведомлять о завершении копирования"
 	?define T_DOUBLE_CLICK "Время двойного клика (в сотых)"
@@ -17,6 +18,7 @@
 	?define SHOW_REAL_NAMES "Show real file names without changing case"
 	?define FONT_SIZE_LABEL "Font size"
 	?define USE_TWO_PANELS "Two panels"
+	?define USE_SMOOTH_FONT "Use smooth font"
 	?define LIST_LINE_HEIGHT "List line height"
 	?define NOTIFY_COPY_END "Notify when copying finished"
 	?define T_DOUBLE_CLICK "Double click time (in hundredths)"
@@ -50,11 +52,12 @@ void settings_dialog()
 				else if (id==20) show_dev_name ^= 1;
 				else if (id==21) { action_buf=109; real_files_names_case ^= 1; }
 				else if (id==22) info_after_copy ^= 1;
-				else if (id==24) two_panels ^= 1;
+				else if (id==24) two_panels ^= true;
 				else if (id==25) { files.item_h++; files_active.item_h = files_inactive.item_h = files.item_h; }
 				else if (id==26) && (files.item_h>18) files.item_h--;
 				else if (id==27) MOUSE_TIME++;
 				else if (id==28) && (MOUSE_TIME>29) MOUSE_TIME--;
+				else if (id==29) smooth_font ^= true;
 				else if (id==30) { font.size.text++; IF(!font.changeSIZE()) font.size.text--; BigFontsChange(); }
 				else if (id==31) { font.size.text--; IF(!font.changeSIZE()) font.size.text++; BigFontsChange(); }
 				EventRedrawWindow(Form.left,Form.top);
@@ -67,10 +70,10 @@ void settings_dialog()
 				break;
 				
 			case evReDraw:
-				DefineAndDrawWindow(Form.left + Form.width/2-10, Form.top + Form.height/2 - 75, 300, 246+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
+				DefineAndDrawWindow(Form.left + Form.width/2-10, Form.top + Form.height/2 - 75, 300, 280+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
 				DrawSettingsCheckBoxes();
-				DrawFlatButton(9, 186, strlen(SAVE_PATH_AS_DEFAULT)+4*6, 22, 6, 0xE4DFE1, SAVE_PATH_AS_DEFAULT);
-				DrawFlatButton(9, 216, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
+				DrawFlatButton(9, 208, strlen(SAVE_PATH_AS_DEFAULT)+4*6, 22, 6, 0xE4DFE1, SAVE_PATH_AS_DEFAULT);
+				DrawFlatButton(9, 240, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
 		}
 	}
 }
@@ -89,9 +92,10 @@ void DrawSettingsCheckBoxes()
 	CheckBox2(10, 33, 21, SHOW_REAL_NAMES,  real_files_names_case);
 	CheckBox2(10, 55, 22, NOTIFY_COPY_END,  info_after_copy);
 	CheckBox2(10, 77, 24, USE_TWO_PANELS,  two_panels); 
-	MoreLessBox(10, 103, 18, 27, 28, #system.color, MOUSE_TIME, T_DOUBLE_CLICK);
-	MoreLessBox(10, 130, 18, 25, 26, #system.color, files.item_h, LIST_LINE_HEIGHT);
-	if (font.data) MoreLessBox(10, 157, 18, 30, 31, #system.color, font.size.text, FONT_SIZE_LABEL);
+	CheckBox2(10, 99, 29, USE_SMOOTH_FONT,  smooth_font); 
+	MoreLessBox(10, 125, 18, 27, 28, #system.color, MOUSE_TIME, T_DOUBLE_CLICK);
+	MoreLessBox(10, 152, 18, 25, 26, #system.color, files.item_h, LIST_LINE_HEIGHT);
+	if (font.data) MoreLessBox(10, 179, 18, 30, 31, #system.color, font.size.text, FONT_SIZE_LABEL);
 }
 
 
@@ -105,6 +109,7 @@ void LoadIniSettings()
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "InfoAfterCopy",     0); info_after_copy = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "FontSize",          9); font.size.text = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "TwoPanels",         0); two_panels = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #config_section, "UseSmoothFont",     true);smooth_font = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "LineHeight",       18); files.item_h = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "TimeDoubleClick",  50); MOUSE_TIME = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinX", 200); WinX = EAX;
@@ -123,6 +128,7 @@ void SaveIniSettings()
 	ini_set_int stdcall (eolite_ini_path, #config_section, "InfoAfterCopy", info_after_copy);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "FontSize", font.size.text);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "TwoPanels", two_panels);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "UseSmoothFont", smooth_font);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "LineHeight", files.item_h);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "TimeDoubleClick", MOUSE_TIME);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "WinX", Form.left);
@@ -137,6 +143,7 @@ void SaveIniSettings()
 		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "InfoAfterCopy", info_after_copy);
 		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "FontSize", font.size.text);
 		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "TwoPanels", two_panels);
+		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "UseSmoothFont", smooth_font);
 		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "LineHeight", files.item_h);
 		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "TimeDoubleClick", MOUSE_TIME);
 		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "WinX", Form.left);

@@ -26,6 +26,7 @@
 	__SIZE size;
 	byte r,g,b,weight,italic, smooth;
 	byte width,height;
+	byte use_smooth;
 	word left,top;
 	byte encoding;
 	dword color;
@@ -219,7 +220,7 @@ FONT font = 0;
 		IF(weight)len+=math.ceil(size.text/17);
 		text1++;
 	}
-	IF (no_bg_copy) && (!color) SmoothFont(buffer, size.width, size.height);
+	IF (use_smooth) SmoothFont(buffer, size.width, size.height);
 	return len;
 }
 :void FONT::show()
@@ -306,6 +307,7 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 :byte FONT::load(dword path)
 {
 	buffer_size = 0;
+	use_smooth = true;
 	IF(data)free(data);
 	IF(!io.read(path)) { debug("Error while loading font: "); debugln(path); return false; }
 	begin = data = io.buffer_data;
