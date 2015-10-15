@@ -249,44 +249,44 @@ drawChar:
         inc     esi
         cmp     [fontSmoothing], 0
         jz      .nextPixel
-.checkLeftSubP:     ; subpixel smoothing
+.checkLeftSM:     ; smoothing
         bsf     eax, edx
         dec     eax
-        js      .checkRightSubP
+        js      .checkRightSM
         bt      [ebx], eax
-        jc      .checkRightSubP
+        jc      .checkRightSM
         dec     eax
-        js      .checkLeftDownSubP
+        js      .checkLeftDownSM
         bt      [ebx], eax
-        jc      .checkRightSubP
-.checkLeftDownSubP:
+        jc      .checkRightSM
+.checkLeftDownSM:
         inc     eax
         bt      [ebx+1], eax
-        jnc     .checkLeftUpSubP
+        jnc     .checkLeftUpSM
         inc     eax
         bt      [ebx+1], eax
         jnc     @f
         bt      [ebx-1], eax
-        jc      .checkRightSubP
+        jc      .checkRightSM
         dec     eax
         dec     eax
         js      @f
         bt      [ebx+1], eax
         jnc     @f
         inc     eax
-.checkLeftUpSubP:
+.checkLeftUpSM:
         bt      [ebx-1], eax
-        jnc     .checkRightSubP
+        jnc     .checkRightSM
         inc     eax
         bt      [ebx-1], eax
         jnc     @f
         bt      [ebx+1], eax
-        jc      .checkRightSubP
+        jc      .checkRightSM
         dec     eax
         dec     eax
         js      @f
         bt      [ebx-1], eax
-        jc      .checkRightSubP
+        jc      .checkRightSM
 @@:
         mov     ecx, [esp+20+deltaToScreen]
         mov     eax, [edi-4]
@@ -301,6 +301,11 @@ drawChar:
         push    ebx edx
         mov     ebx, ebp
         xor     ecx, ecx
+        cmp     [fontSmoothing], 1
+        jnz     .subpixelLeft
+        call    antiAliasing
+        jmp     @f
+.subpixelLeft:
         mov     cl, bl
         lea     edx, [ecx*8+ecx]
         lea     edx, [ecx*2+edx]
@@ -332,9 +337,10 @@ drawChar:
         shr     ecx, 3
         mov     al, cl
         rol     eax, 16
+@@:
         mov     [edi-4], eax
         pop     edx ebx
-.checkRightSubP:
+.checkRightSM:
         bsf     eax, edx
         inc     eax
         bt      [ebx], eax
@@ -343,9 +349,9 @@ drawChar:
         bt      [ebx], eax
         jc      .nextPixel
         dec     eax
-.checkRightDownSubP:
+.checkRightDownSM:
         bt      [ebx+1], eax
-        jnc     .checkRightUpSubP
+        jnc     .checkRightUpSM
         dec     eax
         bt      [ebx+1], eax
         jnc     @f
@@ -356,7 +362,7 @@ drawChar:
         bt      [ebx+1], eax
         jnc     @f
         dec     eax
-.checkRightUpSubP:
+.checkRightUpSM:
         bt      [ebx-1], eax
         jnc     .nextPixel
         dec     eax
@@ -382,6 +388,11 @@ drawChar:
         push    ebx edx
         mov     ebx, ebp
         xor     ecx, ecx
+        cmp     [fontSmoothing], 1
+        jnz     .subpixelRight
+        call    antiAliasing
+        jmp     @f
+.subpixelRight:
         mov     cl, al
         mov     edx, ecx
         shl     ecx, 3
@@ -413,6 +424,7 @@ drawChar:
         shr     edx, 4
         mov     al, dl
         rol     eax, 16
+@@:
         mov     [edi+4], eax
         pop     edx ebx
         jmp     .nextPixel
@@ -756,7 +768,25 @@ drawChar:
         jnz     drawChar
         ret
 
-fontSmoothing   db  1
+antiAliasing:
+        mov     bp, 3
+@@:
+        mov     cl, al
+        mov     dl, bl
+        lea     ecx, [ecx*2+ecx]
+        add     ecx, edx
+        shr     ecx, 2
+        mov     al, cl
+        ror     eax, 8
+        ror     ebx, 8
+        dec     bp
+        jnz     @b
+        ror     eax, 8
+        ror     ebx, 8
+        mov     ebp, ebx
+        ret
+
+fontSmoothing   db  2
 font1:
   if lang eq sp
   file 'char_sp.mt'

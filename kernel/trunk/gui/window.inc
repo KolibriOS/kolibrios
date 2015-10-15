@@ -30,11 +30,8 @@ uglobal
   draw_limits    RECT
 endg
 
-align 4
 ;------------------------------------------------------------------------------
 syscall_draw_window: ;///// system function 0 /////////////////////////////////
-;------------------------------------------------------------------------------
-;? <description>.
 ;------------------------------------------------------------------------------
         mov     eax, edx
         shr     eax, 24
@@ -49,34 +46,28 @@ syscall_draw_window: ;///// system function 0 /////////////////////////////////
         or      al, al
         jnz     @f
 
-        ; type I - original style
+; type I - original style
         call    drawwindow_I
         jmp     window._.draw_window_caption.2
 ;--------------------------------------
-align 4
 @@:
         dec     al
         jnz     @f
 
-        ; type II - only reserve area, no draw
-;        call    sys_window_mouse
-;        call    [draw_pointer]
+; type II - only reserve area, no draw
         call    __sys_draw_pointer
         jmp     .exit
 ;--------------------------------------
-align 4
 @@:
         dec     al
         jnz     @f
 
-        ; type III  - new style
+; type III  - new style
         call    drawwindow_III
         jmp     window._.draw_window_caption.2
-
-        ; type IV & V - skinned window (resizable & not)
 ;--------------------------------------
-align 4
 @@:
+; type IV & V - skinned window (resizable & not)
         mov     eax, [TASK_COUNT]
         movzx   eax, word[WIN_POS + eax * 2]
         cmp     eax, [CURRENT_TASK]
@@ -86,11 +77,8 @@ align 4
         call    drawwindow_IV
         jmp     window._.draw_window_caption.2
 ;--------------------------------------
-align 4
 .exit:
         ret
-;------------------------------------------------------------------------------
-align 4
 ;------------------------------------------------------------------------------
 syscall_display_settings: ;///// system function 48 ///////////////////////////
 ;------------------------------------------------------------------------------
@@ -135,77 +123,64 @@ syscall_display_settings: ;///// system function 48 ///////////////////////////
 ;< ecx = pointer to FileInfoBlock struct
 ;> eax = FS error code
 ; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;; Set font smoothing:
+;; Get font smoothing:
 ;< ebx = 9
-;< ecx = 0 (off) or !0 (on)
+;> eax = 0 — off, 1 — on, 2 — subpixel
+; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;; Set font smoothing:
+;< ebx = 10
+;< ecx = 0 — off, 1 — on, 2 — subpixel
 ;------------------------------------------------------------------------------
         cmp     ebx, .sizeof.ftable / 4
         ja      @f
         jmp     [.ftable + ebx * 4]
-;--------------------------------------
-align 4
-@@:
-        ret
 ;------------------------------------------------------------------------------
-align 4
 syscall_display_settings.00:
         xor     eax, eax
         inc     ebx
         cmp     [windowtypechanged], ebx
-        jne     .exit
+        jne     @f
         mov     [windowtypechanged], eax
-
         jmp     syscall_display_settings._.redraw_whole_screen
-;--------------------------------------
-align 4
-.exit:
-        ret
 ;------------------------------------------------------------------------------
-align 4
 syscall_display_settings.01:
         and     ecx, 1
         cmp     ecx, [buttontype]
-        je      .exit
+        je      @f
         mov     [buttontype], ecx
         mov     [windowtypechanged], ebx
-;--------------------------------------
-align 4
-  .exit:
+@@:
         ret
 ;------------------------------------------------------------------------------
-align 4
 syscall_display_settings.02:
         dec     ebx
         mov     esi, ecx
         cmp     edx, 192
         jnae    @f
         mov     edx, 192 ; max size
-      @@:
+@@:
         mov     edi, common_colours
         mov     ecx, edx
         rep movsb
         mov     [windowtypechanged], ebx
         ret
 ;------------------------------------------------------------------------------
-align 4
 syscall_display_settings.03:
         mov     edi, ecx
         cmp     edx, 192
         jnae    @f
         mov     edx, 192 ; max size
-      @@:
+@@:
         mov     esi, common_colours
         mov     ecx, edx
         rep movsb
         ret
 ;------------------------------------------------------------------------------
-align 4
 syscall_display_settings.04:
         mov     eax, [_skinh]
         mov     [esp + 32], eax
         ret
 ;------------------------------------------------------------------------------
-align 4
 syscall_display_settings.05:
         mov     eax, [screen_workarea.left - 2]
         mov     ax, word[screen_workarea.right]
@@ -215,10 +190,8 @@ syscall_display_settings.05:
         mov     [esp + 20], eax
         ret
 ;------------------------------------------------------------------------------
-align 4
 syscall_display_settings.06:
         xor     esi, esi
-
         mov     edi, [_display.width]
         dec     edi
         mov     eax, ecx
@@ -230,19 +203,13 @@ syscall_display_settings.06:
         or      eax, eax
         jge     @f
         xor     eax, eax
-;--------------------------------------
-align 4
 @@:
         mov     [screen_workarea.left], eax
         cmp     ebx, edi
         jle     @f
         mov     ebx, edi
-;--------------------------------------
-align 4
 @@:
         mov     [screen_workarea.right], ebx
-;--------------------------------------
-align 4
 .check_horizontal:
         mov     edi, [_display.height]
         dec     edi
@@ -255,59 +222,48 @@ align 4
         or      eax, eax
         jge     @f
         xor     eax, eax
-;--------------------------------------
-align 4
 @@:
         mov     [screen_workarea.top], eax
         cmp     ebx, edi
         jle     @f
         mov     ebx, edi
-;--------------------------------------
-align 4
 @@:
         mov     [screen_workarea.bottom], ebx
-;--------------------------------------
-align 4
 .check_if_redraw_needed:
         or      esi, esi
-        jz      .exit
+        jz      @f
 
         call    repos_windows
         jmp     syscall_display_settings._.calculate_whole_screen
-;--------------------------------------
-align 4
-.exit:
-        ret
 ;------------------------------------------------------------------------------
-align 4
 syscall_display_settings.07:
         mov     eax, [_skinmargins + 0]
         mov     [esp + 32], eax
         mov     eax, [_skinmargins + 4]
         mov     [esp + 20], eax
+@@:
         ret
 ;------------------------------------------------------------------------------
-align 4
 syscall_display_settings.08:
         mov     ebx, ecx
         call    read_skin_file
         mov     [esp + 32], eax
         test    eax, eax
-        jnz     .exit
+        jnz     @b
 
         call    syscall_display_settings._.calculate_whole_screen
         jmp     syscall_display_settings._.redraw_whole_screen
-;--------------------------------------
-align 4
-.exit:
+;------------------------------------------------------------------------------
+syscall_display_settings.09:
+        xor     eax, eax
+        mov     al, [fontSmoothing]
+        mov     [esp + 32], eax
         ret
 ;------------------------------------------------------------------------------
-align 4
-syscall_display_settings.09:
+syscall_display_settings.10:
         mov     [fontSmoothing], cl
         ret
 ;------------------------------------------------------------------------------
-align 4
 syscall_display_settings._.calculate_whole_screen:
         xor     eax, eax
         xor     ebx, ebx
@@ -317,7 +273,6 @@ syscall_display_settings._.calculate_whole_screen:
         dec     edx
         jmp     calculatescreen
 ;------------------------------------------------------------------------------
-align 4
 syscall_display_settings._.redraw_whole_screen:
         xor     eax, eax
         mov     [draw_limits.left], eax
@@ -330,8 +285,6 @@ syscall_display_settings._.redraw_whole_screen:
         mov     [draw_limits.bottom], eax
         mov     eax, window_data
         jmp     redrawscreen
-;------------------------------------------------------------------------------
-align 4
 ;------------------------------------------------------------------------------
 syscall_set_window_shape: ;///// system function 50 ///////////////////////////
 ;------------------------------------------------------------------------------
@@ -1447,7 +1400,7 @@ sys_window_moving_handler: ;///////////////////////////////////////////////////
 
 iglobal
   FuncTable syscall_display_settings, ftable, \
-    00, 01, 02, 03, 04, 05, 06, 07, 08, 09
+    00, 01, 02, 03, 04, 05, 06, 07, 08, 09, 10
 
   align 4
   window_topleft dd \
