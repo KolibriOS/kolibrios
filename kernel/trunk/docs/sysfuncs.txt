@@ -192,36 +192,37 @@ Remarks:
   * System time can be set by function 22.
 
 ======================================================================
-============ Function 4 - draw text string in the window. ============
+=================== Function 4 - draw text string. ===================
 ======================================================================
 Parameters:
   * eax = 4 - function number
-  * ebx = [coordinate on axis x]*65536 + [coordinate on axis y]
-  * ecx = 0xXYRRGGBB, where
+  * ebx = X*65536+Y, coordinates in the window or buffer
+  * ecx = 0xXXRRGGBB, where
     * RR, GG, BB specify text color
-    * X = ABFF (bits):
+    * XX = ABFFCSSS (bits):
       * A=1 - output zero terminated string
-      * B=1 - fill background with the color edi
+      * B=1 - fill background (color = edi)
       * FF specifies the font and encoding:
         0 = 6x9  cp866
         2 = 8x16 UTF-16LE
         3 = 8x16 UTF-8
-    * Y = CDDD (bits):
-      * C=1 redirect the output to the user area, specified in edi
-      * DDD = (size multiplier)-1, so 0 = x1, 7 = x8
+      * C=0 - draw to the window,
+        C=1 - draw to the user buffer (edi)
+      * SSS = (size multiplier)-1, so 0 = x1, 7 = x8
   * edx = pointer to the beginning of the string
   * esi = for A=0 length of the string, for A=1 is ignored
   * edi = for B=1 color to fill background,
-          for C=1 pointer to user area for redirect
+          for C=1 pointer to user buffer
 
 Returned value:
   * function does not return value
 Remarks:
-  * C=1, pixel depth = 32 bits, user area is as follows:
-    Xsize = dword
-    Ysize = dword
-    rest of the area = Xsize*Ysize*4
   * You can not use B=1 and C=1 at the same time, since both use edi.
+  * When SSS=0, font may be smoothed, depending on system setting.
+  * User buffer structure:
+Xsize       dd
+Ysize       dd
+picture     rb  Xsize*Ysize*4  ; 32 bpp
 
 ======================================================================
 ========================= Function 5 - delay. ========================
@@ -2115,12 +2116,21 @@ Remarks:
     'default.skn' or dynamically with the application 'desktop'.
 
 ======================================================================
-======== Function 48, subfunction 9 - font smoothing setting. ========
+====== Function 48, subfunction 9 - get font smoothing setting. ======
 ======================================================================
 Parameters:
   * eax = 48 - function number
   * ebx = 9 - subfunction number
-  * cl=0 - turn off font smoothing, else - turn on
+Returned value:
+  * eax = 2 - subpixel, 1 - anti-aliasing, 0 - off
+
+======================================================================
+========== Function 48, subfunction 10 - set font smoothing. =========
+======================================================================
+Parameters:
+  * eax = 48 - function number
+  * ebx = 10 - subfunction number
+  * cl  = 2 - subpixel, 1 - anti-aliasing, 0 - off
 
 ======================================================================
 =========== Function 49 - Advanced Power Management (APM). ===========
