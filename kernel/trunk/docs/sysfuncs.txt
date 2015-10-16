@@ -1041,6 +1041,24 @@ Parameters:
     * bit 4 is set = 5th button is pressed
 Returned value:
   * function does not return value
+
+-------------- Subsubfunction 6 - get doubleclick delay. -------------
+Parameters:
+  * eax = 18 - function number
+  * ebx = 19 - subfunction number
+  * ecx = 6 - subsubfunction number
+Returned value:
+  * eax = current doubleclick delay (100 = 1 second)
+
+-------------- Subsubfunction 7 - set doubleclick delay. -------------
+Parameters:
+  * eax = 18 - function number
+  * ebx = 19 - subfunction number
+  * ecx = 7 - subsubfunction number
+  * dl  = new value for doubleclick delay (100 = 1 second)
+Returned value:
+  * function does not return value
+
 Remarks:
   * It is recommended to set speed of the mouse (in subsubfunction 1)
     from 1 up to 9. The installed value is not inspected by the kernel
@@ -1653,18 +1671,41 @@ Remarks:
     contains relative y-coordinate, and to the high word
     1 should be added.
 
------------- Subfunction 2 - pressed buttons of the mouse ------------
+------------- Subfunction 2 - states of the mouse buttons ------------
 Parameters:
   * eax = 37 - function number
   * ebx = 2 - subfunction number
 Returned value:
-  * eax contains information on the pressed mouse buttons:
-  * bit 0 is set = left button is pressed
-  * bit 1 is set = right button is pressed
-  * bit 2 is set = middle button is pressed
-  * bit 3 is set = 4th button is pressed
-  * bit 4 is set = 5th button is pressed
-  * other bits are cleared
+  * eax = bits 0-4 equal to subfunction 3
+
+------- Subfunction 3 - states and events of the mouse buttons -------
+Parameters:
+  * eax = 37 - function number
+  * ebx = 3 - subfunction number
+Returned value:
+  * eax contains next information:
+
+states:
+  * bit 0 is set = left button is held
+  * bit 1 is set = right button is held
+  * bit 2 is set = middle button is held
+  * bit 3 is set = 4th button is held
+  * bit 4 is set = 5th button is held
+
+events:
+  * bit 8 is set = left button is pressed
+  * bit 9 is set = right button is pressed
+  * bit 10 is set = middle button is pressed
+
+  * bit 15 is set = vertical scroll is used
+
+  * bit 16 is set = left button is released
+  * bit 17 is set = right button is released
+  * bit 18 is set = middle button is released
+
+  * bit 23 is set = horisontal scroll is used
+
+  * bit 24 is set = doubleclick by left button
 
 -------------------- Subfunction 4 - load cursor ---------------------
 Parameters:

@@ -1959,7 +1959,10 @@ get_timer_ticks:
 ;-----------------------------------------------------------------------------
 iglobal
 align 4
-mousefn dd msscreen, mswin, msbutton, msset
+mousefn dd msscreen
+        dd mswin
+        dd msbutton
+        dd msbuttonExt
         dd app_load_cursor
         dd app_set_cursor
         dd app_delete_cursor
@@ -1971,21 +1974,24 @@ readmousepos:
 ; eax=0 screen relative
 ; eax=1 window relative
 ; eax=2 buttons pressed
-; eax=3 set mouse pos   ; reserved
+; eax=3 buttons pressed ext
 ; eax=4 load cursor
 ; eax=5 set cursor
-; eax=6 delete cursor   ; reserved
+; eax=6 delete cursor
 ; eax=7 get mouse_z
 
         cmp     ebx, 7
-        ja      msset
+        ja      @f
         jmp     [mousefn+ebx*4]
+
 msscreen:
         mov     eax, [MOUSE_X]
         shl     eax, 16
         mov     ax, [MOUSE_Y]
         mov     [esp+36-4], eax
+@@:
         ret
+
 mswin:
         mov     eax, [MOUSE_X]
         shl     eax, 16
@@ -1995,7 +2001,6 @@ mswin:
         shl     ebx, 16
         mov     bx, word [esi-twdw+WDATA.box.top]
         sub     eax, ebx
-
         mov     edi, [CURRENT_TASK]
         shl     edi, 8
         sub     ax, word[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
@@ -2004,10 +2009,35 @@ mswin:
         rol     eax, 16
         mov     [esp+36-4], eax
         ret
+
 msbutton:
         movzx   eax, byte [BTN_DOWN]
         mov     [esp+36-4], eax
         ret
+
+msbuttonExt:
+        mov     eax, [BTN_DOWN]
+        mov     [esp+36-4], eax
+        ret
+
+app_load_cursor:
+        cmp     ecx, OS_BASE
+        jae     @f
+        stdcall load_cursor, ecx, edx
+        mov     [esp+36-4], eax
+@@:
+        ret
+
+app_set_cursor:
+        stdcall set_cursor, ecx
+        mov     [esp+36-4], eax
+        ret
+
+app_delete_cursor:
+        stdcall delete_cursor, ecx
+        mov     [esp+36-4], eax
+        ret
+
 msz:
         mov     edi, [TASK_COUNT]
         movzx   edi, word [WIN_POS + edi*2]
@@ -2020,27 +2050,8 @@ msz:
         and     [MOUSE_SCROLL_H], word 0
         and     [MOUSE_SCROLL_V], word 0
         ret
-       @@:
+@@:
         and     [esp+36-4], dword 0
-;           ret
-msset:
-        ret
-
-app_load_cursor:
-        cmp     ecx, OS_BASE
-        jae     msset
-        stdcall load_cursor, ecx, edx
-        mov     [esp+36-4], eax
-        ret
-
-app_set_cursor:
-        stdcall set_cursor, ecx
-        mov     [esp+36-4], eax
-        ret
-
-app_delete_cursor:
-        stdcall delete_cursor, ecx
-        mov     [esp+36-4], eax
         ret
 
 is_input:
@@ -2536,11 +2547,6 @@ sysfn_waitretrace:     ; 18.14 = sys wait retrace
 ;------------------------------------------------------------------------------
 align 4
 sysfn_centermouse:      ; 18.15 = mouse centered
-; removed here by <Lrz>
-;     call  mouse_centered
-;* mouse centered - start code- Mario79
-;mouse_centered:
-;        push  eax
         mov     eax, [_display.width]
         shr     eax, 1
         mov     [MOUSE_X], ax
@@ -2548,62 +2554,61 @@ sysfn_centermouse:      ; 18.15 = mouse centered
         shr     eax, 1
         mov     [MOUSE_Y], ax
         call    wakeup_osloop
-;        ret
-;* mouse centered - end code- Mario79
         xor     eax, eax
         and     [esp+32], eax
-;        pop   eax
         ret
 ;------------------------------------------------------------------------------
-align 4
-sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
-        test    ecx, ecx; get mouse speed factor
-        jnz     .set_mouse_acceleration
+sysfn_mouse_acceleration:       ; 18.19 = set/get mouse features
+        cmp     ecx, 8
+        jnc     @f
+        jmp     dword [.table+ecx*4]
+.get_mouse_acceleration:
         xor     eax, eax
         mov     ax, [mouse_speed_factor]
         mov     [esp+32], eax
         ret
- .set_mouse_acceleration:
-;     cmp  ecx,1  ; set mouse speed factor
-        dec     ecx
-        jnz     .get_mouse_delay
+.set_mouse_acceleration:
         mov     [mouse_speed_factor], dx
         ret
- .get_mouse_delay:
-;     cmp  ecx,2  ; get mouse delay
-        dec     ecx
-        jnz     .set_mouse_delay
+.get_mouse_delay:
         mov     eax, [mouse_delay]
         mov     [esp+32], eax
         ret
- .set_mouse_delay:
-;     cmp  ecx,3  ; set mouse delay
-        dec     ecx
-        jnz     .set_pointer_position
+.set_mouse_delay:
         mov     [mouse_delay], edx
+@@:
         ret
- .set_pointer_position:
-;     cmp  ecx,4  ; set mouse pointer position
-        dec     ecx
-        jnz     .set_mouse_button
+.set_pointer_position:
         cmp     dx, word[_display.height]
-        jae     .end
+        jae     @b
         rol     edx, 16
         cmp     dx, word[_display.width]
-        jae     .end
+        jae     @b
         mov     [MOUSE_X], edx
         mov     [mouse_active], 1
-        call    wakeup_osloop
-        ret
- .set_mouse_button:
-;     cmp   ecx,5  ; set mouse button features
-        dec     ecx
-        jnz     .end
-        mov     [BTN_DOWN], dl
+        jmp     wakeup_osloop
+.set_mouse_button:
+        mov     [BTN_DOWN], edx
         mov     [mouse_active], 1
-        call    wakeup_osloop
- .end:
+        jmp     wakeup_osloop
+.get_doubleclick_delay:
+        xor     eax, eax
+        mov     al, [mouse_doubleclick_delay]
+        mov     [esp+32], eax
         ret
+.set_doubleclick_delay:
+        mov     [mouse_doubleclick_delay], dl
+        ret
+align 4
+.table:
+dd      .get_mouse_acceleration
+dd      .set_mouse_acceleration
+dd      .get_mouse_delay
+dd      .set_mouse_delay
+dd      .set_pointer_position
+dd      .set_mouse_button
+dd      .get_doubleclick_delay
+dd      .set_doubleclick_delay
 ;------------------------------------------------------------------------------
 sysfn_getfreemem:
         mov     eax, [pg_data.pages_free]

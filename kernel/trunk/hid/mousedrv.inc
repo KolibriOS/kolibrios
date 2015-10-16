@@ -39,6 +39,7 @@ mouse_delay             dd 10
 mouse_speed_factor:
                         dd 3
 mouse_timer_ticks       dd 0
+mouse_doubleclick_delay db 64
 endg
 
 ;-----------------------------------------------------------------------------
@@ -531,11 +532,17 @@ proc set_mouse_data stdcall uses edx, BtnState:dword, XMoving:dword, YMoving:dwo
         mov     [MOUSE_Y], ax
 ;--------------------------------------
         mov     eax, [VScroll]
+        test    eax, eax
+        jz      @f
         add     [MOUSE_SCROLL_V], ax
-
+        bts     word [BTN_DOWN], 15
+@@:
         mov     eax, [HScroll]
+        test    eax, eax
+        jz      @f
         add     [MOUSE_SCROLL_H], ax
-
+        bts     dword [BTN_DOWN], 23
+@@:
         mov     [mouse_active], 1
         mov     eax, [timer_ticks]
         mov     [mouse_timer_ticks], eax
