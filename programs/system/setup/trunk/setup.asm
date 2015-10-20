@@ -12,107 +12,132 @@ dd START
 dd IM_END
 dd I_END
 dd stack_area
-dd boot_param
+dd param
 dd 0
 
+include '../../../proc32.inc'
 include '../../../macros.inc'
+include '../../../dll.inc'
 ;---------------------------------------------------------------
-set_language_and_exit:
-	mcall	26,2,9
-	cmp	eax,1
-	je	russian
-	xor	eax,eax
+BootSettings:
+; Set system language
+	mov	word[param],0
+	invoke	ini.get_str, sz_ini, sz_system, sz_language, param, 2, 0
+	mov	ax, [param]
+	or	ax, 0x2020	; convert to lowercase
+	mov	ecx,8
+	mov	edi,langMarks
+	repnz scasw
+	jnz	@f
+	neg	ecx
+	add	ecx,8
+	mcall	21,5
 @@:
-	mov	[keyboard],eax
+
+; Set keyboard layout
+	mov	word[param],0
+	invoke	ini.get_str, sz_ini, sz_system, sz_keyboard, param, 2, 0
+	mov	ax, [param]
+	or	ax, 0x2020
+	mov	ecx,8
+	mov	edi,langMarks
+	repnz scasw
+	jnz	@f
+	neg	ecx
+	add	ecx,7
+	mov	[keyboard],ecx
 	call	_keyboard
-	jmp	close
-russian:
-	mov	eax,3
-	jmp	@b
-;---------------------------------------------------------------
-set_syslanguage_and_exit:
-	mcall	26,5
-	cmp	eax,6
-	jne	@f
-	xor	eax,eax
 @@:
-	inc	eax
-	mov	[syslang],eax
-	call	_syslang
-	jmp	close
-;---------------------------------------------------------------
-apply_all_and_exit:
-	mov	byte[fileinfo],0
-	mcall	70,fileinfo
-	call	apply_all
-	jmp	close
-;---------------------------------------------------------------
-apply_all:
-	call	fontApply
-	call	_syslang
-	call	_lba_read
-	call	_pci_acc
+
+; Set font smoothing
+	mov	dword[param],0
+	invoke	ini.get_str, sz_ini, sz_system, sz_fontSmooth, param, 4, 0
+	xor	ecx,ecx
+	mov	eax,[param]
+	or	eax,0x20202020
+	cmp	eax,'off '
+	jz	@f
+	inc	ecx
+	cmp	eax,'on  '
+	jz	@f
+	cmp	eax,'sbp '
+	jnz	.skipFont
+	inc	ecx
+@@:
+	mcall	48,10
+.skipFont:
+
+; Enable/disable system speaker
+	mov	dword[param],0
+	invoke	ini.get_str, sz_ini, sz_system, sz_speaker, param, 4, 0
+	mov	eax,[param]
+	or	eax,0x20202020
+	cmp	eax,'off '
+	jz	@f
+	cmp	eax,'on  '
+	jnz	.skipSpeaker
+	inc	[speaker_mute]
+@@:
 	call	_speaker_mute
-	call	_keyboard
-	ret
-;---------------------------------------------------------------
-_syslang:
-	mcall	21,5,[syslang]
-	jmp	loadtxt
-;---------------------------------------------------------------
-_lba_read:
-	mcall	21,11,[lba_read]
-	ret
-;---------------------------------------------------------------
-_pci_acc:
-	mcall	21,12,[pci_acc]
-	ret
-;---------------------------------------------------------------
-fontApply:
-	mcall	48,10,[fontSmoothing]
-	ret
-;---------------------------------------------------------------
-_speaker_mute:
-	mcall	18,8,1
-	cmp	[speaker_mute],eax
-	je	@f
+.skipSpeaker:
+
+; Set mouse speed
+	invoke	ini.get_int, sz_ini, sz_mouse, sz_speed, 1
+	mov	edx,eax
+	mcall	18,19,1
+
+; Set mouse delay
+	invoke	ini.get_int, sz_ini, sz_mouse, sz_delay, 1
+	mov	edx,eax
+	mcall	18,19,3
+
+; Enable/disable LBA access for applications
+	mov	dword[param],0
+	invoke	ini.get_str, sz_ini, sz_low_level, sz_lba, param, 4, 0
+	xor	ecx,ecx
+	mov	eax,[param]
+	or	eax,0x20202020
+	cmp	eax,'off '
+	jz	@f
+	cmp	eax,'on  '
+	jnz	.skipLBA
 	inc	ecx
-	mcall	18
 @@:
-	ret
-;---------------------------------------------------------------
-_keyboard:
-	mov	ebp,[keyboard]
-	mov	edx,[ebp*4+keymapTab]
-	mcall	21,2,1
+	mcall	21,11
+.skipLBA:
+
+; Enable/disable PCI access for applications
+	mov	dword[param],0
+	invoke	ini.get_str, sz_ini, sz_low_level, sz_pci, param, 4, 0
+	xor	ecx,ecx
+	mov	eax,[param]
+	or	eax,0x20202020
+	cmp	eax,'off '
+	jz	@f
+	cmp	eax,'on  '
+	jnz	close
 	inc	ecx
-	mov	edx,[ebp*4+shiftKeymapTab]
-	mcall	21
-	inc	ecx
-	mov	edx,[ebp*4+altKeymapTab]
-	mcall	21
-	mov	edx,ebp
-	inc	edx
-	mov	cl, 9
-	mcall	21
-	ret
+@@:
+	mcall	21,12
+	jmp	close
 ;---------------------------------------------------------------
 START:
-	mov	eax,boot_param
-	cmp	[eax],dword 'SLAN'
-	je	set_syslanguage_and_exit
+	mcall	68,11
+	stdcall dll.Load, @IMPORT
+	push	eax
+	test	eax,eax
+	jnz	close
 
-	cmp	[eax],dword 'LANG'
-	je	set_language_and_exit
-
-	cmp	[eax],dword 'BOOT'
-	je	apply_all_and_exit
+	cmp	[param],dword 'BOOT'
+	jz	BootSettings
+	pop	eax
 ; get current settings
 	mcall	26,2,9
 	dec	eax
 	mov	[keyboard],eax
 
 	mcall	26,5
+	dec	eax
 	mov	[syslang],eax
 
 	mcall	26,11
@@ -132,7 +157,7 @@ START:
 draw_infotext:
 	mov	eax,[syslang]
 	mov	edi,[text]
-	lea	esi,[eax*8+langs-8]
+	lea	esi,[eax*8+langs]
 	add	edi,28
 	movsd
 	movsd
@@ -244,21 +269,18 @@ button:
 close:
 	pop	eax
 	mcall	-1
-saveAll:
-	mov	byte[fileinfo],2
-	mcall	70,fileinfo
-	ret
 language1:
 	dec	[syslang]
-	jnz	@f
-	mov	[syslang],6
-	ret
+	jns	@f
+	mov	[syslang],7
+	jmp	@f
 language2:
 	inc	[syslang]
-	cmp	[syslang],7
+	cmp	[syslang],8
 	jnz	@f
-	mov	[syslang],1
-	ret
+	mov	[syslang],0
+@@:
+	jmp	loadtxt
 layout1:
 	dec	[keyboard]
 	jns	@f
@@ -299,43 +321,135 @@ font2:
 	inc	[fontSmoothing]
 @@:
 	ret
+apply_all:
+	call	fontApply
+	call	_syslang
+	call	_lba_read
+	call	_pci_acc
+	call	_speaker_mute
+	call	_keyboard
+	ret
+_syslang:
+	mov	ecx,[syslang]
+	inc	ecx
+	mcall	21,5
+	ret
+_lba_read:
+	mcall	21,11,[lba_read]
+	ret
+_pci_acc:
+	mcall	21,12,[pci_acc]
+	ret
+fontApply:
+	mcall	48,10,[fontSmoothing]
+	ret
+_speaker_mute:
+	mcall	18,8,1
+	cmp	[speaker_mute],eax
+	je	@b
+	inc	ecx
+	mcall	18
+_keyboard:
+	mov	ebp,[keyboard]
+	mov	edx,[ebp*4+keymapTab]
+	mcall	21,2,1
+	inc	ecx
+	mov	edx,[ebp*4+shiftKeymapTab]
+	mcall	21
+	inc	ecx
+	mov	edx,[ebp*4+altKeymapTab]
+	mcall	21
+	mov	edx,ebp
+	inc	edx
+	mov	cl, 9
+	mcall	21
+	ret
 ;---------------------------------------------------------------
 loadtxt:
-	cmp	[syslang],4
-	jne	@f
+	cmp	[syslang],3
+	jz	.ru
+	cmp	[syslang],5
+	jz	.et
+	mov	[text],texteng
+	ret
+.ru:
 	mov	[text],textrus
 	ret
-@@:
-	cmp	[syslang],6
-	jne	@f
+.et:
 	mov	[text],textet
-	ret
-@@:
-	mov	[text],texteng
 	ret
 ;---------------------------------------------------------------
 onoff:
-	cmp	[syslang],4
-	jne	norus1
-	mov	ebx,'ÑÄ  '
-	cmp	eax,1
-	je	exitsub
-	mov	ebx,'çÖí '
-	ret
-norus1:
-	cmp	[syslang],6
-	jne	noet1
-	mov	ebx,'SEES'
-	cmp	eax,1
-	je	exitsub
-	mov	ebx,'VƒL.'
-	ret
-noet1:
-	mov	ebx,'ON  '
-	cmp	eax,1
-	je	exitsub
+	cmp	[syslang],3
+	jz	.ru
+	cmp	[syslang],5
+	jz	.et
 	mov	ebx,'OFF '
-exitsub:
+	test	eax,eax
+	jz	@f
+	mov	ebx,'ON  '
+	ret
+.ru:
+	mov	ebx,'çÖí '
+	test	eax,eax
+	jz	@f
+	mov	ebx,'ÑÄ  '
+	ret
+.et:
+	mov	ebx,'VƒL.'
+	test	eax,eax
+	jz	@f
+	mov	ebx,'SEES'
+@@:
+	ret
+;---------------------------------------------------------------
+saveAll:
+; system language
+	mov	eax,[syslang]
+	mov	ax, [eax*2+langMarks]
+	mov	[param],eax
+	invoke	ini.set_str, sz_ini, sz_system, sz_language, param, 2
+
+; keyboard layout
+	mov	eax,[keyboard]
+	mov	ax, [eax*2+langMarks]
+	mov	[param],eax
+	invoke	ini.set_str, sz_ini, sz_system, sz_keyboard, param, 2
+
+; font smoothing
+	mov	dword[param],'off'
+	cmp	[fontSmoothing],0
+	jz	@f
+	mov	dword[param],'on '
+	cmp	[fontSmoothing],1
+	jz	@f
+	mov	dword[param],'sbp'
+@@:
+	invoke	ini.set_str, sz_ini, sz_system, sz_fontSmooth, param, 3
+
+; system speaker
+	mov	dword[param],'off'
+	cmp	[speaker_mute],0
+	jz	@f
+	mov	dword[param],'on '
+@@:
+	invoke	ini.set_str, sz_ini, sz_system, sz_speaker, param, 3
+
+; LBA access for applications
+	mov	dword[param],'off'
+	cmp	[lba_read],0
+	jz	@f
+	mov	dword[param],'on '
+@@:
+	invoke	ini.set_str, sz_ini, sz_low_level, sz_lba, param, 3
+
+; PCI access for applications
+	mov	dword[param],'off'
+	cmp	[pci_acc],0
+	jz	@f
+	mov	dword[param],'on '
+@@:
+	invoke	ini.set_str, sz_ini, sz_low_level, sz_pci, param, 3
 	ret
 ;---------------------------------------------------------------
 align 4
@@ -389,7 +503,6 @@ altKeymapTab:
 	dd be_keymap_alt_gr
 	dd it_keymap_alt_gr
 
-setup.dat:	; file structure
 syslang 	dd 0
 keyboard	dd 0
 lba_read	dd 0
@@ -397,16 +510,30 @@ pci_acc 	dd 0
 speaker_mute	dd 0
 fontSmoothing	dd 0
 
-fileinfo:
-	dd 0
-	dd 0
-	dd 0
-	dd 4*6
-	dd setup.dat
-	db '/SYS/SETTINGS/SETUP.DAT',0
+@IMPORT:
+library libini, 'libini.obj'
+import	libini, \
+	ini.get_str, 'ini_get_str',\
+	ini.get_int, 'ini_get_int',\
+	ini.set_str, 'ini_set_str',\
+	ini.set_int, 'ini_set_int'
 
-title	db 'System settings',0
-hex	db '0123456789ABCDEF'
+title	db "System settings",0
+sz_ini	db "/sys/settings/system.ini",0
+
+sz_system	db "system",0
+sz_language	db "language",0
+sz_keyboard	db "keyboard",0
+sz_fontSmooth	db "font smoothing",0
+sz_speaker	db "speaker mute",0
+
+sz_mouse	db "mouse",0
+sz_speed	db "speed",0
+sz_delay	db "delay",0
+
+sz_low_level	db "low-level",0
+sz_lba		db "LBA",0
+sz_pci		db "PCI",0
 
 LLL = 56
 stringsAmount = 6
@@ -415,6 +542,8 @@ align 4
 text	dd 0
 langs:
 db 'ENGLISH FINNISH GERMAN  RUSSIAN FRENCH  ESTONIANBELGIAN ITALIAN '
+langMarks:
+db	'enfiderufretesit'
 
 textrus:
 db 'üßÎ™ ·®·‚•¨Î              :              <  >  è‡®¨•≠®‚Ï'
@@ -430,9 +559,9 @@ db 'çÖ áÄÅìÑúíÖ ëéïêÄçàíú çÄëíêéâäà            ëÆÂ‡†≠®‚Ï ¢·•'
 texteng:
 db 'System language           :              <  >    Apply  '
 db 'Keyboard layout           :              <  >    Apply  '
-db 'LBA read enabled          :              -  +    Apply  '
-db 'PCI access for appl.      :              -  +    Apply  '
-db 'SPEAKER disabled          :              -  +    Apply  '
+db 'Allow LBA access          :              -  +    Apply  '
+db 'Allow PCI access          :              -  +    Apply  '
+db 'Disable SPEAKER           :              -  +    Apply  '
 db 'Font smoothing            :              -  +    Apply  '
 
 db 'NOTE:                                        Apply all  '
@@ -443,7 +572,7 @@ db 'S¸steemi keel             :              <  >   Kinnita '
 db 'Klaviatuuri paigutus      :              <  >   Kinnita '
 db 'LBA lugemine lubatud      :              -  +   Kinnita '
 db 'PCI juurdep‰‰s programm.  :              -  +   Kinnita '
-db 'SPEAKER disabled          :              -  +   Kinnita '
+db 'Disable SPEAKER           :              -  +   Kinnita '
 db 'Font smoothing            :              -  +   Kinnita '
 
 db 'MƒRKUS:                                    Kinnita kıik '
@@ -451,7 +580,7 @@ db 'SALVESTA SEADED ENNE KOLIBRIST VƒLJUMIST   Salvesta kıik'
 
 include 'keymaps.inc'
 IM_END:
-boot_param:
+param:
 	rb 1024
 stack_area:
 I_END:
