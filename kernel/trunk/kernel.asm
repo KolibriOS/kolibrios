@@ -2571,11 +2571,12 @@ sysfn_mouse_acceleration:       ; 18.19 = set/get mouse features
         mov     [mouse_speed_factor], dx
         ret
 .get_mouse_delay:
-        mov     eax, [mouse_delay]
+        xor     eax, eax
+        mov     al, [mouse_delay]
         mov     [esp+32], eax
         ret
 .set_mouse_delay:
-        mov     [mouse_delay], edx
+        mov     [mouse_delay], dl
 @@:
         ret
 .set_pointer_position:
