@@ -10,44 +10,45 @@ $Revision$
 ; HDD driver
 
 struct HD_DATA
-hdbase  dd      ?
-hdid    dd      ?
-hdpos   dd      ?
+hdbase  dw  ?
+hdid    dw  ?
+hdpos   dw  ?
+hd48    dw  ?
 ends
 ;-----------------------------------------------------------------
 iglobal
 align 4
 ide_callbacks:
-        dd      ide_callbacks.end - ide_callbacks   ; strucsize
-        dd      0   ; no close function
-        dd      0   ; no closemedia function
-        dd      ide_querymedia
-        dd      ide_read
-        dd      ide_write
-        dd      0   ; no flush function
-        dd      0   ; use default cache size
+    dd  ide_callbacks.end - ide_callbacks
+    dd  0   ; no close function
+    dd  0   ; no closemedia function
+    dd  ide_querymedia
+    dd  ide_read
+    dd  ide_write
+    dd  0   ; no flush function
+    dd  0   ; use default cache size
 .end:
 
-hd0_data        HD_DATA         ?,    0, 1
-hd1_data        HD_DATA         ?, 0x10, 2
-hd2_data        HD_DATA         ?,    0, 3
-hd3_data        HD_DATA         ?, 0x10, 4
-hd4_data        HD_DATA         ?,    0, 5
-hd5_data        HD_DATA         ?, 0x10, 6
-hd6_data        HD_DATA         ?,    0, 7
-hd7_data        HD_DATA         ?, 0x10, 8
-hd8_data        HD_DATA         ?,    0, 9
-hd9_data        HD_DATA         ?, 0x10, 10
-hd10_data       HD_DATA         ?,    0, 11
-hd11_data       HD_DATA         ?, 0x10, 12
+hd0_data    HD_DATA     ?,  0,  1, 0
+hd1_data    HD_DATA     ?, 16,  2, 0
+hd2_data    HD_DATA     ?,  0,  3, 0
+hd3_data    HD_DATA     ?, 16,  4, 0
+hd4_data    HD_DATA     ?,  0,  5, 0
+hd5_data    HD_DATA     ?, 16,  6, 0
+hd6_data    HD_DATA     ?,  0,  7, 0
+hd7_data    HD_DATA     ?, 16,  8, 0
+hd8_data    HD_DATA     ?,  0,  9, 0
+hd9_data    HD_DATA     ?, 16, 10, 0
+hd10_data   HD_DATA     ?,  0, 11, 0
+hd11_data   HD_DATA     ?, 16, 12, 0
 
 ide_mutex_table:
-        dd ide_channel1_mutex
-        dd ide_channel2_mutex
-        dd ide_channel3_mutex
-        dd ide_channel4_mutex
-        dd ide_channel5_mutex
-        dd ide_channel6_mutex
+    dd  ide_channel1_mutex
+    dd  ide_channel2_mutex
+    dd  ide_channel3_mutex
+    dd  ide_channel4_mutex
+    dd  ide_channel5_mutex
+    dd  ide_channel6_mutex
 endg
 ;-----------------------------------------------------------------
 uglobal
@@ -74,7 +75,6 @@ ide_read:
 
 ide_write:
         mov     al, 35h     ; WRITE DMA EXT
-; fall through to ide_read_write
 
 proc ide_read_write stdcall uses esi edi ebx, \
         hd_data, buffer, startsector:qword, numsectors
@@ -86,9 +86,8 @@ proc ide_read_write stdcall uses esi edi ebx, \
 locals
 sectors_todo    dd      ?
 channel_lock    dd      ?
-operation       db      ?
 endl
-        mov     [operation], al
+        mov     bl, al
 ; get number of requested sectors and say that no sectors were read yet
         mov     ecx, [numsectors]
         mov     eax, [ecx]
@@ -98,7 +97,7 @@ endl
         mov     ecx, ide_mutex
         call    mutex_lock
         mov     ecx, [hd_data]
-        mov     ecx, [ecx+HD_DATA.hdpos]
+        movzx   ecx, [ecx+HD_DATA.hdpos]
         dec     ecx
         shr     ecx, 1
         shl     ecx, 2
@@ -106,21 +105,21 @@ endl
         mov     [channel_lock], ecx
         call    mutex_lock
 ; prepare worker procedures variables
-        mov     ecx, [hd_data]
-        mov     eax, [ecx+HD_DATA.hdbase]
-        mov     [hdbase], eax
-        mov     eax, [ecx+HD_DATA.hdid]
-        mov     [hdid], eax
-        mov     eax, [ecx+HD_DATA.hdpos]
-        mov     [hdpos], eax
-        mov     eax, dword [startsector]
-        mov     [sector], eax
-        mov     ax, word [startsector+4]
-        mov     [sector+4], ax
         mov     esi, [buffer]
         mov     edi, esi
-        mov     bl, [operation]
-        mov     ecx, [hdpos]
+        mov     ecx, [hd_data]
+        movzx   eax, [ecx+HD_DATA.hdbase]
+        mov     [hdbase], eax
+        mov     ax, [ecx+HD_DATA.hdid]
+        mov     [hdid], eax
+        mov     eax, dword [startsector]
+        mov     [sector], eax
+        cmp     [ecx+HD_DATA.hd48], 0
+        jz      .LBA28
+        mov     ax, word [startsector+4]
+        mov     [sector+4], ax
+        movzx   ecx, [ecx+HD_DATA.hdpos]
+        mov     [hdpos], ecx
         dec     ecx
         shr     ecx, 2
         imul    ecx, sizeof.IDE_DATA
@@ -134,7 +133,7 @@ endl
         cmp     [eax+IDE_DATA.dma_hdd_channel_1], 1
         jz      .next
         dec     ebx     ; READ/WRITE SECTOR(S) EXT
-; worker procedures take max 8000h sectors per time
+; LBA48 supports max 10000h sectors per time
 ; loop until all sectors will be processed
 .next:
         mov     ecx, 8000h
@@ -154,6 +153,30 @@ endl
         add     [sector], ecx
         adc     word [sector+4], 0
         jmp     .next
+.LBA28:
+        add     eax, [sectors_todo]
+        add     eax, 0xF0000000
+        jc      .out
+        sub     bl, 5   ; READ/WRITE SECTOR(S)
+; LBA28 supports max 256 sectors per time
+; loop until all sectors will be processed
+.next28:
+        mov     ecx, 256
+        cmp     ecx, [sectors_todo]
+        jbe     @f
+        mov     ecx, [sectors_todo]
+@@:
+        mov     [blockSize], ecx
+        push    ecx
+        call    IDE_transfer.LBA28
+        pop     ecx
+        jc      .out
+        mov     eax, [numsectors]
+        add     [eax], ecx
+        sub     [sectors_todo], ecx
+        jz      .out
+        add     [sector], ecx
+        jmp     .next28
 ; loop is done, either due to error or because everything is done
 ; release the global lock and return the corresponding status
 .out:
@@ -360,6 +383,42 @@ IDE_transfer:
         cmp     [eventPointer], 0
         jz      .hd_error
         ret
+
+.LBA28:
+        mov     edx, [hdbase]
+        add     edx, 6
+        mov     al, byte [hdid]
+        add     al, 224
+        out     dx, al  ; select the desired drive
+        call    save_hd_wait_timeout
+        inc     edx
+@@:
+        call    check_hd_wait_timeout
+        jc      .hd_error
+        in      al, dx
+        test    al, 128 ; ready for command?
+        jnz     @b
+        pushfd          ; fill the ports
+        cli
+        mov     edx, [hdbase]
+        inc     edx
+        inc     edx
+        mov     al, [blockSize]
+        out     dx, al  ; Sector count (7:0)
+        inc     edx
+        mov     eax, [sector]
+        out     dx, al  ; LBA (7:0)
+        inc     edx
+        shr     eax, 8
+        out     dx, al  ; LBA (15:8)
+        inc     edx
+        shr     eax, 8
+        out     dx, al  ; LBA (23:16)
+        inc     edx
+        shr     eax, 8
+        add     al, byte [hdid]
+        add     al, 224
+        out     dx, al  ; LBA (27:24)
 .PIO:
         inc     edx     ; ATACommand
         mov     al, bl
@@ -387,8 +446,8 @@ IDE_transfer:
         cld
         mov     ecx, 256
         mov     edx, [hdbase]
-        cmp     bl, 34h
-        jz      .write
+        cmp     bl, 30h
+        jnc     .write
         rep insw
         jmp     @f
 .write:

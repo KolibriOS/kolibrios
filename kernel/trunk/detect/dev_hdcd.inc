@@ -7,61 +7,44 @@
 
 $Revision$
 
+; HDD and CD search
 
-;******************************************************
-; поиск приводов HDD и CD
-; автор исходного текста Кулаков Владимир Геннадьевич.
-; адаптация и доработка Mario79
-;******************************************************
-
-;****************************************************
-;*                 ПОИСК HDD и CD                   *
-;****************************************************
         cmp     [ecx+IDE_DATA.ProgrammingInterface], 0
         je      EndFindHDD
-
 FindHDD:
         push    ecx
-
         xor     ebx, ebx
         inc     ebx
-
-        cmp     ecx, IDE_controller_2
-        jne     @f
-
+        mov     [DeviceNumber], 0
+        cmp     ecx, IDE_controller_1
+        jz      .find
         add     bl, 5
-        jmp     .find
-@@:
-        cmp     ecx, IDE_controller_3
-        jne     .find
-
-        add     bl, 10
-;--------------------------------------
+        add     [DeviceNumber], sizeof.HD_DATA*4
+        cmp     ecx, IDE_controller_2
+        jz      .find
+        add     bl, 5
+        add     [DeviceNumber], sizeof.HD_DATA*4
 .find:
-
         mov     [ChannelNumber], 1
         mov     [DiskNumber], 0
-        call    FindHDD_2
+        call    FindHDD_1
 
-        mov     [DiskNumber], 1
+        inc     [DiskNumber]
         call    FindHDD_2
 
         inc     [ChannelNumber]
-
-        mov     [DiskNumber], 0
+        dec     [DiskNumber]
         call    FindHDD_2
 
-        mov     [DiskNumber], 1
-        call    FindHDD_1
+        inc     [DiskNumber]
+        call    FindHDD_2
 
         pop     ecx
         jmp     EndFindHDD
 ;-----------------------------------------------------------------------------
 FindHDD_2:
-        call    FindHDD_1
+        add     [DeviceNumber], sizeof.HD_DATA
         shl     byte [ebx+DRIVE_DATA], 2
-        ret
-;-----------------------------------------------------------------------------
 FindHDD_1:
         DEBUGF  1, "K : Channel %d ",[ChannelNumber]:2
         DEBUGF  1, "Disk %d\n",[DiskNumber]:1
@@ -80,6 +63,9 @@ FindHDD_1:
         ja      .FindCD
 
         inc     byte [ebx+DRIVE_DATA]
+        movzx   eax, [DeviceNumber]
+        bt      word [Sector512+166], 10
+        adc     [eax+hd0_data.hd48], 0
         jmp     .Print_Device_Name
 ;--------------------------------------
 .FindCD:
@@ -262,6 +248,7 @@ StandardATABases dw ?, ? ; 1F0h, 170h
 ChannelNumber   dw ?
 ; Номер диска
 DiskNumber      db ?
+DeviceNumber    db ?
 ; Базовый адрес группы портов контроллера ATA
 ATABasePortAddr dw ?
 ; Параметры ATA-команды
