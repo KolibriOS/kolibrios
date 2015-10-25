@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  tcpserv.asm - TCP demo program for KolibriOS                   ;;
@@ -43,29 +43,22 @@ start:
         jnz     exit
 
 ; initialize console
-        push    1
-        call    [con_start]
-        push    title
-        push    25
-        push    80
-        push    25
-        push    80
-        call    [con_init]
+        invoke  con_start, 1
+        invoke  con_init, 80, 25, 80, 25, title
 
-        mcall   40, 1 shl 7     ; we only want network events
+        mcall   40, EVM_STACK
 
-        push    str1
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str1
 
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
         je      sock_err
-
         mov     [socketnum], eax
 
-;;        mcall   setsockopt, [socketnum], SOL_SOCKET, SO_REUSEADDR, &yes,
-;;        cmp     eax, -1
-;;        je      opt_err
+; This socket option is not implemented in kernel yet.
+;        mcall   setsockopt, [socketnum], SOL_SOCKET, SO_REUSEADDR, &yes,
+;        cmp     eax, -1
+;        je      opt_err
 
         mcall   bind, [socketnum], sockaddr1, sockaddr1.length
         cmp     eax, -1
@@ -75,18 +68,12 @@ start:
         cmp     eax, -1
         je      listen_err
 
-        push    str2
-        call    [con_write_asciiz]
-
-        mcall   10
+        invoke  con_write_asciiz, str2
 
         mcall   accept, [socketnum], sockaddr1, sockaddr1.length
         cmp     eax, -1
         je      acpt_err
-
         mov     [socketnum2], eax
-
-;;        mcall   close, [socketnum]
 
         mcall   send, [socketnum2], hello, hello.length
 
@@ -95,51 +82,51 @@ start:
         cmp     eax, -1
         je      .loop
 
-        mov     byte [buffer + eax], 0
-
-        push    buffer
-        call    [con_write_asciiz]
-
+        mov     byte[buffer+eax], 0
+        invoke  con_write_asciiz, buffer
         jmp     .loop
 
 acpt_err:
-        push    str8
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str8
         jmp     done
 
 listen_err:
-        push    str3
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str3
         jmp     done
 
 bind_err:
-        push    str4
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str4
         jmp     done
 
 sock_err:
-        push    str6
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str6
         jmp     done
 
 done:
-        call    [con_getch2]
-        push    1
-        call    [con_exit]
+        invoke  con_getch2      ; Wait for user input
+        invoke  con_exit, 1
 exit:
+        cmp     [socketnum], 0
+        je      @f
+        mcall   close, [socketnum]
+  @@:
+        cmp     [socketnum2], 0
+        je      @f
+        mcall   close, [socketnum2]
+  @@:
         mcall   -1
 
 
 
 ; data
-title   db      'TCP stream server - test',0
+title   db      'TCP stream server demo',0
 str1    db      'Opening socket',10, 0
 str2    db      'Listening for incoming connections...',10,0
 str3    db      'Listen error',10,10,0
 str4    db      'Bind error',10,10,0
-str5    db      'Setsockopt error.',10,10,0
+str5    db      'Setsockopt error',10,10,0
 str6    db      'Could not open socket',10,10,0
-str7    db      'Got data!',10,10,0
+str7    db      'Got data',10,10,0
 str8    db      'Error accepting connection',10,10,0
 
 hello   db      'Hello world!',0
@@ -147,7 +134,7 @@ hello   db      'Hello world!',0
 
 sockaddr1:
         dw AF_INET4
-.port   dw 0x1700       ; 23
+.port   dw 23 shl 8             ; port 23 - network byte order
 .ip     dd 0
         rb 10
 .length = $ - sockaddr1
@@ -170,9 +157,9 @@ import  console,        \
         con_set_cursor_pos, 'con_set_cursor_pos'
 i_end:
 
-socketnum       dd ?
-socketnum2      dd ?
-buffer         rb BUFFERSIZE
+socketnum       dd 0
+socketnum2      dd 0
+buffer          rb BUFFERSIZE
 .length = BUFFERSIZE
 
 align   4
