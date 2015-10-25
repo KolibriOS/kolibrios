@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  telnet.asm - Telnet client for KolibriOS                       ;;
@@ -14,8 +14,6 @@
 
 format binary as ""
 
-__DEBUG__       = 0
-__DEBUG_LEVEL__ = 1
 BUFFERSIZE      = 4096
 
 use32
@@ -33,7 +31,6 @@ include '../../macros.inc'
 purge mov,add,sub
 include '../../proc32.inc'
 include '../../dll.inc'
-include '../../debug-fdo.inc'
 include '../../network.inc'
 
 ; entry point
@@ -43,45 +40,34 @@ start:
         test    eax, eax
         jnz     exit
 ; initialize console
-        push    1
-        call    [con_start]
-        push    title
-        push    25
-        push    80
-        push    25
-        push    80
-        call    [con_init]
+        invoke  con_start, 1
+        invoke  con_init, 80, 25, 80, 25, title
 
 ; Check for parameters
-        cmp     byte [hostname], 0
+        cmp     byte[hostname], 0
         jne     resolve
 
 main:
-        call    [con_cls]
+        invoke  con_cls
 ; Welcome user
-        push    str1
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str1
 
 prompt:
 ; write prompt
-        push    str2
-        call    [con_write_asciiz]
-; read string
+        invoke  con_write_asciiz, str2
+; read string (wait for input)
         mov     esi, hostname
-        push    256
-        push    esi
-        call    [con_gets]
+        invoke  con_gets, esi, 256
 ; check for exit
         test    eax, eax
         jz      done
-        cmp     byte [esi], 10
+        cmp     byte[esi], 10
         jz      done
 
 resolve:
+        mov     [sockaddr1.port], 23 shl 8      ; Port is in network byte order
 
-        mov     [sockaddr1.port], 23 shl 8
-
-; delete terminating '\n'
+; delete terminating newline from URL and parse port, if any.
         mov     esi, hostname
   @@:
         lodsb
@@ -89,22 +75,22 @@ resolve:
         je      .do_port
         cmp     al, 0x20
         ja      @r
-        mov     byte [esi-1], 0
+        mov     byte[esi-1], 0
         jmp     .done
 
   .do_port:
         xor     eax, eax
         xor     ebx, ebx
-        mov     byte [esi-1], 0
+        mov     byte[esi-1], 0
   .portloop:
         lodsb
-        cmp     al, 0x20
+        cmp     al, ' '
         jbe     .port_done
         sub     al, '0'
         jb      hostname_error
         cmp     al, 9
         ja      hostname_error
-        lea     ebx, [ebx*4 + ebx]
+        lea     ebx, [ebx*4+ebx]
         shl     ebx, 1
         add     ebx, eax
         jmp     .portloop
@@ -117,42 +103,30 @@ resolve:
 
 ; resolve name
         push    esp     ; reserve stack place
-        push    esp     ; ptr to result
-        push    0       ; addrinfo hints
-        push    0       ; servname
-        push    hostname; hostname
-        call    [getaddrinfo]
+        invoke  getaddrinfo, hostname, 0, 0, esp
         pop     esi
 ; test for error
         test    eax, eax
         jnz     dns_error
 
-        call    [con_cls]
-        push    str3
-        call    [con_write_asciiz]
-        push    hostname
-        call    [con_write_asciiz]
+        invoke  con_cls
+        invoke  con_write_asciiz, str3
+        invoke  con_write_asciiz, hostname
 
 ; write results
-        push    str8
-        call    [con_write_asciiz]
-;        mov     edi, esi
+        invoke  con_write_asciiz, str8
 
 ; convert IP address to decimal notation
         mov     eax, [esi+addrinfo.ai_addr]
         mov     eax, [eax+sockaddr_in.sin_addr]
         mov     [sockaddr1.ip], eax
-        push    eax
-        call    [inet_ntoa]
+        invoke  inet_ntoa, eax
 ; write result
-        push    eax
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, eax
 ; free allocated memory
-        push    esi
-        call    [freeaddrinfo]
+        invoke  freeaddrinfo, esi
 
-        push    str9
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str9
 
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
@@ -163,8 +137,8 @@ resolve:
         test    eax, eax
         jnz     socket_err
 
-        mcall   40, 1 shl 7 ; + 7
-        call    [con_cls]
+        mcall   40, EVM_STACK
+        invoke  con_cls
 
         mcall   18, 7
         push    eax
@@ -173,7 +147,7 @@ resolve:
         mcall   18, 3
 
 mainloop:
-        call    [con_get_flags]
+        invoke  con_get_flags
         test    eax, 0x200                      ; con window closed?
         jnz     exit
 
@@ -181,26 +155,21 @@ mainloop:
         cmp     eax, -1
         je      closed
 
-
-    DEBUGF  1, 'TELNET: got %u bytes of data !\n', eax
-
         mov     esi, buffer_ptr
-        lea     edi, [esi + eax]
-        mov     byte [edi], 0
-
+        lea     edi, [esi+eax]
+        mov     byte[edi], 0
   .scan_cmd:
-        cmp     byte [esi], 0xff        ; Interpret As Command
+        cmp     byte[esi], 0xff         ; Interpret As Command
         jne     .no_cmd
-        ; TODO: parse options, for now, we will reply with 'WONT' to everything
-        mov     byte [esi + 1], 252     ; WONT
+; TODO: parse options
+; for now, we will reply with 'WONT' to everything
+        mov     byte[esi+1], 252        ; WONT
         add     esi, 3                  ; a command is always 3 bytes
         jmp     .scan_cmd
   .no_cmd:
 
         cmp     esi, buffer_ptr
         je      .print
-
-    DEBUGF  1, 'TELNET: sending data\n'
 
         push    esi edi
         sub     esi, buffer_ptr
@@ -211,8 +180,7 @@ mainloop:
         cmp     esi, edi
         jae     mainloop
 
-        push    esi
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, esi
 
   .loop:
         lodsb
@@ -222,32 +190,23 @@ mainloop:
 
 
 socket_err:
-        DEBUGF  1, "TELNET: socket error %d", ebx
-        push    str6
-        call    [con_write_asciiz]
-
+        invoke  con_write_asciiz, str6
         jmp     prompt
 
 dns_error:
-        DEBUGF  1, "TELNET: DNS error %d", eax
-        push    str5
-        call    [con_write_asciiz]
-
+        invoke  con_write_asciiz, str5
         jmp     prompt
 
 hostname_error:
-        push    str11
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str11
         jmp     prompt
 
 closed:
-        push    str12
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str12
         jmp     prompt
 
 done:
-        push    1
-        call    [con_exit]
+        invoke  con_exit, 1
 exit:
 
         mcall   close, [socketnum]
@@ -258,7 +217,7 @@ exit:
 thread:
         mcall   40, 0
   .loop:
-        call    [con_getch2]
+        invoke  con_getch2
         mov     [send_data], ax
         xor     esi, esi
         inc     esi
@@ -268,7 +227,7 @@ thread:
   @@:
         mcall   send, [socketnum], send_data
 
-        call    [con_get_flags]
+        invoke  con_get_flags
         test    eax, 0x200                      ; con window closed?
         jz      .loop
         mcall   -1
@@ -298,11 +257,6 @@ sockaddr1:
 .ip     dd 0
         rb 10
 
-include_debug_strings    ; ALWAYS present in data section
-
-
-
-; import
 align 4
 @IMPORT:
 
