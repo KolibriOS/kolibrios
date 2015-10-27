@@ -439,12 +439,7 @@ align 4
         pop     ecx eax
         ret
 ;------------------------------------------------------------------------------
-iglobal
-win_zmodi db ZPOS_DESKTOP,\
-             ZPOS_ALWAYS_BACK,\
-             ZPOS_NORMAL,\
-             ZPOS_ALWAYS_TOP
-endg
+
 align 4
 ;------------------------------------------------------------------------------
 calculatescreen: ;/////////////////////////////////////////////////////////////
@@ -474,7 +469,7 @@ calculatescreen: ;/////////////////////////////////////////////////////////////
 
         push    edx ecx ebx eax
 
-        mov     dword[esp+14], 0
+        mov     dword[esp+10h], ZPOS_DESKTOP
 ;--------------------------------------
 align 4
 .layout:
@@ -493,8 +488,7 @@ align 4
         test    [edi + WDATA.fl_wstate], WSTATE_MINIMIZED
         jnz     .skip_window
 
-        mov     eax, [esp+14]
-        mov     al, [eax+win_zmodi]
+        mov     eax, [esp+10h]
         cmp     [edi + WDATA.z_modif], al
         jne     .skip_window
 
@@ -548,9 +542,9 @@ align 4
         dec     ebp
         jnz     .next_window
 ;---------------------------------------------
-        inc     dword[esp+14]
-        cmp     dword[esp+14], ZPOS_ALWAYS_TOP
-        jbe     .layout
+        inc     dword[esp+10h]
+        cmp     dword[esp+10h], ZPOS_ALWAYS_TOP
+        jle     .layout
 ;---------------------------------------------
         mov     esi, [TASK_COUNT]
         movzx   edi, word[WIN_POS + esi * 2]
@@ -1012,7 +1006,7 @@ waredraw: ;////////////////////////////////////////////////////////////////////
         movzx   esi, word[WIN_POS + edi * 2]
         call    window._.set_screen
 
-        call    window._.set_top_wnd    ;Fantomer
+        call    window._.set_top_wnd
 
         inc     [_display.mask_seqno]
         popad
@@ -2432,9 +2426,9 @@ window._.get_rect: ;/////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 align 4
 ;------------------------------------------------------------------------------
-window._.set_top_wnd: ;////////////////////////////////////////////////////////
+window._.redraw_top_wnd: ;////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
-;? updates all windows one above the window
+;? redraw all windows one above the window
 ;------------------------------------------------------------------------------
 ;> eax = left
 ;> ebx = top
@@ -2443,13 +2437,25 @@ window._.set_top_wnd: ;////////////////////////////////////////////////////////
 ;> esi = process number
 ;! corrupted edi
 ;------------------------------------------------------------------------------
-        movzx   edi, word[WIN_POS + esi * 2]
-        shl     edi, 5
-        cmp     [edi + window_data + WDATA.z_modif], ZPOS_ALWAYS_TOP
-        jne     @f
-        ret
-      @@:
+        push    0
+        jmp     window._.set_top_wnd.go
 
+align 4
+;------------------------------------------------------------------------------
+window._.set_top_wnd: ;////////////////////////////////////////////////////////
+;------------------------------------------------------------------------------
+;? call set_screen for all windows one above the window
+;------------------------------------------------------------------------------
+;> eax = left
+;> ebx = top
+;> ecx = right
+;> edx = bottom
+;> esi = process number
+;! corrupted edi
+;------------------------------------------------------------------------------
+
+        push    1
+.go:
         push    esi
         pushfd
         cli
@@ -2459,12 +2465,16 @@ window._.set_top_wnd: ;////////////////////////////////////////////////////////
         cmp     ebp, 1
         jbe     .exit
 
+        shl     esi, 5
+        cmp     [esi + window_data + WDATA.z_modif], ZPOS_ALWAYS_TOP
+        je      .exit
+
         push    eax ;for num layout
         push    edx ecx ebx eax
 
-        movzx   eax, byte [edi + window_data + WDATA.z_modif]
+        movsx   eax, byte [esi + window_data + WDATA.z_modif]
         inc     eax
-        mov     dword[esp+14], eax
+        mov     dword[esp+10h], eax
 ;--------------------------------------
 align 4
 .layout:
@@ -2483,8 +2493,7 @@ align 4
         test    [edi + WDATA.fl_wstate], WSTATE_MINIMIZED
         jnz     .skip_window
 
-        mov     eax, [esp+14]
-        mov     al, [eax+win_zmodi]
+        mov     eax, [esp+10h]
         cmp     [edi + WDATA.z_modif], al
         jne     .skip_window
 
@@ -2527,12 +2536,17 @@ align 4
 ;--------------------------------------
 align 4
 @@:
+        cmp     dword[esp+32], 0
+        je      .set_fl_redraw
+
         push    esi
         movzx   esi, word[WIN_POS + esi * 2]
         call    window._.set_screen
         pop     esi
-
+        jmp     @f
+.set_fl_redraw:
         mov     [edi + WDATA.fl_redraw], 1      ;set redraw flag
+     @@:
 ;--------------------------------------
 align 4
 .skip_window:
@@ -2540,9 +2554,9 @@ align 4
         dec     ebp
         jnz     .next_window
 ;--------------------------------------
-        inc     dword[esp+14]
-        cmp     dword[esp+14], ZPOS_ALWAYS_TOP
-        jbe     .layout
+        inc     dword[esp+10h]
+        cmp     byte[esp+10h], ZPOS_ALWAYS_TOP
+        jle     .layout
 ;-------------------------------------
 
         pop     eax ebx ecx edx
@@ -2555,6 +2569,7 @@ align 4
         popfd
         pop     esi
 
+        add     esp, 4   ;dword for 0/1 - set_screen/fl_redraw
         ret
 
 

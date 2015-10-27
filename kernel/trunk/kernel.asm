@@ -2403,7 +2403,7 @@ sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
 .nowindowactivate:
         ret
 ;------------------------------------------------------------------------------
-align 4                         ;Fantomer
+align 4
 sysfn_zmodif:
 ;18,25,1 - get z_modif
 ;18,25,2 - set z_modif
@@ -2413,41 +2413,38 @@ sysfn_zmodif:
 ;1:   eax = z_modif
 ;2: eax=0(fail),1(success) for set z_modif
 
-        xor     eax, eax
-
         cmp     edx, -1
         jne     @f
         mov     edx, [CURRENT_TASK]
      @@:
         cmp     edx, [TASK_COUNT]
-        ja      .exit
+        ja      .fail
         cmp     edx, 1
-        je      .exit
+        je      .fail
 
-
+        mov     eax, edx
         shl     edx, 5
 
         cmp     [edx + CURRENT_TASK + TASKDATA.state], 9
-        je      .exit
+        je      .fail
 
         cmp     ecx, 1
         jnz     .set_zmod
 
         mov     al, [edx + window_data + WDATA.z_modif]
-
         jmp     .exit
-align 4
+
 .set_zmod:
         cmp     ecx, 2
-        jnz     .exit
+        jnz     .fail
 
-        mov     eax, esi
-        mov     esi, edx
+        mov     ebx, esi
+        mov     esi, eax
 
-        cmp     al, ZPOS_ALWAYS_TOP
-        ja      .exit
+        cmp     bl, ZPOS_ALWAYS_TOP
+        jg      .fail
 
-        mov     [edx + window_data + WDATA.z_modif], al
+        mov     [edx + window_data + WDATA.z_modif], bl
 
         mov     eax, [edx + window_data + WDATA.box.left]
         mov     ebx, [edx + window_data + WDATA.box.top]
@@ -2455,10 +2452,18 @@ align 4
         mov     edx, [edx + window_data + WDATA.box.height]
         add     ecx, eax
         add     edx, ebx
+        call    window._.set_screen
         call    window._.set_top_wnd
+        call    window._.redraw_top_wnd
+
+        shl     esi, 5
+        mov     [esi + window_data + WDATA.fl_redraw], 1
+
 
         mov     eax, 1
-align 4
+        jmp     .exit
+.fail:
+        xor     eax, eax
 .exit:
         mov     [esp+32], eax
         ret

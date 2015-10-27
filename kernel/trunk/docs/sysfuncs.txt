@@ -1189,10 +1189,10 @@ Returned value:
   * eax = 1 - success
 
 Constant position of the window relative to other windows:
- ZPOS_NORMAL      = 0 - normal
- ZPOS_ALWAYS_BACK = 1 - behind all the windows
- ZPOS_DESKTOP     = 2 - on the background
- ZPOS_ALWAYS_TOP  = 3 - on top of all windows
+ ZPOS_DESKTOP     = -2 - on the background
+ ZPOS_ALWAYS_BACK = -1 - behind all the windows
+ ZPOS_NORMAL      = 0  - normal
+ ZPOS_ALWAYS_TOP  = 1  - on top of all windows
 
 ======================================================================
 ==================== Function 20 - MIDI interface. ===================

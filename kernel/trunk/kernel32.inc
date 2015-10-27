@@ -76,10 +76,10 @@ TSTATE_TERMINATING    = 4
 TSTATE_WAITING        = 5
 TSTATE_FREE           = 9
 
+ZPOS_DESKTOP            = -2
+ZPOS_ALWAYS_BACK        = -1
 ZPOS_NORMAL             = 0
-ZPOS_ALWAYS_BACK        = 1
-ZPOS_DESKTOP            = 2
-ZPOS_ALWAYS_TOP         = 3     ;ZPOS_ALWAYS_TOP is always last and has max number!
+ZPOS_ALWAYS_TOP         = 1     ;ZPOS_ALWAYS_TOP is always last and has max number!
 ; structures definition
 struct  WDATA
         box             BOX
