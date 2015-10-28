@@ -17,6 +17,13 @@
 ; WARNING: Cards must be inserted before the driver starts, and shouldn't be removed.
 ; This module doesn't handle insertions and removals.
 
+; TODO:
+;
+; Use GetPCIList instead of reading directly from PCI bus to detect bridge.
+; (See #5544 agp.asm for example).
+; Export a function in kernel to re-scan PCI device list (fix 'dirty hack').
+; Fix bugs (currently not working on all PCMCIA bridges).
+
 format PE DLL native
 entry START
 
