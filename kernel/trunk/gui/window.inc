@@ -130,6 +130,14 @@ syscall_display_settings: ;///// system function 48 ///////////////////////////
 ;; Set font smoothing:
 ;< ebx = 10
 ;< ecx = 0 — off, 1 — on, 2 — subpixel
+; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;; Get font size:
+;< ebx = 11
+;> eax = height in pixels
+; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+;; Set font size:
+;< ebx = 12
+;< ecx = height in pixels
 ;------------------------------------------------------------------------------
         cmp     ebx, .sizeof.ftable / 4
         ja      @f
@@ -262,6 +270,16 @@ syscall_display_settings.09:
 ;------------------------------------------------------------------------------
 syscall_display_settings.10:
         mov     [fontSmoothing], cl
+        ret
+;------------------------------------------------------------------------------
+syscall_display_settings.11:
+        xor     eax, eax
+        mov     al, [fontSize]
+        mov     [esp + 32], eax
+        ret
+;------------------------------------------------------------------------------
+syscall_display_settings.12:
+        mov     [fontSize], cl
         ret
 ;------------------------------------------------------------------------------
 syscall_display_settings._.calculate_whole_screen:
@@ -1394,7 +1412,7 @@ sys_window_moving_handler: ;///////////////////////////////////////////////////
 
 iglobal
   FuncTable syscall_display_settings, ftable, \
-    00, 01, 02, 03, 04, 05, 06, 07, 08, 09, 10
+    00, 01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12
 
   align 4
   window_topleft dd \

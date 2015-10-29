@@ -204,6 +204,7 @@ Parameters:
       * B=1 - fill background (color = edi)
       * FF specifies the font and encoding:
         0 = 6x9  cp866
+        1 = 8x16 cp866
         2 = 8x16 UTF-16LE
         3 = 8x16 UTF-8
       * C=0 - draw to the window,
@@ -2172,6 +2173,23 @@ Parameters:
   * eax = 48 - function number
   * ebx = 10 - subfunction number
   * cl  = 2 - subpixel, 1 - anti-aliasing, 0 - off
+
+======================================================================
+============ Function 48, subfunction 11 - get font size. ============
+======================================================================
+Parameters:
+  * eax = 48 - function number
+  * ebx = 9 - subfunction number
+Returned value:
+  * eax = current font height in pixels
+
+======================================================================
+============ Function 48, subfunction 12 - set font size. ============
+======================================================================
+Parameters:
+  * eax = 48 - function number
+  * ebx = 10 - subfunction number
+  * cl  = new font height in pixels
 
 ======================================================================
 =========== Function 49 - Advanced Power Management (APM). ===========

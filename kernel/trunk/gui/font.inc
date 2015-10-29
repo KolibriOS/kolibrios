@@ -18,7 +18,8 @@ dtext:
 ; Z=1: edx -> zero terminated string, esi = ?
 ; B=1: fill background with color eax
 ; R=1: edi -> user area for redirect
-; FF=3: UTF-8 8x16, FF=2: UTF-16LE 8x16, FF=0: 866 6x9
+; FF=3: UTF-8 8x16, FF=2: UTF-16LE 8x16
+; FF=1: cp866 8x16, FF=0: cp866 6x9
 ; SSS = (font multiplier)-1
 ; edi=1: force output
         and     eax, 0xFFFFFF
@@ -64,8 +65,8 @@ dtext:
         bt      ebx, 27
         jc      .bufferReady
         mov     eax, 9
-        bt      ebx, 29
-        jnc     @f
+        test    ebx, 0x30000000
+        jz      @f
         add     eax, 7
 @@:
         imul    eax, ecx
@@ -91,7 +92,11 @@ dtext:
         mov     ebp, eax
         xor     edx, edx
         bt      ebx, 29
-        jnc     .draw866
+        jc      @f
+        bt      ebx, 28
+        jc      .draw866toUni
+        jmp     .draw866
+@@:
         bt      ebx, 28
         jc      .drawUTF8
 
@@ -190,6 +195,27 @@ deltaToScreen = 28
         add     edi, esi
         pop     esi
         jmp     .draw866
+
+.draw866toUni:
+        dec     dword [esp]
+        js      .done
+        xor     eax, eax
+        mov     al, [esi]
+        test    eax, eax
+        jz      .done
+        call    ansi2uni_char
+        shl     eax, 4
+        lea     ebx, [eax+fontUni]
+        inc     esi
+        pushd   esi edi 16
+        mov     esi, [esp+12+fontMultiplier]
+        call    drawChar
+        imul    esi, 8*4
+        pop     edi
+        pop     edi
+        add     edi, esi
+        pop     esi
+        jmp     .draw866toUni
 
 .done:
         mov     ecx, edi
@@ -786,7 +812,8 @@ antiAliasing:
         mov     ebp, ebx
         ret
 
-fontSmoothing   db  2
+fontSmoothing   db  2   ; = 0, 1 or 2
+fontSize        db  0   ; user mode setting
 font1:
   if lang eq sp
   file 'char_sp.mt'
