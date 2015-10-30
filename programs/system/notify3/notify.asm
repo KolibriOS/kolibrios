@@ -6,6 +6,7 @@
     include "../../macros.inc"
     include "../../proc32.inc"
     include "../../dll.inc"
+ ;   include "../../debug.inc"
 
  macro cmpe a, b, c  {
     cmp     a, b
@@ -34,7 +35,21 @@
 
  @entry:
 
+  ;; GET PID OF ACTIVE
+
+    mcall   18, 7
+
+    mov     ecx, eax
+    mcall   9, buffer
+
+    m2m     dword[prev_pid], dword[buffer + 30]
+
+  ;; ALWAYS TOP
+
+    mcall   18, 25, 2, -1, 1
+
   ;; CHECK FOR PARAMS
+
     cmpne   [@params], byte 0, parse
     mov     eax, @params
     mov     ebx, sz_std
@@ -121,31 +136,19 @@
  ;; PARAMS
 
   .params:
-    cmpe    [eax], byte 0, .params.end
-    cmpe    [eax], byte "d", .set_atcl
-    cmpe    [eax], byte "t", .set_title
+    mov     dl, [eax]
+
+    cmpe    dl, 0, .params.end
+    cmpe    dl, "d", .set_atcl
+    cmpe    dl, "t", .set_title
+
     mov     ebx, 1
-    cmpe    [eax], byte "A", .set_icon
+    mov     ecx, sz_icons
+  @@:
+    cmpe    dl, [ecx], .set_icon
     inc     ebx
-    cmpe    [eax], byte "E", .set_icon
-    inc     ebx
-    cmpe    [eax], byte "W", .set_icon
-    inc     ebx
-    cmpe    [eax], byte "O", .set_icon
-    inc     ebx
-    cmpe    [eax], byte "N", .set_icon
-    inc     ebx
-    cmpe    [eax], byte "I", .set_icon
-    inc     ebx
-    cmpe    [eax], byte "F", .set_icon
-    inc     ebx
-    cmpe    [eax], byte "C", .set_icon
-    inc     ebx
-    cmpe    [eax], byte "M", .set_icon
-    inc     ebx
-    cmpe    [eax], byte "D", .set_icon
-    inc     ebx
-    cmpe    [eax], byte "S", .set_icon
+    inc     ecx
+    cmpne   [ecx], byte 0, @b
 
     jmp     .next_char
 
@@ -317,6 +320,16 @@
 
  ;----------------------------
 
+    call    init_window
+
+    mcall   18, 21, [prev_pid]
+    mov     ecx, eax
+    mcall   18, 3
+
+    jmp     redraw
+
+ ;----------------------------
+
  update:
     mcall   23, 10
     cmpe    al, EV_REDRAW, redraw
@@ -360,11 +373,7 @@
  ;----------------------------
 
  draw_window:
-    dec     dword [window.width]
-    dec     dword [window.height]
-    mcall   0, <[window.x], [window.width]>, <[window.y], [window.height]>, 0x61000000
-    inc     dword [window.width]
-    inc     dword [window.height]
+    call    init_window
 
     and     ebx, 0xFFFF
     and     ecx, 0xFFFF
@@ -375,6 +384,7 @@
     mov     eax, 13
     mov     ebx, [window.width]
     mov     edx, 0x222222
+
     cmpe    [first_draw], byte 1, .draw_full
     mov     [first_draw], byte 1
     mov     esi, [window.height]
@@ -387,6 +397,7 @@
     mcall   5, 1
     pop     ebx eax
     cmpne   esi, 0, @b
+
   .draw_full:
     mcall
 
@@ -546,6 +557,18 @@
   @@:
 
     ret
+
+ ;----------------------------
+
+ init_window:
+    dec     dword [window.width]
+    dec     dword [window.height]
+    mcall   0, <[window.x], [window.width]>, <[window.y], [window.height]>, 0x61000000
+    inc     dword [window.width]
+    inc     dword [window.height]
+
+    ret
+
  ;----------------------------
 
  @imports:
@@ -557,11 +580,14 @@
 
  ;----------------------------
 
+ sz_icons   db "AEWONIFCMDS", 0
  sz_ifile   db "/sys/notify3.png", 0
  sz_shname  db "notify-mem-v01", 0
  sz_std     db "'NOTIFY 3\n",                 \
 		"d - disable auto-closing\n", \
 		"t - title\n",		      \
+		" \n",			      \
+		"ICONS:\n",		      \
 		"A - application\n",	      \
 		"E - error\n",		      \
 		"W - warning\n",	      \
@@ -617,6 +643,7 @@
  fi	    rb 26
  buffer     rb 1024
  first_draw rb 1
+ prev_pid   rd 1
 
 ;=====================================================================
 	    rb 2048
