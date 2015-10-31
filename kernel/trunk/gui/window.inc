@@ -1386,6 +1386,15 @@ sys_window_end_moving_handler: ;///////////////////////////////////////////////
         shl     edi, 5
         add     edi, window_data
 
+        test    [fl_moving], 1
+        jz      @f
+
+        push    edi
+        mov     edi, ebx
+        call    window._.draw_negative_box
+        pop     edi
+    @@:
+
         mov     eax, ebx
         mov     bl, [edi + WDATA.fl_wstate]
         call    window._.set_window_box
@@ -1523,11 +1532,6 @@ end if
         call    memmove
         mov     eax, ebx
         mov     ebx, esi
-
-        push    edi
-        mov     edi, eax
-        call    window._.draw_negative_box
-        pop     edi
         call    window._.check_window_position
         call    window._.set_window_clientbox
         call    window._.invalidate_screen

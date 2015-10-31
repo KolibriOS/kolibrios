@@ -3841,6 +3841,14 @@ newdw2:
         cmp     ecx, 1             ; limit for background
         jz      bgli
 
+        mov     eax, [esp+4]        ;if upper in z-position - no redraw
+        test    eax, eax
+        jz      @f
+        mov     al, [eax + WDATA.z_modif]
+        cmp     [edi + WDATA.z_modif], al
+        jg      ricino
+      @@:
+
         mov     eax, [edi + WDATA.box.left]
         mov     ebx, [edi + WDATA.box.top]
 

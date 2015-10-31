@@ -187,6 +187,11 @@ uglobal
     .action     db ?
 endg
 
+iglobal
+        fl_moving db 0
+        rb 3
+endg
+
 align 4
 ;-----------------------------------------------------------------
 mouse._.left_button_press_handler:
@@ -306,6 +311,7 @@ mouse._.left_button_release_handler:
 
   .exit:
         and     [mouse.active_sys_window.action], 0
+        mov     [fl_moving], 0
         ret
 
 mouse._.right_button_press_handler:
@@ -479,6 +485,19 @@ mouse._.move_handler:
         cmpsd
         pop     esi
         je      .exit
+
+        test    [fl_moving], 1
+        jnz     @f
+
+        mov     [fl_moving], 1
+        push    edi
+        mov     edi, esi
+        shl     edi, 5
+        add     edi, WDATA.box + window_data
+        call    window._.draw_negative_box
+        pop     edi
+     @@:
+
 
         mov     [mouse.active_sys_window.last_ticks], 0
         call    sys_window_moving_handler
