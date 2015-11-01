@@ -1,0 +1,23 @@
+# Syntaxis is: <Program_Name> <Parameter(s)> <Delay_Time>
+# Use "parameter value" for parameters with spaces. Use "" if no parameter is required.
+# Delay time means how much the system should wait, before running the next line. It is measured in 1/100 seconds.
+# If delay is negative, wait for termination of the spawned process. Otherwise, simply wait
+#
+#/SYS/CROPFLAT	"XS800 YS480"	1	# set limits of screen
+#/SYS/LOADDRV	COMMOUSE	1	# serial mouse driver
+#/SYS/DEVELOP/BOARD	""	1	# Load DEBUG board
+#/SYS/refrscrn		""	1	# Refresh screen
+/SYS/SETUP		BOOT	1	# Load device settings
+/SYS/LOADDRV		RDC	1	# videodriver for RDC M2010/M2012
+/SYS/NETWORK/NETCFG	A	1	#
+/SYS/NETWORK/@ZEROCONF	""	1	# Network configuration
+/SYS/ESKIN		""	1	# Set style
+/SYS/@VOLUME		""	1	# Start volume daemon
+/SYS/@TASKBAR		""	1	# Start taskbar
+/SYS/@DOCKY		""	1	# Start docky
+/SYS/@ICON		""	1	# Multithread icon
+#/SYS/@RB		""	1	# Desktop right-click menu
+/SYS/@SS		ASSM	1	# Screensaver
+/SYS/TMPDISK		A0	-1	# Add virtual RAM disk /tmp0/1
+/SYS/SEARCHAP		""	-1	# Search and mount additional system directory
+### Hello, ASM World! ###
