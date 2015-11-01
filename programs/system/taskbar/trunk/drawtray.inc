@@ -1,137 +1,96 @@
-;------------------------------------------------------------------------------
-align 4
-draw_tray:    ; draw cpu usage, time, date etc.
-	pusha
 
+draw_tray:	; draw cpu usage, time, date etc.
+	pusha
 	call	draw_tray_buttons
 	call	draw_time_skin
 	call	draw_time
-	
 	mov	[draw_flag_certainly],1
-   	call	draw_flag	; language
-
+	call	draw_flag	; language
 	call	draw_list_button
-
 	popa
 	ret
-;------------------------------------------------------------------------------
+;---------------------------------------------------------------
 draw_tray_buttons:
 	mov	[offset_x_tray],0
-
 	cmp	[minimize_right],dword 0
 	je	@f
-	
 	add	[offset_x_tray],MR_SIZE
-;--------------------------------------
-align 4	
 @@:
-;	mov	ecx,3 shl 16
-;	add	ecx,[height]
-;	sub	cx,6
 	mov	ecx,[height]
 	mov	esi,[wcolor]
 	mov	eax,8
-;--------------------------------------
 	cmp	[clock_enable],dword 0
 	je	@f
-	
 	add	[offset_x_tray],CLOCK_SIZE
-
 	mov	ebx,[max_x]
 	sub	ebx,[offset_x_tray]
 	shl	ebx,16
 	add	ebx,CLOCK_SIZE+1
-	mcall	,,,0x60000000+2	; time/date button
-        sub     ebx,3
+	mcall	,,,0x60000000+2		; time/date button
+	sub	ebx,3
 	mov	[pos_x_clock],ebx
-;--------------------------------------
-align 4	
 @@:
 	cmp	[cpu_usage_enable],dword 0
 	je	@f
-	
 	add	[offset_x_tray],CPU_USAGE_SIZE
-
 	mov	ebx,[max_x]
 	sub	ebx,[offset_x_tray]
 	shl	ebx,16
 	add	ebx,CPU_USAGE_SIZE+1
 	mcall	,,,0x60000000+18	;button 18 - sysmeter_name (GMON)
-        sub     ebx,3
+	sub	ebx,3
 	mov	[pos_x_cpu_usage],ebx
-;--------------------------------------
-align 4	
 @@:
 	cmp	[chlang_enable],dword 0
 	je	@f
-	
 	add	[offset_x_tray],CHLANG_SIZE
-
 	mov	ebx,[max_x]
 	sub	ebx,[offset_x_tray]
 	shl	ebx,16
 	add	ebx,CHLANG_SIZE+1
 	mcall	,,,0x60000000+16	;button 16 - chang language
-        sub     ebx,3
+	sub	ebx,3
 	mov	[pos_x_cpu_chlang],ebx
-;--------------------------------------
-align 4	
 @@:
 	cmp	[page_list_enable],dword 0
 	je	@f
-	
 	add	[offset_x_tray],PAGE_LIST_SIZE
-
 	mov	ebx,[max_x]
 	sub	ebx,[offset_x_tray]
 	shl	ebx,16
 	add	ebx,10
 	mov	[pos_x_page_list],ebx
 	mcall	,,,0x60000000+22	;button 22 - page list decrease
-	
+
 	add	ebx,24 shl 16
-	
 	mcall	,,,0x60000000+21	;button 21 - page list decrease
-;--------------------------------------
-align 4	
 @@:
 	ret
-;------------------------------------------------------------------------------
-align 4
+;---------------------------------------------------------------
 draw_time_skin:
 	cmp	[clock_enable],dword 0
-	je	.exit
-	
-
+	je	@b
 	mov	ebx,[pos_x_clock]
 	call	calculate_button_y_coordinate_and_size
-	
+
 	mov	edx,[Clock_color]	;time_bgr_color
 	mov	esi,[wcolor]
-	call	draw_appl_button
-;--------------------------------------
-align 4
-.exit:
-	ret
-;------------------------------------------------------------------------------
-align 4
+	jmp	draw_appl_button
+;---------------------------------------------------------------
 draw_time:
 	cmp	[clock_enable],dword 0
-	je	.exit
-	
+	je	@b
 	mcall	3
 	cmp	eax,[ptime]
-	jz	.exit
-
+	jz	@b
 	mov	[ptime],eax
-;--------------------------------------
+
 ; draw hours and minutes
 	movzx	ebx,al
 	shr	eax,8
 	movzx	ecx,al
 	shr	eax,8
 	movzx	edx,al
-; ebx ecx edx h m s
 	push	ebx
 	push	ecx
 
@@ -143,38 +102,35 @@ draw_time:
 	shr	ecx,16
 	add	eax,ecx
 	mov	bx,ax
-	
 	add	ebx,18 shl 16
-	
-;	mov	ecx,[bte]
 	mov	ecx,[PanelText_color]
 	or	ecx,0x40000000
-	mov	edx,[esp]	       ; __:_X
+	mov	edx,[esp]	; __:_X
 	and	edx,15
 	add	ebx,10*65536
 	add	edx,text
 	mcall	4,,,,1,[Clock_color]	;time_bgr_color
 
-	pop	edx			; __:X_
+	pop	edx		; __:X_
 	shr	edx,4
 	and	edx,15
 	sub	ebx,6*65536
 	add	edx,text
-	mcall	
+	mcall
 
-	mov	edx,[esp]	       ; _X:__
+	mov	edx,[esp]	; _X:__
 	and	edx,15
 	sub	ebx,11*65536
 	add	edx,text
 	mcall
 
-	pop	edx			; X_:__
+	pop	edx		; X_:__
 	shr	edx,4
 	and	edx,15
 	sub	ebx,6*65536
 	add	edx,text
 	mcall
-;--------------------------------------
+
 ; draw seconds
 	mov	ebx,[pos_x_clock]
 	call	calculate_button_y_coordinate_and_size
@@ -184,74 +140,42 @@ draw_time:
 	shr	ecx,16
 	add	eax,ecx
 	mov	bx,ax
-
 	add	ebx,17 shl 16
-	
 	mcall	3
 
 	mov	ecx,eax
 	shr	ecx,16
 	and	ecx,1
-;	mov	edx,[bte]
 	mov	edx,[PanelText_color]
 	sub	edx,[Clock_color]	;time_bgr_color;[wcolor]
 	imul	ecx,edx
 	add	ecx,[Clock_color]	;time_bgr_color;[wcolor]
-
 	mcall	4,,,sec,1
 
-   	call	draw_cpu_usage
-;--------------------------------------
-align 4
-.exit:
-	ret
-;------------------------------------------------------------------------------
-align 4
+	jmp	draw_cpu_usage
+;---------------------------------------------------------------
 draw_list_button:
 	cmp	[page_list_enable],dword 0
-	je	.exit
+	je	@f
+
 ; draw page list button  "skin"
 	mov	ebx,[pos_x_page_list]
 	mov	bx,10
-	
 	call	calculate_button_y_coordinate_and_size
 
-;	mov	ecx,3 shl 16
-;	add	ecx,[height]
-;	sub	cx,6
-
 	xor	edx,edx
-;	mcall	13
-
 	mov	edx,[PageList_color]	;0xffffff
 	mov	esi,[wcolor]
 	call	draw_appl_button
-	
+
 	add	ebx,24 shl 16 ; 18 shl 16
-;	mcall
-
 	mov	edx,[PageList_color]	;0xffffff
 	mov	esi,[wcolor]
 	call	draw_appl_button
-	
-;	sub	ebx,23 shl 16 ; 19 shl 16
-;	sub	bx,2
 
-;	add	ecx,1 shl 16
-;	sub	ecx,2
-;	mcall	,,,0xffffff
-
-;	add	ebx,24 shl 16
-;	mcall
-;--------------------------------------
 ; draw page list button  text <>
 	mov	ebx,[pos_x_page_list]
 	add	ebx,2 shl 16
-;	mov	eax,[height]
-;	shr	eax,1
-;	sub	eax,4
-;	mov	bx,ax
-
 	call	calculate_button_y_coordinate_and_size
 	movzx	eax,cx
 	shr	eax,1
@@ -259,33 +183,29 @@ draw_list_button:
 	shr	ecx,16
 	add	eax,ecx
 	mov	bx,ax
-
 	xor	ecx,ecx
 	mcall	4,,,page_a1,5
 
 	add	ebx,1 shl 16
 	mcall
-;--------------------------------------
+
 ; draw page list number
 	mov	edx,ebx
 	add	edx,9 shl 16
 	mcall	47,0x20000,[page_list],,[system_colours.work_button_text]
-;--------------------------------------
-align 4
-.exit:	
+@@:
 	ret
-;------------------------------------------------------------------------------
-align 4
+;---------------------------------------------------------------
 draw_cpu_usage:
 	cmp	[cpu_usage_enable],dword 0
-	je	.exit
+	je	@b
 
 	pushad
+
 	mov	eax,[height]
 	sub	eax,[button_top_offset]
 	sub	eax,[button_bottom_offset]
 	sub	eax,2
-	
 	mov	[ysi],eax	;12
 	mcall	18,5	; TSC / SEC
 
@@ -301,86 +221,51 @@ draw_cpu_usage:
 	inc	ebx
 	div	ebx
 	cmp	eax,[ysi]
-	jng	.no_bug
-
+	jng	@f
 	mov	eax,[ysi]
-;--------------------------------------
-align 4
-.no_bug:
+@@:
 	push	eax
-
 	mov	ebx,[pos_x_cpu_usage]
 	mov	ecx,[button_top_offset]
 	shl	ecx,16
 	add	ecx,[ysi]
 	add	ecx,2
-
 	mov	edx,[CpuUsageBckgr_color]	;0xdd2222
 	mov	esi,[wcolor]
 	call	draw_appl_button
-
 	pop	eax
 
-;	mov	ecx,4 shl 16
 	mov	ecx,[button_top_offset]
 	inc	ecx
 	shl	ecx,16
 	add	ecx,eax
-	
-	
 	add	ebx,1 shl 16
 	sub	ebx,2
-	
 	mcall	13,,,[CpuUsage_color]	;0x44aa44
 
 	popad
-;--------------------------------------
-align 4
-.exit:
+@@:
 	ret
-;------------------------------------------------------------------------------
-align 4
-; eax = number (1 or 2)
-; ebx = language id
+;---------------------------------------------------------------
+; get and draw keyboard layout
 draw_flag:
 	cmp	[chlang_enable],dword 0
-	je	.exit
-
+	je	@b
 	cmp	[draw_flag_certainly],0
-	je	.exit
+	je	@b
 
 	pusha
-;--------------------------------------
-; get and draw keyboard layout
+
 	mcall	26,2,9
-
-	mov	ebx,eax
-
-;	mov	eax,2
+	mov	edx,eax
 	mov	[type_lang],al
-; eax = 2 BIG
-; eax = 1 small
-	mov	edx,ebx
 
 	pushad
 	mov	ebx,[pos_x_cpu_chlang]
 	call	calculate_button_y_coordinate_and_size
-
-;	cmp	[type_lang],1
-;	je	.label_1
-
 	mov	edx,[ChangeLang_color]	;time_bgr_color	;0xff ;[wcolor]
-;	jmp	.label_2
-;--------------------------------------
-;align 4
-;.label_1:
-;	mov	edx,0x7700
-;--------------------------------------
-;align 4
-;.label_2:
 	mov	esi,[wcolor]
 	call	draw_appl_button
-
 	popad
 
 	mov	ebx,[pos_x_cpu_chlang]
@@ -389,7 +274,6 @@ draw_flag:
 	shl	eax,16
 	add	ebx,eax
 	sub	ebx,6 shl 16
-
 	call	calculate_button_y_coordinate_and_size
 	movzx	eax,cx
 	shr	eax,1
@@ -397,48 +281,23 @@ draw_flag:
 	shr	ecx,16
 	add	eax,ecx
 	mov	bx,ax
-
-;	mov	ecx,[bte] ; color
 	mov	ecx,[PanelText_color]
 
 if caps_lock_check
-; make flag_text 'enfigerufretua' or 'ENFIGERUFRETUA' depending on CapsLock state.
-	call	flag_text_setup
+	push	ebx
+	mov	[flag_text],flagTextSm
+	mcall	66,3
+	test	eax, 0x40
+	jz	@f
+	mov	[flag_text],flagTextBg
+@@:
+	pop	ebx
 end if
+
 	dec	edx
 	shl	edx,1
-	add	edx,flag_text
+	add	edx,[flag_text]
 	mcall	4,,,,2
 	popa
 	mov	[draw_flag_certainly],0
-;--------------------------------------
-align 4
-.exit:
 	ret
-;------------------------------------------------------------------------------
-align 4
-if caps_lock_check
-flag_text_setup:
-	pusha
-	mcall	66,3
-	mov	edi, flag_text
-	mov	esi, flag_text_caps_off
-	test	eax, 0x40
-	jz	@f
-	
-	add	esi, 14
-;--------------------------------------
-align 4
-@@:
-	mov	ecx, 14
-	rep	movsb
-	
-	popa
-	ret
-
-;flag_text_caps_off db 'enfigerufretua' 
-flag_text_caps_off:
-db 'EnFiGeRuFrEtUa' 
-db 'ENFIGERUFRETUA'
-end if
-;------------------------------------------------------------------------------

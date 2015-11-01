@@ -1,27 +1,43 @@
-;------------------------------------------------------------------------------
+
 align 4
-
-
-; DATA
 stripe:
-	dd -0x010101
-	dd -0x010101
-	dd -0x020202
-	dd -0x010101
-	dd -0x000000
-
-	dd 0x000000
-	dd 0x010101
-	dd 0x020202
-	dd 0x010101
-	dd 0x010101
+dd	-0x010101
+dd	-0x010101
+dd	-0x020202
+dd	-0x010101
+dd	-0x000000
+dd	0x000000
+dd	0x010101
+dd	0x020202
+dd	0x010101
+dd	0x010101
 
 m_icon:
-	dd 0x0
-	dd 0x808080
-	dd 0x000000
-	dd 0x000000
-	dd 0xffffff
+dd	0x0
+dd	0x808080
+dd	0x000000
+dd	0x000000
+dd	0xffffff
+
+running_applications	dd 0x100
+max_applications	dd 11
+current_alt_tab_app	dd -1
+draw_start_position	dd 0
+page_list	dd 0
+small_draw	dd 0x0
+flag_text	dd flagTextSm
+screenxy	dd 0x0
+this_slot	dd 0	; Slot of this process
+max_slot	dd 255
+stcount	dd 0x0
+ysi	dd 0
+ptime	dd 0x0
+max_x	dd 0x0
+wcolor	dd 0x506070
+
+mi_text		db 'WAVETETRBGRDGPL '
+flagTextSm	db 'EnFiGeRuFrEtUaItBe'
+flagTextBg	db 'ENFIGERUFRETUAITBE'
 
 lsz m_text,\
   ru, "Œ¥­î",\
@@ -29,64 +45,16 @@ lsz m_text,\
   et, "MENÜÜ",\
   sp, "Menu"
 
-mi_text		db 'WAVETETRBGRDGPL '
-
-flag_text	db 'EnFiGeRuFrEtUa'
-
+bootparam_printscreen	db 'DIRECT',0
 type_lang	db 0
-
-;sound_flag	db 0
-;button_frames	dd 0x0
-
-;checks		dd -1
-hidetext	db 0x11,0x10,0x1e
-
-turn_text	db  '><'
-gpl		db  'GPL'
-
-chlang	db 'LANG',0
-;syslang db 'SLAN',0
-
 contrast	db 0
-
-running_applications	dd 0x100
-max_applications	dd 11
-
-current_alt_tab_app	dd -1
-
-page_list		dd 0
-draw_start_position	dd 0
-
-;b_size_y:	dd 0x0
-ysi		dd 0
-small_draw	dd 0x0
-
-ptime		dd 0x0
-max_x		dd 0x0
-text		db '0123456789'
-
-page_a1		db '<   >'
 page_clean_but	db 25,24,18
-
-;bte	dd 0x0	;ccddee
-
-wcolor	dd 0x506070
-
+hidetext	db 17,16,30
+Path_def_val	db 'NONE',0
 sec	db ': '
-;pros	db '                                                  '
-;	db '                                                  '
-
-screenxy    dd	0x0
-stcount     dd	0x0
-
-setup_exec:
-		dd 7
-		dd 0
-.cmdline	dd 0
-		dd 0
-		dd 0
-		db '/sys/'
-file_sys	db 'SETUP',0
+chlang	db 'LANG',0
+page_a1	db '<   >'
+text	db '0123456789'
 
 exec_fileinfo:
 	dd 7
@@ -97,13 +65,6 @@ exec_fileinfo:
 	db 0
 .name	dd 0
 
-bootparam_printscreen	db 'DIRECT',0
-
-Path_def_val db 'NONE',0
-
-this_slot	dd 0	      ; Slot of this process
-max_slot	dd 255
-
 ;--------------------------------------
 menu_button_x:
 .start	dd 1234	;0xffff
@@ -112,7 +73,6 @@ menu_button_x:
 menu_button_y:
 .start	dd 0xaa
 .size	dd 0xc
-;--------------------------------------
 ;------------------------------------------------------------------------------
 ; INI variables
 width:			dd 0	;305
@@ -122,16 +82,11 @@ button_top_offset:	dd 0
 button_bottom_offset:	dd 0
 ;------------------------------------------------------------------------------
 ; INI flags
-;buttons 	dd 1	;  0 no frames  ; 1 frames
-soften_up:	dd 1	;  0 no         ; 1 yes
-soften_down:	dd 0	;  0 no         ; 1 yes
-minimize_left:	dd 0
-minimize_right:	dd 1
-;icons_position	dd 95	; not used!
-menu_enable:	dd 1
-;tray_enable:	dd 0	; draw cpu usage, time, date
-;graph_text	dd 1	; not used!
-;soften_middle	dd 1	; not used!	;  0 no         ; 1 yes
+soften_up:		dd 1	;  0 no         ; 1 yes
+soften_down:		dd 0	;  0 no         ; 1 yes
+minimize_left:		dd 0
+minimize_right:		dd 1
+menu_enable:		dd 1
 run_appl:		dd 1	;  0 defaults   ; 1 activate
 clean_desktop_enable:	dd 1
 clock_enable:		dd 1
@@ -188,17 +143,13 @@ aRun			db 'Run',0
 aPrnScr			db 'PrnScr',0
 aMouseEmul		db 'MouseEmul',0
 ;------------------------------------------------------------------------------
-plugins_directory               db 0
-
-ini_file_name                   db 'settings/taskbar.ini',0
-
-system_dir_Libini			db '/sys/lib/libini.obj',0
-
-err_message_found_lib2		db 'libini.obj - Not found!',0
-err_message_import2			db 'libini.obj - Wrong import!',0
-
+plugins_directory	db 0
+ini_file_name		db 'settings/taskbar.ini',0
+system_dir_Libini	db '/sys/lib/libini.obj',0
+err_message_found_lib2	db 'libini.obj - Not found!',0
+err_message_import2	db 'libini.obj - Wrong import!',0
 head_f_i:
-head_f_l        db 'Errors of PLugins:',0
+head_f_l		db 'Errors of PLugins:',0
 ;------------------------------------------------------------------------------
 l_libs_start:
 

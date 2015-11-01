@@ -11,9 +11,6 @@ draw_window:
 	mcall	48,3,system_colours,10*4
 
 	mov	eax, [system_colours+4*6]
-;	sub	eax, 0x101010
-;	mov	[wcolor], eax
-
 	mov	edx,[system_colours+4*6]
 	mov	eax,COLOR_CHANGE_MAGNITUDE
 	call	subtract_color_change_magnitude
@@ -85,7 +82,6 @@ fill_window:
 	movzx	ebx,word [screenxy+2]
 	xor	ecx,ecx
 	mov	edx,[wcolor]
-;	add	edx,0x161616
 	mov	eax,COLOR_CHANGE_MAGNITUDE_0
 	imul	eax,dword [soften_height]
 	call	subtract_color_change_magnitude
@@ -93,8 +89,7 @@ fill_window:
 	je	no_su
 ;--------------------------------------
 align 4
-@@:			; debug.inc has macros with the same name
-;	sub	edx,0x040404
+@@:
 	mov	eax,COLOR_CHANGE_MAGNITUDE_0
 	call	add_color_change_magnitude
 ; draw soften_up - the width of 5 pixels
@@ -146,7 +141,6 @@ no_sd:
 ;--------------------------------------
 align 4
 @@:
-;	mov	esi,stripe
 	mov	edx,[wcolor]
 ;--------------------------------------
 align 4
@@ -181,7 +175,6 @@ minimize_left_button:
 	add	ecx,[height]
 	dec	ecx
 	mov	edx,101
-;	add	edx,[button_frames]
 	or	edx,0x40000000
 	mcall	8,<0,9>,,,[wcolor]	; ABS LEFT
 
@@ -189,8 +182,6 @@ minimize_left_button:
 	mov	bx,[height]
 	shr	bx,1
 	sub	bx,3
-;	mov	ecx,[wcolor]
-;	add	ecx,0x303030
 	mov	edx,[wcolor]
 	mov	eax,COLOR_CHANGE_MAGNITUDE_2
 	call	add_color_change_magnitude
@@ -215,9 +206,8 @@ minimize_right_button:
 	add	ecx,[height]
 	dec	ecx
 	add	ebx,68*65536
-	mov	bx,10 ;9
+	mov	bx,10	;9
 	mov	edx,102
-;	add	edx,[button_frames]
 	or	edx,0x40000000
 	mcall	8,,,,[wcolor]	; ABS RIGHT
 
@@ -227,8 +217,6 @@ minimize_right_button:
 	mov	bx,[height]
 	shr	bx,1
 	sub	bx,3
-;	mov	ecx,[wcolor]
-;	add	ecx,0x303030
 	mov	edx,[wcolor]
 	mov	eax,COLOR_CHANGE_MAGNITUDE_2
 	call	add_color_change_magnitude
@@ -256,11 +244,8 @@ draw_menu_and_clean_desktop:
 ;--------------------------------------
 align 4
 @@:
-;	call	calculate_button_y_coordinate_and_size
         mov     ecx, [height]
 	mov	edx, 0x60d1ff01
-;	mov	edx, 0xd1ff01
-;	add	edx, [button_frames]
 	mcall	8,,,,[wcolor]	; MENU BUTTON
 	
 	mov	eax,ebx
@@ -285,10 +270,10 @@ align 4
         add     ebx,3 shl 16 - 5
 	call	draw_appl_button	
 
-	add	ebx, 6*65536
+	add	ebx, 4*65536
 	mov	bx,[height]
 	shr	bx,1
-	sub	bx,3
+	sub	bx,7
 	mov	ecx,[PanelText_color]
 	or	ecx,0x10000000
 	if lang eq et
@@ -324,7 +309,6 @@ align 4
 	mov	esi, dword [system_colours+24]    ; drawing buttons
 	and	esi, 0x00ffffff
 	mov	edx, 0x60000000 + 103
-;	call	calculate_button_y_coordinate_and_size
         mov     ecx, [height]
 	mcall	8	;,,<3,13>
 	
@@ -332,12 +316,9 @@ align 4
 	mov	edx,[CleanDesktopButton_color]	;time_bgr_color
 	mov	esi,[wcolor]
 	call	draw_appl_button
-	
-;	mov	ecx, dword [system_colours+28]
-;	and	ecx, 0x00ffffff
+
 	mov	ecx,[PanelText_color]
 	add	ebx,5 shl 16
-;	mov	bx,6
 	mov	bx,[height]
 	shr	bx,1
 	sub	bx,2
@@ -359,7 +340,6 @@ draw_application_buttons:
 
 	call	calculate_offset_X
 
-;	mcall	14
 	mov	eax,[screenxy]
 	shr	eax,16
 
@@ -416,9 +396,6 @@ align 4
 	mov	edx,edi
 	add	edx,52
 	or	edx,0x60000000
-;	mov	ecx, 1*65536
-;	add	ecx, [height]
-;	sub	ecx,3
 	mov	ecx, [height]
 	mcall	8,,,,[wcolor]
 
