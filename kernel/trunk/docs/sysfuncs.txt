@@ -2038,11 +2038,11 @@ Remarks:
   * Structure of the color table is described in the standard
     include file 'macros.inc' as 'system_colors'; for example,
     it is possible to write:
-    	sc	system_colors		; variable declaration
-    	...				; somewhere one must call
-    					; this function with ecx=sc
-    	mov	ecx, [sc.work_button_text]	; read text color on
-    					; buttin in working area
+        sc      system_colors           ; variable declaration
+        ...                             ; somewhere one must call
+                                        ; this function with ecx=sc
+        mov     ecx, [sc.work_button_text]      ; read text color on
+                                        ; buttin in working area
   * A program itself desides to use or not to use color table.
     For usage program must simply at calls to drawing functions select
     color taken from the table.
@@ -2442,11 +2442,11 @@ Remarks:
 The data of the graphics screen (the memory area which displays
 screen contents) are accessible to a program directly, without
 any system calls, through the selector gs:
-	mov	eax, [gs:0]
+        mov     eax, [gs:0]
 places in eax the first dword of the buffer, which contains
 information on color of the left upper point (and, possibly, colors
 of several following).
-	mov	[gs:0], eax
+        mov     [gs:0], eax
 by work in VESA modes with LFB sets color of the left upper point
 (and, possibly, colors of several following).
 To interpret the data of graphics screen program needs to know
@@ -3279,7 +3279,7 @@ Remarks:
     and at arrival of new message the system will wait.
     For synchronization frame all work with the buffer by operations
     lock/unlock
-    	neg	[bufsize]
+        neg     [bufsize]
   * Data in the buffer are considered as array of items with variable
     length - messages. Format of a message is explained in
     general description.
@@ -3952,11 +3952,11 @@ Returned value:
   * function does not return value
 
 ======================================================================
-= Function 74, Subfunction -1, Get number of active network devices. =
+= Function 74, Subfunction 255, Get number of active network devices. =
 ======================================================================
 Parameters:
   * eax = 74 - function number
-  * bl = -1 - subfunction number
+  * bl = 255 - subfunction number
 Returned value:
   * eax = number of active network devices
 
@@ -3968,7 +3968,7 @@ Parameters:
   * bl = 0 - subfunction number
   * bh = device number
 Returned value:
-  * eax = device type
+  * eax = device type number
 
 ======================================================================
 ======== Function 74, Subfunction 1, Get network device name. ========
@@ -4001,7 +4001,79 @@ Parameters:
   * bh = device number
 Returned value:
   * eax = -1 on error
+  
+======================================================================
+=========== Function 74, Subfunction 4, Get device pointer. ==========
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 4 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = device pointer, -1 on error  
+  
+======================================================================
+========= Function 74, Subfunction 6, Get packet TX counter. =========
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 6 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = Number of packets sent since device start, -1 on error
+  
+======================================================================
+========= Function 74, Subfunction 7, Get packet RX counter. =========
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 7 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = Number of packets received since device start, -1 on error
+  
+======================================================================
+========== Function 74, Subfunction 8, Get TX byte counter. ==========
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 8 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = Number of bytes sent since device start (lower dword)
+                  -1 on error
+  * ebx = Number of bytes sent since device start (higher dword)
 
+======================================================================
+========== Function 74, Subfunction 9, Get RX byte counter. ==========
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 9 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = Number of bytes received since device start (lower dword)
+                  -1 on error
+  * ebx = Number of bytes received since device start (higher dword)
+  
+======================================================================
+========== Function 74, Subfunction 10, Get link status. =============
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 10 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = link status, -1 on error
+  
+  Link status:
+    ETH_LINK_DOWN   =    0b         ; Link is down
+    ETH_LINK_UNKNOWN=    1b         ; There could be an active link
+    ETH_LINK_FD     =   10b         ; full duplex flag
+    ETH_LINK_10M    =  100b         ; 10 mbit
+    ETH_LINK_100M   = 1000b         ; 100 mbit
+    ETH_LINK_1G     = 1100b         ; gigabit   
+  
 ======================================================================
 ============== Function 75, Subfunction 0, Open socket. ==============
 ======================================================================
@@ -4118,10 +4190,11 @@ Returned value:
   * ebx = errorcode
 Remarks:
 
-  Optstruct: dd level
-             dd optionname
-             dd optlength
-             db options...
+  Optstruct: 
+    dd level
+    dd optionname
+    dd optlength
+    db options...
 
 ======================================================================
 =========== Function 75, Subfunction 9, Get socket options. ==========
@@ -4136,10 +4209,11 @@ Returned value:
   * ebx = errorcode
 Remarks:
 
-  Optstruct: dd level
-             dd optionname
-             dd optlength
-             db options...
+  Optstruct: 
+    dd level
+    dd optionname
+    dd optlength
+    db options...
 
 ======================================================================
 ============ Function 75, Subfunction 10, Get socketpair. ===========
@@ -4150,6 +4224,53 @@ Parameters:
 Returned value:
   * eax = socketnum1, -1 on error
   * ebx = socketnum2, errorcode on error
+  
+======================================================================
+============ Function 76, Network options and statistics. ============
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = protocol number
+  * bh = device number
+  * bl = subfunction number
+
+Ethernet (0)
+        0 - Read MAC
+        
+IPv4 (1)
+        0 - Read # IP packets send
+        1 - Read # IP packets received
+        2 - Read IP
+        3 - Write IP
+        4 - Read DNS
+        5 - Write DNS
+        6 - Read subnet
+        7 - Write subnet
+        8 - Read gateway
+        9 - Write gateway
+        
+ICMP (2)
+        0 - Read # ICMP packets send
+        1 - Read # ICMP packets received
+        3 - enable/disable ICMP echo reply
+
+UDP (3)
+        0 - Read # UDP packets send
+        1 - Read # UDP packets received
+
+TCP (4)
+        0 - Read # TCP packets send
+        1 - Read # TCP packets received 
+        
+ARP (5)
+        0 - Read # ARP packets send
+        1 - Read # ARP packets received
+        2 - Read # ARP entry's
+        3 - Read ARP entry
+        4 - Add static ARP entry
+        5 - Remove ARP entry (-1 = remove all)
+        6 - Send ARP announce on specified interface
+        7 - Read # ARP conflicts (IP address conflicts) 
 
 ======================================================================
 =============== Function -1 - terminate thread/process ===============
