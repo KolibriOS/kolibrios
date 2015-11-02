@@ -25,12 +25,12 @@ BootSettings:
 	invoke	ini.get_str, sz_ini, sz_system, sz_language, param, 2, 0
 	mov	ax, [param]
 	or	ax, 0x2020	; convert to lowercase
-	mov	ecx,10
+	mov	ecx,8
 	mov	edi,langMarks
 	repnz scasw
 	jnz	@f
 	neg	ecx
-	add	ecx,10
+	add	ecx,8
 	mcall	21,5
 @@:
 
@@ -262,11 +262,11 @@ close:
 language1:
 	dec	[syslang]
 	jns	@f
-	mov	[syslang],9
+	mov	[syslang],7
 	jmp	@f
 language2:
 	inc	[syslang]
-	cmp	[syslang],10
+	cmp	[syslang],8
 	jc	@f
 	mov	[syslang],0
 @@:
@@ -486,10 +486,9 @@ stringsAmount = 6
 align 4
 text	dd 0
 langs:
-db 'ENGLISH FINNISH GERMAN  RUSSIAN FRENCH  '
-db 'ESTONIANUKRAINE ITALIAN BELGIAN SPANISH '
+db 'ENGLISH FINNISH GERMAN  RUSSIAN FRENCH  ESTONIANSPANISH ITALIAN '
 langMarks:
-db	'enfiderufretukitbesp'
+db	'enfiderufretspit'
 
 textrus:
 db 'Язык системы              :              <  >  Применить'

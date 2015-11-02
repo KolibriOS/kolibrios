@@ -36,8 +36,8 @@ max_x	dd 0x0
 wcolor	dd 0x506070
 
 mi_text		db 'WAVETETRBGRDGPL '
-flagTextSm	db 'EnFiGeRuFrEtUaItBe'
-flagTextBg	db 'ENFIGERUFRETUAITBE'
+flagTextSm	db 'EnFiDeRuFrEtUaItBe'
+flagTextBg	db 'ENFIDERUFRETUAITBE'
 
 lsz m_text,\
   ru, "Меню",\
