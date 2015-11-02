@@ -25,28 +25,13 @@ BootSettings:
 	invoke	ini.get_str, sz_ini, sz_system, sz_language, param, 2, 0
 	mov	ax, [param]
 	or	ax, 0x2020	; convert to lowercase
-	mov	ecx,8
+	mov	ecx,10
 	mov	edi,langMarks
 	repnz scasw
 	jnz	@f
 	neg	ecx
-	add	ecx,8
+	add	ecx,10
 	mcall	21,5
-@@:
-
-; Set keyboard layout
-	mov	word[param],0
-	invoke	ini.get_str, sz_ini, sz_system, sz_keyboard, param, 2, 0
-	mov	ax, [param]
-	or	ax, 0x2020
-	mov	ecx,8
-	mov	edi,langMarks
-	repnz scasw
-	jnz	@f
-	neg	ecx
-	add	ecx,7
-	mov	[keyboard],ecx
-	call	_keyboard
 @@:
 
 ; Set font smoothing
@@ -80,6 +65,11 @@ BootSettings:
 @@:
 	call	_speaker_mute
 .skipSpeaker:
+
+; Set font size
+	invoke	ini.get_int, sz_ini, sz_system, sz_fontSize, 9
+	mov	ecx,eax
+	mcall	48,12
 
 ; Set mouse speed
 	invoke	ini.get_int, sz_ini, sz_mouse, sz_speed, 1
@@ -131,11 +121,8 @@ START:
 	cmp	[param],dword 'BOOT'
 	jz	BootSettings
 	pop	eax
-; get current settings
-	mcall	26,2,9
-	dec	eax
-	mov	[keyboard],eax
 
+; get current settings
 	mcall	26,5
 	dec	eax
 	mov	[syslang],eax
@@ -152,6 +139,9 @@ START:
 	mcall	48,9
 	mov	[fontSmoothing],eax
 
+	mcall	48,11
+	mov	[fontSize],eax
+
 	call	loadtxt
 
 draw_infotext:
@@ -159,12 +149,6 @@ draw_infotext:
 	mov	edi,[text]
 	lea	esi,[eax*8+langs]
 	add	edi,28
-	movsd
-	movsd
-
-	mov	eax,[keyboard]
-	add	edi,LLL-8
-	lea	esi,[eax*8+langs]
 	movsd
 	movsd
 	add	edi,LLL-8
@@ -191,6 +175,12 @@ draw_infotext:
 @@:
 	mov	[edi+LLL*3],ebx
 	mov	[edi+LLL*3+4],ecx
+
+	mov	eax,[fontSize]
+	mov	bl, 10
+	div	bl
+	add	ax, '00'
+	mov	[edi+LLL*4],ax
 
 draw_window:
 	mcall	12,1
@@ -272,26 +262,15 @@ close:
 language1:
 	dec	[syslang]
 	jns	@f
-	mov	[syslang],7
+	mov	[syslang],9
 	jmp	@f
 language2:
 	inc	[syslang]
-	cmp	[syslang],8
-	jnz	@f
+	cmp	[syslang],10
+	jc	@f
 	mov	[syslang],0
 @@:
 	jmp	loadtxt
-layout1:
-	dec	[keyboard]
-	jns	@f
-	mov	[keyboard],7
-	ret
-layout2:
-	inc	[keyboard]
-	cmp	[keyboard],8
-	jnz	@f
-	mov	[keyboard],0
-	ret
 LBA1:
 	btr	[lba_read],0
 	ret
@@ -319,16 +298,22 @@ font2:
 	cmp	[fontSmoothing],2
 	jz	@f
 	inc	[fontSmoothing]
+	ret
+fontSize1:
+	cmp	[fontSize],10
+	jc	@f
+	dec	[fontSize]
 @@:
 	ret
+fontSize2:
+	inc	[fontSize]
+	ret
 apply_all:
-	call	fontApply
-	call	_syslang
 	call	_lba_read
 	call	_pci_acc
 	call	_speaker_mute
-	call	_keyboard
-	ret
+	call	fontApply
+	call	fontSizeApply
 _syslang:
 	mov	ecx,[syslang]
 	inc	ecx
@@ -343,26 +328,16 @@ _pci_acc:
 fontApply:
 	mcall	48,10,[fontSmoothing]
 	ret
+fontSizeApply:
+	mcall	48,12,[fontSize]
+	ret
 _speaker_mute:
 	mcall	18,8,1
 	cmp	[speaker_mute],eax
-	je	@b
+	jz	@f
 	inc	ecx
 	mcall	18
-_keyboard:
-	mov	ebp,[keyboard]
-	mov	edx,[ebp*4+keymapTab]
-	mcall	21,2,1
-	inc	ecx
-	mov	edx,[ebp*4+shiftKeymapTab]
-	mcall	21
-	inc	ecx
-	mov	edx,[ebp*4+altKeymapTab]
-	mcall	21
-	mov	edx,ebp
-	inc	edx
-	mov	cl, 9
-	mcall	21
+@@:
 	ret
 ;---------------------------------------------------------------
 loadtxt:
@@ -410,11 +385,8 @@ saveAll:
 	mov	[param],eax
 	invoke	ini.set_str, sz_ini, sz_system, sz_language, param, 2
 
-; keyboard layout
-	mov	eax,[keyboard]
-	mov	ax, [eax*2+langMarks]
-	mov	[param],eax
-	invoke	ini.set_str, sz_ini, sz_system, sz_keyboard, param, 2
+; font size
+	invoke	ini.set_int, sz_ini, sz_system, sz_fontSize, [fontSize]
 
 ; font smoothing
 	mov	dword[param],'off'
@@ -460,9 +432,6 @@ buttonTab:	; button handler pointers: -,+,apply
 	dd language1
 	dd language2
 	dd _syslang
-	dd layout1
-	dd layout2
-	dd _keyboard
 	dd LBA1
 	dd LBA2
 	dd _lba_read
@@ -475,40 +444,16 @@ buttonTab:	; button handler pointers: -,+,apply
 	dd font1
 	dd font2
 	dd fontApply
-keymapTab:
-	dd en_keymap
-	dd fi_keymap
-	dd ge_keymap
-	dd ru_keymap
-	dd fr_keymap
-	dd et_keymap
-	dd be_keymap
-	dd it_keymap
-shiftKeymapTab:
-	dd en_keymap_shift
-	dd fi_keymap_shift
-	dd ge_keymap_shift
-	dd ru_keymap_shift
-	dd fr_keymap_shift
-	dd et_keymap_shift
-	dd be_keymap_shift
-	dd it_keymap_shift
-altKeymapTab:
-	dd alt_general
-	dd alt_general
-	dd alt_general
-	dd alt_general
-	dd fr_keymap_alt_gr
-	dd alt_general
-	dd be_keymap_alt_gr
-	dd it_keymap_alt_gr
+	dd fontSize1
+	dd fontSize2
+	dd fontSizeApply
 
 syslang 	dd 0
-keyboard	dd 0
 lba_read	dd 0
 pci_acc 	dd 0
 speaker_mute	dd 0
 fontSmoothing	dd 0
+fontSize	dd 0
 
 @IMPORT:
 library libini, 'libini.obj'
@@ -523,7 +468,7 @@ sz_ini	db "/sys/settings/system.ini",0
 
 sz_system	db "system",0
 sz_language	db "language",0
-sz_keyboard	db "keyboard",0
+sz_fontSize	db "font height",0
 sz_fontSmooth	db "font smoothing",0
 sz_speaker	db "speaker mute",0
 
@@ -541,44 +486,44 @@ stringsAmount = 6
 align 4
 text	dd 0
 langs:
-db 'ENGLISH FINNISH GERMAN  RUSSIAN FRENCH  ESTONIANBELGIAN ITALIAN '
+db 'ENGLISH FINNISH GERMAN  RUSSIAN FRENCH  '
+db 'ESTONIANUKRAINE ITALIAN BELGIAN SPANISH '
 langMarks:
-db	'enfiderufretesit'
+db	'enfiderufretukitbesp'
 
 textrus:
 db 'Язык системы              :              <  >  Применить'
-db 'Раскладка клавиатуры      :              <  >  Применить'
 db 'Включить LBA              :              -  +  Применить'
 db 'Доступ к шине PCI         :              -  +  Применить'
 db 'Выключить SPEAKER         :              -  +  Применить'
 db 'Сглаживание шрифтов       :              -  +  Применить'
+db 'Высота шрифтов            :              -  +  Применить'
 
 db 'ВНИМАНИЕ:                                  Применить все'
 db 'НЕ ЗАБУДЬТЕ СОХРАНИТЬ НАСТРОЙКИ            Сохранить все'
 
 texteng:
 db 'System language           :              <  >    Apply  '
-db 'Keyboard layout           :              <  >    Apply  '
 db 'Allow LBA access          :              -  +    Apply  '
 db 'Allow PCI access          :              -  +    Apply  '
 db 'Disable SPEAKER           :              -  +    Apply  '
 db 'Font smoothing            :              -  +    Apply  '
+db 'Font height               :              -  +    Apply  '
 
 db 'NOTE:                                        Apply all  '
 db 'SAVE YOUR SETTINGS BEFORE QUITING KOLIBRI    Save all   '
 
 textet:
 db 'S№steemi keel             :              <  >   Kinnita '
-db 'Klaviatuuri paigutus      :              <  >   Kinnita '
 db 'LBA lugemine lubatud      :              -  +   Kinnita '
 db 'PCI juurdepффs programm.  :              -  +   Kinnita '
 db 'Disable SPEAKER           :              -  +   Kinnita '
 db 'Font smoothing            :              -  +   Kinnita '
+db 'Font height               :              -  +   Kinnita '
 
 db 'M─RKUS:                                    Kinnita kїik '
 db 'SALVESTA SEADED ENNE KOLIBRIST V─LJUMIST   Salvesta kїik'
 
-include 'keymaps.inc'
 IM_END:
 param:
 	rb 1024
