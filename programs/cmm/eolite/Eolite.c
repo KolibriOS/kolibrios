@@ -159,8 +159,12 @@ void main()
 	strcpy(#inactive_path, #path);
 	llist_copy(#files_inactive, #files);
 	font.no_bg_copy = true;
+	
 	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font file",#TMPS,4096,"/sys/FONTS/Tahoma.kf");
 	font.load(#TMPS);
+	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font smoothing",#TMPS,4096,"on");
+	if(!strcmp(#TMPS,"off"))smooth_font = false;
+	else smooth_font = true;
 	SetEventMask(1100111b);
 	loop(){
 		switch(WaitEvent())
