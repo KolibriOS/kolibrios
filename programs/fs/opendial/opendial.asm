@@ -5,14 +5,14 @@
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are met:
-;        * Redistributions of source code must retain the above copyright
-;          notice, this list of conditions and the following disclaimer.
-;        * Redistributions in binary form must reproduce the above copyright
-;          notice, this list of conditions and the following disclaimer in the
-;          documentation and/or other materials provided with the distribution.
-;        * Neither the name of the <organization> nor the
-;          names of its contributors may be used to endorse or promote products
-;          derived from this software without specific prior written permission.
+;	 * Redistributions of source code must retain the above copyright
+;	   notice, this list of conditions and the following disclaimer.
+;	 * Redistributions in binary form must reproduce the above copyright
+;	   notice, this list of conditions and the following disclaimer in the
+;	   documentation and/or other materials provided with the distribution.
+;	 * Neither the name of the <organization> nor the
+;	   names of its contributors may be used to endorse or promote products
+;	   derived from this software without specific prior written permission.
 ;
 ; THIS SOFTWARE IS PROVIDED BY Marat Zakiyanov ''AS IS'' AND ANY
 ; EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -31,9 +31,9 @@
 ;area name db 'FFFFFFFF_open_dialog',0 ; FFFFFFFF = PID
 ;
 ; communication area data
-; flag  ; +0
-; dw 0   ; 0 - empty, 1 - file for open, 2 -folder for open,
-;          3 - cancel, 4 - path=name of area 6822.
+; flag	; +0
+; dw 0	 ; 0 - empty, 1 - file for open, 2 -folder for open,
+;	   3 - cancel, 4 - path=name of area 6822.
 ;
 ; type of dialog:  0-Open, 1-Save, 2-Dir
 ; dw 0 ; +2
@@ -184,9 +184,9 @@ key:
 	mov	[extended_key],1
 	jmp	still
 @@:
-	cmp	ah,72	; arrow	up
+	cmp	ah,72	; arrow up
 	je	.2
-	cmp	ah,80	; arrow	down
+	cmp	ah,80	; arrow down
 	je	.1
 	cmp	ah,28	; Enter
 	je	.7
@@ -387,14 +387,14 @@ change_focus_area:
 	jne	@f
 	mov	[file_browser_data_1.select_panel_counter],1
 	and	[edi+44],dword 0xFFFFFFFD	; ed_focus
-	mov	[edi+12],dword 0xffffff	; color white
+	mov	[edi+12],dword 0xffffff ; color white
 	call	draw_draw_file_browser1
 	mcall	66,1,1
 	jmp	still
 @@:
 	mov	[file_browser_data_1.select_panel_counter],0
 	or	[edi+44],dword ed_focus
-	mov	[edi+12],dword 0xffffb0	; color yellow
+	mov	[edi+12],dword 0xffffb0 ; color yellow
 	call	draw_draw_file_browser1
 	mcall	66,1,0
 	jmp	still
@@ -668,7 +668,7 @@ button:
 	test	eax,eax
 	jz	button.exit
 @@:
-	cmp	[open_dialog_type],2	;Select	dir
+	cmp	[open_dialog_type],2	;Select dir
 	je	file_no_folder
 	
 	cmp	[open_dialog_type],1	;Save file
@@ -1042,7 +1042,7 @@ get_communication_area:
 	mov	edi,edit1
 	mov	[file_browser_data_1.select_panel_counter],0
 	or	[edi+44],dword ed_focus
-	mov	[edi+12],dword 0xffffb0	; color yellow
+	mov	[edi+12],dword 0xffffb0 ; color yellow
 	mcall	66,1,0
 	popad
 @@:
@@ -1134,7 +1134,7 @@ load_next_dir:
 	mov	edi,edit1
 	xor	eax,eax
 	mov	[edi+44],eax
-	mov	[edi+12],dword 0xffffff	; color white
+	mov	[edi+12],dword 0xffffff ; color white
 	call	draw_draw_file_browser1
 .exit:
 	ret
@@ -1392,35 +1392,24 @@ type_title:
 draw_window:
 
 	mcall	12,1
-	
 	call	prepare_system_colors
-
-;	mcall	0,<10,420>,<10,320>,0x63AABBCC,
 	xor	esi,esi
-;	mov	edx,[w_work]	; color of work area RRGGBB,8->color
-;	or	edx,0x63000000
 	mcall	0,[window_x],[window_y],0x63AABBCC
-
-;	mov	ecx,[communication_area]
-;	add	ecx,4096+4+4
 	call	type_title
 	call	get_window_param
-	
 	mov	eax,[procinfo+70] ;status of window
 	test	eax,100b
 	jne	.end
-	
+
 	mov	eax,[window_high]
 	sub	eax,25+45
 	mov	[file_browser_data_1.size_y],ax
 	mov	[scroll_bar_data_vertical.size_y],ax
-	
 	mov	eax,[window_width]
 	sub	eax,10+20
 	mov	[file_browser_data_1.size_x],ax
 	add	ax,10
 	mov	[scroll_bar_data_vertical.start_x],ax
-	
 	mov	edx,[w_work]	; color of work area RRGGBB,8->color
 	or	edx,0x63000000
 	mcall	13,[window_width],45	;,0xcccccc
@@ -1467,14 +1456,13 @@ draw_window:
 	mov	bx,ax
 	shl	eax,16
 	sub	ebx,eax
-	mov	ecx,26 shl 16+15
-
+	mov	ecx,25 shl 16 + 16
 	mcall	8,,,2,[w_work_button]	;0xffffff
 
 	pusha
 	shr	ecx,16
 	mov	bx,cx
-	add	ebx,20 shl 16+2
+	add	ebx,21 shl 16
 	mov	ecx,[w_work_button_text]
 	or	ecx,0x90000000
 	mcall	4,,,message_ExitDir_button
@@ -1491,14 +1479,13 @@ draw_window:
 
 	shr	ecx,16
 	mov	bx,cx
-	add	ebx,5 shl 16+4
+	add	ebx,2 shl 16
 	mov	ecx,[w_work_button_text]
 	or	ecx,0x90000000
 	mcall	4,,,message_ReloadDir_button
 	pop	ebx
 
 	mov	ebx,[file_browser_data_1.x]
-	
 	mov	ax,bx
 	shl	eax,16
 	add	ebx,eax
@@ -1506,21 +1493,18 @@ draw_window:
 	mov	bx,ax
 	shl	eax,16
 	sub	ebx,eax
-
 	mov	ecx,[file_browser_data_1.y]
 	mov	ax,cx
 	add	eax,3
 	shl	eax,16
 	add	ecx,eax
-	mov	cx,15
-
+	mov	cx,16
 	mcall	8,,,3
 
 	pusha
-
 	shr	ecx,16
 	mov	bx,cx
-	add	ebx,6 shl 16+ 4
+	add	ebx,4 shl 16
 	mov	ecx,[w_work_button_text]
 	or	ecx,0x90000000
 	mcall	4,,,message_cancel_button
@@ -1528,16 +1512,15 @@ draw_window:
 
 	sub	ebx,65 shl 16
 	mcall	8,,,4
-	
+
 	shr	ecx,16
 	mov	bx,cx
-	add	ebx,6 shl 16+4
-	
+	add	ebx,4 shl 16
 	mov	edx,[open_dialog_type]
 	shl	edx,2
 	add	edx,message_open_dialog_button
 	mov	edx,[edx]
-;--------------------------------------	
+;-------------------------------
 	cmp	[open_dialog_type],1
 	jne	@f
 
@@ -1555,24 +1538,20 @@ draw_window:
 	test	[eax],byte 0x10
 	jz	@f
 
-	mov	edx,message_0 	; Open Dir
+	mov	edx,message_0	; Open Dir
 @@:
 ;--------------------------------------
 	mov	[open_button_coordinates],ebx
 	mov	ecx,[w_work_button_text]
 	or	ecx,0x90000000
 	mcall	4	;message_open_button
-	
-;	mcall	47,0x80000,[file_browser_data_1.ini_file_start],<250,0>,0x0
-;	mcall	4,<3,420>,0,fb_extension_start,3
 .end:
 	mcall	12,2
-
 	ret
 ;---------------------------------------------------------------------
 draw_open_button_label:
 	cmp	[do_not_draw_open_button_label],1
-	je	.exit_1	
+	je	.exit_1 
 
 	cmp	[open_dialog_type],1
 	jne	.exit_1
@@ -1664,14 +1643,14 @@ prepare_system_colors:
 	mov	[menu_data_2.menu_col],eax
 	mov	[menu_data_3.menu_col],eax
 	
-	mov	[scroll_bar_data_vertical.bckg_col],eax	
+	mov	[scroll_bar_data_vertical.bckg_col],eax 
 
 	mov	eax,[w_work_button]
 	mov	[menu_data_1.frnt_col],eax
 	mov	[menu_data_2.frnt_col],eax
 	mov	[menu_data_3.frnt_col],eax
 
-	mov	[scroll_bar_data_vertical.frnt_col],eax	
+	mov	[scroll_bar_data_vertical.frnt_col],eax 
 
 	mov	eax,[w_work_button]
 	mov	[menu_data_1.menu_sel_col],eax
@@ -1688,7 +1667,7 @@ prepare_system_colors:
 	mov	[menu_data_2.frnt_text_col],eax
 	mov	[menu_data_3.frnt_text_col],eax
 	
-	mov	[scroll_bar_data_vertical.line_col],eax	
+	mov	[scroll_bar_data_vertical.line_col],eax 
 	ret
 ;---------------------------------------------------------------------
 draw_for_fs_errors:
@@ -1745,7 +1724,7 @@ draw_for_fs_errors:
 
 	shr	ecx,16
 	mov	bx,cx
-	add	ebx,4 shl 16+4
+	add	ebx,4 shl 16
 	mov	ecx,[w_work_button_text]
 	add	ecx,0x90000000
 	mcall	4,,,message_cancel_button
@@ -1785,7 +1764,7 @@ draw_file_name:
 	mov	[edi+8],eax
 	
 	push	dword name_editboxes
-	call	[edit_box_draw]	
+	call	[edit_box_draw] 
 	
 	mov	bx,[file_browser_data_1.start_x]
 	add	bx,5
@@ -1828,7 +1807,7 @@ draw_dir_path:
 ;	shl	ebx,16
 ;	mov	bx,1
 ;	mcall	13
-;--------------------------------------	
+;-------------------------------------- 
 	mov	ebx,[file_browser_data_1.x]
 	sub	ebx,2
 	add	ebx,1 shl 16
@@ -2151,7 +2130,7 @@ clear_data_fb_and_sb:
 	xor	eax,eax
 	mov	[file_browser_data_1.start_draw_cursor_line],ax
 	mov	[file_browser_data_1.start_draw_line],eax
-	mov	[scroll_bar_data_vertical.position],eax	
+	mov	[scroll_bar_data_vertical.position],eax 
 	ret
 ;---------------------------------------------------------------------
 check_filter:
@@ -2550,11 +2529,11 @@ plugins_directory	db 0
 
 system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
 system_dir_CnvPNG	db '/sys/lib/cnv_png.obj',0
-system_dir_Sort		db '/sys/lib/sort.obj',0
+system_dir_Sort 	db '/sys/lib/sort.obj',0
 system_dir_UNPACK	db '/sys/lib/archiver.obj',0
 
 ihead_f_i:
-ihead_f_l	db 'System	error',0
+ihead_f_l	db 'System      error',0
 
 er_message_found_lib	db 'box_lib.obj - Not found!',0
 er_message_import	db 'box_lib.obj - Wrong import!',0
@@ -2587,7 +2566,7 @@ end_l_libs:
 ;---------------------------------------------------------------------
 align	4
 UNPACK_import:
-;unpack_Version			dd aUnpack_Version
+;unpack_Version 		dd aUnpack_Version
 ;unpack_PluginLoad		dd aUnpack_PluginLoad	
 ;unpack_OpenFilePlugin		dd aUnpack_OpenFilePlugin
 ;unpack_ClosePlugin		dd aUnpack_ClosePlugin
@@ -2595,7 +2574,7 @@ UNPACK_import:
 ;unpack_SetFolder		dd aUnpack_SetFolder
 ;unpack_GetFiles		dd aUnpack_GetFiles
 ;unpack_GetOpenPluginInfo	dd aUnpack_GetOpenPluginInfo
-;unpack_Getattr			dd aUnpack_Getattr
+;unpack_Getattr 		dd aUnpack_Getattr
 ;unpack_Open			dd aUnpack_Open
 ;unpack_Read			dd aUnpack_Read
 ;unpack_Setpos			dd aUnpack_Setpos
@@ -2607,7 +2586,7 @@ unpack_DeflateUnpack2		dd aUnpack_DeflateUnpack2
 
 ;aUnpack_Version		db 'version',0
 ;aUnpack_PluginLoad		db 'plugin_load',0
-;aUnpack_OpenFilePlugin		db 'OpenFilePlugin',0
+;aUnpack_OpenFilePlugin 	db 'OpenFilePlugin',0
 ;aUnpack_ClosePlugin		db 'ClosePlugin',0
 ;aUnpack_ReadFolder		db 'ReadFolder',0
 ;aUnpack_SetFolder		db 'SetFolder',0
@@ -2616,7 +2595,7 @@ unpack_DeflateUnpack2		dd aUnpack_DeflateUnpack2
 ;aUnpack_Getattr		db 'getattr',0
 ;aUnpack_Open			db 'open',0
 ;aUnpack_Read			db 'read',0
-;aUnpack_Setpos			db 'setpos',0
+;aUnpack_Setpos 		db 'setpos',0
 ;aUnpack_Close			db 'close',0
 ;aUnpack_DeflateUnpack		db 'deflate_unpack',0
 aUnpack_DeflateUnpack2		db 'deflate_unpack2',0
@@ -2652,7 +2631,7 @@ aCP_Check	db 'Check_Header',0
 aCP_Assoc	db 'Associations',0
 ;---------------------------------------------------------------------
 align	4
-Box_lib_import:	
+Box_lib_import: 
 ;init_lib	dd a_init
 ;version_lib	dd a_version
 
@@ -2662,7 +2641,7 @@ edit_box_key		dd aEdit_box_key
 edit_box_mouse		dd aEdit_box_mouse
 ;version_ed		dd aVersion_ed
 
-;check_box_draw	dd aCheck_box_draw
+;check_box_draw dd aCheck_box_draw
 ;check_box_mouse	dd aCheck_box_mouse
 ;version_ch		dd aVersion_ch
 
@@ -2687,7 +2666,7 @@ menu_bar_activate	dd aMenu_bar_activate
 
 FileBrowser_draw	dd aFileBrowser_draw
 FileBrowser_mouse	dd aFileBrowser_mouse
-FileBrowser_key		dd aFileBrowser_key
+FileBrowser_key 	dd aFileBrowser_key
 ;Version_FileBrowser	dd aVersion_FileBrowser
 
 PathShow_prepare	dd sz_PathShow_prepare
@@ -2696,12 +2675,12 @@ PathShow_draw		dd sz_PathShow_draw
 	dd 0
 	dd 0
 
-;a_init			db 'lib_init',0
+;a_init 		db 'lib_init',0
 ;a_version		db 'version',0
 
 aEdit_box_draw		db 'edit_box',0
 aEdit_box_key		db 'edit_box_key',0
-aEdit_box_mouse		db 'edit_box_mouse',0
+aEdit_box_mouse 	db 'edit_box_mouse',0
 ;aVersion_ed		db 'version_ed',0
 
 ;aCheck_box_draw	db 'check_box_draw',0
@@ -2719,11 +2698,11 @@ aScrollbar_ver_mouse	db 'scrollbar_v_mouse',0
 ;aVersion_scrollbar	db 'version_scrollbar',0
 
 ;aDbutton_draw		db 'dbutton_draw',0
-;aDbutton_mouse		db 'dbutton_mouse',0
+;aDbutton_mouse 	db 'dbutton_mouse',0
 ;aVersion_dbutton	db 'version_dbutton',0
 
 aMenu_bar_draw		db 'menu_bar_draw',0
-aMenu_bar_mouse		db 'menu_bar_mouse',0
+aMenu_bar_mouse 	db 'menu_bar_mouse',0
 aMenu_bar_activate	db 'menu_bar_activate',0
 ;aVersion_menu_bar	db 'version_menu_bar',0
 
@@ -2750,7 +2729,7 @@ root_folder_block		dd 0
 root1_folder_area		dd 0
 root1_folder_block		dd 0
 temp_counter_1			dd 0
-retrieved_devices_table_counter	dd 0
+retrieved_devices_table_counter dd 0
 communication_area		dd 0
 open_dialog_type		dd 0
 
@@ -2768,11 +2747,11 @@ message_open_dialog_button:
 ;---------------------------------------------------------------------
 expansion_length	dd 0
 ;---------------------------------------------------------------------
-N_error			dd 0
+N_error 		dd 0
 error_type		dd 0
 error_path		dd 0
-error_window_x:		dd 100 shl 16+250
-error_window_y:		dd 100 shl 16+120
+error_window_x: 	dd 100 shl 16+250
+error_window_y: 	dd 100 shl 16+120
 ;---------------------------------------------------------------------
 mouse_scroll_data:
 .vertical	dw 0
@@ -2783,7 +2762,7 @@ mouse_position:
 .x	dw 0
 ;---------------------------------------------------------------------
 ; not	change	this	section!!!
-; start	section
+; start section
 ;---------------------------------------------------------------------
 align	4
 image_file	dd 0
@@ -2798,10 +2777,10 @@ raw_pointer_2	dd 0	;+20
 align	4
 fileinfo:
 .subfunction	dd 5
-.Offset		dd 0
+.Offset 	dd 0
 .Offset_1	dd 0
 .size		dd 0
-.return		dd file_info
+.return 	dd file_info
 		db 0
 .name:		dd file_name
 ;---------------------------------------------------------------------
@@ -2811,7 +2790,7 @@ dirinfo:
 .start		dd 0
 .flags		dd 0
 .size		dd 0
-.return		dd 0
+.return 	dd 0
 		db 0
 .name:		dd dir_path
 ;---------------------------------------------------------------------
@@ -2880,7 +2859,7 @@ alt_flag	db 0
 
 error_window	db 0
 
-Tab_key		db 0
+Tab_key 	db 0
 Tab_key_block	db 0
 
 filter_flag	db 1
@@ -2894,7 +2873,7 @@ root_pach:
 	db '/',0
 
 icons_file_name_2	db 'buttons/'
-icons_file_name		db 'z_icons.png',0
+icons_file_name 	db 'z_icons.png',0
 ini_file_name		db 'icons.ini',0
 ;---------------------------------------------------------------------
 
@@ -3163,7 +3142,7 @@ file_browser_data_1:
 .all_redraw			dd 0 ;+168
 .selected_BDVK_adress		dd 0 ;+172
 .key_action			dw 0 ;+176
-.key_action_num			dw 0 ;+178
+.key_action_num 		dw 0 ;+178
 .name_temp_area 		dd name_temp_area ;+180
 .max_name_temp_size		dd 0 ;+184
 .display_name_max_length	dd 0 ;+188
@@ -3197,10 +3176,10 @@ name_editboxes_end:
 mouse_dd rd	1
 ;---------------------------------------------------------------------
 window_x:
-.x_size		dw 420
+.x_size 	dw 420
 .x_start	dw 10
 window_y:
-.y_size		dw 320
+.y_size 	dw 320
 .y_start	dw 10
 ;---------------------------------------------------------------------
 features_table:
@@ -3228,7 +3207,7 @@ do_not_draw_open_button_label	rb 1
 align 4
 app_colours:
 
-w_frame			rd 1
+w_frame 		rd 1
 w_grab			rd 1
 w_grab_button		rd 1
 w_grab_button_text	rd 1
@@ -3239,7 +3218,7 @@ w_work_button_text	rd 1
 w_work_text		rd 1
 w_work_graph		rd 1
 ;---------------------------------------------------------------------
-open_button_coordinates	rd 1
+open_button_coordinates rd 1
 ;---------------------------------------------------------------------
 error_handler_store_input_mode rd 1
 ;---------------------------------------------------------------------
