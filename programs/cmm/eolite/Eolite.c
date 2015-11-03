@@ -109,7 +109,7 @@ char *fd_path_eolite_ini_path;
 #include "include\about.h"
 #include "include\properties.h"
 
-
+char TMPS[4096];
 //char *TMP_PARS,*TMP_PARS2;
 void main() 
 {
@@ -159,7 +159,8 @@ void main()
 	strcpy(#inactive_path, #path);
 	llist_copy(#files_inactive, #files);
 	font.no_bg_copy = true;
-	font.load("/sys/fonts/tahoma.kf");
+	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font file",#TMPS,4096,"/sys/FONTS/Tahoma.kf");
+	font.load(#TMPS);
 	SetEventMask(1100111b);
 	loop(){
 		switch(WaitEvent())
