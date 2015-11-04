@@ -176,7 +176,7 @@ still:
     jne  no_tab
   .tab:
     cmp  ebp,FOCUSABLE
-    JAE	 foc_cycle
+    JAE  foc_cycle
     inc  [focus]
   upd:
     call calculate
@@ -464,14 +464,14 @@ additem:
 
 
 ;   *********************************************
-;   *******          DRAW WINDOW          *******
+;   *******	     DRAW WINDOW	  *******
 ;   *********************************************
 
 draw_clock:
 
     mcall 3
     mov  ecx,eax
-    mcall 47,0x00020100, ,195*65536+301,0x50CCCCCC,COL_TOOLBAR_BG
+    mcall 47,0x00020100, ,195*65536+298,0x50CCCCCC,COL_TOOLBAR_BG
 
     shr  ecx,8
     add  edx,22*65536
@@ -485,7 +485,7 @@ draw_clock:
 define_window:
 
     mcall 12,1
-	mcall 48, 5     ; GetClientTop, fix for case when @patel in the top
+	mcall 48, 5	; GetClientTop, fix for case when @patel in the top
 	shr ebx, 16
 	mov ecx,ebx
 	shl ecx,16
@@ -497,7 +497,7 @@ define_window:
 	sub ecx, WIN_H
 	shl ecx, 16
 panel_top:
-	add ecx, WIN_H   ; [y start] *65536 + [y size]
+	add ecx, WIN_H	 ; [y start] *65536 + [y size]
 	mov ebx, eax
 	sub eax, WIN_W
 	shl ebx, 16
@@ -513,45 +513,40 @@ panel_top:
 	mcall 13,0*65536+B_WBAR_X,84*65536+199,0xE7E7E7
 	
 draw_window:
-
+    call draw_clock
     call draw_week
-    mcall 8,193*65536+8,287*65536+10,72,COL_TOOLBAR_BG
+    mcall 8,193*65536+8,285*65536+10,72,COL_TOOLBAR_BG
     mov  ebx,202*65536+8
     inc  edx ;73
     mcall
     mov  ebx,193*65536+8
-    mov  ecx,311*65536+10
+    mov  ecx,315*65536+10
     inc  edx ;74
     mcall
     mov  ebx,202*65536+8
     inc  edx ;75
     mcall
     mov  ebx,215*65536+8
-    mov  ecx,287*65536+10
+    mov  ecx,285*65536+10
     inc  edx ;76
     mcall
     mov  ebx,224*65536+8
     inc  edx ;77
     mcall
     mov  ebx,215*65536+8
-    mov  ecx,311*65536+10
+    mov  ecx,315*65536+10
     inc  edx ;78
     mcall
     mov  ebx,224*65536+8
     inc  edx ;79
     mcall
-    ;mov  ebx,237*65536+21
-    ;mov  ecx,281*65536+35
-    ;inc  edx ;80
-    ;or   edx,0x40CCFF44
-    ;mcall
     mov  ebx,25*65536+110
     mov  ecx,293*65536+22
     mov  esi,COL_TOOLBAR_BG
     mov  edx,81
     mcall
 
-    mov  esi,COL_MONTH_YEAR_B   ; new style
+    mov  esi,COL_MONTH_YEAR_B	; new style
     mov  edx,10
     or	 edx,1 shl 29+1 shl 30
     mov  ebx,B_NS_X
@@ -568,7 +563,7 @@ draw_window:
     mov  ebx,B_SPIN_X ; <
     inc  edx
     mcall
-    add  ebx,61 shl 16 ; >
+    add  ebx,54 shl 16 ; >
     inc  edx
     mcall
     call draw_days
@@ -577,8 +572,8 @@ draw_window:
     mcall 4,157*65536+301,0x80CCCCCC,sys_text
     mcall  ,211*65536+301,,separator
     mcall  ,233*65536+301
-    mcall  ,185*65536+289, ,plus
-    mcall  ,185*65536+313, ,minus
+    mcall  ,185*65536+287, ,plus
+    mcall  ,185*65536+317, ,minus
     mcall  , 35*65536+300,0x00CCCCCC,set_date_t,15 ;set date text
 
 
@@ -603,8 +598,8 @@ draw_window:
 
     mov  ebx,B_SPIN
     mov  edx,spinner
-    mov  esi,12
-	mov  ecx,COL_DROPDOWN_T
+    mov  esi,8
+    mov  ecx,COL_DROPDOWN_T
     mcall
 
     mov  edx,[Month]
@@ -616,12 +611,10 @@ draw_window:
     mcall
 
     call draw_year
-    call draw_clock
     mov  [dropped],0
     ret
 
 draw_year:
-    mcall 8,B_YEAR_X,B_Y,5,COL_MONTH_YEAR_B
     ShowFocus 3,esi
     mcall 47,0x40001,Year,B_YEAR
     ret
@@ -696,8 +689,8 @@ draw_days:
     mov  edx,B_DAYS_Y
     mov  ebx,0x10001
     mov  edi,[firstday]
-  .dayloop:
     push ecx
+  .dayloop:
     movzx edx,dx
     mov  esi,edi
     shl  esi,21
@@ -714,18 +707,17 @@ draw_days:
     mov  ecx,number
     inc  dword[ecx]
     pusha
+    sub  edx,8 shl 16 + 8
     mov  ebx,edx
     mov  bx,DATE_BUTTON_WIDTH-1
-    sub  ebx,8 shl 16
     shrd ecx,edx,16
     mov  cx,DATE_BUTTON_HEIGHT-1
-    sub  ecx,12 shl 16
     mov  edx,[number]
     cmp  edx,[day_sel]
     je	 .draw_sel
     mov  esi,COL_DATE_BUTTONS
     jmp  .draw_but
-.draw_sel:                                  ;draw selected button
+.draw_sel:				    ;draw selected button
 	add  edx,1 shl 30
 	add  edx,200+1 shl 29
 	mcall 8
@@ -736,7 +728,7 @@ draw_days:
 .not_active:
 	DrawRect COL_DATE_INACTIVE_1,COL_DATE_INACTIVE_2,COL_DATE_INACTIVE_3,COL_DATE_INACTIVE_4
 	jmp .out
-.draw_but:                                   ;draw non selected button
+.draw_but:				     ;draw non selected button
     add  edx,200+1 shl 29
     mcall 8
 	mov eax,[Year]
@@ -755,43 +747,36 @@ draw_days:
 	add ecx,27 shl 16
 	mcall 13
 .out:
-	mov    eax, [number]
-    xor    edx, edx
-    mov    ecx, 10
-    div    ecx
-    mov    [remainder], edx
-    mov    [quotient],  eax
+	mov	eax, [number]
+	xor	edx, edx
+	mov	ecx, 10
+	div	ecx
+	mov	[remainder], edx
+	mov	[quotient],  eax
 	popa
-	
-	;first number
-	mov ecx,quotient
-    mcall 
-	add edx,1 shl 16
+
+; first number
+	mov	ecx,quotient
 	mcall
-	sub edx,1 shl 16
-	
-	;second number
-	mov ecx,remainder
-	add edx,9 shl 16
-    mcall 
-	add edx,1 shl 16
+	add	edx,1 shl 16
 	mcall
-	sub edx,10 shl 16
-	
-	
-    pop  ecx
-    inc  edi
-    cmp  edi,7
-    jne  .nowrap
-    xor  edi,edi
-    add  dx,B_DAYS_SHIFT
-  .nowrap:
-    loop .eloop
-    jmp  .ex
-  .eloop:
-    jmp  .dayloop
-  .ex:
-    ret
+; second number
+	mov	ecx,remainder
+	add	edx,8 shl 16
+	mcall
+	add	edx,1 shl 16
+	mcall
+	sub	edx,10 shl 16
+	inc	edi
+	cmp	edi,7
+	jne	.nowrap
+	xor	edi,edi
+	add	dx,B_DAYS_SHIFT
+.nowrap:
+	dec	dword [esp]
+	jnz	.dayloop
+	pop	ecx
+	ret
 
 count_days:    ; ecx -days in month
     call is_leap_year

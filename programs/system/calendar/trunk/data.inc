@@ -24,7 +24,7 @@ COL_WEEKDAY_BG   equ 0xCCCDDD
 COL_DATE_BUTTONS equ 0xF3F3F3
 COL_TIME_BUTTONS equ 0x5555dd
 COL_GO_TODAY_T   equ 0xd048c8
-COL_MONTH_YEAR_B equ 0x0555555 ; 0 for time?
+COL_MONTH_YEAR_B equ 0x555555
 COL_DROPDOWN_BG  equ 0x666666
 COL_DROPDOWN_T   equ 0x10CCCccc
 COL_NEW_STYLE_T  equ 0xef3333
@@ -49,26 +49,24 @@ DATE_BUTTON_HEIGHT equ 30
 LINE1	  equ 27 shl 16+16
 B_MONTH_X equ 15 shl 16+158
 B_Y	  equ LINE1
-B_MONTH   equ 63 shl 16+32
+B_MONTH   equ 63 shl 16+27
 
 BT_WBAR_Y equ 283 shl 16+43
 
 B_WBAR_X  equ 1 shl 16+WIN_W-1
 B_WBAR_Y  equ 64 shl 16+20
-B_WEEK	  equ 34 shl 16+70
+B_WEEK	  equ 34 shl 16+64
 B_WX_SHIFT equ 32 shl 16
 
 B_DROP	  equ B_MONTH+16
 B_DAYS_Y  equ 106
 B_DAYS_SHIFT equ 30
 
-B_YEAR_X  equ 198 shl 16+46
-B_YEAR	  equ 206 shl 16+32
+B_YEAR	  equ 204 shl 16+28
 
-B_SPIN_WIDTH equ 13
-B_SPIN_X  equ 184 shl 16+B_SPIN_WIDTH
-B_SPIN	  equ 188 shl 16+32
-spinner db '<         >'
+B_SPIN_X  equ 186 shl 16+12
+B_SPIN	  equ 188 shl 16+28
+spinner db '<      >'
 
 B_TODAY_X equ 25 shl 16
 B_TODAY_Y equ 48 shl 16+10
