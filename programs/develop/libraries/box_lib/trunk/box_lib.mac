@@ -314,6 +314,7 @@ struc tree_list info_size,info_max_count,style, img_cx,img_cy,\
   .on_press dd on_press
 }
 
+tl_data_info  equ dword[edi] ;указатель на основные даные
 tl_info_size  equ  word[edi +4] ;размер данных выделяемых для каждого узла (пользовательськие данные + текст для подписи)
 tl_info_max_count equ dword[edi+6] ;максимальное количество узлов, которые можно добавить в элемент
 tl_style      equ dword[edi+10] ;стили элемента
