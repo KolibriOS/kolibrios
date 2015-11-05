@@ -143,55 +143,48 @@ run_notify_struct:
 
 align 4
 @copy_path:
-;        mov     ebx,@library_name
-        mov     esi,@cur_dir_path
-        mov     edi,@library_path
-
-        xor     eax,eax
-        cld
+	mov     esi,@cur_dir_path
+	mov     edi,@library_path
+	xor     eax,eax
+	cld
 align 4
 .lp1:
-        lodsb
-        stosb
-        test    eax,eax
-        jnz     .lp1
-        mov     esi,edi
-
-        std
+	lodsb
+	stosb
+	test    eax,eax
+	jnz     .lp1
+	mov     esi,edi
+	dec     esi ;переход на символ конца строки @cur_dir_path
+	std
 align 4
 .lp2:
-        lodsb
-        cmp     al,'/'
-        jnz     .lp2
-        mov     edi,esi
-
-        add     edi,2
-        cld
-;	mov     esi,@library_name
-
-	mov	esi,@point_dir_name
-	test	esi,esi
+	lodsb
+	cmp     al,'/'
+	jnz     .lp2
+	mov     edi,esi
+	add     edi,2
+	cld
+	mov     esi,@point_dir_name
+	test    esi,esi
 	jz      .str_lp4
 
 align 4
 .lp3:
-        lodsb
-        stosb
-        test    eax,eax
-        jnz     .lp3
-
-
-	dec 	edi
+	lodsb
+	stosb
+	test    eax,eax
+	jnz     .lp3
+	dec     edi
 .str_lp4:
 	mov     esi,@library_name
 align 4
 .lp4:
-        lodsb
-        stosb
-        test    eax,eax
-        jnz     .lp4
+	lodsb
+	stosb
+	test    eax,eax
+	jnz     .lp4
 ;--------------------------------------------------------------------- 
-        ret
+	ret
 }
 
 

@@ -32,7 +32,7 @@ struct FileInfoBlock
 ends
 
 run_file_70 FileInfoBlock
-image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
+image_data dd 0 ;указатель на временную память, нужен для преобразования изображения
 open_file_lif dd 0 ;указатель на память для открытия файлов 3ds
 open_file_size dd 0 ;размер открытого файла
 
@@ -58,9 +58,9 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 			db 0
 		@@:
 		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0x0
+		copy_path .path_str,[32],file_name,0
 	else
-		copy_path path,[32],file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+		copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
 	end if
 
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
@@ -121,10 +121,19 @@ include 'info_wnd_coords.inc'
 align 4
 start:
 	load_libraries l_libs_start,l_libs_end
-	;проверка на сколько удачно загузилась наша либа
-	mov	ebp,lib_7
-	cmp	dword [ebp+ll_struc_size-4],0
-	jz	@f
+	;проверка на сколько удачно загузились библиотеки
+	mov ebp,lib_0
+	cmp dword [ebp+ll_struc_size-4],0
+	jz @f
+	mov ebp,lib_1
+	cmp dword [ebp+ll_struc_size-4],0
+	jz @f
+	mov ebp,lib_2
+	cmp dword [ebp+ll_struc_size-4],0
+	jz @f
+	mov ebp,lib_3
+	cmp dword [ebp+ll_struc_size-4],0
+	jz @f
 		mcall -1 ;exit not correct
 	@@:
 	mcall 48,3,sc,sizeof.system_colors
@@ -205,11 +214,7 @@ align 4
 timer_funct:
 	pushad
 if debug
-	mov eax,4
-	mov ebx,(5 shl 16)+8
-	mov ecx,0xff+0x80000000
-	mov edx,txt_0002
-	int 0x40
+	mcall 4, (5 shl 16)+8, 0xff+0x80000000, txt_0002
 end if
 	mcall 26,9
 	mov [last_time],eax
@@ -423,22 +428,27 @@ button:
 	cmp ah,3
 	jne @f
 		call but_new_file
+		jmp still
 	@@:
 	cmp ah,4
 	jne @f
 		call but_open_file
+		jmp still
 	@@:
 	cmp ah,5
 	jne @f
 		call but_save_file
+		jmp still
 	@@:
 	cmp ah,6
 	jne @f
 		call but_wnd_coords
+		jmp still
 	@@:
 	cmp ah,7
 	jne @f
 		call but_delete_chunk
+		jmp still
 	@@:
 
 	cmp ah,1
@@ -465,8 +475,8 @@ but_new_file:
 
 align 4
 but_open_file:
-	pushad
 	copy_path open_dialog_name,communication_area_default_path,file_name,0
+	pushad
 	mov [OpenDialog_data.type],0
 	stdcall [OpenDialog_Start],OpenDialog_data
 	cmp [OpenDialog_data.status],2
@@ -952,9 +962,8 @@ but_delete_chunk:
 ;output:
 ; eax - число
 align 4
-proc conv_str_to_int, buf:dword
+proc conv_str_to_int uses ebx ecx esi, buf:dword
 	xor eax,eax
-	push ebx ecx esi
 	xor ebx,ebx
 	mov esi,[buf]
 	;определение отрицательных чисел
@@ -1016,7 +1025,6 @@ proc conv_str_to_int, buf:dword
 		sub ecx,eax
 		mov eax,ecx
 	@@:
-	pop esi ecx ebx
 	ret
 endp
 
@@ -1079,20 +1087,20 @@ lib_name_2 db 'box_lib.obj',0
 err_msg_found_lib_2 db 'Не найдена библиотека ',39,'box_lib.obj',39,0
 err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'box_lib',39,0
 
-system_dir_7 db '/sys/lib/'
-lib_name_7 db 'buf2d.obj',0
-err_msg_found_lib_7 db 'Не найдена библиотека ',39,'buf2d.obj',39,0
-err_msg_import_7 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,0
+system_dir_3 db '/sys/lib/'
+lib_name_3 db 'buf2d.obj',0
+err_msg_found_lib_3 db 'Не найдена библиотека ',39,'buf2d.obj',39,0
+err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,0
 
 l_libs_start:
-	lib0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
+	lib_0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
 		err_message_found_lib_0, head_f_l, proclib_import,err_message_import_0, head_f_i
-	lib1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
+	lib_1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
 		err_message_found_lib_1, head_f_l, import_libimg, err_message_import_1, head_f_i
 	lib_2 l_libs lib_name_2, sys_path, library_path, system_dir_2,\
 		err_msg_found_lib_2,head_f_l,import_box_lib,err_msg_import_2,head_f_i
-	lib_7 l_libs lib_name_7, sys_path, library_path, system_dir_7,\
-		err_msg_found_lib_7,head_f_l,import_buf2d,err_msg_import_7,head_f_i
+	lib_3 l_libs lib_name_3, sys_path, library_path, system_dir_3,\
+		err_msg_found_lib_3,head_f_l,import_buf2d,err_msg_import_3,head_f_i
 l_libs_end:
 
 align 4
@@ -1327,37 +1335,7 @@ rb 2+2+2+2+4+4+4+4+4+4
 .ar_offset  dd 1 ;+84
 
 
-
-;этот код не мой, он преобразует число в строку
-;input:
-; eax = value
-; edi = string buffer
-;output:
 align 4
-tl_convert_to_str:
-	pushad
-		mov dword[edi+1],0;0x20202020
-		call .str
-	popad
-	ret
-
-align 4
-.str:
-	mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
-    ;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
-	cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
-	jb @f
-		xor edx,edx  ;очистить edx
-		div ecx      ;разделить - остаток в edx
-		push edx     ;положить в стек
-		;dec edi             ;смещение необходимое для записи с конца строки
-		call .str ;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
-		pop eax
-	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
-	or al,0x30  ;данная команда короче  чем две выше
-	stosb	    ;записать элемент из регистра al в ячеку памяти es:edi
-	ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
-
 i_end:
 	rb 1024
 thread_coords:
@@ -1365,7 +1343,7 @@ thread_coords:
 stacktop:
 	sys_path rb 1024
 	file_name:
-		rb 1024 ;4096 
+		rb 4096 
 	library_path rb 1024
 	plugin_path rb 4096
 	openfile_path rb 4096
