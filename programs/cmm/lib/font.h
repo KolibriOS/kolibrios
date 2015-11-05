@@ -27,7 +27,7 @@
 	byte r,g,b,weight,italic, smooth;
 	byte width,height;
 	byte use_smooth;
-	word left,top;
+	int left,top;
 	byte encoding;
 	dword color;
 	dword file_size;
@@ -172,7 +172,7 @@ FONT font = 0;
 		IF(s=='_') size.width--;
 		IF(size.offset.x<0)size.offset.x = X;
 }
-:dword FONT::prepare(word x,y;dword text1)
+:dword FONT::prepare(int x,y;dword text1)
 {
 	signed len=0;
 	proc_info Form_SELF_FONTS;
@@ -320,16 +320,17 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 	return true;
 }
 
-:void FONT::prepare_buf(dword x,y,w,h; dword text1)
+:void FONT::prepare_buf(int x,y,w,h; dword text1)
 {
 	dword c, new_buffer_size;
 	c = color;
+	//left = x;
 	IF(!text1)return;
 	IF(size.text)IF(!changeSIZE())return;
 	AX = c; r = AL; g = AH; c>>=16; AX = c; b = AL;
 	getsize(text1);
 	y -= size.offset.y;
-	
+	//top = y;
 	size.width = w;
 	size.height = h;
 
