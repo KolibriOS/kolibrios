@@ -155,6 +155,7 @@ void Quest()
 	DrawFlatButton(145,138,70,20,302,0xC6DFC6,T_NO);
 }
 
+/*
 void GetSizeDir(dword way)
 {
 	dword dirbuf, fcount, i, filename;
@@ -184,17 +185,21 @@ void GetSizeDir(dword way)
 		free(cur_file);
 	}
 }
+*/
 
 void GetSizeMoreFiles(dword way)
 {
 	char cur_file[4096];
 	dword selected_offset2;
-	
+	size_dir = 0;
 	for (i=0; i<files.count; i++) 
     {
         selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-        if (ESBYTE[selected_offset2]) {
+        if(ESBYTE[selected_offset2])
+		{
 			sprintf(#cur_file,"%s%s",way,file_mas[i]*304+buf+72);
+			size_dir += fs.get_size(#cur_file);
+			/*
 			if (TestBit(ESDWORD[file_mas[i]*304+buf+32], 4) )
 			{
 				debugln(#cur_file);
@@ -203,10 +208,10 @@ void GetSizeMoreFiles(dword way)
 			}
 			else
 			{
-				GetFileInfo(#cur_file, #file_info_dirsize);
-				size_dir += file_info_dirsize.sizelo;
+				size_dir += fs.get_size(#cur_file);
 				file_count++;
 			}
+			*/
         }
 	}  
 }
@@ -235,7 +240,8 @@ void properties_dialog()
 		GetFileInfo(#file_path, #file_info_general);
 		strcpy(#file_name2, #file_name);
 		file_name_ed.size = strlen(#file_name2);   
-		if(itdir) GetSizeDir(#file_path);
+		//if(itdir) GetSizeDir(#file_path);
+		size_dir = fs.get_size(#file_path);
 		atr_readonly = file_info_general.readonly;
 		atr_hidden = file_info_general.hidden;
 		atr_system = file_info_general.system;

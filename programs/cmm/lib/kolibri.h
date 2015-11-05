@@ -25,6 +25,8 @@ dword  I_Path       = #program_path;
 char param[4096];
 char program_path[4096];
 
+dword TEMP = 0;
+
 #define NULL      0
 #define OLD      -1
 #define true      1

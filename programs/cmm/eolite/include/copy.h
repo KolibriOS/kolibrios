@@ -7,12 +7,14 @@ enum {NOCUT, CUT};
 
 Clipboard clipboard;
 
+dword _copy_path_ = 0;
 void Copy(dword pcth, char cut)
 {
     dword selected_offset2;
     byte copy_t[4096];
     dword buff_data;
     int ind = 0; 
+	/*
     if (selected_count)
 	{
         buff_data = malloc(selected_count*4096+10);
@@ -42,6 +44,9 @@ void Copy(dword pcth, char cut)
 	}
 	cut_active = cut;
 	free(buff_data);
+	*/
+	_copy_path_ = strdup(#file_path);
+	cut_active = cut;
 }
 
 
@@ -56,9 +61,27 @@ void PasteThread()
 	int j;
 	int cnt = 0;
 	dword buf;
+	dword tmp;
 	file_count_copy = 0;
 	copy_bar.value = 0; 
-	
+	if(_copy_path_)
+	{
+		DisplayOperationForm();
+		IF(!TEMP) TEMP = malloc(4096);
+		buf = _copy_path_;
+		while(DSBYTE[buf])
+		{
+			IF(DSBYTE[buf]=='/')tmp = buf;
+			buf++;
+		}
+		sprintf(TEMP,"%s/%s",#path,tmp);
+		IF(cut_active) fs.move(_copy_path_,TEMP);
+		ELSE fs.copy(_copy_path_,TEMP);
+		free(_copy_path_);
+		DialogExit();
+	}
+	_copy_path_ = 0;
+	/*
 	buf = clipboard.GetSlotData(clipboard.GetSlotCount()-1);
 	if (DSDWORD[buf+4] != 3) return;
 	cnt = ESINT[buf+8];
@@ -101,11 +124,8 @@ void PasteThread()
 			Del_File2(#copy_from, 0);
 			
 		}
-	}
-	if (cut_active)
-	{
-		cut_active=false;
-	}
+	}*/
+	cut_active=false;
 	if (info_after_copy) notify(INFO_AFTER_COPY);
-	DialogExit();
+	
 }

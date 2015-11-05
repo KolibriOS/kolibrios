@@ -18,6 +18,7 @@
 //obj
 #include "..\lib\obj\libini.h"
 #include "..\lib\obj\box_lib.h"
+#include "..\lib\obj\fs.h"
 
 byte CMD_ENABLE_SAVE_IMG = false;
 
@@ -124,6 +125,9 @@ void main()
 
 	load_dll(boxlib, #box_lib_init,0);
     load_dll(libini, #lib_init,1);
+	
+	lib_init_fs();
+	
 	eolite_ini_path = abspath("Eolite.ini");
 	
 	fd_path_eolite_ini_path = "/fd/1/File Managers/Eolite.ini";
@@ -874,7 +878,7 @@ void Del_Form()
 int del_error;
 int Del_File2(dword way, sh_progr)
 {    
-	dword dirbuf, fcount, i, filename;
+	/*dword dirbuf, fcount, i, filename;
 	int error;
 	char del_from[4096];
 	if (isdir(way))
@@ -896,7 +900,8 @@ int Del_File2(dword way, sh_progr)
 			}
 		}
 	}
-	if (error = DeleteFile(way)) del_error = error;
+	if (error = DeleteFile(way)) del_error = error;*/
+	fs.remove(way);
 }
 
 void Del_File_Thread()

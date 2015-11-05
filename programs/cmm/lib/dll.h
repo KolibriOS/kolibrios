@@ -16,6 +16,11 @@
 
 char a_libdir[43]  = "/sys/lib/\0";
 
+dword GLOBAL_FUNC_LIB = 0;
+dword G_FUNC_LOAD = 0;
+dword G_FUNC_GET = 0;
+dword PATH_LIBRARY_LOADING = "/rd/1/lib/library.obj";
+
 :inline void error_init(dword text)
 {
 	dword TEXT_ERROR = malloc(1024);
@@ -25,7 +30,7 @@ char a_libdir[43]  = "/sys/lib/\0";
 }
 
 // stdcall with 1 parameter
-void dll_Load() {
+:void dll_Load() {
 asm {
         push    ebp
         mov     ebp, esp
@@ -83,7 +88,7 @@ asm {
 }
 
 //stdcall with 2 parameters
-void dll_Link() {
+:void dll_Link() {
 asm {
         push    ebp
         mov     ebp, esp
@@ -113,7 +118,7 @@ asm {
 
 
 //stdcall with 1 parameter
-void dll_Init() {
+:void dll_Init() {
 asm {
         push    ebp
         mov     ebp, esp
@@ -131,7 +136,7 @@ asm {
 
 
 // stdcall with 2 parameters
-void dll_GetProcAddress(){
+:void dll_GetProcAddress(){
 asm {
         push    ebp
         mov     ebp, esp
@@ -161,7 +166,7 @@ asm {
 
 
 // stdcall with 2 parameters
-void dll_StrCmp() {
+:void dll_StrCmp() {
 asm {
         push    ebp
         mov     ebp, esp
@@ -187,7 +192,7 @@ asm {
     }
 }
 
-int load_dll2(dword dllname, import_table, byte need_init)
+:int load_dll2(dword dllname, import_table, byte need_init)
 {
    //dword dllentry=0;
 // load DLL
@@ -239,7 +244,7 @@ int load_dll2(dword dllname, import_table, byte need_init)
         return -1;
 }
 
-byte load_dll(dword dllname, import_table, byte need_init)
+:byte load_dll(dword dllname, import_table, byte need_init)
 {
 	if (load_dll2(dllname, import_table, need_init))
 	{
@@ -249,5 +254,42 @@ byte load_dll(dword dllname, import_table, byte need_init)
 	return true;
 }
 
+:struct OBJECT
+{
+	void load(dword dllname);
+	dword get(dword fname);
+} library;
+
+:void OBJECT::load(dword dllname)
+{
+	dword tmp;
+	IF(!GLOBAL_FUNC_LIB)
+	{
+		$mov eax, 68
+		$mov ebx, 19
+		ECX=#PATH_LIBRARY_LOADING;
+		$int 0x40
+		tmp = EAX;
+		GLOBAL_FUNC_LIB = tmp;
+		tmp+=4;
+		G_FUNC_LOAD = DSDWORD[tmp];
+		tmp+=8;
+		G_FUNC_GET = DSDWORD[tmp];
+	}
+	G_FUNC_LOAD stdcall(dllname);
+}
+
+:dword OBJECT::get(dword fname)
+{
+	dword tmp=fname;
+	G_FUNC_GET stdcall(tmp);
+	return EAX;
+}
+
+/*
+#define INIT_(name) byte init_#name(){object.load(name);
+#define IMPORT(name) name = object.get(name);
+#define _INIT return 1;}
+*/
 
 #endif
