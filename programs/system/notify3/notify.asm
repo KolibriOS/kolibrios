@@ -58,7 +58,6 @@
   ;; TEXT
 
  parse:
-    mov     eax, sz_std
     call    parse_text
 
  ;; PARAMS
@@ -615,7 +614,7 @@
   .height   rd 1
 
  text:
-  .buffer   rb 256
+  .buffer   rb 2048
   .lines    rd 1
   .max_len  rd 1
   .offset   rd 1
@@ -646,6 +645,6 @@
 ;=====================================================================
 	    rb 2048
  @stack:
- @params    rb 256
+ @params    rb 2048
 
  @memory:
