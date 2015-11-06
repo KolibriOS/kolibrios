@@ -6,7 +6,7 @@
     include "../../macros.inc"
     include "../../proc32.inc"
     include "../../dll.inc"
- ;   include "../../debug.inc"
+;    include "../../debug.inc"
 
  macro cmpe a, b, c  {
     cmp     a, b
@@ -50,88 +50,16 @@
 
   ;; CHECK FOR PARAMS
 
-    cmpne   [@params], byte 0, parse
     mov     eax, @params
-    mov     ebx, sz_std
+    cmpne   [@params], byte 0, @f
+    mov     eax, sz_std
   @@:
-    mov     cl, [ebx]
-    mov     [eax], cl
-    inc     eax
-    inc     ebx
-    cmpne   [ebx - 1], byte 0, @b
 
   ;; TEXT
 
  parse:
-    mov     [text.lines], dword 1
-    mov     [text.max_len], dword 1
-
-    mov     eax, @params
-    mov     ebx, text.buffer
-    mov     edx, 0
-    mov     esi, 0
-
-    cmpne   [eax], byte "'", @f
-    mov     dl, "'"
-    mov     eax, @params + 1
-    jmp     .text
-
-  @@:
-    cmpne   [eax], byte '"', .text
-    mov     dl, '"'
-    mov     eax, @params + 1
-
-  .text:
-    cmpe    [eax], dl, .text.end
-    cmpe    [eax], byte 0, .text.end
-    mov     cl, [eax]
-
-    cmpe    cl, "\", .char
-    cmpne   cl, 10, .copy
-    cmple   esi, dword [text.max_len], @f
-    mov     [text.max_len], esi
-  @@:
-    mov     esi, 0
-    mov     cl, 0
-    inc     dword [text.lines]
-    jmp     .copy
-
-  .char:
-    cmpe    [eax + 1], byte "n", .newline
-    cmpe    [eax + 1], dl, .quote
-    jmp     .copy
-
-  .newline:
-    cmple   esi, dword [text.max_len], @f
-    mov     [text.max_len], esi
-  @@:
-    mov     esi, 0
-    mov     cl, 0
-    inc     dword [text.lines]
-    inc     eax
-    jmp     .copy
-
-  .quote:
-    mov     cl, dl
-    inc     eax
-
-  .copy:
-    mov     [ebx], cl
-    inc     eax
-    inc     ebx
-    inc     esi
-    jmp     .text
-  .text.end:
-
-    cmple   esi, dword [text.max_len], @f
-    mov     [text.max_len], esi
-  @@:
-
-    mov     [ebx], byte 0
-
-    cmpge   [text.max_len], dword 25, @f
-    mov     [text.max_len], dword 25
-  @@:
+    mov     eax, sz_std
+    call    parse_text
 
  ;; PARAMS
 
@@ -141,6 +69,7 @@
     cmpe    dl, 0, .params.end
     cmpe    dl, "d", .set_atcl
     cmpe    dl, "t", .set_title
+    cmpe    dl, "c", .set_ctrl
 
     mov     ebx, 1
     mov     ecx, sz_icons
@@ -158,6 +87,10 @@
 
   .set_title:
     mov     [params.title], byte 1
+    jmp     .next_char
+
+  .set_ctrl:
+    mov     [params.ctrl], byte 1
     jmp     .next_char
 
   .set_icon:
@@ -571,6 +504,70 @@
 
  ;----------------------------
 
+ parse_text:
+    mov     dword [text.max_len], 0
+    mov     dword [text.lines], 1
+    mov     ebx, text.buffer
+    mov     ecx, 0
+    mov     dl, 0
+    mov     dh, 0
+
+    cmpne   byte [eax], "'", @f
+    mov     dl, "'"
+    mov     dh, 1
+  @@:
+    cmpne   byte [eax], '"', @f
+    mov     dl, '"'
+    mov     dh, 1
+  @@:
+    cmpne   dh, 1, @f
+    inc     eax
+  @@:
+
+  .parse_loop:
+    cmpe    byte [eax],  0, .parse_loop.end
+    cmpe    byte [eax], dl, .parse_loop.end
+    mov     dh, [eax]
+
+    cmpe    byte [eax], 10, .newline
+
+    cmpne   byte [eax + 0], "\", @f
+    cmpne   byte [eax + 1], "n", @f
+    inc     eax
+
+  .newline:
+    mov     byte [ebx], 0
+    cmple   ecx, dword [text.max_len], .skip_max_len
+    mov     dword [text.max_len], ecx
+  .skip_max_len:
+    mov     ecx, 0
+    inc     dword [text.lines]
+    jmp     .next
+  @@:
+
+    mov     [ebx], dh
+
+  .next:
+    inc     eax
+    inc     ebx
+    inc     ecx
+    jmp     .parse_loop
+  .parse_loop.end:
+
+    cmple   ecx, dword [text.max_len], @f
+    mov     dword [text.max_len], ecx
+  @@:
+
+    cmpge   [text.max_len], dword 25, @f
+    mov     [text.max_len], dword 25
+  @@:
+
+    mov     [ebx], byte 0
+
+    ret
+
+ ;----------------------------
+
  @imports:
     library img, "libimg.obj"
     import  img, img.init,    "lib_init",     \
@@ -583,23 +580,23 @@
  sz_icons   db "AEWONIFCMDS", 0
  sz_ifile   db "/sys/notify3.png", 0
  sz_shname  db "notify-mem-v01", 0
- sz_std     db "'NOTIFY 3\n",                 \
-		"d - disable auto-closing\n", \
-		"t - title\n",		      \
-		" \n",			      \
-		"ICONS:\n",		      \
-		"A - application\n",	      \
-		"E - error\n",		      \
-		"W - warning\n",	      \
-		"O - ok\n",		      \
-		"N - network\n",	      \
-		"I - info\n",		      \
-		"F - folder\n", 	      \
-		"C - component\n",	      \
-		"M - mail\n",		      \
-		"D - download\n",	      \
-		"S - audio player",	      \
-		"' -td", 0
+ sz_std     db "'NOTIFY 3\n",                \
+	       "d - disable auto-closing\n", \
+	       "t - title\n",		     \
+	       " \n",			     \
+	       "ICONS:\n",		     \
+	       "A - application\n",	     \
+	       "E - error\n",		     \
+	       "W - warning\n", 	     \
+	       "O - ok\n",		     \
+	       "N - network\n", 	     \
+	       "I - info\n",		     \
+	       "F - folder\n",		     \
+	       "C - component\n",	     \
+	       "M - mail\n",		     \
+	       "D - download\n",	     \
+	       "S - audio player",	     \
+	       "' -td", 0
 
  ;----------------------------
 
@@ -627,6 +624,7 @@
   .atcl     rb 1
   .title    rb 1
   .icon     rd 1
+  .ctrl     rb 1
 
  img_data:
   .rgb_obj  rd 1
