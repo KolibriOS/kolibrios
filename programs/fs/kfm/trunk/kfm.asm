@@ -5,14 +5,14 @@
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are met:
-;        * Redistributions of source code must retain the above copyright
-;          notice, this list of conditions and the following disclaimer.
-;        * Redistributions in binary form must reproduce the above copyright
-;          notice, this list of conditions and the following disclaimer in the
-;          documentation and/or other materials provided with the distribution.
-;        * Neither the name of the <organization> nor the
-;          names of its contributors may be used to endorse or promote products
-;          derived from this software without specific prior written permission.
+;	 * Redistributions of source code must retain the above copyright
+;	   notice, this list of conditions and the following disclaimer.
+;	 * Redistributions in binary form must reproduce the above copyright
+;	   notice, this list of conditions and the following disclaimer in the
+;	   documentation and/or other materials provided with the distribution.
+;	 * Neither the name of the <organization> nor the
+;	   names of its contributors may be used to endorse or promote products
+;	   derived from this software without specific prior written permission.
 ;
 ; THIS SOFTWARE IS PROVIDED BY Marat Zakiyanov ''AS IS'' AND ANY
 ; EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -60,17 +60,6 @@ include   'files.inc'
 STRLEN = 1024
 ;---------------------------------------------------------------------
 START:
-;    mcall 9, procinfo, -1
-;    mov   eax,[ebx+30]
-;    mov   [PID],eax
-;    xor   ecx,ecx
-;@@:
-;    inc   ecx
-;    mcall 9, procinfo
-;    mov   eax,[PID]
-;    cmp   eax,[ebx+30]
-;    jne   @r
-;    mov  [active_process],ecx
 	mcall	9,procinfo,-1
 	mov	ecx,[ebx+30]	; PID
 	mcall	18,21
@@ -86,8 +75,6 @@ START:
     call  device_detect_f70
     call  select_starting_directories
     mcall 66, 1, 1
-;    call  draw_window
-;    xor   eax,eax
     mov   eax,1
     mov   [left_sort_flag],eax
     mov   [right_sort_flag],eax
@@ -104,7 +91,7 @@ START:
     jz	  @f
 
     cmp   eax,6
-    je    @f
+    je	  @f
 ; if /hd read error for start then use /rd
     mov   esi,retrieved_devices_table+1
     call  copy_folder_name_1
@@ -192,14 +179,12 @@ get_window_param:
 ;---------------------------------------------------------------------
 draw_window:
     mcall 12, 1
-;    mcall 0, <20,620>, <20,460>, 0x03cccccc   ; 0x805080D0, 0x005080D0
 	xor	esi,esi
-    mcall 0, <20,620>, <20,460>, 0x43cccccc   ; 0x805080D0, 0x005080D0
+    mcall 0, <20,728>, <20,460>, 0x43cccccc   ; 0x805080D0, 0x005080D0
     call  get_window_param
 
     mcall 71, 1, header_text
 
-	;    mov   ecx,[temp_esi]
 	test	[window_status],100b	; window is rolled up
 	jnz	.exit
 
@@ -223,17 +208,8 @@ draw_window:
     cmp   [window_width],495
     jb	  .exit
 
-;    pusha
-;    mcall 4,<15,25>,0,read_folder.name,100
-;    popa
     call  draw_fbutton
-
-;    mov   [left_panel_clear_all],1
-
     call  draw_left_panel
-
-;    mov   [right_panel_clear_all],1
-
     call  draw_right_panel
     call  draw_device_button
     call  draw_left_select_disk_button
@@ -242,65 +218,9 @@ draw_window:
     call  draw_right_sort_button
     call  draw_menu_bar
     call  draw_buttons_panel
-;    call  draw_ATAPI_tray_control
-    
-;    mcall 47,0x80000,[left_scroll_compens],<300, 5>,0xffffff
-;    call  mouse.draw_data
-;    mcall 18, 7
-;    mov   [temp_eax],eax
-;    mcall 47,0x80000,[active_process],<300, 5>,0xffffff
-;    mcall 47,0x80000,[left_marked_counter],<300, 5>,0xffffff
-;    mcall 47,0x80000,[right_marked_counter],<400, 5>,0xffffff
-;    mcall 47,0x80000,[sorting_low_limit],<100, 5>,0xffffff
-;    mcall 47,0x80000,[sort_counter],<200, 5>,0xffffff
-;    mcall 47,0x80000,[sorting_high_limit],<300, 5>,0xffffff
-;    mcall 47,0x80000,[dir_temp_counter],<400, 5>,0xffffff
-
-;    mcall 47,0x80000,[timer_tick],<500, 5>,0xffffff
-;    mcall 47,0x80000,[temp_eax],<400, 5>,0xffffff
-;    mcall 47,0x80000,[temp_ebx],<400, 5>,0xffffff
-;    mcall 47,0x80000,[temp_ecx],<500, 5>,0xffffff
-;    mcall 47,0x80000,[temp_ebx],<500, 5>,0xffffff
-;    mcall 47,0x80000,[ini_file_start],<100, 5>,0xffffff
-;    mcall 47,0x80000,[left_folder_data],<200, 5>,0xffffff
-;    mcall 47,0x80000,[right_folder_data],<300, 5>,0xffffff
-;    mcall 47,0x80000,[appl_memory],<500, 5>,0xffffff
-;    mcall 47,0x80000,[temp_znak],<500, 5>,0xffffff
-
-;    mcall 47,0x80000,[sort_counter],<200, 5>,0xffffff
-;    mcall 47,0x80000,[temp_edi],<250, 5>,0xffffff
-;    mcall 47,0x80000,[temp_esi],<300, 5>,0xffffff
-;    mcall 47,0x80000,[temp_ecx],<350, 5>,0xffffff
-;    mcall 47,0x80000,[temp_znak],<400, 5>,0xffffff
-
-;    movzx ecx,[left_start_draw_cursor_line]
-;    mcall 47,0x40000, ,<300, 5>,0xffffff
-;    mcall 47,0x40000,[left_start_draw_line],<400, 5>,0xffffff
-
-;    mcall 47,0x40000,[window_width],<100, 5>,0xffffff
-;    mcall 47,0x40000,[window_high],<130, 5>,0xffffff
-
-;    mcall 47,0x80100,[left_panel_x],<200, 5>,0xffffff
-;    mcall 47,0x80100,[left_panel_y],<250, 5>,0xffffff
-;    mov   edx,[temp_counter_dword_1]
-;    mcall 4,<150,3>,0x80000000
-;    mov   edx,[temp_counter_dword]
-;    mcall 4,<5,3>,0x80000000
 .exit:
     mcall 12, 2
     ret
-;temp_eax dd 0
-;temp_ebx dd 0
-;temp_ecx dd 0
-;temp_edx dd 0
-;temp_esi dd 0
-;temp_edi dd 0
-;temp_ebp dd 0
-;temp_esp dd 0
-;temp_znak dd 0
-;temp_counter_dword_1 dd 0
-;extension_size_1 dd 0
-;timer_tick dd 0
 ;---------------------------------------------------------------------
 prepare_load_data:
     mov   esi,path
@@ -367,8 +287,6 @@ load_initiation_file:
     jnz   initiation_error
     mov   ebp,icons_associations
     call  search_star_and_end_tags
-;    cmp   ebp,-1
-;    je    .end
     mov   eax,[end_tag]
     mov   [icons_end_tag],eax
     ret
@@ -396,7 +314,6 @@ copy_path:
     test  eax,eax
     jnz   @b
     mov   esi,edi
-;    dec   esi
 @@:
     std
     lodsb

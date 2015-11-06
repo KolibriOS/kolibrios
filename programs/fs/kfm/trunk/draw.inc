@@ -156,8 +156,9 @@ calclulate_sort_button_2:
 	shl	edx,2
 	add	edx,sort_button_name
 	mov	eax,4
+	xor	ecx,ecx
 	mov	esi,eax
-	mcall	,,0x10000000
+	mcall
 	popa
 	dec	edx
 	sub	ebx,38 shl 16
@@ -1045,7 +1046,7 @@ draw_fbutton:
 draw_fbutton_name:
 	mov	ebx, 7 shl 16
 	add	ebx,[window_high]
-	sub	ebx,15
+	sub	ebx,19
 	mov	eax,4
 	mov	ecx,0x90000000
 	push	ebx

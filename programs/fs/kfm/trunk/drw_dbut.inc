@@ -6,7 +6,6 @@ draw_device_button:
 	mov	bx,[left_panel_x.start_x]
 	mov	cx,[left_panel_y.start_y]
 	shl	ebx,16
-;	mov	bx,50	; button size X 
 	sub	cx,30
 	shl	ecx,16
 	mov	cx,12
@@ -45,7 +44,7 @@ draw_device_button:
 	inc	edx
 	shr	ecx,16
 	mov	bx,cx
-	add	ebx,4 shl 16 +3
+	add	ebx,4 shl 16
 	mcall	4,,0x90000000
 	sub	ebx,1 shl 16 + 1
 	mcall	,,0x90ffffff
