@@ -18,6 +18,9 @@
 	dword read_pointer;
 	dword read(dword path);
 	
+	dword run_pointer;
+	dword run(dword path,arg);
+	
 	dword move_pointer;
 	byte move(dword path1,path2);
 	
@@ -39,6 +42,14 @@
 {
 	dword tmp = path;
 	read_pointer stdcall(tmp);
+	return EAX;
+}
+
+:dword FILE_SYSTEM_FUNCTION::run(dword path,arg)
+{
+	dword tmp1 = path1;
+	dword tmp2 = arg;
+	run_pointer stdcall(tmp1,tmp2);
 	return EAX;
 }
 
@@ -75,6 +86,7 @@
 	fs.move_pointer = library.get("fs.move");
 	fs.copy_pointer = library.get("fs.copy");
 	fs.read_pointer = library.get("fs.read");
+	fs.run_pointer = library.get("fs.execute");
 	__CHECK_FS__ = true;
 }
 
