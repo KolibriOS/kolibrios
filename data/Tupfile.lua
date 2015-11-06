@@ -70,7 +70,7 @@ img_files = {
  {"SETTINGS/NETWORK.INI", build_type .. "/settings/network.ini"},
  {"NETWORK/FTPD.INI", "common/network/ftpd.ini"},
  {"NETWORK/USERS.INI", "common/network/users.ini"},
- {"KFVIEWER", "common/kfviewer"},
+ {"FONT_VIEWER", "common/font_viewer"},
 }
 -- For russian build, add russian-only files.
 if build_type == "rus" then tup.append_table(img_files, {

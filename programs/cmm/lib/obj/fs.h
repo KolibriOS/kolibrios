@@ -15,6 +15,9 @@
 	dword remove_pointer;
 	byte remove(dword path);
 	
+	dword read_pointer;
+	dword read(dword path);
+	
 	dword move_pointer;
 	byte move(dword path1,path2);
 	
@@ -29,6 +32,13 @@
 {
 	dword tmp = path;
 	remove_pointer stdcall(tmp);
+	return EAX;
+}
+
+:dword FILE_SYSTEM_FUNCTION::read(dword path)
+{
+	dword tmp = path;
+	read_pointer stdcall(tmp);
 	return EAX;
 }
 
@@ -55,14 +65,17 @@
 	return EAX;
 }
 
+:byte __CHECK_FS__ = 0;
 :void lib_init_fs()
 {
+	IF(__CHECK_FS__)return;
 	library.load("/sys/LIB/FS.OBJ");
 	fs.remove_pointer = library.get("fs.remove");
 	fs.get_size_pointer = library.get("fs.get_size");
 	fs.move_pointer = library.get("fs.move");
 	fs.copy_pointer = library.get("fs.copy");
-	//alert(itoa(fs.get_size("/sys/")));
+	fs.read_pointer = library.get("fs.read");
+	__CHECK_FS__ = true;
 }
 
 #endif

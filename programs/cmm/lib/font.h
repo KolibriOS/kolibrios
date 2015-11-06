@@ -6,7 +6,7 @@
 #endif
 
 #ifndef INCLUDE_IO_H
-#include "../lib/io.h"
+#include "../lib/obj/fs.h"
 #endif
 
 :struct __OFFSET_FONT
@@ -306,12 +306,13 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 }
 :byte FONT::load(dword path)
 {
+	lib_init_fs();
 	buffer_size = 0;
 	use_smooth = true;
 	IF(data)free(data);
-	IF(!io.read(path)) { debug("Error while loading font: "); debugln(path); return false; }
-	begin = data = io.buffer_data;
-	EBX = begin + io.FILES_SIZE;
+	IF(!fs.read(path)) { debug("Error while loading font: "); debugln(path); return false; }
+	begin = data = EAX;
+	EBX = begin + ECX;
 	$dec ebx
 	height = DSBYTE[EBX];
 	$dec ebx

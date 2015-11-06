@@ -35,7 +35,7 @@ void main()
 	font_option.use_smooth = 1;
 	font_option.bg_color = 0xDADADA;
 	
-	strcpy(#title, "Kolibri font preview: ");
+	strcpy(#title, "Font preview: ");
 	strcat(#title, #param);
 	font_title.prepare(5, 4, #title);
 	loop()
