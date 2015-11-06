@@ -1,11 +1,11 @@
 ;------------------------------------------------------------------------------
 ;   @SS - screensaver
 ;------------------------------------------------------------------------------
-; last update:  30/03/2012
-; changed by:   Marat Zakiyanov aka Mario79, aka Mario
-; changes:      The program uses only 4 Kb memory is now.
-;               Code refactoring. Using transparent cursor.
-;               Fix bug - using lots of buttons from f.8.
+; last update:	30/03/2012
+; changed by:	Marat Zakiyanov aka Mario79, aka Mario
+; changes:	The program uses only 4 Kb memory is now.
+;		Code refactoring. Using transparent cursor.
+;		Fix bug - using lots of buttons from f.8.
 ;---------------------------------------------------------------------
 ;   SCREENSAVER APPLICATION by lisovin@26.ru
 ;
@@ -16,7 +16,7 @@
 	org 0x0
 
 	db 'MENUET01'	; 8 byte id
-	dd 0x01		; header version
+	dd 0x01 	; header version
 	dd START	; start of code
 	dd IM_END	; size of image
 	dd I_END	; memory for app
@@ -79,14 +79,14 @@ still:
 align 4
 create_setup:
 	test	[params],2
-	jnz	still           ; окно настроек уже создано
+	jnz	still		; окно настроек уже создано
 	mcall	51,1,sthread,sthread_stack_top
 	or	[params],2
 	jmp	still
 ;------------------------------------------------------------------------------
 align 4
 key:
-	mcall                   ; eax = 2
+	mcall			; eax = 2
 	jmp	still
 ;------------------------------------------------------------------------------
 align 4
@@ -110,7 +110,7 @@ thread:
 
 	push	eax
 	mov	ecx,eax
-	mcall	37,4,,2		; load own cursor
+	mcall	37,4,,2 	; load own cursor
 
 	mov	ecx,eax
 	mcall	37,5		; set own cursor
@@ -125,7 +125,7 @@ thread:
 	je	asminit
 
 	mov	dword [delay],1
-	mov	[lx1],10         ; for "draw line"
+	mov	[lx1],10	 ; for "draw line"
 	mov	[lx2],40
 	mov	[ly1],50
 	mov	[ly2],100
@@ -162,7 +162,7 @@ align 4
 ;--------------------------------------
 align 4
 @@:
-	mov	dword [delay],1	;25 - old value
+	mov	dword [delay],1 ;25 - old value
 ;--------------------------------------
 align 4
 asminit1:
@@ -172,7 +172,7 @@ asminit1:
 ;--------------------------------------
 align 4
 newpage:
-	mov	word [stringpos],10
+	mov	[stringpos],16
 ;--------------------------------------
 align 4
 drawsswin:
@@ -235,7 +235,7 @@ drawssasm:
 ;--------------------------------------
 align 4
 addstring:
-	add	word [stringpos],10
+	add	[stringpos],16
 	add	edi,2
 	mov	[stringstart],edi
 	mov	dword [stringlen],1
@@ -246,9 +246,13 @@ addstring:
 ;--------------------------------------
 align 4
 noaddstring:
-	mov	ebx,10*65536
+	mov	ebx,[stringlen]
+	shl	ebx,19
 	mov	bx,[stringpos]
-	mcall	4,,0x104ba010,[stringstart],[stringlen]
+	mov	edx,[stringstart]
+	add	edx,[stringlen]
+	dec	edx
+	mcall	4,,0x104ba010,,1
 	inc	dword [stringlen]
 	cmp	[edi],byte ' '
 	je	drawssasm
@@ -466,7 +470,7 @@ align 4
 sdraw_window:
 	mcall	12,1
 
-	xor	eax,eax		; function 0 : define and draw window
+	xor	eax,eax 	; function 0 : define and draw window
 	xor	esi,esi
 	mcall	,<100,215>,<100,70>,0x13400088,,title
 
@@ -556,69 +560,53 @@ setf:
 	mcall	4,<153,47>,,,1
 	ret
 ;------------------------------------------------------------------------------
-align 4
-; DATA AREA
-buttext		db 'SHOW',0
-flag		db 'V '
-title		db 'SCREENSAVER SETUP',0
-setuptext	db 'TYPE: < >',0
-		db 'TIME: < >     MINUTES    NEVER',0
-typetext	db 'BLACK SCREENCOLOR LINES ASSEMBLER   '
+align 4 	; DATA AREA
 type	dd 12
-time	db 15	; время до запуска заставки в минутах
 delay	dd 100
-
 lx1	dd 10
 lx2	dd 40
-
 ly1	dd 50
 ly2	dd 100
-
 addx1	dd 1
 addx2	dd 1
-
 addy1	dd 1
 addy2	dd 1
-
 stringlen	dd 1
 stringstart	dd 0
-stringpos	dw 10
 
-params	db 0	;if bit 0 set-ssaver works if bit 1 set-setup works
+stringpos	dw 16
+time		db 15	; время до запуска заставки в минутах
+params		db 0	;if bit 0 set-ssaver works if bit 1 set-setup works
 
 fileinfo:
 	dd 0
 	dd 0
 	dd 0
 .size:	dd 0
-.point:	dd 0
+.point: dd 0
 	db '/sys/macros.inc',0
-;------------------------------------------------------------------------------
-align 4
-IM_END:
-; UNINITIALIZED DATA:
 
+buttext 	db 'SHOW',0
+flag		db 'V '
+title		db 'SCREENSAVER SETUP',0
+setuptext	db 'TYPE: < >',0
+		db 'TIME: < >     MINUTES    NEVER',0
+typetext	db 'BLACK SCREENCOLOR LINES ASSEMBLER   '
+;-------------------------------
+IM_END: 	; UNINITIALIZED DATA
+top_right_corner	rd 1
+align 4
 lcolor	dd ?
 x_max	dw ?	; размеры экрана
 y_max	dw ?
-
-top_right_corner	rd 1
-;------------------------------------------------------------------------------
-align 4
 I_Param:
 fileinfo_buffer:
 	rb 40
-;------------------------------------------------------------------------------
-align 4
+;-------------------------------
 	rb 512
 sthread_stack_top:
-;------------------------------------------------------------------------------
-align 4
 	rb 512
 thread_stack_top:
-;------------------------------------------------------------------------------
-align 4
 	rb 512
 stack_top:
 I_END:
-;------------------------------------------------------------------------------
