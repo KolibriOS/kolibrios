@@ -29,6 +29,8 @@
 	
 	dword get_size_pointer;
 	qword get_size(dword path);
+	
+	dword callback_copy;
 } fs;
 
 :byte FILE_SYSTEM_FUNCTION::remove(dword path)
@@ -93,6 +95,7 @@
 	fs.copy_pointer = library.get("fs.copy");
 	fs.read_pointer = library.get("fs.read");
 	fs.run_pointer = library.get("fs.execute");
+	fs.callback_copy = library.get("fs.callback_copy");
 	__CHECK_FS__ = true;
 }
 
