@@ -13,6 +13,7 @@
 
  2.3 <KEYS>
   d - disable auto-closing
+  c - disable closing by click
   t - title
 
   2.3.1 ICONS:

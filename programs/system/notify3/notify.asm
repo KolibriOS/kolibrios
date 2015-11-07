@@ -1,171 +1,122 @@
     use32
     org     0
     db	    'MENUET01'
-    dd	    1, @entry, @end, @memory, @stack, @params, 0
+    dd	    1, @ENTRY, @end, @memory, @stack, @params, 0
 
     include "../../macros.inc"
+    include "../../cmp.inc"
     include "../../proc32.inc"
     include "../../dll.inc"
 ;    include "../../debug.inc"
-
- macro cmpe a, b, c  {
-    cmp     a, b
-    je	    c	     }
-
- macro cmpl a, b, c  {
-    cmp     a, b
-    jl	    c	     }
-
- macro cmpne a, b, c {
-    cmp     a, b
-    jne     c	     }
-
- macro cmple a, b, c {
-    cmp     a, b
-    jle     c	     }
-
- macro cmpge a, b, c {
-    cmp     a, b
-    jge     c	     }
+    include "../../notify.inc"
+    include "../../string.inc"
 
  LINEH	    equ 12
+ MARGIN     equ 12
  ICONS	    equ 11
 
-;=====================================================================
+;-------------------------------------------------------------------------------
 
- @entry:
+ @ENTRY:
+;; INIT HEAP
+    mcall   68, 11
 
-  ;; GET PID OF ACTIVE
-
+;; SAVE FOCUSED WINDOW
     mcall   18, 7
-
     mov     ecx, eax
     mcall   9, buffer
+    m2m     dword [prev_pid], dword [buffer + 30]
 
-    m2m     dword[prev_pid], dword[buffer + 30]
-
-  ;; ALWAYS TOP
-
+;; MAKE IT ALWAYS ON TOP
     mcall   18, 25, 2, -1, 1
 
-  ;; CHECK FOR PARAMS
-
+;; SET STD PARAMS, IF IT NEEDS
     mov     eax, @params
-    cmpne   [@params], byte 0, @f
+    cmpne   byte [@params], 0, @f
     mov     eax, sz_std
   @@:
+    mov     [params.source], eax
 
-  ;; TEXT
-
- parse:
+;; PARSE ARGUMENTS
+    mov     esi, 0
     call    parse_text
+    call    parse_flags
+    movzx   ebx, [params.icon]
 
- ;; PARAMS
+;; GET PID
+    mcall   9, buffer, -1
+    mov     eax, dword [buffer + 30]
 
-  .params:
-    mov     dl, [eax]
-
-    cmpe    dl, 0, .params.end
-    cmpe    dl, "d", .set_atcl
-    cmpe    dl, "t", .set_title
-    cmpe    dl, "c", .set_ctrl
-
-    mov     ebx, 1
-    mov     ecx, sz_icons
+;; CONVERT PID TO STR
+    mov     ebx, 10
+    mov     ecx, 0
   @@:
-    cmpe    dl, [ecx], .set_icon
-    inc     ebx
+    mov     edx, 0
+    div     ebx
+    push    edx
     inc     ecx
-    cmpne   [ecx], byte 0, @b
+    cmpne   eax, 0, @b
 
-    jmp     .next_char
+    mov     ebx, ctrl.name
+  @@:
+    pop     eax
+    add     al, "0"
+    mov     [ebx], al
+    inc     ebx
+    loop    @b
 
-  .set_atcl:
-    mov     [params.atcl], byte 1
-    jmp     .next_char
+    mov     dword [ebx + 0], "-NOT"
+    mov     dword [ebx + 4], "IFY"
 
-  .set_title:
-    mov     [params.title], byte 1
-    jmp     .next_char
-
-  .set_ctrl:
-    mov     [params.ctrl], byte 1
-    jmp     .next_char
-
-  .set_icon:
-    mov     [params.icon], ebx
-
-  .next_char:
-    inc     eax
-    jmp     .params
-
-  .params.end:
-
- ;----------------------------
-
-    mcall   68, 11
+;; LOAD LIBRARIES
     stdcall dll.Load, @imports
 
-    mov     dword [fi + 00], 5
-    mov     dword [fi + 16], buffer
-    mov     dword [fi + 21], sz_ifile
+;; GET SIZE OF ICONS
     mcall   70, fi
-
     mov     edx, dword [buffer + 32]
     shl     edx, 2
+
+;; ALLOCATE MEMORY FOR THIS
     stdcall mem.Alloc, edx
     mov     [img_data.rgb_obj], eax
 
+;; READ ICONS
     mov     dword [fi + 00], 0
     mov     dword [fi + 12], edx
-    m2m     dword [fi + 16], [img_data.rgb_obj]
-    mov     dword [fi + 21], sz_ifile
+    mov     dword [fi + 16], eax
     mcall   70, fi
 
+;; DECODE ICONS
     stdcall dword [img.decode], dword [img_data.rgb_obj], ebx, 0
     mov     dword [img_data.obj], eax
-
- ;; alpha
-    add     eax, 24
-    mov     eax, [eax] ;; eax - data [argb]
-
-    mov     ecx, 24 * 24 * ICONS
- alpha:
-    mov     ebx, [eax]
-    shr     ebx, 24
-    cmpne   bl, 0x00, @f
-    mov     [eax], dword 0x222222
-
-  @@:
-    add     eax, 4
-    loop    alpha
-
- ;; end alpha
-
     stdcall dword [img.to_rgb], dword [img_data.obj], dword [img_data.rgb_obj]
     stdcall dword [img.destroy], dword [img_data.obj]
 
- ;----------------------------
 
-    mov     [text.offset], LINEH
 
+;; CALC HEIGHT
     mov     eax, [text.lines]
     add     eax, 2
     imul    eax, LINEH
     mov     [window.height], eax
 
-    mov     eax, [text.max_len]
-    imul    eax, 6
-    add     eax, LINEH * 2
-    cmpe    [params.icon], dword 0, @f
-    add     eax, 24 + LINEH
-    add     [text.offset], 24 + LINEH
+;; CALC OFFSET OF TEXT
+    mov     dword [text.offset], MARGIN
+    cmpe    byte [params.icon], 0, @f
+    add     dword [text.offset], MARGIN + 24
   @@:
+
+;; CALC WIDTH
+    mov     eax, [text.max_len]
+    dec     eax
+    imul    eax, 6
+    add     eax, MARGIN
+    add     eax, [text.offset]
     mov     [window.width], eax
 
     mcall   14
     mov     ebx, eax
-    and     ebx, 0xFFFF
+    movzx   ebx, bx
     mov     [scr.height], ebx
     shr     eax, 16
     mov     [scr.width], eax
@@ -173,9 +124,8 @@
     sub     eax, LINEH
     mov     [window.x], eax
 
- ;; CALC WINDOW.Y
-
-    mcall   68, 22, sz_shname, 256 + 512, 4 + 1 ;OPEN_ALWAYS and WRITE
+;; CALC Y
+    mcall   68, 22, sz_shname, 256 + 512, 4 + 1 ;OPEN_ALWAYS AND WRITE
     add     eax, 512
     mov     [shm], eax
 
@@ -202,15 +152,15 @@
  s_area:
     cmpe    [eax], byte 1, .is_1
 
-  .is_0:
+ .is_0:
     inc     ebx
     cmpe    ebx, ecx, s_ok
     jmp     .next
 
-  .is_1:
+ .is_1:
     mov     ebx, 0
 
-  .next:
+ .next:
     inc     eax
     cmple   eax, edx, s_area
 
@@ -241,19 +191,22 @@
 
  ;----------------------------
 
+;; SET EVENT MASK
+    mcall   40, 101b
+
+;; INIT TIMER
     mov     eax, 60
     imul    eax, [text.lines]
     mov     [timer], eax
-
-    mov     [timer.step], dword 1
-    cmpne   [params.atcl], byte 1, @f
-    mov     [timer.step], dword 0
+    mov     dword [timer.step], 1
+    cmpne   byte [params.atcl], 1, @f
+    mov     dword [timer.step], 0
   @@:
 
- ;----------------------------
-
+;; INIT WINDOW
     call    init_window
 
+;; RESTORE FOCUS
     mcall   18, 21, [prev_pid]
     mov     ecx, eax
     mcall   18, 3
@@ -265,12 +218,97 @@
  update:
     mcall   23, 10
     cmpe    al, EV_REDRAW, redraw
-    cmpe    al, EV_KEY, key
-    cmpe    al, EV_BUTTON, exit
+    cmpe    al, EV_BUTTON, button
+
+    mov     edi, update
+
+;; TRY OPEN CONTROLLER
+    cmpe    byte [params.ctrl], 1, .fail_controller_open
+    mcall   68, 22, ctrl.name, , 0x01
+    cmpe    eax, 0, .fail_controller_open
+    mov     byte [params.ctrl], 1
+    mov     [ctrl.addr], eax
+
+;; COPY TEXT TO CTRL
+    add     eax, NTCTRL_TEXT
+    mov     ebx, text.buffer
+    mov     ecx, [text.lines]
+ .copy_start:
+    cmpe     ecx, 0, .copy_end
+    mov      dl, [ebx]
+    cmpne    dl, 0, @f
+    mov      dl, "|"
+    dec      ecx
+  @@:
+    mov      [eax], dl
+    inc      eax
+    inc      ebx
+    jmp      .copy_start
+ .copy_end:
+    mov      byte [eax - 1], 0
+
+;; COPY FLAGS TO CTRL
+    mov      eax, [ctrl.addr]
+    add      eax, NTCTRL_ICON
+    mov      dl, [params.icon]
+    mov      [eax], dl
+
+    mov      eax, [ctrl.addr]
+    add      eax, NTCTRL_TITLE
+    mov      dl,  [params.title]
+    mov      [eax], dl
+
+;; SET CONTROLLER READY
+    mov     eax, [ctrl.addr]
+    add     eax, NTCTRL_READY
+    mov     byte [eax], 1
+ .fail_controller_open:
+
+
+    cmpe    [params.ctrl], 0, .no_ctrl
+;; TEST TEXT
+    mov     eax, [ctrl.addr]
+    add     eax, NTCTRL_APPLY_TEXT
+    cmpne   byte [eax], 1, @f
+    mov     byte [eax], 0
+    mov     eax, [ctrl.addr]
+    add     eax, NTCTRL_TEXT
+    mov     esi, 1
+    call    parse_text
+    mov     edi, redraw
+  @@:
+
+;; TEST ICON
+    mov     eax, [ctrl.addr]
+    add     eax, NTCTRL_APPLY_ICON
+    cmpne   byte [eax], 1, @f
+    mov     eax, [ctrl.addr]
+    add     eax, NTCTRL_ICON
+    mov     dl, [eax]
+    mov     [params.icon], dl
+  @@:
+
+;; TEST TITLE
+    mov     eax, [ctrl.addr]
+    add     eax, NTCTRL_APPLY_TITLE
+    cmpne   byte [eax], 1, @f
+    mov     eax, [ctrl.addr]
+    add     eax, NTCTRL_TITLE
+    mov     dl, [eax]
+    mov     [params.title], dl
+  @@:
+
+;; TEST CLOSE
+    mov     eax, [ctrl.addr]
+    add     eax, NTCTRL_CLOSE
+    cmpe    byte [eax], 1, exit
+
+ .no_ctrl:
 
     mov     eax, [timer.step]
     sub     [timer], eax
-    cmpne   [timer], dword 0, update
+    cmpe    [timer], dword 0, exit
+    jmp     edi
 
  ;----------------------------
 
@@ -289,10 +327,10 @@
 
  ;----------------------------
 
- key:
-    mcall   2
-    cmpne   ah, 27, update
-    jmp     exit
+ button:
+    mcall   17
+    cmpe    byte [params.clcl], 0, exit
+    jmp     update
 
  ;----------------------------
 
@@ -307,8 +345,8 @@
  draw_window:
     call    init_window
 
-    and     ebx, 0xFFFF
-    and     ecx, 0xFFFF
+    movzx   ebx, bx
+    movzx   ecx, cx
     inc     ebx
     inc     ecx
     mcall   8, , , 0x61000001
@@ -330,7 +368,7 @@
     pop     ebx eax
     cmpne   esi, 0, @b
 
-  .draw_full:
+ .draw_full:
     mcall
 
     mcall   , , 1, 0x121212
@@ -415,9 +453,8 @@
 
  ;-----
 
-    cmpe    [params.icon], dword 0, @f
-
-    mov     ebx, [params.icon]
+    cmpe    byte [params.icon], 0, @f
+    movzx   ebx, byte [params.icon]
     dec     ebx
     imul    ebx, 24 * 24 * 3
     add     ebx, [img_data.rgb_obj]
@@ -428,7 +465,6 @@
     add     edx, LINEH shl 16
 
     mcall   7, , <24, 24>
-
   @@:
 
     ret
@@ -444,7 +480,7 @@
     add     ebx, LINEH + (LINEH - 6) / 2
     mov     edx, text.buffer
 
-  .draw_lines:
+ .draw_lines:
     mov     ecx, 0x80111111
 
     add     ebx, 0x00010000
@@ -474,9 +510,9 @@
     inc     edx
     jmp     .draw_lines
 
-  .draw_lines.end:
+ .draw_lines.end:
 
-    cmpne   [params.title], byte 1, @f
+    cmpne   byte [params.title], 1, @f
     mov     edx, text.buffer
     mov     ecx, 0x80111111
     and     ebx, 0xFFFF0000
@@ -511,6 +547,7 @@
     mov     dl, 0
     mov     dh, 0
 
+    cmpe    esi, 1, .parse_loop
     cmpne   byte [eax], "'", @f
     mov     dl, "'"
     mov     dh, 1
@@ -523,35 +560,44 @@
     inc     eax
   @@:
 
-  .parse_loop:
+ .parse_loop:
     cmpe    byte [eax],  0, .parse_loop.end
     cmpe    byte [eax], dl, .parse_loop.end
-    mov     dh, [eax]
 
     cmpe    byte [eax], 10, .newline
+    cmpe    esi, 1, .next_set_char
+    cmpne   byte [eax], "\", @f
+    cmpe    byte [eax + 1], dl, .quote
+    cmpe    byte [eax + 1], "n", .newline_esc
+    jmp     @f
 
-    cmpne   byte [eax + 0], "\", @f
-    cmpne   byte [eax + 1], "n", @f
+ .quote:
+    inc     eax
+    jmp     .next_set_char
+
+ .newline_esc:
     inc     eax
 
-  .newline:
+ .newline:
     mov     byte [ebx], 0
     cmple   ecx, dword [text.max_len], .skip_max_len
     mov     dword [text.max_len], ecx
-  .skip_max_len:
+ .skip_max_len:
     mov     ecx, 0
     inc     dword [text.lines]
     jmp     .next
   @@:
 
+ .next_set_char:
+    mov     dh, [eax]
     mov     [ebx], dh
 
-  .next:
+ .next:
     inc     eax
     inc     ebx
     inc     ecx
     jmp     .parse_loop
-  .parse_loop.end:
+ .parse_loop.end:
 
     cmple   ecx, dword [text.max_len], @f
     mov     dword [text.max_len], ecx
@@ -567,11 +613,56 @@
 
  ;----------------------------
 
+ parse_flags:
+    mov     byte [params.atcl], 0
+    mov     byte [params.title], 0
+    mov     byte [params.icon], 0
+
+ .loop:
+    mov     dl, [eax]
+
+    cmpe    dl, 0, .exit
+    cmpe    dl, "d", .set_atcl
+    cmpe    dl, "c", .set_clcl
+    cmpe    dl, "t", .set_title
+
+    mov     bl, 1
+    mov     ecx, sz_icons
+  @@:
+    cmpe    dl, [ecx], .set_icon
+    inc     bl
+    inc     ecx
+    cmpne   [ecx], byte 0, @b
+    jmp     .next_char
+
+ .set_atcl:
+    mov     byte [params.atcl], 1
+    jmp     .next_char
+
+ .set_clcl:
+    mov     byte [params.clcl], 1
+    jmp     .next_char
+
+ .set_title:
+    mov     byte [params.title], 1
+    jmp     .next_char
+
+ .set_icon:
+    mov     [params.icon], bl
+
+ .next_char:
+    inc     eax
+    jmp     .loop
+
+ .exit:
+    ret
+
+ ;----------------------------
+
  @imports:
     library img, "libimg.obj"
-    import  img, img.init,    "lib_init",     \
-		 img.to_rgb,  "img_to_rgb2",  \
-		 img.decode,  "img_decode",   \
+    import  img, img.to_rgb,  "img_to_rgb2", \
+		 img.decode,  "img_decode",  \
 		 img.destroy, "img_destroy"
 
  ;----------------------------
@@ -579,23 +670,31 @@
  sz_icons   db "AEWONIFCMDS", 0
  sz_ifile   db "/sys/notify3.png", 0
  sz_shname  db "notify-mem-v01", 0
- sz_std     db "'NOTIFY 3\n",                \
-	       "d - disable auto-closing\n", \
-	       "t - title\n",		     \
-	       " \n",			     \
-	       "ICONS:\n",		     \
-	       "A - application\n",	     \
-	       "E - error\n",		     \
-	       "W - warning\n", 	     \
-	       "O - ok\n",		     \
-	       "N - network\n", 	     \
-	       "I - info\n",		     \
-	       "F - folder\n",		     \
-	       "C - component\n",	     \
-	       "M - mail\n",		     \
-	       "D - download\n",	     \
-	       "S - audio player",	     \
+ sz_std     db "'NOTIFY 3\n",                 \
+	       "d - disable auto-closing\n",  \
+	       "c - disable click-closing\n", \
+	       "t - title\n",		      \
+	       " \n",			      \
+	       "ICONS:\n",		      \
+	       "A - application\n",	      \
+	       "E - error\n",		      \
+	       "W - warning\n", 	      \
+	       "O - ok\n",		      \
+	       "N - network\n", 	      \
+	       "I - info\n",		      \
+	       "F - folder\n",		      \
+	       "C - component\n",	      \
+	       "M - mail\n",		      \
+	       "D - download\n",	      \
+	       "S - audio player",	      \
 	       "' -td", 0
+
+ fi:
+	    dd 5
+	    dd 0, 0, 0
+	    dd buffer
+	    db 0
+	    dd sz_ifile
 
  ;----------------------------
 
@@ -604,40 +703,45 @@
 ;=====================================================================
 
  window:
-  .x	    rd 1
-  .y	    rd 1
-  .width    rd 1
-  .height   rd 1
+ .x	   rd 1
+ .y	   rd 1
+ .width    rd 1
+ .height   rd 1
 
  scr:
-  .width    rd 1
-  .height   rd 1
+ .width    rd 1
+ .height   rd 1
 
  text:
-  .buffer   rb 2048
-  .lines    rd 1
-  .max_len  rd 1
-  .offset   rd 1
+ .buffer   rb 2048
+ .lines    rd 1
+ .max_len  rd 1
+ .offset   rd 1
 
  params:
-  .atcl     rb 1
-  .title    rb 1
-  .icon     rd 1
-  .ctrl     rb 1
+ .source   rd 1
+ .atcl	   rb 1
+ .clcl	   rb 1
+ .title    rb 1
+ .icon	   rb 1
+ .ctrl	   rb 1
 
  img_data:
-  .rgb_obj  rd 1
-  .obj	    rd 1
+ .rgb_obj  rd 1
+ .obj	   rd 1
 
  timer:
-  .value    rd 1
-  .step     rd 1
+ .value    rd 1
+ .step	   rd 1
 
  shm:
-  .addr     rd 1
-  .our	    rd 1
+ .addr	   rd 1
+ .our	   rd 1
 
- fi	    rb 26
+ ctrl:
+ .name	   rb 31
+ .addr	   rd 1
+
  buffer     rb 1024
  first_draw rb 1
  prev_pid   rd 1
