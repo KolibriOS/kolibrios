@@ -34,6 +34,7 @@
 :byte FILE_SYSTEM_FUNCTION::remove(dword path)
 {
 	dword tmp = path;
+	lib_init_fs();
 	remove_pointer stdcall(tmp);
 	return EAX;
 }
@@ -41,6 +42,7 @@
 :dword FILE_SYSTEM_FUNCTION::read(dword path)
 {
 	dword tmp = path;
+	lib_init_fs();
 	read_pointer stdcall(tmp);
 	return EAX;
 }
@@ -49,6 +51,7 @@
 {
 	dword tmp1 = path1;
 	dword tmp2 = arg;
+	lib_init_fs();
 	run_pointer stdcall(tmp1,tmp2);
 	return EAX;
 }
@@ -56,6 +59,7 @@
 :qword FILE_SYSTEM_FUNCTION::get_size(dword path)
 {
 	dword tmp = path;
+	lib_init_fs();
 	get_size_pointer stdcall(tmp);
 	return EAX;
 }
@@ -64,6 +68,7 @@
 {
 	dword tmp1 = path1;
 	dword tmp2 = path2;
+	lib_init_fs();
 	move_pointer stdcall(tmp1,tmp2);
 	return EAX;
 }
@@ -72,6 +77,7 @@
 {
 	dword tmp1 = path1;
 	dword tmp2 = path2;
+	lib_init_fs();
 	copy_pointer stdcall(tmp1,tmp2);
 	return EAX;
 }

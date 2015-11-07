@@ -74,7 +74,8 @@ void PasteThread()
 			IF(DSBYTE[buf]=='/')tmp = buf;
 			buf++;
 		}
-		sprintf(TEMP,"%s/%s",#path,tmp);
+		tmp++;
+		sprintf(TEMP,"%s%s",#path,tmp);
 		IF(cut_active) fs.move(_copy_path_,TEMP);
 		ELSE fs.copy(_copy_path_,TEMP);
 		free(_copy_path_);
