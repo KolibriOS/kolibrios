@@ -15,6 +15,7 @@
     include "../../proc32.inc"
     include "../../macros.inc"
     include "../../dll.inc"
+    include "../../cmp.inc"
     include "../../string.inc"
     include "../../develop/libraries/box_lib/trunk/box_lib.mac"
 
@@ -23,8 +24,6 @@
 if DEBUG eq 1
     include "../../debug.inc"
 end if
-
-    include "macros.inc"
 
  ;===============================
 
@@ -134,11 +133,16 @@ end if
   db 0
   dd icons
 
+ is_file_exists:
+  dd 0, 0, 0, 0, buffer6
+  db 0
+  dd buffer
+
   last_x dd -1
   last_y dd -1
 
 if DEBUG eq 1
-    std_param db "~/sys/settings/assoc.ini", 0
+    std_param db "~/sys/example.asm", 0
 end if
 
  imports:
@@ -233,7 +237,10 @@ end if
 
  open:
     invoke  libini.get_str, assoc_ini, assoc_ini.sec, slash, buffer, 2048, undefined
+    cmpne   [buffer], byte "$", @f
+    invoke  libini.get_str, assoc_ini, buffer + 1, assoc_ini.exec, buffer, 2048, undefined
     cmpe    [buffer], byte 0, ini_error
+  @@:
     mov     eax, [param_s]
     mov     [is_open + 8], eax
     mcall   70, is_open
@@ -707,6 +714,11 @@ end if
  ;----------------------
 
  proc section_cb, _file, _sec
+ ;; CHECK IF EXISTS
+    invoke  libini.get_str, assoc_ini, [_sec], assoc_ini.exec, buffer, 2048, undefined
+    mcall   70, is_file_exists
+    cmpe    ebx, -1, .exit
+
     mov     ebx, [list.size]
     shl     ebx, 5
     add     ebx, list
@@ -721,6 +733,7 @@ end if
     inc     [sb_apps.max_area]
   @@:
     mov     eax, 1
+  .exit:
     ret
  endp
 
@@ -752,6 +765,7 @@ end if
  buffer3 rb 2048
  buffer4 rb 4096
  buffer5 rb 4096
+ buffer6 rb 2048
  params rb 2048
  _stack rb 2048
  memory:
