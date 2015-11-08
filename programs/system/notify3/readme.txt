@@ -15,6 +15,7 @@
   d - disable auto-closing
   c - disable closing by click
   t - title
+  p - progressbar
 
   2.3.1 ICONS:
    A - application

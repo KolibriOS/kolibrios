@@ -108,7 +108,6 @@
 
 ;; CALC WIDTH
     mov     eax, [text.max_len]
-    dec     eax
     imul    eax, 6
     add     eax, MARGIN
     add     eax, [text.offset]
@@ -123,6 +122,12 @@
     sub     eax, [window.width]
     sub     eax, LINEH
     mov     [window.x], eax
+
+;; CALC PBAR
+    mov     eax, [window.width]
+    sub     eax, [text.offset]
+    sub     eax, MARGIN
+    mov     [pbar.width], eax
 
 ;; CALC Y
     mcall   68, 22, sz_shname, 256 + 512, 4 + 1 ;OPEN_ALWAYS AND WRITE
@@ -232,12 +237,17 @@
 ;; COPY TEXT TO CTRL
     add     eax, NTCTRL_TEXT
     mov     ebx, text.buffer
+
     mov     ecx, [text.lines]
+    cmpne   byte [params.pbar], 1, @f
+    dec     ecx
+  @@:
+
  .copy_start:
     cmpe     ecx, 0, .copy_end
     mov      dl, [ebx]
     cmpne    dl, 0, @f
-    mov      dl, "|"
+    mov      dl, 10
     dec      ecx
   @@:
     mov      [eax], dl
@@ -271,10 +281,12 @@
     add     eax, NTCTRL_APPLY_TEXT
     cmpne   byte [eax], 1, @f
     mov     byte [eax], 0
+
     mov     eax, [ctrl.addr]
     add     eax, NTCTRL_TEXT
     mov     esi, 1
     call    parse_text
+
     mov     edi, redraw
   @@:
 
@@ -282,20 +294,49 @@
     mov     eax, [ctrl.addr]
     add     eax, NTCTRL_APPLY_ICON
     cmpne   byte [eax], 1, @f
+    mov     byte [eax], 0
+
     mov     eax, [ctrl.addr]
     add     eax, NTCTRL_ICON
     mov     dl, [eax]
     mov     [params.icon], dl
+
+    mov     edi, redraw
   @@:
 
 ;; TEST TITLE
     mov     eax, [ctrl.addr]
     add     eax, NTCTRL_APPLY_TITLE
     cmpne   byte [eax], 1, @f
+    mov     byte [eax], 0
+
     mov     eax, [ctrl.addr]
     add     eax, NTCTRL_TITLE
     mov     dl, [eax]
     mov     [params.title], dl
+
+    mov     edi, redraw
+  @@:
+
+;; TEST PBAR
+    mov     eax, [ctrl.addr]
+    add     eax, NTCTRL_APPLY_PBAR
+    cmpne   byte [eax], 1, @f
+    mov     byte [eax], 0
+
+    mov     eax, [ctrl.addr]
+    add     eax, NTCTRL_PBAR_CUR
+    mov     edx, [eax]
+    mov     [pbar.cur_val], edx
+
+    mov     eax, [ctrl.addr]
+    add     eax, NTCTRL_PBAR_MAX
+    mov     edx, [eax]
+    mov     [pbar.max_val], edx
+
+    call    calc_fill_width
+
+    mov     edi, redraw
   @@:
 
 ;; TEST CLOSE
@@ -337,6 +378,7 @@
  redraw:
     call    draw_window
     call    draw_text
+    call    draw_pbar
 
     jmp     update
 
@@ -474,6 +516,10 @@
  draw_text:
     mov     esi, [text.lines]
 
+    cmpne   byte [params.pbar], 1, @f
+    dec     esi
+  @@:
+
     mov     eax, 4
     mov     ebx, [text.offset]
     shl     ebx, 16
@@ -528,6 +574,31 @@
 
  ;----------------------------
 
+ draw_pbar:
+    cmpne   byte [params.pbar], 1, .exit
+    mov     esi, 0xFF0000
+    mov     ecx, LINEH
+    imul    ecx, [text.lines]
+    shl     ecx, 16
+    add     ecx, (LINEH / 2) shl 16 + 8
+    mcall   13, <[text.offset], [pbar.width]>, , 0x555555
+
+    sub     ecx, -(1 shl 16) + 2
+
+    mov     bx, word [pbar.f_width]
+    add     ebx, 1 shl 16
+
+    mcall     , , , 0x999999
+    mov     cx, 1
+    mcall     , , , 0xAAAAAA
+    mov     cx, 6
+    mov     bx, 1
+    mcall
+ .exit:
+    ret
+
+ ;----------------------------
+
  init_window:
     dec     dword [window.width]
     dec     dword [window.height]
@@ -540,8 +611,12 @@
  ;----------------------------
 
  parse_text:
-    mov     dword [text.max_len], 0
     mov     dword [text.lines], 1
+    cmpne   byte [params.pbar], 1, @f
+    inc     dword [text.lines]
+  @@:
+
+    mov     dword [text.max_len], 0
     mov     ebx, text.buffer
     mov     ecx, 0
     mov     dl, 0
@@ -625,6 +700,7 @@
     cmpe    dl, "d", .set_atcl
     cmpe    dl, "c", .set_clcl
     cmpe    dl, "t", .set_title
+    cmpe    dl, "p", .set_pbar
 
     mov     bl, 1
     mov     ecx, sz_icons
@@ -647,6 +723,11 @@
     mov     byte [params.title], 1
     jmp     .next_char
 
+ .set_pbar:
+    mov     byte [params.pbar], 1
+    inc     dword [text.lines]
+    jmp     .next_char
+
  .set_icon:
     mov     [params.icon], bl
 
@@ -655,6 +736,26 @@
     jmp     .loop
 
  .exit:
+    ret
+
+ ;----------------------------
+
+ calc_fill_width:
+    mov     eax, [pbar.cur_val]
+    cmpng   eax, [pbar.max_val], @f
+    mov     eax, [pbar.max_val]
+  @@:
+    cmpnl   eax, 0, @f
+    mov     eax, 0
+  @@:
+
+    mov     ebx, [pbar.width]
+    sub     ebx, 2
+    imul    eax, ebx
+    mov     edx, 0
+    mov     ebx, [pbar.max_val]
+    div     ebx
+    mov     [pbar.f_width], eax
     ret
 
  ;----------------------------
@@ -673,6 +774,7 @@
  sz_std     db "'NOTIFY 3\n",                 \
 	       "d - disable auto-closing\n",  \
 	       "c - disable click-closing\n", \
+	       "p - use progressbar\n",       \
 	       "t - title\n",		      \
 	       " \n",			      \
 	       "ICONS:\n",		      \
@@ -723,6 +825,7 @@
  .atcl	   rb 1
  .clcl	   rb 1
  .title    rb 1
+ .pbar	   rb 1
  .icon	   rb 1
  .ctrl	   rb 1
 
@@ -741,6 +844,12 @@
  ctrl:
  .name	   rb 31
  .addr	   rd 1
+
+ pbar:
+ .width    rd 1
+ .cur_val  rd 1
+ .max_val  rd 1
+ .f_width  rd 1
 
  buffer     rb 1024
  first_draw rb 1

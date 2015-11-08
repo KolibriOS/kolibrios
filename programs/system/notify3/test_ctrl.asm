@@ -49,6 +49,19 @@
     mcall   5, 1
     cmpe    byte [eax], 0, @b
 
+ ;; CONFIG PBAR
+    mov     eax, [ctrl.addr]
+    add     eax, NTCTRL_PBAR_MAX
+    mov     dword [eax], 9
+
+    mov     eax, [ctrl.addr]
+    add     eax, NTCTRL_PBAR_CUR
+    mov     dword [eax], 9
+
+    mov     eax, [ctrl.addr]
+    add     eax, NTCTRL_APPLY_PBAR
+    mov     byte [eax], 1
+
  ;; LOOP OF NOTIFIES CHANGES
   @@:
   ;; SHIFT TEXT
@@ -68,10 +81,10 @@
     mov     byte [eax], 1
 
   ;; CLOSE NOTIFY IF TIME IS END
-    cmpe    byte [sz_time], "0" - 1, .exit
+    cmpe    byte [sz_time], "0", .exit
 
   ;; WAIT AND DO NEXT ITERATION
-    mcall   5, 10
+    mcall   5, 20
     jmp     @b
 
  .exit:
@@ -95,8 +108,8 @@
     mov     [eax], dh
 
     inc     byte [timer]
-    cmpne   byte [timer], 10, .skip_changes
-    sub     byte [timer], 10
+    cmpne   byte [timer], 5, .skip_changes
+    sub     byte [timer], 5
 
  ;; CHANGE TIMER TEXT
     dec     byte [sz_time]
@@ -126,6 +139,16 @@
     add     eax, NTCTRL_APPLY_TITLE
     mov     byte [eax], 1
 
+ ;; CHANGE PBAR
+    mov     eax, [ctrl.addr]
+    add     eax, NTCTRL_PBAR_CUR
+    dec     dword [eax]
+
+ ;; APPLY PBAR
+    mov     eax, [ctrl.addr]
+    add     eax, NTCTRL_APPLY_PBAR
+    mov     byte [eax], 1
+
  .skip_changes:
 
     ret
@@ -148,7 +171,7 @@
 ;-------------------------------------------------------------------------------
 
  sz_time:
-    db "5", 0
+    db "9", 0
  sz_text:
     db "Hello, World!!! It is a marquee!    ", 0
  sz_quote:
@@ -158,10 +181,11 @@
  sz_sec_line_end:
     db " seconds", 0
  sz_flags:
-    db "Idc", 0
+    db "Idcp", 0
 
  fi_launch:
     dd	    7, 0, params, 0, 0
+    ;db      "/usbhd0/2/svn/programs/system/notify3/notify", 0
     db	    "@notify", 0
 
  @end:
