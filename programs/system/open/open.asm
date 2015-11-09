@@ -365,43 +365,84 @@ end if
     mcall   2
     cmpe    ah, 27, exit
 
-;    cmpe    ah, 179, .go_right
-;    cmpe    ah, 176, .go_left
-;    cmpe    ah, 178, .go_up
-;    cmpe    ah, 177, .go_down
-;    jmp     update
-;
-; .go_right:
-;    jmp     update
-;
-; .go_left:
-;    jmp     update
-;
-; .go_up:
-;    jmp     update
-;
-; .go_down:
-;    stdcall draw_item, [last_x], [last_y], 0
-;
-;    cmpne   [last_x], -1, @f
-;    mov     [last_x], 0
-;  @@:
-;
-;    cmpne   [last_y], LIST_SIZE / 2 - 1, @f
-;    mov     eax, [sb_apps.position]
-;    add     eax, LIST_SIZE / 2
-;    shl     eax, 1
-;    cmpge   eax, [list.size], .pre
-;    inc     [sb_apps.position]
-;    stdcall draw_list
-;    invoke  scrollbar.draw, sb_apps
-;    jmp     update
-; .pre:
-;    dec     [last_y]
-;  @@:
-;
-;    inc     [last_y]
-;    stdcall draw_item, [last_x], [last_y], 1
+    cmpe    ah,  13, list_item_activate
+    cmpe    ah, 179, .go_right
+    cmpe    ah, 176, .go_left
+    cmpe    ah, 178, .go_up
+    cmpe    ah, 177, .go_down
+    jmp     update
+
+ .go_right:
+    mov     esi, 1
+    jmp     .go_anyway
+
+ .go_left:
+    mov     esi, -1
+    jmp     .go_anyway
+
+ .go_up:
+    mov     esi, -2
+    jmp     .go_anyway
+
+ .go_down:
+    mov     esi, 2
+
+ .go_anyway:
+;; HIDE OLD SELECTION
+    stdcall draw_item, [last_x], [last_y], 0
+
+;; [X, Y] -> INDEX
+    mov     eax, [last_y]
+    shl     eax, 1
+    add     eax, [last_x]
+    mov     ebx, [sb_apps.position]
+    shl     ebx, 1
+    add     eax, ebx
+
+;; CHANGE INDEX
+    add     eax, esi
+
+    cmpl    eax, [list.size], @f
+    mov     eax, [list.size]
+    dec     eax
+  @@:
+
+    cmpge   eax, 0, @f
+    mov     eax, 0
+  @@:
+
+;; INDEX -> [X, Y]
+    sub     eax, ebx
+    mov     ebx, eax
+    and     ebx, 1b
+    mov     [last_x], ebx
+    shr     eax, 1
+    mov     [last_y], eax
+
+    cmpl    [last_y], 0xFFFF, @f
+    mov     [last_y], 0
+    dec     [sb_apps.position]
+    jmp     .full_redraw
+  @@:
+
+    cmpl    [last_y], LIST_SIZE / 2, @f
+    mov     [last_y], LIST_SIZE / 2 - 1
+    inc     [sb_apps.position]
+    jmp     .full_redraw
+  @@:
+
+;; DRAW NEW SELECTION
+ .partly_redraw:
+    stdcall draw_item, [last_x], [last_y], 1
+    jmp     update
+
+ .full_redraw:
+    cmpge   [sb_apps.position], 0, @f
+    mov     [sb_apps.position], 0
+  @@:
+
+    stdcall draw_list
+    invoke  scrollbar.draw, sb_apps
     jmp     update
 
  ;----------------------
@@ -410,23 +451,39 @@ end if
     mcall   17
     cmpe    ah, 1, exit
     cmpe    ah, 2, .opendialog
+    jmp     list_item_activate
 
- .fromlist:
-    movzx   ebx, ah
-    sub     ebx, 10
-    mov     ecx, [sb_apps.position]
-    shl     ecx, 1
-    add     ebx, ecx
-    shl     ebx, 5
-    add     ebx, list
-    cmpe    [ebx], byte 0, update
-    mov     [param_a], ebx
-    invoke  libini.get_str, assoc_ini, ebx, assoc_ini.exec, buffer, 256, undefined
-    cmpe    [buffer], byte 0, ini_error
+ .opendialog:
+    invoke  opendialog.start, opendialog
+    cmpne   [opendialog.status], 1, update
     mcall   70, is_openas
-    mov     edi, 1
 
- .save_assoc:
+    mov     edi, 0
+    jmp     save_assoc
+
+ ;----------------------
+
+ list_item_activate:
+    mov     eax, [last_y]
+    shl     eax, 1
+    add     eax, [last_x]
+    mov     ebx, [sb_apps.position]
+    shl     ebx, 1
+    add     eax, ebx
+    shl     eax, 5
+    add     eax, list
+    cmpe    byte [eax], 0, update
+    mov     [param_a], eax
+    invoke  libini.get_str, assoc_ini, eax, assoc_ini.exec, buffer, 256, undefined
+    cmpe    byte [buffer], 0, ini_error
+    mcall   70, is_openas
+
+    mov     edi, 1
+    jmp     save_assoc
+
+ ;----------------------
+
+ save_assoc:
     mov     eax, [cb_always.flags]
     and     eax, ch_flag_en
     cmpe    eax, 0, exit
@@ -438,13 +495,6 @@ end if
 
     invoke  libini.set_str, assoc_ini, assoc_ini.sec, [param_e], buffer, 33
     jmp     exit
-
- .opendialog:
-    invoke  opendialog.start, opendialog
-    cmpne   [opendialog.status], 1, update
-    mcall   70, is_openas
-    mov     edi, 0
-    jmp     .save_assoc
 
  ;----------------------
 
