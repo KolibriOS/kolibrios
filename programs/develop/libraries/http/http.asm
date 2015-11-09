@@ -1473,6 +1473,7 @@ endl
         jnz     .error1
 
 ; getaddrinfo returns addrinfo struct, make the pointer to sockaddr struct
+        push    esi     ; for freeaddrinfo
         mov     esi, [esi + addrinfo.ai_addr]
         mov     [sockaddr], esi
         mov     eax, [esi + sockaddr_in.sin_addr]
@@ -1501,18 +1502,13 @@ endl
         DEBUGF  1, "Socket is now connected.\n"
 
 ; free allocated memory
-        push    [sockaddr]
         call    [freeaddrinfo]
-
         mov     eax, [socketnum]
         ret
 
   .error2:
-
 ; free allocated memory
-        push    [sockaddr]
         call    [freeaddrinfo]
-
   .error1:
         xor     eax, eax
         ret
