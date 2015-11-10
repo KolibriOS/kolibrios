@@ -58,6 +58,7 @@ end if
  assoc_ini db "/sys/settings/assoc.ini", 0
   .sec db "Assoc", 0
   .exec db "exec", 0
+  .next db "next", 0
   .icon db "icon", 0
 
  sb_apps scrollbar \
@@ -142,7 +143,7 @@ end if
   last_y dd -1
 
 if DEBUG eq 1
-    std_param db "~/sys/example.asm", 0
+    std_param db "/sys/example.asm", 0
 end if
 
  imports:
@@ -219,14 +220,24 @@ end if
     cmpe    [esi], dword "kex", execute
 
  open_as:
-    invoke  libini.get_str, assoc_ini, assoc_ini.sec, esi, buffer, 2048, undefined
-    cmpe    [buffer], byte 0, start_dialog_pre
-    cmpne   [buffer], byte "$", @f
-    invoke  libini.get_str, assoc_ini, buffer + 1, assoc_ini.exec, buffer, 2048, undefined
-    cmpe    [buffer], byte 0, ini_error
+    invoke  libini.get_str, assoc_ini, assoc_ini.sec, esi, buffer8, 2048, undefined
+    cmpe    byte [buffer8], 0, start_dialog_pre
+ .run:
+    mov     edi, 0
+    cmpne   byte [buffer8], "$", .pre_open
+    mov     edi, 1
+    invoke  libini.get_str, assoc_ini, buffer8 + 1, assoc_ini.exec, buffer, 2048, undefined
+    cmpe    byte [buffer], 0, ini_error
+    jmp     @f
+ .pre_open:
+    stdcall string.copy, buffer8, buffer
   @@:
     mcall   70, is_openas
-    jmp     exit
+    cmpge   eax, 0, exit
+    cmpe    edi, 0, start_dialog
+    invoke  libini.get_str, assoc_ini, buffer8 + 1, assoc_ini.next, buffer8, 2048, undefined
+    cmpne   byte [buffer], 0, .run
+    jmp     start_dialog
 
  execute:
     mov     eax, [param_s]
@@ -988,6 +999,7 @@ end if
  buffer5 rb 2048 ;OD
  buffer6 rb 2048 ;check existance
  buffer7 rb 32	 ;for sorting
+ buffer8 rd 2048
  params rb 2048
  _stack rb 2048
  memory:
