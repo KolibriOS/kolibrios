@@ -366,10 +366,87 @@ end if
     cmpe    ah, 27, exit
 
     cmpe    ah,  13, list_item_activate
+    cmpe    ah,   9, event_button.opendialog
+    cmpe    ah,  32, .toggle_cb
     cmpe    ah, 179, .go_right
     cmpe    ah, 176, .go_left
     cmpe    ah, 178, .go_up
     cmpe    ah, 177, .go_down
+
+    cmpl    ah, "a", @f
+    cmpg    ah, "z", @f
+    jmp     .letter
+  @@:
+
+    cmpl    ah, " ", @f
+    cmpg    ah, "ï", @f
+    jmp     .letter
+  @@:
+
+    cmpl    ah, "A", @f
+    cmpg    ah, "Z", @f
+    jmp     .letter_big
+  @@:
+
+    cmpl    ah, "€", @f
+    cmpg    ah, "Ÿ", @f
+    jmp     .letter_big
+  @@:
+
+    cmpl    ah, "0", @f
+    cmpg    ah, "9", @f
+    jmp     .letter
+  @@:
+
+    jmp     update
+
+ .letter_big:
+    movzx   ebx, ah
+    stdcall downcase_char, ebx
+    mov     ah, al
+
+ .letter:
+    push    eax
+
+    stdcall get_index
+    inc     eax
+
+    mov     ecx, eax
+
+    imul    ebx, eax, 32
+    add     ebx, list
+
+    pop     eax
+
+  @@:
+    cmpe    byte [ebx], 0, @f
+
+    movzx   edx, byte [ebx]
+    stdcall downcase_char, edx
+    cmpne   ah, al, .next
+    stdcall set_index, ecx
+    stdcall draw_list
+    jmp     update
+
+ .next:
+    inc     ecx
+    add     ebx, 32
+    jmp     @b
+  @@:
+    jmp     update
+
+ .toggle_cb:
+    mov     eax, [cb_always.flags]
+    mov     ebx, eax
+    and     ebx, ch_flag_en
+    cmpe    ebx, 0, @f
+    sub     eax, ch_flag_en
+    jmp     .toggle_cb.redraw
+  @@:
+    add     eax, ch_flag_en
+ .toggle_cb.redraw:
+    mov     [cb_always.flags], eax
+    invoke  checkbox.draw, cb_always
     jmp     update
 
  .go_right:
@@ -392,12 +469,7 @@ end if
     stdcall draw_item, [last_x], [last_y], 0
 
 ;; [X, Y] -> INDEX
-    mov     eax, [last_y]
-    shl     eax, 1
-    add     eax, [last_x]
-    mov     ebx, [sb_apps.position]
-    shl     ebx, 1
-    add     eax, ebx
+    stdcall get_index
 
 ;; CHANGE INDEX
     add     eax, esi
@@ -412,37 +484,16 @@ end if
   @@:
 
 ;; INDEX -> [X, Y]
-    sub     eax, ebx
-    mov     ebx, eax
-    and     ebx, 1b
-    mov     [last_x], ebx
-    shr     eax, 1
-    mov     [last_y], eax
+    stdcall set_index, eax
+    cmpe    eax, 1, @f
 
-    cmpl    [last_y], 0xFFFF, @f
-    mov     [last_y], 0
-    dec     [sb_apps.position]
-    jmp     .full_redraw
-  @@:
-
-    cmpl    [last_y], LIST_SIZE / 2, @f
-    mov     [last_y], LIST_SIZE / 2 - 1
-    inc     [sb_apps.position]
-    jmp     .full_redraw
-  @@:
-
-;; DRAW NEW SELECTION
- .partly_redraw:
+;; PARTLY REDRAW
     stdcall draw_item, [last_x], [last_y], 1
     jmp     update
 
- .full_redraw:
-    cmpge   [sb_apps.position], 0, @f
-    mov     [sb_apps.position], 0
+;; FULL REDRAW
   @@:
-
     stdcall draw_list
-    invoke  scrollbar.draw, sb_apps
     jmp     update
 
  ;----------------------
@@ -464,12 +515,7 @@ end if
  ;----------------------
 
  list_item_activate:
-    mov     eax, [last_y]
-    shl     eax, 1
-    add     eax, [last_x]
-    mov     ebx, [sb_apps.position]
-    shl     ebx, 1
-    add     eax, ebx
+    stdcall get_index
     shl     eax, 5
     add     eax, list
     cmpe    byte [eax], 0, update
@@ -530,14 +576,12 @@ end if
     cmpge   eax, [list.size], @f
     inc     [sb_apps.position]
     stdcall draw_list
-    invoke  scrollbar.draw, sb_apps
     jmp     update
 
  .scroll_up:
     cmpe    [sb_apps.position], 0, @f
     dec     [sb_apps.position]
     stdcall draw_list
-    invoke  scrollbar.draw, sb_apps
     jmp     update
 
   @@:
@@ -588,7 +632,6 @@ end if
     or	    edx, 0x34 shl 24
     mcall   0, <[win.x], WIN_WIDTH>, <[win.y], WIN_HEIGHT>, , , win.title
     stdcall draw_list
-    invoke  scrollbar.draw, sb_apps
     invoke  pathshow.draw, ps_addres
     invoke  checkbox.draw, cb_always
 
@@ -654,6 +697,8 @@ end if
   @@:
     cmpne   edi, -1, .draw_loop
 
+    invoke  scrollbar.draw, sb_apps
+
     ret
  endp
 
@@ -661,12 +706,8 @@ end if
 
  proc draw_item uses edx edi esi, _x, _y, _sel
  ;; get index
-    mov     edi, [_y]
-    shl     edi, 1
-    add     edi, [_x]
-    mov     esi, [sb_apps.position]
-    shl     esi, 1
-    add     edi, esi
+    stdcall get_index_cur, [_x], [_y]
+    mov     edi, eax
 
     cmpge   edi, [list.size], .break
 
@@ -758,6 +799,87 @@ end if
     mcall   4
 
   .break:
+    ret
+ endp
+
+ ;----------------------
+
+ proc downcase_char uses ebx, _ch
+    mov     ebx, [_ch]
+
+    cmpl    bl, "A", @f
+    cmpg    bl, "Z", @f
+    sub     bl, "A" - "a"
+    jmp     .ret
+  @@:
+
+    cmpl    bl, "€", @f
+    cmpg    bl, "Ÿ", @f
+    sub     bl, "€" - " "
+  @@:
+
+ .ret:
+    mov     al, bl
+    ret
+ endp
+
+ ;----------------------
+
+ proc get_index_cur uses ebx, _x, _y
+    mov     eax, [_y]
+    shl     eax, 1
+    add     eax, [_x]
+    mov     ebx, [sb_apps.position]
+    shl     ebx, 1
+    add     eax, ebx
+
+    ret
+ endp
+
+ ;----------------------
+
+ proc get_index
+    stdcall get_index_cur, [last_x], [last_y]
+    ret
+ endp
+
+ ;----------------------
+
+ proc set_index uses ebx,_index
+    mov     eax, [_index]
+    mov     ebx, [sb_apps.position]
+    shl     ebx, 1
+    sub     eax, ebx
+
+    mov     ebx, eax
+    and     ebx, 1b
+    mov     [last_x], ebx
+    shr     eax, 1
+    mov     [last_y], eax
+
+    mov     eax, 0
+
+    cmpl    [last_y], 0xFFFF, @f
+    mov     [last_y], 0
+    dec     [sb_apps.position]
+    mov     eax, 1
+    jmp     .exit
+  @@:
+
+    cmpl    [last_y], LIST_SIZE / 2, @f
+    mov     ebx, [last_y]
+    sub     ebx, LIST_SIZE / 2 - 1
+    mov     [last_y], LIST_SIZE / 2 - 1
+    add     [sb_apps.position], ebx
+    mov     eax, 1
+    jmp     .exit
+  @@:
+
+ .exit:
+    cmpge   [sb_apps.position], 0, @f
+    mov     [sb_apps.position], 0
+  @@:
+
     ret
  endp
 
