@@ -51,24 +51,22 @@ macro load_image_file path,buf,size
 			db 0
 		@@:
 		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0x0
+		copy_path .path_str,[32],file_name,0
 	else
-		copy_path path,[32],file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+		copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
 	end if
 
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
 	mov [buf],eax
 
-	mov eax,70 ;70-я функция работа с файлами
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov [run_file_70.Count], dword size
-	m2m [run_file_70.Buffer], [buf]
+	m2m [run_file_70.Buffer], eax
 	mov byte[run_file_70+20], 0
 	mov [run_file_70.FileName], file_name
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
+	mcall 70,run_file_70 ;загружаем файл изображения
 	cmp ebx,0xffffffff
 	je @f
 		;определяем вид изображения и переводим его во временный буфер image_data
@@ -210,29 +208,25 @@ mov	ebp,lib0
 	mov eax,dword[icon_tl_sys]
 	mov dword[tree1.data_img],eax
 ;------------------------------------------------------------------------------
-  copy_path fn_syntax_dir,sys_path,file_name,0x0 ;берем путь к папке с файлами синтаксиса
-  mov eax,70
-  mov ebx,tree_file_struct
-  int 0x40
+	copy_path fn_syntax_dir,sys_path,file_name,0 ;берем путь к папке с файлами синтаксиса
+	mcall 70,tree_file_struct
 
-cmp ebx,-1
-je .end_dir_init
-
-  mov eax,dir_mem
-  add eax,32+4+1+3+4*6+8
-mov ecx,ebx
-@@:
-  cmp byte[eax],'.' ;фильтруем файлы с именами '.' и '..'
-  je .filter
-    ;0x10000 ;1*2^16 - где 1 номер иконки с книгой
-    stdcall dword[tl_node_add], eax,0x10000, tree1
-
-    stdcall dword[tl_cur_next], tree1
-  .filter:
-  add eax,304
-  loop @b
-  stdcall dword[tl_cur_beg],tree1 ;ставим курсор на начало списка
-.end_dir_init:
+	cmp ebx,-1
+	je .end_dir_init
+		mov eax,dir_mem
+		add eax,32+4+1+3+4*6+8
+		mov ecx,ebx
+		@@:
+			cmp byte[eax],'.' ;фильтруем файлы с именами '.' и '..'
+			je .filter
+			;0x10000 ;1*2^16 - где 1 номер иконки с книгой
+			stdcall dword[tl_node_add], tree1,0x10000,eax 
+			stdcall dword[tl_cur_next], tree1
+			.filter:
+			add eax,304
+			loop @b
+		stdcall dword[tl_cur_beg],tree1 ;ставим курсор на начало списка
+	.end_dir_init:
 
 ;--- load ini file ---
 	copy_path ini_name,sys_path,file_name,0
@@ -293,7 +287,7 @@ mov ecx,ebx
 
 align 4
 red_win:
-  call draw_window
+	call draw_window
 
 align 4
 still:
@@ -326,12 +320,9 @@ draw_window:
 	mov edi,tedit0 ;значение edi нужно для EvSize и ted_wnd_t
 	call EvSize
 
-	mov eax,13 ;верхний прямоугольник, для очистки верхней панели
-	xor ebx,ebx
-	mov ecx,ted_wnd_t
-	mov bx,word[procinfo.client_box.width]
+	movzx ebx,word[procinfo.client_box.width]
 	inc bx
-	int 0x40
+	mcall 13,,ted_wnd_t ;верхний прямоугольник, для очистки верхней панели
 
 	call draw_but_toolbar
 	
@@ -361,15 +352,13 @@ mouse:
 ;output:
 ; ah = symbol
 align 4
-proc KeyConvertToASCII, table:dword
-  push ebx
-  mov ebx,dword[table] ;convert scan to ascii
-  ror ax,8
-  xor ah,ah
-  add bx,ax
-  mov ah,byte[ebx]
-  pop ebx
-  ret
+proc KeyConvertToASCII uses ebx, table:dword
+	mov ebx,dword[table] ;convert scan to ascii
+	ror ax,8
+	xor ah,ah
+	add bx,ax
+	mov ah,byte[ebx]
+	ret
 endp
 
 align 4
@@ -541,7 +530,7 @@ button:
 	@@:
  
 	stdcall [ted_delete], tedit0
-	stdcall dword[tl_data_clear], tree1
+	stdcall [tl_data_clear], tree1
 	mcall -1 ;выход из программы
 
 edit2 edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_find, mouse_dd, 0

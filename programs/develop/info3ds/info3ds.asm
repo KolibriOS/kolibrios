@@ -66,16 +66,14 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
 	mov [buf],eax
 
-	mov eax,70 ;70-я функция работа с файлами
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov [run_file_70.Count], dword size
-	m2m [run_file_70.Buffer], [buf]
+	m2m [run_file_70.Buffer], eax
 	mov byte[run_file_70+20], 0
 	mov [run_file_70.FileName], file_name
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
+	mcall 70,run_file_70 ;загружаем файл изображения
 	cmp ebx,0xffffffff
 	je @f
 		;определяем вид изображения и переводим его во временный буфер image_data
@@ -122,24 +120,23 @@ align 4
 start:
 	load_libraries l_libs_start,l_libs_end
 	;проверка на сколько удачно загузились библиотеки
-	mov ebp,lib_0
-	cmp dword [ebp+ll_struc_size-4],0
-	jz @f
-	mov ebp,lib_1
-	cmp dword [ebp+ll_struc_size-4],0
-	jz @f
-	mov ebp,lib_2
-	cmp dword [ebp+ll_struc_size-4],0
-	jz @f
-	mov ebp,lib_3
-	cmp dword [ebp+ll_struc_size-4],0
-	jz @f
-		mcall -1 ;exit not correct
+	cmp	dword [lib_0+ll_struc_size-4],0
+	jnz @f
+	cmp	dword [lib_1+ll_struc_size-4],0
+	jnz @f
+	cmp	dword [lib_2+ll_struc_size-4],0
+	jnz @f
+	cmp	dword [lib_3+ll_struc_size-4],0
+	jnz @f
+	jmp .lib
 	@@:
+		mcall -1 ;exit not correct
+	.lib:
 	mcall 48,3,sc,sizeof.system_colors
 	mcall 40,0x27
 	stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
 
+	mov dword[w_scr_t1.type],1
 	stdcall dword[tl_data_init], tree1
 	;системные иконки 16*16 для tree_list
 	load_image_file 'tl_sys_16.png', icon_tl_sys,TREE_ICON_SYS16_BMP_SIZE
@@ -221,9 +218,9 @@ end if
 
 	;
 	stdcall [tl_node_get_data],tree1
-	pop ebx
-	cmp ebx,0
+	cmp eax,0
 	je @f
+		mov ebx,eax
 		mov eax,dword[ebx] ;получаем значение сдвига выбранного блока относительно начала файла
 		mov ecx,dword[ebx+4] ;размер блока
 		stdcall hex_in_str, txt_3ds_offs.dig, eax,8
@@ -350,16 +347,12 @@ pushad
 	sub eax,41
 	mov dword[tree1.box_width],eax
 	add ax,word[tree1.box_left]
-	mov word[w_scr_t1.start_x],ax
+	mov word[w_scr_t1+sb_offs_start_x],ax
 	add ax,16+5
 	mov word[buf_0.l],ax
 
-	mov eax,8
-	mov ebx,(5 shl 16)+20
-	mov ecx,(5 shl 16)+20
-	mov edx,3
 	mov esi,[sc.work_button]
-	int 0x40
+	mcall 8,(5 shl 16)+20,(5 shl 16)+20,3
 
 	mov ebx,(30 shl 16)+20
 	mov edx,4
@@ -372,19 +365,10 @@ pushad
 		int 0x40
 	@@:
 
-	mov ebx,(85 shl 16)+20
-	mov edx,6 ;окно с координатами
-	int 0x40
+	mcall ,(85 shl 16)+20,,6 ;окно с координатами
+	mcall ,(110 shl 16)+20,,7 ;удаление блока
 
-	mov ebx,(110 shl 16)+20
-	mov edx,7 ;удаление блока
-	int 0x40
-
-	mov eax,7
-	mov ebx,[image_data_toolbar]
-	mov ecx,(16 shl 16)+16
-	mov edx,(7 shl 16)+7 ;new
-	int 0x40
+	mcall 7,[image_data_toolbar],(16 shl 16)+16,(7 shl 16)+7 ;new
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	mov edx,(32 shl 16)+7 ;open
@@ -456,7 +440,7 @@ button:
 .exit:
 	mov dword[tree1.data_img],0
 	mov dword[tree1.data_img_sys],0
-	stdcall dword[tl_data_clear], tree1
+	stdcall [tl_data_clear], tree1
 	stdcall [buf2d_delete],buf_0
 	stdcall [buf2d_delete],buf_1 ;удаляем буфер
 	stdcall mem.Free,[image_data_toolbar]
@@ -795,7 +779,7 @@ proc add_3ds_object, icon:dword,level:dword,size_bl:dword,info_bl:dword
 			rep movsb
 			mov byte[buffer+size_one_list-1],0 ;0 - символ конеца строки
 		.no_capt:
-		stdcall [tl_node_add], buffer, ebx, tree1
+		stdcall [tl_node_add], tree1, ebx, buffer
 		stdcall [tl_cur_next], tree1
 		if debug
 			stdcall print_err,sz_add_3ds_object,buffer+list_offs_text
@@ -907,42 +891,40 @@ align 4
 but_delete_chunk:
 	pushad
 	stdcall [tl_node_get_data],tree1
-	pop ebx
-	cmp ebx,0
+	cmp eax,0
 	je .end_f
-	cmp byte[ebx+list_offs_chunk_del],0 ;если блок защищен от удаления
+	cmp byte[eax+list_offs_chunk_del],0 ;если блок защищен от удаления
 	jne .notify
 
 	;(1) копирование нижней части файла
-	mov edx,dword[ebx+4] ;размер блока
+	mov edx,dword[eax+4] ;размер блока
 	sub [open_file_size],edx ;изменение размеров файла
 	mov ecx,[open_file_size]
-	mov eax,dword[ebx] ;получаем значение сдвига выбранного блока относительно начала файла
-	sub ecx,eax ;ecx - размер нижней сдвигаемой части файла
-	add eax,dword[open_file_lif] ;получаем значение сдвига в памяти
-	mov edi,eax
-	mov esi,eax
+	mov ebx,dword[eax] ;получаем значение сдвига выбранного блока относительно начала файла
+	sub ecx,ebx ;ecx - размер нижней сдвигаемой части файла
+	add ebx,dword[open_file_lif] ;получаем значение сдвига в памяти
+	mov edi,ebx
+	mov esi,ebx
 	add esi,edx
-	mov al,byte[ebx+list_offs_chunk_lev] ;берем уровень текущего узла
+	mov bl,byte[eax+list_offs_chunk_lev] ;берем уровень текущего узла
 	rep movsb
 	mov byte[can_save],1
 
 	;(2) изменение размеров родительских блоков
-	cmp al,0
+	cmp bl,0
 	je .end_2
 	.cycle_2:
 	stdcall [tl_cur_perv], tree1
 	stdcall [tl_node_get_data],tree1
-	pop ebx
-	cmp ebx,0
+	cmp eax,0
 	je .end_2
-		cmp byte[ebx+list_offs_chunk_lev],al
+		cmp byte[eax+list_offs_chunk_lev],bl
 		jge .cycle_2
-		mov al,byte[ebx+list_offs_chunk_lev]
-		mov ecx,[ebx]
+		mov bl,byte[eax+list_offs_chunk_lev]
+		mov ecx,[eax]
 		add ecx,[open_file_lif]
 		sub dword[ecx+2],edx
-		cmp al,0 ;если самый верхний узел, то al=0
+		cmp bl,0 ;если самый верхний узел, то bl=0
 		jne .cycle_2
 	.end_2:
 	
@@ -1284,13 +1266,10 @@ import_box_lib:
 	sz_tl_node_poi_get_data db 'tl_node_poi_get_data',0
 
 
-
+align 4
 mouse_dd dd 0x0
 sc system_colors 
 last_time dd 0
-
-align 16
-procinfo process_information 
 
 align 4
 buf_0: dd 0 ;указатель на буфер изображения
@@ -1311,32 +1290,18 @@ buf_1:
 	dd 0 ;+16 color
 	db 24 ;+20 bit in pixel
 
+align 4
 el_focus dd tree1
 tree1 tree_list size_one_list,300+2, tl_key_no_edit+tl_draw_par_line,\
 	16,16, 0xffffff,0xb0d0ff,0xd000ff, 5,35,195-16,250, 16,list_offs_text,0, el_focus,\
 	w_scr_t1,0
 
 align 4
-w_scr_t1:
-.size_x     dw 16 ;+0
-.start_x    dw 0
-rb 2+2
-.btn_high   dd 15 ;+8
-.type	    dd 1  ;+12
-.max_area   dd 100  ;+16
-rb 4+4
-.bckg_col   dd 0xeeeeee ;+28
-.frnt_col   dd 0xbbddff ;+32
-.line_col   dd 0  ;+36
-rb 4+2+2
-.run_x:
-rb 2+2+2+2+4+4+4+4+4+4
-.all_redraw dd 0 ;+80
-.ar_offset  dd 1 ;+84
+w_scr_t1 scrollbar 16,0, 3,0, 15, 100, 0,0, 0xeeeeee, 0xbbddff, 0, 1
 
-
-align 4
+align 16
 i_end:
+	procinfo process_information
 	rb 1024
 thread_coords:
 	rb 1024

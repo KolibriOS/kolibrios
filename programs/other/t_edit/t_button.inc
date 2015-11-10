@@ -272,8 +272,8 @@ proc ted_but_open_syntax uses eax ebx ecx edi, edit:dword
 	cmp ted_panel_id,TED_PANEL_SYNTAX
 	jne @f
 		stdcall dword[tl_node_get_data], tree1
-		pop dword[fn_col_option]
-		mov ebx,dword[fn_col_option]
+		mov [fn_col_option],eax
+		mov ebx,eax
 		call open_unpac_synt_file
 		cmp ebx,-1
 		je @f

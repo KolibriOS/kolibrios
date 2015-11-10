@@ -1,7 +1,7 @@
 if lang eq ru
-capt db 'info 3ds версия 05.11.15',0 ;подпись окна
+capt db 'info 3ds версия 10.11.15',0 ;подпись окна
 else
-capt db 'info 3ds version 05.11.15',0 ;window caption
+capt db 'info 3ds version 10.11.15',0 ;window caption
 end if
 
 MAX_FILE_LEVEL equ 20 ;максимальный уровень вложенности блоков для анализа

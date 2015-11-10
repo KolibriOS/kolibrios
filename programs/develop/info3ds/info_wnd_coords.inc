@@ -30,12 +30,11 @@ pushad
 	inc byte[prop_wnd_run]
 
 	stdcall [tl_node_get_data],tree1
-	pop ebx
 	xor edx,edx
 	mov dword[capt_p],txt_q
-	cmp ebx,0
+	cmp eax,0
 	je .no_points
-		mov ebx,dword[ebx] ;получаем значение сдвига выбранного блока
+		mov ebx,dword[eax] ;получаем значение сдвига выбранного блока
 		add ebx,dword[open_file_lif]
 
 		cmp word[ebx],CHUNK_VERTLIST
@@ -94,7 +93,7 @@ pushad
 				stdcall str_cat, obj_point.text,esi
 				stdcall str_cat, obj_point.text,Data_String
 				loop @b
-			stdcall dword[tl_node_add], obj_point, (ID_ICON_DATA shl 16), tree3
+			stdcall dword[tl_node_add], tree3,(ID_ICON_DATA shl 16),obj_point 
 			stdcall dword[tl_cur_next], tree3
 			dec edx
 			cmp edx,0
@@ -207,12 +206,11 @@ prop_button:
 	cmp ah,3
 	jne @f
 		;загрузка координат в editbox-ы
-		push ebx
+		push eax ebx
 		stdcall [tl_node_get_data],tree3
-		pop ebx
-		cmp ebx,0
+		cmp eax,0
 		je .no_select_0
-			mov ebx,[ebx]
+			mov ebx,[eax]
 			mov word[NumberSymbolsAD],8
 			finit
 			fld dword[ebx]
@@ -231,16 +229,16 @@ prop_button:
 			stdcall [edit_box_draw], edit2
 			stdcall [edit_box_draw], edit3
 		.no_select_0:
-		pop ebx
+		pop ebx eax
+		jmp prop_still
 	@@:
 	cmp ah,4
 	jne @f
-		push ebx ecx esi edi
+		push eax ebx ecx edi esi
 		stdcall [tl_node_get_data],tree3
-		pop ebx
-		cmp ebx,0
+		cmp eax,0
 		je .no_select_1
-			mov ebx,[ebx]
+			mov ebx,[eax]
 			finit
 
 			mov esi,string1
@@ -291,12 +289,13 @@ prop_button:
 				stdcall str_cat, obj_point.text,esi
 				stdcall str_cat, obj_point.text,Data_String
 				loop .coord
-			stdcall dword[tl_node_set_data], obj_point, tree3
+			stdcall dword[tl_node_set_data], tree3,obj_point
 			stdcall dword[tl_draw], tree3
 			mov byte[can_save],1 ;для показа кнопки 'Сохранить'
 			mov dword[offs_last_timer],0 ;для обновления блока в таймере
 		.no_select_1:
-		pop edi esi ecx ebx
+		pop esi edi ecx ebx eax
+		jmp prop_still
 	@@:
 
 	cmp ah,1

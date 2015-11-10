@@ -217,8 +217,7 @@ pop eax
 ;фоновый цвет буфера должен быть 0xffffff, иначе не произойдет обрезка
 ;по фоновому цвету и трафарет будет занимат ьмного места в памяти
 align 4
-proc CreateTrapharetBuffer, buf:dword, img_data:dword
-	push eax edi
+proc CreateTrapharetBuffer uses eax edi, buf:dword, img_data:dword
 	mov edi,dword[buf]
 
 	;заполнение данных буфера
@@ -234,7 +233,6 @@ proc CreateTrapharetBuffer, buf:dword, img_data:dword
 	stdcall [buf2d_conv_24_to_8], edi,1 ;делаем буфер прозрачности 8бит
 	;обрезаем лишние края буфера, для более быстрого рисования
 	stdcall [buf2d_crop_color], edi,buf2d_color,BUF2D_OPT_CROP_TOP+BUF2D_OPT_CROP_BOTTOM+BUF2D_OPT_CROP_RIGHT+BUF2D_OPT_CROP_LEFT
-	pop edi eax
 	ret
 endp
 
@@ -636,12 +634,11 @@ txt_tile_type_0 rb FILE_NAME_MAX
 
 align 4
 user_is_select:
-	push ecx esi edi
-	
+	push eax ecx esi edi
 	stdcall [tl_node_get_data], tree1
-	pop esi
-	cmp esi,0 ;если имя игры пустое
-	je @f	
+	cmp eax,0 ;если имя игры пустое
+	je @f
+		mov esi,eax	
 		mov edi,ini_name
 		mov ecx,FILE_NAME_MAX
 		cld
@@ -650,7 +647,7 @@ user_is_select:
 		mov byte[game_select_mode],0
 		call InitAll
 	@@:
-	pop edi esi ecx
+	pop edi esi ecx eax
 
 	call draw_window
 	ret
@@ -753,23 +750,25 @@ align 4
 start:
 	load_libraries l_libs_start,load_lib_end
 
-	;проверка на сколько удачно загузилась наша либа
-	mov	ebp,lib0
-	cmp	dword [ebp+ll_struc_size-4],0
-	jz	@f
-		mcall -1 ;exit not correct
+	;проверка на сколько удачно загузились библиотеки
+	cmp	dword [lib0+ll_struc_size-4],0
+	jnz @f
+	cmp	dword [lib1+ll_struc_size-4],0
+	jnz @f
+	cmp	dword [lib2+ll_struc_size-4],0
+	jnz @f
+	cmp	dword [lib3+ll_struc_size-4],0
+	jnz @f
+	jmp .lib
 	@@:
-	mov	ebp,lib1
-	cmp	dword [ebp+ll_struc_size-4],0
-	jz	@f
 		mcall -1 ;exit not correct
-	@@:
+	.lib:
 
 	mcall 40,0x27
 	mcall 48,3,sc,sizeof.system_colors ;получаем системные цвета
 
 ;******************************************************************************
-; подготовка списка игор
+; подготовка списка игр
 ;******************************************************************************
 	stdcall dword[tl_data_init], tree1
 
@@ -792,7 +791,7 @@ start:
 		inc dl
 		push ecx edx
 		stdcall dword[ini_get_str],file_name,ini_sec_files,key_game,txt_tile_type_0,FILE_NAME_MAX,ini_def_decorat_file
-		stdcall dword[tl_node_add], txt_tile_type_0, 0, tree1 ;добавляем название игры
+		stdcall dword[tl_node_add], tree1, 0, txt_tile_type_0 ;добавляем название игры
 		stdcall dword[tl_cur_next], tree1 ;переносим курсор вниз, что-бы не поменялся порядок игр
 		pop edx ecx
 	loop @b
@@ -983,13 +982,12 @@ push esi
 	int 0x40
 pop esi
 
-	mov eax,4 ;аЁбRў -Ё? в?Єбв 
 	mov bx,BUT1_H
 	add ebx,3*65536;+3
 	mov ecx,dword[color_but_te]
 	or  ecx,0x80000000
 	mov edx,txt_game_a
-	int 0x40
+	mcall 4
 
 	ror ebx,16
 	add ebx,BUT1_NEXT_TOP
@@ -1037,16 +1035,15 @@ pop esi
 align 4
 proc draw_rect_border, client_rect:dword, user_box:dword
 	pushad
-	mov edi,dword[client_rect]
 	mov esi,dword[user_box]
 	cmp esi,0
 	je @f
+		mov edi,dword[client_rect]
 		mov ebx,dword[edi+8] ;+8 = width
 		inc bx
 		mov ecx,dword[esi+4] ;+4 = top
 		mov edx,[sc.work]
-		mov eax,13
-		int 0x40 ;top
+		mcall 13 ;top
 
 		mov eax,dword[esi+4] ;+4 = top
 		add eax,dword[esi+12] ;+12 = height
@@ -1057,8 +1054,7 @@ proc draw_rect_border, client_rect:dword, user_box:dword
 			mov cx,word[edi+12] ;+12 = bottom
 			inc cx
 			sub cx,ax
-			mov eax,13
-			int 0x40 ;bottom
+			mcall 13 ;bottom
 		.no_bottom:
 
 		mov ebx,dword[esi] ;+0 left
@@ -1066,8 +1062,7 @@ proc draw_rect_border, client_rect:dword, user_box:dword
 		shl ecx,16
 		mov cx,word[esi+12] ;+12 = height
 		inc cx 
-		mov eax,13
-		int 0x40 ;left
+		mcall 13 ;left
 
 		mov eax,dword[esi] ;+0 left
 		add eax,dword[esi+8] ;+8 = width
@@ -1076,8 +1071,7 @@ proc draw_rect_border, client_rect:dword, user_box:dword
 		mov bx,word[edi+8] ;+8 = right
 		sub bx,ax
 		inc bx
-		mov eax,13
-		int 0x40 ;right
+		mcall 13 ;right
 	@@:
 	popad
 	ret
@@ -1182,28 +1176,23 @@ l_libs_start:
 load_lib_end:
 
 align 4
-proc mem_copy, source:dword, destination:dword, len:dword
-  push ecx esi edi
-    cld
-    mov esi, dword[source]
-    mov edi, dword[destination]
-    mov ecx, dword[len]
-    rep movsb
-  pop edi esi ecx
-  ret
+proc mem_copy uses ecx esi edi, source:dword, destination:dword, len:dword
+	cld
+	mov esi, dword[source]
+	mov edi, dword[destination]
+	mov ecx, dword[len]
+	rep movsb
+	ret
 endp
 
 align 4
 convert_to_str:
 	pushad
-	;mov eax,dword[value]
-	;mov edi,dword[text]
 	mov dword[edi+1],0
 	cld
 	call .str
 	popad
 	ret
-
 
 align 4
 .str:
@@ -1214,15 +1203,12 @@ align 4
   xor edx,edx  ;очистить edx
   div ecx      ;разделить - остаток в edx
   push edx     ;положить в стек
-  ;dec edi             ;смещение необходимое для записи с конца строки
   call .str;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
   pop eax
   @@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
-  ;sbb al,$69  ;- честно данная инструкция меня заставляет задуматься т.е. я не знаю как это работает
-  ;das        ;после данной команды как бы происходит уменьшение al на 66h  (в книге написано другое)
   or al,0x30  ;данная команда короче  чем две выше 
   stosb       ;записать элемент из регистра al в ячеку памяти es:edi
-  ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
+  ret	      ;вернуться очень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 
 
 last_time dd 0
@@ -1230,7 +1216,7 @@ image_data dd 0 ;память для преобразования картинки функциями libimg
 image_data_gray dd 0 ;память с временными серыми изображениями в формате 24-bit, из которых будут создаваться трафареты
 
 run_file_70 FileInfoBlock
-hed db 'Nu pogodi 17.09.10',0 ;подпись окна
+hed db 'Nu pogodi 10.11.15',0 ;подпись окна
 sc system_colors  ;системные цвета
 
 count_of_dir_list_files equ 10
@@ -1449,11 +1435,10 @@ dd 0,0
 	sz_tl_node_lev_dec db 'tl_node_lev_dec',0
 
 
-
+align 16
 i_end:
-	rb 1024
-	align 16
 	procinfo process_information
+	rb 1024
 stacktop:
 	sys_path rb 4096
 	file_name:

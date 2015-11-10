@@ -76,10 +76,7 @@
 
 <h2><a name="fun_add">tl_node_add</a></h2>
 <p>Добавляет узел, в позицию указанную курсором. Пример добавления узла:</p>
-<pre>	push dword tree1
-	push dword 0x10002
-	push dword data_buffer
-	call dword[tl_node_add]</pre>
+<pre>	stdcall dword[tl_node_add], tree1,0x10002,data_buffer</pre>
 <p>где: <b>tree1</b> - структура tree_list;
  <b>0x10002</b> - параметры узла (старшие байты 0x0001 - индекс иконки, отображаемой возле узла; меньший байт 0x02 - уровень вложености узла); <b>data_buffer</b> - указатель на дынные, добавляемые в узел.</p>
 
@@ -89,8 +86,7 @@
 <h2><a name="fun_get_d">tl_node_get_data</a></h2>
 <p>Берет указатель на данные (пользовательские и подпись) из узла под курсором.</p>
 <p>Пример 1:</p>
-<pre>	stdcall [tl_node_get_data], tree1
-	pop eax</pre>
+<pre>	stdcall [tl_node_get_data], tree1</pre>
 <p>где: <b>tree1</b> - структура tree_list;
  <b>eax</b> - указатель на дынные узла.</p>
 
@@ -98,14 +94,14 @@
 <pre>	NODE_SIZE equ 200
 	node_data rb NODE_SIZE
 .........
-push ecx esi edi
+push eax ecx esi edi
 	stdcall [tl_node_get_data], tree1
-	pop esi
+	mov esi,eax
 	mov edi,node_data
 	mov ecx,NODE_SIZE
 	cld
 	rep movsb
-pop edi esi ecx</pre>
+pop edi esi ecx eax</pre>
 <p>где: <b>tree1</b> - структура tree_list;
  <b>NODE_SIZE</b> - размер дынных узла;
  <b>node_data</b> - копия на дынных узла.</p>
@@ -146,34 +142,25 @@ pop edi esi ecx</pre>
 
 <h2><a name="fun_poi_gi">tl_node_poi_get_info</a></h2>
 <p>Берет внутренний указатель на структуру описывающую узел. Пример использования функции:</p>
-<pre>	push dword tree1
-	push dword 0
-	call dword[tl_node_poi_get_info]
-	pop esi</pre>
+<pre>	stdcall dword[tl_node_poi_get_info], tree1, 0</pre>
 <p>где: <b>tree1</b> - структура tree_list;
 <b>0</b> - позиция узла, с которого берется указатель;
-<b>esi</b> - указатель на структуру описывающую узел.</p>
+<b>eax</b> - указатель на структуру описывающую узел.</p>
 <p><b>Замечание.</b> Если узел с указанным индексом не найден, в указателе возвращается 0.</p>
 
 <h2><a name="fun_poi_gni">tl_node_poi_get_next_info</a></h2>
 <p>Берет указатель на следующий элемент в цепи, без учета открытия/закрытия дочерних узлов. Пример использования функции:</p>
-<pre>	push tree1
-	push esi
-	call dword[tl_node_poi_get_next_info]
-	pop esi ;переходим к следущему узлу</pre>
+<pre>	stdcall dword[tl_node_poi_get_next_info], tree1, eax</pre>
 <p>где: <b>tree1</b> - структура tree_list;
-<b>esi</b> - до вызова функции указатель на структуру описывающую узел, после вызова указатель на структуру описывающую следущий узел в цепи.</p>
+<b>eax</b> - до вызова функции указатель на структуру описывающую узел, после вызова указатель на структуру описывающую следущий узел в цепи.</p>
 <p><b>Замечание.</b> Если следущий узел не найден, в указателе возвращается 0.</p>
 
 <h2><a name="fun_poi_gd">tl_node_poi_get_data</a></h2>
 <p>Берет указатель на данные (пользовательские и подпись) из узла указанного в указателе. Пример использования функции:</p>
-<pre>	push dword tree1
-	push dword esi
-	call dword[tl_node_poi_get_data]
-	pop eax ;получаем данные узла</pre>
+<pre>	stdcall dword[tl_node_poi_get_data], tree1,esi</pre>
 <p>где: <b>tree1</b> - структура tree_list;
 <b>esi</b> - указатель на структуру описывающую узел;
-<b>eax</b> - указатель на данные узла, описааного в esi.</p>
+<b>eax</b> - указатель на данные узла, описанного в esi.</p>
 <p>Указатель, возвращаемый функцией <i>tl_node_poi_get_data</i> аналогичен указателю возвращаемому функцией <i>tl_node_get_data</i>. Отличие функций в том, что <i>tl_node_poi_get_data</i> работает без задействования курсора. Функциями <i>tl_node_poi_get_info</i>, <i>tl_node_poi_get_next_info</i> и <i>tl_node_poi_get_data</i> можно считывать информацию о узлах элемента, при этом не меняя текущего положения курсора. Т. е. можно организовать доступ к даным элемента в &quot;фоновом режиме&quot;.</p>
 
 <h2><a name="fun_sme">tl_save_mem</a></h2>
@@ -181,12 +168,7 @@ pop edi esi ecx</pre>
 <pre>	MEM_SIZE equ 5000
 	node_data rb MEM_SIZE
 .........
-	push dword tree1
-	push dword 0
-	push dword node_data
-	push dword MEM_SIZE
-	call dword[tl_save_mem]
-	pop eax</pre>
+	stdcall dword[tl_save_mem], tree1, 0, node_data, MEM_SIZE</pre>
 <p>где: <b>tree1</b> - структура tree_list;
  <b>0</b> - опция сохранения в начало блока памяти (если = 1, то добавляет элемент после других сохраненных ранее);
  <b>node_data</b> - указатель на блок памяти;
@@ -198,12 +180,7 @@ pop edi esi ecx</pre>
 <pre>	MEM_SIZE equ 5000
 	node_data rb MEM_SIZE
 .........
-	push dword tree1
-	push dword 0
-	push dword node_data
-	push dword MEM_SIZE
-	call dword[tl_load_mem]
-	pop eax</pre>
+	stdcall dword[tl_load_mem], tree1, 0, node_data, MEM_SIZE</pre>
 <p>где: <b>tree1</b> - структура tree_list;
  <b>0</b> - индекс считываемого элемента;
  <b>node_data</b> - указатель на блок памяти;
@@ -217,11 +194,11 @@ pop edi esi ecx</pre>
 	node_data rb MEM_SIZE
 .........
 	;сохраняем данные в 'node_data'
-	stdcall dword[tl_save_mem], MEM_SIZE, node_data, 0, tree1
+	stdcall dword[tl_save_mem], tree1, 0, node_data, MEM_SIZE
 	pop eax ;код ошибки
 .........
 	;получаем размер данных в 'node_data'
-	stdcall dword[tl_get_mem_size], node_data, tree1
+	stdcall dword[tl_get_mem_size], tree1, node_data
 	pop ecx ;размер данных, должен быть &lt;= MEM_SIZE</pre>
 
 <h2><a name="version">version_tree_list</a></h2>
@@ -230,36 +207,33 @@ pop edi esi ecx</pre>
 <h1><a name="struc_tree_list">Структура tree_list</a></h1>
 <pre>struc tree_list info_size,info_max_count,style, img_cx,img_cy,\
 	col_bkg,col_zag,col_txt, box_l,box_t,box_w,box_h, capt_cy,info_capt_offs,\
-	info_capt_len,el_focus, p_scrol,on_press
+	info_capt_len,el_focus, p_scroll,on_press
 {
-  .data_info  dd 0
-  .info_size  dw info_size
-  .info_max_count dd info_max_count
-  .style      dd style
-  .data_nodes dd 0
-  .data_img   dd 0
-  .img_cx     dw img_cx
-  .img_cy     dw img_cy
-  .data_img_sys dd 0
-  .ch_tim     dd 0
-  .ls_tim     dd 0
-  .tim_undo   dd 0
-  .cur_pos    dd 0
-  .col_bkg    dd col_bkg
-  .col_zag    dd col_zag
-  .col_txt    dd col_txt
-  .box_left   dd box_l
-  .box_top    dd box_t
-  .box_width  dd box_w
-  .box_height dd box_h
-  .capt_cy    dw capt_cy
-  .info_capt_offs dw info_capt_offs
-  .info_capt_len  dw info_capt_len
-  .el_focus    dd el_focus
-  .p_scrol     dd p_scrol
-  rb 4
-  .on_activate dd 0
-  .on_press    dd on_press
+.box_left    dd box_l
+.box_top     dd box_t
+.box_width   dd box_w
+.box_height  dd box_h
+.data_info   dd 0
+.info_size   dw info_size
+.info_max_count dd info_max_count
+.style       dd style
+.data_nodes  dd 0
+.data_img    dd 0
+.img_cx      dw img_cx
+.img_cy      dw img_cy
+.data_img_sys dd 0
+.ch_tim      dd 0
+.tim_undo    dd 0
+.cur_pos     dd 0
+.col_bkg     dd col_bkg
+.col_zag     dd col_zag
+.col_txt     dd col_txt
+.capt_cy     dw capt_cy
+.info_capt_offs dw info_capt_offs
+.info_capt_len dw info_capt_len
+.el_focus    dd el_focus
+.p_scroll    dd p_scroll
+.on_press    dd on_press
 }</pre>
 <p><b>info_size</b> - количество байт, которое будет выделено для каждого узла. Часть этой памяти пользователь может использовать для своих целей (регулируется через <i>info_capt_offs</i> и <i>info_capt_len</i> см. рис. 2) а остальная часть будет использована как подпись узла.</p>
 <p><b>info_max_count</b> - максимальное количество узлов, которые можно добавить в элемент.</p>
@@ -274,7 +248,7 @@ pop edi esi ecx</pre>
 <p><b>col_txt</b> - цвет текста.</p>
 <p><b>capt_cy</b> - высота строки для подписи вверху элемента, если меньше 9 подпись не выводится.</p>
 <p><b>info_capt_len</b> - длинна текста для подписи. Если равно 0, то длинна считается так: <i>info_size - info_capt_offs</i>.</p>
-<p><b>p_scrol</b> - указатель на структуру скроллинга, связанного с данным элементом.</p>
+<p><b>p_scroll</b> - указатель на структуру скроллинга, связанного с данным элементом.</p>
 <p><b>on_press</b> - указатель на функцию, которая будет вызвана при нажатии [<b>Enter</b>]. Если указатель равен 0 то ничего не будет вызываться.</p>
 
 <p><img src="info_size.png"></p>
@@ -294,6 +268,6 @@ pop edi esi ecx</pre>
 <p>Стиль не отображает уровни (как в ListBox все узлы одного уровня).</p>
 
 <hr>
-<p>Документация обновлялась последний раз 30.09.10.</p>
+<p>Документация обновлялась последний раз 10.11.15.</p>
 </body>
 </html>

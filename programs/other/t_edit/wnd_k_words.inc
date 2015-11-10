@@ -153,7 +153,7 @@ prop_button:
 		stdcall str_instr, ebx,[edit3.text]
 		test al,al
 		jnz .end_add
-			stdcall dword[tl_node_add], ebx, (0 shl 16), tree3
+			stdcall dword[tl_node_add], tree3, (0 shl 16), ebx 
 			stdcall dword[tl_cur_next], tree3
 		.end_add:
 		add ebx,MAX_COLOR_WORD_LEN+8 ;sizeof.TexColViv
@@ -166,9 +166,9 @@ prop_button:
 	jne @f
 		;копировать в буфер
 		stdcall [tl_node_get_data],tree3
-		pop esi
-		or esi,esi
+		or eax,eax
 		jz .no_select_0
+			mov esi,eax
 			mov edi,[tedit0.buffer]
 			mov dword[edi],MAX_COLOR_WORD_LEN
 			mov dword[edi+4],0 ;text data
@@ -199,19 +199,4 @@ editboxes_end:
 string1 rb MAX_COLOR_WORD_LEN
 
 align 4
-w_scr_t3:
-.size_x     dw 16 ;+0
-rb 2+2+2
-.btn_high   dd 15 ;+8
-.type	    dd 1  ;+12
-.max_area   dd 100  ;+16
-rb 4+4
-.bckg_col   dd 0xeeeeee ;+28
-.frnt_col   dd 0xbbddff ;+32
-.line_col   dd 0  ;+36
-rb 4+2+2
-.run_x:
-rb 2+2+2+2+4+4+4+4+4+4
-.all_redraw dd 0 ;+80
-.ar_offset  dd 1 ;+84
-
+w_scr_t3 scrollbar 16,0, 3,0, 15, 100, 0,0, 0xeeeeee, 0xbbddff, 0, 1

@@ -55,29 +55,21 @@ align 4
 start:
   load_libraries l_libs_start,load_lib_end
 
-;проверка на сколько удачно загузилась наша либа
-	mov	ebp,lib0
-	cmp	dword [ebp+ll_struc_size-4],0
-	jz	@f
-	mcall	-1	;exit not correct
-@@:
-	mov	ebp,lib1
-	cmp	dword [ebp+ll_struc_size-4],0
-	jz	@f
-	mcall	-1	;exit not correct
-@@:
-	mov	ebp,lib2
-	cmp	dword [ebp+ll_struc_size-4],0
-	jz	@f
-	mcall	-1	;exit not correct
-@@:
-	mov	ebp,lib3
-	cmp	dword [ebp+ll_struc_size-4],0
-	jz	@f
-	mcall	-1	;exit not correct
-@@:
+;проверка на сколько удачно загузились библиотеки
+	cmp	dword [lib0+ll_struc_size-4],0
+	jnz @f
+	cmp	dword [lib1+ll_struc_size-4],0
+	jnz @f
+	cmp	dword [lib2+ll_struc_size-4],0
+	jnz @f
+	cmp	dword [lib3+ll_struc_size-4],0
+	jnz @f
+	jmp .lib
+	@@:
+		mcall -1 ;exit not correct
+	.lib:
 
-  copy_path ini_name,sys_path,file_name,0x0
+  copy_path ini_name,sys_path,file_name,0
   stdcall dword[ini_get_str],file_name,ini_sec,ini_k_cache,dword[edit1.text],dword[edit1.max],ini_def_cache
   stdcall [str_len],dword[edit1.text],dword[edit1.max]
   mov dword[edit1.size],eax
@@ -93,7 +85,7 @@ start:
   stdcall dword[ini_get_str],file_name,ini_sec,ini_ext,txt_tile_type_0,dword[tree1.info_capt_len],ini_ext.def
   cmp byte[txt_tile_type_0],0
   je @f
-    stdcall dword[tl_node_add], txt_tile_type_0, 0, tree1
+    stdcall dword[tl_node_add], tree1, 0, txt_tile_type_0 
   jmp @b
 @@:
   mov byte[ini_ext.number],'0' ;считываем параметр от ext0 который будет выбран в списке
@@ -102,7 +94,7 @@ start:
   jne @f
     mov dword[txt_tile_type_0],'.bmp' ;если в *.ini файле ничего нет добавляем расширение .bmp
   @@:
-  stdcall dword[tl_node_add], txt_tile_type_0, 0, tree1
+  stdcall dword[tl_node_add], tree1, 0, txt_tile_type_0
 
 ; init bmp file
   stdcall mem.Alloc, dword RGB_TILE_SIZE+300 ;300 - запасные байты с учетом заголовка bmp файла
@@ -117,8 +109,7 @@ start:
   stdcall mem.Alloc, dword TREE_ICON_NOD16_BMP_SIZE
   mov [tree_nod_icon],eax
 
-  copy_path fn_icon1,sys_path,file_name,0x0
-  mov eax,70 ;load icon file
+  copy_path fn_icon1,sys_path,file_name,0
   mov [run_file_70.Function], 0
   mov [run_file_70.Position], 0
   mov [run_file_70.Flags], 0
@@ -126,8 +117,7 @@ start:
   m2m [run_file_70.Buffer], [tree_sys_icon]
   mov byte[run_file_70+20], 0
   mov [run_file_70.FileName], file_name
-  mov ebx,run_file_70
-  int 0x40
+  mcall 70,run_file_70
   cmp ebx,0xffffffff
   je @f
     stdcall dword[img_decode], dword[tree_sys_icon],ebx,0
@@ -140,12 +130,10 @@ start:
   @@:
 
 
-  copy_path fn_icon2,sys_path,file_name,0x0
-  mov eax,70 ;load icon file
+  copy_path fn_icon2,sys_path,file_name,0
   mov [run_file_70.Count], TREE_ICON_NOD16_BMP_SIZE
   m2m [run_file_70.Buffer], [tree_nod_icon]
-  mov ebx,run_file_70
-  int 0x40
+  mcall 70,run_file_70
   cmp ebx,0xffffffff
   je @f
     stdcall dword[img_decode], dword[tree_nod_icon],ebx,0
@@ -172,58 +160,51 @@ start:
 
 align 4
 red_win:
-  call draw_window
-  call but_MetLoad
-  call but_Refresh ; Auto Refresh after program start
+	call draw_window
+	call but_MetLoad
+	call but_Refresh ; Auto Refresh after program start
 
 align 4
 still:
-  mov eax,10
-  mcall
+	mcall 10
 
-  cmp al,0x1 ;изм. положение окна
-  jz red_win
-  cmp al,0x2
-  jz key
-  cmp al,0x3
-  jz button
+	cmp al,0x1 ;изм. положение окна
+	jz red_win
+	cmp al,0x2
+	jz key
+	cmp al,0x3
+	jz button
 
-  push dword ch2
-  call [check_box_mouse]
-  push dword ch1
-  call [check_box_mouse]
+	stdcall [check_box_mouse],ch2
+	stdcall [check_box_mouse],ch1
+	stdcall [edit_box_mouse], edit1
+	stdcall [edit_box_mouse], edit2
+	stdcall [tl_mouse], tree1
+	stdcall [tl_mouse], tree2
 
-  stdcall [edit_box_mouse], edit1
-  stdcall [edit_box_mouse], edit2
-
-  stdcall [tl_mouse], tree1
-  stdcall [tl_mouse], tree2
-
-  jmp still
+	jmp still
 
 align 4
 key:
-  push eax ebx
-  mcall 2
-  stdcall [edit_box_key], edit1
-  stdcall [edit_box_key], edit2
+	push eax ebx
+	mcall 2
+	stdcall [edit_box_key], edit1
+	stdcall [edit_box_key], edit2
 
-  push dword tree1
-  call [tl_key]
-  push dword tree2
-  call [tl_key]
+	stdcall [tl_key],tree1
+	stdcall [tl_key],tree2
 
-  mov ebx,dword[el_focus] ;что-бы карта не двигалась если окна treelist в фокусе
-  cmp ebx, dword tree1
-  je .end_f
-  cmp ebx, dword tree2
-  je .end_f
+	mov ebx,dword[el_focus] ;что-бы карта не двигалась если окна treelist в фокусе
+	cmp ebx, dword tree1
+	je .end_f
+	cmp ebx, dword tree2
+	je .end_f
 
-  ;что-бы карта не двигалась если текстовые поля в фокусе
-  test word[edit1.flags],10b ;ed_focus
-  jne .end_f
-  test word[edit2.flags],10b ;ed_focus
-  jne .end_f
+	;что-бы карта не двигалась если текстовые поля в фокусе
+	test word[edit1.flags],10b ;ed_focus
+	jne .end_f
+	test word[edit2.flags],10b ;ed_focus
+	jne .end_f
 
     cmp ah,179 ;Right
     jne @f
@@ -261,9 +242,9 @@ key:
       call but_ZoomP
     @@:
 
-  .end_f:
-  pop ebx eax
-  jmp still
+	.end_f:
+	pop ebx eax
+	jmp still
 
 
 align 4
@@ -272,12 +253,10 @@ pushad
   mcall 12,1
 
   xor eax,eax
-  mov ebx,20*65536+min_window_w
-  mov ecx,20*65536+min_window_h
   mov edx,[sc.work]
   or  edx,0x33000000
   mov edi,hed
-  mcall
+  mcall ,20*65536+min_window_w,20*65536+min_window_h
 
   mcall 9,procinfo,-1
 
@@ -293,7 +272,7 @@ pushad
 
   mov eax,dword[tree2.box_left] ;двигаем скроллинг
   add eax,dword[tree2.box_width]
-  mov ebx,dword[tree2.p_scrol]
+  mov ebx,dword[tree2.p_scroll]
   mov word[ebx+2],ax
 
   mov dword[edit2.left],edi
@@ -304,17 +283,10 @@ pushad
   mov dword[wScrMetki.all_redraw],1
   stdcall [scrollbar_ver_draw], dword wScrMetki
 
-  mov eax,8 ;кнопка
-  mov ebx,145*65536+20
-  mov ecx,5*65536+25
-  mov edx,6
   mov esi,[sc.work_button]
-  int 0x40
+  mcall 8,145*65536+20,5*65536+25,6 ;кнопка
 
-  mov ebx,100*65536+20
-  mov ecx,5*65536+25
-  mov edx,5
-  int 0x40
+  mcall ,100*65536+20,5*65536+25,5
 
   mov ebx,170*65536+40 ;кнопка вызова диалога OpenDial
   ;mov ecx,5*65536+25
@@ -490,75 +462,81 @@ lib4_name db 'proc_lib.obj',0
 
 ;library structures
 l_libs_start:
-  lib0 l_libs lib0_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l, boxlib_import,err_message_import0, head_f_i
-  lib1 l_libs lib1_name, sys_path, file_name, system_dir1, err_message_found_lib1, head_f_l, libimg_import, err_message_import1, head_f_i
-  lib2 l_libs lib2_name, sys_path, file_name, system_dir2, err_message_found_lib2, head_f_l, strlib_import, err_message_import2, head_f_i
-  lib3 l_libs lib3_name, sys_path, file_name, system_dir3, err_message_found_lib3, head_f_l, libini_import, err_message_import3, head_f_i
-  lib4 l_libs lib4_name, sys_path, file_name, system_dir4, err_message_found_lib4, head_f_l, proclib_import, err_message_import4, head_f_i
+	lib0 l_libs lib0_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l, boxlib_import,err_message_import0, head_f_i
+	lib1 l_libs lib1_name, sys_path, file_name, system_dir1, err_message_found_lib1, head_f_l, libimg_import, err_message_import1, head_f_i
+	lib2 l_libs lib2_name, sys_path, file_name, system_dir2, err_message_found_lib2, head_f_l, strlib_import, err_message_import2, head_f_i
+	lib3 l_libs lib3_name, sys_path, file_name, system_dir3, err_message_found_lib3, head_f_l, libini_import, err_message_import3, head_f_i
+	lib4 l_libs lib4_name, sys_path, file_name, system_dir4, err_message_found_lib4, head_f_l, proclib_import, err_message_import4, head_f_i
 load_lib_end:
 
 align 4
 button:
-  mcall 17 ;получить код нажатой кнопки
-  cmp ah,5
-  jne @f
-    call but_ZoomM
-  @@:
-  cmp ah,6
-  jne @f
-    call but_ZoomP
-  @@:
-  cmp ah,7
-  jne @f
-    call but_Refresh
-  @@:
+	mcall 17 ;получить код нажатой кнопки
+	cmp ah,5
+	jne @f
+		call but_ZoomM
+		jmp still
+	@@:
+	cmp ah,6
+	jne @f
+		call but_ZoomP
+		jmp still
+	@@:
+	cmp ah,7
+	jne @f
+		call but_Refresh
+		jmp still
+	@@:
 
-  cmp ah,9
-  jz  but_MetSave
-  cmp ah,8
-  jz  but_MetAdd
+	cmp ah,9
+	jz  but_MetSave
+	cmp ah,8
+	jz  but_MetAdd
 
-  cmp ah,10
-  jne @f
-    call but_met_up
-  @@:
-  cmp ah,11
-  jne @f
-    call but_met_dn
-  @@:
-  cmp ah,12
-  jne @f
-    call fun_goto_met
-  @@:
-  cmp ah,13 ;диалог OpenDialog для поиска папки
-  jne @f
-    call fun_opn_dlg
-  @@:
-  cmp ah,1
-  jne still
+	cmp ah,10
+	jne @f
+		call but_met_up
+		jmp still
+	@@:
+	cmp ah,11
+	jne @f
+		call but_met_dn
+		jmp still
+	@@:
+	cmp ah,12
+	jne @f
+		call fun_goto_met
+		jmp still
+	@@:
+	cmp ah,13 ;диалог OpenDialog для поиска папки
+	jne @f
+		call fun_opn_dlg
+		jmp still
+	@@:
+	cmp ah,1
+	jne still
 
 .exit:
-  push dword[bmp_icon]
-  call mem.Free
-  stdcall array_tile_function, tile_00,max_tiles_count,tile_destroy
+	push dword[bmp_icon]
+	call mem.Free
+	stdcall array_tile_function, tile_00,max_tiles_count,tile_destroy
 
-  stdcall dword[tl_data_clear], tree1
-  mov dword[tree2.data_img_sys],0 ;чистим указатель на системные иконки,
-    ;т. к. они были удалены верхней функцией tl_data_clear
-    ;повторный вызов tl_data_clear без чистки указателя вызвет ошибку
-  mov dword[tree2.data_img],0 ;чистим указатель на иконки узлов
-  stdcall dword[tl_data_clear], tree2
+	stdcall dword[tl_data_clear], tree1
+	mov dword[tree2.data_img_sys],0 ;чистим указатель на системные иконки,
+		;т. к. они были удалены верхней функцией tl_data_clear
+		;повторный вызов tl_data_clear без чистки указателя вызвет ошибку
+	mov dword[tree2.data_img],0 ;чистим указатель на иконки узлов
+	stdcall dword[tl_data_clear], tree2
 
 ;  stdcall dword[img_destroy], dword[data_icon]
-  mcall -1 ;выход из программы
+	mcall -1 ;выход из программы
 
 
 ;input:
 ;data_rgb - pointer to rgb data
 ;size - count img pixels (size img data / 3(rgb) )
 align 4
-proc img_rgb_wdiv2 data_rgb:dword, size:dword
-  push eax ebx ecx edx
+proc img_rgb_wdiv2 uses eax ebx ecx edx, data_rgb:dword, size:dword
   mov eax,dword[data_rgb]
   mov ecx,dword[size] ;ecx = size
   imul ecx,3
@@ -596,8 +574,6 @@ proc img_rgb_wdiv2 data_rgb:dword, size:dword
     add eax,3
     add ebx,6
     loop @b
-
-  pop edx ecx ebx eax
   ret
 endp
 
@@ -676,29 +652,27 @@ endp
 ;data_rgb - pointer to rgb data
 ;size - count img pixels (size img data / 3(rgb) )
 align 4
-proc img_rgb_wmul2, data_rgb:dword, size:dword
-  push eax ebx ecx edx
-  ;eax - source
-  ;ebx - destination
-  mov ecx,dword[size] ;ecx = size
-  mov eax,ecx
-  dec eax
-  lea eax,[eax+eax*2] ;eax = (size-1)*3
-  mov ebx,eax ;ebx = size*3
-  add eax,dword[data_rgb] ;eax = pointer + size*3
-  add ebx,eax ;ebx = pointer + 2*size*3
-  @@:
-    mov edx,dword[eax] ;edx = pixel color
-    mov word[ebx],dx
-    mov word[ebx+3],dx
-    shr edx,16
-    mov byte[ebx+2],dl
-    mov byte[ebx+3+2],dl
-    sub eax,3
-    sub ebx,6
-    loop @b
-  pop edx ecx ebx eax
-  ret
+proc img_rgb_wmul2 uses eax ebx ecx edx, data_rgb:dword, size:dword
+	;eax - source
+	;ebx - destination
+	mov ecx,dword[size] ;ecx = size
+	mov eax,ecx
+	dec eax
+	lea eax,[eax+eax*2] ;eax = (size-1)*3
+	mov ebx,eax ;ebx = size*3
+	add eax,dword[data_rgb] ;eax = pointer + size*3
+	add ebx,eax ;ebx = pointer + 2*size*3
+	@@:
+		mov edx,dword[eax] ;edx = pixel color
+		mov word[ebx],dx
+		mov word[ebx+3],dx
+		shr edx,16
+		mov byte[ebx+2],dl
+		mov byte[ebx+3+2],dl
+		sub eax,3
+		sub ebx,6
+		loop @b
+	ret
 endp
 
 ;функция для растягивания изображения по высоте в 2 раза
@@ -754,33 +728,30 @@ endp
 ;size - count img pixels (size img data / 3(rgb) )
 ;size_w - width img in pixels
 align 4
-proc img_rgb_hoffs, data_rgb:dword, size:dword, size_w:dword, hoffs:dword
-  push eax ebx ecx edx esi
+proc img_rgb_hoffs uses eax ebx ecx edx esi, data_rgb:dword, size:dword, size_w:dword, hoffs:dword
+	mov esi,dword[size_w]
+	lea esi,[esi+esi*2] ;esi = width * 3(rgb)
+	imul esi,dword[hoffs]
 
-  mov esi,dword[size_w]
-  lea esi,[esi+esi*2] ;esi = width * 3(rgb)
-  imul esi,dword[hoffs]
+	mov eax,dword[size]
+	lea eax,[eax+eax*2]
+	add eax,dword[data_rgb] ;eax = pointer to end pixel + 1
+	sub eax,3
+	mov ebx,eax
+	add ebx,esi
 
-  mov eax,dword[size]
-  lea eax,[eax+eax*2]
-  add eax,dword[data_rgb] ;eax = pointer to end pixel + 1
-  sub eax,3
-  mov ebx,eax
-  add ebx,esi
+	mov ecx,dword[size]
+	dec ecx
+	@@:
+		mov edx,dword[eax] ;edx = pixel color
+		mov word[ebx],dx
+		shr edx,16
+		mov byte[ebx+2],dl
 
-  mov ecx,dword[size]
-  dec ecx
-  @@:
-    mov edx,dword[eax] ;edx = pixel color
-    mov word[ebx],dx
-    shr edx,16
-    mov byte[ebx+2],dl
-
-    sub eax,3
-    sub ebx,3
-    loop @b
-  pop esi edx ecx ebx eax
-  ret
+		sub eax,3
+		sub ebx,3
+		loop @b
+	ret
 endp
 
 
@@ -824,27 +795,23 @@ proc img_rgb_wcrop, data_rgb:dword, size_w_old:dword, size_w_new:dword, size_h:d
 endp
 
 align 4
-proc mem_copy, source:dword, destination:dword, len:dword
-  push ecx esi edi
-    cld
-    mov esi, dword[source]
-    mov edi, dword[destination]
-    mov ecx, dword[len]
-    rep movsb
-  pop edi esi ecx
-  ret
+proc mem_copy uses ecx esi edi, source:dword, destination:dword, len:dword
+	cld
+	mov esi, dword[source]
+	mov edi, dword[destination]
+	mov ecx, dword[len]
+	rep movsb
+	ret
 endp
 
 align 4
-proc mem_clear, mem:dword, len:dword
-  push eax ecx edi
-    cld
-    xor al,al
-    mov edi, dword[mem]
-    mov ecx, dword[len]
-    repne stosb
-  pop edi ecx eax
-  ret
+proc mem_clear uses eax ecx edi, mem:dword, len:dword
+	cld
+	xor al,al
+	mov edi, dword[mem]
+	mov ecx, dword[len]
+	repne stosb
+	ret
 endp
 
 align 4
@@ -897,38 +864,7 @@ tree2 tree_list 32,300, tl_draw_par_line, 16,16,\
     el_focus, wScrMetki,fun_goto_met
 
 align 4
-wScrMetki:
-.x:
-.size_x     dw 16 ;+0
-.start_x    dw 0 ;+2
-.y:
-.size_y     dw 100 ;+4
-.start_y    dw 0 ;+6
-.btn_high   dd 15 ;+8
-.type	    dd 1  ;+12
-.max_area   dd 100  ;+16
-.cur_area   dd 30  ;+20
-.position   dd 0  ;+24
-.bckg_col   dd 0xeeeeee ;+28
-.frnt_col   dd 0xbbddff ;+32
-.line_col   dd 0  ;+36
-.redraw     dd 0  ;+40
-.delta	    dw 0  ;+44
-.delta2     dw 0  ;+46
-.run_x:
-.r_size_x   dw 0  ;+48
-.r_start_x  dw 0  ;+50
-.run_y:
-.r_size_y   dw 0 ;+52
-.r_start_y  dw 0 ;+54
-.m_pos	    dd 0 ;+56
-.m_pos_2    dd 0 ;+60
-.m_keys     dd 0 ;+64
-.run_size   dd 0 ;+68
-.position2  dd 0 ;+72
-.work_size  dd 0 ;+76
-.all_redraw dd 0 ;+80
-.ar_offset  dd 1 ;+84
+wScrMetki scrollbar 16,0, 100,0, 15, 100, 30,0, 0xeeeeee, 0xbbddff, 0, 1
 
 ed_buffer: ;ЄхъёЄ фы  edit
   .2: rb 32
@@ -997,46 +933,52 @@ map: ;координаты карты
 align 4
 tile_00 rb size_tile_struc * max_tiles_count
 
-;этот код не мой, он преобразует число в строку
 ;input:
-; eax = value
-; edi = string buffer
+; eax - число
+; edi - буфер для строки
+; len - длинна буфера
 ;output:
-; edi =
 align 4
-tl_convert_to_str:
-  pushad
-    mov dword[edi+1],0;0x20202020
-    call .str
-  popad
-  ret
+proc convert_int_to_str, len:dword
+pushad
+	mov esi,[len]
+	add esi,edi
+	dec esi
+	call .str
+popad
+	ret
+endp
 
 align 4
 .str:
-  mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
-    ;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
-  cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
-  jb @f
-  xor edx,edx  ;очистить edx
-  div ecx      ;разделить - остаток в edx
-  push edx     ;положить в стек
-  ;dec edi             ;смещение необходимое для записи с конца строки
-  call .str;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
-  pop eax
-  @@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
-  or al,0x30  ;данная команда короче  чем две выше
-  stosb       ;записать элемент из регистра al в ячеку памяти es:edi
-  ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
+	mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
+	;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
+	cmp eax,ecx ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
+	jb @f
+		xor edx,edx ;очистить edx
+		div ecx   ;разделить - остаток в edx
+		push edx  ;положить в стек
+		;dec edi  ;смещение необходимое для записи с конца строки
+		call .str ;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
+		pop eax
+	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
+	cmp edi,esi
+	jge @f
+		or al,0x30 ;данная команда короче  чем две выше
+		stosb	   ;записать элемент из регистра al в ячеку памяти es:edi
+		mov byte[edi],0 ;в конец строки ставим 0, что-бы не вылазил мусор
+	@@:
+	ret	   ;пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 
 
-hed db 'Planet viewer 16.01.13',0 ;подпись окна
+hed db 'Planet viewer 09.11.15',0 ;подпись окна
 
 sc system_colors  ;системные цвета
 mouse_dd dd 0 ;нужно для Shift-а в editbox
+align 16
 i_end:
-	rb 1024
-	align 16
 	procinfo process_information
+	rb 1024
 stacktop:
 	sys_path rb 4096
 	file_name:

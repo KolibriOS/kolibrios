@@ -283,66 +283,59 @@ macro option_boxes_set_sys_color color_table,group
 
 struc tree_list info_size,info_max_count,style, img_cx,img_cy,\
     col_bkg,col_zag,col_txt, box_l,box_t,box_w,box_h, capt_cy,info_capt_offs,\
-    info_capt_len,el_focus, p_scrol,on_press {
-  .data_info    dd 0
-  .info_size    dw info_size
-  .info_max_count dd info_max_count
-  .style            dd style
-  .data_nodes   dd 0
-  .data_img      dd 0
-  .img_cx          dw img_cx
-  .img_cy          dw img_cy
-  .data_img_sys  dd 0
-  .ch_tim                 dd 0
-  .ls_tim                 dd 0
-  .tim_undo      dd 0
-  .cur_pos        dd 0
-  .col_bkg        dd col_bkg
-  .col_zag        dd col_zag
-  .col_txt        dd col_txt
-  .box_left   dd box_l
-  .box_top    dd box_t
-  .box_width  dd box_w
-  .box_height dd box_h
-  .capt_cy         dw capt_cy
-  .info_capt_offs dw info_capt_offs
-  .info_capt_len dw info_capt_len
-  .el_focus dd el_focus
-  .p_scrol  dd p_scrol
-  rb 4
-  .on_activate dd 0
-  .on_press dd on_press
+    info_capt_len,el_focus, p_scroll,on_press {
+.box_left    dd box_l
+.box_top     dd box_t
+.box_width   dd box_w
+.box_height  dd box_h
+.data_info   dd 0
+.info_size   dw info_size
+.info_max_count dd info_max_count
+.style       dd style
+.data_nodes  dd 0
+.data_img    dd 0
+.img_cx      dw img_cx
+.img_cy      dw img_cy
+.data_img_sys dd 0
+.ch_tim      dd 0
+.tim_undo    dd 0
+.cur_pos     dd 0
+.col_bkg     dd col_bkg
+.col_zag     dd col_zag
+.col_txt     dd col_txt
+.capt_cy     dw capt_cy
+.info_capt_offs dw info_capt_offs
+.info_capt_len dw info_capt_len
+.el_focus    dd el_focus
+.p_scroll    dd p_scroll
+.on_press    dd on_press
 }
 
-tl_data_info  equ dword[edi] ;указатель на основные даные
-tl_info_size  equ  word[edi +4] ;размер данных выделяемых для каждого узла (пользовательськие данные + текст для подписи)
-tl_info_max_count equ dword[edi+6] ;максимальное количество узлов, которые можно добавить в элемент
-tl_style      equ dword[edi+10] ;стили элемента
-tl_data_nodes equ dword[edi+14] ;указатель на структуры узлов
-tl_data_img   equ dword[edi+18] ;указатель на изображения с иконками узлов
-tl_img_cx     equ  word[edi+22] ;ширина иконок
-tl_img_cy     equ  word[edi+24] ;высота иконок
-tl_data_img_sys equ dword[edi+26] ;указатель на системные изображения (стрелки, плюсики)
-tl_ch_tim     equ dword[edi+30] ;количество изменений в файле
-tl_tim_undo   equ dword[edi+38] ;количество отмененных действий
-tl_cur_pos    equ dword[edi+42] ;позиция курсора
-tl_col_bkg    equ dword[edi+46] ;цвет фона
-tl_col_zag    equ dword[edi+50] ;цвет заголовка
-tl_col_txt    equ dword[edi+54] ;цвет текста
-tl_box_left   equ dword[edi+58]
-tl_box_top    equ dword[edi+62]
-tl_box_width  equ dword[edi+66]
-tl_box_height equ dword[edi+70]
-tl_capt_cy    equ  word[edi+74] ;высота подписи
-tl_info_capt_offs equ word[edi+76] ;сдвиг для начала текста (подписи узла)
-tl_info_capt_len equ word[edi+78] ;длинна текста подписи узла (если = 0 то до конца структуры)
-tl_el_focus   equ dword[edi+80] ;указатель на структуру элемента в фокусе
-tl_p_scrol    equ dword[edi+84] ;указатель на структуру скроллинга
-tl_on_press   equ dword[edi+96] ;указатель на функцию, которая вызывается при нажатии Enter
-
-;data_info       dd ? ;+ 0 указатель на основные даные
-;ls_tim         dd ? ;+34 время последнего сохранения
-;on_activate dd ? ;+92 указатель на функцию при активировании узла
+tl_box_left   equ dword[edi]
+tl_box_top    equ dword[edi+ 4]
+tl_box_width  equ dword[edi+ 8]
+tl_box_height equ dword[edi+12]
+tl_data_info  equ dword[edi+16] ;указатель на основные даные
+tl_info_size  equ  word[edi+20] ;размер данных выделяемых для каждого узла (пользовательськие данные + текст для подписи)
+tl_info_max_count equ dword[edi+22] ;максимальное количество узлов, которые можно добавить в элемент
+tl_style      equ dword[edi+26] ;стили элемента
+tl_data_nodes equ dword[edi+30] ;указатель на структуры узлов
+tl_data_img   equ dword[edi+34] ;указатель на изображения с иконками узлов
+tl_img_cx     equ  word[edi+38] ;ширина иконок
+tl_img_cy     equ  word[edi+40] ;высота иконок
+tl_data_img_sys equ dword[edi+42] ;указатель на системные изображения (стрелки, плюсики)
+tl_ch_tim     equ dword[edi+46] ;количество изменений в файле
+tl_tim_undo   equ dword[edi+50] ;количество отмененных действий
+tl_cur_pos    equ dword[edi+54] ;позиция курсора
+tl_col_bkg    equ dword[edi+58] ;цвет фона
+tl_col_zag    equ dword[edi+62] ;цвет заголовка
+tl_col_txt    equ dword[edi+66] ;цвет текста
+tl_capt_cy    equ  word[edi+70] ;высота подписи
+tl_info_capt_offs equ word[edi+72] ;сдвиг для начала текста (подписи узла)
+tl_info_capt_len equ word[edi+74] ;длинна текста подписи узла (если = 0 то до конца структуры)
+tl_el_focus   equ dword[edi+76] ;указатель на структуру элемента в фокусе
+tl_p_scroll   equ dword[edi+80] ;указатель на структуру скроллинга
+tl_on_press   equ dword[edi+84] ;указатель на функцию, которая вызывается при нажатии Enter
 
 ;константы стиля
 tl_key_no_edit   equ   1b ;элемент нельзя редактировать на клавиатуре (изменять уровни, удалять)
@@ -355,7 +348,7 @@ tl_err_load_caption     equ   1b ;в памяти нет заголовка 'tree'
 tl_err_load_info_size   equ 100b ;не совпадает размер информационной структуры при открытии
 tl_load_mode_add        equ 0x20000 ;опция считывания в режиме добавления информации
 tl_save_load_heder_size equ 26 ;размер заголовка для записи/чтения элементов
-tl_offs_box equ 58 ;начало BOX структуры для tree_list
+tl_offs_box equ 0 ;начало BOX структуры для tree_list
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Basic macros for use TextEditor                          ;

@@ -38,24 +38,22 @@ macro load_image_file path,buf,size
 			db 0
 		@@:
 		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0x0
+		copy_path .path_str,[32],file_name,0
 	else
-		copy_path path,[32],file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+		copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
 	end if
  
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
 	mov [buf],eax
  
-	mov eax,70 ;70-я функция работа с файлами
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov [run_file_70.Count], dword size
-	m2m [run_file_70.Buffer], [buf]
+	mov [run_file_70.Buffer], eax
 	mov byte[run_file_70+20], 0
 	mov [run_file_70.FileName], file_name
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
+	mcall 70,run_file_70 ;загружаем файл изображения
 	cmp ebx,0xffffffff
 	je @f
 		;определяем вид изображения и переводим его во временный буфер image_data
@@ -92,12 +90,11 @@ start:
 
 load_libraries l_libs_start,load_lib_end
 
-;проверка на сколько удачно загузилась наша либа
-	mov	ebp,lib0
-	cmp	dword [ebp+ll_struc_size-4],0
-	jz	@f
-	mcall	-1	;exit not correct
-@@:
+;проверка на сколько удачно загузилась библиотека
+	cmp dword [lib0+ll_struc_size-4],0
+	jz @f
+		mcall -1 ;exit not correct
+	@@:
 
 ;---------------------------------------------------------------------
 	stdcall dword[tl_data_init],dword tree1
@@ -126,11 +123,7 @@ mov ecx,ebx
 @@:
   cmp byte[eax],'.' ;фильтруем файлы с именами '.' и '..'
   je .filter
-    push dword tree1
-    push dword 0x10000 ;1*2^16 - где 1 номер иконки с книгой
-    push dword eax
-    call dword[tl_node_add]
-
+    stdcall dword[tl_node_add],tree1,0x10000,eax ;1*2^16 - где 1 номер иконки с книгой
     stdcall dword[tl_cur_next],tree1
   .filter:
   add eax,304
@@ -330,10 +323,12 @@ button:
 
 align 4
 but_OpenSyntax:
-  stdcall [tl_node_get_data],tree1
-  pop dword [fn_col_option]
-  call InitColText
-  ret
+push eax
+	stdcall [tl_node_get_data],tree1
+	mov [fn_col_option],eax
+	call InitColText
+pop eax
+	ret
 
 align 4
 but_SaveSyntax:
@@ -378,7 +373,7 @@ get_wnd_in_focus:
 	;@@:
 	ret
 
-hed db 'TextEditor syntax file converter 01.07.14',0 ;подпись окна
+hed db 'TextEditor syntax file converter 10.11.15',0 ;подпись окна
 conv_tabl rb 128 ; таблица для конвертирования scan-кода в ascii-код
 
 txt122 db 'Загр. файл',0
@@ -402,10 +397,10 @@ l_libs_start:
 load_lib_end:
 
 
+align 16
 i_end:
-	rb 1024
-	align 16
 	procinfo process_information
+		rb 1024
 	thread:
 		rb 1024
 stacktop:

@@ -63,9 +63,9 @@ tile_delta_y	equ  byte[edi+31] ;сдвиг тайла относительно курсора по оси y
 ;               load_new_tile (верхняя картинка)
 
 
-;???
+;передвигаем координату курсора вправо
 align 4
-CursorMoveRight: ;передвигаем координату курсора вправо
+CursorMoveRight:
   push ebx ecx
   xor ebx,ebx
   xor ecx,ecx
@@ -87,9 +87,9 @@ CursorMoveRight: ;передвигаем координату курсора вправо
   pop ecx ebx
   ret
 
-;???
+;передвигаем координату курсора вниз
 align 4
-CursorMoveDown: ;передвигаем координату курсора вниз
+CursorMoveDown:
   push ebx ecx
   xor ebx,ebx
   xor ecx,ecx
@@ -111,24 +111,23 @@ CursorMoveDown: ;передвигаем координату курсора вниз
   pop ecx ebx
   ret
 
-;???
+;перемещение метки вверх, по списку
 align 4
-but_met_up: ;перемещение метки вверх, по списку
+but_met_up:
   stdcall dword[tl_node_move_up], tree2
   ret
 
-;???
+;перемещение метки вниз, по списку?
 align 4
-but_met_dn: ;перемещение метки вниз, по списку
+but_met_dn:
   stdcall dword[tl_node_move_down], tree2
   ret
 
-;???
+;меняем расширение для карты
 align 4
-fun_new_map_type: ;меняем расширение для карты
+fun_new_map_type:
   push eax
     stdcall dword[tl_node_get_data], tree1
-    pop eax
     cmp eax,0
     je @f
       mov dword[txt_tile_type],eax
@@ -138,8 +137,7 @@ fun_new_map_type: ;меняем расширение для карты
 
 ;задаем расположение тайлов по сетке
 align 4
-proc tiles_init_grid, beg_tiles:dword, count:dword, cols:dword
-  push eax ebx ecx edx edi
+proc tiles_init_grid uses eax ebx ecx edx edi, beg_tiles:dword, count:dword, cols:dword
   xor eax,eax
   xor ebx,ebx
   mov edi,[beg_tiles]
@@ -156,7 +154,6 @@ proc tiles_init_grid, beg_tiles:dword, count:dword, cols:dword
       inc bx
     .old_lin:
     loop @b
-  pop edi edx ecx ebx eax
   ret
 endp
 
@@ -165,8 +162,7 @@ endp
 ;тайлы в противоположную сторону, в результате координаты большинства тайлов не меняются
 ;а значит программа не будет перечитывать их заново, чем и достигается оптимизация
 align 4
-proc tiles_grid_move_left, beg_tiles:dword, count:dword, cols:dword
-  push eax ebx ecx edx edi
+proc tiles_grid_move_left uses eax ebx ecx edx edi, beg_tiles:dword, count:dword, cols:dword
   xor eax,eax
   xor ebx,ebx
   mov edi,[beg_tiles]
@@ -180,15 +176,13 @@ proc tiles_grid_move_left, beg_tiles:dword, count:dword, cols:dword
     dec tile_delta_x
     add edi,size_tile_struc
     loop @b
-  pop edi edx ecx ebx eax
   ret
 endp
 
 ;сдвигаем сетку вправо, вылезшие столбцы будут перекинуты на левую сторону
 ;делает тоже что и tiles_grid_move_left только двигает координаты в другую сторону
 align 4
-proc tiles_grid_move_right, beg_tiles:dword, count:dword, cols:dword
-  push eax ebx ecx edx edi
+proc tiles_grid_move_right uses eax ebx ecx edx edi, beg_tiles:dword, count:dword, cols:dword
   xor eax,eax
   xor ebx,ebx
   mov edi,[beg_tiles]
@@ -202,13 +196,11 @@ proc tiles_grid_move_right, beg_tiles:dword, count:dword, cols:dword
     .no_jump:
     add edi,size_tile_struc
     loop @b
-  pop edi edx ecx ebx eax
   ret
 endp
 
 align 4
-proc tiles_grid_move_up, beg_tiles:dword, count:dword, rows:dword
-  push eax ebx ecx edx edi
+proc tiles_grid_move_up uses eax ebx ecx edx edi, beg_tiles:dword, count:dword, rows:dword
   xor eax,eax
   xor ebx,ebx
   mov edi,[beg_tiles]
@@ -222,13 +214,11 @@ proc tiles_grid_move_up, beg_tiles:dword, count:dword, rows:dword
     dec tile_delta_y
     add edi,size_tile_struc
     loop @b
-  pop edi edx ecx ebx eax
   ret
 endp
 
 align 4
-proc tiles_grid_move_down, beg_tiles:dword, count:dword, rows:dword
-  push eax ebx ecx edx edi
+proc tiles_grid_move_down uses eax ebx ecx edx edi, beg_tiles:dword, count:dword, rows:dword
   xor eax,eax
   xor ebx,ebx
   mov edi,[beg_tiles]
@@ -242,35 +232,28 @@ proc tiles_grid_move_down, beg_tiles:dword, count:dword, rows:dword
     .no_jump:
     add edi,size_tile_struc
     loop @b
-  pop edi edx ecx ebx eax
   ret
 endp
 
 align 4
-proc array_tile_function, beg_tiles:dword, count:dword, funct:dword
-  push ecx edi
+proc array_tile_function uses ecx edi, beg_tiles:dword, count:dword, funct:dword
   mov edi,[beg_tiles]
   mov ecx,[count]
   @@:
     stdcall [funct],edi
     add edi,size_tile_struc
     loop @b
-  pop edi ecx
   ret
 endp
 
 align 4
 draw_tiles:
 pushad
-  mov eax,47
-  mov ebx,0x20000
-  xor ecx,ecx
-  mov cl,byte[map.zoom]
-  mov edx,128*65536+13
+  movzx ecx,byte[map.zoom]
   mov esi,[sc.work_text]
   or  esi,0x40000000
   mov edi,[sc.work]
-  int 0x40
+  mcall 47,0x20000,, (128 shl 16)+13
 
   stdcall array_tile_function, tile_00,max_tiles_count,draw_tile
 popad
@@ -466,65 +449,57 @@ but_ZoomM:
   @@:
   ret
 
-;???
+;сохранение файла с метками
 align 4
-but_MetSave: ;сохранение файла с метками
-  stdcall dword[tl_save_mem], TREE_ICON_SYS16_BMP_SIZE,[bmp_icon],0,tree2
+but_MetSave:
+	stdcall dword[tl_save_mem], tree2,0,[bmp_icon],TREE_ICON_SYS16_BMP_SIZE
 
-  push eax ebx ecx edi
-    copy_path fn_metki,sys_path,file_name,0x0
+	copy_path fn_metki,sys_path,file_name,0
+	push eax ebx ecx edi
+		stdcall dword[tl_get_mem_size], tree2,[bmp_icon]
+		inc eax ;для записи в файл завершающего нуля
 
-    stdcall dword[tl_get_mem_size], [bmp_icon],tree2
-    pop ecx
-    inc ecx ;для записи в файл завершающего нуля
+		m2m [run_file_70.Buffer], [bmp_icon]
+		mov [run_file_70.Function], 2
+		mov [run_file_70.Position], 0
+		mov [run_file_70.Flags], 0
+		mov [run_file_70.Count], eax
+		mov byte[run_file_70+20], 0
+		mov [run_file_70.FileName], file_name
+		mcall 70,run_file_70
+	pop edi ecx ebx eax
+	jmp still
 
-    mov eax,70
-    m2m [run_file_70.Buffer], [bmp_icon]
-    mov [run_file_70.Function], 2
-    mov [run_file_70.Position], 0
-    mov [run_file_70.Flags], 0
-    mov [run_file_70.Count], ecx
-    mov byte[run_file_70+20], 0
-    mov [run_file_70.FileName], file_name
-    mov ebx,run_file_70
-    int 0x40
-  pop edi ecx ebx eax
-  jmp still
-
-;???
+;считываем файл с метками
 align 4
-but_MetLoad: ;считываем файл с метками
-  cmp byte[met_fr_opn],0
-  jne .end_f
-  pushad
-    mov byte[met_fr_opn],1
-    copy_path fn_metki,sys_path,file_name,0x0
-    mov eax,70 ;load icon file
-    mov [run_file_70.Function], 0
-    mov [run_file_70.Position], 0
-    mov [run_file_70.Flags], 0
-    mov [run_file_70.Count], TREE_ICON_SYS16_BMP_SIZE
-    mov byte[run_file_70+20], 0
-    mov [run_file_70.FileName], file_name
-    m2m [run_file_70.Buffer], [bmp_icon]
-    mov eax,70
-    mov ebx,run_file_70
-    int 0x40
-    cmp ebx,0xffffffff
-    je @f
-      stdcall [tl_load_mem], TREE_ICON_SYS16_BMP_SIZE,dword[bmp_icon],0,tree2
-      stdcall [tl_cur_beg], tree2 ;?
-      stdcall [tl_draw], tree2 ;?
-      pop eax
-    @@:
-    mov byte[file_name],0 ;clear file name
-  popad
-  .end_f:
-  ret
+but_MetLoad:
+	cmp byte[met_fr_opn],0
+	jne .end_f
+	copy_path fn_metki,sys_path,file_name,0
+	pushad
+		mov byte[met_fr_opn],1
+		mov [run_file_70.Function], 0
+		mov [run_file_70.Position], 0
+		mov [run_file_70.Flags], 0
+		mov [run_file_70.Count], TREE_ICON_SYS16_BMP_SIZE
+		mov byte[run_file_70+20], 0
+		mov [run_file_70.FileName], file_name
+		m2m [run_file_70.Buffer], [bmp_icon]
+		mcall 70,run_file_70
+		cmp ebx,0xffffffff
+		je @f
+			stdcall [tl_load_mem], tree2,0,[bmp_icon],TREE_ICON_SYS16_BMP_SIZE
+			stdcall [tl_cur_beg], tree2
+			stdcall [tl_draw], tree2
+		@@:
+		mov byte[file_name],0 ;clear file name
+	popad
+	.end_f:
+	ret
 
-;???
+;добавление метки
 align 4
-but_MetAdd: ;добавление метки
+but_MetAdd:
   push eax
     mov eax,dword[bmp_icon]
     m2m dword[eax],  dword[map.coord_x]
@@ -532,26 +507,25 @@ but_MetAdd: ;добавление метки
     m2m  word[eax+8], word[map.zoom]
     add eax,12
     stdcall dword[str_copy], eax,30,dword[edit2.text],30
-    stdcall dword[tl_node_add], dword[bmp_icon], 0, tree2
+    stdcall dword[tl_node_add], tree2, 0, dword[bmp_icon] 
     stdcall dword[tl_draw], tree2
   pop eax
   jmp still
 
-;???
+;переход к выбранной метке
 align 4
-fun_goto_met: ;переход к выбранной метке
-  push eax
-  stdcall dword[tl_node_get_data], tree2
-  pop eax
-  cmp eax,0
-  je @f ;курсор не стоит на метке
-    m2m dword[map.coord_x],dword[eax]
-    m2m dword[map.coord_y],dword[eax+4]
-    m2m word[map.zoom],word[eax+8]
-    call but_Refresh
-  @@:
-  pop eax
-  ret
+fun_goto_met:
+	push eax
+	stdcall dword[tl_node_get_data], tree2
+	cmp eax,0
+	je @f ;курсор не стоит на метке
+		m2m dword[map.coord_x],dword[eax]
+		m2m dword[map.coord_y],dword[eax+4]
+		m2m word[map.zoom],word[eax+8]
+		call but_Refresh
+	@@:
+	pop eax
+	ret
 
 ;???
 align 4
@@ -563,38 +537,27 @@ but_Refresh:
   ret
 
 align 4
-proc tile_init, tile:dword
-  push eax edi
-    mov edi,[tile]
-
-    push dword RGB_TILE_SIZE+300
-    call mem.Alloc
-    mov tile_rgb_icon,eax
-
-    push dword RGB_TILE_SIZE
-    call mem.Alloc
-    mov tile_drobn_icon,eax
-  pop edi eax
-  ret
+proc tile_init uses eax edi, tile:dword
+	mov edi,[tile]
+	stdcall mem.Alloc, RGB_TILE_SIZE+300
+	mov tile_rgb_icon,eax
+	stdcall mem.Alloc, RGB_TILE_SIZE
+	mov tile_drobn_icon,eax
+	ret
 endp
 
 align 4
-proc tile_destroy, tile:dword
-  push edi
-    mov edi,[tile]
-    push tile_rgb_icon
-    call mem.Free
-    push tile_drobn_icon
-    call mem.Free
-  pop edi
-  ret
+proc tile_destroy uses edi, tile:dword
+	mov edi,[tile]
+	stdcall mem.Free,tile_rgb_icon
+	stdcall mem.Free,tile_drobn_icon
+	ret
 endp
 
 
-;???
-align 4 ;загружает тайлы, в определенной области
-proc load_tile, tile:dword
-  push eax ebx ecx edi
+;загружает тайлы, в определенной области
+align 4
+proc load_tile uses eax ebx ecx edi, tile:dword
   mov edi,dword[tile] ;копируем указатель на структуру тайла, что-бы работали константы
 
   stdcall mem_copy, map,edi, 9 ;копируем координаты курсора в структуру тайла
@@ -748,7 +711,6 @@ proc load_tile, tile:dword
       jmp .zoom
     @@:
 
-  pop edi ecx ebx eax
   ret
 endp
 
@@ -798,7 +760,6 @@ align 4 ;загружает определенный тайл
 proc load_new_tile, tile:dword
   pushad
 
-  mov eax,70 ;load icon file
   mov [run_file_70.Function], 0
   mov [run_file_70.Position], 0
   mov [run_file_70.Flags], 0
@@ -806,8 +767,7 @@ proc load_new_tile, tile:dword
   m2m [run_file_70.Buffer], [bmp_icon]
   mov byte[run_file_70+20], 0
   mov [run_file_70.FileName], file_name
-  mov ebx,run_file_70
-  int 0x40
+  mcall 70,run_file_70
   mov edi,[tile]
 ;  cmp ebx,0xffffffff
 ;  je .no_load
@@ -844,8 +804,7 @@ endp
 
 ;функция генерирует часть пути к файлу в виде: \z?\?\x?\?\y?
 align 4
-proc get_tile_path, tile:dword
-  push eax ecx edi esi
+proc get_tile_path uses eax ecx edi esi, tile:dword
     mov ecx,300
     mov edi,txt_tile_path
     @@:
@@ -869,7 +828,7 @@ proc get_tile_path, tile:dword
     inc edi
     xor eax,eax
     mov al,byte[esi+8] ;+8 = zoom
-    call tl_convert_to_str
+    stdcall convert_int_to_str, 300
 
     inc edi
     cmp byte[esi+8],9 ;+8 = zoom
@@ -883,7 +842,7 @@ proc get_tile_path, tile:dword
 cmp eax,ecx
 jge .out_of_rang ;coord_x больше допустимого значения при заданном масштабе
     shr eax,10
-    call tl_convert_to_str
+    stdcall convert_int_to_str, 300
 
     @@:
       inc edi
@@ -895,7 +854,7 @@ jge .out_of_rang ;coord_x больше допустимого значения при заданном масштабе
     inc edi
 
     mov eax,[esi] ;coord_x
-    call tl_convert_to_str
+    stdcall convert_int_to_str, 300
 
     @@:
       inc edi
@@ -914,7 +873,7 @@ jge .out_of_rang ;coord_x больше допустимого значения при заданном масштабе
 cmp eax,ecx
 jge .out_of_rang ;coord_y больше допустимого значения при заданном масштабе
     shr eax,10
-    call tl_convert_to_str
+    stdcall convert_int_to_str, 300
 
     @@:
       inc edi
@@ -926,11 +885,10 @@ jge .out_of_rang ;coord_y больше допустимого значения при заданном масштабе
     inc edi
 
     mov eax,[esi+4] ;coord_y]
-    call tl_convert_to_str
+    stdcall convert_int_to_str, 300
 
 .out_of_rang:
     call get_all_path
-  pop esi edi ecx eax
   ret
 endp
 
