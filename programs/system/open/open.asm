@@ -208,7 +208,6 @@ end if
  ;; if without '.' - execute
     stdcall string.last_index_of, [param_s], '.', 1
     cmpe    eax, -1, execute
-
  ;; if '.' is part of path - execute
     mov     esi, eax
     stdcall string.last_index_of, [param_s], '/', 1
@@ -298,6 +297,7 @@ end if
 
  ;; get list
     invoke  libini.for_each_section, assoc_ini, section_cb
+    stdcall sort_list
     mov     eax, [sb_apps.max_area]
     and     eax, 1b
     shr     [sb_apps.max_area], 1
@@ -911,6 +911,55 @@ end if
 
  ;----------------------
 
+ proc sort_list
+    mov     edi, 0
+    mov     ebx, list		 ;; i = 0
+    imul    ecx, [list.size], 32 ;; i < n - 1
+    sub     ecx, 32
+    add     ecx, list
+
+ .loop1:
+    mov     edx, list		 ;; j = 0
+    mov     esi, [list.size]	 ;; j < n - i - 1
+    sub     esi, edi
+    dec     esi
+    imul    esi, 32
+    add     esi, list
+ .loop2:
+    mov     eax, edx
+    add     eax, 32
+    stdcall string.cmp, edx, eax, 32
+    cmpne   eax, 1, .next2
+;; swap names
+    mov     eax, edx
+    add     eax, 32
+    stdcall string.copy, edx, buffer7
+    stdcall string.copy, eax, edx
+    stdcall string.copy, buffer7, eax
+;; swap icons
+    mov     eax, edx
+    sub     eax, list
+    shr     eax, 3
+    add     eax, list.icon
+    push    ebx ecx
+    mov     ebx, [eax]
+    mov     ecx, [eax + 4]
+    mov     [eax], ecx
+    mov     [eax + 4], ebx
+    pop     ecx ebx
+ .next2:
+    add     edx, 32
+    cmpne   edx, esi, .loop2
+ .next1:
+    inc     edi
+    add     ebx, 32
+    cmpne   ebx, ecx, .loop1
+
+    ret
+ endp
+
+ ;----------------------
+
  dataend:
 
  ;===============================
@@ -932,12 +981,13 @@ end if
  param_e rd 1
  param_a rd 1
  undefined rb 1
- buffer rb 2048
- buffer2 rb 2048
- buffer3 rb 2048
- buffer4 rb 4096
- buffer5 rb 4096
- buffer6 rb 2048
+ buffer  rb 2048
+ buffer2 rb 2048 ;OD
+ buffer3 rb 2048 ;OD
+ buffer4 rb 2048 ;OD
+ buffer5 rb 2048 ;OD
+ buffer6 rb 2048 ;check existance
+ buffer7 rb 32	 ;for sorting
  params rb 2048
  _stack rb 2048
  memory:

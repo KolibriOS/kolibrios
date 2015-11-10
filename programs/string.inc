@@ -55,6 +55,29 @@
     ret
  endp
 
+ proc string.cmp uses ecx esi edi, _str1, _str2, _n
+    mov     ecx, [_n]
+    test    ecx, ecx	     ; Max length is zero?
+    je	    .done
+
+    mov     esi, [_str1]	; esi = string s1
+    mov     edi, [_str2]	; edi = string s2
+    cld
+ .compare:
+    cmpsb		     ; Compare two bytes
+    jne     .done
+    cmp     byte [esi-1], 0  ; End of string?
+    je	    .done
+    dec     ecx 	     ; Length limit reached?
+    jne     .compare
+ .done:
+    seta    al		     ; al = (s1 > s2)
+    setb    ah		     ; ah = (s1 < s2)
+    sub     al, ah
+    movsx   eax, al	     ; eax = (s1 > s2) - (s1 < s2), i.e. -1, 0, 1
+    ret
+ endp
+
  proc string.to_lower_case uses eax, _str
     mov     eax, [_str]
   @@:
