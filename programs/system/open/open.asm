@@ -143,7 +143,7 @@ end if
   last_y dd -1
 
 if DEBUG eq 1
-    std_param db "/sys/example.asm", 0
+    std_param db "~/sys/example.asm", 0
 end if
 
  imports:
@@ -429,8 +429,13 @@ end if
 
     pop     eax
 
-  @@:
-    cmpe    byte [ebx], 0, @f
+    mov     edi, 0
+    mov     esi, [list.size]
+ .search:
+    shl     esi, 5
+    add     esi, list
+ @@:
+    cmpe    ebx, esi, @f
 
     movzx   edx, byte [ebx]
     stdcall downcase_char, edx
@@ -444,7 +449,15 @@ end if
     add     ebx, 32
     jmp     @b
   @@:
-    jmp     update
+    cmpe    edi, 1, update
+    mov     ebx, list
+    mov     ecx, 0
+    mov     edi, 1
+    push    eax
+    stdcall get_index
+    mov     esi, eax
+    pop     eax
+    jmp     .search
 
  .toggle_cb:
     mov     eax, [cb_always.flags]
@@ -483,8 +496,23 @@ end if
     stdcall get_index
 
 ;; CHANGE INDEX
+ .check_p2:
+    cmpne   esi, 2, .check_m2
+    mov     ebx, [list.size]
+    dec     ebx
+    sub     ebx, eax
+    cmpg    ebx, 1, .add
+    jmp     .check
+
+ .check_m2:
+    cmpne   esi, -2, .add
+    cmpg    eax, 1, .add
+    jmp     .check
+
+ .add:
     add     eax, esi
 
+ .check:
     cmpl    eax, [list.size], @f
     mov     eax, [list.size]
     dec     eax
@@ -871,8 +899,12 @@ end if
     mov     eax, 0
 
     cmpl    [last_y], 0xFFFF, @f
+    mov     ebx, 0xFFFFFFFF shr 1
+    sub     ebx, [last_y]
+    inc     ebx
     mov     [last_y], 0
-    dec     [sb_apps.position]
+    ;dec     [sb_apps.position]
+    sub     [sb_apps.position], ebx
     mov     eax, 1
     jmp     .exit
   @@:
@@ -905,8 +937,8 @@ end if
     mov     ebx, [list.size]
     shl     ebx, 5
     add     ebx, list
-    stdcall string.compare, [_sec], assoc_ini.sec
-    cmpe    eax, 1, @f
+    stdcall string.cmp, [_sec], assoc_ini.sec
+    cmpe    eax, 0, @f
     stdcall string.copy, [_sec], ebx
     invoke  libini.get_num, [_file], [_sec], assoc_ini.icon, 0
     mov     ecx, [list.size]
@@ -923,33 +955,50 @@ end if
  ;----------------------
 
  proc sort_list
+    mov     eax, list
+    mov     ebx, list.lowercased
+  @@:
+    stdcall string.copy, eax, ebx
+    stdcall string.to_lower_case, ebx
+    add     eax, 32
+    add     ebx, 32
+    cmpne   byte [eax], 0, @b
+
     mov     edi, 0
-    mov     ebx, list		 ;; i = 0
+    mov     ebx, list.lowercased ;; i = 0
     imul    ecx, [list.size], 32 ;; i < n - 1
     sub     ecx, 32
-    add     ecx, list
+    add     ecx, list.lowercased
 
  .loop1:
-    mov     edx, list		 ;; j = 0
+    mov     edx, list.lowercased ;; j = 0
     mov     esi, [list.size]	 ;; j < n - i - 1
     sub     esi, edi
     dec     esi
     imul    esi, 32
-    add     esi, list
+    add     esi, list.lowercased
  .loop2:
     mov     eax, edx
     add     eax, 32
     stdcall string.cmp, edx, eax, 32
     cmpne   eax, 1, .next2
-;; swap names
+;; swap names lw
     mov     eax, edx
     add     eax, 32
     stdcall string.copy, edx, buffer7
     stdcall string.copy, eax, edx
     stdcall string.copy, buffer7, eax
+;; swap names
+    mov     eax, edx
+    sub     eax, 256 * 32 - 32
+    sub     edx, 256 * 32
+    stdcall string.copy, edx, buffer7
+    stdcall string.copy, eax, edx
+    stdcall string.copy, buffer7, eax
+    add     edx, 256 * 32
 ;; swap icons
     mov     eax, edx
-    sub     eax, list
+    sub     eax, list.lowercased
     shr     eax, 3
     add     eax, list.icon
     push    ebx ecx
@@ -977,6 +1026,7 @@ end if
 
  skin system_colors
  list rb 32 * 256
+  .lowercased rd 32 * 256
   .icon rd 256
   .size rd 1
  img  rd 1

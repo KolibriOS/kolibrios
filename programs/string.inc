@@ -33,28 +33,6 @@
     ret
  endp
 
- proc string.compare uses ebx ecx edx, _str1, _str2
-    mov     eax, 0
-    mov     ebx, [_str1]
-    mov     ecx, [_str2]
-  @@:
-    mov     dl, [ebx]
-    cmp     dl, [ecx]
-    jne     .not_eq
-    cmp     dl, 0
-    je	    @f
-    cmp     [ecx], byte 0
-    je	    @f
-    inc     ebx
-    inc     ecx
-    jmp     @b
- .not_eq:
-    mov     eax, -1
-  @@:
-    inc     eax
-    ret
- endp
-
  proc string.cmp uses ecx esi edi, _str1, _str2, _n
     mov     ecx, [_n]
     test    ecx, ecx	     ; Max length is zero?
