@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TreeList для Kolibri OS
-; файл последний раз изменялся 10.11.2015 IgorA
+; файл последний раз изменялся 14.11.2015 IgorA
 ; на код применена GPL2 лицензия
 
 
@@ -206,6 +206,48 @@ proc tl_mouse, tlist:dword
 		add bx,tl_capt_cy
 		cmp ax,bx ;верхняя граница окна + высота подписи
 		jl .test_scroll
+
+push eax ebx
+mcall 37,7 ;обработка колеса мыши
+mov edx,eax
+xor	ecx,ecx
+	test eax,eax
+	jz .mouse_next
+	test ax,0x8000
+	jnz .decr
+	shr eax,16
+	test ax,0x8000
+	jnz .decr_1
+
+	mov cx,dx ;dx = mouse scroll data vertical
+	test ecx,ecx
+	jnz @f
+	shr edx,16
+	mov cx,dx ;dx = mouse scroll data horizontal
+	test ecx,ecx
+	jz .mouse_next
+@@:
+	stdcall tl_cur_next, edi
+	dec ecx
+	jnz @r
+	jmp .mouse_next
+;----------------------------------------
+.decr: ;вертикальная прокрутка отрицательная
+	mov bx,ax ;ax = mouse scroll data vertical
+	jmp @f
+.decr_1: ;горизонтальная прокрутка отрицательная
+	mov bx,ax ;ax = mouse scroll data horizontal
+@@:
+	mov ecx,0xffff
+	sub ecx,ebx
+	inc ecx
+@@:
+	stdcall tl_cur_perv, edi
+	dec ecx
+	jnz @r
+;---------------------------------------------------
+.mouse_next:
+pop ebx eax
 
 		push eax ebx
 		mcall 37,2
@@ -1412,25 +1454,26 @@ endp
 ;output:
 ; eax - pointer to node info
 align 4
-proc tl_node_poi_get_info uses ebx ecx edi, tlist:dword, node_ind:dword
+proc tl_node_poi_get_info uses ebx ecx edx edi, tlist:dword, node_ind:dword
 	mov edi,dword[tlist]
 	mov ebx,dword[node_ind]
 
 	;cycle to nodes
-	mov eax,tl_data_nodes
-	mov ecx,eax
+	mov edx,tl_data_nodes
+	mov ecx,edx
 	add ecx,sizeof.TreeList
 	@@:
 		call tl_iterat_next_all
-		cmp eax,ecx
+		cmp edx,ecx
 		jle @f
 		dec ebx
 		cmp ebx,0
 		jg @b
 		jmp .find
 	@@:
-		xor eax,eax
+		xor edx,edx
 	.find:
+	mov eax,edx
 	ret
 endp
 
@@ -1832,7 +1875,8 @@ endp
 
 ;перемещаем узел вверх
 align 4
-proc tl_node_move_up uses eax ebx ecx edx edi esi, tlist:dword
+proc tl_node_move_up tlist:dword
+pushad
 	mov edi,dword[tlist]
 	call tl_get_cur_node_index ;eax=po_t
 	cmp eax,2
@@ -1861,12 +1905,14 @@ proc tl_node_move_up uses eax ebx ecx edx edi esi, tlist:dword
 				push dword edi
 				call tl_draw
 	@@:
+popad
 	ret
 endp
 
 ;перемещаем узел вниз
 align 4
-proc tl_node_move_down uses eax ebx ecx edx edi esi, tlist:dword
+proc tl_node_move_down tlist:dword
+pushad
 	mov edi,dword[tlist]
 	call tl_get_cur_node_index ;eax=po_t
 	cmp eax,2
@@ -1896,29 +1942,30 @@ proc tl_node_move_down uses eax ebx ecx edx edi esi, tlist:dword
 				stdcall tl_draw, edi
 	@@:
 	ret
+popad
 endp
 
 align 4
 tl_node_move_po6:
-  mov ecx,edx ;save node pointer
-  call tl_move_perv
-  mov dword[edx+8],ebx
+	mov ecx,edx ;save node pointer
+	call tl_move_perv
+	mov dword[edx+8],ebx
 
-  mov edx,esi
-  call tl_move_next
-  mov dword[edx+4],eax
-  mov edx,ecx ;restore node pointer
+	mov edx,esi
+	call tl_move_next
+	mov dword[edx+4],eax
+	mov edx,ecx ;restore node pointer
 
-  ;+4 perv
-  mov ecx,dword[edx+4]
-  mov dword[esi+4],ecx
-  ;+8 next
-  mov ecx,dword[esi+8]
-  mov dword[edx+8],ecx
+	;+4 perv
+	mov ecx,dword[edx+4]
+	mov dword[esi+4],ecx
+	;+8 next
+	mov ecx,dword[esi+8]
+	mov dword[edx+8],ecx
 
-  mov dword[edx+4],ebx
-  mov dword[esi+8],eax
-  ret
+	mov dword[edx+4],ebx
+	mov dword[esi+8],eax
+	ret
 
 ;input
 ;eax = index 1 node struct
@@ -1933,34 +1980,34 @@ tl_node_move_po6:
 align 4
 tl_node_move_po8:
 ;  push ecx
-  mov ecx,edx ;save node pointer
-  call tl_move_perv
-  mov dword[edx+8],ebx
-  mov edx,ecx
-  call tl_move_next
-  mov dword[edx+4],ebx
-  mov edx,esi
-  call tl_move_perv
-  mov dword[edx+8],eax
-  mov edx,esi
-  call tl_move_next
-  mov dword[edx+4],eax
-  mov edx,ecx ;restore node pointer
+	mov ecx,edx ;save node pointer
+	call tl_move_perv
+	mov dword[edx+8],ebx
+	mov edx,ecx
+	call tl_move_next
+	mov dword[edx+4],ebx
+	mov edx,esi
+	call tl_move_perv
+	mov dword[edx+8],eax
+	mov edx,esi
+	call tl_move_next
+	mov dword[edx+4],eax
+	mov edx,ecx ;restore node pointer
 ;  pop ecx
 
-  ;+4 perv
-  mov eax,dword[edx+4]
-  mov ebx,dword[esi+4]
-  xchg eax,ebx
-  mov dword[edx+4],eax
-  mov dword[esi+4],ebx
-  ;+8 next
-  mov eax,dword[edx+8]
-  mov ebx,dword[esi+8]
-  xchg eax,ebx
-  mov dword[edx+8],eax
-  mov dword[esi+8],ebx
-  ret
+	;+4 perv
+	mov eax,dword[edx+4]
+	mov ebx,dword[esi+4]
+	xchg eax,ebx
+	mov dword[edx+4],eax
+	mov dword[esi+4],ebx
+	;+8 next
+	mov eax,dword[edx+8]
+	mov ebx,dword[esi+8]
+	xchg eax,ebx
+	mov dword[edx+8],eax
+	mov dword[esi+8],ebx
+	ret
 
 ;input:
 ; edi = pointer to 'TreeList' struct
