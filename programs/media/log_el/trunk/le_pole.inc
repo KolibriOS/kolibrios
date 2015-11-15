@@ -405,8 +405,7 @@ pushad
 	.end_0:
 
 	;цикл по логическим элементам и подписям
-	stdcall dword[tl_node_poi_get_info],0,tree1
-	pop eax
+	stdcall dword[tl_node_poi_get_info], tree1,0
 	@@:
 		cmp eax,0
 		je .end_1
@@ -416,14 +415,13 @@ pushad
 		je .mov_1
 			jmp .end_mov_1
 		.mov_1:
-			stdcall [tl_node_poi_get_data], eax, tree1
-			pop ecx
-
-			add [ecx],edx ;coord x
-			add [ecx+4],esi ;coord y
+			mov ecx,eax
+			stdcall [tl_node_poi_get_data], tree1,eax
+			add [eax],edx ;coord x
+			add [eax+4],esi ;coord y
+			mov eax,ecx
 		.end_mov_1:
-		stdcall dword[tl_node_poi_get_next_info],eax,tree1
-		pop eax ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree1,eax ;переходим к следущему узлу
 		jmp @b
 	.end_1:
 
@@ -536,25 +534,22 @@ endp
 
 align 4
 proc p_paint_elems uses eax esi
-	stdcall dword[tl_node_poi_get_info],0,tree1
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree1,0
 	@@:
-		cmp esi,0
+		cmp eax,0
 		je @f
+		mov esi,eax
 		cmp word[esi],el_icon_elems ;получение через esi тип иконки
 		jne .end_element
-			stdcall [tl_node_poi_get_data], esi, tree1
-			pop eax
+			stdcall [tl_node_poi_get_data], tree1,esi
 			stdcall el_draw, eax
 		.end_element:
 		cmp word[esi],el_icon_captions ;получение через esi тип иконки
 		jne .end_caption
-			stdcall [tl_node_poi_get_data], esi, tree1
-			pop eax
+			stdcall [tl_node_poi_get_data], tree1,esi
 			stdcall capt_draw, eax
 		.end_caption:
-		stdcall dword[tl_node_poi_get_next_info],esi,tree1
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree1,esi
 		jmp @b
 	@@:
 	ret

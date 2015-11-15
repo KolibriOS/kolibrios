@@ -53,7 +53,7 @@ include 'le_pole.inc'
 include 'le_signal.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Логические элементы 19.04.12',0 ;подпись окна
+caption db 'Логические элементы 15.11.15',0 ;подпись окна
 
 panel_0_coord_top equ 5 ;верхняя координата 0-го ряда панели инструментов
 panel_1_coord_top equ 35
@@ -208,7 +208,7 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 			db 0
 		@@:
 		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0x0
+		copy_path .path_str,[32],file_name,0
 	else
 		copy_path path,[32],file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
 	end if
@@ -216,16 +216,14 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
 	mov [buf],eax
 
-	mov eax,70 ;70-я функция работа с файлами
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov [run_file_70.Count], dword size
-	m2m [run_file_70.Buffer], [buf]
+	m2m [run_file_70.Buffer], eax
 	mov byte[run_file_70+20], 0
 	mov [run_file_70.FileName], file_name
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
+	mcall 70,run_file_70 ;загружаем файл изображения
 	cmp ebx,0xffffffff
 	je @f
 		;определяем вид изображения и переводим его во временный буфер image_data
@@ -341,7 +339,7 @@ start:
 	mov ecx,(el_opt_beg.end-el_opt_beg)/size_el_opt ;колличество типов элементов
 	cld
 	@@:
-		stdcall [tl_node_add], eax, el_icon_elems shl 16, tree2
+		stdcall [tl_node_add], tree2,el_icon_elems shl 16,eax
 		stdcall [tl_cur_next], tree2
 		add eax,size_el_opt
 		loop @b
@@ -479,15 +477,19 @@ mouse:
 			stdcall element_is_click,eax,ebx
 			test eax,eax
 			jz .end_buf_wnd ;при нажатии не попали ни на один из элементов
-				stdcall [tl_node_get_data], tree1
-				pop ebx
+				push eax
+					stdcall [tl_node_get_data], tree1
+					mov ebx,eax
+				pop eax
 				cmp eax,ebx
 				je .end_buf_wnd ;если уже курсор стоит там где нужно
 				
 				stdcall [tl_cur_beg], tree1
 				.cycle0:
-				stdcall [tl_node_get_data], tree1
-				pop ebx
+				push eax
+					stdcall [tl_node_get_data], tree1
+					mov ebx,eax
+				pop eax
 				test ebx,ebx
 				jz .end_buf_wnd
 				cmp eax,ebx
@@ -607,15 +609,15 @@ end if
 ; eax - pointer to element data
 align 4
 proc element_is_click uses ebx ecx edx esi edi, coord_x:dword, coord_y:dword
-	stdcall dword[tl_node_poi_get_info],0,tree1
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree1,0
+	mov esi,eax
 	@@:
 		cmp esi,0
 		je @f
 		cmp word[esi],el_icon_elems ;получение через esi тип иконки
 		jne .end_add_p1
-			stdcall [tl_node_poi_get_data], esi, tree1
-			pop ecx
+			stdcall [tl_node_poi_get_data], tree1,esi
+			mov ecx,eax
 
 			movzx edx,byte[ecx+sp_offs_el_type]
 			imul edx,size_el_opt
@@ -639,8 +641,8 @@ proc element_is_click uses ebx ecx edx esi edi, coord_x:dword, coord_y:dword
 				mov eax,ecx
 				jmp .end_f
 		.end_add_p1:
-		stdcall dword[tl_node_poi_get_next_info],esi,tree1
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree1,esi
+		mov esi,eax ;переходим к следущему узлу
 		jmp @b
 	@@:
 		xor eax,eax ;если не нашли
@@ -827,12 +829,8 @@ pushad
 	stdcall pole_draw_pok, pole
 
 	; *** создание кнопок установки сигналов set_0 и set_1 ***
-	mov eax,8
-	mov ebx,(5 shl 16)+20
-	mov ecx,(panel_1_coord_top shl 16)+20
-	mov edx,20
 	mov esi,[sc.work_button]
-	int 0x40
+	mcall 8, (5 shl 16)+20, (panel_1_coord_top shl 16)+20, 20
 
 	add ebx,25 shl 16
 	mov edx,21
@@ -854,26 +852,19 @@ pushad
 	mov edx,25
 	int 0x40
 
-	mov eax,4 ;рисование текста
-	mov ebx,(10 shl 16)+panel_1_coord_top+5
 	mov ecx,[sc.work_text]
 	or  ecx,0x80000000 ;or (1 shl 30)
-	mov edx,txt_set_0
 	;mov edi,[sc.work]
-	int 0x40
+	mcall 4, (12 shl 16)+panel_1_coord_top+6,, txt_set_0
 
 	add ebx,25 shl 16
 	mov edx,txt_set_1
 	int 0x40
 
 	; *** рисование иконок на кнопках ***
-	mov eax,7
 	mov ebx,[image_data_toolbar]
-	mov ecx,(16 shl 16)+16
-	mov edx,(62 shl 16)+panel_1_coord_top+2
-
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE*15
-	int 0x40
+	mcall 7,, (16 shl 16)+16, (62 shl 16)+panel_1_coord_top+2
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16)
@@ -888,12 +879,8 @@ pushad
 	int 0x40
 
 	; *** создание кнопок рисования провода ***
-	mov eax,8
-	mov ebx,(5 shl 16)+20
-	mov ecx,(panel_2_coord_top shl 16)+20
-	mov edx,30
 	mov esi,[sc.work_button]
-	int 0x40
+	mcall 8, (5 shl 16)+20, (panel_2_coord_top shl 16)+20, 30
 
 	add ebx,30 shl 16
 	mov edx,31
@@ -962,46 +949,57 @@ button:
 	cmp ah,3
 	jne @f
 		call but_new_file
+		jmp still
 	@@:
 	cmp ah,4
 	jne @f
 		call but_open_file
+		jmp still
 	@@:
 	cmp ah,5
 	jne @f
 		call but_save_file
+		jmp still
 	@@:
 	cmp ah,6
 	jne @f
 		call but_run_stop
+		jmp still
 	@@:
 	cmp ah,7
 	jne @f
 		call but_zoom_p
+		jmp still
 	@@:
 	cmp ah,8
 	jne @f
 		call but_zoom_m
+		jmp still
 	@@:
 	cmp ah,9
 	jne @f
 		call but_pole_left
+		jmp still
 	@@:
 	cmp ah,10
 	jne @f
 		call but_pole_right
+		jmp still
 	@@:
 	cmp ah,11
 	jne @f
 		call but_pole_up
+		jmp still
 	@@:
 	cmp ah,12
 	jne @f
 		call but_pole_dn
+		jmp still
 	@@:
 	cmp ah,13
 	jne @f
 		call but_center
+		jmp still
 	@@:
 
 	;передвижение всех объектов схемы
@@ -1134,7 +1132,6 @@ but_open_file:
 	jne .end_open_file
 	;код при удачном открытии диалога
 
-	mov eax,70 ;70-я функция работа с файлами
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
@@ -1142,8 +1139,7 @@ but_open_file:
 	m2m [run_file_70.Buffer], open_file_lif
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл
+	mcall 70,run_file_70 ;загружаем файл
 	cmp ebx,0xffffffff
 	je .end_open_file
 
@@ -1178,7 +1174,7 @@ but_open_file:
 		stdcall [tl_info_clear],tree1
 
 		;*** добавление в список логических элементов ***
-		stdcall [tl_node_add], txt_elements-capt_offs,(el_icon_group shl 16), tree1
+		stdcall [tl_node_add], tree1,(el_icon_group shl 16),txt_elements-capt_offs
 		stdcall [tl_cur_next], tree1
 
 		mov esi,txt_elements
@@ -1209,14 +1205,14 @@ but_open_file:
 
 				stdcall make_list_capts,txt_buf,edi
 
-				stdcall [tl_node_add], txt_buf,(el_icon_elems shl 16)+1, tree1
+				stdcall [tl_node_add], tree1,(el_icon_elems shl 16)+1,txt_buf
 				stdcall [tl_cur_next], tree1
 				dec ecx
 				jnz .cycle_elem
 		.end_elems:
 
 		;*** добавление в список текстовых подписей ***
-		stdcall [tl_node_add], txt_captions-capt_offs,(el_icon_group shl 16), tree1
+		stdcall [tl_node_add], tree1,(el_icon_group shl 16),txt_captions-capt_offs
 		stdcall [tl_cur_next], tree1
 
 		mov esi,txt_captions
@@ -1244,7 +1240,7 @@ but_open_file:
 
 				stdcall make_list_capts,txt_buf,edi
 
-				stdcall [tl_node_add], txt_buf,(el_icon_captions shl 16)+1, tree1
+				stdcall [tl_node_add], tree1,(el_icon_captions shl 16)+1,txt_buf
 				stdcall [tl_cur_next], tree1
 				dec ecx
 				jnz .cycle_captions
@@ -1253,7 +1249,7 @@ but_open_file:
 		mov byte[txt_buf+capt_offs],0 ;обнуление подписей
 
 		;*** добавление в список ключевых точек ***
-		stdcall [tl_node_add], txt_points-capt_offs,(el_icon_group shl 16), tree1
+		stdcall [tl_node_add], tree1,(el_icon_group shl 16),txt_points-capt_offs
 		stdcall [tl_cur_next], tree1
 
 		mov dword[shem_points],0
@@ -1279,9 +1275,7 @@ but_open_file:
 				stdcall conv_str_to_int,edi
 				mov byte[txt_buf+8],al ;направления
 
-;                               stdcall make_list_capts,txt_buf,0
-
-				stdcall [tl_node_add], txt_buf,(el_icon_points shl 16)+1, tree1
+				stdcall [tl_node_add], tree1,(el_icon_points shl 16)+1,txt_buf
 				stdcall [tl_cur_next], tree1
 				dec ecx
 				jnz .cycle_poi
@@ -1291,33 +1285,32 @@ but_open_file:
 
 	;*** добавление точечных объектов ***
 	stdcall pole_clear, pole
-	stdcall dword[tl_node_poi_get_info],0,tree1
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree1,0
+	mov esi,eax
 	@@:
 		cmp esi,0
 		je @f
 		cmp word[esi],el_icon_points ;получение через esi тип иконки, и пропуск не точечных объектов
 		jne .end_add_p0
-			stdcall [tl_node_poi_get_data], esi, tree1
-			pop eax
+			stdcall [tl_node_poi_get_data], tree1,esi
 			stdcall pole_cell_creat, pole,dword[eax],dword[eax+4],0
 		.end_add_p0:
-		stdcall dword[tl_node_poi_get_next_info],esi,tree1
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree1,esi
+		mov esi,eax ;переходим к следущему узлу
 		jmp @b
 	@@:
 	stdcall pole_sort, pole
 
 	;*** добавление точечных объектов (на основе логических элементов) ***
-	stdcall dword[tl_node_poi_get_info],0,tree1
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree1,0
+	mov esi,eax
 	@@:
 		cmp esi,0
 		je @f
 		cmp word[esi],el_icon_elems ;получение через esi тип иконки
 		jne .end_add_p3
-			stdcall [tl_node_poi_get_data], esi, tree1
-			pop ecx
+			stdcall [tl_node_poi_get_data], tree1,esi
+			mov ecx,eax
 
 			xor edx,edx ;edx - номер входной ноги
 			.add_p1:
@@ -1348,49 +1341,48 @@ but_open_file:
 			.end_add_p2:
 
 		.end_add_p3:
-		stdcall dword[tl_node_poi_get_next_info],esi,tree1
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree1,esi
+		mov esi,eax ;переходим к следущему узлу
 		jmp @b
 	@@:
 	stdcall pole_sort, pole
 
 	;*** добавление точечных объектов (на основе подписей) ***
-	stdcall dword[tl_node_poi_get_info],0,tree1
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree1,0
+	mov esi,eax
 	@@:
 		cmp esi,0
 		je @f
 		cmp word[esi],el_icon_captions ;получение через esi тип иконки
 		jne .end_add_p6
-			stdcall [tl_node_poi_get_data], esi, tree1
-			pop ecx
+			stdcall [tl_node_poi_get_data], tree1,esi
+			mov ecx,eax
 			cmp byte[ecx+8],'n'
 			je .end_add_p6
 				stdcall pole_cell_creat, pole,[ecx],[ecx+4],0
 		.end_add_p6:
-		stdcall dword[tl_node_poi_get_next_info],esi,tree1
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree1,esi
+		mov esi,eax ;переходим к следущему узлу
 		jmp @b
 	@@:
 	stdcall pole_sort, pole
 
 	;*** рисование проводов (на основе точечных объектов) ***
-	stdcall dword[tl_node_poi_get_info],0,tree1
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree1,0
+	mov esi,eax
 	xor ecx,ecx
 	@@:
 		cmp esi,0
 		je @f
 		cmp word[esi],el_icon_points ;получение через esi тип иконки, и пропуск не точечных объектов
 		jne .end_add_p4
-			stdcall [tl_node_poi_get_data], esi, tree1
-			pop eax
+			stdcall [tl_node_poi_get_data], tree1,esi
 			movzx ebx,byte[eax+8]
 			stdcall shem_create_line, dword[eax],dword[eax+4],ebx
 			add ecx,edx
 		.end_add_p4:
-		stdcall dword[tl_node_poi_get_next_info],esi,tree1
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree1,esi
+		mov esi,eax ;переходим к следущему узлу
 		cmp ecx,250 ;ecx - число добавленных точек
 		jl @b
 		xor ecx,ecx
@@ -1555,15 +1547,13 @@ pushad
 	;*** снятие метки с точек, которые находятся на входных ногах логических элементов
 	.cycle1_beg:
 	mov dword[shem_elems],0 ;для пепеопределения числа элементов
-	stdcall dword[tl_node_poi_get_info],0,tree1
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree1,0
+	mov esi,eax
 	.cycle1:
 		cmp esi,0
 		je .cycle1_end
 		cmp word[esi],el_icon_elems ;получение через esi тип иконки
 		jne .end_add_p1
-;                       stdcall [tl_node_poi_get_data], esi, tree1
-;                       pop ecx
 			inc dword[shem_elems]
 if 0
 			xor edx,edx ;edx - номер входной ноги
@@ -1586,8 +1576,8 @@ if 0
 			;mov edx,(1 shl 16) ;edx - номер выходной ноги
 end if
 		.end_add_p1:
-		stdcall dword[tl_node_poi_get_next_info],esi,tree1
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree1,esi
+		mov esi,eax ;переходим к следущему узлу
 		jmp .cycle1
 	.cycle1_end:
 
@@ -1616,15 +1606,15 @@ end if
 
 	cmp eax,1
 	jl .cycle2_end
-	stdcall dword[tl_node_poi_get_info],0,tree1
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree1,0
+	mov esi,eax
 	.cycle2:
 		cmp esi,0
 		je .cycle2_end
 		cmp word[esi],el_icon_elems ;получение через esi тип иконки
 		jne .end_add_p2
-			stdcall [tl_node_poi_get_data], esi, tree1
-			pop ecx
+			stdcall [tl_node_poi_get_data], tree1,esi
+			mov ecx,eax
 
 			stdcall str_len,edi
 			add edi,eax
@@ -1653,8 +1643,8 @@ end if
 			stdcall str_cat,edi,txt_nl
 
 		.end_add_p2:
-		stdcall dword[tl_node_poi_get_next_info],esi,tree1
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree1,esi
+		mov esi,eax ;переходим к следущему узлу
 		jmp .cycle2
 	.cycle2_end:
 
@@ -1669,15 +1659,15 @@ end if
 
 	cmp eax,1
 	jl .cycle3_end
-	stdcall dword[tl_node_poi_get_info],0,tree1
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree1,0
+	mov esi,eax
 	.cycle3:
 		cmp esi,0
 		je .cycle3_end
 		cmp word[esi],el_icon_captions ;получение через esi тип иконки
 		jne .end_add_p3
-			stdcall [tl_node_poi_get_data], esi, tree1
-			pop ecx
+			stdcall [tl_node_poi_get_data], tree1,esi
+			mov ecx,eax
 
 			stdcall str_len,edi
 			add edi,eax
@@ -1710,8 +1700,8 @@ end if
 			stdcall str_cat,edi,txt_nl
 
 		.end_add_p3:
-		stdcall dword[tl_node_poi_get_next_info],esi,tree1
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree1,esi
+		mov esi,eax ;переходим к следущему узлу
 		jmp .cycle3
 	.cycle3_end:
 
@@ -1828,19 +1818,16 @@ end if
 	;*** определение параметров файла
 	mov edi,open_file_lif
 	stdcall str_len,edi
-	mov ecx,eax
 
 	;*** запись файла
-	mov eax,70
 	mov [run_file_70.Function], 2
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
-	mov dword[run_file_70.Count], ecx
+	mov dword[run_file_70.Count], eax
 	mov [run_file_70.Buffer], edi
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
-	mov ebx,run_file_70
-	int 0x40 ;сохраняем файл
+	mcall 70,run_file_70 ;сохраняем файл
 
 	call redraw_pole
 	.end_save_file:
@@ -1914,7 +1901,7 @@ proc shem_element_creat uses eax ebx, coord_x:dword, coord_y:dword
 	mov byte[txt_buf+sp_offs_el_angle],al ;направление
 
 	stdcall [tl_node_get_data], tree2
-	pop ebx
+	mov ebx,eax
 	test ebx,ebx
 	jnz @f
 		mov ebx,el_opt_beg+el_offs_nam ;если не взялось имя элемента, то по умолчанию берем 1-й из списка
@@ -1923,7 +1910,7 @@ proc shem_element_creat uses eax ebx, coord_x:dword, coord_y:dword
 	mov byte[txt_buf+sp_offs_el_type],al ;тип элемента
 
 	stdcall make_list_capts,txt_buf,ebx
-	stdcall [tl_node_add], txt_buf,(el_icon_elems shl 16)+1, tree1
+	stdcall [tl_node_add], tree1,(el_icon_elems shl 16)+1,txt_buf
 	stdcall [tl_cur_next], tree1
 	stdcall [tl_draw], tree1
 	.end_f:
@@ -2234,7 +2221,6 @@ endp
 align 4
 proc but_set_0 uses eax
 	stdcall [tl_node_get_data], tree1
-	pop eax
 	test eax,eax
 	jz .end_f
 ;el_icon_captions
@@ -2250,7 +2236,6 @@ endp
 align 4
 proc but_set_1 uses eax
 	stdcall [tl_node_get_data], tree1
-	pop eax
 	test eax,eax
 	jz .end_f
 ;el_icon_captions
@@ -2269,7 +2254,6 @@ proc but_mov_l uses eax edi
 	cmp byte[tim_ch],0
 	jne .end_f
 	stdcall [tl_node_get_data], tree1
-	pop eax
 	test eax,eax
 	jz .end_f
 		cmp dword[eax],1
@@ -2294,7 +2278,6 @@ proc but_mov_r uses eax edi
 	cmp byte[tim_ch],0
 	jne .end_f
 	stdcall [tl_node_get_data], tree1
-	pop eax
 	test eax,eax
 	jz .end_f
 		inc dword[eax]
@@ -2316,7 +2299,6 @@ proc but_mov_u uses eax edi
 	cmp byte[tim_ch],0
 	jne .end_f
 	stdcall [tl_node_get_data], tree1
-	pop eax
 	test eax,eax
 	jz .end_f
 		cmp dword[eax+4],1
@@ -2340,7 +2322,6 @@ proc but_mov_d uses eax edi
 	cmp byte[tim_ch],0
 	jne .end_f
 	stdcall [tl_node_get_data], tree1
-	pop eax
 	test eax,eax
 	jz .end_f
 		inc dword[eax+4]
@@ -2606,9 +2587,8 @@ endp
 ;output:
 ; eax - число
 align 4
-proc conv_str_to_int, buf:dword
+proc conv_str_to_int uses ebx ecx esi, buf:dword
 	xor eax,eax
-	push ebx ecx esi
 	xor ebx,ebx
 	mov esi,[buf]
 
@@ -2679,7 +2659,6 @@ proc conv_str_to_int, buf:dword
 		sub ecx,eax
 		mov eax,ecx
 	@@:
-	pop esi ecx ebx
 	ret
 endp
 
@@ -2712,6 +2691,7 @@ align 4
 	stosb	    ;записать элемент из регистра al в ячеку памяти es:edi
 	ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 
+align 16
 i_end:
 	rb 1024
 stacktop:
