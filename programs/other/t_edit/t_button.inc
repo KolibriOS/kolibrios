@@ -193,35 +193,34 @@ proc ted_but_save_file
 	mov [OpenDialog_data.type],1
 	stdcall [OpenDialog_Start],OpenDialog_data
 	cmp [OpenDialog_data.status],1 ;if status==1 then save
+	jne .end_save_file
+		stdcall [ted_save_file],tedit0,run_file_70,openfile_path
+	.end_save_file:
 	ret
 endp
 
 ;description:
 ; копирование памяти
 align 4
-proc mem_copy, source:dword, destination:dword, len:dword
-  push ecx esi edi
-    cld
-    mov esi, dword[source]
-    mov edi, dword[destination]
-    mov ecx, dword[len]
-    rep movsb
-  pop edi esi ecx
-  ret
+proc mem_copy uses ecx esi edi, source:dword, destination:dword, len:dword
+	cld
+	mov esi, dword[source]
+	mov edi, dword[destination]
+	mov ecx, dword[len]
+	rep movsb
+	ret
 endp
 
 ;description:
 ; заполнение памяти пробелами
 align 4
-proc mem_spac, mem:dword, len:dword
-  push eax ecx edi
-    cld
-    mov al,' '
-    mov edi, dword[mem]
-    mov ecx, dword[len]
-    repne stosb
-  pop edi ecx eax
-  ret
+proc mem_spac uses eax ecx edi, mem:dword, len:dword
+	cld
+	mov al,' '
+	mov edi, dword[mem]
+	mov ecx, dword[len]
+	repne stosb
+	ret
 endp
 
 ;input:
