@@ -21,7 +21,7 @@ include 'obj_codes.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
-hed db 'kol_f_edit 17.04.13',0
+hed db 'kol_f_edit 16.11.15',0
 
 sizeof.TreeList equ 20 ;need for element 'tree_list'
 
@@ -75,24 +75,22 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 			db 0
 		@@:
 		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0x0
+		copy_path .path_str,[32],file_name,0
 	else
-		copy_path path,[32],file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+		copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
 	end if
 
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
 	mov [buf],eax
 
-	mov eax,70 ;70-я функция работа с файлами
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov [run_file_70.Count], dword size
-	m2m [run_file_70.Buffer], [buf]
+	m2m [run_file_70.Buffer], eax
 	mov byte[run_file_70+20], 0
 	mov [run_file_70.FileName], file_name
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
+	mcall 70,run_file_70 ;загружаем файл изображения
 	cmp ebx,0xffffffff
 	je @f
 		;определяем вид изображения и переводим его во временный буфер image_data
@@ -216,8 +214,7 @@ start:
 	stdcall dword[tl_data_init], tree1
 	stdcall dword[tl_data_init], tree2
 
-	copy_path fn_icon,sys_path,file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
-	mov eax,70 ;load icon file
+	copy_path fn_icon,sys_path,file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 54
 	mov [run_file_70.Flags], 0
@@ -225,8 +222,7 @@ start:
 	mov [run_file_70.Buffer], bmp_icon
 	mov [run_file_70.rezerv], 0
 	mov [run_file_70.FileName], file_name
-	mov ebx,run_file_70
-	int 0x40
+	mcall 70,run_file_70
 
 	cmp ebx,-1
 	mov [err_ini0],1
@@ -265,15 +261,13 @@ start:
 	stdcall [buf2d_convert_text_matrix], buf_font
 
 
-	copy_path fn_obj_opt,sys_path,fp_obj_opt,0x0
+	copy_path fn_obj_opt,sys_path,fp_obj_opt,0
 	;load options file
-	mov eax,70
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Count], sizeof.ObjOpt*MAX_OBJ_TYPES+MAX_OBJ_CAPTIONS
 	mov [run_file_70.Buffer], obj_opt
 	mov [run_file_70.FileName], fp_obj_opt
-	mov ebx,run_file_70
-	int 0x40
+	mcall 70,run_file_70
 
 	cmp ebx,-1
 	mov [err_ini1],1
@@ -292,7 +286,7 @@ start:
 				xor cx,cx ;что-бы не глючило с отрицательным индексом
 			.zero:
 			shl ecx,16
-			stdcall dword[tl_node_add], eax, ecx, tree1 ;добавляем название объекта
+			stdcall dword[tl_node_add], tree1,ecx,eax ;добавляем название объекта
 			stdcall dword[tl_cur_next], tree1 ;переносим курсор вниз, что-бы не поменялся порядок
 			add eax,sizeof.ObjOpt ;переход на следующий объект
 			jmp @b
@@ -301,12 +295,12 @@ start:
 
 	.open_end:
 
+	stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
 	stdcall [ted_init], tedit0
-	copy_path fn_syntax,sys_path,file_name,0x0
+	copy_path fn_syntax,sys_path,file_name,0
 
 	; *** init syntax file ***
 	; проверяем размер файла синтаксиса
-	mov eax,70
 	mov [run_file_70.Function], 5
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
@@ -314,8 +308,7 @@ start:
 	mov dword[run_file_70.Buffer], open_b
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], file_name
-	mov ebx,run_file_70
-	int 0x40
+	mcall 70,run_file_70
 	cmp eax,0
 	jne @f
 
@@ -488,11 +481,7 @@ pushad
 
 	cmp [err_opn],1
 	jne @f
-		mov eax,4
-		mov ebx,10*65536+35
-		mov ecx,0x80ff0000
-		mov edx,txtErrOpen
-		int 0x40
+		mcall 4,10*65536+35,0x80ff0000,txtErrOpen
 	@@:
 
 	stdcall [edit_box_draw], dword edit1
@@ -546,10 +535,12 @@ button:
 	cmp ah,5
 	jne @f
 		call but_open_proj
+		jmp still
 	@@:
 	cmp ah,6
 	jne @f
 		call but_save_proj
+		jmp still
 	@@:
 	;cmp ah,10
 	;jne @f
@@ -558,60 +549,74 @@ button:
 	cmp ah,11
 	jne @f
 		call but_show_constructor
+		jmp still
 	@@:
 	cmp ah,12
 	jne @f
 		call but_show_code
+		jmp still
 	@@:
 	cmp ah,13
 	jne @f
 		call but_update
+		jmp still
 	@@:
 	cmp ah,14
 	jne @f
 		call but_save_asm
+		jmp still
 	@@:
 	cmp ah,15
 	jne @f
 		call but_show_invis
+		jmp still
 	@@:
 	cmp ah,16
 	jne @f
 		call but_show_syntax
+		jmp still
 	@@:
 	cmp ah,21
 	jne @f
 		call but_obj_move_up
+		jmp still
 	@@:
 	cmp ah,22
 	jne @f
 		call but_obj_move_down
+		jmp still
 	@@:
 	cmp ah,23
 	jne @f
 		call but_obj_copy
+		jmp still
 	@@:
 	cmp ah,24
 	jne @f
 		call but_obj_paste
+		jmp still
 	@@:
 	cmp ah,25
 	jne @f
 		call on_file_object_select
+		jmp still
 	@@:
 	cmp ah,26
 	jne @f
 		stdcall [tl_info_undo], tree2
 		stdcall [tl_draw], tree2
+		jmp still
 	@@:
 	cmp ah,27
 	jne @f
 		stdcall [tl_info_redo], tree2
 		stdcall [tl_draw], tree2
+		jmp still
 	@@:
 	cmp ah,31
 	jne @f
 		call on_add_object
+		jmp still
 	@@:
 	cmp ah,1
 	jne still
@@ -636,30 +641,49 @@ button:
 	mcall -1
 
 align 4
+open_file_data dd 0 ;указатель на память для открытия файлов
+open_file_size dd 0 ;размер открытого файла
+
+align 4
 but_open_proj:
+	copy_path open_dialog_name,communication_area_default_path,file_name,0
 	pushad
-	mov eax,70
+	mov [OpenDialog_data.type],0
+	stdcall [OpenDialog_Start],OpenDialog_data
+	cmp [OpenDialog_data.status],2
+	je .open_end
+	;код при удачном открытии диалога
+
+	mov [run_file_70.Function], 5
+	mov [run_file_70.Position], 0
+	mov [run_file_70.Flags], 0
+	mov dword[run_file_70.Count], 0
+	mov dword[run_file_70.Buffer], open_b
+	mov byte[run_file_70+20], 0
+	mov dword[run_file_70.FileName], openfile_path
+	mcall 70,run_file_70
+
+	mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
+	mov [open_file_size],ecx
+	stdcall mem.ReAlloc,[open_file_data],ecx
+	mov [open_file_data],eax
+	
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
-	mov [run_file_70.Count], sizeof.object*MAX_CED_OBJECTS
-	mov [run_file_70.Buffer], ced_info
-	mov [run_file_70.rezerv], 0
-	push [edit1.text]
-	pop [run_file_70.FileName]
-	mov ebx,run_file_70
-	int 0x40
-
-	cmp ebx,-1
+	mov dword[run_file_70.Count], ecx
+	m2m dword[run_file_70.Buffer], eax
+	mov byte[run_file_70+20], 0
+	mov dword[run_file_70.FileName], openfile_path
+	mcall 70,run_file_70 ;загружаем файл
+	cmp ebx,0xffffffff
 	mov [err_opn],1
 	je .open_end ;if open file
-		mov ecx,ced_info
-		add ecx,ebx
-		mov byte [ecx],0
 		mov [err_opn],0
+		stdcall [edit_box_set_text], edit1,openfile_path
 
 		stdcall dword[tl_info_clear], tree2
-		mov eax,ced_info ;добавляем объекты
+		mov eax,[open_file_data] ;добавляем объекты
 		@@:
 			mov ebx,dword[eax]
 			cmp ebx,0
@@ -673,12 +697,12 @@ but_open_proj:
 				xor cx,cx ;что-бы не глючило с отрицательным индексом
 			.zero:
 			shl ecx,16 ;в ecx индекс иконки
-			mov cl,byte[eax++u_object.lvl-u_object] ;уровень объекта
+			mov cl,byte[eax+u_object.lvl-u_object] ;уровень объекта
 
 			;tl_node_close_open - не подходит, т.к. действует на узлы имеющие дочерние
-			mov ch,byte[eax++u_object.clo-u_object] ;закрытый/открытый
+			mov ch,byte[eax+u_object.clo-u_object] ;закрытый/открытый
 
-			stdcall dword[tl_node_add], eax, ecx, tree2 ;добавляем объект
+			stdcall dword[tl_node_add], tree2,ecx,eax ;добавляем объект
 
 			stdcall dword[tl_cur_next], tree2 ;переносим курсор вниз, что-бы не поменялся порядок
 			add eax,sizeof.object ;переход на следующий объект
@@ -697,17 +721,39 @@ but_open_proj:
 ;сохранение файла проэкта на диск
 align 4
 but_save_proj:
+	copy_path open_dialog_name,communication_area_default_path,file_name,0
 	pushad
+	mov [OpenDialog_data.type],1
+	stdcall [OpenDialog_Start],OpenDialog_data
+	cmp [OpenDialog_data.status],2
+	je .end_save_file
+	;код при удачном открытии диалога
 
-	mov edi,ced_info
+	;берем размер памяти, необходимой для сохранения файла
+	xor ecx,ecx
+	stdcall [tl_node_poi_get_info], tree2,0
+	@@:
+		cmp eax,0
+		je @f
+		inc ecx
+		stdcall [tl_node_poi_get_next_info], tree2,eax ;переходим к следущему узлу
+		jmp @b
+	@@:
+	;movzx eax,word[tree2.info_size]
+	imul ecx,sizeof.object ;eax
+	add ecx,4 ;метка конца файла
+	mov [open_file_size],ecx
+	stdcall mem.ReAlloc,[open_file_data],ecx
+	mov [open_file_data],eax
 
-	stdcall [tl_node_poi_get_info], 0,tree2
-	pop edx
+	mov edi,[open_file_data]
+	stdcall [tl_node_poi_get_info], tree2,0
+	mov edx,eax
 	@@:
 		cmp edx,0
 		je @f
-		stdcall [tl_node_poi_get_data], edx,tree2
-		pop esi ;получаем данные узла
+		stdcall [tl_node_poi_get_data], tree2,edx
+		mov esi,eax ;получаем данные узла
 
 		mov bl,byte[edx+2] ;bl - уровень объекта
 		mov byte[esi+u_object.lvl-u_object],bl
@@ -724,34 +770,31 @@ but_save_proj:
 			mov [esi+u_object.typid-u_object],eax
 			mov eax,esi
 			;копируем объект в память для сохранения
-			xor ecx,ecx
-			mov cx,word[tree2.info_size]
+			movzx ecx,word[tree2.info_size]
 			cld
 			rep movsb
 		;восстанавливаем тип объекта
 		pop dword[eax+u_object.typid-u_object]
 
-		stdcall [tl_node_poi_get_next_info], edx,tree2
-		pop edx ;переходим к следущему узлу
+		stdcall [tl_node_poi_get_next_info], tree2,edx
+		mov edx,eax ;переходим к следущему узлу
 		jmp @b
 	@@:
 	mov dword[edi],0 ;метка конца файла
 	add edi,4
-	mov ecx,edi
-	sub ecx,ced_info ;ecx - размер сохраняемого файла       
 
-	mov eax,70
+	stdcall [edit_box_set_text], edit1,openfile_path
+	mov ecx,[open_file_size] ;ecx - размер сохраняемого файла       
 	mov [run_file_70.Function], 2
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov [run_file_70.Count], ecx
-	mov [run_file_70.Buffer], ced_info
+	m2m [run_file_70.Buffer], [open_file_data]
 	mov [run_file_70.rezerv], 0
-	push [edit1.text]
-	pop [run_file_70.FileName]
-	mov ebx,run_file_70
-	int 0x40
+	mov dword[run_file_70.FileName], openfile_path
+	mcall 70,run_file_70
 
+	.end_save_file:
 	popad
 	ret
 
@@ -759,38 +802,34 @@ but_save_proj:
 ;output:
 ; eax - номер объекта
 align 4
-proc get_obj_npp, p_obj_str:dword
-	mov eax,2
-	push ebx edx
+proc get_obj_npp uses ebx ecx, p_obj_str:dword
+	mov ecx,2
 	mov ebx,[p_obj_str]
 
-	stdcall [tl_node_poi_get_info], 0,tree2
-	pop edx
+	stdcall [tl_node_poi_get_info], tree2,0
 	@@:
-		cmp edx,0
+		cmp eax,0
 		je .no_exist
-		cmp edx,ebx
+		cmp eax,ebx
 		je @f
 
-		inc eax
-		stdcall [tl_node_poi_get_next_info], edx,tree2
-		pop edx ;переходим к следущему узлу
+		inc ecx
+		stdcall [tl_node_poi_get_next_info], tree2,eax ;переходим к следущему узлу
 		jmp @b
 	.no_exist: ;когда идет ссылка на не существующий объект
-		xor eax,eax ;обнуляем указатель, что-бы не сохранять в файл мусор
+		xor ecx,ecx ;обнуляем указатель, что-бы не сохранять в файл мусор
 	@@:
-	pop edx ebx
+	mov eax,ecx
 	ret
 endp
 
 ;функция для сохранения созданного asm файла
 align 4
 but_save_asm:
-	;stdcall [ted_but_save_file], tedit0,run_file_70,[edit_sav.text]
 	push edi
 	mov edi, tedit0
 
-	stdcall [ted_but_save_file],edi,run_file_70,[edit_sav.text]
+	stdcall [ted_save_file],edi,run_file_70,[edit_sav.text]
 	cmp ted_err_save,0
 	jne @f
 		stdcall [mb_create],msgbox_1,thread ;message: Файл был сохранен
@@ -841,8 +880,8 @@ on_file_object_select:
 	jne @f
 		mov byte[prop_wnd_run],1
 		stdcall [tl_node_get_data], tree2
-		pop dword[foc_obj]
-		cmp dword[foc_obj],0
+		mov dword[foc_obj],eax
+		cmp eax,0
 		je @f
 			pushad
 			;все действия по настройке элементов управления выполняются в окне со свойствами
@@ -858,7 +897,6 @@ align 4
 on_add_object:
 push eax ebx ecx
 	stdcall [tl_node_get_data], tree1
-	pop eax
 	cmp eax,0
 	je @f
 		xor ecx,ecx
@@ -874,7 +912,7 @@ push eax ebx ecx
 		stdcall mem_clear, u_object,sizeof.object
 		mov ebx,dword[eax]
 		mov dword[u_object.id],ebx
-		stdcall dword[tl_node_add], u_object, ecx, tree2 ;добавляем объект
+		stdcall dword[tl_node_add], tree2,ecx,u_object ;добавляем объект
 	@@:
 pop ecx ebx eax
 	call draw_window
@@ -1239,13 +1277,50 @@ rb 32
 .all_redraw dd 0 ;+80
 .ar_offset  dd 1 ;+84
 
+;данные для диалога открытия файлов
+align 4
+OpenDialog_data:
+.type			dd 0 ;0 - открыть, 1 - сохранить, 2 - выбрать дтректорию
+.procinfo		dd procinfo	;+4
+.com_area_name		dd communication_area_name	;+8
+.com_area		dd 0	;+12
+.opendir_path		dd plugin_path	;+16
+.dir_default_path	dd default_dir ;+20
+.start_path		dd file_name ;+24 путь к диалогу открытия файлов
+.draw_window		dd draw_window	;+28
+.status 		dd 0	;+32
+.openfile_path		dd openfile_path	;+36 путь к открываемому файлу
+.filename_area		dd filename_area	;+40
+.filter_area		dd Filter
+.x:
+.x_size 		dw 420 ;+48 ; Window X size
+.x_start		dw 10 ;+50 ; Window X position
+.y:
+.y_size 		dw 320 ;+52 ; Window y size
+.y_start		dw 10 ;+54 ; Window Y position
+
+default_dir db '/rd/1',0
+
+communication_area_name:
+	db 'FFFFFFFF_open_dialog',0
+open_dialog_name:
+	db 'opendial',0
+communication_area_default_path:
+	db '/rd/1/File managers/',0
+
+Filter:
+dd Filter.end - Filter ;.1
+.1:
+db 'CED',0
+db 'ASM',0
+.end:
+db 0
+
+
 data_of_code dd 0
 sc system_colors
 
 image_data dd 0 ;память для преобразования картинки функциями libimg
-
-ced_info object 0 ;on start == 0
-	rb sizeof.object*(MAX_CED_OBJECTS-1)
 
 text_buffer db BUF_SIZE dup(0)
 fn_obj_opt db 'ob_o.opt',0
@@ -1395,7 +1470,6 @@ import_box_lib:
 	tl_node_poi_get_next_info dd sz_tl_node_poi_get_next_info
 	tl_node_poi_get_data dd sz_tl_node_poi_get_data
 
-	ted_but_save_file dd sz_ted_but_save_file
 	ted_but_sumb_upper dd sz_ted_but_sumb_upper
 	ted_but_sumb_lover dd sz_ted_but_sumb_lover
 	ted_can_save dd sz_ted_can_save
@@ -1409,6 +1483,7 @@ import_box_lib:
 	ted_key dd sz_ted_key
 	ted_mouse dd sz_ted_mouse
 	ted_open_file dd sz_ted_open_file
+	ted_save_file dd sz_ted_save_file
 	ted_text_add dd sz_ted_text_add
 	ted_but_select_word dd sz_ted_but_select_word
 	ted_but_cut dd sz_ted_but_cut
@@ -1461,7 +1536,6 @@ dd 0,0
 	sz_tl_node_poi_get_next_info db 'tl_node_poi_get_next_info',0
 	sz_tl_node_poi_get_data db 'tl_node_poi_get_data',0
 
-	sz_ted_but_save_file	db 'ted_but_save_file',0
 	sz_ted_but_sumb_upper	db 'ted_but_sumb_upper',0
 	sz_ted_but_sumb_lover	db 'ted_but_sumb_lover',0
 	sz_ted_can_save 		db 'ted_can_save',0
@@ -1475,6 +1549,7 @@ dd 0,0
 	sz_ted_key				db 'ted_key',0
 	sz_ted_mouse			db 'ted_mouse',0
 	sz_ted_open_file		db 'ted_open_file',0
+	sz_ted_save_file		db 'ted_save_file',0
 	sz_ted_text_add 		db 'ted_text_add',0
 	sz_ted_but_select_word	db 'ted_but_select_word',0
 	sz_ted_but_cut			db 'ted_but_cut',0
@@ -1564,13 +1639,13 @@ load_lib_end:
 
 
 align 16
-procinfo process_information
 run_file_70 FileInfoBlock
 open_b rb 560
 
 IncludeIGlobals
 i_end:
 IncludeUGlobals
+	procinfo process_information
 	buf_cmd_lin rb 1024
 	file_name rb 1024 ;icon file path
 	fp_obj_opt rb 1024 ;obj options file patch
@@ -1582,4 +1657,7 @@ IncludeUGlobals
 stacktop: ;вверху стек основной программы
 	sys_path rb 1024
 	library_path rb 1024
+	plugin_path rb 4096
+	openfile_path rb 4096
+	filename_area rb 256
 mem:

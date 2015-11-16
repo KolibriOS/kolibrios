@@ -35,7 +35,7 @@ push eax ebx ecx edi
 	xor ecx,ecx
 	mov cx,word[edi+obj_opt.img-obj_opt] ;cx - индекс главной иконки добавляемого объекта
 	shl ecx,16
-	stdcall [tl_node_add], eax, ecx, tree2 ;добавляем объект
+	stdcall [tl_node_add], tree2,ecx,eax ;добавляем объект
 	stdcall [tl_draw], tree2
 pop edi ecx ebx eax
 	ret
@@ -62,7 +62,6 @@ but_element_change:
 		mov edx,dword[foc_obj]
 		mov dword[edx+u_object.typid-u_object],0 ;на случай если ничего не выбрано
 		stdcall [tl_node_get_data],tree3
-		pop eax
 		cmp eax,0
 		je @f
 			mov eax,dword[eax] ;берем порядковый номер (в памяти) выбранного объекта
@@ -154,9 +153,8 @@ endp
 ;output:
 ;  eax - длинна текстового поля внутри объекта
 align 4
-proc get_obj_text_len_col, obj:dword, ind:dword
+proc get_obj_text_len_col uses ebx ecx edi, obj:dword, ind:dword
 	xor eax,eax
-push ebx ecx edi
 	mov ecx,dword[ind]
 	mov eax,dword[obj]
 	mov ebx,dword[eax] ;в ebx попадает код объекта
@@ -187,7 +185,6 @@ push ebx ecx edi
 	@@:
 
 	.end_fun:
-pop edi ecx ebx
 	ret
 endp
 
@@ -277,23 +274,22 @@ align 4
 proc find_obj_in_file, o_type:dword
 push ebx esi
 	mov ebx,[o_type]
-	stdcall dword[tl_node_poi_get_info], 0,tree2
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree2,0
+	mov esi,eax
 
 	@@:
 		cmp esi,0
 		je .find_no
 
-		stdcall dword[tl_node_poi_get_data], esi,tree2
-		pop eax ;получаем данные узла
+		stdcall dword[tl_node_poi_get_data], tree2,esi ;получаем данные узла
 		cmp eax,0
 		je .find_no
 
 		cmp dword[eax],ebx ;смотрим описан ли искомый объект в узле
 		je .find_yes
 
-		stdcall dword[tl_node_poi_get_next_info], esi,tree2
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree2,esi
+		mov esi,eax ;переходим к следущему узлу
 
 		jmp @b
 
@@ -311,30 +307,28 @@ endp
 ;выход:
 ;eax - указатель на структуру найденного объекта
 align 4
-proc find_obj_in_file_next, o_type:dword
-push ebx esi
+proc find_obj_in_file_next uses ebx esi, o_type:dword
 	cmp dword[obj_find_last],0
 	je .find_no
 
 	mov ebx,dword[o_type]
 
-	stdcall dword[tl_node_poi_get_next_info], dword[obj_find_last],tree2
-	pop esi ;переходим к следущему узлу
+	stdcall dword[tl_node_poi_get_next_info], tree2,dword[obj_find_last]
+	mov esi,eax ;переходим к следущему узлу
 
 	@@:
 		cmp esi,0
 		je .find_no
 
-		stdcall dword[tl_node_poi_get_data], esi,tree2
-		pop eax ;получаем данные узла
+		stdcall dword[tl_node_poi_get_data], tree2,esi ;получаем данные узла
 		cmp eax,0
 		je .find_no
 
 		cmp dword[eax],ebx ;смотрим описан ли искомый объект в узле
 		je .find_yes
 
-		stdcall dword[tl_node_poi_get_next_info], esi, tree2
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree2,esi
+		mov esi,eax ;переходим к следущему узлу
 
 		jmp @b
 
@@ -345,7 +339,6 @@ push ebx esi
 		mov dword[obj_find_last],0
 		xor eax,eax
 	@@:
-pop esi ebx
 	ret
 endp
 

@@ -40,13 +40,13 @@ pushad
 	cmp dword[edx],C_VAR
 	jne .sel_end
 
-	stdcall [tl_node_poi_get_info], 0,tree2
-	pop edx
+	stdcall [tl_node_poi_get_info], tree2,0
 	@@:
-		cmp edx,0
+		cmp eax,0
 		je @f
-		stdcall [tl_node_poi_get_data], edx,tree2
-		pop esi ;получаем данные узла
+		mov edx,eax
+		stdcall [tl_node_poi_get_data], tree2,edx
+		mov esi,eax ;получаем данные узла
 ;------ добавление объекта в список -------------------------------------------
 		mov ebx,[foc_obj]
 		cmp ebx,esi
@@ -75,12 +75,12 @@ pushad
 			.zero:
 			shl ecx,16 ;в ecx индекс иконки
 
-			stdcall dword[tl_node_add], u_object, ecx, tree3 ;структура u_object в данном случае не соблюдается, она нужна просто как память для вставки
+			stdcall dword[tl_node_add], tree3,ecx,u_object ;структура u_object в данном случае не соблюдается, она нужна просто как память для вставки
 			stdcall dword[tl_cur_next], tree3 ;переносим курсор вниз, что-бы не поменялся порядок
 		.add_end:
 ;-------
-		stdcall [tl_node_poi_get_next_info], edx,tree2
-		pop edx ;переходим к следущему узлу
+		stdcall [tl_node_poi_get_next_info], tree2,edx
+		mov edx,eax ;переходим к следущему узлу
 		jmp @b
 	@@:
 
@@ -92,7 +92,6 @@ pushad
 		stdcall [tl_cur_beg],tree3
 		@@:
 			stdcall [tl_node_get_data],tree3
-			pop eax
 			cmp eax,0
 			je .sel_end
 			cmp dword[eax],edx

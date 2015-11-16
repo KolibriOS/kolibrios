@@ -176,8 +176,8 @@ align 4
 code_gen:
 	stdcall [ted_clear], tedit0,1
 pushad
-	stdcall dword[tl_node_poi_get_info], 0,tree2
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree2,0
+	mov esi,eax
 	xor bl,bl
 	call code_gen_obj
 	stdcall [ted_text_add], tedit0,\
@@ -199,8 +199,7 @@ push eax ebx edx
 		cmp byte[esi+2],bl ;lev
 		jl .find_no
 
-		stdcall dword[tl_node_poi_get_data], esi,tree2
-		pop eax ;получаем данные узла
+		stdcall dword[tl_node_poi_get_data], tree2,esi
 		cmp eax,0
 		je .find_no
 
@@ -263,8 +262,8 @@ push eax ebx edx
 			stdcall get_code_key,eax ;обработка объекта
 		@@:
 
-		stdcall dword[tl_node_poi_get_next_info], esi,tree2
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree2,esi
+		mov esi,eax ;переходим к следущему узлу
 
 		jmp .beg_iterat
 	.find_no:
@@ -273,21 +272,19 @@ pop edx ebx eax
 
 ;взять коды дочерних объектов
 align 4
-proc get_code_children_objects, p_node:dword
-	push ebx esi
-		mov esi,[p_node]
-		mov bl,byte[esi+2] ;сохраняем уровень текущего объекта
+proc get_code_children_objects uses eax ebx esi, p_node:dword
+	mov esi,[p_node]
+	mov bl,byte[esi+2] ;сохраняем уровень текущего объекта
 
-		stdcall dword[tl_node_poi_get_next_info], esi,tree2
-		pop esi ;переходим к следущему узлу
-		cmp esi,0 ;если достигли конца списка объектов
-		je @f
-		cmp byte[esi+2],bl ;если уровень следующего объекта больше или равен текущему
-		jle @f ;то дочерних узлов нет
-			mov bl,byte[esi+2]
-			call code_gen_obj ;рекурсивный вызов дочерних объектов
-		@@:
-	pop esi ebx
+	stdcall dword[tl_node_poi_get_next_info], tree2,esi
+	cmp eax,0 ;если достигли конца списка объектов
+	je @f
+	cmp byte[eax+2],bl ;если уровень следующего объекта больше или равен текущему
+	jle @f ;то дочерних узлов нет
+		mov esi,eax
+		mov bl,byte[esi+2]
+		call code_gen_obj ;рекурсивный вызов дочерних объектов
+	@@:
 	ret
 endp
 
@@ -301,8 +298,7 @@ move_next_no_child_objects:
 	push eax ebx
 		mov bl,byte[esi+2] ;сохраняем уровень текущего объекта
 		@@:
-			stdcall dword[tl_node_poi_get_next_info], esi,tree2
-			pop eax ;переходим к следущему узлу
+			stdcall dword[tl_node_poi_get_next_info], tree2,esi
 			cmp eax,0 ;если достигли конца списка объектов
 			je @f
 			cmp byte[eax+2],bl ;если уровень следующего объекта больше или равен текущему
@@ -330,8 +326,8 @@ proc get_code_auto, p_node:dword
 	pushad
 		insert_nl
 		mov esi,dword[p_node]
-		stdcall dword[tl_node_poi_get_data], esi,tree2
-		pop ebx ;получаем данные узла
+		stdcall dword[tl_node_poi_get_data], tree2,esi
+		mov ebx,eax ;получаем данные узла
 
 		test_bool_prop ebx,BIT_MOD_ACI
 		jae @f
@@ -390,7 +386,7 @@ proc get_code_auto, p_node:dword
 
 				call get_code_auto_data_libs_param
 				stdcall insert_text, txt_ll_start
-					call get_code_auto_data_libs_struc
+				call get_code_auto_data_libs_struc
 				stdcall insert_text, txt_ll_end
 				call get_code_auto_data_libs ;таблицы импорта библиотек
 		@@:
@@ -402,16 +398,16 @@ endp
 align 4
 proc get_code_auto_m
 	pushad
-	stdcall dword[tl_node_poi_get_info], 0,tree2
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree2,0
+	mov esi,eax
 	.beg_iterat:
 		cmp esi,0
 		je .find_no
 
-		stdcall dword[tl_node_poi_get_data], esi,tree2
-		pop ebx ;получаем данные узла
-		cmp ebx,0
+		stdcall dword[tl_node_poi_get_data], tree2,esi
+		cmp eax,0
 		je .find_no
+		mov ebx,eax ;получаем данные узла
 
 		cmp dword[ebx],C_EDB
 		jne @f
@@ -426,8 +422,8 @@ proc get_code_auto_m
 			insert_nl
 		@@:
 
-		stdcall dword[tl_node_poi_get_next_info], esi,tree2
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree2,esi
+		mov esi,eax ;переходим к следущему узлу
 
 		jmp .beg_iterat
 	.find_no:
@@ -441,16 +437,16 @@ proc get_code_auto_data_el
 	pushad
 	insert_nl ;отступ для форматирования
 
-	stdcall dword[tl_node_poi_get_info], 0,tree2
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree2,0
+	mov esi,eax
 	.beg_iterat:
 		cmp esi,0
 		je .find_no
 
-		stdcall dword[tl_node_poi_get_data], esi,tree2
-		pop ebx ;получаем данные узла
-		cmp ebx,0
+		stdcall dword[tl_node_poi_get_data], tree2,esi
+		cmp eax,0
 		je .find_no
+		mov ebx,eax ;получаем данные узла
 
 		cmp dword[ebx],C_EDB
 		jne @f
@@ -513,8 +509,8 @@ proc get_code_auto_data_el
 			stdcall insert_text_label_data, ebx,0
 		@@:
 
-		stdcall dword[tl_node_poi_get_next_info], esi,tree2
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree2,esi
+		mov esi,eax ;переходим к следущему узлу
 
 		jmp .beg_iterat
 	.find_no:
@@ -527,16 +523,16 @@ proc get_code_auto_data_el_cbox
 	pushad
 	insert_nl ;отступ для форматирования
 
-	stdcall dword[tl_node_poi_get_info], 0,tree2
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree2,0
+	mov esi,eax
 	.beg_iterat:
 		cmp esi,0
 		je .find_no
 
-		stdcall dword[tl_node_poi_get_data], esi,tree2
-		pop ebx ;получаем данные узла
-		cmp ebx,0
+		stdcall dword[tl_node_poi_get_data], tree2,esi
+		cmp eax,0
 		je .find_no
+		mov ebx,eax ;получаем данные узла
 
 		cmp dword[ebx],C_CHB
 		jne .no_check
@@ -583,8 +579,8 @@ proc get_code_auto_data_el_cbox
 			stdcall insert_text_label_data, ebx,0
 		@@:
 
-		stdcall dword[tl_node_poi_get_next_info], esi,tree2
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree2,esi
+		mov esi,eax ;переходим к следущему узлу
 
 		jmp .beg_iterat
 	.find_no:
@@ -598,16 +594,16 @@ proc get_code_auto_data_libs_param
 	pushad
 	insert_nl ;отступ для форматирования
 
-	stdcall dword[tl_node_poi_get_info], 0,tree2
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree2,0
+	mov esi,eax
 	.beg_iterat:
 		cmp esi,0
 		je .find_no
 
-		stdcall dword[tl_node_poi_get_data], esi,tree2
-		pop ebx ;получаем данные узла
-		cmp ebx,0
+		stdcall dword[tl_node_poi_get_data], tree2,esi
+		cmp eax,0
 		je .find_no
+		mov ebx,eax ;получаем данные узла
 
 		cmp dword[ebx],C_LIB
 		jne @f
@@ -651,9 +647,8 @@ proc get_code_auto_data_libs_param
 			insert_nl
 		@@:
 
-		stdcall dword[tl_node_poi_get_next_info], esi,tree2
-		pop esi ;переходим к следущему узлу
-
+		stdcall dword[tl_node_poi_get_next_info], tree2,esi
+		mov esi,eax ;переходим к следущему узлу
 		jmp .beg_iterat
 	.find_no:
 	popad
@@ -666,17 +661,16 @@ proc get_code_auto_data_libs_struc
 	pushad
 	;insert_nl ;отступ для форматирования
 
-	stdcall dword[tl_node_poi_get_info], 0,tree2
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree2,0
+	mov esi,eax
 	.beg_iterat:
 		cmp esi,0
 		je .find_no
 
-		stdcall dword[tl_node_poi_get_data], esi,tree2
-		pop ebx ;получаем данные узла
-		cmp ebx,0
+		stdcall dword[tl_node_poi_get_data], tree2,esi
+		cmp eax,0
 		je .find_no
-
+		mov ebx,eax ;получаем данные узла
 		cmp dword[ebx],C_LIB
 		jne @f
 			;0,1,2,3,4,5 - l_nam,s_dir,i_met,...
@@ -717,8 +711,8 @@ proc get_code_auto_data_libs_struc
 			insert_nl
 		@@:
 
-		stdcall dword[tl_node_poi_get_next_info], esi,tree2
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree2,esi
+		mov esi,eax ;переходим к следущему узлу
 
 		jmp .beg_iterat
 	.find_no:
@@ -732,17 +726,16 @@ proc get_code_auto_data_libs
 	pushad
 	insert_nl ;отступ для форматирования
 
-	stdcall dword[tl_node_poi_get_info], 0,tree2
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree2,0
+	mov esi,eax
 	.beg_iterat:
 		cmp esi,0
 		je .find_no
 
-		stdcall dword[tl_node_poi_get_data], esi,tree2
-		pop ebx ;получаем данные узла
-		cmp ebx,0
+		stdcall dword[tl_node_poi_get_data], tree2,esi
+		cmp eax,0
 		je .find_no
-
+		mov ebx,eax ;получаем данные узла
 		cmp dword[ebx],C_LIB
 		jne @f
 			;0,1,2,3,4,5 - l_nam,s_dir,i_met,...
@@ -754,8 +747,8 @@ proc get_code_auto_data_libs
 			call get_code_lib_table
 		@@:
 
-		stdcall dword[tl_node_poi_get_next_info], esi,tree2
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree2,esi
+		mov esi,eax ;переходим к следущему узлу
 
 		jmp .beg_iterat
 	.find_no:
@@ -770,23 +763,23 @@ get_code_lib_table:
 pushad
 	mov bl,byte[esi+2]
 	mov edi,esi
-	stdcall dword[tl_node_poi_get_data], esi,tree2
-	pop edx ;получение данных родительского объекта
-	cmp edx,0
+	stdcall dword[tl_node_poi_get_data], tree2,esi
+	mov edx,eax ;получение данных родительского объекта
+	cmp eax,0
 	je @f
 	@@:
-		stdcall dword[tl_node_poi_get_next_info], esi,tree2
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree2,esi
+		mov esi,eax ;переходим к следущему узлу
 		cmp esi,0
 		je @f
 		cmp byte[esi+2],bl ;lev
 		jle @f
-			stdcall dword[tl_node_poi_get_data], esi,tree2
-			pop ecx ;получаем данные узла
-			cmp ecx,0
+			stdcall dword[tl_node_poi_get_data], tree2,esi
+			cmp eax,0
 			je @f
-			cmp dword[ecx],C_IFN
+			cmp dword[eax],C_IFN
 			jne @b
+				mov ecx,eax ;получаем данные узла
 				;вставка указателя на функцию
 				test_bool_prop ecx,BIT_MOD_IMPORT_FUNCT_COMMENT
 				jae .no_com_0
@@ -803,18 +796,18 @@ pushad
 	stdcall insert_text, txt_dd_0_0
 	mov esi,edi
 	@@:
-		stdcall dword[tl_node_poi_get_next_info], esi,tree2
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree2,esi
+		mov esi,eax ;переходим к следущему узлу
 		cmp esi,0
 		je @f
 		cmp byte[esi+2],bl ;lev
 		jle @f
-			stdcall dword[tl_node_poi_get_data], esi,tree2
-			pop ecx ;получаем данные узла
-			cmp ecx,0
+			stdcall dword[tl_node_poi_get_data], tree2,esi
+			cmp eax,0
 			je @f
-			cmp dword[ecx],C_IFN
+			cmp dword[eax],C_IFN
 			jne @b
+				mov ecx,eax ;получаем данные узла
 				;вставка имени импортированной функции
 				test_bool_prop ecx,BIT_MOD_IMPORT_FUNCT_COMMENT
 				jae .no_com_1
@@ -839,16 +832,16 @@ proc get_code_auto_data_dop
 	pushad
 	insert_nl ;отступ для форматирования
 
-	stdcall dword[tl_node_poi_get_info], 0,tree2
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree2,0
+	mov esi,eax
 	.beg_iterat:
 		cmp esi,0
 		je .find_no
 
-		stdcall dword[tl_node_poi_get_data], esi,tree2
-		pop ebx ;получаем данные узла
-		cmp ebx,0
+		stdcall dword[tl_node_poi_get_data], tree2,esi
+		cmp eax,0
 		je .find_no
+		mov ebx,eax ;получаем данные узла
 
 		cmp dword[ebx],C_EDB
 		jne @f
@@ -907,9 +900,8 @@ proc get_code_auto_data_dop
 		jne @f
 			stdcall insert_text_label_data, ebx,9
 		@@:
-
-		stdcall dword[tl_node_poi_get_next_info], esi,tree2
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree2,esi
+		mov esi,eax ;переходим к следущему узлу
 
 		jmp .beg_iterat
 	.find_no:
@@ -921,16 +913,16 @@ endp
 align 4
 proc get_code_auto_but
 	pushad
-	stdcall dword[tl_node_poi_get_info], 0,tree2
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree2,0
+	mov esi,eax
 	.beg_iterat:
 		cmp esi,0
 		je .find_no
 
-		stdcall dword[tl_node_poi_get_data], esi,tree2
-		pop ebx ;получаем данные узла
-		cmp ebx,0
+		stdcall dword[tl_node_poi_get_data], tree2,esi
+		cmp eax,0
 		je .find_no
+		mov ebx,eax ;получаем данные узла
 
 		cmp dword[ebx],C_BUT
 		jne @f
@@ -960,8 +952,8 @@ proc get_code_auto_but
 			insert_nl
 		@@:
 
-		stdcall dword[tl_node_poi_get_next_info], esi,tree2
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree2,esi
+		mov esi,eax ;переходим к следущему узлу
 
 		jmp .beg_iterat
 	.find_no:
@@ -973,16 +965,16 @@ endp
 align 4
 proc get_code_a_but_fun
 	pushad
-	stdcall dword[tl_node_poi_get_info], 0,tree2
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree2,0
+	mov esi,eax
 	.beg_iterat:
 		cmp esi,0
 		je .find_no
 
-		stdcall dword[tl_node_poi_get_data], esi,tree2
-		pop ebx ;получаем данные узла
-		cmp ebx,0
+		stdcall dword[tl_node_poi_get_data], tree2,esi
+		cmp eax,0
 		je .find_no
+		mov ebx,eax ;получаем данные узла
 
 		cmp dword[ebx],C_BUT
 		jne @f
@@ -1000,8 +992,8 @@ proc get_code_a_but_fun
 			.c_fun:
 		@@:
 
-		stdcall dword[tl_node_poi_get_next_info], esi,tree2
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree2,esi
+		mov esi,eax ;переходим к следущему узлу
 
 		jmp .beg_iterat
 	.find_no:
@@ -1027,17 +1019,17 @@ endp
 align 4
 proc get_code_funct_key
 	pushad
-	stdcall dword[tl_node_poi_get_info], 0,tree2
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree2,0
+	mov esi,eax
 	.beg_iterat:
 		cmp esi,0
 		je .find_no
 
-		stdcall dword[tl_node_poi_get_data], esi,tree2
-		pop ebx ;получаем данные узла
-		cmp ebx,0
+		stdcall dword[tl_node_poi_get_data], tree2,esi
+		cmp eax,0
 		je .find_no
 
+		mov ebx,eax ;получаем данные узла
 		cmp dword[ebx],C_EDB
 		jne @f
 			stdcall insert_text, txt_std_key_ed
@@ -1045,8 +1037,8 @@ proc get_code_funct_key
 			insert_nl
 		@@:
 
-		stdcall dword[tl_node_poi_get_next_info], esi,tree2
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree2,esi
+		mov esi,eax ;переходим к следущему узлу
 
 		jmp .beg_iterat
 	.find_no:
@@ -1153,16 +1145,16 @@ endp
 align 4
 proc get_code_draw_obj
 	pushad
-	stdcall dword[tl_node_poi_get_info], 0,tree2
-	pop esi
+	stdcall dword[tl_node_poi_get_info], tree2,0
+	mov esi,eax
 	.beg_iterat:
 		cmp esi,0
 		je .find_no
 
-		stdcall dword[tl_node_poi_get_data], esi,tree2
-		pop ebx ;получаем данные узла
-		cmp ebx,0
+		stdcall dword[tl_node_poi_get_data], tree2,esi
+		cmp eax,0
 		je .find_no
+		mov ebx,eax ;получаем данные узла
 
 		cmp dword[ebx],C_EDB
 		jne @f
@@ -1314,8 +1306,8 @@ proc get_code_draw_obj
 			insert_nl
 		.ob_draw_text:
 
-		stdcall dword[tl_node_poi_get_next_info], esi,tree2
-		pop esi ;переходим к следущему узлу
+		stdcall dword[tl_node_poi_get_next_info], tree2,esi
+		mov esi,eax ;переходим к следущему узлу
 
 		jmp .beg_iterat
 	.find_no:
