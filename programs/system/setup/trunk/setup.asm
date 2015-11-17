@@ -184,6 +184,7 @@ draw_infotext:
 
 draw_window:
 	mcall	12,1
+	mcall	18,14
 	mov	ecx,50*65536+32*(4+stringsAmount)
 	mcall	0,<50,700>,,0xB4111199,0,title
 ; Main buttons
