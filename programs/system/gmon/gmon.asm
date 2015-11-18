@@ -416,10 +416,22 @@ na1:	int	0x40
 	loop	n_bt
 	; Пишим названия вкладок
 	mov	eax, 4
-	mov	ebx, 35 * 65536 + 260
+	mov	ebx, (18 shl 16) + 256
 	mov	edx, tab_lab
 	mov	ecx, 0x10000000
-	mov	esi, 39
+	mov	esi, 4
+	int	0x40
+	add ebx, (72 shl 16)
+	mov edx, tab_lab.2
+	mov	esi, 5
+	int	0x40
+	add ebx, (72 shl 16)
+	mov edx, tab_lab.3
+	mov	esi, 7
+	int	0x40
+	add ebx, (72 shl 16)
+	mov edx, tab_lab.4
+	mov	esi, 5
 	int	0x40
 	; создаём рамку внизу экрана
 	mov	eax, 13
@@ -465,8 +477,12 @@ about_tab:
 
 DATA
 act_tab		db	2 			; Номер активной вкладки
-tab_lab		db	'Info       Tests      Configs     About'
-title		db	'Ghost Monitor v0.4 [23/05/07]',0
+tab_lab:
+.1: db 'Info'
+.2: db 'Tests'
+.3: db 'Configs'
+.4: db 'About'
+title		db	'Ghost Monitor v0.4 [18/11/15]',0
 
 msgs_mon mls \
 	'CPU Load (%)',\
