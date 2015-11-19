@@ -49,7 +49,7 @@ dtext:
         shl     ebx, 2
         add     eax, ebx
         js      .ret
-        add     edi, eax    ; linear address (32bit)
+        add     edi, eax
         mov     eax, ecx
         mov     ebx, ecx
         test    ecx, ecx
@@ -60,7 +60,7 @@ dtext:
         and     cl, 7
         inc     ecx
         push    ebp ecx esi
-        mov     esi, edx    ; -> string
+        mov     esi, edx
         or      eax, 0xFF000000
         bt      ebx, 27
         jc      .bufferReady
@@ -80,9 +80,9 @@ dtext:
         mov     edx, eax
         mov     eax, [esp+24]
         cmp     eax, -1
-        jnz     .background
+        jnz     @f
         mov     [esp+28], edi
-.background:
+@@:
         mov     edi, edx
         rep stosd
         mov     edi, edx
@@ -100,6 +100,10 @@ dtext:
         bt      ebx, 28
         jc      .drawUTF8
 
+; ebp = font color
+; esi -> string
+; edi -> buffer
+
 ; Stack map:
 ; char counter +0
 fontMultiplier = 4
@@ -115,8 +119,7 @@ deltaToScreen = 28
 .drawUTF16:
         dec     dword [esp]
         js      .done
-        xor     ebx, ebx
-        mov     bx, [esi]
+        movzx   ebx, word [esi]
         test    ebx, ebx
         jz      .done
         inc     esi
@@ -141,27 +144,33 @@ deltaToScreen = 28
         dec     dword [esp]
         js      .done
 @@:
-        xor     ebx, ebx
-        mov     bl, [esi]
+        movzx   ebx, byte [esi]
         inc     esi
         test    bl, bl
         jz      .done
         jns     .valid
         shl     bx, 10
         jnc     @b
-        shr     bh, 2
         mov     bl, [esi]
+        test    bl, bl
+        jns     @b
         shl     bl, 2
+        jc      @b
+        shr     bh, 2
         shr     bx, 2
         inc     esi
         cmp     bx, 1419
         jc      .valid
-        shl     bx, 4
-@@:
+        shl     bh, 4
         jns     @f
+.tail:
+        mov     bl, [esi]
+        shl     bl, 1
+        jnc     @b
+        js      @b
         inc     esi
-        shl     bx, 1
-        jmp     @b
+        shl     bh, 1
+        js      .tail
 @@:
         xor     ebx, ebx
 .valid:
@@ -180,8 +189,7 @@ deltaToScreen = 28
 .draw866:
         dec     dword [esp]
         js      .done
-        xor     ebx, ebx
-        mov     bl, [esi]
+        movzx   ebx, byte [esi]
         test    ebx, ebx
         jz      .done
         inc     esi
@@ -199,8 +207,7 @@ deltaToScreen = 28
 .draw866toUni:
         dec     dword [esp]
         js      .done
-        xor     eax, eax
-        mov     al, [esi]
+        movzx   eax, byte [esi]
         test    eax, eax
         jz      .done
         call    ansi2uni_char
@@ -260,6 +267,10 @@ deltaToScreen = 28
 
 ; scaling/smoothing algorithm
 drawChar:
+; ebp = font color
+; esi = font multiplier
+; edi -> buffer
+; ebx -> char data
         mov     dl, [ebx]
 .raw:
         bsf     eax, edx
