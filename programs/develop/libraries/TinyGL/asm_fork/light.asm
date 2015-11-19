@@ -216,16 +216,19 @@ pushad
 		jmp .end_f
 	.end_spot_c:
 	cmp ecx,GL_CONSTANT_ATTENUATION
+	jne @f
 		mov ecx,[ebx+12]
 		mov [edi+offs_ligh_attenuation],ecx ;l->attenuation[0]=p[3]
 		jmp .end_f
 	@@:
 	cmp ecx,GL_LINEAR_ATTENUATION
+	jne @f
 		mov ecx,[ebx+12]
 		mov [edi+offs_ligh_attenuation+4],ecx ;l->attenuation[1]=p[3]
 		jmp .end_f
 	@@:
 	cmp ecx,GL_QUADRATIC_ATTENUATION
+	jne @f
 		mov ecx,[ebx+12]
 		mov [edi+offs_ligh_attenuation+8],ecx ;l->attenuation[2]=p[3]
 		jmp .end_f

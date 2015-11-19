@@ -1,6 +1,25 @@
 ;
 ; We draw a triangle with various interpolations
 ;
+; Порядок преобразований цветов вершин:
+; ZBufferPoint.r -> r1 (+drdl_min or +drdl_max) -> or1 (+drdx) -> [pixel buffer]
+; ZBufferPoint.g -> g1 (+dgdl_min or +dgdl_max) -> og1 (+dgdx) -> [pixel buffer]
+; ZBufferPoint.b -> b1 (+dbdl_min or +dbdl_max) -> ob1 (+dbdx) -> [pixel buffer]
+;
+; В некоторых случаях значения цвета (во 2-м байте переменных: or1,og1,ob1)
+; может становиться < 0 или > 255, тогда появляються пиксели не правильного
+; цвета. Скорее всего это связано с ошибками округления дробных чисел,
+; при вычислении коэфициентов для плавного перехода цвета.
+;
+; Для лечения этой проблемы в версии на C++ специально ограничиваються
+; минимальные и максимальные значения цвета точек (например от 3 до 252).
+; Потому цвета граней могут немного отличаться от указанных в программе.
+;
+; В даной версии алгоритм немного другой. В наиболее вероятных местах появления
+; пикселей не правильного цвета (обычно начало и конец линии) иправляеться
+; цвет испорченных пикселей. Цвет получаеться наиболее близким к указанному
+; пользователем.
+
 	t dd ? ;ZBufferPoint*
 	pr1 dd ? ;ZBufferPoint*
 	pr2 dd ? ;ZBufferPoint*
@@ -699,10 +718,34 @@ if INTERP_Z eq 1
 end if
 if INTERP_RGB eq 1
 		mov eax,[r1]
+		bt eax,31 ; коректирование испорченных пикселей (в начале линии)
+		jnc @f
+			xor eax,eax
+		@@:
+		bt eax,16
+		jnc @f
+			mov eax,0xff00
+		@@:
 		mov [or1],eax
 		mov eax,[g1]
+		bt eax,31
+		jnc @f
+			xor eax,eax
+		@@:
+		bt eax,16
+		jnc @f
+			mov eax,0xff00
+		@@:
 		mov [og1],eax
 		mov eax,[b1]
+		bt eax,31
+		jnc @f
+			xor eax,eax
+		@@:
+		bt eax,16
+		jnc @f
+			mov eax,0xff00
+		@@:
 		mov [ob1],eax
 end if
 if INTERP_ST eq 1
@@ -720,8 +763,13 @@ end if
 
 align 4
 		.cycle_1: ;while (n>=3)
+if INTERP_RGB eq 1
+		cmp dword[n],5
+		jl .cycle_2
+else
 		cmp dword[n],3
 		jl .cycle_2
+end if
 			PUT_PIXEL 0
 			PUT_PIXEL 1
 			PUT_PIXEL 2
@@ -733,6 +781,36 @@ end if
 			sub dword[n],4
 		jmp .cycle_1
 		.cycle_2: ;while (n>=0)
+if INTERP_RGB eq 1
+		; коректирование испорченных пикселей (в конце линии)
+		bt dword[or1],31
+		jnc @f
+			mov dword[or1],0
+			jmp .end_r
+		@@:
+		bt dword[or1],16
+		jnc .end_r
+			mov dword[or1],0xff00
+		.end_r:
+		bt dword[og1],31
+		jnc @f
+			mov dword[og1],0
+			jmp .end_g
+		@@:
+		bt dword[og1],16
+		jnc .end_g
+			mov dword[og1],0xff00
+		.end_g:
+		bt dword[ob1],31
+		jnc @f
+			mov dword[ob1],0
+			jmp .end_b
+		@@:
+		bt dword[ob1],16
+		jnc .end_b
+			mov dword[ob1],0xff00
+		.end_b:
+end if
 		cmp dword[n],0
 		jl .cycle_2_end
 			PUT_PIXEL 0

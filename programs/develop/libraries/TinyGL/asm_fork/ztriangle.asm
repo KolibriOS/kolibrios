@@ -82,10 +82,9 @@ local .end_0
 		;edi = pp
 		mov word[ebx+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
+		mov ecx,[og1]
 		mov eax,[or1]
 		mov cl,ah
-		mov eax,[og1]
-		mov ch,ah
 		mov word[edi+3*_a],cx
 		mov eax,[ob1]
 		mov byte[edi+3*_a +2],ah
@@ -200,7 +199,8 @@ local .end_0
 	mov ebx,[pz]
 	cmp ax,word[ebx+2*_a] ;if (zz >= pz[_a])
 	jl .end_0
-;       pz[_a]=zz;
+		;edi = pp
+		mov word[ebx+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
 ;   unsigned char *ptr;
 ;       ptr = texture + (((t & 0x3FC00000) | s) >> 14) * 3;
@@ -258,7 +258,8 @@ local .end_0
 	mov ebx,[pz]
 	cmp ax,word[ebx+2*_a] ;if (zz >= pz[_a])
 	jl .end_0
-;       pz[_a]=zz;
+		;edi = pp
+		mov word[ebx+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
 ;   unsigned char *ptr;
 ;       ptr = texture + (((t & 0x3FC00000) | (s & 0x003FC000)) >> 14) * 3;
@@ -388,7 +389,8 @@ local .end_0
 	mov ebx,[pz]
 	cmp ax,word[ebx+2*_a] ;if (zz >= pz[_a])
 	jl .end_0
-;       pz[_a]=zz;
+		;edi = pp
+		mov word[ebx+2*_a],ax ;пишем в буфер глубины новое значение
 		fild dword[z]
 		fld dword[s_z]
 		fdiv st0,st1
