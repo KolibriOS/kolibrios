@@ -12,6 +12,19 @@
 #include "../lib/patterns/simple_open_dialog.h"
 
 #define TOOLBAR_H 34
+#define TOOLBAR_ICON_WIDTH  26
+#define TOOLBAR_ICON_HEIGHT 24
+
+#define TOOLBAR_OPEN_FILE_LEFT       8
+#define TOOLBAR_MAGNIFY_PLUS_LEFT    42
+#define TOOLBAR_MAGNIFY_MINUS_LEFT   67
+#define TOOLBAR_CHANGE_ENCODING_LEFT 101
+#define TOOLBAR_RUN_EDIT_LEFT        135
+
+#define DEFAULT_FONT   "/sys/fonts/Tahoma.kf"
+#define DEFAULT_EDITOR "/sys/tinypad"
+
+#define INTRO_TEXT "This is a plain text reader.\nTry to open some text file."
 
 char default_dir[] = "/rd/1";
 od_filter filter2 = {0,0};
@@ -29,7 +42,7 @@ dword line_offset;
 #define DWORD 4;
 
 enum {
-	OPEN_FILE,
+	OPEN_FILE = 10,
 	MAGNIFY_MINUS,
 	MAGNIFY_PLUS,
 	CHANGE_ENCODING,
@@ -40,66 +53,185 @@ enum {
 #include "ini.h"
 #include "menu.h"
 
+void InitDlls()
+{
+	load_dll(boxlib,    #box_lib_init,   0);
+	load_dll(libio,     #libio_init,     1);
+	load_dll(libimg,    #libimg_init,    1);
+	load_dll(libini,    #lib_init,       1);
+	load_dll(iconv_lib, #iconv_open,     0);
+	load_dll(Proc_lib,  #OpenDialog_init,0);
+}
+
+void EventShowInfo()
+{
+	ShowAbout();
+}
+
+void EventOpenFile()
+{
+	OpenDialog_start stdcall (#o_dialog);
+	OpenFile(#openfile_path);
+	PreparePage();
+}
+
+void EventMagnifyPlus()
+{
+	font.size.text++;
+	if(!font.changeSIZE())
+		font.size.text--;
+	else
+		PreparePage();
+}
+
+void EventMagnifyMinus()
+{
+	font.size.text--;
+	if(!font.changeSIZE())
+		font.size.text++;
+	else
+		PreparePage();
+}
+
+void EventRunEdit()
+{
+	io.run(DEFAULT_EDITOR, #param);
+}
+
+void EventChangeEncoding()
+{
+	CreateThread(#menu_rmb,#stak+4092);
+}
+
+void HandleMouseEvent()
+{
+	mouse.get();
+	list.wheel_size = 7;
+	if (list.MouseScroll(mouse.vert)) {
+		DrawPage(); 
+		return; 
+	}
+	scrollbar_v_mouse (#scroll);
+	if (list.first != scroll.position) {
+		list.first = scroll.position;
+		DrawPage(); 
+	}
+}
+
+void HandleKeyEvent()
+{
+	if (help_opened) {
+		help_opened = false;
+		DrawPage();
+		return; 
+	}
+	GetKeys();
+	if (key_scancode==059) {
+		EventShowInfo();
+		return;
+	}
+	if (key_modifier & KEY_LCTRL) || (key_modifier & KEY_RCTRL) {
+		switch (key_scancode)
+		{
+			case 024:
+				EventOpenFile();
+				break;
+			case SCAN_CODE_UP:
+				EventMagnifyPlus();
+				break;
+			case SCAN_CODE_DOWN:
+				EventMagnifyMinus();
+				break;
+			case 018:
+				EventRunEdit();
+				break;
+			case SCAN_CODE_TAB:
+				EventChangeEncoding();
+				break;
+		}
+		return;
+	}
+	if (list.ProcessKey(key_scancode))
+		DrawPage();
+}
+
+void HandleButtonEvent()
+{
+	
+	byte btn = GetButtonID();
+	if (btn==1) {
+		SaveIniSettings();
+		ExitProcess();
+	}
+	btn-=10;
+	switch(btn)
+	{
+		case OPEN_FILE:
+			EventOpenFile();
+			break;
+		case MAGNIFY_PLUS:
+			EventMagnifyPlus();
+			break;
+		case MAGNIFY_MINUS:
+			EventMagnifyMinus();
+			break;
+		case CHANGE_ENCODING:
+			EventChangeEncoding();
+			break;
+		case RUN_EDIT:
+			EventRunEdit();
+			break;
+		case SHOW_INFO:
+			EventShowInfo();
+			break;
+	}
+}
+
 void main()
-{   
-	byte btn;
-	load_dll(boxlib, #box_lib_init,0);
-	load_dll(libio, #libio_init,1);
-	load_dll(libimg, #libimg_init,1);
-	load_dll(libini, #lib_init,1);
-	load_dll(iconv_lib, #iconv_open,0);
-	load_dll(Proc_lib, #OpenDialog_init,0);
+{   	
+	InitDlls();
+	
 	OpenDialog_init stdcall (#o_dialog);
-	font.no_bg_copy = true; font.color = 0; font.bg_color = 0xFFFFFF;
-	font.load("/sys/fonts/Tahoma.kf"); if (!font.data) { io.run("/sys/@notify","'Error: Font is not loaded.' -E"); ExitProcess(); }
+	
+	font.no_bg_copy = true;
+	font.color      = 0;
+	font.bg_color   = 0xFFFFFF;
+	
+	font.load(DEFAULT_FONT);
+	
+	if (!font.data) {
+		io.run("/sys/@notify","'Error: Font is not loaded.' -E");
+		ExitProcess();
+	}
+	
 	Libimg_LoadImage(#skin, abspath("toolbar.png"));
+	
 	LoadIniSettings();
+	
 	OpenFile(#param);
 	list.no_selection = true;
 	SetEventMask(10000000000000000000000001100111b);
 	loop()
 	{
-	switch(WaitEvent())
-	{
-	   	case evMouse:
-      		mouse.get();
-      		list.wheel_size = 7;
-			if (list.MouseScroll(mouse.vert)) { DrawPage(); break; }
-			scrollbar_v_mouse (#scroll); if (list.first != scroll.position) { list.first = scroll.position; DrawPage(); }
-			break;
-		case evKey:
-			if (help_opened) { help_opened=false; DrawPage(); break; }
-			GetKeys();
-			if (key_scancode==059) goto _SHOW_INFO;
-			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) {
-				if (key_scancode==024) goto _OPEN_FILE;
-				if (key_scancode==SCAN_CODE_UP) goto _MAGNIFY_PLUS;
-				if (key_scancode==SCAN_CODE_DOWN) goto _MAGNIFY_MINUS;
-				if (key_scancode==018) goto _RUN_EDIT;
-				if (key_scancode==SCAN_CODE_TAB) goto _CHANGE_ENCODING;
+		switch(WaitEvent())
+		{
+			case evMouse:
+				HandleMouseEvent();
 				break;
-			}
-			if (list.ProcessKey(key_scancode)) DrawPage();
-			break;
-		case evButton:
-			btn = GetButtonID();
-			if (btn==1) { SaveIniSettings(); ExitProcess(); }
-			btn-=10;
-			if (btn==OPEN_FILE) { _OPEN_FILE: OpenDialog_start stdcall (#o_dialog); OpenFile(#openfile_path); PreparePage(); }
-			else if (btn==MAGNIFY_PLUS)  { _MAGNIFY_PLUS: font.size.text++; if(!font.changeSIZE())font.size.text--; else PreparePage(); }
-			else if (btn==MAGNIFY_MINUS) { _MAGNIFY_MINUS: font.size.text--; if(!font.changeSIZE())font.size.text++; else PreparePage(); }
-			else if (btn==CHANGE_ENCODING) { _CHANGE_ENCODING: CreateThread(#menu_rmb,#stak+4092); break; }
-			else if (btn==RUN_EDIT) { _RUN_EDIT: io.run("/sys/tinypad",#param); }
-			else if (btn==SHOW_INFO) { _SHOW_INFO: ShowAbout(); }
-			break;
-		case evReDraw:
-			if (action_buf) {
-				OpenFile(#param); 
-				PreparePage();
-				action_buf = false;
-			};
-			draw_window();
-	  }
+			case evKey:
+				HandleKeyEvent();
+				break;
+			case evButton:
+				HandleButtonEvent();
+				break;
+			case evReDraw:
+				if (action_buf) {
+					OpenFile(#param); 
+					PreparePage();
+					action_buf = false;
+				};
+				draw_window();
+		}
 	}
 }
 
@@ -108,17 +240,29 @@ void draw_window()
 	DefineAndDrawWindow(Form.left,Form.top,Form.width,Form.height,0x73,0,#title);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
+
 	if (Form.width  < 200) { MoveSize(OLD,OLD,200,OLD); return; }
 	if (Form.height < 200) { MoveSize(OLD,OLD,OLD,200); return; }
+	
 	DrawBar(0, 0, Form.cwidth, TOOLBAR_H - 1, 0xe1e1e1);
 	DrawBar(0, TOOLBAR_H - 1, Form.cwidth, 1, 0x7F7F7F);
-	DrawToolbarButton(OPEN_FILE, 8);
-	DrawToolbarButton(MAGNIFY_PLUS, 42);
-	DrawToolbarButton(MAGNIFY_MINUS, 67);
-	DrawToolbarButton(CHANGE_ENCODING, 101);
-	DrawToolbarButton(RUN_EDIT, 135);
-	DrawToolbarButton(SHOW_INFO, Form.cwidth - 34);
-	if (Form.cwidth-scroll.size_x-1 == list.w) && (Form.cheight-TOOLBAR_H == list.h) && (list.count) DrawPage(); else PreparePage();
+	
+	DrawToolbarButton(OPEN_FILE,       TOOLBAR_OPEN_FILE_LEFT);
+	DrawToolbarButton(MAGNIFY_PLUS,    TOOLBAR_MAGNIFY_PLUS_LEFT);
+	DrawToolbarButton(MAGNIFY_MINUS,   TOOLBAR_MAGNIFY_MINUS_LEFT);
+	DrawToolbarButton(CHANGE_ENCODING, TOOLBAR_CHANGE_ENCODING_LEFT);
+	DrawToolbarButton(RUN_EDIT,        TOOLBAR_RUN_EDIT_LEFT);
+	DrawToolbarButton(SHOW_INFO,       Form.cwidth - 34);
+	
+	if ((Form.cwidth-scroll.size_x-1 == list.w) && 
+		(Form.cheight-TOOLBAR_H == list.h) && 
+		(list.count) 
+	)
+	{
+		DrawPage(); 
+	} else {
+		PreparePage();
+	}
 	DrawRectangle(scroll.start_x, scroll.start_y, scroll.size_x, scroll.size_y-1, scroll.bckg_col);
 }
 
@@ -138,6 +282,7 @@ void PreparePage()
 	dword stroka_y = 5;
 	dword stroka=0;
 	int i, srch_pos;
+	
 	font.changeSIZE();
 	list.w = Form.cwidth-scroll.size_x-1;
 	//get font chars width, need to increase performance
@@ -199,8 +344,8 @@ void PreparePage()
 
 void DrawToolbarButton(char image_id, int x)
 {
-	DefineButton(x, 5, 26-1, 24-1, 10+image_id + BT_HIDE, 0);
-	img_draw stdcall(skin.image, x, 5, 26, 24, 0, image_id*24);
+	DefineButton(x, 5, TOOLBAR_ICON_WIDTH-1, TOOLBAR_ICON_HEIGHT-1, 10+image_id + BT_HIDE, 0);
+	img_draw stdcall(skin.image, x, 5, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, 0, image_id*TOOLBAR_ICON_HEIGHT);
 }
 
 void DrawScroller()
@@ -227,7 +372,7 @@ void OpenFile(dword f_path)
 	}
 	else {
 		if (list.count) return;
-		io.buffer_data = "This is a plain text reader.\nTry to open some text file.";
+		io.buffer_data = INTRO_TEXT;
 		strcpy(#title, "Text Reader"); 
 	}
 	if (encoding!=CH_CP866) ChangeCharset(charsets[encoding], "CP866", io.buffer_data);
@@ -238,9 +383,9 @@ void OpenFile(dword f_path)
 
 
 char *about[] = {
-	"Text Reader v1.0",
+	"Text Reader v1.01",
 	"Idea: Leency, punk_joker",
-	"Code: Leency, KolibriOS Team",
+	"Code: Leency, Veliant, KolibriOS Team",
 	" ",
 	"Hotkeys:",
 	"Ctrl+O - open file",
