@@ -11,7 +11,7 @@ dd 1
 dd START
 dd IM_END
 dd I_END
-dd stack_area
+dd I_END
 dd param
 dd 0
 
@@ -142,7 +142,47 @@ START:
 	mcall	48,11
 	mov	[fontSize],eax
 
-	call	loadtxt
+loadtxt:
+	cmp	[syslang],3
+	jz	.ru
+	cmp	[syslang],5
+	jz	.et
+	mov	[text],texteng
+	jmp	draw_window
+.et:
+	mov	[text],textet
+	jmp	draw_window
+.ru:
+	mov	[text],textrus
+
+draw_window:
+	mcall	12,1
+	mov	ecx,50*65536+32*(4+stringsAmount)
+	mcall	0,<50,700>,,0xB4111199,0,title
+; Main buttons
+	mov	eax,8
+	mov	ecx,6*65536+26
+	mov	edx,4
+	mov	esi,0x5580c0
+	mov	ebp,stringsAmount
+@@:
+	mcall	,<490,24>
+	inc	edx
+	mcall	,<526,24>
+	inc	edx
+	mcall	,<562,120>
+	inc	edx
+	add	ecx,32*65536
+	dec	ebp
+	jnz	@b
+; APPLY ALL
+	add	ecx,32*65536
+	mcall	,<514,168>,,3,0x005588dd
+; SAVE ALL
+	add	ecx,32*65536
+	dec	edx
+	mcall
+	mcall	12,2
 
 draw_infotext:
 	mov	eax,[syslang]
@@ -181,36 +221,8 @@ draw_infotext:
 	div	bl
 	add	ax, '00'
 	mov	[edi+LLL*4],ax
-
-draw_window:
-	mcall	12,1
-	mcall	18,14
-	mov	ecx,50*65536+32*(4+stringsAmount)
-	mcall	0,<50,700>,,0xB4111199,0,title
-; Main buttons
-	mov	eax,8
-	mov	ecx,6*65536+26
-	mov	edx,4
-	mov	esi,0x5580c0
-	mov	ebp,stringsAmount
-@@:
-	mcall	,<490,24>
-	inc	edx
-	mcall	,<526,24>
-	inc	edx
-	mcall	,<562,120>
-	inc	edx
-	add	ecx,32*65536
-	dec	ebp
-	jnz	@b
-; APPLY ALL
-	add	ecx,32*65536
-	mcall	,<514,168>,,3,0x005588dd
-; SAVE ALL
-	add	ecx,32*65536
-	dec	edx
-	mcall
-; text
+; draw text
+	mcall	13,<342,96>,32*stringsAmount,80111199h
 	mov	eax,4
 	mov	ebx,6*65536+11
 	mov	ecx,1ffffffh
@@ -232,8 +244,6 @@ newline:
 	add	edx,esi
 	dec	ebp
 	jnz	@b
-
-	mcall	12,2
 
 still:
 	mcall	10
@@ -271,6 +281,7 @@ language2:
 	jc	@f
 	mov	[syslang],0
 @@:
+	pop	eax
 	jmp	loadtxt
 LBA1:
 	btr	[lba_read],0
@@ -339,20 +350,6 @@ _speaker_mute:
 	inc	ecx
 	mcall	18
 @@:
-	ret
-;---------------------------------------------------------------
-loadtxt:
-	cmp	[syslang],3
-	jz	.ru
-	cmp	[syslang],5
-	jz	.et
-	mov	[text],texteng
-	ret
-.ru:
-	mov	[text],textrus
-	ret
-.et:
-	mov	[text],textet
 	ret
 ;---------------------------------------------------------------
 onoff:
@@ -425,6 +422,7 @@ saveAll:
 	invoke	ini.set_str, sz_ini, sz_low_level, sz_pci, param, 3
 	ret
 ;---------------------------------------------------------------
+; DATA
 align 4
 buttonTab:	; button handler pointers: -,+,apply
 	dd close
@@ -448,13 +446,6 @@ buttonTab:	; button handler pointers: -,+,apply
 	dd fontSize1
 	dd fontSize2
 	dd fontSizeApply
-
-syslang 	dd 0
-lba_read	dd 0
-pci_acc 	dd 0
-speaker_mute	dd 0
-fontSmoothing	dd 0
-fontSize	dd 0
 
 @IMPORT:
 library libini, 'libini.obj'
@@ -485,7 +476,6 @@ LLL = 56
 stringsAmount = 6
 
 align 4
-text	dd 0
 langs:
 db 'ENGLISH FINNISH GERMAN  RUSSIAN FRENCH  ESTONIANSPANISH ITALIAN '
 langMarks:
@@ -525,7 +515,16 @@ db 'MÄRKUS:                                    Kinnita kõik '
 db 'SALVESTA SEADED ENNE KOLIBRIST VÄLJUMIST   Salvesta kõik'
 
 IM_END:
+
+text	dd  ?
+
+syslang 	dd  ?
+lba_read	dd  ?
+pci_acc 	dd  ?
+speaker_mute	dd  ?
+fontSmoothing	dd  ?
+fontSize	dd  ?
+
 param:
 	rb 1024
-stack_area:
 I_END:
