@@ -3,45 +3,46 @@
 ; See f63
 ; Compile with FASM for KolibriOS
 ;------------------------------------------------------------------------------
-include 'lang.inc'
-WRITE_LOG    equ 1
-P_LEN        equ 11
-;------------------------------------------------------------------------------
-        use32
-        org     0x0
+use32
+org 0
         db      'MENUET01'
-        dd      0x01
+        dd      1
         dd      START
         dd      I_END
         dd      mem
         dd      mem
-        dd     filename, 0x0
+        dd      filename
+        dd      0
 ;------------------------------------------------------------------------------
+include 'lang.inc'
 include '../../../macros.inc'
 include '../../../debug.inc'
-purge       newline
-MAXSTRINGS  = 45
-TMP = 80*(MAXSTRINGS+1)
+purge   newline
+MAXSTRINGS = 45
 ;------------------------------------------------------------------------------
-    START:
+START:
         call    CheckUnique
         mov     edi, filename
         cmp     [edi], byte 0
         jnz     param
         mov     esi, default_filename
-    @@:
+@@:
         lodsb
         stosb
         test    al,al
         jnz     @b
-    param:
-        mov     ecx, TMP
-        xor     eax, eax
-        mov     edi, [targ]
-        rep     stosb
+param:
+        mov     ecx, (MAXSTRINGS+1)*20
+        mov     edi, text1
+        mov     eax, '    '
+        rep     stosd
 
-        mov     [tmp1], 'x'
-        mov     [tmp2], 'x'
+        mov     ecx, (MAXSTRINGS+1)*20
+        mov     edi, text2
+        rep     stosd
+
+        mov     byte [tmp1], 'x'
+        mov     byte [tmp2], 'x'
 
         mcall   14
         and     eax, 0xffff0000
@@ -54,13 +55,13 @@ TMP = 80*(MAXSTRINGS+1)
         call    CreateFile
 ;------------------------------------------------------------------------------
 red:
-        call draw_window
+        call    draw_window
 ;------------------------------------------------------------------------------
 still:
         cmp     [buffer_length], 0
         je      @f
         call    write_buffer
-    @@:
+@@:
         mcall   23, 50                    ; wait here for event
         cmp     eax, 1                    ; redraw request ?
         je      red
@@ -79,23 +80,23 @@ new_data:
         cmp     [buffer_length], 255
         jne     @f
         call    write_buffer
-    @@:
+@@:
         movzx   ebx, byte[buffer_length]
         mov     [ebx+tmp], al
         inc     [buffer_length]
         mov     ebp, [targ]
-    .no4:
+        cmp     al, 10
+        jz      new_line
         cmp     al, 13
-        jne     no13
-        and     [ebp-8], dword 0
-        jmp     new_check
+        jz      new_check
+        jmp     char
 ;------------------------------------------
 write_buffer:
         pusha
         mov     edx, tmp
-        movzx   ecx, byte[buffer_length]	;1
+        movzx   ecx, byte[buffer_length]
         mov     esi, filename
-    .write_to_logfile:
+.write_to_logfile:
         call    WriteToFile
         cmp     eax, 5
         jne     @f
@@ -111,9 +112,7 @@ write_buffer:
         popa
         ret
 ;------------------------------------------
-no13:
-        cmp     al, 10
-        jne     no10
+new_line:
         and     [ebp-8], dword 0
         inc     dword [ebp-4]
         cmp     [ebp-4], dword MAXSTRINGS
@@ -121,23 +120,23 @@ no13:
         mov     [ebp-4], dword MAXSTRINGS
         lea     esi, [ebp+80]
         mov     edi, ebp
-        mov     ecx, 80*(MAXSTRINGS)
+        mov     ecx, 20*(MAXSTRINGS)
         cld
-        rep     movsb
+        rep     movsd
 
         mov     esi, [ebp-4]
         imul    esi, 80
         add     esi, [ebp-8]
         add     esi, ebp
-        mov     ecx, 80
-        mov     al ,' '
-        rep     stosb
-    .noypos:
+        mov     ecx, 20
+        mov     eax, '    '
+        rep     stosd
+.noypos:
         mov     [targ],text2
         and     [krnl_cnt],0
         jmp     new_check
 ;------------------------------------------
-no10:
+char:
         cmp     ebp, text1
         je      add2
         mov     ecx, [krnl_cnt]
@@ -147,17 +146,17 @@ no10:
         cmp     [krnl_cnt], 4
         jne     new_check
         mov     [targ], text1
-    .noknl:
+.noknl:
         mov     ebp, [targ]
         jecxz   .add
         push    eax
         mov     esi, krnl_msg
-    .l1:
+.l1:
         lodsb
         call    add_char
         loop    .l1
         pop     eax
-    .add:
+.add:
         and     [krnl_cnt], 0
 add2:
         call    add_char
@@ -181,7 +180,7 @@ button:
         jne     .noclose
         or      eax, -1                   ; close this program
         mcall
-    .noclose:
+.noclose:
         xor     [vmode], 1
         jmp     red
 ;------------------------------------------------------------------------------
@@ -198,7 +197,7 @@ add_char:
 .ok:
         pop     esi
         ret
-	
+
 ;------------------------------------------------------------------------------
 ;************************  WINDOW DEFINITIONS AND DRAW ************************
 ;------------------------------------------------------------------------------
@@ -218,9 +217,9 @@ draw_window:
         mcall   8,,<4,13>,3,[sc.btn_face]
         mov     edx, [vmode]
         lea     edx, [edx*4+duk]
-		mov     ecx, 0x80
-		shr     ecx, 24
-		add     ecx, [sc.btn_text]
+        mov     ecx, 0x80
+        shr     ecx, 24
+        add     ecx, [sc.btn_text]
         mcall   4,<300,7>,,,4
         call    draw_text
         mcall   12, 2                     ; 2, end of draw
@@ -235,7 +234,7 @@ draw_text:
         cmp     [vmode], 0
         je      .kern
         mov     edx, text2
-    .kern:
+.kern:
         push    ebx ecx edx
         mcall   9, procinfo,-1
         mov     eax, [ebx+42]
@@ -278,7 +277,7 @@ CreateFile:
         test    eax, eax
         jz      .out
         stc
-    .out:
+.out:
         popa
         ret
 ;------------------------------------------------------------------------------
@@ -301,8 +300,8 @@ WriteToFile:
         test    eax, eax
         jz      .out
         stc
-    .out:
-        pop      ebx
+.out:
+        pop     ebx
         ret
 
 ;------------------------------------------------------------------------------
@@ -314,15 +313,15 @@ StrCmp:
         repe    cmpsb
         ja      .a_greater_b
         jb      .a_less_b
-    .equal:
+.equal:
         mov     eax, 0
         jmp     .end
-    .a_less_b:
+.a_less_b:
         mov     eax, 1
         jmp     .end
-    .a_greater_b:
+.a_greater_b:
         mov     eax, -1
-    .end:
+.end:
         ret
 
 ;------------------------------------------------------------------------------
@@ -346,38 +345,38 @@ ToLower:
 ;* else continue normally
 ;------------------------------------------------------------------------------
 CheckUnique:
-    .get_thread_info:
+.get_thread_info:
         mov     ebx, procinfo
         mov     ecx, -1
         mcall   9
 
-    .get_pid:                             ; check_buffer
+.get_pid:                             ; check_buffer
         mov     [process_count], eax
         mov     eax, [ebx+process_information.PID]
         mov     [pid_tid], eax
         mov     ecx, 2
 
-    .check_threads:
+.check_threads:
         cmp     ecx, [process_count]
         ja      .leave_check
         mov     eax, 9
         mcall
 
-    .check_slot_free:
+.check_slot_free:
         cmp     dword [ebx+process_information.slot_state], 9
         je      .next_thread
 
-    .check_pid:
+.check_pid:
         mov     eax, [pid_tid]
         cmp     [ebx+process_information.PID], eax
         je      .next_thread
 
-    .get_proc_name:
+.get_proc_name:
         lea     edi, [ebx+process_information.process_name]
         push    ecx
         mov     ecx, my_name_size-1
 
-    .lower_case:
+.lower_case:
         call    ToLower
         lea     esi, [my_name]
         mov     ecx, my_name_size
@@ -386,35 +385,22 @@ CheckUnique:
         cmp     eax, 0
         je      .close_program
 
-    .next_thread:
+.next_thread:
         inc     ecx
         jmp     .check_threads
 
-    .close_program:
+.close_program:
         ; restore and active window of previous thread
-        mcall    18, 3
-        mov      eax, -1
+        mcall   18, 3
+        mov     eax, -1
         mcall
 
-    .leave_check:
+.leave_check:
         ret
 
+;------------------------------------------------------------------------------
+; DATA
 
-;------------------------------------------------------------------------------
-;***********************************  DATA ************************************
-;------------------------------------------------------------------------------
-align 4
-InfoStructure:
-        dd      0x0                       ; subfunction number
-        dd      0x0                       ; position in the file in bytes
-        dd      0x0                       ; upper part of the position address
-        dd      0x0                       ; number of bytes to read
-        dd      0x0                       ; pointer to the buffer to write data
-        db      0x0
-        dd      0x0                       ; pointer to the filename
-filepos dd      0x0
-default_filename db '/sys/boardlog.txt',0
-;------------------------------------------------------------------------------
 if lang eq ru
  title	db 'Доска отладки и сообщений',0
 else if lang eq it
@@ -424,40 +410,46 @@ else if lang eq ge
 else
  title	db 'General debug & message board',0
 end if
-;------------------------------------------------------------------------------
+
+default_filename db '/sys/boardlog.txt',0
 krnl_msg        db  'K : '
 duk             db  'KernUser'
-krnl_cnt        dd  0
-vmode           dd  1
-targ            dd  text2
 my_name         db  'board',0
-my_name_size    = $-my_name
-process_count   dd  0x0
-pid_tid         dd  0x0
-;------------------------------------------------------------------------------
+my_name_size = $-my_name
+
+align 4
+vmode   dd  1
+targ    dd  text2
+
 I_END:
-;------------------------------------------------------------------------------
-offs            dd  ?
-flag            rb  1
-                rd  2
-text1           rb  80*(MAXSTRINGS+1)
-tmp1            db  ?
-                rd  2
-text2           rb  80*(MAXSTRINGS+1)
-tmp2            db  ?
+
+InfoStructure:
+        dd      ?       ; subfunction number
+        dd      ?       ; position in the file in bytes
+        dd      ?       ; upper part of the position address
+        dd      ?       ; number of bytes to read
+        dd      ?       ; pointer to the buffer to write data
+        db      ?
+        dd      ?       ; pointer to the filename
+
+buffer_length   rb  3
+process_count   dd  ?
+krnl_cnt        dd  ?
+pid_tid         dd  ?
+filepos         dd  ?
 xstart          dd  ?
-sc              sys_colors_new
-i_end:
-buffer_length   rb  1
-;------------------------------------------------------------------------------
+sc      sys_colors_new
+
+        rd  2
+text1   rb  80*(MAXSTRINGS+1)
+tmp1    dd  ?
+
+        rd  2
+text2   rb  80*(MAXSTRINGS+1)
+tmp2    dd  ?
+
 tmp             rb  256
 filename        rb  256
-;------------------------------------------------------------------------------
-align 4
-procinfo:
-        rb 1024
-;------------------------------------------------------------------------------
-align 4
+procinfo        rb  1024
 stackbuf        rb  2000h
-;------------------------------------------------------------------------------
 mem:
