@@ -386,58 +386,19 @@ align 4
         call    window._.set_window_box
         add     esp, sizeof.BOX
 
-        ; NOTE: do we really need this? to be reworked
-;       mov     byte[DONT_DRAW_MOUSE], 0 ; mouse pointer
-;       mov     byte[MOUSE_BACKGROUND], 0 ; no mouse under
-;       mov     byte[MOUSE_DOWN], 0 ; react to mouse up/down
-
-        ; NOTE: do we really need this? to be reworked
-;       call    [draw_pointer]
-;--------------------------------------
-align 4
 .exit:
         ret
 ;------------------------------------------------------------------------------
-align 4
+syscall_window_settings: ;///// system function 71 ////////////////////////////
 ;------------------------------------------------------------------------------
-syscall_window_settings: ;///// system function 71 /////////////////////////////
-;------------------------------------------------------------------------------
-;? <description>
-;------------------------------------------------------------------------------
-        dec     ebx     ; subfunction #1 - set window caption
-        jnz     .exit_fail
-
-        ; NOTE: only window owner thread can set its caption,
-        ;       so there's no parameter for PID/TID
-
         mov     edi, [CURRENT_TASK]
         shl     edi, 5
-
         mov     [edi * 8 + SLOT_BASE + APPDATA.wnd_caption], ecx
         or      [edi + window_data + WDATA.fl_wstyle], WSTYLE_HASCAPTION
-
-        call    window._.draw_window_caption
-
-        xor     eax, eax ; eax = 0 (success)
-        ret
-
-;  .get_window_caption:
-;        dec     eax     ; subfunction #2 - get window caption
-;        jnz     .exit_fail
-
-        ; not implemented yet
-;--------------------------------------
-align 4
-.exit_fail:
-        xor     eax, eax
-        inc     eax     ; eax = 1 (fail)
-        ret
+        jmp     window._.draw_window_caption
 ;------------------------------------------------------------------------------
 align 4
-;------------------------------------------------------------------------------
 set_window_defaults: ;/////////////////////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? <description>
 ;------------------------------------------------------------------------------
         mov     byte [window_data + 0x20 + WDATA.cl_titlebar + 3], 1 ; desktop is not movable
         push    eax ecx
@@ -1638,30 +1599,21 @@ window._.sys_set_window: ;/////////////////////////////////////////////////////
         mov     eax, [CURRENT_TASK]
         shl     eax, 5
         add     eax, window_data
-
-        ; save window colors
+; save window colors
         mov     [eax + WDATA.cl_workarea], edx
         mov     [eax + WDATA.cl_titlebar], esi
         mov     [eax + WDATA.cl_frames], edi
-
         mov     edi, eax
-
-        ; was it already defined before?
+; Was it already defined before?
         test    [edi + WDATA.fl_wdrawn], 1
         jnz     .set_client_box
-        or      [edi + WDATA.fl_wdrawn], 1
-; After first draw_window we need redraw mouse necessarily!
+; No, it wasn't. After first draw_window we need redraw mouse necessarily!
 ; Otherwise the user can see cursor specified by f.37.5 from another window.
-; He will be really unhappy! He is terrible in rage - usually he throws stones!
+; He will be really unhappy! Usually, he will be enraged!
+        or      [edi + WDATA.fl_wdrawn], 1
         mov     [redrawmouse_unconditional], 1
         call    wakeup_osloop
-        ; NOTE: commented out since doesn't provide necessary functionality
-        ;       anyway, to be reworked
-;       mov     eax, [timer_ticks] ; [0xfdf0]
-;       add     eax, 100
-;       mov     [new_window_starting], eax
-
-        ; no it wasn't, performing initial window definition
+; performing initial window definition
         movzx   eax, bx
         mov     [edi + WDATA.box.width], eax
         movzx   eax, cx
@@ -2316,6 +2268,8 @@ align 4
         or      edx, edx
         jz      .exit
 
+        mov     ebp, [edi + window_data + WDATA.box.left - 2]
+        mov     bp, word[edi + window_data + WDATA.box.top]
         movzx   eax, [edi + window_data + WDATA.fl_wstyle]
         and     al, 0x0F
         cmp     al, 3
@@ -2327,66 +2281,46 @@ align 4
 ;--------------------------------------
 align 4
 .skinned:
-        mov     ebp, [edi + window_data + WDATA.box.left - 2]
-        mov     bp, word[edi + window_data + WDATA.box.top]
         movzx   eax, word[edi + window_data + WDATA.box.width]
         sub     ax, [_skinmargins.left]
         sub     ax, [_skinmargins.right]
-        push    edx
-        cwde
-        cdq
-        mov     ebx, 6
-        idiv    ebx
-        pop     edx
-        or      eax, eax
         js      .exit
-
-        mov     esi, eax
         mov     ebx, dword[_skinmargins.left - 2]
         mov     bx, word[_skinh]
         sub     bx, [_skinmargins.bottom]
         sub     bx, [_skinmargins.top]
         sar     bx, 1
-        adc     bx, 0
         add     bx, [_skinmargins.top]
-        add     bx, -3
-        add     ebx, ebp
+        sub     bx, 8
         jmp     .dodraw
 ;--------------------------------------
 align 4
 .not_skinned:
         cmp     al, 1
         je      .exit
-
-        mov     ebp, [edi + window_data + WDATA.box.left - 2]
-        mov     bp, word[edi + window_data + WDATA.box.top]
         movzx   eax, word[edi + window_data + WDATA.box.width]
         sub     eax, 16
-        push    edx
-        cwde
-        cdq
-        mov     ebx, 6
-        idiv    ebx
-        pop     edx
-        or      eax, eax
         js      .exit
-
-        mov     esi, eax
-        mov     ebx, 0x00080007
-        add     ebx, ebp
-;--------------------------------------
-align 4
+        mov     ebx, 80002h
 .dodraw:
+        shr     eax, 3
+        mov     esi, eax
+        add     ebx, ebp
         mov     ecx, [common_colours + 16]
-        or      ecx, 0x80000000
+        mov     al, 1
+        cmp     byte [edx], 4
+        jnc     @f
+        mov     al, [edx]
+        test    al, al
+        jz      .exit
+        inc     edx
+@@:
+        shl     eax, 28
+        or      ecx, eax
         xor     edi, edi
-        call    dtext_asciiz_esi
-;--------------------------------------
-align 4
+        call    dtext
 .exit:
-;        call    [draw_pointer]
-        call    __sys_draw_pointer
-        ret
+        jmp     __sys_draw_pointer
 ;------------------------------------------------------------------------------
 align 4
 ;------------------------------------------------------------------------------

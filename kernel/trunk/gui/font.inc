@@ -7,8 +7,6 @@
 
 $Revision$
 
-dtext_asciiz_esi:
-        btr     ecx, 31
 dtext:
 ; edx -> string
 ; esi = number of characters

@@ -3890,12 +3890,16 @@ Remarks:
 Parameters:
   * eax = 71 - function number
   * ebx = 1 - subfunction number
-  * ecx = pointer to caption string
+  * ecx = pointer to zero terminated string
 Returned value:
   * function does not return value
 Remarks:
-  * String must be in the ASCIIZ-format. Disregarding real string
-    length, no more than 255 characters are drawn.
+  * You may set the caption string encoding by putting
+    at the start of the string a byte with next values:
+    1 = cp866
+    2 = UTF-16LE
+    3 = UTF-8
+    otherwise will be used cp866.
   * Pass NULL in ecx to remove caption.
 
 ======================================================================
