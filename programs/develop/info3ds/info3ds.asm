@@ -1,18 +1,13 @@
 use32
 	org 0x0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 0x1
-	dd start
-	dd i_end ;размер приложения
-	dd mem
-	dd stacktop
-	dd 0
-	dd sys_path
+	dd 1, start, i_end, mem, stacktop, 0, sys_path
 
 include '../../macros.inc'
 include '../../proc32.inc'
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/TinyGL/asm_fork/opengl_const.inc'
 include '../../dll.inc'
 include 'lang.inc'
 include 'info_fun_float.inc'
@@ -37,6 +32,7 @@ open_file_lif dd 0 ;указатель на память для открытия файлов 3ds
 open_file_size dd 0 ;размер открытого файла
 
 ;
+main_wnd_height equ 460 ;высота главного окна программы
 fn_toolbar db 'toolbar.png',0
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
 IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*7
@@ -70,7 +66,7 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov [run_file_70.Count], dword size
-	m2m [run_file_70.Buffer], eax
+	mov [run_file_70.Buffer], eax
 	mov byte[run_file_70+20], 0
 	mov [run_file_70.FileName], file_name
 	mcall 70,run_file_70 ;загружаем файл изображения
@@ -120,18 +116,15 @@ align 4
 start:
 	load_libraries l_libs_start,l_libs_end
 	;проверка на сколько удачно загузились библиотеки
-	cmp	dword [lib_0+ll_struc_size-4],0
-	jnz @f
-	cmp	dword [lib_1+ll_struc_size-4],0
-	jnz @f
-	cmp	dword [lib_2+ll_struc_size-4],0
-	jnz @f
-	cmp	dword [lib_3+ll_struc_size-4],0
-	jnz @f
-	jmp .lib
-	@@:
+	mov	ebp,lib_0
+	.test_lib_open:
+	cmp	dword [ebp+ll_struc_size-4],0
+	jz	@f
 		mcall -1 ;exit not correct
-	.lib:
+	@@:
+	add ebp,ll_struc_size
+	cmp ebp,l_libs_end
+	jl .test_lib_open
 	mcall 48,3,sc,sizeof.system_colors
 	mcall 40,0x27
 	stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
@@ -165,8 +158,14 @@ start:
 	mcall 26,9
 	mov [last_time],eax
 
-align 4
-red_win:
+	stdcall [kosglMakeCurrent], 5,3,320,240,ctx1
+	stdcall [glEnable], GL_DEPTH_TEST
+	stdcall [glEnable], GL_NORMALIZE ;делам нормали одинаковой величины во избежание артефактов
+	stdcall [glClearColor], 0.0,0.0,0.0,0.0
+	stdcall [glShadeModel], GL_SMOOTH
+	stdcall [gluNewQuadric]
+	mov [qObj],eax
+
 	call draw_window
 
 align 4
@@ -179,16 +178,15 @@ still:
 		mov ebx,eax
 	@@:
 	sub ebx,eax
-	;cmp ebx,10 ;задержка
-	;ja timer_funct
-	;test ebx,ebx
-	;jz timer_funct
 	mcall 23
 	cmp eax,0
 	je timer_funct
 
 	cmp al,1
-	jz red_win
+	jne @f
+		call draw_window
+		jmp still
+	@@:
 	cmp al,2
 	jz key
 	cmp al,3
@@ -297,17 +295,15 @@ proc buf_draw_hex_table, offs:dword, size_line:dword
 endp
 
 align 4
-proc draw_block_end_line, coord_y:dword
-	push eax ebx ecx
-		add ebx,20 ;20 = width 2.5 symbols
-		mov eax,[coord_y]
-		sub eax,2
-		mov ecx,eax
-		add ecx,10
-		stdcall [buf2d_line], buf_0, 0,ecx,ebx,ecx ,0xff
-		stdcall [buf2d_line], buf_0, ebx,ecx,ebx,eax ,0xff
-		stdcall [buf2d_line], buf_0, ebx,eax,5+10*24-4,eax ,0xff
-	pop ecx ebx eax
+proc draw_block_end_line uses eax ebx ecx, coord_y:dword
+	add ebx,20 ;20 = width 2.5 symbols
+	mov eax,[coord_y]
+	sub eax,2
+	mov ecx,eax
+	add ecx,10
+	stdcall [buf2d_line], buf_0, 0,ecx,ebx,ecx ,0xff
+	stdcall [buf2d_line], buf_0, ebx,ecx,ebx,eax ,0xff
+	stdcall [buf2d_line], buf_0, ebx,eax,5+10*24-4,eax ,0xff
 	ret
 endp
 
@@ -316,12 +312,10 @@ draw_window:
 pushad
 	mcall 12,1
 	xor eax,eax
-	mov ebx,(20 shl 16)+560
-	mov ecx,(20 shl 16)+315
 	mov edx,[sc.work]
-	or  edx,(3 shl 24)+0x10000000+0x20000000
+	or  edx,0x33000000
 	mov edi,capt
-	int 0x40
+	mcall , (20 shl 16)+560, (20 shl 16)+main_wnd_height
 
 	mcall 9,procinfo,-1
 	mov eax,dword[procinfo.box.height]
@@ -445,6 +439,7 @@ button:
 	stdcall [buf2d_delete],buf_1 ;удаляем буфер
 	stdcall mem.Free,[image_data_toolbar]
 	stdcall mem.Free,[open_file_lif]
+	stdcall [gluDeleteQuadric], [qObj]
 	mcall -1
 
 
@@ -467,7 +462,6 @@ but_open_file:
 	je .end_open_file
 	;код при удачном открытии диалога
 
-	mov eax,70 ;70-я функция работа с файлами
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
@@ -475,8 +469,7 @@ but_open_file:
 	m2m [run_file_70.Buffer], dword[open_file_lif]
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
+	mcall 70,run_file_70 ;загружаем файл изображения
 	cmp ebx,0xffffffff
 	je .end_open_file
 
@@ -486,6 +479,14 @@ but_open_file:
 	mov byte[can_save],0
 	call init_tree
 	stdcall [buf2d_draw], buf_0 ;обновляем буфер на экране
+	mov dword[angle_x],0.0
+	mov dword[angle_y],0.0
+	mov dword[angle_z],0.0
+	cmp byte[prop_wnd_run],0
+	je @f
+		;чистим окно с координатами
+		stdcall [tl_info_clear], tree3
+	@@:
 
 	.end_open_file:
 	popad
@@ -1014,17 +1015,17 @@ endp
 align 4
 OpenDialog_data:
 .type			dd 0 ;0 - открыть, 1 - сохранить, 2 - выбрать дтректорию
-.procinfo		dd procinfo	;+4
-.com_area_name		dd communication_area_name	;+8
-.com_area		dd 0	;+12
-.opendir_path		dd plugin_path	;+16
+.procinfo		dd procinfo ;+4
+.com_area_name	dd communication_area_name ;+8
+.com_area		dd 0 ;+12
+.opendir_path	dd plugin_path ;+16
 .dir_default_path	dd default_dir ;+20
 .start_path		dd file_name ;+24 путь к диалогу открытия файлов
-.draw_window		dd draw_window	;+28
-.status 		dd 0	;+32
-.openfile_path		dd openfile_path	;+36 путь к открываемому файлу
-.filename_area		dd filename_area	;+40
-.filter_area		dd Filter
+.draw_window	dd draw_window ;+28
+.status 		dd 0 ;+32
+.openfile_path	dd openfile_path ;+36 путь к открываемому файлу
+.filename_area	dd filename_area ;+40
+.filter_area	dd Filter
 .x:
 .x_size 		dw 420 ;+48 ; Window X size
 .x_start		dw 10 ;+50 ; Window X position
@@ -1050,39 +1051,66 @@ db 'TXT',0
 db 0
 
 
-
-head_f_i:
-head_f_l db 'Системная ошибка',0
-
+align 4
 system_dir_0 db '/sys/lib/'
 lib_name_0 db 'proc_lib.obj',0
-err_message_found_lib_0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,0
-err_message_import_0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,0
-
 system_dir_1 db '/sys/lib/'
 lib_name_1 db 'libimg.obj',0
-err_message_found_lib_1 db 'Не найдена библиотека ',39,'libimg.obj',39,0
-err_message_import_1 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,0
-
 system_dir_2 db '/sys/lib/'
 lib_name_2 db 'box_lib.obj',0
-err_msg_found_lib_2 db 'Не найдена библиотека ',39,'box_lib.obj',39,0
-err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'box_lib',39,0
-
 system_dir_3 db '/sys/lib/'
 lib_name_3 db 'buf2d.obj',0
-err_msg_found_lib_3 db 'Не найдена библиотека ',39,'buf2d.obj',39,0
-err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,0
+system_dir_4 db '/sys/lib/'
+lib_name_4 db 'kmenu.obj',0
+system_dir_5 db '/sys/lib/'
+lib_name_5 db 'tinygl.obj',0
 
+if lang eq ru
+	head_f_i:
+	head_f_l db 'Системная ошибка',0
+	err_msg_found_lib_0 db 'Не найдена библиотека ',39,'proc_lib.obj',39,0
+	err_msg_import_0 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,0
+	err_msg_found_lib_1 db 'Не найдена библиотека ',39,'libimg.obj',39,0
+	err_msg_import_1 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,0
+	err_msg_found_lib_2 db 'Не найдена библиотека ',39,'box_lib.obj',39,0
+	err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'box_lib',39,0
+	err_msg_found_lib_3 db 'Не найдена библиотека ',39,'buf2d.obj',39,0
+	err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,0
+	err_msg_found_lib_4 db 'Не найдена библиотека ',39,'kmenu.obj',39,0
+	err_msg_import_4 db 'Ошибка при импорте библиотеки ',39,'kmenu',39,0
+	err_msg_found_lib_5 db 'Не найдена библиотека ',39,'tinygl.obj',39,0
+	err_msg_import_5 db 'Ошибка при импорте библиотеки ',39,'tinygl',39,0
+else
+	head_f_i:
+	head_f_l db 'System error',0
+	err_msg_found_lib_0 db 'Sorry I cannot found library ',39,'proc_lib.obj',39,0
+	err_msg_import_0 db 'Error on load import library ',39,'proc_lib.obj',39,0
+	err_msg_found_lib_1 db 'Sorry I cannot found library ',39,'libimg.obj',39,0
+	err_msg_import_1 db 'Error on load import library ',39,'libimg.obj',39,0
+	err_msg_found_lib_2 db 'Sorry I cannot found library ',39,'box_lib.obj',39,0
+	err_msg_import_2 db 'Error on load import library ',39,'box_lib.obj',39,0
+	err_msg_found_lib_3 db 'Sorry I cannot found library ',39,'buf2d.obj',39,0
+	err_msg_import_3 db 'Error on load import library ',39,'buf2d.obj',39,0
+	err_msg_found_lib_4 db 'Sorry I cannot found library ',39,'kmenu.obj',39,0
+	err_msg_import_4 db 'Error on load import library ',39,'kmenu.obj',39,0
+	err_msg_found_lib_5 db 'Sorry I cannot found library ',39,'tinygl.obj',39,0
+	err_msg_import_5 db 'Error on load import library ',39,'tinygl',39,0
+end if
+
+align 4
 l_libs_start:
 	lib_0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
-		err_message_found_lib_0, head_f_l, proclib_import,err_message_import_0, head_f_i
+		err_msg_found_lib_0, head_f_l, proclib_import,err_msg_import_0, head_f_i
 	lib_1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
-		err_message_found_lib_1, head_f_l, import_libimg, err_message_import_1, head_f_i
-	lib_2 l_libs lib_name_2, sys_path, library_path, system_dir_2,\
-		err_msg_found_lib_2,head_f_l,import_box_lib,err_msg_import_2,head_f_i
-	lib_3 l_libs lib_name_3, sys_path, library_path, system_dir_3,\
-		err_msg_found_lib_3,head_f_l,import_buf2d,err_msg_import_3,head_f_i
+		err_msg_found_lib_1, head_f_l, import_libimg, err_msg_import_1, head_f_i
+	lib_2 l_libs lib_name_2, sys_path, library_path,  system_dir_2,\
+		err_msg_found_lib_2, head_f_l, import_box_lib,err_msg_import_2,head_f_i
+	lib_3 l_libs lib_name_3, sys_path, library_path,  system_dir_3,\
+		err_msg_found_lib_3, head_f_l, import_buf2d,  err_msg_import_3,head_f_i
+	lib_4 l_libs lib_name_4, sys_path, library_path,  system_dir_4,\
+		err_msg_found_lib_4, head_f_l, import_libkmenu,err_msg_import_4,head_f_i
+	lib_5 l_libs lib_name_5, sys_path, library_path,  system_dir_5,\
+		err_msg_found_lib_5, head_f_l, import_lib_tinygl,err_msg_import_5,head_f_i		
 l_libs_end:
 
 align 4
@@ -1265,6 +1293,43 @@ import_box_lib:
 	sz_tl_node_poi_get_next_info db 'tl_node_poi_get_next_info',0
 	sz_tl_node_poi_get_data db 'tl_node_poi_get_data',0
 
+align 4
+import_libkmenu:
+	kmenu_init		       dd akmenu_init
+	kmainmenu_draw		       dd akmainmenu_draw
+	kmainmenu_dispatch_cursorevent dd akmainmenu_dispatch_cursorevent
+	ksubmenu_new		       dd aksubmenu_new
+	ksubmenu_delete 	       dd aksubmenu_delete
+	ksubmenu_draw		       dd aksubmenu_draw
+	ksubmenu_add		       dd aksubmenu_add
+	kmenuitem_new		       dd akmenuitem_new
+	kmenuitem_delete	       dd akmenuitem_delete
+	kmenuitem_draw		       dd akmenuitem_draw
+dd 0,0
+	akmenu_init			db 'kmenu_init',0
+	akmainmenu_draw 		db 'kmainmenu_draw',0
+	akmainmenu_dispatch_cursorevent db 'kmainmenu_dispatch_cursorevent',0
+	aksubmenu_new			db 'ksubmenu_new',0
+	aksubmenu_delete		db 'ksubmenu_delete',0
+	aksubmenu_draw			db 'ksubmenu_draw',0
+	aksubmenu_add			db 'ksubmenu_add',0
+	akmenuitem_new			db 'kmenuitem_new',0
+	akmenuitem_delete		db 'kmenuitem_delete',0
+	akmenuitem_draw 		db 'kmenuitem_draw',0
+
+align 4
+import_lib_tinygl:
+macro E_LIB n
+{
+	n dd sz_#n
+}
+include '../../develop/libraries/TinyGL/asm_fork/export.inc'
+	dd 0,0
+macro E_LIB n
+{
+	sz_#n db `n,0
+}
+include '../../develop/libraries/TinyGL/asm_fork/export.inc'
 
 align 4
 mouse_dd dd 0x0
@@ -1276,40 +1341,56 @@ buf_0: dd 0 ;указатель на буфер изображения
 .l: dw 205 ;+4 left
 .t: dw 35 ;+6 top
 .w: dd 340 ;+8 w
-.h: dd 250 ;+12 h
+.h: dd main_wnd_height-65 ;+12 h
 .color: dd 0xffffd0 ;+16 color
 	db 24 ;+20 bit in pixel
 
 align 4
 buf_1:
 	dd 0 ;указатель на буфер изображения
-	dw 25 ;+4 left
-	dw 25 ;+6 top
-	dd 128 ;+8 w
-	dd 144 ;+12 h
-	dd 0 ;+16 color
-	db 24 ;+20 bit in pixel
+	dw 25,25 ;+4 left,top
+	dd 128,144 ;+8 w,h
+	dd 0,24 ;+16 color,bit in pixel
 
 align 4
 el_focus dd tree1
 tree1 tree_list size_one_list,300+2, tl_key_no_edit+tl_draw_par_line,\
-	16,16, 0xffffff,0xb0d0ff,0xd000ff, 5,35,195-16,250, 16,list_offs_text,0, el_focus,\
+	16,16, 0xffffff,0xb0d0ff,0x400040, 5,35,195-16,250, 16,list_offs_text,0, el_focus,\
 	w_scr_t1,0
 
 align 4
-w_scr_t1 scrollbar 16,0, 3,0, 15, 100, 0,0, 0xeeeeee, 0xbbddff, 0, 1
+w_scr_t1 scrollbar 16,0, 3,0, 15, 100, 0,0, 0,0,0, 1
+
+align 4
+ctx1 db 28 dup (0) ;TinyGLContext or KOSGLContext
+;sizeof.TinyGLContext = 28
+
+qObj dd 0
+angle_x dd 0.0
+angle_y dd 0.0
+angle_z dd 0.0
+delt_size dd 3.0
+
+light_position dd 0.0, 0.0, 2.0, 1.0 ; Расположение источника [0][1][2]
+	;[3] = (0.0 - бесконечно удаленный источник, 1.0 - источник света на определенном расстоянии)
+light_dir dd 0.0,0.0,0.0 ;направление лампы
+
+mat_specular dd 0.3, 0.3, 0.3, 1.0 ; Цвет блика
+mat_shininess dd 3.0 ; Размер блика (обратная пропорция)
+white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемого источником
+lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 align 16
 i_end:
 	procinfo process_information
-	rb 1024
+	rb 2048
+align 16
 thread_coords:
-	rb 1024
+	rb 2048
 stacktop:
-	sys_path rb 1024
-	file_name:
-		rb 4096 
-	library_path rb 1024
+	sys_path rb 2048
+	file_name rb 4096 
+	library_path rb 2048
 	plugin_path rb 4096
 	openfile_path rb 4096
 	filename_area rb 256

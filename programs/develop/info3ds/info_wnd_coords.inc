@@ -3,7 +3,8 @@
 ; работы окна с координатами
 ;
 
-prop_wnd_width equ 350 ;ширина окна со свойствами объекта
+prop_wnd_width equ 340 ;ширина окна со свойствами объекта
+prop_wnd_height equ 460
 SIZE_ONE_FLOAT equ 14
 MAX_OBJECT_SIZE equ (4+SIZE_ONE_FLOAT*3+1)
 
@@ -14,6 +15,8 @@ txt_space:
 	db SIZE_ONE_FLOAT dup(' ')
 .end:
 	db 0
+
+rad_c dd 150 ;для вычисления радиуса
 
 obj_point: ;добавляемый объект
 	dd 0   ;указатель
@@ -28,6 +31,7 @@ prop_start:
 pushad
 	mcall 40,0x27 ;маска ожидаемых событий
 	inc byte[prop_wnd_run]
+	mov dword[w_scr_t3.type],1
 
 	stdcall [tl_node_get_data],tree1
 	xor edx,edx
@@ -100,11 +104,40 @@ pushad
 			jg .new_point
 			stdcall dword[tl_cur_beg], tree3
 	.no_object:
+	call obj_set_sizes
 	edit_boxes_set_sys_color edit1,editboxes_end,sc ;установка системных цветов
 	stdcall [edit_box_set_text], edit1, txt_q
 	stdcall [edit_box_set_text], edit2, txt_q
 	stdcall [edit_box_set_text], edit3, txt_q
 popad
+
+	call prop_red_win
+
+;не отрывать эту функцию от предыдущей
+align 4
+prop_still:
+	pushad
+	mcall 10
+
+	cmp al,1 ;изм. положение окна
+	jne @f
+		call prop_red_win
+		jmp .end
+	@@:
+	cmp al,2
+	jne @f
+		call prop_key
+		jmp .end
+	@@:
+	cmp al,3
+	jz prop_button
+	cmp al,6
+	jne @f 
+		call prop_mouse
+	@@:
+.end:
+	popad
+	jmp prop_still
 
 align 4
 prop_red_win:
@@ -115,37 +148,26 @@ pushad
 	mov edi,dword[capt_p] ;children window caption
 	mov bx,word[procinfo.box.left]
 	add bx,word[buf_0.l]
+	add bx,5 ;ширина боковой рамки
 	shl ebx,16
 	mov bx,prop_wnd_width
 	mov cx,word[procinfo.box.top]
 	add cx,word[buf_0.t]
 	shl ecx,16
-	mov cx,250
-	mov edx,0xffffd0
-	or  edx,0x33000000
+	mov cx,prop_wnd_height
+	mov edx,0xffffd0+0x33000000
 	int 0x40
 
-	mov eax,8
-	mov ebx,(5 shl 16)+20
-	mov ecx,(195 shl 16)+20
-	mov edx,3
 	mov esi,[sc.work_button]
-	int 0x40
+	mcall 8, (5 shl 16)+20, (246 shl 16)+20, 3
+	mcall , (30 shl 16)+20, (246 shl 16)+20, 4
 
-	mov ebx,(30 shl 16)+20
-	mov ecx,(195 shl 16)+20
-	mov edx,4
-	int 0x40
-
-	mov eax,7
 	mov ebx,[image_data_toolbar]
 	add ebx,4*IMAGE_TOOLBAR_ICON_SIZE
-	mov ecx,(16 shl 16)+16
-	mov edx,(7 shl 16)+197 ;load
-	int 0x40
+	mcall 7, , (16 shl 16)+16, (7 shl 16)+247 ;load
 
 	sub ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mov edx,(32 shl 16)+197 ;save
+	mov edx,(32 shl 16)+247 ;save
 	int 0x40
 
 	mov dword[w_scr_t3.all_redraw],1
@@ -154,38 +176,298 @@ pushad
 	stdcall [edit_box_draw], edit1
 	stdcall [edit_box_draw], edit2
 	stdcall [edit_box_draw], edit3
+
+	call draw_3d
 	mcall 12,2
 popad
+	ret
 
-;не отрывать эту функцию от предыдущей
 align 4
-prop_still:
-	pushad
-	mcall 10
+proc obj_set_sizes uses eax ebx esi
+	stdcall dword[tl_node_poi_get_info], tree3,0
+	cmp eax,0
+	je .end
+		stdcall [tl_node_poi_get_data], tree3,eax
+		finit
+		mov eax,[eax]
+		mov ebx,dword[eax]
+		mov [obj_x_min],ebx
+		mov [obj_x_max],ebx
+		mov ebx,dword[eax+4]
+		mov [obj_y_min],ebx
+		mov [obj_y_max],ebx
+		mov ebx,dword[eax+8]
+		mov [obj_z_min],ebx
+		mov [obj_z_max],ebx
 
-	cmp al,1 ;изм. положение окна
-	jz prop_red_win
-	cmp al,2
-	jne @f
-		call prop_key
+	stdcall dword[tl_node_poi_get_info], tree3,0
+align 4
+	.cycle_0: ;работа с координатой x
+		mov esi,eax
+		stdcall [tl_node_poi_get_data], tree3,esi
+		mov ebx,[eax]
+
+		fld dword[ebx]
+		fld dword[obj_x_min]
+		fcomp
+		fstsw ax
+		sahf
+		jb @f
+			mov eax,[ebx]
+			mov [obj_x_min],eax
+			ffree st0
+			fincstp
+			jmp .next_x
+		@@:
+		fld dword[obj_x_max]
+		fcompp
+		fstsw ax
+		sahf
+		ja .next_x
+			mov eax,[ebx]
+			mov [obj_x_max],eax
+		.next_x:
+
+		stdcall dword[tl_node_poi_get_next_info], tree3,esi
+		cmp eax,0
+		jne .cycle_0
+
+		fld1
+		fld dword[obj_x_max]
+		fsub dword[obj_x_min]
+		fst dword[obj_x_centr]
+		fdivp ;1/size.x
+		fstp dword[obj_x_scale]
+
+		fld dword[obj_x_centr]
+		fld1
+		fld1
+		faddp
+		fdivp ;centr.x = size.x/2
+		fadd dword[obj_x_min]
+		fchs
+		fstp dword[obj_x_centr]
+
+	stdcall dword[tl_node_poi_get_info], tree3,0
+align 4
+	.cycle_1: ;работа с координатой y
+		mov esi,eax
+		stdcall [tl_node_poi_get_data], tree3,esi
+		mov ebx,[eax]
+
+		fld dword[ebx+4]
+		fld dword[obj_y_min]
+		fcomp
+		fstsw ax
+		sahf
+		jb @f
+			mov eax,[ebx+4]
+			mov [obj_y_min],eax
+			ffree st0
+			fincstp
+			jmp .next_y
+		@@:
+		fld dword[obj_y_max]
+		fcompp
+		fstsw ax
+		sahf
+		ja .next_y
+			mov eax,[ebx+4]
+			mov [obj_y_max],eax
+		.next_y:
+
+		stdcall dword[tl_node_poi_get_next_info], tree3,esi
+		cmp eax,0
+		jne .cycle_1
+
+		fld1
+		fld dword[obj_y_max]
+		fsub dword[obj_y_min]
+		fst dword[obj_y_centr]
+		fdivp ;1/size.y
+		fstp dword[obj_y_scale]
+
+		fld dword[obj_y_centr]
+		fld1
+		fld1
+		faddp
+		fdivp ;centr.y = size.y/2
+		fadd dword[obj_y_min]
+		fchs
+		fstp dword[obj_y_centr]
+
+	stdcall dword[tl_node_poi_get_info], tree3,0
+align 4
+	.cycle_2: ;работа с координатой z
+		mov esi,eax
+		stdcall [tl_node_poi_get_data], tree3,esi
+		mov ebx,[eax]
+
+		fld dword[ebx+8]
+		fld dword[obj_z_min]
+		fcomp
+		fstsw ax
+		sahf
+		jb @f
+			mov eax,[ebx+8]
+			mov [obj_z_min],eax
+			ffree st0
+			fincstp
+			jmp .next_z
+		@@:
+		fld dword[obj_z_max]
+		fcompp
+		fstsw ax
+		sahf
+		ja .next_z
+			mov eax,[ebx+8]
+			mov [obj_z_max],eax
+		.next_z:
+
+		stdcall dword[tl_node_poi_get_next_info], tree3,esi
+		cmp eax,0
+		jne .cycle_2
+
+		fld1
+		fld dword[obj_z_max]
+		fsub dword[obj_z_min]
+		fst dword[obj_z_centr]
+		fdivp ;1/size.z
+		fstp dword[obj_z_scale]
+
+		fld dword[obj_z_centr]
+		fld1
+		fld1
+		faddp
+		fdivp ;centr.z = size.z/2
+		fadd dword[obj_z_min]
+		fchs
+		fstp dword[obj_z_centr]
+
+		;находим радиус для сферы
+		fld dword[obj_x_max]
+		fsub dword[obj_x_min]
+		fld dword[obj_y_max]
+		fsub dword[obj_y_min]
+		faddp
+		fild dword[rad_c]
+		fdivp ;radius=(size.x+size.y)/rad_c
+		fstp dword[sph_radius]
+	.end:
+	ret
+endp
+
+;рисование точек в 3d
+align 4
+draw_3d:
+	stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
+	stdcall [glPushMatrix]
+	stdcall [glTranslatef], 0.0,0.0,0.5 ;correct for z
+	stdcall [glScalef], [obj_x_scale],[obj_y_scale],[obj_z_scale]
+	stdcall [glScalef], 1.0,1.0,0.7 ;correct for z
+	stdcall [glRotatef], [angle_z],0.0,0.0,1.0
+	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
+	stdcall [glRotatef], [angle_x],1.0,0.0,0.0
+	stdcall [glTranslatef], [obj_x_centr],[obj_y_centr],[obj_z_centr]
+
+	stdcall [glColor3f], 1.0,1.0,1.0
+	stdcall [glBegin],GL_POINTS
+
+	stdcall dword[tl_node_poi_get_info], tree3,0
 	@@:
-	cmp al,3
-	jz prop_button
-	cmp al,6
-	jne @f 
-		call prop_mouse
+		cmp eax,0
+		je @f
+		mov esi,eax
+		stdcall [tl_node_poi_get_data], tree3,esi
+		mov eax,[eax]
+		stdcall [glVertex3f], [eax],[eax+4],[eax+8]
+		stdcall dword[tl_node_poi_get_next_info], tree3,esi
+		jmp @b
 	@@:
-	popad
-	jmp prop_still
+	stdcall [glEnd]
+
+	stdcall [tl_node_get_data],tree3
+	cmp eax,0
+	je @f
+		;выделение активной точки
+		mov eax,[eax]
+
+		stdcall [glBegin],GL_LINES
+		stdcall [glColor3f], 1.0, 0.0, 0.0
+		stdcall [glVertex3f], [obj_x_min],[eax+4],[eax+8]
+		stdcall [glVertex3f], [obj_x_max],[eax+4],[eax+8]
+		stdcall [glColor3f], 0.0, 0.0, 1.0
+		stdcall [glVertex3f], [eax],[obj_y_min],[eax+8]
+		stdcall [glVertex3f], [eax],[obj_y_max],[eax+8]
+		stdcall [glColor3f], 0.0, 1.0, 0.0
+		stdcall [glVertex3f], [eax],[eax+4],[obj_z_min]
+		stdcall [glVertex3f], [eax],[eax+4],[obj_z_max]
+		stdcall [glEnd]
+
+		stdcall [glColor3f], 1.0, 1.0, 0.0
+		stdcall [glTranslatef], [eax],[eax+4],[eax+8]
+		stdcall [gluSphere], [qObj], [sph_radius], 8,8
+	@@:
+
+	stdcall [glPopMatrix]
+	stdcall [kosglSwapBuffers]
+	ret
 
 align 4
 prop_key:
 push eax
 	mcall 2
-	stdcall [edit_box_key], edit1
-	stdcall [edit_box_key], edit2
-	stdcall [edit_box_key], edit3
+
+	test word [edit1.flags],10b ;ed_focus
+	je @f
+		stdcall [edit_box_key], edit1
+		jmp .end
+	@@:
+	test word [edit2.flags],10b
+	je @f
+		stdcall [edit_box_key], edit2
+		jmp .end
+	@@:
+	test word [edit3.flags],10b
+	je @f
+		stdcall [edit_box_key], edit3
+		jmp .end
+	@@:
 	stdcall [tl_key], tree3
+
+	cmp ah,178 ;Up
+	jne @f
+		fld dword[angle_x]
+		fadd dword[delt_size]
+		fstp dword[angle_x]
+		call draw_3d
+		jmp .end
+	@@:
+	cmp ah,177 ;Down
+	jne @f
+		fld dword[angle_x]
+		fsub dword[delt_size]
+		fstp dword[angle_x]
+		call draw_3d
+		jmp .end
+	@@:
+	cmp ah,176 ;Left
+	jne @f
+		fld dword[angle_y]
+		fadd dword[delt_size]
+		fstp dword[angle_y]
+		call draw_3d
+		jmp .end
+	@@:
+	cmp ah,179 ;Right
+	jne @f
+		fld dword[angle_y]
+		fsub dword[delt_size]
+		fstp dword[angle_y]
+		call draw_3d
+		;jmp .end
+	@@:
+	.end:
 pop eax
 	ret
 
@@ -205,32 +487,9 @@ prop_button:
 
 	cmp ah,3
 	jne @f
-		;загрузка координат в editbox-ы
-		push eax ebx
-		stdcall [tl_node_get_data],tree3
-		cmp eax,0
-		je .no_select_0
-			mov ebx,[eax]
-			mov word[NumberSymbolsAD],8
-			finit
-			fld dword[ebx]
-			fstp qword[Data_Double]
-			call DoubleFloat_to_String
-			stdcall [edit_box_set_text], edit1, Data_String
-			fld dword[ebx+4]
-			fstp qword[Data_Double]
-			call DoubleFloat_to_String
-			stdcall [edit_box_set_text], edit2, Data_String
-			fld dword[ebx+8]
-			fstp qword[Data_Double]
-			call DoubleFloat_to_String
-			stdcall [edit_box_set_text], edit3, Data_String
-			stdcall [edit_box_draw], edit1
-			stdcall [edit_box_draw], edit2
-			stdcall [edit_box_draw], edit3
-		.no_select_0:
-		pop ebx eax
-		jmp prop_still
+		call get_point_coords
+		call draw_3d
+		jmp prop_still.end
 	@@:
 	cmp ah,4
 	jne @f
@@ -244,8 +503,8 @@ prop_button:
 			mov esi,string1
 			mov edi,Data_String
 			cld
-			mov ecx,32
-			rep movsb
+			mov ecx,8
+			rep movsd
 			call String_to_DoubleFloat
 			fld  qword[Data_Double] ;считываем как double
 			fstp dword[ebx] ;сохраняем как float
@@ -253,8 +512,8 @@ prop_button:
 			mov esi,string2
 			mov edi,Data_String
 			cld
-			mov ecx,32
-			rep movsb
+			mov ecx,8
+			rep movsd
 			call String_to_DoubleFloat
 			fld  qword[Data_Double] ;считываем как double
 			fstp dword[ebx+4] ;сохраняем как float
@@ -262,8 +521,8 @@ prop_button:
 			mov esi,string3
 			mov edi,Data_String
 			cld
-			mov ecx,32
-			rep movsb
+			mov ecx,8
+			rep movsd
 			call String_to_DoubleFloat
 			fld  qword[Data_Double] ;считываем как double
 			fstp dword[ebx+8] ;сохраняем как float
@@ -293,13 +552,14 @@ prop_button:
 			stdcall dword[tl_draw], tree3
 			mov byte[can_save],1 ;для показа кнопки 'Сохранить'
 			mov dword[offs_last_timer],0 ;для обновления блока в таймере
+			call draw_3d
 		.no_select_1:
 		pop esi edi ecx ebx eax
-		jmp prop_still
+		jmp prop_still.end
 	@@:
 
 	cmp ah,1
-	jne prop_still
+	jne prop_still.end
 .exit:
 	mov dword[tree3.data_img],0 ;чистим указатели на иконки что-бы их не удалил деструктор
 	mov dword[tree3.data_img_sys],0 ;т. к. они еще используються в других элементах
@@ -307,17 +567,60 @@ prop_button:
 	mov byte[prop_wnd_run],0 ;обнуляем счетчик окон
 	mcall -1 ;выход из программы
 
+align 4
+get_point_coords:
+	;загрузка координат в editbox-ы
+	push eax ebx
+	stdcall [tl_node_get_data],tree3
+	cmp eax,0
+	je @f
+		mov ebx,[eax]
+		mov word[NumberSymbolsAD],8
+		finit
+		fld dword[ebx]
+		fstp qword[Data_Double]
+		call DoubleFloat_to_String
+		stdcall [edit_box_set_text], edit1, Data_String
+		fld dword[ebx+4]
+		fstp qword[Data_Double]
+		call DoubleFloat_to_String
+		stdcall [edit_box_set_text], edit2, Data_String
+		fld dword[ebx+8]
+		fstp qword[Data_Double]
+		call DoubleFloat_to_String
+		stdcall [edit_box_set_text], edit3, Data_String
+		stdcall [edit_box_draw], edit1
+		stdcall [edit_box_draw], edit2
+		stdcall [edit_box_draw], edit3
+	@@:
+	pop ebx eax
+	ret
+
+align 4
+sph_radius dd 0 ;радиус сферы для выделения активной точки
+obj_x_max dd 0
+obj_x_min dd 0
+obj_x_centr dd 0
+obj_x_scale dd 1.0
+obj_y_max dd 0
+obj_y_min dd 0
+obj_y_centr dd 0
+obj_y_scale dd 1.0
+obj_z_max dd 0
+obj_z_min dd 0
+obj_z_centr dd 0
+obj_z_scale dd 1.0
+
 capt_p dd 0
 
 ;дерево с объектами в пользовательском файле
-tree3 tree_list MAX_OBJECT_SIZE,3,\
-	tl_key_no_edit+tl_list_box_mode,\
-	16,16, 0xffffff,0xb0d0ff,0xd000ff, 5,30,300,160, 16, 4,0, el_focus,\
-	w_scr_t3,0
+tree3 tree_list MAX_OBJECT_SIZE,3, tl_key_no_edit+tl_list_box_mode,\
+	16,16, 0xffffff,0xb0d0ff,0x400040, 5,270,303,160, 16, 4,0, el_focus,\
+	w_scr_t3,get_point_coords
 
-edit1 edit_box 80,  70, 200, 0xffffff, 0xff, 0x80ff, 0, 0x8000, 34, string1, mouse_dd, 0
-edit2 edit_box 80, 154, 200, 0xffffff, 0xff, 0x80ff, 0, 0x8000, 34, string2, mouse_dd, 0
-edit3 edit_box 80, 238, 200, 0xffffff, 0xff, 0x80ff, 0, 0x8000, 34, string3, mouse_dd, 0
+edit1 edit_box 80,  76, 249, 0xffd0d0, 0xff, 0x80ff, 0, 0x8000, 34, string1, mouse_dd, 0
+edit2 edit_box 80, 160, 249, 0xd0d0ff, 0xff, 0x80ff, 0, 0x8000, 34, string2, mouse_dd, 0
+edit3 edit_box 80, 244, 249, 0xd0ffd0, 0xff, 0x80ff, 0, 0x8000, 34, string3, mouse_dd, 0
 editboxes_end:
 
 string1 rb 34
@@ -325,19 +628,4 @@ string2 rb 34
 string3 rb 34
 
 align 4
-w_scr_t3:
-.size_x     dw 16 ;+0
-rb 2+2+2
-.btn_high   dd 15 ;+8
-.type	    dd 1  ;+12
-.max_area   dd 100  ;+16
-rb 4+4
-.bckg_col   dd 0xeeeeee ;+28
-.frnt_col   dd 0xbbddff ;+32
-.line_col   dd 0  ;+36
-rb 4+2+2
-.run_x:
-rb 2+2+2+2+4+4+4+4+4+4
-.all_redraw dd 0 ;+80
-.ar_offset  dd 1 ;+84
-
+w_scr_t3 scrollbar 16, 0,0,0, 15, 100,0,0, 0,0,0, 1
