@@ -1,5 +1,5 @@
-#define TITLE "Eolite File Manager v3.21"
-#define ABOUT_TITLE "Eolite 3.21"
+#define TITLE "Eolite File Manager v3.22"
+#define ABOUT_TITLE "Eolite 3.22"
 
 #ifdef LANG_RUS
 	?define T_FILE "” ©«"

@@ -199,19 +199,19 @@ void GetSizeMoreFiles(dword way)
 		{
 			sprintf(#cur_file,"%s%s",way,file_mas[i]*304+buf+72);
 			size_dir += fs.get_size(#cur_file);
-			/*
 			if (TestBit(ESDWORD[file_mas[i]*304+buf+32], 4) )
 			{
-				debugln(#cur_file);
-				GetSizeDir(#cur_file);
+				//debugln(#cur_file);
+				fs.get_size(#cur_file);
+				dir_count = dir_count + ECX;
 				dir_count++;
+				file_count = file_count + EDX;
 			}
 			else
 			{
 				size_dir += fs.get_size(#cur_file);
 				file_count++;
 			}
-			*/
         }
 	}  
 }
@@ -240,8 +240,11 @@ void properties_dialog()
 		GetFileInfo(#file_path, #file_info_general);
 		strcpy(#file_name2, #file_name);
 		file_name_ed.size = strlen(#file_name2);   
-		//if(itdir) GetSizeDir(#file_path);
-		size_dir = fs.get_size(#file_path);
+		fs.get_size(#file_path);
+		element_size = EAX;
+		file_count = EDX;
+		dir_count =ECX;
+		debugi(dir_count);
 		atr_readonly = file_info_general.readonly;
 		atr_hidden = file_info_general.hidden;
 		atr_system = file_info_general.system;
@@ -357,13 +360,12 @@ void DrawPropertiesWindow()
 		WriteText(50, 13, 0x80, 0x000000, PR_T_NAME);                          
 		edit_box_draw stdcall (#file_name_ed);
 		
-		if (!itdir) element_size = file_info_general.sizelo;
-		else
+		if (itdir) 
 		{
-			WriteText(10, 80, 0x80, 0x000000, PR_T_CONTAINS);                              
+			WriteText(10, 80, 0x80, 0x000000, PR_T_CONTAINS);   
 			sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
 			WriteText(100, 80, 0x80, 0x000000, #folder_info);
-			element_size = size_dir;
+			//element_size = size_dir;
 		}
 		WriteText(10,  95, 0x80, 0x000000, SET_3);
         WriteText(10, 110, 0x80, 0x000000, SET_4);
