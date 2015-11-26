@@ -1,7 +1,7 @@
 if lang eq ru
-capt db 'info 3ds версия 10.11.15',0 ;подпись окна
+capt db 'info 3ds версия 26.11.15',0 ;подпись окна
 else
-capt db 'info 3ds version 10.11.15',0 ;window caption
+capt db 'info 3ds version 26.11.15',0 ;window caption
 end if
 
 MAX_FILE_LEVEL equ 20 ;максимальный уровень вложенности блоков для анализа
@@ -69,6 +69,7 @@ block_3ds CHUNK_MATNAME, 3,1,txt_a000
 block_3ds 0xa010,4,0,txt_a010
 block_3ds 0xa020,4,0,txt_a020
 block_3ds 0xa030,4,0,txt_a030
+block_3ds 0xa100,5,1,txt_a100
 block_3ds CHUNK_TEXTURE, 3,0,txt_a200
 block_3ds CHUNK_MAPFILE, 6,1,txt_a300
 block_3ds CHUNK_KEYFRAMER,   7,0,txt_b000
@@ -145,10 +146,10 @@ txt_4160 db 'Матрица перевода',0
 txt_4600 db 'Свет',0
 txt_4700 db 'Камера',0
 txt_a000 db 'Название материала',0
-;txt_a100 db 'MAT_SHADING',0
 txt_a010 db 'Окружающий цвет',0
 txt_a020 db 'Диффузный цвет',0
 txt_a030 db 'Зеркальный цвет',0
+txt_a100 db 'Тип материала [1=flat 2=gouraud 3=phong 4=metal]',0
 txt_a200 db 'Текстура материала 1',0
 txt_a300 db 'Имя файла текстуры',0
 ;txt_a353 db 'MAT_MAP_TEXBLUR',0
@@ -230,6 +231,7 @@ txt_a000 db 'Material name',0
 txt_a010 db 'Ambient color',0
 txt_a020 db 'Diffuse color',0
 txt_a030 db 'Specular color',0
+txt_a100 db 'Material type [1=flat 2=gouraud 3=phong 4=metal]',0
 txt_a200 db 'Texture map 1',0
 txt_a300 db 'Mapping filename',0
 txt_afff db 'Meterial',0

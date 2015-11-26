@@ -11,6 +11,7 @@ include '../../develop/libraries/TinyGL/asm_fork/opengl_const.inc'
 include '../../dll.inc'
 include 'lang.inc'
 include 'info_fun_float.inc'
+include 'info_menu.inc'
 
 debug equ 0
 
@@ -129,6 +130,24 @@ start:
 	mcall 40,0x27
 	stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
 
+	;kmenu initialisation
+	stdcall [kmenu_init],sc
+	stdcall [ksubmenu_new]
+	mov [main_menu], eax
+
+	stdcall [ksubmenu_new]
+	mov [main_menu_view], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Vertexes, 5
+	stdcall [ksubmenu_add], [main_menu_view], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Faces, 6
+	stdcall [ksubmenu_add], [main_menu_view], eax
+	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
+	stdcall [ksubmenu_add], [main_menu_view], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Light, 7
+	stdcall [ksubmenu_add], [main_menu_view], eax	
+	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_View, [main_menu_view]
+	stdcall [ksubmenu_add], [main_menu], eax
+
 	mov dword[w_scr_t1.type],1
 	stdcall dword[tl_data_init], tree1
 	;системные иконки 16*16 для tree_list
@@ -158,7 +177,7 @@ start:
 	mcall 26,9
 	mov [last_time],eax
 
-	stdcall [kosglMakeCurrent], 5,3,320,240,ctx1
+	stdcall [kosglMakeCurrent], 5,23,320,240,ctx1
 	stdcall [glEnable], GL_DEPTH_TEST
 	stdcall [glEnable], GL_NORMALIZE ;делам нормали одинаковой величины во избежание артефактов
 	stdcall [glClearColor], 0.0,0.0,0.0,0.0
@@ -208,13 +227,10 @@ mouse:
 align 4
 timer_funct:
 	pushad
-if debug
-	mcall 4, (5 shl 16)+8, 0xff+0x80000000, txt_0002
-end if
 	mcall 26,9
 	mov [last_time],eax
 
-	;
+	;просматриваем выделенный блок данных
 	stdcall [tl_node_get_data],tree1
 	cmp eax,0
 	je @f
@@ -227,6 +243,7 @@ end if
 		add eax,dword[open_file_lif] ;получаем значение сдвига в памяти
 		cmp dword[offs_last_timer],eax
 		je @f
+			;если выделенный блок данных не совпадает с последним запомненным
 			mov dword[offs_last_timer],eax
 			call buf_draw_beg
 			stdcall [buf2d_draw_text], buf_0, buf_1,txt_3ds_offs,5,35,0xb000
@@ -240,6 +257,12 @@ end if
 			stdcall [buf2d_draw], buf_0 ;обновляем буфер на экране
 	@@:
 	popad
+
+	;просмотр окна с координатами точек
+	;cmp byte[prop_wnd_run],0
+	;je @f
+	;	call prop_timer_funct
+	;@@:
 	jmp still
 
 align 4
@@ -479,9 +502,7 @@ but_open_file:
 	mov byte[can_save],0
 	call init_tree
 	stdcall [buf2d_draw], buf_0 ;обновляем буфер на экране
-	mov dword[angle_x],0.0
-	mov dword[angle_y],0.0
-	mov dword[angle_z],0.0
+	call prop_wnd_clear_param ;чистим параметры окна с координатами
 	cmp byte[prop_wnd_run],0
 	je @f
 		;чистим окно с координатами
@@ -778,7 +799,7 @@ proc add_3ds_object, icon:dword,level:dword,size_bl:dword,info_bl:dword
 			mov ecx,size_one_list-(list_offs_text+5)
 			cld
 			rep movsb
-			mov byte[buffer+size_one_list-1],0 ;0 - символ конеца строки
+			mov byte[buffer+size_one_list-1],0 ;0 - символ конца строки
 		.no_capt:
 		stdcall [tl_node_add], tree1, ebx, buffer
 		stdcall [tl_cur_next], tree1
@@ -819,6 +840,42 @@ proc print_err, fun:dword, mes:dword ;выводим сообщение об шибке на доску отладк
 	popad
 	ret
 endp
+
+;input:
+; eax - value
+; edi - string buffer
+; len - buffer len
+;output:
+align 4
+proc convert_int_to_str, len:dword
+pushad
+	mov esi,[len]
+	add esi,edi
+	dec esi
+	call .str
+popad
+	ret
+endp
+
+align 4
+.str:
+	mov ecx,0x0a
+	cmp eax,ecx
+	jb @f
+		xor edx,edx
+		div ecx
+		push edx
+		call .str
+		pop eax
+	@@:
+	cmp edi,esi
+	jge @f
+		or al,0x30
+		stosb
+		mov byte[edi],0
+	@@:
+	ret
+
 end if
 
 align 4
@@ -857,7 +914,6 @@ but_save_file:
 	je .end_save_file
 	;код при удачном открытии диалога
 
-	mov eax,70 ;70-я функция работа с файлами
 	mov [run_file_70.Function], 2
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
@@ -867,11 +923,10 @@ but_save_file:
 	mov dword[run_file_70.Count], ebx ;размер файла
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
+	mcall 70,run_file_70
 	cmp ebx,0xffffffff
 	je .end_save_file
-
+		;...сообщение...
 	.end_save_file:
 	popad
 	ret
@@ -1333,7 +1388,6 @@ include '../../develop/libraries/TinyGL/asm_fork/export.inc'
 
 align 4
 mouse_dd dd 0x0
-sc system_colors 
 last_time dd 0
 
 align 4
@@ -1371,7 +1425,7 @@ angle_y dd 0.0
 angle_z dd 0.0
 delt_size dd 3.0
 
-light_position dd 0.0, 0.0, 2.0, 1.0 ; Расположение источника [0][1][2]
+light_position dd 0.0, 0.0, -2.0, 1.0 ; Расположение источника [0][1][2]
 	;[3] = (0.0 - бесконечно удаленный источник, 1.0 - источник света на определенном расстоянии)
 light_dir dd 0.0,0.0,0.0 ;направление лампы
 
@@ -1383,6 +1437,7 @@ lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 align 16
 i_end:
 	procinfo process_information
+	sc system_colors
 	rb 2048
 align 16
 thread_coords:
