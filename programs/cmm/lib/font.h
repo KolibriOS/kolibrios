@@ -5,7 +5,7 @@
 #include "../lib/math.h"
 #endif
 
-#ifndef INCLUDE_IO_H
+#ifndef INCLUDE_FS_H
 #include "../lib/obj/fs.h"
 #endif
 

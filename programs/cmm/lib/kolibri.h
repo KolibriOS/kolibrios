@@ -813,6 +813,7 @@ void ______INIT______()
 	$pop     ebx
 
 	main();
+	ExitProcess();
 }
 ______STOP______:
 #endif
