@@ -3,8 +3,12 @@
 ; работы окна с координатами вершин
 ;
 
-prop_wnd_width equ 340 ;ширина окна со свойствами объекта
-prop_wnd_height equ 460
+prop_wnd_width  equ 340 ;ширина окна со свойствами объекта
+prop_wnd_height equ 460 ;высота окна со свойствами объекта
+3d_wnd_l equ   5 ;отступ для tinygl буфера слева
+3d_wnd_t equ  23 ;отступ для tinygl буфера сверху
+3d_wnd_w equ 320
+3d_wnd_h equ 240
 SIZE_ONE_FLOAT equ 14
 MAX_OBJECT_SIZE equ (4+SIZE_ONE_FLOAT*3+1)
 
@@ -12,7 +16,19 @@ bit_vertexes equ 0
 bit_faces equ 1
 bit_faces_fill equ 2
 bit_light equ 3
-def_dr_mode equ 0x1111b
+
+ini_name db 'info3ds.ini',0
+ini_sec_w3d db 'Window 3d',0
+key_dv  db 'draw_vertices',0
+key_df  db 'draw_faces',0
+key_dff db 'draw_faces_fill',0
+key_dl  db 'draw_light',0
+key_ox  db 'col_ox',0
+key_oy  db 'col_oy',0
+key_oz  db 'col_oz',0
+key_bk  db 'col_bkgnd',0
+key_vert db 'col_vertices',0
+key_face db 'col_faces',0
 
 prop_wnd_run db 0 ;переменная следящая за тем что-бы не запускать больше 1-го окна со свойствами одновременно
 
@@ -46,29 +62,68 @@ pushad
 	cmp eax,0
 	je .no_points
 		mov ebx,[eax] ;получаем значение сдвига выбранного блока
-		add ebx,[open_file_lif]
+		add ebx,[open_file_data]
 
-		cmp word[ebx],CHUNK_VERTLIST
-		jne .end_vlist
-			movzx edx,word[ebx+6] ;колличество точек
-			add ebx,8
-			mov dword[capt_p],txt_4110
-			;поиск данных для треугольков
-			mov ecx,eax
-			stdcall [tl_node_poi_get_info], tree1,0
-			@@:
-				mov esi,eax
-				stdcall [tl_node_poi_get_data], tree1,esi
-				cmp eax,ecx
-				je @f ;если попали на выбранный узел
-				stdcall [tl_node_poi_get_next_info], tree1,esi
-				cmp eax,0
-				jne @b
-				jmp .set_points
-			@@:
-			;если нашли выбранный узел, то далее пытаемся найти узел с треугольниками
+		cmp word[ebx],CHUNK_OBJBLOCK
+		jne .end_oblo
+			mov dword[capt_p],txt_4000
+			call found_block_data
+			cmp eax,0
+			je .no_points
+			mov esi,eax
 			movzx ecx,byte[esi+2] ;cl - уровень выбранного узла
 			.cycle_0:
+				stdcall [tl_node_poi_get_next_info], tree1,esi
+				cmp eax,0
+				je .no_points
+				cmp byte[eax+2],cl
+				jle .no_points
+				mov esi,eax
+				stdcall [tl_node_poi_get_data], tree1,esi
+				mov ebx,[eax]
+				add ebx,[open_file_data]
+				cmp word[ebx],CHUNK_VERTLIST
+				je .ini_vlist
+				jmp .cycle_0
+			jmp .no_points
+		.end_oblo:
+		cmp word[ebx],CHUNK_TRIMESH
+		jne .end_trim
+			mov dword[capt_p],txt_4100
+			call found_block_data
+			cmp eax,0
+			je .no_points
+			mov esi,eax
+			movzx ecx,byte[esi+2] ;cl - уровень выбранного узла
+			.cycle_1:
+				stdcall [tl_node_poi_get_next_info], tree1,esi
+				cmp eax,0
+				je .no_points
+				cmp byte[eax+2],cl
+				jle .no_points
+				mov esi,eax
+				stdcall [tl_node_poi_get_data], tree1,esi
+				mov ebx,[eax]
+				add ebx,[open_file_data]
+				cmp word[ebx],CHUNK_VERTLIST
+				je .ini_vlist
+				jmp .cycle_1
+			jmp .no_points
+		.end_trim:
+		cmp word[ebx],CHUNK_VERTLIST
+		jne .end_vlist
+			mov dword[capt_p],txt_4110
+			.ini_vlist:
+			movzx edx,word[ebx+6] ;колличество точек
+			add ebx,8
+			;поиск данных для треугольков
+			call found_block_data
+			cmp eax,0
+			je .set_points
+			mov esi,eax
+			;если нашли выбранный узел, то далее пытаемся найти узел с треугольниками
+			movzx ecx,byte[esi+2] ;cl - уровень выбранного узла
+			.cycle_2:
 				stdcall [tl_node_poi_get_next_info], tree1,esi
 				cmp eax,0
 				je .set_points
@@ -77,14 +132,14 @@ pushad
 				cmp byte[esi+2],cl
 				jl .set_points
 				je .found
-				jmp .cycle_0
+				jmp .cycle_2
 			.found: ;если нашли узел тогоже уровня что и выбранный узел
 				cmp eax,0
 				je .set_points
 				mov eax,[eax]
-				add eax,[open_file_lif]
+				add eax,[open_file_data]
 				cmp word[eax],CHUNK_FACELIST
-				jne .cycle_0
+				jne .cycle_2
 				movzx ecx,word[eax+6]
 				mov [obj_tri_count],ecx
 				add eax,8 ;2+4+2 (chunk+size+count)
@@ -155,6 +210,24 @@ pushad
 	stdcall [edit_box_set_text], edit1, txt_q
 	stdcall [edit_box_set_text], edit2, txt_q
 	stdcall [edit_box_set_text], edit3, txt_q
+	mov eax,0xc0c0c0
+	mov ebx,[color_ox]
+	shr ebx,2
+	and ebx,0x3f3f3f
+	add eax,ebx
+	mov [edit1.color],eax
+	mov eax,0xc0c0c0
+	mov ebx,[color_oy]
+	shr ebx,2
+	and ebx,0x3f3f3f
+	add eax,ebx
+	mov [edit2.color],eax
+	mov eax,0xc0c0c0
+	mov ebx,[color_oz]
+	shr ebx,2
+	and ebx,0x3f3f3f
+	add eax,ebx
+	mov [edit3.color],eax
 popad
 
 	call prop_red_win
@@ -207,7 +280,8 @@ pushad
 	add cx,word[buf_0.t]
 	shl ecx,16
 	mov cx,prop_wnd_height
-	mov edx,0xffffd0+0x33000000
+	mov edx,[sc.work]
+	or  edx,0x33000000
 	int 0x40
 
 	mov esi,[sc.work_button]
@@ -215,7 +289,7 @@ pushad
 	mcall , (30 shl 16)+20, (266 shl 16)+20, 4
 
 	mov ebx,[image_data_toolbar]
-	add ebx,4*IMAGE_TOOLBAR_ICON_SIZE
+	add ebx,3*IMAGE_TOOLBAR_ICON_SIZE
 	mcall 7, , (16 shl 16)+16, (7 shl 16)+268 ;load
 
 	sub ebx,IMAGE_TOOLBAR_ICON_SIZE
@@ -238,14 +312,39 @@ popad
 ;установка всех основных переменных по умолчанию
 align 4
 prop_wnd_clear_param:
-	mov dword[angle_x],0.0
-	mov dword[angle_y],0.0
-	mov dword[angle_z],0.0
+	;установка параметров отображения
+	call mnu_reset_settings
+
+	;обнуление указателей на данные объектов
 	mov dword[obj_poi_data],0
 	mov dword[obj_poi_count],0
 	mov dword[obj_tri_data],0
 	mov dword[obj_tri_count],0
-	mov dword[draw_mode],def_dr_mode
+	ret
+
+;поиск данных
+;input:
+;eax - текущий узел
+;output:
+;eax - структура текущего узла (или 0 при неудаче)
+align 4
+found_block_data:
+push ebx ecx
+	mov ecx,eax
+	stdcall [tl_node_poi_get_info], tree1,0
+	@@:
+		mov ebx,eax
+		stdcall [tl_node_poi_get_data], tree1,ebx
+		cmp eax,ecx
+		je @f ;если попали на выбранный узел
+		stdcall [tl_node_poi_get_next_info], tree1,ebx
+		cmp eax,0
+		jne @b
+		jmp .end
+	@@:
+		mov eax,ebx
+	.end:
+pop ecx ebx
 	ret
 
 ;установка размеров объекта
@@ -418,7 +517,6 @@ align 4
 draw_3d:
 	cmp dword[obj_poi_count],2
 	jl .end_f
-
 	stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
 	stdcall [glPushMatrix]
 	bt dword[draw_mode],bit_light
@@ -439,7 +537,7 @@ draw_3d:
 	;рисование точек
 	bt dword[draw_mode],bit_vertexes
 	jnc .end_points
-		stdcall [glColor3f], 1.0,1.0,1.0
+		stdcall [glColor3ub],[color_vert+2],[color_vert+1],[color_vert]
 		stdcall [glBegin],GL_POINTS
 		mov eax,[obj_poi_data]
 		mov ebx,[obj_poi_count]
@@ -459,13 +557,13 @@ draw_3d:
 		mov eax,[eax]
 
 		stdcall [glBegin],GL_LINES
-		stdcall [glColor3f], 1.0, 0.0, 0.0
+		stdcall [glColor3ub],[color_ox+2],[color_ox+1],[color_ox]
 		stdcall [glVertex3f], [obj_x_min],[eax+4],[eax+8]
 		stdcall [glVertex3f], [obj_x_max],[eax+4],[eax+8]
-		stdcall [glColor3f], 0.0, 0.0, 1.0
+		stdcall [glColor3ub],[color_oy+2],[color_oy+1],[color_oy]
 		stdcall [glVertex3f], [eax],[obj_y_min],[eax+8]
 		stdcall [glVertex3f], [eax],[obj_y_max],[eax+8]
-		stdcall [glColor3f], 0.0, 1.0, 0.0
+		stdcall [glColor3ub],[color_oz+2],[color_oz+1],[color_oz]
 		stdcall [glVertex3f], [eax],[eax+4],[obj_z_min]
 		stdcall [glVertex3f], [eax],[eax+4],[obj_z_max]
 		stdcall [glEnd]
@@ -484,10 +582,15 @@ draw_3d:
 	je .end_triangles
 	cmp dword[obj_poi_count],0
 	je .end_triangles
-		stdcall [glColor3f], 0.5,0.5,0.5
-		;bt dword[draw_mode],bit_faces_fill
-		;jnc @f
-		;@@:
+		bt dword[draw_mode],bit_faces_fill
+		jc @f
+			push GL_LINE
+			jmp .end_0
+		@@:
+			push GL_FILL
+		.end_0:
+		stdcall [glPolygonMode], GL_FRONT_AND_BACK ;mode - уже в стеке
+		stdcall [glColor3ub],[color_face+2],[color_face+1],[color_face]
 		stdcall [glBegin],GL_TRIANGLES
 		mov eax,[obj_tri_data]
 		mov ecx,[obj_tri_count]
@@ -596,13 +699,87 @@ endp
 
 align 4
 prop_mouse:
-	;push ecx edi
+	push eax ebx
+	mcall 37,3
+	bt eax,0
+	jnc .end_m
+		;mouse l. but. move
+		cmp dword[mouse_drag],1
+		jne .end_m
+		mcall 37,1 ;get mouse coords
+		mov ebx,eax
+		shr ebx,16 ;mouse.x
+		cmp ebx,3d_wnd_l
+		jg @f
+			mov ebx,3d_wnd_l
+		@@:
+		sub ebx,3d_wnd_l
+		cmp ebx,3d_wnd_w
+		jle @f
+			mov ebx,3d_wnd_w
+		@@:
+		and eax,0xffff ;mouse.y
+		cmp eax,3d_wnd_t
+		jg @f
+			mov eax,3d_wnd_t
+		@@:
+		sub eax,3d_wnd_t
+		cmp eax,3d_wnd_h
+		jle @f
+			mov eax,3d_wnd_h
+		@@:
+		finit
+		fild dword[mouse_y]
+		mov [mouse_y],eax
+		fisub dword[mouse_y]
+		fdiv dword[angle_dxm] ;если курсор движется по оси y (вверх или вниз) то поворот делаем вокруг оси x
+		fadd dword[angle_x]
+		fstp dword[angle_x]
+
+		fild dword[mouse_x]
+		mov [mouse_x],ebx
+		fisub dword[mouse_x]
+		fdiv dword[angle_dym] ;если курсор движется по оси x (вверх или вниз) то поворот делаем вокруг оси y
+		fadd dword[angle_y]
+		fstp dword[angle_y]
+
+		call draw_3d
+		jmp .end_d
+	.end_m:
+	bt eax,16
+	jnc @f
+		;mouse l. but. up
+		mov dword[mouse_drag],0
+		jmp .end_d
+	@@:
+	bt eax,8
+	jnc .end_d
+		;mouse l. but. press
+		mcall 37,1 ;get mouse coords
+		mov ebx,eax
+		shr ebx,16 ;mouse.x
+		cmp ebx,3d_wnd_l
+		jl .end_d
+		sub ebx,3d_wnd_l
+		cmp ebx,3d_wnd_w
+		jg .end_d
+		and eax,0xffff ;mouse.y
+		cmp eax,3d_wnd_t
+		jl .end_d
+		sub eax,3d_wnd_t
+		cmp eax,3d_wnd_h
+		jg .end_d
+		mov dword[mouse_drag],1
+		mov dword[mouse_x],ebx
+		mov dword[mouse_y],eax
+	.end_d:
+
 	stdcall [kmainmenu_dispatch_cursorevent], [main_menu]
 	stdcall [tl_mouse], tree3
 	stdcall [edit_box_mouse], edit1
 	stdcall [edit_box_mouse], edit2
 	stdcall [edit_box_mouse], edit3
-	;pop edi ecx
+	pop ebx eax
 	ret
 
 align 4
@@ -693,7 +870,17 @@ prop_button:
 	@@:
 	cmp ah,7
 	jne @f
+		call mnu_faces_fill_on_off
+		jmp prop_still.end
+	@@:
+	cmp ah,8
+	jne @f
 		call mnu_light_on_off
+		jmp prop_still.end
+	@@:
+	cmp ah,9
+	jne @f
+		call mnu_reset_settings
 		jmp prop_still.end
 	@@:
 
@@ -747,23 +934,49 @@ proc prop_timer_funct uses eax
 	ret
 endp
 
+;изменяем режим рисования вершин
 align 4
 mnu_vertexes_on_off:
 	xor dword[draw_mode], 1 shl bit_vertexes
 	ret
 
+;изменяем режим рисования граней
 align 4
 mnu_faces_on_off:
 	xor dword[draw_mode], 1 shl bit_faces
 	ret
 
+;изменяем каркасные или сплошные грани
+align 4
+mnu_faces_fill_on_off:
+	xor dword[draw_mode], 1 shl bit_faces_fill
+	or  dword[draw_mode], 1 shl bit_faces ;включаем режим рисования граней (если вдруг был отключен)
+	ret
+
+;включаем или отключаем освещение
 align 4
 mnu_light_on_off:
 	xor dword[draw_mode], 1 shl bit_light
 	ret
 
 align 4
-draw_mode dd 0
+mnu_reset_settings:
+	mov dword[angle_x],0.0
+	mov dword[angle_y],0.0
+	mov dword[angle_z],0.0
+	m2m dword[draw_mode],dword[def_dr_mode]
+	ret
+
+align 4
+def_dr_mode dd 0 ;режим рисования по умолчанию
+delt_size dd 3.0 ;изменение углов при поворотах с кливиатуры
+mouse_drag dd 0 ;режим поворота сцены от перемещении курсора мыши
+mouse_x dd 0
+mouse_y dd 0
+angle_dxm dd 1.7775 ;~ 3d_wnd_w/180 - прибавление углов поворота сцены при вращении мышей
+angle_dym dd 1.3335 ;~ 3d_wnd_h/180
+;angle_dzm dd ?
+draw_mode dd 0 ;режим рисования объекта
 obj_poi_data dd 0 ;указатель на координаты вершин
 obj_poi_count dd 0 ;колличество вершин
 obj_tri_data dd 0 ;указатель на данные треугольников

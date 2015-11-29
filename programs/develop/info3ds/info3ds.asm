@@ -27,10 +27,12 @@ struct FileInfoBlock
 	FileName dd ?
 ends
 
-run_file_70 FileInfoBlock
+align 4
+fl255 dd 255.0
 image_data dd 0 ;указатель на временную память, нужен для преобразования изображения
-open_file_lif dd 0 ;указатель на память для открытия файлов 3ds
+open_file_data dd 0 ;указатель на память для открытия файлов 3ds
 open_file_size dd 0 ;размер открытого файла
+open_b rb 560
 
 ;
 main_wnd_height equ 460 ;высота главного окна программы
@@ -126,7 +128,7 @@ start:
 	add ebp,ll_struc_size
 	cmp ebp,l_libs_end
 	jl .test_lib_open
-	mcall 48,3,sc,sizeof.system_colors
+	mcall 48,3,sc,sizeof.sys_colors_new
 	mcall 40,0x27
 	stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
 
@@ -141,12 +143,16 @@ start:
 	stdcall [ksubmenu_add], [main_menu_view], eax
 	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Faces, 6
 	stdcall [ksubmenu_add], [main_menu_view], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Faces_Fill, 7
+	stdcall [ksubmenu_add], [main_menu_view], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Light, 8
+	stdcall [ksubmenu_add], [main_menu_view], eax
 	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
 	stdcall [ksubmenu_add], [main_menu_view], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Light, 7
-	stdcall [ksubmenu_add], [main_menu_view], eax	
 	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_View, [main_menu_view]
 	stdcall [ksubmenu_add], [main_menu], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Reset, 9
+	stdcall [ksubmenu_add], [main_menu_view], eax
 
 	mov dword[w_scr_t1.type],1
 	stdcall dword[tl_data_init], tree1
@@ -171,16 +177,69 @@ start:
 
 	load_image_file fn_toolbar, image_data_toolbar,IMAGE_TOOLBAR_SIZE
 
-	stdcall mem.Alloc,MAX_FILE_SIZE
-	mov dword[open_file_lif],eax
+	;работа с файлом настроек
+	copy_path ini_name,sys_path,file_name,0
+	mov dword[def_dr_mode],0
+	stdcall dword[ini_get_int],file_name,ini_sec_w3d,key_dv,1
+	or eax,eax
+	jz @f
+		or dword[def_dr_mode], 1 shl bit_vertexes
+	@@:
+	stdcall dword[ini_get_int],file_name,ini_sec_w3d,key_df,1
+	or eax,eax
+	jz @f
+		or dword[def_dr_mode], 1 shl bit_faces
+	@@:
+	stdcall dword[ini_get_int],file_name,ini_sec_w3d,key_dff,1
+	or eax,eax
+	jz @f
+		or dword[def_dr_mode], 1 shl bit_faces_fill
+	@@:
+	stdcall dword[ini_get_int],file_name,ini_sec_w3d,key_dl,1
+	or eax,eax
+	jz @f
+		or dword[def_dr_mode], 1 shl bit_light
+	@@:
+	stdcall dword[ini_get_color],file_name,ini_sec_w3d,key_ox,0x0000ff
+	mov [color_ox],eax
+	stdcall dword[ini_get_color],file_name,ini_sec_w3d,key_oy,0xff0000
+	mov [color_oy],eax
+	stdcall dword[ini_get_color],file_name,ini_sec_w3d,key_oz,0x00ff00
+	mov [color_oz],eax
+	stdcall dword[ini_get_color],file_name,ini_sec_w3d,key_bk,0x000000
+	mov [color_bk],eax
+	shr eax,8
+	mov [color_bk+4],eax
+	shr eax,8
+	mov [color_bk+8],eax
+	stdcall dword[ini_get_color],file_name,ini_sec_w3d,key_vert,0xffffff
+	mov [color_vert],eax
+	stdcall dword[ini_get_color],file_name,ini_sec_w3d,key_face,0x808080
+	mov [color_face],eax
+	finit
+	fild dword[color_bk+8]
+	fdiv dword[fl255]
+	fstp dword[color_bk+8]
+	mov eax,[color_bk+4]
+	and eax,0xff
+	mov [color_bk+4],eax
+	fild dword[color_bk+4]
+	fdiv dword[fl255]
+	fstp dword[color_bk+4]
+	mov eax,[color_bk]
+	and eax,0xff
+	mov [color_bk],eax
+	fild dword[color_bk]
+	fdiv dword[fl255]
+	fstp dword[color_bk]
 
 	mcall 26,9
 	mov [last_time],eax
 
-	stdcall [kosglMakeCurrent], 5,23,320,240,ctx1
+	stdcall [kosglMakeCurrent], 3d_wnd_l,3d_wnd_t,3d_wnd_w,3d_wnd_h,ctx1
 	stdcall [glEnable], GL_DEPTH_TEST
 	stdcall [glEnable], GL_NORMALIZE ;делам нормали одинаковой величины во избежание артефактов
-	stdcall [glClearColor], 0.0,0.0,0.0,0.0
+	stdcall [glClearColor], [color_bk+8],[color_bk+4],[color_bk],0.0
 	stdcall [glShadeModel], GL_SMOOTH
 	stdcall [gluNewQuadric]
 	mov [qObj],eax
@@ -240,7 +299,7 @@ timer_funct:
 		stdcall hex_in_str, txt_3ds_offs.dig, eax,8
 		stdcall hex_in_str, txt_3ds_offs.siz, ecx,8
 
-		add eax,dword[open_file_lif] ;получаем значение сдвига в памяти
+		add eax,dword[open_file_data] ;получаем значение сдвига в памяти
 		cmp dword[offs_last_timer],eax
 		je @f
 			;если выделенный блок данных не совпадает с последним запомненным
@@ -257,12 +316,6 @@ timer_funct:
 			stdcall [buf2d_draw], buf_0 ;обновляем буфер на экране
 	@@:
 	popad
-
-	;просмотр окна с координатами точек
-	;cmp byte[prop_wnd_run],0
-	;je @f
-	;	call prop_timer_funct
-	;@@:
 	jmp still
 
 align 4
@@ -283,7 +336,7 @@ proc buf_draw_hex_table, offs:dword, size_line:dword
 		coord_y dd 55 ;координата y для начала вывода таблицы
 	endl
 		mov esi,dword[offs]
-		mov edi,dword[open_file_lif]
+		mov edi,dword[open_file_data]
 		add edi,dword[file_3ds.size] ;edi - указатель на конец файла в памяти
 		mov dword[txt_3ds_offs.dig],0
 		cld
@@ -461,7 +514,7 @@ button:
 	stdcall [buf2d_delete],buf_0
 	stdcall [buf2d_delete],buf_1 ;удаляем буфер
 	stdcall mem.Free,[image_data_toolbar]
-	stdcall mem.Free,[open_file_lif]
+	stdcall mem.Free,[open_file_data]
 	stdcall [gluDeleteQuadric], [qObj]
 	mcall -1
 
@@ -485,16 +538,29 @@ but_open_file:
 	je .end_open_file
 	;код при удачном открытии диалога
 
-	mov [run_file_70.Function], 0
-	mov [run_file_70.Position], 0
-	mov [run_file_70.Flags], 0
-	mov dword[run_file_70.Count], MAX_FILE_SIZE
-	m2m [run_file_70.Buffer], dword[open_file_lif]
-	mov byte[run_file_70+20], 0
-	mov dword[run_file_70.FileName], openfile_path
-	mcall 70,run_file_70 ;загружаем файл изображения
-	cmp ebx,0xffffffff
-	je .end_open_file
+    mov [run_file_70.Function], 5
+    mov [run_file_70.Position], 0
+    mov [run_file_70.Flags], 0
+    mov dword[run_file_70.Count], 0
+    mov dword[run_file_70.Buffer], open_b
+    mov byte[run_file_70+20], 0
+    mov dword[run_file_70.FileName], openfile_path
+    mcall 70,run_file_70
+
+    mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
+    stdcall mem.ReAlloc,[open_file_data],ecx
+    mov [open_file_data],eax
+    
+    mov [run_file_70.Function], 0
+    mov [run_file_70.Position], 0
+    mov [run_file_70.Flags], 0
+    mov dword[run_file_70.Count], ecx
+    m2m dword[run_file_70.Buffer], dword[open_file_data]
+    mov byte[run_file_70+20], 0
+    mov dword[run_file_70.FileName], openfile_path
+    mcall 70,run_file_70 ;загружаем файл 3ds
+    cmp ebx,0xffffffff
+    je .end_open_file
 
 	mov [open_file_size],ebx
 	;mcall 71,1,openfile_path
@@ -517,17 +583,11 @@ align 4
 init_tree:
 	stdcall [tl_info_clear], tree1 ;очистка списка объектов
 
-	mov esi,dword[open_file_lif]
+	mov esi,dword[open_file_data]
 	cmp word[esi],CHUNK_MAIN
 	je @f
 		call buf_draw_beg
 		stdcall [buf2d_draw_text], buf_0, buf_1,txt_no_3ds,5,25,0xff0000 ;рисуем строку с текстом
-		jmp .end_open
-	@@:
-	cmp dword[esi+2],MAX_FILE_SIZE
-	jle @f
-		call buf_draw_beg
-		stdcall [buf2d_draw_text], buf_0, buf_1,txt_3ds_big_file,5,25,0xff0000 ;рисуем строку с текстом
 		jmp .end_open
 	@@:
 	;--- обработка открытого *.3ds файла
@@ -771,7 +831,7 @@ proc add_3ds_object, icon:dword,level:dword,size_bl:dword,info_bl:dword
 		mov bx,word[level]
 
 		mov eax,esi
-		sub eax,dword[open_file_lif]
+		sub eax,dword[open_file_data]
 		mov dword[buffer],eax ;смещение блока
 		mov ecx,dword[size_bl]
 		mov dword[buffer+4],ecx ;размер блока (используется в функции buf_draw_hex_table для рисования линии)
@@ -841,14 +901,17 @@ proc print_err, fun:dword, mes:dword ;выводим сообщение об шибке на доску отладк
 	ret
 endp
 
+end if
+
 ;input:
 ; eax - value
-; edi - string buffer
+; buf - string buffer
 ; len - buffer len
 ;output:
 align 4
-proc convert_int_to_str, len:dword
+proc convert_int_to_str, buf:dword, len:dword
 pushad
+	mov edi,[buf]
 	mov esi,[len]
 	add esi,edi
 	dec esi
@@ -875,8 +938,6 @@ align 4
 		mov byte[edi],0
 	@@:
 	ret
-
-end if
 
 align 4
 proc hex_in_str, buf:dword,val:dword,zif:dword
@@ -917,7 +978,7 @@ but_save_file:
 	mov [run_file_70.Function], 2
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
-	mov ebx, dword[open_file_lif]
+	mov ebx, dword[open_file_data]
 	mov [run_file_70.Buffer], ebx
 	mov ebx,dword[ebx+2]
 	mov dword[run_file_70.Count], ebx ;размер файла
@@ -958,7 +1019,7 @@ but_delete_chunk:
 	mov ecx,[open_file_size]
 	mov ebx,dword[eax] ;получаем значение сдвига выбранного блока относительно начала файла
 	sub ecx,ebx ;ecx - размер нижней сдвигаемой части файла
-	add ebx,dword[open_file_lif] ;получаем значение сдвига в памяти
+	add ebx,dword[open_file_data] ;получаем значение сдвига в памяти
 	mov edi,ebx
 	mov esi,ebx
 	add esi,edx
@@ -978,7 +1039,7 @@ but_delete_chunk:
 		jge .cycle_2
 		mov bl,byte[eax+list_offs_chunk_lev]
 		mov ecx,[eax]
-		add ecx,[open_file_lif]
+		add ecx,[open_file_data]
 		sub dword[ecx+2],edx
 		cmp bl,0 ;если самый верхний узел, то bl=0
 		jne .cycle_2
@@ -1119,6 +1180,8 @@ system_dir_4 db '/sys/lib/'
 lib_name_4 db 'kmenu.obj',0
 system_dir_5 db '/sys/lib/'
 lib_name_5 db 'tinygl.obj',0
+system_dir_6 db '/sys/lib/'
+lib_name_6 db 'libini.obj',0
 
 if lang eq ru
 	head_f_i:
@@ -1135,6 +1198,8 @@ if lang eq ru
 	err_msg_import_4 db 'Ошибка при импорте библиотеки ',39,'kmenu',39,0
 	err_msg_found_lib_5 db 'Не найдена библиотека ',39,'tinygl.obj',39,0
 	err_msg_import_5 db 'Ошибка при импорте библиотеки ',39,'tinygl',39,0
+	err_msg_found_lib_6 db 'Не найдена библиотека ',39,'libini.obj',39,0
+	err_msg_import_6 db 'Ошибка при импорте библиотеки ',39,'libini',39,0
 else
 	head_f_i:
 	head_f_l db 'System error',0
@@ -1150,6 +1215,8 @@ else
 	err_msg_import_4 db 'Error on load import library ',39,'kmenu.obj',39,0
 	err_msg_found_lib_5 db 'Sorry I cannot found library ',39,'tinygl.obj',39,0
 	err_msg_import_5 db 'Error on load import library ',39,'tinygl',39,0
+	err_msg_found_lib_6 db 'Sorry I cannot found library ',39,'libini.obj',39,0
+	err_msg_import_6 db 'Error on load import library ',39,'libini',39,0
 end if
 
 align 4
@@ -1165,7 +1232,9 @@ l_libs_start:
 	lib_4 l_libs lib_name_4, sys_path, library_path,  system_dir_4,\
 		err_msg_found_lib_4, head_f_l, import_libkmenu,err_msg_import_4,head_f_i
 	lib_5 l_libs lib_name_5, sys_path, library_path,  system_dir_5,\
-		err_msg_found_lib_5, head_f_l, import_lib_tinygl,err_msg_import_5,head_f_i		
+		err_msg_found_lib_5, head_f_l, import_lib_tinygl,err_msg_import_5,head_f_i
+	lib_6 l_libs lib_name_6, sys_path, library_path,  system_dir_6,\
+		err_msg_found_lib_6, head_f_l, import_libini, err_msg_import_6,head_f_i		
 l_libs_end:
 
 align 4
@@ -1387,6 +1456,18 @@ macro E_LIB n
 include '../../develop/libraries/TinyGL/asm_fork/export.inc'
 
 align 4
+import_libini:
+	dd alib_init0
+	ini_get_str   dd aini_get_str
+	ini_get_int   dd aini_get_int
+	ini_get_color dd aini_get_color
+dd 0,0
+	alib_init0     db 'lib_init',0
+	aini_get_str   db 'ini_get_str',0
+	aini_get_int   db 'ini_get_int',0
+	aini_get_color db 'ini_get_color',0
+
+align 4
 mouse_dd dd 0x0
 last_time dd 0
 
@@ -1420,10 +1501,6 @@ ctx1 db 28 dup (0) ;TinyGLContext or KOSGLContext
 ;sizeof.TinyGLContext = 28
 
 qObj dd 0
-angle_x dd 0.0
-angle_y dd 0.0
-angle_z dd 0.0
-delt_size dd 3.0
 
 light_position dd 0.0, 0.0, -2.0, 1.0 ; Расположение источника [0][1][2]
 	;[3] = (0.0 - бесконечно удаленный источник, 1.0 - источник света на определенном расстоянии)
@@ -1434,10 +1511,27 @@ mat_shininess dd 3.0 ; Размер блика (обратная пропорция)
 white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемого источником
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
+if lang eq ru
+capt db 'info 3ds версия 29.11.15',0 ;подпись окна
+else
+capt db 'info 3ds version 29.11.15',0 ;window caption
+end if
+
 align 16
 i_end:
 	procinfo process_information
+	run_file_70 FileInfoBlock
 	sc system_colors
+		rb sizeof.sys_colors_new-sizeof.system_colors
+	angle_x rd 1 ;углы поворота сцены
+	angle_y rd 1
+	angle_z rd 1
+	color_ox rd 1
+	color_oy rd 1
+	color_oz rd 1
+	color_bk rd 3
+	color_vert rd 1
+	color_face rd 1
 	rb 2048
 align 16
 thread_coords:

@@ -1,11 +1,8 @@
-if lang eq ru
-capt db 'info 3ds версия 26.11.15',0 ;подпись окна
-else
-capt db 'info 3ds version 26.11.15',0 ;window caption
-end if
+;
+; здесь собраны данные по блокам *.3ds
+;
 
 MAX_FILE_LEVEL equ 20 ;максимальный уровень вложенности блоков для анализа
-MAX_FILE_SIZE equ 150*0x400 ;максимальный размер файла (0x400=1Kb)
 
 sizeof.block_3ds equ 9
 can_save db 0 ;изменялся ли файл
@@ -295,7 +292,6 @@ end if
 if lang eq ru
 txt_open_3ds db 'Открыт файл:',0
 txt_no_3ds db 'Открытый файл не в формате *.3ds',0
-txt_3ds_big_file db 'Размер файла больше MAX_FILE_SIZE',0
 txt_3ds_err_sizes db 'Возможно файл поврежден',0
 txt_count db 'Количество',0
 txt_3ds_offs:
@@ -307,7 +303,6 @@ txt_3ds_offs:
 else
 txt_open_3ds db 'Open file:',0
 txt_no_3ds db 'Открытый файл не в формате *.3ds',0
-txt_3ds_big_file db 'Размер файла больше MAX_FILE_SIZE',0
 txt_3ds_err_sizes db 'Возможно файл поврежден',0
 txt_count db 'Count',0
 txt_3ds_offs:
