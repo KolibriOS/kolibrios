@@ -781,6 +781,8 @@ end if
 			sub dword[n],4
 		jmp .cycle_1
 		.cycle_2: ;while (n>=0)
+		cmp dword[n],0
+		jl .cycle_2_end
 if INTERP_RGB eq 1
 		; коректирование испорченных пикселей (в конце линии)
 		bt dword[or1],31
@@ -811,8 +813,6 @@ if INTERP_RGB eq 1
 			mov dword[ob1],0xff00
 		.end_b:
 end if
-		cmp dword[n],0
-		jl .cycle_2_end
 			PUT_PIXEL 0
 if INTERP_Z eq 1
 			add dword[pz],2 ;=sizeof(uint)

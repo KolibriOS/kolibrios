@@ -84,7 +84,7 @@ icon_tl_sys dd 0 ;указатель на память для хранения системных иконок
 
 align 4
 start:
-	mcall 48,3,sc,sizeof.system_colors
+	mcall 48,3,sc,sizeof.sys_colors_new
 
 	mcall 68,11
 	or eax,eax
@@ -596,6 +596,9 @@ i_end:
 	last_open_synt_file rb 32 ;имя последнего подключенного файла синтаксиса
 	buf rb BUF_SIZE ;буфер для копирования и вставки
 	buf_find rb 302 ;буфер для поиска текста
+	run_file_70 FileInfoBlock 
+	sc system_colors
+		rb sizeof.sys_colors_new-sizeof.system_colors
 IncludeUGlobals
 	align 16
 	procinfo process_information

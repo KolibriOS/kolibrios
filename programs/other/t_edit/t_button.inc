@@ -17,10 +17,7 @@ struct symbol
 	td dd ?   ;+14 врем. удаления
 ends
 
-sc system_colors
-
 bmp_icon dd 0
-run_file_70 FileInfoBlock 	  
 
 
 ;input:
