@@ -122,17 +122,8 @@ endp
 proc mem.ReAlloc, mptr, size
 	push	ebx ecx edx
 	mov	ecx, [size]
-	or	ecx, ecx
-	jz	@f
-    @@:
 	mov	edx, [mptr]
-	or	edx, edx
-	jz	@f
-    @@:
 	mcall	68, 20
-	or	eax, eax
-	jz	@f
-    @@:
 	pop	edx ecx ebx
 	ret
 endp
@@ -140,9 +131,6 @@ endp
 proc mem.Free, mptr
 	push	ebx ecx
 	mov	ecx,[mptr]
-	or	ecx,ecx
-	jz	@f
-    @@:
 	mcall	68, 13
 	pop	ecx ebx
 	ret
