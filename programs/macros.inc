@@ -272,7 +272,7 @@ macro mpack dest, hsrc, lsrc
       mov dest, (hsrc) shl 16
       add dest, lsrc
     else
-      mov dest, hsrc
+      movi dest, hsrc
       shl dest, 16
       add dest, lsrc
     end if
@@ -283,7 +283,7 @@ macro __mov reg,a,b {       ; mike.dld
  if (~a eq)&(~b eq)
    mpack reg,a,b
  else if (~a eq)&(b eq)
-   mov reg,a
+   movi reg,a
  end if
 }
 

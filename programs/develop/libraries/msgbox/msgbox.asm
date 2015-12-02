@@ -3,7 +3,7 @@ public EXPORTS
 section '.flat' code readable align 16
 
 include '../../../macros.inc'
-purge mov
+macro movi arg1,arg2 {mov arg1,arg2}
 include 'strlen.inc'
 
 MB_FIRST_BUT_ID equ 3 ;идентификатор 1-й кнопки на сообщении
