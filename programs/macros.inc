@@ -398,6 +398,19 @@ macro diff10 title,l1,l2
 ; optimize the code for size
 __regs fix <eax,ebx,ecx,edx,esi,edi,ebp,esp>
 
+macro cmp arg1,arg2
+{
+  if (arg1 in __regs) & (arg2 eqtype 0)
+    if (arg2) = 0
+      test arg1,arg1
+    else
+      cmp arg1,arg2
+    end if
+  else
+    cmp arg1,arg2
+  end if
+}
+
 macro add arg1,arg2
  {
    if (arg2 eqtype 0)
