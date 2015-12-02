@@ -190,7 +190,7 @@ macro sz name,[data] {       ; from MFAR [mike.dld]
   end if
 }
 
-macro szZ name,[data] {      ; same as sz, but with 0 at the end of line (ASCIIZ string) [dunkaist]
+macro szZ name,[data] {      ; same as sz, but for zero terminated string [dunkaist]
  common
   if used name
    name db data,0
@@ -272,7 +272,7 @@ macro mpack dest, hsrc, lsrc
       mov dest, (hsrc) shl 16
       add dest, lsrc
     else
-      mov dest, hsrc
+      movi dest, hsrc
       shl dest, 16
       add dest, lsrc
     end if
@@ -283,7 +283,7 @@ macro __mov reg,a,b {       ; mike.dld
  if (~a eq)&(~b eq)
    mpack reg,a,b
  else if (~a eq)&(b eq)
-   mov reg,a
+   movi reg,a
  end if
 }
 
@@ -395,29 +395,27 @@ macro diff10 title,l1,l2
   display 13,10
  }
 
-; optimize the code for size
-__regs fix <eax,ebx,ecx,edx,esi,edi,ebp,esp>
 
-macro mov arg1,arg2
- {
-   if (arg1 in __regs) & ((arg2 eqtype 0) | (arg2 eqtype '0'))
-      if (arg2) = 0
-     xor arg1,arg1
-      else if (arg2) = 1
-     xor arg1,arg1
-     inc arg1
-      else if (arg2) = -1
-     or  arg1,-1
-      else if (arg2) > -128 & (arg2) < 128
-     push arg2
-     pop  arg1
-      else
-     mov  arg1,arg2
-      end if
-   else
-      mov arg1,arg2
-   end if
- }
+macro movi arg1,arg2
+{
+if (arg1 in <eax,ebx,ecx,edx,esi,edi,ebp,esp>) & ((arg2 eqtype 0) | (arg2 eqtype '0'))
+  if (arg2) = 0
+    xor arg1,arg1
+  else if (arg2) = 1
+    xor arg1,arg1
+    inc arg1
+  else if (arg2) = -1
+    or arg1,-1
+  else if (arg2) >= -128 & (arg2) <= 127
+    push arg2
+    pop arg1
+  else
+    mov arg1,arg2
+  end if
+else
+  mov arg1,arg2
+end if
+}
 
 
 macro RGB [a] {
