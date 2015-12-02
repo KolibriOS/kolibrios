@@ -13,6 +13,8 @@ include 'lang.inc'
 include 'info_fun_float.inc'
 include 'info_menu.inc'
 
+offs_zbuf_pbuf equ 24 ;const. from 'zbuffer.inc'
+
 debug equ 0
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
@@ -44,7 +46,7 @@ image_data_toolbar dd 0
 TREE_ICON_SYS16_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*11+54 ;размер bmp файла с системными иконками
 icon_tl_sys dd 0 ;указатеель на память для хранения системных иконок
 icon_toolbar dd 0 ;указатеель на память для хранения иконок объектов
-TOOLBAR_ICON_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*8+54 ;размер bmp файла с иконками объектов
+TOOLBAR_ICON_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*10+54 ;размер bmp файла с иконками объектов
 ;
 IMAGE_FILE1_SIZE equ 128*144*3+54 ;размер файла с изображением
 
@@ -94,6 +96,8 @@ offs_last_timer dd 0 ;последний сдвиг показаный в функции таймера
 ID_ICON_CHUNK_MAIN equ 0 ;иконка главного блока
 ID_ICON_CHUNK_NOT_FOUND equ 1 ;иконка не известного блока
 ID_ICON_DATA equ 2 ;иконка для данных блока, не определенной структуры
+ID_ICON_POINT equ 8
+ID_ICON_POINT_SEL equ 9
 
 FILE_ERROR_CHUNK_SIZE equ -3 ;ошибка в размере блока
 
@@ -149,10 +153,27 @@ start:
 	stdcall [ksubmenu_add], [main_menu_view], eax
 	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
 	stdcall [ksubmenu_add], [main_menu_view], eax
-	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_View, [main_menu_view]
-	stdcall [ksubmenu_add], [main_menu], eax
 	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Reset, 9
 	stdcall [ksubmenu_add], [main_menu_view], eax
+	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_View, [main_menu_view]
+	stdcall [ksubmenu_add], [main_menu], eax
+
+	stdcall [ksubmenu_new]
+	mov [main_menu_vertexes], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Vertexes_Select, 10
+	stdcall [ksubmenu_add], [main_menu_vertexes], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Vertexes_Deselect, 11
+	stdcall [ksubmenu_add], [main_menu_vertexes], eax
+	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
+	stdcall [ksubmenu_add], [main_menu_vertexes], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Average_x, 12
+	stdcall [ksubmenu_add], [main_menu_vertexes], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Average_y, 13
+	stdcall [ksubmenu_add], [main_menu_vertexes], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Average_z, 14
+	stdcall [ksubmenu_add], [main_menu_vertexes], eax
+	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Vertexes, [main_menu_vertexes]
+	stdcall [ksubmenu_add], [main_menu], eax
 
 	mov dword[w_scr_t1.type],1
 	stdcall dword[tl_data_init], tree1
@@ -216,6 +237,8 @@ start:
 	mov [color_vert],eax
 	stdcall dword[ini_get_color],file_name,ini_sec_w3d,key_face,0x808080
 	mov [color_face],eax
+	stdcall dword[ini_get_color],file_name,ini_sec_w3d,key_select,0xffff00
+	mov [color_select],eax
 	finit
 	fild dword[color_bk+8]
 	fdiv dword[fl255]
@@ -1481,6 +1504,13 @@ buf_0: dd 0 ;указатель на буфер изображения
 	db 24 ;+20 bit in pixel
 
 align 4
+buf_ogl:
+	dd 0 ;указатель на буфер изображения
+	dw 3d_wnd_l,3d_wnd_t ;+4 left,top
+	dd 3d_wnd_w,3d_wnd_h ;+8 w,h
+	dd 0,24 ;+16 color,bit in pixel
+
+align 4
 buf_1:
 	dd 0 ;указатель на буфер изображения
 	dw 25,25 ;+4 left,top
@@ -1512,9 +1542,9 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru
-capt db 'info 3ds версия 29.11.15',0 ;подпись окна
+capt db 'info 3ds версия 02.12.15',0 ;подпись окна
 else
-capt db 'info 3ds version 29.11.15',0 ;window caption
+capt db 'info 3ds version 02.12.15',0 ;window caption
 end if
 
 align 16
@@ -1532,6 +1562,7 @@ i_end:
 	color_bk rd 3
 	color_vert rd 1
 	color_face rd 1
+	color_select rd 1
 	rb 2048
 align 16
 thread_coords:

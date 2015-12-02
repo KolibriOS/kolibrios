@@ -29,6 +29,7 @@ key_oz  db 'col_oz',0
 key_bk  db 'col_bkgnd',0
 key_vert db 'col_vertices',0
 key_face db 'col_faces',0
+key_select db 'col_select',0
 
 prop_wnd_run db 0 ;переменная следящая за тем что-бы не запускать больше 1-го окна со свойствами одновременно
 
@@ -45,7 +46,13 @@ obj_point: ;добавляемый объект
 .text:
 	rb MAX_OBJECT_SIZE
 
-
+if lang eq ru
+txt_select_vert: db 'Выбрано: '
+else
+txt_select_vert: db 'Select: '
+end if
+.count:
+dq 0,0
 
 ;даное окно (процесс) вызываеться функцией but_wnd_coords
 align 4
@@ -67,7 +74,7 @@ pushad
 		cmp word[ebx],CHUNK_OBJBLOCK
 		jne .end_oblo
 			mov dword[capt_p],txt_4000
-			call found_block_data
+			stdcall found_block_data, tree1
 			cmp eax,0
 			je .no_points
 			mov esi,eax
@@ -90,7 +97,7 @@ pushad
 		cmp word[ebx],CHUNK_TRIMESH
 		jne .end_trim
 			mov dword[capt_p],txt_4100
-			call found_block_data
+			stdcall found_block_data, tree1
 			cmp eax,0
 			je .no_points
 			mov esi,eax
@@ -117,7 +124,7 @@ pushad
 			movzx edx,word[ebx+6] ;колличество точек
 			add ebx,8
 			;поиск данных для треугольков
-			call found_block_data
+			stdcall found_block_data, tree1
 			cmp eax,0
 			je .set_points
 			mov esi,eax
@@ -198,7 +205,7 @@ pushad
 				stdcall str_cat, obj_point.text,esi
 				stdcall str_cat, obj_point.text,Data_String
 				loop @b
-			stdcall dword[tl_node_add], tree3,(ID_ICON_DATA shl 16),obj_point 
+			stdcall dword[tl_node_add], tree3,(ID_ICON_POINT shl 16),obj_point 
 			stdcall dword[tl_cur_next], tree3
 			dec edx
 			cmp edx,0
@@ -228,6 +235,11 @@ pushad
 	and ebx,0x3f3f3f
 	add eax,ebx
 	mov [edit3.color],eax
+
+	mov eax,dword[ctx1] ;eax -> TinyGLContext.GLContext
+	mov eax,[eax] ;eax -> ZBuffer
+	mov eax,[eax+offs_zbuf_pbuf] ;eax -> ZBuffer.pbuf
+	mov dword[buf_ogl],eax
 popad
 
 	call prop_red_win
@@ -318,6 +330,7 @@ prop_wnd_clear_param:
 	;обнуление указателей на данные объектов
 	mov dword[obj_poi_data],0
 	mov dword[obj_poi_count],0
+	mov dword[obj_poi_sel_c],0
 	mov dword[obj_tri_data],0
 	mov dword[obj_tri_count],0
 	ret
@@ -328,24 +341,24 @@ prop_wnd_clear_param:
 ;output:
 ;eax - структура текущего узла (или 0 при неудаче)
 align 4
-found_block_data:
-push ebx ecx
+proc found_block_data uses ebx ecx edx, tlist:dword
+	mov edx,[tlist]
 	mov ecx,eax
-	stdcall [tl_node_poi_get_info], tree1,0
+	stdcall [tl_node_poi_get_info], edx,0
 	@@:
 		mov ebx,eax
-		stdcall [tl_node_poi_get_data], tree1,ebx
+		stdcall [tl_node_poi_get_data], edx,ebx
 		cmp eax,ecx
 		je @f ;если попали на выбранный узел
-		stdcall [tl_node_poi_get_next_info], tree1,ebx
+		stdcall [tl_node_poi_get_next_info], edx,ebx
 		cmp eax,0
 		jne @b
 		jmp .end
 	@@:
 		mov eax,ebx
 	.end:
-pop ecx ebx
 	ret
+endp
 
 ;установка размеров объекта
 align 4
@@ -549,7 +562,7 @@ draw_3d:
 		stdcall [glEnd]
 	.end_points:
 
-	;рисование выделенной точки
+	;рисование активной точки
 	stdcall [tl_node_get_data],tree3
 	cmp eax,0
 	je @f
@@ -568,12 +581,37 @@ draw_3d:
 		stdcall [glVertex3f], [eax],[eax+4],[obj_z_max]
 		stdcall [glEnd]
 
-		stdcall [glColor3f], 1.0, 1.0, 0.0
+		stdcall [glColor3ub],[color_select+2],[color_select+1],[color_select]
 		stdcall [glPushMatrix]
 			stdcall [glTranslatef], [eax],[eax+4],[eax+8]
 			stdcall [gluSphere], [qObj], [sph_radius], 8,8
 		stdcall [glPopMatrix]
 	@@:
+
+	;рисование выделенных точек
+	cmp dword[obj_poi_sel_c],0
+	je .end_select
+		mov ecx,dword[obj_poi_sel_c]
+		stdcall [glColor3ub],[color_select+2],[color_select+1],[color_select]
+		stdcall dword[tl_node_poi_get_info], tree3,0
+		@@:
+			cmp eax,0
+			je .end_select
+			mov ebx,eax
+			cmp word[ebx],ID_ICON_POINT_SEL
+			jne .next_sel
+			stdcall [tl_node_poi_get_data], tree3,ebx
+			mov eax,[eax]
+			stdcall [glPushMatrix]
+				stdcall [glTranslatef], [eax],[eax+4],[eax+8]
+				stdcall [gluSphere], [qObj], [sph_radius], 4,4
+			stdcall [glPopMatrix]
+			dec ecx
+			jz .end_select
+			.next_sel:
+			stdcall dword[tl_node_poi_get_next_info], tree3,ebx
+			jmp @b
+    .end_select:
 
 	;рисование граней
 	bt dword[draw_mode],bit_faces
@@ -614,6 +652,10 @@ draw_3d:
 	.end_triangles:
 
 	stdcall [glPopMatrix]
+	cmp dword[obj_poi_sel_c],0
+	je @f
+		stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_select_vert,5,3,[color_select]
+	@@:
 	stdcall [kosglSwapBuffers]
 	.end_f:
 	ret
@@ -849,6 +891,7 @@ prop_button:
 				stdcall str_cat, obj_point.text,esi
 				stdcall str_cat, obj_point.text,Data_String
 				loop .coord
+			mov byte[obj_point.text],'*' ;отмечаем что вершина изменялась
 			stdcall dword[tl_node_set_data], tree3,obj_point
 			stdcall dword[tl_draw], tree3
 			mov byte[can_save],1 ;для показа кнопки 'Сохранить'
@@ -881,6 +924,31 @@ prop_button:
 	cmp ah,9
 	jne @f
 		call mnu_reset_settings
+		jmp prop_still.end
+	@@:
+	cmp ah,10
+	jne @f
+		call mnu_vertexes_select
+		jmp prop_still.end
+	@@:
+	cmp ah,11
+	jne @f
+		call mnu_vertexes_deselect
+		jmp prop_still.end
+	@@:
+	cmp ah,12
+	jne @f
+		call mnu_reset_average_x
+		jmp prop_still.end
+	@@:
+	cmp ah,13
+	jne @f
+		call mnu_reset_average_y
+		jmp prop_still.end
+	@@:
+	cmp ah,14
+	jne @f
+		call mnu_reset_average_z
 		jmp prop_still.end
 	@@:
 
@@ -968,6 +1036,231 @@ mnu_reset_settings:
 	ret
 
 align 4
+proc mnu_vertexes_select uses eax ebx
+	stdcall [tl_node_get_data],tree3
+	cmp eax,0
+	je .no_points
+	stdcall found_block_data,tree3
+	cmp eax,0
+	je .no_points
+		mov bx,word[eax]
+		cmp bx,ID_ICON_POINT_SEL
+		je @f
+			mov word[eax],ID_ICON_POINT_SEL
+			inc dword[obj_poi_sel_c]
+			jmp .change
+		@@:
+			mov word[eax],ID_ICON_POINT
+			dec dword[obj_poi_sel_c]
+		.change:
+			mov eax,[obj_poi_sel_c]
+			stdcall convert_int_to_str, txt_select_vert.count,16
+	.no_points:
+	ret
+endp
+
+align 4
+proc mnu_vertexes_deselect uses eax
+	cmp dword[obj_poi_sel_c],0
+	je .no_points
+	mov dword[obj_poi_sel_c],0
+	stdcall [tl_node_poi_get_info], tree3,0
+	cmp eax,0
+	je .no_points
+	@@:
+		mov word[eax],ID_ICON_POINT
+		stdcall [tl_node_poi_get_next_info], tree3,eax
+		cmp eax,0
+		jne @b
+	.no_points:
+	ret
+endp
+
+align 4
+proc mnu_reset_average_x uses eax ebx ecx edx edi
+	cmp dword[obj_poi_sel_c],2
+	jl .end_select
+		finit
+		fldz
+		mov ecx,dword[obj_poi_sel_c]
+		stdcall dword[tl_node_poi_get_info], tree3,0
+		@@:
+			cmp eax,0
+			je .end_select
+			mov ebx,eax
+			cmp word[ebx],ID_ICON_POINT_SEL
+			jne .next_sel0
+				stdcall [tl_node_poi_get_data], tree3,ebx
+				mov eax,[eax]
+				fadd dword[eax]
+				dec ecx
+				jz @f
+			.next_sel0:
+			stdcall dword[tl_node_poi_get_next_info], tree3,ebx
+			jmp @b
+		@@:
+		fidiv dword[obj_poi_sel_c]
+		fstp dword[eax]
+		mov edx,[eax]
+		mov ecx,dword[obj_poi_sel_c]
+		stdcall dword[tl_node_poi_get_info], tree3,0
+		@@:
+			cmp eax,0
+			je .end_select
+			mov ebx,eax
+			cmp word[ebx],ID_ICON_POINT_SEL
+			jne .next_sel1
+				stdcall [tl_node_poi_get_data], tree3,ebx
+				mov edi,eax
+				mov eax,[eax]
+				mov [eax],edx
+				stdcall update_tree, edi
+				dec ecx
+				jz @f
+			.next_sel1:
+			stdcall dword[tl_node_poi_get_next_info], tree3,ebx
+			jmp @b
+		@@:
+    .end_select:
+	ret
+endp
+
+align 4
+proc mnu_reset_average_y uses eax ebx ecx edx edi
+	cmp dword[obj_poi_sel_c],2
+	jl .end_select
+		finit
+		fldz
+		mov ecx,dword[obj_poi_sel_c]
+		stdcall dword[tl_node_poi_get_info], tree3,0
+		@@:
+			cmp eax,0
+			je .end_select
+			mov ebx,eax
+			cmp word[ebx],ID_ICON_POINT_SEL
+			jne .next_sel0
+				stdcall [tl_node_poi_get_data], tree3,ebx
+				mov eax,[eax]
+				fadd dword[eax+4]
+				dec ecx
+				jz @f
+			.next_sel0:
+			stdcall dword[tl_node_poi_get_next_info], tree3,ebx
+			jmp @b
+		@@:
+		fidiv dword[obj_poi_sel_c]
+		fstp dword[eax+4]
+		mov edx,[eax+4]
+		mov ecx,dword[obj_poi_sel_c]
+		stdcall dword[tl_node_poi_get_info], tree3,0
+		@@:
+			cmp eax,0
+			je .end_select
+			mov ebx,eax
+			cmp word[ebx],ID_ICON_POINT_SEL
+			jne .next_sel1
+				stdcall [tl_node_poi_get_data], tree3,ebx
+				mov edi,eax
+				mov eax,[eax]
+				mov [eax+4],edx
+				stdcall update_tree, edi
+				dec ecx
+				jz @f
+			.next_sel1:
+			stdcall dword[tl_node_poi_get_next_info], tree3,ebx
+			jmp @b
+		@@:
+    .end_select:
+	ret
+endp
+
+align 4
+proc mnu_reset_average_z uses eax ebx ecx edx edi
+	cmp dword[obj_poi_sel_c],2
+	jl .end_select
+		finit
+		fldz
+		mov ecx,dword[obj_poi_sel_c]
+		stdcall dword[tl_node_poi_get_info], tree3,0
+		@@:
+			cmp eax,0
+			je .end_select
+			mov ebx,eax
+			cmp word[ebx],ID_ICON_POINT_SEL
+			jne .next_sel0
+				stdcall [tl_node_poi_get_data], tree3,ebx
+				mov eax,[eax]
+				fadd dword[eax+8]
+				dec ecx
+				jz @f
+			.next_sel0:
+			stdcall dword[tl_node_poi_get_next_info], tree3,ebx
+			jmp @b
+		@@:
+		fidiv dword[obj_poi_sel_c]
+		fstp dword[eax+8]
+		mov edx,[eax+8]
+		mov ecx,dword[obj_poi_sel_c]
+		stdcall dword[tl_node_poi_get_info], tree3,0
+		@@:
+			cmp eax,0
+			je .end_select
+			mov ebx,eax
+			cmp word[ebx],ID_ICON_POINT_SEL
+			jne .next_sel1
+				stdcall [tl_node_poi_get_data], tree3,ebx
+				mov edi,eax
+				mov eax,[eax]
+				mov [eax+8],edx
+				stdcall update_tree, edi
+				dec ecx
+				jz @f
+			.next_sel1:
+			stdcall dword[tl_node_poi_get_next_info], tree3,ebx
+			jmp @b
+		@@:
+    .end_select:
+	ret
+endp
+
+align 4
+proc update_tree h_mem:dword
+pushad
+	mov edi,[h_mem]
+	mov ebx,[edi]
+	finit
+
+	;обновление измененного узла в списке tree3 и главного окна (по таймеру)
+	mov word[NumberSymbolsAD],5
+	mov dword[obj_point.text],0
+	cld
+	mov ecx,3
+	.coord:
+		fld dword[ebx]
+		fstp qword[Data_Double]
+		call DoubleFloat_to_String
+		add ebx,4
+		stdcall str_len, Data_String
+		mov esi,txt_space
+		add esi,eax
+		cmp esi,txt_space.end
+		jl .normal_size
+			mov esi,txt_space.end-1 ;минимум 1 пробел нужно добавить, что-бы цифры не слипались
+		.normal_size:
+		stdcall str_cat, obj_point.text,esi
+		stdcall str_cat, obj_point.text,Data_String
+		loop .coord
+	mov esi,obj_point.text
+	mov byte[esi],'*' ;отмечаем что вершина изменялась
+	mov byte[can_save],1 ;для показа кнопки 'Сохранить'
+	add edi,4
+	mov ecx,MAX_OBJECT_SIZE-4
+	rep movsb
+popad
+	ret
+endp
+
+align 4
 def_dr_mode dd 0 ;режим рисования по умолчанию
 delt_size dd 3.0 ;изменение углов при поворотах с кливиатуры
 mouse_drag dd 0 ;режим поворота сцены от перемещении курсора мыши
@@ -979,6 +1272,7 @@ angle_dym dd 1.3335 ;~ 3d_wnd_h/180
 draw_mode dd 0 ;режим рисования объекта
 obj_poi_data dd 0 ;указатель на координаты вершин
 obj_poi_count dd 0 ;колличество вершин
+obj_poi_sel_c dd 0 ;колличество выделенных вершин
 obj_tri_data dd 0 ;указатель на данные треугольников
 obj_tri_count dd 0 ;колличество треугольников
 cursor_last_draw dd 0 ;положение курсора при последней прорисовке 3d окна
