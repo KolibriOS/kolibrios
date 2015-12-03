@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TreeList для Kolibri OS
-; файл последний раз изменялся 14.11.2015 IgorA
+; файл последний раз изменялся 03.12.2015 IgorA
 ; на код применена GPL2 лицензия
 
 
@@ -63,8 +63,7 @@ endp
 
 ;очистка памяти элемента (деструктор)
 align 4
-proc tl_data_clear uses edi, tlist:dword
-;uses eax ???
+proc tl_data_clear uses eax edi, tlist:dword
 	mov edi,dword[tlist]
 	cmp tl_data_img,0
 	je @f
@@ -129,7 +128,7 @@ proc tl_key uses ebx ecx edi, tlist:dword
 	jne @f
 	cmp tl_on_press,0
 	je @f
-			call tl_on_press
+		call tl_on_press
 	@@:
 	cmp ah,byte[ecx+1] ;Space
 	jne @f
@@ -190,7 +189,6 @@ proc tl_mouse, tlist:dword
 	shl ebx,16
 	cmp eax,ebx ;левая граница окна
 	jl .no_in_wnd ;.test_scroll не применяем
-
 		shr ebx,16
 		add ebx,tl_box_width
 		shl ebx,16
@@ -208,9 +206,9 @@ proc tl_mouse, tlist:dword
 		jl .test_scroll
 
 push eax ebx
-mcall 37,7 ;обработка колеса мыши
-mov edx,eax
-xor	ecx,ecx
+	mcall 37,7 ;обработка колеса мыши
+	mov edx,eax
+	xor	ecx,ecx
 	test eax,eax
 	jz .mouse_next
 	test ax,0x8000
@@ -231,7 +229,7 @@ xor	ecx,ecx
 	dec ecx
 	jnz @r
 	jmp .mouse_next
-;----------------------------------------
+;------------------------------------------------
 .decr: ;вертикальная прокрутка отрицательная
 	mov bx,ax ;ax = mouse scroll data vertical
 	jmp @f
@@ -245,7 +243,7 @@ xor	ecx,ecx
 	stdcall tl_cur_perv, edi
 	dec ecx
 	jnz @r
-;---------------------------------------------------
+;------------------------------------------------
 .mouse_next:
 pop ebx eax
 
@@ -340,7 +338,7 @@ pop ebx eax
 			stdcall scroll_bar_vertical.mouse, edx ;scrollbar_ver_mouse
 
 			cmp dword[edx+sb_offs_redraw],0
-			je  @f
+			je @f
 				mov dword[edx+sb_offs_redraw],0
 				stdcall tl_draw, edi ;произошли изменения скроллинга
 			@@:
@@ -351,7 +349,6 @@ pop ebx eax
 	mcall 37,2 ;проверяем нажатость любых кнопок
 	cmp eax,0  ;ничего не нажали eax=0
 	je .no_draw
-
 		mov ebx,tl_el_focus
 		cmp dword[ebx],edi
 		jne .no_draw ;элемент не в фокусе
@@ -394,160 +391,149 @@ endp
 ;внутренняя функция, не для экспорта
 align 4
 tl_info_set_undo:
-  cmp tl_tim_undo,1
-  jl .no_work
+	cmp tl_tim_undo,1
+	jl .no_work
 
-  push eax ebx ecx edx
-  mov edx,tl_data_nodes
-  mov ecx,edx
-  add ecx,sizeof.TreeList
-  call tl_move_next ;long i=node[0].next;
-  mov eax,tl_tim_undo
-  sub tl_ch_tim,eax ;ch_tim-=tim_undo;
-  mov eax,tl_ch_tim
-    cmp edx,ecx
-    jle @f
+	push eax ebx ecx edx
+	mov edx,tl_data_nodes
+	mov ecx,edx
+	add ecx,sizeof.TreeList
+	call tl_move_next ;long i=node[0].next;
+	mov eax,tl_tim_undo
+	sub tl_ch_tim,eax ;ch_tim-=tim_undo;
+	mov eax,tl_ch_tim
+	cmp edx,ecx
+	jle @f
+		;if(node[i].tc>ch_tim){ // если создание символа было отменено
+		cmp dword[edx+12],eax
+		jle .no_u1
+			mov dword[edx+12],0
+			mov dword[edx+16],0
 
-    ;if(node[i].tc>ch_tim){ // если создание символа было отменено
-    cmp dword[edx+12],eax
-    jle .no_u1
-      mov dword[edx+12],0
-      mov dword[edx+16],0
+			mov ebx, dword[edx+4]
+			imul ebx,sizeof.TreeList
+			add ebx, tl_data_nodes ;.next
+			push dword[edx+8] ;node[node[i].perv].next=node[i].next;
+			pop dword[ebx+8]
 
-      mov ebx, dword[edx+4]
-      imul ebx,sizeof.TreeList
-      add ebx, tl_data_nodes ;.next
-      push dword[edx+8] ;node[node[i].perv].next=node[i].next;
-      pop dword[ebx+8]
+			mov ebx, dword[edx+8]
+			imul ebx,sizeof.TreeList
+			add ebx, tl_data_nodes ;.perv
+			push dword[edx+4] ;node[node[i].next].perv=node[i].perv;
+			pop dword[ebx+4]
+		.no_u1:
 
-      mov ebx, dword[edx+8]
-      imul ebx,sizeof.TreeList
-      add ebx, tl_data_nodes ;.perv
-      push dword[edx+4] ;node[node[i].next].perv=node[i].perv;
-      pop dword[ebx+4]
-
-    .no_u1:
-
-    ;else if(node[i].td>ch_tim) node[i].td=0; // если удаление символа было отменено
-    cmp dword[edx+16],eax
-    jle .no_u2
-      mov dword[edx+16],0
-    .no_u2:
-
-    call tl_move_next
-    jmp @b
-  @@:
-  mov tl_tim_undo,0
-;  mov eax,[edi+?] ;co_tim
-;  cmp tl_ch_tim,eax ;ch_tim
-;  jge @f
-;    mov [edi+?],0 ;co_tim
-;  @@:
-  pop edx ecx ebx eax
-  .no_work:
-
-  ret
+		;else if(node[i].td>ch_tim) node[i].td=0; // если удаление символа было отменено
+		cmp dword[edx+16],eax
+		jle .no_u2
+			mov dword[edx+16],0
+		.no_u2:
+		call tl_move_next
+		jmp @b
+	@@:
+	mov tl_tim_undo,0
+	pop edx ecx ebx eax
+	.no_work:
+	ret
 
 ;вывод списка на экран
 align 4
 proc tl_draw, tlist:dword
-    pushad
-    ;draw dir_list main rect
-    mov edi,dword[tlist]
-    mov ebx,tl_box_left
-    shl ebx,16
-    add ebx,tl_box_width
-    mov ecx,tl_box_top
-    shl ecx,16
-    mov cx,tl_capt_cy
-    mov edx,tl_col_zag
-    mcall 13 ;draw window caption
+	pushad
+	;draw dir_list main rect
+	mov edi,dword[tlist]
+	mov ebx,tl_box_left
+	shl ebx,16
+	add ebx,tl_box_width
+	mov ecx,tl_box_top
+	shl ecx,16
+	mov cx,tl_capt_cy
+	mov edx,tl_col_zag
+	mcall 13 ;draw window caption
 
-    add ecx,tl_box_top
-    shl ecx,16
-    add ecx,tl_box_height
-    sub cx,tl_capt_cy
-    mov edx,tl_col_bkg
-    int 0x40 ;draw window client rect
+	add ecx,tl_box_top
+	shl ecx,16
+	add ecx,tl_box_height
+	sub cx,tl_capt_cy
+	mov edx,tl_col_bkg
+	int 0x40 ;draw window client rect
 
-    cmp tl_capt_cy,9 ;9 - minimum caption height
-    jl @f
-    mov ebx,edi ;calculate cursor position
-    mov eax,tl_cur_pos
-    inc eax
-    lea edi,[txt_capt_cur]
-    add edi,7
-    call tl_convert_to_str
-
-    mov edi,ebx
-    mov eax,tl_tim_undo
-    lea edi,[txt_capt_otm]
-    add edi,7
-    call tl_convert_to_str
-    mov edi,ebx ;restore edi
-
-    mov eax,4 ;draw text captions
-    mov ebx,tl_box_left
-    shl ebx,16
-    add ebx,5*65536+3
-    add ebx,tl_box_top
-    mov ecx,tl_col_txt
-    or  ecx,0x80000000
-    lea edx,[txt_capt_cur]
-    int 0x40
-
-    mov ebx,tl_box_left
-    shl ebx,16
-    add ebx,100*65536+3
-    add ebx,tl_box_top
-    lea edx,[txt_capt_otm]
-    int 0x40
-    @@:
-
-    ;cycle to nodes
-    xor eax,eax
-    mov edx,tl_data_nodes
-    mov ecx,edx
-    add ecx,sizeof.TreeList
-
-    ;*** пропуск узлов, которые промотаны скроллингом ***
-    cmp tl_p_scroll,0 ;если есть указатель на скроллинг
-    je .end_c1
-    mov esi,tl_p_scroll
-    cmp dword[esi+sb_offs_position],0 ;если скроллинг на верху, выходим
-    je .end_c1
-      @@:
-	call tl_iterat_next
-	cmp edx,ecx
-	jle .end_draw
+	cmp tl_capt_cy,9 ;9 - minimum caption height
+	jl @f
+	mov ebx,edi ;calculate cursor position
+	mov eax,tl_cur_pos
 	inc eax
-	cmp eax,dword[esi+sb_offs_position]
-	jge .end_c1
-	jmp @b
-    .end_c1:
+	lea edi,[txt_capt_cur]
+	add edi,7
+	call tl_convert_to_str
 
-    xor eax,eax
-    mov esi,tl_box_top
-    add esi,tl_box_height ;esi = coord bottom border
-    @@:
-      call tl_iterat_next
-      cmp edx,ecx
-      jle @f
-      call tl_draw_node
-      inc eax
-      jmp @b
-    @@:
+	mov edi,ebx
+	mov eax,tl_tim_undo
+	lea edi,[txt_capt_otm]
+	add edi,7
+	call tl_convert_to_str
+	mov edi,ebx ;restore edi
 
-    call tl_draw_cursor
+	mov eax,4 ;draw text captions
+	mov ebx,tl_box_left
+	shl ebx,16
+	add ebx,5*65536+3
+	add ebx,tl_box_top
+	mov ecx,tl_col_txt
+	or  ecx,0x80000000
+	lea edx,[txt_capt_cur]
+	int 0x40
 
-    mov edi,tl_p_scroll ;рисуем дочерний скроллинг
-    cmp edi,0          ;для того что-бы его не пришлось рисовать в пользовательской программе
-    je .end_draw       ;если нет скроллинга выходим
-    stdcall scroll_bar_vertical.draw, edi
+	mov ebx,tl_box_left
+	shl ebx,16
+	add ebx,100*65536+3
+	add ebx,tl_box_top
+	lea edx,[txt_capt_otm]
+	int 0x40
+	@@:
 
-    .end_draw:
-    popad
-  ret
+	;cycle to nodes
+	xor eax,eax
+	mov edx,tl_data_nodes
+	mov ecx,edx
+	add ecx,sizeof.TreeList
+
+	;*** пропуск узлов, которые промотаны скроллингом ***
+	cmp tl_p_scroll,0 ;если есть указатель на скроллинг
+	je .end_c1
+		mov esi,tl_p_scroll
+		cmp dword[esi+sb_offs_position],0 ;если скроллинг на верху, выходим
+		je .end_c1
+		@@:
+			call tl_iterat_next
+			cmp edx,ecx
+			jle .end_draw
+			inc eax
+			cmp eax,dword[esi+sb_offs_position]
+			jl @b
+	.end_c1:
+
+	xor eax,eax
+	mov esi,tl_box_top
+	add esi,tl_box_height ;esi = coord bottom border
+	@@:
+		call tl_iterat_next
+		cmp edx,ecx
+		jle @f
+		call tl_draw_node
+		inc eax
+		jmp @b
+	@@:
+
+	call tl_draw_cursor
+
+	mov edi,tl_p_scroll ;рисуем дочерний скроллинг
+	cmp edi,0    ;для того что-бы его не пришлось рисовать в пользовательской программе
+	je .end_draw ;если нет скроллинга выходим
+		stdcall scroll_bar_vertical.draw, edi
+	.end_draw:
+	popad
+	ret
 endp
 
 ;переход на следущий видимый узел (пропуская закрытые)
@@ -559,42 +545,42 @@ endp
 ; edx = pointer to next node struct
 align 4
 tl_iterat_next:
-  push bx
-  mov bl,0x7f
-  cmp byte[edx+3],1
-  jne @f
-    mov bl,byte[edx+2]
-  @@:
+	push bx
+	mov bl,0x7f
+	cmp byte[edx+3],1
+	jne @f
+		mov bl,byte[edx+2]
+	@@:
 
-  cmp tl_tim_undo,0
-  je .else
+	cmp tl_tim_undo,0
+	je .else
 
-  push eax
-  .beg0:
-    call tl_move_next
-    cmp edx,ecx
-    jle @f
-    call tl_node_not_vis ;пропуск удаленных и отмененных
-    cmp al,1
-    je .beg0
-    cmp bl,byte[edx+2] ;пропуск закрытых
-    jl .beg0
-  @@:
-  pop eax
-  pop bx
-  ret
+	push eax
+	.beg0:
+		call tl_move_next
+		cmp edx,ecx
+		jle @f
+		call tl_node_not_vis ;пропуск удаленных и отмененных
+		cmp al,1
+		je .beg0
+		cmp bl,byte[edx+2] ;пропуск закрытых
+		jl .beg0
+		@@:
+	pop eax
+	pop bx
+	ret
 
-  .else:
-    call tl_move_next
-    cmp edx,ecx
-    jle .endif
-    cmp dword[edx+16],0 ;td = 'time delete' -> пропуск удаленных
-    jne .else
-    cmp bl,byte[edx+2] ;пропуск закрытых
-    jl .else
-  .endif:
-  pop bx
-  ret
+	.else:
+		call tl_move_next
+		cmp edx,ecx
+		jle .endif
+		cmp dword[edx+16],0 ;td = 'time delete' -> пропуск удаленных
+		jne .else
+		cmp bl,byte[edx+2] ;пропуск закрытых
+		jl .else
+	.endif:
+	pop bx
+	ret
 
 ;переход на следущий видимый узел (и на закрытые тоже)
 ;input:
@@ -605,28 +591,28 @@ tl_iterat_next:
 ; edx = pointer to next visible node struct
 align 4
 tl_iterat_next_all:
-  cmp tl_tim_undo,0
-  je .else
+	cmp tl_tim_undo,0
+	je .else
 
-  push eax
-  @@:
-    call tl_move_next
-    cmp edx,ecx
-    jle @f
-    call tl_node_not_vis
-    cmp al,1
-    je @b
-  @@:
-  pop eax
-  ret
-  .else:
-    call tl_move_next
-    cmp edx,ecx
-    jle .endif
-    cmp dword[edx+16],0 ;td -> time delete
-    jne .else
-  .endif:
-  ret
+	push eax
+	@@:
+		call tl_move_next
+		cmp edx,ecx
+		jle @f
+		call tl_node_not_vis
+		cmp al,1
+		je @b
+	@@:
+	pop eax
+	ret
+	.else:
+		call tl_move_next
+		cmp edx,ecx
+		jle .endif
+		cmp dword[edx+16],0 ;td -> time delete
+		jne .else
+	.endif:
+	ret
 
 ;переход на предыдущий видимый узел (пропуская закрытые)
 ;input:
@@ -635,29 +621,29 @@ tl_iterat_next_all:
 ; edi = pointer to 'TreeList' struct
 align 4
 tl_iterat_perv:
-  push eax
-  cmp tl_tim_undo,0
-  je .beg1
+	push eax
+	cmp tl_tim_undo,0
+	je .beg1
 
-  .beg0:
-    call tl_move_perv
-    cmp edx,ecx
-    jle @f
-    call tl_node_not_vis ;пропуск удаленных и отмененных
-    cmp al,1
-    je .beg0
+	.beg0:
+		call tl_move_perv
+		cmp edx,ecx
+		jle @f
+		call tl_node_not_vis ;пропуск удаленных и отмененных
+		cmp al,1
+		je .beg0
 
-  .beg1:
-    call tl_move_perv
-    cmp edx,ecx
-    jle @f
-    cmp dword[edx+16],0 ;td = 'time delete' -> пропуск удаленных
-    jne .beg1
+	.beg1:
+		call tl_move_perv
+		cmp edx,ecx
+		jle @f
+		cmp dword[edx+16],0 ;td = 'time delete' -> пропуск удаленных
+		jne .beg1
 
-  @@:
-    call tl_move_max_clo_par
-  pop eax
-  ret
+	@@:
+		call tl_move_max_clo_par
+	pop eax
+	ret
 
 ;находит родительский закрытый узел максимального уровня
 ;input:
@@ -667,21 +653,21 @@ tl_iterat_perv:
 ; edx = pointer closed parent node with maximum level
 align 4
 proc tl_move_max_clo_par uses eax ebx
-  mov eax,edx
-  xor ebx,ebx
-  .beg:
-    call tl_move_par
-    cmp byte[edx+3],1 ;родительский узел закрыт ?
-    jne @f
-      mov eax,edx
-    @@:
-    cmp ebx,edx
-    je .end_f
-      mov ebx,edx
-    jmp .beg
-  .end_f:
-  mov edx,eax
-  ret
+	mov eax,edx
+	xor ebx,ebx
+	.beg:
+		call tl_move_par
+		cmp byte[edx+3],1 ;родительский узел закрыт ?
+		jne @f
+			mov eax,edx
+		@@:
+		cmp ebx,edx
+		je .end_f
+			mov ebx,edx
+			jmp .beg
+	.end_f:
+	mov edx,eax
+	ret
 endp
 
 ;input:
@@ -748,25 +734,25 @@ tl_move_par:
 ; (node[i].td+tim_Undo<=ch_tim && node[i].td) || (node[i].tc>ch_tim-tim_Undo)
 align 4
 tl_node_not_vis:
-  cmp dword[edx+16],0
-  je @f
-  mov eax,dword[edx+16] ;eax=node[i].td
-  add eax,tl_tim_undo
-  cmp eax,tl_ch_tim
-  jg @f
-    mov al,1
-    ret
-  @@:
+	cmp dword[edx+16],0
+	je @f
+	mov eax,dword[edx+16] ;eax=node[i].td
+	add eax,tl_tim_undo
+	cmp eax,tl_ch_tim
+	jg @f
+		mov al,1
+		ret
+	@@:
 
-  mov eax,tl_ch_tim
-  sub eax,tl_tim_undo
-  cmp dword[edx+12],eax ;tc -> time create
-  jle @f
-    mov al,1
-    ret
-  @@:
-  xor al,al
-  ret
+	mov eax,tl_ch_tim
+	sub eax,tl_tim_undo
+	cmp dword[edx+12],eax ;tc -> time create
+	jle @f
+		mov al,1
+		ret
+	@@:
+	xor al,al
+	ret
 
 ;рисуем курсор на экране
 ;input:
@@ -851,36 +837,32 @@ endp
 ; esi = coord bottom border
 align 4
 proc tl_draw_null_cursor uses eax ebx ecx edx esi
-    call tl_get_display_cur_pos ;eax = cursor pos in screen
-    cmp eax,0
-    jl .end_f ;курсор находится выше окна, в области прокрученной скроллингом
+	call tl_get_display_cur_pos ;eax = cursor pos in screen
+	cmp eax,0
+	jl .end_f ;курсор находится выше окна, в области прокрученной скроллингом
+		mov ebx,tl_box_left
+		shl ebx,16
+		mov bx,tl_img_cx
+		xor ecx,ecx
+		mov cx,tl_img_cy
+		imul ecx,eax
+		add ecx,tl_box_top
+		add cx,tl_capt_cy
 
-    mov ebx,tl_box_left
-    shl ebx,16
-    mov bx,tl_img_cx
-    xor ecx,ecx
-    mov cx,tl_img_cy
-    imul ecx,eax
-    add ecx,tl_box_top
-    add cx,tl_capt_cy
+		;crop image if on the border
+		cmp esi,ecx ;если курсор внизу и его вообще не видно
+		jl .end_f
 
-    ;crop image if on the border
-    cmp esi,ecx ;если курсор внизу и его вообще не видно
-    jl .end_f
-
-    sub esi,ecx
-    shl ecx,16
-    mov cx,tl_img_cy
-    cmp si,tl_img_cy
-    jge @f
-      mov cx,si ;если курсор виден частично (попал на нижнюю границу)
-    @@:
-
-    mov edx,tl_col_bkg
-    mcall 13 ;рисуем простой прямоугольник с фоновым цветом
-
-    .end_f:
-  ret
+		sub esi,ecx
+		shl ecx,16
+		mov cx,tl_img_cy
+		cmp si,tl_img_cy
+		jge @f
+			mov cx,si ;если курсор виден частично (попал на нижнюю границу)
+		@@:
+		mcall 13,,,tl_col_bkg ;рисуем простой прямоугольник с фоновым цветом
+	.end_f:
+	ret
 endp
 
 ;берет позицию курсора, относительно экрана
@@ -890,20 +872,20 @@ endp
 ; eax = index
 align 4
 tl_get_display_cur_pos:
-   mov eax,tl_cur_pos
-   cmp tl_p_scroll,0
-   je @f
-     push ebx
-       mov ebx,tl_p_scroll
-       mov ebx,dword[ebx+sb_offs_position]
-       sub eax,ebx ;отнимаем позицию скроллинга
-     pop ebx
-  @@:
-  ret
+	mov eax,tl_cur_pos
+	cmp tl_p_scroll,0
+	je @f
+		push ebx
+		mov ebx,tl_p_scroll
+		mov ebx,dword[ebx+sb_offs_position]
+		sub eax,ebx ;отнимаем позицию скроллинга
+		pop ebx
+	@@:
+	ret
 
 ;рисует узел с: картинкой, подписью, иконкой открытия/закрытия и линиями к родит. узлу
 ;input:
-; eax = node position
+; eax = node position (0, ..., max_nodes-scroll_pos) не до tl_box_height/tl_img_cy
 ; edx = pointer to some node struct
 ; edi = pointer to 'TreeList' struct
 ; esi = coord of bottom border
@@ -923,8 +905,9 @@ proc tl_draw_node uses eax ebx ecx edx esi
 	xor ecx,ecx
 	mov cx,tl_img_cy
 	imul ecx,eax
-	add ecx,tl_box_top
 	add cx,tl_capt_cy
+	jc .end_draw ;когда много узлов, то может быть переполнение координаты cx
+	add ecx,tl_box_top
 
 	;crop image if on the border
 	cmp esi,ecx ;если узел внизу и его вообще не видно
@@ -947,7 +930,7 @@ proc tl_draw_node uses eax ebx ecx edx esi
 		push edx
 		mov edx,tl_col_txt
 		mcall 13 ;draw node rect
-	pop edx
+		pop edx
 	jmp @f
 	.draw_img_n:
 	push ebx edx esi
@@ -995,38 +978,37 @@ endp
 ;...
 align 4
 proc tl_draw_node_icon_opn_clo uses eax ebx ecx edx esi
-    inc al
-    call tl_iterat_next_all ;get next visible item
-    cmp edx,ecx
-    jle @f
-      mov ecx,esi ;load ecx
-      cmp al,byte[edx+2]
-      jne @f
-      ror ebx,16
-      sub bx,tl_img_cx
-      ror ebx,16
-      cmp tl_data_img_sys,0
-      jne .draw_img_s
-	mov edx,tl_col_txt
-	mcall 13 ;draw minus rect, if not system icons
-	jmp @f
-      .draw_img_s:
-      mov ecx,esi ;load ecx
-      mov edx,ebx
-      ror ecx,16
-      mov dx,cx
-      mov cx,bx
-      ror ecx,16
-      mov ebx,3 ;rgb = 3 bytes
-      imul bx,tl_img_cx
-      imul bx,tl_img_cy
-      shr eax,8
-      and eax,0xff
-      imul ebx,eax ;eax = icon index
-      add ebx,tl_data_img_sys
-      mcall 7 ;draw minus icon '-'
-    @@:
-  ret
+	inc al
+	call tl_iterat_next_all ;get next visible item
+	cmp edx,ecx
+	jle @f
+		mov ecx,esi ;load ecx
+		cmp al,byte[edx+2]
+		jne @f
+		ror ebx,16
+		sub bx,tl_img_cx
+		ror ebx,16
+		cmp tl_data_img_sys,0
+		jne .draw_img_s
+			mcall 13,,,tl_col_txt ;draw minus rect, if not system icons
+			jmp @f
+		.draw_img_s:
+		mov ecx,esi ;load ecx
+		mov edx,ebx
+		ror ecx,16
+		mov dx,cx
+		mov cx,bx
+		ror ecx,16
+		mov ebx,3 ;rgb = 3 bytes
+		imul bx,tl_img_cx
+		imul bx,tl_img_cy
+		shr eax,8
+		and eax,0xff
+		imul ebx,eax ;eax = icon index
+		add ebx,tl_data_img_sys
+		mcall 7 ;draw minus icon '-'
+	@@:
+	ret
 endp
 
 ;рисование линии к родительскому элементу
@@ -1037,121 +1019,111 @@ endp
 ;...
 align 4
 tl_draw_node_icon_par_lin:
-  cmp byte[edx+3],1
-  je .close
-  push eax ebx ecx edx esi
-    cmp al,0
-    je @f
-;    dec al
-;    call tl_iterat_perv ;get perv visible item
+	cmp byte[edx+3],1
+	je .close
+	push eax ebx ecx edx esi
+	cmp al,0
+	je @f
+		call tl_iterat_next_all ;get next visible item
+		cmp edx,ecx
+		jle .line3 ;if end of list
+			cmp al,byte[edx+2]
+			jne .line3 ;jg ???
+			mov eax,3 ;line in middle element
+			jmp .line2
+		.line3:
+			mov eax,6 ;line in end element
+		.line2:
 
-    call tl_iterat_next_all ;get next visible item
-    cmp edx,ecx
-    jle .line3 ;if end of list
-      cmp al,byte[edx+2]
-      jne .line3 ;jg ???
-      mov eax,3 ;line in middle element
-      jmp .line2
-    .line3:
-      mov eax,6 ;line in end element
-    .line2:
+		mov ecx,esi ;load ecx
+		ror ebx,16
+		sub bx,tl_img_cx
+		ror ebx,16
+		cmp tl_data_img_sys,0
+		jne .draw_img_s
+			mcall 13,,,tl_col_txt ;draw minus rect, if not system icons
+			jmp @f
+		.draw_img_s:
+		mov edx,ebx
+		ror ecx,16
+		mov dx,cx
+		mov cx,bx
+		ror ecx,16
+		mov ebx,3 ;rgb = 3 bytes
+		imul bx,tl_img_cx
+		imul bx,tl_img_cy
 
-      mov ecx,esi ;load ecx
-      ror ebx,16
-      sub bx,tl_img_cx
-      ror ebx,16
-      cmp tl_data_img_sys,0
-      jne .draw_img_s
-	mov edx,tl_col_txt
-	mcall 13 ;draw minus rect, if not system icons
-	jmp @f
-      .draw_img_s:
-;      mov ecx,esi ;load ecx
-      mov edx,ebx
-      ror ecx,16
-      mov dx,cx
-      mov cx,bx
-      ror ecx,16
-      mov ebx,3 ;rgb = 3 bytes
-      imul bx,tl_img_cx
-      imul bx,tl_img_cy
-
-;      shr eax,8
-;      and eax,0xff
-      imul ebx,eax ;eax = icon index
-      add ebx,tl_data_img_sys
-      mcall 7 ;draw line icon
-    @@:
-  pop esi edx ecx ebx eax
-  .close:
-  ret
+		imul ebx,eax ;eax = icon index
+		add ebx,tl_data_img_sys
+		mcall 7 ;draw line icon
+	@@:
+	pop esi edx ecx ebx eax
+	.close:
+	ret
 
 
 ;input:
 ; al = уровень элемента
+; ebx = (node.left shl 16) + tl_img_cx
 ; ecx = pointer to 1 node struct
 ; edx = pointer to some node struct
 ; edi = pointer to 'TreeList' struct
 align 4
-tl_draw_node_icon_par_lin_up:
-  push eax ebx ecx edx
-  push esi
-    cmp tl_data_img_sys,0 ;if not image
-    je @f
-    cmp al,0
-    je @f
-
-    xor esi,esi ;в si будем насчитывать кол-во иконок, нужных для прорисовки линии
+proc tl_draw_node_icon_par_lin_up uses eax ebx ecx edx esi
+	cmp tl_data_img_sys,0 ;if not image
+	je @f
+	cmp al,0
+	je @f
+		xor esi,esi ;в si будем насчитывать кол-во иконок, нужных для прорисовки линии
 ;--- цикл для вычисления колличества вертикальных линий ---
-    .cycle0:
-      call tl_iterat_perv ;get perv visible item
-      cmp edx,ecx
-      jle .cycle1 ;if begin of list
+		.cycle0:
+			call tl_iterat_perv ;get perv visible item
+			cmp edx,ecx
+			jle .cycle1 ;if begin of list
 
-      cmp byte[edx+2],al
-      jle .cycle0end ;уровень верхнего элемента не требует прорисовки
-      inc si
-      jmp .cycle0
-    .cycle0end:
-      cmp si,0 ;si = кол-во иконок линии которые нужно нарисовать сверху
-      je @f
-      shl esi,16
+			cmp byte[edx+2],al
+			jle .cycle0end ;уровень верхнего элемента не требует прорисовки
+			inc si
+			jmp .cycle0
+		.cycle0end:
+		cmp si,0 ;si = кол-во иконок линии которые нужно нарисовать сверху
+		je @f
+		shl esi,16
 
-      pop ecx ;esi->ecx
-      push ecx ;save esi
+		pop ecx ;esi->ecx
+		push ecx ;save esi
 
-      ror ebx,16
-      sub bx,tl_img_cx
-      ror ebx,16
+		ror ebx,16
+		sub bx,tl_img_cx
+		ror ebx,16
 
-      mov edx,ebx
-      ror ecx,16
-      mov dx,cx
-      mov cx,bx
-      ror ecx,16
-      mov cx,tl_img_cy ;restore size y (if crop)
-      mov ebx,3 ;rgb = 3 bytes
-      imul bx,tl_img_cx
-      imul bx,tl_img_cy
-      add ebx,tl_data_img_sys
+		mov edx,ebx
+		ror ecx,16
+		mov dx,cx
+		mov cx,bx
+		ror ecx,16
+		mov cx,tl_img_cy ;restore size y (if crop)
+		mov ebx,3 ;rgb = 3 bytes
+		imul bx,tl_img_cx
+		imul bx,tl_img_cy
+		add ebx,tl_data_img_sys
 
-      add esi,tl_box_top
-      add si,tl_capt_cy ;si = верхняя граница окна
-      mov eax,7
+		add esi,tl_box_top
+		add si,tl_capt_cy ;si = верхняя граница окна
+		mov eax,7
 ;--- цикл для рисования вертикальной линии ---
-      .cycle1:
-      sub dx,tl_img_cy ;поднимаем координату y вверх
-      cmp dx,si
-      jl @f
-        cmp esi,0x10000
-        jl @f
-        int 0x40 ;draw line icon
-        sub esi,0x10000 ;уменьшаем счетчик иконок
-      jmp .cycle1
-    @@:
-  pop esi
-  pop edx ecx ebx eax
-  ret
+		.cycle1:
+		sub dx,tl_img_cy ;поднимаем координату y вверх
+		cmp dx,si
+		jl @f
+			cmp esi,0x10000
+			jl @f
+			int 0x40 ;draw line icon
+			sub esi,0x10000 ;уменьшаем счетчик иконок
+		jmp .cycle1
+	@@:
+	ret
+endp
 
 ;input:
 ; edi = pointer to TreeInfo struct
@@ -1159,15 +1131,15 @@ tl_draw_node_icon_par_lin_up:
 ; eax = rows
 align 4
 tl_get_rows_count:
-  push ecx edx
-    mov eax,tl_box_height
-    sub ax,tl_capt_cy
-    xor ecx,ecx
-    mov cx,tl_img_cy
-    xor edx,edx
-    div ecx
-  pop edx ecx
-  ret
+	push ecx edx
+		mov eax,tl_box_height
+		sub ax,tl_capt_cy
+		xor ecx,ecx
+		mov cx,tl_img_cy
+		xor edx,edx
+		div ecx
+	pop edx ecx
+	ret
 
 ;input:
 ; eax = node position
@@ -1176,40 +1148,36 @@ tl_get_rows_count:
 ; edx = pointer to some node struct
 ; edi = pointer to TreeInfo struct
 align 4
-tl_draw_node_caption:
-    push ebx ecx edx esi
+proc tl_draw_node_caption uses ebx ecx edx esi
+	xor esi,esi
+	mov si,tl_info_size
+	cmp si,tl_info_capt_offs
+	jle @f ;if caption size <= 0
+		push eax
+			call tl_get_node_index ;eax = node index
+			imul esi,eax
+		pop eax
+		add si,tl_info_capt_offs
+		add esi,tl_data_info
+		mov edx,esi
 
-    xor esi,esi
-    mov si,tl_info_size
-    cmp si,tl_info_capt_offs
-    jle @f ;if caption size <= 0
-
-    push eax
-      call tl_get_node_index ;eax = node index
-      imul esi,eax
-    pop eax
-      add si,tl_info_capt_offs
-      add esi,tl_data_info
-      mov edx,esi
-
-      shr ebx,16
-      add bx,tl_img_cx ;сдвигаем надпись по горизонтали --->
-      add bx,3 ;отступ
-      ;bx = coord. x
-      call tl_strlen ;eax = strlen
-      call tl_get_draw_text_len
-      mov cx,bx
-      ror ecx,16
-      mov ebx,ecx
-      add bx,tl_img_cy ;выравнивиние по нижней границе иконки
-      sub bx,9 ;отнимаем высоту текста
-      mov ecx,tl_col_txt
-      and ecx,0xffffff
-;      or ecx,0x80000000 ;text is ASCIIZ
-      mcall 4
-    @@:
-    pop esi edx ecx ebx
-  ret
+		shr ebx,16
+		add bx,tl_img_cx ;сдвигаем надпись по горизонтали --->
+		add bx,3 ;отступ
+		;bx = coord.x
+		call tl_strlen ;eax = strlen
+		call tl_get_draw_text_len
+		mov cx,bx
+		ror ecx,16
+		mov ebx,ecx
+		add bx,tl_img_cy ;выравнивиние по нижней границе иконки
+		sub bx,9 ;отнимаем высоту текста
+		mov ecx,tl_col_txt
+		and ecx,0xffffff
+		mcall 4
+	@@:
+	ret
+endp
 
 ;input:
 ; eax = strlen
@@ -1217,28 +1185,25 @@ tl_draw_node_caption:
 ;output:
 ; esi = text len
 align 4
-tl_get_draw_text_len:
-  push eax ecx edx
-    mov esi,eax ;берем длинну строки
-
-    mov eax,tl_box_left
-    add eax,tl_box_width
-    cmp eax,ebx
-    jle .text_null ;если подпись полностью вся за экраном
-    sub eax,ebx
-    xor edx,edx
-    mov ecx,6 ;ширина системного шрифта
-    div ecx ;смотрим сколько символов может поместиться на экране
-
-    cmp esi,eax
-    jl @f
-      mov esi,eax ;если длинна текста меньше, чем все место под строку
-    jmp @f
-    .text_null:
-      xor esi,esi
-    @@:
-  pop edx ecx eax
-  ret
+proc tl_get_draw_text_len uses eax ecx edx
+	mov esi,eax ;берем длинну строки
+	mov eax,tl_box_left
+	add eax,tl_box_width
+	cmp eax,ebx
+	jle .text_null ;если подпись полностью вся за экраном
+		sub eax,ebx
+		xor edx,edx
+		mov ecx,6 ;ширина системного шрифта
+		div ecx ;смотрим сколько символов может поместиться на экране
+		cmp esi,eax
+		jl @f
+			mov esi,eax ;если длинна текста меньше, чем все место под строку
+			jmp @f
+	.text_null:
+	xor esi,esi
+	@@:
+	ret
+endp
 
 ;input:
 ; esi = pointer to string
@@ -1246,15 +1211,15 @@ tl_get_draw_text_len:
 ; eax = strlen
 align 4
 tl_strlen:
-  mov eax,esi
-  @@:
-    cmp byte[eax],0
-    je @f
-    inc eax
-    jmp @b
-  @@:
-  sub eax,esi
-  ret
+	mov eax,esi
+	@@:
+		cmp byte[eax],0
+		je @f
+		inc eax
+		jmp @b
+	@@:
+	sub eax,esi
+	ret
 
 ;добавить узел
 ;input:
@@ -1263,103 +1228,101 @@ tl_strlen:
 ; n_info - указатель на добавляемые данные
 align 4
 proc tl_node_add uses eax ebx ecx edx edi, tlist:dword, n_opt:dword, n_info:dword
-    mov edi,dword[tlist]
+	mov edi,dword[tlist]
 
-    call tl_info_set_undo
+	call tl_info_set_undo
 
-    mov ebx,sizeof.TreeList
-    imul ebx,tl_info_max_count
-    add ebx,tl_data_nodes
+	mov ebx,sizeof.TreeList
+	imul ebx,tl_info_max_count
+	add ebx,tl_data_nodes
 ;--
-    call tl_get_cur_node_index ;eax=po_t
-    imul eax,sizeof.TreeList
-    add eax,tl_data_nodes
-    mov edx,eax
-    call tl_move_perv
-    call tl_get_node_index ;eax = index of pointer [edx]
+	call tl_get_cur_node_index ;eax=po_t
+	imul eax,sizeof.TreeList
+	add eax,tl_data_nodes
+	mov edx,eax
+	call tl_move_perv
+	call tl_get_node_index ;eax = index of pointer [edx]
 ;--
-    mov edx,sizeof.TreeList
-    shl edx,1
-    add edx,tl_data_nodes
-    @@: ;for(i=2;i<nodeMax;i++)
-      cmp dword [edx+12],0
-      jne .u0
-      cmp dword [edx+16],0
-      jne .u0
+	mov edx,sizeof.TreeList
+	shl edx,1
+	add edx,tl_data_nodes
+	@@: ;for(i=2;i<nodeMax;i++)
+		cmp dword [edx+12],0
+		jne .u0
+		cmp dword [edx+16],0
+		jne .u0
 
-	inc  tl_ch_tim
-	mov ecx,dword[n_opt]
-	ror ecx,16 ;cx = type
-	mov word[edx],cx
- ;;;mov cl,byte[ebp+13]
- rol ecx,8 ;cl = close|open
- mov byte[edx+3],cl  ;node[i].clo
-	mov   byte[edx+2], 0 ;node[i].lev=0
-  bt tl_style,2 ;tl_list_box_mode
-  jc .l_box_m
-    mov cl,byte[n_opt]
-    mov byte[edx+2],cl  ;node[i].lev
-  .l_box_m:
-	push tl_ch_tim       ;node[i].tc=ch_tim;
-	pop  dword[edx+12]
-	mov  dword[edx+4], eax ;node[i].perv=po_t;
-	;*** copy node data ***
-	push esi
-	xor ecx,ecx
-	mov cx,tl_info_size
-	mov esi,ecx
+		inc tl_ch_tim
+		mov ecx,dword[n_opt]
+		ror ecx,16 ;cx = type
+		mov word[edx],cx
+		rol ecx,8 ;cl = close|open
+		mov byte[edx+3],cl ;node[i].clo
+		mov byte[edx+2],0 ;node[i].lev=0
+		bt tl_style,2 ;tl_list_box_mode
+		jc .l_box_m
+			mov cl,byte[n_opt]
+			mov byte[edx+2],cl ;node[i].lev
+		.l_box_m:
+		push tl_ch_tim       ;node[i].tc=ch_tim;
+		pop dword[edx+12]
+		mov [edx+4],eax ;node[i].perv=po_t;
+		;*** copy node data ***
+		push esi
+		xor ecx,ecx
+		mov cx,tl_info_size
+		mov esi,ecx
 
-	push eax
-	  call tl_get_node_index ;eax = node index
-	  imul esi,eax
-	pop eax
-	add esi,tl_data_info
-	mov edi,dword[n_info] ;pointer to node data
-	xchg edi,esi
-	rep movsb
+		push eax
+			call tl_get_node_index ;eax = node index
+			imul esi,eax
+		pop eax
+		add esi,tl_data_info
+		mov edi,dword[n_info] ;pointer to node data
+		xchg edi,esi
+		rep movsb
 
-	mov esi,edi
-	mov edi,dword[tlist] ;restore edi
-	mov cx,tl_info_capt_offs
-	cmp cx,tl_info_size
-	jge .no_text_data
- cmp tl_info_capt_len,0 ;проверяем есть ли ограничение на длинну строки
- je .no_len_ogran
-   add cx,tl_info_capt_len
-   and ecx,0xffff
-   add esi,ecx
-   mov cx,tl_info_size
-   sub esi,ecx
- .no_len_ogran:
-	  dec esi
-	  mov byte[esi],0
-	.no_text_data:
-	pop esi ;restore esi
+		mov esi,edi
+		mov edi,dword[tlist] ;restore edi
+		mov cx,tl_info_capt_offs
+		cmp cx,tl_info_size
+		jge .no_text_data
+		cmp tl_info_capt_len,0 ;проверяем есть ли ограничение на длинну строки
+		je .no_len_ogran
+			add cx,tl_info_capt_len
+			and ecx,0xffff
+			add esi,ecx
+			mov cx,tl_info_size
+			sub esi,ecx
+		.no_len_ogran:
+		dec esi
+		mov byte[esi],0
+		.no_text_data:
+		pop esi ;restore esi
 
-	mov ecx,eax
-	imul ecx,sizeof.TreeList
-	add ecx,tl_data_nodes ; *** ecx = node[po_t] ***
-	add ecx,8   ; *** ecx = node[po_t].next ***
-	push dword [ecx] ;node[i].next=node[po_t].next;
-	pop dword [edx+8]
+		mov ecx,eax
+		imul ecx,sizeof.TreeList
+		add ecx,tl_data_nodes ; *** ecx = node[po_t] ***
+		add ecx,8   ; *** ecx = node[po_t].next ***
+		push dword[ecx] ;node[i].next=node[po_t].next;
+		pop dword[edx+8]
 
-	call tl_get_node_index ;*** eax = i ***
-	cmp eax,tl_info_max_count
-	jge .u0
+		call tl_get_node_index ;*** eax = i ***
+		cmp eax,tl_info_max_count
+		jge .u0
+			mov [ecx],eax ;node[po_t].next=i; // ссылки перенаправляем
+			mov ecx,[edx+8] ; *** ecx = node[i].next ***
+			imul ecx,sizeof.TreeList
+			add ecx,tl_data_nodes ; *** ecx = node[node[i].next] ***
+			mov [ecx+4],eax ;node[node[i].next].perv=i;
 
-	mov [ecx],eax ;node[po_t].next=i; // ссылки перенаправляем
-	mov ecx,[edx+8] ; *** ecx = node[i].next ***
-	imul ecx,sizeof.TreeList
-	add ecx,tl_data_nodes ; *** ecx = node[node[i].next] ***
-	mov [ecx+4],eax ;node[node[i].next].perv=i;
-
-	call tb_scrol_resize ;обработка скроллинга
-    jmp @f
-      .u0:
-      add edx,sizeof.TreeList
-      cmp edx,ebx ;enf of node memory ?
-      jle @b
-    @@:
+			call tb_scrol_resize ;обработка скроллинга
+			jmp @f
+		.u0:
+		add edx,sizeof.TreeList
+		cmp edx,ebx ;enf of node memory ?
+		jle @b
+	@@:
 	ret
 endp
 
@@ -1368,61 +1331,59 @@ endp
 align 4
 proc tb_scrol_resize uses eax ecx edx
 	cmp tl_p_scroll,0 ;обработка скроллинга
-  je @f
-    call tl_get_node_count ;eax = node count
-    mov ecx,eax
-    call tl_get_rows_count
-    cmp ecx,eax
-    jg .ye_sb
-      xor ecx,ecx
-    .ye_sb:
-
-    mov edx,tl_p_scroll
-    mov dword[edx+sb_offs_cur_area],eax
-    mov dword[edx+sb_offs_max_area],ecx
+	je @f
+		call tl_get_node_count ;eax = node count
+		mov ecx,eax
+		call tl_get_rows_count
+		cmp ecx,eax
+		jg .ye_sb
+			xor ecx,ecx
+		.ye_sb:
+		mov edx,tl_p_scroll
+		mov dword[edx+sb_offs_cur_area],eax
+		mov dword[edx+sb_offs_max_area],ecx
 		stdcall scroll_bar_vertical.draw,edx
-  @@:
-ret
+	@@:
+	ret
 endp
 
 ;input:
 ;n_info - pointer to node info
 align 4
 proc tl_node_set_data uses eax ecx edx edi esi, tlist:dword, n_info:dword
-    mov edi,dword[tlist]
-    call tl_get_cur_node_index ;eax=po_t
-    cmp eax,2
-    jl @f
-      xor ecx,ecx
-      mov cx,tl_info_size
-      imul eax,ecx
-      add eax,tl_data_info
-      mov edi,eax
-      mov esi,dword[n_info] ;pointer to node data
-      rep movsb
+	mov edi,dword[tlist]
+	call tl_get_cur_node_index ;eax=po_t
+	cmp eax,2
+	jl @f
+		xor ecx,ecx
+		mov cx,tl_info_size
+		imul eax,ecx
+		add eax,tl_data_info
+		mov edi,eax
+		mov esi,dword[n_info] ;pointer to node data
+		rep movsb
 
-      mov esi,edi
-      mov edi,dword[tlist] ;restore edi
-      mov cx,tl_info_capt_offs
-      cmp cx,tl_info_size
-      jge .no_text_data
-        mov ax,tl_info_capt_len ;проверяем есть ли ограничение на длинну текста
-        cmp ax,0
-        je .no_limit
-        add cx,ax ;cx = tl_info_capt_offs + tl_info_capt_len
-        and ecx,0xffff
-        xor eax,eax
-        mov ax,tl_info_size
-        cmp eax,ecx
-        jl .no_limit ;пользователь задал слишком большую длинну текста
-        add esi,ecx
-        sub esi,eax
-        .no_limit:
-          dec esi
-          mov byte[esi],0 ;обнуляем последний символ подписи, что-бы не глючило если пользователь задал неправильную структуру
-      .no_text_data:
-
-    @@:
+		mov esi,edi
+		mov edi,dword[tlist] ;restore edi
+		mov cx,tl_info_capt_offs
+		cmp cx,tl_info_size
+		jge .no_text_data
+			mov ax,tl_info_capt_len ;проверяем есть ли ограничение на длинну текста
+			cmp ax,0
+			je .no_limit
+				add cx,ax ;cx = tl_info_capt_offs + tl_info_capt_len
+				and ecx,0xffff
+				xor eax,eax
+				mov ax,tl_info_size
+				cmp eax,ecx
+				jl .no_limit ;пользователь задал слишком большую длинну текста
+				add esi,ecx
+				sub esi,eax
+			.no_limit:
+			dec esi
+			mov byte[esi],0 ;обнуляем последний символ подписи, что-бы не глючило если пользователь задал неправильную структуру
+		.no_text_data:
+	@@:
 	ret
 endp
 
@@ -1511,15 +1472,15 @@ proc tl_node_poi_get_data uses ecx edx edi, tlist:dword, node_p:dword
 	mov edi,dword[tlist]
 	mov edx,dword[node_p]
 
-    call tl_get_node_index ;eax = node index
-    cmp eax,2
-    jl @f
-      xor ecx,ecx
-      mov cx,tl_info_size
-      imul eax,ecx
+	call tl_get_node_index ;eax = node index
+	cmp eax,2
+	jl @f
+		xor ecx,ecx
+		mov cx,tl_info_size
+		imul eax,ecx
 		add eax,tl_data_info
 		jmp .end_f ;return node data pointer
-    @@:
+	@@:
 		xor eax,eax ;возвращаем 0 в случае не удачного поиска
 	.end_f:
 	ret
@@ -1606,33 +1567,31 @@ endp
 ;перенести курсор на 1 позицию ниже
 align 4
 proc tl_cur_next uses eax ebx edi esi, tlist:dword
-    mov edi,dword[tlist]
-    call tl_get_node_count ;eax = node count
-    ;inc eax
-    cmp tl_cur_pos,eax
-    jge .no_redraw
-      mov esi,tl_box_top
-      add esi,tl_box_height ;esi = coord bottom border
-      call tl_draw_null_cursor ;стираем курсор
-      inc tl_cur_pos
+	mov edi,dword[tlist]
+	call tl_get_node_count ;eax = node count
+	cmp tl_cur_pos,eax
+	jge .no_redraw
+		mov esi,tl_box_top
+		add esi,tl_box_height ;esi = coord bottom border
+		call tl_draw_null_cursor ;стираем курсор
+		inc tl_cur_pos
 
-    cmp tl_p_scroll,0 ;if not scrol struct
-    je @f
-    call tl_get_rows_count ;eax = rows count
-    mov ebx,tl_p_scroll
-    add eax,dword[ebx+sb_offs_position]
-    cmp tl_cur_pos,eax
-    jl @f
-      inc dword[ebx+sb_offs_position]
-      stdcall scroll_bar_vertical.draw,ebx
-
-      stdcall tl_draw,dword[tlist] ;полная перерисовка окна
-      jmp .no_redraw
-    @@:
-      mov edi,dword[tlist] ;restore edi
-      call tl_draw_cursor ;перерисовка курсора
-      call tl_draw_caption_cur_pos
-    .no_redraw:
+		cmp tl_p_scroll,0 ;if not scrol struct
+		je @f
+		call tl_get_rows_count ;eax = rows count
+		mov ebx,tl_p_scroll
+		add eax,dword[ebx+sb_offs_position]
+		cmp tl_cur_pos,eax
+		jl @f
+			inc dword[ebx+sb_offs_position]
+			stdcall scroll_bar_vertical.draw,ebx
+			stdcall tl_draw,dword[tlist] ;полная перерисовка окна
+			jmp .no_redraw
+		@@:
+		mov edi,dword[tlist] ;restore edi
+		call tl_draw_cursor ;перерисовка курсора
+		call tl_draw_caption_cur_pos
+	.no_redraw:
 	ret
 endp
 
@@ -1716,38 +1675,37 @@ endp
 ;перенести курсор на 1 страницу выше
 align 4
 proc tl_cur_page_up uses eax edi esi, tlist:dword
-    mov edi,dword[tlist]
+	mov edi,dword[tlist]
 
-    cmp tl_p_scroll,0 ;если есть указатель на скроллинг
-    je .no_redraw
+	cmp tl_p_scroll,0 ;если есть указатель на скроллинг
+	je .no_redraw
+		mov esi,tl_p_scroll
+		call tl_get_rows_count ;eax = rows count
 
-    mov esi,tl_p_scroll
-    call tl_get_rows_count ;eax = rows count
-
-    cmp tl_cur_pos,0
-    jne @f
-    cmp dword[esi+sb_offs_position],0 ;если скроллинг на верху, выходим
-    jne @f
-      jmp .no_redraw
-    @@:
-      cmp tl_cur_pos,eax ;проверяем позицию курсора и кол-во сток на странице
-      jl @f ;если меньше, то приравниваем к 0, что-бы не отнять больше чем надо
-        sub tl_cur_pos,eax
-        jmp .cursor
-      @@:
-        mov tl_cur_pos,0
-      .cursor:
-      cmp dword[esi+sb_offs_position],eax
-      jl @f
-        sub dword[esi+sb_offs_position],eax
-        jmp .scroll
-      @@:
-        mov dword[esi+sb_offs_position],0
-      .scroll:
-      ;перерисовки окна и скроллинга
-      stdcall tl_draw, edi ;draw window
-      stdcall scroll_bar_vertical.draw, esi
-    .no_redraw:
+		cmp tl_cur_pos,0
+		jne @f
+		cmp dword[esi+sb_offs_position],0 ;если скроллинг на верху, выходим
+		jne @f
+			jmp .no_redraw
+		@@:
+		cmp tl_cur_pos,eax ;проверяем позицию курсора и кол-во сток на странице
+		jl @f ;если меньше, то приравниваем к 0, что-бы не отнять больше чем надо
+			sub tl_cur_pos,eax
+			jmp .cursor
+		@@:
+			mov tl_cur_pos,0
+		.cursor:
+		cmp dword[esi+sb_offs_position],eax
+		jl @f
+			sub dword[esi+sb_offs_position],eax
+			jmp .scroll
+		@@:
+		mov dword[esi+sb_offs_position],0
+		.scroll:
+		;перерисовки окна и скроллинга
+		stdcall tl_draw, edi ;draw window
+		stdcall scroll_bar_vertical.draw, esi
+	.no_redraw:
 	ret
 endp
 
@@ -1757,49 +1715,45 @@ proc tl_cur_page_down uses eax ebx ecx edi esi, tlist:dword
 ;eax - кол-во строк на странице
 ;ebx - макс. позиция курсора
 ;ecx - макс. позиция скроллинга
-    mov edi,dword[tlist]
+	mov edi,dword[tlist]
+	cmp tl_p_scroll,0 ;если есть указатель на скроллинг
+	je .no_redraw
+		mov esi,tl_p_scroll
+		call tl_get_node_count ;eax = node count
+		mov ebx,eax
+		call tl_get_rows_count ;eax = rows count
 
-    cmp tl_p_scroll,0 ;если есть указатель на скроллинг
-    je .no_redraw
+		mov ecx,ebx
+		inc ecx ;если нижний узел виден на половину
+		cmp ecx,eax ;if (ecx>eax) { ecx=ecx-eax } else { ecx=0 }
+		jl @f
+			sub ecx,eax ;уменьшаем максимальную позицию скроллинга, так что-бы были видны последние узлы
+			jmp .control
+		@@:
+			xor ecx,ecx ;ecx=0 - все узлы влазят в экран, скроллинг не нужен
+		.control:
 
-    mov esi,tl_p_scroll
-    call tl_get_node_count ;eax = node count
-    mov ebx,eax
-    call tl_get_rows_count ;eax = rows count
+		cmp tl_cur_pos,ebx ;курсор внизу ?
+		jl @f
+		cmp dword[esi+sb_offs_position],ecx ;скроллинг внизу ?
+		jl @f
+			jmp .no_redraw
+		@@:
+		add tl_cur_pos,eax ;перемещаем курсор
+		cmp tl_cur_pos,ebx
+		jl @f
+			mov tl_cur_pos,ebx
+		@@:
+		add dword[esi+sb_offs_position],eax ;перемещаем скроллинг
+		cmp dword[esi+sb_offs_position],ecx
+		jl @f
+			mov dword[esi+sb_offs_position],ecx
+		@@:
 
-    mov ecx,ebx
-    inc ecx ;если нижний узел виден на половину
-    cmp ecx,eax ;if (ecx>eax) { ecx=ecx-eax } else { ecx=0 }
-    jl @f
-      sub ecx,eax ;уменьшаем максимальную позицию скроллинга, так что-бы были видны последние узлы
-      jmp .control
-    @@:
-      xor ecx,ecx ;ecx=0 - все узлы влазят в экран, скроллинг не нужен
-    .control:
-
-    cmp tl_cur_pos,ebx ;курсор внизу ?
-    jl @f
-    cmp dword[esi+sb_offs_position],ecx ;скроллинг внизу ?
-    jl @f
-      jmp .no_redraw
-    @@:
-
-      add tl_cur_pos,eax ;перемещаем курсор
-      cmp tl_cur_pos,ebx
-      jl @f
-        mov tl_cur_pos,ebx
-      @@:
-
-      add dword[esi+sb_offs_position],eax ;перемещаем скроллинг
-      cmp dword[esi+sb_offs_position],ecx
-      jl @f
-        mov dword[esi+sb_offs_position],ecx
-      @@:
-
-      ;перерисовки окна и скроллинга
-      stdcall tl_draw, edi ;draw window
-      stdcall scroll_bar_vertical.draw, esi
-    .no_redraw:
+		;перерисовки окна и скроллинга
+		stdcall tl_draw, edi ;draw window
+		stdcall scroll_bar_vertical.draw, esi
+	.no_redraw:
 	ret
 endp
 
@@ -1979,7 +1933,6 @@ tl_node_move_po6:
 ;ecx = ?
 align 4
 tl_node_move_po8:
-;  push ecx
 	mov ecx,edx ;save node pointer
 	call tl_move_perv
 	mov dword[edx+8],ebx
@@ -1993,7 +1946,6 @@ tl_node_move_po8:
 	call tl_move_next
 	mov dword[edx+4],eax
 	mov edx,ecx ;restore node pointer
-;  pop ecx
 
 	;+4 perv
 	mov eax,dword[edx+4]
@@ -2284,17 +2236,17 @@ tl_convert_to_str:
 
 align 4
 .str:
-  mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
-    ;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
-  cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
-  jb @f
-  xor edx,edx  ;очистить edx
-  div ecx      ;разделить - остаток в edx
-  push edx     ;положить в стек
-  call .str;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
-  pop eax
-  @@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
-  or al,0x30  ;данная команда короче  чем две выше 
-  stosb       ;записать элемент из регистра al в ячеку памяти es:edi
-  ret         ;вернуться очень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
+	mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
+		;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
+	cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
+	jb @f
+		xor edx,edx ;очистить edx
+		div ecx     ;разделить - остаток в edx
+		push edx    ;положить в стек
+		call .str   ;вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
+		pop eax
+	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
+	or al,0x30  ;данная команда короче  чем две выше 
+	stosb       ;записать элемент из регистра al в ячеку памяти es:edi
+	ret         ;вернуться очень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 }

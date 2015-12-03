@@ -521,6 +521,24 @@ align 4
 		fild dword[rad_c]
 		fdivp ;radius=(size.x+size.y)/rad_c
 		fstp dword[sph_radius]
+
+	;делаем одинаковый масштаб по осям x и y, что-бы не нарушались пропорции изображения
+	fld dword[obj_y_scale]
+	fdiv dword[ratio] ;приведение масштаба по оси y учитывая что по высоте экран меньше
+	fcomp dword[obj_x_scale]
+	fstsw ax
+	sahf
+	jb @f
+		;сжатие масштаба по y
+		fld dword[obj_x_scale]
+		fmul dword[ratio]
+		fstp dword[obj_y_scale] ;масштаб по оси y = масштаб по оси x
+		jmp .end
+	@@:
+		;сжатие масштаба по x >...<
+		fld	dword[obj_x_scale]
+		fdiv dword[ratio]
+		fstp dword[obj_x_scale]
 	.end:
 	ret
 endp
@@ -1268,6 +1286,7 @@ mouse_x dd 0
 mouse_y dd 0
 angle_dxm dd 1.7775 ;~ 3d_wnd_w/180 - прибавление углов поворота сцены при вращении мышей
 angle_dym dd 1.3335 ;~ 3d_wnd_h/180
+ratio dd 1.3333 ;~ 3d_wnd_w/3d_wnd_h
 ;angle_dzm dd ?
 draw_mode dd 0 ;режим рисования объекта
 obj_poi_data dd 0 ;указатель на координаты вершин
