@@ -1,13 +1,7 @@
 use32
 	org 0x0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 0x1
-	dd start
-	dd i_end ;размер приложения
-	dd mem
-	dd stacktop
-	dd 0
-	dd sys_path
+	dd 1, start, i_end, mem, stacktop, 0, sys_path
 
 include '../../../../programs/macros.inc'
 include '../../../../programs/proc32.inc'
@@ -18,7 +12,7 @@ include 'vox_3d.inc'
 include '../trunk/str.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel viewer 17.02.15',0 ;подпись окна
+caption db 'Voxel viewer 07.12.15',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -30,7 +24,11 @@ struct FileInfoBlock
 	FileName dd ?
 ends
 
-run_file_70 FileInfoBlock
+3d_wnd_l equ   5 ;отступ для tinygl буфера слева
+3d_wnd_t equ  30 ;отступ для tinygl буфера сверху
+3d_wnd_w equ 512
+3d_wnd_h equ 512
+
 image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
 
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
@@ -48,24 +46,22 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 			db 0
 		@@:
 		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0x0
+		copy_path .path_str,[32],file_name,0
 	else
-		copy_path path,[32],file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+		copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
 	end if
 
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
 	mov [buf],eax
 
-	mov eax,70 ;70-я функция работа с файлами
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov [run_file_70.Count], dword size
-	m2m [run_file_70.Buffer], [buf]
+	mov [run_file_70.Buffer], eax
 	mov byte[run_file_70+20], 0
 	mov [run_file_70.FileName], file_name
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
+	mcall 70,run_file_70 ;загружаем файл изображения
 	cmp ebx,0xffffffff
 	je @f
 		;определяем вид изображения и переводим его во временный буфер image_data
@@ -103,7 +99,7 @@ start:
 	mcall 26,9
 	mov [last_time],eax
 
-	stdcall [kosglMakeCurrent], 5,30,512,512,ctx1
+	stdcall [kosglMakeCurrent], 3d_wnd_l,3d_wnd_t,3d_wnd_w,3d_wnd_h,ctx1
 	stdcall [glEnable], GL_DEPTH_TEST
 	stdcall [glEnable], GL_NORMALIZE ;делам нормали одинаковой величины во избежание артефактов
 	stdcall [glClearColor], 0.0,0.0,0.0,0.0
@@ -139,6 +135,10 @@ still:
 	jz key
 	cmp al,3
 	jz button
+	cmp al,6
+	jne @f 
+		call mouse
+	@@:
 
 	jmp still
 
@@ -315,6 +315,88 @@ key:
 
 	jmp still
 
+
+align 4
+mouse:
+	push eax ebx
+	mcall 37,3
+	bt eax,0
+	jnc .end_m
+		;mouse l. but. move
+		cmp dword[mouse_drag],1
+		jne .end_m
+		mcall 37,1 ;get mouse coords
+		mov ebx,eax
+		shr ebx,16 ;mouse.x
+		cmp ebx,3d_wnd_l
+		jg @f
+			mov ebx,3d_wnd_l
+		@@:
+		sub ebx,3d_wnd_l
+		cmp ebx,3d_wnd_w
+		jle @f
+			mov ebx,3d_wnd_w
+		@@:
+		and eax,0xffff ;mouse.y
+		cmp eax,3d_wnd_t
+		jg @f
+			mov eax,3d_wnd_t
+		@@:
+		sub eax,3d_wnd_t
+		cmp eax,3d_wnd_h
+		jle @f
+			mov eax,3d_wnd_h
+		@@:
+		finit
+		fild dword[mouse_y]
+		mov [mouse_y],eax
+		fisub dword[mouse_y]
+		fdiv dword[angle_dxm] ;если курсор движется по оси y (вверх или вниз) то поворот делаем вокруг оси x
+		fadd dword[angle_x]
+		fstp dword[angle_x]
+
+		fild dword[mouse_x]
+		mov [mouse_x],ebx
+		fisub dword[mouse_x]
+		fdiv dword[angle_dym] ;если курсор движется по оси x (вверх или вниз) то поворот делаем вокруг оси y
+		fadd dword[angle_y]
+		fstp dword[angle_y]
+
+		call draw_3d
+		stdcall [kosglSwapBuffers]
+		jmp .end_d
+	.end_m:
+	bt eax,16
+	jnc @f
+		;mouse l. but. up
+		mov dword[mouse_drag],0
+		jmp .end_d
+	@@:
+	bt eax,8
+	jnc .end_d
+		;mouse l. but. press
+		mcall 37,1 ;get mouse coords
+		mov ebx,eax
+		shr ebx,16 ;mouse.x
+		cmp ebx,3d_wnd_l
+		jl .end_d
+		sub ebx,3d_wnd_l
+		cmp ebx,3d_wnd_w
+		jg .end_d
+		and eax,0xffff ;mouse.y
+		cmp eax,3d_wnd_t
+		jl .end_d
+		sub eax,3d_wnd_t
+		cmp eax,3d_wnd_h
+		jg .end_d
+		mov dword[mouse_drag],1
+		mov dword[mouse_x],ebx
+		mov dword[mouse_y],eax
+	.end_d:
+
+	;stdcall [kmainmenu_dispatch_cursorevent], [main_menu]
+	pop ebx eax
+	ret
 
 align 4
 button:
@@ -668,11 +750,11 @@ align 4
 		mov edi,txt_stat_m1.v
 		stdcall convert_int_to_str,20
 
-		;mov eax,ebx
-		;mov edi,txt_stat_m2.v
-		;stdcall convert_int_to_str,20
+		mov eax,ebx
+		mov edi,txt_stat_m2.v
+		stdcall convert_int_to_str,20
 
-		;stdcall str_n_cat,txt_stat_m1.v,txt_stat_m2,50
+		stdcall str_n_cat,txt_stat_m1.v,txt_stat_m2,50
 		notify_window_run txt_stat_m1
 	.end_stat:
 	ret
@@ -681,7 +763,7 @@ endp
 align 4
 txt_stat_m1:
 	db 'Статистика',13,10,'Вокселей: '
-.v: rb 50
+.v: rb 70
 txt_stat_m2:
 	db 13,10,'Отображаемых граней: '
 .v: rb 20
@@ -717,6 +799,7 @@ draw_3d:
 		;но все же при поворотах будут отсекатся края, которые вылезут за пределы плоскостей отсечения
 		;в версии opengl под Win координаты идут от -1.0 до 1.0 потому там этого делать не нужно
 	stdcall [glScalef], [scale], [scale], [scale] ;увеличиваем воксельный объект, что-бы не был очень маленьким
+	stdcall [glScalef], 1.0, 1.0, 0.5 ;что-бы края объекта не вылазили за грани отсечения
 	stdcall [glRotatef], [angle_x],1.0,0.0,0.0
 	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
 	stdcall [glRotatef], [angle_z],0.0,0.0,1.0
@@ -973,11 +1056,7 @@ err_msg_found_lib_3 db 'Не найдена библиотека ',39,'tinygl.obj',39,0
 err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'tinygl',39,0
 ;--------------------------------------------------
 
-sc system_colors 
 last_time dd 0
-
-align 16
-procinfo process_information 
 
 align 4
 buf_0: dd 0 ;указатель на буфер изображения
@@ -1006,6 +1085,11 @@ angle_x dd 0.0
 angle_y dd 0.0
 angle_z dd 0.0
 delt_size dd 3.0
+mouse_drag dd 0 ;режим поворота сцены от перемещении курсора мыши
+mouse_x dd 0
+mouse_y dd 0
+angle_dxm dd 2.8444 ;~ 3d_wnd_w/180 - прибавление углов поворота сцены при вращении мышей
+angle_dym dd 2.8444 ;~ 3d_wnd_h/180
 
 opt_light dw 0 ;опция для включения/выключения света
 opt_cube_box dw 1 ;опция для рисования рамки вокруг объекта
@@ -1026,10 +1110,12 @@ i_end:
 	rb 4096
 stacktop:
 	sys_path rb 1024
-	file_name:
-		rb 1024 ;4096 
+	file_name rb 2048 
 	library_path rb 1024
 	plugin_path rb 4096
 	openfile_path rb 4096
 	filename_area rb 256
+	sc system_colors
+	procinfo process_information
+	run_file_70 FileInfoBlock
 mem:
