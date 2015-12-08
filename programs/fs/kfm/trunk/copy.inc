@@ -195,7 +195,7 @@ draw_editbox_copy_name:
 
     shr   ecx,16
     mov   bx,cx
-    add   ebx,60 shl 16+5
+    add   ebx,60 shl 16+1
     cmp   [move_file_flag],0
     je	  .copy
     mov   edx,move_type_1

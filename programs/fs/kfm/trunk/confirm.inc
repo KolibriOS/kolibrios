@@ -103,9 +103,9 @@ draw_confirmation_menu:
 	pop	ecx	ebx
 	shr	ecx,16
 	mov	bx,cx
-	add	ebx,15 shl 16+5
+	add	ebx,7 shl 16+2
 	mcall	4,,0x90ffffff,[confirmation_type]
-	add	ebx,7 shl 16+20
+	add	ebx,15 shl 16+20
 	mcall	,,,type_yes
 	add	ebx,56 shl 16
 	mcall	,,,type_no

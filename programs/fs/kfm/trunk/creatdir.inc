@@ -117,7 +117,7 @@ draw_create_dir:
 
     shr   ecx,16
     mov   bx,cx
-    add   ebx,30 shl 16+5
+    add   ebx,30 shl 16+1
     mcall 4, ,0x90ffffff,create_dir  ;[confirmation_type]
     add   ebx,48 shl 16+36
     mov   edx,type_yes
