@@ -149,7 +149,7 @@ end if
 ;      ebx - координаты : X << 16 + Y
 show_text:
 	mov	eax, 4
-	mov	ecx, 0x10000000
+	xor	ecx, ecx
 @@:
 	movzx	esi, byte[edx]
 	inc	edx

@@ -23,7 +23,7 @@
 	mov	eax, 4
 	mov	ebx, 17 * 65536 + 285
 	mov	edx, msg_cf_utime
-	mov	ecx, 0x10000000
+	xor	ecx, ecx
 	mov	esi, 11
 	int	0x40
 	
@@ -45,7 +45,7 @@
 	mov	ebx, 152 * 65536 + 285
 	mov	edx, dub_p
 	mov	esi, 1
-	mov	ecx, 0x10000000
+	xor	ecx, ecx
 	int	0x40
 	
 	jmp	end_drow_tab

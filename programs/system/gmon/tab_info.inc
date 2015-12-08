@@ -120,7 +120,7 @@ end if
 	mov	esi, 1
 	mov	ecx, 6		; <- количество строк
 nxt_dp:	push	ecx
-	mov	ecx, 0x10000000
+	xor	ecx, ecx
 	int	0x40
 	add	ebx, 10
 	pop	ecx

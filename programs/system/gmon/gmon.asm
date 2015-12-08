@@ -41,7 +41,7 @@ include 'macros.inc'
 
 tcol	equ	0x5080d0
 atcol	equ	0x4070c0
-val_mod	equ	0x3090
+val_mod equ	0x3090
 
 MEOS_APP_START
 include "tests.inc"	; <-- Много выравниваний, лучше здесь
@@ -108,14 +108,14 @@ key:
 	jmp	wait_for_event
 ;--- Button down -----------------------------------------------------
 button:
-	mov	eax, 17			; get id
+	mov	eax, 17 		; get id
 	int	0x40
 	cmp	ah, 1			; button id == 1 ?
 	jne	noexit
 exit:	cmp	byte[test_id], 0
 	je	@f
 	call	stop_test
-@@:	mov	eax, -1		; close this program
+@@:	mov	eax, -1 	; close this program
 	int	0x40
 noexit:
 	; кнопки вкладок (2 .. 5)
@@ -145,7 +145,7 @@ rtst:	mov	eax, 51
 	mov	edx, stp
 	mov	ebx, 1
 	int	0x40
-	cmp	eax, 0xFFFFFFF0	; -16
+	cmp	eax, 0xFFFFFFF0 ; -16
 	je	wait_for_event	; <-- ошибка запуска теста, ПЕРЕПИСАТЬ
 	mov	[test_pid], eax
 	pop	eax
@@ -211,7 +211,7 @@ draw_window:
 	mov	ecx, 140 * 65536 + 140
 @@:	add	ecx, 10 * 65536 + 10
 	int	0x40
-	cmp	cx, 230			; привязано к координатам окна
+	cmp	cx, 230 		; привязано к координатам окна
 	jl	@b
 
 	; Пишим названия параметров (Cpu load, temper, etc...)
@@ -337,7 +337,7 @@ sh_temp:push	ecx
 	mov	ecx, 5
 	mov	esi, hwm_rpms
 	mov	edx, 121 * 65536 + 80
-sh_fan:	push	ecx
+sh_fan: push	ecx
 	lodsd
 	push	esi
 	;реакция на изменения
@@ -372,8 +372,8 @@ volt_nxt:
 	fsub	dword [edi]
 	fabs
 
-	; fcomp	dword [c_eps]	; bug in MeOsEmul
-	; fstsw	ax
+	; fcomp dword [c_eps]	; bug in MeOsEmul
+	; fstsw ax
 	fcom	dword [c_eps]	; 0xBADCODE
 	fstsw	ax
 	finit
@@ -459,7 +459,7 @@ end_drow_tab:
 	jmp	wait_for_event
 ;--- Drow Info tab ---------------
 info_tab:
-	include	"tab_info.inc"
+	include "tab_info.inc"
 ;--- Drow test tab ---------------
 test_tab:
 	include "tab_test.inc"
@@ -470,13 +470,13 @@ config_tab:
 about_tab:
 	include "tab_about.inc"
 ;---------------------------------------------------------------------
-	include	"system.inc"
+	include "system.inc"
 	include "hwm.inc"
 	include "diag.inc"
 
 
 DATA
-act_tab		db	2 			; Номер активной вкладки
+act_tab 	db	2			; Номер активной вкладки
 tab_lab:
 .1: db 'Info'
 .2: db 'Tests'
@@ -505,7 +505,7 @@ msgs_mon2 mls \
 	'-12V',\
 	'-5V'
 
-msg_yes		db	'Yes'
+msg_yes 	db	'Yes'
 msg_no		db	'N/A'
 
 update_time	dd	300			; период обновления в сотых долях секунды
@@ -513,28 +513,28 @@ d_colors	dd	d_cpu_load, d_mem_usage, d_temp1, d_temp2, d_temp3
 c_eps		dd	0.01
 
 ; Цвета графиков
-colors:		dd	0xff0000, 0xff00, 0xff, 0xffffff, tcol, 0xFF7E23, 0x8BA169, 0xff0000	; первый и последний равны
+colors: 	dd	0xff0000, 0xff00, 0xff, 0xffffff, tcol, 0xFF7E23, 0x8BA169, 0xff0000	; первый и последний равны
 colors_end:
 ;---------------------------------------------------------------------
 UDATA
 
 test_pid	dd	?			; если test_id == 0 - не имеет смысла
-test_id		db	?			; 0 - тест не запушен (соответствует № кнопки 6..10)
+test_id 	db	?			; 0 - тест не запушен (соответствует № кнопки 6..10)
 diag_add_v	db	?			; 0 - не добавлять данные на график, !0 - добавлять
 
-Vendor:		times	12 db ?
+Vendor: 	times	12 db ?
 CPU_fam:	db	?
 CPU_mod:	db	?
 CPU_type:	db	?
 CPU_mmx:	db	?
 
 ; Для реакции на изменения
-old_t1:		dd	?	; последнее значение temp1
-old_t2:		dd	?	; ...
-old_t3:		dd	?
-old_f1:		dd	?
-old_f2:		dd	?
-old_f3:		dd	?
+old_t1: 	dd	?	; последнее значение temp1
+old_t2: 	dd	?	; ...
+old_t3: 	dd	?
+old_f1: 	dd	?
+old_f2: 	dd	?
+old_f3: 	dd	?
 old_volts:	times	7 dd ?
 
 ; Грфики

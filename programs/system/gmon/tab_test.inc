@@ -2,14 +2,8 @@
 ; Ghost Monitor - утилита (стресс) тестировани€ и мониторинга системы
 ; Copyright (C) 2005, 2006, 2007 Mihailov Ilia (ghost.nsk@mail.ru)
 ; All Right Reserved
-
-;
-;
 ;
 ; ¬кладка тестов
-;
-;
-;
 ;
 ; "GenuineIntel" - International Electronics
 ; "GenuineTMx86" - Transmeta Processor
@@ -65,66 +59,49 @@ k6n:	int	0x40
 	jne	k7n
 	mov	esi, atcol
 k7n:	int	0x40
-	; MMX тест
-	; add	ecx, 27 * 65536
-	; inc	edx
-	; mov	esi, tcol
-	; cmp	byte[CPU_mmx], 1
-	; jne	mmxn
-	; mov	esi, atcol
-; mmxn:	int	0x40
 	; ѕишем названи€ кнопок
 	mov	eax, 4
 	mov	ebx, 30 * 65536 + 307
 	mov	esi, 7
 	mov	edx, tmsg_p	; P5
-	mov	ecx, 0x10000000
+	xor	ecx, ecx
 	cmp	byte[test_id], 6
 	jne	nr1
-	mov	ecx, 0x10FF0000
+	mov	ecx, 0xFF0000
 nr1:	int	0x40
-	mov	ebx, 30 * 65536 + 307 + 27
+	add	ebx, 27
 	mov	esi, 20		; P6
-	mov	ecx, 0x10000000
+	xor	ecx, ecx
 	cmp	byte[test_id], 7
 	jne	nr2
-	mov	ecx, 0x10FF0000
+	mov	ecx, 0xFF0000
 nr2:	int	0x40
-	mov	ebx, 30 * 65536 + 307 + 27 + 27
+	add	ebx, 27
 	mov	edx, tmsg_k6	; K6
 	mov	esi, 13
-	mov	ecx, 0x10000000
+	xor	ecx, ecx
 	cmp	byte[test_id], 8
 	jne	nr3
-	mov	ecx, 0x10FF0000
+	mov	ecx, 0xFF0000
 nr3:	int	0x40
-	mov	ebx, 30 * 65536 + 307 + 27 + 27 + 27
+	add	ebx, 27
 	mov	edx, tmsg_k7	; K7
 	mov	esi, 15
-	mov	ecx, 0x10000000
+	xor	ecx, ecx
 	cmp	byte[test_id], 9
 	jne	nr4
-	mov	ecx, 0x10FF0000
+	mov	ecx, 0xFF0000
 nr4:	int	0x40
-	; mov	ebx, 30 * 65536 + 307 + 27 + 27 + 27 + 27
-	; mov	edx, tmsg_mmx	; MMX
-	; mov	esi, 12
-	; mov	ecx, 0x10000000
-	; cmp	byte[test_id], 10
-	; jne	nr5
-	; mov	ecx, 0x10FF0000
-; nr5:	int	0x40
-	; recommendate
-	mov	ecx, 0x10000000
+	xor	ecx, ecx
 	mov	ebx, 190 * 65536 + 420
 	mov	edx, tmsg_rec
-	mov	esi, 14
+	mov	esi, 13
 	int	0x40
 	; read about
 	mov	ebx, 30 * 65536 + 282
 	mov	edx, tmsg_war
-	mov	esi, 34
-	mov	ecx, 0x10FF0000
+	mov	esi, 35
+	mov	ecx, 0xFF0000
 	int	0x40
 	; recommendate color
 	mov	eax, 13
@@ -133,16 +110,14 @@ nr4:	int	0x40
 	mov	edx, atcol
 	int	0x40
 
-
 	jmp	end_drow_tab
 
 tmsg_p	db	'Pentium (Pro/II/III)'	; 7/20
 tmsg_k6	db	'K6 (I/II/III)'		; 13
 tmsg_k7	db	'K7/Athlon/Duron'	; 15
-;tmsg_mmx db	'MMX (memory)'		; 12
-tmsg_rec db	'- recommendate'	; 14
+tmsg_rec db	'Ч recommended'		; 13
 if lang eq it
-	tmsg_war db	'Potrebbe danneggiare lo hardware  ' ; 34
+	tmsg_war db	'Potrebbe danneggiare lo hardware   '
 else
-	tmsg_war db	'May permanent damage to electronic' ; 34
+	tmsg_war db	'May permanently damage the hardware'
 end if
