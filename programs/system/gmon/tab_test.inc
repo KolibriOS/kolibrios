@@ -95,7 +95,7 @@ nr4:	int	0x40
 	xor	ecx, ecx
 	mov	ebx, 190 * 65536 + 420
 	mov	edx, tmsg_rec
-	mov	esi, 13
+	mov	esi, 11
 	int	0x40
 	; read about
 	mov	ebx, 30 * 65536 + 282
@@ -115,7 +115,7 @@ nr4:	int	0x40
 tmsg_p	db	'Pentium (Pro/II/III)'	; 7/20
 tmsg_k6	db	'K6 (I/II/III)'		; 13
 tmsg_k7	db	'K7/Athlon/Duron'	; 15
-tmsg_rec db	'— recommended'		; 13
+tmsg_rec db	'recommended'		; 11
 if lang eq it
 	tmsg_war db	'Potrebbe danneggiare lo hardware   '
 else
