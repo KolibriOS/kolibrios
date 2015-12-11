@@ -507,7 +507,8 @@ void main()
 									selected_count++;
 								}
 								_INSERT_END:
-								if (files.KeyDown()) List_ReDraw();
+								files.KeyDown();
+								List_ReDraw();
 								break;
 						case 059...068: //F1-F10
 								FnProcess(key_scancode-58);
