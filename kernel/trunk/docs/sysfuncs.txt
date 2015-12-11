@@ -1002,20 +1002,22 @@ Parameters:
 Returned value:
   * function does not return value
 
----------------- Subsubfunction 2 - get mouse delay. -----------------
+Remark: recommended speed = 1, 0 = lock the cursor.
+
+------------- Subsubfunction 2 - get mouse acceleration. -------------
 Parameters:
   * eax = 18 - function number
   * ebx = 19 - subfunction number
   * ecx = 2 - subsubfunction number
 Returned value:
-  * eax = current mouse delay
+  * eax = 2 - fierce, 1 - soft, 0 - off
 
----------------- Subsubfunction 3 - set mouse delay. -----------------
+------------- Subsubfunction 3 - set mouse acceleration. -------------
 Parameters:
   * eax = 18 - function number
   * ebx = 19 - subfunction number
   * ecx = 3 - subsubfunction number
-  * edx = new value for mouse delay
+  * edx = 2 - fierce, 1 - soft, 0 - off
 Returned value:
   * function does not return value
 
@@ -1060,22 +1062,7 @@ Parameters:
 Returned value:
   * function does not return value
 
-Remarks:
-  * It is recommended to set speed of the mouse (in subsubfunction 1)
-    from 1 up to 9. The installed value is not inspected by the kernel
-    code, so set it carefully, at incorrect value the cursor
-    can "freeze". Speed of the mouse can be regulated through the
-    application SETUP.
-  * Recommended delay of the mouse (in subsubfunction 3) = 10. Lower
-    value is not handled by COM mice. At the very large values the
-    movement of the mouse on 1 pixel is impossible and the cursor will
-    jump on the value of installed speed (subsubfunction 1). The
-    installed value is not inspected by the kernel code.
-    Mouse delay can be regulated through the application SETUP.
-  * The subsubfunction 4 does not check the passed value. Before
-    its call find out current screen resolution (with function 14)
-    and check that the value of position is inside the limits of the
-    screen.
+Remark: mouse settings can be modified in the application mouse_cfg.
 
 ======================================================================
 ======== Function 18, subfunction 20 - get information on RAM. =======
