@@ -3,4 +3,4 @@ C-- "textreader.c"
 @rename "textreader.com" "textreader"
 @del warning.txt
 @pause
-rem kpack textreader
+kpack textreader
