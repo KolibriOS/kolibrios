@@ -69,20 +69,17 @@ void Tip(int y, dword caption, id, arrow)
 }
 
 
-path_string disk_list[30];
-int disc_num;
-dword devbuf;
-
+collection disk_list;
 
 void GetSystemDiscs()
 {
 	char dev_name[10], sys_discs[10];
-	int i1, j1, dev_num, dev_disc_num,l;
+	int i1, j1, dev_num, dev_disc_num;
 	dword temp_file_count, tempbuf;
+	dword devbuf;
 
-	disc_num=0;
-	if (devbuf) free(devbuf);
-	devbuf = malloc(10000); //буфер где-то на 10 девайсов в левой панели
+	disk_list.init(4096);
+	devbuf = malloc(10000);
 	ReadDir(19, devbuf, "/");
 	dev_num = EBX;
 	for (i1=0; i1<dev_num; i1++)
@@ -90,27 +87,20 @@ void GetSystemDiscs()
 		sprintf(#dev_name,"/%s/",i1*304+ devbuf+72);
 		Open_Dir(#dev_name, ONLY_OPEN);
 		dev_disc_num = files.count;
-		//if (files.count<=0) copystr(#dev_name,#disk_list[disc_num].Item); else
 		for (j1=0; j1<dev_disc_num; j1++;)
 		{
-			l=sprintf(#sys_discs,"%s%s/",#dev_name,j1*304+ buf+72);
-			strlcpy(#disk_list[disc_num].Item, #sys_discs,l);
-			disc_num++;
+			sprintf(#sys_discs,"%s%s/",#dev_name,j1*304+ buf+72);
+			disk_list.add(#sys_discs);
 		}
-		if (!strncmp(#sys_discs, "/rd/1/",6)) 
+		if (!strcmp(#sys_discs, "/rd/1/")) 
 		{
 			GetDir(#tempbuf, #temp_file_count, "/kolibrios/", DIRS_ONLYREAL);
-			if (temp_file_count)
-			{
-				strlcpy(#disk_list[disc_num].Item, "/kolibrios/",11);
-				kolibrios_drive = true;
-				disc_num++;	
-			}
-			else kolibrios_drive = false;
+			if (temp_file_count) disk_list.add("/kolibrios/");
 			free(tempbuf);
 		}
-		else if (!strncmp(#sys_discs, "/fd/1/",6)) CMD_ENABLE_SAVE_IMG = true;
+		else if (!strcmp(#sys_discs, "/fd/1/")) CMD_ENABLE_SAVE_IMG = true;
 	}
+	free(devbuf);
 }
 
 
@@ -119,10 +109,10 @@ void DrawSystemDiscs()
 	char dev_name[15], disc_name[100], i, dev_icon, is_active, name_len;
 	int pos_y, pos_x=2;
 	
-	for (i=disc_num; i<30; i++) DeleteButton(100+i);
-	for (i=0;i<disc_num;i++)
+	for (i=0; i<30; i++) DeleteButton(100+i);
+	for (i=0;i<disk_list.count;i++)
 	{
-		strcpy(#dev_name, #disk_list[i].Item);
+		strcpy(#dev_name, disk_list.get(i));
 		dev_name[strlen(#dev_name)-1]=NULL;
 		switch(dev_name[1])
 		{
@@ -207,7 +197,7 @@ void DrawSystemDiscs()
 
 void ActionsDraw()
 {
-	int actions_y=disc_num*16+108, lineh=16;
+	int actions_y=disk_list.count*16+108, lineh=16;
 	Tip(actions_y-18, T_ACTIONS, 77, ""); //заголовок
 	for (i=0; actions[i*3]!=0; i++, actions_y+=lineh)
 	{
@@ -222,7 +212,7 @@ void ActionsDraw()
 
 void DrawLeftPanelBg()
 {
-	int actions_y=disc_num*16;
+	int actions_y=disk_list.count*16;
 	int start_y = actions_y+156;
 	int onTop1;
 	DrawBar(2,41,190,15,col_lpanel);		      //синий прямоугольник - над девайсами
@@ -255,9 +245,9 @@ void DrawDeviceAndActionsLeftPanel()
 }
 
 
-void ClickOnDisk(char diskN)
+void ClickOnDisk(int n)
 {
-	strcpy(#path, #disk_list[diskN].Item);
+	strcpy(#path, disk_list.get(n));
 	files.KeyHome();
 	Open_Dir(#path,WITH_REDRAW);	
 }

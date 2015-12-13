@@ -6,7 +6,7 @@
 #endif
 
 //libraries
-#define MEMSIZE 540000
+#define MEMSIZE 4096 * 150
 #include "..\lib\clipboard.h"
 #include "..\lib\strings.h"
 #include "..\lib\mem.h"
@@ -15,6 +15,7 @@
 #include "..\lib\list_box.h"
 #include "..\lib\random.h"
 #include "..\lib\font.h"
+#include "..\lib\collection.h"
 //obj
 #include "..\lib\obj\libini.h"
 #include "..\lib\obj\box_lib.h"
@@ -72,7 +73,7 @@ char scroll_used=false;
 dword menu_stak,about_stak,properties_stak,settings_stak,copy_stak,delete_stak;
 
 proc_info Form;
-int mouse_dd, sc_slider_h, kolibrios_drive;
+int mouse_dd, sc_slider_h;
 int j, i;
 int action_buf;
 int rand_n;
@@ -412,7 +413,7 @@ void main()
 					{
 						case 059...068:
 								key_scancode -= 59;
-								if (key_scancode<disc_num)
+								if (key_scancode<disk_list.count)
 								{
 									if (!two_panels)
 									{
