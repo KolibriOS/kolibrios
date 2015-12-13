@@ -215,6 +215,7 @@ int llist::KeyPgUp()
 	if (count <= visible) return KeyHome();
 	if (first == 0) return 0;
 	first -= visible;
+	cur_y = first;
 	CheckDoesValuesOkey();
 	return 1;
 }
@@ -224,6 +225,7 @@ int llist::KeyPgDown()
 	if (count <= visible) return KeyEnd();
 	if (first == count - visible) return 0;
 	first += visible;
+	cur_y = first + visible - 1;
 	CheckDoesValuesOkey();
 	return 1;
 }
