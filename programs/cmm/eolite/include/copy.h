@@ -7,14 +7,12 @@ enum {NOCUT, CUT};
 
 Clipboard clipboard;
 
-dword _copy_path_ = 0;
 void Copy(dword pcth, char cut)
 {
     dword selected_offset2;
     byte copy_t[4096];
     dword buff_data;
     int ind = 0; 
-	
     if (selected_count)
 	{
         buff_data = malloc(selected_count*4096+10);
@@ -58,30 +56,56 @@ void PasteThread()
 	int j;
 	int cnt = 0;
 	dword buf;
-	dword tmp;
 	file_count_copy = 0;
 	copy_bar.value = 0; 
 	
 	buf = clipboard.GetSlotData(clipboard.GetSlotCount()-1);
 	if (DSDWORD[buf+4] != 3) return;
 	cnt = ESINT[buf+8];
+	for (j = 0; j < cnt; j++) {
+		strlcpy(#copy_from, j*4096+buf+10, 4096);
+		GetFileInfo(#copy_from, #file_info_count);
+		if ( file_info_count.isfolder ) DirFileCount(#copy_from);
+		else file_count_copy++;
+	}
+	copy_bar.max = file_count_copy;
 	
+	if (cut_active)  operation_flag = MOVE_FLAG;
+	else  operation_flag = COPY_FLAG;
+	
+	DisplayOperationForm();
 	for (j = 0; j < cnt; j++) {
 		strlcpy(#copy_from, j*4096+buf+10, 4096);
 		if (!copy_from) DialogExit();
 		strcpy(#copy_to, #path);
 		strcat(#copy_to, #copy_from+strrchr(#copy_from,'/'));
+		if (!strcmp(#copy_from,#copy_to))
+		{
+			strcpy(#copy_to, #path);
+			strcat(#copy_to, "new_");
+			strcat(#copy_to, #copy_from+strrchr(#copy_from,'/'));
+		}
 		if (strstr(#copy_to, #copy_from))
 		{
-			cut_active=false;
 			notify("Copy directory into itself is a bad idea...");
 			DialogExit();
 		}
-		IF (cut_active) fs.move(#copy_from, #copy_to);
-		ELSE fs.copy(#copy_from, #copy_to);
+
+		if (copy_rezult = copyf(#copy_from,#copy_to))
+		{
+			Write_Error(copy_rezult);
+		}
+		else if (cut_active)
+		{
+			//strcpy(#file_path, #copy_from);
+			Del_File2(#copy_from, 0);
+			
+		}
 	}
-	
-	cut_active=false;
+	if (cut_active)
+	{
+		cut_active=false;
+	}
 	if (info_after_copy) notify(INFO_AFTER_COPY);
 	DialogExit();
 }
