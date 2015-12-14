@@ -424,7 +424,8 @@ static inline void get_proc_info(char *info)
     __asm__ __volatile__(
     "int $0x40"
     :
-    :"a"(9), "b"(info), "c"(-1));
+    :"a"(9), "b"(info), "c"(-1)
+    :"memory");
 };
 static inline void GetProcInfo(char *info) __attribute__ ((alias ("get_proc_info")));
 

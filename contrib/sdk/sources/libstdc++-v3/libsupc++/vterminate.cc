@@ -47,7 +47,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     if (terminating)
       {
 	fputs("terminate called recursively\n", stderr);
-        abort ();
+	abort ();
       }
     terminating = true;
 
@@ -61,8 +61,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	{
 	  int status = -1;
 	  char *dem = 0;
-
-//	  dem = __cxa_demangle(name, 0, 0, &status);
+	  
+	  dem = __cxa_demangle(name, 0, 0, &status);
 
 	  fputs("terminate called after throwing an instance of '", stderr);
 	  if (status == 0)
@@ -91,7 +91,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       }
     else
       fputs("terminate called without an active exception\n", stderr);
-
+    
     abort();
   }
 

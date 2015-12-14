@@ -655,10 +655,6 @@ _ELIDABLE_INLINE int __sputc_r(struct _reent *_ptr, int _c, FILE *_p) {
 #define	clearerr(p)	__sclearerr(p)
 #endif
 
-#if 0 /*ndef __STRICT_ANSI__ - FIXME: must initialize stdio first, use fn */
-#define	fileno(p)	__sfileno(p)
-#endif
-
 #ifndef __CYGWIN__
 #ifndef lint
 #define	getc(fp)	__sgetc_r(_REENT, fp)

@@ -79,6 +79,12 @@ SECTIONS
         ___iend = . ;
    }
 
+   .eh_frame BLOCK(16) :
+   {
+        PROVIDE (___EH_FRAME_BEGIN__ = .) ;
+        *(.eh_frame*)
+   }
+
    .idata ALIGN(16):
    {
       __idata_start = .;
@@ -113,7 +119,6 @@ SECTIONS
     *(.debug$F)
     *(.drectve)
     *(.note.GNU-stack)
-    *(.eh_frame)
     *(.comment)
     *(.debug_abbrev)
     *(.debug_info)

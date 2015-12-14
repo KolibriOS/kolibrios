@@ -57,7 +57,7 @@ __gxx_exception_cleanup (_Unwind_Reason_Code code, _Unwind_Exception *exc)
 
 
 extern "C" void
-__cxxabiv1::__cxa_throw (void *obj, std::type_info *tinfo, 
+__cxxabiv1::__cxa_throw (void *obj, std::type_info *tinfo,
 			 void (_GLIBCXX_CDTOR_CALLABI *dest) (void *))
 {
   PROBE2 (throw, obj, tinfo);
@@ -100,7 +100,7 @@ __cxxabiv1::__cxa_rethrow ()
 	globals->caughtExceptions = 0;
       else
 	{
-	header->handlerCount = -header->handlerCount;
+	  header->handlerCount = -header->handlerCount;
 	  // Only notify probe for C++ exceptions.
 	  PROBE2 (rethrow, __get_object_from_ambiguous_exception(header),
 		  header->exceptionType);

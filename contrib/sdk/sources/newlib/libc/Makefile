@@ -3,7 +3,7 @@ CC = kos32-gcc
 AR = kos32-ar
 LD = kos32-ld
 
-CFLAGS = -c -O2 -fno-ident -fomit-frame-pointer -DBUILD_DLL -DMISSING_SYSCALL_NAMES
+CFLAGS = -c -O2 -fno-ident -fomit-frame-pointer -fexceptions -DBUILD_DLL -DMISSING_SYSCALL_NAMES
 LDFLAGS = -shared -s -T libcdll.lds --out-implib libc.dll.a --image-base 0
 #LDFLAGS+= --output-def libc.orig.def
 ARFLAGS = crs

@@ -95,7 +95,7 @@ get_ttype_entry (lsda_header_info *info, _uleb128_t i)
   i *= size_of_encoded_value (info->ttype_encoding);
   read_encoded_value_with_base (info->ttype_encoding, info->ttype_base,
 				info->TType - i, &ptr);
-  
+
   return reinterpret_cast<const std::type_info *>(ptr);
 }
 

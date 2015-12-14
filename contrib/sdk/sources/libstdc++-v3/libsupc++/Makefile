@@ -7,17 +7,20 @@ CPP= kos32-g++
 STRIP = kos32-strip
 
 CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fno-ident -fomit-frame-pointer
+CPPFLAGS = -fno-rtti
 
 ARFLAGS= crs
 
-INCLUDES= -I. -I../../newlib/libc/include
+INCLUDES= -I. -I../include/mingw32 -I../include -I../../newlib/libc/include -I/d/mingw/include
 
 LIBS:=  -ldll -lc.dll
 
-DEFINES= -DHAVE_CONFIG_H -DIN_GCC -DUSE_EMUTLS=1 -D_GLIBCXX_HAVE_TLS
+DEFINES= -DHAVE_CONFIG_H -DIN_GCC -DIN_GLIBCPP_V3 -DUSE_EMUTLS=1 -D_GLIBCXX_HAVE_TLS
 
 
-SOURCES = 	gthr_mutex.c			\
+SOURCES = 					\
+		cp-demangle.c			\
+		gthr_mutex.c			\
 		array_type_info.cc		\
 		atexit_thread.cc		\
 		bad_alloc.cc			\
@@ -81,22 +84,22 @@ $(LIBRARY).a: $(OBJECTS) Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
 
 %.o : %.cc Makefile
-	$(CPP) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
+	$(CPP) $(CFLAGS) $(CPPFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
 
 eh_ptr.o: eh_ptr.cc
-	$(CPP) $(CFLAGS) -std=gnu++0x $(DEFINES) $(INCLUDES) -o $@ $<
+	$(CPP) $(CFLAGS) -std=gnu++0x $(CPPFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
 
 eh_throw.o: eh_throw.cc
-	$(CPP) $(CFLAGS) -std=gnu++0x $(DEFINES) $(INCLUDES) -o $@ $<
+	$(CPP) $(CFLAGS) -std=gnu++0x $(CPPFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
 
 guard.o: guard.cc
-	$(CPP) $(CFLAGS) -std=gnu++0x $(DEFINES) $(INCLUDES) -o $@ $<
+	$(CPP) $(CFLAGS) -std=gnu++0x $(CPPFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
 
 atexit_thread.o: atexit_thread.cc
-	$(CPP) $(CFLAGS) -std=gnu++0x $(DEFINES) $(INCLUDES) -o $@ $<
+	$(CPP) $(CFLAGS) -std=gnu++0x $(CPPFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
 
 nested_exception.o: nested_exception.cc
-	$(CPP) $(CFLAGS) -std=gnu++0x $(DEFINES) $(INCLUDES) -o $@ $<
+	$(CPP) $(CFLAGS) -std=gnu++0x $(CPPFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
 
 clean: 
 	-rm -f *.o 

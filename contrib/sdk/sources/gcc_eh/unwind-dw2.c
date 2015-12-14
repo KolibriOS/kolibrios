@@ -1,6 +1,5 @@
 /* DWARF2 exception handling and frame unwind runtime interface routines.
-   Copyright (C) 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006,
-   2008, 2009, 2010  Free Software Foundation, Inc.
+   Copyright (C) 1997-2013 Free Software Foundation, Inc.
 
    This file is part of GCC.
 
@@ -55,12 +54,79 @@
 #define DWARF_REG_TO_UNWIND_COLUMN(REGNO) (REGNO)
 #endif
 
+/* ??? For the public function interfaces, we tend to gcc_assert that the
+   column numbers are in range.  For the dwarf2 unwind info this does happen,
+   although so far in a case that doesn't actually matter.
+
+   See PR49146, in which a call from x86_64 ms abi to x86_64 unix abi stores
+   the call-saved xmm registers and annotates them.  We havn't bothered
+   providing support for the xmm registers for the x86_64 port primarily
+   because the 64-bit windows targets don't use dwarf2 unwind, using sjlj or
+   SEH instead.  Adding the support for unix targets would generally be a
+   waste.  However, some runtime libraries supplied with ICC do contain such
+   an unorthodox transition, as well as the unwind info to match.  This loss
+   of register restoration doesn't matter in practice, because the exception
+   is caught in the native unix abi, where all of the xmm registers are 
+   call clobbered.
+
+   Ideally, we'd record some bit to notice when we're failing to restore some
+   register recorded in the unwind info, but to do that we need annotation on
+   the unix->ms abi edge, so that we know when the register data may be
+   discarded.  And since this edge is also within the ICC library, we're
+   unlikely to be able to get the new annotation.
+
+   Barring a magic solution to restore the ms abi defined 128-bit xmm registers
+   (as distictly opposed to the full runtime width) without causing extra
+   overhead for normal unix abis, the best solution seems to be to simply
+   ignore unwind data for unknown columns.  */
+
+#define UNWIND_COLUMN_IN_RANGE(x) \
+    __builtin_expect((x) <= DWARF_FRAME_REGISTERS, 1)
+
+#ifdef REG_VALUE_IN_UNWIND_CONTEXT
+typedef _Unwind_Word _Unwind_Context_Reg_Val;
+
+#ifndef ASSUME_EXTENDED_UNWIND_CONTEXT
+#define ASSUME_EXTENDED_UNWIND_CONTEXT 1
+#endif
+
+static inline _Unwind_Word
+_Unwind_Get_Unwind_Word (_Unwind_Context_Reg_Val val)
+{
+  return val;
+}
+
+static inline _Unwind_Context_Reg_Val
+_Unwind_Get_Unwind_Context_Reg_Val (_Unwind_Word val)
+{
+  return val;
+}
+#else
+typedef void *_Unwind_Context_Reg_Val;
+
+static inline _Unwind_Word
+_Unwind_Get_Unwind_Word (_Unwind_Context_Reg_Val val)
+{
+  return (_Unwind_Word) (_Unwind_Internal_Ptr) val;
+}
+
+static inline _Unwind_Context_Reg_Val
+_Unwind_Get_Unwind_Context_Reg_Val (_Unwind_Word val)
+{
+  return (_Unwind_Context_Reg_Val) (_Unwind_Internal_Ptr) val;
+}
+#endif
+
+#ifndef ASSUME_EXTENDED_UNWIND_CONTEXT
+#define ASSUME_EXTENDED_UNWIND_CONTEXT 0
+#endif
+
 /* This is the register and unwind state for a particular frame.  This
    provides the information necessary to unwind up past a frame and return
    to its caller.  */
 struct _Unwind_Context
 {
-  void *reg[DWARF_FRAME_REGISTERS+1];
+  _Unwind_Context_Reg_Val reg[DWARF_FRAME_REGISTERS+1];
   void *cfa;
   void *ra;
   void *lsda;
@@ -143,7 +209,8 @@ _Unwind_SetSignalFrame (struct _Unwind_Context *context, int val)
 static inline _Unwind_Word
 _Unwind_IsExtendedContext (struct _Unwind_Context *context)
 {
-  return context->flags & EXTENDED_CONTEXT_BIT;
+  return (ASSUME_EXTENDED_UNWIND_CONTEXT
+	  || (context->flags & EXTENDED_CONTEXT_BIT));
 }
 
 /* Get the value of register INDEX as saved in CONTEXT.  */
@@ -152,7 +219,7 @@ inline _Unwind_Word
 _Unwind_GetGR (struct _Unwind_Context *context, int index)
 {
   int size;
-  void *ptr;
+  _Unwind_Context_Reg_Val val;
 
 #ifdef DWARF_ZERO_REG
   if (index == DWARF_ZERO_REG)
@@ -162,18 +229,18 @@ _Unwind_GetGR (struct _Unwind_Context *context, int index)
   index = DWARF_REG_TO_UNWIND_COLUMN (index);
   gcc_assert (index < (int) sizeof(dwarf_reg_size_table));
   size = dwarf_reg_size_table[index];
-  ptr = context->reg[index];
+  val = context->reg[index];
 
   if (_Unwind_IsExtendedContext (context) && context->by_value[index])
-    return (_Unwind_Word) (_Unwind_Internal_Ptr) ptr;
+    return _Unwind_Get_Unwind_Word (val);
 
   /* This will segfault if the register hasn't been saved.  */
   if (size == sizeof(_Unwind_Ptr))
-    return * (_Unwind_Ptr *) ptr;
+    return * (_Unwind_Ptr *) (_Unwind_Internal_Ptr) val;
   else
     {
       gcc_assert (size == sizeof(_Unwind_Word));
-      return * (_Unwind_Word *) ptr;
+      return * (_Unwind_Word *) (_Unwind_Internal_Ptr) val;
     }
 }
 
@@ -205,11 +272,11 @@ _Unwind_SetGR (struct _Unwind_Context *context, int index, _Unwind_Word val)
 
   if (_Unwind_IsExtendedContext (context) && context->by_value[index])
     {
-      context->reg[index] = (void *) (_Unwind_Internal_Ptr) val;
+      context->reg[index] = _Unwind_Get_Unwind_Context_Reg_Val (val);
       return;
     }
 
-  ptr = context->reg[index];
+  ptr = (void *) (_Unwind_Internal_Ptr) context->reg[index];
 
   if (size == sizeof(_Unwind_Ptr))
     * (_Unwind_Ptr *) ptr = val;
@@ -228,7 +295,7 @@ _Unwind_GetGRPtr (struct _Unwind_Context *context, int index)
   index = DWARF_REG_TO_UNWIND_COLUMN (index);
   if (_Unwind_IsExtendedContext (context) && context->by_value[index])
     return &context->reg[index];
-  return context->reg[index];
+  return (void *) (_Unwind_Internal_Ptr) context->reg[index];
 }
 
 /* Set the pointer to a register INDEX as saved in CONTEXT.  */
@@ -239,7 +306,7 @@ _Unwind_SetGRPtr (struct _Unwind_Context *context, int index, void *p)
   index = DWARF_REG_TO_UNWIND_COLUMN (index);
   if (_Unwind_IsExtendedContext (context))
     context->by_value[index] = 0;
-  context->reg[index] = p;
+  context->reg[index] = (_Unwind_Context_Reg_Val) (_Unwind_Internal_Ptr) p;
 }
 
 /* Overwrite the saved value for register INDEX in CONTEXT with VAL.  */
@@ -250,10 +317,11 @@ _Unwind_SetGRValue (struct _Unwind_Context *context, int index,
 {
   index = DWARF_REG_TO_UNWIND_COLUMN (index);
   gcc_assert (index < (int) sizeof(dwarf_reg_size_table));
-  gcc_assert (dwarf_reg_size_table[index] == sizeof (_Unwind_Ptr));
+  /* Return column size may be smaller than _Unwind_Context_Reg_Val.  */
+  gcc_assert (dwarf_reg_size_table[index] <= sizeof (_Unwind_Context_Reg_Val));
 
   context->by_value[index] = 1;
-  context->reg[index] = (void *) (_Unwind_Internal_Ptr) val;
+  context->reg[index] = _Unwind_Get_Unwind_Context_Reg_Val (val);
 }
 
 /* Return nonzero if register INDEX is stored by value rather than
@@ -356,7 +424,16 @@ extract_cie_info (const struct dwarf_cie *cie, struct _Unwind_Context *context,
       aug += 2;
     }
 
-  /* Immediately following the augmentation are the code and
+  /* After the augmentation resp. pointer for "eh" augmentation
+     follows for CIE version >= 4 address size byte and
+     segment size byte.  */
+  if (__builtin_expect (cie->version >= 4, 0))
+    {
+      if (p[0] != sizeof (void *) || p[1] != 0)
+	return NULL;
+      p += 2;
+    }
+  /* Immediately following this are the code and
      data alignment and return address column.  */
   p = read_uleb128 (p, &utmp);
   fs->code_align = (_Unwind_Word)utmp;
@@ -888,14 +965,19 @@ execute_cfa_program (const unsigned char *insn_ptr,
 	  reg = insn & 0x3f;
 	  insn_ptr = read_uleb128 (insn_ptr, &utmp);
 	  offset = (_Unwind_Sword) utmp * fs->data_align;
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].how
-	    = REG_SAVED_OFFSET;
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].loc.offset = offset;
+	  reg = DWARF_REG_TO_UNWIND_COLUMN (reg);
+	  if (UNWIND_COLUMN_IN_RANGE (reg))
+	    {
+	      fs->regs.reg[reg].how = REG_SAVED_OFFSET;
+	      fs->regs.reg[reg].loc.offset = offset;
+	    }
 	}
       else if ((insn & 0xc0) == DW_CFA_restore)
 	{
 	  reg = insn & 0x3f;
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].how = REG_UNSAVED;
+	  reg = DWARF_REG_TO_UNWIND_COLUMN (reg);
+	  if (UNWIND_COLUMN_IN_RANGE (reg))
+	    fs->regs.reg[reg].how = REG_UNSAVED;
 	}
       else switch (insn)
 	{
@@ -926,26 +1008,35 @@ execute_cfa_program (const unsigned char *insn_ptr,
 	  insn_ptr = read_uleb128 (insn_ptr, &reg);
 	  insn_ptr = read_uleb128 (insn_ptr, &utmp);
 	  offset = (_Unwind_Sword) utmp * fs->data_align;
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].how
-	    = REG_SAVED_OFFSET;
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].loc.offset = offset;
+	  reg = DWARF_REG_TO_UNWIND_COLUMN (reg);
+	  if (UNWIND_COLUMN_IN_RANGE (reg))
+	    {
+	      fs->regs.reg[reg].how = REG_SAVED_OFFSET;
+	      fs->regs.reg[reg].loc.offset = offset;
+	    }
 	  break;
 
 	case DW_CFA_restore_extended:
 	  insn_ptr = read_uleb128 (insn_ptr, &reg);
 	  /* FIXME, this is wrong; the CIE might have said that the
 	     register was saved somewhere.  */
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN(reg)].how = REG_UNSAVED;
+	  reg = DWARF_REG_TO_UNWIND_COLUMN (reg);
+	  if (UNWIND_COLUMN_IN_RANGE (reg))
+	    fs->regs.reg[reg].how = REG_UNSAVED;
 	  break;
 
 	case DW_CFA_same_value:
 	  insn_ptr = read_uleb128 (insn_ptr, &reg);
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN(reg)].how = REG_UNSAVED;
+	  reg = DWARF_REG_TO_UNWIND_COLUMN (reg);
+	  if (UNWIND_COLUMN_IN_RANGE (reg))
+	    fs->regs.reg[reg].how = REG_UNSAVED;
 	  break;
 
 	case DW_CFA_undefined:
 	  insn_ptr = read_uleb128 (insn_ptr, &reg);
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN(reg)].how = REG_UNDEFINED;
+	  reg = DWARF_REG_TO_UNWIND_COLUMN (reg);
+	  if (UNWIND_COLUMN_IN_RANGE (reg))
+	    fs->regs.reg[reg].how = REG_UNDEFINED;
 	  break;
 
 	case DW_CFA_nop:
@@ -956,9 +1047,12 @@ execute_cfa_program (const unsigned char *insn_ptr,
 	    _uleb128_t reg2;
 	    insn_ptr = read_uleb128 (insn_ptr, &reg);
 	    insn_ptr = read_uleb128 (insn_ptr, &reg2);
-	    fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].how = REG_SAVED_REG;
-	    fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].loc.reg =
-	      (_Unwind_Word)reg2;
+	    reg = DWARF_REG_TO_UNWIND_COLUMN (reg);
+	    if (UNWIND_COLUMN_IN_RANGE (reg))
+	      {
+	        fs->regs.reg[reg].how = REG_SAVED_REG;
+	        fs->regs.reg[reg].loc.reg = (_Unwind_Word)reg2;
+	      }
 	  }
 	  break;
 
@@ -1016,8 +1110,12 @@ execute_cfa_program (const unsigned char *insn_ptr,
 
 	case DW_CFA_expression:
 	  insn_ptr = read_uleb128 (insn_ptr, &reg);
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].how = REG_SAVED_EXP;
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].loc.exp = insn_ptr;
+	  reg = DWARF_REG_TO_UNWIND_COLUMN (reg);
+	  if (UNWIND_COLUMN_IN_RANGE (reg))
+	    {
+	      fs->regs.reg[reg].how = REG_SAVED_EXP;
+	      fs->regs.reg[reg].loc.exp = insn_ptr;
+	    }
 	  insn_ptr = read_uleb128 (insn_ptr, &utmp);
 	  insn_ptr += utmp;
 	  break;
@@ -1027,9 +1125,12 @@ execute_cfa_program (const unsigned char *insn_ptr,
 	  insn_ptr = read_uleb128 (insn_ptr, &reg);
 	  insn_ptr = read_sleb128 (insn_ptr, &stmp);
 	  offset = stmp * fs->data_align;
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].how
-	    = REG_SAVED_OFFSET;
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].loc.offset = offset;
+	  reg = DWARF_REG_TO_UNWIND_COLUMN (reg);
+	  if (UNWIND_COLUMN_IN_RANGE (reg))
+	    {
+	      fs->regs.reg[reg].how = REG_SAVED_OFFSET;
+	      fs->regs.reg[reg].loc.offset = offset;
+	    }
 	  break;
 
 	case DW_CFA_def_cfa_sf:
@@ -1052,36 +1153,46 @@ execute_cfa_program (const unsigned char *insn_ptr,
 	  insn_ptr = read_uleb128 (insn_ptr, &reg);
 	  insn_ptr = read_uleb128 (insn_ptr, &utmp);
 	  offset = (_Unwind_Sword) utmp * fs->data_align;
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].how
-	    = REG_SAVED_VAL_OFFSET;
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].loc.offset = offset;
+	  reg = DWARF_REG_TO_UNWIND_COLUMN (reg);
+	  if (UNWIND_COLUMN_IN_RANGE (reg))
+	    {
+	      fs->regs.reg[reg].how = REG_SAVED_VAL_OFFSET;
+	      fs->regs.reg[reg].loc.offset = offset;
+	    }
 	  break;
 
 	case DW_CFA_val_offset_sf:
 	  insn_ptr = read_uleb128 (insn_ptr, &reg);
 	  insn_ptr = read_sleb128 (insn_ptr, &stmp);
 	  offset = stmp * fs->data_align;
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].how
-	    = REG_SAVED_VAL_OFFSET;
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].loc.offset = offset;
+	  reg = DWARF_REG_TO_UNWIND_COLUMN (reg);
+	  if (UNWIND_COLUMN_IN_RANGE (reg))
+	    {
+	      fs->regs.reg[reg].how = REG_SAVED_VAL_OFFSET;
+	      fs->regs.reg[reg].loc.offset = offset;
+	    }
 	  break;
 
 	case DW_CFA_val_expression:
 	  insn_ptr = read_uleb128 (insn_ptr, &reg);
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].how
-	    = REG_SAVED_VAL_EXP;
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].loc.exp = insn_ptr;
+	  reg = DWARF_REG_TO_UNWIND_COLUMN (reg);
+	  if (UNWIND_COLUMN_IN_RANGE (reg))
+	    {
+	      fs->regs.reg[reg].how = REG_SAVED_VAL_EXP;
+	      fs->regs.reg[reg].loc.exp = insn_ptr;
+	    }
 	  insn_ptr = read_uleb128 (insn_ptr, &utmp);
 	  insn_ptr += utmp;
 	  break;
 
 	case DW_CFA_GNU_window_save:
 	  /* ??? Hardcoded for SPARC register window configuration.  */
-	  for (reg = 16; reg < 32; ++reg)
-	    {
-	      fs->regs.reg[reg].how = REG_SAVED_OFFSET;
-	      fs->regs.reg[reg].loc.offset = (reg - 16) * sizeof (void *);
-	    }
+	  if (DWARF_FRAME_REGISTERS >= 32)
+	    for (reg = 16; reg < 32; ++reg)
+	      {
+		fs->regs.reg[reg].how = REG_SAVED_OFFSET;
+		fs->regs.reg[reg].loc.offset = (reg - 16) * sizeof (void *);
+	      }
 	  break;
 
 	case DW_CFA_GNU_args_size:
@@ -1095,9 +1206,12 @@ execute_cfa_program (const unsigned char *insn_ptr,
 	  insn_ptr = read_uleb128 (insn_ptr, &reg);
 	  insn_ptr = read_uleb128 (insn_ptr, &utmp);
 	  offset = (_Unwind_Word) utmp * fs->data_align;
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].how
-	    = REG_SAVED_OFFSET;
-	  fs->regs.reg[DWARF_REG_TO_UNWIND_COLUMN (reg)].loc.offset = -offset;
+	  reg = DWARF_REG_TO_UNWIND_COLUMN (reg);
+	  if (UNWIND_COLUMN_IN_RANGE (reg))
+	    {
+	      fs->regs.reg[reg].how = REG_SAVED_OFFSET;
+	      fs->regs.reg[reg].loc.offset = -offset;
+	    }
 	  break;
 
 	default:
@@ -1204,7 +1318,8 @@ __frame_state_for (void *pc_target, struct frame_state *state_in)
   int reg;
 
   memset (&context, 0, sizeof (struct _Unwind_Context));
-  context.flags = EXTENDED_CONTEXT_BIT;
+  if (!ASSUME_EXTENDED_UNWIND_CONTEXT)
+    context.flags = EXTENDED_CONTEXT_BIT;
   context.ra = pc_target + 1;
 
   if (uw_frame_state_for (&context, &fs) != _URC_NO_REASON)
@@ -1442,7 +1557,8 @@ uw_init_context_1 (struct _Unwind_Context *context,
 
   memset (context, 0, sizeof (struct _Unwind_Context));
   context->ra = ra;
-  context->flags = EXTENDED_CONTEXT_BIT;
+  if (!ASSUME_EXTENDED_UNWIND_CONTEXT)
+    context->flags = EXTENDED_CONTEXT_BIT;
 
   code = uw_frame_state_for (context, &fs);
   gcc_assert (code == _URC_NO_REASON);
@@ -1484,7 +1600,13 @@ static void
 _Unwind_DebugHook (void *cfa __attribute__ ((__unused__)),
 		   void *handler __attribute__ ((__unused__)))
 {
+  /* We only want to use stap probes starting with v3.  Earlier
+     versions added too much startup cost.  */
+#if defined (HAVE_SYS_SDT_H) && defined (STAP_PROBE2) && _SDT_NOTE_TYPE >= 3
+  STAP_PROBE2 (libgcc, unwind, cfa, handler);
+#else
   asm ("");
+#endif
 }
 
 /* Install TARGET into CURRENT so that we can return to it.  This is a
@@ -1515,8 +1637,8 @@ uw_install_context_1 (struct _Unwind_Context *current,
 
   for (i = 0; i < DWARF_FRAME_REGISTERS; ++i)
     {
-      void *c = current->reg[i];
-      void *t = target->reg[i];
+      void *c = (void *) (_Unwind_Internal_Ptr) current->reg[i];
+      void *t = (void *) (_Unwind_Internal_Ptr)target->reg[i];
 
       gcc_assert (current->by_value[i] == 0);
       if (target->by_value[i] && c)

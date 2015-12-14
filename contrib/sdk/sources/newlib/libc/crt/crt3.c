@@ -18,28 +18,9 @@
 #include <string.h>
 #include <stdio.h>
 
-/*
-typedef void (*ctp)();
-static void __do_global_ctors ()
-{
-  extern int __CTOR_LIST__;
-  int *c = &__CTOR_LIST__;
-  c++;
-  while (*c)
-    {
-      ctp d = (ctp)*c;
-      (d)();
-      c++;
-    }
-}
-*/
-
 void *load_libc();
-//void __main (){};
-
 void* get_entry_point(void *raw);
 
-void _pei386_runtime_relocator (void){};
 
 void  __attribute__((noreturn))
 __crt_startup (void)
@@ -47,8 +28,6 @@ __crt_startup (void)
     struct   app_hdr *header;
     void    *img;
     void __attribute__((noreturn)) (*entry)(void *img);
-
-//    _pei386_runtime_relocator();
 
     img = load_libc();
 

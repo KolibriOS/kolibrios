@@ -93,9 +93,9 @@ struct __eh_globals_init
   bool 			_M_init;
 
   __eh_globals_init() : _M_init(false)
-  {
+  { 
     if (__gthread_active_p())
-      _M_init = __gthread_key_create(&_M_key, eh_globals_dtor) == 0;
+      _M_init = __gthread_key_create(&_M_key, eh_globals_dtor) == 0; 
   }
 
   ~__eh_globals_init()
