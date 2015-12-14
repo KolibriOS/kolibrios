@@ -21,6 +21,7 @@
 void *load_libc();
 void* get_entry_point(void *raw);
 
+void _pei386_runtime_relocator (void){};
 
 void  __attribute__((noreturn))
 __crt_startup (void)
