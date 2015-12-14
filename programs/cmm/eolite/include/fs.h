@@ -10,9 +10,10 @@ void DirFileCount(dword way)
 		cur_file = malloc(4096);
 		// In the process of recursive descent, memory must be allocated dynamically, because the static memory -> was a bug !!! But unfortunately pass away to sacrifice speed.
 		GetDir(#dirbuf, #fcount, way, DIRS_ONLYREAL);
+		filename = dirbuf+72;
 		for (i=0; i<fcount; i++)
 		{
-			filename = i*304+dirbuf+72;
+			filename += 304;
 			sprintf(cur_file,"%s/%s",way,filename);
 			
 			if (TestBit(ESDWORD[filename-40], 4) )

@@ -6,7 +6,7 @@ cls
 c-- Eolite.c
 rem @kpack Eolite.com
 @rename Eolite.com Eolite
-kpack eolite
+
 @del warning.txt
 @del lang.h--
 @pause

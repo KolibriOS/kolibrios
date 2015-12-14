@@ -7,9 +7,7 @@
 	?define PR_T_NAME "Имя:"
 	?define PR_T_DEST "Расположение:"
 	?define PR_T_SIZE "Размер:"
-	?define SET_3 "Создан:"
-	?define SET_4 "Открыт:"
-	?define SET_5 "Изменен:"
+	?define CREATED_OPENED_MODIFIED "Создан:\nОткрыт:\nИзменен:"
 	?define SET_6 "Файлов: "
 	?define SET_7 " Папок: "
 	?define PR_T_CONTAINS "Содержит: "
@@ -27,9 +25,7 @@
 	?define PR_T_NAME "Name:"
 	?define PR_T_DEST "Destination:"
 	?define PR_T_SIZE "Size:"
-	?define SET_3 "Created:"
-	?define SET_4 "Opened:"
-	?define SET_5 "Modified:"
+	?define CREATED_OPENED_MODIFIED "Created:\nOpened:\nModified:"
 	?define SET_6 "Files: "
 	?define SET_7 " Folders: "
 	?define PR_T_CONTAINS "Contains: "
@@ -359,9 +355,7 @@ void DrawPropertiesWindow()
 			WriteText(100, 80, 0x80, 0x000000, #folder_info);
 			element_size = size_dir;
 		}
-		WriteText(10,  95, 0x80, 0x000000, SET_3);
-        WriteText(10, 110, 0x80, 0x000000, SET_4);
-        WriteText(10, 125, 0x80, 0x000000, SET_5);
+		WriteTextLines(10,  95, 0x80, 0x000000, CREATED_OPENED_MODIFIED, 15);
 		DrawDate(100,  95, 0, #file_info_general.datecreate);
         DrawDate(100, 110, 0, #file_info_general.datelastaccess);
         DrawDate(100, 125, 0, #file_info_general.datelastedit);

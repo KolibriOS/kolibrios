@@ -189,4 +189,13 @@
 	}
 }
 
+:void WriteTextLines(dword x,y,byte fontType, dword color, text_pointer, line_h)
+{
+	dword next_word_pointer = strchr(text_pointer, '\n');
+	if (next_word_pointer) WriteTextLines(dword x, y+line_h, byte fontType, dword color, next_word_pointer+2, line_h);
+	ESBYTE[next_word_pointer] = NULL;
+	WriteText(dword x, y, byte fontType, dword color, text_pointer);
+	ESBYTE[next_word_pointer] = '\n';
+}
+
 #endif

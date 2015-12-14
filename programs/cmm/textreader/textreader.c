@@ -1,4 +1,4 @@
-#define MEMSIZE 4096*20
+#define MEMSIZE 4096*25
 
 #include "../lib/font.h"
 #include "../lib/io.h"
@@ -25,6 +25,18 @@
 #define DEFAULT_EDITOR "/sys/tinypad"
 
 #define INTRO_TEXT "This is a plain text reader.\nTry to open some text file."
+#define VERSION "Text Reader v1.02"
+#define ABOUT "Idea: Leency, punk_joker
+Code: Leency, Veliant, KolibriOS Team
+
+Hotkeys:
+Ctrl+O - open file
+Ctrl+Up - bigger font
+Ctrl+Down - smaller font
+Ctrl+Tab - select charset
+Ctrl+E - edit current document
+ 
+Press any key..."
 
 char default_dir[] = "/rd/1";
 od_filter filter2 = {0,0};
@@ -42,7 +54,7 @@ dword line_offset;
 #define DWORD 4;
 
 enum {
-	OPEN_FILE = 10,
+	OPEN_FILE,
 	MAGNIFY_MINUS,
 	MAGNIFY_PLUS,
 	CHANGE_ENCODING,
@@ -380,28 +392,9 @@ void OpenFile(dword f_path)
 	list.ClearList();
 }
 
-
-
-char *about[] = {
-	"Text Reader v1.01",
-	"Idea: Leency, punk_joker",
-	"Code: Leency, Veliant, KolibriOS Team",
-	" ",
-	"Hotkeys:",
-	"Ctrl+O - open file",
-	"Ctrl+Up - bigger font",
-	"Ctrl+Down - smaller font",
-	"Ctrl+Tab - select charset",
-	"Ctrl+E - edit current document",
-	" ",
-	"Press any key...",
-	0
-};
-
 ShowAbout() {
-	int i;
 	help_opened = true;
 	DrawBar(list.x, list.y, list.w, list.h, 0xFFFfff);
-	WriteText(list.x + 10, list.y + 10, 10000001b, 0x555555, about[0]);
-	for (i=1; about[i]; i++) WriteText(list.x + 10, i+1*20 + list.y, 10110000b, 0, about[i]);
+	WriteText(list.x + 10, list.y + 10, 10000001b, 0x555555, VERSION);
+	WriteTextLines(list.x + 10, list.y+40, 10110000b, 0, ABOUT, 20);
 }
