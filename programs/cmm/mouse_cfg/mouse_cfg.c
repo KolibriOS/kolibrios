@@ -21,7 +21,7 @@
 	?define CHECK_MOUSE_1 "Нажмите на этой области"
 	?define CHECK_MOUSE_2 "для проверки кнопок мыши"
 	?define POINTER_SPEED "Скорость указателя мыши"
-	?define POINTER_DELAY "Задержка указателя мыши"
+	?define POINTER_DELAY "Ускорение указателя мыши"
 	?define MOUSE_EMULATION "Эмуляция управления указателем через клавиатуру"
 	?define MADMOUSE "Сквозные для курсора стороны экрана"
 #else
@@ -29,7 +29,7 @@
 	?define CHECK_MOUSE_1 "Click on this area to"
 	?define CHECK_MOUSE_2 "check your mouse buttons"
 	?define POINTER_SPEED "Mouse pointer speed"
-	?define POINTER_DELAY "Mouse pointer delay"
+	?define POINTER_DELAY "Mouse pointer acceleration"
 	?define MOUSE_EMULATION "Enable mouse emulation using keyboard NumPad"
 	?define MADMOUSE "Through screen sides for pointer"
 	#endif
@@ -112,7 +112,7 @@ void main() {
 					mouse_cfg.pointer_speed--;
 					SetMouseSpeed(mouse_cfg.pointer_speed);
 				}
-				if (id==122)
+				if (id==122) && (mouse_cfg.pointer_delay<3)
 				{
 					mouse_cfg.pointer_delay++;
 					SetMouseDelay(mouse_cfg.pointer_delay);
