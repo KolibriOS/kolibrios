@@ -1010,14 +1010,14 @@ Parameters:
   * ebx = 19 - subfunction number
   * ecx = 2 - subsubfunction number
 Returned value:
-  * eax = 2 - fierce, 1 - soft, 0 - off
+  * eax = 0 - off, 1 - slight, 2 - medium, 3 - intense
 
 ------------- Subsubfunction 3 - set mouse acceleration. -------------
 Parameters:
   * eax = 18 - function number
   * ebx = 19 - subfunction number
   * ecx = 3 - subsubfunction number
-  * edx = 2 - fierce, 1 - soft, 0 - off
+  * edx = 0 - off, 1 - slight, 2 - medium, 3 - intense
 Returned value:
   * function does not return value
 
