@@ -421,6 +421,7 @@ SOCKET_bind:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_bind: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
         call    SOCKET_num_to_ptr
+        test    eax, eax
         jz      .invalid
 
         cmp     esi, 2
@@ -510,6 +511,7 @@ SOCKET_connect:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_connect: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
         call    SOCKET_num_to_ptr
+        test    eax, eax
         jz      .invalid
 
         cmp     esi, 8
@@ -566,6 +568,7 @@ SOCKET_listen:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_listen: socknum=%u backlog=%u\n", ecx, edx
 
         call    SOCKET_num_to_ptr
+        test    eax, eax
         jz      .invalid
 
         cmp     [eax + SOCKET.Domain], AF_INET4
@@ -632,6 +635,7 @@ SOCKET_accept:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_accept: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
         call    SOCKET_num_to_ptr
+        test    eax, eax
         jz      .invalid
 
         test    [eax + SOCKET.options], SO_ACCEPTCON
@@ -649,16 +653,17 @@ SOCKET_accept:
 ; Ok, we got a socket ptr
         mov     eax, [esi]
 
-; Change thread ID to that of the current thread
+; Verify that it is (still) a valid socket
+        call    SOCKET_check
+        jz      .invalid
+
+; Change sockets thread owner ID to that of the current thread
         mov     ebx, [TASK_BASE]
         mov     ebx, [ebx + TASKDATA.pid]
         mov     [eax + SOCKET.TID], ebx
 
-; Convert it to a socket number
-        call    SOCKET_ptr_to_num
-        jz      .invalid        ; FIXME ?
-
-; and return it to caller
+; Return socket number to caller
+        mov     eax, [eax + SOCKET.Number]
         mov     [esp+32], eax
         ret
 
@@ -698,6 +703,7 @@ SOCKET_close:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_close: socknum=%u\n", ecx
 
         call    SOCKET_num_to_ptr
+        test    eax, eax
         jz      .invalid
 
         mov     dword[esp+32], 0                                ; The socket exists, so we will succeed in closing it.
@@ -754,6 +760,7 @@ SOCKET_receive:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: socknum=%u bufaddr=%x buflength=%u flags=%x\n", ecx, edx, esi, edi
 
         call    SOCKET_num_to_ptr
+        test    eax, eax
         jz      .invalid
 
   .loop:
@@ -927,6 +934,7 @@ SOCKET_send:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: socknum=%u data ptr=%x length=%u flags=%x\n", ecx, edx, esi, edi
 
         call    SOCKET_num_to_ptr
+        test    eax, eax
         jz      .invalid
 
         mov     ecx, esi
@@ -1096,6 +1104,7 @@ SOCKET_get_opt:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_get_opt\n"
 
         call    SOCKET_num_to_ptr
+        test    eax, eax
         jz      .invalid
 
         cmp     dword [edx], IP_PROTO_TCP
@@ -1157,6 +1166,7 @@ SOCKET_set_opt:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_set_opt\n"
 
         call    SOCKET_num_to_ptr
+        test    eax, eax
         jz      .invalid
 
         cmp     [edx + socket_options.level], IP_PROTO_IP
@@ -1264,7 +1274,7 @@ SOCKET_pair:
         lea     eax, [eax + STREAM_SOCKET.rcv]
         call    SOCKET_ring_create
         test    eax, eax
-        jz      .nomem1
+        jz      .nomem2
 
         lea     eax, [ebx + STREAM_SOCKET.rcv]
         call    SOCKET_ring_create
@@ -1274,11 +1284,15 @@ SOCKET_pair:
         ret
 
   .nomem2:
-        mov     eax, ebx
+        mov     eax, [esp+20]
         call    SOCKET_free
+
   .nomem1:
+        mov     eax, [esp+32]
+        call    SOCKET_free
+
         mov     dword[esp+32], -1
-        mov     dword[esp+28], ENOMEM
+        mov     dword[esp+20], ENOMEM
         ret
 
 
@@ -1305,6 +1319,7 @@ SOCKET_debug:
         jz      .returnall
 
         call    SOCKET_num_to_ptr
+        test    eax, eax
         jz      .invalid
 
         mov     esi, eax
@@ -1331,7 +1346,7 @@ SOCKET_debug:
 
   .invalid:
         mov     dword[esp+32], -1
-        mov     dword[esp+28], EINVAL
+        mov     dword[esp+20], EINVAL
         ret
 
 
@@ -1523,7 +1538,7 @@ SOCKET_ring_create:
         test    eax, eax
         jz      .fail
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_ring_created: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_ring_create: %x\n", eax
 
         pusha
         lea     ecx, [esi + RING_BUFFER.mutex]
@@ -1538,7 +1553,11 @@ SOCKET_ring_create:
         mov     [esi + RING_BUFFER.end_ptr], eax
         mov     eax, esi
 
+        pop     esi
+        ret
+
   .fail:
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_ring_create: Out of memory!\n"
         pop     esi
         ret
 
@@ -1858,7 +1877,7 @@ SOCKET_notify:
 ;
 ; Allocate memory for socket data and put new socket into the list
 ; Newly created socket is initialized with calling PID and number and
-; put into beginning of list (which is a fastest way).
+; put into beginning of list (which is the fastest way).
 ;
 ; IN:  /
 ; OUT: eax = 0 on error, socket ptr otherwise
@@ -1871,9 +1890,9 @@ SOCKET_alloc:
         push    ebx
 
         stdcall kernel_alloc, SOCKETBUFFSIZE
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_alloc: ptr=%x\n", eax
         or      eax, eax
-        jz      .exit
+        jz      .nomem
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_alloc: ptr=%x\n", eax
 
 ; zero-initialize allocated memory
         push    eax
@@ -1954,10 +1973,13 @@ SOCKET_alloc:
         mov     ecx, socket_mutex
         call    mutex_unlock
         popa
-
-  .exit:
         pop     ebx
 
+        ret
+
+  .nomem:
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_alloc: Out of memory!\n"
+        pop     ebx
         ret
 
   .not_yet:
@@ -1992,17 +2014,20 @@ SOCKET_free:
         call    mutex_lock
         popa
 
-        cmp     [eax + SOCKET.Domain], AF_INET4
-        jnz     .no_tcp
-
-        cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
-        jnz     .no_tcp
+        cmp     [eax + SOCKET.Type], SOCK_STREAM
+        jne     .no_stream
 
         mov     ebx, eax
-        stdcall kernel_free, [ebx + STREAM_SOCKET.rcv.start_ptr]
-        stdcall kernel_free, [ebx + STREAM_SOCKET.snd.start_ptr]
+        cmp     [eax + STREAM_SOCKET.rcv.start_ptr], 0
+        je      @f
+        stdcall free_kernel_space, [eax + STREAM_SOCKET.rcv.start_ptr]
+  @@:
+        cmp     [ebx + STREAM_SOCKET.snd.start_ptr], 0
+        je      @f
+        stdcall free_kernel_space, [ebx + STREAM_SOCKET.snd.start_ptr]
+  @@:
         mov     eax, ebx
-  .no_tcp:
+  .no_stream:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_free: freeing socket %x\n", eax
         push    eax                             ; this will be passed to kernel_free
@@ -2027,6 +2052,12 @@ SOCKET_free:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_free: success!\n"
 
   .error:
+        ret
+
+  .error1:
+        pop     ebx
+        DEBUGF  DEBUG_NETWORK_ERROR, "Error in socket free!\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "socket ptr=0x%x caller=0x%x\n", eax, [esp]
         ret
 
 ;------------------------------------
@@ -2095,7 +2126,6 @@ SOCKET_fork:
 ;
 ; IN:  ecx = socket number
 ; OUT: eax = 0 on error, socket ptr otherwise
-;       ZF = set on error
 ;
 ;---------------------------------------------------
 align 4
@@ -2109,15 +2139,12 @@ SOCKET_num_to_ptr:
         popa
 
         mov     eax, net_sockets
-
   .next_socket:
         mov     eax, [eax + SOCKET.NextPtr]
-        or      eax, eax
+        test    eax, eax
         jz      .error
         cmp     [eax + SOCKET.Number], ecx
         jne     .next_socket
-
-        test    eax, eax
 
         pusha
         mov     ecx, socket_mutex
@@ -2183,6 +2210,8 @@ SOCKET_check:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_check: %x\n", eax
 
+        test    eax, eax
+        jz      .error
         push    ebx
         mov     ebx, net_sockets
 
@@ -2197,7 +2226,11 @@ SOCKET_check:
         mov     eax, ebx
         test    eax, eax
         pop     ebx
+        ret
 
+  .error:
+        DEBUGF  DEBUG_NETWORK_ERROR, "Socket_check called with argument 0\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "stack: 0x%x, 0x%x, 0x%x\n", [esp], [esp+4], [esp+8]
         ret
 
 
