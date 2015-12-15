@@ -1,4 +1,4 @@
-#define MEMSIZE 4096*10
+#define MEMSIZE 4096*120
 
 #include "../lib/io.h"
 #include "../lib/collection.h"
@@ -6,12 +6,11 @@
 void main()
 {   
 	collection s;
+	int i;
 	io.run("/sys/develop/board", "");
-	s.init(4096);
-	s.add("lorem");
-	s.add("ipsum");
-	s.add("1234566");
+	s.add("Hello");
+	s.add("World!");
 	debugln(s.get(0));
 	debugln(s.get(1));
-	debugln(s.get(2));
+	s.drop();
 }

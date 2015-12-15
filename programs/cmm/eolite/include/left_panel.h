@@ -78,7 +78,7 @@ void GetSystemDiscs()
 	dword temp_file_count, tempbuf;
 	dword devbuf;
 
-	disk_list.init(4096);
+	disk_list.drop();
 	devbuf = malloc(10000);
 	ReadDir(19, devbuf, "/");
 	dev_num = EBX;

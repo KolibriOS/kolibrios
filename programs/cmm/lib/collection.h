@@ -4,42 +4,52 @@
 
 struct collection
 {
-	int count;
-	dword element_offset[4096];
+	int realloc_size, count;
+	dword data_start;
+	dword data_cur_pos;
 	dword data_size;
-	dword string_data_start;
-	dword string_data_cur_pos;
-	void add();
+	dword element_offset[4090];
+	int add();
 	dword get();
 	void drop();
-	void init();
+	void increase_data_size();
 
 };
 
-void collection::init(dword size) {
-	if (data_size) drop();
-	data_size = data_size + size;
-	string_data_cur_pos = string_data_start = malloc(data_size);
-	count = 0;
+void collection::increase_data_size() {
+	int filled_size;
+	if (realloc_size<4096) realloc_size = 4096;
+	if (!data_size) {
+		data_size = realloc_size;
+		data_start = malloc(realloc_size);		
+	}
+	else {
+		data_size = data_size + realloc_size;
+		data_start = realloc(data_start, data_size);
+	}
 }
 
-void collection::add(dword in) {
-	strcpy(string_data_cur_pos, in);
-	element_offset[count] = string_data_cur_pos;
-	string_data_cur_pos += strlen(in) + 1;
+int collection::add(dword in) {
+	if (count >= 4090) return 0;
+	if (data_cur_pos+strlen(in)+2 > data_size) {
+		increase_data_size();
+		add(in);
+		return;
+	}
+	strcpy(data_start+data_cur_pos, in);
+	element_offset[count] = data_cur_pos;
+	data_cur_pos += strlen(in) + 1;
 	count++;
+	return 1;
 }
 
 dword collection::get(dword pos) {
-	return element_offset[pos];
+	return data_start + element_offset[pos];
 }
 
 void collection::drop() {
-	if (string_data_start) free(string_data_start);
-	data_size =
-	string_data_start =
-	string_data_cur_pos =
-	count = 0;
+	if (data_start) free(data_start);
+	data_size = data_start = data_cur_pos = count = 0;
 }
 
 #endif
