@@ -12,7 +12,6 @@ struct collection
 	dword get();
 	void drop();
 	void increase_data_size();
-
 };
 
 void collection::increase_data_size() {

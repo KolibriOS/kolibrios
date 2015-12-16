@@ -19,6 +19,8 @@
 //obj
 #include "..\lib\obj\libini.h"
 #include "..\lib\obj\box_lib.h"
+//patterns
+#include "..\lib\patterns\history.h"
 
 byte CMD_ENABLE_SAVE_IMG = false;
 
@@ -104,7 +106,6 @@ char *fd_path_eolite_ini_path;
 #include "include\sorting.h"
 #include "include\icons.h"
 #include "include\left_panel.h"
-#include "include\history.h"
 #include "include\menu.h"
 #include "include\about.h"
 #include "include\properties.h"
@@ -170,8 +171,9 @@ void main()
 					{
 						if (dif_x > 150)
 						{
-							if (FoldersHistory.forward())
+							if (History.forward())
 								{
+									strcpy(#path, History.current());
 									files.KeyHome();
 									Open_Dir(#path,WITH_REDRAW);
 								}
@@ -323,8 +325,9 @@ void main()
 							GoBack();
 							break;
 					case 22: //Forward
-							if (FoldersHistory.forward())
+							if (History.forward())
 							{
+								strcpy(#path, History.current());
 								files.KeyHome();
 								Open_Dir(#path,WITH_REDRAW);
 							}
@@ -735,7 +738,7 @@ void Open_Dir(dword dir_path, redraw){
 		if (ESBYTE[dir_path+1]!='\0') chrcat(dir_path, '/');
 		if (errornum)
 		{
-			FoldersHistory.add();
+			History.add(#path);
 			GoBack();
 			Write_Error(errornum);
 			return;
@@ -753,7 +756,7 @@ void Open_Dir(dword dir_path, redraw){
 			PathShow_prepare stdcall(#PathShow);
 			PathShow_draw stdcall(#PathShow);
 		}
-		FoldersHistory.add();
+		History.add(#path);
 		files.visible = files.h / files.item_h;
 		if (files.count < files.visible) files.visible = files.count;
 		if (redraw!=ONLY_SHOW) Sorting();
@@ -1001,7 +1004,10 @@ inline fastcall void GoBack()
 	char cur_folder[4096];
 	strcpy(#cur_folder, #path);
 	cur_folder[strlen(#cur_folder)-1]=0x00; //delete last '/'
-	if (FoldersHistory.back()) SelectFileByName(#cur_folder+strrchr(#cur_folder,'/'));
+	if (History.back()) {
+		strcpy(#path, History.current());
+		SelectFileByName(#cur_folder+strrchr(#cur_folder,'/'));
+	}
 }
 
 void ShowOpenWithDialog()
