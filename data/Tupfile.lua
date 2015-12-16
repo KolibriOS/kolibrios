@@ -50,7 +50,7 @@ img_files = {
  {"SETTINGS/ASSOC.INI", "common/settings/assoc.ini"},
  {"SETTINGS/SYSTEM_PANEL.INI", "common/settings/system_panel.ini"},
  {"NOTIFY3.PNG", "common/notify3.png"},
- {"SETTINGS/SYSTEM.INI", build_type .. "/settings/SYSTEM.INI"},
+ {"SETTINGS/SYSTEM.INI", "/common/settings/system.ini"},
  {"VMODE", "common/vmode"},
  {"3D/HOUSE.3DS", "common/3d/house.3ds"},
  {"File Managers/EOLITE.INI", "common/File Managers/eolite.ini"},
