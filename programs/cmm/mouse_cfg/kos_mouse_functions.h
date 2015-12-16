@@ -37,6 +37,6 @@ inline fastcall int GetMouseDoubleClickDelay() {
 inline fastcall void SetMouseDoubleClickDelay(DL) {
 	$mov eax,18
 	$mov ebx,19
-	$mov ecx,6
+	$mov ecx,7
 	$int 0x40
 }

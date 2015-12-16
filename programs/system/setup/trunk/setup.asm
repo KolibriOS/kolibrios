@@ -76,10 +76,15 @@ BootSettings:
 	mov	edx,eax
 	mcall	18,19,1
 
-; Set mouse delay
-	invoke	ini.get_int, sz_ini, sz_mouse, sz_delay, 1
+; Set mouse acceleration
+	invoke	ini.get_int, sz_ini, sz_mouse, sz_acceleration, 1
 	mov	edx,eax
 	mcall	18,19,3
+	
+; Set mouse double click delay
+	invoke	ini.get_int, sz_ini, sz_mouse, sz_double_click_delay, 1
+	mov	edx,eax
+	mcall	18,19,7
 
 ; Enable/disable LBA access for applications
 	mov	dword[param],0
@@ -466,7 +471,8 @@ sz_speaker	db "speaker mute",0
 
 sz_mouse	db "mouse",0
 sz_speed	db "speed",0
-sz_delay	db "delay",0
+sz_acceleration	db "acceleration",0
+sz_double_click_delay	db "double_click_delay",0
 
 sz_low_level	db "low-level",0
 sz_lba		db "LBA",0
