@@ -12,6 +12,7 @@
 #include "../lib/socket.h"
 #include "../lib/draw_buf.h"
 #include "../lib/cursor.h"
+#include "../lib/collection.h"
 //*.obj libraries
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/network.h"
@@ -19,6 +20,8 @@
 #include "../lib/obj/libimg_lib.h"
 #include "../lib/obj/netcode.h"
 #include "../lib/obj/iconv.h"
+//patternts
+#include "..\lib\patterns\history.h"
 //images
 byte letter_icons[sizeof(file "img/letter_icons.raw")] = FROM "img/letter_icons.raw";
 #include "img/letter_icons.h"

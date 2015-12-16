@@ -3,13 +3,13 @@
 struct _History {
 	collection items;
 	int active;	
-	dword add();
-	dword back();
-	dword forward();
+	int add();
+	int back();
+	int forward();
 	dword current();
 } History;
 
-dword _History::add(dword in)
+int _History::add(dword in)
 {
 	if (!strcmp(in, items.get(active-1))) return 0;
 	items.count = active;
@@ -18,18 +18,18 @@ dword _History::add(dword in)
 	return 1;
 }
 	
-dword _History::back()
+int _History::back()
 {
 	if (active==1) return 0;
 	active--;
-	return items.get(active-1);
+	return 1;
 }
 
-dword _History::forward()
+int _History::forward()
 {
 	if (active==items.count) return 0;
 	active++;
-	return items.get(active-1);
+	return 1;
 }
 
 dword _History::current()
