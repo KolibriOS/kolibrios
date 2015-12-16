@@ -13,6 +13,7 @@
 #include "..\lib\draw_buf.h"
 #include "..\lib\list_box.h"
 #include "..\lib\cursor.h"
+#include "..\lib\collection.h"
 //*.obj libraries
 #include "..\lib\obj\box_lib.h"
 #include "..\lib\obj\libio_lib.h"
@@ -21,6 +22,7 @@
 #include "..\lib\obj\iconv.h"
 //useful patterns
 #include "..\lib\patterns\libimg_load_skin.h"
+#include "..\lib\patterns\history.h"
 
 char homepage[] = FROM "html\\homepage.htm";
 
@@ -214,14 +216,14 @@ void main()
 							http_free stdcall (http_transfer);
 							http_transfer=0;
 							PageLinks.GetAbsoluteURL(#URL);
-							BrowserHistory.cur_y--;
+							History.back();
 							strcpy(#editURL, #URL);
 							DrawEditBox();
 							OpenPage();
 						}
 						else
 						{
-							BrowserHistory.AddUrl();
+							History.add(#URL);
 							ESI = http_transfer;
 							bufpointer = ESI.http_msg.content_ptr;
 							bufsize = ESI.http_msg.content_received;
@@ -277,12 +279,16 @@ void Scan(dword id__)
 	{
 		case SCAN_CODE_BS:
 		case BACK_BUTTON:
-			if (!BrowserHistory.GoBack()) return;
-			OpenPage();
+			if (History.back()) {
+				strcpy(#URL, History.current());
+				OpenPage();
+			}
 			return;
 		case FORWARD_BUTTON:
-			if (!BrowserHistory.GoForward()) return;
-			OpenPage();
+			if (History.forward()) {
+				strcpy(#URL, History.current());
+				OpenPage();
+			}
 			return;
 		case GOTOURL_BUTTON:
 		case SCAN_CODE_ENTER:
@@ -387,7 +393,7 @@ void OpenPage()
 	StopLoading();
 	souce_mode = false;
 	strcpy(#editURL, #URL);
-	BrowserHistory.AddUrl();
+	History.add(#URL);
 	if (!strncmp(#URL,"WebView:",8))
 	{
 		SetPageDefaults();
@@ -448,7 +454,6 @@ void ShowPage()
 	{
 		WB1.Prepare();
 	}
-
 	//if (!header) strcpy(#header, #version);
 	if (!strcmp(#version, #header)) DrawTitle(#header);
 }
@@ -486,7 +491,7 @@ void ClickLink()
 	if (http_transfer > 0) 
 	{
 		StopLoading();
-		BrowserHistory.cur_y--;
+		History.back();
 	}
 
 	strcpy(#URL, PageLinks.GetURL(PageLinks.active));	
@@ -494,7 +499,7 @@ void ClickLink()
 	if (URL[0] == '#')
 	{
 		strcpy(#anchor, #URL+strrchr(#URL, '#'));		
-		strcpy(#URL, BrowserHistory.CurrentUrl());
+		strcpy(#URL, History.current());
 		WB1.list.first=WB1.list.count-WB1.list.visible;
 		ShowPage();
 		return;
@@ -518,15 +523,15 @@ void ClickLink()
 			CreateThread(#Downloader,#downloader_stak+4092);
 		}
 		else RunProgram("@open", #URL);
-		strcpy(#editURL, BrowserHistory.CurrentUrl());
-		strcpy(#URL, BrowserHistory.CurrentUrl());
+		strcpy(#editURL, History.current());
+		strcpy(#URL, History.current());
 		return;
 	}
 	if (!strncmp(#URL,"mailto:", 7))
 	{
 		notify(#URL);
-		strcpy(#editURL, BrowserHistory.CurrentUrl());
-		strcpy(#URL, BrowserHistory.CurrentUrl());
+		strcpy(#editURL, History.current());
+		strcpy(#URL, History.current());
 		return;
 	}
 	OpenPage();

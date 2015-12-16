@@ -62,7 +62,6 @@ char attr[1200];
 char val[4096];
 char anchor[256]=0;
 
-#include "..\TWB\history.h"
 #include "..\TWB\links.h"
 #include "..\TWB\colors.h"
 #include "..\TWB\unicode_tags.h"
