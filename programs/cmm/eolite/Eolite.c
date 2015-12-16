@@ -6,7 +6,7 @@
 #endif
 
 //libraries
-#define MEMSIZE 4096 * 150
+#define MEMSIZE 4096 * 180
 #include "..\lib\clipboard.h"
 #include "..\lib\strings.h"
 #include "..\lib\mem.h"
@@ -33,7 +33,6 @@ enum {CREATE_FILE=1, CREATE_FOLDER, RENAME_ITEM }; //NewElement
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
-struct path_string { char Item[4096]; };
 
 byte smooth_font=false;
 byte active_about=0;
@@ -110,8 +109,6 @@ char *fd_path_eolite_ini_path;
 #include "include\about.h"
 #include "include\properties.h"
 
-char TMPS[4096];
-//char *TMP_PARS,*TMP_PARS2;
 void main() 
 {
 	word id;
@@ -125,27 +122,9 @@ void main()
 
 	load_dll(boxlib, #box_lib_init,0);
     load_dll(libini, #lib_init,1);
+
 	eolite_ini_path = abspath("Eolite.ini");
-	
 	fd_path_eolite_ini_path = "/fd/1/File Managers/Eolite.ini";
-	/*
-	TMP_PARS2 = #fd_path_eolite_ini_path;
-	WHILE(DSBYTE[TMP_PARS])
-	{
-		IF(count_sl!=1)
-		{
-			DSBYTE[TMP_PARS2] = DSBYTE[TMP_PARS];
-			TMP_PARS2++;
-		}
-		ELSE IF(count_sl==2)
-		{
-			strlcpy(TMP_PARS2,"fd",2);
-			TMP_PARS2+=2;
-		}
-		IF(DSBYTE[TMP_PARS]=='/')count_sl++;
-		TMP_PARS++;
-	}
-	*/
 	
 	LoadIniSettings();
 	GetSystemDiscs();
@@ -159,13 +138,6 @@ void main()
 	Open_Dir(#path,ONLY_OPEN);
 	strcpy(#inactive_path, #path);
 	llist_copy(#files_inactive, #files);
-	font.no_bg_copy = true;
-	
-	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font file",#TMPS,4096,"/sys/FONTS/Tahoma.kf");
-	font.load(#TMPS);
-	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font smoothing",#TMPS,4096,"on");
-	if(!strcmp(#TMPS,"off"))smooth_font = false;
-	else smooth_font = true;
 	SetEventMask(1100111b);
 	loop(){
 		switch(WaitEvent())
@@ -198,7 +170,7 @@ void main()
 					{
 						if (dif_x > 150)
 						{
-							if (HistoryPath(GO_FORWARD))
+							if (FoldersHistory.forward())
 								{
 									files.KeyHome();
 									Open_Dir(#path,WITH_REDRAW);
@@ -351,7 +323,7 @@ void main()
 							GoBack();
 							break;
 					case 22: //Forward
-							if (HistoryPath(GO_FORWARD))
+							if (FoldersHistory.forward())
 							{
 								files.KeyHome();
 								Open_Dir(#path,WITH_REDRAW);
@@ -510,7 +482,7 @@ void main()
 						case 059...068: //F1-F10
 								FnProcess(key_scancode-58);
 								break; 
-						default:    
+						default:
 								for (i=files.cur_y+1; i<files.count; i++)
 								{
 									strcpy(#temp, file_mas[i]*304+buf+72);
@@ -763,7 +735,7 @@ void Open_Dir(dword dir_path, redraw){
 		if (ESBYTE[dir_path+1]!='\0') chrcat(dir_path, '/');
 		if (errornum)
 		{
-			HistoryPath(ADD_NEW_PATH);
+			FoldersHistory.add();
 			GoBack();
 			Write_Error(errornum);
 			return;
@@ -781,7 +753,7 @@ void Open_Dir(dword dir_path, redraw){
 			PathShow_prepare stdcall(#PathShow);
 			PathShow_draw stdcall(#PathShow);
 		}
-		HistoryPath(ADD_NEW_PATH);
+		FoldersHistory.add();
 		files.visible = files.h / files.item_h;
 		if (files.count < files.visible) files.visible = files.count;
 		if (redraw!=ONLY_SHOW) Sorting();
@@ -966,8 +938,8 @@ void Del_File(byte dodel) {
 	del_active=0;
 	if (dodel)
 	{
-		delete_stak = malloc(20000);
-		CreateThread(#Del_File_Thread,delete_stak+20000-4);
+		delete_stak = malloc(40000);
+		CreateThread(#Del_File_Thread,delete_stak+40000-4);
 	}
 	else draw_window();
 }
@@ -1024,12 +996,12 @@ void Open(byte rez)
 	}
 }
 
-
 inline fastcall void GoBack()
 {
 	char cur_folder[4096];
-	strcpy(#cur_folder, GetCurrentFolder());
-	if (HistoryPath(GO_BACK)) SelectFileByName(#cur_folder);
+	strcpy(#cur_folder, #path);
+	cur_folder[strlen(#cur_folder)-1]=0x00; //delete last '/'
+	if (FoldersHistory.back()) SelectFileByName(#cur_folder+strrchr(#cur_folder,'/'));
 }
 
 void ShowOpenWithDialog()

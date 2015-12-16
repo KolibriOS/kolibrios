@@ -6,7 +6,6 @@ struct collection
 {
 	int realloc_size, count;
 	dword data_start;
-	dword data_cur_pos;
 	dword data_size;
 	dword element_offset[4090];
 	int add();
@@ -31,25 +30,25 @@ void collection::increase_data_size() {
 
 int collection::add(dword in) {
 	if (count >= 4090) return 0;
-	if (data_cur_pos+strlen(in)+2 > data_size) {
+	if (element_offset[count]+strlen(in)+2 > data_size) {
 		increase_data_size();
 		add(in);
 		return;
 	}
-	strcpy(data_start+data_cur_pos, in);
-	element_offset[count] = data_cur_pos;
-	data_cur_pos += strlen(in) + 1;
+	strcpy(data_start+element_offset[count], in);
 	count++;
+	element_offset[count] = element_offset[count-1] + strlen(in) + 1;
 	return 1;
 }
 
 dword collection::get(dword pos) {
+	if (pos<0) || (pos>=count) return 0;
 	return data_start + element_offset[pos];
 }
 
 void collection::drop() {
 	if (data_start) free(data_start);
-	data_size = data_start = data_cur_pos = count = 0;
+	data_size = data_start = element_offset[count] = count = 0;
 }
 
 #endif
