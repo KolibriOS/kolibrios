@@ -20,7 +20,7 @@ void test1() {
 	s.drop();
 }
 
-void main()
+void test2()
 {   
 	int i;
 	s.add("0");
