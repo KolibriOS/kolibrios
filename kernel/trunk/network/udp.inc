@@ -36,13 +36,11 @@ align 4
 endg
 
 
-;-----------------------------------------------------------------
-;
-; UDP_init
-;
-;  This function resets all UDP variables
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; UDP_init: This function resets all UDP variables                ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 macro   UDP_init {
 
         xor     eax, eax
@@ -98,23 +96,20 @@ macro   UDP_checksum    IP1, IP2  { ; esi = ptr to udp packet, ecx = packet size
 }
 
 
-;-----------------------------------------------------------------
-;
-; UDP_input:
-;
-;  Called by IPv4_input,
-;  this procedure will inject the UDP data in the application sockets.
-;
-;  IN:  [esp] = ptr to buffer
-;       ebx = ptr to device struct
-;       ecx = UDP packet size
-;       edx = ptr to IPv4 header
-;       esi = ptr to UDP packet data
-;       edi = interface number*4
-;
-;  OUT: /
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; UDP_input: Inject the UDP data in the application sockets.      ;
+;                                                                 ;
+;   IN: [esp] = ptr to buffer                                     ;
+;       ebx = ptr to device struct                                ;
+;       ecx = UDP packet size                                     ;
+;       edx = ptr to IPv4 header                                  ;
+;       esi = ptr to UDP packet data                              ;
+;       edi = interface number*4                                  ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 UDP_input:
 
@@ -230,17 +225,17 @@ UDP_input:
 
 
 
-;-----------------------------------------------------------------
-;
-; UDP_output
-;
-; IN: eax = socket pointer
-;     ecx = number of bytes to send
-;     esi = pointer to data
-;
-; OUT: eax = -1 on error
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; UDP_output: Create an UDP packet.                               ;
+;                                                                 ;
+;  IN:  eax = socket pointer                                      ;
+;       ecx = number of bytes to send                             ;
+;       esi = pointer to data                                     ;
+;                                                                 ;
+; OUT:  eax = -1 on error                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 
 align 4
 UDP_output:
@@ -305,15 +300,17 @@ UDP_output:
 
 
 
-;-----------------------------------------------------------------
-;
-; UDP_connect
-;
-;   IN: eax = socket pointer
-;  OUT: eax = 0 ok / -1 error
-;       ebx = error code
-;
-;-------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; UDP_connect                                                     ;
+;                                                                 ;
+;   IN: eax = socket pointer                                      ;
+;                                                                 ;
+;  OUT: eax = 0 on success                                        ;
+;       eax = -1 on error                                         ;
+;       ebx = error code on error                                 ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 UDP_connect:
 
@@ -357,14 +354,15 @@ UDP_connect:
         ret
 
 
-;-----------------------------------------------------------------
-;
-; UDP_disconnect
-;
-;   IN: eax = socket pointer
-;  OUT: eax = socket pointer
-;
-;-------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; UDP_disconnect                                                  ;
+;                                                                 ;
+;   IN: eax = socket pointer                                      ;
+;                                                                 ;
+;  OUT: eax = socket pointer                                      ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 UDP_disconnect:
 
@@ -378,20 +376,17 @@ UDP_disconnect:
 
 
 
-;---------------------------------------------------------------------------
-;
-; UDP_API
-;
-; This function is called by system function 75
-;
-; IN:  subfunction number in bl
-;      device number in bh
-;      ecx, edx, .. depends on subfunction
-;
-; OUT:
-;
-;---------------------------------------------------------------------------
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; UDP_api: This function is called by system function 76          ;
+;                                                                 ;
+;  IN: bl = subfunction number in bl                              ;
+;      bh = device number in bh                                   ;
+;      ecx, edx, .. depends on subfunction                        ;
+;                                                                 ;
+; OUT: depends on subfunction                                     ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 UDP_api:
 

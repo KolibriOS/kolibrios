@@ -104,18 +104,17 @@ macro   TCP_init_socket socket {
 }
 
 
-;---------------------------
-;
-; TCP_pull_out_of_band
-;
-; IN:  eax =
-;      ebx = socket ptr
-;      edx = tcp packet ptr
-;
-; OUT: /
-;
-;---------------------------
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; TCP_pull_out_of_band                                            ;
+;                                                                 ;
+;  IN:  eax = ?                                                   ;
+;       ebx = socket ptr                                          ;
+;       edx = tcp packet ptr                                      ;
+;                                                                 ;
+; OUT:  /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 TCP_pull_out_of_band:
 
@@ -127,21 +126,16 @@ TCP_pull_out_of_band:
 
 
 
-
-
-
-
-
-;-------------------------
-;
-; TCP_drop
-;
-;  IN:  eax = socket ptr
-;       ebx = error number
-;
-;  OUT: eax = socket ptr
-;
-;-------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; TCP_drop                                                        ;
+;                                                                 ;
+;  IN:  eax = socket ptr                                          ;
+;       ebx = error number                                        ;
+;                                                                 ;
+;  OUT: eax = socket ptr                                          ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 TCP_drop:    ; FIXME CHECKME TODO
 
@@ -171,14 +165,15 @@ TCP_drop:    ; FIXME CHECKME TODO
 
 
 
-;-------------------------
-;
-; TCP_disconnect
-;
-;  IN:  eax = socket ptr
-;  OUT: eax = socket ptr / 0
-;
-;-------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; TCP_disconnect                                                  ;
+;                                                                 ;
+;  IN:  eax = socket ptr                                          ;
+;                                                                 ;
+;  OUT: eax = socket ptr / 0                                      ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 TCP_disconnect:
 
@@ -198,18 +193,18 @@ TCP_disconnect:
         call    TCP_output
         pop     eax
   @@:
-
         ret
 
 
-;-------------------------
-;
-; TCP_close
-;
-;  IN:  eax = socket ptr
-;  OUT: /
-;
-;-------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; TCP_close                                                       ;
+;                                                                 ;
+;  IN:  eax = socket ptr                                          ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 TCP_close:
 
@@ -222,21 +217,19 @@ TCP_close:
         call    SOCKET_free
 
         xor     eax, eax
-
         ret
 
 
 
-
-;-------------------------
-;
-; TCP_outflags
-;
-;  IN:  eax = socket ptr
-;
-;  OUT: edx = flags
-;
-;-------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; TCP_outflags                                                    ;
+;                                                                 ;
+;  IN:  eax = socket ptr                                          ;
+;                                                                 ;
+;  OUT: edx = flags                                               ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 TCP_outflags:
 
@@ -266,19 +259,16 @@ TCP_outflags:
 
 
 
-;-----------------------------------------------------------------
-;
-; The fast way to send an ACK/RST/keepalive segment
-;
-; TCP_respond
-;
-;  IN:  ebx = socket ptr
-;        cl = flags
-;
-; OUT:  /
-;
-;-----------------------------------------------------------------
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; TCP_respond: Fast way to send an ACK/RST/keepalive segment.     ;
+;                                                                 ;
+;  IN:  ebx = socket ptr                                          ;
+;        cl = flags                                               ;
+;                                                                 ;
+; OUT:  /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 TCP_respond:
 
@@ -351,19 +341,18 @@ TCP_respond:
         ret
 
 
-;-----------------------------------------------------------------
-;
-; TCP_respond_segment:
-;
-;  IN:  ebx = device ptr
-;       edx = segment ptr (a previously received segment)
-;       edi = ptr to IPv4 header
-;        cl = flags
-;
-;  OUT: /
-;
-;-----------------------------------------------------------------
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; TCP_respond_segment                                             ;
+;                                                                 ;
+;  IN:  ebx = device ptr                                          ;
+;       edx = segment ptr (a previously received segment)         ;
+;       edi = ptr to IPv4 header                                  ;
+;        cl = flags                                               ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 TCP_respond_segment:
 
@@ -457,7 +446,11 @@ local   .done
   .done:
 }
 
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; TCP_set_persist                                                 ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 TCP_set_persist:
 
@@ -494,13 +487,20 @@ TCP_set_persist:
 
 
 
-; eax = rtt
-; ebx = socket ptr
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; TCP_xmit_timer: Calculate new smoothed RTT.                     ;
+;                                                                 ;
+;   IN: eax = rtt                                                 ;
+;       ebx = socket ptr                                          ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 TCP_xmit_timer:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_xmit_timer: socket=%x rtt=%d0ms\n", ebx, eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_xmit_timer: socket=0x%x rtt=%d0ms\n", ebx, eax
 
 ;TODO: update stats
 
@@ -549,7 +549,6 @@ TCP_xmit_timer:
 
 
   .no_rtt_yet:
-
         push    ecx
         mov     ecx, eax
         shl     ecx, TCP_RTT_SHIFT
@@ -562,14 +561,20 @@ TCP_xmit_timer:
         ret
 
 
-
-
-; eax = max segment size
-; ebx = socket ptr
+;-----------------------------------------------------------------;
+;                                                                 ;
+; TCP_mss: Update maximum segment size                            ;
+;                                                                 ;
+;  IN:  eax = max segment size                                    ;
+;       ebx = socket ptr                                          ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 TCP_mss:
 
-        cmp     eax, 1420                               ; FIXME
+        cmp     eax, 1420       ; FIXME
         jbe     @f
         mov     eax, 1420
   @@:
@@ -580,13 +585,20 @@ TCP_mss:
 
 
 
-
-; ebx = socket ptr
-; edx = segment ptr
+;-----------------------------------------------------------------;
+;                                                                 ;
+; TCP_reassemble                                                  ;
+;                                                                 ;
+;   IN: ebx = socket ptr                                          ;
+;       edx = segment ptr                                         ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 TCP_reassemble:
 
-
+        ;;;;; TODO
 
         ret
 

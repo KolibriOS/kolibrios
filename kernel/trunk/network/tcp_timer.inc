@@ -23,9 +23,6 @@ timer_flag_persist              = 1 shl 3
 timer_flag_wait                 = 1 shl 4
 
 
-;----------------------
-; 160 ms timer
-;----------------------
 macro   TCP_timer_160ms {
 
 local   .loop
@@ -150,9 +147,9 @@ proc TCP_timer_640ms            ; TODO: implement timed wait timer!
 
   .check_more5:
         dec     [eax + TCP_SOCKET.timer_persist]
-        jnz     .loop
+        jnz     .check_more6
         test    [eax + TCP_SOCKET.timer_flags], timer_flag_persist
-        jz      .loop
+        jz      .check_more6
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: persist timer expired\n", eax
 
@@ -163,14 +160,33 @@ proc TCP_timer_640ms            ; TODO: implement timed wait timer!
         pop     eax
         mov     [eax + TCP_SOCKET.t_force], 0
 
-        jmp     .loop
+  .check_more6:
+        dec     [eax + TCP_SOCKET.timer_timed_wait]
+        jnz     .loop
+        test    [eax + TCP_SOCKET.timer_flags], timer_flag_wait
+        jz      .loop
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: timed wait timer expired\n", eax
+
+        push    [eax + SOCKET.NextPtr]
+        call    TCP_close
+        pop     eax
+
+        jmp     .check_only
 
 endp
 
 
-
-; eax = socket
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; TCP_cancel_timers                                               ;
+;                                                                 ;
+;   IN: eax = socket                                              ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
+align 4
 TCP_cancel_timers:
 
         mov     [eax + TCP_SOCKET.timer_flags], 0

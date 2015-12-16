@@ -16,23 +16,20 @@
 
 $Revision$
 
-;-----------------------------------------------------------------
-;
-; TCP_input:
-;
-;       Add a segment to the incoming TCP queue
-;
-;  IN:  [esp] = ptr to buffer
-;       ebx = ptr to device struct
-;       ecx = TCP segment size
-;       edx = ptr to IPv4 header
-;       esi = ptr to TCP segment
-;       edi = interface number*4
-;
-;  OUT: /
-;
-;-----------------------------------------------------------------
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; TCP_input: Add a segment to the incoming TCP queue.             ;
+;                                                                 ;
+;  IN:  [esp] = ptr to buffer                                     ;
+;       ebx = ptr to device struct                                ;
+;       ecx = TCP segment size                                    ;
+;       edx = ptr to IPv4 header                                  ;
+;       esi = ptr to TCP segment                                  ;
+;       edi = interface number*4                                  ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 TCP_input:
 
@@ -488,8 +485,8 @@ endl
         inc     eax
         call    TCP_xmit_timer
         jmp     .rtt_done
-
   .no_timestamp_rtt:
+
         cmp     [ebx + TCP_SOCKET.t_rtt], 0
         je      .rtt_done
         mov     eax, [edx + TCP_header.AckNumber]
@@ -497,7 +494,6 @@ endl
         jbe     .rtt_done
         mov     eax, [ebx + TCP_SOCKET.t_rtt]
         call    TCP_xmit_timer
-
   .rtt_done:
 
 ; update window pointers

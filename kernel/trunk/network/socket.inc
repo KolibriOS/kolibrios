@@ -19,23 +19,23 @@ $Revision$
 
 struct  SOCKET
 
-        NextPtr                 dd ? ; pointer to next socket in list
-        PrevPtr                 dd ? ; pointer to previous socket in list
-        Number                  dd ? ; socket number
+        NextPtr                 dd ?    ; pointer to next socket in list
+        PrevPtr                 dd ?    ; pointer to previous socket in list
+        Number                  dd ?    ; socket number
 
         mutex                   MUTEX
 
-        PID                     dd ? ; process ID
-        TID                     dd ? ; thread ID
-        Domain                  dd ? ; INET4/INET6/LOCAL/..
-        Type                    dd ? ; RAW/STREAM/DGRAM
-        Protocol                dd ? ; UDP/TCP/ARP/ICMP
+        PID                     dd ?    ; process ID
+        TID                     dd ?    ; thread ID
+        Domain                  dd ?    ; INET4/INET6/LOCAL/..
+        Type                    dd ?    ; RAW/STREAM/DGRAM
+        Protocol                dd ?    ; UDP/TCP/ARP/ICMP
         errorcode               dd ?
-        device                  dd ? ; driver pointer, socket pointer if it's an LOCAL socket
+        device                  dd ?    ; device pointer, paired socket pointer if it's a local socket
 
         options                 dd ?
         state                   dd ?
-        backlog                 dw ? ; how many incoming connections that can be queued
+        backlog                 dw ?    ; number of incoming connections that can be queued
 
         snd_proc                dd ?
         rcv_proc                dd ?
@@ -45,21 +45,21 @@ ends
 
 struct  IP_SOCKET               SOCKET
 
-        LocalIP                 rd 4 ; network byte order
-        RemoteIP                rd 4 ; network byte order
+        LocalIP                 rd 4    ; network byte order
+        RemoteIP                rd 4    ; network byte order
         ttl                     db ?
-                                rb 3 ; align
+                                rb 3    ; align
 
 ends
 
 struct  TCP_SOCKET              IP_SOCKET
 
-        LocalPort               dw ? ; network byte order
-        RemotePort              dw ? ; network byte order
+        LocalPort               dw ?    ; network byte order
+        RemotePort              dw ?    ; network byte order
 
-        t_state                 dd ? ; TCB state
+        t_state                 dd ?    ; TCB state
         t_rxtshift              db ?
-                                rb 3 ; align
+                                rb 3    ; align
         t_rxtcur                dd ?
         t_dupacks               dd ?
         t_maxseg                dd ?
@@ -70,19 +70,19 @@ struct  TCP_SOCKET              IP_SOCKET
 ; RFC783 page 21
 
 ; send sequence
-        SND_UNA                 dd ? ; sequence number of unack'ed sent Packets
-        SND_NXT                 dd ? ; next send sequence number to use
-        SND_UP                  dd ? ; urgent pointer
-        SND_WL1                 dd ? ; window minus one
-        SND_WL2                 dd ? ;
-        ISS                     dd ? ; initial send sequence number
-        SND_WND                 dd ? ; send window
+        SND_UNA                 dd ?    ; sequence number of unack'ed sent Packets
+        SND_NXT                 dd ?    ; next send sequence number to use
+        SND_UP                  dd ?    ; urgent pointer
+        SND_WL1                 dd ?    ; window minus one
+        SND_WL2                 dd ?    ;
+        ISS                     dd ?    ; initial send sequence number
+        SND_WND                 dd ?    ; send window
 
 ; receive sequence
-        RCV_WND                 dd ? ; receive window
-        RCV_NXT                 dd ? ; next receive sequence number to use
-        RCV_UP                  dd ? ; urgent pointer
-        IRS                     dd ? ; initial receive sequence number
+        RCV_WND                 dd ?    ; receive window
+        RCV_NXT                 dd ?    ; next receive sequence number to use
+        RCV_UP                  dd ?    ; urgent pointer
+        IRS                     dd ?    ; initial receive sequence number
 
 ;---------------------
 ; Additional variables
@@ -130,36 +130,36 @@ struct  TCP_SOCKET              IP_SOCKET
 ;-------
 ; Timers
         timer_flags             dd ?
-        timer_retransmission    dd ? ; rexmt
+        timer_retransmission    dd ?    ; rexmt
         timer_persist           dd ?
-        timer_keepalive         dd ? ; keepalive/syn timeout
-        timer_timed_wait        dd ? ; also used as 2msl timer
+        timer_keepalive         dd ?    ; keepalive/syn timeout
+        timer_timed_wait        dd ?    ; also used as 2msl timer
         timer_connect           dd ?
 
 ; extra
 
-        ts_ecr                  dd ? ; timestamp echo reply
+        ts_ecr                  dd ?    ; timestamp echo reply
         ts_val                  dd ?
 
-        seg_next                dd ? ; re-assembly queue
+        seg_next                dd ?    ; re-assembly queue
 
 ends
 
 struct  UDP_SOCKET              IP_SOCKET
 
-        LocalPort               dw ? ; network byte order
-        RemotePort              dw ? ; network byte order
+        LocalPort               dw ?    ; in network byte order
+        RemotePort              dw ?    ; in network byte order
 
 ends
 
 struct  RING_BUFFER
 
         mutex                   MUTEX
-        start_ptr               dd ? ; Pointer to start of buffer
-        end_ptr                 dd ? ; pointer to end of buffer
-        read_ptr                dd ? ; Read pointer
-        write_ptr               dd ? ; Write pointer
-        size                    dd ? ; Number of bytes buffered
+        start_ptr               dd ?    ; Pointer to start of buffer
+        end_ptr                 dd ?    ; pointer to end of buffer
+        read_ptr                dd ?    ; Read pointer
+        write_ptr               dd ?    ; Write pointer
+        size                    dd ?    ; Number of bytes buffered
 
 ends
 
@@ -178,10 +178,18 @@ struct  socket_queue_entry
 
 ends
 
+struct  socket_options
 
-SOCKETBUFFSIZE          = 4096     ; in bytes
+        level                   dd ?
+        optname                 dd ?
+        optlen                  dd ?
+        optval                  dd ?
 
-SOCKET_QUEUE_SIZE       = 10       ; maximum number of incoming packets queued for 1 socket
+ends
+
+SOCKETBUFFSIZE          = 4096          ; in bytes
+
+SOCKET_QUEUE_SIZE       = 10            ; maximum number of incoming packets queued for 1 socket
 ; the incoming packet queue for sockets is placed in the socket struct itself, at this location from start
 SOCKET_QUEUE_LOCATION   = (SOCKETBUFFSIZE - SOCKET_QUEUE_SIZE*sizeof.socket_queue_entry - sizeof.queue)
 
@@ -190,18 +198,18 @@ align 4
 
         net_sockets     rd 4
         last_socket_num dd ?
-        last_UDP_port   dw ? ; These values give the number of the last used ephemeral port
-        last_TCP_port   dw ? ;
+        last_UDP_port   dw ?            ; last used ephemeral port
+        last_TCP_port   dw ?            ;
         socket_mutex    MUTEX
 
 endg
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_init
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_init                                                     ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 macro   SOCKET_init {
 
         xor     eax, eax
@@ -232,11 +240,11 @@ macro   SOCKET_init {
 
 }
 
-;-----------------------------------------------------------------
-;
-; Socket API (function 74)
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; Sockets API (system function 75)                                ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 sys_socket:
 
@@ -250,17 +258,17 @@ sys_socket:
         jmp     dword [.table + 4*ebx]
 
   .table:
-        dd      SOCKET_open     ; 0
-        dd      SOCKET_close    ; 1
-        dd      SOCKET_bind     ; 2
-        dd      SOCKET_listen   ; 3
-        dd      SOCKET_connect  ; 4
-        dd      SOCKET_accept   ; 5
-        dd      SOCKET_send     ; 6
-        dd      SOCKET_receive  ; 7
-        dd      SOCKET_set_opt  ; 8
-        dd      SOCKET_get_opt  ; 9
-        dd      SOCKET_pair     ; 10
+        dd      SOCKET_open             ; 0
+        dd      SOCKET_close            ; 1
+        dd      SOCKET_bind             ; 2
+        dd      SOCKET_listen           ; 3
+        dd      SOCKET_connect          ; 4
+        dd      SOCKET_accept           ; 5
+        dd      SOCKET_send             ; 6
+        dd      SOCKET_receive          ; 7
+        dd      SOCKET_set_opt          ; 8
+        dd      SOCKET_get_opt          ; 9
+        dd      SOCKET_pair             ; 10
   .number = ($ - .table) / 4 - 1
 
   .error:
@@ -269,16 +277,19 @@ sys_socket:
 
         ret
 
-;-----------------------------------------------------------------
-;
-; SOCKET_open
-;
-;  IN:  domain in ecx
-;       type in edx
-;       protocol in esi
-;  OUT: eax is socket num, -1 on error
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_open: Create a new socket.                               ;
+;                                                                 ;
+;   IN: ecx = domain                                              ;
+;       edx = type                                                ;
+;       esi = protocol                                            ;
+;                                                                 ;
+;  OUT: eax = socket number                                       ;
+;       eax = -1 on error                                         ;
+;       ebx = errorcode on error                                  ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_open:
 
@@ -290,7 +301,7 @@ SOCKET_open:
         test    eax, eax
         jz      .nobuffs
 
-        mov     [esp+32], edi                   ; return socketnumber
+        mov     [esp+32], edi           ; return socketnumber
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socknum=%u\n", edi
 
         test    edx, SO_NONBLOCK
@@ -340,7 +351,7 @@ SOCKET_open:
         ret
 
   .raw:
-        test    esi, esi       ; IP_PROTO_IP
+        test    esi, esi        ; IP_PROTO_IP
         jz      .raw_ip
 
         cmp     esi, IP_PROTO_ICMP
@@ -405,16 +416,19 @@ align 4
         ret
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_bind
-;
-;  IN:  socket number in ecx
-;       pointer to sockaddr struct in edx
-;       length of that struct in esi
-;  OUT: 0 on success
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_bind: Bind to a local port.                              ;
+;                                                                 ;
+;   IN: ecx = socket number                                       ;
+;       edx = pointer to sockaddr struct                          ;
+;       esi = length of sockaddr struct                           ;
+;                                                                 ;
+;  OUT: eax = 0 on success                                        ;
+;       eax = -1 on error                                         ;
+;       ebx = errorcode on error                                  ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_bind:
 
@@ -427,7 +441,7 @@ SOCKET_bind:
         cmp     esi, 2
         jb      .invalid
 
-        cmp     [eax + UDP_SOCKET.LocalPort], 0         ; Socket can only be bound once
+        cmp     [eax + UDP_SOCKET.LocalPort], 0 ; Socket can only be bound once
         jnz     .invalid
 
         cmp     word [edx], AF_INET4
@@ -495,16 +509,19 @@ SOCKET_bind:
 
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_connect
-;
-;  IN:  socket number in ecx
-;       pointer to sockaddr struct in edx
-;       length of that struct in esi
-;  OUT: 0 on success
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_connect: Connect to the remote host.                     ;
+;                                                                 ;
+;   IN: ecx = socket number                                       ;
+;       edx = pointer to sockaddr struct                          ;
+;       esi = length of sockaddr struct                           ;
+;                                                                 ;
+;  OUT: eax = 0 on success                                        ;
+;       eax = -1 on error                                         ;
+;       ebx = errorcode on error                                  ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_connect:
 
@@ -553,15 +570,18 @@ connect_notsupp:
         ret
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_listen
-;
-;  IN:  socket number in ecx
-;       backlog in edx
-;  OUT: eax is socket num, -1 on error
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_listen: Listen for incoming connections.                 ;
+;                                                                 ;
+;   IN: ecx = socket number                                       ;
+;       edx = backlog in edx                                      ;
+;                                                                 ;
+;  OUT: eax = 0 on success                                        ;
+;       eax = -1 on error                                         ;
+;       ebx = errorcode on error                                  ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_listen:
 
@@ -619,16 +639,19 @@ SOCKET_listen:
         ret
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_accept
-;
-;  IN:  socket number in ecx
-;       addr in edx
-;       addrlen in esi
-;  OUT: eax is socket num, -1 on error
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_accept: Accept an incoming connection.                   ;
+;                                                                 ;
+;   IN: ecx = socket number (of listening socket)                 ;
+;       edx = ptr to sockaddr struct                              ;
+;       esi = length of sockaddr struct                           ;
+;                                                                 ;
+;  OUT: eax = newly created socket num                            ;
+;       eax = -1 on error                                         ;
+;       ebx = errorcode on error                                  ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_accept:
 
@@ -689,14 +712,17 @@ SOCKET_accept:
         mov     dword[esp+32], -1
         ret
 
-;-----------------------------------------------------------------
-;
-; SOCKET_close
-;
-;  IN:  socket number in ecx
-;  OUT: eax is socket num, -1 on error
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_close: Close the socket (and connection).                ;
+;                                                                 ;
+;   IN: ecx = socket number                                       ;
+;                                                                 ;
+;  OUT: eax = 0 on success                                        ;
+;       eax = -1 on error                                         ;
+;       ebx = errorcode on error                                  ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_close:
 
@@ -726,14 +752,12 @@ SOCKET_close:
         ret
 
   .tcp:
-
         call    TCP_usrclosed
 
         test    eax, eax
         jz      @f
         call    TCP_output                                      ; If connection is not closed yet, send the FIN
   @@:
-
         ret
 
 
@@ -743,17 +767,21 @@ SOCKET_close:
         ret
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_receive
-;
-;  IN:  socket number in ecx
-;       addr to buffer in edx
-;       length of buffer in esi
-;       flags in edi
-;  OUT: eax is number of bytes copied, -1 on error
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_receive: Receive some data from the remote end.          ;
+;                                                                 ;
+;   IN: ecx = socket number                                       ;
+;       edx = addr to application buffer                          ;
+;       edx = length of application buffer                        ;
+;       edi = flags                                               ;
+;                                                                 ;
+;  OUT: eax = number of bytes copied                              ;
+;       eax = -1 on error                                         ;
+;       eax = 0 when socket has been closed by the remote end     ;
+;       ebx = errorcode on error                                  ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_receive:
 
@@ -777,8 +805,8 @@ SOCKET_receive:
         test    edi, MSG_DONTWAIT
         jnz     .return_err
 
-;        test    [eax + SOCKET.options], SO_NONBLOCK
-;        jnz     .return_err
+        test    [eax + SOCKET.options], SO_NONBLOCK
+        jnz     .return_err
 
         call    SOCKET_block
         jmp     .loop
@@ -797,7 +825,7 @@ SOCKET_receive:
   .last_data:
         test    ecx, ecx
         jz      .return
-        call    SOCKET_notify
+        call    SOCKET_notify                                   ; Call me again!
         jmp     .return
 
 
@@ -808,7 +836,10 @@ SOCKET_receive_dgram:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: DGRAM\n"
 
-        mov     ebx, esi                                        ; bufferlength
+        test    edi, MSG_PEEK
+        jnz     .peek
+
+        mov     ebx, esi                                        ; buffer length
 
         get_from_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, sizeof.socket_queue_entry, .wouldblock ; sets esi only on success.
         mov     ecx, [esi + socket_queue_entry.data_size]
@@ -839,7 +870,11 @@ SOCKET_receive_dgram:
 
         call    NET_BUFF_free
         pop     ecx eax                                         ; return number of bytes copied to application
-        xor     ebx, ebx
+        cmp     [eax + SOCKET_QUEUE_LOCATION + queue.size], 0
+        je      @f
+        call    SOCKET_notify                                   ; Queue another network event
+  @@:
+        xor     ebx, ebx                                        ; errorcode = 0 (no error)
         ret
 
   .too_small:
@@ -853,6 +888,15 @@ SOCKET_receive_dgram:
         pop     ebx
         ret
 
+  .peek:
+        xor     ebx, ebx
+        xor     ecx, ecx
+        cmp     [eax + SOCKET_QUEUE_LOCATION + queue.size], 0
+        je      @f
+        mov     esi, [eax + SOCKET_QUEUE_LOCATION + queue.r_ptr]
+        mov     ecx, [esi + socket_queue_entry.data_size]
+  @@:
+        ret
 
 
 align 4
@@ -916,18 +960,20 @@ SOCKET_receive_stream:
         ret
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_send
-;
-;
-;  IN:  socket number in ecx
-;       pointer to data in edx
-;       datalength in esi
-;       flags in edi
-;  OUT: -1 on error
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_send: Send some data to the remote end.                  ;
+;                                                                 ;
+;   IN: ecx = socket number                                       ;
+;       edx = pointer to data                                     ;
+;       esi = data length                                         ;
+;       edi = flags                                               ;
+;                                                                 ;
+;  OUT: eax = number of bytes sent                                ;
+;       eax = -1 on error                                         ;
+;       ebx = errorcode on error                                  ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_send:
 
@@ -1084,22 +1130,25 @@ SOCKET_send_local_:
         ret
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_get_options
-;
-;  IN:  ecx = socket number
-;       edx = pointer to the options:
-;               dd      level, optname, optval, optlen
-;  OUT: -1 on error
-;
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_get_options: Read a socket option                        ;
+;                                                                 ;
+;   IN: ecx = socket number                                       ;
+;       edx = pointer to socket options struct                    ;
+;                                                                 ;
+;  OUT: eax = 0 on success                                        ;
+;       eax = -1 on error                                         ;
+;       ebx = errorcode on error                                  ;
+;                                                                 ;
+;-----------------------------------------------------------------;
+align 4
+SOCKET_get_opt:
+
+; FIXME:
 ; At moment, uses only pseudo-optname -2 for get last_ack_number for TCP.
 ; TODO: find best way to notify that send()'ed data were acknowledged
 ; Also pseudo-optname -3 is valid and returns socket state, one of TCPS_*.
-;
-;-----------------------------------------------------------------
-align 4
-SOCKET_get_opt:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_get_opt\n"
 
@@ -1143,23 +1192,18 @@ SOCKET_get_opt:
         ret
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_set_options
-;
-;  IN:  ecx = socket number
-;       edx = pointer to socket_options
-;  OUT: -1 on error
-;
-;-----------------------------------------------------------------
-
-struct socket_options
-        level   dd ?
-        optname dd ?
-        optlen  dd ?
-        optval  dd ?
-ends
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_set_options: Set a socket option.                        ;
+;                                                                 ;
+;   IN: ecx = socket number                                       ;
+;       edx = pointer to socket options struct                    ;
+;                                                                 ;
+;  OUT: eax = 0 on success                                        ;
+;       eax = -1 on error                                         ;
+;       ebx = errorcode on error                                  ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_set_opt:
 
@@ -1226,17 +1270,18 @@ SOCKET_set_opt:
 
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_pair
-;
-; Allocates a pair of linked LOCAL domain sockets
-;
-; IN: /
-; OUT: eax is socket1 num, -1 on error
-;      ebx is socket2 num
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_pair: Allocate a pair of linked local sockets.           ;
+;                                                                 ;
+;  IN: /                                                          ;
+;                                                                 ;
+; OUT: eax = socket1 num on success                               ;
+;      eax = -1 on error                                          ;
+;      ebx = socket2 num on success                               ;
+;      ebx = errorcode on error                                   ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_pair:
 
@@ -1297,17 +1342,18 @@ SOCKET_pair:
 
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_debug
-;
-;  Copies socket variables to application buffer
-;
-;  IN:  ecx = socket number
-;       edx = pointer to buffer
-;
-;  OUT: -1 on error
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_debug: Copy socket variables to application buffer.      ;
+;                                                                 ;
+;   IN: ecx = socket number                                       ;
+;       edx = pointer to application buffer                       ;
+;                                                                 ;
+;  OUT: eax = 0 on success                                        ;
+;       eax = -1 on error                                         ;
+;       ebx = errorcode on error                                  ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_debug:
 
@@ -1350,18 +1396,27 @@ SOCKET_debug:
         ret
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_find_port
-;
-; Fills in the local port number for TCP and UDP sockets
-; This procedure always works because the number of sockets is
-; limited to a smaller number then the number of possible ports
-;
-;  IN:  eax = socket pointer
-;  OUT: /
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;   ____                                                 ____     ;
+;   \  /              End of sockets API                 \  /     ;
+;    \/                                                   \/      ;
+;    ()        Internally used functions follow           ()      ;
+;                                                                 ;
+;-----------------------------------------------------------------;
+
+
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_find_port:                                               ;
+; Fill in the local port number for TCP and UDP sockets           ;
+; This procedure always works because the number of sockets is    ;
+; limited to a smaller number then the number of possible ports   ;
+;                                                                 ;
+;  IN:  eax = socket pointer                                      ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_find_port:
 
@@ -1410,19 +1465,20 @@ SOCKET_find_port:
 
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_check_port (to be used with AF_INET only!)
-;
-; Checks if a local port number is unused
-; If the proposed port number is unused, it is filled in in the socket structure
-;
-;  IN:  eax = socket ptr (to find out if its a TCP/UDP socket)
-;        bx = proposed socket number (network byte order)
-;
-;  OUT:  ZF = set on error
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_check_port (to be used with AF_INET only!)               ;
+;                                                                 ;
+; Checks if a local port number is unused                         ;
+; If the proposed port number is unused, it is filled in in the   ;
+; socket structure                                                ;
+;                                                                 ;
+;   IN: eax = socket ptr                                          ;
+;       bx = proposed socket number (network byte order)          ;
+;                                                                 ;
+;  OUT: ZF = set on error                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_check_port:
 
@@ -1472,22 +1528,20 @@ SOCKET_check_port:
 
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_input
-;
-; Updates a (stateless) socket with received data
-;
-; Note: the mutex should already be set !
-;
-;  IN:  eax = socket ptr
-;       ecx = data size
-;       esi = ptr to data
-;       [esp] = ptr to buf
-;
-;  OUT: /
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_input: Update a (stateless) socket with received data.   ;
+;                                                                 ;
+; Note: The socket's mutex should already be set !                ;
+;                                                                 ;
+;   IN: eax = socket ptr                                          ;
+;       ecx = data size                                           ;
+;       esi = ptr to data                                         ;
+;       [esp] = ptr to buf                                        ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_input:
 
@@ -1522,10 +1576,16 @@ SOCKET_input:
         ret
 
 
-;--------------------------
-;
-; eax = ptr to ring struct (just a buffer of the right size)
-;
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_ring_create: Create a ringbuffer for sockets.            ;
+;                                                                 ;
+;   IN: eax = ptr to ring struct                                  ;
+;                                                                 ;
+;  OUT: eax = 0 on error                                          ;
+;       eax = start ptr                                           ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_ring_create:
 
@@ -1561,19 +1621,17 @@ SOCKET_ring_create:
         pop     esi
         ret
 
-;-----------------------------------------------------------------
-;
-; SOCKET_ring_write
-;
-; Adds data to a stream socket, and updates write pointer and size
-;
-;  IN:  eax = ptr to ring struct
-;       ecx = data size
-;       esi = ptr to data
-;
-;  OUT: ecx = number of bytes stored
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_ring_write: Write data to ring buffer.                   ;
+;                                                                 ;
+;   IN: eax = ptr to ring struct                                  ;
+;       ecx = data size                                           ;
+;       esi = ptr to data                                         ;
+;                                                                 ;
+;  OUT: ecx = number of bytes stored                              ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_ring_write:
 
@@ -1633,22 +1691,22 @@ SOCKET_ring_write:
 
         ret
 
-;-----------------------------------------------------------------
-;
-; SOCKET_ring_read
-;
-;  IN:  eax = ring struct ptr
-;       ecx = bytes to read
-;       edx = offset
-;       edi = ptr to buffer start
-;
-;  OUT: eax = unchanged
-;       ecx = number of bytes read (0 on error)
-;       edx = destroyed
-;       esi = destroyed
-;       edi = ptr to buffer end
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_ring_read: Read from ring buffer                         ;
+;                                                                 ;
+;   IN: eax = ring struct ptr                                     ;
+;       ecx = bytes to read                                       ;
+;       edx = offset                                              ;
+;       edi = ptr to buffer start                                 ;
+;                                                                 ;
+;  OUT: eax = unchanged                                           ;
+;       ecx = number of bytes read (0 on error)                   ;
+;       edx = destroyed                                           ;
+;       esi = destroyed                                           ;
+;       edi = ptr to buffer end                                   ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_ring_read:
 
@@ -1707,18 +1765,16 @@ SOCKET_ring_read:
         jmp     .copy
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_ring_free
-;
-; Free's some bytes from the ringbuffer
-;
-;  IN:  eax = ptr to ring struct
-;       ecx = data size
-;
-;  OUT: ecx = number of bytes free-ed
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_ring_free: Free data from a ringbuffer                   ;
+;                                                                 ;
+;   IN: eax = ptr to ring struct                                  ;
+;       ecx = data size                                           ;
+;                                                                 ;
+;  OUT: ecx = number of freed bytes                               ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_ring_free:
 
@@ -1759,16 +1815,15 @@ SOCKET_ring_free:
         ret
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_block
-;
-; Suspends the thread attached to a socket
-;
-;  IN:  eax = socket ptr
-;  OUT: eax = unchanged
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_block: Suspend the thread attached to a socket.          ;
+;                                                                 ;
+;   IN: eax = socket ptr                                          ;
+;                                                                 ;
+;  OUT: eax = unchanged                                           ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_block:
 
@@ -1802,16 +1857,15 @@ SOCKET_block:
         ret
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_notify
-;
-; notify's the owner of a socket that something happened
-;
-;  IN:  eax = socket ptr
-;  OUT: eax = unchanged
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_notify: Wake up socket owner thread.                     ;
+;                                                                 ;
+;   IN: eax = socket ptr                                          ;
+;                                                                 ;
+;  OUT: eax = unchanged                                           ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_notify:
 
@@ -1850,7 +1904,7 @@ SOCKET_notify:
         test    [eax + SOCKET.state], SS_BLOCKED
         jnz     .un_block
 
-; socket and thread exists and socket is of non blocking type.
+; Socket and thread exists and socket is of non blocking type.
 ; We'll try to flag an event to the thread.
         shl     ecx, 8
         or      [ecx + SLOT_BASE + APPDATA.event_mask], EVENT_NETWORK
@@ -1861,7 +1915,7 @@ SOCKET_notify:
 
 
   .un_block:
-; socket and thread exists and socket is of blocking type
+; Socket and thread exists and socket is of blocking type
 ; We'll try to unblock it.
         and     [eax + SOCKET.state], not SS_BLOCKED    ; Clear the 'socket is blocked' flag
         mov     [esi + TASKDATA.state], 0               ; Run the thread
@@ -1871,19 +1925,20 @@ SOCKET_notify:
         ret
 
 
-;--------------------------------------------------------------------
-;
-; SOCKET_alloc
-;
-; Allocate memory for socket data and put new socket into the list
-; Newly created socket is initialized with calling PID and number and
-; put into beginning of list (which is the fastest way).
-;
-; IN:  /
-; OUT: eax = 0 on error, socket ptr otherwise
-;      edi = socket number
-;
-;--------------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_alloc:                                                   ;
+; Allocate memory for socket and put new socket into the list.    ;
+; Newly created socket is initialized with calling PID and socket ;
+; number.                                                         ;
+;                                                                 ;
+;  IN:  /                                                         ;
+;                                                                 ;
+; OUT:  eax = socket ptr on success                               ;
+;       eax = 0 on error                                          ;
+;       edi = socket number on success                            ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_alloc:
 
@@ -1988,17 +2043,17 @@ SOCKET_alloc:
         ret
 
 
-;----------------------------------------------------
-;
-; SOCKET_free
-;
-; Free socket data memory and remove socket from the list
-; Caller should lock and unlock socket_mutex
-;
-; IN:  eax = socket ptr
-; OUT: /
-;
-;----------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_free:                                                    ;
+; Free socket data memory and remove socket from the list.        ;
+; Caller should lock and unlock socket_mutex.                     ;
+;                                                                 ;
+;  IN:  eax = socket ptr                                          ;
+;                                                                 ;
+; OUT:  /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_free:
 
@@ -2056,20 +2111,20 @@ SOCKET_free:
 
   .error1:
         pop     ebx
-        DEBUGF  DEBUG_NETWORK_ERROR, "Error in socket free!\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_free: error!\n"
         DEBUGF  DEBUG_NETWORK_ERROR, "socket ptr=0x%x caller=0x%x\n", eax, [esp]
         ret
 
-;------------------------------------
-;
-; SOCKET_fork
-;
-; Create a child socket
-;
-; IN:  socket nr in ebx
-; OUT: child socket nr in eax
-;
-;-----------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_fork: Create a child socket.                             ;
+;                                                                 ;
+;  IN:  ebx = socket number                                       ;
+;                                                                 ;
+; OUT:  eax = child socket number on success                      ;
+;       eax = 0 on error                                          ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_fork:
 
@@ -2118,16 +2173,16 @@ SOCKET_fork:
         ret
 
 
-;---------------------------------------------------
-;
-; SOCKET_num_to_ptr
-;
-; Get socket structure address by its number
-;
-; IN:  ecx = socket number
-; OUT: eax = 0 on error, socket ptr otherwise
-;
-;---------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_num_to_ptr: Get socket structure address by its number.  ;
+;                                                                 ;
+;  IN:  ecx = socket number                                       ;
+;                                                                 ;
+; OUT:  eax = socket ptr                                          ;
+;       eax = 0 on error                                          ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_num_to_ptr:
 
@@ -2165,17 +2220,17 @@ SOCKET_num_to_ptr:
         ret
 
 
-;---------------------------------------------------
-;
-; SOCKET_ptr_to_num
-;
-; Get socket number by its address
-;
-; IN:  eax = socket ptr
-; OUT: eax = 0 on error, socket num otherwise
-;       ZF = set on error
-;
-;---------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_ptr_to_num: Get socket number by its address.            ;
+;                                                                 ;
+;  IN:  eax = socket ptr                                          ;
+;                                                                 ;
+; OUT:  eax = socket number                                       ;
+;       eax = 0 on error                                          ;
+;       ZF = set on error                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_ptr_to_num:
 
@@ -2194,17 +2249,16 @@ SOCKET_ptr_to_num:
         ret
 
 
-;---------------------------------------------------
-;
-; SOCKET_check
-;
-; checks if the given value is really a socket ptr
-;
-; IN:  eax = socket ptr
-; OUT: eax = 0 on error, unchanged otherwise
-;       ZF = set on error
-;
-;---------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_check: Checks if the given ptr is really a socket ptr.   ;
+;                                                                 ;
+;  IN:  eax = socket ptr                                          ;
+;                                                                 ;
+; OUT:  eax = 0 on error                                          ;
+;       ZF = set on error                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_check:
 
@@ -2229,22 +2283,21 @@ SOCKET_check:
         ret
 
   .error:
-        DEBUGF  DEBUG_NETWORK_ERROR, "Socket_check called with argument 0\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_check: called with argument 0\n"
         DEBUGF  DEBUG_NETWORK_ERROR, "stack: 0x%x, 0x%x, 0x%x\n", [esp], [esp+4], [esp+8]
         ret
 
 
 
-;---------------------------------------------------
-;
-; SOCKET_check_owner
-;
-; checks if the caller application owns the socket
-;
-; IN:  eax = socket ptr
-; OUT:  ZF = true/false
-;
-;---------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_check_owner: Check if the caller app owns the socket.    ;
+;                                                                 ;
+;  IN:  eax = socket ptr                                          ;
+;                                                                 ;
+; OUT:  ZF = true/false                                           ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_check_owner:
 
@@ -2261,18 +2314,18 @@ SOCKET_check_owner:
 
 
 
-;------------------------------------------------------
-;
-; SOCKET_process_end
-;
-; Kernel calls this function when a certain process ends
-; This function will check if the process had any open sockets
-; And update them accordingly (clean up)
-;
-; IN:  edx = pid
-; OUT: /
-;
-;------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_process_end:                                             ;
+; Kernel calls this function when a certain process ends.         ;
+; This function will check if the process had any open sockets,   ;
+; and update them accordingly (clean up).                         ;
+;                                                                 ;
+;  IN:  edx = pid                                                 ;
+;                                                                 ;
+; OUT:  /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_process_end:
 
@@ -2339,15 +2392,15 @@ SOCKET_process_end:
 
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_is_connecting
-;
-;  IN:  eax = socket ptr
-;  OUT: /
-;
-;-----------------------------------------------------------------
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_is_connecting: Update socket state.                      ;
+;                                                                 ;
+;  IN:  eax = socket ptr                                          ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_is_connecting:
 
@@ -2355,20 +2408,19 @@ SOCKET_is_connecting:
 
         and     [eax + SOCKET.state], not (SS_ISCONNECTED + SS_ISDISCONNECTING + SS_ISCONFIRMING)
         or      [eax + SOCKET.state], SS_ISCONNECTING
-
         ret
 
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_is_connected
-;
-;  IN:  eax = socket ptr
-;  OUT: /
-;
-;-----------------------------------------------------------------
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_is_connected: Update socket state.                       ;
+;                                                                 ;
+;  IN:  eax = socket ptr                                          ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_is_connected:
 
@@ -2376,21 +2428,20 @@ SOCKET_is_connected:
 
         and     [eax + SOCKET.state], not (SS_ISCONNECTING + SS_ISDISCONNECTING + SS_ISCONFIRMING)
         or      [eax + SOCKET.state], SS_ISCONNECTED
-
         jmp     SOCKET_notify
 
 
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_is_disconnecting
-;
-;  IN:  eax = socket ptr
-;  OUT: /
-;
-;-----------------------------------------------------------------
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_is_disconnecting: Update socket state.                   ;
+;                                                                 ;
+;  IN:  eax = socket ptr                                          ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_is_disconnecting:
 
@@ -2398,20 +2449,19 @@ SOCKET_is_disconnecting:
 
         and     [eax + SOCKET.state], not (SS_ISCONNECTING)
         or      [eax + SOCKET.state], SS_ISDISCONNECTING + SS_CANTRCVMORE + SS_CANTSENDMORE
-
         jmp     SOCKET_notify
 
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_is_disconnected
-;
-;  IN:  eax = socket ptr
-;  OUT: /
-;
-;-----------------------------------------------------------------
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_is_disconnected: Update socket state.                    ;
+;                                                                 ;
+;  IN:  eax = socket ptr                                          ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_is_disconnected:
 
@@ -2419,43 +2469,38 @@ SOCKET_is_disconnected:
 
         and     [eax + SOCKET.state], not (SS_ISCONNECTING + SS_ISCONNECTED + SS_ISDISCONNECTING)
         or      [eax + SOCKET.state], SS_CANTRCVMORE + SS_CANTSENDMORE
-
-
         jmp     SOCKET_notify
 
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_cant_recv_more
-;
-;  IN:  eax = socket ptr
-;  OUT: /
-;
-;-----------------------------------------------------------------
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_cant_recv_more: Update socket state.                     ;
+;                                                                 ;
+;  IN:  eax = socket ptr                                          ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_cant_recv_more:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_cant_recv_more: %x\n", eax
 
         or      [eax + SOCKET.state], SS_CANTRCVMORE
-
-        call    SOCKET_notify
-
-        ret
+        jmp     SOCKET_notify
 
 
 
-;-----------------------------------------------------------------
-;
-; SOCKET_cant_send_more
-;
-;  IN:  eax = socket ptr
-;  OUT: /
-;
-;-----------------------------------------------------------------
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; SOCKET_cant_send_more: Update socket state.                     ;
+;                                                                 ;
+;  IN:  eax = socket ptr                                          ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 SOCKET_cant_send_more:
 
@@ -2463,10 +2508,7 @@ SOCKET_cant_send_more:
 
         or      [eax + SOCKET.state], SS_CANTSENDMORE
         mov     [eax + SOCKET.snd_proc], .notconn
-
-        call    SOCKET_notify
-
-        ret
+        jmp     SOCKET_notify
 
   .notconn:
         mov     dword[esp+20], ENOTCONN
