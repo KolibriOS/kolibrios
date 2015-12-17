@@ -151,7 +151,7 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 	//WriteTextCenter(col*cell_w+6,row*cell_h+46 + list_pos,cell_w,0x000000,key_name);
 	font.size = 12;
 	font.color = 0xDCDCDC;
-	font.weight = false;
+	font.bold = false;
 	font.bg_color = LIST_BACKGROUND_COLOR;
 	font.textcenter(col*cell_w+7,row*cell_h+47 + list_pos,cell_w,0,key_name);
 	font.show();
@@ -188,7 +188,7 @@ byte process_sections(dword sec_name, f_name)
 		DrawBar(0, row * cell_h + list_pos, Form.cwidth , 29, LIST_BACKGROUND_COLOR);
 		//WriteTextB(10, row * cell_h + 9 + list_pos, 0x90, 0x000000, sec_name);
 		font.size=14;
-		font.weight=true;
+		font.bold=true;
 		font.bg_color = LIST_BACKGROUND_COLOR;
 		text_len = font.prepare(10, row * cell_h + 10 + list_pos,sec_name);
 		font.show();
@@ -206,7 +206,7 @@ void draw_top_bar()
 	DrawBar(0,0,Form.cwidth, top_position-1, system.color.work);
 	DrawBar(0,top_position-1, Form.cwidth, 1, system.color.work_graph);
 	font.size = 17;
-	font.weight = false;
+	font.bold = false;
 	font.bg_color = system.color.work;
 	font.prepare(Form.cwidth-font.getsize(#window_title)/2,0,#window_title);
 	font.show();

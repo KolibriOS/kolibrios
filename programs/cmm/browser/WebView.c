@@ -8,12 +8,14 @@
 #endif
 
 //libraries
-#define MEMSIZE 0x100000
+#define MEMSIZE 1060000
 #include "..\lib\gui.h"
 #include "..\lib\draw_buf.h"
 #include "..\lib\list_box.h"
 #include "..\lib\cursor.h"
 #include "..\lib\collection.h"
+#include "..\lib\font.h"
+
 //*.obj libraries
 #include "..\lib\obj\box_lib.h"
 #include "..\lib\obj\libio_lib.h"
@@ -45,7 +47,6 @@ char homepage[] = FROM "html\\homepage.htm";
 #define URL_SERVICE_HISTORY "WebView://history"
 #define URL_SERVICE_HOME "WebView://home"
 #define URL_SERVICE_SOURCE "WebView://source:"
-
 
 proc_info Form;
 
@@ -115,6 +116,15 @@ void main()
 	WB1.DrawBuf.zoom = 1;
 	WB1.list.SetFont(8, 14, 10111000b);
 	WB1.list.no_selection = true;
+	//font init
+	font.no_bg_copy = true;
+	font.bg_color   = 0xFFFFFF;
+	font.load(DEFAULT_FONT);
+	if (!font.data) {
+		notify("'Error: Font is not loaded.' -E");
+		ExitProcess();
+	}
+	//
 	SetEventMask(0xa7);
 	BEGIN_LOOP_APPLICATION:
 		WaitEventTimeout(2);
@@ -250,6 +260,8 @@ void SetElementSizes()
 	if (WB1.list.w!=WB1.DrawBuf.bufw) WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h * 30);
 }
 
+int list__w;
+
 void Draw_Window()
 {
 	DrawBar(0,0, Form.cwidth,TOOLBAR_H-2, panel_color);
@@ -268,6 +280,21 @@ void Draw_Window()
 	if (!header) OpenPage(); else { WB1.DrawPage(); DrawEditBox(); }
 	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, scroll_wv.bckg_col);
 	DrawProgress();
+
+	list__w = 200;
+	font.buffer_size = 0;
+	font.size.height = 200;
+	font.color = 0;
+	font.size.text = 11;
+	font.prepare_buf(10,10,list__w,font.size.height, "Hello World!");
+	font.color = 0xFF00FF;
+	font.size.text = 12;
+	font.prepare_buf(10,23,list__w,font.size.height, "How are you?");
+	font.color = 0x2E74BB;
+	font.size.text = 15;
+	font.prepare_buf(11,40,list__w,font.size.height, "Fine");
+	SmoothFont(font.buffer, font.size.width, font.size.height);
+	_PutImage(0,0,list__w,font.size.height,font.buffer);
 }
 
 

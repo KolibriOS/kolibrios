@@ -6,7 +6,7 @@
 	?define SHOW_REAL_NAMES "Показывать имена файлов не меняя регистр"
 	?define FONT_SIZE_LABEL "Размер шрифта"
 	?define USE_TWO_PANELS "Две панели"
-	?define USE_SMOOTH_FONT "Использовать сглаженный шрифт"
+	?define smooth_FONT "Использовать сглаженный шрифт"
 	?define LIST_LINE_HEIGHT "Высота строки в списке"
 	?define NOTIFY_COPY_END "Уведомлять о завершении копирования"
 	?define T_DOUBLE_CLICK "Время двойного клика (в сотых)"
@@ -18,7 +18,7 @@
 	?define SHOW_REAL_NAMES "Show real file names without changing case"
 	?define FONT_SIZE_LABEL "Font size"
 	?define USE_TWO_PANELS "Two panels"
-	?define USE_SMOOTH_FONT "Use smooth font"
+	?define smooth_FONT "Use smooth font"
 	?define LIST_LINE_HEIGHT "List line height"
 	?define NOTIFY_COPY_END "Notify when copying finished"
 	?define T_DOUBLE_CLICK "Double click time (in hundredths)"
@@ -92,7 +92,7 @@ void DrawSettingsCheckBoxes()
 	CheckBox2(10, 33, 21, SHOW_REAL_NAMES,  real_files_names_case);
 	CheckBox2(10, 55, 22, NOTIFY_COPY_END,  info_after_copy);
 	CheckBox2(10, 77, 24, USE_TWO_PANELS,  two_panels); 
-	//CheckBox2(10, 99, 29, USE_SMOOTH_FONT,  smooth_font); 
+	//CheckBox2(10, 99, 29, smooth_FONT,  smooth_font); 
 	MoreLessBox(10, 99, 18, 27, 28, #system.color, MOUSE_TIME, T_DOUBLE_CLICK);
 	MoreLessBox(10, 125, 18, 25, 26, #system.color, files.item_h, LIST_LINE_HEIGHT);
 	if (font.data) MoreLessBox(10, 152, 18, 30, 31, #system.color, font.size.text, FONT_SIZE_LABEL);

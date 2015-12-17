@@ -718,7 +718,7 @@ void Line_ReDraw(dword bgcol, filenum){
 	else
 	{
 		font.bg_color = bgcol;
-		font.use_smooth = smooth_font;
+		font.smooth = smooth_font;
 		font.prepare(files.x + 23, files.item_h - font.height / 2 + y, file_name_off);
 		font.show();
 	}

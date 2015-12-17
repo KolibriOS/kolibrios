@@ -9,6 +9,8 @@
 #include "../lib/obj/fs.h"
 #endif
 
+#define DEFAULT_FONT "/sys/fonts/Tahoma.kf"
+
 :struct __OFFSET_FONT
 {
 	signed x,y;
@@ -24,11 +26,10 @@
 :struct FONT
 {
 	__SIZE size;
-	byte r,g,b,weight,italic, smooth;
-	byte width,height;
-	byte use_smooth;
-	int left,top;
-	byte encoding;
+	int left,top,width,height;
+	byte bold,italic,smooth;
+	byte no_bg_copy;
+	dword bg_color;
 	dword color;
 	dword file_size;
 	dword buffer;
@@ -46,26 +47,13 @@
 	dword getsize(dword text1);
 	byte changeSIZE();
 	void PixelRGB(dword x,y);
-	//dword GetPixel(word x,y);
-	byte no_bg_copy;
-	dword bg_color;
 };
 FONT font = 0;
-/*
-:dword FONT::GetPixel(word x,y)
-{
-	dword tmp = y*size.width*3;
-	tmp += x*3 + buffer;
-	r = DSBYTE[tmp]; tmp++;
-	g = DSBYTE[tmp]; tmp++;
-	b = DSBYTE[tmp];
-}*/
+
 :void FONT::PixelRGB(dword x,y)
 {
 	dword offs = y*size.width+x*3 + buffer;
-	DSBYTE[offs] = r; offs++;
-	DSBYTE[offs] = g; offs++;
-	DSBYTE[offs] = b;
+	DSDWORD[offs] = DSDWORD[offs] & 0xFF000000 | color;
 }
 :byte FONT::changeSIZE()
 {
@@ -119,43 +107,38 @@ FONT font = 0;
 }
 :byte FONT::symbol_size(byte s)
 {
-        dword xi,yi;
-        dword tmp,_;
-        dword iii;
-        byte rw=0;
+		dword xi,yi;
+		dword tmp,_;
+		dword iii;
+		byte rw=0;
 		byte X;
 		size.TMP_WEIGHT = math.ceil(size.text/17);
-        IF(s==32)
+		IF(s==32)
 		{
 			size.width += width/4;
-			IF(weight) size.width+=size.TMP_WEIGHT;
+			IF(bold) size.width+=size.TMP_WEIGHT;
 			return;
 		}
 		IF(s==9)
 		{
 			size.width += width;
-			IF(weight) size.width+=size.TMP_WEIGHT;
+			IF(bold) size.width+=size.TMP_WEIGHT;
 			return;
 		}
-		IF(!encoding){
-			IF(s>=128)&&(s<=175)s+=64;
-			ELSE IF(s>=224)&&(s<=239)s+=16;
-			ELSE IF(s==241)s=184; //yo
-			ELSE IF(s==240)s=168; //YO
-		}
-        iii = 0;
-        tmp = 4*block*s + data;
-        for(yi=0; yi<height; yi++)
-        {
-            for(xi=0; xi<width; xi++)
-            {
-                IF(iii%32) _ >>= 1;
+		s = AnsiToCp866(s);
+		iii = 0;
+		tmp = 4*block*s + data;
+		for(yi=0; yi<height; yi++)
+		{
+			for(xi=0; xi<width; xi++)
+			{
+				IF(iii%32) _ >>= 1;
 				ELSE
 				{
-                        tmp += 4;
-                        _ = DSDWORD[tmp];
-                }
-                IF(_&1)
+					tmp += 4;
+					_ = DSDWORD[tmp];
+				}
+				IF(_&1)
 				{
 					IF(xi>rw)rw=xi;
 					IF(size.height<yi)size.height = yi;
@@ -164,24 +147,107 @@ FONT font = 0;
 					IF(!X) X = xi;
 					ELSE IF(X>xi)X = xi;
 				}
-                iii++;
-            }
-        }
+				iii++;
+			}
+		}
 		size.width += rw;
-		IF(weight) size.width+=size.TMP_WEIGHT;
+		IF(bold) size.width+=size.TMP_WEIGHT;
 		IF(s=='_') size.width--;
 		IF(size.offset.x<0)size.offset.x = X;
 }
+:byte FONT::symbol(signed x,y;byte s)
+{
+		dword xi,yi;
+		dword iii;
+		float ital = -size.w_italic;
+		dword ___x;
+		byte rw=0;
+		IF(s==32)return width/4;
+		IF(s==9)return width;
+		s = AnsiToCp866(s);
+		iii = 0;
+		EBX = block*s << 2 + data;
+		for(yi=0; yi<height; yi++)
+		{
+			EDI = size.offset.y + yi + y;
+			for(xi=0; xi<width; xi++)
+			{
+				IF(iii%32) $shr ecx,1
+				ELSE
+				{
+						EBX += 4;
+						ECX = DSDWORD[EBX];
+				}
+				IF(ECX&true)
+				{
+						IF(xi>rw)rw=xi;
+						___x = x+xi;
+						IF(italic)___x+=math.ceil(ital);
+						PixelRGB(___x,EDI);
+						IF(bold) PixelRGB(___x+1,EDI);
+				}
+				iii++;
+			}
+			if (italic) ital-=size.offset_i;
+		}
+		return rw;
+}
+
+:void FONT::show(){ 
+	_PutImage(left,top,size.width,size.height,buffer);
+}
+
+byte AnsiToCp866(byte s) {
+	IF(s>=128)&&(s<=175)s+=64;
+	ELSE IF(s>=224)&&(s<=239)s+=16;
+	ELSE IF(s==241)s=184; //yo
+	ELSE IF(s==240)s=168; //YO
+	return s;
+}
+
+inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
+:void SmoothFont(dword image, w, h)
+{
+	dword i,line_w,to;
+	line_w = w * 3;
+	to = w*h*3 + image - line_w - 3;
+	for(i = image; i < to; i+=3)	{
+		IF(i-image%line_w +3 == line_w) continue;
+		IF(b24(i)==0x000000) && (b24(i+3)!=0x000000) && (b24(i+line_w)!=0x000000) && (b24(i+3+line_w)==0x000000)
+		{ 
+			ShadowImage(i+3, 1, 1, 2);
+			ShadowImage(i+line_w, 1, 1, 2);
+		}
+		ELSE IF(b24(i)!=0x000000) && (b24(i+3)==0x000000) && (b24(i+line_w)==0x000000) && (b24(i+3+line_w)!=0x000000)
+		{
+			ShadowImage(i, 1, 1, 2);
+			ShadowImage(i+3+line_w, 1, 1, 2);
+		}
+	}
+}
+:byte FONT::load(dword path)
+{
+	lib_init_fs();
+	buffer_size = 0;
+	smooth = true;
+	IF(data)free(data);
+	IF(!fs.read(path)) { debug("Error while loading font: "); debugln(path); return false; }
+	begin = data = EAX;
+	EBX = begin + ECX;
+	height = DSBYTE[EBX-1];
+	width = DSBYTE[EBX-2];
+	block = math.ceil(height*width/32);
+	return true;
+}
+
 :dword FONT::prepare(int x,y;dword text1)
 {
 	signed len=0;
 	proc_info Form_SELF_FONTS;
 	dword c;
-	c = color;
-	left = x;
 	IF(!text1)return false;
 	IF(size.text)IF(!changeSIZE())return false;
-	AX = c; r = AL; g = AH; c>>=16; AX = c; b = AL;
+	left = x;
 	getsize(text1);
 	y -= size.offset.y;
 	top = y;
@@ -199,13 +265,8 @@ FONT font = 0;
 	IF (no_bg_copy)
 	{
 		EBX = bg_color;
-		EDI = buffer;
-		EAX = buffer_size+EDI;
-		WHILE (EDI<EAX)
-		{
-			ESDWORD[EDI] = EBX;
-			$add edi,3
-		}
+		EAX = buffer_size+buffer;
+		for (EDI=buffer; EDI<EAX; EDI+=3) ESDWORD[EDI] = EBX;
 	}
 	ELSE
 	{
@@ -217,143 +278,38 @@ FONT font = 0;
 	{
 		IF(DSBYTE[text1]=='_') len--;
 		len+=symbol(len,0,DSBYTE[text1]);
-		IF(weight)len+=math.ceil(size.text/17);
+		IF(bold)len+=math.ceil(size.text/17);
 		text1++;
 	}
-	IF (use_smooth) SmoothFont(buffer, size.width, size.height);
+	IF (smooth) SmoothFont(buffer, size.width, size.height);
 	return len;
-}
-:void FONT::show()
-{
-	_PutImage(left,top,size.width,size.height,buffer);
-}
-inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
-:void SmoothFont(dword image, w, h)
-{
-	byte rr,gg,bb;
-	dword i,line_w,to, pixel;
-	line_w = w * 3;
-	to = w*h*3 + image - line_w - 3;
-	for(i = image; i < to; i+=3)	{
-		IF(i-image%line_w +3 == line_w) continue;
-		IF(b24(i)==0x000000) && (b24(i+3)!=0x000000) && (b24(i+line_w)!=0x000000) && (b24(i+3+line_w)==0x000000)
-		{ 
-			ShadowImage(i+3, 1, 1, 2);
-			ShadowImage(i+line_w, 1, 1, 2);
-		}
-		ELSE IF(b24(i)!=0x000000) && (b24(i+3)==0x000000) && (b24(i+line_w)==0x000000) && (b24(i+3+line_w)!=0x000000)
-		{
-			ShadowImage(i, 1, 1, 2);
-			ShadowImage(i+3+line_w, 1, 1, 2);
-		}
-	}
-}
-:byte FONT::symbol(signed x,y;byte s)
-{
-        dword xi,yi;
-        dword iii;
-		float ital = -size.w_italic;
-		dword ___x;
-		//byte _TMP_WEIGHT;
-        byte rw=0;
-		//_TMP_WEIGHT=2;
-        IF(s==32)return width/4;
-		IF(s==9)return width;
-		IF(!encoding)
-		{
-			IF(s>=128)&&(s<=175)s+=64;
-			ELSE IF(s>=224)&&(s<=239)s+=16;
-			ELSE IF(s==241)s=184; //yo
-			ELSE IF(s==240)s=168; //YO
-		}
-        iii = 0;
-        EBX = block*s;
-		$shl ebx,2
-		$add ebx,data
-		yi = 0;
-        while(yi<height)
-        {
-			EDI = size.offset.y;
-			$add edi,yi
-			$add edi,y
-            for(xi=0; xi<width; xi++)
-            {
-				IF(iii%32) $shr ecx,1
-				ELSE
-				{
-						$add ebx,4
-						ECX = DSDWORD[EBX];
-				}
-				IF(ECX&true)
-				{
-						IF(xi>rw)rw=xi;
-						___x = x+xi;
-						IF(italic)___x+=math.ceil(ital);
-						PixelRGB(___x,EDI);
-						//_TMP_WEIGHT = 2;
-						//WHILE(_TMP_WEIGHT)
-						//{
-						//	_TMP_WEIGHT--;
-							IF(weight) PixelRGB(___x+1,EDI);
-						//}
-				}
-				iii++;
-            }
-			IF(italic) ital-=size.offset_i;
-			$inc yi
-        }
-        return rw;
-}
-:byte FONT::load(dword path)
-{
-	lib_init_fs();
-	buffer_size = 0;
-	use_smooth = true;
-	IF(data)free(data);
-	IF(!fs.read(path)) { debug("Error while loading font: "); debugln(path); return false; }
-	begin = data = EAX;
-	EBX = begin + ECX;
-	$dec ebx
-	height = DSBYTE[EBX];
-	$dec ebx
-	width = DSBYTE[EBX];
-	block = math.ceil(height*width/32);
-	return true;
 }
 
 :void FONT::prepare_buf(int x,y,w,h; dword text1)
 {
 	dword c, new_buffer_size;
-	c = color;
-	//left = x;
 	IF(!text1)return;
 	IF(size.text)IF(!changeSIZE())return;
-	AX = c; r = AL; g = AH; c>>=16; AX = c; b = AL;
 	getsize(text1);
 	y -= size.offset.y;
-	//top = y;
+
 	size.width = w;
 	size.height = h;
 
 	new_buffer_size = w*h*3;
-	IF(buffer_size!=new_buffer_size)
+	IF(buffer_size != w*h*3)
 	{
 		buffer_size = new_buffer_size; 
 		free(buffer);
 		buffer = malloc(buffer_size);
 		EBX = bg_color;
-		EDI = buffer;
 		EAX = buffer_size+buffer;
-		WHILE (EDI<EAX)
-		{
-			ESDWORD[EDI] = EBX;
-			$add edi,3
-		}
+		for (EDI=buffer; EDI<EAX; EDI+=3) ESDWORD[EDI] = EBX;
 	}
 	WHILE(DSBYTE[text1])
 	{
 		x+=symbol(x,y,DSBYTE[text1]);
-		IF(weight)x+=math.ceil(size.text/17);
+		IF(bold)x+=math.ceil(size.text/17);
 		text1++;
 	}
 	return;
