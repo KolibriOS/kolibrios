@@ -241,38 +241,6 @@ Remarks:
     time slice), use subfunction 1 of function 68.
 
 ======================================================================
-============== Function 6 - read the file from ramdisk. ==============
-======================================================================
-Parameters:
-  * eax = 6 - function number
-  * ebx = pointer to the filename
-  * ecx = number of start block, beginning from 1;
-    ecx=0 - read from the beginning of the file (same as ecx=1)
-  * edx = number of blocks to read;
-    edx=0 - read one block (same as edx=1)
-  * esi = pointer to memory area for the data
-Returned value:
-  * eax = file size in bytes, if the file was successfully read
-  * eax = -1, if the file was not found
-Remarks:
-  * This function is out-of-date; function 70 allows
-    to fulfil the same operations with the extended possibilities.
-  * Block = 512 bytes.
-  * For reading all file you can specify the certainly large value
-    in edx, for example, edx = -1; but in this case be ready that
-    the program will "fall", if the file will appear too large and can
-    not be placed in the program memory.
-  * The filename must be either in the format 8+3 characters
-    (first 8 characters - name itself, last 3 - extension,
-    the short names and extensions are supplemented with spaces),
-    or in the format 8.3 characters "FILE.EXT"/"FILE.EX "
-    (name no more than 8 characters, dot, extension 3 characters
-    supplemented if necessary by spaces).
-    The filename must be written with capital letters. The terminating
-    character with code 0 is not necessary (not ASCIIZ-string).
-  * This function does not support folders on the ramdisk.
-
-======================================================================
 =============== Function 7 - draw image in the window. ===============
 ======================================================================
 Paramters:
@@ -3161,7 +3129,7 @@ Remarks:
     FPU and/or SSE.
 
 ======================================================================
-====== Function 68, subfunction 25 - set FPU exception handler. ======
+======== Function 68, subfunction 25 - set exception activity ========
 ======================================================================
 Parameters:
   * eax = 68 - function number
@@ -3992,7 +3960,7 @@ Parameters:
   * bh = device number
 Returned value:
   * eax = -1 on error
-  
+
 ======================================================================
 =========== Function 74, Subfunction 4, Get device pointer. ==========
 ======================================================================
@@ -4001,8 +3969,8 @@ Parameters:
   * bl = 4 - subfunction number
   * bh = device number
 Returned value:
-  * eax = device pointer, -1 on error  
-  
+  * eax = device pointer, -1 on error
+
 ======================================================================
 ========= Function 74, Subfunction 6, Get packet TX counter. =========
 ======================================================================
@@ -4012,7 +3980,7 @@ Parameters:
   * bh = device number
 Returned value:
   * eax = Number of packets sent since device start, -1 on error
-  
+
 ======================================================================
 ========= Function 74, Subfunction 7, Get packet RX counter. =========
 ======================================================================
@@ -4022,7 +3990,7 @@ Parameters:
   * bh = device number
 Returned value:
   * eax = Number of packets received since device start, -1 on error
-  
+
 ======================================================================
 ========== Function 74, Subfunction 8, Get TX byte counter. ==========
 ======================================================================
@@ -4046,7 +4014,7 @@ Returned value:
   * eax = Number of bytes received since device start (lower dword)
                   -1 on error
   * ebx = Number of bytes received since device start (higher dword)
-  
+
 ======================================================================
 ========== Function 74, Subfunction 10, Get link status. =============
 ======================================================================
@@ -4056,15 +4024,15 @@ Parameters:
   * bh = device number
 Returned value:
   * eax = link status, -1 on error
-  
+
   Link status:
     ETH_LINK_DOWN   =    0b         ; Link is down
     ETH_LINK_UNKNOWN=    1b         ; There could be an active link
     ETH_LINK_FD     =   10b         ; full duplex flag
     ETH_LINK_10M    =  100b         ; 10 mbit
     ETH_LINK_100M   = 1000b         ; 100 mbit
-    ETH_LINK_1G     = 1100b         ; gigabit   
-  
+    ETH_LINK_1G     = 1100b         ; gigabit
+
 ======================================================================
 ============== Function 75, Subfunction 0, Open socket. ==============
 ======================================================================
