@@ -260,10 +260,11 @@ void SetElementSizes()
 	if (WB1.list.w!=WB1.DrawBuf.bufw) WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h * 30);
 }
 
-int list__w;
+
 
 void Draw_Window()
 {
+	int list__w;
 	DrawBar(0,0, Form.cwidth,TOOLBAR_H-2, panel_color);
 	DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, 0xD7D0D3);
 	DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, border_color);
@@ -281,6 +282,7 @@ void Draw_Window()
 	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, scroll_wv.bckg_col);
 	DrawProgress();
 
+	/*
 	list__w = 200;
 	font.buffer_size = 0;
 	font.size.height = 200;
@@ -295,6 +297,7 @@ void Draw_Window()
 	font.prepare_buf(11,40,list__w,font.size.height, "Fine");
 	SmoothFont(font.buffer, font.size.width, font.size.height);
 	_PutImage(0,0,list__w,font.size.height,font.buffer);
+	*/
 }
 
 
@@ -372,16 +375,7 @@ void Scan(dword id__)
 				strlcpy(#DL_URL, "http://",7);
 				CreateThread(#Downloader,#downloader_stak+4092);
 			}
-			return; /*
-		case 020:
-		case NEWTAB:
-			MoveSize(190,80,OLD,OLD);
-			RunProgram(#program_path, #URL);
 			return;
-		case SEARCHWEB_BUTTON:
-			sprintf(#URL,"%s%s",#search_path,#editURL);
-			OpenPage();
-			return; */
 	}
 }
 
