@@ -701,19 +701,11 @@ setvideomode:
         mov     eax, [hpet_base]
         test    eax, eax
         jz      @F
-        DEBUGF  1, "K : HPET base %x\n", eax
-        mov     eax, [hpet_period]
-        DEBUGF  1, "K : HPET period %d\n", eax
-        mov     eax, [hpet_timers]
-        DEBUGF  1, "K : HPET timers %d\n", eax
-
         mov     eax, [hpet_base]
         stdcall map_io_mem, [hpet_base], 1024, PG_GLOBAL+PAT_UC+PG_SWR
         mov     [hpet_base], eax
-
         mov     eax, [eax]
         DEBUGF  1, "K : HPET caps %x\n", eax
-
 @@:
 ; SET UP OS TASK
 
@@ -1041,7 +1033,31 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
         mov     esi, boot_cpufreq
         call    boot_log
 
-        cli                         ;FIXME check IF
+        cli
+        mov     ebx, [hpet_base]
+        test    ebx, ebx
+        jz      @F
+        mov     ebx, [ebx+0xF0]
+
+        rdtsc
+        mov     ecx, 1000
+        sub     eax, [hpet_tsc_start]
+        sbb     edx, [hpet_tsc_start+4]
+        shld    edx, eax, 10
+        shl     eax, 10
+        mov     esi, eax
+        mov     eax, edx
+        mul     ecx
+        xchg    eax, esi
+        mul     ecx
+        adc     edx, esi
+        div     ebx
+        mul     ecx
+        div     [hpet_period]
+        mul     ecx
+        DEBUGF  1, "K : cpu frequency %u Hz\n", eax
+        jmp     .next
+@@:
         rdtsc
         mov     ecx, eax
         mov     esi, 250            ; wait 1/4 a second
@@ -1053,6 +1069,7 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
         xor     edx, edx
         shld    edx, eax, 2
         shl     eax, 2
+.next:
         mov     dword [cpu_freq], eax
         mov     dword [cpu_freq+4], edx
         mov     ebx, 1000000
@@ -1103,7 +1120,7 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
 
         call    load_default_skin
 
-;protect io permission map
+; Protect I/O permission map
 
         mov     esi, [default_io_map]
         stdcall map_page, esi, [SLOT_BASE+256+APPDATA.io_map], PG_READ
@@ -1905,8 +1922,18 @@ sys_getsetup:
         ret
 ;--------------------------------------
 @@:
+; F.26.10 - get the time from kernel launch in nanoseconds
+        sub     ebx, 1
+        jnz     @f
+
+        call    get_clock_ns
+        mov     [esp+24], edx
+        mov     [esp+32], eax
+        ret
+;--------------------------------------
+@@:
 ; F.26.11 - Find out whether low-level HD access is enabled
-        sub     ebx, 2
+        sub     ebx, 1
         jnz     @f
 
         mov     eax, [lba_read_enabled]
@@ -1932,7 +1959,10 @@ get_timer_ticks:
 ;-----------------------------------------------------------------------------
 iglobal
 align 4
-mousefn dd msscreen, mswin, msbutton, msset
+mousefn dd msscreen
+        dd mswin
+        dd msbutton
+        dd msbuttonExt
         dd app_load_cursor
         dd app_set_cursor
         dd app_delete_cursor
@@ -1944,21 +1974,24 @@ readmousepos:
 ; eax=0 screen relative
 ; eax=1 window relative
 ; eax=2 buttons pressed
-; eax=3 set mouse pos   ; reserved
+; eax=3 buttons pressed ext
 ; eax=4 load cursor
 ; eax=5 set cursor
-; eax=6 delete cursor   ; reserved
+; eax=6 delete cursor
 ; eax=7 get mouse_z
 
         cmp     ebx, 7
-        ja      msset
+        ja      @f
         jmp     [mousefn+ebx*4]
+
 msscreen:
         mov     eax, [MOUSE_X]
         shl     eax, 16
         mov     ax, [MOUSE_Y]
         mov     [esp+36-4], eax
+@@:
         ret
+
 mswin:
         mov     eax, [MOUSE_X]
         shl     eax, 16
@@ -1968,7 +2001,6 @@ mswin:
         shl     ebx, 16
         mov     bx, word [esi-twdw+WDATA.box.top]
         sub     eax, ebx
-
         mov     edi, [CURRENT_TASK]
         shl     edi, 8
         sub     ax, word[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
@@ -1977,10 +2009,35 @@ mswin:
         rol     eax, 16
         mov     [esp+36-4], eax
         ret
+
 msbutton:
         movzx   eax, byte [BTN_DOWN]
         mov     [esp+36-4], eax
         ret
+
+msbuttonExt:
+        mov     eax, [BTN_DOWN]
+        mov     [esp+36-4], eax
+        ret
+
+app_load_cursor:
+        cmp     ecx, OS_BASE
+        jae     @f
+        stdcall load_cursor, ecx, edx
+        mov     [esp+36-4], eax
+@@:
+        ret
+
+app_set_cursor:
+        stdcall set_cursor, ecx
+        mov     [esp+36-4], eax
+        ret
+
+app_delete_cursor:
+        stdcall delete_cursor, ecx
+        mov     [esp+36-4], eax
+        ret
+
 msz:
         mov     edi, [TASK_COUNT]
         movzx   edi, word [WIN_POS + edi*2]
@@ -1993,27 +2050,8 @@ msz:
         and     [MOUSE_SCROLL_H], word 0
         and     [MOUSE_SCROLL_V], word 0
         ret
-       @@:
+@@:
         and     [esp+36-4], dword 0
-;           ret
-msset:
-        ret
-
-app_load_cursor:
-        cmp     ecx, OS_BASE
-        jae     msset
-        stdcall load_cursor, ecx, edx
-        mov     [esp+36-4], eax
-        ret
-
-app_set_cursor:
-        stdcall set_cursor, ecx
-        mov     [esp+36-4], eax
-        ret
-
-app_delete_cursor:
-        stdcall delete_cursor, ecx
-        mov     [esp+36-4], eax
         ret
 
 is_input:
@@ -2204,6 +2242,8 @@ sys_system_table:
         dd      sysfn_min_rest_window   ; 22 = minimize and restore any window
         dd      sysfn_min_windows       ; 23 = minimize all windows
         dd      sysfn_set_screen_sizes  ; 24 = set screen sizes for Vesa
+
+        dd      sysfn_zmodif            ; 25 = get/set window z modifier  ;Fantomer
 sysfn_num = ($ - sys_system_table)/4
 endg
 ;------------------------------------------------------------------------------
@@ -2363,6 +2403,72 @@ sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
 .nowindowactivate:
         ret
 ;------------------------------------------------------------------------------
+align 4
+sysfn_zmodif:
+;18,25,1 - get z_modif
+;18,25,2 - set z_modif
+;edx = -1(for current task) or TID
+;esi(for 2) = new value z_modif
+;return:
+;1:   eax = z_modif
+;2: eax=0(fail),1(success) for set z_modif
+
+        cmp     edx, -1
+        jne     @f
+        mov     edx, [CURRENT_TASK]
+     @@:
+        cmp     edx, [TASK_COUNT]
+        ja      .fail
+        cmp     edx, 1
+        je      .fail
+
+        mov     eax, edx
+        shl     edx, 5
+
+        cmp     [edx + CURRENT_TASK + TASKDATA.state], 9
+        je      .fail
+
+        cmp     ecx, 1
+        jnz     .set_zmod
+
+        mov     al, [edx + window_data + WDATA.z_modif]
+        jmp     .exit
+
+.set_zmod:
+        cmp     ecx, 2
+        jnz     .fail
+
+        mov     ebx, esi
+        mov     esi, eax
+
+        cmp     bl, ZPOS_ALWAYS_TOP
+        jg      .fail
+
+        mov     [edx + window_data + WDATA.z_modif], bl
+
+        mov     eax, [edx + window_data + WDATA.box.left]
+        mov     ebx, [edx + window_data + WDATA.box.top]
+        mov     ecx, [edx + window_data + WDATA.box.width]
+        mov     edx, [edx + window_data + WDATA.box.height]
+        add     ecx, eax
+        add     edx, ebx
+        call    window._.set_screen
+        call    window._.set_top_wnd
+        call    window._.redraw_top_wnd
+
+        shl     esi, 5
+        mov     [esi + window_data + WDATA.fl_redraw], 1
+
+
+        mov     eax, 1
+        jmp     .exit
+.fail:
+        xor     eax, eax
+.exit:
+        mov     [esp+32], eax
+        ret
+
+;------------------------------------------------------------------------------
 sysfn_getidletime:              ; 18.4 = GET IDLETIME
         mov     eax, [CURRENT_TASK+32+TASKDATA.cpu_usage]
         mov     [esp+32], eax
@@ -2446,11 +2552,6 @@ sysfn_waitretrace:     ; 18.14 = sys wait retrace
 ;------------------------------------------------------------------------------
 align 4
 sysfn_centermouse:      ; 18.15 = mouse centered
-; removed here by <Lrz>
-;     call  mouse_centered
-;* mouse centered - start code- Mario79
-;mouse_centered:
-;        push  eax
         mov     eax, [_display.width]
         shr     eax, 1
         mov     [MOUSE_X], ax
@@ -2458,62 +2559,62 @@ sysfn_centermouse:      ; 18.15 = mouse centered
         shr     eax, 1
         mov     [MOUSE_Y], ax
         call    wakeup_osloop
-;        ret
-;* mouse centered - end code- Mario79
         xor     eax, eax
         and     [esp+32], eax
-;        pop   eax
         ret
 ;------------------------------------------------------------------------------
-align 4
-sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
-        test    ecx, ecx; get mouse speed factor
-        jnz     .set_mouse_acceleration
+sysfn_mouse_acceleration:       ; 18.19 = set/get mouse features
+        cmp     ecx, 8
+        jnc     @f
+        jmp     dword [.table+ecx*4]
+.get_mouse_acceleration:
         xor     eax, eax
         mov     ax, [mouse_speed_factor]
         mov     [esp+32], eax
         ret
- .set_mouse_acceleration:
-;     cmp  ecx,1  ; set mouse speed factor
-        dec     ecx
-        jnz     .get_mouse_delay
+.set_mouse_acceleration:
         mov     [mouse_speed_factor], dx
         ret
- .get_mouse_delay:
-;     cmp  ecx,2  ; get mouse delay
-        dec     ecx
-        jnz     .set_mouse_delay
-        mov     eax, [mouse_delay]
+.get_mouse_delay:
+        xor     eax, eax
+        mov     al, [mouse_delay]
         mov     [esp+32], eax
         ret
- .set_mouse_delay:
-;     cmp  ecx,3  ; set mouse delay
-        dec     ecx
-        jnz     .set_pointer_position
-        mov     [mouse_delay], edx
+.set_mouse_delay:
+        mov     [mouse_delay], dl
+@@:
         ret
- .set_pointer_position:
-;     cmp  ecx,4  ; set mouse pointer position
-        dec     ecx
-        jnz     .set_mouse_button
+.set_pointer_position:
         cmp     dx, word[_display.height]
-        jae     .end
+        jae     @b
         rol     edx, 16
         cmp     dx, word[_display.width]
-        jae     .end
+        jae     @b
         mov     [MOUSE_X], edx
         mov     [mouse_active], 1
-        call    wakeup_osloop
-        ret
- .set_mouse_button:
-;     cmp   ecx,5  ; set mouse button features
-        dec     ecx
-        jnz     .end
-        mov     [BTN_DOWN], dl
+        jmp     wakeup_osloop
+.set_mouse_button:
+        mov     [BTN_DOWN], edx
         mov     [mouse_active], 1
-        call    wakeup_osloop
- .end:
+        jmp     wakeup_osloop
+.get_doubleclick_delay:
+        xor     eax, eax
+        mov     al, [mouse_doubleclick_delay]
+        mov     [esp+32], eax
         ret
+.set_doubleclick_delay:
+        mov     [mouse_doubleclick_delay], dl
+        ret
+align 4
+.table:
+dd      .get_mouse_acceleration
+dd      .set_mouse_acceleration
+dd      .get_mouse_delay
+dd      .set_mouse_delay
+dd      .set_pointer_position
+dd      .set_mouse_button
+dd      .get_doubleclick_delay
+dd      .set_doubleclick_delay
 ;------------------------------------------------------------------------------
 sysfn_getfreemem:
         mov     eax, [pg_data.pages_free]
@@ -3739,6 +3840,14 @@ newdw2:
 
         cmp     ecx, 1             ; limit for background
         jz      bgli
+
+        mov     eax, [esp+4]        ;if upper in z-position - no redraw
+        test    eax, eax
+        jz      @f
+        mov     al, [eax + WDATA.z_modif]
+        cmp     [edi + WDATA.z_modif], al
+        jg      ricino
+      @@:
 
         mov     eax, [edi + WDATA.box.left]
         mov     ebx, [edi + WDATA.box.top]

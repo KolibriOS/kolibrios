@@ -201,13 +201,11 @@ align 4
 endg
 
 
-;-----------------------------------------------------------------
-;
-; TCP_init
-;
-;  This function resets all TCP variables
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; TCP_init: Resets all TCP variables.                             ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 macro   TCP_init {
 
         xor     eax, eax
@@ -246,19 +244,17 @@ include 'tcp_input.inc'
 include 'tcp_output.inc'
 
 
-;---------------------------------------------------------------------------
-;
-; TCP_API
-;
-; This function is called by system function 76
-;
-; IN:  subfunction number in bl
-;      device number in bh
-;      ecx, edx, .. depends on subfunction
-;
-; OUT:
-;
-;---------------------------------------------------------------------------
+;------------------------------------------------------------------;
+;                                                                  ;
+; TCP_api: This function is called by system function 76           ;
+;                                                                  ;
+;  IN:  bl = subfunction number                                    ;
+;       bh = device number                                         ;
+;       ecx, edx, .. depends on subfunction                        ;
+;                                                                  ;
+; OUT:  depends on subfunction                                     ;
+;                                                                  ;
+;------------------------------------------------------------------;
 align 4
 TCP_api:
 

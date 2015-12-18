@@ -544,13 +544,17 @@ WSTATE_WNDDRAWN  = 00000010b
 WSTYLE_HASCAPTION     = 00010000b
 WSTYLE_CLIENTRELATIVE = 00100000b
 
+ZPOS_DESKTOP            = -2
+ZPOS_ALWAYS_BACK        = -1
+ZPOS_NORMAL             = 0
+ZPOS_ALWAYS_TOP         = 1     ;ZPOS_ALWAYS_TOP is always last and has max number!
 ; structures definition
 struct  WDATA
         box             BOX
         cl_workarea     dd ?
         cl_titlebar     dd ?
         cl_frames       dd ?
-        reserved        db ?
+        z_modif         db ?
         fl_wstate       db ?
         fl_wdrawn       db ?
         fl_redraw       db ?

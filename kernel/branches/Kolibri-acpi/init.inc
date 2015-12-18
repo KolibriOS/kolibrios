@@ -439,7 +439,7 @@ acpi_hpet_base    rd 1
 hpet_base         rd 1
 hpet_period       rd 1
 hpet_timers       rd 1
-
+hpet_tsc_start    rd 2
 cpu_count         rd 1
 smpt              rd 16
 endg
@@ -599,39 +599,62 @@ check_acpi:
         mov     [acpi_ioapic_base-OS_BASE], eax
         jmp     .next
 
-HPET_PERIOD             equ 0x004
-HPET_CFG_ENABLE         equ     1
-HPET_CFG                equ 0x010
+HPET_PERIOD             equ 0x0004
+HPET_CFG_ENABLE         equ 0x0001
+HPET_CFG                equ 0x0010
+HPET_COUNTER            equ 0x00f0
+HPET_T0_CFG             equ 0x0100
+
+HPET_TN_LEVEL           equ 0x0002
+HPET_TN_ENABLE          equ 0x0004
+HPET_TN_FSB             equ 0x4000
 
 align 4
 init_hpet:
         mov     ebx, [hpet_base-OS_BASE]
         test    ebx, ebx
-        jz      @F
+        jz      .done
 
         mov     eax, [ebx]
         and     ah, 0x1F
         inc     ah
         movzx   eax, ah
         mov     [hpet_timers-OS_BASE], eax
+        mov     ecx, eax
 
         mov     eax, [ebx+HPET_PERIOD]
-        mov     edx, 0x431BDE83
-        mul     edx
-        shr     edx, 18
-        mov     [hpet_period-OS_BASE], edx
+        xor     edx, edx
+        shld    edx, eax, 10
+        shl     eax, 10
+        mov     esi, 1000000
+        div     esi
+        mov     [hpet_period-OS_BASE], eax
 
-        mov     eax, [ebx+HPET_CFG]
-        and     eax, not HPET_CFG_ENABLE
-        mov     [ebx+HPET_CFG], eax     ;stop main counter
+        mov     esi, [ebx+HPET_CFG]
+        and     esi, not HPET_CFG_ENABLE
+        mov     [ebx+HPET_CFG], esi             ;stop main counter
 
-        xor     ecx, ecx
-        mov     [ebx+0xF0], ecx         ;reset counter
-        mov     [ebx+0xF4], ecx
-
-        or      eax, HPET_CFG_ENABLE
-        mov     [ebx+HPET_CFG], eax     ;and start again
+        lea     edx, [ebx+HPET_T0_CFG]
 @@:
+        jcxz    @F
+        mov     eax, [edx]
+        and     eax, not (HPET_TN_ENABLE+HPET_TN_LEVEL+HPET_TN_FSB)
+        mov     [edx], eax
+        add     edx, 0x20
+        dec     ecx
+        jmp     @B
+@@:
+        mov     [ebx+HPET_COUNTER], ecx         ;reset main counter
+        mov     [ebx+HPET_COUNTER+4], ecx
+
+        or      esi, HPET_CFG_ENABLE
+        mov     [ebx+HPET_CFG], esi             ;and start again
+
+.done:
+        rdtsc
+        mov     [hpet_tsc_start-OS_BASE], eax
+        mov     [hpet_tsc_start+4-OS_BASE], edx
+
         ret
 
 

@@ -16,7 +16,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 5584 $
+$Revision: 5842 $
 
 IPv4_MAX_FRAGMENTS              = 64
 IPv4_MAX_ROUTES                 = 64
@@ -215,7 +215,6 @@ macro IPv4_checksum ptr {
 ;  It will also re-construct fragmented packets
 ;
 ;  IN:  Pointer to buffer in [esp]
-;       size of buffer in [esp+4]
 ;       pointer to device struct in ebx
 ;       pointer to IPv4 header in edx
 ;       size of IPv4 packet in ecx
@@ -223,7 +222,7 @@ macro IPv4_checksum ptr {
 ;
 ;-----------------------------------------------------------------
 align 4
-IPv4_input:                                                     ; TODO: add IPv4 raw sockets support
+IPv4_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: packet from %u.%u.%u.%u ",\
         [edx + IPv4_header.SourceAddress + 0]:1,[edx + IPv4_header.SourceAddress + 1]:1,\
@@ -231,6 +230,10 @@ IPv4_input:                                                     ; TODO: add IPv4
         DEBUGF  DEBUG_NETWORK_VERBOSE, "to %u.%u.%u.%u\n",\
         [edx + IPv4_header.DestinationAddress + 0]:1,[edx + IPv4_header.DestinationAddress + 1]:1,\
         [edx + IPv4_header.DestinationAddress + 2]:1,[edx + IPv4_header.DestinationAddress + 3]:1
+
+        call    NET_ptr_to_num4
+        cmp     edi, -1
+        je      .invalid_device
 
 ;-------------------------------
 ; re-calculate the checksum
@@ -240,40 +243,32 @@ IPv4_input:                                                     ; TODO: add IPv4
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Checksum ok\n"
 
-;-----------------------------------
-; Check if destination IP is correct
+;--------------------------------
+; Check if destination IP matches
 
-        call    NET_ptr_to_num4
-
-        ; check if it matches local ip (Using RFC1122 strong end system model)
-
+; local ip (Using RFC1122 strong end system model)
         mov     eax, [edx + IPv4_header.DestinationAddress]
         cmp     eax, [IP_LIST + edi]
         je      .ip_ok
 
-        ; check for broadcast (IP or (not SUBNET))
-
+; network layer broadcast
         cmp     eax, [BROADCAST_LIST + edi]
         je      .ip_ok
 
-        ; or a special broadcast (255.255.255.255)
-
+; physical layer broadcast (255.255.255.255)
         cmp     eax, 0xffffffff
         je      .ip_ok
 
-        ; maybe it's a multicast (224.0.0.0/4)
-
+; multicast (224.0.0.0/4 = 224.0.0.0 to 239.255.255.255)
         and     eax, 0x0fffffff
         cmp     eax, 224
         je      .ip_ok
 
-        ; maybe we just dont have an IP yet and should accept everything on the IP level
-
+; maybe we just dont have an IP yet and should accept everything on the IP level
         cmp     [IP_LIST + edi], 0
         je      .ip_ok
 
-        ; or it's just not meant for us.. :(
-
+; or it's just not meant for us.. :(
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Destination address does not match!\n"
         jmp     .dump
 
@@ -305,7 +300,6 @@ IPv4_input:                                                     ; TODO: add IPv4
         xchg    cl, ch                                          ;
         sub     ecx, esi                                        ;
 
-        lea     edi, [edx + IPv4_header.SourceAddress]          ; make edi ptr to source and dest IPv4 address
         mov     al, [edx + IPv4_header.Protocol]
         add     esi, edx                                        ; make esi ptr to data
 
@@ -318,11 +312,60 @@ IPv4_input:                                                     ; TODO: add IPv4
         cmp     al, IP_PROTO_ICMP
         je      ICMP_input
 
+;-------------------------------
+; Look for a matching RAW socket
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_lock
+        popa
+
+        add     ecx, esi
+        sub     ecx, edx
+        mov     esi, edx
+        movzx   edx, al
+        mov     eax, net_sockets
+  .next_socket:
+        mov     eax, [eax + SOCKET.NextPtr]
+        or      eax, eax
+        jz      .dump_unlock
+
+        cmp     [eax + SOCKET.Domain], AF_INET4
+        jne     .next_socket
+
+        cmp     [eax + SOCKET.Protocol], edx
+        jne     .next_socket
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: found matching RAW socket: 0x%x\n", eax
+
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_lock
+        popa
+
+        jmp     SOCKET_input
+
+  .dump_unlock:
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
+
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: unknown protocol %u\n", al
 
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: dumping\n"
-        inc     [IPv4_packets_dumped]                           ; FIXME: use correct interface
+        inc     [IPv4_packets_dumped + edi]
+        call    NET_BUFF_free
+        ret
+
+  .invalid_device:
+        DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_input: packet originated from invalid device\n"
         call    NET_BUFF_free
         ret
 
@@ -568,11 +611,12 @@ IPv4_find_fragment_slot:
 ;
 ; IPv4_output
 ;
-; IN:   eax = Destination IP
+; IN:    al = protocol
+;        ah = TTL
 ;       ebx = device ptr (or 0 to let IP layer decide)
 ;       ecx = data length
 ;       edx = Source IP
-;        di = TTL shl 8 + protocol
+;       edi = Destination IP
 ;
 ; OUT:  eax = pointer to buffer start / 0 on error
 ;       ebx = device ptr (send packet through this device)
@@ -589,7 +633,8 @@ IPv4_output:
         cmp     ecx, 65500              ; Max IPv4 packet size
         ja      .too_large
 
-        push    ecx di eax
+        push    ecx ax edi
+        mov     eax, edi
         call    IPv4_route              ; outputs device number in edi, dest ip in eax, source IP in edx
         push    edx
         test    edi, edi
@@ -601,7 +646,7 @@ IPv4_output:
         push    ebx                     ; push the mac onto the stack
         push    ax
 
-        inc     [IPv4_packets_tx + edi]   ; update stats
+        inc     [IPv4_packets_tx + edi] ; update stats
 
         mov     ax, ETHER_PROTO_IPv4
         mov     ebx, [NET_DRV_LIST + edi]
@@ -642,7 +687,10 @@ IPv4_output:
 
   .arp_error:
         DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_output: ARP error=%x\n", eax
-        add     esp, 3*4+2
+        add     esp, 4
+        pop     eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_output: ip=0x%x\n", eax
+        add     esp, 4+2
         xor     eax, eax
         ret
 
@@ -678,9 +726,6 @@ IPv4_output_raw:
 
         DEBUGF 1,"IPv4_output_raw: size=%u ptr=%x socket=%x\n", ecx, esi, eax
 
-        cmp     ecx, 1480               ;;;;; FIXME
-        ja      .too_large
-
         sub     esp, 8
         push    esi eax
 
@@ -707,7 +752,7 @@ IPv4_output_raw:
         mov     dword[esp+4+4+4], eax
 
         pop     eax esi
-;; todo: check socket options if we should add header, or just compute checksum
+;; TODO: check socket options if we should add header, or just compute checksum
 
         push    edi ecx
         rep movsb
@@ -734,11 +779,14 @@ IPv4_output_raw:
         ret
 
   .error:
-        add     esp, 6
+        add     esp, 6+8+4+4
+        mov     ebx, ENOBUFS            ; FIXME: NOBUFS or MSGSIZE error
+        or      eax, -1
+        ret
+
   .arp_error:
         add     esp, 8+4+4
-  .too_large:
-        DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_output_raw: Failed\n"
+        mov     ebx, ENOTCONN
         or      eax, -1
         ret
 
@@ -746,116 +794,119 @@ IPv4_output_raw:
 ;--------------------------------------------------------
 ;
 ;
-; IN: dword [esp] = pointer to buffer containing ipv4 packet to be fragmented
-;     esi = pointer to ip header in that buffer
-;     ecx = max size of fragments
+; IN: [esp] = pointer to buffer containing ipv4 packet to be fragmented
+;     edi = pointer to ip header in that buffer
+;     ebx = device ptr
 ;
 ; OUT: /
 ;
 ;--------------------------------------------------------
+proc IPv4_fragment stdcall buffer
 
-align 4
-IPv4_fragment:
+locals
+        offset          dd ?
+        headerlength    dd ?
+        headerptr       dd ?
+        dataptr         dd ?
+        remaining       dd ?
+        segmentsize     dd ?
+endl
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_fragment\n"
 
-        and     ecx, not 111b   ; align 4
-
-        cmp     ecx, sizeof.IPv4_header + 8     ; must be able to put at least 8 bytes
-        jb      .err2
-
-        push    esi ecx
-        mov     eax, [esi + IPv4_header.DestinationAddress]
-        call    ARP_IP_to_MAC
-        pop     ecx esi
-        cmp     eax, -1
-        jz      .err2
-
-        push    ebx
-        push    ax
-
-        mov     ebx, [NET_DRV_LIST]
-        lea     eax, [ebx + ETH_DEVICE.mac]
-        push    eax
-
-
-        push    esi                             ; ptr to ip header
-        sub     ecx, sizeof.IPv4_header         ; substract header size
-        push    ecx                             ; max data size
-        push    dword 0                         ; offset
-
-  .new_fragment:
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "Ipv4_fragment: new fragment"
-
-        mov     ax, ETHER_PROTO_IPv4
-        lea     ebx, [esp + 4*4]
-        call    ETH_output
-        jz      .err
-
-; copy header
-        mov     esi, [esp + 2*4]
-        mov     ecx, 5  ; 5 dwords: TODO: use IHL field of the header!
-        rep movsd
-
-; copy data
-        mov     esi, [esp + 2*4]
-        add     esi, sizeof.IPv4_header
-        add     esi, [esp]      ; offset
-
-        mov     ecx, [esp + 1*4]
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_fragment: copying %u bytes\n", ecx
-        rep movsb
-
-; now, correct header
-        mov     ecx, [esp + 1*4]
-        add     ecx, sizeof.IPv4_header
-        xchg    cl, ch
-        mov     [edi + IPv4_header.TotalLength], cx
-
-        mov     ecx, [esp]              ; offset
-        xchg    cl, ch
-
-;        cmp     dword[esp + 4*4], 0     ; last fragment?;<<<<<<
-;        je      .last_fragment
-        or      cx, 1 shl 2             ; more fragments
-;  .last_fragment:
-        mov     [edi + IPv4_header.FlagsAndFragmentOffset], cx
+; We must be able to put at least 8 bytes per segment
+        movzx   eax, byte[edi]          ; IHL
+        and     eax, 0xf
+        shl     eax, 2
+        mov     [headerlength], eax
+        add     eax, 8
+        mov     ecx, [ebx + NET_DEVICE.mtu]
+        and     ecx, not 11b
+        cmp     ecx, eax
+        jb      .fail
 
         mov     [edi + IPv4_header.HeaderChecksum], 0
 
-        ;<<<<<<<<<<<<<<<<<<<<<<<<<<<<< send the packet
-        mov     ecx, [esp + 1*4]
+        mov     [segmentsize], ecx
+        mov     [headerptr], edi
+        movzx   ecx, [edi + IPv4_header.TotalLength]
+        xchg    cl, ch
+        sub     ecx, [headerlength]
+        mov     [remaining], ecx
+        mov     [offset], 0
 
-        push    edx eax
+        add     edi, [headerlength]
+        mov     [dataptr], edi
+
+  .loop:
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "Ipv4_fragment: new fragment"
+
+        mov     ecx, [segmentsize]
+        cmp     ecx, [remaining]
+        jbe     @f
+        mov     ecx, [remaining]
+  @@:
+
+        mov     ax, ETHER_PROTO_IPv4
+        mov     edx, [esp]
+        add     edx, [edx + NET_BUFF.offset]
+;        add     edx, ETH_header.DstMAC         ; = 0
+        call    ETH_output
+        jz      .fail
+
+        push    edi
+        mov     edx, ecx
+
+; copy header
+        mov     esi, [headerptr]
+        mov     ecx, [headerlength]
+        shr     ecx, 2
+        rep movsd
+
+; copy data
+        mov     esi, [dataptr]
+        add     esi, [offset]
+        mov     ecx, edx
+        sub     ecx, [headerlength]
+        shr     ecx, 2
+        rep movsd
+        pop     edi
+
+; now, correct header
+; packet length
+        mov     ax, dx
+        xchg    al, ah
+        mov     [edi + IPv4_header.TotalLength], ax
+
+; offset
+        mov     eax, [offset]
+        xchg    al, ah
+
+        sub     edx, [headerlength]
+        sub     [remaining], edx
+        je      @f
+        jb      .fail
+        or      ah, 1 shl 2             ; more fragments
+        add     [offset], edx
+  @@:
+        mov     [edi + IPv4_header.FlagsAndFragmentOffset], ax
+
+; Send the fragment
         IPv4_checksum edi
-
         call    [ebx + NET_DEVICE.transmit]
-        ;<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-        mov     ecx, [esp+4]
-        add     [esp], ecx
+        cmp     [remaining], 0
+        jne     .loop
 
-        mov     ecx, [esp+3*4+6+4]      ; ptr to begin of buff
-        add     ecx, [esp+3*4+6+4+4]    ; buff size
-        sub     ecx, [esp+2*4]          ; ptr to ip header
-        add     ecx, [esp]              ; offset
-
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "Ipv4_fragment: %u bytes remaining\n", ecx
-
-        cmp     ecx, [esp+1*4]
-        jae     .new_fragment
-
-        mov     [esp+4], ecx            ; set fragment size to remaining packet size
-        jmp     .new_fragment
-
-      .err:
-        DEBUGF  DEBUG_NETWORK_ERROR, "Ipv4_fragment: failed\n"
-      .done:
-        add     esp, 12 + 4 + 6
-      .err2:
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "Ipv4_fragment: dumping\n"
         call    NET_BUFF_free
         ret
+
+      .fail:
+        DEBUGF  DEBUG_NETWORK_ERROR, "Ipv4_fragment: failed\n"
+        call    NET_BUFF_free
+        ret
+
+endp
 
 
 
@@ -972,11 +1023,6 @@ IPv4_connect:
 ; Fill in remote IP
         pushd   [edx + 4]
         pop     [eax + IP_SOCKET.RemoteIP]
-
-; Set up data receiving queue
-        push    eax
-        init_queue (eax + SOCKET_QUEUE_LOCATION)
-        pop     eax
 
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock

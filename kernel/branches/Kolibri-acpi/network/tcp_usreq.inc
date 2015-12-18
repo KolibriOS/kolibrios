@@ -17,15 +17,15 @@
 $Revision: 5442 $
 
 
-;-------------------------
-;
-; TCP_usrclose
-;
-; Move connection to next state, based on process close.
-;
-;  IN:  eax = socket ptr
-;
-;-------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; TCP_usrclosed                                                   ;
+;                                                                 ;
+;  IN:  eax = socket ptr                                          ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 TCP_usrclosed:
 
@@ -37,7 +37,6 @@ TCP_usrclosed:
         jmp     ebx
 
   .switch:
-
         dd      .close                  ; TCPS_CLOSED
         dd      .close                  ; TCPS_LISTEN
         dd      .close                  ; TCPS_SYN_SENT
@@ -49,7 +48,6 @@ TCP_usrclosed:
         dd      .ret                    ; TCPS_LAST_ACK
         dd      .disc                   ; TCPS_FIN_WAIT_2
         dd      .disc                   ; TCPS_TIMED_WAIT
-
 
   .close:
         mov     [eax + TCP_SOCKET.t_state], TCPS_CLOSED
@@ -74,15 +72,17 @@ TCP_usrclosed:
         ret
 
 
-;-------------------------
-;
-; TCP_connect
-;
-;  IN:  eax = socket ptr
-;  OUT: eax = 0 ok / -1 error
-;       ebx = error code
-;
-;-------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; TCP_connect                                                     ;
+;                                                                 ;
+;  IN:  eax = socket ptr                                          ;
+;                                                                 ;
+;  OUT: eax = 0 on success                                        ;
+;       eax = -1 on error                                         ;
+;       ebx = error code on error                                 ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 TCP_connect:
 

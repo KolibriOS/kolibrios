@@ -13,27 +13,27 @@ search_partitions:
         xor     eax, eax
         mov     edx, IDE_controller_1
         mov     ax, [edx + IDE_DATA.BAR0_val]
-        mov     [hd0_data.hdbase], eax
-        mov     [hd1_data.hdbase], eax
+        mov     [hd0_data.hdbase], ax
+        mov     [hd1_data.hdbase], ax
         mov     ax, [edx + IDE_DATA.BAR2_val]
-        mov     [hd2_data.hdbase], eax
-        mov     [hd3_data.hdbase], eax
+        mov     [hd2_data.hdbase], ax
+        mov     [hd3_data.hdbase], ax
 
         mov     edx, IDE_controller_2
         mov     ax, [edx + IDE_DATA.BAR0_val]
-        mov     [hd4_data.hdbase], eax
-        mov     [hd5_data.hdbase], eax
+        mov     [hd4_data.hdbase], ax
+        mov     [hd5_data.hdbase], ax
         mov     ax, [edx + IDE_DATA.BAR2_val]
-        mov     [hd6_data.hdbase], eax
-        mov     [hd7_data.hdbase], eax
+        mov     [hd6_data.hdbase], ax
+        mov     [hd7_data.hdbase], ax
 
         mov     edx, IDE_controller_3
         mov     ax, [edx + IDE_DATA.BAR0_val]
-        mov     [hd8_data.hdbase], eax
-        mov     [hd9_data.hdbase], eax
+        mov     [hd8_data.hdbase], ax
+        mov     [hd9_data.hdbase], ax
         mov     ax, [edx + IDE_DATA.BAR2_val]
-        mov     [hd10_data.hdbase], eax
-        mov     [hd11_data.hdbase], eax
+        mov     [hd10_data.hdbase], ax
+        mov     [hd11_data.hdbase], ax
 ; 2. Notify the system about /hd* disks.
 ; For every existing disk, call ide_disk_add with correct parameters.
 ; Generate name "hdN" on the stack; this is 4 bytes including terminating zero.

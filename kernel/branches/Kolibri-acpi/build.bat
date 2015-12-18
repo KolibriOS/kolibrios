@@ -51,7 +51,6 @@ goto :eof
    echo lang fix %lang% > lang.inc
    fasm -m 65536 kernel.asm bin\kernel.mnt
    if not %errorlevel%==0 goto :Error_FasmFailed
-   erase lang.inc
 goto :eof
 
 
@@ -63,7 +62,6 @@ goto :Exit_OK
 
 :Error_FasmFailed
 echo error: fasm execution failed
-erase lang.inc >nul 2>&1
 echo.
 pause
 exit 1

@@ -285,7 +285,7 @@ proc find_next_task
         call    [ebx+APPDATA.wait_test]
         mov     [esp+28], eax
         popad
-        test    eax, eax
+        or      eax, eax
         jnz     @f
       ; testing for timeout
         mov     eax, [timer_ticks]

@@ -898,7 +898,7 @@ endp
 align 4
 proc new_sys_threads
        locals
-         slot      dd ?
+         slot          dd ?
          flags         dd ?
          app_cmdline   dd ? ;0x00
          app_path      dd ? ;0x04
@@ -1164,7 +1164,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         mov     [ebx+REG_ECX], eax
         mov     [ebx+REG_EAX], eax
 
-        mov     eax, [esi+0x08]  ;app_eip
+        mov     eax, [esi+0x08]             ;app_eip
         mov     [ebx+REG_EIP], eax          ;app_entry
         mov     [ebx+REG_CS], dword app_code
         mov     ecx, USER_PRIORITY

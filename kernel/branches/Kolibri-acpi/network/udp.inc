@@ -36,13 +36,11 @@ align 4
 endg
 
 
-;-----------------------------------------------------------------
-;
-; UDP_init
-;
-;  This function resets all UDP variables
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; UDP_init: This function resets all UDP variables                ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 macro   UDP_init {
 
         xor     eax, eax
@@ -57,15 +55,15 @@ macro   UDP_checksum    IP1, IP2  { ; esi = ptr to udp packet, ecx = packet size
 ; Pseudoheader
         mov     edx, IP_PROTO_UDP
 
-        add     dl, [IP1+1]
-        adc     dh, [IP1+0]
-        adc     dl, [IP1+3]
-        adc     dh, [IP1+2]
+        add     dl, byte[IP1+1]
+        adc     dh, byte[IP1+0]
+        adc     dl, byte[IP1+3]
+        adc     dh, byte[IP1+2]
 
-        adc     dl, [IP2+1]
-        adc     dh, [IP2+0]
-        adc     dl, [IP2+3]
-        adc     dh, [IP2+2]
+        adc     dl, byte[IP2+1]
+        adc     dh, byte[IP2+0]
+        adc     dl, byte[IP2+3]
+        adc     dh, byte[IP2+2]
 
         adc     dl, cl ; byte[esi+UDP_header.Length+1]
         adc     dh, ch ; byte[esi+UDP_header.Length+0]
@@ -98,23 +96,20 @@ macro   UDP_checksum    IP1, IP2  { ; esi = ptr to udp packet, ecx = packet size
 }
 
 
-;-----------------------------------------------------------------
-;
-; UDP_input:
-;
-;  Called by IPv4_input,
-;  this procedure will inject the udp data diagrams in the application sockets.
-;
-;  IN:   [esp]  = Pointer to buffer
-;       [esp+4] = size of buffer
-;       ebx = ptr to device struct
-;       ecx = UDP Packet size
-;       esi = ptr to UDP header
-;       edi = ptr to ipv4 source and dest address
-;
-;  OUT: /
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; UDP_input: Inject the UDP data in the application sockets.      ;
+;                                                                 ;
+;   IN: [esp] = ptr to buffer                                     ;
+;       ebx = ptr to device struct                                ;
+;       ecx = UDP packet size                                     ;
+;       edx = ptr to IPv4 header                                  ;
+;       esi = ptr to UDP packet data                              ;
+;       edi = interface number*4                                  ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 UDP_input:
 
@@ -127,7 +122,8 @@ UDP_input:
 
         ; otherwise, we will re-calculate the checksum and add it to this value, thus creating 0 when it is correct
 
-        UDP_checksum (edi), (edi+4)
+        mov     eax, edx
+        UDP_checksum (eax+IPv4_header.SourceAddress), (eax+IPv4_header.DestinationAddress)
         jnz     .checksum_mismatch
 
   .no_checksum:
@@ -148,9 +144,7 @@ UDP_input:
 
         mov     cx, [esi + UDP_header.SourcePort]
         mov     dx, [esi + UDP_header.DestinationPort]
-        mov     edi, [edi + 4]                          ; ipv4 source address
         mov     eax, net_sockets
-
   .next_socket:
         mov     eax, [eax + SOCKET.NextPtr]
         or      eax, eax
@@ -172,15 +166,15 @@ UDP_input:
         call    mutex_unlock
         popa
 
-        ;;; TODO: when packet is processed, check more sockets!
+        ;;; TODO: when packet is processed, check more sockets?!
 
+; FIXME: check remote IP if possible
+;
 ;        cmp     [eax + IP_SOCKET.RemoteIP], 0xffffffff
 ;        je      @f
-;        cmp     [eax + IP_SOCKET.RemoteIP], edi
+;        cmp     [eax + IP_SOCKET.RemoteIP],
 ;        jne     .next_socket
 ;       @@:
-;
-; FIXME: UDP should check remote IP, but not under all circumstances!
 
         cmp     [eax + UDP_SOCKET.RemotePort], 0
         je      .updateport
@@ -194,7 +188,6 @@ UDP_input:
         popa
 
   .updatesock:
-        call    NET_ptr_to_num4
         inc     [UDP_PACKETS_RX + edi]
 
         movzx   ecx, [esi + UDP_header.Length]
@@ -232,17 +225,17 @@ UDP_input:
 
 
 
-;-----------------------------------------------------------------
-;
-; UDP_output
-;
-; IN: eax = socket pointer
-;     ecx = number of bytes to send
-;     esi = pointer to data
-;
-; OUT: eax = -1 on error
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; UDP_output: Create an UDP packet.                               ;
+;                                                                 ;
+;  IN:  eax = socket pointer                                      ;
+;       ecx = number of bytes to send                             ;
+;       esi = pointer to data                                     ;
+;                                                                 ;
+; OUT:  eax = -1 on error                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 
 align 4
 UDP_output:
@@ -257,10 +250,11 @@ UDP_output:
 
         sub     esp, 4                                          ; Data ptr will be placed here
         push    edx esi
-        mov     edx, [eax + IP_SOCKET.LocalIP]
         mov     ebx, [eax + IP_SOCKET.device]
-        mov     eax, [eax + IP_SOCKET.RemoteIP]
-        mov     di, IP_PROTO_UDP shl 8 + 128
+        mov     edx, [eax + IP_SOCKET.LocalIP]
+        mov     edi, [eax + IP_SOCKET.RemoteIP]
+        mov     al, [eax + IP_SOCKET.ttl]
+        mov     ah, IP_PROTO_UDP
         add     ecx, sizeof.UDP_header
         call    IPv4_output
         jz      .fail
@@ -306,15 +300,17 @@ UDP_output:
 
 
 
-;-----------------------------------------------------------------
-;
-; UDP_connect
-;
-;   IN: eax = socket pointer
-;  OUT: eax = 0 ok / -1 error
-;       ebx = error code
-;
-;-------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; UDP_connect                                                     ;
+;                                                                 ;
+;   IN: eax = socket pointer                                      ;
+;                                                                 ;
+;  OUT: eax = 0 on success                                        ;
+;       eax = -1 on error                                         ;
+;       ebx = error code on error                                 ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 UDP_connect:
 
@@ -348,10 +344,6 @@ UDP_connect:
        @@:
 
         push    eax
-        init_queue (eax + SOCKET_QUEUE_LOCATION)                ; Set up data receiving queue
-        pop     eax
-
-        push    eax
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
         pop     eax
@@ -362,14 +354,15 @@ UDP_connect:
         ret
 
 
-;-----------------------------------------------------------------
-;
-; UDP_disconnect
-;
-;   IN: eax = socket pointer
-;  OUT: eax = socket pointer
-;
-;-------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; UDP_disconnect                                                  ;
+;                                                                 ;
+;   IN: eax = socket pointer                                      ;
+;                                                                 ;
+;  OUT: eax = socket pointer                                      ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 UDP_disconnect:
 
@@ -383,20 +376,17 @@ UDP_disconnect:
 
 
 
-;---------------------------------------------------------------------------
-;
-; UDP_API
-;
-; This function is called by system function 75
-;
-; IN:  subfunction number in bl
-;      device number in bh
-;      ecx, edx, .. depends on subfunction
-;
-; OUT:
-;
-;---------------------------------------------------------------------------
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; UDP_api: This function is called by system function 76          ;
+;                                                                 ;
+;  IN: bl = subfunction number in bl                              ;
+;      bh = device number in bh                                   ;
+;      ecx, edx, .. depends on subfunction                        ;
+;                                                                 ;
+; OUT: depends on subfunction                                     ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 UDP_api:
 

@@ -192,40 +192,38 @@ Remarks:
   * System time can be set by function 22.
 
 ======================================================================
-============ Function 4 - draw text string in the window. ============
+=================== Function 4 - draw text string. ===================
 ======================================================================
 Parameters:
   * eax = 4 - function number
-  * ebx = [coordinate on axis x]*65536 + [coordinate on axis y]
-  * ecx = 0xXYRRGGBB, where
+  * ebx = X*65536+Y, coordinates in the window or buffer
+  * ecx = 0xXXRRGGBB, where
     * RR, GG, BB specify text color
-    * X=ABnn (bits):
-      * nn specifies the used font: 0=system monospaced,
-        1=system font of variable width
-      * A=0 - output esi characters, A=1 - output ASCIIZ-string
-      * B=1 - fill background with the color edi
-    * Y = Cnnn
-      * C=1 redirect the output to the user area, specified in edi
-      * nnn - not used in the current, must be 0 (zero)
+    * XX = ABFFCSSS (bits):
+      * A=1 - output zero terminated string
+      * B=1 - fill background (color = edi)
+      * FF specifies the font and encoding:
+        0 = 6x9  cp866
+        1 = 8x16 cp866
+        2 = 8x16 UTF-16LE
+        3 = 8x16 UTF-8
+      * C=0 - draw to the window,
+        C=1 - draw to the user buffer (edi)
+      * SSS = (size multiplier)-1, so 0 = x1, 7 = x8
   * edx = pointer to the beginning of the string
-  * esi = for A=0 length of the string, must not exceed 255;
-          for A=1 is ignored
-  * edi = color to fill background, if B=1
-  * edi = pointer to user area, for redirect, if C=1
+  * esi = for A=0 length of the string, for A=1 is ignored
+  * edi = for B=1 color to fill background,
+          for C=1 pointer to user buffer
 
 Returned value:
   * function does not return value
 Remarks:
-  * First system font is read out at loading from the file char.mt,
-    second - from char2.mt.
-  * Both fonts have height 9 pixels, width of the monospaced font
-    is equal to 6 pixels.
-  * C=1, pixel depth = 32 bits, user area is as follows:
-    dword Xsize
-    dword Ysize
-    rest of the area = Xsize * Y size * 4
-  * You can not use B = 1 and C = 1, at the same time. Since in both
-    cases, the register edi is used for different purposes.
+  * You can not use B=1 and C=1 at the same time, since both use edi.
+  * When SSS=0, font may be smoothed, depending on system setting.
+  * User buffer structure:
+Xsize       dd
+Ysize       dd
+picture     rb  Xsize*Ysize*4  ; 32 bpp
 
 ======================================================================
 ========================= Function 5 - delay. ========================
@@ -241,38 +239,6 @@ Remarks:
     and does not make any operations at all. If it is really required
     to transfer control to the next process (to complete a current
     time slice), use subfunction 1 of function 68.
-
-======================================================================
-============== Function 6 - read the file from ramdisk. ==============
-======================================================================
-Parameters:
-  * eax = 6 - function number
-  * ebx = pointer to the filename
-  * ecx = number of start block, beginning from 1;
-    ecx=0 - read from the beginning of the file (same as ecx=1)
-  * edx = number of blocks to read;
-    edx=0 - read one block (same as edx=1)
-  * esi = pointer to memory area for the data
-Returned value:
-  * eax = file size in bytes, if the file was successfully read
-  * eax = -1, if the file was not found
-Remarks:
-  * This function is out-of-date; function 70 allows
-    to fulfil the same operations with the extended possibilities.
-  * Block = 512 bytes.
-  * For reading all file you can specify the certainly large value
-    in edx, for example, edx = -1; but in this case be ready that
-    the program will "fall", if the file will appear too large and can
-    not be placed in the program memory.
-  * The filename must be either in the format 8+3 characters
-    (first 8 characters - name itself, last 3 - extension,
-    the short names and extensions are supplemented with spaces),
-    or in the format 8.3 characters "FILE.EXT"/"FILE.EX "
-    (name no more than 8 characters, dot, extension 3 characters
-    supplemented if necessary by spaces).
-    The filename must be written with capital letters. The terminating
-    character with code 0 is not necessary (not ASCIIZ-string).
-  * This function does not support folders on the ramdisk.
 
 ======================================================================
 =============== Function 7 - draw image in the window. ===============
@@ -1004,20 +970,22 @@ Parameters:
 Returned value:
   * function does not return value
 
----------------- Subsubfunction 2 - get mouse delay. -----------------
+Remark: recommended speed = 1, 0 = lock the cursor.
+
+------------- Subsubfunction 2 - get mouse acceleration. -------------
 Parameters:
   * eax = 18 - function number
   * ebx = 19 - subfunction number
   * ecx = 2 - subsubfunction number
 Returned value:
-  * eax = current mouse delay
+  * eax = 0 - off, 1 - slight, 2 - medium, 3 - intense
 
----------------- Subsubfunction 3 - set mouse delay. -----------------
+------------- Subsubfunction 3 - set mouse acceleration. -------------
 Parameters:
   * eax = 18 - function number
   * ebx = 19 - subfunction number
   * ecx = 3 - subsubfunction number
-  * edx = new value for mouse delay
+  * edx = 0 - off, 1 - slight, 2 - medium, 3 - intense
 Returned value:
   * function does not return value
 
@@ -1044,22 +1012,25 @@ Parameters:
     * bit 4 is set = 5th button is pressed
 Returned value:
   * function does not return value
-Remarks:
-  * It is recommended to set speed of the mouse (in subsubfunction 1)
-    from 1 up to 9. The installed value is not inspected by the kernel
-    code, so set it carefully, at incorrect value the cursor
-    can "freeze". Speed of the mouse can be regulated through the
-    application SETUP.
-  * Recommended delay of the mouse (in subsubfunction 3) = 10. Lower
-    value is not handled by COM mice. At the very large values the
-    movement of the mouse on 1 pixel is impossible and the cursor will
-    jump on the value of installed speed (subsubfunction 1). The
-    installed value is not inspected by the kernel code.
-    Mouse delay can be regulated through the application SETUP.
-  * The subsubfunction 4 does not check the passed value. Before
-    its call find out current screen resolution (with function 14)
-    and check that the value of position is inside the limits of the
-    screen.
+
+-------------- Subsubfunction 6 - get doubleclick delay. -------------
+Parameters:
+  * eax = 18 - function number
+  * ebx = 19 - subfunction number
+  * ecx = 6 - subsubfunction number
+Returned value:
+  * eax = current doubleclick delay (100 = 1 second)
+
+-------------- Subsubfunction 7 - set doubleclick delay. -------------
+Parameters:
+  * eax = 18 - function number
+  * ebx = 19 - subfunction number
+  * ecx = 7 - subsubfunction number
+  * dl  = new value for doubleclick delay (100 = 1 second)
+Returned value:
+  * function does not return value
+
+Remark: mouse settings can be modified in the application mouse_cfg.
 
 ======================================================================
 ======== Function 18, subfunction 20 - get information on RAM. =======
@@ -1147,6 +1118,37 @@ Remarks:
   * The sizes specified in the function should not exceed the sizes
     of the current video mode, otherwise the function will not change
     anything.
+
+======================================================================
+===================== Function 18, subfunction 25 ====================
+===== Control position of the window relative to other windows. ======
+======================================================================
+
+------------- Subsubfunction 1 - get position  -----------------------
+Parameters:
+  * eax = 18 - function number
+  * ebx = 25 - subfunction number
+  * ecx = 1 - subsubfunction number
+  * edx = -1(for current window) or PID application
+Returned value:
+  * eax = one of the constants window position
+
+------------- Subsubfunction 2 - set position  -----------------------
+Parameters:
+  * eax = 18 - function number
+  * ebx = 25 - subfunction number
+  * ecx = 2 - subsubfunction number
+  * edx = -1(for current window) or PID application
+  * esi = new window position (one of the constants below)
+Returned value:
+  * eax = 0 - error
+  * eax = 1 - success
+
+Constant position of the window relative to other windows:
+ ZPOS_DESKTOP     = -2 - on the background
+ ZPOS_ALWAYS_BACK = -1 - behind all the windows
+ ZPOS_NORMAL      = 0  - normal
+ ZPOS_ALWAYS_TOP  = 1  - on top of all windows
 
 ======================================================================
 ==================== Function 20 - MIDI interface. ===================
@@ -1451,7 +1453,21 @@ Returned value:
 Remarks:
   * Counter takes modulo 2^32, that correspond to a little more
     than 497 days.
-  * To get system time use function 3.
+  * To get system time use function 3.  
+  
+======================================================================
+===================== Function 26, subfunction 10 ====================
+========== Get the value of the high precision time counter. =========
+======================================================================
+Parameters:
+  * eax = 26 - function number
+  * ebx = 10 - subfunction number
+Returned value:
+  * eax = number of nanoseconds since system boot time (lower DWORD)
+  * edx = number of nanoseconds since system boot time (high DWORD)  
+Remarks:
+  * The counter is based on HPET, if HPET is not available, resolution
+    will be reduced to 10 000 000 nanoseconds.
 
 ======================================================================
 ===================== Function 26, subfunction 11 ====================
@@ -1611,18 +1627,41 @@ Remarks:
     contains relative y-coordinate, and to the high word
     1 should be added.
 
------------- Subfunction 2 - pressed buttons of the mouse ------------
+------------- Subfunction 2 - states of the mouse buttons ------------
 Parameters:
   * eax = 37 - function number
   * ebx = 2 - subfunction number
 Returned value:
-  * eax contains information on the pressed mouse buttons:
-  * bit 0 is set = left button is pressed
-  * bit 1 is set = right button is pressed
-  * bit 2 is set = middle button is pressed
-  * bit 3 is set = 4th button is pressed
-  * bit 4 is set = 5th button is pressed
-  * other bits are cleared
+  * eax = bits 0-4 equal to subfunction 3
+
+------- Subfunction 3 - states and events of the mouse buttons -------
+Parameters:
+  * eax = 37 - function number
+  * ebx = 3 - subfunction number
+Returned value:
+  * eax contains next information:
+
+states:
+  * bit 0 is set = left button is held
+  * bit 1 is set = right button is held
+  * bit 2 is set = middle button is held
+  * bit 3 is set = 4th button is held
+  * bit 4 is set = 5th button is held
+
+events:
+  * bit 8 is set = left button is pressed
+  * bit 9 is set = right button is pressed
+  * bit 10 is set = middle button is pressed
+
+  * bit 15 is set = vertical scroll is used
+
+  * bit 16 is set = left button is released
+  * bit 17 is set = right button is released
+  * bit 18 is set = middle button is released
+
+  * bit 23 is set = horisontal scroll is used
+
+  * bit 24 is set = doubleclick by left button
 
 -------------------- Subfunction 4 - load cursor ---------------------
 Parameters:
@@ -1954,11 +1993,11 @@ Remarks:
   * Structure of the color table is described in the standard
     include file 'macros.inc' as 'system_colors'; for example,
     it is possible to write:
-    	sc	system_colors		; variable declaration
-    	...				; somewhere one must call
-    					; this function with ecx=sc
-    	mov	ecx, [sc.work_button_text]	; read text color on
-    					; buttin in working area
+        sc      system_colors           ; variable declaration
+        ...                             ; somewhere one must call
+                                        ; this function with ecx=sc
+        mov     ecx, [sc.work_button_text]      ; read text color on
+                                        ; buttin in working area
   * A program itself desides to use or not to use color table.
     For usage program must simply at calls to drawing functions select
     color taken from the table.
@@ -2072,6 +2111,40 @@ Remarks:
     on ramdisk.
   * User can change the skin statically by creating hisself
     'default.skn' or dynamically with the application 'desktop'.
+
+======================================================================
+====== Function 48, subfunction 9 - get font smoothing setting. ======
+======================================================================
+Parameters:
+  * eax = 48 - function number
+  * ebx = 9 - subfunction number
+Returned value:
+  * eax = 2 - subpixel, 1 - anti-aliasing, 0 - off
+
+======================================================================
+========== Function 48, subfunction 10 - set font smoothing. =========
+======================================================================
+Parameters:
+  * eax = 48 - function number
+  * ebx = 10 - subfunction number
+  * cl  = 2 - subpixel, 1 - anti-aliasing, 0 - off
+
+======================================================================
+============ Function 48, subfunction 11 - get font size. ============
+======================================================================
+Parameters:
+  * eax = 48 - function number
+  * ebx = 9 - subfunction number
+Returned value:
+  * eax = current font height in pixels
+
+======================================================================
+============ Function 48, subfunction 12 - set font size. ============
+======================================================================
+Parameters:
+  * eax = 48 - function number
+  * ebx = 10 - subfunction number
+  * cl  = new font height in pixels
 
 ======================================================================
 =========== Function 49 - Advanced Power Management (APM). ===========
@@ -2324,11 +2397,11 @@ Remarks:
 The data of the graphics screen (the memory area which displays
 screen contents) are accessible to a program directly, without
 any system calls, through the selector gs:
-	mov	eax, [gs:0]
+        mov     eax, [gs:0]
 places in eax the first dword of the buffer, which contains
 information on color of the left upper point (and, possibly, colors
 of several following).
-	mov	[gs:0], eax
+        mov     [gs:0], eax
 by work in VESA modes with LFB sets color of the left upper point
 (and, possibly, colors of several following).
 To interpret the data of graphics screen program needs to know
@@ -3056,7 +3129,7 @@ Remarks:
     FPU and/or SSE.
 
 ======================================================================
-====== Function 68, subfunction 25 - set FPU exception handler. ======
+======== Function 68, subfunction 25 - set exception activity ========
 ======================================================================
 Parameters:
   * eax = 68 - function number
@@ -3161,7 +3234,7 @@ Remarks:
     and at arrival of new message the system will wait.
     For synchronization frame all work with the buffer by operations
     lock/unlock
-    	neg	[bufsize]
+        neg     [bufsize]
   * Data in the buffer are considered as array of items with variable
     length - messages. Format of a message is explained in
     general description.
@@ -3772,12 +3845,16 @@ Remarks:
 Parameters:
   * eax = 71 - function number
   * ebx = 1 - subfunction number
-  * ecx = pointer to caption string
+  * ecx = pointer to zero terminated string
 Returned value:
   * function does not return value
 Remarks:
-  * String must be in the ASCIIZ-format. Disregarding real string
-    length, no more than 255 characters are drawn.
+  * You may set the caption string encoding by putting
+    at the start of the string a byte with next values:
+    1 = cp866
+    2 = UTF-16LE
+    3 = UTF-8
+    otherwise will be used cp866.
   * Pass NULL in ecx to remove caption.
 
 ======================================================================
@@ -3834,11 +3911,11 @@ Returned value:
   * function does not return value
 
 ======================================================================
-= Function 74, Subfunction -1, Get number of active network devices. =
+= Function 74, Subfunction 255, Get number of active network devices. =
 ======================================================================
 Parameters:
   * eax = 74 - function number
-  * bl = -1 - subfunction number
+  * bl = 255 - subfunction number
 Returned value:
   * eax = number of active network devices
 
@@ -3850,7 +3927,7 @@ Parameters:
   * bl = 0 - subfunction number
   * bh = device number
 Returned value:
-  * eax = device type
+  * eax = device type number
 
 ======================================================================
 ======== Function 74, Subfunction 1, Get network device name. ========
@@ -3883,6 +3960,78 @@ Parameters:
   * bh = device number
 Returned value:
   * eax = -1 on error
+
+======================================================================
+=========== Function 74, Subfunction 4, Get device pointer. ==========
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 4 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = device pointer, -1 on error
+
+======================================================================
+========= Function 74, Subfunction 6, Get packet TX counter. =========
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 6 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = Number of packets sent since device start, -1 on error
+
+======================================================================
+========= Function 74, Subfunction 7, Get packet RX counter. =========
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 7 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = Number of packets received since device start, -1 on error
+
+======================================================================
+========== Function 74, Subfunction 8, Get TX byte counter. ==========
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 8 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = Number of bytes sent since device start (lower dword)
+                  -1 on error
+  * ebx = Number of bytes sent since device start (higher dword)
+
+======================================================================
+========== Function 74, Subfunction 9, Get RX byte counter. ==========
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 9 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = Number of bytes received since device start (lower dword)
+                  -1 on error
+  * ebx = Number of bytes received since device start (higher dword)
+
+======================================================================
+========== Function 74, Subfunction 10, Get link status. =============
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 10 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = link status, -1 on error
+
+  Link status:
+    ETH_LINK_DOWN   =    0b         ; Link is down
+    ETH_LINK_UNKNOWN=    1b         ; There could be an active link
+    ETH_LINK_FD     =   10b         ; full duplex flag
+    ETH_LINK_10M    =  100b         ; 10 mbit
+    ETH_LINK_100M   = 1000b         ; 100 mbit
+    ETH_LINK_1G     = 1100b         ; gigabit
 
 ======================================================================
 ============== Function 75, Subfunction 0, Open socket. ==============
@@ -4000,10 +4149,11 @@ Returned value:
   * ebx = errorcode
 Remarks:
 
-  Optstruct: dd level
-             dd optionname
-             dd optlength
-             db options...
+  Optstruct: 
+    dd level
+    dd optionname
+    dd optlength
+    db options...
 
 ======================================================================
 =========== Function 75, Subfunction 9, Get socket options. ==========
@@ -4018,10 +4168,11 @@ Returned value:
   * ebx = errorcode
 Remarks:
 
-  Optstruct: dd level
-             dd optionname
-             dd optlength
-             db options...
+  Optstruct: 
+    dd level
+    dd optionname
+    dd optlength
+    db options...
 
 ======================================================================
 ============ Function 75, Subfunction 10, Get socketpair. ===========
@@ -4032,6 +4183,53 @@ Parameters:
 Returned value:
   * eax = socketnum1, -1 on error
   * ebx = socketnum2, errorcode on error
+  
+======================================================================
+============ Function 76, Network options and statistics. ============
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = protocol number
+  * bh = device number
+  * bl = subfunction number
+
+Ethernet (0)
+        0 - Read MAC
+        
+IPv4 (1)
+        0 - Read # IP packets send
+        1 - Read # IP packets received
+        2 - Read IP
+        3 - Write IP
+        4 - Read DNS
+        5 - Write DNS
+        6 - Read subnet
+        7 - Write subnet
+        8 - Read gateway
+        9 - Write gateway
+        
+ICMP (2)
+        0 - Read # ICMP packets send
+        1 - Read # ICMP packets received
+        3 - enable/disable ICMP echo reply
+
+UDP (3)
+        0 - Read # UDP packets send
+        1 - Read # UDP packets received
+
+TCP (4)
+        0 - Read # TCP packets send
+        1 - Read # TCP packets received 
+        
+ARP (5)
+        0 - Read # ARP packets send
+        1 - Read # ARP packets received
+        2 - Read # ARP entry's
+        3 - Read ARP entry
+        4 - Add static ARP entry
+        5 - Remove ARP entry (-1 = remove all)
+        6 - Send ARP announce on specified interface
+        7 - Read # ARP conflicts (IP address conflicts) 
 
 ======================================================================
 =============== Function -1 - terminate thread/process ===============

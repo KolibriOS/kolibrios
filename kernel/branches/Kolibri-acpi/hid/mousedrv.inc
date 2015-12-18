@@ -35,10 +35,9 @@ endg
 iglobal
 ;--------------------------------------
 align 4
-mouse_delay             dd 10
-mouse_speed_factor:
-                        dd 3
-mouse_timer_ticks       dd 0
+mouse_speed_factor      dw 1
+mouse_delay             db 1
+mouse_doubleclick_delay db 64
 endg
 
 ;-----------------------------------------------------------------------------
@@ -490,11 +489,12 @@ proc set_mouse_data stdcall uses edx, BtnState:dword, XMoving:dword, YMoving:dwo
         mov     eax, [XMoving]
         test    [BtnState], 0x80000000
         jnz     .absolute_x
+        test    eax, eax
+        jz      @f
         call    mouse_acceleration
         add     ax, [MOUSE_X]
-        cmp     ax, 0
-        jge     .check_x
-        mov     eax, 0
+        jns     .check_x
+        xor     eax, eax
         jmp     .set_x
  .absolute_x:
         mov     edx, [_display.width]
@@ -508,15 +508,17 @@ proc set_mouse_data stdcall uses edx, BtnState:dword, XMoving:dword, YMoving:dwo
  .set_x:
         mov     [MOUSE_X], ax
 ;--------------------------------------
+@@:
         mov     eax, [YMoving]
         test    [BtnState], 0x40000000
         jnz     .absolute_y
+        test    eax, eax
+        jz      @f
         neg     eax
         call    mouse_acceleration
         add     ax, [MOUSE_Y]
-        cmp     ax, 0
-        jge     .check_y
-        mov     ax, 0
+        jns     .check_y
+        xor     eax, eax
         jmp     .set_y
  .absolute_y:
         mov     edx, [_display.height]
@@ -530,31 +532,54 @@ proc set_mouse_data stdcall uses edx, BtnState:dword, XMoving:dword, YMoving:dwo
  .set_y:
         mov     [MOUSE_Y], ax
 ;--------------------------------------
+@@:
         mov     eax, [VScroll]
+        test    eax, eax
+        jz      @f
         add     [MOUSE_SCROLL_V], ax
-
+        bts     word [BTN_DOWN], 15
+@@:
         mov     eax, [HScroll]
+        test    eax, eax
+        jz      @f
         add     [MOUSE_SCROLL_H], ax
-
+        bts     dword [BTN_DOWN], 23
+@@:
         mov     [mouse_active], 1
-        mov     eax, [timer_ticks]
-        mov     [mouse_timer_ticks], eax
         call    wakeup_osloop
         ret
 endp
 
 ;-----------------------------------------------------------------------------
-
+; 3 = x^2 /2
+; 2 = (x+1)^2 /4
+; 1 = (x+2)^2 /8
 align 4
 mouse_acceleration:
+        cmp     [mouse_delay], 0
+        jz      .end
         push    eax
-        mov     eax, [timer_ticks]
-        sub     eax, [mouse_timer_ticks]
-        cmp     eax, [mouse_delay]
-        pop     eax
-        ja      @f
-        ;push  edx
-        imul    eax, [mouse_speed_factor]
-        ;pop   edx
-  @@:
+@@:
+        neg     eax
+        jl      @b
+        cmp     [mouse_delay], 3
+        adc     eax, 0
+        cmp     [mouse_delay], 2
+        adc     eax, 0
+        mul     al
+        shr     eax, 1
+        adc     eax, 0
+        cmp     [mouse_delay], 2
+        jz      .2
+        jnc     .3
+        shr     eax, 1
+.2:
+        shr     eax, 1
+.3:
+        pop     edx
+        test    edx, edx
+        jns     .end
+        neg     eax
+.end:
+        imul    [mouse_speed_factor]
         ret

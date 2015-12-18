@@ -9,9 +9,9 @@ $Revision$
 
 include 'mousepointer.inc'
 
-;==============================================================================
-;///// public functions ///////////////////////////////////////////////////////
-;==============================================================================
+;================================
+;/////// public functions ///////
+;================================
 
 mouse.LEFT_BUTTON_FLAG   = 0001b
 mouse.RIGHT_BUTTON_FLAG  = 0010b
@@ -36,14 +36,10 @@ mouse.WINDOW_RESIZE_SE_FLAG = \
   mouse.WINDOW_RESIZE_E_FLAG
 
 align 4
-;------------------------------------------------------------------------------
-mouse_check_events: ;//////////////////////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? Check if mouse buttons state or cursor position has changed and call
-;? appropriate handlers
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------
+mouse_check_events:
+; Check if mouse buttons state or cursor position has changed
         push    eax ebx
-
         mov     al, [BTN_DOWN]
         mov     bl, [mouse.state.buttons]
         and     al, mouse.BUTTONS_MASK
@@ -63,8 +59,8 @@ mouse_check_events: ;//////////////////////////////////////////////////////////
         ; yes it is, activate window user is pointing at, if needed
         call    mouse._.activate_sys_window_under_cursor
 
-        ; NOTE: this code wouldn't be necessary if we knew window did
-        ;       already redraw itself after call above
+; NOTE: this code wouldn't be necessary if we knew
+; that window did already redraw itself after call above
         or      eax, eax
         jnz     .exit
 
@@ -162,19 +158,19 @@ mouse_check_events: ;//////////////////////////////////////////////////////////
         jnz     mouse._.middle_button_press_handler
         jmp     mouse._.middle_button_release_handler
 
-;==============================================================================
-;///// private functions //////////////////////////////////////////////////////
-;==============================================================================
+;===============================
+;////// private functions //////
+;===============================
 
 uglobal
   mouse.state:
     .pos     POINT
     .buttons db ?
 
-  ; NOTE: since there's no unique and lifetime-constant button identifiers,
-  ;       we're using two dwords to identify each of them:
-  ;       * pbid - process slot (high 8 bits) and button id (low 24 bits) pack
-  ;       * coord - left (high 16 bits) and top (low 16 bits) coordinates pack
+; NOTE: since there's no unique and lifetime-constant button identifiers,
+; we are using two dwords to identify each of them:
+;   * pbid - process slot (high 8 bits) and button id (low 24 bits) pack
+;   * coord - left (high 16 bits) and top (low 16 bits) coordinates pack
   align 4
   mouse.active_sys_button:
     .pbid    dd ?
@@ -191,12 +187,25 @@ uglobal
     .action     db ?
 endg
 
+iglobal
+        fl_moving db 0
+        rb 3
+endg
+
 align 4
-;------------------------------------------------------------------------------
-mouse._.left_button_press_handler: ;///////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? Called when left mouse button has been pressed down
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------
+mouse._.left_button_press_handler:
+; Called when left mouse button has been pressed down
+        bts     word [BTN_DOWN], 8
+        mov     eax, [timer_ticks]
+        mov     ebx, eax
+        xchg    ebx, [mouse.active_sys_window.last_ticks]
+        sub     eax, ebx
+        movzx   ebx, [mouse_doubleclick_delay]
+        cmp     eax, ebx
+        jg      @f
+        bts     dword [BTN_DOWN], 24
+@@:
         test    [mouse.state.buttons], not mouse.LEFT_BUTTON_FLAG
         jnz     .exit
 
@@ -210,12 +219,8 @@ mouse._.left_button_press_handler: ;///////////////////////////////////////////
         test    dl, mouse.WINDOW_MOVE_FLAG
         jz      @f
 
-        mov     eax, [timer_ticks]
-        mov     ebx, eax
-        xchg    ebx, [mouse.active_sys_window.last_ticks]
-        sub     eax, ebx
-        cmp     eax, 50
-        jg      @f
+        bt      dword [BTN_DOWN], 24
+        jnc     @f
 
         mov     [mouse.active_sys_window.last_ticks], 0
         call    sys_window_maximize_handler
@@ -254,9 +259,6 @@ mouse._.left_button_press_handler: ;///////////////////////////////////////////
         call    .calculate_e_delta
 
   .call_window_handler:
-;        mov     eax, mouse.active_sys_window.old_box
-;        call    sys_window_start_moving_handler
-
   .exit:
         ret
 
@@ -287,11 +289,10 @@ mouse._.left_button_press_handler: ;///////////////////////////////////////////
         ret
 
 align 4
-;------------------------------------------------------------------------------
-mouse._.left_button_release_handler: ;/////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? Called when left mouse button has been released
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------
+mouse._.left_button_release_handler:
+; Called when left mouse button has been released
+        bts     dword [BTN_DOWN], 16
         xor     esi, esi
         xchg    esi, [mouse.active_sys_window.pslot]
         or      esi, esi
@@ -310,60 +311,38 @@ mouse._.left_button_release_handler: ;/////////////////////////////////////////
 
   .exit:
         and     [mouse.active_sys_window.action], 0
+        mov     [fl_moving], 0
         ret
 
-align 4
-;------------------------------------------------------------------------------
-mouse._.right_button_press_handler: ;//////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? Called when right mouse button has been pressed down
-;------------------------------------------------------------------------------
+mouse._.right_button_press_handler:
+        bts     word [BTN_DOWN], 9
         test    [mouse.state.buttons], not mouse.RIGHT_BUTTON_FLAG
-        jnz     .exit
-
+        jnz     @f
         call    mouse._.find_sys_window_under_cursor
         call    mouse._.check_sys_window_actions
         test    al, mouse.WINDOW_MOVE_FLAG
-        jz      .exit
+        jz      @f
+        jmp     sys_window_rollup_handler
 
-        call    sys_window_rollup_handler
+mouse._.right_button_release_handler:
+        bts     dword [BTN_DOWN], 17
+@@:
+        ret
 
-  .exit:
+mouse._.middle_button_press_handler:
+        bts     word [BTN_DOWN], 10
+        ret
+
+mouse._.middle_button_release_handler:
+        bts     dword [BTN_DOWN], 18
         ret
 
 align 4
-;------------------------------------------------------------------------------
-mouse._.right_button_release_handler: ;////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? Called when right mouse button has been released
-;------------------------------------------------------------------------------
-        ret
-
-align 4
-;------------------------------------------------------------------------------
-mouse._.middle_button_press_handler: ;/////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? Called when middle mouse button has been pressed down
-;------------------------------------------------------------------------------
-        ret
-
-align 4
-;------------------------------------------------------------------------------
-mouse._.middle_button_release_handler: ;///////////////////////////////////////
-;------------------------------------------------------------------------------
-;? Called when middle mouse button has been released
-;------------------------------------------------------------------------------
-        ret
-
-align 4
-;------------------------------------------------------------------------------
-mouse._.move_handler: ;////////////////////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? Called when cursor has been moved
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------
+mouse._.move_handler:
+; Called when cursor has been moved
 ;> eax = old x coord
 ;> ebx = old y coord
-;------------------------------------------------------------------------------
         cmp     [mouse.active_sys_button.pbid], 0
         jnz     .exit
 
@@ -507,6 +486,19 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
         pop     esi
         je      .exit
 
+        test    [fl_moving], 1
+        jnz     @f
+
+        mov     [fl_moving], 1
+        push    edi
+        mov     edi, esi
+        shl     edi, 5
+        add     edi, WDATA.box + window_data
+        call    window._.draw_negative_box
+        pop     edi
+     @@:
+
+
         mov     [mouse.active_sys_window.last_ticks], 0
         call    sys_window_moving_handler
 
@@ -514,15 +506,12 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
         ret
 
 align 4
-;------------------------------------------------------------------------------
-mouse._.find_sys_window_under_cursor: ;////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? Find system window object which is currently visible on screen and has
-;? mouse cursor within its bounds
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------
+mouse._.find_sys_window_under_cursor:
+; Find system window object which is currently visible on screen
+; and has mouse cursor within its bounds
 ;< esi = process slot
 ;< edi = pointer to WDATA struct
-;------------------------------------------------------------------------------
         mov     esi, [mouse.state.pos.y]
         mov     esi, [d_width_calc_area + esi*4]
 
@@ -535,27 +524,21 @@ mouse._.find_sys_window_under_cursor: ;////////////////////////////////////////
         ret
 
 align 4
-;------------------------------------------------------------------------------
-mouse._.activate_sys_window_under_cursor: ;////////////////////////////////////
-;------------------------------------------------------------------------------
-;? <description>
-;------------------------------------------------------------------------------
-        ; activate and redraw window under cursor (if necessary)
+;-----------------------------------------------------------------
+mouse._.activate_sys_window_under_cursor:
+; activate and redraw window under cursor (if necessary)
         call    mouse._.find_sys_window_under_cursor
         movzx   esi, word[WIN_STACK + esi * 2]
         lea     esi, [WIN_POS + esi * 2]
         jmp     waredraw
 
 align 4
-;------------------------------------------------------------------------------
-mouse._.find_sys_button_under_cursor: ;////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? Find system button object which is currently visible on screen and has
-;? mouse cursor within its bounds
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------
+mouse._.find_sys_button_under_cursor:
+; Find system button object which is currently visible on screen
+; and has mouse cursor within its bounds
 ;< eax = pack[8(process slot), 24(button id)] or 0
 ;< ebx = pack[16(button x coord), 16(button y coord)]
-;------------------------------------------------------------------------------
         push    ecx edx esi edi
 
         call    mouse._.find_sys_window_under_cursor
@@ -612,13 +595,9 @@ mouse._.find_sys_button_under_cursor: ;////////////////////////////////////////
         ret
 
 align 4
-;------------------------------------------------------------------------------
-mouse._.check_sys_window_actions: ;////////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? <description>
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------
+mouse._.check_sys_window_actions:
 ;< eax = action flags or 0
-;------------------------------------------------------------------------------
         ; is window movable?
         test    byte[edi + WDATA.cl_titlebar + 3], 0x01
         jnz     .no_action
@@ -638,8 +617,8 @@ mouse._.check_sys_window_actions: ;////////////////////////////////////////////
         ; no there isn't, can it be resized then?
         mov     dl, [edi + WDATA.fl_wstyle]
         and     dl, 0x0f
-        ; NOTE: dangerous optimization, revise if window types changed;
-        ;       this currently implies only types 2 and 3 could be resized
+; NOTE: dangerous optimization, revise if window types changed
+; this currently implies only types 2 and 3 could be resized
         test    dl, 2
         jz      .no_action
 

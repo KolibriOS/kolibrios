@@ -59,7 +59,7 @@ getkey:                         ; Use BIOS INT 16h to read a key from the keyboa
         jb      getkey      ; ASCII code is below lowest accepted value => continue waiting for another key.
         cmp     al, bh      ; Compare 'al' (ASCII code of key pressed) with 'bh' (highest accepted char from the range).
         ja      getkey      ; ASCII code is above highest accepted value => continue waiting for another key.
-        push    ax              ; If the pressed key is in the accepted range, save it on the stack and echo to screen.
+        push    ax          ; If the pressed key is in the accepted range, save it on the stack and echo to screen.
         call    putchar
         pop     ax
         and     ax, 0Fh     ; Convert ASCII code to number: '1'->1, '2'->2, etc. 0Fh=1111b.
@@ -159,7 +159,7 @@ FirstDataSector dw      0                       ; begin of data
 ;
 ;=========================================================================
 
-include 'bootvesa.inc'                 ;Include source for boot vesa 
+include 'bootvesa.inc'                 ;Include source for boot vesa
 if defined extended_primary_loader
 include 'parsers.inc'
 end if
@@ -176,9 +176,9 @@ if defined extended_primary_loader
         mov     [bootfs], bx
 
 ; set up stack
-        mov     ax, 3000h
+        mov     ax, (TMP_STACK_TOP and 0xF0000) shr 4
         mov     ss, ax
-        mov     sp, 0EC00h
+        mov     sp, TMP_STACK_TOP and 0xFFFF
 
 ; try to load configuration file
         mov     ax, 1
@@ -293,9 +293,9 @@ else
 no_hd_load:
 
 ; set up stack
-        mov     ax, 3000h
+        mov     ax, (TMP_STACK_TOP and 0xF0000) shr 4
         mov     ss, ax
-        mov     sp, 0EC00h
+        mov     sp, TMP_STACK_TOP and 0xFFFF
 ; set up segment registers
         push    cs
         pop     ds
@@ -534,7 +534,7 @@ end if
         cmp     byte [di+preboot_dma-preboot_device], 1
         adc     byte [di+preboot_dma-preboot_device], 0
         cmp     byte [di+preboot_launcher-preboot_device], 1        ; Start LAUNCHER by default
-        adc     byte [di+preboot_launcher-preboot_device], 0        
+        adc     byte [di+preboot_launcher-preboot_device], 0
 ;        cmp     byte [di+preboot_biosdisk-preboot_device], 1
 ;        adc     byte [di+preboot_biosdisk-preboot_device], 0
 ;; default value for VRR is OFF

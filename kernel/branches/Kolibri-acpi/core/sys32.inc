@@ -263,7 +263,7 @@ show_error_parameters:
         call    .check_ESP
         test    eax, eax
         jnz     .error_ESP
-        DEBUGF  1, " [ESP+08]: %x\n",[ebx]        
+        DEBUGF  1, " [ESP+08]: %x\n",[ebx]
         add     ebx, 4
         call    .check_ESP
         test    eax, eax
@@ -293,7 +293,7 @@ show_error_parameters:
         call    .check_ESP
         test    eax, eax
         jnz     .error_ESP
-        DEBUGF  1, " [ESP+32]: %x\n",[ebx]        
+        DEBUGF  1, " [ESP+32]: %x\n",[ebx]
         pop     edx ecx ebx eax
         ret
 .error_ESP:
@@ -315,11 +315,11 @@ show_error_parameters:
         mov     eax, [page_tabs+ebx*4]
         test    eax, 2
         jz      .fail             ;address not reserved for use. error
-        
-        pop     ebx        
+
+        pop     ebx
         xor     eax, eax
-        ret        
-        
+        ret
+
 .fail:
         pop     ebx
         xor     eax, eax
@@ -581,7 +581,7 @@ destroy_thread:
         mov     [esi+WDATA.cl_workarea], eax
         mov     [esi+WDATA.cl_titlebar], eax
         mov     [esi+WDATA.cl_frames], eax
-        mov     dword [esi+WDATA.reserved], eax; clear all flags: wstate, redraw, wdrawn
+        mov     dword [esi+WDATA.z_modif], eax; clear all flags: z_modif, wstate, redraw, wdrawn
         lea     edi, [esi-window_data+draw_data]
         mov     ecx, 32/4
         rep stosd

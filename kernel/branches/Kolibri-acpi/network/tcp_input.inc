@@ -14,36 +14,35 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 5522 $
+$Revision: 5976 $
 
-;-----------------------------------------------------------------
-;
-; TCP_input:
-;
-;       Add a segment to the incoming TCP queue
-;
-;  IN:  [esp] = ptr to buffer
-;       ebx = ptr to device struct
-;       ecx = segment size
-;       esi = ptr to TCP segment
-;       edi = ptr to ipv4 source address, followed by ipv4 dest address
-;
-;  OUT: /
-;
-;-----------------------------------------------------------------
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; TCP_input: Add a segment to the incoming TCP queue.             ;
+;                                                                 ;
+;  IN:  [esp] = ptr to buffer                                     ;
+;       ebx = ptr to device struct                                ;
+;       ecx = TCP segment size                                    ;
+;       edx = ptr to IPv4 header                                  ;
+;       esi = ptr to TCP segment                                  ;
+;       edi = interface number*4                                  ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 TCP_input:
 
 ; record the current time
         push    [timer_ticks]           ; in 1/100 seconds
-        push    ebx ecx esi edi         ; mind the order (see TCP_queue_entry struct)
+        push    ebx ecx esi edx         ; mind the order (see TCP_queue_entry struct)
         mov     esi, esp
 
+        push    edi
         add_to_queue TCP_queue, TCP_QUEUE_SIZE, sizeof.TCP_queue_entry, .fail
+        pop     edi
         add     esp, sizeof.TCP_queue_entry
 
-        call    NET_ptr_to_num4
         inc     [TCP_segments_rx + edi]
 
         xor     edx, edx
@@ -55,12 +54,13 @@ TCP_input:
         ret
 
   .fail:
+        pop     edi
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP incoming queue is full, discarding packet!\n"
 
         call    NET_ptr_to_num4
         inc     [TCP_segments_missed + edi]
 
-        add     esp, sizeof.TCP_queue_entry - 8
+        add     esp, sizeof.TCP_queue_entry - 4
         call    NET_BUFF_free
         ret
 
@@ -94,7 +94,7 @@ endl
 
         mov     ebx, [esi + TCP_queue_entry.device_ptr]
         mov     ecx, [esi + TCP_queue_entry.segment_size]
-        mov     edi, [esi + TCP_queue_entry.ip_ptr]                     ; ptr to ipv4 source address, followed by ipv4 destination address
+        mov     edi, [esi + TCP_queue_entry.ip_ptr]                     ; ptr to ipv4 header
         mov     esi, [esi + TCP_queue_entry.segment_ptr]                ; change esi last
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: size=%u time=%d\n", ecx, [timer_ticks]
@@ -111,8 +111,8 @@ endl
         push    ecx esi
         pushw   [esi + TCP_header.Checksum]
         mov     [esi + TCP_header.Checksum], 0
-        TCP_checksum (edi), (edi+4)
-        pop     cx                      ; previous checksum
+        TCP_checksum (edi+IPv4_header.SourceAddress), (edi+IPv4_header.DestinationAddress)
+        pop     cx                              ; previous checksum
         cmp     cx, dx
         pop     edx ecx
         jne     .drop_no_socket
@@ -170,7 +170,7 @@ endl
         jne     .socket_loop
 
         mov     eax, [ebx + IP_SOCKET.RemoteIP]
-        cmp     eax, [edi]                              ; Ipv4 source address
+        cmp     eax, [edi + IPv4_header.SourceAddress]
         je      @f
         test    eax, eax
         jnz     .socket_loop
@@ -233,7 +233,7 @@ endl
         call    mutex_unlock
         popa
 
-        push    ecx edx esi edi         ;;;
+        push    ecx edx esi edi
         call    SOCKET_fork
         pop     edi esi edx ecx
 
@@ -244,7 +244,7 @@ endl
 
         mov     [temp_bits], TCP_BIT_DROPSOCKET
 
-        push    dword [edi + 4]                         ; Ipv4 destination addres
+        push    [edi + IPv4_header.DestinationAddress]
         pop     [ebx + IP_SOCKET.LocalIP]
 
         push    [edx + TCP_header.DestinationPort]
@@ -485,8 +485,8 @@ endl
         inc     eax
         call    TCP_xmit_timer
         jmp     .rtt_done
-
   .no_timestamp_rtt:
+
         cmp     [ebx + TCP_SOCKET.t_rtt], 0
         je      .rtt_done
         mov     eax, [edx + TCP_header.AckNumber]
@@ -494,7 +494,6 @@ endl
         jbe     .rtt_done
         mov     eax, [ebx + TCP_SOCKET.t_rtt]
         call    TCP_xmit_timer
-
   .rtt_done:
 
 ; update window pointers
@@ -1211,7 +1210,7 @@ align 4
 
 ;;; TODO: check if it's a broadcast or multicast, and drop if so
 
-        push    dword [edi]                             ; Ipv4 source addres
+        push    [edi + IPv4_header.SourceAddress]
         pop     [ebx + IP_SOCKET.RemoteIP]
 
         push    [edx + TCP_header.SourcePort]
@@ -1673,11 +1672,13 @@ align 4
 
   .respond_seg_ack:
         mov     cl, TH_RST
+        xor     ebx, ebx                ; FIXME: find a way to get the receiving device ptr
         call    TCP_respond_segment
         jmp     .drop_no_socket
 
   .respond_seg_syn:
         mov     cl, TH_RST + TH_ACK
+        xor     ebx, ebx                ; FIXME: find a way to get the receiving device ptr
         call    TCP_respond_segment
         jmp     .drop_no_socket
 

@@ -1843,6 +1843,9 @@ fat_Read:
         shr     edi, 9
         add     eax, edi
         and     edx, 511
+        cmp     ecx, 512
+        jc      .sectorPiece
+        test    edx, edx
         jz      .alignedSector
 .sectorPiece:
         push    eax ebx
@@ -1870,8 +1873,6 @@ fat_Read:
         test    ecx, ecx
         jz      .done
 .alignedSector:
-        cmp     ecx, 512
-        jc      .sectorPiece
         shl     edi, 9
         add     ecx, edi
         mov     edi, [ebp+FAT.SECTORS_PER_CLUSTER]
@@ -1899,15 +1900,19 @@ fat_Read:
         dec     eax
         imul    eax, [ebp+FAT.SECTORS_PER_CLUSTER]
         add     eax, [ebp+FAT.DATA_START]
-        sub     eax, edx
-.readFragment:
         push    ecx
         mov     ecx, eax
+        mov     eax, esi
+        dec     eax
+        dec     eax
+        imul    eax, [ebp+FAT.SECTORS_PER_CLUSTER]
+        add     eax, [ebp+FAT.DATA_START]
+        push    eax
+.readFragment:
+        sub     ecx, edx
         mov     eax, edx
         xor     edx, edx
-        push    eax
         call    fs_read64_app
-        add     [esp], ecx
         shl     ecx, 9
         add     ebx, ecx
         test    eax, eax
@@ -1916,13 +1921,6 @@ fat_Read:
         pop     ecx
         xor     edx, edx
         jcxz    .done
-        cmp     ecx, 512
-        jc      .sectorPiece
-        mov     eax, esi
-        dec     eax
-        dec     eax
-        imul    eax, [ebp+FAT.SECTORS_PER_CLUSTER]
-        add     eax, [ebp+FAT.DATA_START]
         jmp     .alignedCluster
 .readEnd:
         add     ecx, edi
@@ -1933,8 +1931,10 @@ fat_Read:
         dec     eax
         imul    eax, [ebp+FAT.SECTORS_PER_CLUSTER]
         add     eax, [ebp+FAT.DATA_START]
-        sub     eax, edx
         add     eax, edi
+        push    ecx
+        push    eax
+        mov     ecx, eax
         jmp     .readFragment
 .noaccess3:
         pop     eax

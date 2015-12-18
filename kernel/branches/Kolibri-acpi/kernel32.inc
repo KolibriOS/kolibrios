@@ -5,7 +5,7 @@
 ;;                                                              ;;
 ;; KERNEL32.INC                                                 ;;
 ;;                                                              ;;
-;; Included 32 bit kernel files for KolibriOS                    ;;
+;; Included 32 bit kernel files for MenuetOS                    ;;
 ;;                                                              ;;
 ;; This file is kept separate as it will be easier to           ;;
 ;; maintain and compile with an automated SETUP program         ;;

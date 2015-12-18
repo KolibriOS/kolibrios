@@ -14,7 +14,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 5523 $
+$Revision: 5976 $
 
 iglobal
 align 4
@@ -61,15 +61,15 @@ local   .fail
   .fail:
 }
 
-;-----------------------------------------------------------------
-;
-; LOOP_input
-;
-;  IN:  [esp+4] = Pointer to buffer
-;
-;  OUT: /
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; LOOP_input                                                      ;
+;                                                                 ;
+;   IN: [esp+4] = Pointer to buffer                               ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 LOOP_input:
 
@@ -105,19 +105,19 @@ LOOP_input:
         ret
 
 
-;-----------------------------------------------------------------
-;
-; LOOP_output
-;
-; IN:   ecx = packet size
-;       edi = address family
-;
-; OUT:  eax = start of net frame / 0 on error
-;       ebx = to device structure
-;       ecx = unchanged (packet size of embedded data)
-;       edi = start of payload
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; LOOP_output                                                     ;
+;                                                                 ;
+;  IN:  ecx = packet size                                         ;
+;       edi = address family                                      ;
+;                                                                 ;
+; OUT:  eax = start of net frame / 0 on error                     ;
+;       ebx = to device structure                                 ;
+;       ecx = unchanged (packet size of embedded data)            ;
+;       edi = start of payload                                    ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 LOOP_output:
 
