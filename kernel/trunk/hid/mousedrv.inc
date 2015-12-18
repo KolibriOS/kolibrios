@@ -551,9 +551,9 @@ proc set_mouse_data stdcall uses edx, BtnState:dword, XMoving:dword, YMoving:dwo
 endp
 
 ;-----------------------------------------------------------------------------
-; 3 = x^2 /2
-; 2 = (x+1)^2 /4
-; 1 = (x+2)^2 /8
+; 3 = (x+1)^2 /4
+; 2 = (x+2)^2 /8
+; 1 = (x+3)^2 /16
 align 4
 mouse_acceleration:
         cmp     [mouse_delay], 0
@@ -562,13 +562,13 @@ mouse_acceleration:
 @@:
         neg     eax
         jl      @b
+        inc     eax
         cmp     [mouse_delay], 3
         adc     eax, 0
         cmp     [mouse_delay], 2
         adc     eax, 0
         mul     al
-        shr     eax, 1
-        adc     eax, 0
+        shr     eax, 2
         cmp     [mouse_delay], 2
         jz      .2
         jnc     .3
