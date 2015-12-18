@@ -117,7 +117,6 @@ void main()
 	WB1.list.SetFont(8, 14, 10111000b);
 	WB1.list.no_selection = true;
 	//font init
-	font.no_bg_copy = true;
 	font.bg_color   = 0xFFFFFF;
 	font.load(DEFAULT_FONT);
 	if (!font.data) {
@@ -286,16 +285,16 @@ void Draw_Window()
 	list__w = 200;
 	font.buffer_size = 0;
 	font.size.height = 200;
-	font.color = 0;
+	font.color = 0x000000;
 	font.size.text = 11;
-	font.prepare_buf(10,10,list__w,font.size.height, "Hello World!");
+	font.write_buf(10,10,list__w,font.size.height, "Hello World!");
 	font.color = 0xFF00FF;
 	font.size.text = 12;
-	font.prepare_buf(10,23,list__w,font.size.height, "How are you?");
+	font.write_buf(10,23,list__w,font.size.height, "How are you?");
 	font.color = 0x2E74BB;
 	font.size.text = 15;
-	font.prepare_buf(11,40,list__w,font.size.height, "Fine");
-	SmoothFont(font.buffer, font.size.width, font.size.height);
+	font.write_buf(11,40,list__w,font.size.height, "Fine");
+	font.apply_smooth();
 	_PutImage(0,0,list__w,font.size.height,font.buffer);
 	*/
 }

@@ -58,13 +58,13 @@ void PreparePage()
 			}
 			i = bufoff-line_start;
 			strlcpy(#line, line_start, i);
-			font.prepare_buf(8,stroka_y,list.w,font.size.height, #line);
+			font.write_buf(8,stroka_y,list.w,font.size.height, #line);
 			stroka_y += list.item_h;
 			line_start = bufoff;
 			line_length = 30;
 		}
 	}
-	font.prepare_buf(8,stroka_y,list.w,font.size.height, line_start);
-	SmoothFont(font.buffer, font.size.width, font.size.height);
+	font.write_buf(8,stroka_y,list.w,font.size.height, line_start);
+	font.apply_smooth();
 	DrawPage();
 }

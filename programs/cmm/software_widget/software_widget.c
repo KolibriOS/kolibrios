@@ -59,7 +59,6 @@ void main()
 {   
 	dword id, key;
 	font.load("/sys/fonts/Tahoma.kf");
-	font.no_bg_copy = true;
 	font.smooth = true;
 	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
@@ -153,11 +152,9 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 	font.color = 0xDCDCDC;
 	font.bold = false;
 	font.bg_color = LIST_BACKGROUND_COLOR;
-	font.textcenter(col*cell_w+7,row*cell_h+47 + list_pos,cell_w,0,key_name);
-	font.show();
+	font.write_center(col*cell_w+7,row*cell_h+47 + list_pos,cell_w,0,key_name);
 	font.color = 0;
-	font.textcenter(col*cell_w+6,row*cell_h+46 + list_pos,cell_w,0,key_name);
-	font.show();
+	font.write_center(col*cell_w+6,row*cell_h+46 + list_pos,cell_w,0,key_name);
 	current_item_id++;
 	col++;
 	return true;
@@ -187,11 +184,10 @@ byte process_sections(dword sec_name, f_name)
 		old_row = row;
 		DrawBar(0, row * cell_h + list_pos, Form.cwidth , 29, LIST_BACKGROUND_COLOR);
 		//WriteTextB(10, row * cell_h + 9 + list_pos, 0x90, 0x000000, sec_name);
-		font.size=14;
-		font.bold=true;
+		font.size=15;
+		font.bold=false;
 		font.bg_color = LIST_BACKGROUND_COLOR;
-		text_len = font.prepare(10, row * cell_h + 10 + list_pos,sec_name);
-		font.show();
+		text_len = font.write(10, row * cell_h + 10 + list_pos,sec_name);
 		DrawBar(text_len+20, row * cell_h + list_pos + 20, Form.cwidth-text_len-20, 1, 0xDCDCDC);
 		DrawBar(text_len+20, row * cell_h + list_pos + 21, Form.cwidth-text_len-20, 1, 0xFCFCFC);
 		list_pos += 29;
@@ -208,8 +204,7 @@ void draw_top_bar()
 	font.size = 17;
 	font.bold = false;
 	font.bg_color = system.color.work;
-	font.prepare(Form.cwidth-font.getsize(#window_title)/2,0,#window_title);
-	font.show();
+	font.write(Form.cwidth-font.getsize(#window_title)/2,0,#window_title);
 	list_top = top_position;
 	list_pos = list_top;
 	row = -1;

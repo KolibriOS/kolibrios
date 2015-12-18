@@ -118,7 +118,6 @@ void LoadIniSettings()
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinH", 500); WinH = EAX;
 	ini_get_str stdcall   (eolite_ini_path, #config_section, "DefaultPath", #path,4096,"/rd/1/");
 
-	font.no_bg_copy = true;	
 	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font file",#temp,4096,"/sys/FONTS/Tahoma.kf");
 	font.load(#temp);
 	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font smoothing",#temp,4096,"on");

@@ -177,6 +177,16 @@
 	}
 }
 
+:void ShadowPixel(dword color_image, strength)
+{
+	dword to = color_image + 3;
+	strength = 10 - strength;
+	for ( ; color_image < to; color_image++)
+	{
+		ESI = strength * DSBYTE[color_image] / 10;
+		DSBYTE[color_image] = ESI;
+	}
+}
 :void ShadowImage(dword color_image, w, h, strength)
 {
 	dword col, to;

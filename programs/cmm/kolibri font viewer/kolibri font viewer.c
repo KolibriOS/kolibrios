@@ -10,7 +10,6 @@ void main()
 	proc_info Form;
 	word i, y, btn;
 	char line[256], title[4196];
-	font.no_bg_copy = true;
 	font.color = 0;
 	font.bg_color = 0xFFFFFF;
 	if (!param) strcpy(#param, DEFAULT_FONT);
@@ -46,12 +45,10 @@ void main()
 			{
 				font.size.text = i;
 				sprintf(#line,"Размер шрифта/size font %d пикселей.",i);
-				font.prepare_buf(10,y,Form.cwidth,Form.cheight-PANELH, #line);
+				font.write_buf(10,y,Form.cwidth,Form.cheight-PANELH, #line);
 			}
-			if (font.smooth) SmoothFont(font.buffer, font.size.width, font.size.height);
-			font.left = 0;
-			font.top = PANELH;
-			font.show();
+			if (font.smooth) font.apply_smooth();
+			font.show_buf(0, PANELH);
 	  }
 	}
 }

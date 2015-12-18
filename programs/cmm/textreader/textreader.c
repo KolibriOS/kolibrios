@@ -19,7 +19,7 @@
 #define DEFAULT_EDITOR "/sys/tinypad"
 
 #define INTRO_TEXT "This is a plain Text Reader.\nTry to open some text file."
-#define VERSION "Text Reader v1.03"
+#define VERSION "Text Reader v1.04"
 #define ABOUT "Idea: Leency, punk_joker
 Code: Leency, Veliant, KolibriOS Team
 
@@ -75,7 +75,6 @@ void main()
 	
 	OpenDialog_init stdcall (#o_dialog);
 	
-	font.no_bg_copy = true;
 	font.color      = 0;
 	font.bg_color   = 0xFFFFFF;
 	

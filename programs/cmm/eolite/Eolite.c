@@ -719,8 +719,7 @@ void Line_ReDraw(dword bgcol, filenum){
 	{
 		font.bg_color = bgcol;
 		font.smooth = smooth_font;
-		font.prepare(files.x + 23, files.item_h - font.height / 2 + y, file_name_off);
-		font.show();
+		font.write(files.x + 23, files.item_h - font.height / 2 + y, file_name_off);
 	}
 	DrawBar(files.x+files.w-141,y,1,files.item_h,system.color.work); //gray line 1
 	DrawBar(files.x+files.w-68,y,1,files.item_h,system.color.work); //gray line 2
