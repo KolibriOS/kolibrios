@@ -16,7 +16,7 @@
 	dword width,height;
 	signed offset_x, offset_y;
 	float offset_i,w_italic;
-	byte points;
+	byte pt;
 	byte TMP_WEIGHT;
 };
 :struct LABEL
