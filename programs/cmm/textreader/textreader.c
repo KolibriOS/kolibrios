@@ -15,11 +15,10 @@
 #define TOOLBAR_ICON_WIDTH  26
 #define TOOLBAR_ICON_HEIGHT 24
 
-#define DEFAULT_FONT   "/sys/fonts/Tahoma.kf"
 #define DEFAULT_EDITOR "/sys/tinypad"
 
 #define INTRO_TEXT "This is a plain Text Reader.\nTry to open some text file."
-#define VERSION "Text Reader v1.04"
+#define VERSION "Text Reader v1.05"
 #define ABOUT "Idea: Leency, punk_joker
 Code: Leency, Veliant, KolibriOS Team
 
@@ -71,24 +70,11 @@ void InitDlls()
 
 void main()
 {   	
-	InitDlls();
-	
+	InitDlls();	
 	OpenDialog_init stdcall (#o_dialog);
-	
-	font.color      = 0;
-	font.bg_color   = 0xFFFFFF;
-	
-	font.load(DEFAULT_FONT);
-	
-	if (!font.data) {
-		io.run("/sys/@notify","'Error: Font is not loaded.' -E");
-		ExitProcess();
-	}
-	
+	label.init(DEFAULT_FONT);
 	Libimg_LoadImage(#skin, abspath("toolbar.png"));
-	
 	LoadIniSettings();
-	
 	OpenFile(#param);
 	list.no_selection = true;
 	SetEventMask(10000000000000000000000001100111b);
@@ -215,18 +201,18 @@ void EventOpenFile()
 
 void EventMagnifyPlus()
 {
-	font.size.text++;
-	if(!font.changeSIZE())
-		font.size.text--;
+	label.size.pt++;
+	if(!label.changeSIZE())
+		label.size.pt--;
 	else
 		PreparePage();
 }
 
 void EventMagnifyMinus()
 {
-	font.size.text--;
-	if(!font.changeSIZE())
-		font.size.text++;
+	label.size.pt--;
+	if(!label.changeSIZE())
+		label.size.pt++;
 	else
 		PreparePage();
 }
@@ -303,6 +289,6 @@ void draw_window()
 
 void DrawPage()
 {
-	_PutImage(list.x,list.y,list.w,list.h,list.first*list.item_h*list.w*3 + font.buffer);
+	_PutImage(list.x,list.y,list.w,list.h,list.first*list.item_h*list.w*3 + label.raw);
 	DrawScroller();
 }

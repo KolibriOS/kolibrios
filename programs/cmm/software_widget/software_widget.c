@@ -58,8 +58,7 @@ void load_config()
 void main()
 {   
 	dword id, key;
-	font.load("/sys/fonts/Tahoma.kf");
-	font.smooth = true;
+	label.init("/sys/fonts/Tahoma.kf");
 	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libini, #lib_init,1);
@@ -146,15 +145,9 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 	icon_char_pos = strchr(key_value, ',');
 	if (icon_char_pos) icon_id = atoi(icon_char_pos+1); else icon_id = default_icon;
 	img_draw stdcall(skin.image, col*cell_w+tmp-10, row*cell_h+5 + list_pos, 32, 32, 0, icon_id*32);
-	//WriteTextCenter(col*cell_w+7,row*cell_h+47 + list_pos,cell_w,0xDCDCDC,key_name);
-	//WriteTextCenter(col*cell_w+6,row*cell_h+46 + list_pos,cell_w,0x000000,key_name);
-	font.size = 12;
-	font.color = 0xDCDCDC;
-	font.bold = false;
-	font.bg_color = LIST_BACKGROUND_COLOR;
-	font.write_center(col*cell_w+7,row*cell_h+47 + list_pos,cell_w,0,key_name);
-	font.color = 0;
-	font.write_center(col*cell_w+6,row*cell_h+46 + list_pos,cell_w,0,key_name);
+	label.bold = false;
+	label.write_center(col*cell_w+7,row*cell_h+47 + list_pos, cell_w,0, LIST_BACKGROUND_COLOR, 0xDCDCDC, 12, key_name);
+	label.write_center(col*cell_w+6,row*cell_h+46 + list_pos, cell_w,0, LIST_BACKGROUND_COLOR, 0x000000, 12, key_name);
 	current_item_id++;
 	col++;
 	return true;
@@ -184,10 +177,8 @@ byte process_sections(dword sec_name, f_name)
 		old_row = row;
 		DrawBar(0, row * cell_h + list_pos, Form.cwidth , 29, LIST_BACKGROUND_COLOR);
 		//WriteTextB(10, row * cell_h + 9 + list_pos, 0x90, 0x000000, sec_name);
-		font.size=15;
-		font.bold=false;
-		font.bg_color = LIST_BACKGROUND_COLOR;
-		text_len = font.write(10, row * cell_h + 10 + list_pos,sec_name);
+		label.bold=false;
+		text_len = label.write(10, row * cell_h + 10 + list_pos, LIST_BACKGROUND_COLOR, 0, 15, sec_name);
 		DrawBar(text_len+20, row * cell_h + list_pos + 20, Form.cwidth-text_len-20, 1, 0xDCDCDC);
 		DrawBar(text_len+20, row * cell_h + list_pos + 21, Form.cwidth-text_len-20, 1, 0xFCFCFC);
 		list_pos += 29;
@@ -201,10 +192,8 @@ void draw_top_bar()
 	int top_position = 26;
 	DrawBar(0,0,Form.cwidth, top_position-1, system.color.work);
 	DrawBar(0,top_position-1, Form.cwidth, 1, system.color.work_graph);
-	font.size = 17;
-	font.bold = false;
-	font.bg_color = system.color.work;
-	font.write(Form.cwidth-font.getsize(#window_title)/2,0,#window_title);
+	label.bold = false;
+	label.write_center(0,0, Form.cwidth, top_position, system.color.work, system.color.work_text, 17, #window_title);
 	list_top = top_position;
 	list_pos = list_top;
 	row = -1;

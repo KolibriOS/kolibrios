@@ -116,14 +116,7 @@ void main()
 	WB1.DrawBuf.zoom = 1;
 	WB1.list.SetFont(8, 14, 10111000b);
 	WB1.list.no_selection = true;
-	//font init
-	font.bg_color   = 0xFFFFFF;
-	font.load(DEFAULT_FONT);
-	if (!font.data) {
-		notify("'Error: Font is not loaded.' -E");
-		ExitProcess();
-	}
-	//
+	label.init(DEFAULT_FONT);
 	SetEventMask(0xa7);
 	BEGIN_LOOP_APPLICATION:
 		WaitEventTimeout(2);
@@ -263,7 +256,7 @@ void SetElementSizes()
 
 void Draw_Window()
 {
-	int list__w;
+	int list__w, list__h;
 	DrawBar(0,0, Form.cwidth,TOOLBAR_H-2, panel_color);
 	DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, 0xD7D0D3);
 	DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, border_color);
@@ -283,19 +276,13 @@ void Draw_Window()
 
 	/*
 	list__w = 200;
-	font.buffer_size = 0;
-	font.size.height = 200;
-	font.color = 0x000000;
-	font.size.text = 11;
-	font.write_buf(10,10,list__w,font.size.height, "Hello World!");
-	font.color = 0xFF00FF;
-	font.size.text = 12;
-	font.write_buf(10,23,list__w,font.size.height, "How are you?");
-	font.color = 0x2E74BB;
-	font.size.text = 15;
-	font.write_buf(11,40,list__w,font.size.height, "Fine");
-	font.apply_smooth();
-	_PutImage(0,0,list__w,font.size.height,font.buffer);
+	list__h = 200;
+	label.raw_size = 0;
+	label.write_buf(10,10, list__w, list__h, 0xFFFFFF, 0, 11, "Hello World!");
+	label.write_buf(10,23, list__w, list__h, 0xFFFFFF, 0xFF00FF, 12, "How are you?");
+	label.write_buf(11,40, list__w, list__h, 0xFFFFFF, 0x2E74BB, 15, "Fine");
+	label.apply_smooth();
+	label.show_buf(0,0);
 	*/
 }
 

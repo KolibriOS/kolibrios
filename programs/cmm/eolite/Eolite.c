@@ -702,7 +702,7 @@ void Line_ReDraw(dword bgcol, filenum){
 		if (text_col==0xA6A6B7) text_col=0xFFFFFF;
 	}
 	if (file.selected) text_col=0xFF0000;
-	if (font.size.text==9) || (!font.data)
+	if (label.size.pt==9) || (!label.font)
 	{
 		if (Form.width>=480)
 		{
@@ -717,9 +717,8 @@ void Line_ReDraw(dword bgcol, filenum){
 	}
 	else
 	{
-		font.bg_color = bgcol;
-		font.smooth = smooth_font;
-		font.write(files.x + 23, files.item_h - font.height / 2 + y, file_name_off);
+		label.smooth = smooth_font;
+		label.write(files.x + 23, files.item_h - label.height / 2 + y, bgcol, text_col, label.size.pt, file_name_off);
 	}
 	DrawBar(files.x+files.w-141,y,1,files.item_h,system.color.work); //gray line 1
 	DrawBar(files.x+files.w-68,y,1,files.item_h,system.color.work); //gray line 2

@@ -58,8 +58,8 @@ void settings_dialog()
 				else if (id==27) MOUSE_TIME++;
 				else if (id==28) && (MOUSE_TIME>29) MOUSE_TIME--;
 				//else if (id==29) smooth_font ^= true;
-				else if (id==30) { font.size.text++; IF(!font.changeSIZE()) font.size.text--; BigFontsChange(); }
-				else if (id==31) { font.size.text--; IF(!font.changeSIZE()) font.size.text++; BigFontsChange(); }
+				else if (id==30) { label.size.pt++; IF(!label.changeSIZE()) label.size.pt--; BigFontsChange(); }
+				else if (id==31) { label.size.pt--; IF(!label.changeSIZE()) label.size.pt++; BigFontsChange(); }
 				EventRedrawWindow(Form.left,Form.top);
 				DrawSettingsCheckBoxes();
 			break;
@@ -95,7 +95,7 @@ void DrawSettingsCheckBoxes()
 	//CheckBox2(10, 99, 29, smooth_FONT,  smooth_font); 
 	MoreLessBox(10, 99, 18, 27, 28, #system.color, MOUSE_TIME, T_DOUBLE_CLICK);
 	MoreLessBox(10, 125, 18, 25, 26, #system.color, files.item_h, LIST_LINE_HEIGHT);
-	if (font.data) MoreLessBox(10, 152, 18, 30, 31, #system.color, font.size.text, FONT_SIZE_LABEL);
+	if (label.font) MoreLessBox(10, 152, 18, 30, 31, #system.color, label.size.pt, FONT_SIZE_LABEL);
 }
 
 
@@ -107,7 +107,7 @@ void LoadIniSettings()
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "ShowDeviceName",    1); show_dev_name = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "RealFileNamesCase", 0); real_files_names_case = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "InfoAfterCopy",     0); info_after_copy = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #config_section, "FontSize",          9); font.size.text = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #config_section, "FontSize",          9); label.size.pt = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "TwoPanels",         0); two_panels = EAX;
 	//ini_get_int stdcall   (eolite_ini_path, #config_section, "UseSmoothFont",     true);smooth_font = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "LineHeight",       18); files.item_h = EAX;
@@ -118,8 +118,8 @@ void LoadIniSettings()
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinH", 500); WinH = EAX;
 	ini_get_str stdcall   (eolite_ini_path, #config_section, "DefaultPath", #path,4096,"/rd/1/");
 
-	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font file",#temp,4096,"/sys/FONTS/Tahoma.kf");
-	font.load(#temp);
+	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font file",#temp,4096,DEFAULT_FONT);
+	label.init(#temp);
 	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font smoothing",#temp,4096,"on");
 	if(!strcmp(#temp,"off"))smooth_font = false;
 	else smooth_font = true;
@@ -132,7 +132,7 @@ void SaveIniSettings()
 	ini_set_int stdcall (eolite_ini_path, #config_section, "ShowDeviceName", show_dev_name);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "RealFileNamesCase", real_files_names_case);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "InfoAfterCopy", info_after_copy);
-	ini_set_int stdcall (eolite_ini_path, #config_section, "FontSize", font.size.text);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "FontSize", label.size.pt);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "TwoPanels", two_panels);
 	//ini_set_int stdcall (eolite_ini_path, #config_section, "UseSmoothFont", smooth_font);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "LineHeight", files.item_h);
@@ -147,7 +147,7 @@ void SaveIniSettings()
 		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "ShowDeviceName", show_dev_name);
 		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "RealFileNamesCase", real_files_names_case);
 		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "InfoAfterCopy", info_after_copy);
-		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "FontSize", font.size.text);
+		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "FontSize", label.size.pt);
 		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "TwoPanels", two_panels);
 		//ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "UseSmoothFont", smooth_font);
 		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "LineHeight", files.item_h);
@@ -187,7 +187,7 @@ void SetAppColors()
 
 void BigFontsChange()
 {
-	files.item_h = font.size.text + 4;
+	files.item_h = label.size.pt + 4;
 	if (files.item_h<18) files.item_h = 18;
 	files_active.item_h = files_inactive.item_h = files.item_h;
 }

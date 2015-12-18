@@ -10,10 +10,10 @@ void PreparePage()
 	dword stroka=0;
 	int i, srch_pos;
 	
-	font.changeSIZE();
+	label.changeSIZE();
 	list.w = Form.cwidth-scroll.size_x-1;
 	//get font chars width, need to increase performance
-	for (i=0; i<256; i++) char_width[i] = font.symbol_size(i);
+	for (i=0; i<256; i++) char_width[i] = label.symbol_size(i);
 	//get font buffer height
 	for (bufoff=io.buffer_data; ESBYTE[bufoff]; bufoff++)
 	{
@@ -34,11 +34,11 @@ void PreparePage()
 	}
 	//draw text in buffer
 	list.count = stroka+2;
-	list.SetSizes(0, TOOLBAR_H, list.w, Form.cheight-TOOLBAR_H, font.size.text+1);
+	list.SetSizes(0, TOOLBAR_H, list.w, Form.cheight-TOOLBAR_H, label.size.pt+1);
 	if (list.count < list.visible) list.count = list.visible;
 
-	font.size.height = list.count+1*list.item_h;
-	font.buffer_size = 0;
+	label.size.height = list.count+1*list.item_h;
+	label.raw_size = 0;
 
 	line_length = 30;
 	line_start = io.buffer_data;
@@ -58,13 +58,13 @@ void PreparePage()
 			}
 			i = bufoff-line_start;
 			strlcpy(#line, line_start, i);
-			font.write_buf(8,stroka_y,list.w,font.size.height, #line);
+			label.write_buf(8,stroka_y,list.w,label.size.height, 0xFFFFFF, 0, label.size.pt, #line);
 			stroka_y += list.item_h;
 			line_start = bufoff;
 			line_length = 30;
 		}
 	}
-	font.write_buf(8,stroka_y,list.w,font.size.height, line_start);
-	font.apply_smooth();
+	label.write_buf(8,stroka_y,list.w,label.size.height, 0xFFFFFF, 0, label.size.pt, line_start);
+	label.apply_smooth();
 	DrawPage();
 }

@@ -8,12 +8,10 @@
 void main()
 {   
 	proc_info Form;
-	word i, y, btn;
+	int i, y, btn;
 	char line[256], title[4196];
-	font.color = 0;
-	font.bg_color = 0xFFFFFF;
 	if (!param) strcpy(#param, DEFAULT_FONT);
-	font.load(#param);
+	label.init(#param);
 	strcpy(#title, "Font preview: ");
 	strcat(#title, #param);
 	loop()
@@ -23,32 +21,32 @@ void main()
 		case evButton:
 			btn = GetButtonID();
 			if (btn==1) ExitProcess();
-			if (btn==2) font.bold ^=1;
-			if (btn==3) font.italic ^=1;
-			if (btn==4) font.smooth ^=1;
+			if (btn==2) label.bold ^=1;
+			if (btn==3) label.italic ^=1;
+			if (btn==4) label.smooth ^=1;
 			goto _DRAW_WINDOW_CONTENT;
 		case evReDraw:
 			DefineAndDrawWindow(215,100,500,320,0x74,0xFFFFFF,#title);
 			GetProcessInfo(#Form, SelfInfo);
+			if (Form.status_window>2) break;
 			_DRAW_WINDOW_CONTENT:
 			DrawBar(0, 0, Form.cwidth, PANELH, 0xCCCccc);
-			CheckBox2(10, 8, 2, "Bold",  font.bold);
-			CheckBox2(70, 8, 3, "Italic",  font.italic);
-			CheckBox2(140, 8, 4, "Smooth",  font.smooth);
-			font.buffer_size = free(font.buffer);
-			if (!font.data)
+			CheckBox2(10, 8, 2, "Bold",  label.bold);
+			CheckBox2(70, 8, 3, "Italic",  label.italic);
+			CheckBox2(140, 8, 4, "Smooth",  label.smooth);
+			label.raw_size = free(label.raw);
+			if (!label.font)
 			{
 				DrawBar(0, PANELH, Form.cwidth, Form.cheight - PANELH, 0xFFFfff);
 				WriteText(10, 50, 0x82, 0xFF00FF, "Font is not loaded.");
 			}
-			else for (i=10, y=5; i<22; i++, y+=font.height;) //not flexible, need to calculate font count and max line length
+			else for (i=10, y=5; i<22; i++, y+=label.height;) //not flexible, need to calculate font count and max line length
 			{
-				font.size.text = i;
 				sprintf(#line,"Размер шрифта/size font %d пикселей.",i);
-				font.write_buf(10,y,Form.cwidth,Form.cheight-PANELH, #line);
+				label.write_buf(10,y,Form.cwidth,Form.cheight-PANELH, 0xFFFFFF, 0, i, #line);
 			}
-			if (font.smooth) font.apply_smooth();
-			font.show_buf(0, PANELH);
+			if (label.smooth) label.apply_smooth();
+			label.show_buf(0, PANELH);
 	  }
 	}
 }
