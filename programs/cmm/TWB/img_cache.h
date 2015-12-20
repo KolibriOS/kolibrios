@@ -44,7 +44,7 @@ void ImageCache::Images(int left1, top1, width1)
 		if (isattr("src="))
 		{
 			strcpy(#img_path, #val);
-			PageLinks.GetAbsoluteURL(#img_path);
+			GetAbsoluteURL(#img_path);
 			cur_pic = GetImage(#img_path);
 		}
 		if (isattr("alt="))

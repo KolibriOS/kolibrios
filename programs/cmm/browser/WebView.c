@@ -29,14 +29,14 @@
 char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.40";
+	char version[]=" Текстовый браузер 1.41";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.40";
+	char version[]=" Text-based Browser 1.41";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -217,7 +217,7 @@ void main()
 						{
 							http_free stdcall (http_transfer);
 							http_transfer=0;
-							PageLinks.GetAbsoluteURL(#URL);
+							GetAbsoluteURL(#URL);
 							History.back();
 							strcpy(#editURL, #URL);
 							DrawEditBox();
@@ -518,7 +518,7 @@ void ClickLink()
 		URL[strrchr(#URL, '#')-1] = 0x00;
 	}
 	
-	PageLinks.GetAbsoluteURL(#URL);
+	GetAbsoluteURL(#URL);
 	
 	if (UrlExtIs(".png")==1) || (UrlExtIs(".gif")==1) || (UrlExtIs(".jpg")==1) || (UrlExtIs(".zip")==1) || (UrlExtIs(".kex")==1)
 	|| (UrlExtIs(".7z")==1) || (UrlExtIs("netcfg")==1) 

@@ -20,8 +20,6 @@ struct LinksArray {
 	void AddText();
 	dword GetURL();
 	void Clear();
-	void GetAbsoluteURL();
-	int UrlAbsolute();
 } PageLinks;
 
 void LinksArray::AddLink(dword lpath, int link_x, link_y)
@@ -98,68 +96,3 @@ void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
 		active = -1;
 	}
 }
-
-int LinksArray::UrlAbsolute(dword in_URL)
-{
-	if(!strncmp(in_URL,"http:",5)) return 1;
-	if(!strncmp(in_URL,"https:",6)) return 1;
-	if(!strncmp(in_URL,"mailto:",7)) return 1;
-	if(!strncmp(in_URL,"ftp:",4)) return 1;
-	if(!strncmp(in_URL,"WebView:",8)) return 1;
-	if(!strncmp(in_URL,"/sys/",5)) return 1;
-	if(!strncmp(in_URL,"/hd/",4)) return 1;
-	if(!strncmp(in_URL,"/fd/",4)) return 1;
-	if(!strncmp(in_URL,"/rd/",4)) return 1;
-	if(!strncmp(in_URL,"/tmp/",5)) return 1;
-	if(!strncmp(in_URL,"/cd/",4)) return 1;
-	if(!strncmp(in_URL,"/bd/",4)) return 1;
-	if(!strncmp(in_URL,"/usbhd/",7)) return 1;
-	if(!strncmp(in_URL,"/kolibrios/",11)) return 1;
-	return 0;
-}
-
-void LinksArray::GetAbsoluteURL(dword in_URL)
-{
-	int i;
-	dword orig_URL = in_URL;
-	char newurl[sizeof(URL)];
-
-	if (UrlAbsolute(in_URL)) return;
-	
-	IF (!strcmpn(in_URL,"./", 2)) in_URL+=2;
-	if (!http_transfer) 
-	{
-		strcpy(#newurl, History.current());
-	}
-	else
-	{
-		strcpy(#newurl, History.items.get(History.active-2)); 
-	}
-
-	if (ESBYTE[in_URL] == '/') //remove everything after site domain name
-	{
-		i = strchr(#newurl+8, '/');
-		if (i) ESBYTE[i]=0;
-		in_URL+=1;
-	}
-		
-	_CUT_ST_LEVEL_MARK:
-		
-	if (newurl[strrchr(#newurl, '/')-2]<>'/')
-	{
-		newurl[strrchr(#newurl, '/')] = 0x00;
-	}
-	
-	IF (!strncmp(in_URL,"../",3))
-	{
-		in_URL+=3;
-		newurl[strrchr(#newurl, '/')-1] = 0x00;
-		goto _CUT_ST_LEVEL_MARK;
-	}
-	
-	if (newurl[strlen(#newurl)-1]<>'/') strcat(#newurl, "/"); 
-	
-	strcat(#newurl, in_URL);
-	strcpy(orig_URL, #newurl);
-}
-

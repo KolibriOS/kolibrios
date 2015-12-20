@@ -62,6 +62,7 @@ char attr[1200];
 char val[4096];
 char anchor[256]=0;
 
+#include "..\TWB\absolute_url.h"
 #include "..\TWB\links.h"
 #include "..\TWB\colors.h"
 #include "..\TWB\unicode_tags.h"
@@ -352,8 +353,7 @@ void TWebBrowser::SetStyle() {
 		return;
 	}
 	if (istag("br")) { NewLine(); return; }
-	if (istag("tr")) { if (opened) { NewLine(); strcat(#line, "| "); } return; }
-	if (istag("td")) || (istag("th")) { if (!opened) strcat(#line, " | "); return; }
+	if (istag("tr")) { if (opened) NewLine(); return; }
 	if (istag("b")) || (istag("strong")) || (istag("big")) { style.b = opened; return; }
 	if (istag("i")) || (istag("em")) || (istag("subtitle")) { style.i=opened; return; }
 	if (istag("u")) || (istag("ins")) { style.u=opened; return;}
