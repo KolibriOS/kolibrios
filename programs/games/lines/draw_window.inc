@@ -11,13 +11,13 @@ macro draw_window {
 	mcall	0			; нарисовать окно
 
 
-	mov	ebx, 12*65536 + 7	;РИСУЕМ ОЧКИ
+	mov	ebx, 12*65536 + 5	;РИСУЕМ ОЧКИ
 	mov	ecx, 0x90000000
 	mov	edx, szScore
 	mcall	4
 	call	redraw_score
 
-	mov	ebx, 234*65536 + 7	;РИСУЕМ РЕКОРД
+	mov	ebx, 234*65536 + 5	;РИСУЕМ РЕКОРД
 	mov	ecx, 0x90000000
 	mov	edx, szRecord
 	mcall	4
@@ -29,7 +29,7 @@ macro draw_window {
 
 	mov	ebx, 0xB0000
 	mov	ecx, [record]
-	mov	edx, 237*65536 + 27
+	mov	edx, 237*65536 + 24
 	mov	esi, 0x10ffffff
 	mcall	47
 

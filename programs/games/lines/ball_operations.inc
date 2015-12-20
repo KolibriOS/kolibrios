@@ -177,7 +177,7 @@ redraw_score:
 
 	mov	ebx, 0xB0000
 	mov	ecx, [score]
-	mov	edx, 15*65536 + 27
+	mov	edx, 15*65536 + 24
 	mov	esi, 0x10ffffff
 	mcall	47
 	ret

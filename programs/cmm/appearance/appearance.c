@@ -13,7 +13,7 @@
 #include "..\lib\obj\box_lib.h"
 
 #ifdef LANG_RUS
-	?define WINDOW_HEADER "Усправление темой"
+	?define WINDOW_HEADER "Управление темой"
 	?define T_SKINS       "   Тема окон"
 	?define T_WALLPAPERS  "   Обои рабочего стола"
 #else
