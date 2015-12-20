@@ -122,7 +122,7 @@ void main()
 	rand_n = random(40);
 
 	load_dll(boxlib, #box_lib_init,0);
-    load_dll(libini, #lib_init,1);
+	load_dll(libini, #lib_init,1);
 
 	eolite_ini_path = abspath("Eolite.ini");
 	fd_path_eolite_ini_path = "/fd/1/File Managers/Eolite.ini";
@@ -370,8 +370,8 @@ void main()
 				}
 				if (new_element_active)
 				{
-					if (key_scancode == SCAN_CODE_ESC) NewElement(0);
-					if (key_scancode == SCAN_CODE_ENTER) NewElement(1);
+					if (key_scancode == SCAN_CODE_ENTER) NewElement(true);
+					if (key_scancode == SCAN_CODE_ESC) NewElement(false);
 					EAX= key_ascii << 8;
 					edit_box_key stdcall (#new_file_ed);
 					break;
@@ -507,7 +507,7 @@ void main()
 					if (action_buf==OPERATION_END)
 					{
 						FnProcess(5);
-						SelectFileByName(#copy_to+strrchr(#copy_to,'/'));
+						if (copy_stak) SelectFileByName(#copy_to+strrchr(#copy_to,'/'));
 					}
 					if (action_buf==100) Open(0);
 					if (action_buf==201) ShowOpenWithDialog();
@@ -523,14 +523,14 @@ void main()
 					action_buf=0;
 				}
 		}
-		
 		if(cmd_free)
 		{
-			if(cmd_free==1)     free(menu_stak);
-			else if(cmd_free==2)free(about_stak);
-			else if(cmd_free==3)free(properties_stak);
-			else if(cmd_free==4)free(settings_stak);
-			else if(cmd_free==5)free(copy_stak);
+			if(cmd_free==1)      menu_stak=free(menu_stak);
+			else if(cmd_free==2) about_stak=free(about_stak);
+			else if(cmd_free==3) properties_stak=free(properties_stak);
+			else if(cmd_free==4) settings_stak=free(settings_stak);
+			else if(cmd_free==5) copy_stak=free(copy_stak);
+			else if(cmd_free==6) delete_stak=free(delete_stak);
 			cmd_free = false;
 		}
 	}
@@ -662,11 +662,11 @@ void List_ReDraw()
 
 void Line_ReDraw(dword bgcol, filenum){
 	dword text_col=0,
-	      ext1, attr,
-	      file_offet,
-	      file_name_off,
-	      y=filenum*files.item_h+files.y;
-	      BDVK file;
+		  ext1, attr,
+		  file_offet,
+		  file_name_off,
+		  y=filenum*files.item_h+files.y;
+		  BDVK file;
 	if (filenum==-1) return;
 	DrawBar(files.x,y,3,files.item_h,bgcol); 
 	DrawBar(files.x+19,y,files.w-19,files.item_h,bgcol);
@@ -886,16 +886,16 @@ void Del_File_Thread()
 	
 	if (selected_count)
 	{
-   	   for (i=0; i<files.count; i++) 
-          {
-               selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-			    if (ESBYTE[selected_offset2]) {
+	   for (i=0; i<files.count; i++) 
+		  {
+			   selected_offset2 = file_mas[i]*304 + buf+32 + 7;
+				if (ESBYTE[selected_offset2]) {
 					sprintf(#del_from,"%s%s",#path,file_mas[i]*304+buf+72);
 					GetFileInfo(#del_from, #file_info_count);
 					if ( file_info_count.isfolder ) DirFileCount(#del_from);
 					else file_count_copy++;
 				}
-           }
+		   }
 	}
 	else
 	{
@@ -905,34 +905,26 @@ void Del_File_Thread()
 	
 	copy_bar.max = file_count_copy;
 	
-	//if (dodel==true)
-	//{
-		//del_active=2;
-		//if (itdir) ShowMessage(WAIT_DELETING_FOLDER, 0);
-		del_error = 0;
-		DisplayOperationForm();
-		if (selected_count)
+	del_error = 0;
+	DisplayOperationForm();
+	if (selected_count)
+	{
+		for (i=0; i<files.count; i++) 
 		{
-   		   for (i=0; i<files.count; i++) 
-           {
-                selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-                if (ESBYTE[selected_offset2]) {
-					sprintf(#del_from,"%s%s",#path,file_mas[i]*304+buf+72);
-                    Del_File2(#del_from, 1);
-                }
-            }
+			selected_offset2 = file_mas[i]*304 + buf+32 + 7;
+			if (ESBYTE[selected_offset2]) {
+				sprintf(#del_from,"%s%s",#path,file_mas[i]*304+buf+72);
+				Del_File2(#del_from, 1);
+			}
 		}
-		else
-		{
-		   Del_File2(#file_path, 1);			
-		}
-		if (del_error) Write_Error(del_error);
- 	DialogExit();
-	//}
-	//del_active=0;
-	//DeleteButton(301);
-	//DeleteButton(302);
-	//Open_Dir(#path,WITH_REDRAW);
+	}
+	else
+	{
+		Del_File2(#file_path, 1);			
+	}
+	if (del_error) Write_Error(del_error);
+	cmd_free = 6;
+	DialogExit();
 }
 
 void Del_File(byte dodel) {
@@ -949,7 +941,7 @@ void SelectFileByName(dword that_file)
 {
 	int ind;
 	files.KeyHome();
-   	Open_Dir(#path,ONLY_OPEN);
+	Open_Dir(#path,ONLY_OPEN);
 	if (!real_files_names_case) strttl(that_file);
 	for (ind=files.count-1; ind>=0; ind--;) { if (!strcmp(file_mas[ind]*304+buf+72,that_file)) break; }
 	files.cur_y = ind - 1;
