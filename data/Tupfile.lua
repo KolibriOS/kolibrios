@@ -70,7 +70,6 @@ img_files = {
  {"SETTINGS/NETWORK.INI", build_type .. "/settings/network.ini"},
  {"NETWORK/FTPD.INI", "common/network/ftpd.ini"},
  {"NETWORK/USERS.INI", "common/network/users.ini"},
- {"FONT_VIEWER", "common/font_viewer"},
 }
 -- For russian build, add russian-only files.
 if build_type == "rus" then tup.append_table(img_files, {
@@ -472,6 +471,7 @@ end -- tup.getconfig('NO_NASM') ~= 'full'
 if tup.getconfig('NO_CMM') ~= 'full' then
 tup.append_table(img_files, {
  {"File Managers/EOLITE", PROGS .. "/cmm/eolite/Eolite.com"},
+ {"FONT_VIEWER", PROGS .. "/cmm/kf_font_viewer/font_viewer.com"},
  {"GAMES/CLICKS", PROGS .. "/games/clicks/trunk/clicks.com"},
  {"GAMES/FindNumbers", PROGS .. "/games/FindNumbers/trunk/FindNumbers"},
  {"GAMES/flood-it", PROGS .. "/games/flood-it/trunk/flood-it.com"},
