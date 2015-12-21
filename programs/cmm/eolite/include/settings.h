@@ -9,7 +9,7 @@
 	?define smooth_FONT "Использовать сглаженный шрифт"
 	?define LIST_LINE_HEIGHT "Высота строки в списке"
 	?define NOTIFY_COPY_END "Уведомлять о завершении копирования"
-	#define SAVE_PATH_AS_DEFAULT "Сохранить текущий путь по умолчанию"
+	?define SAVE_PATH_AS_DEFAULT "Сделать текущий путь домашним каталогом"
 #else
 	?define EDIT_FILE_ASSOCIATIONS "Edit file associations"
 	?define TITLE_SETT "Settings"
@@ -20,7 +20,7 @@
 	?define smooth_FONT "Use smooth font"
 	?define LIST_LINE_HEIGHT "List line height"
 	?define NOTIFY_COPY_END "Notify when copying finished"
-	#define SAVE_PATH_AS_DEFAULT "Save the current default path"
+	?define SAVE_PATH_AS_DEFAULT "Save current path as home folder"
 #endif
 
 char config_section[] = "Config";
@@ -66,10 +66,10 @@ void settings_dialog()
 				break;
 				
 			case evReDraw:
-				DefineAndDrawWindow(Form.left + Form.width/2-10, Form.top + Form.height/2 - 75, 300, 260+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
+				DefineAndDrawWindow(Form.left + Form.width/2-10, Form.top + Form.height/2 - 75, 300, 240+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
 				DrawSettingsCheckBoxes();
-				DrawFlatButton(9, 183, strlen(SAVE_PATH_AS_DEFAULT)+4*6, 22, 6, 0xE4DFE1, SAVE_PATH_AS_DEFAULT);
-				DrawFlatButton(9, 215, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
+				DrawFlatButton(9, 166, strlen(SAVE_PATH_AS_DEFAULT)+4*6, 22, 6, 0xE4DFE1, SAVE_PATH_AS_DEFAULT);
+				DrawFlatButton(9, 198, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
 		}
 	}
 }
@@ -88,8 +88,8 @@ void DrawSettingsCheckBoxes()
 	CheckBox2(10, 33, 21, SHOW_REAL_NAMES,  real_files_names_case);
 	CheckBox2(10, 55, 22, NOTIFY_COPY_END,  info_after_copy);
 	CheckBox2(10, 77, 24, USE_TWO_PANELS,  two_panels);
-	MoreLessBox(10, 125, 18, 25, 26, #system.color, files.item_h, LIST_LINE_HEIGHT);
-	if (label.font) MoreLessBox(10, 152, 18, 30, 31, #system.color, label.size.pt, FONT_SIZE_LABEL);
+	MoreLessBox(10, 105, 18, 25, 26, #system.color, files.item_h, LIST_LINE_HEIGHT);
+	if (label.font) MoreLessBox(10, 132, 18, 30, 31, #system.color, label.size.pt, FONT_SIZE_LABEL);
 }
 
 

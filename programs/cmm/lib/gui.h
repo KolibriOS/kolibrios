@@ -177,15 +177,20 @@
 	}
 }
 
-:void ShadowPixel(dword color_image, strength)
+:dword ShadowPixel(dword dwColor, strength)
 {
-	dword to = color_image + 3;
+	dword iB, iG, iR;
 	strength = 10 - strength;
-	for ( ; color_image < to; color_image++)
-	{
-		ESI = strength * DSBYTE[color_image] / 10;
-		DSBYTE[color_image] = ESI;
-	}
+
+	iB = dwColor & 0xFF; dwColor >>= 8;
+	iG = dwColor & 0xFF; dwColor >>= 8;
+	iR = dwColor & 0xFF; dwColor >>= 8;
+
+	iB = strength * iB / 10 << 16;
+	iG = strength * iG / 10 << 8;
+	iR = strength * iR / 10;
+
+	return iR + iG + iB;
 }
 :void ShadowImage(dword color_image, w, h, strength)
 {

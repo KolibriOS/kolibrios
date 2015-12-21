@@ -24,7 +24,7 @@
 	__SIZE size;
 	int width,height;
 	byte bold,italic,smooth;
-	dword color;
+	dword color, background;
 	dword font,font_begin;
 	word block;
 	byte init();
@@ -215,35 +215,36 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 	to = size.height - 1 * line_w + raw - 3;
 	for(i=raw; i < to; i+=3)
 	{
-		IF(i-raw%line_w +3 == line_w) continue;
-		IF(b24(i)==0x000000) && (b24(i+3)!=0x000000) && (b24(i+line_w)!=0x000000) && (b24(i+3+line_w)==0x000000)
-		{ 
-			ShadowPixel(i+3, 2);
-			ShadowPixel(i+line_w, 2);
-		}
-		ELSE IF(b24(i)!=0x000000) && (b24(i+3)==0x000000) && (b24(i+line_w)==0x000000) && (b24(i+3+line_w)!=0x000000)
+		if(i-raw%line_w +3 == line_w) continue;
+		if(b24(i)==0x000000) && (b24(i+3)!=0x000000) && (b24(i+line_w)!=0x000000) && (b24(i+3+line_w)==0x000000)
 		{
-			ShadowPixel(i, 2);
-			ShadowPixel(i+3+line_w, 2);
+			ShadowImage(i+3, 1, 1, 2);
+			ShadowImage(i+line_w, 1, 1, 2);
+		}
+		else if(b24(i)!=0x000000) && (b24(i+3)==0x000000) && (b24(i+line_w)==0x000000) && (b24(i+3+line_w)!=0x000000)
+		{
+			ShadowImage(i, 1, 1, 2);
+			ShadowImage(i+3+line_w, 1, 1, 2);
 		}
 	}
 }
 
-:int LABEL::write_center(dword x,y,w,h; dword background, color1; byte fontSizePoints; dword txt)
+:int LABEL::write_center(dword x,y,w,h; dword _background, _color; byte fontSizePoints; dword txt)
 {
 	size.pt = fontSizePoints;
 	getsize(txt);
-	return write(w-size.width/2+x,y, background, color1, fontSizePoints, txt);
+	return write(w-size.width/2+x,y, _background, _color, fontSizePoints, txt);
 }
 
-:int LABEL::write(int x,y; dword background, color1; byte fontSizePoints; dword text1)
+:int LABEL::write(int x,y; dword _background, _color; byte fontSizePoints; dword text1)
 {
 	signed len=0;
 	IF(!text1)return false;
 	IF(size.pt)IF(!changeSIZE())return false;
 	size.pt = fontSizePoints;
 	getsize(text1);
-	color = color1;
+	color = _color;
+	background = _background;
 	y -= size.offset_y;
 	EDX = size.width*size.height*3;
 	IF(!raw_size)
@@ -274,7 +275,7 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 	return len;
 }
 
-:void LABEL::write_buf(int x,y,w,h; dword background, color1; byte fontSizePoints; dword text1)
+:void LABEL::write_buf(int x,y,w,h; dword _background, _color; byte fontSizePoints; dword text1)
 {
 	dword new_raw_size;
 	IF(!text1)return;
@@ -283,7 +284,8 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 	size.pt = fontSizePoints;
 	getsize(text1);
 	y -= size.offset_y;
-	color = color1;
+	color = _color;
+	background = _background;
 
 	size.width = w;
 	size.height = h;
