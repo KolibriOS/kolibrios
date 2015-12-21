@@ -9,7 +9,6 @@
 	?define smooth_FONT "Использовать сглаженный шрифт"
 	?define LIST_LINE_HEIGHT "Высота строки в списке"
 	?define NOTIFY_COPY_END "Уведомлять о завершении копирования"
-	?define T_DOUBLE_CLICK "Время двойного клика (в сотых)"
 	#define SAVE_PATH_AS_DEFAULT "Сохранить текущий путь по умолчанию"
 #else
 	?define EDIT_FILE_ASSOCIATIONS "Edit file associations"
@@ -21,7 +20,6 @@
 	?define smooth_FONT "Use smooth font"
 	?define LIST_LINE_HEIGHT "List line height"
 	?define NOTIFY_COPY_END "Notify when copying finished"
-	?define T_DOUBLE_CLICK "Double click time (in hundredths)"
 	#define SAVE_PATH_AS_DEFAULT "Save the current default path"
 #endif
 
@@ -55,8 +53,6 @@ void settings_dialog()
 				else if (id==24) two_panels ^= true;
 				else if (id==25) { files.item_h++; files_active.item_h = files_inactive.item_h = files.item_h; }
 				else if (id==26) && (files.item_h>18) files.item_h--;
-				else if (id==27) MOUSE_TIME++;
-				else if (id==28) && (MOUSE_TIME>29) MOUSE_TIME--;
 				//else if (id==29) smooth_font ^= true;
 				else if (id==30) { label.size.pt++; IF(!label.changeSIZE()) label.size.pt--; BigFontsChange(); }
 				else if (id==31) { label.size.pt--; IF(!label.changeSIZE()) label.size.pt++; BigFontsChange(); }
@@ -91,9 +87,7 @@ void DrawSettingsCheckBoxes()
 	CheckBox2(10, 11, 20, SHOW_DEVICE_CLASS,  show_dev_name);
 	CheckBox2(10, 33, 21, SHOW_REAL_NAMES,  real_files_names_case);
 	CheckBox2(10, 55, 22, NOTIFY_COPY_END,  info_after_copy);
-	CheckBox2(10, 77, 24, USE_TWO_PANELS,  two_panels); 
-	//CheckBox2(10, 99, 29, smooth_FONT,  smooth_font); 
-	MoreLessBox(10, 99, 18, 27, 28, #system.color, MOUSE_TIME, T_DOUBLE_CLICK);
+	CheckBox2(10, 77, 24, USE_TWO_PANELS,  two_panels);
 	MoreLessBox(10, 125, 18, 25, 26, #system.color, files.item_h, LIST_LINE_HEIGHT);
 	if (label.font) MoreLessBox(10, 152, 18, 30, 31, #system.color, label.size.pt, FONT_SIZE_LABEL);
 }
@@ -109,9 +103,7 @@ void LoadIniSettings()
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "InfoAfterCopy",     0); info_after_copy = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "FontSize",          9); label.size.pt = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "TwoPanels",         0); two_panels = EAX;
-	//ini_get_int stdcall   (eolite_ini_path, #config_section, "UseSmoothFont",     true);smooth_font = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "LineHeight",       18); files.item_h = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #config_section, "TimeDoubleClick",  50); MOUSE_TIME = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinX", 200); WinX = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinY", 50); WinY = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinW", 550); WinW = EAX;
@@ -121,8 +113,7 @@ void LoadIniSettings()
 	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font file",#temp,4096,DEFAULT_FONT);
 	label.init(#temp);
 	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font smoothing",#temp,4096,"on");
-	if(!strcmp(#temp,"off"))smooth_font = false;
-	else smooth_font = true;
+	if(!strcmp(#temp,"off")) label.smooth = false; else label.smooth = true;
 }
 
 
@@ -134,9 +125,7 @@ void SaveIniSettings()
 	ini_set_int stdcall (eolite_ini_path, #config_section, "InfoAfterCopy", info_after_copy);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "FontSize", label.size.pt);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "TwoPanels", two_panels);
-	//ini_set_int stdcall (eolite_ini_path, #config_section, "UseSmoothFont", smooth_font);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "LineHeight", files.item_h);
-	ini_set_int stdcall (eolite_ini_path, #config_section, "TimeDoubleClick", MOUSE_TIME);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "WinX", Form.left);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "WinY", Form.top);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "WinW", Form.width);
@@ -149,9 +138,7 @@ void SaveIniSettings()
 		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "InfoAfterCopy", info_after_copy);
 		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "FontSize", label.size.pt);
 		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "TwoPanels", two_panels);
-		//ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "UseSmoothFont", smooth_font);
 		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "LineHeight", files.item_h);
-		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "TimeDoubleClick", MOUSE_TIME);
 		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "WinX", Form.left);
 		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "WinY", Form.top);
 		ini_set_int stdcall (fd_path_eolite_ini_path, #config_section, "WinW", Form.width);

@@ -14,8 +14,6 @@
 #include "..\lib\obj\libini.h"
 #include "..\lib\patterns\restart_process.h"
 
-#include "kos_mouse_functions.h"
-
 #ifdef LANG_RUS
 	?define WINDOW_TITLE "Проверка и настройка параметров мыши"
 	?define CHECK_MOUSE_1 "Нажмите на этой области"

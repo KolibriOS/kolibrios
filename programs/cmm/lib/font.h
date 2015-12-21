@@ -73,8 +73,8 @@
 	}
 	$neg size.offset_y
 	$neg size.offset_x
-	size.height += size.offset_y; size.height++;
-	size.width += size.offset_x; size.width++;
+	size.height += size.offset_y+1;
+	size.width += size.offset_x+1;
 	IF(italic)
 	{
 		size.w_italic = size.height/3;

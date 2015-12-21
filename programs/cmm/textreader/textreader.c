@@ -18,7 +18,7 @@
 #define DEFAULT_EDITOR "/sys/tinypad"
 
 #define INTRO_TEXT "This is a plain Text Reader.\nTry to open some text file."
-#define VERSION "Text Reader v1.05"
+#define VERSION "Text Reader v1.06"
 #define ABOUT "Idea: Leency, punk_joker
 Code: Leency, Veliant, KolibriOS Team
 

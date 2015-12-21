@@ -802,7 +802,7 @@ void ______INIT______()
 	screen.height = GetScreenHeight();
 	
 	//program_path_length = strlen(I_Path);
-	MOUSE_TIME = 50; //Default 500 ms.
+	DOUBLE_CLICK_DELAY = GetMouseDoubleClickDelay();
 	__generator = GetStartTime();
 	
 	$push    ebx

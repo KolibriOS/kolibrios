@@ -36,7 +36,6 @@ dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
 
-byte smooth_font=false;
 byte active_about=0;
 word about_window;
 word settings_window;
@@ -667,6 +666,7 @@ void Line_ReDraw(dword bgcol, filenum){
 		  file_name_off,
 		  y=filenum*files.item_h+files.y;
 		  BDVK file;
+	char label_file_name[4096];
 	if (filenum==-1) return;
 	DrawBar(files.x,y,3,files.item_h,bgcol); 
 	DrawBar(files.x+19,y,files.w-19,files.item_h,bgcol);
@@ -717,8 +717,15 @@ void Line_ReDraw(dword bgcol, filenum){
 	}
 	else
 	{
-		label.smooth = smooth_font;
-		label.write(files.x + 23, files.item_h - label.height / 2 + y, bgcol, text_col, label.size.pt, file_name_off);
+		strcpy(#label_file_name, file_name_off);
+		if (label.getsize(#label_file_name) + 141 + 26 > files.w)
+		{
+			while (label.getsize(#label_file_name) + 141 + 26 > files.w) {
+				ESBYTE[#label_file_name+strlen(#label_file_name)-1] = NULL;
+			}
+			strcpy(#label_file_name+strlen(#label_file_name)-2, "...");			
+		}
+		label.write(files.x + 23, files.item_h - label.height / 2 + y, bgcol, text_col, label.size.pt, #label_file_name);
 	}
 	DrawBar(files.x+files.w-141,y,1,files.item_h,system.color.work); //gray line 1
 	DrawBar(files.x+files.w-68,y,1,files.item_h,system.color.work); //gray line 2

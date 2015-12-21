@@ -22,11 +22,11 @@
  *  up - key release events
  *  move - event MOUSE movements
  *  click - when clicked
- *  dblclick - double-click the default 50 (500 ms)
+ *  dblclick - double-click get system value
  *  drag - drag the element event
  */
 
-:dword __TMP_TIME,MOUSE_TIME;
+:dword __TMP_TIME,DOUBLE_CLICK_DELAY;
 :struct MOUSE
 {
 	signed x,y,xx,yy,lkm,mkm,pkm,key,tmp,tmp_time,hor,vert,down,up,move,click,dblclick,drag,left,top;
@@ -42,7 +42,7 @@
 } mouse;
 :void MOUSE::clearTime()
 {
-	tmp_time = GetStartTime()+MOUSE_TIME;
+	tmp_time = GetStartTime()+DOUBLE_CLICK_DELAY;
 }
 :void MOUSE::show()
 {
@@ -149,7 +149,7 @@
 		drag = false;
 		if(!move) click = true;
 		__TMP_TIME = GetStartTime();
-		if(__TMP_TIME-tmp_time<=MOUSE_TIME)
+		if(__TMP_TIME-tmp_time<=DOUBLE_CLICK_DELAY)
 		{ 
 			dblclick = true;
 			click    = false; 
@@ -210,6 +210,56 @@
 	get();
 	_x = x;_y = y;
 	pause(5);
+}
+
+
+/*=====================================================================================
+===========================                                 ===========================
+===========================              SYSTEM             ===========================
+===========================                                 ===========================
+=====================================================================================*/
+
+
+inline fastcall int GetMouseSpeed() {
+	$mov eax,18
+	$mov ebx,19
+	$mov ecx,0
+	$int 0x40
+}
+
+inline fastcall void SetMouseSpeed(EDX) {
+	$mov eax,18
+	$mov ebx,19
+	$mov ecx,1
+	$int 0x40
+}
+
+inline fastcall int GetMouseAcceleration() {
+	$mov eax,18
+	$mov ebx,19
+	$mov ecx,2
+	$int 0x40
+}
+
+inline fastcall void SetMouseAcceleration(EDX) {
+	$mov eax,18
+	$mov ebx,19
+	$mov ecx,3
+	$int 0x40
+}
+
+inline fastcall int GetMouseDoubleClickDelay() {
+	$mov eax,18
+	$mov ebx,19
+	$mov ecx,6
+	$int 0x40
+}
+
+inline fastcall void SetMouseDoubleClickDelay(DL) {
+	$mov eax,18
+	$mov ebx,19
+	$mov ecx,7
+	$int 0x40
 }
 
 #endif
