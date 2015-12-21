@@ -37,6 +37,8 @@ attributeOffset = 14h
 recordFlags = 16h
 recordRealSize = 18h
 recordAllocatedSize = 1ch
+baseRecordReference = 20h       ; for auxiliary records
+baseRecordReuse = 26h
 newAttributeID = 28h
     ; attribute header
 attributeType = 0
@@ -111,8 +113,8 @@ fileRealSize            dd  ?   ; in bytes
 indexOffset             dd  ?
 nodeLastRead            dd  ?
 ntfs_bCanContinue       db  ?
-ntfsNotFound            db  ?
 ntfsFolder              db  ?
+ntfsWriteAttr           db  ?   ; Warning: Don't forget to turn off!!!
 ntfsFragmentCount       db  ?
 
 cur_subnode_size        dd  ?
@@ -143,7 +145,7 @@ ntfs_user_functions:
         dd      ntfs_ReadFile
         dd      ntfs_ReadFolder
         dd      ntfs_CreateFile
-        dd      ntfs_Write
+        dd      ntfs_WriteFile
         dd      ntfs_SetFileEnd
         dd      ntfs_GetFileInfo
         dd      ntfs_SetFileInfo
@@ -277,6 +279,7 @@ ntfs_create_partition:
         mov     ecx, [ebp+PARTITION.Disk]
         mov     [eax+NTFS.Disk], ecx
         mov     [eax+NTFS.FSUserFunctions], ntfs_user_functions
+        mov     [eax+NTFS.ntfsWriteAttr], 0
 
         push    ebx ebp esi
         mov     ebp, eax
@@ -544,6 +547,7 @@ ntfs_read_frs_sector:
         ret
 
 ntfs_read_attr:
+; [ebp+NTFS.ntfsWriteAttr]=1 -> write attribute
 ;   in:
 ; [ebp+NTFS.ntfs_cur_iRecord] = number of fileRecord
 ; [ebp+NTFS.ntfs_cur_attr] = attribute type
@@ -992,6 +996,18 @@ ntfs_read_attr:
         sub     eax, [ecx+10h]  ; first_vbo
         jb      .okret
 ; eax = cluster, edx = starting sector
+        cmp     [ebp+NTFS.ntfs_cur_attr], 0x80
+        jnz     .sys
+        cmp     [ebp+NTFS.ntfs_cur_iRecord], 0
+        jz      .sys
+        push    fs_read64_app
+        cmp     [ebp+NTFS.ntfsWriteAttr], 1
+        jnz     @f
+        mov     dword[esp], fs_write64_app
+        jmp     @f
+.sys:
+        push    fs_read64_sys
+@@:
         sub     esp, 10h
         movzx   esi, word [ecx+20h]     ; mcb_info_ofs
         add     esi, ecx
@@ -1021,15 +1037,7 @@ ntfs_read_attr:
         mov     [ebp+NTFS.ntfsLastRead], eax
         push    ecx
         xor     edx, edx
-        cmp     [ebp+NTFS.ntfs_cur_attr], 0x80
-        jnz     .sys
-        cmp     [ebp+NTFS.ntfs_cur_iRecord], 0
-        jz      .sys
-        call    fs_read64_app
-        jmp     .appsys
-.sys:
-        call    fs_read64_sys
-.appsys:
+        call    dword[esp+18h]
         pop     ecx
         test    eax, eax
         jnz     .errread2
@@ -1044,7 +1052,7 @@ ntfs_read_attr:
         xor     edx, edx
         cmp     [ebp+NTFS.ntfs_cur_size], 0
         jnz     .readloop
-        add     esp, 10h
+        add     esp, 14h
         mov     eax, [ebp+NTFS.ntfs_cur_tail]
         test    eax, eax
         jz      @f
@@ -1055,11 +1063,11 @@ ntfs_read_attr:
         ret
 .errread2:
         pop     ecx
-        add     esp, 10h
+        add     esp, 14h
         stc
         ret
 .break:
-        add     esp, 10h        ; CF=0
+        add     esp, 14h        ; CF=0
         mov     [ebp+NTFS.ntfs_bCanContinue], 1
         ret
 
@@ -1211,8 +1219,8 @@ ntfs_find_lfn:
 ; in: [esi]+[esp+4] = name
 ;   out:
 ; [ebp+NTFS.ntfs_cur_iRecord] = number of MFT fileRecord
-; eax = pointer in parent index node
-; CF=1 -> file not found (or just error)
+; eax -> index in the parent index node
+; CF=1 -> file not found, eax=0 -> error
         mov     [ebp+NTFS.ntfs_cur_iRecord], 5   ; start parse from root cluster
 .doit2:
         mov     [ebp+NTFS.ntfs_cur_attr], 0x90   ; $INDEX_ROOT
@@ -1222,11 +1230,11 @@ ntfs_find_lfn:
         mov     eax, [ebp+NTFS.cur_index_buf]
         mov     [ebp+NTFS.ntfs_cur_buf], eax
         call    ntfs_read_attr
+        mov     eax, 0
         jnc     @f
 .ret:
         ret     4
 @@:
-        xor     eax, eax
         cmp     [ebp+NTFS.ntfs_cur_read], 0x20
         jc      .ret
         pushad
@@ -1345,7 +1353,6 @@ ntfs_find_lfn:
         add     esi, 0x18
         jmp     .scanloop
 .notfound:
-        mov     [ebp+NTFS.ntfsNotFound], 1
         mov     [esp+1Ch], esi
 .err:
         popad
@@ -1470,7 +1477,6 @@ ntfs_ReadFile:
         adc     edx, 0
         shrd    eax, edx, 9
         pop     edx
-.zero1:
         mov     [ebp+NTFS.ntfs_cur_offs], eax
         mov     [ebp+NTFS.ntfs_cur_buf], edx
         mov     eax, ecx
@@ -1550,7 +1556,7 @@ ntfs_ReadFolder:
         test    eax, eax
         jz      .notfound
         or      ebx, -1
-        push    11
+        push    ERROR_DEVICE
         jmp     .pop_ret
 .ok:
         cmp     [ebp+NTFS.ntfs_cur_read], 0x20
@@ -1587,7 +1593,7 @@ ntfs_ReadFolder:
         call    ntfs_unlock
         popad
         or      ebx, -1
-        movi    eax, 12
+        movi    eax, ERROR_OUT_OF_MEMORY
         ret
 @@:
         mov     [ebp+NTFS.cur_index_buf], eax
@@ -1976,6 +1982,7 @@ ntfs_datetime_to_bdfe:
 ntfs_CreateFolder:
         mov     [ebp+NTFS.ntfsFolder], 1
         jmp     @f
+
 ntfs_CreateFile:
         mov     [ebp+NTFS.ntfsFolder], 0
 @@:
@@ -1986,18 +1993,46 @@ ntfs_CreateFile:
         ret
 @@: ; 1. Search file
         call    ntfs_lock
-        mov     [ebp+NTFS.ntfsNotFound], 0
         stdcall ntfs_find_lfn, [esp+4]
-        jnc     @f      ; found; rewrite
+        jnc     .found
         cmp     [ebp+NTFS.ntfsFragmentCount], 1
         jnz     @f      ; record fragmented
-        cmp     [ebp+NTFS.ntfsNotFound], 1
-        jz      .notFound
+        test    eax, eax
+        jnz     .notFound
         push    ERROR_FS_FAIL
         jmp     ntfsError
 @@:
         push    ERROR_UNSUPPORTED_FS
         jmp     ntfsError
+
+.found:     ; rewrite
+        mov     [ebp+NTFS.ntfs_cur_attr], 0x80
+        mov     [ebp+NTFS.ntfs_cur_offs], 0
+        mov     [ebp+NTFS.ntfs_cur_size], 0
+        call    ntfs_read_attr
+        jnc     @f
+        push    ERROR_ACCESS_DENIED
+        jmp     ntfsError
+@@:
+        push    ERROR_UNSUPPORTED_FS
+        mov     eax, [ebp+NTFS.frs_buffer]
+        cmp     word [eax+baseRecordReuse], 0
+        jnz     ntfsError       ; auxiliary record
+        cmp     byte [eax+hardLinkCounter], 1
+        jnz     ntfsError       ; file copying required
+        mov     ecx, [ebp+NTFS.ntfs_attr_offs]
+        cmp     byte [ecx+nonResidentFlag], 1
+        jnz     ntfsError       ; resident $DATA
+        mov     eax, [ebx+4]
+        mov     edx, [ebx+8]
+        add     eax, [ebx+12]
+        adc     edx, 0
+        cmp     edx, [ecx+attributeRealSize+4]
+        jnz     ntfsError
+        cmp     [ecx+attributeRealSize], eax
+        jnz     ntfsError
+        jmp     ntfs_WriteFile.write
+
 .notFound:  ; create; check name
         cmp     dword [esp+4], 0
         jnz     .bad
@@ -2285,7 +2320,7 @@ ntfs_CreateFile:
         call    fs_write64_app
         test    eax, eax
         jz      .mftBitmap
-        push    11
+        push    ERROR_DEVICE
         jmp     ntfsError
 
     ; 4. MFT record
@@ -2335,8 +2370,11 @@ ntfs_CreateFile:
         shl     ebx, 9+3
         add     dword [edi+lastVCN], 8
         add     [edi+attributeAllocatedSize], ebx
+        adc     byte [edi+attributeAllocatedSize+4], 0
         add     [edi+attributeRealSize], ebx
+        adc     byte [edi+attributeRealSize+4], 0
         add     [edi+initialDataSize], ebx
+        adc     byte [edi+initialDataSize+4], 0
         add     edi, [edi+dataRunsOffset]
         movzx   eax, byte [edi]
         inc     edi
@@ -2364,14 +2402,15 @@ ntfs_CreateFile:
         and     ecx, 7
         shr     edx, 3
         add     edx, [ebp+NTFS.BitmapBuffer]
-        movzx   eax, word [edx]
-        shr     eax, cl
+        mov     ax, [edx]
+        shr     ax, cl
+        test    al, al
         jnz     ntfsError
-        mov     al, -1
+        dec     al
         xchg    [edx], al
         mov     [edx+1], al
         pop     eax
-        push    12
+        push    ERROR_OUT_OF_MEMORY
         stdcall kernel_alloc, ebx
         test    eax, eax
         jz      ntfsError
@@ -2389,7 +2428,7 @@ ntfs_CreateFile:
         call    fs_write64_sys  ; clear new records
         stdcall kernel_free, ebx
         pop     eax
-        push    11
+        push    ERROR_DEVICE
         mov     eax, esi
         shr     eax, 3+9
         mov     ebx, eax
@@ -2521,7 +2560,7 @@ ntfs_CreateFile:
         call    writeRecord
         test    eax, eax
         jz      @f
-        push    11
+        push    ERROR_DEVICE
         jmp     ntfsError
 @@:
         mov     esi, [ebp+PARTITION.Disk]
@@ -2538,7 +2577,7 @@ ntfs_CreateFile:
         call    fs_write64_sys
         test    eax, eax
         jz      @f
-        push    11
+        push    ERROR_DEVICE
         jmp     ntfsError
 @@: ; 5. Write partition bitmap
         cmp     [ebp+NTFS.ntfsFolder], 0
@@ -2560,7 +2599,7 @@ ntfs_CreateFile:
         call    fs_write64_app
         test    eax, eax
         jz      @f
-        push    11
+        push    ERROR_DEVICE
         jmp     ntfsError
 @@:
         mov     esi, [ebp+PARTITION.Disk]
@@ -2659,9 +2698,126 @@ bitmapBuffering:
         jmp     ntfsError
 
 ;----------------------------------------------------------------
-ntfs_Write:
+ntfs_WriteFile:
+        cmp     byte [esi], 0
+        jnz     @f
         xor     ebx, ebx
-        mov     eax, ERROR_UNSUPPORTED_FS
+        movi    eax, ERROR_ACCESS_DENIED
+        ret
+@@:
+        call    ntfs_lock
+        stdcall ntfs_find_lfn, [esp+4]
+        jnc     .found
+        push    ERROR_FILE_NOT_FOUND
+        jmp     ntfsError
+.found:
+        mov     [ebp+NTFS.ntfs_cur_attr], 0x80
+        mov     [ebp+NTFS.ntfs_cur_offs], 0
+        mov     [ebp+NTFS.ntfs_cur_size], 0
+        call    ntfs_read_attr
+        jnc     @f
+        push    ERROR_ACCESS_DENIED
+        jmp     ntfsError
+@@:
+        push    ERROR_UNSUPPORTED_FS
+        mov     eax, [ebp+NTFS.frs_buffer]
+        cmp     word [eax+baseRecordReuse], 0
+        jnz     ntfsError       ; auxiliary record
+        cmp     byte [eax+hardLinkCounter], 1
+        jnz     ntfsError       ; file copying required
+        mov     ecx, [ebp+NTFS.ntfs_attr_offs]
+        cmp     byte [ecx+nonResidentFlag], 1
+        jnz     ntfsError       ; resident $DATA
+        mov     eax, [ebx+4]
+        mov     edx, [ebx+8]
+        add     eax, [ebx+12]
+        adc     edx, 0
+        cmp     edx, [ecx+attributeRealSize+4]
+        jc      .write
+        jnz     ntfsError       ; end of file
+        cmp     [ecx+attributeRealSize], eax
+        jc      ntfsError
+.write:
+        pop     eax
+        push    ERROR_DEVICE
+        mov     eax, [ebx+4]
+        mov     edx, [ebx+8]
+        mov     ecx, [ebx+12]
+        mov     esi, [ebx+16]
+        shrd    eax, edx, 9
+        test    dword[ebx+4], 1FFh
+        jz      .aligned
+        mov     [ebp+NTFS.ntfs_cur_offs], eax
+        mov     [ebp+NTFS.ntfs_cur_size], 1
+        lea     edi, [ebp+NTFS.ntfs_bitmap_buf]
+        mov     [ebp+NTFS.ntfs_cur_buf], edi
+        call    ntfs_read_attr.continue
+        jc      ntfsError
+        mov     eax, [ebx+4]
+        and     eax, 1FFh
+        add     edi, eax
+        sub     eax, [ebp+NTFS.ntfs_cur_read]
+        neg     eax
+        push    ecx
+        cmp     ecx, eax
+        jb      @f
+        mov     ecx, eax
+@@:
+        sub     [esp], ecx
+        rep movsb
+        push    ebx
+        mov     eax, [ebp+NTFS.ntfsLastRead]
+        lea     ebx, [ebp+NTFS.ntfs_bitmap_buf]
+        mov     ecx, 1
+        xor     edx, edx
+        call    fs_write64_app
+        pop     ebx
+        pop     ecx
+        test    eax, eax
+        jnz     ntfsError
+        test    ecx, ecx
+        jz      @f
+        mov     eax, [ebx+4]
+        mov     edx, [ebx+8]
+        shrd    eax, edx, 9
+        inc     eax
+.aligned:
+        push    ecx
+        shr     ecx, 9
+        mov     [ebp+NTFS.ntfs_cur_offs], eax
+        mov     [ebp+NTFS.ntfs_cur_size], ecx
+        mov     [ebp+NTFS.ntfs_cur_buf], esi
+        add     eax, ecx
+        push    eax
+        mov     [ebp+NTFS.ntfsWriteAttr], 1
+        call    ntfs_read_attr.continue
+        mov     [ebp+NTFS.ntfsWriteAttr], 0
+        pop     [ebp+NTFS.ntfs_cur_offs]
+        pop     ecx
+        jc      ntfsError
+        and     ecx, 1FFh
+        jz      @f
+        add     esi, [ebp+NTFS.ntfs_cur_read]
+        mov     [ebp+NTFS.ntfs_cur_size], 1
+        lea     edi, [ebp+NTFS.ntfs_bitmap_buf]
+        mov     [ebp+NTFS.ntfs_cur_buf], edi
+        call    ntfs_read_attr.continue
+        jc      ntfsError
+        rep movsb
+        push    ebx
+        mov     eax, [ebp+NTFS.ntfsLastRead]
+        lea     ebx, [ebp+NTFS.ntfs_bitmap_buf]
+        mov     ecx, 1
+        xor     edx, edx
+        call    fs_write64_app
+        pop     ebx
+@@:
+        mov     esi, [ebp+PARTITION.Disk]
+        call    disk_sync
+        call    ntfs_unlock
+        pop     eax
+        xor     eax, eax
+        mov     ebx, [ebx+12]
         ret
 
 ;----------------------------------------------------------------
@@ -2675,19 +2831,19 @@ ntfs_Delete:
 ntfs_GetFileInfo:
         cmp     byte [esi], 0
         jnz     @f
-        movi    eax, 2
+        movi    eax, ERROR_UNSUPPORTED_FS
         ret
 @@:
         call    ntfs_lock
         stdcall ntfs_find_lfn, [esp+4]
-        jnc     .doit
-        test    eax, eax
+        jnc     .found
         push    ERROR_FILE_NOT_FOUND
-        jz      ntfsError
+        test    eax, eax
+        jnz     ntfsError
         pop     eax
-        push    11
+        push    ERROR_FS_FAIL
         jmp     ntfsError
-.doit:
+.found:
         push    esi edi
         mov     esi, eax
         mov     edi, [ebx+16]
