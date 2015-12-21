@@ -4,18 +4,19 @@ void PreparePage()
 	char char_width[255];
 	dword line_start;
 	byte ch;
-	dword bufoff;
+	dword bufoff, buflen;
 	dword line_length=30;
 	dword stroka_y = 5;
 	dword stroka=0;
 	int i, srch_pos;
-	
+
 	label.changeSIZE();
 	list.w = Form.cwidth-scroll.size_x-1;
 	//get font chars width, need to increase performance
 	for (i=0; i<256; i++) char_width[i] = label.symbol_size(i);
 	//get font buffer height
-	for (bufoff=io.buffer_data; ESBYTE[bufoff]; bufoff++)
+	buflen = strlen(io.buffer_data) + io.buffer_data;
+	for (bufoff=io.buffer_data; bufoff<buflen; bufoff++)
 	{
 		ch = ESBYTE[bufoff];
 		line_length += char_width[ch];
@@ -42,7 +43,7 @@ void PreparePage()
 
 	line_length = 30;
 	line_start = io.buffer_data;
-	for (bufoff=io.buffer_data; ESBYTE[bufoff]; bufoff++)
+	for (bufoff=io.buffer_data; bufoff<buflen; bufoff++)
 	{
 		ch = ESBYTE[bufoff];
 		line_length += char_width[ch];

@@ -143,7 +143,6 @@
 		byte rw=0;
 		IF(s==32)return width/4;
 		IF(s==9)return width;
-		debugch(s);
 		s = Cp866ToAnsi(s);
 		EBX = block*s << 2 + font;
 		for(yi=0; yi<height; yi++)
