@@ -747,12 +747,13 @@ proc fix_coff_symbols stdcall uses ebx esi, sec:dword, symbols:dword,\
         test    eax, eax
         jnz     @F
 
-        mov     esi, msg_unresolved
-        call    sys_msg_board_str
-        mov     esi, edi
-        call    sys_msg_board_str
-        mov     esi, msg_CR
-        call    sys_msg_board_str
+        ; disable debug msg
+        ;mov     esi, msg_unresolved
+        ;call    sys_msg_board_str
+        ;mov     esi, edi
+        ;call    sys_msg_board_str
+        ;mov     esi, msg_CR
+        ;call    sys_msg_board_str
 
         mov     [retval], 0
 @@:
