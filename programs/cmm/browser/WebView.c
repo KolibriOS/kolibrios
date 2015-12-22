@@ -29,14 +29,14 @@
 char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.41";
+	char version[]=" Текстовый браузер 1.42";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.41";
+	char version[]=" Text-based Browser 1.42";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -89,8 +89,8 @@ enum {
 #include "menu.h"
 #include "history.h"
 #include "show_src.h"
-#include "network_get.h"
-#include "downloader.h"
+#include "http_downloader.h"
+#include "download_manager.h"
 
 char editURL[sizeof(URL)];
 int	mouse_twb;
@@ -358,7 +358,7 @@ void Scan(dword id__)
 			return;
 		case DOWNLOAD_MANAGER:
 			if (!downloader_opened) {
-				strlcpy(#DL_URL, "http://",7);
+				downloader_edit = NULL;
 				CreateThread(#Downloader,#downloader_stak+4092);
 			}
 			return;
@@ -526,7 +526,7 @@ void ClickLink()
 		//notify(#URL);
 		if (!strncmp(#URL,"http://", 7))
 		{
-			strcpy(#DL_URL, #URL);
+			strcpy(#downloader_edit, #URL);
 			CreateThread(#Downloader,#downloader_stak+4092);
 		}
 		else RunProgram("@open", #URL);

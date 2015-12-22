@@ -58,7 +58,7 @@ void ImageCache::Images(int left1, top1, width1)
 	
 	if (!pics[cur_pic].image) 
 	{
-		if (alt) && (link) strcat(#line, #alt);
+		if (alt) strcat(#line, #alt);
 		//cur_pic = GetImage("/sys/network/noimg.png");
 		return;
 	}

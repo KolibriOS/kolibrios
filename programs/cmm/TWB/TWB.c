@@ -302,7 +302,7 @@ void TWebBrowser::SetStyle() {
 		{
 			if (link) IF(text_color_index > 0) text_color_index--; //если предыдущий тег а не был закрыт
 			do{
-				if (isattr("href="))
+				if (isattr("href=")) && (!strstr(#val,"javascript:"))
 				{
 					text_color_index++;
 					text_colors[text_color_index] = text_colors[text_color_index-1];

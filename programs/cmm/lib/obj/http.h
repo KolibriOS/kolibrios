@@ -50,7 +50,7 @@ char aURIunescape[9]           = "unescape\0";
 
 // user flags
 #define FLAG_KEEPALIVE          1 << 8
-#define FLAG_MULTIBUFF			1 << 9
+#define FLAG_MULTIBUFF          1 << 9
 
 // error flags
 #define FLAG_INVALID_HEADER     1 << 16
