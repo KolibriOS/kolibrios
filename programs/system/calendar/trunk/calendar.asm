@@ -208,9 +208,9 @@ still:
     jne  still
     mov  ebx,[day_sel]
     cmp  ah,176 	; left arrow
-    jb	 still
+    jg	 still
     cmp  ah,179
-    ja	 still
+    jl	 still
     shr  eax,8
     sub  eax,176
     movsx ecx,byte[day_bounds+eax*2]
