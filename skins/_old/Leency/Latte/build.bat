@@ -1,3 +1,3 @@
-..\fasm default.asm Latte.skn
-..\kpack Latte.skn
+fasm default.asm Latte.skn
+kpack Latte.skn
 pause
