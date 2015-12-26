@@ -168,10 +168,16 @@ syscall_button: ;///// system function 8 //////////////////////////////////////
         push    ebx
         xor     edi, edi
         mov     ecx, esi
-        call    button._.incecx
+        ; call    button._.incecx
 ;        call    [draw_line]
         call    __sys_draw_line
 
+        ; light line under top border
+        add     ebx, 0x00010001 
+        mov     ecx, esi
+        call    button._.incecx
+        call    __sys_draw_line
+        sub     ebx, 0x00010001
         ; bottom border
         movzx   edx, word[esp + 4 + 0]
         add     ebx, edx
@@ -194,7 +200,7 @@ syscall_button: ;///// system function 8 //////////////////////////////////////
         add     bx, [esp + 4 + 0]
         pop     edx
         mov     ecx, esi
-        call    button._.incecx
+        call    button._.dececx ; button._.incecx
 ;        call    [draw_line]
         dec     ebx
         call    __sys_draw_line
