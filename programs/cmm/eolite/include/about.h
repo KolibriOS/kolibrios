@@ -47,8 +47,8 @@ void about_dialog()
 				WriteTextB(110,15,0x81,0xBF40BF,ABOUT_TITLE);
 				WriteTextLines(110,53,10010000b,0,DEVELOPERS_TEXT,21);
 				#ifdef LANG_RUS
-				DrawFlatButton(about_form.cwidth-250,about_form.cheight-35,130,22,11,0xE4DFE1,"История разработки");
+				DrawFlatButton(about_form.cwidth-310,about_form.cheight-38,180,26,11,0xE4DFE1,"История разработки");
 				#endif
-				DrawFlatButton(about_form.cwidth-100,about_form.cheight-35,70,22,10,0xE4DFE1,CLOSE_BUTTON_TEXT);
+				DrawFlatButton(about_form.cwidth-110,about_form.cheight-38, 90,26,10,0xE4DFE1,CLOSE_BUTTON_TEXT);
 	}
 }

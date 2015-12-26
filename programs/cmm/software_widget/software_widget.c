@@ -98,10 +98,11 @@ void main()
 			DefineAndDrawWindow(GetScreenWidth()-window_width/2,GetScreenHeight()-window_height/2,window_width,window_height,0x74,system.color.work,"");
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) { DrawTitle(#window_title); break; } else DrawTitle("");
+			draw_top_bar();
 			kolibrios_mounted = isdir("/kolibrios");
 			col_max = Form.cwidth - 10 / cell_w;
 			current_item_id = 0;
-			draw_top_bar();
+			row = -1;
 			ini_enum_sections stdcall (#settings_ini_path, #process_sections);
 			DrawBar(0, row + 1 * cell_h + list_pos, Form.cwidth, -row - 1 * cell_h - list_pos + Form.cheight, LIST_BACKGROUND_COLOR);
 			break;
@@ -187,14 +188,13 @@ byte process_sections(dword sec_name, f_name)
 
 void draw_top_bar()
 {
-	int top_position = 26;
+	int top_position = 32;
 	DrawBar(0,0,Form.cwidth, top_position-2, system.color.work);
 	DrawBar(0,top_position-2, Form.cwidth, 1, ShadowPixel(system.color.work, 1));
 	DrawBar(0,top_position-1, Form.cwidth, 1, system.color.work_graph);
-	label.write_center(0,0, Form.cwidth, top_position, system.color.work, system.color.work_text, 16, #window_title);
+	label.write_center(0,5, Form.cwidth, top_position, system.color.work, system.color.work_text, 16, #window_title);
 	list_top = top_position;
 	list_pos = list_top;
-	row = -1;
 }
 
 

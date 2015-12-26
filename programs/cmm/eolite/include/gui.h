@@ -50,7 +50,11 @@ void DrawFlatButton(dword x,y,width,height,id,color,text)
 	PutPixel(x+width-1, y+1, col_padding);
 	if (color!=-1) DrawFilledBar(x+2, y+2, width-3, height-3);
 	IF (id<>0)	DefineButton(x+1,y+1,width-2,height-2,id+BT_HIDE,0xEFEBEF);
-	WriteText(-strlen(text)*6+width/2+x+1,height/2-3+y,0x80,system.color.work_text,text);
+	if (height<18) 
+		WriteText(-strlen(text)*6+width/2+x+1,height/2+y-3,0x80     ,system.color.work_text,text);
+	else
+		WriteText(-strlen(text)*8+width/2+x+1,height/2+y-6,10010000b,system.color.work_text,text);
+
 }
 
 void DrawFilledBar(dword x, y, w, h)
@@ -61,12 +65,16 @@ void DrawFilledBar(dword x, y, w, h)
 	DrawBar(x, y+i, w, h-fill_h, col_palette[14-i]);		
 }
 
-void ShowMessage(dword message, pause_duration)
+void DrawEolitePopup(dword b1_text, b2_text)
 {
-	int form_x=files.w-220/2+files.x;
-	int form_y=160;
-	DrawPopup(form_x,form_y,220,80,1,system.color.work,system.color.work_graph);
-	WriteText(-strlen(message)*3+110+form_x,80/2-4+form_y,0x80,system.color.work_text,message);
-	pause(pause_duration);
-	if (pause_duration) List_ReDraw();
+	int form_w=250, button_padding=30;
+	int b1_len = strlen(b1_text) * 8 + button_padding;
+	int b2_len = strlen(b2_text) * 8 + button_padding;
+	int dform_x = files.w - form_w / 2 + files.x ;
+	int button_margin = form_w - b1_len - b2_len / 3;
+	int b1_x = dform_x + button_margin;
+	int b2_x = dform_x + button_margin + b1_len + button_margin;
+	DrawPopup(dform_x, 160, form_w, 90, 1, system.color.work, system.color.work_graph);
+	DrawFlatButton(b1_x, 210, b1_len, 24, 301, 0xFFB6B5, b1_text);
+	DrawFlatButton(b2_x, 210, b2_len, 24, 302, 0xC6DFC6, b2_text);
 }

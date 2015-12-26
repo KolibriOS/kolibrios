@@ -39,8 +39,8 @@
 dword mouse_ddd2;
 char path_to_file[4096]="\0";
 char file_name2[4096]="\0";
-edit_box file_name_ed = {195,50,25,0xffffff,0x94AECE,0x000000,0xffffff,2,4098,#file_name2,#mouse_ddd2, 1000000000000000b,2,2};
-edit_box path_to_file_ed = {145,100,46,0xffffff,0x94AECE,0x000000,0xffffff,2,4098,#path_to_file,#mouse_ddd2, 1000000000000000b,2,2};
+edit_box file_name_ed = {195,50,25,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,4098,#file_name2,#mouse_ddd2, 1000000000000000b,2,2};
+edit_box path_to_file_ed = {145,100,46,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,4098,#path_to_file,#mouse_ddd2, 1000000000000000b,2,2};
 frame flags_frame = { 0, 280, 10, 83, 151, 0x000111, 0xFFFfff, 1, FLAGS, 0, 0, 6, 0x000111, 0xFFFFFF };
 
 int file_count, dir_count, size_dir;
@@ -158,7 +158,8 @@ void GetSizeDir(dword way)
 	if (isdir(way))
 	{
 		cur_file = malloc(4096);
-		// In the process of recursive descent, memory must be allocated dynamically, because the static memory -> was a bug !!! But unfortunately pass away to sacrifice speed.
+		// In the process of recursive descent, memory must be allocated dynamically, 
+		// because the static memory -> was a bug !!! But unfortunately pass away to sacrifice speed.
 		GetDir(#dirbuf, #fcount, way, DIRS_ONLYREAL);
 		for (i=0; i<fcount; i++)
 		{
@@ -318,10 +319,10 @@ void properties_dialog()
 
 void DrawPropertiesWindow()
 {
-	DefineAndDrawWindow(Form.left + 150,150,270,285+GetSkinHeight(),0x34,0xFFFFFF,WINDOW_TITLE_PROPERTIES);
+	DefineAndDrawWindow(Form.left + 150,150,270,285+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE_PROPERTIES);
 	GetProcessInfo(#settings_form, SelfInfo);
-	DrawFlatButton(settings_form.cwidth - 70 - 13, settings_form.cheight - 34, 70, 22, 10, 0xE4DFE1, BTN_CLOSE);
-	DrawFlatButton(settings_form.cwidth - 150 - 13, settings_form.cheight - 34, 70, 22, 11, 0xE4DFE1, BTN_APPLY);
+	DrawFlatButton(settings_form.cwidth - 80 - 13, settings_form.cheight - 34, 80, 24, 10, 0xE4DFE1, BTN_CLOSE);
+	DrawFlatButton(settings_form.cwidth - 170 - 13, settings_form.cheight - 34, 80, 24, 11, 0xE4DFE1, BTN_APPLY);
 	DrawBar(10, 10, 32, 32, 0xFFFfff);
 	
 	WriteText(10, 50, 0x80, 0x000000, PR_T_DEST);

@@ -309,7 +309,7 @@ void main()
 				}
 				if (del_active)
 				{
-					if (id==301) || (id==302)	Del_File(302-id);
+					if (id==301) || (id==302) Del_File(302-id);
 					break;
 				}
 				if (new_element_active)
@@ -821,7 +821,7 @@ void Del_Form()
 	else
 	{
 		if (!files.count) return;
-		DrawPopup(dform_x,160,220,85,1,system.color.work,system.color.work_graph);
+		DrawEolitePopup(T_YES, T_NO);
 		WriteText(-strlen(T_DELETE_FILE)*3+110+dform_x,175,0x80,system.color.work_text,T_DELETE_FILE);
 		for (i=0; i<files.count; i++) 
 		{
@@ -846,9 +846,7 @@ void Del_Form()
 				ESI = 24;
 				WriteText(dform_x+20,190,0,0,#file_name);
 			}
-		}
-		DrawFlatButton(dform_x+27,208,70,20,301,0xFFB6B5,T_YES);
-		DrawFlatButton(dform_x+120,208,70,20,302,0xC6DFC6,T_NO);		
+		}		
 		del_active=1;
 	}
 }
@@ -1030,8 +1028,8 @@ void NewElement(byte newf)
 					WriteFile(0, 0, #temp);
 					if (EAX)
 					{
-						Write_Error(EAX);
-						ShowMessage(NOT_CREATE_FILE, 150);
+						if (EAX==5) notify(NOT_CREATE_FILE);
+						else Write_Error(EAX);
 					}
 				}
 				else
@@ -1045,8 +1043,8 @@ void NewElement(byte newf)
 					CreateDir(#temp);
 					if (EAX)
 					{
-						Write_Error(EAX);
-						ShowMessage(NOT_CREATE_FOLDER, 150);
+						if (EAX==5) notify(NOT_CREATE_FOLDER);
+						else Write_Error(EAX);
 					}
 				}
 				else
@@ -1062,7 +1060,6 @@ void NewElement(byte newf)
 						if (del_rezult = DeleteFile(#file_path))
 						{
 							Write_Error(del_rezult);
-							ShowMessage(T_DEL_ERROR_1, 150);
 							return;
 						}
 						if (CreateDir(#temp)) CreateDir(#file_path);
@@ -1104,14 +1101,12 @@ void NewElement_Form(byte crt, dword strng)
 		strcpy(#new_element_name, strng);
 		new_file_ed.size = new_file_ed.pos = strlen(strng);
 	}
-	DrawPopup(dform_x,160,220,85,1,system.color.work,system.color.work_graph);
+	if (new_element_active==3) DrawEolitePopup(T_RENAME, T_CANCEL);
+	else DrawEolitePopup(T_CREATE, T_CANCEL);
 	new_file_ed.left = dform_x+24;
 	edit_box_draw  stdcall (#new_file_ed);
 	DrawRectangle(new_file_ed.left-1, new_file_ed.top-1, new_file_ed.width+2, 16, 0xFFFfff);
 	DrawRectangle(new_file_ed.left-2, new_file_ed.top-2, new_file_ed.width+4, 18, system.color.work_graph);
-	if (new_element_active==3) DrawFlatButton(dform_x+22,208,85,22,301,0xFFB6B5,T_RENAME);
-	else DrawFlatButton(dform_x+27,208,70,22,301,0xFFB6B5,T_CREATE);
-	DrawFlatButton(dform_x+120,208,70,22,302,0xC6DFC6,T_CANCEL);
 }
 
 void FnProcess(byte N)

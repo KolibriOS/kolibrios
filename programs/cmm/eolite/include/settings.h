@@ -53,7 +53,6 @@ void settings_dialog()
 				else if (id==24) two_panels ^= true;
 				else if (id==25) { files.item_h++; files_active.item_h = files_inactive.item_h = files.item_h; }
 				else if (id==26) && (files.item_h>18) files.item_h--;
-				//else if (id==29) smooth_font ^= true;
 				else if (id==30) { label.size.pt++; IF(!label.changeSIZE()) label.size.pt--; BigFontsChange(); }
 				else if (id==31) { label.size.pt--; IF(!label.changeSIZE()) label.size.pt++; BigFontsChange(); }
 				EventRedrawWindow(Form.left,Form.top);
@@ -66,10 +65,10 @@ void settings_dialog()
 				break;
 				
 			case evReDraw:
-				DefineAndDrawWindow(Form.left + Form.width/2-10, Form.top + Form.height/2 - 75, 300, 240+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
+				DefineAndDrawWindow(Form.left + Form.width/2-10, Form.top + Form.height/2 - 75, 370, 243+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
 				DrawSettingsCheckBoxes();
-				DrawFlatButton(9, 166, strlen(SAVE_PATH_AS_DEFAULT)+4*6, 22, 6, 0xE4DFE1, SAVE_PATH_AS_DEFAULT);
-				DrawFlatButton(9, 198, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
+				DrawFlatButton(9, 166, strlen(SAVE_PATH_AS_DEFAULT)+3*8, 24, 6, 0xE4DFE1, SAVE_PATH_AS_DEFAULT);
+				DrawFlatButton(9, 200, strlen(EDIT_FILE_ASSOCIATIONS)+3*8, 24, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
 		}
 	}
 }
