@@ -1,23 +1,14 @@
-//Leency 2008-2013
+//Leency 2008-2016
 
 #define BROWSER_PATH    "/sys/network/webview"
-#define BROWSER_LINK    "http://kolibri-n.org/index.php"
+#define BROWSER_LINK    "http://kolibri-n.org/inf/eolite/eolite_p1"
 
 #ifdef LANG_RUS
-	?define INTRO_TEXT_1 "О Eolite"
-	?define INTRO_TEXT_2 "Разработчики:"
-	?define INTRO_TEXT_3 "Посетите"
-	?define INTRO_TEXT_4 "Закрыть"
-#elif LANG_EST
-	?define INTRO_TEXT_1 "Programmis Eolite"
-	?define INTRO_TEXT_2 "Arendajad:"
-	?define INTRO_TEXT_3 "K№lasta"
-	?define INTRO_TEXT_4 "Sulge"
+	?define DEVELOPERS_TEXT "Разработчики:\nLeency Veliant PunkJoker Pavelyakov\nKolibriOS Team\n2008-2016"
+	?define CLOSE_BUTTON_TEXT "Закрыть"
 #else
-	?define INTRO_TEXT_1 "About Eolite"
-	?define INTRO_TEXT_2 "Developers:"
-	?define INTRO_TEXT_3 "Visit"
-	?define INTRO_TEXT_4 "Close"
+	?define DEVELOPERS_TEXT "Developers:\nLeency Veliant PunkJoker Pavelyakov\nKolibriOS Team\n2008-2016"
+	?define CLOSE_BUTTON_TEXT "Close"
 #endif
 
 void about_dialog()
@@ -25,8 +16,7 @@ void about_dialog()
 	byte id;
 	proc_info about_form;
 
-	IF (active_about){cmd_free = 2;ExitProcess();}
-	active_about=1;
+	if (active_about) {cmd_free=2;ExitProcess();} else active_about=1;
 	loop() switch(WaitEvent())
 	{
 		case evButton: 
@@ -37,7 +27,7 @@ void about_dialog()
 					cmd_free = 2;
 					ExitProcess();
 				}
-				IF (id==23) RunProgram(BROWSER_PATH, BROWSER_LINK);
+				IF (id==11) RunProgram(BROWSER_PATH, BROWSER_LINK);
 				break;
 				
 		case evKey:
@@ -50,18 +40,15 @@ void about_dialog()
 				break;
 				
 		case evReDraw:
-				DefineAndDrawWindow(Form.left+Form.width/2,Form.top+Form.height/2-114,300,248+GetSkinHeight(),0x34,system.color.work,INTRO_TEXT_1);
+				DefineAndDrawWindow(Form.left+Form.width/2,Form.top+Form.height/2-114,440,200+GetSkinHeight(),0x34,system.color.work,0);
 				GetProcessInfo(#about_form, SelfInfo);
 				if (Form.status_window>2) break;
-				DrawBar(0,0,about_form.cwidth,50,0x8494C4);
-				PutPaletteImage(#logo,85,85,about_form.cwidth/2-43,7,8,#logo_pal);
-				WriteTextB(-strlen(ABOUT_TITLE)*12+about_form.cwidth/2,100,0x81,0xBF40BF,ABOUT_TITLE);
-				WriteTextCenter(0,130,about_form.cwidth,0,INTRO_TEXT_2);			
-				WriteTextCenter(0,143,about_form.cwidth,0,"Leency Veliant PunkJoker Pavelyakov"); 
-				WriteTextCenter(0,156,about_form.cwidth,0,"KolibriOS Team");
-				WriteTextCenter(0,169,about_form.cwidth,0,"2008-2015");
-				WriteTextCenter(10,182,about_form.width-125,0,INTRO_TEXT_3);			
-				DrawLink(about_form.cwidth/2-15,182,0x80,23, "kolibri-n.org");
-				DrawFlatButton(about_form.cwidth/2-35,about_form.cheight-35,70,22,10,0xE4DFE1, INTRO_TEXT_4);
+				_PutImage(10, 15, 86, 86, #logo);
+				WriteTextB(110,15,0x81,0xBF40BF,ABOUT_TITLE);
+				WriteTextLines(110,53,10010000b,0,DEVELOPERS_TEXT,21);
+				#ifdef LANG_RUS
+				DrawFlatButton(about_form.cwidth-250,about_form.cheight-35,130,22,11,0xE4DFE1,"История разработки");
+				#endif
+				DrawFlatButton(about_form.cwidth-100,about_form.cheight-35,70,22,10,0xE4DFE1,CLOSE_BUTTON_TEXT);
 	}
 }

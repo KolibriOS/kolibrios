@@ -1,7 +1,6 @@
-//HTTP library
 #ifndef INCLUDE_LIBHTTP_H
 #define INCLUDE_LIBHTTP_H
-#print "[include <obj/http.h>]\n"
+#print "[include <obj/http.h]\n"
 
 #ifndef INCLUDE_KOLIBRI_H
 #include "../lib/kolibri.h"
@@ -11,9 +10,8 @@
 #include "../lib/dll.h"
 #endif
 
-dword NOT_INIT_LIBHTTP = true;
 dword libHTTP = #alibHTTP;
-char alibHTTP[23] = "/sys/lib/http.obj\0";
+char alibHTTP[] = "/sys/lib/http.obj";
 
 dword http_lib_init          = #aLib_init;
 dword http_get               = #aHTTPget;
@@ -28,17 +26,17 @@ dword uri_escape             = #aURIescape;
 dword uri_unescape           = #aURIunescape;
 $DD 2 dup 0
 
-char aLib_init[9]              = "lib_init\0";
-char aHTTPget[4]               = "get\0";
-char aHTTPhead[5]              = "head\0";
-char aHTTPpost[5]              = "post\0";
-char aFHF[18]                  = "find_header_field\0";
-char aHTTPsend[5]              = "send\0";
-char aHTTPreceive[8]           = "receive\0";
-char aHTTPdisconnect[11]       = "disconnect\0";
-char aHTTPfree[5]              = "free\0";
-char aURIescape[7]             = "escape\0";
-char aURIunescape[9]           = "unescape\0";
+char aLib_init[]             = "lib_init";
+char aHTTPget[]              = "get";
+char aHTTPhead[]             = "head";
+char aHTTPpost[]             = "post";
+char aFHF[]                  = "find_header_field";
+char aHTTPsend[]             = "send";
+char aHTTPreceive[]          = "receive";
+char aHTTPdisconnect[]       = "disconnect";
+char aHTTPfree[]             = "free";
+char aURIescape[]            = "escape";
+char aURIunescape[]          = "unescape";
 
 // status flags
 #define FLAG_HTTP11             1 << 0
@@ -68,15 +66,11 @@ struct  http_msg{
         dword   timestamp;
         dword   status;
         dword   header_length;
-		dword	content_ptr;
+        dword   content_ptr;
         dword   content_length;
         dword   content_received;
         char    http_header;
 };
 
-:dword file_get_contents(dword url,...)
-{
-	http_get(url,FLAG_HTTP11,"");
-}
 
 #endif

@@ -82,7 +82,7 @@ void Downloader()
 				if (downloader.state == STATE_COMPLETED) 
 				{
 					strcpy(#filepath, #save_to);
-					strcat(#filepath, #downloader.url+strrchr(#downloader.url, '/'));
+					strcat(#filepath, #save_to+strrchr(#save_to, '/'));
 					if (WriteFile(downloader.bufsize, downloader.bufpointer, #filepath)==0)
 						sprintf(#notify_message, "%s%s%s",FILE_SAVED_AS,#filepath,"' -Dt");
 					else

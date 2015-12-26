@@ -6,7 +6,6 @@ enum {
 };
 
 struct DOWNLOADER {
-	char url[10000];
 	int data_downloaded_size, data_full_size;
 	dword bufpointer, bufsize;
 	byte state;
@@ -20,8 +19,7 @@ struct DOWNLOADER {
 dword DOWNLOADER::Start(dword _url)
 {
 	state = STATE_IN_PROGRESS;
-	strcpy(#url, _url); //need to replace my malloc()
-	http_get stdcall (#url, 0, 0, #accept_language);
+	http_get stdcall (_url, 0, 0, #accept_language);
 	http_transfer = EAX;
 	return http_transfer;
 }
