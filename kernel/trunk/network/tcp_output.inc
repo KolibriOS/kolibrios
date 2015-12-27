@@ -18,7 +18,7 @@ $Revision$
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; TCP_output                                                      ;
+; tcp_output                                                      ;
 ;                                                                 ;
 ;  IN:  eax = socket pointer                                      ;
 ;                                                                 ;
@@ -26,7 +26,7 @@ $Revision$
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-proc TCP_output
+proc tcp_output
 
 locals
         temp_bits       db ?
@@ -72,7 +72,7 @@ endl
         mov     ecx, [eax + TCP_SOCKET.SND_CWND]        ;
        @@:                                              ;
 
-        call    TCP_outflags                            ; flags in dl
+        call    tcp_outflags                            ; flags in dl
 
 ;------------------------
 ; data being forced out ?
@@ -279,7 +279,7 @@ endl
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: Entering persist state\n"
 
         mov     [eax + TCP_SOCKET.t_rxtshift], 0
-        call    TCP_set_persist
+        call    tcp_set_persist
        @@:
 
 ;----------------------------
@@ -509,7 +509,7 @@ endl
         mov     edi, [eax + IP_SOCKET.RemoteIP] ; dest ip
         mov     al, [eax + IP_SOCKET.ttl]
         mov     ah, IP_PROTO_TCP
-        call    IPv4_output
+        call    ipv4_output
         jz      .ip_error
 
 ;------------------------------------------
@@ -549,7 +549,7 @@ endl
         add     [eax + TCP_SOCKET.SND_NXT], ecx ; update sequence number
         sub     edx, [eax + TCP_SOCKET.SND_UNA] ; offset
         add     eax, STREAM_SOCKET.snd
-        call    SOCKET_ring_read
+        call    socket_ring_read
   .nodata:
         pop     edi
         pop     esi                             ; begin of data
@@ -606,7 +606,7 @@ endl
         test    [ebx + NET_DEVICE.hwacc], NET_HWACC_TCP_IPv4_OUT
         jnz     .checksum_ok
 
-        TCP_checksum (eax + IP_SOCKET.LocalIP), (eax + IP_SOCKET.RemoteIP)
+        tcp_checksum (eax + IP_SOCKET.LocalIP), (eax + IP_SOCKET.RemoteIP)
 
   .checksum_ok:
         mov     [esi + TCP_header.Checksum], dx
@@ -624,7 +624,7 @@ endl
         pop     ecx
         pop     eax
 
-        call    NET_ptr_to_num4
+        call    net_ptr_to_num4
         inc     [TCP_segments_tx + edi]
         inc     [TCPS_sndtotal]
 
@@ -658,7 +658,7 @@ endl
 ; Check if we need more output
 
         test    [temp_bits], TCP_BIT_SENDALOT
-        jnz     TCP_output.again
+        jnz     tcp_output.again
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: success!\n"
 

@@ -33,37 +33,33 @@ align 4
 
 endg
 
-;-----------------------------------------------------------------
-;
-; PPPoE_init
-;
-;  This function resets all IP variables
-;
-;-----------------------------------------------------------------
-macro   PPPoE_init {
+;-----------------------------------------------------------------;
+;                                                                 ;
+; pppoe_init: Reset all pppoe variables                           ;
+;                                                                 ;
+;-----------------------------------------------------------------;
+macro   pppoe_init {
 
-        call    PPPoE_stop_connection
+        call    pppoe_stop_connection
 
 }
 
 
-;-----------------------------------------------------------------
-;
-; PPPoE discovery input
-;
-; Handler of received Ethernet packet with type = Discovery
-;
-;
-;  IN:  Pointer to buffer in [esp]
-;       size of buffer in [esp+4]
-;       pointer to device struct in ebx
-;       pointer to PPP header in edx
-;       size of PPP packet in ecx
-;  OUT: /
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; pppoe_discovery_input                                           ;
+;                                                                 ;
+;  IN:  [esp] = ptr to buffer                                     ;
+;       [esp+4] = size of buffer                                  ;
+;       ebx = ptr to device struct                                ;
+;       ecx = size of PPP packet                                  ;
+;       edx = ptr to PPP header                                   ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-PPPoE_discovery_input:
+pppoe_discovery_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_discovery_input\n"
 
@@ -97,7 +93,7 @@ PPPoE_discovery_input:
         mov     ecx, [esp + 4]
         mov     esi, [esp]
 
-        jmp     SOCKET_input
+        jmp     socket_input
 
   .dump:
         pusha
@@ -106,22 +102,21 @@ PPPoE_discovery_input:
         popa
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, 'PPPoE_discovery_input: dumping\n'
-        call    NET_BUFF_free
+        call    net_buff_free
         ret
 
 
-;--------------------------------------
-;
-; Send discovery packet
-;
-; IN: eax = socket pointer
-;     ecx = number of bytes to send
-;     esi = pointer to data
-;
-;--------------------------------------
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; pppoe_discovery_output                                          ;
+;                                                                 ;
+;  IN:  eax = socket pointer                                      ;
+;       ecx = number of bytes to send                             ;
+;       esi = pointer to data                                     ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-PPPoE_discovery_output:
+pppoe_discovery_output:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_discovery_output: socket=%x buffer=%x size=%d\n", eax, esi, ecx
 
@@ -147,7 +142,7 @@ PPPoE_discovery_output:
 
 ; Create packet.
         push    ecx esi
-        stdcall kernel_alloc, 1500
+;;;; FIXME        stdcall kernel_alloc, 1500
         pop     esi ecx
         test    eax, eax
         jz      .bad
@@ -185,23 +180,21 @@ PPPoE_discovery_output:
         ret
 
 
-;-----------------------------------------------------------------
-;
-; PPPoE session input
-;
-; Handler of received Ethernet packet with type = Session
-;
-;
-;  IN:  Pointer to buffer in [esp]
-;       size of buffer in [esp+4]
-;       pointer to device struct in ebx
-;       pointer to PPP header in edx
-;       size of PPP packet in ecx
-;  OUT: /
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; pppoe_session_input                                             ;
+;                                                                 ;
+;  IN:  [esp] = ptr to buffer                                     ;
+;       [esp+4] = size of buffer                                  ;
+;       ebx = ptr to device struct                                ;
+;       edx = ptr to PPP header                                   ;
+;       ecx = size of PPP packet                                  ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-PPPoE_session_input:
+pppoe_session_input:
 
         cmp     [edx + PPPoE_frame.VersionAndType], 0x11
         jne     .dump
@@ -221,38 +214,39 @@ PPPoE_session_input:
         add     edx, PPPoE_frame.Payload + 2
 
         cmp     ax, PPP_PROTO_IPv4
-        je      IPv4_input
+        je      ipv4_input
 
 ;        cmp     ax, PPP_PROTO_IPv6
-;        je      IPv6_input
+;        je      ipv6_input
 
-        jmp     PPPoE_discovery_input   ; Send LCP,CHAP,CBCP,... packets to the PPP dialer
+        jmp     pppoe_discovery_input   ; Send LCP,CHAP,CBCP,... packets to the PPP dialer
         DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_input: Unknown protocol=%x\n", ax
 
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_input: dumping\n"
-        call    NET_BUFF_free
+        call    net_buff_free
         ret
 
 
 
-;-----------------------------------------------------------------
-;
-; PPPoE_output
-;
-; IN:  ax = protocol
-;     ebx = device ptr
-;     ecx = packet size
-;
-; OUT: eax = buffer start / 0 on error
-;      ebx = device ptr
-;      ecx = packet size
-;      edx = size of complete buffer
-;      edi = start of PPP payload
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; pppoe_output                                                    ;
+;                                                                 ;
+;  IN:  ax = protocol                                             ;
+;       ebx = device ptr                                          ;
+;       ecx = packet size                                         ;
+;                                                                 ;
+; OUT:  eax = buffer start                                        ;
+;       eax = 0 on error                                          ;
+;       ebx = device ptr                                          ;
+;       ecx = packet size                                         ;
+;       edx = size of complete buffer                             ;
+;       edi = start of PPP payload                                ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-PPPoE_output:
+pppoe_output:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_output: size=%u device=%x\n", ecx, ebx
 
@@ -262,7 +256,7 @@ PPPoE_output:
         mov     ax, ETHER_PROTO_PPP_SESSION
         add     ecx, PPPoE_frame.Payload + 2
         lea     edx, [PPPoE_MAC]
-        call    ETH_output
+        call    eth_output
         jz      .eth_error
 
         sub     ecx, PPPoE_frame.Payload
@@ -287,8 +281,8 @@ PPPoE_output:
         xor     eax, eax
         ret
 
-
-PPPoE_start_connection:
+align 4
+pppoe_start_connection:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_start_connection: %x\n", cx
 
@@ -308,7 +302,7 @@ PPPoE_start_connection:
 
 
 align 4
-PPPoE_stop_connection:
+pppoe_stop_connection:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_stop_connection\n"
 
@@ -320,21 +314,19 @@ PPPoE_stop_connection:
         ret
 
 
-;---------------------------------------------------------------------------
-;
-; PPPoE API
-;
-; This function is called by system function 75
-;
-; IN:  subfunction number in bl
-;      device number in bh
-;      ecx, edx, .. depends on subfunction
-;
-; OUT:
-;
-;---------------------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; pppoe_api: Part of system function 76                           ;
+;                                                                 ;
+; IN:  subfunction number in bl                                   ;
+;      device number in bh                                        ;
+;      ecx, edx, .. depends on subfunction                        ;
+;                                                                 ;
+; OUT:                                                            ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-PPPoE_api:
+pppoe_api:
 
         movzx   eax, bh
         shl     eax, 2
@@ -345,8 +337,8 @@ PPPoE_api:
         jmp     dword [.table + 4*ebx]
 
   .table:
-        dd      PPPoE_start_connection  ; 0
-        dd      PPPoE_stop_connection   ; 1
+        dd      pppoe_start_connection  ; 0
+        dd      pppoe_stop_connection   ; 1
   .number = ($ - .table) / 4 - 1
 
   .error:

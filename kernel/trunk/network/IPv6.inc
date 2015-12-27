@@ -45,14 +45,12 @@ align 4
 endg
 
 
-;-----------------------------------------------------------------
-;
-; IPv6_init
-;
-;  This function resets all IP variables
-;
-;-----------------------------------------------------------------
-macro   IPv6_init {
+;-----------------------------------------------------------------;
+;                                                                 ;
+; ipv6_init: Resets all IPv6 variables                            ;
+;                                                                 ;
+;-----------------------------------------------------------------;
+macro   ipv6_init {
 
         xor     eax, eax
         mov     edi, IPv6
@@ -63,25 +61,23 @@ macro   IPv6_init {
 
 
 
-;-----------------------------------------------------------------
-;
-; IPv6_input:
-;
-;  Will check if IPv6 Packet isnt damaged
-;  and call appropriate handler. (TCP/UDP/ICMP/..)
-;
-;  It will also re-construct fragmented packets
-;
-;  IN:  Pointer to buffer in [esp]
-;       size of buffer in [esp+4]
-;       pointer to device struct in ebx
-;       pointer to IPv6 header in edx
-;       size of IPv6 packet in ecx
-;  OUT: /
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; ipv6_input: Check if IPv6 Packet isnt damaged and call          ;
+; appropriate handler. (TCP/UDP/ICMP/..)                          ;
+; We will also re-construct fragmented packets                    ;
+;                                                                 ;
+;   IN: [esp] = ptr to buffer                                     ;
+;       [esp+4] = size of buffer                                  ;
+;       ebx = ptr to device struct                                ;
+;       edx = ptr to IPv6 header                                  ;
+;       ecx = size of IPv6 packet                                 ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-IPv6_input:
+ipv6_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv6_input from: %x%x:%x%x:%x%x:%x%x:%x%x:%x%x:%x%x:%x%x\n",\
         [edx + IPv6_header.SourceAddress + 0]:2,[edx + IPv6_header.SourceAddress + 1]:2,\
@@ -147,7 +143,7 @@ IPv6_input:
 
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv6_input - dumping\n"
-        call    NET_BUFF_free
+        call    net_buff_free
         ret
 
   .dump_options:
@@ -245,21 +241,19 @@ IPv6_input:
 
 
 
-;---------------------------------------------------------------------------
-;
-; IPv6_API
-;
-; This function is called by system function 75
-;
-; IN:  subfunction number in bl
-;      device number in bh
-;      ecx, edx, .. depends on subfunction
-;
-; OUT:
-;
-;---------------------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; ipv6_api: Part of system function 76                            ;
+;                                                                 ;
+;  IN:  bl = subfunction number                                   ;
+;       bh = device number                                        ;
+;       ecx, edx, .. depends on subfunction                       ;
+;                                                                 ;
+; OUT:  depends on subfunction                                    ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-IPv6_api:
+ipv6_api:
 
         movzx   eax, bh
         shl     eax, 2

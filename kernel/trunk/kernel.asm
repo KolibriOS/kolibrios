@@ -2167,7 +2167,7 @@ sys_end:
         pusha
         mov     edx, [TASK_BASE]
         mov     edx, [edx+TASKDATA.pid]
-        call    SOCKET_process_end
+        call    socket_process_end
         popa
 ;--------------------------------------
         mov     ecx, [current_slot]
@@ -2297,7 +2297,7 @@ sysfn_terminate:        ; 18.2 = TERMINATE
 ; terminate all network sockets it used
         pusha
         mov     eax, edx
-        call    SOCKET_process_end
+        call    socket_process_end
         popa
 ;--------------------------------------
         cmp     [_display.select_cursor], 0

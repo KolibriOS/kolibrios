@@ -19,7 +19,7 @@ $Revision$
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; TCP_usrclosed                                                   ;
+; tcp_usrclosed                                                   ;
 ;                                                                 ;
 ;  IN:  eax = socket ptr                                          ;
 ;                                                                 ;
@@ -27,7 +27,7 @@ $Revision$
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-TCP_usrclosed:
+tcp_usrclosed:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_usrclosed: %x\n", eax
 
@@ -51,7 +51,7 @@ TCP_usrclosed:
 
   .close:
         mov     [eax + TCP_SOCKET.t_state], TCPS_CLOSED
-        call    TCP_close
+        call    tcp_close
         pop     ebx
         ret
 
@@ -66,7 +66,7 @@ TCP_usrclosed:
         ret
 
   .disc:
-        call    SOCKET_is_disconnected
+        call    socket_is_disconnected
   .ret:
         pop     ebx
         ret
@@ -74,7 +74,7 @@ TCP_usrclosed:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; TCP_connect                                                     ;
+; tcp_connect                                                     ;
 ;                                                                 ;
 ;  IN:  eax = socket ptr                                          ;
 ;                                                                 ;
@@ -84,7 +84,7 @@ TCP_usrclosed:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-TCP_connect:
+tcp_connect:
 
         test    [eax + SOCKET.state], SS_ISCONNECTED
         jnz     .eisconn
@@ -112,7 +112,7 @@ TCP_connect:
 ; Find a local port, if user didnt define one
         cmp     [eax + TCP_SOCKET.LocalPort], 0
         jne     @f
-        call    SOCKET_find_port
+        call    socket_find_port
        @@:
 
 ; Start the TCP sequence
@@ -124,16 +124,16 @@ TCP_connect:
         pop     [eax + TCP_SOCKET.ISS]
         mov     [eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_init
 
-        TCP_sendseqinit eax
+        tcp_sendseqinit eax
 
         mov     ebx, eax
         lea     eax, [ebx + STREAM_SOCKET.snd]
-        call    SOCKET_ring_create
+        call    socket_ring_create
         test    eax, eax
         jz      .nomem
 
         lea     eax, [ebx + STREAM_SOCKET.rcv]
-        call    SOCKET_ring_create
+        call    socket_ring_create
         test    eax, eax
         jz      .nomem
 
@@ -142,11 +142,11 @@ TCP_connect:
         call    mutex_unlock
         pop     eax
 
-        call    SOCKET_is_connecting
+        call    socket_is_connecting
 
 ; Now send the SYN packet to remote end
         push    eax
-        call    TCP_output
+        call    tcp_output
         pop     eax
 
   .block:
@@ -183,14 +183,14 @@ TCP_connect:
         cmp     [eax + TCP_SOCKET.t_state], TCPS_ESTABLISHED
         je      .established
 
-        call    SOCKET_block
+        call    socket_block
         jmp     .loop
 
   .timeout:
         mov     eax, [esp+4]
         mov     [eax + SOCKET.errorcode], ETIMEDOUT
         and     [eax + SOCKET.state], not SS_ISCONNECTING
-        call    SOCKET_notify
+        call    socket_notify
         ret     4
 
   .fail:

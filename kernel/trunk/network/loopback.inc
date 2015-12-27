@@ -27,7 +27,7 @@ LOOPBACK_DEVICE:
 
         .unload         dd .dummy_fn
         .reset          dd .dummy_fn
-        .transmit       dd LOOP_input
+        .transmit       dd loop_input
 
         .bytes_tx       dq 0
         .bytes_rx       dq 0
@@ -45,11 +45,11 @@ LOOPBACK_DEVICE:
 endg
 
 
-macro   LOOP_init {
+macro   loop_init {
 local   .fail
 
         mov     ebx, LOOPBACK_DEVICE
-        call    NET_add_device
+        call    net_add_device
 
         cmp     eax, -1
         je      .fail
@@ -63,7 +63,7 @@ local   .fail
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; LOOP_input                                                      ;
+; loop_input                                                      ;
 ;                                                                 ;
 ;   IN: [esp+4] = Pointer to buffer                               ;
 ;                                                                 ;
@@ -71,7 +71,7 @@ local   .fail
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-LOOP_input:
+loop_input:
 
         mov     eax, [esp+4]
 
@@ -95,19 +95,19 @@ LOOP_input:
 
 ; Place protocol handlers here
         cmp     eax, AF_INET4
-        je      IPv4_input
+        je      ipv4_input
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_input: Unknown packet type=%x\n", eax
 
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_input: dumping\n"
-        call    NET_BUFF_free
+        call    net_buff_free
         ret
 
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; LOOP_output                                                     ;
+; loop_output                                                     ;
 ;                                                                 ;
 ;  IN:  ecx = packet size                                         ;
 ;       edi = address family                                      ;
@@ -119,7 +119,7 @@ LOOP_input:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-LOOP_output:
+loop_output:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_output\n"
 
@@ -128,7 +128,7 @@ LOOP_output:
 
         push    ecx edi
         add     ecx, NET_BUFF.data
-        stdcall NET_BUFF_alloc, ecx
+        stdcall net_buff_alloc, ecx
         test    eax, eax
         jz      .out_of_ram
 

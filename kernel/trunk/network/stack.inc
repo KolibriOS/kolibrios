@@ -163,8 +163,8 @@ NET_HWACC_TCP_IPv4_IN   = 1 shl 0
 NET_HWACC_TCP_IPv4_OUT  = 1 shl 1
 
 ; Network frame types
-NET_BUFF_LOOPBACK      = 0
-NET_BUFF_ETH           = 1
+NET_BUFF_LOOPBACK       = 0
+NET_BUFF_ETH            = 1
 
 struct  NET_DEVICE
 
@@ -258,16 +258,14 @@ align 4
 endg
 
 
-;-----------------------------------------------------------------
-;
-; stack_init
-;
-;  This function calls all network init procedures
-;
-;  IN:  /
-;  OUT: /
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; stack_init: Initialize all network variables                    ;
+;                                                                 ;
+;  IN:  /                                                         ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 stack_init:
 
@@ -294,21 +292,21 @@ stack_init:
         mov     ecx, (NET_DEVICES_MAX + 1)
         rep stosd
 
-        ETH_init
+        eth_init
 
-        PPPoE_init
+        pppoe_init
 
-        IPv4_init
-;        IPv6_init
-        ICMP_init
+        ipv4_init
+;        ipv6_init
+        icmp_init
 
-        ARP_init
-        UDP_init
-        TCP_init
+        arp_init
+        udp_init
+        tcp_init
 
-        SOCKET_init
+        socket_init
 
-        LOOP_init
+        loop_init
 
         mov     [net_tmr_count], 0
         ret
@@ -329,16 +327,14 @@ proc stack_handler_has_work?
 endp
 
 
-;-----------------------------------------------------------------
-;
-; stack_handler
-;
-;  This function is called in kernel loop
-;
-;  IN:  /
-;  OUT: /
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; stack_handler: Network handlers called from os_loop.            ;
+;                                                                 ;
+;  IN:  /                                                         ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 stack_handler:
 
@@ -354,13 +350,13 @@ stack_handler:
         test    [net_10ms], 0x0f        ; 160ms
         jnz     .exit
 
-        TCP_timer_160ms
+        tcp_timer_160ms
 
         test    [net_10ms], 0x3f        ; 640ms
         jnz     .exit
 
-        ARP_decrease_entry_ttls
-        IPv4_decrease_fragment_ttls
+        arp_decrease_entry_ttls
+        ipv4_decrease_fragment_ttls
 
         xor     edx, edx
         mov     eax, [TCP_timer1_event]
@@ -373,7 +369,8 @@ stack_handler:
 
 
 align 4
-proc NET_BUFF_alloc stdcall, buffersize
+proc net_buff_alloc stdcall, buffersize
+
         cmp     [buffersize], NET_BUFFER_SIZE
         ja      .too_large
 
@@ -387,27 +384,27 @@ proc NET_BUFF_alloc stdcall, buffersize
 
         spin_unlock_irqrestore
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "net alloc: 0x%x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "net_buff_alloc: 0x%x\n", eax
         ret
 
   .out_of_mem:
         spin_unlock_irqrestore
 
         xor     eax, eax
-        DEBUGF  DEBUG_NETWORK_ERROR, "NET_BUFF_alloc: out of mem!\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "net_buff_alloc: out of mem!\n"
         ret
 
   .too_large:
         xor     eax, eax
-        DEBUGF  DEBUG_NETWORK_ERROR, "NET_BUFF_alloc: too large!\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "net_buff_alloc: too large!\n"
         ret
 endp
 
 
 align 4
-proc NET_BUFF_free stdcall, buffer
+proc net_buff_free stdcall, buffer
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "net free: 0x%x\n", [buffer]
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "net_buff_free: 0x%x\n", [buffer]
 
         spin_lock_irqsave
 
@@ -423,14 +420,14 @@ endp
 
 
 align 4
-NET_link_changed:
+net_link_changed:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "NET_link_changed device=0x%x status=0x%x\n", ebx, [ebx + NET_DEVICE.link_state]
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "net_link_changed device=0x%x status=0x%x\n", ebx, [ebx + NET_DEVICE.link_state]
 
 align 4
-NET_send_event:
+net_send_event:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "NET_send_event\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "net_send_event\n"
 
 ; Send event to all applications
         push    edi ecx
@@ -446,21 +443,20 @@ NET_send_event:
 
 
 
-;-----------------------------------------------------------------
-;
-; NET_add_device:
-;
-;  This function is called by the network drivers,
-;  to register each running NIC to the kernel
-;
-;  IN:  Pointer to device structure in ebx
-;  OUT: Device num in eax, -1 on error
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; net_add_device: Called by network driver to register interface. ;
+;                                                                 ;
+;  IN:  ebx = ptr to device structure                             ;
+;                                                                 ;
+;  OUT: eax = device num on success                               ;
+;       eax = -1 on error                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-NET_add_device:
+net_add_device:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "NET_Add_Device: %x\n", ebx   ;;; TODO: use mutex to lock net device list
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "net_add_device: %x\n", ebx   ;;; TODO: use mutex to lock net device list
 
         cmp     [NET_RUNNING], NET_DEVICES_MAX
         jae     .error
@@ -495,7 +491,7 @@ NET_add_device:
 
         inc     [NET_RUNNING]           ; Indicate that one more network device is up and running
 
-        call    NET_send_event
+        call    net_send_event
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "Device number: %u\n", eax
         ret
@@ -507,19 +503,17 @@ NET_add_device:
 
 
 
-;-----------------------------------------------------------------
-;
-; NET_Remove_Device:
-;
-;  This function is called by network drivers,
-;  to unregister network devices from the kernel
-;
-;  IN:  Pointer to device structure in ebx
-;  OUT: eax: -1 on error
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; net_remove_device: Called by network driver to unregister dev.  ;
+;                                                                 ;
+;  IN:  ebx = ptr to device                                       ;
+;                                                                 ;
+;  OUT: eax: -1 on error                                          ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-NET_remove_device:
+net_remove_device:
 
         cmp     [NET_RUNNING], 0
         je      .error
@@ -541,7 +535,7 @@ NET_remove_device:
         mov     dword [edi-4], eax
         dec     [NET_RUNNING]
 
-        call    NET_send_event
+        call    net_send_event
 
         xor     eax, eax
         ret
@@ -552,25 +546,27 @@ NET_remove_device:
 
 
 
-;-----------------------------------------------------------------
-;
-; NET_ptr_to_num
-;
-; IN:  ebx = ptr to device struct
-; OUT: edi = -1 on error, device number otherwise
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; net_ptr_to_num                                                  ;
+;                                                                 ;
+;  IN:  ebx = ptr to device struct                                ;
+;                                                                 ;
+;  OUT: edi = device number                                       ;
+;       edi = -1 on error                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-NET_ptr_to_num:
+net_ptr_to_num:
 
-        call    NET_ptr_to_num4
+        call    net_ptr_to_num4
         ror     edi, 2          ; If -1, stay -1
                                 ; valid device numbers have last two bits 0, so do just shr
 
         ret
 
 align 4
-NET_ptr_to_num4:                ; Todo, place number in device structure so we only need to verify?
+net_ptr_to_num4:                ; Todo, place number in device structure so we only need to verify?
 
         test    ebx, ebx
         jz      .fail
@@ -595,21 +591,17 @@ NET_ptr_to_num4:                ; Todo, place number in device structure so we o
         pop     ecx
         ret
 
-;-----------------------------------------------------------------
-;
-; checksum_1
-;
-;  This is the first of two functions needed to calculate a checksum.
-;
-;  IN:  edx = start offset for semi-checksum
-;       esi = pointer to data
-;       ecx = data size
-;  OUT: edx = semi-checksum
-;
-;
-; Code was optimized by diamond
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; checksum_1: Calculate semi-checksum for network packets.        ;
+;                                                                 ;
+;  IN:  edx = start offset for semi-checksum                      ;
+;       esi = pointer to data                                     ;
+;       ecx = data size                                           ;
+;                                                                 ;
+;  OUT: edx = semi-checksum                                       ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 checksum_1:
 
@@ -679,16 +671,15 @@ checksum_1:
   .end:
         ret
 
-;-----------------------------------------------------------------
-;
-; checksum_2
-;
-;  This function calculates the final ip/tcp/udp checksum for you
-;
-;  IN:  edx = semi-checksum
-;  OUT: dx = checksum (in INET byte order)
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; checksum_2: Calculate the final ip/tcp/udp checksum.            ;
+;                                                                 ;
+;   IN: edx = semi-checksum                                       ;
+;                                                                 ;
+;  OUT: dx = checksum (in INET byte order)                        ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 checksum_2:
 
@@ -713,11 +704,11 @@ checksum_2:
 
 
 
-;----------------------------------------------------------------
-;
-;  System function to work with network devices (74)
-;
-;----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+;  System function 74: Low level access to network devices.       ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 sys_network:
 
@@ -736,7 +727,7 @@ sys_network:
         and     esi, 0x0000ff00
         shr     esi, 6
 
-        cmp     dword [esi + NET_DRV_LIST], 0   ; check if driver is running
+        cmp     dword[esi + NET_DRV_LIST], 0    ; check if driver is running
         je      .doesnt_exist
 
         mov     eax, [esi + NET_DRV_LIST]
@@ -809,16 +800,16 @@ sys_network:
         ret
 
   .bytes_tx:
-        mov     ebx, dword [eax + NET_DEVICE.bytes_tx + 4]
+        mov     ebx, dword[eax + NET_DEVICE.bytes_tx + 4]
         mov     [esp+20], ebx
-        mov     eax, dword [eax + NET_DEVICE.bytes_tx]
+        mov     eax, dword[eax + NET_DEVICE.bytes_tx]
         mov     [esp+32], eax
         ret
 
   .bytes_rx:
-        mov     ebx, dword [eax + NET_DEVICE.bytes_rx + 4]
+        mov     ebx, dword[eax + NET_DEVICE.bytes_rx + 4]
         mov     [esp+20], ebx
-        mov     eax, dword [eax + NET_DEVICE.bytes_rx]
+        mov     eax, dword[eax + NET_DEVICE.bytes_rx]
         mov     [esp+32], eax
         ret
 
@@ -834,11 +825,11 @@ sys_network:
 
 
 
-;----------------------------------------------------------------
-;
-;  System function to work with protocols  (76)
-;
-;----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+;  System function 76: Low level access to protocol handlers.     ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 sys_protocols:
         cmp     bh, NET_DEVICES_MAX             ; Check if device number exists
@@ -856,28 +847,28 @@ sys_protocols:
         shr     eax, 16                         ;
 
         cmp     ax, API_ETH
-        je      ETH_api
+        je      eth_api
 
         cmp     ax, API_IPv4
-        je      IPv4_api
+        je      ipv4_api
 
         cmp     ax, API_ICMP
-        je      ICMP_api
+        je      icmp_api
 
         cmp     ax, API_UDP
-        je      UDP_api
+        je      udp_api
 
         cmp     ax, API_TCP
-        je      TCP_api
+        je      tcp_api
 
         cmp     ax, API_ARP
-        je      ARP_api
+        je      arp_api
 
         cmp     ax, API_PPPOE
-        je      PPPoE_api
+        je      pppoe_api
 
         cmp     ax, API_IPv6
-        je      IPv6_api
+        je      ipv6_api
 
         add     esp, 4                           ; if we reached here, no function was called, so we need to balance stack
 

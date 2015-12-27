@@ -38,10 +38,10 @@ endg
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; UDP_init: This function resets all UDP variables                ;
+; udp_init: This function resets all UDP variables                ;
 ;                                                                 ;
 ;-----------------------------------------------------------------;
-macro   UDP_init {
+macro   udp_init {
 
         xor     eax, eax
         mov     edi, UDP_PACKETS_TX
@@ -50,7 +50,7 @@ macro   UDP_init {
 }
 
 
-macro   UDP_checksum    IP1, IP2  { ; esi = ptr to udp packet, ecx = packet size, destroys: ecx, edx
+macro   udp_checksum    IP1, IP2  { ; esi = ptr to udp packet, ecx = packet size, destroys: ecx, edx
 
 ; Pseudoheader
         mov     edx, IP_PROTO_UDP
@@ -98,7 +98,7 @@ macro   UDP_checksum    IP1, IP2  { ; esi = ptr to udp packet, ecx = packet size
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; UDP_input: Inject the UDP data in the application sockets.      ;
+; udp_input: Inject the UDP data in the application sockets.      ;
 ;                                                                 ;
 ;   IN: [esp] = ptr to buffer                                     ;
 ;       ebx = ptr to device struct                                ;
@@ -111,7 +111,7 @@ macro   UDP_checksum    IP1, IP2  { ; esi = ptr to udp packet, ecx = packet size
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-UDP_input:
+udp_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: size=%u\n", ecx
 
@@ -123,7 +123,7 @@ UDP_input:
         ; otherwise, we will re-calculate the checksum and add it to this value, thus creating 0 when it is correct
 
         mov     eax, edx
-        UDP_checksum (eax+IPv4_header.SourceAddress), (eax+IPv4_header.DestinationAddress)
+        udp_checksum (eax+IPv4_header.SourceAddress), (eax+IPv4_header.DestinationAddress)
         jnz     .checksum_mismatch
 
   .no_checksum:
@@ -194,7 +194,7 @@ UDP_input:
         sub     ecx, sizeof.UDP_header
         add     esi, sizeof.UDP_header
 
-        jmp     SOCKET_input
+        jmp     socket_input
 
   .updateport:
         pusha
@@ -220,14 +220,14 @@ UDP_input:
 
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: dumping\n"
-        call    NET_BUFF_free
+        call    net_buff_free
         ret
 
 
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; UDP_output: Create an UDP packet.                               ;
+; udp_output: Create an UDP packet.                               ;
 ;                                                                 ;
 ;  IN:  eax = socket pointer                                      ;
 ;       ecx = number of bytes to send                             ;
@@ -238,7 +238,7 @@ UDP_input:
 ;-----------------------------------------------------------------;
 
 align 4
-UDP_output:
+udp_output:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_output: socket=%x bytes=%u data_ptr=%x\n", eax, ecx, esi
 
@@ -256,7 +256,7 @@ UDP_output:
         mov     al, [eax + IP_SOCKET.ttl]
         mov     ah, IP_PROTO_UDP
         add     ecx, sizeof.UDP_header
-        call    IPv4_output
+        call    ipv4_output
         jz      .fail
         mov     [esp + 8], eax                                  ; pointer to buffer start
 
@@ -279,13 +279,13 @@ UDP_output:
 ; Checksum
         mov     esi, edi
         mov     [edi + UDP_header.Checksum], 0
-        UDP_checksum (edi-4), (edi-8)                           ; FIXME: IPv4 packet could have options..
+        udp_checksum (edi-4), (edi-8)                           ; FIXME: IPv4 packet could have options..
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_output: sending with device %x\n", ebx
         call    [ebx + NET_DEVICE.transmit]
         test    eax, eax
         jnz     @f
-        call    NET_ptr_to_num4
+        call    net_ptr_to_num4
         inc     [UDP_PACKETS_TX + edi]
        @@:
 
@@ -302,7 +302,7 @@ UDP_output:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; UDP_connect                                                     ;
+; udp_connect                                                     ;
 ;                                                                 ;
 ;   IN: eax = socket pointer                                      ;
 ;                                                                 ;
@@ -312,11 +312,11 @@ UDP_output:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-UDP_connect:
+udp_connect:
 
         test    [eax + SOCKET.state], SS_ISCONNECTED
         jz      @f
-        call    UDP_disconnect
+        call    udp_disconnect
   @@:
 
         push    eax edx
@@ -340,7 +340,7 @@ UDP_connect:
 ; Find a local port, if user didnt define one
         cmp     [eax + UDP_SOCKET.LocalPort], 0
         jne     @f
-        call    SOCKET_find_port
+        call    socket_find_port
        @@:
 
         push    eax
@@ -348,7 +348,7 @@ UDP_connect:
         call    mutex_unlock
         pop     eax
 
-        call    SOCKET_is_connected
+        call    socket_is_connected
 
         xor     eax, eax
         ret
@@ -364,11 +364,11 @@ UDP_connect:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-UDP_disconnect:
+udp_disconnect:
 
         ; TODO: remove the pending received data
 
-        call    SOCKET_is_disconnected
+        call    socket_is_disconnected
 
         ret
 
@@ -378,7 +378,7 @@ UDP_disconnect:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; UDP_api: This function is called by system function 76          ;
+; UDP_api: Part of system function 76                             ;
 ;                                                                 ;
 ;  IN: bl = subfunction number in bl                              ;
 ;      bh = device number in bh                                   ;
@@ -388,7 +388,7 @@ UDP_disconnect:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-UDP_api:
+udp_api:
 
         movzx   eax, bh
         shl     eax, 2

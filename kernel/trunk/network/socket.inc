@@ -207,10 +207,10 @@ endg
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_init                                                     ;
+; socket_init                                                     ;
 ;                                                                 ;
 ;-----------------------------------------------------------------;
-macro   SOCKET_init {
+macro   socket_init {
 
         xor     eax, eax
         mov     edi, net_sockets
@@ -251,24 +251,24 @@ sys_socket:
         mov     dword[esp+20], 0        ; Set error code to 0
 
         cmp     ebx, 255
-        jz      SOCKET_debug
+        jz      socket_debug
 
         cmp     ebx, .number
         ja      .error
         jmp     dword [.table + 4*ebx]
 
   .table:
-        dd      SOCKET_open             ; 0
-        dd      SOCKET_close            ; 1
-        dd      SOCKET_bind             ; 2
-        dd      SOCKET_listen           ; 3
-        dd      SOCKET_connect          ; 4
-        dd      SOCKET_accept           ; 5
-        dd      SOCKET_send             ; 6
-        dd      SOCKET_receive          ; 7
-        dd      SOCKET_set_opt          ; 8
-        dd      SOCKET_get_opt          ; 9
-        dd      SOCKET_pair             ; 10
+        dd      socket_open             ; 0
+        dd      socket_close            ; 1
+        dd      socket_bind             ; 2
+        dd      socket_listen           ; 3
+        dd      socket_connect          ; 4
+        dd      socket_accept           ; 5
+        dd      socket_send             ; 6
+        dd      socket_receive          ; 7
+        dd      socket_set_opt          ; 8
+        dd      socket_get_opt          ; 9
+        dd      socket_pair             ; 10
   .number = ($ - .table) / 4 - 1
 
   .error:
@@ -279,7 +279,7 @@ sys_socket:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_open: Create a new socket.                               ;
+; socket_open: Create a new socket.                               ;
 ;                                                                 ;
 ;   IN: ecx = domain                                              ;
 ;       edx = type                                                ;
@@ -291,12 +291,12 @@ sys_socket:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_open:
+socket_open:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_open: domain=%u type=%u protocol=%x ", ecx, edx, esi
 
         push    ecx edx esi
-        call    SOCKET_alloc
+        call    socket_alloc
         pop     esi edx ecx
         test    eax, eax
         jz      .nobuffs
@@ -339,7 +339,7 @@ SOCKET_open:
   .no_ppp:
   .unsupported:
         push    eax
-        call    SOCKET_free
+        call    socket_free
         pop     eax
         mov     dword[esp+20], EOPNOTSUPP
         mov     dword[esp+32], -1
@@ -366,19 +366,19 @@ align 4
         pop     eax
 
         mov     [eax + SOCKET.Protocol], IP_PROTO_UDP
-        mov     [eax + SOCKET.snd_proc], SOCKET_send_udp
-        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
-        mov     [eax + SOCKET.connect_proc], UDP_connect
+        mov     [eax + SOCKET.snd_proc], socket_send_udp
+        mov     [eax + SOCKET.rcv_proc], socket_receive_dgram
+        mov     [eax + SOCKET.connect_proc], udp_connect
         ret
 
 align 4
   .tcp:
         mov     [eax + SOCKET.Protocol], IP_PROTO_TCP
-        mov     [eax + SOCKET.snd_proc], SOCKET_send_tcp
-        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
-        mov     [eax + SOCKET.connect_proc], TCP_connect
+        mov     [eax + SOCKET.snd_proc], socket_send_tcp
+        mov     [eax + SOCKET.rcv_proc], socket_receive_stream
+        mov     [eax + SOCKET.connect_proc], tcp_connect
 
-        TCP_init_socket eax
+        tcp_init_socket eax
         ret
 
 
@@ -388,9 +388,9 @@ align 4
         init_queue (eax + SOCKET_QUEUE_LOCATION)        ; Set up data receiving queue
         pop     eax
 
-        mov     [eax + SOCKET.snd_proc], SOCKET_send_ip
-        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
-        mov     [eax + SOCKET.connect_proc], IPv4_connect
+        mov     [eax + SOCKET.snd_proc], socket_send_ip
+        mov     [eax + SOCKET.rcv_proc], socket_receive_dgram
+        mov     [eax + SOCKET.connect_proc], ipv4_connect
         ret
 
 
@@ -400,9 +400,9 @@ align 4
         init_queue (eax + SOCKET_QUEUE_LOCATION)        ; Set up data receiving queue
         pop     eax
 
-        mov     [eax + SOCKET.snd_proc], SOCKET_send_icmp
-        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
-        mov     [eax + SOCKET.connect_proc], IPv4_connect
+        mov     [eax + SOCKET.snd_proc], socket_send_icmp
+        mov     [eax + SOCKET.rcv_proc], socket_receive_dgram
+        mov     [eax + SOCKET.connect_proc], ipv4_connect
         ret
 
 align 4
@@ -411,14 +411,14 @@ align 4
         init_queue (eax + SOCKET_QUEUE_LOCATION)        ; Set up data receiving queue
         pop     eax
 
-        mov     [eax + SOCKET.snd_proc], SOCKET_send_pppoe
-        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
+        mov     [eax + SOCKET.snd_proc], socket_send_pppoe
+        mov     [eax + SOCKET.rcv_proc], socket_receive_dgram
         ret
 
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_bind: Bind to a local port.                              ;
+; socket_bind: Bind to a local port.                              ;
 ;                                                                 ;
 ;   IN: ecx = socket number                                       ;
 ;       edx = pointer to sockaddr struct                          ;
@@ -430,11 +430,11 @@ align 4
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_bind:
+socket_bind:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_bind: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
-        call    SOCKET_num_to_ptr
+        call    socket_num_to_ptr
         test    eax, eax
         jz      .invalid
 
@@ -444,10 +444,10 @@ SOCKET_bind:
         cmp     [eax + UDP_SOCKET.LocalPort], 0 ; Socket can only be bound once
         jnz     .invalid
 
-        cmp     word [edx], AF_INET4
+        cmp     word[edx], AF_INET4
         je      .af_inet4
 
-        cmp     word [edx], AF_LOCAL
+        cmp     word[edx], AF_LOCAL
         je      .af_local
 
   .notsupp:
@@ -479,18 +479,17 @@ SOCKET_bind:
 
   .tcp:
   .udp:
-
         pushd   [edx + 4]                       ; First, fill in the IP
         popd    [eax + IP_SOCKET.LocalIP]
 
         mov     bx, [edx + 2]                   ; Did caller specify a local port?
         test    bx, bx
         jnz     .just_check
-        call    SOCKET_find_port                ; Nope, find an ephemeral one
+        call    socket_find_port                ; Nope, find an ephemeral one
         jmp     .done
 
   .just_check:
-        call    SOCKET_check_port               ; Yes, check if it's still available
+        call    socket_check_port               ; Yes, check if it's still available
         jz      .addrinuse                      ; ZF is set by socket_check_port on error
 
   .done:
@@ -511,7 +510,7 @@ SOCKET_bind:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_connect: Connect to the remote host.                     ;
+; socket_connect: Connect to the remote host.                     ;
 ;                                                                 ;
 ;   IN: ecx = socket number                                       ;
 ;       edx = pointer to sockaddr struct                          ;
@@ -523,11 +522,11 @@ SOCKET_bind:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_connect:
+socket_connect:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_connect: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
-        call    SOCKET_num_to_ptr
+        call    socket_num_to_ptr
         test    eax, eax
         jz      .invalid
 
@@ -572,7 +571,7 @@ connect_notsupp:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_listen: Listen for incoming connections.                 ;
+; socket_listen: Listen for incoming connections.                 ;
 ;                                                                 ;
 ;   IN: ecx = socket number                                       ;
 ;       edx = backlog in edx                                      ;
@@ -583,11 +582,11 @@ connect_notsupp:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_listen:
+socket_listen:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_listen: socknum=%u backlog=%u\n", ecx, edx
 
-        call    SOCKET_num_to_ptr
+        call    socket_num_to_ptr
         test    eax, eax
         jz      .invalid
 
@@ -641,7 +640,7 @@ SOCKET_listen:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_accept: Accept an incoming connection.                   ;
+; socket_accept: Accept an incoming connection.                   ;
 ;                                                                 ;
 ;   IN: ecx = socket number (of listening socket)                 ;
 ;       edx = ptr to sockaddr struct                              ;
@@ -653,11 +652,11 @@ SOCKET_listen:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_accept:
+socket_accept:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_accept: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
-        call    SOCKET_num_to_ptr
+        call    socket_num_to_ptr
         test    eax, eax
         jz      .invalid
 
@@ -677,7 +676,7 @@ SOCKET_accept:
         mov     eax, [esi]
 
 ; Verify that it is (still) a valid socket
-        call    SOCKET_check
+        call    socket_check
         jz      .invalid
 
 ; Change sockets thread owner ID to that of the current thread
@@ -694,7 +693,7 @@ SOCKET_accept:
         test    [eax + SOCKET.options], SO_NONBLOCK
         jnz     .wouldblock
 
-        call    SOCKET_block
+        call    socket_block
         jmp     .loop
 
   .wouldblock:
@@ -714,7 +713,7 @@ SOCKET_accept:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_close: Close the socket (and connection).                ;
+; socket_close: Close the socket (and connection).                ;
 ;                                                                 ;
 ;   IN: ecx = socket number                                       ;
 ;                                                                 ;
@@ -724,11 +723,11 @@ SOCKET_accept:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_close:
+socket_close:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_close: socknum=%u\n", ecx
 
-        call    SOCKET_num_to_ptr
+        call    socket_num_to_ptr
         test    eax, eax
         jz      .invalid
 
@@ -738,7 +737,7 @@ SOCKET_close:
 
         test    [eax + SOCKET.state], SS_BLOCKED                ; Is the socket still in blocked state?
         jz      @f
-        call    SOCKET_notify                                   ; Unblock it.
+        call    socket_notify                                   ; Unblock it.
   @@:
 
         cmp     [eax + SOCKET.Domain], AF_INET4
@@ -748,15 +747,15 @@ SOCKET_close:
         je      .tcp
 
   .free:
-        call    SOCKET_free
+        call    socket_free
         ret
 
   .tcp:
-        call    TCP_usrclosed
+        call    tcp_usrclosed
 
         test    eax, eax
         jz      @f
-        call    TCP_output                                      ; If connection is not closed yet, send the FIN
+        call    tcp_output                                      ; If connection is not closed yet, send the FIN
   @@:
         ret
 
@@ -769,7 +768,7 @@ SOCKET_close:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_receive: Receive some data from the remote end.          ;
+; socket_receive: Receive some data from the remote end.          ;
 ;                                                                 ;
 ;   IN: ecx = socket number                                       ;
 ;       edx = addr to application buffer                          ;
@@ -783,11 +782,11 @@ SOCKET_close:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_receive:
+socket_receive:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: socknum=%u bufaddr=%x buflength=%u flags=%x\n", ecx, edx, esi, edi
 
-        call    SOCKET_num_to_ptr
+        call    socket_num_to_ptr
         test    eax, eax
         jz      .invalid
 
@@ -808,7 +807,7 @@ SOCKET_receive:
         test    [eax + SOCKET.options], SO_NONBLOCK
         jnz     .return_err
 
-        call    SOCKET_block
+        call    socket_block
         jmp     .loop
 
 
@@ -825,14 +824,14 @@ SOCKET_receive:
   .last_data:
         test    ecx, ecx
         jz      .return
-        call    SOCKET_notify                                   ; Call me again!
+        call    socket_notify                                   ; Call me again!
         jmp     .return
 
 
 
 
 align 4
-SOCKET_receive_dgram:
+socket_receive_dgram:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: DGRAM\n"
 
@@ -868,11 +867,11 @@ SOCKET_receive_dgram:
         rep movsd
   .nd:
 
-        call    NET_BUFF_free
+        call    net_buff_free
         pop     ecx eax                                         ; return number of bytes copied to application
         cmp     [eax + SOCKET_QUEUE_LOCATION + queue.size], 0
         je      @f
-        call    SOCKET_notify                                   ; Queue another network event
+        call    socket_notify                                   ; Queue another network event
   @@:
         xor     ebx, ebx                                        ; errorcode = 0 (no error)
         ret
@@ -900,7 +899,7 @@ SOCKET_receive_dgram:
 
 
 align 4
-SOCKET_receive_local:
+socket_receive_local:
 
         ; does this socket have a PID yet?
         cmp     [eax + SOCKET.PID], 0
@@ -913,12 +912,12 @@ SOCKET_receive_local:
         mov     [eax + SOCKET.TID], ebx                         ; currently TID = PID in kolibrios :(
       @@:
 
-        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
+        mov     [eax + SOCKET.rcv_proc], socket_receive_stream
 
 ; ... continue to SOCKET_receive_stream
 
 align 4
-SOCKET_receive_stream:
+socket_receive_stream:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: STREAM\n"
 
@@ -934,8 +933,8 @@ SOCKET_receive_stream:
 
         push    eax
         add     eax, STREAM_SOCKET.rcv
-        call    SOCKET_ring_read                                ; copy data from kernel buffer to application buffer
-        call    SOCKET_ring_free                                ; free read memory
+        call    socket_ring_read                                ; copy data from kernel buffer to application buffer
+        call    socket_ring_free                                ; free read memory
         pop     eax
 
         cmp     [eax + STREAM_SOCKET.rcv + RING_BUFFER.size], 0
@@ -944,7 +943,7 @@ SOCKET_receive_stream:
         ret
 
   .more_data:
-        call    SOCKET_notify                                   ; Queue another network event
+        call    socket_notify                                   ; Queue another network event
         xor     ebx, ebx                                        ; errorcode = 0 (no error)
         ret
 
@@ -962,7 +961,7 @@ SOCKET_receive_stream:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_send: Send some data to the remote end.                  ;
+; socket_send: Send some data to the remote end.                  ;
 ;                                                                 ;
 ;   IN: ecx = socket number                                       ;
 ;       edx = pointer to data                                     ;
@@ -975,11 +974,11 @@ SOCKET_receive_stream:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_send:
+socket_send:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: socknum=%u data ptr=%x length=%u flags=%x\n", ecx, edx, esi, edi
 
-        call    SOCKET_num_to_ptr
+        call    socket_num_to_ptr
         test    eax, eax
         jz      .invalid
 
@@ -995,12 +994,12 @@ SOCKET_send:
 
 
 align 4
-SOCKET_send_udp:
+socket_send_udp:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: UDP\n"
 
         mov     [esp+32], ecx
-        call    UDP_output
+        call    udp_output
         cmp     eax, -1
         je      .error
         ret
@@ -1012,19 +1011,19 @@ SOCKET_send_udp:
 
 
 align 4
-SOCKET_send_tcp:
+socket_send_tcp:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: TCP\n"
 
         push    eax
         add     eax, STREAM_SOCKET.snd
-        call    SOCKET_ring_write
+        call    socket_ring_write
         pop     eax
 
         mov     [esp+32], ecx
         mov     [eax + SOCKET.errorcode], 0
         push    eax
-        call    TCP_output              ; FIXME: this doesnt look pretty, does it?
+        call    tcp_output              ; FIXME: this doesnt look pretty, does it?
         pop     eax
         mov     eax, [eax + SOCKET.errorcode]
         mov     [esp+20], eax
@@ -1032,12 +1031,12 @@ SOCKET_send_tcp:
 
 
 align 4
-SOCKET_send_ip:
+socket_send_ip:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: IPv4\n"
 
         mov     [esp+32], ecx
-        call    IPv4_output_raw
+        call    ipv4_output_raw
         cmp     eax, -1
         je      .error
         ret
@@ -1049,12 +1048,12 @@ SOCKET_send_ip:
 
 
 align 4
-SOCKET_send_icmp:
+socket_send_icmp:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: ICMP\n"
 
         mov     [esp+32], ecx
-        call    ICMP_output_raw
+        call    icmp_output_raw
         cmp     eax, -1
         je      .error
         ret
@@ -1066,14 +1065,14 @@ SOCKET_send_icmp:
 
 
 align 4
-SOCKET_send_pppoe:
+socket_send_pppoe:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: PPPoE\n"
 
         mov     [esp+32], ecx
         mov     ebx, [eax + SOCKET.device]
 
-        call    PPPoE_discovery_output  ; FIXME: errorcodes
+        call    pppoe_discovery_output  ; FIXME: errorcodes
         cmp     eax, -1
         je      .error
         ret
@@ -1086,7 +1085,7 @@ SOCKET_send_pppoe:
 
 
 align 4
-SOCKET_send_local:
+socket_send_local:
 
         ; does this socket have a PID yet?
         cmp     [eax + SOCKET.PID], 0
@@ -1098,29 +1097,29 @@ SOCKET_send_local:
         mov     [eax + SOCKET.PID], ebx
         mov     [eax + SOCKET.TID], ebx         ; currently TID = PID in kolibrios :(
       @@:
-        mov     [eax + SOCKET.snd_proc], SOCKET_send_local_
+        mov     [eax + SOCKET.snd_proc], socket_send_local_initialized
 
 align 4
-SOCKET_send_local_:
+socket_send_local_initialized:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: LOCAL\n"
 
         ; get the other side's socket and check if it still exists
         mov     eax, [eax + SOCKET.device]
-        call    SOCKET_check
+        call    socket_check
         jz      .invalid
 
         ; allright, shove in the data!
         push    eax
         add     eax, STREAM_SOCKET.rcv
-        call    SOCKET_ring_write
+        call    socket_ring_write
         pop     eax
 
         ; return the number of written bytes (or errorcode) to application
         mov     [esp+32], ecx
 
         ; and notify the other end
-        call    SOCKET_notify
+        call    socket_notify
 
         ret
 
@@ -1132,7 +1131,7 @@ SOCKET_send_local_:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_get_options: Read a socket option                        ;
+; socket_get_opt: Read a socket option                            ;
 ;                                                                 ;
 ;   IN: ecx = socket number                                       ;
 ;       edx = pointer to socket options struct                    ;
@@ -1143,7 +1142,7 @@ SOCKET_send_local_:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_get_opt:
+socket_get_opt:
 
 ; FIXME:
 ; At moment, uses only pseudo-optname -2 for get last_ack_number for TCP.
@@ -1152,7 +1151,7 @@ SOCKET_get_opt:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_get_opt\n"
 
-        call    SOCKET_num_to_ptr
+        call    socket_num_to_ptr
         test    eax, eax
         jz      .invalid
 
@@ -1194,7 +1193,7 @@ SOCKET_get_opt:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_set_options: Set a socket option.                        ;
+; socket_set_options: Set a socket option.                        ;
 ;                                                                 ;
 ;   IN: ecx = socket number                                       ;
 ;       edx = pointer to socket options struct                    ;
@@ -1205,11 +1204,11 @@ SOCKET_get_opt:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_set_opt:
+socket_set_opt:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_set_opt\n"
 
-        call    SOCKET_num_to_ptr
+        call    socket_num_to_ptr
         test    eax, eax
         jz      .invalid
 
@@ -1272,7 +1271,7 @@ SOCKET_set_opt:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_pair: Allocate a pair of linked local sockets.           ;
+; socket_pair: Allocate a pair of linked local sockets.           ;
 ;                                                                 ;
 ;  IN: /                                                          ;
 ;                                                                 ;
@@ -1283,11 +1282,11 @@ SOCKET_set_opt:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_pair:
+socket_pair:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_pair\n"
 
-        call    SOCKET_alloc
+        call    socket_alloc
         test    eax, eax
         jz      .nomem1
         mov     [esp+32], edi   ; application's eax
@@ -1295,12 +1294,12 @@ SOCKET_pair:
         mov     [eax + SOCKET.Domain], AF_LOCAL
         mov     [eax + SOCKET.Type], SOCK_STREAM
         mov     [eax + SOCKET.Protocol], 0              ;;; CHECKME
-        mov     [eax + SOCKET.snd_proc], SOCKET_send_local
-        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_local
+        mov     [eax + SOCKET.snd_proc], socket_send_local
+        mov     [eax + SOCKET.rcv_proc], socket_receive_local
         mov     [eax + SOCKET.PID], 0
         mov     ebx, eax
 
-        call    SOCKET_alloc
+        call    socket_alloc
         test    eax, eax
         jz      .nomem2
         mov     [esp+20], edi   ; application's ebx
@@ -1308,8 +1307,8 @@ SOCKET_pair:
         mov     [eax + SOCKET.Domain], AF_LOCAL
         mov     [eax + SOCKET.Type], SOCK_STREAM
         mov     [eax + SOCKET.Protocol], 0              ;;; CHECKME
-        mov     [eax + SOCKET.snd_proc], SOCKET_send_local
-        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_local
+        mov     [eax + SOCKET.snd_proc], socket_send_local
+        mov     [eax + SOCKET.rcv_proc], socket_receive_local
         mov     [eax + SOCKET.PID], 0
 
         ; Link the two sockets to eachother
@@ -1317,12 +1316,12 @@ SOCKET_pair:
         mov     [ebx + SOCKET.device], eax
 
         lea     eax, [eax + STREAM_SOCKET.rcv]
-        call    SOCKET_ring_create
+        call    socket_ring_create
         test    eax, eax
         jz      .nomem2
 
         lea     eax, [ebx + STREAM_SOCKET.rcv]
-        call    SOCKET_ring_create
+        call    socket_ring_create
         test    eax, eax
         jz      .nomem2
 
@@ -1330,11 +1329,11 @@ SOCKET_pair:
 
   .nomem2:
         mov     eax, [esp+20]
-        call    SOCKET_free
+        call    socket_free
 
   .nomem1:
         mov     eax, [esp+32]
-        call    SOCKET_free
+        call    socket_free
 
         mov     dword[esp+32], -1
         mov     dword[esp+20], ENOMEM
@@ -1344,7 +1343,7 @@ SOCKET_pair:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_debug: Copy socket variables to application buffer.      ;
+; socket_debug: Copy socket variables to application buffer.      ;
 ;                                                                 ;
 ;   IN: ecx = socket number                                       ;
 ;       edx = pointer to application buffer                       ;
@@ -1355,7 +1354,7 @@ SOCKET_pair:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_debug:
+socket_debug:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_debug\n"
 
@@ -1364,7 +1363,7 @@ SOCKET_debug:
         test    ecx, ecx
         jz      .returnall
 
-        call    SOCKET_num_to_ptr
+        call    socket_num_to_ptr
         test    eax, eax
         jz      .invalid
 
@@ -1407,7 +1406,7 @@ SOCKET_debug:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_find_port:                                               ;
+; socket_find_port:                                               ;
 ; Fill in the local port number for TCP and UDP sockets           ;
 ; This procedure always works because the number of sockets is    ;
 ; limited to a smaller number then the number of possible ports   ;
@@ -1418,7 +1417,7 @@ SOCKET_debug:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_find_port:
+socket_find_port:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_find_port\n"
 
@@ -1459,7 +1458,7 @@ SOCKET_find_port:
         add     bh, 1
         adc     bl, 0
 
-        call    SOCKET_check_port
+        call    socket_check_port
         jz      .findit
         ret
 
@@ -1467,11 +1466,10 @@ SOCKET_find_port:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_check_port (to be used with AF_INET only!)               ;
-;                                                                 ;
+; socket_check_port: (to be used with AF_INET only!)              ;
 ; Checks if a local port number is unused                         ;
 ; If the proposed port number is unused, it is filled in in the   ;
-; socket structure                                                ;
+; socket structure.                                               ;
 ;                                                                 ;
 ;   IN: eax = socket ptr                                          ;
 ;       bx = proposed socket number (network byte order)          ;
@@ -1480,7 +1478,7 @@ SOCKET_find_port:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_check_port:
+socket_check_port:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_check_port: "
 
@@ -1530,7 +1528,7 @@ SOCKET_check_port:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_input: Update a (stateless) socket with received data.   ;
+; socket_input: Update a (stateless) socket with received data.   ;
 ;                                                                 ;
 ; Note: The socket's mutex should already be set !                ;
 ;                                                                 ;
@@ -1543,7 +1541,7 @@ SOCKET_check_port:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_input:
+socket_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_input: socket=%x, data=%x size=%u\n", eax, esi, ecx
 
@@ -1551,7 +1549,7 @@ SOCKET_input:
         push    esi
         mov     esi, esp
 
-        add_to_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, sizeof.socket_queue_entry, SOCKET_input.full
+        add_to_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, sizeof.socket_queue_entry, .full
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_input: success\n"
         add     esp, sizeof.socket_queue_entry
@@ -1561,7 +1559,7 @@ SOCKET_input:
         call    mutex_unlock
         popa
 
-        jmp     SOCKET_notify
+        jmp     socket_notify
 
   .full:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_input: socket %x is full!\n", eax
@@ -1572,13 +1570,13 @@ SOCKET_input:
         popa
 
         add     esp, 8
-        call    NET_BUFF_free
+        call    net_buff_free
         ret
 
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_ring_create: Create a ringbuffer for sockets.            ;
+; socket_ring_create: Create a ringbuffer for sockets.            ;
 ;                                                                 ;
 ;   IN: eax = ptr to ring struct                                  ;
 ;                                                                 ;
@@ -1587,7 +1585,7 @@ SOCKET_input:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_ring_create:
+socket_ring_create:
 
         push    esi
         mov     esi, eax
@@ -1623,7 +1621,7 @@ SOCKET_ring_create:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_ring_write: Write data to ring buffer.                   ;
+; socket_ring_write: Write data to ring buffer.                   ;
 ;                                                                 ;
 ;   IN: eax = ptr to ring struct                                  ;
 ;       ecx = data size                                           ;
@@ -1633,7 +1631,7 @@ SOCKET_ring_create:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_ring_write:
+socket_ring_write:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_ring_write: ringbuff=%x ptr=%x size=%u\n", eax, esi, ecx
 
@@ -1693,7 +1691,7 @@ SOCKET_ring_write:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_ring_read: Read from ring buffer                         ;
+; socket_ring_read: Read from ring buffer                         ;
 ;                                                                 ;
 ;   IN: eax = ring struct ptr                                     ;
 ;       ecx = bytes to read                                       ;
@@ -1708,7 +1706,7 @@ SOCKET_ring_write:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_ring_read:
+socket_ring_read:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_ring_read: ringbuff=%x ptr=%x size=%u offset=%x\n", eax, edi, ecx, edx
 
@@ -1767,7 +1765,7 @@ SOCKET_ring_read:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_ring_free: Free data from a ringbuffer                   ;
+; socket_ring_free: Free data from a ringbuffer.                  ;
 ;                                                                 ;
 ;   IN: eax = ptr to ring struct                                  ;
 ;       ecx = data size                                           ;
@@ -1776,7 +1774,7 @@ SOCKET_ring_read:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_ring_free:
+socket_ring_free:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_ring_free: %u bytes from ring %x\n", ecx, eax
 
@@ -1817,7 +1815,7 @@ SOCKET_ring_free:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_block: Suspend the thread attached to a socket.          ;
+; socket_block: Suspend the thread attached to a socket.          ;
 ;                                                                 ;
 ;   IN: eax = socket ptr                                          ;
 ;                                                                 ;
@@ -1825,7 +1823,7 @@ SOCKET_ring_free:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_block:
+socket_block:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_block: %x\n", eax
 
@@ -1859,7 +1857,7 @@ SOCKET_block:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_notify: Wake up socket owner thread.                     ;
+; socket_notify: Wake up socket owner thread.                     ;
 ;                                                                 ;
 ;   IN: eax = socket ptr                                          ;
 ;                                                                 ;
@@ -1867,11 +1865,11 @@ SOCKET_block:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_notify:
+socket_notify:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: %x\n", eax
 
-        call    SOCKET_check
+        call    socket_check
         jz      .error
 
 ; Find the associated thread's TASK_DATA
@@ -1927,10 +1925,9 @@ SOCKET_notify:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_alloc:                                                   ;
-; Allocate memory for socket and put new socket into the list.    ;
-; Newly created socket is initialized with calling PID and socket ;
-; number.                                                         ;
+; socket_alloc: Allocate memory for socket and put new socket     ;
+; into the list. Newly created socket is initialized with calling ;
+; PID and given a socket number.                                  ;
 ;                                                                 ;
 ;  IN:  /                                                         ;
 ;                                                                 ;
@@ -1940,7 +1937,7 @@ SOCKET_notify:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_alloc:
+socket_alloc:
 
         push    ebx
 
@@ -2045,9 +2042,8 @@ SOCKET_alloc:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_free:                                                    ;
-; Free socket data memory and remove socket from the list.        ;
-; Caller should lock and unlock socket_mutex.                     ;
+; socket_free: Free socket data memory and remove socket from     ;
+; the list. Caller should lock and unlock socket_mutex.           ;
 ;                                                                 ;
 ;  IN:  eax = socket ptr                                          ;
 ;                                                                 ;
@@ -2055,11 +2051,11 @@ SOCKET_alloc:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_free:
+socket_free:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_free: %x\n", eax
 
-        call    SOCKET_check
+        call    socket_check
         jz      .error
 
         push    ebx
@@ -2117,7 +2113,7 @@ SOCKET_free:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_fork: Create a child socket.                             ;
+; socket_fork: Create a child socket.                             ;
 ;                                                                 ;
 ;  IN:  ebx = socket number                                       ;
 ;                                                                 ;
@@ -2126,7 +2122,7 @@ SOCKET_free:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_fork:
+socket_fork:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_fork: %x\n", ebx
 
@@ -2137,7 +2133,7 @@ SOCKET_fork:
 
 ; Allocate new socket
         push    ebx
-        call    SOCKET_alloc
+        call    socket_alloc
         pop     ebx
         test    eax, eax
         jz      .fail
@@ -2160,7 +2156,7 @@ SOCKET_fork:
 ; Notify owner of parent socket
         push    eax
         mov     eax, ebx
-        call    SOCKET_notify
+        call    socket_notify
         pop     eax
 
         ret
@@ -2175,7 +2171,7 @@ SOCKET_fork:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_num_to_ptr: Get socket structure address by its number.  ;
+; socket_num_to_ptr: Get socket structure address by its number.  ;
 ;                                                                 ;
 ;  IN:  ecx = socket number                                       ;
 ;                                                                 ;
@@ -2184,7 +2180,7 @@ SOCKET_fork:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_num_to_ptr:
+socket_num_to_ptr:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_num_to_ptr: num=%u ", ecx
 
@@ -2222,7 +2218,7 @@ SOCKET_num_to_ptr:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_ptr_to_num: Get socket number by its address.            ;
+; socket_ptr_to_num: Get socket number by its address.            ;
 ;                                                                 ;
 ;  IN:  eax = socket ptr                                          ;
 ;                                                                 ;
@@ -2232,11 +2228,11 @@ SOCKET_num_to_ptr:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_ptr_to_num:
+socket_ptr_to_num:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_ptr_to_num: ptr=%x ", eax
 
-        call    SOCKET_check
+        call    socket_check
         jz      .error
 
         mov     eax, [eax + SOCKET.Number]
@@ -2251,7 +2247,7 @@ SOCKET_ptr_to_num:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_check: Checks if the given ptr is really a socket ptr.   ;
+; socket_check: Checks if the given ptr is really a socket ptr.   ;
 ;                                                                 ;
 ;  IN:  eax = socket ptr                                          ;
 ;                                                                 ;
@@ -2260,7 +2256,7 @@ SOCKET_ptr_to_num:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_check:
+socket_check:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_check: %x\n", eax
 
@@ -2291,7 +2287,7 @@ SOCKET_check:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_check_owner: Check if the caller app owns the socket.    ;
+; socket_check_owner: Check if the caller app owns the socket.    ;
 ;                                                                 ;
 ;  IN:  eax = socket ptr                                          ;
 ;                                                                 ;
@@ -2299,7 +2295,7 @@ SOCKET_check:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_check_owner:
+socket_check_owner:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_check_owner: %x\n", eax
 
@@ -2316,10 +2312,9 @@ SOCKET_check_owner:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_process_end:                                             ;
-; Kernel calls this function when a certain process ends.         ;
-; This function will check if the process had any open sockets,   ;
-; and update them accordingly (clean up).                         ;
+; socket_process_end: Kernel calls this function when a certain   ;
+; process ends. This function will check if the process had any   ;
+; open sockets and update them accordingly (clean up).            ;
 ;                                                                 ;
 ;  IN:  edx = pid                                                 ;
 ;                                                                 ;
@@ -2327,7 +2322,7 @@ SOCKET_check_owner:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_process_end:
+socket_process_end:
 
         ret     ; FIXME
 
@@ -2368,11 +2363,11 @@ SOCKET_process_end:
         cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
         jne     .free
 
-        call    TCP_disconnect
+        call    tcp_disconnect
         jmp     .closed
 
   .free:
-        call    SOCKET_free
+        call    socket_free
 
   .closed:
         popa
@@ -2394,7 +2389,7 @@ SOCKET_process_end:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_is_connecting: Update socket state.                      ;
+; socket_is_connecting: Update socket state.                      ;
 ;                                                                 ;
 ;  IN:  eax = socket ptr                                          ;
 ;                                                                 ;
@@ -2402,7 +2397,7 @@ SOCKET_process_end:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_is_connecting:
+socket_is_connecting:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_is_connecting: %x\n", eax
 
@@ -2414,7 +2409,7 @@ SOCKET_is_connecting:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_is_connected: Update socket state.                       ;
+; socket_is_connected: Update socket state.                       ;
 ;                                                                 ;
 ;  IN:  eax = socket ptr                                          ;
 ;                                                                 ;
@@ -2422,20 +2417,20 @@ SOCKET_is_connecting:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_is_connected:
+socket_is_connected:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_is_connected: %x\n", eax
 
         and     [eax + SOCKET.state], not (SS_ISCONNECTING + SS_ISDISCONNECTING + SS_ISCONFIRMING)
         or      [eax + SOCKET.state], SS_ISCONNECTED
-        jmp     SOCKET_notify
+        jmp     socket_notify
 
 
 
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_is_disconnecting: Update socket state.                   ;
+; socket_is_disconnecting: Update socket state.                   ;
 ;                                                                 ;
 ;  IN:  eax = socket ptr                                          ;
 ;                                                                 ;
@@ -2443,19 +2438,19 @@ SOCKET_is_connected:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_is_disconnecting:
+socket_is_disconnecting:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_is_disconnecting: %x\n", eax
 
         and     [eax + SOCKET.state], not (SS_ISCONNECTING)
         or      [eax + SOCKET.state], SS_ISDISCONNECTING + SS_CANTRCVMORE + SS_CANTSENDMORE
-        jmp     SOCKET_notify
+        jmp     socket_notify
 
 
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_is_disconnected: Update socket state.                    ;
+; socket_is_disconnected: Update socket state.                    ;
 ;                                                                 ;
 ;  IN:  eax = socket ptr                                          ;
 ;                                                                 ;
@@ -2463,19 +2458,19 @@ SOCKET_is_disconnecting:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_is_disconnected:
+socket_is_disconnected:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_is_disconnected: %x\n", eax
 
         and     [eax + SOCKET.state], not (SS_ISCONNECTING + SS_ISCONNECTED + SS_ISDISCONNECTING)
         or      [eax + SOCKET.state], SS_CANTRCVMORE + SS_CANTSENDMORE
-        jmp     SOCKET_notify
+        jmp     socket_notify
 
 
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_cant_recv_more: Update socket state.                     ;
+; socket_cant_recv_more: Update socket state.                     ;
 ;                                                                 ;
 ;  IN:  eax = socket ptr                                          ;
 ;                                                                 ;
@@ -2483,18 +2478,18 @@ SOCKET_is_disconnected:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_cant_recv_more:
+socket_cant_recv_more:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_cant_recv_more: %x\n", eax
 
         or      [eax + SOCKET.state], SS_CANTRCVMORE
-        jmp     SOCKET_notify
+        jmp     socket_notify
 
 
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; SOCKET_cant_send_more: Update socket state.                     ;
+; socket_cant_send_more: Update socket state.                     ;
 ;                                                                 ;
 ;  IN:  eax = socket ptr                                          ;
 ;                                                                 ;
@@ -2502,13 +2497,13 @@ SOCKET_cant_recv_more:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-SOCKET_cant_send_more:
+socket_cant_send_more:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_cant_send_more: %x\n", eax
 
         or      [eax + SOCKET.state], SS_CANTSENDMORE
         mov     [eax + SOCKET.snd_proc], .notconn
-        jmp     SOCKET_notify
+        jmp     socket_notify
 
   .notconn:
         mov     dword[esp+20], ENOTCONN

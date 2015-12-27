@@ -50,10 +50,10 @@ align 4
         ETH_input_event dd ?
 endg
 
-macro   ETH_init {
+macro   eth_init {
 
         movi    ebx, 1
-        mov     ecx, ETH_process_input
+        mov     ecx, eth_process_input
         call    new_sys_threads
         test    eax, eax
         jns     @f
@@ -62,20 +62,18 @@ macro   ETH_init {
 
 }
 
-;-----------------------------------------------------------------
-;
-; ETH_input
-;
-;  This function is called by ethernet drivers,
-;  It pushes the received ethernet packets onto the ethernet input queue
-;
-;  IN:  [esp] = Pointer to buffer
-;
-;  OUT: /
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; eth_input: This function is called by ethernet drivers.         ;
+; Push the received ethernet packet onto the ethernet input queue.;
+;                                                                 ;
+;  IN:  [esp] = Pointer to buffer                                 ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-ETH_input:
+eth_input:
 
         pop     eax
         pushf
@@ -109,14 +107,22 @@ ETH_input:
         DEBUGF  DEBUG_NETWORK_ERROR, "ETH incoming queue is full, discarding packet!\n"
         popf
         push    eax
-        call    NET_BUFF_free
+        call    net_buff_free
         ret
 
 
 
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; eth_process_input: Process packets from ethernet input queue.   ;
+;                                                                 ;
+;  IN:  /                                                         ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-ETH_process_input:
+eth_process_input:
 
         xor     esi, esi
         mov     ecx, MANUAL_DESTROY
@@ -163,44 +169,46 @@ ETH_process_input:
 
 ; Place protocol handlers here
         cmp     ax, ETHER_PROTO_IPv4
-        je      IPv4_input
+        je      ipv4_input
 
         cmp     ax, ETHER_PROTO_ARP
-        je      ARP_input
+        je      arp_input
 
 ;        cmp     ax, ETHER_PROTO_IPv6
-;        je      IPv6_input
+;        je      ipv6_input
 
 ;        cmp     ax, ETHER_PROTO_PPP_DISCOVERY
-;        je      PPPoE_discovery_input
+;        je      pppoe_discovery_input
 
 ;        cmp     ax, ETHER_PROTO_PPP_SESSION
-;        je      PPPoE_session_input
+;        je      pppoe_session_input
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_input: Unknown packet type=%x\n", ax
 
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_input: dumping\n"
-        call    NET_BUFF_free
+        call    net_buff_free
         ret
 
-;-----------------------------------------------------------------
-;
-; ETH_output
-;
-; IN:  ax = protocol
-;     ebx = device ptr
-;     ecx = payload size
-;     edx = pointer to destination mac
-;
-; OUT: eax = start of net frame / 0 on error
-;      ebx = device ptr
-;      ecx = payload size
-;      edi = start of payload
-;
-;-----------------------------------------------------------------
+
+
+;-----------------------------------------------------------------;
+;                                                                 ;
+; eth_output                                                      ;
+;                                                                 ;
+;  IN:  ax = protocol                                             ;
+;       ebx = device ptr                                          ;
+;       ecx = payload size                                        ;
+;       edx = pointer to destination mac                          ;
+;                                                                 ;
+;  OUT: eax = start of net frame / 0 on error                     ;
+;       ebx = device ptr                                          ;
+;       ecx = payload size                                        ;
+;       edi = start of payload                                    ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-ETH_output:
+eth_output:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_output: size=%u device=%x\n", ecx, ebx
 
@@ -211,7 +219,7 @@ ETH_output:
         push    ax edx
 
         add     ecx, sizeof.ETH_header + NET_BUFF.data
-        stdcall NET_BUFF_alloc, ecx
+        stdcall net_buff_alloc, ecx
         test    eax, eax
         jz      .out_of_ram
         mov     [eax + NET_BUFF.type], NET_BUFF_ETH
@@ -257,21 +265,19 @@ ETH_output:
 
 
 
-;-----------------------------------------------------------------
-;
-; ETH_API
-;
-; This function is called by system function 76
-;
-; IN:  subfunction number in bl
-;      device number in bh
-;      ecx, edx, .. depends on subfunction
-;
-; OUT:
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; eth_api: Part of system function 76.                            ;
+;                                                                 ;
+;  IN:  bl = subfunction number                                   ;
+;       bh = device number                                        ;
+;       ecx, edx, .. depends on subfunction                       ;
+;                                                                 ;
+; OUT:  depends on subfunction                                    ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-ETH_api:
+eth_api:
 
         cmp     bh, NET_DEVICES_MAX
         ja      .error

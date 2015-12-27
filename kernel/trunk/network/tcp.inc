@@ -206,7 +206,7 @@ endg
 ; TCP_init: Resets all TCP variables.                             ;
 ;                                                                 ;
 ;-----------------------------------------------------------------;
-macro   TCP_init {
+macro   tcp_init {
 
         xor     eax, eax
         mov     edi, TCP_segments_tx
@@ -219,7 +219,7 @@ macro   TCP_init {
         init_queue TCP_queue
 
         movi    ebx, 1
-        mov     ecx, TCP_process_input
+        mov     ecx, tcp_process_input
         call    new_sys_threads
         test    eax, eax
         jns     @f
@@ -227,7 +227,7 @@ macro   TCP_init {
   @@:
 
         movi    ebx, 1
-        mov     ecx, TCP_timer_640ms
+        mov     ecx, tcp_timer_640ms
         call    new_sys_threads
         test    eax, eax
         jns     @f
@@ -246,7 +246,7 @@ include 'tcp_output.inc'
 
 ;------------------------------------------------------------------;
 ;                                                                  ;
-; TCP_api: This function is called by system function 76           ;
+; tcp_api: Part of system function 76                              ;
 ;                                                                  ;
 ;  IN:  bl = subfunction number                                    ;
 ;       bh = device number                                         ;
@@ -256,7 +256,7 @@ include 'tcp_output.inc'
 ;                                                                  ;
 ;------------------------------------------------------------------;
 align 4
-TCP_api:
+tcp_api:
 
         movzx   eax, bh
         shl     eax, 2
