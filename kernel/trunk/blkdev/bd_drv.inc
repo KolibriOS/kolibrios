@@ -207,6 +207,8 @@ bd_read:
         jmp     bd_read
 .readerr:
 .v86err:
+        pop     edx
+        pop     eax
         mov     [hd_error], 1
         jmp     hd_read_error
 ;-----------------------------------------------------------------
