@@ -208,7 +208,7 @@ pushad
 			fmulp
 			fdiv dword[an180f]
 			fcos
-			fstp dword[edi+offs_ligh_spot_cutoff] ;l.cos_spot_cutoff=cos(a * M_PI / 180.0)
+			fstp dword[edi+offs_ligh_cos_spot_cutoff] ;l.cos_spot_cutoff=cos(a * M_PI / 180.0)
 			jmp .end_f
 		@@:
 		ffree st0
