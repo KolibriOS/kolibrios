@@ -89,10 +89,10 @@ v86_create:
         mov     byte [0x504], 0x10
         mov     byte [0x505], 0xF4
 
-        mov     eax, 0x99000+PG_UWR
-        mov     edi, page_tabs+0x99*4
+        mov     eax, 0x98000+PG_UWR
+        mov     edi, page_tabs+0x98*4
         mov     edx, 0x1000
-        mov     ecx, 7
+        mov     ecx, 8
 @@:
         stosd
         add     eax, edx
