@@ -207,7 +207,7 @@ proc gl_M4_MulV4 uses ebx ecx edx, a:dword, b:dword, c:dword ;V4 *a, M4 *b, V4 *
 		fmul st0,st3      ;st0 *= c.Z
 		faddp
 		fld dword[ebx+12] ;st0 += m[_][3]
-		fmul st0,st2      ;st0 *= c.Z
+		fmul st0,st2      ;st0 *= c.W
 		faddp
 		fstp dword[edx]   ;a.X = b.m[_][0]*c.X +b.m[_][1]*c.Y +b.m[_][2]*c.Z +b.m[_][3]*c.W
 		add ebx,16 ;следущая строка матрицы
@@ -343,14 +343,18 @@ endl
 			shl eax,2
 			add eax,[m]
 			fld dword[eax]
-			fcom dword[max] ;if (fabs(m[i*n+j])>fabs(max))
+			fld st0
+			fabs
+			fld dword[max]
+			fabs
+			fcompp ;if (fabs(m[i*n+j])>fabs(max))
 			fstsw ax
 			sahf
-			jbe @f
+			jae @f
 				mov edx,edi ;k=i
 				fst dword[max]
 			@@:
-			ffree st0
+			ffree st0 ;m[i*n+j]
 			fincstp
 		inc edi
 		jmp .cycle_1
@@ -600,10 +604,10 @@ proc gl_V3_Norm uses ebx, a:dword
 	mov ebx,[a]
 	fld dword[ebx]
 	fmul st0,st0
-	fld dword[ebx+4]
+	fld dword[ebx+offs_Y]
 	fmul st0,st0
 	faddp
-	fld dword[ebx+8]
+	fld dword[ebx+offs_Z]
 	fmul st0,st0
 	faddp
 	fsqrt ;st0 = sqrt(a.X^2 +a.Y^2 +a.Z^2)
@@ -614,12 +618,12 @@ proc gl_V3_Norm uses ebx, a:dword
 		fld dword[ebx] ;offs_X = 0
 		fdiv st0,st1
 		fstp dword[ebx] ;a.X/=sqrt(...)
-		fld dword[ebx+4]
+		fld dword[ebx+offs_Y]
 		fdiv st0,st1
-		fstp dword[ebx+4] ;a.Y/=sqrt(...)
-		fld dword[ebx+8]
+		fstp dword[ebx+offs_Y] ;a.Y/=sqrt(...)
+		fld dword[ebx+offs_Z]
 		fdiv st0,st1
-		fstp dword[ebx+8] ;a.Z/=sqrt(...)
+		fstp dword[ebx+offs_Z] ;a.Z/=sqrt(...)
 		xor eax,eax
 		jmp @f
 	.r1:

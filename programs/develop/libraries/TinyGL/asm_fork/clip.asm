@@ -8,15 +8,6 @@ CLIP_YMAX equ (1<<3)
 CLIP_ZMIN equ (1<<4)
 CLIP_ZMAX equ (1<<5)
 
-offs_X equ 0
-offs_Y equ 4
-offs_Z equ 8
-offs_W equ 12
-
-if DEBUG
-f_ttv db ' gl_transform_to_viewport',0
-end if
-
 align 4
 proc gl_transform_to_viewport uses eax ebx ecx, context:dword,v:dword
 locals
@@ -87,31 +78,6 @@ endl
 		fistp dword[ebx+offs_vert_zp+offs_zbup_t]
 		add dword[ebx+offs_vert_zp+offs_zbup_s],ZB_POINT_T_MIN
 	@@:
-if DEBUG ;gl_transform_to_viewport
-pushad
-	mov ecx,80
-	mov eax,[ebx+offs_vert_zp]
-	lea edi,[buf_param]
-	stdcall convert_int_to_str,ecx
-	stdcall str_n_cat,edi,txt_zp_sp,2
-	stdcall str_len,edi
-	add edi,eax
-	sub ecx,eax
-
-	mov eax,[ebx+offs_vert_zp+offs_zbup_y]
-	stdcall convert_int_to_str,ecx
-	stdcall str_n_cat,edi,txt_zp_sp,2
-	stdcall str_len,edi
-	add edi,eax
-	sub ecx,eax
-
-	mov eax,[ebx+offs_vert_zp+offs_zbup_z]
-	stdcall convert_int_to_str,ecx
-
-	stdcall str_n_cat,edi,txt_nl,2
-	stdcall dbg_print,f_ttv,buf_param
-popad
-end if
 	ret
 endp
 

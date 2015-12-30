@@ -2,6 +2,10 @@ include 'opengl_const.inc'
 include 'zbuffer.inc'
 include 'zmath.inc'
 
+offs_X equ 0
+offs_Y equ 4
+offs_Z equ 8
+offs_W equ 12
 
 ;enum { OP_ ## a , ... }
 sum1 equ 0
