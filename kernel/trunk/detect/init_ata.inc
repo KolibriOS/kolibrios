@@ -378,9 +378,11 @@ Init_IDE_ATA_controller_2:
         je      .end_set_interrupts
 
         push    ecx
-        stdcall attach_int_handler, 14, IDE_irq_14_handler, 0
+        stdcall attach_int_handler, 14, IDE_irq_14_handler, ecx
+        pop     ecx
         DEBUGF  1, "K : Set IDE IRQ14 return code %x\n", eax
-        stdcall attach_int_handler, 15, IDE_irq_15_handler, 0
+        push    ecx
+        stdcall attach_int_handler, 15, IDE_irq_15_handler, ecx
         DEBUGF  1, "K : Set IDE IRQ15 return code %x\n", eax
         pop     ecx
 
@@ -400,20 +402,18 @@ Init_IDE_ATA_controller_2:
 ; the IDE controller 01018f. For this reason, the interrupt handler
 ; does not need to be installed if both channel IDE controller
 ; running in PIO mode.
+
+; ...unfortunately, PCI interrupt can be shared with other devices
+; which could enable it without consulting IDE code.
+; So install the handler anyways and try to process
+; even those interrupts which we are not expecting.
         cmp     [ecx+IDE_DATA.RegsBaseAddres], 0
         je      .end_set_interrupts
 
-        cmp     [ecx+IDE_DATA.dma_hdd_channel_1], 0
-        jne     @f
-
-        cmp     [ecx+IDE_DATA.dma_hdd_channel_2], 0
-        je      .end_set_interrupts
-;--------------------------------------
-@@:
         mov     ax, [ecx+IDE_DATA.Interrupt]
         movzx   eax, al
         push    ecx
-        stdcall attach_int_handler, eax, IDE_common_irq_handler, 0
+        stdcall attach_int_handler, eax, IDE_common_irq_handler, ecx
         pop     ecx
         DEBUGF  1, "K : Set IDE IRQ%d return code %x\n", [ecx+IDE_DATA.Interrupt]:1, eax
 ;--------------------------------------

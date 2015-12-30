@@ -203,6 +203,8 @@ align 16
 ; Note: this still isn't 100% correct, because two IRQs can fire simultaneously,
 ; the better way would be to find the correct IRQ, but I don't know how to do
 ; this in that case.
+        cmp     ebp, 1
+        jz      .fail
         push    ebp
         xor     ebp, ebp
 .try_other_irqs:

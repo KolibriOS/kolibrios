@@ -996,8 +996,6 @@ end if
 ;        mov     esi, boot_devices
 ;        call    boot_log
 
-        call    clear_pci_ide_interrupts
-
 include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
 
         stdcall load_pe_driver, szVidintel, 0
