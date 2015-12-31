@@ -3,9 +3,6 @@ SOCK_STREAM     = 1
 SOCK_DGRAM      = 2
 SOCK_RAW        = 3
 
-; Socket options
-SO_NONBLOCK     = 1 shl 31
-
 ; IP protocols
 IPPROTO_IP      = 0
 IPPROTO_ICMP    = 1
@@ -20,7 +17,7 @@ IP_TTL          = 2
 AF_UNSPEC       = 0
 AF_LOCAL        = 1
 AF_INET4        = 2     ; IPv4
-AF_INET6        = 28    ; IPv6
+AF_INET6        = 10    ; IPv6
 
 PF_UNSPEC       = AF_UNSPEC
 PF_LOCAL        = AF_LOCAL
@@ -55,6 +52,7 @@ SOL_SOCKET      = 0xffff
 
 ; Socket options
 SO_BINDTODEVICE = 1 shl 9
+SO_NONBLOCK     = 1 shl 31
 
 struct sockaddr_in
         sin_family      dw      ?       ; sa_family_t
