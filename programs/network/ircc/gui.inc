@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -9,7 +9,6 @@
 ;;          Version 2, June 1991                                   ;;
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 
 draw_window:    ; Completely redraw the window, recalculate all coordinates and sizes
@@ -53,25 +52,14 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
         add     edx, 0x33000000
         mov     edi, str_programname
         mcall
-        mcall   12, 2		
-			
-		test	[thread_info.wnd_state], 100b ; skip if window rolled up
-		jne		.exit
-
-        mov     ebx, [xsize]
-        mov     ecx, [ysize]
-        sub     cx, BOTTOM_Y ;;;;
-        push    cx
-        shl     ecx, 16
-        pop     cx
-        mov     edx, [colors.work_graph]
-        mcall   38                              ; draw bottom line
-        mov     ecx, TOP_Y SHL 16 + TOP_Y
-        mcall                                   ; draw top line
+        mcall   12, 2           
+                        
+        test    [thread_info.wnd_state], 100b   ; skip if window is rolled up
+        jne     .exit
 
 ; calculate available space for textbox and coordinates for scrollbars
         mov     eax, [ysize]
-        sub     eax, TOP_Y + BOTTOM_Y - 1   ;;;;
+        sub     eax, TOP_Y + INPUTBOX_HEIGHT - 1   ;;;;
         mov     [scroll2.y_size], ax
         mov     [scroll1.y_size], ax
         sub     eax, 4 ;;;;
@@ -137,14 +125,14 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
         shl     ebx, 16
         pop     bx
         mov     ecx, [ysize]
-        add     ecx, TOP_Y shl 16 - (BOTTOM_Y)
+        add     ecx, TOP_Y shl 16 - (INPUTBOX_HEIGHT)
         mov     edx, [colors.work_graph]
         mcall   38
   .not_channel:
 
 ; draw editbox
         mov     eax, [ysize]
-        sub     eax, 13 ;;;;;;
+        sub     eax, INPUTBOX_HEIGHT
         mov     [edit1.top], eax
 
         mov     eax, [xsize]
@@ -267,11 +255,18 @@ draw_channel_list:
 
 draw_windowtabs:
 
+; Draw horizontal line
+
+        mov     ebx, [xsize]
+        mov     edx, [colors.work_graph]
+        mov     ecx, TOP_Y SHL 16 + TOP_Y
+        mcall   38
+
 ; Create the buttons
 
         mov     eax, 8
-        mov     ebx, 5 shl 16 + 120
-        mov     ecx, 12 shl 16 + 12
+        mov     ebx, TAB_WIDTH
+        mov     ecx, TOP_SPACE shl 16 + TAB_HEIGHT
         mov     edx, WINDOW_BTN_START
         mov     edi, windows
   .more_btn:
@@ -283,23 +278,22 @@ draw_windowtabs:
       @@:
         mcall
         inc     edx
-        add     ebx, 125 shl 16
+        add     ebx, (TAB_WIDTH + TAB_SPACE) shl 16
         add     edi, sizeof.window
         cmp     [edi + window.data_ptr], 0
         jne     .more_btn
 
 ; Draw the close window button
-
         mov     edi, [window_active]
         cmp     [edi + window.type], WINDOWTYPE_SERVER  ; dont let the user close server window
         je      @f
 
 ;        mov     eax, 8
         mov     ebx, [xsize]
-        sub     ebx, 12
+        sub     ebx, SCROLLBAR_WIDTH
         shl     ebx, 16
-        mov     bx, 12
-        mov     ecx, 6 shl 16 + 12
+        mov     bx, SCROLLBAR_WIDTH
+        mov     ecx, TOP_SPACE shl 16 + TAB_HEIGHT - 1
         mov     edx, WINDOW_BTN_CLOSE
         mov     esi, 0x00aa0000         ; red !
         mcall
@@ -308,14 +302,14 @@ draw_windowtabs:
 ; Draw the windownames onto the buttons
 
         mov     eax, 4
-        mov     ebx, 10 shl 16 + 15
+        mov     ebx, 5 shl 16 + TOP_SPACE + 4 ;;;;
         mov     esi, MAX_WINDOWS
         mov     edi, windows
   .more:
         mov     ecx, [colors.work_button_text]
         test    [edi + window.flags], FLAG_UPDATED
         jz      @f
-        mov     ecx, 0x00aa0000 ; RED!
+        mov     ecx, 0x00aa0000         ; RED!
   @@:
         or      ecx, 0x80000000         ; ASCIIZ string
         lea     edx, [edi + window.name]
@@ -323,7 +317,7 @@ draw_windowtabs:
         add     edi, sizeof.window      ; get ptr to next window
         cmp     [edi + window.data_ptr], 0
         je      .enough
-        add     ebx, 125 shl 16
+        add     ebx, (TAB_WIDTH + TAB_SPACE) shl 16
         dec     esi
         jnz     .more
   .enough:
@@ -334,7 +328,7 @@ draw_windowtabs:
 
 highlight_updated_tabs:
         mov     eax, 4
-        mov     ebx, 10 shl 16 + 15
+        mov     ebx, 5 shl 16 + TOP_SPACE + 4 ;;;;
         mov     ecx, 0x80aa0000
         mov     esi, MAX_WINDOWS
         mov     edi, windows
@@ -347,7 +341,7 @@ highlight_updated_tabs:
         add     edi, sizeof.window      ; get ptr to next window
         cmp     [edi + window.data_ptr], 0
         je      .enough_
-        add     ebx, 125 shl 16
+        add     ebx, (TAB_WIDTH + TAB_SPACE) shl 16
         dec     esi
         jnz     .more_
   .enough_:
