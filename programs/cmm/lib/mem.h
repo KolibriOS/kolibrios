@@ -9,61 +9,64 @@
 dword mem_init()
 {
 	$push    ebx
-        $mov     eax, 68
-        $mov     ebx, 11
-        $int     0x40
-        
-        $pop     ebx
-        return  EAX;
+	$mov     eax, 68
+	$mov     ebx, 11
+	$int     0x40
+	
+	$pop     ebx
+	return  EAX;
 }
 
 dword malloc(dword size)
 {
-        $push    ebx
-        $push    ecx
-        $mov     eax, 68
-        $mov     ebx, 12
-        $mov     ecx, size
-        $int     0x40
-        
-        $pop     ecx
-        $pop     ebx
-        return  EAX;
+	$push    ebx
+	$push    ecx
+
+	$mov     eax, 68
+	$mov     ebx, 12
+	$mov     ecx, size
+	$int     0x40
+	
+	$pop     ecx
+	$pop     ebx
+	return  EAX;
 }
 
 stdcall dword realloc(dword mptr, size)
 {
-        $push    ebx
-        $push    ecx
-        $push    edx
-        $mov     eax, 68
-        $mov     ebx, 20
-        $mov     ecx, size
-        $mov     edx, mptr
-        $int     0x40
+	$push    ebx
+	$push    ecx
+	$push    edx
 
-        $pop     edx
-        $pop     ecx
-        $pop     ebx
-        return   EAX;
+	$mov     eax, 68
+	$mov     ebx, 20
+	$mov     ecx, size
+	$mov     edx, mptr
+	$int     0x40
+
+	$pop     edx
+	$pop     ecx
+	$pop     ebx
+	return   EAX;
 }
 
 dword free(dword mptr)
 {
-        $push    eax
-        $push    ebx
-        $push    ecx
-        $mov     eax, 68
-        $mov     ebx, 13
-        $mov     ecx, mptr
-        $test    ecx, ecx
-        $jz      end0
-        $int     0x40
+	$push    eax
+	$push    ebx
+	$push    ecx
+	
+	$mov     eax, 68
+	$mov     ebx, 13
+	$mov     ecx, mptr
+	$test    ecx, ecx
+	$jz      end0
+	$int     0x40
    @end0:
-        $pop     ecx
-        $pop     ebx
-        $pop     eax
-        return 0;
+	$pop     ecx
+	$pop     ebx
+	$pop     eax
+	return 0;
 }
 
 inline fastcall memmov( EDI, ESI, ECX)

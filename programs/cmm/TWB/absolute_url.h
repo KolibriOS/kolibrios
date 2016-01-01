@@ -34,11 +34,11 @@ void GetAbsoluteURL(dword in_URL)
 	IF (!strcmpn(in_URL,"./", 2)) in_URL+=2;
 	if (!http_transfer) 
 	{
-		strcpy(#newurl, History.current());
+		strcpy(#newurl, history.current());
 	}
 	else
 	{
-		strcpy(#newurl, History.items.get(History.active-2)); 
+		strcpy(#newurl, history.items.get(history.active-2)); 
 	}
 
 	if (ESBYTE[in_URL] == '/') //remove everything after site domain name

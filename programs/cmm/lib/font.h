@@ -9,6 +9,9 @@
 #include "../lib/obj/fs.h"
 #endif
 
+#include "../lib/patterns/rgb.h"
+
+
 #define DEFAULT_FONT "/sys/fonts/Tahoma.kf"
 
 :struct __SIZE
@@ -211,20 +214,40 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 :void LABEL::apply_smooth()
 {
 	dword i,line_w,to;
+	rgb.DwordToRgb(ShadowPixel(background,2)); //get shadowed pixel
 	line_w = size.width * 3;
 	to = size.height - 1 * line_w + raw - 3;
 	for(i=raw; i < to; i+=3)
 	{
 		if(i-raw%line_w +3 == line_w) continue;
+		// pixels position, where b - black, w - write
+		// bw
+		// wb
 		if(b24(i)==0x000000) && (b24(i+3)!=0x000000) && (b24(i+line_w)!=0x000000) && (b24(i+3+line_w)==0x000000)
 		{
-			ShadowImage(i+3, 1, 1, 2);
-			ShadowImage(i+line_w, 1, 1, 2);
+			ESBYTE[i+3] = rgb.b;
+			ESBYTE[i+4] = rgb.g;
+			ESBYTE[i+5] = rgb.r;
+			ESBYTE[i+line_w  ] = rgb.b;
+			ESBYTE[i+line_w+1] = rgb.g;
+			ESBYTE[i+line_w+2] = rgb.r;
+			// // I don't know why but underneath code works slower then beneath
+			// DSDWORD[i] = DSDWORD[i] & 0xFF000000 | dark_background;
+			// DSDWORD[i+line_w] = DSDWORD[i+3+line_w] & 0xFF000000 | dark_background;			
 		}
+		// wb
+		// bw
 		else if(b24(i)!=0x000000) && (b24(i+3)==0x000000) && (b24(i+line_w)==0x000000) && (b24(i+3+line_w)!=0x000000)
 		{
-			ShadowImage(i, 1, 1, 2);
-			ShadowImage(i+3+line_w, 1, 1, 2);
+			ESBYTE[i  ] = rgb.b;
+			ESBYTE[i+1] = rgb.g;
+			ESBYTE[i+2] = rgb.r;
+			ESBYTE[i+line_w+3] = rgb.b;
+			ESBYTE[i+line_w+4] = rgb.g;
+			ESBYTE[i+line_w+5] = rgb.r;
+			// // I don't know why but underneath code works slower then beneath
+			// DSDWORD[i] = DSDWORD[i] & 0xFF000000 | dark_background;
+			// DSDWORD[i+3+line_w] = DSDWORD[i+3+line_w] & 0xFF000000 | dark_background;
 		}
 	}
 }
@@ -281,9 +304,11 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 	IF(!text1)return;
 	IF(size.pt)IF(!changeSIZE())return;
 	
-	size.pt = fontSizePoints;
-	getsize(text1);
-	y -= size.offset_y;
+	if (size.pt != fontSizePoints) {
+		size.pt = fontSizePoints;
+		getsize(text1);
+		y -= size.offset_y;
+	}
 	color = _color;
 	background = _background;
 

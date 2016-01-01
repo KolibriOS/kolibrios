@@ -218,14 +218,14 @@ void main()
 							http_free stdcall (http_transfer);
 							http_transfer=0;
 							GetAbsoluteURL(#URL);
-							History.back();
+							history.back();
 							strcpy(#editURL, #URL);
 							DrawEditBox();
 							OpenPage();
 						}
 						else
 						{
-							History.add(#URL);
+							history.add(#URL);
 							ESI = http_transfer;
 							bufpointer = ESI.http_msg.content_ptr;
 							bufsize = ESI.http_msg.content_received;
@@ -295,14 +295,14 @@ void Scan(dword id__)
 	{
 		case SCAN_CODE_BS:
 		case BACK_BUTTON:
-			if (History.back()) {
-				strcpy(#URL, History.current());
+			if (history.back()) {
+				strcpy(#URL, history.current());
 				OpenPage();
 			}
 			return;
 		case FORWARD_BUTTON:
-			if (History.forward()) {
-				strcpy(#URL, History.current());
+			if (history.forward()) {
+				strcpy(#URL, history.current());
 				OpenPage();
 			}
 			return;
@@ -400,7 +400,7 @@ void OpenPage()
 	StopLoading();
 	souce_mode = false;
 	strcpy(#editURL, #URL);
-	History.add(#URL);
+	history.add(#URL);
 	if (!strncmp(#URL,"WebView:",8))
 	{
 		SetPageDefaults();
@@ -498,7 +498,7 @@ void ClickLink()
 	if (http_transfer > 0) 
 	{
 		StopLoading();
-		History.back();
+		history.back();
 	}
 
 	strcpy(#URL, PageLinks.GetURL(PageLinks.active));	
@@ -506,7 +506,7 @@ void ClickLink()
 	if (URL[0] == '#')
 	{
 		strcpy(#anchor, #URL+strrchr(#URL, '#'));		
-		strcpy(#URL, History.current());
+		strcpy(#URL, history.current());
 		WB1.list.first=WB1.list.count-WB1.list.visible;
 		ShowPage();
 		return;
@@ -530,15 +530,15 @@ void ClickLink()
 			CreateThread(#Downloader,#downloader_stak+4092);
 		}
 		else RunProgram("@open", #URL);
-		strcpy(#editURL, History.current());
-		strcpy(#URL, History.current());
+		strcpy(#editURL, history.current());
+		strcpy(#URL, history.current());
 		return;
 	}
 	if (!strncmp(#URL,"mailto:", 7))
 	{
 		notify(#URL);
-		strcpy(#editURL, History.current());
-		strcpy(#URL, History.current());
+		strcpy(#editURL, history.current());
+		strcpy(#URL, history.current());
 		return;
 	}
 	OpenPage();

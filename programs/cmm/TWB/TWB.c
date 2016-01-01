@@ -90,7 +90,7 @@ void TWebBrowser::DrawStyle()
 	{
 		start_x = stolbec * list.font_w + body_magrin * DrawBuf.zoom + list.x;
 		start_y = stroka * list.item_h + body_magrin;
-		stolbec_len = utf8_strlen(#line) * DrawBuf.zoom;
+		stolbec_len = strlen(#line) * DrawBuf.zoom;
 		line_length = stolbec_len * list.font_w;
 
 		if (style.h) stroka++;
@@ -212,7 +212,7 @@ void TWebBrowser::Prepare(){
 		default:
 			DEFAULT_MARK:
 			if (bukva<=15) bukva=' ';
-			line_len = utf8_strlen(#line);
+			line_len = strlen(#line);
 			if (!style.pre) && (bukva == ' ')
 			{
 				if (line[line_len-1]==' ') break; //no double spaces
@@ -238,9 +238,9 @@ void TWebBrowser::Perenos()
 {
 	int perenos_num;
 	char new_line_text[4096];
-	if (utf8_strlen(#line)*DrawBuf.zoom + stolbec < list.column_max) return;
+	if (strlen(#line)*DrawBuf.zoom + stolbec < list.column_max) return;
 	perenos_num = strrchr(#line, ' ');
-	if (!perenos_num) && (utf8_strlen(#line)*DrawBuf.zoom>list.column_max) perenos_num=list.column_max/DrawBuf.zoom;
+	if (!perenos_num) && (strlen(#line)*DrawBuf.zoom>list.column_max) perenos_num=list.column_max/DrawBuf.zoom;
 	strcpy(#new_line_text, #line + perenos_num);
 	line[perenos_num] = 0x00;
 	DrawStyle();

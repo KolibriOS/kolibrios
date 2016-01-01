@@ -170,9 +170,9 @@ void main()
 					{
 						if (dif_x > 150)
 						{
-							if (History.forward())
+							if (history.forward())
 								{
-									strcpy(#path, History.current());
+									strcpy(#path, history.current());
 									files.KeyHome();
 									Open_Dir(#path,WITH_REDRAW);
 								}
@@ -324,9 +324,9 @@ void main()
 							GoBack();
 							break;
 					case 22: //Forward
-							if (History.forward())
+							if (history.forward())
 							{
-								strcpy(#path, History.current());
+								strcpy(#path, history.current());
 								files.KeyHome();
 								Open_Dir(#path,WITH_REDRAW);
 							}
@@ -743,7 +743,7 @@ void Open_Dir(dword dir_path, redraw){
 		if (ESBYTE[dir_path+1]!='\0') chrcat(dir_path, '/');
 		if (errornum)
 		{
-			History.add(#path);
+			history.add(#path);
 			GoBack();
 			Write_Error(errornum);
 			return;
@@ -761,7 +761,7 @@ void Open_Dir(dword dir_path, redraw){
 			PathShow_prepare stdcall(#PathShow);
 			PathShow_draw stdcall(#PathShow);
 		}
-		History.add(#path);
+		history.add(#path);
 		files.visible = files.h / files.item_h;
 		if (files.count < files.visible) files.visible = files.count;
 		if (redraw!=ONLY_SHOW) Sorting();
@@ -999,8 +999,8 @@ inline fastcall void GoBack()
 	char cur_folder[4096];
 	strcpy(#cur_folder, #path);
 	cur_folder[strlen(#cur_folder)-1]=0x00; //delete last '/'
-	if (History.back()) {
-		strcpy(#path, History.current());
+	if (history.back()) {
+		strcpy(#path, history.current());
 		SelectFileByName(#cur_folder+strrchr(#cur_folder,'/'));
 	}
 }

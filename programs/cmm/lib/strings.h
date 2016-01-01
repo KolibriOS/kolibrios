@@ -506,7 +506,7 @@ inline dword strstri(dword searchin, usestr_s)
         searchin++;
         if (DSBYTE[usestr_e]=='\0') return searchin;
     }
-    return 0;
+    return -1;
 }
 
 

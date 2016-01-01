@@ -1,4 +1,5 @@
-//CODED by Veliant, Leency, Nable. GNU GPL licence.
+//CODED by Veliant, Leency, Nable, Pavelyakov. GNU GPL licence.
+
 #ifndef INCLUDE_KOLIBRI_H
 #define INCLUDE_KOLIBRI_H
 #print "[include <kolibri.h>]\n"
@@ -805,15 +806,14 @@ void ______INIT______()
 	DOUBLE_CLICK_DELAY = GetMouseDoubleClickDelay();
 	__generator = GetStartTime();
 	
-	$push    ebx
-	$mov     eax, 68
-	$mov     ebx, 11
-	$int     0x40
-	
-	$pop     ebx
+	mem_init();
 
 	main();
 	ExitProcess();
 }
 ______STOP______:
+#endif
+
+#ifndef INCLUDE_MEM_H
+#include "../lib/mem.h"
 #endif
