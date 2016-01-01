@@ -213,6 +213,7 @@ pushad
 			stdcall dword[tl_cur_beg], tree3
 	.no_object:
 	call obj_set_sizes
+	call obj_set_normals
 	edit_boxes_set_sys_color edit1,editboxes_end,sc ;установка системных цветов
 	stdcall [edit_box_set_text], edit1, txt_q
 	stdcall [edit_box_set_text], edit2, txt_q
@@ -333,6 +334,12 @@ prop_wnd_clear_param:
 	mov dword[obj_poi_sel_c],0
 	mov dword[obj_tri_data],0
 	mov dword[obj_tri_count],0
+	mov dword[obj_normals_tri_count],0
+	mov dword[obj_normals_poi_count],0
+	stdcall mem.Free,[obj_normals_tri_data]
+	stdcall mem.Free,[obj_normals_poi_data]
+	mov dword[obj_normals_tri_data],0
+	mov dword[obj_normals_poi_data],0
 	ret
 
 ;поиск данных
@@ -543,6 +550,134 @@ align 4
 	ret
 endp
 
+;установка нормалей для граней
+align 4
+proc obj_set_normals
+locals
+	tbl1 rd 9 ;ebp-72
+	tbl2 rd 9 ;ebp-36
+endl
+pushad
+	cmp dword[obj_poi_count],0
+	je .end
+		finit
+		mov ecx,[obj_tri_count]
+		mov [obj_normals_tri_count],ecx ;на каждый треугольник 1 нармаль
+		cmp ecx,0
+		je .end
+		imul ecx,12
+		stdcall mem.Alloc, ecx
+		mov [obj_normals_tri_data],eax
+
+		mov edx,[obj_tri_data]
+		mov ebx,[obj_tri_count]
+align 4
+		@@:
+			mov edi,ebp
+			sub edi,36 ;tbl2
+			movzx esi,word[edx] ;1-я вершина
+			imul esi,12
+			add esi,[obj_poi_data]
+			mov ecx,3
+			rep movsd
+			movzx esi,word[edx+2] ;2-я вершина
+			imul esi,12
+			add esi,[obj_poi_data]
+			mov ecx,3
+			rep movsd
+			movzx esi,word[edx+4] ;3-я вершина
+			imul esi,12
+			add esi,[obj_poi_data]
+			mov ecx,3
+			rep movsd
+
+			mov esi,ebp
+			sub esi,72 ;tbl1
+			sub edi,36 ;tbl2
+			;v1 <-> v2
+			fld dword[edi+12]
+			fsub dword[edi]
+			fstp dword[esi] ;(x1-x2)
+			fld dword[edi+16]
+			fsub dword[edi+4]
+			fstp dword[esi+4] ;(y1-y2)
+			fld dword[edi+20]
+			fsub dword[edi+8]
+			fstp dword[esi+8] ;(z1-z2)
+			;v2 <-> v3
+			fld dword[edi+24]
+			fsub dword[edi+12]
+			fstp dword[esi+12] ;(x2-x3)
+			fld dword[edi+28]
+			fsub dword[edi+16]
+			fstp dword[esi+16] ;(y2-y3)
+			fld dword[edi+32]
+			fsub dword[edi+20]
+			fstp dword[esi+20] ;(z2-z3)
+			;v3 <-> v1
+			fld dword[edi]
+			fsub dword[edi+24]
+			fstp dword[esi+24] ;(x3-x1)
+			fld dword[edi+4]
+			fsub dword[edi+28]
+			fstp dword[esi+28] ;(y3-y1)
+			fld dword[edi+8]
+			fsub dword[edi+32]
+			fstp dword[esi+32] ;(z3-z1)
+
+			;a1,a2,a3
+			fld dword[esi+4]
+			fmul dword[esi+8]
+			fstp dword[edi] ;a1=(y1-y2)*(z1-z2)
+			fld dword[esi+16]
+			fmul dword[esi+20]
+			fstp dword[edi+4] ;a2=(y2-y3)*(z2-z3)
+			fld dword[esi+28]
+			fmul dword[esi+32]
+			fstp dword[edi+8] ;a3=(y3-y1)*(z3-z1)
+			;b1,b2,b3
+			fld dword[esi]
+			fmul dword[esi+8]
+			fstp dword[edi] ;b1=(x1-x2)*(z1-z2)
+			fld dword[esi+12]
+			fmul dword[esi+20]
+			fstp dword[edi+4] ;b2=(x2-x3)*(z2-z3)
+			fld dword[esi+24]
+			fmul dword[esi+32]
+			fstp dword[edi+8] ;b3=(x3-x1)*(z3-z1)
+			;c1,с2,с3
+			fld dword[esi]
+			fmul dword[esi+4]
+			fstp dword[edi] ;c1=(x1-x2)*(y1-y2)
+			fld dword[esi+12]
+			fmul dword[esi+16]
+			fstp dword[edi+4] ;c2=(x2-x3)*(y2-y3)
+			fld dword[esi+24]
+			fmul dword[esi+28]
+			fstp dword[edi+8] ;c3=(x3-x1)*(y3-y1)
+			
+			fld dword[edi]
+			fadd dword[edi+4]
+			fadd dword[edi+8]
+			fstp dword[eax] ;set normal.a
+			fld dword[edi+12]
+			fadd dword[edi+16]
+			fadd dword[edi+20]
+			fstp dword[eax+4] ;set normal.b
+			fld dword[edi+24]
+			fadd dword[edi+28]
+			fadd dword[edi+32]
+			fstp dword[eax+8] ;set normal.c
+			
+			add edx,8 ;размер треугольника = (3 вершины (по 2б) + свойства (2б))
+			add eax,12
+			dec ebx
+			jnz @b
+	.end:
+popad
+	ret
+endp
+
 ;рисование точек в 3d
 align 4
 draw_3d:
@@ -650,7 +785,16 @@ draw_3d:
 		stdcall [glBegin],GL_TRIANGLES
 		mov eax,[obj_tri_data]
 		mov ecx,[obj_tri_count]
+		mov edx,[obj_normals_tri_data]
 		@@:
+			;
+			bt dword[draw_mode],bit_light
+			jnc .norm
+				;[obj_normals_tri_count]
+				stdcall [glNormal3fv], edx
+				add edx,12
+			.norm:
+			;
 			movzx ebx,word[eax] ;1-я вершина
 			imul ebx,12
 			add ebx,[obj_poi_data]
@@ -976,6 +1120,10 @@ prop_button:
 	mov dword[tree3.data_img],0 ;чистим указатели на иконки что-бы их не удалил деструктор
 	mov dword[tree3.data_img_sys],0 ;т. к. они еще используються в других элементах
 	stdcall dword[tl_data_clear], tree3
+	stdcall mem.Free,[obj_normals_tri_data]
+	stdcall mem.Free,[obj_normals_poi_data]
+	mov dword[obj_normals_tri_data],0
+	mov dword[obj_normals_poi_data],0
 	mov byte[prop_wnd_run],0 ;обнуляем счетчик окон
 	mcall -1 ;выход из программы
 
@@ -1296,6 +1444,12 @@ obj_tri_data dd 0 ;указатель на данные треугольников
 obj_tri_count dd 0 ;колличество треугольников
 cursor_last_draw dd 0 ;положение курсора при последней прорисовке 3d окна
 sph_radius dd 0 ;радиус сферы для выделения активной точки
+
+obj_normals_poi_data dd 0
+obj_normals_poi_count dd 0
+obj_normals_tri_data dd 0
+obj_normals_tri_count dd 0
+
 obj_x_max dd 0
 obj_x_min dd 0
 obj_x_centr dd 0
