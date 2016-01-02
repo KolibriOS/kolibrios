@@ -89,45 +89,45 @@ _1dbounce_count=0;
 macro collimg img1_off,x1,y1,img2_off,x2,y2,otv
 {
 local bounce,exit,anot,bc,nbc
-	mov esi,[img1_off] ;xs1
-	mov edi,[img2_off] ;ys2
-	mov eax,x1 ;
-	mov ebx,x2 ;
-	call _1dbounce
-	mov edx,ecx
-	mov esi,[img1_off+4] ;ys1
-	mov edi,[img2_off+4] ;ys2
-	mov eax,y1 ;
-	mov ebx,y2 ;
-	call _1dbounce
-	add edx,ecx
-	cmp edx,2
-	je bounce
-	mov otv,0
-	jmp exit
+        mov esi, dword[img1_off] ;xs1
+        mov edi, dword[img2_off] ;ys2
+        mov eax, x1 ;
+        mov ebx, x2 ;
+        call _1dbounce
+        mov edx,ecx
+        mov esi, dword[img1_off+4] ;ys1
+        mov edi, dword[img2_off+4] ;ys2
+        mov eax, y1 ;
+        mov ebx, y2 ;
+        call _1dbounce
+        add edx, ecx
+        cmp edx, 2
+        je bounce
+        mov otv, 0
+        jmp exit
 _1dbounce_count=_1dbounce_count+1
 if (_1dbounce_count = 1)
 _1dbounce:
-	cmp ebx,eax
-	jnae anot
-	add eax,esi
-	cmp eax,ebx
-	jna nbc
-	jmp bc
+        cmp ebx,eax
+        jnae anot
+        add eax,esi
+        cmp eax,ebx
+        jna nbc
+        jmp bc
 anot: 
     add ebx,edi
-	cmp ebx,eax
-	jna nbc
-bc:	
+        cmp ebx,eax
+        jna nbc
+bc:     
     mov ecx,1
-	ret
+        ret
 nbc:
-	mov ecx,0
-	ret
+        mov ecx,0
+        ret
 end if
-bounce:	
-	mov otv,1
-exit:	
+bounce: 
+        mov otv,1
+exit:   
 }
 
 ; SETBMP -  Set bmp to window
@@ -316,14 +316,14 @@ local noaddword
   yespicsize:
     mov  eax,bmp_load_area
     mov  ebx,eax
-    add  ebx, [bmp_load_area+2];file size
+    add  ebx, dword[bmp_load_area+2];file size
     inc  ebx
     mov  dword [bmp_soi],ebx   ;soi-start of image area for drawing
-    add  eax, [bmp_load_area+10]
+    add  eax, dword[bmp_load_area+10]
     mov  dword [sop],eax   ;sop-start of picture in file
-    add  eax, [bmp_load_area+34]
+    add  eax, dword[bmp_load_area+34]
     mov  dword [eop],eax   ;eop-end of picture in file
-    mov  eax, [bmp_load_area+18]
+    mov  eax, dword[bmp_load_area+18]
     lea  eax,[eax+2*eax]   ;3x pixels in eax
 
     mov  edi,dword [bmp_soi]   ;initializing
@@ -341,9 +341,9 @@ local noaddword
     rep movsd
   convert1:
     pop  edi
-    sub  esi,dword [bps]
-    sub  esi,dword [bps]
-    cmp  esi,dword [sop]
+    sub  esi, dword[bps]
+    sub  esi, dword[bps]
+    cmp  esi, dword[sop]
     jb   end_bmp;nomorestring
     add  edi,eax
     jmp  nextstring
@@ -353,10 +353,10 @@ local noaddword
 
   convertno32:
     mov  ebx,bmp_load_area
-    add  ebx, [bmp_load_area+14]
+    add  ebx, dword[bmp_load_area+14]
     add  ebx,14          ;start of color table
     push esi
-    add  esi,dword [bps]
+    add  esi, dword[bps]
     mov  dword [eos],esi
     pop  esi
   nextelem:
