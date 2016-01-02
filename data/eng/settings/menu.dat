@@ -3,14 +3,14 @@ Game Center               /sys/game_center
 Demos              >      /@1
 Graphics           >      /@3
 Multimedia         >      /@4
-Emulators          >      /@18
+Emulators*         >      /@18
 Development        >      /@5
 System             >      /@7
 Data processing    >      /@11
 Network            >      /@12
 Other              >      /@15
 Help                      /sys/docpack
-Run application           /sys/run
+Run                       /sys/run
 Shutdown                  /sys/end
 #1    **** DEMOS ****
 3D                 >      /@2
@@ -35,103 +35,103 @@ CubeLine                  /sys/3d/cubeline
 Gears                     /sys/3d/gears
 3D-waved area             /sys/3d/3dwav
 #3   **** GRAPHICS ****
-Image viewer KIV          /sys/media/kiv
-Image viewer zSea         /KolibriOS/media/zsea/zsea
+Kolibri Image Viewer      /sys/media/kiv
+zSea* (image viewer)      /KolibriOS/media/zsea/zsea
 Animage                   /sys/media/animage
 Image Filtering           /sys/media/imgf/imgf
 Palitra                   /sys/media/palitra
 #4   **** MULTIMEDIA ****
-Pixie MP3 Player          /sys/media/pixie/pixie
-Fplay - video             /KolibriOS/media/fplay-full
+Pixie (MP3 player)        /sys/media/pixie/pixie
+Fplay* (video player)     /KolibriOS/media/fplay-full
 MidAMP                    /sys/media/midamp
 #5    **** PROGRAMMING ****
 Examples           >      /@6
-Archiver KPack            /sys/kpack
+KPack Archiver            /sys/kpack
 Flat Assembler            /sys/develop/fasm
 Debug Board               /sys/develop/board
 Debugger                  /sys/develop/mtdbg
-Hex2Dec2Bin               /sys/develop/h2d2b
-ASCII-codes               /sys/develop/keyascii
-SCAN-codes                /sys/develop/scancode
+Base Converter            /sys/develop/h2d2b
+Key ASCII-codes           /sys/develop/keyascii
+Key SCAN-codes            /sys/develop/scancode
 #6    **** EXAMPLES ****
-Threads                   /sys/develop/thread
+Threaded example          /sys/develop/thread
 Color slider              /sys/demos/cslide
 Console example 1         /sys/develop/testcon2
 Console example 2         /sys/develop/test_gets
 Message Boxes example     /sys/demos/use_mb
 #7    **** SYSTEM ****
 Settings           >      /@8
-System sensors     >      /@9
-Work with files    >      /@10
+System monitors    >      /@9
+File Management    >      /@10
 Testing            >      /@16
-Accessibility opt. >      /@17
+Accessibility      >      /@17
 Debug board               /sys/develop/board
 Terminal                  /sys/terminal
 #8    **** SETTINGS ****
-Devices                   /sys/setup
+System                    /sys/setup
 Background generator      /sys/media/palitra
 Colors & Skin             /sys/desktop
-Hot keys                  /sys/mykey
-Video mode for ATI        /sys/vmode
-#9    **** SYSTEM SENSORS ****
-Process manager           /sys/cpu
+Hotkeys                   /sys/mykey
+ATI video mode            /sys/vmode
+#9    **** SYSTEM MONITORS ****
+Task manager              /sys/cpu
 PCI devices               /sys/pcidev
 CPUID                     /sys/cpuid
 Ghost Monitor             /sys/gmon
-K. Bus disconnected       /sys/kbd
+Bus disconnect test       /sys/kbd
 HDD informer              /sys/hdd_info
-#10  **** WORK WITH FILES ****
+#10  **** FILE MANAGEMENT ****
 KFAR                      /sys/File Managers/kfar
 KFM                       /sys/File Managers/kfm
 Eolite                    /sys/File Managers/Eolite
 Virtual disks             /sys/tmpdisk
-SHELL console             /sys/shell
-Save RD image             /sys/rdsave
+Shell                     /sys/shell
+Save ramdisk              /sys/rdsave
 #11 **** DATA PROCESSING ****
 Calculator                /sys/calc
 Tinypad                   /sys/tinypad
 TextEdit                  /sys/develop/t_edit
-Table Processor           /sys/table
+Table processor           /sys/table
 Graph builder             /sys/graph
-Hex-Editor                /sys/develop/heed
-#12    **** NET ****
-Servers            >      /@13
-Clients            >      /@14
+Hex editor                /sys/develop/heed
+#12    **** NETWORK ****
+Clients            >      /@13
+Servers            >      /@14
 Network devices           /sys/network/netcfg
 Network status            /sys/network/netstat
-#13    **** SERVERS ****
-FTP daemon                /sys/network/ftpd
-#14   **** CLIENTS ****
-IRC client                /sys/network/ircc
-FTP client                /sys/network/ftpc
-TFTP client               /sys/network/tftpc
+#13   **** CLIENTS ****
+IRC                       /sys/network/ircc
+FTP                       /sys/network/ftpc
+TFTP                      /sys/network/tftpc
 Ping                      /sys/network/ping
-Telnet client             /sys/network/telnet
-Synergy client            /sys/network/synergyc
+Telnet                    /sys/network/telnet
+Synergy                   /sys/network/synergyc
 DNS lookup                /sys/network/nslookup
-Internet downloader       /sys/network/downloader
+Downloader                /sys/network/downloader
 Text-based browser        /sys/network/webview
+#14    **** SERVERS ****
+FTP                       /sys/network/ftpd
 #15    **** OTHER ****
-Analogue clock            /sys/demos/aclock
+Analog clock              /sys/demos/aclock
 Binary clock              /sys/demos/bcdclk
 Timer                     /sys/demos/timer
-ScrShoot                  /sys/scrshoot
+Screenshooter             /sys/scrshoot
 Calendar                  /sys/calendar
 RTF reader                /sys/rtfread
 #16    **** SYSTEM TESTS ****
 Protection test           /sys/test
 Monitor test              /sys/disptest
-Test graphics speed       /sys/mgb
-FSPEED speed of FS        /sys/fspeed
-#17    **** SYSTEM SPECIAL ****
+Graphics benchmark        /sys/mgb
+File system benchmark     /sys/fspeed
+#17    **** ACCESSIBILITY ****
 Screen magnifier          /sys/magnify
 Screen keyboard           /sys/zkey
 Character table           /sys/ASCIIVju
 #18    **** EMULATORS ****
-DOSBox DOS Emulator       /KolibriOS/emul/DosBox/dosbox
-e80 (ZX Spectrum)         /KolibriOS/emul/e80/e80
-FCE Ultra - NES           /KolibriOS/emul/fceu/fce
-Gameboy Color             /KolibriOS/emul/gameboy
-ScummVM (adventure)       /KolibriOS/emul/scummvm
-ZSNES Super Nintendo      /KolibriOS/emul/zsnes
+DOSBox* (DOS PC)          /KolibriOS/emul/DosBox/dosbox
+e80* (ZX Spectrum)        /KolibriOS/emul/e80/e80
+FCE Ultra* (NES)          /KolibriOS/emul/fceu/fce
+Gameboy Color*            /KolibriOS/emul/gameboy
+ScummVM* (adventure)      /KolibriOS/emul/scummvm
+ZSNES* (super Nintendo)   /KolibriOS/emul/zsnes
 ##
