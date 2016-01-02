@@ -440,6 +440,7 @@ cmd_usr_part:
 cmd_usr_close_window:
 
         mov     esi, [window_active]
+        mov     [window_print], esi
         cmp     [esi + window.type], WINDOWTYPE_SERVER
         je      .not_channel
 

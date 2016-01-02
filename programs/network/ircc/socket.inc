@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -210,7 +210,7 @@ socket_receive:
 
         pusha
 
-; TODO: read more data if we receive one full packet
+; FIXME: make this a proper stream!
 
   .nextpacket:
         mcall   recv, [socketnum], packetbuf, 1024, MSG_DONTWAIT        ; read a packet
@@ -219,30 +219,33 @@ socket_receive:
         dec     eax
         jz      .disconnected
 
-; ok we have data, now feed it to the recoder
+; ok we have data, now feed it to the command splicer
 
-        lea     edx, [packetbuf + eax]                  ; edx = end pointer
+        mov     ecx, eax
         mov     esi, packetbuf                          ; esi = start pointer
   .nextcommand:
         mov     edi, servercommand
   .byteloop:
-        call    get_next_byte                           ; reads byte from [esi] to al
-        jnc     .nextpacket                             ; if CF is set, we need more data (TODO: dont throw away old data!!!)
+        lodsb
         cmp     al, 10
         je      .got_command
         cmp     al, 13
         je      .got_command
         stosb
-        jmp     .byteloop
+        dec     ecx
+        jnz     .byteloop
+        ;;; FIXME
+        jmp     .nextpacket
 
 ; we have a command, call the serverparser
 
   .got_command:
         mov     byte[edi], 0                            ; mark the end of the command
-        push    esi edx
+        push    esi ecx
         call    server_parser
-        pop     edx esi
-        jmp     .nextcommand
+        pop     ecx esi
+        test    ecx, ecx
+        jnz     .nextcommand
 
   .done:
         popa

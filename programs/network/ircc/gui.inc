@@ -113,7 +113,7 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
         jne     .not_channel
 
         mov     [scroll1.all_redraw], 1
-        call    draw_channel_list
+        call    draw_user_list
 
 ; draw a vertical separator line when there is no scrollbar
         cmp     [scroll2.all_redraw], 1
@@ -138,11 +138,10 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
         mov     eax, [xsize]
         mov     [edit1.width], eax
 
-        push    dword edit1
-        call    [edit_box_draw]
+        invoke  edit_box_draw, edit1
 
 ; draw tabs
-        call    draw_windowtabs
+        call    draw_window_tabs
                 
   .exit:
         popa
@@ -150,7 +149,7 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
 
 
 
-draw_channel_list:
+draw_user_list:
 
         pusha
 
@@ -167,8 +166,7 @@ draw_channel_list:
         mov     [scroll1.position], eax
   @@:
         ; OK, draw the scrollbar
-        push    dword scroll1
-        call    [scrollbar_draw]
+        invoke  scrollbar_draw, scroll1
 
         ; dont redraw scrollbar completely next time,
         ; unless draw_window asks us to by setting [scroll1.all_redraw] back to 1
@@ -211,7 +209,7 @@ draw_channel_list:
         pop     ebx
         mov     bx, TEXT_Y
         mov     ecx, [colors.work_text]
-        or      ecx, 0x80000000                 ; ASCIIZ string
+        or      ecx, 0x90000000                 ; 8x16 font, zero terminated string
         mov     eax, 4                          ; draw text
 
         mov     edi, [textbox_height]           ; how many names will fit on screen
@@ -226,16 +224,16 @@ draw_channel_list:
         mov     cx, bx
         mov     bx, USERLIST_WIDTH
         shl     ecx, 16
-        mov     cx, 10 - 1
+        mov     cx, FONT_HEIGHT
         mov     edx, 0x00000055                 ; blue!
         mcall   13
         popa
 
-        mov     ecx, 0x8000ffff                 ; cyan!
+        mov     ecx, 0x9000ffff                 ; cyan!
         mcall
 
         mov     ecx, [colors.work_text]
-        or      ecx, 0x80000000                 ; ASCIIZ string
+        or      ecx, 0x90000000                 ; 8x16 font, zero terminated string
         jmp     .next
 
   .nothighlight:
@@ -253,7 +251,7 @@ draw_channel_list:
         ret
 
 
-draw_windowtabs:
+draw_window_tabs:
 
 ; Draw horizontal line
 

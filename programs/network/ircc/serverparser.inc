@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -961,7 +961,7 @@ cmd_353:                ; channel usernames reply
         jmp     .add
 
   .done:
-        call    draw_channel_list
+        call    draw_user_list
   .fail:
 
         ret
@@ -1059,7 +1059,7 @@ cmd_322:        ; LIST
         jz      .fail
 
         mov     [window_active], ebx
-        call    draw_windowtabs
+        call    draw_window_tabs
         pop     esi
         call    print_asciiz
         mov     al, 10

@@ -11,7 +11,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-text_insert_newlines:			; esi = ASCIIZ string
+text_insert_newlines:                   ; esi = ASCIIZ string
 
         xor     edx, edx                ; number of lines of text
         cmp     byte[esi], 0
@@ -24,6 +24,8 @@ text_insert_newlines:			; esi = ASCIIZ string
         dec     ecx
         jz      .end_of_line
         lodsb                           ; get one character of the string
+        test    al, 0x80
+        jnz     .multiball!
         test    al, al                  ; end of string?
         jz      .almost_done
         cmp     al, ' '                 ; it's a space! remember its position
@@ -51,6 +53,20 @@ text_insert_newlines:			; esi = ASCIIZ string
   .done:
 
         ret
+
+  .multiball!:
+        add     esi, 4
+        and     al, 11111000b
+        cmp     al, 11110000b
+        je      .more
+        dec     esi
+        and     al, 11110000b
+        cmp     al, 11100000b
+        je      .more
+        dec     esi
+        jmp     .more
+
+
 
 ;----------------------------------
 ; scan untill next line is reached
@@ -180,8 +196,8 @@ draw_channel_text:
 
 ; Is scrollbar at lowest position?
         test    [edi + window.flags], FLAG_SCROLL_LOW
-        jnz     .yesscroll                              ;Yes
-        cmp     [scroll2.all_redraw], 1                 ;No
+        jnz     .yesscroll                              ; Yes
+        cmp     [scroll2.all_redraw], 1                 ; No
         jnz      .noscroll
         mov     edx, [textbox_height]
         add     edx, [edi + window.text_line_print]
@@ -245,11 +261,45 @@ draw_channel_text:
   .no_offset:
         xor     ebx, ebx
   .draw_text:
+
 ; Prepare to actually draw some text
-        mov     eax, [textbox_height]   ; max number of lines to draw
-        add     ebx, TEXT_X shl 16 + TEXT_Y
-        mov     ecx, [colors.work_text] ; default text color
-        mov     edx, [edi + window.text_print]
+        add     ebx, TEXT_X shl 16 + TEXT_Y     ; text coordinates
+        mov     ecx, [colors.work_text]         ; default text color
+        or      ecx, 0x30000000
+        mov     edx, [edi + window.text_print]  ; start of text to print
+
+; Scan backwards on line for color escape codes
+        mov     esi, edx
+        push    edx
+        std
+  @@:
+        lodsb
+        cmp     al, 0           ; end of text
+        je      @f
+        cmp     al, 10          ; hard newline
+        je      @f
+        cmp     al, 3           ; mIRC escape code
+        jne     @b
+
+        cld
+        lea     edx, [esi+2]
+        call    dec_to_esi
+        jz      @f
+        mov     ecx, [irc_colors + 4*esi]
+        or      ecx, 0x30000000                 ; UTF-8 text
+
+        cmp     byte[edx], ','                  ; background color?
+        jne     @f
+        inc     edx
+        call    dec_to_esi
+        jz      @f
+        mov     edi, [irc_colors + 4*esi]
+        or      ecx, 0x40000000                 ; enable background color
+  @@:
+        cld
+
+        pop     edx
+        mov     eax, [textbox_height]           ; max number of lines to draw
   .drawloop:
         cmp     byte[edx], 0
         je      .end_of_text
@@ -263,30 +313,29 @@ draw_channel_text:
         mov     bx, word[textbox_width]
         imul    bx, FONT_WIDTH
         mov     edx, [colors.work]
-        mcall   13                      ; draw rectangle
+        mcall   13                              ; draw rectangle
         popa
 
-        mov     esi, edx
-        add     esi, [textbox_width]
+        push    eax
+        mov     esi, [textbox_width]
   .line:
         cmp     byte[edx], 0
         je      .end_of_text
-
         cmp     byte[edx], 13
         je      .newline_soft
-
         cmp     byte[edx], 10
         je      .newline_hard
 
-        push    esi eax
-        cmp     byte[edx], 3            ; escape code for mIRC colors
+        push    esi
+        cmp     byte[edx], 3                    ; escape code for mIRC colors
         jne     .no_colors
         inc     edx
         call    dec_to_esi
         jz      .no_colors
         mov     ecx, [irc_colors + 4*esi]
+        or      ecx, 0x30000000
 
-        cmp     byte[edx], ','          ; background color?
+        cmp     byte[edx], ','                  ; background color?
         jne     .no_colors
         inc     edx
         call    dec_to_esi
@@ -296,21 +345,39 @@ draw_channel_text:
   .no_colors:
 
         mov     esi, 1
-        mcall   4                       ; draw text
+        mcall   4                               ; draw text
+
+        mov     esi, 1
+        mov     al, byte[edx]
+        test    al, 10000000b
+        jz      @f
+        mov     esi, 4
+        and     al, 11111000b
+        cmp     al, 11110000b
+        je      @f
+        dec     esi
+        and     al, 11110000b
+        cmp     al, 11100000b
+        je      @f
+        dec     esi
+  @@:
+
         add     ebx, FONT_WIDTH shl 16
-        inc     edx
-        pop     eax esi
-        cmp     edx, esi
-        jb      .line
+        add     edx, esi
+        pop     esi
+        dec     esi
+        jnz     .line
         jmp     .line_full
 
   .newline_hard:
         mov     ecx, [colors.work_text]
+        or      ecx, 0x30000000
   .newline_soft:
         inc     edx
   .line_full:
         and     ebx, 0x0000ffff
         add     ebx, TEXT_X shl 16 + FONT_HEIGHT
+        pop     eax
         dec     eax
         jnz     .drawloop
   .end_of_text:

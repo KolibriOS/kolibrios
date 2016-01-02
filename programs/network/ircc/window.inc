@@ -76,7 +76,7 @@ window_set_name:
         stosb
 
         push    esi ebx
-        call    draw_windowtabs
+        call    draw_window_tabs
         pop     ebx esi
 
         ret
@@ -107,7 +107,7 @@ window_close:   ; closes the 'print' window
         jne     @f
         sub     edi, sizeof.window
         mov     [window_active], edi
-        mov     [window_print], edi  ;;;;;;;;
+        mov     [window_print], edi
   @@:
 
 ; At last, redraw everything

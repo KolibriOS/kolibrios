@@ -13,7 +13,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version equ '0.24'
+version equ '0.25'
 
 ; connection status
 STATUS_DISCONNECTED     = 0
@@ -43,9 +43,9 @@ UTF8                    = 2
 USERCMD_MAX_SIZE        = 400
 
 WIN_MIN_X               = 600
-WIN_MIN_Y               = 170
+WIN_MIN_Y               = 183
 
-TEXT_X                  = 5
+TEXT_X                  = 2
 TEXT_Y                  = TOP_Y + 2
 
 TOP_SPACE               = 2
@@ -77,10 +77,10 @@ WINDOW_BTN_CLOSE        = 2
 WINDOW_BTN_LIST         = 3
 
 SCROLLBAR_WIDTH         = 14
-USERLIST_WIDTH          = 100
+USERLIST_WIDTH          = 160
 
-FONT_HEIGHT             = 9
-FONT_WIDTH              = 6
+FONT_WIDTH              = 8
+FONT_HEIGHT             = 16
 
 format binary as ""
 
@@ -245,7 +245,7 @@ mainloop:
         mov     edi, [window_active]
         cmp     [edi + window.type], WINDOWTYPE_CHANNEL
         jne     .no_update
-        call    draw_channel_list
+        call    draw_user_list
   .no_update:
         call    highlight_updated_tabs
 
@@ -280,7 +280,7 @@ button:
         mov     ebx, [window_active]
         mov     [ebx + window.selected], eax
 
-        call    draw_channel_list
+        call    draw_user_list
 
         pop     eax
         test    eax, 1 shl 25   ; Right mouse button pressed?
@@ -378,8 +378,7 @@ main_window_key:
         mov     [edit1.size], 0
         mov     [edit1.pos], 0
 
-        push    dword edit1
-        call    [edit_box_draw]
+        invoke  edit_box_draw, edit1
 
         call    draw_channel_text
 
@@ -389,8 +388,7 @@ main_window_key:
         jmp     mainloop
 
 mouse:
-        push    dword edit1
-        call    [edit_box_mouse]
+        invoke  edit_box_mouse, edit1
 
 ;        mcall   37, 7
 ;        movsx   eax, ax
@@ -401,12 +399,11 @@ mouse:
         cmp     [edi + window.type], WINDOWTYPE_CHANNEL
         jne     @f
         push    [scroll1.position]
-        push    dword scroll1
-        call    [scrollbar_mouse]
+        invoke  scrollbar_mouse, scroll1
         pop     eax
         cmp     eax, [scroll1.position] ; did the scrollbar move?
         je      @f
-        call    draw_channel_list
+        call    draw_user_list
   @@:
 
 ; TODO: check if scrollbar is active?
@@ -414,8 +411,7 @@ mouse:
         mov     eax, [edi + window.text_lines]
         cmp     eax, [textbox_height]
         jbe     @f
-        push    dword scroll2
-        call    [scrollbar_mouse]
+        invoke  scrollbar_mouse, scroll2
         mov     edi, [window_active]
         and     [edi+window.flags], not FLAG_SCROLL_LOW
         mov     edx, [scroll2.position]
@@ -506,10 +502,8 @@ str_welcome             db 3, '3 ___', 3, '7__________', 3, '6_________  ', 3, '
                         db 3, '3|   |', 3, '7|    |   \', 3, '6     \____', 3, '4 \  \___|  |_|  \  ___/|   |  \  |', 10
                         db 3, '3|___|', 3, '7|____|_  /', 3, '6\______  /', 3, '4  \___  >____/__|\___  >___|  /__|', 10
                         db 3, '3     ', 3, '7       \/ ', 3, '6       \/ ', 3, '4      \/             \/     \/', 10
-                        db 10
                         db 'Welcome to KolibriOS IRC client ', version, 10
-                        db 10
-                        db 'Type /help for help', 10, 10, 0
+                        db 'Type /help for help', 10, 0
 
 str_version             db 'VERSION KolibriOS '
 str_programname         db 'IRC client ', version, 0
@@ -577,7 +571,7 @@ import  boxlib,\
         scrollbar_mouse,'scrollbar_v_mouse'
 
         ;         width, left, top
-edit1   edit_box  0, 0, 0, 0xffffff, 0x6f9480, 0, 0, 0, USERCMD_MAX_SIZE, usercommand, mouse_dd, ed_always_focus, 25, 25
+edit1   edit_box  0, 0, 0, 0xffffff, 0x6f9480, 0, 0, 0x000000, USERCMD_MAX_SIZE, usercommand, mouse_dd, ed_always_focus, 25, 25
         ;         xsize, xpos, ysize, ypos, btn_height, max, cur, pos, bgcol, frcol, linecol
 scroll1 scrollbar SCROLLBAR_WIDTH, 0, 0, TOP_Y, SCROLLBAR_WIDTH, 0, 0, 0, 0, 0, 0, 1
 scroll2 scrollbar SCROLLBAR_WIDTH, 0, 0, TOP_Y, SCROLLBAR_WIDTH, 0, 0, 0, 0, 0, 0, 1
