@@ -370,7 +370,7 @@ tup.append_table(img_files, {
  {"MEDIA/MIDAMP", PROGS .. "/media/midamp/trunk/midamp"},
  {"MEDIA/PALITRA", PROGS .. "/media/palitra/trunk/palitra"},
  {"MEDIA/STARTMUS", PROGS .. "/media/startmus/trunk/STARTMUS"},
- {"NETWORK/PING", PROGS .. "/network/icmp/ping"},
+ {"NETWORK/PING", PROGS .. "/network/ping/ping"},
  {"NETWORK/NETCFG", PROGS .. "/network/netcfg/netcfg"},
  {"NETWORK/NETSTAT", PROGS .. "/network/netstat/netstat"},
  {"NETWORK/NSLOOKUP", PROGS .. "/network/nslookup/nslookup"},
