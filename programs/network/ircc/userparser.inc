@@ -13,19 +13,25 @@
 
 user_parser:
 
-        mov     ebp, [window_active]   ; print to the current window
+        mov     ebp, [window_active]                    ; print to the current window
         mov     [window_print], ebp
 
-        mov     eax, [edit1.size]
-        test    eax, eax
+        mov     ecx, [edit1.size]
+        test    ecx, ecx
         jz      .ret                                    ; ignore empty commands
-        mov     word[usercommand + eax], 0x0a0d         ; terminate the line
 
-        cmp     byte[usercommand], '/'                  ; is it a server command ?
+        mov     esi, input_text
+        mov     edi, user_command
+        call    recode                                  ; Convert to UTF-8
+        mov     word[edi], 0x0a0d                       ; terminate the line
+        sub     edi, user_command
+        mov     [user_command.size], edi
+
+        cmp     byte[user_command], '/'                 ; is it a server command ?
         je      .command
 
-        cmp     [status], STATUS_CONNECTED
-        jne     .not_connected
+        cmp     [status], STATUS_LOGGED_IN
+        jne     .not_loggedin
 
         cmp     [ebp + window.type], WINDOWTYPE_CHANNEL
         je      .send_privmsg
@@ -48,10 +54,9 @@ user_parser:
         mov     al, ' '
         call    print_char
 
-        mov     eax, [edit1.size]
-        mov     byte[usercommand + eax],0
-
-        mov     esi, usercommand
+        mov     eax, [user_command.size]
+        mov     byte[user_command + eax],0
+        mov     esi, user_command
         call    print_asciiz
 
         mov     al, 10
@@ -76,10 +81,10 @@ user_parser:
         mov     ax, ' :'
         stosw
 
-        mov     esi, usercommand
-        mov     ecx, [edit1.size]
-        inc     ecx
-        call    recode
+        mov     esi, user_command
+        mov     ecx, [user_command.size]
+;        inc     ecx
+        rep     movsb
 
 ; end the command with a CRLF
         mov     ax, 0x0a0d
@@ -93,13 +98,13 @@ user_parser:
 
 ; Text begins with a '/' lets try to find the command in the lookup table.
   .command:
-        mov     eax, dword[usercommand+1]       ; skip '/'
+        mov     eax, dword[user_command+1]      ; skip '/'
         or      eax, 0x20202020                 ; convert to lowercase
 
         mov     edi, user_commands
         mov     ecx, user_commands.number
         cmp     [status], STATUS_CONNECTED
-        je      .cmd_loop
+        jae     .cmd_loop
         mov     ecx, user_commands.number2
   .cmd_loop:
         scasd
@@ -109,7 +114,7 @@ user_parser:
         jnz     .cmd_loop
 
         cmp     [status], STATUS_CONNECTED
-        jne     .not_connected
+        jb      .not_connected
 
 ; Commands shorter then 3 chars are placed here
         and     eax, 0x00ffffff
@@ -121,6 +126,11 @@ user_parser:
 
   .got_cmd:
         jmp     dword[edi]
+
+  .not_loggedin:
+        mov     esi, str_notloggedin
+        call    print_asciiz
+        ret
 
   .not_connected:
         mov     esi, str_notconnected
@@ -156,7 +166,7 @@ user_commands:
 
 cmd_usr_msg:
 
-        lea     esi, [usercommand+5]
+        lea     esi, [user_command+5]
 
         mov     dword[packetbuf], 'PRIV'
         mov     dword[packetbuf+4], 'MSG '
@@ -226,9 +236,9 @@ cmd_usr_msg:
 cmd_usr_quit:
 
         mov     esi, quit_msg
-        cmp     byte[usercommand+5], ' '
+        cmp     byte[user_command+5], ' '
         jne     quit_server
-        lea     esi, [usercommand+6]
+        lea     esi, [user_command+6]
 
 ; esi = quit message
 quit_server:
@@ -282,19 +292,19 @@ quit_server:
 
 cmd_usr_nick:
 
-        cmp     [edit1.size], 5
+        cmp     [user_command.size], 5
         je      .justprint
-        cmp     byte[usercommand+5], ' '
+        cmp     byte[user_command+5], ' '
         jne     .fail
         cmp     [socketnum], 0
         je      .dontsend
 
 ; Request nickname change to server
-        mov     dword[usercommand+1], 'NICK'
-        mov     esi, [edit1.size]
-        mov     word[usercommand + esi], 0x0a0d
+        mov     dword[user_command+1], 'NICK'
+        mov     esi, [user_command.size]
+        mov     word[user_command + esi], 0x0a0d
         inc     esi
-        mcall   send, [socketnum], usercommand+1, , 0
+        mcall   send, [socketnum], user_command+1, , 0
 
   .fail:
         ret
@@ -302,7 +312,7 @@ cmd_usr_nick:
 ; We arent logged in yet, directly change user_nick field and print notification to user.
   .dontsend:
         mov     ecx, MAX_NICK_LEN
-        mov     esi, usercommand+6
+        mov     esi, user_command+6
         mov     edi, user_nick
   @@:
         lodsb
@@ -331,11 +341,11 @@ cmd_usr_nick:
 
 cmd_usr_real:
 
-        cmp     byte[usercommand+5], ' '
+        cmp     byte[user_command+5], ' '
         jne     cmd_usr_send
 
         mov     ecx, MAX_REAL_LEN
-        mov     esi, usercommand+6
+        mov     esi, user_command+6
         mov     edi, user_real_name
   .loop:
         lodsb
@@ -363,7 +373,7 @@ cmd_usr_real:
 
 cmd_usr_server:
 
-        mov     eax, dword[usercommand+5]       ; check for 'er ', we only checked 'serv'
+        mov     eax, dword[user_command+5]      ; check for 'er ', we only checked 'serv'
         or      eax, 0x00002020
         and     eax, 0x00ffffff
         cmp     eax, 'er '
@@ -373,10 +383,10 @@ cmd_usr_server:
         mov     [window_print], windows
         mov     [window_active], windows
 
-        mov     ecx, [edit1.size]               ; ok now set the address
+        mov     ecx, [user_command.size]        ; ok now set the address
         sub     ecx, 8
 
-        mov     esi, usercommand+8
+        mov     esi, user_command+8
   .now:
         push    esi
         mov     edi, irc_server_name
@@ -404,7 +414,7 @@ cmd_usr_server:
 
 cmd_usr_quer:
 
-        mov     esi, usercommand+7
+        mov     esi, user_command+7
         call    window_open
 ;        test    ebx, ebx
 ;        jz      .fail
@@ -433,7 +443,7 @@ cmd_usr_code:
 ; User typed a part command
 cmd_usr_part:
 
-        cmp     byte[usercommand+5], 13         ; parameters given?
+        cmp     byte[user_command+5], 13        ; parameters given?
         jne     cmd_usr_send                    ; yes, send command straight to server
 
 ; close active window
@@ -492,10 +502,10 @@ cmd_usr_part_channel:
 
 cmd_usr_ctcp:
 
-        cmp     byte[usercommand+5], ' '
+        cmp     byte[user_command+5], ' '
         jne     cmd_usr_send
 
-        mov     esi, usercommand+6
+        mov     esi, user_command+6
 ; prepare a 'PRIVMSG '
         mov     dword[packetbuf], 'PRIV'
         mov     dword[packetbuf+4], 'MSG '
@@ -575,7 +585,7 @@ cmd_usr_me:
         stosb
 
 ; copy the message itself (including first space)
-        mov     esi, usercommand+3
+        mov     esi, user_command+3
   @@:
         lodsb
         cmp     al, 13
@@ -605,7 +615,7 @@ cmd_usr_me:
         mov     esi, user_nick
         call    print_asciiz
 
-        mov     esi, usercommand+3
+        mov     esi, user_command+3
         mov     bl, 13
         call    print_string
 
@@ -616,17 +626,15 @@ cmd_usr_me:
 
 
 
-; The user typed some undefined command, just recode it and send to the server
+; The user typed some undefined command, just send it to the server
 cmd_usr_send:
 
-        mov     esi, usercommand+1
-        mov     ecx, [edit1.size]
-        inc     ecx
-        mov     edi, packetbuf
-        call    recode
-
-        lea     esi, [edi - packetbuf]
-        mcall   send, [socketnum], packetbuf, , 0
+        mov     esi, [user_command.size]
+        mov     eax, [user_command.size]
+        add     eax, user_command+1
+        mov     word[eax], 0x0d0a
+        inc     esi
+        mcall   send, [socketnum], user_command+1, , 0
 
         ret
 

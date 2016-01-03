@@ -47,7 +47,7 @@ server_parser:
 
 server_commands:
 
-        dd      '001 ', cmd_justprint
+        dd      '001 ', cmd_welcome
         dd      '002 ', cmd_justprint
         dd      '003 ', cmd_justprint
         dd      '004 ', cmd_justprint
@@ -80,7 +80,9 @@ server_commands:
         dd      '375 ', cmd_justprint   ; start of motd
         dd      '376 ', cmd_justprint   ; end of motd
         dd      '421 ', cmd_justprint   ; unknown command
+        dd      '432 ', cmd_justprint   ; erroneous nickname
         dd      '433 ', cmd_justprint   ; nickname already in use
+        dd      '436 ', cmd_justprint   ; nickname collision
 
         dd      'join', cmd_join
         dd      'kick', cmd_kick
@@ -170,7 +172,9 @@ skip_parameter:
 
 
 
+cmd_welcome:
 
+        mov     [status], STATUS_LOGGED_IN
 
 cmd_justprint:
 
@@ -183,6 +187,7 @@ cmd_justprint:
         call    print_char
 
         ret
+
 
 
 cmd_notice:
@@ -466,11 +471,11 @@ cmd_dcc:
 ctcp_reply:
 
         push    esi
-        mov     dword [usercommand], 'NOTI'
-        mov     dword [usercommand+4], 'CE  '
+        mov     dword[user_command], 'NOTI'
+        mov     dword[user_command+4], 'CE  '
 
         mov     esi, servercommand+1
-        mov     edi, usercommand+7
+        mov     edi, user_command+7
   .nickloop:
         lodsb
         cmp     al, '!'
@@ -502,8 +507,8 @@ ctcp_reply:
         mov     ax, 0x0a0d
         stosw
 
-        lea     esi, [edi - usercommand]
-        mcall   send, [socketnum], usercommand, , 0
+        lea     esi, [edi - user_command]
+        mcall   send, [socketnum], user_command, , 0
   .fail:
         ret
 

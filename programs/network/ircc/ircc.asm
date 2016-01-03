@@ -13,13 +13,14 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version equ '0.25'
+version equ '0.26'
 
 ; connection status
 STATUS_DISCONNECTED     = 0
 STATUS_RESOLVING        = 1
 STATUS_CONNECTING       = 2
 STATUS_CONNECTED        = 3
+STATUS_LOGGED_IN        = 4
 
 ; window flags
 FLAG_UPDATED            = 1 shl 0
@@ -473,8 +474,9 @@ str_refused             db 3, '5* Connection refused', 10, 0
 str_srv_disconnected    db 3, '5* Server disconnected', 10, 0
 str_disconnected        db 3, '5* Disconnected', 10, 0
 str_reconnect           db 3, '5* Connection reset by user', 10, 0
-str_notconnected        db 3, '5* Not connected to server', 10, 0
+str_notconnected        db 3, '5* You are not connected', 10, 0
 str_notchannel          db 3, '5* You are not on a channel', 10, 0
+str_notloggedin         db 3, '5* You are not logged in to the server', 10, 0
 
 str_1                   db 3, '13 -', 0
 str_2                   db '- ', 0
@@ -571,15 +573,18 @@ import  boxlib,\
         scrollbar_mouse,'scrollbar_v_mouse'
 
         ;         width, left, top
-edit1   edit_box  0, 0, 0, 0xffffff, 0x6f9480, 0, 0, 0x000000, USERCMD_MAX_SIZE, usercommand, mouse_dd, ed_always_focus, 25, 25
+edit1   edit_box  0, 0, 0, 0xffffff, 0x6f9480, 0, 0, 0x000000, USERCMD_MAX_SIZE, input_text, mouse_dd, ed_always_focus, 25, 25
         ;         xsize, xpos, ysize, ypos, btn_height, max, cur, pos, bgcol, frcol, linecol
 scroll1 scrollbar SCROLLBAR_WIDTH, 0, 0, TOP_Y, SCROLLBAR_WIDTH, 0, 0, 0, 0, 0, 0, 1
 scroll2 scrollbar SCROLLBAR_WIDTH, 0, 0, TOP_Y, SCROLLBAR_WIDTH, 0, 0, 0, 0, 0, 0, 1
 
-usercommand     db '/server chat.freenode.net', 0
+input_text      db '/server chat.freenode.net', 0
                 rb MAX_COMMAND_LEN
 
 I_END:
+
+user_command    rb MAX_COMMAND_LEN*4
+.size           dd ?
 
 utf8_bytes_rest dd ?            ; bytes rest in current UTF8 sequence
 utf8_char       dd ?            ; first bits of current UTF8 character
