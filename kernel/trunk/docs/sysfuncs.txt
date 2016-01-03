@@ -4197,7 +4197,7 @@ Ethernet (0)
         0 - Read MAC
         
 IPv4 (1)
-        0 - Read # IP packets send
+        0 - Read # IP packets sent
         1 - Read # IP packets received
         2 - Read IP
         3 - Write IP
@@ -4209,20 +4209,20 @@ IPv4 (1)
         9 - Write gateway
         
 ICMP (2)
-        0 - Read # ICMP packets send
+        0 - Read # ICMP packets sent
         1 - Read # ICMP packets received
         3 - enable/disable ICMP echo reply
 
 UDP (3)
-        0 - Read # UDP packets send
+        0 - Read # UDP packets sent
         1 - Read # UDP packets received
 
 TCP (4)
-        0 - Read # TCP packets send
+        0 - Read # TCP packets sent
         1 - Read # TCP packets received 
         
 ARP (5)
-        0 - Read # ARP packets send
+        0 - Read # ARP packets sent
         1 - Read # ARP packets received
         2 - Read # ARP entry's
         3 - Read ARP entry
