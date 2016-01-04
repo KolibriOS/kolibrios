@@ -8,10 +8,6 @@
 
 $Revision$
 
-;==============================================================================
-;///// public functions ///////////////////////////////////////////////////////
-;==============================================================================
-
 button.MAX_BUTTONS = 4095
 
 struct  SYS_BUTTON
@@ -25,12 +21,11 @@ struct  SYS_BUTTON
                         dw ?
 ends
 
-align 4
-;------------------------------------------------------------------------------
-syscall_button: ;///// system function 8 //////////////////////////////////////
-;------------------------------------------------------------------------------
+;---------------------------------------------------------------
+syscall_button: ;////////////// system function 8 //////////////
+;---------------------------------------------------------------
 ;? Define/undefine GUI button object
-;------------------------------------------------------------------------------
+;---------------------------------------------------------------
 ;; Define button:
 ;> ebx = pack[16(x), 16(width)]
 ;> ecx = pack[16(y), 16(height)]
@@ -40,12 +35,12 @@ syscall_button: ;///// system function 8 //////////////////////////////////////
 ;>          6 (30) = don't draw button
 ;>          5 (29) = don't draw button frame when pressed
 ;> esi = button color
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 ;; Undefine button:
 ;> edx = pack[8(flags), 24(button identifier)]
 ;>       flags bits:
 ;>          7 (31) = 1
-;------------------------------------------------------------------------------
+;---------------------------------------------------------------
         ; do we actually need to undefine the button?
         test    edx, 0x80000000
         jnz     .remove_button
@@ -74,13 +69,12 @@ syscall_button: ;///// system function 8 //////////////////////////////////////
         pop     eax
 
         ; basic checks passed, define the button
-        push    ebx ecx edx
         inc     eax
         mov     [edi], ax
         shl     eax, 4
         add     edi, eax
-        ; NOTE: this code doesn't rely on SYS_BUTTON struct, please revise it
-        ;       if you change something
+; NOTE: this code doesn't rely on SYS_BUTTON struct,
+; please revise it, if you change something.
         mov     ax, [CURRENT_TASK]
         stosw
         mov     ax, dx
@@ -94,18 +88,48 @@ syscall_button: ;///// system function 8 //////////////////////////////////////
         mov     eax, edx
         shr     eax, 16
         stosw               ; button id number: bits 16-31
-        pop     edx ecx ebx
 
         ; do we also need to draw the button?
         test    edx, 0x40000000
         jnz     .exit
 
-        ; draw button body
+        xor     edi, edi
+        push    ebx ecx esi
+        cmp     [buttontype], 1
+        jnz     .draw
+        cmp     cx, 129
+        jnc     .draw
 
-        pushad
+        ; calculate gradient data
+        mov     eax, esi
+        shl     eax, 8
+        mov     edx, 3
+.calculate:
+        rol     eax, 8
+        shl     al, 1
+        jnc     @f
+        neg     al
+        jnz     @f
+        mov     al, 128
+@@:
+        jns     @f
+        mov     al, 128
+@@:
+        div     cl
+        shl     ax, 8
+        dec     edx
+        jnz     .calculate
+        mov     dl, cl
+        dec     edx
+        shr     edx, 1
+        shr     eax, 8
+        mov     edi, eax
+        mul     edx
+        add     esi, eax
 
-        ; calculate window-relative coordinates
-        movzx   edi, cx
+.draw:  ; calculate window-relative coordinates
+        movzx   ebp, cx
+        dec     ebp
         shr     ebx, 16
         shr     ecx, 16
         mov     eax, [TASK_BASE]
@@ -113,116 +137,53 @@ syscall_button: ;///// system function 8 //////////////////////////////////////
         add     ecx, [eax - twdw + WDATA.box.top]
         mov     eax, ebx
         inc     eax
-        shl     eax, 16
-        mov     ax, bx
-        add     ax, word[esp + 16]
-        dec     ax
-        mov     ebx, ecx
-        shl     ebx, 16
-        mov     bx, cx
-
-        ; calculate initial color
-        mov     ecx, esi
-        cmp     [buttontype], 0
-        je      @f
-        call    button._.incecx2
-
-        ; set button height counter
-    @@:
-        mov     edx, edi
-        add     ebx, 0x00010001
-        dec     edx
-
-  .next_line:
-        call    button._.button_dececx
-        push    edi
-        xor     edi, edi
-;        call    [draw_line]
-        call    __sys_draw_line
-        pop     edi
-        add     ebx, 0x00010001
-        dec     edx
-        jnz     .next_line
-
-        popad
-
-        ; draw button frame
-
-        push    ebx ecx
-
-        ; calculate window-relative coordinates
-        shr     ebx, 16
-        shr     ecx, 16
-        mov     eax, [TASK_BASE]
-        add     ebx, [eax - twdw + WDATA.box.left]
-        add     ecx, [eax - twdw + WDATA.box.top]
-
-        ; top border
-        mov     eax, ebx
-        shl     eax, 16
-        mov     ax, bx
-        add     ax, [esp + 4]
-        mov     ebx, ecx
-        shl     ebx, 16
-        mov     bx, cx
-        push    ebx
-        xor     edi, edi
-        mov     ecx, esi
-        ; call    button._.incecx
-;        call    [draw_line]
-        call    __sys_draw_line
-
-        ; light line under top border
-        add     ebx, 0x00010001 
-        mov     ecx, esi
-        call    button._.incecx
-        call    __sys_draw_line
-        sub     ebx, 0x00010001
-        ; bottom border
-        movzx   edx, word[esp + 4 + 0]
-        add     ebx, edx
-        shl     edx, 16
-        add     ebx, edx
-        mov     ecx, esi
-        call    button._.dececx
-;        call    [draw_line]
-        call    __sys_draw_line
-
-        ; left border
-        pop     ebx
-        push    edx
-        mov     edx, eax
-        shr     edx, 16
-        mov     ax, dx
         mov     edx, ebx
-        shr     edx, 16
-        mov     bx, dx
-        add     bx, [esp + 4 + 0]
-        pop     edx
+        add     dx, [esp+8]
+        dec     edx
+        mov     ebx, ecx
         mov     ecx, esi
-        call    button._.dececx ; button._.incecx
-;        call    [draw_line]
-        dec     ebx
-        call    __sys_draw_line
-
-        ; right border
-        mov     dx, [esp + 4]
-        add     ax, dx
-        shl     edx, 16
-        add     eax, edx
-        add     ebx, 0x00010000
-        mov     ecx, esi
-        call    button._.dececx
-;        call    [draw_line]
-        call    __sys_draw_line
-
+        shr     ecx, 1
+        btr     ecx, 7
+        btr     ecx, 15
+        push    esi
+        mov     esi, edi
+        xor     edi, edi
+        call    hline   ; top border
+        inc     ebx
+        pop     ecx
+.next_line:
+        call    hline   ; button body
+        inc     ebx
+        sub     ecx, esi
+        dec     ebp
+        jnz     .next_line
+        shr     ecx, 1
+        btr     ecx, 7
+        btr     ecx, 15
+        call    hline   ; bottom border
+        pop     ecx
+        shr     ecx, 1
+        btr     ecx, 7
+        btr     ecx, 15
+        inc     edx
+        push    edx
+        mov     edx, ebx
+        sub     bx, [esp+4]
+        dec     eax
+        cmp     [buttontype], 1
+        jnz     @f
+        dec     edx
+        inc     ebx
+@@:
+        call    vline   ; left border
+        pop     eax
+        call    vline   ; right border
         pop     ecx ebx
-
-  .exit:
+.exit:
         ret
 
 ; FIXME: mutex needed
-syscall_button.remove_button:
+.remove_button:
         and     edx, 0x00ffffff
         mov     edi, [BTN_ADDR]
         mov     ebx, [edi]
@@ -233,7 +194,7 @@ syscall_button.remove_button:
         add     ecx, -sizeof.SYS_BUTTON
         add     esi, sizeof.SYS_BUTTON
 
-  .next_button:
+.next_button:
         dec     ebx
         jz      .exit
 
@@ -262,98 +223,28 @@ syscall_button.remove_button:
         pop     ebx
         jmp     .next_button
 
-  .exit:
-        ret
-
-align 4
-;------------------------------------------------------------------------------
-sys_button_activate_handler: ;/////////////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? <description>
-;------------------------------------------------------------------------------
+;---------------------------------------------------------------
+sys_button_activate_handler:
+sys_button_deactivate_handler:
+;---------------------------------------------------------------
 ;> eax = pack[8(process slot), 24(button id)]
 ;> ebx = pack[16(button x coord), 16(button y coord)]
 ;> cl = mouse button mask this system button was pressed with
-;------------------------------------------------------------------------------
-        call    button._.find_button
-        or      eax, eax
-        jz      .exit
-
-        mov     ebx, dword[eax + SYS_BUTTON.id_hi - 2]
-        call    button._.negative_button
-
-  .exit:
-        ret
-
-align 4
-;------------------------------------------------------------------------------
-sys_button_deactivate_handler: ;///////////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? <description>
-;------------------------------------------------------------------------------
-;> eax = pack[8(process slot), 24(button id)]
-;> ebx = pack[16(button x coord), 16(button y coord)]
-;> cl = mouse button mask this system button was pressed with
-;------------------------------------------------------------------------------
-        call    button._.find_button
-        or      eax, eax
-        jz      .exit
-
-        mov     ebx, dword[eax + SYS_BUTTON.id_hi - 2]
-        call    button._.negative_button
-
-  .exit:
-        ret
-
-align 4
-;------------------------------------------------------------------------------
-sys_button_perform_handler: ;//////////////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? <description>
-;------------------------------------------------------------------------------
-;> eax = pack[8(process slot), 24(button id)]
-;> ebx = pack[16(button x coord), 16(button y coord)]
-;> cl = mouse button mask this system button was pressed with
-;------------------------------------------------------------------------------
-        shl     eax, 8
-        mov     al, cl
-        movzx   ebx, byte[BTN_COUNT]
-        mov     [BTN_BUFF + ebx * 4], eax
-        inc     bl
-        mov     [BTN_COUNT], bl
-        ret
-
-;==============================================================================
-;///// private functions //////////////////////////////////////////////////////
-;==============================================================================
-
-;------------------------------------------------------------------------------
-button._.find_button: ;////////////////////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? Find system button by specified process slot, id and coordinates
-;------------------------------------------------------------------------------
-;> eax = pack[8(process slot), 24(button id)] or 0
-;> ebx = pack[16(button x coord), 16(button y coord)]
-;------------------------------------------------------------------------------
-;< eax = pointer to SYS_BUTTON struct or 0
-;------------------------------------------------------------------------------
+;---------------------------------------------------------------
+; find system button by specified process slot, id and coordinates
         push    ecx edx esi edi
-
         mov     edx, eax
         shr     edx, 24
         and     eax, 0x0ffffff
-
         mov     edi, [BTN_ADDR]
         mov     ecx, [edi]
         imul    esi, ecx, sizeof.SYS_BUTTON
         add     esi, edi
         inc     ecx
         add     esi, sizeof.SYS_BUTTON
-
-  .next_button:
+.next_button:
         dec     ecx
-        jz      .not_found
-
+        jz      .popexit
         add     esi, -sizeof.SYS_BUTTON
 
         ; does it belong to our process?
@@ -373,147 +264,71 @@ button._.find_button: ;////////////////////////////////////////////////////////
         cmp     ebx, edi
         jne     .next_button
 
-        ; okay, return it
         mov     eax, esi
-        jmp     .exit
-
-  .not_found:
-        xor     eax, eax
-
-  .exit:
         pop     edi esi edx ecx
-        ret
+        mov     ebx, dword[eax + SYS_BUTTON.id_hi - 2]
 
-;------------------------------------------------------------------------------
-button._.dececx: ;/////////////////////////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? <description>
-;------------------------------------------------------------------------------
-        sub     cl, 0x20
-        jnc     @f
-        xor     cl, cl
-    @@:
-        sub     ch, 0x20
-        jnc     @f
-        xor     ch, ch
-    @@:
-        rol     ecx, 16
-        sub     cl, 0x20
-        jnc     @f
-        xor     cl, cl
-    @@:
-        rol     ecx, 16
-        ret
-
-;------------------------------------------------------------------------------
-button._.incecx: ;/////////////////////////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? <description>
-;------------------------------------------------------------------------------
-        add     cl, 0x20
-        jnc     @f
-        or      cl, -1
-    @@:
-        add     ch, 0x20
-        jnc     @f
-        or      ch, -1
-    @@:
-        rol     ecx, 16
-        add     cl, 0x20
-        jnc     @f
-        or      cl, -1
-    @@:
-        rol     ecx, 16
-        ret
-
-;------------------------------------------------------------------------------
-button._.incecx2: ;////////////////////////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? <description>
-;------------------------------------------------------------------------------
-        add     cl, 0x14
-        jnc     @f
-        or      cl, -1
-    @@:
-        add     ch, 0x14
-        jnc     @f
-        or      ch, -1
-    @@:
-        rol     ecx, 16
-        add     cl, 0x14
-        jnc     @f
-        or      cl, -1
-    @@:
-        rol     ecx, 16
-        ret
-
-;------------------------------------------------------------------------------
-button._.button_dececx: ;//////////////////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? <description>
-;------------------------------------------------------------------------------
-        cmp     [buttontype], 1
-        jne     .finish
-
-        push    eax
-        mov     al, 1
-        cmp     edi, 20
-        jg      @f
-        mov     al, 2
-
-    @@:
-        sub     cl, al
-        jnc     @f
-        xor     cl, cl
-    @@:
-        sub     ch, al
-        jnc     @f
-        xor     ch, ch
-    @@:
-        rol     ecx, 16
-        sub     cl, al
-        jnc     @f
-        xor     cl, cl
-    @@:
-        rol     ecx, 16
-
-        pop     eax
-
-  .finish:
-        ret
-
-;------------------------------------------------------------------------------
-button._.negative_button: ;////////////////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? Invert system button border
-;------------------------------------------------------------------------------
-        ; if requested, do not display button border on press.
+        ; display button border on press?
         test    ebx, 0x20000000
         jnz     .exit
 
+        ; invert system button border
         pushad
-
-        xchg    esi, eax
-
+        mov     esi, eax
         movzx   ecx, [esi + SYS_BUTTON.pslot]
         shl     ecx, 5
         add     ecx, window_data
-
         mov     eax, dword[esi + SYS_BUTTON.left]
         mov     ebx, dword[esi + SYS_BUTTON.top]
         add     eax, [ecx + WDATA.box.left]
         add     ebx, [ecx + WDATA.box.top]
-        push    eax ebx
-        pop     edx ecx
         rol     eax, 16
         rol     ebx, 16
-        add     ax, cx
-        add     bx, dx
-
-        mov     esi, 0x01000000
-        call    draw_rectangle.forced
-
+        push    eax ebx
+        shr     eax, 16
+        shr     ebx, 16
+        mov     edx, eax
+        add     dx, [esp+4]
+        dec     edx
+        inc     eax
+        mov     ecx, 1000000h
+        xor     edi, edi
+        inc     edi
+        call    hline
+        add     bx, [esp]
+        call    hline
+        inc     edx
+        push    edx
+        mov     edx, ebx
+        sub     bx, [esp+4]
+        dec     eax
+        cmp     [buttontype], 1
+        jnz     @f
+        dec     edx
+        inc     ebx
+@@:
+        call    vline
+        pop     eax
+        call    vline
+        pop     eax eax
         popad
+.exit:
+        ret
+.popexit:
+        pop     edi esi edx ecx
+        ret
 
-  .exit:
+;---------------------------------------------------------------
+sys_button_perform_handler:
+;---------------------------------------------------------------
+;> eax = pack[8(process slot), 24(button id)]
+;> ebx = pack[16(button x coord), 16(button y coord)]
+;> cl = mouse button mask this system button was pressed with
+;---------------------------------------------------------------
+        shl     eax, 8
+        mov     al, cl
+        movzx   ebx, byte[BTN_COUNT]
+        mov     [BTN_BUFF + ebx * 4], eax
+        inc     bl
+        mov     [BTN_COUNT], bl
         ret
