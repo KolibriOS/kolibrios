@@ -93,11 +93,14 @@ syscall_button: ;////////////// system function 8 //////////////
         test    edx, 0x40000000
         jnz     .exit
 
+        and     esi, 0xFFFFFF
         xor     edi, edi
         push    ebx ecx esi
+        dec     cx
+        dec     cx
         cmp     [buttontype], 1
         jnz     .draw
-        cmp     cx, 129
+        cmp     cx, 65
         jnc     .draw
 
         ; calculate gradient data
@@ -110,10 +113,11 @@ syscall_button: ;////////////// system function 8 //////////////
         jnc     @f
         neg     al
         jnz     @f
-        mov     al, 128
+        mov     al, 64
 @@:
-        jns     @f
-        mov     al, 128
+        cmp     al, 65
+        jc      @f
+        mov     al, 64
 @@:
         div     cl
         shl     ax, 8
@@ -143,41 +147,61 @@ syscall_button: ;////////////// system function 8 //////////////
         mov     ebx, ecx
         mov     ecx, esi
         shr     ecx, 1
-        btr     ecx, 7
-        btr     ecx, 15
+        and     cx, 7F7Fh
         push    esi
         mov     esi, edi
         xor     edi, edi
         call    hline   ; top border
         inc     ebx
+        or      ecx, 808080h
+        call    hline   ; top light line
         pop     ecx
+        inc     ebx
 .next_line:
         call    hline   ; button body
         inc     ebx
         sub     ecx, esi
         dec     ebp
         jnz     .next_line
-        shr     ecx, 1
-        btr     ecx, 7
-        btr     ecx, 15
+        shr     ecx, 2
+        and     cx, 3F3Fh
+        mov     ebp, ecx
+        shl     ecx, 1
+        add     ecx, ebp
+        call    hline   ; bottom dark line
+        inc     ebx
+        sub     ecx, ebp
         call    hline   ; bottom border
         pop     ecx
         shr     ecx, 1
-        btr     ecx, 7
-        btr     ecx, 15
         inc     edx
         push    edx
         mov     edx, ebx
         sub     bx, [esp+4]
-        dec     eax
-        cmp     [buttontype], 1
-        jnz     @f
         dec     edx
         inc     ebx
+        cmp     [buttontype], 0
+        jnz     @f
+        dec     edx
+        or      ecx, 808080h
+        call    vline   ; left light line
+        inc     edx
 @@:
+        and     ecx, 7F7F7Fh
+        dec     eax
         call    vline   ; left border
         pop     eax
         call    vline   ; right border
+        cmp     [buttontype], 0
+        jnz     @f
+        mov     ebp, ecx
+        shr     ecx, 1
+        and     cx, 7F7Fh
+        add     ecx, ebp
+        dec     eax
+        inc     ebx
+        call    vline   ; right dark line
+@@:
         pop     ecx ebx
 .exit:
         ret
@@ -302,11 +326,8 @@ sys_button_deactivate_handler:
         mov     edx, ebx
         sub     bx, [esp+4]
         dec     eax
-        cmp     [buttontype], 1
-        jnz     @f
         dec     edx
         inc     ebx
-@@:
         call    vline
         pop     eax
         call    vline
