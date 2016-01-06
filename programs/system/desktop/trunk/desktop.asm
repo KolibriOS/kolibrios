@@ -510,7 +510,7 @@ draw_window:
 ;-----------------------------------
 ; select color DTP frame
 ; LOAD BUTTON	; button 12
-	mcall	8,<frame_1.x+10,load_w>,<frame_1.y+25,15>,12,[w_work_button]
+	mcall	8,<frame_1.x+10,load_w>,<frame_1.y+25,18>,12,[w_work_button]
 ; SAVE BUTTON
 	add	ebx,(load_w+2)*65536-load_w+save_w
 	inc	edx
@@ -519,11 +519,11 @@ draw_window:
 	mov	ebx,(frame_1.x + frame_1.width - apply_w - 15)*65536+apply_w
 	mcall	8,,,16	; button 17
 ; select color DTP button text
-	mcall	4,<frame_1.x+16,frame_1.y+29>,[w_work_button_text],t1,t1.size
+	mcall	4,<frame_1.x+16,frame_1.y+31>,[w_work_button_text],t1,t1.size
 ;-----------------------------------	
 ; select skin frame	
 ; LOAD SKIN BUTTON	; button 17
-	mcall	8,<frame_2.x+10,load_w>,<frame_2.y+25,15>,17,[w_work_button]
+	mcall	8,<frame_2.x+10,load_w>,<frame_2.y+25,18>,17,[w_work_button]
 ; 3D
 	mov	ebx,(frame_2.x+155)*65536+34
 	mcall	,,,14	; button 14
@@ -535,7 +535,7 @@ draw_window:
 	mov	ebx,(frame_2.x + frame_2.width - apply_w -15)*65536+apply_w
 	mcall	,,,18		; button 18
 ; select skin button text
-	mcall	4,<frame_2.x+16,frame_2.y+29>,[w_work_button_text],t2,t2.size
+	mcall	4,<frame_2.x+16,frame_2.y+31>,[w_work_button_text],t2,t2.size
 ;-----------------------------------		
 	call	draw_button_row
 	call	draw_button_row_of_texts

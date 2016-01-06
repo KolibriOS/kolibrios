@@ -333,7 +333,6 @@ tup.append_table(img_files, {
  {"File Managers/KFM", PROGS .. "/fs/kfm/trunk/kfm"},
  {"File Managers/OPENDIAL", PROGS .. "/fs/opendial/opendial"},
  {"GAMES/15", PROGS .. "/games/15/trunk/15"},
- {"GAMES/ARCANII", PROGS .. "/games/arcanii/trunk/arcanii"},
  {"GAMES/FREECELL", PROGS .. "/games/freecell/freecell"},
  {"GAMES/GOMOKU", PROGS .. "/games/gomoku/trunk/gomoku"},
  {"GAMES/KLAVISHA", PROGS .. "/games/klavisha/trunk/klavisha"},
@@ -428,9 +427,9 @@ tup.append_table(extra_files, {
  {"HD_Load/USB_Boot/", PROGS .. "/hd_load/usb_boot/setmbr.exe"},
  {"HD_Load/USB_boot_old/", PROGS .. "/hd_load/usb_boot_old/MeOSload.com"},
  {"HD_Load/USB_boot_old/", PROGS .. "/hd_load/usb_boot_old/enable.exe"},
+ {"kolibrios/games/arcanii", PROGS .. "/games/arcanii/trunk/arcanii"},
  {"kolibrios/games/codemaster/binary_master", PROGS .. "/games/codemaster/binary_master"},
  {"kolibrios/games/codemaster/hang_programmer", PROGS .. "/games/codemaster/hang_programmer"},
-
  {"kolibrios/games/codemaster/kolibri_puzzle", PROGS .. "/games/codemaster/kolibri_puzzle"},
  {"kolibrios/games/invaders", PROGS .. "/games/invaders/invaders"},
  {"kolibrios/media/zsea/zsea", PROGS .. "/media/zsea/zSea"},
