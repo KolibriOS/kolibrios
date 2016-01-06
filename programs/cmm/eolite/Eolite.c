@@ -80,7 +80,7 @@ int rand_n;
 byte CMD_REFRESH;
 
 //struct t_settings {
-byte sort_num=2,
+int sort_num=2,
 	show_dev_name=true,
 	real_files_names_case=false,
 	info_after_copy=false,
@@ -127,7 +127,7 @@ void main()
 	fd_path_eolite_ini_path = "/fd/1/File Managers/Eolite.ini";
 	
 	LoadIniSettings();
-	GetSystemDiscs();
+	SystemDiscs.Get();
 	SetAppColors();
 	if (param)
 	{
@@ -352,7 +352,7 @@ void main()
 							FnProcess(id-50);
 							break;
 					case 100...120:
-						ClickOnDisk(id-100);
+						SystemDiscs.Click(id-100);
 						break;
 				}
 				break;
@@ -387,14 +387,14 @@ void main()
 					{
 						case 059...068:
 								key_scancode -= 59;
-								if (key_scancode<disk_list.count)
+								if (key_scancode < SystemDiscs.list.count)
 								{
 									if (!two_panels)
 									{
 										DrawRectangle(17,key_scancode*16+74,159,16, 0); //display click
 										pause(7);										
 									}
-									ClickOnDisk(key_scancode);
+									SystemDiscs.Click(key_scancode);
 								}
 								break;
 						case 45:  //Ctrl+X
@@ -581,6 +581,7 @@ void DrawList()
 
 void DrawFilePanels()
 {
+	int files_y;
 	if (!two_panels)
 	{
 		DrawDeviceAndActionsLeftPanel();
@@ -593,31 +594,33 @@ void DrawFilePanels()
 		llist_copy(#files, #files_inactive);
 		strcpy(#path, #inactive_path);
 		col_selec = 0xCCCccc;
+		SystemDiscs.Draw();
+		files_y = files.y;
 
 		if (active_panel==1)
 		{
 			llist_copy(#files, #files_inactive);
 			strcpy(#path, #inactive_path);
 			col_selec = 0xCCCccc;
-			files.SetSizes(Form.cwidth/2, 57+22, Form.cwidth/2 -17, Form.cheight-59-22, files.item_h);
+			files.SetSizes(Form.cwidth/2, files_y, Form.cwidth/2 -17, Form.cheight-files_y, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 			llist_copy(#files, #files_active);
 			strcpy(#path, #active_path);
 			col_selec = 0x94AECE;
-			files.SetSizes(2, 57+22, Form.cwidth/2-2-17, Form.cheight-59-22, files.item_h);
+			files.SetSizes(2, files_y, Form.cwidth/2-2-17, Form.cheight-files_y, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 		}
 		if (active_panel==2)
 		{
-			files.SetSizes(2, 57+22, Form.cwidth/2-2-17, Form.cheight-59-22, files.item_h);
+			files.SetSizes(2, files_y, Form.cwidth/2-2-17, Form.cheight-files_y, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 			llist_copy(#files, #files_active);
 			strcpy(#path, #active_path);
 			col_selec = 0x94AECE;
-			files.SetSizes(Form.cwidth/2, 57+22, Form.cwidth/2 -17, Form.cheight-59-22, files.item_h);
+			files.SetSizes(Form.cwidth/2, files_y, Form.cwidth/2 -17, Form.cheight-files_y, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 		}
@@ -762,12 +765,12 @@ void Open_Dir(dword dir_path, redraw){
 			PathShow_draw stdcall(#PathShow);
 		}
 		history.add(#path);
+		SystemDiscs.Draw();
 		files.visible = files.h / files.item_h;
 		if (files.count < files.visible) files.visible = files.count;
 		if (redraw!=ONLY_SHOW) Sorting();
 		list_full_redraw = true;
 		if (redraw!=ONLY_OPEN)&&(!_not_draw) List_ReDraw();
-		DrawSystemDiscs();
 	}
 	if (files.count==-1) && (redraw!=ONLY_OPEN) 
 	{
@@ -1145,7 +1148,7 @@ void FnProcess(byte N)
 				Tip(56, T_DEVICES, 55, "-");
 				Open_Dir(#path,WITH_REDRAW);
 				pause(10);
-				GetSystemDiscs();
+				SystemDiscs.Get();
 				Open_Dir(#path,WITH_REDRAW);
 				DrawDeviceAndActionsLeftPanel();				
 			}
