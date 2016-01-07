@@ -293,12 +293,13 @@ sys_button_deactivate_handler:
         mov     ebx, dword[eax + SYS_BUTTON.id_hi - 2]
 
         ; display button border on press?
-        test    ebx, 0x20000000
-        jnz     .exit
+        bt      ebx, 29
+        jc      .exit
 
         ; invert system button border
         pushad
         mov     esi, eax
+        mov     edi, ebx
         movzx   ecx, [esi + SYS_BUTTON.pslot]
         shl     ecx, 5
         add     ecx, window_data
@@ -308,14 +309,17 @@ sys_button_deactivate_handler:
         add     ebx, [ecx + WDATA.box.top]
         mov     ecx, eax
         mov     edx, ebx
+        bt      edi, 30
+        jc      @f
         inc     ax
         inc     bx
+        dec     cx
+        dec     dx
+@@:
         rol     eax, 16
         rol     ebx, 16
         add     ax, cx
         add     bx, dx
-        dec     ax
-        dec     bx
         mov     esi, 1000000h
         call    draw_rectangle.forced
         popad
