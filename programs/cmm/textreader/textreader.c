@@ -4,6 +4,7 @@
 #include "../lib/io.h"
 #include "../lib/gui.h"
 #include "../lib/list_box.h"
+#include "../lib/menu.h"
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/libini.h"
 #include "../lib/obj/iconv.h"
@@ -52,7 +53,6 @@ enum {
 };
 
 #include "ini.h"
-#include "menu.h"
 #include "gui.h"
 #include "prepare_page.h"
 
@@ -92,10 +92,10 @@ void main()
 				HandleButtonEvent();
 				break;
 			case evReDraw:
-				if (action_buf) {
+				if (menu.list.cur_y) {
+					encoding = menu.list.cur_y - 10;
 					OpenFile(#param); 
 					PreparePage();
-					action_buf = false;
 				};
 				draw_window();
 		}
@@ -224,7 +224,8 @@ void EventRunEdit()
 
 void EventChangeEncoding()
 {
-	CreateThread(#menu_rmb,#stak+4092);
+	menu.selected = encoding + 1;
+	menu.show(Form.left+104, Form.top+29+skin_height, 130, "UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866", 10);
 }
 
 void EventShowInfo() {
