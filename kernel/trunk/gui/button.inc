@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
@@ -306,32 +306,18 @@ sys_button_deactivate_handler:
         mov     ebx, dword[esi + SYS_BUTTON.top]
         add     eax, [ecx + WDATA.box.left]
         add     ebx, [ecx + WDATA.box.top]
+        mov     ecx, eax
+        mov     edx, ebx
+        inc     ax
+        inc     bx
         rol     eax, 16
         rol     ebx, 16
-        push    eax ebx
-        shr     eax, 16
-        shr     ebx, 16
-        mov     edx, eax
-        add     dx, [esp+4]
-        dec     edx
-        inc     eax
-        mov     ecx, 1000000h
-        xor     edi, edi
-        inc     edi
-        call    hline
-        add     bx, [esp]
-        call    hline
-        inc     edx
-        push    edx
-        mov     edx, ebx
-        sub     bx, [esp+4]
-        dec     eax
-        dec     edx
-        inc     ebx
-        call    vline
-        pop     eax
-        call    vline
-        pop     eax eax
+        add     ax, cx
+        add     bx, dx
+        dec     ax
+        dec     bx
+        mov     esi, 1000000h
+        call    draw_rectangle.forced
         popad
 .exit:
         ret
