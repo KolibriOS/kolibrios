@@ -1920,7 +1920,7 @@ fat_Read:
         jnz     .noaccess3
         pop     ecx
         xor     edx, edx
-        jcxz    .done
+        jecxz   .done
         jmp     .alignedCluster
 .readEnd:
         add     ecx, edi
