@@ -51,10 +51,9 @@ void DrawFlatButton(dword x,y,width,height,id,color,text)
 	if (color!=-1) DrawFilledBar(x+2, y+2, width-3, height-3);
 	IF (id<>0)	DefineButton(x+1,y+1,width-2,height-2,id+BT_HIDE,0xEFEBEF);
 	if (height<18) 
-		WriteText(-strlen(text)*6+width/2+x+1,height/2+y-3,0x80     ,system.color.work_text,text);
+		WriteText(-strlen(text)*6+width/2+x+1,height/2+y-3,0x80,system.color.work_text,text);
 	else
-		WriteText(-strlen(text)*8+width/2+x+1,height/2+y-6,10010000b,system.color.work_text,text);
-
+		WriteText(-strlen(text)*8+width/2+x+1,height/2+y-6,0x90,system.color.work_text,text);
 }
 
 void DrawFilledBar(dword x, y, w, h)
@@ -62,7 +61,7 @@ void DrawFilledBar(dword x, y, w, h)
 	int i, fill_h;
 	if (h <= 14) fill_h = h; else fill_h = 14;
 	for (i=0; i<fill_h; i++) DrawBar(x, y+i, w, 1, col_palette[14-i]);	
-	DrawBar(x, y+i, w, h-fill_h, col_palette[14-i]);		
+	DrawBar(x, y+i, w, h-fill_h, col_palette[14-i]);
 }
 
 void DrawEolitePopup(dword b1_text, b2_text)

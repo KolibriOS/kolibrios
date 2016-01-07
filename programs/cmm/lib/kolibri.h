@@ -26,15 +26,14 @@ dword  I_Path       = #program_path;
 char param[4096];
 char program_path[4096];
 
-dword TEMP = 0;
+#define bool      char
 
 #define NULL      0
 #define OLD      -1
 #define true      1
 #define false     0
 
-//Events
-
+//Process Events
 #define evReDraw  1
 #define evKey     2
 #define evButton  3
@@ -43,8 +42,6 @@ dword TEMP = 0;
 #define evIPC     7
 #define evNetwork 8
 #define evDebug   9
-
-#define EVENT_MOUSE case 6: mouse.get();
 
 //Button options
 #define BT_DEL      0x80000000

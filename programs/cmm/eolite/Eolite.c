@@ -602,25 +602,25 @@ void DrawFilePanels()
 			llist_copy(#files, #files_inactive);
 			strcpy(#path, #inactive_path);
 			col_selec = 0xCCCccc;
-			files.SetSizes(Form.cwidth/2, files_y, Form.cwidth/2 -17, Form.cheight-files_y, files.item_h);
+			files.SetSizes(Form.cwidth/2, files_y, Form.cwidth/2 -17, Form.cheight-files_y-2, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 			llist_copy(#files, #files_active);
 			strcpy(#path, #active_path);
 			col_selec = 0x94AECE;
-			files.SetSizes(2, files_y, Form.cwidth/2-2-17, Form.cheight-files_y, files.item_h);
+			files.SetSizes(2, files_y, Form.cwidth/2-2-17, Form.cheight-files_y-2, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 		}
 		if (active_panel==2)
 		{
-			files.SetSizes(2, files_y, Form.cwidth/2-2-17, Form.cheight-files_y, files.item_h);
+			files.SetSizes(2, files_y, Form.cwidth/2-2-17, Form.cheight-files_y-2, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 			llist_copy(#files, #files_active);
 			strcpy(#path, #active_path);
 			col_selec = 0x94AECE;
-			files.SetSizes(Form.cwidth/2, files_y, Form.cwidth/2 -17, Form.cheight-files_y, files.item_h);
+			files.SetSizes(Form.cwidth/2, files_y, Form.cwidth/2 -17, Form.cheight-files_y-2, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 		}
