@@ -1060,6 +1060,7 @@ void NewElement(byte newf)
 				{
 					if (itdir)
 					{
+						//rename only empty folders
 						if (del_rezult = DeleteFile(#file_path))
 						{
 							Write_Error(del_rezult);
@@ -1077,7 +1078,7 @@ void NewElement(byte newf)
 						}
 						else
 						{
-							Del_File(true);
+							DeleteFile(#file_path);
 							SelectFileByName(new_file_ed.text);
 						}
 					}
