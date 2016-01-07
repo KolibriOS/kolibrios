@@ -1808,6 +1808,8 @@ fat_Read:
         mov     ebx, [ebx+16]   ; buffer
         push    ebx
         push    0
+        test    ecx, ecx
+        jz      .done
         mov     eax, [edi+28]
         sub     eax, edx
         jb      .fileEnd
