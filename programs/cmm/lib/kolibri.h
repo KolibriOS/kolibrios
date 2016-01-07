@@ -719,10 +719,7 @@ inline fastcall dword GetStartTime()
 	dword width,height;
 } screen;
 
-:struct _skin
-{
-	dword width,height;
-} SKIN;
+:byte skin_height;
 
 :void DrawDate(dword x, y, color, in_date)
 {
@@ -795,7 +792,7 @@ void ______INIT______()
 	self.path = I_Path;
 	__path_name__(#__BUF_DIR__,I_Path);
 	
-	SKIN.height   = GetSkinHeight();
+	skin_height   = GetSkinHeight();
 	screen.width  = GetScreenWidth();
 	screen.height = GetScreenHeight();
 	
