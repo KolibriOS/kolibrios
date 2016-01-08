@@ -29,9 +29,9 @@ dword ChangeCharset(dword from_chs, to_chs, conv_buf)
 	iconv_open stdcall (from_chs, to_chs); //CP866, CP1251, CP1252, KOI8-RU, UTF-8, ISO8859-5
 	if (EAX==-1)
 	{
-		debug(from_chs);
-		debug(to_chs);
-		debug("iconv: wrong charset,\nuse only CP866, CP1251, CP1252, KOI8-RU, UTF-8, ISO8859-5");
+		debugln(from_chs);
+		debugln(to_chs);
+		debugln("iconv: wrong charset,\nuse only CP866, CP1251, CP1252, KOI8-RU, UTF-8, ISO8859-5");
 		return 0; 
 	}
 	cd = EAX;
@@ -42,12 +42,10 @@ dword ChangeCharset(dword from_chs, to_chs, conv_buf)
 	cd = EAX;
 	if (cd!=0)
 	{
-		debug("iconv: something is wrong with stdcall iconv()");
+		debugln("iconv: something is wrong with stdcall iconv()");
 		debugi(cd);
-		debug("in_len");
-		debugi(in_len);
-		debug("out_len");
-		debugi(out_len);
+		debug("in_len:"); debugi(in_len);
+		debug("out_len:"); debugi(out_len);
 		new_buf = free(new_buf);
 		return 0;
 	}

@@ -135,12 +135,12 @@ void TWebBrowser::Prepare(){
 	if (strstri(bufpointer, "html")) 
 	{
 		style.pre = 0;
-		cur_encoding = CH_UTF8;
+		cur_encoding = CH_NULL;
 	}
 	else
 	{
 		style.pre = 1;
-		cur_encoding = CH_CP866;
+		cur_encoding = CH_NULL;
 	}
 	for (bufpos=bufpointer ; (bufpos < bufpointer+bufsize) && (ESBYTE[bufpos]!=0) ; bufpos++;)
 	{
@@ -368,7 +368,7 @@ void TWebBrowser::SetStyle() {
 		if (opened)
 		{
 			WB1.DrawBuf.zoom=2;
-			WB1.list.font_type |= 10111001b;
+			WB1.list.font_type |= 10011001b;
 			if (isattr("align=")) && (isval("center")) style.align = ALIGN_CENTER;
 			if (isattr("align=")) && (isval("right")) style.align = ALIGN_RIGHT;
 			if (stroka>1) NewLine();
@@ -376,7 +376,7 @@ void TWebBrowser::SetStyle() {
 		else
 		{
 			WB1.DrawBuf.zoom=1;
-			WB1.list.font_type = 10111000b;
+			WB1.list.font_type = 10011000b;
 			style.align = ALIGN_LEFT;
 		}
 		return;
@@ -416,6 +416,7 @@ void TWebBrowser::SetStyle() {
 		return;
 	}
 	if (istag("meta")) || (istag("?xml")) {
+		meta_encoding = CH_NULL;
 		do{
 			if (isattr("charset=")) || (isattr("content=")) || (isattr("encoding="))
 			{
@@ -426,10 +427,9 @@ void TWebBrowser::SetStyle() {
 				else if (isval("windows-1251")) || (isval("windows1251")) meta_encoding = CH_CP1251;
 				else if (isval("iso-8859-5"))   || (isval("iso8859-5"))   meta_encoding = CH_ISO8859_5;
 				else if (isval("dos"))          || (isval("cp-866"))      meta_encoding = CH_CP866;
-				if (cur_encoding!=meta_encoding) BufEncode(meta_encoding);
-				return;
 			}
 		} while(GetNextParam());
+		if (meta_encoding!=CH_NULL) BufEncode(meta_encoding);
 		return;
 	}
 }
@@ -437,7 +437,6 @@ void TWebBrowser::SetStyle() {
 void TWebBrowser::BufEncode(int set_new_encoding)
 {
 	int bufpointer_realsize;
-	cur_encoding = set_new_encoding;
 	if (o_bufpointer==0)
 	{
 		o_bufpointer = malloc(bufsize);
@@ -446,6 +445,11 @@ void TWebBrowser::BufEncode(int set_new_encoding)
 	else
 	{
 		strcpy(bufpointer, o_bufpointer);
+	}
+	if (cur_encoding!=set_new_encoding) {
+		cur_encoding = set_new_encoding;
+		debugln(charsets[cur_encoding]);
+		bufpointer = ChangeCharset(charsets[cur_encoding], "CP866", bufpointer);
 	}
 }
 //============================================================================================

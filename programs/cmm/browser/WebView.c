@@ -15,6 +15,7 @@
 #include "..\lib\cursor.h"
 #include "..\lib\collection.h"
 #include "..\lib\font.h"
+#include "..\lib\menu.h"
 
 //*.obj libraries
 #include "..\lib\obj\box_lib.h"
@@ -29,19 +30,31 @@
 char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.42";
-	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
-	?define T_LAST_SLIDE "Это последний слайд"
-	char loading[] = "Загрузка страницы...<br>";
-	char page_not_found[] = FROM "html\page_not_found_ru.htm";
-	char accept_language[]= "Accept-Language: ru\n";
+char version[]=" Текстовый браузер 1.48";
+?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
+?define T_LAST_SLIDE "Это последний слайд"
+char loading[] = "Загрузка страницы...<br>";
+char page_not_found[] = FROM "html\page_not_found_ru.htm";
+char accept_language[]= "Accept-Language: ru\n";
+char rmb_menu[] = 
+"Посмотреть исходник
+Редактировать исходник
+История
+Очистить кэш картинок
+Менеджер загрузок";
 #else
-	char version[]=" Text-based Browser 1.42";
-	?define IMAGES_CACHE_CLEARED "Images cache cleared"
-	?define T_LAST_SLIDE "This slide is the last"
-	char loading[] = "Loading...<br>";
-	char page_not_found[] = FROM "html\page_not_found_en.htm";
-	char accept_language[]= "Accept-Language: en\n";	
+char version[]=" Text-based Browser 1.48";
+?define IMAGES_CACHE_CLEARED "Images cache cleared"
+?define T_LAST_SLIDE "This slide is the last"
+char loading[] = "Loading...<br>";
+char page_not_found[] = FROM "html\page_not_found_en.htm";
+char accept_language[]= "Accept-Language: en\n";
+char rmb_menu[] =
+"View source
+Edit source
+History
+Free image cache
+Download Manager";
 #endif
 
 #define URL_SERVICE_HISTORY "WebView://history"
@@ -86,7 +99,6 @@ enum {
 };
 
 #include "..\TWB\TWB.c"
-#include "menu.h"
 #include "history.h"
 #include "show_src.h"
 #include "http_downloader.h"
@@ -108,13 +120,12 @@ void main()
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libHTTP, #http_lib_init,1);
 	load_dll(iconv_lib, #iconv_open,0);
-	//load_dll(kmenu, #akmenu_init,0);
 	Libimg_LoadImage(#skin, abspath("wv_skin.png"));
 	SetSkinColors();
 	CreateDir("/tmp0/1/downloads");
 	if (param) strcpy(#URL, #param); else strcpy(#URL, URL_SERVICE_HOME);
 	WB1.DrawBuf.zoom = 1;
-	WB1.list.SetFont(8, 14, 10111000b);
+	WB1.list.SetFont(8, 14, 10011000b);
 	WB1.list.no_selection = true;
 	label.init(DEFAULT_FONT);
 	SetEventMask(0xa7);
@@ -129,7 +140,10 @@ void main()
 				if (WB1.list.MouseOver(mouse.x, mouse.y))
 				{
 					PageLinks.Hover(mouse.x, WB1.list.first*WB1.list.item_h + mouse.y, link_color_inactive, link_color_active, bg_color);
-					if (bufsize) && (mouse.pkm) && (mouse.up) { CreateThread(#menu_rmb,#stak+4092); break; }
+					if (bufsize) && (mouse.pkm) && (mouse.up) {
+						menu.show(Form.left+mouse.x-6,Form.top+mouse.y+skin_height+3, 180, #rmb_menu, VIEW_SOURCE);
+						break;
+					}
 					if (WB1.list.MouseScroll(mouse.vert)) WB1.DrawPage();
 				}
 				scrollbar_v_mouse (#scroll_wv);
@@ -161,7 +175,10 @@ void main()
 				break;
 
 			case evReDraw:
-				if (action_buf) Scan(action_buf);
+				if (menu.list.cur_y) {
+					Scan(menu.list.cur_y);
+					menu.list.cur_y = 0;
+				}
 				DefineAndDrawWindow(GetScreenWidth()-800/2,GetScreenHeight()-600/2,800,600,0x73,col_bg,0,0);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window>2) { DrawTitle(#header); break; }
@@ -249,7 +266,10 @@ void SetElementSizes()
 	WB1.list.wheel_size = 7;
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w;
 	WB1.list.visible = WB1.list.h - 5 / WB1.list.item_h;
-	if (WB1.list.w!=WB1.DrawBuf.bufw) WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h * 30);
+	if (WB1.list.w!=WB1.DrawBuf.bufw) {
+		WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h * 30);
+		Scan(REFRESH_BUTTON);
+	}
 }
 
 
@@ -332,7 +352,7 @@ void Scan(dword id__)
 		case SANDWICH_BUTTON:
 			mouse.y = TOOLBAR_H-6;
 			mouse.x = Form.cwidth - 167;
-			CreateThread(#menu_rmb,#stak+4092);
+			menu.show(Form.left+mouse.x-6,Form.top+mouse.y+skin_height+3, 180, #rmb_menu, VIEW_SOURCE);
 			return;
 		case VIEW_SOURCE:
 			WB1.list.first = 0;

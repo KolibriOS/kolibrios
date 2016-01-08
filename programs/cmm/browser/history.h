@@ -8,7 +8,7 @@ ShowHistory()
 		history_pointer = malloc(history.items.data_size+256);
 		strcat(history_pointer, "<html><head><title>History</title></head><body><h1>History</h1>");
 		strcat(history_pointer, "<h2>Visited pages</h2><blockquote><br>");
-		for (i=1; i<history.items.count; i++)
+		for (i=0; i<history.items.count; i++)
 		{
 			strcat(history_pointer, " <a href='");
 			strcat(history_pointer, history.items.get(i));
