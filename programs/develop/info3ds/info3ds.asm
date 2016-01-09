@@ -13,9 +13,7 @@ include 'lang.inc'
 include 'info_fun_float.inc'
 include 'info_menu.inc'
 
-offs_zbuf_pbuf equ 24 ;const. from 'zbuffer.inc'
-
-debug equ 0
+version_edit equ 1
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
@@ -28,6 +26,16 @@ struct FileInfoBlock
 		db ?
 	FileName dd ?
 ends
+
+ID_ICON_CHUNK_MAIN equ 0 ;иконка главного блока
+ID_ICON_CHUNK_NOT_FOUND equ 1 ;иконка не известного блока
+ID_ICON_DATA equ 2 ;иконка для данных блока, не определенной структуры
+ID_ICON_POINT equ 8
+ID_ICON_POINT_SEL equ 9
+
+FILE_ERROR_CHUNK_SIZE equ -3 ;ошибка в размере блока
+
+include 'info_o3d.inc'
 
 align 4
 fl255 dd 255.0
@@ -92,14 +100,6 @@ include 'data.inc'
 
 level_stack dd 0
 offs_last_timer dd 0 ;последний сдвиг показаный в функции таймера
-
-ID_ICON_CHUNK_MAIN equ 0 ;иконка главного блока
-ID_ICON_CHUNK_NOT_FOUND equ 1 ;иконка не известного блока
-ID_ICON_DATA equ 2 ;иконка для данных блока, не определенной структуры
-ID_ICON_POINT equ 8
-ID_ICON_POINT_SEL equ 9
-
-FILE_ERROR_CHUNK_SIZE equ -3 ;ошибка в размере блока
 
 align 4
 file_3ds: ;переменные используемые при открытии файла
@@ -591,7 +591,7 @@ but_open_file:
 	mov byte[can_save],0
 	call init_tree
 	stdcall [buf2d_draw], buf_0 ;обновляем буфер на экране
-	call prop_wnd_clear_param ;чистим параметры окна с координатами
+	stdcall obj_clear_param, o3d ;чистим параметры окна с координатами
 	cmp byte[prop_wnd_run],0
 	je @f
 		;чистим окно с координатами
@@ -713,7 +713,7 @@ block_analiz_data:
 			shl eax,3
 			add esi,2
 			sub ecx,2
-			stdcall add_3ds_object, ID_ICON_DATA,ebx,eax,0 ;данные вершин
+			stdcall add_3ds_object, ID_ICON_DATA,ebx,eax,0 ;данные граней
 
 			sub ecx,eax
 			cmp ecx,1
@@ -886,45 +886,9 @@ proc add_3ds_object, icon:dword,level:dword,size_bl:dword,info_bl:dword
 		.no_capt:
 		stdcall [tl_node_add], tree1, ebx, buffer
 		stdcall [tl_cur_next], tree1
-		if debug
-			stdcall print_err,sz_add_3ds_object,buffer+list_offs_text
-		end if
 	popad
 	ret
 endp
-
-if debug
-sz_add_3ds_object db 13,10,'3ds_object',0
-
-align 4
-proc print_err, fun:dword, mes:dword ;выводим сообщение об шибке на доску отладки
-	pushad
-	mov eax,63
-	mov ebx,1
-
-	mov esi,[fun]
-	@@:
-		mov cl,byte[esi]
-		int 0x40
-		inc esi
-		cmp byte[esi],0
-		jne @b
-	mov cl,':'
-	int 0x40
-	mov cl,' '
-	int 0x40
-	mov esi,[mes]
-	@@:
-		mov cl,byte[esi]
-		int 0x40
-		inc esi
-		cmp byte[esi],0
-		jne @b
-	popad
-	ret
-endp
-
-end if
 
 ;input:
 ; eax - value
@@ -1078,77 +1042,6 @@ but_delete_chunk:
 	.end_f:
 	popad
 	ret
-
-;input:
-; buf - указатель на строку, число должно быть в 10 или 16 ричном виде
-;output:
-; eax - число
-align 4
-proc conv_str_to_int uses ebx ecx esi, buf:dword
-	xor eax,eax
-	xor ebx,ebx
-	mov esi,[buf]
-	;определение отрицательных чисел
-	xor ecx,ecx
-	inc ecx
-	cmp byte[esi],'-'
-	jne @f
-		dec ecx
-		inc esi
-	@@:
-
-	cmp word[esi],'0x'
-	je .load_digit_16
-
-	.load_digit_10: ;считывание 10-тичных цифр
-		mov bl,byte[esi]
-		cmp bl,'0'
-		jl @f
-		cmp bl,'9'
-		jg @f
-			sub bl,'0'
-			imul eax,10
-			add eax,ebx
-			inc esi
-			jmp .load_digit_10
-	jmp @f
-
-	.load_digit_16: ;считывание 16-ричных цифр
-		add esi,2
-	.cycle_16:
-		mov bl,byte[esi]
-		cmp bl,'0'
-		jl @f
-		cmp bl,'f'
-		jg @f
-		cmp bl,'9'
-		jle .us1
-			cmp bl,'A'
-			jl @f ;отсеиваем символы >'9' и <'A'
-		.us1: ;составное условие
-		cmp bl,'F'
-		jle .us2
-			cmp bl,'a'
-			jl @f ;отсеиваем символы >'F' и <'a'
-			sub bl,32 ;переводим символы в верхний регистр, для упрощения их последущей обработки
-		.us2: ;составное условие
-			sub bl,'0'
-			cmp bl,9
-			jle .cor1
-				sub bl,7 ;convert 'A' to '10'
-			.cor1:
-			shl eax,4
-			add eax,ebx
-			inc esi
-			jmp .cycle_16
-	@@:
-	cmp ecx,0 ;если число отрицательное
-	jne @f
-		sub ecx,eax
-		mov eax,ecx
-	@@:
-	ret
-endp
 
 ;данные для диалога открытия файлов
 align 4
@@ -1491,7 +1384,7 @@ dd 0,0
 	aini_get_color db 'ini_get_color',0
 
 align 4
-mouse_dd dd 0x0
+mouse_dd dd 0
 last_time dd 0
 
 align 4
@@ -1542,9 +1435,9 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru
-capt db 'info 3ds версия 01.01.16',0 ;подпись окна
+capt db 'info 3ds версия 09.01.16',0 ;подпись окна
 else
-capt db 'info 3ds version 01.01.16',0 ;window caption
+capt db 'info 3ds version 09.01.16',0 ;window caption
 end if
 
 align 16
@@ -1563,6 +1456,8 @@ i_end:
 	color_vert rd 1
 	color_face rd 1
 	color_select rd 1
+	obj_poi_sel_c rd 1
+	o3d obj_3d
 	rb 2048
 align 16
 thread_coords:

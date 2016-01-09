@@ -12,25 +12,6 @@ prop_wnd_height equ 460 ;высота окна со свойствами объекта
 SIZE_ONE_FLOAT equ 14
 MAX_OBJECT_SIZE equ (4+SIZE_ONE_FLOAT*3+1)
 
-bit_vertexes equ 0
-bit_faces equ 1
-bit_faces_fill equ 2
-bit_light equ 3
-
-ini_name db 'info3ds.ini',0
-ini_sec_w3d db 'Window 3d',0
-key_dv  db 'draw_vertices',0
-key_df  db 'draw_faces',0
-key_dff db 'draw_faces_fill',0
-key_dl  db 'draw_light',0
-key_ox  db 'col_ox',0
-key_oy  db 'col_oy',0
-key_oz  db 'col_oz',0
-key_bk  db 'col_bkgnd',0
-key_vert db 'col_vertices',0
-key_face db 'col_faces',0
-key_select db 'col_select',0
-
 prop_wnd_run db 0 ;переменная следящая за тем что-бы не запускать больше 1-го окна со свойствами одновременно
 
 txt_q db '?',0
@@ -38,8 +19,6 @@ txt_space:
 	db SIZE_ONE_FLOAT dup(' ')
 .end:
 	db 0
-
-rad_c dd 150 ;для вычисления радиуса
 
 obj_point: ;добавляемый объект
 	dd 0   ;указатель
@@ -61,7 +40,8 @@ pushad
 	mcall 40,0x27 ;маска ожидаемых событий
 	inc byte[prop_wnd_run]
 	mov dword[w_scr_t3.type],1
-	call prop_wnd_clear_param
+	mov edi,o3d
+	stdcall obj_clear_param, edi
 
 	stdcall [tl_node_get_data],tree1
 	xor edx,edx
@@ -148,9 +128,9 @@ pushad
 				cmp word[eax],CHUNK_FACELIST
 				jne .cycle_2
 				movzx ecx,word[eax+6]
-				mov [obj_tri_count],ecx
+				mov [edi+offs_obj_tri_count],ecx
 				add eax,8 ;2+4+2 (chunk+size+count)
-				mov [obj_tri_data],eax
+				mov [edi+offs_obj_tri_data],eax
 			jmp .set_points
 		.end_vlist:
 		cmp word[ebx],CHUNK_TRACKPIVOT
@@ -168,8 +148,8 @@ pushad
 			;jmp .set_points
 		@@:
 		.set_points:
-		mov [obj_poi_data],ebx
-		mov [obj_poi_count],edx
+		mov [edi+offs_obj_poi_data],ebx
+		mov [edi+offs_obj_poi_count],edx
 	.no_points:
 
 	;настройка списка объектов
@@ -212,8 +192,8 @@ pushad
 			jg .new_point
 			stdcall dword[tl_cur_beg], tree3
 	.no_object:
-	call obj_set_sizes
-	call obj_set_normals
+	stdcall obj_set_sizes, o3d
+	stdcall obj_set_normals, o3d
 	edit_boxes_set_sys_color edit1,editboxes_end,sc ;установка системных цветов
 	stdcall [edit_box_set_text], edit1, txt_q
 	stdcall [edit_box_set_text], edit2, txt_q
@@ -317,527 +297,9 @@ pushad
 	stdcall [edit_box_draw], edit3
 
 	stdcall [kmainmenu_draw], [main_menu]
-	call draw_3d
+	stdcall draw_3d, o3d
 	mcall 12,2
 popad
-	ret
-
-;установка всех основных переменных по умолчанию
-align 4
-prop_wnd_clear_param:
-	;установка параметров отображения
-	call mnu_reset_settings
-
-	;обнуление указателей на данные объектов
-	mov dword[obj_poi_data],0
-	mov dword[obj_poi_count],0
-	mov dword[obj_poi_sel_c],0
-	mov dword[obj_tri_data],0
-	mov dword[obj_tri_count],0
-	mov dword[obj_normals_tri_count],0
-	mov dword[obj_normals_poi_count],0
-	stdcall mem.Free,[obj_normals_tri_data]
-	stdcall mem.Free,[obj_normals_poi_data]
-	mov dword[obj_normals_tri_data],0
-	mov dword[obj_normals_poi_data],0
-	ret
-
-;поиск данных
-;input:
-;eax - текущий узел
-;output:
-;eax - структура текущего узла (или 0 при неудаче)
-align 4
-proc found_block_data uses ebx ecx edx, tlist:dword
-	mov edx,[tlist]
-	mov ecx,eax
-	stdcall [tl_node_poi_get_info], edx,0
-	@@:
-		mov ebx,eax
-		stdcall [tl_node_poi_get_data], edx,ebx
-		cmp eax,ecx
-		je @f ;если попали на выбранный узел
-		stdcall [tl_node_poi_get_next_info], edx,ebx
-		cmp eax,0
-		jne @b
-		jmp .end
-	@@:
-		mov eax,ebx
-	.end:
-	ret
-endp
-
-;установка размеров объекта
-align 4
-proc obj_set_sizes uses eax ebx esi
-	cmp dword[obj_poi_count],0
-	je .end
-		finit
-		mov eax,[obj_poi_data]
-		mov ebx,dword[eax]
-		mov [obj_x_min],ebx
-		mov [obj_x_max],ebx
-		mov ebx,dword[eax+4]
-		mov [obj_y_min],ebx
-		mov [obj_y_max],ebx
-		mov ebx,dword[eax+8]
-		mov [obj_z_min],ebx
-		mov [obj_z_max],ebx
-
-	mov ebx,[obj_poi_data]
-	mov esi,[obj_poi_count]
-align 4
-	.cycle_0: ;работа с координатой x
-		fld dword[ebx]
-		fld dword[obj_x_min]
-		fcomp
-		fstsw ax
-		sahf
-		jb @f
-			mov eax,[ebx]
-			mov [obj_x_min],eax
-			ffree st0
-			fincstp
-			jmp .next_x
-		@@:
-		fld dword[obj_x_max]
-		fcompp
-		fstsw ax
-		sahf
-		ja .next_x
-			mov eax,[ebx]
-			mov [obj_x_max],eax
-		.next_x:
-
-		add ebx,12
-		dec esi
-		jnz .cycle_0
-
-		fld1
-		fld dword[obj_x_max]
-		fsub dword[obj_x_min]
-		fst dword[obj_x_centr]
-		fdivp ;1/size.x
-		fstp dword[obj_x_scale]
-
-		fld dword[obj_x_centr]
-		fld1
-		fld1
-		faddp
-		fdivp ;centr.x = size.x/2
-		fadd dword[obj_x_min]
-		fchs
-		fstp dword[obj_x_centr]
-
-	mov ebx,[obj_poi_data]
-	mov esi,[obj_poi_count]
-align 4
-	.cycle_1: ;работа с координатой y
-		fld dword[ebx+4]
-		fld dword[obj_y_min]
-		fcomp
-		fstsw ax
-		sahf
-		jb @f
-			mov eax,[ebx+4]
-			mov [obj_y_min],eax
-			ffree st0
-			fincstp
-			jmp .next_y
-		@@:
-		fld dword[obj_y_max]
-		fcompp
-		fstsw ax
-		sahf
-		ja .next_y
-			mov eax,[ebx+4]
-			mov [obj_y_max],eax
-		.next_y:
-
-		add ebx,12
-		dec esi
-		jnz .cycle_1
-
-		fld1
-		fld dword[obj_y_max]
-		fsub dword[obj_y_min]
-		fst dword[obj_y_centr]
-		fdivp ;1/size.y
-		fstp dword[obj_y_scale]
-
-		fld dword[obj_y_centr]
-		fld1
-		fld1
-		faddp
-		fdivp ;centr.y = size.y/2
-		fadd dword[obj_y_min]
-		fchs
-		fstp dword[obj_y_centr]
-
-	mov ebx,[obj_poi_data]
-	mov esi,[obj_poi_count]
-align 4
-	.cycle_2: ;работа с координатой z
-		fld dword[ebx+8]
-		fld dword[obj_z_min]
-		fcomp
-		fstsw ax
-		sahf
-		jb @f
-			mov eax,[ebx+8]
-			mov [obj_z_min],eax
-			ffree st0
-			fincstp
-			jmp .next_z
-		@@:
-		fld dword[obj_z_max]
-		fcompp
-		fstsw ax
-		sahf
-		ja .next_z
-			mov eax,[ebx+8]
-			mov [obj_z_max],eax
-		.next_z:
-
-		add ebx,12
-		dec esi
-		jnz .cycle_2
-
-		fld1
-		fld dword[obj_z_max]
-		fsub dword[obj_z_min]
-		fst dword[obj_z_centr]
-		fdivp ;1/size.z
-		fstp dword[obj_z_scale]
-
-		fld dword[obj_z_centr]
-		fld1
-		fld1
-		faddp
-		fdivp ;centr.z = size.z/2
-		fadd dword[obj_z_min]
-		fchs
-		fstp dword[obj_z_centr]
-
-		;находим радиус для сферы
-		fld dword[obj_x_max]
-		fsub dword[obj_x_min]
-		fld dword[obj_y_max]
-		fsub dword[obj_y_min]
-		faddp
-		fild dword[rad_c]
-		fdivp ;radius=(size.x+size.y)/rad_c
-		fstp dword[sph_radius]
-
-	;делаем одинаковый масштаб по осям x и y, что-бы не нарушались пропорции изображения
-	fld dword[obj_y_scale]
-	fdiv dword[ratio] ;приведение масштаба по оси y учитывая что по высоте экран меньше
-	fcomp dword[obj_x_scale]
-	fstsw ax
-	sahf
-	jb @f
-		;сжатие масштаба по y
-		fld dword[obj_x_scale]
-		fmul dword[ratio]
-		fstp dword[obj_y_scale] ;масштаб по оси y = масштаб по оси x
-		jmp .end
-	@@:
-		;сжатие масштаба по x >...<
-		fld	dword[obj_x_scale]
-		fdiv dword[ratio]
-		fstp dword[obj_x_scale]
-	.end:
-	ret
-endp
-
-;установка нормалей для граней
-align 4
-proc obj_set_normals
-locals
-	tbl1 rd 9 ;ebp-72
-	tbl2 rd 9 ;ebp-36
-endl
-pushad
-	cmp dword[obj_poi_count],0
-	je .end
-		finit
-		mov ecx,[obj_tri_count]
-		mov [obj_normals_tri_count],ecx ;на каждый треугольник 1 нармаль
-		cmp ecx,0
-		je .end
-		imul ecx,12
-		stdcall mem.Alloc, ecx
-		mov [obj_normals_tri_data],eax
-
-		mov edx,[obj_tri_data]
-		mov ebx,[obj_tri_count]
-align 4
-		@@:
-			mov edi,ebp
-			sub edi,36 ;tbl2
-			movzx esi,word[edx] ;1-я вершина
-			imul esi,12
-			add esi,[obj_poi_data]
-			mov ecx,3
-			rep movsd
-			movzx esi,word[edx+2] ;2-я вершина
-			imul esi,12
-			add esi,[obj_poi_data]
-			mov ecx,3
-			rep movsd
-			movzx esi,word[edx+4] ;3-я вершина
-			imul esi,12
-			add esi,[obj_poi_data]
-			mov ecx,3
-			rep movsd
-
-			mov esi,ebp
-			sub esi,72 ;tbl1
-			sub edi,36 ;tbl2
-			;v1 <-> v2
-			fld dword[edi+12]
-			fsub dword[edi]
-			fstp dword[esi] ;(x1-x2)
-			fld dword[edi+16]
-			fsub dword[edi+4]
-			fstp dword[esi+4] ;(y1-y2)
-			fld dword[edi+20]
-			fsub dword[edi+8]
-			fstp dword[esi+8] ;(z1-z2)
-			;v2 <-> v3
-			fld dword[edi+24]
-			fsub dword[edi+12]
-			fstp dword[esi+12] ;(x2-x3)
-			fld dword[edi+28]
-			fsub dword[edi+16]
-			fstp dword[esi+16] ;(y2-y3)
-			fld dword[edi+32]
-			fsub dword[edi+20]
-			fstp dword[esi+20] ;(z2-z3)
-			;v3 <-> v1
-			fld dword[edi]
-			fsub dword[edi+24]
-			fstp dword[esi+24] ;(x3-x1)
-			fld dword[edi+4]
-			fsub dword[edi+28]
-			fstp dword[esi+28] ;(y3-y1)
-			fld dword[edi+8]
-			fsub dword[edi+32]
-			fstp dword[esi+32] ;(z3-z1)
-
-			;a1,a2,a3
-			fld dword[esi+4]
-			fmul dword[esi+8]
-			fstp dword[edi] ;a1=(y1-y2)*(z1-z2)
-			fld dword[esi+16]
-			fmul dword[esi+20]
-			fstp dword[edi+4] ;a2=(y2-y3)*(z2-z3)
-			fld dword[esi+28]
-			fmul dword[esi+32]
-			fstp dword[edi+8] ;a3=(y3-y1)*(z3-z1)
-			;b1,b2,b3
-			fld dword[esi]
-			fmul dword[esi+8]
-			fstp dword[edi] ;b1=(x1-x2)*(z1-z2)
-			fld dword[esi+12]
-			fmul dword[esi+20]
-			fstp dword[edi+4] ;b2=(x2-x3)*(z2-z3)
-			fld dword[esi+24]
-			fmul dword[esi+32]
-			fstp dword[edi+8] ;b3=(x3-x1)*(z3-z1)
-			;c1,с2,с3
-			fld dword[esi]
-			fmul dword[esi+4]
-			fstp dword[edi] ;c1=(x1-x2)*(y1-y2)
-			fld dword[esi+12]
-			fmul dword[esi+16]
-			fstp dword[edi+4] ;c2=(x2-x3)*(y2-y3)
-			fld dword[esi+24]
-			fmul dword[esi+28]
-			fstp dword[edi+8] ;c3=(x3-x1)*(y3-y1)
-			
-			fld dword[edi]
-			fadd dword[edi+4]
-			fadd dword[edi+8]
-			fstp dword[eax] ;set normal.a
-			fld dword[edi+12]
-			fadd dword[edi+16]
-			fadd dword[edi+20]
-			fstp dword[eax+4] ;set normal.b
-			fld dword[edi+24]
-			fadd dword[edi+28]
-			fadd dword[edi+32]
-			fstp dword[eax+8] ;set normal.c
-			
-			add edx,8 ;размер треугольника = (3 вершины (по 2б) + свойства (2б))
-			add eax,12
-			dec ebx
-			jnz @b
-	.end:
-popad
-	ret
-endp
-
-;рисование точек в 3d
-align 4
-draw_3d:
-	cmp dword[obj_poi_count],2
-	jl .end_f
-	stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
-	stdcall [glPushMatrix]
-	bt dword[draw_mode],bit_light
-	jnc @f
-		call SetLight
-		jmp .end_l
-	@@:
-		stdcall [glDisable],GL_LIGHTING
-	.end_l:
-	stdcall [glTranslatef], 0.0,0.0,0.5 ;correct for z
-	stdcall [glScalef], [obj_x_scale],[obj_y_scale],[obj_z_scale]
-	stdcall [glScalef], 1.0,1.0,0.7 ;correct for z
-	stdcall [glRotatef], [angle_z],0.0,0.0,1.0
-	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
-	stdcall [glRotatef], [angle_x],1.0,0.0,0.0
-	stdcall [glTranslatef], [obj_x_centr],[obj_y_centr],[obj_z_centr]
-
-	;рисование точек
-	bt dword[draw_mode],bit_vertexes
-	jnc .end_points
-		stdcall [glColor3ub],[color_vert+2],[color_vert+1],[color_vert]
-		stdcall [glBegin],GL_POINTS
-		mov eax,[obj_poi_data]
-		mov ebx,[obj_poi_count]
-		@@:
-			stdcall [glVertex3f], [eax],[eax+4],[eax+8]
-			add eax,12
-			dec ebx
-			jnz @b
-		stdcall [glEnd]
-	.end_points:
-
-	;рисование активной точки
-	stdcall [tl_node_get_data],tree3
-	cmp eax,0
-	je @f
-		;выделение активной точки
-		mov eax,[eax]
-
-		stdcall [glBegin],GL_LINES
-		stdcall [glColor3ub],[color_ox+2],[color_ox+1],[color_ox]
-		stdcall [glVertex3f], [obj_x_min],[eax+4],[eax+8]
-		stdcall [glVertex3f], [obj_x_max],[eax+4],[eax+8]
-		stdcall [glColor3ub],[color_oy+2],[color_oy+1],[color_oy]
-		stdcall [glVertex3f], [eax],[obj_y_min],[eax+8]
-		stdcall [glVertex3f], [eax],[obj_y_max],[eax+8]
-		stdcall [glColor3ub],[color_oz+2],[color_oz+1],[color_oz]
-		stdcall [glVertex3f], [eax],[eax+4],[obj_z_min]
-		stdcall [glVertex3f], [eax],[eax+4],[obj_z_max]
-		stdcall [glEnd]
-
-		stdcall [glColor3ub],[color_select+2],[color_select+1],[color_select]
-		stdcall [glPushMatrix]
-			stdcall [glTranslatef], [eax],[eax+4],[eax+8]
-			stdcall [gluSphere], [qObj], [sph_radius], 8,8
-		stdcall [glPopMatrix]
-	@@:
-
-	;рисование выделенных точек
-	cmp dword[obj_poi_sel_c],0
-	je .end_select
-		mov ecx,dword[obj_poi_sel_c]
-		stdcall [glColor3ub],[color_select+2],[color_select+1],[color_select]
-		stdcall dword[tl_node_poi_get_info], tree3,0
-		@@:
-			cmp eax,0
-			je .end_select
-			mov ebx,eax
-			cmp word[ebx],ID_ICON_POINT_SEL
-			jne .next_sel
-			stdcall [tl_node_poi_get_data], tree3,ebx
-			mov eax,[eax]
-			stdcall [glPushMatrix]
-				stdcall [glTranslatef], [eax],[eax+4],[eax+8]
-				stdcall [gluSphere], [qObj], [sph_radius], 4,4
-			stdcall [glPopMatrix]
-			dec ecx
-			jz .end_select
-			.next_sel:
-			stdcall dword[tl_node_poi_get_next_info], tree3,ebx
-			jmp @b
-    .end_select:
-
-	;рисование граней
-	bt dword[draw_mode],bit_faces
-	jnc .end_triangles
-	cmp dword[obj_tri_count],0
-	je .end_triangles
-	cmp dword[obj_poi_count],0
-	je .end_triangles
-		bt dword[draw_mode],bit_faces_fill
-		jc @f
-			push GL_LINE
-			jmp .end_0
-		@@:
-			push GL_FILL
-		.end_0:
-		stdcall [glPolygonMode], GL_FRONT_AND_BACK ;mode - уже в стеке
-		stdcall [glColor3ub],[color_face+2],[color_face+1],[color_face]
-		stdcall [glBegin],GL_TRIANGLES
-		mov eax,[obj_tri_data]
-		mov ecx,[obj_tri_count]
-		mov edx,[obj_normals_tri_data]
-		@@:
-			;
-			bt dword[draw_mode],bit_light
-			jnc .norm
-				;[obj_normals_tri_count]
-				stdcall [glNormal3fv], edx
-				add edx,12
-			.norm:
-			;
-			movzx ebx,word[eax] ;1-я вершина
-			imul ebx,12
-			add ebx,[obj_poi_data]
-			stdcall [glVertex3f], [ebx],[ebx+4],[ebx+8]
-			movzx ebx,word[eax+2] ;2-я вершина
-			imul ebx,12
-			add ebx,[obj_poi_data]
-			stdcall [glVertex3f], [ebx],[ebx+4],[ebx+8]
-			movzx ebx,word[eax+4] ;3-я вершина
-			imul ebx,12
-			add ebx,[obj_poi_data]
-			stdcall [glVertex3f], [ebx],[ebx+4],[ebx+8]
-			add eax,8 ;размер треугольника = (3 вершины (по 2б) + свойства (2б))
-			dec ecx
-			jnz @b
-		stdcall [glEnd]
-	.end_triangles:
-
-	stdcall [glPopMatrix]
-	cmp dword[obj_poi_sel_c],0
-	je @f
-		stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_select_vert,5,3,[color_select]
-	@@:
-	stdcall [kosglSwapBuffers]
-	.end_f:
-	ret
-
-align 4
-SetLight:
-	stdcall [glLightfv], GL_LIGHT0, GL_POSITION, light_position
-	stdcall [glLightfv], GL_LIGHT0, GL_SPOT_DIRECTION, light_dir
-
-	stdcall [glLightfv], GL_LIGHT0, GL_DIFFUSE, white_light
-	stdcall [glLightfv], GL_LIGHT0, GL_SPECULAR, white_light
-
-	stdcall [glEnable], GL_COLOR_MATERIAL
-	stdcall [glColorMaterial], GL_FRONT, GL_AMBIENT_AND_DIFFUSE
-	stdcall [glMaterialfv], GL_FRONT, GL_SPECULAR, mat_specular
-	stdcall [glMaterialf], GL_FRONT, GL_SHININESS, mat_shininess
-	stdcall [glLightModelfv], GL_LIGHT_MODEL_AMBIENT, lmodel_ambient
-
-	stdcall [glEnable],GL_LIGHTING
-	stdcall [glEnable],GL_LIGHT0
 	ret
 
 align 4
@@ -870,7 +332,7 @@ proc prop_key uses eax ebx
 		fld dword[angle_x]
 		fadd dword[delt_size]
 		fstp dword[angle_x]
-		call draw_3d
+		stdcall draw_3d, o3d
 		jmp .end
 	@@:
 	cmp ah,177 ;Down
@@ -878,7 +340,7 @@ proc prop_key uses eax ebx
 		fld dword[angle_x]
 		fsub dword[delt_size]
 		fstp dword[angle_x]
-		call draw_3d
+		stdcall draw_3d, o3d
 		jmp .end
 	@@:
 	cmp ah,176 ;Left
@@ -886,7 +348,7 @@ proc prop_key uses eax ebx
 		fld dword[angle_y]
 		fadd dword[delt_size]
 		fstp dword[angle_y]
-		call draw_3d
+		stdcall draw_3d, o3d
 		jmp .end
 	@@:
 	cmp ah,179 ;Right
@@ -894,7 +356,7 @@ proc prop_key uses eax ebx
 		fld dword[angle_y]
 		fsub dword[delt_size]
 		fstp dword[angle_y]
-		call draw_3d
+		stdcall draw_3d, o3d
 		;jmp .end
 	@@:
 	.end:
@@ -947,7 +409,7 @@ prop_mouse:
 		fadd dword[angle_y]
 		fstp dword[angle_y]
 
-		call draw_3d
+		stdcall draw_3d, o3d
 		jmp .end_d
 	.end_m:
 	bt eax,16
@@ -993,7 +455,7 @@ prop_button:
 	cmp ah,3
 	jne @f
 		call get_point_coords
-		call draw_3d
+		stdcall draw_3d, o3d
 		jmp prop_still.end
 	@@:
 	cmp ah,4
@@ -1058,7 +520,7 @@ prop_button:
 			stdcall dword[tl_draw], tree3
 			mov byte[can_save],1 ;для показа кнопки 'Сохранить'
 			mov dword[offs_last_timer],0 ;для обновления блока в таймере
-			call draw_3d
+			stdcall draw_3d, o3d
 		.no_select_1:
 		pop esi edi ecx ebx eax
 		jmp prop_still.end
@@ -1120,10 +582,11 @@ prop_button:
 	mov dword[tree3.data_img],0 ;чистим указатели на иконки что-бы их не удалил деструктор
 	mov dword[tree3.data_img_sys],0 ;т. к. они еще используються в других элементах
 	stdcall dword[tl_data_clear], tree3
-	stdcall mem.Free,[obj_normals_tri_data]
-	stdcall mem.Free,[obj_normals_poi_data]
-	mov dword[obj_normals_tri_data],0
-	mov dword[obj_normals_poi_data],0
+	mov edi,o3d
+	stdcall mem.Free,[edi+offs_obj_normals_tri_data]
+	stdcall mem.Free,[edi+offs_obj_normals_poi_data]
+	mov dword[edi+offs_obj_normals_tri_data],0
+	mov dword[edi+offs_obj_normals_poi_data],0
 	mov byte[prop_wnd_run],0 ;обнуляем счетчик окон
 	mcall -1 ;выход из программы
 
@@ -1163,43 +626,10 @@ proc prop_timer_funct uses eax
 	cmp [cursor_last_draw],eax
 	je @f
 		mov [cursor_last_draw],eax
-		call draw_3d
+		stdcall draw_3d, o3d
 	@@:
 	ret
 endp
-
-;изменяем режим рисования вершин
-align 4
-mnu_vertexes_on_off:
-	xor dword[draw_mode], 1 shl bit_vertexes
-	ret
-
-;изменяем режим рисования граней
-align 4
-mnu_faces_on_off:
-	xor dword[draw_mode], 1 shl bit_faces
-	ret
-
-;изменяем каркасные или сплошные грани
-align 4
-mnu_faces_fill_on_off:
-	xor dword[draw_mode], 1 shl bit_faces_fill
-	or  dword[draw_mode], 1 shl bit_faces ;включаем режим рисования граней (если вдруг был отключен)
-	ret
-
-;включаем или отключаем освещение
-align 4
-mnu_light_on_off:
-	xor dword[draw_mode], 1 shl bit_light
-	ret
-
-align 4
-mnu_reset_settings:
-	mov dword[angle_x],0.0
-	mov dword[angle_y],0.0
-	mov dword[angle_z],0.0
-	m2m dword[draw_mode],dword[def_dr_mode]
-	ret
 
 align 4
 proc mnu_vertexes_select uses eax ebx
@@ -1427,42 +857,10 @@ popad
 endp
 
 align 4
-def_dr_mode dd 0 ;режим рисования по умолчанию
-delt_size dd 3.0 ;изменение углов при поворотах с кливиатуры
-mouse_drag dd 0 ;режим поворота сцены от перемещении курсора мыши
-mouse_x dd 0
-mouse_y dd 0
 angle_dxm dd 1.7775 ;~ 3d_wnd_w/180 - прибавление углов поворота сцены при вращении мышей
 angle_dym dd 1.3335 ;~ 3d_wnd_h/180
 ratio dd 1.3333 ;~ 3d_wnd_w/3d_wnd_h
-;angle_dzm dd ?
-draw_mode dd 0 ;режим рисования объекта
-obj_poi_data dd 0 ;указатель на координаты вершин
-obj_poi_count dd 0 ;колличество вершин
-obj_poi_sel_c dd 0 ;колличество выделенных вершин
-obj_tri_data dd 0 ;указатель на данные треугольников
-obj_tri_count dd 0 ;колличество треугольников
 cursor_last_draw dd 0 ;положение курсора при последней прорисовке 3d окна
-sph_radius dd 0 ;радиус сферы для выделения активной точки
-
-obj_normals_poi_data dd 0
-obj_normals_poi_count dd 0
-obj_normals_tri_data dd 0
-obj_normals_tri_count dd 0
-
-obj_x_max dd 0
-obj_x_min dd 0
-obj_x_centr dd 0
-obj_x_scale dd 1.0
-obj_y_max dd 0
-obj_y_min dd 0
-obj_y_centr dd 0
-obj_y_scale dd 1.0
-obj_z_max dd 0
-obj_z_min dd 0
-obj_z_centr dd 0
-obj_z_scale dd 1.0
-
 capt_p dd 0
 
 ;дерево с объектами в пользовательском файле
