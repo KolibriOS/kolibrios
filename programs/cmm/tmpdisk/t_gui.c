@@ -231,7 +231,10 @@ void DrawTmpDisks()
 		real_id = disk_list[i].Item[3] - '0';
 		WriteText(disk_pos_x[i]+25,disk_pos_y[i]+19, 0x80, 0x888888, ConvertSize(disk_sizes[real_id]));
 		_PutImage(disk_pos_x[i]+5,disk_pos_y[i]+4, 14,14, 2*14*14*3+#icons);
-		if (selected==i) DrawRectangle(disk_pos_x[i], disk_pos_y[i], 65-1, 30-1, 0x00459A);
+		if (selected==i) {
+			DrawWideRectangle(disk_pos_x[i], disk_pos_y[i], 65, 30, 2, 0x0080FF);
+			PutPixel(disk_pos_x[i], disk_pos_y[i], 0xFFFfff);
+		}
 	}
 }
 

@@ -70,7 +70,6 @@ void Downloader()
 				break;
 				
 			default:
-				if (DL_Form.width==0) break; //WTF?
 				if (!downloader.MonitorProgress()) break;
 				pb.max = downloader.data_full_size;
 				if (pb.value != downloader.data_downloaded_size)
