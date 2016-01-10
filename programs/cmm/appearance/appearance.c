@@ -234,8 +234,7 @@ void DrawTab(dword x,y, but_id, is_active, text)
 		col_bg=system.color.work;
 		col_text=system.color.work_text;
 	} 
-	DrawRectangle(x,y, w,h, system.color.work_graph);
-	DrawCaptButton(x+1,y+1, w-2,h-1, but_id, col_bg, col_text, text);
+	DrawCaptButton(x,y, w-1,h+1, but_id, col_bg, col_text, text);
 	_PutImage(x+6,y+4,  16,15,   but_id-2*16*15*3+#icons);
 }
 
