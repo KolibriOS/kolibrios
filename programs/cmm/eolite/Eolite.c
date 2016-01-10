@@ -22,8 +22,6 @@
 //patterns
 #include "..\lib\patterns\history.h"
 
-byte CMD_ENABLE_SAVE_IMG = false;
-
 //images
 #include "imgs\toolbar.txt"
 #include "imgs\left_p.txt"

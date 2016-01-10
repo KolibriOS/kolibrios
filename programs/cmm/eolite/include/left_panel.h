@@ -117,7 +117,6 @@ void _SystemDiscs::Get()
 			if (temp_file_count) list.add("/kolibrios/");
 			free(tempbuf);
 		}
-		else if (!strcmp(#sys_discs, "/fd/1/")) CMD_ENABLE_SAVE_IMG = true;
 	}
 	free(devbuf);
 }

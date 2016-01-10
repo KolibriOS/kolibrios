@@ -44,7 +44,6 @@ void settings_dialog()
 				else if (id==6)
 				{
 					ini_set_str stdcall (eolite_ini_path, #config_section, "DefaultPath", #path,strlen(#path));
-					IF(CMD_ENABLE_SAVE_IMG)ini_set_str stdcall (fd_path_eolite_ini_path, #config_section, "DefaultPath", #path,strlen(#path));
 					break;
 				}
 				else if (id==20) show_dev_name ^= 1;
@@ -116,24 +115,19 @@ void LoadIniSettings()
 	if(!strcmp(#temp,"off")) label.smooth = false; else label.smooth = true;
 }
 
-void ProceedSaveSettings(dword save_path) 
-{
-	ini_set_int stdcall (save_path, #config_section, "ShowDeviceName", show_dev_name);
-	ini_set_int stdcall (save_path, #config_section, "RealFileNamesCase", real_files_names_case);
-	ini_set_int stdcall (save_path, #config_section, "InfoAfterCopy", info_after_copy);
-	ini_set_int stdcall (save_path, #config_section, "FontSize", label.size.pt);
-	ini_set_int stdcall (save_path, #config_section, "TwoPanels", two_panels);
-	ini_set_int stdcall (save_path, #config_section, "LineHeight", files.item_h);
-	ini_set_int stdcall (save_path, #config_section, "WinX", Form.left);
-	ini_set_int stdcall (save_path, #config_section, "WinY", Form.top);
-	ini_set_int stdcall (save_path, #config_section, "WinW", Form.width);
-	ini_set_int stdcall (save_path, #config_section, "WinH", Form.height);
-}
 
 void SaveIniSettings()
 {
-	ProceedSaveSettings(eolite_ini_path);
-	if(CMD_ENABLE_SAVE_IMG) ProceedSaveSettings(fd_path_eolite_ini_path);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "ShowDeviceName", show_dev_name);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "RealFileNamesCase", real_files_names_case);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "InfoAfterCopy", info_after_copy);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "FontSize", label.size.pt);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "TwoPanels", two_panels);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "LineHeight", files.item_h);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "WinX", Form.left);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "WinY", Form.top);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "WinW", Form.width);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "WinH", Form.height);
 }
 
 
