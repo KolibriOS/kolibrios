@@ -59,6 +59,7 @@ edit_box address_box = {250,56,34,0xffffff,0x94AECE,0xffffff,0xffffff,0,UML,#add
 
 #include "ini.h"
 #include "gui.h"
+#include "label.h"
 #include "prepare_page.h"
 
 void InitDlls()
@@ -96,12 +97,13 @@ void main()
 				HandleButtonEvent();
 				break;
 			case evReDraw:
+				draw_window();
 				if (menu.list.cur_y) {
 					encoding = menu.list.cur_y - 10;
 					debugln("evReDraw: charset changed");
 					EventOpenAddress(history.current());
+					menu.list.cur_y = 0;
 				}
-				draw_window();
 		}
 	}
 }
@@ -268,7 +270,7 @@ char temp[UML];
 		}
 		if (!downloader.Start(#address)) {
 			downloader.Stop();
-		} else {		
+		} else {
 			while (downloader.state!=STATE_COMPLETED)
 			{ 
 				downloader.MonitorProgress(); 

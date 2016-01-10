@@ -210,11 +210,10 @@ byte Cp866ToAnsi(byte s) {
 =====================================================================================*/
 
 
-inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
+inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
 :void LABEL::apply_smooth()
 {
-	dword i,line_w,to;
-	rgb.DwordToRgb(ShadowPixel(background,2)); //get shadowed pixel
+	dword i,line_w,to,dark_background;
 	line_w = size.width * 3;
 	to = size.height - 1 * line_w + raw - 3;
 	for(i=raw; i < to; i+=3)
@@ -223,31 +222,19 @@ inline fastcall dword b24(EBX) { return DSDWORD[EBX] << 8; }
 		// pixels position, where b - black, w - write
 		// bw
 		// wb
-		if(b24(i)==0x000000) && (b24(i+3)!=0x000000) && (b24(i+line_w)!=0x000000) && (b24(i+3+line_w)==0x000000)
+		if(b24(i)!=background) && (b24(i+3)==background) && (b24(i+line_w)==background) && (b24(i+3+line_w)!=background)
 		{
-			ESBYTE[i+3] = rgb.b;
-			ESBYTE[i+4] = rgb.g;
-			ESBYTE[i+5] = rgb.r;
-			ESBYTE[i+line_w  ] = rgb.b;
-			ESBYTE[i+line_w+1] = rgb.g;
-			ESBYTE[i+line_w+2] = rgb.r;
-			// // I don't know why but underneath code works slower then beneath
-			// DSDWORD[i] = DSDWORD[i] & 0xFF000000 | dark_background;
-			// DSDWORD[i+line_w] = DSDWORD[i+3+line_w] & 0xFF000000 | dark_background;			
+			dark_background = MixColors(background,b24(i),200);
+			DSDWORD[i+3] = DSDWORD[i+3] & 0xFF000000 | dark_background;
+			DSDWORD[i+line_w] = DSDWORD[i+line_w] & 0xFF000000 | dark_background;			
 		}
 		// wb
 		// bw
-		else if(b24(i)!=0x000000) && (b24(i+3)==0x000000) && (b24(i+line_w)==0x000000) && (b24(i+3+line_w)!=0x000000)
+		else if(b24(i)==background) && (b24(i+3)!=background) && (b24(i+line_w)!=background) && (b24(i+3+line_w)==background)
 		{
-			ESBYTE[i  ] = rgb.b;
-			ESBYTE[i+1] = rgb.g;
-			ESBYTE[i+2] = rgb.r;
-			ESBYTE[i+line_w+3] = rgb.b;
-			ESBYTE[i+line_w+4] = rgb.g;
-			ESBYTE[i+line_w+5] = rgb.r;
-			// // I don't know why but underneath code works slower then beneath
-			// DSDWORD[i] = DSDWORD[i] & 0xFF000000 | dark_background;
-			// DSDWORD[i+3+line_w] = DSDWORD[i+3+line_w] & 0xFF000000 | dark_background;
+			dark_background = MixColors(background,b24(i+3),200);
+			DSDWORD[i] = DSDWORD[i] & 0xFF000000 | dark_background;
+			DSDWORD[i+3+line_w] = DSDWORD[i+3+line_w] & 0xFF000000 | dark_background;
 		}
 	}
 }

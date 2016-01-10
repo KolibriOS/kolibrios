@@ -42,9 +42,9 @@ dword MakePageWithHistory()
 
 enum {
 	STEP_1_DOWNLOAD_PAGE         =   0,
-	STEP_2_COUNT_PAGE_HEIGHT     =  30,
+	STEP_2_COUNT_PAGE_HEIGHT     =  35,
 	STEP_3_DRAW_PAGE_INTO_BUFFER =  60,
-	STEP_4_SMOOTH_FONT           =  94,
+	STEP_4_SMOOTH_FONT           =  88,
 	STEP_5_STOP                  = 100,
 };
 
@@ -54,22 +54,9 @@ void DrawProgress(int percent)
 	if (percent<100) {
 		progress_width = address_box.width+5*percent/100;
 		DrawBar(address_box.left-3, address_box.top+16, progress_width, 2, 0x72B7EA);
-		//debugi(percent);
 	}
 	else {
 		progress_width = address_box.width+5;
 		DrawBar(address_box.left-3, address_box.top+16, progress_width, 2, 0xFFFfff);
-	}
-}
-
-int progress_percent;
-void DrawProgressWhileDrawing(dword bufoff, buflen) 
-{
-	int progress_cur = bufoff - io.buffer_data;
-	int progress_max = buflen - io.buffer_data;
-	int new_progress_percent = STEP_4_SMOOTH_FONT-STEP_3_DRAW_PAGE_INTO_BUFFER*progress_cur/progress_max + STEP_3_DRAW_PAGE_INTO_BUFFER;
-	if (progress_percent != new_progress_percent) {
-		progress_percent = new_progress_percent;
-		DrawProgress(progress_percent);
 	}
 }

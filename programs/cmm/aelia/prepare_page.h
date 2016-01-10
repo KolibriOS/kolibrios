@@ -1,30 +1,24 @@
-char char_width[255];
 
 void PreparePage() 
 {
-int i;
-	list.SetSizes(0, TOOLBAR_H, Form.cwidth-scroll.size_x-1, Form.cheight-TOOLBAR_H, label.size.pt+1);
+	list.SetSizes(0, TOOLBAR_H, Form.cwidth-scroll.size_x-1, Form.cheight-TOOLBAR_H, label.size.pt+2);
+	strcpy(#title, history.current()+strrchr(history.current(),'/'));
 	//get font chars width, need to increase performance
-	//if (strstri(io.buffer_data, "<html>")==-1) {
+	get_label_symbols_size();
+	ChangeCharset(charsets[encoding], "CP866", io.buffer_data);
+	if (strstri(io.buffer_data, "<html")==-1) {
 		debugln("no <html> found");
-		label.changeSIZE();
-		for (i=0; i<256; i++) char_width[i] = label.symbol_size(i);
-		ChangeCharset(charsets[encoding], "CP866", io.buffer_data);
-		DrawProgress(STEP_2_COUNT_PAGE_HEIGHT);     ParceTxt(false);        //get page height to calculate buffer size
-		DrawProgress(STEP_3_DRAW_PAGE_INTO_BUFFER); ParceTxt(true);         //draw text in buffer
-		DrawProgress(STEP_4_SMOOTH_FONT);           label.apply_smooth();
-		DrawProgress(STEP_5_STOP);                  DrawPage();
-	/*}
-	else {
+		DrawProgress(STEP_2_COUNT_PAGE_HEIGHT);     ParceTxt(false);   //get page height to calculate buffer size
+		DrawProgress(STEP_3_DRAW_PAGE_INTO_BUFFER); ParceTxt(true);    //draw text in buffer
+	} else {
 		debugln("<html> tag found");
-		label.changeSIZE();
-		for (i=0; i<256; i++) char_width[i] = label.symbol_size(i);
-		ChangeCharset(charsets[encoding], "CP866", io.buffer_data);
-		DrawProgress(STEP_2_COUNT_PAGE_HEIGHT);     ParceHtml(false);        //get page height to calculate buffer size
-		DrawProgress(STEP_3_DRAW_PAGE_INTO_BUFFER); ParceHtml(true);         //draw text in buffer
-		DrawProgress(STEP_4_SMOOTH_FONT);           label.apply_smooth();
-		DrawProgress(STEP_5_STOP);                  DrawPage();
-	}*/
+		DrawProgress(STEP_2_COUNT_PAGE_HEIGHT);     ParceHtml(false);  //get page height to calculate buffer size
+		DrawProgress(STEP_3_DRAW_PAGE_INTO_BUFFER); ParceHtml(true);   //draw text in buffer
+	}
+	strcat(#title, " - Aelia");
+	DrawTitle(#title);
+	DrawProgress(STEP_4_SMOOTH_FONT);           label.apply_smooth();
+	DrawProgress(STEP_5_STOP);                  DrawPage();
 }
 
 void ParceTxt(byte draw)
@@ -49,10 +43,8 @@ int stroka_y=5, line_length=0;
 			}
 			if (draw==true) {
 				ESBYTE[bufoff] >< zeroch; //set line end
-				label.write_buf(8,stroka_y,list.w,label.size.height, 0xFFFFFF, 0, label.size.pt, line_start);
+				WriteTextIntoBuf(8, stroka_y, 0x000000, line_start);
 				ESBYTE[bufoff] >< zeroch; //restore line
-				DrawProgressWhileDrawing(bufoff, buflen);
-				if (stroka_y/list.item_h-list.first==list.visible) DrawPage();
 			}
 			stroka_y += list.item_h;
 			line_start = bufoff;
@@ -65,7 +57,7 @@ int stroka_y=5, line_length=0;
 		label.size.height = list.count+1*list.item_h;
 		label.raw_size = 0;
 	} 
-	if (draw==true) label.write_buf(8,stroka_y,list.w,label.size.height, 0xFFFFFF, 0, label.size.pt, line_start);
+	if (draw==true) WriteTextIntoBuf(8, stroka_y, 0x000000, line_start);
 }
 
 
@@ -75,18 +67,7 @@ int stroka_y=5, line_length=0;
 =                                                        =
 ========================================================*/
 
-/*
-HTML parcer tags:
-<title>
-<meta encoding>
-<a hrf="">
-<img src="" alt="">
-<h1> ... <h6>
-<b>
-<u>
-<s>
-<pre>
-*/
+/* <title>   <meta encoding> <a hrf=""> <img src="" alt=""> <h1>..<h6> <b> <u> <s> <pre> */
 
 struct _DOM {
 	dword start;
@@ -99,9 +80,14 @@ struct _style {
 	bool h1, h2, h3, h4, h5, h6;
 	bool a;
 	bool pre;
-	bool title;
-	bool br;
+	bool ignore;
+	dword color;
 } style;
+
+struct _text {
+	dword start;
+	int x, y;
+};
 
 struct _tag {
 	dword start;
@@ -109,77 +95,106 @@ struct _tag {
 	dword param[10];
 	dword value[10];
 	void parce();
-	void get_param_value();
+	int nameis();
 };
 
 void _tag::parce()
 {
-	bool closed_status = false;
-	if (start) debugln(start);
-	/*
-	if (strncmp(start, "/", 1)==0) {
-		start++;
-		closed_status = true;
-	}
-	if (!strcmp(start, "title")) style.title = closed_status;
-	if (!strcmp(start, "br")) style.br = closed_status;
-	*/
+	dword o = name = start;
+	while (ESBYTE[o]!=' ') && (ESBYTE[o]) o++; //searching for a space after tag name
+	ESBYTE[o] = '\0';
+	strlwr(name);
 }
 
-struct _text {
-	dword start;
-	int x, y;
-	void draw();	
-};
-
-void _text::draw()
+int _tag::nameis(dword _in_tag_name)
 {
-	if (start) debugln(start);
-	/*
-	if (style.title) {
-		strlcpy(#title, start, sizeof(title));
-		DrawTitle(#title);
-		return;
-	}
-	if (style.br) {
-		y += list.item_h;
-		style.br = false;
-	}
-	*/
+	if (strcmp(_in_tag_name, name)==0) return true;
+	return false;
 }
+
+#define HTML_PADDING_X 8;
+#define HTML_PADDING_Y 5;
 
 
 void ParceHtml(byte draw)
 {
-byte ch;
+int stroka_x = HTML_PADDING_X;
+int stroka_y = HTML_PADDING_Y;
+dword line_break;
+byte ch, zeroch;
 _DOM DOM;
 _text text;
 _tag tag;
 dword DOM_pos;
 
 	/* Create DOM */
-	debugln("starting DOM parce");
+	debugln("creating DOM");
 	DOM.len = strlen(io.buffer_data);
 	DOM.start = malloc(DOM.len);
 	DOM.end = DOM.start + DOM.len;
 	strlcpy(DOM.start, io.buffer_data, DOM.len);
 
 	/* Parce DOM */
+	debugln("starting DOM parce...");
 	text.start = DOM_pos;
 	for (DOM_pos=DOM.start; DOM_pos<DOM.end; DOM_pos++)
 	{
+		if (ESBYTE[DOM_pos]==0x0D) || (ESBYTE[DOM_pos]==0x0A) ESBYTE[DOM_pos]=' ';
 		ch = ESBYTE[DOM_pos];
+		//debugch(ch);
 		if (ch=='<') {
-			ESBYTE[DOM_pos] = NULL;
+			ESBYTE[DOM_pos] = '\0';
 			tag.start = DOM_pos + 1;
-			text.draw();
+			if (style.ignore) continue;
+			if (tag.nameis("title")) {
+				strcpy(#title, text.start);
+				continue;
+			}
+			while (get_label_len(text.start) + stroka_x + 30 > list.w)
+			{
+				//debugln("long line cut");
+				zeroch = 0;
+				for (line_break=tag.start-1; line_break>text.start; line_break--;)
+				{
+					ESBYTE[line_break] >< zeroch; //set line end
+					if (get_label_len(text.start) + stroka_x + 30 <= list.w) break;
+					ESBYTE[line_break] >< zeroch; //restore line
+				}
+				if (draw==true) {
+					if (style.a) label_draw_bar(stroka_x, stroka_y+label.size.pt+1, get_label_len(text.start), style.color);
+					WriteTextIntoBuf(stroka_x, stroka_y, style.color, text.start);
+				}
+				ESBYTE[line_break] >< zeroch; //restore line
+				text.start = line_break;
+				stroka_x = HTML_PADDING_X;
+				stroka_y += list.item_h;
+			}
+			if (draw==true) {
+				if (style.a) label_draw_bar(stroka_x, stroka_y+label.size.pt+1, get_label_len(text.start), style.color);
+				WriteTextIntoBuf(stroka_x, stroka_y, style.color, text.start);
+			}
+			stroka_x += get_label_len(text.start);
 		}
 		if (ch=='>') {
-			ESBYTE[DOM_pos] = NULL;
+			ESBYTE[DOM_pos] = '\0';
 			text.start = DOM_pos + 1;
 			tag.parce();
+			if (tag.nameis("br")) || (tag.nameis("p")) || (tag.nameis("div")) || (tag.nameis("h1")) || (tag.nameis("h2")) {
+				stroka_y+= list.item_h;
+				stroka_x = HTML_PADDING_X;
+				continue;
+			}
+			if (tag.nameis("script")) || (tag.nameis("style")) style.ignore = true;
+			if (tag.nameis("/script")) || (tag.nameis("/style")) style.ignore = false;
+			if (tag.nameis("a"))  { style.a = true;  style.color=0x0000FF; }
+			if (tag.nameis("/a")) { style.a = false; style.color=0x000000; }
 		}		
 	}
+	if (draw==false) {
+		list.count = stroka_y/list.item_h+2;
+		if (list.count < list.visible) list.count = list.visible;
+		label.size.height = list.count+1*list.item_h;
+		label.raw_size = 0;
+	}
 	free(DOM.start);
-	ExitProcess();
 }
