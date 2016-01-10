@@ -27,7 +27,7 @@ void DisplayOperationForm()
 			else if (operation_flag==MOVE_FLAG) WriteText(45, 11, 0x80, system.color.work_text, T_MOVE_WINDOW_TEXT);
 			else WriteText(45, 11, 0x80, system.color.work_text, T_DELETE_WINDOW_TEXT);
 			
-			DrawFlatButton(Dialog_Form.cwidth - 96, Dialog_Form.cheight - 32, 80, 22, 10, system.color.work_button, T_ABORT_WINDOW_BUTTON);
+			DrawFlatButton(Dialog_Form.cwidth - 96, Dialog_Form.cheight - 32, 80, 22, 10, T_ABORT_WINDOW_BUTTON);
 			DrawBar(8, 10, 32, 32, 0xFFFfff);
 			break;
 	  }

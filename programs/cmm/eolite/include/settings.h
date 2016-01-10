@@ -66,8 +66,8 @@ void settings_dialog()
 			case evReDraw:
 				DefineAndDrawWindow(Form.left + Form.width/2-10, Form.top + Form.height/2 - 75, 370, 243+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
 				DrawSettingsCheckBoxes();
-				DrawFlatButton(9, 166, strlen(SAVE_PATH_AS_DEFAULT)+3*8, 24, 6, 0xE4DFE1, SAVE_PATH_AS_DEFAULT);
-				DrawFlatButton(9, 200, strlen(EDIT_FILE_ASSOCIATIONS)+3*8, 24, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
+				DrawFlatButton(9, 166, strlen(SAVE_PATH_AS_DEFAULT)+3*8, 24, 6, SAVE_PATH_AS_DEFAULT);
+				DrawFlatButton(9, 200, strlen(EDIT_FILE_ASSOCIATIONS)+3*8, 24, 5, EDIT_FILE_ASSOCIATIONS);
 		}
 	}
 }

@@ -147,8 +147,8 @@ void Quest()
 	DrawPopup(30,80,200,90,1,system.color.work, system.color.work_graph);
 	WriteText(50, 100, 0x80, 0x000000, QUEST_1);
 	WriteText(80, 115, 0x80, 0x000000, QUEST_2);
-	DrawFlatButton(52,138,70,20,301,0xFFB6B5,T_YES);
-	DrawFlatButton(145,138,70,20,302,0xC6DFC6,T_NO);
+	DrawFlatButton(52,138,70,20,301,T_YES);
+	DrawFlatButton(145,138,70,20,302,T_NO);
 }
 
 void GetSizeDir(dword way)
@@ -321,8 +321,8 @@ void DrawPropertiesWindow()
 {
 	DefineAndDrawWindow(Form.left + 150,150,270,285+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE_PROPERTIES);
 	GetProcessInfo(#settings_form, SelfInfo);
-	DrawFlatButton(settings_form.cwidth - 80 - 13, settings_form.cheight - 34, 80, 24, 10, 0xE4DFE1, BTN_CLOSE);
-	DrawFlatButton(settings_form.cwidth - 170 - 13, settings_form.cheight - 34, 80, 24, 11, 0xE4DFE1, BTN_APPLY);
+	DrawFlatButton(settings_form.cwidth - 80 - 13, settings_form.cheight - 34, 80, 24, 10, BTN_CLOSE);
+	DrawFlatButton(settings_form.cwidth - 170 - 13, settings_form.cheight - 34, 80, 24, 11, BTN_APPLY);
 	DrawBar(10, 10, 32, 32, 0xFFFfff);
 	
 	WriteText(10, 50, 0x80, 0x000000, PR_T_DEST);

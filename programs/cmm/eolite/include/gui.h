@@ -23,7 +23,8 @@ void Scroll() {
 		if (sc_slider_h > sc_h-sc_slider_y+56) || (files.first+files.visible>=files.count) sc_slider_y= Form.cheight - 19 - sc_slider_h; //для большого списка 
 	}
 	//slider
-	DrawFlatButton(sc_x,sc_slider_y,16,sc_slider_h,0,-1,"");
+	DrawRectangle(sc_x,sc_slider_y,16,sc_slider_h,system.color.work_graph);
+	DrawRectangle3D(sc_x+1,sc_slider_y+1,14,sc_slider_h-2,0xFEFEFE,col_padding);
 	if (!scroll_used) for (i=0; i<13; i++) DrawBar(sc_x + 2 + i, sc_slider_y+2, 1, sc_slider_h-3, col_palette[13-i]);
 	if (scroll_used)  for (i=0; i<13; i++) DrawBar(sc_x + 2 + i, sc_slider_y+2, 1, sc_slider_h-3, col_palette[i]);
 	//area before slider
@@ -42,14 +43,13 @@ void Scroll() {
 	}
 }
 
-void DrawFlatButton(dword x,y,width,height,id,color,text)
+void DrawFlatButton(dword x,y,width,height,id,text)
 {
-	int fill_h;
 	DrawRectangle(x,y,width,height,system.color.work_graph);
 	DrawRectangle3D(x+1,y+1,width-2,height-2,0xFEFEFE,col_padding);
 	PutPixel(x+width-1, y+1, col_padding);
-	if (color!=-1) DrawFilledBar(x+2, y+2, width-3, height-3);
-	IF (id<>0)	DefineButton(x+1,y+1,width-2,height-2,id+BT_HIDE,0xEFEBEF);
+	DrawFilledBar(x+2, y+2, width-3, height-3);
+	if (id) DefineButton(x+1,y+1,width-2,height-2,id+BT_HIDE,0xEFEBEF);
 	if (height<18) 
 		WriteText(-strlen(text)*6+width/2+x+1,height/2+y-3,0x80,system.color.work_text,text);
 	else
@@ -74,6 +74,6 @@ void DrawEolitePopup(dword b1_text, b2_text)
 	int b1_x = dform_x + button_margin;
 	int b2_x = dform_x + button_margin + b1_len + button_margin;
 	DrawPopup(dform_x, 160, form_w, 90, 1, system.color.work, system.color.work_graph);
-	DrawFlatButton(b1_x, 210, b1_len, 24, 301, 0xFFB6B5, b1_text);
-	DrawFlatButton(b2_x, 210, b2_len, 24, 302, 0xC6DFC6, b2_text);
+	DrawFlatButton(b1_x, 210, b1_len, 24, 301, b1_text);
+	DrawFlatButton(b2_x, 210, b2_len, 24, 302, b2_text);
 }

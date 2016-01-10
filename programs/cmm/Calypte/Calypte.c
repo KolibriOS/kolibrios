@@ -118,7 +118,6 @@ byte active_properties = 0;
 int encoding;
 dword properties_window;
 
-#include "include\gui.h"
 #include "include\properties.h"
 
 struct filter

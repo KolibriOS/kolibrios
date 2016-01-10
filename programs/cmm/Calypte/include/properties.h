@@ -85,8 +85,8 @@ void properties_dialog()
 				break;
 				
 		case evReDraw:
-				DefineAndDrawWindow(Form.left + 150,150,270,285+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE_PROPERTIES);
+				DefineAndDrawWindow(Form.left + 150,150,270,285+skin_height,0x34,system.color.work,WINDOW_TITLE_PROPERTIES);
 				GetProcessInfo(#settings_form, SelfInfo);
-				DrawFlatButton(settings_form.cwidth - 70 - 13, settings_form.cheight - 34, 70, 22, 10, 0xE4DFE1, BTN_CLOSE);
+				DrawCaptButton(settings_form.cwidth-70-13, settings_form.cheight-34, 70, 22, 10, 0x288FBD, 0xFFFfff, BTN_CLOSE);
 	}
 }

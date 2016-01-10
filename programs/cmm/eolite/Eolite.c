@@ -564,11 +564,11 @@ void draw_window()
 void DrawList() 
 {
 	word sorting_arrow_x;
-	DrawFlatButton(files.x, files.y-17, files.w - 141,16,31,system.color.work,T_FILE);
-	DrawFlatButton(files.x + files.w - 141, files.y-17,73,16,32,system.color.work,T_TYPE);
-	DrawFlatButton(files.x + files.w -  68, files.y-17,68,16,33,system.color.work,T_SIZE);
-	DrawFlatButton(files.x + files.w,       files.y-17,16,16, 0,system.color.work,"\x18");
-	DrawFlatButton(files.x + files.w,files.y+files.h-16,16,16,0,system.color.work,"\x19");
+	DrawFlatButton(files.x, files.y-17,     files.w - 141,16,31,T_FILE);
+	DrawFlatButton(files.x + files.w - 141, files.y-17,73,16,32,T_TYPE);
+	DrawFlatButton(files.x + files.w -  68, files.y-17,68,16,33,T_SIZE);
+	DrawFlatButton(files.x + files.w,       files.y-17,16,16, 0,"\x18");
+	DrawFlatButton(files.x + files.w,files.y+files.h-16,16,16,0,"\x19");
 	if (sort_num==1) sorting_arrow_x = files.w - 141 / 2 + files.x + 18;
 	if (sort_num==2) sorting_arrow_x = files.x + files.w - 90;
 	if (sort_num==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;

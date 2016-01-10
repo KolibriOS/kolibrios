@@ -1,14 +1,20 @@
-c-- example.c
+c-- window.c
 c-- collections.c
 c-- menu.c
+c-- mixcolors.c
 
-@del @@example
-@del @@collections
-@del @@menu
+@echo off
+@del _window
+@del _collections
+@del _menu
+@del _mixcolors
 
-@rename example.com @@example
-@rename collections.com @@collections
-@rename menu.com @@menu
+@rename window.com _window
+@rename collections.com _collections
+@rename menu.com _menu
+@rename mixcolors.com _mixcolors
 
 @del warning.txt
+@echo on
+
 @pause
