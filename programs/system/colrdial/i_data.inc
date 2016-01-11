@@ -8,10 +8,10 @@ history_text:
 ;---------------------------------------------------------------------
 align 4
 window_x:
-.x_size		dw 420
+.x_size		dw 510
 .x_start	dw 10
 window_y:
-.y_size		dw 320
+.y_size		dw 300
 .y_start	dw 10
 ;---------------------------------------------------------------------
 ;plugins_directory	db 'plugins/',0
@@ -243,5 +243,6 @@ frame_data:
 .font_number		dd 0 ;+32
 .font_size_y		dd 9 ;+36
 .font_color		dd 0x0 ;+40
-.font_backgr_color	dd 0xAABBCC ;+44
+.font_backgr_color	dd 0xEEEeee ;+44
 ;---------------------------------------------------------------------
+OK_Cancel db 'OK              Cancel',0

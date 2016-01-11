@@ -281,7 +281,7 @@ get_communication_area:
 	mov	ebx,[eax+8]
 ;	cmp	bx,word y_minimal_size ;200
 ;	jb	@f
-	mov	bx,310
+	mov	bx,340
 	mov	[window_y],ebx
 @@:
 	ret
@@ -580,10 +580,13 @@ draw_window:
 	mcall	12,1
 ;	mcall	0, <w_start_x,w_size_x>, <w_start_y,w_size_y>, 0x33AABBCC,,title
 	xor	esi,esi
-	mcall	0,[window_x],[window_y], 0x34AABBCC,,title
+	mcall	0,[window_x],[window_y], 0x34EEEeee,,title
 	mcall	8,<p_start_x,[palette_SIZE_X]>,<p_start_y,[palette_SIZE_Y]>,0x60000002
 	mcall	,<t_start_x,[tone_SIZE_X]>,<t_start_y,[tone_SIZE_Y]>,0x60000003
-	mcall	,<c_start_x,c_size_x>,<c_start_y,c_size_y>,0x60000004
+	mcall	,<296,80>,<280,22>,4,0x37A4D4
+	mcall	,<402,80>,        ,1
+	mcall   4,<332,289>,0x802C7B9E,OK_Cancel
+	mcall   ,<331,288>,0x80FFFfff
 	xor	ebp,ebp
 	mcall	65,[palette_area],<[palette_SIZE_X],[palette_SIZE_Y]>,<p_start_x,p_start_y>,24
 	call	draw_tone
