@@ -126,6 +126,8 @@ Remarks:
     * value _skinh is accessible as the result of call
       subfunction 4 of function 48
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_CREATE_WINDOW (0)
 ======================================================================
 ================ Function 1 - put pixel in the window. ===============
 ======================================================================
@@ -139,6 +141,8 @@ Parameters:
 Returned value:
   * function does not return value
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_PUT_PIXEL (1)
 ======================================================================
 ============ Function 2 - get the code of the pressed key. ===========
 ======================================================================
@@ -176,6 +180,8 @@ Remarks:
   * This function notifies only about those hotkeys, which were
     defined by this thread by subfunction 4 of function 66.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_GET_KEY (2)
 ======================================================================
 ==================== Function 3 - get system time. ===================
 ======================================================================
@@ -191,6 +197,8 @@ Remarks:
     returns simply DWORD-value of the time counter.
   * System time can be set by function 22.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_GET_SYS_TIME (3)
 ======================================================================
 =================== Function 4 - draw text string. ===================
 ======================================================================
@@ -225,6 +233,8 @@ Xsize       dd
 Ysize       dd
 picture     rb  Xsize*Ysize*4  ; 32 bpp
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_DRAW_TEXT (4)
 ======================================================================
 ========================= Function 5 - delay. ========================
 ======================================================================
@@ -240,6 +250,8 @@ Remarks:
     to transfer control to the next process (to complete a current
     time slice), use subfunction 1 of function 68.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SLEEP (5)
 ======================================================================
 =============== Function 7 - draw image in the window. ===============
 ======================================================================
@@ -255,6 +267,8 @@ Remarks:
     of the image relative to the window.
   * Size of the image in bytes is 3*xsize*ysize.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_PUT_IMAGE (7)
 ======================================================================
 =============== Function 8 - define/delete the button. ===============
 ======================================================================
@@ -287,6 +301,8 @@ Remarks:
     In rest it is usual button.
   * Total number of buttons for all applications is limited to 4095.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_DEFINE_BUTTON (8)
 ======================================================================
 ============ Function 9 - information on execution thread. ===========
 ======================================================================
@@ -385,6 +401,8 @@ Remarks:
     1-Kb buffer for the future compatibility, in the future
     some fields can be added.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_THREAD_INFO (9)
 ======================================================================
 ==================== Function 10 - wait for event. ===================
 ======================================================================
@@ -403,6 +421,8 @@ Remarks:
   * To check, whether there is a message in queue, use function 11.
     To wait for no more than given time, use function 23.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_WAIT_EVENT (10)
 ======================================================================
 =============== Function 11 - check for event, no wait. ==============
 ======================================================================
@@ -420,6 +440,8 @@ Remarks:
   * To wait for event, use function 10.
     To wait for no more than given time, use function 23.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_CHECK_EVENT (11)
 ======================================================================
 =============== Function 12 - begin/end window redraw. ===============
 ======================================================================
@@ -441,6 +463,9 @@ Remarks:
   * Subfunction 1 deletes all buttons defined with
     function 8, they must be defined again.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_REDRAW (12)
+  ebx - SSF_BEGIN_DRAW (1), SSF_END_DRAW (2)
 ======================================================================
 ============ Function 13 - draw a rectangle in the window. ===========
 ======================================================================
@@ -455,6 +480,8 @@ Remarks:
   * Coordinates are understood as coordinates of the left upper corner
     of a rectangle relative to the window.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_DRAW_RECT (13)
 ======================================================================
 =================== Function 14 - get screen size. ===================
 ======================================================================
@@ -470,6 +497,8 @@ Remarks:
   * See also subfunction 5 of function 48 - get sizes of
     working area of the screen.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_GET_SCREEN_SIZE (14)
 ======================================================================
 == Function 15, subfunction 1 - set a size of the background image. ==
 ======================================================================
@@ -488,6 +517,9 @@ Remarks:
   * There is a pair function for get size of the background image -
     subfunction 1 of function 39.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_BACKGROUND_SET (15)
+  ebx - SSF_SIZE_BG (1)
 ======================================================================
 === Function 15, subfunction 2 - put pixel on the background image. ==
 ======================================================================
@@ -508,6 +540,9 @@ Remarks:
   * There is a pair function for get pixel on the background image -
     subfunction 2 of function 39.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_BACKGROUND_SET (15)
+  ebx - SSF_PIXEL_BG (2)
 ======================================================================
 =========== Function 15, subfunction 3 - redraw background. ==========
 ======================================================================
@@ -517,6 +552,9 @@ Parameters:
 Returned value:
   * function does not return value
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_BACKGROUND_SET (15)
+  ebx - SSF_REDRAW_BG (3)
 ======================================================================
 == Function 15, subfunction 4 - set drawing mode for the background. =
 ======================================================================
@@ -534,6 +572,9 @@ Remarks:
   * There is a pair function for get drawing mode of the background -
     subfunction 4 of function 39.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_BACKGROUND_SET (15)
+  ebx - SSF_MODE_BG (4)
 ======================================================================
 ===================== Function 15, subfunction 5 =====================
 ============ Put block of pixels on the background image. ============
@@ -555,6 +596,9 @@ Remarks:
   * For update of the screen (after completion of a series of commands
     working with a background) call subfunction 3.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_BACKGROUND_SET (15)
+  ebx - SSF_IMAGE_BG (5)
 ======================================================================
 ===================== Function 15, subfunction 6 =====================
 ======== Map background data to the address space of process. ========
@@ -572,6 +616,9 @@ Remarks:
   * Pixels of the background image are written sequentially
     from left to right, from up to down.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_BACKGROUND_SET (15)
+  ebx - SSF_MAP_BG (6)
 ======================================================================
 ===== Function 15, subfunction 7 - close mapped background data. =====
 ======================================================================
@@ -582,6 +629,9 @@ Parameters:
 Returned value:
   * eax = 1 - success, 0 - error
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_BACKGROUND_SET (15)
+  ebx - SSF_UNMAP_BG (7)
 ======================================================================
 ===================== Function 15, subfunction 8 =====================
 ============= Get coordinates of last draw the background ============
@@ -599,6 +649,9 @@ Remarks:
     immediately after the event:
              5 = kernel finished redrawing of the desktop background
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_BACKGROUND_SET (15)
+  ebx - SSF_LAST_DRAW (8)
 ======================================================================
 ===================== Function 15, subfunction 9 =====================
 ============= Redraws a rectangular part of the background ===========
@@ -615,6 +668,9 @@ Remarks:
     (right,bottom) are coordinates of the right lower one.
   * If parameters are set incorrectly then background is not redrawn.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_BACKGROUND_SET (15)
+  ebx - SSF_REDRAW_RECT (9)
 ======================================================================
 =============== Function 16 - save ramdisk on a floppy. ==============
 ======================================================================
@@ -625,6 +681,8 @@ Returned value:
   * eax = 0 - success
   * eax = 1 - error
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_RD_TO_FLOPPY (16)
 ======================================================================
 ======= Function 17 - get the identifier of the pressed button. ======
 ======================================================================
@@ -648,6 +706,8 @@ Remarks:
     as in subfunction 2 of function 37 at the beginning
     of button press, excluding lower bit, which is cleared.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_GET_BUTTON (17)
 ======================================================================
 ===================== Function 18, subfunction 1 =====================
 ============= Make deactive the window of the given thread. ==========
@@ -659,6 +719,9 @@ Parameters:
 Returned value:
   * function does not return value
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_UNFOCUS_WINDOW (1)
 ======================================================================
 = Function 18, subfunction 2 - terminate process/thread by the slot. =
 ======================================================================
@@ -675,6 +738,9 @@ Remarks:
   * See also subfunction 18 - terminate
     process/thread by the identifier.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_TERMINATE_THREAD (2)
 ======================================================================
 ===================== Function 18, subfunction 3 =====================
 ============= Make active the window of the given thread. ============
@@ -690,6 +756,9 @@ Remarks:
     some window is made active.
   * To find out, which window is active, use subfunction 7.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_FOCUS_WINDOW (3)
 ======================================================================
 ===================== Function 18, subfunction 4 =====================
 =========== Get counter of idle time units per one second. ===========
@@ -703,6 +772,9 @@ Parameters:
 Returned value:
   * eax = value of the counter of idle time units per one second
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_GET_IDLE_COUNT (4)
 ======================================================================
 ========== Function 18, subfunction 5 - get CPU clock rate. ==========
 ======================================================================
@@ -712,6 +784,9 @@ Parameters:
 Returned value:
   * eax = clock rate (modulo 2^32 clock ticks = 4GHz)
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_GET_CPU_REQUENCY (5)
 ======================================================================
  Function 18, subfunction 6 - save ramdisk to the file on hard drive.
 ======================================================================
@@ -727,6 +802,9 @@ Remarks:
   * All folders in the given path must exist, otherwise function
     returns value 5, "file not found".
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_RD_TO_HDD (6)
 ======================================================================
 =========== Function 18, subfunction 7 - get active window. ==========
 ======================================================================
@@ -741,6 +819,9 @@ Remarks:
     messages on all keyboard input.
   * To make a window active, use subfunction 3.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_GET_ACTIVE_WINDOW (7)
 ======================================================================
 == Function 18, subfunction 8 - disable/enable the internal speaker. =
 ======================================================================
@@ -765,6 +846,10 @@ Parameters:
 Returned value:
   * function does not return value
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_SPEAKER (8)
+  ecx - SSSF_GET_STATE (1), SSSF_TOGGLE (2)
 ======================================================================
 == Function 18, subfunction 9 - system shutdown with the parameter. ==
 ======================================================================
@@ -783,6 +868,9 @@ Remarks:
   * Do not rely on returned value by incorrect call, it can be
     changed in future versions of the kernel.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_SHUTDOWN (9)
 ======================================================================
 ======= Function 18, subfunction 10 - minimize topmost window. =======
 ======================================================================
@@ -804,6 +892,9 @@ Remarks:
     for other windows it can be defined manually by function 8),
     restore of a window is done by the application '@taskbar'.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_MINIMIZE_WINDOW (10)
 ======================================================================
  Function 18, subfunction 11 - get information on the disk subsystem.
 ======================================================================
@@ -872,6 +963,9 @@ Remarks:
   * The table can be used for obtaining the information about
     available devices.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_INFO_DISC_SYS (11)
 ======================================================================
 ========== Function 18, subfunction 13 - get kernel version. =========
 ======================================================================
@@ -891,6 +985,9 @@ db 0,7,7,0
 db 0
 dd 1675
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_KERNEL_VERSION (13)
 ======================================================================
 ======= Function 18, subfunction 14 - wait for screen retrace. =======
 ======================================================================
@@ -905,6 +1002,9 @@ Remarks:
   * Function is intended only for active high-efficiency graphics
     applications; is used for smooth output of a graphics.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_WAIT_RETRACE (14)
 ======================================================================
 == Function 18, subfunction 15 - center mouse cursor on the screen. ==
 ======================================================================
@@ -914,6 +1014,9 @@ Parameters:
 Returned value:
   * eax = 0 as the tag of success
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_CURSOR_CENTER (15)
 ======================================================================
 ========= Function 18, subfunction 16 - get size of free RAM. ========
 ======================================================================
@@ -923,6 +1026,9 @@ Parameters:
 Returned value:
   * eax = size of free memory in kilobytes
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_GET_FREE_RAM (16)
 ======================================================================
 ======== Function 18, subfunction 17 - get full amount of RAM. =======
 ======================================================================
@@ -932,6 +1038,9 @@ Parameters:
 Returned value:
   * eax = total size of existing memory in kilobytes
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_GET_TOTAL_RAM (17)
 ======================================================================
 ===================== Function 18, subfunction 18 ====================
 ============= Terminate process/thread by the identifier. ============
@@ -949,6 +1058,9 @@ Remarks:
   * See also subfunction 2 - terminate
     process/thread by given slot.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_TERMINATE_THREAD_ID (18)
 ======================================================================
 ======== Function 18, subfunction 19 - get/set mouse features. =======
 ======================================================================
@@ -1032,6 +1144,12 @@ Returned value:
 
 Remark: mouse settings can be modified in the application mouse_cfg.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_MOUSE_SETTINGS (19)
+  ecx - SSSF_GET_SPEED (0), SSSF_SET_SPEED (1), SSSF_GET_SPEEDUP (2),
+    SSSF_SET_SPEEDUP (3), SSSF_SET_POS (4), SSSF_SET_BUTTON (5),
+    SSSF_GET_DOUBLE_CLICK_DELAY (6), SSSF_SET_DOUBLE_CLICK_DELAY (7)
 ======================================================================
 ======== Function 18, subfunction 20 - get information on RAM. =======
 ======================================================================
@@ -1056,6 +1174,9 @@ Returned value:
     * +32: dword: size of maximum allocated block in kernel heap
                  (reserved)
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_GET_RAM_INFO (20)
 ======================================================================
 ===================== Function 18, subfunction 21 ====================
 ======== Get slot number of process/thread by the identifier. ========
@@ -1068,6 +1189,9 @@ Returned value:
   * eax = 0 - error (invalid identifier)
   * otherwise eax = slot number
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_GET_THREAD_SLOT (21)
 ======================================================================
 ===================== Function 18, subfunction 22 ====================
 ============== Operations with window of another thread. =============
@@ -1089,6 +1213,11 @@ Remarks:
   * One can restore and activate window simultaneously with
     subfunction 3 (which requires slot number).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_FOREIGN_WINDOW (22)
+  ecx - SSSF_MINIMIZE (0), SSSF_MINIMIZE_ID (1), SSSF_RESTORE (2),
+    SSSF_RESTORE_ID (3)
 ======================================================================
 ======== Function 18, subfunction 23 - minimize all windows. ==========
 ======================================================================
@@ -1101,6 +1230,9 @@ Returned value:
 Remarks:
   * Window of special thread (name begin to symbol @) is not minimize.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_MINIMIZE_ALL (23)
 ======================================================================
 ======= Function 18, subfunction 24 - set limits of screen. ==========
 ======================================================================
@@ -1119,6 +1251,9 @@ Remarks:
     of the current video mode, otherwise the function will not change
     anything.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_SET_SCREEN_LIMITS (24)
 ======================================================================
 ===================== Function 18, subfunction 25 ====================
 ===== Control position of the window relative to other windows. ======
@@ -1150,6 +1285,10 @@ Constant position of the window relative to other windows:
  ZPOS_NORMAL      = 0  - normal
  ZPOS_ALWAYS_TOP  = 1  - on top of all windows
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM (18)
+  ebx - SSF_WINDOW_BEHAVIOR (25)
+  ecx - SSSF_GET_WB (1), SSSF_SET_WB (2)
 ======================================================================
 ==================== Function 20 - MIDI interface. ===================
 ======================================================================
@@ -1171,6 +1310,9 @@ Remarks:
   * Previously the base port must be defined by
     subfunction 1 of function 21.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_MIDI (20)
+  ebx - SSF_RESET (1), SSF_OUTPUT (2)
 ======================================================================
 ======== Function 21, subfunction 1 - set MPU MIDI base port. ========
 ======================================================================
@@ -1186,6 +1328,9 @@ Remarks:
   * The installation of base is necessary for function 20.
   * To get base port use subfunction 1 of function 26.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM_SET (21)
+  ebx - SSF_MPU_MIDI_BASE (1)
 ======================================================================
 ========== Function 21, subfunction 2 - set keyboard layout. =========
 ======================================================================
@@ -1219,6 +1364,9 @@ Remarks:
     the corresponding icon.
   * The application @taskbar switches layouts on user request.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM_SET (21)
+  ebx - SSF_KEYBOARD_LAYOUT (2)
 ======================================================================
 ========== Function 21, subfunction 5 - set system language. =========
 ======================================================================
@@ -1236,6 +1384,9 @@ Remarks:
     use this variable.
   * To get system language use subfunction 5 of function 26.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM_SET (21)
+  ebx - SSF_SYS_LANG (5)
 ======================================================================
  Function 21, subfunction 11 - enable/disable low-level access to HD.
 ======================================================================
@@ -1250,6 +1401,9 @@ Remarks:
   * The current implementation uses only low bit of ecx.
   * To get current status use subfunction 11 of function 26.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM_SET (21)
+  ebx - SSF_ACCESS_HD_LBA (11)
 ======================================================================
  Function 21, subfunction 12 - enable/disable low-level access to PCI.
 ======================================================================
@@ -1264,6 +1418,9 @@ Remarks:
   * The current implementation uses only low bit of ecx.
   * To get current status use subfunction 12 of function 26.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM_SET (21)
+  ebx - SSF_ACCESS_PCI (12)
 ======================================================================
 ================= Function 22 - set system date/time. ================
 ======================================================================
@@ -1302,6 +1459,8 @@ Remarks:
     an alarm clock cancels automatically the previous set.
     However, at moment no program uses it.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SET_TIME_DATE (22)
 ======================================================================
 ============= Function 23 - wait for event with timeout. =============
 ======================================================================
@@ -1325,6 +1484,8 @@ Remarks:
     if the addition of ebx with the current value of time counter
     makes 32-bit overflow.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_WAIT_EVENT_TIMEOUT (23)
 ======================================================================
 ======= Function 24, subfunction 4 - eject tray of disk drive. =======
 ======================================================================
@@ -1345,6 +1506,9 @@ Remarks:
     corresponding device.
   * An example of usage of the function is the application CD_tray.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_CD (24)
+  ebx - SSF_EJECT_TRAY (4), SSF_INSERT_TRAY (5)
 ======================================================================
 ======== Function 24, subfunction 5 - load tray of disk drive. =======
 ======================================================================
@@ -1361,6 +1525,9 @@ Remarks:
   * The function is supported only for ATAPI devices (CD and DVD).
   * An example of usage of the function is the application CD_tray.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_CD (24)
+  ebx - SSF_EJECT_TRAY (4), SSF_INSERT_TRAY (5)
 ======================================================================
 ======= Function 25 - put image area on the background layer. ========
 ======================================================================
@@ -1381,6 +1548,8 @@ Remarks:
   * The function places the image directly to LFB. It is not for
     background image f.15. Options f.15 to f.25 does not make sense.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SCREEN_PUT_IMAGE (25)
 ======================================================================
 ======== Function 26, subfunction 1 - get MPU MIDI base port. ========
 ======================================================================
@@ -1392,6 +1561,9 @@ Returned value:
 Parameters:
   * To set base port use subfunction 1 of function 21.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM_GET (26)
+  ebx - SSF_MPU_MIDI_BASE (1)
 ======================================================================
 ========== Function 26, subfunction 2 - get keyboard layout. =========
 ======================================================================
@@ -1428,6 +1600,9 @@ Remarks:
     the corresponding icon (using this function).
   * The application @taskbar switches layouts on user request.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM_GET (26)
+  ebx - SSF_KEYBOARD_LAYOUT (2)
 ======================================================================
 ========== Function 26, subfunction 5 - get system language. =========
 ======================================================================
@@ -1442,6 +1617,9 @@ Remarks:
     appropriate icon (using this function).
   * To set system language use subfunction 5 of function 21.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM_GET (26)
+  ebx - SSF_SYS_LANG (5)
 ======================================================================
 === Function 26, subfunction 9 - get the value of the time counter. ==
 ======================================================================
@@ -1454,7 +1632,10 @@ Remarks:
   * Counter takes modulo 2^32, that correspond to a little more
     than 497 days.
   * To get system time use function 3.  
-  
+
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM_GET (26)
+  ebx - SSF_TIME_COUNT (9)
 ======================================================================
 ===================== Function 26, subfunction 10 ====================
 ========== Get the value of the high precision time counter. =========
@@ -1469,6 +1650,9 @@ Remarks:
   * The counter is based on HPET, if HPET is not available, resolution
     will be reduced to 10 000 000 nanoseconds.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM_GET (26)
+  ebx - SSF_TIME_COUNT_PRO (10)
 ======================================================================
 ===================== Function 26, subfunction 11 ====================
 ========== Find out whether low-level HD access is enabled. ==========
@@ -1482,6 +1666,9 @@ Remarks:
   * Is used in LBA read (subfunction 8 of function 58).
   * To set current state use subfunction 11 of function 21.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM_GET (26)
+  ebx - SSF_ACCESS_HD_LBA (11)
 ======================================================================
 ===================== Function 26, subfunction 12 ====================
 ========== Find out whether low-level PCI access is enabled. =========
@@ -1496,6 +1683,9 @@ Remarks:
   * The current implementation uses only low bit of ecx.
   * To set the current state use subfunction 12 of function 21.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYSTEM_GET (26)
+  ebx - SSF_ACCESS_PCI (12)
 ======================================================================
 =================== Function 29 - get system date. ===================
 ======================================================================
@@ -1510,6 +1700,8 @@ Returned value:
 Remarks:
   * To set system date use function 22.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_GET_SYS_DATE (29)
 ======================================================================
 ============= Function 30 - work with the current folder. ============
 ======================================================================
@@ -1554,6 +1746,9 @@ Returned value:
 Remarks:
   * The function can be called only 1 time for 1 session of the OS.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_CURRENT_FOLDER (30)
+  ebx - SSF_SET_CF (1), SSF_GET_CF (2), SSF_ADD_SYS_FOLDER (3)
 ======================================================================
 ========= Function 34 - who owner the pixel on the screen. ===========
 ======================================================================
@@ -1567,6 +1762,8 @@ Returned value:
     If incorrect values ebx and ecx then function returns 0
   * The function takes the value from the area [_WinMapAddress]
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_GET_PIXEL_OWNER (34)
 ======================================================================
 ======= Function 35 - read the color of a pixel on the screen. =======
 ======================================================================
@@ -1584,6 +1781,8 @@ Remarks:
     to videomemory through the selector gs. To get parameters of
     the current videomode, use function 61.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_GET_PIXEL (35)
 ======================================================================
 =================== Function 36 - read screen area. ==================
 ======================================================================
@@ -1600,6 +1799,8 @@ Remarks:
     of the image relative to the screen.
   * Size of the image in bytes is 3*xsize*ysize.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_GET_IMAGE (36)
 ======================================================================
 =================== Function 37 - work with mouse. ===================
 ======================================================================
@@ -1722,6 +1923,11 @@ Remarks:
   * Values are zeroed after reading.
   * Values are signed.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_MOUSE_GET (37)
+  ebx - SSF_SCREEN_POSITION (0), SSF_WINDOW_POSITION (1),
+    SSF_BUTTON (2), SSF_BUTTON_EXT (3), SSF_LOAD_CURSOR (4),
+    SSF_SET_CURSOR (5), SSF_DEL_CURSOR (6), SSF_SCROLL_DATA (7)
 ======================================================================
 ====================== Function 38 - draw line. ======================
 ======================================================================
@@ -1740,6 +1946,8 @@ Remarks:
   * Coordinates are relative to the window.
   * End point is also drawn.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_DRAW_LINE (38)
 ======================================================================
 == Function 39, subfunction 1 - get a size of the background image. ==
 ======================================================================
@@ -1753,6 +1961,8 @@ Remarks:
     subfunction 1 of function 15. After which it is necessary,
     of course, anew to define image.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_BACKGROUND_GET (39)
 ======================================================================
 == Function 39, subfunction 2 - get pixel from the background image. =
 ======================================================================
@@ -1772,6 +1982,8 @@ Remarks:
   * There is a pair function to set pixel on the background image -
     subfunction 2 of function 15.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_BACKGROUND_GET (39)
 ======================================================================
 == Function 39, subfunction 4 - get drawing mode for the background. =
 ======================================================================
@@ -1785,6 +1997,8 @@ Remarks:
   * There is a pair function to set drawing mode -
     subfunction 4 of function 15.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_BACKGROUND_GET (39)
 ======================================================================
 =========== Function 40 - set the mask for expected events. ==========
 ======================================================================
@@ -1812,7 +2026,8 @@ Remarks:
   * Event functions take into account the mask on moment of
     function call, not on moment of event arrival.
 
-
+---------------------- Constants for registers: ----------------------
+  eax - SF_SET_EVENTS_MASK (40)
 ======================================================================
 ================ Function 43 - input/output to a port. ===============
 ======================================================================
@@ -1841,7 +2056,8 @@ Remarks:
     processor instructions in/out - this is much
     faster and a bit shorter and easier.
 
-
+---------------------- Constants for registers: ----------------------
+  eax - SF_PORT_IN_OUT (43)
 ======================================================================
 ====== Function 46 - reserve/free a group of input/output ports. =====
 ======================================================================
@@ -1874,6 +2090,8 @@ Remarks:
   * When a thread terminates, all reserved by it ports
     are freed automatically.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SET_PORTS (46)
 ======================================================================
 ============= Function 47 - draw a number in the window. =============
 ======================================================================
@@ -1908,6 +2126,8 @@ Remarks:
   * Parameters of fonts are shown in the description of function 4
     (text output).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_DRAW_NUMBER (47)
 ======================================================================
 ========= Function 48, subfunction 0 - apply screen settings. ========
 ======================================================================
@@ -1924,6 +2144,9 @@ Remarks:
     is ignored.
   * Function call with nonzero ecx is ignored.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_STYLE_SETTINGS (48)
+  ebx - SSF_APPLY (0)
 ======================================================================
 =========== Function 48, subfunction 1 - set button style. ===========
 ======================================================================
@@ -1940,6 +2163,9 @@ Remarks:
     subfunction 0.
   * Button style influences only to their draw of function 8.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_STYLE_SETTINGS (48)
+  ebx - SSF_SET_BUTTON_STYLE (1)
 ======================================================================
 ====== Function 48, subfunction 2 - set standard window colors. ======
 ======================================================================
@@ -1963,6 +2189,9 @@ Remarks:
   * Color table can be viewed/changed interactively with
     the application 'desktop'.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_STYLE_SETTINGS (48)
+  ebx - SSF_SET_COLORS (2)
 ======================================================================
 ====== Function 48, subfunction 3 - get standard window colors. ======
 ======================================================================
@@ -2008,6 +2237,9 @@ Remarks:
   * Color table can be viewed/changed interactively with
     the application 'desktop'.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_STYLE_SETTINGS (48)
+  ebx - SSF_GET_COLORS (3)
 ======================================================================
 ============ Function 48, subfunction 4 - get skin height. ===========
 ======================================================================
@@ -2022,6 +2254,9 @@ Remarks:
   * See also general structure of window in the description
     of function 0.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_STYLE_SETTINGS (48)
+  ebx - SSF_GET_SKIN_HEIGHT (4)
 ======================================================================
 ======== Function 48, subfunction 5 - get screen working area. =======
 ======================================================================
@@ -2044,6 +2279,9 @@ Remarks:
     to get sizes of all screen.
   * There is a pair function to set working area - subfunction 6.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_STYLE_SETTINGS (48)
+  ebx - SSF_GET_SCREEN_AREA (5)
 ======================================================================
 ======== Function 48, subfunction 6 - set screen working area. =======
 ======================================================================
@@ -2074,6 +2312,9 @@ Remarks:
     updating coordinates and sizes of maximized windows.
     The system sends to all windows redraw message (the event 1).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_STYLE_SETTINGS (48)
+  ebx - SSF_SET_SCREEN_AREA (6)
 ======================================================================
 =========== Function 48, subfunction 7 - get skin margins. ===========
 ======================================================================
@@ -2092,6 +2333,9 @@ Remarks:
     (by function 4) or a substitute of header text
     (at the discretion of an application).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_STYLE_SETTINGS (48)
+  ebx - SSF_GET_SKIN_MARGINS (7)
 ======================================================================
 ============= Function 48, subfunction 8 - set used skin. ============
 ======================================================================
@@ -2112,6 +2356,9 @@ Remarks:
   * User can change the skin statically by creating hisself
     'default.skn' or dynamically with the application 'desktop'.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_STYLE_SETTINGS (48)
+  ebx - SSF_SET_SKIN (8)
 ======================================================================
 ====== Function 48, subfunction 9 - get font smoothing setting. ======
 ======================================================================
@@ -2121,6 +2368,9 @@ Parameters:
 Returned value:
   * eax = 2 - subpixel, 1 - anti-aliasing, 0 - off
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_STYLE_SETTINGS (48)
+  ebx - SSF_GET_FONT_SMOOTH (9)
 ======================================================================
 ========== Function 48, subfunction 10 - set font smoothing. =========
 ======================================================================
@@ -2129,6 +2379,9 @@ Parameters:
   * ebx = 10 - subfunction number
   * cl  = 2 - subpixel, 1 - anti-aliasing, 0 - off
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_STYLE_SETTINGS (48)
+  ebx - SSF_SET_FONT_SMOOTH (10)
 ======================================================================
 ============ Function 48, subfunction 11 - get font size. ============
 ======================================================================
@@ -2138,6 +2391,9 @@ Parameters:
 Returned value:
   * eax = current font height in pixels
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_STYLE_SETTINGS (48)
+  ebx - SSF_GET_FONT_SIZE (11)
 ======================================================================
 ============ Function 48, subfunction 12 - set font size. ============
 ======================================================================
@@ -2146,6 +2402,9 @@ Parameters:
   * ebx = 10 - subfunction number
   * cl  = new font height in pixels
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_STYLE_SETTINGS (48)
+  ebx - SSF_SET_FONT_SIZE (12)
 ======================================================================
 =========== Function 49 - Advanced Power Management (APM). ===========
 ======================================================================
@@ -2168,6 +2427,8 @@ Remarks:
     (http://www.pobox.com/~ralf/files.html,
     ftp://ftp.cs.cmu.edu/afs/cs/user/ralf/pub/).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_APM (49)
 ======================================================================
 =================== Function 50 - set window shape. ==================
 ======================================================================
@@ -2214,6 +2475,8 @@ Remarks:
   * The call of subfunction 0 with NULL pointer results in return
     to the rectangular shape.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SET_WINDOW_SHAPE (50)
 ======================================================================
 ==================== Function 51 - create thread. ====================
 ======================================================================
@@ -2225,8 +2488,9 @@ Parameters:
 Returned value:
   * eax = -1 - error (there is too many threads)
   * otherwise eax = TID - thread identifier
-    </UL>
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_CREATE_THREAD (51)
 ======================================================================
 ==================== Function 54, subfunction 0 ======================
 ============== Get the number of slots in the clipboard. =============
@@ -2238,6 +2502,9 @@ Returned value:
   * eax = slots in the clipboard
   * eax = -1 - main list area not found
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_CLIPBOARD (54)
+  ebx - SSF_GET_SLOT_COUNT (0)
 ======================================================================
 ==================== Function 54, subfunction 1 ======================
 ================= Read the data from the clipboard. ==================
@@ -2250,7 +2517,10 @@ Returned value:
   * eax = if successful - pointer to a memory with data
   * eax = 1 - error
   * eax = -1 - main list area not found
-
+ 
+---------------------- Constants for registers: ----------------------
+  eax - SF_CLIPBOARD (54)
+  ebx - SSF_READ_CB (1)
 ======================================================================
 ==================== Function 54, subfunction 2 ======================
 ================= Write the data to the clipboard. ===================
@@ -2264,7 +2534,10 @@ Returned value:
   * eax = 0 - success
   * eax = 1 - error
   * eax = -1 - main list area not found
- 
+
+---------------------- Constants for registers: ----------------------
+  eax - SF_CLIPBOARD (54)
+  ebx - SSF_WRITE_CB (2)
 ======================================================================
 ===================== Function 54, subfunction 3 =====================
 ================ Delete the last slot in the clipboard ===============
@@ -2276,7 +2549,10 @@ Returned value:
   * eax = 0 - success
   * eax = 1 - error
   * eax = -1 - main list area not found
-  
+
+---------------------- Constants for registers: ----------------------
+  eax - SF_CLIPBOARD (54)
+  ebx - SSF_DEL_SLOT (3)
 ======================================================================
 ===================== Function 54, subfunction 4 =====================
 ===================== Alarm reset the lock buffer ====================
@@ -2291,6 +2567,9 @@ Remarks:
   * Used in exceptional cases, where no responsible or killed
     application blocked the clipboard operations.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_CLIPBOARD (54)
+  ebx - SSF_UNLOCK_BUFFER (4)
 ======================================================================
  Function 55, subfunction 55 - begin to play data on built-in speaker.
 ======================================================================
@@ -2324,6 +2603,8 @@ Remarks:
   * The data must be kept in the memory at least up to the end
     of play.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SPEAKER_PLAY (55)
 ======================================================================
 ======================= Function 57 - PCI BIOS. ======================
 ======================================================================
@@ -2342,6 +2623,8 @@ Remarks:
   * If BIOS does not support this extension, its behavior is emulated
     (through kernel-mode analogues of subfunctions of function 62).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_PCI_BIOS (57)
 ======================================================================
 ========== Function 60 - Inter Process Communication (IPC). ==========
 ======================================================================
@@ -2391,6 +2674,9 @@ Remarks:
   * Immediately after writing of IPC-message to the buffer the system
     sends to the receiver the event with code 7 (see event codes).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_IPC (60)
+  ebx - SSF_SET_AREA (1), SSF_SEND_MESSAGE (2)
 ======================================================================
 ==== Function 61 - get parameters for the direct graphics access. ====
 ======================================================================
@@ -2450,6 +2736,10 @@ Returned value:
   * eax = number of bytes occupied by one scanline
     (horizontal line on the screen)
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_GET_GRAPHICAL_PARAMS (61)
+  ebx - SSF_SCREEN_SIZE (1), SSF_BITS_PER_PIXEL (2),
+    SSF_BYTES_PER_LINE (3)
 ======================================================================
 ===== Function 62, subfunction 0 - get version of PCI-interface. =====
 ======================================================================
@@ -2465,6 +2755,9 @@ Remarks:
     enabled by subfunction 12 of function 21.
   * If PCI BIOS is not supported, the value of ax is undefined.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_PCI (62)
+  ebx - SSF_GET_VERSION (0)
 ======================================================================
 ==== Function 62, subfunction 1 - get number of the last PCI-bus. ====
 ======================================================================
@@ -2479,6 +2772,9 @@ Remarks:
     enabled by subfunction 12 of function 21.
   * If PCI BIOS is not supported, the value of ax is undefined.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_PCI (62)
+  ebx - SSF_GET_LAST_BUS (1)
 ======================================================================
 ===================== Function 62, subfunction 2 =====================
 ===== Get mechanism of addressing to the PCI configuration space. ====
@@ -2497,6 +2793,9 @@ Remarks:
   * Subfunctions of read and write work automatically
     with the selected mechanism.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_PCI (62)
+  ebx - SSF_GET_ADRR_MODE (2)
 ======================================================================
 ======== Function 62, subfunctions 4,5,6 - read PCI-register. ========
 ======================================================================
@@ -2529,6 +2828,9 @@ Remarks:
     registers of the second type must be listed
     in the device documentation.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_PCI (62)
+  ebx - SSF_READ_BYTE (4), SSF_READ_WORD (5), SSF_READ_DWORD (6)
 ======================================================================
 ====== Function 62, subfunctions 8,9,10 - write to PCI-register. =====
 ======================================================================
@@ -2559,6 +2861,9 @@ Remarks:
     Ralf Brown; registers of the second type must be listed
     in the device documentation.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_PCI (62)
+  ebx - SSF_WRITE_BYTE (8), SSF_WRITE_WORD (9), SSF_WRITE_DWORD (10)
 ======================================================================
 ============== Function 63 - work with the debug board. ==============
 ======================================================================
@@ -2604,6 +2909,9 @@ Returned value:
   * eax = ebx = 0 - the buffer is empty
   * eax = byte, ebx = 1 - byte was successfully read
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_BOARD (63)
+  ebx - SSF_DEBUG_WRITE (1), SSF_DEBUG_READ (2)
 ======================================================================
 ============== Function 64 - resize application memory. ==============
 ======================================================================
@@ -2621,6 +2929,8 @@ Remarks:
     The function call will be ignored after creation of process heap
     with function 68.11.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_MEMORY_RESIZE (64)
 ======================================================================
 ======== Function 65 - draw image with palette in the window. ========
 ======================================================================
@@ -2665,6 +2975,8 @@ Remarks:
   * The call to function 7 is equivalent to call to this function
     with esi=24, ebp=0.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_PUT_IMAGE_EXT (65)
 ======================================================================
 ================== Function 66 - work with keyboard. =================
 ======================================================================
@@ -2773,6 +3085,11 @@ Remarks:
   * Unlocking the results of the f. 66.6
   * To emulate a mouse via the keyboard, the application MOUSEMUL
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_KEYBOARD (66)
+  ebx - SSF_SET_INPUT_MODE (1), SSF_GET_INPUT_MODE (2),
+    SSF_GET_CONTROL_KEYS (3), SSF_SET_SYS_HOTKEY (4),
+    SSF_DEL_SYS_HOTKEY (5),  SSF_LOCK_INPUT (6), SSF_UNLOCK_INPUT (7)
 ======================================================================
 ========= Function 67 - change position/sizes of the window. =========
 ======================================================================
@@ -2797,6 +3114,8 @@ Remarks:
     call to function 9.
   * The function sends to the window redraw event (with the code 1).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_CHANGE_WINDOW (67)
 ======================================================================
 ====== Function 68, subfunction 0 - get the task switch counter. =====
 ======================================================================
@@ -2807,6 +3126,9 @@ Returned value:
   * eax = number of task switches from the system booting
     (modulo 2^32)
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_GET_TASK_SWITCH_COUNT (0)
 ======================================================================
 ======= Function 68, subfunction 1 - switch to the next thread. ======
 ======================================================================
@@ -2820,6 +3142,9 @@ Parameters:
 Returned value:
   * function does not return value
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_SWITCH_TASK (1)
 ======================================================================
 ============= Function 68, subfunction 2 - cache + rdpmc. ============
 ======================================================================
@@ -2842,6 +3167,11 @@ Returned value:
   * for ecx=2 and ecx=3:
     * function does not return value
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_PERFORMANCE (2)
+  ecx - SSSF_ALLOW_RDPMC (0), SSSF_CACHE_STATUS (1),
+    SSSF_CACHE_ON (2), SSSF_CACHE_OFF (3)
 ======================================================================
 =========== Function 68, subfunction 3 - read MSR-register. ==========
 ======================================================================
@@ -2866,6 +3196,9 @@ Remarks:
     will generate other exception in the kernel, which will anyway
     kill the thread.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_READ_MSR (3)
 ======================================================================
 ========= Function 68, subfunction 4 - write to MSR-register. ========
 ======================================================================
@@ -2891,6 +3224,9 @@ Remarks:
     will generate other exception in the kernel, which will anyway
     kill the thread.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_WRITE_MSR (4)
 ======================================================================
 ======= Function 68, subfunction 11 - initialize process heap. =======
 ======================================================================
@@ -2908,6 +3244,9 @@ Remarks:
     returning the size of the existing heap.
   * After creation of the heap calls to function 64 will be ignored.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_HEAP_INIT (11)
 ======================================================================
 ======== Function 68, subfunction 12 - allocate memory block. ========
 ======================================================================
@@ -2924,6 +3263,9 @@ Remarks:
     way that the real size of allocated block is more than or equal to
     requested size.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_MEM_ALLOC (12)
 ======================================================================
 ========== Function 68, subfunction 13 - free memory block. ==========
 ======================================================================
@@ -2938,6 +3280,9 @@ Remarks:
   * The memory block must have been allocated by subfunction 12
     or subfunction 20.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_MEM_FREE (13)
 ======================================================================
 ===================== Function 68, subfunction 14 ====================
 ============ Wait for signal from another program/driver. ============
@@ -2952,6 +3297,9 @@ Returned value:
     * +4: dword: data of signal (20 bytes), format of which is defined
           by the first dword
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_WAIT_SIGNAL (14)
 ======================================================================
 ============= Function 68, subfunction 16 - load driver. =============
 ======================================================================
@@ -2970,6 +3318,9 @@ Remarks:
     terminating null character, the rest is ignored.
   * Driver ABC is loaded from file /rd/1/drivers/ABC.obj.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_LOAD_DRIVER (16)
 ======================================================================
 ============ Function 68, subfunction 17 - driver control. ===========
 ======================================================================
@@ -2990,6 +3341,9 @@ Remarks:
     are defined by driver.
   * Previously one must obtain driver handle by subfunction 16.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_CONTROL_DRIVER (17)
 ======================================================================
 =============== Function 68, subfunction 19 - load DLL. ==============
 ======================================================================
@@ -3005,6 +3359,9 @@ Remarks:
     by zero. The first dword in structure points to function name,
     the second dword contains address of function.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_LOAD_DLL (19)
 ======================================================================
 ======= Function 68, subfunction 20 - reallocate memory block. =======
 ======================================================================
@@ -3028,6 +3385,9 @@ Remarks:
   * The contents of the block are unchanged up to the shorter of
     the new and old sizes.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_MEM_REALLOC (20)
 ======================================================================
 =========== Function 68, subfunction 21 - load driver PE. ============
 ======================================================================
@@ -3043,6 +3403,9 @@ Remarks:
   * If the driver was not loaded yet, it is loaded;
     if the driver was loaded yet, nothing happens.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_LOAD_DRIVER_PE (21)
 ======================================================================
 ======== Function 68, subfunction 22 - open named memory area. =======
 ======================================================================
@@ -3081,6 +3444,9 @@ Remarks:
     with denied rights will fail with error code E_ACCESS.
   * The process which has created an area always has write access.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_MEM_OPEN (22)
 ======================================================================
 ======= Function 68, subfunction 23 - close named memory area. =======
 ======================================================================
@@ -3096,6 +3462,9 @@ Remarks:
     this area will close it.
   * When thread is terminating, all opened by it areas are closed.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_MEM_CLOSE (23)
 ======================================================================
 ======== Function 68, subfunction 24 - set exception handler. ========
 ======================================================================
@@ -3128,6 +3497,9 @@ Remarks:
     Also user handler is responsible for clearing exceptions flags in
     FPU and/or SSE.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_SET_EXCEPTION_HANDLER (24)
 ======================================================================
 ======== Function 68, subfunction 25 - set exception activity ========
 ======================================================================
@@ -3144,6 +3516,9 @@ Remarks:
     which has been previously set by subfunction 24,
     is changed. Signal number corresponds to exception number.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_SET_EXCEPTION_STATE (25)
 ======================================================================
 ====== Function 68, subfunction 26 - release memory pages ============
 ======================================================================
@@ -3157,6 +3532,9 @@ Remarks:
   * function release range of pages from ecx+edx to ecx+edx+esi
     and set virtual memory into reserved state.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_MEM_FREE_EXT (26)
 ======================================================================
 ========== Function 68, subfunction 27 - load file ===================
 ======================================================================
@@ -3170,6 +3548,9 @@ Returned value:
 Remarks:
   * function loads file and unpacks, if necessary
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SYS_MISC (68)
+  ebx - SSF_LOAD_FILE (27)
 ======================================================================
 ====================== Function 69 - debugging. ======================
 ======================================================================
@@ -3216,6 +3597,12 @@ The full list of subfunctions:
   * subfunction 8 - terminate debugged thread
   * subfunction 9 - set/clear hardware breakpoint
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_DEBUG (69)
+  ebx - SSF_SET_MESSAGE_AREA (0), SSF_GET_REGISTERS (1),
+    SSF_SET_REGISTERS (2), SSF_DETACH (3), SSF_SUSPEND (4),
+    SSF_RESUME (5), SSF_READ_MEMORY (6), SSF_WRITE_MEMORY (7),
+    SSF_TERMINATE (8), SSF_DEFINE_BREAKPOINT (9)
 ======================================================================
 = Function 69, subfunction 0 - define data area fror debug messages. =
 ======================================================================
@@ -3239,6 +3626,9 @@ Remarks:
     length - messages. Format of a message is explained in
     general description.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_DEBUG (69)
+  ebx - SSF_SET_MESSAGE_AREA (0)
 ======================================================================
 ===================== Function 69, subfunction 1 =====================
 ============ Get contents of registers of debugged thread. ===========
@@ -3268,6 +3658,9 @@ Remarks:
   * Process must be loaded for debugging (as is shown in
     general description).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_DEBUG (69)
+  ebx - SSF_GET_REGISTERS (1)
 ======================================================================
 ===================== Function 69, subfunction 2 =====================
 ============ Set contents of registers of debugged thread. ===========
@@ -3287,6 +3680,9 @@ Remarks:
   * Process must be loaded for debugging (as is shown in
     general description).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_DEBUG (69)
+  ebx - SSF_SET_REGISTERS (2)
 ======================================================================
 ===== Function 69, subfunction 3 - detach from debugged process. =====
 ======================================================================
@@ -3299,6 +3695,9 @@ Returned value:
 Remarks:
   * If the process was suspended, it resumes execution.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_DEBUG (69)
+  ebx - SSF_DETACH (3)
 ======================================================================
 ======== Function 69, subfunction 4 - suspend debugged thread. =======
 ======================================================================
@@ -3312,6 +3711,9 @@ Remarks:
   * Process must be loaded for debugging (as is shown in
     general description).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_DEBUG (69)
+  ebx - SSF_SUSPEND (4)
 ======================================================================
 ======== Function 69, subfunction 5 - resume debugged thread. ========
 ======================================================================
@@ -3325,6 +3727,9 @@ Remarks:
   * Process must be loaded for debugging (as is shown in
     general description).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_DEBUG (69)
+  ebx - SSF_RESUME (5)
 ======================================================================
 = Fucntion 69, subfunction 6 - read from memory of debugged process. =
 ======================================================================
@@ -3343,6 +3748,9 @@ Remarks:
   * Process must be loaded for debugging (as is shown in
     general description).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_DEBUG (69)
+  ebx - SSF_READ_MEMORY (6)
 ======================================================================
 == Function 69, subfunction 7 - write to memory of debugged process. =
 ======================================================================
@@ -3361,6 +3769,9 @@ Remarks:
   * Process must be loaded for debugging (as is shown in
     general description).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_DEBUG (69)
+  ebx - SSF_WRITE_MEMORY (7)
 ======================================================================
 ======= Function 69, subfunction 8 - terminate debugged thread. ======
 ======================================================================
@@ -3377,6 +3788,9 @@ Remarks:
     with two differences: it requires first remark and
     accepts PID rather than slot number.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_DEBUG (69)
+  ebx - SSF_TERMINATE (8)
 ======================================================================
 ===== Function 69, subfunction 9 - set/clear hardware breakpoint. ====
 ======================================================================
@@ -3418,6 +3832,9 @@ Remarks:
   * Breakpoints on write and read/write act after
     execution of the caused it instruction.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_DEBUG (69)
+  ebx - SSF_DEFINE_BREAKPOINT (9)
 ======================================================================
 ==== Function 70 - work with file system with long names support. ====
 ======================================================================
@@ -3486,6 +3903,12 @@ At the first call of subfunctions 0,1,5,7 to ATAPI devices
 drive data. Unlocking is made when subfunction 4 of function 24
 is called for corresponding device.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_FILE (70)
+ [ebx] - SSF_READ_FILE (0), SSF_READ_FOLDER (1), SSF_CREATE_FILE (2),
+    SSF_WRITE_FILE (3), SSF_SET_END (4), SSF_GET_INFO (5),
+    SSF_SET_INFO (6), SSF_START_APP (7), SSF_DELETE (8),
+    SSF_CREATE_FOLDER (9)
 ======================================================================
 === Function 70, subfunction 0 - read file with long names support. ==
 ======================================================================
@@ -3513,6 +3936,9 @@ Remarks:
   * The function does not allow to read folder (returns eax=10,
     access denied).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_FILE (70)
+ [ebx] - SSF_READ_FILE (0)
 ======================================================================
 == Function 70, subfunction 1 - read folder with long names support. =
 ======================================================================
@@ -3610,6 +4036,9 @@ Remarks:
     and times and dates are zeroed. An alternative way to get the
     equipment information - subfunction 11 of function 18.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_FILE (70)
+ [ebx] - SSF_READ_FOLDER (1)
 ======================================================================
 ===================== Function 70, subfunction 2 =====================
 ============ Create/rewrite file with long names support. ============
@@ -3638,6 +4067,9 @@ Remarks:
     write as many as can and then return error code 8.
   * The function is not supported for CD (returns error code 2).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_FILE (70)
+ [ebx] - SSF_CREATE_FILE (2)
 ======================================================================
 ===================== Function 70, subfunction 3 =====================
 =========== Write to existing file with long names support. ==========
@@ -3668,6 +4100,9 @@ Remarks:
     size with zero characters.
   * The function is not supported for CD (returns error code 2).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_FILE (70)
+ [ebx] - SSF_WRITE_FILE (3)
 ======================================================================
 ============ Function 70, subfunction 4 - set end of file. ===========
 ======================================================================
@@ -3699,6 +4134,9 @@ Remarks:
     error code 8.
   * The function is not supported for CD (returns error code 2).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_FILE (70)
+ [ebx] - SSF_SET_END (4)
 ======================================================================
 ==== Function 70, subfunction 5 - get information on file/folder. ====
 ======================================================================
@@ -3727,6 +4165,9 @@ Remarks:
   * The function does not support virtual folders such as /, /rd and
     root folders like /rd/1.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_FILE (70)
+ [ebx] - SSF_GET_INFO (5)
 ======================================================================
 ===== Function 70, subfunction 6 - set attributes of file/folder. ====
 ======================================================================
@@ -3757,6 +4198,9 @@ Remarks:
     root folders like /rd/1.
   * The function is not supported for CD (returns error code 2).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_FILE (70)
+ [ebx] - SSF_SET_INFO (6)
 ======================================================================
 =========== Function 70, subfunction 7 - start application. ==========
 ======================================================================
@@ -3789,6 +4233,9 @@ Remarks:
   * If the process is started as debugged, it is created in
     the suspended state; to run use subfunction 5 of function 69.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_FILE (70)
+ [ebx] - SSF_START_APP (7)
 ======================================================================
 ========== Function 70, subfunction 8 - delete file/folder. ==========
 ======================================================================
@@ -3814,6 +4261,9 @@ Remarks:
   * The function can delete only empty folders (attempt to delete
     nonempty folder results in error with code 10, "access denied").
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_FILE (70)
+ [ebx] - SSF_DELETE (8)
 ======================================================================
 ============= Function 70, subfunction 9 - create folder. ============
 ======================================================================
@@ -3839,6 +4289,9 @@ Remarks:
   * The parent folder must already exist.
   * If target folder already exists, function returns success (eax=0).
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_FILE (70)
+ [ebx] - SSF_CREATE_FOLDER (9)
 ======================================================================
 ========== Function 71, subfunction 1 - set window caption. ==========
 ======================================================================
@@ -3857,6 +4310,8 @@ Remarks:
     otherwise will be used cp866.
   * Pass NULL in ecx to remove caption.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SET_CAPTION (71)
 ======================================================================
 =============== Function 72 - send message to a window. ==============
 ======================================================================
@@ -3871,6 +4326,8 @@ Returned value:
   * eax = 0 - success
   * eax = 1 - buffer is full
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_SEND_MESSAGE (72)
 ======================================================================
 ===================== Function 73 - blit bitmap  =====================
 ======================================================================
@@ -3910,6 +4367,8 @@ Parameters:
 Returned value:
   * function does not return value
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_BLITTER (73)
 ======================================================================
 = Function 74, Subfunction 255, Get number of active network devices. =
 ======================================================================
@@ -3919,6 +4378,9 @@ Parameters:
 Returned value:
   * eax = number of active network devices
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_GET (74)
+   bl - SSF_DEVICE_COUNT (255)
 ======================================================================
 ======== Function 74, Subfunction 0, Get network device type. ========
 ======================================================================
@@ -3929,6 +4391,9 @@ Parameters:
 Returned value:
   * eax = device type number
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_GET (74)
+   bl - SSF_DEVICE_TYPE (0)
 ======================================================================
 ======== Function 74, Subfunction 1, Get network device name. ========
 ======================================================================
@@ -3941,6 +4406,9 @@ Returned value:
   * eax = -1 on error
   * The network device name is written into the buffer, on success
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_GET (74)
+   bl - SSF_DEVICE_NAME (1)
 ======================================================================
 ========= Function 74, Subfunction 2, Reset network device. ==========
 ======================================================================
@@ -3951,6 +4419,9 @@ Parameters:
 Returned value:
   * eax = -1 on error
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_GET (74)
+   bl - SSF_RESET_DEVICE (2)
 ======================================================================
 ========== Function 74, Subfunction 3, Stop network device. ==========
 ======================================================================
@@ -3961,6 +4432,9 @@ Parameters:
 Returned value:
   * eax = -1 on error
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_GET (74)
+   bl - SSF_STOP_DEVICE (3)
 ======================================================================
 =========== Function 74, Subfunction 4, Get device pointer. ==========
 ======================================================================
@@ -3971,6 +4445,9 @@ Parameters:
 Returned value:
   * eax = device pointer, -1 on error
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_GET (74)
+   bl - SSF_DEVICE_POINER (4)
 ======================================================================
 ========= Function 74, Subfunction 6, Get packet TX counter. =========
 ======================================================================
@@ -3981,6 +4458,9 @@ Parameters:
 Returned value:
   * eax = Number of packets sent since device start, -1 on error
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_GET (74)
+   bl - SSF_TX_PACKET_COUNT (6)
 ======================================================================
 ========= Function 74, Subfunction 7, Get packet RX counter. =========
 ======================================================================
@@ -3991,6 +4471,9 @@ Parameters:
 Returned value:
   * eax = Number of packets received since device start, -1 on error
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_GET (74)
+   bl - SSF_RX_PACKET_COUNT (7)
 ======================================================================
 ========== Function 74, Subfunction 8, Get TX byte counter. ==========
 ======================================================================
@@ -4003,6 +4486,9 @@ Returned value:
                   -1 on error
   * ebx = Number of bytes sent since device start (higher dword)
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_GET (74)
+   bl - SSF_TX_BYTE_COUNT (8)
 ======================================================================
 ========== Function 74, Subfunction 9, Get RX byte counter. ==========
 ======================================================================
@@ -4015,6 +4501,9 @@ Returned value:
                   -1 on error
   * ebx = Number of bytes received since device start (higher dword)
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_GET (74)
+   bl - SSF_RX_BYTE_COUNT (9)
 ======================================================================
 ========== Function 74, Subfunction 10, Get link status. =============
 ======================================================================
@@ -4033,6 +4522,9 @@ Returned value:
     ETH_LINK_100M   = 1000b         ; 100 mbit
     ETH_LINK_1G     = 1100b         ; gigabit
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_GET (74)
+   bl - SSF_LINK_STATUS (10)
 ======================================================================
 ============== Function 75, Subfunction 0, Open socket. ==============
 ======================================================================
@@ -4046,6 +4538,9 @@ Returned value:
   * eax = socket number, -1 on error
   * ebx = errorcode
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_SOCKET (75)
+   bl - SSF_OPEN (0)
 ======================================================================
 ============= Function 75, Subfunction 1, Close socket. ==============
 ======================================================================
@@ -4057,6 +4552,9 @@ Returned value:
   * eax = -1 on error
   * ebx = errorcode
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_SOCKET (75)
+   bl - SSF_CLOSE (1)
 ======================================================================
 ================== Function 75, Subfunction 2, Bind. =================
 ======================================================================
@@ -4070,6 +4568,9 @@ Returned value:
   * eax = -1 on error
   * ebx = errorcode
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_SOCKET (75)
+   bl - SSF_BIND (2)
 ======================================================================
 ================= Function 75, Subfunction 3, Listen. ================
 ======================================================================
@@ -4082,6 +4583,9 @@ Returned value:
   * eax = -1 on error
   * ebx = errorcode
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_SOCKET (75)
+   bl - SSF_LISTEN (3)
 ======================================================================
 ================ Function 75, Subfunction 4, Connect. ================
 ======================================================================
@@ -4095,6 +4599,9 @@ Returned value:
   * eax = -1 on error
   * ebx = errorcode
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_SOCKET (75)
+   bl - SSF_CONNECT (4)
 ======================================================================
 ================= Function 75, Subfunction 5, Accept. ================
 ======================================================================
@@ -4108,6 +4615,9 @@ Returned value:
   * eax = socket number of accepted socket, -1 on error
   * ebx = errorcode
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_SOCKET (75)
+   bl - SSF_ACCEPT (5)
 ======================================================================
 ================== Function 75, Subfunction 6, Send. =================
 ======================================================================
@@ -4122,6 +4632,9 @@ Returned value:
   * eax = number of bytes copied, -1 on error
   * ebx = errorcode
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_SOCKET (75)
+   bl - SSF_SEND (6)
 ======================================================================
 ================ Function 75, Subfunction 7, Receive. ================
 ======================================================================
@@ -4136,6 +4649,9 @@ Returned value:
   * eax = number of bytes copied, -1 on error
   * ebx = errorcode
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_SOCKET (75)
+   bl - SSF_RECEIVE (7)
 ======================================================================
 =========== Function 75, Subfunction 8, Set socket options. ==========
 ======================================================================
@@ -4155,6 +4671,9 @@ Remarks:
     dd optlength
     db options...
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_SOCKET (75)
+   bl - SSF_SET_OPTIONS (8)
 ======================================================================
 =========== Function 75, Subfunction 9, Get socket options. ==========
 ======================================================================
@@ -4174,6 +4693,9 @@ Remarks:
     dd optlength
     db options...
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_SOCKET (75)
+   bl - SSF_GET_OPTIONS (9)
 ======================================================================
 ============ Function 75, Subfunction 10, Get socketpair. ===========
 ======================================================================
@@ -4183,7 +4705,10 @@ Parameters:
 Returned value:
   * eax = socketnum1, -1 on error
   * ebx = socketnum2, errorcode on error
-  
+
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_SOCKET (75)
+   bl - SSF_GET_PAIR (10)
 ======================================================================
 ============ Function 76, Network options and statistics. ============
 ======================================================================
@@ -4231,6 +4756,8 @@ ARP (5)
         6 - Send ARP announce on specified interface
         7 - Read # ARP conflicts (IP address conflicts) 
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_NETWORK_PROTOCOL (76)
 ======================================================================
 =============== Function -1 - terminate thread/process ===============
 ======================================================================
