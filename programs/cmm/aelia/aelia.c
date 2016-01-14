@@ -1,4 +1,4 @@
-#define MEMSIZE 4096*30
+#define MEMSIZE 4096*60
 
 #include "../lib/font.h"
 #include "../lib/io.h"
@@ -13,9 +13,7 @@
 #include "../lib/patterns/libimg_load_skin.h"
 #include "../lib/patterns/simple_open_dialog.h"
 #include "../lib/patterns/history.h"
-
-#include "../browser/http_downloader.h"
-#include "parse_address.h"
+#include "../lib/patterns/http_downloader.h"
 
 char default_dir[] = "/rd/1";
 od_filter filter2 = {0,0};
@@ -48,9 +46,9 @@ enum {
 	MAGNIFY_PLUS,
 	CHANGE_ENCODING,
 	RUN_EDIT,
-	SHOW_INFO,
 	GO_BACK,
 	GO_FORWARD,
+	SANDWICH
 };
 
 char address[UML]="http://";
@@ -60,7 +58,11 @@ edit_box address_box = {250,56,34,0xffffff,0x94AECE,0xffffff,0xffffff,0,UML,#add
 #include "ini.h"
 #include "gui.h"
 #include "label.h"
+#include "link.h"
 #include "prepare_page.h"
+//#include "special_symbols.h"
+
+#define SANDWICH_MENU "Refresh page\nEdit page\nHistory\nAbout"
 
 void InitDlls()
 {
@@ -75,7 +77,7 @@ void InitDlls()
 
 
 void main()
-{   	
+{   
 	InitDlls();	
 	OpenDialog_init stdcall (#o_dialog);
 	label.init(DEFAULT_FONT);
@@ -98,12 +100,19 @@ void main()
 				break;
 			case evReDraw:
 				draw_window();
-				if (menu.list.cur_y) {
+				if (menu.list.cur_y>=10) && (menu.list.cur_y<20) {
 					encoding = menu.list.cur_y - 10;
-					debugln("evReDraw: charset changed");
-					EventOpenAddress(history.current());
+					EventPageRefresh();
 					menu.list.cur_y = 0;
 				}
+				if (menu.list.cur_y>=20) {
+					menu.list.cur_y-=20;
+					if (menu.list.cur_y==0) EventPageRefresh();
+					if (menu.list.cur_y==1) EventRunEdit();
+					if (menu.list.cur_y==2) EventShowHistory();
+					if (menu.list.cur_y==3) EventShowInfo();
+					menu.list.cur_y = 0;
+				} 
 		}
 	}
 }
@@ -139,8 +148,8 @@ void HandleButtonEvent()
 		case RUN_EDIT:
 			EventRunEdit();
 			break;
-		case SHOW_INFO:
-			EventShowInfo();
+		case SANDWICH:
+			EventShowSandwichMenu();
 			break;
 	}
 }
@@ -205,6 +214,7 @@ void HandleMouseEvent()
 	edit_box_mouse stdcall (#address_box);
 	mouse.get();
 	list.wheel_size = 7;
+	link.hover();
 	if (list.MouseScroll(mouse.vert)) {
 		DrawPage(); 
 		return; 
@@ -279,6 +289,8 @@ char temp[UML];
 				else
 					DrawProgress(STEP_2_COUNT_PAGE_HEIGHT-STEP_1_DOWNLOAD_PAGE/2);
 			}
+			strcpy(#address,downloader.url);
+			DrawAddressBox();
 			io.buffer_data = downloader.bufpointer;
 		}
 	}
@@ -356,6 +368,17 @@ void EventGoForward()
 	if (history.forward()) EventOpenAddress(history.current());
 }
 
+void EventShowSandwichMenu()
+{
+	menu.selected = 0;
+	menu.show(Form.left+Form.cwidth-130,Form.top+TOOLBAR_H+skin_height-10, 130, SANDWICH_MENU, 20);
+}
+
+void EventPageRefresh()
+{
+	EventOpenAddress(history.current());
+}
+
 /* ------------------------------------------- */
 
 
@@ -375,11 +398,10 @@ void draw_window()
 	DrawToolbarButton(GO_BACK,         8);
 	DrawToolbarButton(GO_FORWARD,      33);
 	DrawToolbarButton(OPEN_FILE,       68);
-	DrawToolbarButton(MAGNIFY_PLUS,    Form.cwidth - 161);
-	DrawToolbarButton(MAGNIFY_MINUS,   Form.cwidth - 136);
-	DrawToolbarButton(CHANGE_ENCODING, Form.cwidth - 102);
-	DrawToolbarButton(RUN_EDIT,        Form.cwidth - 68);
-	DrawToolbarButton(SHOW_INFO,       Form.cwidth - 34);
+	DrawToolbarButton(MAGNIFY_PLUS,    Form.cwidth - 125);
+	DrawToolbarButton(MAGNIFY_MINUS,   Form.cwidth - 100);
+	DrawToolbarButton(CHANGE_ENCODING, Form.cwidth - 64);
+	DrawToolbarButton(SANDWICH,        Form.cwidth - 31);
 
 	DrawAddressBox();
 
@@ -413,7 +435,7 @@ void DrawAddressBox()
 {
 	address_box.left = 97;
 	address_box.top = 11;
-	address_box.width = Form.cwidth - address_box.left - 172;
+	address_box.width = Form.cwidth - address_box.left - 138;
 	DrawRectangle(address_box.left-4, address_box.top-5, address_box.width+6, 23, 0x8C8C8C);
 	DrawWideRectangle(address_box.left-3, address_box.top-3, address_box.width+5, 21, 4, address_box.color);
 	address_box.size = address_box.pos = address_box.shift = address_box.shift_old = strlen(#address);

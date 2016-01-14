@@ -74,7 +74,7 @@ char program_path[4096];
 #define SCAN_CODE_DEL   083
 #define SCAN_CODE_INS   082
 #define SCAN_CODE_SPACE 057
-            
+			
 #define SCAN_CODE_LEFT  075
 #define SCAN_CODE_RIGHT 077
 #define SCAN_CODE_DOWN  080
@@ -404,8 +404,8 @@ inline fastcall int GetClientTop()
 	$mov eax, 48
 	$mov ebx, 5
 	$int 0x40
-    $mov eax, ebx
-    $shr eax, 16
+	$mov eax, ebx
+	$shr eax, 16
 }
 
 inline fastcall int GetClientHeight()
@@ -413,7 +413,7 @@ inline fastcall int GetClientHeight()
 	$mov eax, 48
 	$mov ebx, 5
 	$int 0x40
-    $mov eax, ebx
+	$mov eax, ebx
 }
 
 
@@ -437,61 +437,6 @@ inline fastcall int PlaySpeaker( ESI)
 	$int 0x40
 }
 
-inline fastcall void debugln( EDX)
-{
-	$push eax
-	$push ebx
-	$push ecx
-	$mov eax, 63
-	$mov ebx, 1
-NEXT_CHAR:
-	$mov ecx, DSDWORD[edx]
-	$or	 cl, cl
-	$jz  DONE
-	$int 0x40
-	$inc edx
-	$jmp NEXT_CHAR
-DONE:
-	$mov cl, 13
-	$int 0x40
-	$mov cl, 10
-	$int 0x40
-	$pop ecx
-	$pop ebx
-	$pop eax
-}
-
-inline fastcall void debug( EDX)
-{
-	$push eax
-	$push ebx
-	$push ecx
-	$mov eax, 63
-	$mov ebx, 1
-NEXT_CHAR:
-	$mov ecx, DSDWORD[edx]
-	$or	 cl, cl
-	$jz  DONE
-	$int 0x40
-	$inc edx
-	$jmp NEXT_CHAR
-DONE:
-	$pop ecx
-	$pop ebx
-	$pop eax
-}
-
-
-inline fastcall void debugch( ECX)
-{
-	$push eax
-	$push ebx
-	$mov eax,63
-	$mov ebx,1
-	$int 0x40
-	$pop ebx
-	$pop eax
-}
 //------------------------------------------------------------------------------
 
 void DefineAndDrawWindow(dword x, y, size_w, size_h, byte WindowType,dword WindowAreaColor, EDI, ESI)
@@ -606,7 +551,7 @@ void DrawBar(dword x,y,w,h,EDX)
 	EAX = 13;
 	EBX = x<<16+w;
 	ECX = y<<16+h;
- 	$int 0x40
+	$int 0x40
 }
 
 void DefineButton(dword x,y,w,h,EDX,ESI)
@@ -811,4 +756,8 @@ ______STOP______:
 
 #ifndef INCLUDE_MEM_H
 #include "../lib/mem.h"
+#endif
+
+#ifndef INCLUDE_DEBUG_H
+#include "../lib/debug.h"
 #endif

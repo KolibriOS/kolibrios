@@ -26,6 +26,7 @@
 //useful patterns
 #include "..\lib\patterns\libimg_load_skin.h"
 #include "..\lib\patterns\history.h"
+#include "..\lib\patterns\http_downloader.h"
 
 char homepage[] = FROM "html\\homepage.htm";
 
@@ -101,7 +102,6 @@ enum {
 #include "..\TWB\TWB.c"
 #include "history.h"
 #include "show_src.h"
-#include "http_downloader.h"
 #include "download_manager.h"
 
 char editURL[sizeof(URL)];

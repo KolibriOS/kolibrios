@@ -6,6 +6,7 @@ void PreparePage()
 	//get font chars width, need to increase performance
 	get_label_symbols_size();
 	ChangeCharset(charsets[encoding], "CP866", io.buffer_data);
+	link.clear();
 	if (strstri(io.buffer_data, "<html")==-1) {
 		debugln("no <html> found");
 		DrawProgress(STEP_2_COUNT_PAGE_HEIGHT);     ParceTxt(false);   //get page height to calculate buffer size
@@ -82,7 +83,18 @@ struct _style {
 	bool pre;
 	bool ignore;
 	dword color;
+	void clear();
 } style;
+
+void _style::clear()
+{
+	b=u=i=s=0;
+	h1=h2=h3=h4=h5=h6=0;
+	a=0;
+	pre=0;
+	ignore=0;
+	color=0;
+}
 
 struct _text {
 	dword start;
@@ -96,6 +108,7 @@ struct _tag {
 	dword value[10];
 	void parce();
 	int nameis();
+	void clear();
 };
 
 void _tag::parce()
@@ -108,8 +121,13 @@ void _tag::parce()
 
 int _tag::nameis(dword _in_tag_name)
 {
-	if (strcmp(_in_tag_name, name)==0) return true;
+	if (name) && (strcmp(_in_tag_name, name)==0) return true;
 	return false;
+}
+
+void _tag::clear() 
+{
+	start=name=0;
 }
 
 #define HTML_PADDING_X 8;
@@ -127,21 +145,24 @@ _text text;
 _tag tag;
 dword DOM_pos;
 
+	tag.clear();
+	style.clear();
 	/* Create DOM */
 	debugln("creating DOM");
 	DOM.len = strlen(io.buffer_data);
 	DOM.start = malloc(DOM.len);
 	DOM.end = DOM.start + DOM.len;
 	strlcpy(DOM.start, io.buffer_data, DOM.len);
+	//RemoveSpecialSymbols(DOM.start, DOM.len);
+	//DOM.len = strlen(DOM.start);
 
 	/* Parce DOM */
 	debugln("starting DOM parce...");
-	text.start = DOM_pos;
+	text.start = DOM.start;
 	for (DOM_pos=DOM.start; DOM_pos<DOM.end; DOM_pos++)
 	{
 		if (ESBYTE[DOM_pos]==0x0D) || (ESBYTE[DOM_pos]==0x0A) ESBYTE[DOM_pos]=' ';
 		ch = ESBYTE[DOM_pos];
-		//debugch(ch);
 		if (ch=='<') {
 			ESBYTE[DOM_pos] = '\0';
 			tag.start = DOM_pos + 1;
@@ -152,7 +173,6 @@ dword DOM_pos;
 			}
 			while (get_label_len(text.start) + stroka_x + 30 > list.w)
 			{
-				//debugln("long line cut");
 				zeroch = 0;
 				for (line_break=tag.start-1; line_break>text.start; line_break--;)
 				{
@@ -161,7 +181,10 @@ dword DOM_pos;
 					ESBYTE[line_break] >< zeroch; //restore line
 				}
 				if (draw==true) {
-					if (style.a) label_draw_bar(stroka_x, stroka_y+label.size.pt+1, get_label_len(text.start), style.color);
+					if (style.a) {
+						link.add(stroka_x,stroka_y,get_label_len(text.start),list.item_h,text.start," ");
+						label_draw_bar(stroka_x, stroka_y+label.size.pt+1, get_label_len(text.start), style.color);
+					}
 					WriteTextIntoBuf(stroka_x, stroka_y, style.color, text.start);
 				}
 				ESBYTE[line_break] >< zeroch; //restore line
@@ -170,7 +193,10 @@ dword DOM_pos;
 				stroka_y += list.item_h;
 			}
 			if (draw==true) {
-				if (style.a) label_draw_bar(stroka_x, stroka_y+label.size.pt+1, get_label_len(text.start), style.color);
+				if (style.a) {
+					link.add(stroka_x,stroka_y,get_label_len(text.start),list.item_h,text.start," ");	
+					label_draw_bar(stroka_x, stroka_y+label.size.pt+1, get_label_len(text.start), style.color);
+				}
 				WriteTextIntoBuf(stroka_x, stroka_y, style.color, text.start);
 			}
 			stroka_x += get_label_len(text.start);

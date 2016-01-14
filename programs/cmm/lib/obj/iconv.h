@@ -7,10 +7,6 @@
 #include "../lib/kolibri.h"
 #endif
 
-#ifndef INCLUDE_DLL_H
-#include "../lib/dll.h"
-#endif
-
 dword iconv_lib = #a_iconv_lib;
 char a_iconv_lib[19]="/sys/lib/iconv.obj\0";
 

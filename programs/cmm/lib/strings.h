@@ -181,6 +181,10 @@ inline signed int strcmp(dword text1, text2)
 	return 0;
 }
 
+inline signed int streq(dword text1, text2) {
+	if (!strcmp(text1,text2)) return true; else return false;
+}
+
 /*
 signed int strncmp(dword s1, s2, signed n)
 unsigned char _s1,_s2;
@@ -383,18 +387,6 @@ inline fastcall void chrcat(ESI, BL)
     EDI = strlen(ESI);
     ESBYTE[ESI+EDI] = BL;
     ESBYTE[ESI+EDI+1] = 0;
-}
-
-
-inline fastcall signed int old_strchr( ESI,BL)
-{
-    int jj=0;
-    do{
-        jj++;
-        $lodsb
-        IF(AL==BL) return jj;
-    } while(AL!=0);
-    return 0;
 }
 
 inline dword strchr(dword shb;char s)
@@ -896,14 +888,6 @@ inline signed strcoll(dword text1,text2)
 	}
 	return 0;
 }
-
-inline void debugi(dword d_int)
-{
-    char tmpch[12];
-    itoa_(#tmpch, d_int);
-    debugln(#tmpch);
-}
-
 
 #define strnmov strmovn
 #define stricmp strcmpi
