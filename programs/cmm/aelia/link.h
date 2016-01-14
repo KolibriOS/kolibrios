@@ -34,7 +34,7 @@ int _link::hover()
 	//char tempp[4096];
 	dword color;
 	int i;
-	active = 0;
+	active = -1;
 	mouse.x = mouse.x - list.x;
 	mouse.y = mouse.y - list.y;
 	for (i=0; i<link.count; i++) {
@@ -44,12 +44,17 @@ int _link::hover()
 			if (mouse.x>link.x[i]) 
 			&& (-list.first*list.item_h+link.y[i]<mouse.y)
 			&& (mouse.x<link.x[i]+link.w[i]) 
-			&& (-list.first*list.item_h+link.y[i]+link.h[i]>mouse.y) 
-				color = 0xFF0000;
-			else
-				color = 0xCCCccc;
-			DrawRectangle(link.x[i]+list.x+1, -list.first*list.item_h+link.y[i]+list.y, link.w[i], link.h[i], color);
+			&& (-list.first*list.item_h+link.y[i]+link.h[i]>mouse.y) {
+				color = 0xFFFfff;
+				CursorPointer.Set();
+				active = i;
+			}
+			else {
+				color = 0x0000FF;
+			}
+			DrawBar(link.x[i]+list.x, -list.first*list.item_h+link.y[i]+list.y+link.h[i]-1, link.w[i], 1, color);
 		}
 	}
+	if (active==-1) CursorPointer.Restore();
 	return false;
 }

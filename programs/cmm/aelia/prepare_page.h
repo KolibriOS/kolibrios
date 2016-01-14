@@ -53,9 +53,9 @@ int stroka_y=5, line_length=0;
 		}
 	}
 	if (draw==false) {
-		list.count = stroka_y/list.item_h+2;
+		list.count = stroka_y/list.item_h+3;
 		if (list.count < list.visible) list.count = list.visible;
-		label.size.height = list.count+1*list.item_h;
+		label.size.height = list.count+5*list.item_h;
 		label.raw_size = 0;
 	} 
 	if (draw==true) WriteTextIntoBuf(8, stroka_y, 0x000000, line_start);
@@ -171,6 +171,7 @@ dword DOM_pos;
 				strcpy(#title, text.start);
 				continue;
 			}
+			strtrim(text.start);
 			while (get_label_len(text.start) + stroka_x + 30 > list.w)
 			{
 				zeroch = 0;
@@ -186,6 +187,7 @@ dword DOM_pos;
 						label_draw_bar(stroka_x, stroka_y+label.size.pt+1, get_label_len(text.start), style.color);
 					}
 					WriteTextIntoBuf(stroka_x, stroka_y, style.color, text.start);
+					stroka_x+=char_width[' '];
 				}
 				ESBYTE[line_break] >< zeroch; //restore line
 				text.start = line_break;
@@ -198,6 +200,7 @@ dword DOM_pos;
 					label_draw_bar(stroka_x, stroka_y+label.size.pt+1, get_label_len(text.start), style.color);
 				}
 				WriteTextIntoBuf(stroka_x, stroka_y, style.color, text.start);
+				stroka_x+=char_width[' '];
 			}
 			stroka_x += get_label_len(text.start);
 		}
@@ -205,11 +208,20 @@ dword DOM_pos;
 			ESBYTE[DOM_pos] = '\0';
 			text.start = DOM_pos + 1;
 			tag.parce();
-			if (tag.nameis("br")) || (tag.nameis("p")) || (tag.nameis("div")) || (tag.nameis("h1")) || (tag.nameis("h2")) {
+			if (tag.nameis("br")) 
+				|| (tag.nameis("p")) 
+				|| (tag.nameis("div")) 
+				|| (tag.nameis("tr")) {
 				stroka_y+= list.item_h;
 				stroka_x = HTML_PADDING_X;
 				continue;
 			}
+			if 	(tag.nameis("h1")) || (tag.nameis("/h1"))
+				|| (tag.nameis("h2")) || (tag.nameis("/h2")) {
+					stroka_y+= list.item_h;
+					stroka_x = HTML_PADDING_X;
+					continue;					
+				}
 			if (tag.nameis("script")) || (tag.nameis("style")) style.ignore = true;
 			if (tag.nameis("/script")) || (tag.nameis("/style")) style.ignore = false;
 			if (tag.nameis("a"))  { style.a = true;  style.color=0x0000FF; }
@@ -217,9 +229,9 @@ dword DOM_pos;
 		}		
 	}
 	if (draw==false) {
-		list.count = stroka_y/list.item_h+2;
+		list.count = stroka_y/list.item_h+3;
 		if (list.count < list.visible) list.count = list.visible;
-		label.size.height = list.count+1*list.item_h;
+		label.size.height = list.count+5*list.item_h;
 		label.raw_size = 0;
 	}
 	free(DOM.start);

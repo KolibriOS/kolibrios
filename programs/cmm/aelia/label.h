@@ -23,11 +23,11 @@ void WriteTextIntoBuf(int _x, _y; dword _text_col, _text_off)
 {
 	char error_message[128];
 	if (_x > list.w) {
-		sprintf(#error_message, "\nWriteTextIntoBuf _x overflow: H %d X %d \n", label.size.height, _x);
+		sprintf(#error_message, "'WriteTextIntoBuf _x overflow: H %d X %d' -A", label.size.height, _x);
 		notify(#error_message);
 	}
 	if (_y+label.size.pt > label.size.height) {
-		sprintf(#error_message, "\nWriteTextIntoBuf _y overflow: H %d Y %d \n", label.size.height, _y);
+		sprintf(#error_message, "'WriteTextIntoBuf _y overflow: H %d Y %d' -A", label.size.height, _y);
 		notify(#error_message);
 		return;
 	}

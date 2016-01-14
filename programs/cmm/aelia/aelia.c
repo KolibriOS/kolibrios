@@ -10,6 +10,7 @@
 #include "../lib/obj/iconv.h"
 #include "../lib/obj/proc_lib.h"
 #include "../lib/obj/http.h"
+#include "../lib/cursor.h"
 #include "../lib/patterns/libimg_load_skin.h"
 #include "../lib/patterns/simple_open_dialog.h"
 #include "../lib/patterns/history.h"
@@ -55,6 +56,9 @@ char address[UML]="http://";
 int	mouse_address_box;
 edit_box address_box = {250,56,34,0xffffff,0x94AECE,0xffffff,0xffffff,0,UML,#address,#mouse_address_box,2,19,19};
 
+CustomCursor CursorPointer;
+dword CursorFile = FROM "pointer.cur";
+
 #include "ini.h"
 #include "gui.h"
 #include "label.h"
@@ -80,6 +84,7 @@ void main()
 {   
 	InitDlls();	
 	OpenDialog_init stdcall (#o_dialog);
+	CursorPointer.Load(#CursorFile);
 	label.init(DEFAULT_FONT);
 	Libimg_LoadImage(#skin, abspath("toolbar.png"));
 	LoadIniSettings();
