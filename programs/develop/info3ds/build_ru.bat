@@ -10,4 +10,6 @@ if not exist bin\font8x9.bmp @copy ..\..\fs\kfar\trunk\font8x9.bmp bin\font8x9.b
 @kpack bin\tinygl.obj
 @fasm.exe -m 16384 info3ds.asm bin\info3ds.kex
 @kpack bin\info3ds.kex
+@fasm.exe -m 16384 info3ds_u.asm bin\info3ds_u.kex
+@kpack bin\info3ds_u.kex
 pause

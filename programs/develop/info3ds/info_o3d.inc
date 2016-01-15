@@ -83,13 +83,16 @@ proc obj_clear_param uses edi, o_data:dword
 	mov dword[edi+offs_obj_tri_count],0
 	mov dword[edi+offs_obj_normals_tri_count],0
 	mov dword[edi+offs_obj_normals_poi_count],0
-	stdcall mem.Free,[edi+offs_obj_normals_tri_data]
-	stdcall mem.Free,[edi+offs_obj_normals_poi_data]
-	mov dword[edi+offs_obj_normals_tri_data],0
-	mov dword[edi+offs_obj_normals_poi_data],0
-
-	;установка параметров отображения
-	call mnu_reset_settings
+	cmp dword[edi+offs_obj_normals_tri_data],0
+	je @f
+		stdcall mem.Free,[edi+offs_obj_normals_tri_data]
+		mov dword[edi+offs_obj_normals_tri_data],0
+	@@:
+	cmp dword[edi+offs_obj_normals_poi_data],0
+	je @f
+		stdcall mem.Free,[edi+offs_obj_normals_poi_data]
+		mov dword[edi+offs_obj_normals_poi_data],0
+	@@:
 	ret
 endp
 
@@ -435,10 +438,83 @@ popad
 	ret
 endp
 
+;настройка структуры 3d объекта
+align 4
+proc obj_init, o_data:dword
+	pushad
+	mov edi,[o_data]
+	stdcall obj_clear_param, edi
+	stdcall [tl_node_get_data],tree1
+	xor edx,edx
+	cmp eax,0
+	je .no_points
+		mov ebx,[eax] ;получаем значение сдвига выбранного блока
+		add ebx,[open_file_data]
+		xor ecx,ecx
+		cmp word[ebx],CHUNK_OBJBLOCK
+		jne @f
+			mov ecx,ebx
+			add ecx,dword[ecx+2] ;граница блока
+			push eax edi
+				mov edi,ebx
+				add edi,6
+				cld
+				xor al,al
+				repne scasb ;пропуск имени объекта
+				mov ebx,edi
+			pop edi eax
+		@@:
+		cmp word[ebx],CHUNK_TRIMESH
+		jne @f
+			mov ecx,ebx
+			add ecx,dword[ecx+2] ;граница блока
+			add ebx,6
+		@@:
+		cmp word[ebx],CHUNK_VERTLIST
+		jne .no_points
+			mov esi,ebx
+			movzx edx,word[ebx+6] ;колличество точек
+			add ebx,8
+			mov [edi+offs_obj_poi_data],ebx
+			mov [edi+offs_obj_poi_count],edx
+
+			.cycle_0: ;цикл для поиска треугольников
+				add esi,dword[esi+2]
+				cmp word[esi],CHUNK_FACELIST
+				je @f
+					cmp ecx,esi
+					jg .cycle_0 ;пока не достигнута грница старшего блока
+					jmp .end_points ;если не нашли треугольники
+			@@:
+			;если нашли треугольники
+			movzx edx,word[esi+6]
+			mov [edi+offs_obj_tri_count],edx
+			add esi,8 ;2+4+2 (chunk+size+count)
+			mov [edi+offs_obj_tri_data],esi
+		.end_points:
+
+		stdcall obj_set_sizes, edi
+		stdcall obj_set_normals, edi
+if version_edit eq 0
+		stdcall draw_3d, edi
+end if
+	.no_points:
+	popad
+	ret
+endp
+
 ;рисование точек в 3d
 align 4
 proc draw_3d uses eax ebx ecx edi, o_data:dword
 	mov edi,[o_data]
+if 0 ;debug
+	stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT
+	mov eax,[edi+offs_obj_poi_data]
+	stdcall convert_int_to_str, txt_select_vert.count,16
+	stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_select_vert,5,3,[color_select]
+	stdcall [kosglSwapBuffers]
+	jmp .end_f
+end if
 	cmp dword[edi+offs_obj_poi_count],2
 	jl .end_f
 	stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
@@ -603,33 +679,35 @@ SetLight:
 	stdcall [glEnable],GL_LIGHT0
 	ret
 
-;изменяем режим рисования вершин
+;включаем режим рисования вершин
 align 4
-mnu_vertexes_on_off:
-	xor dword[draw_mode], 1 shl bit_vertexes
-	stdcall draw_3d, o3d
+mnu_vertexes_on:
+	or dword[draw_mode], 1 shl bit_vertexes
+	and dword[draw_mode], not (1 shl bit_faces) ;выключаем режим рисования граней (что-бы не мешали)
+	call update_obj
 	ret
 
-;изменяем режим рисования граней
+;включаем режим рисования каркасных граней
 align 4
-mnu_faces_on_off:
-	xor dword[draw_mode], 1 shl bit_faces
-	stdcall draw_3d, o3d
+mnu_edges_on:
+	or dword[draw_mode], 1 shl bit_faces
+	and dword[draw_mode], not ((1 shl bit_vertexes)+(1 shl bit_faces_fill))
+	call update_obj
 	ret
 
-;изменяем каркасные или сплошные грани
+;включаем режим рисования сплошных граней
 align 4
-mnu_faces_fill_on_off:
-	xor dword[draw_mode], 1 shl bit_faces_fill
-	or  dword[draw_mode], 1 shl bit_faces ;включаем режим рисования граней (если вдруг был отключен)
-	stdcall draw_3d, o3d
+mnu_faces_on:
+	or dword[draw_mode], (1 shl bit_faces)+(1 shl bit_faces_fill)
+	and dword[draw_mode], not (1 shl bit_vertexes)
+	call update_obj
 	ret
 
 ;включаем или отключаем освещение
 align 4
 mnu_light_on_off:
 	xor dword[draw_mode], 1 shl bit_light
-	stdcall draw_3d, o3d
+	call update_obj
 	ret
 
 align 4
@@ -638,8 +716,31 @@ mnu_reset_settings:
 	mov dword[angle_y],0.0
 	mov dword[angle_z],0.0
 	m2m dword[draw_mode],dword[def_dr_mode]
+	call update_obj
+	ret
+
+if version_edit eq 1
+
+align 4
+update_obj:
 	stdcall draw_3d, o3d
 	ret
+
+else
+
+align 4
+update_obj:
+push eax
+	stdcall [tl_node_get_data],tree1
+	cmp eax,0
+	je @f
+		add eax,14 ;14=list_offs_obj3d
+		stdcall draw_3d, eax
+	@@:
+pop eax
+	ret
+
+end if
 
 align 4
 draw_mode dd 0 ;режим рисования объекта

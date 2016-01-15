@@ -42,6 +42,12 @@ pushad
 	mov dword[w_scr_t3.type],1
 	mov edi,o3d
 	stdcall obj_clear_param, edi
+	call mnu_reset_settings
+
+	mov eax,dword[ctx1] ;eax -> TinyGLContext.GLContext
+	mov eax,[eax] ;eax -> ZBuffer
+	mov eax,[eax+offs_zbuf_pbuf] ;eax -> ZBuffer.pbuf
+	mov dword[buf_ogl],eax
 
 	stdcall [tl_node_get_data],tree1
 	xor edx,edx
@@ -54,84 +60,20 @@ pushad
 		cmp word[ebx],CHUNK_OBJBLOCK
 		jne .end_oblo
 			mov dword[capt_p],txt_4000
-			stdcall found_block_data, tree1
-			cmp eax,0
-			je .no_points
-			mov esi,eax
-			movzx ecx,byte[esi+2] ;cl - уровень выбранного узла
-			.cycle_0:
-				stdcall [tl_node_poi_get_next_info], tree1,esi
-				cmp eax,0
-				je .no_points
-				cmp byte[eax+2],cl
-				jle .no_points
-				mov esi,eax
-				stdcall [tl_node_poi_get_data], tree1,esi
-				mov ebx,[eax]
-				add ebx,[open_file_data]
-				cmp word[ebx],CHUNK_VERTLIST
-				je .ini_vlist
-				jmp .cycle_0
+			stdcall obj_init,edi
 			jmp .no_points
 		.end_oblo:
 		cmp word[ebx],CHUNK_TRIMESH
 		jne .end_trim
 			mov dword[capt_p],txt_4100
-			stdcall found_block_data, tree1
-			cmp eax,0
-			je .no_points
-			mov esi,eax
-			movzx ecx,byte[esi+2] ;cl - уровень выбранного узла
-			.cycle_1:
-				stdcall [tl_node_poi_get_next_info], tree1,esi
-				cmp eax,0
-				je .no_points
-				cmp byte[eax+2],cl
-				jle .no_points
-				mov esi,eax
-				stdcall [tl_node_poi_get_data], tree1,esi
-				mov ebx,[eax]
-				add ebx,[open_file_data]
-				cmp word[ebx],CHUNK_VERTLIST
-				je .ini_vlist
-				jmp .cycle_1
+			stdcall obj_init,edi
 			jmp .no_points
 		.end_trim:
 		cmp word[ebx],CHUNK_VERTLIST
 		jne .end_vlist
 			mov dword[capt_p],txt_4110
-			.ini_vlist:
-			movzx edx,word[ebx+6] ;колличество точек
-			add ebx,8
-			;поиск данных для треугольков
-			stdcall found_block_data, tree1
-			cmp eax,0
-			je .set_points
-			mov esi,eax
-			;если нашли выбранный узел, то далее пытаемся найти узел с треугольниками
-			movzx ecx,byte[esi+2] ;cl - уровень выбранного узла
-			.cycle_2:
-				stdcall [tl_node_poi_get_next_info], tree1,esi
-				cmp eax,0
-				je .set_points
-				mov esi,eax
-				stdcall [tl_node_poi_get_data], tree1,esi
-				cmp byte[esi+2],cl
-				jl .set_points
-				je .found
-				jmp .cycle_2
-			.found: ;если нашли узел тогоже уровня что и выбранный узел
-				cmp eax,0
-				je .set_points
-				mov eax,[eax]
-				add eax,[open_file_data]
-				cmp word[eax],CHUNK_FACELIST
-				jne .cycle_2
-				movzx ecx,word[eax+6]
-				mov [edi+offs_obj_tri_count],ecx
-				add eax,8 ;2+4+2 (chunk+size+count)
-				mov [edi+offs_obj_tri_data],eax
-			jmp .set_points
+			stdcall obj_init,edi
+			jmp .no_points
 		.end_vlist:
 		cmp word[ebx],CHUNK_TRACKPIVOT
 		jne @f
@@ -153,7 +95,9 @@ pushad
 	.no_points:
 
 	;настройка списка объектов
+	mov ebx,[edi+offs_obj_poi_data]
 	mov dword[tree3.info_max_count],2
+	mov edx,[edi+offs_obj_poi_count]
 	add dword[tree3.info_max_count],edx ;ставим число узлов, равное колличеству точек (+2 на начало и конец списка)
 	stdcall dword[tl_data_init], tree3
 	mov eax,dword[icon_tl_sys]
@@ -165,6 +109,7 @@ pushad
 	je .no_object
 		mov word[NumberSymbolsAD],5
 		finit
+		mov dword[w_scr_t3.redraw],0
 		.new_point:
 			mov dword[obj_point],ebx
 			mov dword[obj_point.text],0
@@ -190,6 +135,7 @@ pushad
 			dec edx
 			cmp edx,0
 			jg .new_point
+			mov dword[w_scr_t3.redraw],1
 			stdcall dword[tl_cur_beg], tree3
 	.no_object:
 	stdcall obj_set_sizes, o3d
@@ -216,13 +162,7 @@ pushad
 	and ebx,0x3f3f3f
 	add eax,ebx
 	mov [edit3.color],eax
-
-	mov eax,dword[ctx1] ;eax -> TinyGLContext.GLContext
-	mov eax,[eax] ;eax -> ZBuffer
-	mov eax,[eax+offs_zbuf_pbuf] ;eax -> ZBuffer.pbuf
-	mov dword[buf_ogl],eax
 popad
-
 	call prop_red_win
 
 ;не отрывать эту функцию от предыдущей
@@ -527,17 +467,17 @@ prop_button:
 	@@:
 	cmp ah,5
 	jne @f
-		call mnu_vertexes_on_off
+		call mnu_vertexes_on
 		jmp prop_still.end
 	@@:
 	cmp ah,6
 	jne @f
-		call mnu_faces_on_off
+		call mnu_edges_on
 		jmp prop_still.end
 	@@:
 	cmp ah,7
 	jne @f
-		call mnu_faces_fill_on_off
+		call mnu_faces_on
 		jmp prop_still.end
 	@@:
 	cmp ah,8

@@ -1,10 +1,11 @@
 use32
 	org 0x0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 1, start, i_end, mem, stacktop, 0, sys_path
+	dd 1, start, i_end, mem, stacktop, file_name, sys_path
 
 include '../../macros.inc'
 include '../../proc32.inc'
+include '../../kosfuncs.inc'
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../develop/libraries/TinyGL/asm_fork/opengl_const.inc'
@@ -14,7 +15,12 @@ include 'info_fun_float.inc'
 include 'info_menu.inc'
 include 'data.inc'
 
-version_edit equ 1
+version_edit equ 0
+
+3d_wnd_l equ 205 ;отступ для tinygl буфера слева
+3d_wnd_t equ  47 ;отступ для tinygl буфера сверху
+3d_wnd_w equ 344
+3d_wnd_h equ 312
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
@@ -76,14 +82,14 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
 	mov [buf],eax
 
-	mov [run_file_70.Function], 0
+	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov [run_file_70.Count], dword size
 	mov [run_file_70.Buffer], eax
 	mov byte[run_file_70+20], 0
 	mov [run_file_70.FileName], file_name
-	mcall 70,run_file_70 ;загружаем файл изображения
+	mcall SF_FILE,run_file_70 ;загружаем файл изображения
 	cmp ebx,0xffffffff
 	je @f
 		;определяем вид изображения и переводим его во временный буфер image_data
@@ -106,33 +112,47 @@ file_3ds: ;переменные используемые при открытии файла
 .size: dd 0 ;+4 размер блока (для 1-го параметра = размер файла 3ds)
 rb 8*MAX_FILE_LEVEL
 
-size_one_list equ 42
+size_one_list equ 42+sizeof.obj_3d
 list_offs_chunk_del equ 8 ;может ли блок удалятся
 list_offs_chunk_lev equ 9 ;уровень блока (прописан в данные узла)
 list_offs_p_data equ 10 ;указатель на подпись блока
-list_offs_text equ 14 ;сдвиг начала текста в листе
+list_offs_obj3d equ 14 ;указатель на структуру данных для 3d объекта
+list_offs_text equ 14+sizeof.obj_3d ;сдвиг начала текста в листе
 buffer rb size_one_list ;буфер для добавления структур в список tree1
 
 txt_3ds_symb db 0,0
 ;--------------------------------------
 
-include 'info_wnd_coords.inc'
+
 
 align 4
 start:
+	;--- copy cmd line ---
+	mov esi,file_name
+	mov edi,openfile_path
+@@:
+	lodsd
+	cmp eax,0
+	je @f ;выход, если 0
+	stosd
+	jmp @b
+@@:
+	stosd
+
 	load_libraries l_libs_start,l_libs_end
 	;проверка на сколько удачно загузились библиотеки
 	mov	ebp,lib_0
 	.test_lib_open:
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
-		mcall -1 ;exit not correct
+		mcall SF_TERMINATE_PROCESS ;exit not correct
 	@@:
 	add ebp,ll_struc_size
 	cmp ebp,l_libs_end
 	jl .test_lib_open
-	mcall 48,3,sc,sizeof.sys_colors_new
-	mcall 40,0x27
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.sys_colors_new
+	mcall SF_SET_EVENTS_MASK,0x27
+
 	stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
 
 	;kmenu initialisation
@@ -142,7 +162,7 @@ start:
 
 	stdcall [ksubmenu_new]
 	mov [main_menu_view], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Vertexes, 5
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Vertexes, 10
 	stdcall [ksubmenu_add], [main_menu_view], eax
 	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Faces, 6
 	stdcall [ksubmenu_add], [main_menu_view], eax
@@ -157,23 +177,6 @@ start:
 	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_View, [main_menu_view]
 	stdcall [ksubmenu_add], [main_menu], eax
 
-	stdcall [ksubmenu_new]
-	mov [main_menu_vertexes], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Vertexes_Select, 10
-	stdcall [ksubmenu_add], [main_menu_vertexes], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Vertexes_Deselect, 11
-	stdcall [ksubmenu_add], [main_menu_vertexes], eax
-	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
-	stdcall [ksubmenu_add], [main_menu_vertexes], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Average_x, 12
-	stdcall [ksubmenu_add], [main_menu_vertexes], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Average_y, 13
-	stdcall [ksubmenu_add], [main_menu_vertexes], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Average_z, 14
-	stdcall [ksubmenu_add], [main_menu_vertexes], eax
-	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Vertexes, [main_menu_vertexes]
-	stdcall [ksubmenu_add], [main_menu], eax
-
 	mov dword[w_scr_t1.type],1
 	stdcall dword[tl_data_init], tree1
 	;системные иконки 16*16 для tree_list
@@ -186,8 +189,6 @@ start:
 	load_image_file 'objects.png', icon_toolbar,IMAGE_CHUNKS_SIZE
 	mov eax,dword[icon_toolbar]
 	mov dword[tree1.data_img],eax
-
-	stdcall [buf2d_create], buf_0 ;создание буфера
 
 	load_image_file 'font8x9.bmp', image_data_toolbar,IMAGE_FILE1_SIZE
 	stdcall [buf2d_create_f_img], buf_1,[image_data_toolbar] ;создаем буфер
@@ -255,7 +256,7 @@ start:
 	fdiv dword[fl255]
 	fstp dword[color_bk]
 
-	mcall 26,9
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov [last_time],eax
 
 	stdcall [kosglMakeCurrent], 3d_wnd_l,3d_wnd_t,3d_wnd_w,3d_wnd_h,ctx1
@@ -266,11 +267,21 @@ start:
 	stdcall [gluNewQuadric]
 	mov [qObj],eax
 
+	mov eax,dword[ctx1] ;eax -> TinyGLContext.GLContext
+	mov eax,[eax] ;eax -> ZBuffer
+	mov eax,[eax+offs_zbuf_pbuf] ;eax -> ZBuffer.pbuf
+	mov dword[buf_ogl],eax
+
+	;open file from cmd line
+	cmp dword[openfile_path],0
+	je @f
+		call but_open_file.no_dlg
+	@@:
 	call draw_window
 
 align 4
 still:
-	mcall 26,9
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov ebx,[last_time]
 	add ebx,10 ;задержка
 	cmp ebx,eax
@@ -278,7 +289,7 @@ still:
 		mov ebx,eax
 	@@:
 	sub ebx,eax
-	mcall 23
+	mcall SF_WAIT_EVENT_TIMEOUT
 	cmp eax,0
 	je timer_funct
 
@@ -293,7 +304,7 @@ still:
 	jz button
 	cmp al,6
 	jne @f
-		mcall 9,procinfo,-1
+		mcall SF_THREAD_INFO,procinfo,-1
 		cmp ax,word[procinfo+4]
 		jne @f ;окно не активно
 		call mouse
@@ -302,19 +313,102 @@ still:
 
 align 4
 mouse:
+	push eax ebx
+	mcall SF_MOUSE_GET,SSF_BUTTON_EXT
+	bt eax,0
+	jnc .end_m
+		;mouse l. but. move
+		cmp dword[mouse_drag],1
+		jne .end_m
+		mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
+		mov ebx,eax
+		shr ebx,16 ;mouse.x
+		cmp ebx,3d_wnd_l
+		jg @f
+			mov ebx,3d_wnd_l
+		@@:
+		sub ebx,3d_wnd_l
+		cmp ebx,3d_wnd_w
+		jle @f
+			mov ebx,3d_wnd_w
+		@@:
+		and eax,0xffff ;mouse.y
+		cmp eax,3d_wnd_t
+		jg @f
+			mov eax,3d_wnd_t
+		@@:
+		sub eax,3d_wnd_t
+		cmp eax,3d_wnd_h
+		jle @f
+			mov eax,3d_wnd_h
+		@@:
+		finit
+		fild dword[mouse_y]
+		mov [mouse_y],eax
+		fisub dword[mouse_y]
+		fdiv dword[angle_dxm] ;если курсор движется по оси y (вверх или вниз) то поворот делаем вокруг оси x
+		fadd dword[angle_x]
+		fstp dword[angle_x]
+
+		fild dword[mouse_x]
+		mov [mouse_x],ebx
+		fisub dword[mouse_x]
+		fdiv dword[angle_dym] ;если курсор движется по оси x (вверх или вниз) то поворот делаем вокруг оси y
+		fadd dword[angle_y]
+		fstp dword[angle_y]
+
+		stdcall [tl_node_get_data],tree1
+		cmp eax,0
+		je .end_d
+		add eax,list_offs_obj3d
+		stdcall draw_3d, eax
+		jmp .end_d
+	.end_m:
+	bt eax,16
+	jnc @f
+		;mouse l. but. up
+		mov dword[mouse_drag],0
+		jmp .end_d
+	@@:
+	bt eax,8
+	jnc .end_d
+		;mouse l. but. press
+		mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
+		mov ebx,eax
+		shr ebx,16 ;mouse.x
+		cmp ebx,3d_wnd_l
+		jl .end_d
+		sub ebx,3d_wnd_l
+		cmp ebx,3d_wnd_w
+		jg .end_d
+		and eax,0xffff ;mouse.y
+		cmp eax,3d_wnd_t
+		jl .end_d
+		sub eax,3d_wnd_t
+		cmp eax,3d_wnd_h
+		jg .end_d
+		mov dword[mouse_drag],1
+		mov dword[mouse_x],ebx
+		mov dword[mouse_y],eax
+	.end_d:
+
 	stdcall [tl_mouse], dword tree1
+	stdcall [kmainmenu_dispatch_cursorevent], [main_menu]
+	pop ebx eax
 	ret
 
 align 4
 timer_funct:
 	pushad
-	mcall 26,9
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov [last_time],eax
 
 	;просматриваем выделенный блок данных
 	stdcall [tl_node_get_data],tree1
 	cmp eax,0
-	je @f
+	je .end_f
+		mov edi,eax
+		add edi,list_offs_obj3d
 		mov ebx,eax
 		mov eax,dword[ebx] ;получаем значение сдвига выбранного блока относительно начала файла
 		mov ecx,dword[ebx+4] ;размер блока
@@ -323,184 +417,164 @@ timer_funct:
 
 		add eax,dword[open_file_data] ;получаем значение сдвига в памяти
 		cmp dword[offs_last_timer],eax
-		je @f
+		je .end_f
 			;если выделенный блок данных не совпадает с последним запомненным
 			mov dword[offs_last_timer],eax
+
+			cmp word[eax],CHUNK_OBJBLOCK
+			jne .end_oblo
+			cmp dword[edi+offs_obj_poi_count],2
+			jl .ini_oblo
+				stdcall draw_3d,edi
+				jmp .end_f
+			.ini_oblo:
+				stdcall obj_init,edi ;попытка настроить переменные объекта
+				cmp dword[edi+offs_obj_poi_count],2
+				jl .end_f
+					call mnu_reset_settings ;сброс углов поворота и режимов рисования
+				jmp .end_f
+			.end_oblo:
 			call buf_draw_beg
-			stdcall [buf2d_draw_text], buf_0, buf_1,txt_3ds_offs,5,35,0xb000
+			stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_3ds_offs,5,35,0xb000
 			mov edx,dword[ebx+list_offs_p_data]
 			cmp edx,0 ;смотрим есть ли описание блока
 			je .no_info
-				stdcall [buf2d_draw_text], buf_0, buf_1,edx,5,45,0xb000
+				stdcall [buf2d_draw_text], buf_ogl, buf_1,edx,5,45,0xb000
 			.no_info:
-			add ecx,eax ;получаем размер блока
-			stdcall buf_draw_hex_table,eax,ecx ;добавление 16-ричных данных
-			stdcall [buf2d_draw], buf_0 ;обновляем буфер на экране
-	@@:
+			stdcall [buf2d_draw], buf_ogl ;обновляем буфер на экране
+	.end_f:
 	popad
 	jmp still
 
 align 4
 buf_draw_beg:
-	stdcall [buf2d_clear], buf_0, [buf_0.color] ;чистим буфер
-	stdcall [buf2d_draw_text], buf_0, buf_1,txt_open_3ds,5,5,0xff
-	stdcall [buf2d_draw_text], buf_0, buf_1,openfile_path,5,15,0xff
+	stdcall [buf2d_clear], buf_ogl, [buf_ogl.color] ;чистим буфер
+	stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_open_3ds,5,5,0xff
+	stdcall [buf2d_draw_text], buf_ogl, buf_1,openfile_path,5,15,0xff
 	cmp dword[level_stack],FILE_ERROR_CHUNK_SIZE ;возможна ошибка файла
 	jne @f
-		stdcall [buf2d_draw_text], buf_0, buf_1,txt_3ds_err_sizes,5,25,0xff0000
+		stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_3ds_err_sizes,5,25,0xff0000
 	@@:
 	ret
 
 align 4
-proc buf_draw_hex_table, offs:dword, size_line:dword
-	pushad
-	locals
-		coord_y dd 55 ;координата y для начала вывода таблицы
-	endl
-		mov esi,dword[offs]
-		mov edi,dword[open_file_data]
-		add edi,dword[file_3ds.size] ;edi - указатель на конец файла в памяти
-		mov dword[txt_3ds_offs.dig],0
-		cld
-		.cycle_rows:
-			mov ebx,5 ;отступ слева для цифр
-			mov edx,5+10*24 ;отступ слева для текста
-			mov ecx,10
-			@@:
-				stdcall hex_in_str, txt_3ds_offs.dig, dword[esi],2
-				stdcall [buf2d_draw_text], buf_0, buf_1,txt_3ds_offs.dig,ebx,[coord_y],0
-
-				mov al,byte[esi]
-				mov byte[txt_3ds_symb],al
-				stdcall [buf2d_draw_text], buf_0, buf_1,txt_3ds_symb,edx,[coord_y],0x808080
-				inc esi
-				cmp esi,dword[size_line]
-				jne .end_block
-					stdcall draw_block_end_line, dword[coord_y]
-				.end_block:
-				cmp esi,edi
-				jge @f ;jg ???
-				add ebx,24
-				add edx,9 ;ширина 1-го символа +1pix
-				loop @b
-			add dword[coord_y],10 ;высота 1-го символа (или интервал между строками)
-			mov ebx,dword[buf_0.h]
-			cmp dword[coord_y],ebx
-			jl .cycle_rows
-		@@:
-	popad
-	ret
-endp
-
-align 4
-proc draw_block_end_line uses eax ebx ecx, coord_y:dword
-	add ebx,20 ;20 = width 2.5 symbols
-	mov eax,[coord_y]
-	sub eax,2
-	mov ecx,eax
-	add ecx,10
-	stdcall [buf2d_line], buf_0, 0,ecx,ebx,ecx ,0xff
-	stdcall [buf2d_line], buf_0, ebx,ecx,ebx,eax ,0xff
-	stdcall [buf2d_line], buf_0, ebx,eax,5+10*24-4,eax ,0xff
-	ret
-endp
-
-align 4
 draw_window:
 pushad
-	mcall 12,1
-	xor eax,eax
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 	mov edx,[sc.work]
 	or  edx,0x33000000
-	mov edi,capt
-	mcall , (20 shl 16)+560, (20 shl 16)+main_wnd_height
+	mcall SF_CREATE_WINDOW, (20 shl 16)+560, (20 shl 16)+main_wnd_height,,, capt
 
-	mcall 9,procinfo,-1
+	mcall SF_THREAD_INFO,procinfo,-1
 	mov eax,dword[procinfo.box.height]
 	cmp eax,250
 	jge @f
 		mov eax,250
 	@@:
-	sub eax,65
-	mov dword[tree1.box_height],eax
+	sub eax,30
+	sub eax,[tree1.box_top]
+	mov [tree1.box_height],eax
 	mov word[w_scr_t1.y_size],ax ;новые размеры скроллинга
-	cmp eax,dword[buf_0.h] ;увеличиваем высоту буфера
-	jle @f
-		stdcall [buf2d_resize],buf_0,0,eax
-		mov dword[offs_last_timer],0 ;для обновления буфера в таймере
-	@@:
 
-	mov eax,dword[procinfo.box.width]
-	cmp eax,400
-	jge @f
-		mov eax,400
-	@@:
-	sub eax,[buf_0.w]
-	sub eax,41
-	mov dword[tree1.box_width],eax
-	add ax,word[tree1.box_left]
-	mov word[w_scr_t1.x_pos],ax
-	add ax,16+5
-	mov word[buf_0.l],ax
+	stdcall [kmainmenu_draw], [main_menu]
 
 	mov esi,[sc.work_button]
-	mcall 8,(5 shl 16)+20,(5 shl 16)+20,3
+	mcall SF_DEFINE_BUTTON,(5 shl 16)+20,(24 shl 16)+20,3
+	mcall ,(30 shl 16)+20,,4 ;open
+	mcall ,(3d_wnd_l shl 16)+20,,5 ;вершины вкл./выкл.
+	mcall ,((3d_wnd_l+25) shl 16)+20,,6 ;грани вкл./выкл.
+	mcall ,((3d_wnd_l+50) shl 16)+20,,7 ;заливка граней вкл./выкл.
+	mcall ,((3d_wnd_l+75) shl 16)+20,,8 ;свет вкл./выкл.
+	mcall ,((3d_wnd_l+100) shl 16)+20,,9 ;сброс
 
-	mov ebx,(30 shl 16)+20
-	mov edx,4
-	int 0x40
-
-	cmp byte[can_save],0
-	je @f
-		mov ebx,(55 shl 16)+20
-		mov edx,5
-		int 0x40
-	@@:
-
-	mcall ,(85 shl 16)+20,,6 ;окно с координатами
-	mcall ,(110 shl 16)+20,,7 ;удаление блока
-
-	mcall 7,[image_data_toolbar],(16 shl 16)+16,(7 shl 16)+7 ;new
-
+	mcall SF_PUT_IMAGE,[image_data_toolbar],(16 shl 16)+16,(7 shl 16)+26 ;new
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mov edx,(32 shl 16)+7 ;open
-	int 0x40
-
-	cmp byte[can_save],0
-	je @f
-		add ebx,IMAGE_TOOLBAR_ICON_SIZE
-		mov edx,(57 shl 16)+7 ;save
-		int 0x40
-		sub ebx,IMAGE_TOOLBAR_ICON_SIZE
-	@@:
-
-	add ebx,4*IMAGE_TOOLBAR_ICON_SIZE
-	mov edx,(87 shl 16)+7
-	int 0x40
-
+	mcall ,,,(32 shl 16)+26 ;open
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE*6
+	mcall ,,,((3d_wnd_l+2) shl 16)+26 ;вершины вкл./выкл.
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mov edx,(112 shl 16)+7
-	int 0x40
+	mcall ,,,((3d_wnd_l+27) shl 16)+26 ;грани вкл./выкл.
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	mcall ,,,((3d_wnd_l+52) shl 16)+26 ;заливка граней вкл./выкл.
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	mcall ,,,((3d_wnd_l+77) shl 16)+26 ;свет вкл./выкл.
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	mcall ,,,((3d_wnd_l+102) shl 16)+26 ;сброс
 
 	mov dword[w_scr_t1.all_redraw],1
-	stdcall [tl_draw],dword tree1
+	stdcall [tl_draw], tree1
+	stdcall [buf2d_draw], buf_ogl
 
-	stdcall [buf2d_draw], buf_0
-
-	mcall 12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 popad
 	ret
 
 align 4
 key:
-	mcall 2
-	stdcall [tl_key], dword tree1
+	mcall SF_GET_KEY
+
+	cmp dword[el_focus], tree1
+	jne @f
+		stdcall [tl_key], tree1
+		jmp .end
+	@@:
+
+	cmp ah,178 ;Up
+	jne @f
+		fld dword[angle_x]
+		fadd dword[delt_size]
+		fstp dword[angle_x]
+		stdcall [tl_node_get_data],tree1
+		cmp eax,0
+		je .end
+		add eax,list_offs_obj3d
+		stdcall draw_3d, eax
+		jmp .end
+	@@:
+	cmp ah,177 ;Down
+	jne @f
+		fld dword[angle_x]
+		fsub dword[delt_size]
+		fstp dword[angle_x]
+		stdcall [tl_node_get_data],tree1
+		cmp eax,0
+		je .end
+		add eax,list_offs_obj3d
+		stdcall draw_3d, eax
+		jmp .end
+	@@:
+	cmp ah,176 ;Left
+	jne @f
+		fld dword[angle_y]
+		fadd dword[delt_size]
+		fstp dword[angle_y]
+		stdcall [tl_node_get_data],tree1
+		cmp eax,0
+		je .end
+		add eax,list_offs_obj3d
+		stdcall draw_3d, eax
+		jmp .end
+	@@:
+	cmp ah,179 ;Right
+	jne @f
+		fld dword[angle_y]
+		fsub dword[delt_size]
+		fstp dword[angle_y]
+		stdcall [tl_node_get_data],tree1
+		cmp eax,0
+		je .end
+		add eax,list_offs_obj3d
+		stdcall draw_3d, eax
+		;jmp .end
+	@@:
+
+	.end:
 	jmp still
 
 
 align 4
 button:
-	mcall 17
+	mcall SF_GET_BUTTON
 	cmp ah,3
 	jne @f
 		call but_new_file
@@ -511,19 +585,31 @@ button:
 		call but_open_file
 		jmp still
 	@@:
+
+	;menu functions
 	cmp ah,5
 	jne @f
-		call but_save_file
+		call mnu_vertexes_on
 		jmp still
 	@@:
 	cmp ah,6
 	jne @f
-		call but_wnd_coords
+		call mnu_edges_on
 		jmp still
 	@@:
 	cmp ah,7
 	jne @f
-		call but_delete_chunk
+		call mnu_faces_on
+		jmp still
+	@@:
+	cmp ah,8
+	jne @f
+		call mnu_light_on_off
+		jmp still
+	@@:
+	cmp ah,9
+	jne @f
+		call mnu_reset_settings
 		jmp still
 	@@:
 
@@ -533,21 +619,33 @@ button:
 	mov dword[tree1.data_img],0
 	mov dword[tree1.data_img_sys],0
 	stdcall [tl_data_clear], tree1
-	stdcall [buf2d_delete],buf_0
 	stdcall [buf2d_delete],buf_1 ;удаляем буфер
 	stdcall mem.Free,[image_data_toolbar]
 	stdcall mem.Free,[open_file_data]
 	stdcall [gluDeleteQuadric], [qObj]
-	mcall -1
+	mcall SF_TERMINATE_PROCESS
 
 
 align 4
 but_new_file:
-	mov byte[can_save],0
+push eax ebx
+	stdcall dword[tl_node_poi_get_info], tree1,0
+	@@:
+		cmp eax,0
+		je @f
+		mov ebx,eax
+		stdcall [tl_node_poi_get_data], tree1,ebx
+		add eax,list_offs_obj3d
+		stdcall obj_clear_param, eax
+		stdcall dword[tl_node_poi_get_next_info], tree1,ebx
+		cmp eax,0
+		jne @b
+	@@:
+pop ebx eax
 	stdcall [tl_info_clear], tree1 ;очистка списка объектов
-	stdcall [buf2d_clear], buf_0, [buf_0.color] ;чистим буфер
+	stdcall [buf2d_clear], buf_ogl, [buf_ogl.color] ;чистим буфер
 	stdcall [tl_draw], tree1
-	stdcall [buf2d_draw], buf_0 ;обновляем буфер на экране
+	stdcall [buf2d_draw], buf_ogl ;обновляем буфер на экране
 	ret
 
 align 4
@@ -559,57 +657,66 @@ but_open_file:
 	cmp [OpenDialog_data.status],2
 	je .end_open_file
 	;код при удачном открытии диалога
-
-    mov [run_file_70.Function], 5
+	jmp @f
+.no_dlg: ;если минуем диалог открытия файла
+		pushad
+	@@:
+    mov [run_file_70.Function], SSF_GET_INFO
     mov [run_file_70.Position], 0
     mov [run_file_70.Flags], 0
     mov dword[run_file_70.Count], 0
     mov dword[run_file_70.Buffer], open_b
     mov byte[run_file_70+20], 0
     mov dword[run_file_70.FileName], openfile_path
-    mcall 70,run_file_70
+    mcall SF_FILE,run_file_70
 
     mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
     stdcall mem.ReAlloc,[open_file_data],ecx
     mov [open_file_data],eax
     
-    mov [run_file_70.Function], 0
+    mov [run_file_70.Function], SSF_READ_FILE
     mov [run_file_70.Position], 0
     mov [run_file_70.Flags], 0
     mov dword[run_file_70.Count], ecx
     m2m dword[run_file_70.Buffer], dword[open_file_data]
     mov byte[run_file_70+20], 0
     mov dword[run_file_70.FileName], openfile_path
-    mcall 70,run_file_70 ;загружаем файл 3ds
+    mcall SF_FILE,run_file_70 ;загружаем файл 3ds
     cmp ebx,0xffffffff
     je .end_open_file
+		mov [open_file_size],ebx
+		;mcall SF_SET_CAPTION,1,openfile_path
 
-	mov [open_file_size],ebx
-	;mcall 71,1,openfile_path
-
-	mov byte[can_save],0
-	call init_tree
-	stdcall [buf2d_draw], buf_0 ;обновляем буфер на экране
-	stdcall obj_clear_param, o3d ;чистим параметры окна с координатами
-	cmp byte[prop_wnd_run],0
-	je @f
-		;чистим окно с координатами
-		stdcall [tl_info_clear], tree3
-	@@:
-
+		call init_tree
+		stdcall [buf2d_draw], buf_ogl ;обновляем буфер на экране
 	.end_open_file:
 	popad
 	ret
 
 align 4
 init_tree:
+	;чистим память занятую объектами
+	stdcall dword[tl_node_poi_get_info], tree1,0
+	@@:
+		cmp eax,0
+		je @f
+		mov ebx,eax
+		stdcall [tl_node_poi_get_data], tree1,ebx
+		cmp eax,0
+		je @f
+			add eax,list_offs_obj3d
+			stdcall obj_clear_param, eax
+			stdcall dword[tl_node_poi_get_next_info], tree1,ebx
+			cmp eax,0
+			jne @b
+	@@:
 	stdcall [tl_info_clear], tree1 ;очистка списка объектов
 
 	mov esi,dword[open_file_data]
 	cmp word[esi],CHUNK_MAIN
 	je @f
 		call buf_draw_beg
-		stdcall [buf2d_draw_text], buf_0, buf_1,txt_no_3ds,5,25,0xff0000 ;рисуем строку с текстом
+		stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_no_3ds,5,25,0xff0000 ;рисуем строку с текстом
 		jmp .end_open
 	@@:
 	;--- обработка открытого *.3ds файла
@@ -631,17 +738,33 @@ init_tree:
 
 		mov edx,dword[esi+2] ;размер блока
 		call block_analiz
+;cmp word[esi],CHUNK_MATERIAL
+;je @f
+cmp word[esi],CHUNK_OBJMESH
+je @f
+cmp word[esi],CHUNK_OBJBLOCK
+je @f
+mov dword[bl_found],0
+@@:
 		cmp dword[bl_found],0
 		jne @f
 			;объект не известного вида
-			stdcall add_3ds_object, ID_ICON_CHUNK_NOT_FOUND,dword[level_stack],edx,0
 			call block_next
 			jmp .cycle_main
 		@@:
 			;объект известного вида
 			mov ecx,dword[bl_found]
 			mov bx,word[ecx+2] ;номер иконки для объекта
-			stdcall add_3ds_object, ebx,dword[level_stack],edx,dword[ecx+5]
+			cmp word[esi],CHUNK_OBJBLOCK
+			jne .pod1
+				add esi,6
+				push esi
+				sub esi,6
+				jmp .pod2
+			.pod1:
+				push dword[ecx+5] ;стандартное название блока
+			.pod2:
+			stdcall add_3ds_object, ebx,dword[level_stack],edx
 			cmp byte[ecx+4],1
 			je .bl_data
 				;блок содержит дочерние блоки
@@ -664,106 +787,94 @@ init_tree:
 ; eax - new stack pointer
 ; esi - new memory pointer
 align 4
-block_analiz_data:
-	push ebx ecx edx edi
-		mov dx,word[esi]
-		mov ecx,dword[esi+2]
-		sub ecx,6 ;размер данных в блоке
-		add esi,6
-		mov ebx,dword[level_stack]
-		inc ebx
-		; *** анализ блоков с разными данными и выделением подблоков
-		cmp dx,CHUNK_OBJBLOCK ;объект
-		jne @f
-			push ax
-				cld
-				xor al,al
-				mov edi,esi
-				repne scasb
-			pop ax
-			sub edi,esi ;edi - strlen
-			stdcall add_3ds_object, ID_ICON_DATA,ebx,edi,0 ;название объекта
-			add esi,edi
-			;sub ecx,edi ;уже сделано в repne
-			jmp .next_bl
-		@@:
-		cmp dx,CHUNK_VERTLIST ;список вершин
-		je .vertexes
-		cmp dx,0x4111 ;флаги вершин
-		je .vertexes
-		cmp dx,CHUNK_MAPLIST ;текстурные координаты
-		je .vertexes
-		jmp @f
-		.vertexes: ;обработка блоков, содержащих данные вершин
-			stdcall add_3ds_object, ID_ICON_DATA,ebx,2,txt_count ;число вершин
-			add esi,2
-			sub ecx,2
-			stdcall add_3ds_object, ID_ICON_DATA,ebx,ecx,0 ;данные вершин
-			sub esi,8 ;восстановление esi
-			call block_next
-			jmp .end_f		
-		@@:
-		cmp dx,CHUNK_FACELIST ;список граней
-		jne @f
-			stdcall add_3ds_object, ID_ICON_DATA,ebx,2,txt_count ;число граней
-			push eax
-			movzx eax,word[esi]
-			shl eax,3
-			add esi,2
-			sub ecx,2
-			stdcall add_3ds_object, ID_ICON_DATA,ebx,eax,0 ;данные граней
+proc block_analiz_data uses ebx ecx edx edi
+	mov dx,word[esi]
+	mov ecx,dword[esi+2]
+	sub ecx,6 ;размер данных в блоке
+	add esi,6
+	mov ebx,dword[level_stack]
+	inc ebx
+	; *** анализ блоков с разными данными и выделением подблоков
+	cmp dx,CHUNK_OBJBLOCK ;объект
+	jne @f
+		push ax
+			cld
+			xor al,al
+			mov edi,esi
+			repne scasb
+		pop ax
+		sub edi,esi ;edi - strlen
+		add esi,edi
+		;sub ecx,edi ;уже сделано в repne
+		jmp .next_bl
+	@@:
+	cmp dx,CHUNK_VERTLIST ;список вершин
+	je .vertexes
+	cmp dx,0x4111 ;флаги вершин
+	je .vertexes
+	cmp dx,CHUNK_MAPLIST ;текстурные координаты
+	je .vertexes
+	jmp @f
+	.vertexes: ;обработка блоков, содержащих данные вершин
+		add esi,2
+		sub ecx,2
+		sub esi,8 ;восстановление esi
+		call block_next
+		jmp .end_f		
+	@@:
+	cmp dx,CHUNK_FACELIST ;список граней
+	jne @f
+		push eax
+		movzx eax,word[esi]
+		shl eax,3
+		add esi,2
+		sub ecx,2
 
-			sub ecx,eax
-			cmp ecx,1
-			jl .data_3 ;проверяем есть ли блок описывающий материал, применяемый к объекту
-				add esi,eax
-				pop eax
-				jmp .next_bl
-				;stdcall add_3ds_object, ID_ICON_DATA,ebx,ecx,0 ;данные материала
-				;sub esi,eax ;восстановление esi
-			.data_3:
-
-			sub esi,8 ;восстановление esi
+		sub ecx,eax
+		cmp ecx,1
+		jl .data_3 ;проверяем есть ли блок описывающий материал, применяемый к объекту
+			add esi,eax
 			pop eax
-			call block_next
-			jmp .end_f		
-		@@:
-		cmp dx,CHUNK_FACEMAT ;материалы граней
-		jne @f
-			push ax
-				cld
-				xor al,al
-				mov edi,esi
-				repne scasb
-			pop ax
-			sub edi,esi ;edi - strlen
-			stdcall add_3ds_object, ID_ICON_DATA,ebx,edi,0 ;название объекта
-			add esi,edi
-			;sub ecx,edi ;уже сделано в repne
-			stdcall add_3ds_object, ID_ICON_DATA,ebx,2,txt_count ;число граней
-			add esi,2
-			sub ecx,2
-			stdcall add_3ds_object, ID_ICON_DATA,ebx,ecx,0 ;номера граней, к которым применен материал
-			sub esi,edi ;восстановление esi (1)
-			sub esi,8   ;восстановление esi (2)
-			call block_next
-			jmp .end_f
-		@@:
-		; *** анализ блока с данными по умолчанию (без выделения подблоков)
-			stdcall add_3ds_object, ID_ICON_DATA,ebx,ecx,0
-			sub esi,6 ;восстановление esi
-			call block_next
-			jmp .end_f
-		.next_bl:
-		; *** настройки для анализа оставшихся подблоков
-			mov dword[eax],esi ;указатель на начало блока
-			mov ebx,dword[esi+2]
-			mov dword[eax+4],ebx ;размер блока
-			inc dword[level_stack]
-			add eax,8
-		.end_f:
-	pop edi edx ecx ebx
+			jmp .next_bl
+		.data_3:
+
+		sub esi,8 ;восстановление esi
+		pop eax
+		call block_next
+		jmp .end_f		
+	@@:
+	cmp dx,CHUNK_FACEMAT ;материалы граней
+	jne @f
+		push ax
+			cld
+			xor al,al
+			mov edi,esi
+			repne scasb
+		pop ax
+		sub edi,esi ;edi - strlen
+		stdcall add_3ds_object, ID_ICON_DATA,ebx,edi,0 ;название объекта
+		add esi,edi
+		add esi,2
+		sub ecx,2
+		sub esi,edi ;восстановление esi (1)
+		sub esi,8   ;восстановление esi (2)
+		call block_next
+		jmp .end_f
+	@@:
+	; *** анализ блока с данными по умолчанию (без выделения подблоков)
+		sub esi,6 ;восстановление esi
+		call block_next
+		jmp .end_f
+	.next_bl:
+	; *** настройки для анализа оставшихся подблоков
+		mov dword[eax],esi ;указатель на начало блока
+		mov ebx,dword[esi+2]
+		mov dword[eax+4],ebx ;размер блока
+		inc dword[level_stack]
+		add eax,8
+	.end_f:
 	ret
+endp
 
 ;вход в 1-й дочерний блок
 ;input:
@@ -886,6 +997,11 @@ proc add_3ds_object, icon:dword,level:dword,size_bl:dword,info_bl:dword
 			rep movsb
 			mov byte[buffer+size_one_list-1],0 ;0 - символ конца строки
 		.no_capt:
+		mov ecx,(sizeof.obj_3d)/4
+		xor eax,eax
+		mov edi,buffer
+		add edi,list_offs_obj3d
+		rep stosd
 		stdcall [tl_node_add], tree1, ebx, buffer
 		stdcall [tl_cur_next], tree1
 	popad
@@ -949,101 +1065,9 @@ proc hex_in_str, buf:dword,val:dword,zif:dword
 			dec edi
 			shr ebx,4
 		loop .cycle
-
 	popad
 	ret
 endp
-
-align 4
-but_save_file:
-	pushad
-	copy_path open_dialog_name,communication_area_default_path,file_name,0
-	mov [OpenDialog_data.type],1
-	stdcall [OpenDialog_Start],OpenDialog_data
-	cmp [OpenDialog_data.status],2
-	je .end_save_file
-	;код при удачном открытии диалога
-
-	mov [run_file_70.Function], 2
-	mov [run_file_70.Position], 0
-	mov [run_file_70.Flags], 0
-	mov ebx, dword[open_file_data]
-	mov [run_file_70.Buffer], ebx
-	mov ebx,dword[ebx+2]
-	mov dword[run_file_70.Count], ebx ;размер файла
-	mov byte[run_file_70+20], 0
-	mov dword[run_file_70.FileName], openfile_path
-	mcall 70,run_file_70
-	cmp ebx,0xffffffff
-	je .end_save_file
-		;...сообщение...
-	.end_save_file:
-	popad
-	ret
-
-align 4
-but_wnd_coords:
-	cmp byte[prop_wnd_run],0
-	jne @f
-		pushad
-		mcall 51,1,prop_start,thread_coords
-		popad
-	@@:
-	ret
-
-;description:
-; удаление выбранного блока из открытого файла
-align 4
-but_delete_chunk:
-	pushad
-	stdcall [tl_node_get_data],tree1
-	cmp eax,0
-	je .end_f
-	cmp byte[eax+list_offs_chunk_del],0 ;если блок защищен от удаления
-	jne .notify
-
-	;(1) копирование нижней части файла
-	mov edx,dword[eax+4] ;размер блока
-	sub [open_file_size],edx ;изменение размеров файла
-	mov ecx,[open_file_size]
-	mov ebx,dword[eax] ;получаем значение сдвига выбранного блока относительно начала файла
-	sub ecx,ebx ;ecx - размер нижней сдвигаемой части файла
-	add ebx,dword[open_file_data] ;получаем значение сдвига в памяти
-	mov edi,ebx
-	mov esi,ebx
-	add esi,edx
-	mov bl,byte[eax+list_offs_chunk_lev] ;берем уровень текущего узла
-	rep movsb
-	mov byte[can_save],1
-
-	;(2) изменение размеров родительских блоков
-	cmp bl,0
-	je .end_2
-	.cycle_2:
-	stdcall [tl_cur_perv], tree1
-	stdcall [tl_node_get_data],tree1
-	cmp eax,0
-	je .end_2
-		cmp byte[eax+list_offs_chunk_lev],bl
-		jge .cycle_2
-		mov bl,byte[eax+list_offs_chunk_lev]
-		mov ecx,[eax]
-		add ecx,[open_file_data]
-		sub dword[ecx+2],edx
-		cmp bl,0 ;если самый верхний узел, то bl=0
-		jne .cycle_2
-	.end_2:
-	
-	;(3) обновление списка tree1
-	call init_tree
-	call draw_window
-
-	jmp .end_f
-	.notify:
-	notify_window_run txt_not_delete
-	.end_f:
-	popad
-	ret
 
 ;данные для диалога открытия файлов
 align 4
@@ -1152,7 +1176,7 @@ l_libs_start:
 	lib_5 l_libs lib_name_5, sys_path, library_path,  system_dir_5,\
 		err_msg_found_lib_5, head_f_l, import_lib_tinygl,err_msg_import_5,head_f_i
 	lib_6 l_libs lib_name_6, sys_path, library_path,  system_dir_6,\
-		err_msg_found_lib_6, head_f_l, import_libini, err_msg_import_6,head_f_i		
+		err_msg_found_lib_6, head_f_l, import_libini, err_msg_import_6,head_f_i 	
 l_libs_end:
 
 align 4
@@ -1380,22 +1404,17 @@ dd 0,0
 align 4
 mouse_dd dd 0
 last_time dd 0
-
-align 4
-buf_0: dd 0 ;указатель на буфер изображения
-.l: dw 205 ;+4 left
-.t: dw 35 ;+6 top
-.w: dd 340 ;+8 w
-.h: dd main_wnd_height-65 ;+12 h
-.color: dd 0xffffd0 ;+16 color
-	db 24 ;+20 bit in pixel
+angle_dxm dd 1.9111 ;~ 3d_wnd_w/180 - прибавление углов поворота сцены при вращении мышей
+angle_dym dd 1.7333 ;~ 3d_wnd_h/180
+ratio dd 1.1025 ;~ 3d_wnd_w/3d_wnd_h
 
 align 4
 buf_ogl:
 	dd 0 ;указатель на буфер изображения
 	dw 3d_wnd_l,3d_wnd_t ;+4 left,top
 	dd 3d_wnd_w,3d_wnd_h ;+8 w,h
-	dd 0,24 ;+16 color,bit in pixel
+.color: dd 0xffffd0
+	dd 24 ;+16 color,bit in pixel
 
 align 4
 buf_1:
@@ -1407,8 +1426,8 @@ buf_1:
 align 4
 el_focus dd tree1
 tree1 tree_list size_one_list,300+2, tl_key_no_edit+tl_draw_par_line,\
-	16,16, 0xffffff,0xb0d0ff,0x400040, 5,35,195-16,250, 16,list_offs_text,0,\
-	el_focus,w_scr_t1,0
+	16,16, 0xffffff,0xb0d0ff,0x400040, 5,47,195-16,250, 16,list_offs_text,0, el_focus,\
+	w_scr_t1,0
 
 align 4
 w_scr_t1 scrollbar 16,0, 3,0, 15, 100, 0,0, 0,0,0, 1
@@ -1429,9 +1448,9 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru
-capt db 'info 3ds версия 16.01.16',0 ;подпись окна
+capt db 'info 3ds [user] версия 16.01.16',0 ;подпись окна
 else
-capt db 'info 3ds version 16.01.16',0 ;window caption
+capt db 'info 3ds [user] version 16.01.16',0 ;window caption
 end if
 
 align 16
@@ -1450,8 +1469,6 @@ i_end:
 	color_vert rd 1
 	color_face rd 1
 	color_select rd 1
-	obj_poi_sel_c rd 1
-	o3d obj_3d
 	rb 2048
 align 16
 thread_coords:
