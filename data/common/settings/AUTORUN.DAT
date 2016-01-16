@@ -9,14 +9,13 @@
 #/SYS/refrscrn		""	1	# Refresh screen
 /SYS/SETUP		BOOT	1	# Load device settings
 /SYS/LOADDRV		RDC	1	# videodriver for RDC M2010/M2012
-/SYS/NETWORK/NETCFG	A	1	#
-/SYS/NETWORK/@ZEROCONF	""	1	# Network configuration
 /SYS/ESKIN		""	1	# Set style
-/SYS/@VOLUME		""	1	# Start volume daemon
+/SYS/@ICON		""	1	# Multithread icon
 /SYS/@TASKBAR		""	1	# Start taskbar
 /SYS/@DOCKY		""	1	# Start docky
-/SYS/@ICON		""	1	# Multithread icon
-#/SYS/@RB		""	1	# Desktop right-click menu
+/SYS/NETWORK/NETCFG	A	1	#
+/SYS/NETWORK/@ZEROCONF	""	1	# Network configuration
+/SYS/@VOLUME		""	1	# Start volume daemon
 /SYS/@SS		ASSM	1	# Screensaver
 /SYS/TMPDISK		A0	-1	# Add virtual RAM disk /tmp0/1
 /SYS/SEARCHAP		""	-1	# Search and mount additional system directory
