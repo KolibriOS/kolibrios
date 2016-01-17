@@ -20,6 +20,7 @@ img_files = {
  {"DEVELOP/TL_NOD_16.PNG", PROGS .. "/other/t_edit/tl_nod_16.png"},
  {"DEVELOP/TL_SYS_16.PNG", PROGS .. "/media/log_el/trunk/tl_sys_16.png"},
  {"DEVELOP/T_EDIT.INI", PROGS .. "/other/t_edit/t_edit.ini"},
+ {"FB2READ", "common/fb2read"},
  {"File Managers/Z_ICONS.PNG", PROGS .. "/fs/opendial/z_icons.png"},
  {"File Managers/BUTTONS.BMP", PROGS .. "/fs/kfm/trunk/buttons.bmp"},
  {"File Managers/ICONS.BMP", PROGS .. "/fs/kfm/trunk/icons.bmp"},
