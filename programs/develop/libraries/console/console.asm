@@ -17,11 +17,13 @@ START:
 ;      evident heap initialization, because if DLL is loaded, heap is already initialized
 ;      (if heap was not initialized, loader does this implicitly).
 ;      So this action does nothing useful, but nothing harmful.
+        push    ebx
         push    68
         pop     eax
         push    11
         pop     ebx
         int     0x40
+        pop     ebx
         or      eax, -1
         ret     4
 
@@ -31,7 +33,7 @@ START:
 
 align 4
 con_init:
-		
+
         pop     eax
         pop     [con.wnd_width]
         pop     [con.wnd_height]
@@ -43,7 +45,7 @@ con_init:
         push ebx
 
 		mov [con.init_cmd],1
-		
+
         mov     ecx, 4
         mov     eax, con.wnd_width
         mov     edx, con.def_wnd_width
@@ -154,17 +156,17 @@ con_init_check:
 	mov ah,[con.init_cmd]
 	test ah,ah
 	jne cmd_init_yes
-	
+
 	push con.title_init_console
 	push -1
 	push -1
 	push -1
 	push -1
-	
+
 	call con_init
-	
+
 	cmd_init_yes:
-	
+
 	ret
 ; void __stdcall con_write_asciiz(const char* string);
 con_write_asciiz:
