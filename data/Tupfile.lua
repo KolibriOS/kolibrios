@@ -49,7 +49,7 @@ img_files = {
  {"SETTINGS/ESKIN.INI", "common/settings/eskin.ini"},
  {"SETTINGS/DOCKY.INI", "common/settings/docky.ini"},
  {"SETTINGS/ASSOC.INI", "common/settings/assoc.ini"},
- {"SETTINGS/SYSTEM_PANEL.INI", "common/settings/system_panel.ini"},
+ {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
  {"NOTIFY3.PNG", "common/notify3.png"},
  {"SETTINGS/SYSTEM.INI", "common/settings/system.ini"},
  {"VMODE", "common/vmode"},
@@ -483,7 +483,7 @@ tup.append_table(img_files, {
  {"TEXTREADER", PROGS .. "/cmm/textreader/textreader.com"},
  {"TMPDISK", PROGS .. "/cmm/tmpdisk/tmpdisk.com"},
  {"GAME_CENTER", PROGS .. "/cmm/software_widget/software_widget.com"},
- {"SYSTEM_PANEL", PROGS .. "/cmm/software_widget/software_widget.com"},
+ {"SYSPANEL", PROGS .. "/cmm/software_widget/software_widget.com"},
 })
 end -- tup.getconfig('NO_CMM') ~= 'full'
 
