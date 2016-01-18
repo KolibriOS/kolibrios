@@ -14,7 +14,7 @@ SECTIONS
         LONG(___stacktop);
         LONG(___cmdline);
         LONG(___pgmname);     /*  full path    */
-        LONG(0);              /*FIXME tls data */
+        LONG(__subsystem__);
         LONG(__idata_start)
         LONG(__idata_end)
         LONG(_main)
@@ -65,7 +65,7 @@ SECTIONS
         ___crt_xt_end__ = . ;
    }
 
-   .data ALIGN(64) :
+   .data ALIGN(16) :
    {
      	PROVIDE ( __data_start__ = .) ;
         *(.data)
@@ -74,17 +74,17 @@ SECTIONS
         *(.jcr)
         __CRT_MT = .;
         LONG(0);
-       	PROVIDE ( __data_end__ = .) ;
+        PROVIDE ( __data_end__ = .) ;
         *(.data_cygwin_nocopy)
         ___iend = . ;
    }
 
-   .eh_frame BLOCK(16) :
+/*   .eh_frame BLOCK(16) :
    {
         PROVIDE (___EH_FRAME_BEGIN__ = .) ;
         *(.eh_frame*)
    }
-
+*/
    .idata ALIGN(16):
    {
       __idata_start = .;
@@ -120,6 +120,7 @@ SECTIONS
     *(.drectve)
     *(.note.GNU-stack)
     *(.comment)
+    *(.eh_frame)
     *(.debug_abbrev)
     *(.debug_info)
     *(.debug_line)

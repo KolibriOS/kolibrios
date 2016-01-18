@@ -29,7 +29,7 @@ struct app_hdr
     int   stacktop;
     char  *cmdline;
     char  *path;
-    int    reserved;
+    int    __subsystem__;
     void  *__idata_start;
     void  *__idata_end;
     int  (*main)(int argc, char **argv, char **envp);
@@ -38,7 +38,8 @@ struct app_hdr
 void _pei386_runtime_relocator (void);
 void init_loader(void *libc_image);
 void init_reent();
-
+void __init_conio();
+void __fini_conio();
 int link_app();
 void* get_entry_point(void *raw);
 int (*entry)(int, char **, char **);
@@ -182,6 +183,10 @@ libc_crt_startup (void *libc_base)
     _tls_map[0] = 0xE0;
     init_reent();
     init_stdio();
+
+    if(header->__subsystem__ == 3)
+        __init_conio();
+
     __do_global_ctors();
 
  //   __appenv = load_file("/sys/system.env", &__appenv_size);
@@ -209,6 +214,9 @@ libc_crt_startup (void *libc_base)
 
     retval = header->main(argc, argv, NULL);
 done:
+    if(header->__subsystem__ == 3)
+        __fini_conio();
+
     exit (retval);
 }
 

@@ -14,7 +14,7 @@ SECTIONS
         LONG(___stacktop);
         LONG(___cmdline);
         LONG(___pgmname);     /*  full path    */
-        LONG(0);              /*FIXME tls data */
+        LONG(__subsystem__);
 
         *(.init)
         *(.text)

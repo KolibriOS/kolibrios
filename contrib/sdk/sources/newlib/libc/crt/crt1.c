@@ -29,7 +29,11 @@ struct app_hdr
     int   stacktop;
     char  *cmdline;
     char  *path;
+    int    __subsystem__;
 };
+
+void __init_conio();
+void __fini_conio();
 
 extern int main (int, char **, char **);
 
@@ -177,6 +181,8 @@ __crt_startup (void)
     init_reent();
     init_stdio();
 
+    if(header->__subsystem__ == 3)
+        __init_conio();
 
     if( header->cmdline[0] != 0)
     {
@@ -196,6 +202,9 @@ __crt_startup (void)
 
     retval = main(argc, argv, NULL);
 done:
+    if(header->__subsystem__ == 3)
+        __fini_conio();
+
     exit (retval);
 }
 

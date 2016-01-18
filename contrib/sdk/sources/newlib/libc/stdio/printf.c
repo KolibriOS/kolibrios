@@ -22,8 +22,6 @@
 #include <stdarg.h>
 #include "local.h"
 
-int __gui_mode;
-
 int
 _DEFUN(_printf_r, (ptr, fmt),
        struct _reent *ptr _AND
@@ -57,11 +55,3 @@ _DEFUN(printf, (fmt),
 }
 
 #endif /* ! _REENT_ONLY */
-
-extern int __gui_mode;
-
-extern void __attribute__ ((constructor)) __init_conio();
-static void __attribute__ ((constructor)) init_printf()
-{
-    __gui_mode = (int)&__init_conio;
-}

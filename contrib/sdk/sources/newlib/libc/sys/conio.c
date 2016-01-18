@@ -21,19 +21,19 @@ static int console_write(const char *path, const void *buff,
     return count;
 };
 
-void __attribute__ ((constructor)) __init_conio()
+void __init_conio()
 {
     __io_handle *ioh;
 
     load_libconsole();
-    con_init(80, 25, 80, 250, "Console application");
+    con_init(80, 25, 80, 500, "Console application");
 
     ioh = &__io_tab[STDOUT_FILENO];
     ioh->mode  = _WRITE|_ISTTY;
     ioh->write = &console_write;
 };
 
-static void __attribute__ ((destructor)) __fini_conio()
+void __fini_conio()
 {
     con_exit(0);
 }
