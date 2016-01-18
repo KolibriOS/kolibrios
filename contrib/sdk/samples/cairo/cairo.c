@@ -336,7 +336,7 @@ static void (*draw_screen[5])(cairo_t *cr, int width, int height)=
     };
 
 
-static int check_events(cairo_t *cr)
+int check_events(cairo_t *cr)
 {
     uint32_t ev;
     oskey_t   key;
@@ -348,7 +348,7 @@ static int check_events(cairo_t *cr)
     {
         case 1:
             BeginDraw();
-            DrawWindow(0,0,0,0,NULL,0,0x74);
+            DrawWindow(0,0,0,0,NULL,0,0x73);
             Blit(winbitmap, TYPE_3_BORDER_WIDTH, get_skin_height(),
                  0, 0, width, height,width,height,winstride);
             EndDraw();
@@ -498,6 +498,10 @@ int main ()
     :"=a"(tmp)
     :"a"(66),"b"(1),"c"(1));
 
+    __asm__ __volatile__(
+    "int $0x40"
+    ::"a"(40), "b"(0xc0000027));
+
     main_surface = main_surface_create(width, height);
     cr = cairo_create(main_surface);
 
@@ -507,8 +511,8 @@ int main ()
     screen_hello(cr,width,height);
 
     BeginDraw();
-    DrawWindow(10, 40, width+TYPE_3_BORDER_WIDTH*2,
-               height+TYPE_3_BORDER_WIDTH+get_skin_height(), "Cairo demo", 0x000000, 0x74);
+    DrawWindow(30, 40, width+TYPE_3_BORDER_WIDTH*2,
+               height+TYPE_3_BORDER_WIDTH+get_skin_height(), "Cairo demo", 0x000000, 0x73);
     Blit(winbitmap, TYPE_3_BORDER_WIDTH, get_skin_height(), 0, 0, width, height,
          width,height,winstride);
     EndDraw();
