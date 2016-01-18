@@ -368,7 +368,7 @@ _pixman_disabled (const char *name)
 
 	    if (strlen (name) == len && strncmp (name, env, len) == 0)
 	    {
-		printf ("pixman: Disabled %s implementation\n", name);
+        fprintf (stderr, "pixman: Disabled %s implementation\n", name);
 		return TRUE;
 	    }
 
