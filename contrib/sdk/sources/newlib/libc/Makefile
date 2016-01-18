@@ -26,7 +26,13 @@ STATIC_SRCS:=					\
          		crt/crt1.c		\
 			crt/crt2.c		\
          		crt/chkstk.S		\
-         		crt/exit.S		\
+         		crt/exit.S
+
+LIBCRT_SRCS:=					\
+			crt/start.S		\
+			crt/crt3.c		\
+			crt/chkstk.S		\
+			crt/pseudo-reloc.c	\
 			pe/crtloader.c
 
 LIBDLL_SRCS:=					\
@@ -39,21 +45,16 @@ LIBDLL_SRCS:=					\
 
 LIBCDLL_SRCS:=					\
 			crt/crtdll.c		\
+			crt/crt2.c		\
 			crt/pseudo-reloc.c	\
 			crt/chkstk.S		\
 			crt/exit.S		\
 			pe/loader.c
 
-LIBCRT_SRCS:=					\
-			crt/start.S		\
-			crt/chkstk.S		\
-			crt/crt3.c		\
-			crt/pseudo-reloc.c	\
-			pe/crtloader.c
-
 CORE_SRCS:=                   			\
 			argz/buf_findstr.c	\
 			argz/envz_get.c		\
+			crt/console.asm		\
 			crt/emutls.c         	\
 			crt/thread.S         	\
 			crt/tls.S            	\
@@ -119,6 +120,7 @@ CORE_SRCS:=                   			\
 			signal/signal.c		\
 			sys/access.c		\
 			sys/close.c		\
+			sys/conio.c		\
 			sys/create.c         	\
 			sys/errno.c		\
 			sys/finfo.c          	\

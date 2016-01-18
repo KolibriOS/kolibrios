@@ -1,3 +1,13 @@
+/*
+ * crtdll.c
+ * This file has no copyright assigned and is placed in the Public Domain.
+ * This file is a part of the mingw-runtime package.
+ * No warranty is given; refer to the file DISCLAIMER within the package.
+ *
+ * Source code for the shared libc startup proceedures. This code is compiled
+ * to make libc.dll, which should be located in the library path.
+ *
+ */
 
 #include <_ansi.h>
 #include <reent.h>
@@ -37,26 +47,6 @@ char* __appenv;
 int   __appenv_size;
 
 extern char _tls_map[128];
-
-void  __attribute__((noreturn))
-__thread_startup (int (*entry)(void*), void *param,
-                  void *stacklow, void *stackhigh)
-{
-    int retval;
-
-//    asm volatile ( "xchgw %bx, %bx");
-
-    __asm__ __volatile__(               // save stack limits
-    "movl %0, %%fs:8    \n\t"           // use TLS
-    "movl %1, %%fs:12    \n\t"
-    ::"r"(stacklow), "r"(stackhigh));
-
-    init_reent();                       // initialize thread reentry structure
-
-    retval = entry(param);              // call user thread function
-
-    _exit(retval);
-};
 
 char * __libc_getenv(const char *name)
 {
@@ -192,6 +182,7 @@ libc_crt_startup (void *libc_base)
     _tls_map[0] = 0xE0;
     init_reent();
     init_stdio();
+    __do_global_ctors();
 
  //   __appenv = load_file("/sys/system.env", &__appenv_size);
 
@@ -220,5 +211,4 @@ libc_crt_startup (void *libc_base)
 done:
     exit (retval);
 }
-
 

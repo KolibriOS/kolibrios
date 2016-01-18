@@ -2,6 +2,8 @@
 
 void init_reent();
 
+void   _exit(int __status) __attribute__((noreturn));
+
 void  __attribute__((noreturn))
 __thread_startup (int (*entry)(void*), void *param,
                   void *stacklow, void *stackhigh)

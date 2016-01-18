@@ -550,14 +550,14 @@ __LOCK_INIT_RECURSIVE(static, malloc_global_mutex);
 
 #define CORRUPTION_ERROR_ACTION(m)                             \
         do {                                                   \
-            printf("%s malloc heap corrupted\n",__FUNCTION__); \
+            /*printf("%s malloc heap corrupted\n",__FUNCTION__); */\
             __asm__("int3");                                   \
         }while(0)                                              \
 
 
 #define USAGE_ERROR_ACTION(m, p)                               \
         do {                                                   \
-            printf("%s malloc heap corrupted\n",__FUNCTION__); \
+            /*printf("%s malloc heap corrupted\n",__FUNCTION__); */\
             __asm__("int3");                                   \
         }while(0)                                              \
 

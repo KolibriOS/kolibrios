@@ -19,39 +19,6 @@
 #include <stdio.h>
 #include <sys/kos_io.h>
 
-#include "cpu_features.h"
-
-
-/* NOTE: The code for initializing the _argv, _argc, and environ variables
- *       has been moved to a separate .c file which is included in both
- *       crt1.c and dllcrt1.c. This means changes in the code don't have to
- *       be manually synchronized, but it does lead to this not-generally-
- *       a-good-idea use of include. */
-
-
-extern char __cmdline[];
-extern char __pgmname[];
-
-extern int main (int, char **, char **);
-
-int   _errno;
-int   _fmode;
-
-int    _argc;
-char **_argv;
-
-static char *arg[2];
-
-void   _exit(int __status) __attribute__((noreturn));
-
-
-char * __libc_getenv(const char *name)
-{
-    return NULL;
-}
-
-void __main (){};
-
 struct app_hdr
 {
     char  banner[8];
@@ -64,64 +31,171 @@ struct app_hdr
     char  *path;
 };
 
-typedef void (*ctp)();
-static void __do_global_ctors ()
+extern int main (int, char **, char **);
+
+/* NOTE: The code for initializing the _argv, _argc, and environ variables
+ *       has been moved to a separate .c file which is included in both
+ *       crt1.c and dllcrt1.c. This means changes in the code don't have to
+ *       be manually synchronized, but it does lead to this not-generally-
+ *       a-good-idea use of include. */
+
+char* __appenv;
+int   __appenv_size;
+
+extern char _tls_map[128];
+
+char * __libc_getenv(const char *name)
 {
-  extern int __CTOR_LIST__;
-  int *c = &__CTOR_LIST__;
-  c++;
-  while (*c)
-    {
-      ctp d = (ctp)*c;
-      (d)();
-      c++;
-    }
+    return NULL;
 }
+
+static int split_cmdline(char *cmdline, char **argv)
+{
+    enum quote_state
+    {
+        QUOTE_NONE,         /* no " active in current parm       */
+        QUOTE_DELIMITER,    /* " was first char and must be last */
+        QUOTE_STARTED       /* " was seen, look for a match      */
+    };
+
+    enum quote_state state;
+    unsigned int argc;
+    char *p = cmdline;
+    char *new_arg, *start;
+
+    argc = 0;
+
+    for(;;)
+    {
+        /* skip over spaces and tabs */
+        if ( *p )
+        {
+            while (*p == ' ' || *p == '\t')
+                ++p;
+        }
+
+        if (*p == '\0')
+            break;
+
+        state = QUOTE_NONE;
+        if( *p == '\"' )
+        {
+            p++;
+            state = QUOTE_DELIMITER;
+        }
+        new_arg = start = p;
+        for (;;)
+        {
+            if( *p == '\"' )
+            {
+                p++;
+                if( state == QUOTE_NONE )
+                {
+                    state = QUOTE_STARTED;
+                }
+                else
+                {
+                    state = QUOTE_NONE;
+                }
+                continue;
+            }
+
+            if( *p == ' ' || *p == '\t' )
+            {
+                if( state == QUOTE_NONE )
+                {
+                    break;
+                }
+            }
+
+            if( *p == '\0' )
+                break;
+
+            if( *p == '\\' )
+            {
+                if( p[1] == '\"' )
+                {
+                    ++p;
+                    if( p[-2] == '\\' )
+                    {
+                        continue;
+                    }
+                }
+            }
+            if( argv )
+            {
+                *(new_arg++) = *p;
+            }
+            ++p;
+        };
+
+        if( argv )
+        {
+            argv[ argc ] = start;
+            ++argc;
+
+            /*
+              The *new = '\0' is req'd in case there was a \" to "
+              translation. It must be after the *p check against
+              '\0' because new and p could point to the same char
+              in which case the scan would be terminated too soon.
+            */
+
+            if( *p == '\0' )
+            {
+                *new_arg = '\0';
+                break;
+            }
+            *new_arg = '\0';
+            ++p;
+        }
+        else
+        {
+            ++argc;
+            if( *p == '\0' )
+            {
+                break;
+            }
+            ++p;
+        }
+    }
+
+    return argc;
+};
 
 void  __attribute__((noreturn))
 __crt_startup (void)
 {
-    int nRet;
-    struct   app_hdr *header;
+    struct   app_hdr *header = NULL;
+    int retval = 0;
+
+    char **argv;
+    int    argc;
+
+    memset(_tls_map, 0xFF, 32*4);
+    _tls_map[0] = 0xE0;
+    init_reent();
+    init_stdio();
 
 
-    init_global_reent();
-
-  /*
-   * Initialize floating point unit.
-   */
-    __cpu_features_init ();   /* Do we have SSE, etc.*/
-//  _fpreset ();              /* Supplied by the runtime library. */
-
-    __do_global_ctors();
-
-    arg[0] = &__pgmname[0];
-
-    if( __cmdline[0] != 0)
+    if( header->cmdline[0] != 0)
     {
-        _argc = 2;
-        arg[1] = &__cmdline[0];
-    } else _argc = 1;
+        argc = split_cmdline(header->cmdline, NULL) + 1;
+        argv = alloca((argc+1)*sizeof(char*));
+        argv[0] = header->path;
 
-    _argv = arg;
+        split_cmdline(header->cmdline, argv + 1);
+    }
+    else
+    {
+        argc = 1;
+        argv = alloca((argc+1)*sizeof(char*));
+        argv[0] = header->path;
+    }
+    argv[argc] = NULL;
 
-  /*
-   * Sets the default file mode.
-   * If _CRT_fmode is set, also set mode for stdin, stdout
-   * and stderr, as well
-   * NOTE: DLLs don't do this because that would be rude!
-   */
-//  _mingw32_init_fmode ();
-
-
-    nRet = main (_argc, _argv, NULL);
-
-  /*
-   * Perform exit processing for the C library. This means
-   * flushing output and calling 'atexit' registered functions.
-   */
-    exit (nRet);
+    retval = main(argc, argv, NULL);
+done:
+    exit (retval);
 }
-
-
 

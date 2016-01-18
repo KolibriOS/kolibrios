@@ -139,3 +139,12 @@ _DEFUN(puts, (s),
 }
 
 #endif
+
+extern int __gui_mode;
+
+extern void __attribute__ ((constructor)) __init_conio();
+static void __attribute__ ((constructor)) init_puts()
+{
+    __gui_mode = (int)&__init_conio;
+}
+
