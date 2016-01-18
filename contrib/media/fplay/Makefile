@@ -46,7 +46,7 @@ OBJECTS =  $(patsubst %.asm, %.o, $(patsubst %.c, %.o, $(SOURCES)))
 all:$(NAME)
 
 $(NAME): $(OBJECTS) Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(OBJECTS) $(LIBS)
+	$(LD) $(LDFLAGS) $(LIBPATH) --subsystem native -o $@ $(OBJECTS) $(LIBS)
 	kos32-objcopy $@ -O binary
 
 %.o : %.c Makefile
