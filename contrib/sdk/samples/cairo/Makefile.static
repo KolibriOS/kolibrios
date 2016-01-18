@@ -19,7 +19,7 @@ OBJECTS = $(patsubst %.c, %.o, $(SOURCES))
 default: cairo
 
 cairo: $(OBJECTS) Makefile.static
-	$(LD) $(LDFLAGS) $(LIBPATH) -Map cairo.map -o cairo $(OBJECTS) -lcairo2 -lpixman-1 -lfreetype -lc -lgcc -lc
+	$(LD) $(LDFLAGS) $(LIBPATH) --subsystem console -Map cairo.map -o cairo $(OBJECTS) -lcairo2 -lpixman-1 -lfreetype -lc -lgcc -lc
 	objcopy cairo -O binary
 
 %.o : %.c Makefile $(SOURCES)
