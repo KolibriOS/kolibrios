@@ -1808,6 +1808,8 @@ fat_Read:
         mov     ebx, [ebx+16]   ; buffer
         push    ebx
         push    0
+        test    ecx, ecx
+        jz      .done
         mov     eax, [edi+28]
         sub     eax, edx
         jb      .fileEnd
@@ -1920,7 +1922,7 @@ fat_Read:
         jnz     .noaccess3
         pop     ecx
         xor     edx, edx
-        jcxz    .done
+        jecxz   .done
         jmp     .alignedCluster
 .readEnd:
         add     ecx, edi

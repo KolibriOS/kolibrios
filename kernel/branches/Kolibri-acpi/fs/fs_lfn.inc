@@ -20,6 +20,7 @@ ERROR_FAT_TABLE      = 9 ;deprecated
 ERROR_FS_FAIL        = 9
 ERROR_ACCESS_DENIED  = 10
 ERROR_DEVICE         = 11
+ERROR_OUT_OF_MEMORY  = 12
 
 image_of_eax EQU esp+32
 image_of_ebx EQU esp+20

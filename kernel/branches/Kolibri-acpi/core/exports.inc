@@ -119,13 +119,13 @@ __exports:
           usb_get_param,         'USBGetParam',        \
           usb_hc_func,           'USBHCFunc',          \
 \
-          NET_add_device,        'NetRegDev',          \
-          NET_remove_device,     'NetUnRegDev',        \
-          NET_ptr_to_num,        'NetPtrToNum',        \
-          NET_link_changed,      'NetLinkChanged',     \
-          ETH_input,             'EthInput',           \
-          NET_BUFF_alloc,        'NetAlloc',           \
-          NET_BUFF_free,         'NetFree',            \
+          net_add_device,        'NetRegDev',          \
+          net_remove_device,     'NetUnRegDev',        \
+          net_ptr_to_num,        'NetPtrToNum',        \
+          net_link_changed,      'NetLinkChanged',     \
+          eth_input,             'EthInput',           \
+          net_buff_alloc,        'NetAlloc',           \
+          net_buff_free,         'NetFree',            \
 \
           get_pcidev_list,       'GetPCIList',         \
 \

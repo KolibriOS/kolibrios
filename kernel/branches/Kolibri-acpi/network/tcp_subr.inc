@@ -14,14 +14,14 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 5584 $
+$Revision: 6011 $
 
 align 4
 iglobal
         TCP_backoff     db 0,1,2,3,4,5,6,6,6,6,6,6,6
 endg
 
-macro   TCP_checksum IP1, IP2 {
+macro   tcp_checksum IP1, IP2 {
 
 ;-------------
 ; Pseudoheader
@@ -60,9 +60,9 @@ macro   TCP_checksum IP1, IP2 {
 
 
 
-macro   TCP_sendseqinit ptr {
+macro   tcp_sendseqinit ptr {
 
-        push    edi                     ;;;; i dont like this static use of edi
+        push    edi                     ;;;; FIXME: i dont like this static use of edi
         mov     edi, [ptr + TCP_SOCKET.ISS]
         mov     [ptr + TCP_SOCKET.SND_UP], edi
         mov     [ptr + TCP_SOCKET.SND_MAX], edi
@@ -74,7 +74,7 @@ macro   TCP_sendseqinit ptr {
 
 
 
-macro   TCP_rcvseqinit ptr {
+macro   tcp_rcvseqinit ptr {
 
         push    edi
         mov     edi, [ptr + TCP_SOCKET.IRS]
@@ -87,7 +87,7 @@ macro   TCP_rcvseqinit ptr {
 
 
 
-macro   TCP_init_socket socket {
+macro   tcp_init_socket socket {
 
         mov     [socket + TCP_SOCKET.t_maxseg], TCP_mss_default
         mov     [socket + TCP_SOCKET.t_flags], TF_REQ_SCALE or TF_REQ_TSTMP
@@ -106,7 +106,7 @@ macro   TCP_init_socket socket {
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; TCP_pull_out_of_band                                            ;
+; tcp_pull_out_of_band                                            ;
 ;                                                                 ;
 ;  IN:  eax = ?                                                   ;
 ;       ebx = socket ptr                                          ;
@@ -116,9 +116,9 @@ macro   TCP_init_socket socket {
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-TCP_pull_out_of_band:
+tcp_pull_out_of_band:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_pull_out_of_band\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "tcp_pull_out_of_band\n"
 
         ;;;; 1282-1305
 
@@ -128,7 +128,7 @@ TCP_pull_out_of_band:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; TCP_drop                                                        ;
+; tcp_drop                                                        ;
 ;                                                                 ;
 ;  IN:  eax = socket ptr                                          ;
 ;       ebx = error number                                        ;
@@ -137,9 +137,9 @@ TCP_pull_out_of_band:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-TCP_drop:    ; FIXME CHECKME TODO
+tcp_drop:    ; FIXME CHECKME TODO
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_drop: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "tcp_drop: %x\n", eax
 
         cmp     [eax + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED
         jb      .no_syn_received
@@ -147,12 +147,12 @@ TCP_drop:    ; FIXME CHECKME TODO
         mov     [eax + TCP_SOCKET.t_state], TCPS_CLOSED
 
         push    eax
-        call    TCP_output
+        call    tcp_output
         pop     eax
 
 ;;; TODO: update stats
 
-        jmp     TCP_close
+        jmp     tcp_close
 
   .no_syn_received:
 
@@ -167,7 +167,7 @@ TCP_drop:    ; FIXME CHECKME TODO
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; TCP_disconnect                                                  ;
+; tcp_disconnect                                                  ;
 ;                                                                 ;
 ;  IN:  eax = socket ptr                                          ;
 ;                                                                 ;
@@ -175,22 +175,22 @@ TCP_drop:    ; FIXME CHECKME TODO
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-TCP_disconnect:
+tcp_disconnect:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_disconnect: %x\n", eax
 
         cmp     [eax + TCP_SOCKET.t_state], TCPS_ESTABLISHED
-        jb      TCP_close       ; Connection not yet synchronised, just get rid of the socket
+        jb      tcp_close       ; Connection not yet synchronised, just get rid of the socket
 
 ; TODO: implement LINGER
 
-        call    SOCKET_is_disconnecting
-        call    TCP_usrclosed
+        call    socket_is_disconnecting
+        call    tcp_usrclosed
 
         test    eax, eax
         jz      @f
         push    eax
-        call    TCP_output
+        call    tcp_output
         pop     eax
   @@:
         ret
@@ -198,7 +198,7 @@ TCP_disconnect:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; TCP_close                                                       ;
+; tcp_close                                                       ;
 ;                                                                 ;
 ;  IN:  eax = socket ptr                                          ;
 ;                                                                 ;
@@ -206,15 +206,15 @@ TCP_disconnect:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-TCP_close:
+tcp_close:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_close: %x\n", eax
 
 ;;; TODO: update RTT and mean deviation
 ;;; TODO: update slow start threshold
 
-        call    SOCKET_is_disconnected
-        call    SOCKET_free
+        call    socket_is_disconnected
+        call    socket_free
 
         xor     eax, eax
         ret
@@ -223,7 +223,7 @@ TCP_close:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; TCP_outflags                                                    ;
+; tcp_outflags                                                    ;
 ;                                                                 ;
 ;  IN:  eax = socket ptr                                          ;
 ;                                                                 ;
@@ -231,10 +231,10 @@ TCP_close:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-TCP_outflags:
+tcp_outflags:
 
         mov     edx, [eax + TCP_SOCKET.t_state]
-        movzx   edx, byte [edx + .flaglist]
+        movzx   edx, byte[edx + .flaglist]
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_outflags: socket=%x flags=%x\n", eax, dl
 
@@ -270,7 +270,7 @@ TCP_outflags:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-TCP_respond:
+tcp_respond:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_respond_socket: socket=%x flags=%x\n", ebx, cl
 
@@ -284,7 +284,7 @@ TCP_respond:
         mov     ah, IP_PROTO_TCP
         mov     ecx, sizeof.TCP_header
         mov     ebx, [ebx + IP_SOCKET.device]
-        call    IPv4_output
+        call    ipv4_output
         jz      .error
         pop     esi cx
         push    eax
@@ -320,7 +320,7 @@ TCP_respond:
         sub     edi, sizeof.TCP_header
         mov     ecx, sizeof.TCP_header
         xchg    esi, edi
-        TCP_checksum (edi + IP_SOCKET.LocalIP), (edi + IP_SOCKET.RemoteIP)
+        tcp_checksum (edi + IP_SOCKET.LocalIP), (edi + IP_SOCKET.RemoteIP)
         mov     [esi+TCP_header.Checksum], dx
 
 ;--------------------
@@ -329,7 +329,7 @@ TCP_respond:
         call    [ebx + NET_DEVICE.transmit]
         test    eax, eax
         jnz     @f
-        call    NET_ptr_to_num4
+        call    net_ptr_to_num4
         inc     [TCP_segments_tx + edi]
        @@:
         ret
@@ -343,7 +343,7 @@ TCP_respond:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; TCP_respond_segment                                             ;
+; tcp_respond_segment                                             ;
 ;                                                                 ;
 ;  IN:  ebx = device ptr                                          ;
 ;       edx = segment ptr (a previously received segment)         ;
@@ -354,7 +354,7 @@ TCP_respond:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-TCP_respond_segment:
+tcp_respond_segment:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_respond_segment: frame=%x flags=%x\n", edx, cl
 
@@ -366,7 +366,7 @@ TCP_respond_segment:
         mov     edi, [edi + IPv4_header.SourceAddress]
         mov     ecx, sizeof.TCP_header
         mov     ax, IP_PROTO_TCP shl 8 + 128
-        call    IPv4_output
+        call    ipv4_output
         jz      .error
         pop     esi cx
 
@@ -399,7 +399,7 @@ TCP_respond_segment:
 
         lea     esi, [edi - sizeof.TCP_header]
         mov     ecx, sizeof.TCP_header
-        TCP_checksum (esi - sizeof.IPv4_header + IPv4_header.DestinationAddress),\      ; FIXME
+        tcp_checksum (esi - sizeof.IPv4_header + IPv4_header.DestinationAddress),\      ; FIXME
                      (esi - sizeof.IPv4_header + IPv4_header.SourceAddress)
         mov     [esi + TCP_header.Checksum], dx
 
@@ -409,7 +409,7 @@ TCP_respond_segment:
         call    [ebx + NET_DEVICE.transmit]
         test    eax, eax
         jnz     @f
-        call    NET_ptr_to_num4
+        call    net_ptr_to_num4
         inc     [TCP_segments_tx + edi]
        @@:
         ret
@@ -421,7 +421,7 @@ TCP_respond_segment:
         ret
 
 
-macro   TCPT_RANGESET   timer, value, min, max {
+macro   tcpt_rangeset   timer, value, min, max {
 
 local   .min
 local   .max
@@ -448,11 +448,11 @@ local   .done
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; TCP_set_persist                                                 ;
+; tcp_set_persist                                                 ;
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-TCP_set_persist:
+tcp_set_persist:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_set_persist\n"
 
@@ -473,7 +473,7 @@ TCP_set_persist:
 
 ; Start/restart persistance timer.
 
-        TCPT_RANGESET   [eax + TCP_SOCKET.timer_persist], ebx, TCP_time_pers_min, TCP_time_pers_max
+        tcpt_rangeset [eax + TCP_SOCKET.timer_persist], ebx, TCP_time_pers_min, TCP_time_pers_max
         or      [ebx + TCP_SOCKET.timer_flags], timer_flag_persist
         pop     ebx
 
@@ -489,7 +489,7 @@ TCP_set_persist:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; TCP_xmit_timer: Calculate new smoothed RTT.                     ;
+; tcp_xmit_timer: Calculate new smoothed RTT.                     ;
 ;                                                                 ;
 ;   IN: eax = rtt                                                 ;
 ;       ebx = socket ptr                                          ;
@@ -498,7 +498,7 @@ TCP_set_persist:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-TCP_xmit_timer:
+tcp_xmit_timer:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_xmit_timer: socket=0x%x rtt=%d0ms\n", ebx, eax
 
@@ -563,7 +563,7 @@ TCP_xmit_timer:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; TCP_mss: Update maximum segment size                            ;
+; tcp_mss: Update maximum segment size                            ;
 ;                                                                 ;
 ;  IN:  eax = max segment size                                    ;
 ;       ebx = socket ptr                                          ;
@@ -572,7 +572,7 @@ TCP_xmit_timer:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-TCP_mss:
+tcp_mss:
 
         cmp     eax, 1420       ; FIXME
         jbe     @f
@@ -587,7 +587,7 @@ TCP_mss:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; TCP_reassemble                                                  ;
+; tcp_reassemble                                                  ;
 ;                                                                 ;
 ;   IN: ebx = socket ptr                                          ;
 ;       edx = segment ptr                                         ;
@@ -596,7 +596,7 @@ TCP_mss:
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-TCP_reassemble:
+tcp_reassemble:
 
         ;;;;; TODO
 

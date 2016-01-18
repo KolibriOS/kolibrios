@@ -16,7 +16,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 5842 $
+$Revision: 6011 $
 
 IPv4_MAX_FRAGMENTS              = 64
 IPv4_MAX_ROUTES                 = 64
@@ -92,14 +92,12 @@ align 4
 endg
 
 
-;-----------------------------------------------------------------
-;
-; IPv4_init
-;
-;  This function resets all IP variables
-;
-;-----------------------------------------------------------------
-macro   IPv4_init {
+;-----------------------------------------------------------------;
+;                                                                 ;
+; ipv4_init: Resets all IPv4 variables                            ;
+;                                                                 ;
+;-----------------------------------------------------------------;
+macro   ipv4_init {
 
         xor     eax, eax
         mov     edi, IP_LIST
@@ -109,12 +107,12 @@ macro   IPv4_init {
 }
 
 
-;-----------------------------------------------------------------
-;
-; Decrease TimeToLive of all fragment slots
-;
-;-----------------------------------------------------------------
-macro IPv4_decrease_fragment_ttls {
+;-----------------------------------------------------------------;
+;                                                                 ;
+; Decrease TimeToLive of all fragment slots                       ;
+;                                                                 ;
+;-----------------------------------------------------------------;
+macro ipv4_decrease_fragment_ttls {
 
 local   .loop, .next
 
@@ -141,7 +139,7 @@ local   .loop, .next
 
 
 
-macro IPv4_checksum ptr {
+macro ipv4_checksum ptr {
 
 ; This is the fast procedure to create or check an IP header without options
 ; To create a new checksum, the checksum field must be set to 0 before computation
@@ -205,24 +203,22 @@ macro IPv4_checksum ptr {
 
 
 
-;-----------------------------------------------------------------
-;
-; IPv4_input:
-;
-;  Will check if IPv4 Packet isnt damaged
-;  and call appropriate handler. (TCP/UDP/ICMP/..)
-;
-;  It will also re-construct fragmented packets
-;
-;  IN:  Pointer to buffer in [esp]
-;       pointer to device struct in ebx
-;       pointer to IPv4 header in edx
-;       size of IPv4 packet in ecx
-;  OUT: /
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; ipv4_input: Check if IPv4 Packet isnt damaged and call          ;
+; appropriate handler. (TCP/UDP/ICMP/..)                          ;
+; We will also re-construct fragmented packets.                   ;
+;                                                                 ;
+;  IN:  Pointer to buffer in [esp]                                ;
+;       pointer to device struct in ebx                           ;
+;       pointer to IPv4 header in edx                             ;
+;       size of IPv4 packet in ecx                                ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-IPv4_input:
+ipv4_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: packet from %u.%u.%u.%u ",\
         [edx + IPv4_header.SourceAddress + 0]:1,[edx + IPv4_header.SourceAddress + 1]:1,\
@@ -231,14 +227,14 @@ IPv4_input:
         [edx + IPv4_header.DestinationAddress + 0]:1,[edx + IPv4_header.DestinationAddress + 1]:1,\
         [edx + IPv4_header.DestinationAddress + 2]:1,[edx + IPv4_header.DestinationAddress + 3]:1
 
-        call    NET_ptr_to_num4
+        call    net_ptr_to_num4
         cmp     edi, -1
         je      .invalid_device
 
 ;-------------------------------
 ; re-calculate the checksum
 
-        IPv4_checksum edx
+        ipv4_checksum edx
         jnz     .dump                                           ; if checksum isn't valid then dump packet
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Checksum ok\n"
@@ -304,13 +300,13 @@ IPv4_input:
         add     esi, edx                                        ; make esi ptr to data
 
         cmp     al, IP_PROTO_TCP
-        je      TCP_input
+        je      tcp_input
 
         cmp     al, IP_PROTO_UDP
-        je      UDP_input
+        je      udp_input
 
         cmp     al, IP_PROTO_ICMP
-        je      ICMP_input
+        je      icmp_input
 
 ;-------------------------------
 ; Look for a matching RAW socket
@@ -347,7 +343,7 @@ IPv4_input:
         call    mutex_lock
         popa
 
-        jmp     SOCKET_input
+        jmp     socket_input
 
   .dump_unlock:
 
@@ -361,12 +357,12 @@ IPv4_input:
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: dumping\n"
         inc     [IPv4_packets_dumped + edi]
-        call    NET_BUFF_free
+        call    net_buff_free
         ret
 
   .invalid_device:
         DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_input: packet originated from invalid device\n"
-        call    NET_BUFF_free
+        call    net_buff_free
         ret
 
 
@@ -390,7 +386,7 @@ IPv4_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Middle fragment packet received!\n"
 
-        call    IPv4_find_fragment_slot
+        call    ipv4_find_fragment_slot
         cmp     esi, -1
         je      .dump
 
@@ -455,7 +451,7 @@ IPv4_input:
   .is_last_fragment:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Last fragment packet received!\n"
 
-        call    IPv4_find_fragment_slot
+        call    ipv4_find_fragment_slot
         cmp     esi, -1
         je      .dump
 
@@ -546,7 +542,7 @@ IPv4_input:
         push    [edx + IPv4_FRAGMENT_entry.NextPtr]                                     ; Set edx to the next pointer
         push    edx                                                                     ; Push pointer to fragment onto stack
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Next Fragment: 0x%x\n", edx
-        call    NET_BUFF_free                                                          ; free the previous fragment buffer (this uses the value from stack)
+        call    net_buff_free                                                          ; free the previous fragment buffer (this uses the value from stack)
         pop     edx ebx eax
         cmp     edx, -1                                                                 ; Check if it is last fragment in chain
         jne     .rebuild_packet_loop
@@ -571,16 +567,17 @@ IPv4_input:
 
 
 
-;-----------------------------------------------------------------
-;
-; find fragment slot
-;
-; IN: pointer to fragmented packet in edx
-; OUT: pointer to slot in esi, -1 on error
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; ipv4_find_fragment_slot                                         ;
+;                                                                 ;
+; IN: pointer to fragmented packet in edx                         ;
+;                                                                 ;
+; OUT: pointer to slot in esi, -1 on error                        ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-IPv4_find_fragment_slot:
+ipv4_find_fragment_slot:
 
 ;;; TODO: the RFC says we should check protocol number too
 
@@ -607,26 +604,27 @@ IPv4_find_fragment_slot:
         ret
 
 
-;------------------------------------------------------------------
-;
-; IPv4_output
-;
-; IN:    al = protocol
-;        ah = TTL
-;       ebx = device ptr (or 0 to let IP layer decide)
-;       ecx = data length
-;       edx = Source IP
-;       edi = Destination IP
-;
-; OUT:  eax = pointer to buffer start / 0 on error
-;       ebx = device ptr (send packet through this device)
-;       ecx = data length
-;       edx = size of complete frame
-;       edi = start of IPv4 payload
-;
-;------------------------------------------------------------------
+;------------------------------------------------------------------;
+;                                                                  ;
+; ipv4_output                                                      ;
+;                                                                  ;
+;  IN:  al = protocol                                              ;
+;       ah = TTL                                                   ;
+;       ebx = device ptr (or 0 to let IP layer decide)             ;
+;       ecx = data length                                          ;
+;       edx = Source IP                                            ;
+;       edi = Destination IP                                       ;
+;                                                                  ;
+; OUT:  eax = pointer to buffer start                              ;
+;       eax = 0 on error                                           ;
+;       ebx = device ptr (send packet through this device)         ;
+;       ecx = data length                                          ;
+;       edx = size of complete frame                               ;
+;       edi = start of IPv4 payload                                ;
+;                                                                  ;
+;------------------------------------------------------------------;
 align 4
-IPv4_output:
+ipv4_output:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_output: size=%u ip=0x%x\n", ecx, eax
 
@@ -635,12 +633,12 @@ IPv4_output:
 
         push    ecx ax edi
         mov     eax, edi
-        call    IPv4_route              ; outputs device number in edi, dest ip in eax, source IP in edx
+        call    ipv4_route              ; outputs device number in edi, dest ip in eax, source IP in edx
         push    edx
         test    edi, edi
         jz      .loopback
 
-        call    ARP_IP_to_MAC
+        call    arp_ip_to_mac
         test    eax, 0xffff0000         ; error bits
         jnz     .arp_error
         push    ebx                     ; push the mac onto the stack
@@ -653,7 +651,7 @@ IPv4_output:
         mov     ecx, [esp + 6 + 8 + 2]
         add     ecx, sizeof.IPv4_header
         mov     edx, esp
-        call    ETH_output
+        call    eth_output
         jz      .eth_error
         add     esp, 6                  ; pop the mac out of the stack
 
@@ -674,7 +672,7 @@ IPv4_output:
 
         pop     ecx
 
-        IPv4_checksum edi
+        ipv4_checksum edi
         add     edi, sizeof.IPv4_header
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_output: success!\n"
         ret
@@ -704,33 +702,33 @@ IPv4_output:
         mov     ecx, [esp + 10]
         add     ecx, sizeof.IPv4_header
         mov     edi, AF_INET4
-        call    LOOP_output
+        call    loop_output
         jmp     .continue
 
 
 
 
-;------------------------------------------------------------------
-;
-; IPv4_output_raw
-;
-; IN: eax = socket ptr
-;     ecx = data length
-;     esi = data ptr
-;
-; OUT: eax = -1 on error
-;
-;------------------------------------------------------------------
+;------------------------------------------------------------------;
+;                                                                  ;
+; ipv4_output_raw                                                  ;
+;                                                                  ;
+;  IN: eax = socket ptr                                            ;
+;      ecx = data length                                           ;
+;      esi = data ptr                                              ;
+;                                                                  ;
+; OUT: eax = -1 on error                                           ;
+;                                                                  ;
+;------------------------------------------------------------------;
 align 4
-IPv4_output_raw:
+ipv4_output_raw:
 
         DEBUGF 1,"IPv4_output_raw: size=%u ptr=%x socket=%x\n", ecx, esi, eax
 
         sub     esp, 8
         push    esi eax
 
-        call    IPv4_route
-        call    ARP_IP_to_MAC
+        call    ipv4_route
+        call    arp_ip_to_mac
 
         test    eax, 0xffff0000         ; error bits
         jnz     .arp_error
@@ -744,7 +742,7 @@ IPv4_output_raw:
         mov     ecx, [esp + 6 + 4]
         add     ecx, sizeof.IPv4_header
         mov     edx, esp
-        call    ETH_output
+        call    eth_output
         jz      .error
         add     esp, 6  ; pop the mac
 
@@ -772,7 +770,7 @@ IPv4_output_raw:
 ;        [edi + IPv4_header.SourceAddress]
 ;        [edi + IPv4_header.DestinationAddress]
 
-        IPv4_checksum edi                       ;;;; todo: checksum for IP packet with options!
+        ipv4_checksum edi                       ;;;; todo: checksum for IP packet with options!
         add     edi, sizeof.IPv4_header
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_output_raw: device=%x\n", ebx
         call    [ebx + NET_DEVICE.transmit]
@@ -791,17 +789,18 @@ IPv4_output_raw:
         ret
 
 
-;--------------------------------------------------------
-;
-;
-; IN: [esp] = pointer to buffer containing ipv4 packet to be fragmented
-;     edi = pointer to ip header in that buffer
-;     ebx = device ptr
-;
-; OUT: /
-;
-;--------------------------------------------------------
-proc IPv4_fragment stdcall buffer
+;-----------------------------------------------------------------;
+;                                                                 ;
+; ipv4_fragment                                                   ;
+;                                                                 ;
+;  IN:  [esp] = ptr to packet buffer to fragment                  ;
+;       edi = ptrr to ip header in that buffer                    ;
+;       ebx = device ptr                                          ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
+proc ipv4_fragment stdcall buffer
 
 locals
         offset          dd ?
@@ -910,22 +909,24 @@ endp
 
 
 
-;---------------------------------------------------------------------------
-;
-; IPv4_route
-;
-; IN:   eax = Destination IP
-;       ebx = outgoing device / 0
-;       edx = Source IP
-; OUT:  eax = Destination IP (or gateway IP)
-;       edx = Source IP
-;       edi = device number*4
-; DESTROYED:
-;       ecx
-;
-;---------------------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; ipv4_route                                                      ;
+;                                                                 ;
+; IN:   eax = Destination IP                                      ;
+;       ebx = outgoing device / 0                                 ;
+;       edx = Source IP                                           ;
+;                                                                 ;
+; OUT:  eax = Destination IP (or gateway IP)                      ;
+;       edx = Source IP                                           ;
+;       edi = device number*4                                     ;
+;                                                                 ;
+; DESTROYED:                                                      ;
+;       ecx                                                       ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-IPv4_route:     ; TODO: return error if no valid route found
+ipv4_route:     ; TODO: return error if no valid route found
 
         test    ebx, ebx
         jnz     .got_device
@@ -961,7 +962,7 @@ IPv4_route:     ; TODO: return error if no valid route found
 
   .got_device:
 ; Validate device ptr and convert to device number
-        call    NET_ptr_to_num4
+        call    net_ptr_to_num4
         cmp     edi, -1
         je      .fail
 
@@ -982,32 +983,35 @@ IPv4_route:     ; TODO: return error if no valid route found
 
 
 
-;---------------------------------------------------------------------------
-;
-; IPv4_get_frgmnt_num
-;
-; IN: /
-; OUT: fragment number in ax
-;
-;---------------------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; ipv4_get_frgmnt_num                                             ;
+;                                                                 ;
+;  IN: /                                                          ;
+;                                                                 ;
+; OUT: ax = fragment number                                       ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-IPv4_get_frgmnt_num:
+ipv4_get_frgmnt_num:
         xor     ax, ax  ;;; TODO: replace this with real code
 
         ret
 
 
-;-----------------------------------------------------------------
-;
-; IPv4_connect
-;
-;   IN: eax = socket pointer
-;  OUT: eax = 0 ok / -1 error
-;       ebx = error code
-;
-;-------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; ipv4_connect                                                    ;
+;                                                                 ;
+;   IN: eax = socket pointer                                      ;
+;                                                                 ;
+;  OUT: eax = 0 on success                                        ;
+;       eax = -1 on error                                         ;
+;       ebx = error code on error                                 ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-IPv4_connect:
+ipv4_connect:
 
         push    eax edx
         lea     ecx, [eax + SOCKET.mutex]
@@ -1031,21 +1035,19 @@ IPv4_connect:
         ret
 
 
-;---------------------------------------------------------------------------
-;
-; IPv4_API
-;
-; This function is called by system function 75
-;
-; IN:  subfunction number in bl
-;      device number in bh
-;      ecx, edx, .. depends on subfunction
-;
-; OUT:
-;
-;---------------------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; ipv4_API: Part of system function 76.                           ;
+;                                                                 ;
+;  IN:  bl = subfunction number                                   ;
+;       bh = device number                                        ;
+;       ecx, edx, .. depends on subfunction                       ;
+;                                                                 ;
+; OUT:  depends on subfunction                                    ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-IPv4_api:
+ipv4_api:
 
         movzx   eax, bh
         shl     eax, 2
@@ -1096,9 +1098,9 @@ IPv4_api:
 
         mov     ebx, [NET_DRV_LIST + eax]
         mov     eax, [IP_LIST + eax]
-        call    ARP_output_request              ; now send a gratuitous ARP
+        call    arp_output_request              ; now send a gratuitous ARP
 
-        call    NET_send_event
+        call    net_send_event
         xor     eax, eax
         ret
 
@@ -1108,7 +1110,7 @@ IPv4_api:
 
   .write_dns:
         mov     [DNS_LIST + eax], ecx
-        call    NET_send_event
+        call    net_send_event
         xor     eax, eax
         ret
 
@@ -1125,7 +1127,7 @@ IPv4_api:
         or      ecx, ebx
         mov     [BROADCAST_LIST + eax], ecx
 
-        call    NET_send_event
+        call    net_send_event
         xor     eax, eax
         ret
 
@@ -1136,6 +1138,6 @@ IPv4_api:
   .write_gateway:
         mov     [GATEWAY_LIST + eax], ecx
 
-        call    NET_send_event
+        call    net_send_event
         xor     eax, eax
         ret

@@ -14,7 +14,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 5976 $
+$Revision: 6011 $
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
@@ -31,7 +31,7 @@ $Revision: 5976 $
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-TCP_input:
+tcp_input:
 
 ; record the current time
         push    [timer_ticks]           ; in 1/100 seconds
@@ -57,17 +57,17 @@ TCP_input:
         pop     edi
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP incoming queue is full, discarding packet!\n"
 
-        call    NET_ptr_to_num4
+        call    net_ptr_to_num4
         inc     [TCP_segments_missed + edi]
 
         add     esp, sizeof.TCP_queue_entry - 4
-        call    NET_BUFF_free
+        call    net_buff_free
         ret
 
 
 
 align 4
-proc TCP_process_input
+proc tcp_process_input
 
 locals
         dataoffset      dd ?
@@ -111,7 +111,7 @@ endl
         push    ecx esi
         pushw   [esi + TCP_header.Checksum]
         mov     [esi + TCP_header.Checksum], 0
-        TCP_checksum (edi+IPv4_header.SourceAddress), (edi+IPv4_header.DestinationAddress)
+        tcp_checksum (edi+IPv4_header.SourceAddress), (edi+IPv4_header.DestinationAddress)
         pop     cx                              ; previous checksum
         cmp     cx, dx
         pop     edx ecx
@@ -234,7 +234,7 @@ endl
         popa
 
         push    ecx edx esi edi
-        call    SOCKET_fork
+        call    socket_fork
         pop     edi esi edx ecx
 
         test    eax, eax
@@ -312,7 +312,7 @@ endl
         lodsw
         rol     ax, 8
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Maxseg=%u\n", eax
-        call    TCP_mss
+        call    tcp_mss
        @@:
         jmp     .opt_loop
 
@@ -473,7 +473,7 @@ endl
         pusha
         mov     ecx, eax
         lea     eax, [ebx + STREAM_SOCKET.snd]
-        call    SOCKET_ring_free
+        call    socket_ring_free
         popa
 
 ; Update RTT estimators
@@ -483,7 +483,7 @@ endl
         mov     eax, [timestamp]
         sub     eax, [ebx + TCP_SOCKET.ts_ecr]
         inc     eax
-        call    TCP_xmit_timer
+        call    tcp_xmit_timer
         jmp     .rtt_done
   .no_timestamp_rtt:
 
@@ -493,7 +493,7 @@ endl
         cmp     eax, [ebx + TCP_SOCKET.t_rtseq]
         jbe     .rtt_done
         mov     eax, [ebx + TCP_SOCKET.t_rtt]
-        call    TCP_xmit_timer
+        call    tcp_xmit_timer
   .rtt_done:
 
 ; update window pointers
@@ -511,10 +511,10 @@ endl
 
 ; Awaken waiting processes
         mov     eax, ebx
-        call    SOCKET_notify
+        call    socket_notify
 
 ; Generate more output
-        call    TCP_output
+        call    tcp_output
 
         jmp     .drop_no_socket
 
@@ -540,11 +540,11 @@ endl
         mov     esi, [dataoffset]
         add     esi, edx
         lea     eax, [ebx + STREAM_SOCKET.rcv]
-        call    SOCKET_ring_write                       ; Add the data to the socket buffer
+        call    socket_ring_write                       ; Add the data to the socket buffer
         add     [ebx + TCP_SOCKET.RCV_NXT], ecx         ; Update sequence number with number of bytes we have copied
 
         mov     eax, ebx
-        call    SOCKET_notify
+        call    socket_notify
 
         or      [ebx + TCP_SOCKET.t_flags], TF_DELACK   ; Set delayed ack flag
 
@@ -661,7 +661,7 @@ endl
         jz      .not_terminated
 
         mov     eax, ebx
-        call    TCP_close
+        call    tcp_close
         inc     [TCPS_rcvafterclose]
         jmp     .respond_seg_reset
 
@@ -691,7 +691,7 @@ endl
 ;        cmp     edx, [edx + TCP_header.SequenceNumber]
 ;        add     edx, 64000      ; TCP_ISSINCR   FIXME
         mov     eax, ebx
-        call    TCP_close
+        call    tcp_close
         jmp     .findpcb        ; FIXME: skip code for unscaling window, ...
   .no_new_request:
 
@@ -779,14 +779,14 @@ endl
         mov     [ebx + TCP_SOCKET.t_state], TCPS_CLOSED
 ;;; TODO: update stats (tcp drops)
         mov     eax, ebx
-        call    TCP_close
+        call    tcp_close
         jmp     .drop_no_socket
 
   .rst_close:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Closing with reset\n"
 
         mov     eax, ebx
-        call    TCP_close
+        call    tcp_close
         jmp     .drop_no_socket
 
   .no_rst:
@@ -799,7 +799,7 @@ endl
 
         mov     eax, ebx
         mov     ebx, ECONNRESET
-        call    TCP_drop
+        call    tcp_drop
         jmp     .drop_with_reset
   .not_syn_full:
 
@@ -824,7 +824,7 @@ endl
 ;;; TODO: update stats
 
         mov     eax, ebx
-        call    SOCKET_is_connected
+        call    socket_is_connected
         mov     [ebx + TCP_SOCKET.t_state], TCPS_ESTABLISHED
 
 ; Do window scaling?
@@ -838,7 +838,7 @@ endl
         pop     word [ebx + TCP_SOCKET.SND_SCALE]
        @@:
 
-        call    TCP_reassemble
+        call    tcp_reassemble
 
         mov     eax, [edx + TCP_header.SequenceNumber]
         dec     eax
@@ -916,7 +916,7 @@ endl
 
 ; retransmit missing segment
         mov     eax, [esp]
-        call    TCP_output
+        call    tcp_output
 
 ; Lock the socket again
         mov     ecx, [esp]
@@ -955,7 +955,7 @@ endl
 
 ; retransmit missing segment
         mov     eax, [esp]
-        call    TCP_output
+        call    tcp_output
 
 ; Lock the socket again
         mov     ecx, [esp]
@@ -1005,7 +1005,7 @@ endl
         mov     eax, [timestamp]
         sub     eax, [ebx + TCP_SOCKET.ts_ecr]
         inc     eax
-        call    TCP_xmit_timer
+        call    tcp_xmit_timer
         jmp     .rtt_done_
 
 ; If no timestamp but transmit timer is running and timed sequence number was acked,
@@ -1020,7 +1020,7 @@ endl
         mov     eax, [ebx + TCP_SOCKET.t_rtt]
         test    eax, eax
         jz      .rtt_done_
-        call    TCP_xmit_timer
+        call    tcp_xmit_timer
 
   .rtt_done_:
 
@@ -1085,7 +1085,7 @@ endl
         mov     ecx, [ebx + STREAM_SOCKET.snd.size]
         lea     eax, [ebx + STREAM_SOCKET.snd]
         sub     [ebx + TCP_SOCKET.SND_WND], ecx
-        call    SOCKET_ring_free
+        call    socket_ring_free
         pop     ebx edx ecx
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: our FIN is acked\n"
@@ -1097,7 +1097,7 @@ endl
         push    ecx edx ebx
         mov     ecx, edi
         lea     eax, [ebx + STREAM_SOCKET.snd]
-        call    SOCKET_ring_free
+        call    socket_ring_free
         pop     ebx
         sub     [ebx + TCP_SOCKET.SND_WND], ecx
         pop     edx ecx
@@ -1109,7 +1109,7 @@ endl
 
   .wakeup:
         mov     eax, ebx
-        call    SOCKET_notify
+        call    socket_notify
 
 ; Update TCPS
         mov     eax, [edx + TCP_header.AckNumber]
@@ -1147,7 +1147,7 @@ endl
         test    [ebx + SOCKET.state], SS_CANTRCVMORE
         jnz     @f
         mov     eax, ebx
-        call    SOCKET_is_disconnected
+        call    socket_is_disconnected
         mov     [ebx + TCP_SOCKET.timer_timed_wait], TCP_time_max_idle
         or      [ebx + TCP_SOCKET.timer_flags], timer_flag_wait
        @@:
@@ -1160,11 +1160,11 @@ endl
 
         mov     [ebx + TCP_SOCKET.t_state], TCPS_TIMED_WAIT
         mov     eax, ebx
-        call    TCP_cancel_timers
+        call    tcp_cancel_timers
         mov     [ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL
         or      [ebx + TCP_SOCKET.timer_flags], timer_flag_wait
         mov     eax, ebx
-        call    SOCKET_is_disconnected
+        call    socket_is_disconnected
         jmp     .ack_processed
 
   .ack_la:
@@ -1177,7 +1177,7 @@ endl
         pop     ebx
 
         mov     eax, ebx
-        call    TCP_close
+        call    tcp_close
         jmp     .drop_no_socket
 
   .ack_tw:
@@ -1224,8 +1224,8 @@ align 4
         mov     [ebx + TCP_SOCKET.ISS], eax
         mov     [ebx + TCP_SOCKET.SND_NXT], eax
 
-        TCP_sendseqinit ebx
-        TCP_rcvseqinit ebx
+        tcp_sendseqinit ebx
+        tcp_rcvseqinit ebx
 
         mov     [ebx + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED
         or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
@@ -1233,12 +1233,12 @@ align 4
         or      [ebx + TCP_SOCKET.timer_flags], timer_flag_keepalive
 
         lea     eax, [ebx + STREAM_SOCKET.snd]
-        call    SOCKET_ring_create
+        call    socket_ring_create
         test    eax, eax
         jz      .drop
 
         lea     eax, [ebx + STREAM_SOCKET.rcv]
-        call    SOCKET_ring_create
+        call    socket_ring_create
         test    eax, eax
         jz      .drop
 
@@ -1246,7 +1246,7 @@ align 4
 
         pusha
         mov     eax, ebx
-        call    SOCKET_notify
+        call    socket_notify
         popa
 
         jmp     .trim
@@ -1278,7 +1278,7 @@ align 4
 
         mov     eax, ebx
         mov     ebx, ECONNREFUSED
-        call    TCP_drop
+        call    tcp_drop
 
         jmp     .drop
        @@:
@@ -1306,7 +1306,7 @@ align 4
         push    [edx + TCP_header.SequenceNumber]
         pop     [ebx + TCP_SOCKET.IRS]
 
-        TCP_rcvseqinit ebx
+        tcp_rcvseqinit ebx
 
         or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
 
@@ -1324,7 +1324,7 @@ align 4
 ; set socket state to connected
         push    eax
         mov     eax, ebx
-        call    SOCKET_is_connected
+        call    socket_is_connected
         pop     eax
         mov     [ebx + TCP_SOCKET.t_state], TCPS_ESTABLISHED
 
@@ -1334,8 +1334,8 @@ align 4
         cmp     eax, TF_REQ_SCALE or TF_RCVD_SCALE
         jne     .no_scaling
 
-        mov     ax, word [ebx + TCP_SOCKET.requested_s_scale]
-        mov     word [ebx + TCP_SOCKET.SND_SCALE], ax
+        mov     ax, word[ebx + TCP_SOCKET.requested_s_scale]
+        mov     word[ebx + TCP_SOCKET.SND_SCALE], ax
   .no_scaling:
 
 ;;; TODO: reassemble packets queue
@@ -1343,7 +1343,7 @@ align 4
         mov     eax, [ebx + TCP_SOCKET.t_rtt]
         test    eax, eax
         je      .trim
-        call    TCP_xmit_timer
+        call    tcp_xmit_timer
         jmp     .trim
 
   .simultaneous_open:
@@ -1485,13 +1485,13 @@ align 4
         mov     esi, [dataoffset]
         add     esi, edx
         lea     eax, [ebx + STREAM_SOCKET.rcv]
-        call    SOCKET_ring_write                       ; Add the data to the socket buffer
+        call    socket_ring_write                       ; Add the data to the socket buffer
         add     [ebx + TCP_SOCKET.RCV_NXT], ecx         ; Update sequence number with number of bytes we have copied
         popa
 
 ; Wake up the sleeping process
         mov     eax, ebx
-        call    SOCKET_notify
+        call    socket_notify
 
         jmp     .data_done
 
@@ -1501,7 +1501,7 @@ align 4
 
 ; Uh-oh, some data is out of order, lets call TCP reassemble for help
 
-        call    TCP_reassemble
+        call    tcp_reassemble
 
 ; Generate ACK immediately, to let the other end know that a segment was received out of order,
 ; and to tell it what sequence number is expected. This aids the fast-retransmit algorithm.
@@ -1522,7 +1522,7 @@ align 4
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: First FIN for this connection\n"
 
         mov     eax, ebx
-        call    SOCKET_cant_recv_more
+        call    socket_cant_recv_more
 
         or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
         inc     [ebx + TCP_SOCKET.RCV_NXT]
@@ -1556,8 +1556,8 @@ align 4
   .fin_wait2:
         mov     [ebx + TCP_SOCKET.t_state], TCPS_TIMED_WAIT
         mov     eax, ebx
-        call    TCP_cancel_timers
-        call    SOCKET_is_disconnected
+        call    tcp_cancel_timers
+        call    socket_is_disconnected
 
   .fin_timed:
         mov     [ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL
@@ -1583,12 +1583,12 @@ align 4
 
   .need_output:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: need output\n"
-        call    TCP_output
+        call    tcp_output
 
   .done:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: dumping\n"
 
-        call    NET_BUFF_free
+        call    net_buff_free
         jmp     .loop
 
 
@@ -1621,7 +1621,7 @@ align 4
         test    [edx + TCP_header.Flags], TH_RST
         jnz     .done
 
-        ;;; if its a multicast/broadcast, also drop
+; TODO: if its a multicast/broadcast, also drop
 
         test    [edx + TCP_header.Flags], TH_ACK
         jnz     .respond_ack
@@ -1636,14 +1636,14 @@ align 4
   .respond_ack:
         push    ebx
         mov     cl, TH_RST
-        call    TCP_respond
+        call    tcp_respond
         pop     ebx
         jmp     .destroy_new_socket
 
   .respond_syn:
         push    ebx
         mov     cl, TH_RST + TH_ACK
-        call    TCP_respond
+        call    tcp_respond
         pop     ebx
         jmp     .destroy_new_socket
 
@@ -1660,7 +1660,7 @@ align 4
         test    [edx + TCP_header.Flags], TH_RST
         jnz     .drop_no_socket
 
-        ;;; TODO: if its a multicast/broadcast, also drop
+; TODO: if its a multicast/broadcast, also drop
 
         test    [edx + TCP_header.Flags], TH_ACK
         jnz     .respond_seg_ack
@@ -1673,13 +1673,13 @@ align 4
   .respond_seg_ack:
         mov     cl, TH_RST
         xor     ebx, ebx                ; FIXME: find a way to get the receiving device ptr
-        call    TCP_respond_segment
+        call    tcp_respond_segment
         jmp     .drop_no_socket
 
   .respond_seg_syn:
         mov     cl, TH_RST + TH_ACK
         xor     ebx, ebx                ; FIXME: find a way to get the receiving device ptr
-        call    TCP_respond_segment
+        call    tcp_respond_segment
         jmp     .drop_no_socket
 
 ;------------------------------------------------
@@ -1701,7 +1701,7 @@ align 4
         jz      .drop_no_socket
 
         mov     eax, ebx
-        call    SOCKET_free
+        call    socket_free
 
 ;------------------
 ; Drop the segment
@@ -1709,7 +1709,7 @@ align 4
   .drop_no_socket:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Drop (no socket)\n"
 
-        call    NET_BUFF_free
+        call    net_buff_free
         jmp     .loop
 
 endp

@@ -504,81 +504,66 @@ align 4
 IDE_irq_14_handler:
 IDE_irq_15_handler:
 IDE_common_irq_handler:
+; Most of the time, we are here because we have requested
+; a DMA transfer for the corresponding drive.
+; However,
+; a) we can be here because IDE IRQ is shared with some other device,
+;    that device has actually raised IRQ,
+;    it has nothing to do with IDE;
+; b) we can be here because IDE controller just does not want
+;    to be silent and reacts to something even though
+;    we have, in theory, disabled IRQs.
+; If the interrupt corresponds to our current request,
+; remove the interrupt request and raise the event for the waiting code.
+; In the case a), just return zero - not our interrupt.
+; In the case b), remove the interrupt request and hope for the best.
 ; DEBUGF  1, 'K : IDE_irq_handler %x\n', [IDE_common_irq_param]:2
-        cmp     [IDE_common_irq_param], 0
-        jz      .exit
-        pushfd
-        cli
-        pushad
-        mov     ecx, [IDE_controller_pointer]
+        mov     ecx, [esp+4]
         mov     dx, [ecx+IDE_DATA.RegsBaseAddres]
-        cmp     [IDE_common_irq_param], 14
-        jz      @f
-        add     dx, 8
-@@:
         add     edx, 2  ; Bus Master IDE Status register
         in      al, dx
         test    al, 4
-        jz      @f
-        mov     [IDE_common_irq_param], 0
+        jnz     .interrupt_from_primary
+        add     edx, 8
+        in      al, dx
+        test    al, 4
+        jnz     .interrupt_from_secondary
+.exit_notour:
+        xor     eax, eax ; not our interrupt
+        ret
+.interrupt_from_primary:
         out     dx, al  ; clear Interrupt bit
         sub     edx, 2
         xor     eax, eax
         out     dx, al  ; clear Bus Master IDE Command register
-        mov     edx, [hdbase]
+        mov     dx, [ecx+IDE_DATA.BAR0_val]
         add     edx, 7
-        in      al, dx  ; read status register
+        in      al, dx ; read status register
+        cmp     [IDE_common_irq_param], 14
+        jz      .raise
+.exit_our:
+        mov     al, 1
+        ret
+.interrupt_from_secondary:
+        out     dx, al  ; clear Interrupt bit
+        sub     edx, 2
+        xor     eax, eax
+        out     dx, al  ; clear Bus Master IDE Command register
+        mov     dx, [ecx+IDE_DATA.BAR2_val]
+        add     edx, 7
+        in      al, dx ; read status register
+        cmp     [IDE_common_irq_param], 15
+        jnz     .exit_our
+.raise:
+        cmp     ecx, [IDE_controller_pointer]
+        jnz     .exit_our
+        pushad
         mov     eax, [eventPointer]
         mov     ebx, [eventID]
         xor     edx, edx
         xor     esi, esi
         call    raise_event
         popad
-        popfd
         mov     al, 1   ; remove the interrupt request
         ret
-@@:
-        popad
-        popfd
-.exit:
-        xor     eax, eax    ; not our interrupt
-        ret
 ;-----------------------------------------------------------------
-proc clear_pci_ide_interrupts
-        mov     esi, pcidev_list
-align 4
-.loop:
-        mov     esi, [esi+PCIDEV.fd]
-        cmp     esi, pcidev_list
-        jz      .done
-
-;        cmp     [esi+PCIDEV.class], 0x01018F
-        mov     eax, [esi+PCIDEV.class]
-        shr     eax, 4
-        cmp     eax, 0x01018
-        jnz     .loop
-
-        mov     ah, [esi+PCIDEV.bus]
-        mov     al, 2
-        mov     bh, [esi+PCIDEV.devfn]
-        mov     bl, 0x20
-        call    pci_read_reg
-
-        and     eax, 0FFFCh
-        mov     edx, eax
-        add     edx, 2
-        in      al, dx
-        DEBUGF 1,'K : clear_pci_ide_interrupts: port[%x] = %x ',dx,al
-        out     dx, al
-        in      al, dx
-        DEBUGF 1,'-> %x; ',al
-        add     edx, 8
-        in      al, dx
-        DEBUGF 1,'port[%x] = %x ',dx,al
-        out     dx, al
-        in      al, dx
-        DEBUGF 1,'-> %x\n',al
-        jmp     .loop
-.done:
-        ret
-endp

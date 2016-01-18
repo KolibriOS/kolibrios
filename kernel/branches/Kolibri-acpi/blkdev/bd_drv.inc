@@ -178,7 +178,7 @@ bd_read:
         ja      .notread
         sub     eax, [bios_cur_sector]
         shl     eax, 9
-        add     eax, (OS_BASE+0x9A000)
+        add     eax, (OS_BASE+0x99000)
         push    ecx esi
         mov     esi, eax
         mov     ecx, 512/4
@@ -207,12 +207,14 @@ bd_read:
         jmp     bd_read
 .readerr:
 .v86err:
+        pop     edx
+        pop     eax
         mov     [hd_error], 1
         jmp     hd_read_error
 ;-----------------------------------------------------------------
 bd_write_cache_chain:
         pusha
-        mov     edi, OS_BASE + 0x9A000
+        mov     edi, OS_BASE + 0x99000
         movzx   ecx, [cache_chain_size]
         push    ecx
         shl     ecx, 9-2
@@ -240,7 +242,7 @@ int13_call:
 ; In current implementation it is protected by common mutex 'ide_status'
         mov     word [OS_BASE + 510h], 10h          ; packet length
         mov     word [OS_BASE + 512h], cx           ; number of sectors
-        mov     dword [OS_BASE + 514h], 9A000000h   ; buffer 9A00:0000
+        mov     dword [OS_BASE + 514h], 99000000h   ; buffer 9900:0000
         mov     dword [OS_BASE + 518h], eax
         and     dword [OS_BASE + 51Ch], 0
         push    ebx ecx esi edi
@@ -267,7 +269,7 @@ int13_call:
 @@:
         mov     word [ebx+v86_regs.esi], 510h
         mov     word [ebx+v86_regs.ss], 9000h
-        mov     word [ebx+v86_regs.esp], 0A000h
+        mov     word [ebx+v86_regs.esp], 09000h
         mov     word [ebx+v86_regs.eip], 500h
         mov     [ebx+v86_regs.eflags], 20200h
         mov     esi, [sys_v86_machine]

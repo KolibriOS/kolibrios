@@ -14,7 +14,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 5442 $
+$Revision: 6011 $
 
 timer_flag_retransmission       = 1 shl 0
 timer_flag_keepalive            = 1 shl 1
@@ -23,7 +23,7 @@ timer_flag_persist              = 1 shl 3
 timer_flag_wait                 = 1 shl 4
 
 
-macro   TCP_timer_160ms {
+macro   tcp_timer_160ms {
 
 local   .loop
 local   .exit
@@ -45,10 +45,7 @@ local   .exit
 
         push    ebx
         mov     cl, TH_ACK
-        call    TCP_respond
-;        and     [ebx + TCP_SOCKET.t_flags], TF_ACKNOW   ;;
-;        mov     eax, ebx                                ;;
-;        call    TCP_output                              ;;
+        call    tcp_respond
         pop     ebx
 
         inc     [TCPS_delack]                   ; update stats
@@ -61,7 +58,7 @@ local   .exit
 
 
 align 4
-proc TCP_timer_640ms            ; TODO: implement timed wait timer!
+proc tcp_timer_640ms
 
         xor     esi, esi
         mov     ecx, MANUAL_DESTROY
@@ -77,8 +74,8 @@ proc TCP_timer_640ms            ; TODO: implement timed wait timer!
 
         add     [TCP_sequence_num], 64000
 
-; scan through all the active TCP sockets, decrementing ALL timers
-; When a timer reaches zero, we'll check wheter it was active or not
+; Scan through all the active TCP sockets, decrementing all active timers
+; When a timer reaches zero, run its handler.
 
         mov     eax, net_sockets
   .loop:
@@ -95,22 +92,22 @@ proc TCP_timer_640ms            ; TODO: implement timed wait timer!
 
         inc     [eax + TCP_SOCKET.t_idle]
 
-        dec     [eax + TCP_SOCKET.timer_retransmission]
-        jnz     .check_more2
         test    [eax + TCP_SOCKET.timer_flags], timer_flag_retransmission
         jz      .check_more2
+        dec     [eax + TCP_SOCKET.timer_retransmission]
+        jnz     .check_more2
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: Retransmission timer expired\n", eax
 
         push    eax
-        call    TCP_output
+        call    tcp_output
         pop     eax
 
   .check_more2:
-        dec     [eax + TCP_SOCKET.timer_keepalive]
-        jnz     .check_more3
         test    [eax + TCP_SOCKET.timer_flags], timer_flag_keepalive
         jz      .check_more3
+        dec     [eax + TCP_SOCKET.timer_keepalive]
+        jnz     .check_more3
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: Keepalive expired\n", eax
 
@@ -118,7 +115,7 @@ proc TCP_timer_640ms            ; TODO: implement timed wait timer!
         ja      .dont_kill
 
         push    eax
-        call    TCP_disconnect
+        call    tcp_disconnect
         pop     eax
         jmp     .loop
 
@@ -129,7 +126,7 @@ proc TCP_timer_640ms            ; TODO: implement timed wait timer!
         push    eax
         mov     ebx, eax
         xor     cl, cl
-        call    TCP_respond     ; send keepalive
+        call    tcp_respond                     ; send keepalive
         pop     eax
         mov     [eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_interval
         jmp     .check_more3
@@ -138,38 +135,38 @@ proc TCP_timer_640ms            ; TODO: implement timed wait timer!
         mov     [eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_idle
 
   .check_more3:
-        dec     [eax + TCP_SOCKET.timer_timed_wait]
-        jnz     .check_more5
         test    [eax + TCP_SOCKET.timer_flags], timer_flag_2msl
         jz      .check_more5
+        dec     [eax + TCP_SOCKET.timer_timed_wait]
+        jnz     .check_more5
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: 2MSL timer expired\n", eax
 
   .check_more5:
-        dec     [eax + TCP_SOCKET.timer_persist]
-        jnz     .check_more6
         test    [eax + TCP_SOCKET.timer_flags], timer_flag_persist
         jz      .check_more6
+        dec     [eax + TCP_SOCKET.timer_persist]
+        jnz     .check_more6
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: persist timer expired\n", eax
 
-        call    TCP_set_persist
+        call    tcp_set_persist
         mov     [eax + TCP_SOCKET.t_force], 1
         push    eax
-        call    TCP_output
+        call    tcp_output
         pop     eax
         mov     [eax + TCP_SOCKET.t_force], 0
 
   .check_more6:
-        dec     [eax + TCP_SOCKET.timer_timed_wait]
-        jnz     .loop
         test    [eax + TCP_SOCKET.timer_flags], timer_flag_wait
         jz      .loop
+        dec     [eax + TCP_SOCKET.timer_timed_wait]
+        jnz     .loop
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: timed wait timer expired\n", eax
 
         push    [eax + SOCKET.NextPtr]
-        call    TCP_close
+        call    tcp_close
         pop     eax
 
         jmp     .check_only
@@ -187,7 +184,7 @@ endp
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-TCP_cancel_timers:
+tcp_cancel_timers:
 
         mov     [eax + TCP_SOCKET.timer_flags], 0
 

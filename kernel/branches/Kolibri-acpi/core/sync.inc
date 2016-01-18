@@ -144,13 +144,13 @@ align 4
 
         sub     esp, sizeof.MUTEX_WAITER
         mov     ebx, [TASK_BASE]
-        mov     [ebx+TASKDATA.state], 1
         mov     [esp+MUTEX_WAITER.task], ebx
         lea     esi, [ebp+FUTEX.wait_list]
 
         list_add_tail esp, esi      ;esp= new waiter, esi= list head
 
 .again:
+        mov     [ebx+TASKDATA.state], 1
         call    change_task
 
         lock cmpxchg [ecx], edx
@@ -199,7 +199,7 @@ align 4
         mov     eax, [TASK_BASE]
         mov     [eax+TASKDATA.state], 5
 
-        mov     [esp+MUTEX_WAITER.task], ebx
+        mov     [esp+MUTEX_WAITER.task], eax
         lea     esi, [ebp+FUTEX.wait_list]
 
         list_add_tail esp, esi      ;esp= new waiter, esi= list head

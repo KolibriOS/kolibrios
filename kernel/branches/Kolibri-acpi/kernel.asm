@@ -996,8 +996,6 @@ end if
 ;        mov     esi, boot_devices
 ;        call    boot_log
 
-        call    clear_pci_ide_interrupts
-
 include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
 
         stdcall load_pe_driver, szVidintel, 0
@@ -2167,7 +2165,7 @@ sys_end:
         pusha
         mov     edx, [TASK_BASE]
         mov     edx, [edx+TASKDATA.pid]
-        call    SOCKET_process_end
+        call    socket_process_end
         popa
 ;--------------------------------------
         mov     ecx, [current_slot]
@@ -2297,7 +2295,7 @@ sysfn_terminate:        ; 18.2 = TERMINATE
 ; terminate all network sockets it used
         pusha
         mov     eax, edx
-        call    SOCKET_process_end
+        call    socket_process_end
         popa
 ;--------------------------------------
         cmp     [_display.select_cursor], 0

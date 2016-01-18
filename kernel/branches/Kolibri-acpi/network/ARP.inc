@@ -70,14 +70,12 @@ endg
 
 
 
-;-----------------------------------------------------------------
-;
-; ARP_init
-;
-;  This function resets all ARP variables
-;
-;-----------------------------------------------------------------
-macro ARP_init {
+;-----------------------------------------------------------------;
+;                                                                 ;
+; arp_init: Resets all ARP variables.                             ;
+;                                                                 ;
+;-----------------------------------------------------------------;
+macro arp_init {
 
         xor     eax, eax
         mov     edi, ARP_entries_num
@@ -86,13 +84,12 @@ macro ARP_init {
 
 }
 
-;---------------------------------------------------------------------------
-;
-; ARP_decrease_entry_ttls
-;
-;---------------------------------------------------------------------------
-
-macro ARP_decrease_entry_ttls {
+;-----------------------------------------------------------------;
+;                                                                 ;
+; arp_decrease_entry_ttls                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
+macro arp_decrease_entry_ttls {
 
 local   .loop
 local   .exit
@@ -135,7 +132,7 @@ local   .exit
         je      .response_timeout
 
         push    esi edi ecx
-        call    ARP_del_entry
+        call    arp_del_entry
         pop     ecx edi esi
 
         jmp     .next
@@ -154,20 +151,21 @@ local   .exit
 }
 
 
-;-----------------------------------------------------------------
-;
-; ARP_input
-;
-;  IN:  Pointer to buffer in [esp]
-;       size of buffer in [esp+4]
-;       packet size (without ethernet header) in ecx
-;       packet ptr in edx
-;       device ptr in ebx
-;  OUT: /
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; arp_input                                                       ;
+;                                                                 ;
+;  IN:  [esp] = Pointer to buffer                                 ;
+;       [esp+4] = size of buffer                                  ;
+;       ecx = packet size (without ethernet header)               ;
+;       edx = packet ptr                                          ;
+;       ebx = device ptr                                          ;
+;                                                                 ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-ARP_input:
+arp_input:
 
 ;-----------------------------------------
 ; Check validity and print some debug info
@@ -175,7 +173,7 @@ ARP_input:
         cmp     ecx, sizeof.ARP_header
         jb      .exit
 
-        call    NET_ptr_to_num4
+        call    net_ptr_to_num4
         cmp     edi, -1
         jz      .exit
 
@@ -294,21 +292,21 @@ ARP_input:
 
   .exit:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: exiting\n"
-        call    NET_BUFF_free
+        call    net_buff_free
         ret
 
-;---------------------------------------------------------------------------
-;
-; ARP_output_request
-;
-; IN:   ebx = device ptr
-;       eax = IP
-; OUT: /
-;       scratched: probably everything
-;
-;---------------------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; arp_output_request                                              ;
+;                                                                 ;
+;  IN:  ebx = device ptr                                          ;
+;       eax = IP                                                  ;
+;                                                                 ;
+; OUT:  scratched: probably everything                            ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-ARP_output_request:
+arp_output_request:
 
         push    eax
 
@@ -318,7 +316,7 @@ ARP_output_request:
         mov     ax, ETHER_PROTO_ARP
         mov     ecx, sizeof.ARP_header
         mov     edx, ETH_BROADCAST              ; broadcast mac
-        call    ETH_output
+        call    eth_output
         jz      .exit
 
         mov     [edi + ARP_header.HardwareType], 0x0100         ; Ethernet
@@ -333,7 +331,7 @@ ARP_output_request:
         movsd                                   ;
 
         push    edi
-        call    NET_ptr_to_num4
+        call    net_ptr_to_num4
         inc     [ARP_PACKETS_TX + edi]          ; assume we will succeed
         lea     esi, [IP_LIST + edi]            ; SenderIP
         pop     edi
@@ -354,18 +352,22 @@ ARP_output_request:
         ret
 
 
-;-----------------------------------------------------------------
-;
-; ARP_add_entry (or update)
-;
-; IN:  esi = ptr to entry (can easily be made on the stack)
-;      edi = device num*4
-; OUT: eax = entry #, -1 on error
-;      esi = ptr to newly created entry
-;
-;-----------------------------------------------------------------      ; TODO: use a mutex
+;-----------------------------------------------------------------;
+;                                                                 ;
+; arp_add_entry: Add or update an entry in the ARP table.         ;
+;                                                                 ;
+;  IN:  esi = ptr to entry (can easily be made on the stack)      ;
+;       edi = device num*4                                        ;
+;                                                                 ;
+; OUT:  eax = entry number on success                             ;
+;       eax = -1 on error                                         ;
+;       esi = ptr to newly created entry                          ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-ARP_add_entry:
+arp_add_entry:
+
+; TODO: use a mutex to lock ARP table
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_add_entry: device=%u\n", edi
 
@@ -421,19 +423,22 @@ ARP_add_entry:
         ret
 
 
-;-----------------------------------------------------------------
-;
-; ARP_del_entry
-;
-; IN:   esi = ptr to arp entry
-;       edi = device number
-; OUT:  /
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; arp_del_entry: Remove an entry from the ARP table.              ;
+;                                                                 ;
+; IN:   esi = ptr to arp entry                                    ;
+;       edi = device number                                       ;
+;                                                                 ;
+; OUT:  /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-ARP_del_entry:
+arp_del_entry:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_del_entry: entry=%x entrys=%u\n", esi, [ARP_entries_num + 4*edi]
+; TODO: use a mutex to lock ARP table
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_del_entry: entry=0x%x entrys=%u\n", esi, [ARP_entries_num + 4*edi]
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_del_entry: IP=%u.%u.%u.%u\n", \
         [esi + ARP_entry.IP]:1, [esi + ARP_entry.IP + 1]:1, [esi + ARP_entry.IP + 2]:1, [esi + ARP_entry.IP + 3]:1
 
@@ -463,22 +468,22 @@ ARP_del_entry:
 
 
 
-;-----------------------------------------------------------------
-;
-; ARP_IP_to_MAC
-;
-;  This function translates an IP address to a MAC address
-;
-;  IN:  eax = IPv4 address
-;       edi = device number * 4
-;  OUT: eax = -1 on error, -2 means request send
-;      else, ax = first two bytes of mac (high 16 bits of eax will be 0)
-;       ebx = last four bytes of mac
-;       edi = unchanged
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; arp_ip_to_mac: Translate an IP address to a MAC address.        ;
+;                                                                 ;
+;  IN:  eax = IPv4 address                                        ;
+;       edi = device number * 4                                   ;
+;                                                                 ;
+;  OUT: eax = -1 on error                                         ;
+;       eax = -2 when request send                                ;
+;       eax = first two bytes of mac on success                   ;
+;       ebx = last four bytes of mac on success                   ;
+;       edi = unchanged                                           ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-ARP_IP_to_MAC:
+arp_ip_to_mac:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_IP_to_MAC: %u.%u", al, ah
         rol     eax, 16
@@ -513,11 +518,11 @@ ARP_IP_to_MAC:
         pushw   ARP_AWAITING_RESPONSE   ; status
         pushd   0                       ; mac
         pushw   0
-        pushd   eax                     ; ip
+        pushd   eax                     ; IP
         mov     esi, esp
 
 ; Add it to the list
-        call    ARP_add_entry
+        call    arp_add_entry
 
 ; Delete the temporary entry
         add     esp, sizeof.ARP_entry   ; clear the entry from stack
@@ -534,7 +539,7 @@ ARP_IP_to_MAC:
 
         push    esi edi
         mov     ebx, [NET_DRV_LIST + edi]
-        call    ARP_output_request
+        call    arp_output_request
         pop     edi esi
   .found_it:
         cmp     [esi + ARP_entry.Status], ARP_VALID_MAPPING             ; Does it have a MAC assigned?
@@ -576,21 +581,19 @@ end if
         ret
 
 
-;-----------------------------------------------------------------
-;
-; ARP_API
-;
-; This function is called by system function 76
-;
-; IN:  subfunction number in bl
-;      device number in bh
-;      ecx, edx, .. depends on subfunction
-;
-; OUT:  ?
-;
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------;
+;                                                                 ;
+; arp_api: Part of system function 76.                            ;
+;                                                                 ;
+;  IN:  bl = subfunction number                                   ;
+;       bh = device number                                        ;
+;       ecx, edx, .. depends on subfunction                       ;
+;                                                                 ;
+; OUT:  depends on subfunction                                    ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
-ARP_api:
+arp_api:
 
         movzx   eax, bh
         shl     eax, 2
@@ -650,7 +653,7 @@ ARP_api:
   .write:
         ; esi = pointer to buffer
         mov     edi, eax
-        call    ARP_add_entry           ; out: eax = entry number, -1 on error
+        call    arp_add_entry           ; out: eax = entry number, -1 on error
         ret
 
   .remove:
@@ -661,12 +664,12 @@ ARP_api:
         lea     esi, [ARP_table + ecx]
         mov     edi, eax
         shr     edi, 2
-        call    ARP_del_entry
+        call    arp_del_entry
         ret
 
   .send_announce:
         mov     ebx, [NET_DRV_LIST + eax]
         mov     eax, [IP_LIST + eax]
-        call    ARP_output_request      ; now send a gratuitous ARP
+        call    arp_output_request      ; now send a gratuitous ARP
         ret
 

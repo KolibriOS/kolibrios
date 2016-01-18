@@ -101,7 +101,6 @@ parse_skin_data:
         xor     eax, eax
         cld
         rep stosd
-
         mov     ebx, [ebp+SKIN_HEADER.params]
         add     ebx, [skin_data]
         mov     eax, [ebx+SKIN_PARAMS.skin_height]
@@ -127,11 +126,8 @@ parse_skin_data:
         mov     dword[_skinmargins+0], eax
         mov     eax, dword[ebx+SKIN_PARAMS.margin.bottom]
         mov     dword[_skinmargins+4], eax
-
         mov     ebx, [ebp+SKIN_HEADER.bitmaps]
         add     ebx, [skin_data]
-;--------------------------------------
-align 4
 .lp1:
         cmp     dword[ebx], 0
         je      .end_bitmaps
@@ -142,11 +138,8 @@ align 4
         xor     eax, eax
         mov     edx, skin_active.left.data
         or      ecx, ecx
-        jnz     @f
+        jnz     .next_bitmap
         mov     edx, skin_inactive.left.data
-;--------------------------------------
-align 4
-@@:
         jmp     .next_bitmap
 ;--------------------------------------
 align 4
@@ -159,11 +152,8 @@ align 4
         neg     eax
         mov     edx, skin_active.oper.data
         or      ecx, ecx
-        jnz     @f
+        jnz     .next_bitmap
         mov     edx, skin_inactive.oper.data
-;--------------------------------------
-align 4
-@@:
         jmp     .next_bitmap
 ;--------------------------------------
 align 4
@@ -173,12 +163,9 @@ align 4
         mov     eax, [skin_active.left.width]
         mov     edx, skin_active.base.data
         or      ecx, ecx
-        jnz     @f
+        jnz     .next_bitmap
         mov     eax, [skin_inactive.left.width]
         mov     edx, skin_inactive.base.data
-;--------------------------------------
-align 4
-@@:
         jmp     .next_bitmap
 ;--------------------------------------
 align 4
@@ -202,8 +189,6 @@ align 4
 .end_bitmaps:
         mov     ebx, [ebp+SKIN_HEADER.buttons]
         add     ebx, [skin_data]
-;--------------------------------------
-align 4
 .lp2:
         cmp     dword[ebx], 0
         je      .end_buttons
@@ -245,13 +230,10 @@ align 4
 ;------------------------------------------------------------------------------
 align 4
 drawwindow_IV_caption:
-
         mov     ebp, skin_active
         or      al, al
         jnz     @f
         mov     ebp, skin_inactive
-;--------------------------------------
-align 4
 @@:
         mov     esi, [esp+4]
         mov     eax, [esi+WDATA.box.width]   ; window width
@@ -260,13 +242,10 @@ align 4
         mov     ecx, [ebp+SKIN_DATA.left.width]
         shl     ecx, 16
         add     ecx, [_skinh]
-
         mov     ebx, [ebp+SKIN_DATA.left.data]
         or      ebx, ebx
         jz      @f
         call    sys_putimage.forced
-;--------------------------------------
-align 4
 @@:
         mov     esi, [esp+4]
         mov     eax, [esi+WDATA.box.width]
@@ -278,9 +257,7 @@ align 4
         mov     ecx, [ebp+SKIN_DATA.base.width]
         jecxz   .non_base
         div     ecx
-
         inc     eax
-
         mov     ebx, [ebp+SKIN_DATA.base.data]
         mov     ecx, [ebp+SKIN_DATA.base.width]
         shl     ecx, 16
@@ -288,45 +265,33 @@ align 4
         mov     edx, [ebp+SKIN_DATA.base.left]
         sub     edx, [ebp+SKIN_DATA.base.width]
         shl     edx, 16
-;--------------------------------------
-align 4
 .baseskinloop:
         shr     edx, 16
         add     edx, [ebp+SKIN_DATA.base.width]
         shl     edx, 16
 
         push    eax ebx ecx edx
-
         or      ebx, ebx
         jz      @f
         call    sys_putimage.forced
-;--------------------------------------
-align 4
 @@:
         pop     edx ecx ebx eax
 
         dec     eax
         jnz     .baseskinloop
-;--------------------------------------
-align 4
 .non_base:
-
         mov     esi, [esp+4]
         mov     edx, [esi+WDATA.box.width]
         sub     edx, [ebp+SKIN_DATA.oper.width]
         inc     edx
         shl     edx, 16
         mov     ebx, [ebp+SKIN_DATA.oper.data]
-
         mov     ecx, [ebp+SKIN_DATA.oper.width]
         shl     ecx, 16
         add     ecx, [_skinh]
-
         or      ebx, ebx
         jz      @f
         call    sys_putimage.forced
-;--------------------------------------
-align 4
 @@:
         ret
 ;------------------------------------------------------------------------------
@@ -334,17 +299,12 @@ align 4
 drawwindow_IV:
 ;param1 - aw_yes
         pusha
-
         push    edx
-
         mov     edi, edx
-
         mov     ebp, skin_active
         cmp     byte [esp+32+4+4], 0
         jne     @f
         mov     ebp, skin_inactive
-;--------------------------------------
-align 4
 @@:
         mov     eax, [edi+WDATA.box.left]
         shl     eax, 16
@@ -362,8 +322,6 @@ align 4
         rol     ebx, 16
         call    draw_rectangle
         mov     ecx, 3
-;--------------------------------------
-align 4
 _dw3l:
         add     eax, 1*65536-1
         add     ebx, 0*65536-1
@@ -387,8 +345,6 @@ _dw3l:
         test    [edi + WDATA.fl_wstate], WSTATE_ROLLEDUP
         jnz     @f
         call    draw_rectangle
-;--------------------------------------
-align 4
 @@:
         mov     eax, [skin_data]
         cmp     [eax], dword 'SKIN'
@@ -400,7 +356,6 @@ align 4
         inc     ecx
         mov     edx, [_skinh]
         mov     edi, [common_colours+4]; standard grab color
-;        call    [drawbar]
         call    vesa20_drawbar
         jmp     draw_clientbar
 ;--------------------------------------
@@ -408,11 +363,8 @@ align 4
 @@:
         mov     al, [esp+32+4+4]
         call    drawwindow_IV_caption
-;--------------------------------------
-align 4
 draw_clientbar:
         mov     esi, [esp]
-
         mov     edx, [esi+WDATA.box.top]                    ; WORK AREA
         add     edx, 21+5
         mov     ebx, [esi+WDATA.box.top]
@@ -428,10 +380,7 @@ draw_clientbar:
         mov     edi, [esi+WDATA.cl_workarea]
         test    edi, 0x40000000
         jnz     _noinside2
-;        call    [drawbar]
         call    vesa20_drawbar
-;--------------------------------------
-align 4
 _noinside2:
         mov     eax, [skin_data]
         cmp     [eax], dword 'SKIN'
@@ -443,39 +392,30 @@ _noinside2:
         jge     no_skin_add_button
         inc     eax
         mov     [edi], ax
-
         shl     eax, 4
         add     eax, edi
 
         mov     bx, [CURRENT_TASK]
         mov     [eax], bx
-
-        add     eax, 2      ; save button id number
-        mov     bx, 1
-        mov     [eax], bx
-        add     eax, 2      ; x start
+        mov     word [eax+2], 1     ; button id
         xor     ebx, ebx
         cmp     [skin_btn_close.left], 0
-        jge     _bCx_at_right
+        jge     @f
         mov     ebx, [esp]
         mov     ebx, [ebx+WDATA.box.width]
         inc     ebx
-;--------------------------------------
-align 4
-_bCx_at_right:
+@@:
         add     ebx, [skin_btn_close.left]
-        mov     [eax], bx
-        add     eax, 2      ; x size
+        mov     word [eax+4], bx    ; x start
         mov     ebx, [skin_btn_close.width]
         dec     ebx
-        mov     [eax], bx
-        add     eax, 2      ; y start
+        mov     word [eax+6], bx    ; x size
         mov     ebx, [skin_btn_close.top]
-        mov     [eax], bx
-        add     eax, 2      ; y size
+        mov     word [eax+8], bx    ; y start
         mov     ebx, [skin_btn_close.height]
         dec     ebx
-        mov     [eax], bx
+        mov     word [eax+10], bx   ; y size
+        bts     word [eax+12], 14
 ;* minimize button
         mov     edi, [BTN_ADDR]
         movzx   eax, word [edi]
@@ -483,43 +423,31 @@ _bCx_at_right:
         jge     no_skin_add_button
         inc     eax
         mov     [edi], ax
-
         shl     eax, 4
         add     eax, edi
 
         mov     bx, [CURRENT_TASK]
         mov     [eax], bx
-
-        add     eax, 2      ; save button id number
-        mov     bx, 65535;999
-        mov     [eax], bx
-        add     eax, 2      ; x start
+        mov     word [eax+2], -1    ; button id
         xor     ebx, ebx
         cmp     [skin_btn_minimize.left], 0
-        jge     _bMx_at_right
+        jge     @f
         mov     ebx, [esp]
         mov     ebx, [ebx+WDATA.box.width]
         inc     ebx
-;--------------------------------------
-align 4
-_bMx_at_right:
+@@:
         add     ebx, [skin_btn_minimize.left]
-        mov     [eax], bx
-        add     eax, 2      ; x size
+        mov     word [eax+4], bx    ; x start
         mov     ebx, [skin_btn_minimize.width]
         dec     ebx
-        mov     [eax], bx
-        add     eax, 2      ; y start
+        mov     word [eax+6], bx    ; x size
         mov     ebx, [skin_btn_minimize.top]
-        mov     [eax], bx
-        add     eax, 2      ; y size
+        mov     word [eax+8], bx    ; y start
         mov     ebx, [skin_btn_minimize.height]
         dec     ebx
-        mov     [eax], bx
-;--------------------------------------
-align 4
+        mov     word [eax+10], bx   ; y size
+        bts     word [eax+12], 14
 no_skin_add_button:
         pop     edi
         popa
         ret     4
-;------------------------------------------------------------------------------

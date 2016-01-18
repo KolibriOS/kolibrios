@@ -241,7 +241,7 @@ deltaToScreen = 28
 .drawPicture:
         mov     eax, -1
         repz scasd
-        jcxz    @f
+        jecxz   @f
         mov     eax, edx
         sub     eax, ecx
         push    ecx
