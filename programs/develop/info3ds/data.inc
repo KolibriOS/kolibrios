@@ -52,16 +52,16 @@ block_3ds 0x0011,4,1,txt_0011
 block_3ds 0x0100,3,1,txt_0100
 block_3ds CHUNK_ambient_color,3,0,txt_2100 ; [-] ambient color
 block_3ds CHUNK_OBJMESH, 3,0,txt_3d3d
-block_3ds CHUNK_OBJBLOCK,3,1,txt_4000
+block_3ds CHUNK_OBJBLOCK,11,1,txt_4000
 block_3ds CHUNK_TRIMESH, 3,0,txt_4100
-block_3ds CHUNK_VERTLIST,3,1,txt_4110
+block_3ds CHUNK_VERTLIST,8,1,txt_4110
 block_3ds CHUNK_FACELIST,3,1,txt_4120
-block_3ds CHUNK_FACEMAT, 3,1,txt_4130
+block_3ds CHUNK_FACEMAT,10,1,txt_4130
 block_3ds CHUNK_MAPLIST, 3,1,txt_4140
 block_3ds CHUNK_TRMATRIX,3,1,txt_4160
 block_3ds 0x4600,3,1,txt_4600
 block_3ds CHUNK_CAMERA,  3,1,txt_4700
-block_3ds CHUNK_MATERIAL,3,0,txt_afff
+block_3ds CHUNK_MATERIAL,10,0,txt_afff
 block_3ds CHUNK_MATNAME, 3,1,txt_a000
 block_3ds 0xa010,4,0,txt_a010
 block_3ds 0xa020,4,0,txt_a020

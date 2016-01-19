@@ -1,10 +1,11 @@
 use32
 	org 0x0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 1, start, i_end, mem, stacktop, 0, sys_path
+	dd 1, start, i_end, mem, stacktop, file_name, sys_path
 
 include '../../macros.inc'
 include '../../proc32.inc'
+include '../../kosfuncs.inc'
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../develop/libraries/TinyGL/asm_fork/opengl_const.inc'
@@ -55,7 +56,7 @@ image_data_toolbar dd 0
 TREE_ICON_SYS16_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*11+54 ;размер bmp файла с системными иконками
 icon_tl_sys dd 0 ;указатеель на память для хранения системных иконок
 icon_toolbar dd 0 ;указатеель на память для хранения иконок объектов
-IMAGE_CHUNKS_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*10+54 ;размер bmp файла с иконками объектов
+IMAGE_CHUNKS_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*12+54 ;размер bmp файла с иконками объектов
 ;
 IMAGE_FILE1_SIZE equ 128*144*3+54 ;размер файла с изображением
 
@@ -76,14 +77,14 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
 	mov [buf],eax
 
-	mov [run_file_70.Function], 0
+	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov [run_file_70.Count], dword size
 	mov [run_file_70.Buffer], eax
 	mov byte[run_file_70+20], 0
 	mov [run_file_70.FileName], file_name
-	mcall 70,run_file_70 ;загружаем файл изображения
+	mcall SF_FILE,run_file_70 ;загружаем файл изображения
 	cmp ebx,0xffffffff
 	je @f
 		;определяем вид изображения и переводим его во временный буфер image_data
@@ -120,19 +121,32 @@ include 'info_wnd_coords.inc'
 
 align 4
 start:
+	;--- copy cmd line ---
+	mov esi,file_name
+	mov edi,openfile_path
+@@:
+	lodsd
+	cmp eax,0
+	je @f ;выход, если 0
+	stosd
+	jmp @b
+@@:
+	stosd
+
 	load_libraries l_libs_start,l_libs_end
 	;проверка на сколько удачно загузились библиотеки
 	mov	ebp,lib_0
 	.test_lib_open:
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
-		mcall -1 ;exit not correct
+		mcall SF_TERMINATE_PROCESS ;exit not correct
 	@@:
 	add ebp,ll_struc_size
 	cmp ebp,l_libs_end
 	jl .test_lib_open
-	mcall 48,3,sc,sizeof.sys_colors_new
-	mcall 40,0x27
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.sys_colors_new
+	mcall SF_SET_EVENTS_MASK,0x27
+
 	stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
 
 	;kmenu initialisation
@@ -255,7 +269,7 @@ start:
 	fdiv dword[fl255]
 	fstp dword[color_bk]
 
-	mcall 26,9
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov [last_time],eax
 
 	stdcall [kosglMakeCurrent], 3d_wnd_l,3d_wnd_t,3d_wnd_w,3d_wnd_h,ctx1
@@ -266,11 +280,21 @@ start:
 	stdcall [gluNewQuadric]
 	mov [qObj],eax
 
+	mov eax,dword[ctx1] ;eax -> TinyGLContext.GLContext
+	mov eax,[eax] ;eax -> ZBuffer
+	mov eax,[eax+offs_zbuf_pbuf] ;eax -> ZBuffer.pbuf
+	mov dword[buf_ogl],eax
+
+	;open file from cmd line
+	cmp dword[openfile_path],0
+	je @f
+		call but_open_file.no_dlg
+	@@:
 	call draw_window
 
 align 4
 still:
-	mcall 26,9
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov ebx,[last_time]
 	add ebx,10 ;задержка
 	cmp ebx,eax
@@ -278,7 +302,7 @@ still:
 		mov ebx,eax
 	@@:
 	sub ebx,eax
-	mcall 23
+	mcall SF_WAIT_EVENT_TIMEOUT
 	cmp eax,0
 	je timer_funct
 
@@ -293,7 +317,7 @@ still:
 	jz button
 	cmp al,6
 	jne @f
-		mcall 9,procinfo,-1
+		mcall SF_THREAD_INFO,procinfo,-1
 		cmp ax,word[procinfo+4]
 		jne @f ;окно не активно
 		call mouse
@@ -308,7 +332,7 @@ mouse:
 align 4
 timer_funct:
 	pushad
-	mcall 26,9
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov [last_time],eax
 
 	;просматриваем выделенный блок данных
@@ -316,7 +340,7 @@ timer_funct:
 	cmp eax,0
 	je @f
 		mov ebx,eax
-		mov eax,dword[ebx] ;получаем значение сдвига выбранного блока относительно начала файла
+		mov eax,dword[ebx]
 		mov ecx,dword[ebx+4] ;размер блока
 		stdcall hex_in_str, txt_3ds_offs.dig, eax,8
 		stdcall hex_in_str, txt_3ds_offs.siz, ecx,8
@@ -326,7 +350,7 @@ timer_funct:
 		je @f
 			;если выделенный блок данных не совпадает с последним запомненным
 			mov dword[offs_last_timer],eax
-			call buf_draw_beg
+			stdcall buf_draw_beg, buf_0
 			stdcall [buf2d_draw_text], buf_0, buf_1,txt_3ds_offs,5,35,0xb000
 			mov edx,dword[ebx+list_offs_p_data]
 			cmp edx,0 ;смотрим есть ли описание блока
@@ -339,17 +363,6 @@ timer_funct:
 	@@:
 	popad
 	jmp still
-
-align 4
-buf_draw_beg:
-	stdcall [buf2d_clear], buf_0, [buf_0.color] ;чистим буфер
-	stdcall [buf2d_draw_text], buf_0, buf_1,txt_open_3ds,5,5,0xff
-	stdcall [buf2d_draw_text], buf_0, buf_1,openfile_path,5,15,0xff
-	cmp dword[level_stack],FILE_ERROR_CHUNK_SIZE ;возможна ошибка файла
-	jne @f
-		stdcall [buf2d_draw_text], buf_0, buf_1,txt_3ds_err_sizes,5,25,0xff0000
-	@@:
-	ret
 
 align 4
 proc buf_draw_hex_table, offs:dword, size_line:dword
@@ -408,14 +421,14 @@ endp
 align 4
 draw_window:
 pushad
-	mcall 12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 	xor eax,eax
 	mov edx,[sc.work]
 	or  edx,0x33000000
 	mov edi,capt
 	mcall , (20 shl 16)+560, (20 shl 16)+main_wnd_height
 
-	mcall 9,procinfo,-1
+	mcall SF_THREAD_INFO,procinfo,-1
 	mov eax,dword[procinfo.box.height]
 	cmp eax,250
 	jge @f
@@ -444,23 +457,17 @@ pushad
 	mov word[buf_0.l],ax
 
 	mov esi,[sc.work_button]
-	mcall 8,(5 shl 16)+20,(5 shl 16)+20,3
-
-	mov ebx,(30 shl 16)+20
-	mov edx,4
-	int 0x40
+	mcall SF_DEFINE_BUTTON,(5 shl 16)+20,(5 shl 16)+20,3
+	mcall ,(30 shl 16)+20,,4
 
 	cmp byte[can_save],0
 	je @f
-		mov ebx,(55 shl 16)+20
-		mov edx,5
-		int 0x40
+		mcall ,(55 shl 16)+20,,5
 	@@:
-
 	mcall ,(85 shl 16)+20,,6 ;окно с координатами
 	mcall ,(110 shl 16)+20,,7 ;удаление блока
 
-	mcall 7,[image_data_toolbar],(16 shl 16)+16,(7 shl 16)+7 ;new
+	mcall SF_PUT_IMAGE,[image_data_toolbar],(16 shl 16)+16,(7 shl 16)+7 ;new
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	mov edx,(32 shl 16)+7 ;open
@@ -487,20 +494,20 @@ pushad
 
 	stdcall [buf2d_draw], buf_0
 
-	mcall 12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 popad
 	ret
 
 align 4
 key:
-	mcall 2
+	mcall SF_GET_KEY
 	stdcall [tl_key], dword tree1
 	jmp still
 
 
 align 4
 button:
-	mcall 17
+	mcall SF_GET_BUTTON
 	cmp ah,3
 	jne @f
 		call but_new_file
@@ -538,7 +545,7 @@ button:
 	stdcall mem.Free,[image_data_toolbar]
 	stdcall mem.Free,[open_file_data]
 	stdcall [gluDeleteQuadric], [qObj]
-	mcall -1
+	mcall SF_TERMINATE_PROCESS
 
 
 align 4
@@ -559,33 +566,36 @@ but_open_file:
 	cmp [OpenDialog_data.status],2
 	je .end_open_file
 	;код при удачном открытии диалога
-
-    mov [run_file_70.Function], 5
+	jmp @f
+.no_dlg: ;если минуем диалог открытия файла
+		pushad
+	@@:
+    mov [run_file_70.Function], SSF_GET_INFO
     mov [run_file_70.Position], 0
     mov [run_file_70.Flags], 0
     mov dword[run_file_70.Count], 0
     mov dword[run_file_70.Buffer], open_b
     mov byte[run_file_70+20], 0
     mov dword[run_file_70.FileName], openfile_path
-    mcall 70,run_file_70
+    mcall SF_FILE,run_file_70
 
     mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
     stdcall mem.ReAlloc,[open_file_data],ecx
     mov [open_file_data],eax
     
-    mov [run_file_70.Function], 0
+    mov [run_file_70.Function], SSF_READ_FILE
     mov [run_file_70.Position], 0
     mov [run_file_70.Flags], 0
     mov dword[run_file_70.Count], ecx
     m2m dword[run_file_70.Buffer], dword[open_file_data]
     mov byte[run_file_70+20], 0
     mov dword[run_file_70.FileName], openfile_path
-    mcall 70,run_file_70 ;загружаем файл 3ds
+    mcall SF_FILE,run_file_70 ;загружаем файл 3ds
     cmp ebx,0xffffffff
     je .end_open_file
 
 	mov [open_file_size],ebx
-	;mcall 71,1,openfile_path
+		;mcall SF_SET_CAPTION,1,openfile_path
 
 	mov byte[can_save],0
 	call init_tree
@@ -608,7 +618,7 @@ init_tree:
 	mov esi,dword[open_file_data]
 	cmp word[esi],CHUNK_MAIN
 	je @f
-		call buf_draw_beg
+		stdcall buf_draw_beg, buf_0
 		stdcall [buf2d_draw_text], buf_0, buf_1,txt_no_3ds,5,25,0xff0000 ;рисуем строку с текстом
 		jmp .end_open
 	@@:
@@ -659,6 +669,7 @@ init_tree:
 
 ;анализ данных блока
 ;input:
+; eax - stack pointer
 ; esi - memory pointer
 ;output:
 ; eax - new stack pointer
@@ -716,11 +727,16 @@ block_analiz_data:
 			sub ecx,eax
 			cmp ecx,1
 			jl .data_3 ;проверяем есть ли блок описывающий материал, применяемый к объекту
+if 0
+				add esi,eax
+				mov ecx,dword[esi+2]
+				stdcall add_3ds_object, 10,ebx,ecx,0 ;данные материала
+				sub esi,eax
+else
 				add esi,eax
 				pop eax
 				jmp .next_bl
-				;stdcall add_3ds_object, ID_ICON_DATA,ebx,ecx,0 ;данные материала
-				;sub esi,eax ;восстановление esi
+end if
 			.data_3:
 
 			sub esi,8 ;восстановление esi
@@ -929,32 +945,6 @@ align 4
 	ret
 
 align 4
-proc hex_in_str, buf:dword,val:dword,zif:dword
-	pushad
-		mov edi,dword[buf]
-		mov ecx,dword[zif]
-		add edi,ecx
-		dec edi
-		mov ebx,dword[val]
-
-		.cycle:
-			mov al,bl
-			and al,0xf
-			cmp al,10
-			jl @f
-				add al,'a'-'0'-10
-			@@:
-			add al,'0'
-			mov byte[edi],al
-			dec edi
-			shr ebx,4
-		loop .cycle
-
-	popad
-	ret
-endp
-
-align 4
 but_save_file:
 	pushad
 	copy_path open_dialog_name,communication_area_default_path,file_name,0
@@ -964,7 +954,7 @@ but_save_file:
 	je .end_save_file
 	;код при удачном открытии диалога
 
-	mov [run_file_70.Function], 2
+	mov [run_file_70.Function], SSF_CREATE_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov ebx, dword[open_file_data]
@@ -973,7 +963,7 @@ but_save_file:
 	mov dword[run_file_70.Count], ebx ;размер файла
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
-	mcall 70,run_file_70
+	mcall SF_FILE,run_file_70
 	cmp ebx,0xffffffff
 	je .end_save_file
 		;...сообщение...
@@ -986,7 +976,7 @@ but_wnd_coords:
 	cmp byte[prop_wnd_run],0
 	jne @f
 		pushad
-		mcall 51,1,prop_start,thread_coords
+		mcall SF_CREATE_THREAD,1,prop_start,thread_coords
 		popad
 	@@:
 	ret
@@ -1006,7 +996,7 @@ but_delete_chunk:
 	mov edx,dword[eax+4] ;размер блока
 	sub [open_file_size],edx ;изменение размеров файла
 	mov ecx,[open_file_size]
-	mov ebx,dword[eax] ;получаем значение сдвига выбранного блока относительно начала файла
+	mov ebx,dword[eax]
 	sub ecx,ebx ;ecx - размер нижней сдвигаемой части файла
 	add ebx,dword[open_file_data] ;получаем значение сдвига в памяти
 	mov edi,ebx
@@ -1429,9 +1419,9 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru
-capt db 'info 3ds версия 16.01.16',0 ;подпись окна
+capt db 'info 3ds версия 19.01.16',0 ;подпись окна
 else
-capt db 'info 3ds version 16.01.16',0 ;window caption
+capt db 'info 3ds version 19.01.16',0 ;window caption
 end if
 
 align 16

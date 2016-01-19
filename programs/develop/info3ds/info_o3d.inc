@@ -48,6 +48,17 @@ offs_obj_z_min equ 68
 offs_obj_z_centr equ 72
 offs_obj_z_scale equ 76
 
+struct material
+	name dd ?
+	col_ambient dd ? ;цвет материала
+	col_diffuse dd ?
+	col_specular dd ?
+ends
+
+offs_mat_name equ 0
+offs_mat_col_ambient equ 4
+offs_mat_col_diffuse equ 8
+offs_mat_col_specular equ 12
 
 bit_vertexes equ 0
 bit_faces equ 1
@@ -71,6 +82,30 @@ key_select db 'col_select',0
 
 rad_c dd 150 ;для вычисления радиуса
 
+align 4
+proc hex_in_str, buf:dword,val:dword,zif:dword
+pushad
+	mov edi,dword[buf]
+	mov ecx,dword[zif]
+	add edi,ecx
+	dec edi
+	mov ebx,dword[val]
+
+	.cycle:
+		mov al,bl
+		and al,0xf
+		cmp al,10
+		jl @f
+			add al,'a'-'0'-10
+		@@:
+		add al,'0'
+		mov byte[edi],al
+		dec edi
+		shr ebx,4
+	loop .cycle
+popad
+	ret
+endp
 
 ;установка всех основных переменных по умолчанию
 align 4
@@ -503,6 +538,151 @@ end if
 	ret
 endp
 
+;настройка материала
+align 4
+proc mat_init, m_data:dword
+	pushad
+	mov edi,[m_data]
+
+	;... clear edi ...
+	mov dword[edi+offs_mat_name],0
+	mov dword[edi+offs_mat_col_ambient],0
+	mov dword[edi+offs_mat_col_diffuse],0
+	mov dword[edi+offs_mat_col_specular],0
+
+	stdcall [tl_node_get_data],tree1
+	xor edx,edx
+	cmp eax,0
+	je .no_material
+		mov ebx,[eax] ;получаем значение сдвига выбранного блока
+		add ebx,[open_file_data]
+		xor ecx,ecx
+		cmp word[ebx],CHUNK_MATERIAL
+		jne .no_material
+			mov ecx,ebx
+			add ecx,dword[ecx+2] ;граница блока
+			add ebx,6
+		cmp word[ebx],CHUNK_MATNAME
+		jne .no_material
+			;*** (0) ***
+			mov esi,ebx
+			add ebx,6
+			mov [edi+offs_mat_name],ebx
+			sub ebx,6
+			;*** (1) ***
+			.cycle_0: ;цикл для поиска цвета материала
+				add esi,dword[esi+2]
+				cmp word[esi],0xa010
+				je @f
+					cmp ecx,esi
+					jg .cycle_0 ;пока не достигнута грница старшего блока
+					jmp .end_material ;если не нашли цвет материала
+			@@:
+			;если нашли цвет материала
+			add esi,6
+			cmp word[esi],0x0011
+			jne .end_material
+				add esi,6
+				mov dl,byte[esi]
+				mov [edi+offs_mat_col_ambient+2],dl
+				mov dx,word[esi+1]
+				ror dx,8
+				mov [edi+offs_mat_col_ambient],dx
+			;*** (2) ***
+			mov esi,ebx
+			.cycle_1: ;цикл для поиска цвета материала
+				add esi,dword[esi+2]
+				cmp word[esi],0xa020
+				je @f
+					cmp ecx,esi
+					jg .cycle_1 ;пока не достигнута грница старшего блока
+					jmp .end_material ;если не нашли цвет материала
+			@@:
+			;если нашли цвет материала
+			add esi,6
+			cmp word[esi],0x0011
+			jne .end_material
+				add esi,6
+				mov dl,byte[esi]
+				mov [edi+offs_mat_col_diffuse+2],dl
+				mov dx,word[esi+1]
+				ror dx,8
+				mov [edi+offs_mat_col_diffuse],dx
+			;*** (3) ***
+			mov esi,ebx
+			.cycle_2: ;цикл для поиска цвета материала
+				add esi,dword[esi+2]
+				cmp word[esi],0xa030
+				je @f
+					cmp ecx,esi
+					jg .cycle_2 ;пока не достигнута грница старшего блока
+					jmp .end_material ;если не нашли цвет материала
+			@@:
+			;если нашли цвет материала
+			add esi,6
+			cmp word[esi],0x0011
+			jne .end_material
+				add esi,6
+				mov dl,byte[esi]
+				mov [edi+offs_mat_col_specular+2],dl
+				mov dx,word[esi+1]
+				ror dx,8
+				mov [edi+offs_mat_col_specular],dx
+
+			.end_material:
+	.no_material:
+	popad
+	ret
+endp
+
+align 4
+proc buf_draw_beg uses eax, buf:dword
+	mov eax,[buf]
+	stdcall [buf2d_clear], eax, [eax+16] ;чистим буфер
+	stdcall [buf2d_draw_text], eax, buf_1,txt_open_3ds,5,5,0xff
+	stdcall [buf2d_draw_text], eax, buf_1,openfile_path,5,15,0xff
+	cmp dword[level_stack],FILE_ERROR_CHUNK_SIZE ;возможна ошибка файла
+	jne @f
+		stdcall [buf2d_draw_text], eax, buf_1,txt_3ds_err_sizes,5,25,0xff0000
+	@@:
+	ret
+endp
+
+;рисование материала
+align 4
+proc draw_material uses edi, m_data:dword
+	mov edi,[m_data]
+	stdcall buf_draw_beg, buf_ogl
+	stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_afff,5,35,0xff
+
+	stdcall [buf2d_draw_text], buf_ogl,buf_1,[edi+offs_mat_name],15,45,0 ;имя материала
+	stdcall draw_color, [edi+offs_mat_col_ambient], txt_a010,2,55 ;окружающий цвет
+	stdcall draw_color, [edi+offs_mat_col_diffuse], txt_a020,2,75 ;дифузный цвет
+	stdcall draw_color, [edi+offs_mat_col_specular],txt_a030,2,95 ;зеркальный цвет
+
+	stdcall [buf2d_draw], buf_ogl
+	ret
+endp
+
+align 4
+proc draw_color uses eax ebx, color:dword, text:dword, c_x:dword, c_y:dword
+	mov eax,[c_x]
+	mov ebx,[c_y]
+	; прямоугольник
+	inc ebx
+	stdcall [buf2d_filled_rect_by_size], buf_ogl,eax,ebx,30,17,[color]
+	dec ebx
+	stdcall [buf2d_rect_by_size], buf_ogl,eax,ebx,30,19, 0
+	; подписи
+	add eax,33
+	stdcall [buf2d_draw_text], buf_ogl, buf_1,[text],eax,ebx,0
+	add ebx,10
+	stdcall hex_in_str, buffer,[color],6
+	mov byte[buffer+6],0
+	stdcall [buf2d_draw_text], buf_ogl, buf_1,buffer,eax,ebx,0
+	ret
+endp
+
 ;рисование точек в 3d
 align 4
 proc draw_3d uses eax ebx ecx edi, o_data:dword
@@ -730,14 +910,18 @@ else
 
 align 4
 update_obj:
-push eax
+push eax ebx
 	stdcall [tl_node_get_data],tree1
 	cmp eax,0
 	je @f
-		add eax,14 ;14=list_offs_obj3d
-		stdcall draw_3d, eax
+		mov ebx,dword[eax] ;получаем значение сдвига выбранного блока относительно начала файла
+		add ebx,dword[open_file_data] ;получаем значение сдвига в памяти
+		cmp word[ebx],CHUNK_OBJBLOCK
+		jne @f
+			add eax,14 ;14=list_offs_obj3d
+			stdcall draw_3d, eax
 	@@:
-pop eax
+pop ebx eax
 	ret
 
 end if

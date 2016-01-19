@@ -61,7 +61,7 @@ image_data_toolbar dd 0
 TREE_ICON_SYS16_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*11+54 ;размер bmp файла с системными иконками
 icon_tl_sys dd 0 ;указатеель на память для хранения системных иконок
 icon_toolbar dd 0 ;указатеель на память для хранения иконок объектов
-IMAGE_CHUNKS_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*10+54 ;размер bmp файла с иконками объектов
+IMAGE_CHUNKS_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*12+54 ;размер bmp файла с иконками объектов
 ;
 IMAGE_FILE1_SIZE equ 128*144*3+54 ;размер файла с изображением
 
@@ -320,6 +320,15 @@ mouse:
 		;mouse l. but. move
 		cmp dword[mouse_drag],1
 		jne .end_m
+
+		stdcall [tl_node_get_data],tree1
+		cmp eax,0
+		je .end_d
+			mov ebx,dword[eax]
+			add ebx,dword[open_file_data] ;получаем значение сдвига в памяти
+			cmp word[ebx],CHUNK_OBJBLOCK
+			jne .end_d
+
 		mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
 		mov ebx,eax
 		shr ebx,16 ;mouse.x
@@ -358,8 +367,7 @@ mouse:
 		fstp dword[angle_y]
 
 		stdcall [tl_node_get_data],tree1
-		cmp eax,0
-		je .end_d
+		;cmp eax,0 - не надо, было сделано выше
 		add eax,list_offs_obj3d
 		stdcall draw_3d, eax
 		jmp .end_d
@@ -410,7 +418,7 @@ timer_funct:
 		mov edi,eax
 		add edi,list_offs_obj3d
 		mov ebx,eax
-		mov eax,dword[ebx] ;получаем значение сдвига выбранного блока относительно начала файла
+		mov eax,dword[ebx]
 		mov ecx,dword[ebx+4] ;размер блока
 		stdcall hex_in_str, txt_3ds_offs.dig, eax,8
 		stdcall hex_in_str, txt_3ds_offs.siz, ecx,8
@@ -434,7 +442,22 @@ timer_funct:
 					call mnu_reset_settings ;сброс углов поворота и режимов рисования
 				jmp .end_f
 			.end_oblo:
-			call buf_draw_beg
+
+			cmp word[eax],CHUNK_MATERIAL
+			jne .end_mblo
+			cmp dword[edi+offs_mat_name],0
+			je .ini_mblo
+				stdcall draw_material,edi
+				jmp .end_f
+			.ini_mblo:
+				stdcall mat_init,edi ;попытка настроить данные материала
+				cmp dword[edi+offs_mat_name],0
+				je .end_f
+					stdcall draw_material,edi
+				jmp .end_f
+			.end_mblo:
+
+			stdcall buf_draw_beg, buf_ogl
 			stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_3ds_offs,5,35,0xb000
 			mov edx,dword[ebx+list_offs_p_data]
 			cmp edx,0 ;смотрим есть ли описание блока
@@ -445,17 +468,6 @@ timer_funct:
 	.end_f:
 	popad
 	jmp still
-
-align 4
-buf_draw_beg:
-	stdcall [buf2d_clear], buf_ogl, [buf_ogl.color] ;чистим буфер
-	stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_open_3ds,5,5,0xff
-	stdcall [buf2d_draw_text], buf_ogl, buf_1,openfile_path,5,15,0xff
-	cmp dword[level_stack],FILE_ERROR_CHUNK_SIZE ;возможна ошибка файла
-	jne @f
-		stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_3ds_err_sizes,5,25,0xff0000
-	@@:
-	ret
 
 align 4
 draw_window:
@@ -715,7 +727,7 @@ init_tree:
 	mov esi,dword[open_file_data]
 	cmp word[esi],CHUNK_MAIN
 	je @f
-		call buf_draw_beg
+		stdcall buf_draw_beg, buf_ogl
 		stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_no_3ds,5,25,0xff0000 ;рисуем строку с текстом
 		jmp .end_open
 	@@:
@@ -738,14 +750,14 @@ init_tree:
 
 		mov edx,dword[esi+2] ;размер блока
 		call block_analiz
-;cmp word[esi],CHUNK_MATERIAL
-;je @f
-cmp word[esi],CHUNK_OBJMESH
-je @f
-cmp word[esi],CHUNK_OBJBLOCK
-je @f
-mov dword[bl_found],0
-@@:
+		cmp word[esi],CHUNK_MATERIAL
+		je @f
+		cmp word[esi],CHUNK_OBJMESH
+		je @f
+		cmp word[esi],CHUNK_OBJBLOCK
+		je @f
+			mov dword[bl_found],0
+		@@:
 		cmp dword[bl_found],0
 		jne @f
 			;объект не известного вида
@@ -760,10 +772,19 @@ mov dword[bl_found],0
 				add esi,6
 				push esi
 				sub esi,6
-				jmp .pod2
+				jmp .pod3
 			.pod1:
-				push dword[ecx+5] ;стандартное название блока
+			cmp word[esi],CHUNK_MATERIAL
+			jne .pod2
+				cmp word[esi+6],CHUNK_MATNAME
+				jne .pod2
+				add esi,12
+				push esi
+				sub esi,12
+				jmp .pod3
 			.pod2:
+				push dword[ecx+5] ;стандартное название блока
+			.pod3:
 			stdcall add_3ds_object, ebx,dword[level_stack],edx
 			cmp byte[ecx+4],1
 			je .bl_data
@@ -782,6 +803,7 @@ mov dword[bl_found],0
 
 ;анализ данных блока
 ;input:
+; eax - stack pointer
 ; esi - memory pointer
 ;output:
 ; eax - new stack pointer
@@ -833,9 +855,16 @@ proc block_analiz_data uses ebx ecx edx edi
 		sub ecx,eax
 		cmp ecx,1
 		jl .data_3 ;проверяем есть ли блок описывающий материал, применяемый к объекту
+if 1
+			add esi,eax
+			mov ecx,dword[esi+2]
+			stdcall add_3ds_object, 10,ebx,ecx,0 ;данные материала
+			sub esi,eax
+else
 			add esi,eax
 			pop eax
 			jmp .next_bl
+end if
 		.data_3:
 
 		sub esi,8 ;восстановление esi
@@ -1043,31 +1072,6 @@ align 4
 		mov byte[edi],0
 	@@:
 	ret
-
-align 4
-proc hex_in_str, buf:dword,val:dword,zif:dword
-	pushad
-		mov edi,dword[buf]
-		mov ecx,dword[zif]
-		add edi,ecx
-		dec edi
-		mov ebx,dword[val]
-
-		.cycle:
-			mov al,bl
-			and al,0xf
-			cmp al,10
-			jl @f
-				add al,'a'-'0'-10
-			@@:
-			add al,'0'
-			mov byte[edi],al
-			dec edi
-			shr ebx,4
-		loop .cycle
-	popad
-	ret
-endp
 
 ;данные для диалога открытия файлов
 align 4
@@ -1448,9 +1452,9 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru
-capt db 'info 3ds [user] версия 16.01.16',0 ;подпись окна
+capt db 'info 3ds [user] версия 19.01.16',0 ;подпись окна
 else
-capt db 'info 3ds [user] version 16.01.16',0 ;window caption
+capt db 'info 3ds [user] version 19.01.16',0 ;window caption
 end if
 
 align 16

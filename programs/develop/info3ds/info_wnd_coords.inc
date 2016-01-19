@@ -37,17 +37,12 @@ dq 0,0
 align 4
 prop_start:
 pushad
-	mcall 40,0x27 ;маска ожидаемых событий
+	mcall SF_SET_EVENTS_MASK,0x27 ;маска ожидаемых событий
 	inc byte[prop_wnd_run]
 	mov dword[w_scr_t3.type],1
 	mov edi,o3d
 	stdcall obj_clear_param, edi
 	call mnu_reset_settings
-
-	mov eax,dword[ctx1] ;eax -> TinyGLContext.GLContext
-	mov eax,[eax] ;eax -> ZBuffer
-	mov eax,[eax+offs_zbuf_pbuf] ;eax -> ZBuffer.pbuf
-	mov dword[buf_ogl],eax
 
 	stdcall [tl_node_get_data],tree1
 	xor edx,edx
@@ -170,7 +165,7 @@ align 4
 prop_still:
 	pushad
 
-	mcall 23,10
+	mcall SF_WAIT_EVENT_TIMEOUT,10
 	or eax,eax
 	jnz @f
 		call prop_timer_funct
@@ -200,7 +195,7 @@ prop_still:
 align 4
 prop_red_win:
 pushad
-	mcall 12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
 	xor eax,eax
 	mov edi,dword[capt_p] ;children window caption
@@ -218,12 +213,12 @@ pushad
 	int 0x40
 
 	mov esi,[sc.work_button]
-	mcall 8, (5 shl 16)+20, (266 shl 16)+20, 3
+	mcall SF_DEFINE_BUTTON, (5 shl 16)+20, (266 shl 16)+20, 3
 	mcall , (30 shl 16)+20, (266 shl 16)+20, 4
 
 	mov ebx,[image_data_toolbar]
 	add ebx,3*IMAGE_TOOLBAR_ICON_SIZE
-	mcall 7, , (16 shl 16)+16, (7 shl 16)+268 ;load
+	mcall SF_PUT_IMAGE, , (16 shl 16)+16, (7 shl 16)+268 ;load
 
 	sub ebx,IMAGE_TOOLBAR_ICON_SIZE
 	mov edx,(32 shl 16)+268 ;save
@@ -238,13 +233,13 @@ pushad
 
 	stdcall [kmainmenu_draw], [main_menu]
 	stdcall draw_3d, o3d
-	mcall 12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 popad
 	ret
 
 align 4
 proc prop_key uses eax ebx
-	mcall 2
+	mcall SF_GET_KEY
 
 	test word [edit1.flags],10b ;ed_focus
 	je @f
@@ -306,13 +301,13 @@ endp
 align 4
 prop_mouse:
 	push eax ebx
-	mcall 37,3
+	mcall SF_MOUSE_GET,SSF_BUTTON_EXT
 	bt eax,0
 	jnc .end_m
 		;mouse l. but. move
 		cmp dword[mouse_drag],1
 		jne .end_m
-		mcall 37,1 ;get mouse coords
+		mcall SF_MOUSE_GET,SSF_WINDOW_POSITION ;get mouse coords
 		mov ebx,eax
 		shr ebx,16 ;mouse.x
 		cmp ebx,3d_wnd_l
@@ -361,7 +356,7 @@ prop_mouse:
 	bt eax,8
 	jnc .end_d
 		;mouse l. but. press
-		mcall 37,1 ;get mouse coords
+		mcall SF_MOUSE_GET,SSF_WINDOW_POSITION ;get mouse coords
 		mov ebx,eax
 		shr ebx,16 ;mouse.x
 		cmp ebx,3d_wnd_l
@@ -390,7 +385,7 @@ prop_mouse:
 
 align 4
 prop_button:
-	mcall 17 ;получить код нажатой кнопки
+	mcall SF_GET_BUTTON
 
 	cmp ah,3
 	jne @f
@@ -528,7 +523,7 @@ prop_button:
 	mov dword[edi+offs_obj_normals_tri_data],0
 	mov dword[edi+offs_obj_normals_poi_data],0
 	mov byte[prop_wnd_run],0 ;обнуляем счетчик окон
-	mcall -1 ;выход из программы
+	mcall SF_TERMINATE_PROCESS ;выход из программы
 
 align 4
 get_point_coords:
