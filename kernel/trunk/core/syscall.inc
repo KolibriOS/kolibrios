@@ -175,6 +175,8 @@ iglobal
       dd sys_network             ; 74-reserved for new stack
       dd sys_socket              ; 75-reserved for new stack
       dd sys_protocols           ; 76-reserved for new stack
+      dd sys_synchronization     ; 77
+
         times 255 - ( ($-servetable2) /4 )  dd undefined_syscall
       dd sys_end                 ; -1-end application
 
