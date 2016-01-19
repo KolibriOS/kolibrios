@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -48,9 +48,12 @@ nameLength = 9
 nameOffset = 10
 attributeFlags = 12
 attributeID = 14
-sizeWithoutHeader = 16
+    ; resident attribute header
+sizeWithoutHeader = 10h
+; attributeOffset = 14h
 indexedFlag = 16h
     ; non resident attribute header
+firstVCN = 10h
 lastVCN = 18h
 dataRunsOffset = 20h
 attributeAllocatedSize = 28h
@@ -1070,7 +1073,7 @@ ntfs_read_attr:
 
 ntfs_read_file_record:
 ; in: eax = iRecord
-; out: [ebp+NTFS.frs_buffer] = record data
+; out: [ebp+NTFS.frs_buffer] -> file record
 ; CF=1 -> failed, eax = disk error code, eax=0 -> something with FS
     ; Read attr $DATA of $Mft, starting from eax*[ebp+NTFS.frs_size]
         push    ecx edx
@@ -1135,6 +1138,9 @@ ntfs_read_file_record:
 ntfs_restore_usa_frs:
         mov     eax, [ebp+NTFS.frs_size]
 ntfs_restore_usa:
+;   in:
+; ebx -> record
+; eax = size in bytes
         pushad
         shr     eax, 9
         mov     ecx, eax
@@ -1163,13 +1169,13 @@ ntfs_restore_usa:
 
 ntfs_decode_mcb_entry:
 ;   in:
-; esi -> mcb entry
+; esi -> MCB entry
 ; esp -> buffer (16 bytes)
 ;   out:
-; esi -> next mcb entry
+; esi -> next MCB entry
 ; esp -> data run size
 ; esp+8 -> cluster (delta)
-; CF=0 -> mcb end
+; CF=0 -> MCB end
         push    eax ecx edi
         lea     edi, [esp+16]
         xor     eax, eax
@@ -1999,59 +2005,88 @@ ntfs_CreateFile:
 @@: ; 1. Search file
         call    ntfs_lock
         stdcall ntfs_find_lfn, [esp+4]
-        jnc     .found
-        cmp     [ebp+NTFS.ntfsFragmentCount], 1
-        jnz     ntfsUnsupported     ; record fragmented
-        test    eax, eax
-        jz      ntfsFail
-        jmp     .notFound
-
-.found:     ; rewrite
+        jc      .notFound
+; found, rewrite
         cmp     [ebp+NTFS.ntfs_cur_iRecord], 16
         jc      ntfsDenied
         cmp     [ebp+NTFS.ntfsFolder], 1
-        jz      ntfsDenied
+        jz      .folder
+        xor     ecx, ecx
+        mov     edx, [ebx+12]
+        mov     [ebp+NTFS.nodeLastRead], ecx
+        cmp     [eax+fileRealSize+4], ecx
+        jnz     @f
+        cmp     [eax+fileRealSize], edx
+        jz      .readAttribute
+@@:         ; set file size in the directory
+        cmp     [ebp+NTFS.ntfsFragmentCount], 1
+        jnz     ntfsUnsupported     ; record fragmented
+        mov     edi, [ebp+NTFS.cur_index_buf]
+        cmp     dword [edi], 'INDX'
+        jz      @f
+        mov     esi, [ebp+NTFS.frs_buffer]
+        mov     ecx, [esi+recordRealSize]
+        shr     ecx, 2
+        rep movsd
+        mov     esi, [ebp+NTFS.ntfs_attr_offs]
+        mov     cl, [esi+attributeOffset]
+        sub     esi, [ebp+NTFS.frs_buffer]
+        add     eax, ecx
+        add     eax, esi
+        xor     ecx, ecx
+@@:
+        mov     [eax+fileRealSize], edx
+        mov     [eax+fileRealSize+4], ecx
+        mov     eax, [ebp+NTFS.ntfsLastRead]
+        mov     [ebp+NTFS.nodeLastRead], eax
+.readAttribute:
         mov     [ebp+NTFS.ntfs_cur_attr], 0x80
         mov     [ebp+NTFS.ntfs_cur_offs], 0
         mov     [ebp+NTFS.ntfs_cur_size], 0
         call    ntfs_read_attr
-        jc      ntfsDenied
-        mov     eax, [ebp+NTFS.frs_buffer]
-        cmp     word [eax+baseRecordReuse], 0
+        jc      ntfsFail
+        mov     ecx, [ebp+NTFS.frs_buffer]
+        mov     eax, edx
+        xor     edx, edx
+        cmp     word [ecx+baseRecordReuse], 0
         jnz     ntfsUnsupported     ; auxiliary record
-        cmp     byte [eax+hardLinkCounter], 1
+        cmp     byte [ecx+hardLinkCounter], 1
         jnz     ntfsUnsupported     ; file copying required
         mov     ecx, [ebp+NTFS.ntfs_attr_offs]
         cmp     byte [ecx+nonResidentFlag], 1
         jnz     ntfsUnsupported     ; resident $DATA
-        mov     eax, [ebx+4]
-        mov     edx, [ebx+8]
-        add     eax, [ebx+12]
-        adc     edx, 0
-        cmp     edx, [ecx+attributeRealSize+4]
-        jnz     ntfsUnsupported
+        test    eax, eax
+        jz      ntfsUnsupported
+        cmp     [ecx+attributeRealSize+4], edx
+        jnz     @f
         cmp     [ecx+attributeRealSize], eax
-        jnz     ntfsUnsupported
-        jmp     ntfs_WriteFile.write
+        jz      ntfs_WriteFile.writeNode
+@@:
+        jmp     ntfs_WriteFile.resizeAttribute
 
-.notFound:  ; create; check path folders
-        cmp     dword [esp+4], 0
-        jnz     ntfsNotFound
-        cmp     byte [esi], 0
-        jz      ntfsNotFound
+.folder:
+        bt      dword [eax+fileFlags], 28
+        jnc     ntfsDenied
+        push    0
+        jmp     ntfsOut
+
+.notFound:  ; create
+        test    eax, eax
+        jz      ntfsFail
+        cmp     [ebp+NTFS.ntfsFragmentCount], 1
+        jnz     ntfsUnsupported     ; record fragmented
 ; 2. Prepare directory record
         mov     ecx, esi
 @@:         ; count characters
         inc     ecx
         cmp     byte [ecx], '/'
-        jz      ntfsNotFound
+        jz      ntfsNotFound    ; path folder not found
         cmp     byte [ecx], 0
         jnz     @b
         sub     ecx, esi
         push    ecx
-        lea     ecx, [ecx*2+52h]    ; precalculate index length
-        add     ecx, 7              ; align 8
-        and     ecx, not 7
+        lea     ecx, [ecx*2+52h+7]  ; precalculate index length
+        and     ecx, not 7          ; align 8
         mov     edi, [ebp+NTFS.cur_index_buf]
         push    esi
         push    ecx
@@ -2115,7 +2150,8 @@ ntfs_CreateFile:
         pop     esi
         mov     [edi+indexAllocatedSize], ax     ; fill index with data
         mov     eax, [esp]
-        lea     eax, [eax*2+42h]
+        shl     eax, 1
+        add     eax, 42h
         mov     [edi+indexRawSize], ax
         mov     eax, [ebp+NTFS.ntfs_attr_iRecord]
         mov     [edi+directoryRecordReference], eax
@@ -2149,161 +2185,15 @@ ntfs_CreateFile:
         cmp     [ebp+NTFS.ntfsFolder], 0
         jz      @f
         mov     edi, [ebp+NTFS.indexOffset]
-        mov     byte [edi+fileFlags+3], 16
+        bts     dword [edi+fileFlags], 28
         jmp     .mftBitmap
 
 @@: ; 3. File data
         cmp     [ebp+NTFS.fileRealSize], 0
         jz      .mftBitmap
-; One piece free space bitmap search engine
-        mov     edi, [ebp+NTFS.BitmapBuffer]
-        add     edi, [ebp+NTFS.BitmapStart]
-        mov     eax, [ebp+NTFS.fileDataSize]
-        shr     eax, 5
-        jz      .small
-        push    eax         ; bitmap dwords
-        add     edi, 4
-.start:
-        mov     ecx, [ebp+NTFS.BitmapSize]
-        add     ecx, [ebp+NTFS.BitmapBuffer]
-        sub     ecx, edi
-        shr     ecx, 2
-@@:
-        xor     eax, eax
-        repnz scasd         ; search for empty dword
-        jz      @f
-        call    bitmapBuffering
-        jmp     @b
-@@:
-        cmp     ecx, [esp]
-        jnc     @f
-        call    bitmapBuffering
-        jmp     @b
-@@:
-        sub     edi, 4
-        mov     ecx, [esp]
-        mov     esi, edi
-        xor     eax, eax
-        repz scasd          ; check following dwords
-        jnz     .start
-        sub     esi, 4
-        mov     eax, [esi]
-        xor     edx, edx
-        bsr     edx, eax
-        inc     edx
-        push    edx         ; starting bit
-        push    esi         ; starting dword
-        add     esi, 4
-        neg     edx
-        add     edx, 32
-        mov     eax, [ebp+NTFS.fileDataSize]
-        sub     eax, edx
-        mov     edx, eax
-        shr     eax, 5
-        shl     eax, 2
-        add     esi, eax
-        mov     eax, [esi]
-        bsf     ecx, eax    ; last dword
-        jz      .done
-        and     edx, 31
-        cmp     ecx, edx
-        jnc     .done
-        add     esp, 8
-        jmp     .start
-
-.small:     ; less than 32 clusters
-        mov     ecx, [ebp+NTFS.BitmapSize]
-        sub     ecx, [ebp+NTFS.BitmapStart]
-        shr     ecx, 2
-.smStart:
-        mov     eax, -1
-        repz scasd          ; search for zero bits
-        push    ecx
-        test    ecx, ecx
-        jnz     @f
-        call    bitmapBuffering
-        pop     eax
-        jmp     .smStart
-@@:
-        sub     edi, 4
-        mov     eax, [edi]
-        not     eax
-@@:
-        bsf     ecx, eax    ; first 0
-        jz      .again
-        not     eax
-        shr     eax, cl
-        shl     eax, cl
-        bsf     edx, eax    ; next 1
-        jz      @f
-        sub     edx, ecx
-        cmp     edx, [ebp+NTFS.fileDataSize]
-        jnc     .got        ; fits inside
-        bsf     ecx, eax
-        not     eax
-        shr     eax, cl
-        shl     eax, cl
-        jmp     @b
-@@:         ; next dword
-        mov     eax, [edi+4]
-        bsf     edx, eax
-        jz      .got        ; empty
-        add     edx, 32
-        sub     edx, ecx
-        cmp     edx, [ebp+NTFS.fileDataSize]
-        jnc     .got        ; share between dwords
-.again:
-        add     edi, 4
-        pop     ecx
-        jmp     .smStart
-
-.got:
-        push    ecx         ; starting bit
-        push    edi         ; starting dword
-.done:      ; mark space
-        mov     ecx, [esp+4]
-        cmp     ecx, 32
-        jc      @f
-        xor     ecx, ecx
-        add     dword [esp], 4
-        mov     [esp+4], ecx
-@@:
-        mov     edi, [esp]
-        xor     eax, eax
-        dec     eax
-        shr     eax, cl
-        shl     eax, cl
-        neg     ecx
-        add     ecx, 32
-        sub     ecx, [ebp+NTFS.fileDataSize]
-        jc      @f
-        shl     eax, cl     ; fits inside dword
-        shr     eax, cl
-        or      [edi], eax
-        jmp     .writeData
-
-@@:
-        or      [edi], eax
-        neg     ecx
-        push    ecx
-        shr     ecx, 5
-        add     edi, 4
-        xor     eax, eax
-        dec     eax
-        rep stosd
-        pop     ecx
-        and     ecx, 31
-        shr     eax, cl
-        shl     eax, cl
-        not     eax
-        or      [edi], eax
-.writeData:
-        pop     edx
-        sub     edx, [ebp+NTFS.BitmapBuffer]
-        shl     edx, 3
-        pop     eax
-        add     eax, edx
-        pop     edx
+        mov     edi, [ebp+NTFS.BitmapStart]
+        call    ntfsSpaceAlloc
+        jc      ntfsDiskFull
         mov     [ebp+NTFS.fileDataStart], eax
         mul     [ebp+NTFS.sectors_per_cluster]
         mov     ecx, [ebp+NTFS.fileRealSize]
@@ -2452,7 +2342,7 @@ ntfs_CreateFile:
         mov     byte [edi+updateSequenceSize], 3
         mov     byte [edi+hardLinkCounter], 1
         mov     byte [edi+attributeOffset], 30h
-        pop     dword[edi+recordRealSize]
+        popd    [edi+recordRealSize]
         mov     word [edi+recordAllocatedSize], 1024
         mov     byte [edi+newAttributeID], 3
         rdtsc
@@ -2479,6 +2369,9 @@ ntfs_CreateFile:
         sub     ecx, 18h
         shr     ecx, 2
         rep movsd
+        mov     byte [edi+sizeWithHeader], 50h
+        mov     byte [edi+attributeID], 2
+        mov     dword[edi+50h], -1      ; $End
         cmp     [ebp+NTFS.ntfsFolder], 0
         jnz     @f
 ; $Data
@@ -2486,6 +2379,9 @@ ntfs_CreateFile:
         cmp     [ebp+NTFS.fileRealSize], 0
         jz      .zeroSize
         mov     esi, [ebp+NTFS.indexOffset]
+        mov     eax, [ebp+NTFS.fileDataSize]
+        dec     eax
+        mov     [edi+lastVCN], eax
         mov     byte [edi+nonResidentFlag], 1
         mov     byte [edi+dataRunsOffset], 40h
         mov     eax, [esi+fileAllocatedSize]
@@ -2493,13 +2389,9 @@ ntfs_CreateFile:
         mov     eax, [esi+fileRealSize]
         mov     [edi+attributeRealSize], eax
         mov     [edi+initialDataSize], eax
-        mov     byte [edi+40h], 44h
-        mov     eax, [ebp+NTFS.fileDataSize]
-        mov     [edi+41h], eax
-        dec     eax
-        mov     [edi+lastVCN], eax
-        mov     eax, [ebp+NTFS.fileDataStart]
-        mov     [edi+45h], eax
+        mov     esi, edi
+        add     edi, 40h
+        call    createMcbEntry
         mov     al, 1
         jmp     .writeMftRecord
 
@@ -2529,17 +2421,12 @@ ntfs_CreateFile:
         mov     byte [edi+40h+indexFlags], 2
         mov     al, 3
 .writeMftRecord:
-        mov     byte [edi+sizeWithHeader], 50h
-        mov     byte [edi+attributeID], 2
-        mov     dword[edi+50h], -1      ; $End
         mov     edi, [ebp+NTFS.frs_buffer]
-        mov     [edi+recordFlags], al
         mov     [ebp+NTFS.ntfs_cur_buf], edi
+        mov     [edi+recordFlags], al
         call    writeRecord
         test    eax, eax
         jnz     ntfsDevice
-        mov     esi, [ebp+PARTITION.Disk]
-        call    disk_sync
 ; write MFT bitmap
         mov     eax, [ebp+NTFS.newMftRecord]
         shr     eax, 3+9
@@ -2557,9 +2444,9 @@ ntfs_CreateFile:
         jnz     @f
         cmp     [ebp+NTFS.fileRealSize], 0
         jz      @f
-        mov     ecx, [ebp+NTFS.fileDataStart]
-        mov     eax, ecx
-        add     ecx, [ebp+NTFS.fileDataSize]
+        mov     eax, [ebp+NTFS.fileDataStart]
+        mov     ecx, [ebp+NTFS.fileDataSize]
+        add     ecx, eax
         add     ecx, 4095
         shr     ecx, 3+9
         shr     eax, 3+9
@@ -2573,8 +2460,6 @@ ntfs_CreateFile:
         test    eax, eax
         jnz     ntfsDevice
 @@:
-        mov     esi, [ebp+PARTITION.Disk]
-        call    disk_sync
         mov     edi, [ebp+NTFS.indexOffset]
         mov     eax, [ebp+NTFS.newMftRecord]
         mov     [edi+fileRecordReference], eax
@@ -2584,8 +2469,6 @@ ntfs_CreateFile:
         mov     eax, [ebp+NTFS.cur_index_buf]
         mov     [ebp+NTFS.ntfs_cur_buf], eax
         call    writeRecord
-        test    eax, eax
-        jnz     ntfsDevice
         mov     ebx, [ebp+NTFS.fileRealSize]
 ntfsDone:
         mov     esi, [ebp+PARTITION.Disk]
@@ -2595,16 +2478,17 @@ ntfsDone:
         ret
 
 writeRecord:
+; make updateSequence and write to disk
 ;   in:
-; [ebp+NTFS.ntfs_cur_buf] = record
+; [ebp+NTFS.ntfs_cur_buf] -> record
 ; [ebp+NTFS.ntfsLastRead] = partition sector
-    ; making updateSequence
         mov     esi, [ebp+NTFS.ntfs_cur_buf]
         mov     edi, esi
         movzx   ecx, word [esi+updateSequenceOffset]
         add     edi, ecx
         mov     ax, [edi]
-        add     edi, 2
+        inc     ax
+        stosw
         mov     cx, [esi+updateSequenceSize]
         dec     ecx
         push    ecx
@@ -2614,18 +2498,459 @@ writeRecord:
         mov     [esi-2], ax
         dec     ecx
         jnz     @b
-; writing to disk
         mov     eax, [ebp+NTFS.ntfsLastRead]
         mov     ebx, [ebp+NTFS.ntfs_cur_buf]
         pop     ecx
         xor     edx, edx
         jmp     fs_write64_sys
 
+createMcbEntry:
+;   in:
+; [ebp+NTFS.fileDataStart] = position value
+; [ebp+NTFS.fileDataSize] = size value
+; edi -> destination
+; esi -> attribute header
+        mov     eax, [ebp+NTFS.fileDataStart]
+        xor     edx, edx
+        shl     eax, 1
+        jnc     @f
+        not     eax
+@@:
+        inc     edx
+        shr     eax, 8
+        jnz     @b
+        mov     eax, [ebp+NTFS.fileDataSize]
+        shl     eax, 1
+        xor     ecx, ecx
+@@:
+        inc     ecx
+        shr     eax, 8
+        jnz     @b
+        lea     eax, [edi+edx+1]
+        add     eax, ecx
+        sub     eax, esi
+        sub     ax, [esi+sizeWithHeader]
+        jc      @f
+        add     word [esi+sizeWithHeader], 8    ; extend attribute
+        mov     esi, [ebp+NTFS.frs_buffer]
+        mov     eax, [esi+recordRealSize]
+        add     eax, 8
+        cmp     [esi+recordAllocatedSize], eax
+        jc      .end    ; no space in the record
+        mov     [esi+recordRealSize], eax
+        push    ecx edi
+        add     esi, eax
+        mov     ecx, esi
+        sub     ecx, edi
+        sub     ecx, 8
+        shr     ecx, 2
+        mov     edi, esi
+        sub     edi, 4
+        sub     esi, 12
+        std
+        rep movsd
+        cld
+        pop     edi ecx
+@@:
+        mov     eax, edx
+        shl     eax, 4
+        add     eax, ecx
+        stosb
+        lea     esi, [ebp+NTFS.fileDataSize]
+        rep movsb
+        lea     esi, [ebp+NTFS.fileDataStart]
+        mov     ecx, edx
+        rep movsb
+.end:
+        ret
+
+resizeAttribute:
+;   in:
+; [ebp+NTFS.frs_buffer] -> file record
+; [ebp+NTFS.ntfs_attr_offs] -> attribute
+; edx:eax = new size
+;   out:
+; CF=1 -> eax = error code
+        mov     esi, [ebp+NTFS.ntfs_attr_offs]
+        mov     ecx, [ebp+NTFS.sectors_per_cluster]
+        shl     ecx, 9
+        mov     dword [ebp+NTFS.ntfs_attr_size], eax
+        mov     dword [ebp+NTFS.ntfs_attr_size+4], edx
+        mov     [esi+attributeRealSize], eax
+        mov     [esi+attributeRealSize+4], edx
+        mov     [esi+initialDataSize], eax
+        mov     [esi+initialDataSize+4], edx
+        sub     eax, 1
+        sbb     edx, 0
+        div     ecx
+        mov     edi, eax
+        inc     eax
+        mul     ecx
+        mov     [esi+attributeAllocatedSize], eax
+        mov     [esi+attributeAllocatedSize+4], edx
+        mov     ecx, [esi+lastVCN]
+        mov     [esi+lastVCN], edi
+        movzx   eax, byte [esi+dataRunsOffset]
+        sub     edi, ecx
+        jz      .done
+        jc      .shrinkAttribute
+; extend attribute
+        mov     [ebp+NTFS.fileDataSize], edi
+        xor     edi, edi
+        add     esi, eax
+        push    edi edi edi edi
+@@:
+        mov     edx, eax
+        mov     eax, esi
+        add     edi, [esp+8]
+        call    ntfs_decode_mcb_entry
+        jc      @b
+        mov     [esp+4], edx
+        mov     [esp+12], edi
+        add     edi, [esp]
+        push    edi
+        shr     edi, 5
+        shl     edi, 2
+        push    eax
+        cmp     edi, [ebp+NTFS.BitmapStart]
+        jc      .err1
+        call    ntfsSpaceAlloc
+        jc      .err1
+        pop     edi
+        pop     edx
+        cmp     edx, eax
+        jnz     .newEntry
+        pop     edx
+        pop     edi
+        pop     [ebp+NTFS.fileDataStart]
+        mov     [esp], eax
+        push    [ebp+NTFS.fileDataSize]
+        add     [ebp+NTFS.fileDataSize], edx
+        jmp     @f
+
+.newEntry:
+        add     esp, 12
+        pop     edx
+        push    eax
+        push    [ebp+NTFS.fileDataSize]
+        sub     eax, edx
+        mov     [ebp+NTFS.fileDataStart], eax
+@@:
+        mov     esi, [ebp+NTFS.ntfs_attr_offs]
+        call    createMcbEntry
+        pop     ecx
+        pop     eax
+        jc      .err2
+        mov     byte [edi], 0
+        add     ecx, eax
+        add     ecx, 4095
+        shr     ecx, 3+9
+        shr     eax, 3+9
+        sub     ecx, eax
+        mov     ebx, eax
+        shl     ebx, 9
+        add     eax, [ebp+NTFS.BitmapLocation]
+        add     ebx, [ebp+NTFS.BitmapBuffer]
+        xor     edx, edx
+        call    fs_write64_app
+        test    eax, eax
+        jz      .done
+        movi    eax, ERROR_DEVICE
+        stc
+.done:
+        ret
+
+.err1:
+        movi    eax, ERROR_DISK_FULL
+        add     esp, 24
+        stc
+        ret
+
+.err2:
+        movi    eax, ERROR_UNSUPPORTED_FS
+        ret
+
+.shrinkAttribute:
+        add     ecx, edi
+        inc     ecx
+        add     esi, eax
+        xor     edi, edi
+        sub     esp, 20
+@@:
+        mov     [esp+16], esi
+        call    ntfs_decode_mcb_entry
+        jnc     .err3
+        add     edi, [esp+8]
+        sub     ecx, [esp]
+        jnc     @b
+        mov     ebx, ecx
+        add     ecx, [esp]
+        mov     eax, [esp+8]
+        mov     [ebp+NTFS.fileDataSize], ecx
+        mov     [ebp+NTFS.fileDataStart], eax
+        push    edi
+        add     edi, ecx
+        neg     ebx
+        call    ntfsSpaceFree
+        pop     edi
+        jc      .end
+@@:
+        call    ntfs_decode_mcb_entry
+        jnc     .end
+        cmp     dword[esp+8], 0
+        jz      @b
+        add     edi, [esp+8]
+        mov     ebx, [esp]
+        call    ntfsSpaceFree
+        jnc     @b
+.end:
+        add     esp, 16
+        pop     edi
+        cmp     [ebp+NTFS.fileDataSize], 0
+        jz      @f
+        mov     esi, [ebp+NTFS.ntfs_attr_offs]
+        call    createMcbEntry
+@@:
+        mov     byte [edi], 0
+        ret
+
+.err3:
+        movi    eax, ERROR_FS_FAIL
+        add     esp, 20
+        stc
+        ret
+
+ntfsSpaceAlloc:
+; find and mark block of free space in bitmap buffer
+;   in:
+; edi = offset in bitmap to start search from
+; [ebp+NTFS.fileDataSize] = block size in clusters
+;   out:
+; eax = allocated block starting cluster
+; CF=1 -> disk full
+        mov     ecx, [ebp+NTFS.BitmapBuffer]
+        add     edi, ecx
+        add     ecx, [ebp+NTFS.BitmapSize]
+        sub     ecx, edi
+        jnc     @f
+        call    bitmapBuffering
+        shl     ecx, 2
+@@:
+        shr     ecx, 2
+        mov     eax, [ebp+NTFS.fileDataSize]
+        shr     eax, 5
+        jz      .small
+        push    eax         ; bitmap dwords
+.start:
+        mov     ecx, [ebp+NTFS.BitmapBuffer]
+        add     ecx, [ebp+NTFS.BitmapSize]
+        sub     ecx, edi
+        shr     ecx, 2
+@@:
+        xor     eax, eax
+        repnz scasd         ; search for empty dword
+        jz      @f
+        call    bitmapBuffering
+        jmp     @b
+@@:
+        cmp     ecx, [esp]
+        jnc     @f
+        call    bitmapBuffering
+        jmp     @b
+@@:
+        sub     edi, 4
+        mov     ecx, [esp]
+        mov     esi, edi
+        xor     eax, eax
+        repz scasd          ; check following dwords
+        jnz     .start
+        sub     esi, 4
+        mov     eax, [esi]
+        xor     edx, edx
+        bsr     edx, eax
+        inc     edx
+        push    edx         ; starting bit
+        push    esi         ; starting dword
+        add     esi, 4
+        neg     edx
+        add     edx, 32
+        mov     eax, [ebp+NTFS.fileDataSize]
+        sub     eax, edx
+        mov     edx, eax
+        shr     eax, 5
+        shl     eax, 2
+        add     esi, eax
+        mov     eax, [esi]
+        bsf     ecx, eax    ; check last dword
+        jz      .done
+        and     edx, 31
+        cmp     ecx, edx
+        jnc     .done
+        add     esp, 8
+        jmp     .start
+
+.small:     ; less than 32 clusters
+        mov     eax, -1
+        repz scasd          ; search for zero bits
+        push    ecx
+        test    ecx, ecx
+        jnz     @f
+        call    bitmapBuffering
+        pop     eax
+        jmp     .small
+@@:
+        sub     edi, 4
+        mov     eax, [edi]
+        not     eax
+@@:
+        bsf     ecx, eax    ; first 0
+        jz      .again
+        not     eax
+        shr     eax, cl
+        shl     eax, cl
+        bsf     edx, eax    ; next 1
+        jz      @f
+        sub     edx, ecx
+        cmp     edx, [ebp+NTFS.fileDataSize]
+        jnc     .got        ; fits inside
+        bsf     ecx, eax
+        not     eax
+        shr     eax, cl
+        shl     eax, cl
+        jmp     @b
+@@:         ; next dword
+        mov     eax, [edi+4]
+        bsf     edx, eax
+        jz      .got        ; empty
+        add     edx, 32
+        sub     edx, ecx
+        cmp     edx, [ebp+NTFS.fileDataSize]
+        jnc     .got        ; share between dwords
+.again:
+        add     edi, 4
+        pop     ecx
+        jmp     .small
+
+.got:
+        push    ecx         ; starting bit
+        push    edi         ; starting dword
+.done:      ; mark space
+        mov     ecx, [esp+4]
+        cmp     ecx, 32
+        jc      @f
+        xor     ecx, ecx
+        add     dword [esp], 4
+        mov     [esp+4], ecx
+@@:
+        mov     edi, [esp]
+        xor     eax, eax
+        dec     eax
+        shr     eax, cl
+        shl     eax, cl
+        neg     ecx
+        add     ecx, 32
+        sub     ecx, [ebp+NTFS.fileDataSize]
+        jc      @f
+        shl     eax, cl     ; fits inside dword
+        shr     eax, cl
+        or      [edi], eax
+        jmp     .end
+
+@@:
+        or      [edi], eax
+        neg     ecx
+        push    ecx
+        shr     ecx, 5
+        add     edi, 4
+        xor     eax, eax
+        dec     eax
+        rep stosd
+        pop     ecx
+        and     ecx, 31
+        shr     eax, cl
+        shl     eax, cl
+        not     eax
+        or      [edi], eax
+.end:
+        pop     eax
+        sub     eax, [ebp+NTFS.BitmapBuffer]
+        shl     eax, 3
+        pop     edx
+        add     eax, edx
+        pop     edx
+        ret
+
+ntfsSpaceFree:
+; free disk space
+;   in:
+; edi = starting cluster
+; ebx = size in clusters
+        mov     eax, edi
+        add     eax, ebx
+        shr     eax, 3
+        inc     eax
+        cmp     eax, [ebp+NTFS.BitmapSize]
+        jc      @f
+        add     eax, [ebp+NTFS.BitmapBuffer]
+        push    edi
+        mov     edi, eax
+        call    bitmapBuffering
+        pop     edi
+@@:
+        push    edi
+        mov     ecx, edi
+        shr     edi, 5
+        shl     edi, 2
+        add     edi, [ebp+NTFS.BitmapBuffer]
+        and     ecx, 31
+        xor     eax, eax
+        dec     eax
+        shr     eax, cl
+        shl     eax, cl
+        neg     ecx
+        add     ecx, 32
+        sub     ecx, ebx
+        jc      @f
+        shl     eax, cl     ; fits inside dword
+        shr     eax, cl
+        not     eax
+        and     [edi], eax
+        jmp     .writeBitmap
+
+@@:
+        not     eax
+        and     [edi], eax
+        neg     ecx
+        push    ecx
+        shr     ecx, 5
+        add     edi, 4
+        xor     eax, eax
+        rep stosd
+        pop     ecx
+        and     ecx, 31
+        dec     eax
+        shr     eax, cl
+        shl     eax, cl
+        and     [edi], eax
+.writeBitmap:
+        pop     eax
+        mov     edi, eax
+        lea     ecx, [eax+ebx+4095]
+        shr     eax, 3+9
+        shr     ecx, 3+9
+        sub     ecx, eax
+        mov     ebx, eax
+        shl     ebx, 9
+        add     eax, [ebp+NTFS.BitmapLocation]
+        add     ebx, [ebp+NTFS.BitmapBuffer]
+        xor     edx, edx
+        jmp     fs_write64_app
+
 bitmapBuffering:
 ; Extend BitmapBuffer and read next 32kb of bitmap
 ; Warning: $Bitmap fragmentation is not foreseen
-; if edi -> position in bitmap buffer,
-; then ecx = number of buffered dwords left
+; in: edi -> position in bitmap buffer
+; out: ecx = number of buffered dwords left
         push    ebx
         mov     eax, [ebp+NTFS.BitmapTotalSize]
         cmp     eax, [ebp+NTFS.BitmapSize]
@@ -2654,11 +2979,12 @@ bitmapBuffering:
         jnc     @f
         mov     [ebp+NTFS.BitmapSize], eax
 @@:
-        mov     ecx, [ebp+NTFS.BitmapSize]
-        add     ecx, [ebp+NTFS.BitmapBuffer]
-        sub     ecx, edi
-        shr     ecx, 2
         pop     ebx
+        mov     ecx, [ebp+NTFS.BitmapBuffer]
+        add     ecx, [ebp+NTFS.BitmapSize]
+        sub     ecx, edi
+        jc      bitmapBuffering
+        shr     ecx, 2
         ret
 
 .err:
@@ -2667,9 +2993,11 @@ bitmapBuffering:
         mov     ecx, 8
         call    release_pages
 .end:
-        add     esp, 12     ; double ret
-        push    ERROR_DISK_FULL
-        jmp     ntfsOut
+        pop     ebx
+        pop     eax     ; ret
+        pop     eax
+        stc
+        ret
 
 ;----------------------------------------------------------------
 ntfs_WriteFile:
@@ -2684,31 +3012,83 @@ ntfs_WriteFile:
         jc      ntfsNotFound
         cmp     [ebp+NTFS.ntfs_cur_iRecord], 16
         jc      ntfsDenied
-        mov     [ebp+NTFS.ntfs_cur_attr], 0x80
-        mov     [ebp+NTFS.ntfs_cur_offs], 0
-        mov     [ebp+NTFS.ntfs_cur_size], 0
-        call    ntfs_read_attr
+        bt      dword [eax+fileFlags], 28
         jc      ntfsDenied
-        mov     eax, [ebp+NTFS.frs_buffer]
-        cmp     word [eax+baseRecordReuse], 0
-        jnz     ntfsUnsupported     ; auxiliary record
-        cmp     byte [eax+hardLinkCounter], 1
-        jnz     ntfsUnsupported     ; file copying required
-        mov     ecx, [ebp+NTFS.ntfs_attr_offs]
-        cmp     byte [ecx+nonResidentFlag], 1
-        jnz     ntfsUnsupported     ; resident $DATA
-        cmp     word [ecx+attributeFlags], 0
-        jnz     ntfsUnsupported
+        mov     ecx, eax
         mov     eax, [ebx+4]
         mov     edx, [ebx+8]
         add     eax, [ebx+12]
         adc     edx, 0
+        mov     [ebp+NTFS.nodeLastRead], 0
+        cmp     edx, [ecx+fileRealSize+4]
+        jc      .readAttribute
+        jnz     @f
+        cmp     [ecx+fileRealSize], eax
+        jnc     .readAttribute
+@@:         ; set file size in the directory
+        cmp     [ebp+NTFS.ntfsFragmentCount], 1
+        jnz     ntfsUnsupported     ; record fragmented
+        mov     edi, [ebp+NTFS.cur_index_buf]
+        cmp     dword [edi], 'INDX'
+        jz      @f
+        mov     esi, [ebp+NTFS.frs_buffer]
+        push    ecx
+        mov     ecx, [esi+recordRealSize]
+        shr     ecx, 2
+        rep movsd
+        mov     esi, [ebp+NTFS.ntfs_attr_offs]
+        mov     cl, [esi+attributeOffset]
+        sub     esi, [ebp+NTFS.frs_buffer]
+        add     esi, ecx
+        pop     ecx
+        add     ecx, esi
+@@:
+        mov     [ecx+fileRealSize], eax
+        mov     [ecx+fileRealSize+4], edx
+        mov     ecx, [ebp+NTFS.ntfsLastRead]
+        mov     [ebp+NTFS.nodeLastRead], ecx
+.readAttribute:
+        mov     [ebp+NTFS.ntfs_cur_attr], 0x80
+        mov     [ebp+NTFS.ntfs_cur_offs], 0
+        mov     [ebp+NTFS.ntfs_cur_size], 0
+        push    eax
+        call    ntfs_read_attr
+        pop     eax
+        jc      ntfsFail
+        mov     ecx, [ebp+NTFS.frs_buffer]
+        cmp     word [ecx+baseRecordReuse], 0
+        jnz     ntfsUnsupported     ; auxiliary record
+        cmp     byte [ecx+hardLinkCounter], 1
+        jnz     ntfsUnsupported     ; file copying required
+        mov     ecx, [ebp+NTFS.ntfs_attr_offs]
+        cmp     byte [ecx+nonResidentFlag], 1
+        jnz     ntfsUnsupported     ; resident $DATA
         cmp     edx, [ecx+attributeRealSize+4]
-        jc      .write
-        jnz     ntfsUnsupported     ; end of file
+        jc      .writeNode
+        jnz     .resizeAttribute
         cmp     [ecx+attributeRealSize], eax
-        jc      ntfsUnsupported
-.write:
+        jnc     .writeNode
+.resizeAttribute:
+        push    ebx
+        call    resizeAttribute
+        jc      ntfsError
+        mov     eax, [ebp+NTFS.frs_buffer]
+        mov     [ebp+NTFS.ntfs_cur_buf], eax
+        call    writeRecord     ; file
+        mov     ebx, [ebp+NTFS.frs_buffer]
+        call    ntfs_restore_usa_frs
+        pop     ebx
+.writeNode:
+        mov     eax, [ebp+NTFS.nodeLastRead]
+        test    eax, eax
+        jz      .writeData
+        mov     [ebp+NTFS.ntfsLastRead], eax
+        mov     eax, [ebp+NTFS.cur_index_buf]
+        mov     [ebp+NTFS.ntfs_cur_buf], eax
+        push    ebx
+        call    writeRecord     ; directory
+        pop     ebx
+.writeData:
         mov     eax, [ebx+4]
         mov     edx, [ebx+8]
         mov     ecx, [ebx+12]
@@ -2742,8 +3122,6 @@ ntfs_WriteFile:
         call    fs_write64_app
         pop     ebx
         pop     ecx
-        test    eax, eax
-        jnz     ntfsDevice
         test    ecx, ecx
         jz      @f
         mov     eax, [ebx+4]
@@ -2780,8 +3158,6 @@ ntfs_WriteFile:
         xor     edx, edx
         call    fs_write64_app
         pop     ebx
-        test    eax, eax
-        jnz     ntfsDevice
 @@:
         mov     ebx, [ebx+12]
         jmp     ntfsDone
@@ -2864,83 +3240,16 @@ ntfs_Delete:
         add     esi, eax
         xor     edi, edi
         sub     esp, 16
-.clearBitmap:       ; "delete" file data
+@@:         ; "delete" file data
         call    ntfs_decode_mcb_entry
-        jnc     .mcbEnd
+        jnc     @f
         cmp     dword[esp+8], 0
-        jz      .clearBitmap
+        jz      @b
         add     edi, [esp+8]
         mov     ebx, [esp]
-        mov     eax, edi
-        add     eax, ebx
-        shr     eax, 3
-        inc     eax
-        cmp     eax, [ebp+NTFS.BitmapSize]
-        jc      .buffered
-        add     eax, [ebp+NTFS.BitmapBuffer]
-        add     esp, 16
-        push    edi
-        mov     edi, eax
+        call    ntfsSpaceFree
+        jnc     @b
 @@:
-        call    bitmapBuffering
-        shl     ecx, 2
-        js      @b
-        pop     edi
-        sub     esp, 16
-.buffered:
-        push    edi
-        mov     ecx, edi
-        shr     edi, 5
-        shl     edi, 2
-        add     edi, [ebp+NTFS.BitmapBuffer]
-        and     ecx, 31
-        xor     eax, eax
-        dec     eax
-        shr     eax, cl
-        shl     eax, cl
-        neg     ecx
-        add     ecx, 32
-        sub     ecx, ebx
-        jc      @f
-        shl     eax, cl     ; fits inside dword
-        shr     eax, cl
-        not     eax
-        and     [edi], eax
-        jmp     .writeBitmap
-
-@@:
-        not     eax
-        and     [edi], eax
-        neg     ecx
-        push    ecx
-        shr     ecx, 5
-        add     edi, 4
-        xor     eax, eax
-        rep stosd
-        pop     ecx
-        and     ecx, 31
-        dec     eax
-        shr     eax, cl
-        shl     eax, cl
-        and     [edi], eax
-.writeBitmap:
-        pop     edi
-        mov     ecx, edi
-        add     ecx, ebx
-        add     ecx, 4095
-        shr     ecx, 3+9
-        mov     eax, edi
-        shr     eax, 3+9
-        sub     ecx, eax
-        mov     ebx, eax
-        shl     ebx, 9
-        add     eax, [ebp+NTFS.BitmapLocation]
-        add     ebx, [ebp+NTFS.BitmapBuffer]
-        xor     edx, edx
-        call    fs_write64_app
-        jmp     .clearBitmap
-
-.mcbEnd:
         add     esp, 16
         jmp     .writeBitmapMFT
 
@@ -2982,9 +3291,7 @@ ntfs_Delete:
         mov     eax, [ebp+NTFS.cur_index_buf]
         mov     [ebp+NTFS.ntfs_cur_buf], eax
         call    writeRecord
-        test    eax, eax
-        jz      ntfsDone
-        jmp     ntfsDevice
+        jmp     ntfsDone
 
 ;----------------------------------------------------------------
 ntfs_SetFileEnd:
@@ -3018,11 +3325,7 @@ ntfs_GetFileInfo:
 
 ntfsUnsupported:
         push    ERROR_UNSUPPORTED_FS
-ntfsOut:
-        call    ntfs_unlock
-        xor     ebx, ebx
-        pop     eax
-        ret
+        jmp     ntfsOut
 ntfsDevice:
         push    ERROR_DEVICE
         jmp     ntfsOut
@@ -3038,3 +3341,14 @@ ntfsFail:
 ntfsNoMemory:
         push    ERROR_OUT_OF_MEMORY
         jmp     ntfsOut
+ntfsDiskFull:
+        push    ERROR_DISK_FULL
+        jmp     ntfsOut
+ntfsError:
+        pop     ebx
+        push    eax
+ntfsOut:
+        call    ntfs_unlock
+        xor     ebx, ebx
+        pop     eax
+        ret
