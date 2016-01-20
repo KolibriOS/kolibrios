@@ -5,7 +5,8 @@
 #include "i915_drv.h"
 #include "intel_drv.h"
 #include <linux/hdmi.h>
-
+#include <linux/seq_file.h>
+#include <linux/fence.h>
 
 struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags)
 {
@@ -315,62 +316,72 @@ EXPORT_SYMBOL(hex2bin);
  * example output buffer:
  * 40 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e 4f  @ABCDEFGHIJKLMNO
  */
-void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,
-            int groupsize, char *linebuf, size_t linebuflen,
-            bool ascii)
+int hex_dump_to_buffer(const void *buf, size_t len, int rowsize, int groupsize,
+               char *linebuf, size_t linebuflen, bool ascii)
 {
     const u8 *ptr = buf;
+    int ngroups;
     u8 ch;
     int j, lx = 0;
     int ascii_column;
+    int ret;
 
     if (rowsize != 16 && rowsize != 32)
         rowsize = 16;
 
-    if (!len)
-        goto nil;
     if (len > rowsize)      /* limit to one line at a time */
         len = rowsize;
+    if (!is_power_of_2(groupsize) || groupsize > 8)
+        groupsize = 1;
     if ((len % groupsize) != 0) /* no mixed size output */
         groupsize = 1;
 
-    switch (groupsize) {
-    case 8: {
+    ngroups = len / groupsize;
+    ascii_column = rowsize * 2 + rowsize / groupsize + 1;
+
+    if (!linebuflen)
+        goto overflow1;
+
+    if (!len)
+        goto nil;
+
+    if (groupsize == 8) {
         const u64 *ptr8 = buf;
-        int ngroups = len / groupsize;
 
-        for (j = 0; j < ngroups; j++)
-            lx += scnprintf(linebuf + lx, linebuflen - lx,
-                    "%s%16.16llx", j ? " " : "",
-                    (unsigned long long)*(ptr8 + j));
-        ascii_column = 17 * ngroups + 2;
-        break;
-    }
-
-    case 4: {
+        for (j = 0; j < ngroups; j++) {
+            ret = snprintf(linebuf + lx, linebuflen - lx,
+                       "%s%16.16llx", j ? " " : "",
+                       (unsigned long long)*(ptr8 + j));
+            if (ret >= linebuflen - lx)
+                goto overflow1;
+            lx += ret;
+        }
+    } else if (groupsize == 4) {
         const u32 *ptr4 = buf;
-        int ngroups = len / groupsize;
 
-        for (j = 0; j < ngroups; j++)
-            lx += scnprintf(linebuf + lx, linebuflen - lx,
-                    "%s%8.8x", j ? " " : "", *(ptr4 + j));
-        ascii_column = 9 * ngroups + 2;
-        break;
-    }
-
-    case 2: {
+        for (j = 0; j < ngroups; j++) {
+            ret = snprintf(linebuf + lx, linebuflen - lx,
+                       "%s%8.8x", j ? " " : "",
+                       *(ptr4 + j));
+            if (ret >= linebuflen - lx)
+                goto overflow1;
+            lx += ret;
+        }
+    } else if (groupsize == 2) {
         const u16 *ptr2 = buf;
-        int ngroups = len / groupsize;
 
-        for (j = 0; j < ngroups; j++)
-            lx += scnprintf(linebuf + lx, linebuflen - lx,
-                    "%s%4.4x", j ? " " : "", *(ptr2 + j));
-        ascii_column = 5 * ngroups + 2;
-        break;
-    }
-
-    default:
-        for (j = 0; (j < len) && (lx + 3) <= linebuflen; j++) {
+        for (j = 0; j < ngroups; j++) {
+            ret = snprintf(linebuf + lx, linebuflen - lx,
+                       "%s%4.4x", j ? " " : "",
+                       *(ptr2 + j));
+            if (ret >= linebuflen - lx)
+                goto overflow1;
+            lx += ret;
+        }
+    } else {
+        for (j = 0; j < len; j++) {
+            if (linebuflen < lx + 3)
+                goto overflow2;
             ch = ptr[j];
             linebuf[lx++] = hex_asc_hi(ch);
             linebuf[lx++] = hex_asc_lo(ch);
@@ -378,23 +389,29 @@ void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,
         }
         if (j)
             lx--;
-
-        ascii_column = 3 * rowsize + 2;
-        break;
     }
     if (!ascii)
         goto nil;
 
-    while (lx < (linebuflen - 1) && lx < (ascii_column - 1))
+    while (lx < ascii_column) {
+        if (linebuflen < lx + 2)
+            goto overflow2;
         linebuf[lx++] = ' ';
-    for (j = 0; (j < len) && (lx + 2) < linebuflen; j++) {
+    }
+    for (j = 0; j < len; j++) {
+        if (linebuflen < lx + 2)
+            goto overflow2;
         ch = ptr[j];
         linebuf[lx++] = (isascii(ch) && isprint(ch)) ? ch : '.';
     }
 nil:
+    linebuf[lx] = '\0';
+    return lx;
+overflow2:
     linebuf[lx++] = '\0';
+overflow1:
+    return ascii ? ascii_column + len : (groupsize * 2 + 1) * ngroups - 1;
 }
-
 /**
  * print_hex_dump - print a text hex dump to syslog for a binary blob of data
  * @level: kernel log level (e.g. KERN_DEBUG)
@@ -774,5 +791,59 @@ void call_rcu_sched(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
         __call_rcu(head, func, &rcu_sched_ctrlblk);
 }
 
+int seq_puts(struct seq_file *m, const char *s)
+{
+    return 0;
+};
 
+__printf(2, 3) int seq_printf(struct seq_file *m, const char *f, ...)
+{
+    return 0;
+}
+
+
+signed long
+fence_wait_timeout(struct fence *fence, bool intr, signed long timeout)
+{
+        signed long ret;
+
+        if (WARN_ON(timeout < 0))
+                return -EINVAL;
+
+//        trace_fence_wait_start(fence);
+        ret = fence->ops->wait(fence, intr, timeout);
+//        trace_fence_wait_end(fence);
+        return ret;
+}
+
+void fence_release(struct kref *kref)
+{
+        struct fence *fence =
+                        container_of(kref, struct fence, refcount);
+
+//        trace_fence_destroy(fence);
+
+        BUG_ON(!list_empty(&fence->cb_list));
+
+        if (fence->ops->release)
+                fence->ops->release(fence);
+        else
+                fence_free(fence);
+}
+
+void fence_free(struct fence *fence)
+{
+        kfree_rcu(fence, rcu);
+}
+EXPORT_SYMBOL(fence_free);
+
+
+ktime_t ktime_get(void)
+{
+    ktime_t t;
+
+    t.tv64 = GetClockNs();
+
+    return t;
+}
 

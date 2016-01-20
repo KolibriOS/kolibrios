@@ -49,12 +49,6 @@ EXPORT_SYMBOL(drm_vblank_offdelay);
 unsigned int drm_timestamp_precision = 20;  /* Default to 20 usecs. */
 EXPORT_SYMBOL(drm_timestamp_precision);
 
-/*
- * Default to use monotonic timestamps for wait-for-vblank and page-flip
- * complete events.
- */
-unsigned int drm_timestamp_monotonic = 1;
-
 struct idr drm_minors_idr;
 
 void drm_err(const char *format, ...)
@@ -568,4 +562,11 @@ void drm_clflush_virt_range(void *addr, unsigned long length)
     return;
 }
 
+int drm_sysfs_connector_add(struct drm_connector *connector)
+{
+    return 0;
+}
 
+void drm_sysfs_connector_remove(struct drm_connector *connector)
+{
+}

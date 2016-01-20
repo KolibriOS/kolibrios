@@ -27,6 +27,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/export.h>
 #include <drm/drmP.h>
+#include "drm_internal.h"
 #include "drm_legacy.h"
 
 #include <syscall.h>
@@ -291,6 +292,8 @@ static struct drm_bus drm_pci_bus = {
  * Attempt to gets inter module "drm" information. If we are first
  * then register the character device and inter module information.
  * Try and register, if we fail to register, backout previous work.
+ *
+ * Return: 0 on success or a negative error code on failure.
  */
 int drm_get_pci_dev(struct pci_dev *pdev, const struct pci_device_id *ent,
 		    struct drm_driver *driver)

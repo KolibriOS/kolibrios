@@ -781,7 +781,7 @@ void __iomem *pci_map_rom(struct pci_dev *pdev, size_t *size)
     				start = (loff_t)0xC0000;
     				*size = 0x20000; /* cover C000:0 through E000:0 */
 
-                }
+                 }
         }
 
         rom = ioremap(start, *size);

@@ -1,3 +1,5 @@
+#include <syscall.h>
+
 #include <drm/drmP.h>
 #include <drm/i915_drm.h>
 #include "i915_drv.h"
@@ -6,9 +8,10 @@
 #include <linux/module.h>
 #include <linux/mod_devicetable.h>
 #include <linux/pci.h>
-#include <syscall.h>
 
 #include "bitmap.h"
+
+#define DRV_NAME "i915 v4.4"
 
 #define I915_DEV_CLOSE 0
 #define I915_DEV_INIT  1
@@ -28,6 +31,19 @@ struct pci_device {
     uint8_t     revision;
 };
 
+struct cmdtable
+{
+    char *key;
+    int   size;
+    int  *val;
+};
+
+#define CMDENTRY(key, val) {(key), (sizeof(key)-1), &val}
+void parse_cmdline(char *cmdline, struct cmdtable *table, char *log, videomode_t *mode);
+
+
+int oops_in_progress;
+int i915_fbsize = 16;
 struct drm_device *main_device;
 struct drm_file   *drm_file_handlers[256];
 videomode_t usermode;
@@ -38,15 +54,6 @@ int kmap_init();
 int _stdcall display_handler(ioctl_t *io);
 int init_agp(void);
 
-int srv_blit_bitmap(u32 hbitmap, int  dst_x, int dst_y,
-               int src_x, int src_y, u32 w, u32 h);
-
-int blit_textured(u32 hbitmap, int  dst_x, int dst_y,
-               int src_x, int src_y, u32 w, u32 h);
-
-int blit_tex(u32 hbitmap, int  dst_x, int dst_y,
-             int src_x, int src_y, u32 w, u32 h);
-
 void get_pci_info(struct pci_device *dev);
 int i915_getparam(struct drm_device *dev, void *data,
              struct drm_file *file_priv);
@@ -55,11 +62,11 @@ int i915_mask_update(struct drm_device *dev, void *data,
             struct drm_file *file);
 
 struct cmdtable cmdtable[]= {
-//    CMDENTRY("-pm=", i915_powersave),
-//    CMDENTRY("-rc6=", i915_enable_rc6),
-//    CMDENTRY("-fbc=", i915_enable_fbc),
-//    CMDENTRY("-ppgt=", i915_enable_ppgtt),
-//    CMDENTRY("-pc8=", i915_enable_pc8),
+    CMDENTRY("-FB=", i915_fbsize),
+/*    CMDENTRY("-pm=", i915.powersave),     */
+    CMDENTRY("-rc6=", i915.enable_rc6),
+    CMDENTRY("-fbc=", i915.enable_fbc),
+    CMDENTRY("-ppgt=", i915.enable_ppgtt),
     {NULL, 0}
 };
 
@@ -110,8 +117,13 @@ void i915_driver_thread()
 
     while(driver_wq_state == I915_DEV_INIT)
     {
-        jiffies = GetTimerTicks();
+        jiffies = GetClockNs() / 10000000;
         delay(1);
+    };
+
+    if( driver_wq_state == I915_DEV_CLOSE)
+    {
+        asm volatile ("int $0x40"::"a"(-1));
     };
 
     dev_priv = main_device->dev_private;
@@ -123,7 +135,7 @@ void i915_driver_thread()
 
     while(driver_wq_state != I915_DEV_CLOSE)
     {
-        jiffies = GetTimerTicks();
+        jiffies = GetClockNs() / 10000000;
 
         key = get_key();
 
@@ -186,9 +198,11 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     if( GetService("DISPLAY") != 0 )
         return 0;
 
-    printf("\ni915 v3.19-rc2 build %s %s\nusage: i915 [options]\n"
+    printf("\n%s build %s %s\nusage: i915 [options]\n"
+           "-FB=<0-9>     Set framebuffer size in megabytes (default: 16)\n",
            "-pm=<0,1>     Enable powersavings, fbc, downclocking, etc. (default: 1 - true)\n",
-           __DATE__, __TIME__);
+           DRV_NAME, __DATE__, __TIME__);
+
     printf("-rc6=<-1,0-7> Enable power-saving render C-state 6.\n"
            "              Different stages can be selected via bitmask values\n"
            "              (0 = disable; 1 = enable rc6; 2 = enable deep rc6; 4 = enable deepest rc6).\n"
@@ -197,17 +211,22 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     printf("-fbc=<-1,0,1> Enable frame buffer compression for power savings\n"
            "              (default: -1 (use per-chip default))\n");
     printf("-ppgt=<0,1>   Enable PPGTT (default: true)\n");
-    printf("-pc8=<0,1>    Enable support for low power package C states (PC8+) (default: 0 - false)\n");
+
     printf("-l<path>      path to log file\n");
     printf("-m<WxHxHz>    set videomode\n");
 
+    printf("cmdline %s\n", cmdline);
     if( cmdline && *cmdline )
         parse_cmdline(cmdline, cmdtable, log, &usermode);
 
     if( *log && !dbg_open(log))
-        {
-            printf("Can't open %s\nExit\n", log);
-            return 0;
+    {
+        printf("Can't open %s\nExit\n", log);
+        return 0;
+    }
+    else
+    {
+        dbgprintf("\nLOG: %s build %s %s\n",DRV_NAME,__DATE__, __TIME__);
     }
 
     cpu_detect1();
@@ -237,6 +256,7 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     {
         driver_wq_state = I915_DEV_CLOSE;
         dbgprintf("Epic Fail :(\n");
+        delay(100);
         return 0;
     };
 
@@ -260,25 +280,16 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 #define DISPLAY_VERSION  API_VERSION
 
 
-#define SRV_GETVERSION          0
-#define SRV_ENUM_MODES          1
-#define SRV_SET_MODE            2
-#define SRV_GET_CAPS            3
-
-#define SRV_CREATE_SURFACE      10
-#define SRV_DESTROY_SURFACE     11
-#define SRV_LOCK_SURFACE        12
-#define SRV_UNLOCK_SURFACE      13
-#define SRV_RESIZE_SURFACE      14
-#define SRV_BLIT_BITMAP         15
-#define SRV_BLIT_TEXTURE        16
-#define SRV_BLIT_VIDEO          17
+#define SRV_GETVERSION              0
+#define SRV_ENUM_MODES              1
+#define SRV_SET_MODE                2
+#define SRV_GET_CAPS                3
 
 
-#define SRV_GET_PCI_INFO            20
+#define SRV_GET_PCI_INFO                20
 #define SRV_I915_GET_PARAM              21
-#define SRV_I915_GEM_CREATE         22
-#define SRV_DRM_GEM_CLOSE           23
+#define SRV_I915_GEM_CREATE             22
+#define SRV_DRM_GEM_CLOSE               23
 #define SRV_DRM_GEM_FLINK               24
 #define SRV_DRM_GEM_OPEN                25
 #define SRV_I915_GEM_PIN                26
@@ -316,7 +327,7 @@ int _stdcall display_handler(ioctl_t *io)
 {
     struct drm_file *file;
 
-    int    retval = -1;
+    int  retval = -1;
     u32 *inp;
     u32 *outp;
 
@@ -377,14 +388,6 @@ int _stdcall display_handler(ioctl_t *io)
 
         case SRV_DRM_GEM_OPEN:
             retval = drm_gem_open_ioctl(main_device, inp, file);
-            break;
-
-        case SRV_I915_GEM_PIN:
-            retval = i915_gem_pin_ioctl(main_device, inp, file);
-            break;
-
-        case SRV_I915_GEM_UNPIN:
-            retval = i915_gem_unpin_ioctl(main_device, inp, file);
             break;
 
         case SRV_I915_GEM_GET_CACHING:
@@ -885,4 +888,32 @@ __asm__ __volatile__(
     : "dx", "di");
 return __res;
 }
+
+#include <linux/math64.h>
+
+u64 long_div(u64 dividend, u64 divisor)
+{
+#if 1
+    u32 high = divisor >> 32;
+    u64 quot;
+
+    if (high == 0) {
+            quot = div_u64(dividend, divisor);
+    } else {
+            int n = 1 + fls(high);
+            quot = div_u64(dividend >> n, divisor >> n);
+
+            if (quot != 0)
+                    quot--;
+            if ((dividend - quot * divisor) >= divisor)
+                    quot++;
+    }
+
+    return quot;
+#endif
+//    return dividend / divisor;
+};
+
+
+
 

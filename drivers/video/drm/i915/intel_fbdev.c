@@ -29,7 +29,7 @@
 #include <linux/kernel.h>
 #include <linux/errno.h>
 #include <linux/string.h>
-//#include <linux/mm.h>
+#include <linux/mm.h>
 //#include <linux/tty.h>
 #include <linux/sysrq.h>
 #include <linux/delay.h>
@@ -43,7 +43,6 @@
 #include "intel_drv.h"
 #include <drm/i915_drm.h>
 #include "i915_drv.h"
-
 
 struct fb_info *framebuffer_alloc(size_t size, struct device *dev)
 {
@@ -81,16 +80,45 @@ static int intel_fbdev_set_par(struct fb_info *info)
 	ret = drm_fb_helper_set_par(info);
 
 	if (ret == 0) {
-		/*
-		 * FIXME: fbdev presumes that all callbacks also work from
-		 * atomic contexts and relies on that for emergency oops
-		 * printing. KMS totally doesn't do that and the locking here is
-		 * by far not the only place this goes wrong.  Ignore this for
-		 * now until we solve this for real.
-		 */
 		mutex_lock(&fb_helper->dev->struct_mutex);
-		ret = i915_gem_object_set_to_gtt_domain(ifbdev->fb->obj,
-							true);
+		intel_fb_obj_invalidate(ifbdev->fb->obj, ORIGIN_GTT);
+		mutex_unlock(&fb_helper->dev->struct_mutex);
+	}
+
+	return ret;
+}
+
+static int intel_fbdev_blank(int blank, struct fb_info *info)
+{
+	struct drm_fb_helper *fb_helper = info->par;
+	struct intel_fbdev *ifbdev =
+		container_of(fb_helper, struct intel_fbdev, helper);
+	int ret;
+
+	ret = drm_fb_helper_blank(blank, info);
+
+	if (ret == 0) {
+		mutex_lock(&fb_helper->dev->struct_mutex);
+		intel_fb_obj_invalidate(ifbdev->fb->obj, ORIGIN_GTT);
+		mutex_unlock(&fb_helper->dev->struct_mutex);
+	}
+
+	return ret;
+}
+
+static int intel_fbdev_pan_display(struct fb_var_screeninfo *var,
+				   struct fb_info *info)
+{
+	struct drm_fb_helper *fb_helper = info->par;
+	struct intel_fbdev *ifbdev =
+		container_of(fb_helper, struct intel_fbdev, helper);
+
+	int ret;
+	ret = drm_fb_helper_pan_display(var, info);
+
+	if (ret == 0) {
+		mutex_lock(&fb_helper->dev->struct_mutex);
+		intel_fb_obj_invalidate(ifbdev->fb->obj, ORIGIN_GTT);
 		mutex_unlock(&fb_helper->dev->struct_mutex);
 	}
 
@@ -104,22 +132,23 @@ static struct fb_ops intelfb_ops = {
 //   .fb_fillrect = cfb_fillrect,
 //   .fb_copyarea = cfb_copyarea,
 //   .fb_imageblit = cfb_imageblit,
-//   .fb_pan_display = drm_fb_helper_pan_display,
-	.fb_blank = drm_fb_helper_blank,
+	.fb_pan_display = intel_fbdev_pan_display,
+	.fb_blank = intel_fbdev_blank,
 //   .fb_setcmap = drm_fb_helper_setcmap,
 //   .fb_debug_enter = drm_fb_helper_debug_enter,
 //   .fb_debug_leave = drm_fb_helper_debug_leave,
 };
 
 static int intelfb_alloc(struct drm_fb_helper *helper,
-			  struct drm_fb_helper_surface_size *sizes)
+			 struct drm_fb_helper_surface_size *sizes)
 {
 	struct intel_fbdev *ifbdev =
 		container_of(helper, struct intel_fbdev, helper);
 	struct drm_framebuffer *fb;
 	struct drm_device *dev = helper->dev;
+	struct drm_i915_private *dev_priv = to_i915(dev);
 	struct drm_mode_fb_cmd2 mode_cmd = {};
-	struct drm_i915_gem_object *obj;
+	struct drm_i915_gem_object *obj = NULL;
 	int size, ret;
 
 	/* we don't do packed 24bpp */
@@ -135,9 +164,9 @@ static int intelfb_alloc(struct drm_fb_helper *helper,
 							  sizes->surface_depth);
 
 	size = mode_cmd.pitches[0] * mode_cmd.height;
-	size = ALIGN(size, PAGE_SIZE);
+	size = PAGE_ALIGN(size);
 	obj = main_fb_obj;
-    obj->stride = mode_cmd.pitches[0];
+	obj->map_and_fenceable=true;
 	if (!obj) {
 		DRM_ERROR("failed to allocate framebuffer\n");
 		ret = -ENOMEM;
@@ -151,7 +180,7 @@ static int intelfb_alloc(struct drm_fb_helper *helper,
 	}
 
 	/* Flush everything out, we'll be doing GTT only from now on */
-	ret = intel_pin_and_fence_fb_obj(NULL, fb, NULL);
+	ret = intel_pin_and_fence_fb_obj(NULL, fb, NULL, NULL, NULL);
 	if (ret) {
 		DRM_ERROR("failed to pin obj: %d\n", ret);
 		goto out_fb;
@@ -214,9 +243,9 @@ static int intelfb_create(struct drm_fb_helper *helper,
 	obj = intel_fb->obj;
 	size = obj->base.size;
 
-	info = framebuffer_alloc(0, &dev->pdev->dev);
-	if (!info) {
-		ret = -ENOMEM;
+	info = drm_fb_helper_alloc_fbi(helper);
+	if (IS_ERR(info)) {
+		ret = PTR_ERR(info);
 		goto out_unpin;
 	}
 
@@ -224,20 +253,17 @@ static int intelfb_create(struct drm_fb_helper *helper,
 
 	fb = &ifbdev->fb->base;
 
+    if(main_framebuffer == NULL)
+        main_framebuffer = fb;
+
 	ifbdev->helper.fb = fb;
-	ifbdev->helper.fbdev = info;
 
-    strcpy(info->fix.id, "inteldrmfb");
+	strcpy(info->fix.id, "inteldrmfb");
 
-    info->flags = FBINFO_DEFAULT | FBINFO_CAN_FORCE_OUTPUT;
-    info->fbops = &intelfb_ops;
+	info->flags = FBINFO_DEFAULT | FBINFO_CAN_FORCE_OUTPUT;
+	info->fbops = &intelfb_ops;
 
-    /* setup aperture base/size for vesafb takeover */
-	info->apertures = alloc_apertures(1);
-	if (!info->apertures) {
-		ret = -ENOMEM;
-		goto out_unpin;
-	}
+	/* setup aperture base/size for vesafb takeover */
 	info->apertures->ranges[0].base = dev->mode_config.fb_base;
 	info->apertures->ranges[0].size = dev_priv->gtt.mappable_end;
 
@@ -253,13 +279,15 @@ static int intelfb_create(struct drm_fb_helper *helper,
 
 	/* Use default scratch pixmap (info->pixmap.flags = FB_PIXMAP_SYSTEM) */
 
-	DRM_DEBUG_KMS("allocated %dx%d fb: 0x%08lx, bo %p\n",
+	DRM_DEBUG_KMS("allocated %dx%d fb: 0x%08llx, bo %p\n",
 		      fb->width, fb->height,
 		      i915_gem_obj_ggtt_offset(obj), obj);
 
 	mutex_unlock(&dev->struct_mutex);
 	return 0;
 
+out_destroy_fbi:
+	drm_fb_helper_release_fbi(helper);
 out_unpin:
 	i915_gem_object_ggtt_unpin(obj);
 	drm_gem_object_unreference(&obj->base);
@@ -440,18 +468,13 @@ retry:
 			 * IMPORTANT: We want to use the adjusted mode (i.e.
 			 * after the panel fitter upscaling) as the initial
 			 * config, not the input mode, which is what crtc->mode
-			 * usually contains. But since our current fastboot
+			 * usually contains. But since our current
 			 * code puts a mode derived from the post-pfit timings
-			 * into crtc->mode this works out correctly. We don't
-			 * use hwmode anywhere right now, so use it for this
-			 * since the fb helper layer wants a pointer to
-			 * something we own.
+			 * into crtc->mode this works out correctly.
 			 */
 			DRM_DEBUG_KMS("looking for current mode on connector %s\n",
 				      connector->name);
-			intel_mode_from_pipe_config(&encoder->crtc->hwmode,
-						    &to_intel_crtc(encoder->crtc)->config);
-			modes[i] = &encoder->crtc->hwmode;
+			modes[i] = &encoder->crtc->mode;
 		}
 		crtcs[i] = new_crtc;
 
@@ -518,28 +541,25 @@ static bool intel_fbdev_init_bios(struct drm_device *dev,
 	struct intel_framebuffer *fb = NULL;
 	struct drm_crtc *crtc;
 	struct intel_crtc *intel_crtc;
-	struct intel_plane_config *plane_config = NULL;
 	unsigned int max_size = 0;
-
-	if (!i915.fastboot)
-		return false;
 
 	/* Find the largest fb */
 	for_each_crtc(dev, crtc) {
+		struct drm_i915_gem_object *obj =
+			intel_fb_obj(crtc->primary->state->fb);
 		intel_crtc = to_intel_crtc(crtc);
 
-		if (!intel_crtc->active || !crtc->primary->fb) {
+		if (!crtc->state->active || !obj) {
 			DRM_DEBUG_KMS("pipe %c not active or no fb, skipping\n",
 				      pipe_name(intel_crtc->pipe));
 			continue;
 		}
 
-		if (intel_crtc->plane_config.size > max_size) {
+		if (obj->base.size > max_size) {
 			DRM_DEBUG_KMS("found possible fb from plane %c\n",
 				      pipe_name(intel_crtc->pipe));
-			plane_config = &intel_crtc->plane_config;
-			fb = to_intel_framebuffer(crtc->primary->fb);
-			max_size = plane_config->size;
+			fb = to_intel_framebuffer(crtc->primary->state->fb);
+			max_size = obj->base.size;
 		}
 	}
 
@@ -554,7 +574,7 @@ static bool intel_fbdev_init_bios(struct drm_device *dev,
 
 		intel_crtc = to_intel_crtc(crtc);
 
-		if (!intel_crtc->active) {
+		if (!crtc->state->active) {
 			DRM_DEBUG_KMS("pipe %c not active, skipping\n",
 				      pipe_name(intel_crtc->pipe));
 			continue;
@@ -568,24 +588,25 @@ static bool intel_fbdev_init_bios(struct drm_device *dev,
 		 * pipe.  Note we need to use the selected fb's pitch and bpp
 		 * rather than the current pipe's, since they differ.
 		 */
-		cur_size = intel_crtc->config.adjusted_mode.crtc_hdisplay;
+		cur_size = intel_crtc->config->base.adjusted_mode.crtc_hdisplay;
 		cur_size = cur_size * fb->base.bits_per_pixel / 8;
 		if (fb->base.pitches[0] < cur_size) {
 			DRM_DEBUG_KMS("fb not wide enough for plane %c (%d vs %d)\n",
 				      pipe_name(intel_crtc->pipe),
 				      cur_size, fb->base.pitches[0]);
-			plane_config = NULL;
 			fb = NULL;
 			break;
 		}
 
-		cur_size = intel_crtc->config.adjusted_mode.crtc_vdisplay;
-		cur_size = ALIGN(cur_size, plane_config->tiled ? (IS_GEN2(dev) ? 16 : 8) : 1);
+		cur_size = intel_crtc->config->base.adjusted_mode.crtc_vdisplay;
+		cur_size = intel_fb_align_height(dev, cur_size,
+						 fb->base.pixel_format,
+						 fb->base.modifier[0]);
 		cur_size *= fb->base.pitches[0];
 		DRM_DEBUG_KMS("pipe %c area: %dx%d, bpp: %d, size: %d\n",
 			      pipe_name(intel_crtc->pipe),
-			      intel_crtc->config.adjusted_mode.crtc_hdisplay,
-			      intel_crtc->config.adjusted_mode.crtc_vdisplay,
+			      intel_crtc->config->base.adjusted_mode.crtc_hdisplay,
+			      intel_crtc->config->base.adjusted_mode.crtc_vdisplay,
 			      fb->base.bits_per_pixel,
 			      cur_size);
 
@@ -593,7 +614,6 @@ static bool intel_fbdev_init_bios(struct drm_device *dev,
 			DRM_DEBUG_KMS("fb not big enough for plane %c (%d vs %d)\n",
 				      pipe_name(intel_crtc->pipe),
 				      cur_size, max_size);
-			plane_config = NULL;
 			fb = NULL;
 			break;
 		}
@@ -617,7 +637,7 @@ static bool intel_fbdev_init_bios(struct drm_device *dev,
 	for_each_crtc(dev, crtc) {
 		intel_crtc = to_intel_crtc(crtc);
 
-		if (!intel_crtc->active)
+		if (!crtc->state->active)
 			continue;
 
 		WARN(!crtc->primary->fb,
@@ -659,10 +679,12 @@ int intel_fbdev_init(struct drm_device *dev)
 		return ret;
 	}
 
+	ifbdev->helper.atomic = true;
+
 	dev_priv->fbdev = ifbdev;
 	drm_fb_helper_single_add_all_connectors(&ifbdev->helper);
 
-    return 0;
+	return 0;
 }
 
 void intel_fbdev_initial_config(void *data, async_cookie_t cookie)

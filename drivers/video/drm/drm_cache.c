@@ -61,12 +61,6 @@ static void drm_cache_flush_clflush(struct page *pages[],
 		drm_clflush_page(*pages++);
 	mb();
 }
-
-static void
-drm_clflush_ipi_handler(void *null)
-{
-	wbinvd();
-}
 #endif
 
 void
@@ -125,20 +119,21 @@ EXPORT_SYMBOL(drm_clflush_sg);
 
 #if 0
 void
-drm_clflush_virt_range(char *addr, unsigned long length)
+drm_clflush_virt_range(void *addr, unsigned long length)
 {
 #if defined(CONFIG_X86)
 	if (cpu_has_clflush) {
-		char *end = addr + length;
+		const int size = boot_cpu_data.x86_clflush_size;
+		void *end = addr + length;
+		addr = (void *)(((unsigned long)addr) & -size);
 		mb();
-		for (; addr < end; addr += boot_cpu_data.x86_clflush_size)
-			clflush(addr);
-		clflush(end - 1);
+		for (; addr < end; addr += size)
+			clflushopt(addr);
 		mb();
 		return;
 	}
 
-	if (on_each_cpu(drm_clflush_ipi_handler, NULL, 1) != 0)
+	if (wbinvd_on_all_cpus())
 		printk(KERN_ERR "Timed out waiting for cache flush.\n");
 #else
 	printk(KERN_ERR "Architecture has no drm_cache.c support\n");

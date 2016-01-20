@@ -104,7 +104,7 @@ drm_gem_init(struct drm_device *dev)
 	dev->vma_offset_manager = vma_offset_manager;
 	drm_vma_offset_manager_init(vma_offset_manager,
 				    DRM_FILE_PAGE_OFFSET_START,
-		    DRM_FILE_PAGE_OFFSET_SIZE);
+				    DRM_FILE_PAGE_OFFSET_SIZE);
 
 	return 0;
 }
@@ -155,7 +155,7 @@ EXPORT_SYMBOL(drm_gem_object_init);
  * backing the object and handling it.
  */
 void drm_gem_private_object_init(struct drm_device *dev,
-			struct drm_gem_object *obj, size_t size)
+				 struct drm_gem_object *obj, size_t size)
 {
 	BUG_ON((size & (PAGE_SIZE - 1)) != 0);
 
@@ -253,7 +253,7 @@ drm_gem_handle_delete(struct drm_file *filp, u32 handle)
 
 	if (dev->driver->gem_close_object)
 		dev->driver->gem_close_object(obj, filp);
-	drm_gem_object_handle_unreference_unlocked(obj);
+    drm_gem_object_handle_unreference_unlocked(obj);
 
 	return 0;
 }
@@ -264,7 +264,7 @@ EXPORT_SYMBOL(drm_gem_handle_delete);
  * @file: drm file-private structure to remove the dumb handle from
  * @dev: corresponding drm_device
  * @handle: the dumb handle to remove
- * 
+ *
  * This implements the ->dumb_destroy kms driver callback for drivers which use
  * gem to manage their backing storage.
  */
@@ -288,8 +288,8 @@ EXPORT_SYMBOL(drm_gem_dumb_destroy);
  */
 int
 drm_gem_handle_create_tail(struct drm_file *file_priv,
-		       struct drm_gem_object *obj,
-		       u32 *handlep)
+			   struct drm_gem_object *obj,
+			   u32 *handlep)
 {
 	struct drm_device *dev = obj->dev;
 	int ret;
@@ -343,8 +343,8 @@ drm_gem_handle_create_tail(struct drm_file *file_priv,
  * will likely want to dereference the object afterwards.
  */
 int drm_gem_handle_create(struct drm_file *file_priv,
-		       struct drm_gem_object *obj,
-		       u32 *handlep)
+			  struct drm_gem_object *obj,
+			  u32 *handlep)
 {
 	mutex_lock(&obj->dev->object_name_lock);
 
@@ -462,7 +462,7 @@ struct page **drm_gem_get_pages(struct drm_gem_object *obj)
 		 * __GFP_DMA32 to be set in mapping_gfp_mask(inode->i_mapping)
 		 * so shmem can relocate pages during swapin if required.
 		 */
-		BUG_ON((mapping_gfp_mask(mapping) & __GFP_DMA32) &&
+		BUG_ON(mapping_gfp_constraint(mapping, __GFP_DMA32) &&
 				(page_to_pfn(p) >= 0x00100000UL));
 	}
 
@@ -602,8 +602,8 @@ drm_gem_flink_ioctl(struct drm_device *dev, void *data,
 		obj->name = ret;
 	}
 
-		args->name = (uint64_t) obj->name;
-		ret = 0;
+	args->name = (uint64_t) obj->name;
+	ret = 0;
 
 err:
 	idr_preload_end();
@@ -733,10 +733,11 @@ EXPORT_SYMBOL(drm_gem_object_release);
 void
 drm_gem_object_free(struct kref *kref)
 {
-	struct drm_gem_object *obj = (struct drm_gem_object *) kref;
+	struct drm_gem_object *obj =
+		container_of(kref, struct drm_gem_object, refcount);
 	struct drm_device *dev = obj->dev;
 
-	BUG_ON(!mutex_is_locked(&dev->struct_mutex));
+	WARN_ON(!mutex_is_locked(&dev->struct_mutex));
 
 	if (dev->driver->gem_free_object != NULL)
 		dev->driver->gem_free_object(obj);

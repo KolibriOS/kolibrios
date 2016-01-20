@@ -17,6 +17,7 @@
 
 display_t *os_display;
 struct drm_i915_gem_object *main_fb_obj;
+struct drm_framebuffer     *main_framebuffer;
 
 u32 cmd_buffer;
 u32 cmd_offset;
@@ -59,6 +60,8 @@ static int set_mode(struct drm_device *dev, struct drm_connector *connector,
     unsigned hdisplay, vdisplay;
     int stride;
     int ret;
+
+ENTER();
 
     drm_modeset_lock_all(dev);
 
@@ -103,15 +106,17 @@ do_set:
     hdisplay = mode->hdisplay;
     vdisplay = mode->vdisplay;
 
-    if (crtc->invert_dimensions)
-        swap(hdisplay, vdisplay);
+//    if (crtc->invert_dimensions)
+//        swap(hdisplay, vdisplay);
 
     fb = crtc->primary->fb;
+    if(fb == NULL)
+        fb = main_framebuffer;
 
     fb->width  = reqmode->width;
     fb->height = reqmode->height;
 
-        main_fb_obj->tiling_mode = I915_TILING_X;
+    main_fb_obj->tiling_mode = I915_TILING_X;
 
     if( main_fb_obj->tiling_mode == I915_TILING_X)
     {
@@ -138,8 +143,10 @@ do_set:
     crtc->enabled = true;
     os_display->crtc = crtc;
 
-//    i915_gem_object_unpin_fence(main_fb_obj);
     i915_gem_object_put_fence(main_fb_obj);
+
+    printf("fb:%p %dx%dx pitch %d format %x\n",
+            fb,fb->width,fb->height,fb->pitches[0],fb->pixel_format);
 
     set.crtc = crtc;
     set.x = 0;
@@ -150,8 +157,6 @@ do_set:
     set.fb = fb;
 
     ret = drm_mode_set_config_internal(&set);
-
-    drm_modeset_unlock_all(dev);
 
     if ( !ret )
     {
@@ -167,6 +172,10 @@ do_set:
     else
         DRM_ERROR("failed to set mode %d_%d on crtc %p\n",
                    fb->width, fb->height, crtc);
+
+    drm_modeset_unlock_all(dev);
+
+LEAVE();
 
     return ret;
 }
@@ -191,7 +200,7 @@ static struct drm_crtc *get_possible_crtc(struct drm_device *dev, struct drm_enc
     list_for_each_entry(tmp_crtc, &dev->mode_config.crtc_list, head)
     {
         if (encoder->possible_crtcs & crtc_mask)
-    {
+        {
             encoder->crtc = tmp_crtc;
             DRM_DEBUG_KMS("use CRTC %p ID %d\n", tmp_crtc, tmp_crtc->base.id);
             return tmp_crtc;
@@ -221,12 +230,12 @@ static int choose_config(struct drm_device *dev, struct drm_connector **boot_con
             connector_funcs = connector->helper_private;
             encoder = connector_funcs->best_encoder(connector);
 
-        if( encoder == NULL)
-        {
-            DRM_DEBUG_KMS("CONNECTOR %x ID: %d no active encoders\n",
-                        connector, connector->base.id);
-            continue;
-        };
+            if( encoder == NULL)
+            {
+                DRM_DEBUG_KMS("CONNECTOR %s ID: %d no active encoders\n",
+                        connector->name, connector->base.id);
+                continue;
+            };
         }
 
         crtc = encoder->crtc;
@@ -238,9 +247,18 @@ static int choose_config(struct drm_device *dev, struct drm_connector **boot_con
             *boot_connector = connector;
             *boot_crtc = crtc;
 
-            DRM_DEBUG_KMS("CONNECTOR %p ID:%d status:%d ENCODER %p ID: %d CRTC %p ID:%d\n",
-                           connector, connector->base.id, connector->status,
+            DRM_DEBUG_KMS("CONNECTOR %s ID:%d status:%d ENCODER %p ID: %d CRTC %p ID:%d\n",
+                           connector->name, connector->base.id, connector->status,
                            encoder, encoder->base.id, crtc, crtc->base.id );
+            char  con_edid[128];
+
+            memcpy(con_edid, connector->edid_blob_ptr->data, 128);
+            printf("Manufacturer: %s Model %x Serial Number %u\n",
+                    manufacturer_name(con_edid + 0x08),
+                    (unsigned short)(con_edid[0x0A] + (con_edid[0x0B] << 8)),
+                    (unsigned int)(con_edid[0x0C] + (con_edid[0x0D] << 8)
+                    + (con_edid[0x0E] << 16) + (con_edid[0x0F] << 24)));
+
             return 0;
         }
         else
@@ -283,7 +301,9 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
 
     cursor_t  *cursor;
     u32      ifl;
-    int        ret;
+    int       ret;
+
+ENTER();
 
     mutex_lock(&dev->struct_mutex);
     mutex_lock(&dev->mode_config.mutex);
@@ -303,16 +323,12 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
         ret = idr_alloc(&dev->object_name_idr, &main_fb_obj->base, 1, 0, GFP_NOWAIT);
 
         main_fb_obj->base.name = ret;
-
-        /* Allocate a reference for the name table.  */
-        drm_gem_object_reference(&main_fb_obj->base);
-
+        main_fb_obj->base.handle_count++;
         DRM_DEBUG_KMS("%s allocate fb name %d\n", __FUNCTION__, main_fb_obj->base.name );
     }
 
     idr_preload_end();
     mutex_unlock(&dev->object_name_lock);
-    drm_gem_object_unreference(&main_fb_obj->base);
 
     os_display = GetDisplay();
     os_display->ddev = dev;
@@ -463,7 +479,7 @@ int init_cursor(cursor_t *cursor)
 
     if (dev_priv->info.cursor_needs_physical)
     {
-        bits = (uint32_t*)KernelAlloc(KMS_CURSOR_WIDTH*KMS_CURSOR_HEIGHT*4);
+        bits = (uint32_t*)KernelAlloc(KMS_CURSOR_WIDTH*KMS_CURSOR_HEIGHT*8);
         if (unlikely(bits == NULL))
             return ENOMEM;
         cursor->cobj = (struct drm_i915_gem_object *)GetPgAddr(bits);
@@ -474,7 +490,7 @@ int init_cursor(cursor_t *cursor)
         if (unlikely(obj == NULL))
             return -ENOMEM;
 
-        ret = i915_gem_obj_ggtt_pin(obj, 0,PIN_MAPPABLE | PIN_NONBLOCK);
+        ret = i915_gem_object_ggtt_pin(obj, &i915_ggtt_view_normal, 128*1024, PIN_GLOBAL);
         if (ret) {
             drm_gem_object_unreference(&obj->base);
             return ret;
@@ -531,19 +547,20 @@ int init_cursor(cursor_t *cursor)
 void __stdcall move_cursor_kms(cursor_t *cursor, int x, int y)
 {
     struct drm_crtc *crtc = os_display->crtc;
+    struct drm_plane_state *cursor_state = crtc->cursor->state;
+
     x-= cursor->hot_x;
     y-= cursor->hot_y;
 
 	crtc->cursor_x = x;
 	crtc->cursor_y = y;
 
+    cursor_state->crtc_x = x;
+    cursor_state->crtc_y = y;
+
 	intel_crtc_update_cursor(crtc, 1);
 
-//    if (crtc->funcs->cursor_move)
-//        crtc->funcs->cursor_move(crtc, x, y);
-
 };
-
 
 cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
 {
@@ -556,15 +573,16 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
     old = os_display->cursor;
     os_display->cursor = cursor;
 
-    intel_crtc->cursor_bo = cursor->cobj;
+//    intel_crtc->cursor_bo = cursor->cobj;
 
     if (!dev_priv->info.cursor_needs_physical)
        intel_crtc->cursor_addr = i915_gem_obj_ggtt_offset(cursor->cobj);
     else
         intel_crtc->cursor_addr = (addr_t)cursor->cobj;
 
-    intel_crtc->cursor_width = 64;
-    intel_crtc->cursor_height = 64;
+	intel_crtc->base.cursor->state->crtc_w = 64;
+	intel_crtc->base.cursor->state->crtc_h = 64;
+    intel_crtc->base.cursor->state->rotation = 0;
 
     move_cursor_kms(cursor, crtc->cursor_x, crtc->cursor_y);
     return old;
@@ -574,7 +592,6 @@ int i915_fbinfo(struct drm_i915_fb_info *fb)
 {
     struct drm_i915_private *dev_priv = os_display->ddev->dev_private;
     struct intel_crtc *crtc = to_intel_crtc(os_display->crtc);
-
     struct drm_i915_gem_object *obj = get_fb_obj();
 
     fb->name   = obj->base.name;
@@ -804,10 +821,11 @@ int i915_mask_update_ex(struct drm_device *dev, void *data,
     int    ret = 0;
     slot = *((u8*)CURRENT_TASK);
 
-    if( mask_seqno[slot] == os_display->mask_seqno)
+    if( mask->forced == 0 && mask_seqno[slot] == os_display->mask_seqno)
         return 0;
 
-    memset(mask->bo_map,0,mask->width * mask->height);
+    if(mask->forced)
+        memset((void*)mask->bo_map,0,mask->width * mask->height);
 
     GetWindowRect(&win);
     win.right+= 1;
@@ -851,8 +869,8 @@ int i915_mask_update_ex(struct drm_device *dev, void *data,
         return -EINVAL;
     }
 
-#if 1
-    if(warn_count < 1000)
+#if 0
+    if(warn_count < 100)
     {
         printf("left %d top %d right %d bottom %d\n",
                 ml, mt, mr, mb);
@@ -1001,13 +1019,6 @@ err1:
 
 
 
-
-
-
-
-
-
-
 #define NSEC_PER_SEC    1000000000L
 
 void getrawmonotonic(struct timespec *ts)
@@ -1018,29 +1029,7 @@ void getrawmonotonic(struct timespec *ts)
     ts->tv_nsec = (tmp - ts->tv_sec*100)*10000000;
 }
 
-void set_normalized_timespec(struct timespec *ts, time_t sec, s64 nsec)
-{
-    while (nsec >= NSEC_PER_SEC) {
-        /*
-         * The following asm() prevents the compiler from
-         * optimising this loop into a modulo operation. See
-         * also __iter_div_u64_rem() in include/linux/time.h
-         */
-        asm("" : "+rm"(nsec));
-        nsec -= NSEC_PER_SEC;
-        ++sec;
-    }
-    while (nsec < 0) {
-        asm("" : "+rm"(nsec));
-        nsec += NSEC_PER_SEC;
-        --sec;
-    }
-    ts->tv_sec = sec;
-    ts->tv_nsec = nsec;
-}
-
-void
-prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait, int state)
+void prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait, int state)
 {
     unsigned long flags;
 

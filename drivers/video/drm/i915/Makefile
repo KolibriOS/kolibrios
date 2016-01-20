@@ -1,10 +1,10 @@
 
+CC = kos32-gcc
+FASM = fasm.exe
 
-CC = gcc
-FASM = e:/fasm/fasm.exe
-
-DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_TINY_RCU -DCONFIG_X86_L1_CACHE_SHIFT=6
-DEFINES += -DCONFIG_ARCH_HAS_CACHE_LINE_SIZE -DCONFIG_DRM_I915_FBDEV -DCONFIG_DMI -DKBUILD_MODNAME=\"i915.dll\"
+DEFINES	 = -DDRM_DEBUG_CODE=1 -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_X86_CMPXCHG64 -DCONFIG_TINY_RCU
+DEFINES  += -DCONFIG_X86_L1_CACHE_SHIFT=6
+DEFINES += -DCONFIG_DRM_FBDEV_EMULATION -DCONFIG_DMI -DKBUILD_MODNAME=\"i915.dll\"
 
 
 DDK_TOPDIR      = /d/kos/kolibri/drivers/ddk
@@ -17,7 +17,7 @@ INCLUDES =	-I$(DRV_INCLUDES)	\
 		-I$(DRV_INCLUDES)/drm -I./ -I$(DRV_INCLUDES)
 
 CFLAGS= -c -O2 $(INCLUDES) $(DEFINES) -march=i686 -msse2 -fomit-frame-pointer -fno-ident -fno-builtin-printf
-CFLAGS+= -mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -mno-ms-bitfields
+CFLAGS+= -mno-stack-arg-probe -mno-ms-bitfields
 
 LIBPATH:= $(DDK_TOPDIR)
 
@@ -56,18 +56,25 @@ NAME_SRC=		main.c					\
 			i915_dma.c				\
 			i915_drv.c				\
 			i915_gem.c				\
+			i915_gem_batch_pool.c			\
 			i915_gem_context.c			\
 			i915_gem_execbuffer.c			\
+			i915_gem_fence.c			\
 			i915_gem_evict.c			\
 			i915_gem_gtt.c				\
 			i915_gem_render_state.c			\
 			i915_gem_stolen.c			\
 			i915_gem_tiling.c			\
 			i915_gpu_error.c			\
+			i915_guc_submission.c			\
 			i915_irq.c				\
 			i915_params.c				\
+			i915_vgpu.c				\
+			intel_atomic.c				\
+			intel_atomic_plane.c			\
 			intel_audio.c				\
 			intel_bios.c				\
+			intel_csr.c				\
 			intel_crt.c				\
 			intel_ddi.c				\
 			intel_display.c				\
@@ -78,13 +85,16 @@ NAME_SRC=		main.c					\
 			intel_dsi_panel_vbt.c			\
 			intel_dsi_pll.c				\
 			intel_dvo.c				\
+			intel_fbc.c				\
 			intel_fbdev.c				\
 			intel_fifo_underrun.c			\
 			intel_frontbuffer.c			\
+			intel_guc_loader.c			\
 			intel_hdmi.c				\
 			intel_i2c.c				\
 			intel_lrc.c				\
 			intel_lvds.c				\
+			intel_mocs.c				\
 			intel_modes.c				\
 			intel_panel.c				\
 			intel_pm.c				\
@@ -100,8 +110,8 @@ NAME_SRC=		main.c					\
 			intel_sprite.c				\
 			intel_uncore.c				\
 			kms_display.c				\
-			kos_gem_fb.c				\
 			utils.c					\
+			fwblob.asm				\
 			../hdmi.c				\
 			Gtt/intel-agp.c				\
 			Gtt/intel-gtt.c				\
@@ -116,14 +126,18 @@ NAME_SRC=		main.c					\
 			$(DRM_TOPDIR)/drm_dp_helper.c		\
 			../drm_dp_mst_topology.c		\
 			$(DRM_TOPDIR)/drm_atomic.c		\
+			$(DRM_TOPDIR)/drm_atomic_helper.c	\
+			$(DRM_TOPDIR)/drm_bridge.c		\
 			$(DRM_TOPDIR)/drm_edid.c		\
 			$(DRM_TOPDIR)/drm_fb_helper.c		\
 			$(DRM_TOPDIR)/drm_gem.c			\
 			$(DRM_TOPDIR)/drm_irq.c			\
+			$(DRM_TOPDIR)/drm_mipi_dsi.c		\
 			$(DRM_TOPDIR)/drm_mm.c			\
 			$(DRM_TOPDIR)/drm_modes.c		\
 			$(DRM_TOPDIR)/drm_modeset_lock.c	\
 			$(DRM_TOPDIR)/drm_pci.c			\
+			$(DRM_TOPDIR)/drm_panel.c		\
 			$(DRM_TOPDIR)/drm_plane_helper.c	\
 			$(DRM_TOPDIR)/drm_probe_helper.c	\
 			$(DRM_TOPDIR)/drm_rect.c		\
@@ -134,7 +148,6 @@ SRC_DEP:=
 
 NAME_OBJS = $(patsubst %.S, %.o, $(patsubst %.asm, %.o,\
             $(patsubst %.c, %.o, $(NAME_SRC))))
-
 
 
 all: $(NAME).dll 
@@ -148,6 +161,9 @@ $(NAME).dll: $(NAME_OBJS) $(FW_BINS) $(SRC_DEP) i915.lds Makefile
 
 %.o : %.S $(HFILES) Makefile
 	as -o $@ $<
+
+fwblob.o:  fwblob.asm $(FW_BINS) Makefile
+	$(FASM) $< $@
 
 
 clean:

@@ -26,11 +26,14 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include <linux/fs.h>
+#include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/export.h>
 #include <drm/drmP.h>
 #include <drm/drm_core.h>
 
+bool drm_atomic = 0;
 
 static int drm_version(struct drm_device *dev, void *data,
 		       struct drm_file *file_priv);
