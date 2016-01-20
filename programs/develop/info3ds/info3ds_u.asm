@@ -5,7 +5,7 @@ use32
 
 include '../../macros.inc'
 include '../../proc32.inc'
-include '../../kosfuncs.inc'
+include '../../KOSfuncs.inc'
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../develop/libraries/TinyGL/asm_fork/opengl_const.inc'
