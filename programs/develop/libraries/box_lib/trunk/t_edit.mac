@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TextEditor для Kolibri OS
-; файл последний раз изменялся 28.06.2014 IgorA
+; файл последний раз изменялся 20.01.2016 IgorA
 ; на код применена GPL2 лицензия
 
 ;input:
@@ -2124,190 +2124,190 @@ ted_text_colored:
 ;description:
 ; Функция для поиска и выделения подсвеченых слов
 align 4
-proc ted_text_find_sel_color
+proc ted_text_find_sel_color uses eax ebx ecx esi
 locals
-  begPos dd ? ;начальная позиция
-  endPos dd ? ;конечная позиция
-  find db ? ;найдено / не найдено
-  f_color db ? ;индекс цвета найденого слова
+	begPos dd ? ;начальная позиция
+	endPos dd ? ;конечная позиция
+	find db ? ;найдено / не найдено
+	f_color db ? ;индекс цвета найденого слова
 endl
-  push eax ebx ecx esi
 ;eax = word_n текущий номер (позиция) проверяемого слова в списке
 ;ebx = для разных целей
 ;ecx = l_pos последний номер (позиция) подходящего слова в списке
 ;esi = для разных целей, номер проверяемого символа в слове
-  mov dword[begPos],1
-  mov dword[endPos],1
-  mov byte[find],0
-  mov byte[f_color],1
-  @@:
-    call ted_iterat_next
-    cmp edx,ted_tex_1
-    jle @f
+	mov dword[begPos],1
+	mov dword[endPos],1
+	mov byte[find],0
+	mov byte[f_color],1
+	@@:
+		call ted_iterat_next
+		cmp edx,ted_tex_1
+		jle @f
 
-    xor eax,eax
-    mov al,byte[edx]
-    shl ax,2 ;eax*=4
-    add eax,ted_arr_key_pos
-    mov eax,dword[eax]
-    cmp eax,0
-    jl @b ;if( (word_n=ted_arr_key_pos[(unsigned char)tex[i].c])>-1 ){
+		xor eax,eax
+		mov al,byte[edx]
+		shl ax,2 ;eax*=4
+		add eax,ted_arr_key_pos
+		mov eax,dword[eax]
+		cmp eax,0
+		jl @b ;if( (word_n=ted_arr_key_pos[(unsigned char)tex[i].c])>-1 ){
 
-    mov ecx,eax
-    ;while(l_pos<ted_key_words_count && Col[l_pos].Text[0]==Col[word_n].Text[0])
-    .wh_1b:
-      cmp ecx,ted_key_words_count
-      jge .wh_1e
-      ColToIndexOffset ecx,esi
-      mov bl,byte[esi]
-      ColToIndexOffset eax,esi
-      cmp bl,byte[esi]
-      jne .wh_1e
-	inc ecx
-      jmp .wh_1b
-    .wh_1e:
+		mov ecx,eax
+		;while(l_pos<ted_key_words_count && Col[l_pos].Text[0]==Col[word_n].Text[0])
+		.wh_1b:
+			cmp ecx,ted_key_words_count
+			jge .wh_1e
+			ColToIndexOffset ecx,esi
+			mov bl,byte[esi]
+			ColToIndexOffset eax,esi
+			cmp bl,byte[esi]
+			jne .wh_1e
+				inc ecx
+			jmp .wh_1b
+		.wh_1e:
 
-    mov dword[begPos],edx ;bP=i;
-    mov esi,1
+		mov dword[begPos],edx ;bP=i;
+		mov esi,1
+align 4
+		.wh_2b: ;while(1){
+		call ted_iterat_next
 
-    .wh_2b: ;while(1){
-      call ted_iterat_next
+		;while(l_pos>word_n && Col[l_pos-1].Text[pos]!=tex[i].c)
+		.wh_3b:
+			cmp ecx,eax
+			jle .wh_3e
+			dec ecx
+			ColToIndexOffset ecx,ebx
+			inc ecx
+			;cmp byte[ebx+esi],byte[edx]
+			mov bl,byte[ebx+esi]
+			cmp bl,byte[edx]
+			je .wh_3e
+				dec ecx
+			jmp .wh_3b
+		.wh_3e:
 
-      ;while(l_pos>word_n && Col[l_pos-1].Text[pos]!=tex[i].c)
-      .wh_3b:
-	cmp ecx,eax
-	jle .wh_3e
-	dec ecx
-	ColToIndexOffset ecx,ebx
-	inc ecx
-	;cmp byte[ebx+esi],byte[edx]
-	mov bl,byte[ebx+esi]
-	cmp bl,byte[edx]
-	je .wh_3e
-	  dec ecx
-	jmp .wh_3b
-      .wh_3e:
+		ColToIndexOffset eax,ebx
+		cmp byte[ebx+esi],0
+		jne .if_0 ;if(Col[word_n].Text[pos]==0){
+		mov dword[endPos],edx ;eP=i;
+		ColToIndexOffset eax,ebx
+		mov bl,byte[ebx+MAX_COLOR_WORD_LEN+7]
+		mov byte[f_color],bl ;f_color=Col[word_n].color;
 
-      ColToIndexOffset eax,ebx
-      cmp byte[ebx+esi],0
-      jne .if_0 ;if(Col[word_n].Text[pos]==0){
-	mov dword[endPos],edx ;eP=i;
-	ColToIndexOffset eax,ebx
-	mov bl,byte[ebx+MAX_COLOR_WORD_LEN+7]
-	mov byte[f_color],bl ;f_color=Col[word_n].color;
+		mov byte[find],1
+		ColToIndexOffset eax,ebx ;... ebx = Col[word_n]
+		mov bl,byte[ebx+MAX_COLOR_WORD_LEN+4]
+		cmp bl,0 ;if(Col[word_n].wwo)
+		je .if_2n
+			push edx
+			mov edx,dword[begPos]
+			call ted_iterat_perv
 
-mov byte[find],1
-	  ColToIndexOffset eax,ebx ;... ebx = Col[word_n]
-	  mov bl,byte[ebx+MAX_COLOR_WORD_LEN+4]
-	  cmp bl,0 ;if(Col[word_n].wwo)
-	  je .if_2n
-	    push edx
-	    mov edx,dword[begPos]
-     call ted_iterat_perv
+			btr bx,0 ;1-1
+			jae .if_3e ;if(Col[word_n].wwo&1)
+				;u1= !(isalnum(cont_s)||cont_s=='_')
+				call isalnum
+				jae .if_3e
+					mov byte[find],0
+					jmp .if_4e
+			.if_3e:
 
-	    btr bx,0 ;1-1
-	    jae .if_3e ;if(Col[word_n].wwo&1)
-	      ;u1= !(isalnum(cont_s)||cont_s=='_')
-	      call isalnum
-	      jae .if_3e
-		mov byte[find],0
-	    .if_3e:
+			btr bx,3 ;4-1
+			jae .if_4e ;if(Col[word_n].wwo&8)
+				;u1= !isalpha(cont_s);
+				call isalpha
+				jae .if_4e
+					mov byte[find],0
+			.if_4e:
 
-	    btr bx,3 ;4-1
-	    jae .if_4e ;if(Col[word_n].wwo&8)
-	      ;u1= !isalpha(cont_s);
-	      call isalpha
-	      jae .if_4e
-		mov byte[find],0
-	    .if_4e:
+			mov edx,dword[endPos]
+			;call ted_iterat_next
 
-	    mov edx,dword[endPos]
-;     call ted_iterat_next
+			btr bx,1 ;2-1
+			jae .if_5e ;if(Col[word_n].wwo&2)
+				;u1= !(isalnum(cont_s)||cont_s=='_')
+				call isalnum
+				jae .if_5e
+					mov byte[find],0
+					jmp .if_6e
+			.if_5e:
 
-	    btr bx,1 ;2-1
-	    jae .if_5e ;if(Col[word_n].wwo&2)
-	      ;u1= !(isalnum(cont_s)||cont_s=='_')
-	      call isalnum
-	      jae .if_5e
-		mov byte[find],0
-	    .if_5e:
+			btr bx,4 ;5-1
+			jae .if_6e ;if(Col[word_n].wwo&16)
+				;u1= !isalpha(cont_s);
+				call isalpha
+				jae .if_6e
+					mov byte[find],0
+			.if_6e:
 
-	    btr bx,4 ;5-1
-	    jae .if_6e ;if(Col[word_n].wwo&16)
-	      ;u1= !isalpha(cont_s);
-	      call isalpha
-	      jae .if_6e
-		mov byte[find],0
-	    .if_6e:
+			btr bx,2 ;3-1
+			jae .if_7e ;if(Col[word_n].wwo&4)
+				ColToIndexOffset eax,ebx
+				mov bx,word[ebx+MAX_COLOR_WORD_LEN+5]
+				call ted_iterat_next_pos_char
+				cmp edx,ted_tex_1
+				jle .if_7e
+					mov dword[endPos],edx
+			.if_7e:
 
-	    btr bx,2 ;3-1
-	    jae .if_7e ;if(Col[word_n].wwo&4)
-	    ColToIndexOffset eax,ebx
-	    mov bx,word[ebx+MAX_COLOR_WORD_LEN+5]
-	    call ted_iterat_next_pos_char
-       cmp edx,ted_tex_1
-       jle .if_7e
-       mov dword[endPos],edx
-	    .if_7e:
+			pop edx
+		.if_2n:
+;if(i!=1){ // не конец документа
+;  cont_s=tex[eP].c;
+;  if(Col[word_n].wwo&2) u2= !(isalnum(cont_s)||cont_s=='_');  // не букв.-числ. символ
+;  if(u2 && Col[word_n].wwo&16) u2= !isalpha(cont_s); // не числ. символ
+;  if(Col[word_n].wwo&4) eP=ted_iterat_next_pos_char(eP,Col[word_n].endc);
 
-	    pop edx
-	  .if_2n:
-;                 if(i!=1){ // не конец документа
-;                   cont_s=tex[eP].c;
-;                   if(Col[word_n].wwo&2) u2= !(isalnum(cont_s)||cont_s=='_');  // не букв.-числ. символ
-;                   if(u2 && Col[word_n].wwo&16) u2= !isalpha(cont_s); // не числ. символ
-;                   if(Col[word_n].wwo&4) eP=ted_iterat_next_pos_char(eP,Col[word_n].endc);
+			cmp eax,ecx
+			je .wh_2e ;if(word_n==l_pos) break; // do double - если слово точно последнее
+		.if_0:
 
-	cmp eax,ecx
-	je .wh_2e ;if(word_n==l_pos) break; // do double - если слово точно последнее
-      .if_0:
+		cmp edx,ted_tex_1
+		jle .wh_2e ;if(i==1) break;
 
-      cmp edx,ted_tex_1
-      jle .wh_2e ;if(i==1) break;
+		;while(l_pos>word_n && Col[word_n].Text[pos]!=tex[i].c)
+		.wh_4b:
+		cmp ecx,eax
+		jle .wh_4e
+			ColToIndexOffset eax,ebx
+			;cmp byte[ebx+esi],byte[edx]
+			mov bl,byte[ebx+esi]
+			cmp bl,byte[edx]
+			je .wh_4e
+				inc eax
+			jmp .wh_4b
+		.wh_4e:
 
-      ;while(l_pos>word_n && Col[word_n].Text[pos]!=tex[i].c)
-      .wh_4b:
-	cmp ecx,eax
-	jle .wh_4e
-	ColToIndexOffset eax,ebx
-	;cmp byte[ebx+esi],byte[edx]
-	mov bl,byte[ebx+esi]
-	cmp bl,byte[edx]
-	je .wh_4e
-	  inc eax
-	jmp .wh_4b
-      .wh_4e:
+		cmp eax,ecx
+		je .wh_2e;if(word_n==l_pos) break;
+			inc esi ;pos++;
+			jmp .wh_2b
+		.wh_2e:
 
-      cmp eax,ecx
-      je .wh_2e;if(word_n==l_pos) break;
-      inc esi ;pos++;
-      jmp .wh_2b
-    .wh_2e:
+		cmp byte[find],1 ;if(fnd)break;
+		je @f
+			mov edx,dword[begPos];i=bP;
+		jmp @b
+	@@:
 
-    cmp byte[find],1 ;if(fnd)break;
-    je @f
-    mov edx,dword[begPos];i=bP;
-    jmp @b
-  @@:
+	cmp byte[find],1
+	jne .if_1e ;if(fnd){ // выделение найденого текста
+		;if(!mode_sf1 || (mode_sf1 && strlen(Col[word_n].f1->c_str())>0)){
+		mov eax,dword[begPos]
+		mov bl,byte[f_color]
+		mov byte[eax+1],bl ;tex[bP].col=f_color;
+		mov eax,dword[endPos]
+		mov byte[eax+1],0xff ;tex[eP].col=255;
+		;return ItPoPerv(eP); // возвращаем позицию конца вхождения
+		mov edx,dword[endPos]
+		call ted_get_text_perv_pos
+		jmp @f
+	.if_1e:
+		mov edx,ted_tex
+	@@:
 
-  cmp byte[find],1
-  jne .if_1e ;if(fnd){ // выделение найденого текста
-;    if(!mode_sf1 || (mode_sf1 && strlen(Col[word_n].f1->c_str())>0)){
-    mov eax,dword[begPos]
-    mov bl,byte[f_color]
-    mov byte[eax+1],bl ;tex[bP].col=f_color;
-    mov eax,dword[endPos]
-    mov byte[eax+1],0xff ;tex[eP].col=255;
-;    return ItPoPerv(eP); // возвращаем позицию конца вхождения
-    mov edx,dword[endPos]
-    call ted_get_text_perv_pos
-    jmp @f
-  .if_1e:
-    mov edx,ted_tex
-  @@:
-
-  pop esi ecx ebx eax
-  ret
+	ret
 endp
 
 ;input:
@@ -2315,62 +2315,59 @@ endp
 ;output:
 ; cf=1 if symbol is...
 align 4
-tab_all_num db 0,0,0,0,0,0,11111111b,11b,11111110b,0xff,0xff,111b,11111110b,0xff,0xff,111b,0,0,0,0,0,0,0,0;,0,0,0,0,0,0,0,0 - tab_alpha_0,0,0,0,0,0,0,0
-tab_alpha db 0,0,0,0,0,0,0,0,11111110b,0xff,0xff,111b,11111110b,0xff,0xff,111b,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+tab_all_num db 0,0,0,0,0,0,0xff,11b,11111110b,0xff,0xff,10000111b,11111110b,0xff,0xff,111b,0,0,0,0,0,0,0,0;,0,0,0,0,0,0,0,0 - tab_alpha_0,0,0,0,0,0,0,0
+tab_alpha db 0,0,0,0,0,0,0,0,11111110b,0xff,0xff,10000111b,11111110b,0xff,0xff,111b,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
+;output:
+; cf=1 если в [edx] буква, цифра или '_'
 align 4
 isalnum:
-  push eax ebx
-  mov al,byte[edx] ;al=offset
-  shr al,3
-  and eax,11111b
-  lea ebx,[tab_all_num]
-  add ebx,eax
-  mov ah,byte[ebx]
-  mov al,byte[edx] ;al=bit
-  and ax,111b
-  mov bx,word[ebx]
-  btr bx,ax
-  pop ebx eax
-  ret
+	push eax ebx
+	movzx eax,byte[edx] ;al=offset
+	shr eax,3
+	lea ebx,[tab_all_num]
+	add ebx,eax
+	movzx ax,byte[edx] ;al=bit
+	and ax,111b
+	bt word[ebx],ax
+	pop ebx eax
+	ret
+
+;output:
+; cf=1 если в [edx] буква или '_'
 align 4
 isalpha:
-  push eax ebx
-  mov al,byte[edx] ;al=offset
-  shr al,3
-  and eax,11111b
-  lea ebx,[tab_alpha]
-  add ebx,eax
-  mov ah,byte[ebx]
-  mov al,byte[edx] ;al=bit
-  and ax,111b
-  mov bx,word[ebx]
-  btr bx,ax
-  pop ebx eax
-  ret
+	push eax ebx
+	movzx eax,byte[edx] ;al=offset
+	shr eax,3
+	lea ebx,[tab_alpha]
+	add ebx,eax
+	movzx ax,byte[edx] ;al=bit
+	and ax,111b
+	bt word[ebx],ax
+	pop ebx eax
+	ret
 
 align 4
-proc ted_show_help_f1, edit:dword
-  push eax edx edi
-  mov edi,dword[edit]
+proc ted_show_help_f1 uses eax edx edi, edit:dword
+	mov edi,dword[edit]
 
-  call ted_get_pos_by_cursor
-  push edx
-    call ted_iterat_next_color_tag
-    mov eax,edx
-  pop edx
-  call ted_iterat_perv_color_tag
+	call ted_get_pos_by_cursor
+	push edx
+		call ted_iterat_next_color_tag
+		mov eax,edx
+	pop edx
+	call ted_iterat_perv_color_tag
 
-  cmp eax,ted_tex
-  jle @f
-  cmp edx,ted_tex_1
-  jle @f
-    stdcall ted_find_help_id,eax
-  @@:
-  ;call ted_draw_main_cursor
-  call ted_draw_help_f1
-  pop edi edx eax
-  ret 
+	cmp eax,ted_tex
+	jle @f
+	cmp edx,ted_tex_1
+	jle @f
+		stdcall ted_find_help_id,eax
+	@@:
+	;call ted_draw_main_cursor
+	call ted_draw_help_f1
+	ret 
 endp
 
 ;input:

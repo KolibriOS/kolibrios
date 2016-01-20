@@ -3,11 +3,7 @@
 use32
   org 0x0
   db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-  dd 0x01
-  dd start
-  dd i_end ; размер приложения
-  dd mem
-  dd stacktop
+  dd 1, start, i_end, mem, stacktop
   dd file_name ; command line
   dd sys_path
 
@@ -21,6 +17,7 @@ include '../../proc32.inc'
 ;include '../../config.inc'
 include '../../macros.inc'
 include '../../dll.inc'
+include '../../KOSfuncs.inc'
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../system/desktop/trunk/kglobals.inc'
@@ -59,14 +56,14 @@ macro load_image_file path,buf,size
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
 	mov [buf],eax
 
-	mov [run_file_70.Function], 0
+	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov [run_file_70.Count], dword size
 	m2m [run_file_70.Buffer], eax
 	mov byte[run_file_70+20], 0
 	mov [run_file_70.FileName], file_name
-	mcall 70,run_file_70 ;загружаем файл изображения
+	mcall SF_FILE,run_file_70 ;загружаем файл изображения
 	cmp ebx,0xffffffff
 	je @f
 		;определяем вид изображения и переводим его во временный буфер image_data
@@ -84,14 +81,14 @@ icon_tl_sys dd 0 ;указатель на память для хранения системных иконок
 
 align 4
 start:
-	mcall 48,3,sc,sizeof.sys_colors_new
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.sys_colors_new
 
-	mcall 68,11
+	mcall SF_SYS_MISC,SSF_HEAP_INIT
 	or eax,eax
 	jz button.exit
 
-	mcall 66,1,1 ;scan code
-	mcall 40,0xC0000027
+	mcall SF_KEYBOARD,SSF_SET_INPUT_MODE,1 ;scan code
+	mcall SF_SET_EVENTS_MASK,0xC0000027
 
 	mov esi,file_name
 	call strlen
@@ -107,7 +104,7 @@ mov	ebp,lib0
 .test_lib_open:
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
-	mcall -1 ;exit not correct
+	mcall SF_TERMINATE_PROCESS ;exit not correct
 @@:
 	add ebp,ll_struc_size
 	cmp ebp,load_lib_end
@@ -209,7 +206,7 @@ mov	ebp,lib0
 	mov dword[tree1.data_img],eax
 ;------------------------------------------------------------------------------
 	copy_path fn_syntax_dir,sys_path,file_name,0 ;берем путь к папке с файлами синтаксиса
-	mcall 70,tree_file_struct
+	mcall SF_FILE,tree_file_struct
 
 	cmp ebx,-1
 	je .end_dir_init
@@ -272,13 +269,13 @@ mov	ebp,lib0
 	@@:
 
 ;--- load color option file ---
-	mov ebx,dword[fn_col_option]
-	call open_unpac_synt_file
+	stdcall open_unpac_synt_file,[fn_col_option]
 
 ;--- get cmd line ---
 	cmp byte[openfile_path+3],0 ;openfile_path
 	je @f ;if file names exist
 		mov esi,openfile_path
+		stdcall auto_open_syntax,esi
 		call strlen ;eax=strlen
 		call but_no_msg_OpenFile
 	@@:
@@ -291,7 +288,7 @@ red_win:
 
 align 4
 still:
-	mcall 10
+	mcall SF_WAIT_EVENT
 	cmp dword[exit_code],1
 	je button.exit
 
@@ -309,28 +306,24 @@ still:
 
 align 4
 draw_window:
-	mcall 12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
 	mov edx,[sc.work]
 	or  edx,0x73000000
-	mov edi,hed
-	mcall 0,dword[wnd_s_pos],dword[wnd_s_pos+4]
+	mcall SF_CREATE_WINDOW,dword[wnd_s_pos],dword[wnd_s_pos+4],,,hed
 
-	mcall 9,procinfo,-1
+	mcall SF_THREAD_INFO,procinfo,-1
 	mov edi,tedit0 ;значение edi нужно для EvSize и ted_wnd_t
 	call EvSize
 
 	movzx ebx,word[procinfo.client_box.width]
 	inc bx
-	mcall 13,,ted_wnd_t ;верхний прямоугольник, для очистки верхней панели
-
+	mcall SF_DRAW_RECT,,ted_wnd_t ;верхний прямоугольник, для очистки верхней панели
 	call draw_but_toolbar
-	
 	stdcall [kmainmenu_draw], [main_menu]
-
 	stdcall [ted_draw], tedit0
 
-	mcall 12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 	ret
 
 align 4
@@ -363,7 +356,7 @@ endp
 
 align 4
 key:
-  mcall 66,3 ;66.3 получить состояние управляющих клавиш
+  mcall SF_KEYBOARD,SSF_GET_CONTROL_KEYS ;66.3 получить состояние управляющих клавиш
   xor esi,esi
   mov ecx,1
   test al,0x03 ;[Shift]
@@ -385,8 +378,8 @@ key:
     or esi,KM_NUMLOCK
   @@:
 
-  mcall 26,2,,conv_tabl ;26.2 получить раскладку клавиатуры
-  mcall 2 ;получаем код нажатой клавиши
+  mcall SF_SYSTEM_GET,SSF_KEYBOARD_LAYOUT,,conv_tabl ;26.2 получить раскладку клавиатуры
+  mcall SF_GET_KEY
   stdcall [tl_key], tree1
 
   test word [edit2.flags],10b;ed_focus ; если не в фокусе, выходим
@@ -415,7 +408,7 @@ key:
 align 4
 button:
 
-  mcall 17 ;получить код нажатой кнопки
+  mcall SF_GET_BUTTON
   cmp ah,3
   jne @f
     call ted_but_new_file
@@ -531,7 +524,7 @@ button:
  
 	stdcall [ted_delete], tedit0
 	stdcall [tl_data_clear], tree1
-	mcall -1 ;выход из программы
+	mcall SF_TERMINATE_PROCESS ;выход из программы
 
 edit2 edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_find, mouse_dd, 0
 

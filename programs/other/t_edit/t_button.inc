@@ -43,7 +43,7 @@ ted_but_new_file:
 	call On_NewFile
 	.ret_f:
 		mov byte[openfile_path],0
-		mcall 71,1,hed
+		mcall SF_SET_CAPTION,1,hed
 	pop ebx eax
 	ret
 
@@ -142,44 +142,46 @@ ted_but_open_file:
 	@@:
 	cmp [OpenDialog_data.status],1
 	jne .ret_f
-
-		;ищем есть ли файл подсветки для открываемого текстового файла
-		mov esi,[OpenDialog_data.openfile_path]
-		call strlen
-		mov edx,openfile_path
-		add edx,eax
-		.f_beg:
-		cmp byte[edx],'.'
-		je .found
-			dec edx
-			cmp edx,openfile_path
-			jg .f_beg
-		.found:
-		inc edx ;edx - указатель на расширение открытого файла
-
-		mov ebx,synt_auto_open
-		.cycle_0:
-			add ebx,32
-			stdcall strcmp,ebx,edx ;сравниваем расширение открытого файла со значениями открытыми с ini файла
-			test eax,eax
-			jz .ok
-			add ebx,32
-			cmp byte[ebx],0
-			jne .cycle_0
-		jmp .end_0
-		.ok: ;открытие файла подсветки в зависимости от найденного расширения
-			sub ebx,32
-			;mov ecx,ebx
-			;mcall 71,1
-			call open_unpac_synt_file
-		.end_0:
-
+		stdcall auto_open_syntax,[OpenDialog_data.openfile_path]
 		stdcall [ted_open_file], tedit0,run_file_70,openfile_path
 		call ted_messages_after_open_file
-
 	.ret_f:
 	popad
 	ret
+
+proc auto_open_syntax, of_path:dword
+pushad
+	;ищем есть ли файл подсветки для открываемого текстового файла
+	mov esi,[of_path]
+	call strlen
+	mov edx,[of_path]
+	add edx,eax
+	.f_beg:
+	cmp byte[edx],'.'
+	je .found
+		dec edx
+		cmp edx,[of_path]
+		jg .f_beg
+	.found:
+	inc edx ;edx - указатель на расширение открытого файла
+
+	mov ebx,synt_auto_open
+	.cycle_0:
+		add ebx,32
+		stdcall strcmp,ebx,edx ;сравниваем расширение открытого файла со значениями открытыми с ini файла
+		test eax,eax
+		jz .ok
+		add ebx,32
+		cmp byte[ebx],0
+		jne .cycle_0
+	jmp .end_0
+	.ok: ;открытие файла подсветки в зависимости от найденного расширения
+		sub ebx,32
+		stdcall open_unpac_synt_file,ebx
+	.end_0:
+popad
+	ret
+endp
 
 ;description:
 ; функция сохранения файла с вызовом окна диалога
@@ -269,8 +271,7 @@ proc ted_but_open_syntax uses eax ebx ecx edi, edit:dword
 	jne @f
 		stdcall dword[tl_node_get_data], tree1
 		mov [fn_col_option],eax
-		mov ebx,eax
-		call open_unpac_synt_file
+		stdcall open_unpac_synt_file,eax
 		cmp ebx,-1
 		je @f
 
@@ -282,13 +283,13 @@ endp
 
 ;открытие и распаковка файла подсветки синтаксиса
 ;input:
-; ebx - указатель на имя открываемого файла синтаксиса (без пути и папки info)
+; f_name - указатель на имя открываемого файла синтаксиса (без пути и папки info)
 ;output:
 ; ebx - число прочитанных байт из файла
 ; ecx - разрушается
 align 4
-open_unpac_synt_file:
-push eax edi esi
+proc open_unpac_synt_file uses eax edi esi, f_name:dword
+	mov ebx,[f_name]
 	mov edi,last_open_synt_file
 	stdcall strcmp,ebx,edi ;сравниваем имя подключенного файла с подключенным ранее файлом
 	test eax,eax
@@ -296,14 +297,14 @@ push eax edi esi
 
 	;копируем имя подключенного файла (для избежания повторных подключений)
 	mov esi,ebx
-	mov ecx,32
+	mov ecx,32/4
 	cld
-	rep movsb
+	rep movsd
 
 	copy_path ebx,fn_syntax_dir,syntax_path,0
 	copy_path syntax_path,sys_path,file_name,0
 	mov edi, tedit0
-	mov [run_file_70.Function], 0
+	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov ecx, ted_syntax_file_size
@@ -311,7 +312,7 @@ push eax edi esi
 	m2m dword[run_file_70.Buffer], ted_syntax_file
 	mov byte[run_file_70+20], 0
 	mov [run_file_70.FileName], file_name
-	mcall 70, run_file_70
+	mcall SF_FILE, run_file_70
 	cmp ebx,-1
 	jne .end_0
 		call ted_on_init_synt_err
@@ -337,8 +338,8 @@ push eax edi esi
 		.end_unpack:
 		stdcall [ted_init_syntax_file], tedit0
 	@@:
-pop esi edi eax
 	ret
+endp
 
 ;description:
 ; вызов/скрытие панели поиска
@@ -403,7 +404,7 @@ but_find_key_w:
 	cmp byte[wnd_k_words_run],0
 	jne @f
 		pushad
-		mcall 51,1,prop_start,thread_coords
+		mcall SF_CREATE_THREAD,1,prop_start,thread_coords
 		popad
 	@@:
 	ret
