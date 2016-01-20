@@ -44,11 +44,9 @@ struct exec_domain {
  */
 #define personality(pers)	(pers & PER_MASK)
 
-
 /*
  * Change personality of the currently running process.
  */
-#define set_personality(pers) \
-	((current->personality == (pers)) ? 0 : __set_personality(pers))
+#define set_personality(pers)	(current->personality = (pers))
 
 #endif /* _LINUX_PERSONALITY_H */

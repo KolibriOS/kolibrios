@@ -1,6 +1,6 @@
 /*
  * include/linux/idr.h
- *
+ * 
  * 2002-10-18  written by Jim Houston jim.houston@ccur.com
  *	Copyright (C) 2002 by Concurrent Computer Corporation
  *	Distributed under the GNU GPL license version 2.
@@ -32,17 +32,17 @@ struct idr_layer {
 	int			prefix;	/* the ID prefix of this idr_layer */
 	int			layer;	/* distance from leaf */
 	struct idr_layer __rcu	*ary[1<<IDR_BITS];
-	int			 count;	 /* When zero, we can release it */
+	int			count;	/* When zero, we can release it */
 	union {
 		/* A zero bit means "space here" */
 		DECLARE_BITMAP(bitmap, IDR_SIZE);
-    struct rcu_head      rcu_head;
+		struct rcu_head		rcu_head;
 	};
 };
 
 struct idr {
 	struct idr_layer __rcu	*hint;	/* the last layer allocated from */
-	struct idr_layer __rcu *top;
+	struct idr_layer __rcu	*top;
 	int			layers;	/* only valid w/o concurrent changes */
 	int			cur;	/* current pos for cyclic allocation */
 	spinlock_t		lock;
@@ -50,8 +50,8 @@ struct idr {
 	struct idr_layer	*id_free;
 };
 
-#define IDR_INIT(name)						\
-{								\
+#define IDR_INIT(name)							\
+{									\
 	.lock			= __SPIN_LOCK_UNLOCKED(name.lock),	\
 }
 #define DEFINE_IDR(name)	struct idr name = IDR_INIT(name)
@@ -145,7 +145,7 @@ static inline void *idr_find(struct idr *idr, int id)
  */
 #define IDA_CHUNK_SIZE		128	/* 128 bytes per chunk */
 #define IDA_BITMAP_LONGS	(IDA_CHUNK_SIZE / sizeof(long) - 1)
-#define IDA_BITMAP_BITS		(IDA_BITMAP_LONGS * sizeof(long) * 8)
+#define IDA_BITMAP_BITS 	(IDA_BITMAP_LONGS * sizeof(long) * 8)
 
 struct ida_bitmap {
 	long			nr_busy;

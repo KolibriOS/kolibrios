@@ -40,8 +40,8 @@ static inline int timeval_compare(const struct timeval *lhs, const struct timeva
 }
 
 extern time64_t mktime64(const unsigned int year, const unsigned int mon,
-			    const unsigned int day, const unsigned int hour,
-			    const unsigned int min, const unsigned int sec);
+			const unsigned int day, const unsigned int hour,
+			const unsigned int min, const unsigned int sec);
 
 /**
  * Deprecated. Use mktime64().
@@ -107,6 +107,19 @@ static inline bool timespec_valid_strict(const struct timespec *ts)
 	/* Disallow values that could overflow ktime_t */
 	if ((unsigned long long)ts->tv_sec >= KTIME_SEC_MAX)
 		return false;
+	return true;
+}
+
+static inline bool timeval_valid(const struct timeval *tv)
+{
+	/* Dates before 1970 are bogus */
+	if (tv->tv_sec < 0)
+		return false;
+
+	/* Can't have more microseconds then a second */
+	if (tv->tv_usec < 0 || tv->tv_usec >= USEC_PER_SEC)
+		return false;
+
 	return true;
 }
 

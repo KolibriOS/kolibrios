@@ -44,7 +44,7 @@
 
 /* Exception table entry */
 #ifdef __ASSEMBLY__
-# define _ASM_EXTABLE(from,to)	    \
+# define _ASM_EXTABLE(from,to)					\
 	.pushsection "__ex_table","a" ;				\
 	.balign 8 ;						\
 	.long (from) - . ;					\
@@ -60,11 +60,36 @@
 
 # define _ASM_NOKPROBE(entry)					\
 	.pushsection "_kprobe_blacklist","aw" ;			\
-	_ASM_ALIGN ;		    \
+	_ASM_ALIGN ;						\
 	_ASM_PTR (entry);					\
 	.popsection
+
+.macro ALIGN_DESTINATION
+	/* check for bad alignment of destination */
+	movl %edi,%ecx
+	andl $7,%ecx
+	jz 102f				/* already aligned */
+	subl $8,%ecx
+	negl %ecx
+	subl %ecx,%edx
+100:	movb (%rsi),%al
+101:	movb %al,(%rdi)
+	incq %rsi
+	incq %rdi
+	decl %ecx
+	jnz 100b
+102:
+	.section .fixup,"ax"
+103:	addl %ecx,%edx			/* ecx is zerorest also */
+	jmp copy_user_handle_tail
+	.previous
+
+	_ASM_EXTABLE(100b,103b)
+	_ASM_EXTABLE(101b,103b)
+	.endm
+
 #else
-# define _ASM_EXTABLE(from,to) \
+# define _ASM_EXTABLE(from,to)					\
 	" .pushsection \"__ex_table\",\"a\"\n"			\
 	" .balign 8\n"						\
 	" .long (" #from ") - .\n"				\

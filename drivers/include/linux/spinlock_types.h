@@ -43,8 +43,8 @@ typedef struct raw_spinlock {
 
 #ifdef CONFIG_DEBUG_SPINLOCK
 # define SPIN_DEBUG_INIT(lockname)		\
-				.magic = SPINLOCK_MAGIC,		\
-				.owner_cpu = -1,			\
+	.magic = SPINLOCK_MAGIC,		\
+	.owner_cpu = -1,			\
 	.owner = SPINLOCK_OWNER_INIT,
 #else
 # define SPIN_DEBUG_INIT(lockname)
@@ -54,7 +54,7 @@ typedef struct raw_spinlock {
 	{					\
 	.raw_lock = __ARCH_SPIN_LOCK_UNLOCKED,	\
 	SPIN_DEBUG_INIT(lockname)		\
-				SPIN_DEP_MAP_INIT(lockname) }
+	SPIN_DEP_MAP_INIT(lockname) }
 
 #define __RAW_SPIN_LOCK_UNLOCKED(lockname)	\
 	(raw_spinlock_t) __RAW_SPIN_LOCK_INITIALIZER(lockname)

@@ -15,6 +15,7 @@
 
 #define PG_SW               0x003
 #define PG_UW               0x007
+#define PG_WRITEC           0x008
 #define PG_NOCACHE          0x018
 #define PG_SHARED           0x200
 
@@ -61,9 +62,6 @@ struct ddk_params;
 int   ddk_init(struct ddk_params *params);
 
 u32 drvEntry(int, char *)__asm__("_drvEntry");
-
-
-
 
 
 #endif      /*    DDK_H    */

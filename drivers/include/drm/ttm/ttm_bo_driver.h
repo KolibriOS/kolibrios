@@ -277,7 +277,7 @@ struct ttm_mem_type_manager {
 	bool has_type;
 	bool use_type;
 	uint32_t flags;
-	unsigned long gpu_offset;
+	uint64_t gpu_offset; /* GPU address space is independent of CPU word size */
 	uint64_t size;
 	uint32_t available_caching;
 	uint32_t default_caching;
@@ -441,7 +441,7 @@ struct ttm_bo_driver {
  */
 
 struct ttm_bo_global_ref {
-    struct drm_global_reference ref;
+	struct drm_global_reference ref;
 	struct ttm_mem_global *mem_glob;
 };
 
@@ -776,9 +776,9 @@ extern void ttm_bo_add_to_lru(struct ttm_buffer_object *bo);
  * be returned if @use_ticket is set to true.
  */
 static inline int __ttm_bo_reserve(struct ttm_buffer_object *bo,
-				       bool interruptible,
-				       bool no_wait, bool use_ticket,
-				       struct ww_acquire_ctx *ticket)
+				   bool interruptible,
+				   bool no_wait, bool use_ticket,
+				   struct ww_acquire_ctx *ticket)
 {
 	int ret = 0;
 
@@ -846,7 +846,7 @@ static inline int __ttm_bo_reserve(struct ttm_buffer_object *bo,
  * be returned if @use_ticket is set to true.
  */
 static inline int ttm_bo_reserve(struct ttm_buffer_object *bo,
-			  bool interruptible,
+				 bool interruptible,
 				 bool no_wait, bool use_ticket,
 				 struct ww_acquire_ctx *ticket)
 {
@@ -872,7 +872,7 @@ static inline int ttm_bo_reserve(struct ttm_buffer_object *bo,
  * held by us, this function cannot deadlock any more.
  */
 static inline int ttm_bo_reserve_slowpath(struct ttm_buffer_object *bo,
-				 bool interruptible,
+					  bool interruptible,
 					  struct ww_acquire_ctx *ticket)
 {
 	int ret = 0;

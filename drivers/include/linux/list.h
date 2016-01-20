@@ -204,7 +204,7 @@ static inline int list_empty(const struct list_head *head)
  */
 static inline int list_empty_careful(const struct list_head *head)
 {
-    struct list_head *next = head->next;
+	struct list_head *next = head->next;
 	return (next == head) && (next == head->prev);
 }
 
@@ -445,7 +445,7 @@ static inline void list_splice_tail_init(struct list_head *list,
  */
 #define list_for_each_entry(pos, head, member)				\
 	for (pos = list_first_entry(head, typeof(*pos), member);	\
-	     &pos->member != (head); 	\
+	     &pos->member != (head);					\
 	     pos = list_next_entry(pos, member))
 
 /**
@@ -456,7 +456,7 @@ static inline void list_splice_tail_init(struct list_head *list,
  */
 #define list_for_each_entry_reverse(pos, head, member)			\
 	for (pos = list_last_entry(head, typeof(*pos), member);		\
-	     &pos->member != (head); 	\
+	     &pos->member != (head); 					\
 	     pos = list_prev_entry(pos, member))
 
 /**
@@ -481,7 +481,7 @@ static inline void list_splice_tail_init(struct list_head *list,
  */
 #define list_for_each_entry_continue(pos, head, member) 		\
 	for (pos = list_next_entry(pos, member);			\
-	     &pos->member != (head);	\
+	     &pos->member != (head);					\
 	     pos = list_next_entry(pos, member))
 
 /**
@@ -495,7 +495,7 @@ static inline void list_splice_tail_init(struct list_head *list,
  */
 #define list_for_each_entry_continue_reverse(pos, head, member)		\
 	for (pos = list_prev_entry(pos, member);			\
-	     &pos->member != (head);	\
+	     &pos->member != (head);					\
 	     pos = list_prev_entry(pos, member))
 
 /**
@@ -507,7 +507,7 @@ static inline void list_splice_tail_init(struct list_head *list,
  * Iterate over list of given type, continuing from current position.
  */
 #define list_for_each_entry_from(pos, head, member) 			\
-	for (; &pos->member != (head);	\
+	for (; &pos->member != (head);					\
 	     pos = list_next_entry(pos, member))
 
 /**
@@ -670,6 +670,11 @@ static inline void hlist_add_behind(struct hlist_node *n,
 static inline void hlist_add_fake(struct hlist_node *n)
 {
 	n->pprev = &n->next;
+}
+
+static inline bool hlist_fake(struct hlist_node *h)
+{
+	return h->pprev == &h->next;
 }
 
 /*

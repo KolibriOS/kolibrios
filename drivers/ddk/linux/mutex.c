@@ -24,6 +24,27 @@
 #include <linux/export.h>
 #include <linux/spinlock.h>
 #include <syscall.h>
+
+struct  kos_taskdata
+{
+    u32 event_mask;
+    u32 pid;
+    u16 r0;
+    u8  state;
+    u8  r1;
+    u16 r2;
+    u8  wnd_number;
+    u8  r3;
+    u32 mem_start;
+    u32 counter_sum;
+    u32 counter_add;
+    u32 cpu_usage;
+}__attribute__((packed));
+
+static inline void mutex_set_owner(struct mutex *lock)
+{
+}
+
 /*
  * A negative mutex count indicates that waiters are sleeping waiting for the
  * mutex.
@@ -43,43 +64,29 @@ __mutex_init(struct mutex *lock, const char *name, struct lock_class_key *key)
 
 }
 
+static inline int __ww_mutex_lock_check_stamp(struct mutex *lock, struct ww_acquire_ctx *ctx)
+{
+        struct ww_mutex *ww = container_of(lock, struct ww_mutex, base);
+        struct ww_acquire_ctx *hold_ctx = READ_ONCE(ww->ctx);
+
+        if (!hold_ctx)
+                return 0;
+
+        if (unlikely(ctx == hold_ctx))
+                return -EALREADY;
+
+        if (ctx->stamp - hold_ctx->stamp <= LONG_MAX &&
+            (ctx->stamp != hold_ctx->stamp || ctx > hold_ctx)) {
+                return -EDEADLK;
+        }
+
+        return 0;
+}
+
+
 static __always_inline void ww_mutex_lock_acquired(struct ww_mutex *ww,
                            struct ww_acquire_ctx *ww_ctx)
 {
-#ifdef CONFIG_DEBUG_MUTEXES
-    /*
-     * If this WARN_ON triggers, you used ww_mutex_lock to acquire,
-     * but released with a normal mutex_unlock in this call.
-     *
-     * This should never happen, always use ww_mutex_unlock.
-     */
-    DEBUG_LOCKS_WARN_ON(ww->ctx);
-
-    /*
-     * Not quite done after calling ww_acquire_done() ?
-     */
-    DEBUG_LOCKS_WARN_ON(ww_ctx->done_acquire);
-
-    if (ww_ctx->contending_lock) {
-        /*
-         * After -EDEADLK you tried to
-         * acquire a different ww_mutex? Bad!
-         */
-        DEBUG_LOCKS_WARN_ON(ww_ctx->contending_lock != ww);
-
-        /*
-         * You called ww_mutex_lock after receiving -EDEADLK,
-         * but 'forgot' to unlock everything else first?
-         */
-        DEBUG_LOCKS_WARN_ON(ww_ctx->acquired > 0);
-        ww_ctx->contending_lock = NULL;
-    }
-
-    /*
-     * Naughty, using a different class will lead to undefined behavior!
-     */
-    DEBUG_LOCKS_WARN_ON(ww_ctx->ww_class != ww->ww_class);
-#endif
     ww_ctx->acquired++;
 }
 
@@ -90,28 +97,143 @@ void ww_mutex_unlock(struct ww_mutex *lock)
      * into 'unlocked' state:
      */
     if (lock->ctx) {
-        if (lock->ctx->acquired > 0)
-            lock->ctx->acquired--;
-        lock->ctx = NULL;
+            if (lock->ctx->acquired > 0)
+                    lock->ctx->acquired--;
+            lock->ctx = NULL;
     }
     MutexUnlock(&lock->base);
 }
 
-int __ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+static inline int __mutex_fastpath_lock_retval(atomic_t *count)
 {
-    MutexLock(&lock->base);
+    if (unlikely(atomic_dec_return(count) < 0))
+        return -1;
+    else
+        return 0;
+}
+
+static __always_inline void
+ww_mutex_set_context_fastpath(struct ww_mutex *lock,
+                               struct ww_acquire_ctx *ctx)
+{
+    u32 flags;
+    struct mutex_waiter *cur;
+
+    ww_mutex_lock_acquired(lock, ctx);
+
+    lock->ctx = ctx;
+
+    /*
+     * The lock->ctx update should be visible on all cores before
+     * the atomic read is done, otherwise contended waiters might be
+     * missed. The contended waiters will either see ww_ctx == NULL
+     * and keep spinning, or it will acquire wait_lock, add itself
+     * to waiter list and sleep.
+     */
+    smp_mb(); /* ^^^ */
+
+    /*
+     * Check if lock is contended, if not there is nobody to wake up
+     */
+    if (likely(atomic_read(&lock->base.count) == 0))
+            return;
+
+    /*
+     * Uh oh, we raced in fastpath, wake up everyone in this case,
+     * so they can see the new lock->ctx.
+     */
+    flags = safe_cli();
+    list_for_each_entry(cur, &lock->base.wait_list, list) {
+        ((struct kos_taskdata*)cur->task)->state = 0;
+    }
+    safe_sti(flags);
+}
+
+ww_mutex_set_context_slowpath(struct ww_mutex *lock,
+                              struct ww_acquire_ctx *ctx)
+{
+    struct mutex_waiter *cur;
+
     ww_mutex_lock_acquired(lock, ctx);
     lock->ctx = ctx;
 
-    return 0;
+    /*
+     * Give any possible sleeping processes the chance to wake up,
+     * so they can recheck if they have to back off.
+     */
+    list_for_each_entry(cur, &lock->base.wait_list, list) {
+        ((struct kos_taskdata*)cur->task)->state = 0;
+    }
+}
+
+int __ww_mutex_lock_slowpath(struct ww_mutex *ww, struct ww_acquire_ctx *ctx)
+{
+    struct mutex *lock;
+    struct mutex_waiter waiter;
+    struct kos_taskdata* taskdata;
+    u32 eflags;
+    int ret = 0;
+
+    lock = &ww->base;
+    taskdata = (struct kos_taskdata*)(0x80003010);
+    waiter.task = (u32*)taskdata;
+
+    eflags = safe_cli();
+
+    list_add_tail(&waiter.list, &lock->wait_list);
+
+    for(;;)
+    {
+        if( atomic_xchg(&lock->count, -1) == 1)
+            break;
+
+        if (ctx->acquired > 0) {
+            ret = __ww_mutex_lock_check_stamp(lock, ctx);
+            if (ret)
+                goto err;
+        };
+        taskdata->state = 1;
+        change_task();
+    };
+
+    if (likely(list_empty(&lock->wait_list)))
+        atomic_set(&lock->count, 0);
+
+    ww_mutex_set_context_slowpath(ww, ctx);
+
+err:
+    list_del(&waiter.list);
+    safe_sti(eflags);
+
+    return ret;
+}
+
+
+int __ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+{
+    int ret;
+
+    ret = __mutex_fastpath_lock_retval(&lock->base.count);
+
+    if (likely(!ret)) {
+            ww_mutex_set_context_fastpath(lock, ctx);
+            mutex_set_owner(&lock->base);
+    } else
+            ret = __ww_mutex_lock_slowpath(lock, ctx);
+    return ret;
 }
 
 
 int __ww_mutex_lock_interruptible(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
 {
-    MutexLock(&lock->base);
-    ww_mutex_lock_acquired(lock, ctx);
-    lock->ctx = ctx;
+    int ret;
 
-    return 0;
+    ret = __mutex_fastpath_lock_retval(&lock->base.count);
+
+    if (likely(!ret)) {
+            ww_mutex_set_context_fastpath(lock, ctx);
+            mutex_set_owner(&lock->base);
+    } else
+            ret = __ww_mutex_lock_slowpath(lock, ctx);
+    return ret;
 }

@@ -27,6 +27,7 @@
     .global _FreeKernelSpace
     .global _FreePage
 
+    .global _GetClockNs
     .global _GetCpuFreq
     .global _GetDisplay
     .global _GetEvent
@@ -102,6 +103,8 @@
 
     .def  _FreeKernelSpace;   .scl  2;  .type 32; .endef
     .def  _FreePage;          .scl  2;  .type 32; .endef
+
+    .def  _GetClockNs;        .scl  2;  .type 32; .endef
 
     .def  _GetDisplay;        .scl  2;  .type 32; .endef
 
@@ -181,6 +184,7 @@ _DiskMediaChanged:
 _FreeKernelSpace:
 _FreePage:
 
+_GetClockNs:
 _GetCpuFreq:
 _GetDisplay:
 _GetEvent:
@@ -259,6 +263,7 @@ _WaitEventTimeout:
         .ascii " -export:FreeKernelSpace"      # stdcall
         .ascii " -export:FreePage"             #
 
+        .ascii " -export:GetClockNs"           #
         .ascii " -export:GetCpuFreq"           #
         .ascii " -export:GetDisplay"           # stdcall
         .ascii " -export:GetEvent"             #

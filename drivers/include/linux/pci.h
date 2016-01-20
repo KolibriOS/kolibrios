@@ -25,6 +25,16 @@
 #include <linux/pci_regs.h>	/* The pci register defines */
 #include <linux/ioport.h>
 
+#include <linux/device.h>
+
+#if 0
+struct device
+{
+    struct device   *parent;
+    void            *driver_data;
+};
+
+#endif
 
 #define PCI_CFG_SPACE_SIZE      256
 #define PCI_CFG_SPACE_EXP_SIZE  4096
@@ -204,6 +214,10 @@
  *
  *	7:3 = slot
  *	2:0 = function
+ *
+ * PCI_DEVFN(), PCI_SLOT(), and PCI_FUNC() are defined in uapi/linux/pci.h.
+ * In the interest of not exposing interfaces to user-space unnecessarily,
+ * the following kernel-only defines are being added here.
  */
 #define PCI_DEVFN(slot, func)  ((((slot) & 0x1f) << 3) | ((func) & 0x07))
 #define PCI_SLOT(devfn)        (((devfn) >> 3) & 0x1f)
@@ -427,11 +441,12 @@ struct pci_dev {
 						   D3cold, not set for devices
 						   powered on/off by the
 						   corresponding bridge */
+	unsigned int	ignore_hotplug:1;	/* Ignore hotplug events */
 	unsigned int	d3_delay;	/* D3->D0 transition time in ms */
 	unsigned int	d3cold_delay;	/* D3cold->D0 transition time in ms */
 
 #ifdef CONFIG_PCIEASPM
-	struct pcie_link_state	*link_state;	/* ASPM link state. */
+	struct pcie_link_state	*link_state;	/* ASPM link state */
 #endif
 
 	pci_channel_state_t error_state;	/* current connectivity state */
@@ -446,13 +461,15 @@ struct pci_dev {
     unsigned int    irq;
     struct resource resource[DEVICE_COUNT_RESOURCE]; /* I/O and memory regions + expansion ROMs */
 
+	bool match_driver;		/* Skip attaching driver */
     /* These fields are used by common fixups */
-    unsigned int    transparent:1;  /* Transparent PCI bridge */
+	unsigned int	transparent:1;	/* Subtractive decode PCI bridge */
     unsigned int    multifunction:1;/* Part of multi-function device */
     /* keep track of device state */
     unsigned int    is_added:1;
     unsigned int    is_busmaster:1; /* device is busmaster */
     unsigned int    no_msi:1;   /* device may not use msi */
+	unsigned int	no_64bit_msi:1; /* device may only use 32-bit MSIs */
 	unsigned int	block_cfg_access:1;	/* config space access is blocked */
     unsigned int    broken_parity_status:1; /* Device generates false positive parity */
     unsigned int    irq_reroute_variant:2;  /* device needs IRQ rerouting variant */
@@ -460,8 +477,6 @@ struct pci_dev {
     unsigned int    msix_enabled:1;
 	unsigned int	ari_enabled:1;	/* ARI forwarding */
     unsigned int    is_managed:1;
-	unsigned int	is_pcie:1;	/* Obsolete. Will be removed.
-					   Use pci_is_pcie() instead */
 	unsigned int    needs_freset:1; /* Dev requires fundamental reset */
     unsigned int    state_saved:1;
     unsigned int    is_physfn:1;

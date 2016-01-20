@@ -6,6 +6,14 @@
 typedef u32 addr_t;
 typedef u32 count_t;
 
+typedef struct
+{
+  int width;
+  int height;
+  int bpp;
+  int freq;
+}videomode_t;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 #define STDCALL  __attribute__ ((stdcall)) __attribute__ ((dllimport))
@@ -36,6 +44,7 @@ int    STDCALL UserFree(void *mem)__asm__("UserFree");
 void*  STDCALL GetDisplay(void)__asm__("GetDisplay");
 
 u32  IMPORT  GetTimerTicks(void)__asm__("GetTimerTicks");
+u64  IMPORT  GetClockNs(void)__asm__("GetClockNs");
 
 addr_t STDCALL AllocPage(void)__asm__("AllocPage");
 addr_t STDCALL AllocPages(count_t count)__asm__("AllocPages");
@@ -512,9 +521,14 @@ static inline void __iomem *ioremap(u32 offset, size_t size)
     return (void __iomem*) MapIoMem(offset, size, PG_SW|PG_NOCACHE|0x100);
 }
 
+static inline void __iomem *ioremap_nocache(u32 offset, size_t size)
+{
+    return (void __iomem*) MapIoMem(offset, size, PG_SW|PG_NOCACHE|0x100);
+}
+
 static inline void __iomem *ioremap_wc(u32 offset, size_t size)
 {
-    return (void __iomem*) MapIoMem(offset, size, PG_SW|0x100);
+    return (void __iomem*) MapIoMem(offset, size, PG_SW|PG_WRITEC|0x100);
 }
 
 
@@ -546,7 +560,7 @@ static inline void vfree(void *addr)
     KernelFree(addr);
 }
 
-static inline int power_supply_is_system_supplied(void) { return -1; }
+static inline int power_supply_is_system_supplied(void) { return -1; };
 
 
 #endif

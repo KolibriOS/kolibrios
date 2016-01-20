@@ -115,6 +115,8 @@ struct dma_buf_ops {
  * @attachments: list of dma_buf_attachment that denotes all devices attached.
  * @ops: dma_buf_ops associated with this buffer object.
  * @exp_name: name of the exporter; useful for debugging.
+ * @owner: pointer to exporter module; used for refcounting when exporter is a
+ *         kernel module.
  * @list_node: node for dma_buf accounting and debugging.
  * @priv: exporter specific private data for this buffer object.
  * @resv: reservation object linked to this dma-buf
@@ -170,12 +172,7 @@ struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
 void dma_buf_detach(struct dma_buf *dmabuf,
 				struct dma_buf_attachment *dmabuf_attach);
 
-struct dma_buf *dma_buf_export_named(void *priv, const struct dma_buf_ops *ops,
-			       size_t size, int flags, const char *,
-			       struct reservation_object *);
-
-#define dma_buf_export(priv, ops, size, flags, resv)	\
-	dma_buf_export_named(priv, ops, size, flags, KBUILD_MODNAME, resv)
+struct dma_buf *dma_buf_export(const struct dma_buf_export_info *exp_info);
 
 int dma_buf_fd(struct dma_buf *dmabuf, int flags);
 struct dma_buf *dma_buf_get(int fd);

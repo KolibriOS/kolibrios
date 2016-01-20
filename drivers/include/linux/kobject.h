@@ -61,7 +61,7 @@ enum kobject_action {
 };
 
 struct kobject {
-    const char          *name;
+	const char		*name;
 	struct list_head	entry;
 	struct kobject		*parent;
 //    struct kset         *kset;
@@ -80,8 +80,9 @@ struct kobject {
 
 extern __printf(2, 3)
 int kobject_set_name(struct kobject *kobj, const char *name, ...);
-extern int kobject_set_name_vargs(struct kobject *kobj, const char *fmt,
-				  va_list vargs);
+extern __printf(2, 0)
+int kobject_set_name_vargs(struct kobject *kobj, const char *fmt,
+			   va_list vargs);
 
 static inline const char *kobject_name(const struct kobject *kobj)
 {
@@ -121,6 +122,7 @@ struct kobj_type {
 };
 
 struct kobj_uevent_env {
+	char *argv[3];
 	char *envp[UEVENT_NUM_ENVP];
 	int envp_idx;
 	char buf[UEVENT_BUFFER_SIZE];

@@ -49,7 +49,7 @@
 struct mutex {
 	/* 1: unlocked, 0: locked, negative: locked, possible waiters */
 	struct list_head	wait_list;
-    atomic_t            count;
+	atomic_t            	count;
 };
 
 /*
@@ -58,7 +58,7 @@ struct mutex {
  */
 struct mutex_waiter {
 	struct list_head	list;
-    int                *task;
+    	int                	*task;
 };
 
 

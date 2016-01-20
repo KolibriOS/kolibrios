@@ -18,7 +18,7 @@
 
 /*
  * Flags to pass to kmem_cache_create().
- * The ones marked DEBUG are only valid if CONFIG_SLAB_DEBUG is set.
+ * The ones marked DEBUG are only valid if CONFIG_DEBUG_SLAB is set.
  */
 #define SLAB_DEBUG_FREE		0x00000100UL	/* DEBUG: Perform (expensive) checks on free */
 #define SLAB_RED_ZONE		0x00000400UL	/* DEBUG: Red zone objs in a cache */
@@ -104,7 +104,11 @@
 				(unsigned long)ZERO_SIZE_PTR)
 
 void __init kmem_cache_init(void);
-int slab_is_available(void);
+bool slab_is_available(void);
+
+struct kmem_cache *kmem_cache_create(const char *, size_t, size_t,
+			unsigned long,
+			void (*)(void *));
 void kmem_cache_destroy(struct kmem_cache *);
 int kmem_cache_shrink(struct kmem_cache *);
 void kmem_cache_free(struct kmem_cache *, void *);
@@ -120,7 +124,9 @@ static inline void kfree(void *p)
 }
 static __always_inline void *kmalloc(size_t size, gfp_t flags)
 {
-    return __builtin_malloc(size);
+    void *ret = __builtin_malloc(size);
+    memset(ret, 0, size);
+    return ret;
 }
 
 /**

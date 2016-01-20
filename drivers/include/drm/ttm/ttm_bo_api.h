@@ -71,9 +71,9 @@ struct ttm_place {
  * Structure indicating the placement you request for an object.
  */
 struct ttm_placement {
-	unsigned	num_placement;
+	unsigned		num_placement;
 	const struct ttm_place	*placement;
-	unsigned	num_busy_placement;
+	unsigned		num_busy_placement;
 	const struct ttm_place	*busy_placement;
 };
 
@@ -249,7 +249,7 @@ struct ttm_buffer_object {
 	 * either of these locks held.
 	 */
 
-	unsigned long offset;
+	uint64_t offset; /* GPU address space is independent of CPU word size */
 	uint32_t cur_placement;
 
 	struct sg_table *sg;

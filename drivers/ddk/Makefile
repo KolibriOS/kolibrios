@@ -14,7 +14,7 @@ DEFINES = -DKOLIBRI -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_DMI -DCONFIG_TINY_RCU
 DEFINES+= -DCONFIG_X86_L1_CACHE_SHIFT=6 -DCONFIG_ARCH_HAS_CACHE_LINE_SIZE
 
 CFLAGS = 	-c -Os $(INCLUDES) $(DEFINES) -march=i686 -fomit-frame-pointer -fno-builtin-printf \
--mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2
+-mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -fno-ident
 
 NAME:=	  libddk
 
@@ -36,7 +36,6 @@ NAME_SRCS:=  				\
 		linux/firmware.c	\
 		linux/hdmi.c		\
 		linux/kasprintf.c	\
-		linux/kref.c		\
 		linux/list_sort.c	\
 		linux/mutex.c		\
 		linux/rbtree.c		\

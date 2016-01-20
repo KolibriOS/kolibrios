@@ -22,7 +22,7 @@
 #define EBADHANDLE	521	/* Illegal NFS file handle */
 #define ENOTSYNC	522	/* Update synchronization mismatch */
 #define EBADCOOKIE	523	/* Cookie is stale */
-#define ENOTSUPP        524     /* Operation is not supported */
+#define ENOTSUPP	524	/* Operation is not supported */
 #define ETOOSMALL	525	/* Buffer or request is too small */
 #define ESERVERFAULT	526	/* An untranslatable error occurred */
 #define EBADTYPE	527	/* Type not supported by server */

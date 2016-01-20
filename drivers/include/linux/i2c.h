@@ -26,11 +26,8 @@
 #ifndef _LINUX_I2C_H
 #define _LINUX_I2C_H
 
-#include <linux/types.h>
-#ifdef __KERNEL__
-#include <linux/module.h>
-#include <linux/i2c-id.h>
 #include <linux/mod_devicetable.h>
+#include <linux/device.h>	/* for struct device */
 #include <linux/sched.h>	/* for completion */
 #include <linux/mutex.h>
 #include <linux/jiffies.h>
@@ -61,8 +58,6 @@ extern int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
  * @probe: Callback for device binding
  * @remove: Callback for device unbinding
  * @shutdown: Callback for device shutdown
- * @suspend: Callback for device suspend
- * @resume: Callback for device resume
  * @alert: Alert callback, for example for the SMBus alert protocol
  * @command: Callback for bus-wide signaling (optional)
  * @driver: Device driver model driver
@@ -105,8 +100,6 @@ struct i2c_driver {
 
 	/* driver model interfaces that don't relate to enumeration  */
 	void (*shutdown)(struct i2c_client *);
-//	int (*suspend)(struct i2c_client *, pm_message_t mesg);
-	int (*resume)(struct i2c_client *);
 
 	/* Alert callback, for example for the SMBus alert protocol.
 	 * The format and meaning of the data value depends on the protocol.
@@ -166,10 +159,10 @@ extern struct i2c_client *i2c_verify_client(struct device *dev);
 extern struct i2c_adapter *i2c_verify_adapter(struct device *dev);
 
 enum i2c_slave_event {
-	I2C_SLAVE_REQ_READ_START,
-	I2C_SLAVE_REQ_READ_END,
-	I2C_SLAVE_REQ_WRITE_START,
-	I2C_SLAVE_REQ_WRITE_END,
+	I2C_SLAVE_READ_REQUESTED,
+	I2C_SLAVE_WRITE_REQUESTED,
+	I2C_SLAVE_READ_PROCESSED,
+	I2C_SLAVE_WRITE_RECEIVED,
 	I2C_SLAVE_STOP,
 };
 /**
@@ -180,7 +173,7 @@ enum i2c_slave_event {
  * @platform_data: stored in i2c_client.dev.platform_data
  * @archdata: copied into i2c_client.dev.archdata
  * @of_node: pointer to OpenFirmware device node
- * @acpi_node: ACPI device node
+ * @fwnode: device node supplied by the platform firmware
  * @irq: stored in i2c_client.irq
  *
  * I2C doesn't actually support hardware probing, although controllers and
@@ -306,7 +299,7 @@ void i2c_unlock_adapter(struct i2c_adapter *);
 	((const unsigned short []){ addr, ## addrs, I2C_CLIENT_END })
 
 
-#endif /* __KERNEL__ */
+
 
 /**
  * struct i2c_msg - an I2C transaction segment beginning with START
