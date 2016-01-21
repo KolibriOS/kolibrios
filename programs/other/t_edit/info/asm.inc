@@ -74,202 +74,470 @@ wo<'@@'>,f1.64-f1,3,,6
 wo<'@b'>,f1.65-f1,3,,6
 wo<'@f'>,f1.66-f1,3,,6
 wo<'@r'>,f1.67-f1,3,,6
+wo<'SF_APM'>,f1.68-f1,3,,5
+wo<'SF_BACKGROUND_GET'>,,3,,5
+wo<'SF_BACKGROUND_SET'>,,3,,5
+wo<'SF_BLITTER'>,,3,,5
+wo<'SF_BOARD'>,f1.72-f1,3,,5
+wo<'SF_CD'>,,3,,5
+wo<'SF_CHANGE_WINDOW'>,f1.74-f1,3,,5
+wo<'SF_CHECK_EVENT'>,f1.75-f1,3,,5
+wo<'SF_CLIPBOARD'>,,3,,5
+wo<'SF_CREATE_THREAD'>,f1.77-f1,3,,5
+wo<'SF_CREATE_WINDOW'>,f1.78-f1,3,,5
+wo<'SF_CURRENT_FOLDER'>,,3,,5
+wo<'SF_DEBUG'>,,3,,5
+wo<'SF_DEFINE_BUTTON'>,f1.81-f1,3,,5
+wo<'SF_DRAW_LINE'>,f1.82-f1,3,,5
+wo<'SF_DRAW_NUMBER'>,f1.83-f1,3,,5
+wo<'SF_DRAW_RECT'>,f1.84-f1,3,,5
+wo<'SF_DRAW_TEXT'>,f1.85-f1,3,,5
+wo<'SF_FILE'>,,3,,5
+wo<'SF_GET_BUTTON'>,f1.87-f1,3,,5
+wo<'SF_GET_GRAPHICAL_PARAMS'>,f1.88-f1,3,,5
+wo<'SF_GET_IMAGE'>,f1.89-f1,3,,5
+wo<'SF_GET_KEY'>,f1.90-f1,3,,5
+wo<'SF_GET_PIXEL'>,f1.91-f1,3,,5
+wo<'SF_GET_PIXEL_OWNER'>,f1.92-f1,3,,5
+wo<'SF_GET_SCREEN_SIZE'>,f1.93-f1,3,,5
+wo<'SF_GET_SYS_DATE'>,f1.94-f1,3,,5
+wo<'SF_GET_SYS_TIME'>,f1.95-f1,3,,5
+wo<'SF_IPC'>,,3,,5
+wo<'SF_KEYBOARD'>,f1.97-f1,3,,5
+wo<'SF_MEMORY_RESIZE'>,f1.98-f1,3,,5
+wo<'SF_MIDI'>,f1.99-f1,3,,5
+wo<'SF_MOUSE_GET'>,f1.100-f1,3,,5
+wo<'SF_NETWORK_GET'>,,3,,5
+wo<'SF_NETWORK_PROTOCOL'>,f1.102-f1,3,,5
+wo<'SF_NETWORK_SOCKET'>,,3,,5
+wo<'SF_PCI'>,,3,,5
+wo<'SF_PCI_BIOS'>,,3,,5
+wo<'SF_PORT_IN_OUT'>,f1.106-f1,3,,5
+wo<'SF_PUT_IMAGE'>,f1.107-f1,3,,5
+wo<'SF_PUT_IMAGE_EXT'>,f1.108-f1,3,,5
+wo<'SF_PUT_PIXEL'>,f1.109-f1,3,,5
+wo<'SF_RD_TO_FLOPPY'>,f1.110-f1,3,,5
+wo<'SF_REDRAW'>,f1.111-f1,3,,5
+wo<'SF_SCREEN_PUT_IMAGE'>,f1.112-f1,3,,5
+wo<'SF_SEND_MESSAGE'>,f1.113-f1,3,,5
+wo<'SF_SET_CAPTION'>,f1.114-f1,3,,5
+wo<'SF_SET_EVENTS_MASK'>,f1.115-f1,3,,5
+wo<'SF_SET_PORTS'>,f1.116-f1,3,,5
+wo<'SF_SET_TIME_DATE'>,f1.117-f1,3,,5
+wo<'SF_SET_WINDOW_SHAPE'>,f1.118-f1,3,,5
+wo<'SF_SLEEP'>,f1.119-f1,3,,5
+wo<'SF_SPEAKER_PLAY'>,f1.120-f1,3,,5
+wo<'SF_STYLE_SETTINGS'>,,3,,5
+wo<'SF_SYS_MISC'>,,3,,5
+wo<'SF_SYSTEM'>,,3,,5
+wo<'SF_SYSTEM_GET'>,,3,,5
+wo<'SF_SYSTEM_SET'>,,3,,5
+wo<'SF_TERMINATE_PROCESS'>,f1.126-f1,3,,5
+wo<'SF_THREAD_INFO'>,f1.127-f1,3,,5
+wo<'SF_WAIT_EVENT'>,f1.128-f1,3,,5
+wo<'SF_WAIT_EVENT_TIMEOUT'>,f1.129-f1,3,,5
+wo<'SSF_ACCEPT'>,,3,,5
+wo<'SSF_ACCESS_HD_LBA'>,,3,,5
+wo<'SSF_ACCESS_PCI'>,,3,,5
+wo<'SSF_ADD_SYS_FOLDER'>,f1.133-f1,3,,5
+wo<'SSF_APPLY'>,,3,,5
+wo<'SSF_ARP_ADD_STATIC_ENTRY'>,,3,,5
+wo<'SSF_ARP_CONFLICTS_COUNT'>,,3,,5
+wo<'SSF_ARP_DEL_ENTRY'>,,3,,5
+wo<'SSF_ARP_GET_ENTRY_COUNT'>,,3,,5
+wo<'SSF_ARP_PACKETS_RECEIVED'>,,3,,5
+wo<'SSF_ARP_PACKETS_SENT'>,,3,,5
+wo<'SSF_ARP_READ_ENTRY'>,,3,,5
+wo<'SSF_ARP_SEND_ANNOUNCE'>,,3,,5
+wo<'SSF_BEGIN_DRAW'>,,3,,5
+wo<'SSF_BIND'>,,3,,5
+wo<'SSF_BITS_PER_PIXEL'>,,3,,5
+wo<'SSF_BUTTON'>,,3,,5
+wo<'SSF_BUTTON_EXT'>,,3,,5
+wo<'SSF_BYTES_PER_LINE'>,,3,,5
+wo<'SSF_CLOSE'>,,3,,5
+wo<'SSF_CONNECT'>,,3,,5
+wo<'SSF_CONTROL_DRIVER'>,,3,,5
+wo<'SSF_CREATE_FILE'>,,3,,5
+wo<'SSF_CREATE_FOLDER'>,,3,,5
+wo<'SSF_CURSOR_CENTER'>,,3,,5
+wo<'SSF_DEBUG_READ'>,,3,,5
+wo<'SSF_DEBUG_WRITE'>,,3,,5
+wo<'SSF_DEFINE_BREAKPOINT'>,,3,,5
+wo<'SSF_DEL_CURSOR'>,,3,,5
+wo<'SSF_DEL_SLOT'>,,3,,5
+wo<'SSF_DEL_SYS_HOTKEY'>,,3,,5
+wo<'SSF_DELETE'>,,3,,5
+wo<'SSF_DETACH'>,,3,,5
+wo<'SSF_DEVICE_COUNT'>,,3,,5
+wo<'SSF_DEVICE_NAME'>,,3,,5
+wo<'SSF_DEVICE_POINER'>,,3,,5
+wo<'SSF_DEVICE_TYPE'>,,3,,5
+wo<'SSF_EJECT_TRAY'>,,3,,5
+wo<'SSF_END_DRAW'>,,3,,5
+wo<'SSF_ETHERNET_READ_MAC'>,,3,,5
+wo<'SSF_FOCUS_WINDOW'>,,3,,5
+wo<'SSF_FOREIGN_WINDOW'>,,3,,5
+wo<'SSF_GET_ACTIVE_WINDOW'>,,3,,5
+wo<'SSF_GET_ADRR_MODE'>,,3,,5
+wo<'SSF_GET_CF'>,f1.174-f1,3,,5
+wo<'SSF_GET_COLORS'>,,3,,5
+wo<'SSF_GET_CONTROL_KEYS'>,,3,,5
+wo<'SSF_GET_CPU_REQUENCY'>,,3,,5
+wo<'SSF_GET_FONT_SIZE'>,,3,,5
+wo<'SSF_GET_FONT_SMOOTH'>,,3,,5
+wo<'SSF_GET_FREE_RAM'>,,3,,5
+wo<'SSF_GET_IDLE_COUNT'>,,3,,5
+wo<'SSF_GET_INFO'>,,3,,5
+wo<'SSF_GET_INPUT_MODE'>,,3,,5
+wo<'SSF_GET_LAST_BUS'>,,3,,5
+wo<'SSF_GET_OPTIONS'>,,3,,5
+wo<'SSF_GET_PAIR'>,,3,,5
+wo<'SSF_GET_RAM_INFO'>,,3,,5
+wo<'SSF_GET_REGISTERS'>,,3,,5
+wo<'SSF_GET_SCREEN_AREA'>,,3,,5
+wo<'SSF_GET_SKIN_HEIGHT'>,,3,,5
+wo<'SSF_GET_SKIN_MARGINS'>,,3,,5
+wo<'SSF_GET_SLOT_COUNT'>,f1.192-f1,3,,5
+wo<'SSF_GET_TASK_SWITCH_COUNT'>,,3,,5
+wo<'SSF_GET_THREAD_SLOT'>,,3,,5
+wo<'SSF_GET_TOTAL_RAM'>,,3,,5
+wo<'SSF_GET_VERSION'>,,3,,5
+wo<'SSF_HEAP_INIT'>,,3,,5
+wo<'SSF_ICMP_ECHO_REPLY'>,,3,,5
+wo<'SSF_ICMP_PACKETS_RECEIVED'>,,3,,5
+wo<'SSF_ICMP_PACKETS_SENT'>,,3,,5
+wo<'SSF_IMAGE_BG'>,,3,,5
+wo<'SSF_INFO_DISC_SYS'>,,3,,5
+wo<'SSF_INSERT_TRAY'>,,3,,5
+wo<'SSF_IP4_PACKETS_RECEIVED'>,,3,,5
+wo<'SSF_IP4_PACKETS_SENT'>,,3,,5
+wo<'SSF_IP4_READ_DNS'>,,3,,5
+wo<'SSF_IP4_READ_GATEWAY'>,,3,,5
+wo<'SSF_IP4_READ_IP'>,,3,,5
+wo<'SSF_IP4_READ_SUBNET'>,,3,,5
+wo<'SSF_IP4_WRITE_DNS'>,,3,,5
+wo<'SSF_IP4_WRITE_GATEWAY'>,,3,,5
+wo<'SSF_IP4_WRITE_IP'>,,3,,5
+wo<'SSF_IP4_WRITE_SUBNET'>,,3,,5
+wo<'SSF_KERNEL_VERSION'>,,3,,5
+wo<'SSF_KEYBOARD_LAYOUT'>,,3,,5
+wo<'SSF_LAST_DRAW'>,,3,,5
+wo<'SSF_LINK_STATUS'>,,3,,5
+wo<'SSF_LISTEN'>,,3,,5
+wo<'SSF_LOAD_CURSOR'>,,3,,5
+wo<'SSF_LOAD_DLL'>,,3,,5
+wo<'SSF_LOAD_DRIVER'>,,3,,5
+wo<'SSF_LOAD_DRIVER_PE'>,,3,,5
+wo<'SSF_LOAD_FILE'>,,3,,5
+wo<'SSF_LOCK_INPUT'>,,3,,5
+wo<'SSF_MAP_BG'>,,3,,5
+wo<'SSF_MEM_ALLOC'>,,3,,5
+wo<'SSF_MEM_CLOSE'>,,3,,5
+wo<'SSF_MEM_FREE'>,,3,,5
+wo<'SSF_MEM_FREE_EXT'>,,3,,5
+wo<'SSF_MEM_OPEN'>,,3,,5
+wo<'SSF_MEM_REALLOC'>,,3,,5
+wo<'SSF_MINIMIZE_ALL'>,,3,,5
+wo<'SSF_MINIMIZE_WINDOW'>,,3,,5
+wo<'SSF_MODE_BG'>,,3,,5
+wo<'SSF_MOUSE_SETTINGS'>,,3,,5
+wo<'SSF_MPU_MIDI_BASE'>,,3,,5
+wo<'SSF_OPEN'>,,3,,5
+wo<'SSF_OUTPUT'>,,3,,5
+wo<'SSF_PERFORMANCE'>,,3,,5
+wo<'SSF_PIXEL_BG'>,,3,,5
+wo<'SSF_RD_TO_HDD'>,,3,,5
+wo<'SSF_READ_BYTE'>,,3,,5
+wo<'SSF_READ_CB'>,,3,,5
+wo<'SSF_READ_DWORD'>,,3,,5
+wo<'SSF_READ_FILE'>,,3,,5
+wo<'SSF_READ_FOLDER'>,,3,,5
+wo<'SSF_READ_MEMORY'>,,3,,5
+wo<'SSF_READ_MSR'>,,3,,5
+wo<'SSF_READ_WORD'>,,3,,5
+wo<'SSF_RECEIVE'>,,3,,5
+wo<'SSF_REDRAW_BG'>,,3,,5
+wo<'SSF_REDRAW_RECT'>,,3,,5
+wo<'SSF_RESET'>,,3,,5
+wo<'SSF_RESET_DEVICE'>,,3,,5
+wo<'SSF_RESUME'>,,3,,5
+wo<'SSF_RX_BYTE_COUNT'>,,3,,5
+wo<'SSF_RX_PACKET_COUNT'>,,3,,5
+wo<'SSF_SCREEN_POSITION'>,,3,,5
+wo<'SSF_SCREEN_SIZE'>,,3,,5
+wo<'SSF_SCROLL_DATA'>,,3,,5
+wo<'SSF_SEND'>,,3,,5
+wo<'SSF_SEND_MESSAGE'>,,3,,5
+wo<'SSF_SET_AREA'>,,3,,5
+wo<'SSF_SET_BUTTON_STYLE'>,,3,,5
+wo<'SSF_SET_CF'>,f1.265-f1,3,,5
+wo<'SSF_SET_COLORS'>,,3,,5
+wo<'SSF_SET_CURSOR'>,,3,,5
+wo<'SSF_SET_END'>,,3,,5
+wo<'SSF_SET_EXCEPTION_HANDLER'>,,3,,5
+wo<'SSF_SET_EXCEPTION_STATE'>,,3,,5
+wo<'SSF_SET_FONT_SIZE'>,,3,,5
+wo<'SSF_SET_FONT_SMOOTH'>,,3,,5
+wo<'SSF_SET_INFO'>,,3,,5
+wo<'SSF_SET_INPUT_MODE'>,,3,,5
+wo<'SSF_SET_MESSAGE_AREA'>,,3,,5
+wo<'SSF_SET_OPTIONS'>,,3,,5
+wo<'SSF_SET_REGISTERS'>,,3,,5
+wo<'SSF_SET_SCREEN_AREA'>,,3,,5
+wo<'SSF_SET_SCREEN_LIMITS'>,,3,,5
+wo<'SSF_SET_SKIN'>,,3,,5
+wo<'SSF_SET_SYS_HOTKEY'>,,3,,5
+wo<'SSF_SHUTDOWN'>,,3,,5
+wo<'SSF_SIZE_BG'>,,3,,5
+wo<'SSF_SPEAKER'>,,3,,5
+wo<'SSF_START_APP'>,,3,,5
+wo<'SSF_STOP_DEVICE'>,,3,,5
+wo<'SSF_SUSPEND'>,,3,,5
+wo<'SSF_SWITCH_TASK'>,,3,,5
+wo<'SSF_SYS_LANG'>,,3,,5
+wo<'SSF_TCP_PACKETS_RECEIVED'>,,3,,5
+wo<'SSF_TCP_PACKETS_SENT'>,,3,,5
+wo<'SSF_TERMINATE'>,,3,,5
+wo<'SSF_TERMINATE_THREAD'>,,3,,5
+wo<'SSF_TERMINATE_THREAD_ID'>,,3,,5
+wo<'SSF_TIME_COUNT'>,,3,,5
+wo<'SSF_TIME_COUNT_PRO'>,,3,,5
+wo<'SSF_TX_BYTE_COUNT'>,,3,,5
+wo<'SSF_TX_PACKET_COUNT'>,,3,,5
+wo<'SSF_UDP_PACKETS_RECEIVED'>,,3,,5
+wo<'SSF_UDP_PACKETS_SENT'>,,3,,5
+wo<'SSF_UNFOCUS_WINDOW'>,,3,,5
+wo<'SSF_UNLOCK_BUFFER'>,,3,,5
+wo<'SSF_UNLOCK_INPUT'>,,3,,5
+wo<'SSF_UNMAP_BG'>,,3,,5
+wo<'SSF_WAIT_RETRACE'>,,3,,5
+wo<'SSF_WAIT_SIGNAL'>,,3,,5
+wo<'SSF_WINDOW_BEHAVIOR'>,,3,,5
+wo<'SSF_WINDOW_POSITION'>,,3,,5
+wo<'SSF_WRITE_BYTE'>,,3,,5
+wo<'SSF_WRITE_CB'>,,3,,5
+wo<'SSF_WRITE_DWORD'>,,3,,5
+wo<'SSF_WRITE_FILE'>,,3,,5
+wo<'SSF_WRITE_MEMORY'>,,3,,5
+wo<'SSF_WRITE_MSR'>,,3,,5
+wo<'SSF_WRITE_WORD'>,,3,,5
+wo<'SSSF_ALLOW_RDPMC'>,,3,,5
+wo<'SSSF_CACHE_OFF'>,,3,,5
+wo<'SSSF_CACHE_ON'>,,3,,5
+wo<'SSSF_CACHE_STATUS'>,,3,,5
+wo<'SSSF_GET_DOUBLE_CLICK_DELAY'>,,3,,5
+wo<'SSSF_GET_SPEED'>,,3,,5
+wo<'SSSF_GET_SPEEDUP'>,,3,,5
+wo<'SSSF_GET_STATE'>,,3,,5
+wo<'SSSF_GET_WB'>,,3,,5
+wo<'SSSF_MINIMIZE'>,,3,,5
+wo<'SSSF_MINIMIZE_ID'>,,3,,5
+wo<'SSSF_RESTORE'>,,3,,5
+wo<'SSSF_RESTORE_ID'>,,3,,5
+wo<'SSSF_SET_BUTTON'>,,3,,5
+wo<'SSSF_SET_DOUBLE_CLICK_DELAY'>,,3,,5
+wo<'SSSF_SET_POS'>,,3,,5
+wo<'SSSF_SET_SPEED'>,,3,,5
+wo<'SSSF_SET_SPEEDUP'>,,3,,5
+wo<'SSSF_SET_WB'>,,3,,5
+wo<'SSSF_TOGGLE'>,,3,,5
 wo<'['>,,0,,1
 wo<']'>,,0,,1
-wo<'aaa'>,f1.70-f1,3,,1
+wo<'aaa'>,f1.338-f1,3,,1
 wo<'aad'>,,3,,1
 wo<'aam'>,,3,,1
 wo<'aas'>,,3,,1
 wo<'adc'>,,3,,1
-wo<'add'>,f1.75-f1,3,,1
+wo<'add'>,f1.343-f1,3,,1
 wo<'addr'>,,3,,1
-wo<'af'>,f1.77-f1,3,,2
-wo<'ah'>,f1.78-f1,3,,2
-wo<'al'>,f1.79-f1,3,,2
+wo<'af'>,f1.345-f1,3,,2
+wo<'ah'>,f1.346-f1,3,,2
+wo<'al'>,f1.347-f1,3,,2
 wo<'align'>,,3,,1
 wo<'and'>,,3,,1
-wo<'ax'>,f1.82-f1,3,,2
+wo<'ax'>,f1.350-f1,3,,2
 wo<'bh'>,,3,,2
 wo<'bl'>,,3,,2
 wo<'bound'>,,3,,1
-wo<'bp'>,f1.86-f1,3,,2
+wo<'bp'>,f1.354-f1,3,,2
 wo<'bsf'>,,3,,1
 wo<'bsr'>,,3,,1
 wo<'bswap'>,,3,,1
-wo<'bt'>,f1.90-f1,3,,1
-wo<'btc'>,f1.91-f1,3,,1
-wo<'btr'>,f1.92-f1,3,,1
-wo<'bts'>,f1.93-f1,3,,1
-wo<'bx'>,f1.94-f1,3,,2
-wo<'byte'>,f1.95-f1,3,,8
-wo<'call'>,f1.96-f1,3,,1
+wo<'bt'>,f1.358-f1,3,,1
+wo<'btc'>,f1.359-f1,3,,1
+wo<'btr'>,f1.360-f1,3,,1
+wo<'bts'>,f1.361-f1,3,,1
+wo<'bx'>,f1.362-f1,3,,2
+wo<'byte'>,f1.363-f1,3,,8
+wo<'call'>,f1.364-f1,3,,1
 wo<'case'>,,3,,6
 wo<'casemap'>,,3,,1
 wo<'cbw'>,,3,,1
 wo<'cdq'>,,3,,1
-wo<'cf'>,f1.101-f1,3,,2
+wo<'cf'>,f1.369-f1,3,,2
 wo<'ch'>,,3,,2
-wo<'cl'>,f1.103-f1,3,,2
-wo<'clc'>,f1.104-f1,3,,1
-wo<'cld'>,f1.105-f1,3,,1
-wo<'cli'>,f1.106-f1,3,,1
+wo<'cl'>,f1.371-f1,3,,2
+wo<'clc'>,f1.372-f1,3,,1
+wo<'cld'>,f1.373-f1,3,,1
+wo<'cli'>,f1.374-f1,3,,1
 wo<'cmc'>,,3,,1
-wo<'cmp'>,f1.108-f1,3,,1
+wo<'cmp'>,f1.376-f1,3,,1
 wo<'cmps'>,,3,,1
-wo<'cmpsb'>,f1.110-f1,3,,1
-wo<'cmpsd'>,f1.111-f1,3,,1
+wo<'cmpsb'>,f1.378-f1,3,,1
+wo<'cmpsd'>,f1.379-f1,3,,1
 wo<'cmpsq'>,,3,,1
-wo<'cmpsw'>,f1.113-f1,3,,1
+wo<'cmpsw'>,f1.381-f1,3,,1
 wo<'cmpxchg'>,,3,,1
-wo<'comment *'>,f1.115-f1,5,42,4
+wo<'comment *'>,f1.383-f1,5,42,4
 wo<'cr0'>,,3,,2
 wo<'cr1'>,,3,,2
 wo<'cr2'>,,3,,2
 wo<'cr3'>,,3,,2
 wo<'cr4'>,,3,,2
-wo<'cs'>,f1.121-f1,3,,2
-wo<'cwd'>,f1.122-f1,3,,1
+wo<'cs'>,f1.389-f1,3,,2
+wo<'cwd'>,f1.390-f1,3,,1
 wo<'cwde'>,,3,,1
-wo<'cx'>,f1.124-f1,3,,2
-wo<'daa'>,f1.125-f1,3,,1
-wo<'das'>,f1.126-f1,3,,1
-wo<'db'>,f1.127-f1,3,,8
-wo<'dd'>,f1.128-f1,3,,8
-wo<'dec'>,f1.129-f1,3,,1
-wo<'df'>,f1.130-f1,3,,2
+wo<'cx'>,f1.392-f1,3,,2
+wo<'daa'>,f1.393-f1,3,,1
+wo<'das'>,f1.394-f1,3,,1
+wo<'db'>,f1.395-f1,3,,8
+wo<'dd'>,f1.396-f1,3,,8
+wo<'dec'>,f1.397-f1,3,,1
+wo<'df'>,f1.398-f1,3,,2
 wo<'dh'>,,3,,2
 wo<'di'>,,3,,2
-wo<'div'>,f1.133-f1,3,,1
+wo<'div'>,f1.401-f1,3,,1
 wo<'dl'>,,3,,2
-wo<'dq'>,f1.135-f1,3,,8
+wo<'dq'>,f1.403-f1,3,,8
 wo<'dqword'>,,3,,8
-wo<'dr0'>,f1.137-f1,3,,2
-wo<'dr1'>,f1.138-f1,3,,2
-wo<'dr2'>,f1.139-f1,3,,2
-wo<'dr3'>,f1.140-f1,3,,2
-wo<'dr4'>,f1.141-f1,3,,2
-wo<'dr5'>,f1.142-f1,3,,2
-wo<'dr6'>,f1.143-f1,3,,2
-wo<'dr7'>,f1.144-f1,3,,2
-wo<'ds'>,f1.145-f1,3,,2
-wo<'dt'>,f1.146-f1,3,,8
-wo<'dup'>,f1.147-f1,3,,1
-wo<'dw'>,f1.148-f1,3,,8
-wo<'dword'>,f1.149-f1,3,,8
-wo<'dx'>,f1.150-f1,3,,2
-wo<'eax'>,f1.151-f1,3,,2
+wo<'dr0'>,f1.405-f1,3,,2
+wo<'dr1'>,f1.406-f1,3,,2
+wo<'dr2'>,f1.407-f1,3,,2
+wo<'dr3'>,f1.408-f1,3,,2
+wo<'dr4'>,f1.409-f1,3,,2
+wo<'dr5'>,f1.410-f1,3,,2
+wo<'dr6'>,f1.411-f1,3,,2
+wo<'dr7'>,f1.412-f1,3,,2
+wo<'ds'>,f1.413-f1,3,,2
+wo<'dt'>,f1.414-f1,3,,8
+wo<'dup'>,f1.415-f1,3,,1
+wo<'dw'>,f1.416-f1,3,,8
+wo<'dword'>,f1.417-f1,3,,8
+wo<'dx'>,f1.418-f1,3,,2
+wo<'eax'>,f1.419-f1,3,,2
 wo<'ebp'>,,3,,2
-wo<'ebx'>,f1.153-f1,3,,2
-wo<'ecx'>,f1.154-f1,3,,2
-wo<'edi'>,f1.155-f1,3,,2
-wo<'edx'>,f1.156-f1,3,,2
-wo<'eip'>,f1.157-f1,3,,2
-wo<'end'>,f1.158-f1,3,,1
-wo<'endm'>,f1.159-f1,3,,1
-wo<'endp'>,f1.160-f1,3,,5
-wo<'ends'>,f1.161-f1,3,,1
+wo<'ebx'>,f1.421-f1,3,,2
+wo<'ecx'>,f1.422-f1,3,,2
+wo<'edi'>,f1.423-f1,3,,2
+wo<'edx'>,f1.424-f1,3,,2
+wo<'eip'>,f1.425-f1,3,,2
+wo<'end'>,f1.426-f1,3,,1
+wo<'endm'>,f1.427-f1,3,,1
+wo<'endp'>,f1.428-f1,3,,5
+wo<'ends'>,f1.429-f1,3,,1
 wo<'enter'>,,3,,1
 wo<'equ'>,,3,,1
-wo<'es'>,f1.164-f1,3,,2
-wo<'esc'>,f1.165-f1,3,,1
+wo<'es'>,f1.432-f1,3,,2
+wo<'esc'>,f1.433-f1,3,,1
 wo<'esi'>,,3,,2
 wo<'esp'>,,3,,2
-wo<'f2xm1'>,f1.168-f1,3,,1
-wo<'fabs'>,f1.169-f1,3,,1
-wo<'fadd'>,f1.170-f1,3,,1
+wo<'f2xm1'>,f1.436-f1,3,,1
+wo<'fabs'>,f1.437-f1,3,,1
+wo<'fadd'>,f1.438-f1,3,,1
 wo<'faddp'>,,3,,1
-wo<'fbld'>,f1.172-f1,3,,1
-wo<'fchs'>,f1.173-f1,3,,1
-wo<'fcom'>,f1.174-f1,3,,1
-wo<'fcomp'>,f1.175-f1,3,,1
-wo<'fcompp'>,f1.176-f1,3,,1
-wo<'fcos'>,f1.177-f1,3,,1
-wo<'fdecstp'>,f1.178-f1,3,,1
-wo<'fdiv'>,f1.179-f1,3,,1
+wo<'fbld'>,f1.440-f1,3,,1
+wo<'fchs'>,f1.441-f1,3,,1
+wo<'fcom'>,f1.442-f1,3,,1
+wo<'fcomp'>,f1.443-f1,3,,1
+wo<'fcompp'>,f1.444-f1,3,,1
+wo<'fcos'>,f1.445-f1,3,,1
+wo<'fdecstp'>,f1.446-f1,3,,1
+wo<'fdiv'>,f1.447-f1,3,,1
 wo<'fdivp'>,,3,,1
 wo<'fdivr'>,,3,,1
 wo<'fdivrp'>,,3,,1
-wo<'ffree'>,f1.183-f1,3,,1
-wo<'ficom'>,f1.184-f1,3,,1
-wo<'ficomp'>,f1.185-f1,3,,1
-wo<'fild'>,f1.186-f1,3,,1
+wo<'ffree'>,f1.451-f1,3,,1
+wo<'ficom'>,f1.452-f1,3,,1
+wo<'ficomp'>,f1.453-f1,3,,1
+wo<'fild'>,f1.454-f1,3,,1
 wo<'fimul'>,,3,,1
-wo<'fincstp'>,f1.188-f1,3,,1
-wo<'finit'>,f1.189-f1,3,,1
+wo<'fincstp'>,f1.456-f1,3,,1
+wo<'finit'>,f1.457-f1,3,,1
 wo<'fistp'>,,3,,1
 wo<'fisub'>,,3,,1
-wo<'fld'>,f1.192-f1,3,,1
-wo<'fld1'>,f1.193-f1,3,,1
+wo<'fld'>,f1.460-f1,3,,1
+wo<'fld1'>,f1.461-f1,3,,1
 wo<'fldenvw'>,,3,,1
-wo<'fldl2e'>,f1.195-f1,3,,1
-wo<'fldl2t'>,f1.196-f1,3,,1
-wo<'fldlg2'>,f1.197-f1,3,,1
-wo<'fldln2'>,f1.198-f1,3,,1
-wo<'fldpi'>,f1.199-f1,3,,1
-wo<'fldz'>,f1.200-f1,3,,1
-wo<'fmul'>,f1.201-f1,3,,1
+wo<'fldl2e'>,f1.463-f1,3,,1
+wo<'fldl2t'>,f1.464-f1,3,,1
+wo<'fldlg2'>,f1.465-f1,3,,1
+wo<'fldln2'>,f1.466-f1,3,,1
+wo<'fldpi'>,f1.467-f1,3,,1
+wo<'fldz'>,f1.468-f1,3,,1
+wo<'fmul'>,f1.469-f1,3,,1
 wo<'fmulp'>,,3,,1
 wo<'fnsavew'>,,3,,1
 wo<'fnstenvw'>,,3,,1
-wo<'fpatan'>,f1.205-f1,3,,1
-wo<'fprem'>,f1.206-f1,3,,1
-wo<'fptan'>,f1.207-f1,3,,1
-wo<'frndint'>,f1.208-f1,3,,1
+wo<'fpatan'>,f1.473-f1,3,,1
+wo<'fprem'>,f1.474-f1,3,,1
+wo<'fptan'>,f1.475-f1,3,,1
+wo<'frndint'>,f1.476-f1,3,,1
 wo<'frstorw'>,,3,,1
 wo<'fs'>,,3,,2
 wo<'fsavew'>,,3,,1
-wo<'fscale'>,f1.212-f1,3,,1
-wo<'fsin'>,f1.213-f1,3,,1
-wo<'fsincos'>,f1.214-f1,3,,1
-wo<'fsqrt'>,f1.215-f1,3,,1
-wo<'fst'>,f1.216-f1,3,,1
+wo<'fscale'>,f1.480-f1,3,,1
+wo<'fsin'>,f1.481-f1,3,,1
+wo<'fsincos'>,f1.482-f1,3,,1
+wo<'fsqrt'>,f1.483-f1,3,,1
+wo<'fst'>,f1.484-f1,3,,1
 wo<'fstenvw'>,,3,,1
-wo<'fstp'>,f1.218-f1,3,,1
+wo<'fstp'>,f1.486-f1,3,,1
 wo<'fstsw'>,,3,,1
-wo<'fsub'>,f1.220-f1,3,,1
+wo<'fsub'>,f1.488-f1,3,,1
 wo<'fsubp'>,,3,,1
 wo<'fsubr'>,,3,,1
 wo<'fsubrp'>,,3,,1
-wo<'ftst'>,f1.224-f1,3,,1
+wo<'ftst'>,f1.492-f1,3,,1
 wo<'fword'>,,3,,8
-wo<'fxam'>,f1.226-f1,3,,1
-wo<'fxch'>,f1.227-f1,3,,1
-wo<'fxtract'>,f1.228-f1,3,,1
-wo<'fyl2x'>,f1.229-f1,3,,1
-wo<'fyl2xp1'>,f1.230-f1,3,,1
-wo<'gdtr'>,f1.231-f1,3,,2
+wo<'fxam'>,f1.494-f1,3,,1
+wo<'fxch'>,f1.495-f1,3,,1
+wo<'fxtract'>,f1.496-f1,3,,1
+wo<'fyl2x'>,f1.497-f1,3,,1
+wo<'fyl2xp1'>,f1.498-f1,3,,1
+wo<'gdtr'>,f1.499-f1,3,,2
 wo<'gs'>,,3,,2
-wo<'hlt'>,f1.233-f1,3,,1
-wo<'idiv'>,f1.234-f1,3,,1
-wo<'if'>,f1.235-f1,3,,2
-wo<'imul'>,f1.236-f1,3,,1
+wo<'hlt'>,f1.501-f1,3,,1
+wo<'idiv'>,f1.502-f1,3,,1
+wo<'if'>,f1.503-f1,3,,2
+wo<'imul'>,f1.504-f1,3,,1
 wo<'in'>,,3,,1
-wo<'inc'>,f1.238-f1,3,,1
+wo<'inc'>,f1.506-f1,3,,1
 wo<'include'>,,3,,2
-wo<'includelib'>,f1.240-f1,3,,2
+wo<'includelib'>,f1.508-f1,3,,2
 wo<'ins'>,,3,,1
 wo<'insb'>,,3,,1
 wo<'insd'>,,3,,1
 wo<'insw'>,,3,,1
 wo<'int'>,,3,,1
 wo<'into'>,,3,,1
-wo<'ip'>,f1.247-f1,3,,2
+wo<'ip'>,f1.515-f1,3,,2
 wo<'iret'>,,3,,1
 wo<'iretd'>,,3,,1
-wo<'ja'>,f1.250-f1,3,,6
-wo<'jae'>,f1.251-f1,3,,6
-wo<'jb'>,f1.252-f1,3,,6
-wo<'jbe'>,f1.253-f1,3,,6
-wo<'jc'>,f1.254-f1,3,,6
+wo<'ja'>,f1.518-f1,3,,6
+wo<'jae'>,f1.519-f1,3,,6
+wo<'jb'>,f1.520-f1,3,,6
+wo<'jbe'>,f1.521-f1,3,,6
+wo<'jc'>,f1.522-f1,3,,6
 wo<'jcc'>,,3,,1
-wo<'jcxz'>,f1.256-f1,3,,6
-wo<'je'>,f1.257-f1,3,,6
-wo<'jecxz'>,f1.258-f1,3,,6
-wo<'jg'>,f1.259-f1,3,,6
-wo<'jge'>,f1.260-f1,3,,6
-wo<'jl'>,f1.261-f1,3,,6
-wo<'jle'>,f1.262-f1,3,,6
-wo<'jmp'>,f1.263-f1,3,,6
+wo<'jcxz'>,f1.524-f1,3,,6
+wo<'je'>,f1.525-f1,3,,6
+wo<'jecxz'>,f1.526-f1,3,,6
+wo<'jg'>,f1.527-f1,3,,6
+wo<'jge'>,f1.528-f1,3,,6
+wo<'jl'>,f1.529-f1,3,,6
+wo<'jle'>,f1.530-f1,3,,6
+wo<'jmp'>,f1.531-f1,3,,6
 wo<'jna'>,,3,,6
 wo<'jnae'>,,3,,6
 wo<'jnb'>,,3,,6
@@ -283,16 +551,16 @@ wo<'jnle'>,,3,,6
 wo<'jno'>,,3,,6
 wo<'jnp'>,,3,,6
 wo<'jns'>,,3,,6
-wo<'jnz'>,f1.277-f1,3,,6
-wo<'jo'>,f1.278-f1,3,,6
+wo<'jnz'>,f1.545-f1,3,,6
+wo<'jo'>,f1.546-f1,3,,6
 wo<'jp'>,,3,,6
 wo<'jpe'>,,3,,6
-wo<'jpo'>,f1.281-f1,3,,6
-wo<'js'>,f1.282-f1,3,,6
-wo<'jz'>,f1.283-f1,3,,6
+wo<'jpo'>,f1.549-f1,3,,6
+wo<'js'>,f1.550-f1,3,,6
+wo<'jz'>,f1.551-f1,3,,6
 wo<'lahf'>,,3,,1
 wo<'lds'>,,3,,1
-wo<'ldtr'>,f1.286-f1,3,,2
+wo<'ldtr'>,f1.554-f1,3,,2
 wo<'lea'>,,3,,1
 wo<'leave'>,,3,,1
 wo<'les'>,,3,,1
@@ -301,222 +569,22 @@ wo<'lgdt'>,,3,,1
 wo<'lgs'>,,3,,1
 wo<'lidt'>,,3,,1
 wo<'lldt'>,,3,,1
-wo<'local'>,f1.295-f1,3,,1
+wo<'local'>,f1.563-f1,3,,1
 wo<'lock'>,,3,,1
 wo<'lods'>,,3,,1
-wo<'lodsb'>,f1.298-f1,3,,1
-wo<'lodsd'>,f1.299-f1,3,,1
+wo<'lodsb'>,f1.566-f1,3,,1
+wo<'lodsd'>,f1.567-f1,3,,1
 wo<'lodsq'>,,3,,1
-wo<'lodsw'>,f1.301-f1,3,,1
+wo<'lodsw'>,f1.569-f1,3,,1
 wo<'loop'>,,3,,6
-wo<'loope'>,f1.303-f1,3,,6
-wo<'loopne'>,f1.304-f1,3,,6
-wo<'loopnz'>,f1.305-f1,3,,6
-wo<'loopz'>,f1.306-f1,3,,6
+wo<'loope'>,f1.571-f1,3,,6
+wo<'loopne'>,f1.572-f1,3,,6
+wo<'loopnz'>,f1.573-f1,3,,6
+wo<'loopz'>,f1.574-f1,3,,6
 wo<'lss'>,,3,,1
-wo<'m2m'>,f1.308-f1,3,,5
+wo<'m2m'>,f1.576-f1,3,,5
 wo<'macro'>,,3,,1
-wo<'mcall -1'>,f1.310-f1,3,,5
-wo<'mcall 0'>,f1.311-f1,3,,5
-wo<'mcall 1'>,f1.312-f1,3,,5
-wo<'mcall 10'>,f1.313-f1,3,,5
-wo<'mcall 11'>,f1.314-f1,3,,5
-wo<'mcall 12'>,f1.315-f1,3,,5
-wo<'mcall 13'>,f1.316-f1,3,,5
-wo<'mcall 14'>,f1.317-f1,3,,5
-wo<'mcall 15,1'>,f1.318-f1,3,,5
-wo<'mcall 15,2'>,f1.319-f1,3,,5
-wo<'mcall 15,3'>,f1.320-f1,3,,5
-wo<'mcall 15,4'>,f1.321-f1,3,,5
-wo<'mcall 15,5'>,f1.322-f1,3,,5
-wo<'mcall 15,6'>,f1.323-f1,3,,5
-wo<'mcall 15,7'>,f1.324-f1,3,,5
-wo<'mcall 16'>,f1.325-f1,3,,5
-wo<'mcall 17'>,f1.326-f1,3,,5
-wo<'mcall 18,1'>,f1.327-f1,3,,5
-wo<'mcall 18,10'>,f1.328-f1,3,,5
-wo<'mcall 18,11'>,f1.329-f1,3,,5
-wo<'mcall 18,13'>,f1.330-f1,3,,5
-wo<'mcall 18,14'>,f1.331-f1,3,,5
-wo<'mcall 18,15'>,f1.332-f1,3,,5
-wo<'mcall 18,16'>,f1.333-f1,3,,5
-wo<'mcall 18,17'>,f1.334-f1,3,,5
-wo<'mcall 18,18'>,f1.335-f1,3,,5
-wo<'mcall 18,19'>,f1.336-f1,3,,5
-wo<'mcall 18,2'>,f1.337-f1,3,,5
-wo<'mcall 18,20'>,f1.338-f1,3,,5
-wo<'mcall 18,21'>,f1.339-f1,3,,5
-wo<'mcall 18,22'>,f1.340-f1,3,,5
-wo<'mcall 18,3'>,f1.341-f1,3,,5
-wo<'mcall 18,4'>,f1.342-f1,3,,5
-wo<'mcall 18,5'>,f1.343-f1,3,,5
-wo<'mcall 18,6'>,f1.344-f1,3,,5
-wo<'mcall 18,7'>,f1.345-f1,3,,5
-wo<'mcall 18,8'>,f1.346-f1,3,,5
-wo<'mcall 18,9'>,f1.347-f1,3,,5
-wo<'mcall 2'>,f1.348-f1,3,,5
-wo<'mcall 20'>,f1.349-f1,3,,5
-wo<'mcall 21,1'>,f1.350-f1,3,,5
-wo<'mcall 21,10'>,f1.351-f1,3,,5
-wo<'mcall 21,11'>,f1.352-f1,3,,5
-wo<'mcall 21,12'>,f1.353-f1,3,,5
-wo<'mcall 21,13,1'>,f1.354-f1,3,,5
-wo<'mcall 21,13,2'>,f1.355-f1,3,,5
-wo<'mcall 21,13,3'>,f1.356-f1,3,,5
-wo<'mcall 21,13,4'>,f1.357-f1,3,,5
-wo<'mcall 21,13,5'>,f1.358-f1,3,,5
-wo<'mcall 21,2'>,f1.359-f1,3,,5
-wo<'mcall 21,3'>,f1.360-f1,3,,5
-wo<'mcall 21,4'>,f1.361-f1,3,,5
-wo<'mcall 21,5'>,f1.362-f1,3,,5
-wo<'mcall 21,7'>,f1.363-f1,3,,5
-wo<'mcall 21,8'>,f1.364-f1,3,,5
-wo<'mcall 22'>,f1.365-f1,3,,5
-wo<'mcall 23'>,f1.366-f1,3,,5
-wo<'mcall 24,1'>,f1.367-f1,3,,5
-wo<'mcall 24,2'>,f1.368-f1,3,,5
-wo<'mcall 24,3'>,f1.369-f1,3,,5
-wo<'mcall 24,4'>,f1.370-f1,3,,5
-wo<'mcall 24,5'>,f1.371-f1,3,,5
-wo<'mcall 25'>,f1.372-f1,3,,5
-wo<'mcall 26,1'>,f1.373-f1,3,,5
-wo<'mcall 26,10'>,f1.374-f1,3,,5
-wo<'mcall 26,11'>,f1.375-f1,3,,5
-wo<'mcall 26,12'>,f1.376-f1,3,,5
-wo<'mcall 26,2'>,f1.377-f1,3,,5
-wo<'mcall 26,3'>,f1.378-f1,3,,5
-wo<'mcall 26,4'>,f1.379-f1,3,,5
-wo<'mcall 26,5'>,f1.380-f1,3,,5
-wo<'mcall 26,7'>,f1.381-f1,3,,5
-wo<'mcall 26,8'>,f1.382-f1,3,,5
-wo<'mcall 26,9'>,f1.383-f1,3,,5
-wo<'mcall 28'>,f1.384-f1,3,,5
-wo<'mcall 29'>,f1.385-f1,3,,5
-wo<'mcall 3'>,f1.386-f1,3,,5
-wo<'mcall 30'>,f1.387-f1,3,,5
-wo<'mcall 32'>,f1.388-f1,3,,5
-wo<'mcall 33'>,f1.389-f1,3,,5
-wo<'mcall 35'>,f1.390-f1,3,,5
-wo<'mcall 37'>,f1.391-f1,3,,5
-wo<'mcall 38'>,f1.392-f1,3,,5
-wo<'mcall 39,1'>,f1.393-f1,3,,5
-wo<'mcall 39,2'>,f1.394-f1,3,,5
-wo<'mcall 39,4'>,f1.395-f1,3,,5
-wo<'mcall 4'>,f1.396-f1,3,,5
-wo<'mcall 40'>,f1.397-f1,3,,5
-wo<'mcall 43'>,f1.398-f1,3,,5
-wo<'mcall 46'>,f1.399-f1,3,,5
-wo<'mcall 47'>,f1.400-f1,3,,5
-wo<'mcall 48,0'>,f1.401-f1,3,,5
-wo<'mcall 48,1'>,f1.402-f1,3,,5
-wo<'mcall 48,2'>,f1.403-f1,3,,5
-wo<'mcall 48,3'>,f1.404-f1,3,,5
-wo<'mcall 48,4'>,f1.405-f1,3,,5
-wo<'mcall 48,5'>,f1.406-f1,3,,5
-wo<'mcall 48,6'>,f1.407-f1,3,,5
-wo<'mcall 48,7'>,f1.408-f1,3,,5
-wo<'mcall 48,8'>,f1.409-f1,3,,5
-wo<'mcall 49'>,f1.410-f1,3,,5
-wo<'mcall 5'>,f1.411-f1,3,,5
-wo<'mcall 50'>,f1.412-f1,3,,5
-wo<'mcall 51'>,f1.413-f1,3,,5
-wo<'mcall 52,0'>,f1.414-f1,3,,5
-wo<'mcall 52,1'>,f1.415-f1,3,,5
-wo<'mcall 52,10'>,f1.416-f1,3,,5
-wo<'mcall 52,11'>,f1.417-f1,3,,5
-wo<'mcall 52,12'>,f1.418-f1,3,,5
-wo<'mcall 52,13'>,f1.419-f1,3,,5
-wo<'mcall 52,14'>,f1.420-f1,3,,5
-wo<'mcall 52,15'>,f1.421-f1,3,,5
-wo<'mcall 52,2'>,f1.422-f1,3,,5
-wo<'mcall 52,3'>,f1.423-f1,3,,5
-wo<'mcall 52,6'>,f1.424-f1,3,,5
-wo<'mcall 52,8'>,f1.425-f1,3,,5
-wo<'mcall 52,9'>,f1.426-f1,3,,5
-wo<'mcall 53,0'>,f1.427-f1,3,,5
-wo<'mcall 53,1'>,f1.428-f1,3,,5
-wo<'mcall 53,10'>,f1.429-f1,3,,5
-wo<'mcall 53,11'>,f1.430-f1,3,,5
-wo<'mcall 53,2'>,f1.431-f1,3,,5
-wo<'mcall 53,255'>,f1.432-f1,3,,5
-wo<'mcall 53,3'>,f1.433-f1,3,,5
-wo<'mcall 53,4'>,f1.434-f1,3,,5
-wo<'mcall 53,5'>,f1.435-f1,3,,5
-wo<'mcall 53,6'>,f1.436-f1,3,,5
-wo<'mcall 53,7'>,f1.437-f1,3,,5
-wo<'mcall 53,8'>,f1.438-f1,3,,5
-wo<'mcall 53,9'>,f1.439-f1,3,,5
-wo<'mcall 55,0'>,f1.440-f1,3,,5
-wo<'mcall 55,1'>,f1.441-f1,3,,5
-wo<'mcall 55,2'>,f1.442-f1,3,,5
-wo<'mcall 55,55'>,f1.443-f1,3,,5
-wo<'mcall 57'>,f1.444-f1,3,,5
-wo<'mcall 58'>,f1.445-f1,3,,5
-wo<'mcall 58,0'>,f1.446-f1,3,,5
-wo<'mcall 58,15'>,f1.447-f1,3,,5
-wo<'mcall 58,8'>,f1.448-f1,3,,5
-wo<'mcall 6'>,f1.449-f1,3,,5
-wo<'mcall 60'>,f1.450-f1,3,,5
-wo<'mcall 61'>,f1.451-f1,3,,5
-wo<'mcall 62,0'>,f1.452-f1,3,,5
-wo<'mcall 62,1'>,f1.453-f1,3,,5
-wo<'mcall 62,10'>,f1.454-f1,3,,5
-wo<'mcall 62,2'>,f1.455-f1,3,,5
-wo<'mcall 62,4'>,f1.456-f1,3,,5
-wo<'mcall 62,5'>,f1.457-f1,3,,5
-wo<'mcall 62,6'>,f1.458-f1,3,,5
-wo<'mcall 62,8'>,f1.459-f1,3,,5
-wo<'mcall 62,9'>,f1.460-f1,3,,5
-wo<'mcall 63'>,f1.461-f1,3,,5
-wo<'mcall 64'>,f1.462-f1,3,,5
-wo<'mcall 65'>,f1.463-f1,3,,5
-wo<'mcall 66'>,f1.464-f1,3,,5
-wo<'mcall 66,1'>,f1.465-f1,3,,5
-wo<'mcall 66,2'>,f1.466-f1,3,,5
-wo<'mcall 66,3'>,f1.467-f1,3,,5
-wo<'mcall 66,4'>,f1.468-f1,3,,5
-wo<'mcall 66,5'>,f1.469-f1,3,,5
-wo<'mcall 67'>,f1.470-f1,3,,5
-wo<'mcall 68,0'>,f1.471-f1,3,,5
-wo<'mcall 68,1'>,f1.472-f1,3,,5
-wo<'mcall 68,11'>,f1.473-f1,3,,5
-wo<'mcall 68,12'>,f1.474-f1,3,,5
-wo<'mcall 68,13'>,f1.475-f1,3,,5
-wo<'mcall 68,14'>,f1.476-f1,3,,5
-wo<'mcall 68,15'>,f1.477-f1,3,,5
-wo<'mcall 68,16'>,f1.478-f1,3,,5
-wo<'mcall 68,17'>,f1.479-f1,3,,5
-wo<'mcall 68,19'>,f1.480-f1,3,,5
-wo<'mcall 68,2'>,f1.481-f1,3,,5
-wo<'mcall 68,20'>,f1.482-f1,3,,5
-wo<'mcall 68,3'>,f1.483-f1,3,,5
-wo<'mcall 68,4'>,f1.484-f1,3,,5
-wo<'mcall 69'>,f1.485-f1,3,,5
-wo<'mcall 69,0'>,f1.486-f1,3,,5
-wo<'mcall 69,1'>,f1.487-f1,3,,5
-wo<'mcall 69,2'>,f1.488-f1,3,,5
-wo<'mcall 69,3'>,f1.489-f1,3,,5
-wo<'mcall 69,4'>,f1.490-f1,3,,5
-wo<'mcall 69,5'>,f1.491-f1,3,,5
-wo<'mcall 69,6'>,f1.492-f1,3,,5
-wo<'mcall 69,7'>,f1.493-f1,3,,5
-wo<'mcall 69,8'>,f1.494-f1,3,,5
-wo<'mcall 69,9'>,f1.495-f1,3,,5
-wo<'mcall 7'>,f1.496-f1,3,,5
-wo<'mcall 70'>,f1.497-f1,3,,5
-wo<'mcall 70,0'>,f1.498-f1,3,,5
-wo<'mcall 70,1'>,f1.499-f1,3,,5
-wo<'mcall 70,2'>,f1.500-f1,3,,5
-wo<'mcall 70,3'>,f1.501-f1,3,,5
-wo<'mcall 70,4'>,f1.502-f1,3,,5
-wo<'mcall 70,5'>,f1.503-f1,3,,5
-wo<'mcall 70,6'>,f1.504-f1,3,,5
-wo<'mcall 70,7'>,f1.505-f1,3,,5
-wo<'mcall 70,8'>,f1.506-f1,3,,5
-wo<'mcall 70,9'>,f1.507-f1,3,,5
-wo<'mcall 71,1'>,f1.508-f1,3,,5
-wo<'mcall 8'>,f1.509-f1,3,,5
-wo<'mcall 9'>,f1.510-f1,3,,5
+wo<'mcall'>,f1.578-f1,3,,5
 wo<'mm0'>,,3,,2
 wo<'mm1'>,,3,,2
 wo<'mm2'>,,3,,2
@@ -525,7 +593,7 @@ wo<'mm4'>,,3,,2
 wo<'mm5'>,,3,,2
 wo<'mm6'>,,3,,2
 wo<'mm7'>,,3,,2
-wo<'mov'>,f1.519-f1,3,,1
+wo<'mov'>,f1.587-f1,3,,1
 wo<'movs'>,,3,,1
 wo<'movsb'>,,3,,1
 wo<'movsd'>,,3,,1
@@ -534,9 +602,9 @@ wo<'movsx'>,,3,,1
 wo<'movzx'>,,3,,1
 wo<'mul'>,,3,,1
 wo<'neg'>,,3,,1
-wo<'nop'>,f1.528-f1,3,,1
+wo<'nop'>,f1.596-f1,3,,1
 wo<'not'>,,3,,1
-wo<'of'>,f1.530-f1,3,,2
+wo<'of'>,f1.598-f1,3,,2
 wo<'offset'>,,3,,1
 wo<'option'>,,3,,1
 wo<'or'>,,3,,1
@@ -545,32 +613,32 @@ wo<'outs'>,,3,,1
 wo<'packssdw'>,,3,,1
 wo<'packsswb'>,,3,,1
 wo<'packuswb'>,,3,,1
-wo<'paddb'>,f1.539-f1,3,,1
-wo<'paddd'>,f1.540-f1,3,,1
-wo<'paddsb'>,f1.541-f1,3,,1
-wo<'paddsw'>,f1.542-f1,3,,1
-wo<'paddusb'>,f1.543-f1,3,,1
-wo<'paddusw'>,f1.544-f1,3,,1
-wo<'paddw'>,f1.545-f1,3,,1
-wo<'pand'>,f1.546-f1,3,,1
-wo<'pandn'>,f1.547-f1,3,,1
-wo<'pcmpeqb'>,f1.548-f1,3,,1
-wo<'pcmpeqd'>,f1.549-f1,3,,1
-wo<'pcmpeqw'>,f1.550-f1,3,,1
-wo<'pcmpgtb'>,f1.551-f1,3,,1
-wo<'pcmpgtd'>,f1.552-f1,3,,1
-wo<'pcmpgtw'>,f1.553-f1,3,,1
-wo<'pf'>,f1.554-f1,3,,2
-wo<'pmaddwd'>,f1.555-f1,3,,1
-wo<'pmulhw'>,f1.556-f1,3,,1
-wo<'pmullw'>,f1.557-f1,3,,1
+wo<'paddb'>,f1.607-f1,3,,1
+wo<'paddd'>,f1.608-f1,3,,1
+wo<'paddsb'>,f1.609-f1,3,,1
+wo<'paddsw'>,f1.610-f1,3,,1
+wo<'paddusb'>,f1.611-f1,3,,1
+wo<'paddusw'>,f1.612-f1,3,,1
+wo<'paddw'>,f1.613-f1,3,,1
+wo<'pand'>,f1.614-f1,3,,1
+wo<'pandn'>,f1.615-f1,3,,1
+wo<'pcmpeqb'>,f1.616-f1,3,,1
+wo<'pcmpeqd'>,f1.617-f1,3,,1
+wo<'pcmpeqw'>,f1.618-f1,3,,1
+wo<'pcmpgtb'>,f1.619-f1,3,,1
+wo<'pcmpgtd'>,f1.620-f1,3,,1
+wo<'pcmpgtw'>,f1.621-f1,3,,1
+wo<'pf'>,f1.622-f1,3,,2
+wo<'pmaddwd'>,f1.623-f1,3,,1
+wo<'pmulhw'>,f1.624-f1,3,,1
+wo<'pmullw'>,f1.625-f1,3,,1
 wo<'pop'>,,3,,1
-wo<'popa'>,f1.559-f1,3,,1
-wo<'popad'>,f1.560-f1,3,,1
+wo<'popa'>,f1.627-f1,3,,1
+wo<'popad'>,f1.628-f1,3,,1
 wo<'popf'>,,3,,1
 wo<'popfd'>,,3,,1
-wo<'por'>,f1.563-f1,3,,1
-wo<'proc'>,f1.564-f1,3,,5
+wo<'por'>,f1.631-f1,3,,1
+wo<'proc'>,f1.632-f1,3,,5
 wo<'pshimd'>,,3,,1
 wo<'pshimq'>,,3,,1
 wo<'pshimw'>,,3,,1
@@ -596,14 +664,14 @@ wo<'punpckhwd'>,,3,,1
 wo<'punpcklbw'>,,3,,1
 wo<'punpckldq'>,,3,,1
 wo<'punpcklwd'>,,3,,1
-wo<'push'>,f1.590-f1,3,,1
-wo<'pusha'>,f1.591-f1,3,,1
-wo<'pushad'>,f1.592-f1,3,,1
-wo<'pushf'>,f1.593-f1,3,,1
+wo<'push'>,f1.658-f1,3,,1
+wo<'pusha'>,f1.659-f1,3,,1
+wo<'pushad'>,f1.660-f1,3,,1
+wo<'pushf'>,f1.661-f1,3,,1
 wo<'pushfd'>,,3,,1
 wo<'pword'>,,3,,8
-wo<'pxor'>,f1.596-f1,3,,1
-wo<'qword'>,f1.597-f1,3,,8
+wo<'pxor'>,f1.664-f1,3,,1
+wo<'qword'>,f1.665-f1,3,,8
 wo<'rcl'>,,3,,1
 wo<'rcr'>,,3,,1
 wo<'rep'>,,3,,1
@@ -613,26 +681,26 @@ wo<'repnz'>,,3,,1
 wo<'repz'>,,3,,1
 wo<'ret'>,,3,,1
 wo<'retf'>,,3,,1
-wo<'rol'>,f1.607-f1,3,,1
-wo<'ror'>,f1.608-f1,3,,1
-wo<'sahf'>,f1.609-f1,3,,1
+wo<'rol'>,f1.675-f1,3,,1
+wo<'ror'>,f1.676-f1,3,,1
+wo<'sahf'>,f1.677-f1,3,,1
 wo<'sal'>,,3,,1
 wo<'sar'>,,3,,1
 wo<'sbb'>,,3,,1
 wo<'scas'>,,3,,1
-wo<'scasb'>,f1.614-f1,3,,1
-wo<'scasd'>,f1.615-f1,3,,1
-wo<'scasw'>,f1.616-f1,3,,1
+wo<'scasb'>,f1.682-f1,3,,1
+wo<'scasd'>,f1.683-f1,3,,1
+wo<'scasw'>,f1.684-f1,3,,1
 wo<'setcc'>,,3,,1
-wo<'sf'>,f1.618-f1,3,,2
-wo<'sgdt'>,f1.619-f1,3,,1
-wo<'shl'>,f1.620-f1,3,,1
-wo<'shld'>,f1.621-f1,3,,1
-wo<'shr'>,f1.622-f1,3,,1
-wo<'si'>,f1.623-f1,3,,2
+wo<'sf'>,f1.686-f1,3,,2
+wo<'sgdt'>,f1.687-f1,3,,1
+wo<'shl'>,f1.688-f1,3,,1
+wo<'shld'>,f1.689-f1,3,,1
+wo<'shr'>,f1.690-f1,3,,1
+wo<'si'>,f1.691-f1,3,,2
 wo<'sizeof'>,,3,,1
-wo<'sp'>,f1.625-f1,3,,2
-wo<'ss'>,f1.626-f1,3,,2
+wo<'sp'>,f1.693-f1,3,,2
+wo<'ss'>,f1.694-f1,3,,2
 wo<'st0'>,,3,,2
 wo<'st1'>,,3,,2
 wo<'st2'>,,3,,2
@@ -643,24 +711,24 @@ wo<'st6'>,,3,,2
 wo<'st7'>,,3,,2
 wo<'stc'>,,3,,1
 wo<'std'>,,3,,1
-wo<'stdcall'>,f1.637-f1,3,,5
+wo<'stdcall'>,f1.705-f1,3,,5
 wo<'sti'>,,3,,1
 wo<'stos'>,,3,,1
-wo<'stosb'>,f1.640-f1,3,,1
-wo<'stosd'>,f1.641-f1,3,,1
-wo<'stosw'>,f1.642-f1,3,,1
-wo<'struc'>,f1.643-f1,3,,5
+wo<'stosb'>,f1.708-f1,3,,1
+wo<'stosd'>,f1.709-f1,3,,1
+wo<'stosw'>,f1.710-f1,3,,1
+wo<'struc'>,f1.711-f1,3,,5
 wo<'struct'>,,3,,1
-wo<'sub'>,f1.645-f1,3,,1
+wo<'sub'>,f1.713-f1,3,,1
 wo<'switch'>,,3,,6
 wo<'tbyte'>,,3,,8
 wo<'test'>,,3,,1
-wo<'tf'>,f1.649-f1,3,,2
-wo<'tword'>,f1.650-f1,3,,8
-wo<'uses'>,f1.651-f1,3,,1
-wo<'word'>,f1.652-f1,3,,8
+wo<'tf'>,f1.717-f1,3,,2
+wo<'tword'>,f1.718-f1,3,,8
+wo<'uses'>,f1.719-f1,3,,1
+wo<'word'>,f1.720-f1,3,,8
 wo<'xadd'>,,3,,1
-wo<'xchg'>,f1.654-f1,3,,1
+wo<'xchg'>,f1.722-f1,3,,1
 wo<'xlat'>,,3,,1
 wo<'xlatb'>,,3,,1
 wo<'xmm0'>,,3,,2
@@ -671,8 +739,8 @@ wo<'xmm4'>,,3,,2
 wo<'xmm5'>,,3,,2
 wo<'xmm6'>,,3,,2
 wo<'xmm7'>,,3,,2
-wo<'xor'>,f1.665-f1,3,,1
-wo<'zf'>,f1.666-f1,3,,2
+wo<'xor'>,f1.733-f1,3,,1
+wo<'zf'>,f1.734-f1,3,,2
 wo<'||'>,,0,,1
 f1: db 0
 .19:db 'секция кода',0
@@ -685,403 +753,251 @@ f1: db 0
 .65:db 'верхняя анонимная метка (тоже что @r)',0
 .66:db 'нижняя анонимная метка',0
 .67:db 'верхняя анонимная метка (тоже что @b)',0
-.70:db 'используется после сложения каждого разряда распакованных BCD-чисел (Ascii Adjust after Addition - ASCII-коррекция после сложения)',0
-.75:db 'прибавить к первому операнду второй',0
-.77:db 'флаговый регистр дополнительный признак переноса',0
-.78:db 'регистр общего назначения 1 байт',0
-.79:db 'регистр общего назначения 1 байт',0
-.82:db 'регистр общего назначения 2 байта',0
-.86:db 'регистр указателя',0
-.90:db 'определяет, установлен ли в заданном слове определенный бит. Значение выбраного бита помещаеться в cf',0
-.91:db 'значение выбраного бита помещаеться в cf, инвертирует значение бита',0
-.92:db 'значение выбраного бита помещаеться в cf, в бит записываеться 0',0
-.93:db 'значение выбраного бита помещаеться в cf, в бит записываеться 1',0
-.94:db 'регистр общего назначения 2 байта',0
-.95:db '1 байт',0
-.96:db 'Вызов подпрограммы. Перед вызовом помещает в стэк адрес предыдущей команды',0
-.101:db 'флаговый регистр переноса',0
-.103:db 'регистр общего назначения 1 байт',0
-.104:db 'сброс флага переноса cf=0',0
-.105:db 'сброс признака направления df=0',0
-.106:db 'сброс признака разрешения прерывания if=0',0
-.108:db 'сравнение операндов и по результатам сравнения устанавливает флаги (af, cf, of, pf, sf и zf)',0
-.110:db 'сравнение 1-но байтовых строк',0
-.111:db 'сравнение 4-х байтовых строк',0
-.113:db 'сравнение 2-х байтовых строк',0
-.115:db 'многострочный комментарий',0
-.121:db 'сегментный регистр - сегмент кода',0
-.122:db 'преобразование слова в двойное слово. Флаги не меняются.',0
-.124:db 'регистр общего назначения 2 байта',0
-.125:db 'десятичная коррекция для сложения. Команда воздействует на флаги af. cf, pf, sf и zf (флаг of неопределен).',0
-.126:db 'десятичная коррекция для вычитания. Команда воздействует на флаги af, cf, pf, sf и zf.',0
-.127:db '1 байт',0
-.128:db '4 байта - 2 слова',0
-.129:db 'вычесть из операнда единицу. Команда воздействует на флаги af, of, pf, sf и zf.',0
-.130:db 'флаговый регистр направления',0
-.133:db 'деление. Команда воздействует на флаги af, cf, of, pf sf и zf (все не определены).',0
-.135:db '8 байт - 4 слова',0
-.137:db 'отладочный регистр 0-й',0
-.138:db 'отладочный регистр 1-й',0
-.139:db 'отладочный регистр 2-й',0
-.140:db 'отладочный регистр 3-й',0
-.141:db 'отладочный регистр 4-й',0
-.142:db 'отладочный регистр 5-й',0
-.143:db 'отладочный регистр 6-й',0
-.144:db 'отладочный регистр 7-й',0
-.145:db 'сегментный регистр - сегмент данных',0
-.146:db '10 байт',0
-.147:db 'дублирование начального значения',0
-.148:db '2 байта - 1 слово',0
-.149:db '4 байта',0
-.150:db 'регистр общего назначения 2 байта',0
-.151:db 'регистр общего назначения 4 байта',0
-.153:db 'регистр общего назначения 4 байта',0
-.154:db 'регистр общего назначения 4 байта',0
-.155:db 'индексный регистр 4 байта',0
-.156:db 'регистр общего назначения 4 байта',0
-.157:db 'регистр указателя команд',0
-.158:db 'конец программы',0
-.159:db 'конец макроса',0
-.160:db 'конец функции proc',0
-.161:db 'конец структуры struct',0
-.164:db 'сегментный регистр',0
-.165:db 'переключение на сопроцессор. Флаги не меняются.',0
-.168:db 'вычисление степени x по основанию 2 минус 1',0
-.169:db 'значение по модулю числа st(0) ',0
-.170:db 'сложить 2 числа с плавающей точкой',0
-.172:db 'загружает из памяти в вершину стека st(0) двоично-десятичное число',0
-.173:db 'изменение знака числа',0
-.174:db 'сравнение',0
-.175:db 'сравнение и извлечение из стека',0
-.176:db 'сравнение и двойное извлечение из стека',0
-.177:db 'косинус',0
-.178:db 'уменьшить указатель стека sp на 1',0
-.179:db 'поделить 2 числа с плавающей точкой',0
-.183:db 'освобождение регистра стека сопроцессора',0
-.184:db 'целочисленное сравнение',0
-.185:db 'целочисленное сравнение и извлечение из стека',0
-.186:db 'загружает из памяти в вершину стека st(0) целое число ',0
-.188:db 'увеличить указатель стека sp на 1',0
-.189:db 'инициализировать fpu',0
-.192:db 'загружает из памяти в вершину стека st(0) вещественное число',0
-.193:db 'загрузка единицы',0
-.195:db 'загрузка числа 1/ln(2)',0
-.196:db 'загрузка числа ln(10)/ln(2)',0
-.197:db 'загрузка числа log(2)/ln(10)',0
-.198:db 'загрузка числа ln(2)',0
-.199:db 'загружает в вершину стека st(0) число Pi',0
-.200:db 'загрузка нуля',0
-.201:db 'умножение',0
-.205:db 'арктангенс частного',0
-.206:db 'вычисление остатка от деления',0
-.207:db 'вычисление тангенса',0
-.208:db 'округление числа st(0) до целого',0
-.212:db 'умножение на 2^y',0
-.213:db 'вычисление синуса',0
-.214:db 'вычисление синуса и косинуса',0
-.215:db 'извлечение квадратного корня',0
-.216:db 'выгрузка результата st(0)',0
-.218:db 'выгрузка результата st(0) и освобождение стека',0
-.220:db 'вычитание',0
-.224:db 'сравнение операнда с нулем',0
-.226:db 'анализ операнда',0
-.227:db 'обмен',0
-.228:db 'выделение порядка числа и мантиссы',0
-.229:db 'вычисление y*log2(x)',0
-.230:db 'вычисление y*log2(x+1)',0
-.231:db '6-байтный регистр, в котором содержится линейный адрес глобальной дескрипторной таблицы',0
-.233:db 'останов микропроцессора. Флаги не меняются.',0
-.234:db 'целое деление знаковых величин. Команда воздействует на флаги af, cf, of, pf, sf и zf.',0
-.235:db 'флаговый регистр разрешения прерывания',0
-.236:db 'целое умножение знаковых величин. Команда воздействует на флаги cf и of (флаги af pf sf и zf не определены).',0
-.238:db 'прибавить к операнду единицу',0
-.240:db 'указывает библиотеку импорта',0
-.247:db 'регистр указателя команд',0
-.250:db 'переход если cf=0 и zf=0 (ja - Jump if Above)',0
-.251:db 'переход если cf=0 (jae - Jump if Above or Equal)',0
-.252:db 'переход если cf=1 (jb - Jump if Below)',0
-.253:db 'переход если cf=1 или zf=1 (jbe - Jump if Below or Equal)',0
-.254:db 'переход если cf=1 (jc - Jump if Carry)',0
-.256:db 'переход если cx=0 (jcxz - Jump if CX Zero)',0
-.257:db 'переход если zf=1 (je - Jump if Equal)',0
-.258:db 'переход если ecx=0 (jecxz - Jump if ECX Zero)',0
-.259:db 'переход если zf=0 и sf=of (jg - Jump if Greater (signed))',0
-.260:db 'переход если sf=of (jge - Jump if Greater or Equal (signed))',0
-.261:db 'переход если sf!=of (jl - Jump if Less (signed))',0
-.262:db 'переход если zf=1 или sf!=of (jle - Jump if Less or Equal (signed))',0
-.263:db 'переход без условия',0
-.277:db 'переход если zf=0 (jnz - Jump if Not Zero)',0
-.278:db 'переход если of=1 (jo - Jump if Overflow)',0
-.281:db 'переход если pf=0 (jpo - Jump if Parity Odd)',0
-.282:db 'переход если sf=1 (js - Jump if Signed (signed))',0
-.283:db 'переход если zf=1 (jz - Jump if Zero)',0
-.286:db '10-байтный регистр, содержащий 16-битный селектор (индекс) для gdt и 8-байтный дескриптор',0
-.295:db 'резервирует память из стека для локальных переменных',0
-.298:db 'загрузка 1-но байтовых строк',0
-.299:db 'загрузка 4-х байтовых строк',0
-.301:db 'загрузка 2-х байтовых строк',0
-.303:db 'переход если ecx!=0 и флаг zf=1',0
-.304:db 'переход если ecx!=0 и флаг zf=0',0
-.305:db 'переход если ecx!=0 и флаг zf=0',0
-.306:db 'переход если ecx!=0 и флаг zf=1',0
-.308:db 'макрос для копирования значения, использует операции push и pop',0
-.310:db 'завершить выполнение потока/процесс (макрос для сист. функций вызывает int 0x40)',0
-.311:db 'определить и нарисовать окно (макрос для сист. функций вызывает int 0x40)',0
-.312:db 'поставить точку в окне (ebx = x-координата (относительно окна), ecx = y-координата (относительно окна), edx = 0x00RRGGBB - цвет точки) (макрос для сист. функций вызывает int 0x40)',0
-.313:db 'ожидать события (макрос для сист. функций вызывает int 0x40)',0
-.314:db 'проверить, есть ли событие, без ожидания (макрос для сист. функций вызывает int 0x40)',0
-.315:db 'начать/закончить перерисовку окна (макрос для сист. функций вызывает int 0x40)',0
-.316:db 'нарисовать прямоугольник в окне (макрос для сист. функций вызывает int 0x40)',0
-.317:db 'получить размеры экрана (макрос для сист. функций вызывает int 0x40)',0
-.318:db 'установить размер фонового изображения (макрос для сист. функций вызывает int 0x40)',0
-.319:db 'поставить точку на фоновом изображении (макрос для сист. функций вызывает int 0x40)',0
-.320:db 'перерисовать фон (макрос для сист. функций вызывает int 0x40)',0
-.321:db 'установить режим отрисовки фона (макрос для сист. функций вызывает int 0x40)',0
-.322:db 'поместить блок пикселей на фон (макрос для сист. функций вызывает int 0x40)',0
-.323:db 'Спроецировать данные фона на адресное пространство процесса (макрос для сист. функций вызывает int 0x40)',0
-.324:db 'Закрыть проекцию данных фона на адресное пространство процесса (макрос для сист. функций вызывает int 0x40)',0
-.325:db 'сохранить рамдиск на дискету (макрос для сист. функций вызывает int 0x40)',0
-.326:db 'получить код нажатой кнопки (макрос для сист. функций вызывает int 0x40)',0
-.327:db 'завершить работу системы (макрос для сист. функций вызывает int 0x40)',0
-.328:db 'свернуть окно приложения (макрос для сист. функций вызывает int 0x40)',0
-.329:db 'Получить информацию о дисковой подсистеме (макрос для сист. функций вызывает int 0x40)',0
-.330:db 'получить версию ядра (макрос для сист. функций вызывает int 0x40)',0
-.331:db 'Ожидать начала обратного хода луча развёртки монитора (макрос для сист. функций вызывает int 0x40)',0
-.332:db 'поместить курсор мыши в центр экрана (макрос для сист. функций вызывает int 0x40)',0
-.333:db 'Получить размер свободной оперативной памяти (макрос для сист. функций вызывает int 0x40)',0
-.334:db 'Получить размер имеющейся оперативной памяти (макрос для сист. функций вызывает int 0x40)',0
-.335:db 'Завершить процесс/поток по идентификатору (макрос для сист. функций вызывает int 0x40)',0
-.336:db 'получить/установить настройки мыши (макрос для сист. функций вызывает int 0x40)',0
-.337:db 'завершить процесс/поток по слоту (макрос для сист. функций вызывает int 0x40)',0
-.338:db 'Получить информацию об оперативной памяти (макрос для сист. функций вызывает int 0x40)',0
-.339:db 'Получить номер слота процесса/потока по идентификатору (макрос для сист. функций вызывает int 0x40)',0
-.340:db 'операции с окном другого процесса/потока (макрос для сист. функций вызывает int 0x40)',0
-.341:db 'сделать активным окно заданного потока (макрос для сист. функций вызывает int 0x40)',0
-.342:db 'получить счётчик пустых тактов в секунду (макрос для сист. функций вызывает int 0x40)',0
-.343:db 'получить тактовую частоту (макрос для сист. функций вызывает int 0x40)',0
-.344:db 'сохранить рамдиск в файл на жёстком диске (макрос для сист. функций вызывает int 0x40)',0
-.345:db 'получить номер активного окна (макрос для сист. функций вызывает int 0x40)',0
-.346:db 'отключить/разрешить звук спикера (макрос для сист. функций вызывает int 0x40)',0
-.347:db 'завершение работы системы с параметром (макрос для сист. функций вызывает int 0x40)',0
-.348:db 'получить код нажатой клавиши (макрос для сист. функций вызывает int 0x40)',0
-.349:db 'интерфейс MIDI (макрос для сист. функций вызывает int 0x40)',0
-.350:db 'установить базовый порт MPU MIDI (макрос для сист. функций вызывает int 0x40)',0
-.351:db 'установить канал DMA для звука (макрос для сист. функций вызывает int 0x40)',0
-.352:db 'Разрешить/запретить низкоуровневый доступ к HD (макрос для сист. функций вызывает int 0x40)',0
-.353:db 'Разрешить/запретить низкоуровневый доступ к PCI (макрос для сист. функций вызывает int 0x40)',0
-.354:db 'Инициализировать + получить информацию о драйвере vmode.mdr (макрос для сист. функций вызывает int 0x40)',0
-.355:db 'Получить информацию о текущем видеорежиме (макрос для сист. функций вызывает int 0x40)',0
-.356:db 'установить видеорежим.  (макрос для сист. функций вызывает int 0x40)',0
-.357:db 'Вернуться к начальному видеорежиму (макрос для сист. функций вызывает int 0x40)',0
-.358:db 'Увеличить/уменьшить размер видимой области монитора (макрос для сист. функций вызывает int 0x40)',0
-.359:db 'установить раскладку клавиатуры (макрос для сист. функций вызывает int 0x40)',0
-.360:db 'установить базу CD (макрос для сист. функций вызывает int 0x40)',0
-.361:db 'установить базовый порт Sound Blaster (макрос для сист. функций вызывает int 0x40)',0
-.362:db 'установить язык системы (макрос для сист. функций вызывает int 0x40)',0
-.363:db 'установить базу HD (макрос для сист. функций вызывает int 0x40)',0
-.364:db 'установить раздел HD (макрос для сист. функций вызывает int 0x40)',0
-.365:db 'установить системную дату/время (макрос для сист. функций вызывает int 0x40)',0
-.366:db 'ожидать события с таймаутом (макрос для сист. функций вызывает int 0x40)',0
-.367:db 'начать проигрывать CD-audio (макрос для сист. функций вызывает int 0x40)',0
-.368:db 'получить информацию о дорожках (макрос для сист. функций вызывает int 0x40)',0
-.369:db 'остановить проигрываемое CD-audio (макрос для сист. функций вызывает int 0x40)',0
-.370:db 'извлечь лоток привода диска (макрос для сист. функций вызывает int 0x40)',0
-.371:db 'загрузить лоток привода диска (макрос для сист. функций вызывает int 0x40)',0
-.372:db 'установить громкость SBPro - удалена (макрос для сист. функций вызывает int 0x40)',0
-.373:db 'получить базовый порт MPU MIDI (макрос для сист. функций вызывает int 0x40)',0
-.374:db 'получить канал DMA для звука (макрос для сист. функций вызывает int 0x40)',0
-.375:db 'Узнать, разрешён ли низкоуровневый доступ к HD (макрос для сист. функций вызывает int 0x40)',0
-.376:db 'Узнать, разрешён ли низкоуровневый доступ к PCI (макрос для сист. функций вызывает int 0x40)',0
-.377:db 'получить раскладку клавиатуры (макрос для сист. функций вызывает int 0x40)',0
-.378:db 'получить базу CD (макрос для сист. функций вызывает int 0x40)',0
-.379:db 'получить базовый порт Sound Blaster (макрос для сист. функций вызывает int 0x40)',0
-.380:db 'получить язык системы (макрос для сист. функций вызывает int 0x40)',0
-.381:db 'получить базу HD (макрос для сист. функций вызывает int 0x40)',0
-.382:db 'получить раздел HD (макрос для сист. функций вызывает int 0x40)',0
-.383:db 'получить значение счётчика времени (макрос для сист. функций вызывает int 0x40)',0
-.384:db 'установить громкость SB16 - удалена (макрос для сист. функций вызывает int 0x40)',0
-.385:db 'получить системную дату (макрос для сист. функций вызывает int 0x40)',0
-.386:db 'получить системное время (макрос для сист. функций вызывает int 0x40)',0
-.387:db 'работа с текущей папкой (макрос для сист. функций вызывает int 0x40)',0
-.388:db 'удалить файл с рамдиска - удалена (макрос для сист. функций вызывает int 0x40)',0
-.389:db 'записать файл на рамдиск - удалена (макрос для сист. функций вызывает int 0x40)',0
-.390:db 'прочитать цвет точки на экране (макрос для сист. функций вызывает int 0x40)',0
-.391:db 'работа с мышью (макрос для сист. функций вызывает int 0x40)',0
-.392:db 'нарисовать отрезок (макрос для сист. функций вызывает int 0x40)',0
-.393:db 'получить размер фонового изображения (макрос для сист. функций вызывает int 0x40)',0
-.394:db 'прочитать точку с фонового изображения (макрос для сист. функций вызывает int 0x40)',0
-.395:db 'получить режим отрисовки фона (макрос для сист. функций вызывает int 0x40)',0
-.396:db 'вывести строку текста в окно (макрос для сист. функций вызывает int 0x40)',0
-.397:db 'установить маску для ожидаемых событий (макрос для сист. функций вызывает int 0x40)',0
-.398:db 'ввод/вывод в порт (макрос для сист. функций вызывает int 0x40)',0
-.399:db 'зарезервировать/освободить группу портов ввода/вывода (макрос для сист. функций вызывает int 0x40)',0
-.400:db 'вывести число в окно (макрос для сист. функций вызывает int 0x40)',0
-.401:db 'применить настройки экрана (макрос для сист. функций вызывает int 0x40)',0
-.402:db 'установить стиль кнопок (макрос для сист. функций вызывает int 0x40)',0
-.403:db 'установить стандартные цвета окон (макрос для сист. функций вызывает int 0x40)',0
-.404:db 'получить стандартные цвета окон (макрос для сист. функций вызывает int 0x40)',0
-.405:db 'получить высоту скина (макрос для сист. функций вызывает int 0x40)',0
-.406:db 'получить рабочую область экрана (макрос для сист. функций вызывает int 0x40)',0
-.407:db 'установить рабочую область экрана (макрос для сист. функций вызывает int 0x40)',0
-.408:db 'Получить область скина для текста заголовка (макрос для сист. функций вызывает int 0x40)',0
-.409:db 'установить используемый скин окон (макрос для сист. функций вызывает int 0x40)',0
-.410:db 'Advanced Power Management (APM) (макрос для сист. функций вызывает int 0x40)',0
-.411:db 'пауза (ebx = время в сотых долях секунды) (макрос для сист. функций вызывает int 0x40)',0
-.412:db 'установка формы окна (макрос для сист. функций вызывает int 0x40)',0
-.413:db 'создать поток (макрос для сист. функций вызывает int 0x40)',0
-.414:db 'получить конфигурацию сетевого драйвера (макрос для сист. функций вызывает int 0x40)',0
-.415:db 'получить локальный IP-адрес (макрос для сист. функций вызывает int 0x40)',0
-.416:db 'получить маску подсети (макрос для сист. функций вызывает int 0x40)',0
-.417:db 'установить gateway IP (макрос для сист. функций вызывает int 0x40)',0
-.418:db 'установить маску подсети (макрос для сист. функций вызывает int 0x40)',0
-.419:db 'получить DNS IP (макрос для сист. функций вызывает int 0x40)',0
-.420:db 'установить DNS IP (макрос для сист. функций вызывает int 0x40)',0
-.421:db 'получить локальный MAC-адрес (макрос для сист. функций вызывает int 0x40)',0
-.422:db 'установить конфигурацию сетевого драйвера (макрос для сист. функций вызывает int 0x40)',0
-.423:db 'установить локальный IP-адрес (макрос для сист. функций вызывает int 0x40)',0
-.424:db 'добавить данные в стек входной очереди (макрос для сист. функций вызывает int 0x40)',0
-.425:db 'Прочитать данные из сетевой очереди вывода (макрос для сист. функций вызывает int 0x40)',0
-.426:db 'получить gateway IP (макрос для сист. функций вызывает int 0x40)',0
-.427:db 'открыть UDP-сокет (макрос для сист. функций вызывает int 0x40)',0
-.428:db 'закрыть UDP-сокет (макрос для сист. функций вызывает int 0x40)',0
-.429:db 'получить статус кабеля Ethernet (макрос для сист. функций вызывает int 0x40)',0
-.430:db 'прочитать данные сетевого стека (макрос для сист. функций вызывает int 0x40)',0
-.431:db 'опрос сокета (макрос для сист. функций вызывает int 0x40)',0
-.432:db 'отладочная информация сетевого драйвера (макрос для сист. функций вызывает int 0x40)',0
-.433:db 'прочитать байт из сокета (макрос для сист. функций вызывает int 0x40)',0
-.434:db 'записать в UDP-сокет (макрос для сист. функций вызывает int 0x40)',0
-.435:db 'открыть TCP-сокет (макрос для сист. функций вызывает int 0x40)',0
-.436:db 'получить состояние TCP-сокета (макрос для сист. функций вызывает int 0x40)',0
-.437:db 'записать в TCP-сокет (макрос для сист. функций вызывает int 0x40)',0
-.438:db 'закрыть TCP-сокет (макрос для сист. функций вызывает int 0x40)',0
-.439:db 'проверить, свободен ли локальный порт (макрос для сист. функций вызывает int 0x40)',0
-.440:db 'загрузить данные для SB16 (макрос для сист. функций вызывает int 0x40)',0
-.441:db 'начать проигрывать данные на SB16 (макрос для сист. функций вызывает int 0x40)',0
-.442:db 'установить формат данных SB16 (макрос для сист. функций вызывает int 0x40)',0
-.443:db 'Начать проигрывать данные на встроенном спикере (макрос для сист. функций вызывает int 0x40)',0
-.444:db 'PCI BIOS (макрос для сист. функций вызывает int 0x40)',0
-.445:db 'работа с файловой системой (макрос для сист. функций вызывает int 0x40)',0
-.446:db 'прочитать файл/папку (макрос для сист. функций вызывает int 0x40)',0
-.447:db 'получить информацию о файловой системе (макрос для сист. функций вызывает int 0x40)',0
-.448:db 'LBA-чтение с устройства (макрос для сист. функций вызывает int 0x40)',0
-.449:db 'прочитать файл с рамдиска (макрос для сист. функций вызывает int 0x40)',0
-.450:db 'Inter Process Communication (IPC) (макрос для сист. функций вызывает int 0x40)',0
-.451:db 'получить параметры для прямого доступа к графике (макрос для сист. функций вызывает int 0x40)',0
-.452:db 'получить версию PCI-интерфейса (макрос для сист. функций вызывает int 0x40)',0
-.453:db 'получить номер последней PCI-шины (макрос для сист. функций вызывает int 0x40)',0
-.454:db 'записать в PCI-регистр (макрос для сист. функций вызывает int 0x40)',0
-.455:db 'Получить механизм обращения к конфигурационному пространству PCI (макрос для сист. функций вызывает int 0x40)',0
-.456:db 'прочитать PCI-регистр (макрос для сист. функций вызывает int 0x40)',0
-.457:db 'прочитать PCI-регистр (макрос для сист. функций вызывает int 0x40)',0
-.458:db 'прочитать PCI-регистр (макрос для сист. функций вызывает int 0x40)',0
-.459:db 'записать в PCI-регистр (макрос для сист. функций вызывает int 0x40)',0
-.460:db 'записать в PCI-регистр (макрос для сист. функций вызывает int 0x40)',0
-.461:db 'работа с доской отладки (макрос для сист. функций вызывает int 0x40)',0
-.462:db 'перераспределить память приложения (макрос для сист. функций вызывает int 0x40)',0
-.463:db 'вывести изображение с палитрой в окно (макрос для сист. функций вызывает int 0x40)',0
-.464:db 'работа с клавиатурой (макрос для сист. функций вызывает int 0x40)',0
-.465:db 'установить режим ввода с клавиатуры, ecx=0 обычный (ASCII-символы) ecx=1 сканкоды (макрос для сист. функций вызывает int 0x40)',0
-.466:db 'получить режим ввода с клавиатуры (макрос для сист. функций вызывает int 0x40)',0
-.467:db 'получить состояние управляющих клавиш (макрос для сист. функций вызывает int 0x40)',0
-.468:db 'установить общесистемную "горячую клавишу" (макрос для сист. функций вызывает int 0x40)',0
-.469:db 'удалить установленную "горячую клавишу" (макрос для сист. функций вызывает int 0x40)',0
-.470:db 'изменить положение/размеры окна (макрос для сист. функций вызывает int 0x40)',0
-.471:db 'получить счётчик переключений задач (макрос для сист. функций вызывает int 0x40)',0
-.472:db 'Переключиться на следующий поток выполнения (макрос для сист. функций вызывает int 0x40)',0
-.473:db 'инициализировать кучу процесса (макрос для сист. функций вызывает int 0x40)',0
-.474:db 'выделить блок памяти (макрос для сист. функций вызывает int 0x40)',0
-.475:db 'освободить блок памяти (макрос для сист. функций вызывает int 0x40)',0
-.476:db 'ожидать извещения от драйвера (макрос для сист. функций вызывает int 0x40)',0
-.477:db 'установить обработчик исключений FPU (макрос для сист. функций вызывает int 0x40)',0
-.478:db 'загрузить драйвер (макрос для сист. функций вызывает int 0x40)',0
-.479:db 'управление драйвером (макрос для сист. функций вызывает int 0x40)',0
-.480:db 'загрузить DLL (макрос для сист. функций вызывает int 0x40)',0
-.481:db 'кэш + rdpmc (макрос для сист. функций вызывает int 0x40)',0
-.482:db 'перераспределить блок памяти (макрос для сист. функций вызывает int 0x40)',0
-.483:db 'прочитать MSR-регистр (макрос для сист. функций вызывает int 0x40)',0
-.484:db 'записать в MSR-регистр (макрос для сист. функций вызывает int 0x40)',0
-.485:db 'отладка (макрос для сист. функций вызывает int 0x40)',0
-.486:db 'Определить область данных для отладочных сообщений (макрос для сист. функций вызывает int 0x40)',0
-.487:db 'Получить состояние регистров отлаживаемого потока (макрос для сист. функций вызывает int 0x40)',0
-.488:db 'Установить состояние регистров отлаживаемого потока (макрос для сист. функций вызывает int 0x40)',0
-.489:db 'отключиться от отлаживаемого процесса (макрос для сист. функций вызывает int 0x40)',0
-.490:db 'приостановить отлаживаемый поток (макрос для сист. функций вызывает int 0x40)',0
-.491:db 'Возобновить выполнение отлаживаемого потока (макрос для сист. функций вызывает int 0x40)',0
-.492:db 'Прочитать из памяти отлаживаемого процесса (макрос для сист. функций вызывает int 0x40)',0
-.493:db 'записать в память отлаживаемого процесса (макрос для сист. функций вызывает int 0x40)',0
-.494:db 'завершить отлаживаемый поток (макрос для сист. функций вызывает int 0x40)',0
-.495:db 'Установить/снять аппаратную точку останова (макрос для сист. функций вызывает int 0x40)',0
-.496:db 'вывести изображение в окно (макрос для сист. функций вызывает int 0x40)',0
-.497:db 'работа с файловой системой с поддержкой длинных имён (макрос для сист. функций вызывает int 0x40)',0
-.498:db 'чтение файла с поддержкой длинных имён, ebx=указатель на информационную структуру (макрос для сист. функций вызывает int 0x40)',0
-.499:db 'чтение папки с поддержкой длинных имён, ebx=указатель на информационную структуру (макрос для сист. функций вызывает int 0x40)',0
-.500:db 'Создание/перезапись файла с поддержкой длинных имён, ebx=указатель на информационную структуру (макрос для сист. функций вызывает int 0x40)',0
-.501:db 'Запись в существующий файл с поддержкой длинных имён, ebx=указатель на информационную структуру (макрос для сист. функций вызывает int 0x40)',0
-.502:db 'установка размера файла, ebx=указатель на информационную структуру (макрос для сист. функций вызывает int 0x40)',0
-.503:db 'получение информации о файле/папке, ebx=указатель на информационную структуру (макрос для сист. функций вызывает int 0x40)',0
-.504:db 'установка атрибутов файла/папки, ebx=указатель на информационную структуру (макрос для сист. функций вызывает int 0x40)',0
-.505:db 'запуск программы, ebx=указатель на информационную структуру (макрос для сист. функций вызывает int 0x40)',0
-.506:db 'удаление файла/папки, ebx=указатель на информационную структуру (макрос для сист. функций вызывает int 0x40)',0
-.507:db 'создание папки, ebx=указатель на информационную структуру (макрос для сист. функций вызывает int 0x40)',0
-.508:db 'установить заголовок окна программы (макрос для сист. функций вызывает int 0x40)',0
-.509:db 'определить/удалить кнопку (макрос для сист. функций вызывает int 0x40)',0
-.510:db 'информация о потоке выполнения (макрос для сист. функций вызывает int 0x40)',0
-.519:db 'поместить значение второго операнда в первый',0
-.528:db 'пустая операция',0
-.530:db 'флаговый регистр переполнения',0
-.539:db 'сложение упакованных байт без насыщения (с циклическим переполнением)',0
-.540:db 'сложение упакованных двойных слов без насыщения (с циклическим переполнением)',0
-.541:db 'сложение упакованных байт со знаковым насыщением',0
-.542:db 'сложение упакованных слов со знаковым насыщением',0
-.543:db 'сложение упакованных байт с беззнаковым насыщением',0
-.544:db 'сложение упакованных слов с беззнаковым насыщением',0
-.545:db 'сложение упакованных слов без насыщения (с циклическим переполнением)',0
-.546:db 'логическое "и"',0
-.547:db 'логическое "и-не"',0
-.548:db 'Сравнение (на равенство) упакованных байт. Все биты элемента результата будут единичными (true) при совпадении соответствующих элементов операндов и нулевыми (false) - при несовпадении',0
-.549:db 'Сравнение (на равенство) упакованных двойных слов. Все биты элемента результата будут единичными (true) при совпадении соответствующих элементов операндов и нулевыми (false) - при несовпадении',0
-.550:db 'Сравнение (на равенство) упакованных слов. Все биты элемента результата будут единичными (true) при совпадении соответствующих элементов операндов и нулевыми (false) - при несовпадении',0
-.551:db 'Сравнение (по величине) упакованных знаковых байт. Все биты элемента результата будут единичными (true), если соответствующий элемент операнда назначения больше элемента операнда источника, и нулевыми (false) в противном случае',0
-.552:db 'Сравнение (по величине) упакованных знаковых двойных слов. Все биты элемента результата будут единичными (true), если соответствующий элемент операнда назначения больше элемента операнда источника, и нулевыми (false) в противном случае',0
-.553:db 'Сравнение (по величине) упакованных знаковых слов. Все биты элемента результата будут единичными (true), если соответствующий элемент операнда назначения больше элемента операнда источника, и нулевыми (false) в противном случае',0
-.554:db 'флаговый регистр четности',0
-.555:db 'Умножение 4-х знаковых слов операнда источника на 4 знаковых слова операнда назначения. Два двойных слова результатов умножения младших слов суммируются и записываются в младшее двойное слово операнда назначения. Два двойных слова результатов умножения старших слов суммируются и записываются в старшее двойное слово операнда назначения',0
-.556:db 'умножение упакованных знаковых слов с сохранением только старших 16 бит элементов результата',0
-.557:db 'умножение упакованных знаковых или беззнаковых слов с сохранением только младших 16 бит результата',0
-.559:db 'выгрузка из стека 2-х байтных регистров общего назначения',0
-.560:db 'выгрузка из стека 4-х байтных регистров общего назначения',0
-.563:db 'логическое "или"',0
-.564:db 'макрос для описания функции (процесса)',0
-.590:db 'загрузка слова в стек',0
-.591:db 'загрузка в стек 2-х байтных регистров общего назначения',0
-.592:db 'загрузка в стек 4-х байтных регистров общего назначения',0
-.593:db 'загрузка содержимого регистра flags в стек',0
-.596:db 'исключающее "или"',0
-.597:db '8 байт',0
-.607:db 'циклический сдвиг влево',0
-.608:db 'циклический сдвиг вправо',0
-.609:db 'сохраняет регистр ah в регистр флагов (воздействует на af, cf, pf, sf, zf)',0
-.614:db 'сравнивает значение al со значением по адресу edi',0
-.615:db 'сравнивает значение eax со значением по адресу edi',0
-.616:db 'сравнивает значение ax со значением по адресу edi',0
-.618:db 'флаговый регистр знака',0
-.619:db 'сохранение регистра gdtr (глобальной дескрипторной таблицы) в памяти',0
-.620:db 'сдвиг влево на опред. кол. бит (увеличивает число в 2^n раз)',0
-.621:db '3-х операндная команда сдвига влево. 1-м операндом может быть либо регистр, либо ячейка памяти, 2-м операндом должен быть регистр общего назначения, третьим - регистр cl или операнд.',0
-.622:db 'сдвиг вправо на опред. кол. бит (уменьшает число в 2^n раз)',0
-.623:db 'индексный регистр',0
-.625:db 'регистр указателя',0
-.626:db 'сегментный регистр - сегмент стека',0
-.637:db 'макрос для вызова функции (операция call) с записью параметров в стек (операция push)',0
-.640:db 'запись al по адресу edi, в зависимости от df адрес изменяется на 1',0
-.641:db 'запись eax по адресу edi, в зависимости от df адрес изменяется на 4',0
-.642:db 'запись ax по адресу edi, в зависимости от df адрес изменяется на 2',0
-.643:db 'макрос для описания структуры',0
-.645:db 'вычесть из первого операнда второй',0
-.649:db 'флаговый регистр трассировки',0
-.650:db '10 байт',0
-.651:db 'генерирует в процедурах (функциях) код для сохранения и восстановления указанных регистров',0
-.652:db '2 байта',0
-.654:db 'обмен значениями',0
-.665:db 'операция исключающее или | 0+0=0 | 0+1=1 | 1+0=1 | 1+1=0 |',0
-.666:db 'флаговый регистр нулевого результата',0
+.68:db 'Advanced Power Management (APM) (сист. функция из KOSfuncs.inc)',0
+.72:db 'работа с доской отладки (сист. функция из KOSfuncs.inc)',0
+.74:db 'изменить положение/размеры окна (сист. функция из KOSfuncs.inc)',0
+.75:db 'проверить, есть ли событие, без ожидания (сист. функция из KOSfuncs.inc)',0
+.77:db 'создать поток (сист. функция из KOSfuncs.inc)',0
+.78:db 'определить и нарисовать окно (сист. функция из KOSfuncs.inc)',0
+.81:db 'определить/удалить кнопку (сист. функция из KOSfuncs.inc)',0
+.82:db 'нарисовать отрезок (сист. функция из KOSfuncs.inc)',0
+.83:db 'вывести число в окно (сист. функция из KOSfuncs.inc)',0
+.84:db 'нарисовать прямоугольник в окне (сист. функция из KOSfuncs.inc)',0
+.85:db 'нарисовать строку текста (сист. функция из KOSfuncs.inc)',0
+.87:db 'получить код нажатой кнопки (сист. функция из KOSfuncs.inc)',0
+.88:db 'получить параметры для прямого доступа к графике (сист. функция из KOSfuncs.inc)',0
+.89:db 'прочитать область экрана (сист. функция из KOSfuncs.inc)',0
+.90:db 'получить код нажатой клавиши (сист. функция из KOSfuncs.inc)',0
+.91:db 'прочитать цвет точки на экране (сист. функция из KOSfuncs.inc)',0
+.92:db 'узнать кому принадлежит точка экрана (сист. функция из KOSfuncs.inc)',0
+.93:db 'получить размеры экрана (сист. функция из KOSfuncs.inc)',0
+.94:db 'получить системную дату (сист. функция из KOSfuncs.inc)',0
+.95:db 'получить системное время (сист. функция из KOSfuncs.inc)',0
+.97:db 'работа с клавиатурой (сист. функция из KOSfuncs.inc)',0
+.98:db 'перераспределить память приложения (сист. функция из KOSfuncs.inc)',0
+.99:db 'интерфейс MIDI (сист. функция из KOSfuncs.inc)',0
+.100:db 'работа с мышью (сист. функция из KOSfuncs.inc)',0
+.102:db 'сетевые опции и статистика (сист. функция из KOSfuncs.inc)',0
+.106:db 'ввод/вывод в порт (сист. функция из KOSfuncs.inc)',0
+.107:db 'вывести изображение в окно (сист. функция из KOSfuncs.inc)',0
+.108:db 'вывести изображение с палитрой в окно (сист. функция из KOSfuncs.inc)',0
+.109:db 'поставить точку в окне (ebx = x-координата (относительно окна), ecx = y-координата (относительно окна), edx = 0x00RRGGBB - цвет точки) (сист. функция из KOSfuncs.inc)',0
+.110:db 'сохранить рамдиск на дискету (сист. функция из KOSfuncs.inc)',0
+.111:db 'начать/закончить перерисовку окна (сист. функция из KOSfuncs.inc)',0
+.112:db 'записать область на слой фона (сист. функция из KOSfuncs.inc)',0
+.113:db 'послать сообщение окну (сист. функция из KOSfuncs.inc)',0
+.114:db 'установить заголовок окна программы (сист. функция из KOSfuncs.inc)',0
+.115:db 'установить маску для ожидаемых событий (сист. функция из KOSfuncs.inc)',0
+.116:db 'зарезервировать/освободить группу портов ввода/вывода (сист. функция из KOSfuncs.inc)',0
+.117:db 'установить системную дату/время (сист. функция из KOSfuncs.inc)',0
+.118:db 'установка формы окна (сист. функция из KOSfuncs.inc)',0
+.119:db 'пауза (сист. функция из KOSfuncs.inc)',0
+.120:db 'начать проигрывать данные на встроенном спикере (сист. функция из KOSfuncs.inc)',0
+.126:db 'завершить выполнение потока/процесса (сист. функция из KOSfuncs.inc)',0
+.127:db 'информация о потоке выполнения (сист. функция из KOSfuncs.inc)',0
+.128:db 'ожидать события (сист. функция из KOSfuncs.inc)',0
+.129:db 'ожидать события с таймаутом (сист. функция из KOSfuncs.inc)',0
+.133:db 'установить доп. системную директорию для ядра (подфункция для сист. функции SF_CURRENT_FOLDER)',0
+.174:db 'получить текущую папку для потока (подфункция для сист. функции SF_CURRENT_FOLDER)',0
+.192:db 'узнать количество слотов в буфере обмена (подфункция для сист. функции SF_CLIPBOARD)',0
+.265:db 'установить текущую папку для потока (подфункция для сист. функции SF_CURRENT_FOLDER)',0
+.338:db 'используется после сложения каждого разряда распакованных BCD-чисел (Ascii Adjust after Addition - ASCII-коррекция после сложения)',0
+.343:db 'прибавить к первому операнду второй',0
+.345:db 'флаговый регистр дополнительный признак переноса',0
+.346:db 'регистр общего назначения 1 байт',0
+.347:db 'регистр общего назначения 1 байт',0
+.350:db 'регистр общего назначения 2 байта',0
+.354:db 'регистр указателя',0
+.358:db 'определяет, установлен ли в заданном слове определенный бит. Значение выбраного бита помещаеться в cf',0
+.359:db 'значение выбраного бита помещаеться в cf, инвертирует значение бита',0
+.360:db 'значение выбраного бита помещаеться в cf, в бит записываеться 0',0
+.361:db 'значение выбраного бита помещаеться в cf, в бит записываеться 1',0
+.362:db 'регистр общего назначения 2 байта',0
+.363:db '1 байт',0
+.364:db 'Вызов подпрограммы. Перед вызовом помещает в стэк адрес предыдущей команды',0
+.369:db 'флаговый регистр переноса',0
+.371:db 'регистр общего назначения 1 байт',0
+.372:db 'сброс флага переноса cf=0',0
+.373:db 'сброс признака направления df=0',0
+.374:db 'сброс признака разрешения прерывания if=0',0
+.376:db 'сравнение операндов и по результатам сравнения устанавливает флаги (af, cf, of, pf, sf и zf)',0
+.378:db 'сравнение 1-но байтовых строк',0
+.379:db 'сравнение 4-х байтовых строк',0
+.381:db 'сравнение 2-х байтовых строк',0
+.383:db 'многострочный комментарий',0
+.389:db 'сегментный регистр - сегмент кода',0
+.390:db 'преобразование слова в двойное слово. Флаги не меняются.',0
+.392:db 'регистр общего назначения 2 байта',0
+.393:db 'десятичная коррекция для сложения. Команда воздействует на флаги af. cf, pf, sf и zf (флаг of неопределен).',0
+.394:db 'десятичная коррекция для вычитания. Команда воздействует на флаги af, cf, pf, sf и zf.',0
+.395:db '1 байт',0
+.396:db '4 байта - 2 слова',0
+.397:db 'вычесть из операнда единицу. Команда воздействует на флаги af, of, pf, sf и zf.',0
+.398:db 'флаговый регистр направления',0
+.401:db 'деление. Команда воздействует на флаги af, cf, of, pf sf и zf (все не определены).',0
+.403:db '8 байт - 4 слова',0
+.405:db 'отладочный регистр 0-й',0
+.406:db 'отладочный регистр 1-й',0
+.407:db 'отладочный регистр 2-й',0
+.408:db 'отладочный регистр 3-й',0
+.409:db 'отладочный регистр 4-й',0
+.410:db 'отладочный регистр 5-й',0
+.411:db 'отладочный регистр 6-й',0
+.412:db 'отладочный регистр 7-й',0
+.413:db 'сегментный регистр - сегмент данных',0
+.414:db '10 байт',0
+.415:db 'дублирование начального значения',0
+.416:db '2 байта - 1 слово',0
+.417:db '4 байта',0
+.418:db 'регистр общего назначения 2 байта',0
+.419:db 'регистр общего назначения 4 байта',0
+.421:db 'регистр общего назначения 4 байта',0
+.422:db 'регистр общего назначения 4 байта',0
+.423:db 'индексный регистр 4 байта',0
+.424:db 'регистр общего назначения 4 байта',0
+.425:db 'регистр указателя команд',0
+.426:db 'конец программы',0
+.427:db 'конец макроса',0
+.428:db 'конец функции proc',0
+.429:db 'конец структуры struct',0
+.432:db 'сегментный регистр',0
+.433:db 'переключение на сопроцессор. Флаги не меняются.',0
+.436:db 'вычисление степени x по основанию 2 минус 1',0
+.437:db 'значение по модулю числа st(0) ',0
+.438:db 'сложить 2 числа с плавающей точкой',0
+.440:db 'загружает из памяти в вершину стека st(0) двоично-десятичное число',0
+.441:db 'изменение знака числа',0
+.442:db 'сравнение',0
+.443:db 'сравнение и извлечение из стека',0
+.444:db 'сравнение и двойное извлечение из стека',0
+.445:db 'косинус',0
+.446:db 'уменьшить указатель стека sp на 1',0
+.447:db 'поделить 2 числа с плавающей точкой',0
+.451:db 'освобождение регистра стека сопроцессора',0
+.452:db 'целочисленное сравнение',0
+.453:db 'целочисленное сравнение и извлечение из стека',0
+.454:db 'загружает из памяти в вершину стека st(0) целое число ',0
+.456:db 'увеличить указатель стека sp на 1',0
+.457:db 'инициализировать fpu',0
+.460:db 'загружает из памяти в вершину стека st(0) вещественное число',0
+.461:db 'загрузка единицы',0
+.463:db 'загрузка числа 1/ln(2)',0
+.464:db 'загрузка числа ln(10)/ln(2)',0
+.465:db 'загрузка числа log(2)/ln(10)',0
+.466:db 'загрузка числа ln(2)',0
+.467:db 'загружает в вершину стека st(0) число Pi',0
+.468:db 'загрузка нуля',0
+.469:db 'умножение',0
+.473:db 'арктангенс частного',0
+.474:db 'вычисление остатка от деления',0
+.475:db 'вычисление тангенса',0
+.476:db 'округление числа st(0) до целого',0
+.480:db 'умножение на 2^y',0
+.481:db 'вычисление синуса',0
+.482:db 'вычисление синуса и косинуса',0
+.483:db 'извлечение квадратного корня',0
+.484:db 'выгрузка результата st(0)',0
+.486:db 'выгрузка результата st(0) и освобождение стека',0
+.488:db 'вычитание',0
+.492:db 'сравнение операнда с нулем',0
+.494:db 'анализ операнда',0
+.495:db 'обмен',0
+.496:db 'выделение порядка числа и мантиссы',0
+.497:db 'вычисление y*log2(x)',0
+.498:db 'вычисление y*log2(x+1)',0
+.499:db '6-байтный регистр, в котором содержится линейный адрес глобальной дескрипторной таблицы',0
+.501:db 'останов микропроцессора. Флаги не меняются.',0
+.502:db 'целое деление знаковых величин. Команда воздействует на флаги af, cf, of, pf, sf и zf.',0
+.503:db 'флаговый регистр разрешения прерывания',0
+.504:db 'целое умножение знаковых величин. Команда воздействует на флаги cf и of (флаги af pf sf и zf не определены).',0
+.506:db 'прибавить к операнду единицу',0
+.508:db 'указывает библиотеку импорта',0
+.515:db 'регистр указателя команд',0
+.518:db 'переход если cf=0 и zf=0 (ja - Jump if Above)',0
+.519:db 'переход если cf=0 (jae - Jump if Above or Equal)',0
+.520:db 'переход если cf=1 (jb - Jump if Below)',0
+.521:db 'переход если cf=1 или zf=1 (jbe - Jump if Below or Equal)',0
+.522:db 'переход если cf=1 (jc - Jump if Carry)',0
+.524:db 'переход если cx=0 (jcxz - Jump if CX Zero)',0
+.525:db 'переход если zf=1 (je - Jump if Equal)',0
+.526:db 'переход если ecx=0 (jecxz - Jump if ECX Zero)',0
+.527:db 'переход если zf=0 и sf=of (jg - Jump if Greater (signed))',0
+.528:db 'переход если sf=of (jge - Jump if Greater or Equal (signed))',0
+.529:db 'переход если sf!=of (jl - Jump if Less (signed))',0
+.530:db 'переход если zf=1 или sf!=of (jle - Jump if Less or Equal (signed))',0
+.531:db 'переход без условия',0
+.545:db 'переход если zf=0 (jnz - Jump if Not Zero)',0
+.546:db 'переход если of=1 (jo - Jump if Overflow)',0
+.549:db 'переход если pf=0 (jpo - Jump if Parity Odd)',0
+.550:db 'переход если sf=1 (js - Jump if Signed (signed))',0
+.551:db 'переход если zf=1 (jz - Jump if Zero)',0
+.554:db '10-байтный регистр, содержащий 16-битный селектор (индекс) для gdt и 8-байтный дескриптор',0
+.563:db 'резервирует память из стека для локальных переменных',0
+.566:db 'загрузка 1-но байтовых строк',0
+.567:db 'загрузка 4-х байтовых строк',0
+.569:db 'загрузка 2-х байтовых строк',0
+.571:db 'переход если ecx!=0 и флаг zf=1',0
+.572:db 'переход если ecx!=0 и флаг zf=0',0
+.573:db 'переход если ecx!=0 и флаг zf=0',0
+.574:db 'переход если ecx!=0 и флаг zf=1',0
+.576:db 'макрос для копирования значения, использует операции push и pop',0
+.578:db 'макрос для вызова системных функций вызывает int 0x40, параметры пишет в регистры',0
+.587:db 'поместить значение второго операнда в первый',0
+.596:db 'пустая операция',0
+.598:db 'флаговый регистр переполнения',0
+.607:db 'сложение упакованных байт без насыщения (с циклическим переполнением)',0
+.608:db 'сложение упакованных двойных слов без насыщения (с циклическим переполнением)',0
+.609:db 'сложение упакованных байт со знаковым насыщением',0
+.610:db 'сложение упакованных слов со знаковым насыщением',0
+.611:db 'сложение упакованных байт с беззнаковым насыщением',0
+.612:db 'сложение упакованных слов с беззнаковым насыщением',0
+.613:db 'сложение упакованных слов без насыщения (с циклическим переполнением)',0
+.614:db 'логическое "и"',0
+.615:db 'логическое "и-не"',0
+.616:db 'Сравнение (на равенство) упакованных байт. Все биты элемента результата будут единичными (true) при совпадении соответствующих элементов операндов и нулевыми (false) - при несовпадении',0
+.617:db 'Сравнение (на равенство) упакованных двойных слов. Все биты элемента результата будут единичными (true) при совпадении соответствующих элементов операндов и нулевыми (false) - при несовпадении',0
+.618:db 'Сравнение (на равенство) упакованных слов. Все биты элемента результата будут единичными (true) при совпадении соответствующих элементов операндов и нулевыми (false) - при несовпадении',0
+.619:db 'Сравнение (по величине) упакованных знаковых байт. Все биты элемента результата будут единичными (true), если соответствующий элемент операнда назначения больше элемента операнда источника, и нулевыми (false) в противном случае',0
+.620:db 'Сравнение (по величине) упакованных знаковых двойных слов. Все биты элемента результата будут единичными (true), если соответствующий элемент операнда назначения больше элемента операнда источника, и нулевыми (false) в противном случае',0
+.621:db 'Сравнение (по величине) упакованных знаковых слов. Все биты элемента результата будут единичными (true), если соответствующий элемент операнда назначения больше элемента операнда источника, и нулевыми (false) в противном случае',0
+.622:db 'флаговый регистр четности',0
+.623:db 'Умножение 4-х знаковых слов операнда источника на 4 знаковых слова операнда назначения. Два двойных слова результатов умножения младших слов суммируются и записываются в младшее двойное слово операнда назначения. Два двойных слова результатов умножения старших слов суммируются и записываются в старшее двойное слово операнда назначения',0
+.624:db 'умножение упакованных знаковых слов с сохранением только старших 16 бит элементов результата',0
+.625:db 'умножение упакованных знаковых или беззнаковых слов с сохранением только младших 16 бит результата',0
+.627:db 'выгрузка из стека 2-х байтных регистров общего назначения',0
+.628:db 'выгрузка из стека 4-х байтных регистров общего назначения',0
+.631:db 'логическое "или"',0
+.632:db 'макрос для описания функции (процесса)',0
+.658:db 'загрузка слова в стек',0
+.659:db 'загрузка в стек 2-х байтных регистров общего назначения',0
+.660:db 'загрузка в стек 4-х байтных регистров общего назначения',0
+.661:db 'загрузка содержимого регистра flags в стек',0
+.664:db 'исключающее "или"',0
+.665:db '8 байт',0
+.675:db 'циклический сдвиг влево',0
+.676:db 'циклический сдвиг вправо',0
+.677:db 'сохраняет регистр ah в регистр флагов (воздействует на af, cf, pf, sf, zf)',0
+.682:db 'сравнивает значение al со значением по адресу edi',0
+.683:db 'сравнивает значение eax со значением по адресу edi',0
+.684:db 'сравнивает значение ax со значением по адресу edi',0
+.686:db 'флаговый регистр знака',0
+.687:db 'сохранение регистра gdtr (глобальной дескрипторной таблицы) в памяти',0
+.688:db 'сдвиг влево на опред. кол. бит (увеличивает число в 2^n раз)',0
+.689:db '3-х операндная команда сдвига влево. 1-м операндом может быть либо регистр, либо ячейка памяти, 2-м операндом должен быть регистр общего назначения, третьим - регистр cl или операнд.',0
+.690:db 'сдвиг вправо на опред. кол. бит (уменьшает число в 2^n раз)',0
+.691:db 'индексный регистр',0
+.693:db 'регистр указателя',0
+.694:db 'сегментный регистр - сегмент стека',0
+.705:db 'макрос для вызова функции (операция call) с записью параметров в стек (операция push)',0
+.708:db 'запись al по адресу edi, в зависимости от df адрес изменяется на 1',0
+.709:db 'запись eax по адресу edi, в зависимости от df адрес изменяется на 4',0
+.710:db 'запись ax по адресу edi, в зависимости от df адрес изменяется на 2',0
+.711:db 'макрос для описания структуры',0
+.713:db 'вычесть из первого операнда второй',0
+.717:db 'флаговый регистр трассировки',0
+.718:db '10 байт',0
+.719:db 'генерирует в процедурах (функциях) код для сохранения и восстановления указанных регистров',0
+.720:db '2 байта',0
+.722:db 'обмен значениями',0
+.733:db 'операция исключающее или | 0+0=0 | 0+1=1 | 1+0=1 | 1+1=0 |',0
+.734:db 'флаговый регистр нулевого результата',0

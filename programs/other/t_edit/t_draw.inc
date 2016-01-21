@@ -1,95 +1,95 @@
 align 4
 draw_but_toolbar: ;функция для рисования панели инструментов
-  pushad
-  mov edi,tedit0
+	pushad
+	mov edi,tedit0
 
-  mov ecx,0x40000000
-  mov edx,5*65536+25
-  call draw_but_icon
+	mov ecx,0x40000000
+	mov edx,5*65536+25
+	call draw_but_icon
 
-  inc cx
-  mov edx,30*65536+25
-  call draw_but_icon
+	inc cx
+	mov edx,30*65536+25
+	call draw_but_icon
 
-stdcall [ted_can_save],edi
-cmp al,1
-je @f
-and ecx,0xffff
-@@:
-  inc cx
-  mov edx,55*65536+25
-  call draw_but_icon
-or ecx,0x40000000
+	stdcall [ted_can_save],edi
+	cmp al,1
+	je @f
+		and ecx,0xffff
+	@@:
+	inc cx
+	mov edx,55*65536+25
+	call draw_but_icon
+	or ecx,0x40000000
 
-  inc cx
-  mov edx,85*65536+25
-  call draw_but_icon
+	inc cx
+	mov edx,85*65536+25
+	call draw_but_icon
 
-call [ted_is_select]
-cmp al,0
-jne @f
-and ecx,0xffff
-@@:
-  inc cx ; Cut
-  mov edx,110*65536+25
-  call draw_but_icon
+	call [ted_is_select]
+	cmp al,0
+	jne @f
+		and ecx,0xffff
+	@@:
+	inc cx ; Cut
+	mov edx,110*65536+25
+	call draw_but_icon
 
-  inc cx ; Copy
-  mov edx,135*65536+25
-  call draw_but_icon
+	inc cx ; Copy
+	mov edx,135*65536+25
+	call draw_but_icon
 
-  mov cx,10 ; Upper
-  mov edx,265*65536+25
-  call draw_but_icon
+	mov cx,10 ; Upper
+	mov edx,265*65536+25
+	call draw_but_icon
 
-  inc cx ; Lower
-  mov edx,290*65536+25
-  call draw_but_icon
+	inc cx ; Lower
+	mov edx,290*65536+25
+	call draw_but_icon
 
-  inc cx ; reverse
-  mov edx,315*65536+25
-  call draw_but_icon
-or ecx,0x40000000
+	inc cx ; reverse
+	mov edx,315*65536+25
+	call draw_but_icon
+	or ecx,0x40000000
 
-cmp dword[buf],0
-jne @f
-and ecx,0xffff
-@@:
-  mov cx,6 ; Paste
-  mov edx,160*65536+25
-  call draw_but_icon
-or ecx,0x40000000
+	cmp dword[buf],0
+	jne @f
+		and ecx,0xffff
+	@@:
+	mov cx,6 ; Paste
+	mov edx,160*65536+25
+	call draw_but_icon
+	or ecx,0x40000000
 
-  inc cx
-  mov edx,185*65536+25
-  call draw_but_icon
+	inc cx
+	mov edx,185*65536+25
+	call draw_but_icon
 
-  inc cx
-  mov edx,210*65536+25
-  call draw_but_icon
+	inc cx
+	mov edx,210*65536+25
+	call draw_but_icon
 
-  inc cx
-  mov edx,235*65536+25
-  call draw_but_icon
+	inc cx
+	mov edx,235*65536+25
+	call draw_but_icon
 
-mov ebx,ted_tim_undo
-cmp ted_tim_ch,ebx
-jg @f
-and ecx,0xffff
-@@:
-  mov cx,13
-  mov edx,345*65536+25
-  call draw_but_icon
-or ecx,0x40000000
+	mov ebx,ted_tim_undo
+	cmp ted_tim_ch,ebx
+	jg @f
+		and ecx,0xffff
+	@@:
+	mov cx,13
+	mov edx,345*65536+25
+	call draw_but_icon
+	or ecx,0x40000000
 
-cmp ted_tim_undo,1
-jge @f
-and ecx,0xffff
-@@:
-  inc cx
-  mov edx,370*65536+25
-  call draw_but_icon
-or ecx,0x40000000
+	cmp ted_tim_undo,1
+	jge @f
+		and ecx,0xffff
+	@@:
+	inc cx
+	mov edx,370*65536+25
+	call draw_but_icon
+	or ecx,0x40000000
 
 	inc cx
 	mov edx,400*65536+25
@@ -123,146 +123,112 @@ or ecx,0x40000000
 ; edi = pointer to tedit struct
 align 4
 proc draw_panel_find
-;push edi
-;mov edi,dword[edit]
-  cmp ted_panel_id,TED_PANEL_FIND ;if not panel
-  jne @f
-  push eax ebx ecx edx
+	cmp ted_panel_id,TED_PANEL_FIND ;if not panel
+	jne @f
+	push eax ebx ecx edx
+		mov ecx,ted_wnd_t
+		shl ecx,16
+		mov cx,20
+		mcall SF_DRAW_RECT,TED_PANEL_WIDTH,,[sc.work]
 
-  mov eax,13 ;рисование прямоугольника
-  mov ebx,TED_PANEL_WIDTH
-  mov ecx,ted_wnd_t
-  shl ecx,16
-  mov cx,20
-  mov edx,[sc.work]
-  int 0x40
+		mov ebx,30*65536+25
+		add ebx,ted_wnd_t
+		mov ecx,[sc.work_text]
+		or ecx,0x80000000
+		mcall SF_DRAW_TEXT,,,txtFindCapt
 
-  mov eax,4 ;рисование текста
-  mov ebx,30*65536+25
-  add ebx,ted_wnd_t
-  mov ecx,[sc.work_text]
-  or ecx,0x80000000
-  mov edx,txtFindCapt
-  int 0x40
+		stdcall [edit_box_draw], edit2
 
-  stdcall [edit_box_draw], dword edit2
+		mov ecx,ted_wnd_t
+		add cx,20+15 ; 15 - height text box
+		shl ecx,16
+		add ecx,ted_wnd_h
+		mov edx,ted_scr_h
+		add cx,word[edx+sb_offs_size_y]
+		sub cx,20+15-1 ; 15 - height text box
+		mcall SF_DRAW_RECT,TED_PANEL_WIDTH,,[sc.work]
 
-  mov eax,13 ;рисование прямоугольника
-  mov ebx,TED_PANEL_WIDTH
-  mov ecx,ted_wnd_t
-  add cx,20+15 ; 15 - height text box
-  shl ecx,16
-  add ecx,ted_wnd_h
-  mov edx,ted_scr_h
-  add cx,word[edx+sb_offs_size_y]
-  sub cx,20+15-1 ; 15 - height text box
-  mov edx,[sc.work]
-  int 0x40
+		mov ecx,ted_wnd_t
+		add cx,20+15+5
+		shl ecx,16
+		mov cx,20
+		mcall SF_DEFINE_BUTTON,5*65536+85,,201,[sc.work_button] ;201 - button id
 
-  mov eax,8 ;кнопка
-  mov ebx,5*65536+85
-  mov ecx,ted_wnd_t
-  add cx,20+15+5
-  shl ecx,16
-  mov cx,20
-  mov edx,201 ;button id
-  mov esi,[sc.work_button]
-  int 0x40
-
-  mov eax,4 ;рисование текста
-  mov ebx,15*65536+(20+15+10)
-  add ebx,ted_wnd_t
-  mov ecx,[sc.work_text]
-  or ecx,0x80000000
-  mov edx,txtFindNext
-  int 0x40
-
-  pop edx ecx ebx eax
-  jmp .end_f
-  @@:
-  push eax edx
-    mov eax,8
-    mov edx,201
-    or edx,0x80000000
-    int 0x40
-  pop edx eax
-  .end_f:
-;pop edi
-  ret
+		mov ebx,15*65536+(20+15+10)
+		add ebx,ted_wnd_t
+		mov ecx,[sc.work_text]
+		or ecx,0x80000000
+		mcall SF_DRAW_TEXT,,,txtFindNext
+	pop edx ecx ebx eax
+	jmp .end_f
+	@@:
+	push eax edx
+		mov edx,201
+		or edx,0x80000000
+		mcall SF_DEFINE_BUTTON
+	pop edx eax
+	.end_f:
+	ret
 endp
 
 ;input:
 ; edi = pointer to tedit struct
 align 4
 proc draw_panel_syntax
-;push edi
-;mov edi,dword[edit]
-  cmp ted_panel_id,TED_PANEL_SYNTAX ;if not panel
-  jne @f
-  pushad
+	cmp ted_panel_id,TED_PANEL_SYNTAX ;if not panel
+	jne @f
+	pushad
 
-  mov eax,13 ;рисование прямоугольника
-  mov ebx,TED_PANEL_WIDTH
-  mov ecx,ted_wnd_t
-  shl ecx,16
-  mov cx,20
-  mov edx,[sc.work]
-  int 0x40 ;рисование верхнего фонового прямоугольника
+	mov ecx,ted_wnd_t
+	shl ecx,16
+	mov cx,20
+	mcall SF_DRAW_RECT,TED_PANEL_WIDTH,,[sc.work] ;рисование верхнего фонового прямоугольника
 
-  stdcall dword[tl_draw], tree1
-  mov [ws_dir_lbox.all_redraw],1 ;для полной перерисовки дочернего скроллинга
-  stdcall dword[scrollbar_ver_draw], dword ws_dir_lbox
+	stdcall dword[tl_draw], tree1
+	mov [ws_dir_lbox.all_redraw],1 ;для полной перерисовки дочернего скроллинга
+	stdcall dword[scrollbar_ver_draw], dword ws_dir_lbox
 
-  ror ecx,16
-  add ecx,dword[tree1.box_height]
-  add ecx,20
-  and ecx,0xffff
-  ror ecx,16
-  add ecx,ted_wnd_h
-  mov esi,ted_scr_h
-  add cx,word[esi+sb_offs_size_y]
-  sub cx,20
-  sub ecx,dword[tree1.box_height]
-  inc cx
-  int 0x40 ;рисование нижнего фонового прямоугольника
+	ror ecx,16
+	add ecx,dword[tree1.box_height]
+	add ecx,20
+	and ecx,0xffff
+	ror ecx,16
+	add ecx,ted_wnd_h
+	mov esi,ted_scr_h
+	add cx,word[esi+sb_offs_size_y]
+	sub cx,20
+	sub ecx,dword[tree1.box_height]
+	inc cx
+	int 0x40 ;рисование нижнего фонового прямоугольника
 
-  mov eax,8 ;кнопка
-  mov ebx,5*65536+65
-  mov ecx,ted_wnd_t
-  add ecx,25
-  add ecx,dword[tree1.box_height]
-  shl ecx,16
-  mov cx,20
-  mov edx,200 ;button id
-  mov esi,[sc.work_button]
-  int 0x40
+	mov ecx,ted_wnd_t
+	add ecx,25
+	add ecx,dword[tree1.box_height]
+	shl ecx,16
+	mov cx,20
+	mcall SF_DEFINE_BUTTON,(5 shl 16)+65,,200,[sc.work_button] ;200 - button id
 
-  mov eax,4 ;рисование текста
-  mov ebx,30*65536+5
-  add ebx,ted_wnd_t
-  mov ecx,[sc.work_text]
-  or ecx,0x80000000
-  mov edx,txtFormatCapt
-  int 0x40
+	mov ebx,(30 shl 16)+5
+	add ebx,ted_wnd_t
+	mov ecx,[sc.work_text]
+	or ecx,0x80000000
+	mcall SF_DRAW_TEXT,,,txtFormatCapt
 
-  mov ebx,10*65536+31
-  add ebx,dword[tree1.box_height]
-  add ebx,ted_wnd_t
-  mov edx,txtFormatApply
-  int 0x40
+	mov ebx,(10 shl 16)+31
+	add ebx,dword[tree1.box_height]
+	add ebx,ted_wnd_t
+	mcall ,,,txtFormatApply
 
-  popad
-  jmp .end_f
-  @@:
-    push eax edx
-      mov eax,8
-      mov edx,200
-      or edx,0x80000000
-      int 0x40 ;если нет панели то удаляем кнопку
-    pop edx eax
-  .end_f:
-;pop edi
-  ret
+	popad
+	jmp .end_f
+	@@:
+		push eax edx
+		mov edx,200
+		or edx,0x80000000
+		mcall SF_DEFINE_BUTTON ;если нет панели то удаляем кнопку
+		pop edx eax
+	.end_f:
+	ret
 endp
 
 MIN_M_WND_H equ 100 ;минимальная высота главного окна
@@ -270,41 +236,39 @@ MIN_M_WND_H equ 100 ;минимальная высота главного окна
 ; edi = pointer to tedit struct
 align 4
 EvSize:
-  pushad
-  mov ebx,ted_scr_h
-  mov esi,ted_scr_w
+	pushad
+	mov ebx,ted_scr_h
+	mov esi,ted_scr_w
 
-  m2m ted_wnd_w,[procinfo.client_box.width] ;ставим ширину окна редактора равной ширине всего окна
-  mov eax,ted_wnd_l
-  sub ted_wnd_w,eax ;отнимаем отступ слева
-  mov eax,dword[esi+sb_offs_size_x]
-  and eax,0xffff
-  sub ted_wnd_w,eax ;отнимаем ширину верт. скроллинга
+	m2m ted_wnd_w,[procinfo.client_box.width] ;ставим ширину окна редактора равной ширине всего окна
+	mov eax,ted_wnd_l
+	sub ted_wnd_w,eax ;отнимаем отступ слева
+	movzx eax,word[esi+sb_offs_size_x]
+	sub ted_wnd_w,eax ;отнимаем ширину верт. скроллинга
 
-  m2m ted_wnd_h,[procinfo.client_box.height] ;ставим высоту окна редактора равной высоте всего окна
-  cmp ted_wnd_h,MIN_M_WND_H
-  jg @f
-    mov ted_wnd_h,MIN_M_WND_H
-  @@:
+	m2m ted_wnd_h,[procinfo.client_box.height] ;ставим высоту окна редактора равной высоте всего окна
+	cmp ted_wnd_h,MIN_M_WND_H
+	jg @f
+		mov ted_wnd_h,MIN_M_WND_H
+	@@:
 
-  mov ax,word[ebx+sb_offs_size_y]
-  and eax,0xffff
-  sub ted_wnd_h,eax	      ;отнимаем высоту гориз. скроллинга
-  mov eax,ted_wnd_t
-  sub ted_wnd_h,eax	      ;отнимаем отступ сверху
+	movzx eax,word[ebx+sb_offs_size_y]
+	sub ted_wnd_h,eax	      ;отнимаем высоту гориз. скроллинга
+	mov eax,ted_wnd_t
+	sub ted_wnd_h,eax	      ;отнимаем отступ сверху
 
-  stdcall [ted_init_scroll_bars], tedit0,2
+	stdcall [ted_init_scroll_bars], tedit0,2
 
-  mov eax,ted_wnd_t
-  mov edi,dword tree1
-  mov tl_box_top,eax ;=ted_wnd_t
-  add tl_box_top,20
+	mov eax,ted_wnd_t
+	mov edi,dword tree1
+	mov tl_box_top,eax ;=ted_wnd_t
+	add tl_box_top,20
 
-  mov dword[edit2.top],eax ;=ted_wnd_t
-  add dword[edit2.top],20
+	mov [edit2.top],eax ;=ted_wnd_t
+	add dword[edit2.top],20
 
-  popad
-  ret
+	popad
+	ret
 
 ;input:
 ;  ecx = 0x4000____
@@ -314,7 +278,7 @@ align 4
 draw_but_icon:
 	push eax ebx
 
-	mov eax,8 ;кнопка
+	mov eax,SF_DEFINE_BUTTON
 	push ecx edx esi
 		mov ebx,edx
 		mov edx,ecx
@@ -330,11 +294,11 @@ draw_but_icon:
 		jge @f ;кнопка не влезла в окно
 			mov esi,[sc.work_button]
 			int 0x40 ;ставим кнопку
-			mov eax,7 ;bmp
+			mov eax,SF_PUT_IMAGE
 		@@:
 	pop esi edx ecx
 
-	cmp eax,7
+	cmp eax,SF_PUT_IMAGE
 	jne @f ;кнопка не влезла в окно
 		mov ebx,[bmp_icon]
 		bt ecx,30 ;if (ecx & 0x40000000)

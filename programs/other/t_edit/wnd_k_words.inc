@@ -20,7 +20,7 @@ end if
 align 4
 prop_start:
 pushad
-	mcall 40,0xC0000027 ;маска ожидаемых событий
+	mcall SF_SET_EVENTS_MASK,0xC0000027 ;маска ожидаемых событий
 	inc byte[wnd_k_words_run]
 
 	;настройка списка объектов
@@ -41,10 +41,8 @@ popad
 align 4
 prop_red_win:
 pushad
-	mcall 12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
-	xor eax,eax
-	mov edi,txt_caption
 	mov bx,word[procinfo.box.left]
 	add bx,5 ;word[buf_0.l]
 	shl ebx,16
@@ -53,43 +51,31 @@ pushad
 	add cx,42 ;word[buf_0.t]
 	shl ecx,16
 	mov cx,250
-	mov edx,0xffffd0
-	or  edx,0x33000000
-	int 0x40
+	mcall SF_CREATE_WINDOW,,,0x33ffffd0,,txt_caption
 
-	mov eax,8
-	mov ebx,(5 shl 16)+19
-	mov ecx,(5 shl 16)+19
-	mov edx,3
-	mov esi,[sc.work_button]
-	int 0x40
-
+	mcall SF_DEFINE_BUTTON,(5 shl 16)+19,(5 shl 16)+19,3,[sc.work_button]
 	add ebx,(25 shl 16)
-	mov edx,4
-	int 0x40
+	mcall ,,,4
 
-	mov eax,7
 	mov ebx,[bmp_icon]
 	add ebx,7*IMAGE_TOOLBAR_ICON_SIZE
-	mov ecx,(20 shl 16)+20
-	mov edx,(5 shl 16)+5 ;найти
-	int 0x40
+	mcall SF_PUT_IMAGE,,(20 shl 16)+20,(5 shl 16)+5 ;найти
 
 	sub ebx,2*IMAGE_TOOLBAR_ICON_SIZE
 	mov edx,(30 shl 16)+5 ;копировать
 	int 0x40
 
 	mov dword[w_scr_t3.all_redraw],1
-	stdcall [scrollbar_ver_draw],dword w_scr_t3
+	stdcall [scrollbar_ver_draw], w_scr_t3
 	stdcall [tl_draw], tree3
 	stdcall [edit_box_draw], edit3
-	mcall 12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 popad
 
 ;не отрывать эту функцию от предыдущей
 align 4
 prop_still:
-	mcall 10
+	mcall SF_WAIT_EVENT
 
 	cmp al,1 ;изм. положение окна
 	jz prop_red_win
@@ -111,12 +97,12 @@ prop_still:
 	mov dword[tree3.data_img_sys],0 ;т. к. они еще используються в других элементах
 	stdcall dword[tl_data_clear], tree3
 	mov byte[wnd_k_words_run],0 ;обнуляем счетчик окон
-	mcall -1 ;закрытие окна поиска
+	mcall SF_TERMINATE_PROCESS
 
 align 4
 prop_key:
 push eax
-	mcall 2
+	mcall SF_GET_KEY
 	stdcall [edit_box_key], edit3
 	stdcall [tl_key], tree3
 pop eax
@@ -133,7 +119,7 @@ prop_mouse:
 align 4
 prop_button:
 	pushad
-	mcall 17 ;получить код нажатой кнопки
+	mcall SF_GET_BUTTON
 
 	cmp ah,1
 	je prop_still.exit
@@ -153,14 +139,23 @@ prop_button:
 		stdcall str_instr, ebx,[edit3.text]
 		test al,al
 		jnz .end_add
-			stdcall dword[tl_node_add], tree3, (0 shl 16), ebx 
+			;ключевое слово
+			stdcall dword[tl_node_add], tree3, (1 shl 16), ebx
 			stdcall dword[tl_cur_next], tree3
+			mov edx,[ebx+MAX_COLOR_WORD_LEN]
+			or edx,edx
+			jz .end_add
+				;справка по ключевому слову
+				add edx,ted_help_text_f1
+				stdcall dword[tl_node_add], tree3, 1, edx
+				stdcall dword[tl_cur_next], tree3
 		.end_add:
 		add ebx,MAX_COLOR_WORD_LEN+8 ;sizeof.TexColViv
 		loop .cycle_0
 
 		stdcall dword[tl_cur_beg], tree3
 		stdcall dword[tl_draw], tree3
+		jmp .no_select_0
 	@@:
 	cmp ah,4
 	jne @f
@@ -178,7 +173,7 @@ prop_button:
 			mov ecx,MAX_COLOR_WORD_LEN
 			cld
 			rep movsb
-			mcall 54,2,12+MAX_COLOR_WORD_LEN,[tedit0.buffer]
+			mcall SF_CLIPBOARD,SSF_WRITE_CB,12+MAX_COLOR_WORD_LEN,[tedit0.buffer]
 		.no_select_0:
 	@@:
 
@@ -187,10 +182,8 @@ prop_button:
 
 ;дерево с объектами в пользовательском файле
 align 4
-tree3 tree_list MAX_COLOR_WORD_LEN,3,\
-	tl_key_no_edit+tl_list_box_mode,\
-	16,16, 0x8080ff,0x0000ff,0xffffff, 5,30,300,160, 16, 0,0, el_focus,\
-	w_scr_t3,0
+tree3 tree_list MAX_COLOR_WORD_LEN,3,tl_key_no_edit,\
+	16,16, 0x8080ff,0x0000ff,0xffffff, 5,30,300,160, 16, 0,0, el_focus, w_scr_t3,0
 
 align 4
 edit3 edit_box 80, 70, 8, 0xffffff, 0xff, 0x80ff, 0, 0x8000, MAX_COLOR_WORD_LEN+2, string1, mouse_dd, 0
