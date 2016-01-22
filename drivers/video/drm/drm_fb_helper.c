@@ -1324,11 +1324,9 @@ struct drm_display_mode *drm_pick_cmdline_mode(struct drm_fb_helper_connector *f
 	struct drm_display_mode *mode;
 	bool prefer_non_interlace;
 
-    return NULL;
-#if 0
 	cmdline_mode = &fb_helper_conn->connector->cmdline_mode;
 	if (cmdline_mode->specified == false)
-        return NULL;
+		return NULL;
 
 	/* attempt to find a matching mode in the list of modes
 	 *  we have gotten so far, if not add a CVT mode that conforms
@@ -1369,7 +1367,6 @@ create_mode:
 						 cmdline_mode);
 	list_add(&mode->head, &fb_helper_conn->connector->modes);
 	return mode;
-#endif
 }
 EXPORT_SYMBOL(drm_pick_cmdline_mode);
 

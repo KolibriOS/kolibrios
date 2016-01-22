@@ -253,7 +253,7 @@ drm_gem_handle_delete(struct drm_file *filp, u32 handle)
 
 	if (dev->driver->gem_close_object)
 		dev->driver->gem_close_object(obj, filp);
-    drm_gem_object_handle_unreference_unlocked(obj);
+	drm_gem_object_handle_unreference_unlocked(obj);
 
 	return 0;
 }
@@ -264,7 +264,7 @@ EXPORT_SYMBOL(drm_gem_handle_delete);
  * @file: drm file-private structure to remove the dumb handle from
  * @dev: corresponding drm_device
  * @handle: the dumb handle to remove
- *
+ * 
  * This implements the ->dumb_destroy kms driver callback for drivers which use
  * gem to manage their backing storage.
  */
@@ -751,10 +751,6 @@ void drm_gem_vm_open(struct vm_area_struct *vma)
 	struct drm_gem_object *obj = vma->vm_private_data;
 
 	drm_gem_object_reference(obj);
-
-	mutex_lock(&obj->dev->struct_mutex);
-	drm_vm_open_locked(obj->dev, vma);
-	mutex_unlock(&obj->dev->struct_mutex);
 }
 EXPORT_SYMBOL(drm_gem_vm_open);
 

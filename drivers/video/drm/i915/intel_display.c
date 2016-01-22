@@ -26,7 +26,7 @@
 
 #include <linux/dmi.h>
 #include <linux/module.h>
-//#include <linux/input.h>
+#include <linux/input.h>
 #include <linux/i2c.h>
 #include <linux/kernel.h>
 #include <linux/slab.h>
@@ -8065,7 +8065,7 @@ i9xx_get_initial_plane_config(struct intel_crtc *crtc,
 					       fb->modifier[0]);
 
 //   plane_config->size = fb->pitches[0] * aligned_height;
- 	plane_config->size = i915_fbsize*1024*1024;
+    plane_config->size = i915.fbsize*1024*1024;
 
 	DRM_DEBUG_KMS("pipe/plane %c/%d with fb: size=%dx%d@%d, offset=%x, pitch %d, size 0x%x\n",
 		      pipe_name(pipe), plane, fb->width, fb->height,
@@ -9131,7 +9131,7 @@ skylake_get_initial_plane_config(struct intel_crtc *crtc,
 					       fb->modifier[0]);
 
 //   plane_config->size = fb->pitches[0] * aligned_height;
-    plane_config->size = i915_fbsize*1024*1024;
+    plane_config->size = i915.fbsize*1024*1024;
 
 	DRM_DEBUG_KMS("pipe %c with fb: size=%dx%d@%d, offset=%x, pitch %d, size 0x%x\n",
 		      pipe_name(pipe), fb->width, fb->height,
@@ -9230,7 +9230,7 @@ ironlake_get_initial_plane_config(struct intel_crtc *crtc,
 					       fb->modifier[0]);
 
 //   plane_config->size = fb->pitches[0] * aligned_height;
-    plane_config->size = i915_fbsize*1024*1024;
+    plane_config->size = i915.fbsize*1024*1024;
 
 	DRM_DEBUG_KMS("pipe %c with fb: size=%dx%d@%d, offset=%x, pitch %d, size 0x%x\n",
 		      pipe_name(pipe), fb->width, fb->height,
@@ -13250,8 +13250,7 @@ static int intel_atomic_commit(struct drm_device *dev,
 
 	/* FIXME: add subpixel order */
 
-//   drm_atomic_helper_wait_for_vblanks(dev, state);
-
+	drm_atomic_helper_wait_for_vblanks(dev, state);
 	drm_atomic_helper_cleanup_planes(dev, state);
 
 	if (any_ms)
@@ -14826,7 +14825,7 @@ void intel_modeset_init(struct drm_device *dev)
 	int sprite, ret;
 	enum pipe pipe;
 	struct intel_crtc *crtc;
-ENTER();
+
 	drm_mode_config_init(dev);
 
 	dev->mode_config.min_width = 0;
@@ -14949,9 +14948,6 @@ ENTER();
 		}
 
 	}
-
-
-LEAVE();
 }
 
 static void intel_enable_pipe_a(struct drm_device *dev)

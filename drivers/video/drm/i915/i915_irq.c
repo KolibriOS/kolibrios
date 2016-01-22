@@ -29,6 +29,7 @@
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/slab.h>
+#include <linux/circ_buf.h>
 #include <drm/drmP.h>
 #include <drm/i915_drm.h>
 #include "i915_drv.h"
@@ -1444,7 +1445,7 @@ static void intel_get_hpd_pins(u32 *pin_mask, u32 *long_mask,
 		*pin_mask |= BIT(i);
 
 //       if (!intel_hpd_pin_to_port(i, &port))
-			continue;
+//			continue;
 
 		if (long_pulse_detect(port, dig_hotplug_reg))
 			*long_mask |= BIT(i);
@@ -1594,8 +1595,8 @@ static void gen6_rps_irq_handler(struct drm_i915_private *dev_priv, u32 pm_iir)
 
 static bool intel_pipe_handle_vblank(struct drm_device *dev, enum pipe pipe)
 {
-//   if (!drm_handle_vblank(dev, pipe))
-//       return false;
+	if (!drm_handle_vblank(dev, pipe))
+		return false;
 
 	return true;
 }
@@ -2281,6 +2282,9 @@ static irqreturn_t gen8_irq_handler(int irq, void *arg)
 			ret = IRQ_HANDLED;
 			I915_WRITE(GEN8_DE_PIPE_IIR(pipe), pipe_iir);
 
+			if (pipe_iir & GEN8_PIPE_VBLANK &&
+			    intel_pipe_handle_vblank(dev, pipe))
+			/*	intel_check_page_flip(dev, pipe)*/;
 
 			if (INTEL_INFO(dev_priv)->gen >= 9)
 				flip_done = pipe_iir & GEN9_PIPE_PLANE1_FLIP_DONE;
@@ -2419,8 +2423,8 @@ static void i915_reset_and_wakeup(struct drm_device *dev)
 			atomic_inc(&dev_priv->gpu_error.reset_counter);
 
 		} else {
-			atomic_set_mask(I915_WEDGED, &error->reset_counter);
-	}
+			atomic_or(I915_WEDGED, &error->reset_counter);
+		}
 
 		/*
 		 * Note: The wake_up also serves as a memory barrier so that
@@ -3009,6 +3013,7 @@ static void i915_hangcheck_elapsed(struct work_struct *work)
 //       return i915_handle_error(dev, true);
 
 }
+
 static void ibx_irq_reset(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
@@ -3933,7 +3938,8 @@ static bool i915_handle_vblank(struct drm_device *dev,
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	u32 flip_pending = DISPLAY_PLANE_FLIP_PENDING(plane);
 
-	return false;
+	if (!intel_pipe_handle_vblank(dev, pipe))
+		return false;
 
 	if ((iir & flip_pending) == 0)
 		goto check_page_flip;

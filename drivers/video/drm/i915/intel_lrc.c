@@ -2359,7 +2359,7 @@ populate_lr_context(struct intel_context *ctx, struct drm_i915_gem_object *ctx_o
 	kunmap_atomic(reg_state);
 
 	ctx_obj->dirty = 1;
-    i915_gem_object_unpin_pages(ctx_obj);
+	i915_gem_object_unpin_pages(ctx_obj);
 
 	return 0;
 }

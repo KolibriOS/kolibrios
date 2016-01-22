@@ -841,7 +841,7 @@ void intel_panel_disable_backlight(struct intel_connector *connector)
 
 	mutex_lock(&dev_priv->backlight_lock);
 
-    panel->backlight.enabled = false;
+	panel->backlight.enabled = false;
 	panel->backlight.disable(connector);
 
 	mutex_unlock(&dev_priv->backlight_lock);

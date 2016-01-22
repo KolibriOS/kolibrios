@@ -26,6 +26,7 @@
 #include <linux/wait.h>
 #include <linux/workqueue.h>
 #include <linux/delay.h>
+#include <linux/init.h>
 #include <linux/errno.h>
 #include <linux/sched.h>
 #include <linux/seq_file.h>
@@ -2651,7 +2652,7 @@ int drm_dp_mst_topology_mgr_init(struct drm_dp_mst_topology_mgr *mgr,
 	INIT_LIST_HEAD(&mgr->destroy_connector_list);
 	INIT_WORK(&mgr->work, drm_dp_mst_link_probe_work);
 	INIT_WORK(&mgr->tx_work, drm_dp_tx_work);
-//   init_waitqueue_head(&mgr->tx_waitq);
+	init_waitqueue_head(&mgr->tx_waitq);
 	mgr->dev = dev;
 	mgr->aux = aux;
 	mgr->max_dpcd_transaction_bytes = max_dpcd_transaction_bytes;

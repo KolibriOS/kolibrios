@@ -47,7 +47,7 @@ struct i915_params i915 __read_mostly = {
 	.invert_brightness = 0,
 	.disable_display = 0,
 	.enable_cmd_parser = 0,
-    .disable_vtd_wa = 1,
+	.disable_vtd_wa = 1,
 	.use_mmio_flip = 0,
 	.mmio_debug = 0,
 	.verbose_state_checks = 1,
@@ -55,6 +55,9 @@ struct i915_params i915 __read_mostly = {
 	.edp_vswing = 0,
 	.enable_guc_submission = false,
 	.guc_log_level = -1,
+    .fbsize = 16,
+    .log_file = NULL,
+    .cmdline_mode = NULL,
 };
 
 module_param_named(modeset, i915.modeset, int, 0400);

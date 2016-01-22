@@ -34,6 +34,7 @@ void __stdcall restore_cursor(int x, int y)
 void disable_mouse(void)
 {};
 
+struct mutex cursor_lock;
 
 static char *manufacturer_name(unsigned char *x)
 {
@@ -47,6 +48,17 @@ static char *manufacturer_name(unsigned char *x)
     return name;
 }
 
+static int count_connector_modes(struct drm_connector* connector)
+{
+    struct drm_display_mode  *mode;
+    int count = 0;
+
+    list_for_each_entry(mode, &connector->modes, head)
+        count++;
+
+    return count;
+};
+
 static int set_mode(struct drm_device *dev, struct drm_connector *connector,
                     struct drm_crtc *crtc, videomode_t *reqmode, bool strict)
 {
@@ -54,6 +66,7 @@ static int set_mode(struct drm_device *dev, struct drm_connector *connector,
 
     struct drm_mode_config  *config     = &dev->mode_config;
     struct drm_display_mode *mode       = NULL, *tmpmode;
+    struct drm_connector    *tmpc;
     struct drm_framebuffer  *fb         = NULL;
     struct drm_mode_set     set;
     const char *con_name;
@@ -64,6 +77,14 @@ static int set_mode(struct drm_device *dev, struct drm_connector *connector,
 ENTER();
 
     drm_modeset_lock_all(dev);
+
+    list_for_each_entry(tmpc, &dev->mode_config.connector_list, head)
+    {
+        const struct drm_connector_funcs *f = tmpc->funcs;
+        if(tmpc == connector)
+            continue;
+        f->dpms(tmpc, DRM_MODE_DPMS_OFF);
+    };
 
     list_for_each_entry(tmpmode, &connector->modes, head)
     {
@@ -95,7 +116,17 @@ ENTER();
 
 do_set:
 
+
     con_name = connector->name;
+
+    char  con_edid[128];
+
+    memcpy(con_edid, connector->edid_blob_ptr->data, 128);
+    DRM_DEBUG_KMS("Manufacturer: %s Model %x Serial Number %u\n",
+            manufacturer_name(con_edid + 0x08),
+            (unsigned short)(con_edid[0x0A] + (con_edid[0x0B] << 8)),
+            (unsigned int)(con_edid[0x0C] + (con_edid[0x0D] << 8)
+            + (con_edid[0x0E] << 16) + (con_edid[0x0F] << 24)));
 
     DRM_DEBUG_KMS("set mode %d %d: crtc %d connector %s\n",
               reqmode->width, reqmode->height, crtc->base.id,
@@ -180,16 +211,135 @@ LEAVE();
     return ret;
 }
 
-static int count_connector_modes(struct drm_connector* connector)
+static int set_mode_ex(struct drm_device *dev,
+                       struct drm_connector *connector, struct drm_display_mode *mode)
 {
-    struct drm_display_mode  *mode;
-    int count = 0;
+    struct drm_i915_private *dev_priv = dev->dev_private;
+    struct drm_connector    *tmpc;
+    struct drm_mode_config  *config   = &dev->mode_config;
+    struct drm_framebuffer  *fb       = NULL;
+    struct drm_mode_set     set;
+    char  con_edid[128];
+    int stride;
+    int ret;
 
-    list_for_each_entry(mode, &connector->modes, head)
+ENTER();
+
+    drm_modeset_lock_all(dev);
+
+    list_for_each_entry(tmpc, &dev->mode_config.connector_list, head)
     {
-        count++;
+        const struct drm_connector_funcs *f = tmpc->funcs;
+        if(tmpc == connector)
+            continue;
+        f->dpms(tmpc, DRM_MODE_DPMS_OFF);
     };
-    return count;
+
+    drm_mode_set_crtcinfo(mode, CRTC_INTERLACE_HALVE_V);
+
+    fb = connector->encoder->crtc->primary->fb;
+    if(fb == NULL)
+        fb = main_framebuffer;
+
+    fb->width  = mode->hdisplay;
+    fb->height = mode->vdisplay;;
+
+    main_fb_obj->tiling_mode = I915_TILING_X;
+
+    if( main_fb_obj->tiling_mode == I915_TILING_X)
+    {
+        if(IS_GEN3(dev))
+            for (stride = 512; stride < mode->hdisplay * 4; stride <<= 1);
+        else
+            stride = ALIGN(mode->hdisplay * 4, 512);
+    }
+    else
+    {
+        stride = ALIGN(mode->hdisplay * 4, 64);
+    }
+
+    fb->pitches[0]  =
+    fb->pitches[1]  =
+    fb->pitches[2]  =
+    fb->pitches[3]  = stride;
+
+    main_fb_obj->stride  = stride;
+
+    fb->bits_per_pixel = 32;
+    fb->depth = 24;
+
+    connector->encoder->crtc->enabled = true;
+
+    i915_gem_object_put_fence(main_fb_obj);
+
+    memcpy(con_edid, connector->edid_blob_ptr->data, 128);
+    DRM_DEBUG_KMS("set mode %dx%d: crtc %d connector %s\n"
+                  "monitor: %s model %x serial number %u\n",
+                fb->width, fb->height,
+                connector->encoder->crtc->base.id, connector->name,
+                manufacturer_name(con_edid + 0x08),
+                (unsigned short)(con_edid[0x0A] + (con_edid[0x0B] << 8)),
+                (unsigned int)(con_edid[0x0C] + (con_edid[0x0D] << 8)
+                + (con_edid[0x0E] << 16) + (con_edid[0x0F] << 24)));
+
+    DRM_DEBUG_KMS("use framebuffer %p %dx%d pitch %d format %x\n",
+            fb,fb->width,fb->height,fb->pitches[0],fb->pixel_format);
+
+    set.crtc = connector->encoder->crtc;
+    set.x = 0;
+    set.y = 0;
+    set.mode = mode;
+    set.connectors = &connector;
+    set.num_connectors = 1;
+    set.fb = fb;
+
+    ret = drm_mode_set_config_internal(&set);
+    if ( !ret )
+    {
+        struct drm_crtc *crtc = os_display->crtc;
+
+        os_display->width    = fb->width;
+        os_display->height   = fb->height;
+        os_display->vrefresh = drm_mode_vrefresh(mode);
+
+        sysSetScreen(fb->width, fb->height, fb->pitches[0]);
+
+        os_display->connector = connector;
+        os_display->crtc = connector->encoder->crtc;
+        os_display->supported_modes = count_connector_modes(connector);
+
+        crtc->cursor_x = os_display->width/2;
+        crtc->cursor_y = os_display->height/2;
+
+        select_cursor_kms(os_display->cursor);
+
+        DRM_DEBUG_KMS("new mode %d x %d pitch %d\n",
+                       fb->width, fb->height, fb->pitches[0]);
+    }
+    else
+        DRM_ERROR(" failed to set mode %d_%d on crtc %p\n",
+                   fb->width, fb->height, connector->encoder->crtc);
+
+    drm_modeset_unlock_all(dev);
+
+LEAVE();
+
+    return ret;
+}
+
+static int set_cmdline_mode(struct drm_device *dev, struct drm_connector *connector)
+{
+    struct drm_display_mode *mode;
+    int retval;
+
+    mode = drm_mode_create_from_cmdline_mode(dev, &connector->cmdline_mode);
+    if(mode == NULL)
+        return EINVAL;
+
+    retval = set_mode_ex(dev, connector, mode);
+
+    drm_mode_destroy(dev, mode);
+    return retval;
 };
 
 static struct drm_crtc *get_possible_crtc(struct drm_device *dev, struct drm_encoder *encoder)
@@ -210,60 +360,92 @@ static struct drm_crtc *get_possible_crtc(struct drm_device *dev, struct drm_enc
     return NULL;
 };
 
-static int choose_config(struct drm_device *dev, struct drm_connector **boot_connector,
-                  struct drm_crtc **boot_crtc)
+static int check_connector(struct drm_device *dev, struct drm_connector *connector)
 {
-    struct drm_connector_helper_funcs *connector_funcs;
-    struct drm_connector *connector;
+    const struct drm_connector_helper_funcs *connector_funcs;
     struct drm_encoder   *encoder;
     struct drm_crtc      *crtc;
 
+    if( connector->status != connector_status_connected)
+        return -EINVAL;
+
+    encoder = connector->encoder;
+
+    if(encoder == NULL)
+    {
+        connector_funcs = connector->helper_private;
+        encoder = connector_funcs->best_encoder(connector);
+
+        if( encoder == NULL)
+        {
+            DRM_DEBUG_KMS("CONNECTOR %s ID: %d no active encoders\n",
+            connector->name, connector->base.id);
+            return -EINVAL;
+        };
+    }
+
+    crtc = encoder->crtc;
+    if(crtc == NULL)
+        crtc = get_possible_crtc(dev, encoder);
+
+    if(crtc != NULL)
+    {
+        encoder->crtc = crtc;
+        return 0;
+    }
+    else
+        DRM_DEBUG_KMS("No CRTC for encoder %d\n", encoder->base.id);
+    return -EINVAL;
+}
+
+static struct drm_connector* get_cmdline_connector(struct drm_device *dev, const char *cmdline)
+{
+    struct drm_connector *connector;
+
     list_for_each_entry(connector, &dev->mode_config.connector_list, head)
     {
-        if( connector->status != connector_status_connected)
+        int name_len = __builtin_strlen(connector->name);
+
+        if (name_len == 0)
             continue;
 
-        encoder = connector->encoder;
+        if (__builtin_strncmp(connector->name, cmdline, name_len))
+            continue;
 
-        if(encoder == NULL)
-        {
-            connector_funcs = connector->helper_private;
-            encoder = connector_funcs->best_encoder(connector);
+        if(check_connector(dev, connector) == 0)
+            return connector;
+    }
+    return NULL;
+}
 
-            if( encoder == NULL)
-            {
-                DRM_DEBUG_KMS("CONNECTOR %s ID: %d no active encoders\n",
-                        connector->name, connector->base.id);
-                continue;
-            };
-        }
 
-        crtc = encoder->crtc;
-        if(crtc == NULL)
-            crtc = get_possible_crtc(dev, encoder);
+static int choose_config(struct drm_device *dev, struct drm_connector **boot_connector,
+                  struct drm_crtc **boot_crtc)
+{
+    const struct drm_connector_helper_funcs *connector_funcs;
+    struct drm_connector *connector = NULL;
+    struct drm_encoder   *encoder = NULL;
+    struct drm_crtc      *crtc = NULL;
 
-        if(crtc != NULL)
+    if((i915.cmdline_mode != NULL) && (*i915.cmdline_mode != 0))
+    {
+        connector = get_cmdline_connector(dev, i915.cmdline_mode);
+        if(connector != NULL)
         {
             *boot_connector = connector;
-            *boot_crtc = crtc;
-
-            DRM_DEBUG_KMS("CONNECTOR %s ID:%d status:%d ENCODER %p ID: %d CRTC %p ID:%d\n",
-                           connector->name, connector->base.id, connector->status,
-                           encoder, encoder->base.id, crtc, crtc->base.id );
-            char  con_edid[128];
-
-            memcpy(con_edid, connector->edid_blob_ptr->data, 128);
-            printf("Manufacturer: %s Model %x Serial Number %u\n",
-                    manufacturer_name(con_edid + 0x08),
-                    (unsigned short)(con_edid[0x0A] + (con_edid[0x0B] << 8)),
-                    (unsigned int)(con_edid[0x0C] + (con_edid[0x0D] << 8)
-                    + (con_edid[0x0E] << 16) + (con_edid[0x0F] << 24)));
-
+            *boot_crtc = connector->encoder->crtc;
             return 0;
         }
-        else
-            DRM_DEBUG_KMS("No CRTC for encoder %d\n", encoder->base.id);
+    }
 
+    list_for_each_entry(connector, &dev->mode_config.connector_list, head)
+    {
+        if(check_connector(dev, connector) == 0)
+        {
+            *boot_connector = connector;
+            *boot_crtc = connector->encoder->crtc;
+            return 0;
+        };
     };
 
     return -ENOENT;
@@ -275,10 +457,6 @@ static int get_boot_mode(struct drm_connector *connector, videomode_t *usermode)
 
     list_for_each_entry(mode, &connector->modes, head)
     {
-        DRM_DEBUG_KMS("check mode w:%d h:%d %dHz\n",
-                mode->hdisplay, mode->vdisplay,
-                drm_mode_vrefresh(mode));
-
         if( os_display->width  == mode->hdisplay &&
             os_display->height == mode->vdisplay &&
             drm_mode_vrefresh(mode) == 60)
@@ -305,14 +483,12 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
 
 ENTER();
 
-    mutex_lock(&dev->struct_mutex);
     mutex_lock(&dev->mode_config.mutex);
-
     ret = choose_config(dev, &connector, &crtc);
     if(ret)
     {
-        DRM_DEBUG_KMS("No active connectors!\n");
         mutex_unlock(&dev->mode_config.mutex);
+        DRM_DEBUG_KMS("No active connectors!\n");
         return -1;
     };
 
@@ -334,8 +510,11 @@ ENTER();
     os_display->ddev = dev;
     os_display->connector = connector;
     os_display->crtc = crtc;
-
     os_display->supported_modes = count_connector_modes(connector);
+    mutex_unlock(&dev->mode_config.mutex);
+
+    mutex_init(&cursor_lock);
+    mutex_lock(&dev->struct_mutex);
 
     ifl = safe_cli();
     {
@@ -359,24 +538,34 @@ ENTER();
     };
     safe_sti(ifl);
 
-    if( (usermode->width == 0) ||
-        (usermode->height == 0))
-    {
-        if( !get_boot_mode(connector, usermode))
-        {
-            struct drm_display_mode *mode;
-
-            mode = list_entry(connector->modes.next, typeof(*mode), head);
-            usermode->width  = mode->hdisplay;
-            usermode->height = mode->vdisplay;
-            usermode->freq   = drm_mode_vrefresh(mode);
-        };
-    };
-
-    mutex_unlock(&dev->mode_config.mutex);
     mutex_unlock(&dev->struct_mutex);
 
-    set_mode(dev, os_display->connector, os_display->crtc, usermode, false);
+    ret = -1;
+
+    if(connector->cmdline_mode.specified == true)
+        ret = set_cmdline_mode(dev, connector);
+
+    if(ret !=0)
+    {
+        mutex_lock(&dev->mode_config.mutex);
+
+        if( (usermode->width == 0) ||
+            (usermode->height == 0))
+        {
+            if( !get_boot_mode(connector, usermode))
+            {
+                struct drm_display_mode *mode;
+
+                mode = list_entry(connector->modes.next, typeof(*mode), head);
+                usermode->width  = mode->hdisplay;
+                usermode->height = mode->vdisplay;
+                usermode->freq   = drm_mode_vrefresh(mode);
+            };
+        };
+        mutex_unlock(&dev->mode_config.mutex);
+
+        set_mode(dev, os_display->connector, os_display->crtc, usermode, false);
+    };
 
 #ifdef __HWA__
     err = init_bitmaps();
@@ -384,9 +573,69 @@ ENTER();
 
     LEAVE();
 
-    return 0;
+    return ret;
 };
 
+
+int set_cmdline_mode_ext(struct drm_device *dev, const char *cmdline)
+{
+    struct drm_connector_helper_funcs *connector_funcs;
+    struct drm_connector    *connector;
+    struct drm_cmdline_mode cmd_mode;
+    struct drm_display_mode *mode;
+    char *mode_option;
+    int retval = 0;
+    char  con_edid[128];
+
+ENTER();
+    if((cmdline == NULL) || (*cmdline == 0))
+        return EINVAL;
+
+    mutex_lock(&dev->mode_config.mutex);
+    connector = get_cmdline_connector(dev, cmdline);
+    mutex_unlock(&dev->mode_config.mutex);
+
+    if(connector == NULL)
+        return EINVAL;
+
+    mode_option = __builtin_strchr(cmdline,':');
+    if(mode_option == NULL)
+        return EINVAL;
+
+    mode_option++;
+
+    __builtin_memset(&cmd_mode, 0, sizeof(cmd_mode));
+
+    if( !drm_mode_parse_command_line_for_connector(mode_option, connector, &cmd_mode))
+        return EINVAL;
+
+    DRM_DEBUG_KMS("cmdline mode for connector %s %dx%d@%dHz%s%s%s\n",
+                   connector->name,
+                   cmd_mode.xres, cmd_mode.yres,
+                   cmd_mode.refresh_specified ? cmd_mode.refresh : 60,
+                   cmd_mode.rb ? " reduced blanking" : "",
+                   cmd_mode.margins ? " with margins" : "",
+                   cmd_mode.interlace ?  " interlaced" : "");
+
+    mode = drm_mode_create_from_cmdline_mode(dev, &cmd_mode);
+    if(mode == NULL)
+        return EINVAL;
+
+    memcpy(con_edid, connector->edid_blob_ptr->data, 128);
+    DRM_DEBUG_KMS("connector: %s monitor: %s model %x serial number %u\n",
+            connector->name,
+            manufacturer_name(con_edid + 0x08),
+            (unsigned short)(con_edid[0x0A] + (con_edid[0x0B] << 8)),
+            (unsigned int)(con_edid[0x0C] + (con_edid[0x0D] << 8)
+            + (con_edid[0x0E] << 16) + (con_edid[0x0F] << 24)));
+
+    retval = set_mode_ex(dev, connector, mode);
+
+    drm_mode_destroy(dev, mode);
+
+LEAVE();
+    return retval;
+}
 
 int get_videomodes(videomode_t *mode, int *count)
 {
@@ -571,9 +820,10 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
     cursor_t *old;
 
     old = os_display->cursor;
-    os_display->cursor = cursor;
 
-//    intel_crtc->cursor_bo = cursor->cobj;
+    mutex_lock(&cursor_lock);
+
+    os_display->cursor = cursor;
 
     if (!dev_priv->info.cursor_needs_physical)
        intel_crtc->cursor_addr = i915_gem_obj_ggtt_offset(cursor->cobj);
@@ -583,6 +833,7 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
 	intel_crtc->base.cursor->state->crtc_w = 64;
 	intel_crtc->base.cursor->state->crtc_h = 64;
     intel_crtc->base.cursor->state->rotation = 0;
+    mutex_unlock(&cursor_lock);
 
     move_cursor_kms(cursor, crtc->cursor_x, crtc->cursor_y);
     return old;

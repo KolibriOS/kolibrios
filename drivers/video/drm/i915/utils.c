@@ -7,6 +7,7 @@
 #include <linux/hdmi.h>
 #include <linux/seq_file.h>
 #include <linux/fence.h>
+#include "i915_kos32.h"
 
 struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags)
 {
@@ -847,3 +848,184 @@ ktime_t ktime_get(void)
     return t;
 }
 
+char *strdup(const char *str)
+{
+    size_t len = strlen(str) + 1;
+    char *copy = __builtin_malloc(len);
+    if (copy)
+    {
+        memcpy (copy, str, len);
+    }
+    return copy;
+}
+
+int split_cmdline(char *cmdline, char **argv)
+{
+    enum quote_state
+    {
+        QUOTE_NONE,         /* no " active in current parm       */
+        QUOTE_DELIMITER,    /* " was first char and must be last */
+        QUOTE_STARTED       /* " was seen, look for a match      */
+    };
+
+    enum quote_state state;
+    unsigned int argc;
+    char *p = cmdline;
+    char *new_arg, *start;
+
+    argc = 0;
+
+    for(;;)
+    {
+        /* skip over spaces and tabs */
+        if ( *p )
+        {
+            while (*p == ' ' || *p == '\t')
+                ++p;
+        }
+
+        if (*p == '\0')
+            break;
+
+        state = QUOTE_NONE;
+        if( *p == '\"' )
+        {
+            p++;
+            state = QUOTE_DELIMITER;
+        }
+        new_arg = start = p;
+        for (;;)
+        {
+            if( *p == '\"' )
+            {
+                p++;
+                if( state == QUOTE_NONE )
+                {
+                    state = QUOTE_STARTED;
+                }
+                else
+                {
+                    state = QUOTE_NONE;
+                }
+                continue;
+            }
+
+            if( *p == ' ' || *p == '\t' )
+            {
+                if( state == QUOTE_NONE )
+                {
+                    break;
+                }
+            }
+
+            if( *p == '\0' )
+                break;
+
+            if( *p == '\\' )
+            {
+                if( p[1] == '\"' )
+                {
+                    ++p;
+                    if( p[-2] == '\\' )
+                    {
+                        continue;
+                    }
+                }
+            }
+            if( argv )
+            {
+                *(new_arg++) = *p;
+            }
+            ++p;
+        };
+
+        if( argv )
+        {
+            argv[ argc ] = start;
+            ++argc;
+
+            /*
+              The *new = '\0' is req'd in case there was a \" to "
+              translation. It must be after the *p check against
+              '\0' because new and p could point to the same char
+              in which case the scan would be terminated too soon.
+            */
+
+            if( *p == '\0' )
+            {
+                *new_arg = '\0';
+                break;
+            }
+            *new_arg = '\0';
+            ++p;
+        }
+        else
+        {
+            ++argc;
+            if( *p == '\0' )
+            {
+                break;
+            }
+            ++p;
+        }
+    }
+
+    return argc;
+};
+
+char *strstr(const char *cs, const char *ct)
+{
+int d0, d1;
+register char *__res;
+__asm__ __volatile__(
+    "movl %6,%%edi\n\t"
+    "repne\n\t"
+    "scasb\n\t"
+    "notl %%ecx\n\t"
+    "decl %%ecx\n\t"    /* NOTE! This also sets Z if searchstring='' */
+    "movl %%ecx,%%edx\n"
+    "1:\tmovl %6,%%edi\n\t"
+    "movl %%esi,%%eax\n\t"
+    "movl %%edx,%%ecx\n\t"
+    "repe\n\t"
+    "cmpsb\n\t"
+    "je 2f\n\t"     /* also works for empty string, see above */
+    "xchgl %%eax,%%esi\n\t"
+    "incl %%esi\n\t"
+    "cmpb $0,-1(%%eax)\n\t"
+    "jne 1b\n\t"
+    "xorl %%eax,%%eax\n\t"
+    "2:"
+    : "=a" (__res), "=&c" (d0), "=&S" (d1)
+    : "0" (0), "1" (0xffffffff), "2" (cs), "g" (ct)
+    : "dx", "di");
+return __res;
+}
+
+fb_get_options(const char *name, char **option)
+{
+    char *opt, *options = NULL;
+    int retval = 1;
+    int name_len;
+
+    if(i915.cmdline_mode == NULL)
+        return 1;
+
+    name_len = __builtin_strlen(name);
+
+    if (name_len )
+    {
+        opt = i915.cmdline_mode;
+        if (!__builtin_strncmp(name, opt, name_len) &&
+             opt[name_len] == ':')
+        {
+             options = opt + name_len + 1;
+             retval = 0;
+        }
+    }
+
+    if (option)
+        *option = options;
+
+    return retval;
+}

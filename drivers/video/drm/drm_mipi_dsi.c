@@ -32,7 +32,7 @@
 #include <linux/module.h>
 //#include <linux/of_device.h>
 #include <linux/pm_runtime.h>
-//#include <linux/slab.h>
+#include <linux/slab.h>
 
 #include <video/mipi_display.h>
 

@@ -80,7 +80,6 @@ static int usecs_to_scanlines(const struct drm_display_mode *adjusted_mode,
  */
 void intel_pipe_update_start(struct intel_crtc *crtc)
 {
-ENTER();
 	struct drm_device *dev = crtc->base.dev;
 	const struct drm_display_mode *adjusted_mode = &crtc->config->base.adjusted_mode;
 	enum pipe pipe = crtc->pipe;

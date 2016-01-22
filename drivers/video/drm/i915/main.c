@@ -9,7 +9,10 @@
 #include <linux/mod_devicetable.h>
 #include <linux/pci.h>
 
+#include "getopt.h"
+
 #include "bitmap.h"
+#include "i915_kos32.h"
 
 #define DRV_NAME "i915 v4.4"
 
@@ -17,91 +20,21 @@
 #define I915_DEV_INIT  1
 #define I915_DEV_READY 2
 
-
-struct pci_device {
-    uint16_t    domain;
-    uint8_t     bus;
-    uint8_t     dev;
-    uint8_t     func;
-    uint16_t    vendor_id;
-    uint16_t    device_id;
-    uint16_t    subvendor_id;
-    uint16_t    subdevice_id;
-    uint32_t    device_class;
-    uint8_t     revision;
-};
-
-struct cmdtable
-{
-    char *key;
-    int   size;
-    int  *val;
-};
-
-#define CMDENTRY(key, val) {(key), (sizeof(key)-1), &val}
-void parse_cmdline(char *cmdline, struct cmdtable *table, char *log, videomode_t *mode);
-
-
-int oops_in_progress;
-int i915_fbsize = 16;
-struct drm_device *main_device;
-struct drm_file   *drm_file_handlers[256];
-videomode_t usermode;
-
+static int my_atoi(char **cmd);
+static char* parse_mode(char *p, videomode_t *mode);
 void cpu_detect1();
 int kmap_init();
 
-int _stdcall display_handler(ioctl_t *io);
-int init_agp(void);
-
-void get_pci_info(struct pci_device *dev);
-int i915_getparam(struct drm_device *dev, void *data,
-             struct drm_file *file_priv);
-
-int i915_mask_update(struct drm_device *dev, void *data,
-            struct drm_file *file);
-
-struct cmdtable cmdtable[]= {
-    CMDENTRY("-FB=", i915_fbsize),
-/*    CMDENTRY("-pm=", i915.powersave),     */
-    CMDENTRY("-rc6=", i915.enable_rc6),
-    CMDENTRY("-fbc=", i915.enable_fbc),
-    CMDENTRY("-ppgt=", i915.enable_ppgtt),
-    {NULL, 0}
-};
-
-
-static char  log[256];
-
 unsigned long volatile jiffies;
-
-struct workqueue_struct *system_wq;
-int driver_wq_state;
-
+int oops_in_progress;
 int x86_clflush_size;
 unsigned int tsc_khz;
-
-int i915_modeset = 1;
-
-typedef union __attribute__((packed))
-{
-    uint32_t val;
-    struct
-    {
-        uint8_t   state;
-        uint8_t   code;
-        uint16_t  ctrl_key;
-    };
-}oskey_t;
-
-static inline oskey_t get_key(void)
-{
-    oskey_t val;
-    asm volatile("int $0x40":"=a"(val):"a"(2));
-    return val;
-};
-
-void i915_dpms(struct drm_device *dev, int mode);
+struct workqueue_struct *system_wq;
+int driver_wq_state;
+struct drm_device *main_device;
+struct drm_file   *drm_file_handlers[256];
+videomode_t usermode;
+extern int __getopt_initialized;
 
 void i915_driver_thread()
 {
@@ -186,7 +119,7 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 {
     static pci_dev_t device;
     const struct pci_device_id  *ent;
-
+    char *safecmdline;
     int err = 0;
 
     if(action != 1)
@@ -199,29 +132,97 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
         return 0;
 
     printf("\n%s build %s %s\nusage: i915 [options]\n"
-           "-FB=<0-9>     Set framebuffer size in megabytes (default: 16)\n",
-           "-pm=<0,1>     Enable powersavings, fbc, downclocking, etc. (default: 1 - true)\n",
+           "-f\n"
+           "--fbsize <0-9>  Set framebuffer size in megabytes (default: 16)\n",
            DRV_NAME, __DATE__, __TIME__);
 
-    printf("-rc6=<-1,0-7> Enable power-saving render C-state 6.\n"
-           "              Different stages can be selected via bitmask values\n"
-           "              (0 = disable; 1 = enable rc6; 2 = enable deep rc6; 4 = enable deepest rc6).\n"
-           "              For example, 3 would enable rc6 and deep rc6, and 7 would enable everything.\n"
-           "              default: -1 (use per-chip default)\n");
-    printf("-fbc=<-1,0,1> Enable frame buffer compression for power savings\n"
-           "              (default: -1 (use per-chip default))\n");
-    printf("-ppgt=<0,1>   Enable PPGTT (default: true)\n");
+    printf("--rc6 <-1,0-7>  Enable power-saving render C-state 6.\n"
+           "                Different stages can be selected via bitmask values\n"
+           "                (0 = disable; 1 = enable rc6; 2 = enable deep rc6;\n"
+           "                4 = enable deepest rc6).\n"
+           "                For example, 3 would enable rc6 and deep rc6,\n"
+           "                and 7 would enable everything.\n"
+           "                default: -1 (use per-chip default)\n");
+    printf("--fbc <-1,0,1>  Enable frame buffer compression for power savings\n"
+           "                (default: -1 (use per-chip default))\n");
+    printf("-l\n"
+           "--log  <path>   path to log file\n");
+    printf("-m\n"
+           "--mode <WxHxHz> set videomode\n");
+    printf("-v\n"
+           "--video <CONNECTOR>:<xres>x<yres>[M][R][-<bpp>][@<refresh>][i][m][eDd]\n"
+           "                set videomode for CONNECTOR\n");
 
-    printf("-l<path>      path to log file\n");
-    printf("-m<WxHxHz>    set videomode\n");
-
-    printf("cmdline %s\n", cmdline);
     if( cmdline && *cmdline )
-        parse_cmdline(cmdline, cmdtable, log, &usermode);
-
-    if( *log && !dbg_open(log))
     {
-        printf("Can't open %s\nExit\n", log);
+        int argc, i, c;
+        char **argv;
+
+        safecmdline = __builtin_strdup(cmdline);
+        printf("cmdline %s\n", safecmdline);
+
+        argc = split_cmdline(safecmdline, NULL);
+        argv = __builtin_malloc((argc+1)*sizeof(char*));
+        split_cmdline(safecmdline, argv);
+        argv[argc] = NULL;
+
+        while(1)
+        {
+            static struct option long_options[] =
+            {
+                {"log",   required_argument, 0, 'l'},
+                {"mode",  required_argument, 0, 'm'},
+                {"fbsize",required_argument, 0, 'f'},
+                {"video", required_argument, 0, 'v'},
+                {"rc6", required_argument, 0, OPTION_RC6},
+                {"fbc", required_argument, 0, OPTION_FBC},
+                {0, 0, 0, 0}
+            };
+
+            int option_index = 0;
+
+            c = getopt_long (argc, argv, "f:l:m:v:",
+                            long_options, &option_index);
+
+            if (c == -1)
+                break;
+
+            switch(c)
+            {
+                case OPTION_RC6:
+                    i915.enable_rc6 = my_atoi(&optarg);
+                    printf("i915.rc6 = %d\n",i915.enable_rc6);
+                    break;
+
+                case OPTION_FBC:
+                    i915.enable_fbc = my_atoi(&optarg);
+                    printf("i915.fbc = %d\n",i915.enable_fbc);
+                    break;
+
+                case 'f':
+                    i915.fbsize = my_atoi(&optarg);
+                    printf("i915.fbsize =%d\n",i915.fbsize);
+                    break;
+
+                case 'l':
+                    i915.log_file = optarg;
+                    break;
+
+                case 'm':
+                    parse_mode(optarg, &usermode);
+                    break;
+
+                case 'v':
+                    i915.cmdline_mode = optarg;
+                    printf("i915.cmdline_mode =%s\n",i915.cmdline_mode);
+                    break;
+            }
+        }
+    };
+
+    if( i915.log_file && !dbg_open(i915.log_file))
+    {
+        printf("Can't open %s\nExit\n", i915.log_file);
         return 0;
     }
     else
@@ -230,7 +231,6 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     }
 
     cpu_detect1();
-//    dbgprintf("\ncache line size %d\n", x86_clflush_size);
 
     err = enum_pci_devices();
     if( unlikely(err != 0) )
@@ -272,6 +272,54 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     return err;
 };
 
+int do_command_line(const char* usercmd)
+{
+    char *cmdline;
+    int argc, i, c;
+    char **argv;
+
+    if( (usercmd == NULL) || (*usercmd == 0) )
+        return 1;
+
+    cmdline = __builtin_strdup(usercmd);
+    printf("cmdline %s\n", cmdline);
+
+    argc = split_cmdline(cmdline, NULL);
+    argv = __builtin_malloc((argc+1)*sizeof(char*));
+    split_cmdline(cmdline, argv);
+    argv[argc] = NULL;
+
+    __getopt_initialized = 0;
+
+    while(1)
+    {
+        static struct option long_options[] =
+        {
+            {"video", required_argument, 0, 'v'},
+            {0, 0, 0, 0}
+        };
+
+        int option_index = 0;
+
+        c = getopt_long (argc, argv, "v:",
+                        long_options, &option_index);
+
+        if (c == -1)
+            break;
+
+        switch(c)
+        {
+            case 'v':
+                printf("cmdline_mode %s\n",optarg);
+                set_cmdline_mode_ext(main_device, optarg);
+                break;
+        }
+    }
+    __builtin_free(argv);
+    __builtin_free(cmdline);
+
+    return 0;
+};
 
 #define CURRENT_API     0x0200      /*      2.00     */
 #define COMPATIBLE_API  0x0100      /*      1.00     */
@@ -284,7 +332,7 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 #define SRV_ENUM_MODES              1
 #define SRV_SET_MODE                2
 #define SRV_GET_CAPS                3
-
+#define SRV_CMDLINE                 4
 
 #define SRV_GET_PCI_INFO                20
 #define SRV_I915_GET_PARAM              21
@@ -349,20 +397,22 @@ int _stdcall display_handler(ioctl_t *io)
 //                       inp, io->inp_size, io->out_size );
             check_output(4);
 //            check_input(*outp * sizeof(videomode_t));
-            if( i915_modeset)
-                retval = get_videomodes((videomode_t*)inp, outp);
+            retval = get_videomodes((videomode_t*)inp, outp);
             break;
 
         case SRV_SET_MODE:
 //            dbgprintf("SRV_SET_MODE inp %x inp_size %x\n",
 //                       inp, io->inp_size);
             check_input(sizeof(videomode_t));
-            if( i915_modeset )
-                retval = set_user_mode((videomode_t*)inp);
+            retval = set_user_mode((videomode_t*)inp);
             break;
 
         case SRV_GET_CAPS:
             retval = get_driver_caps((hwcaps_t*)inp);
+            break;
+
+        case SRV_CMDLINE:
+            retval = do_command_line((char*)inp);
             break;
 
         case SRV_GET_PCI_INFO:
@@ -779,7 +829,7 @@ static int my_atoi(char **cmd)
     }
 }
 
-char* parse_mode(char *p, videomode_t *mode)
+static char* parse_mode(char *p, videomode_t *mode)
 {
     char c;
 
@@ -805,89 +855,6 @@ char* parse_mode(char *p, videomode_t *mode)
 
     return p;
 };
-
-
-static char* parse_path(char *p, char *log)
-{
-    char  c;
-
-    while( (c = *p++) == ' ');
-        p--;
-    while((c = *p++) && (c != ' '))
-        *log++ = c;
-
-    *log = 0;
-
-    return p;
-};
-
-void parse_cmdline(char *cmdline, struct cmdtable *table, char *log, videomode_t *mode)
-{
-    char *p = cmdline;
-    char *p1;
-    int val;
-    char c = *p++;
-
-    if( table )
-    {
-        while(table->key)
-        {
-            if(p1 = strstr(cmdline, table->key))
-            {
-                p1+= table->size;
-                *table->val = my_atoi(&p1);
-            }
-            table++;
-        }
-    }
-
-    while( c )
-    {
-        if( c == '-')
-        {
-            switch(*p++)
-            {
-                case 'l':
-                    p = parse_path(p, log);
-                    break;
-
-                case 'm':
-                    p = parse_mode(p, mode);
-                    break;
-            };
-        };
-        c = *p++;
-    };
-};
-
-char *strstr(const char *cs, const char *ct)
-{
-int d0, d1;
-register char *__res;
-__asm__ __volatile__(
-    "movl %6,%%edi\n\t"
-    "repne\n\t"
-    "scasb\n\t"
-    "notl %%ecx\n\t"
-    "decl %%ecx\n\t"    /* NOTE! This also sets Z if searchstring='' */
-    "movl %%ecx,%%edx\n"
-    "1:\tmovl %6,%%edi\n\t"
-    "movl %%esi,%%eax\n\t"
-    "movl %%edx,%%ecx\n\t"
-    "repe\n\t"
-    "cmpsb\n\t"
-    "je 2f\n\t"     /* also works for empty string, see above */
-    "xchgl %%eax,%%esi\n\t"
-    "incl %%esi\n\t"
-    "cmpb $0,-1(%%eax)\n\t"
-    "jne 1b\n\t"
-    "xorl %%eax,%%eax\n\t"
-    "2:"
-    : "=a" (__res), "=&c" (d0), "=&S" (d1)
-    : "0" (0), "1" (0xffffffff), "2" (cs), "g" (ct)
-    : "dx", "di");
-return __res;
-}
 
 #include <linux/math64.h>
 

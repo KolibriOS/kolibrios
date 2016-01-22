@@ -852,6 +852,14 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 	if (ret)
 		goto out_freecsr;
 
+	/* WARNING: Apparently we must kick fbdev drivers before vgacon,
+	 * otherwise the vga fbdev driver falls over. */
+	ret = i915_kick_out_firmware_fb(dev_priv);
+	if (ret) {
+		DRM_ERROR("failed to remove conflicting framebuffer drivers\n");
+		goto out_gtt;
+	}
+
 	ret = i915_kick_out_vgacon(dev_priv);
 	if (ret) {
 		DRM_ERROR("failed to remove conflicting VGA console\n");
@@ -927,11 +935,11 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 
 	intel_init_dpio(dev_priv);
 
-//   if (INTEL_INFO(dev)->num_pipes) {
-//       ret = drm_vblank_init(dev, INTEL_INFO(dev)->num_pipes);
-//       if (ret)
-//           goto out_gem_unload;
-//   }
+	if (INTEL_INFO(dev)->num_pipes) {
+		ret = drm_vblank_init(dev, INTEL_INFO(dev)->num_pipes);
+		if (ret)
+			goto out_gem_unload;
+	}
 
 	intel_power_domains_init(dev_priv);
 

@@ -1010,11 +1010,9 @@ int __i915_wait_request(struct drm_i915_gem_request *req,
 	const bool irq_test_in_progress =
 		ACCESS_ONCE(dev_priv->gpu_error.test_irq_rings) & intel_ring_flag(ring);
 	int state = interruptible ? TASK_INTERRUPTIBLE : TASK_UNINTERRUPTIBLE;
-	DEFINE_WAIT(wait);
+	wait_queue_t wait;
 	unsigned long timeout_expire;
 	s64 before, now;
-
-    wait_queue_t __wait;
 	int ret;
 
 	WARN(!intel_irqs_enabled(dev_priv), "IRQs disabled");
@@ -1053,9 +1051,8 @@ int __i915_wait_request(struct drm_i915_gem_request *req,
 		goto out;
 	}
 
-    INIT_LIST_HEAD(&__wait.task_list);
-    __wait.evnt = CreateEvent(NULL, MANUAL_DESTROY);
-
+	INIT_LIST_HEAD(&wait.task_list);
+	wait.evnt = CreateEvent(NULL, MANUAL_DESTROY);
 
 	for (;;) {
         unsigned long flags;
@@ -1076,31 +1073,31 @@ int __i915_wait_request(struct drm_i915_gem_request *req,
 			break;
 		}
 
-        if (timeout && time_after_eq(jiffies, timeout_expire)) {
+		if (timeout && time_after_eq(jiffies, timeout_expire)) {
 			ret = -ETIME;
 			break;
 		}
 
         spin_lock_irqsave(&ring->irq_queue.lock, flags);
-        if (list_empty(&__wait.task_list))
-            __add_wait_queue(&ring->irq_queue, &__wait);
+        if (list_empty(&wait.task_list))
+            __add_wait_queue(&ring->irq_queue, &wait);
         spin_unlock_irqrestore(&ring->irq_queue.lock, flags);
 
-        WaitEventTimeout(__wait.evnt, 1);
+            WaitEventTimeout(wait.evnt, 1);
 
-        if (!list_empty(&__wait.task_list)) {
+        if (!list_empty(&wait.task_list)) {
             spin_lock_irqsave(&ring->irq_queue.lock, flags);
-            list_del_init(&__wait.task_list);
+            list_del_init(&wait.task_list);
             spin_unlock_irqrestore(&ring->irq_queue.lock, flags);
         }
-    };
 
-    DestroyEvent(__wait.evnt);
+	};
 
 	if (!irq_test_in_progress)
 		ring->irq_put(ring);
 
-//	finish_wait(&ring->irq_queue, &wait);
+    DestroyEvent(wait.evnt);
+
 out:
 	now = ktime_get_raw_ns();
 	trace_i915_gem_request_wait_end(req);
@@ -1665,10 +1662,10 @@ unpin:
     *offset = (uint32_t)mem;
 
 out:
-    drm_gem_object_unreference(&obj->base);
+	drm_gem_object_unreference(&obj->base);
 unlock:
-    mutex_unlock(&dev->struct_mutex);
-    return ret;
+	mutex_unlock(&dev->struct_mutex);
+	return ret;
 }
 
 /**

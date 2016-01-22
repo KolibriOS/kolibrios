@@ -23,7 +23,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 //#include <linux/delay.h>
-//#include <linux/init.h>
+#include <linux/init.h>
 #include <linux/errno.h>
 #include <linux/sched.h>
 #include <linux/i2c.h>
@@ -215,7 +215,7 @@ static int drm_dp_dpcd_access(struct drm_dp_aux *aux, u8 request,
 			return -EIO;
 
 		case DP_AUX_NATIVE_REPLY_DEFER:
-			usleep(500);
+			usleep_range(AUX_RETRY_INTERVAL, AUX_RETRY_INTERVAL + 100);
 			break;
 		}
 	}
@@ -349,7 +349,7 @@ int drm_dp_link_power_up(struct drm_dp_aux *aux, struct drm_dp_link *link)
 	 * power saving state within 1 ms" (Section 2.5.3.1, Table 5-52, "Sink
 	 * Control Field" (register 0x600).
 	 */
-	usleep(2000);
+	usleep_range(1000, 2000);
 
 	return 0;
 }
@@ -578,7 +578,7 @@ static int drm_dp_i2c_do_msg(struct drm_dp_aux *aux, struct drm_dp_aux_msg *msg)
 			 * For now just defer for long enough to hopefully be
 			 * safe for all use-cases.
 			 */
-			usleep_range(500, 600);
+			usleep_range(AUX_RETRY_INTERVAL, AUX_RETRY_INTERVAL + 100);
 			continue;
 
 		default:
@@ -610,7 +610,7 @@ static int drm_dp_i2c_do_msg(struct drm_dp_aux *aux, struct drm_dp_aux_msg *msg)
 			aux->i2c_defer_count++;
 			if (defer_i2c < 7)
 				defer_i2c++;
-			usleep_range(400, 500);
+			usleep_range(AUX_RETRY_INTERVAL, AUX_RETRY_INTERVAL + 100);
 			drm_dp_i2c_msg_write_status_update(msg);
 
 			continue;

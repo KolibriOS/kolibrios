@@ -189,6 +189,7 @@ static int drm_helper_probe_single_connector_modes_merge_bits(struct drm_connect
 
 	if (count == 0 && connector->status == connector_status_connected)
 		count = drm_add_modes_noedid(connector, 1024, 768);
+	count += drm_helper_probe_add_cmdline_mode(connector);
 	if (count == 0)
 		goto prune;
 

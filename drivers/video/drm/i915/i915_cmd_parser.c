@@ -866,7 +866,7 @@ static u32 *vmap_batch(struct drm_i915_gem_object *obj,
 	int npages = last_page - first_page;
 	struct page **pages;
 
-    pages = kmalloc(obj->base.size >> PAGE_SHIFT, sizeof(*pages));
+	pages = kmalloc(obj->base.size >> PAGE_SHIFT, sizeof(*pages));
 	if (pages == NULL) {
 		DRM_DEBUG_DRIVER("Failed to get space for pages\n");
 		goto finish;

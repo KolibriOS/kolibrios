@@ -1065,7 +1065,7 @@ int drm_atomic_helper_commit(struct drm_device *dev,
 
 	drm_atomic_helper_commit_modeset_enables(dev, state);
 
-//   drm_atomic_helper_wait_for_vblanks(dev, state);
+	drm_atomic_helper_wait_for_vblanks(dev, state);
 
 	drm_atomic_helper_cleanup_planes(dev, state);
 

@@ -1198,6 +1198,214 @@ void drm_mode_connector_list_update(struct drm_connector *connector,
 	}
 }
 EXPORT_SYMBOL(drm_mode_connector_list_update);
+
+/**
+ * drm_mode_parse_command_line_for_connector - parse command line modeline for connector
+ * @mode_option: optional per connector mode option
+ * @connector: connector to parse modeline for
+ * @mode: preallocated drm_cmdline_mode structure to fill out
+ *
+ * This parses @mode_option command line modeline for modes and options to
+ * configure the connector. If @mode_option is NULL the default command line
+ * modeline in fb_mode_option will be parsed instead.
+ *
+ * This uses the same parameters as the fb modedb.c, except for an extra
+ * force-enable, force-enable-digital and force-disable bit at the end:
+ *
+ *	<xres>x<yres>[M][R][-<bpp>][@<refresh>][i][m][eDd]
+ *
+ * The intermediate drm_cmdline_mode structure is required to store additional
+ * options from the command line modline like the force-enable/disable flag.
+ *
+ * Returns:
+ * True if a valid modeline has been parsed, false otherwise.
+ */
+bool drm_mode_parse_command_line_for_connector(const char *mode_option,
+					       struct drm_connector *connector,
+					       struct drm_cmdline_mode *mode)
+{
+	const char *name;
+	unsigned int namelen;
+	bool res_specified = false, bpp_specified = false, refresh_specified = false;
+	unsigned int xres = 0, yres = 0, bpp = 32, refresh = 0;
+	bool yres_specified = false, cvt = false, rb = false;
+	bool interlace = false, margins = false, was_digit = false;
+	int i;
+	enum drm_connector_force force = DRM_FORCE_UNSPECIFIED;
+
+#ifdef CONFIG_FB
+	if (!mode_option)
+		mode_option = fb_mode_option;
+#endif
+
+	if (!mode_option) {
+		mode->specified = false;
+		return false;
+	}
+
+	name = mode_option;
+	namelen = strlen(name);
+	for (i = namelen-1; i >= 0; i--) {
+		switch (name[i]) {
+		case '@':
+			if (!refresh_specified && !bpp_specified &&
+			    !yres_specified && !cvt && !rb && was_digit) {
+				refresh = simple_strtol(&name[i+1], NULL, 10);
+				refresh_specified = true;
+				was_digit = false;
+			} else
+				goto done;
+			break;
+		case '-':
+			if (!bpp_specified && !yres_specified && !cvt &&
+			    !rb && was_digit) {
+				bpp = simple_strtol(&name[i+1], NULL, 10);
+				bpp_specified = true;
+				was_digit = false;
+			} else
+				goto done;
+			break;
+		case 'x':
+			if (!yres_specified && was_digit) {
+				yres = simple_strtol(&name[i+1], NULL, 10);
+				yres_specified = true;
+				was_digit = false;
+			} else
+				goto done;
+			break;
+		case '0' ... '9':
+			was_digit = true;
+			break;
+		case 'M':
+			if (yres_specified || cvt || was_digit)
+				goto done;
+			cvt = true;
+			break;
+		case 'R':
+			if (yres_specified || cvt || rb || was_digit)
+				goto done;
+			rb = true;
+			break;
+		case 'm':
+			if (cvt || yres_specified || was_digit)
+				goto done;
+			margins = true;
+			break;
+		case 'i':
+			if (cvt || yres_specified || was_digit)
+				goto done;
+			interlace = true;
+			break;
+		case 'e':
+			if (yres_specified || bpp_specified || refresh_specified ||
+			    was_digit || (force != DRM_FORCE_UNSPECIFIED))
+				goto done;
+
+			force = DRM_FORCE_ON;
+			break;
+		case 'D':
+			if (yres_specified || bpp_specified || refresh_specified ||
+			    was_digit || (force != DRM_FORCE_UNSPECIFIED))
+				goto done;
+
+			if ((connector->connector_type != DRM_MODE_CONNECTOR_DVII) &&
+			    (connector->connector_type != DRM_MODE_CONNECTOR_HDMIB))
+				force = DRM_FORCE_ON;
+			else
+				force = DRM_FORCE_ON_DIGITAL;
+			break;
+		case 'd':
+			if (yres_specified || bpp_specified || refresh_specified ||
+			    was_digit || (force != DRM_FORCE_UNSPECIFIED))
+				goto done;
+
+			force = DRM_FORCE_OFF;
+			break;
+		default:
+			goto done;
+		}
+	}
+
+	if (i < 0 && yres_specified) {
+		char *ch;
+		xres = simple_strtol(name, &ch, 10);
+		if ((ch != NULL) && (*ch == 'x'))
+			res_specified = true;
+		else
+			i = ch - name;
+	} else if (!yres_specified && was_digit) {
+		/* catch mode that begins with digits but has no 'x' */
+		i = 0;
+	}
+done:
+	if (i >= 0) {
+		printk(KERN_WARNING
+			"parse error at position %i in video mode '%s'\n",
+			i, name);
+		mode->specified = false;
+		return false;
+	}
+
+	if (res_specified) {
+		mode->specified = true;
+		mode->xres = xres;
+		mode->yres = yres;
+	}
+
+	if (refresh_specified) {
+		mode->refresh_specified = true;
+		mode->refresh = refresh;
+	}
+
+	if (bpp_specified) {
+		mode->bpp_specified = true;
+		mode->bpp = bpp;
+	}
+	mode->rb = rb;
+	mode->cvt = cvt;
+	mode->interlace = interlace;
+	mode->margins = margins;
+	mode->force = force;
+
+	return true;
+}
+EXPORT_SYMBOL(drm_mode_parse_command_line_for_connector);
+
+/**
+ * drm_mode_create_from_cmdline_mode - convert a command line modeline into a DRM display mode
+ * @dev: DRM device to create the new mode for
+ * @cmd: input command line modeline
+ *
+ * Returns:
+ * Pointer to converted mode on success, NULL on error.
+ */
+struct drm_display_mode *
+drm_mode_create_from_cmdline_mode(struct drm_device *dev,
+				  struct drm_cmdline_mode *cmd)
+{
+	struct drm_display_mode *mode;
+
+	if (cmd->cvt)
+		mode = drm_cvt_mode(dev,
+				    cmd->xres, cmd->yres,
+				    cmd->refresh_specified ? cmd->refresh : 60,
+				    cmd->rb, cmd->interlace,
+				    cmd->margins);
+	else
+		mode = drm_gtf_mode(dev,
+				    cmd->xres, cmd->yres,
+				    cmd->refresh_specified ? cmd->refresh : 60,
+				    cmd->interlace,
+				    cmd->margins);
+	if (!mode)
+		return NULL;
+
+	mode->type |= DRM_MODE_TYPE_USERDEF;
+	drm_mode_set_crtcinfo(mode, CRTC_INTERLACE_HALVE_V);
+	return mode;
+}
+EXPORT_SYMBOL(drm_mode_create_from_cmdline_mode);
+
 /**
  * drm_crtc_convert_to_umode - convert a drm_display_mode into a modeinfo
  * @out: drm_mode_modeinfo struct to return to the user

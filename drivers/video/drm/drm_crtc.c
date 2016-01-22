@@ -818,8 +818,6 @@ static void drm_connector_get_cmdline_mode(struct drm_connector *connector)
 	struct drm_cmdline_mode *mode = &connector->cmdline_mode;
 	char *option = NULL;
 
-    return;
-#if 0
 	if (fb_get_options(connector->name, &option))
 		return;
 
@@ -855,7 +853,6 @@ static void drm_connector_get_cmdline_mode(struct drm_connector *connector)
 		      mode->rb ? " reduced blanking" : "",
 		      mode->margins ? " with margins" : "",
 		      mode->interlace ?  " interlaced" : "");
-#endif
 }
 
 /**
