@@ -4794,8 +4794,9 @@ Parameters:
   * edx = control value
   * esi = timeout in system ticks or 0 for infinity
 Returned value:
-  * eax = 0 - successfull, -1 on timeout
-
+  * eax = 0 - successfull
+	 -1 - timeout
+	 -2 - futex dword does not have the same value as edx
 Remarks:
   * This functionn tests that the value at the futex dword still
     contains the expected control value, and if so, then sleeps

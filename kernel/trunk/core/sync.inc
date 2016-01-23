@@ -132,10 +132,10 @@ align 4
         jnz     .futex_wait_timeout
         mov     ecx, [ebp+FUTEX.pointer]
         mov     eax, edx
-        lock cmpxchg [ecx], edx         ;wait until old_value == new_value
-        jz      .wait_slow
+        lock cmpxchg [ecx], edx
+        je      .wait_slow
 
-        mov     [esp+SYSCALL_STACK._eax], 0
+        mov     [esp+SYSCALL_STACK._eax], -2
         ret
 
 .wait_slow:
@@ -148,13 +148,13 @@ align 4
         lea     esi, [ebp+FUTEX.wait_list]
 
         list_add_tail esp, esi      ;esp= new waiter, esi= list head
-
+        mov     eax, edx
 .again:
         mov     [ebx+TASKDATA.state], 1
         call    change_task
 
         lock cmpxchg [ecx], edx
-        jz      .again
+        je      .again
 
         list_del esp
         add     esp, sizeof.MUTEX_WAITER
@@ -174,9 +174,9 @@ align 4
         mov     ecx, [ebp+FUTEX.pointer]
         mov     eax, edx
         lock cmpxchg [ecx], edx         ;wait until old_value == new_value
-        jz      .wait_slow_timeout
+        je      .wait_slow_timeout
 
-        mov     [esp+SYSCALL_STACK._eax], 0
+        mov     [esp+SYSCALL_STACK._eax], -2
         ret
 
 align 4
@@ -210,6 +210,7 @@ align 4
         test    eax, eax
         jz      .timeout
 
+        mov     eax, edx
         lock cmpxchg [ecx], edx
         jz      .again_timeout
 @@:
