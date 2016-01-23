@@ -940,12 +940,6 @@ proc new_sys_threads
         mov     ecx, 11
         rep movsb             ;copy process name
 
-        mov     eax, [ebx+APPDATA.process]
-        mov     [edx+APPDATA.process], eax
-
-        lea     ebx, [edx+APPDATA.list]
-        lea     ecx, [eax+PROC.thr_list]
-        list_add_tail ebx, ecx               ;add thread to process child's list
 
         mov     eax, [ebx+APPDATA.tls_base]
         test    eax, eax
@@ -958,6 +952,13 @@ proc new_sys_threads
         jz      .failed1;eax=0
 @@:
         mov     [edx+APPDATA.tls_base], eax
+
+        mov     eax, [ebx+APPDATA.process]
+        mov     [edx+APPDATA.process], eax
+
+        lea     ebx, [edx+APPDATA.list]
+        lea     ecx, [eax+PROC.thr_list]
+        list_add_tail ebx, ecx               ;add thread to process child's list
 
         lea     eax, [app_cmdline]
         stdcall set_app_params , [slot], eax, dword 0, \
