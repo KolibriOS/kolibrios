@@ -178,7 +178,7 @@ extra_files = {
  {"kolibrios/media/zsea/zsea.ini", PROGS .. "/media/zsea/zSea.ini"},
  {"kolibrios/media/zsea/buttons/buttons.png", PROGS .. "/media/zsea/buttons.png"},
  {"kolibrios/res/skins/", "../skins/authors.txt"},
- {"kolibrios/utils/appearance", PROGS .. "/cmm/appearance/appearance"},
+ {"kolibrios/utils/appearance", PROGS .. "/cmm/appearance/appearance.com"},
 }
 if build_type == "rus" then tup.append_table(extra_files, {
  {"Docs/cp866/config.txt", build_type .. "/docs/CONFIG.TXT"},
