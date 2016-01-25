@@ -355,12 +355,6 @@ endp
 align 4
 fl_1e_3 dd 1.0e-3
 
-if DEBUG
-txt_mate db 'Material',0
-txt_colo db 'Color',0
-txt_rgba db 'R, G, B',0
-end if
-
 ; non optimized lightening model
 align 4
 proc gl_shade_vertex, context:dword, v:dword
@@ -386,6 +380,16 @@ pushad
 ; ebx -> GLLight *l
 ; ecx -> GLMaterial *m
 ; esi -> GLVertex *v
+
+;n = v.normal
+;d = l.position
+;   diffuse light
+;dot = d*n
+;dot_spot = d*l.norm_spot_direction
+;   specular light
+;s = d-v.ec
+;dot_spec = n*s
+
 	mov esi,[v]
 	mov edx,[context]
 	mov ecx,edx
@@ -400,20 +404,6 @@ pushad
 	movsd ;n.Y=v.normal.Y
 	movsd ;n.Z=v.normal.Z
 	mov esi,[v]
-
-if DEBUG ;offs_mate_emission, offs_mate_ambient, offs_mate_specular, offs_mate_diffuse
-push ecx
-	stdcall dbg_print,txt_mate,txt_nl
-	add ecx,offs_mate_emission
-	stdcall gl_print_matrix,ecx,1
-	add ecx,offs_mate_ambient-offs_mate_emission
-	stdcall gl_print_matrix,ecx,1
-	add ecx,offs_mate_specular-offs_mate_ambient
-	stdcall gl_print_matrix,ecx,1
-	add ecx,offs_mate_diffuse-offs_mate_specular
-	stdcall gl_print_matrix,ecx,1
-pop ecx
-end if
 
 	fld dword[edx+offs_cont_ambient_light_model]
 	fmul dword[ecx+offs_mate_ambient]
@@ -454,12 +444,12 @@ end if
 			; light at infinity
 			ffree st0 ;l.position.v[3]
 			fincstp
-			mov eax,[ebx+offs_ligh_position]
-			mov [d],eax ;d.X=l.position.v[0]
-			mov eax,[ebx+offs_ligh_position+offs_Y]
-			mov [d+offs_Y],eax ;d.Y=l.position.v[1]
-			mov eax,[ebx+offs_ligh_position+offs_Z]
-			mov [d+offs_Z],eax ;d.Z=l.position.v[2]
+			mov eax,[ebx+offs_ligh_norm_position]
+			mov [d],eax ;d.X=l.norm_position.v[0]
+			mov eax,[ebx+offs_ligh_norm_position+offs_Y]
+			mov [d+offs_Y],eax ;d.Y=l.norm_position.v[1]
+			mov eax,[ebx+offs_ligh_norm_position+offs_Z]
+			mov [d+offs_Z],eax ;d.Z=l.norm_position.v[2]
 			mov dword[att],1.0
 			jmp .els_0_end
 		.els_0:
@@ -562,10 +552,10 @@ end if
 			je .if1_end
 				fld dword[ebx+offs_ligh_norm_spot_direction]
 				fmul dword[d]
-				fld dword[ebx+offs_ligh_norm_spot_direction+4]
+				fld dword[ebx+offs_ligh_norm_spot_direction+offs_Y]
 				fmul dword[d+offs_Y]
 				faddp
-				fld dword[ebx+offs_ligh_norm_spot_direction+8]
+				fld dword[ebx+offs_ligh_norm_spot_direction+offs_Z]
 				fmul dword[d+offs_Z]
 				faddp
 				fchs
@@ -756,13 +746,6 @@ end if
 	mov [esi+offs_vert_color+8],eax ;v.color.v[2]=clampf(B,0,1)
 	mov eax,[A]
 	mov [esi+offs_vert_color+12],eax ;v.color.v[3]=A
-if DEBUG ;offs_vert_color
-push esi
-	stdcall dbg_print,txt_colo,txt_nl
-	add esi,offs_vert_color
-	stdcall gl_print_matrix,esi,1
-pop esi
-end if
 popad
 	ret
 endp
