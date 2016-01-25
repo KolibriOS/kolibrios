@@ -125,7 +125,6 @@ extra_files = {
  {"/", build_type .. "/distr_data/autorun.inf"},
  {"/", build_type .. "/distr_data/KolibriOS_icon.ico"},
  {"/", build_type .. "/settings/kolibri.lbl"},
- {"Skins/", "../skins/authors.txt"},
  {"Docs/stack.txt", build_type .. "/docs/STACK.TXT"},
  {"HD_Load/9x2klbr/", "common/HD_load/9x2klbr/LDKLBR.VXD"},
  {"HD_Load/MeOSLoad/", PROGS .. "/hd_load/meosload/AUTOEXEC.BAT"},
@@ -178,6 +177,8 @@ extra_files = {
  {"kolibrios/media/fplay", "common/media/fplay"},
  {"kolibrios/media/zsea/zsea.ini", PROGS .. "/media/zsea/zSea.ini"},
  {"kolibrios/media/zsea/buttons/buttons.png", PROGS .. "/media/zsea/buttons.png"},
+ {"kolibrios/res/skins/", "../skins/authors.txt"},
+ {"kolibrios/utils/appearance", PROGS .. "/cmm/appearance/appearance"},
 }
 if build_type == "rus" then tup.append_table(extra_files, {
  {"Docs/cp866/config.txt", build_type .. "/docs/CONFIG.TXT"},
@@ -329,7 +330,6 @@ tup.append_table(img_files, {
  {"DEVELOP/INFO/DEFAULT.SYN", PROGS .. "/other/t_edit/info/default.syn"},
  {"DEVELOP/INFO/HTML.SYN", PROGS .. "/other/t_edit/info/html.syn"},
  {"DEVELOP/INFO/INI_FILES.SYN", PROGS .. "/other/t_edit/info/ini_files.syn"},
- {"DEVELOP/INFO/WIN_CONST.SYN", PROGS .. "/other/t_edit/info/win_const.syn"},
  {"File Managers/KFAR", PROGS .. "/fs/kfar/trunk/kfar"},
  {"File Managers/KFM", PROGS .. "/fs/kfm/trunk/kfm"},
  {"File Managers/OPENDIAL", PROGS .. "/fs/opendial/opendial"},
@@ -553,7 +553,7 @@ end
 
 -- append skins to extra_files
 for i,v in ipairs(skinlist) do
-  table.insert(extra_files, {"Skins/", "../skins/" .. v})
+  table.insert(extra_files, {"kolibrios/res/skins/", "../skins/" .. v})
 end
 
 -- prepare distr_extra_files and iso_extra_files: expand and append common part

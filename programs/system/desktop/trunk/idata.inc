@@ -99,13 +99,13 @@ else
 end if
 ;-----------------------------------------------------------------------------
 if lang eq ru
-  title db 'НАСТРОЙКА ОКОН',0
+  title db 'Настройка окон',0
 else if lang eq et
-  title db 'AKNA SEADED - VALI V─RV JA VAJUTA OBJEKTILE',0
+  title db 'Akna seaded',0
 else if lang eq it
-  title db 'Impostazioni - definire il colore e cliccare lo oggetto',0
+  title db 'Impostazioni',0
 else
-  title db 'WINDOWS SETTINGS - DEFINE COLOR AND CLICK ON TARGET',0
+  title db 'Windows settings',0
 end if
 ;---------------------------------------------------------------------
 l_libs_start:
