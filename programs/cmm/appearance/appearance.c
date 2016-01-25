@@ -30,12 +30,12 @@ unsigned char icons[]= FROM "icons.raw";
 
 llist list[2];
 int active;
-enum { WALLPAPERS, SKINS };
+enum { SKINS, WALLPAPERS };
 
 char folder_path[4096];
 char cur_file_path[4096];
 char temp_filename[4096];
-int files_mas[100];
+int files_mas[400];
 
 int cur;
 
@@ -151,13 +151,11 @@ void main()
 	load_dll(boxlib, #box_lib_init,0);
 	list[SKINS].cur_y = list[WALLPAPERS].cur_y = -1;
 	list[SKINS].first = list[WALLPAPERS].first = 0;
-	TabClick(WALLPAPERS);
+	TabClick(SKINS);
 	list[WALLPAPERS].SetSizes(0, 230, 350, 400-PANEL_H, 18);
 	list[SKINS].SetSizes(0, 230, 350, 400-PANEL_H, 18);
-	loop()
+	loop() switch(WaitEvent()) 
 	{
-	  switch(WaitEvent()) 
-	  {
 	  	case evMouse:
 			if (!CheckActiveProcess(Form.ID)) break;
 			mouse.get();
@@ -213,7 +211,6 @@ void main()
 			IF (Form.status_window>=2) break;
 			DrawTabs();
 			Draw_List();
-	  }
    }
 }
 
@@ -242,8 +239,8 @@ void DrawTab(dword x,y, but_id, is_active, text)
 void DrawTabs()
 {
 	DrawBar(0,0, Form.cwidth, PANEL_H-1, system.color.work);
-	DrawTab(10,7, 2, list[WALLPAPERS].active, T_WALLPAPERS);
-	DrawTab(strlen(T_WALLPAPERS)*6+BT_PADDING+21,7, 3, list[SKINS].active, T_SKINS);
+	DrawTab(10,7, 3, list[SKINS].active, T_SKINS);
+	if (isdir(WALP_STANDART_PATH)) DrawTab(strlen(T_SKINS)*6+BT_PADDING+21,7, 2, list[WALLPAPERS].active, T_WALLPAPERS);
 	DrawBar(0,PANEL_H-2, Form.cwidth, 1, system.color.work_graph);
 	DrawBar(0,PANEL_H-1, Form.cwidth, 1, 0xEEEeee);
 }
