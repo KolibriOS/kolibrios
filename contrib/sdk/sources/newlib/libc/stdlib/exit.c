@@ -63,7 +63,7 @@ _DEFUN (exit, (code),
   void __call_exitprocs _PARAMS ((int, _PTR)) __attribute__((weak));
   if (__call_exitprocs)
 #endif
-  __call_exitprocs (code, NULL);
+    __call_exitprocs (code, NULL);
 
   if (_GLOBAL_REENT->__cleanup)
     (*_GLOBAL_REENT->__cleanup) (_GLOBAL_REENT);

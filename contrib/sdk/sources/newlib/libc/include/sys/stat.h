@@ -7,7 +7,9 @@ extern "C" {
 
 #include <_ansi.h>
 #include <time.h>
+#include <sys/cdefs.h>
 #include <sys/types.h>
+#include <sys/_timespec.h>
 
 /* dj's stat defines _STAT_H_ */
 #ifndef _STAT_H_
@@ -22,7 +24,7 @@ extern "C" {
 #define stat64 stat
 #endif
 #else
-struct	stat
+struct	stat 
 {
   dev_t		st_dev;
   ino_t		st_ino;
@@ -142,6 +144,8 @@ struct	stat
 #define UTIME_OMIT	-1L
 #endif
 
+int	_EXFUN(chmod,( const char *__path, mode_t __mode ));
+int     _EXFUN(fchmod,(int __fd, mode_t __mode));
 int	_EXFUN(fstat,( int __fd, struct stat *__sbuf ));
 int	_EXFUN(mkdir,( const char *_path, mode_t __mode ));
 int	_EXFUN(mkfifo,( const char *__path, mode_t __mode ));
@@ -153,12 +157,18 @@ int	_EXFUN(lstat,( const char *__restrict __path, struct stat *__restrict __buf 
 int	_EXFUN(mknod,( const char *__path, mode_t __mode, dev_t __dev ));
 #endif
 
-#if defined (__CYGWIN__) && !defined(__INSIDE_CYGWIN__)
+#if (__POSIX_VISIBLE >= 200809 || defined (__CYGWIN__)) && !defined(__INSIDE_CYGWIN__)
 int	_EXFUN(fchmodat, (int, const char *, mode_t, int));
+#endif
+#if (__BSD_VISIBLE || __POSIX_VISIBLE >= 200809 || defined (__CYGWIN__)) && !defined(__INSIDE_CYGWIN__)
 int	_EXFUN(fstatat, (int, const char *__restrict , struct stat *__restrict, int));
 int	_EXFUN(mkdirat, (int, const char *, mode_t));
 int	_EXFUN(mkfifoat, (int, const char *, mode_t));
+#endif
+#if (__BSD_VISIBLE || __XSI_VISIBLE >= 700 || defined (__CYGWIN__)) && !defined(__INSIDE_CYGWIN__)
 int	_EXFUN(mknodat, (int, const char *, mode_t, dev_t));
+#endif
+#if (__BSD_VISIBLE || __POSIX_VISIBLE >= 200809 || defined (__CYGWIN__)) && !defined(__INSIDE_CYGWIN__)
 int	_EXFUN(utimensat, (int, const char *, const struct timespec *, int));
 int	_EXFUN(futimens, (int, const struct timespec *));
 #endif

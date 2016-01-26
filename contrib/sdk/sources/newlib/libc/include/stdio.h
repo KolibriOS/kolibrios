@@ -32,6 +32,7 @@
 
 #define __need_size_t
 #define __need_NULL
+#include <sys/cdefs.h>
 #include <stddef.h>
 
 #define __need___va_list
@@ -48,7 +49,10 @@
 
 _BEGIN_STD_C
 
+#if !defined(__FILE_defined)
 typedef __FILE FILE;
+# define __FILE_defined
+#endif
 
 #ifdef __CYGWIN__
 typedef _fpos64_t fpos_t;
@@ -82,6 +86,7 @@ typedef _fpos64_t fpos64_t;
 #define	__SL64	0x8000		/* is 64-bit offset large file */
 
 /* _flags2 flags */
+#define	__SNLK  0x0001		/* stdio functions do not lock streams themselves */
 #define	__SWID	0x2000		/* true => stream orientation wide, false => byte, only valid if __SORD in _flags is true */
 
 /*
@@ -102,7 +107,7 @@ typedef _fpos64_t fpos64_t;
 #ifdef __BUFSIZ__
 #define	BUFSIZ		__BUFSIZ__
 #else
-#define BUFSIZ      4096
+#define	BUFSIZ		1024
 #endif
 
 #ifdef __FOPEN_MAX__
@@ -161,6 +166,9 @@ typedef _fpos64_t fpos64_t;
 
 FILE *	_EXFUN(tmpfile, (void));
 char *	_EXFUN(tmpnam, (char *));
+#if __BSD_VISIBLE || __XSI_VISIBLE || __POSIX_VISIBLE >= 200112
+char *	_EXFUN(tempnam, (const char *, const char *));
+#endif
 int	_EXFUN(fclose, (FILE *));
 int	_EXFUN(fflush, (FILE *));
 FILE *	_EXFUN(freopen, (const char *__restrict, const char *__restrict, FILE *__restrict));
@@ -231,7 +239,10 @@ int	_EXFUN(fseeko, (FILE *, off_t, int));
 off_t	_EXFUN(ftello, ( FILE *));
 #endif
 #endif
-#if !defined(__STRICT_ANSI__) || (__STDC_VERSION__ >= 199901L)
+#if __GNU_VISIBLE
+int	_EXFUN(fcloseall, (_VOID));
+#endif
+#if !defined(__STRICT_ANSI__) || (__STDC_VERSION__ >= 199901L) || (__cplusplus >= 201103L)
 #ifndef _REENT_ONLY
 int	_EXFUN(asiprintf, (char **, const char *, ...)
                _ATTRIBUTE ((__format__ (__printf__, 2, 3))));
@@ -245,7 +256,6 @@ int	_EXFUN(asprintf, (char **__restrict, const char *__restrict, ...)
 int	_EXFUN(diprintf, (int, const char *, ...)
                _ATTRIBUTE ((__format__ (__printf__, 2, 3))));
 #endif
-int	_EXFUN(fcloseall, (_VOID));
 int	_EXFUN(fiprintf, (FILE *, const char *, ...)
                _ATTRIBUTE ((__format__ (__printf__, 2, 3))));
 int	_EXFUN(fiscanf, (FILE *, const char *, ...)
@@ -260,9 +270,8 @@ int	_EXFUN(siscanf, (const char *, const char *, ...)
                _ATTRIBUTE ((__format__ (__scanf__, 2, 3))));
 int	_EXFUN(snprintf, (char *__restrict, size_t, const char *__restrict, ...)
                _ATTRIBUTE ((__format__ (__printf__, 3, 4))));
-int _EXFUN(sniprintf, (char *, size_t, const char *, ...)
+int	_EXFUN(sniprintf, (char *, size_t, const char *, ...)
                _ATTRIBUTE ((__format__ (__printf__, 3, 4))));
-char *	_EXFUN(tempnam, (const char *, const char *));
 int	_EXFUN(vasiprintf, (char **, const char *, __VALIST)
                _ATTRIBUTE ((__format__ (__printf__, 2, 0))));
 char *	_EXFUN(vasniprintf, (char *, size_t *, const char *, __VALIST)
@@ -336,7 +345,7 @@ FILE *	_EXFUN(fmemopen, (void *__restrict, size_t, const char *__restrict));
 /* getdelim - see __getdelim for now */
 /* getline - see __getline for now */
 FILE *	_EXFUN(open_memstream, (char **, size_t *));
-#if defined (__CYGWIN__)
+#if __BSD_VISIBLE || __POSIX_VISIBLE >= 200809
 int	_EXFUN(renameat, (int, const char *, int, const char *));
 #endif
 int	_EXFUN(vdprintf, (int, const char *__restrict, __VALIST)
@@ -365,7 +374,9 @@ int	_EXFUN(_fcloseall_r, (struct _reent *));
 FILE *	_EXFUN(_fdopen_r, (struct _reent *, int, const char *));
 int	_EXFUN(_fflush_r, (struct _reent *, FILE *));
 int	_EXFUN(_fgetc_r, (struct _reent *, FILE *));
+int	_EXFUN(_fgetc_unlocked_r, (struct _reent *, FILE *));
 char *  _EXFUN(_fgets_r, (struct _reent *, char *__restrict, int, FILE *__restrict));
+char *  _EXFUN(_fgets_unlocked_r, (struct _reent *, char *__restrict, int, FILE *__restrict));
 #ifdef _COMPILING_NEWLIB
 int	_EXFUN(_fgetpos_r, (struct _reent *, FILE *__restrict, _fpos_t *__restrict));
 int	_EXFUN(_fsetpos_r, (struct _reent *, FILE *, const _fpos_t *));
@@ -384,8 +395,11 @@ int	_EXFUN(_fprintf_r, (struct _reent *, FILE *__restrict, const char *__restric
                _ATTRIBUTE ((__format__ (__printf__, 3, 4))));
 int	_EXFUN(_fpurge_r, (struct _reent *, FILE *));
 int	_EXFUN(_fputc_r, (struct _reent *, int, FILE *));
+int	_EXFUN(_fputc_unlocked_r, (struct _reent *, int, FILE *));
 int	_EXFUN(_fputs_r, (struct _reent *, const char *__restrict, FILE *__restrict));
+int	_EXFUN(_fputs_unlocked_r, (struct _reent *, const char *__restrict, FILE *__restrict));
 size_t	_EXFUN(_fread_r, (struct _reent *, _PTR __restrict, size_t _size, size_t _n, FILE *__restrict));
+size_t	_EXFUN(_fread_unlocked_r, (struct _reent *, _PTR __restrict, size_t _size, size_t _n, FILE *__restrict));
 int	_EXFUN(_fscanf_r, (struct _reent *, FILE *__restrict, const char *__restrict, ...)
                _ATTRIBUTE ((__format__ (__scanf__, 3, 4))));
 int	_EXFUN(_fseek_r, (struct _reent *, FILE *, long, int));
@@ -394,6 +408,7 @@ long	_EXFUN(_ftell_r, (struct _reent *, FILE *));
 _off_t	_EXFUN(_ftello_r,(struct _reent *, FILE *));
 void	_EXFUN(_rewind_r, (struct _reent *, FILE *));
 size_t	_EXFUN(_fwrite_r, (struct _reent *, const _PTR __restrict, size_t _size, size_t _n, FILE *__restrict));
+size_t	_EXFUN(_fwrite_unlocked_r, (struct _reent *, const _PTR __restrict, size_t _size, size_t _n, FILE *__restrict));
 int	_EXFUN(_getc_r, (struct _reent *, FILE *));
 int	_EXFUN(_getc_unlocked_r, (struct _reent *, FILE *));
 int	_EXFUN(_getchar_r, (struct _reent *));
@@ -479,6 +494,23 @@ int	_EXFUN(_vsscanf_r, (struct _reent *, const char *__restrict, const char *__r
 int	_EXFUN(fpurge, (FILE *));
 ssize_t _EXFUN(__getdelim, (char **, size_t *, int, FILE *));
 ssize_t _EXFUN(__getline, (char **, size_t *, FILE *));
+
+#if __BSD_VISIBLE
+void	_EXFUN(clearerr_unlocked, (FILE *));
+int	_EXFUN(feof_unlocked, (FILE *));
+int	_EXFUN(ferror_unlocked, (FILE *));
+int	_EXFUN(fileno_unlocked, (FILE *));
+int	_EXFUN(fflush_unlocked, (FILE *));
+int	_EXFUN(fgetc_unlocked, (FILE *));
+int	_EXFUN(fputc_unlocked, (int, FILE *));
+size_t	_EXFUN(fread_unlocked, (_PTR __restrict, size_t _size, size_t _n, FILE *__restrict));
+size_t	_EXFUN(fwrite_unlocked, (const _PTR __restrict , size_t _size, size_t _n, FILE *));
+#endif
+
+#if __GNU_VISIBLE
+char *  _EXFUN(fgets_unlocked, (char *__restrict, int, FILE *__restrict));
+int	_EXFUN(fputs_unlocked, (const char *__restrict, FILE *__restrict));
+#endif
 
 #ifdef __LARGE64_FILES
 #if !defined(__CYGWIN__) || defined(_COMPILING_NEWLIB)
@@ -578,7 +610,7 @@ FILE *_EXFUN(_fopencookie_r,(struct _reent *, void *__cookie,
 
 #ifndef __CUSTOM_FILE_IO__
 /*
- * The __sfoo macros are here so that we can
+ * The __sfoo macros are here so that we can 
  * define function versions in the C library.
  */
 #define       __sgetc_raw_r(__ptr, __f) (--(__f)->_r < 0 ? __srget_r(__ptr, __f) : (int)(*(__f)->_p++))
@@ -587,7 +619,7 @@ FILE *_EXFUN(_fopencookie_r,(struct _reent *, void *__cookie,
 /*  For a platform with CR/LF, additional logic is required by
   __sgetc_r which would otherwise simply be a macro; therefore we
   use an inlined function.  The function is only meant to be inlined
-  in place as used and the function body should never be emitted.
+  in place as used and the function body should never be emitted.  
 
   There are two possible means to this end when compiling with GCC,
   one when compiling with a standard C99 compiler, and for other
@@ -644,8 +676,8 @@ _ELIDABLE_INLINE int __sputc_r(struct _reent *_ptr, int _c, FILE *_p) {
 #endif
 #endif
 
-#define	__sfeof(p)	(((p)->_flags & __SEOF) != 0)
-#define	__sferror(p)	(((p)->_flags & __SERR) != 0)
+#define	__sfeof(p)	((int)(((p)->_flags & __SEOF) != 0))
+#define	__sferror(p)	((int)(((p)->_flags & __SERR) != 0))
 #define	__sclearerr(p)	((void)((p)->_flags &= ~(__SERR|__SEOF)))
 #define	__sfileno(p)	((p)->_file)
 
@@ -653,6 +685,16 @@ _ELIDABLE_INLINE int __sputc_r(struct _reent *_ptr, int _c, FILE *_p) {
 #define	feof(p)		__sfeof(p)
 #define	ferror(p)	__sferror(p)
 #define	clearerr(p)	__sclearerr(p)
+
+#if __BSD_VISIBLE
+#define	feof_unlocked(p)	__sfeof(p)
+#define	ferror_unlocked(p)	__sferror(p)
+#define	clearerr_unlocked(p)	__sclearerr(p)
+#endif /* __BSD_VISIBLE */
+#endif /* _REENT_SMALL */
+
+#if 0 /*ndef __STRICT_ANSI__ - FIXME: must initialize stdio first, use fn */
+#define	fileno(p)	__sfileno(p)
 #endif
 
 #ifndef __CYGWIN__
@@ -677,6 +719,11 @@ _ELIDABLE_INLINE int __sputc_r(struct _reent *_ptr, int _c, FILE *_p) {
 
 #define	getchar()	getc(stdin)
 #define	putchar(x)	putc(x, stdout)
+
+#ifndef __STRICT_ANSI__
+#define	getchar_unlocked()	getc_unlocked(stdin)
+#define	putchar_unlocked(x)	putc_unlocked(x, stdout)
+#endif
 
 _END_STD_C
 

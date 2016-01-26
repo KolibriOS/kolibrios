@@ -22,7 +22,7 @@ extern int errno;
 /*
 FUNCTION
 	<<_close_r>>---Reentrant version of close
-
+	
 INDEX
 	_close_r
 

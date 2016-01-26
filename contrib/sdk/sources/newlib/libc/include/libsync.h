@@ -56,19 +56,19 @@ static inline void mutex_lock(mutex_t *mutex)
     while (exchange_acquire (&mutex->lock, 2) != 0)
     {
         asm volatile(
-        "int $0x40\t"
+        "int $0x40\t\n"
         :"=a"(tmp)
         :"a"(77),"b"(FUTEX_WAIT),
         "c"(mutex->handle),"d"(2),"S"(0));
    }
 };
 
-static inline void mutex_lock_timeout(mutex_t *mutex, int timeout)
+static inline int mutex_lock_timeout(mutex_t *mutex, int timeout)
 {
-    int tmp;
+    int tmp = 0;
 
     if( __sync_fetch_and_add(&mutex->lock, 1) == 0)
-        return;
+        return 1;
 
     while (exchange_acquire (&mutex->lock, 2) != 0)
     {
@@ -77,7 +77,11 @@ static inline void mutex_lock_timeout(mutex_t *mutex, int timeout)
         :"=a"(tmp)
         :"a"(77),"b"(FUTEX_WAIT),
         "c"(mutex->handle),"d"(2),"S"(timeout));
-   }
+
+        if(++tmp == 0)
+            break;
+    }
+    return tmp ;
 };
 
 static inline int mutex_trylock (mutex_t *mutex)

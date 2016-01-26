@@ -39,11 +39,10 @@ int _EXFUN(toascii, (int __c));
 #define _X	0100
 #define	_B	0200
 
-extern
 #ifndef _MB_CAPABLE
 _CONST
 #endif
-__IMPORT char   *__ctype_ptr__;
+extern	__IMPORT char	*__ctype_ptr__;
 
 #ifndef __cplusplus
 /* These macros are intentionally written in a manner that will trigger

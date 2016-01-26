@@ -31,12 +31,50 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include "local.h"
 
-/* On platforms where long double is as wide as double.  */
+#ifdef _HAVE_LONG_DOUBLE
+
+#if defined (__x86_64__) || defined (__i386__)
+static const int map[] = {
+        1,      /* round to nearest */
+        3,      /* round to zero */
+        2,      /* round to negative infinity */
+        0       /* round to positive infinity */
+};
+
+int
+__flt_rounds(void)
+{
+        int x;
+
+        /* Assume that the x87 and the SSE unit agree on the rounding mode. */
+        __asm("fnstcw %0" : "=m" (x));
+        return (map[(x >> 10) & 0x03]);
+}
+#define FLT_ROUNDS __flt_rounds()
+#else
+#define FLT_ROUNDS 0
+#endif
+
+long double
+_strtold_r (struct _reent *ptr, const char *__restrict s00,
+	    char **__restrict se)
+{
 #ifdef _LDBL_EQ_DBL
+  /* On platforms where long double is as wide as double.  */
+  return _strtod_r (ptr, s00, se);
+#else
+  long double result;
+
+  _strtorx_r (ptr, s00, se, FLT_ROUNDS, &result);
+  return result;
+#endif
+}
+
 long double
 strtold (const char *__restrict s00, char **__restrict se)
 {
-  return strtod(s00, se);
+  return _strtold_r (_REENT, s00, se);
 }
-#endif /* _LDBL_EQ_DBL */
+
+#endif /* _HAVE_LONG_DOUBLE */
 

@@ -75,6 +75,10 @@
 #define _POINTER_INT short
 #endif
 
+#if defined(__m68k__) || defined(__mc68000__)
+#define _READ_WRITE_RETURN_TYPE _ssize_t
+#endif
+
 #ifdef ___AM29K__
 #define _FLOAT_RET double
 #endif
@@ -179,6 +183,10 @@
 #ifdef __SPU__
 #define MALLOC_ALIGNMENT 16
 #define __CUSTOM_FILE_IO__
+#endif
+
+#if defined(__or1k__) || defined(__or1knd__)
+#define __DYNAMIC_REENT__
 #endif
 
 /* This block should be kept in sync with GCC's limits.h.  The point

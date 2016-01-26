@@ -35,7 +35,7 @@
 #define _END_STD_C  }
 #endif
 #if __GNUC_PREREQ (3, 3)
-#define _NOTHROW __attribute__ ((nothrow))
+#define _NOTHROW __attribute__ ((__nothrow__))
 #else
 #define _NOTHROW throw()
 #endif
@@ -72,9 +72,6 @@
 #ifndef _LONG_DOUBLE
 #define _LONG_DOUBLE long double
 #endif
-#ifndef _LONG_LONG_TYPE
-#define _LONG_LONG_TYPE long long
-#endif
 #ifndef _PARAMS
 #define _PARAMS(paramlist)		paramlist
 #endif
@@ -93,7 +90,6 @@
 #define	_DEFUN_VOID(name)		name()
 #define _CAST_VOID
 #define _LONG_DOUBLE double
-#define _LONG_LONG_TYPE long
 #ifndef _PARAMS
 #define _PARAMS(paramlist)		()
 #endif
@@ -126,7 +122,7 @@
 /* We're using GCC, but without the new C99-compatible behaviour.  */
 #define _ELIDABLE_INLINE extern __inline__ _ATTRIBUTE ((__always_inline__))
 #else
-/* We're using GCC in C99 mode, or an unknown compiler which 
+/* We're using GCC in C99 mode, or an unknown compiler which
   we just have to hope obeys the C99 semantics of inline.  */
 #define _ELIDABLE_INLINE static __inline__
 #endif

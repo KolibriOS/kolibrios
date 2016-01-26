@@ -166,6 +166,10 @@ notations, the result is an empty string. [tm_sec, tm_min, tm_hour]
 o %R
 The 24-hour time, to the minute.  Equivalent to "%H:%M". [tm_min, tm_hour]
 
+o %s
+The time elapsed, in seconds, since the start of the Unix epoch at
+1970-01-01 00:00:00 UTC.
+
 o %S
 The second, formatted with two digits (from `<<00>>' to `<<60>>').  The
 value 60 accounts for the occasional leap second. [tm_sec]
@@ -282,44 +286,44 @@ the "C" locale settings.
  * string literals or wide-character constants and wide-character-string
  * literals, as appropriate.  */
 #if !defined(MAKE_WCSFTIME)
-#  define CHAR      char        /* string type basis */
-#  define CQ(a)     a       /* character constant qualifier */
-#  define SFLG              /* %s flag (null for normal char) */
+#  define CHAR		char		/* string type basis */
+#  define CQ(a)		a		/* character constant qualifier */
+#  define SFLG				/* %s flag (null for normal char) */
 #  define _ctloc(x) (ctloclen = strlen (ctloc = _CurrentTimeLocale->x), ctloc)
 #  define snprintf	sniprintf	/* avoid to pull in FP functions. */
-#  define TOLOWER(c)    tolower((int)(unsigned char)(c))
+#  define TOLOWER(c)	tolower((int)(unsigned char)(c))
 #  define STRTOUL(c,p,b) strtoul((c),(p),(b))
-#  define STRCPY(a,b)   strcpy((a),(b))
-#  define STRCHR(a,b)   strchr((a),(b))
-#  define STRLEN(a) strlen(a)
+#  define STRCPY(a,b)	strcpy((a),(b))
+#  define STRCHR(a,b)	strchr((a),(b))
+#  define STRLEN(a)	strlen(a)
 # else
-#  define strftime  wcsftime    /* Alternate function name */
-#  define CHAR      wchar_t     /* string type basis */
-#  define CQ(a)     L##a        /* character constant qualifier */
-#  define snprintf  swprintf    /* wide-char equivalent function name */
-#  define strncmp   wcsncmp     /* wide-char equivalent function name */
-#  define TOLOWER(c)    towlower((wint_t)(c))
+#  define strftime	wcsftime	/* Alternate function name */
+#  define CHAR		wchar_t		/* string type basis */
+#  define CQ(a)		L##a		/* character constant qualifier */
+#  define snprintf	swprintf	/* wide-char equivalent function name */
+#  define strncmp	wcsncmp		/* wide-char equivalent function name */
+#  define TOLOWER(c)	towlower((wint_t)(c))
 #  define STRTOUL(c,p,b) wcstoul((c),(p),(b))
-#  define STRCPY(a,b)   wcscpy((a),(b))
-#  define STRCHR(a,b)   wcschr((a),(b))
-#  define STRLEN(a) wcslen(a)
-#  define SFLG      "l"     /* %s flag (l for wide char) */
+#  define STRCPY(a,b)	wcscpy((a),(b))
+#  define STRCHR(a,b)	wcschr((a),(b))
+#  define STRLEN(a)	wcslen(a)
+#  define SFLG		"l"		/* %s flag (l for wide char) */
 #  ifdef __HAVE_LOCALE_INFO_EXTENDED__
 #   define _ctloc(x) (ctloclen = wcslen (ctloc = _CurrentTimeLocale->w##x), \
-              ctloc)
+		      ctloc)
 #  else
-#   define CTLOCBUFLEN   256        /* Arbitrary big buffer size */
+#   define CTLOCBUFLEN   256		/* Arbitrary big buffer size */
     const wchar_t *
     __ctloc (wchar_t *buf, const char *elem, size_t *len_ret)
     {
       buf[CTLOCBUFLEN - 1] = L'\0';
       *len_ret = mbstowcs (buf, elem, CTLOCBUFLEN - 1);
       if (*len_ret == (size_t) -1 )
-    *len_ret = 0;
+	*len_ret = 0;
       return buf;
     }
 #   define _ctloc(x) (ctloc = __ctloc (ctlocbuf, _CurrentTimeLocale->x, \
-              &ctloclen))
+		      &ctloclen))
 #  endif
 #endif  /* MAKE_WCSFTIME */
 
@@ -694,15 +698,16 @@ _DEFUN (strftime, (s, maxsize, format, tim_p),
 #endif /* !_WANT_C99_TIME_FORMATS */
 {
   size_t count = 0;
-  int i, len = 0;
+  int len = 0;
   const CHAR *ctloc;
 #if defined (MAKE_WCSFTIME) && !defined (__HAVE_LOCALE_INFO_EXTENDED__)
   CHAR ctlocbuf[CTLOCBUFLEN];
 #endif
-  size_t ctloclen;
+  size_t i, ctloclen;
   CHAR alt;
   CHAR pad;
   unsigned long width;
+  int tzset_called = 0;
 
   struct lc_time_T *_CurrentTimeLocale = __get_current_time_locale ();
   for (;;)
@@ -737,7 +742,7 @@ _DEFUN (strftime, (s, maxsize, format, tim_p),
       if (*format == CQ('E'))
 	{
 	  alt = *format++;
-#ifdef _WANT_C99_TIME_FORMATS      
+#ifdef _WANT_C99_TIME_FORMATS
 #if defined (MAKE_WCSFTIME) && defined (__HAVE_LOCALE_INFO_EXTENDED__)
 	  if (!*era_info && *_CurrentTimeLocale->wera)
 	    *era_info = get_era_info (tim_p, _CurrentTimeLocale->wera);
@@ -750,7 +755,7 @@ _DEFUN (strftime, (s, maxsize, format, tim_p),
       else if (*format == CQ('O'))
 	{
 	  alt = *format++;
-#ifdef _WANT_C99_TIME_FORMATS      
+#ifdef _WANT_C99_TIME_FORMATS
 #if defined (MAKE_WCSFTIME) && defined (__HAVE_LOCALE_INFO_EXTENDED__)
 	  if (!*alt_digits && *_CurrentTimeLocale->walt_digits)
 	    *alt_digits = get_alt_digits (_CurrentTimeLocale->walt_digits);
@@ -933,7 +938,7 @@ recurse:
 	  { /* %F is equivalent to "%+4Y-%m-%d", flags and width can change
 	       that.  Recurse to avoid need to replicate %Y formation. */
 	    CHAR fmtbuf[32], *fmt = fmtbuf;
-	    
+
 	    *fmt++ = CQ('%');
 	    if (pad) /* '0' or '+' */
 	      *fmt++ = pad;
@@ -1108,6 +1113,74 @@ recurse:
 			  tim_p->tm_hour, tim_p->tm_min);
           CHECK_LENGTH ();
           break;
+	case CQ('s'):
+/*
+ * From:
+ * The Open Group Base Specifications Issue 7
+ * IEEE Std 1003.1, 2013 Edition
+ * Copyright (c) 2001-2013 The IEEE and The Open Group
+ * XBD Base Definitions
+ * 4. General Concepts
+ * 4.15 Seconds Since the Epoch
+ * A value that approximates the number of seconds that have elapsed since the
+ * Epoch. A Coordinated Universal Time name (specified in terms of seconds
+ * (tm_sec), minutes (tm_min), hours (tm_hour), days since January 1 of the year
+ * (tm_yday), and calendar year minus 1900 (tm_year)) is related to a time
+ * represented as seconds since the Epoch, according to the expression below.
+ * If the year is <1970 or the value is negative, the relationship is undefined.
+ * If the year is >=1970 and the value is non-negative, the value is related to a
+ * Coordinated Universal Time name according to the C-language expression, where
+ * tm_sec, tm_min, tm_hour, tm_yday, and tm_year are all integer types:
+ * tm_sec + tm_min*60 + tm_hour*3600 + tm_yday*86400 +
+ *     (tm_year-70)*31536000 + ((tm_year-69)/4)*86400 -
+ *     ((tm_year-1)/100)*86400 + ((tm_year+299)/400)*86400
+ * OR
+ * ((((tm_year-69)/4 - (tm_year-1)/100 + (tm_year+299)/400 +
+ *         (tm_year-70)*365 + tm_yday)*24 + tm_hour)*60 + tm_min)*60 + tm_sec
+ */
+/* modified from %z case by hoisting offset outside if block and initializing */
+	  {
+	    long offset = 0;	/* offset < 0 => W of GMT, > 0 => E of GMT:
+				   subtract to get UTC */
+
+	    if (tim_p->tm_isdst >= 0)
+	      {
+		TZ_LOCK;
+		if (!tzset_called)
+		  {
+		    _tzset_unlocked ();
+		    tzset_called = 1;
+		  }
+
+#if defined (__CYGWIN__)
+		/* Cygwin must check if the application has been built with or
+		   without the extra tm members for backward compatibility, and
+		   then use either that or the old method fetching from tzinfo.
+		   Rather than pulling in the version check infrastructure, we
+		   just call a Cygwin function. */
+		extern long __cygwin_gettzoffset (const struct tm *tmp);
+		offset = __cygwin_gettzoffset (tim_p);
+#elif defined (__TM_GMTOFF)
+		offset = tim_p->__TM_GMTOFF;
+#else
+		__tzinfo_type *tz = __gettzinfo ();
+		/* The sign of this is exactly opposite the envvar TZ.  We
+		   could directly use the global _timezone for tm_isdst==0,
+		   but have to use __tzrule for daylight savings.  */
+		offset = -tz->__tzrule[tim_p->tm_isdst > 0].offset;
+#endif
+		TZ_UNLOCK;
+	      }
+	    len = snprintf (&s[count], maxsize - count, CQ("%lld"),
+			    (((((long long)tim_p->tm_year - 69)/4
+				- (tim_p->tm_year - 1)/100
+				+ (tim_p->tm_year + 299)/400
+				+ (tim_p->tm_year - 70)*365 + tim_p->tm_yday)*24
+			      + tim_p->tm_hour)*60 + tim_p->tm_min)*60
+			    + tim_p->tm_sec - offset);
+	    CHECK_LENGTH ();
+	  }
+          break;
 	case CQ('S'):
 #ifdef _WANT_C99_TIME_FORMATS
 	  if (alt != CQ('O') || !*alt_digits
@@ -1122,7 +1195,7 @@ recurse:
 	  if (count < maxsize - 1)
 	    s[count++] = CQ('\t');
 	  else
-  return 0;
+	    return 0;
 	  break;
 	case CQ('T'):
           len = snprintf (&s[count], maxsize - count, CQ("%.2d:%.2d:%.2d"),
@@ -1283,12 +1356,31 @@ recurse:
           if (tim_p->tm_isdst >= 0)
             {
 	      long offset;
-	      __tzinfo_type *tz = __gettzinfo ();
+
 	      TZ_LOCK;
+	      if (!tzset_called)
+		{
+		  _tzset_unlocked ();
+		  tzset_called = 1;
+		}
+
+#if defined (__CYGWIN__)
+	      /* Cygwin must check if the application has been built with or
+		 without the extra tm members for backward compatibility, and
+		 then use either that or the old method fetching from tzinfo.
+		 Rather than pulling in the version check infrastructure, we
+		 just call a Cygwin function. */
+	      extern long __cygwin_gettzoffset (const struct tm *tmp);
+	      offset = __cygwin_gettzoffset (tim_p);
+#elif defined (__TM_GMTOFF)
+	      offset = tim_p->__TM_GMTOFF;
+#else
+	      __tzinfo_type *tz = __gettzinfo ();
 	      /* The sign of this is exactly opposite the envvar TZ.  We
-	         could directly use the global _timezone for tm_isdst==0,
-	         but have to use __tzrule for daylight savings.  */
+		 could directly use the global _timezone for tm_isdst==0,
+		 but have to use __tzrule for daylight savings.  */
 	      offset = -tz->__tzrule[tim_p->tm_isdst > 0].offset;
+#endif
 	      TZ_UNLOCK;
 	      len = snprintf (&s[count], maxsize - count, CQ("%+03ld%.2ld"),
 			      offset / SECSPERHOUR,
@@ -1299,13 +1391,33 @@ recurse:
 	case CQ('Z'):
 	  if (tim_p->tm_isdst >= 0)
 	    {
-	      int size;
+	      size_t size;
+	      const char *tznam = NULL;
+
 	      TZ_LOCK;
-	      size = strlen(_tzname[tim_p->tm_isdst > 0]);
+	      if (!tzset_called)
+		{
+		  _tzset_unlocked ();
+		  tzset_called = 1;
+		}
+#if defined (__CYGWIN__)
+	      /* See above. */
+	      extern const char *__cygwin_gettzname (const struct tm *tmp);
+	      tznam = __cygwin_gettzname (tim_p);
+#elif defined (__TM_ZONE)
+	      tznam = tim_p->__TM_ZONE;
+#endif
+	      if (!tznam)
+		tznam = _tzname[tim_p->tm_isdst > 0];
+	      /* Note that in case of wcsftime this loop only works for
+	         timezone abbreviations using the portable codeset (aka ASCII).
+		 This seems to be the case, but if that ever changes, this
+		 loop needs revisiting. */
+	      size = strlen (tznam);
 	      for (i = 0; i < size; i++)
 		{
 		  if (count < maxsize - 1)
-		    s[count++] = _tzname[tim_p->tm_isdst > 0][i];
+		    s[count++] = tznam[i];
 		  else
 		    {
 		      TZ_UNLOCK;
@@ -1338,13 +1450,13 @@ recurse:
 /* The remainder of this file can serve as a regression test.  Compile
  *  with -D_REGRESSION_TEST.  */
 #if defined(_REGRESSION_TEST)	/* [Test code:  */
- 
+
 /* This test code relies on ANSI C features, in particular on the ability
  * of adjacent strings to be pasted together into one string.  */
- 
+
 /* Test output buffer size (should be larger than all expected results) */
 #define OUTSIZE	256
- 
+
 struct test {
 	CHAR  *fmt;	/* Testing format */
 	size_t  max;	/* Testing maxsize */
@@ -1356,9 +1468,9 @@ struct list {
 	const struct test *vec;	/* Test vectors */
 	int  cnt;		/* Number of vectors */
 	};
- 
+
 const char  TZ[]="TZ=EST5EDT";
- 
+
 /* Define list of test inputs and expected outputs, for the given time zone
  * and time.  */
 const struct tm  tm0 = {
@@ -1402,6 +1514,7 @@ const struct test  Vec0[] = {
 	{ CQ("%p"), 2+1, EXP(CQ("AM")) },
 	{ CQ("%r"), 11+1, EXP(CQ("09:53:47 AM")) },
 	{ CQ("%R"), 5+1, EXP(CQ("09:53")) },
+	{ CQ("%s"), 2+1, EXP(CQ("1230648827")) },
 	{ CQ("%S"), 2+1, EXP(CQ("47")) },
 	{ CQ("%t"), 1+1, EXP(CQ("\t")) },
 	{ CQ("%T"), 8+1, EXP(CQ("09:53:47")) },
@@ -1462,6 +1575,7 @@ const struct test  Vec1[] = {
 	{ CQ("%p"), 2+1, EXP(CQ("PM")) },
 	{ CQ("%r"), 11+1, EXP(CQ("11:01:13 PM")) },
 	{ CQ("%R"), 5+1, EXP(CQ("23:01")) },
+	{ CQ("%s"), 2+1, EXP(CQ("1215054073")) },
 	{ CQ("%S"), 2+1, EXP(CQ("13")) },
 	{ CQ("%t"), 1+1, EXP(CQ("\t")) },
 	{ CQ("%T"), 8+1, EXP(CQ("23:01:13")) },
@@ -1486,7 +1600,7 @@ const struct test  Vec1[] = {
 	#undef VEC
 	#undef EXP
 	};
- 
+
 #if YEAR_BASE == 1900  /* ( */
 /* Checks for very large years.  YEAR_BASE value relied upon so that the
  * answer strings can be predetermined.
@@ -1584,7 +1698,7 @@ const struct test  Vecyr1[] = {
 #undef CENT
 #undef Year
 #endif /* YEAR_BASE ) */
- 
+
 /* Checks for years just over zero (also test for s=60).
  * Years less than 4 digits are not mentioned for %Y in the standard, so the
  * test for that case is based on the design intent.  */
@@ -1655,7 +1769,7 @@ const struct test  Vecyrzn[] = {
 #undef YEAR
 #undef CENT
 #undef Year
- 
+
 const struct list  ListYr[] = {
 	{ &tmyrzp, Vecyrzp, sizeof(Vecyrzp)/sizeof(Vecyrzp[0]) },
 	{ &tmyrzn, Vecyrzn, sizeof(Vecyrzn)/sizeof(Vecyrzn[0]) },
@@ -1664,19 +1778,19 @@ const struct list  ListYr[] = {
 	{ &tmyr1, Vecyr1, sizeof(Vecyr1)/sizeof(Vecyr1[0]) },
 	#endif
 	};
- 
- 
+
+
 /* List of tests to be run */
 const struct list  List[] = {
 	{ &tm0, Vec0, sizeof(Vec0)/sizeof(Vec0[0]) },
 	{ &tm1, Vec1, sizeof(Vec1)/sizeof(Vec1[0]) },
 	};
- 
+
 #if defined(STUB_getenv_r)
 char *
 _getenv_r(struct _reent *p, const char *cp) { return getenv(cp); }
 #endif
- 
+
 int
 main(void)
 {
@@ -1684,7 +1798,7 @@ int  i, l, errr=0, erro=0, tot=0;
 const char  *cp;
 CHAR  out[OUTSIZE];
 size_t  ret;
- 
+
 /* Set timezone so that %z and %Z tests come out right */
 cp = TZ;
 if((i=putenv(cp)))  {
@@ -1708,7 +1822,7 @@ __tzinfo_type *tz = __gettzinfo ();
 printf("tz->__tzrule[0].offset=%d, tz->__tzrule[1].offset=%d\n", tz->__tzrule[0].offset, tz->__tzrule[1].offset);
 }
 #endif
- 
+
 /* Run all of the exact-length tests as-given--results should match */
 for(l=0; l<sizeof(List)/sizeof(List[0]); l++)  {
     const struct list  *test = &List[l];
@@ -1729,7 +1843,7 @@ for(l=0; l<sizeof(List)/sizeof(List[0]); l++)  {
 	    }
 	}
     }
- 
+
 /* Run all of the exact-length tests with the length made too short--expect to
  * fail.  */
 for(l=0; l<sizeof(List)/sizeof(List[0]); l++)  {
@@ -1755,7 +1869,7 @@ for(l=0; l<sizeof(List)/sizeof(List[0]); l++)  {
 	    }
 	}
     }
- 
+
 /* Run all of the special year test cases */
 for(l=0; l<sizeof(ListYr)/sizeof(ListYr[0]); l++)  {
     const struct list  *test = &ListYr[l];
@@ -1776,14 +1890,14 @@ for(l=0; l<sizeof(ListYr)/sizeof(ListYr[0]); l++)  {
 	    }
 	}
     }
- 
+
 #define STRIZE(f)	#f
 #define NAME(f)	STRIZE(f)
 printf(NAME(strftime) "() test ");
 if(errr || erro)  printf("FAILED %d/%d of", errr, erro);
   else    printf("passed");
 printf(" %d test cases.\n", tot);
- 
+
 return(errr || erro);
 }
 #endif /* defined(_REGRESSION_TEST) ] */

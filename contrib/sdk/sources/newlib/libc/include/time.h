@@ -25,6 +25,7 @@
 #define CLK_TCK CLOCKS_PER_SEC
 
 #include <sys/types.h>
+#include <sys/timespec.h>
 
 _BEGIN_STD_C
 
@@ -39,6 +40,12 @@ struct tm
   int	tm_wday;
   int	tm_yday;
   int	tm_isdst;
+#ifdef __TM_GMTOFF
+  long	__TM_GMTOFF;
+#endif
+#ifdef __TM_ZONE
+  const char *__TM_ZONE;
+#endif
 };
 
 clock_t	   _EXFUN(clock,    (void));

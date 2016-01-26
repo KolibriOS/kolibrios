@@ -62,7 +62,7 @@ _DEFUN(__sfvwrite_r, (ptr, fp, uio),
 
   /* make sure we can write */
   if (cantwrite (ptr, fp))
-      return EOF;
+    return EOF;
 
   iov = uio->uio_iov;
   len = 0;

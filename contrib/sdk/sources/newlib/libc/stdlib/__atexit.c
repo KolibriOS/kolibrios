@@ -79,16 +79,31 @@ _DEFUN (__register_exitproc,
 
   p = _GLOBAL_ATEXIT;
   if (p == NULL)
-    _GLOBAL_ATEXIT = p = _GLOBAL_ATEXIT0;
+    {
+      _GLOBAL_ATEXIT = p = _GLOBAL_ATEXIT0;
+#ifdef _REENT_SMALL
+      extern struct _on_exit_args * const __on_exit_args _ATTRIBUTE ((weak));
+      if (&__on_exit_args != NULL)
+	p->_on_exit_args_ptr = __on_exit_args;
+#endif	/* def _REENT_SMALL */
+    }
   if (p->_ind >= _ATEXIT_SIZE)
     {
 #ifndef _ATEXIT_DYNAMIC_ALLOC
+#ifndef __SINGLE_THREAD__
+      __lock_release_recursive(__atexit_lock);
+#endif
       return -1;
 #else
       /* Don't dynamically allocate the atexit array if malloc is not
 	 available.  */
       if (!malloc)
-	return -1;
+	{
+#ifndef __SINGLE_THREAD__
+	  __lock_release_recursive(__atexit_lock);
+#endif
+	  return -1;
+	}
 
       p = (struct _atexit *) malloc (sizeof *p);
       if (p == NULL)
@@ -116,6 +131,12 @@ _DEFUN (__register_exitproc,
       args = p->_on_exit_args_ptr;
       if (args == NULL)
 	{
+#ifndef _ATEXIT_DYNAMIC_ALLOC
+#ifndef __SINGLE_THREAD__
+	  __lock_release_recursive(__atexit_lock);
+#endif
+	  return -1;
+#else
 	  if (malloc)
 	    args = malloc (sizeof * p->_on_exit_args_ptr);
 
@@ -129,6 +150,7 @@ _DEFUN (__register_exitproc,
 	  args->_fntypes = 0;
 	  args->_is_cxa = 0;
 	  p->_on_exit_args_ptr = args;
+#endif
 	}
 #else
       args = &p->_on_exit_args;

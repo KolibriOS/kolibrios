@@ -360,6 +360,7 @@ typedef struct _Bigint _Bigint;
 #define mult	__multiply
 #define pow5mult	__pow5mult
 #define lshift	__lshift
+#define match   __match
 #define cmp	__mcmp
 #define diff	__mdiff
 #define ulp 	__ulp
@@ -396,12 +397,18 @@ int 		_EXFUN(hi0bits,(__ULong));
 int 		_EXFUN(lo0bits,(__ULong *));
 _Bigint *	_EXFUN(d2b,(struct _reent *p, double d, int *e, int *bits));
 _Bigint *	_EXFUN(lshift,(struct _reent *p, _Bigint *b, int k));
+int		_EXFUN(match,(const char**, char*));
 _Bigint *	_EXFUN(diff,(struct _reent *p, _Bigint *a, _Bigint *b));
 int		_EXFUN(cmp,(_Bigint *a, _Bigint *b));
 int		_EXFUN(gethex,(struct _reent *p, _CONST char **sp, _CONST struct FPI *fpi, Long *exp, _Bigint **bp, int sign));     
 double		_EXFUN(ratio,(_Bigint *a, _Bigint *b));
 __ULong		_EXFUN(any_on,(_Bigint *b, int k));
 void		_EXFUN(copybits,(__ULong *c, int n, _Bigint *b));
+#if defined (_HAVE_LONG_DOUBLE) && !defined (_LDBL_EQ_DBL)
+int		_EXFUN(_strtorx_r,(struct _reent *, _CONST char *, char **, int, void *));
+int		_EXFUN(_strtodg_r,(struct _reent *p, _CONST char *s00, char **se, struct FPI *fpi, Long *exp, __ULong *bits));
+#endif /* _HAVE_LONG_DOUBLE && !_LDBL_EQ_DBL */
+
 #if defined(PREFER_SIZE_OVER_SPEED) || defined(__OPTIMIZE_SIZE__) || defined(_SMALL_HEXDIG)
 unsigned char _EXFUN(__hexdig_fun,(unsigned char));
 #endif /* !defined(PREFER_SIZE_OVER_SPEED) && !defined(__OPTIMIZE_SIZE__) && !defined(_SMALL_HEXDIG) */

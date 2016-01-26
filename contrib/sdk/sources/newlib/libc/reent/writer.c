@@ -22,7 +22,7 @@ extern int errno;
 /*
 FUNCTION
 	<<_write_r>>---Reentrant version of write
-
+	
 INDEX
 	_write_r
 

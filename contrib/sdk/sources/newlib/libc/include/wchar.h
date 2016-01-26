@@ -16,7 +16,7 @@
 
 /* For _mbstate_t definition. */
 #include <sys/_types.h>
-
+#include <sys/cdefs.h>
 /* For __STDC_ISO_10646__ */
 #include <sys/features.h>
 
@@ -24,6 +24,7 @@
 # define WEOF ((wint_t)-1)
 #endif
 
+/* This must match definition in <stdint.h> */
 #ifndef WCHAR_MIN
 #ifdef __WCHAR_MIN__
 #define WCHAR_MIN __WCHAR_MIN__
@@ -34,6 +35,7 @@
 #endif
 #endif
 
+/* This must match definition in <stdint.h> */
 #ifndef WCHAR_MAX
 #ifdef __WCHAR_MAX__
 #define WCHAR_MAX __WCHAR_MAX__
@@ -47,7 +49,10 @@
 _BEGIN_STD_C
 
 /* As in stdio.h, <sys/reent.h> defines __FILE. */
+#if !defined(__FILE_defined)
 typedef __FILE FILE;
+# define __FILE_defined
+#endif
 
 /* As required by POSIX.1-2008, declare tm as incomplete type.
    The actual definition is in time.h. */
@@ -141,10 +146,7 @@ long    _EXFUN(_wcstol_r, (struct _reent *, const wchar_t *, wchar_t **, int));
 long long _EXFUN(_wcstoll_r, (struct _reent *, const wchar_t *, wchar_t **, int));
 unsigned long _EXFUN(_wcstoul_r, (struct _reent *, const wchar_t *, wchar_t **, int));
 unsigned long long _EXFUN(_wcstoull_r, (struct _reent *, const wchar_t *, wchar_t **, int));
-/* On platforms where long double equals double.  */
-#ifdef _LDBL_EQ_DBL
 long double _EXFUN(wcstold, (const wchar_t *, wchar_t **));
-#endif /* _LDBL_EQ_DBL */
 
 wint_t _EXFUN(fgetwc, (__FILE *));
 wchar_t *_EXFUN(fgetws, (wchar_t *__restrict, int, __FILE *__restrict));
@@ -158,15 +160,34 @@ wint_t _EXFUN(putwchar, (wchar_t));
 wint_t _EXFUN (ungetwc, (wint_t wc, __FILE *));
 
 wint_t _EXFUN(_fgetwc_r, (struct _reent *, __FILE *));
+wint_t _EXFUN(_fgetwc_unlocked_r, (struct _reent *, __FILE *));
 wchar_t *_EXFUN(_fgetws_r, (struct _reent *, wchar_t *, int, __FILE *));
+wchar_t *_EXFUN(_fgetws_unlocked_r, (struct _reent *, wchar_t *, int, __FILE *));
 wint_t _EXFUN(_fputwc_r, (struct _reent *, wchar_t, __FILE *));
+wint_t _EXFUN(_fputwc_unlocked_r, (struct _reent *, wchar_t, __FILE *));
 int _EXFUN(_fputws_r, (struct _reent *, const wchar_t *, __FILE *));
+int _EXFUN(_fputws_unlocked_r, (struct _reent *, const wchar_t *, __FILE *));
 int _EXFUN (_fwide_r, (struct _reent *, __FILE *, int));
 wint_t _EXFUN (_getwc_r, (struct _reent *, __FILE *));
+wint_t _EXFUN (_getwc_unlocked_r, (struct _reent *, __FILE *));
 wint_t _EXFUN (_getwchar_r, (struct _reent *ptr));
+wint_t _EXFUN (_getwchar_unlocked_r, (struct _reent *ptr));
 wint_t _EXFUN(_putwc_r, (struct _reent *, wchar_t, __FILE *));
+wint_t _EXFUN(_putwc_unlocked_r, (struct _reent *, wchar_t, __FILE *));
 wint_t _EXFUN(_putwchar_r, (struct _reent *, wchar_t));
+wint_t _EXFUN(_putwchar_unlocked_r, (struct _reent *, wchar_t));
 wint_t _EXFUN (_ungetwc_r, (struct _reent *, wint_t wc, __FILE *));
+
+#if __GNU_VISIBLE
+wint_t _EXFUN(fgetwc_unlocked, (__FILE *));
+wchar_t *_EXFUN(fgetws_unlocked, (wchar_t *__restrict, int, __FILE *__restrict));
+wint_t _EXFUN(fputwc_unlocked, (wchar_t, __FILE *));
+int _EXFUN(fputws_unlocked, (const wchar_t *__restrict, __FILE *__restrict));
+wint_t _EXFUN(getwc_unlocked, (__FILE *));
+wint_t _EXFUN(getwchar_unlocked, (void));
+wint_t _EXFUN(putwc_unlocked, (wchar_t, __FILE *));
+wint_t _EXFUN(putwchar_unlocked, (wchar_t));
+#endif
 
 __FILE *_EXFUN (open_wmemstream, (wchar_t **, size_t *));
 __FILE *_EXFUN (_open_wmemstream_r, (struct _reent *, wchar_t **, size_t *));
@@ -217,6 +238,13 @@ int	_EXFUN(_wscanf_r, (struct _reent *, const wchar_t *, ...));
 #define putwc(wc,fp)	fputwc((wc), (fp))
 #define getwchar()	fgetwc(_REENT->_stdin)
 #define putwchar(wc)	fputwc((wc), _REENT->_stdout)
+
+#if __GNU_VISIBLE
+#define getwc_unlocked(fp)	fgetwc_unlocked(fp)
+#define putwc_unlocked(wc,fp)	fputwc_unlocked((wc), (fp))
+#define getwchar_unlocked()	fgetwc_unlocked(_REENT->_stdin)
+#define putwchar_unlocked(wc)	fputwc_unlocked((wc), _REENT->_stdout)
+#endif
 
 _END_STD_C
 

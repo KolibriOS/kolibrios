@@ -23,7 +23,7 @@ extern int errno;
 /*
 FUNCTION
 	<<_open_r>>---Reentrant version of open
-
+	
 INDEX
 	_open_r
 

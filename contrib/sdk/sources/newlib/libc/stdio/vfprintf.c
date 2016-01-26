@@ -114,7 +114,7 @@ Supporting OS subroutines required: <<close>>, <<fstat>>, <<isatty>>,
 
 #if defined(LIBC_SCCS) && !defined(lint)
 /*static char *sccsid = "from: @(#)vfprintf.c	5.50 (Berkeley) 12/16/92";*/
-static char *rcsid = "$Id: vfprintf.c,v 1.43 2002/08/13 02:40:06 fitzsim Exp $";
+static char *rcsid = "$Id$";
 #endif /* LIBC_SCCS and not lint */
 
 /*
@@ -857,7 +857,7 @@ _DEFUN(_VFPRINTF_R, (data, fp, fmt0, ap),
 #ifndef STRING_ONLY
 	/* Initialize std streams if not dealing with sprintf family.  */
 	CHECK_INIT (data, fp);
-    _newlib_flockfile_start (fp);
+	_newlib_flockfile_start (fp);
 
 	ORIENT(fp, -1);
 
@@ -964,7 +964,7 @@ reswitch:	switch (ch) {
 			grouping = _localeconv_r (data)->grouping;
 			if (thsnd_len > 0 && grouping && *grouping)
 			  flags |= GROUPING;
-		  goto rflag;
+			goto rflag;
 #endif
 		case ' ':
 			/*
@@ -1338,21 +1338,21 @@ reswitch:	switch (ch) {
 # endif
 			} else {
 				if (ch == 'f') {		/* f fmt */
-				if (expt > 0) {
+					if (expt > 0) {
+						size = expt;
+						if (prec || flags & ALT)
+							size += prec + 1;
+					} else	/* "0.X" */
+						size = (prec || flags & ALT)
+							  ? prec + 2
+							  : 1;
+				} else if (expt >= ndig) { /* fixed g fmt */
 					size = expt;
-					if (prec || flags & ALT)
-						size += prec + 1;
-				} else	/* "0.X" */
-					size = (prec || flags & ALT)
-						  ? prec + 2
-						  : 1;
-			} else if (expt >= ndig) {	/* fixed g fmt */
-				size = expt;
-				if (flags & ALT)
-					++size;
-			} else
-				size = ndig + (expt > 0 ?
-					1 : 2 - expt);
+					if (flags & ALT)
+						++size;
+				} else
+					size = ndig + (expt > 0 ?
+						1 : 2 - expt);
 # ifdef _WANT_IO_C99_FORMATS
 				if ((flags & GROUPING) && expt > 0) {
 					/* space for thousands' grouping */
@@ -1521,11 +1521,9 @@ string:
 				 */
 				char *p = memchr (cp, 0, prec);
 
-				if (p != NULL) {
+				if (p != NULL)
 					size = p - cp;
-					if (size > prec)
-						size = prec;
-				} else
+				else
 					size = prec;
 			} else
 				size = strlen (cp);
@@ -1598,7 +1596,7 @@ number:			if ((dprec = prec) >= 0)
 					ndig = 0;
 #endif
 					do {
-						*--cp = to_char (_uquad % 10);
+					  *--cp = to_char (_uquad % 10);
 #ifdef _WANT_IO_C99_FORMATS
 					  ndig++;
 					  /* If (*grouping == CHAR_MAX) then no
@@ -1619,7 +1617,7 @@ number:			if ((dprec = prec) >= 0)
 					      grouping++;
 					  }
 #endif
-						_uquad /= 10;
+					  _uquad /= 10;
 					} while (_uquad != 0);
 					break;
 
@@ -1744,7 +1742,7 @@ number:			if ((dprec = prec) >= 0)
 					}
 #endif
 					if (expt < ndig || flags & ALT)
-					PRINT (decimal_point, decp_len);
+					    PRINT (decimal_point, decp_len);
 					PRINTANDPAD (cp, convbuf + ndig,
 						     ndig - expt, zeroes);
 				}

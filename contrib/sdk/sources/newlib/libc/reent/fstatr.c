@@ -28,7 +28,7 @@ extern int errno;
 /*
 FUNCTION
 	<<_fstat_r>>---Reentrant version of fstat
-
+	
 INDEX
 	_fstat_r
 

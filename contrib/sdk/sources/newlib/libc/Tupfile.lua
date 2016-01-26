@@ -53,18 +53,19 @@ CORE_SRCS = {
   "sys/_rename.c", "sys/stat.c", "sys/unlink.c", "sys/write.c", "sys/io_alloc.S",
   "time/asctime.c", "time/asctime_r.c", "time/clock.c", "time/ctime.c",
   "time/ctime_r.c", "time/difftime.c", "time/gettzinfo.c", "time/gmtime.c",
-  "time/gmtime_r.c", "time/mktime.c", "time/mktm_r.c", "time/lcltime.c",
-  "time/lcltime_r.c", "time/strftime.c", "time/time.c", "time/timelocal.c",
-  "time/tzlock.c", "time/tzvars.c"
+  "time/gmtime_r.c", "time/mktime.c", "time/month_lengths.c", "time/lcltime.c",
+  "time/lcltime_r.c", "time/strftime.c", "time/time.c", "time/tzcalc_limits.c",
+  "time/timelocal.c", "time/tzlock.c", "time/tzset.c", "time/tzset_r.c", "time/tzvars.c"
 }
 STDLIB_SRCS = {
   "__atexit.c", "__call_atexit.c", "abort.c", "abs.c", "assert.c", "atexit.c",
   "atof.c", "atoi.c", "atol.c", "div.c", "dtoa.c", "dtoastub.c", "exit.c",
-  "gdtoa-gethex.c", "gdtoa-hexnan.c", "getenv.c", "mprec.c", "mbtowc.c",
+  "gdtoa-gethex.c", "gdtoa-hexnan.c", "getenv.c", "getenv_r.c","mprec.c", "mbtowc.c",
   "mbtowc_r.c", "mbrtowc.c", "mlock.c", "calloc.c", "malloc.c", "mallocr.c",
   "rand.c", "rand_r.c", "rand48.c", "realloc.c", "seed48.c", "srand48.c",
-  "strtod.c", "strtol.c", "strtold.c", "strtoll.c", "strtoll_r.c", "strtoul.c",
-  "strtoull.c", "strtoull_r.c", "system.c", "wcrtomb.c", "wctomb_r.c"
+  "strtod.c", "strtodg.c", "strtol.c", "strtold.c", "strtoll.c", "strtoll_r.c",
+  "strtorx.c","strtoul.c", "strtoull.c", "strtoull_r.c", "system.c", "wcrtomb.c",
+  "wctomb_r.c"
 }
 STRING_SRCS = {
   "memcpy.c", "memcmp.c", "memmove.c", "memset.c", "memchr.c", "stpcpy.c",
@@ -80,14 +81,15 @@ STDIO_SRCS = {
   "clearerr.c", "diprintf.c", "dprintf.c", "printf.c", "putchar.c", "fgetc.c",
   "fgets.c", "fopen.c", "fclose.c", "fdopen.c", "fflush.c", "flags.c",
   "fileno.c", "findfp.c", "fiprintf.c", "fiscanf.c", "fprintf.c", "fputc.c",
-  "fputs.c", "fputwc.c", "fread.c", "freopen.c", "fscanf.c", "fseek.c",
-  "fseeko.c", "ftell.c", "ftello.c", "fwrite.c", "fvwrite.c", "fwalk.c",
-  "makebuf.c", "mbstowcs.c", "mktemp.c", "perror.c", "putc.c", "puts.c",
-  "refill.c", "rget.c", "remove.c", "rename.c", "setvbuf.c", "stdio.c",
+  "fputs.c", "fputwc.c", "fread.c", "freopen.c", "fscanf.c", "fseek.c", "fseeko.c",
+  "ftell.c", "ftello.c", "fwrite.c", "fvwrite.c", "fwalk.c", "makebuf.c",
+  "mbstowcs.c", "mktemp.c", "perror.c", "putc.c", "puts.c", "refill.c", "remove.c",
+  "rename.c", "rewind.c", "rget.c", "sccl.c", "setvbuf.c", "siprintf.c",
+  "siscanf.c", "sniprintf.c", "snprintf.c", "sprintf.c", "sscanf.c", "stdio.c",
   "tmpfile.c", "tmpnam.c", "ungetc.c", "vasniprintf.c", "vasnprintf.c",
   "vdprintf.c", "vdiprintf.c", "vscanf.c", "vsprintf.c", "vsnprintf.c",
-  "vsscanf.c", "wsetup.c", "wbuf.c", "sccl.c", "siprintf.c", "sniprintf.c",
-  "snprintf.c", "sprintf.c", "sscanf.c"
+  "vsscanf.c", "wsetup.c", "wbuf.c"
+
 }
 
 MATH_SRCS = {

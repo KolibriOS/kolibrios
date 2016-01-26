@@ -137,7 +137,7 @@ static _CONST double tinytens[] = { 1e-16, 1e-32,
 				    1e-64, 1e-128,
 				    9007199254740992. * 9007199254740992.e-256
 #endif
-		};
+				  };
 
 #endif
 #endif
@@ -163,7 +163,7 @@ _DEFUN (sulp, (x, scale),
         rv = ulp(dval(x));
         if (!scale || (i = 2*P + 1 - ((dword0(x) & Exp_mask) >> Exp_shift)) <= 0)
                 return rv; /* Is there an example where i <= 0 ? */
-        dword0(u) = Exp_1 + (i << Exp_shift);
+        dword0(u) = Exp_1 + ((__int32_t)i << Exp_shift);
 #ifndef _DOUBLE_IS_32BITS
         dword1(u) = 0;
 #endif
@@ -211,27 +211,6 @@ _DEFUN (ULtod, (L, bits, exp, k),
 		L[_0] |= 0x80000000L;
 }
 #endif /* !NO_HEX_FP */
-
-#ifdef INFNAN_CHECK
-static int
-_DEFUN (match, (sp, t),
-	_CONST char **sp _AND
-	char *t)
-{
-	int c, d;
-	_CONST char *s = *sp;
-
-	while( (d = *t++) !=0) {
-		if ((c = *++s) >= 'A' && c <= 'Z')
-			c += 'a' - 'A';
-		if (c != d)
-			return 0;
-		}
-	*sp = s + 1;
-	return 1;
-}
-#endif /* INFNAN_CHECK */
-
 
 double
 _DEFUN (_strtod_r, (ptr, s00, se),
@@ -333,10 +312,10 @@ _DEFUN (_strtod_r, (ptr, s00, se),
 	s0 = s;
 	y = z = 0;
 	for(nd = nf = 0; (c = *s) >= '0' && c <= '9'; nd++, s++)
-			if (nd < 9)
-				y = 10*y + c - '0';
-			else
-				z = 10*z + c - '0';
+		if (nd < 9)
+			y = 10*y + c - '0';
+		else
+			z = 10*z + c - '0';
 	nd0 = nd;
 	if (strncmp (s, _localeconv_r (ptr)->decimal_point,
 		     strlen (_localeconv_r (ptr)->decimal_point)) == 0)
@@ -361,13 +340,13 @@ _DEFUN (_strtod_r, (ptr, s00, se),
 				nf += nz;
 				for(i = 1; i < nz; i++)
 					if (nd++ < 9)
-							y *= 10;
+						y *= 10;
 					else if (nd <= DBL_DIG + 1)
-							z *= 10;
+						z *= 10;
 				if (nd++ < 9)
-						y = 10*y + c;
+					y = 10*y + c;
 				else if (nd <= DBL_DIG + 1)
-						z = 10*z + c;
+					z = 10*z + c;
 				nz = 0;
 				}
 			}
@@ -759,7 +738,7 @@ _DEFUN (_strtod_r, (ptr, s00, se),
 			j -= i;
 			if (i < 32)
 				Lsb <<= i;
-		else
+			else
 				Lsb1 = Lsb << (i-32);
 			}
 #else /*Avoid_Underflow*/
@@ -847,7 +826,7 @@ _DEFUN (_strtod_r, (ptr, s00, se),
 				else if (!dsign) {
 					adj = -1.;
 					if (!dword1(rv)
-					 && !(dword0(rv) & Frac_mask)) {
+					    && !(dword0(rv) & Frac_mask)) {
 						y = dword0(rv) & Exp_mask;
 #ifdef Avoid_Underflow
 						if (!scale || y > 2*P*Exp_msk1)

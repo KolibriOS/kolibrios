@@ -1,7 +1,7 @@
 /*
  *  Written by Joel Sherrill <joel@OARcorp.com>.
  *
- *  COPYRIGHT (c) 1989-2000.
+ *  COPYRIGHT (c) 1989-2014.
  *
  *  On-Line Applications Research Corporation (OAR).
  *
@@ -15,7 +15,7 @@
  *  OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY OF THIS
  *  SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  *
- *  $Id: features.h,v 1.30 2013/04/23 09:42:25 corinna Exp $
+ *  $Id$
  */
 
 #ifndef _SYS_FEATURES_H
@@ -24,6 +24,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* Macros to determine that newlib is being used.  Put in this header to 
+ * be similar to where glibc stores its version of these macros.
+ */
+#define __NEWLIB__  		2
+#define __NEWLIB_MINOR__  	2
 
 /* Macro to test version of GCC.  Returns 0 for non-GCC or too old GCC. */
 #ifndef __GNUC_PREREQ

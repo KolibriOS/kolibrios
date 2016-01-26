@@ -22,7 +22,7 @@ extern int errno;
 /*
 FUNCTION
 	<<_lseek_r>>---Reentrant version of lseek
-
+	
 INDEX
 	_lseek_r
 

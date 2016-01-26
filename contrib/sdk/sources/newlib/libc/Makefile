@@ -149,13 +149,16 @@ CORE_SRCS:=                   			\
 			time/gmtime.c        	\
 			time/gmtime_r.c		\
 			time/mktime.c        	\
-			time/mktm_r.c        	\
+			time/month_lengths.c	\
 			time/lcltime.c       	\
 			time/lcltime_r.c     	\
 			time/strftime.c		\
 			time/time.c          	\
+			time/tzcalc_limits.c	\
 			time/timelocal.c	\
 			time/tzlock.c        	\
+			time/tzset.c		\
+			time/tzset_r.c		\
 			time/tzvars.c
 
 
@@ -176,6 +179,7 @@ STDLIB_SRCS=                 			\
          		gdtoa-gethex.c      	\
          		gdtoa-hexnan.c       	\
          		getenv.c             	\
+			getenv_r.c		\
          		mprec.c              	\
          		mbtowc.c             	\
          		mbtowc_r.c           	\
@@ -191,10 +195,12 @@ STDLIB_SRCS=                 			\
          		seed48.c             	\
          		srand48.c            	\
          		strtod.c            	\
+			strtodg.c		\
          		strtol.c             	\
          		strtold.c            	\
          		strtoll.c            	\
          		strtoll_r.c         	\
+			strtorx.c		\
          		strtoul.c            	\
          		strtoull.c           	\
          		strtoull_r.c        	\
@@ -279,11 +285,18 @@ STDIO_SRCS=					\
 			putc.c			\
 			puts.c			\
 			refill.c		\
-			rget.c			\
 			remove.c		\
 			rename.c		\
 			rewind.c		\
+			rget.c			\
+			sccl.c			\
 			setvbuf.c		\
+			siprintf.c		\
+			siscanf.c		\
+			sniprintf.c		\
+			snprintf.c		\
+			sprintf.c		\
+			sscanf.c		\
 			stdio.c			\
 			tmpfile.c		\
 			tmpnam.c		\
@@ -297,13 +310,7 @@ STDIO_SRCS=					\
 			vsnprintf.c		\
 			vsscanf.c		\
 			wsetup.c		\
-			wbuf.c			\
-			sccl.c			\
-			siprintf.c		\
-			sniprintf.c		\
-			snprintf.c		\
-			sprintf.c		\
-			sscanf.c
+			wbuf.c
 
 
 MATH_SRCS = 	e_acos.c e_acosh.c e_asin.c e_atan2.c e_atanh.c e_cosh.c e_exp.c e_fmod.c	\

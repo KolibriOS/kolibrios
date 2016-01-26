@@ -22,7 +22,7 @@ extern int errno;
 /*
 FUNCTION
 	<<_read_r>>---Reentrant version of read
-
+	
 INDEX
 	_read_r
 

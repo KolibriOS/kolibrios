@@ -3,7 +3,7 @@
 #include <string.h>
 
 char *
-_DEFUN (_strdup_r, (reent_ptr, str),
+_DEFUN (_strdup_r, (reent_ptr, str), 
         struct _reent *reent_ptr  _AND
         _CONST char   *str)
 {

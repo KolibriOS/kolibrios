@@ -2093,21 +2093,21 @@ History:
       * malloc_extend_top: fix mask error that caused wastage after
         foreign sbrks
       * Add linux mremap support code from HJ Liu
-
+   
     V2.6.2 Tue Dec  5 06:52:55 1995  Doug Lea  (dl at gee)
       * Integrated most documentation with the code.
-      * Add support for mmap, with help from
+      * Add support for mmap, with help from 
         Wolfram Gloger (Gloger@lrz.uni-muenchen.de).
       * Use last_remainder in more cases.
       * Pack bins using idea from  colin@nyx10.cs.du.edu
       * Use ordered bins instead of best-fit threshhold
       * Eliminate block-local decls to simplify tracing and debugging.
       * Support another case of realloc via move into top
-      * Fix error occuring when initial sbrk_base not word-aligned.
+      * Fix error occuring when initial sbrk_base not word-aligned.  
       * Rely on page size for units instead of SBRK_UNIT to
         avoid surprises about sbrk alignment conventions.
       * Add mallinfo, mallopt. Thanks to Raymond Nijssen
-        (raymond@es.ele.tue.nl) for the suggestion.
+        (raymond@es.ele.tue.nl) for the suggestion. 
       * Add `pad' argument to malloc_trim and top_pad mallopt parameter.
       * More precautions for cases where other routines call sbrk,
         courtesy of Wolfram Gloger (Gloger@lrz.uni-muenchen.de).
@@ -2131,7 +2131,7 @@ History:
         Paul Wilson (wilson@cs.texas.edu) for the suggestion.
 
     V2.5.4 Wed Nov  1 07:54:51 1995  Doug Lea  (dl at gee)
-      * Added malloc_trim, with help from Wolfram Gloger
+      * Added malloc_trim, with help from Wolfram Gloger 
         (wmglo@Dent.MED.Uni-Muenchen.DE).
 
     V2.5.3 Tue Apr 26 10:16:01 1994  Doug Lea  (dl at g)
@@ -2151,20 +2151,20 @@ History:
          (eliminating old malloc_find_space & malloc_clean_bin)
       * Scan 2 returns chunks (not just 1)
       * Propagate failure in realloc if malloc returns 0
-      * Add stuff to allow compilation on non-ANSI compilers
+      * Add stuff to allow compilation on non-ANSI compilers 
           from kpv@research.att.com
-
+     
     V2.5 Sat Aug  7 07:41:59 1993  Doug Lea  (dl at g.oswego.edu)
       * removed potential for odd address access in prev_chunk
       * removed dependency on getpagesize.h
       * misc cosmetics and a bit more internal documentation
       * anticosmetics: mangled names in macros to evade debugger strangeness
-      * tested on sparc, hp-700, dec-mips, rs6000
+      * tested on sparc, hp-700, dec-mips, rs6000 
           with gcc & native cc (hp, dec only) allowing
           Detlefs & Zorn comparison study (in SIGPLAN Notices.)
 
     Trial version Fri Aug 28 13:14:29 1992  Doug Lea  (dl at g.oswego.edu)
-      * Based loosely on libg++-1.2X malloc. (It retains some of the overall
+      * Based loosely on libg++-1.2X malloc. (It retains some of the overall 
          structure of old version,  but most details differ.)
 
 */

@@ -88,7 +88,7 @@ Cygwin additionally supports locales from the file
 /usr/share/locale/locale.alias.
 
 (<<"">> is also accepted; if given, the settings are read from the
-corresponding LC_* environment variables and $LANG according to POSIX rules.
+corresponding LC_* environment variables and $LANG according to POSIX rules.)
 
 This implementation also supports the modifier <<"cjknarrow">>, which
 affects how the functions <<wcwidth>> and <<wcswidth>> handle characters
@@ -498,7 +498,7 @@ restart:
   locale = new_categories[category];
 # define FAIL	return NULL
 #endif
-  
+
   /* "POSIX" is translated to "C", as on Linux. */
   if (!strcmp (locale, "POSIX"))
     strcpy (locale, "C");
@@ -573,14 +573,14 @@ restart:
       	FAIL;
     }
   if (c && c[0] == '@')
-	{
-	  /* Modifier */
-	  /* Only one modifier is recognized right now.  "cjknarrow" is used
-	     to modify the behaviour of wcwidth() for East Asian languages.
-	     For details see the comment at the end of this function. */
-	  if (!strcmp (c + 1, "cjknarrow"))
-	    cjknarrow = 1;
-	}
+    {
+      /* Modifier */
+      /* Only one modifier is recognized right now.  "cjknarrow" is used
+         to modify the behaviour of wcwidth() for East Asian languages.
+         For details see the comment at the end of this function. */
+      if (!strcmp (c + 1, "cjknarrow"))
+	cjknarrow = 1;
+    }
   /* We only support this subset of charsets. */
   switch (charset[0])
     {
@@ -772,9 +772,9 @@ restart:
 	  || !strcasecmp (charset, "GB2312"))
       	{
 	  strcpy (charset, charset[2] == '2' ? "GB2312" : "GBK");
-      mbc_max = 2;
-      l_wctomb = __gbk_wctomb;
-      l_mbtowc = __gbk_mbtowc;
+	  mbc_max = 2;
+	  l_wctomb = __gbk_wctomb;
+	  l_mbtowc = __gbk_mbtowc;
 	}
       else
 #endif /* __CYGWIN__ */

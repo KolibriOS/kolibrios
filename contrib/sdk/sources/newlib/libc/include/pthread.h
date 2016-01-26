@@ -15,7 +15,7 @@
  *  OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY OF THIS
  *  SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  *
- *  $Id: pthread.h,v 1.12 2013/11/29 23:35:34 joel Exp $
+ *  $Id$
  */
 
 #ifndef __PTHREAD_h
@@ -31,7 +31,7 @@ extern "C" {
 
 #include <sys/types.h>
 #include <time.h>
-#include <sys/sched.h>
+#include <sched.h>
 #include <sys/cdefs.h>
 
 struct _pthread_cleanup_context {

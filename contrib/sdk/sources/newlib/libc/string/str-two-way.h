@@ -336,7 +336,7 @@ two_way_long_needle (const unsigned char *haystack, size_t haystack_len,
 		     after the mismatch.  */
 		  shift = needle_len - period;
 		}
-		  memory = 0;
+	      memory = 0;
 	      j += shift;
 	      continue;
 	    }

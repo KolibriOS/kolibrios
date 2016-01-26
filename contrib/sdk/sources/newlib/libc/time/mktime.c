@@ -199,13 +199,15 @@ _DEFUN(mktime, (tim_p),
 
   TZ_LOCK;
 
+  _tzset_unlocked ();
+
   if (_daylight)
     {
       int tm_isdst;
       int y = tim_p->tm_year + YEAR_BASE;
-  /* Convert user positive into 1 */
-  tm_isdst = tim_p->tm_isdst > 0  ?  1 : tim_p->tm_isdst;
-  isdst = tm_isdst;
+      /* Convert user positive into 1 */
+      tm_isdst = tim_p->tm_isdst > 0  ?  1 : tim_p->tm_isdst;
+      isdst = tm_isdst;
 
       if (y == tz->__tzyear || __tzcalc_limits (y))
 	{

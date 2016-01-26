@@ -77,28 +77,28 @@
  * For details on the use of these macros, see the queue(3) manual page.
  *
  *
- *			SLIST	LIST	STAILQ	TAILQ
- * _HEAD		+	+	+	+
- * _HEAD_INITIALIZER	+	+	+	+
- * _ENTRY		+	+	+	+
- * _INIT		+	+	+	+
- * _EMPTY		+	+	+	+
- * _FIRST		+	+	+	+
- * _NEXT		+	+	+	+
+ *				SLIST	LIST	STAILQ	TAILQ
+ * _HEAD			+	+	+	+
+ * _HEAD_INITIALIZER		+	+	+	+
+ * _ENTRY			+	+	+	+
+ * _INIT			+	+	+	+
+ * _EMPTY			+	+	+	+
+ * _FIRST			+	+	+	+
+ * _NEXT			+	+	+	+
  * _PREV			-	+	-	+
- * _LAST		-	-	+	+
- * _FOREACH		+	+	+	+
+ * _LAST			-	-	+	+
+ * _FOREACH			+	+	+	+
  * _FOREACH_SAFE		+	+	+	+
- * _FOREACH_REVERSE	-	-	-	+
+ * _FOREACH_REVERSE		-	-	-	+
  * _FOREACH_REVERSE_SAFE	-	-	-	+
- * _INSERT_HEAD		+	+	+	+
- * _INSERT_BEFORE	-	+	-	+
- * _INSERT_AFTER	+	+	+	+
- * _INSERT_TAIL		-	-	+	+
- * _CONCAT		-	-	+	+
+ * _INSERT_HEAD			+	+	+	+
+ * _INSERT_BEFORE		-	+	-	+
+ * _INSERT_AFTER		+	+	+	+
+ * _INSERT_TAIL			-	-	+	+
+ * _CONCAT			-	-	+	+
  * _REMOVE_AFTER		+	-	+	-
- * _REMOVE_HEAD		+	-	+	-
- * _REMOVE		+	+	+	+
+ * _REMOVE_HEAD			+	-	+	-
+ * _REMOVE			+	+	+	+
  * _SWAP			+	+	+	+
  *
  */
@@ -149,12 +149,12 @@ struct name {								\
 
 #define	SLIST_HEAD_INITIALIZER(head)					\
 	{ NULL }
- 
+
 #define	SLIST_ENTRY(type)						\
 struct {								\
 	struct type *sle_next;	/* next element */			\
 }
- 
+
 /*
  * Singly-linked List functions.
  */

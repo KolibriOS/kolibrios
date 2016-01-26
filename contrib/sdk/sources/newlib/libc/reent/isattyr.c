@@ -26,7 +26,7 @@ extern int errno;
 /*
 FUNCTION
 	<<_isatty_r>>---Reentrant version of isatty
-
+	
 INDEX
 	_isatty_r
 

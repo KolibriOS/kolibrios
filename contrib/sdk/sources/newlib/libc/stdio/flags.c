@@ -65,12 +65,12 @@ _DEFUN(__sflags, (ptr, mode, optr),
       switch (*mode)
 	{
 	case '+':
-      ret = (ret & ~(__SRD | __SWR)) | __SRW;
+	  ret = (ret & ~(__SRD | __SWR)) | __SRW;
 	  m = (m & ~O_ACCMODE) | O_RDWR;
 	  break;
 	case 'b':
 #ifdef O_BINARY
-      m |= O_BINARY;
+	  m |= O_BINARY;
 #endif
 	  break;
 #ifdef __CYGWIN__
@@ -92,7 +92,7 @@ _DEFUN(__sflags, (ptr, mode, optr),
     }
 #if defined (O_TEXT) && !defined (__CYGWIN__)
   if (!(m | O_BINARY))
-      m |= O_TEXT;
+    m |= O_TEXT;
 #endif
   *optr = m | o;
   return ret;
