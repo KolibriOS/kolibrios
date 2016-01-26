@@ -207,7 +207,10 @@ draw_channel_text:
 ; Scrollbar was at lowest position, scroll down automatically when new text arrived.
         mov     edx, [edi + window.text_lines]
         sub     edx, [textbox_height]
-        jle     .noscroll                               ; There are less lines of text than fit into the window, dont scroll..
+        jg      @f
+        mov     [edi + window.text_line_print], 0
+        jmp     .noscroll                               ; There are less lines of text than fit into the window, dont scroll..
+  @@:
         sub     edx, [edi + window.text_line_print]
         je      .noscroll                               ; We are already at the bottom pos, dont scroll..
   .scroll_to_pos:               ; edx = number of lines to go up/down (flags must indicate direction)
@@ -215,7 +218,7 @@ draw_channel_text:
         add     [edi + window.text_line_print], edx
         mov     esi, [edi + window.text_print]
         popf
-        ja      .loop_forward
+        jg      .loop_forward
         std                     ; set direction flag so we can scan backwards
         dec     esi
         dec     esi             ; move our cursor just in front of newline, for scanning backwards

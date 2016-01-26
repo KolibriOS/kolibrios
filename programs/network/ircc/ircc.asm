@@ -13,7 +13,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version equ '0.26'
+version equ '0.27'
 
 ; connection status
 STATUS_DISCONNECTED     = 0
