@@ -1,3 +1,6 @@
+;
+; функции для вычисления зеркального цвета (блики)
+;
 
 align 4
 proc calc_buf uses ebx ecx, buf:dword, shininess:dword
@@ -18,8 +21,8 @@ align 4
 	cmp ecx,SPECULAR_BUFFER_SIZE
 	jg @f
 		;Вычисляем x^y
-		fld dword[shininess]
-		fld dword[val]
+		fld dword[val] ;сначала берем y
+		fld dword[shininess] ;а потом x
 		fyl2x ;Стек FPU теперь содержит: st0=z=y*log2(x):
 		;Теперь считаем 2**z:
 		fld st0 ;Создаем еще одну копию z
@@ -80,12 +83,14 @@ endl
 	cmp dword[oldest],0 ;if (oldest == NULL || context.specbuf_num_buffers < MAX_SPECULAR_BUFFERS)
 	je @f
 	cmp dword[edx+offs_cont_specbuf_num_buffers],MAX_SPECULAR_BUFFERS
-	jl @f
-		jmp .end_1
+	jge .end_1
 	@@:
 		; create new buffer
 	stdcall gl_malloc, sizeof.GLSpecBuf
-;if (!eax) gl_fatal_error("could not allocate specular buffer")
+	or eax,eax
+	jnz @f
+;gl_fatal_error("could not allocate specular buffer")
+	@@:
 	inc dword[edx+offs_cont_specbuf_num_buffers]
 	mov ecx,[edx+offs_cont_specbuf_first]
 	mov [eax+offs_spec_next],ecx

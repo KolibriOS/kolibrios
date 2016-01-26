@@ -7,6 +7,7 @@ use32
 
 include '../../../../../proc32.inc'
 include '../../../../../macros.inc'
+include '../../../../../KOSfuncs.inc'
 include '../../../../../develop/libraries/box_lib/load_lib.mac'
 include '../../../../../dll.inc'
 include '../opengl_const.inc'
@@ -27,6 +28,8 @@ ends
 image_data dd 0 ;указатель на временную память, нужен для преобразования изображения
 image_data_toolbar dd 0
 IMAGE_FILE1_SIZE equ 128*144*3+54 ;размер файла с изображением
+IMAGE_TOOLBAR_ICON_SIZE equ 256*3
+IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*3+54
 
 macro load_image_file path,buf,size { ;макрос для загрузки изображений
 	;path - может быть переменной или строковым параметром
@@ -43,14 +46,14 @@ macro load_image_file path,buf,size { ;макрос для загрузки из
 	end if
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
 	mov [buf],eax
-	mov [run_file_70.Function], 0
+	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov [run_file_70.Count], dword size
 	mov [run_file_70.Buffer], eax
 	mov byte[run_file_70+20], 0
 	mov [run_file_70.FileName], file_name
-	mcall 70,run_file_70 ;загружаем файл изображения
+	mcall SF_FILE,run_file_70 ;загружаем файл изображения
 	cmp ebx,0xffffffff
 	je @f
 		;определяем вид изображения и переводим его во временный буфер image_data
@@ -73,15 +76,16 @@ load_libraries l_libs_start,l_libs_end
 	.test_lib_open:
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
-		mcall -1 ;exit not correct
+		mcall SF_TERMINATE_PROCESS
 	@@:
 	add ebp,ll_struc_size
 	cmp ebp,l_libs_end
 	jl .test_lib_open
 
-	mcall 40,0x27
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.sys_colors_new
+	mcall SF_SET_EVENTS_MASK,0x27
 
-	stdcall [kosglMakeCurrent], 10,10,[buf_ogl.w],[buf_ogl.h],ctx1
+	stdcall [kosglMakeCurrent], 5,30,[buf_ogl.w],[buf_ogl.h],ctx1
 	stdcall [glEnable], GL_DEPTH_TEST
 	stdcall [glEnable], GL_NORMALIZE ;делам нормали одинаковой величины во избежание артефактов
 	stdcall [gluNewQuadric]
@@ -100,6 +104,8 @@ load_libraries l_libs_start,l_libs_end
 	stdcall mem.Free,[image_data_toolbar] ;освобождаем память
 	stdcall [buf2d_conv_24_to_8], buf_1,1 ;делаем буфер прозрачности 8 бит
 	stdcall [buf2d_convert_text_matrix], buf_1
+
+	load_image_file 'toolb_1.png', image_data_toolbar,IMAGE_TOOLBAR_SIZE
 	call draw_3d
 
 align 4
@@ -108,7 +114,7 @@ red_win:
 
 align 4
 still:
-	mcall 10
+	mcall SF_WAIT_EVENT
 	cmp al,1
 	jz red_win
 	cmp al,2
@@ -120,19 +126,28 @@ still:
 align 4
 draw_window:
 	pushad
-	mcall 12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
+	mcall SF_CREATE_WINDOW,(50 shl 16)+420,(30 shl 16)+410,0x33ffffff,,caption
 
-	mov edx,0x33ffffff ;0x73ffffff
-	mcall 0,(50 shl 16)+430,(30 shl 16)+400,,,caption
+	mov esi,[sc.work_button]
+	mcall SF_DEFINE_BUTTON,(5 shl 16)+20,(5 shl 16)+20,3 ;вершины вкл.
+	mcall ,(30 shl 16)+20,,4 ;каркасные грани вкл.
+	mcall ,(55 shl 16)+20,,5 ;сплошные грани вкл.
+
+	mcall SF_PUT_IMAGE,[image_data_toolbar],(16 shl 16)+16,(7 shl 16)+7 ;вершины вкл.
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	mcall ,,,(32 shl 16)+7 ;каркасные грани вкл.
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	mcall ,,,(57 shl 16)+7 ;сплошные грани вкл.
+
 	stdcall [kosglSwapBuffers]
-
-	mcall 12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 	popad
 	ret
 
 align 4
 key:
-	mcall 2
+	mcall SF_GET_KEY
 
 	cmp ah,27 ;Esc
 	je button.exit
@@ -226,13 +241,49 @@ key:
 
 align 4
 button:
-	mcall 17
+	mcall SF_GET_BUTTON
+	cmp ah,3
+	jne @f
+		call but_st_point
+		jmp still
+	@@:
+	cmp ah,4
+	jne @f
+		call but_st_line
+		jmp still
+	@@:
+	cmp ah,5
+	jne @f
+		call but_st_face
+		jmp still
+	@@:
 	cmp ah,1
 	jne still
 .exit:
 	stdcall [gluDeleteQuadric], [qObj]
-	;stdcall mem.Free,[image_data_toolbar]
-	mcall -1
+	stdcall mem.Free,[image_data_toolbar]
+	mcall SF_TERMINATE_PROCESS
+
+align 4
+but_st_point:
+	stdcall [gluQuadricDrawStyle], [qObj],GLU_POINT
+	call draw_3d
+	stdcall [kosglSwapBuffers]
+	ret
+
+align 4
+but_st_line:
+	stdcall [gluQuadricDrawStyle], [qObj],GLU_LINE
+	call draw_3d
+	stdcall [kosglSwapBuffers]
+	ret
+
+align 4
+but_st_face:
+	stdcall [gluQuadricDrawStyle], [qObj],GLU_FILL
+	call draw_3d
+	stdcall [kosglSwapBuffers]
+	ret
 
 
 align 4
@@ -484,6 +535,8 @@ l_libs_end:
 align 4
 i_end:
 	run_file_70 FileInfoBlock
+	sc system_colors
+		rb sizeof.sys_colors_new-sizeof.system_colors
 align 16
 	rb 4096
 stacktop:
