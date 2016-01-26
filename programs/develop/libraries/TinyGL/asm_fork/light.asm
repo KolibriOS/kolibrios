@@ -685,17 +685,15 @@ pushad
 				stdcall specbuf_get_buffer, edx, dword[ecx+offs_mate_shininess_i], dword[ecx+offs_mate_shininess]
 				mov edi,eax ;edi = specbuf
 				mov dword[idx],SPECULAR_BUFFER_SIZE ;idx = SPECULAR_BUFFER_SIZE
-				fld1
-				fcomp
-				fstsw ax
-				fild dword[idx]
-				sahf
-				jbe @f ;if(dot_spec < 1.0) st0=1 st1=dot_spec
-					fmul st0,st1 ;idx *= dot_spec
+
+				;idx = (int)(dot_spec*SPECULAR_BUFFER_SIZE)
+				fimul dword[idx]
+				fistp dword[idx]				
+				;if (idx > SPECULAR_BUFFER_SIZE) idx = SPECULAR_BUFFER_SIZE
+				cmp dword[idx],SPECULAR_BUFFER_SIZE
+				jle @f
+					mov dword[idx],SPECULAR_BUFFER_SIZE
 				@@:
-				fistp dword[idx]
-				ffree st0 ;dot_spec
-				fincstp
 				shl dword[idx],2
 				add edi,dword[idx]
 				fld dword[edi+offs_spec_buf] ;dot_spec = specbuf.buf[idx]

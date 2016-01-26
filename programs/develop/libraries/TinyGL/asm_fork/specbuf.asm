@@ -8,21 +8,23 @@ locals
 	val dd ? ;float
 	f_inc dd ? ;float
 endl
-	mov dword[val],0.0f
 	mov dword[f_inc],SPECULAR_BUFFER_SIZE
-	fld1
-	fidiv dword[f_inc]
-	fstp dword[f_inc] ;f_inc = 1.0f/SPECULAR_BUFFER_SIZE
 	mov ebx,[buf]
 	add ebx,offs_spec_buf
+	mov dword[ebx],0.0 ;buf.buf[0] = 0.0
 	xor ecx,ecx
+	inc ecx
+	fld dword[shininess] ;сначала берем y
+	fld1
+	fidiv dword[f_inc]
+	fst dword[f_inc] ;f_inc = 1.0f/SPECULAR_BUFFER_SIZE
+	fst dword[val]
 align 4
-	.cycle_0: ;for (i = 0; i <= SPECULAR_BUFFER_SIZE; i++)
+	.cycle_0: ;for (i = 1; i <= SPECULAR_BUFFER_SIZE; i++)
 	cmp ecx,SPECULAR_BUFFER_SIZE
 	jg @f
 		;Вычисляем x^y
-		fld dword[val] ;сначала берем y
-		fld dword[shininess] ;а потом x
+
 		fyl2x ;Стек FPU теперь содержит: st0=z=y*log2(x):
 		;Теперь считаем 2**z:
 		fld st0 ;Создаем еще одну копию z
@@ -35,15 +37,22 @@ align 4
 		fxch st1
 		fstp st ;Результат остается на вершине стека st0
 
-		fstp dword[ebx] ;buf.buf[i] = pow(val, shininess)
 		add ebx,4
+		fstp dword[ebx] ;buf.buf[i] = pow(val, shininess)
+		ffree st0 ;испорченный shininess
+		fincstp
 
+		fld dword[shininess] ;сначала берем y
 		fld dword[val]
 		fadd dword[f_inc]
-		fstp dword[val] ;val += f_inc
+		fst dword[val] ;val += f_inc
 	inc ecx
 	jmp .cycle_0
 	@@:
+	ffree st0 ;val
+	fincstp
+	ffree st0 ;shininess
+	fincstp
 	ret
 endp
 
