@@ -13,7 +13,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version equ '0.27'
+version equ '0.28'
 
 ; connection status
 STATUS_DISCONNECTED     = 0
@@ -215,9 +215,6 @@ START:
         mov     ecx, 1024
         call    cmd_usr_server.now
   @@:
-
-; Draw window a first time, so we can figure out skin size
-        call    draw_window
 
 redraw:
         call    draw_window

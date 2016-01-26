@@ -45,24 +45,23 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
         pusha
 
         mcall   12, 1
-        xor     eax, eax                        ; draw window
-        mov     ebx, WIN_MIN_X
-        mov     ecx, WIN_MIN_Y
+        xor     eax, eax                                ; draw window
+        mov     ebx, WIN_MIN_X+10
+        mov     ecx, WIN_MIN_Y+30
         mov     edx, [colors.work]
         add     edx, 0x33000000
         mov     edi, str_programname
         mcall
-        mcall   12, 2           
                         
-        test    [thread_info.wnd_state], 100b   ; skip if window is rolled up
+        test    [thread_info.wnd_state], 100b           ; skip if window is rolled up
         jne     .exit
 
 ; calculate available space for textbox and coordinates for scrollbars
         mov     eax, [ysize]
-        sub     eax, TOP_Y + INPUTBOX_HEIGHT - 1   ;;;;
+        sub     eax, TOP_Y + INPUTBOX_HEIGHT - 1
         mov     [scroll2.y_size], ax
         mov     [scroll1.y_size], ax
-        sub     eax, 4 ;;;;
+        sub     eax, 4
         xor     edx, edx
         mov     ecx, FONT_HEIGHT
         div     ecx
@@ -144,6 +143,7 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
         call    draw_window_tabs
                 
   .exit:
+        mcall   12, 2
         popa
         ret
 
