@@ -28,6 +28,7 @@
 #include <drm/drmP.h>
 #include "radeon.h"
 #include "radeon_asic.h"
+#include "radeon_audio.h"
 #include "atom.h"
 #include "rs690d.h"
 
@@ -73,9 +74,9 @@ void rs690_pm_info(struct radeon_device *rdev)
 				   &frev, &crev, &data_offset)) {
 		info = (union igp_info *)(rdev->mode_info.atom_context->bios + data_offset);
 
-	/* Get various system informations from bios */
-	switch (crev) {
-	case 1:
+		/* Get various system informations from bios */
+		switch (crev) {
+		case 1:
 			tmp.full = dfixed_const(100);
 			rdev->pm.igp_sideport_mclk.full = dfixed_const(le32_to_cpu(info->info.ulBootUpMemoryClock));
 			rdev->pm.igp_sideport_mclk.full = dfixed_div(rdev->pm.igp_sideport_mclk, tmp);
@@ -88,8 +89,8 @@ void rs690_pm_info(struct radeon_device *rdev)
 				rdev->pm.igp_system_mclk.full = dfixed_const(400);
 			rdev->pm.igp_ht_link_clk.full = dfixed_const(le16_to_cpu(info->info.usFSBClock));
 			rdev->pm.igp_ht_link_width.full = dfixed_const(info->info.ucHTLinkWidth);
-		break;
-	case 2:
+			break;
+		case 2:
 			tmp.full = dfixed_const(100);
 			rdev->pm.igp_sideport_mclk.full = dfixed_const(le32_to_cpu(info->info_v2.ulBootUpSidePortClock));
 			rdev->pm.igp_sideport_mclk.full = dfixed_div(rdev->pm.igp_sideport_mclk, tmp);
@@ -103,16 +104,16 @@ void rs690_pm_info(struct radeon_device *rdev)
 			rdev->pm.igp_ht_link_clk.full = dfixed_const(le32_to_cpu(info->info_v2.ulHTLinkFreq));
 			rdev->pm.igp_ht_link_clk.full = dfixed_div(rdev->pm.igp_ht_link_clk, tmp);
 			rdev->pm.igp_ht_link_width.full = dfixed_const(le16_to_cpu(info->info_v2.usMinHTLinkWidth));
-		break;
-	default:
-		/* We assume the slower possible clock ie worst case */
+			break;
+		default:
+			/* We assume the slower possible clock ie worst case */
 			rdev->pm.igp_sideport_mclk.full = dfixed_const(200);
 			rdev->pm.igp_system_mclk.full = dfixed_const(200);
 			rdev->pm.igp_ht_link_clk.full = dfixed_const(1000);
 			rdev->pm.igp_ht_link_width.full = dfixed_const(8);
-		DRM_ERROR("No integrated system info for your GPU, using safe default\n");
-		break;
-	}
+			DRM_ERROR("No integrated system info for your GPU, using safe default\n");
+			break;
+		}
 	} else {
 		/* We assume the slower possible clock ie worst case */
 		rdev->pm.igp_sideport_mclk.full = dfixed_const(200);
@@ -153,7 +154,7 @@ static void rs690_mc_init(struct radeon_device *rdev)
 
 	rs400_gart_adjust_size(rdev);
 	rdev->mc.vram_is_ddr = true;
-		rdev->mc.vram_width = 128;
+	rdev->mc.vram_width = 128;
 	rdev->mc.real_vram_size = RREG32(RADEON_CONFIG_MEMSIZE);
 	rdev->mc.mc_vram_size = rdev->mc.real_vram_size;
 	rdev->mc.aper_base = pci_resource_start(rdev->pdev, 0);
@@ -206,6 +207,9 @@ void rs690_line_buffer_adjust(struct radeon_device *rdev,
 {
 	u32 tmp;
 
+	/* Guess line buffer size to be 8192 pixels */
+	u32 lb_size = 8192;
+
 	/*
 	 * Line Buffer Setup
 	 * There is a single line buffer shared by both display controllers.
@@ -242,6 +246,13 @@ void rs690_line_buffer_adjust(struct radeon_device *rdev,
 		tmp |= V_006520_DC_LB_MEMORY_SPLIT_D1_1Q_D2_3Q;
 	}
 	WREG32(R_006520_DC_LB_MEMORY_SPLIT, tmp);
+
+	/* Save number of lines the linebuffer leads before the scanout */
+	if (mode1)
+		rdev->mode_info.crtcs[0]->lb_vblank_lead_lines = DIV_ROUND_UP(lb_size, mode1->crtc_hdisplay);
+
+	if (mode2)
+		rdev->mode_info.crtcs[1]->lb_vblank_lead_lines = DIV_ROUND_UP(lb_size, mode2->crtc_hdisplay);
 }
 
 struct rs690_watermark {
@@ -258,7 +269,7 @@ struct rs690_watermark {
 };
 
 static void rs690_crtc_bandwidth_compute(struct radeon_device *rdev,
-				  struct radeon_crtc *crtc,
+					 struct radeon_crtc *crtc,
 					 struct rs690_watermark *wm,
 					 bool low)
 {
@@ -632,7 +643,7 @@ void rs690_bandwidth_update(struct radeon_device *rdev)
 
 	WREG32(R_006548_D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
 	WREG32(R_00654C_D1MODE_PRIORITY_B_CNT, d1mode_priority_b_cnt);
-		WREG32(R_006D48_D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
+	WREG32(R_006D48_D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
 	WREG32(R_006D4C_D2MODE_PRIORITY_B_CNT, d2mode_priority_b_cnt);
 }
 
@@ -729,7 +740,7 @@ static int rs690_startup(struct radeon_device *rdev)
 		return r;
 	}
 
-	r = r600_audio_init(rdev);
+	r = radeon_audio_init(rdev);
 	if (r) {
 		dev_err(rdev->dev, "failed initializing audio\n");
 		return r;
@@ -740,6 +751,22 @@ static int rs690_startup(struct radeon_device *rdev)
 
 
 
+void rs690_fini(struct radeon_device *rdev)
+{
+	radeon_pm_fini(rdev);
+	radeon_audio_fini(rdev);
+	r100_cp_fini(rdev);
+	radeon_wb_fini(rdev);
+	radeon_ib_pool_fini(rdev);
+	radeon_gem_fini(rdev);
+	rs400_gart_fini(rdev);
+	radeon_irq_kms_fini(rdev);
+	radeon_fence_driver_fini(rdev);
+	radeon_bo_fini(rdev);
+	radeon_atombios_fini(rdev);
+	kfree(rdev->bios);
+	rdev->bios = NULL;
+}
 
 int rs690_init(struct radeon_device *rdev)
 {
@@ -804,11 +831,11 @@ int rs690_init(struct radeon_device *rdev)
 	if (r) {
 		/* Somethings want wront with the accel init stop accel */
 		dev_err(rdev->dev, "Disabling GPU acceleration\n");
-//		r100_cp_fini(rdev);
-//		r100_wb_fini(rdev);
-//		r100_ib_fini(rdev);
+		r100_cp_fini(rdev);
+		radeon_wb_fini(rdev);
+		radeon_ib_pool_fini(rdev);
 		rs400_gart_fini(rdev);
-//		radeon_irq_kms_fini(rdev);
+		radeon_irq_kms_fini(rdev);
 		rdev->accel_working = false;
 	}
 	return 0;

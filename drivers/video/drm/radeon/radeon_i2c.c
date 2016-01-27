@@ -66,23 +66,23 @@ bool radeon_ddc_probe(struct radeon_connector *radeon_connector, bool use_aux)
 	if (use_aux) {
 		ret = i2c_transfer(&radeon_connector->ddc_bus->aux.ddc, msgs, 2);
 	} else {
-	ret = i2c_transfer(&radeon_connector->ddc_bus->adapter, msgs, 2);
+		ret = i2c_transfer(&radeon_connector->ddc_bus->adapter, msgs, 2);
 	}
 
 	if (ret != 2)
 		/* Couldn't find an accessible DDC on this connector */
 		return false;
-		/* Probe also for valid EDID header
-		 * EDID header starts with:
-		 * 0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00.
-		 * Only the first 6 bytes must be valid as
-		 * drm_edid_block_valid() can fix the last 2 bytes */
-		if (drm_edid_header_is_valid(buf) < 6) {
-			/* Couldn't find an accessible EDID on this
-			 * connector */
-			return false;
-		}
-		return true;
+	/* Probe also for valid EDID header
+	 * EDID header starts with:
+	 * 0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00.
+	 * Only the first 6 bytes must be valid as
+	 * drm_edid_block_valid() can fix the last 2 bytes */
+	if (drm_edid_header_is_valid(buf) < 6) {
+		/* Couldn't find an accessible EDID on this
+		 * connector */
+		return false;
+	}
+	return true;
 }
 
 /* bit banging i2c */
@@ -101,7 +101,7 @@ static int pre_xfer(struct i2c_adapter *i2c_adap)
 	 * doing DDC - do this for all r200s/r300s/r400s for safety sake
 	 */
 	if (rec->hw_capable) {
-	if ((rdev->family >= CHIP_R200) && !ASIC_IS_AVIVO(rdev)) {
+		if ((rdev->family >= CHIP_R200) && !ASIC_IS_AVIVO(rdev)) {
 			u32 reg;
 
 			if (rdev->family >= CHIP_RV350)
@@ -114,14 +114,14 @@ static int pre_xfer(struct i2c_adapter *i2c_adap)
 
 			mutex_lock(&rdev->dc_hw_i2c_mutex);
 			if (rec->a_clk_reg == reg) {
-			WREG32(RADEON_DVI_I2C_CNTL_0, (RADEON_I2C_SOFT_RST |
-						R200_DVI_I2C_PIN_SEL(R200_SEL_DDC1)));
-		} else {
-			WREG32(RADEON_DVI_I2C_CNTL_0, (RADEON_I2C_SOFT_RST |
-						R200_DVI_I2C_PIN_SEL(R200_SEL_DDC3)));
-		}
+				WREG32(RADEON_DVI_I2C_CNTL_0, (RADEON_I2C_SOFT_RST |
+							       R200_DVI_I2C_PIN_SEL(R200_SEL_DDC1)));
+			} else {
+				WREG32(RADEON_DVI_I2C_CNTL_0, (RADEON_I2C_SOFT_RST |
+							       R200_DVI_I2C_PIN_SEL(R200_SEL_DDC3)));
+			}
 			mutex_unlock(&rdev->dc_hw_i2c_mutex);
-	}
+		}
 	}
 
 	/* switch the pads to ddc mode */
@@ -133,10 +133,10 @@ static int pre_xfer(struct i2c_adapter *i2c_adap)
 
 	/* clear the output pin values */
 	temp = RREG32(rec->a_clk_reg) & ~rec->a_clk_mask;
-		WREG32(rec->a_clk_reg, temp);
+	WREG32(rec->a_clk_reg, temp);
 
 	temp = RREG32(rec->a_data_reg) & ~rec->a_data_mask;
-		WREG32(rec->a_data_reg, temp);
+	WREG32(rec->a_data_reg, temp);
 
 	/* set the pins to input */
 	temp = RREG32(rec->en_clk_reg) & ~rec->en_clk_mask;
@@ -838,7 +838,7 @@ static int radeon_hw_i2c_xfer(struct i2c_adapter *i2c_adap,
 	case CHIP_RV410:
 	case CHIP_RS400:
 	case CHIP_RS480:
-			ret = r100_hw_i2c_xfer(i2c_adap, msgs, num);
+		ret = r100_hw_i2c_xfer(i2c_adap, msgs, num);
 		break;
 	case CHIP_RS600:
 	case CHIP_RS690:
@@ -851,10 +851,10 @@ static int radeon_hw_i2c_xfer(struct i2c_adapter *i2c_adap,
 	case CHIP_RV560:
 	case CHIP_RV570:
 	case CHIP_R580:
-			if (rec->mm_i2c)
-				ret = r100_hw_i2c_xfer(i2c_adap, msgs, num);
-			else
-				ret = r500_hw_i2c_xfer(i2c_adap, msgs, num);
+		if (rec->mm_i2c)
+			ret = r100_hw_i2c_xfer(i2c_adap, msgs, num);
+		else
+			ret = r500_hw_i2c_xfer(i2c_adap, msgs, num);
 		break;
 	case CHIP_R600:
 	case CHIP_RV610:
@@ -906,8 +906,8 @@ static const struct i2c_algorithm radeon_atom_i2c_algo = {
 };
 
 struct radeon_i2c_chan *radeon_i2c_create(struct drm_device *dev,
-		struct radeon_i2c_bus_rec *rec,
-		const char *name)
+					  struct radeon_i2c_bus_rec *rec,
+					  const char *name)
 {
 	struct radeon_device *rdev = dev->dev_private;
 	struct radeon_i2c_chan *i2c;
@@ -924,6 +924,7 @@ struct radeon_i2c_chan *radeon_i2c_create(struct drm_device *dev,
 	i2c->rec = *rec;
 	i2c->adapter.owner = THIS_MODULE;
 	i2c->adapter.class = I2C_CLASS_DDC;
+	i2c->adapter.dev.parent = &dev->pdev->dev;
 	i2c->dev = dev;
 	i2c_set_adapdata(&i2c->adapter, i2c);
 	mutex_init(&i2c->mutex);
@@ -968,10 +969,10 @@ struct radeon_i2c_chan *radeon_i2c_create(struct drm_device *dev,
 		i2c->bit.timeout = usecs_to_jiffies(2200);	/* from VESA */
 		i2c->bit.data = i2c;
 		ret = i2c_bit_add_bus(&i2c->adapter);
-	if (ret) {
+		if (ret) {
 			DRM_ERROR("Failed to register bit i2c %s\n", name);
-		goto out_free;
-	}
+			goto out_free;
+		}
 	}
 
 	return i2c;
@@ -1047,15 +1048,10 @@ struct radeon_i2c_chan *radeon_i2c_lookup(struct radeon_device *rdev,
 	return NULL;
 }
 
-struct drm_encoder *radeon_best_encoder(struct drm_connector *connector)
-{
-	return NULL;
-}
-
 void radeon_i2c_get_byte(struct radeon_i2c_chan *i2c_bus,
-			    u8 slave_addr,
-			    u8 addr,
-			    u8 *val)
+			 u8 slave_addr,
+			 u8 addr,
+			 u8 *val)
 {
 	u8 out_buf[2];
 	u8 in_buf[2];
@@ -1087,9 +1083,9 @@ void radeon_i2c_get_byte(struct radeon_i2c_chan *i2c_bus,
 }
 
 void radeon_i2c_put_byte(struct radeon_i2c_chan *i2c_bus,
-			    u8 slave_addr,
-			    u8 addr,
-			    u8 val)
+			 u8 slave_addr,
+			 u8 addr,
+			 u8 val)
 {
 	uint8_t out_buf[2];
 	struct i2c_msg msg = {
@@ -1112,7 +1108,7 @@ void radeon_router_select_ddc_port(struct radeon_connector *radeon_connector)
 {
 	u8 val;
 
-    if (!radeon_connector->router.ddc_valid)
+	if (!radeon_connector->router.ddc_valid)
 		return;
 
 	if (!radeon_connector->router_bus)

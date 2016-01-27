@@ -81,9 +81,9 @@ static int r200_get_vtx_size_0(uint32_t vtx_fmt_0)
 }
 
 struct radeon_fence *r200_copy_dma(struct radeon_device *rdev,
-		  uint64_t src_offset,
-		  uint64_t dst_offset,
-		  unsigned num_gpu_pages,
+				   uint64_t src_offset,
+				   uint64_t dst_offset,
+				   unsigned num_gpu_pages,
 				   struct reservation_object *resv)
 {
 	struct radeon_ring *ring = &rdev->ring[RADEON_RING_TYPE_GFX_INDEX];
@@ -291,13 +291,13 @@ int r200_packet0_check(struct radeon_cs_parser *p,
 
 		if (!(p->cs_flags & RADEON_CS_KEEP_TILING_FLAGS)) {
 			if (reloc->tiling_flags & RADEON_TILING_MACRO)
-			tile_flags |= RADEON_COLOR_TILE_ENABLE;
+				tile_flags |= RADEON_COLOR_TILE_ENABLE;
 			if (reloc->tiling_flags & RADEON_TILING_MICRO)
-			tile_flags |= RADEON_COLOR_MICROTILE_ENABLE;
+				tile_flags |= RADEON_COLOR_MICROTILE_ENABLE;
 
-		tmp = idx_value & ~(0x7 << 16);
-		tmp |= tile_flags;
-		ib[idx] = tmp;
+			tmp = idx_value & ~(0x7 << 16);
+			tmp |= tile_flags;
+			ib[idx] = tmp;
 		} else
 			ib[idx] = idx_value;
 

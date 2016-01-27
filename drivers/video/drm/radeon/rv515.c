@@ -572,6 +572,23 @@ void rv515_set_safe_registers(struct radeon_device *rdev)
 	rdev->config.r300.reg_safe_bm_size = ARRAY_SIZE(rv515_reg_safe_bm);
 }
 
+void rv515_fini(struct radeon_device *rdev)
+{
+	radeon_pm_fini(rdev);
+	r100_cp_fini(rdev);
+	radeon_wb_fini(rdev);
+	radeon_ib_pool_fini(rdev);
+	radeon_gem_fini(rdev);
+	rv370_pcie_gart_fini(rdev);
+	radeon_agp_fini(rdev);
+	radeon_irq_kms_fini(rdev);
+	radeon_fence_driver_fini(rdev);
+	radeon_bo_fini(rdev);
+	radeon_atombios_fini(rdev);
+	kfree(rdev->bios);
+	rdev->bios = NULL;
+}
+
 int rv515_init(struct radeon_device *rdev)
 {
 	int r;
@@ -639,6 +656,12 @@ int rv515_init(struct radeon_device *rdev)
 	if (r) {
 		/* Somethings want wront with the accel init stop accel */
 		dev_err(rdev->dev, "Disabling GPU acceleration\n");
+		r100_cp_fini(rdev);
+		radeon_wb_fini(rdev);
+		radeon_ib_pool_fini(rdev);
+		radeon_irq_kms_fini(rdev);
+		rv370_pcie_gart_fini(rdev);
+		radeon_agp_fini(rdev);
 		rdev->accel_working = false;
 	}
 	return 0;
@@ -888,7 +911,7 @@ struct rv515_watermark {
 };
 
 static void rv515_crtc_bandwidth_compute(struct radeon_device *rdev,
-				  struct radeon_crtc *crtc,
+					 struct radeon_crtc *crtc,
 					 struct rv515_watermark *wm,
 					 bool low)
 {
@@ -1204,7 +1227,7 @@ void rv515_bandwidth_avivo_update(struct radeon_device *rdev)
 
 	WREG32(D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
 	WREG32(D1MODE_PRIORITY_B_CNT, d1mode_priority_b_cnt);
-		WREG32(D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
+	WREG32(D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
 	WREG32(D2MODE_PRIORITY_B_CNT, d2mode_priority_b_cnt);
 }
 

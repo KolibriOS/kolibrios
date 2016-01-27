@@ -212,11 +212,9 @@ void rs400_gart_fini(struct radeon_device *rdev)
 #define RS400_PTE_WRITEABLE (1 << 2)
 #define RS400_PTE_READABLE  (1 << 3)
 
-void rs400_gart_set_page(struct radeon_device *rdev, unsigned i,
-			 uint64_t addr, uint32_t flags)
+uint64_t rs400_gart_get_page_entry(uint64_t addr, uint32_t flags)
 {
 	uint32_t entry;
-	u32 *gtt = rdev->gart.ptr;
 
 	entry = (lower_32_bits(addr) & PAGE_MASK) |
 		((upper_32_bits(addr) & 0xff) << 4);
@@ -226,8 +224,14 @@ void rs400_gart_set_page(struct radeon_device *rdev, unsigned i,
 		entry |= RS400_PTE_WRITEABLE;
 	if (!(flags & RADEON_GART_PAGE_SNOOP))
 		entry |= RS400_PTE_UNSNOOPED;
-	entry = cpu_to_le32(entry);
-	gtt[i] = entry;
+	return entry;
+}
+
+void rs400_gart_set_page(struct radeon_device *rdev, unsigned i,
+			 uint64_t entry)
+{
+	u32 *gtt = rdev->gart.ptr;
+	gtt[i] = cpu_to_le32(lower_32_bits(entry));
 }
 
 int rs400_mc_wait_for_idle(struct radeon_device *rdev)
@@ -437,11 +441,11 @@ static int rs400_startup(struct radeon_device *rdev)
 	r100_irq_set(rdev);
 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
 	/* 1M ring buffer */
-   r = r100_cp_init(rdev, 1024 * 1024);
-   if (r) {
+	r = r100_cp_init(rdev, 1024 * 1024);
+	if (r) {
 		dev_err(rdev->dev, "failed initializing CP (%d).\n", r);
-       return r;
-   }
+		return r;
+	}
 
 	r = radeon_ib_pool_init(rdev);
 	if (r) {
@@ -454,6 +458,21 @@ static int rs400_startup(struct radeon_device *rdev)
 
 
 
+void rs400_fini(struct radeon_device *rdev)
+{
+	radeon_pm_fini(rdev);
+	r100_cp_fini(rdev);
+	radeon_wb_fini(rdev);
+	radeon_ib_pool_fini(rdev);
+	radeon_gem_fini(rdev);
+	rs400_gart_fini(rdev);
+	radeon_irq_kms_fini(rdev);
+	radeon_fence_driver_fini(rdev);
+	radeon_bo_fini(rdev);
+	radeon_atombios_fini(rdev);
+	kfree(rdev->bios);
+	rdev->bios = NULL;
+}
 
 int rs400_init(struct radeon_device *rdev)
 {
@@ -517,11 +536,11 @@ int rs400_init(struct radeon_device *rdev)
 	if (r) {
 		/* Somethings want wront with the accel init stop accel */
 		dev_err(rdev->dev, "Disabling GPU acceleration\n");
-//		r100_cp_fini(rdev);
-//		r100_wb_fini(rdev);
-//		r100_ib_fini(rdev);
+		r100_cp_fini(rdev);
+		radeon_wb_fini(rdev);
+		radeon_ib_pool_fini(rdev);
 		rs400_gart_fini(rdev);
-//		radeon_irq_kms_fini(rdev);
+		radeon_irq_kms_fini(rdev);
 		rdev->accel_working = false;
 	}
 	return 0;

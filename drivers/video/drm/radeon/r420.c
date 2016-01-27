@@ -301,6 +301,29 @@ static int r420_startup(struct radeon_device *rdev)
 
 
 
+void r420_fini(struct radeon_device *rdev)
+{
+	radeon_pm_fini(rdev);
+	r100_cp_fini(rdev);
+	radeon_wb_fini(rdev);
+	radeon_ib_pool_fini(rdev);
+	radeon_gem_fini(rdev);
+	if (rdev->flags & RADEON_IS_PCIE)
+		rv370_pcie_gart_fini(rdev);
+	if (rdev->flags & RADEON_IS_PCI)
+		r100_pci_gart_fini(rdev);
+	radeon_agp_fini(rdev);
+	radeon_irq_kms_fini(rdev);
+	radeon_fence_driver_fini(rdev);
+	radeon_bo_fini(rdev);
+	if (rdev->is_atom_bios) {
+		radeon_atombios_fini(rdev);
+	} else {
+		radeon_combios_fini(rdev);
+	}
+	kfree(rdev->bios);
+	rdev->bios = NULL;
+}
 
 int r420_init(struct radeon_device *rdev)
 {
@@ -345,9 +368,9 @@ int r420_init(struct radeon_device *rdev)
 	/* initialize AGP */
 	if (rdev->flags & RADEON_IS_AGP) {
 		r = radeon_agp_init(rdev);
-	if (r) {
+		if (r) {
 			radeon_agp_disable(rdev);
-	}
+		}
 	}
 	/* initialize memory controller */
 	r300_mc_init(rdev);
@@ -385,6 +408,10 @@ int r420_init(struct radeon_device *rdev)
 	if (r) {
 		/* Somethings want wront with the accel init stop accel */
 		dev_err(rdev->dev, "Disabling GPU acceleration\n");
+		r100_cp_fini(rdev);
+		radeon_wb_fini(rdev);
+		radeon_ib_pool_fini(rdev);
+		radeon_irq_kms_fini(rdev);
 		if (rdev->flags & RADEON_IS_PCIE)
 			rv370_pcie_gart_fini(rdev);
 		if (rdev->flags & RADEON_IS_PCI)

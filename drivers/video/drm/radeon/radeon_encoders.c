@@ -179,9 +179,12 @@ static void radeon_encoder_add_backlight(struct radeon_encoder *radeon_encoder,
 		    (rdev->pdev->subsystem_vendor == 0x1734) &&
 		    (rdev->pdev->subsystem_device == 0x1107))
 			use_bl = false;
+/* Older PPC macs use on-GPU backlight controller */
+#ifndef CONFIG_PPC_PMAC
 		/* disable native backlight control on older asics */
 		else if (rdev->family < CHIP_R600)
 			use_bl = false;
+#endif
 		else
 			use_bl = true;
 	}
@@ -191,7 +194,6 @@ static void radeon_encoder_add_backlight(struct radeon_encoder *radeon_encoder,
 			radeon_atom_backlight_init(radeon_encoder, connector);
 		else
 			radeon_legacy_backlight_init(radeon_encoder, connector);
-		rdev->mode_info.bl_encoder = radeon_encoder;
 	}
 }
 
@@ -244,7 +246,16 @@ radeon_get_connector_for_encoder(struct drm_encoder *encoder)
 
 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
 		radeon_connector = to_radeon_connector(connector);
-		if (radeon_encoder->active_device & radeon_connector->devices)
+		if (radeon_encoder->is_mst_encoder) {
+			struct radeon_encoder_mst *mst_enc;
+
+			if (!radeon_connector->is_mst_connector)
+				continue;
+
+			mst_enc = radeon_encoder->enc_priv;
+			if (mst_enc->connector == radeon_connector->mst_port)
+				return connector;
+		} else if (radeon_encoder->active_device & radeon_connector->devices)
 			return connector;
 	}
 	return NULL;
@@ -377,12 +388,12 @@ bool radeon_dig_monitor_is_duallink(struct drm_encoder *encoder,
 			if (ASIC_IS_DCE6(rdev) && drm_detect_hdmi_monitor(radeon_connector_edid(connector))) {
 				if (pixel_clock > 340000)
 					return true;
-			else
+				else
 					return false;
 			} else {
 				if (pixel_clock > 165000)
 					return true;
-		else
+				else
 					return false;
 			}
 		} else
@@ -390,27 +401,30 @@ bool radeon_dig_monitor_is_duallink(struct drm_encoder *encoder,
 	case DRM_MODE_CONNECTOR_DVID:
 	case DRM_MODE_CONNECTOR_HDMIA:
 	case DRM_MODE_CONNECTOR_DisplayPort:
+		if (radeon_connector->is_mst_connector)
+			return false;
+
 		dig_connector = radeon_connector->con_priv;
 		if ((dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT) ||
 		    (dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_eDP))
 			return false;
-	else {
+		else {
 			/* HDMI 1.3 supports up to 340 Mhz over single link */
 			if (ASIC_IS_DCE6(rdev) && drm_detect_hdmi_monitor(radeon_connector_edid(connector))) {
 				if (pixel_clock > 340000)
 					return true;
-		else
+				else
 					return false;
-	} else {
+			} else {
 				if (pixel_clock > 165000)
 					return true;
 				else
+					return false;
+			}
+		}
+	default:
 		return false;
 	}
-		}
-		default:
-			return false;
-		}
 }
 
 bool radeon_encoder_is_digital(struct drm_encoder *encoder)

@@ -33,6 +33,7 @@
 #include <linux/wait.h>
 #include <linux/kref.h>
 #include <linux/slab.h>
+#include <linux/firmware.h>
 #include <drm/drmP.h>
 #include "radeon_reg.h"
 #include "radeon.h"
@@ -63,7 +64,7 @@ static void radeon_fence_write(struct radeon_device *rdev, u32 seq, int ring)
 	struct radeon_fence_driver *drv = &rdev->fence_drv[ring];
 	if (likely(rdev->wb.enabled || !drv->scratch_reg)) {
 		if (drv->cpu_addr) {
-		*drv->cpu_addr = cpu_to_le32(seq);
+			*drv->cpu_addr = cpu_to_le32(seq);
 		}
 	} else {
 		WREG32(drv->scratch_reg, seq);
@@ -86,8 +87,8 @@ static u32 radeon_fence_read(struct radeon_device *rdev, int ring)
 
 	if (likely(rdev->wb.enabled || !drv->scratch_reg)) {
 		if (drv->cpu_addr) {
-		seq = le32_to_cpu(*drv->cpu_addr);
-	} else {
+			seq = le32_to_cpu(*drv->cpu_addr);
+		} else {
 			seq = lower_32_bits(atomic64_read(&drv->last_seq));
 		}
 	} else {
@@ -341,10 +342,9 @@ static bool radeon_fence_is_signaled(struct fence *f)
 		return true;
 	}
 
-//   if (down_read_trylock(&rdev->exclusive_lock))
-     {
+	if (down_read_trylock(&rdev->exclusive_lock)) {
 		radeon_fence_process(rdev, ring);
-//       up_read(&rdev->exclusive_lock);
+		up_read(&rdev->exclusive_lock);
 
 		if (atomic64_read(&rdev->fence_drv[ring].last_seq) >= seq) {
 			return true;
@@ -667,9 +667,9 @@ struct radeon_fence *radeon_fence_ref(struct radeon_fence *fence)
  */
 void radeon_fence_unref(struct radeon_fence **fence)
 {
-    struct radeon_fence *tmp = *fence;
+	struct radeon_fence *tmp = *fence;
 
-    *fence = NULL;
+	*fence = NULL;
 	if (tmp) {
 		fence_put(&tmp->base);
 	}
@@ -788,7 +788,7 @@ int radeon_fence_driver_start_ring(struct radeon_device *rdev, int ring)
 	if (rdev->wb.use_event || !radeon_ring_supports_scratch_reg(rdev, &rdev->ring[ring])) {
 		rdev->fence_drv[ring].scratch_reg = 0;
 		if (ring != R600_RING_TYPE_UVD_INDEX) {
-		index = R600_WB_EVENT_OFFSET + ring * 4;
+			index = R600_WB_EVENT_OFFSET + ring * 4;
 			rdev->fence_drv[ring].cpu_addr = &rdev->wb.wb[index/4];
 			rdev->fence_drv[ring].gpu_addr = rdev->wb.gpu_addr +
 							 index;
@@ -802,21 +802,21 @@ int radeon_fence_driver_start_ring(struct radeon_device *rdev, int ring)
 
 	} else {
 		r = radeon_scratch_get(rdev, &rdev->fence_drv[ring].scratch_reg);
-	if (r) {
-		dev_err(rdev->dev, "fence failed to get scratch register\n");
-		return r;
-	}
+		if (r) {
+			dev_err(rdev->dev, "fence failed to get scratch register\n");
+			return r;
+		}
 		index = RADEON_WB_SCRATCH_OFFSET +
 			rdev->fence_drv[ring].scratch_reg -
 			rdev->scratch.reg_base;
-	rdev->fence_drv[ring].cpu_addr = &rdev->wb.wb[index/4];
-	rdev->fence_drv[ring].gpu_addr = rdev->wb.gpu_addr + index;
+		rdev->fence_drv[ring].cpu_addr = &rdev->wb.wb[index/4];
+		rdev->fence_drv[ring].gpu_addr = rdev->wb.gpu_addr + index;
 	}
 	radeon_fence_write(rdev, atomic64_read(&rdev->fence_drv[ring].last_seq), ring);
 	rdev->fence_drv[ring].initialized = true;
 	dev_info(rdev->dev, "fence driver on ring %d use gpu addr 0x%016llx and cpu addr 0x%p\n",
 		 ring, rdev->fence_drv[ring].gpu_addr, rdev->fence_drv[ring].cpu_addr);
-    return 0;
+	return 0;
 }
 
 /**

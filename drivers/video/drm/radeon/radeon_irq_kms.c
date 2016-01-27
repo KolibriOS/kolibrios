@@ -32,11 +32,9 @@
 #include "radeon.h"
 #include "atom.h"
 
+#include <linux/pm_runtime.h>
+
 #define RADEON_WAIT_IDLE_TIMEOUT 200
-
-
-extern int irq_override;
-
 
 /**
  * radeon_driver_irq_handler_kms - irq handler for KMS
@@ -67,24 +65,24 @@ void radeon_driver_irq_preinstall_kms(struct drm_device *dev)
 {
 	struct radeon_device *rdev = dev->dev_private;
 	unsigned long irqflags;
-    unsigned i;
+	unsigned i;
 
 	spin_lock_irqsave(&rdev->irq.lock, irqflags);
-    /* Disable *all* interrupts */
+	/* Disable *all* interrupts */
 	for (i = 0; i < RADEON_NUM_RINGS; i++)
 		atomic_set(&rdev->irq.ring_int[i], 0);
 	rdev->irq.dpm_thermal = false;
 	for (i = 0; i < RADEON_MAX_HPD_PINS; i++)
 		rdev->irq.hpd[i] = false;
 	for (i = 0; i < RADEON_MAX_CRTCS; i++) {
-        rdev->irq.crtc_vblank_int[i] = false;
+		rdev->irq.crtc_vblank_int[i] = false;
 		atomic_set(&rdev->irq.pflip[i], 0);
 		rdev->irq.afmt[i] = false;
-    }
-    radeon_irq_set(rdev);
+	}
+	radeon_irq_set(rdev);
 	spin_unlock_irqrestore(&rdev->irq.lock, irqflags);
-    /* Clear bits */
-    radeon_irq_process(rdev);
+	/* Clear bits */
+	radeon_irq_process(rdev);
 }
 
 /**
@@ -97,7 +95,13 @@ void radeon_driver_irq_preinstall_kms(struct drm_device *dev)
  */
 int radeon_driver_irq_postinstall_kms(struct drm_device *dev)
 {
-	dev->max_vblank_count = 0x001fffff;
+	struct radeon_device *rdev = dev->dev_private;
+
+	if (ASIC_IS_AVIVO(rdev))
+		dev->max_vblank_count = 0x00ffffff;
+	else
+		dev->max_vblank_count = 0x001fffff;
+
 	return 0;
 }
 
@@ -148,6 +152,10 @@ int radeon_irq_kms_init(struct radeon_device *rdev)
 	int r = 0;
 
 	spin_lock_init(&rdev->irq.lock);
+	r = drm_vblank_init(rdev->ddev, rdev->num_crtc);
+	if (r) {
+		return r;
+	}
 	/* enable msi */
 	rdev->msi_enabled = 0;
 
@@ -172,7 +180,7 @@ int radeon_irq_kms_init(struct radeon_device *rdev)
  */
 void radeon_irq_kms_fini(struct radeon_device *rdev)
 {
-//	drm_vblank_cleanup(rdev->ddev);
+	drm_vblank_cleanup(rdev->ddev);
 	if (rdev->irq.installed) {
 //		drm_irq_uninstall(rdev->ddev);
 		rdev->irq.installed = false;

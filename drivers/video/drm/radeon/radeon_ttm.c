@@ -132,7 +132,7 @@ static int radeon_init_mem_type(struct ttm_bo_device *bdev, uint32_t type,
 		man->available_caching = TTM_PL_MASK_CACHING;
 		man->default_caching = TTM_PL_FLAG_CACHED;
 		man->flags = TTM_MEMTYPE_FLAG_MAPPABLE | TTM_MEMTYPE_FLAG_CMA;
-#if __OS_HAS_AGP
+#if IS_ENABLED(CONFIG_AGP)
 		if (rdev->flags & RADEON_IS_AGP) {
 			if (!rdev->ddev->agp) {
 				DRM_ERROR("AGP is not enabled for memory type %u\n",
@@ -447,7 +447,7 @@ static int radeon_ttm_io_mem_reserve(struct ttm_bo_device *bdev, struct ttm_mem_
 		/* system memory */
 		return 0;
 	case TTM_PL_TT:
-#if __OS_HAS_AGP
+#if IS_ENABLED(CONFIG_AGP)
 		if (rdev->flags & RADEON_IS_AGP) {
 			/* RADEON_IS_AGP is set only if AGP is active */
 			mem->bus.offset = mem->start << PAGE_SHIFT;
@@ -565,7 +565,7 @@ static struct ttm_tt *radeon_ttm_tt_create(struct ttm_bo_device *bdev,
 	struct radeon_ttm_tt *gtt;
 
 	rdev = radeon_get_rdev(bdev);
-#if __OS_HAS_AGP
+#if IS_ENABLED(CONFIG_AGP)
 	if (rdev->flags & RADEON_IS_AGP) {
 		return ttm_agp_tt_create(bdev, rdev->ddev->agp->bridge,
 					 size, page_flags, dummy_read_page);
@@ -611,7 +611,7 @@ static int radeon_ttm_tt_populate(struct ttm_tt *ttm)
 	}
 
 	rdev = radeon_get_rdev(ttm->bdev);
-#if __OS_HAS_AGP
+#if IS_ENABLED(CONFIG_AGP)
 	if (rdev->flags & RADEON_IS_AGP) {
 		return ttm_agp_tt_populate(ttm);
 	}
@@ -648,7 +648,7 @@ static void radeon_ttm_tt_unpopulate(struct ttm_tt *ttm)
 		return;
 
 	rdev = radeon_get_rdev(ttm->bdev);
-#if __OS_HAS_AGP
+#if IS_ENABLED(CONFIG_AGP)
 	if (rdev->flags & RADEON_IS_AGP) {
 		ttm_agp_tt_unpopulate(ttm);
 		return;

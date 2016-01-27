@@ -39,11 +39,11 @@ void radeon_gem_object_free(struct drm_gem_object *gobj)
 }
 
 int radeon_gem_object_create(struct radeon_device *rdev, unsigned long size,
-                int alignment, int initial_domain,
+				int alignment, int initial_domain,
 				u32 flags, bool kernel,
-                struct drm_gem_object **obj)
+				struct drm_gem_object **obj)
 {
-    struct radeon_bo *robj;
+	struct radeon_bo *robj;
 	unsigned long max_size;
 	int r;
 
@@ -75,7 +75,7 @@ retry:
 			DRM_ERROR("Failed to allocate GEM object (%ld, %d, %u, %d)\n",
 				  size, initial_domain, alignment, r);
 		}
-        return r;
+		return r;
 	}
 	*obj = &robj->gem_base;
 
@@ -179,7 +179,7 @@ int radeon_gem_create_ioctl(struct drm_device *dev, void *data,
 	args->size = roundup(args->size, PAGE_SIZE);
 	r = radeon_gem_object_create(rdev, args->size, args->alignment,
 				     args->initial_domain, args->flags,
-					false, &gobj);
+				     false, &gobj);
 	if (r) {
 		up_read(&rdev->exclusive_lock);
 		r = radeon_gem_handle_lockup(rdev, r);

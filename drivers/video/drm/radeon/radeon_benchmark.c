@@ -34,7 +34,8 @@
 
 static int radeon_benchmark_do_move(struct radeon_device *rdev, unsigned size,
 				    uint64_t saddr, uint64_t daddr,
-				    int flag, int n)
+				    int flag, int n,
+				    struct reservation_object *resv)
 {
 	unsigned long start_jiffies;
 	unsigned long end_jiffies;
@@ -46,13 +47,13 @@ static int radeon_benchmark_do_move(struct radeon_device *rdev, unsigned size,
 		switch (flag) {
 		case RADEON_BENCHMARK_COPY_DMA:
 			fence = radeon_copy_dma(rdev, saddr, daddr,
-					    size / RADEON_GPU_PAGE_SIZE,
-						NULL);
+						size / RADEON_GPU_PAGE_SIZE,
+						resv);
 			break;
 		case RADEON_BENCHMARK_COPY_BLIT:
 			fence = radeon_copy_blit(rdev, saddr, daddr,
-					     size / RADEON_GPU_PAGE_SIZE,
-						 NULL);
+						 size / RADEON_GPU_PAGE_SIZE,
+						 resv);
 			break;
 		default:
 			DRM_ERROR("Unknown copy method\n");
@@ -84,16 +85,13 @@ static void radeon_benchmark_log_results(int n, unsigned size,
 }
 
 static void radeon_benchmark_move(struct radeon_device *rdev, unsigned size,
-			   unsigned sdomain, unsigned ddomain)
+				  unsigned sdomain, unsigned ddomain)
 {
 	struct radeon_bo *dobj = NULL;
 	struct radeon_bo *sobj = NULL;
 	uint64_t saddr, daddr;
 	int r, n;
 	int time;
-
-
-    ENTER();
 
 	n = RADEON_BENCHMARK_ITERATIONS;
 	r = radeon_bo_create(rdev, size, PAGE_SIZE, true, sdomain, 0, NULL, NULL, &sobj);
@@ -120,11 +118,11 @@ static void radeon_benchmark_move(struct radeon_device *rdev, unsigned size,
 	if (r) {
 		goto out_cleanup;
 	}
-    dbgprintf("done\n");
 
 	if (rdev->asic->copy.dma) {
 		time = radeon_benchmark_do_move(rdev, size, saddr, daddr,
-						RADEON_BENCHMARK_COPY_DMA, n);
+						RADEON_BENCHMARK_COPY_DMA, n,
+						dobj->tbo.resv);
 		if (time < 0)
 			goto out_cleanup;
 		if (time > 0)
@@ -133,13 +131,14 @@ static void radeon_benchmark_move(struct radeon_device *rdev, unsigned size,
 	}
 
 	if (rdev->asic->copy.blit) {
-	time = radeon_benchmark_do_move(rdev, size, saddr, daddr,
-					RADEON_BENCHMARK_COPY_BLIT, n);
-	if (time < 0)
-		goto out_cleanup;
-	if (time > 0)
-		radeon_benchmark_log_results(n, size, time,
-					     sdomain, ddomain, "blit");
+		time = radeon_benchmark_do_move(rdev, size, saddr, daddr,
+						RADEON_BENCHMARK_COPY_BLIT, n,
+						dobj->tbo.resv);
+		if (time < 0)
+			goto out_cleanup;
+		if (time > 0)
+			radeon_benchmark_log_results(n, size, time,
+						     sdomain, ddomain, "blit");
 	}
 
 out_cleanup:
@@ -163,9 +162,6 @@ out_cleanup:
 	if (r) {
 		DRM_ERROR("Error while benchmarking BO move.\n");
 	}
-
-    LEAVE();
-
 }
 
 void radeon_benchmark(struct radeon_device *rdev, int test_number)
@@ -230,21 +226,21 @@ void radeon_benchmark(struct radeon_device *rdev, int test_number)
 		for (i = 0; i < RADEON_BENCHMARK_COMMON_MODES_N; i++)
 			radeon_benchmark_move(rdev, common_modes[i],
 					      RADEON_GEM_DOMAIN_GTT,
-                 RADEON_GEM_DOMAIN_VRAM);
+					      RADEON_GEM_DOMAIN_VRAM);
 		break;
 	case 7:
 		/* VRAM to GTT, buffer size sweep, common modes */
 		for (i = 0; i < RADEON_BENCHMARK_COMMON_MODES_N; i++)
 			radeon_benchmark_move(rdev, common_modes[i],
 					      RADEON_GEM_DOMAIN_VRAM,
-                 RADEON_GEM_DOMAIN_GTT);
+					      RADEON_GEM_DOMAIN_GTT);
 		break;
 	case 8:
 		/* VRAM to VRAM, buffer size sweep, common modes */
 		for (i = 0; i < RADEON_BENCHMARK_COMMON_MODES_N; i++)
 			radeon_benchmark_move(rdev, common_modes[i],
 					      RADEON_GEM_DOMAIN_VRAM,
-                 RADEON_GEM_DOMAIN_VRAM);
+					      RADEON_GEM_DOMAIN_VRAM);
 		break;
 
 	default:

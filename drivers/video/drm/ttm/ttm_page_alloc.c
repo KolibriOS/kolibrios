@@ -70,12 +70,12 @@
  * @npages: Number of pages in pool.
  */
 struct ttm_page_pool {
-    spinlock_t          lock;
-    bool                fill_lock;
+	spinlock_t		lock;
+	bool			fill_lock;
 	struct list_head	list;
-    gfp_t               gfp_flags;
-    unsigned            npages;
-    char                *name;
+	gfp_t			gfp_flags;
+	unsigned		npages;
+	char			*name;
 	unsigned long		nfrees;
 	unsigned long		nrefills;
 };

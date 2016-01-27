@@ -71,7 +71,7 @@ static inline int radeon_bo_reserve(struct radeon_bo *bo, bool no_intr)
 			dev_err(bo->rdev->dev, "%p reserve failed\n", bo);
 		return r;
 	}
-    return 0;
+	return 0;
 }
 
 static inline void radeon_bo_unreserve(struct radeon_bo *bo)
@@ -123,11 +123,11 @@ extern int radeon_bo_wait(struct radeon_bo *bo, u32 *mem_type,
 			  bool no_wait);
 
 extern int radeon_bo_create(struct radeon_device *rdev,
-				unsigned long size, int byte_align,
+			    unsigned long size, int byte_align,
 			    bool kernel, u32 domain, u32 flags,
 			    struct sg_table *sg,
 			    struct reservation_object *resv,
-				struct radeon_bo **bo_ptr);
+			    struct radeon_bo **bo_ptr);
 extern int radeon_bo_kmap(struct radeon_bo *bo, void **ptr);
 extern void radeon_bo_kunmap(struct radeon_bo *bo);
 extern struct radeon_bo *radeon_bo_ref(struct radeon_bo *bo);
@@ -143,8 +143,6 @@ extern void radeon_bo_fini(struct radeon_device *rdev);
 extern int radeon_bo_list_validate(struct radeon_device *rdev,
 				   struct ww_acquire_ctx *ticket,
 				   struct list_head *head, int ring);
-extern int radeon_bo_fbdev_mmap(struct radeon_bo *bo,
-				struct vm_area_struct *vma);
 extern int radeon_bo_set_tiling_flags(struct radeon_bo *bo,
 				u32 tiling_flags, u32 pitch);
 extern void radeon_bo_get_tiling_flags(struct radeon_bo *bo,

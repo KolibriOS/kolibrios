@@ -61,7 +61,7 @@ static int radeon_process_i2c_ch(struct radeon_i2c_chan *chan,
 		if (buf == NULL)
 			args.ucRegIndex = 0;
 		else
-		args.ucRegIndex = buf[0];
+			args.ucRegIndex = buf[0];
 		if (num)
 			num--;
 		if (num)

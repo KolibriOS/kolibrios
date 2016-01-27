@@ -226,62 +226,72 @@ EXPORT_SYMBOL(hex2bin);
  * example output buffer:
  * 40 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e 4f  @ABCDEFGHIJKLMNO
  */
-void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,
-            int groupsize, char *linebuf, size_t linebuflen,
-            bool ascii)
+int hex_dump_to_buffer(const void *buf, size_t len, int rowsize, int groupsize,
+               char *linebuf, size_t linebuflen, bool ascii)
 {
     const u8 *ptr = buf;
+    int ngroups;
     u8 ch;
     int j, lx = 0;
     int ascii_column;
+    int ret;
 
     if (rowsize != 16 && rowsize != 32)
         rowsize = 16;
 
-    if (!len)
-        goto nil;
     if (len > rowsize)      /* limit to one line at a time */
         len = rowsize;
+    if (!is_power_of_2(groupsize) || groupsize > 8)
+        groupsize = 1;
     if ((len % groupsize) != 0) /* no mixed size output */
         groupsize = 1;
 
-    switch (groupsize) {
-    case 8: {
+    ngroups = len / groupsize;
+    ascii_column = rowsize * 2 + rowsize / groupsize + 1;
+
+    if (!linebuflen)
+        goto overflow1;
+
+    if (!len)
+        goto nil;
+
+    if (groupsize == 8) {
         const u64 *ptr8 = buf;
-        int ngroups = len / groupsize;
 
-        for (j = 0; j < ngroups; j++)
-            lx += scnprintf(linebuf + lx, linebuflen - lx,
-                    "%s%16.16llx", j ? " " : "",
-                    (unsigned long long)*(ptr8 + j));
-        ascii_column = 17 * ngroups + 2;
-        break;
-    }
-
-    case 4: {
+        for (j = 0; j < ngroups; j++) {
+            ret = snprintf(linebuf + lx, linebuflen - lx,
+                       "%s%16.16llx", j ? " " : "",
+                       (unsigned long long)*(ptr8 + j));
+            if (ret >= linebuflen - lx)
+                goto overflow1;
+            lx += ret;
+        }
+    } else if (groupsize == 4) {
         const u32 *ptr4 = buf;
-        int ngroups = len / groupsize;
 
-        for (j = 0; j < ngroups; j++)
-            lx += scnprintf(linebuf + lx, linebuflen - lx,
-                    "%s%8.8x", j ? " " : "", *(ptr4 + j));
-        ascii_column = 9 * ngroups + 2;
-        break;
-    }
-
-    case 2: {
+        for (j = 0; j < ngroups; j++) {
+            ret = snprintf(linebuf + lx, linebuflen - lx,
+                       "%s%8.8x", j ? " " : "",
+                       *(ptr4 + j));
+            if (ret >= linebuflen - lx)
+                goto overflow1;
+            lx += ret;
+        }
+    } else if (groupsize == 2) {
         const u16 *ptr2 = buf;
-        int ngroups = len / groupsize;
 
-        for (j = 0; j < ngroups; j++)
-            lx += scnprintf(linebuf + lx, linebuflen - lx,
-                    "%s%4.4x", j ? " " : "", *(ptr2 + j));
-        ascii_column = 5 * ngroups + 2;
-        break;
-    }
-
-    default:
-        for (j = 0; (j < len) && (lx + 3) <= linebuflen; j++) {
+        for (j = 0; j < ngroups; j++) {
+            ret = snprintf(linebuf + lx, linebuflen - lx,
+                       "%s%4.4x", j ? " " : "",
+                       *(ptr2 + j));
+            if (ret >= linebuflen - lx)
+                goto overflow1;
+            lx += ret;
+        }
+    } else {
+        for (j = 0; j < len; j++) {
+            if (linebuflen < lx + 3)
+                goto overflow2;
             ch = ptr[j];
             linebuf[lx++] = hex_asc_hi(ch);
             linebuf[lx++] = hex_asc_lo(ch);
@@ -289,23 +299,29 @@ void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,
         }
         if (j)
             lx--;
-
-        ascii_column = 3 * rowsize + 2;
-        break;
     }
     if (!ascii)
         goto nil;
 
-    while (lx < (linebuflen - 1) && lx < (ascii_column - 1))
+    while (lx < ascii_column) {
+        if (linebuflen < lx + 2)
+            goto overflow2;
         linebuf[lx++] = ' ';
-    for (j = 0; (j < len) && (lx + 2) < linebuflen; j++) {
+    }
+    for (j = 0; j < len; j++) {
+        if (linebuflen < lx + 2)
+            goto overflow2;
         ch = ptr[j];
         linebuf[lx++] = (isascii(ch) && isprint(ch)) ? ch : '.';
     }
 nil:
+    linebuf[lx] = '\0';
+    return lx;
+overflow2:
     linebuf[lx++] = '\0';
+overflow1:
+    return ascii ? ascii_column + len : (groupsize * 2 + 1) * ngroups - 1;
 }
-
 /**
  * print_hex_dump - print a text hex dump to syslog for a binary blob of data
  * @level: kernel log level (e.g. KERN_DEBUG)
@@ -377,6 +393,98 @@ void print_hex_dump_bytes(const char *prefix_str, int prefix_type,
                        buf, len, true);
 }
 
+#define KMAP_MAX    256
+
+static struct mutex kmap_mutex;
+static struct page* kmap_table[KMAP_MAX];
+static int kmap_av;
+static int kmap_first;
+static void* kmap_base;
+
+
+int kmap_init()
+{
+    kmap_base = AllocKernelSpace(KMAP_MAX*4096);
+    if(kmap_base == NULL)
+        return -1;
+
+    kmap_av = KMAP_MAX;
+    MutexInit(&kmap_mutex);
+    return 0;
+};
+
+void *kmap(struct page *page)
+{
+    void *vaddr = NULL;
+    int i;
+
+    do
+    {
+        MutexLock(&kmap_mutex);
+        if(kmap_av != 0)
+        {
+            for(i = kmap_first; i < KMAP_MAX; i++)
+            {
+                if(kmap_table[i] == NULL)
+                {
+                    kmap_av--;
+                    kmap_first = i;
+                    kmap_table[i] = page;
+                    vaddr = kmap_base + (i<<12);
+                    MapPage(vaddr,(addr_t)page,3);
+                    break;
+                };
+            };
+        };
+        MutexUnlock(&kmap_mutex);
+    }while(vaddr == NULL);
+
+    return vaddr;
+};
+
+void *kmap_atomic(struct page *page) __attribute__ ((alias ("kmap")));
+
+void kunmap(struct page *page)
+{
+    void *vaddr;
+    int   i;
+
+    MutexLock(&kmap_mutex);
+
+    for(i = 0; i < KMAP_MAX; i++)
+    {
+        if(kmap_table[i] == page)
+        {
+            kmap_av++;
+            if(i < kmap_first)
+                kmap_first = i;
+            kmap_table[i] = NULL;
+            vaddr = kmap_base + (i<<12);
+            MapPage(vaddr,0,0);
+            break;
+        };
+    };
+
+    MutexUnlock(&kmap_mutex);
+};
+
+void kunmap_atomic(void *vaddr)
+{
+    int i;
+
+    MapPage(vaddr,0,0);
+
+    i = (vaddr - kmap_base) >> 12;
+
+    MutexLock(&kmap_mutex);
+
+    kmap_av++;
+    if(i < kmap_first)
+        kmap_first = i;
+    kmap_table[i] = NULL;
+
+    MutexUnlock(&kmap_mutex);
+}
 void msleep(unsigned int msecs)
 {
     msecs /= 10;
@@ -974,4 +1082,40 @@ void call_rcu_sched(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
         __call_rcu(head, func, &rcu_sched_ctrlblk);
 }
 
+fb_get_options(const char *name, char **option)
+{
+    return 1;
+
+}
+
+ktime_t ktime_get(void)
+{
+    ktime_t t;
+
+    t.tv64 = GetClockNs();
+
+    return t;
+}
+
+void radeon_cursor_reset(struct drm_crtc *crtc)
+{
+
+}
+
+/* Greatest common divisor */
+unsigned long gcd(unsigned long a, unsigned long b)
+{
+        unsigned long r;
+
+        if (a < b)
+                swap(a, b);
+
+        if (!b)
+                return a;
+        while ((r = a % b) != 0) {
+                a = b;
+                b = r;
+        }
+        return b;
+}
 

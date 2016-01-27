@@ -203,11 +203,11 @@ static int r520_startup(struct radeon_device *rdev)
 	rs600_irq_set(rdev);
 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
 	/* 1M ring buffer */
-    r = r100_cp_init(rdev, 1024 * 1024);
-    if (r) {
+	r = r100_cp_init(rdev, 1024 * 1024);
+	if (r) {
 		dev_err(rdev->dev, "failed initializing CP (%d).\n", r);
-        return r;
-    }
+		return r;
+	}
 
 	r = radeon_ib_pool_init(rdev);
 	if (r) {
@@ -292,6 +292,10 @@ int r520_init(struct radeon_device *rdev)
 	if (r) {
 		/* Somethings want wront with the accel init stop accel */
 		dev_err(rdev->dev, "Disabling GPU acceleration\n");
+		r100_cp_fini(rdev);
+		radeon_wb_fini(rdev);
+		radeon_ib_pool_fini(rdev);
+		radeon_irq_kms_fini(rdev);
 		rv370_pcie_gart_fini(rdev);
 		rdev->accel_working = false;
 	}

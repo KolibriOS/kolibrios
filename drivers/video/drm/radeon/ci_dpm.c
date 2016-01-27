@@ -187,6 +187,9 @@ static int ci_update_uvd_dpm(struct radeon_device *rdev, bool gate);
 static PPSMC_Result ci_send_msg_to_smc_with_parameter(struct radeon_device *rdev,
 						      PPSMC_Msg msg, u32 parameter);
 
+static void ci_thermal_start_smc_fan_control(struct radeon_device *rdev);
+static void ci_fan_ctrl_set_default_mode(struct radeon_device *rdev);
+
 static struct ci_power_info *ci_get_pi(struct radeon_device *rdev)
 {
         struct ci_power_info *pi = rdev->pm.dpm.priv;
@@ -255,7 +258,7 @@ static void ci_initialize_powertune_defaults(struct radeon_device *rdev)
 		if (rdev->family == CHIP_HAWAII)
 			pi->enable_bapm_feature = false;
 		else
-		pi->enable_bapm_feature = true;
+			pi->enable_bapm_feature = true;
 		pi->enable_tdc_limit_feature = true;
 		pi->enable_pkg_pwr_tracking_feature = true;
 	}
@@ -1043,22 +1046,24 @@ static int ci_fan_ctrl_start_smc_fan_control(struct radeon_device *rdev)
 			return -EINVAL;
 	}
 
+	pi->fan_is_controlled_by_smc = true;
 	return 0;
 }
 
-#if 0
 static int ci_fan_ctrl_stop_smc_fan_control(struct radeon_device *rdev)
 {
 	PPSMC_Result ret;
+	struct ci_power_info *pi = ci_get_pi(rdev);
 
 	ret = ci_send_msg_to_smc(rdev, PPSMC_StopFanControl);
-	if (ret == PPSMC_Result_OK)
+	if (ret == PPSMC_Result_OK) {
+		pi->fan_is_controlled_by_smc = false;
 		return 0;
-	else
+	} else
 		return -EINVAL;
 }
 
-static int ci_fan_ctrl_get_fan_speed_percent(struct radeon_device *rdev,
+int ci_fan_ctrl_get_fan_speed_percent(struct radeon_device *rdev,
 					     u32 *speed)
 {
 	u32 duty, duty100;
@@ -1083,21 +1088,22 @@ static int ci_fan_ctrl_get_fan_speed_percent(struct radeon_device *rdev,
 	return 0;
 }
 
-static int ci_fan_ctrl_set_fan_speed_percent(struct radeon_device *rdev,
+int ci_fan_ctrl_set_fan_speed_percent(struct radeon_device *rdev,
 					     u32 speed)
 {
 	u32 tmp;
 	u32 duty, duty100;
 	u64 tmp64;
+	struct ci_power_info *pi = ci_get_pi(rdev);
 
 	if (rdev->pm.no_fan)
 		return -ENOENT;
 
-	if (speed > 100)
+	if (pi->fan_is_controlled_by_smc)
 		return -EINVAL;
 
-	if (rdev->pm.dpm.fan.ucode_fan_control)
-		ci_fan_ctrl_stop_smc_fan_control(rdev);
+	if (speed > 100)
+		return -EINVAL;
 
 	duty100 = (RREG32_SMC(CG_FDO_CTRL1) & FMAX_DUTY100_MASK) >> FMAX_DUTY100_SHIFT;
 
@@ -1112,11 +1118,38 @@ static int ci_fan_ctrl_set_fan_speed_percent(struct radeon_device *rdev,
 	tmp |= FDO_STATIC_DUTY(duty);
 	WREG32_SMC(CG_FDO_CTRL0, tmp);
 
-	ci_fan_ctrl_set_static_mode(rdev, FDO_PWM_MODE_STATIC);
-
 	return 0;
 }
 
+void ci_fan_ctrl_set_mode(struct radeon_device *rdev, u32 mode)
+{
+	if (mode) {
+		/* stop auto-manage */
+		if (rdev->pm.dpm.fan.ucode_fan_control)
+			ci_fan_ctrl_stop_smc_fan_control(rdev);
+		ci_fan_ctrl_set_static_mode(rdev, mode);
+	} else {
+		/* restart auto-manage */
+		if (rdev->pm.dpm.fan.ucode_fan_control)
+			ci_thermal_start_smc_fan_control(rdev);
+		else
+			ci_fan_ctrl_set_default_mode(rdev);
+	}
+}
+
+u32 ci_fan_ctrl_get_mode(struct radeon_device *rdev)
+{
+	struct ci_power_info *pi = ci_get_pi(rdev);
+	u32 tmp;
+
+	if (pi->fan_is_controlled_by_smc)
+		return 0;
+
+	tmp = RREG32_SMC(CG_FDO_CTRL2) & FDO_PWM_MODE_MASK;
+	return (tmp >> FDO_PWM_MODE_SHIFT);
+}
+
+#if 0
 static int ci_fan_ctrl_get_fan_speed_rpm(struct radeon_device *rdev,
 					 u32 *speed)
 {
@@ -1698,10 +1731,12 @@ static int ci_set_overdrive_target_tdp(struct radeon_device *rdev,
 	return 0;
 }
 
+#if 0
 static int ci_set_boot_state(struct radeon_device *rdev)
 {
 	return ci_enable_sclk_mclk_dpm(rdev, false);
 }
+#endif
 
 static u32 ci_get_average_sclk_freq(struct radeon_device *rdev)
 {
@@ -3349,9 +3384,9 @@ static int ci_setup_default_pcie_tables(struct radeon_device *rdev)
 					  pi->pcie_gen_powersaving.min,
 					  pi->pcie_lane_powersaving.max);
 	else
-	ci_setup_pcie_table_entry(&pi->dpm_table.pcie_speed_table, 0,
-				  pi->pcie_gen_powersaving.min,
-				  pi->pcie_lane_powersaving.min);
+		ci_setup_pcie_table_entry(&pi->dpm_table.pcie_speed_table, 0,
+					  pi->pcie_gen_powersaving.min,
+					  pi->pcie_lane_powersaving.min);
 	ci_setup_pcie_table_entry(&pi->dpm_table.pcie_speed_table, 1,
 				  pi->pcie_gen_performance.min,
 				  pi->pcie_lane_performance.min);
@@ -5240,7 +5275,7 @@ int ci_dpm_late_enable(struct radeon_device *rdev)
 
 	ret = ci_set_temperature_range(rdev);
 	if (ret)
-			return ret;
+		return ret;
 
 	ci_dpm_powergate_uvd(rdev, true);
 
@@ -5343,10 +5378,12 @@ int ci_dpm_set_power_state(struct radeon_device *rdev)
 	return 0;
 }
 
+#if 0
 void ci_dpm_reset_asic(struct radeon_device *rdev)
 {
 	ci_set_boot_state(rdev);
 }
+#endif
 
 void ci_dpm_display_configuration_changed(struct radeon_device *rdev)
 {
@@ -5781,7 +5818,7 @@ int ci_dpm_init(struct radeon_device *rdev)
 			tmp |= DPM_ENABLED;
 			break;
 		default:
-			DRM_ERROR("Invalid PCC GPIO: %u!\n", gpio.shift);
+			DRM_DEBUG("Invalid PCC GPIO: %u!\n", gpio.shift);
 			break;
 		}
 		WREG32_SMC(CNB_PWRMGT_CNTL, tmp);
@@ -5883,6 +5920,20 @@ void ci_dpm_print_power_state(struct radeon_device *rdev,
 		       i, pl->sclk, pl->mclk, pl->pcie_gen + 1, pl->pcie_lane);
 	}
 	r600_dpm_print_ps_status(rdev, rps);
+}
+
+u32 ci_dpm_get_current_sclk(struct radeon_device *rdev)
+{
+	u32 sclk = ci_get_average_sclk_freq(rdev);
+
+	return sclk;
+}
+
+u32 ci_dpm_get_current_mclk(struct radeon_device *rdev)
+{
+	u32 mclk = ci_get_average_mclk_freq(rdev);
+
+	return mclk;
 }
 
 u32 ci_dpm_get_sclk(struct radeon_device *rdev, bool low)

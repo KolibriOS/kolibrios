@@ -375,14 +375,14 @@ static void ttm_bo_cleanup_refs_or_queue(struct ttm_buffer_object *bo)
 
 	if (!ret) {
 		if (!ttm_bo_wait(bo, false, false, true)) {
-		put_count = ttm_bo_del_from_lru(bo);
+			put_count = ttm_bo_del_from_lru(bo);
 
-		spin_unlock(&glob->lru_lock);
-		ttm_bo_cleanup_memtype_use(bo);
+			spin_unlock(&glob->lru_lock);
+			ttm_bo_cleanup_memtype_use(bo);
 
-		ttm_bo_list_ref_sub(bo, put_count, true);
+			ttm_bo_list_ref_sub(bo, put_count, true);
 
-		return;
+			return;
 		} else
 			ttm_bo_flush_all_fences(bo);
 

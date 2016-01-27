@@ -346,44 +346,43 @@ void cayman_dma_vm_copy_pages(struct radeon_device *rdev,
  * @addr: dst addr to write into pe
  * @count: number of page entries to update
  * @incr: increase next addr by incr bytes
- * @flags: hw access flags 
+ * @flags: hw access flags
  *
  * Update PTEs by writing them manually using the DMA (cayman/TN).
  */
 void cayman_dma_vm_write_pages(struct radeon_device *rdev,
-			    struct radeon_ib *ib,
-			    uint64_t pe,
-			    uint64_t addr, unsigned count,
-			    uint32_t incr, uint32_t flags)
+			       struct radeon_ib *ib,
+			       uint64_t pe,
+			       uint64_t addr, unsigned count,
+			       uint32_t incr, uint32_t flags)
 {
 	uint64_t value;
 	unsigned ndw;
 
-		while (count) {
-			ndw = count * 2;
-			if (ndw > 0xFFFFE)
-				ndw = 0xFFFFE;
+	while (count) {
+		ndw = count * 2;
+		if (ndw > 0xFFFFE)
+			ndw = 0xFFFFE;
 
-			/* for non-physically contiguous pages (system) */
+		/* for non-physically contiguous pages (system) */
 		ib->ptr[ib->length_dw++] = DMA_PACKET(DMA_PACKET_WRITE,
 						      0, 0, ndw);
-			ib->ptr[ib->length_dw++] = pe;
-			ib->ptr[ib->length_dw++] = upper_32_bits(pe) & 0xff;
-			for (; ndw > 0; ndw -= 2, --count, pe += 8) {
-				if (flags & R600_PTE_SYSTEM) {
-					value = radeon_vm_map_gart(rdev, addr);
-					value &= 0xFFFFFFFFFFFFF000ULL;
-				} else if (flags & R600_PTE_VALID) {
-					value = addr;
-				} else {
-					value = 0;
-				}
-				addr += incr;
-				value |= flags;
-				ib->ptr[ib->length_dw++] = value;
-				ib->ptr[ib->length_dw++] = upper_32_bits(value);
+		ib->ptr[ib->length_dw++] = pe;
+		ib->ptr[ib->length_dw++] = upper_32_bits(pe) & 0xff;
+		for (; ndw > 0; ndw -= 2, --count, pe += 8) {
+			if (flags & R600_PTE_SYSTEM) {
+				value = radeon_vm_map_gart(rdev, addr);
+			} else if (flags & R600_PTE_VALID) {
+				value = addr;
+			} else {
+				value = 0;
 			}
+			addr += incr;
+			value |= flags;
+			ib->ptr[ib->length_dw++] = value;
+			ib->ptr[ib->length_dw++] = upper_32_bits(value);
 		}
+	}
 }
 
 /**
@@ -408,31 +407,31 @@ void cayman_dma_vm_set_pages(struct radeon_device *rdev,
 	uint64_t value;
 	unsigned ndw;
 
-		while (count) {
-			ndw = count * 2;
-			if (ndw > 0xFFFFE)
-				ndw = 0xFFFFE;
+	while (count) {
+		ndw = count * 2;
+		if (ndw > 0xFFFFE)
+			ndw = 0xFFFFE;
 
-			if (flags & R600_PTE_VALID)
-				value = addr;
-			else
-				value = 0;
+		if (flags & R600_PTE_VALID)
+			value = addr;
+		else
+			value = 0;
 
-			/* for physically contiguous pages (vram) */
-			ib->ptr[ib->length_dw++] = DMA_PTE_PDE_PACKET(ndw);
-			ib->ptr[ib->length_dw++] = pe; /* dst addr */
-			ib->ptr[ib->length_dw++] = upper_32_bits(pe) & 0xff;
-			ib->ptr[ib->length_dw++] = flags; /* mask */
-			ib->ptr[ib->length_dw++] = 0;
-			ib->ptr[ib->length_dw++] = value; /* value */
-			ib->ptr[ib->length_dw++] = upper_32_bits(value);
-			ib->ptr[ib->length_dw++] = incr; /* increment size */
-			ib->ptr[ib->length_dw++] = 0;
+		/* for physically contiguous pages (vram) */
+		ib->ptr[ib->length_dw++] = DMA_PTE_PDE_PACKET(ndw);
+		ib->ptr[ib->length_dw++] = pe; /* dst addr */
+		ib->ptr[ib->length_dw++] = upper_32_bits(pe) & 0xff;
+		ib->ptr[ib->length_dw++] = flags; /* mask */
+		ib->ptr[ib->length_dw++] = 0;
+		ib->ptr[ib->length_dw++] = value; /* value */
+		ib->ptr[ib->length_dw++] = upper_32_bits(value);
+		ib->ptr[ib->length_dw++] = incr; /* increment size */
+		ib->ptr[ib->length_dw++] = 0;
 
-			pe += ndw * 4;
-			addr += (ndw / 2) * incr;
-			count -= ndw / 2;
-		}
+		pe += ndw * 4;
+		addr += (ndw / 2) * incr;
+		count -= ndw / 2;
+	}
 }
 
 /**
@@ -463,5 +462,11 @@ void cayman_dma_vm_flush(struct radeon_device *rdev, struct radeon_ring *ring,
 	radeon_ring_write(ring, DMA_PACKET(DMA_PACKET_SRBM_WRITE, 0, 0, 0));
 	radeon_ring_write(ring, (0xf << 16) | (VM_INVALIDATE_REQUEST >> 2));
 	radeon_ring_write(ring, 1 << vm_id);
+
+	/* wait for invalidate to complete */
+	radeon_ring_write(ring, DMA_SRBM_READ_PACKET);
+	radeon_ring_write(ring, (0xff << 20) | (VM_INVALIDATE_REQUEST >> 2));
+	radeon_ring_write(ring, 0); /* mask */
+	radeon_ring_write(ring, 0); /* value */
 }
 

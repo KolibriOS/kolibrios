@@ -116,7 +116,7 @@ static uint32_t atom_iio_execute(struct atom_context *ctx, int base,
 			break;
 		case ATOM_IIO_WRITE:
 			if (rdev->family == CHIP_RV515)
-			(void)ctx->card->ioreg_read(ctx->card, CU16(base + 1));
+				(void)ctx->card->ioreg_read(ctx->card, CU16(base + 1));
 			ctx->card->ioreg_write(ctx->card, CU16(base + 1), temp);
 			base += 3;
 			break;
@@ -663,9 +663,11 @@ static void atom_op_delay(atom_exec_context *ctx, int *ptr, int arg)
 {
 	unsigned count = U8((*ptr)++);
 	SDEBUG("   count: %d\n", count);
-    if (arg == ATOM_UNIT_MICROSEC)
-       udelay(count);
-    else
+	if (arg == ATOM_UNIT_MICROSEC)
+		udelay(count);
+	else if (!drm_can_sleep())
+		mdelay(count);
+	else
 		msleep(count);
 }
 
@@ -1403,9 +1405,9 @@ int atom_allocate_fb_scratch(struct atom_context *ctx)
 	struct _ATOM_VRAM_USAGE_BY_FIRMWARE *firmware_usage;
 
 	if (atom_parse_data_header(ctx, index, NULL, NULL, NULL, &data_offset)) {
-	firmware_usage = (struct _ATOM_VRAM_USAGE_BY_FIRMWARE *)(ctx->bios + data_offset);
+		firmware_usage = (struct _ATOM_VRAM_USAGE_BY_FIRMWARE *)(ctx->bios + data_offset);
 
-	DRM_DEBUG("atom firmware requested %08x %dkb\n",
+		DRM_DEBUG("atom firmware requested %08x %dkb\n",
 			  le32_to_cpu(firmware_usage->asFirmwareVramReserveInfo[0].ulStartAddrUsedByFirmware),
 			  le16_to_cpu(firmware_usage->asFirmwareVramReserveInfo[0].usFirmwareUseInKb));
 

@@ -27,6 +27,7 @@
 #include <drm/drmP.h>
 #include "radeon.h"
 #include "radeon_asic.h"
+#include "radeon_audio.h"
 #include <drm/radeon_drm.h>
 #include "sid.h"
 #include "atom.h"
@@ -1263,6 +1264,36 @@ static void si_init_golden_registers(struct radeon_device *rdev)
 	}
 }
 
+/**
+ * si_get_allowed_info_register - fetch the register for the info ioctl
+ *
+ * @rdev: radeon_device pointer
+ * @reg: register offset in bytes
+ * @val: register value
+ *
+ * Returns 0 for success or -EINVAL for an invalid register
+ *
+ */
+int si_get_allowed_info_register(struct radeon_device *rdev,
+				 u32 reg, u32 *val)
+{
+	switch (reg) {
+	case GRBM_STATUS:
+	case GRBM_STATUS2:
+	case GRBM_STATUS_SE0:
+	case GRBM_STATUS_SE1:
+	case SRBM_STATUS:
+	case SRBM_STATUS2:
+	case (DMA_STATUS_REG + DMA0_REGISTER_OFFSET):
+	case (DMA_STATUS_REG + DMA1_REGISTER_OFFSET):
+	case UVD_STATUS:
+		*val = RREG32(reg);
+		return 0;
+	default:
+		return -EINVAL;
+	}
+}
+
 #define PCIE_BUS_CLK                10000
 #define TCLK                        (PCIE_BUS_CLK / 10)
 
@@ -1531,31 +1562,31 @@ int si_mc_load_microcode(struct radeon_device *rdev)
 		new_fw_data = (const __le32 *)
 			(rdev->mc_fw->data + le32_to_cpu(hdr->header.ucode_array_offset_bytes));
 	} else {
-	ucode_size = rdev->mc_fw->size / 4;
+		ucode_size = rdev->mc_fw->size / 4;
 
-	switch (rdev->family) {
-	case CHIP_TAHITI:
-		io_mc_regs = (u32 *)&tahiti_io_mc_regs;
-		regs_size = TAHITI_IO_MC_REGS_SIZE;
-		break;
-	case CHIP_PITCAIRN:
-		io_mc_regs = (u32 *)&pitcairn_io_mc_regs;
-		regs_size = TAHITI_IO_MC_REGS_SIZE;
-		break;
-	case CHIP_VERDE:
-	default:
-		io_mc_regs = (u32 *)&verde_io_mc_regs;
-		regs_size = TAHITI_IO_MC_REGS_SIZE;
-		break;
-	case CHIP_OLAND:
-		io_mc_regs = (u32 *)&oland_io_mc_regs;
-		regs_size = TAHITI_IO_MC_REGS_SIZE;
-		break;
-	case CHIP_HAINAN:
-		io_mc_regs = (u32 *)&hainan_io_mc_regs;
-		regs_size = TAHITI_IO_MC_REGS_SIZE;
-		break;
-	}
+		switch (rdev->family) {
+		case CHIP_TAHITI:
+			io_mc_regs = (u32 *)&tahiti_io_mc_regs;
+			regs_size = TAHITI_IO_MC_REGS_SIZE;
+			break;
+		case CHIP_PITCAIRN:
+			io_mc_regs = (u32 *)&pitcairn_io_mc_regs;
+			regs_size = TAHITI_IO_MC_REGS_SIZE;
+			break;
+		case CHIP_VERDE:
+		default:
+			io_mc_regs = (u32 *)&verde_io_mc_regs;
+			regs_size = TAHITI_IO_MC_REGS_SIZE;
+			break;
+		case CHIP_OLAND:
+			io_mc_regs = (u32 *)&oland_io_mc_regs;
+			regs_size = TAHITI_IO_MC_REGS_SIZE;
+			break;
+		case CHIP_HAINAN:
+			io_mc_regs = (u32 *)&hainan_io_mc_regs;
+			regs_size = TAHITI_IO_MC_REGS_SIZE;
+			break;
+		}
 		fw_data = (const __be32 *)rdev->mc_fw->data;
 	}
 
@@ -1577,16 +1608,16 @@ int si_mc_load_microcode(struct radeon_device *rdev)
 				WREG32(MC_SEQ_IO_DEBUG_INDEX, le32_to_cpup(new_io_mc_regs++));
 				WREG32(MC_SEQ_IO_DEBUG_DATA, le32_to_cpup(new_io_mc_regs++));
 			} else {
-			WREG32(MC_SEQ_IO_DEBUG_INDEX, io_mc_regs[(i << 1)]);
-			WREG32(MC_SEQ_IO_DEBUG_DATA, io_mc_regs[(i << 1) + 1]);
-		}
+				WREG32(MC_SEQ_IO_DEBUG_INDEX, io_mc_regs[(i << 1)]);
+				WREG32(MC_SEQ_IO_DEBUG_DATA, io_mc_regs[(i << 1) + 1]);
+			}
 		}
 		/* load the MC ucode */
 		for (i = 0; i < ucode_size; i++) {
 			if (rdev->new_fw)
 				WREG32(MC_SEQ_SUP_PGM, le32_to_cpup(new_fw_data++));
 			else
-			WREG32(MC_SEQ_SUP_PGM, be32_to_cpup(fw_data++));
+				WREG32(MC_SEQ_SUP_PGM, be32_to_cpup(fw_data++));
 		}
 
 		/* put the engine back into the active state */
@@ -1687,17 +1718,17 @@ static int si_init_microcode(struct radeon_device *rdev)
 	snprintf(fw_name, sizeof(fw_name), "radeon/%s_pfp.bin", new_chip_name);
 	err = request_firmware(&rdev->pfp_fw, fw_name, rdev->dev);
 	if (err) {
-	snprintf(fw_name, sizeof(fw_name), "radeon/%s_pfp.bin", chip_name);
-	err = request_firmware(&rdev->pfp_fw, fw_name, rdev->dev);
-	if (err)
-		goto out;
-	if (rdev->pfp_fw->size != pfp_req_size) {
-		printk(KERN_ERR
-		       "si_cp: Bogus length %zu in firmware \"%s\"\n",
-		       rdev->pfp_fw->size, fw_name);
-		err = -EINVAL;
-		goto out;
-	}
+		snprintf(fw_name, sizeof(fw_name), "radeon/%s_pfp.bin", chip_name);
+		err = request_firmware(&rdev->pfp_fw, fw_name, rdev->dev);
+		if (err)
+			goto out;
+		if (rdev->pfp_fw->size != pfp_req_size) {
+			printk(KERN_ERR
+			       "si_cp: Bogus length %zu in firmware \"%s\"\n",
+			       rdev->pfp_fw->size, fw_name);
+			err = -EINVAL;
+			goto out;
+		}
 	} else {
 		err = radeon_ucode_validate(rdev->pfp_fw);
 		if (err) {
@@ -1713,16 +1744,16 @@ static int si_init_microcode(struct radeon_device *rdev)
 	snprintf(fw_name, sizeof(fw_name), "radeon/%s_me.bin", new_chip_name);
 	err = request_firmware(&rdev->me_fw, fw_name, rdev->dev);
 	if (err) {
-	snprintf(fw_name, sizeof(fw_name), "radeon/%s_me.bin", chip_name);
-	err = request_firmware(&rdev->me_fw, fw_name, rdev->dev);
-	if (err)
-		goto out;
-	if (rdev->me_fw->size != me_req_size) {
-		printk(KERN_ERR
-		       "si_cp: Bogus length %zu in firmware \"%s\"\n",
-		       rdev->me_fw->size, fw_name);
-		err = -EINVAL;
-	}
+		snprintf(fw_name, sizeof(fw_name), "radeon/%s_me.bin", chip_name);
+		err = request_firmware(&rdev->me_fw, fw_name, rdev->dev);
+		if (err)
+			goto out;
+		if (rdev->me_fw->size != me_req_size) {
+			printk(KERN_ERR
+			       "si_cp: Bogus length %zu in firmware \"%s\"\n",
+			       rdev->me_fw->size, fw_name);
+			err = -EINVAL;
+		}
 	} else {
 		err = radeon_ucode_validate(rdev->me_fw);
 		if (err) {
@@ -1738,16 +1769,16 @@ static int si_init_microcode(struct radeon_device *rdev)
 	snprintf(fw_name, sizeof(fw_name), "radeon/%s_ce.bin", new_chip_name);
 	err = request_firmware(&rdev->ce_fw, fw_name, rdev->dev);
 	if (err) {
-	snprintf(fw_name, sizeof(fw_name), "radeon/%s_ce.bin", chip_name);
-	err = request_firmware(&rdev->ce_fw, fw_name, rdev->dev);
-	if (err)
-		goto out;
-	if (rdev->ce_fw->size != ce_req_size) {
-		printk(KERN_ERR
-		       "si_cp: Bogus length %zu in firmware \"%s\"\n",
-		       rdev->ce_fw->size, fw_name);
-		err = -EINVAL;
-	}
+		snprintf(fw_name, sizeof(fw_name), "radeon/%s_ce.bin", chip_name);
+		err = request_firmware(&rdev->ce_fw, fw_name, rdev->dev);
+		if (err)
+			goto out;
+		if (rdev->ce_fw->size != ce_req_size) {
+			printk(KERN_ERR
+			       "si_cp: Bogus length %zu in firmware \"%s\"\n",
+			       rdev->ce_fw->size, fw_name);
+			err = -EINVAL;
+		}
 	} else {
 		err = radeon_ucode_validate(rdev->ce_fw);
 		if (err) {
@@ -1764,15 +1795,15 @@ static int si_init_microcode(struct radeon_device *rdev)
 	err = request_firmware(&rdev->rlc_fw, fw_name, rdev->dev);
 	if (err) {
 		snprintf(fw_name, sizeof(fw_name), "radeon/%s_rlc.bin", chip_name);
-	err = request_firmware(&rdev->rlc_fw, fw_name, rdev->dev);
-	if (err)
-		goto out;
-	if (rdev->rlc_fw->size != rlc_req_size) {
-		printk(KERN_ERR
-		       "si_rlc: Bogus length %zu in firmware \"%s\"\n",
-		       rdev->rlc_fw->size, fw_name);
-		err = -EINVAL;
-	}
+		err = request_firmware(&rdev->rlc_fw, fw_name, rdev->dev);
+		if (err)
+			goto out;
+		if (rdev->rlc_fw->size != rlc_req_size) {
+			printk(KERN_ERR
+			       "si_rlc: Bogus length %zu in firmware \"%s\"\n",
+			       rdev->rlc_fw->size, fw_name);
+			err = -EINVAL;
+		}
 	} else {
 		err = radeon_ucode_validate(rdev->rlc_fw);
 		if (err) {
@@ -1788,22 +1819,22 @@ static int si_init_microcode(struct radeon_device *rdev)
 	snprintf(fw_name, sizeof(fw_name), "radeon/%s_mc.bin", new_chip_name);
 	err = request_firmware(&rdev->mc_fw, fw_name, rdev->dev);
 	if (err) {
-	snprintf(fw_name, sizeof(fw_name), "radeon/%s_mc2.bin", chip_name);
-	err = request_firmware(&rdev->mc_fw, fw_name, rdev->dev);
-	if (err) {
-	snprintf(fw_name, sizeof(fw_name), "radeon/%s_mc.bin", chip_name);
-	err = request_firmware(&rdev->mc_fw, fw_name, rdev->dev);
-	if (err)
-		goto out;
-	}
-	if ((rdev->mc_fw->size != mc_req_size) &&
-	    (rdev->mc_fw->size != mc2_req_size)) {
-		printk(KERN_ERR
-		       "si_mc: Bogus length %zu in firmware \"%s\"\n",
-		       rdev->mc_fw->size, fw_name);
-		err = -EINVAL;
-	}
-	DRM_INFO("%s: %zu bytes\n", fw_name, rdev->mc_fw->size);
+		snprintf(fw_name, sizeof(fw_name), "radeon/%s_mc2.bin", chip_name);
+		err = request_firmware(&rdev->mc_fw, fw_name, rdev->dev);
+		if (err) {
+			snprintf(fw_name, sizeof(fw_name), "radeon/%s_mc.bin", chip_name);
+			err = request_firmware(&rdev->mc_fw, fw_name, rdev->dev);
+			if (err)
+				goto out;
+		}
+		if ((rdev->mc_fw->size != mc_req_size) &&
+		    (rdev->mc_fw->size != mc2_req_size)) {
+			printk(KERN_ERR
+			       "si_mc: Bogus length %zu in firmware \"%s\"\n",
+			       rdev->mc_fw->size, fw_name);
+			err = -EINVAL;
+		}
+		DRM_INFO("%s: %zu bytes\n", fw_name, rdev->mc_fw->size);
 	} else {
 		err = radeon_ucode_validate(rdev->mc_fw);
 		if (err) {
@@ -1819,21 +1850,21 @@ static int si_init_microcode(struct radeon_device *rdev)
 	snprintf(fw_name, sizeof(fw_name), "radeon/%s_smc.bin", new_chip_name);
 	err = request_firmware(&rdev->smc_fw, fw_name, rdev->dev);
 	if (err) {
-	snprintf(fw_name, sizeof(fw_name), "radeon/%s_smc.bin", chip_name);
-	err = request_firmware(&rdev->smc_fw, fw_name, rdev->dev);
-	if (err) {
-		printk(KERN_ERR
-		       "smc: error loading firmware \"%s\"\n",
-		       fw_name);
-		release_firmware(rdev->smc_fw);
-		rdev->smc_fw = NULL;
-		err = 0;
-	} else if (rdev->smc_fw->size != smc_req_size) {
-		printk(KERN_ERR
-		       "si_smc: Bogus length %zu in firmware \"%s\"\n",
-		       rdev->smc_fw->size, fw_name);
-		err = -EINVAL;
-	}
+		snprintf(fw_name, sizeof(fw_name), "radeon/%s_smc.bin", chip_name);
+		err = request_firmware(&rdev->smc_fw, fw_name, rdev->dev);
+		if (err) {
+			printk(KERN_ERR
+			       "smc: error loading firmware \"%s\"\n",
+			       fw_name);
+			release_firmware(rdev->smc_fw);
+			rdev->smc_fw = NULL;
+			err = 0;
+		} else if (rdev->smc_fw->size != smc_req_size) {
+			printk(KERN_ERR
+			       "si_smc: Bogus length %zu in firmware \"%s\"\n",
+			       rdev->smc_fw->size, fw_name);
+			err = -EINVAL;
+		}
 	} else {
 		err = radeon_ucode_validate(rdev->smc_fw);
 		if (err) {
@@ -2345,6 +2376,9 @@ static void dce6_program_watermarks(struct radeon_device *rdev,
 		c.full = dfixed_div(c, a);
 		priority_b_mark = dfixed_trunc(c);
 		priority_b_cnt |= priority_b_mark & PRIORITY_MARK_MASK;
+
+		/* Save number of lines the linebuffer leads before the scanout */
+		radeon_crtc->lb_vblank_lead_lines = DIV_ROUND_UP(lb_size, mode->crtc_hdisplay);
 	}
 
 	/* select wm A */
@@ -3161,6 +3195,8 @@ static void si_gpu_init(struct radeon_device *rdev)
 	}
 
 	WREG32(GRBM_CNTL, GRBM_READ_TIMEOUT(0xff));
+	WREG32(SRBM_INT_CNTL, 1);
+	WREG32(SRBM_INT_ACK, 1);
 
 	evergreen_fix_pci_max_read_req_size(rdev);
 
@@ -3218,7 +3254,7 @@ static void si_gpu_init(struct radeon_device *rdev)
 		/* XXX what about 12? */
 		rdev->config.si.tile_config |= (3 << 0);
 		break;
-	}
+	}	
 	switch ((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT) {
 	case 0: /* four banks */
 		rdev->config.si.tile_config |= 0 << 4;
@@ -3261,10 +3297,10 @@ static void si_gpu_init(struct radeon_device *rdev)
 	rdev->config.si.active_cus = 0;
 	for (i = 0; i < rdev->config.si.max_shader_engines; i++) {
 		for (j = 0; j < rdev->config.si.max_sh_per_se; j++) {
-				rdev->config.si.active_cus +=
-					hweight32(si_get_cu_active_bitmap(rdev, i, j));
-			}
+			rdev->config.si.active_cus +=
+				hweight32(si_get_cu_active_bitmap(rdev, i, j));
 		}
+	}
 
 	/* set HW defaults for 3D engine */
 	WREG32(CP_QUEUE_THRESHOLDS, (ROQ_IB1_START(0x16) |
@@ -3428,7 +3464,7 @@ static void si_cp_enable(struct radeon_device *rdev, bool enable)
 		WREG32(CP_ME_CNTL, 0);
 	else {
 		if (rdev->asic->copy.copy_ring_index == RADEON_RING_TYPE_GFX_INDEX)
-		radeon_ttm_set_active_vram_size(rdev, rdev->mc.visible_vram_size);
+			radeon_ttm_set_active_vram_size(rdev, rdev->mc.visible_vram_size);
 		WREG32(CP_ME_CNTL, (CP_ME_HALT | CP_PFP_HALT | CP_CE_HALT));
 		WREG32(SCRATCH_UMSK, 0);
 		rdev->ring[RADEON_RING_TYPE_GFX_INDEX].ready = false;
@@ -3490,26 +3526,26 @@ static int si_cp_load_microcode(struct radeon_device *rdev)
 	} else {
 		const __be32 *fw_data;
 
-	/* PFP */
-	fw_data = (const __be32 *)rdev->pfp_fw->data;
-	WREG32(CP_PFP_UCODE_ADDR, 0);
-	for (i = 0; i < SI_PFP_UCODE_SIZE; i++)
-		WREG32(CP_PFP_UCODE_DATA, be32_to_cpup(fw_data++));
-	WREG32(CP_PFP_UCODE_ADDR, 0);
+		/* PFP */
+		fw_data = (const __be32 *)rdev->pfp_fw->data;
+		WREG32(CP_PFP_UCODE_ADDR, 0);
+		for (i = 0; i < SI_PFP_UCODE_SIZE; i++)
+			WREG32(CP_PFP_UCODE_DATA, be32_to_cpup(fw_data++));
+		WREG32(CP_PFP_UCODE_ADDR, 0);
 
-	/* CE */
-	fw_data = (const __be32 *)rdev->ce_fw->data;
-	WREG32(CP_CE_UCODE_ADDR, 0);
-	for (i = 0; i < SI_CE_UCODE_SIZE; i++)
-		WREG32(CP_CE_UCODE_DATA, be32_to_cpup(fw_data++));
-	WREG32(CP_CE_UCODE_ADDR, 0);
+		/* CE */
+		fw_data = (const __be32 *)rdev->ce_fw->data;
+		WREG32(CP_CE_UCODE_ADDR, 0);
+		for (i = 0; i < SI_CE_UCODE_SIZE; i++)
+			WREG32(CP_CE_UCODE_DATA, be32_to_cpup(fw_data++));
+		WREG32(CP_CE_UCODE_ADDR, 0);
 
-	/* ME */
-	fw_data = (const __be32 *)rdev->me_fw->data;
-	WREG32(CP_ME_RAM_WADDR, 0);
-	for (i = 0; i < SI_PM4_UCODE_SIZE; i++)
-		WREG32(CP_ME_RAM_DATA, be32_to_cpup(fw_data++));
-	WREG32(CP_ME_RAM_WADDR, 0);
+		/* ME */
+		fw_data = (const __be32 *)rdev->me_fw->data;
+		WREG32(CP_ME_RAM_WADDR, 0);
+		for (i = 0; i < SI_PM4_UCODE_SIZE; i++)
+			WREG32(CP_ME_RAM_DATA, be32_to_cpup(fw_data++));
+		WREG32(CP_ME_RAM_WADDR, 0);
 	}
 
 	WREG32(CP_PFP_UCODE_ADDR, 0);
@@ -3862,16 +3898,16 @@ static void si_gpu_soft_reset(struct radeon_device *rdev, u32 reset_mask)
 
 	if (reset_mask & (RADEON_RESET_GFX | RADEON_RESET_COMPUTE | RADEON_RESET_CP)) {
 		grbm_soft_reset = SOFT_RESET_CB |
-		      SOFT_RESET_DB |
-		      SOFT_RESET_GDS |
-		      SOFT_RESET_PA |
-		      SOFT_RESET_SC |
-		      SOFT_RESET_BCI |
-		      SOFT_RESET_SPI |
-		      SOFT_RESET_SX |
-		      SOFT_RESET_TC |
-		      SOFT_RESET_TA |
-		      SOFT_RESET_VGT |
+			SOFT_RESET_DB |
+			SOFT_RESET_GDS |
+			SOFT_RESET_PA |
+			SOFT_RESET_SC |
+			SOFT_RESET_BCI |
+			SOFT_RESET_SPI |
+			SOFT_RESET_SX |
+			SOFT_RESET_TC |
+			SOFT_RESET_TA |
+			SOFT_RESET_VGT |
 			SOFT_RESET_IA;
 	}
 
@@ -4085,7 +4121,7 @@ bool si_gfx_is_lockup(struct radeon_device *rdev, struct radeon_ring *ring)
 	u32 reset_mask = si_gpu_check_soft_reset(rdev);
 
 	if (!(reset_mask & (RADEON_RESET_GFX |
-					RADEON_RESET_COMPUTE |
+			    RADEON_RESET_COMPUTE |
 			    RADEON_RESET_CP))) {
 		radeon_ring_lockup_update(rdev, ring);
 		return false;
@@ -4115,8 +4151,8 @@ static void si_mc_program(struct radeon_device *rdev)
 		dev_warn(rdev->dev, "Wait for MC idle timedout !\n");
 	}
 	if (!ASIC_IS_NODCE(rdev))
-	/* Lockout access through VGA aperture*/
-	WREG32(VGA_HDP_CONTROL, VGA_MEMORY_DISABLE);
+		/* Lockout access through VGA aperture*/
+		WREG32(VGA_HDP_CONTROL, VGA_MEMORY_DISABLE);
 	/* Update configuration */
 	WREG32(MC_VM_SYSTEM_APERTURE_LOW_ADDR,
 	       rdev->mc.vram_start >> 12);
@@ -4139,14 +4175,14 @@ static void si_mc_program(struct radeon_device *rdev)
 	}
 	evergreen_mc_resume(rdev, &save);
 	if (!ASIC_IS_NODCE(rdev)) {
-	/* we need to own VRAM, so turn off the VGA renderer here
-	 * to stop it overwriting our objects */
-	rv515_vga_render_disable(rdev);
-		}
+		/* we need to own VRAM, so turn off the VGA renderer here
+		 * to stop it overwriting our objects */
+		rv515_vga_render_disable(rdev);
+	}
 }
 
 void si_vram_gtt_location(struct radeon_device *rdev,
-				 struct radeon_mc *mc)
+			  struct radeon_mc *mc)
 {
 	if (mc->mc_vram_size > 0xFFC0000000ULL) {
 		/* leave room for at least 1024M GTT */
@@ -4285,7 +4321,7 @@ static int si_pcie_gart_enable(struct radeon_device *rdev)
 	/* empty context1-15 */
 	/* set vm size, must be a multiple of 4 */
 	WREG32(VM_CONTEXT1_PAGE_TABLE_START_ADDR, 0);
-	WREG32(VM_CONTEXT1_PAGE_TABLE_END_ADDR, rdev->vm_manager.max_pfn);
+	WREG32(VM_CONTEXT1_PAGE_TABLE_END_ADDR, rdev->vm_manager.max_pfn - 1);
 	/* Assign the pt base to something valid for now; the pts used for
 	 * the VMs are determined by the application and setup and assigned
 	 * on the fly in the vm part of radeon_gart.c
@@ -4360,7 +4396,7 @@ static void si_pcie_gart_fini(struct radeon_device *rdev)
 {
 	si_pcie_gart_disable(rdev);
 	radeon_gart_table_vram_free(rdev);
-//   radeon_gart_fini(rdev);
+	radeon_gart_fini(rdev);
 }
 
 /* vm parser */
@@ -4698,12 +4734,6 @@ int si_ib_parse(struct radeon_device *rdev, struct radeon_ib *ib)
 		switch (pkt.type) {
 		case RADEON_PACKET_TYPE0:
 			dev_err(rdev->dev, "Packet0 not allowed!\n");
-			for (i = 0; i < ib->length_dw; i++) {
-				if (i == idx)
-					printk("\t0x%08x <---\n", ib->ptr[i]);
-				else
-					printk("\t0x%08x\n", ib->ptr[i]);
-			}
 			ret = -EINVAL;
 			break;
 		case RADEON_PACKET_TYPE2:
@@ -4735,8 +4765,15 @@ int si_ib_parse(struct radeon_device *rdev, struct radeon_ib *ib)
 			ret = -EINVAL;
 			break;
 		}
-		if (ret)
+		if (ret) {
+			for (i = 0; i < ib->length_dw; i++) {
+				if (i == idx)
+					printk("\t0x%08x <---\n", ib->ptr[i]);
+				else
+					printk("\t0x%08x\n", ib->ptr[i]);
+			}
 			break;
+		}
 	} while (idx < ib->length_dw);
 
 	return ret;
@@ -5056,6 +5093,16 @@ void si_vm_flush(struct radeon_device *rdev, struct radeon_ring *ring,
 	radeon_ring_write(ring, VM_INVALIDATE_REQUEST >> 2);
 	radeon_ring_write(ring, 0);
 	radeon_ring_write(ring, 1 << vm_id);
+
+	/* wait for the invalidate to complete */
+	radeon_ring_write(ring, PACKET3(PACKET3_WAIT_REG_MEM, 5));
+	radeon_ring_write(ring, (WAIT_REG_MEM_FUNCTION(0) |  /* always */
+				 WAIT_REG_MEM_ENGINE(0))); /* me */
+	radeon_ring_write(ring, VM_INVALIDATE_REQUEST >> 2);
+	radeon_ring_write(ring, 0);
+	radeon_ring_write(ring, 0); /* ref */
+	radeon_ring_write(ring, 0); /* mask */
+	radeon_ring_write(ring, 0x20); /* poll interval */
 
 	/* sync PFP to ME, otherwise we might get invalid PFP reads */
 	radeon_ring_write(ring, PACKET3(PACKET3_PFP_SYNC_ME, 0));
@@ -5555,7 +5602,7 @@ static void si_enable_hdp_ls(struct radeon_device *rdev,
 }
 
 static void si_update_cg(struct radeon_device *rdev,
-		  u32 block, bool enable)
+			 u32 block, bool enable)
 {
 	if (block & RADEON_CG_BLOCK_GFX) {
 		si_enable_gui_idle_interrupt(rdev, false);
@@ -5605,7 +5652,7 @@ static void si_init_cg(struct radeon_device *rdev)
 	if (rdev->has_uvd) {
 		si_update_cg(rdev, RADEON_CG_BLOCK_UVD, true);
 		si_init_uvd_internal_cg(rdev);
-		}
+	}
 }
 
 static void si_fini_cg(struct radeon_device *rdev)
@@ -5627,7 +5674,7 @@ u32 si_get_csb_size(struct radeon_device *rdev)
 	const struct cs_extent_def *ext = NULL;
 
 	if (rdev->rlc.cs_data == NULL)
-	return 0;
+		return 0;
 
 	/* begin clear state */
 	count += 2;
@@ -5843,10 +5890,10 @@ static int si_rlc_resume(struct radeon_device *rdev)
 	} else {
 		const __be32 *fw_data =
 			(const __be32 *)rdev->rlc_fw->data;
-	for (i = 0; i < SI_RLC_UCODE_SIZE; i++) {
-		WREG32(RLC_UCODE_ADDR, i);
-		WREG32(RLC_UCODE_DATA, be32_to_cpup(fw_data++));
-	}
+		for (i = 0; i < SI_RLC_UCODE_SIZE; i++) {
+			WREG32(RLC_UCODE_ADDR, i);
+			WREG32(RLC_UCODE_DATA, be32_to_cpup(fw_data++));
+		}
 	}
 	WREG32(RLC_UCODE_ADDR, 0);
 
@@ -5899,9 +5946,10 @@ static void si_disable_interrupt_state(struct radeon_device *rdev)
 	tmp = RREG32(DMA_CNTL + DMA1_REGISTER_OFFSET) & ~TRAP_ENABLE;
 	WREG32(DMA_CNTL + DMA1_REGISTER_OFFSET, tmp);
 	WREG32(GRBM_INT_CNTL, 0);
+	WREG32(SRBM_INT_CNTL, 0);
 	if (rdev->num_crtc >= 2) {
-	WREG32(INT_MASK + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
-	WREG32(INT_MASK + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
+		WREG32(INT_MASK + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
+		WREG32(INT_MASK + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
 	}
 	if (rdev->num_crtc >= 4) {
 		WREG32(INT_MASK + EVERGREEN_CRTC2_REGISTER_OFFSET, 0);
@@ -5913,8 +5961,8 @@ static void si_disable_interrupt_state(struct radeon_device *rdev)
 	}
 
 	if (rdev->num_crtc >= 2) {
-	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
-	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
 	}
 	if (rdev->num_crtc >= 4) {
 		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, 0);
@@ -5928,18 +5976,18 @@ static void si_disable_interrupt_state(struct radeon_device *rdev)
 	if (!ASIC_IS_NODCE(rdev)) {
 		WREG32(DAC_AUTODETECT_INT_CONTROL, 0);
 
-	tmp = RREG32(DC_HPD1_INT_CONTROL) & DC_HPDx_INT_POLARITY;
-	WREG32(DC_HPD1_INT_CONTROL, tmp);
-	tmp = RREG32(DC_HPD2_INT_CONTROL) & DC_HPDx_INT_POLARITY;
-	WREG32(DC_HPD2_INT_CONTROL, tmp);
-	tmp = RREG32(DC_HPD3_INT_CONTROL) & DC_HPDx_INT_POLARITY;
-	WREG32(DC_HPD3_INT_CONTROL, tmp);
-	tmp = RREG32(DC_HPD4_INT_CONTROL) & DC_HPDx_INT_POLARITY;
-	WREG32(DC_HPD4_INT_CONTROL, tmp);
-	tmp = RREG32(DC_HPD5_INT_CONTROL) & DC_HPDx_INT_POLARITY;
-	WREG32(DC_HPD5_INT_CONTROL, tmp);
-	tmp = RREG32(DC_HPD6_INT_CONTROL) & DC_HPDx_INT_POLARITY;
-	WREG32(DC_HPD6_INT_CONTROL, tmp);
+		tmp = RREG32(DC_HPD1_INT_CONTROL) & DC_HPDx_INT_POLARITY;
+		WREG32(DC_HPD1_INT_CONTROL, tmp);
+		tmp = RREG32(DC_HPD2_INT_CONTROL) & DC_HPDx_INT_POLARITY;
+		WREG32(DC_HPD2_INT_CONTROL, tmp);
+		tmp = RREG32(DC_HPD3_INT_CONTROL) & DC_HPDx_INT_POLARITY;
+		WREG32(DC_HPD3_INT_CONTROL, tmp);
+		tmp = RREG32(DC_HPD4_INT_CONTROL) & DC_HPDx_INT_POLARITY;
+		WREG32(DC_HPD4_INT_CONTROL, tmp);
+		tmp = RREG32(DC_HPD5_INT_CONTROL) & DC_HPDx_INT_POLARITY;
+		WREG32(DC_HPD5_INT_CONTROL, tmp);
+		tmp = RREG32(DC_HPD6_INT_CONTROL) & DC_HPDx_INT_POLARITY;
+		WREG32(DC_HPD6_INT_CONTROL, tmp);
 	}
 }
 
@@ -6040,12 +6088,12 @@ int si_irq_set(struct radeon_device *rdev)
 		(CNTX_BUSY_INT_ENABLE | CNTX_EMPTY_INT_ENABLE);
 
 	if (!ASIC_IS_NODCE(rdev)) {
-	hpd1 = RREG32(DC_HPD1_INT_CONTROL) & ~DC_HPDx_INT_EN;
-	hpd2 = RREG32(DC_HPD2_INT_CONTROL) & ~DC_HPDx_INT_EN;
-	hpd3 = RREG32(DC_HPD3_INT_CONTROL) & ~DC_HPDx_INT_EN;
-	hpd4 = RREG32(DC_HPD4_INT_CONTROL) & ~DC_HPDx_INT_EN;
-	hpd5 = RREG32(DC_HPD5_INT_CONTROL) & ~DC_HPDx_INT_EN;
-	hpd6 = RREG32(DC_HPD6_INT_CONTROL) & ~DC_HPDx_INT_EN;
+		hpd1 = RREG32(DC_HPD1_INT_CONTROL) & ~(DC_HPDx_INT_EN | DC_HPDx_RX_INT_EN);
+		hpd2 = RREG32(DC_HPD2_INT_CONTROL) & ~(DC_HPDx_INT_EN | DC_HPDx_RX_INT_EN);
+		hpd3 = RREG32(DC_HPD3_INT_CONTROL) & ~(DC_HPDx_INT_EN | DC_HPDx_RX_INT_EN);
+		hpd4 = RREG32(DC_HPD4_INT_CONTROL) & ~(DC_HPDx_INT_EN | DC_HPDx_RX_INT_EN);
+		hpd5 = RREG32(DC_HPD5_INT_CONTROL) & ~(DC_HPDx_INT_EN | DC_HPDx_RX_INT_EN);
+		hpd6 = RREG32(DC_HPD6_INT_CONTROL) & ~(DC_HPDx_INT_EN | DC_HPDx_RX_INT_EN);
 	}
 
 	dma_cntl = RREG32(DMA_CNTL + DMA0_REGISTER_OFFSET) & ~TRAP_ENABLE;
@@ -6108,27 +6156,27 @@ int si_irq_set(struct radeon_device *rdev)
 	}
 	if (rdev->irq.hpd[0]) {
 		DRM_DEBUG("si_irq_set: hpd 1\n");
-		hpd1 |= DC_HPDx_INT_EN;
+		hpd1 |= DC_HPDx_INT_EN | DC_HPDx_RX_INT_EN;
 	}
 	if (rdev->irq.hpd[1]) {
 		DRM_DEBUG("si_irq_set: hpd 2\n");
-		hpd2 |= DC_HPDx_INT_EN;
+		hpd2 |= DC_HPDx_INT_EN | DC_HPDx_RX_INT_EN;
 	}
 	if (rdev->irq.hpd[2]) {
 		DRM_DEBUG("si_irq_set: hpd 3\n");
-		hpd3 |= DC_HPDx_INT_EN;
+		hpd3 |= DC_HPDx_INT_EN | DC_HPDx_RX_INT_EN;
 	}
 	if (rdev->irq.hpd[3]) {
 		DRM_DEBUG("si_irq_set: hpd 4\n");
-		hpd4 |= DC_HPDx_INT_EN;
+		hpd4 |= DC_HPDx_INT_EN | DC_HPDx_RX_INT_EN;
 	}
 	if (rdev->irq.hpd[4]) {
 		DRM_DEBUG("si_irq_set: hpd 5\n");
-		hpd5 |= DC_HPDx_INT_EN;
+		hpd5 |= DC_HPDx_INT_EN | DC_HPDx_RX_INT_EN;
 	}
 	if (rdev->irq.hpd[5]) {
 		DRM_DEBUG("si_irq_set: hpd 6\n");
-		hpd6 |= DC_HPDx_INT_EN;
+		hpd6 |= DC_HPDx_INT_EN | DC_HPDx_RX_INT_EN;
 	}
 
 	WREG32(CP_INT_CNTL_RING0, cp_int_cntl);
@@ -6146,8 +6194,8 @@ int si_irq_set(struct radeon_device *rdev)
 	}
 
 	if (rdev->num_crtc >= 2) {
-	WREG32(INT_MASK + EVERGREEN_CRTC0_REGISTER_OFFSET, crtc1);
-	WREG32(INT_MASK + EVERGREEN_CRTC1_REGISTER_OFFSET, crtc2);
+		WREG32(INT_MASK + EVERGREEN_CRTC0_REGISTER_OFFSET, crtc1);
+		WREG32(INT_MASK + EVERGREEN_CRTC1_REGISTER_OFFSET, crtc2);
 	}
 	if (rdev->num_crtc >= 4) {
 		WREG32(INT_MASK + EVERGREEN_CRTC2_REGISTER_OFFSET, crtc3);
@@ -6178,15 +6226,18 @@ int si_irq_set(struct radeon_device *rdev)
 	}
 
 	if (!ASIC_IS_NODCE(rdev)) {
-	WREG32(DC_HPD1_INT_CONTROL, hpd1);
-	WREG32(DC_HPD2_INT_CONTROL, hpd2);
-	WREG32(DC_HPD3_INT_CONTROL, hpd3);
-	WREG32(DC_HPD4_INT_CONTROL, hpd4);
-	WREG32(DC_HPD5_INT_CONTROL, hpd5);
-	WREG32(DC_HPD6_INT_CONTROL, hpd6);
+		WREG32(DC_HPD1_INT_CONTROL, hpd1);
+		WREG32(DC_HPD2_INT_CONTROL, hpd2);
+		WREG32(DC_HPD3_INT_CONTROL, hpd3);
+		WREG32(DC_HPD4_INT_CONTROL, hpd4);
+		WREG32(DC_HPD5_INT_CONTROL, hpd5);
+		WREG32(DC_HPD6_INT_CONTROL, hpd6);
 	}
 
 	WREG32(CG_THERMAL_INT, thermal_int);
+
+	/* posting read */
+	RREG32(SRBM_STATUS);
 
 	return 0;
 }
@@ -6288,6 +6339,37 @@ static inline void si_irq_ack(struct radeon_device *rdev)
 		tmp |= DC_HPDx_INT_ACK;
 		WREG32(DC_HPD6_INT_CONTROL, tmp);
 	}
+
+	if (rdev->irq.stat_regs.evergreen.disp_int & DC_HPD1_RX_INTERRUPT) {
+		tmp = RREG32(DC_HPD1_INT_CONTROL);
+		tmp |= DC_HPDx_RX_INT_ACK;
+		WREG32(DC_HPD1_INT_CONTROL, tmp);
+	}
+	if (rdev->irq.stat_regs.evergreen.disp_int_cont & DC_HPD2_RX_INTERRUPT) {
+		tmp = RREG32(DC_HPD2_INT_CONTROL);
+		tmp |= DC_HPDx_RX_INT_ACK;
+		WREG32(DC_HPD2_INT_CONTROL, tmp);
+	}
+	if (rdev->irq.stat_regs.evergreen.disp_int_cont2 & DC_HPD3_RX_INTERRUPT) {
+		tmp = RREG32(DC_HPD3_INT_CONTROL);
+		tmp |= DC_HPDx_RX_INT_ACK;
+		WREG32(DC_HPD3_INT_CONTROL, tmp);
+	}
+	if (rdev->irq.stat_regs.evergreen.disp_int_cont3 & DC_HPD4_RX_INTERRUPT) {
+		tmp = RREG32(DC_HPD4_INT_CONTROL);
+		tmp |= DC_HPDx_RX_INT_ACK;
+		WREG32(DC_HPD4_INT_CONTROL, tmp);
+	}
+	if (rdev->irq.stat_regs.evergreen.disp_int_cont4 & DC_HPD5_RX_INTERRUPT) {
+		tmp = RREG32(DC_HPD5_INT_CONTROL);
+		tmp |= DC_HPDx_RX_INT_ACK;
+		WREG32(DC_HPD5_INT_CONTROL, tmp);
+	}
+	if (rdev->irq.stat_regs.evergreen.disp_int_cont5 & DC_HPD6_RX_INTERRUPT) {
+		tmp = RREG32(DC_HPD5_INT_CONTROL);
+		tmp |= DC_HPDx_RX_INT_ACK;
+		WREG32(DC_HPD6_INT_CONTROL, tmp);
+	}
 }
 
 static void si_irq_disable(struct radeon_device *rdev)
@@ -6353,6 +6435,7 @@ int si_irq_process(struct radeon_device *rdev)
 	u32 src_id, src_data, ring_id;
 	u32 ring_index;
 	bool queue_hotplug = false;
+	bool queue_dp = false;
 	bool queue_thermal = false;
 	u32 status, addr;
 
@@ -6386,23 +6469,27 @@ restart_ih:
 		case 1: /* D1 vblank/vline */
 			switch (src_data) {
 			case 0: /* D1 vblank */
-				if (rdev->irq.stat_regs.evergreen.disp_int & LB_D1_VBLANK_INTERRUPT) {
-					if (rdev->irq.crtc_vblank_int[0]) {
-//                       drm_handle_vblank(rdev->ddev, 0);
-						rdev->pm.vblank_sync = true;
-//                       wake_up(&rdev->irq.vblank_queue);
-					}
-//                   if (atomic_read(&rdev->irq.pflip[0]))
-//                       radeon_crtc_handle_flip(rdev, 0);
-					rdev->irq.stat_regs.evergreen.disp_int &= ~LB_D1_VBLANK_INTERRUPT;
-					DRM_DEBUG("IH: D1 vblank\n");
+				if (!(rdev->irq.stat_regs.evergreen.disp_int & LB_D1_VBLANK_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				if (rdev->irq.crtc_vblank_int[0]) {
+					drm_handle_vblank(rdev->ddev, 0);
+					rdev->pm.vblank_sync = true;
+					wake_up(&rdev->irq.vblank_queue);
 				}
+				if (atomic_read(&rdev->irq.pflip[0]))
+					radeon_crtc_handle_vblank(rdev, 0);
+				rdev->irq.stat_regs.evergreen.disp_int &= ~LB_D1_VBLANK_INTERRUPT;
+				DRM_DEBUG("IH: D1 vblank\n");
+
 				break;
 			case 1: /* D1 vline */
-				if (rdev->irq.stat_regs.evergreen.disp_int & LB_D1_VLINE_INTERRUPT) {
-					rdev->irq.stat_regs.evergreen.disp_int &= ~LB_D1_VLINE_INTERRUPT;
-					DRM_DEBUG("IH: D1 vline\n");
-				}
+				if (!(rdev->irq.stat_regs.evergreen.disp_int & LB_D1_VLINE_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				rdev->irq.stat_regs.evergreen.disp_int &= ~LB_D1_VLINE_INTERRUPT;
+				DRM_DEBUG("IH: D1 vline\n");
+
 				break;
 			default:
 				DRM_DEBUG("Unhandled interrupt: %d %d\n", src_id, src_data);
@@ -6412,23 +6499,27 @@ restart_ih:
 		case 2: /* D2 vblank/vline */
 			switch (src_data) {
 			case 0: /* D2 vblank */
-				if (rdev->irq.stat_regs.evergreen.disp_int_cont & LB_D2_VBLANK_INTERRUPT) {
-					if (rdev->irq.crtc_vblank_int[1]) {
-//                       drm_handle_vblank(rdev->ddev, 1);
-						rdev->pm.vblank_sync = true;
-//                       wake_up(&rdev->irq.vblank_queue);
-					}
-//                   if (atomic_read(&rdev->irq.pflip[1]))
-//                       radeon_crtc_handle_flip(rdev, 1);
-					rdev->irq.stat_regs.evergreen.disp_int_cont &= ~LB_D2_VBLANK_INTERRUPT;
-					DRM_DEBUG("IH: D2 vblank\n");
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont & LB_D2_VBLANK_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				if (rdev->irq.crtc_vblank_int[1]) {
+					drm_handle_vblank(rdev->ddev, 1);
+					rdev->pm.vblank_sync = true;
+					wake_up(&rdev->irq.vblank_queue);
 				}
+				if (atomic_read(&rdev->irq.pflip[1]))
+					radeon_crtc_handle_vblank(rdev, 1);
+				rdev->irq.stat_regs.evergreen.disp_int_cont &= ~LB_D2_VBLANK_INTERRUPT;
+				DRM_DEBUG("IH: D2 vblank\n");
+
 				break;
 			case 1: /* D2 vline */
-				if (rdev->irq.stat_regs.evergreen.disp_int_cont & LB_D2_VLINE_INTERRUPT) {
-					rdev->irq.stat_regs.evergreen.disp_int_cont &= ~LB_D2_VLINE_INTERRUPT;
-					DRM_DEBUG("IH: D2 vline\n");
-				}
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont & LB_D2_VLINE_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				rdev->irq.stat_regs.evergreen.disp_int_cont &= ~LB_D2_VLINE_INTERRUPT;
+				DRM_DEBUG("IH: D2 vline\n");
+
 				break;
 			default:
 				DRM_DEBUG("Unhandled interrupt: %d %d\n", src_id, src_data);
@@ -6438,23 +6529,27 @@ restart_ih:
 		case 3: /* D3 vblank/vline */
 			switch (src_data) {
 			case 0: /* D3 vblank */
-				if (rdev->irq.stat_regs.evergreen.disp_int_cont2 & LB_D3_VBLANK_INTERRUPT) {
-					if (rdev->irq.crtc_vblank_int[2]) {
-//                       drm_handle_vblank(rdev->ddev, 2);
-						rdev->pm.vblank_sync = true;
-//                       wake_up(&rdev->irq.vblank_queue);
-					}
-//                   if (atomic_read(&rdev->irq.pflip[2]))
-//                       radeon_crtc_handle_flip(rdev, 2);
-					rdev->irq.stat_regs.evergreen.disp_int_cont2 &= ~LB_D3_VBLANK_INTERRUPT;
-					DRM_DEBUG("IH: D3 vblank\n");
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont2 & LB_D3_VBLANK_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				if (rdev->irq.crtc_vblank_int[2]) {
+					drm_handle_vblank(rdev->ddev, 2);
+					rdev->pm.vblank_sync = true;
+					wake_up(&rdev->irq.vblank_queue);
 				}
+				if (atomic_read(&rdev->irq.pflip[2]))
+					radeon_crtc_handle_vblank(rdev, 2);
+				rdev->irq.stat_regs.evergreen.disp_int_cont2 &= ~LB_D3_VBLANK_INTERRUPT;
+				DRM_DEBUG("IH: D3 vblank\n");
+
 				break;
 			case 1: /* D3 vline */
-				if (rdev->irq.stat_regs.evergreen.disp_int_cont2 & LB_D3_VLINE_INTERRUPT) {
-					rdev->irq.stat_regs.evergreen.disp_int_cont2 &= ~LB_D3_VLINE_INTERRUPT;
-					DRM_DEBUG("IH: D3 vline\n");
-				}
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont2 & LB_D3_VLINE_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				rdev->irq.stat_regs.evergreen.disp_int_cont2 &= ~LB_D3_VLINE_INTERRUPT;
+				DRM_DEBUG("IH: D3 vline\n");
+
 				break;
 			default:
 				DRM_DEBUG("Unhandled interrupt: %d %d\n", src_id, src_data);
@@ -6464,23 +6559,27 @@ restart_ih:
 		case 4: /* D4 vblank/vline */
 			switch (src_data) {
 			case 0: /* D4 vblank */
-				if (rdev->irq.stat_regs.evergreen.disp_int_cont3 & LB_D4_VBLANK_INTERRUPT) {
-					if (rdev->irq.crtc_vblank_int[3]) {
-//                       drm_handle_vblank(rdev->ddev, 3);
-						rdev->pm.vblank_sync = true;
-//                       wake_up(&rdev->irq.vblank_queue);
-					}
-//                   if (atomic_read(&rdev->irq.pflip[3]))
-//                       radeon_crtc_handle_flip(rdev, 3);
-					rdev->irq.stat_regs.evergreen.disp_int_cont3 &= ~LB_D4_VBLANK_INTERRUPT;
-					DRM_DEBUG("IH: D4 vblank\n");
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont3 & LB_D4_VBLANK_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				if (rdev->irq.crtc_vblank_int[3]) {
+					drm_handle_vblank(rdev->ddev, 3);
+					rdev->pm.vblank_sync = true;
+					wake_up(&rdev->irq.vblank_queue);
 				}
+				if (atomic_read(&rdev->irq.pflip[3]))
+					radeon_crtc_handle_vblank(rdev, 3);
+				rdev->irq.stat_regs.evergreen.disp_int_cont3 &= ~LB_D4_VBLANK_INTERRUPT;
+				DRM_DEBUG("IH: D4 vblank\n");
+
 				break;
 			case 1: /* D4 vline */
-				if (rdev->irq.stat_regs.evergreen.disp_int_cont3 & LB_D4_VLINE_INTERRUPT) {
-					rdev->irq.stat_regs.evergreen.disp_int_cont3 &= ~LB_D4_VLINE_INTERRUPT;
-					DRM_DEBUG("IH: D4 vline\n");
-				}
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont3 & LB_D4_VLINE_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				rdev->irq.stat_regs.evergreen.disp_int_cont3 &= ~LB_D4_VLINE_INTERRUPT;
+				DRM_DEBUG("IH: D4 vline\n");
+
 				break;
 			default:
 				DRM_DEBUG("Unhandled interrupt: %d %d\n", src_id, src_data);
@@ -6490,23 +6589,27 @@ restart_ih:
 		case 5: /* D5 vblank/vline */
 			switch (src_data) {
 			case 0: /* D5 vblank */
-				if (rdev->irq.stat_regs.evergreen.disp_int_cont4 & LB_D5_VBLANK_INTERRUPT) {
-					if (rdev->irq.crtc_vblank_int[4]) {
-//                       drm_handle_vblank(rdev->ddev, 4);
-						rdev->pm.vblank_sync = true;
-//                       wake_up(&rdev->irq.vblank_queue);
-					}
-//                   if (atomic_read(&rdev->irq.pflip[4]))
-//                       radeon_crtc_handle_flip(rdev, 4);
-					rdev->irq.stat_regs.evergreen.disp_int_cont4 &= ~LB_D5_VBLANK_INTERRUPT;
-					DRM_DEBUG("IH: D5 vblank\n");
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont4 & LB_D5_VBLANK_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				if (rdev->irq.crtc_vblank_int[4]) {
+					drm_handle_vblank(rdev->ddev, 4);
+					rdev->pm.vblank_sync = true;
+					wake_up(&rdev->irq.vblank_queue);
 				}
+				if (atomic_read(&rdev->irq.pflip[4]))
+					radeon_crtc_handle_vblank(rdev, 4);
+				rdev->irq.stat_regs.evergreen.disp_int_cont4 &= ~LB_D5_VBLANK_INTERRUPT;
+				DRM_DEBUG("IH: D5 vblank\n");
+
 				break;
 			case 1: /* D5 vline */
-				if (rdev->irq.stat_regs.evergreen.disp_int_cont4 & LB_D5_VLINE_INTERRUPT) {
-					rdev->irq.stat_regs.evergreen.disp_int_cont4 &= ~LB_D5_VLINE_INTERRUPT;
-					DRM_DEBUG("IH: D5 vline\n");
-				}
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont4 & LB_D5_VLINE_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				rdev->irq.stat_regs.evergreen.disp_int_cont4 &= ~LB_D5_VLINE_INTERRUPT;
+				DRM_DEBUG("IH: D5 vline\n");
+
 				break;
 			default:
 				DRM_DEBUG("Unhandled interrupt: %d %d\n", src_id, src_data);
@@ -6516,23 +6619,27 @@ restart_ih:
 		case 6: /* D6 vblank/vline */
 			switch (src_data) {
 			case 0: /* D6 vblank */
-				if (rdev->irq.stat_regs.evergreen.disp_int_cont5 & LB_D6_VBLANK_INTERRUPT) {
-					if (rdev->irq.crtc_vblank_int[5]) {
-//                       drm_handle_vblank(rdev->ddev, 5);
-						rdev->pm.vblank_sync = true;
-//                       wake_up(&rdev->irq.vblank_queue);
-					}
-//                   if (atomic_read(&rdev->irq.pflip[5]))
-//                       radeon_crtc_handle_flip(rdev, 5);
-					rdev->irq.stat_regs.evergreen.disp_int_cont5 &= ~LB_D6_VBLANK_INTERRUPT;
-					DRM_DEBUG("IH: D6 vblank\n");
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont5 & LB_D6_VBLANK_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				if (rdev->irq.crtc_vblank_int[5]) {
+					drm_handle_vblank(rdev->ddev, 5);
+					rdev->pm.vblank_sync = true;
+					wake_up(&rdev->irq.vblank_queue);
 				}
+				if (atomic_read(&rdev->irq.pflip[5]))
+					radeon_crtc_handle_vblank(rdev, 5);
+				rdev->irq.stat_regs.evergreen.disp_int_cont5 &= ~LB_D6_VBLANK_INTERRUPT;
+				DRM_DEBUG("IH: D6 vblank\n");
+
 				break;
 			case 1: /* D6 vline */
-				if (rdev->irq.stat_regs.evergreen.disp_int_cont5 & LB_D6_VLINE_INTERRUPT) {
-					rdev->irq.stat_regs.evergreen.disp_int_cont5 &= ~LB_D6_VLINE_INTERRUPT;
-					DRM_DEBUG("IH: D6 vline\n");
-				}
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont5 & LB_D6_VLINE_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				rdev->irq.stat_regs.evergreen.disp_int_cont5 &= ~LB_D6_VLINE_INTERRUPT;
+				DRM_DEBUG("IH: D6 vline\n");
+
 				break;
 			default:
 				DRM_DEBUG("Unhandled interrupt: %d %d\n", src_id, src_data);
@@ -6550,51 +6657,121 @@ restart_ih:
 		case 42: /* HPD hotplug */
 			switch (src_data) {
 			case 0:
-				if (rdev->irq.stat_regs.evergreen.disp_int & DC_HPD1_INTERRUPT) {
-					rdev->irq.stat_regs.evergreen.disp_int &= ~DC_HPD1_INTERRUPT;
-					queue_hotplug = true;
-					DRM_DEBUG("IH: HPD1\n");
-				}
+				if (!(rdev->irq.stat_regs.evergreen.disp_int & DC_HPD1_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				rdev->irq.stat_regs.evergreen.disp_int &= ~DC_HPD1_INTERRUPT;
+				queue_hotplug = true;
+				DRM_DEBUG("IH: HPD1\n");
+
 				break;
 			case 1:
-				if (rdev->irq.stat_regs.evergreen.disp_int_cont & DC_HPD2_INTERRUPT) {
-					rdev->irq.stat_regs.evergreen.disp_int_cont &= ~DC_HPD2_INTERRUPT;
-					queue_hotplug = true;
-					DRM_DEBUG("IH: HPD2\n");
-				}
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont & DC_HPD2_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				rdev->irq.stat_regs.evergreen.disp_int_cont &= ~DC_HPD2_INTERRUPT;
+				queue_hotplug = true;
+				DRM_DEBUG("IH: HPD2\n");
+
 				break;
 			case 2:
-				if (rdev->irq.stat_regs.evergreen.disp_int_cont2 & DC_HPD3_INTERRUPT) {
-					rdev->irq.stat_regs.evergreen.disp_int_cont2 &= ~DC_HPD3_INTERRUPT;
-					queue_hotplug = true;
-					DRM_DEBUG("IH: HPD3\n");
-				}
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont2 & DC_HPD3_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				rdev->irq.stat_regs.evergreen.disp_int_cont2 &= ~DC_HPD3_INTERRUPT;
+				queue_hotplug = true;
+				DRM_DEBUG("IH: HPD3\n");
+
 				break;
 			case 3:
-				if (rdev->irq.stat_regs.evergreen.disp_int_cont3 & DC_HPD4_INTERRUPT) {
-					rdev->irq.stat_regs.evergreen.disp_int_cont3 &= ~DC_HPD4_INTERRUPT;
-					queue_hotplug = true;
-					DRM_DEBUG("IH: HPD4\n");
-				}
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont3 & DC_HPD4_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				rdev->irq.stat_regs.evergreen.disp_int_cont3 &= ~DC_HPD4_INTERRUPT;
+				queue_hotplug = true;
+				DRM_DEBUG("IH: HPD4\n");
+
 				break;
 			case 4:
-				if (rdev->irq.stat_regs.evergreen.disp_int_cont4 & DC_HPD5_INTERRUPT) {
-					rdev->irq.stat_regs.evergreen.disp_int_cont4 &= ~DC_HPD5_INTERRUPT;
-					queue_hotplug = true;
-					DRM_DEBUG("IH: HPD5\n");
-				}
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont4 & DC_HPD5_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				rdev->irq.stat_regs.evergreen.disp_int_cont4 &= ~DC_HPD5_INTERRUPT;
+				queue_hotplug = true;
+				DRM_DEBUG("IH: HPD5\n");
+
 				break;
 			case 5:
-				if (rdev->irq.stat_regs.evergreen.disp_int_cont5 & DC_HPD6_INTERRUPT) {
-					rdev->irq.stat_regs.evergreen.disp_int_cont5 &= ~DC_HPD6_INTERRUPT;
-					queue_hotplug = true;
-					DRM_DEBUG("IH: HPD6\n");
-				}
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont5 & DC_HPD6_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				rdev->irq.stat_regs.evergreen.disp_int_cont5 &= ~DC_HPD6_INTERRUPT;
+				queue_hotplug = true;
+				DRM_DEBUG("IH: HPD6\n");
+
+				break;
+			case 6:
+				if (!(rdev->irq.stat_regs.evergreen.disp_int & DC_HPD1_RX_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				rdev->irq.stat_regs.evergreen.disp_int &= ~DC_HPD1_RX_INTERRUPT;
+				queue_dp = true;
+				DRM_DEBUG("IH: HPD_RX 1\n");
+
+				break;
+			case 7:
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont & DC_HPD2_RX_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				rdev->irq.stat_regs.evergreen.disp_int_cont &= ~DC_HPD2_RX_INTERRUPT;
+				queue_dp = true;
+				DRM_DEBUG("IH: HPD_RX 2\n");
+
+				break;
+			case 8:
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont2 & DC_HPD3_RX_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				rdev->irq.stat_regs.evergreen.disp_int_cont2 &= ~DC_HPD3_RX_INTERRUPT;
+				queue_dp = true;
+				DRM_DEBUG("IH: HPD_RX 3\n");
+
+				break;
+			case 9:
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont3 & DC_HPD4_RX_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				rdev->irq.stat_regs.evergreen.disp_int_cont3 &= ~DC_HPD4_RX_INTERRUPT;
+				queue_dp = true;
+				DRM_DEBUG("IH: HPD_RX 4\n");
+
+				break;
+			case 10:
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont4 & DC_HPD5_RX_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				rdev->irq.stat_regs.evergreen.disp_int_cont4 &= ~DC_HPD5_RX_INTERRUPT;
+				queue_dp = true;
+				DRM_DEBUG("IH: HPD_RX 5\n");
+
+				break;
+			case 11:
+				if (!(rdev->irq.stat_regs.evergreen.disp_int_cont5 & DC_HPD6_RX_INTERRUPT))
+					DRM_DEBUG("IH: IH event w/o asserted irq bit?\n");
+
+				rdev->irq.stat_regs.evergreen.disp_int_cont5 &= ~DC_HPD6_RX_INTERRUPT;
+				queue_dp = true;
+				DRM_DEBUG("IH: HPD_RX 6\n");
+
 				break;
 			default:
 				DRM_DEBUG("Unhandled interrupt: %d %d\n", src_id, src_data);
 				break;
 			}
+			break;
+		case 96:
+			DRM_ERROR("SRBM_READ_ERROR: 0x%x\n", RREG32(SRBM_READ_ERROR));
+			WREG32(SRBM_INT_ACK, 0x1);
 			break;
 		case 124: /* UVD */
 			DRM_DEBUG("IH: UVD int: 0x%08x\n", src_data);
@@ -6775,6 +6952,22 @@ static int si_startup(struct radeon_device *rdev)
 			rdev->ring[R600_RING_TYPE_UVD_INDEX].ring_size = 0;
 	}
 
+	r = radeon_vce_resume(rdev);
+	if (!r) {
+		r = vce_v1_0_resume(rdev);
+		if (!r)
+			r = radeon_fence_driver_start_ring(rdev,
+							   TN_RING_TYPE_VCE1_INDEX);
+		if (!r)
+			r = radeon_fence_driver_start_ring(rdev,
+							   TN_RING_TYPE_VCE2_INDEX);
+	}
+	if (r) {
+		dev_err(rdev->dev, "VCE init error (%d).\n", r);
+		rdev->ring[TN_RING_TYPE_VCE1_INDEX].ring_size = 0;
+		rdev->ring[TN_RING_TYPE_VCE2_INDEX].ring_size = 0;
+	}
+
 	/* Enable IRQ */
 	if (!rdev->irq.installed) {
 		r = radeon_irq_kms_init(rdev);
@@ -6843,6 +7036,23 @@ static int si_startup(struct radeon_device *rdev)
 		}
 	}
 
+	r = -ENOENT;
+
+	ring = &rdev->ring[TN_RING_TYPE_VCE1_INDEX];
+	if (ring->ring_size)
+		r = radeon_ring_init(rdev, ring, ring->ring_size, 0,
+				     VCE_CMD_NO_OP);
+
+	ring = &rdev->ring[TN_RING_TYPE_VCE2_INDEX];
+	if (ring->ring_size)
+		r = radeon_ring_init(rdev, ring, ring->ring_size, 0,
+				     VCE_CMD_NO_OP);
+
+	if (!r)
+		r = vce_v1_0_init(rdev);
+	else if (r != -ENOENT)
+		DRM_ERROR("radeon: failed initializing VCE (%d).\n", r);
+
 	r = radeon_ib_pool_init(rdev);
 	if (r) {
 		dev_err(rdev->dev, "IB initialization failed (%d).\n", r);
@@ -6855,15 +7065,41 @@ static int si_startup(struct radeon_device *rdev)
 		return r;
 	}
 
-	r = dce6_audio_init(rdev);
+	r = radeon_audio_init(rdev);
 	if (r)
 		return r;
 
 	return 0;
 }
 
+int si_resume(struct radeon_device *rdev)
+{
+	int r;
 
+	/* Do not reset GPU before posting, on rv770 hw unlike on r500 hw,
+	 * posting will perform necessary task to bring back GPU into good
+	 * shape.
+	 */
+	/* post card */
+	atom_asic_init(rdev->mode_info.atom_context);
 
+	/* init golden registers */
+	si_init_golden_registers(rdev);
+
+	if (rdev->pm.pm_method == PM_METHOD_DPM)
+		radeon_pm_resume(rdev);
+
+	rdev->accel_working = true;
+	r = si_startup(rdev);
+	if (r) {
+		DRM_ERROR("si startup failed on resume\n");
+		rdev->accel_working = false;
+		return r;
+	}
+
+	return r;
+
+}
 
 /* Plan is to move initialization in that function and use
  * helper function so that radeon_device_init pretty much
@@ -6963,25 +7199,37 @@ int si_init(struct radeon_device *rdev)
 		}
 	}
 
-    rdev->ih.ring_obj = NULL;
+	r = radeon_vce_init(rdev);
+	if (!r) {
+		ring = &rdev->ring[TN_RING_TYPE_VCE1_INDEX];
+		ring->ring_obj = NULL;
+		r600_ring_init(rdev, ring, 4096);
+
+		ring = &rdev->ring[TN_RING_TYPE_VCE2_INDEX];
+		ring->ring_obj = NULL;
+		r600_ring_init(rdev, ring, 4096);
+	}
+
+	rdev->ih.ring_obj = NULL;
 	r600_ih_ring_init(rdev, 64 * 1024);
 
-    r = r600_pcie_gart_init(rdev);
-    if (r)
-       return r;
+	r = r600_pcie_gart_init(rdev);
+	if (r)
+		return r;
 
 	rdev->accel_working = true;
-    r = si_startup(rdev);
+	r = si_startup(rdev);
 	if (r) {
 		dev_err(rdev->dev, "disabling GPU acceleration\n");
 		si_cp_fini(rdev);
-//       si_irq_fini(rdev);
-//       si_rlc_fini(rdev);
-//       radeon_wb_fini(rdev);
-//       radeon_ib_pool_fini(rdev);
-//       radeon_vm_manager_fini(rdev);
-//       radeon_irq_kms_fini(rdev);
-//       si_pcie_gart_fini(rdev);
+		cayman_dma_fini(rdev);
+		si_irq_fini(rdev);
+		sumo_rlc_fini(rdev);
+		radeon_wb_fini(rdev);
+		radeon_ib_pool_fini(rdev);
+		radeon_vm_manager_fini(rdev);
+		radeon_irq_kms_fini(rdev);
+		si_pcie_gart_fini(rdev);
 		rdev->accel_working = false;
 	}
 
@@ -6995,6 +7243,34 @@ int si_init(struct radeon_device *rdev)
 	}
 
 	return 0;
+}
+
+void si_fini(struct radeon_device *rdev)
+{
+	radeon_pm_fini(rdev);
+	si_cp_fini(rdev);
+	cayman_dma_fini(rdev);
+	si_fini_pg(rdev);
+	si_fini_cg(rdev);
+	si_irq_fini(rdev);
+	sumo_rlc_fini(rdev);
+	radeon_wb_fini(rdev);
+	radeon_vm_manager_fini(rdev);
+	radeon_ib_pool_fini(rdev);
+	radeon_irq_kms_fini(rdev);
+	if (rdev->has_uvd) {
+		uvd_v1_0_fini(rdev);
+		radeon_uvd_fini(rdev);
+		radeon_vce_fini(rdev);
+	}
+	si_pcie_gart_fini(rdev);
+	r600_vram_scratch_fini(rdev);
+	radeon_gem_fini(rdev);
+	radeon_fence_driver_fini(rdev);
+	radeon_bo_fini(rdev);
+	radeon_atombios_fini(rdev);
+	kfree(rdev->bios);
+	rdev->bios = NULL;
 }
 
 /**
@@ -7031,8 +7307,7 @@ int si_set_uvd_clocks(struct radeon_device *rdev, u32 vclk, u32 dclk)
 	WREG32_P(CG_UPLL_FUNC_CNTL, UPLL_BYPASS_EN_MASK, ~UPLL_BYPASS_EN_MASK);
 
 	if (!vclk || !dclk) {
-		/* keep the Bypass mode, put PLL to sleep */
-		WREG32_P(CG_UPLL_FUNC_CNTL, UPLL_SLEEP_MASK, ~UPLL_SLEEP_MASK);
+		/* keep the Bypass mode */
 		return 0;
 	}
 
@@ -7048,8 +7323,7 @@ int si_set_uvd_clocks(struct radeon_device *rdev, u32 vclk, u32 dclk)
 	/* set VCO_MODE to 1 */
 	WREG32_P(CG_UPLL_FUNC_CNTL, UPLL_VCO_MODE_MASK, ~UPLL_VCO_MODE_MASK);
 
-	/* toggle UPLL_SLEEP to 1 then back to 0 */
-	WREG32_P(CG_UPLL_FUNC_CNTL, UPLL_SLEEP_MASK, ~UPLL_SLEEP_MASK);
+	/* disable sleep mode */
 	WREG32_P(CG_UPLL_FUNC_CNTL, 0, ~UPLL_SLEEP_MASK);
 
 	/* deassert UPLL_RESET */
@@ -7467,4 +7741,125 @@ static void si_program_aspm(struct radeon_device *rdev)
 			}
 		}
 	}
+}
+
+int si_vce_send_vcepll_ctlreq(struct radeon_device *rdev)
+{
+        unsigned i;
+
+        /* make sure VCEPLL_CTLREQ is deasserted */
+        WREG32_SMC_P(CG_VCEPLL_FUNC_CNTL, 0, ~UPLL_CTLREQ_MASK);
+
+        mdelay(10);
+
+        /* assert UPLL_CTLREQ */
+        WREG32_SMC_P(CG_VCEPLL_FUNC_CNTL, UPLL_CTLREQ_MASK, ~UPLL_CTLREQ_MASK);
+
+        /* wait for CTLACK and CTLACK2 to get asserted */
+        for (i = 0; i < 100; ++i) {
+                uint32_t mask = UPLL_CTLACK_MASK | UPLL_CTLACK2_MASK;
+                if ((RREG32_SMC(CG_VCEPLL_FUNC_CNTL) & mask) == mask)
+                        break;
+                mdelay(10);
+        }
+
+        /* deassert UPLL_CTLREQ */
+        WREG32_SMC_P(CG_VCEPLL_FUNC_CNTL, 0, ~UPLL_CTLREQ_MASK);
+
+        if (i == 100) {
+                DRM_ERROR("Timeout setting UVD clocks!\n");
+                return -ETIMEDOUT;
+        }
+
+        return 0;
+}
+
+int si_set_vce_clocks(struct radeon_device *rdev, u32 evclk, u32 ecclk)
+{
+	unsigned fb_div = 0, evclk_div = 0, ecclk_div = 0;
+	int r;
+
+	/* bypass evclk and ecclk with bclk */
+	WREG32_SMC_P(CG_VCEPLL_FUNC_CNTL_2,
+		     EVCLK_SRC_SEL(1) | ECCLK_SRC_SEL(1),
+		     ~(EVCLK_SRC_SEL_MASK | ECCLK_SRC_SEL_MASK));
+
+	/* put PLL in bypass mode */
+	WREG32_SMC_P(CG_VCEPLL_FUNC_CNTL, VCEPLL_BYPASS_EN_MASK,
+		     ~VCEPLL_BYPASS_EN_MASK);
+
+	if (!evclk || !ecclk) {
+		/* keep the Bypass mode, put PLL to sleep */
+		WREG32_SMC_P(CG_VCEPLL_FUNC_CNTL, VCEPLL_SLEEP_MASK,
+			     ~VCEPLL_SLEEP_MASK);
+		return 0;
+	}
+
+	r = radeon_uvd_calc_upll_dividers(rdev, evclk, ecclk, 125000, 250000,
+					  16384, 0x03FFFFFF, 0, 128, 5,
+					  &fb_div, &evclk_div, &ecclk_div);
+	if (r)
+		return r;
+
+	/* set RESET_ANTI_MUX to 0 */
+	WREG32_SMC_P(CG_VCEPLL_FUNC_CNTL_5, 0, ~RESET_ANTI_MUX_MASK);
+
+	/* set VCO_MODE to 1 */
+	WREG32_SMC_P(CG_VCEPLL_FUNC_CNTL, VCEPLL_VCO_MODE_MASK,
+		     ~VCEPLL_VCO_MODE_MASK);
+
+	/* toggle VCEPLL_SLEEP to 1 then back to 0 */
+	WREG32_SMC_P(CG_VCEPLL_FUNC_CNTL, VCEPLL_SLEEP_MASK,
+		     ~VCEPLL_SLEEP_MASK);
+	WREG32_SMC_P(CG_VCEPLL_FUNC_CNTL, 0, ~VCEPLL_SLEEP_MASK);
+
+	/* deassert VCEPLL_RESET */
+	WREG32_SMC_P(CG_VCEPLL_FUNC_CNTL, 0, ~VCEPLL_RESET_MASK);
+
+	mdelay(1);
+
+	r = si_vce_send_vcepll_ctlreq(rdev);
+	if (r)
+		return r;
+
+	/* assert VCEPLL_RESET again */
+	WREG32_SMC_P(CG_VCEPLL_FUNC_CNTL, VCEPLL_RESET_MASK, ~VCEPLL_RESET_MASK);
+
+	/* disable spread spectrum. */
+	WREG32_SMC_P(CG_VCEPLL_SPREAD_SPECTRUM, 0, ~SSEN_MASK);
+
+	/* set feedback divider */
+	WREG32_SMC_P(CG_VCEPLL_FUNC_CNTL_3, VCEPLL_FB_DIV(fb_div), ~VCEPLL_FB_DIV_MASK);
+
+	/* set ref divider to 0 */
+	WREG32_SMC_P(CG_VCEPLL_FUNC_CNTL, 0, ~VCEPLL_REF_DIV_MASK);
+
+	/* set PDIV_A and PDIV_B */
+	WREG32_SMC_P(CG_VCEPLL_FUNC_CNTL_2,
+		     VCEPLL_PDIV_A(evclk_div) | VCEPLL_PDIV_B(ecclk_div),
+		     ~(VCEPLL_PDIV_A_MASK | VCEPLL_PDIV_B_MASK));
+
+	/* give the PLL some time to settle */
+	mdelay(15);
+
+	/* deassert PLL_RESET */
+	WREG32_SMC_P(CG_VCEPLL_FUNC_CNTL, 0, ~VCEPLL_RESET_MASK);
+
+	mdelay(15);
+
+	/* switch from bypass mode to normal mode */
+	WREG32_SMC_P(CG_VCEPLL_FUNC_CNTL, 0, ~VCEPLL_BYPASS_EN_MASK);
+
+	r = si_vce_send_vcepll_ctlreq(rdev);
+	if (r)
+		return r;
+
+	/* switch VCLK and DCLK selection */
+	WREG32_SMC_P(CG_VCEPLL_FUNC_CNTL_2,
+		     EVCLK_SRC_SEL(16) | ECCLK_SRC_SEL(16),
+		     ~(EVCLK_SRC_SEL_MASK | ECCLK_SRC_SEL_MASK));
+
+	mdelay(100);
+
+	return 0;
 }

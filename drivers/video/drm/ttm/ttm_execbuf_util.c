@@ -131,17 +131,17 @@ int ttm_eu_reserve_buffers(struct ww_acquire_ctx *ticket,
 
 		if (!ret) {
 			if (!entry->shared)
-			continue;
+				continue;
 
 			ret = reservation_object_reserve_shared(bo->resv);
 			if (!ret)
 				continue;
 		}
 
-			/* uh oh, we lost out, drop every reservation and try
-			 * to only reserve this buffer, then start over if
-			 * this succeeds.
-			 */
+		/* uh oh, we lost out, drop every reservation and try
+		 * to only reserve this buffer, then start over if
+		 * this succeeds.
+		 */
 		ttm_eu_backoff_reservation_reverse(list, entry);
 
 		if (ret == -EDEADLK && intr) {
@@ -155,15 +155,15 @@ int ttm_eu_reserve_buffers(struct ww_acquire_ctx *ticket,
 		if (!ret && entry->shared)
 			ret = reservation_object_reserve_shared(bo->resv);
 
-			if (unlikely(ret != 0)) {
-				if (ret == -EINTR)
-					ret = -ERESTARTSYS;
+		if (unlikely(ret != 0)) {
+			if (ret == -EINTR)
+				ret = -ERESTARTSYS;
 			if (ticket) {
 				ww_acquire_done(ticket);
 				ww_acquire_fini(ticket);
 			}
 			return ret;
-			}
+		}
 
 		/* move this item to the front of the list,
 		 * forces correct iteration of the loop without keeping track

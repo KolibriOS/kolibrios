@@ -437,8 +437,8 @@ void r600_dma_ring_ib_execute(struct radeon_device *rdev, struct radeon_ib *ib)
  * registered as the asic copy callback.
  */
 struct radeon_fence *r600_copy_dma(struct radeon_device *rdev,
-		  uint64_t src_offset, uint64_t dst_offset,
-		  unsigned num_gpu_pages,
+				   uint64_t src_offset, uint64_t dst_offset,
+				   unsigned num_gpu_pages,
 				   struct reservation_object *resv)
 {
 	struct radeon_fence *fence;

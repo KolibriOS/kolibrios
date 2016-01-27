@@ -63,7 +63,7 @@ bool radeon_semaphore_emit_signal(struct radeon_device *rdev, int ridx,
 	trace_radeon_semaphore_signale(ridx, semaphore);
 
 	if (radeon_semaphore_ring_emit(rdev, ridx, ring, semaphore, false)) {
-	--semaphore->waiters;
+		--semaphore->waiters;
 
 		/* for debugging lockup only, used by sysfs debug files */
 		ring->last_semaphore_signal_addr = semaphore->gpu_addr;
@@ -80,7 +80,7 @@ bool radeon_semaphore_emit_wait(struct radeon_device *rdev, int ridx,
 	trace_radeon_semaphore_wait(ridx, semaphore);
 
 	if (radeon_semaphore_ring_emit(rdev, ridx, ring, semaphore, true)) {
-	++semaphore->waiters;
+		++semaphore->waiters;
 
 		/* for debugging lockup only, used by sysfs debug files */
 		ring->last_semaphore_wait_addr = semaphore->gpu_addr;

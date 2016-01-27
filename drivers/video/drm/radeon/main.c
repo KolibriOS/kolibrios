@@ -5,27 +5,17 @@
 #include "radeon.h"
 #include "bitmap.h"
 
+#define DRV_NAME "atikms v4.4"
+
 void __init dmi_scan_machine(void);
 
 #define KMS_DEV_CLOSE 0
 #define KMS_DEV_INIT  1
 #define KMS_DEV_READY 2
 
-struct pci_device {
-    uint16_t    domain;
-    uint8_t     bus;
-    uint8_t     dev;
-    uint8_t     func;
-    uint16_t    vendor_id;
-    uint16_t    device_id;
-    uint16_t    subvendor_id;
-    uint16_t    subdevice_id;
-    uint32_t    device_class;
-    uint8_t     revision;
-};
-
 struct drm_device *main_device;
 struct drm_file   *drm_file_handlers[256];
+int oops_in_progress;
 
 videomode_t usermode;
 
@@ -56,8 +46,9 @@ void ati_driver_thread()
 
     while(driver_wq_state == KMS_DEV_INIT)
     {
-        jiffies = GetTimerTicks();
-        jiffies_64 = jiffies;
+        jiffies_64 = GetClockNs() / 10000000;
+        jiffies = (unsigned long)jiffies_64;
+
         delay(1);
     };
 
@@ -134,7 +125,7 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     if( GetService("DISPLAY") != 0 )
         return 0;
 
-    printf("Radeon v3.19-rc3 cmdline %s\n", cmdline);
+    printf("%s cmdline %s\n",DRV_NAME, cmdline);
 
     if( cmdline && *cmdline )
         parse_cmdline(cmdline, &usermode, log, &radeon_modeset);
@@ -143,6 +134,10 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     {
         printf("Can't open %s\nExit\n", log);
         return 0;
+    }
+    else
+    {
+        dbgprintf("\nLOG: %s build %s %s\n",DRV_NAME,__DATE__, __TIME__);
     }
 
     cpu_detect1();
@@ -153,6 +148,16 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
         dbgprintf("Device enumeration failed\n");
         return 0;
     }
+
+    err = kmap_init();
+    if( unlikely(err != 0) )
+    {
+        dbgprintf("kmap initialization failed\n");
+        return 0;
+    }
+
+    dmi_scan_machine();
+
 
     driver_wq_state = KMS_DEV_INIT;
     CreateKernelThread(ati_driver_thread);
@@ -277,7 +282,7 @@ int pci_scan_filter(u32 id, u32 busnr, u32 devfn)
 {
     u16 vendor, device;
     u32 class;
-    int   ret = 0;
+    int ret = 0;
 
     vendor   = id & 0xffff;
     device   = (id >> 16) & 0xffff;
@@ -311,7 +316,7 @@ s64 div64_s64(s64 dividend, s64 divisor)
 {
         s64 quot, t;
 
-        quot = div64_u64(abs64(dividend), abs64(divisor));
+        quot = div64_u64(abs(dividend), abs(divisor));
         t = (dividend ^ divisor) >> 63;
 
         return (quot ^ t) - t;

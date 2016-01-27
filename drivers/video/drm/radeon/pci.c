@@ -1,10 +1,15 @@
+#define CONFIG_PCI
+
+#include <syscall.h>
 
 #include <linux/kernel.h>
 #include <linux/mutex.h>
 #include <linux/mod_devicetable.h>
 #include <linux/slab.h>
+#include <linux/pm.h>
+
 #include <linux/pci.h>
-#include <syscall.h>
+
 
 extern int pci_scan_filter(u32 id, u32 busnr, u32 devfn);
 
@@ -372,7 +377,7 @@ static pci_dev_t* pci_scan_device(u32 busnr, int devfn)
 
 
 
-int pci_scan_slot(u32 bus, int devfn)
+int _pci_scan_slot(u32 bus, int devfn)
 {
     int  func, nr = 0;
 
@@ -493,7 +498,7 @@ int enum_pci_devices()
     for(;bus <= last_bus; bus++)
     {
         for (devfn = 0; devfn < 0x100; devfn += 8)
-            pci_scan_slot(bus, devfn);
+            _pci_scan_slot(bus, devfn);
 
 
     }
@@ -571,7 +576,7 @@ pci_get_device(unsigned int vendor, unsigned int device, struct pci_dev *from)
 };
 
 
-struct pci_dev * pci_get_bus_and_slot(unsigned int bus, unsigned int devfn)
+struct pci_dev * _pci_get_bus_and_slot(unsigned int bus, unsigned int devfn)
 {
     pci_dev_t *dev;
 
@@ -665,7 +670,7 @@ void pci_iounmap(struct pci_dev *dev, void __iomem * addr)
 
 
 static inline void
-pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
+_pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
                          struct resource *res)
 {
     region->start = res->start;
@@ -682,7 +687,7 @@ int pci_enable_rom(struct pci_dev *pdev)
     if (!res->flags)
             return -1;
 
-    pcibios_resource_to_bus(pdev, &region, res);
+    _pcibios_resource_to_bus(pdev, &region, res);
     pci_read_config_dword(pdev, pdev->rom_base_reg, &rom_addr);
     rom_addr &= ~PCI_ROM_ADDRESS_MASK;
     rom_addr |= region.start | PCI_ROM_ADDRESS_ENABLE;

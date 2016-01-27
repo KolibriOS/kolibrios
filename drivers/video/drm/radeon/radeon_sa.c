@@ -354,8 +354,8 @@ int radeon_sa_bo_new(struct radeon_device *rdev,
 		spin_lock(&sa_manager->wq.lock);
 		/* if we have nothing to wait for block */
 		if (r == -ENOENT) {
-            r = wait_event_interruptible(
-				sa_manager->wq,
+			r = wait_event_interruptible(
+				sa_manager->wq, 
 				radeon_sa_event(sa_manager, size, align)
 			);
 		}

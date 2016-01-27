@@ -209,7 +209,7 @@ static const struct radeon_tv_mode_constants available_tv_modes[] = {
 		630627,             /* defRestart */
 		347,                /* crtcPLL_N */
 		14,                 /* crtcPLL_M */
-			8,                  /* crtcPLL_postDiv */
+		8,                  /* crtcPLL_postDiv */
 		1022,               /* pixToTV */
 	},
 	{ /* PAL timing for 14 Mhz ref clk */

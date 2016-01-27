@@ -268,6 +268,17 @@ static void cik_sdma_gfx_stop(struct radeon_device *rdev)
 	}
 	rdev->ring[R600_RING_TYPE_DMA_INDEX].ready = false;
 	rdev->ring[CAYMAN_RING_TYPE_DMA1_INDEX].ready = false;
+
+	/* FIXME use something else than big hammer but after few days can not
+	 * seem to find good combination so reset SDMA blocks as it seems we
+	 * do not shut them down properly. This fix hibernation and does not
+	 * affect suspend to ram.
+	 */
+	WREG32(SRBM_SOFT_RESET, SOFT_RESET_SDMA | SOFT_RESET_SDMA1);
+	(void)RREG32(SRBM_SOFT_RESET);
+	udelay(50);
+	WREG32(SRBM_SOFT_RESET, 0);
+	(void)RREG32(SRBM_SOFT_RESET);
 }
 
 /**
@@ -280,6 +291,33 @@ static void cik_sdma_gfx_stop(struct radeon_device *rdev)
 static void cik_sdma_rlc_stop(struct radeon_device *rdev)
 {
 	/* XXX todo */
+}
+
+/**
+ * cik_sdma_ctx_switch_enable - enable/disable sdma engine preemption
+ *
+ * @rdev: radeon_device pointer
+ * @enable: enable/disable preemption.
+ *
+ * Halt or unhalt the async dma engines (CIK).
+ */
+static void cik_sdma_ctx_switch_enable(struct radeon_device *rdev, bool enable)
+{
+	uint32_t reg_offset, value;
+	int i;
+
+	for (i = 0; i < 2; i++) {
+		if (i == 0)
+			reg_offset = SDMA0_REGISTER_OFFSET;
+		else
+			reg_offset = SDMA1_REGISTER_OFFSET;
+		value = RREG32(SDMA0_CNTL + reg_offset);
+		if (enable)
+			value |= AUTO_CTXSW_ENABLE;
+		else
+			value &= ~AUTO_CTXSW_ENABLE;
+		WREG32(SDMA0_CNTL + reg_offset, value);
+	}
 }
 
 /**
@@ -312,6 +350,8 @@ void cik_sdma_enable(struct radeon_device *rdev, bool enable)
 			me_cntl |= SDMA_HALT;
 		WREG32(SDMA0_ME_CNTL + reg_offset, me_cntl);
 	}
+
+	cik_sdma_ctx_switch_enable(rdev, enable);
 }
 
 /**
@@ -457,19 +497,19 @@ static int cik_sdma_load_microcode(struct radeon_device *rdev)
 	} else {
 		const __be32 *fw_data;
 
-	/* sdma0 */
-	fw_data = (const __be32 *)rdev->sdma_fw->data;
-	WREG32(SDMA0_UCODE_ADDR + SDMA0_REGISTER_OFFSET, 0);
-	for (i = 0; i < CIK_SDMA_UCODE_SIZE; i++)
-		WREG32(SDMA0_UCODE_DATA + SDMA0_REGISTER_OFFSET, be32_to_cpup(fw_data++));
-	WREG32(SDMA0_UCODE_DATA + SDMA0_REGISTER_OFFSET, CIK_SDMA_UCODE_VERSION);
+		/* sdma0 */
+		fw_data = (const __be32 *)rdev->sdma_fw->data;
+		WREG32(SDMA0_UCODE_ADDR + SDMA0_REGISTER_OFFSET, 0);
+		for (i = 0; i < CIK_SDMA_UCODE_SIZE; i++)
+			WREG32(SDMA0_UCODE_DATA + SDMA0_REGISTER_OFFSET, be32_to_cpup(fw_data++));
+		WREG32(SDMA0_UCODE_DATA + SDMA0_REGISTER_OFFSET, CIK_SDMA_UCODE_VERSION);
 
-	/* sdma1 */
-	fw_data = (const __be32 *)rdev->sdma_fw->data;
-	WREG32(SDMA0_UCODE_ADDR + SDMA1_REGISTER_OFFSET, 0);
-	for (i = 0; i < CIK_SDMA_UCODE_SIZE; i++)
-		WREG32(SDMA0_UCODE_DATA + SDMA1_REGISTER_OFFSET, be32_to_cpup(fw_data++));
-	WREG32(SDMA0_UCODE_DATA + SDMA1_REGISTER_OFFSET, CIK_SDMA_UCODE_VERSION);
+		/* sdma1 */
+		fw_data = (const __be32 *)rdev->sdma_fw->data;
+		WREG32(SDMA0_UCODE_ADDR + SDMA1_REGISTER_OFFSET, 0);
+		for (i = 0; i < CIK_SDMA_UCODE_SIZE; i++)
+			WREG32(SDMA0_UCODE_DATA + SDMA1_REGISTER_OFFSET, be32_to_cpup(fw_data++));
+		WREG32(SDMA0_UCODE_DATA + SDMA1_REGISTER_OFFSET, CIK_SDMA_UCODE_VERSION);
 	}
 
 	WREG32(SDMA0_UCODE_ADDR + SDMA0_REGISTER_OFFSET, 0);
@@ -537,8 +577,8 @@ void cik_sdma_fini(struct radeon_device *rdev)
  * registered as the asic copy callback.
  */
 struct radeon_fence *cik_copy_dma(struct radeon_device *rdev,
-		 uint64_t src_offset, uint64_t dst_offset,
-		 unsigned num_gpu_pages,
+				  uint64_t src_offset, uint64_t dst_offset,
+				  unsigned num_gpu_pages,
 				  struct reservation_object *resv)
 {
 	struct radeon_fence *fence;
@@ -756,28 +796,28 @@ bool cik_sdma_is_lockup(struct radeon_device *rdev, struct radeon_ring *ring)
  * Update PTEs by copying them from the GART using sDMA (CIK).
  */
 void cik_sdma_vm_copy_pages(struct radeon_device *rdev,
-			  struct radeon_ib *ib,
+			    struct radeon_ib *ib,
 			    uint64_t pe, uint64_t src,
 			    unsigned count)
 {
-		while (count) {
-			unsigned bytes = count * 8;
-			if (bytes > 0x1FFFF8)
-				bytes = 0x1FFFF8;
+	while (count) {
+		unsigned bytes = count * 8;
+		if (bytes > 0x1FFFF8)
+			bytes = 0x1FFFF8;
 
 		ib->ptr[ib->length_dw++] = SDMA_PACKET(SDMA_OPCODE_COPY,
 			SDMA_WRITE_SUB_OPCODE_LINEAR, 0);
-			ib->ptr[ib->length_dw++] = bytes;
-			ib->ptr[ib->length_dw++] = 0; /* src/dst endian swap */
-			ib->ptr[ib->length_dw++] = lower_32_bits(src);
-			ib->ptr[ib->length_dw++] = upper_32_bits(src);
-			ib->ptr[ib->length_dw++] = lower_32_bits(pe);
-			ib->ptr[ib->length_dw++] = upper_32_bits(pe);
+		ib->ptr[ib->length_dw++] = bytes;
+		ib->ptr[ib->length_dw++] = 0; /* src/dst endian swap */
+		ib->ptr[ib->length_dw++] = lower_32_bits(src);
+		ib->ptr[ib->length_dw++] = upper_32_bits(src);
+		ib->ptr[ib->length_dw++] = lower_32_bits(pe);
+		ib->ptr[ib->length_dw++] = upper_32_bits(pe);
 
-			pe += bytes;
-			src += bytes;
-			count -= bytes / 8;
-		}
+		pe += bytes;
+		src += bytes;
+		count -= bytes / 8;
+	}
 }
 
 /**
@@ -802,32 +842,31 @@ void cik_sdma_vm_write_pages(struct radeon_device *rdev,
 	uint64_t value;
 	unsigned ndw;
 
-		while (count) {
-			ndw = count * 2;
-			if (ndw > 0xFFFFE)
-				ndw = 0xFFFFE;
+	while (count) {
+		ndw = count * 2;
+		if (ndw > 0xFFFFE)
+			ndw = 0xFFFFE;
 
-			/* for non-physically contiguous pages (system) */
+		/* for non-physically contiguous pages (system) */
 		ib->ptr[ib->length_dw++] = SDMA_PACKET(SDMA_OPCODE_WRITE,
 			SDMA_WRITE_SUB_OPCODE_LINEAR, 0);
-			ib->ptr[ib->length_dw++] = pe;
-			ib->ptr[ib->length_dw++] = upper_32_bits(pe);
-			ib->ptr[ib->length_dw++] = ndw;
-			for (; ndw > 0; ndw -= 2, --count, pe += 8) {
+		ib->ptr[ib->length_dw++] = pe;
+		ib->ptr[ib->length_dw++] = upper_32_bits(pe);
+		ib->ptr[ib->length_dw++] = ndw;
+		for (; ndw > 0; ndw -= 2, --count, pe += 8) {
 			if (flags & R600_PTE_SYSTEM) {
 				value = radeon_vm_map_gart(rdev, addr);
-				value &= 0xFFFFFFFFFFFFF000ULL;
 			} else if (flags & R600_PTE_VALID) {
 				value = addr;
 			} else {
 				value = 0;
 			}
-				addr += incr;
-				value |= flags;
-				ib->ptr[ib->length_dw++] = value;
-				ib->ptr[ib->length_dw++] = upper_32_bits(value);
-			}
+			addr += incr;
+			value |= flags;
+			ib->ptr[ib->length_dw++] = value;
+			ib->ptr[ib->length_dw++] = upper_32_bits(value);
 		}
+	}
 }
 
 /**
@@ -852,32 +891,32 @@ void cik_sdma_vm_set_pages(struct radeon_device *rdev,
 	uint64_t value;
 	unsigned ndw;
 
-		while (count) {
-			ndw = count;
-			if (ndw > 0x7FFFF)
-				ndw = 0x7FFFF;
+	while (count) {
+		ndw = count;
+		if (ndw > 0x7FFFF)
+			ndw = 0x7FFFF;
 
-			if (flags & R600_PTE_VALID)
-				value = addr;
-			else
-				value = 0;
+		if (flags & R600_PTE_VALID)
+			value = addr;
+		else
+			value = 0;
 
-			/* for physically contiguous pages (vram) */
-			ib->ptr[ib->length_dw++] = SDMA_PACKET(SDMA_OPCODE_GENERATE_PTE_PDE, 0, 0);
-			ib->ptr[ib->length_dw++] = pe; /* dst addr */
-			ib->ptr[ib->length_dw++] = upper_32_bits(pe);
-			ib->ptr[ib->length_dw++] = flags; /* mask */
-			ib->ptr[ib->length_dw++] = 0;
-			ib->ptr[ib->length_dw++] = value; /* value */
-			ib->ptr[ib->length_dw++] = upper_32_bits(value);
-			ib->ptr[ib->length_dw++] = incr; /* increment size */
-			ib->ptr[ib->length_dw++] = 0;
-			ib->ptr[ib->length_dw++] = ndw; /* number of entries */
+		/* for physically contiguous pages (vram) */
+		ib->ptr[ib->length_dw++] = SDMA_PACKET(SDMA_OPCODE_GENERATE_PTE_PDE, 0, 0);
+		ib->ptr[ib->length_dw++] = pe; /* dst addr */
+		ib->ptr[ib->length_dw++] = upper_32_bits(pe);
+		ib->ptr[ib->length_dw++] = flags; /* mask */
+		ib->ptr[ib->length_dw++] = 0;
+		ib->ptr[ib->length_dw++] = value; /* value */
+		ib->ptr[ib->length_dw++] = upper_32_bits(value);
+		ib->ptr[ib->length_dw++] = incr; /* increment size */
+		ib->ptr[ib->length_dw++] = 0;
+		ib->ptr[ib->length_dw++] = ndw; /* number of entries */
 
-			pe += ndw * 8;
-			addr += ndw * incr;
-			count -= ndw;
-		}
+		pe += ndw * 8;
+		addr += ndw * incr;
+		count -= ndw;
+	}
 }
 
 /**
@@ -903,6 +942,9 @@ void cik_sdma_vm_pad_ib(struct radeon_ib *ib)
 void cik_dma_vm_flush(struct radeon_device *rdev, struct radeon_ring *ring,
 		      unsigned vm_id, uint64_t pd_addr)
 {
+	u32 extra_bits = (SDMA_POLL_REG_MEM_EXTRA_OP(0) |
+			  SDMA_POLL_REG_MEM_EXTRA_FUNC(0)); /* always */
+
 	radeon_ring_write(ring, SDMA_PACKET(SDMA_OPCODE_SRBM_WRITE, 0, 0xf000));
 	if (vm_id < 8) {
 		radeon_ring_write(ring, (VM_CONTEXT0_PAGE_TABLE_BASE_ADDR + (vm_id << 2)) >> 2);
@@ -943,5 +985,12 @@ void cik_dma_vm_flush(struct radeon_device *rdev, struct radeon_ring *ring,
 	radeon_ring_write(ring, SDMA_PACKET(SDMA_OPCODE_SRBM_WRITE, 0, 0xf000));
 	radeon_ring_write(ring, VM_INVALIDATE_REQUEST >> 2);
 	radeon_ring_write(ring, 1 << vm_id);
+
+	radeon_ring_write(ring, SDMA_PACKET(SDMA_OPCODE_POLL_REG_MEM, 0, extra_bits));
+	radeon_ring_write(ring, VM_INVALIDATE_REQUEST >> 2);
+	radeon_ring_write(ring, 0);
+	radeon_ring_write(ring, 0); /* reference */
+	radeon_ring_write(ring, 0); /* mask */
+	radeon_ring_write(ring, (0xfff << 16) | 10); /* retry count, poll interval */
 }
 

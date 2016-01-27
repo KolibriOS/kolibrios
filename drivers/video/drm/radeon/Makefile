@@ -3,8 +3,9 @@ LD = ld
 AS = as
 FASM = fasm.exe
 
-DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_TINY_RCU -DCONFIG_X86_L1_CACHE_SHIFT=6
-DEFINES += -DCONFIG_ARCH_HAS_CACHE_LINE_SIZE
+DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_X86_CMPXCHG64 -DCONFIG_TINY_RCU
+DEFINES += -DCONFIG_X86_L1_CACHE_SHIFT=6
+DEFINES += -DCONFIG_DRM_FBDEV_EMULATION -DCONFIG_DMI -DCONFIG_ARCH_HAS_CACHE_LINE_SIZE
 
 DRV_TOPDIR   = $(CURDIR)/../../..
 DRM_TOPDIR   = $(CURDIR)/..
@@ -50,12 +51,15 @@ NAME_SRC=							\
 			../ttm/ttm_memory.c			\
 			../ttm/ttm_page_alloc.c			\
 			../ttm/ttm_tt.c				\
+			$(DRM_TOPDIR)/drm_atomic.c		\
+			$(DRM_TOPDIR)/drm_atomic_helper.c	\
+			$(DRM_TOPDIR)/drm_bridge.c		\
 			$(DRM_TOPDIR)/drm_cache.c		\
 			$(DRM_TOPDIR)/drm_crtc.c		\
 			$(DRM_TOPDIR)/drm_crtc_helper.c		\
 			$(DRM_TOPDIR)/drm_dp_helper.c		\
+			$(DRM_TOPDIR)/drm_dp_mst_topology.c	\
 			$(DRM_TOPDIR)/drm_drv.c			\
-			$(DRM_TOPDIR)/drm_atomic.c		\
 			$(DRM_TOPDIR)/drm_edid.c		\
 			$(DRM_TOPDIR)/drm_fb_helper.c		\
 			$(DRM_TOPDIR)/drm_gem.c			\
@@ -102,6 +106,7 @@ NAME_SRC=							\
 			radeon_agp.c				\
 			radeon_asic.c				\
 			radeon_atombios.c			\
+			radeon_audio.c				\
 			radeon_benchmark.c			\
 			radeon_bios.c				\
 			radeon_combios.c			\
@@ -109,6 +114,8 @@ NAME_SRC=							\
 			radeon_cs.c				\
 			radeon_clocks.c				\
 			radeon_display.c			\
+			radeon_dp_auxch.c			\
+			radeon_dp_mst.c				\
 			radeon_encoders.c			\
 			radeon_fence.c				\
 			radeon_fb.c				\
@@ -117,6 +124,7 @@ NAME_SRC=							\
 			radeon_i2c.c				\
 			radeon_ib.c				\
 			radeon_irq_kms.c			\
+			radeon_kms.c				\
 			radeon_legacy_crtc.c			\
 			radeon_legacy_encoders.c		\
 			radeon_legacy_tv.c			\

@@ -73,18 +73,18 @@ static int ttm_bo_man_get_node(struct ttm_mem_type_manager *man,
 		aflags = DRM_MM_CREATE_TOP;
 	}
 
-		spin_lock(&rman->lock);
+	spin_lock(&rman->lock);
 	ret = drm_mm_insert_node_in_range_generic(mm, node, mem->num_pages,
 					  mem->page_alignment, 0,
 					  place->fpfn, lpfn,
 					  sflags, aflags);
-			spin_unlock(&rman->lock);
+	spin_unlock(&rman->lock);
 
 	if (unlikely(ret)) {
 		kfree(node);
 	} else {
-	mem->mm_node = node;
-	mem->start = node->start;
+		mem->mm_node = node;
+		mem->start = node->start;
 	}
 
 	return 0;

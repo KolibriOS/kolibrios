@@ -50,6 +50,31 @@
  */
 
 /*
+ * Indirect registers accessor
+ */
+uint32_t rv370_pcie_rreg(struct radeon_device *rdev, uint32_t reg)
+{
+	unsigned long flags;
+	uint32_t r;
+
+	spin_lock_irqsave(&rdev->pcie_idx_lock, flags);
+	WREG32(RADEON_PCIE_INDEX, ((reg) & rdev->pcie_reg_mask));
+	r = RREG32(RADEON_PCIE_DATA);
+	spin_unlock_irqrestore(&rdev->pcie_idx_lock, flags);
+	return r;
+}
+
+void rv370_pcie_wreg(struct radeon_device *rdev, uint32_t reg, uint32_t v)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&rdev->pcie_idx_lock, flags);
+	WREG32(RADEON_PCIE_INDEX, ((reg) & rdev->pcie_reg_mask));
+	WREG32(RADEON_PCIE_DATA, (v));
+	spin_unlock_irqrestore(&rdev->pcie_idx_lock, flags);
+}
+
+/*
  * rv370,rv380 PCIE GART
  */
 static int rv370_debugfs_pcie_gart_info_init(struct radeon_device *rdev);
@@ -66,18 +91,15 @@ void rv370_pcie_gart_tlb_flush(struct radeon_device *rdev)
 		(void)RREG32_PCIE(RADEON_PCIE_TX_GART_CNTL);
 		WREG32_PCIE(RADEON_PCIE_TX_GART_CNTL, tmp);
 	}
-		mb();
+	mb();
 }
 
 #define R300_PTE_UNSNOOPED (1 << 0)
 #define R300_PTE_WRITEABLE (1 << 2)
 #define R300_PTE_READABLE  (1 << 3)
 
-void rv370_pcie_gart_set_page(struct radeon_device *rdev, unsigned i,
-			      uint64_t addr, uint32_t flags)
+uint64_t rv370_pcie_gart_get_page_entry(uint64_t addr, uint32_t flags)
 {
-	void __iomem *ptr = rdev->gart.ptr;
-
 	addr = (lower_32_bits(addr) >> 8) |
 		((upper_32_bits(addr) & 0xff) << 24);
 	if (flags & RADEON_GART_PAGE_READ)
@@ -86,10 +108,18 @@ void rv370_pcie_gart_set_page(struct radeon_device *rdev, unsigned i,
 		addr |= R300_PTE_WRITEABLE;
 	if (!(flags & RADEON_GART_PAGE_SNOOP))
 		addr |= R300_PTE_UNSNOOPED;
+	return addr;
+}
+
+void rv370_pcie_gart_set_page(struct radeon_device *rdev, unsigned i,
+			      uint64_t entry)
+{
+	void __iomem *ptr = rdev->gart.ptr;
+
 	/* on x86 we want this to be CPU endian, on powerpc
 	 * on powerpc without HW swappers, it'll get swapped on way
 	 * into VRAM - so no need for cpu_to_le32 on VRAM tables */
-	writel(addr, ((void __iomem *)ptr) + (i * 4));
+	writel(entry, ((void __iomem *)ptr) + (i * 4));
 }
 
 int rv370_pcie_gart_init(struct radeon_device *rdev)
@@ -109,6 +139,7 @@ int rv370_pcie_gart_init(struct radeon_device *rdev)
 		DRM_ERROR("Failed to register debugfs file for PCIE gart !\n");
 	rdev->gart.table_size = rdev->gart.num_gpu_pages * 4;
 	rdev->asic->gart.tlb_flush = &rv370_pcie_gart_tlb_flush;
+	rdev->asic->gart.get_page_entry = &rv370_pcie_gart_get_page_entry;
 	rdev->asic->gart.set_page = &rv370_pcie_gart_set_page;
 	return radeon_gart_table_vram_alloc(rdev);
 }
@@ -170,7 +201,7 @@ void rv370_pcie_gart_disable(struct radeon_device *rdev)
 void rv370_pcie_gart_fini(struct radeon_device *rdev)
 {
 	radeon_gart_fini(rdev);
-			rv370_pcie_gart_disable(rdev);
+	rv370_pcie_gart_disable(rdev);
 	radeon_gart_table_vram_free(rdev);
 }
 
@@ -536,7 +567,7 @@ int rv370_get_pcie_lanes(struct radeon_device *rdev)
 
 	/* FIXME wait for idle */
 
-		link_width_cntl = RREG32_PCIE(RADEON_PCIE_LC_LINK_WIDTH_CNTL);
+	link_width_cntl = RREG32_PCIE(RADEON_PCIE_LC_LINK_WIDTH_CNTL);
 
 	switch ((link_width_cntl & RADEON_PCIE_LC_LINK_WIDTH_RD_MASK) >> RADEON_PCIE_LC_LINK_WIDTH_RD_SHIFT) {
 	case RADEON_PCIE_LC_LINK_WIDTH_X0:
@@ -687,15 +718,15 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 				  ((idx_value & ~31) + (u32)reloc->gpu_offset);
 		} else {
 			if (reloc->tiling_flags & RADEON_TILING_MACRO)
-			tile_flags |= R300_TXO_MACRO_TILE;
+				tile_flags |= R300_TXO_MACRO_TILE;
 			if (reloc->tiling_flags & RADEON_TILING_MICRO)
-			tile_flags |= R300_TXO_MICRO_TILE;
+				tile_flags |= R300_TXO_MICRO_TILE;
 			else if (reloc->tiling_flags & RADEON_TILING_MICRO_SQUARE)
-			tile_flags |= R300_TXO_MICRO_TILE_SQUARE;
+				tile_flags |= R300_TXO_MICRO_TILE_SQUARE;
 
 			tmp = idx_value + ((u32)reloc->gpu_offset);
-		tmp |= tile_flags;
-		ib[idx] = tmp;
+			tmp |= tile_flags;
+			ib[idx] = tmp;
 		}
 		track->textures[i].robj = reloc->robj;
 		track->tex_dirty = true;
@@ -748,23 +779,23 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 		/* RB3D_COLORPITCH3 */
 		if (!(p->cs_flags & RADEON_CS_KEEP_TILING_FLAGS)) {
 			r = radeon_cs_packet_next_reloc(p, &reloc, 0);
-		if (r) {
-			DRM_ERROR("No reloc for ib[%d]=0x%04X\n",
-				  idx, reg);
+			if (r) {
+				DRM_ERROR("No reloc for ib[%d]=0x%04X\n",
+					  idx, reg);
 				radeon_cs_dump_packet(p, pkt);
-			return r;
-		}
+				return r;
+			}
 
 			if (reloc->tiling_flags & RADEON_TILING_MACRO)
-			tile_flags |= R300_COLOR_TILE_ENABLE;
+				tile_flags |= R300_COLOR_TILE_ENABLE;
 			if (reloc->tiling_flags & RADEON_TILING_MICRO)
-			tile_flags |= R300_COLOR_MICROTILE_ENABLE;
+				tile_flags |= R300_COLOR_MICROTILE_ENABLE;
 			else if (reloc->tiling_flags & RADEON_TILING_MICRO_SQUARE)
-			tile_flags |= R300_COLOR_MICROTILE_SQUARE_ENABLE;
+				tile_flags |= R300_COLOR_MICROTILE_SQUARE_ENABLE;
 
-		tmp = idx_value & ~(0x7 << 16);
-		tmp |= tile_flags;
-		ib[idx] = tmp;
+			tmp = idx_value & ~(0x7 << 16);
+			tmp |= tile_flags;
+			ib[idx] = tmp;
 		}
 		i = (reg - 0x4E38) >> 2;
 		track->cb[i].pitch = idx_value & 0x3FFE;
@@ -833,23 +864,23 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 		/* ZB_DEPTHPITCH */
 		if (!(p->cs_flags & RADEON_CS_KEEP_TILING_FLAGS)) {
 			r = radeon_cs_packet_next_reloc(p, &reloc, 0);
-		if (r) {
-			DRM_ERROR("No reloc for ib[%d]=0x%04X\n",
-				  idx, reg);
+			if (r) {
+				DRM_ERROR("No reloc for ib[%d]=0x%04X\n",
+					  idx, reg);
 				radeon_cs_dump_packet(p, pkt);
-			return r;
-		}
+				return r;
+			}
 
 			if (reloc->tiling_flags & RADEON_TILING_MACRO)
-			tile_flags |= R300_DEPTHMACROTILE_ENABLE;
+				tile_flags |= R300_DEPTHMACROTILE_ENABLE;
 			if (reloc->tiling_flags & RADEON_TILING_MICRO)
-			tile_flags |= R300_DEPTHMICROTILE_TILED;
+				tile_flags |= R300_DEPTHMICROTILE_TILED;
 			else if (reloc->tiling_flags & RADEON_TILING_MICRO_SQUARE)
-			tile_flags |= R300_DEPTHMICROTILE_TILED_SQUARE;
+				tile_flags |= R300_DEPTHMICROTILE_TILED_SQUARE;
 
-		tmp = idx_value & ~(0x7 << 16);
-		tmp |= tile_flags;
-		ib[idx] = tmp;
+			tmp = idx_value & ~(0x7 << 16);
+			tmp |= tile_flags;
+			ib[idx] = tmp;
 		}
 		track->zb.pitch = idx_value & 0x3FFC;
 		track->zb_dirty = true;
@@ -1136,7 +1167,7 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 fail:
 	printk(KERN_ERR "Forbidden register 0x%04X in cs at %d (val=%08x)\n",
 	       reg, idx, idx_value);
-		return -EINVAL;
+	return -EINVAL;
 }
 
 static int r300_packet3_check(struct radeon_cs_parser *p,
@@ -1155,7 +1186,7 @@ static int r300_packet3_check(struct radeon_cs_parser *p,
 	case PACKET3_3D_LOAD_VBPNTR:
 		r = r100_packet3_load_vbpntr(p, pkt, idx);
 		if (r)
-				return r;
+			return r;
 		break;
 	case PACKET3_INDX_BUFFER:
 		r = radeon_cs_packet_next_reloc(p, &reloc, 0);
@@ -1393,11 +1424,11 @@ static int r300_startup(struct radeon_device *rdev)
 	r100_irq_set(rdev);
 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
 	/* 1M ring buffer */
-    r = r100_cp_init(rdev, 1024 * 1024);
-    if (r) {
+	r = r100_cp_init(rdev, 1024 * 1024);
+	if (r) {
 		dev_err(rdev->dev, "failed initializing CP (%d).\n", r);
-       return r;
-    }
+		return r;
+	}
 
 	r = radeon_ib_pool_init(rdev);
 	if (r) {
@@ -1411,6 +1442,25 @@ static int r300_startup(struct radeon_device *rdev)
 
 
 
+void r300_fini(struct radeon_device *rdev)
+{
+	radeon_pm_fini(rdev);
+	r100_cp_fini(rdev);
+	radeon_wb_fini(rdev);
+	radeon_ib_pool_fini(rdev);
+	radeon_gem_fini(rdev);
+	if (rdev->flags & RADEON_IS_PCIE)
+		rv370_pcie_gart_fini(rdev);
+	if (rdev->flags & RADEON_IS_PCI)
+		r100_pci_gart_fini(rdev);
+	radeon_agp_fini(rdev);
+	radeon_irq_kms_fini(rdev);
+	radeon_fence_driver_fini(rdev);
+	radeon_bo_fini(rdev);
+	radeon_atombios_fini(rdev);
+	kfree(rdev->bios);
+	rdev->bios = NULL;
+}
 
 int r300_init(struct radeon_device *rdev)
 {
@@ -1489,6 +1539,10 @@ int r300_init(struct radeon_device *rdev)
 	if (r) {
 		/* Something went wrong with the accel init, so stop accel */
 		dev_err(rdev->dev, "Disabling GPU acceleration\n");
+		r100_cp_fini(rdev);
+		radeon_wb_fini(rdev);
+		radeon_ib_pool_fini(rdev);
+		radeon_irq_kms_fini(rdev);
 		if (rdev->flags & RADEON_IS_PCIE)
 			rv370_pcie_gart_fini(rdev);
 		if (rdev->flags & RADEON_IS_PCI)

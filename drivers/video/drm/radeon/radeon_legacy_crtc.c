@@ -795,17 +795,17 @@ static void radeon_set_pll(struct drm_crtc *crtc, struct drm_display_mode *mode)
 				pll->flags |= RADEON_PLL_NO_ODD_POST_DIV;
 			if (encoder->encoder_type == DRM_MODE_ENCODER_LVDS) {
 				if (!rdev->is_atom_bios) {
-				struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
-				struct radeon_encoder_lvds *lvds = (struct radeon_encoder_lvds *)radeon_encoder->enc_priv;
-				if (lvds) {
-					if (lvds->use_bios_dividers) {
-						pll_ref_div = lvds->panel_ref_divider;
-						pll_fb_post_div   = (lvds->panel_fb_divider |
-								     (lvds->panel_post_divider << 16));
-						htotal_cntl  = 0;
-						use_bios_divs = true;
+					struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
+					struct radeon_encoder_lvds *lvds = (struct radeon_encoder_lvds *)radeon_encoder->enc_priv;
+					if (lvds) {
+						if (lvds->use_bios_dividers) {
+							pll_ref_div = lvds->panel_ref_divider;
+							pll_fb_post_div   = (lvds->panel_fb_divider |
+									     (lvds->panel_post_divider << 16));
+							htotal_cntl  = 0;
+							use_bios_divs = true;
+						}
 					}
-				}
 				}
 				pll->flags |= RADEON_PLL_USE_REF_DIV;
 			}
@@ -816,8 +816,8 @@ static void radeon_set_pll(struct drm_crtc *crtc, struct drm_display_mode *mode)
 
 	if (!use_bios_divs) {
 		radeon_compute_pll_legacy(pll, mode->clock,
-				   &freq, &feedback_div, &frac_fb_div,
-				   &reference_div, &post_divider);
+					  &freq, &feedback_div, &frac_fb_div,
+					  &reference_div, &post_divider);
 
 		for (post_div = &post_divs[0]; post_div->divider; ++post_div) {
 			if (post_div->divider == post_divider)
@@ -1054,6 +1054,7 @@ static int radeon_crtc_mode_set(struct drm_crtc *crtc,
 			DRM_ERROR("Mode need scaling but only first crtc can do that.\n");
 		}
 	}
+	radeon_cursor_reset(crtc);
 	return 0;
 }
 
