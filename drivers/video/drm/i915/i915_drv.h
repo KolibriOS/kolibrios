@@ -2691,10 +2691,10 @@ struct i915_params {
 	bool verbose_state_checks;
 	bool nuclear_pageflip;
 	int edp_vswing;
-				/* Kolibri related */
-	int fbsize;
-	char *log_file;
-	char *cmdline_mode;
+                /* Kolibri related */
+    int fbsize;
+    char *log_file;
+    char *cmdline_mode;
 };
 extern struct i915_params i915 __read_mostly;
 
@@ -3540,7 +3540,7 @@ wait_remaining_ms_from_jiffies(unsigned long timestamp_jiffies, int to_wait_ms)
 
 	if (time_after(target_jiffies, tmp_jiffies)) {
 		remaining_jiffies = target_jiffies - tmp_jiffies;
-        delay(remaining_jiffies);
+		delay(remaining_jiffies);
 	}
 }
 

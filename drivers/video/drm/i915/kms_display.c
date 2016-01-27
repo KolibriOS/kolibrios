@@ -74,8 +74,6 @@ static int set_mode(struct drm_device *dev, struct drm_connector *connector,
     int stride;
     int ret;
 
-ENTER();
-
     drm_modeset_lock_all(dev);
 
     list_for_each_entry(tmpc, &dev->mode_config.connector_list, head)
@@ -206,8 +204,6 @@ do_set:
 
     drm_modeset_unlock_all(dev);
 
-LEAVE();
-
     return ret;
 }
 
@@ -222,8 +218,6 @@ static int set_mode_ex(struct drm_device *dev,
     char  con_edid[128];
     int stride;
     int ret;
-
-ENTER();
 
     drm_modeset_lock_all(dev);
 
@@ -321,8 +315,6 @@ ENTER();
                    fb->width, fb->height, connector->encoder->crtc);
 
     drm_modeset_unlock_all(dev);
-
-LEAVE();
 
     return ret;
 }
@@ -422,10 +414,7 @@ static struct drm_connector* get_cmdline_connector(struct drm_device *dev, const
 static int choose_config(struct drm_device *dev, struct drm_connector **boot_connector,
                   struct drm_crtc **boot_crtc)
 {
-    const struct drm_connector_helper_funcs *connector_funcs;
-    struct drm_connector *connector = NULL;
-    struct drm_encoder   *encoder = NULL;
-    struct drm_crtc      *crtc = NULL;
+    struct drm_connector *connector;
 
     if((i915.cmdline_mode != NULL) && (*i915.cmdline_mode != 0))
     {
@@ -450,6 +439,7 @@ static int choose_config(struct drm_device *dev, struct drm_connector **boot_con
 
     return -ENOENT;
 };
+
 
 static int get_boot_mode(struct drm_connector *connector, videomode_t *usermode)
 {
@@ -480,8 +470,6 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
     cursor_t  *cursor;
     u32      ifl;
     int       ret;
-
-ENTER();
 
     mutex_lock(&dev->mode_config.mutex);
     ret = choose_config(dev, &connector, &crtc);
@@ -571,8 +559,6 @@ ENTER();
     err = init_bitmaps();
 #endif
 
-    LEAVE();
-
     return ret;
 };
 
@@ -581,13 +567,12 @@ int set_cmdline_mode_ext(struct drm_device *dev, const char *cmdline)
 {
     struct drm_connector_helper_funcs *connector_funcs;
     struct drm_connector    *connector;
-    struct drm_cmdline_mode cmd_mode;
+    struct drm_cmdline_mode cmd_mode = {0};
     struct drm_display_mode *mode;
     char *mode_option;
     int retval = 0;
     char  con_edid[128];
 
-ENTER();
     if((cmdline == NULL) || (*cmdline == 0))
         return EINVAL;
 
@@ -603,8 +588,6 @@ ENTER();
         return EINVAL;
 
     mode_option++;
-
-    __builtin_memset(&cmd_mode, 0, sizeof(cmd_mode));
 
     if( !drm_mode_parse_command_line_for_connector(mode_option, connector, &cmd_mode))
         return EINVAL;
@@ -633,9 +616,68 @@ ENTER();
 
     drm_mode_destroy(dev, mode);
 
-LEAVE();
     return retval;
 }
+
+void list_connectors(struct drm_device *dev)
+{
+    struct drm_connector *connector;
+    char  con_edid[128];
+
+    mutex_lock(&dev->mode_config.mutex);
+    list_for_each_entry(connector, &dev->mode_config.connector_list, head)
+    {
+        if( connector->status != connector_status_connected)
+            continue;
+
+        memcpy(con_edid, connector->edid_blob_ptr->data, 128);
+
+        if(connector ==  os_display->connector)
+        {
+            printf("%s mode %dx%d connected %s model %x serial number %u\n",
+                   connector->name, os_display->width, os_display->height,
+                   manufacturer_name(con_edid + 0x08),
+                   (unsigned short)(con_edid[0x0A] + (con_edid[0x0B] << 8)),
+                   (unsigned int)(con_edid[0x0C] + (con_edid[0x0D] << 8)
+                   + (con_edid[0x0E] << 16) + (con_edid[0x0F] << 24)));
+            continue;
+        }
+        else
+        {
+            printf("%s connected: %s model %x serial number %u\n",
+                connector->name, manufacturer_name(con_edid + 0x08),
+                (unsigned short)(con_edid[0x0A] + (con_edid[0x0B] << 8)),
+                (unsigned int)(con_edid[0x0C] + (con_edid[0x0D] << 8)
+                + (con_edid[0x0E] << 16) + (con_edid[0x0F] << 24)));
+        }
+    };
+    mutex_unlock(&dev->mode_config.mutex);
+}
+
+int list_connector_modes(struct drm_device *dev, const char* name)
+{
+    struct drm_connector *connector;
+    struct drm_display_mode  *drmmode;
+
+    mutex_lock(&dev->mode_config.mutex);
+
+    connector = get_cmdline_connector(dev, name);
+    if(connector == NULL)
+    {
+        mutex_unlock(&dev->mode_config.mutex);
+        return EINVAL;
+    };
+
+    printf("connector %s probed modes :\n", connector->name);
+
+    list_for_each_entry(drmmode, &connector->modes, head)
+    {
+        printf("%dx%d@%d\n", drmmode->hdisplay, drmmode->vdisplay, drm_mode_vrefresh(drmmode));
+    };
+
+    mutex_unlock(&dev->mode_config.mutex);
+    return 0;
+};
 
 int get_videomodes(videomode_t *mode, int *count)
 {

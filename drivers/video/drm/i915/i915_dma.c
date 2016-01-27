@@ -44,7 +44,7 @@
 //#include <linux/pnp.h>
 //#include <linux/vga_switcheroo.h>
 #include <linux/slab.h>
-//#include <acpi/video.h>
+#include <linux/pm.h>
 #include <linux/pm_runtime.h>
 
 void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen);

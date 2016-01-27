@@ -1085,6 +1085,14 @@ intel_dp_aux_init(struct intel_dp *intel_dp, struct intel_connector *connector)
 			  name, ret);
 		return;
 	}
+
+	ret = sysfs_create_link(&connector->base.kdev->kobj,
+				&intel_dp->aux.ddc.dev.kobj,
+				intel_dp->aux.ddc.dev.kobj.name);
+	if (ret < 0) {
+		DRM_ERROR("sysfs_create_link() for %s failed (%d)\n", name, ret);
+		drm_dp_aux_unregister(&intel_dp->aux);
+	}
 }
 
 static void
@@ -1092,6 +1100,9 @@ intel_dp_connector_unregister(struct intel_connector *intel_connector)
 {
 	struct intel_dp *intel_dp = intel_attached_dp(&intel_connector->base);
 
+	if (!intel_connector->mst_port)
+		sysfs_remove_link(&intel_connector->base.kdev->kobj,
+				  intel_dp->aux.ddc.dev.kobj.name);
 	intel_connector_unregister(intel_connector);
 }
 

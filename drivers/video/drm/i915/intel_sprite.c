@@ -85,9 +85,8 @@ void intel_pipe_update_start(struct intel_crtc *crtc)
 	enum pipe pipe = crtc->pipe;
 	long timeout = msecs_to_jiffies_timeout(1);
 	int scanline, min, max, vblank_start;
-#if 0
-//   wait_queue_head_t *wq = drm_crtc_vblank_waitqueue(&crtc->base);
-//   DEFINE_WAIT(wait);
+	wait_queue_head_t *wq = drm_crtc_vblank_waitqueue(&crtc->base);
+	DEFINE_WAIT(wait);
 
 	vblank_start = adjusted_mode->crtc_vblank_start;
 	if (adjusted_mode->flags & DRM_MODE_FLAG_INTERLACE)
@@ -97,11 +96,13 @@ void intel_pipe_update_start(struct intel_crtc *crtc)
 	min = vblank_start - usecs_to_scanlines(adjusted_mode, 100);
 	max = vblank_start - 1;
 
+	local_irq_disable();
+
 	if (min <= 0 || max <= 0)
 		return;
 
-//   if (WARN_ON(drm_vblank_get(dev, pipe)))
-//       return false;
+	if (WARN_ON(drm_crtc_vblank_get(&crtc->base)))
+		return;
 
 	crtc->debug.min_vbl = min;
 	crtc->debug.max_vbl = max;
@@ -125,15 +126,21 @@ void intel_pipe_update_start(struct intel_crtc *crtc)
 			break;
 		}
 
-//       local_irq_enable();
-
-        schedule_timeout(timeout);
-        timeout = 0;
-//       local_irq_disable();
+		local_irq_enable();
+		
+		{
+			unsigned long expire;
+			expire = timeout + jiffies;
+			WaitEventTimeout(wait.evnt, timeout);;
+			timeout = expire - jiffies;
+			timeout = timeout < 0 ? 0 : timeout;
+		}
+		local_irq_disable();
 	}
 
 	finish_wait(wq, &wait);
-#endif
+
+	drm_crtc_vblank_put(&crtc->base);
 
 	crtc->debug.scanline_start = scanline;
 	crtc->debug.start_vbl_time = ktime_get();
@@ -162,7 +169,7 @@ void intel_pipe_update_end(struct intel_crtc *crtc)
 
 	trace_i915_pipe_update_end(crtc, end_vbl_count, scanline_end);
 
-//   local_irq_enable();
+	local_irq_enable();
 
 	if (crtc->debug.start_vbl_count &&
 	    crtc->debug.start_vbl_count != end_vbl_count) {

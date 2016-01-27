@@ -1055,7 +1055,7 @@ int __i915_wait_request(struct drm_i915_gem_request *req,
 	wait.evnt = CreateEvent(NULL, MANUAL_DESTROY);
 
 	for (;;) {
-        unsigned long flags;
+		unsigned long flags;
 
 		/* We need to check whether any gpu reset happened in between
 		 * the caller grabbing the seqno and now ... */

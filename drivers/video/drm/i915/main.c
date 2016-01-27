@@ -277,6 +277,7 @@ int do_command_line(const char* usercmd)
     char *cmdline;
     int argc, i, c;
     char **argv;
+    int retval = 0;
 
     if( (usercmd == NULL) || (*usercmd == 0) )
         return 1;
@@ -295,7 +296,9 @@ int do_command_line(const char* usercmd)
     {
         static struct option long_options[] =
         {
-            {"video", required_argument, 0, 'v'},
+            {"list-connectors",      no_argument,       0, OPTION_CONNECTORS},
+            {"list-connector-modes", required_argument, 0, OPTION_CONN_MODES},
+            {"video",                required_argument, 0, 'v'},
             {0, 0, 0, 0}
         };
 
@@ -311,14 +314,22 @@ int do_command_line(const char* usercmd)
         {
             case 'v':
                 printf("cmdline_mode %s\n",optarg);
-                set_cmdline_mode_ext(main_device, optarg);
+                retval = set_cmdline_mode_ext(main_device, optarg);
+                break;
+
+            case OPTION_CONNECTORS:
+                list_connectors(main_device);
+                break;
+
+            case OPTION_CONN_MODES:
+                retval = list_connector_modes(main_device, optarg);
                 break;
         }
     }
     __builtin_free(argv);
     __builtin_free(cmdline);
 
-    return 0;
+    return retval;
 };
 
 #define CURRENT_API     0x0200      /*      2.00     */
@@ -855,32 +866,4 @@ static char* parse_mode(char *p, videomode_t *mode)
 
     return p;
 };
-
-#include <linux/math64.h>
-
-u64 long_div(u64 dividend, u64 divisor)
-{
-#if 1
-    u32 high = divisor >> 32;
-    u64 quot;
-
-    if (high == 0) {
-            quot = div_u64(dividend, divisor);
-    } else {
-            int n = 1 + fls(high);
-            quot = div_u64(dividend >> n, divisor >> n);
-
-            if (quot != 0)
-                    quot--;
-            if ((dividend - quot * divisor) >= divisor)
-                    quot++;
-    }
-
-    return quot;
-#endif
-//    return dividend / divisor;
-};
-
-
-
 
