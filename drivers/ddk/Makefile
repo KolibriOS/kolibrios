@@ -29,24 +29,27 @@ NAME_SRCS:=  				\
            	io/ssize.c		\
            	io/write.c		\
 		linux/bitmap.c		\
+		linux/ctype.c		\
+		linux/dmapool.c		\
 		linux/dmi.c		\
 		linux/find_next_bit.c	\
+		linux/firmware.c	\
+		linux/gcd.c		\
+		linux/hdmi.c		\
+		linux/hexdump.c		\
 		linux/idr.c		\
 		linux/interval_tree.c	\
-		linux/firmware.c	\
-		linux/hdmi.c		\
 		linux/kasprintf.c	\
 		linux/list_sort.c	\
 		linux/mutex.c		\
 		linux/rbtree.c		\
-		linux/dmapool.c		\
-		linux/ctype.c		\
 		linux/scatterlist.c	\
 		linux/string.c		\
 		linux/time.c		\
 		linux/workqueue.c	\
 		malloc/malloc.c		\
 		stdio/vsprintf.c	\
+		string/strstr.c		\
 		string/_memmove.S 	\
 		string/_strncat.S 	\
 		string/_strncmp.S 	\

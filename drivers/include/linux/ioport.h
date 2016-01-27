@@ -23,12 +23,6 @@ struct resource {
 	struct resource *parent, *sibling, *child;
 };
 
-struct resource_list {
-	struct resource_list *next;
-	struct resource *res;
-	struct pci_dev *dev;
-};
-
 /*
  * IO resources have these defined flags.
  */
@@ -175,6 +169,15 @@ static inline resource_size_t resource_size(const struct resource *res)
 static inline unsigned long resource_type(const struct resource *res)
 {
 	return res->flags & IORESOURCE_TYPE_BITS;
+}
+/* True iff r1 completely contains r2 */
+static inline bool resource_contains(struct resource *r1, struct resource *r2)
+{
+	if (resource_type(r1) != resource_type(r2))
+		return false;
+	if (r1->flags & IORESOURCE_UNSET || r2->flags & IORESOURCE_UNSET)
+		return false;
+	return r1->start <= r2->start && r1->end >= r2->end;
 }
 
 

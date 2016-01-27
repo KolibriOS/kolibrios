@@ -53,7 +53,7 @@ static __inline__ void *drm_malloc_ab(size_t nmemb, size_t size)
 		return NULL;
 
 	if (size * nmemb <= PAGE_SIZE)
-        return kmalloc(nmemb * size, GFP_KERNEL);
+	    return kmalloc(nmemb * size, GFP_KERNEL);
 
     return (void*)KernelAlloc(size * nmemb);
 }

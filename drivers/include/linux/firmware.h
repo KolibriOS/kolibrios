@@ -10,18 +10,13 @@
 #define FW_ACTION_NOHOTPLUG 0
 #define FW_ACTION_HOTPLUG 1
 
-struct device;
-
-struct platform_device
-{
-	struct device dev;
-};
-
 struct firmware {
 	size_t size;
 	const u8 *data;
 };
 
+struct module;
+struct device;
 
 struct builtin_fw {
 	char *name;

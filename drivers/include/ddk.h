@@ -8,8 +8,6 @@
 #include <linux/spinlock.h>
 #include <linux/mutex.h>
 #include <linux/rwsem.h>
-#include <linux/pci.h>
-
 
 #define OS_BASE             0x80000000
 
@@ -24,22 +22,7 @@
 #define ENTER()   dbgprintf("enter %s\n",__FUNCTION__)
 #define LEAVE()   dbgprintf("leave %s\n",__FUNCTION__)
 #define FAIL()    dbgprintf("fail %s\n",__FUNCTION__)
-
-typedef struct
-{
-    u32  code;
-    u32  data[5];
-}kevent_t;
-
-typedef union
-{
-    struct
-    {
-        u32 handle;
-        u32 euid;
-    };
-    u64 raw;
-}evhandle_t;
+#define LINE()    dbgprintf("%s line %d\n", __FUNCTION__,__LINE__)
 
 typedef struct
 {

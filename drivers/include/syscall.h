@@ -14,6 +14,18 @@ typedef struct
   int freq;
 }videomode_t;
 
+struct kos32_pdev
+{
+    struct kos32_pdev *prev;
+    struct kos32_pdev *next;
+    u32 devid;
+    u32 class;
+    u8  devfn;
+    u8  bus;
+    u8  reserved[2];
+    u32 owner;
+} __attribute__((packed));
+
 ///////////////////////////////////////////////////////////////////////////////
 
 #define STDCALL  __attribute__ ((stdcall)) __attribute__ ((dllimport))
@@ -86,6 +98,7 @@ void   STDCALL SetMouseData(int btn, int x, int y,
 
 void   FASTCALL SetKeyboardData(u32 data)__asm__("SetKeyboardData");
 
+struct kos32_pdev* IMPORT GetPCIList()__asm__("GetPCIList");
 
 u8  STDCALL PciRead8 (u32 bus, u32 devfn, u32 reg)__asm__("PciRead8");
 u16 STDCALL PciRead16(u32 bus, u32 devfn, u32 reg)__asm__("PciRead16");
@@ -113,47 +126,6 @@ u32 STDCALL PciWrite32(u32 bus, u32 devfn, u32 reg,u32 val)__asm__("PciWrite32")
 #define pciWriteLong(tag, reg, val) \
         PciWrite32(PCI_BUS_FROM_TAG(tag),PCI_DFN_FROM_TAG(tag),(reg),(val))
 
-static inline int pci_read_config_byte(struct pci_dev *dev, int where,
-                    u8 *val)
-{
-    *val = PciRead8(dev->busnr, dev->devfn, where);
-    return 1;
-}
-
-static inline int pci_read_config_word(struct pci_dev *dev, int where,
-                    u16 *val)
-{
-    *val = PciRead16(dev->busnr, dev->devfn, where);
-    return 1;
-}
-
-static inline int pci_read_config_dword(struct pci_dev *dev, int where,
-                    u32 *val)
-{
-    *val = PciRead32(dev->busnr, dev->devfn, where);
-    return 1;
-}
-
-static inline int pci_write_config_byte(struct pci_dev *dev, int where,
-                    u8 val)
-{
-    PciWrite8(dev->busnr, dev->devfn, where, val);
-    return 1;
-}
-
-static inline int pci_write_config_word(struct pci_dev *dev, int where,
-                    u16 val)
-{
-    PciWrite16(dev->busnr, dev->devfn, where, val);
-    return 1;
-}
-
-static inline int pci_write_config_dword(struct pci_dev *dev, int where,
-                    u32 val)
-{
-    PciWrite32(dev->busnr, dev->devfn, where, val);
-    return 1;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -82,5 +82,31 @@ static inline void up_write(struct rw_semaphore *sem)
     UpWrite(sem);
 }
 
+#define RWSEM_UNLOCKED_VALUE            0x00000000L
+#define RWSEM_ACTIVE_BIAS               0x00000001L
+#define RWSEM_WAITING_BIAS              (-RWSEM_ACTIVE_MASK-1)
+#define RWSEM_ACTIVE_READ_BIAS          RWSEM_ACTIVE_BIAS
+#define RWSEM_ACTIVE_WRITE_BIAS         (RWSEM_WAITING_BIAS + RWSEM_ACTIVE_BIAS)
+
+static inline int down_read_trylock(struct rw_semaphore *sem)
+{
+    long result, tmp;
+    asm volatile("# beginning __down_read_trylock\n\t"
+                 "  mov          %0,%1\n\t"
+                 "1:\n\t"
+                 "  mov          %1,%2\n\t"
+                 "  add          %3,%2\n\t"
+                 "  jle          2f\n\t"
+                 LOCK_PREFIX "  cmpxchg  %2,%0\n\t"
+                 "  jnz          1b\n\t"
+                 "2:\n\t"
+                 "# ending __down_read_trylock\n\t"
+                 : "+m" (sem->count), "=&a" (result), "=&r" (tmp)
+                 : "i" (RWSEM_ACTIVE_READ_BIAS)
+                 : "memory", "cc");
+    return result >= 0 ? 1 : 0;
+}
+
+
 #endif /* __KERNEL__ */
 #endif /* _ASM_X86_RWSEM_H */

@@ -32,6 +32,7 @@
     .global _GetDisplay
     .global _GetEvent
     .global _GetPgAddr
+    .global _GetPCIList
     .global _GetPid
     .global _GetService
     .global _GetStackBase
@@ -110,6 +111,7 @@
 
     .def  _GetDisplay;        .scl  2;  .type 32; .endef
     .def  _GetEvent;          .scl  2;  .type 32; .endef
+    .def  _GetPCIList;        .scl  2;  .type 32; .endef
     .def  _GetPid;            .scl  2;  .type 32; .endef
     .def  _GetPgAddr;         .scl  2;  .type 32; .endef
     .def  _GetService;        .scl  2;  .type 32; .endef
@@ -188,6 +190,7 @@ _GetClockNs:
 _GetCpuFreq:
 _GetDisplay:
 _GetEvent:
+_GetPCIList:
 _GetPid:
 _GetPgAddr:
 _GetService:
@@ -267,6 +270,7 @@ _WaitEventTimeout:
         .ascii " -export:GetCpuFreq"           #
         .ascii " -export:GetDisplay"           # stdcall
         .ascii " -export:GetEvent"             #
+        .ascii " -export:GetPCIList"           #
         .ascii " -export:GetPid"               #
         .ascii " -export:GetPgAddr"            # stdcall
         .ascii " -export:GetService"           # stdcall

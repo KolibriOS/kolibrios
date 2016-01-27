@@ -3,7 +3,7 @@
  * OS abstraction macros.
  */
 
-//#include <linux/interrupt.h>   /* For task queue support */
+#include <linux/interrupt.h>	/* For task queue support */
 #include <linux/delay.h>
 
 #ifndef readq

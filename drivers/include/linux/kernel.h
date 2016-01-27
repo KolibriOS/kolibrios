@@ -161,6 +161,10 @@
  */
 #define lower_32_bits(n) ((u32)(n))
 
+struct completion;
+struct pt_regs;
+struct user;
+
 #ifdef CONFIG_PREEMPT_VOLUNTARY
 extern int _cond_resched(void);
 # define might_resched() _cond_resched()
@@ -660,12 +664,25 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
 	 BUILD_BUG_ON_ZERO((perms) & 2) +					\
 	 (perms))
 
-
 void free (void *ptr);
-
 
 typedef unsigned long   pgprotval_t;
 
+typedef struct
+{
+	u32  code;
+	u32  data[5];
+}kevent_t;
+
+typedef union
+{
+	struct
+	{
+		u32 handle;
+		u32 euid;
+	};
+	u64 raw;
+}evhandle_t;
 
 struct file
 {
@@ -677,7 +694,6 @@ struct file
 
 struct vm_area_struct {};
 struct address_space {};
-
 
 #define in_dbg_master() (0)
 
@@ -791,11 +807,6 @@ struct pagelist {
 #define get_page(a)
 #define put_page(a)
 
-#define pci_map_page(dev, page, offset, size, direction) \
-        (dma_addr_t)( (offset)+page_to_phys(page))
-
-#define pci_unmap_page(dev, dma_address, size, direction)
-
 #define IS_ENABLED(a)  0
 
 
@@ -847,7 +858,6 @@ void kunmap_atomic(void *vaddr);
 typedef u64 async_cookie_t;
 
 #define iowrite32(v, addr)      writel((v), (addr))
-
 
 #define __init
 

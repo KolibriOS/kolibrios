@@ -15,7 +15,7 @@
 #include <syscall.h>
 #include <linux/types.h>
 #include <linux/bitops.h>
-//#include <linux/init.h>
+#include <linux/init.h>
 #include <linux/rcupdate.h>
 
 /*

@@ -2,6 +2,7 @@
 #define __KERNEL_PRINTK__
 
 #include <stdarg.h>
+#include <linux/init.h>
 #include <linux/linkage.h>
 #include <linux/cache.h>
 
