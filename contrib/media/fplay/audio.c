@@ -1,11 +1,12 @@
 
 #include <stdint.h>
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include "libswresample/swresample.h"
-
 #include <stdio.h>
 #include <string.h>
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libswresample/swresample.h>
+#include <kos32sys.h>
+
 #include "winlib/winlib.h"
 #include "sound.h"
 #include "fplay.h"
@@ -40,18 +41,11 @@ int init_audio(int format)
     int    version =-1;
     char  *errstr;
 
-    mutex_lock(&driver_lock);
-
     if((err = InitSound(&version)) !=0 )
     {
-        mutex_unlock(&driver_lock);
         errstr = "Sound service not installed\n\r";
         goto exit_whith_error;
     };
-
-    mutex_unlock(&driver_lock);
-
-//    printf("sound version 0x%x\n", version);
 
     if( (SOUND_VERSION>(version&0xFFFF)) ||
         (SOUND_VERSION<(version >> 16)))
@@ -106,14 +100,11 @@ int decode_audio(AVCodecContext  *ctx, queue_t *qa)
     int got_frame;
     int data_size;
 
-
     if( astream.count > 192000*2)
         return -1;
 
     if( get_packet(qa, &pkt) == 0 )
         return 0;
-
- //          __asm__("int3");
 
     if (!aFrame)
     {
@@ -128,8 +119,6 @@ int decode_audio(AVCodecContext  *ctx, queue_t *qa)
     {
         data_size = 192000;
 
-//        len = avcodec_decode_audio3(ctx,(int16_t*)decoder_buffer,
-//                                   &data_size, &pkt_tmp);
         got_frame = 0;
         len = avcodec_decode_audio4(ctx, aFrame, &got_frame, &pkt_tmp);
 
@@ -200,19 +189,7 @@ int decode_audio(AVCodecContext  *ctx, queue_t *qa)
                 samples = astream.buffer+astream.count;
 
                 memcpy(samples, decoder_buffer, data_size);
-/*
-            memcpy(samples, aFrame->extended_data[0], plane_size);
 
-            if (planar && ctx->channels > 1)
-            {
-                uint8_t *out = ((uint8_t *)samples) + plane_size;
-                for (ch = 1; ch < ctx->channels; ch++)
-                {
-                    memcpy(out, aFrame->extended_data[ch], plane_size);
-                    out += plane_size;
-                }
-            }
-*/
                 astream.count += data_size;
                 mutex_unlock(&astream.lock);
             };

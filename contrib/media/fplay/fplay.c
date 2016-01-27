@@ -51,7 +51,6 @@ int64_t  rewind_pos;
 int64_t stream_duration;
 
 int threads_running = DECODER_THREAD;
-mutex_t driver_lock;
 
 extern double audio_base;
 
@@ -110,11 +109,8 @@ int main( int argc, char *argv[])
     }
     else movie_file = file_name;
 
-//    __asm__ __volatile__("int3");
-
     stream_duration = pFormatCtx->duration;
 
-    printf("duration %f\n", (double)stream_duration);
    // Find the first video stream
     videoStream=-1;
     audioStream=-1;
@@ -172,7 +168,6 @@ int main( int argc, char *argv[])
 
 //    printf("ctx->pix_fmt %d\n", pCodecCtx->pix_fmt);
 
-    mutex_init(&driver_lock);
     mutex_init(&q_video.lock);
     mutex_init(&q_audio.lock);
 
@@ -245,7 +240,6 @@ int main( int argc, char *argv[])
     if(astream.lock.handle)
         mutex_destroy(&astream.lock);
 
-    mutex_destroy(&driver_lock);
     mutex_destroy(&q_video.lock);
     mutex_destroy(&q_audio.lock);
 

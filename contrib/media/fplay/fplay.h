@@ -124,10 +124,6 @@ int decode_audio(AVCodecContext  *ctx, queue_t *qa);
 
 double get_master_clock(void);
 
-
-int create_thread(int (*proc)(void *param), void *param, int stack_size);
-
-
 static inline void GetNotify(void *event)
 {
     __asm__ __volatile__ (

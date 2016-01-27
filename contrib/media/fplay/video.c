@@ -4,11 +4,12 @@
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 #include <libavutil/imgutils.h>
-#include <kos32sys.h>
-#include "winlib/winlib.h"
-#include <sound.h>
-#include "fplay.h"
 #include <math.h>
+#include <kos32sys.h>
+#include <sound.h>
+
+#include "winlib/winlib.h"
+#include "fplay.h"
 
 int fplay_blit_bitmap(bitmap_t *bitmap, int dst_x, int dst_y,int w, int h);
 void draw_va_picture(render_t *render, AVPicture *picture);
@@ -71,7 +72,6 @@ int init_video(AVCodecContext *ctx)
     width = ctx->width;
     height = ctx->height;
 
-
     Frame = avcodec_alloc_frame();
     if ( Frame == NULL )
     {
@@ -82,9 +82,6 @@ int init_video(AVCodecContext *ctx)
     for( i=0; i < 4; i++)
     {
         int ret;
-
-//        printf("alloc picture %d %d %x\n",
-//                   ctx->width, ctx->height, ctx->pix_fmt );
 
         ret = avpicture_alloc(&frames[i].picture, ctx->pix_fmt,
                                ctx->width, ctx->height);
@@ -152,12 +149,6 @@ int decode_video(AVCodecContext  *ctx, queue_t *qv)
             else
                 pts= 0;
 
-//        pts = *(int64_t*)av_opt_ptr(avcodec_get_frame_class(),
-//                                Frame, "best_effort_timestamp");
-
-//        if (pts == AV_NOPTS_VALUE)
-//            pts = 0;
-
             pts *= av_q2d(video_time_base);
 
             dst_pic = &frames[dfx].picture;
@@ -167,7 +158,6 @@ int decode_video(AVCodecContext  *ctx, queue_t *qv)
                       Frame->linesize, ctx->pix_fmt, ctx->width, ctx->height);
 
             frames[dfx].pts = pts*1000.0;
-//            printf("pts %f\n", frames[dfx].pts);
 
             frames[dfx].ready = 1;
 
@@ -205,8 +195,6 @@ static void player_stop()
     decoder_state = PLAY_2_STOP;
     sound_state = PLAY_2_STOP;
     render_draw_client(main_render);
-//    printf("stop player\n");
-
 };
 
 int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
@@ -353,7 +341,6 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
 
                         rewind_pos = (prg->max - prg->min)*prg->pos/prg->ctrl.w;
 
-//                        printf("progress action pos: %d time: %f\n", prg->pos, (double)rewind_pos);
                         player_state  = REWIND;
                         decoder_state = REWIND;
                         sound_state   = PLAY_2_STOP;
@@ -379,10 +366,8 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
                     int      level;
 
                     peak = sld->min + sld->pos * (sld->max - sld->min)/(96);
-//                    level = (log2(peak+16384)*10000.0)/15 - 10000;
                     level =  peak;
 
-//                    printf("level %d\n", level);
                     set_audio_volume(level, level);
                     send_message(&sld->ctrl, MSG_PAINT, 0, 0);
                     win->panel.lvl->vol = level;
@@ -621,9 +606,7 @@ render_t *create_render(window_t *win, AVCodecContext *ctx, uint32_t flags)
     render->ctx_height = ctx->height;
     render->ctx_format = ctx->pix_fmt;
 
-    mutex_lock(&driver_lock);
     render->caps = pxInit(1);
-    mutex_unlock(&driver_lock);
 
     right  = win->w;
     bottom = win->h-CAPTION_HEIGHT-PANEL_HEIGHT;
