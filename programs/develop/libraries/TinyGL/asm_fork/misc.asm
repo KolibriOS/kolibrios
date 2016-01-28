@@ -54,7 +54,7 @@ endl
 		stdcall dword[edx+offs_cont_gl_resize_viewport], edx ;gl_resize_viewport(context,&xsize_req,&ysize_req)
 		cmp eax,0
 		je @f
-			stdcall dbg_print,f_vp,err_4
+			stdcall dbg_print,sz_glViewport,err_4
 	@@:
 
 	mov ecx,[xsize_req]
@@ -67,40 +67,8 @@ endl
 	jg @f
 	cmp dword[xsize],0
 	jg @f
-		stdcall dbg_print,f_vp,err_5
+		stdcall dbg_print,sz_glViewport,err_5
 	@@:
-if DEBUG ;glopViewport
-push edi
-	mov ecx,80
-	mov eax,[xmin]
-	lea edi,[buf_param]
-	stdcall convert_int_to_str,ecx
-	stdcall str_n_cat,edi,txt_zp_sp,2
-	stdcall str_len,edi
-	add edi,eax
-	sub ecx,eax
-
-	mov eax,[ymin]
-	stdcall convert_int_to_str,ecx
-	stdcall str_n_cat,edi,txt_zp_sp,2
-	stdcall str_len,edi
-	add edi,eax
-	sub ecx,eax
-
-	mov eax,[xsize]
-	stdcall convert_int_to_str,ecx
-	stdcall str_n_cat,edi,txt_zp_sp,2
-	stdcall str_len,edi
-	add edi,eax
-	sub ecx,eax
-
-	mov eax,[ysize]
-	stdcall convert_int_to_str,ecx
-
-	stdcall str_n_cat,edi,txt_nl,2
-	stdcall dbg_print,f_vp,buf_param
-pop edi
-end if
 	mov ecx,[xmin]
 	mov dword[edx+offs_cont_viewport+offs_vpor_xmin],ecx
 	mov ecx,[ymin]

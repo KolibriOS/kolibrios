@@ -86,13 +86,12 @@ endp
 align 4
 .str:
 	mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
-	;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
+	;преревод числа в ASCII строку входные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
 	cmp eax,ecx ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
 	jb @f
 		xor edx,edx ;очистить edx
 		div ecx   ;разделить - остаток в edx
 		push edx  ;положить в стек
-		;dec edi  ;смещение необходимое для записи с конца строки
 		call .str ;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
 		pop eax
 	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
@@ -131,22 +130,21 @@ glTexCoord3dv: ;(double *)
 glTexCoord4d: ;(double ,double ,double, double )
 glTexCoord4fv: ;(float *)
 glTexCoord4dv: ;(double *)
-glGenTextures: ;(int n, unsigned int *textures)
-glDeleteTextures: ;(int n, const unsigned int *textures)
 glGetIntegerv: ;(int pname,int *params)
 glGetFloatv: ;(int pname, float *v)
 
 align 4
-f_kosgl_1 db 'kosglMakeCurrent',0
 err_0 db 'Error while initializing Z buffer',13,10,0
 f_zb_opn db ' ZB_open',0
 err_1 db 'gl_malloc(sizeof.ZBuffer)==0',13,10,0
 err_2 db 'gl_malloc(xsize*ysize*4)==0',13,10,0
 err_3 db 'bit mode not correct',13,10,0
-f_vp db ' glViewport',0
 err_4 db 'error while resizing display',13,10,0
 err_5 db 'size too small',13,10,0
-f_clipcode db ' gl_clipcode',0
+err_6 db 'unsupported option',13,10,0
+err_7 db 'assert(target == GL_TEXTURE_2D && texture >= 0)',13,10,0
+err_8 db 'combinaison of parameters not handled',13,10,0
+err_9 db 'GL_INVALID_ENUM',13,10,0
 f_zbz db ' ZB_line_z',0
 f_zb db ' ZB_line',0
 f_find_l db 'find_list',0

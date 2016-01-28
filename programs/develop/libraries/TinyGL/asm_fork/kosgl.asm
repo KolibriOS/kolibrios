@@ -14,11 +14,11 @@ ends
 ;KOSGLContext kosglCreateContext(KOSGLContext shareList, int flags)
 ;{
 ;  TinyGLContext *ctx;
-;
+
 ;  if (shareList != NULL) {
 ;    gl_fatal_error("No sharing available in TinyGL");    
 ;  }
-;
+
 ;    ctx=gl_malloc(sizeof(TinyGLContext));
 ;  if (!ctx)
 ;      return NULL;
@@ -99,9 +99,9 @@ proc kosglMakeCurrent uses ebx ecx, win_x0:dword, win_y0:dword, win_x:dword, win
 		xor eax,eax
 		stdcall ZB_open, dword[win_x], dword[win_y], dword ZB_MODE_RGB24, eax,eax,eax,eax ;NULL,NULL,NULL
 
-		cmp eax,0
-		jne @f
-			stdcall dbg_print,f_kosgl_1,err_0
+		or eax,eax
+		jnz @f
+			stdcall dbg_print,sz_kosglMakeCurrent,err_0
 			xor eax,eax
 			jmp .err_f
 		@@:

@@ -9,7 +9,7 @@ proc find_texture uses ebx ecx, context:dword, h:dword
 	mov eax,[h]
 	and eax,0xff
 	shl eax,2
-	add eax,[ebx] ;eax = &context.shared_state.texture_hash_table[h % TEXTURE_HASH_TABLE_SIZE]
+	add eax,ebx ;eax = &context.shared_state.texture_hash_table[h % TEXTURE_HASH_TABLE_SIZE]
 
 	; [eax] - указатель на текстуру, получаемую через хеш таблицу
 	mov ecx,[h] ; ecx - указатель на искомую текстуру
@@ -27,29 +27,50 @@ proc find_texture uses ebx ecx, context:dword, h:dword
 	ret
 endp
 
-;static void free_texture(GLContext *c,int h)
-;{
-;  GLTexture *t,**ht;
-;  GLImage *im;
-;  int i;
-;
-;  t=find_texture(c,h);
-;  if (t->prev==NULL) {
-;    ht=&c->shared_state.texture_hash_table
-;      [t->handle % TEXTURE_HASH_TABLE_SIZE];
-;    *ht=t->next;
-;  } else {
-;    t->prev->next=t->next;
-;  }
-;  if (t->next!=NULL) t->next->prev=t->prev;
-;
-;  for(i=0;i<MAX_TEXTURE_LEVELS;i++) {
-;    im=&t->images[i];
-;    if (im->pixmap != NULL) gl_free(im->pixmap);
-;  }
-;
-;  gl_free(t);
-;}
+align 4
+proc free_texture uses eax ebx ecx edx, context:dword, h:dword
+	mov edx,[context]
+
+	stdcall find_texture,edx,[h] ;t=find_texture(context,h)
+	cmp dword[eax+offs_text_prev],0 ;if (t.prev==NULL)
+	jne .else
+		mov edx,[edx+offs_cont_shared_state+4] ;edx = &context.shared_state.texture_hash_table[0]
+		mov ebx,[eax+offs_text_handle]
+		and ebx,0xff
+		shl ebx,2
+		add edx,ebx ;edx = &context.shared_state.texture_hash_table[t.handle % TEXTURE_HASH_TABLE_SIZE]
+		mov ebx,[eax+offs_text_next]
+		mov [edx],ebx ;*ht=t.next
+		jmp @f
+	.else:
+		mov ebx,[eax+offs_text_prev]
+		mov ecx,[eax+offs_text_next]
+		mov [ebx+offs_text_next],ecx ;t.prev.next=t.next
+	@@:
+	cmp dword[eax+offs_text_next],0 ;if (t.next!=NULL)
+	je @f
+		mov ebx,[eax+offs_text_next]
+		mov ecx,[eax+offs_text_prev]
+		mov [ebx+offs_text_prev],ecx ;t.next.prev=t.prev
+	@@:
+
+	xor ebx,ebx
+	mov ecx,[eax+offs_text_images] ;im=&t.images[0]
+	.cycle_0: ;for(i=0;i<MAX_TEXTURE_LEVELS;i++)
+	cmp ebx,MAX_TEXTURE_LEVELS
+	jge .cycle_0_end
+		cmp dword[ecx+offs_imag_pixmap],0 ;if (im.pixmap != NULL)
+		je @f
+			stdcall gl_free,[ecx+offs_imag_pixmap]
+		@@:
+		add ecx,sizeof.GLImage
+		inc ebx
+		jmp .cycle_0
+	.cycle_0_end:
+
+	stdcall gl_free,eax
+	ret
+endp
 
 ;output:
 ; eax - указатель на память
@@ -63,7 +84,7 @@ proc alloc_texture uses ebx ecx, context:dword, h:dword
 	mov ecx,[h]
 	and ecx,0xff
 	shl ecx,2
-	add ecx,[ebx] ;ecx = &context.shared_state.texture_hash_table[h % TEXTURE_HASH_TABLE_SIZE]
+	add ecx,ebx ;ecx = &context.shared_state.texture_hash_table[h % TEXTURE_HASH_TABLE_SIZE]
 
 	mov ebx,[ecx]
 	mov [eax+offs_text_next],ebx
@@ -90,56 +111,94 @@ proc glInitTextures uses eax edx, context:dword
 	ret
 endp
 
-;void glGenTextures(int n, unsigned int *textures)
-;{
-;  GLContext *c=gl_get_context();
-;  int max,i;
-;  GLTexture *t;
-;
-;  max=0;
-;  for(i=0;i<TEXTURE_HASH_TABLE_SIZE;i++) {
-;    t=c->shared_state.texture_hash_table[i];
-;    while (t!=NULL) {
-;      if (t->handle>max) max=t->handle;
-;      t=t->next;
-;    }
-;
-;  }
-;  for(i=0;i<n;i++) {
-;    textures[i]=max+i+1;
-;  }
-;}
-;
-;
-;void glDeleteTextures(int n, const unsigned int *textures)
-;{
-;  GLContext *c=gl_get_context();
-;  int i;
-;  GLTexture *t;
-;
-;  for(i=0;i<n;i++) {
-;    t=find_texture(c,textures[i]);
-;    if (t!=NULL && t!=0) {
-;      if (t==c->current_texture) {
-;	glBindTexture(GL_TEXTURE_2D,0);
-;      }
-;      free_texture(c,textures[i]);
-;    }
-;  }
-;}
+align 4
+proc glGenTextures uses eax ebx ecx edx esi, n:dword, textures:dword
+;edx - GLTexture *t
+	call gl_get_context
+	add eax,offs_cont_shared_state+4 ;offset texture_hash_table = 4
+
+	xor ebx,ebx ;max=0
+	xor ecx,ecx ;i=0
+	.cycle_0: ;for(i=0;i<TEXTURE_HASH_TABLE_SIZE;i++)
+	cmp ecx,TEXTURE_HASH_TABLE_SIZE
+	jge .cycle_0_end
+		mov esi,ecx
+		shl esi,2
+		add esi,[eax]
+		mov edx,dword[esi] ;t=context.shared_state.texture_hash_table[i]
+		.cycle_1: ;while (t!=NULL)
+		or edx,edx
+		jz .cycle_1_end
+			cmp [edx+offs_text_handle],ebx ;if (t.handle>max)
+			jle @f
+				mov ebx,[edx+offs_text_handle] ;max=t.handle
+			@@:
+			mov edx,[edx+offs_text_next] ;t=t.next
+			jmp .cycle_1
+		.cycle_1_end:
+		inc ecx
+		jmp .cycle_0
+	.cycle_0_end:
+
+	xor ecx,ecx ;i=0
+	mov esi,[textures]
+	.cycle_2: ;for(i=0;i<n;i++)
+	cmp ecx,[n]
+	jge .cycle_2_end
+		inc ebx
+		mov [esi],ebx ;textures[i]=max+i+1
+		add esi,4
+		inc ecx
+		jmp .cycle_2
+	.cycle_2_end:
+	ret
+endp
+
+align 4
+proc glDeleteTextures uses eax ebx ecx edx, n:dword, textures:dword
+	call gl_get_context
+	mov edx,eax
+	mov ecx,[textures]
+
+	xor ebx,ebx
+	.cycle_0: ;for(i=0;i<n;i++)
+	cmp ebx,[n]
+	jge .cycle_0_end
+		stdcall find_texture,edx,[ecx] ;t=find_texture(context,textures[i])
+		or eax,eax ;if (t!=0)
+		jz @f
+			cmp eax,[edx+offs_cont_current_texture] ;if (t==context.current_texture)
+			jne .end_1
+				stdcall glBindTexture,GL_TEXTURE_2D,0
+			.end_1:
+			stdcall free_texture, edx,[ecx]
+		@@:
+		add ecx,4
+		inc ebx
+		jmp .cycle_0
+	.cycle_0_end:
+	ret
+endp
 
 align 4
 proc glopBindTexture uses eax ebx edx, context:dword, p:dword
 	mov ebx,[p]
 	mov edx,[context]
 
-;  assert(p[1].i == GL_TEXTURE_2D && texture >= 0);
+	cmp dword[ebx+4],GL_TEXTURE_2D
+	je @f
+	;jne .error
+	;cmp dword[ebx+8],0
+	;jge @f
+	.error:
+		stdcall dbg_print,sz_glBindTexture,err_7
+	@@:
 
-	;[ebx+8] = p[2]
-	stdcall find_texture, edx,dword[ebx+8]
-	cmp eax,0 ;NULL
-	jne @f
-		stdcall alloc_texture, edx,dword[ebx+8]
+	mov ebx,[ebx+8] ;ebx = p[2]
+	stdcall find_texture, edx,ebx
+	or eax,eax ;if(t==NULL)
+	jnz @f
+		stdcall alloc_texture, edx,ebx
 	@@:
 	mov [edx+offs_cont_current_texture],eax
 	ret
@@ -147,114 +206,170 @@ endp
 
 align 4
 proc glopTexImage2D, context:dword, p:dword
-;{
-;  int target=p[1].i;
-;  int level=p[2].i;
-;  int components=p[3].i;
-;  int width=p[4].i;
-;  int height=p[5].i;
-;  int border=p[6].i;
-;  int format=p[7].i;
-;  int type=p[8].i;
-;  void *pixels=p[9].p;
-;  GLImage *im;
-;  unsigned char *pixels1;
-;  int do_free;
-;
-;  if (!(target == GL_TEXTURE_2D && level == 0 && components == 3 && 
-;        border == 0 && format == GL_RGB &&
-;        type == GL_UNSIGNED_BYTE)) {
-;    gl_fatal_error("glTexImage2D: combinaison of parameters not handled");
-;  }
-;  
-;  do_free=0;
-;  if (width != 256 || height != 256) {
-;    pixels1 = gl_malloc(256 * 256 * 3);
-;    /* no interpolation is done here to respect the original image aliasing ! */
-;    gl_resizeImageNoInterpolate(pixels1,256,256,pixels,width,height);
-;    do_free=1;
-;    width=256;
-;    height=256;
-;  } else {
-;    pixels1=pixels;
-;  }
-;
-;  im=&c->current_texture->images[level];
-;  im->xsize=width;
-;  im->ysize=height;
-;  if (im->pixmap!=NULL) gl_free(im->pixmap);
-;#if TGL_FEATURE_RENDER_BITS == 24 
-;  im->pixmap=gl_malloc(width*height*3);
-;  if(im->pixmap) {
-;      memcpy(im->pixmap,pixels1,width*height*3);
-;  }
-;#elif TGL_FEATURE_RENDER_BITS == 32
-;  im->pixmap=gl_malloc(width*height*4);
-;  if(im->pixmap) {
-;      gl_convertRGB_to_8A8R8G8B(im->pixmap,pixels1,width,height);
-;  }
-;#elif TGL_FEATURE_RENDER_BITS == 16
-;  im->pixmap=gl_malloc(width*height*2);
-;  if(im->pixmap) {
-;      gl_convertRGB_to_5R6G5B(im->pixmap,pixels1,width,height);
-;  }
-;#else
-;#error TODO
-;#endif
-;  if (do_free) gl_free(pixels1);
+locals
+	pixels1 dd ?
+	do_free dd ?
+endl
+pushad
+	mov edi,[p]
+	mov eax,[edi+4] ;target=p[1].i
+	mov ebx,[edi+8] ;level=p[2].i
+	mov ecx,[edi+12] ;components=p[3].i;
+	mov edx,[edi+16] ;width=p[4].i;
+	mov esi,[edi+20] ;height=p[5].i;
+
+	cmp eax,GL_TEXTURE_2D ;if (param != GL_TEXTURE_2D)
+	jne .error
+	or ebx,ebx ;if (level != 0)
+	jnz .error
+	cmp ecx,3 ;if (components != 3)
+	jne .error
+	cmp dword[edi+24],0 ;if (border != 0)
+	jne .error
+	cmp dword[edi+28],GL_RGB ;if (format != GL_RGB)
+	jne .error
+	cmp dword[edi+32],GL_UNSIGNED_BYTE ;if (type != GL_UNSIGNED_BYTE)
+	jne .error
+
+	jmp @f
+	.error:
+		stdcall dbg_print,sz_glTexImage2D,err_8 ;"glTexImage2D: combinaison of parameters not handled"
+	@@:
+
+	mov dword[do_free],0
+	cmp edx,256
+	jne .else
+	cmp esi,256
+	jne .else
+		mov eax,[edi+36]
+		mov [pixels1],eax ;pixels1=pixels
+		jmp @f
+	.else: ;if (width != 256 || height != 256)
+		stdcall gl_malloc, 256*256*3
+		mov [pixels1],eax ;pixels1 = gl_malloc(256 * 256 * 3)
+		; no interpolation is done here to respect the original image aliasing !
+;gl_resizeImageNoInterpolate(eax,256,256,[edi+36],edx,esi)
+		mov dword[do_free],1
+		mov edx,256
+		mov esi,256
+	@@:
+
+	mov ecx,[context]
+	mov ecx,[ecx+offs_cont_current_texture]
+	add ecx,offs_text_images
+	imul ebx,sizeof.GLTexture
+	add ecx,ebx ;ecx = &context.current_texture.images[level]
+	mov dword[ecx+offs_imag_xsize],edx ;im.xsize=width
+	mov dword[ecx+offs_imag_ysize],esi ;im.ysize=height
+	cmp dword[ecx+offs_imag_pixmap],0 ;if (im.pixmap!=NULL) 
+	je @f
+		stdcall gl_free, [ecx+offs_imag_pixmap]
+	@@:
+if TGL_FEATURE_RENDER_BITS eq 24
+	imul edx,esi
+	imul edx,3
+	stdcall gl_malloc,edx
+	mov [ecx+offs_imag_pixmap],eax ;im.pixmap = gl_malloc(width*height*3)
+	or eax,eax ;if(im.pixmap)
+	jz @f
+		mov edi,eax
+		mov esi,[pixels1]
+		mov ecx,edx
+		rep movsb ;memcpy(im.pixmap,pixels1,width*height*3)
+	@@:
+end if
+if TGL_FEATURE_RENDER_BITS eq 32
+	mov ebx,edx
+	imul edx,esi
+	shl edx,2
+	stdcall gl_malloc,edx
+	mov [ecx+offs_imag_pixmap],eax ;im.pixmap = gl_malloc(width*height*4)
+	or eax,eax ;if(im.pixmap)
+	jz @f
+;gl_convertRGB_to_8A8R8G8B(eax,[pixels1],ebx,esi)
+	@@:
+end if
+if TGL_FEATURE_RENDER_BITS eq 16
+	mov ebx,edx
+	imul edx,esi
+	shl edx,1
+	stdcall gl_malloc,edx
+	mov [ecx+offs_imag_pixmap],eax ;im.pixmap = gl_malloc(width*height*2)
+	or eax,eax ;if(im.pixmap)
+	jz @f
+;gl_convertRGB_to_5R6G5B(eax,[pixels1],ebx,esi)
+	@@:
+end if
+	cmp dword[do_free],0 ;if (do_free)
+	je @f
+		stdcall gl_free, [pixels1]
+	@@:
+popad
 	ret
 endp
 
 ; TODO: not all tests are done
 align 4
-proc glopTexEnv, context:dword, p:dword
+proc glopTexEnv uses eax ebx ecx, context:dword, p:dword
+	mov ecx,[p]
+	mov eax,[ecx+4] ;target=p[1].i
+	mov ebx,[ecx+8] ;pname=p[2].i
+	mov ecx,[ecx+12] ;param=p[3].i
 
-;  int target=p[1].i;
-;  int pname=p[2].i;
-;  int param=p[3].i;
-;
-;  if (target != GL_TEXTURE_ENV) {
-;  error:
-;    gl_fatal_error("glTexParameter: unsupported option");
-;  }
-;
-;  if (pname != GL_TEXTURE_ENV_MODE) goto error;
-;
-;  if (param != GL_DECAL) goto error;
+	cmp eax,GL_TEXTURE_ENV ;if (target != GL_TEXTURE_ENV)
+	jne .error
+	cmp ebx,GL_TEXTURE_ENV_MODE ;if (pname != GL_TEXTURE_ENV_MODE)
+	jne .error
+	cmp ecx,GL_DECAL ;if (param != GL_DECAL)
+	jne .error
+
+	jmp @f
+	.error:
+		stdcall dbg_print,sz_glTexParameteri,err_6
+	@@:
 	ret
 endp
 
 ; TODO: not all tests are done
 align 4
-proc glopTexParameter, context:dword, p:dword
+proc glopTexParameter uses eax ebx ecx, context:dword, p:dword
+	mov ecx,[p]
+	mov eax,[ecx+4] ;target=p[1].i
+	mov ebx,[ecx+8] ;pname=p[2].i
+	mov ecx,[ecx+12] ;param=p[3].i
 
-;  int target=p[1].i;
-;  int pname=p[2].i;
-;  int param=p[3].i;
-;  
-;  if (target != GL_TEXTURE_2D) {
-;  error:
-;    gl_fatal_error("glTexParameter: unsupported option");
-;  }
-;
-;  switch(pname) {
-;  case GL_TEXTURE_WRAP_S:
-;  case GL_TEXTURE_WRAP_T:
-;    if (param != GL_REPEAT) goto error;
-;    break;
-;  }
+	cmp eax,GL_TEXTURE_2D ;if (target != GL_TEXTURE_2D)
+	jne .error
+	cmp ebx,GL_TEXTURE_WRAP_S
+	je @f
+	cmp ebx,GL_TEXTURE_WRAP_T
+	je @f
+		jmp .error
+	@@:
+	cmp ecx,GL_REPEAT ;if (param != GL_REPEAT)
+	jne .error
+
+	jmp @f
+	.error:
+		stdcall dbg_print,sz_glTexParameteri,err_6
+	@@:
 	ret
 endp
 
 align 4
-proc glopPixelStore, context:dword, p:dword
+proc glopPixelStore uses eax ebx, context:dword, p:dword
+	mov ebx,[p]
+	mov eax,[ebx+4] ;pname=p[1].i
+	mov ebx,[ebx+8] ;param=p[2].i
 
-;  int pname=p[1].i;
-;  int param=p[2].i;
-;
-;  if (pname != GL_UNPACK_ALIGNMENT ||
-;      param != 1) {
-;    gl_fatal_error("glPixelStore: unsupported option");
-;  }
+	cmp eax,GL_UNPACK_ALIGNMENT ;if (pname != GL_UNPACK_ALIGNMENT)
+	jne .error
+	cmp ebx,1 ;if (param != 1)
+	jne .error
+
+	jmp @f
+	.error:
+		stdcall dbg_print,sz_glPixelStorei,err_6
+	@@:
 	ret
 endp

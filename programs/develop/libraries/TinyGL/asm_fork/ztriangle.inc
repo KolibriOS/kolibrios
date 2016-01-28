@@ -20,7 +20,6 @@
 ; цвет испорченных пикселей. Цвет получаеться наиболее близким к указанному
 ; пользователем.
 
-	t dd ? ;ZBufferPoint*
 	pr1 dd ? ;ZBufferPoint*
 	pr2 dd ? ;ZBufferPoint*
 	l1 dd ? ;ZBufferPoint*
@@ -52,6 +51,10 @@
 	; warning: x2 is multiplied by 2^16
 	x2 dd ? ;int
 	dx2dy2 dd ? ;int
+
+	pz dd ? ;unsigned short *
+	z dd ? ;uint
+	zz dd ? ;uint
 
 if INTERP_Z eq 1
 	z1 dd ? ;int
@@ -100,18 +103,10 @@ if INTERP_STZ eq 1
 	dtzdy dd ? ;float
 	dtzdl_min dd ? ;float
 	dtzdl_max dd ? ;float
+	s_z dd ? ;float
+	t_z dd ? ;float
 end if
-
-
-if DRAW_LINE_M eq 1
-	DRAW_LINE 0 ;переменные делаются в макросе
-else
 	n dd ? ;int - длинна горизонтальной линии в пикселях
-if INTERP_Z eq 1
-	pz dd ? ;unsigned short *
-	z dd ? ;uint
-	zz dd ? ;uint
-end if
 if INTERP_RGB eq 1
 	or1 dd ? ;uint
 	og1 dd ? ;uint
@@ -121,18 +116,13 @@ if INTERP_ST eq 1
 	s dd ? ;uint
 	t dd ? ;uint
 end if
-if INTERP_STZ eq 1
-	s_z dd ? ;float
-	t_z dd ? ;float
-end if
+
+if DRAW_LINE_M eq 1
+	DRAW_LINE 0 ;переменные делаются в макросе
 end if
 
 endl
 pushad
-
-if DEBUG ;(1)
-stdcall dbg_print,f_fill_tr,m_1
-end if
 
 	; we sort the vertex with increasing y
 	mov ebx,[p0]

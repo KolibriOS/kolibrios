@@ -263,9 +263,9 @@ proc glopCallList uses eax ebx ecx edx edi, context:dword, p:dword
 	mov ebx,[p]
 
 	stdcall find_list,edx,[ebx+4]
-	cmp eax,0
-	jne @f
-		;if (eax == NULL) gl_fatal_error("list %d not defined",[ebx+4])
+	or eax,eax
+	jnz @f
+		;gl_fatal_error("list %d not defined",[ebx+4])
 	@@:
 	mov edi,[eax] ;edi = &GLList.first_op_buffer.ops
 

@@ -31,9 +31,9 @@ SPECULAR_BUFFER_RESOLUTION equ 1024
 MAX_MODELVIEW_STACK_DEPTH  equ 32
 MAX_PROJECTION_STACK_DEPTH equ 8
 MAX_TEXTURE_STACK_DEPTH    equ 8
-MAX_NAME_STACK_DEPTH	   equ 64
-MAX_TEXTURE_LEVELS	   equ 11
-MAX_LIGHTS		   equ 16
+MAX_NAME_STACK_DEPTH equ 64
+MAX_TEXTURE_LEVELS   equ 11
+MAX_LIGHTS equ 16
 
 VERTEX_HASH_SIZE equ 1031
 
@@ -172,6 +172,8 @@ struct GLImage
 ends
 
 offs_imag_pixmap equ 0
+offs_imag_xsize equ 4
+offs_imag_ysize equ 8
 
 ; textures
 
@@ -477,15 +479,6 @@ proc gl_clipcode uses ebx, x:dword, y:dword, z:dword, w1:dword
 	fincstp
 
 	mov eax,ebx
-if DEBUG ;gl_clipcode
-push edi
-	mov ecx,80
-	lea edi,[buf_param]
-	stdcall convert_int_to_str,ecx
-	stdcall str_n_cat,edi,txt_nl,2
-	stdcall dbg_print,f_clipcode,buf_param
-pop edi
-end if
 	ret
 endp
 

@@ -75,7 +75,7 @@ proc gluQuadricDrawStyle uses eax ebx, qobj:dword, drawStyle:dword
 		mov dword[eax+offs_qobj_DrawStyle],ebx
 		jmp @f
 	.err_q:
-		;quadric_error(qobj, GLU_INVALID_ENUM, "qluQuadricDrawStyle")
+		stdcall dbg_print,sz_gluQuadricDrawStyle,err_9
 	@@:
 	ret
 endp
@@ -98,7 +98,26 @@ proc gluQuadricOrientation uses eax ebx, qobj:dword, orientation:dword
 		mov dword[eax+offs_qobj_Orientation],ebx
 		jmp @f
 	.err_q:
-		;quadric_error(qobj, GLU_INVALID_ENUM, "qluQuadricOrientation")
+		stdcall dbg_print,sz_gluQuadricOrientation,err_9
+	@@:
+	ret
+endp
+
+align 4
+proc gluQuadricTexture uses eax ebx, qobj:dword, texture:dword
+	mov eax,[qobj]
+	or eax,eax
+	jz .err_q
+	mov ebx,[texture]
+	cmp ebx,GL_TRUE
+	je @f
+	cmp ebx,GL_FALSE
+	je @f
+	@@:
+		mov dword[eax+offs_qobj_TextureFlag],ebx
+		jmp @f
+	.err_q:
+		stdcall dbg_print,sz_gluQuadricTexture,err_9
 	@@:
 	ret
 endp
@@ -179,7 +198,7 @@ pushad
 	@@:
 	cmp dword[eax+offs_qobj_TextureFlag],0 ;if (qobj.TextureFlag)
 	je @f
-;glTexCoord2f(0.5,0.0)
+		stdcall glTexCoord2f, 0.5,0.0
 	@@:
 	sub esp,4
 	fld dword[nsign]
@@ -320,7 +339,11 @@ align 4
 		@@:
 		cmp dword[eax+offs_qobj_TextureFlag],0 ;if (qobj.TextureFlag)
 		je @f
-;glTexCoord2f(s,1-t)
+			fld1
+			fsub dword[t]
+			fstp dword[esp-4]
+			sub esp,4
+			stdcall glTexCoord2f, [s] ;,1-t
 		@@:
 		fld dword[radius]
 		fld dword[z]
@@ -368,7 +391,12 @@ align 4
 		@@:
 		cmp dword[eax+offs_qobj_TextureFlag],0 ;if (qobj.TextureFlag)
 		je @f
-;glTexCoord2f(s,1-(t-dt))
+			fld1
+			fsub dword[t]
+			fadd dword[d_t]
+			fstp dword[esp-4]
+			sub esp,4
+			stdcall glTexCoord2f, [s] ;,1-(t-dt)
 			fld dword[s]
 			fadd dword[d_s]
 			fstp dword[s]
@@ -404,7 +432,7 @@ align 4
 	@@:
 	cmp dword[eax+offs_qobj_TextureFlag],0 ;if (qobj.TextureFlag)
 	je @f
-;glTexCoord2f(0.5,1.0)
+		stdcall glTexCoord2f, 0.5,1.0
 		mov dword[s],1.0
 		mov ebx,[d_t]
 		mov [t],ebx
@@ -463,7 +491,11 @@ align 4
 		@@:
 		cmp dword[eax+offs_qobj_TextureFlag],0 ;if (qobj.TextureFlag)
 		je @f
-;glTexCoord2f(s,1-t)
+			fld1
+			fsub dword[t]
+			fstp dword[esp-4]
+			sub esp,4
+			stdcall glTexCoord2f, [s] ;,1-t
 			fld dword[s]
 			fsub dword[d_s]
 			fstp dword[s]

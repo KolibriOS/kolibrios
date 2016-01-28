@@ -165,6 +165,7 @@ E_LIB gluNewQuadric
 E_LIB gluDeleteQuadric
 E_LIB gluQuadricDrawStyle
 E_LIB gluQuadricOrientation
+E_LIB gluQuadricTexture
 E_LIB gluSphere
 
 ;
