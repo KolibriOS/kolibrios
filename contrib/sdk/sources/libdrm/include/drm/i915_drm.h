@@ -165,58 +165,62 @@ typedef struct _drm_i915_sarea {
 
 /* Flags for perf_boxes
  */
-#define I915_BOX_RING_EMPTY    		0x1
-#define I915_BOX_FLIP          		0x2
-#define I915_BOX_WAIT          		0x4
-#define I915_BOX_TEXTURE_LOAD  		0x8
-#define I915_BOX_LOST_CONTEXT  		0x10
+#define I915_BOX_RING_EMPTY    0x1
+#define I915_BOX_FLIP          0x2
+#define I915_BOX_WAIT          0x4
+#define I915_BOX_TEXTURE_LOAD  0x8
+#define I915_BOX_LOST_CONTEXT  0x10
 
-/* I915 specific ioctls
- * The device specific ioctl range is 0x40 to 0x79.
+/*
+ * i915 specific ioctls.
+ *
+ * The device specific ioctl range is [DRM_COMMAND_BASE, DRM_COMMAND_END) ie
+ * [0x40, 0xa0) (a0 is excluded). The numbers below are defined as offset
+ * against DRM_COMMAND_BASE and should be between [0x0, 0x60).
  */
-#define DRM_I915_INIT			0x00
-#define DRM_I915_FLUSH			0x01
-#define DRM_I915_FLIP			0x02
-#define DRM_I915_BATCHBUFFER		0x03
-#define DRM_I915_IRQ_EMIT		0x04
-#define DRM_I915_IRQ_WAIT		0x05
-#define DRM_I915_GETPARAM		0x06
-#define DRM_I915_SETPARAM		0x07
-#define DRM_I915_ALLOC			0x08
-#define DRM_I915_FREE			0x09
-#define DRM_I915_INIT_HEAP		0x0a
-#define DRM_I915_CMDBUFFER		0x0b
-#define DRM_I915_DESTROY_HEAP		0x0c
+#define DRM_I915_INIT		0x00
+#define DRM_I915_FLUSH		0x01
+#define DRM_I915_FLIP		0x02
+#define DRM_I915_BATCHBUFFER	0x03
+#define DRM_I915_IRQ_EMIT	0x04
+#define DRM_I915_IRQ_WAIT	0x05
+#define DRM_I915_GETPARAM	0x06
+#define DRM_I915_SETPARAM	0x07
+#define DRM_I915_ALLOC		0x08
+#define DRM_I915_FREE		0x09
+#define DRM_I915_INIT_HEAP	0x0a
+#define DRM_I915_CMDBUFFER	0x0b
+#define DRM_I915_DESTROY_HEAP	0x0c
 #define DRM_I915_SET_VBLANK_PIPE	0x0d
 #define DRM_I915_GET_VBLANK_PIPE	0x0e
-#define DRM_I915_VBLANK_SWAP		0x0f
-#define DRM_I915_HWS_ADDR		0x11
-#define DRM_I915_GEM_INIT		0x13
-#define DRM_I915_GEM_EXECBUFFER		0x14
-#define DRM_I915_GEM_PIN		0x15
-#define DRM_I915_GEM_UNPIN		0x16
-#define DRM_I915_GEM_BUSY		0x17
-#define DRM_I915_GEM_THROTTLE		0x18
-#define DRM_I915_GEM_ENTERVT		0x19
-#define DRM_I915_GEM_LEAVEVT		0x1a
-#define DRM_I915_GEM_CREATE		0x1b
-#define DRM_I915_GEM_PREAD		0x1c
-#define DRM_I915_GEM_PWRITE		0x1d
-#define DRM_I915_GEM_MMAP		0x1e
-#define DRM_I915_GEM_SET_DOMAIN		0x1f
-#define DRM_I915_GEM_SW_FINISH		0x20
-#define DRM_I915_GEM_SET_TILING		0x21
-#define DRM_I915_GEM_GET_TILING		0x22
-#define DRM_I915_GEM_GET_APERTURE 	0x23
-#define DRM_I915_GEM_MMAP_GTT		0x24
+#define DRM_I915_VBLANK_SWAP	0x0f
+#define DRM_I915_HWS_ADDR	0x11
+#define DRM_I915_GEM_INIT	0x13
+#define DRM_I915_GEM_EXECBUFFER	0x14
+#define DRM_I915_GEM_PIN	0x15
+#define DRM_I915_GEM_UNPIN	0x16
+#define DRM_I915_GEM_BUSY	0x17
+#define DRM_I915_GEM_THROTTLE	0x18
+#define DRM_I915_GEM_ENTERVT	0x19
+#define DRM_I915_GEM_LEAVEVT	0x1a
+#define DRM_I915_GEM_CREATE	0x1b
+#define DRM_I915_GEM_PREAD	0x1c
+#define DRM_I915_GEM_PWRITE	0x1d
+#define DRM_I915_GEM_MMAP	0x1e
+#define DRM_I915_GEM_SET_DOMAIN	0x1f
+#define DRM_I915_GEM_SW_FINISH	0x20
+#define DRM_I915_GEM_SET_TILING	0x21
+#define DRM_I915_GEM_GET_TILING	0x22
+#define DRM_I915_GEM_GET_APERTURE 0x23
+#define DRM_I915_GEM_MMAP_GTT	0x24
 #define DRM_I915_GET_PIPE_FROM_CRTC_ID	0x25
-#define DRM_I915_GEM_MADVISE		0x26
+#define DRM_I915_GEM_MADVISE	0x26
 #define DRM_I915_OVERLAY_PUT_IMAGE	0x27
-#define DRM_I915_OVERLAY_ATTRS		0x28
+#define DRM_I915_OVERLAY_ATTRS	0x28
 #define DRM_I915_GEM_EXECBUFFER2	0x29
 #define DRM_I915_GET_SPRITE_COLORKEY	0x2a
 #define DRM_I915_SET_SPRITE_COLORKEY	0x2b
-#define DRM_I915_GEM_WAIT		0x2c
+#define DRM_I915_GEM_WAIT	0x2c
 #define DRM_I915_GEM_CONTEXT_CREATE	0x2d
 #define DRM_I915_GEM_CONTEXT_DESTROY	0x2e
 #define DRM_I915_GEM_SET_CACHING	0x2f
@@ -243,7 +247,7 @@ typedef struct _drm_i915_sarea {
 #define DRM_IOCTL_I915_VBLANK_SWAP
 #define DRM_IOCTL_I915_HWS_ADDR
 #define DRM_IOCTL_I915_GEM_INIT
-#define DRM_IOCTL_I915_GEM_EXECBUFFER
+#define DRM_IOCTL_I915_GEM_EXECBUFFER           SRV_I915_GEM_EXECBUFFER
 #define DRM_IOCTL_I915_GEM_EXECBUFFER2          SRV_I915_GEM_EXECBUFFER2
 #define DRM_IOCTL_I915_GEM_PIN                  SRV_I915_GEM_PIN
 #define DRM_IOCTL_I915_GEM_UNPIN                SRV_I915_GEM_UNPIN
@@ -254,7 +258,7 @@ typedef struct _drm_i915_sarea {
 #define DRM_IOCTL_I915_GEM_ENTERVT
 #define DRM_IOCTL_I915_GEM_LEAVEVT
 #define DRM_IOCTL_I915_GEM_CREATE               SRV_I915_GEM_CREATE
-#define DRM_IOCTL_I915_GEM_PREAD
+#define DRM_IOCTL_I915_GEM_PREAD                SRV_I915_GEM_PREAD
 #define DRM_IOCTL_I915_GEM_PWRITE               SRV_I915_GEM_PWRITE
 #define DRM_IOCTL_I915_GEM_MMAP                 SRV_I915_GEM_MMAP
 #define DRM_IOCTL_I915_GEM_MMAP_GTT             SRV_I915_GEM_MMAP_GTT
@@ -332,7 +336,7 @@ typedef struct drm_i915_irq_wait {
 #define I915_PARAM_HAS_WAIT_TIMEOUT	 19
 #define I915_PARAM_HAS_SEMAPHORES	 20
 #define I915_PARAM_HAS_PRIME_VMAP_FLUSH	 21
-#define I915_PARAM_HAS_VEBOX            22
+#define I915_PARAM_HAS_VEBOX		 22
 #define I915_PARAM_HAS_SECURE_BATCHES	 23
 #define I915_PARAM_HAS_PINNED_BATCHES	 24
 #define I915_PARAM_HAS_EXEC_NO_RELOC	 25
@@ -340,9 +344,21 @@ typedef struct drm_i915_irq_wait {
 #define I915_PARAM_HAS_WT     	 	 27
 #define I915_PARAM_CMD_PARSER_VERSION	 28
 #define I915_PARAM_HAS_COHERENT_PHYS_GTT 29
+#define I915_PARAM_MMAP_VERSION          30
+#define I915_PARAM_HAS_BSD2		 31
+#define I915_PARAM_REVISION              32
+#define I915_PARAM_SUBSLICE_TOTAL	 33
+#define I915_PARAM_EU_TOTAL		 34
+#define I915_PARAM_HAS_GPU_RESET	 35
+#define I915_PARAM_HAS_RESOURCE_STREAMER 36
+#define I915_PARAM_HAS_EXEC_SOFTPIN	 37
 
 typedef struct drm_i915_getparam {
 	int param;
+	/*
+	 * WARNING: Using pointers instead of fixed-size u64 means we need to write
+	 * compat32 code. Don't repeat this mistake.
+	 */
 	int *value;
 } drm_i915_getparam_t;
 
@@ -487,6 +503,14 @@ struct drm_i915_gem_mmap {
 	 * This is a fixed-size type for 32/64 compatibility.
 	 */
 	__u64 addr_ptr;
+
+	/**
+	 * Flags for extended behaviour.
+	 *
+	 * Added in version 2.
+	 */
+	__u64 flags;
+#define I915_MMAP_WC 0x1
 };
 
 struct drm_i915_gem_mmap_gtt {
@@ -654,15 +678,21 @@ struct drm_i915_gem_exec_object2 {
 	__u64 alignment;
 
 	/**
-	 * Returned value of the updated offset of the object, for future
-	 * presumed_offset writes.
+	 * When the EXEC_OBJECT_PINNED flag is specified this is populated by
+	 * the user with the GTT offset at which this object will be pinned.
+	 * When the I915_EXEC_NO_RELOC flag is specified this must contain the
+	 * presumed_offset of the object.
+	 * During execbuffer2 the kernel populates it with the value of the
+	 * current GTT offset of the object, for future presumed_offset writes.
 	 */
 	__u64 offset;
 
 #define EXEC_OBJECT_NEEDS_FENCE (1<<0)
 #define EXEC_OBJECT_NEEDS_GTT	(1<<1)
 #define EXEC_OBJECT_WRITE	(1<<2)
-#define __EXEC_OBJECT_UNKNOWN_FLAGS -(EXEC_OBJECT_WRITE<<1)
+#define EXEC_OBJECT_SUPPORTS_48B_ADDRESS (1<<3)
+#define EXEC_OBJECT_PINNED	(1<<4)
+#define __EXEC_OBJECT_UNKNOWN_FLAGS -(EXEC_OBJECT_PINNED<<1)
 	__u64 flags;
 
 	__u64 rsvd1;
@@ -736,7 +766,18 @@ struct drm_i915_gem_execbuffer2 {
  */
 #define I915_EXEC_HANDLE_LUT		(1<<12)
 
-#define __I915_EXEC_UNKNOWN_FLAGS -(I915_EXEC_HANDLE_LUT<<1)
+/** Used for switching BSD rings on the platforms with two BSD rings */
+#define I915_EXEC_BSD_MASK		(3<<13)
+#define I915_EXEC_BSD_DEFAULT		(0<<13) /* default ping-pong mode */
+#define I915_EXEC_BSD_RING1		(1<<13)
+#define I915_EXEC_BSD_RING2		(2<<13)
+
+/** Tell the kernel that the batchbuffer is processed by
+ *  the resource streamer.
+ */
+#define I915_EXEC_RESOURCE_STREAMER     (1<<15)
+
+#define __I915_EXEC_UNKNOWN_FLAGS -(I915_EXEC_RESOURCE_STREAMER<<1)
 
 #define I915_EXEC_CONTEXT_ID_MASK	(0xffffffff)
 #define i915_execbuffer2_set_context_id(eb2, context) \
@@ -972,6 +1013,7 @@ struct drm_intel_overlay_put_image {
 /* flags */
 #define I915_OVERLAY_UPDATE_ATTRS	(1<<0)
 #define I915_OVERLAY_UPDATE_GAMMA	(1<<1)
+#define I915_OVERLAY_DISABLE_DEST_COLORKEY	(1<<2)
 struct drm_intel_overlay_attrs {
 	__u32 flags;
 	__u32 color_key;
@@ -1038,9 +1080,23 @@ struct drm_i915_gem_context_destroy {
 };
 
 struct drm_i915_reg_read {
+	/*
+	 * Register offset.
+	 * For 64bit wide registers where the upper 32bits don't immediately
+	 * follow the lower 32bits, the offset of the lower 32bits must
+	 * be specified
+	 */
 	__u64 offset;
 	__u64 val; /* Return value */
 };
+/* Known registers:
+ *
+ * Render engine timestamp - 0x2358 + 64bit - gen7+
+ * - Note this register returns an invalid value if using the default
+ *   single instruction 8byte read, in order to workaround that use
+ *   offset (0x2538 | 1) instead.
+ *
+ */
 
 struct drm_i915_reset_stats {
 	__u32 ctx_id;
@@ -1065,11 +1121,21 @@ struct drm_i915_gem_userptr {
 #define I915_USERPTR_READ_ONLY 0x1
 #define I915_USERPTR_UNSYNCHRONIZED 0x80000000
 	/**
-	* Returned handle for the object.
-	*
-	* Object handles are nonzero.
-	*/
+	 * Returned handle for the object.
+	 *
+	 * Object handles are nonzero.
+	 */
 	__u32 handle;
+};
+
+struct drm_i915_gem_context_param {
+	__u32 ctx_id;
+	__u32 size;
+	__u64 param;
+#define I915_CONTEXT_PARAM_BAN_PERIOD	0x1
+#define I915_CONTEXT_PARAM_NO_ZEROMAP	0x2
+#define I915_CONTEXT_PARAM_GTT_SIZE	0x3
+	__u64 value;
 };
 
 struct drm_i915_mask {
@@ -1102,4 +1168,4 @@ struct drm_i915_mask_update {
     __u32 forced;
 };
 
-#endif				/* _I915_DRM_H_ */
+#endif /* _I915_DRM_H_ */

@@ -1,5 +1,5 @@
 /**
- * \file xf86drm.c 
+ * \file xf86drm.c
  * User-level interface to DRM device
  *
  * \author Rickard E. (Rik) Faith <faith@valinux.com>
@@ -39,9 +39,12 @@
 #include <string.h>
 #include <strings.h>
 #include <ctype.h>
+#include <stddef.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <stdarg.h>
 
 /* Not all systems have MAP_FAILED defined */
@@ -50,10 +53,12 @@
 #endif
 
 #include "xf86drm.h"
+#include "libdrm_macros.h"
+
 #include <kos32sys.h>
 
 #ifndef DRM_MAJOR
-#define DRM_MAJOR 226       /* Linux */
+#define DRM_MAJOR 226		/* Linux */
 #endif
 
 
@@ -89,7 +94,7 @@ drmVersionPtr drmGetVersion(int fd)
     v->name_len           = 4;
     v->name               = "i915";
     v->date_len           = 8;
-    v->date               = "20080730";
+    v->date               = "20151010";
     v->desc_len           = 14;
     v->desc               = "Intel Graphics";
     return v;

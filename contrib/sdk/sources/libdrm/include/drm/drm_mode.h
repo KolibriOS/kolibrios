@@ -42,20 +42,20 @@
 
 /* Video mode flags */
 /* bit compatible with the xorg definitions. */
-#define DRM_MODE_FLAG_PHSYNC	(1<<0)
-#define DRM_MODE_FLAG_NHSYNC	(1<<1)
-#define DRM_MODE_FLAG_PVSYNC	(1<<2)
-#define DRM_MODE_FLAG_NVSYNC	(1<<3)
-#define DRM_MODE_FLAG_INTERLACE	(1<<4)
-#define DRM_MODE_FLAG_DBLSCAN	(1<<5)
-#define DRM_MODE_FLAG_CSYNC	(1<<6)
-#define DRM_MODE_FLAG_PCSYNC	(1<<7)
-#define DRM_MODE_FLAG_NCSYNC	(1<<8)
-#define DRM_MODE_FLAG_HSKEW	(1<<9) /* hskew provided */
-#define DRM_MODE_FLAG_BCAST	(1<<10)
-#define DRM_MODE_FLAG_PIXMUX	(1<<11)
-#define DRM_MODE_FLAG_DBLCLK	(1<<12)
-#define DRM_MODE_FLAG_CLKDIV2	(1<<13)
+#define DRM_MODE_FLAG_PHSYNC			(1<<0)
+#define DRM_MODE_FLAG_NHSYNC			(1<<1)
+#define DRM_MODE_FLAG_PVSYNC			(1<<2)
+#define DRM_MODE_FLAG_NVSYNC			(1<<3)
+#define DRM_MODE_FLAG_INTERLACE			(1<<4)
+#define DRM_MODE_FLAG_DBLSCAN			(1<<5)
+#define DRM_MODE_FLAG_CSYNC			(1<<6)
+#define DRM_MODE_FLAG_PCSYNC			(1<<7)
+#define DRM_MODE_FLAG_NCSYNC			(1<<8)
+#define DRM_MODE_FLAG_HSKEW			(1<<9) /* hskew provided */
+#define DRM_MODE_FLAG_BCAST			(1<<10)
+#define DRM_MODE_FLAG_PIXMUX			(1<<11)
+#define DRM_MODE_FLAG_DBLCLK			(1<<12)
+#define DRM_MODE_FLAG_CLKDIV2			(1<<13)
 #define DRM_MODE_FLAG_3D_MASK			(0x1f<<14)
 #define  DRM_MODE_FLAG_3D_NONE			(0<<14)
 #define  DRM_MODE_FLAG_3D_FRAME_PACKING		(1<<14)
@@ -173,6 +173,9 @@ struct drm_mode_get_plane_res {
 #define DRM_MODE_ENCODER_TMDS	2
 #define DRM_MODE_ENCODER_LVDS	3
 #define DRM_MODE_ENCODER_TVDAC	4
+#define DRM_MODE_ENCODER_VIRTUAL 5
+#define DRM_MODE_ENCODER_DSI	6
+#define DRM_MODE_ENCODER_DPMST	7
 
 struct drm_mode_get_encoder {
 	__u32 encoder_id;
@@ -210,6 +213,8 @@ struct drm_mode_get_encoder {
 #define DRM_MODE_CONNECTOR_HDMIB	12
 #define DRM_MODE_CONNECTOR_TV		13
 #define DRM_MODE_CONNECTOR_eDP		14
+#define DRM_MODE_CONNECTOR_VIRTUAL      15
+#define DRM_MODE_CONNECTOR_DSI		16
 
 struct drm_mode_get_connector {
 
@@ -238,6 +243,21 @@ struct drm_mode_get_connector {
 #define DRM_MODE_PROP_ENUM	(1<<3) /* enumerated type with text strings */
 #define DRM_MODE_PROP_BLOB	(1<<4)
 #define DRM_MODE_PROP_BITMASK	(1<<5) /* bitmask of enumerated types */
+
+/* non-extended types: legacy bitmask, one bit per type: */
+#define DRM_MODE_PROP_LEGACY_TYPE  ( \
+		DRM_MODE_PROP_RANGE | \
+		DRM_MODE_PROP_ENUM | \
+		DRM_MODE_PROP_BLOB | \
+		DRM_MODE_PROP_BITMASK)
+
+/* extended-types: rather than continue to consume a bit per type,
+ * grab a chunk of the bits to use as integer type id.
+ */
+#define DRM_MODE_PROP_EXTENDED_TYPE	0x0000ffc0
+#define DRM_MODE_PROP_TYPE(n)		((n) << 6)
+#define DRM_MODE_PROP_OBJECT		DRM_MODE_PROP_TYPE(1)
+#define DRM_MODE_PROP_SIGNED_RANGE	DRM_MODE_PROP_TYPE(2)
 
 struct drm_mode_property_enum {
 	__u64 value;
@@ -302,7 +322,8 @@ struct drm_mode_fb_cmd {
 	__u32 handle;
 };
 
-#define DRM_MODE_FB_INTERLACED (1<<0) /* for interlaced framebuffers */
+#define DRM_MODE_FB_INTERLACED	(1<<0) /* for interlaced framebuffers */
+#define DRM_MODE_FB_MODIFIERS	(1<<1) /* enables ->modifer[] */
 
 struct drm_mode_fb_cmd2 {
 	__u32 fb_id;
@@ -323,10 +344,18 @@ struct drm_mode_fb_cmd2 {
 	 * So it would consist of Y as offset[0] and UV as
 	 * offset[1].  Note that offset[0] will generally
 	 * be 0.
+	 *
+	 * To accommodate tiled, compressed, etc formats, a per-plane
+	 * modifier can be specified.  The default value of zero
+	 * indicates "native" format as specified by the fourcc.
+	 * Vendor specific modifier token.  This allows, for example,
+	 * different tiling/swizzling pattern on different planes.
+	 * See discussion above of DRM_FORMAT_MOD_xxx.
 	 */
 	__u32 handles[4];
 	__u32 pitches[4]; /* pitch for each plane */
 	__u32 offsets[4]; /* offset of each plane */
+	__u64 modifier[4]; /* ie, tiling, compressed (per plane) */
 };
 
 #define DRM_MODE_FB_DIRTY_ANNOTATE_COPY 0x01
@@ -486,5 +515,42 @@ struct drm_mode_map_dumb {
 struct drm_mode_destroy_dumb {
 	__u32 handle;
 };
+
+/* page-flip flags are valid, plus: */
+#define DRM_MODE_ATOMIC_TEST_ONLY	0x0100
+#define DRM_MODE_ATOMIC_NONBLOCK	0x0200
+#define DRM_MODE_ATOMIC_ALLOW_MODESET	0x0400
+
+struct drm_mode_atomic {
+	__u32 flags;
+	__u32 count_objs;
+	__u64 objs_ptr;
+	__u64 count_props_ptr;
+	__u64 props_ptr;
+	__u64 prop_values_ptr;
+	__u64 reserved;
+	__u64 user_data;
+};
+
+/**
+ * Create a new 'blob' data property, copying length bytes from data pointer,
+ * and returning new blob ID.
+ */
+struct drm_mode_create_blob {
+	/** Pointer to data to copy. */
+	__u64 data;
+	/** Length of data to copy. */
+	__u32 length;
+	/** Return: new property ID. */
+	__u32 blob_id;
+};
+
+/**
+ * Destroy a user-created blob property.
+ */
+struct drm_mode_destroy_blob {
+	__u32 blob_id;
+};
+
 
 #endif

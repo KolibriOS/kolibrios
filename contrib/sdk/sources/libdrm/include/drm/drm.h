@@ -38,6 +38,7 @@
 
 #include <stdint.h>
 
+#include <sys/types.h>
 typedef int8_t   __s8;
 typedef uint8_t  __u8;
 typedef int16_t  __s16;
@@ -627,6 +628,13 @@ struct drm_get_cap {
  */
 #define DRM_CLIENT_CAP_UNIVERSAL_PLANES 2
 
+/**
+ * DRM_CLIENT_CAP_ATOMIC
+ *
+ * If set to 1, the DRM core will allow atomic modesetting requests.
+ */
+#define DRM_CLIENT_CAP_ATOMIC		3
+
 /** DRM_IOCTL_SET_CLIENT_CAP ioctl argument type */
 struct drm_set_client_cap {
 	__u64 capability;
@@ -673,12 +681,13 @@ struct drm_prime_handle {
 #define SRV_MASK_UPDATE                 45
 #define SRV_MASK_UPDATE_EX              46
 
-
+#define SRV_I915_GEM_PREAD              47
+#define SRV_I915_GEM_EXECBUFFER         48
 
 #include "drm_mode.h"
 
 #define DRM_IOCTL_BASE			'd'
-#define DRM_IO(nr)              _IO(DRM_IOCTL_BASE,nr)
+#define DRM_IO(nr)			_IO(DRM_IOCTL_BASE,nr)
 #define DRM_IOR(nr,type)		_IOR(DRM_IOCTL_BASE,nr,type)
 #define DRM_IOW(nr,type)		_IOW(DRM_IOCTL_BASE,nr,type)
 #define DRM_IOWR(nr,type)		_IOWR(DRM_IOCTL_BASE,nr,type)
@@ -829,6 +838,7 @@ struct drm_event_vblank {
 #define DRM_CAP_PRIME 0x5
 #define DRM_CAP_TIMESTAMP_MONOTONIC 0x6
 #define DRM_CAP_ASYNC_PAGE_FLIP 0x7
+#define DRM_CAP_ADDFB2_MODIFIERS	0x10
 
 #define DRM_PRIME_CAP_IMPORT 0x1
 #define DRM_PRIME_CAP_EXPORT 0x2

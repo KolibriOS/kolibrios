@@ -39,7 +39,7 @@
 #include <stdint.h>
 #include <drm.h>
 
-#if defined(__cplusplus) || defined(c_plusplus)
+#if defined(__cplusplus)
 extern "C" {
 #endif
 
@@ -66,6 +66,7 @@ extern "C" {
 #define DRM_DIR_NAME  "/dev/dri"
 #define DRM_DEV_NAME  "%s/card%d"
 #define DRM_CONTROL_DEV_NAME  "%s/controlD%d"
+#define DRM_RENDER_DEV_NAME  "%s/renderD%d"
 #define DRM_PROC_NAME "/proc/dri/" /* For backward Linux compatibility */
 
 #define DRM_ERR_NO_DEVICE  (-1001)
@@ -537,7 +538,8 @@ do {	register unsigned int __old __asm("o0");		\
 /* General user-level programmer's API: unprivileged */
 extern int           drmAvailable(void);
 extern int           drmOpen(const char *name, const char *busid);
-extern int drmOpenControl(int minor);
+extern int           drmOpenControl(int minor);
+extern int           drmOpenRender(int minor);
 extern int           drmClose(int fd);
 extern drmVersionPtr drmGetVersion(int fd);
 extern drmVersionPtr drmGetLibVersion(int fd);
@@ -720,6 +722,7 @@ typedef struct _drmEventContext {
 extern int drmHandleEvent(int fd, drmEventContextPtr evctx);
 
 extern char *drmGetDeviceNameFromFd(int fd);
+extern int drmGetNodeTypeFromFd(int fd);
 
 extern int drmPrimeHandleToFD(int fd, uint32_t handle, uint32_t flags, int *prime_fd);
 extern int drmPrimeFDToHandle(int fd, int prime_fd, uint32_t *handle);

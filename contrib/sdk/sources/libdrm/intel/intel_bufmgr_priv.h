@@ -62,6 +62,18 @@ struct _drm_intel_bufmgr {
 					      unsigned int alignment);
 
 	/**
+	 * Allocate a buffer object from an existing user accessible
+	 * address malloc'd with the provided size.
+	 * Alignment is used when mapping to the gtt.
+	 * Flags may be I915_VMAP_READ_ONLY or I915_USERPTR_UNSYNCHRONIZED
+	 */
+	drm_intel_bo *(*bo_alloc_userptr)(drm_intel_bufmgr *bufmgr,
+					  const char *name, void *addr,
+					  uint32_t tiling_mode, uint32_t stride,
+					  unsigned long size,
+					  unsigned long flags);
+
+	/**
 	 * Allocate a tiled buffer object.
 	 *
 	 * Alignment for tiled objects is set automatically; the 'flags'
@@ -122,8 +134,8 @@ struct _drm_intel_bufmgr {
 	 * This is an optional function, if missing,
 	 * drm_intel_bo will map/memcpy/unmap.
 	 */
-//	int (*bo_get_subdata) (drm_intel_bo *bo, unsigned long offset,
-//			       unsigned long size, void *data);
+	int (*bo_get_subdata) (drm_intel_bo *bo, unsigned long offset,
+			       unsigned long size, void *data);
 
 	/**
 	 * Waits for rendering to an object by the GPU to have completed.
@@ -138,6 +150,20 @@ struct _drm_intel_bufmgr {
 	 * Tears down the buffer manager instance.
 	 */
 	void (*destroy) (drm_intel_bufmgr *bufmgr);
+
+	/**
+	 * Indicate if the buffer can be placed anywhere in the full ppgtt
+	 * address range (2^48).
+	 *
+	 * Any resource used with flat/heapless (0x00000000-0xfffff000)
+	 * General State Heap (GSH) or Intructions State Heap (ISH) must
+	 * be in a 32-bit range. 48-bit range will only be used when explicitly
+	 * requested.
+	 *
+	 * \param bo Buffer to set the use_48b_address_range flag.
+	 * \param enable The flag value.
+	 */
+	void (*bo_use_48b_address_range) (drm_intel_bo *bo, uint32_t enable);
 
 	/**
 	 * Add relocation entry in reloc_buf, which will be updated with the
@@ -213,6 +239,13 @@ struct _drm_intel_bufmgr {
 	 */
 	int (*bo_get_tiling) (drm_intel_bo *bo, uint32_t * tiling_mode,
 			      uint32_t * swizzle_mode);
+
+	/**
+	 * Set the offset at which this buffer will be softpinned
+	 * \param bo Buffer to set the softpin offset for
+	 * \param offset Softpin offset
+	 */
+	int (*bo_set_softpin_offset) (drm_intel_bo *bo, uint64_t offset);
 
 	/**
 	 * Create a visible name for a buffer which can be used by other apps

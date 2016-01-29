@@ -38,6 +38,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 struct drm_clip_rect;
 
 typedef struct _drm_intel_bufmgr drm_intel_bufmgr;
@@ -113,6 +117,11 @@ drm_intel_bo *drm_intel_bo_alloc_for_render(drm_intel_bufmgr *bufmgr,
 					    const char *name,
 					    unsigned long size,
 					    unsigned int alignment);
+drm_intel_bo *drm_intel_bo_alloc_userptr(drm_intel_bufmgr *bufmgr,
+					const char *name,
+					void *addr, uint32_t tiling_mode,
+					uint32_t stride, unsigned long size,
+					unsigned long flags);
 drm_intel_bo *drm_intel_bo_alloc_tiled(drm_intel_bufmgr *bufmgr,
 				       const char *name,
 				       int x, int y, int cpp,
@@ -155,6 +164,8 @@ int drm_intel_bo_get_tiling(drm_intel_bo *bo, uint32_t * tiling_mode,
 int drm_intel_bo_flink(drm_intel_bo *bo, uint32_t * name);
 int drm_intel_bo_busy(drm_intel_bo *bo);
 int drm_intel_bo_madvise(drm_intel_bo *bo, int madv);
+int drm_intel_bo_use_48b_address_range(drm_intel_bo *bo, uint32_t enable);
+int drm_intel_bo_set_softpin_offset(drm_intel_bo *bo, uint64_t offset);
 
 int drm_intel_bo_disable_reuse(drm_intel_bo *bo);
 int drm_intel_bo_is_reusable(drm_intel_bo *bo);
@@ -263,6 +274,9 @@ int drm_intel_get_reset_stats(drm_intel_context *ctx,
 			      uint32_t *active,
 			      uint32_t *pending);
 
+int drm_intel_get_subslice_total(int fd, unsigned int *subslice_total);
+int drm_intel_get_eu_total(int fd, unsigned int *eu_total);
+
 /** @{ Compatibility defines to keep old code building despite the symbol rename
  * from dri_* to drm_intel_*
  */
@@ -303,5 +317,9 @@ int drm_intel_get_reset_stats(drm_intel_context *ctx,
 #define intel_bufmgr_fake_evict_all drm_intel_bufmgr_fake_evict_all
 
 /** @{ */
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* INTEL_BUFMGR_H */

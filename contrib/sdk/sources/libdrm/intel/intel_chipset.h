@@ -70,8 +70,8 @@
 #define PCI_CHIP_G45_G			0x2E22
 #define PCI_CHIP_G41_G			0x2E32
 
-#define PCI_CHIP_ILD_G                  0x0042
-#define PCI_CHIP_ILM_G                  0x0046
+#define PCI_CHIP_ILD_G			0x0042
+#define PCI_CHIP_ILM_G			0x0046
 
 #define PCI_CHIP_SANDYBRIDGE_GT1	0x0102 /* desktop */
 #define PCI_CHIP_SANDYBRIDGE_GT2	0x0112
@@ -88,14 +88,14 @@
 #define PCI_CHIP_IVYBRIDGE_S		0x015a /* server */
 #define PCI_CHIP_IVYBRIDGE_S_GT2	0x016a /* server */
 
-#define PCI_CHIP_HASWELL_GT1            0x0402 /* Desktop */
-#define PCI_CHIP_HASWELL_GT2            0x0412
+#define PCI_CHIP_HASWELL_GT1		0x0402 /* Desktop */
+#define PCI_CHIP_HASWELL_GT2		0x0412
 #define PCI_CHIP_HASWELL_GT3		0x0422
-#define PCI_CHIP_HASWELL_M_GT1          0x0406 /* Mobile */
-#define PCI_CHIP_HASWELL_M_GT2          0x0416
+#define PCI_CHIP_HASWELL_M_GT1		0x0406 /* Mobile */
+#define PCI_CHIP_HASWELL_M_GT2		0x0416
 #define PCI_CHIP_HASWELL_M_GT3		0x0426
-#define PCI_CHIP_HASWELL_S_GT1          0x040A /* Server */
-#define PCI_CHIP_HASWELL_S_GT2          0x041A
+#define PCI_CHIP_HASWELL_S_GT1		0x040A /* Server */
+#define PCI_CHIP_HASWELL_S_GT2		0x041A
 #define PCI_CHIP_HASWELL_S_GT3		0x042A
 #define PCI_CHIP_HASWELL_B_GT1		0x040B /* Reserved */
 #define PCI_CHIP_HASWELL_B_GT2		0x041B
@@ -103,14 +103,14 @@
 #define PCI_CHIP_HASWELL_E_GT1		0x040E /* Reserved */
 #define PCI_CHIP_HASWELL_E_GT2		0x041E
 #define PCI_CHIP_HASWELL_E_GT3		0x042E
-#define PCI_CHIP_HASWELL_SDV_GT1        0x0C02 /* Desktop */
-#define PCI_CHIP_HASWELL_SDV_GT2        0x0C12
+#define PCI_CHIP_HASWELL_SDV_GT1	0x0C02 /* Desktop */
+#define PCI_CHIP_HASWELL_SDV_GT2	0x0C12
 #define PCI_CHIP_HASWELL_SDV_GT3	0x0C22
-#define PCI_CHIP_HASWELL_SDV_M_GT1      0x0C06 /* Mobile */
-#define PCI_CHIP_HASWELL_SDV_M_GT2      0x0C16
+#define PCI_CHIP_HASWELL_SDV_M_GT1	0x0C06 /* Mobile */
+#define PCI_CHIP_HASWELL_SDV_M_GT2	0x0C16
 #define PCI_CHIP_HASWELL_SDV_M_GT3	0x0C26
-#define PCI_CHIP_HASWELL_SDV_S_GT1      0x0C0A /* Server */
-#define PCI_CHIP_HASWELL_SDV_S_GT2      0x0C1A
+#define PCI_CHIP_HASWELL_SDV_S_GT1	0x0C0A /* Server */
+#define PCI_CHIP_HASWELL_SDV_S_GT2	0x0C1A
 #define PCI_CHIP_HASWELL_SDV_S_GT3	0x0C2A
 #define PCI_CHIP_HASWELL_SDV_B_GT1	0x0C0B /* Reserved */
 #define PCI_CHIP_HASWELL_SDV_B_GT2	0x0C1B
@@ -118,14 +118,14 @@
 #define PCI_CHIP_HASWELL_SDV_E_GT1	0x0C0E /* Reserved */
 #define PCI_CHIP_HASWELL_SDV_E_GT2	0x0C1E
 #define PCI_CHIP_HASWELL_SDV_E_GT3	0x0C2E
-#define PCI_CHIP_HASWELL_ULT_GT1        0x0A02 /* Desktop */
-#define PCI_CHIP_HASWELL_ULT_GT2        0x0A12
+#define PCI_CHIP_HASWELL_ULT_GT1	0x0A02 /* Desktop */
+#define PCI_CHIP_HASWELL_ULT_GT2	0x0A12
 #define PCI_CHIP_HASWELL_ULT_GT3	0x0A22
-#define PCI_CHIP_HASWELL_ULT_M_GT1      0x0A06 /* Mobile */
-#define PCI_CHIP_HASWELL_ULT_M_GT2      0x0A16
+#define PCI_CHIP_HASWELL_ULT_M_GT1	0x0A06 /* Mobile */
+#define PCI_CHIP_HASWELL_ULT_M_GT2	0x0A16
 #define PCI_CHIP_HASWELL_ULT_M_GT3	0x0A26
-#define PCI_CHIP_HASWELL_ULT_S_GT1      0x0A0A /* Server */
-#define PCI_CHIP_HASWELL_ULT_S_GT2      0x0A1A
+#define PCI_CHIP_HASWELL_ULT_S_GT1	0x0A0A /* Server */
+#define PCI_CHIP_HASWELL_ULT_S_GT2	0x0A1A
 #define PCI_CHIP_HASWELL_ULT_S_GT3	0x0A2A
 #define PCI_CHIP_HASWELL_ULT_B_GT1	0x0A0B /* Reserved */
 #define PCI_CHIP_HASWELL_ULT_B_GT2	0x0A1B
@@ -164,6 +164,32 @@
 #define PCI_CHIP_CHERRYVIEW_1		0x22b1
 #define PCI_CHIP_CHERRYVIEW_2		0x22b2
 #define PCI_CHIP_CHERRYVIEW_3		0x22b3
+
+#define PCI_CHIP_SKYLAKE_DT_GT1		0x1902
+#define PCI_CHIP_SKYLAKE_ULT_GT1	0x1906
+#define PCI_CHIP_SKYLAKE_SRV_GT1	0x190A /* Reserved */
+#define PCI_CHIP_SKYLAKE_ULX_GT1	0x190E /* Reserved */
+#define PCI_CHIP_SKYLAKE_DT_GT2		0x1912
+#define PCI_CHIP_SKYLAKE_FUSED0_GT2	0x1913 /* Reserved */
+#define PCI_CHIP_SKYLAKE_FUSED1_GT2	0x1915 /* Reserved */
+#define PCI_CHIP_SKYLAKE_ULT_GT2	0x1916
+#define PCI_CHIP_SKYLAKE_FUSED2_GT2	0x1917 /* Reserved */
+#define PCI_CHIP_SKYLAKE_SRV_GT2	0x191A /* Reserved */
+#define PCI_CHIP_SKYLAKE_HALO_GT2	0x191B
+#define PCI_CHIP_SKYLAKE_WKS_GT2 	0x191D
+#define PCI_CHIP_SKYLAKE_ULX_GT2	0x191E
+#define PCI_CHIP_SKYLAKE_MOBILE_GT2	0x1921 /* Reserved */
+#define PCI_CHIP_SKYLAKE_GT3		0x1926
+#define PCI_CHIP_SKYLAKE_HALO_GT3	0x192B /* Reserved */
+#define PCI_CHIP_SKYLAKE_SRV_GT4	0x192A
+#define PCI_CHIP_SKYLAKE_DT_GT4		0x1932
+#define PCI_CHIP_SKYLAKE_SRV_GT4X	0x193A
+#define PCI_CHIP_SKYLAKE_H_GT4		0x193B
+#define PCI_CHIP_SKYLAKE_WKS_GT4	0x193D
+
+#define PCI_CHIP_BROXTON_0		0x0A84
+#define PCI_CHIP_BROXTON_1		0x1A84
+#define PCI_CHIP_BROXTON_2		0x5A84
 
 #define IS_MOBILE(devid)	((devid) == PCI_CHIP_I855_GM || \
 				 (devid) == PCI_CHIP_I915_GM || \
@@ -226,8 +252,8 @@
 				 (devid) == PCI_CHIP_SANDYBRIDGE_M_GT2_PLUS || \
 				 (devid) == PCI_CHIP_SANDYBRIDGE_S)
 
-#define IS_GEN7(devid)          (IS_IVYBRIDGE(devid) || \
-                                 IS_HASWELL(devid) || \
+#define IS_GEN7(devid)		(IS_IVYBRIDGE(devid) || \
+				 IS_HASWELL(devid) || \
 				 IS_VALLEYVIEW(devid))
 
 #define IS_IVYBRIDGE(devid)	((devid) == PCI_CHIP_IVYBRIDGE_GT1 || \
@@ -303,7 +329,7 @@
 				 (devid) == PCI_CHIP_HASWELL_CRW_B_GT3 || \
 				 (devid) == PCI_CHIP_HASWELL_CRW_E_GT3)
 
-#define IS_HASWELL(devid)       (IS_HSW_GT1(devid) || \
+#define IS_HASWELL(devid)	(IS_HSW_GT1(devid) || \
 				 IS_HSW_GT2(devid) || \
 				 IS_HSW_GT3(devid))
 
@@ -324,12 +350,50 @@
 #define IS_GEN8(devid)		(IS_BROADWELL(devid) || \
 				 IS_CHERRYVIEW(devid))
 
+#define IS_SKL_GT1(devid)	((devid) == PCI_CHIP_SKYLAKE_ULT_GT1	|| \
+				 (devid) == PCI_CHIP_SKYLAKE_ULX_GT1	|| \
+				 (devid) == PCI_CHIP_SKYLAKE_DT_GT1	|| \
+				 (devid) == PCI_CHIP_SKYLAKE_SRV_GT1)
+
+#define IS_SKL_GT2(devid)	((devid) == PCI_CHIP_SKYLAKE_DT_GT2	|| \
+				 (devid) == PCI_CHIP_SKYLAKE_FUSED0_GT2	|| \
+				 (devid) == PCI_CHIP_SKYLAKE_FUSED1_GT2	|| \
+				 (devid) == PCI_CHIP_SKYLAKE_ULT_GT2	|| \
+				 (devid) == PCI_CHIP_SKYLAKE_FUSED2_GT2	|| \
+				 (devid) == PCI_CHIP_SKYLAKE_SRV_GT2	|| \
+				 (devid) == PCI_CHIP_SKYLAKE_HALO_GT2	|| \
+				 (devid) == PCI_CHIP_SKYLAKE_WKS_GT2	|| \
+				 (devid) == PCI_CHIP_SKYLAKE_ULX_GT2	|| \
+				 (devid) == PCI_CHIP_SKYLAKE_MOBILE_GT2)
+
+#define IS_SKL_GT3(devid)	((devid) == PCI_CHIP_SKYLAKE_GT3	|| \
+				 (devid) == PCI_CHIP_SKYLAKE_HALO_GT3)
+
+#define IS_SKL_GT4(devid)	((devid) == PCI_CHIP_SKYLAKE_SRV_GT4	|| \
+				 (devid) == PCI_CHIP_SKYLAKE_DT_GT4	|| \
+				 (devid) == PCI_CHIP_SKYLAKE_SRV_GT4X	|| \
+				 (devid) == PCI_CHIP_SKYLAKE_H_GT4	|| \
+				 (devid) == PCI_CHIP_SKYLAKE_WKS_GT4)
+
+#define IS_SKYLAKE(devid)	(IS_SKL_GT1(devid) || \
+				 IS_SKL_GT2(devid) || \
+				 IS_SKL_GT3(devid) || \
+				 IS_SKL_GT4(devid))
+
+#define IS_BROXTON(devid)	((devid) == PCI_CHIP_BROXTON_0	|| \
+				 (devid) == PCI_CHIP_BROXTON_1	|| \
+				 (devid) == PCI_CHIP_BROXTON_2)
+
+#define IS_GEN9(devid)		(IS_SKYLAKE(devid) || \
+				 IS_BROXTON(devid))
+
 #define IS_9XX(dev)		(IS_GEN3(dev) || \
 				 IS_GEN4(dev) || \
 				 IS_GEN5(dev) || \
 				 IS_GEN6(dev) || \
 				 IS_GEN7(dev) || \
-				 IS_GEN8(dev))
+				 IS_GEN8(dev) || \
+				 IS_GEN9(dev))
 
 
 #endif /* _INTEL_CHIPSET_H */
