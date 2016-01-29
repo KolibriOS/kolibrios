@@ -655,6 +655,8 @@
 #define	__GNU_VISIBLE		1
 #endif
 
+#define	__GNU_VISIBLE		1
+
 /* Deal with IEEE Std. 1003.1-1990, in which _POSIX_C_SOURCE == 1. */
 #if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE == 1
 #undef _POSIX_C_SOURCE		/* Probably illegal, but beyond caring now. */

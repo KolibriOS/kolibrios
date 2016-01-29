@@ -144,8 +144,6 @@ struct	stat
 #define UTIME_OMIT	-1L
 #endif
 
-int	_EXFUN(chmod,( const char *__path, mode_t __mode ));
-int     _EXFUN(fchmod,(int __fd, mode_t __mode));
 int	_EXFUN(fstat,( int __fd, struct stat *__sbuf ));
 int	_EXFUN(mkdir,( const char *_path, mode_t __mode ));
 int	_EXFUN(mkfifo,( const char *__path, mode_t __mode ));

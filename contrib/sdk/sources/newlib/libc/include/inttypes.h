@@ -23,7 +23,7 @@
 #define __STRINGIFY(a) #a
 
 /* 8-bit types */
-#define __PRI8(x) __INT8 __STRINGIFY(x)
+#define __PRI8(x) __STRINGIFY(x)
 #define __PRI8LEAST(x) __LEAST8 __STRINGIFY(x)
 #define __PRI8FAST(x) __FAST8 __STRINGIFY(x)
 
@@ -150,8 +150,8 @@
 #define SCNxFAST16	__SCN16FAST(x)
 
 /* 32-bit types */
-#define __PRI32(x) __INT32 __STRINGIFY(x)
-#define __SCN32(x) __INT32 __STRINGIFY(x)
+#define __PRI32(x) __STRINGIFY(I32##x)
+#define __SCN32(x) __STRINGIFY(I32##x)
 #define __PRI32LEAST(x) __LEAST32 __STRINGIFY(x)
 #define __SCN32LEAST(x) __LEAST32 __STRINGIFY(x)
 #define __PRI32FAST(x) __FAST32 __STRINGIFY(x)
@@ -200,15 +200,14 @@
 
 
 /* 64-bit types */
-#define __PRI64(x) __INT64 __STRINGIFY(x)
-#define __SCN64(x) __INT64 __STRINGIFY(x)
+#define __PRI64(x) __STRINGIFY(I64##x)
+#define __SCN64(x) __STRINGIFY(I64##x)
 
 #define __PRI64LEAST(x) __LEAST64 __STRINGIFY(x)
 #define __SCN64LEAST(x) __LEAST64 __STRINGIFY(x)
 #define __PRI64FAST(x) __FAST64 __STRINGIFY(x)
 #define __SCN64FAST(x) __FAST64 __STRINGIFY(x)
 
-#if __int64_t_defined
 #define PRId64		__PRI64(d)
 #define PRIi64		__PRI64(i)
 #define PRIo64		__PRI64(o)
@@ -221,7 +220,6 @@
 #define SCNo64		__SCN64(o)
 #define SCNu64		__SCN64(u)
 #define SCNx64		__SCN64(x)
-#endif
 
 #if __int_least64_t_defined
 #define PRIdLEAST64	__PRI64LEAST(d)
@@ -254,16 +252,8 @@
 #endif
 
 /* max-bit types */
-#if __have_long64
-#define __PRIMAX(x) __STRINGIFY(l##x)
-#define __SCNMAX(x) __STRINGIFY(l##x)
-#elif __have_longlong64
-#define __PRIMAX(x) __STRINGIFY(ll##x)
-#define __SCNMAX(x) __STRINGIFY(ll##x)
-#else
-#define __PRIMAX(x) __STRINGIFY(x)
-#define __SCNMAX(x) __STRINGIFY(x)
-#endif
+#define __PRIMAX(x) __STRINGIFY(I64##x)
+#define __SCNMAX(x) __STRINGIFY(I64##x)
 
 #define PRIdMAX		__PRIMAX(d)
 #define PRIiMAX		__PRIMAX(i)
@@ -280,11 +270,11 @@
 
 /* ptr types */
 #if defined (_INTPTR_EQ_LONGLONG)
-# define __PRIPTR(x) __STRINGIFY(ll##x)
-# define __SCNPTR(x) __STRINGIFY(ll##x)
+# define __PRIPTR(x) __STRINGIFY(I64##x)
+# define __SCNPTR(x) __STRINGIFY(I64##x)
 #elif defined (_INTPTR_EQ_LONG)
-# define __PRIPTR(x) __STRINGIFY(l##x)
-# define __SCNPTR(x) __STRINGIFY(l##x)
+# define __PRIPTR(x) __STRINGIFY(I32##x)
+# define __SCNPTR(x) __STRINGIFY(I32##x)
 #else
 # define __PRIPTR(x) __STRINGIFY(x)
 # define __SCNPTR(x) __STRINGIFY(x)

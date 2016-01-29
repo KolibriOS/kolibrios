@@ -119,6 +119,7 @@ CORE_SRCS:=                   			\
 			search/bsearch.c     	\
 			signal/signal.c		\
 			sys/access.c		\
+			sys/clock_gettime.c	\
 			sys/close.c		\
 			sys/conio.c		\
 			sys/create.c         	\

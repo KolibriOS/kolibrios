@@ -25,7 +25,7 @@ static inline int mutex_init(mutex_t *mutex)
 
     mutex->lock = 0;
 
-    asm volatile(
+    __asm__ volatile(
     "int $0x40\t"
     :"=a"(handle)
     :"a"(77),"b"(FUTEX_INIT),"c"(mutex));
@@ -38,7 +38,7 @@ static inline int mutex_destroy(mutex_t *mutex)
 {
     int retval;
 
-    asm volatile(
+    __asm__ volatile(
     "int $0x40\t"
     :"=a"(retval)
     :"a"(77),"b"(FUTEX_DESTROY),"c"(mutex->handle));
@@ -55,7 +55,7 @@ static inline void mutex_lock(mutex_t *mutex)
 
     while (exchange_acquire (&mutex->lock, 2) != 0)
     {
-        asm volatile(
+        __asm__ volatile(
         "int $0x40\t\n"
         :"=a"(tmp)
         :"a"(77),"b"(FUTEX_WAIT),
@@ -72,7 +72,7 @@ static inline int mutex_lock_timeout(mutex_t *mutex, int timeout)
 
     while (exchange_acquire (&mutex->lock, 2) != 0)
     {
-        asm volatile(
+        __asm__ __volatile__(
         "int $0x40\t"
         :"=a"(tmp)
         :"a"(77),"b"(FUTEX_WAIT),
@@ -99,7 +99,7 @@ static inline void mutex_unlock(mutex_t *mutex)
 
     if (prev != 1)
     {
-        asm volatile(
+        __asm__ volatile(
         "int $0x40\t"
         :"=a"(prev)
         :"a"(77),"b"(FUTEX_WAKE),

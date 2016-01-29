@@ -80,37 +80,37 @@ extern "C"
 
 typedef unsigned int SNDBUF;
 
-int _stdcall  InitSound(int *version);
+int __stdcall  InitSound(int *version);
 
-int _stdcall  CreateBuffer(unsigned int format,int size,SNDBUF *buf);
-int _stdcall  DestroyBuffer(SNDBUF hBuff);
+int __stdcall  CreateBuffer(unsigned int format,int size,SNDBUF *buf);
+int __stdcall  DestroyBuffer(SNDBUF hBuff);
 
-int _stdcall  SetFormat(SNDBUF hBuff, unsigned int format);
-int _stdcall  GetFormat(SNDBUF hBuff, unsigned int *format);
+int __stdcall  SetFormat(SNDBUF hBuff, unsigned int format);
+int __stdcall  GetFormat(SNDBUF hBuff, unsigned int *format);
 
-int _stdcall  ResetBuffer(SNDBUF hBuff, unsigned int flags);
-int _stdcall  SetBufferPos(SNDBUF hBuff, int offset);
-int _stdcall  GetBufferPos(SNDBUF hBuff, int *offset);
-int _stdcall  GetBufferSize(SNDBUF hBuff, int *size);
-int _stdcall  GetBufferFree(SNDBUF hBuff, int *free);
+int __stdcall  ResetBuffer(SNDBUF hBuff, unsigned int flags);
+int __stdcall  SetBufferPos(SNDBUF hBuff, int offset);
+int __stdcall  GetBufferPos(SNDBUF hBuff, int *offset);
+int __stdcall  GetBufferSize(SNDBUF hBuff, int *size);
+int __stdcall  GetBufferFree(SNDBUF hBuff, int *free);
 
-int _stdcall  SetBuffer(SNDBUF hBuff,void* buff,
+int __stdcall  SetBuffer(SNDBUF hBuff,void* buff,
                         int offs, int size);
-int _stdcall  WaveOut(SNDBUF hBuff,void *buff, int size);
-int _stdcall  PlayBuffer(SNDBUF hBuff,unsigned int flags);
-int _stdcall  StopBuffer(SNDBUF hBuff);
+int __stdcall  WaveOut(SNDBUF hBuff,void *buff, int size);
+int __stdcall  PlayBuffer(SNDBUF hBuff,unsigned int flags);
+int __stdcall  StopBuffer(SNDBUF hBuff);
 
-int _stdcall  SetVolume(SNDBUF hBuff, int left, int right);
-int _stdcall  GetVolume(SNDBUF hBuff, int *left, int *right);
-int _stdcall  SetPan(SNDBUF hBuff, int pan);
-int _stdcall  GetPan(SNDBUF hBuff, int *pan);
+int __stdcall  SetVolume(SNDBUF hBuff, int left, int right);
+int __stdcall  GetVolume(SNDBUF hBuff, int *left, int *right);
+int __stdcall  SetPan(SNDBUF hBuff, int pan);
+int __stdcall  GetPan(SNDBUF hBuff, int *pan);
 
-int _stdcall  GetMasterVol(int* vol);
-int _stdcall  SetMasterVol(int vol);
+int __stdcall  GetMasterVol(int* vol);
+int __stdcall  SetMasterVol(int vol);
 
-int _stdcall  SetTimeBase(SNDBUF hBuff, double base);
-int _stdcall  GetTimeStamp(SNDBUF hBuff, double *stamp);
-int _stdcall  GetDevTime(int *stamp);
+int __stdcall  SetTimeBase(SNDBUF hBuff, double base);
+int __stdcall  GetTimeStamp(SNDBUF hBuff, double *stamp);
+int __stdcall  GetDevTime(int *stamp);
 
 
 typedef struct
@@ -133,7 +133,7 @@ typedef struct
 } WAVEHEADER;
 
 
-unsigned int _stdcall test_wav(WAVEHEADER *hdr);
+unsigned int __stdcall test_wav(WAVEHEADER *hdr);
 
 #ifdef __cplusplus
 } /* extern "C" */
