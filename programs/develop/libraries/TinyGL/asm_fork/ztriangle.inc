@@ -28,7 +28,7 @@
 	fdx2 dd ? ;float
 	fdy1 dd ? ;float
 	fdy2 dd ? ;float
-	fz dd ? ;float
+	fz dd ? ;float - переменная отвечающая за геометрию фигуры
 	d1 dd ? ;float
 	d2 dd ? ;float
 	pz1 dd ? ;unsigned short*
@@ -56,6 +56,8 @@
 	z dd ? ;uint
 	zz dd ? ;uint
 
+	n dd ? ;int - длинна горизонтальной линии в пикселях
+
 if INTERP_Z eq 1
 	z1 dd ? ;int
 	dzdx dd ? ;int
@@ -79,15 +81,16 @@ if INTERP_RGB eq 1
 	dbdy dd ?
 	dbdl_min dd ?
 	dbdl_max dd ?
+	or1 dd ? ;uint
+	og1 dd ? ;uint
+	ob1 dd ? ;uint
 end if
 if INTERP_ST eq 1
 	s1 dd ? ;int
-	dsdx dd ? ;int
 	dsdy dd ? ;int
 	dsdl_min dd ? ;int
 	dsdl_max dd ? ;int
 	t1 dd ? ;int
-	dtdx dd ? ;int
 	dtdy dd ? ;int
 	dtdl_min dd ? ;int
 	dtdl_max dd ? ;int
@@ -106,21 +109,12 @@ if INTERP_STZ eq 1
 	s_z dd ? ;float
 	t_z dd ? ;float
 end if
-	n dd ? ;int - длинна горизонтальной линии в пикселях
-if INTERP_RGB eq 1
-	or1 dd ? ;uint
-	og1 dd ? ;uint
-	ob1 dd ? ;uint
-end if
-if INTERP_ST eq 1
+if (INTERP_ST eq 1) | (DRAW_LINE_M eq 1)
 	s dd ? ;uint
 	t dd ? ;uint
+	dsdx dd ? ;int
+	dtdx dd ? ;int
 end if
-
-if DRAW_LINE_M eq 1
-	DRAW_LINE 0 ;переменные делаются в макросе
-end if
-
 endl
 pushad
 
@@ -687,7 +681,7 @@ end if
 	jle .end_w_lin
 		dec dword[nb_lines]
 if DRAW_LINE_M eq 1
-		DRAW_LINE 1
+		DRAW_LINE
 else
 		; generic draw line
 		mov eax,[x2]
@@ -878,7 +872,6 @@ if INTERP_STZ eq 1
 		fstp dword[tz1]
 end if
 	.end_er:
-
 			; right edge
 			mov eax,[dx2dy2]
 			add [x2],eax

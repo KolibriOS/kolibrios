@@ -1,9 +1,3 @@
-;
-; Макрос DRAW_LINE имеет параметр code, от которого зависит
-; будет ли включен код или объявлены переменные.
-; В версии на C++ параметра code нет, потому что там переменные
-; можно ставить в любом месте функции, в asm версии такое не проходит.
-;
 
 INTERP_Z equ 1
 
@@ -236,29 +230,20 @@ end if
 
 DRAW_LINE_M equ 1
 
-macro DRAW_LINE code
+macro DRAW_LINE
 {
 if TGL_FEATURE_RENDER_BITS eq 24
-if code eq 0
-	s dd ? ;uint
-	t dd ? ;uint
-	dsdx dd ? ;int
-	dtdx dd ? ;int
-	fz dd ? ;float
-	zinv dd ? ;float
-end if
-if code eq 1
 	mov eax,[x2]
 	sar eax,16
-	sub eax,[x1]
+	mov edi,[x1]
+	sub eax,edi
 	mov [n],eax ;n = (x2 >> 16) - x1
 fld1
 	fild dword[z1]
-	fst dword[fz] ;fz = (float)z1
+	fst dword[f_z] ;fz = (float)z1
 	;fld1
 	fdivp
 	fstp dword[zinv] ;zinv = 1.0 / fz
-	mov edi,[x1]
 	imul edi,PSZB
 	add edi,[pp1] ;pp = (pp1 + x1 * PSZB)
 	mov eax,[x1]
@@ -292,9 +277,9 @@ align 4
 		fmul dword[zinv]
 		fistp dword[dtdx] ;dtdx = (int)( (dtzdx - tt*fdzdx)*zinv )
 fld1
-		fld dword[fz]
+		fld dword[f_z]
 		fadd dword[fndzdx]
-		fst dword[fz] ;fz += fndzdx
+		fst dword[f_z] ;fz += fndzdx
 		;fld1
 		fdivp
 		fstp dword[zinv] ;zinv = 1.0 / fz
@@ -344,7 +329,6 @@ align 4
 		jmp .cycle_3
 	.cycle_3_end:
 end if
-end if
 }
 
 align 4
@@ -355,6 +339,8 @@ locals
 	fndzdx dd ? ;float
 	ndszdx dd ? ;float
 	ndtzdx dd ? ;float
+	zinv dd ? ;float
+	f_z dd ? ;float - переменная отвечающая за геометрию текстуры
 include 'ztriangle.inc'
 
 end if
@@ -377,7 +363,6 @@ macro DRAW_INIT
 macro PUT_PIXEL _a
 {
 local .end_0
-;   int s,t;
 	mov eax,[z]
 	shr eax,ZB_POINT_Z_FRAC_BITS
 	mov [zz],eax
