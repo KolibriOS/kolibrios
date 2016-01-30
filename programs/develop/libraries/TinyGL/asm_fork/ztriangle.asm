@@ -34,11 +34,11 @@ local .end_0
 		;edi = pp
 		mov word[ebx+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
-		mov cl,[colorR]
-		mov ch,[colorG]
-		mov word[edi+3*_a],cx
-		mov cl,[colorB]
-		mov byte[edi+3*_a +2],cl
+		mov al,[colorR]
+		mov ah,[colorG]
+		mov word[edi+3*_a],ax
+		mov al,[colorB]
+		mov byte[edi+3*_a +2],al
 ;else
 ;      pp[_a]=color;
 end if
@@ -69,11 +69,6 @@ INTERP_RGB equ 1
 
 macro DRAW_INIT
 {
-if TGL_FEATURE_RENDER_BITS eq 16
-;  _drgbdx=((drdx / (1<<6)) << 22) & 0xFFC00000;
-;  _drgbdx|=(dgdx / (1<<5)) & 0x000007FF;
-;  _drgbdx|=((dbdx / (1<<7)) << 12) & 0x001FF000;
-end if
 }
 
 macro PUT_PIXEL _a
@@ -88,102 +83,30 @@ local .end_0
 		;edi = pp
 		mov word[ebx+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
-		mov ecx,[og1]
-		mov eax,[or1]
-		mov cl,ah
-		mov word[edi+3*_a],cx
+		mov ebx,[or1]
+		mov eax,[og1]
+		mov al,bh
+		mov word[edi+3*_a],ax
 		mov eax,[ob1]
 		mov byte[edi+3*_a +2],ah
 end if
-if TGL_FEATURE_RENDER_BITS eq 16
-;      tmp=rgb & 0xF81F07E0;
-;      pp[_a]=tmp | (tmp >> 16);
-;else
+;if TGL_FEATURE_RENDER_BITS eq 32
 ;      pp[_a] = RGB_TO_PIXEL(or1, og1, ob1);
-end if
+;end if
 	.end_0:
 	mov eax,[dzdx]
 	add [z],eax
-if TGL_FEATURE_RENDER_BITS eq 16
-;    rgb=(rgb+drgbdx) & ( ~ 0x00200800);
-end if
-if TGL_FEATURE_RENDER_BITS <> 16
 	mov eax,[dgdx]
 	add [og1],eax
 	mov eax,[drdx]
 	add [or1],eax
 	mov eax,[dbdx]
 	add [ob1],eax
-end if
-}
-
-macro DRAW_LINE code
-{
-local .cycle_0
-local .cycle_1
-if TGL_FEATURE_RENDER_BITS eq 16
-if code eq 0
-	tmp dd ? ;uint
-	rgb dd ? ;uint
-	drgbdx dd ? ;uint
-end if
-if code eq 1
-	mov eax,[x2]
-	sar eax,16
-	sub eax,[x1]
-	mov [n],eax ;n = (x2 >> 16) - x1
-	mov edi,[pp1]
-	add edi,[x1] ;pp = pp1 + x1
-	mov eax,[pz1]
-	add eax,[x1]
-	mov [pz],eax ;pz = pz1 + x1
-	mov eax,[z1]
-	mov [z],eax ;z = z1
-	mov eax,[r1]
-	shl eax,16
-	and eax,0xFFC00000
-	mov [rgb],eax ;rgb = (r1 << 16) & 0xFFC00000
-	mov eax,[g1]
-	shr eax,5
-	and eax,0x000007FF
-	or [rgb],eax ;rgb |= (g1 >> 5) & 0x000007FF
-	mov eax,[b1]
-	shl eax,5
-	and eax,0x001FF000
-	or [rgb],eax ;rgb |= (b1 << 5) & 0x001FF000
-	mov eax,[_drgbdx]
-	mov [drgbdx],eax ;drgbdx = _drgbdx
-align 4
-	.cycle_0: ;while (n>=3)
-	cmp dword[n],3
-	jl .cycle_1
-		PUT_PIXEL 0
-		PUT_PIXEL 1
-		PUT_PIXEL 2
-		PUT_PIXEL 3
-		add dword[pz],8
-		add edi,4*3
-		sub [n],4
-	jmp .cycle_0
-	.cycle_1: ;while (n>=0)
-	cmp dword[n],0
-	jl .cycle_1_end
-		PUT_PIXEL 0
-		add dword[pz],2
-		add edi,3
-		dec dword[n]
-		jmp .cycle_1
-	.cycle_1_end:
-end if
-end if
 }
 
 align 4
 proc ZB_fillTriangleSmooth, zb:dword, p0:dword, p1:dword, p2:dword
 locals
-if TGL_FEATURE_RENDER_BITS eq 16
-	_drgbdx dd ? ;int
-end if
 include 'ztriangle.inc'
 
 align 4
@@ -319,7 +242,6 @@ if TGL_FEATURE_RENDER_BITS eq 24
 if code eq 0
 	s dd ? ;uint
 	t dd ? ;uint
-	n1 dd ? ;int - длинна горизонтальной линии в пикселях
 	dsdx dd ? ;int
 	dtdx dd ? ;int
 	fz dd ? ;float
@@ -329,7 +251,7 @@ if code eq 1
 	mov eax,[x2]
 	sar eax,16
 	sub eax,[x1]
-	mov [n1],eax ;n1 = (x2 >> 16) - x1
+	mov [n],eax ;n = (x2 >> 16) - x1
 fld1
 	fild dword[z1]
 	fst dword[fz] ;fz = (float)z1
@@ -339,8 +261,9 @@ fld1
 	mov edi,[x1]
 	imul edi,PSZB
 	add edi,[pp1] ;pp = (pp1 + x1 * PSZB)
-	mov eax,[pz1]
-	add eax,[x1]
+	mov eax,[x1]
+	shl eax,1
+	add eax,[pz1]
 	mov [pz],eax ;pz = pz1 + x1
 	mov eax,[z1]
 	mov [z],eax ;z = z1
@@ -349,8 +272,8 @@ fld1
 	mov eax,[tz1]
 	mov [t_z],eax ;tz = tz1
 align 4
-	.cycle_2: ;while (n1>=(NB_INTERP-1))
-	cmp dword[n1],NB_INTERP-1
+	.cycle_2: ;while (n>=(NB_INTERP-1))
+	cmp dword[n],NB_INTERP-1
 	jl .cycle_2_end
 		fld dword[zinv]
 		fld st0
@@ -385,10 +308,10 @@ fld1
 		PUT_PIXEL 7
 		add dword[pz],2*NB_INTERP ;pz += NB_INTERP
 		add edi,NB_INTERP*PSZB ;pp += NB_INTERP * PSZB
-		sub dword[n1],NB_INTERP ;n1 -= NB_INTERP
+		sub dword[n],NB_INTERP ;n -= NB_INTERP
 		fld dword[ndszdx]
 		fadd dword[s_z]
-		fstp dword[s_z] ;s_z += ndszdx
+		fstp dword[s_z] ;sz += ndszdx
 		fld dword[ndtzdx]
 		fadd dword[t_z]
 		fstp dword[t_z] ;tz += ndtzdx
@@ -411,13 +334,13 @@ fld1
 	fmul dword[zinv]
 	fistp dword[dtdx] ;dtdx = (int)( (dtzdx - tt*fdzdx)*zinv )
 align 4
-	.cycle_3: ;while (n1>=0)
-	cmp dword[n1],0
+	.cycle_3: ;while (n>=0)
+	cmp dword[n],0
 	jl .cycle_3_end
 		PUT_PIXEL 0
 		add dword[pz],2 ;pz += 1
 		add edi,PSZB ;pp += PSZB
-		dec dword[n1]
+		dec dword[n]
 		jmp .cycle_3
 	.cycle_3_end:
 end if
@@ -466,9 +389,18 @@ local .end_0
 		fild dword[z]
 		fld dword[s_z]
 		fdiv st0,st1
-		;fistp dword[...s...] ;s = (int) (s_z / (float) z)
-;       t= (int) (t_z / (float) z);
-;       pp[_a]=texture[((t & 0x3FC00000) | s) >> 14];
+		fistp dword[esp-4] ;s = (int) (s_z / (float) z)
+		fld dword[t_z]
+		fdiv st0,st1
+		fistp dword[esp-8] ;t = (int) (t_z / (float) z)
+		mov eax,dword[esp-8]
+		and eax,0x3FC00000
+		or eax,dword[esp-4]
+		shr eax,12 ;14
+		add eax,[texture]
+		mov eax,[eax]
+		stosd ;pp[_a] = texture[((t & 0x3FC00000) | s) >> 14]
+		sub edi,4
 	.end_0:
 	mov eax,[dzdx]
 	add [z],eax
