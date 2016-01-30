@@ -1,1 +1,74 @@
-if lang eq rusz_main_menu_File db 'Файл', 0sz_main_menu_File_New  db 'Новый', 0sz_main_menu_File_Open db 'Открыть', 0sz_main_menu_File_Save db 'Сохранить', 0sz_main_menu_File_Exit db 'Выход', 0sz_main_menu_Changes db 'Изменения', 0sz_main_menu_Changes_Undo  db 'Отмена', 0sz_main_menu_Changes_Redo  db 'Повтор', 0sz_main_menu_Buf db 'Буфер', 0sz_main_menu_Buf_Cut   db 'Вырезать', 0sz_main_menu_Buf_Copy  db 'Копировать', 0sz_main_menu_Buf_Paste db 'Вставить', 0sz_main_menu_Search db 'Поиск', 0sz_main_menu_Search_Text  db 'Поиск по тексту', 0sz_main_menu_Search_Keywords db 'Поиск в ключевых словах', 0sz_main_menu_View  db 'Вид', 0sz_main_menu_Veiw_UseSyntax   db 'Использовать подсветку систаксиса', 0sz_main_menu_Veiw_ChooseSyntax   db 'Выбрать подсветку синтаксиса', 0sz_main_menu_Veiw_LineBreak   db 'Показывать символ переноса строки', 0sz_main_menu_Encoding db 'Кодировка', 0sz_main_menu_Encoding_1251to866  db 'CP1251 ',0x1A,' CP866', 0sz_main_menu_Encoding_866to1251 db 'CP866 ',0x1A,' CP1251', 0else  sz_main_menu_File db 'File', 0sz_main_menu_File_New db 'New', 0sz_main_menu_File_Open db 'Open', 0sz_main_menu_File_Save db 'Save', 0sz_main_menu_File_Exit db 'Exit', 0sz_main_menu_Changes db 'Changes', 0sz_main_menu_Changes_Undo  db 'Undo', 0sz_main_menu_Changes_Redo  db 'Redo', 0sz_main_menu_Buf db 'Buffer', 0sz_main_menu_Buf_Cut   db 'Cut', 0sz_main_menu_Buf_Copy  db 'Copy', 0sz_main_menu_Buf_Paste db 'Paste', 0sz_main_menu_Search db 'Search', 0sz_main_menu_Search_Text  db 'Text search', 0sz_main_menu_Search_Keywords db 'Search in keywords', 0sz_main_menu_View  db 'View', 0sz_main_menu_Veiw_UseSyntax   db 'Use syntax highlight', 0sz_main_menu_Veiw_ChooseSyntax   db 'Choose syntax highlight', 0sz_main_menu_Veiw_LineBreak   db 'Show line breack symbols', 0sz_main_menu_Encoding db 'Encoding', 0sz_main_menu_Encoding_1251to866  db 'CP1251 ',0x1A,' CP866', 0sz_main_menu_Encoding_866to1251 db 'CP866 ',0x1A,' CP1251', 0end ifmain_menu dd 0main_menu_file dd 0main_menu_changes dd 0main_menu_buf dd 0main_menu_search dd 0main_menu_view dd 0main_menu_encoding dd 0KMENUITEM_NORMAL equ 0KMENUITEM_SUBMENU equ 1KMENUITEM_SEPARATOR equ 2
+
+if lang eq ru
+
+sz_main_menu_File db 'Файл', 0
+sz_main_menu_File_New  db 'Новый', 0
+sz_main_menu_File_Open db 'Открыть', 0
+sz_main_menu_File_Save db 'Сохранить', 0
+sz_main_menu_File_Exit db 'Выход', 0
+
+sz_main_menu_Changes db 'Изменения', 0
+sz_main_menu_Changes_Undo  db 'Отмена', 0
+sz_main_menu_Changes_Redo  db 'Повтор', 0
+
+sz_main_menu_Buf db 'Буфер', 0
+sz_main_menu_Buf_Cut   db 'Вырезать', 0
+sz_main_menu_Buf_Copy  db 'Копировать', 0
+sz_main_menu_Buf_Paste db 'Вставить', 0
+
+sz_main_menu_Search db 'Поиск', 0
+sz_main_menu_Search_Text  db 'Поиск по тексту', 0
+sz_main_menu_Search_Keywords db 'Поиск в ключевых словах', 0
+
+sz_main_menu_View  db 'Вид', 0
+sz_main_menu_Veiw_UseSyntax   db 'Использовать подсветку систаксиса', 0
+sz_main_menu_Veiw_ChooseSyntax   db 'Выбрать подсветку синтаксиса', 0
+sz_main_menu_Veiw_LineBreak   db 'Показывать символ переноса строки', 0
+
+sz_main_menu_Encoding db 'Кодировка', 0
+sz_main_menu_Encoding_1251to866  db 'CP1251 ',0x1A,' CP866', 0
+sz_main_menu_Encoding_866to1251 db 'CP866 ',0x1A,' CP1251', 0
+
+else
+  
+sz_main_menu_File db 'File', 0
+sz_main_menu_File_New db 'New', 0
+sz_main_menu_File_Open db 'Open', 0
+sz_main_menu_File_Save db 'Save', 0
+sz_main_menu_File_Exit db 'Exit', 0
+
+sz_main_menu_Changes db 'Changes', 0
+sz_main_menu_Changes_Undo  db 'Undo', 0
+sz_main_menu_Changes_Redo  db 'Redo', 0
+
+sz_main_menu_Buf db 'Buffer', 0
+sz_main_menu_Buf_Cut   db 'Cut', 0
+sz_main_menu_Buf_Copy  db 'Copy', 0
+sz_main_menu_Buf_Paste db 'Paste', 0
+
+sz_main_menu_Search db 'Search', 0
+sz_main_menu_Search_Text  db 'Text search', 0
+sz_main_menu_Search_Keywords db 'Search in keywords', 0
+
+sz_main_menu_View  db 'View', 0
+sz_main_menu_Veiw_UseSyntax   db 'Use syntax highlight', 0
+sz_main_menu_Veiw_ChooseSyntax   db 'Choose syntax highlight', 0
+sz_main_menu_Veiw_LineBreak   db 'Show line break symbols', 0
+
+sz_main_menu_Encoding db 'Encoding', 0
+sz_main_menu_Encoding_1251to866  db 'CP1251 ',0x1A,' CP866', 0
+sz_main_menu_Encoding_866to1251 db 'CP866 ',0x1A,' CP1251', 0
+
+end if
+
+main_menu dd 0
+main_menu_file dd 0
+main_menu_changes dd 0
+main_menu_buf dd 0
+main_menu_search dd 0
+main_menu_view dd 0
+main_menu_encoding dd 0
+
+KMENUITEM_NORMAL equ 0
+KMENUITEM_SUBMENU equ 1
+KMENUITEM_SEPARATOR equ 2
