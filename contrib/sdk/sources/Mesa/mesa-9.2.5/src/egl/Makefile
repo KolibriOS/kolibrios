@@ -9,7 +9,7 @@ CFLAGS   = -c $(CFLAGS_OPT)
 LDFLAGS = -nostdlib -shared -s --image-base 0 -T $(SRC_DIR)/newlib/dll.lds --out-implib libegl.dll.a -e _DllStartup
 
 INC_EGL:= -I$(SRC_DIR)/newlib/libc/include -I$(SDK_DIR)/includes -I$(SRC_DIR)/Mesa/mesa-9.2.5/include
-INC_EGL+= -I$(SRC_DIR)/libdrm -I$(SRC_DIR)/libdrm/include/drm -I./main
+INC_EGL+= -I$(SRC_DIR)/libdrm -I$(SRC_DIR)/libdrm/include/drm -I./main -I./wayland
 INC_EGL+= -I$(MESA_SRC)/gbm/backends/dri -I$(MESA_SRC)/gbm/main
 
 LIBPATH:= -L$(SDK_DIR)/lib -L/home/autobuild/tools/win32/mingw32/lib

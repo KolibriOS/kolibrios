@@ -53,6 +53,15 @@ struct _egl_image_attribs
 
    /* EGL_WL_bind_wayland_display */
    EGLint PlaneWL;
+
+    /* Kolibri specific */
+
+   EGLint Plane0_offset;
+   EGLint Plane1_offset;
+   EGLint Plane2_offset;
+   EGLint Plane0_pitch;
+   EGLint Plane1_pitch;
+   EGLint Plane2_pitch;
 };
 
 /**

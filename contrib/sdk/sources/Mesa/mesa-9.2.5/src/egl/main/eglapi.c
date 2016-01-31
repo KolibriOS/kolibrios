@@ -950,6 +950,8 @@ eglGetProcAddress(const char *procname)
 #endif
       { "eglCreateImageKHR", (_EGLProc) eglCreateImageKHR },
       { "eglDestroyImageKHR", (_EGLProc) eglDestroyImageKHR },
+      { "eglCreatePlanarImage", (_EGLProc) eglCreatePlanarImage },
+      { "eglDestroyPlanarImage", (_EGLProc) eglDestroyPlanarImage },
       { "eglCreateSyncKHR", (_EGLProc) eglCreateSyncKHR },
       { "eglDestroySyncKHR", (_EGLProc) eglDestroySyncKHR },
       { "eglClientWaitSyncKHR", (_EGLProc) eglClientWaitSyncKHR },
@@ -1352,6 +1354,26 @@ eglCreateImageKHR(EGLDisplay dpy, EGLContext ctx, EGLenum target,
    RETURN_EGL_EVAL(disp, ret);
 }
 
+EGLImageKHR EGLAPIENTRY
+eglCreatePlanarImage(EGLDisplay dpy, EGLContext ctx,
+                  EGLClientBuffer buffer, const EGLint *attr_list)
+{
+   _EGLDisplay *disp = _eglLockDisplay(dpy);
+   _EGLContext *context = _eglLookupContext(ctx, disp);
+   _EGLDriver *drv;
+   _EGLImage *img;
+
+   _EGL_CHECK_DISPLAY(disp, EGL_NO_IMAGE_KHR, drv);
+   if (!disp->Extensions.KHR_image_base)
+      RETURN_EGL_EVAL(disp, EGL_NO_IMAGE_KHR);
+   if (!context && ctx != EGL_NO_CONTEXT)
+      RETURN_EGL_ERROR(disp, EGL_BAD_CONTEXT, EGL_NO_IMAGE_KHR);
+
+   img = drv->API.CreatePlanarImage(drv,
+         disp, context, buffer, attr_list);
+
+   return (EGLImageKHR)img;
+}
 
 EGLBoolean EGLAPIENTRY
 eglDestroyImageKHR(EGLDisplay dpy, EGLImageKHR image)
@@ -1373,6 +1395,24 @@ eglDestroyImageKHR(EGLDisplay dpy, EGLImageKHR image)
    RETURN_EGL_EVAL(disp, ret);
 }
 
+EGLBoolean EGLAPIENTRY
+eglDestroyPlanarImage(EGLDisplay dpy, EGLImageKHR image)
+{
+   _EGLDisplay *disp = _eglLockDisplay(dpy);
+   _EGLImage *img = (_EGLImage*)image;
+   _EGLDriver *drv;
+   EGLBoolean ret;
+
+   _EGL_CHECK_DISPLAY(disp, EGL_FALSE, drv);
+   if (!disp->Extensions.KHR_image_base)
+      RETURN_EGL_EVAL(disp, EGL_FALSE);
+   if (!img)
+      RETURN_EGL_ERROR(disp, EGL_BAD_PARAMETER, EGL_FALSE);
+
+//   ret = drv->API.DestroyImageKHR(drv, disp, img);
+
+   RETURN_EGL_EVAL(disp, ret);
+}
 
 EGLSyncKHR EGLAPIENTRY
 eglCreateSyncKHR(EGLDisplay dpy, EGLenum type, const EGLint *attrib_list)

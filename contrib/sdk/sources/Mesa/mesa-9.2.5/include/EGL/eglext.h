@@ -83,9 +83,14 @@ typedef void *EGLImageKHR;
 #ifdef EGL_EGLEXT_PROTOTYPES
 EGLAPI EGLImageKHR EGLAPIENTRY eglCreateImageKHR (EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLint *attrib_list);
 EGLAPI EGLBoolean EGLAPIENTRY eglDestroyImageKHR (EGLDisplay dpy, EGLImageKHR image);
+EGLAPI EGLImageKHR EGLAPIENTRY eglCreatePlanarImage (EGLDisplay dpy, EGLContext ctx, EGLClientBuffer buffer, const EGLint *attrib_list);
+EGLAPI EGLBoolean EGLAPIENTRY  eglDestroyPlanarImage (EGLDisplay dpy, EGLImageKHR image);
 #endif /* EGL_EGLEXT_PROTOTYPES */
 typedef EGLImageKHR (EGLAPIENTRYP PFNEGLCREATEIMAGEKHRPROC) (EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLint *attrib_list);
 typedef EGLBoolean (EGLAPIENTRYP PFNEGLDESTROYIMAGEKHRPROC) (EGLDisplay dpy, EGLImageKHR image);
+typedef EGLImageKHR (EGLAPIENTRYP PFNEGLCREATEPLANARIMAGEPROC) (EGLDisplay dpy, EGLContext ctx, EGLClientBuffer buffer, const EGLint *attrib_list);
+typedef EGLBoolean  (EGLAPIENTRYP PFNEGLDESTROYPLANARIMAGEPROC) (EGLDisplay dpy, EGLImageKHR image);
+
 #endif
 
 #ifndef EGL_KHR_vg_parent_image

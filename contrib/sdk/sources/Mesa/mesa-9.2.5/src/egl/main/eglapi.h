@@ -101,6 +101,8 @@ typedef _EGLSurface *(*CreatePbufferFromClientBuffer_t)(_EGLDriver *drv, _EGLDis
 
 typedef _EGLImage *(*CreateImageKHR_t)(_EGLDriver *drv, _EGLDisplay *dpy, _EGLContext *ctx, EGLenum target, EGLClientBuffer buffer, const EGLint *attr_list);
 typedef EGLBoolean (*DestroyImageKHR_t)(_EGLDriver *drv, _EGLDisplay *dpy, _EGLImage *image);
+typedef _EGLImage *(*CreatePlanarImage_t)(_EGLDriver *drv, _EGLDisplay *dpy, _EGLContext *ctx, EGLClientBuffer buffer, const EGLint *attrib_list);
+typedef EGLBoolean *(*DestroyPlanarImage_t) (_EGLDriver *drv, EGLDisplay dpy, _EGLImage *image);
 
 
 typedef _EGLSync *(*CreateSyncKHR_t)(_EGLDriver *drv, _EGLDisplay *dpy, EGLenum type, const EGLint *attrib_list);
@@ -189,6 +191,8 @@ struct _egl_api
 
    CreateImageKHR_t CreateImageKHR;
    DestroyImageKHR_t DestroyImageKHR;
+   CreatePlanarImage_t CreatePlanarImage;
+   DestroyPlanarImage_t DestroyPlanarImage;
    GetImageFB_t GetImageFB;
 
    CreateSyncKHR_t CreateSyncKHR;

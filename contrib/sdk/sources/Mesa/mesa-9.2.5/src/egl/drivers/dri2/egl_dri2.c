@@ -41,6 +41,7 @@
 #define EGL_EGLEXT_PROTOTYPES
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#include <wayland-kos32.h>
 
 #include "eglmode.h"
 #include "eglscreen.h"
@@ -1227,8 +1228,6 @@ dri2_create_image_mesa_drm_buffer(_EGLDisplay *disp, _EGLContext *ctx,
    return dri2_create_image(disp, dri_image);
 }
 
-#ifdef HAVE_WAYLAND_PLATFORM
-
 /* This structure describes how a wl_buffer maps to one or more
  * __DRIimages.  A wl_drm_buffer stores the wl_drm format code and the
  * offsets and strides of the planes in the buffer.  This table maps a
@@ -1247,6 +1246,7 @@ static const struct wl_drm_components_descriptor {
    { __DRI_IMAGE_COMPONENTS_Y_XUXV, EGL_TEXTURE_Y_XUXV_WL, 2 },
 };
 
+#if 0
 static _EGLImage *
 dri2_create_image_wayland_wl_buffer(_EGLDisplay *disp, _EGLContext *ctx,
 				    EGLClientBuffer _buffer,
@@ -1692,6 +1692,104 @@ dri2_query_wayland_buffer_wl(_EGLDriver *drv, _EGLDisplay *disp,
 #endif
 
 static void
+dri2_reference_planar_buffer(struct dri2_egl_display *dri2_dpy, uint32_t name,
+                         struct egl_planar_buffer *buffer)
+{
+    __DRIimage *img;
+    int i, dri_components = 0;
+
+    img = dri2_dpy->image->createImageFromNames(dri2_dpy->dri_screen,
+                                                buffer->width,
+                                                buffer->height,
+                                                buffer->format,
+                                                (int*)&name, 1,
+                                                buffer->stride,
+                                                buffer->offset,
+                                                NULL);
+
+   if (img == NULL)
+      return;
+
+   dri2_dpy->image->queryImage(img, __DRI_IMAGE_ATTRIB_COMPONENTS, &dri_components);
+
+   buffer->driver_format = NULL;
+   for (i = 0; i < ARRAY_SIZE(wl_drm_components); i++)
+      if (wl_drm_components[i].dri_components == dri_components)
+         buffer->driver_format = &wl_drm_components[i];
+
+   if (buffer->driver_format == NULL)
+      dri2_dpy->image->destroyImage(img);
+   else
+      buffer->driver_buffer = img;
+}
+
+_EGLImage *
+dri2_create_planar_image(_EGLDriver *drv, _EGLDisplay *dpy, _EGLContext *ctx,
+                         EGLClientBuffer clbuffer, const EGLint *attrib_list)
+{
+    struct dri2_egl_display *dri2_dpy = dri2_egl_display(dpy);
+    _EGLImageAttribs attrs;
+    struct egl_planar_buffer *buffer;
+
+    EGLint name, err;
+
+    name = (EGLint) (uintptr_t) clbuffer;
+
+    err = _eglParseImageAttribList(&attrs, dpy, attrib_list);
+    if (err != EGL_SUCCESS)
+        return NULL;
+
+    if (attrs.Width <= 0 || attrs.Height <= 0 )
+    {
+        _eglError(EGL_BAD_PARAMETER,
+            "bad width, height or stride");
+        return NULL;
+    }
+
+    switch (attrs.DRMBufferFormatMESA)
+    {
+        case WL_DRM_FORMAT_YUV410:
+        case WL_DRM_FORMAT_YUV411:
+        case WL_DRM_FORMAT_YUV420:
+        case WL_DRM_FORMAT_YUV422:
+        case WL_DRM_FORMAT_YUV444:
+        case WL_DRM_FORMAT_NV12:
+        case WL_DRM_FORMAT_NV16:
+            break;
+        default:
+            _eglError(EGL_BAD_PARAMETER, "invalid format");
+           return NULL;
+    }
+
+    buffer = calloc(1, sizeof *buffer);
+    if (buffer == NULL) {
+        _eglError(EGL_BAD_ALLOC, "planar buffer");
+        return NULL;
+    }
+
+    buffer->width     = attrs.Width;
+    buffer->height    = attrs.Height;
+    buffer->format    = attrs.DRMBufferFormatMESA;
+    buffer->offset[0] = attrs.Plane0_offset;
+    buffer->stride[0] = attrs.Plane0_pitch;
+    buffer->offset[1] = attrs.Plane1_offset;
+    buffer->stride[1] = attrs.Plane1_pitch;
+    buffer->offset[2] = attrs.Plane2_offset;
+    buffer->stride[2] = attrs.Plane2_pitch;
+
+    dri2_reference_planar_buffer(dri2_dpy, name, buffer);
+    if (buffer->driver_buffer == NULL)
+    {
+        _eglError(EGL_BAD_PARAMETER,"invalid name\n");
+        free(buffer);
+        return NULL;
+    };
+
+    return (_EGLImage*)buffer;
+}
+
+
+static void
 dri2_unload(_EGLDriver *drv)
 {
    struct dri2_egl_driver *dri2_drv = dri2_egl_driver(drv);
@@ -1766,6 +1864,8 @@ _eglBuiltInDriverDRI2(const char *args)
    dri2_drv->base.API.ReleaseTexImage = dri2_release_tex_image;
    dri2_drv->base.API.CreateImageKHR = dri2_create_image_khr;
    dri2_drv->base.API.DestroyImageKHR = dri2_destroy_image_khr;
+   dri2_drv->base.API.CreatePlanarImage = dri2_create_planar_image;
+   dri2_drv->base.API.DestroyPlanarImage = NULL;
    dri2_drv->base.API.CreateDRMImageMESA = dri2_create_drm_image_mesa;
    dri2_drv->base.API.ExportDRMImageMESA = dri2_export_drm_image_mesa;
 #ifdef HAVE_WAYLAND_PLATFORM

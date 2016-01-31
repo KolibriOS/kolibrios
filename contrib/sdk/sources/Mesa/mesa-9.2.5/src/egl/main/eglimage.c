@@ -93,6 +93,30 @@ _eglParseImageAttribList(_EGLImageAttribs *attrs, _EGLDisplay *dpy,
          attrs->PlaneWL = val;
          break;
 
+      case EGL_DMA_BUF_PLANE0_OFFSET_EXT:
+         attrs->Plane0_offset = val;
+         break;
+
+      case EGL_DMA_BUF_PLANE1_OFFSET_EXT:
+         attrs->Plane1_offset = val;
+         break;
+
+      case EGL_DMA_BUF_PLANE2_OFFSET_EXT:
+         attrs->Plane2_offset = val;
+         break;
+
+      case EGL_DMA_BUF_PLANE0_PITCH_EXT:
+         attrs->Plane0_pitch = val;
+         break;
+
+      case EGL_DMA_BUF_PLANE1_PITCH_EXT:
+         attrs->Plane1_pitch = val;
+         break;
+
+      case EGL_DMA_BUF_PLANE2_PITCH_EXT:
+         attrs->Plane2_pitch = val;
+         break;
+
       default:
          /* unknown attrs are ignored */
          break;
