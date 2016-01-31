@@ -13,6 +13,11 @@ struct pix_driver
     int       (*create_client)(int x, int y, uint32_t width, uint32_t height);
     int       (*resize_client)(int x, int y, uint32_t width, uint32_t height);
     void      (*fini)(void);
+    planar_t *(*create_planar)(int name, int format,
+                            uint32_t width, uint32_t height,
+                            uint32_t offset0, uint32_t pitch0,
+                            uint32_t offset1, uint32_t pitch1,
+                            uint32_t offset2, uint32_t pitch2);
 };
 
 #endif

@@ -6,6 +6,7 @@
 
 #include "EGL/egl.h"
 #include "EGL/eglext.h"
+#include "EGL/eglmesaext.h"
 #include "GL/gl.h"
 
 struct bitmap
@@ -18,6 +19,18 @@ struct bitmap
     GLuint      handle;
     GLuint      name;
     EGLImageKHR image;
+};
+
+struct planar
+{
+    uint32_t    width;
+    uint32_t    height;
+    GLuint      name;
+    EGLImageKHR planar_image;
+    EGLImageKHR image[3];
+    GLuint      offset[3];
+    GLuint      pitch[3];
+    GLuint      tex[3];
 };
 
 enum

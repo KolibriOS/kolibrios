@@ -200,7 +200,6 @@ err_0:
     return NULL;
 };
 
-
 static int px_create_bitmap(struct render *px, struct bitmap *bitmap,
                             size_t size, EGLint format)
 {
@@ -527,6 +526,98 @@ err_0:
     return NULL;
 };
 
+static planar_t* hw_create_planar(EGLint name, EGLint format, uint32_t width, uint32_t height,
+                            uint32_t offset0, uint32_t pitch0,
+                            uint32_t offset1, uint32_t pitch1,
+                            uint32_t offset2, uint32_t pitch2)
+{
+    struct drm_gem_close close;
+    planar_t *planar;
+    EGLImageKHR img;
+    int num_planes;
+    int i;
+
+    EGLint attribs[] = {
+        EGL_WIDTH, width,
+        EGL_HEIGHT,height,
+        EGL_DRM_BUFFER_FORMAT_MESA, format,
+        EGL_DMA_BUF_PLANE0_OFFSET_EXT, offset0,
+        EGL_DMA_BUF_PLANE0_PITCH_EXT, pitch0,
+        EGL_DMA_BUF_PLANE1_OFFSET_EXT, offset1,
+        EGL_DMA_BUF_PLANE1_PITCH_EXT, pitch1,
+        EGL_DMA_BUF_PLANE2_OFFSET_EXT, offset2,
+        EGL_DMA_BUF_PLANE2_PITCH_EXT, pitch2,
+        EGL_NONE, EGL_NONE
+    };
+
+    switch (format)
+    {
+        case EGL_TEXTURE_Y_UV_WL:
+            num_planes = 2;
+            break;
+        case EGL_TEXTURE_Y_U_V_WL:
+            num_planes = 3;
+            break;
+        case EGL_TEXTURE_Y_XUXV_WL:
+            num_planes = 2;
+            break;
+        default:
+            num_planes = 0;
+    }
+
+    if(num_planes == 0)
+        return NULL;
+
+    planar = calloc(1, sizeof(struct planar));
+    if(planar == NULL)
+        return NULL;
+
+    img = eglCreatePlanarImage(px->dpy, px->context, (EGLClientBuffer)name, attribs);
+    if(img == NULL)
+        goto err_0;
+
+    planar->width  = width;
+    planar->height = height;
+    planar->name   = name;
+    planar->planar_image = img;
+
+    planar->offset[0] = offset0;
+    planar->offset[1] = offset1;
+    planar->offset[2] = offset2;
+
+    planar->pitch[0] = pitch0;
+    planar->pitch[1] = pitch1;
+    planar->pitch[2] = pitch2;
+
+    glGenTextures(num_planes, &planar->tex[0]);
+
+    for(i = 0; i < num_planes; i++)
+    {
+        EGLint attr[3];
+        attr[0] = EGL_WAYLAND_PLANE_WL;
+        attr[1] = i;
+        attr[2] = EGL_NONE;
+
+        planar->image[i] = eglCreateImageKHR(px->dpy, px->context,
+                           EGL_WAYLAND_BUFFER_WL,(EGLClientBuffer)name, attr);
+
+        glBindTexture(GL_TEXTURE_2D, planar->tex[i]);
+
+        glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, planar->image[i]);
+
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+    };
+
+    return planar;
+
+err_0:
+    free(planar);
+
+    return NULL;
+}
+
+
 static int hw_destroy_bitmap(bitmap_t * bitmap)
 {
     struct drm_gem_close close;
@@ -711,7 +802,8 @@ static struct pix_driver gl_driver =
     hw_blit,
     hw_create_client,
     hw_resize_client,
-    hw_fini
+    hw_fini,
+    hw_create_planar
 };
 
 struct pix_driver *DrvInit(uint32_t service)

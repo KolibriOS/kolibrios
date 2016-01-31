@@ -179,6 +179,7 @@ static struct pix_driver sw_driver =
     sw_blit,
     sw_create_client,
     sw_resize_client,
+    NULL,
     NULL
 };
 
@@ -255,6 +256,19 @@ void pxFini()
 };
 
 
+planar_t* pxCreatePlanar(int name, int format,
+                         uint32_t width, uint32_t height,
+                         uint32_t offset0, uint32_t pitch0,
+                         uint32_t offset1, uint32_t pitch1,
+                         uint32_t offset2, uint32_t pitch2)
+{
+    if(driver->create_planar)
+        return driver->create_planar(name, format, width, height,
+                                     offset0, pitch0, offset1, pitch1,
+                                     offset2, pitch2);
+    else
+        return NULL;
+}
 
 
 
