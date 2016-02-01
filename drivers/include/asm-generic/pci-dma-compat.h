@@ -96,12 +96,12 @@ pci_dma_mapping_error(struct pci_dev *pdev, dma_addr_t dma_addr)
 #ifdef CONFIG_PCI
 static inline int pci_set_dma_mask(struct pci_dev *dev, u64 mask)
 {
-	return dma_set_mask(&dev->dev, mask);
+    return 0;
 }
 
 static inline int pci_set_consistent_dma_mask(struct pci_dev *dev, u64 mask)
 {
-	return dma_set_coherent_mask(&dev->dev, mask);
+    return 0;
 }
 #endif
 

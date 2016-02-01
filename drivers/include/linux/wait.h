@@ -248,12 +248,15 @@ void wake_up(wait_queue_head_t *q)
     unsigned long flags;
 
     spin_lock_irqsave(&q->lock, flags);
-    curr = list_first_entry(&q->task_list, typeof(*curr), task_list);
+    curr = list_first_entry_or_null(&q->task_list, typeof(*curr), task_list);
+    if(curr != NULL)
     {
-//        printf("raise event \n");
-        kevent_t event;
-        event.code = -1;
-        RaiseEvent(curr->evnt, 0, &event);
+        if(!WARN_ON(curr->evnt.handle == 0))
+        {
+            kevent_t event = {0};
+            event.code = -1;
+            RaiseEvent(curr->evnt, 0, &event);
+        }
     }
     spin_unlock_irqrestore(&q->lock, flags);
 }
@@ -265,12 +268,15 @@ void wake_up_interruptible(wait_queue_head_t *q)
     unsigned long flags;
 
     spin_lock_irqsave(&q->lock, flags);
-    curr = list_first_entry(&q->task_list, typeof(*curr), task_list);
+    curr = list_first_entry_or_null(&q->task_list, typeof(*curr), task_list);
+    if(curr != NULL)
     {
-//        printf("raise event \n");
-        kevent_t event;
-        event.code = -1;
-        RaiseEvent(curr->evnt, 0, &event);
+        if(!WARN_ON(curr->evnt.handle == 0))
+        {
+            kevent_t event = {0};
+            event.code = -1;
+            RaiseEvent(curr->evnt, 0, &event);
+        }
     }
     spin_unlock_irqrestore(&q->lock, flags);
 }
@@ -280,12 +286,12 @@ void wake_up_all(wait_queue_head_t *q)
 {
     wait_queue_t *curr;
     unsigned long flags;
-
     spin_lock_irqsave(&q->lock, flags);
     list_for_each_entry(curr, &q->task_list, task_list)
     {
-//        printf("raise event \n");
-        kevent_t event;
+        if(WARN_ON(curr->evnt.handle == 0))
+            continue;
+        kevent_t event = {0};
         event.code = -1;
         RaiseEvent(curr->evnt, 0, &event);
     }

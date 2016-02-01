@@ -132,6 +132,86 @@ struct workqueue_struct {
     struct list_head worklist;
     struct list_head delayed_worklist;
 };
+
+/*
+ * Workqueue flags and constants.  For details, please refer to
+ * Documentation/workqueue.txt.
+ */
+enum {
+	WQ_UNBOUND		= 1 << 1, /* not bound to any cpu */
+	WQ_FREEZABLE		= 1 << 2, /* freeze during suspend */
+	WQ_MEM_RECLAIM		= 1 << 3, /* may be used for memory reclaim */
+	WQ_HIGHPRI		= 1 << 4, /* high priority */
+	WQ_CPU_INTENSIVE	= 1 << 5, /* cpu intensive workqueue */
+	WQ_SYSFS		= 1 << 6, /* visible in sysfs, see wq_sysfs_register() */
+
+	/*
+	 * Per-cpu workqueues are generally preferred because they tend to
+	 * show better performance thanks to cache locality.  Per-cpu
+	 * workqueues exclude the scheduler from choosing the CPU to
+	 * execute the worker threads, which has an unfortunate side effect
+	 * of increasing power consumption.
+	 *
+	 * The scheduler considers a CPU idle if it doesn't have any task
+	 * to execute and tries to keep idle cores idle to conserve power;
+	 * however, for example, a per-cpu work item scheduled from an
+	 * interrupt handler on an idle CPU will force the scheduler to
+	 * excute the work item on that CPU breaking the idleness, which in
+	 * turn may lead to more scheduling choices which are sub-optimal
+	 * in terms of power consumption.
+	 *
+	 * Workqueues marked with WQ_POWER_EFFICIENT are per-cpu by default
+	 * but become unbound if workqueue.power_efficient kernel param is
+	 * specified.  Per-cpu workqueues which are identified to
+	 * contribute significantly to power-consumption are identified and
+	 * marked with this flag and enabling the power_efficient mode
+	 * leads to noticeable power saving at the cost of small
+	 * performance disadvantage.
+	 *
+	 * http://thread.gmane.org/gmane.linux.kernel/1480396
+	 */
+	WQ_POWER_EFFICIENT	= 1 << 7,
+
+	__WQ_DRAINING		= 1 << 16, /* internal: workqueue is draining */
+	__WQ_ORDERED		= 1 << 17, /* internal: workqueue is ordered */
+
+	WQ_MAX_ACTIVE		= 512,	  /* I like 512, better ideas? */
+	WQ_MAX_UNBOUND_PER_CPU	= 4,	  /* 4 * #cpus for unbound wq */
+	WQ_DFL_ACTIVE		= WQ_MAX_ACTIVE / 2,
+};
+
+/* unbound wq's aren't per-cpu, scale max_active according to #cpus */
+#define WQ_UNBOUND_MAX_ACTIVE	\
+	max_t(int, WQ_MAX_ACTIVE, num_possible_cpus() * WQ_MAX_UNBOUND_PER_CPU)
+
+/*
+ * System-wide workqueues which are always present.
+ *
+ * system_wq is the one used by schedule[_delayed]_work[_on]().
+ * Multi-CPU multi-threaded.  There are users which expect relatively
+ * short queue flush time.  Don't queue works which can run for too
+ * long.
+ *
+ * system_highpri_wq is similar to system_wq but for work items which
+ * require WQ_HIGHPRI.
+ *
+ * system_long_wq is similar to system_wq but may host long running
+ * works.  Queue flushing might take relatively long.
+ *
+ * system_unbound_wq is unbound workqueue.  Workers are not bound to
+ * any specific CPU, not concurrency managed, and all queued works are
+ * executed immediately as long as max_active limit is not reached and
+ * resources are available.
+ *
+ * system_freezable_wq is equivalent to system_wq except that it's
+ * freezable.
+ *
+ * *_power_efficient_wq are inclined towards saving power and converted
+ * into WQ_UNBOUND variants if 'wq_power_efficient' is enabled; otherwise,
+ * they are same as their non-power-efficient counterparts - e.g.
+ * system_power_efficient_wq is identical to system_wq if
+ * 'wq_power_efficient' is disabled.  See WQ_POWER_EFFICIENT for more info.
+ */
 extern struct workqueue_struct *system_wq;
 
 void run_workqueue(struct workqueue_struct *cwq);
@@ -139,9 +219,21 @@ void run_workqueue(struct workqueue_struct *cwq);
 struct workqueue_struct *alloc_workqueue_key(const char *fmt,
                            unsigned int flags, int max_active);
 
-
-#define alloc_ordered_workqueue(fmt, flags, args...)            \
-        alloc_workqueue(fmt, WQ_UNBOUND | (flags), 1, ##args)
+/**
+ * alloc_ordered_workqueue - allocate an ordered workqueue
+ * @fmt: printf format for the name of the workqueue
+ * @flags: WQ_* flags (only WQ_FREEZABLE and WQ_MEM_RECLAIM are meaningful)
+ * @args...: args for @fmt
+ *
+ * Allocate an ordered workqueue.  An ordered workqueue executes at
+ * most one work item at any given time in the queued order.  They are
+ * implemented as unbound workqueues with @max_active of one.
+ *
+ * RETURNS:
+ * Pointer to the allocated workqueue on success, %NULL on failure.
+ */
+#define alloc_ordered_workqueue(fmt, flags, args...)			\
+	alloc_workqueue(fmt, WQ_UNBOUND | __WQ_ORDERED | (flags), 1, ##args)
 
 bool queue_work(struct workqueue_struct *wq, struct work_struct *work);
 int queue_delayed_work(struct workqueue_struct *wq,

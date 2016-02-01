@@ -1166,11 +1166,19 @@ int __must_check pci_bus_alloc_resource(struct pci_bus *bus,
 
 int pci_remap_iospace(const struct resource *res, phys_addr_t phys_addr);
 
+static inline void
+_pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
+                         struct resource *res)
+{
+    region->start = res->start;
+    region->end = res->end;
+}
+
 static inline pci_bus_addr_t pci_bus_address(struct pci_dev *pdev, int bar)
 {
 	struct pci_bus_region region;
 
-	pcibios_resource_to_bus(pdev->bus, &region, &pdev->resource[bar]);
+    _pcibios_resource_to_bus(pdev, &region, &pdev->resource[bar]);
 	return region.start;
 }
 
