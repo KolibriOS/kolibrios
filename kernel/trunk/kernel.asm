@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -2177,7 +2177,7 @@ sys_end:
 @@:
 
         mov     eax, [TASK_BASE]
-        mov     [eax+TASKDATA.state], 3; terminate this program
+        mov     [eax+TASKDATA.state], TSTATE_ZOMBIE
         call    wakeup_osloop
 
 .waitterm:            ; wait here for termination
@@ -3746,7 +3746,7 @@ nobackgr:
 align 4
 markz:
         push    ecx edx
-        cmp     [edx+TASKDATA.state], 9
+        cmp     [edx+TASKDATA.state], TSTATE_FREE
         jz      .nokill
         lea     edx, [(edx-(CURRENT_TASK and 1FFFFFFFh))*8+SLOT_BASE]
         cmp     [edx+APPDATA.process], sys_proc
@@ -3760,7 +3760,7 @@ markz:
         pop     edx ecx
         test    eax, eax
         jz      @f
-        mov     [edx+TASKDATA.state], byte 3
+        mov     [edx+TASKDATA.state], TSTATE_ZOMBIE
 @@:
         add     edx, 0x20
         loop    markz
