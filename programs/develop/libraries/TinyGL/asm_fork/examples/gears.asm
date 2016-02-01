@@ -1,17 +1,15 @@
 use32
 	org 0x0
 	db 'MENUET01'
-	dd 0x1
-	dd start
-	dd i_end
-	dd mem,stacktop
-	dd 0,cur_dir_path
+	dd 1,start,i_end,mem,stacktop,0,cur_dir_path
 
 include '../../../../../proc32.inc'
 include '../../../../../macros.inc'
+include '../../../../../KOSfuncs.inc'
 include '../../../../../develop/libraries/box_lib/load_lib.mac'
 include '../../../../../dll.inc'
 include '../opengl_const.inc'
+include 'fps.inc'
 
 @use_library
 
@@ -27,10 +25,10 @@ start:
 	cmp eax,-1
 	jz button.exit
 
-	mcall 40,0x27
+	mcall SF_SET_EVENTS_MASK,0x27
 
-	stdcall [kosglMakeCurrent], 10,10,400,350,ctx1
-	stdcall reshape, 400,350
+	stdcall [kosglMakeCurrent], 0,15,400,380,ctx1
+	stdcall reshape, 400,380
 
 ; *** init ***
 	stdcall [glLightfv], GL_LIGHT0, GL_POSITION, pos
@@ -44,7 +42,6 @@ start:
 	mov [gear1],eax
 	stdcall [glNewList], eax, GL_COMPILE
 	stdcall [glMaterialfv], GL_FRONT, GL_AMBIENT_AND_DIFFUSE, red
-;;;stdcall [glColor4fv], red
 	stdcall gear, 1.0, 4.0, 1.0, 20, 0.7
 	call [glEndList]
 
@@ -52,7 +49,6 @@ start:
 	mov [gear2],eax
 	stdcall [glNewList], eax, GL_COMPILE
 	stdcall [glMaterialfv], GL_FRONT, GL_AMBIENT_AND_DIFFUSE, green
-;;;stdcall [glColor4fv], green
 	stdcall gear, 0.5, 2.0, 2.0, 10, 0.7
 	call [glEndList]
 
@@ -60,22 +56,29 @@ start:
 	mov [gear3],eax
 	stdcall [glNewList], eax, GL_COMPILE
 	stdcall [glMaterialfv], GL_FRONT, GL_AMBIENT_AND_DIFFUSE, blue
-;;;stdcall [glColor4fv], blue
 	stdcall gear, 1.3, 2.0, 0.5, 10, 0.7
 	call [glEndList]
 
 	stdcall [glEnable], GL_NORMALIZE
 ; *** end init ***
 
-	call draw_3d
-
 align 4
 red_win:
 	call draw_window
 
-align 4
+align 16
 still:
-	mcall 10
+	call draw_3d
+
+	stdcall Fps, 330,4
+	mov dword[esp-4],eax
+	fild dword[esp-4]
+	fmul dword[a2]
+	fadd dword[a1]
+	fadd dword[angle]
+	fstp dword[angle]
+
+	mcall SF_CHECK_EVENT
 	cmp al,1
 	jz red_win
 	cmp al,2
@@ -83,6 +86,10 @@ still:
 	cmp al,3
 	jz button
 	jmp still
+
+align 4
+a1 dd 0.01
+a2 dd 0.3
 
 ; new window size or exposure
 align 4
@@ -121,19 +128,23 @@ p6 dq 60.0
 align 4
 draw_window:
 	pushad
-	mcall 12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
-	mov edx,0x33ffffff ;0x73ffffff
-	mcall 0,(50 shl 16)+430,(30 shl 16)+400,,,caption
+	mcall SF_CREATE_WINDOW,(50 shl 16)+410,(30 shl 16)+425,0x33ffffff,,title1
 	stdcall [kosglSwapBuffers]
 
-	mcall 12,2
+	;Title
+	mcall SF_DRAW_TEXT,(300 shl 16)+4,0x808080,fps,   fps.end-fps
+	mcall SF_DRAW_TEXT,(8 shl 16)+4,0x808080,title3,title3.end-title3
+	;mcall SF_DRAW_TEXT,(180 shl 16)+4,0x808080,title2,title2.end-title2
+
+	mcall SF_REDRAW,SSF_END_DRAW
 	popad
 	ret
 
 align 4
 key:
-	mcall 2
+	mcall SF_GET_KEY
 
 	cmp ah,27 ;Esc
 	je button.exit
@@ -144,7 +155,6 @@ key:
 		fdiv dword[delt_sc]
 		fstp dword[scale]
 		call draw_3d
-		stdcall [kosglSwapBuffers]
 	@@:
 	cmp ah,45 ;-
 	jne @f
@@ -152,7 +162,6 @@ key:
 		fmul dword[delt_sc]
 		fstp dword[scale]
 		call draw_3d
-		stdcall [kosglSwapBuffers]
 	@@:
 	cmp ah,178 ;Up
 	jne @f
@@ -160,7 +169,6 @@ key:
 		fadd dword[delt_size]
 		fstp dword[view_rotx]
 		call draw_3d
-		stdcall [kosglSwapBuffers]
 	@@:
 	cmp ah,177 ;Down
 	jne @f
@@ -168,7 +176,6 @@ key:
 		fsub dword[delt_size]
 		fstp dword[view_rotx]
 		call draw_3d
-		stdcall [kosglSwapBuffers]
 	@@:
 	cmp ah,176 ;Left
 	jne @f
@@ -176,7 +183,6 @@ key:
 		fadd dword[delt_size]
 		fstp dword[view_roty]
 		call draw_3d
-		stdcall [kosglSwapBuffers]
 	@@:
 	cmp ah,179 ;Right
 	jne @f
@@ -184,32 +190,39 @@ key:
 		fsub dword[delt_size]
 		fstp dword[view_roty]
 		call draw_3d
-		stdcall [kosglSwapBuffers]
 	@@:
 
 	jmp still
 
 align 4
 button:
-	mcall 17
+	mcall SF_GET_BUTTON
 	cmp ah,1
 	jne still
 .exit:
-	mcall -1
+	mcall SF_TERMINATE_PROCESS
 
 
 align 4
-caption db 'Gears, [Esc] - exit, [<-],[->],[Up],[Down] - rotate',0
+title1: db 'TinyGL in KolibriOS'
+.end: db 0
+title2: db 'F full screen'
+.end: db 0
+title3: db 'ESC - exit'
+.end: db 0
+fps:    db 'FPS:'
+.end: db 0
+
 align 4
 ctx1 db 28 dup (0) ;TinyGLContext or KOSGLContext
 ;sizeof.TinyGLContext = 28
 
-align 4
+align 16
 draw_3d:
 	stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT
 
 	stdcall [glPushMatrix]
-;;;stdcall [glScalef], [scale], [scale], [scale] ;???
+	;stdcall [glScalef], [scale], [scale], [scale]
 	stdcall [glRotatef], [view_rotx], 1.0, 0.0, 0.0
 	stdcall [glRotatef], [view_roty], 0.0, 1.0, 0.0
 	stdcall [glRotatef], [view_rotz], 0.0, 0.0, 1.0
@@ -260,17 +273,16 @@ draw_3d:
 
 	stdcall [glPopMatrix]
 
-;;;   tkSwapBuffers();
+	stdcall [kosglSwapBuffers]
 
 ;   count++;
 ;   if (count==limit) {
 ;       exit(0);
-ret
+	ret
 
 align 4
 an_9 dd 9.0
 an_25 dd 25.0
-qObj dd 0 ;???
 scale dd 0.14 ;???
 delt_sc dd 0.85 ;???
 delt_size dd 5.0
@@ -802,7 +814,7 @@ endl
 		faddp
 
 		fldpi
-		fmul st0,st1
+		fmulp
 		fimul dword[i]
 		fidiv dword[teeth]
 		fst dword[angle] ;angle = i * 2.0*M_PI / teeth
@@ -841,9 +853,6 @@ endl
 		jmp @b
 	@@:
 	call [glEnd]
-
-	;ffree st0 ;2.0
-	;fincstp
 
 	ret	 
 endp
