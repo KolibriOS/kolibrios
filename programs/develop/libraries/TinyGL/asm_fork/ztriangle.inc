@@ -52,10 +52,7 @@
 	x2 dd ? ;int
 	dx2dy2 dd ? ;int
 
-	pz dd ? ;unsigned short *
 	z dd ? ;uint
-	zz dd ? ;uint
-
 	n dd ? ;int - длинна горизонтальной линии в пикселях
 
 if INTERP_Z eq 1
@@ -693,10 +690,9 @@ else
 		add edi,[pp1] ;pp = pp1 + x1 * PSZB
 
 if INTERP_Z eq 1
-		mov eax,[x1]
-		shl eax,1
-		add eax,[pz1]
-		mov [pz],eax
+		mov esi,[x1]
+		shl esi,1
+		add esi,[pz1]
 		mov eax,[z1]
 		mov [z],eax
 end if
@@ -759,7 +755,7 @@ end if
 			PUT_PIXEL 2
 			PUT_PIXEL 3
 if INTERP_Z eq 1
-			add dword[pz],8 ;=4*sizeof(uint)
+			add esi,8 ;=4*sizeof(uint)
 end if
 			add edi,4*PSZB
 			sub dword[n],4
@@ -799,7 +795,7 @@ if INTERP_RGB eq 1
 end if
 			PUT_PIXEL 0
 if INTERP_Z eq 1
-			add dword[pz],2 ;=sizeof(uint)
+			add esi,2 ;=sizeof(uint)
 end if
 			add edi,PSZB
 			dec dword[n]

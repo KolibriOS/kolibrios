@@ -805,16 +805,16 @@ endl
 	; draw inside radius cylinder
 	stdcall [glBegin], GL_QUAD_STRIP
 	mov dword[i],0
+	finit
 	@@:
 	cmp dword[i],ebx
 	jg @f
-		finit
 		fld1
 		fld1
 		faddp
 
 		fldpi
-		fmulp
+		fmul st0,st1
 		fimul dword[i]
 		fidiv dword[teeth]
 		fst dword[angle] ;angle = i * 2.0*M_PI / teeth
@@ -849,6 +849,8 @@ endl
 		call [glNormal3f];, -cos(angle), -sin(angle), 0.0
 		call [glVertex3f];, r0*cos(angle), r0*sin(angle), -width*0.5
 		call [glVertex3f];, r0*cos(angle), r0*sin(angle), width*0.5
+		ffree st0 ;2.0
+		fincstp
 		inc dword[i]
 		jmp @b
 	@@:

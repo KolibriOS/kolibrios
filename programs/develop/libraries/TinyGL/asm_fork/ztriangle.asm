@@ -12,7 +12,7 @@ if TGL_FEATURE_RENDER_BITS eq 24
 	mov eax,[ecx+offs_zbup_b]
 	mov [colorB],ah ;colorB=p2.b>>8
 ;else
-;  color=RGB_TO_PIXEL(p2->r,p2->g,p2->b);
+;color=RGB_TO_PIXEL(p2.r,p2.g,p2.b)
 end if
 }
 
@@ -20,13 +20,11 @@ macro PUT_PIXEL _a
 {
 local .end_0
 	mov eax,[z]
-	shr eax, ZB_POINT_Z_FRAC_BITS
-	mov [zz],eax
-	mov ebx,[pz]
-	cmp ax,word[ebx+2*_a] ;if (zz >= pz[_a])
+	shr eax,ZB_POINT_Z_FRAC_BITS
+	cmp ax,word[esi+2*_a] ;if (zz >= pz[_a])
 	jl .end_0
 		;edi = pp
-		mov word[ebx+2*_a],ax ;пишем в буфер глубины новое значение
+		mov word[esi+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
 		mov al,[colorR]
 		mov ah,[colorG]
@@ -34,7 +32,7 @@ if TGL_FEATURE_RENDER_BITS eq 24
 		mov al,[colorB]
 		mov byte[edi+3*_a +2],al
 ;else
-;      pp[_a]=color;
+;pp[_a]=color
 end if
 	.end_0:
 	mov eax,[dzdx]
@@ -70,12 +68,10 @@ macro PUT_PIXEL _a
 local .end_0
 	mov eax,[z]
 	shr eax,ZB_POINT_Z_FRAC_BITS
-	mov [zz],eax
-	mov ebx,[pz]
-	cmp ax,word[ebx+2*_a] ;if (zz >= pz[_a])
+	cmp ax,word[esi+2*_a] ;if (zz >= pz[_a])
 	jl .end_0
 		;edi = pp
-		mov word[ebx+2*_a],ax ;пишем в буфер глубины новое значение
+		mov word[esi+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
 		mov ebx,[or1]
 		mov eax,[og1]
@@ -85,7 +81,7 @@ if TGL_FEATURE_RENDER_BITS eq 24
 		mov byte[edi+3*_a +2],ah
 end if
 ;if TGL_FEATURE_RENDER_BITS eq 32
-;      pp[_a] = RGB_TO_PIXEL(or1, og1, ob1);
+;pp[_a] = RGB_TO_PIXEL(or1, og1, ob1)
 ;end if
 	.end_0:
 	mov eax,[dzdx]
@@ -126,12 +122,10 @@ macro PUT_PIXEL _a
 local .end_0
 	mov eax,[z]
 	shr eax,ZB_POINT_Z_FRAC_BITS
-	mov [zz],eax
-	mov ebx,[pz]
-	cmp ax,word[ebx+2*_a] ;if (zz >= pz[_a])
+	cmp ax,word[esi+2*_a] ;if (zz >= pz[_a])
 	jl .end_0
 		;edi = pp
-		mov word[ebx+2*_a],ax ;пишем в буфер глубины новое значение
+		mov word[esi+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
 		mov ebx,[t]
 		and ebx,0x3fc00000
@@ -144,7 +138,7 @@ if TGL_FEATURE_RENDER_BITS eq 24
 		mov al,byte[ebx+2]
 		mov byte[edi+3*_a +2],al ;pp[3 * _a + 2]= ptr[2]
 else
-;       pp[_a]=texture[((t & 0x3FC00000) | s) >> 14];
+;pp[_a]=texture[((t & 0x3FC00000) | s) >> 14]
 end if
 	.end_0:
 	mov eax,[dzdx]
@@ -196,12 +190,10 @@ macro PUT_PIXEL _a
 local .end_0
 	mov eax,[z]
 	shr eax,ZB_POINT_Z_FRAC_BITS
-	mov [zz],eax
-	mov ebx,[pz]
-	cmp ax,word[ebx+2*_a] ;if (zz >= pz[_a])
+	cmp ax,word[esi+2*_a] ;if (zz >= pz[_a])
 	jl .end_0
 		;edi = pp
-		mov word[ebx+2*_a],ax ;пишем в буфер глубины новое значение
+		mov word[esi+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
 		mov ebx,[t]
 		and ebx,0x3fc00000
@@ -246,10 +238,9 @@ fld1
 	fstp dword[zinv] ;zinv = 1.0 / fz
 	imul edi,PSZB
 	add edi,[pp1] ;pp = (pp1 + x1 * PSZB)
-	mov eax,[x1]
-	shl eax,1
-	add eax,[pz1]
-	mov [pz],eax ;pz = pz1 + x1
+	mov esi,[x1]
+	shl esi,1
+	add esi,[pz1] ;pz = pz1 + x1
 	mov eax,[z1]
 	mov [z],eax ;z = z1
 	mov eax,[sz1]
@@ -291,7 +282,7 @@ fld1
 		PUT_PIXEL 5
 		PUT_PIXEL 6
 		PUT_PIXEL 7
-		add dword[pz],2*NB_INTERP ;pz += NB_INTERP
+		add esi,2*NB_INTERP ;pz += NB_INTERP
 		add edi,NB_INTERP*PSZB ;pp += NB_INTERP * PSZB
 		sub dword[n],NB_INTERP ;n -= NB_INTERP
 		fld dword[ndszdx]
@@ -323,7 +314,7 @@ align 4
 	cmp dword[n],0
 	jl .cycle_3_end
 		PUT_PIXEL 0
-		add dword[pz],2 ;pz += 1
+		add esi,2 ;pz += 1
 		add edi,PSZB ;pp += PSZB
 		dec dword[n]
 		jmp .cycle_3
@@ -365,12 +356,10 @@ macro PUT_PIXEL _a
 local .end_0
 	mov eax,[z]
 	shr eax,ZB_POINT_Z_FRAC_BITS
-	mov [zz],eax
-	mov ebx,[pz]
-	cmp ax,word[ebx+2*_a] ;if (zz >= pz[_a])
+	cmp ax,word[esi+2*_a] ;if (zz >= pz[_a])
 	jl .end_0
 		;edi = pp
-		mov word[ebx+2*_a],ax ;пишем в буфер глубины новое значение
+		mov word[esi+2*_a],ax ;пишем в буфер глубины новое значение
 		fild dword[z]
 		fld dword[s_z]
 		fdiv st0,st1
