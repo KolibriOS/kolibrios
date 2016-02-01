@@ -111,6 +111,9 @@ struct vstate
 
     mutex_t         gpu_lock;   /* gpu access lock. libdrm not yet thread safe :( */
 
+    int             vfx;        /* index of decoded frame */
+    int             dfx;        /* index of renderd frame */
+
 };
 
 
@@ -130,6 +133,7 @@ void render_adjust_size(render_t *render, window_t *win);
 void render_set_size(render_t *render, int width, int height);
 void render_draw_client(render_t *render);
 
+int fplay_init_context(vst_t *vst);
 
 int init_audio(int format);
 int audio_thread(void *param);
@@ -152,6 +156,8 @@ static inline void GetNotify(void *event)
 }
 
 int fplay_vaapi_init(void);
+void va_convert_picture(vst_t *vst, int width, int height, AVPicture *pic);
+
 int init_fontlib();
 char *get_moviefile();
 

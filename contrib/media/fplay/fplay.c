@@ -16,14 +16,16 @@
 #include "sound.h"
 #include "fplay.h"
 
+#ifdef HAVE_VAAPI
+int va_check_codec_support(enum AVCodecID id);
+#endif
+
 volatile enum player_state player_state  = STOP;
 volatile enum player_state decoder_state = PREPARE;
 volatile enum player_state sound_state   = STOP;
 
 uint32_t win_width, win_height;
 
-void decoder();
-int fplay_init_context(AVCodecContext *avctx);
 
 AVFrame         *pFrame;
 
@@ -35,7 +37,7 @@ extern int resampler_size;
 extern int sample_rate;
 char *movie_file;
 
-void flush_video();
+void flush_video(vst_t* vst);
 
 
 int64_t  rewind_pos;
@@ -77,6 +79,10 @@ int main( int argc, char *argv[])
     avcodec_register_all();
     avdevice_register_all();
     av_register_all();
+
+#ifdef HAVE_VAAPI
+    fplay_vaapi_init();
+#endif
 
     if( avformat_open_input(&vst.fCtx, movie_file, NULL, NULL) < 0)
     {
@@ -152,8 +158,20 @@ int main( int argc, char *argv[])
         return -1; // Codec not found
     }
 
+#ifdef HAVE_VAAPI
+    int hwdec = va_check_codec_support(vst.vCtx->codec_id);
 
+    if(hwdec)
+    {
+        printf("hardware decode supported\n");
 
+        if (fplay_init_context(&vst) < 0)
+        {
+            printf("context initialization failed\n");
+            return -1;
+        };
+    };
+#endif
 
     if(avcodec_open2(vst.vCtx, vst.vCodec, NULL) < 0)
     {
@@ -298,7 +316,7 @@ static void flush_all(vst_t* vst)
     while( get_packet(&vst->q_audio, &packet)!= 0)
         av_free_packet(&packet);
 
-    flush_video();
+    flush_video(vst);
 
     astream.count = 0;
 };

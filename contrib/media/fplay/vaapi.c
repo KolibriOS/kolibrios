@@ -13,8 +13,6 @@
 #include "winlib/winlib.h"
 #include "fplay.h"
 
-extern int dfx;
-
 struct hw_profile
 {
     enum AVCodecID av_codec;
@@ -224,9 +222,6 @@ int vaapi_init(VADisplay display)
     vaapi->display               = display;
     vaapi->config_id             = VA_INVALID_ID;
     vaapi->context_id            = VA_INVALID_ID;
-//    vaapi->pic_param_buf_id      = VA_INVALID_ID;
-//    vaapi->iq_matrix_buf_id      = VA_INVALID_ID;
-//    vaapi->bitplane_buf_id       = VA_INVALID_ID;
 
     v_context = vaapi;
 
@@ -466,14 +461,11 @@ static void av_release_buffer(void *opaque, uint8_t *data)
     av_freep(&data);
 }
 
-
 static int get_buffer2(AVCodecContext *avctx, AVFrame *pic, int flags)
 {
-    void *surface = (void *)(uintptr_t)v_surface_id[dfx];
+    vst_t *vst = (vst_t*)avctx->opaque;
+    void *surface = (void *)(uintptr_t)v_surface_id[vst->dfx];
 
-//    printf("%s surface %x\n", __FUNCTION__, surface);
-
-//    pic->type= FF_BUFFER_TYPE_USER;
     pic->data[3] = surface;
 
     struct av_surface *avsurface;
@@ -489,15 +481,15 @@ static int get_buffer2(AVCodecContext *avctx, AVFrame *pic, int flags)
 
 struct vaapi_context va_context_storage;
 
-int fplay_init_context(AVCodecContext *avctx)
+int fplay_init_context(vst_t *vst)
 {
-    ENTER();
+    AVCodecContext *vCtx = vst->vCtx;
 
-    avctx->thread_count    = 1;
-    avctx->get_format      = get_format;
-    avctx->get_buffer2      = get_buffer2;
+    vCtx->opaque       = vst;
+    vCtx->thread_count = 1;
+    vCtx->get_format   = get_format;
+    vCtx->get_buffer2  = get_buffer2;
 
-    LEAVE();
     return 0;
 }
 
@@ -515,16 +507,7 @@ int fplay_vaapi_init(void)
 
 struct SwsContext *vacvt_ctx;
 
-
-void va_sync()
-{
-    struct vaapi_context* const vaapi = v_context;
-
-    vaSyncSurface(vaapi->display,v_surface_id[dfx]);
-};
-
-
-void va_convert_picture(int width, int height, AVPicture *pic)
+void va_convert_picture(vst_t *vst, int width, int height, AVPicture *pic)
 {
     uint8_t  *src_data[4];
     int       src_linesize[4];
@@ -533,10 +516,9 @@ void va_convert_picture(int width, int height, AVPicture *pic)
     uint8_t *vdata;
     struct vaapi_context* const vaapi = v_context;
 
+    vaSyncSurface(vaapi->display,v_surface_id[vst->dfx]);
 
-    va_sync();
-
-    status = vaDeriveImage(vaapi->display,v_surface_id[dfx],&vaimage);
+    status = vaDeriveImage(vaapi->display,v_surface_id[vst->dfx],&vaimage);
     if (!vaapi_check_status(status, "vaDeriveImage()"))
     {
         FAIL();
@@ -545,7 +527,7 @@ void va_convert_picture(int width, int height, AVPicture *pic)
 
     static int once = 2;
 
-    if(once && dfx == 0)
+    if(once && vst->dfx == 0)
     {
         VABufferInfo info = {0};
 
