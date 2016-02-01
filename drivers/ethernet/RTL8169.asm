@@ -11,7 +11,7 @@
 ;;  Port to the new network stack by hidnplayr                     ;;
 ;;                                                                 ;;
 ;;  References:                                                    ;;
-;;    r8169.c - linux driver (etherboot project)                   ;;
+;;    r8169.c - linux driver                                       ;;
 ;;                                                                 ;;
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
 ;;             Version 2, June 1991                                ;;
@@ -1395,6 +1395,13 @@ dd 0x7c800000, 0x38000000, 17, name_10
 dd 0x7c800000, 0x30000000, 11, name_11
 
 ; 8101 family.
+dd 0x7cf00000, 0x44900000, 39, name_39
+dd 0x7c800000, 0x44800000, 39, name_39
+dd 0x7c800000, 0x44000000, 37, name_37
+dd 0x7cf00000, 0x40b00000, 30, name_29
+dd 0x7cf00000, 0x40a00000, 30, name_29
+dd 0x7cf00000, 0x40900000, 29, name_29
+dd 0x7c800000, 0x40800000, 30, name_29
 dd 0x7cf00000, 0x34a00000, 09, name_07
 dd 0x7cf00000, 0x24a00000, 09, name_07
 dd 0x7cf00000, 0x34900000, 08, name_07
