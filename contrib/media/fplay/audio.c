@@ -23,8 +23,6 @@ volatile enum player_state player_state;
 volatile enum player_state decoder_state;
 volatile enum player_state sound_state;
 
-extern mutex_t driver_lock;
-
 static SNDBUF hBuff;
 
 static int snd_format;
@@ -108,7 +106,7 @@ int decode_audio(AVCodecContext  *ctx, queue_t *qa)
 
     if (!aFrame)
     {
-        if (!(aFrame = avcodec_alloc_frame()))
+        if (!(aFrame = av_frame_alloc()))
             return -1;
     } else
         avcodec_get_frame_defaults(aFrame);

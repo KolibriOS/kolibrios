@@ -19,7 +19,7 @@ INCLUDES+=-I$(SDK_DIR)/sources/freetype/include
 #-I$(SDK_DIR)/sources/vaapi/libva-1.4.1
 
 #DEFINES= -DDEBUG=1 -DPACKAGE_NAME=\"Fplay-vaapi\"
-LIBS:= -lsync -lavdevice.dll -lavformat.dll -lavcodec.dll -lavutil.dll -lswscale.dll
+LIBS:= -lavdevice.dll -lavformat.dll -lavcodec.dll -lavutil.dll -lswscale.dll
 LIBS+= -lswresample.dll -lsound -lpixlib3 -lfreetype.dll -lva.dll -lgcc -lc.dll -lapp
 
 LIBPATH:= -L$(LIB_DIR) -L/home/autobuild/tools/win32/mingw32/lib

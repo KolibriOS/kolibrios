@@ -47,8 +47,6 @@ int height;
 AVRational video_time_base;
 AVFrame  *Frame;
 
-extern mutex_t driver_lock;
-
 void get_client_rect(rect_t *rc);
 
 void flush_video()
@@ -65,14 +63,14 @@ void flush_video()
     dfx    = 0;
 };
 
-int init_video(AVCodecContext *ctx)
+int init_video(vst_t *vst)
 {
     int        i;
 
-    width = ctx->width;
-    height = ctx->height;
+    width = vst->vCtx->width;
+    height = vst->vCtx->height;
 
-    Frame = avcodec_alloc_frame();
+    Frame = av_frame_alloc();
     if ( Frame == NULL )
     {
         printf("Cannot alloc video frame\n\r");
@@ -83,8 +81,8 @@ int init_video(AVCodecContext *ctx)
     {
         int ret;
 
-        ret = avpicture_alloc(&frames[i].picture, ctx->pix_fmt,
-                               ctx->width, ctx->height);
+        ret = avpicture_alloc(&frames[i].picture, vst->vCtx->pix_fmt,
+                               vst->vCtx->width, vst->vCtx->height);
         if ( ret != 0 )
         {
             printf("Cannot alloc video buffer\n\r");
@@ -95,13 +93,13 @@ int init_video(AVCodecContext *ctx)
         frames[i].ready  = 0;
     };
 
-    create_thread(video_thread, ctx, 1024*1024);
+    create_thread(video_thread, vst, 1024*1024);
 
     delay(50);
     return 1;
 };
 
-int decode_video(AVCodecContext  *ctx, queue_t *qv)
+int decode_video(vst_t* vst)
 {
     AVPacket   pkt;
     double     pts;
@@ -111,7 +109,7 @@ int decode_video(AVCodecContext  *ctx, queue_t *qv)
     if(frames[dfx].ready != 0 )
         return -1;
 
-    if( get_packet(qv, &pkt) == 0 )
+    if( get_packet(&vst->q_video, &pkt) == 0 )
         return 0;
 
 /*
@@ -132,9 +130,11 @@ int decode_video(AVCodecContext  *ctx, queue_t *qv)
     {
         frameFinished = 0;
 
-        ctx->reordered_opaque = pkt.pts;
+        vst->vCtx->reordered_opaque = pkt.pts;
 
-        if(avcodec_decode_video2(ctx, Frame, &frameFinished, &pkt) <= 0)
+        mutex_lock(&vst->gpu_lock);
+
+        if(avcodec_decode_video2(vst->vCtx, Frame, &frameFinished, &pkt) <= 0)
             printf("video decoder error\n");
 
         if(frameFinished)
@@ -155,7 +155,7 @@ int decode_video(AVCodecContext  *ctx, queue_t *qv)
 
             av_image_copy(dst_pic->data, dst_pic->linesize,
                       (const uint8_t**)Frame->data,
-                      Frame->linesize, ctx->pix_fmt, ctx->width, ctx->height);
+                      Frame->linesize, vst->vCtx->pix_fmt, vst->vCtx->width, vst->vCtx->height);
 
             frames[dfx].pts = pts*1000.0;
 
@@ -165,6 +165,8 @@ int decode_video(AVCodecContext  *ctx, queue_t *qv)
             dfx&= 3;
             frames_count++;
         };
+        mutex_unlock(&vst->gpu_lock);
+
     };
     av_free_packet(&pkt);
 
@@ -386,9 +388,6 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
 
 #define VERSION_A     1
 
-extern queue_t  q_video;
-extern queue_t  q_audio;
-
 void render_time(render_t *render)
 {
     progress_t  *prg = main_render->win->panel.prg;
@@ -547,7 +546,7 @@ extern char *movie_file;
 
 int video_thread(void *param)
 {
-    AVCodecContext *ctx = param;
+    vst_t *vst = param;
     window_t  *MainWindow;
 
     init_winlib();
@@ -559,9 +558,7 @@ int video_thread(void *param)
 
     show_window(MainWindow, NORMAL);
 
-//    __asm__ __volatile__("int3");
-
-    main_render = create_render(MainWindow, ctx, HW_TEX_BLIT|HW_BIT_BLIT);
+    main_render = create_render(vst, MainWindow, HW_TEX_BLIT|HW_BIT_BLIT);
     if( main_render == NULL)
     {
         printf("Cannot create render\n\r");
@@ -587,7 +584,7 @@ int video_thread(void *param)
 void draw_hw_picture(render_t *render, AVPicture *picture);
 void draw_sw_picture(render_t *render, AVPicture *picture);
 
-render_t *create_render(window_t *win, AVCodecContext *ctx, uint32_t flags)
+render_t *create_render(vst_t *vst, window_t *win, uint32_t flags)
 {
     render_t *render;
 
@@ -600,11 +597,12 @@ render_t *create_render(window_t *win, AVCodecContext *ctx, uint32_t flags)
     render = (render_t*)malloc(sizeof(render_t));
     memset(render, 0, sizeof(render_t));
 
+    render->vst = vst;
     render->win = win;
 
-    render->ctx_width  = ctx->width;
-    render->ctx_height = ctx->height;
-    render->ctx_format = ctx->pix_fmt;
+    render->ctx_width  = vst->vCtx->width;
+    render->ctx_height = vst->vCtx->height;
+    render->ctx_format = vst->vCtx->pix_fmt;
 
     render->caps = pxInit(1);
 
@@ -845,7 +843,7 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
 
     cvt_ctx = sws_getCachedContext(cvt_ctx,
               render->ctx_width, render->ctx_height, render->ctx_format,
-              dst_width, dst_height, PIX_FMT_BGRA,
+              dst_width, dst_height, AV_PIX_FMT_BGRA,
               SWS_FAST_BILINEAR, NULL, NULL, NULL);
     if(cvt_ctx == NULL)
     {
@@ -877,6 +875,7 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
               picture->linesize, 0, render->ctx_height, data, linesize);
 //    printf("sws_scale\n");
 
+    mutex_lock(&render->vst->gpu_lock);
 
     if(render->caps & HW_TEX_BLIT)
     {
@@ -899,6 +898,7 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
                     CAPTION_HEIGHT+render->rcvideo.t,
                     render->rcvideo.r, render->rcvideo.b, 0, 0);
     };
+    mutex_unlock(&render->vst->gpu_lock);
 
     render->last_bitmap = bitmap;
     render->target++;
@@ -920,7 +920,7 @@ void draw_sw_picture(render_t *render, AVPicture *picture)
               render->ctx_width, render->ctx_height,
               render->ctx_format,
               render->rcvideo.r, render->rcvideo.b,
-              PIX_FMT_BGRA, SWS_FAST_BILINEAR, NULL, NULL, NULL);
+              AV_PIX_FMT_BGRA, SWS_FAST_BILINEAR, NULL, NULL, NULL);
     if(cvt_ctx == NULL)
     {
         printf("Cannot initialize the conversion context!\n");

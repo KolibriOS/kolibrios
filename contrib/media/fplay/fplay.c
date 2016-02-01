@@ -25,14 +25,7 @@ uint32_t win_width, win_height;
 void decoder();
 int fplay_init_context(AVCodecContext *avctx);
 
-AVFormatContext *pFormatCtx;
-AVCodecContext  *pCodecCtx;
-AVCodecContext  *aCodecCtx;
-AVCodec         *pCodec;
-AVCodec         *aCodec;
 AVFrame         *pFrame;
-int             videoStream;
-int             audioStream;
 
 int             have_sound = 0;
 
@@ -44,8 +37,7 @@ char *movie_file;
 
 void flush_video();
 
-queue_t  q_video;
-queue_t  q_audio;
+
 int64_t  rewind_pos;
 
 int64_t stream_duration;
@@ -54,15 +46,17 @@ int threads_running = DECODER_THREAD;
 
 extern double audio_base;
 
-double get_audio_base()
+
+double get_audio_base(vst_t* vst)
 {
-  return (double)av_q2d(pFormatCtx->streams[audioStream]->time_base)*1000;
+    return (double)av_q2d(vst->fCtx->streams[vst->aStream]->time_base)*1000;
 };
 
 
 int main( int argc, char *argv[])
 {
-    int i;
+    static vst_t vst;
+    int i, ret;
     char *file_name, *dot;
 
     if(argc < 2)
@@ -84,16 +78,16 @@ int main( int argc, char *argv[])
     avdevice_register_all();
     av_register_all();
 
-    if( avformat_open_input(&pFormatCtx, movie_file, NULL, NULL) < 0)
+    if( avformat_open_input(&vst.fCtx, movie_file, NULL, NULL) < 0)
     {
         printf("Cannot open file %s\n\r", movie_file);
         return -1; // Couldn't open file
     };
 
-    pFormatCtx->flags |= AVFMT_FLAG_GENPTS;
+    vst.fCtx->flags |= AVFMT_FLAG_GENPTS;
 
   // Retrieve stream information
-    if(avformat_find_stream_info(pFormatCtx, NULL)<0)
+    if(avformat_find_stream_info(vst.fCtx, NULL) < 0)
     {
         printf("Cannot find streams\n\r");
         return -1;
@@ -109,32 +103,33 @@ int main( int argc, char *argv[])
     }
     else movie_file = file_name;
 
-    stream_duration = pFormatCtx->duration;
+    stream_duration = vst.fCtx->duration;
 
    // Find the first video stream
-    videoStream=-1;
-    audioStream=-1;
-    for(i=0; i < pFormatCtx->nb_streams; i++)
-    {
-        if(pFormatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO
-            && videoStream < 0)
-        {
-            videoStream=i;
-            video_time_base = pFormatCtx->streams[i]->time_base;
-            if(stream_duration == 0)
-               stream_duration = pFormatCtx->streams[i]->duration;
+    vst.vStream = -1;
+    vst.aStream = -1;
 
-        }
-        if(pFormatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_AUDIO &&
-            audioStream < 0)
+    for(i=0; i < vst.fCtx->nb_streams; i++)
+    {
+        if(vst.fCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO
+            && vst.vStream < 0)
         {
-            audioStream=i;
+            vst.vStream = i;
+            video_time_base = vst.fCtx->streams[i]->time_base;
             if(stream_duration == 0)
-               stream_duration = pFormatCtx->streams[i]->duration;
+               stream_duration = vst.fCtx->streams[i]->duration;
+        }
+
+        if(vst.fCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_AUDIO &&
+           vst.aStream < 0)
+        {
+            vst.aStream = i;
+            if(stream_duration == 0)
+               stream_duration = vst.fCtx->streams[i]->duration;
         }
     }
 
-    if(videoStream==-1)
+    if(vst.vStream==-1)
     {
         printf("Video stream not detected\n\r");
         return -1; // Didn't find a video stream
@@ -143,59 +138,60 @@ int main( int argc, char *argv[])
   //   __asm__ __volatile__("int3");
 
     // Get a pointer to the codec context for the video stream
-    pCodecCtx = pFormatCtx->streams[videoStream]->codec;
-    aCodecCtx = pFormatCtx->streams[audioStream]->codec;
+    vst.vCtx = vst.fCtx->streams[vst.vStream]->codec;
+    vst.aCtx = vst.fCtx->streams[vst.aStream]->codec;
 
-  // Find the decoder for the video stream
+    vst.vCodec = avcodec_find_decoder(vst.vCtx->codec_id);
+    printf("codec id %x name %s\n",vst.vCtx->codec_id, vst.vCodec->name);
+    printf("ctx->pix_fmt %d\n", vst.vCtx->pix_fmt);
 
-
-    pCodec=avcodec_find_decoder(pCodecCtx->codec_id);
-
-//    printf("ctx->pix_fmt %d\n", pCodecCtx->pix_fmt);
-
-    if(pCodec==NULL) {
+    if(vst.vCodec == NULL)
+    {
         printf("Unsupported codec with id %d for input stream %d\n",
-        pCodecCtx->codec_id, videoStream);
+        vst.vCtx->codec_id, vst.vStream);
         return -1; // Codec not found
     }
 
-    if(avcodec_open2(pCodecCtx, pCodec, NULL) < 0)
+
+
+
+    if(avcodec_open2(vst.vCtx, vst.vCodec, NULL) < 0)
     {
         printf("Error while opening codec for input stream %d\n",
-                videoStream);
+                vst.vStream);
         return -1; // Could not open codec
     };
 
-//    printf("ctx->pix_fmt %d\n", pCodecCtx->pix_fmt);
 
-    mutex_init(&q_video.lock);
-    mutex_init(&q_audio.lock);
+    mutex_init(&vst.q_video.lock);
+    mutex_init(&vst.q_audio.lock);
+    mutex_init(&vst.gpu_lock);
 
-    if (aCodecCtx->channels > 0)
-            aCodecCtx->request_channels = FFMIN(2, aCodecCtx->channels);
+    if (vst.aCtx->channels > 0)
+        vst.aCtx->request_channels = FFMIN(2, vst.aCtx->channels);
     else
-            aCodecCtx->request_channels = 2;
+        vst.aCtx->request_channels = 2;
 
-    aCodec = avcodec_find_decoder(aCodecCtx->codec_id);
+    vst.aCodec = avcodec_find_decoder(vst.aCtx->codec_id);
 
-    if(aCodec)
+    if(vst.aCodec)
     {
-        if(avcodec_open2(aCodecCtx, aCodec, NULL) >= 0 )
+        if(avcodec_open2(vst.aCtx, vst.aCodec, NULL) >= 0 )
         {
             WAVEHEADER       whdr;
             int fmt;
             int channels;
 
             printf("audio stream rate %d channels %d format %d\n",
-            aCodecCtx->sample_rate, aCodecCtx->channels, aCodecCtx->sample_fmt );
+            vst.aCtx->sample_rate, vst.aCtx->channels, vst.aCtx->sample_fmt );
             whdr.riff_id = 0x46464952;
             whdr.riff_format = 0x45564157;
             whdr.wFormatTag = 0x01;
-            whdr.nSamplesPerSec = aCodecCtx->sample_rate;
+            whdr.nSamplesPerSec = vst.aCtx->sample_rate;
             whdr.nChannels = 2;
             whdr.wBitsPerSample = 16;
 
-            sample_rate = aCodecCtx->sample_rate;
+            sample_rate = vst.aCtx->sample_rate;
 
             fmt = test_wav(&whdr);
 
@@ -222,10 +218,10 @@ int main( int argc, char *argv[])
     }
     else printf("Unsupported audio codec!\n");
 
-    if( !init_video(pCodecCtx))
+    if(!init_video(&vst))
         return 0;
 
-    decoder();
+    decoder(&vst);
 
   // Free the YUV frame
     av_free(pFrame);
@@ -240,31 +236,31 @@ int main( int argc, char *argv[])
     if(astream.lock.handle)
         mutex_destroy(&astream.lock);
 
-    mutex_destroy(&q_video.lock);
-    mutex_destroy(&q_audio.lock);
+    mutex_destroy(&vst.q_video.lock);
+    mutex_destroy(&vst.q_audio.lock);
 
     return 0;
 }
 
 
-static int load_frame()
+static int load_frame(vst_t *vst)
 {
     AVPacket  packet;
     int err;
 
-    err = av_read_frame(pFormatCtx, &packet);
+    err = av_read_frame(vst->fCtx, &packet);
     if( err == 0)
     {
-        if(packet.stream_index==videoStream)
-            put_packet(&q_video, &packet);
-        else if( (packet.stream_index == audioStream) &&
+        if(packet.stream_index == vst->vStream)
+            put_packet(&vst->q_video, &packet);
+        else if( (packet.stream_index == vst->aStream) &&
                   (have_sound != 0) )
         {
-            put_packet(&q_audio, &packet);
+            put_packet(&vst->q_audio, &packet);
             if(audio_base == -1.0)
             {
                 if (packet.pts != AV_NOPTS_VALUE)
-                    audio_base = get_audio_base() * packet.pts;
+                    audio_base = get_audio_base(vst) * packet.pts;
 //                    printf("audio base %f\n", audio_base);
             };
         }
@@ -278,30 +274,28 @@ static int load_frame()
 
 
 
-static int fill_queue()
+static int fill_queue(vst_t* vst)
 {
     int err = 0;
     AVPacket  packet;
 
-    while( (q_video.size < 4*1024*1024) &&
-            !err )
-        err = load_frame();
+    while( (vst->q_video.size < 4*1024*1024) && !err )
+        err = load_frame(vst);
 
     return err;
-
 };
 
 
-static void flush_all()
+static void flush_all(vst_t* vst)
 {
     AVPacket  packet;
 
-    avcodec_flush_buffers(pCodecCtx);
-    avcodec_flush_buffers(aCodecCtx);
-    while( get_packet(&q_video, &packet) != 0)
+    avcodec_flush_buffers(vst->vCtx);
+    avcodec_flush_buffers(vst->aCtx);
+    while( get_packet(&vst->q_video, &packet) != 0)
         av_free_packet(&packet);
 
-    while( get_packet(&q_audio, &packet)!= 0)
+    while( get_packet(&vst->q_audio, &packet)!= 0)
         av_free_packet(&packet);
 
     flush_video();
@@ -309,7 +303,7 @@ static void flush_all()
     astream.count = 0;
 };
 
-void decoder()
+void decoder(vst_t* vst)
 {
     int       eof;
     AVPacket  packet;
@@ -326,17 +320,17 @@ void decoder()
         switch(decoder_state)
         {
             case PREPARE:
-                eof = fill_queue();
+                eof = fill_queue(vst);
 
                 do
                 {
-                    if( (q_video.size < 4*1024*1024) &&
+                    if( (vst->q_video.size < 4*1024*1024) &&
                         (eof == 0) )
                     {
-                        eof = load_frame();
+                        eof = load_frame(vst);
                     }
-                    decode_video(pCodecCtx, &q_video);
-                    ret = decode_audio(aCodecCtx, &q_audio);
+                    decode_video(vst);
+                    ret = decode_audio(vst->aCtx, &vst->q_audio);
                 }while(astream.count < resampler_size*2 &&
                        ret == 1);
 
@@ -345,13 +339,13 @@ void decoder()
                 player_state  = PLAY;
 
             case PLAY:
-                if( (q_video.size < 4*1024*1024) &&
+                if( (vst->q_video.size < 4*1024*1024) &&
                     (eof == 0) )
                 {
-                    eof = load_frame();
+                    eof = load_frame(vst);
                 }
-                vret = decode_video(pCodecCtx, &q_video);
-                aret = decode_audio(aCodecCtx, &q_audio);
+                vret = decode_video(vst);
+                aret = decode_audio(vst->aCtx, &vst->q_audio);
                 ret = vret | aret;
 
                 if( eof && !ret)
@@ -362,10 +356,10 @@ void decoder()
 
                 if( (vret & aret) == -1)
                 {
-                    if( (q_video.size < 4*1024*1024) &&
+                    if( (vst->q_video.size < 4*1024*1024) &&
                         (eof == 0) )
                     {
-                        eof = load_frame();
+                        eof = load_frame(vst);
                         yield();
                         continue;
                     };
@@ -385,14 +379,14 @@ void decoder()
                 while(sound_state != STOP)
                     delay(1);
 
-                flush_all();
+                flush_all(vst);
 
-                if (pFormatCtx->start_time != AV_NOPTS_VALUE)
-                    rewind_pos = pFormatCtx->start_time;
+                if (vst->fCtx->start_time != AV_NOPTS_VALUE)
+                    rewind_pos = vst->fCtx->start_time;
                 else
                     rewind_pos = 0;
 
-                ret = avformat_seek_file(pFormatCtx, -1, INT64_MIN,
+                ret = avformat_seek_file(vst->fCtx, -1, INT64_MIN,
                                          rewind_pos, INT64_MAX, 0);
 
                 decoder_state = STOP;
@@ -402,7 +396,7 @@ void decoder()
                 while(sound_state != STOP)
                     yield();
 
-                flush_all();
+                flush_all(vst);
                 int opts = 0;
                 if(rewind_pos < 0)
                 {
@@ -410,27 +404,23 @@ void decoder()
                     opts = AVSEEK_FLAG_BACKWARD;
                 };
 
-                if (pFormatCtx->start_time != AV_NOPTS_VALUE)
-                    rewind_pos += pFormatCtx->start_time;
+                if (vst->fCtx->start_time != AV_NOPTS_VALUE)
+                    rewind_pos += vst->fCtx->start_time;
 
 //                printf("rewind %8"PRId64"\n", rewind_pos);
                 min_pos = rewind_pos - 1000000;
                 max_pos = rewind_pos + 1000000;
 
-                ret = avformat_seek_file(pFormatCtx, -1, INT64_MIN,
+                ret = avformat_seek_file(vst->fCtx, -1, INT64_MIN,
                                          rewind_pos, INT64_MAX, 0);
-
                 if (ret < 0)
                 {
                     printf("could not seek to position %f\n",
                             (double)rewind_pos / AV_TIME_BASE);
                 }
-
-//                printf("restart\n");
                 decoder_state = PREPARE;
                 break;
         }
     };
-
 };
 
