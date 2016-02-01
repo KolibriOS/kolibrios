@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  RTL8169 driver for KolibriOS                                   ;;
@@ -8,7 +8,7 @@
 ;;  Copyright 2007 mike.dld,                                       ;;
 ;;   mike.dld@gmail.com                                            ;;
 ;;                                                                 ;;
-;; port to net branch by hidnplayr                                 ;;
+;;  Port to the new network stack by hidnplayr                     ;;
 ;;                                                                 ;;
 ;;  References:                                                    ;;
 ;;    r8169.c - linux driver (etherboot project)                   ;;
@@ -560,11 +560,15 @@ init_board:
         jmp     @r
   @@:
 
-        mov     eax, [esi+8]
-        mov     [ebx + device.mac_version], eax
-        mov     eax, [esi+12]
-        mov     [ebx + device.name], eax
-        DEBUGF  2, "Detected chip: %s\n", eax
+        mov     ecx, [esi+8]
+        mov     [ebx + device.mac_version], ecx
+        mov     ecx, [esi+12]
+        mov     [ebx + device.name], ecx
+        DEBUGF  2, "Detected chip: %s\n", ecx
+        cmp     dword[esi], 0
+        jne     @f
+        DEBUGF  2, "TxConfig = 0x%x\n", eax
+  @@:
 
         xor     eax, eax
         ret
