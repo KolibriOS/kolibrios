@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2016. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  zeroconfig.asm - Zeroconfig service for KolibriOS              ;;
@@ -419,7 +419,7 @@ read_packet:                                                            ; we hav
         sub     ebx, [ebp + interface.timeout]
         ja      send_dhcp_packet.wait
 
-        DEBUGF  2, "No answer from DHCP server\n"
+        DEBUGF  1, "No answer from DHCP server\n"
         dec     [ebp + interface.tries]
         jnz     send_dhcp_packet
         jmp     dhcp_fail
@@ -458,7 +458,8 @@ request_sent:
         cmp     [rx_msg_type], 5                ; Was the response an ACK? It should be
         jne     read_packet                     ; NO - read next packets
 
-        DEBUGF  2, "IP assigned by DHCP server successfully\n"
+        DEBUGF  2, "IP address %u.%u.%u.%u assigned to network interface %u by DHCP\n",\
+        [ebp+interface.ip+0]:1, [ebp+interface.ip+1]:1, [ebp+interface.ip+2]:1, [ebp+interface.ip+3]:1, [ebp + interface.number]:1
 
         mcall   close, [ebp + interface.socketNum]
 
@@ -595,7 +596,7 @@ dhcp_fail:
         mcall   close, [ebp + interface.socketNum]
 
 dhcp_error:
-        DEBUGF  1, "DHCP failed\n"
+        DEBUGF  2, "DHCP failed\n"
         cmp     [ebp + interface.mode], 3               ; zero config mode?
         jne     link_up
 
@@ -610,7 +611,8 @@ link_local:
         mov     ebx, API_IPv4 + 3
         mov     bh, byte[ebp + interface.number]
         mcall   76, , ecx                               ; mask is 255.255.0.0
-        DEBUGF  2, "Link Local IP assigned: 169.254.%u.%u\n", [generator+0]:1, [generator+1]:1
+        DEBUGF  2, "IP address 169.254.%u.%u assigned to network interface %u through Link-Local\n",\
+        [generator+0]:1, [generator+1]:1, [ebp + interface.number]:1
         mov     bl, 7
         mcall   76, , 0xffff
         mov     bl, 9
