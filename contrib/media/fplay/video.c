@@ -11,8 +11,6 @@
 #include "winlib/winlib.h"
 #include "fplay.h"
 
-int fplay_blit_bitmap(bitmap_t *bitmap, int dst_x, int dst_y,int w, int h);
-
 extern int res_pause_btn[];
 extern int res_pause_btn_pressed[];
 
@@ -23,15 +21,7 @@ extern int64_t stream_duration;
 extern volatile int sound_level_0;
 extern volatile int sound_level_1;
 
-typedef struct
-{
-    AVPicture      picture;
-    double         pts;
-    volatile int   ready;
-}vframe_t;
-
-vframe_t           frames[4];
-volatile int      frames_count = 0;
+volatile int frames_count = 0;
 
 struct SwsContext *cvt_ctx = NULL;
 
@@ -52,8 +42,8 @@ void flush_video(vst_t *vst)
 
     for(i = 0; i < 4; i++)
     {
-        frames[i].pts    = 0;
-        frames[i].ready  = 0;
+        vst->vframe[i].pts   = 0;
+        vst->vframe[i].ready = 0;
     };
     vst->vfx = 0;
     vst->dfx = 0;
@@ -74,22 +64,6 @@ int init_video(vst_t *vst)
         return 0;
     };
 
-    for( i=0; i < 4; i++)
-    {
-        int ret;
-
-        ret = avpicture_alloc(&frames[i].picture, vst->vCtx->pix_fmt,
-                               vst->vCtx->width, vst->vCtx->height);
-        if ( ret != 0 )
-        {
-            printf("Cannot alloc video buffer\n\r");
-            return 0;
-        };
-
-        frames[i].pts    = 0;
-        frames[i].ready  = 0;
-    };
-
     create_thread(video_thread, vst, 1024*1024);
 
     delay(50);
@@ -103,7 +77,7 @@ int decode_video(vst_t* vst)
     int frameFinished;
     double current_clock;
 
-    if(frames[vst->dfx].ready != 0 )
+    if(vst->vframe[vst->dfx].ready != 0 )
         return -1;
 
     if( get_packet(&vst->q_video, &pkt) == 0 )
@@ -148,16 +122,17 @@ int decode_video(vst_t* vst)
 
             pts *= av_q2d(video_time_base);
 
-            dst_pic = &frames[vst->dfx].picture;
+            dst_pic = &vst->vframe[vst->dfx].picture;
 
-            av_image_copy(dst_pic->data, dst_pic->linesize,
-                      (const uint8_t**)Frame->data,
-                      Frame->linesize, vst->vCtx->pix_fmt, vst->vCtx->width, vst->vCtx->height);
+            if(vst->hwdec == 0)
+                av_image_copy(dst_pic->data, dst_pic->linesize,
+                              (const uint8_t**)Frame->data,
+                              Frame->linesize, vst->vCtx->pix_fmt, vst->vCtx->width, vst->vCtx->height);
+            else
+                va_convert_picture(vst, vst->vCtx->width, vst->vCtx->height, dst_pic);
 
-            frames[vst->dfx].pts = pts*1000.0;
-
-            frames[vst->dfx].ready = 1;
-
+            vst->vframe[vst->dfx].pts = pts*1000.0;
+            vst->vframe[vst->dfx].ready = 1;
             vst->dfx = (vst->dfx + 1) & 3;
             frames_count++;
         };
@@ -417,12 +392,12 @@ void render_time(render_t *render)
 
 
 #ifdef VERSION_A
-    if(frames[vst->vfx].ready == 1 )
+    if(vst->vframe[vst->vfx].ready == 1 )
     {
         int sys_time;
 
         ctime = get_master_clock();
-        fdelay = (frames[vst->vfx].pts - ctime);
+        fdelay = (vst->vframe[vst->vfx].pts - ctime);
 
 //        printf("pts %f time %f delay %f\n",
 //                frames[vfx].pts, ctime, fdelay);
@@ -434,7 +409,7 @@ void render_time(render_t *render)
         };
 #if 0
         ctime = get_master_clock();
-        fdelay = (frames[vst->vfx].pts - ctime);
+        fdelay = (vst->vframe[vst->vfx].pts - ctime);
 
 //        while(fdelay > 0)
 //        {
@@ -450,14 +425,14 @@ void render_time(render_t *render)
 //                    sys_time*10, frames[vfx].pts, ctime, fdelay);
 
         printf("pts %f time %f delay %f\n",
-                frames[vfx].pts, ctime, fdelay);
+                vst->vframe[vst->vfx].pts, ctime, fdelay);
         printf("video cache %d audio cache %d\n", q_video.size/1024, q_audio.size/1024);
 #endif
 
-        main_render->draw(main_render, &frames[vst->vfx].picture);
+        main_render->draw(main_render, &vst->vframe[vst->vfx].picture);
         if(main_render->win->win_state != FULLSCREEN)
         {
-            prg->current = frames[vst->vfx].pts*1000;
+            prg->current = vst->vframe[vst->vfx].pts*1000;
 //        printf("current %f\n", prg->current);
             lvl->current = vst->vfx & 1 ? sound_level_1 : sound_level_0;
 
@@ -468,17 +443,17 @@ void render_time(render_t *render)
         }
 
         frames_count--;
-        frames[vst->vfx].ready = 0;
+        vst->vframe[vst->vfx].ready = 0;
         vst->vfx = (vst->vfx + 1) & 3;
     }
     else delay(1);
 
 #else
 
-    if(frames[vfx].ready == 1 )
+    if(vst->vframe[vfx].ready == 1 )
     {
         ctime = get_master_clock();
-        fdelay = (frames[vst->vfx].pts - ctime);
+        fdelay = (vst->vrame[vst->vfx].pts - ctime);
 
 //            printf("pts %f time %f delay %f\n",
 //                    frames[vfx].pts, ctime, fdelay);
@@ -488,21 +463,21 @@ void render_time(render_t *render)
             int  next_vfx;
             fdelay = 0;
             next_vfx = (vst->vfx+1) & 3;
-            if( frames[next_vfx].ready == 1 )
+            if( vst->vrame[next_vfx].ready == 1 )
             {
-                if(frames[next_vfx].pts <= ctime)
+                if(vst->vrame[next_vfx].pts <= ctime)
                 {
-                    frames[vst->vfx].ready = 0;                  // skip this frame
+                    vst->vrame[vst->vfx].ready = 0;                  // skip this frame
                     vst->vfx = (vst->vfx + 1) & 3;
                 }
                 else
                 {
-                    if( (frames[next_vfx].pts - ctime) <
+                    if( (vst->vrame[next_vfx].pts - ctime) <
                         ( ctime - frames[vst->vfx].pts) )
                     {
-                        frames[vst->vfx].ready = 0;                  // skip this frame
+                        vst->vrame[vst->vfx].ready = 0;                  // skip this frame
                         vst->vfx = (vst->vfx + 1) & 3;
-                        fdelay = (frames[next_vfx].pts - ctime);
+                        fdelay = (vst->vrame[next_vfx].pts - ctime);
                     }
                 }
             };
@@ -512,20 +487,20 @@ void render_time(render_t *render)
         {
            int val = fdelay;
            printf("pts %f time %f delay %d\n",
-                   frames[vst->vfx].pts, ctime, val);
+                   vst->vrame[vst->vfx].pts, ctime, val);
            delay(val/10);
         };
 
         ctime = get_master_clock();
-        fdelay = (frames[vst->vfx].pts - ctime);
+        fdelay = (vst->vrame[vst->vfx].pts - ctime);
 
         printf("pts %f time %f delay %f\n",
-                frames[vst->vfx].pts, ctime, fdelay);
+                vst->vrame[vst->vfx].pts, ctime, fdelay);
 
-        main_render->draw(main_render, &frames[vfx].picture);
-        main_render->win->panel.prg->current = frames[vfx].pts;
+        main_render->draw(main_render, &vst->vrame[vfx].picture);
+        main_render->win->panel.prg->current = vst->vrame[vfx].pts;
 //        send_message(&render->win->panel.prg->ctrl, MSG_PAINT, 0, 0);
-        frames[vst->vfx].ready = 0;
+        vst->vrame[vst->vfx].ready = 0;
         vst->vfx = (vst->vfx + 1) & 3;
     }
     else yield();
@@ -817,6 +792,7 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
     uint32_t  bitmap_pitch;
     uint8_t  *data[4];
     int       linesize[4];
+    enum AVPixelFormat format;
 
     if(render->win->win_state == MINIMIZED ||
        render->win->win_state == ROLLED)
@@ -833,8 +809,9 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
         dst_height = render->rcvideo.b;
     };
 
+	format = render->vst->hwdec == 0 ? render->ctx_format : AV_PIX_FMT_BGRA
     cvt_ctx = sws_getCachedContext(cvt_ctx,
-              render->ctx_width, render->ctx_height, render->ctx_format,
+              render->ctx_width, render->ctx_height, format,
               dst_width, dst_height, AV_PIX_FMT_BGRA,
               SWS_FAST_BILINEAR, NULL, NULL, NULL);
     if(cvt_ctx == NULL)
@@ -960,8 +937,8 @@ void render_draw_client(render_t *render)
 
     if(player_state == PAUSE)
     {
-         if(frames[vst->vfx].ready == 1 )
-            main_render->draw(main_render, &frames[vst->vfx].picture);
+         if(vst->vframe[vst->vfx].ready == 1 )
+            main_render->draw(main_render, &vst->vframe[vst->vfx].picture);
          else
             draw_bar(0, y, render->win_width,
                  render->rcvideo.b, 0);

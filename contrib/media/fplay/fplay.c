@@ -27,11 +27,11 @@ volatile enum player_state sound_state   = STOP;
 uint32_t win_width, win_height;
 
 
-AVFrame         *pFrame;
+AVFrame *pFrame;
 
-int             have_sound = 0;
+int      have_sound = 0;
 
-uint8_t     *decoder_buffer;
+uint8_t  *decoder_buffer;
 extern int resampler_size;
 
 extern int sample_rate;
@@ -79,10 +79,6 @@ int main( int argc, char *argv[])
     avcodec_register_all();
     avdevice_register_all();
     av_register_all();
-
-#ifdef HAVE_VAAPI
-    fplay_vaapi_init();
-#endif
 
     if( avformat_open_input(&vst.fCtx, movie_file, NULL, NULL) < 0)
     {
@@ -158,20 +154,8 @@ int main( int argc, char *argv[])
         return -1; // Codec not found
     }
 
-#ifdef HAVE_VAAPI
-    int hwdec = va_check_codec_support(vst.vCtx->codec_id);
-
-    if(hwdec)
-    {
-        printf("hardware decode supported\n");
-
-        if (fplay_init_context(&vst) < 0)
-        {
-            printf("context initialization failed\n");
-            return -1;
-        };
-    };
-#endif
+    if(fplay_init_context(&vst))
+        return -1;
 
     if(avcodec_open2(vst.vCtx, vst.vCodec, NULL) < 0)
     {
@@ -180,6 +164,7 @@ int main( int argc, char *argv[])
         return -1; // Could not open codec
     };
 
+    printf("ctx->pix_fmt %d\n", vst.vCtx->pix_fmt);
 
     mutex_init(&vst.q_video.lock);
     mutex_init(&vst.q_audio.lock);

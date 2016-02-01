@@ -176,7 +176,7 @@ VADisplay va_open_display(void)
     return NULL;
 };
 
-int vaapi_init(VADisplay display)
+void *vaapi_init(VADisplay display)
 {
     struct vaapi_context *vaapi;
     int major_version, minor_version;
@@ -225,13 +225,12 @@ int vaapi_init(VADisplay display)
 
     v_context = vaapi;
 
-    return 0;
+    return vaapi;
 
 error:
     free(display_attrs);
-    return -1;
+    return NULL;
 }
-
 
 static int has_profile(struct vaapi_context *vaapi, VAProfile profile)
 {
@@ -485,25 +484,61 @@ int fplay_init_context(vst_t *vst)
 {
     AVCodecContext *vCtx = vst->vCtx;
 
-    vCtx->opaque       = vst;
-    vCtx->thread_count = 1;
-    vCtx->get_format   = get_format;
-    vCtx->get_buffer2  = get_buffer2;
+    if(va_check_codec_support(vCtx->codec_id))
+    {
+        VADisplay dpy;
+
+        dpy = va_open_display();
+        vst->hwCtx = vaapi_init(dpy);
+
+        if(vst->hwCtx != NULL)
+        {
+            for(int i = 0; i < 4; i++)
+            {
+                int ret;
+
+                ret = avpicture_alloc(&vst->vframe[i].picture, AV_PIX_FMT_BGRA,
+                                      vst->vCtx->width, vst->vCtx->height);
+                if ( ret != 0 )
+                {
+                    printf("Cannot alloc video buffer\n\r");
+                    return ret;
+                };
+                vst->vframe[i].format = AV_PIX_FMT_BGRA;
+                vst->vframe[i].pts   = 0;
+                vst->vframe[i].ready  = 0;
+            };
+
+            vst->hwdec         = 1;
+            vCtx->opaque       = vst;
+            vCtx->thread_count = 1;
+            vCtx->get_format   = get_format;
+            vCtx->get_buffer2  = get_buffer2;
+            return 0;
+        };
+    };
+
+    vst->hwdec = 0;
+
+    for(int i = 0; i < 4; i++)
+    {
+        int ret;
+
+        ret = avpicture_alloc(&vst->vframe[i].picture, vst->vCtx->pix_fmt,
+                               vst->vCtx->width, vst->vCtx->height);
+        if ( ret != 0 )
+        {
+            printf("Cannot alloc video buffer\n\r");
+            return ret;
+        };
+        vst->vframe[i].format = vst->vCtx->pix_fmt;
+        vst->vframe[i].pts    = 0;
+        vst->vframe[i].ready  = 0;
+    };
 
     return 0;
 }
 
-int fplay_vaapi_init(void)
-{
-    VADisplay dpy;
-
-    dpy = va_open_display();
-
-    if (vaapi_init(dpy) < 0)
-        return -1;
-
-    return 0;
-}
 
 struct SwsContext *vacvt_ctx;
 
@@ -583,9 +618,6 @@ void va_convert_picture(vst_t *vst, int width, int height, AVPicture *pic)
         printf("Cannot initialize the conversion context!\n");
         return ;
     };
-
-
-//    __asm__ volatile ("int3");
 
     sws_scale(vacvt_ctx, (const uint8_t* const *)src_data, src_linesize, 0, height, pic->data, pic->linesize);
 

@@ -16,6 +16,15 @@ typedef struct vstate vst_t;
 #define HAS_RIGHT       (1<<2)
 #define HAS_BOTTOM      (1<<3)
 
+typedef struct
+{
+    enum AVPixelFormat format;
+    AVPicture     picture;
+    int           planar;
+    double        pts;
+    volatile int  ready;
+}vframe_t;
+
 struct render
 {
     vst_t     *vst;
@@ -98,24 +107,25 @@ int get_packet(queue_t *q, AVPacket *pkt);
 
 struct vstate
 {
-    AVFormatContext *fCtx;      /* format context */
-    AVCodecContext  *vCtx;      /* video decoder context */
-    AVCodecContext  *aCtx;      /* audio decoder context */
-    AVCodec         *vCodec;    /* video codec */
-    AVCodec         *aCodec;    /* audio codec */
-    int             vStream;    /* video stream index */
-    int             aStream;    /* audio stream index */
+    AVFormatContext *fCtx;      /* format context           */
+    AVCodecContext  *vCtx;      /* video decoder context    */
+    AVCodecContext  *aCtx;      /* audio decoder context    */
+    AVCodec         *vCodec;    /* video codec              */
+    AVCodec         *aCodec;    /* audio codec              */
+    int             vStream;    /* video stream index       */
+    int             aStream;    /* audio stream index       */
 
-    queue_t         q_video;    /* video packets queue */
-    queue_t         q_audio;    /* audio packets queue */
+    queue_t         q_video;    /* video packets queue      */
+    queue_t         q_audio;    /* audio packets queue      */
 
     mutex_t         gpu_lock;   /* gpu access lock. libdrm not yet thread safe :( */
 
-    int             vfx;        /* index of decoded frame */
-    int             dfx;        /* index of renderd frame */
-
+    vframe_t        vframe[4];  /* decoder workset          */
+    int             vfx;        /* index of decoded frame   */
+    int             dfx;        /* index of renderd frame   */
+    void           *hwCtx;      /* hardware context         */
+    int             hwdec;      /* hardware decoder         */
 };
-
 
 
 #define DECODER_THREAD  1
@@ -155,7 +165,6 @@ static inline void GetNotify(void *event)
     ::"a"(68),"b"(14),"c"(event));
 }
 
-int fplay_vaapi_init(void);
 void va_convert_picture(vst_t *vst, int width, int height, AVPicture *pic);
 
 int init_fontlib();
