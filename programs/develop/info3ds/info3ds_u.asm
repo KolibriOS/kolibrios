@@ -54,7 +54,7 @@ open_b rb 560
 ;
 main_wnd_height equ 460 ;высота главного окна программы
 fn_toolbar db 'toolbar.png',0
-IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
+IMAGE_TOOLBAR_ICON_SIZE equ 21*21*3
 IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*12+54
 image_data_toolbar dd 0
 ;
@@ -491,27 +491,27 @@ pushad
 	stdcall [kmainmenu_draw], [main_menu]
 
 	mov esi,[sc.work_button]
-	mcall SF_DEFINE_BUTTON,(5 shl 16)+20,(24 shl 16)+20,3
-	mcall ,(30 shl 16)+20,,4 ;open
-	mcall ,(3d_wnd_l shl 16)+20,,5 ;вершины вкл./выкл.
-	mcall ,((3d_wnd_l+25) shl 16)+20,,6 ;грани вкл./выкл.
-	mcall ,((3d_wnd_l+50) shl 16)+20,,7 ;заливка граней вкл./выкл.
-	mcall ,((3d_wnd_l+75) shl 16)+20,,8 ;свет вкл./выкл.
-	mcall ,((3d_wnd_l+100) shl 16)+20,,9 ;сброс
+	mcall SF_DEFINE_BUTTON,(5 shl 16)+20,(24 shl 16)+20,0x40000003
+	mcall ,(30 shl 16)+20,,0x40000004 ;open
+	mcall ,(3d_wnd_l shl 16)+20,,0x40000005 ;вершины вкл./выкл.
+	mcall ,((3d_wnd_l+25) shl 16)+20,,0x40000006 ;грани вкл./выкл.
+	mcall ,((3d_wnd_l+50) shl 16)+20,,0x40000007 ;заливка граней вкл./выкл.
+	mcall ,((3d_wnd_l+75) shl 16)+20,,0x40000008 ;свет вкл./выкл.
+	mcall ,((3d_wnd_l+100) shl 16)+20,,0x40000009 ;сброс
 
-	mcall SF_PUT_IMAGE,[image_data_toolbar],(16 shl 16)+16,(7 shl 16)+26 ;new
+	mcall SF_PUT_IMAGE,[image_data_toolbar],(21 shl 16)+21,(5 shl 16)+24 ;new
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mcall ,,,(32 shl 16)+26 ;open
+	mcall ,,,(30 shl 16)+24 ;open
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE*6
-	mcall ,,,((3d_wnd_l+2) shl 16)+26 ;вершины вкл./выкл.
+	mcall ,,,((3d_wnd_l) shl 16)+24 ;вершины вкл./выкл.
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mcall ,,,((3d_wnd_l+27) shl 16)+26 ;грани вкл./выкл.
+	mcall ,,,((3d_wnd_l+25) shl 16)+24 ;грани вкл./выкл.
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mcall ,,,((3d_wnd_l+52) shl 16)+26 ;заливка граней вкл./выкл.
+	mcall ,,,((3d_wnd_l+50) shl 16)+24 ;заливка граней вкл./выкл.
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mcall ,,,((3d_wnd_l+77) shl 16)+26 ;свет вкл./выкл.
+	mcall ,,,((3d_wnd_l+75) shl 16)+24 ;свет вкл./выкл.
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mcall ,,,((3d_wnd_l+102) shl 16)+26 ;сброс
+	mcall ,,,((3d_wnd_l+100) shl 16)+24 ;сброс
 
 	mov dword[w_scr_t1.all_redraw],1
 	stdcall [tl_draw], tree1

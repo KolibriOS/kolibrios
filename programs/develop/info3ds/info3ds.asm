@@ -49,7 +49,7 @@ open_b rb 560
 ;
 main_wnd_height equ 460 ;высота главного окна программы
 fn_toolbar db 'toolbar.png',0
-IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
+IMAGE_TOOLBAR_ICON_SIZE equ 21*21*3
 IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*12+54
 image_data_toolbar dd 0
 ;
@@ -457,36 +457,36 @@ pushad
 	mov word[buf_0.l],ax
 
 	mov esi,[sc.work_button]
-	mcall SF_DEFINE_BUTTON,(5 shl 16)+20,(5 shl 16)+20,3
-	mcall ,(30 shl 16)+20,,4
+	mcall SF_DEFINE_BUTTON,(5 shl 16)+20,(5 shl 16)+20,0x40000003
+	mcall ,(30 shl 16)+20,,0x40000004
 
 	cmp byte[can_save],0
 	je @f
-		mcall ,(55 shl 16)+20,,5
+		mcall ,(55 shl 16)+20,,0x40000005
 	@@:
-	mcall ,(85 shl 16)+20,,6 ;окно с координатами
-	mcall ,(110 shl 16)+20,,7 ;удаление блока
+	mcall ,(85 shl 16)+20,,0x40000006 ;окно с координатами
+	mcall ,(110 shl 16)+20,,0x40000007 ;удаление блока
 
-	mcall SF_PUT_IMAGE,[image_data_toolbar],(16 shl 16)+16,(7 shl 16)+7 ;new
+	mcall SF_PUT_IMAGE,[image_data_toolbar],(21 shl 16)+21,(5 shl 16)+5 ;new
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mov edx,(32 shl 16)+7 ;open
+	mov edx,(30 shl 16)+5 ;open
 	int 0x40
 
 	cmp byte[can_save],0
 	je @f
 		add ebx,IMAGE_TOOLBAR_ICON_SIZE
-		mov edx,(57 shl 16)+7 ;save
+		mov edx,(55 shl 16)+5 ;save
 		int 0x40
 		sub ebx,IMAGE_TOOLBAR_ICON_SIZE
 	@@:
 
 	add ebx,4*IMAGE_TOOLBAR_ICON_SIZE
-	mov edx,(87 shl 16)+7
+	mov edx,(85 shl 16)+5
 	int 0x40
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mov edx,(112 shl 16)+7
+	mov edx,(110 shl 16)+5
 	int 0x40
 
 	mov dword[w_scr_t1.all_redraw],1

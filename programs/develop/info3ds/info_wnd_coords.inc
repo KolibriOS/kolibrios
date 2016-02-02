@@ -213,15 +213,15 @@ pushad
 	int 0x40
 
 	mov esi,[sc.work_button]
-	mcall SF_DEFINE_BUTTON, (5 shl 16)+20, (266 shl 16)+20, 3
-	mcall , (30 shl 16)+20, (266 shl 16)+20, 4
+	mcall SF_DEFINE_BUTTON, (5 shl 16)+20, (266 shl 16)+20, 0x40000003
+	mcall , (30 shl 16)+20, (266 shl 16)+20, 0x40000004
 
 	mov ebx,[image_data_toolbar]
 	add ebx,3*IMAGE_TOOLBAR_ICON_SIZE
-	mcall SF_PUT_IMAGE, , (16 shl 16)+16, (7 shl 16)+268 ;load
+	mcall SF_PUT_IMAGE, , (21 shl 16)+21, (5 shl 16)+266 ;load
 
 	sub ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mov edx,(32 shl 16)+268 ;save
+	mov edx,(30 shl 16)+266 ;save
 	int 0x40
 
 	mov dword[w_scr_t3.all_redraw],1
