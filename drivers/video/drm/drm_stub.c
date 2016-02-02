@@ -547,21 +547,6 @@ int drm_order(unsigned long size)
     return order;
 }
 
-extern int x86_clflush_size;
-
-
-void drm_clflush_virt_range(void *addr, unsigned long length)
-{
-    char *tmp = addr;
-    char *end = tmp + length;
-    mb();
-    for (; tmp < end; tmp += x86_clflush_size)
-        clflush(tmp);
-    clflush(end - 1);
-    mb();
-    return;
-}
-
 int drm_sysfs_connector_add(struct drm_connector *connector)
 {
     return 0;

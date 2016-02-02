@@ -54,6 +54,10 @@ static inline ktime_t ktime_mono_to_real(ktime_t mono)
 	return mono;
 }
 
+irqreturn_t device_irq_handler(struct drm_device *dev)
+{
+	return dev->driver->irq_handler(0, dev);
+}
 
 /* Access macro for slots in vblank timestamp ringbuffer. */
 #define vblanktimestamp(dev, pipe, count) \
@@ -401,15 +405,6 @@ EXPORT_SYMBOL(drm_vblank_init);
 
 
 
-irqreturn_t device_irq_handler(struct drm_device *dev)
-{
-
-//    printf("video irq\n");
-
-//    printf("device %p driver %p handler %p\n", dev, dev->driver, dev->driver->irq_handler) ;
-
-    return dev->driver->irq_handler(0, dev);
-}
 
 /**
  * drm_irq_install - install IRQ handler
@@ -1424,7 +1419,7 @@ static void drm_handle_vblank_events(struct drm_device *dev, unsigned int pipe)
 
 		list_del(&e->base.link);
 		drm_vblank_put(dev, pipe);
-		send_vblank_event(dev, e, seq, &now);
+//       send_vblank_event(dev, e, seq, &now);
 	}
 
 }

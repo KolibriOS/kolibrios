@@ -181,7 +181,7 @@ static int i915_get_bridge_dev(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
 
-	dev_priv->bridge_dev = pci_get_bus_and_slot(0, PCI_DEVFN(0, 0));
+	dev_priv->bridge_dev = _pci_get_bus_and_slot(0, PCI_DEVFN(0, 0));
 	if (!dev_priv->bridge_dev) {
 		DRM_ERROR("bridge device not found\n");
 		return -1;
@@ -899,8 +899,8 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 	 * All tasks on the workqueue are expected to acquire the dev mutex
 	 * so there is no point in running more than one instance of the
 	 * workqueue at any time.  Use an ordered one.
-     */
-    dev_priv->wq = (struct workqueue_struct *)alloc_ordered_workqueue("i915", 0);
+	 */
+	dev_priv->wq = (struct workqueue_struct *)alloc_ordered_workqueue("i915", 0);
 	if (dev_priv->wq == NULL) {
 		DRM_ERROR("Failed to create our workqueue.\n");
 		ret = -ENOMEM;

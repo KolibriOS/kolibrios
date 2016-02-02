@@ -14,7 +14,7 @@
 #include "bitmap.h"
 #include "i915_kos32.h"
 
-#define DRV_NAME "i915 v4.4"
+#define DRV_NAME "i915 v4.4.1"
 
 #define I915_DEV_CLOSE 0
 #define I915_DEV_INIT  1
@@ -374,6 +374,8 @@ int do_command_line(const char* usercmd)
 #define SRV_MASK_UPDATE                 45
 #define SRV_MASK_UPDATE_EX              46
 
+#define SRV_I915_GEM_PREAD              47
+
 #define check_input(size) \
     if( unlikely((inp==NULL)||(io->inp_size != (size))) )   \
         break;
@@ -459,6 +461,10 @@ int _stdcall display_handler(ioctl_t *io)
             retval = i915_gem_set_caching_ioctl(main_device, inp, file);
             break;
 
+        case SRV_I915_GEM_PREAD:
+            retval = i915_gem_pread_ioctl(main_device, inp, file);
+            break;
+
         case SRV_I915_GEM_PWRITE:
             retval = i915_gem_pwrite_ioctl(main_device, inp, file);
             break;
@@ -498,7 +504,6 @@ int _stdcall display_handler(ioctl_t *io)
             break;
 
         case SRV_I915_GEM_EXECBUFFER2:
-//            printf("SRV_I915_GEM_EXECBUFFER2\n");
             retval = i915_gem_execbuffer2(main_device, inp, file);
             break;
 

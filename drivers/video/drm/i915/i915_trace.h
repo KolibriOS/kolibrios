@@ -43,5 +43,5 @@
 #define trace_i915_page_table_entry_map(vm, pde, pt, index, count, GEN6_PTES)
 #define trace_i915_va_alloc(vm,start,size,name)
 #define trace_i915_gem_request_notify(ring)
-
+#define trace_i915_gem_object_pread(obj, offset, size)
 #endif

@@ -33,8 +33,13 @@
 
 extern int x86_clflush_size;
 
+#if defined(CONFIG_X86)
 
-#if 0
+/*
+ * clflushopt is an unordered instruction which needs fencing with mfence or
+ * sfence to avoid ordering issues.  For drm_clflush_page this fencing happens
+ * in the caller.
+ */
 static void
 drm_clflush_page(struct page *page)
 {
@@ -66,70 +71,44 @@ static void drm_cache_flush_clflush(struct page *pages[],
 void
 drm_clflush_pages(struct page *pages[], unsigned long num_pages)
 {
-    uint8_t *pva;
-    unsigned int i, j;
 
-    pva = AllocKernelSpace(4096);
+#if defined(CONFIG_X86)
+	drm_cache_flush_clflush(pages, num_pages);
+	return;
 
-    if(pva != NULL)
-    {
-        dma_addr_t *src, *dst;
-        u32 count;
+#elif defined(__powerpc__)
+	unsigned long i;
+	for (i = 0; i < num_pages; i++) {
+		struct page *page = pages[i];
+		void *page_virtual;
 
-        for (i = 0; i < num_pages; i++)
-        {
-            mb();
-            MapPage(pva, page_to_phys(pages[i]), 0x001);
-            for (j = 0; j < PAGE_SIZE; j += x86_clflush_size)
-                clflush(pva + j);
-        }
-        FreeKernelSpace(pva);
-    }
-    mb();
+		if (unlikely(page == NULL))
+			continue;
+
+		page_virtual = kmap_atomic(page);
+		flush_dcache_range((unsigned long)page_virtual,
+				   (unsigned long)page_virtual + PAGE_SIZE);
+		kunmap_atomic(page_virtual);
+	}
+#else
+	printk(KERN_ERR "Architecture has no drm_cache.c support\n");
+	WARN_ON_ONCE(1);
+#endif
 }
 EXPORT_SYMBOL(drm_clflush_pages);
 
 void
 drm_clflush_sg(struct sg_table *st)
 {
-    struct sg_page_iter sg_iter;
-    struct page *page;
-
-    uint8_t *pva;
-    unsigned int i;
-
-    pva = AllocKernelSpace(4096);
-    if( pva != NULL)
-    {
-        mb();
-        for_each_sg_page(st->sgl, &sg_iter, st->nents, 0)
-        {
-            page = sg_page_iter_page(&sg_iter);
-
-            MapPage(pva,page_to_phys(page), 0x001);
-
-            for (i = 0; i < PAGE_SIZE; i += x86_clflush_size)
-                clflush(pva + i);
-        };
-        FreeKernelSpace(pva);
-    };
-    mb();
-}
-EXPORT_SYMBOL(drm_clflush_sg);
-
-#if 0
-void
-drm_clflush_virt_range(void *addr, unsigned long length)
-{
 #if defined(CONFIG_X86)
 	if (cpu_has_clflush) {
-		const int size = boot_cpu_data.x86_clflush_size;
-		void *end = addr + length;
-		addr = (void *)(((unsigned long)addr) & -size);
+		struct sg_page_iter sg_iter;
+
 		mb();
-		for (; addr < end; addr += size)
-			clflushopt(addr);
+		for_each_sg_page(st->sgl, &sg_iter, st->nents, 0)
+			drm_clflush_page(sg_page_iter_page(&sg_iter));
 		mb();
+
 		return;
 	}
 
@@ -140,6 +119,26 @@ drm_clflush_virt_range(void *addr, unsigned long length)
 	WARN_ON_ONCE(1);
 #endif
 }
-EXPORT_SYMBOL(drm_clflush_virt_range);
+EXPORT_SYMBOL(drm_clflush_sg);
 
+void
+drm_clflush_virt_range(void *addr, unsigned long length)
+{
+#if defined(CONFIG_X86)
+	if (1) {
+		const int size = x86_clflush_size;
+		void *end = addr + length;
+		addr = (void *)(((unsigned long)addr) & -size);
+		mb();
+		for (; addr < end; addr += size)
+			clflush(addr);
+		mb();
+		return;
+	}
+
+#else
+	printk(KERN_ERR "Architecture has no drm_cache.c support\n");
+	WARN_ON_ONCE(1);
 #endif
+}
+EXPORT_SYMBOL(drm_clflush_virt_range);

@@ -40,6 +40,7 @@
 #define RQ_BUG_ON(expr)
 
 extern int x86_clflush_size;
+#define __copy_to_user_inatomic __copy_to_user
 
 #define PROT_READ       0x1             /* page can be read */
 #define PROT_WRITE      0x2             /* page can be written */
@@ -57,7 +58,7 @@ unsigned long vm_mmap(struct file *file, unsigned long addr,
 #define MAX_ERRNO       4095
 
 #define IS_ERR_VALUE(x) unlikely((x) >= (unsigned long)-MAX_ERRNO)
-
+#define offset_in_page(p)       ((unsigned long)(p) & ~PAGE_MASK)
 
 static void i915_gem_object_flush_gtt_write_domain(struct drm_i915_gem_object *obj);
 static void i915_gem_object_flush_cpu_write_domain(struct drm_i915_gem_object *obj);
@@ -238,9 +239,6 @@ i915_gem_create_ioctl(struct drm_device *dev, void *data,
 			       args->size, &args->handle);
 }
 
-
-#if 0
-
 static inline int
 __copy_to_user_swizzled(char __user *cpu_vaddr,
 			const char *gpu_vaddr, int gpu_offset,
@@ -291,6 +289,42 @@ __copy_from_user_swizzled(char *gpu_vaddr, int gpu_offset,
 	}
 
 	return 0;
+}
+
+/*
+ * Pins the specified object's pages and synchronizes the object with
+ * GPU accesses. Sets needs_clflush to non-zero if the caller should
+ * flush the object from the CPU cache.
+ */
+int i915_gem_obj_prepare_shmem_read(struct drm_i915_gem_object *obj,
+				    int *needs_clflush)
+{
+	int ret;
+
+	*needs_clflush = 0;
+
+	if (!obj->base.filp)
+		return -EINVAL;
+
+	if (!(obj->base.read_domains & I915_GEM_DOMAIN_CPU)) {
+		/* If we're not in the cpu read domain, set ourself into the gtt
+		 * read domain and manually flush cachelines (if required). This
+		 * optimizes for the case when the gpu will dirty the data
+		 * anyway again before the next pread happens. */
+		*needs_clflush = !cpu_cache_is_coherent(obj->base.dev,
+							obj->cache_level);
+		ret = i915_gem_object_wait_rendering(obj, true);
+		if (ret)
+			return ret;
+	}
+
+	ret = i915_gem_object_get_pages(obj);
+	if (ret)
+		return ret;
+
+	i915_gem_object_pin_pages(obj);
+
+	return ret;
 }
 
 /* Per-page copy function for the shmem pread fastpath.
@@ -424,16 +458,6 @@ i915_gem_shmem_pread(struct drm_device *dev,
 
 		mutex_unlock(&dev->struct_mutex);
 
-		if (likely(!i915.prefault_disable) && !prefaulted) {
-			ret = fault_in_multipages_writeable(user_data, remain);
-			/* Userspace is tricking us, but we've already clobbered
-			 * its pages with the prefault and promised to write the
-			 * data up to the first fault. Hence ignore any errors
-			 * and just continue. */
-			(void)ret;
-			prefaulted = 1;
-		}
-
 		ret = shmem_pread_slow(page, shmem_page_offset, page_length,
 				       user_data, page_do_bit17_swizzling,
 				       needs_clflush);
@@ -470,11 +494,6 @@ i915_gem_pread_ioctl(struct drm_device *dev, void *data,
 
 	if (args->size == 0)
 		return 0;
-
-	if (!access_ok(VERIFY_WRITE,
-		       to_user_ptr(args->data_ptr),
-		       args->size))
-		return -EFAULT;
 
 	ret = i915_mutex_lock_interruptible(dev);
 	if (ret)
@@ -516,27 +535,7 @@ unlock:
  * page faults in the source data
  */
 
-static inline int
-fast_user_write(struct io_mapping *mapping,
-		loff_t page_base, int page_offset,
-		char __user *user_data,
-		int length)
-{
-	void __iomem *vaddr_atomic;
-	void *vaddr;
-	unsigned long unwritten;
 
-	vaddr_atomic = io_mapping_map_atomic_wc(mapping, page_base);
-	/* We can use the cpu mem copy function because this is X86. */
-	vaddr = (void __force*)vaddr_atomic + page_offset;
-	unwritten = __copy_from_user_inatomic_nocache(vaddr,
-						      user_data, length);
-	io_mapping_unmap_atomic(vaddr_atomic);
-	return unwritten;
-}
-#endif
-
-#define offset_in_page(p)       ((unsigned long)(p) & ~PAGE_MASK)
 /**
  * This is the fast pwrite path, where we copy the data directly from the
  * user into the GTT, uncached.
@@ -585,9 +584,10 @@ i915_gem_gtt_pwrite_fast(struct drm_device *dev,
 		if ((page_offset + remain) > PAGE_SIZE)
 			page_length = PAGE_SIZE - page_offset;
 
-        MapPage(dev_priv->gtt.mappable, dev_priv->gtt.mappable_base+page_base, PG_SW);
+		MapPage(dev_priv->gtt.mappable,
+				dev_priv->gtt.mappable_base+page_base, PG_WRITEC|PG_SW);
 
-        memcpy((char*)dev_priv->gtt.mappable+page_offset, user_data, page_length);
+		memcpy((char*)dev_priv->gtt.mappable+page_offset, user_data, page_length);
 
 		remain -= page_length;
 		user_data += page_length;

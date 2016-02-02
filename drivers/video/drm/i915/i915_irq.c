@@ -1445,8 +1445,8 @@ static void intel_get_hpd_pins(u32 *pin_mask, u32 *long_mask,
 
 		*pin_mask |= BIT(i);
 
-//       if (!intel_hpd_pin_to_port(i, &port))
-//			continue;
+//		if (!intel_hpd_pin_to_port(i, &port))
+			continue;
 
 		if (long_pulse_detect(port, dig_hotplug_reg))
 			*long_mask |= BIT(i);
@@ -2009,8 +2009,8 @@ static void ilk_display_irq_handler(struct drm_device *dev, u32 de_iir)
 	enum pipe pipe;
 	u32 hotplug_trigger = de_iir & DE_DP_A_HOTPLUG;
 
-	if (hotplug_trigger)
-		ilk_hpd_irq_handler(dev, hotplug_trigger, hpd_ilk);
+//   if (hotplug_trigger)
+//       ilk_hpd_irq_handler(dev, hotplug_trigger, hpd_ilk);
 
 	if (de_iir & DE_AUX_CHANNEL_A)
 		dp_aux_irq_handler(dev);
@@ -4474,13 +4474,3 @@ void intel_runtime_pm_enable_interrupts(struct drm_i915_private *dev_priv)
 	dev_priv->dev->driver->irq_preinstall(dev_priv->dev);
 	dev_priv->dev->driver->irq_postinstall(dev_priv->dev);
 }
-
-irqreturn_t intel_irq_handler(struct drm_device *dev)
-{
-
-//    printf("i915 irq\n");
-//    printf("device %p driver %p handler %p\n", dev, dev->driver, dev->driver->irq_handler) ;
-
-    return dev->driver->irq_handler(0, dev);
-}
-

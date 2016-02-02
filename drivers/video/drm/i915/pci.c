@@ -1,10 +1,12 @@
+#include <syscall.h>
 
 #include <linux/kernel.h>
 #include <linux/mutex.h>
 #include <linux/mod_devicetable.h>
 #include <linux/slab.h>
+#include <linux/pm.h>
+
 #include <linux/pci.h>
-#include <syscall.h>
 
 extern int pci_scan_filter(u32 id, u32 busnr, u32 devfn);
 
@@ -372,7 +374,7 @@ static pci_dev_t* pci_scan_device(u32 busnr, int devfn)
 
 
 
-int pci_scan_slot(u32 bus, int devfn)
+int _pci_scan_slot(u32 bus, int devfn)
 {
     int  func, nr = 0;
 
@@ -493,7 +495,7 @@ int enum_pci_devices()
     for(;bus <= last_bus; bus++)
     {
         for (devfn = 0; devfn < 0x100; devfn += 8)
-            pci_scan_slot(bus, devfn);
+            _pci_scan_slot(bus, devfn);
 
 
     }
@@ -560,7 +562,7 @@ pci_get_device(unsigned int vendor, unsigned int device, struct pci_dev *from)
         dev = (pci_dev_t*)dev->link.next)
     {
         if( dev->pci_dev.vendor != vendor )
-            continue;
+                continue;
 
         if(dev->pci_dev.device == device)
         {
@@ -571,7 +573,7 @@ pci_get_device(unsigned int vendor, unsigned int device, struct pci_dev *from)
 };
 
 
-struct pci_dev * pci_get_bus_and_slot(unsigned int bus, unsigned int devfn)
+struct pci_dev * _pci_get_bus_and_slot(unsigned int bus, unsigned int devfn)
 {
     pci_dev_t *dev;
 
@@ -664,13 +666,6 @@ void pci_iounmap(struct pci_dev *dev, void __iomem * addr)
 }
 
 
-static inline void
-pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
-                         struct resource *res)
-{
-    region->start = res->start;
-    region->end = res->end;
-}
 
 
 int pci_enable_rom(struct pci_dev *pdev)
@@ -682,7 +677,7 @@ int pci_enable_rom(struct pci_dev *pdev)
     if (!res->flags)
             return -1;
 
-    pcibios_resource_to_bus(pdev, &region, res);
+    _pcibios_resource_to_bus(pdev, &region, res);
     pci_read_config_dword(pdev, pdev->rom_base_reg, &rom_addr);
     rom_addr &= ~PCI_ROM_ADDRESS_MASK;
     rom_addr |= region.start | PCI_ROM_ADDRESS_ENABLE;
@@ -758,49 +753,49 @@ size_t pci_get_rom_size(struct pci_dev *pdev, void __iomem *rom, size_t size)
  */
 void __iomem *pci_map_rom(struct pci_dev *pdev, size_t *size)
 {
-        struct resource *res = &pdev->resource[PCI_ROM_RESOURCE];
-        loff_t start;
-        void __iomem *rom;
+    struct resource *res = &pdev->resource[PCI_ROM_RESOURCE];
+    loff_t start;
+    void __iomem *rom;
 
-        /*
-         * IORESOURCE_ROM_SHADOW set on x86, x86_64 and IA64 supports legacy
-         * memory map if the VGA enable bit of the Bridge Control register is
-         * set for embedded VGA.
-         */
-        if (res->flags & IORESOURCE_ROM_SHADOW) {
-                /* primary video rom always starts here */
-                start = (loff_t)0xC0000;
-                *size = 0x20000; /* cover C000:0 through E000:0 */
-        } else {
+    /*
+     * IORESOURCE_ROM_SHADOW set on x86, x86_64 and IA64 supports legacy
+     * memory map if the VGA enable bit of the Bridge Control register is
+     * set for embedded VGA.
+     */
+    if (res->flags & IORESOURCE_ROM_SHADOW) {
+        /* primary video rom always starts here */
+        start = (loff_t)0xC0000;
+        *size = 0x20000; /* cover C000:0 through E000:0 */
+    } else {
                 if (res->flags &
                         (IORESOURCE_ROM_COPY | IORESOURCE_ROM_BIOS_COPY)) {
-                        *size = pci_resource_len(pdev, PCI_ROM_RESOURCE);
-                        return (void __iomem *)(unsigned long)
-                                pci_resource_start(pdev, PCI_ROM_RESOURCE);
-                } else {
+            *size = pci_resource_len(pdev, PCI_ROM_RESOURCE);
+             return (void __iomem *)(unsigned long)
+             pci_resource_start(pdev, PCI_ROM_RESOURCE);
+        } else {
     				start = (loff_t)0xC0000;
     				*size = 0x20000; /* cover C000:0 through E000:0 */
 
-                 }
         }
+    }
 
-        rom = ioremap(start, *size);
-        if (!rom) {
-                /* restore enable if ioremap fails */
-                if (!(res->flags & (IORESOURCE_ROM_ENABLE |
-                                    IORESOURCE_ROM_SHADOW |
-                                    IORESOURCE_ROM_COPY)))
-                        pci_disable_rom(pdev);
-                return NULL;
-        }
+    rom = ioremap(start, *size);
+    if (!rom) {
+            /* restore enable if ioremap fails */
+            if (!(res->flags & (IORESOURCE_ROM_ENABLE |
+                                IORESOURCE_ROM_SHADOW |
+                                IORESOURCE_ROM_COPY)))
+                    pci_disable_rom(pdev);
+            return NULL;
+    }
 
-        /*
-         * Try to find the true size of the ROM since sometimes the PCI window
-         * size is much larger than the actual size of the ROM.
-         * True size is important if the ROM is going to be copied.
-         */
-        *size = pci_get_rom_size(pdev, rom, *size);
-        return rom;
+    /*
+     * Try to find the true size of the ROM since sometimes the PCI window
+     * size is much larger than the actual size of the ROM.
+     * True size is important if the ROM is going to be copied.
+     */
+    *size = pci_get_rom_size(pdev, rom, *size);
+    return rom;
 }
 
 void pci_unmap_rom(struct pci_dev *pdev, void __iomem *rom)
@@ -817,50 +812,260 @@ void pci_unmap_rom(struct pci_dev *pdev, void __iomem *rom)
             pci_disable_rom(pdev);
 }
 
-#if 0
-void pcibios_set_master(struct pci_dev *dev)
-{
-    u8 lat;
-
-    /* The latency timer doesn't apply to PCIe (either Type 0 or Type 1) */
-    if (pci_is_pcie(dev))
-            return;
-
-    pci_read_config_byte(dev, PCI_LATENCY_TIMER, &lat);
-    if (lat < 16)
-            lat = (64 <= pcibios_max_latency) ? 64 : pcibios_max_latency;
-    else if (lat > pcibios_max_latency)
-            lat = pcibios_max_latency;
-    else
-            return;
-    dev_printk(KERN_DEBUG, &dev->dev, "setting latency timer to %d\n", lat);
-    pci_write_config_byte(dev, PCI_LATENCY_TIMER, lat);
-}
-#endif
-
-
 static void __pci_set_master(struct pci_dev *dev, bool enable)
 {
     u16 old_cmd, cmd;
 
     pci_read_config_word(dev, PCI_COMMAND, &old_cmd);
     if (enable)
-            cmd = old_cmd | PCI_COMMAND_MASTER;
+        cmd = old_cmd | PCI_COMMAND_MASTER;
     else
-            cmd = old_cmd & ~PCI_COMMAND_MASTER;
+        cmd = old_cmd & ~PCI_COMMAND_MASTER;
     if (cmd != old_cmd) {
             dbgprintf("%s bus mastering\n",
                     enable ? "enabling" : "disabling");
-            pci_write_config_word(dev, PCI_COMMAND, cmd);
-    }
+        pci_write_config_word(dev, PCI_COMMAND, cmd);
+        }
     dev->is_busmaster = enable;
 }
 
+
+/* pci_set_master - enables bus-mastering for device dev
+ * @dev: the PCI device to enable
+ *
+ * Enables bus-mastering on the device and calls pcibios_set_master()
+ * to do the needed arch specific settings.
+ */
 void pci_set_master(struct pci_dev *dev)
 {
-    __pci_set_master(dev, true);
-//    pcibios_set_master(dev);
+        __pci_set_master(dev, true);
+//        pcibios_set_master(dev);
+}
+
+/**
+ * pci_clear_master - disables bus-mastering for device dev
+ * @dev: the PCI device to disable
+ */
+void pci_clear_master(struct pci_dev *dev)
+{
+        __pci_set_master(dev, false);
 }
 
 
+static inline int pcie_cap_version(const struct pci_dev *dev)
+{
+    return dev->pcie_flags_reg & PCI_EXP_FLAGS_VERS;
+}
+
+static inline bool pcie_cap_has_devctl(const struct pci_dev *dev)
+{
+    return true;
+}
+
+static inline bool pcie_cap_has_lnkctl(const struct pci_dev *dev)
+{
+    int type = pci_pcie_type(dev);
+
+    return pcie_cap_version(dev) > 1 ||
+           type == PCI_EXP_TYPE_ROOT_PORT ||
+           type == PCI_EXP_TYPE_ENDPOINT ||
+           type == PCI_EXP_TYPE_LEG_END;
+}
+
+static inline bool pcie_cap_has_sltctl(const struct pci_dev *dev)
+{
+    int type = pci_pcie_type(dev);
+
+    return pcie_cap_version(dev) > 1 ||
+           type == PCI_EXP_TYPE_ROOT_PORT ||
+           (type == PCI_EXP_TYPE_DOWNSTREAM &&
+        dev->pcie_flags_reg & PCI_EXP_FLAGS_SLOT);
+}
+
+static inline bool pcie_cap_has_rtctl(const struct pci_dev *dev)
+{
+    int type = pci_pcie_type(dev);
+
+    return pcie_cap_version(dev) > 1 ||
+           type == PCI_EXP_TYPE_ROOT_PORT ||
+           type == PCI_EXP_TYPE_RC_EC;
+}
+
+static bool pcie_capability_reg_implemented(struct pci_dev *dev, int pos)
+{
+    if (!pci_is_pcie(dev))
+        return false;
+
+    switch (pos) {
+    case PCI_EXP_FLAGS_TYPE:
+        return true;
+    case PCI_EXP_DEVCAP:
+    case PCI_EXP_DEVCTL:
+    case PCI_EXP_DEVSTA:
+        return pcie_cap_has_devctl(dev);
+    case PCI_EXP_LNKCAP:
+    case PCI_EXP_LNKCTL:
+    case PCI_EXP_LNKSTA:
+        return pcie_cap_has_lnkctl(dev);
+    case PCI_EXP_SLTCAP:
+    case PCI_EXP_SLTCTL:
+    case PCI_EXP_SLTSTA:
+        return pcie_cap_has_sltctl(dev);
+    case PCI_EXP_RTCTL:
+    case PCI_EXP_RTCAP:
+    case PCI_EXP_RTSTA:
+        return pcie_cap_has_rtctl(dev);
+    case PCI_EXP_DEVCAP2:
+    case PCI_EXP_DEVCTL2:
+    case PCI_EXP_LNKCAP2:
+    case PCI_EXP_LNKCTL2:
+    case PCI_EXP_LNKSTA2:
+        return pcie_cap_version(dev) > 1;
+    default:
+        return false;
+    }
+}
+
+/*
+ * Note that these accessor functions are only for the "PCI Express
+ * Capability" (see PCIe spec r3.0, sec 7.8).  They do not apply to the
+ * other "PCI Express Extended Capabilities" (AER, VC, ACS, MFVC, etc.)
+ */
+int pcie_capability_read_word(struct pci_dev *dev, int pos, u16 *val)
+{
+    int ret;
+
+    *val = 0;
+    if (pos & 1)
+        return -EINVAL;
+
+    if (pcie_capability_reg_implemented(dev, pos)) {
+        ret = pci_read_config_word(dev, pci_pcie_cap(dev) + pos, val);
+        /*
+         * Reset *val to 0 if pci_read_config_word() fails, it may
+         * have been written as 0xFFFF if hardware error happens
+         * during pci_read_config_word().
+         */
+        if (ret)
+            *val = 0;
+        return ret;
+    }
+
+    /*
+     * For Functions that do not implement the Slot Capabilities,
+     * Slot Status, and Slot Control registers, these spaces must
+     * be hardwired to 0b, with the exception of the Presence Detect
+     * State bit in the Slot Status register of Downstream Ports,
+     * which must be hardwired to 1b.  (PCIe Base Spec 3.0, sec 7.8)
+     */
+    if (pci_is_pcie(dev) && pos == PCI_EXP_SLTSTA &&
+         pci_pcie_type(dev) == PCI_EXP_TYPE_DOWNSTREAM) {
+        *val = PCI_EXP_SLTSTA_PDS;
+    }
+
+    return 0;
+}
+EXPORT_SYMBOL(pcie_capability_read_word);
+
+int pcie_capability_read_dword(struct pci_dev *dev, int pos, u32 *val)
+{
+    int ret;
+
+    *val = 0;
+    if (pos & 3)
+        return -EINVAL;
+
+    if (pcie_capability_reg_implemented(dev, pos)) {
+        ret = pci_read_config_dword(dev, pci_pcie_cap(dev) + pos, val);
+        /*
+         * Reset *val to 0 if pci_read_config_dword() fails, it may
+         * have been written as 0xFFFFFFFF if hardware error happens
+         * during pci_read_config_dword().
+         */
+        if (ret)
+            *val = 0;
+        return ret;
+    }
+
+    if (pci_is_pcie(dev) && pos == PCI_EXP_SLTCTL &&
+         pci_pcie_type(dev) == PCI_EXP_TYPE_DOWNSTREAM) {
+        *val = PCI_EXP_SLTSTA_PDS;
+    }
+
+    return 0;
+}
+EXPORT_SYMBOL(pcie_capability_read_dword);
+
+int pcie_capability_write_word(struct pci_dev *dev, int pos, u16 val)
+{
+    if (pos & 1)
+        return -EINVAL;
+
+    if (!pcie_capability_reg_implemented(dev, pos))
+        return 0;
+
+    return pci_write_config_word(dev, pci_pcie_cap(dev) + pos, val);
+}
+EXPORT_SYMBOL(pcie_capability_write_word);
+
+int pcie_capability_write_dword(struct pci_dev *dev, int pos, u32 val)
+{
+    if (pos & 3)
+        return -EINVAL;
+
+    if (!pcie_capability_reg_implemented(dev, pos))
+        return 0;
+
+    return pci_write_config_dword(dev, pci_pcie_cap(dev) + pos, val);
+}
+EXPORT_SYMBOL(pcie_capability_write_dword);
+
+int pcie_capability_clear_and_set_word(struct pci_dev *dev, int pos,
+                                       u16 clear, u16 set)
+{
+        int ret;
+        u16 val;
+
+        ret = pcie_capability_read_word(dev, pos, &val);
+        if (!ret) {
+                val &= ~clear;
+                val |= set;
+                ret = pcie_capability_write_word(dev, pos, val);
+        }
+
+        return ret;
+}
+
+
+
+int pcie_get_readrq(struct pci_dev *dev)
+{
+        u16 ctl;
+
+        pcie_capability_read_word(dev, PCI_EXP_DEVCTL, &ctl);
+
+        return 128 << ((ctl & PCI_EXP_DEVCTL_READRQ) >> 12);
+}
+EXPORT_SYMBOL(pcie_get_readrq);
+
+/**
+ * pcie_set_readrq - set PCI Express maximum memory read request
+ * @dev: PCI device to query
+ * @rq: maximum memory read count in bytes
+ *    valid values are 128, 256, 512, 1024, 2048, 4096
+ *
+ * If possible sets maximum memory read request in bytes
+ */
+int pcie_set_readrq(struct pci_dev *dev, int rq)
+{
+        u16 v;
+
+        if (rq < 128 || rq > 4096 || !is_power_of_2(rq))
+                return -EINVAL;
+
+        v = (ffs(rq) - 8) << 12;
+
+        return pcie_capability_clear_and_set_word(dev, PCI_EXP_DEVCTL,
+                                                  PCI_EXP_DEVCTL_READRQ, v);
+}
 

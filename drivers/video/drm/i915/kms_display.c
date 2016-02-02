@@ -374,6 +374,7 @@ static int check_connector(struct drm_device *dev, struct drm_connector *connect
             connector->name, connector->base.id);
             return -EINVAL;
         };
+        connector->encoder = encoder;
     }
 
     crtc = encoder->crtc;
@@ -382,7 +383,8 @@ static int check_connector(struct drm_device *dev, struct drm_connector *connect
 
     if(crtc != NULL)
     {
-        encoder->crtc = crtc;
+        DRM_DEBUG_KMS("%s connector: %p encode: %p crtc: %p\n",__FUNCTION__,
+               connector, encoder, crtc);
         return 0;
     }
     else
@@ -823,8 +825,6 @@ int init_cursor(cursor_t *cursor)
 
     FreeKernelSpace(mapped);
 
-// release old cursor
-
     KernelFree(cursor->data);
 
     cursor->data = bits;
@@ -1153,13 +1153,21 @@ int i915_mask_update_ex(struct drm_device *dev, void *data,
         mask->height== 0 )
         return 1;
 
+    ret = i915_mutex_lock_interruptible(dev);
+    if (ret)
+        return ret;
+
     obj = drm_gem_object_lookup(dev, file, mask->handle);
     if (obj == NULL)
-        return -ENOENT;
+    {
+        ret = -ENOENT;
+        goto unlock;
+    }
 
-    if (!obj->filp) {
-        drm_gem_object_unreference_unlocked(obj);
-        return -EINVAL;
+    if (!obj->filp)
+    {
+        ret = -ENOENT;
+        goto out;
     }
 
 #if 0
@@ -1178,10 +1186,6 @@ int i915_mask_update_ex(struct drm_device *dev, void *data,
         u8* src_offset;
         u8* dst_offset;
         u32 ifl;
-
-        ret = i915_mutex_lock_interruptible(dev);
-        if (ret)
-            goto err1;
 
         i915_gem_object_set_to_cpu_domain(to_intel_bo(obj), true);
 
@@ -1301,10 +1305,11 @@ int i915_mask_update_ex(struct drm_device *dev, void *data,
     }
 #endif
 
-err2:
-    mutex_unlock(&dev->struct_mutex);
-err1:
+out:
     drm_gem_object_unreference(obj);
+
+unlock:
+    mutex_unlock(&dev->struct_mutex);
 
     return ret;
 }
