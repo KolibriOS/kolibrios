@@ -1,11 +1,10 @@
-
 CC = kos32-gcc
 FASM = fasm.exe
 
-DEFINES	 = -DDRM_DEBUG_CODE=1 -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_X86_CMPXCHG64 -DCONFIG_TINY_RCU
-DEFINES  += -DCONFIG_X86_L1_CACHE_SHIFT=6
-DEFINES += -DCONFIG_DRM_FBDEV_EMULATION -DCONFIG_DMI -DKBUILD_MODNAME=\"i915.dll\"
-
+DEFINES	= -DDRM_DEBUG_CODE=0 -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_PCI -DCONFIG_X86_CMPXCHG64
+DEFINES += -DCONFIG_TINY_RCU -DCONFIG_X86_L1_CACHE_SHIFT=6
+DEFINES += -DCONFIG_DRM_FBDEV_EMULATION -DCONFIG_DMI 
+DEFINES += -DKBUILD_MODNAME=\"i915.dll\"
 
 DDK_TOPDIR      = /d/kos/kolibri/drivers/ddk
 DRV_INCLUDES    = /d/kos/kolibri/drivers/include
@@ -16,7 +15,7 @@ INCLUDES =	-I$(DRV_INCLUDES)	\
 		-I$(DRV_INCLUDES)/uapi	\
 		-I$(DRV_INCLUDES)/drm -I./ -I$(DRV_INCLUDES)
 
-CFLAGS= -c -O2 $(INCLUDES) $(DEFINES) -march=i686 -msse2 -fomit-frame-pointer -fno-ident -fno-builtin-printf
+CFLAGS= -c -O2 $(INCLUDES) $(DEFINES) -march=i686 -fno-ident -msse2 -fomit-frame-pointer -fno-builtin-printf
 CFLAGS+= -mno-stack-arg-probe -mno-ms-bitfields
 
 LIBPATH:= $(DDK_TOPDIR)
@@ -46,6 +45,8 @@ HFILES:=     		$(DRV_INCLUDES)/linux/types.h		\
 
 NAME_SRC=		main.c					\
 			pci.c					\
+			getopt.c				\
+			getopt1.c				\
 			dvo_ch7017.c				\
 			dvo_ch7xxx.c				\
 			dvo_ivch.c				\
@@ -124,7 +125,7 @@ NAME_SRC=		main.c					\
 			$(DRM_TOPDIR)/drm_crtc.c		\
 			$(DRM_TOPDIR)/drm_crtc_helper.c		\
 			$(DRM_TOPDIR)/drm_dp_helper.c		\
-			../drm_dp_mst_topology.c		\
+			$(DRM_TOPDIR)/drm_dp_mst_topology.c	\
 			$(DRM_TOPDIR)/drm_atomic.c		\
 			$(DRM_TOPDIR)/drm_atomic_helper.c	\
 			$(DRM_TOPDIR)/drm_bridge.c		\
