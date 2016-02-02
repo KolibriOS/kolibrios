@@ -571,10 +571,11 @@ align 4
         jnz     @B
 
         pop     edi
+        pop     esi
+
 ;--------------------------------------
 align 4
 .ret:
-        pop     esi
         pop     ebx
         ret
 endp
@@ -605,10 +606,11 @@ align 4
         jnz     @B
 
         pop     edi
+        pop     esi
+
 ;--------------------------------------
 align 4
 .ret:
-        pop     esi
         pop     ebx
         ret
 endp
