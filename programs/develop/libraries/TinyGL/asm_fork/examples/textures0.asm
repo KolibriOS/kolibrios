@@ -28,7 +28,7 @@ ends
 image_data dd 0 ;указатель на временную память, нужен для преобразования изображения
 image_data_toolbar dd 0
 IMAGE_FILE1_SIZE equ 128*144*3+54 ;размер файла с изображением
-IMAGE_TOOLBAR_ICON_SIZE equ 256*3
+IMAGE_TOOLBAR_ICON_SIZE equ 21*21*3
 IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*3+54
 
 macro load_image_file path,buf,size { ;макрос для загрузки изображений
@@ -150,12 +150,12 @@ draw_window:
 	mcall SF_CREATE_WINDOW,(50 shl 16)+420,(30 shl 16)+410,0x33ffffff,,caption
 
 	mov esi,[sc.work_button]
-	mcall SF_DEFINE_BUTTON,(5 shl 16)+20,(5 shl 16)+20,3 ;сферы
-	mcall ,(30 shl 16)+20,,4 ;куб
+	mcall SF_DEFINE_BUTTON,(6 shl 16)+19,(6 shl 16)+19,3+0x40000000 ;сферы
+	mcall ,(36 shl 16)+19,,4+0x40000000 ;куб
 
-	mcall SF_PUT_IMAGE,[image_data_toolbar],(16 shl 16)+16,(7 shl 16)+7 ;сферы
+	mcall SF_PUT_IMAGE,[image_data_toolbar],(21 shl 16)+21,(5 shl 16)+5 ;сферы
 	add ebx,2*IMAGE_TOOLBAR_ICON_SIZE
-	mcall ,,,(32 shl 16)+7 ;куб
+	mcall ,,,(35 shl 16)+5 ;куб
 
 	stdcall [kosglSwapBuffers]
 	mcall SF_REDRAW,SSF_END_DRAW
