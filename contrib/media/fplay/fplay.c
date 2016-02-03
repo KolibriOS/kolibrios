@@ -26,9 +26,6 @@ volatile enum player_state sound_state   = STOP;
 
 uint32_t win_width, win_height;
 
-
-AVFrame *pFrame;
-
 int      have_sound = 0;
 
 uint8_t  *decoder_buffer;
@@ -147,6 +144,15 @@ int main( int argc, char *argv[])
     printf("codec id %x name %s\n",vst.vCtx->codec_id, vst.vCodec->name);
     printf("ctx->pix_fmt %d\n", vst.vCtx->pix_fmt);
 
+    INIT_LIST_HEAD(&vst.input_list);
+    INIT_LIST_HEAD(&vst.output_list);
+    mutex_init(&vst.q_video.lock);
+    mutex_init(&vst.q_audio.lock);
+    mutex_init(&vst.gpu_lock);
+    mutex_init(&vst.decoder_lock);
+    mutex_init(&vst.input_lock);
+    mutex_init(&vst.output_lock);
+
     if(vst.vCodec == NULL)
     {
         printf("Unsupported codec with id %d for input stream %d\n",
@@ -165,10 +171,6 @@ int main( int argc, char *argv[])
     };
 
     printf("ctx->pix_fmt %d\n", vst.vCtx->pix_fmt);
-
-    mutex_init(&vst.q_video.lock);
-    mutex_init(&vst.q_audio.lock);
-    mutex_init(&vst.gpu_lock);
 
     if (vst.aCtx->channels > 0)
         vst.aCtx->request_channels = FFMIN(2, vst.aCtx->channels);
@@ -224,10 +226,9 @@ int main( int argc, char *argv[])
     if(!init_video(&vst))
         return 0;
 
-    decoder(&vst);
+    mutex_lock_timeout(&vst.decoder_lock, 3000);
 
-  // Free the YUV frame
-    av_free(pFrame);
+    decoder(&vst);
 
 
 //__asm__ __volatile__("int3");
@@ -241,7 +242,7 @@ int main( int argc, char *argv[])
 
     mutex_destroy(&vst.q_video.lock);
     mutex_destroy(&vst.q_audio.lock);
-
+    mutex_destroy(&vst.decoder_lock);
     return 0;
 }
 
@@ -334,8 +335,7 @@ void decoder(vst_t* vst)
                     }
                     decode_video(vst);
                     ret = decode_audio(vst->aCtx, &vst->q_audio);
-                }while(astream.count < resampler_size*2 &&
-                       ret == 1);
+                }while(astream.count < resampler_size*2 && ret == 1);
 
                 sound_state   = PREPARE;
                 decoder_state = PLAY;

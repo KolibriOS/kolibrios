@@ -28,35 +28,38 @@ struct SwsContext *cvt_ctx = NULL;
 
 render_t   *main_render;
 
-int width;
-int height;
-
 AVRational video_time_base;
 AVFrame  *Frame;
 
 void get_client_rect(rect_t *rc);
+void run_render(window_t *win, void *render);
+void window_update_layout(window_t *win);
+int  fini_winlib();
 
 void flush_video(vst_t *vst)
 {
-    int i;
+    vframe_t *vframe, *tmp;
 
-    for(i = 0; i < 4; i++)
+    mutex_lock(&vst->output_lock);
+    mutex_lock(&vst->input_lock);
+
+    list_for_each_entry_safe(vframe, tmp, &vst->output_list, list)
+        list_move_tail(&vframe->list, &vst->input_list);
+
+    list_for_each_entry(vframe, &vst->output_list, list)
     {
-        vst->vframe[i].pts   = 0;
-        vst->vframe[i].ready = 0;
-    };
-    vst->vfx = 0;
-    vst->dfx = 0;
+        vframe->pts   = 0;
+        vframe->ready = 0;
+    }
+
+    mutex_unlock(&vst->input_lock);
+    mutex_unlock(&vst->output_lock);
+
     frames_count = 0;
 };
 
 int init_video(vst_t *vst)
 {
-    int        i;
-
-    width  = vst->vCtx->width;
-    height = vst->vCtx->height;
-
     Frame = av_frame_alloc();
     if ( Frame == NULL )
     {
@@ -64,81 +67,113 @@ int init_video(vst_t *vst)
         return 0;
     };
 
+    mutex_lock(&vst->decoder_lock);
+
     create_thread(video_thread, vst, 1024*1024);
 
-    delay(50);
     return 1;
 };
+
+static double  dts = 0.0;
 
 int decode_video(vst_t* vst)
 {
     AVPacket   pkt;
     double     pts;
     int frameFinished;
-    double current_clock;
 
-    if(vst->vframe[vst->dfx].ready != 0 )
-        return -1;
+    if(vst->decoder_frame == NULL)
+    {
+        mutex_lock(&vst->input_lock);
+        if(list_empty(&vst->input_list))
+        {
+            mutex_unlock(&vst->input_lock);
+            return -1;
+        }
+        vst->decoder_frame = list_first_entry(&vst->input_list, vframe_t, list);
+        list_del(&vst->decoder_frame->list);
+        mutex_unlock(&vst->input_lock);
+
+        vframe_t *vframe = vst->decoder_frame;
+    };
 
     if( get_packet(&vst->q_video, &pkt) == 0 )
-        return 0;
-
-/*
-    current_clock = -90.0 + get_master_clock();
-
-    if( pkt.dts == AV_NOPTS_VALUE &&
-        Frame->reordered_opaque != AV_NOPTS_VALUE)
-        pts = Frame->reordered_opaque;
-    else if(pkt.dts != AV_NOPTS_VALUE)
-        pts= pkt.dts;
-    else
-        pts= 0;
-
-
-    pts *= av_q2d(video_time_base)*1000.0;
-*/
-    if( 1 /*pts > current_clock*/)
     {
-        frameFinished = 0;
-
-        vst->vCtx->reordered_opaque = pkt.pts;
-
-        mutex_lock(&vst->gpu_lock);
-
-        if(avcodec_decode_video2(vst->vCtx, Frame, &frameFinished, &pkt) <= 0)
-            printf("video decoder error\n");
-
-        if(frameFinished)
-        {
-            AVPicture *dst_pic;
-
-            if( pkt.dts == AV_NOPTS_VALUE &&
-                Frame->reordered_opaque != AV_NOPTS_VALUE)
-                pts = Frame->reordered_opaque;
-            else if(pkt.dts != AV_NOPTS_VALUE)
-                pts = pkt.dts;
-            else
-                pts = 0;
-
-            pts *= av_q2d(video_time_base);
-
-            dst_pic = &vst->vframe[vst->dfx].picture;
-
-            if(vst->hwdec == 0)
-                av_image_copy(dst_pic->data, dst_pic->linesize,
-                              (const uint8_t**)Frame->data,
-                              Frame->linesize, vst->vCtx->pix_fmt, vst->vCtx->width, vst->vCtx->height);
-            else
-                va_convert_picture(vst, vst->vCtx->width, vst->vCtx->height, dst_pic);
-
-            vst->vframe[vst->dfx].pts = pts*1000.0;
-            vst->vframe[vst->dfx].ready = 1;
-            vst->dfx = (vst->dfx + 1) & 3;
-            frames_count++;
-        };
-        mutex_unlock(&vst->gpu_lock);
-
+        return 0;
     };
+
+    frameFinished = 0;
+    if(dts == 0)
+        dts = pkt.pts;
+
+    mutex_lock(&vst->gpu_lock);
+
+    if(avcodec_decode_video2(vst->vCtx, Frame, &frameFinished, &pkt) <= 0)
+        printf("video decoder error\n");
+
+    if(frameFinished)
+    {
+        vframe_t  *vframe;
+        AVPicture *dst_pic;
+
+        pts = av_frame_get_best_effort_timestamp(Frame);
+        pts *= av_q2d(video_time_base);
+
+        vframe  = vst->decoder_frame;
+        dst_pic = &vframe->picture;
+
+        if(vframe->is_hw_pic == 0)
+            av_image_copy(dst_pic->data, dst_pic->linesize,
+                          (const uint8_t**)Frame->data,
+                          Frame->linesize, vst->vCtx->pix_fmt, vst->vCtx->width, vst->vCtx->height);
+        else
+            va_create_planar(vst, vframe);
+
+        vframe->pts = pts*1000.0;
+        vframe->pkt_pts = pkt.pts*av_q2d(video_time_base)*1000.0;
+        vframe->pkt_dts = dts*av_q2d(video_time_base)*1000.0;
+        vframe->ready = 1;
+
+
+        mutex_lock(&vst->output_lock);
+
+        if(list_empty(&vst->output_list))
+            list_add_tail(&vframe->list, &vst->output_list);
+        else
+        {
+            vframe_t *cur;
+
+            cur = list_first_entry(&vst->output_list,vframe_t,list);
+            if(vframe->pkt_pts < cur->pkt_pts)
+            {
+                list_add_tail(&vframe->list, &vst->output_list);
+            }
+            else
+            {
+                list_for_each_entry_reverse(cur,&vst->output_list,list)
+                {
+                    if(vframe->pkt_pts > cur->pkt_pts)
+                    {
+                        list_add(&vframe->list, &cur->list);
+                        break;
+                    };
+                };
+            };
+        };
+        mutex_unlock(&vst->output_lock);
+
+
+//        printf("decoded index: %d pts: %f pkt_pts %f pkt_dts %f\n",
+//               vst->dfx, vst->vframe[vst->dfx].pts,
+//               vst->vframe[vst->dfx].pkt_pts, vst->vframe[vst->dfx].pkt_dts);
+
+        vst->decoder_frame = NULL;
+        frames_count++;
+        dts = 0;
+    };
+    av_frame_unref(Frame);
+    mutex_unlock(&vst->gpu_lock);
+
     av_free_packet(&pkt);
 
     return 1;
@@ -357,8 +392,6 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
     return 0;
 };
 
-#define VERSION_A     1
-
 void render_time(render_t *render)
 {
     progress_t *prg = main_render->win->panel.prg;
@@ -366,8 +399,6 @@ void render_time(render_t *render)
     vst_t      *vst = main_render->vst;
     double      ctime;            /*    milliseconds    */
     double      fdelay;           /*    milliseconds    */
-
-//again:
 
     if(player_state == CLOSED)
     {
@@ -390,51 +421,38 @@ void render_time(render_t *render)
         return;
     };
 
-
-#ifdef VERSION_A
-    if(vst->vframe[vst->vfx].ready == 1 )
+    mutex_lock(&vst->output_lock);
+    if(list_empty(&vst->output_list))
     {
+        mutex_unlock(&vst->output_lock);
+        delay(1);
+    }
+    else
+    {
+        vframe_t *vframe;
         int sys_time;
 
-        ctime = get_master_clock();
-        fdelay = (vst->vframe[vst->vfx].pts - ctime);
+        vframe = list_first_entry(&vst->output_list, vframe_t, list);
+        list_del(&vframe->list);
+        mutex_unlock(&vst->output_lock);
 
-//        printf("pts %f time %f delay %f\n",
-//                frames[vfx].pts, ctime, fdelay);
+        ctime = get_master_clock();
+        fdelay = (vframe->pkt_pts - ctime);
 
         if(fdelay > 15.0)
         {
             delay((int)fdelay/10);
-        //    return;
         };
-#if 0
-        ctime = get_master_clock();
-        fdelay = (vst->vframe[vst->vfx].pts - ctime);
 
-//        while(fdelay > 0)
-//        {
-//            yield();
-//            ctime = get_master_clock();
-//            fdelay = (frames[vfx].pts - ctime);
-//        }
+//        printf("output index: %d pts: %f pkt_pts %f pkt_dts %f\n",
+//               vframe->index,vframe->pts,vframe->pkt_pts,vframe->pkt_dts);
 
-//        sys_time = get_tick_count();
+        main_render->draw(main_render, vframe);
 
-//        if(fdelay < 0)
-//            printf("systime %d pts %f time %f delay %f\n",
-//                    sys_time*10, frames[vfx].pts, ctime, fdelay);
-
-        printf("pts %f time %f delay %f\n",
-                vst->vframe[vst->vfx].pts, ctime, fdelay);
-        printf("video cache %d audio cache %d\n", q_video.size/1024, q_audio.size/1024);
-#endif
-
-        main_render->draw(main_render, &vst->vframe[vst->vfx].picture);
         if(main_render->win->win_state != FULLSCREEN)
         {
-            prg->current = vst->vframe[vst->vfx].pts*1000;
-//        printf("current %f\n", prg->current);
-            lvl->current = vst->vfx & 1 ? sound_level_1 : sound_level_0;
+            prg->current = vframe->pkt_pts * 1000;
+            lvl->current = vframe->index & 1 ? sound_level_1 : sound_level_0;
 
             send_message(&prg->ctrl, PRG_PROGRESS, 0, 0);
 
@@ -443,69 +461,12 @@ void render_time(render_t *render)
         }
 
         frames_count--;
-        vst->vframe[vst->vfx].ready = 0;
-        vst->vfx = (vst->vfx + 1) & 3;
+        vframe->ready = 0;
+
+        mutex_lock(&vst->input_lock);
+        list_add_tail(&vframe->list, &vst->input_list);
+        mutex_unlock(&vst->input_lock);
     }
-    else delay(1);
-
-#else
-
-    if(vst->vframe[vfx].ready == 1 )
-    {
-        ctime = get_master_clock();
-        fdelay = (vst->vrame[vst->vfx].pts - ctime);
-
-//            printf("pts %f time %f delay %f\n",
-//                    frames[vfx].pts, ctime, fdelay);
-
-        if(fdelay < 0.0 )
-        {
-            int  next_vfx;
-            fdelay = 0;
-            next_vfx = (vst->vfx+1) & 3;
-            if( vst->vrame[next_vfx].ready == 1 )
-            {
-                if(vst->vrame[next_vfx].pts <= ctime)
-                {
-                    vst->vrame[vst->vfx].ready = 0;                  // skip this frame
-                    vst->vfx = (vst->vfx + 1) & 3;
-                }
-                else
-                {
-                    if( (vst->vrame[next_vfx].pts - ctime) <
-                        ( ctime - frames[vst->vfx].pts) )
-                    {
-                        vst->vrame[vst->vfx].ready = 0;                  // skip this frame
-                        vst->vfx = (vst->vfx + 1) & 3;
-                        fdelay = (vst->vrame[next_vfx].pts - ctime);
-                    }
-                }
-            };
-        };
-
-        if(fdelay > 10.0)
-        {
-           int val = fdelay;
-           printf("pts %f time %f delay %d\n",
-                   vst->vrame[vst->vfx].pts, ctime, val);
-           delay(val/10);
-        };
-
-        ctime = get_master_clock();
-        fdelay = (vst->vrame[vst->vfx].pts - ctime);
-
-        printf("pts %f time %f delay %f\n",
-                vst->vrame[vst->vfx].pts, ctime, fdelay);
-
-        main_render->draw(main_render, &vst->vrame[vfx].picture);
-        main_render->win->panel.prg->current = vst->vrame[vfx].pts;
-//        send_message(&render->win->panel.prg->ctrl, MSG_PAINT, 0, 0);
-        vst->vrame[vst->vfx].ready = 0;
-        vst->vfx = (vst->vfx + 1) & 3;
-    }
-    else yield();
-#endif
-
 }
 
 
@@ -519,7 +480,7 @@ int video_thread(void *param)
     init_winlib();
 
     MainWindow = create_window(movie_file,0,
-                               10,10,width,height+CAPTION_HEIGHT+PANEL_HEIGHT,MainWindowProc);
+                               10,10,vst->vCtx->width,vst->vCtx->height+CAPTION_HEIGHT+PANEL_HEIGHT,MainWindowProc);
 
     MainWindow->panel.prg->max = stream_duration;
 
@@ -528,6 +489,7 @@ int video_thread(void *param)
     main_render = create_render(vst, MainWindow, HW_TEX_BLIT|HW_BIT_BLIT);
     if( main_render == NULL)
     {
+        mutex_unlock(&vst->decoder_lock);
         printf("Cannot create render\n\r");
         return 0;
     };
@@ -536,6 +498,8 @@ int video_thread(void *param)
 
     render_draw_client(main_render);
     player_state = PLAY;
+
+    mutex_unlock(&vst->decoder_lock);
 
     run_render(MainWindow, main_render);
 
@@ -548,8 +512,8 @@ int video_thread(void *param)
 };
 
 
-void draw_hw_picture(render_t *render, AVPicture *picture);
-void draw_sw_picture(render_t *render, AVPicture *picture);
+void draw_hw_picture(render_t *render, vframe_t *vframe);
+void draw_sw_picture(render_t *render, vframe_t *vframe);
 
 render_t *create_render(vst_t *vst, window_t *win, uint32_t flags)
 {
@@ -783,8 +747,26 @@ void render_adjust_size(render_t *render, window_t *win)
     return;
 };
 
-void draw_hw_picture(render_t *render, AVPicture *picture)
+static void render_hw_planar(render_t *render, vframe_t *vframe)
 {
+    vst_t *vst = render->vst;
+    planar_t *planar = vframe->planar;
+
+    if(vframe->is_hw_pic != 0 && vframe->format != AV_PIX_FMT_NONE)
+    {
+        mutex_lock(&render->vst->gpu_lock);
+
+        pxBlitPlanar(planar, render->rcvideo.l,
+                    CAPTION_HEIGHT+render->rcvideo.t,
+                    render->rcvideo.r, render->rcvideo.b,0,0);
+        mutex_unlock(&render->vst->gpu_lock);
+
+    }
+};
+
+void draw_hw_picture(render_t *render, vframe_t *vframe)
+{
+    AVPicture *picture;
     int       dst_width;
     int       dst_height;
     bitmap_t *bitmap;
@@ -793,6 +775,8 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
     uint8_t  *data[4];
     int       linesize[4];
     enum AVPixelFormat format;
+
+    vst_t *vst = render->vst;
 
     if(render->win->win_state == MINIMIZED ||
        render->win->win_state == ROLLED)
@@ -809,11 +793,18 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
         dst_height = render->rcvideo.b;
     };
 
-	format = render->vst->hwdec == 0 ? render->ctx_format : AV_PIX_FMT_BGRA
-    cvt_ctx = sws_getCachedContext(cvt_ctx,
-              render->ctx_width, render->ctx_height, format,
-              dst_width, dst_height, AV_PIX_FMT_BGRA,
-              SWS_FAST_BILINEAR, NULL, NULL, NULL);
+    if(vst->hwdec)
+    {
+        render_hw_planar(render, vframe);
+        return;
+    };
+
+    picture = &vframe->picture;
+
+    format = render->vst->hwdec == 0 ? render->ctx_format : AV_PIX_FMT_BGRA;
+    cvt_ctx = sws_getCachedContext(cvt_ctx, render->ctx_width, render->ctx_height, format,
+                                   dst_width, dst_height, AV_PIX_FMT_BGRA,
+                                   SWS_FAST_BILINEAR, NULL, NULL, NULL);
     if(cvt_ctx == NULL)
     {
         printf("Cannot initialize the conversion context!\n");
@@ -829,7 +820,6 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
         return ;
     }
 
-//    printf("sws_getCachedContext\n");
     data[0] = bitmap_data;
     data[1] = bitmap_data+1;
     data[2] = bitmap_data+2;
@@ -874,8 +864,9 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
     render->target&= 1;
 }
 
-void draw_sw_picture(render_t *render, AVPicture *picture)
+void draw_sw_picture(render_t *render, vframe_t *vframe)
 {
+    AVPicture *picture;
     uint8_t  *bitmap_data;
     uint32_t  bitmap_pitch;
     uint8_t  *data[4];
@@ -884,6 +875,8 @@ void draw_sw_picture(render_t *render, AVPicture *picture)
     if(render->win->win_state == MINIMIZED ||
        render->win->win_state == ROLLED)
         return;
+
+    picture = &vframe->picture;
 
     cvt_ctx = sws_getCachedContext(cvt_ctx,
               render->ctx_width, render->ctx_height,
@@ -937,9 +930,9 @@ void render_draw_client(render_t *render)
 
     if(player_state == PAUSE)
     {
-         if(vst->vframe[vst->vfx].ready == 1 )
-            main_render->draw(main_render, &vst->vframe[vst->vfx].picture);
-         else
+//         if(vst->vframe[vst->vfx].ready == 1 )
+//            main_render->draw(main_render, &vst->vframe[vst->vfx].picture);
+//         else
             draw_bar(0, y, render->win_width,
                  render->rcvideo.b, 0);
     }

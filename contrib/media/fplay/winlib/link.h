@@ -38,7 +38,7 @@ static inline void list_remove(link_t *link)
 	link_initialize(link);
 }
 
-static inline int list_empty(link_t *head)
+static inline int llist_empty(link_t *head)
 {
     return head->next == head ? 1 : 0;
 }

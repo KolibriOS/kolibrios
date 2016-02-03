@@ -17,7 +17,7 @@ struct hw_profile
 {
     enum AVCodecID av_codec;
     int ff_profile;
-    uint64_t va_profile;
+    VAProfile va_profile;
 };
 
 
@@ -39,7 +39,7 @@ struct hw_profile
 static int drm_fd = 0;
 static struct vaapi_context *v_context;
 
-static VASurfaceID v_surface_id[4];
+static VASurfaceID v_surface_id[HWDEC_NUM_SURFACES];
 
 #define HAS_HEVC VA_CHECK_VERSION(0, 38, 0)
 #define HAS_VP9 (VA_CHECK_VERSION(0, 38, 1) && defined(FF_PROFILE_VP9_0))
@@ -48,7 +48,7 @@ static VASurfaceID v_surface_id[4];
     {AV_CODEC_ID_ ## av_codec_id, FF_PROFILE_ ## ff_profile,    \
      VAProfile ## vdp_profile}
 
-static const struct hw_profile profiles[] = {
+static const struct hw_profile hw_profiles[] = {
     PE(MPEG2VIDEO,  MPEG2_MAIN,         MPEG2Main),
     PE(MPEG2VIDEO,  MPEG2_SIMPLE,       MPEG2Simple),
     PE(MPEG4,       MPEG4_ADVANCED_SIMPLE, MPEG4AdvancedSimple),
@@ -75,8 +75,8 @@ static const struct hw_profile profiles[] = {
 
 int va_check_codec_support(enum AVCodecID id)
 {
-    for (int n = 0; profiles[n].av_codec; n++) {
-        if (profiles[n].av_codec == id)
+    for (int n = 0; hw_profiles[n].av_codec; n++) {
+        if (hw_profiles[n].av_codec == id)
             return 1;
     }
     return 0;
@@ -219,9 +219,9 @@ void *vaapi_init(VADisplay display)
 
     if ((vaapi = calloc(1, sizeof(*vaapi))) == NULL)
         goto error;
-    vaapi->display               = display;
-    vaapi->config_id             = VA_INVALID_ID;
-    vaapi->context_id            = VA_INVALID_ID;
+    vaapi->display    = display;
+    vaapi->config_id  = VA_INVALID_ID;
+    vaapi->context_id = VA_INVALID_ID;
 
     v_context = vaapi;
 
@@ -281,7 +281,7 @@ static int has_entrypoint(struct vaapi_context *vaapi, VAProfile profile, VAEntr
     return 0;
 }
 
-static int vaapi_init_decoder(VAProfile    profile,
+static int vaapi_init_decoder(VAProfile profile,
                        VAEntrypoint entrypoint,
                        unsigned int picture_width,
                        unsigned int picture_height)
@@ -343,8 +343,7 @@ ENTER();
 
     printf("vaCreateSurfaces %dx%d\n",picture_width,picture_height);
     status = vaCreateSurfaces(vaapi->display, VA_RT_FORMAT_YUV420, picture_width, picture_height,
-                              v_surface_id,4,NULL,0);
-    printf("v_surface_id_3 %x\n", v_surface_id[3]);
+                              v_surface_id,HWDEC_NUM_SURFACES,NULL,0);
     if (!vaapi_check_status(status, "vaCreateSurfaces()"))
     {
         FAIL();
@@ -379,7 +378,7 @@ ENTER();
     status = vaCreateContext(vaapi->display, config_id,
                              picture_width, picture_height,
                              VA_PROGRESSIVE,
-                             v_surface_id, 4,
+                             v_surface_id, HWDEC_NUM_SURFACES,
                              &context_id);
     if (!vaapi_check_status(status, "vaCreateContext()"))
     {
@@ -387,8 +386,8 @@ ENTER();
         return -1;
     };
 
-    vaapi->config_id      = config_id;
-    vaapi->context_id     = context_id;
+    vaapi->config_id  = config_id;
+    vaapi->context_id = context_id;
     LEAVE();
     return 0;
 }
@@ -397,48 +396,38 @@ ENTER();
 static enum PixelFormat get_format(struct AVCodecContext *avctx,
                                    const enum AVPixelFormat *fmt)
 {
-    int i, profile;
+    VAProfile profile = VAProfileNone;
 
     ENTER();
 
-//    for (int i = 0; fmt[i] != AV_PIX_FMT_NONE; i++)
-//        printf(" %s", av_get_pix_fmt_name(fmt[i]));
+    for (int i = 0; fmt[i] != PIX_FMT_NONE; i++)
+    {
+        enum AVCodecID codec = avctx->codec_id;
 
-    for (i = 0; fmt[i] != PIX_FMT_NONE; i++) {
-        printf("pixformat %x\n", fmt[i]);
         if (fmt[i] != AV_PIX_FMT_VAAPI_VLD)
             continue;
 
-        switch (avctx->codec_id)
+        if (codec == AV_CODEC_ID_H264)
         {
-        case CODEC_ID_MPEG2VIDEO:
-            profile = VAProfileMPEG2Main;
-            break;
-        case CODEC_ID_MPEG4:
-        case CODEC_ID_H263:
-            profile = VAProfileMPEG4AdvancedSimple;
-            break;
-        case CODEC_ID_H264:
-            profile = VAProfileH264High;
-            break;
-        case CODEC_ID_WMV3:
-            profile = VAProfileVC1Main;
-            break;
-        case CODEC_ID_VC1:
-            profile = VAProfileVC1Advanced;
-            break;
-        default:
-            profile = -1;
-            break;
-        }
-        if (profile >= 0) {
-            if (vaapi_init_decoder(profile, VAEntrypointVLD, avctx->width, avctx->height) == 0)
+            if (profile == FF_PROFILE_H264_CONSTRAINED_BASELINE)
+                profile = FF_PROFILE_H264_MAIN;
+        };
+
+        for (int n = 0; hw_profiles[n].av_codec; n++)
+        {
+            if (hw_profiles[n].av_codec   == codec &&
+                hw_profiles[n].ff_profile == avctx->profile)
             {
-                avctx->hwaccel_context = v_context;
-                LEAVE();
-                return fmt[i]; ;
+                profile = hw_profiles[n].va_profile;
+                if (vaapi_init_decoder(profile, VAEntrypointVLD, avctx->width, avctx->height) == 0)
+                {
+                    avctx->hwaccel_context = v_context;
+                    LEAVE();
+                    return fmt[i]; ;
+                }
             }
         }
+
     }
     FAIL();
     return PIX_FMT_NONE;
@@ -454,16 +443,15 @@ struct av_surface
 static void av_release_buffer(void *opaque, uint8_t *data)
 {
     struct av_surface surface = *(struct av_surface*)data;
-//    VDPAUContext *ctx = opaque;
-
-//    ctx->video_surface_destroy(surface);
     av_freep(&data);
 }
 
 static int get_buffer2(AVCodecContext *avctx, AVFrame *pic, int flags)
 {
     vst_t *vst = (vst_t*)avctx->opaque;
-    void *surface = (void *)(uintptr_t)v_surface_id[vst->dfx];
+    void *surface;
+
+    surface = (void *)(uintptr_t)v_surface_id[vst->decoder_frame->index];
 
     pic->data[3] = surface;
 
@@ -493,20 +481,16 @@ int fplay_init_context(vst_t *vst)
 
         if(vst->hwCtx != NULL)
         {
-            for(int i = 0; i < 4; i++)
+            for(int i = 0; i < HWDEC_NUM_SURFACES; i++)
             {
-                int ret;
+                vframe_t *vframe = calloc(1, sizeof(*vframe));
 
-                ret = avpicture_alloc(&vst->vframe[i].picture, AV_PIX_FMT_BGRA,
-                                      vst->vCtx->width, vst->vCtx->height);
-                if ( ret != 0 )
-                {
-                    printf("Cannot alloc video buffer\n\r");
-                    return ret;
-                };
-                vst->vframe[i].format = AV_PIX_FMT_BGRA;
-                vst->vframe[i].pts   = 0;
-                vst->vframe[i].ready  = 0;
+                vframe->format    = AV_PIX_FMT_NONE;
+                vframe->is_hw_pic = 1;
+                vframe->index     = i;
+                vframe->pts       = 0;
+                vframe->ready     = 0;
+                list_add_tail(&vframe->list, &vst->input_list);
             };
 
             vst->hwdec         = 1;
@@ -520,107 +504,154 @@ int fplay_init_context(vst_t *vst)
 
     vst->hwdec = 0;
 
-    for(int i = 0; i < 4; i++)
+    for(int i = 0; i < HWDEC_NUM_SURFACES; i++)
     {
+        vframe_t *vframe;
         int ret;
 
-        ret = avpicture_alloc(&vst->vframe[i].picture, vst->vCtx->pix_fmt,
+        vframe = calloc(1, sizeof(*vframe));
+
+        ret = avpicture_alloc(&vframe->picture, vst->vCtx->pix_fmt,
                                vst->vCtx->width, vst->vCtx->height);
         if ( ret != 0 )
         {
             printf("Cannot alloc video buffer\n\r");
             return ret;
         };
-        vst->vframe[i].format = vst->vCtx->pix_fmt;
-        vst->vframe[i].pts    = 0;
-        vst->vframe[i].ready  = 0;
+        vframe->format = vst->vCtx->pix_fmt;
+        vframe->index  = i;
+        vframe->pts    = 0;
+        vframe->ready  = 0;
+        list_add_tail(&vframe->list, &vst->input_list);
     };
 
     return 0;
 }
 
 
-struct SwsContext *vacvt_ctx;
+#define EGL_TEXTURE_Y_U_V_WL            0x31D7
+#define EGL_TEXTURE_Y_UV_WL             0x31D8
+#define EGL_TEXTURE_Y_XUXV_WL           0x31D9
 
-void va_convert_picture(vst_t *vst, int width, int height, AVPicture *pic)
+enum wl_drm_format {
+    WL_DRM_FORMAT_C8 = 0x20203843,
+    WL_DRM_FORMAT_RGB332 = 0x38424752,
+    WL_DRM_FORMAT_BGR233 = 0x38524742,
+    WL_DRM_FORMAT_XRGB4444 = 0x32315258,
+    WL_DRM_FORMAT_XBGR4444 = 0x32314258,
+    WL_DRM_FORMAT_RGBX4444 = 0x32315852,
+    WL_DRM_FORMAT_BGRX4444 = 0x32315842,
+    WL_DRM_FORMAT_ARGB4444 = 0x32315241,
+    WL_DRM_FORMAT_ABGR4444 = 0x32314241,
+    WL_DRM_FORMAT_RGBA4444 = 0x32314152,
+    WL_DRM_FORMAT_BGRA4444 = 0x32314142,
+    WL_DRM_FORMAT_XRGB1555 = 0x35315258,
+    WL_DRM_FORMAT_XBGR1555 = 0x35314258,
+    WL_DRM_FORMAT_RGBX5551 = 0x35315852,
+    WL_DRM_FORMAT_BGRX5551 = 0x35315842,
+    WL_DRM_FORMAT_ARGB1555 = 0x35315241,
+    WL_DRM_FORMAT_ABGR1555 = 0x35314241,
+    WL_DRM_FORMAT_RGBA5551 = 0x35314152,
+    WL_DRM_FORMAT_BGRA5551 = 0x35314142,
+    WL_DRM_FORMAT_RGB565 = 0x36314752,
+    WL_DRM_FORMAT_BGR565 = 0x36314742,
+    WL_DRM_FORMAT_RGB888 = 0x34324752,
+    WL_DRM_FORMAT_BGR888 = 0x34324742,
+    WL_DRM_FORMAT_XRGB8888 = 0x34325258,
+    WL_DRM_FORMAT_XBGR8888 = 0x34324258,
+    WL_DRM_FORMAT_RGBX8888 = 0x34325852,
+    WL_DRM_FORMAT_BGRX8888 = 0x34325842,
+    WL_DRM_FORMAT_ARGB8888 = 0x34325241,
+    WL_DRM_FORMAT_ABGR8888 = 0x34324241,
+    WL_DRM_FORMAT_RGBA8888 = 0x34324152,
+    WL_DRM_FORMAT_BGRA8888 = 0x34324142,
+    WL_DRM_FORMAT_XRGB2101010 = 0x30335258,
+    WL_DRM_FORMAT_XBGR2101010 = 0x30334258,
+    WL_DRM_FORMAT_RGBX1010102 = 0x30335852,
+    WL_DRM_FORMAT_BGRX1010102 = 0x30335842,
+    WL_DRM_FORMAT_ARGB2101010 = 0x30335241,
+    WL_DRM_FORMAT_ABGR2101010 = 0x30334241,
+    WL_DRM_FORMAT_RGBA1010102 = 0x30334152,
+    WL_DRM_FORMAT_BGRA1010102 = 0x30334142,
+    WL_DRM_FORMAT_YUYV = 0x56595559,
+    WL_DRM_FORMAT_YVYU = 0x55595659,
+    WL_DRM_FORMAT_UYVY = 0x59565955,
+    WL_DRM_FORMAT_VYUY = 0x59555956,
+    WL_DRM_FORMAT_AYUV = 0x56555941,
+    WL_DRM_FORMAT_NV12 = 0x3231564e,
+    WL_DRM_FORMAT_NV21 = 0x3132564e,
+    WL_DRM_FORMAT_NV16 = 0x3631564e,
+    WL_DRM_FORMAT_NV61 = 0x3136564e,
+    WL_DRM_FORMAT_YUV410 = 0x39565559,
+    WL_DRM_FORMAT_YVU410 = 0x39555659,
+    WL_DRM_FORMAT_YUV411 = 0x31315559,
+    WL_DRM_FORMAT_YVU411 = 0x31315659,
+    WL_DRM_FORMAT_YUV420 = 0x32315559,
+    WL_DRM_FORMAT_YVU420 = 0x32315659,
+    WL_DRM_FORMAT_YUV422 = 0x36315559,
+    WL_DRM_FORMAT_YVU422 = 0x36315659,
+    WL_DRM_FORMAT_YUV444 = 0x34325559,
+    WL_DRM_FORMAT_YVU444 = 0x34325659,
+};
+
+void va_create_planar(vst_t *vst, vframe_t *vframe)
 {
-    uint8_t  *src_data[4];
-    int       src_linesize[4];
+    struct vaapi_context* const vaapi = v_context;
+    VABufferInfo info = {0};
+
     VAImage vaimage;
     VAStatus status;
-    uint8_t *vdata;
-    struct vaapi_context* const vaapi = v_context;
+    planar_t *planar;
 
-    vaSyncSurface(vaapi->display,v_surface_id[vst->dfx]);
+    vaSyncSurface(vaapi->display,v_surface_id[vframe->index]);
 
-    status = vaDeriveImage(vaapi->display,v_surface_id[vst->dfx],&vaimage);
+    if(vframe->format != AV_PIX_FMT_NONE)
+        return;
+
+ENTER();
+
+    status = vaDeriveImage(vaapi->display,v_surface_id[vframe->index],&vaimage);
     if (!vaapi_check_status(status, "vaDeriveImage()"))
     {
         FAIL();
         return;
     };
-
-    static int once = 2;
-
-    if(once && vst->dfx == 0)
+/*
+    printf("vaDeriveImage: %x  fourcc: %x\n"
+           "offset0: %d pitch0: %d\n"
+           "offset1: %d pitch1: %d\n"
+           "offset2: %d pitch2: %d\n",
+            vaimage.buf, vaimage.format.fourcc,
+            vaimage.offsets[0],vaimage.pitches[0],
+            vaimage.offsets[1],vaimage.pitches[1],
+            vaimage.offsets[2],vaimage.pitches[2]);
+*/
+    info.mem_type = VA_SURFACE_ATTRIB_MEM_TYPE_KERNEL_DRM;
+    status = vaAcquireBufferHandle(vaapi->display, vaimage.buf, &info);
+    if (!vaapi_check_status(status, "vaAcquireBufferHandle()"))
     {
-        VABufferInfo info = {0};
-
-        printf("vaDeriveImage: %x  fourcc: %x\n"
-               "offset0: %d pitch0: %d\n"
-               "offset1: %d pitch1: %d\n"
-               "offset2: %d pitch2: %d\n",
-                vaimage.buf, vaimage.format.fourcc,
-                vaimage.offsets[0],vaimage.pitches[0],
-                vaimage.offsets[1],vaimage.pitches[1],
-                vaimage.offsets[2],vaimage.pitches[2]);
-
-        info.mem_type = VA_SURFACE_ATTRIB_MEM_TYPE_KERNEL_DRM;
-        status = vaAcquireBufferHandle(vaapi->display, vaimage.buf, &info);
-        if (vaapi_check_status(status, "vaAcquireBufferHandle()"))
-        {
-            printf("vaAcquireBufferHandle: %x type: %x\n"
-                    "mem type: %x mem size: %d\n",
-                    info.handle, info.type, info.mem_type, info.mem_size);
-
-            vaReleaseBufferHandle(vaapi->display, vaimage.buf);
-        }
-        once--;
-    };
-
-    src_linesize[0] = vaimage.pitches[0];
-    src_linesize[1] = vaimage.pitches[1];
-    src_linesize[2] = vaimage.pitches[2];
-    src_linesize[3] = 0;
-
-    status = vaMapBuffer(vaapi->display,vaimage.buf,(void **)&vdata);
-    if (!vaapi_check_status(status, "vaMapBuffer()"))
-    {
+        vaDestroyImage(vaapi->display, vaimage.image_id);
         FAIL();
         return;
     };
-
-//    printf("vdata: %x offset0: %d offset1: %d offset2: %d\n", vdata,
-//            vaimage.offsets[0],
-//            vaimage.offsets[1],
-//            vaimage.offsets[2]);
-
-    src_data[0] = vdata + vaimage.offsets[0];
-    src_data[1] = vdata + vaimage.offsets[1];
-    src_data[2] = vdata + vaimage.offsets[2];
-    src_data[3] = 0;
-
-    vacvt_ctx = sws_getCachedContext(vacvt_ctx, width, height, AV_PIX_FMT_NV12,
-              width, height, AV_PIX_FMT_BGRA,
-              SWS_FAST_BILINEAR, NULL, NULL, NULL);
-    if(vacvt_ctx == NULL)
+/*
+    printf("vaAcquireBufferHandle: %x type: %x\n"
+            "mem type: %x mem size: %d\n",
+            info.handle, info.type, info.mem_type, info.mem_size);
+*/
+    planar = pxCreatePlanar(info.handle, WL_DRM_FORMAT_NV12,
+                            vaimage.width, vaimage.height,
+                            vaimage.offsets[0],vaimage.pitches[0],
+                            vaimage.offsets[1],vaimage.pitches[1],
+                            vaimage.offsets[2],vaimage.pitches[2]);
+    if(planar != NULL)
     {
-        printf("Cannot initialize the conversion context!\n");
-        return ;
+        printf("create planar image\n",planar);
+        vframe->planar = planar;
+        vframe->format = AV_PIX_FMT_NV12;
     };
 
-    sws_scale(vacvt_ctx, (const uint8_t* const *)src_data, src_linesize, 0, height, pic->data, pic->linesize);
-
-    vaUnmapBuffer (vaapi->display, vaimage.buf);
+    vaReleaseBufferHandle(vaapi->display, vaimage.buf);
     vaDestroyImage(vaapi->display, vaimage.image_id);
+LEAVE();
 }

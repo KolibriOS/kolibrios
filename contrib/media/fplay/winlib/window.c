@@ -35,6 +35,9 @@ static int need_update;
 
 
 void adjust_frame(window_t *win);
+void blit_panel(panel_t *panel);
+void update_panel_size(window_t *win);
+void update_caption_size(window_t *win);
 
 //#include "timer.h"
 ctrl_t *win_get_child(window_t *win, int x, int y)

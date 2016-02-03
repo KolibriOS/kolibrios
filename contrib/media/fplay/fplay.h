@@ -1,6 +1,7 @@
 
 #include <libsync.h>
-#include "pixlib3.h"
+#include <pixlib3.h>
+#include "list.h"
 
 #define BLACK_MAGIC_SOUND
 #define BLACK_MAGIC_VIDEO
@@ -18,10 +19,15 @@ typedef struct vstate vst_t;
 
 typedef struct
 {
+    struct list_head list;
     enum AVPixelFormat format;
     AVPicture     picture;
-    int           planar;
+    planar_t*     planar;
+    int           is_hw_pic;
+    int           index;
     double        pts;
+    double        pkt_pts;
+    double        pkt_dts;
     volatile int  ready;
 }vframe_t;
 
@@ -53,7 +59,7 @@ struct render
       EMPTY, INIT }state;
     enum win_state win_state;
 
-    void (*draw)(render_t *render, AVPicture *picture);
+    void (*draw)(render_t *render, vframe_t *vframe);
 };
 
 enum player_state
@@ -105,26 +111,31 @@ typedef struct {
 int put_packet(queue_t *q, AVPacket *pkt);
 int get_packet(queue_t *q, AVPacket *pkt);
 
+#define HWDEC_NUM_SURFACES  16
 struct vstate
 {
-    AVFormatContext *fCtx;      /* format context           */
-    AVCodecContext  *vCtx;      /* video decoder context    */
-    AVCodecContext  *aCtx;      /* audio decoder context    */
-    AVCodec         *vCodec;    /* video codec              */
-    AVCodec         *aCodec;    /* audio codec              */
-    int             vStream;    /* video stream index       */
-    int             aStream;    /* audio stream index       */
+    AVFormatContext *fCtx;          /* format context           */
+    AVCodecContext  *vCtx;          /* video decoder context    */
+    AVCodecContext  *aCtx;          /* audio decoder context    */
+    AVCodec         *vCodec;        /* video codec              */
+    AVCodec         *aCodec;        /* audio codec              */
+    int             vStream;        /* video stream index       */
+    int             aStream;        /* audio stream index       */
 
-    queue_t         q_video;    /* video packets queue      */
-    queue_t         q_audio;    /* audio packets queue      */
+    queue_t         q_video;        /* video packets queue      */
+    queue_t         q_audio;        /* audio packets queue      */
 
-    mutex_t         gpu_lock;   /* gpu access lock. libdrm not yet thread safe :( */
+    mutex_t         gpu_lock;       /* gpu access lock. libdrm not yet thread safe :( */
+    mutex_t         decoder_lock;
 
-    vframe_t        vframe[4];  /* decoder workset          */
-    int             vfx;        /* index of decoded frame   */
-    int             dfx;        /* index of renderd frame   */
-    void           *hwCtx;      /* hardware context         */
-    int             hwdec;      /* hardware decoder         */
+    mutex_t         input_lock;
+    mutex_t         output_lock;
+    struct list_head input_list;
+    struct list_head output_list;
+
+    vframe_t       *decoder_frame;
+    void           *hwCtx;          /* hardware context         */
+    int             hwdec;          /* hardware decoder         */
 };
 
 
@@ -165,7 +176,7 @@ static inline void GetNotify(void *event)
     ::"a"(68),"b"(14),"c"(event));
 }
 
-void va_convert_picture(vst_t *vst, int width, int height, AVPicture *pic);
+void va_create_planar(vst_t *vst, vframe_t *vframe);
 
 int init_fontlib();
 char *get_moviefile();
