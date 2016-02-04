@@ -5177,7 +5177,7 @@ i965_acquire_buffer_handle(struct object_buffer *obj_buffer,
             break;
         }
         case VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME: {
-            int fd;
+            int fd = -1;
 //            if (drm_intel_bo_gem_export_to_prime(buffer_store->bo, &fd) != 0)
 //                return VA_STATUS_ERROR_INVALID_BUFFER;
             buf_info->handle = (intptr_t)fd;
