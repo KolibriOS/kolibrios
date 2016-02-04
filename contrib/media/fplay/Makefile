@@ -8,17 +8,16 @@ LD = kos32-ld
 CPP= kos32-g++
 STRIP = kos32-strip
 
-CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fno-ident -fomit-frame-pointer  -mno-ms-bitfields
+CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fno-ident -std=c99 -fomit-frame-pointer  -mno-ms-bitfields
 ARFLAG = crs
 
 SDK_DIR:= $(abspath ../../sdk)
 LIB_DIR:= $(SDK_DIR)/lib
 
 INCLUDES= -I. -I$(SDK_DIR)/sources/newlib/libc/include -I$(SDK_DIR)/sources/ffmpeg-2.5
-INCLUDES+=-I$(SDK_DIR)/sources/freetype/include
-#-I$(SDK_DIR)/sources/vaapi/libva-1.4.1
+INCLUDES+=-I$(SDK_DIR)/sources/freetype/include -I$(SDK_DIR)/sources/vaapi/libva-1.4.1
 
-#DEFINES= -DDEBUG=1 -DPACKAGE_NAME=\"Fplay-vaapi\"
+DEFINES= -DDEBUG=1 -DHAVE_VAAPI -DPACKAGE_NAME=\"Fplay-vaapi\"
 LIBS:= -lavdevice.dll -lavformat.dll -lavcodec.dll -lavutil.dll -lswscale.dll
 LIBS+= -lswresample.dll -lsound -lpixlib3 -lfreetype.dll -lva.dll -lgcc -lc.dll -lapp
 
@@ -29,6 +28,7 @@ LDFLAGS = -static -nostdlib --stack 0x200000 -Map fplay.map -T$(SDK_DIR)/sources
 SOURCES = 	opendial.asm			\
 		audio.c				\
 		fplay.c				\
+		vaapi.c				\
 		video.c				\
 		utils.c				\
 		skin/skin.asm			\
