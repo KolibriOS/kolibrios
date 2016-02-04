@@ -21,15 +21,9 @@ extern int64_t stream_duration;
 extern volatile int sound_level_0;
 extern volatile int sound_level_1;
 
-volatile int frames_count = 0;
-
 struct SwsContext *cvt_ctx = NULL;
 
-
 render_t   *main_render;
-
-AVRational video_time_base;
-AVFrame  *Frame;
 
 void get_client_rect(rect_t *rc);
 void run_render(window_t *win, void *render);
@@ -51,30 +45,12 @@ void flush_video(vst_t *vst)
         vframe->pts   = 0;
         vframe->ready = 0;
     }
+    vst->frames_count = 0;
 
     mutex_unlock(&vst->input_lock);
     mutex_unlock(&vst->output_lock);
-
-    frames_count = 0;
 };
 
-int init_video(vst_t *vst)
-{
-    Frame = av_frame_alloc();
-    if ( Frame == NULL )
-    {
-        printf("Cannot alloc video frame\n\r");
-        return 0;
-    };
-
-    mutex_lock(&vst->decoder_lock);
-
-    create_thread(video_thread, vst, 1024*1024);
-
-    return 1;
-};
-
-static double  dts = 0.0;
 
 static vframe_t *get_input_frame(vst_t *vst)
 {
@@ -115,31 +91,31 @@ static void put_output_frame(vst_t *vst, vframe_t *vframe)
             };
         };
     };
+    vst->frames_count++;
     mutex_unlock(&vst->output_lock);
 };
 
 int decode_video(vst_t* vst)
 {
-    AVPacket   pkt;
     double     pts;
+    AVPacket   pkt;
+
     int frameFinished;
 
     if(vst->decoder_frame == NULL)
         vst->decoder_frame = get_input_frame(vst);
 
     if(vst->decoder_frame == NULL)
-        return 0;
+        return -1;
 
     if( get_packet(&vst->q_video, &pkt) == 0 )
         return 0;
 
     frameFinished = 0;
-    if(dts == 0)
-        dts = pkt.pts;
 
     mutex_lock(&vst->gpu_lock);
 
-    if(avcodec_decode_video2(vst->vCtx, Frame, &frameFinished, &pkt) <= 0)
+    if(avcodec_decode_video2(vst->vCtx, vst->Frame, &frameFinished, &pkt) <= 0)
         printf("video decoder error\n");
 
     if(frameFinished)
@@ -150,22 +126,21 @@ int decode_video(vst_t* vst)
         if(vst->hwdec)
             pts = pkt.pts;
         else
-            pts = av_frame_get_best_effort_timestamp(Frame);
+            pts = av_frame_get_best_effort_timestamp(vst->Frame);
 
-        pts*= av_q2d(video_time_base);
+        pts*= av_q2d(vst->video_time_base);
 
         dst_pic = &vframe->picture;
 
         if(vframe->is_hw_pic == 0)
             av_image_copy(dst_pic->data, dst_pic->linesize,
-                          (const uint8_t**)Frame->data,
-                          Frame->linesize, vst->vCtx->pix_fmt, vst->vCtx->width, vst->vCtx->height);
+                          (const uint8_t**)vst->Frame->data,
+                          vst->Frame->linesize, vst->vCtx->pix_fmt, vst->vCtx->width, vst->vCtx->height);
         else
             va_create_planar(vst, vframe);
 
         vframe->pts = pts*1000.0;
-        vframe->pkt_pts = pkt.pts*av_q2d(video_time_base)*1000.0;
-        vframe->pkt_dts = dts*av_q2d(video_time_base)*1000.0;
+        vframe->pkt_pts = pkt.pts*av_q2d(vst->video_time_base)*1000.0;
         vframe->ready = 1;
 
         put_output_frame(vst, vframe);
@@ -175,10 +150,8 @@ int decode_video(vst_t* vst)
 //               vst->vframe[vst->dfx].pkt_pts, vst->vframe[vst->dfx].pkt_dts);
 
         vst->decoder_frame = NULL;
-        frames_count++;
-        dts = 0;
     };
-    av_frame_unref(Frame);
+    av_frame_unref(vst->Frame);
     mutex_unlock(&vst->gpu_lock);
 
     av_free_packet(&pkt);
@@ -417,7 +390,7 @@ void render_time(render_t *render)
         delay(1);
         return;
     }
-    else if (decoder_state == STOP && frames_count  == 0 &&
+    else if (decoder_state == STOP && vst->frames_count  == 0 &&
               player_state  != STOP)
     {
         player_stop();
@@ -441,10 +414,11 @@ void render_time(render_t *render)
 
         vframe = list_first_entry(&vst->output_list, vframe_t, list);
         list_del(&vframe->list);
+        vst->frames_count--;
         mutex_unlock(&vst->output_lock);
 
         ctime = get_master_clock();
-        fdelay = (vframe->pkt_pts - ctime);
+        fdelay = (vframe->pts - ctime);
 
         if(fdelay > 15.0)
         {
@@ -458,7 +432,7 @@ void render_time(render_t *render)
 
         if(main_render->win->win_state != FULLSCREEN)
         {
-            prg->current = vframe->pkt_pts * 1000;
+            prg->current = vframe->pts * 1000;
             lvl->current = vframe->index & 1 ? sound_level_1 : sound_level_0;
 
             send_message(&prg->ctrl, PRG_PROGRESS, 0, 0);
@@ -467,7 +441,6 @@ void render_time(render_t *render)
                 send_message(&lvl->ctrl, MSG_PAINT, 0, 0);
         }
 
-        frames_count--;
         vframe->ready = 0;
 
         mutex_lock(&vst->input_lock);
@@ -476,9 +449,6 @@ void render_time(render_t *render)
     }
 }
 
-
-extern char *movie_file;
-
 int video_thread(void *param)
 {
     vst_t *vst = param;
@@ -486,7 +456,7 @@ int video_thread(void *param)
 
     init_winlib();
 
-    MainWindow = create_window(movie_file,0,
+    MainWindow = create_window(vst->input_name,0,
                                10,10,vst->vCtx->width,vst->vCtx->height+CAPTION_HEIGHT+PANEL_HEIGHT,MainWindowProc);
 
     MainWindow->panel.prg->max = stream_duration;

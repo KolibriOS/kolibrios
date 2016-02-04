@@ -16,26 +16,17 @@
 #include "sound.h"
 #include "fplay.h"
 
-#ifdef HAVE_VAAPI
-int va_check_codec_support(enum AVCodecID id);
-#endif
-
 volatile enum player_state player_state  = STOP;
 volatile enum player_state decoder_state = PREPARE;
 volatile enum player_state sound_state   = STOP;
 
 uint32_t win_width, win_height;
 
-int      have_sound = 0;
+int have_sound = 0;
 
 uint8_t  *decoder_buffer;
 extern int resampler_size;
-
 extern int sample_rate;
-char *movie_file;
-
-void flush_video(vst_t* vst);
-
 
 int64_t  rewind_pos;
 
@@ -46,12 +37,6 @@ int threads_running = DECODER_THREAD;
 extern double audio_base;
 
 
-double get_audio_base(vst_t* vst)
-{
-    return (double)av_q2d(vst->fCtx->streams[vst->aStream]->time_base)*1000;
-};
-
-
 int main( int argc, char *argv[])
 {
     static vst_t vst;
@@ -60,14 +45,14 @@ int main( int argc, char *argv[])
 
     if(argc < 2)
     {
-        movie_file = get_moviefile();
-        if(movie_file == NULL)
+        vst.input_file = get_moviefile();
+        if(vst.input_file == NULL)
         {
             printf("Please provide a movie file\n");
             return -1;
         }
     }
-    else movie_file = argv[1];
+    else vst.input_file = argv[1];
 
     /* register all codecs, demux and protocols */
 
@@ -77,9 +62,9 @@ int main( int argc, char *argv[])
     avdevice_register_all();
     av_register_all();
 
-    if( avformat_open_input(&vst.fCtx, movie_file, NULL, NULL) < 0)
+    if( avformat_open_input(&vst.fCtx, vst.input_file, NULL, NULL) < 0)
     {
-        printf("Cannot open file %s\n\r", movie_file);
+        printf("Cannot open file %s\n\r", vst.input_file);
         return -1; // Couldn't open file
     };
 
@@ -92,15 +77,15 @@ int main( int argc, char *argv[])
         return -1;
     };
 
-    file_name = strrchr(movie_file,'/')+1;
+    file_name = strrchr(vst.input_file,'/')+1;
     dot = strrchr(file_name,'.');
     if(dot)
     {
-        movie_file = malloc(dot-file_name+1);
-        memcpy(movie_file, file_name, dot-file_name);
-        movie_file[dot-file_name] = 0;
+        vst.input_name = malloc(dot-file_name+1);
+        memcpy(vst.input_name, file_name, dot-file_name);
+        vst.input_name[dot-file_name] = 0;
     }
-    else movie_file = file_name;
+    else vst.input_name = file_name;
 
     stream_duration = vst.fCtx->duration;
 
@@ -114,7 +99,7 @@ int main( int argc, char *argv[])
             && vst.vStream < 0)
         {
             vst.vStream = i;
-            video_time_base = vst.fCtx->streams[i]->time_base;
+            vst.video_time_base = vst.fCtx->streams[i]->time_base;
             if(stream_duration == 0)
                stream_duration = vst.fCtx->streams[i]->duration;
         }
@@ -123,6 +108,7 @@ int main( int argc, char *argv[])
            vst.aStream < 0)
         {
             vst.aStream = i;
+            vst.audio_time_base = vst.fCtx->streams[i]->time_base;
             if(stream_duration == 0)
                stream_duration = vst.fCtx->streams[i]->duration;
         }
@@ -141,8 +127,6 @@ int main( int argc, char *argv[])
     vst.aCtx = vst.fCtx->streams[vst.aStream]->codec;
 
     vst.vCodec = avcodec_find_decoder(vst.vCtx->codec_id);
-    printf("codec id %x name %s\n",vst.vCtx->codec_id, vst.vCodec->name);
-    printf("ctx->pix_fmt %d\n", vst.vCtx->pix_fmt);
 
     INIT_LIST_HEAD(&vst.input_list);
     INIT_LIST_HEAD(&vst.output_list);
@@ -157,8 +141,15 @@ int main( int argc, char *argv[])
     {
         printf("Unsupported codec with id %d for input stream %d\n",
         vst.vCtx->codec_id, vst.vStream);
-        return -1; // Codec not found
+        return -1;
     }
+
+    vst.Frame = av_frame_alloc();
+    if(vst.Frame == NULL)
+    {
+        printf("Cannot alloc video frame\n");
+        return -1;
+    };
 
     if(fplay_init_context(&vst))
         return -1;
@@ -169,8 +160,6 @@ int main( int argc, char *argv[])
                 vst.vStream);
         return -1; // Could not open codec
     };
-
-    printf("ctx->pix_fmt %d\n", vst.vCtx->pix_fmt);
 
     if (vst.aCtx->channels > 0)
         vst.aCtx->request_channels = FFMIN(2, vst.aCtx->channels);
@@ -223,10 +212,10 @@ int main( int argc, char *argv[])
     }
     else printf("Unsupported audio codec!\n");
 
-    if(!init_video(&vst))
-        return 0;
-
-    mutex_lock_timeout(&vst.decoder_lock, 3000);
+    mutex_lock(&vst.decoder_lock);
+    create_thread(video_thread, &vst, 1024*1024);
+    if(mutex_lock_timeout(&vst.decoder_lock, 3000) == 0)
+        return -1;
 
     decoder(&vst);
 
@@ -369,7 +358,6 @@ void decoder(vst_t* vst)
                     delay(1);
                     continue;
                 }
-
                 yield();
                 continue;
 

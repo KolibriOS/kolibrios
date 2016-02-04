@@ -27,7 +27,6 @@ typedef struct
     int           index;
     double        pts;
     double        pkt_pts;
-    double        pkt_dts;
     volatile int  ready;
 }vframe_t;
 
@@ -111,21 +110,24 @@ typedef struct {
 int put_packet(queue_t *q, AVPacket *pkt);
 int get_packet(queue_t *q, AVPacket *pkt);
 
-#define HWDEC_NUM_SURFACES  16
 struct vstate
 {
-    AVFormatContext *fCtx;          /* format context           */
-    AVCodecContext  *vCtx;          /* video decoder context    */
-    AVCodecContext  *aCtx;          /* audio decoder context    */
-    AVCodec         *vCodec;        /* video codec              */
-    AVCodec         *aCodec;        /* audio codec              */
-    int             vStream;        /* video stream index       */
-    int             aStream;        /* audio stream index       */
+    AVFormatContext *fCtx;              /* format context           */
+    AVCodecContext  *vCtx;              /* video decoder context    */
+    AVCodecContext  *aCtx;              /* audio decoder context    */
+    AVCodec         *vCodec;            /* video codec              */
+    AVCodec         *aCodec;            /* audio codec              */
+    char            *input_file;
+    char            *input_name;
+    int             vStream;            /* video stream index       */
+    int             aStream;            /* audio stream index       */
+    AVRational      video_time_base;
+    AVRational      audio_time_base;
 
-    queue_t         q_video;        /* video packets queue      */
-    queue_t         q_audio;        /* audio packets queue      */
+    queue_t         q_video;            /* video packets queue      */
+    queue_t         q_audio;            /* audio packets queue      */
 
-    mutex_t         gpu_lock;       /* gpu access lock. libdrm not yet thread safe :( */
+    mutex_t         gpu_lock;           /* gpu access lock. libdrm not yet thread safe :( */
     mutex_t         decoder_lock;
 
     mutex_t         input_lock;
@@ -133,13 +135,18 @@ struct vstate
     struct list_head input_list;
     struct list_head output_list;
 
+    AVFrame        *Frame;
+
     vframe_t       *decoder_frame;
-    void           *hwCtx;          /* hardware context         */
-    int             hwdec:1;        /* hardware decoder         */
-    int             blit_bitmap:1;  /* hardware RGBA blitter    */
-    int             blit_texture:1; /* hardware RGBA blit and scale */
-    int             blit_planar:1;  /* hardbare YUV blit and scale */
+    volatile int    frames_count;
+    void           *hwCtx;              /* hardware context         */
+    int             hwdec:1;            /* hardware decoder         */
+    int             blit_bitmap:1;      /* hardware RGBA blitter    */
+    int             blit_texture:1;     /* hardware RGBA blit and scale */
+    int             blit_planar:1;      /* hardbare YUV blit and scale */
     int             frame_reorder:1;
+    int             nframes;
+    vframe_t        vframes[16];
 };
 
 
@@ -149,7 +156,6 @@ struct vstate
 
 extern int threads_running;
 extern astream_t astream;
-extern AVRational video_time_base;
 
 render_t *create_render(vst_t *vst, window_t *win, uint32_t flags);
 void destroy_render(render_t *render);
@@ -164,8 +170,8 @@ int init_audio(int format);
 int audio_thread(void *param);
 void set_audio_volume(int left, int right);
 
-int init_video(vst_t* vst);
 int video_thread(void *param);
+void flush_video(vst_t* vst);
 
 void decoder(vst_t *vst);
 int decode_video(vst_t* vst);
@@ -179,6 +185,11 @@ static inline void GetNotify(void *event)
     "int $0x40"
     ::"a"(68),"b"(14),"c"(event));
 }
+
+static inline double get_audio_base(vst_t* vst)
+{
+    return (double)av_q2d(vst->fCtx->streams[vst->aStream]->time_base)*1000;
+};
 
 void va_create_planar(vst_t *vst, vframe_t *vframe);
 

@@ -39,7 +39,7 @@ struct hw_profile
 static int drm_fd = 0;
 static struct vaapi_context *v_context;
 
-static VASurfaceID v_surface_id[HWDEC_NUM_SURFACES];
+static VASurfaceID v_surface_id[16];
 
 #define HAS_HEVC VA_CHECK_VERSION(0, 38, 0)
 #define HAS_VP9 (VA_CHECK_VERSION(0, 38, 1) && defined(FF_PROFILE_VP9_0))
@@ -281,10 +281,10 @@ static int has_entrypoint(struct vaapi_context *vaapi, VAProfile profile, VAEntr
     return 0;
 }
 
-static int vaapi_init_decoder(VAProfile profile,
-                       VAEntrypoint entrypoint,
-                       unsigned int picture_width,
-                       unsigned int picture_height)
+static int vaapi_init_decoder(vst_t *vst,VAProfile profile,
+                              VAEntrypoint entrypoint,
+                              unsigned int picture_width,
+                              unsigned int picture_height)
 {
     struct vaapi_context* const vaapi = v_context;
     VAConfigAttrib attrib;
@@ -343,7 +343,7 @@ ENTER();
 
     printf("vaCreateSurfaces %dx%d\n",picture_width,picture_height);
     status = vaCreateSurfaces(vaapi->display, VA_RT_FORMAT_YUV420, picture_width, picture_height,
-                              v_surface_id,HWDEC_NUM_SURFACES,NULL,0);
+                              v_surface_id,vst->nframes,NULL,0);
     if (!vaapi_check_status(status, "vaCreateSurfaces()"))
     {
         FAIL();
@@ -378,7 +378,7 @@ ENTER();
     status = vaCreateContext(vaapi->display, config_id,
                              picture_width, picture_height,
                              VA_PROGRESSIVE,
-                             v_surface_id, HWDEC_NUM_SURFACES,
+                             v_surface_id, vst->nframes,
                              &context_id);
     if (!vaapi_check_status(status, "vaCreateContext()"))
     {
@@ -396,9 +396,9 @@ ENTER();
 static enum PixelFormat get_format(struct AVCodecContext *avctx,
                                    const enum AVPixelFormat *fmt)
 {
+    vst_t *vst = (vst_t*)avctx->opaque;
     VAProfile profile = VAProfileNone;
 
-    ENTER();
 
     for (int i = 0; fmt[i] != PIX_FMT_NONE; i++)
     {
@@ -419,17 +419,15 @@ static enum PixelFormat get_format(struct AVCodecContext *avctx,
                 hw_profiles[n].ff_profile == avctx->profile)
             {
                 profile = hw_profiles[n].va_profile;
-                if (vaapi_init_decoder(profile, VAEntrypointVLD, avctx->width, avctx->height) == 0)
+                if (vaapi_init_decoder(vst, profile, VAEntrypointVLD, avctx->width, avctx->height) == 0)
                 {
                     avctx->hwaccel_context = v_context;
-                    LEAVE();
                     return fmt[i]; ;
                 }
             }
         }
 
     }
-    FAIL();
     return PIX_FMT_NONE;
 }
 
@@ -472,6 +470,8 @@ int fplay_init_context(vst_t *vst)
 {
     AVCodecContext *vCtx = vst->vCtx;
 
+    vst->nframes = 4;
+
     if(va_check_codec_support(vCtx->codec_id))
     {
         VADisplay dpy;
@@ -481,9 +481,12 @@ int fplay_init_context(vst_t *vst)
 
         if(vst->hwCtx != NULL)
         {
-            for(int i = 0; i < HWDEC_NUM_SURFACES; i++)
+            if(vCtx->codec_id == AV_CODEC_ID_H264)
+                vst->nframes = 16;
+
+            for(int i = 0; i < vst->nframes; i++)
             {
-                vframe_t *vframe = calloc(1, sizeof(*vframe));
+                vframe_t *vframe = &vst->vframes[i];
 
                 vframe->format    = AV_PIX_FMT_NONE;
                 vframe->is_hw_pic = 1;
@@ -494,6 +497,7 @@ int fplay_init_context(vst_t *vst)
             };
 
             vst->hwdec         = 1;
+            vst->frame_reorder = 1;
             vCtx->opaque       = vst;
             vCtx->thread_count = 1;
             vCtx->get_format   = get_format;
@@ -504,12 +508,12 @@ int fplay_init_context(vst_t *vst)
 
     vst->hwdec = 0;
 
-    for(int i = 0; i < HWDEC_NUM_SURFACES; i++)
+    for(int i = 0; i < vst->nframes; i++)
     {
         vframe_t *vframe;
         int ret;
 
-        vframe = calloc(1, sizeof(*vframe));
+        vframe = &vst->vframes[i];
 
         ret = avpicture_alloc(&vframe->picture, vst->vCtx->pix_fmt,
                                vst->vCtx->width, vst->vCtx->height);
