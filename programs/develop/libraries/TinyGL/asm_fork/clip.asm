@@ -8,7 +8,7 @@ CLIP_YMAX equ (1<<3)
 CLIP_ZMIN equ (1<<4)
 CLIP_ZMAX equ (1<<5)
 
-align 4
+align 16
 proc gl_transform_to_viewport uses eax ebx ecx, context:dword,v:dword
 locals
 	point dd ?
@@ -53,6 +53,7 @@ endl
 		push ecx
 		stdcall RGBFtoRGBI, dword[ebx+offs_vert_color],dword[ebx+offs_vert_color+4],dword[ebx+offs_vert_color+8]
 		jmp .end_if
+align 4
 	@@:
 		; no need to convert to integer if no lighting : take current color
 		mov ecx,[eax+offs_cont_longcurrent_color]
@@ -74,14 +75,14 @@ endl
 
 		mov dword[point],dword(ZB_POINT_T_MAX - ZB_POINT_T_MIN)
 		fild dword[point]
-		fmul dword[ebx+offs_vert_tex_coord+4] ;st0 *= v.tex_coord.Y
+		fmul dword[ebx+offs_vert_tex_coord+offs_Y] ;st0 *= v.tex_coord.Y
 		fistp dword[ebx+offs_vert_zp+offs_zbup_t]
 		add dword[ebx+offs_vert_zp+offs_zbup_s],ZB_POINT_T_MIN
 	@@:
 	ret
 endp
 
-align 4
+align 16
 proc gl_add_select1 uses eax ebx ecx, context:dword, z1:dword,z2:dword,z3:dword
 	mov eax,[z1]
 	mov ebx,eax
@@ -113,7 +114,7 @@ endp
 
 ; point
 
-align 4
+align 16
 proc gl_draw_point uses eax ebx, context:dword, p0:dword
 	mov ebx,[p0]
 	cmp dword[ebx+offs_vert_clip_code],0 ;if (p0.clip_code == 0)
@@ -123,6 +124,7 @@ proc gl_draw_point uses eax ebx, context:dword, p0:dword
 	jne .els
 		stdcall gl_add_select, eax,dword[ebx+offs_vert_zp+offs_zbup_z],dword[ebx+offs_vert_zp+offs_zbup_z] ;p0.zp.z,p0.zp.z
 		jmp @f
+align 4
 	.els:
 		add ebx,offs_vert_zp
 		stdcall ZB_plot, dword[eax+offs_cont_zb],ebx
@@ -132,7 +134,7 @@ endp
 
 ; line
 
-align 4
+align 16
 proc interpolate uses eax ebx ecx, q:dword,p0:dword,p1:dword,t:dword
 	mov eax,[q]
 	mov ebx,[p0]
@@ -195,7 +197,7 @@ endp
 ; Line Clipping algorithm from 'Computer Graphics', Principles and
 ; Practice
 ; tmin,tmax -> &float
-align 4
+align 16
 proc ClipLine1 uses ebx, denom:dword,num:dword,tmin:dword,tmax:dword
 	fld dword[denom]
 	ftst
@@ -217,6 +219,7 @@ proc ClipLine1 uses ebx, denom:dword,num:dword,tmin:dword,tmax:dword
 		jbe .r1_f1 ;if (t>*tmin) *tmin=t
 			fstp dword[ebx] 
 		jmp .r1
+align 4
 	.els_0: ;else if (denom<0)
 		jae .els_1
 		fld dword[num]
@@ -234,6 +237,7 @@ proc ClipLine1 uses ebx, denom:dword,num:dword,tmin:dword,tmax:dword
 		jae .r1_f1
 			fstp dword[ebx] ;if (t<*tmin) *tmax=t
 		jmp .r1
+align 4
 	.els_1: ;else if (num>0)
 		ffree st0 ;denom
 		fincstp
@@ -243,13 +247,14 @@ proc ClipLine1 uses ebx, denom:dword,num:dword,tmin:dword,tmax:dword
 		sahf
 		ja .r0_f1 ;if (num>0) return 0
 		jmp .r1_f1
-
+align 4
 	.r0_f1: ;return 0 & free st0
 		ffree st0
 		fincstp
 	.r0: ;return 0
 		xor eax,eax
 		jmp .end_f
+align 4
 	.r1_f1: ;return 1 & free st0
 		ffree st0
 		fincstp
@@ -260,7 +265,7 @@ proc ClipLine1 uses ebx, denom:dword,num:dword,tmin:dword,tmax:dword
 	ret
 endp
 
-align 4
+align 16
 proc gl_draw_line, context:dword, p1:dword, p2:dword
 locals
 	d_x dd ?
@@ -291,6 +296,7 @@ pushad
 			stdcall gl_add_select1, edx,dword[edi+offs_vert_zp+offs_zbup_z],\
 				dword[esi+offs_vert_zp+offs_zbup_z],dword[esi+offs_vert_zp+offs_zbup_z]
 			jmp .end_f
+align 4
 		.els_1:
 			add edi,offs_vert_zp
 			add esi,offs_vert_zp
@@ -302,15 +308,17 @@ pushad
 				;if (context.depth_test)
 				call ZB_line_z ;, dword[edx+offs_cont_zb],edi,esi
 				jmp .end_f
+align 4
 			.els_2:
 				call ZB_line ;, dword[edx+offs_cont_zb],edi,esi
 				jmp .end_f
+align 4
 	.els_i:
 		;else if ( (p1.clip_code & p2.clip_code) != 0 )
 		mov eax,[edi+offs_vert_clip_code]
 		and eax,[esi+offs_vert_clip_code]
-		cmp eax,0
-		jne .end_f
+		or eax,eax
+		jnz .end_f
 	.els_0:
 
 	fld dword[esi+offs_vert_pc+offs_X]
@@ -454,6 +462,7 @@ pushad
 	je .els_3
 		call ZB_line_z ;(context.zb,&q1.zp,&q2.zp)
 		jmp .end_f
+align 4
 	.els_3:
 		call ZB_line ;(context.zb,&q1.zp,&q2.zp)
 	.end_f:
@@ -509,6 +518,7 @@ end if
 		fldz
 		fst dword[t] ;t=0
 		jmp .e_zero
+align 4
 	@@: ;else
 		fld dword[edx+offs#dir]
 if sign eq 0		
@@ -543,37 +553,37 @@ end if
 	mov eax,[t]
 }
 
-align 4
+align 16
 proc clip_xmin uses ebx ecx edx, c:dword, a:dword, b:dword
 	clip_func 0,_X,_Y,_Z
 	ret
 endp
 
-align 4
+align 16
 proc clip_xmax uses ebx ecx edx, c:dword, a:dword, b:dword
 	clip_func 1,_X,_Y,_Z
 	ret
 endp
 
-align 4
+align 16
 proc clip_ymin uses ebx ecx edx, c:dword, a:dword, b:dword
 	clip_func 0,_Y,_X,_Z
 	ret
 endp
 
-align 4
+align 16
 proc clip_ymax uses ebx ecx edx, c:dword, a:dword, b:dword
 	clip_func 1,_Y,_X,_Z
 	ret
 endp
 
-align 4
+align 16
 proc clip_zmin uses ebx ecx edx, c:dword, a:dword, b:dword
 	clip_func 0,_Z,_X,_Y
 	ret
 endp
 
-align 4
+align 16
 proc clip_zmax uses ebx ecx edx, c:dword, a:dword, b:dword
 	clip_func 1,_Z,_X,_Y
 	ret
@@ -582,7 +592,7 @@ endp
 align 4
 clip_proc dd clip_xmin,clip_xmax, clip_ymin,clip_ymax, clip_zmin,clip_zmax
 
-align 4
+align 16
 proc updateTmp uses eax ebx ecx edx, context:dword, q:dword, p0:dword, p1:dword, t:dword
 	mov ebx,[q]
 	mov edx,[context]
@@ -606,6 +616,7 @@ proc updateTmp uses eax ebx ecx edx, context:dword, q:dword, p0:dword, p1:dword,
 		fadd dword[eax+offs_vert_color+8]
 		fstp dword[ebx+offs_vert_color+8] ;q.color.v[2]=p0.color.v[2] + (p1.color.v[2]-p0.color.v[2])*t
 		jmp @f
+align 4
 	.els_0:
 		mov ecx,[eax+offs_vert_color]
 		mov [ebx+offs_vert_color],ecx ;q.color.v[0]=p0.color.v[0]
@@ -648,7 +659,7 @@ proc updateTmp uses eax ebx ecx edx, context:dword, q:dword, p0:dword, p1:dword,
 	ret
 endp
 
-align 4
+align 16
 proc gl_draw_triangle, context:dword, p0:dword, p1:dword, p2:dword
 locals
 	cc rd 3
@@ -716,6 +727,7 @@ pushad
 				je .end_f
 					stdcall dword[edi+offs_cont_draw_triangle_front], edi,ebx,ecx,edx
 				jmp .end_f
+align 4
 			@@:
 			cmp dword[edi+offs_cont_current_cull_face],GL_FRONT
 			jne .end_f
@@ -723,15 +735,18 @@ pushad
 				jne .end_f
 					stdcall dword[edi+offs_cont_draw_triangle_back], edi,ebx,ecx,edx
 			jmp .end_f
+align 4
 		.els_1:
 			; no culling
 			cmp dword[front],0
 			je @f
 				stdcall dword[edi+offs_cont_draw_triangle_front], edi,ebx,ecx,edx
 				jmp .end_f
+align 4
 			@@:
 				stdcall dword[edi+offs_cont_draw_triangle_back], edi,ebx,ecx,edx
 		jmp .end_f
+align 4
 	.els_0:
 		;eax = cc[2]
 		and eax,[cc]
@@ -744,7 +759,7 @@ popad
 	ret
 endp
 
-align 4
+align 16
 proc gl_draw_triangle_clip, context:dword, p0:dword, p1:dword, p2:dword, clip_bit:dword
 locals
 	co dd ?
@@ -774,6 +789,7 @@ pushad
 	jnz .els_0
 		stdcall gl_draw_triangle, [context],ebx,ecx,edx
 		jmp .end_f
+align 4
 	.els_0:
 		;eax = cc[2]
 		and eax,[cc]
@@ -796,6 +812,7 @@ pushad
 		jnz .cycle_0_end
 			inc dword[clip_bit]
 			jmp .cycle_0
+align 4
 		.cycle_0_end:
 
 	; this test can be true only in case of rounding errors
@@ -837,6 +854,7 @@ end if
 			mov [q+4],ecx
 			mov [q+8],edx
 			jmp .els_2_end
+align 4
 		.els_2:
 		mov eax,[cc+4]
 		and eax,[clip_mask]
@@ -847,6 +865,7 @@ end if
 			mov [q+4],edx
 			mov [q+8],ebx
 			jmp .els_2_end
+align 4
 		.els_3:
 			;q[0]=p2 q[1]=p0 q[2]=p1
 			mov [q],edx
@@ -908,6 +927,7 @@ end if
 		add edi,sizeof.GLVertex ;edi = &tmp2
 		stdcall gl_draw_triangle_clip,[context],edi ;gl_draw_triangle_clip(c,&tmp2,&tmp1,q[2],clip_bit+1)
 		jmp .end_f
+align 4
 	.els_1:
 		; two points outside
 		mov eax,[cc]
@@ -919,6 +939,7 @@ end if
 			mov [q+4],ecx
 			mov [q+8],edx
 			jmp .els_4_end
+align 4
 		.els_4:
 		mov eax,[cc+4]
 		and eax,[clip_mask]
@@ -929,6 +950,7 @@ end if
 			mov [q+4],edx
 			mov [q+8],ebx
 			jmp .els_4_end
+align 4
 		.els_5:
 			;q[0]=p2 q[1]=p0 q[2]=p1
 			mov [q],edx
@@ -977,7 +999,7 @@ popad
 	ret
 endp
 
-align 4
+align 16
 proc gl_draw_triangle_select uses eax, context:dword, p0:dword,p1:dword,p2:dword
 	mov eax,[p2]
 	push dword[eax+offs_vert_zp+offs_Z]
@@ -995,7 +1017,7 @@ if PROFILE eq 1
 	count_pixels dd ?
 end if
 
-align 4
+align 16
 proc gl_draw_triangle_fill, context:dword, p0:dword,p1:dword,p2:dword
 pushad
 if PROFILE eq 1
@@ -1030,8 +1052,19 @@ end if
 		stdcall ZB_setTexture, dword[edx+offs_cont_zb],dword[eax]
 		mov eax,[p0]
 		add eax,offs_vert_zp
-		stdcall ZB_fillTriangleMappingPerspective, dword[edx+offs_cont_zb],eax,ebx,ecx
+		push ecx
+		push ebx
+		push eax
+		push dword[edx+offs_cont_zb]
+		cmp dword[edx+offs_cont_matrix_model_projection_no_w_transform],0
+		je @f
+			call ZB_fillTriangleMappingPerspective
+			jmp .end_f
+align 4
+		@@:
+			call ZB_fillTriangleMapping
 		jmp .end_f
+align 4
 	.els_i:
 		mov eax,[p0]
 		add eax,offs_vert_zp
@@ -1040,6 +1073,7 @@ end if
 			;else if (context.current_shade_model == GL_SMOOTH)
 			stdcall ZB_fillTriangleSmooth, dword[edx+offs_cont_zb],eax,ebx,ecx
 			jmp .end_f
+align 4
 		.els:
 			stdcall ZB_fillTriangleFlat, dword[edx+offs_cont_zb],eax,ebx,ecx
 	.end_f:
@@ -1049,13 +1083,14 @@ endp
 
 ; Render a clipped triangle in line mode
 
-align 4
+align 16
 proc gl_draw_triangle_line uses eax ebx ecx edx, context:dword, p0:dword,p1:dword,p2:dword
 	mov edx,[context]
 	cmp dword[edx+offs_cont_depth_test],0
 	je .els
 		lea ecx,[ZB_line_z]
 		jmp @f
+align 4
 	.els:
 		lea ecx,[ZB_line]
 	@@:
@@ -1095,7 +1130,7 @@ proc gl_draw_triangle_line uses eax ebx ecx edx, context:dword, p0:dword,p1:dwor
 endp
 
 ; Render a clipped triangle in point mode
-align 4
+align 16
 proc gl_draw_triangle_point uses eax ebx edx, context:dword, p0:dword,p1:dword,p2:dword
 	mov edx,[context]
 	mov eax,[p0]

@@ -39,7 +39,7 @@ end if
 	add [z],eax
 }
 
-align 4
+align 16
 proc ZB_fillTriangleFlat, zb:dword, p0:dword, p1:dword, p2:dword
 locals
 if TGL_FEATURE_RENDER_BITS eq 24
@@ -94,12 +94,12 @@ end if
 	add [ob1],eax
 }
 
-align 4
+align 16
 proc ZB_fillTriangleSmooth, zb:dword, p0:dword, p1:dword, p2:dword
 locals
 include 'ztriangle.inc'
 
-align 4
+align 16
 proc ZB_setTexture uses eax ebx, zb:dword, texture:dword
 	mov eax,[zb]
 	mov ebx,[texture]
@@ -120,6 +120,7 @@ macro DRAW_INIT
 macro PUT_PIXEL _a
 {
 local .end_0
+local .in_mem
 	mov eax,[z]
 	shr eax,ZB_POINT_Z_FRAC_BITS
 	cmp ax,word[esi+2*_a] ;if (zz >= pz[_a])
@@ -131,6 +132,10 @@ if TGL_FEATURE_RENDER_BITS eq 24
 		and ebx,0x3fc00000
 		or ebx,[s]
 		shr ebx,14
+		cmp ebx,256*256-1 ;проверка на выход за пределы текстуры
+		jl .in_mem ;координата 1.0,1.0 может выползать
+			mov ebx,256*256-1 ;переход на последний пиксель текстуры
+		.in_mem:
 		imul ebx,3
 		add ebx,[texture] ;ptr = texture + (((t & 0x3fc00000) | s) >> 14) * 3
 		mov ax,word[ebx]
@@ -149,7 +154,7 @@ end if
 	add [t],eax
 }
 
-align 4
+align 16
 proc ZB_fillTriangleMapping, zb:dword, p0:dword, p1:dword, p2:dword
 locals
 	texture dd ? ;PIXEL*
@@ -188,6 +193,7 @@ macro DRAW_INIT
 macro PUT_PIXEL _a
 {
 local .end_0
+local .in_mem
 	mov eax,[z]
 	shr eax,ZB_POINT_Z_FRAC_BITS
 	cmp ax,word[esi+2*_a] ;if (zz >= pz[_a])
@@ -201,6 +207,15 @@ if TGL_FEATURE_RENDER_BITS eq 24
 		and eax,0x003fc000
 		or ebx,eax
 		shr ebx,14
+if 1
+; не знаю нужна ли сдесь эта проверка
+; функция ZB_fillTriangleMapping без нее не работает
+; на всякий случай делаю и тут такое же
+		cmp ebx,256*256-1 ;проверка на выход за пределы текстуры
+		jl .in_mem ;координата 1.0,1.0 может выползать
+			mov ebx,256*256-1 ;переход на последний пиксель текстуры
+		.in_mem:
+end if
 		imul ebx,3
 		add ebx,[texture] ;ptr = texture + (((t & 0x3fc00000) | (s & 0x003FC000)) >> 14) * 3
 		mov ax,word[ebx]
@@ -230,10 +245,9 @@ if TGL_FEATURE_RENDER_BITS eq 24
 	mov edi,[x1]
 	sub eax,edi
 	mov [n],eax ;n = (x2 >> 16) - x1
-fld1
+	fld1
 	fild dword[z1]
 	fst dword[f_z] ;fz = (float)z1
-	;fld1
 	fdivp
 	fstp dword[zinv] ;zinv = 1.0 / fz
 	imul edi,PSZB
@@ -267,11 +281,10 @@ align 4
 		fadd dword[dtzdx]
 		fmul dword[zinv]
 		fistp dword[dtdx] ;dtdx = (int)( (dtzdx - tt*fdzdx)*zinv )
-fld1
+		fld1
 		fld dword[f_z]
 		fadd dword[fndzdx]
 		fst dword[f_z] ;fz += fndzdx
-		;fld1
 		fdivp
 		fstp dword[zinv] ;zinv = 1.0 / fz
 		PUT_PIXEL 0
@@ -292,6 +305,7 @@ fld1
 		fadd dword[t_z]
 		fstp dword[t_z] ;tz += ndtzdx
 		jmp .cycle_2
+align 4
 	.cycle_2_end:
 	fld dword[zinv]
 	fld st0
@@ -318,11 +332,12 @@ align 4
 		add edi,PSZB ;pp += PSZB
 		dec dword[n]
 		jmp .cycle_3
+align 4
 	.cycle_3_end:
 end if
 }
 
-align 4
+align 16
 proc ZB_fillTriangleMappingPerspective, zb:dword, p0:dword, p1:dword, p2:dword
 locals
 	texture dd ? ;PIXEL *
@@ -386,7 +401,7 @@ local .end_0
 	fstp dword[t_z]
 }
 
-align 4
+align 16
 proc ZB_fillTriangleMappingPerspective, zb:dword, p0:dword, p1:dword, p2:dword
 locals
 	texture dd ? ;PIXEL*
