@@ -1246,13 +1246,12 @@ static const struct wl_drm_components_descriptor {
    { __DRI_IMAGE_COMPONENTS_Y_XUXV, EGL_TEXTURE_Y_XUXV_WL, 2 },
 };
 
-#if 0
 static _EGLImage *
 dri2_create_image_wayland_wl_buffer(_EGLDisplay *disp, _EGLContext *ctx,
 				    EGLClientBuffer _buffer,
 				    const EGLint *attr_list)
 {
-   struct wl_drm_buffer *buffer = (struct wl_drm_buffer *) _buffer;
+   struct egl_planar_buffer *buffer = (struct egl_planar_buffer *) _buffer;
    struct dri2_egl_display *dri2_dpy = dri2_egl_display(disp);
    const struct wl_drm_components_descriptor *f;
    __DRIimage *dri_image;
@@ -1260,8 +1259,6 @@ dri2_create_image_wayland_wl_buffer(_EGLDisplay *disp, _EGLContext *ctx,
    EGLint err;
    int32_t plane;
 
-   if (!wayland_buffer_is_drm(dri2_dpy->wl_server_drm, &buffer->buffer))
-       return NULL;
 
    err = _eglParseImageAttribList(&attrs, disp, attr_list);
    plane = attrs.PlaneWL;
@@ -1286,7 +1283,6 @@ dri2_create_image_wayland_wl_buffer(_EGLDisplay *disp, _EGLContext *ctx,
 
    return dri2_create_image(disp, dri_image);
 }
-#endif
 
 /**
  * Set the error code after a call to
@@ -1417,10 +1413,8 @@ dri2_create_image_khr(_EGLDriver *drv, _EGLDisplay *disp,
       return dri2_create_image_khr_renderbuffer(disp, ctx, buffer, attr_list);
    case EGL_DRM_BUFFER_MESA:
       return dri2_create_image_mesa_drm_buffer(disp, ctx, buffer, attr_list);
-#ifdef HAVE_WAYLAND_PLATFORM
    case EGL_WAYLAND_BUFFER_WL:
       return dri2_create_image_wayland_wl_buffer(disp, ctx, buffer, attr_list);
-#endif
    default:
       _eglError(EGL_BAD_PARAMETER, "dri2_create_image_khr");
       return EGL_NO_IMAGE_KHR;
