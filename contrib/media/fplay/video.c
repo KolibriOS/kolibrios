@@ -76,6 +76,48 @@ int init_video(vst_t *vst)
 
 static double  dts = 0.0;
 
+static vframe_t *get_input_frame(vst_t *vst)
+{
+    vframe_t *vframe = NULL;
+
+    mutex_lock(&vst->input_lock);
+    if(!list_empty(&vst->input_list))
+    {
+        vframe = list_first_entry(&vst->input_list, vframe_t, list);
+        list_del(&vframe->list);
+    }
+    mutex_unlock(&vst->input_lock);
+
+    return vframe;
+}
+
+static void put_output_frame(vst_t *vst, vframe_t *vframe)
+{
+    mutex_lock(&vst->output_lock);
+    if(list_empty(&vst->output_list))
+        list_add_tail(&vframe->list, &vst->output_list);
+    else
+    {
+        vframe_t *cur;
+
+        cur = list_first_entry(&vst->output_list,vframe_t,list);
+        if(vframe->pts < cur->pts)
+            list_add_tail(&vframe->list, &vst->output_list);
+        else
+        {
+            list_for_each_entry_reverse(cur,&vst->output_list,list)
+            {
+                if(vframe->pts > cur->pts)
+                {
+                    list_add(&vframe->list, &cur->list);
+                    break;
+                };
+            };
+        };
+    };
+    mutex_unlock(&vst->output_lock);
+};
+
 int decode_video(vst_t* vst)
 {
     AVPacket   pkt;
@@ -83,24 +125,13 @@ int decode_video(vst_t* vst)
     int frameFinished;
 
     if(vst->decoder_frame == NULL)
-    {
-        mutex_lock(&vst->input_lock);
-        if(list_empty(&vst->input_list))
-        {
-            mutex_unlock(&vst->input_lock);
-            return -1;
-        }
-        vst->decoder_frame = list_first_entry(&vst->input_list, vframe_t, list);
-        list_del(&vst->decoder_frame->list);
-        mutex_unlock(&vst->input_lock);
+        vst->decoder_frame = get_input_frame(vst);
 
-        vframe_t *vframe = vst->decoder_frame;
-    };
+    if(vst->decoder_frame == NULL)
+        return 0;
 
     if( get_packet(&vst->q_video, &pkt) == 0 )
-    {
         return 0;
-    };
 
     frameFinished = 0;
     if(dts == 0)
@@ -113,13 +144,16 @@ int decode_video(vst_t* vst)
 
     if(frameFinished)
     {
-        vframe_t  *vframe;
+        vframe_t  *vframe = vst->decoder_frame;;
         AVPicture *dst_pic;
 
-        pts = av_frame_get_best_effort_timestamp(Frame);
-        pts *= av_q2d(video_time_base);
+        if(vst->hwdec)
+            pts = pkt.pts;
+        else
+            pts = av_frame_get_best_effort_timestamp(Frame);
 
-        vframe  = vst->decoder_frame;
+        pts*= av_q2d(video_time_base);
+
         dst_pic = &vframe->picture;
 
         if(vframe->is_hw_pic == 0)
@@ -134,34 +168,7 @@ int decode_video(vst_t* vst)
         vframe->pkt_dts = dts*av_q2d(video_time_base)*1000.0;
         vframe->ready = 1;
 
-
-        mutex_lock(&vst->output_lock);
-
-        if(list_empty(&vst->output_list))
-            list_add_tail(&vframe->list, &vst->output_list);
-        else
-        {
-            vframe_t *cur;
-
-            cur = list_first_entry(&vst->output_list,vframe_t,list);
-            if(vframe->pkt_pts < cur->pkt_pts)
-            {
-                list_add_tail(&vframe->list, &vst->output_list);
-            }
-            else
-            {
-                list_for_each_entry_reverse(cur,&vst->output_list,list)
-                {
-                    if(vframe->pkt_pts > cur->pkt_pts)
-                    {
-                        list_add(&vframe->list, &cur->list);
-                        break;
-                    };
-                };
-            };
-        };
-        mutex_unlock(&vst->output_lock);
-
+        put_output_frame(vst, vframe);
 
 //        printf("decoded index: %d pts: %f pkt_pts %f pkt_dts %f\n",
 //               vst->dfx, vst->vframe[vst->dfx].pts,

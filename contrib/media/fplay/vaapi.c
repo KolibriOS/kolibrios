@@ -608,8 +608,6 @@ void va_create_planar(vst_t *vst, vframe_t *vframe)
     if(vframe->format != AV_PIX_FMT_NONE)
         return;
 
-ENTER();
-
     status = vaDeriveImage(vaapi->display,v_surface_id[vframe->index],&vaimage);
     if (!vaapi_check_status(status, "vaDeriveImage()"))
     {
@@ -653,5 +651,5 @@ ENTER();
 
     vaReleaseBufferHandle(vaapi->display, vaimage.buf);
     vaDestroyImage(vaapi->display, vaimage.image_id);
-LEAVE();
+
 }

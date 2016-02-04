@@ -135,7 +135,11 @@ struct vstate
 
     vframe_t       *decoder_frame;
     void           *hwCtx;          /* hardware context         */
-    int             hwdec;          /* hardware decoder         */
+    int             hwdec:1;        /* hardware decoder         */
+    int             blit_bitmap:1;  /* hardware RGBA blitter    */
+    int             blit_texture:1; /* hardware RGBA blit and scale */
+    int             blit_planar:1;  /* hardbare YUV blit and scale */
+    int             frame_reorder:1;
 };
 
 
