@@ -47,9 +47,6 @@ static bitmap_t *sw_create_bitmap(uint32_t width, uint32_t height)
     if (bitmap->buffer == NULL)
         goto err_1;
 
-//    printf("create bitmap: %p %dx%d buffer: %p\n",
-//            bitmap, bitmap->width, bitmap->height, bitmap->buffer);
-
     return bitmap;
 
 err_1:
@@ -180,6 +177,7 @@ static struct pix_driver sw_driver =
     sw_create_client,
     sw_resize_client,
     NULL,
+    NULL,
     NULL
 };
 
@@ -191,6 +189,9 @@ uint32_t pxInit(int hw)
 
     uint32_t api_version;
     ioctl_t io;
+
+    if(driver != NULL)
+        return driver->driver_caps;
 
     driver = &sw_driver;
 
@@ -271,6 +272,15 @@ planar_t* pxCreatePlanar(int name, int format,
 }
 
 
+int pxBlitPlanar(planar_t *planar, int dst_x, int dst_y,
+                 uint32_t w, uint32_t h, int src_x, int src_y)
+{
+    if(driver->blit_planar)
+        return driver->blit_planar(planar, dst_x, dst_y,
+                                   w, h, src_x, src_y);
+    else
+        return 0;
+};
 
 
 

@@ -10,6 +10,8 @@
 #define WIN_STATE_MINIMIZED  0x02
 #define WIN_STATE_ROLLED     0x04
 
+#define LINE()    printf("%s line %d\n", __FUNCTION__,__LINE__)
+
 static int drm_ioctl(int fd, unsigned long request, void *arg)
 {
     ioctl_t  io;
@@ -125,39 +127,6 @@ err_0:
     return -1;
 };
 
-static GLint create_shader(GLenum type, const char *source)
-{
-    GLint ok;
-    GLint shader;
-
-    shader = glCreateShader(type);
-    if(shader == 0)
-        goto err;
-
-    glShaderSource(shader, 1, (const GLchar **) &source, NULL);
-    glCompileShader(shader);
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &ok);
-    if (!ok) {
-        GLchar *info;
-        GLint size;
-
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &size);
-        info = malloc(size);
-
-        glGetShaderInfoLog(shader, size, NULL, info);
-        DBG("Failed to compile %s: %s\n",
-                type == GL_FRAGMENT_SHADER ? "FS" : "VS",info);
-        DBG("Program source:\n%s", source);
-        DBG("GLSL compile failure\n");
-        free(info);
-        glDeleteShader(shader);
-        shader = 0;
-    };
-
-    DBG("create shader %d\n", shader);
-err:
-    return shader;
-}
 
 
 static void *px_create_obj(struct render *px, size_t size,
@@ -347,31 +316,189 @@ err_0:
     return -1;
 };
 
-static struct render* create_render(EGLDisplay dpy, EGLContext context, int dx, int dy, int w, int h)
+static GLint create_shader(GLenum type, const char *source)
+{
+    GLint ok;
+    GLint shader;
+
+    shader = glCreateShader(type);
+    if(shader == 0)
+        goto err;
+
+    glShaderSource(shader, 1, (const GLchar **) &source, NULL);
+    glCompileShader(shader);
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &ok);
+    if (!ok) {
+        GLchar *info;
+        GLint size;
+
+        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &size);
+        info = malloc(size);
+
+        glGetShaderInfoLog(shader, size, NULL, info);
+        DBG("Failed to compile %s: %s\n",
+                type == GL_FRAGMENT_SHADER ? "FS" : "VS",info);
+        DBG("Program source:\n%s", source);
+        DBG("GLSL compile failure\n");
+        free(info);
+        glDeleteShader(shader);
+        shader = 0;
+    };
+
+    DBG("create shader %d\n", shader);
+err:
+    return shader;
+}
+
+static GLuint create_rgba_shader(struct shader *shader)
 {
     const char *vs_src =
         "attribute vec4 v_position;\n"
         "attribute vec4 v_texcoord0;\n"
-        "varying vec2 source_texture;\n"
+        "varying vec2 tex_coord;\n"
         "void main()\n"
         "{\n"
         "   gl_Position = v_position;\n"
-        "   source_texture = v_texcoord0.xy;\n"
+        "   tex_coord   = v_texcoord0.xy;\n"
         "}\n";
 
-    const char *fs_i965 =
-        "varying vec2 source_texture;\n"
-        "uniform sampler2D sampler_src;\n"
-        "uniform sampler2D sampler_mask;\n"
+    const char *fs_rgba =
+        "uniform sampler2D tex_rgba;\n"
+        "uniform sampler2D tex_mask;\n"
+        "varying vec2 tex_coord;\n"
         "void main()\n"
         "{\n"
-        "   float ca = texture2D(sampler_mask, source_texture).r;\n"
-        "   gl_FragColor = vec4(texture2D(sampler_src, source_texture).rgb, ca);\n"
+        "   float ca = texture2D(tex_mask, tex_coord).r;\n"
+        "   gl_FragColor = vec4(texture2D(tex_rgba, tex_coord).rgb, ca);\n"
         "}\n";
+
+    GLuint prog;
+    GLint  vs_shader, fs_shader;
+    int ret;
+
+    prog = glCreateProgram();
+    if(prog == 0)
+        goto err;
+
+    vs_shader = create_shader(GL_VERTEX_SHADER, vs_src);
+    if(vs_shader == 0)
+        goto err;
+
+    fs_shader = create_shader(GL_FRAGMENT_SHADER, fs_rgba);
+    if(fs_shader == 0)
+        goto err;
+
+    glAttachShader(prog, vs_shader);
+    glAttachShader(prog, fs_shader);
+    glBindAttribLocation(prog, 0, "v_position");
+    glBindAttribLocation(prog, 1, "v_texcoord0");
+
+    glLinkProgram(prog);
+    glGetProgramiv(prog, GL_LINK_STATUS, &ret);
+    if (!ret)
+    {
+        GLchar *info;
+        GLint size;
+
+        glGetProgramiv(prog, GL_INFO_LOG_LENGTH, &size);
+        info = malloc(size);
+
+        glGetProgramInfoLog(prog, size, NULL, info);
+        DBG("Failed to link: %s\n", info);
+        DBG("GLSL link failure\n");
+        free(info);
+        goto err;
+    }
+
+    shader->sampler0  = glGetUniformLocation(prog,"tex_rgba");
+    shader->sm_mask   = glGetUniformLocation(prog,"tex_mask");
+    shader->blit_prog = prog;
+    return prog;
+err:
+    return 0;
+}
+
+static GLuint create_y_uv_shader(struct shader *shader)
+{
+    const char *vs_src =
+        "attribute vec4 v_position;\n"
+        "attribute vec4 v_texcoord0;\n"
+        "varying vec2 tex_coord;\n"
+        "void main()\n"
+        "{\n"
+        "   gl_Position = v_position;\n"
+        "   tex_coord   = v_texcoord0.xy;\n"
+        "}\n";
+
+    const char *fs_y_uv =
+        "uniform sampler2D tex_src_y;\n"
+        "uniform sampler2D tex_src_uv;\n"
+        "uniform sampler2D tex_mask;\n"
+        "varying vec2 tex_coord;\n"
+        "void main()\n"
+        "{\n"
+        "   float y = 1.16438356 * (texture2D(tex_src_y, tex_coord).x - 0.0625);\n"
+        "   float u = texture2D(tex_src_uv, tex_coord).r - 0.5;\n"
+        "   float v = texture2D(tex_src_uv, tex_coord).g - 0.5;\n"
+        "   gl_FragColor.r = y + 1.59602678 * v;\n"          \
+        "   gl_FragColor.g = y - 0.39176229 * u - 0.81296764 * v;\n" \
+        "   gl_FragColor.b = y + 2.01723214 * u;\n"          \
+        "   gl_FragColor.a = texture2D(tex_mask, tex_coord).r;\n"
+        "}\n";
+
+    GLuint prog;
+    GLint  vs_shader, fs_shader;
+    int ret;
+
+    prog = glCreateProgram();
+    if(prog == 0)
+        goto err;
+
+    vs_shader = create_shader(GL_VERTEX_SHADER, vs_src);
+    if(vs_shader == 0)
+        goto err;
+
+    fs_shader = create_shader(GL_FRAGMENT_SHADER, fs_y_uv);
+    if(fs_shader == 0)
+        goto err;
+
+    glAttachShader(prog, vs_shader);
+    glAttachShader(prog, fs_shader);
+    glBindAttribLocation(prog, 0, "v_position");
+    glBindAttribLocation(prog, 1, "v_texcoord0");
+
+    glLinkProgram(prog);
+    glGetProgramiv(prog, GL_LINK_STATUS, &ret);
+    if (!ret)
+    {
+        GLchar *info;
+        GLint size;
+
+        glGetProgramiv(prog, GL_INFO_LOG_LENGTH, &size);
+        info = malloc(size);
+
+        glGetProgramInfoLog(prog, size, NULL, info);
+        DBG("Failed to link: %s\n", info);
+        DBG("GLSL link failure\n");
+        free(info);
+        goto err;
+    }
+
+    shader->sampler0  = glGetUniformLocation(prog,"tex_src_y");
+    shader->sampler1  = glGetUniformLocation(prog,"tex_src_uv");
+    shader->sm_mask   = glGetUniformLocation(prog,"tex_mask");
+    shader->blit_prog = prog;
+    return prog;
+err:
+    return 0;
+}
+
+static struct render* create_render(EGLDisplay dpy, EGLContext context, int dx, int dy, int w, int h)
+{
 
     struct drm_i915_fb_info fb;
     struct render *px;
-    GLint  vs_shader, fs_shader;
+
     int    ret;
 
     px = (struct render*)malloc(sizeof(struct render));
@@ -418,46 +545,8 @@ static struct render* create_render(EGLDisplay dpy, EGLContext context, int dx, 
     if(create_mask(px))
         goto err_4;
 
-    px->blit_prog = glCreateProgram();
-    if(px->blit_prog == 0)
-        goto err_4;
-
-    vs_shader = create_shader(GL_VERTEX_SHADER, vs_src);
-    if(vs_shader == 0)
-        goto err_4;
-
-    fs_shader = create_shader(GL_FRAGMENT_SHADER, fs_i965);
-    if(fs_shader == 0)
-        goto err_4;
-
-    glAttachShader(px->blit_prog, vs_shader);
-    glAttachShader(px->blit_prog, fs_shader);
-    glBindAttribLocation(px->blit_prog, 0, "v_position");
-    glBindAttribLocation(px->blit_prog, 1, "v_texcoord0");
-
-    glLinkProgram(px->blit_prog);
-    glGetProgramiv(px->blit_prog, GL_LINK_STATUS, &ret);
-    if (!ret)
-    {
-        GLchar *info;
-        GLint size;
-
-        glGetProgramiv(px->blit_prog, GL_INFO_LOG_LENGTH, &size);
-        info = malloc(size);
-
-        glGetProgramInfoLog(px->blit_prog, size, NULL, info);
-        DBG("Failed to link: %s\n", info);
-        DBG("GLSL link failure\n");
-        free(info);
-        goto err_4;
-    }
-
-    px->sampler = glGetUniformLocation(px->blit_prog,"sampler_src");
-    px->sm_mask = glGetUniformLocation(px->blit_prog,"sampler_mask");
-
-    glUseProgram(px->blit_prog);
-    glUniform1i(px->sampler, 0);
-    glUniform1i(px->sm_mask, 1);
+    create_y_uv_shader(&px->shader_y_uv);
+    create_rgba_shader(&px->shader_rgba);
 
     glEnableClientState(GL_VERTEX_ARRAY);
 
@@ -552,7 +641,7 @@ static planar_t* hw_create_planar(EGLint name, EGLint format, uint32_t width, ui
 
     switch (format)
     {
-        case EGL_TEXTURE_Y_UV_WL:
+        case WL_DRM_FORMAT_NV12:
             num_planes = 2;
             break;
         case EGL_TEXTURE_Y_U_V_WL:
@@ -565,12 +654,14 @@ static planar_t* hw_create_planar(EGLint name, EGLint format, uint32_t width, ui
             num_planes = 0;
     }
 
+//    printf("%s num_planes %d\n", __FUNCTION__, num_planes);
+
     if(num_planes == 0)
-        return NULL;
+        goto fail;
 
     planar = calloc(1, sizeof(struct planar));
     if(planar == NULL)
-        return NULL;
+        goto fail;
 
     img = eglCreatePlanarImage(px->dpy, px->context, (EGLClientBuffer)name, attribs);
     if(img == NULL)
@@ -593,17 +684,28 @@ static planar_t* hw_create_planar(EGLint name, EGLint format, uint32_t width, ui
 
     for(i = 0; i < num_planes; i++)
     {
+        EGLImageKHR image;
         EGLint attr[3];
         attr[0] = EGL_WAYLAND_PLANE_WL;
         attr[1] = i;
         attr[2] = EGL_NONE;
 
-        planar->image[i] = eglCreateImageKHR(px->dpy, px->context,
-                           EGL_WAYLAND_BUFFER_WL,(EGLClientBuffer)name, attr);
+        image = eglCreateImageKHR(px->dpy, px->context,
+                                   EGL_WAYLAND_BUFFER_WL,(EGLClientBuffer)img, attr);
 
+        planar->image[i] = image;
         glBindTexture(GL_TEXTURE_2D, planar->tex[i]);
 
-        glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, planar->image[i]);
+        if(glGetError() != GL_NO_ERROR)
+        {
+            goto fail;
+        };
+
+        glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, image);
+        if(glGetError() != GL_NO_ERROR)
+        {
+            goto fail;
+        }
 
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
@@ -613,6 +715,7 @@ static planar_t* hw_create_planar(EGLint name, EGLint format, uint32_t width, ui
 
 err_0:
     free(planar);
+fail:
 
     return NULL;
 }
@@ -723,10 +826,118 @@ static int hw_blit(bitmap_t *bitmap, int dst_x, int dst_y,
     vertices[1*2+1] = t1;
     vertices[3*2+1] = t5;
 
+    struct shader *shader = &px->shader_rgba;
+
+    glUseProgram(shader->blit_prog);
+    glUniform1i(shader->sampler0, 0);
+    glUniform1i(shader->sm_mask, 1);
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, bitmap->tex);
 
     glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, px->texture[TEX_MASK]);
+
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    glFlush();
+
+    return;
+};
+
+static int hw_blit_planar(planar_t *planar, int dst_x, int dst_y,
+                   uint32_t w, uint32_t h, int src_x, int src_y)
+{
+    struct drm_i915_mask_update update;
+    struct drm_i915_fb_info fb;
+
+    uint32_t winx, winy, winw, winh;
+    uint8_t  state;
+    float xscale, yscale;
+    int r, b;
+    float *vertices  = px->vertices;
+
+    get_proc_info(proc_info);
+
+    state  = *(uint8_t*)(proc_info+70);
+    if(state & (WIN_STATE_MINIMIZED|WIN_STATE_ROLLED))
+        return;
+
+    winx = *(uint32_t*)(proc_info+34);
+    winy = *(uint32_t*)(proc_info+38);
+    winw = *(uint32_t*)(proc_info+42)+1;
+    winh = *(uint32_t*)(proc_info+46)+1;
+
+    __builtin_memset(&fb, 0, sizeof(fb));
+    if( 0 != drm_ioctl(px->fd, SRV_FBINFO, &fb))
+    {
+        DBG("failed to get framebuffer info\n");
+        return;
+    };
+
+    if( fb.width  != px->scr_width ||
+        fb.height != px->scr_height )
+    {
+        px->scr_width  = fb.width;
+        px->scr_height = fb.height;
+
+        eglDestroyImageKHR(px->dpy, px->screen);
+
+        if(update_fb(px, fb.name, fb.pitch))
+            return;
+    };
+
+    update.handle = px->mask.handle;
+    update.dx     = px->dx;
+    update.dy     = px->dy;
+    update.width  = px->width;
+    update.height = px->height;
+    update.bo_pitch = (px->width+15) & ~15;
+    update.bo_map = (int)px->mask.buffer;
+
+    if(drm_ioctl(px->fd, SRV_MASK_UPDATE_EX, &update))
+    {
+        return;
+    }
+
+    xscale = 1.0/px->scr_width;
+    yscale = 1.0/px->scr_height;
+
+    r = winx + px->dx + px->width;
+    b = winy + px->dy + px->height;
+
+    float t0, t1, t2, t5;
+
+//    render->tc_src[1*2]  = 1.0;
+//    render->tc_src[2*2]  = 1.0;
+//    render->tc_src[2*2+1]= 1.0;
+//    render->tc_src[3*2+1]= 1.0;
+
+    vertices[0]     = t0 = 2*(winx+px->dx)*xscale - 1.0;
+    vertices[1 * 2] = t2 = 2*r*xscale - 1.0;
+
+    vertices[2 * 2] = t2;
+    vertices[3 * 2] = t0;
+
+    vertices[1]     = t1 = 2*(winy+px->dy)*yscale - 1.0;
+    vertices[2*2+1] = t5 = 2*b*yscale - 1.0;
+    vertices[1*2+1] = t1;
+    vertices[3*2+1] = t5;
+
+    struct shader *shader = &px->shader_y_uv;
+
+    glUseProgram(shader->blit_prog);
+    glUniform1i(shader->sampler0, 0);
+    glUniform1i(shader->sampler1, 1);
+    glUniform1i(shader->sm_mask, 2);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, planar->tex[0]);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, planar->tex[1]);
+
+    glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, px->texture[TEX_MASK]);
 
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -803,7 +1014,8 @@ static struct pix_driver gl_driver =
     hw_create_client,
     hw_resize_client,
     hw_fini,
-    hw_create_planar
+    hw_create_planar,
+    hw_blit_planar
 };
 
 struct pix_driver *DrvInit(uint32_t service)
