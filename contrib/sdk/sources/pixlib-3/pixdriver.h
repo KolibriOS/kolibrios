@@ -18,6 +18,7 @@ struct pix_driver
                             uint32_t offset0, uint32_t pitch0,
                             uint32_t offset1, uint32_t pitch1,
                             uint32_t offset2, uint32_t pitch2);
+    int       (*destroy_planar)(planar_t *planar);
     int       (*blit_planar)(planar_t *planar, int dst_x, int dst_y,
                              uint32_t w, uint32_t h, int src_x, int src_y);
 };

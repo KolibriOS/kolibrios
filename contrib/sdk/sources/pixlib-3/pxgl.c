@@ -615,6 +615,22 @@ err_0:
     return NULL;
 };
 
+static int hw_destroy_planar(planar_t *planar)
+{
+    glDeleteTextures(planar->num_planes, &planar->tex[0]);
+
+    if(planar->image[2] != NULL)
+        eglDestroyImageKHR(px->dpy, planar->image[2]);
+    if(planar->image[1] != NULL)
+        eglDestroyImageKHR(px->dpy, planar->image[1]);
+    if(planar->image[0] != NULL)
+        eglDestroyImageKHR(px->dpy, planar->image[0]);
+    if(planar->planar_image != NULL)
+        eglDestroyImageKHR(px->dpy, planar->planar_image);
+    free(planar);
+    return 0;
+};
+
 static planar_t* hw_create_planar(EGLint name, EGLint format, uint32_t width, uint32_t height,
                             uint32_t offset0, uint32_t pitch0,
                             uint32_t offset1, uint32_t pitch1,
@@ -670,6 +686,7 @@ static planar_t* hw_create_planar(EGLint name, EGLint format, uint32_t width, ui
     planar->width  = width;
     planar->height = height;
     planar->name   = name;
+    planar->num_planes = num_planes;
     planar->planar_image = img;
 
     planar->offset[0] = offset0;
@@ -681,6 +698,8 @@ static planar_t* hw_create_planar(EGLint name, EGLint format, uint32_t width, ui
     planar->pitch[2] = pitch2;
 
     glGenTextures(num_planes, &planar->tex[0]);
+    if(glGetError() != GL_NO_ERROR)
+       goto err_0;
 
     for(i = 0; i < num_planes; i++)
     {
@@ -692,19 +711,20 @@ static planar_t* hw_create_planar(EGLint name, EGLint format, uint32_t width, ui
 
         image = eglCreateImageKHR(px->dpy, px->context,
                                    EGL_WAYLAND_BUFFER_WL,(EGLClientBuffer)img, attr);
+        if(image == NULL)
+            goto err_1;
 
         planar->image[i] = image;
         glBindTexture(GL_TEXTURE_2D, planar->tex[i]);
-
         if(glGetError() != GL_NO_ERROR)
         {
-            goto fail;
+            goto err_1;
         };
 
         glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, image);
         if(glGetError() != GL_NO_ERROR)
         {
-            goto fail;
+            goto err_1;
         }
 
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
@@ -713,13 +733,15 @@ static planar_t* hw_create_planar(EGLint name, EGLint format, uint32_t width, ui
 
     return planar;
 
+err_1:
+    hw_destroy_planar(planar);
+    return NULL;
+
 err_0:
     free(planar);
 fail:
-
     return NULL;
 }
-
 
 static int hw_destroy_bitmap(bitmap_t * bitmap)
 {
@@ -731,6 +753,7 @@ static int hw_destroy_bitmap(bitmap_t * bitmap)
     close.handle = bitmap->handle;
     drm_ioctl(px->fd, DRM_IOCTL_GEM_CLOSE, &close);
     free(bitmap);
+    return 0;
 };
 
 static void *hw_lock_bitmap(bitmap_t *bitmap, uint32_t *pitch)
@@ -1015,6 +1038,7 @@ static struct pix_driver gl_driver =
     hw_resize_client,
     hw_fini,
     hw_create_planar,
+    hw_destroy_planar,
     hw_blit_planar
 };
 

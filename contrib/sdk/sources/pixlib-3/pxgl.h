@@ -87,6 +87,7 @@ struct planar
     uint32_t    width;
     uint32_t    height;
     GLuint      name;
+    int         num_planes;
     EGLImageKHR planar_image;
     EGLImageKHR image[3];
     GLuint      offset[3];

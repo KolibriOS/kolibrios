@@ -21,18 +21,20 @@ bitmap_t *pxCreateBitmap(uint32_t width, uint32_t height);
 
 int pxDestroyBitmap(bitmap_t *bitmap);
 
-planar_t* pxCreatePlanar(int name, int format,
-                         uint32_t width, uint32_t height,
-                         uint32_t offset0, uint32_t pitch0,
-                         uint32_t offset1, uint32_t pitch1,
-                         uint32_t offset2, uint32_t pitch2);
-
 void *pxLockBitmap(bitmap_t *bitmap, uint32_t *pitch);
 
 int pxResizeBitmap(bitmap_t *bitmap, uint32_t width, uint32_t height);
 
 int pxBlitBitmap(bitmap_t *bitmap, int dst_x, int dst_y,
                  uint32_t w, uint32_t h, int src_x, int src_y);
+
+planar_t* pxCreatePlanar(int name, int format,
+                         uint32_t width, uint32_t height,
+                         uint32_t offset0, uint32_t pitch0,
+                         uint32_t offset1, uint32_t pitch1,
+                         uint32_t offset2, uint32_t pitch2);
+
+int pxDestroyPlanar(planar_t *planar);
 
 int pxBlitPlanar(planar_t *planar, int dst_x, int dst_y,
                  uint32_t w, uint32_t h, int src_x, int src_y);
