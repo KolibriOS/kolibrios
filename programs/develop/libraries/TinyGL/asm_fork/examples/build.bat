@@ -1,5 +1,6 @@
 if not exist bin mkdir bin
 if not exist bin\text_1.png @copy text_1.png bin\text_1.png
+if not exist bin\text_2.png @copy text_2.png bin\text_2.png
 if not exist bin\toolb_1.png @copy toolb_1.png bin\toolb_1.png
 if not exist bin\font8x9.bmp @copy ..\..\..\..\..\fs\kfar\trunk\font8x9.bmp bin\font8x9.bmp
 if not exist bin\tinygl.obj @fasm.exe -m 16384 ..\tinygl.asm bin\tinygl.obj
@@ -18,6 +19,7 @@ if not exist bin\tinygl.obj @fasm.exe -m 16384 ..\tinygl.asm bin\tinygl.obj
 
 @fasm.exe -m 16384 gears.asm bin\gears.kex
 @fasm.exe -m 16384 textures0.asm bin\textures0.kex
+@fasm.exe -m 16384 textures1.asm bin\textures1.kex
 
 
 @kpack bin\test0.kex
@@ -34,5 +36,6 @@ if not exist bin\tinygl.obj @fasm.exe -m 16384 ..\tinygl.asm bin\tinygl.obj
 
 @kpack bin\gears.kex
 @kpack bin\textures0.kex
+@kpack bin\textures1.kex
 
 pause
