@@ -1,0 +1,4 @@
+LIBAVDEVICE_56 {
+        global: DllStartup; avdevice_*;
+        local: *;
+};

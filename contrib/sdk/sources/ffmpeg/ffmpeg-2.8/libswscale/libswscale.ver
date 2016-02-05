@@ -1,0 +1,5 @@
+LIBSWSCALE_3 {
+        global: DllStartup;
+                swscale_*; sws_*;
+        local: *;
+};

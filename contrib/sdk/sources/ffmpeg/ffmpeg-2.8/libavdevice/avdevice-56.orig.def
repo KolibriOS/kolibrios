@@ -1,0 +1,14 @@
+EXPORTS
+    DllStartup @1
+    avdevice_app_to_dev_control_message @2
+    avdevice_capabilities_create @3
+    avdevice_capabilities_free @4
+    avdevice_configuration @5
+    avdevice_dev_to_app_control_message @6
+    avdevice_free_list_devices @7
+    avdevice_license @8
+    avdevice_list_devices @9
+    avdevice_list_input_sources @10
+    avdevice_list_output_sinks @11
+    avdevice_register_all @12
+    avdevice_version @13

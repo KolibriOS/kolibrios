@@ -1,0 +1,24 @@
+EXPORTS
+    DllStartup @1
+    swr_alloc @2
+    swr_alloc_set_opts @3
+    swr_close @4
+    swr_config_frame @5
+    swr_convert @6
+    swr_convert_frame @7
+    swr_drop_output @8
+    swr_ffversion @9 DATA
+    swr_free @10
+    swr_get_class @11
+    swr_get_delay @12
+    swr_get_out_samples @13
+    swr_init @14
+    swr_inject_silence @15
+    swr_is_initialized @16
+    swr_next_pts @17
+    swr_set_channel_mapping @18
+    swr_set_compensation @19
+    swr_set_matrix @20
+    swresample_configuration @21
+    swresample_license @22
+    swresample_version @23
