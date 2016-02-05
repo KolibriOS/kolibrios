@@ -74,20 +74,30 @@ $(LIB_DIR)/libpixlib3.a: newlib libdrm Mesa
 
 #####################################
 
-ffmpeg: $(DLL_DIR)/avcodec-55.dll $(DLL_DIR)/avdevice-55.dll \
-	$(DLL_DIR)/avformat-55.dll $(DLL_DIR)/avutil-52.dll \
-	$(DLL_DIR)/swresample-0.dll $(DLL_DIR)/swscale-2.dll \
+vaapi: $(DLL_DIR)/i65-video.dll $(DLL_DIR)/libva.dll
+
+$(DLL_DIR)/i65-video.dll : newlib libdrm
+	$(MAKE) -C vaapi/intel-driver-1.6.2
+
+$(DLL_DIR)/libva.dll : newlib libdrm
+	$(MAKE) -C vaapi/libva-1.6.2
+
+#####################################
+
+ffmpeg: $(DLL_DIR)/avcodec-56.dll $(DLL_DIR)/avdevice-56.dll \
+	$(DLL_DIR)/avformat-56.dll $(DLL_DIR)/avutil-54.dll \
+	$(DLL_DIR)/swresample-1.dll $(DLL_DIR)/swscale-3.dll \
 	$(LIB_DIR)/libavcodec.dll.a $(LIB_DIR)/libavdevice.dll.a \
 	$(LIB_DIR)/libavformat.dll.a $(LIB_DIR)/libavutil.dll.a \
 	$(LIB_DIR)/libswresample.dll.a $(LIB_DIR)/libswscale.dll.a
 
-$(DLL_DIR)/avcodec-55.dll $(DLL_DIR)/avdevice-55.dll \
-	$(DLL_DIR)/avformat-55.dll $(DLL_DIR)/avutil-52.dll \
-	$(DLL_DIR)/swresample-0.dll $(DLL_DIR)/swscale-2.dll \
+$(DLL_DIR)/avcodec-56.dll $(DLL_DIR)/avdevice-56.dll \
+	$(DLL_DIR)/avformat-56.dll $(DLL_DIR)/avutil-54.dll \
+	$(DLL_DIR)/swresample-1.dll $(DLL_DIR)/swscale-3.dll \
 	$(LIB_DIR)/libavcodec.dll.a $(LIB_DIR)/libavdevice.dll.a \
 	$(LIB_DIR)/libavformat.dll.a $(LIB_DIR)/libavutil.dll.a \
-	$(LIB_DIR)/libswresample.dll.a $(LIB_DIR)/libswscale.dll.a : newlib
-	$(MAKE) -C ffmpeg
+	$(LIB_DIR)/libswresample.dll.a $(LIB_DIR)/libswscale.dll.a : newlib vaapi
+	$(MAKE) -C ffmpeg/ffmpeg-2.8
 
 #####################################
 
@@ -132,16 +142,6 @@ eglut: $(DLL_DIR)/libeglut.dll $(LIB_DIR)/libeglut.dll.a $(LIB_DIR)/libeglut.a
 
 $(DLL_DIR)/libeglut.dll $(LIB_DIR)/libeglut.dll.a $(LIB_DIR)/libeglut.a : newlib Mesa
 	$(MAKE) -C eglut
-
-#####################################
-
-vaapi: $(DLL_DIR)/i65-video.dll $(DLL_DIR)/libva.dll
-
-$(DLL_DIR)/i65-video.dll : newlib libdrm
-	$(MAKE) -C vaapi/intel-driver-1.4.1
-
-$(DLL_DIR)/libva.dll : newlib libdrm
-	$(MAKE) -C vaapi/libva-1.4.1
 
 #####################################
 
