@@ -13,8 +13,8 @@ ARFLAG = crs
 SDK_DIR:= $(abspath ../../sdk)
 LIB_DIR:= $(SDK_DIR)/lib
 
-INCLUDES= -I. -I$(SDK_DIR)/sources/newlib/libc/include -I$(SDK_DIR)/sources/ffmpeg-2.5
-INCLUDES+=-I$(SDK_DIR)/sources/freetype/include -I$(SDK_DIR)/sources/vaapi/libva-1.4.1
+INCLUDES= -I. -I$(SDK_DIR)/sources/newlib/libc/include -I$(SDK_DIR)/sources/ffmpeg/ffmpeg-2.8
+INCLUDES+=-I$(SDK_DIR)/sources/freetype/include -I$(SDK_DIR)/sources/vaapi/libva-1.6.2
 
 DEFINES= -DDEBUG=1 -DHAVE_VAAPI -DPACKAGE_NAME=\"Fplay-vaapi\"
 LIBS:= -lavdevice.dll -lavformat.dll -lavcodec.dll -lavutil.dll -lswscale.dll
