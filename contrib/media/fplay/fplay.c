@@ -22,8 +22,6 @@ volatile enum player_state sound_state   = STOP;
 
 uint32_t win_width, win_height;
 
-int have_sound = 0;
-
 uint8_t  *decoder_buffer;
 extern int resampler_size;
 extern int sample_rate;
@@ -33,8 +31,6 @@ int64_t  rewind_pos;
 int64_t stream_duration;
 
 int threads_running = DECODER_THREAD;
-
-extern double audio_base;
 
 
 int main( int argc, char *argv[])
@@ -70,7 +66,6 @@ int main( int argc, char *argv[])
 
     vst.fCtx->flags |= AVFMT_FLAG_GENPTS;
 
-  // Retrieve stream information
     if(avformat_find_stream_info(vst.fCtx, NULL) < 0)
     {
         printf("Cannot find streams\n\r");
@@ -89,7 +84,6 @@ int main( int argc, char *argv[])
 
     stream_duration = vst.fCtx->duration;
 
-   // Find the first video stream
     vst.vStream = -1;
     vst.aStream = -1;
 
@@ -108,7 +102,6 @@ int main( int argc, char *argv[])
            vst.aStream < 0)
         {
             vst.aStream = i;
-            vst.audio_time_base = vst.fCtx->streams[i]->time_base;
             if(stream_duration == 0)
                stream_duration = vst.fCtx->streams[i]->duration;
         }
@@ -122,12 +115,6 @@ int main( int argc, char *argv[])
 
   //   __asm__ __volatile__("int3");
 
-    // Get a pointer to the codec context for the video stream
-    vst.vCtx = vst.fCtx->streams[vst.vStream]->codec;
-    vst.aCtx = vst.fCtx->streams[vst.aStream]->codec;
-
-    vst.vCodec = avcodec_find_decoder(vst.vCtx->codec_id);
-
     INIT_LIST_HEAD(&vst.input_list);
     INIT_LIST_HEAD(&vst.output_list);
     mutex_init(&vst.q_video.lock);
@@ -137,37 +124,14 @@ int main( int argc, char *argv[])
     mutex_init(&vst.input_lock);
     mutex_init(&vst.output_lock);
 
-    if(vst.vCodec == NULL)
-    {
-        printf("Unsupported codec with id %d for input stream %d\n",
-        vst.vCtx->codec_id, vst.vStream);
-        return -1;
-    }
+    vst.vCtx = vst.fCtx->streams[vst.vStream]->codec;
+    vst.aCtx = vst.fCtx->streams[vst.aStream]->codec;
 
-    vst.Frame = av_frame_alloc();
-    if(vst.Frame == NULL)
-    {
-        printf("Cannot alloc video frame\n");
-        return -1;
-    };
-
-    if(fplay_init_context(&vst))
+    if(init_video_decoder(&vst) != 0 )
         return -1;
 
-    if(avcodec_open2(vst.vCtx, vst.vCodec, NULL) < 0)
-    {
-        printf("Error while opening codec for input stream %d\n",
-                vst.vStream);
-        return -1; // Could not open codec
-    };
-
-    if (vst.aCtx->channels > 0)
-        vst.aCtx->request_channels = FFMIN(2, vst.aCtx->channels);
-    else
-        vst.aCtx->request_channels = 2;
-
+    vst.aCtx->request_channel_layout = AV_CH_LAYOUT_STEREO;
     vst.aCodec = avcodec_find_decoder(vst.aCtx->codec_id);
-
     if(vst.aCodec)
     {
         if(avcodec_open2(vst.aCtx, vst.aCodec, NULL) >= 0 )
@@ -198,11 +162,11 @@ int main( int argc, char *argv[])
                     astream.count  = 0;
                     astream.buffer = (char *)av_mallocz(192000*3);
                     if( astream.buffer != NULL )
-                        have_sound = 1;
+                        vst.has_sound = 1;
                     else
                         av_free(decoder_buffer);
                 }
-                if( have_sound == 0)
+                if( vst.has_sound == 0)
                 {
                         printf("Not enough memory for audio buffers\n");
                 }
@@ -229,9 +193,11 @@ int main( int argc, char *argv[])
     if(astream.lock.handle)
         mutex_destroy(&astream.lock);
 
+    fini_video_decoder(&vst);
     mutex_destroy(&vst.q_video.lock);
     mutex_destroy(&vst.q_audio.lock);
     mutex_destroy(&vst.decoder_lock);
+
     return 0;
 }
 
@@ -247,14 +213,14 @@ static int load_frame(vst_t *vst)
         if(packet.stream_index == vst->vStream)
             put_packet(&vst->q_video, &packet);
         else if( (packet.stream_index == vst->aStream) &&
-                  (have_sound != 0) )
+                  (vst->has_sound != 0) )
         {
             put_packet(&vst->q_audio, &packet);
-            if(audio_base == -1.0)
+            if(vst->audio_timer_valid == 0 &&
+               packet.pts != AV_NOPTS_VALUE )
             {
-                if (packet.pts != AV_NOPTS_VALUE)
-                    audio_base = get_audio_base(vst) * packet.pts;
-//                    printf("audio base %f\n", audio_base);
+                vst->audio_timer_base = get_audio_base(vst) * packet.pts;
+                vst->audio_timer_valid = 1;
             };
         }
         else av_free_packet(&packet);

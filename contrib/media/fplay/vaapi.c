@@ -160,21 +160,6 @@ static const char *string_of_VAEntrypoint(VAEntrypoint entrypoint)
     return "<unknown>";
 }
 
-VADisplay va_open_display(void)
-{
-    VADisplay va_dpy;
-
-    drm_fd = get_service("DISPLAY");
-    if (drm_fd == 0)
-        return NULL;
-
-    va_dpy = vaGetDisplayDRM(drm_fd);
-    if (va_dpy)
-        return va_dpy;
-
-    drm_fd = 0;
-    return NULL;
-};
 
 void *vaapi_init(VADisplay display)
 {
@@ -343,7 +328,7 @@ ENTER();
 
     printf("vaCreateSurfaces %dx%d\n",picture_width,picture_height);
     status = vaCreateSurfaces(vaapi->display, VA_RT_FORMAT_YUV420, picture_width, picture_height,
-                              v_surface_id,vst->nframes,NULL,0);
+                              v_surface_id,vst->decoder->nframes,NULL,0);
     if (!vaapi_check_status(status, "vaCreateSurfaces()"))
     {
         FAIL();
@@ -378,7 +363,7 @@ ENTER();
     status = vaCreateContext(vaapi->display, config_id,
                              picture_width, picture_height,
                              VA_PROGRESSIVE,
-                             v_surface_id, vst->nframes,
+                             v_surface_id, vst->decoder->nframes,
                              &context_id);
     if (!vaapi_check_status(status, "vaCreateContext()"))
     {
@@ -399,7 +384,7 @@ static enum PixelFormat get_format(struct AVCodecContext *avctx,
     vst_t *vst = (vst_t*)avctx->opaque;
     VAProfile profile = VAProfileNone;
 
-
+ENTER();
     for (int i = 0; fmt[i] != PIX_FMT_NONE; i++)
     {
         enum AVCodecID codec = avctx->codec_id;
@@ -449,7 +434,7 @@ static int get_buffer2(AVCodecContext *avctx, AVFrame *pic, int flags)
     vst_t *vst = (vst_t*)avctx->opaque;
     void *surface;
 
-    surface = (void *)(uintptr_t)v_surface_id[vst->decoder_frame->index];
+    surface = (void *)(uintptr_t)v_surface_id[vst->decoder->active_frame->index];
 
     pic->data[3] = surface;
 
@@ -466,71 +451,6 @@ static int get_buffer2(AVCodecContext *avctx, AVFrame *pic, int flags)
 
 struct vaapi_context va_context_storage;
 
-int fplay_init_context(vst_t *vst)
-{
-    AVCodecContext *vCtx = vst->vCtx;
-
-    vst->nframes = 4;
-
-    if(va_check_codec_support(vCtx->codec_id))
-    {
-        VADisplay dpy;
-
-        dpy = va_open_display();
-        vst->hwCtx = vaapi_init(dpy);
-
-        if(vst->hwCtx != NULL)
-        {
-            if(vCtx->codec_id == AV_CODEC_ID_H264)
-                vst->nframes = 16;
-
-            for(int i = 0; i < vst->nframes; i++)
-            {
-                vframe_t *vframe = &vst->vframes[i];
-
-                vframe->format    = AV_PIX_FMT_NONE;
-                vframe->is_hw_pic = 1;
-                vframe->index     = i;
-                vframe->pts       = 0;
-                vframe->ready     = 0;
-                list_add_tail(&vframe->list, &vst->input_list);
-            };
-
-            vst->hwdec         = 1;
-            vst->frame_reorder = 1;
-            vCtx->opaque       = vst;
-            vCtx->thread_count = 1;
-            vCtx->get_format   = get_format;
-            vCtx->get_buffer2  = get_buffer2;
-            return 0;
-        };
-    };
-
-    vst->hwdec = 0;
-
-    for(int i = 0; i < vst->nframes; i++)
-    {
-        vframe_t *vframe;
-        int ret;
-
-        vframe = &vst->vframes[i];
-
-        ret = avpicture_alloc(&vframe->picture, vst->vCtx->pix_fmt,
-                               vst->vCtx->width, vst->vCtx->height);
-        if ( ret != 0 )
-        {
-            printf("Cannot alloc video buffer\n\r");
-            return ret;
-        };
-        vframe->format = vst->vCtx->pix_fmt;
-        vframe->index  = i;
-        vframe->pts    = 0;
-        vframe->ready  = 0;
-        list_add_tail(&vframe->list, &vst->input_list);
-    };
-
-    return 0;
-}
 
 
 #define EGL_TEXTURE_Y_U_V_WL            0x31D7
@@ -648,7 +568,6 @@ void va_create_planar(vst_t *vst, vframe_t *vframe)
                             vaimage.offsets[2],vaimage.pitches[2]);
     if(planar != NULL)
     {
-        printf("create planar image\n",planar);
         vframe->planar = planar;
         vframe->format = AV_PIX_FMT_NV12;
     };
@@ -656,4 +575,79 @@ void va_create_planar(vst_t *vst, vframe_t *vframe)
     vaReleaseBufferHandle(vaapi->display, vaimage.buf);
     vaDestroyImage(vaapi->display, vaimage.image_id);
 
+}
+
+struct decoder* va_init_decoder(vst_t *vst)
+{
+    AVCodecContext *vCtx = vst->vCtx;
+    struct decoder *decoder;
+    VADisplay dpy;
+
+    drm_fd = get_service("DISPLAY");
+    if (drm_fd == 0)
+        return NULL;
+
+    dpy = vaGetDisplayDRM(drm_fd);
+    if (dpy == NULL)
+        goto err_0;
+
+    decoder = calloc(1, sizeof(struct decoder));
+    if(decoder == NULL)
+        goto err_0;
+
+    decoder->hwctx = vaapi_init(dpy);
+    if(decoder->hwctx == NULL)
+        goto err_1;
+
+    decoder->Frame = av_frame_alloc();
+    if(decoder->Frame == NULL)
+        goto err_1;
+
+    if(vCtx->codec_id == AV_CODEC_ID_H264)
+        decoder->nframes = 16;
+    else
+        decoder->nframes = 4;
+
+    for(int i = 0; i < decoder->nframes; i++)
+    {
+        vframe_t *vframe = &decoder->vframes[i];
+
+        vframe->format    = AV_PIX_FMT_NONE;
+        vframe->is_hw_pic = 1;
+        vframe->index     = i;
+        vframe->pts       = 0;
+        vframe->ready     = 0;
+        list_add_tail(&vframe->list, &vst->input_list);
+    };
+
+    vCtx->opaque       = vst;
+    vCtx->thread_count = 1;
+    vCtx->get_format   = get_format;
+    vCtx->get_buffer2  = get_buffer2;
+
+    if(avcodec_open2(vst->vCtx, vst->vCodec, NULL) < 0)
+    {
+        printf("Error while opening codec for input stream %d\n",
+                vst->vStream);
+        goto err_2;
+    };
+
+    decoder->name     = vst->vCodec->name;
+    decoder->codec_id = vCtx->codec_id;
+    decoder->pix_fmt  = vCtx->pix_fmt;
+    decoder->width    = vCtx->width;
+    decoder->height   = vCtx->height;
+    decoder->is_hw    = 1;
+    decoder->frame_reorder = 1;
+
+    return decoder;
+
+err_2:
+    av_frame_free(&decoder->Frame);
+err_1:
+    free(decoder);
+    vaTerminate(dpy);
+err_0:
+    drm_fd = 0;
+    return NULL;
 }

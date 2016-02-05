@@ -16,6 +16,7 @@ uint32_t main_cursor;
 
 static int button_proc(ctrl_t *btn, uint32_t msg, uint32_t arg1, uint32_t arg2);
 static int spinbtn_proc(ctrl_t *btn, uint32_t msg, uint32_t arg1, uint32_t arg2);
+void panel_set_layout(ctrl_t *panel, int layout);
 
 ctrl_t *create_control(size_t size, int id, int x, int y,
                          int w, int h, ctrl_t *parent)

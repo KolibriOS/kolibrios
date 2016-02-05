@@ -203,6 +203,7 @@ static inline int pt_in_rect(rect_t *rc, int x, int y)
 ctrl_t *get_child(ctrl_t *ctrl, int x, int y);
 
 ctrl_t *capture_mouse(ctrl_t *newm);
+void release_mouse(void);
 
 void blit_raw(ctx_t *ctx, void *raw, int x, int y, int w, int h, int pitch);
 

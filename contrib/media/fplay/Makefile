@@ -1,4 +1,3 @@
-
 NAME= Fplay
 
 FASM= fasm.exe
@@ -27,6 +26,7 @@ LDFLAGS = -static -nostdlib --stack 0x200000 -Map fplay.map -T$(SDK_DIR)/sources
 
 SOURCES = 	opendial.asm			\
 		audio.c				\
+		decoder.c			\
 		fplay.c				\
 		vaapi.c				\
 		video.c				\

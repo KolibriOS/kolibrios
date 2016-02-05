@@ -40,7 +40,7 @@ void flush_video(vst_t *vst)
     list_for_each_entry_safe(vframe, tmp, &vst->output_list, list)
         list_move_tail(&vframe->list, &vst->input_list);
 
-    list_for_each_entry(vframe, &vst->output_list, list)
+    list_for_each_entry(vframe, &vst->input_list, list)
     {
         vframe->pts   = 0;
         vframe->ready = 0;
@@ -52,112 +52,6 @@ void flush_video(vst_t *vst)
 };
 
 
-static vframe_t *get_input_frame(vst_t *vst)
-{
-    vframe_t *vframe = NULL;
-
-    mutex_lock(&vst->input_lock);
-    if(!list_empty(&vst->input_list))
-    {
-        vframe = list_first_entry(&vst->input_list, vframe_t, list);
-        list_del(&vframe->list);
-    }
-    mutex_unlock(&vst->input_lock);
-
-    return vframe;
-}
-
-static void put_output_frame(vst_t *vst, vframe_t *vframe)
-{
-    mutex_lock(&vst->output_lock);
-    if(list_empty(&vst->output_list))
-        list_add_tail(&vframe->list, &vst->output_list);
-    else
-    {
-        vframe_t *cur;
-
-        cur = list_first_entry(&vst->output_list,vframe_t,list);
-        if(vframe->pts < cur->pts)
-            list_add_tail(&vframe->list, &vst->output_list);
-        else
-        {
-            list_for_each_entry_reverse(cur,&vst->output_list,list)
-            {
-                if(vframe->pts > cur->pts)
-                {
-                    list_add(&vframe->list, &cur->list);
-                    break;
-                };
-            };
-        };
-    };
-    vst->frames_count++;
-    mutex_unlock(&vst->output_lock);
-};
-
-int decode_video(vst_t* vst)
-{
-    double     pts;
-    AVPacket   pkt;
-
-    int frameFinished;
-
-    if(vst->decoder_frame == NULL)
-        vst->decoder_frame = get_input_frame(vst);
-
-    if(vst->decoder_frame == NULL)
-        return -1;
-
-    if( get_packet(&vst->q_video, &pkt) == 0 )
-        return 0;
-
-    frameFinished = 0;
-
-    mutex_lock(&vst->gpu_lock);
-
-    if(avcodec_decode_video2(vst->vCtx, vst->Frame, &frameFinished, &pkt) <= 0)
-        printf("video decoder error\n");
-
-    if(frameFinished)
-    {
-        vframe_t  *vframe = vst->decoder_frame;;
-        AVPicture *dst_pic;
-
-        if(vst->hwdec)
-            pts = pkt.pts;
-        else
-            pts = av_frame_get_best_effort_timestamp(vst->Frame);
-
-        pts*= av_q2d(vst->video_time_base);
-
-        dst_pic = &vframe->picture;
-
-        if(vframe->is_hw_pic == 0)
-            av_image_copy(dst_pic->data, dst_pic->linesize,
-                          (const uint8_t**)vst->Frame->data,
-                          vst->Frame->linesize, vst->vCtx->pix_fmt, vst->vCtx->width, vst->vCtx->height);
-        else
-            va_create_planar(vst, vframe);
-
-        vframe->pts = pts*1000.0;
-        vframe->pkt_pts = pkt.pts*av_q2d(vst->video_time_base)*1000.0;
-        vframe->ready = 1;
-
-        put_output_frame(vst, vframe);
-
-//        printf("decoded index: %d pts: %f pkt_pts %f pkt_dts %f\n",
-//               vst->dfx, vst->vframe[vst->dfx].pts,
-//               vst->vframe[vst->dfx].pkt_pts, vst->vframe[vst->dfx].pkt_dts);
-
-        vst->decoder_frame = NULL;
-    };
-    av_frame_unref(vst->Frame);
-    mutex_unlock(&vst->gpu_lock);
-
-    av_free_packet(&pkt);
-
-    return 1;
-}
 
 extern volatile enum player_state player_state;
 extern volatile enum player_state decoder_state;
@@ -482,6 +376,18 @@ int video_thread(void *param)
 
     __sync_and_and_fetch(&threads_running,~VIDEO_THREAD);
 
+    {
+        vframe_t *vframe, *tmp;
+        flush_video(vst);
+
+        list_for_each_entry_safe(vframe, tmp, &vst->output_list, list)
+        {
+            list_del(&vframe->list);
+            if(vframe->planar != NULL)
+                pxDestroyPlanar(vframe->planar);
+        }
+    }
+
     destroy_render(main_render);
     fini_winlib();
     player_state = CLOSED;
@@ -737,7 +643,6 @@ static void render_hw_planar(render_t *render, vframe_t *vframe)
                     CAPTION_HEIGHT+render->rcvideo.t,
                     render->rcvideo.r, render->rcvideo.b,0,0);
         mutex_unlock(&render->vst->gpu_lock);
-
     }
 };
 
@@ -770,7 +675,7 @@ void draw_hw_picture(render_t *render, vframe_t *vframe)
         dst_height = render->rcvideo.b;
     };
 
-    if(vst->hwdec)
+    if(vframe->is_hw_pic)
     {
         render_hw_planar(render, vframe);
         return;
@@ -778,7 +683,7 @@ void draw_hw_picture(render_t *render, vframe_t *vframe)
 
     picture = &vframe->picture;
 
-    format = render->vst->hwdec == 0 ? render->ctx_format : AV_PIX_FMT_BGRA;
+    format = render->ctx_format;
     cvt_ctx = sws_getCachedContext(cvt_ctx, render->ctx_width, render->ctx_height, format,
                                    dst_width, dst_height, AV_PIX_FMT_BGRA,
                                    SWS_FAST_BILINEAR, NULL, NULL, NULL);

@@ -29,9 +29,6 @@ static int snd_format;
 int sample_rate;
 
 static uint32_t samples_written = 0;
-double audio_base = -1.0;
-
-double get_audio_base();
 
 int init_audio(int format)
 {
@@ -128,14 +125,6 @@ int decode_audio(AVCodecContext  *ctx, queue_t *qa)
             int data_size = av_samples_get_buffer_size(&plane_size, ctx->channels,
                                                    aFrame->nb_samples,
                                                    ctx->sample_fmt, 1);
-
-//            if(audio_base == -1.0)
-//            {
-//                if (pkt.pts != AV_NOPTS_VALUE)
-//                    audio_base = get_audio_base() * pkt.pts;
-//                printf("audio base %f\n", audio_base);
-//            };
-
             pkt_tmp.data += len;
             pkt_tmp.size -= len;
 
@@ -254,6 +243,7 @@ static void sync_audio(SNDBUF hbuff, int buffsize)
 
 int audio_thread(void *param)
 {
+    vst_t *vst = param;
     SND_EVENT evnt;
 
     int       buffsize;
@@ -306,11 +296,10 @@ int audio_thread(void *param)
                         memcpy(astream.buffer, astream.buffer+buffsize*2, astream.count);
                 mutex_unlock(&astream.lock);
 
-                SetTimeBase(hBuff, audio_base);
+                SetTimeBase(hBuff, vst->audio_timer_base);
 
             case PAUSE_2_PLAY:
                 GetTimeStamp(hBuff, &last_time_stamp);
-//                printf("last audio time stamp %f\n", last_time_stamp);
 
                 if((err = PlayBuffer(hBuff, 0)) !=0 )
                 {
@@ -320,7 +309,6 @@ int audio_thread(void *param)
                 active = 1;
                 sync_audio(hBuff, buffsize);
                 sound_state = PLAY;
-//                printf("render: set audio latency to %f\n", audio_delta);
 
                 /* breaktrough */
 
@@ -385,7 +373,7 @@ int audio_thread(void *param)
                 if( active )
                 {
                     ResetBuffer(hBuff, SND_RESET_ALL);
-                    audio_base = -1.0;
+                	vst->audio_timer_valid = 0;
                     active = 0;
                 }
                 sound_state = STOP;

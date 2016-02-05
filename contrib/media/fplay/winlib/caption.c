@@ -25,6 +25,8 @@ extern int res_full_btn_pressed[];
 extern uint32_t main_cursor;
 
 void update_caption_size(window_t *win);
+void window_update_layout(window_t *win);
+int draw_text_ext(void *pixmap, uint32_t pitch, int face, char *text, rect_t *rc, int color);
 
 int caption_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2);
 

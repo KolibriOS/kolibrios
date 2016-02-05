@@ -110,6 +110,22 @@ typedef struct {
 int put_packet(queue_t *q, AVPacket *pkt);
 int get_packet(queue_t *q, AVPacket *pkt);
 
+struct decoder
+{
+    const char     *name;
+    enum AVCodecID  codec_id;
+    enum AVPixelFormat pix_fmt;
+    int             width;
+    int             height;
+    AVFrame        *Frame;
+    vframe_t       *active_frame;
+    void           *hwctx;
+    int             is_hw:1;
+    int             frame_reorder:1;
+    int             nframes;
+    vframe_t        vframes[16];
+};
+
 struct vstate
 {
     AVFormatContext *fCtx;              /* format context           */
@@ -122,7 +138,7 @@ struct vstate
     int             vStream;            /* video stream index       */
     int             aStream;            /* audio stream index       */
     AVRational      video_time_base;
-    AVRational      audio_time_base;
+    double          audio_timer_base;
 
     queue_t         q_video;            /* video packets queue      */
     queue_t         q_audio;            /* audio packets queue      */
@@ -135,18 +151,13 @@ struct vstate
     struct list_head input_list;
     struct list_head output_list;
 
-    AVFrame        *Frame;
-
-    vframe_t       *decoder_frame;
+    struct decoder *decoder;
     volatile int    frames_count;
-    void           *hwCtx;              /* hardware context         */
-    int             hwdec:1;            /* hardware decoder         */
+    int             has_sound:1;
+    int             audio_timer_valid:1;
     int             blit_bitmap:1;      /* hardware RGBA blitter    */
     int             blit_texture:1;     /* hardware RGBA blit and scale */
     int             blit_planar:1;      /* hardbare YUV blit and scale */
-    int             frame_reorder:1;
-    int             nframes;
-    vframe_t        vframes[16];
 };
 
 
@@ -173,6 +184,8 @@ void set_audio_volume(int left, int right);
 int video_thread(void *param);
 void flush_video(vst_t* vst);
 
+int init_video_decoder(vst_t *vst);
+void fini_video_decoder(vst_t *vst);
 void decoder(vst_t *vst);
 int decode_video(vst_t* vst);
 int decode_audio(AVCodecContext  *ctx, queue_t *qa);
@@ -191,8 +204,13 @@ static inline double get_audio_base(vst_t* vst)
     return (double)av_q2d(vst->fCtx->streams[vst->aStream]->time_base)*1000;
 };
 
+struct decoder* va_init_decoder(vst_t *vst);
 void va_create_planar(vst_t *vst, vframe_t *vframe);
 
 int init_fontlib();
 char *get_moviefile();
+
+#define ENTER()   printf("enter %s\n",__FUNCTION__)
+#define LEAVE()   printf("leave %s\n",__FUNCTION__)
+#define FAIL()    printf("fail %s\n",__FUNCTION__)
 
