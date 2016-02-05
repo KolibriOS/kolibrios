@@ -1,0 +1,440 @@
+/*
+ *  Copyright 2000-2011 Intel Corporation All Rights Reserved
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
+ *  Copyright 2000-2011 Intel Corporation All Rights Reserved
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  Authors: Zhao Yakui <yakui.zhao@intel.com>
+ */
+
+//  326    // Total instruction count
+//    1    // Total kernel count
+
+
+
+// Module name: common.inc
+//
+// Common header file for all Video-Processing kernels
+//
+
+.default_execution_size (16)
+.default_register_type  :ub
+
+.reg_count_total        128
+.reg_count_payload      7
+
+//========== Common constants ==========
+
+
+//========== Macros ==========
+
+
+//Fast Jump, For more details see "Set_Layer_N.asm"
+
+
+//========== Defines ====================
+
+//========== Static Parameters (Common To All) ==========
+//r1
+
+
+//r2
+
+                                    //  e.g.            byte0   byte1  byte2
+                                    // YUYV               0       1      3
+                                    // YVYU               0       3      1
+
+//Color Pipe (IECP) parameters
+
+
+//ByteCopy
+
+
+//r4
+
+                                    //  e.g.              byte0           byte1           byte2
+                                    // YUYV                 0               1               3
+                                    // YVYU                 0               3               1
+
+
+//========== Inline parameters (Common To All) ===========
+
+
+//============== Binding Index Table===========
+//Common between DNDI and DNUV
+
+
+//================= Common Message Descriptor =====
+// Message descriptor for thread spawning
+// Message Descriptors
+//                = 000 0001 (min message len 1 ) 0,0000 (resp len 0   -add later)
+//                  0000,0000,0000
+//                  0001(Spawn a root thread),0001 (Root thread spawn thread)
+//                = 0x02000011
+// Thread Spawner Message Descriptor
+
+
+// Message descriptor for atomic operation add
+// Message Descriptors
+//                = 000 0110 (min message len 6 ) 0,0000 (resp len 0   -add later)
+//                  1(header present)001,10(typed atomic operation)0(return enabled)0(slot group, low 8 bits),0111 (AOP_Add)
+//                  0000,0000 (Binding table index, added later)
+//                = 0x02000011
+
+// Atomic Operation Add Message Descriptor
+
+
+// Message descriptor for dataport media write
+        // Message Descriptors
+                //                = 000 0001 (min message len 1 - add later) 00000 (resp len 0)
+                //                  1 (header present 1) 0 1010 (media block write) 000000
+                //                  00000000 (binding table index - set later)
+                //                = 0x020A8000
+
+
+// Message Length defines
+
+
+// Response Length defines
+
+
+// Block Width and Height Size defines
+
+
+// Extended Message Descriptors
+
+
+// Common message descriptors:
+
+
+//===================== Math Function Control ===================================
+
+
+//============ Message Registers ===============
+                             // buf4 starts from r28
+
+
+//#define mMSGHDR_EOT  r43    // Dummy Message Register for EOT
+
+
+.declare    mubMSGPAYLOAD  Base=r30 ElementSize=1 SrcRegion=<16;16,1> Type=ub
+.declare    muwMSGPAYLOAD  Base=r30 ElementSize=2 SrcRegion=<16;16,1> Type=uw
+.declare    mudMSGPAYLOAD  Base=r30 ElementSize=4 SrcRegion=<8;8,1> Type=ud
+.declare    mfMSGPAYLOAD   Base=r30 ElementSize=4 SrcRegion=<8;8,1> Type=f
+
+//=================== End of thread instruction ===========================
+
+
+//=====================Pointers Used=====================================
+
+
+//=======================================================================
+
+
+//r11-r17
+// Define temp space for any usages
+
+
+// Common Buffers
+
+
+// temp space for rotation
+
+.declare fROBUF		  Base=r11.0		ElementSize=4		SrcRegion=<8;8,1>		  DstRegion=<1>		Type=f
+
+.declare udROBUF		Base=r11.0		ElementSize=4		SrcRegion=<8;8,1>		  DstRegion=<1>		Type=ud
+
+.declare uwROBUF		Base=r11.0		ElementSize=2		SrcRegion=<16;16,1>		DstRegion=<1>		Type=uw
+
+.declare ubROBUF		Base=r11.0		ElementSize=1		SrcRegion=<16;16,1>		DstRegion=<1>		Type=ub
+
+.declare ub4ROBUF 	Base=r11.0		ElementSize=1		SrcRegion=<32;8,4>		DstRegion=<4>		Type=ub
+
+
+// End of common.inc
+
+
+// FileName:		VP_Setup.asm
+// Author:			Vivek Kumar
+// Description:		Sets up all parameters for the Video Processing Kernel
+
+
+
+
+// Description: Includes all definitions explicit to Fast Composite.
+
+
+
+
+// End of common.inc
+
+
+//========== GRF partition ==========
+     // r0 header            :   r0          (1 GRF)
+     // Static parameters    :   r1 - r6     (6 GRFS)
+     // Inline parameters    :   r7 - r8     (2 GRFs)
+     // MSGSRC               :   r27         (1 GRF)
+//===================================
+
+//Interface:
+//========== Static Parameters (Explicit To Fast Composite) ==========
+//r1
+//CSC Set 0
+
+
+.declare udCSC_CURBE    Base=r1.0      ElementSize=4       Type=ud
+
+//Constant alpha
+
+
+//r2
+
+
+// Gen7 AVS WA
+
+
+// WiDi Definitions
+
+
+//Colorfill
+
+
+                                      // 0: 0-degree, 1: 90, 2: 180, 3: 270-degree, clockwise.	    
+
+.declare ubCOLOR_PIXEL_VAL      Base=r2.20      ElementSize=1       SrcRegion=<0;1,0>       DstRegion=<1>       Type=ub
+
+//r3
+//Normalised Ratio of Horizontal step size with main video for all layers
+
+
+    //Normalised Ratio of Horizontal step size with main video for all layers becomes
+    //Normalised Horizontal step size for all layers in VP_Setup.asm
+
+
+//r4
+//Normalised Vertical step size for all layers
+
+
+//r5
+//Normalised Vertical Frame Origin for all layers
+
+
+//r6
+//Normalised Horizontal Frame Origin for all layers
+
+
+//========== Inline Parameters (Explicit To Fast Composite) ==========
+
+
+//Main video Step X
+
+
+//====================== Binding table (Explicit To Fast Composite)=========================================
+
+
+//Used by Interlaced Scaling Kernels
+
+
+//========== Sampler State Table Index (Explicit To Fast Composite)==========
+//Sampler Index for AVS/IEF messages
+
+
+//Sampler Index for SIMD16 sampler messages
+
+
+//=============================================================================
+
+.declare fBUFFER_0      Base=r64.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+.declare fBUFFER_1      Base=r80.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+.declare fBUFFER_2      Base=r96.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+.declare fBUFFER_3      Base=r112.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+.declare fBUFFER_4      Base=r28.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+.declare fBUFFER_5      Base=r46.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+
+.declare udBUFFER_0     Base=r64.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=ud
+.declare udBUFFER_1     Base=r80.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=ud
+.declare udBUFFER_2     Base=r96.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=ud
+.declare udBUFFER_3     Base=r112.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=ud
+.declare udBUFFER_4     Base=r28.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=ud
+.declare udBUFFER_5     Base=r46.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=ud
+
+.declare uwBUFFER_0     Base=r64.0       ElementSize=2       SrcRegion=<16;16,1>     DstRegion=<1>       Type=uw
+.declare uwBUFFER_1     Base=r80.0       ElementSize=2       SrcRegion=<16;16,1>     DstRegion=<1>       Type=uw
+.declare uwBUFFER_2     Base=r96.0       ElementSize=2       SrcRegion=<16;16,1>     DstRegion=<1>       Type=uw
+.declare uwBUFFER_3     Base=r112.0       ElementSize=2       SrcRegion=<16;16,1>     DstRegion=<1>       Type=uw
+.declare uwBUFFER_4     Base=r28.0       ElementSize=2       SrcRegion=<16;16,1>     DstRegion=<1>       Type=uw
+.declare uwBUFFER_5     Base=r46.0       ElementSize=2       SrcRegion=<16;16,1>     DstRegion=<1>       Type=uw
+
+.declare ubBUFFER_0     Base=r64.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+.declare ubBUFFER_1     Base=r80.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+.declare ubBUFFER_2     Base=r96.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+.declare ubBUFFER_3     Base=r112.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+.declare ubBUFFER_4     Base=r28.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+.declare ubBUFFER_5     Base=r46.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+
+.declare ub4BUFFER_0    Base=r64.0       ElementSize=1       SrcRegion=<32;8,4>      DstRegion=<4>       Type=ub
+.declare ub4BUFFER_1    Base=r80.0       ElementSize=1       SrcRegion=<32;8,4>      DstRegion=<4>       Type=ub
+.declare ub4BUFFER_2    Base=r96.0       ElementSize=1       SrcRegion=<32;8,4>      DstRegion=<4>       Type=ub
+.declare ub4BUFFER_3    Base=r112.0       ElementSize=1       SrcRegion=<32;8,4>      DstRegion=<4>       Type=ub
+.declare ub4BUFFER_4    Base=r28.0       ElementSize=1       SrcRegion=<32;8,4>      DstRegion=<4>       Type=ub
+.declare ub4BUFFER_5    Base=r46.0       ElementSize=1       SrcRegion=<32;8,4>      DstRegion=<4>       Type=ub
+
+//Pointer to mask reg
+
+
+//r18
+
+
+//Always keep Cannel Pointers and Offsets in same GRF, so that we can use
+// NODDCLR, NODDCHK flags. -rT
+
+
+.declare udCSC_COEFF_0  Base=r18.0    ElementSize=4 Type=ud       // 1 GRF
+
+//r19
+
+
+.declare udCSC_COEFF_1  Base=r19.0    ElementSize=4 Type=ud       // 1 GRF
+
+
+//r20
+
+.declare uwALPHA_MASK_REG_TEMP  Base=r20.0    ElementSize=2 SrcRegion=<16;16,1> Type=uw        // 1 GRF
+
+//r21
+
+.declare uwALPHA_MASK_REG       Base=r21.0         ElementSize=2 SrcRegion=<16;16,1> Type=uw        // 1 GRF
+
+//r22
+
+
+//Always keep Cannel Pointers and Offsets in same GRF, so that we can use
+// NODDCLR, NODDCHK flags. -rT
+
+
+//Keep fORIGIN_X_NLAS, fY_OFFSET_2ND_BLOCK, fSTEP_X_NLAS, pMSGDSC_COPY, ubCONST_ALPHA_COPY as
+//sub registers of same GRF to enable using NODDCLR NODDCHK. -rT
+
+//r23
+
+
+//Lumakey
+
+
+//r24
+
+
+//r25
+
+
+//r26
+
+
+//defines to generate LABELS during compile time.
+
+
+//Setup pointer to the inline parameter
+
+// Copy MSG HDR
+	mov (8)		r27.0<1>:ud  	r0.0<8;8,1>:ud  // Initialize message payload header with R0
+
+// Only one layer is enough
+ 
+//temp; remove it once unread msg warnings are resolved -vK
+mov (8) r25<1>:ud 	r0.0<8;8,1>:ud
+mov (8) r26<1>:ud 	r0.0<8;8,1>:ud
+
+// Calculate StepX for all layers and overwrite it on the ratio
+	mul	(8)		r3.0<1>:f   r3.0<8;8,1>:f 	r9.4<0;1,0>:f				//StepX_ratio = StepX / VideoStepX
+
+	//Normalised Ratio of Horizontal step size with main video for all layers now becomes
+	//Normalised Horizontal step size for all layers
+
+// Calculate block origin for all layers and overwrite it on the frame origin
+	mov (2)	r10.5<1>:f						r9.0<2;2,1>:w		//Convert origin from word to float
+
+	cmp.e.f0.0 	(1)	null<1>:d				r2.26<0;1,0>:ub 		1:uw
+
+
+    shr (1) r17.0<1>:uw    r2.2<0;1,0>:uw    0:uw
+    and (1) r17.0<1>:uw    r17.0<0;1,0>:uw           3:uw
+    cmp.e.f0.1 (1) null<1>:w    r17.0<0;1,0>:uw    1:uw
+    (f0.1) jmpi (1) ROTATE_90_L0
+    cmp.e.f0.1 (1) null<1>:w    r17.0<0;1,0>:uw    2:uw
+    (f0.1) jmpi (1) ROTATE_180_L0
+    cmp.e.f0.1 (1) null<1>:w    r17.0<0;1,0>:uw    3:uw
+    (f0.1) jmpi (1) ROTATE_270_L0
+
+  // rotate 0 degree
+ROTATE_0_L0:  
+    (-f0.0)mov	(1)	acc0.0<1>:f					   r6.0<0;1,0>:f
+    (-f0.0)mac	(1)	r6.0<1>:f    r3.0<0;1,0>:f		r10.5<0;1,0>:f
+
+    mov	(1)	acc0.0<1>:f            r5.0<0;1,0>:f
+    mac	(1)	r5.0<1>:f    r4.0<0;1,0>:f		    r10.6<0;1,0>:f
+    jmpi (1) END_SRC_BLOCK_ORIG_COMP_L0
+
+  // rotate 90 degree
+ROTATE_90_L0:  
+    (-f0.0)mov	(1)	acc0.0<1>:f            r6.0<0;1,0>:f
+    (-f0.0)mac	(1)	r6.0<1>:f    r3.0<0;1,0>:f		r10.6<0;1,0>:f
+
+    mov (1) r16.0<1>:f    r2.0<0;1,0>:uw
+    add (1) r17.0<1>:f    -r10.5<0;1,0>:f               r16.0<0;1,0>:f
+    add (1) r17.0<1>:f    r17.0<0;1,0>:f        -16.0:f  	
+
+    mov	(1)	acc0.0<1>:f							r5.0<0;1,0>:f
+    mac	(1)	r5.0<1>:f     r4.0<0;1,0>:f		r17.0<0;1,0>:f
+    jmpi (1) END_SRC_BLOCK_ORIG_COMP_L0
+
+  // rotate 180 degree
+ROTATE_180_L0:  
+    (-f0.0)mov (1) r16.0<1>:f    r2.0<0;1,0>:uw
+    (-f0.0)add (1) r17.0<1>:f    -r10.5<0;1,0>:f              r16.0<0;1,0>:f
+    (-f0.0)add (1) r17.0<1>:f    r17.0<0;1,0>:f       -16.0:f  	
+    (-f0.0)mov (1) acc0.0<1>:f             r6.0<0;1,0>:f
+    (-f0.0)mac (1) r6.0<1>:f     r3.0<0;1,0>:f          r17.0<0;1,0>:f
+
+    mov (1) r16.0<1>:f    r2.1<0;1,0>:uw	
+    add (1) r17.0<1>:f    -r10.6<0;1,0>:f                     r16.0<0;1,0>:f
+    add (1) r17.0<1>:f    r17.0<0;1,0>:f              -16.0:f  	
+    mov	(1)	acc0.0<1>:f             r5.0<0;1,0>:f
+    mac	(1)	r5.0<1>:f     r4.0<0;1,0>:f                 r17.0<0;1,0>:f
+    jmpi (1) END_SRC_BLOCK_ORIG_COMP_L0  
+
+  // rotate 270 degree
+ROTATE_270_L0:    
+    (-f0.0)mov (1) r16.0<1>:f    r2.1<0;1,0>:uw	
+    (-f0.0)add (1) r17.0<1>:f    -r10.6<0;1,0>:f              r16.0<0;1,0>:f
+    (-f0.0)add (1) r17.0<1>:f    r17.0<0;1,0>:f       -16.0:f  	
+    (-f0.0)mov (1) acc0.0<1>:f             r6.0<0;1,0>:f
+    (-f0.0)mac (1) r6.0<1>:f     r3.0<0;1,0>:f          r17.0<0;1,0>:f
+
+    mov	(1)	acc0.0<1>:f                    r5.0<0;1,0>:f
+    mac	(1)	r5.0<1>:f            r4.0<0;1,0>:f          r10.5<0;1,0>:f
+
+END_SRC_BLOCK_ORIG_COMP_L0:		
+    nop	

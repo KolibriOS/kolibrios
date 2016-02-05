@@ -1,0 +1,1017 @@
+/*
+ *  Copyright 2000-2011 Intel Corporation All Rights Reserved
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sub license, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the
+ * next paragraph) shall be included in all copies or substantial portions
+ * of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+ * IN NO EVENT SHALL PRECISION INSIGHT AND/OR ITS SUPPLIERS BE LIABLE FOR
+ * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * This file was originally licensed under the following license
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  Authors:
+ *    Zhao Yakui <yakui.zhao@intel.com>
+ */
+
+
+
+// Module name: common.inc
+//
+// Common header file for all Video-Processing kernels
+//
+
+.default_execution_size (16)
+.default_register_type  :ub
+
+.reg_count_total        128
+.reg_count_payload      7
+
+//========== Common constants ==========
+
+
+//========== Macros ==========
+
+
+//Fast Jump, For more details see "Set_Layer_N.asm"
+
+
+//========== Defines ====================
+
+//========== Static Parameters (Common To All) ==========
+//r1
+
+
+//r2
+
+                                    //  e.g.            byte0   byte1  byte2
+                                    // YUYV               0       1      3
+                                    // YVYU               0       3      1
+
+//Color Pipe (IECP) parameters
+
+
+//ByteCopy
+
+
+//r4
+
+                                    //  e.g.              byte0           byte1           byte2
+                                    // YUYV                 0               1               3
+                                    // YVYU                 0               3               1
+
+
+//========== Inline parameters (Common To All) ===========
+
+
+//============== Binding Index Table===========
+//Common between DNDI and DNUV
+
+
+//================= Common Message Descriptor =====
+// Message descriptor for thread spawning
+// Message Descriptors
+//                = 000 0001 (min message len 1 ) 0,0000 (resp len 0   -add later)
+//                  0000,0000,0000
+//                  0001(Spawn a root thread),0001 (Root thread spawn thread)
+//                = 0x02000011
+// Thread Spawner Message Descriptor
+
+
+// Message descriptor for atomic operation add
+// Message Descriptors
+//                = 000 0110 (min message len 6 ) 0,0000 (resp len 0   -add later)
+//                  1(header present)001,10(typed atomic operation)0(return enabled)0(slot group, low 8 bits),0111 (AOP_Add)
+//                  0000,0000 (Binding table index, added later)
+//                = 0x02000011
+
+// Atomic Operation Add Message Descriptor
+
+
+// Message descriptor for dataport media write
+        // Message Descriptors
+                //                = 000 0001 (min message len 1 - add later) 00000 (resp len 0)
+                //                  1 (header present 1) 0 1010 (media block write) 000000
+                //                  00000000 (binding table index - set later)
+                //                = 0x020A8000
+
+
+// Message Length defines
+
+
+// Response Length defines
+
+
+// Block Width and Height Size defines
+
+
+// Extended Message Descriptors
+
+
+// Common message descriptors:
+
+
+//===================== Math Function Control ===================================
+
+
+//============ Message Registers ===============
+                             // buf4 starts from r28
+
+
+//#define mMSGHDR_EOT  r43    // Dummy Message Register for EOT
+
+
+.declare    mubMSGPAYLOAD  Base=r30 ElementSize=1 SrcRegion=<16;16,1> Type=ub
+.declare    muwMSGPAYLOAD  Base=r30 ElementSize=2 SrcRegion=<16;16,1> Type=uw
+.declare    mudMSGPAYLOAD  Base=r30 ElementSize=4 SrcRegion=<8;8,1> Type=ud
+.declare    mfMSGPAYLOAD   Base=r30 ElementSize=4 SrcRegion=<8;8,1> Type=f
+
+//=================== End of thread instruction ===========================
+
+
+//=====================Pointers Used=====================================
+
+
+//=======================================================================
+
+
+//r11-r17
+// Define temp space for any usages
+
+
+// Common Buffers
+
+
+// temp space for rotation
+
+.declare fROBUF		  Base=r11.0		ElementSize=4		SrcRegion=<8;8,1>		  DstRegion=<1>		Type=f
+
+.declare udROBUF		Base=r11.0		ElementSize=4		SrcRegion=<8;8,1>		  DstRegion=<1>		Type=ud
+
+.declare uwROBUF		Base=r11.0		ElementSize=2		SrcRegion=<16;16,1>		DstRegion=<1>		Type=uw
+
+.declare ubROBUF		Base=r11.0		ElementSize=1		SrcRegion=<16;16,1>		DstRegion=<1>		Type=ub
+
+.declare ub4ROBUF 	Base=r11.0		ElementSize=1		SrcRegion=<32;8,4>		DstRegion=<4>		Type=ub
+
+
+// End of common.inc
+
+
+// Module name: YUV_to_RGB.asm
+//
+// Convert YUV to RGB, handle it by 16x4 block
+//
+
+
+// Description: Includes all definitions explicit to Fast Composite.
+
+
+//========== GRF partition ==========
+     // r0 header            :   r0          (1 GRF)
+     // Static parameters    :   r1 - r6     (6 GRFS)
+     // Inline parameters    :   r7 - r8     (2 GRFs)
+     // MSGSRC               :   r27         (1 GRF)
+//===================================
+
+//Interface:
+//========== Static Parameters (Explicit To Fast Composite) ==========
+//r1
+//CSC Set 0
+
+
+.declare udCSC_CURBE    Base=r1.0      ElementSize=4       Type=ud
+
+//Constant alpha
+
+
+//r2
+
+
+// Gen7 AVS WA
+
+
+// WiDi Definitions
+
+
+//Colorfill
+
+
+                                      // 0: 0-degree, 1: 90, 2: 180, 3: 270-degree, clockwise.	    
+
+.declare ubCOLOR_PIXEL_VAL      Base=r2.20      ElementSize=1       SrcRegion=<0;1,0>       DstRegion=<1>       Type=ub
+
+//r3
+//Normalised Ratio of Horizontal step size with main video for all layers
+
+
+    //Normalised Ratio of Horizontal step size with main video for all layers becomes
+    //Normalised Horizontal step size for all layers in VP_Setup.asm
+
+
+//r4
+//Normalised Vertical step size for all layers
+
+
+//r5
+//Normalised Vertical Frame Origin for all layers
+
+
+//r6
+//Normalised Horizontal Frame Origin for all layers
+
+
+//========== Inline Parameters (Explicit To Fast Composite) ==========
+
+
+//Main video Step X
+
+
+//====================== Binding table (Explicit To Fast Composite)=========================================
+
+
+//Used by Interlaced Scaling Kernels
+
+
+//========== Sampler State Table Index (Explicit To Fast Composite)==========
+//Sampler Index for AVS/IEF messages
+
+
+//Sampler Index for SIMD16 sampler messages
+
+
+//=============================================================================
+
+.declare fBUFFER_0      Base=r64.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+.declare fBUFFER_1      Base=r80.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+.declare fBUFFER_2      Base=r96.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+.declare fBUFFER_3      Base=r112.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+
+.declare bBUFFER_0     Base=r64.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+.declare bBUFFER_1     Base=r80.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+.declare bBUFFER_2     Base=r96.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+.declare bBUFFER_3     Base=r112.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+
+//Pointer to mask reg
+
+
+//r18
+
+
+//Always keep Cannel Pointers and Offsets in same GRF, so that we can use
+// NODDCLR, NODDCHK flags. -rT
+
+
+.declare udCSC_COEFF_0  Base=r18.0    ElementSize=4 Type=ud       // 1 GRF
+
+//r19
+
+
+.declare udCSC_COEFF_1  Base=r19.0    ElementSize=4 Type=ud       // 1 GRF
+
+
+//r20
+
+.declare uwALPHA_MASK_REG_TEMP  Base=r20.0    ElementSize=2 SrcRegion=<16;16,1> Type=uw        // 1 GRF
+
+//r21
+
+.declare uwALPHA_MASK_REG       Base=r21.0         ElementSize=2 SrcRegion=<16;16,1> Type=uw        // 1 GRF
+
+//r22
+
+
+//Always keep Cannel Pointers and Offsets in same GRF, so that we can use
+// NODDCLR, NODDCHK flags. -rT
+
+
+//Keep fORIGIN_X_NLAS, fY_OFFSET_2ND_BLOCK, fSTEP_X_NLAS, pMSGDSC_COPY, ubCONST_ALPHA_COPY as
+//sub registers of same GRF to enable using NODDCLR NODDCHK. -rT
+
+//r23
+
+
+//Lumakey
+
+
+//r24
+
+
+//r25
+
+
+//r26
+
+
+//defines to generate LABELS during compile time.
+
+
+//Msg payload buffers; upto 4 full-size messages can be written
+
+//Unnecessary to use the MSGPayLoad, So it is temporiarily used for conversion of YUV->RGB
+
+.declare    fBUFFER_R       Base=r28.0 ElementSize=4 SrcRegion=<8;8,1> Type=f
+.declare    fBUFFER_G       Base=r30.0 ElementSize=4 SrcRegion=<8;8,1> Type=f
+.declare    fBUFFER_B	    Base=r32.0 ElementSize=4 SrcRegion=<8;8,1> Type=f
+
+.declare    fBUFFER_Y	    Base=r36.0 ElementSize=4 SrcRegion=<8;8,1> Type=f
+.declare    fBUFFER_U	    Base=r38.0 ElementSize=4 SrcRegion=<8;8,1> Type=f
+.declare    fBUFFER_V	    Base=r40.0 ElementSize=4 SrcRegion=<8;8,1> Type=f
+
+
+.declare	wTempR		Base=r42.0 ElementSize=2 Type=w
+.declare	wTempG		Base=r44.0 ElementSize=2 Type=w
+.declare	wTempB		Base=r46.0 ElementSize=2 Type=w
+
+.declare	ubTempR		Base=r42.0 ElementSize=1 Type=ub
+.declare	ubTempG		Base=r44.0 ElementSize=1 Type=ub
+.declare	ubTempB		Base=r46.0 ElementSize=1 Type=ub
+
+	// the r17 register (nTEMP0) is originally defined from "Common.inc"
+	// instead of re-defining a nTEMP0 here, we use "SAVE_RGB" suffix for its naming
+
+	.declare wTemp0 Base=r17.0 ElementSize=2 Type=uw
+
+
+//_SAVE_INC_
+	// NTSC standard
+	// R = Clamp ( 1.164(Y-16/255) + 1.596(Cr-128/255))
+	// G = Clamp ( 1.164(Y-16/255) - 0.813(Cr-128/255) - 0.392(Cb-128/255))
+    	// B = Clamp ( 1.164(Y-16/255) + 2.017(Cb-128/255))	
+	// ITU-R conversion, Now we are using ITU-R conversion
+        // R = clip( Y                  + 1.402*(Cr-128))  // ITU-R
+        // G = clip( Y - 0.344*(Cb-128) - 0.714*(Cr-128))
+        // B = clip( Y + 1.772*(Cb-128))
+
+	// At the save module we have all 8 address sub-registers available.
+	// So we will use PING-PONG type of scheme to save the data using
+	// pointers pBUF_CHNL_TOP_8x4 and pBUF_CHNL_BOT_8x4. This will help
+	// reduce dependency. - rT
+
+	//wBUFF_CHNL_PTR points to either buffer 0 or buffer 4.
+	//Add appropriate offsets to get pointers for all buffers (1,2,3 or 5).
+	//Offsets are zero for buffer 0 and buffer 4.
+	//Y/U/V is also stored as R/G/B for the internal purpose
+//for BUFFER_0
+	mov   (4) a0.0<1>:uw		  r22.0<4;4,1>:uw
+//the first line in the block 0
+        mov   (8) fBUFFER_Y(0, 0)<1>	  r[a0.1, 1]<16;8,2>:ub           
+        mov   (8) fBUFFER_Y(1, 0)<1>	  r[a0.1, 17]<16;8,2>:ub           
+        mov   (8) fBUFFER_U(0, 0)<1>	  r[a0.2, 1]<16;8,2>:ub          
+        mov   (8) fBUFFER_U(1, 0)<1>	  r[a0.2, 17]<16;8,2>:ub          
+        mov   (8) fBUFFER_V(0, 0)<1>	  r[a0.0, 1]<16;8,2>:ub           
+        mov   (8) fBUFFER_V(1, 0)<1>	  r[a0.0, 17]<16;8,2>:ub           
+
+        mul   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            0.0039216f
+
+        add   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            r7.3<0;1,0>:f
+        add   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            r7.7<0;1,0>:f
+        add   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            r8.3<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.1<0;1,0>:f
+	mac.sat (16) fBUFFER_R(0, 0)<1>	  fBUFFER_V(0, 0)<8;8,1>	r7.2<0;1,0>:f
+	
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.4<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.5<0;1,0>:f
+        mac.sat (16) fBUFFER_G(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.6<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r8.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r8.1<0;1,0>:f
+        mac.sat (16) fBUFFER_B(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r8.2<0;1,0>:f
+
+        mul   (16) fBUFFER_R(0, 0)<1>	  fBUFFER_R(0, 0)<8;8,1>	255.0f
+        mul   (16) fBUFFER_G(0, 0)<1>     fBUFFER_G(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_B(0, 0)<1>     fBUFFER_B(0, 0)<8;8,1>        255.0f
+
+        mov   (16) wTempR(0, 0)<2>        fBUFFER_R(0, 0)<8;8,1>
+        mov   (16) wTempG(0, 0)<2>        fBUFFER_G(0, 0)<8;8,1>
+        mov   (16) wTempB(0, 0)<2>        fBUFFER_B(0, 0)<8;8,1>
+        mov   (16) r[a0.1,1]<2>:ub        ubTempR(0, 0)<32;8,4>
+        mov   (16) r[a0.2,1]<2>:ub        ubTempG(0, 0)<32;8,4>
+        mov   (16) r[a0.0,1]<2>:ub        ubTempB(0, 0)<32;8,4>
+
+//the second line in the block 0
+        
+        mov   (8) fBUFFER_Y(0, 0)<1>	  r[a0.1, 33]<16;8,2>:ub           
+        mov   (8) fBUFFER_Y(1, 0)<1>	  r[a0.1, 49]<16;8,2>:ub           
+        mov   (8) fBUFFER_U(0, 0)<1>	  r[a0.2, 33]<16;8,2>:ub          
+        mov   (8) fBUFFER_U(1, 0)<1>	  r[a0.2, 49]<16;8,2>:ub          
+        mov   (8) fBUFFER_V(0, 0)<1>	  r[a0.0, 33]<16;8,2>:ub           
+        mov   (8) fBUFFER_V(1, 0)<1>	  r[a0.0, 49]<16;8,2>:ub           
+
+        mul   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            0.0039216f
+
+        add   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            r7.3<0;1,0>:f
+        add   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            r7.7<0;1,0>:f
+        add   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            r8.3<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.1<0;1,0>:f
+        mac.sat (16) fBUFFER_R(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.2<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.4<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.5<0;1,0>:f
+        mac.sat (16) fBUFFER_G(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.6<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r8.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r8.1<0;1,0>:f
+        mac.sat (16) fBUFFER_B(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r8.2<0;1,0>:f
+
+        mul   (16) fBUFFER_R(0, 0)<1>     fBUFFER_R(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_G(0, 0)<1>     fBUFFER_G(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_B(0, 0)<1>     fBUFFER_B(0, 0)<8;8,1>        255.0f
+
+	mov   (16) wTempR(0, 0)<2>	  fBUFFER_R(0, 0)<8;8,1> 	
+	mov   (16) wTempG(0, 0)<2>	  fBUFFER_G(0, 0)<8;8,1> 	
+	mov   (16) wTempB(0, 0)<2>	  fBUFFER_B(0, 0)<8;8,1>
+	mov   (16) r[a0.1,33]<2>:ub	  ubTempR(0, 0)<32;8,4>
+	mov   (16) r[a0.2,33]<2>:ub	  ubTempG(0, 0)<32;8,4>	
+	mov   (16) r[a0.0,33]<2>:ub	  ubTempB(0, 0)<32;8,4>	
+
+//the third line in the block 0
+        mov   (8) fBUFFER_Y(0, 0)<1>	  r[a0.1, 65]<16;8,2>:ub           
+        mov   (8) fBUFFER_Y(1, 0)<1>	  r[a0.1, 81]<16;8,2>:ub           
+        mov   (8) fBUFFER_U(0, 0)<1>	  r[a0.2, 65]<16;8,2>:ub          
+        mov   (8) fBUFFER_U(1, 0)<1>	  r[a0.2, 81]<16;8,2>:ub          
+        mov   (8) fBUFFER_V(0, 0)<1>	  r[a0.0, 65]<16;8,2>:ub           
+        mov   (8) fBUFFER_V(1, 0)<1>	  r[a0.0, 81]<16;8,2>:ub           
+
+        mul   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            0.0039216f
+
+        add   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            r7.3<0;1,0>:f
+        add   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            r7.7<0;1,0>:f
+        add   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            r8.3<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.1<0;1,0>:f
+        mac.sat (16) fBUFFER_R(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.2<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.4<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.5<0;1,0>:f
+        mac.sat (16) fBUFFER_G(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.6<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r8.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r8.1<0;1,0>:f
+        mac.sat (16) fBUFFER_B(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r8.2<0;1,0>:f
+
+        mul   (16) fBUFFER_R(0, 0)<1>     fBUFFER_R(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_G(0, 0)<1>     fBUFFER_G(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_B(0, 0)<1>     fBUFFER_B(0, 0)<8;8,1>        255.0f
+
+	mov   (16) wTempR(0, 0)<2>	  fBUFFER_R(0, 0)<8;8,1> 	
+	mov   (16) wTempG(0, 0)<2>	  fBUFFER_G(0, 0)<8;8,1> 	
+	mov   (16) wTempB(0, 0)<2>	  fBUFFER_B(0, 0)<8;8,1>
+	mov   (16) r[a0.1,65]<2>:ub	  ubTempR(0, 0)<32;8,4>
+	mov   (16) r[a0.2,65]<2>:ub	  ubTempG(0, 0)<32;8,4>	
+	mov   (16) r[a0.0,65]<2>:ub	  ubTempB(0, 0)<32;8,4>	
+
+//the fourth line in the block 0
+        mov   (8) fBUFFER_Y(0, 0)<1>	  r[a0.1, 97]<16;8,2>:ub           
+        mov   (8) fBUFFER_Y(1, 0)<1>	  r[a0.1, 113]<16;8,2>:ub           
+        mov   (8) fBUFFER_U(0, 0)<1>	  r[a0.2, 97]<16;8,2>:ub          
+        mov   (8) fBUFFER_U(1, 0)<1>	  r[a0.2, 113]<16;8,2>:ub          
+        mov   (8) fBUFFER_V(0, 0)<1>	  r[a0.0, 97]<16;8,2>:ub           
+        mov   (8) fBUFFER_V(1, 0)<1>	  r[a0.0, 113]<16;8,2>:ub           
+
+        mul   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            0.0039216f
+
+        add   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            r7.3<0;1,0>:f
+        add   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            r7.7<0;1,0>:f
+        add   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            r8.3<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.1<0;1,0>:f
+        mac.sat (16) fBUFFER_R(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.2<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.4<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.5<0;1,0>:f
+        mac.sat (16) fBUFFER_G(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.6<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r8.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r8.1<0;1,0>:f
+        mac.sat (16) fBUFFER_B(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r8.2<0;1,0>:f
+
+        mul   (16) fBUFFER_R(0, 0)<1>     fBUFFER_R(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_G(0, 0)<1>     fBUFFER_G(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_B(0, 0)<1>     fBUFFER_B(0, 0)<8;8,1>        255.0f
+
+	mov   (16) wTempR(0, 0)<2>	  fBUFFER_R(0, 0)<8;8,1> 	
+	mov   (16) wTempG(0, 0)<2>	  fBUFFER_G(0, 0)<8;8,1> 	
+	mov   (16) wTempB(0, 0)<2>	  fBUFFER_B(0, 0)<8;8,1>
+	mov   (16) r[a0.1,97]<2>:ub	  ubTempR(0, 0)<32;8,4>
+	mov   (16) r[a0.2,97]<2>:ub	  ubTempG(0, 0)<32;8,4>	
+	mov   (16) r[a0.0,97]<2>:ub	  ubTempB(0, 0)<32;8,4>	
+
+
+//for BUFFER_1
+	add   (4) a0.0<1>:uw		  r22.0<4;4,1>:uw	512:uw
+//the first line in the block 1
+        mov   (8) fBUFFER_Y(0, 0)<1>	  r[a0.1, 1]<16;8,2>:ub           
+        mov   (8) fBUFFER_Y(1, 0)<1>	  r[a0.1, 17]<16;8,2>:ub           
+        mov   (8) fBUFFER_U(0, 0)<1>	  r[a0.2, 1]<16;8,2>:ub          
+        mov   (8) fBUFFER_U(1, 0)<1>	  r[a0.2, 17]<16;8,2>:ub          
+        mov   (8) fBUFFER_V(0, 0)<1>	  r[a0.0, 1]<16;8,2>:ub           
+        mov   (8) fBUFFER_V(1, 0)<1>	  r[a0.0, 17]<16;8,2>:ub           
+
+        mul   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            0.0039216f
+
+        add   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            r7.3<0;1,0>:f
+        add   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            r7.7<0;1,0>:f
+        add   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            r8.3<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.1<0;1,0>:f
+        mac.sat (16) fBUFFER_R(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.2<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.4<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.5<0;1,0>:f
+        mac.sat (16) fBUFFER_G(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.6<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r8.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r8.1<0;1,0>:f
+        mac.sat (16) fBUFFER_B(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r8.2<0;1,0>:f
+
+        mul   (16) fBUFFER_R(0, 0)<1>     fBUFFER_R(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_G(0, 0)<1>     fBUFFER_G(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_B(0, 0)<1>     fBUFFER_B(0, 0)<8;8,1>        255.0f
+
+	mov   (16) wTempR(0, 0)<2>	  fBUFFER_R(0, 0)<8;8,1> 	
+	mov   (16) wTempG(0, 0)<2>	  fBUFFER_G(0, 0)<8;8,1> 	
+	mov   (16) wTempB(0, 0)<2>	  fBUFFER_B(0, 0)<8;8,1>
+	mov   (16) r[a0.1,1]<2>:ub	  ubTempR(0, 0)<32;8,4>
+	mov   (16) r[a0.2,1]<2>:ub	  ubTempG(0, 0)<32;8,4>	
+	mov   (16) r[a0.0,1]<2>:ub	  ubTempB(0, 0)<32;8,4>	
+
+//the second line in the block 1
+        
+        mov   (8) fBUFFER_Y(0, 0)<1>	  r[a0.1, 33]<16;8,2>:ub           
+        mov   (8) fBUFFER_Y(1, 0)<1>	  r[a0.1, 49]<16;8,2>:ub           
+        mov   (8) fBUFFER_U(0, 0)<1>	  r[a0.2, 33]<16;8,2>:ub          
+        mov   (8) fBUFFER_U(1, 0)<1>	  r[a0.2, 49]<16;8,2>:ub          
+        mov   (8) fBUFFER_V(0, 0)<1>	  r[a0.0, 33]<16;8,2>:ub           
+        mov   (8) fBUFFER_V(1, 0)<1>	  r[a0.0, 49]<16;8,2>:ub           
+
+        mul   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            0.0039216f
+
+        add   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            r7.3<0;1,0>:f
+        add   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            r7.7<0;1,0>:f
+        add   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            r8.3<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.1<0;1,0>:f
+        mac.sat (16) fBUFFER_R(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.2<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.4<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.5<0;1,0>:f
+        mac.sat (16) fBUFFER_G(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.6<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r8.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r8.1<0;1,0>:f
+        mac.sat (16) fBUFFER_B(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r8.2<0;1,0>:f
+
+        mul   (16) fBUFFER_R(0, 0)<1>     fBUFFER_R(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_G(0, 0)<1>     fBUFFER_G(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_B(0, 0)<1>     fBUFFER_B(0, 0)<8;8,1>        255.0f
+
+	mov   (16) wTempR(0, 0)<2>	  fBUFFER_R(0, 0)<8;8,1> 	
+	mov   (16) wTempG(0, 0)<2>	  fBUFFER_G(0, 0)<8;8,1> 	
+	mov   (16) wTempB(0, 0)<2>	  fBUFFER_B(0, 0)<8;8,1>
+	mov   (16) r[a0.1,33]<2>:ub	  ubTempR(0, 0)<32;8,4>
+	mov   (16) r[a0.2,33]<2>:ub	  ubTempG(0, 0)<32;8,4>	
+	mov   (16) r[a0.0,33]<2>:ub	  ubTempB(0, 0)<32;8,4>	
+
+//the third line in the block 1
+        mov   (8) fBUFFER_Y(0, 0)<1>	  r[a0.1, 65]<16;8,2>:ub           
+        mov   (8) fBUFFER_Y(1, 0)<1>	  r[a0.1, 81]<16;8,2>:ub           
+        mov   (8) fBUFFER_U(0, 0)<1>	  r[a0.2, 65]<16;8,2>:ub          
+        mov   (8) fBUFFER_U(1, 0)<1>	  r[a0.2, 81]<16;8,2>:ub          
+        mov   (8) fBUFFER_V(0, 0)<1>	  r[a0.0, 65]<16;8,2>:ub           
+        mov   (8) fBUFFER_V(1, 0)<1>	  r[a0.0, 81]<16;8,2>:ub           
+
+        mul   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            0.0039216f
+
+        add   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            r7.3<0;1,0>:f
+        add   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            r7.7<0;1,0>:f
+        add   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            r8.3<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.1<0;1,0>:f
+        mac.sat (16) fBUFFER_R(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.2<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.4<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.5<0;1,0>:f
+        mac.sat (16) fBUFFER_G(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.6<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r8.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r8.1<0;1,0>:f
+        mac.sat (16) fBUFFER_B(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r8.2<0;1,0>:f
+
+        mul   (16) fBUFFER_R(0, 0)<1>     fBUFFER_R(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_G(0, 0)<1>     fBUFFER_G(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_B(0, 0)<1>     fBUFFER_B(0, 0)<8;8,1>        255.0f
+
+	mov   (16) wTempR(0, 0)<2>	  fBUFFER_R(0, 0)<8;8,1> 	
+	mov   (16) wTempG(0, 0)<2>	  fBUFFER_G(0, 0)<8;8,1> 	
+	mov   (16) wTempB(0, 0)<2>	  fBUFFER_B(0, 0)<8;8,1>
+	mov   (16) r[a0.1,65]<2>:ub	  ubTempR(0, 0)<32;8,4>
+	mov   (16) r[a0.2,65]<2>:ub	  ubTempG(0, 0)<32;8,4>	
+	mov   (16) r[a0.0,65]<2>:ub	  ubTempB(0, 0)<32;8,4>	
+
+//the fourth line in the block 1
+        mov   (8) fBUFFER_Y(0, 0)<1>	  r[a0.1, 97]<16;8,2>:ub           
+        mov   (8) fBUFFER_Y(1, 0)<1>	  r[a0.1, 113]<16;8,2>:ub           
+        mov   (8) fBUFFER_U(0, 0)<1>	  r[a0.2, 97]<16;8,2>:ub          
+        mov   (8) fBUFFER_U(1, 0)<1>	  r[a0.2, 113]<16;8,2>:ub          
+        mov   (8) fBUFFER_V(0, 0)<1>	  r[a0.0, 97]<16;8,2>:ub           
+        mov   (8) fBUFFER_V(1, 0)<1>	  r[a0.0, 113]<16;8,2>:ub           
+
+        mul   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            0.0039216f
+
+        add   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            r7.3<0;1,0>:f
+        add   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            r7.7<0;1,0>:f
+        add   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            r8.3<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.1<0;1,0>:f
+        mac.sat (16) fBUFFER_R(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.2<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.4<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.5<0;1,0>:f
+        mac.sat (16) fBUFFER_G(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.6<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r8.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r8.1<0;1,0>:f
+        mac.sat (16) fBUFFER_B(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r8.2<0;1,0>:f
+
+        mul   (16) fBUFFER_R(0, 0)<1>     fBUFFER_R(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_G(0, 0)<1>     fBUFFER_G(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_B(0, 0)<1>     fBUFFER_B(0, 0)<8;8,1>        255.0f
+
+	mov   (16) wTempR(0, 0)<2>	  fBUFFER_R(0, 0)<8;8,1> 	
+	mov   (16) wTempG(0, 0)<2>	  fBUFFER_G(0, 0)<8;8,1> 	
+	mov   (16) wTempB(0, 0)<2>	  fBUFFER_B(0, 0)<8;8,1>
+	mov   (16) r[a0.1,97]<2>:ub	  ubTempR(0, 0)<32;8,4>
+	mov   (16) r[a0.2,97]<2>:ub	  ubTempG(0, 0)<32;8,4>	
+	mov   (16) r[a0.0,97]<2>:ub	  ubTempB(0, 0)<32;8,4>	
+
+
+//for BUFFER_2
+	add   (4) a0.0<1>:uw		  r22.0<4;4,1>:uw	1024:uw
+//the first line in the block 2
+        mov   (8) fBUFFER_Y(0, 0)<1>	  r[a0.1, 1]<16;8,2>:ub           
+        mov   (8) fBUFFER_Y(1, 0)<1>	  r[a0.1, 17]<16;8,2>:ub           
+        mov   (8) fBUFFER_U(0, 0)<1>	  r[a0.2, 1]<16;8,2>:ub          
+        mov   (8) fBUFFER_U(1, 0)<1>	  r[a0.2, 17]<16;8,2>:ub          
+        mov   (8) fBUFFER_V(0, 0)<1>	  r[a0.0, 1]<16;8,2>:ub           
+        mov   (8) fBUFFER_V(1, 0)<1>	  r[a0.0, 17]<16;8,2>:ub           
+
+        mul   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            0.0039216f
+
+        add   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            r7.3<0;1,0>:f
+        add   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            r7.7<0;1,0>:f
+        add   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            r8.3<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.1<0;1,0>:f
+        mac.sat (16) fBUFFER_R(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.2<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.4<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.5<0;1,0>:f
+        mac.sat (16) fBUFFER_G(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.6<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r8.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r8.1<0;1,0>:f
+        mac.sat (16) fBUFFER_B(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r8.2<0;1,0>:f
+
+        mul   (16) fBUFFER_R(0, 0)<1>     fBUFFER_R(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_G(0, 0)<1>     fBUFFER_G(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_B(0, 0)<1>     fBUFFER_B(0, 0)<8;8,1>        255.0f
+
+	mov   (16) wTempR(0, 0)<2>	  fBUFFER_R(0, 0)<8;8,1> 	
+	mov   (16) wTempG(0, 0)<2>	  fBUFFER_G(0, 0)<8;8,1> 	
+	mov   (16) wTempB(0, 0)<2>	  fBUFFER_B(0, 0)<8;8,1>
+	mov   (16) r[a0.1,1]<2>:ub	  ubTempR(0, 0)<32;8,4>
+	mov   (16) r[a0.2,1]<2>:ub	  ubTempG(0, 0)<32;8,4>	
+	mov   (16) r[a0.0,1]<2>:ub	  ubTempB(0, 0)<32;8,4>	
+
+//the second line in the block 2
+        
+        mov   (8) fBUFFER_Y(0, 0)<1>	  r[a0.1, 33]<16;8,2>:ub           
+        mov   (8) fBUFFER_Y(1, 0)<1>	  r[a0.1, 49]<16;8,2>:ub           
+        mov   (8) fBUFFER_U(0, 0)<1>	  r[a0.2, 33]<16;8,2>:ub          
+        mov   (8) fBUFFER_U(1, 0)<1>	  r[a0.2, 49]<16;8,2>:ub          
+        mov   (8) fBUFFER_V(0, 0)<1>	  r[a0.0, 33]<16;8,2>:ub           
+        mov   (8) fBUFFER_V(1, 0)<1>	  r[a0.0, 49]<16;8,2>:ub           
+
+        mul   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            0.0039216f
+
+        add   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            r7.3<0;1,0>:f
+        add   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            r7.7<0;1,0>:f
+        add   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            r8.3<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.1<0;1,0>:f
+        mac.sat (16) fBUFFER_R(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.2<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.4<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.5<0;1,0>:f
+        mac.sat (16) fBUFFER_G(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.6<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r8.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r8.1<0;1,0>:f
+        mac.sat (16) fBUFFER_B(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r8.2<0;1,0>:f
+
+        mul   (16) fBUFFER_R(0, 0)<1>     fBUFFER_R(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_G(0, 0)<1>     fBUFFER_G(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_B(0, 0)<1>     fBUFFER_B(0, 0)<8;8,1>        255.0f
+
+	mov   (16) wTempR(0, 0)<2>	  fBUFFER_R(0, 0)<8;8,1> 	
+	mov   (16) wTempG(0, 0)<2>	  fBUFFER_G(0, 0)<8;8,1> 	
+	mov   (16) wTempB(0, 0)<2>	  fBUFFER_B(0, 0)<8;8,1>
+	mov   (16) r[a0.1,33]<2>:ub	  ubTempR(0, 0)<32;8,4>
+	mov   (16) r[a0.2,33]<2>:ub	  ubTempG(0, 0)<32;8,4>	
+	mov   (16) r[a0.0,33]<2>:ub	  ubTempB(0, 0)<32;8,4>	
+
+//the third line in the block 2
+        mov   (8) fBUFFER_Y(0, 0)<1>	  r[a0.1, 65]<16;8,2>:ub           
+        mov   (8) fBUFFER_Y(1, 0)<1>	  r[a0.1, 81]<16;8,2>:ub           
+        mov   (8) fBUFFER_U(0, 0)<1>	  r[a0.2, 65]<16;8,2>:ub          
+        mov   (8) fBUFFER_U(1, 0)<1>	  r[a0.2, 81]<16;8,2>:ub          
+        mov   (8) fBUFFER_V(0, 0)<1>	  r[a0.0, 65]<16;8,2>:ub           
+        mov   (8) fBUFFER_V(1, 0)<1>	  r[a0.0, 81]<16;8,2>:ub           
+
+        mul   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            0.0039216f
+
+        add   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            r7.3<0;1,0>:f
+        add   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            r7.7<0;1,0>:f
+        add   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            r8.3<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.1<0;1,0>:f
+        mac.sat (16) fBUFFER_R(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.2<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.4<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.5<0;1,0>:f
+        mac.sat (16) fBUFFER_G(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.6<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r8.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r8.1<0;1,0>:f
+        mac.sat (16) fBUFFER_B(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r8.2<0;1,0>:f
+
+        mul   (16) fBUFFER_R(0, 0)<1>     fBUFFER_R(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_G(0, 0)<1>     fBUFFER_G(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_B(0, 0)<1>     fBUFFER_B(0, 0)<8;8,1>        255.0f
+
+	mov   (16) wTempR(0, 0)<2>	  fBUFFER_R(0, 0)<8;8,1> 	
+	mov   (16) wTempG(0, 0)<2>	  fBUFFER_G(0, 0)<8;8,1> 	
+	mov   (16) wTempB(0, 0)<2>	  fBUFFER_B(0, 0)<8;8,1>
+	mov   (16) r[a0.1,65]<2>:ub	  ubTempR(0, 0)<32;8,4>
+	mov   (16) r[a0.2,65]<2>:ub	  ubTempG(0, 0)<32;8,4>	
+	mov   (16) r[a0.0,65]<2>:ub	  ubTempB(0, 0)<32;8,4>	
+
+//the fourth line in the block 2
+        mov   (8) fBUFFER_Y(0, 0)<1>	  r[a0.1, 97]<16;8,2>:ub           
+        mov   (8) fBUFFER_Y(1, 0)<1>	  r[a0.1, 113]<16;8,2>:ub           
+        mov   (8) fBUFFER_U(0, 0)<1>	  r[a0.2, 97]<16;8,2>:ub          
+        mov   (8) fBUFFER_U(1, 0)<1>	  r[a0.2, 113]<16;8,2>:ub          
+        mov   (8) fBUFFER_V(0, 0)<1>	  r[a0.0, 97]<16;8,2>:ub           
+        mov   (8) fBUFFER_V(1, 0)<1>	  r[a0.0, 113]<16;8,2>:ub           
+
+        mul   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            0.0039216f
+
+        add   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            r7.3<0;1,0>:f
+        add   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            r7.7<0;1,0>:f
+        add   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            r8.3<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.1<0;1,0>:f
+        mac.sat (16) fBUFFER_R(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.2<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.4<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.5<0;1,0>:f
+        mac.sat (16) fBUFFER_G(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.6<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r8.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r8.1<0;1,0>:f
+        mac.sat (16) fBUFFER_B(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r8.2<0;1,0>:f
+
+        mul   (16) fBUFFER_R(0, 0)<1>     fBUFFER_R(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_G(0, 0)<1>     fBUFFER_G(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_B(0, 0)<1>     fBUFFER_B(0, 0)<8;8,1>        255.0f
+
+	mov   (16) wTempR(0, 0)<2>	  fBUFFER_R(0, 0)<8;8,1> 	
+	mov   (16) wTempG(0, 0)<2>	  fBUFFER_G(0, 0)<8;8,1> 	
+	mov   (16) wTempB(0, 0)<2>	  fBUFFER_B(0, 0)<8;8,1>
+	mov   (16) r[a0.1,97]<2>:ub	  ubTempR(0, 0)<32;8,4>
+	mov   (16) r[a0.2,97]<2>:ub	  ubTempG(0, 0)<32;8,4>	
+	mov   (16) r[a0.0,97]<2>:ub	  ubTempB(0, 0)<32;8,4>	
+
+
+//for BUFFER_3
+	add   (4) a0.0<1>:uw		  r22.0<4;4,1>:uw	1536:uw
+//the first line in the block 3
+        mov   (8) fBUFFER_Y(0, 0)<1>	  r[a0.1, 1]<16;8,2>:ub           
+        mov   (8) fBUFFER_Y(1, 0)<1>	  r[a0.1, 17]<16;8,2>:ub           
+        mov   (8) fBUFFER_U(0, 0)<1>	  r[a0.2, 1]<16;8,2>:ub          
+        mov   (8) fBUFFER_U(1, 0)<1>	  r[a0.2, 17]<16;8,2>:ub          
+        mov   (8) fBUFFER_V(0, 0)<1>	  r[a0.0, 1]<16;8,2>:ub           
+        mov   (8) fBUFFER_V(1, 0)<1>	  r[a0.0, 17]<16;8,2>:ub           
+
+        mul   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            0.0039216f
+
+        add   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            r7.3<0;1,0>:f
+        add   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            r7.7<0;1,0>:f
+        add   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            r8.3<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.1<0;1,0>:f
+        mac.sat (16) fBUFFER_R(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.2<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.4<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.5<0;1,0>:f
+        mac.sat (16) fBUFFER_G(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.6<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r8.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r8.1<0;1,0>:f
+        mac.sat (16) fBUFFER_B(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r8.2<0;1,0>:f
+
+        mul   (16) fBUFFER_R(0, 0)<1>     fBUFFER_R(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_G(0, 0)<1>     fBUFFER_G(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_B(0, 0)<1>     fBUFFER_B(0, 0)<8;8,1>        255.0f
+
+	mov   (16) wTempR(0, 0)<2>	  fBUFFER_R(0, 0)<8;8,1> 	
+	mov   (16) wTempG(0, 0)<2>	  fBUFFER_G(0, 0)<8;8,1> 	
+	mov   (16) wTempB(0, 0)<2>	  fBUFFER_B(0, 0)<8;8,1>
+	mov   (16) r[a0.1,1]<2>:ub	  ubTempR(0, 0)<32;8,4>
+	mov   (16) r[a0.2,1]<2>:ub	  ubTempG(0, 0)<32;8,4>	
+	mov   (16) r[a0.0,1]<2>:ub	  ubTempB(0, 0)<32;8,4>	
+
+//the second line in the block 3
+        
+        mov   (8) fBUFFER_Y(0, 0)<1>	  r[a0.1, 33]<16;8,2>:ub           
+        mov   (8) fBUFFER_Y(1, 0)<1>	  r[a0.1, 49]<16;8,2>:ub           
+        mov   (8) fBUFFER_U(0, 0)<1>	  r[a0.2, 33]<16;8,2>:ub          
+        mov   (8) fBUFFER_U(1, 0)<1>	  r[a0.2, 49]<16;8,2>:ub          
+        mov   (8) fBUFFER_V(0, 0)<1>	  r[a0.0, 33]<16;8,2>:ub           
+        mov   (8) fBUFFER_V(1, 0)<1>	  r[a0.0, 49]<16;8,2>:ub           
+
+        mul   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            0.0039216f
+
+        add   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            r7.3<0;1,0>:f
+        add   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            r7.7<0;1,0>:f
+        add   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            r8.3<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.1<0;1,0>:f
+        mac.sat (16) fBUFFER_R(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.2<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.4<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.5<0;1,0>:f
+        mac.sat (16) fBUFFER_G(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.6<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r8.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r8.1<0;1,0>:f
+        mac.sat (16) fBUFFER_B(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r8.2<0;1,0>:f
+
+        mul   (16) fBUFFER_R(0, 0)<1>     fBUFFER_R(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_G(0, 0)<1>     fBUFFER_G(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_B(0, 0)<1>     fBUFFER_B(0, 0)<8;8,1>        255.0f
+
+	mov   (16) wTempR(0, 0)<2>	  fBUFFER_R(0, 0)<8;8,1> 	
+	mov   (16) wTempG(0, 0)<2>	  fBUFFER_G(0, 0)<8;8,1> 	
+	mov   (16) wTempB(0, 0)<2>	  fBUFFER_B(0, 0)<8;8,1>
+	mov   (16) r[a0.1,33]<2>:ub	  ubTempR(0, 0)<32;8,4>
+	mov   (16) r[a0.2,33]<2>:ub	  ubTempG(0, 0)<32;8,4>	
+	mov   (16) r[a0.0,33]<2>:ub	  ubTempB(0, 0)<32;8,4>	
+
+//the third line in the block 3
+        mov   (8) fBUFFER_Y(0, 0)<1>	  r[a0.1, 65]<16;8,2>:ub           
+        mov   (8) fBUFFER_Y(1, 0)<1>	  r[a0.1, 81]<16;8,2>:ub           
+        mov   (8) fBUFFER_U(0, 0)<1>	  r[a0.2, 65]<16;8,2>:ub          
+        mov   (8) fBUFFER_U(1, 0)<1>	  r[a0.2, 81]<16;8,2>:ub          
+        mov   (8) fBUFFER_V(0, 0)<1>	  r[a0.0, 65]<16;8,2>:ub           
+        mov   (8) fBUFFER_V(1, 0)<1>	  r[a0.0, 81]<16;8,2>:ub           
+
+        mul   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            0.0039216f
+
+        add   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            r7.3<0;1,0>:f
+        add   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            r7.7<0;1,0>:f
+        add   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            r8.3<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.1<0;1,0>:f
+        mac.sat (16) fBUFFER_R(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.2<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.4<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.5<0;1,0>:f
+        mac.sat (16) fBUFFER_G(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.6<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r8.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r8.1<0;1,0>:f
+        mac.sat (16) fBUFFER_B(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r8.2<0;1,0>:f
+
+        mul   (16) fBUFFER_R(0, 0)<1>     fBUFFER_R(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_G(0, 0)<1>     fBUFFER_G(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_B(0, 0)<1>     fBUFFER_B(0, 0)<8;8,1>        255.0f
+
+	mov   (16) wTempR(0, 0)<2>	  fBUFFER_R(0, 0)<8;8,1> 	
+	mov   (16) wTempG(0, 0)<2>	  fBUFFER_G(0, 0)<8;8,1> 	
+	mov   (16) wTempB(0, 0)<2>	  fBUFFER_B(0, 0)<8;8,1>
+	mov   (16) r[a0.1,65]<2>:ub	  ubTempR(0, 0)<32;8,4>
+	mov   (16) r[a0.2,65]<2>:ub	  ubTempG(0, 0)<32;8,4>	
+	mov   (16) r[a0.0,65]<2>:ub	  ubTempB(0, 0)<32;8,4>	
+
+//the fourth line in the block 3
+        mov   (8) fBUFFER_Y(0, 0)<1>	  r[a0.1, 97]<16;8,2>:ub           
+        mov   (8) fBUFFER_Y(1, 0)<1>	  r[a0.1, 113]<16;8,2>:ub           
+        mov   (8) fBUFFER_U(0, 0)<1>	  r[a0.2, 97]<16;8,2>:ub          
+        mov   (8) fBUFFER_U(1, 0)<1>	  r[a0.2, 113]<16;8,2>:ub          
+        mov   (8) fBUFFER_V(0, 0)<1>	  r[a0.0, 97]<16;8,2>:ub           
+        mov   (8) fBUFFER_V(1, 0)<1>	  r[a0.0, 113]<16;8,2>:ub           
+
+        mul   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            0.0039216f
+        mul   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            0.0039216f
+
+        add   (16) fBUFFER_Y(0, 0)<1>     fBUFFER_Y(0, 0)<1>            r7.3<0;1,0>:f
+        add   (16) fBUFFER_U(0, 0)<1>     fBUFFER_U(0, 0)<1>            r7.7<0;1,0>:f
+        add   (16) fBUFFER_V(0, 0)<1>     fBUFFER_V(0, 0)<1>            r8.3<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.1<0;1,0>:f
+        mac.sat (16) fBUFFER_R(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.2<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r7.4<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r7.5<0;1,0>:f
+        mac.sat (16) fBUFFER_G(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r7.6<0;1,0>:f
+
+        mul   (16) acc0.0<1>:f            fBUFFER_Y(0, 0)<8;8,1>        r8.0<0;1,0>:f
+        mac   (16) acc0.0<1>:f            fBUFFER_U(0, 0)<8;8,1>        r8.1<0;1,0>:f
+        mac.sat (16) fBUFFER_B(0, 0)<1>   fBUFFER_V(0, 0)<8;8,1>        r8.2<0;1,0>:f
+
+        mul   (16) fBUFFER_R(0, 0)<1>     fBUFFER_R(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_G(0, 0)<1>     fBUFFER_G(0, 0)<8;8,1>        255.0f
+        mul   (16) fBUFFER_B(0, 0)<1>     fBUFFER_B(0, 0)<8;8,1>        255.0f
+
+	mov   (16) wTempR(0, 0)<2>	  fBUFFER_R(0, 0)<8;8,1> 	
+	mov   (16) wTempG(0, 0)<2>	  fBUFFER_G(0, 0)<8;8,1> 	
+	mov   (16) wTempB(0, 0)<2>	  fBUFFER_B(0, 0)<8;8,1>
+	mov   (16) r[a0.1,97]<2>:ub	  ubTempR(0, 0)<32;8,4>
+	mov   (16) r[a0.2,97]<2>:ub	  ubTempG(0, 0)<32;8,4>	
+	mov   (16) r[a0.0,97]<2>:ub	  ubTempB(0, 0)<32;8,4>	
+

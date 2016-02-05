@@ -1,0 +1,2513 @@
+/*
+ *  Copyright 2000-2011 Intel Corporation All Rights Reserved
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sub license, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the
+ * next paragraph) shall be included in all copies or substantial portions
+ * of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+ * IN NO EVENT SHALL PRECISION INSIGHT AND/OR ITS SUPPLIERS BE LIABLE FOR
+ * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * This file was originally licensed under the following license
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+// 1153    // Total instruction count
+//    1    // Total kernel count
+
+
+.kernel NV12_DNUV_NV12
+.code
+
+
+
+//Module		: DN_UV_Setup
+//Author		: Tatiya, Rupesh
+//Description	: Initial Set-up for DN_UV
+
+
+
+
+// Module name	: ChromaDenoise.inc
+// Author		: Tatiya, Rupesh
+
+
+
+
+// Module name: common.inc
+//
+// Common header file for all Video-Processing kernels
+//
+
+.default_execution_size (16)
+.default_register_type  :ub
+
+.reg_count_total        128
+.reg_count_payload      7
+
+//========== Common constants ==========
+
+
+//========== Macros ==========
+
+
+//Fast Jump, For more details see "Set_Layer_N.asm"
+
+
+//========== Defines ====================
+
+//========== Static Parameters (Common To All) ==========
+//r1
+
+
+//r2
+
+                                    //  e.g.            byte0   byte1  byte2
+                                    // YUYV               0       1      3
+                                    // YVYU               0       3      1
+
+//Color Pipe (IECP) parameters
+
+
+//ByteCopy
+
+
+//r4
+
+                                    //  e.g.              byte0           byte1           byte2
+                                    // YUYV                 0               1               3
+                                    // YVYU                 0               3               1
+
+
+//========== Inline parameters (Common To All) ===========
+
+
+//============== Binding Index Table===========
+//Common between DNDI and DNUV
+
+
+//================= Common Message Descriptor =====
+// Message descriptor for thread spawning
+// Message Descriptors
+//                = 000 0001 (min message len 1 ) 0,0000 (resp len 0   -add later)
+//                  0000,0000,0000
+//                  0001(Spawn a root thread),0001 (Root thread spawn thread)
+//                = 0x02000011
+// Thread Spawner Message Descriptor
+
+
+// Message descriptor for atomic operation add
+// Message Descriptors
+//                = 000 0110 (min message len 6 ) 0,0000 (resp len 0   -add later)
+//                  1(header present)001,10(typed atomic operation)0(return enabled)0(slot group, low 8 bits),0111 (AOP_Add)
+//                  0000,0000 (Binding table index, added later)
+//                = 0x02000011
+
+// Atomic Operation Add Message Descriptor
+
+
+// Message descriptor for dataport media write
+        // Message Descriptors
+                //                = 000 0001 (min message len 1 - add later) 00000 (resp len 0)
+                //                  1 (header present 1) 0 1010 (media block write) 000000
+                //                  00000000 (binding table index - set later)
+                //                = 0x020A8000
+
+
+// Message Length defines
+
+
+// Response Length defines
+
+
+// Block Width and Height Size defines
+
+
+// Extended Message Descriptors
+
+
+// Common message descriptors:
+
+
+//===================== Math Function Control ===================================
+
+
+//============ Message Registers ===============
+                             // buf4 starts from r28
+
+
+//#define mMSGHDR_EOT  r43    // Dummy Message Register for EOT
+
+
+.declare    mubMSGPAYLOAD  Base=r30 ElementSize=1 SrcRegion=<16;16,1> Type=ub
+.declare    muwMSGPAYLOAD  Base=r30 ElementSize=2 SrcRegion=<16;16,1> Type=uw
+.declare    mudMSGPAYLOAD  Base=r30 ElementSize=4 SrcRegion=<8;8,1> Type=ud
+.declare    mfMSGPAYLOAD   Base=r30 ElementSize=4 SrcRegion=<8;8,1> Type=f
+
+//=================== End of thread instruction ===========================
+
+
+//=====================Pointers Used=====================================
+
+
+//=======================================================================
+
+
+//r11-r17
+// Define temp space for any usages
+
+
+// Common Buffers
+
+
+// temp space for rotation
+
+.declare fROBUF		  Base=r11.0		ElementSize=4		SrcRegion=<8;8,1>		  DstRegion=<1>		Type=f
+
+.declare udROBUF		Base=r11.0		ElementSize=4		SrcRegion=<8;8,1>		  DstRegion=<1>		Type=ud
+
+.declare uwROBUF		Base=r11.0		ElementSize=2		SrcRegion=<16;16,1>		DstRegion=<1>		Type=uw
+
+.declare ubROBUF		Base=r11.0		ElementSize=1		SrcRegion=<16;16,1>		DstRegion=<1>		Type=ub
+
+.declare ub4ROBUF 	Base=r11.0		ElementSize=1		SrcRegion=<32;8,4>		DstRegion=<4>		Type=ub
+
+
+// End of common.inc
+
+
+//Interface:
+//Static Parameters:
+//r1
+
+
+//======================================================
+//Interface for serpent mode Chroma Denoise, added by Le
+//======================================================
+//r1
+
+
+//noise history thresholds (low and high)
+
+
+//temporal difference thresholds (high and low)
+
+
+//noise history thresholds (low and high)
+//#define ubNoiseHistMaxHigh  r1.22
+//#define ubNoiseHistMaxLow  r1.23
+//#define ubNoiseHistDeltaHigh  r1.24
+//#define ubNoiseHistDeltaLow  r1.25
+
+//Gaussian thresholds
+
+
+//temporal difference thresholds (default)
+
+
+//r2
+//history thresholds (default)
+
+
+//denoise factor  (0-63)
+
+
+//====================== Binding table (Explicit To DNUV)=========================================
+//Used by DN_UV kernels
+
+
+	//Pointer to Current Frame UV
+
+
+//r1-r6
+	//CURBE GRFs used as TEMP : Used for max computation and storing max temporarily. : r1-r6
+
+
+	.declare	ubCURBE_TEMP	Base=r1.0	ElementSize=1	Type=ub
+	.declare	uwCURBE_TEMP	Base=r1.0	ElementSize=2	Type=uw
+	.declare	wCURBE_TEMP		Base=r1.0	ElementSize=2	Type=w
+	.declare	fCURBE_TEMP		Base=r1.0	ElementSize=4	Type=f
+	.declare	udCURBE_TEMP		Base=r1.0	ElementSize=4	Type=ud
+	.declare	uwMAX_ABS_DIFF	Base=r5.0	ElementSize=2	Type=uw
+
+	//r1
+
+
+	//r3
+
+
+    //r4
+
+//r7
+	//All of the following has to defined in Same GRF for optimal performance.
+
+
+//r8-24
+    //Previous Frame UV
+
+	.declare	udPREV_UV		Base=r8.0	ElementSize=4	Type=ud
+	.declare	ubPREV_UV		Base=r8.0	ElementSize=1	Type=ub
+
+
+//r25-48
+	//TEMP Space for any Usage.
+
+
+//=========================================================================
+//Definations and declarations for serpent mode Chroma Denoise, added by Le
+//========================================================================= 	  
+
+
+	.declare	udGNE_UV		Base=r24.0	ElementSize=4	Type=ud
+  .declare	fGNE_UV		Base=r24.0	ElementSize=4	Type=f
+  .declare	ubGNE_UV		Base=r24.0	ElementSize=1	Type=ub
+
+  .declare	udMSGHDR_BNE_SERP	Base=r25.0	ElementSize=4	Type=ud
+  .declare	udMSGSRC_BNE_SERP	Base=r26.0	ElementSize=4	Type=ud
+
+
+  .declare	ubDN_UV_Thresholds Base=r26.0	ElementSize=1	Type=ub
+  .declare	ubDN_UV_Thresholds_Temp  Base=r27.0	ElementSize=1	Type=ub
+  .declare	udDN_UV_Thresholds Base=r26.0	ElementSize=4	Type=ud
+  .declare	udDN_UV_Thresholds_Temp Base=r27.0	ElementSize=4	Type=ud
+  .declare	fDN_UV_Thresholds Base=r26.0	ElementSize=4	Type=f
+  .declare	fDN_UV_Thresholds_Temp Base=r27.0	ElementSize=4	Type=f 	
+
+
+//====================================================================================
+
+
+	//TEMP23: To hold V data for PL3 surfaces
+	.declare	udCURR_V_TEMP	Base=r25.0	ElementSize=4	Type=ud
+	.declare	ubCURR_V_TEMP	Base=r25.0	ElementSize=1	Type=ub
+
+	//GRFs to calculate Median: r25-r42
+	.declare	ubMEDIAN_TEMP	Base=r25.0	ElementSize=1	Type=ub
+
+	//18 GRFs to hold difference : r25-r42
+	.declare	wDIFF			Base=r25.0	ElementSize=2	Type=w
+	.declare	uwDIFF			Base=r25.0	ElementSize=2	Type=uw
+
+	//Temporal Diff
+	.declare	wDIFF_TEMPORAL			Base=r25.0	ElementSize=2	Type=w
+	.declare	ubDIFF_TEMPORAL			Base=r25.0	ElementSize=1	Type=ub
+
+	//4 GRFs to hold Sobel Value : r43-46
+	.declare	wSOBEL_X	Base=r43.0	ElementSize=2	Type=w
+	.declare	uwSOBEL		Base=r43.0	ElementSize=2	Type=uw
+
+
+	//2 GRFs to hold SOAD temporarily: r47-48
+	.declare	uwSOAD			Base=r47.0	ElementSize=2	Type=uw
+
+	//Temp GRFs to hold extra YUYV pixels: r43-r48
+	.declare	ubTEMP5			Base=r43.0	ElementSize=1	Type=ub
+
+	//Temp GRFs in Median Calculation: r47-r48
+	.declare	ubTEMP1			Base=r47.0	ElementSize=1	Type=ub
+
+	.declare	uwTEMP0			Base=r48.0	ElementSize=2	Type=uw
+	.declare	ubTEMP0			Base=r48.0	ElementSize=1	Type=ub
+
+	//Temp Space to store Median : r49-50
+
+	.declare	ubMEDIAN	Base=r49.0	ElementSize=1	Type=ub
+
+//r49
+
+
+//r50
+    //Message Source
+
+
+//r51
+	//DN_UV History Surface
+
+	.declare	udHIST_UV		Base=r51.0	ElementSize=4	Type=ud
+	.declare	ubHIST_UV		Base=r51.0	ElementSize=1	Type=ub
+
+//r52 - r91
+	//r52
+	//Current Frame UV
+
+
+	.declare	udCURR_UV		Base=r52.0	ElementSize=4	Type=ud
+	.declare	ubCURR_UV		Base=r52.0	ElementSize=1	Type=ub
+
+	//r54
+	//CURBE COPY
+
+
+	//r55
+
+
+	.declare 	uwSOAD_MIN_8x4		Base=r56.0	ElementSize=2	Type=uw
+
+	//r61
+
+
+	//r62
+
+
+	//History Surface Temp Origin
+
+
+    //r63
+    //Current Frame Y Temp Origin
+
+
+	//BNE Surface Origin
+
+
+    //r70
+
+	.declare	uwDIFF_TEMPORAL_SUM4x4	Base=r70.0	ElementSize=2	Type=uw  //4 GRFs
+
+	//r74-91 : For Saving Dest UV (PL2/PL3)
+
+
+	.declare	ubMSGPAYLOAD_UV0	Base=r75.0	ElementSize=1	Type=ub
+
+
+	.declare	ubMSGPAYLOAD_U		Base=r75.0	ElementSize=1	Type=ub
+
+
+	.declare	ubMSGPAYLOAD_UV1	Base=r84.0	ElementSize=1	Type=ub
+
+
+	.declare	ubMSGPAYLOAD_V		Base=r84.0	ElementSize=1	Type=ub
+
+	//r90
+
+	.declare	uwDIFF_TEMPORAL_SUM4x4_FINAL	Base=r90.0	ElementSize=2	Type=uw  //2 GRFs
+
+//r92-127
+	//Current Frame Y
+
+
+	//r92
+    .declare	uwDIFF_TEMPORAL_SUM4x4_TEMP_0		Base=r92	ElementSize=2	Type=uw
+	//r101
+    .declare	uwDIFF_TEMPORAL_SUM4x4_TEMP_1		Base=r101	ElementSize=2	Type=uw
+	//r110
+    .declare	uwDIFF_TEMPORAL_SUM4x4_TEMP_2		Base=r110	ElementSize=2	Type=uw
+	//r119
+    .declare	uwDIFF_TEMPORAL_SUM4x4_TEMP_3		Base=r119	ElementSize=2	Type=uw
+
+	.declare	udCURR_Y0		Base=r93.0	ElementSize=4	Type=ud
+    .declare	ubCURR_Y0		Base=r93.0	ElementSize=1	Type=ub
+    .declare	udCURR_Y1		Base=r102.0	ElementSize=4	Type=ud
+	.declare	ubCURR_Y1		Base=r102.0	ElementSize=1	Type=ub
+	.declare	udCURR_Y2		Base=r111.0	ElementSize=4	Type=ud
+	.declare	ubCURR_Y2		Base=r111.0	ElementSize=1	Type=ub
+	.declare	udCURR_Y3		Base=r120.0	ElementSize=4	Type=ud
+	.declare	ubCURR_Y3		Base=r120.0	ElementSize=1	Type=ub
+
+	//r92: To hold U data for PL3 surfaces
+	.declare	udCURR_U_TEMP		Base=r92.0	ElementSize=4	Type=ud
+    .declare	ubCURR_U_TEMP		Base=r92.0	ElementSize=1	Type=ub
+
+    //r112: To hold U data for PL3 surfaces
+	.declare	udPREV_U_TEMP		Base=r112.0	ElementSize=4	Type=ud
+	.declare	ubPREV_U_TEMP		Base=r112.0	ElementSize=1	Type=ub
+
+	//r120: To hold U data for PL3 surfaces
+	.declare	udPREV_V_TEMP		Base=r120.0	ElementSize=4	Type=ud
+	.declare	ubPREV_V_TEMP		Base=r120.0	ElementSize=1	Type=ub
+
+
+	// Initialize message source with r0.
+	mov (8)   r50.0<1>:ud		r0.0<8;8,1>:ud
+	mov (8)   r92.0<1>:ud		r0.0<8;8,1>:ud
+	mov (8)   r101.0<1>:ud		r0.0<8;8,1>:ud
+	mov (8)   r110.0<1>:ud		r0.0<8;8,1>:ud
+	mov (8)   r119.0<1>:ud		r0.0<8;8,1>:ud
+
+
+
+//Module Name 	: 	DN_UV_PL2_Load_Curr_Frame_UV
+//Author		:	Tatiya, Rupesh
+//Description	:	Loads Current Frame UV data for PL2 input.
+
+
+
+//Module name 	:  DN_UV_Load_Curr_Frame_UV
+//Author		:  Tatiya, Rupesh
+//Description	:  Loads Current Frame (UV only).
+//				   We need 4 extra rows (2 per field) and 2 extra pixel (1 each side) for both U and V each.
+//				   The processing size is 16x16 U and V each. So we need : U size - 18x20, V size - 18x20, UV size - 36x20, YUYV size - 72x20.
+
+
+
+
+//36x20 interleaved UV block is partitioned as follows:
+//				<------ 18 --------> <--------18 ------->
+//				-----------------------------------------
+//				|		20x8   A 	!|    20x8     D    !
+//				|      (overlapped) !|   (overlapped) 	!
+//				|-------------------!|------------------!
+//				|       20x8   B    !|      20x8   E    !
+//				|      (overlapped) !|     (overlapped) !
+//				|-------------------!|------------------!
+//				|		20x4   C    !|		20x4   F    !
+//				|     (overlapped)	!|    (overlapped)	!
+//				-----------------------------------------
+//
+// Cordinates: (x-2, y-2), (x+14, y-2), (x-2, y+6), (x+14, y+6), (x-2, y+14), (x+14, y+14)
+
+	//UV surface origin: (ORIX, ORIY/2)
+	add  (2)	r9.4<1>:w		r9.0<2;2,1>:w	 	r4.4<2;2,1>:w	 { AccWrEn } // Source Block origin
+	shr  (1)	r9.5<1>:w		acc0.5<0;1,0>:w		1:w
+	mov  (2)	acc0.0<1>:d							r9.4<2;2,1>:w
+
+	//A
+	add  (2)   	r50.0<1>:d	acc0.0<2;2,1>:d		-2:d					{ AccWrEn }
+ 	mov  (1)   	r50.2<1>:ud	0x70013:ud			
+ 	send (8)	udCURR_UV(0)<1>			r50		0x4	0x2890004:ud
+
+	//B
+ 	add  (1)    r50.1<1>:d	acc0.1<0;1,0>:d			8:d
+ 	send (8)	udCURR_UV(8)<1>			r50		0x4	0x2890004:ud
+
+	//C
+	add  (1)    r50.1<1>:d	acc0.1<0;1,0>:d			16:d   				
+	mov  (1)   	r50.2<1>:ud	0x30013:ud			
+ 	send (8)	udCURR_UV(16)<1>		r50		0x4	0x2490004:ud
+
+	//D
+	add  (1)    r50.0<1>:d	acc0.0<0;1,0>:d			16:d				{ AccWrEn }
+	mov  (1)    r50.1<1>:d	acc0.1<0;1,0>:d								
+	mov  (1)   	r50.2<1>:ud	0x70013:ud			
+ 	send (8)	udCURR_UV(20)<1>		r50		0x4	0x2890004:ud
+
+	//E
+ 	add  (1)    r50.1<1>:d	acc0.1<0;1,0>:d			8:d
+ 	send (8)	udCURR_UV(28)<1>		r50		0x4	0x2890004:ud
+
+	//F
+ 	add  (1)    r50.1<1>:d	acc0.1<0;1,0>:d			16:d   					
+	mov  (1)   	r50.2<1>:ud	0x30013:ud				
+ 	send (8)	udCURR_UV(36)<1>		r50		0x4	0x2490004:ud
+
+ 	//History Origin, Current Y origin and BNE surface origin - all are in inline GRF. Use , . -rT.
+
+ 	//Calculate Origin For History Surface: (ORIX/4, ORIY/8)
+	mov  (16)   acc0.0<1>:w						r9.0<0;2,1>:w
+	shr  (1)	r9.2<1>:w		acc0.2<0;1,0>:w	2:w
+	shr  (1)	r9.3<1>:w		acc0.3<0;1,0>:w	3:w
+
+	//Calculate Origin For BNE Surface: (ORIX/8, ORIY/16)
+	shr  (1)	r9.6<1>:w		acc0.6<0;1,0>:w		3:w
+	shr  (1)	r9.7<1>:w		acc0.7<0;1,0>:w		4:w
+
+
+
+//Module Name 	: 	DN_UV_PL2_Load_Prev_Frame_UV
+//Author		:	Tatiya, Rupesh
+//Description	:	Loads Pevious Frame UV data for PL2 input.
+
+
+
+//Module Name 	: 	DN_UV_Load_Prev_Frame_UV
+//Author		:	Tatiya, Rupesh
+//Description	:   Loads Prev Frame (UV only). U size - 16x16, V size - 16x16, UV size - 32x16, YUYV size - 64x16.
+
+
+
+
+	mov  (2)	r50.0<1>:d		r9.4<2;2,1>:w			{ AccWrEn } 	// Source lock origin
+	mov  (1)	r50.2<1>:ud		0xF000F:ud  						// U/V block width and height (16x16)
+	send (8)	udPREV_UV(0)<1>		r50		0x4	0x2890001:ud
+
+	add  (1)	r50.0<1>:ud 		acc0.0<0;1,0>:d		16:w										// Add 16 to X origin
+	send (8)	udPREV_UV(8)<1>		r50		0x4	0x2890001:ud
+
+
+	//TODO - See if History loading can be combined with Prev Frame Load. - rT
+
+
+//Module name 	:  DN_UV_Load_Hist_UV
+//Author		:  Tatiya, Rupesh
+//Description	:  Load DN History for UV denoise. 4x4 for each U & V.
+
+
+
+
+	mov  (2)	r50.0<1>:d	r9.2<2;2,1>:w
+	mov  (1)	r50.2<1>:ud	0x30007:ud  		
+	send (8)	udHIST_UV(0)<1>			r50		0x4	0x2190022:ud
+
+
+
+//Module Name 	: DN_UV_420_Load_Curr_Frame_Y
+//Author		: Tatiya, Rupesh
+//Description	: Load Curr Frame Y data for 420 Input
+
+
+
+//Module Name 	: DN_UV_Load_Curr_Frame_Y
+//Author		: Tatiya, Rupesh
+//Description	: Loads Y of Current frame.
+
+
+
+
+	//For 16x16 U and 16x16 V for 420, we need to read 32x32 Y.
+
+	mov (8)		acc0.0<1>:ud		r0.0<8;8,1>:ud
+	mov (1)		acc0.2<1>:ud		0xF000F:ud
+	add (2)		acc0.0<1>:ud		r9.0<2;2,1>:w		r4.4<2;2,1>:w
+
+	mov (8)     r92.0<1>:ud	acc0.0<8;8,1>:ud
+
+	mov (8)     r101.0<1>:ud	acc0.0<8;8,1>:ud
+	mov (8)     r110.0<1>:ud	acc0.0<8;8,1>:ud
+	mov (8)     r119.0<1>:ud	acc0.0<8;8,1>:ud
+
+	add (1)		r101.1<1>:d 	acc0.1<0;1,0>:d   		16:d
+
+	add (1)		r110.0<1>:d 	acc0.0<0;1,0>:d   		16:d
+
+	add (2)		r119.0<1>:d 	acc0.0<2;2,1>:d   		16:d
+
+	send (8)	udCURR_Y0(0)<1>		r92		0x4	0x2890003:ud
+	send (8)	udCURR_Y1(0)<1>		r101		0x4	0x2890003:ud
+	send (8)	udCURR_Y2(0)<1>		r110		0x4	0x2890003:ud
+	send (8)	udCURR_Y3(0)<1>		r119		0x4	0x2890003:ud
+
+
+
+//Module Name : DN_UV_Noise_Detection_UV
+//Author	  : Tatiya, Rupesh
+//Description : Performs noise detection on 16x16 U and 16x16 V each.
+
+
+
+//Module Name 	: DN_UV_Move_CURBE_Inline_UV.asm
+//Author		: Tatiya, Rupesh
+
+
+
+
+	//Mov CURBE data to another space - so that it can be used as Temp Space --> r1 - r6
+	mov (4)	r54.28<1>:ub		r2.28<4;4,1>:ub		//Dest. YUY2 offset
+	mov (2) r54.5<1>:ud		r4.0<4;2,2>:ud		//Src YUY2 offset and Origin offset
+	mov (4)	r55.28<1>:ub		r1.0<4;4,1>:ub
+
+	mov (8) r61.20<1>:ub		r1.4<8;8,1>:ub		
+	mov (4) r61.28<1>:ub		r1.12<4;4,1>:ub		
+
+	//Move Inline Data to another space - so that it can be used as Temp Space --> r7
+	mov (4) r62.10<1>:w				r9.0<4;4,1>:w
+	mov (4) r63.10<1>:w		r9.4<4;4,1>:w
+
+
+
+
+
+//Module Name	: DN_UV_Noise_Detection_Set_Top_Region_N
+//Author		: Tatiya, Rupesh
+//Description	: Sets sub-region region N from Top region.
+
+
+	mov (1) a0.0:uw				1664:uw				
+	mov (1)	a0.1:uw	1816:uw 	
+
+
+
+
+add (1) r9.7<1>:d ip:ud 32:d { NoCompact }
+ jmpi (1) DN_UV_NOISE_DETECTION_UV { NoCompact }
+
+
+
+
+
+//Module Name	: DN_UV_Noise_Detection_Set_Top_Region_N
+//Author		: Tatiya, Rupesh
+//Description	: Sets sub-region region N from Top region.
+
+
+	//TODO - remove one instruction here using arithmatic. -rT
+	mov (1) a0.0:uw				1792:uw			
+	mov (1)	a0.1:uw	1820:uw 	
+
+
+
+
+add (1) r9.7<1>:d ip:ud 32:d { NoCompact }
+ jmpi (1) DN_UV_NOISE_DETECTION_UV { NoCompact }
+
+
+
+
+
+//Module Name	: DN_UV_Noise_Detection_Set_Top_Region_N
+//Author		: Tatiya, Rupesh
+//Description	: Sets sub-region region N from Top region.
+
+
+	//TODO - remove one instruction here using arithmatic. -rT
+	mov (1) a0.0:uw				1920:uw			
+	mov (1)	a0.1:uw	1848:uw 	
+
+
+
+
+add (1) r9.7<1>:d ip:ud 32:d { NoCompact }
+ jmpi (1) DN_UV_NOISE_DETECTION_UV { NoCompact }
+
+
+
+
+
+//Module Name	: DN_UV_Noise_Detection_Set_Top_Region_N
+//Author		: Tatiya, Rupesh
+//Description	: Sets sub-region region N from Top region.
+
+
+	//TODO - remove one instruction here using arithmatic. -rT
+	mov (1) a0.0:uw				2048:uw			
+	mov (1)	a0.1:uw	1852:uw 	
+
+
+
+
+add (1) r9.7<1>:d ip:ud 32:d { NoCompact }
+ jmpi (1) DN_UV_NOISE_DETECTION_UV { NoCompact }
+
+
+
+
+
+//Module Name	: DN_UV_Noise_Detection_Set_Top_Region_N
+//Author		: Tatiya, Rupesh
+//Description	: Sets sub-region region N from Top region.
+
+
+	mov (1) a0.0:uw				2304:uw			
+	mov (1)	a0.1:uw	1880:uw 	
+
+
+
+
+add (1) r9.7<1>:d ip:ud 32:d { NoCompact }
+ jmpi (1) DN_UV_NOISE_DETECTION_UV { NoCompact }
+
+
+
+
+
+//Module Name	: DN_UV_Noise_Detection_Set_Top_Region_N
+//Author		: Tatiya, Rupesh
+//Description	: Sets sub-region region N from Top region.
+
+
+	//TODO - remove one instruction here using arithmatic. -rT
+	mov (1) a0.0:uw				2432:uw			
+	mov (1)	a0.1:uw	1884:uw 	
+
+
+
+
+add (1) r9.7<1>:d ip:ud 32:d { NoCompact }
+ jmpi (1) DN_UV_NOISE_DETECTION_UV { NoCompact }
+
+
+
+
+
+//Module Name	: DN_UV_Noise_Detection_Set_Top_Region_N
+//Author		: Tatiya, Rupesh
+//Description	: Sets sub-region region N from Top region.
+
+
+	//TODO - remove one instruction here using arithmatic. -rT
+	mov (1) a0.0:uw				2560:uw			
+	mov (1)	a0.1:uw	1912:uw 	
+
+
+
+
+add (1) r9.7<1>:d ip:ud 32:d { NoCompact }
+ jmpi (1) DN_UV_NOISE_DETECTION_UV { NoCompact }
+
+
+
+
+
+//Module Name	: DN_UV_Noise_Detection_Set_Top_Region_N
+//Author		: Tatiya, Rupesh
+//Description	: Sets sub-region region N from Top region.
+
+
+	//TODO - remove one instruction here using arithmatic. -rT
+	mov (1) a0.0:uw				2688:uw			
+	mov (1)	a0.1:uw	1916:uw 	
+
+
+
+
+add (1) r9.7<1>:d ip:ud 32:d { NoCompact }
+ jmpi (1) DN_UV_NOISE_DETECTION_UV { NoCompact }
+
+
+
+//Module 		: DN_UV_Noise_Reduction_UV
+//Author		: Tatiya, Rupesh
+//Description	: Performs Noise Reduction on 16x16 U and 16x16 V.
+//Tasks			: 1. Update weight history
+//				  2. Find if it block is motion block
+//				  3. Compute Denoised Pixel.
+
+
+
+
+//History is 1+1 byte every 4x4 U and 4x4 V.
+
+	cmp.l.f0.0 (16) null<1>:w		ubHIST_UV(0,0)<16;16,1>		r61.20<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w		ubHIST_UV(0,0)<16;16,1>		r61.22<0;2,1>:ub
+
+	mov (16)	uwCURBE_TEMP(0)<1>	0:w
+	mov (16)	uwCURBE_TEMP(1)<1>	0:w
+
+	//Compute diff betn curr and prev. - First 16 lines
+	// 8 lines here
+    add (16)	wDIFF_TEMPORAL(0)<1>			ubCURR_UV(2,2)<16;16,1>		-ubPREV_UV(0,0)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(1)<1>			ubCURR_UV(3,2)<16;16,1>		-ubPREV_UV(0,16)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(2)<1>			ubCURR_UV(4,2)<16;16,1>		-ubPREV_UV(0,32)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(3)<1>			ubCURR_UV(5,2)<16;16,1>		-ubPREV_UV(0,48)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(4)<1>			ubCURR_UV(6,2)<16;16,1>		-ubPREV_UV(0,64)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(5)<1>			ubCURR_UV(7,2)<16;16,1>		-ubPREV_UV(0,80)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(6)<1>			ubCURR_UV(8,2)<16;16,1>		-ubPREV_UV(0,96)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(7)<1>			ubCURR_UV(9,2)<16;16,1>		-ubPREV_UV(0,112)<16;16,1>		//Diff UV interleaved
+
+	//Update WT HIST
+	(-f0.0) shr 	(16) uwCURBE_TEMP(0)<1>		ubHIST_UV(0,0)<16;16,1>		1:w
+	(f1.0)  add 	(16) uwCURBE_TEMP(2)<1>		ubHIST_UV(0,0)<16;16,1>		r61.24<0;2,1>:ub
+	(f0.0)  mov 	(16) uwCURBE_TEMP(2)<1>		r61.20<0;2,1>:ub
+	(-f0.0.anyv) mov 	(16) uwCURBE_TEMP(2)<1>		ubHIST_UV(0,0)<16;16,1>
+
+	cmp.l.f0.0 (16) null<1>:w		ubHIST_UV(0,16)<16;16,1>	r61.20<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w		ubHIST_UV(0,16)<16;16,1>	r61.22<0;2,1>:ub
+
+	//Compute diff betn curr and prev. - First 16 lines
+	// 8 more lines here
+    add (16)	wDIFF_TEMPORAL(8)<1>			ubCURR_UV(10,2)<16;16,1>		-ubPREV_UV(0,128)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(9)<1>			ubCURR_UV(11,2)<16;16,1>		-ubPREV_UV(0,144)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(10)<1>			ubCURR_UV(12,2)<16;16,1>		-ubPREV_UV(0,160)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(11)<1>			ubCURR_UV(13,2)<16;16,1>		-ubPREV_UV(0,176)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(12)<1>			ubCURR_UV(14,2)<16;16,1>		-ubPREV_UV(0,192)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(13)<1>			ubCURR_UV(15,2)<16;16,1>		-ubPREV_UV(0,208)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(14)<1>			ubCURR_UV(16,2)<16;16,1>		-ubPREV_UV(0,224)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(15)<1>			ubCURR_UV(17,2)<16;16,1>		-ubPREV_UV(0,240)<16;16,1>		//Diff UV interleaved
+
+	(-f0.0) shr 	(16) uwCURBE_TEMP(1)<1>		ubHIST_UV(0,16)<16;16,1>	1:w
+	(f1.0)  add 	(16) uwCURBE_TEMP(3)<1>		ubHIST_UV(0,16)<16;16,1>	r61.24<0;2,1>:ub
+	(f0.0)  mov 	(16) uwCURBE_TEMP(3)<1>		r61.20<0;2,1>:ub
+	(-f0.0.anyv) mov(16) uwCURBE_TEMP(3)<1>		ubHIST_UV(0,16)<16;16,1>
+
+	//16x16 to 16x4 - First 16 lines
+	add (16)	acc0.0<1>:uw					(abs)wDIFF_TEMPORAL(0)<16;16,1>	(abs)wDIFF_TEMPORAL(1)<16;16,1>
+	add (16)	acc0.0<1>:uw					acc0.0<16;16,1>:uw					(abs)wDIFF_TEMPORAL(2)<16;16,1>
+	add (16)	uwDIFF_TEMPORAL_SUM4x4(0)<1>	acc0.0<16;16,1>:uw					(abs)wDIFF_TEMPORAL(3)<16;16,1>
+	//16x16 to 16x4 - First 16 lines
+	add (16)	acc0.0<1>:uw					(abs)wDIFF_TEMPORAL(4)<16;16,1>	(abs)wDIFF_TEMPORAL(5)<16;16,1>
+	add (16)	acc0.0<1>:uw					acc0.0<16;16,1>:uw					(abs)wDIFF_TEMPORAL(6)<16;16,1>
+	add (16)	uwDIFF_TEMPORAL_SUM4x4(1)<1>	acc0.0<16;16,1>:uw					(abs)wDIFF_TEMPORAL(7)<16;16,1>
+	//16x16 to 16x4 - First 16 lines
+	add (16)	acc0.0<1>:uw					(abs)wDIFF_TEMPORAL(8)<16;16,1>	(abs)wDIFF_TEMPORAL(9)<16;16,1>
+	add (16)	acc0.0<1>:uw					acc0.0<16;16,1>:uw					(abs)wDIFF_TEMPORAL(10)<16;16,1>
+	add (16)	uwDIFF_TEMPORAL_SUM4x4(2)<1>	acc0.0<16;16,1>:uw					(abs)wDIFF_TEMPORAL(11)<16;16,1>
+	//16x16 to 16x4 - First 16 lines
+	add (16)	acc0.0<1>:uw					(abs)wDIFF_TEMPORAL(12)<16;16,1>	(abs)wDIFF_TEMPORAL(13)<16;16,1>
+	add (16)	acc0.0<1>:uw					acc0.0<16;16,1>:uw					(abs)wDIFF_TEMPORAL(14)<16;16,1>
+	add (16)	uwDIFF_TEMPORAL_SUM4x4(3)<1>	acc0.0<16;16,1>:uw					(abs)wDIFF_TEMPORAL(15)<16;16,1>
+
+//Compute diff betn curr and prev. - Second 16 lines
+//13 lines.
+    add (16)	wDIFF_TEMPORAL(16)<1>		ubCURR_UV(22,2)<16;16,1>		-ubPREV_UV(8,0)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(17)<1>		ubCURR_UV(23,2)<16;16,1>		-ubPREV_UV(8,16)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(18)<1>		ubCURR_UV(24,2)<16;16,1>		-ubPREV_UV(8,32)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(19)<1>		ubCURR_UV(25,2)<16;16,1>		-ubPREV_UV(8,48)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(20)<1>		ubCURR_UV(26,2)<16;16,1>		-ubPREV_UV(8,64)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(21)<1>		ubCURR_UV(27,2)<16;16,1>		-ubPREV_UV(8,80)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(22)<1>		ubCURR_UV(28,2)<16;16,1>		-ubPREV_UV(8,96)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(23)<1>		ubCURR_UV(29,2)<16;16,1>		-ubPREV_UV(8,112)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(24)<1>		ubCURR_UV(30,2)<16;16,1>		-ubPREV_UV(8,128)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(25)<1>		ubCURR_UV(31,2)<16;16,1>		-ubPREV_UV(8,144)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(26)<1>		ubCURR_UV(32,2)<16;16,1>		-ubPREV_UV(8,160)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(27)<1>		ubCURR_UV(33,2)<16;16,1>		-ubPREV_UV(8,176)<16;16,1>		//Diff UV interleaved
+    add (16)	wDIFF_TEMPORAL(28)<1>		ubCURR_UV(34,2)<16;16,1>		-ubPREV_UV(8,192)<16;16,1>		//Diff UV interleaved
+
+//3 more lines
+    add (16)	wCURBE_TEMP(4)<1>		ubCURR_UV(35,2)<16;16,1>		-ubPREV_UV(8,208)<16;16,1>		//Diff UV interleaved
+    add (16)	wCURBE_TEMP(5)<1>		ubCURR_UV(36,2)<16;16,1>		-ubPREV_UV(8,224)<16;16,1>		//Diff UV interleaved
+    add (16)	wCURBE_TEMP(6)<1>		ubCURR_UV(37,2)<16;16,1>		-ubPREV_UV(8,240)<16;16,1>		//Diff UV interleaved
+
+	//16x4 to 8x4 - First 16 lines
+	add (16)	uwDIFF_TEMPORAL_SUM4x4(0)<1>		uwDIFF_TEMPORAL_SUM4x4(0,0)<4;2,1>		uwDIFF_TEMPORAL_SUM4x4(0,2)<4;2,1>
+	add (16)	uwDIFF_TEMPORAL_SUM4x4(1)<1>		uwDIFF_TEMPORAL_SUM4x4(2,0)<4;2,1>		uwDIFF_TEMPORAL_SUM4x4(2,2)<4;2,1>
+
+	//8x4 to 4x4 - First 16 lines
+	add (16)	uwDIFF_TEMPORAL_SUM4x4_FINAL(0)<1>	uwDIFF_TEMPORAL_SUM4x4(0,0)<4;2,1>		uwDIFF_TEMPORAL_SUM4x4(0,2)<4;2,1>		{ AccWrEn }
+
+	//16x16 to 16x4 - Second 16 lines
+	add (16)	acc0.0<1>:uw					(abs)wDIFF_TEMPORAL(16)<16;16,1>	(abs)wDIFF_TEMPORAL(17)<16;16,1>
+	add (16)	acc0.0<1>:uw					acc0.0<16;16,1>:uw					(abs)wDIFF_TEMPORAL(18)<16;16,1>
+	add (16)	uwDIFF_TEMPORAL_SUM4x4(0)<1>	acc0.0<16;16,1>:uw					(abs)wDIFF_TEMPORAL(19)<16;16,1>
+	//16x16 to 16x4 - Second 16 lines
+	add (16)	acc0.0<1>:uw					(abs)wDIFF_TEMPORAL(20)<16;16,1>	(abs)wDIFF_TEMPORAL(21)<16;16,1>
+	add (16)	acc0.0<1>:uw					acc0.0<16;16,1>:uw					(abs)wDIFF_TEMPORAL(22)<16;16,1>
+	add (16)	uwDIFF_TEMPORAL_SUM4x4(1)<1>	acc0.0<16;16,1>:uw					(abs)wDIFF_TEMPORAL(23)<16;16,1>
+	//16x16 to 16x4 - Second 16 lines
+	add (16)	acc0.0<1>:uw					(abs)wDIFF_TEMPORAL(24)<16;16,1>	(abs)wDIFF_TEMPORAL(25)<16;16,1>
+	add (16)	acc0.0<1>:uw					acc0.0<16;16,1>:uw					(abs)wDIFF_TEMPORAL(26)<16;16,1>
+	add (16)	uwDIFF_TEMPORAL_SUM4x4(2)<1>	acc0.0<16;16,1>:uw					(abs)wDIFF_TEMPORAL(27)<16;16,1>
+
+	//16x16 to 16x4 - Second 16 lines
+	add (16)	acc0.0<1>:uw					(abs)wDIFF_TEMPORAL(28)<16;16,1>	(abs)wCURBE_TEMP(4)<16;16,1>
+	add (16)	acc0.0<1>:uw					acc0.0<16;16,1>:uw					(abs)wCURBE_TEMP(5)<16;16,1>
+	add (16)	uwDIFF_TEMPORAL_SUM4x4(3)<1>	acc0.0<16;16,1>:uw					(abs)wCURBE_TEMP(6)<16;16,1>
+
+	//Find if block is motion block - First 16 lines
+	cmp.g.f0.0  (16) null<1>:w				uwDIFF_TEMPORAL_SUM4x4_FINAL(0)<16;16,1> 		r61.26<0;2,1>:ub
+
+	//Move TEMPORAL_SUM4x4 for SIMD16 use later.
+	mov (8)     uwDIFF_TEMPORAL_SUM4x4_TEMP_0(0,0)<1>                 uwDIFF_TEMPORAL_SUM4x4_FINAL(0,0)<0;2,1>		
+	mov (8)     uwDIFF_TEMPORAL_SUM4x4_TEMP_0(0,8)<1>                 uwDIFF_TEMPORAL_SUM4x4_FINAL(0,2)<0;2,1>		
+	mov (8)     uwDIFF_TEMPORAL_SUM4x4_TEMP_1(0,0)<1>                 uwDIFF_TEMPORAL_SUM4x4_FINAL(0,4)<0;2,1>		
+	mov (8)     uwDIFF_TEMPORAL_SUM4x4_TEMP_1(0,8)<1>                 uwDIFF_TEMPORAL_SUM4x4_FINAL(0,6)<0;2,1>      
+	mov (8)     uwDIFF_TEMPORAL_SUM4x4_TEMP_2(0,0)<1>                 uwDIFF_TEMPORAL_SUM4x4_FINAL(0,8)<0;2,1>		
+	mov (8)     uwDIFF_TEMPORAL_SUM4x4_TEMP_2(0,8)<1>                 uwDIFF_TEMPORAL_SUM4x4_FINAL(0,10)<0;2,1>     
+	mov (8)     uwDIFF_TEMPORAL_SUM4x4_TEMP_3(0,0)<1>                 uwDIFF_TEMPORAL_SUM4x4_FINAL(0,12)<0;2,1>		
+	mov (8)     uwDIFF_TEMPORAL_SUM4x4_TEMP_3(0,8)<1>                 uwDIFF_TEMPORAL_SUM4x4_FINAL(0,14)<0;2,1>     
+
+	//Pick Appropriate Weight History Based on motion. - First 16 lines
+	(-f0.0) mov (16) uwCURBE_TEMP(0)<1>		uwCURBE_TEMP(2)<16;16,1>
+
+	//Actual DN - First 16 lines
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wDIFF_TEMPORAL(0)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wDIFF_TEMPORAL(0)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(2,2)<8;8,1>					-uwCURBE_TEMP(0,0)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(2,10)<8;8,1>					-uwCURBE_TEMP(0,2)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(2,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(0,0)<8;8,1>					uwCURBE_TEMP(0,0)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(0,8)<8;8,1>					uwCURBE_TEMP(0,2)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr (16) wDIFF_TEMPORAL(0)<1> 			acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(0)<1> 			ubCURR_UV(2,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_0(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(0)<1>	wDIFF_TEMPORAL(0)<16;16,1>					ubCURR_UV(2,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wDIFF_TEMPORAL(1)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wDIFF_TEMPORAL(1)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(3,2)<8;8,1>					-uwCURBE_TEMP(0,0)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(3,10)<8;8,1>					-uwCURBE_TEMP(0,2)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(3,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(0,16)<8;8,1>				uwCURBE_TEMP(0,0)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(0,24)<8;8,1>				uwCURBE_TEMP(0,2)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(1)<1>		acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(1)<1>		ubCURR_UV(3,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_0(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(1)<1>	wDIFF_TEMPORAL(1)<16;16,1>				ubCURR_UV(3,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wDIFF_TEMPORAL(2)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wDIFF_TEMPORAL(2)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(4,2)<8;8,1>					-uwCURBE_TEMP(0,0)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(4,10)<8;8,1>					-uwCURBE_TEMP(0,2)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(4,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(0,32)<8;8,1>				uwCURBE_TEMP(0,0)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(0,40)<8;8,1>				uwCURBE_TEMP(0,2)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(2)<1> 		acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(2)<1>		ubCURR_UV(4,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_0(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(2)<1>	wDIFF_TEMPORAL(2)<16;16,1>				ubCURR_UV(4,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wDIFF_TEMPORAL(3)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wDIFF_TEMPORAL(3)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(5,2)<8;8,1>					-uwCURBE_TEMP(0,0)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(5,10)<8;8,1>					-uwCURBE_TEMP(0,2)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(5,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(0,48)<8;8,1>				uwCURBE_TEMP(0,0)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(0,56)<8;8,1>				uwCURBE_TEMP(0,2)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(3)<1>		acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(3)<1>		ubCURR_UV(5,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_0(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(3)<1>	wDIFF_TEMPORAL(3)<16;16,1>				ubCURR_UV(5,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wDIFF_TEMPORAL(4)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wDIFF_TEMPORAL(4)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(6,2)<8;8,1>					-uwCURBE_TEMP(0,4)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(6,10)<8;8,1>					-uwCURBE_TEMP(0,6)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(6,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(0,64)<8;8,1>					uwCURBE_TEMP(0,4)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(0,72)<8;8,1>					uwCURBE_TEMP(0,6)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr (16) wDIFF_TEMPORAL(4)<1> 			acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(4)<1> 			ubCURR_UV(6,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_1(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(4)<1>	wDIFF_TEMPORAL(4)<16;16,1>					ubCURR_UV(6,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wDIFF_TEMPORAL(5)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wDIFF_TEMPORAL(5)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(7,2)<8;8,1>					-uwCURBE_TEMP(0,4)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(7,10)<8;8,1>					-uwCURBE_TEMP(0,6)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(7,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(0,80)<8;8,1>				uwCURBE_TEMP(0,4)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(0,88)<8;8,1>				uwCURBE_TEMP(0,6)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(5)<1>		acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(5)<1>		ubCURR_UV(7,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_1(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(5)<1>	wDIFF_TEMPORAL(5)<16;16,1>				ubCURR_UV(7,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wDIFF_TEMPORAL(6)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wDIFF_TEMPORAL(6)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(8,2)<8;8,1>					-uwCURBE_TEMP(0,4)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(8,10)<8;8,1>					-uwCURBE_TEMP(0,6)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(8,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(0,96)<8;8,1>				uwCURBE_TEMP(0,4)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(0,104)<8;8,1>				uwCURBE_TEMP(0,6)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(6)<1> 		acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(6)<1>		ubCURR_UV(8,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_1(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(6)<1>	wDIFF_TEMPORAL(6)<16;16,1>				ubCURR_UV(8,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wDIFF_TEMPORAL(7)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wDIFF_TEMPORAL(7)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(9,2)<8;8,1>					-uwCURBE_TEMP(0,4)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(9,10)<8;8,1>					-uwCURBE_TEMP(0,6)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(9,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(0,112)<8;8,1>				uwCURBE_TEMP(0,4)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(0,120)<8;8,1>				uwCURBE_TEMP(0,6)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(7)<1>		acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(7)<1>		ubCURR_UV(9,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_1(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(7)<1>	wDIFF_TEMPORAL(7)<16;16,1>				ubCURR_UV(9,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wDIFF_TEMPORAL(8)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wDIFF_TEMPORAL(8)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(10,2)<8;8,1>					-uwCURBE_TEMP(0,8)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(10,10)<8;8,1>					-uwCURBE_TEMP(0,10)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(10,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(0,128)<8;8,1>					uwCURBE_TEMP(0,8)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(0,136)<8;8,1>					uwCURBE_TEMP(0,10)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr (16) wDIFF_TEMPORAL(8)<1> 			acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(8)<1> 			ubCURR_UV(10,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_2(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(8)<1>	wDIFF_TEMPORAL(8)<16;16,1>					ubCURR_UV(10,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wDIFF_TEMPORAL(9)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wDIFF_TEMPORAL(9)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(11,2)<8;8,1>					-uwCURBE_TEMP(0,8)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(11,10)<8;8,1>					-uwCURBE_TEMP(0,10)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(11,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(0,144)<8;8,1>				uwCURBE_TEMP(0,8)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(0,152)<8;8,1>				uwCURBE_TEMP(0,10)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(9)<1>		acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(9)<1>		ubCURR_UV(11,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_2(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(9)<1>	wDIFF_TEMPORAL(9)<16;16,1>				ubCURR_UV(11,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wDIFF_TEMPORAL(10)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wDIFF_TEMPORAL(10)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(12,2)<8;8,1>					-uwCURBE_TEMP(0,8)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(12,10)<8;8,1>					-uwCURBE_TEMP(0,10)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(12,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(0,160)<8;8,1>				uwCURBE_TEMP(0,8)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(0,168)<8;8,1>				uwCURBE_TEMP(0,10)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(10)<1> 		acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(10)<1>		ubCURR_UV(12,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_2(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(10)<1>	wDIFF_TEMPORAL(10)<16;16,1>				ubCURR_UV(12,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wDIFF_TEMPORAL(11)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wDIFF_TEMPORAL(11)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(13,2)<8;8,1>					-uwCURBE_TEMP(0,8)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(13,10)<8;8,1>					-uwCURBE_TEMP(0,10)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(13,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(0,176)<8;8,1>				uwCURBE_TEMP(0,8)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(0,184)<8;8,1>				uwCURBE_TEMP(0,10)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(11)<1>		acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(11)<1>		ubCURR_UV(13,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_2(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(11)<1>	wDIFF_TEMPORAL(11)<16;16,1>				ubCURR_UV(13,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wDIFF_TEMPORAL(12)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wDIFF_TEMPORAL(12)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(14,2)<8;8,1>					-uwCURBE_TEMP(0,12)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(14,10)<8;8,1>					-uwCURBE_TEMP(0,14)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(14,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(0,192)<8;8,1>					uwCURBE_TEMP(0,12)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(0,200)<8;8,1>					uwCURBE_TEMP(0,14)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr (16) wDIFF_TEMPORAL(12)<1> 			acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(12)<1> 			ubCURR_UV(14,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_3(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(12)<1>	wDIFF_TEMPORAL(12)<16;16,1>					ubCURR_UV(14,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wDIFF_TEMPORAL(13)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wDIFF_TEMPORAL(13)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(15,2)<8;8,1>					-uwCURBE_TEMP(0,12)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(15,10)<8;8,1>					-uwCURBE_TEMP(0,14)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(15,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(0,208)<8;8,1>				uwCURBE_TEMP(0,12)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(0,216)<8;8,1>				uwCURBE_TEMP(0,14)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(13)<1>		acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(13)<1>		ubCURR_UV(15,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_3(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(13)<1>	wDIFF_TEMPORAL(13)<16;16,1>				ubCURR_UV(15,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wDIFF_TEMPORAL(14)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wDIFF_TEMPORAL(14)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(16,2)<8;8,1>					-uwCURBE_TEMP(0,12)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(16,10)<8;8,1>					-uwCURBE_TEMP(0,14)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(16,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(0,224)<8;8,1>				uwCURBE_TEMP(0,12)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(0,232)<8;8,1>				uwCURBE_TEMP(0,14)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(14)<1> 		acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(14)<1>		ubCURR_UV(16,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_3(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(14)<1>	wDIFF_TEMPORAL(14)<16;16,1>				ubCURR_UV(16,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wDIFF_TEMPORAL(15)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wDIFF_TEMPORAL(15)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(17,2)<8;8,1>					-uwCURBE_TEMP(0,12)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(17,10)<8;8,1>					-uwCURBE_TEMP(0,14)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(17,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(0,240)<8;8,1>				uwCURBE_TEMP(0,12)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(0,248)<8;8,1>				uwCURBE_TEMP(0,14)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(15)<1>		acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(15)<1>		ubCURR_UV(17,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_3(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(15)<1>	wDIFF_TEMPORAL(15)<16;16,1>				ubCURR_UV(17,2)<16;16,1>
+
+
+	//16x4 to 8x4 - Second 16 lines
+	add (16)	uwDIFF_TEMPORAL_SUM4x4(0)<1>	uwDIFF_TEMPORAL_SUM4x4(0,0)<4;2,1>		uwDIFF_TEMPORAL_SUM4x4(0,2)<4;2,1>
+	add (16)	uwDIFF_TEMPORAL_SUM4x4(1)<1>	uwDIFF_TEMPORAL_SUM4x4(2,0)<4;2,1>		uwDIFF_TEMPORAL_SUM4x4(2,2)<4;2,1>
+
+	//8x4 to 4x4 - Second 16 lines
+	add (16)	uwDIFF_TEMPORAL_SUM4x4_FINAL(1)<1>	uwDIFF_TEMPORAL_SUM4x4(0,0)<4;2,1>		uwDIFF_TEMPORAL_SUM4x4(0,2)<4;2,1>     { AccWrEn }
+
+	//Find if block is motion block - Second 16 lines
+	cmp.g.f1.0  (16) null<1>:w				uwDIFF_TEMPORAL_SUM4x4_FINAL(1)<16;16,1> 		r61.26<0;2,1>:ub
+
+	//Move TEMPORAL_SUM4x4 for SIMD16 use later.
+	mov (8)     uwDIFF_TEMPORAL_SUM4x4_TEMP_0(0,0)<1>                 uwDIFF_TEMPORAL_SUM4x4_FINAL(1,0)<0;2,1>		
+	mov (8)     uwDIFF_TEMPORAL_SUM4x4_TEMP_0(0,8)<1>                 uwDIFF_TEMPORAL_SUM4x4_FINAL(1,2)<0;2,1>		
+	mov (8)     uwDIFF_TEMPORAL_SUM4x4_TEMP_1(0,0)<1>                 uwDIFF_TEMPORAL_SUM4x4_FINAL(1,4)<0;2,1>		
+	mov (8)     uwDIFF_TEMPORAL_SUM4x4_TEMP_1(0,8)<1>                 uwDIFF_TEMPORAL_SUM4x4_FINAL(1,6)<0;2,1>      
+	mov (8)     uwDIFF_TEMPORAL_SUM4x4_TEMP_2(0,0)<1>                 uwDIFF_TEMPORAL_SUM4x4_FINAL(1,8)<0;2,1>		
+	mov (8)     uwDIFF_TEMPORAL_SUM4x4_TEMP_2(0,8)<1>                 uwDIFF_TEMPORAL_SUM4x4_FINAL(1,10)<0;2,1>     
+	mov (8)     uwDIFF_TEMPORAL_SUM4x4_TEMP_3(0,0)<1>                 uwDIFF_TEMPORAL_SUM4x4_FINAL(1,12)<0;2,1>		
+	mov (8)     uwDIFF_TEMPORAL_SUM4x4_TEMP_3(0,8)<1>                 uwDIFF_TEMPORAL_SUM4x4_FINAL(1,14)<0;2,1>     
+
+	//Pick Appropriate Weight History Based on motion. - Second 16 lines
+	(-f1.0) mov (16) uwCURBE_TEMP(1)<1>		uwCURBE_TEMP(3)<16;16,1>
+
+	//Actual DN - Second 16 lines
+	cmp.l.f0.0 (16)	null<1>:w							(abs)wDIFF_TEMPORAL(16)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w							(abs)wDIFF_TEMPORAL(16)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w									ubCURR_UV(22,2)<8;8,1>					-uwCURBE_TEMP(1,0)<0;2,1>
+	mul (8)	acc0.8<1>:w									ubCURR_UV(22,10)<8;8,1>					-uwCURBE_TEMP(1,2)<0;2,1>
+	mac (16)	acc0<1>:w								ubCURR_UV(22,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w									ubPREV_UV(8,0)<8;8,1>					uwCURBE_TEMP(1,0)<0;2,1>
+	mac (8)	acc0.8<1>:w									ubPREV_UV(8,8)<8;8,1>					uwCURBE_TEMP(1,2)<0;2,1>
+	add (16)	acc0<1>:w								acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(16)<1> 			acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(16)<1>			ubCURR_UV(22,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w							uwDIFF_TEMPORAL_SUM4x4_TEMP_0(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(16)<1>	wDIFF_TEMPORAL(16)<16;16,1>			ubCURR_UV(22,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w							(abs)wDIFF_TEMPORAL(17)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w							(abs)wDIFF_TEMPORAL(17)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w									ubCURR_UV(23,2)<8;8,1>					-uwCURBE_TEMP(1,0)<0;2,1>
+	mul (8)	acc0.8<1>:w									ubCURR_UV(23,10)<8;8,1>					-uwCURBE_TEMP(1,2)<0;2,1>
+	mac (16)	acc0<1>:w								ubCURR_UV(23,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w									ubPREV_UV(8,16)<8;8,1>				uwCURBE_TEMP(1,0)<0;2,1>
+	mac (8)	acc0.8<1>:w									ubPREV_UV(8,24)<8;8,1>				uwCURBE_TEMP(1,2)<0;2,1>
+	add (16)	acc0<1>:w								acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(17)<1>			acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(17)<1>			ubCURR_UV(23,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w							uwDIFF_TEMPORAL_SUM4x4_TEMP_0(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(17)<1>	wDIFF_TEMPORAL(17)<16;16,1>			ubCURR_UV(23,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w							(abs)wDIFF_TEMPORAL(18)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w							(abs)wDIFF_TEMPORAL(18)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w									ubCURR_UV(24,2)<8;8,1>					-uwCURBE_TEMP(1,0)<0;2,1>
+	mul (8)	acc0.8<1>:w									ubCURR_UV(24,10)<8;8,1>					-uwCURBE_TEMP(1,2)<0;2,1>
+	mac (16)	acc0<1>:w								ubCURR_UV(24,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w									ubPREV_UV(8,32)<8;8,1>				uwCURBE_TEMP(1,0)<0;2,1>
+	mac (8)	acc0.8<1>:w									ubPREV_UV(8,40)<8;8,1>				uwCURBE_TEMP(1,2)<0;2,1>
+	add (16)	acc0<1>:w								acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(18)<1> 			acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(18)<1>			ubCURR_UV(24,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w							uwDIFF_TEMPORAL_SUM4x4_TEMP_0(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(18)<1>	wDIFF_TEMPORAL(18)<16;16,1>			ubCURR_UV(24,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w							(abs)wDIFF_TEMPORAL(19)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w							(abs)wDIFF_TEMPORAL(19)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w									ubCURR_UV(25,2)<8;8,1>					-uwCURBE_TEMP(1,0)<0;2,1>
+	mul (8)	acc0.8<1>:w									ubCURR_UV(25,10)<8;8,1>					-uwCURBE_TEMP(1,2)<0;2,1>
+	mac (16)	acc0<1>:w								ubCURR_UV(25,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w									ubPREV_UV(8,48)<8;8,1>				uwCURBE_TEMP(1,0)<0;2,1>
+	mac (8)	acc0.8<1>:w									ubPREV_UV(8,56)<8;8,1>				uwCURBE_TEMP(1,2)<0;2,1>
+	add (16)	acc0<1>:w								acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(19)<1>			acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(19)<1>			ubCURR_UV(25,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w							uwDIFF_TEMPORAL_SUM4x4_TEMP_0(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(19)<1>	wDIFF_TEMPORAL(19)<16;16,1>			ubCURR_UV(25,2)<16;16,1>
+	cmp.l.f0.0 (16)	null<1>:w							(abs)wDIFF_TEMPORAL(20)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w							(abs)wDIFF_TEMPORAL(20)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w									ubCURR_UV(26,2)<8;8,1>					-uwCURBE_TEMP(1,4)<0;2,1>
+	mul (8)	acc0.8<1>:w									ubCURR_UV(26,10)<8;8,1>					-uwCURBE_TEMP(1,6)<0;2,1>
+	mac (16)	acc0<1>:w								ubCURR_UV(26,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w									ubPREV_UV(8,64)<8;8,1>					uwCURBE_TEMP(1,4)<0;2,1>
+	mac (8)	acc0.8<1>:w									ubPREV_UV(8,72)<8;8,1>					uwCURBE_TEMP(1,6)<0;2,1>
+	add (16)	acc0<1>:w								acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(20)<1> 			acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(20)<1>			ubCURR_UV(26,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w							uwDIFF_TEMPORAL_SUM4x4_TEMP_1(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(20)<1>	wDIFF_TEMPORAL(20)<16;16,1>			ubCURR_UV(26,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w							(abs)wDIFF_TEMPORAL(21)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w							(abs)wDIFF_TEMPORAL(21)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w									ubCURR_UV(27,2)<8;8,1>					-uwCURBE_TEMP(1,4)<0;2,1>
+	mul (8)	acc0.8<1>:w									ubCURR_UV(27,10)<8;8,1>					-uwCURBE_TEMP(1,6)<0;2,1>
+	mac (16)	acc0<1>:w								ubCURR_UV(27,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w									ubPREV_UV(8,80)<8;8,1>				uwCURBE_TEMP(1,4)<0;2,1>
+	mac (8)	acc0.8<1>:w									ubPREV_UV(8,88)<8;8,1>				uwCURBE_TEMP(1,6)<0;2,1>
+	add (16)	acc0<1>:w								acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(21)<1>			acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(21)<1>			ubCURR_UV(27,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w							uwDIFF_TEMPORAL_SUM4x4_TEMP_1(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(21)<1>	wDIFF_TEMPORAL(21)<16;16,1>			ubCURR_UV(27,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w							(abs)wDIFF_TEMPORAL(22)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w							(abs)wDIFF_TEMPORAL(22)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w									ubCURR_UV(28,2)<8;8,1>					-uwCURBE_TEMP(1,4)<0;2,1>
+	mul (8)	acc0.8<1>:w									ubCURR_UV(28,10)<8;8,1>					-uwCURBE_TEMP(1,6)<0;2,1>
+	mac (16)	acc0<1>:w								ubCURR_UV(28,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w									ubPREV_UV(8,96)<8;8,1>				uwCURBE_TEMP(1,4)<0;2,1>
+	mac (8)	acc0.8<1>:w									ubPREV_UV(8,104)<8;8,1>				uwCURBE_TEMP(1,6)<0;2,1>
+	add (16)	acc0<1>:w								acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(22)<1> 			acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(22)<1>			ubCURR_UV(28,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w							uwDIFF_TEMPORAL_SUM4x4_TEMP_1(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(22)<1>	wDIFF_TEMPORAL(22)<16;16,1>			ubCURR_UV(28,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w							(abs)wDIFF_TEMPORAL(23)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w							(abs)wDIFF_TEMPORAL(23)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w									ubCURR_UV(29,2)<8;8,1>					-uwCURBE_TEMP(1,4)<0;2,1>
+	mul (8)	acc0.8<1>:w									ubCURR_UV(29,10)<8;8,1>					-uwCURBE_TEMP(1,6)<0;2,1>
+	mac (16)	acc0<1>:w								ubCURR_UV(29,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w									ubPREV_UV(8,112)<8;8,1>				uwCURBE_TEMP(1,4)<0;2,1>
+	mac (8)	acc0.8<1>:w									ubPREV_UV(8,120)<8;8,1>				uwCURBE_TEMP(1,6)<0;2,1>
+	add (16)	acc0<1>:w								acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(23)<1>			acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(23)<1>			ubCURR_UV(29,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w							uwDIFF_TEMPORAL_SUM4x4_TEMP_1(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(23)<1>	wDIFF_TEMPORAL(23)<16;16,1>			ubCURR_UV(29,2)<16;16,1>
+	cmp.l.f0.0 (16)	null<1>:w							(abs)wDIFF_TEMPORAL(24)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w							(abs)wDIFF_TEMPORAL(24)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w									ubCURR_UV(30,2)<8;8,1>					-uwCURBE_TEMP(1,8)<0;2,1>
+	mul (8)	acc0.8<1>:w									ubCURR_UV(30,10)<8;8,1>					-uwCURBE_TEMP(1,10)<0;2,1>
+	mac (16)	acc0<1>:w								ubCURR_UV(30,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w									ubPREV_UV(8,128)<8;8,1>					uwCURBE_TEMP(1,8)<0;2,1>
+	mac (8)	acc0.8<1>:w									ubPREV_UV(8,136)<8;8,1>					uwCURBE_TEMP(1,10)<0;2,1>
+	add (16)	acc0<1>:w								acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(24)<1> 			acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(24)<1>			ubCURR_UV(30,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w							uwDIFF_TEMPORAL_SUM4x4_TEMP_2(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(24)<1>	wDIFF_TEMPORAL(24)<16;16,1>			ubCURR_UV(30,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w							(abs)wDIFF_TEMPORAL(25)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w							(abs)wDIFF_TEMPORAL(25)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w									ubCURR_UV(31,2)<8;8,1>					-uwCURBE_TEMP(1,8)<0;2,1>
+	mul (8)	acc0.8<1>:w									ubCURR_UV(31,10)<8;8,1>					-uwCURBE_TEMP(1,10)<0;2,1>
+	mac (16)	acc0<1>:w								ubCURR_UV(31,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w									ubPREV_UV(8,144)<8;8,1>				uwCURBE_TEMP(1,8)<0;2,1>
+	mac (8)	acc0.8<1>:w									ubPREV_UV(8,152)<8;8,1>				uwCURBE_TEMP(1,10)<0;2,1>
+	add (16)	acc0<1>:w								acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(25)<1>			acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(25)<1>			ubCURR_UV(31,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w							uwDIFF_TEMPORAL_SUM4x4_TEMP_2(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(25)<1>	wDIFF_TEMPORAL(25)<16;16,1>			ubCURR_UV(31,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w							(abs)wDIFF_TEMPORAL(26)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w							(abs)wDIFF_TEMPORAL(26)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w									ubCURR_UV(32,2)<8;8,1>					-uwCURBE_TEMP(1,8)<0;2,1>
+	mul (8)	acc0.8<1>:w									ubCURR_UV(32,10)<8;8,1>					-uwCURBE_TEMP(1,10)<0;2,1>
+	mac (16)	acc0<1>:w								ubCURR_UV(32,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w									ubPREV_UV(8,160)<8;8,1>				uwCURBE_TEMP(1,8)<0;2,1>
+	mac (8)	acc0.8<1>:w									ubPREV_UV(8,168)<8;8,1>				uwCURBE_TEMP(1,10)<0;2,1>
+	add (16)	acc0<1>:w								acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(26)<1> 			acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(26)<1>			ubCURR_UV(32,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w							uwDIFF_TEMPORAL_SUM4x4_TEMP_2(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(26)<1>	wDIFF_TEMPORAL(26)<16;16,1>			ubCURR_UV(32,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w							(abs)wDIFF_TEMPORAL(27)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w							(abs)wDIFF_TEMPORAL(27)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w									ubCURR_UV(33,2)<8;8,1>					-uwCURBE_TEMP(1,8)<0;2,1>
+	mul (8)	acc0.8<1>:w									ubCURR_UV(33,10)<8;8,1>					-uwCURBE_TEMP(1,10)<0;2,1>
+	mac (16)	acc0<1>:w								ubCURR_UV(33,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w									ubPREV_UV(8,176)<8;8,1>				uwCURBE_TEMP(1,8)<0;2,1>
+	mac (8)	acc0.8<1>:w									ubPREV_UV(8,184)<8;8,1>				uwCURBE_TEMP(1,10)<0;2,1>
+	add (16)	acc0<1>:w								acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(27)<1>			acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(27)<1>			ubCURR_UV(33,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w							uwDIFF_TEMPORAL_SUM4x4_TEMP_2(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(27)<1>	wDIFF_TEMPORAL(27)<16;16,1>			ubCURR_UV(33,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wDIFF_TEMPORAL(28)<16;16,1>			r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wDIFF_TEMPORAL(28)<16;16,1>			r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(34,2)<8;8,1>					-uwCURBE_TEMP(1,12)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(34,10)<8;8,1>					-uwCURBE_TEMP(1,14)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(34,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(8,192)<8;8,1>					uwCURBE_TEMP(1,12)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(8,200)<8;8,1>					uwCURBE_TEMP(1,14)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wDIFF_TEMPORAL(28)<1> 			acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wDIFF_TEMPORAL(28)<1>			ubCURR_UV(34,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_3(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wDIFF_TEMPORAL(28)<1>	wDIFF_TEMPORAL(28)<16;16,1>				ubCURR_UV(34,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wCURBE_TEMP(4)<16;16,1>				r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wCURBE_TEMP(4)<16;16,1>				r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(35,2)<8;8,1>					-uwCURBE_TEMP(1,12)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(35,10)<8;8,1>					-uwCURBE_TEMP(1,14)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(35,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(8,208)<8;8,1>				uwCURBE_TEMP(1,12)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(8,216)<8;8,1>				uwCURBE_TEMP(1,14)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wCURBE_TEMP(4)<1>				acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wCURBE_TEMP(4)<1>				ubCURR_UV(35,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_3(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wCURBE_TEMP(4)<1>		wCURBE_TEMP(4)<16;16,1>				ubCURR_UV(35,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wCURBE_TEMP(5)<16;16,1>				r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wCURBE_TEMP(5)<16;16,1>				r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(36,2)<8;8,1>					-uwCURBE_TEMP(1,12)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(36,10)<8;8,1>					-uwCURBE_TEMP(1,14)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(36,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(8,224)<8;8,1>				uwCURBE_TEMP(1,12)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(8,232)<8;8,1>				uwCURBE_TEMP(1,14)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wCURBE_TEMP(5)<1> 				acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wCURBE_TEMP(5)<1>				ubCURR_UV(36,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_3(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wCURBE_TEMP(5)<1>		wCURBE_TEMP(5)<16;16,1>				ubCURR_UV(36,2)<16;16,1>
+
+	cmp.l.f0.0 (16)	null<1>:w						(abs)wCURBE_TEMP(6)<16;16,1>				r61.28<0;2,1>:ub
+	cmp.l.f1.0 (16) null<1>:w						(abs)wCURBE_TEMP(6)<16;16,1>				r61.30<0;2,1>:ub
+	mul (8)	acc0.0<1>:w								ubCURR_UV(37,2)<8;8,1>					-uwCURBE_TEMP(1,12)<0;2,1>
+	mul (8)	acc0.8<1>:w								ubCURR_UV(37,10)<8;8,1>					-uwCURBE_TEMP(1,14)<0;2,1>
+	mac (16)	acc0<1>:w							ubCURR_UV(37,2)<16;16,1>					256:w
+	mac (8)	acc0.0<1>:w								ubPREV_UV(8,240)<8;8,1>				uwCURBE_TEMP(1,12)<0;2,1>
+	mac (8)	acc0.8<1>:w								ubPREV_UV(8,248)<8;8,1>				uwCURBE_TEMP(1,14)<0;2,1>
+	add (16)	acc0<1>:w							acc0<16;16,1>:w								128:w
+ 	(f0.0) shr  (16) wCURBE_TEMP(6)<1>				acc0<16;16,1>:w								8:w
+	(-f0.0) mov (16) wCURBE_TEMP(6)<1>				ubCURR_UV(37,2)<16;16,1>
+	cmp.le.f0.0 (16) null<1>:w						uwDIFF_TEMPORAL_SUM4x4_TEMP_3(0)<16;16,1> 	r61.26<0;2,1>:ub
+	(-f0.0.allv) avg (16)	wCURBE_TEMP(6)<1>		wCURBE_TEMP(6)<16;16,1>				ubCURR_UV(37,2)<16;16,1>
+
+	//Pack Weight History WORD -> BYTE
+	mov (16) ubCURBE_TEMP(3,0)<1>		ubCURBE_TEMP(0)<32;16,2>	
+	mov (16) ubCURBE_TEMP(3,16)<1>		ubCURBE_TEMP(1)<32;16,2>	
+
+
+
+//Module Name 	: DN_UV_Compute_BNE_UV
+//Author		: Tatiya, Rupesh
+//Description	: Computes minimum SOAD for each 16x4 block.
+
+	cmp.l.f0.0  (8) null:w     				uwSOAD_MIN_8x4(0,12)<16;4,1> 	uwSOAD_MIN_8x4(2,12)<16;4,1>
+	(f0.0)sel	(8) uwCURBE_TEMP(1,0)<1>	uwSOAD_MIN_8x4(0,12)<16;4,1> 	uwSOAD_MIN_8x4(2,12)<16;4,1>
+
+    mov  (8)	ubCURBE_TEMP(1)<1>			ubCURBE_TEMP(1)<16;8,2>
+
+
+
+//Module Name 	: DN_UV_PL2_Pack_Denoised_UV
+//Name			: Tatiya, Rupesh
+//Description	: Pack UV denoised data based on PL2 input.
+
+
+
+//Module Name 	: DN_UV_Pack_Denoised_UV
+//Name			: Tatiya, Rupesh
+//Description	: Pack UV denoised data based on PL2/PL3/PA.
+
+
+//First 16 lines.
+	mov  (16)	ubMSGPAYLOAD_UV0(0,0)<1>		ubDIFF_TEMPORAL(0)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV0(0,16)<1>		ubDIFF_TEMPORAL(1)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV0(1,0)<1>		ubDIFF_TEMPORAL(2)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV0(1,16)<1>		ubDIFF_TEMPORAL(3)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV0(2,0)<1>		ubDIFF_TEMPORAL(4)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV0(2,16)<1>		ubDIFF_TEMPORAL(5)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV0(3,0)<1>		ubDIFF_TEMPORAL(6)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV0(3,16)<1>		ubDIFF_TEMPORAL(7)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV0(4,0)<1>		ubDIFF_TEMPORAL(8)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV0(4,16)<1>		ubDIFF_TEMPORAL(9)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV0(5,0)<1>		ubDIFF_TEMPORAL(10)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV0(5,16)<1>		ubDIFF_TEMPORAL(11)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV0(6,0)<1>		ubDIFF_TEMPORAL(12)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV0(6,16)<1>		ubDIFF_TEMPORAL(13)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV0(7,0)<1>		ubDIFF_TEMPORAL(14)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV0(7,16)<1>		ubDIFF_TEMPORAL(15)<32;16,2>		
+
+//Second 16 lines.
+//12 lines first
+	mov  (16)	ubMSGPAYLOAD_UV1(0,0)<1>		ubDIFF_TEMPORAL(16)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV1(0,16)<1>		ubDIFF_TEMPORAL(17)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV1(1,0)<1>		ubDIFF_TEMPORAL(18)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV1(1,16)<1>		ubDIFF_TEMPORAL(19)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV1(2,0)<1>		ubDIFF_TEMPORAL(20)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV1(2,16)<1>		ubDIFF_TEMPORAL(21)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV1(3,0)<1>		ubDIFF_TEMPORAL(22)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV1(3,16)<1>		ubDIFF_TEMPORAL(23)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV1(4,0)<1>		ubDIFF_TEMPORAL(24)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV1(4,16)<1>		ubDIFF_TEMPORAL(25)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV1(5,0)<1>		ubDIFF_TEMPORAL(26)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV1(5,16)<1>		ubDIFF_TEMPORAL(27)<32;16,2>		
+
+	//3 lines next
+	mov  (16)	ubMSGPAYLOAD_UV1(6,0)<1>		ubDIFF_TEMPORAL(28)<32;16,2>		
+	mov  (16)	ubMSGPAYLOAD_UV1(6,16)<1>		ubCURBE_TEMP(4)<32;16,2>			
+	mov  (16)	ubMSGPAYLOAD_UV1(7,0)<1>		ubCURBE_TEMP(5)<32;16,2>			
+	mov  (16)	ubMSGPAYLOAD_UV1(7,16)<1>		ubCURBE_TEMP(6)<32;16,2>			
+
+
+
+//Module Name 	: DN_UV_420_Save_Curr_Frame_Y
+//Author		: Tatiya, Rupesh
+//Description	: Save Curr Frame Y data for 420 Input
+
+
+
+//Module Name 	: DN_UV_Load_Curr_Frame_Y
+//Author		: Tatiya, Rupesh
+//Description	: Saves Y or YUY2 of Current frame.
+
+
+
+
+	mov (8)		acc0.0<1>:ud		r0.0<8;8,1>:ud
+	mov (2)		acc0.0<1>:d			r62.10<2;2,1>:w
+
+	mov (1)		acc0.2<1>:d			0xF000F:ud
+
+	mov (8)     r92.0<1>:ud	acc0.0<8;8,1>:ud
+
+	mov (8)     r101.0<1>:ud	acc0.0<8;8,1>:ud
+	mov (8)     r110.0<1>:ud	acc0.0<8;8,1>:ud
+	mov (8)     r119.0<1>:ud	acc0.0<8;8,1>:ud
+
+	add (1)		r101.1<1>:d 	acc0.1<0;1,0>:d   		16:d
+
+	add (1)		r110.0<1>:d 	acc0.0<0;1,0>:d   		16:d
+
+	add (2)		r119.0<1>:d 	acc0.0<2;2,1>:d   		16:d
+
+	send (8)	null<1>:d	r92		0x5		0x120A8018:ud
+	send (8)	null<1>:d	r101		0x5		0x120A8018:ud
+	send (8)	null<1>:d	r110		0x5		0x120A8018:ud
+	send (8)	null<1>:d	r119		0x5		0x120A8018:ud
+
+
+	//TODO - See if History saving can be combined with Curr Frame Save. - rT
+
+
+//Module Name 	: DN_UV_Save_Hist_UV
+//Author		: Tatiya, Rupesh
+//Description	: Saves DN history for UV data.
+
+	mov (8)  r3.0<1>:ud	r0.0<8;8,1>:ud
+	mov (2)	 r3.0<1>:d	r62.12<2;2,1>:w				
+	mov (1)	 r3.2<1>:d	0x30007:ud		
+
+	send (8) null<1>:d	r3		0x5		0x40A8021:ud
+
+
+
+//Module Name	: DN_UV_Save_BNE_UV
+//Author		: Tatiya, Rupesh
+//Description	: Saves BNE values for 16x16 U and 16x16 V.
+
+	mov (8)  r1.0<1>:ud	r0.0<8;8,1>:ud
+	mov (2)	 r1.0<1>:d		r63.12<2;2,1>:w					
+	mov (1)	 r1.2<1>:d		0x10003:ud		
+
+	send (8) null<1>:d	r1		0x5		0x40A8023:ud
+
+
+
+//Module Name 	: DN_UV_PL2_Save_Curr_Frame_UV
+//Author		: Tatiya, Rupesh
+
+
+
+//Module name 	:  DN_UV_Save_Curr_Frame_UV
+//Author		:  Tatiya, Rupesh
+//Description	:  Saves Current Frame (UV only).
+
+
+
+
+	mov  (8) 		r74<1>:ud		r0.0<8;8,1>:ud
+	mov  (8) 		r83<1>:ud		r0.0<8;8,1>:ud
+
+	mov (1)	 r74.0<1>:d		r62.10<0;1,0>:w						
+	shr (1)  r74.1<1>:d		r62.11<0;1,0>:w			1:w			
+	mov (1)	 r74.2<1>:d		0xF000F:ud		
+
+	add (1)	 r83.0<1>:d		r62.10<0;1,0>:w			16:d		
+	shr (1)	 r83.1<1>:d		r62.11<0;1,0>:w			 1:w		
+	mov (1)	 r83.2<1>:d		0xF000F:ud		
+
+	send (8) null<1>:d	r74		0x5		0x120A8019:ud
+	send (8) null<1>:d	r83		0x5		0x120A8019:ud
+
+
+
+//End of Thread message
+
+mov (8) r127<1>:ud r0.0<8;8,1>:ud 
+ send (1) null<1>:d r127 0x27 0x02000010
+
+
+	//All sub-routines here
+
+
+// Module Name  : Noise_Detection
+// Author		: Tatiya, Rupesh
+// Description	: Performs noise detection on 32 pixels of U (8x4) and 32 pixels of V (8x4).
+
+DN_UV_NOISE_DETECTION_UV:
+
+// Find Field Block Median
+//
+// Purpose   : Find the median value of the nine pixels in the same field
+//             which are centered at current pixel.
+//
+//             Works on 9 pixels centered at the current pixel
+//                NOTE: pixels are within same field.
+//                      v4 - current pixel
+//
+//                  v2 v1 v0
+//                   *  *  *     <--- Different field - not used
+//                  v5 v4 v3
+//                   *  *  *     <--- Different field - not used
+//                  v8 v7 v6
+
+// Algorithm to find median modifies the data.
+// Copy the data needed to calculate median so the original source data stays intact.
+//
+
+//TODO - Change Interleaved implementation to separated one if - ,  does not work on predication. - rT
+
+//Delete Later - rT
+//mov (1) pCUR_UV:uw		52*32:uw
+
+// v0
+mov (16) ubMEDIAN_TEMP(0,0)<1>    	r[a0.0,0]<16;16,1>		
+// v0
+mov (16) ubMEDIAN_TEMP(0,16)<1>   	r[a0.0,32]<16;16,1>		
+// v1
+mov (16) ubMEDIAN_TEMP(1,0)<1>    	r[a0.0,2]<16;16,1>		
+// v1
+mov (16) ubMEDIAN_TEMP(1,16)<1>   	r[a0.0,34]<16;16,1>		
+// v2
+mov (16) ubMEDIAN_TEMP(2,0)<1>    	r[a0.0,4]<16;16,1>		
+// v2
+mov (16) ubMEDIAN_TEMP(2,16)<1>   	r[a0.0,36]<16;16,1>		
+// v3
+mov (16) ubMEDIAN_TEMP(3,0)<1>    	r[a0.0,64]<16;16,1>  	
+// v3
+mov (16) ubMEDIAN_TEMP(3,16)<1>   	r[a0.0,96]<16;16,1>		
+// v4
+mov (16) ubMEDIAN_TEMP(4,0)<1>		r[a0.0,66]<16;16,1>  	
+// v4
+mov (16) ubMEDIAN_TEMP(4,16)<1>   	r[a0.0,98]<16;16,1>  	
+// v5
+mov (16) ubMEDIAN_TEMP(5,0)<1>		r[a0.0,68]<16;16,1>  	
+// v5
+mov (16) ubMEDIAN_TEMP(5,16)<1>   	r[a0.0,100]<16;16,1>  	
+// v6
+mov (16) ubMEDIAN_TEMP(6,0)<1>    	r[a0.0,128]<16;16,1>  	
+// v6
+mov (16) ubMEDIAN_TEMP(6,16)<1>   	r[a0.0,160]<16;16,1>		
+// v7
+mov (16) ubMEDIAN_TEMP(7,0)<1>		r[a0.0,130]<16;16,1>  	
+// v7
+mov (16) ubMEDIAN_TEMP(7,16)<1>   	r[a0.0,162]<16;16,1>  	
+// v8
+mov (16) ubMEDIAN_TEMP(8,0)<1>		r[a0.0,132]<16;16,1>  	
+// v8
+mov (16) ubMEDIAN_TEMP(8,16)<1>   	r[a0.0,164]<16;16,1>  	
+
+//TODO - Optimize one instruction here.
+add (1)  a0.0:uw		a0.0<0;1,0>:uw 64:uw
+// v0
+mov (16) ubMEDIAN_TEMP(9,0)<1>    	r[a0.0,0]<16;16,1>		
+// v0
+mov (16) ubMEDIAN_TEMP(9,16)<1>   	r[a0.0,32]<16;16,1>		
+// v1
+mov (16) ubMEDIAN_TEMP(10,0)<1>    	r[a0.0,2]<16;16,1>		
+// v1
+mov (16) ubMEDIAN_TEMP(10,16)<1>   	r[a0.0,34]<16;16,1>		
+// v2
+mov (16) ubMEDIAN_TEMP(11,0)<1>    	r[a0.0,4]<16;16,1>		
+// v2
+mov (16) ubMEDIAN_TEMP(11,16)<1>   	r[a0.0,36]<16;16,1>		
+// v3
+mov (16) ubMEDIAN_TEMP(12,0)<1>    	r[a0.0,64]<16;16,1>  	
+// v3
+mov (16) ubMEDIAN_TEMP(12,16)<1>   	r[a0.0,96]<16;16,1>		
+// v4
+mov (16) ubMEDIAN_TEMP(13,0)<1>		r[a0.0,66]<16;16,1>  	
+// v4
+mov (16) ubMEDIAN_TEMP(13,16)<1>   	r[a0.0,98]<16;16,1>  	
+// v5
+mov (16) ubMEDIAN_TEMP(14,0)<1>		r[a0.0,68]<16;16,1>  	
+// v5
+mov (16) ubMEDIAN_TEMP(14,16)<1>   	r[a0.0,100]<16;16,1>  	
+// v6
+mov (16) ubMEDIAN_TEMP(15,0)<1>    	r[a0.0,128]<16;16,1>  	
+// v6
+mov (16) ubMEDIAN_TEMP(15,16)<1>   	r[a0.0,160]<16;16,1>		
+// v7
+mov (16) ubMEDIAN_TEMP(16,0)<1>		r[a0.0,130]<16;16,1>  	
+// v7
+mov (16) ubMEDIAN_TEMP(16,16)<1>   	r[a0.0,162]<16;16,1>  	
+// v8
+mov (16) ubMEDIAN_TEMP(17,0)<1>		r[a0.0,132]<16;16,1>  	
+// v8
+mov (16) ubMEDIAN_TEMP(17,16)<1>   	r[a0.0,164]<16;16,1>  	
+
+//TODO - Optimize one instruction here.
+add (1)  a0.0:uw		a0.0<0;1,0>:uw 64:uw
+
+// MedianSwap
+//
+//  MedianSwap(inOutLeft, inOutRight)
+//  {
+//      if (inOutLeft > inOutRight)
+//      {
+//          temp = inOutLeft
+//          inOutLeft = inOutRight
+//          inOutRight = temp
+//      }
+//  }
+
+// MedianSwap(v1, v2) - U
+// MedianSwap(v4, v5) - U
+// MedianSwap(v1, v2) - V
+// MedianSwap(v4, v5) - V
+
+cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(1,0)<32;16,2>  ubMEDIAN_TEMP(2,0)<32;16,2>
+cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(4,0)<32;16,2>  ubMEDIAN_TEMP(5,0)<32;16,2>
+cmp.g.f1.0 (16) null:w          ubMEDIAN_TEMP(1,1)<32;16,2> 	ubMEDIAN_TEMP(2,1)<32;16,2>
+cmp.g.f1.1 (16) null:w          ubMEDIAN_TEMP(4,1)<32;16,2> 	ubMEDIAN_TEMP(5,1)<32;16,2>
+
+       	mov (16) ubTEMP1(0,0)<1>      ubMEDIAN_TEMP(1,0)<32;16,2>	
+       	mov (16) ubTEMP1(0,16)<1>     ubMEDIAN_TEMP(4,0)<32;16,2>	
+       	mov (16) ubTEMP1(1,0)<1>      ubMEDIAN_TEMP(1,1)<32;16,2>	
+		mov (16) ubTEMP1(1,16)<1>     ubMEDIAN_TEMP(4,1)<32;16,2>	
+
+(f0.0) mov (16) ubMEDIAN_TEMP(1,0)<2>     	ubMEDIAN_TEMP(2,0)<32;16,2>		
+(f0.1) mov (16) ubMEDIAN_TEMP(4,0)<2>		ubMEDIAN_TEMP(5,0)<32;16,2>		
+(f1.0) mov (16) ubMEDIAN_TEMP(1,1)<2>  		ubMEDIAN_TEMP(2,1)<32;16,2>		
+(f1.1) mov (16) ubMEDIAN_TEMP(4,1)<2>		ubMEDIAN_TEMP(5,1)<32;16,2>		
+
+(f0.0) mov (16) ubMEDIAN_TEMP(2,0)<2>     ubTEMP1(0,0)<16;16,1>		
+(f0.1) mov (16) ubMEDIAN_TEMP(5,0)<2>     ubTEMP1(0,16)<16;16,1>		
+(f1.0) mov (16) ubMEDIAN_TEMP(2,1)<2>     ubTEMP1(1,0)<16;16,1>		
+(f1.1) mov (16) ubMEDIAN_TEMP(5,1)<2>     ubTEMP1(1,16)<16;16,1>   	
+
+// MedianSwap(v7, v8) - U
+// MedianSwap(v0, v1) - U
+// MedianSwap(v7, v8) - V
+// MedianSwap(v0, v1) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(7,0)<32;16,2>   	ubMEDIAN_TEMP(8,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(0,0)<32;16,2>  	ubMEDIAN_TEMP(1,0)<32;16,2>
+ cmp.g.f1.0 (16) null:w          ubMEDIAN_TEMP(7,1)<32;16,2> 	ubMEDIAN_TEMP(8,1)<32;16,2>
+ cmp.g.f1.1 (16) null:w          ubMEDIAN_TEMP(0,1)<32;16,2> 	ubMEDIAN_TEMP(1,1)<32;16,2>
+
+        mov (16) ubTEMP1(0,0)<1>      ubMEDIAN_TEMP(7,0)<32;16,2>		
+        mov (16) ubTEMP1(0,16)<1>     ubMEDIAN_TEMP(0,0)<32;16,2>		
+        mov (16) ubTEMP1(1,0)<1>      ubMEDIAN_TEMP(7,1)<32;16,2>		
+ 		mov (16) ubTEMP1(1,16)<1>     ubMEDIAN_TEMP(0,1)<32;16,2>		
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(7,0)<2>   ubMEDIAN_TEMP(8,0)<32;16,2>	   
+ (f0.1) mov (16) ubMEDIAN_TEMP(0,0)<2>	ubMEDIAN_TEMP(1,0)<32;16,2>     
+ (f1.0) mov (16) ubMEDIAN_TEMP(7,1)<2>  	ubMEDIAN_TEMP(8,1)<32;16,2>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(0,1)<2>	ubMEDIAN_TEMP(1,1)<32;16,2>     
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(8,0)<2>     ubTEMP1(0,0)<16;16,1>	   
+ (f0.1) mov (16) ubMEDIAN_TEMP(1,0)<2>     ubTEMP1(0,16)<16;16,1>    
+ (f1.0) mov (16) ubMEDIAN_TEMP(8,1)<2>     ubTEMP1(1,0)<16;16,1>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(1,1)<2>     ubTEMP1(1,16)<16;16,1>    
+
+ // MedianSwap(v3, v4) - U
+ // MedianSwap(v6, v7) - U
+ // MedianSwap(v3, v4) - V
+ // MedianSwap(v6, v7) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(3,0)<32;16,2>   	ubMEDIAN_TEMP(4,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(6,0)<32;16,2>  	ubMEDIAN_TEMP(7,0)<32;16,2>
+ cmp.g.f1.0 (16) null:w          ubMEDIAN_TEMP(3,1)<32;16,2> 	ubMEDIAN_TEMP(4,1)<32;16,2>
+ cmp.g.f1.1 (16) null:w          ubMEDIAN_TEMP(6,1)<32;16,2> 	ubMEDIAN_TEMP(7,1)<32;16,2>
+
+        mov (16) ubTEMP1(0,0)<1>      ubMEDIAN_TEMP(3,0)<32;16,2>		
+        mov (16) ubTEMP1(0,16)<1>     ubMEDIAN_TEMP(6,0)<32;16,2>		
+        mov (16) ubTEMP1(1,0)<1>      ubMEDIAN_TEMP(3,1)<32;16,2>		
+ 		mov (16) ubTEMP1(1,16)<1>     ubMEDIAN_TEMP(6,1)<32;16,2>		
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(3,0)<2>   ubMEDIAN_TEMP(4,0)<32;16,2>	   
+ (f0.1) mov (16) ubMEDIAN_TEMP(6,0)<2>	ubMEDIAN_TEMP(7,0)<32;16,2>     
+ (f1.0) mov (16) ubMEDIAN_TEMP(3,1)<2>  	ubMEDIAN_TEMP(4,1)<32;16,2>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(6,1)<2>	ubMEDIAN_TEMP(7,1)<32;16,2>     
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(4,0)<2>     ubTEMP1(0,0)<16;16,1>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(7,0)<2>     ubTEMP1(0,16)<16;16,1>    
+ (f1.0) mov (16) ubMEDIAN_TEMP(4,1)<2>     ubTEMP1(1,0)<16;16,1>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(7,1)<2>     ubTEMP1(1,16)<16;16,1>    
+
+ // MedianSwap(v1, v2) - U
+ // MedianSwap(v4, v5) - U
+ // MedianSwap(v1, v2) - V
+ // MedianSwap(v4, v5) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(1,0)<32;16,2>   	ubMEDIAN_TEMP(2,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(4,0)<32;16,2>  	ubMEDIAN_TEMP(5,0)<32;16,2>
+ cmp.g.f1.0 (16) null:w          ubMEDIAN_TEMP(1,1)<32;16,2> 	ubMEDIAN_TEMP(2,1)<32;16,2>
+ cmp.g.f1.1 (16) null:w          ubMEDIAN_TEMP(4,1)<32;16,2> 	ubMEDIAN_TEMP(5,1)<32;16,2>
+
+        mov (16) ubTEMP1(0,0)<1>      ubMEDIAN_TEMP(1,0)<32;16,2>		
+        mov (16) ubTEMP1(0,16)<1>     ubMEDIAN_TEMP(4,0)<32;16,2>		
+        mov (16) ubTEMP1(1,0)<1>      ubMEDIAN_TEMP(1,1)<32;16,2>		
+ 		mov (16) ubTEMP1(1,16)<1>     ubMEDIAN_TEMP(4,1)<32;16,2>		
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(1,0)<2>   ubMEDIAN_TEMP(2,0)<32;16,2>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(4,0)<2>	ubMEDIAN_TEMP(5,0)<32;16,2>     
+ (f1.0) mov (16) ubMEDIAN_TEMP(1,1)<2>  	ubMEDIAN_TEMP(2,1)<32;16,2>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(4,1)<2>	ubMEDIAN_TEMP(5,1)<32;16,2>     
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(2,0)<2>     ubTEMP1(0,0)<16;16,1>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(5,0)<2>     ubTEMP1(0,16)<16;16,1>    
+ (f1.0) mov (16) ubMEDIAN_TEMP(2,1)<2>     ubTEMP1(1,0)<16;16,1>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(5,1)<2>     ubTEMP1(1,16)<16;16,1>    
+
+ // MedianSwap(v7, v8) - U
+ // MedianSwap(v0, v3) - U
+ // MedianSwap(v7, v8) - V
+ // MedianSwap(v0, v3) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(7,0)<32;16,2>   	ubMEDIAN_TEMP(8,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(0,0)<32;16,2>  	ubMEDIAN_TEMP(3,0)<32;16,2>
+ cmp.g.f1.0 (16) null:w          ubMEDIAN_TEMP(7,1)<32;16,2> 	ubMEDIAN_TEMP(8,1)<32;16,2>
+ cmp.g.f1.1 (16) null:w          ubMEDIAN_TEMP(0,1)<32;16,2> 	ubMEDIAN_TEMP(3,1)<32;16,2>
+
+        mov (16) ubTEMP1(0,0)<1>      ubMEDIAN_TEMP(7,0)<32;16,2>		
+        mov (16) ubTEMP1(0,16)<1>     ubMEDIAN_TEMP(0,0)<32;16,2>		
+        mov (16) ubTEMP1(1,0)<1>      ubMEDIAN_TEMP(7,1)<32;16,2>		
+ 		mov (16) ubTEMP1(1,16)<1>     ubMEDIAN_TEMP(0,1)<32;16,2>		
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(7,0)<2>   ubMEDIAN_TEMP(8,0)<32;16,2>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(0,0)<2>	ubMEDIAN_TEMP(3,0)<32;16,2>     
+ (f1.0) mov (16) ubMEDIAN_TEMP(7,1)<2>  	ubMEDIAN_TEMP(8,1)<32;16,2>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(0,1)<2>	ubMEDIAN_TEMP(3,1)<32;16,2>     
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(8,0)<2>     ubTEMP1(0,0)<16;16,1>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(3,0)<2>     ubTEMP1(0,16)<16;16,1>    
+ (f1.0) mov (16) ubMEDIAN_TEMP(8,1)<2>     ubTEMP1(1,0)<16;16,1>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(3,1)<2>     ubTEMP1(1,16)<16;16,1>    
+
+ // NOTE:
+ // Compare v0 to v6 to find the minimum.
+ // Store the minimum for future use.
+ //TODO - Find if MIN is needed.
+ //cmp.l.f0.0  (16) null:w          			ubMEDIAN_TEMP(%1+0,0)<32;16,2> 	ubMEDIAN_TEMP(%1+6,0)<32;16,2>
+ //cmp.l.f1.0  (16) null:w          			ubMEDIAN_TEMP(%1+0,1)<32;16,2> 	ubMEDIAN_TEMP(%1+6,1)<32;16,2>
+ //(f0.0)  mov (16) ubCURR_MIN(0,%2*16+0)<1>   		ubMEDIAN_TEMP(%1+0,0)<32;16,2>
+ //(f1.0)  mov (16) ubCURR_MIN(1,%2*16+0)<1>   		ubMEDIAN_TEMP(%1+0,1)<32;16,2>
+ //(-f0.0) mov (16) ubCURR_MIN(0,%2*16+0)<1>   		ubMEDIAN_TEMP(%1+6,0)<32;16,2>
+ //(-f1.0) mov (16) ubCURR_MIN(1,%2*16+0)<1>   		ubMEDIAN_TEMP(%1+6,1)<32;16,2>
+
+ // MedianSwap(v5, v8) - U
+ // MedianSwap(v4, v7) - U
+ // MedianSwap(v5, v8) - V
+ // MedianSwap(v4, v7) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(5,0)<32;16,2>   	ubMEDIAN_TEMP(8,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(4,0)<32;16,2>  	ubMEDIAN_TEMP(7,0)<32;16,2>
+ cmp.g.f1.0 (16) null:w          ubMEDIAN_TEMP(5,1)<32;16,2> 	ubMEDIAN_TEMP(8,1)<32;16,2>
+ cmp.g.f1.1 (16) null:w          ubMEDIAN_TEMP(4,1)<32;16,2> 	ubMEDIAN_TEMP(7,1)<32;16,2>
+
+        mov (16) ubTEMP1(0,0)<1>      ubMEDIAN_TEMP(5,0)<32;16,2>		
+        mov (16) ubTEMP1(0,16)<1>     ubMEDIAN_TEMP(4,0)<32;16,2>		
+        mov (16) ubTEMP1(1,0)<1>      ubMEDIAN_TEMP(5,1)<32;16,2>		
+ 		mov (16) ubTEMP1(1,16)<1>     ubMEDIAN_TEMP(4,1)<32;16,2>		
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(5,0)<2>    	ubMEDIAN_TEMP(8,0)<32;16,2>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(4,0)<2>		ubMEDIAN_TEMP(7,0)<32;16,2>     
+ (f1.0) mov (16) ubMEDIAN_TEMP(5,1)<2>  	ubMEDIAN_TEMP(8,1)<32;16,2>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(4,1)<2>		ubMEDIAN_TEMP(7,1)<32;16,2>     
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(8,0)<2>     ubTEMP1(0,0)<16;16,1>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(7,0)<2>     ubTEMP1(0,16)<16;16,1>    
+ (f1.0) mov (16) ubMEDIAN_TEMP(8,1)<2>     ubTEMP1(1,0)<16;16,1>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(7,1)<2>     ubTEMP1(1,16)<16;16,1>    
+
+// NOTE:
+// Compare v2 to v8 to find the maximum.
+// Store the maximum for future use.
+ //TODO - Find if MAX is needed.
+// cmp.g.f0.0  (16) null:w         ubMEDIAN_TEMP(%1+2,0)<32;16,2> ubMEDIAN_TEMP(%1+8,0)<32;16,2>
+// cmp.g.f1.0  (16) null:w         ubMEDIAN_TEMP(%1+2,1)<32;16,2> ubMEDIAN_TEMP(%1+8,1)<32;16,2>
+//(f0.0)  mov (16) ubCURR_MAX(0,%2*16+0)<1>   	ubMEDIAN_TEMP(%1+2,0)<32;16,2>
+//(f1.0)  mov (16) ubCURR_MAX(1,%2*16+0)<1>   	ubMEDIAN_TEMP(%1+2,1)<32;16,2>
+//(-f0.0) mov (16) ubCURR_MAX(0,%2*16+0)<1>   	ubMEDIAN_TEMP(%1+8,0)<32;16,2>
+//(-f1.0) mov (16) ubCURR_MAX(1,%2*16+0)<1>   	ubMEDIAN_TEMP(%1+8,1)<32;16,2>
+
+// MedianSwap(v3, v6) - U
+// MedianSwap(v1, v4) - U
+// MedianSwap(v3, v6) - V
+// MedianSwap(v1, v4) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(3,0)<32;16,2>   	ubMEDIAN_TEMP(6,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(1,0)<32;16,2>  	ubMEDIAN_TEMP(4,0)<32;16,2>
+ cmp.g.f1.0 (16) null:w          ubMEDIAN_TEMP(3,1)<32;16,2> 	ubMEDIAN_TEMP(6,1)<32;16,2>
+ cmp.g.f1.1 (16) null:w          ubMEDIAN_TEMP(1,1)<32;16,2> 	ubMEDIAN_TEMP(4,1)<32;16,2>
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(6,0)<2>     ubMEDIAN_TEMP(3,0)<32;16,2>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(4,0)<2>     ubMEDIAN_TEMP(1,0)<32;16,2>      
+ (f1.0) mov (16) ubMEDIAN_TEMP(6,1)<2>     ubMEDIAN_TEMP(3,1)<32;16,2>      
+ (f1.1) mov (16) ubMEDIAN_TEMP(4,1)<2>     ubMEDIAN_TEMP(1,1)<32;16,2>      
+
+ // MedianSwap(v2,v5) - U
+ // MedianSwap(v4,v7) - U
+ // MedianSwap(v2,v5) - V
+ // MedianSwap(v4,v7) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(2,0)<32;16,2>   	ubMEDIAN_TEMP(5,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(4,0)<32;16,2>  	ubMEDIAN_TEMP(7,0)<32;16,2>
+ cmp.g.f1.0 (16) null:w          ubMEDIAN_TEMP(2,1)<32;16,2> 	ubMEDIAN_TEMP(5,1)<32;16,2>
+ cmp.g.f1.1 (16) null:w          ubMEDIAN_TEMP(4,1)<32;16,2> 	ubMEDIAN_TEMP(7,1)<32;16,2>
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(2,0)<2>     ubMEDIAN_TEMP(5,0)<32;16,2>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(4,0)<2>     ubMEDIAN_TEMP(7,0)<32;16,2>      
+ (f1.0) mov (16) ubMEDIAN_TEMP(2,1)<2>     ubMEDIAN_TEMP(5,1)<32;16,2>      
+ (f1.1) mov (16) ubMEDIAN_TEMP(4,1)<2>     ubMEDIAN_TEMP(7,1)<32;16,2>      
+
+ // MedianSwap(v4,v2) - U
+ // MedianSwap(v4,v2) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(4,0)<32;16,2>   	ubMEDIAN_TEMP(2,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(4,1)<32;16,2>  	ubMEDIAN_TEMP(2,1)<32;16,2>
+
+        mov (16) ubTEMP1(0,0)<1>      ubMEDIAN_TEMP(4,0)<32;16,2>		
+        mov (16) ubTEMP1(0,16)<1>     ubMEDIAN_TEMP(4,1)<32;16,2>		
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(4,0)<2>    	ubMEDIAN_TEMP(2,0)<32;16,2>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(4,1)<2>		ubMEDIAN_TEMP(2,1)<32;16,2>		
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(2,0)<2>     ubTEMP1(0,0)<16;16,1>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(2,1)<2>     ubTEMP1(0,16)<16;16,1>	
+
+ // MedianSwap(v6,v4) - U
+ // MedianSwap(v6,v4) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(6,0)<32;16,2>   ubMEDIAN_TEMP(4,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(6,1)<32;16,2>   ubMEDIAN_TEMP(4,1)<32;16,2>
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(4,0)<2>    	ubMEDIAN_TEMP(6,0)<32;16,2>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(4,1)<2>		ubMEDIAN_TEMP(6,1)<32;16,2>		
+
+ // MedianSwap(v4,v2) - U
+ // MedianSwap(v4,v2) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(4,0)<32;16,2>   	ubMEDIAN_TEMP(2,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(4,1)<32;16,2>  	ubMEDIAN_TEMP(2,1)<32;16,2>
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(4,0)<2>    	ubMEDIAN_TEMP(2,0)<32;16,2>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(4,1)<2>		ubMEDIAN_TEMP(2,1)<32;16,2>		
+cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(10,0)<32;16,2>  ubMEDIAN_TEMP(11,0)<32;16,2>
+cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(13,0)<32;16,2>  ubMEDIAN_TEMP(14,0)<32;16,2>
+cmp.g.f1.0 (16) null:w          ubMEDIAN_TEMP(10,1)<32;16,2> 	ubMEDIAN_TEMP(11,1)<32;16,2>
+cmp.g.f1.1 (16) null:w          ubMEDIAN_TEMP(13,1)<32;16,2> 	ubMEDIAN_TEMP(14,1)<32;16,2>
+
+       	mov (16) ubTEMP1(0,0)<1>      ubMEDIAN_TEMP(10,0)<32;16,2>	
+       	mov (16) ubTEMP1(0,16)<1>     ubMEDIAN_TEMP(13,0)<32;16,2>	
+       	mov (16) ubTEMP1(1,0)<1>      ubMEDIAN_TEMP(10,1)<32;16,2>	
+		mov (16) ubTEMP1(1,16)<1>     ubMEDIAN_TEMP(13,1)<32;16,2>	
+
+(f0.0) mov (16) ubMEDIAN_TEMP(10,0)<2>     	ubMEDIAN_TEMP(11,0)<32;16,2>		
+(f0.1) mov (16) ubMEDIAN_TEMP(13,0)<2>		ubMEDIAN_TEMP(14,0)<32;16,2>		
+(f1.0) mov (16) ubMEDIAN_TEMP(10,1)<2>  		ubMEDIAN_TEMP(11,1)<32;16,2>		
+(f1.1) mov (16) ubMEDIAN_TEMP(13,1)<2>		ubMEDIAN_TEMP(14,1)<32;16,2>		
+
+(f0.0) mov (16) ubMEDIAN_TEMP(11,0)<2>     ubTEMP1(0,0)<16;16,1>		
+(f0.1) mov (16) ubMEDIAN_TEMP(14,0)<2>     ubTEMP1(0,16)<16;16,1>		
+(f1.0) mov (16) ubMEDIAN_TEMP(11,1)<2>     ubTEMP1(1,0)<16;16,1>		
+(f1.1) mov (16) ubMEDIAN_TEMP(14,1)<2>     ubTEMP1(1,16)<16;16,1>   	
+
+// MedianSwap(v7, v8) - U
+// MedianSwap(v0, v1) - U
+// MedianSwap(v7, v8) - V
+// MedianSwap(v0, v1) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(16,0)<32;16,2>   	ubMEDIAN_TEMP(17,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(9,0)<32;16,2>  	ubMEDIAN_TEMP(10,0)<32;16,2>
+ cmp.g.f1.0 (16) null:w          ubMEDIAN_TEMP(16,1)<32;16,2> 	ubMEDIAN_TEMP(17,1)<32;16,2>
+ cmp.g.f1.1 (16) null:w          ubMEDIAN_TEMP(9,1)<32;16,2> 	ubMEDIAN_TEMP(10,1)<32;16,2>
+
+        mov (16) ubTEMP1(0,0)<1>      ubMEDIAN_TEMP(16,0)<32;16,2>		
+        mov (16) ubTEMP1(0,16)<1>     ubMEDIAN_TEMP(9,0)<32;16,2>		
+        mov (16) ubTEMP1(1,0)<1>      ubMEDIAN_TEMP(16,1)<32;16,2>		
+ 		mov (16) ubTEMP1(1,16)<1>     ubMEDIAN_TEMP(9,1)<32;16,2>		
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(16,0)<2>   ubMEDIAN_TEMP(17,0)<32;16,2>	   
+ (f0.1) mov (16) ubMEDIAN_TEMP(9,0)<2>	ubMEDIAN_TEMP(10,0)<32;16,2>     
+ (f1.0) mov (16) ubMEDIAN_TEMP(16,1)<2>  	ubMEDIAN_TEMP(17,1)<32;16,2>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(9,1)<2>	ubMEDIAN_TEMP(10,1)<32;16,2>     
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(17,0)<2>     ubTEMP1(0,0)<16;16,1>	   
+ (f0.1) mov (16) ubMEDIAN_TEMP(10,0)<2>     ubTEMP1(0,16)<16;16,1>    
+ (f1.0) mov (16) ubMEDIAN_TEMP(17,1)<2>     ubTEMP1(1,0)<16;16,1>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(10,1)<2>     ubTEMP1(1,16)<16;16,1>    
+
+ // MedianSwap(v3, v4) - U
+ // MedianSwap(v6, v7) - U
+ // MedianSwap(v3, v4) - V
+ // MedianSwap(v6, v7) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(12,0)<32;16,2>   	ubMEDIAN_TEMP(13,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(15,0)<32;16,2>  	ubMEDIAN_TEMP(16,0)<32;16,2>
+ cmp.g.f1.0 (16) null:w          ubMEDIAN_TEMP(12,1)<32;16,2> 	ubMEDIAN_TEMP(13,1)<32;16,2>
+ cmp.g.f1.1 (16) null:w          ubMEDIAN_TEMP(15,1)<32;16,2> 	ubMEDIAN_TEMP(16,1)<32;16,2>
+
+        mov (16) ubTEMP1(0,0)<1>      ubMEDIAN_TEMP(12,0)<32;16,2>		
+        mov (16) ubTEMP1(0,16)<1>     ubMEDIAN_TEMP(15,0)<32;16,2>		
+        mov (16) ubTEMP1(1,0)<1>      ubMEDIAN_TEMP(12,1)<32;16,2>		
+ 		mov (16) ubTEMP1(1,16)<1>     ubMEDIAN_TEMP(15,1)<32;16,2>		
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(12,0)<2>   ubMEDIAN_TEMP(13,0)<32;16,2>	   
+ (f0.1) mov (16) ubMEDIAN_TEMP(15,0)<2>	ubMEDIAN_TEMP(16,0)<32;16,2>     
+ (f1.0) mov (16) ubMEDIAN_TEMP(12,1)<2>  	ubMEDIAN_TEMP(13,1)<32;16,2>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(15,1)<2>	ubMEDIAN_TEMP(16,1)<32;16,2>     
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(13,0)<2>     ubTEMP1(0,0)<16;16,1>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(16,0)<2>     ubTEMP1(0,16)<16;16,1>    
+ (f1.0) mov (16) ubMEDIAN_TEMP(13,1)<2>     ubTEMP1(1,0)<16;16,1>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(16,1)<2>     ubTEMP1(1,16)<16;16,1>    
+
+ // MedianSwap(v1, v2) - U
+ // MedianSwap(v4, v5) - U
+ // MedianSwap(v1, v2) - V
+ // MedianSwap(v4, v5) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(10,0)<32;16,2>   	ubMEDIAN_TEMP(11,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(13,0)<32;16,2>  	ubMEDIAN_TEMP(14,0)<32;16,2>
+ cmp.g.f1.0 (16) null:w          ubMEDIAN_TEMP(10,1)<32;16,2> 	ubMEDIAN_TEMP(11,1)<32;16,2>
+ cmp.g.f1.1 (16) null:w          ubMEDIAN_TEMP(13,1)<32;16,2> 	ubMEDIAN_TEMP(14,1)<32;16,2>
+
+        mov (16) ubTEMP1(0,0)<1>      ubMEDIAN_TEMP(10,0)<32;16,2>		
+        mov (16) ubTEMP1(0,16)<1>     ubMEDIAN_TEMP(13,0)<32;16,2>		
+        mov (16) ubTEMP1(1,0)<1>      ubMEDIAN_TEMP(10,1)<32;16,2>		
+ 		mov (16) ubTEMP1(1,16)<1>     ubMEDIAN_TEMP(13,1)<32;16,2>		
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(10,0)<2>   ubMEDIAN_TEMP(11,0)<32;16,2>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(13,0)<2>	ubMEDIAN_TEMP(14,0)<32;16,2>     
+ (f1.0) mov (16) ubMEDIAN_TEMP(10,1)<2>  	ubMEDIAN_TEMP(11,1)<32;16,2>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(13,1)<2>	ubMEDIAN_TEMP(14,1)<32;16,2>     
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(11,0)<2>     ubTEMP1(0,0)<16;16,1>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(14,0)<2>     ubTEMP1(0,16)<16;16,1>    
+ (f1.0) mov (16) ubMEDIAN_TEMP(11,1)<2>     ubTEMP1(1,0)<16;16,1>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(14,1)<2>     ubTEMP1(1,16)<16;16,1>    
+
+ // MedianSwap(v7, v8) - U
+ // MedianSwap(v0, v3) - U
+ // MedianSwap(v7, v8) - V
+ // MedianSwap(v0, v3) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(16,0)<32;16,2>   	ubMEDIAN_TEMP(17,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(9,0)<32;16,2>  	ubMEDIAN_TEMP(12,0)<32;16,2>
+ cmp.g.f1.0 (16) null:w          ubMEDIAN_TEMP(16,1)<32;16,2> 	ubMEDIAN_TEMP(17,1)<32;16,2>
+ cmp.g.f1.1 (16) null:w          ubMEDIAN_TEMP(9,1)<32;16,2> 	ubMEDIAN_TEMP(12,1)<32;16,2>
+
+        mov (16) ubTEMP1(0,0)<1>      ubMEDIAN_TEMP(16,0)<32;16,2>		
+        mov (16) ubTEMP1(0,16)<1>     ubMEDIAN_TEMP(9,0)<32;16,2>		
+        mov (16) ubTEMP1(1,0)<1>      ubMEDIAN_TEMP(16,1)<32;16,2>		
+ 		mov (16) ubTEMP1(1,16)<1>     ubMEDIAN_TEMP(9,1)<32;16,2>		
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(16,0)<2>   ubMEDIAN_TEMP(17,0)<32;16,2>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(9,0)<2>	ubMEDIAN_TEMP(12,0)<32;16,2>     
+ (f1.0) mov (16) ubMEDIAN_TEMP(16,1)<2>  	ubMEDIAN_TEMP(17,1)<32;16,2>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(9,1)<2>	ubMEDIAN_TEMP(12,1)<32;16,2>     
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(17,0)<2>     ubTEMP1(0,0)<16;16,1>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(12,0)<2>     ubTEMP1(0,16)<16;16,1>    
+ (f1.0) mov (16) ubMEDIAN_TEMP(17,1)<2>     ubTEMP1(1,0)<16;16,1>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(12,1)<2>     ubTEMP1(1,16)<16;16,1>    
+
+ // NOTE:
+ // Compare v0 to v6 to find the minimum.
+ // Store the minimum for future use.
+ //TODO - Find if MIN is needed.
+ //cmp.l.f0.0  (16) null:w          			ubMEDIAN_TEMP(%1+0,0)<32;16,2> 	ubMEDIAN_TEMP(%1+6,0)<32;16,2>
+ //cmp.l.f1.0  (16) null:w          			ubMEDIAN_TEMP(%1+0,1)<32;16,2> 	ubMEDIAN_TEMP(%1+6,1)<32;16,2>
+ //(f0.0)  mov (16) ubCURR_MIN(0,%2*16+0)<1>   		ubMEDIAN_TEMP(%1+0,0)<32;16,2>
+ //(f1.0)  mov (16) ubCURR_MIN(1,%2*16+0)<1>   		ubMEDIAN_TEMP(%1+0,1)<32;16,2>
+ //(-f0.0) mov (16) ubCURR_MIN(0,%2*16+0)<1>   		ubMEDIAN_TEMP(%1+6,0)<32;16,2>
+ //(-f1.0) mov (16) ubCURR_MIN(1,%2*16+0)<1>   		ubMEDIAN_TEMP(%1+6,1)<32;16,2>
+
+ // MedianSwap(v5, v8) - U
+ // MedianSwap(v4, v7) - U
+ // MedianSwap(v5, v8) - V
+ // MedianSwap(v4, v7) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(14,0)<32;16,2>   	ubMEDIAN_TEMP(17,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(13,0)<32;16,2>  	ubMEDIAN_TEMP(16,0)<32;16,2>
+ cmp.g.f1.0 (16) null:w          ubMEDIAN_TEMP(14,1)<32;16,2> 	ubMEDIAN_TEMP(17,1)<32;16,2>
+ cmp.g.f1.1 (16) null:w          ubMEDIAN_TEMP(13,1)<32;16,2> 	ubMEDIAN_TEMP(16,1)<32;16,2>
+
+        mov (16) ubTEMP1(0,0)<1>      ubMEDIAN_TEMP(14,0)<32;16,2>		
+        mov (16) ubTEMP1(0,16)<1>     ubMEDIAN_TEMP(13,0)<32;16,2>		
+        mov (16) ubTEMP1(1,0)<1>      ubMEDIAN_TEMP(14,1)<32;16,2>		
+ 		mov (16) ubTEMP1(1,16)<1>     ubMEDIAN_TEMP(13,1)<32;16,2>		
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(14,0)<2>    	ubMEDIAN_TEMP(17,0)<32;16,2>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(13,0)<2>		ubMEDIAN_TEMP(16,0)<32;16,2>     
+ (f1.0) mov (16) ubMEDIAN_TEMP(14,1)<2>  	ubMEDIAN_TEMP(17,1)<32;16,2>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(13,1)<2>		ubMEDIAN_TEMP(16,1)<32;16,2>     
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(17,0)<2>     ubTEMP1(0,0)<16;16,1>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(16,0)<2>     ubTEMP1(0,16)<16;16,1>    
+ (f1.0) mov (16) ubMEDIAN_TEMP(17,1)<2>     ubTEMP1(1,0)<16;16,1>     
+ (f1.1) mov (16) ubMEDIAN_TEMP(16,1)<2>     ubTEMP1(1,16)<16;16,1>    
+
+// NOTE:
+// Compare v2 to v8 to find the maximum.
+// Store the maximum for future use.
+ //TODO - Find if MAX is needed.
+// cmp.g.f0.0  (16) null:w         ubMEDIAN_TEMP(%1+2,0)<32;16,2> ubMEDIAN_TEMP(%1+8,0)<32;16,2>
+// cmp.g.f1.0  (16) null:w         ubMEDIAN_TEMP(%1+2,1)<32;16,2> ubMEDIAN_TEMP(%1+8,1)<32;16,2>
+//(f0.0)  mov (16) ubCURR_MAX(0,%2*16+0)<1>   	ubMEDIAN_TEMP(%1+2,0)<32;16,2>
+//(f1.0)  mov (16) ubCURR_MAX(1,%2*16+0)<1>   	ubMEDIAN_TEMP(%1+2,1)<32;16,2>
+//(-f0.0) mov (16) ubCURR_MAX(0,%2*16+0)<1>   	ubMEDIAN_TEMP(%1+8,0)<32;16,2>
+//(-f1.0) mov (16) ubCURR_MAX(1,%2*16+0)<1>   	ubMEDIAN_TEMP(%1+8,1)<32;16,2>
+
+// MedianSwap(v3, v6) - U
+// MedianSwap(v1, v4) - U
+// MedianSwap(v3, v6) - V
+// MedianSwap(v1, v4) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(12,0)<32;16,2>   	ubMEDIAN_TEMP(15,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(10,0)<32;16,2>  	ubMEDIAN_TEMP(13,0)<32;16,2>
+ cmp.g.f1.0 (16) null:w          ubMEDIAN_TEMP(12,1)<32;16,2> 	ubMEDIAN_TEMP(15,1)<32;16,2>
+ cmp.g.f1.1 (16) null:w          ubMEDIAN_TEMP(10,1)<32;16,2> 	ubMEDIAN_TEMP(13,1)<32;16,2>
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(15,0)<2>     ubMEDIAN_TEMP(12,0)<32;16,2>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(13,0)<2>     ubMEDIAN_TEMP(10,0)<32;16,2>      
+ (f1.0) mov (16) ubMEDIAN_TEMP(15,1)<2>     ubMEDIAN_TEMP(12,1)<32;16,2>      
+ (f1.1) mov (16) ubMEDIAN_TEMP(13,1)<2>     ubMEDIAN_TEMP(10,1)<32;16,2>      
+
+ // MedianSwap(v2,v5) - U
+ // MedianSwap(v4,v7) - U
+ // MedianSwap(v2,v5) - V
+ // MedianSwap(v4,v7) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(11,0)<32;16,2>   	ubMEDIAN_TEMP(14,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(13,0)<32;16,2>  	ubMEDIAN_TEMP(16,0)<32;16,2>
+ cmp.g.f1.0 (16) null:w          ubMEDIAN_TEMP(11,1)<32;16,2> 	ubMEDIAN_TEMP(14,1)<32;16,2>
+ cmp.g.f1.1 (16) null:w          ubMEDIAN_TEMP(13,1)<32;16,2> 	ubMEDIAN_TEMP(16,1)<32;16,2>
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(11,0)<2>     ubMEDIAN_TEMP(14,0)<32;16,2>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(13,0)<2>     ubMEDIAN_TEMP(16,0)<32;16,2>      
+ (f1.0) mov (16) ubMEDIAN_TEMP(11,1)<2>     ubMEDIAN_TEMP(14,1)<32;16,2>      
+ (f1.1) mov (16) ubMEDIAN_TEMP(13,1)<2>     ubMEDIAN_TEMP(16,1)<32;16,2>      
+
+ // MedianSwap(v4,v2) - U
+ // MedianSwap(v4,v2) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(13,0)<32;16,2>   	ubMEDIAN_TEMP(11,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(13,1)<32;16,2>  	ubMEDIAN_TEMP(11,1)<32;16,2>
+
+        mov (16) ubTEMP1(0,0)<1>      ubMEDIAN_TEMP(13,0)<32;16,2>		
+        mov (16) ubTEMP1(0,16)<1>     ubMEDIAN_TEMP(13,1)<32;16,2>		
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(13,0)<2>    	ubMEDIAN_TEMP(11,0)<32;16,2>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(13,1)<2>		ubMEDIAN_TEMP(11,1)<32;16,2>		
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(11,0)<2>     ubTEMP1(0,0)<16;16,1>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(11,1)<2>     ubTEMP1(0,16)<16;16,1>	
+
+ // MedianSwap(v6,v4) - U
+ // MedianSwap(v6,v4) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(15,0)<32;16,2>   ubMEDIAN_TEMP(13,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(15,1)<32;16,2>   ubMEDIAN_TEMP(13,1)<32;16,2>
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(13,0)<2>    	ubMEDIAN_TEMP(15,0)<32;16,2>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(13,1)<2>		ubMEDIAN_TEMP(15,1)<32;16,2>		
+
+ // MedianSwap(v4,v2) - U
+ // MedianSwap(v4,v2) - V
+ cmp.g.f0.0 (16) null:w          ubMEDIAN_TEMP(13,0)<32;16,2>   	ubMEDIAN_TEMP(11,0)<32;16,2>
+ cmp.g.f0.1 (16) null:w          ubMEDIAN_TEMP(13,1)<32;16,2>  	ubMEDIAN_TEMP(11,1)<32;16,2>
+
+ (f0.0) mov (16) ubMEDIAN_TEMP(13,0)<2>    	ubMEDIAN_TEMP(11,0)<32;16,2>		
+ (f0.1) mov (16) ubMEDIAN_TEMP(13,1)<2>		ubMEDIAN_TEMP(11,1)<32;16,2>		
+
+// Sobel Value calculation for the current pixel v4
+//          v2 v1 v0
+//           *  *  *     <--- Different field - not used
+//          v5 v4 v3
+//           *  *  *     <--- Different field - not used
+//          v8 v7 v6
+//
+//    Gx = -v0 - 2*v3 - v6 + v2 + 2*v5 + v8
+//    Gy =  v0 + 2*v1 + v2 - v6 - 2*v7 - v8
+//
+//  Sobel = (|Gx| + |Gy|) >> 3
+
+//TODO - Change Later - rT
+add (1) a0.0:uw  a0.0<0;1,0>:uw -128:uw
+
+// - 2 * v3
+mul (16) acc0.0<1>:w  		r[a0.0,64]<16;16,1>:ub  		-2:w
+// + v8
+mac (16) acc0.0<1>:w  		r[a0.0,132]<16;16,1>:ub   		1:w
+// - v0
+mac (16) acc0.0<1>:w  		r[a0.0,0]<16;16,1>:ub  		-1:w
+// - v6
+mac (16) acc0.0<1>:w  		r[a0.0,128]<16;16,1>:ub  		-1:w
+// + v2
+mac (16) acc0.0<1>:w  		r[a0.0,4]<16;16,1>:ub   		1:w
+// + 2 * v5
+mac (16) wSOBEL_X(0)<1> 	r[a0.0,68]<16;16,1>:ub   		2:w
+// - 2 * v3
+mul (16) acc0.0<1>:w  		r[a0.0,96]<16;16,1>:ub  		-2:w
+// + v8
+mac (16) acc0.0<1>:w  		r[a0.0,164]<16;16,1>:ub   		1:w
+// - v0
+mac (16) acc0.0<1>:w  		r[a0.0,32]<16;16,1>:ub  		-1:w
+// - v6
+mac (16) acc0.0<1>:w  		r[a0.0,160]<16;16,1>:ub  		-1:w
+// + v2
+mac (16) acc0.0<1>:w  		r[a0.0,36]<16;16,1>:ub   		1:w
+// + 2 * v5
+mac (16) wSOBEL_X(1)<1> 	r[a0.0,100]<16;16,1>:ub   		2:w
+// - 2 * v3
+mul (16) acc0.0<1>:w  		r[a0.0,128]<16;16,1>:ub  		-2:w
+// + v8
+mac (16) acc0.0<1>:w  		r[a0.0,196]<16;16,1>:ub   		1:w
+// - v0
+mac (16) acc0.0<1>:w  		r[a0.0,64]<16;16,1>:ub  		-1:w
+// - v6
+mac (16) acc0.0<1>:w  		r[a0.0,192]<16;16,1>:ub  		-1:w
+// + v2
+mac (16) acc0.0<1>:w  		r[a0.0,68]<16;16,1>:ub   		1:w
+// + 2 * v5
+mac (16) wSOBEL_X(2)<1> 	r[a0.0,132]<16;16,1>:ub   		2:w
+// - 2 * v3
+mul (16) acc0.0<1>:w  		r[a0.0,160]<16;16,1>:ub  		-2:w
+// + v8
+mac (16) acc0.0<1>:w  		r[a0.0,228]<16;16,1>:ub   		1:w
+// - v0
+mac (16) acc0.0<1>:w  		r[a0.0,96]<16;16,1>:ub  		-1:w
+// - v6
+mac (16) acc0.0<1>:w  		r[a0.0,224]<16;16,1>:ub  		-1:w
+// + v2
+mac (16) acc0.0<1>:w  		r[a0.0,100]<16;16,1>:ub   		1:w
+// + 2 * v5
+mac (16) wSOBEL_X(3)<1> 	r[a0.0,164]<16;16,1>:ub   		2:w
+
+// + 2 * v1
+mul (16) acc0.0<1>:w  r[a0.0,2]<16;16,1>:ub   	2:w
+// + v0
+mac (16) acc0.0<1>:w  r[a0.0,0]<16;16,1>:ub   	1:w
+// - v8
+mac (16) acc0.0<1>:w  r[a0.0,132]<16;16,1>:ub  -1:w
+// + v2
+mac (16) acc0.0<1>:w  r[a0.0,4]<16;16,1>:ub   	1:w
+// - v6
+mac (16) acc0.0<1>:w  r[a0.0,128]<16;16,1>:ub  -1:w
+// - 2 * v7
+mac (16) acc0.0<1>:w  r[a0.0,130]<16;16,1>:ub  -2:w
+
+add (16) acc0.0<1>:uw (abs)acc0.0<16;16,1>:w		(abs)wSOBEL_X(0)<16;16,1>
+
+shr (16) uwSOBEL(0)<1>	acc0.0<16;16,1>:uw   3:uw
+// + 2 * v1
+mul (16) acc0.0<1>:w  r[a0.0,34]<16;16,1>:ub   	2:w
+// + v0
+mac (16) acc0.0<1>:w  r[a0.0,32]<16;16,1>:ub   	1:w
+// - v8
+mac (16) acc0.0<1>:w  r[a0.0,164]<16;16,1>:ub  -1:w
+// + v2
+mac (16) acc0.0<1>:w  r[a0.0,36]<16;16,1>:ub   	1:w
+// - v6
+mac (16) acc0.0<1>:w  r[a0.0,160]<16;16,1>:ub  -1:w
+// - 2 * v7
+mac (16) acc0.0<1>:w  r[a0.0,162]<16;16,1>:ub  -2:w
+
+add (16) acc0.0<1>:uw (abs)acc0.0<16;16,1>:w		(abs)wSOBEL_X(1)<16;16,1>
+
+shr (16) uwSOBEL(1)<1>	acc0.0<16;16,1>:uw   3:uw
+// + 2 * v1
+mul (16) acc0.0<1>:w  r[a0.0,66]<16;16,1>:ub   	2:w
+// + v0
+mac (16) acc0.0<1>:w  r[a0.0,64]<16;16,1>:ub   	1:w
+// - v8
+mac (16) acc0.0<1>:w  r[a0.0,196]<16;16,1>:ub  -1:w
+// + v2
+mac (16) acc0.0<1>:w  r[a0.0,68]<16;16,1>:ub   	1:w
+// - v6
+mac (16) acc0.0<1>:w  r[a0.0,192]<16;16,1>:ub  -1:w
+// - 2 * v7
+mac (16) acc0.0<1>:w  r[a0.0,194]<16;16,1>:ub  -2:w
+
+add (16) acc0.0<1>:uw (abs)acc0.0<16;16,1>:w		(abs)wSOBEL_X(2)<16;16,1>
+
+shr (16) uwSOBEL(2)<1>	acc0.0<16;16,1>:uw   3:uw
+// + 2 * v1
+mul (16) acc0.0<1>:w  r[a0.0,98]<16;16,1>:ub   	2:w
+// + v0
+mac (16) acc0.0<1>:w  r[a0.0,96]<16;16,1>:ub   	1:w
+// - v8
+mac (16) acc0.0<1>:w  r[a0.0,228]<16;16,1>:ub  -1:w
+// + v2
+mac (16) acc0.0<1>:w  r[a0.0,100]<16;16,1>:ub   	1:w
+// - v6
+mac (16) acc0.0<1>:w  r[a0.0,224]<16;16,1>:ub  -1:w
+// - 2 * v7
+mac (16) acc0.0<1>:w  r[a0.0,226]<16;16,1>:ub  -2:w
+
+add (16) acc0.0<1>:uw (abs)acc0.0<16;16,1>:w		(abs)wSOBEL_X(3)<16;16,1>
+
+shr (16) uwSOBEL(3)<1>	acc0.0<16;16,1>:uw   3:uw
+
+//Mov Median in CURBE_TEMP to free up temp space.
+mov (16)	ubMEDIAN(0,0)<1>  	ubMEDIAN_TEMP(4,0)<16;16,1>		
+mov (16)	ubMEDIAN(0,16)<1> ubMEDIAN_TEMP(4,16)<16;16,1>		
+mov (16)	ubMEDIAN(0,32)<1>  	ubMEDIAN_TEMP(13,0)<16;16,1>		
+mov (16)	ubMEDIAN(0,48)<1> ubMEDIAN_TEMP(13,16)<16;16,1>		
+
+// Find:
+//      absDiff = abs(ubCurY - ubMedian)
+// Find the difference between pixel and median value.
+
+//Median is interleaved. So difference is also interleaved.
+
+//------------------------------------------------------------------------------------------
+//Process 16 U and 16 V pixels here and rest later.
+// first row - v0,v1,v2
+add (16) wDIFF(0)<1>   r[a0.0,0]<16;16,1>:ub  -ubMEDIAN(0,0)<16;16,1>
+add (16) wDIFF(1)<1>   r[a0.0,2]<16;16,1>:ub  -ubMEDIAN(0,0)<16;16,1>
+add (16) wDIFF(2)<1>   r[a0.0,4]<16;16,1>:ub  -ubMEDIAN(0,0)<16;16,1>
+
+// second row - v3,v4,v5
+add (16) wDIFF(3)<1>   r[a0.0,64]<16;16,1>:ub  -ubMEDIAN(0,0)<16;16,1>
+add (16) wDIFF(4)<1>   r[a0.0,66]<16;16,1>:ub  -ubMEDIAN(0,0)<16;16,1>
+add (16) wDIFF(5)<1>   r[a0.0,68]<16;16,1>:ub  -ubMEDIAN(0,0)<16;16,1>
+
+// third row - v6,v7,v8
+add (16) wDIFF(6)<1>   r[a0.0,128]<16;16,1>:ub  -ubMEDIAN(0,0)<16;16,1>
+add (16) wDIFF(7)<1>   r[a0.0,130]<16;16,1>:ub  -ubMEDIAN(0,0)<16;16,1>
+add (16) wDIFF(8)<1>   r[a0.0,132]<16;16,1>:ub  -ubMEDIAN(0,0)<16;16,1>
+// first row - v0,v1,v2
+add (16) wDIFF(9)<1>   r[a0.0,32]<16;16,1>:ub  -ubMEDIAN(0,16)<16;16,1>
+add (16) wDIFF(10)<1>   r[a0.0,34]<16;16,1>:ub  -ubMEDIAN(0,16)<16;16,1>
+add (16) wDIFF(11)<1>   r[a0.0,36]<16;16,1>:ub  -ubMEDIAN(0,16)<16;16,1>
+
+// second row - v3,v4,v5
+add (16) wDIFF(12)<1>   r[a0.0,96]<16;16,1>:ub  -ubMEDIAN(0,16)<16;16,1>
+add (16) wDIFF(13)<1>   r[a0.0,98]<16;16,1>:ub  -ubMEDIAN(0,16)<16;16,1>
+add (16) wDIFF(14)<1>   r[a0.0,100]<16;16,1>:ub  -ubMEDIAN(0,16)<16;16,1>
+
+// third row - v6,v7,v8
+add (16) wDIFF(15)<1>   r[a0.0,160]<16;16,1>:ub  -ubMEDIAN(0,16)<16;16,1>
+add (16) wDIFF(16)<1>   r[a0.0,162]<16;16,1>:ub  -ubMEDIAN(0,16)<16;16,1>
+add (16) wDIFF(17)<1>   r[a0.0,164]<16;16,1>:ub  -ubMEDIAN(0,16)<16;16,1>
+
+//TODO - Change Later - rT
+add (1) a0.0:uw  a0.0<0;1,0>:uw 64:uw
+
+// Find sum of all absolute differences AND
+// maximum absolute difference for 16 U and 16 V here.
+//First 2 rows of 8x4
+//Compare 0-1, 2-3, 4-5, 6-7
+cmp.g.f0.0 (16) null:uw         (abs)wDIFF(0)<16;16,1>   (abs)wDIFF(1)<16;16,1>
+cmp.g.f0.1 (16) null:uw         (abs)wDIFF(2)<16;16,1>   (abs)wDIFF(3)<16;16,1>
+cmp.g.f1.0 (16) null:uw         (abs)wDIFF(4)<16;16,1>   (abs)wDIFF(5)<16;16,1>
+cmp.g.f1.1 (16) null:uw         (abs)wDIFF(6)<16;16,1>   (abs)wDIFF(7)<16;16,1>
+
+//Calculate SAD
+	add        (16) acc0.0<1>:uw     (abs)wDIFF(0)<16;16,1>  (abs)wDIFF(1)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(2)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(3)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(4)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(5)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(6)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(7)<16;16,1>
+	add        (16) uwSOAD(0)<1>  	 acc0.0<16;16,1>:uw 		(abs)wDIFF(8)<16;16,1>
+
+(f0.0) sel (16) uwCURBE_TEMP(0)<1> (abs)wDIFF(0)<16;16,1>   (abs)wDIFF(1)<16;16,1>
+(f0.1) sel (16) uwCURBE_TEMP(1)<1> (abs)wDIFF(2)<16;16,1>   (abs)wDIFF(3)<16;16,1>
+(f1.0) sel (16) uwCURBE_TEMP(2)<1> (abs)wDIFF(4)<16;16,1>   (abs)wDIFF(5)<16;16,1>
+(f1.1) sel (16) uwCURBE_TEMP(3)<1> (abs)wDIFF(6)<16;16,1>   (abs)wDIFF(7)<16;16,1>
+
+//------------
+	//DIFF(0-7) is not needed here. Populate it.
+	// first row - v0,v1,v2
+	add (16) wDIFF(0)<1>   r[a0.0,0]<16;16,1>:ub  -ubMEDIAN(1,0)<16;16,1>
+	add (16) wDIFF(1)<1>   r[a0.0,2]<16;16,1>:ub  -ubMEDIAN(1,0)<16;16,1>
+	add (16) wDIFF(2)<1>   r[a0.0,4]<16;16,1>:ub  -ubMEDIAN(1,0)<16;16,1>
+
+	// second row - v3,v4,v5
+	add (16) wDIFF(3)<1>   r[a0.0,64]<16;16,1>:ub  -ubMEDIAN(1,0)<16;16,1>
+	add (16) wDIFF(4)<1>   r[a0.0,66]<16;16,1>:ub  -ubMEDIAN(1,0)<16;16,1>
+	add (16) wDIFF(5)<1>   r[a0.0,68]<16;16,1>:ub  -ubMEDIAN(1,0)<16;16,1>
+
+	// third row - v6,v7
+	add (16) wDIFF(6)<1>   r[a0.0,128]<16;16,1>:ub  -ubMEDIAN(1,0)<16;16,1>
+	add (16) wDIFF(7)<1>   r[a0.0,130]<16;16,1>:ub  -ubMEDIAN(1,0)<16;16,1>
+//------------
+
+//Compare Max(0,1) - Max(2,3), Max(4,5) - Max(6,7)
+cmp.g.f0.0 (16) null:uw      uwCURBE_TEMP(0)<16;16,1>   uwCURBE_TEMP(1)<16;16,1>
+cmp.g.f0.1 (16) null:uw      uwCURBE_TEMP(2)<16;16,1>   uwCURBE_TEMP(3)<16;16,1>
+
+(f0.0)sel (16) uwCURBE_TEMP(0)<1>  uwCURBE_TEMP(0)<16;16,1>   uwCURBE_TEMP(1)<16;16,1>
+(f0.1)sel (16) uwCURBE_TEMP(2)<1>  uwCURBE_TEMP(2)<16;16,1>   uwCURBE_TEMP(3)<16;16,1>
+
+//Compare Max(0,1,2,3) - Max(4,5,6,7)
+cmp.g.f0.0 (16) null:uw      		uwCURBE_TEMP(0)<16;16,1>   uwCURBE_TEMP(2)<16;16,1>
+(f0.0)sel  (16) uwCURBE_TEMP(0)<1> 	uwCURBE_TEMP(0)<16;16,1>   uwCURBE_TEMP(2)<16;16,1>
+
+//Compare Max(0,1,2,3,4,5,6,7) - 8
+cmp.g.f0.0 (16) null:uw      			uwCURBE_TEMP(0)<16;16,1>   (abs)wDIFF(8)<16;16,1>
+(f0.0)sel  (16) uwMAX_ABS_DIFF(0)<1> uwCURBE_TEMP(0)<16;16,1>   (abs)wDIFF(8)<16;16,1>
+
+//------------
+	//Load v8 - DIFF(8)
+	add (16) wDIFF(8)<1>   			r[a0.0,132]<16;16,1>:ub  -ubMEDIAN(1,0)<16;16,1>
+//------------
+//Compare 0-1, 2-3, 4-5, 6-7
+cmp.g.f0.0 (16) null:uw         (abs)wDIFF(9)<16;16,1>   (abs)wDIFF(10)<16;16,1>
+cmp.g.f0.1 (16) null:uw         (abs)wDIFF(11)<16;16,1>   (abs)wDIFF(12)<16;16,1>
+cmp.g.f1.0 (16) null:uw         (abs)wDIFF(13)<16;16,1>   (abs)wDIFF(14)<16;16,1>
+cmp.g.f1.1 (16) null:uw         (abs)wDIFF(15)<16;16,1>   (abs)wDIFF(16)<16;16,1>
+
+//Calculate SAD
+	add        (16) acc0.0<1>:uw     (abs)wDIFF(9)<16;16,1>  (abs)wDIFF(10)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(11)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(12)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(13)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(14)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(15)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(16)<16;16,1>
+	add        (16) uwSOAD(1)<1>  	 acc0.0<16;16,1>:uw 		(abs)wDIFF(17)<16;16,1>
+
+(f0.0) sel (16) uwCURBE_TEMP(0)<1> (abs)wDIFF(9)<16;16,1>   (abs)wDIFF(10)<16;16,1>
+(f0.1) sel (16) uwCURBE_TEMP(1)<1> (abs)wDIFF(11)<16;16,1>   (abs)wDIFF(12)<16;16,1>
+(f1.0) sel (16) uwCURBE_TEMP(2)<1> (abs)wDIFF(13)<16;16,1>   (abs)wDIFF(14)<16;16,1>
+(f1.1) sel (16) uwCURBE_TEMP(3)<1> (abs)wDIFF(15)<16;16,1>   (abs)wDIFF(16)<16;16,1>
+
+//------------
+	//DIFF(0-7) is not needed here. Populate it.
+	// first row - v0,v1,v2
+	add (16) wDIFF(9)<1>   r[a0.0,32]<16;16,1>:ub  -ubMEDIAN(1,16)<16;16,1>
+	add (16) wDIFF(10)<1>   r[a0.0,34]<16;16,1>:ub  -ubMEDIAN(1,16)<16;16,1>
+	add (16) wDIFF(11)<1>   r[a0.0,36]<16;16,1>:ub  -ubMEDIAN(1,16)<16;16,1>
+
+	// second row - v3,v4,v5
+	add (16) wDIFF(12)<1>   r[a0.0,96]<16;16,1>:ub  -ubMEDIAN(1,16)<16;16,1>
+	add (16) wDIFF(13)<1>   r[a0.0,98]<16;16,1>:ub  -ubMEDIAN(1,16)<16;16,1>
+	add (16) wDIFF(14)<1>   r[a0.0,100]<16;16,1>:ub  -ubMEDIAN(1,16)<16;16,1>
+
+	// third row - v6,v7
+	add (16) wDIFF(15)<1>   r[a0.0,160]<16;16,1>:ub  -ubMEDIAN(1,16)<16;16,1>
+	add (16) wDIFF(16)<1>   r[a0.0,162]<16;16,1>:ub  -ubMEDIAN(1,16)<16;16,1>
+//------------
+
+//Compare Max(0,1) - Max(2,3), Max(4,5) - Max(6,7)
+cmp.g.f0.0 (16) null:uw      uwCURBE_TEMP(0)<16;16,1>   uwCURBE_TEMP(1)<16;16,1>
+cmp.g.f0.1 (16) null:uw      uwCURBE_TEMP(2)<16;16,1>   uwCURBE_TEMP(3)<16;16,1>
+
+(f0.0)sel (16) uwCURBE_TEMP(0)<1>  uwCURBE_TEMP(0)<16;16,1>   uwCURBE_TEMP(1)<16;16,1>
+(f0.1)sel (16) uwCURBE_TEMP(2)<1>  uwCURBE_TEMP(2)<16;16,1>   uwCURBE_TEMP(3)<16;16,1>
+
+//Compare Max(0,1,2,3) - Max(4,5,6,7)
+cmp.g.f0.0 (16) null:uw      		uwCURBE_TEMP(0)<16;16,1>   uwCURBE_TEMP(2)<16;16,1>
+(f0.0)sel  (16) uwCURBE_TEMP(0)<1> 	uwCURBE_TEMP(0)<16;16,1>   uwCURBE_TEMP(2)<16;16,1>
+
+//Compare Max(0,1,2,3,4,5,6,7) - 8
+cmp.g.f0.0 (16) null:uw      			uwCURBE_TEMP(0)<16;16,1>   (abs)wDIFF(17)<16;16,1>
+(f0.0)sel  (16) uwMAX_ABS_DIFF(1)<1> uwCURBE_TEMP(0)<16;16,1>   (abs)wDIFF(17)<16;16,1>
+
+//------------
+	//Load v8 - DIFF(8)
+	add (16) wDIFF(17)<1>   			r[a0.0,164]<16;16,1>:ub  -ubMEDIAN(1,16)<16;16,1>
+//------------
+
+//if ((sobel_edge_measure < m_SobelEdgeThreshold) && ((block_max-block_min) < m_LocalDiffThreshold))
+//						if (sigma_mb_min > sigma)
+//							sigma_mb_min = sigma;
+
+//NOTE: block_min is always zero as median is one of the value in 3x3 block. So no need o calculate it.
+//		So just do -
+//if ((sobel_edge_measure < m_SobelEdgeThreshold) && ((block_max) < m_LocalDiffThreshold) && ( sigma < sigma_mb_min))
+//							sigma_mb_min = sigma;
+
+//We are processing 32 bytes of U and 32 bytes of V - each of size 8x4.
+//Compare first 8 bytes with max possible (255).
+//Start above condition from second 8 bytes.
+
+//TODO - Change Later - rT
+//	mov (1)	pCUR_MIN_SOAD_8x4:uw	1752:uw		//r54.24:ub
+
+//First row of 8x4
+        cmp.l.f0.0 	(16) null:uw     		uwSOBEL(0)<16;16,1>         r55.30<0;2,1>:ub
+(f0.0)  cmp.l.f0.0 	(16) null:uw     		uwMAX_ABS_DIFF(0)<16;16,1>  r55.28<0;2,1>:ub
+(f0.0)  cmp.l.f0.0 	(16) null:uw     		uwSOAD(0)<16;16,1>			255:uw
+(f0.0)  sel 		(16) uwSOBEL(0)<1>   uwSOAD(0)<16;16,1>			255:uw
+
+//Second row of 8x4
+		cmp.l.f0.0 	(16) null:uw     		uwSOBEL(1)<16;16,1>         r55.30<0;2,1>:ub
+(f0.0)  cmp.l.f0.0 	(16) null:uw     		uwMAX_ABS_DIFF(1)<16;16,1>  r55.28<0;2,1>:ub
+(f0.0)  cmp.l.f0.0 	(16) null:uw     		uwSOAD(1)<16;16,1>			uwSOBEL(0)<16;16,1>
+(f0.0)  mov 		(16) uwSOBEL(0)<1>   uwSOAD(1)<16;16,1>
+
+// Find sum of all absolute differences AND
+// maximum absolute difference for 16 U and 16 V here.
+//Second 2 rows of 8x4
+//Compare 0-1, 2-3, 4-5, 6-7
+cmp.g.f0.0 (16) null:uw         (abs)wDIFF(0)<16;16,1>   (abs)wDIFF(1)<16;16,1>
+cmp.g.f0.1 (16) null:uw         (abs)wDIFF(2)<16;16,1>   (abs)wDIFF(3)<16;16,1>
+cmp.g.f1.0 (16) null:uw         (abs)wDIFF(4)<16;16,1>   (abs)wDIFF(5)<16;16,1>
+cmp.g.f1.1 (16) null:uw         (abs)wDIFF(6)<16;16,1>   (abs)wDIFF(7)<16;16,1>
+
+//Calculate SAD
+	add        (16) acc0.0<1>:uw     (abs)wDIFF(0)<16;16,1>  (abs)wDIFF(1)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(2)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(3)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(4)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(5)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(6)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(7)<16;16,1>
+	add        (16) uwSOAD(0)<1> 	 acc0.0<16;16,1>:uw 		(abs)wDIFF(8)<16;16,1>
+
+(f0.0) sel (16) uwCURBE_TEMP(0)<1> (abs)wDIFF(0)<16;16,1>   (abs)wDIFF(1)<16;16,1>
+(f0.1) sel (16) uwCURBE_TEMP(1)<1> (abs)wDIFF(2)<16;16,1>   (abs)wDIFF(3)<16;16,1>
+(f1.0) sel (16) uwCURBE_TEMP(2)<1> (abs)wDIFF(4)<16;16,1>   (abs)wDIFF(5)<16;16,1>
+(f1.1) sel (16) uwCURBE_TEMP(3)<1> (abs)wDIFF(6)<16;16,1>   (abs)wDIFF(7)<16;16,1>
+
+//Compare Max(0,1) - Max(2,3), Max(4,5) - Max(6,7)
+cmp.g.f0.0 (16) null:uw      uwCURBE_TEMP(0)<16;16,1>   uwCURBE_TEMP(1)<16;16,1>
+cmp.g.f0.1 (16) null:uw      uwCURBE_TEMP(2)<16;16,1>   uwCURBE_TEMP(3)<16;16,1>
+
+(f0.0)sel (16) uwCURBE_TEMP(0)<1>  uwCURBE_TEMP(0)<16;16,1>   uwCURBE_TEMP(1)<16;16,1>
+(f0.1)sel (16) uwCURBE_TEMP(2)<1>  uwCURBE_TEMP(2)<16;16,1>   uwCURBE_TEMP(3)<16;16,1>
+
+//Compare Max(0,1,2,3) - Max(4,5,6,7)
+cmp.g.f0.0 (16) null:uw      		uwCURBE_TEMP(0)<16;16,1>   uwCURBE_TEMP(2)<16;16,1>
+(f0.0)sel  (16) uwCURBE_TEMP(0)<1> 	uwCURBE_TEMP(0)<16;16,1>   uwCURBE_TEMP(2)<16;16,1>
+
+//Compare Max(0,1,2,3,4,5,6,7) - 8
+cmp.g.f0.0 (16) null:uw      			uwCURBE_TEMP(0)<16;16,1>   (abs)wDIFF(8)<16;16,1>
+(f0.0)sel  (16) uwMAX_ABS_DIFF(0)<1> 	uwCURBE_TEMP(0)<16;16,1>   (abs)wDIFF(8)<16;16,1>
+//Compare 0-1, 2-3, 4-5, 6-7
+cmp.g.f0.0 (16) null:uw         (abs)wDIFF(9)<16;16,1>   (abs)wDIFF(10)<16;16,1>
+cmp.g.f0.1 (16) null:uw         (abs)wDIFF(11)<16;16,1>   (abs)wDIFF(12)<16;16,1>
+cmp.g.f1.0 (16) null:uw         (abs)wDIFF(13)<16;16,1>   (abs)wDIFF(14)<16;16,1>
+cmp.g.f1.1 (16) null:uw         (abs)wDIFF(15)<16;16,1>   (abs)wDIFF(16)<16;16,1>
+
+//Calculate SAD
+	add        (16) acc0.0<1>:uw     (abs)wDIFF(9)<16;16,1>  (abs)wDIFF(10)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(11)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(12)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(13)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(14)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(15)<16;16,1>
+	add        (16) acc0.0<1>:uw     acc0.0<16;16,1>:uw 		(abs)wDIFF(16)<16;16,1>
+	add        (16) uwSOAD(1)<1> 	 acc0.0<16;16,1>:uw 		(abs)wDIFF(17)<16;16,1>
+
+(f0.0) sel (16) uwCURBE_TEMP(0)<1> (abs)wDIFF(9)<16;16,1>   (abs)wDIFF(10)<16;16,1>
+(f0.1) sel (16) uwCURBE_TEMP(1)<1> (abs)wDIFF(11)<16;16,1>   (abs)wDIFF(12)<16;16,1>
+(f1.0) sel (16) uwCURBE_TEMP(2)<1> (abs)wDIFF(13)<16;16,1>   (abs)wDIFF(14)<16;16,1>
+(f1.1) sel (16) uwCURBE_TEMP(3)<1> (abs)wDIFF(15)<16;16,1>   (abs)wDIFF(16)<16;16,1>
+
+//Compare Max(0,1) - Max(2,3), Max(4,5) - Max(6,7)
+cmp.g.f0.0 (16) null:uw      uwCURBE_TEMP(0)<16;16,1>   uwCURBE_TEMP(1)<16;16,1>
+cmp.g.f0.1 (16) null:uw      uwCURBE_TEMP(2)<16;16,1>   uwCURBE_TEMP(3)<16;16,1>
+
+(f0.0)sel (16) uwCURBE_TEMP(0)<1>  uwCURBE_TEMP(0)<16;16,1>   uwCURBE_TEMP(1)<16;16,1>
+(f0.1)sel (16) uwCURBE_TEMP(2)<1>  uwCURBE_TEMP(2)<16;16,1>   uwCURBE_TEMP(3)<16;16,1>
+
+//Compare Max(0,1,2,3) - Max(4,5,6,7)
+cmp.g.f0.0 (16) null:uw      		uwCURBE_TEMP(0)<16;16,1>   uwCURBE_TEMP(2)<16;16,1>
+(f0.0)sel  (16) uwCURBE_TEMP(0)<1> 	uwCURBE_TEMP(0)<16;16,1>   uwCURBE_TEMP(2)<16;16,1>
+
+//Compare Max(0,1,2,3,4,5,6,7) - 8
+cmp.g.f0.0 (16) null:uw      			uwCURBE_TEMP(0)<16;16,1>   (abs)wDIFF(17)<16;16,1>
+(f0.0)sel  (16) uwMAX_ABS_DIFF(1)<1> 	uwCURBE_TEMP(0)<16;16,1>   (abs)wDIFF(17)<16;16,1>
+
+//Third row of 8x4
+        cmp.l.f0.0 	(16) null:uw     		uwSOBEL(2)<16;16,1>     	r55.30<0;2,1>:ub
+(f0.0)  cmp.l.f0.0 	(16) null:uw     		uwMAX_ABS_DIFF(0)<16;16,1>  r55.28<0;2,1>:ub
+(f0.0)  cmp.l.f0.0 	(16) null:uw     		uwSOAD(0)<16;16,1>			uwSOBEL(0)<16;16,1>
+(f0.0)  mov 		(16) uwSOBEL(0)<1>   uwSOAD(0)<16;16,1>
+
+//Fourth row of 8x4
+		cmp.l.f0.0 	(16) null:uw     		uwSOBEL(3)<16;16,1>     	r55.30<0;2,1>:ub
+(f0.0)  cmp.l.f0.0 	(16) null:uw     		uwMAX_ABS_DIFF(1)<16;16,1>  r55.28<0;2,1>:ub
+(f0.0)  cmp.l.f0.0 	(16) null:uw     		uwSOAD(1)<16;16,1>			uwSOBEL(0)<16;16,1>
+(f0.0)  mov 		(16) uwSOBEL(0)<1>   uwSOAD(1)<16;16,1>
+
+		cmp.l.f0.0 	(8) null:uw     		uwSOBEL(0,0)<8;8,1>  	uwSOBEL(0,8)<8;8,1>
+(f0.0)  sel 		(8) uwSOBEL(0)<1>   	uwSOBEL(0,0)<8;8,1>  	uwSOBEL(0,8)<8;8,1>
+
+		cmp.l.f0.0 	(4) null:uw     		uwSOBEL(0,0)<4;4,1>  	uwSOBEL(0,4)<4;4,1>
+(f0.0)  sel 		(4) uwSOBEL(0)<1>   	uwSOBEL(0,0)<4;4,1>  	uwSOBEL(0,4)<4;4,1>
+
+		cmp.l.f0.0 	(2) null:uw     					uwSOBEL(0,0)<2;2,1>  uwSOBEL(0,2)<2;2,1>
+(f0.0)  sel 		(2) r[a0.1,0]<1>:uw   	uwSOBEL(0,0)<2;2,1>  uwSOBEL(0,2)<2;2,1>
+
+
+
+
+
+
+// End of common.inc
+
+mov (1) ip:ud r9.7<0;1,0>:d
+
+
+.end_code
+.end_kernel

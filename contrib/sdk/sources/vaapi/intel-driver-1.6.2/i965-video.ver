@@ -1,0 +1,6 @@
+I965_VIDEO {
+	global: DllStartup;
+		__vaDriverInit_0_38;
+
+	local:  *;
+};

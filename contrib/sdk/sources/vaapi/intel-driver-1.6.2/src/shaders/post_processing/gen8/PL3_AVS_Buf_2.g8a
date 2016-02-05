@@ -1,0 +1,470 @@
+/*
+ *  Copyright 2000-2011 Intel Corporation All Rights Reserved
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+//   44    // Total instruction count
+//    1    // Total kernel count
+
+
+
+// Module name: common.inc
+//
+// Common header file for all Video-Processing kernels
+//
+
+.default_execution_size (16)
+.default_register_type  :ub
+
+.reg_count_total        128
+.reg_count_payload      7
+
+//========== Common constants ==========
+
+
+//========== Macros ==========
+
+
+//Fast Jump, For more details see "Set_Layer_N.asm"
+
+
+//========== Defines ====================
+
+//========== Static Parameters (Common To All) ==========
+//r1
+
+
+//r2
+
+                                    //  e.g.            byte0   byte1  byte2
+                                    // YUYV               0       1      3
+                                    // YVYU               0       3      1
+
+//Color Pipe (IECP) parameters
+
+
+//ByteCopy
+
+
+//r4
+
+                                    //  e.g.              byte0           byte1           byte2
+                                    // YUYV                 0               1               3
+                                    // YVYU                 0               3               1
+
+
+//========== Inline parameters (Common To All) ===========
+
+
+//============== Binding Index Table===========
+//Common between DNDI and DNUV
+
+
+//================= Common Message Descriptor =====
+// Message descriptor for thread spawning
+// Message Descriptors
+//                = 000 0001 (min message len 1 ) 0,0000 (resp len 0   -add later)
+//                  0000,0000,0000
+//                  0001(Spawn a root thread),0001 (Root thread spawn thread)
+//                = 0x02000011
+// Thread Spawner Message Descriptor
+
+
+// Message descriptor for atomic operation add
+// Message Descriptors
+//                = 000 0110 (min message len 6 ) 0,0000 (resp len 0   -add later)
+//                  1(header present)001,10(typed atomic operation)0(return enabled)0(slot group, low 8 bits),0111 (AOP_Add)
+//                  0000,0000 (Binding table index, added later)
+//                = 0x02000011
+
+// Atomic Operation Add Message Descriptor
+
+
+// Message descriptor for dataport media write
+        // Message Descriptors
+                //                = 000 0001 (min message len 1 - add later) 00000 (resp len 0)
+                //                  1 (header present 1) 0 1010 (media block write) 000000
+                //                  00000000 (binding table index - set later)
+                //                = 0x020A8000
+
+
+// Message Length defines
+
+
+// Response Length defines
+
+
+// Block Width and Height Size defines
+
+
+// Extended Message Descriptors
+
+
+// Common message descriptors:
+
+
+//===================== Math Function Control ===================================
+
+
+//============ Message Registers ===============
+                             // buf4 starts from r28
+
+
+//#define mMSGHDR_EOT  r43    // Dummy Message Register for EOT
+
+
+.declare    mubMSGPAYLOAD  Base=r30 ElementSize=1 SrcRegion=<16;16,1> Type=ub
+.declare    muwMSGPAYLOAD  Base=r30 ElementSize=2 SrcRegion=<16;16,1> Type=uw
+.declare    mudMSGPAYLOAD  Base=r30 ElementSize=4 SrcRegion=<8;8,1> Type=ud
+.declare    mfMSGPAYLOAD   Base=r30 ElementSize=4 SrcRegion=<8;8,1> Type=f
+
+//=================== End of thread instruction ===========================
+
+
+//=====================Pointers Used=====================================
+
+
+//=======================================================================
+
+
+//r11-r17
+// Define temp space for any usages
+
+
+// Common Buffers
+
+
+// temp space for rotation
+
+.declare fROBUF		  Base=r11.0		ElementSize=4		SrcRegion=<8;8,1>		  DstRegion=<1>		Type=f
+
+.declare udROBUF		Base=r11.0		ElementSize=4		SrcRegion=<8;8,1>		  DstRegion=<1>		Type=ud
+
+.declare uwROBUF		Base=r11.0		ElementSize=2		SrcRegion=<16;16,1>		DstRegion=<1>		Type=uw
+
+.declare ubROBUF		Base=r11.0		ElementSize=1		SrcRegion=<16;16,1>		DstRegion=<1>		Type=ub
+
+.declare ub4ROBUF 	Base=r11.0		ElementSize=1		SrcRegion=<32;8,4>		DstRegion=<4>		Type=ub
+
+
+// End of common.inc
+
+
+// FileName:		PL2_AVS_Buf_0.asm
+// Author:			Tatiya, Rupesh
+// Description:		Loads 8x8 AVS/IEF PL2 data into Buffer 0
+
+
+
+// FileName     :   PL2_AVS_Buf.asm
+// Author       :   Tatiya, Rupesh
+// Description  :   Loads 8x8 AVS/IEF PL2 data into Buffer N
+
+
+
+// Module name: Scaling.inc
+
+
+
+
+// Description: Includes all definitions explicit to Fast Composite.
+
+
+
+
+// End of common.inc
+
+
+//========== GRF partition ==========
+     // r0 header            :   r0          (1 GRF)
+     // Static parameters    :   r1 - r6     (6 GRFS)
+     // Inline parameters    :   r7 - r8     (2 GRFs)
+     // MSGSRC               :   r27         (1 GRF)
+//===================================
+
+//Interface:
+//========== Static Parameters (Explicit To Fast Composite) ==========
+//r1
+//CSC Set 0
+
+
+.declare udCSC_CURBE    Base=r1.0      ElementSize=4       Type=ud
+
+//Constant alpha
+
+
+//r2
+
+
+// Gen7 AVS WA
+
+
+// WiDi Definitions
+
+
+//Colorfill
+
+
+                                      // 0: 0-degree, 1: 90, 2: 180, 3: 270-degree, clockwise.	    
+
+.declare ubCOLOR_PIXEL_VAL      Base=r2.20      ElementSize=1       SrcRegion=<0;1,0>       DstRegion=<1>       Type=ub
+
+//r3
+//Normalised Ratio of Horizontal step size with main video for all layers
+
+
+    //Normalised Ratio of Horizontal step size with main video for all layers becomes
+    //Normalised Horizontal step size for all layers in VP_Setup.asm
+
+
+//r4
+//Normalised Vertical step size for all layers
+
+
+//r5
+//Normalised Vertical Frame Origin for all layers
+
+
+//r6
+//Normalised Horizontal Frame Origin for all layers
+
+
+//========== Inline Parameters (Explicit To Fast Composite) ==========
+
+
+//Main video Step X
+
+
+//====================== Binding table (Explicit To Fast Composite)=========================================
+
+
+//Used by Interlaced Scaling Kernels
+
+
+//========== Sampler State Table Index (Explicit To Fast Composite)==========
+//Sampler Index for AVS/IEF messages
+
+
+//Sampler Index for SIMD16 sampler messages
+
+
+//=============================================================================
+
+.declare fBUFFER_0      Base=r64.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+.declare fBUFFER_1      Base=r80.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+.declare fBUFFER_2      Base=r96.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+.declare fBUFFER_3      Base=r112.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+.declare fBUFFER_4      Base=r28.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+.declare fBUFFER_5      Base=r46.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+
+.declare udBUFFER_0     Base=r64.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=ud
+.declare udBUFFER_1     Base=r80.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=ud
+.declare udBUFFER_2     Base=r96.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=ud
+.declare udBUFFER_3     Base=r112.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=ud
+.declare udBUFFER_4     Base=r28.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=ud
+.declare udBUFFER_5     Base=r46.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=ud
+
+.declare uwBUFFER_0     Base=r64.0       ElementSize=2       SrcRegion=<16;16,1>     DstRegion=<1>       Type=uw
+.declare uwBUFFER_1     Base=r80.0       ElementSize=2       SrcRegion=<16;16,1>     DstRegion=<1>       Type=uw
+.declare uwBUFFER_2     Base=r96.0       ElementSize=2       SrcRegion=<16;16,1>     DstRegion=<1>       Type=uw
+.declare uwBUFFER_3     Base=r112.0       ElementSize=2       SrcRegion=<16;16,1>     DstRegion=<1>       Type=uw
+.declare uwBUFFER_4     Base=r28.0       ElementSize=2       SrcRegion=<16;16,1>     DstRegion=<1>       Type=uw
+.declare uwBUFFER_5     Base=r46.0       ElementSize=2       SrcRegion=<16;16,1>     DstRegion=<1>       Type=uw
+
+.declare ubBUFFER_0     Base=r64.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+.declare ubBUFFER_1     Base=r80.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+.declare ubBUFFER_2     Base=r96.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+.declare ubBUFFER_3     Base=r112.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+.declare ubBUFFER_4     Base=r28.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+.declare ubBUFFER_5     Base=r46.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+
+.declare ub4BUFFER_0    Base=r64.0       ElementSize=1       SrcRegion=<32;8,4>      DstRegion=<4>       Type=ub
+.declare ub4BUFFER_1    Base=r80.0       ElementSize=1       SrcRegion=<32;8,4>      DstRegion=<4>       Type=ub
+.declare ub4BUFFER_2    Base=r96.0       ElementSize=1       SrcRegion=<32;8,4>      DstRegion=<4>       Type=ub
+.declare ub4BUFFER_3    Base=r112.0       ElementSize=1       SrcRegion=<32;8,4>      DstRegion=<4>       Type=ub
+.declare ub4BUFFER_4    Base=r28.0       ElementSize=1       SrcRegion=<32;8,4>      DstRegion=<4>       Type=ub
+.declare ub4BUFFER_5    Base=r46.0       ElementSize=1       SrcRegion=<32;8,4>      DstRegion=<4>       Type=ub
+
+//Pointer to mask reg
+
+
+//r18
+
+
+//Always keep Cannel Pointers and Offsets in same GRF, so that we can use
+// NODDCLR, NODDCHK flags. -rT
+
+
+.declare udCSC_COEFF_0  Base=r18.0    ElementSize=4 Type=ud       // 1 GRF
+
+//r19
+
+
+.declare udCSC_COEFF_1  Base=r19.0    ElementSize=4 Type=ud       // 1 GRF
+
+
+//r20
+
+.declare uwALPHA_MASK_REG_TEMP  Base=r20.0    ElementSize=2 SrcRegion=<16;16,1> Type=uw        // 1 GRF
+
+//r21
+
+.declare uwALPHA_MASK_REG       Base=r21.0         ElementSize=2 SrcRegion=<16;16,1> Type=uw        // 1 GRF
+
+//r22
+
+
+//Always keep Cannel Pointers and Offsets in same GRF, so that we can use
+// NODDCLR, NODDCHK flags. -rT
+
+
+//Keep fORIGIN_X_NLAS, fY_OFFSET_2ND_BLOCK, fSTEP_X_NLAS, pMSGDSC_COPY, ubCONST_ALPHA_COPY as
+//sub registers of same GRF to enable using NODDCLR NODDCHK. -rT
+
+//r23
+
+
+//Lumakey
+
+
+//r24
+
+
+//r25
+
+
+//r26
+
+
+//defines to generate LABELS during compile time.
+
+
+        // Message Header
+        // m0.7         31:0    Debug
+        // m0.6         31:0    Debug
+        // m0.5         31:0    Ignored
+        // m0.4         31:0    Ignored
+        // m0.3         31:0    Ignored
+        // m0.2         31:16   Ignored
+        //              15      Alpha Write Channel Mask        enable=0, disable=1
+        //              14      Blue Write Channel Mask  (U)
+        //              13      Green Write Channel Mask (Y)
+        //              12      Red Write Channel Mask   (V)
+        //              11:0    Ignored
+        // m0.1                 Ignored
+        // m0.0                 Ignored
+
+
+        // AVS payload
+        // m1.7                 Group ID Number
+        // m1.6                 U 2nd Derivative        ---> NLAS dx
+        // m1.5                 Delta V                 ---> Step Y
+        // m1.4                 Delta U                 ---> Step X
+        // m1.3                 Pixel 0 V Address       ---> ORIY (Y0)
+        // m1.2                 Pixel 0 U Address       ---> ORIX (X0)
+        // m1.1                 Vertical Block Number
+        // m1.0                 Reserved
+
+        // Sampler Message Descriptor
+        // 31:29        Reserved                        000
+        // 28:25        Message length                  0010
+        // 24:20        Response length                 xxxxx   ---> 4GRFs for each enabled channel (AVS), 2GRFs for each enabled channel (sample unorm)
+        // 19           Header Present                  1
+        // 18:17        SIMD Mode                       11      ---> SIMD32/64
+        // 16:12        Message Type                    xxxxx   ---> 01011 sample_8x8, 01100 (sample_unorm), 01010 (sample_unorm+killpix)
+        // 11:8         Sampler Index                   xxxx
+        // 7:0          Binding Table Index             xxxxxxxx
+
+
+        // Msg Header M0.2
+        // 15:15        Alpha Write Channel Mask, 0: written back, 1: not written back
+        // 14:14        Blue  Write Channel Mask
+        // 13:13        Green Write Channel Mask
+        // 12:12        Red   Write Channel Mask
+
+
+//By design, Buffer 0,1,2,3 always have Layer 0 and Buffer 4,5 always have L1-L7
+
+
+//used to generate LABELS at compile time.
+
+
+        // 18:17        SIMD Mode                       10      ---> SIMD16
+        // 16:12        Message Type                    xxxxx   ---> 00000 (SIMD16)
+
+
+//r10-17  - 8 GRFs to load SIMD16 data (upto 4 channels)
+//r18-19  - 2 GRFs to store sampler ramp.
+
+    .declare mfSCALING_0X_34X_PAYLOAD	Base=r14.0	ElementSize=4		SrcRegion=<8;8,1>		DstRegion=<1>		Type=f
+    .declare muwSCALING_0X_34X_PAYLOAD	Base=r14.0	ElementSize=2		SrcRegion=<16;16,1>		DstRegion=<1>		Type=uw
+    .declare mudCALING_0X_34X_PAYLOAD	Base=r14.0	ElementSize=4		SrcRegion=<8;8,1>		DstRegion=<1>		Type=ud
+    .declare mubCALING_0X_34X_PAYLOAD	Base=r14.0	ElementSize=1		SrcRegion=<32;32,1>		DstRegion=<1>		Type=ub
+
+
+	.declare fSCALING_0X_34X_TEMP		Base=r11.0	ElementSize=4		SrcRegion=<8;8,1>		DstRegion=<1>		Type=f
+	.declare udSCALING_0X_34X_TEMP		Base=r11.0	ElementSize=4		SrcRegion=<8;8,1>		DstRegion=<1>		Type=ud
+	.declare ub4SCALING_0X_34X_TEMP		Base=r11.0	ElementSize=1		SrcRegion=<32;8,4>		DstRegion=<1>		Type=ub
+	.declare uwSCALING_0X_34X_TEMP		Base=r11.0	ElementSize=2		SrcRegion=<16;16,1>		DstRegion=<1>		Type=uw
+
+	// Sampler ramp is used for Scaling 0X_0.34X
+	.declare	fSAMPLER_RAMP  		Base=r11.0 ElementSize=4 SrcRegion=<8;8,1> Type=f		// 1 GRFs, 8 elements
+
+
+	//#define rMSGDSC_UV    		r23.0
+
+
+//End of _SCALING_
+
+
+        //NOTE: We need offsets for second halfof LAYER 0 - even if we do not load it.
+        //Update the channel offset in the buffers for the lower 8x4 data for BUFFER_0.
+        mov (1)     r22.4<1>:ud       0x400040:ud
+
+
+    mov (1)     r16.3<1>:ud	r0.3<0;1,0>:ud
+
+
+    //AVS_PAYLOAD already has all the data loaded at this point
+    add (1)     a0.0<1>:ud     r23.5<0;1,0>:ud      0x44EB000:ud      //msg desc
+
+    mov (1)     r16.2<1>:ud      0x0000D000:ud                                        // Enable Red channel
+
+
+
+    // set the vertical block number
+
+      mov (1)   r25.1<1>:ud 2:ud
+
+    mov (8)     r17.0<1>:ud      r25.0<8;8,1>:ud                                     // Copy msg payload mirrors to MRFs
+
+    send (1)    uwBUFFER_2(0)<1>   r16    0x2    a0.0:ud
+    // Returns Y data in 4 GRFs in scrambled order
+
+    add (1)     a0.0<1>:ud                r23.5<0;1,0>:ud      0x44EB001:ud            // msg desc; 1 is added to change BI to UV
+
+    mov (1)     r16.2<1>:ud      0x0000E000:ud                           // Enable Red channel
+
+    send (1)    uwBUFFER_2(4)<1>   r16    0x2    a0.0:ud
+    // Returns U data in 4 GRFs in scrambled order
+
+    add (1)     a0.0<1>:ud     r23.5<0;1,0>:ud      0x44EB002:ud     // msg desc; 1 is added to change BI to UV
+    mov (1)     r16.2<1>:ud      0x0000E000:ud                           // Enable Red channel
+
+    send (1)    uwBUFFER_2(8)<1>   r16    0x2    a0.0:ud
+    // Returns V data in 4 GRFs in scrambled order
+
+SKIP_AVS_LOAD_L0_0_:
+    nop
+
+

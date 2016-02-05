@@ -1,0 +1,690 @@
+/*
+ *  Copyright 2000-2011 Intel Corporation All Rights Reserved
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sub license, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the
+ * next paragraph) shall be included in all copies or substantial portions
+ * of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+ * IN NO EVENT SHALL PRECISION INSIGHT AND/OR ITS SUPPLIERS BE LIABLE FOR
+ * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * This file was originally licensed under the following license
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+//  198    // Total instruction count
+//    1    // Total kernel count
+
+
+
+// Module name: common.inc
+//
+// Common header file for all Video-Processing kernels
+//
+
+.default_execution_size (16)
+.default_register_type  :ub
+
+.reg_count_total        128
+.reg_count_payload      7
+
+//========== Common constants ==========
+
+
+//========== Macros ==========
+
+
+//Fast Jump, For more details see "Set_Layer_N.asm"
+
+
+//========== Defines ====================
+
+//========== Static Parameters (Common To All) ==========
+//r1
+
+
+//r2
+
+                                    //  e.g.            byte0   byte1  byte2
+                                    // YUYV               0       1      3
+                                    // YVYU               0       3      1
+
+//Color Pipe (IECP) parameters
+
+
+//ByteCopy
+
+
+//r4
+
+                                    //  e.g.              byte0           byte1           byte2
+                                    // YUYV                 0               1               3
+                                    // YVYU                 0               3               1
+
+
+//========== Inline parameters (Common To All) ===========
+
+
+//============== Binding Index Table===========
+//Common between DNDI and DNUV
+
+
+//================= Common Message Descriptor =====
+// Message descriptor for thread spawning
+// Message Descriptors
+//                = 000 0001 (min message len 1 ) 0,0000 (resp len 0   -add later)
+//                  0000,0000,0000
+//                  0001(Spawn a root thread),0001 (Root thread spawn thread)
+//                = 0x02000011
+// Thread Spawner Message Descriptor
+
+
+// Message descriptor for atomic operation add
+// Message Descriptors
+//                = 000 0110 (min message len 6 ) 0,0000 (resp len 0   -add later)
+//                  1(header present)001,10(typed atomic operation)0(return enabled)0(slot group, low 8 bits),0111 (AOP_Add)
+//                  0000,0000 (Binding table index, added later)
+//                = 0x02000011
+
+// Atomic Operation Add Message Descriptor
+
+
+// Message descriptor for dataport media write
+        // Message Descriptors
+                //                = 000 0001 (min message len 1 - add later) 00000 (resp len 0)
+                //                  1 (header present 1) 0 1010 (media block write) 000000
+                //                  00000000 (binding table index - set later)
+                //                = 0x020A8000
+
+
+// Message Length defines
+
+
+// Response Length defines
+
+
+// Block Width and Height Size defines
+
+
+// Extended Message Descriptors
+
+
+// Common message descriptors:
+
+
+//===================== Math Function Control ===================================
+
+
+//============ Message Registers ===============
+                             // buf4 starts from r28
+
+
+//#define mMSGHDR_EOT  r43    // Dummy Message Register for EOT
+
+
+.declare    mubMSGPAYLOAD  Base=r30 ElementSize=1 SrcRegion=<16;16,1> Type=ub
+.declare    muwMSGPAYLOAD  Base=r30 ElementSize=2 SrcRegion=<16;16,1> Type=uw
+.declare    mudMSGPAYLOAD  Base=r30 ElementSize=4 SrcRegion=<8;8,1> Type=ud
+.declare    mfMSGPAYLOAD   Base=r30 ElementSize=4 SrcRegion=<8;8,1> Type=f
+
+//=================== End of thread instruction ===========================
+
+
+//=====================Pointers Used=====================================
+
+
+//=======================================================================
+
+
+//r11-r17
+// Define temp space for any usages
+
+
+// Common Buffers
+
+
+// temp space for rotation
+
+.declare fROBUF		  Base=r11.0		ElementSize=4		SrcRegion=<8;8,1>		  DstRegion=<1>		Type=f
+
+.declare udROBUF		Base=r11.0		ElementSize=4		SrcRegion=<8;8,1>		  DstRegion=<1>		Type=ud
+
+.declare uwROBUF		Base=r11.0		ElementSize=2		SrcRegion=<16;16,1>		DstRegion=<1>		Type=uw
+
+.declare ubROBUF		Base=r11.0		ElementSize=1		SrcRegion=<16;16,1>		DstRegion=<1>		Type=ub
+
+.declare ub4ROBUF 	Base=r11.0		ElementSize=1		SrcRegion=<32;8,4>		DstRegion=<4>		Type=ub
+
+
+// End of common.inc
+
+
+// Module name: Save_AVS_RGB.asm
+//
+// Save packed ARGB 444 frame data block of size 16x16
+//
+// To save 16x16 block (64x16 byte layout for ARGB8888) we need 4 send instructions with 16x16 in each
+//  -----------------
+//  | 0 | 1 | 2 | 3 |
+//  -----------------
+// the 4 16x16 block send has been replaced by 16 32x2 sends to get better performance
+
+
+
+// Module name: Save.inc
+
+
+
+
+// Description: Includes all definitions explicit to Fast Composite.
+
+
+
+
+// End of common.inc
+
+
+//========== GRF partition ==========
+     // r0 header            :   r0          (1 GRF)
+     // Static parameters    :   r1 - r6     (6 GRFS)
+     // Inline parameters    :   r7 - r8     (2 GRFs)
+     // MSGSRC               :   r27         (1 GRF)
+//===================================
+
+//Interface:
+//========== Static Parameters (Explicit To Fast Composite) ==========
+//r1
+//CSC Set 0
+
+
+.declare udCSC_CURBE    Base=r1.0      ElementSize=4       Type=ud
+
+//Constant alpha
+
+
+//r2
+
+
+// Gen7 AVS WA
+
+
+// WiDi Definitions
+
+
+//Colorfill
+
+
+                                      // 0: 0-degree, 1: 90, 2: 180, 3: 270-degree, clockwise.	    
+
+.declare ubCOLOR_PIXEL_VAL      Base=r2.20      ElementSize=1       SrcRegion=<0;1,0>       DstRegion=<1>       Type=ub
+
+//r3
+//Normalised Ratio of Horizontal step size with main video for all layers
+
+
+    //Normalised Ratio of Horizontal step size with main video for all layers becomes
+    //Normalised Horizontal step size for all layers in VP_Setup.asm
+
+
+//r4
+//Normalised Vertical step size for all layers
+
+
+//r5
+//Normalised Vertical Frame Origin for all layers
+
+
+//r6
+//Normalised Horizontal Frame Origin for all layers
+
+
+//========== Inline Parameters (Explicit To Fast Composite) ==========
+
+
+//Main video Step X
+
+
+//====================== Binding table (Explicit To Fast Composite)=========================================
+
+
+//Used by Interlaced Scaling Kernels
+
+
+//========== Sampler State Table Index (Explicit To Fast Composite)==========
+//Sampler Index for AVS/IEF messages
+
+
+//Sampler Index for SIMD16 sampler messages
+
+
+//=============================================================================
+
+.declare fBUFFER_0      Base=r64.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+.declare fBUFFER_1      Base=r80.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+.declare fBUFFER_2      Base=r96.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+.declare fBUFFER_3      Base=r112.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+.declare fBUFFER_4      Base=r28.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+.declare fBUFFER_5      Base=r46.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=f
+
+.declare udBUFFER_0     Base=r64.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=ud
+.declare udBUFFER_1     Base=r80.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=ud
+.declare udBUFFER_2     Base=r96.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=ud
+.declare udBUFFER_3     Base=r112.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=ud
+.declare udBUFFER_4     Base=r28.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=ud
+.declare udBUFFER_5     Base=r46.0       ElementSize=4       SrcRegion=<8;8,1>       DstRegion=<1>       Type=ud
+
+.declare uwBUFFER_0     Base=r64.0       ElementSize=2       SrcRegion=<16;16,1>     DstRegion=<1>       Type=uw
+.declare uwBUFFER_1     Base=r80.0       ElementSize=2       SrcRegion=<16;16,1>     DstRegion=<1>       Type=uw
+.declare uwBUFFER_2     Base=r96.0       ElementSize=2       SrcRegion=<16;16,1>     DstRegion=<1>       Type=uw
+.declare uwBUFFER_3     Base=r112.0       ElementSize=2       SrcRegion=<16;16,1>     DstRegion=<1>       Type=uw
+.declare uwBUFFER_4     Base=r28.0       ElementSize=2       SrcRegion=<16;16,1>     DstRegion=<1>       Type=uw
+.declare uwBUFFER_5     Base=r46.0       ElementSize=2       SrcRegion=<16;16,1>     DstRegion=<1>       Type=uw
+
+.declare ubBUFFER_0     Base=r64.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+.declare ubBUFFER_1     Base=r80.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+.declare ubBUFFER_2     Base=r96.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+.declare ubBUFFER_3     Base=r112.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+.declare ubBUFFER_4     Base=r28.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+.declare ubBUFFER_5     Base=r46.0       ElementSize=1       SrcRegion=<16;16,1>     DstRegion=<1>       Type=ub
+
+.declare ub4BUFFER_0    Base=r64.0       ElementSize=1       SrcRegion=<32;8,4>      DstRegion=<4>       Type=ub
+.declare ub4BUFFER_1    Base=r80.0       ElementSize=1       SrcRegion=<32;8,4>      DstRegion=<4>       Type=ub
+.declare ub4BUFFER_2    Base=r96.0       ElementSize=1       SrcRegion=<32;8,4>      DstRegion=<4>       Type=ub
+.declare ub4BUFFER_3    Base=r112.0       ElementSize=1       SrcRegion=<32;8,4>      DstRegion=<4>       Type=ub
+.declare ub4BUFFER_4    Base=r28.0       ElementSize=1       SrcRegion=<32;8,4>      DstRegion=<4>       Type=ub
+.declare ub4BUFFER_5    Base=r46.0       ElementSize=1       SrcRegion=<32;8,4>      DstRegion=<4>       Type=ub
+
+//Pointer to mask reg
+
+
+//r18
+
+
+//Always keep Cannel Pointers and Offsets in same GRF, so that we can use
+// NODDCLR, NODDCHK flags. -rT
+
+
+.declare udCSC_COEFF_0  Base=r18.0    ElementSize=4 Type=ud       // 1 GRF
+
+//r19
+
+
+.declare udCSC_COEFF_1  Base=r19.0    ElementSize=4 Type=ud       // 1 GRF
+
+
+//r20
+
+.declare uwALPHA_MASK_REG_TEMP  Base=r20.0    ElementSize=2 SrcRegion=<16;16,1> Type=uw        // 1 GRF
+
+//r21
+
+.declare uwALPHA_MASK_REG       Base=r21.0         ElementSize=2 SrcRegion=<16;16,1> Type=uw        // 1 GRF
+
+//r22
+
+
+//Always keep Cannel Pointers and Offsets in same GRF, so that we can use
+// NODDCLR, NODDCHK flags. -rT
+
+
+//Keep fORIGIN_X_NLAS, fY_OFFSET_2ND_BLOCK, fSTEP_X_NLAS, pMSGDSC_COPY, ubCONST_ALPHA_COPY as
+//sub registers of same GRF to enable using NODDCLR NODDCHK. -rT
+
+//r23
+
+
+//Lumakey
+
+
+//r24
+
+
+//r25
+
+
+//r26
+
+
+//defines to generate LABELS during compile time.
+
+
+//Msg payload buffers; upto 4 full-size messages can be written
+
+
+.declare    mudMSGPAYLOAD0  Base=r29.0 ElementSize=4 SrcRegion=<8;8,1> Type=ud
+.declare    mudMSGPAYLOAD1  Base=r38.0 ElementSize=4 SrcRegion=<8;8,1> Type=ud
+.declare    mudMSGPAYLOAD2  Base=r47.0 ElementSize=4 SrcRegion=<8;8,1> Type=ud
+.declare    mudMSGPAYLOAD3  Base=r56.0 ElementSize=4 SrcRegion=<8;8,1> Type=ud
+
+.declare    muwMSGPAYLOAD0  Base=r29.0 ElementSize=2 SrcRegion=<16;16,1> Type=uw
+.declare    muwMSGPAYLOAD1  Base=r38.0 ElementSize=2 SrcRegion=<16;16,1> Type=uw
+.declare    muwMSGPAYLOAD2  Base=r47.0 ElementSize=2 SrcRegion=<16;16,1> Type=uw
+.declare    muwMSGPAYLOAD3  Base=r56.0 ElementSize=2 SrcRegion=<16;16,1> Type=uw
+
+.declare    mubMSGPAYLOAD0  Base=r29.0 ElementSize=1 SrcRegion=<16;16,1> Type=ub
+.declare    mubMSGPAYLOAD1  Base=r38.0 ElementSize=1 SrcRegion=<16;16,1> Type=ub
+.declare    mubMSGPAYLOAD2  Base=r47.0 ElementSize=1 SrcRegion=<16;16,1> Type=ub
+.declare    mubMSGPAYLOAD3  Base=r56.0 ElementSize=1 SrcRegion=<16;16,1> Type=ub
+.declare    mubMSGPAYLOAD4  Base=r32.0 ElementSize=1 SrcRegion=<16;16,1> Type=ub
+.declare    mubMSGPAYLOAD5  Base=r41.0 ElementSize=1 SrcRegion=<16;16,1> Type=ub
+.declare    mubMSGPAYLOAD6  Base=r50.0 ElementSize=1 SrcRegion=<16;16,1> Type=ub
+.declare    mubMSGPAYLOAD7  Base=r59.0 ElementSize=1 SrcRegion=<16;16,1> Type=ub
+
+
+	// the r17 register (nTEMP0) is originally defined from "Common.inc"
+	// instead of re-defining a nTEMP0 here, we use "SAVE_RGB" suffix for its naming
+
+	.declare uwTemp0 Base=r17.0 ElementSize=2 Type=uw
+
+
+//_SAVE_INC_
+
+
+// At the save module we have all 8 address sub-registers available.
+// So we will use PING-PONG type of scheme to save the data using
+// pointers pBUF_CHNL_TOP_8x4 and pBUF_CHNL_BOT_8x4. This will help
+// reduce dependency. - rT
+
+// channel switching based on bit 0 of uWRGB_BGR_CH_SWITCH
+
+			// if channel swap?
+			and.nz.f0.0	null<1>:w	r2.3<0;1,0>:uw 0x01:w
+
+//wBUFF_CHNL_PTR points to either buffer 0 or buffer 4.
+//Add appropriate offsets to get pointers for all buffers (1,2,3 or 5).
+//Offsets are zero for buffer 0 and buffer 4.
+	add   (4)   a0.0:uw   r22.0<4;4,1>:w          0:uw
+
+	// pointer swap
+	(f0.0)	mov (1)	uwTemp0<1> a0.0:uw
+	(f0.0)	mov (1)	a0.0:uw a0.2:uw
+	(f0.0)	mov (1)	a0.2:uw uwTemp0<0;1,0>
+
+    shl (1) r27.0<1>:d      r9.0<0;1,0>:w            2:w  			{ NoDDClr }       // H. block origin need to be quadrupled
+    mov (1) r27.1<1>:d      r9.1<0;1,0>:w                 			{ NoDDClr, NoDDChk }    // Block origin (1st quadrant)
+    mov (1) r27.2<1>:ud     0x1001F:ud  	{ NoDDChk }       // Block width and height (32x2)
+
+    add (4)   a0.4:uw   a0.0<4;4,1>:w          r22.8<0;2,1>:w
+
+    mov (8) r28<1>:ud      r27<8;8,1>:ud
+    mov (8) r37<1>:ud      r27<8;8,1>:ud
+    mov (8) r46<1>:ud      r27<8;8,1>:ud
+    mov (8) r55<1>:ud      r27<8;8,1>:ud
+
+    mov (8) r31<1>:ud		r27<8;8,1>:ud
+	mov (8) r40<1>:ud		r27<8;8,1>:ud
+	mov (8) r49<1>:ud		r27<8;8,1>:ud
+	mov (8) r58<1>:ud		r27<8;8,1>:ud
+
+
+//for BUFFER 0
+	add (1) r37.1<1>:d     r27.1<0;1,0>:d        2:d   
+	add (1) r46.0<1>:d     r27.0<0;1,0>:d       32:d   
+	add (1) r55.0<1>:d     r27.0<0;1,0>:d       32:d   
+	add (1) r55.1<1>:d     r27.1<0;1,0>:d        2:d  
+
+// for BUFFER 1
+	add (1) r31.1<1>:d     r27.1<0;1,0>:d        4:d   
+	add (1) r40.1<1>:d     r27.1<0;1,0>:d        6:d   
+	add (1) r49.0<1>:d     r27.0<0;1,0>:d       32:d   
+	add (1) r49.1<1>:d     r27.1<0;1,0>:d        4:d  
+	add (1) r58.0<1>:d     r27.0<0;1,0>:d       32:d   
+	add (1) r58.1<1>:d     r27.1<0;1,0>:d        6:d  
+    // write Buf_0 to 1st quarter of four horizontal output blocks
+
+// Please note the scattered order of NODDCLR, NODDCHK flags. Since the sub-registers
+// of destination reg are not updated at one place and hence even flags are scattered. -rT
+
+    mov (8)    mubMSGPAYLOAD0(0,   0)<4>  r[a0.2,   1]<16;8,2>	    { NoDDClr }
+    mov (8)    mubMSGPAYLOAD0(0,   1)<4>  r[a0.1,   1]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD0(0,   2)<4>  r[a0.0,   1]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD0(0,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD0(1,   0)<4>  r[a0.2,   33]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD0(1,   1)<4>  r[a0.1,   33]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD0(1,   2)<4>  r[a0.0,   33]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD0(1,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD1(0,   0)<4>  r[a0.6,   1]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD1(0,   1)<4>  r[a0.5,   1]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD1(0,   2)<4>  r[a0.4,   1]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD1(0,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD1(1,   0)<4>  r[a0.6,   33]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD1(1,   1)<4>  r[a0.5,   33]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD1(1,   2)<4>  r[a0.4,   33]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD1(1,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD2(0,   0)<4>  r[a0.2,   17]<16;8,2>	    { NoDDClr }
+    mov (8)    mubMSGPAYLOAD2(0,   1)<4>  r[a0.1,   17]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD2(0,   2)<4>  r[a0.0,   17]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD2(0,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD2(1,   0)<4>  r[a0.2,   49]<16;8,2>	    { NoDDClr }
+    mov (8)    mubMSGPAYLOAD2(1,   1)<4>  r[a0.1,   49]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD2(1,   2)<4>  r[a0.0,   49]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD2(1,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD3(0,   0)<4>  r[a0.6,   17]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD3(0,   1)<4>  r[a0.5,   17]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD3(0,   2)<4>  r[a0.4,   17]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD3(0,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD3(1,   0)<4>  r[a0.6,   49]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD3(1,   1)<4>  r[a0.5,   49]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD3(1,   2)<4>  r[a0.4,   49]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD3(1,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    // write Buf_1 to 2nd quarter of four horizontal output blocks
+    add (4)   a0.0:uw   r22.0<4;4,1>:w          512:uw
+
+	// pointer swap
+	(f0.0)	mov (1)	uwTemp0<1> a0.0:uw
+	(f0.0)	mov (1)	a0.0:uw a0.2:uw
+	(f0.0)	mov (1)	a0.2:uw uwTemp0<0;1,0>
+
+    add (4)   a0.4:uw   a0.0<4;4,1>:w         r22.8<0;2,1>:w
+
+	mov (8)    mubMSGPAYLOAD4(0,   0)<4>  r[a0.2,   1]<16;8,2>	    { NoDDClr }
+    mov (8)    mubMSGPAYLOAD4(0,   1)<4>  r[a0.1,   1]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD4(0,   2)<4>  r[a0.0,   1]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD4(0,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD4(1,   0)<4>  r[a0.2,   33]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD4(1,   1)<4>  r[a0.1,   33]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD4(1,   2)<4>  r[a0.0,   33]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD4(1,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD5(0,   0)<4>  r[a0.6,   1]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD5(0,   1)<4>  r[a0.5,   1]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD5(0,   2)<4>  r[a0.4,   1]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD5(0,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD5(1,   0)<4>  r[a0.6,   33]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD5(1,   1)<4>  r[a0.5,   33]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD5(1,   2)<4>  r[a0.4,   33]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD5(1,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD6(0,   0)<4>  r[a0.2,   17]<16;8,2>	    { NoDDClr }
+    mov (8)    mubMSGPAYLOAD6(0,   1)<4>  r[a0.1,   17]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD6(0,   2)<4>  r[a0.0,   17]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD6(0,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD6(1,   0)<4>  r[a0.2,   49]<16;8,2>	    { NoDDClr }
+    mov (8)    mubMSGPAYLOAD6(1,   1)<4>  r[a0.1,   49]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD6(1,   2)<4>  r[a0.0,   49]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD6(1,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD7(0,   0)<4>  r[a0.6,   17]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD7(0,   1)<4>  r[a0.5,   17]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD7(0,   2)<4>  r[a0.4,   17]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD7(0,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD7(1,   0)<4>  r[a0.6,   49]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD7(1,   1)<4>  r[a0.5,   49]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD7(1,   2)<4>  r[a0.4,   49]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD7(1,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    // send buffer 0 and buffer 1	
+	send (1)    null<1>:d    r28   	0x5			0x60A8018:ud
+    send (1)    null<1>:d    r37	0x5			0x60A8018:ud
+    send (1)    null<1>:d    r46   	0x5			0x60A8018:ud
+    send (1)    null<1>:d    r55	0x5			0x60A8018:ud
+
+	send (1)    null<1>:d    r31   	0x5			0x60A8018:ud
+    send (1)    null<1>:d    r40	0x5			0x60A8018:ud
+    send (1)    null<1>:d    r49   	0x5			0x60A8018:ud
+    send (1)    null<1>:d    r58	0x5			0x60A8018:ud
+
+//==========
+//prepare headers 
+//for BUFFER 2
+	add (1) r28.1<1>:d     r27.1<0;1,0>:d        8:d   
+	add (1) r37.1<1>:d     r27.1<0;1,0>:d       10:d   
+	add (1) r46.0<1>:d     r27.0<0;1,0>:d       32:d   
+	add (1) r46.1<1>:d     r27.1<0;1,0>:d        8:d   
+	add (1) r55.0<1>:d     r27.0<0;1,0>:d       32:d   
+	add (1) r55.1<1>:d     r27.1<0;1,0>:d       10:d  
+// for BUFFER 3
+	add (1) r31.1<1>:d     r27.1<0;1,0>:d       12:d   
+	add (1) r40.1<1>:d     r27.1<0;1,0>:d       14:d   
+	add (1) r49.0<1>:d     r27.0<0;1,0>:d       32:d   
+	add (1) r49.1<1>:d     r27.1<0;1,0>:d       12:d  
+	add (1) r58.0<1>:d     r27.0<0;1,0>:d       32:d   
+	add (1) r58.1<1>:d     r27.1<0;1,0>:d       14:d  
+
+//===========
+
+    // write Buf_2 to 3rd quarter of four horizontal output blocks
+    add (4)   a0.0:uw   r22.0<4;4,1>:w          1024:uw
+
+	// pointer swap
+	(f0.0)	mov (1)	uwTemp0<1> a0.0:uw
+	(f0.0)	mov (1)	a0.0:uw a0.2:uw
+	(f0.0)	mov (1)	a0.2:uw uwTemp0<0;1,0>
+
+    add (4)   a0.4:uw   a0.0<4;4,1>:w         r22.8<0;2,1>:w
+
+	mov (8)    mubMSGPAYLOAD0(0,   0)<4>  r[a0.2,   1]<16;8,2>	    { NoDDClr }
+    mov (8)    mubMSGPAYLOAD0(0,   1)<4>  r[a0.1,   1]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD0(0,   2)<4>  r[a0.0,   1]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD0(0,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD0(1,   0)<4>  r[a0.2,   33]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD0(1,   1)<4>  r[a0.1,   33]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD0(1,   2)<4>  r[a0.0,   33]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD0(1,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD1(0,   0)<4>  r[a0.6,   1]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD1(0,   1)<4>  r[a0.5,   1]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD1(0,   2)<4>  r[a0.4,   1]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD1(0,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD1(1,   0)<4>  r[a0.6,   33]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD1(1,   1)<4>  r[a0.5,   33]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD1(1,   2)<4>  r[a0.4,   33]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD1(1,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD2(0,   0)<4>  r[a0.2,   17]<16;8,2>	    { NoDDClr }
+    mov (8)    mubMSGPAYLOAD2(0,   1)<4>  r[a0.1,   17]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD2(0,   2)<4>  r[a0.0,   17]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD2(0,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD2(1,   0)<4>  r[a0.2,   49]<16;8,2>	    { NoDDClr }
+    mov (8)    mubMSGPAYLOAD2(1,   1)<4>  r[a0.1,   49]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD2(1,   2)<4>  r[a0.0,   49]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD2(1,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD3(0,   0)<4>  r[a0.6,   17]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD3(0,   1)<4>  r[a0.5,   17]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD3(0,   2)<4>  r[a0.4,   17]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD3(0,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD3(1,   0)<4>  r[a0.6,   49]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD3(1,   1)<4>  r[a0.5,   49]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD3(1,   2)<4>  r[a0.4,   49]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD3(1,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    // write Buf_3 to 4th quarter of four horizontal output blocks
+    add (4)   a0.0:uw   r22.0<4;4,1>:w          1536:uw
+
+	// pointer swap
+	(f0.0)	mov (1)	uwTemp0<1> a0.0:uw
+	(f0.0)	mov (1)	a0.0:uw a0.2:uw
+	(f0.0)	mov (1)	a0.2:uw uwTemp0<0;1,0>
+
+    add (4)   a0.4:uw   a0.0<4;4,1>:w         r22.8<0;2,1>:w
+
+	mov (8)    mubMSGPAYLOAD4(0,   0)<4>  r[a0.2,   1]<16;8,2>	    { NoDDClr }
+    mov (8)    mubMSGPAYLOAD4(0,   1)<4>  r[a0.1,   1]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD4(0,   2)<4>  r[a0.0,   1]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD4(0,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD4(1,   0)<4>  r[a0.2,   33]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD4(1,   1)<4>  r[a0.1,   33]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD4(1,   2)<4>  r[a0.0,   33]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD4(1,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD5(0,   0)<4>  r[a0.6,   1]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD5(0,   1)<4>  r[a0.5,   1]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD5(0,   2)<4>  r[a0.4,   1]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD5(0,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD5(1,   0)<4>  r[a0.6,   33]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD5(1,   1)<4>  r[a0.5,   33]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD5(1,   2)<4>  r[a0.4,   33]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD5(1,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD6(0,   0)<4>  r[a0.2,   17]<16;8,2>	    { NoDDClr }
+    mov (8)    mubMSGPAYLOAD6(0,   1)<4>  r[a0.1,   17]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD6(0,   2)<4>  r[a0.0,   17]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD6(0,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD6(1,   0)<4>  r[a0.2,   49]<16;8,2>	    { NoDDClr }
+    mov (8)    mubMSGPAYLOAD6(1,   1)<4>  r[a0.1,   49]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD6(1,   2)<4>  r[a0.0,   49]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD6(1,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD7(0,   0)<4>  r[a0.6,   17]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD7(0,   1)<4>  r[a0.5,   17]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD7(0,   2)<4>  r[a0.4,   17]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD7(0,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    mov (8)    mubMSGPAYLOAD7(1,   0)<4>  r[a0.6,   49]<16;8,2>		{ NoDDClr }
+    mov (8)    mubMSGPAYLOAD7(1,   1)<4>  r[a0.5,   49]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD7(1,   2)<4>  r[a0.4,   49]<16;8,2>		{ NoDDClr, NoDDChk }
+    mov (8)    mubMSGPAYLOAD7(1,   3)<4>  r2.31:ub					{ NoDDChk }
+
+    // send buffer 2 and buffer 3	
+	send (1)    null<1>:d    r28   	0x5			0x60A8018:ud
+    send (1)    null<1>:d    r37	0x5			0x60A8018:ud
+    send (1)    null<1>:d    r46   	0x5			0x60A8018:ud
+    send (1)    null<1>:d    r55	0x5			0x60A8018:ud
+
+	send (1)    null<1>:d    r31   	0x5			0x60A8018:ud
+    send (1)    null<1>:d    r40	0x5			0x60A8018:ud
+    send (1)    null<1>:d    r49   	0x5			0x60A8018:ud
+    send (1)    null<1>:d    r58	0x5			0x60A8018:ud

@@ -1,0 +1,80 @@
+/*
+ * Copyright © 2010 Intel Corporation
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the next
+ * paragraph) shall be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ *
+ */
+
+/* header */
+define(`data_port_msg_2_0',     `g112')
+define(`data_port_msg_2_1',     `g113')
+define(`data_port_msg_2_ind',   `112')
+
+mov (8) data_port_msg_2_0<1>UD g0<8,8,1>UD {align1 mask_disable};
+mov (8) data_port_msg_2_1<1>UD g1<8,8,1>UD {align1 mask_disable};
+
+/*
+ * Prepare data in g114-g115 for Red channel, g116-g117 for Green channel,
+ * g118-g119 for Blue and g120-g121 for Alpha channel
+ */
+define(`slot_r_00',     `g114')
+define(`slot_r_01',     `g115')
+define(`slot_g_00',     `g116')
+define(`slot_g_01',     `g117')
+define(`slot_b_00',     `g118')
+define(`slot_b_01',     `g119')
+define(`slot_a_00',     `g120')
+define(`slot_a_01',     `g121')
+
+mov (8) slot_r_00<1>F     src_sample_r_01<8,8,1>F { align1 mask_disable };
+mov (8) slot_r_01<1>F     src_sample_r_23<8,8,1>F { align1 mask_disable };
+
+mov (8) slot_g_00<1>F     src_sample_g_01<8,8,1>F { align1 mask_disable };
+mov (8) slot_g_01<1>F     src_sample_g_23<8,8,1>F { align1 mask_disable };
+
+mov (8) slot_b_00<1>F     src_sample_b_01<8,8,1>F { align1 mask_disable };
+mov (8) slot_b_01<1>F     src_sample_b_23<8,8,1>F { align1 mask_disable };
+
+mov (8) slot_a_00<1>F     src_sample_a_01<8,8,1>F { align1 mask_disable };
+mov (8) slot_a_01<1>F     src_sample_a_23<8,8,1>F { align1 mask_disable };
+
+send (16)
+	data_port_msg_2_ind
+	null<1>UW
+	null
+	write (
+	       0,   /* binding table index */
+	       16,  /* last render target(1) + slots 15:0(0) + msg type simd16 single source(000) */
+	       12,  /* render target write */
+	       0,   /* ignore for Ivybridge */
+	       1    /* header present */
+	)
+	mlen 10
+	rlen 0
+	{ align1 EOT };
+
+nop;
+nop;
+nop;
+nop;
+nop;
+nop;
+nop;
+nop;

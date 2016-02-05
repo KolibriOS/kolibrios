@@ -1,0 +1,111 @@
+Source: libva
+Priority: extra
+Maintainer: Gwenole Beauchesne <gwenole.beauchesne@intel.com>
+Build-Depends: automake,
+               autotools-dev,
+               cdbs,
+               debhelper (>= 5),
+               libdrm-dev (>= 2.4),
+               libx11-dev, libxext-dev, libxfixes-dev,
+               libgl-dev,
+               libwayland-dev (>= 1.0.0),
+               libtool,
+               pkg-config
+Standards-Version: 3.7.2
+Section: libs
+
+Package: libva-dev
+Section: libdevel
+Architecture: any
+Depends: libdrm-dev (>= 2.4),
+         libva-drm1,
+         libva-x11-1 (= ${binary:Version}), libx11-dev,
+         libva-glx1 (= ${binary:Version}), libgl-dev,
+         libva-egl1 (= ${binary:Version}),
+         libva-wayland1 (= ${binary:Version}), libwayland-dev (>= 1.0.0),
+         libva1 (= ${binary:Version}),
+         pkg-config
+Description: Video Acceleration (VA) API for Linux -- development files
+ The libva library implements the Video Acceleration (VA) API for Linux.
+ The library loads a hardware dependendent driver.
+ .
+ This package provides the development environment for libva.
+
+Package: libva1
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Video Acceleration (VA) API for Linux -- Core runtime
+ The libva library implements the Video Acceleration (VA) API for Linux.
+ The library loads a hardware dependendent driver.
+ .
+ This package contains the Core runtime library.
+
+Package: libva-drm1
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Video Acceleration (VA) API for Linux -- DRM runtime
+ The libva library implements the Video Acceleration (VA) API for Linux.
+ The library loads a hardware dependendent driver.
+ .
+ This package contains the VA/DRM runtime library.
+
+Package: libva-x11-1
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Video Acceleration (VA) API for Linux -- X11 runtime
+ The libva library implements the Video Acceleration (VA) API for Linux.
+ The library loads a hardware dependendent driver.
+ .
+ This package contains the VA/X11 runtime library.
+
+Package: libva-glx1
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Video Acceleration (VA) API for Linux -- GLX runtime
+ The libva library implements the Video Acceleration (VA) API for Linux.
+ The library loads a hardware dependendent driver.
+ .
+ This package contains the VA/GLX runtime library.
+
+Package: libva-egl1
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Video Acceleration (VA) API for Linux -- EGL runtime
+ The libva library implements the Video Acceleration (VA) API for Linux.
+ The library loads a hardware dependendent driver.
+ .
+ This package contains the VA/EGL runtime library.
+
+Package: libva-wayland1
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Video Acceleration (VA) API for Linux -- Wayland runtime
+ The libva library implements the Video Acceleration (VA) API for Linux.
+ The library loads a hardware dependendent driver.
+ .
+ This package contains the VA/Wayland runtime library.
+
+Package: libva1-dbg
+Section: libdevel
+Architecture: any
+Depends: libva1 (= ${Source-Version})
+Description: Video Acceleration (VA) API for Linux -- runtime
+ The libva library implements the Video Acceleration (VA) API for Linux.
+ The library loads a hardware dependendent driver.
+ .
+ This package contains the debug info files.
+
+Package: vainfo
+Architecture: any
+Depends: libva1 (= ${Source-Version})
+Description: Video Acceleration (VA) API for Linux -- info program
+ The libva library implements the Video Acceleration (VA) API for Linux.
+ The library loads a hardware dependendent driver.
+ .
+ This package contains the `vainfo' program.

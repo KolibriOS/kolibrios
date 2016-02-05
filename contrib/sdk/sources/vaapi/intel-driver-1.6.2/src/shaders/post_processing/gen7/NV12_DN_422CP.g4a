@@ -1,0 +1,561 @@
+/*
+ *  Copyright 2000-2011 Intel Corporation All Rights Reserved
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sub license, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the
+ * next paragraph) shall be included in all copies or substantial portions
+ * of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+ * IN NO EVENT SHALL PRECISION INSIGHT AND/OR ITS SUPPLIERS BE LIABLE FOR
+ * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * This file was originally licensed under the following license
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+//  113    // Total instruction count
+//    1    // Total kernel count
+
+.kernel NV12_DN_422CP
+.code
+
+
+
+// FileName:	DN_PL_Core.asm 
+// Author:		Vivek Kumar
+// Description:	Tasks for DN only case (16x8 block) for planar format
+
+
+
+// FileName:	DN.asm 
+// Author:		Vivek Kumar
+// Description:	Tasks for DN only case (16x8 block)
+
+
+
+
+// Module name: common.inc
+//
+// Common header file for all Video-Processing kernels
+//
+
+.default_execution_size (16)
+.default_register_type  :ub
+
+.reg_count_total        128
+.reg_count_payload      7
+
+//========== Common constants ==========
+
+
+//========== Macros ==========
+
+
+//Fast Jump, For more details see "Set_Layer_N.asm"
+
+
+//========== Defines ====================
+
+//========== Static Parameters (Common To All) ==========
+//r1
+
+
+//r2
+
+                                    //  e.g.            byte0   byte1  byte2
+                                    // YUYV               0       1      3
+                                    // YVYU               0       3      1
+
+//Color Pipe (IECP) parameters
+
+
+//ByteCopy
+
+
+//r4
+
+                                    //  e.g.              byte0           byte1           byte2
+                                    // YUYV                 0               1               3
+                                    // YVYU                 0               3               1
+
+
+//========== Inline parameters (Common To All) ===========
+
+
+//============== Binding Index Table===========
+//Common between DNDI and DNUV
+
+
+//================= Common Message Descriptor =====
+// Message descriptor for thread spawning
+// Message Descriptors
+//                = 000 0001 (min message len 1 ) 0,0000 (resp len 0   -add later)
+//                  0000,0000,0000
+//                  0001(Spawn a root thread),0001 (Root thread spawn thread)
+//                = 0x02000011
+// Thread Spawner Message Descriptor
+
+
+// Message descriptor for atomic operation add
+// Message Descriptors
+//                = 000 0110 (min message len 6 ) 0,0000 (resp len 0   -add later)
+//                  1(header present)001,10(typed atomic operation)0(return enabled)0(slot group, low 8 bits),0111 (AOP_Add)
+//                  0000,0000 (Binding table index, added later)
+//                = 0x02000011
+
+// Atomic Operation Add Message Descriptor
+
+
+// Message descriptor for dataport media write
+        // Message Descriptors
+                //                = 000 0001 (min message len 1 - add later) 00000 (resp len 0)
+                //                  1 (header present 1) 0 1010 (media block write) 000000
+                //                  00000000 (binding table index - set later)
+                //                = 0x020A8000
+
+
+// Message Length defines
+
+
+// Response Length defines
+
+
+// Block Width and Height Size defines
+
+
+// Extended Message Descriptors
+
+
+// Common message descriptors:
+
+
+//===================== Math Function Control ===================================
+
+
+//============ Message Registers ===============
+                             // buf4 starts from r28
+
+
+//#define mMSGHDR_EOT  r43    // Dummy Message Register for EOT
+
+
+.declare    mubMSGPAYLOAD  Base=r30 ElementSize=1 SrcRegion=<16;16,1> Type=ub
+.declare    muwMSGPAYLOAD  Base=r30 ElementSize=2 SrcRegion=<16;16,1> Type=uw
+.declare    mudMSGPAYLOAD  Base=r30 ElementSize=4 SrcRegion=<8;8,1> Type=ud
+.declare    mfMSGPAYLOAD   Base=r30 ElementSize=4 SrcRegion=<8;8,1> Type=f
+
+//=================== End of thread instruction ===========================
+
+
+//=====================Pointers Used=====================================
+
+
+//=======================================================================
+
+
+//r11-r17
+// Define temp space for any usages
+
+
+// Common Buffers
+
+
+// temp space for rotation
+
+.declare fROBUF		  Base=r11.0		ElementSize=4		SrcRegion=<8;8,1>		  DstRegion=<1>		Type=f
+
+.declare udROBUF		Base=r11.0		ElementSize=4		SrcRegion=<8;8,1>		  DstRegion=<1>		Type=ud
+
+.declare uwROBUF		Base=r11.0		ElementSize=2		SrcRegion=<16;16,1>		DstRegion=<1>		Type=uw
+
+.declare ubROBUF		Base=r11.0		ElementSize=1		SrcRegion=<16;16,1>		DstRegion=<1>		Type=ub
+
+.declare ub4ROBUF 	Base=r11.0		ElementSize=1		SrcRegion=<32;8,4>		DstRegion=<4>		Type=ub
+
+
+// End of common.inc
+
+
+// FileName:    DNDI.inc
+// Author:      Vivek Kumar
+// Description: Include file for DN, DI and DNDI
+// Inputs:      DI_ENABLE, DN_ENABLE, DN_PLANAR, DN_PACKED
+
+
+
+
+// End of common.inc
+
+
+//Interface:
+//Static Parameters:
+//r1
+
+
+//====================== Binding table (Explicit To DNDI)=========================================
+
+
+.declare mudMSGHDR_DNDI     Base=r18      ElementSize=4    Type=ud
+.declare mdMSGHDR_DNDI      Base=r18      ElementSize=4    Type=d
+.declare mwMSGHDR_DNDI      Base=r18      ElementSize=2    Type=w
+
+
+.declare mudMSGHDR_STMM     Base=r20      ElementSize=4    Type=ud
+
+
+.declare mudMSGHDR_HIST     Base=r22      ElementSize=4    Type=ud
+
+
+.declare mudMSGHDR_ENC_STATS Base=r24 ElementSize=4   Type=ud
+.declare muwMSGHDR_ENC_STATS Base=r24 ElementSize=2   Type=uw
+.declare mubMSGHDR_ENC_STATS Base=r24 ElementSize=1   Type=ub
+
+
+.declare mudMSGHDR_DN_OUT   Base=r31.0      ElementSize=4  Type=ud
+.declare mdMSGHDR_DN_OUT    Base=r31.0      ElementSize=4  Type=d
+.declare mubMSGHDR_DN_OUT   Base=r31.0      ElementSize=1  Type=ub
+
+
+.declare mudMSGHDR_UVCOPY   Base=r36      ElementSize=4  Type=ud
+.declare mdMSGHDR_UVCOPY    Base=r36      ElementSize=4  Type=d
+.declare mudMSGHDR_UCOPY    Base=r36       ElementSize=4  Type=ud
+.declare mudMSGHDR_VCOPY    Base=r38       ElementSize=4  Type=ud
+
+
+.declare mudMSGHDR_DI_OUT1  Base=r18.0      ElementSize=4     Type=ud
+.declare mubMSGHDR_DI_OUT1  Base=r18.0      ElementSize=1     Type=ub
+
+
+.declare mudMSGHDR_DI_OUT2  Base=r23.0      ElementSize=4     Type=ud
+.declare mubMSGHDR_DI_OUT2  Base=r23.0      ElementSize=1     Type=ub
+
+//r45
+//Use r45 as message header, so no need to "mov" the data.
+
+.declare mudDN_Y_OUT        Base=r45.0 ElementSize=4 SrcRegion=<8;8,1>   DstRegion=<1> Type=ud
+
+// Message response (Denoised & DI-ed pixels & statistics); Use buffer 5
+.declare udDNDI_RESP        Base=r46.0 ElementSize=4 SrcRegion=<8;8,1>   DstRegion=<1> Type=ud
+.declare uwDNDI_RESP        Base=r46.0 ElementSize=2 SrcRegion=<16;16,1> DstRegion=<1> Type=uw
+.declare ubDNDI_RESP        Base=r46.0 ElementSize=1 SrcRegion=<16;16,1> DstRegion=<1> Type=ub
+
+// Message response (UV Copy); Use buffer 5
+.declare udDNDI_UV_RESP     Base=r58.0 ElementSize=4 SrcRegion=<8;8,1>  DstRegion=<1> Type=ud
+.declare ubDNDI_UV_RESP     Base=r58.0 ElementSize=1 SrcRegion=<16;16,1>    DstRegion=<1> Type=ub
+
+//Temp GRFs: For 42X to 422 Conversion
+.declare uwDNDI_UVCOPY_TEMP Base=r10.0 ElementSize=2 SrcRegion=<16;16,1>    DstRegion=<1> Type=uw       //8 GRFs
+.declare ubDNDI_UVCOPY_TEMP Base=r10.0 ElementSize=1 SrcRegion=<16;16,1>    DstRegion=<1> Type=ub       //8 GRFs
+//---------------------------------------------------------------------------
+// Message descriptors
+//---------------------------------------------------------------------------
+// Extended message descriptor
+    // Message descriptor   for sampler read
+    //                    = 000 0010 (message len 2) 00000 (resp len - set later, 12 or 5 or 11)
+    //                      1 (header present 1) 0 11 (SIMD32/64 mode)
+    //                      1000 (message type) 0000 (DI state index)
+    //                      00000000 (binding table index - set later)
+    //                    = 0x040b8000
+
+
+// Attention: The Message Length is The Number of GRFs with Data Only, without the Header
+
+
+//---------------------------------------------------------------------------
+// VDI Return Data format
+//---------------------------------------------------------------------------
+// Defines for DI enabled
+
+
+// Defines for DI disabled
+
+
+
+// FileName:	DNDI_Command.asm 
+// Author:		Vivek Kumar
+// Description:	Sends a message to the VDI to process one DN (16x8) or DNDI (16x4) block
+
+// Prepare the DNDI send command
+mov (8)		mudMSGHDR_DNDI(0)<1>			r0.0<8;8,1>:ud					// message header
+mov (1)		mwMSGHDR_DNDI(1,4)<1>			r9.0<0;1,0>:w		{ NoDDClr }		// horizontal origin	// Do we need to add offset here? -vK
+mov (1)		mwMSGHDR_DNDI(1,12)<1>			r9.1<0;1,0>:w		{ NoDDChk }		// vertical origin		// Can these 2 be combined? - vK
+
+send (8)	udDNDI_RESP(0)<1>	r18	0x2	0x45E8003:ud
+
+// On Gen6, with VDI walker, use the XY pair returned rather than programmed above
+// VDI_RETURNED_XY is ordered XY in case of walker enables and the same as programmed in case of walker disabled
+mov (2) 	r9.0<1>:w     uwDNDI_RESP(4,14)<2;2,1>	// horizontal/Vertial origin in W.14 and W.15
+
+
+
+// FileName:	DN_Hist_Save.asm 
+// Author:		Vivek Kumar
+// Description:	Saves DN history data to statistics surface
+
+// Write denoise history to memory
+mov (8)    r27<1>:ud				r0.0<8;8,1>:ud                   			// message header   
+
+
+	mov (2)    mudMSGHDR_HIST(1)<1>    	udDNDI_RESP(4,0)<2;2,1>    	// Move denoise history to MRF (4x2)
+
+
+shr (2)    r27.0<1>:ud		r9.0<2;2,1>:w				2:w                                 	// X,Y origin / 4
+add (1)    r27.0<1>:ud		r27.0<0;1,0>:ud			r1.12<0;1,0>:uw		{ NoDDClr }  	// Add pitch to X origin
+mov (1)    r27.2<1>:ud		0x10003:ud									{ NoDDChk }  	// block width and height
+
+mov (8)		mudMSGHDR_HIST(0)<1>		r27.0<8;8,1>:ud
+send (8)	null<1>:d	r22	0x5		0x40A8021:ud
+
+
+
+// FileName:	DNDI_Enc_Stats_Save.asm
+// Author:		Vivek Kumar
+// Description:	Saves Encoder Statistics data to statistics surface in case of DI enabled (for 16x4 block)
+
+// Write encoder statistics to memory
+//Currently enable this only on Gen6 validation
+mov (8)		mudMSGHDR_ENC_STATS(1)<1>	0x0:ud						// Init payload MRF
+mov (8)		mudMSGHDR_ENC_STATS(0)<1>	r0.0<8;8,1>:ud				// message header
+
+shr (1)		mudMSGHDR_ENC_STATS(0,0)<1>		r9.0<0;1,0>:w            	1:w  	{ NoDDClr }			//enable the flag after testing on si           			{ NoDDClr }	// X origin / 2
+mul (1)		acc0.1<1>:ud					r9.1<0;1,0>:w				3:w																							// Y origin * 3
+shr (1)		mudMSGHDR_ENC_STATS(0,1)<1>		acc0.1<0;1,0>:ud			2:w		{ NoDDClr, NoDDChk }		//enable the flag after testing on si			   { NoDDClr, NoDDChk } // Y origin * 3/4
+mov (1)		mudMSGHDR_ENC_STATS(0,2)<1>		0x50003:ud				{ NoDDChk }			//enable the flag after testing on si						{ NoDDChk } // block width and height (8x3)
+add (2)		mudMSGHDR_ENC_STATS(0,0)<1>		mudMSGHDR_ENC_STATS(0,0)<2;2,1>       	r1.12<2;2,1>:uw					// Add pitch to X,Y origin
+
+
+	//Data block for Encoder Statistics
+	//----------------------------------------------------
+	//|  0  |   1  |   2   |  3  |  4  |  5  |  6  |  7  | Bytes
+	//----------------------------------------------------
+	//| BNE |   X  |   X   |  X  |           X           |
+	//----------------------------------------------------
+	//|     X      |     SVCM    |           X           |
+	//----------------------------------------------------
+	//|   SHCM     |     STAD    |           X           |
+	//----------------------------------------------------
+	//|            X             |           X           |
+	//----------------------------------------------------
+	//|     X      |     SVCM    |           X           |
+	//----------------------------------------------------
+	//|   SHCM     |     STAD    |           X           |
+	//----------------------------------------------------
+	mov (1)		mubMSGHDR_ENC_STATS(1,0)<1>		ubDNDI_RESP(4,8)<0;1,0>    		{ NoDDClr }				// Move encoder statistics to MRF
+	mov (1)		muwMSGHDR_ENC_STATS(1,3)<1>		uwDNDI_RESP(4,11)<0;1,0>    	{ NoDDClr, NoDDChk }			// Move encoder statistics to MRF
+	mov (2)		muwMSGHDR_ENC_STATS(1,4)<1>		uwDNDI_RESP(4,12)<2;2,1>    	{ NoDDClr, NoDDChk }			// Move encoder statistics to MRF
+	mov (1)		muwMSGHDR_ENC_STATS(1,9)<1>		uwDNDI_RESP(4,8)<0;1,0>    		{ NoDDClr, NoDDChk }			// Move encoder statistics to MRF
+	mov (2)		muwMSGHDR_ENC_STATS(1,10)<1>	uwDNDI_RESP(4,9)<2;2,1>    		{ NoDDChk }				// Move encoder statistics to MRF
+
+
+send (8)   null<1>:d    r24    0x5    0x40A8021:ud
+
+
+
+// FileName:	DN_Load_UV_NV12_16x8.asm 
+// Author:		Vivek Kumar
+// Description:	Read UV for 16x8 block through DATAPORT 
+
+
+
+// FileName:	UVCopy_Load_16x8.asm
+// Author:		Vivek Kumar
+// Description:	Read UV for 16x8 block through DATAPORT
+
+//CHANGE	:  Read extra UV data to convert to 422. -rT
+//we are reading extra data in ALL cases irrespective of whether upsampling is reqd or not later on, to keep things simple.
+
+
+	add (2)		r27.0<1>:d				r9.0<2;2,1>:w				r4.4<2;2,1>:w				// Source Y Block origin
+	asr (1)  	r27.1<1>:d     			r27.1<0;1,0>:d       	1:w   						{ NoDDClr }	// U/V block origin should be half of Y's
+	mov (1)		r27.2<1>:ud				0x4000F:ud  					{ NoDDChk }	// U/V block width and height (8x5)
+    mov (8)     mudMSGHDR_UVCOPY(0)<1>    	r27.0<8;8,1>:ud
+	send (8)	udDNDI_UV_RESP(0)<1>		r36	0x4	0x2390001:ud
+
+	//Update Header for Save
+	mov (1)		mudMSGHDR_UVCOPY(0,2)<1>	0x3000F:ud									// U/V block width and height (8x4)
+
+
+
+// FileName:    DN_Save_Y_16x8.asm
+// Author:      Vivek Kumar
+// Description: Save one 16x8 blocks of Y channel of DN output for reference
+
+
+mov (8)     mudDN_Y_OUT(0,0)<1>     r0<8;8,1>:ud                                // message header
+mov (2)     mudDN_Y_OUT(0,0)<1>     r9.0<2;2,1>:w                  { NoDDClr }     // X origin
+mov (1)     mudDN_Y_OUT(0,2)<1>     0x7000F:ud    { NoDDChk }     // block width and height (16x8)
+
+//send out data through data port
+send (8)    null<1>:d    mudDN_Y_OUT      0x5    0xA0A8018:ud
+
+
+
+// FileName:	DN_Save_UV_NV12_16x8.asm 
+// Author:		Vivek Kumar
+// Description:	Save UV for 16x8 block through DATAPORT 
+
+
+
+// FileName:	UVCopy_Save_16x8.asm
+// Author:		Vivek Kumar
+// Description:	Save UV for 16x8 block through DATAPORT
+
+
+//Reuse the header from Load component
+//Header is modified at the end of load - to be usable for save.
+
+	mov (8)		mudMSGHDR_UVCOPY(1)<1>		udDNDI_UV_RESP(0)<8;8,1>
+	mov (8)		mudMSGHDR_UVCOPY(2)<1>		udDNDI_UV_RESP(1)<8;8,1>
+	send (8)	null<1>:d    r36	0x5    0x60A8019:ud
+
+
+
+// FileName:	DN_Upsample_UV_NV12_16x8.asm
+// Author:		Tatiya, Rupesh
+// Description:	Upconvert 420 UV to 422
+
+
+
+// FileName:	UVCopy_Upsample_UV_16x8.asm
+// Author:		Tatiya, Rupesh
+// Description:	Convert 42X UV to 422 - to be used for IECP.
+
+
+	avg.sat (16) uwDNDI_UVCOPY_TEMP(0)		ubDNDI_UV_RESP(0,0)<16;16,1>     ubDNDI_UV_RESP(0,0)<16;16,1>
+	avg.sat (16) uwDNDI_UVCOPY_TEMP(1)	ubDNDI_UV_RESP(0,0)<16;16,1>     ubDNDI_UV_RESP(0,16)<16;16,1>
+	avg.sat (16) uwDNDI_UVCOPY_TEMP(2)		ubDNDI_UV_RESP(0,16)<16;16,1>     ubDNDI_UV_RESP(0,16)<16;16,1>
+	avg.sat (16) uwDNDI_UVCOPY_TEMP(3)	ubDNDI_UV_RESP(0,16)<16;16,1>     ubDNDI_UV_RESP(0,32)<16;16,1>
+	avg.sat (16) uwDNDI_UVCOPY_TEMP(4)		ubDNDI_UV_RESP(0,32)<16;16,1>     ubDNDI_UV_RESP(0,32)<16;16,1>
+	avg.sat (16) uwDNDI_UVCOPY_TEMP(5)	ubDNDI_UV_RESP(0,32)<16;16,1>     ubDNDI_UV_RESP(0,48)<16;16,1>
+	avg.sat (16) uwDNDI_UVCOPY_TEMP(6)		ubDNDI_UV_RESP(0,48)<16;16,1>     ubDNDI_UV_RESP(0,48)<16;16,1>
+	avg.sat (16) uwDNDI_UVCOPY_TEMP(7)	ubDNDI_UV_RESP(0,48)<16;16,1>     ubDNDI_UV_RESP(0,64)<16;16,1>
+
+	mov 	(16)	ubDNDI_RESP(5,1)<2>		ubDNDI_UVCOPY_TEMP(0,0)<32;8,4>		{ NoDDClr }		//Copy U data
+	mov 	(16)	ubDNDI_RESP(5,0)<2>		ubDNDI_UVCOPY_TEMP(0,2)<32;8,4>		{ NoDDChk }		//Copy V data
+	mov 	(16)	ubDNDI_RESP(5,33)<2>		ubDNDI_UVCOPY_TEMP(2,0)<32;8,4>		{ NoDDClr }		//Copy U data
+	mov 	(16)	ubDNDI_RESP(5,32)<2>		ubDNDI_UVCOPY_TEMP(2,2)<32;8,4>		{ NoDDChk }		//Copy V data
+	mov 	(16)	ubDNDI_RESP(5,65)<2>		ubDNDI_UVCOPY_TEMP(4,0)<32;8,4>		{ NoDDClr }		//Copy U data
+	mov 	(16)	ubDNDI_RESP(5,64)<2>		ubDNDI_UVCOPY_TEMP(4,2)<32;8,4>		{ NoDDChk }		//Copy V data
+	mov 	(16)	ubDNDI_RESP(5,97)<2>		ubDNDI_UVCOPY_TEMP(6,0)<32;8,4>		{ NoDDClr }		//Copy U data
+	mov 	(16)	ubDNDI_RESP(5,96)<2>		ubDNDI_UVCOPY_TEMP(6,2)<32;8,4>		{ NoDDChk }		//Copy V data
+
+
+
+// FileName:	DN_Save_422CP_16x8.asm
+// Author:		Vivek Kumar
+// Description:	Save one 16x8 blocks of DN output to the color pipe in 4-2-2 format
+
+
+.declare mubMSGHDR_DN_OUT_2   Base=r36.0      ElementSize=1  Type=ub
+
+
+mov (8)		mudMSGHDR_DN_OUT(0)<1>		r0<8;8,1>:ud            			// message header
+shl (1)     mdMSGHDR_DN_OUT(0,0)<1>		r9.0<0;1,0>:w     1:w  		{ NoDDClr }            // X origin * 2 (422 output)
+mov (1)     mdMSGHDR_DN_OUT(0,1)<1>		r9.1<0;1,0>:w          		{ NoDDClr, NoDDChk }   // Y origin
+mov (1)     mudMSGHDR_DN_OUT(0,2)<1>	0x7000F:ud	{ NoDDClr, NoDDChk }            // block width and height (16x8)
+
+//M0.3	- 0 - CP Enable, 1 - Area of Interest, 3:2 Message Format(TBD), 4:3 - Ignored, 31:5 CP state pointer
+//Compose area-of-interest bit + color pipe state pointer
+or (1)		mudMSGHDR_DN_OUT(0,3)<1>		r2.4<0;1,0>:ud 	r9.26<0;1,0>:b		{ NoDDChk }
+
+// First 8 x 8 Block
+	mov (8)		mubMSGHDR_DN_OUT(1)<2>			ubDNDI_RESP(0,0)<8;8,1>				{ NoDDClr } 	// copy line of Y directly to memory as optimization
+	mov (8)		mubMSGHDR_DN_OUT(1,16)<2>		ubDNDI_RESP(0,16)<8;8,1>			{ NoDDClr, NoDDChk } 	// copy line of Y directly to memory as optimization
+	mov (8)		mubMSGHDR_DN_OUT(2)<2>			ubDNDI_RESP(0,32)<8;8,1>				{ NoDDClr } 	// copy line of Y directly to memory as optimization
+	mov (8)		mubMSGHDR_DN_OUT(2,16)<2>		ubDNDI_RESP(0,48)<8;8,1>			{ NoDDClr, NoDDChk } 	// copy line of Y directly to memory as optimization
+	mov (8)		mubMSGHDR_DN_OUT(3)<2>			ubDNDI_RESP(0,64)<8;8,1>				{ NoDDClr } 	// copy line of Y directly to memory as optimization
+	mov (8)		mubMSGHDR_DN_OUT(3,16)<2>		ubDNDI_RESP(0,80)<8;8,1>			{ NoDDClr, NoDDChk } 	// copy line of Y directly to memory as optimization
+	mov (8)		mubMSGHDR_DN_OUT(4)<2>			ubDNDI_RESP(0,96)<8;8,1>				{ NoDDClr } 	// copy line of Y directly to memory as optimization
+	mov (8)		mubMSGHDR_DN_OUT(4,16)<2>		ubDNDI_RESP(0,112)<8;8,1>			{ NoDDClr, NoDDChk } 	// copy line of Y directly to memory as optimization
+
+	mov (4)     mubMSGHDR_DN_OUT(1,1)<4>   	ubDNDI_RESP(5,1)<8;4,2>			{ NoDDClr, NoDDChk } 	// copy line of U directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT(1,17)<4>   	ubDNDI_RESP(5,17)<8;4,2>		{ NoDDClr, NoDDChk } 	// copy line of U directly to memory as optimization
+
+	mov (4)     mubMSGHDR_DN_OUT(1,3)<4>   	ubDNDI_RESP(5,0)<8;4,2>			{ NoDDChk }    	// copy line of V directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT(1,19)<4>   	ubDNDI_RESP(5,16)<8;4,2>			{ NoDDChk }    	// copy line of V directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT(2,1)<4>   	ubDNDI_RESP(5,33)<8;4,2>			{ NoDDClr, NoDDChk } 	// copy line of U directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT(2,17)<4>   	ubDNDI_RESP(5,49)<8;4,2>		{ NoDDClr, NoDDChk } 	// copy line of U directly to memory as optimization
+
+	mov (4)     mubMSGHDR_DN_OUT(2,3)<4>   	ubDNDI_RESP(5,32)<8;4,2>			{ NoDDChk }    	// copy line of V directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT(2,19)<4>   	ubDNDI_RESP(5,48)<8;4,2>			{ NoDDChk }    	// copy line of V directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT(3,1)<4>   	ubDNDI_RESP(5,65)<8;4,2>			{ NoDDClr, NoDDChk } 	// copy line of U directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT(3,17)<4>   	ubDNDI_RESP(5,81)<8;4,2>		{ NoDDClr, NoDDChk } 	// copy line of U directly to memory as optimization
+
+	mov (4)     mubMSGHDR_DN_OUT(3,3)<4>   	ubDNDI_RESP(5,64)<8;4,2>			{ NoDDChk }    	// copy line of V directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT(3,19)<4>   	ubDNDI_RESP(5,80)<8;4,2>			{ NoDDChk }    	// copy line of V directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT(4,1)<4>   	ubDNDI_RESP(5,97)<8;4,2>			{ NoDDClr, NoDDChk } 	// copy line of U directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT(4,17)<4>   	ubDNDI_RESP(5,113)<8;4,2>		{ NoDDClr, NoDDChk } 	// copy line of U directly to memory as optimization
+
+	mov (4)     mubMSGHDR_DN_OUT(4,3)<4>   	ubDNDI_RESP(5,96)<8;4,2>			{ NoDDChk }    	// copy line of V directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT(4,19)<4>   	ubDNDI_RESP(5,112)<8;4,2>			{ NoDDChk }    	// copy line of V directly to memory as optimization
+
+// Second 8 x 8 Block
+mov	(8)	r36.0<1>:ud		r31.0<8;8,1>:ud
+add	(1)	r36.0<1>:ud		r36.0<0;1,0>:w		0x10:w
+
+	mov (8)		mubMSGHDR_DN_OUT_2(1)<2>		ubDNDI_RESP(0,8)<8;8,1>			{ NoDDClr } 	// copy line of Y directly to memory as optimization
+	mov (8)		mubMSGHDR_DN_OUT_2(1,16)<2>	ubDNDI_RESP(0,24)<8;8,1>			{ NoDDClr, NoDDChk } 	// copy line of Y directly to memory as optimization
+	mov (8)		mubMSGHDR_DN_OUT_2(2)<2>		ubDNDI_RESP(0,40)<8;8,1>			{ NoDDClr } 	// copy line of Y directly to memory as optimization
+	mov (8)		mubMSGHDR_DN_OUT_2(2,16)<2>	ubDNDI_RESP(0,56)<8;8,1>			{ NoDDClr, NoDDChk } 	// copy line of Y directly to memory as optimization
+	mov (8)		mubMSGHDR_DN_OUT_2(3)<2>		ubDNDI_RESP(0,72)<8;8,1>			{ NoDDClr } 	// copy line of Y directly to memory as optimization
+	mov (8)		mubMSGHDR_DN_OUT_2(3,16)<2>	ubDNDI_RESP(0,88)<8;8,1>			{ NoDDClr, NoDDChk } 	// copy line of Y directly to memory as optimization
+	mov (8)		mubMSGHDR_DN_OUT_2(4)<2>		ubDNDI_RESP(0,104)<8;8,1>			{ NoDDClr } 	// copy line of Y directly to memory as optimization
+	mov (8)		mubMSGHDR_DN_OUT_2(4,16)<2>	ubDNDI_RESP(0,120)<8;8,1>			{ NoDDClr, NoDDChk } 	// copy line of Y directly to memory as optimization
+
+	mov (4)     mubMSGHDR_DN_OUT_2(1,1)<4>   	ubDNDI_RESP(5,9)<8;4,2>		{ NoDDClr, NoDDChk } 	// copy line of U directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT_2(1,17)<4>   	ubDNDI_RESP(5,25)<8;4,2>		{ NoDDClr, NoDDChk } 	// copy line of U directly to memory as optimization
+
+	mov (4)     mubMSGHDR_DN_OUT_2(1,3)<4>   	ubDNDI_RESP(5,8)<8;4,2>			{ NoDDChk }    	// copy line of V directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT_2(1,19)<4>   	ubDNDI_RESP(5,24)<8;4,2>		{ NoDDChk }    	// copy line of V directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT_2(2,1)<4>   	ubDNDI_RESP(5,41)<8;4,2>		{ NoDDClr, NoDDChk } 	// copy line of U directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT_2(2,17)<4>   	ubDNDI_RESP(5,57)<8;4,2>		{ NoDDClr, NoDDChk } 	// copy line of U directly to memory as optimization
+
+	mov (4)     mubMSGHDR_DN_OUT_2(2,3)<4>   	ubDNDI_RESP(5,40)<8;4,2>			{ NoDDChk }    	// copy line of V directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT_2(2,19)<4>   	ubDNDI_RESP(5,56)<8;4,2>		{ NoDDChk }    	// copy line of V directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT_2(3,1)<4>   	ubDNDI_RESP(5,73)<8;4,2>		{ NoDDClr, NoDDChk } 	// copy line of U directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT_2(3,17)<4>   	ubDNDI_RESP(5,89)<8;4,2>		{ NoDDClr, NoDDChk } 	// copy line of U directly to memory as optimization
+
+	mov (4)     mubMSGHDR_DN_OUT_2(3,3)<4>   	ubDNDI_RESP(5,72)<8;4,2>			{ NoDDChk }    	// copy line of V directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT_2(3,19)<4>   	ubDNDI_RESP(5,88)<8;4,2>		{ NoDDChk }    	// copy line of V directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT_2(4,1)<4>   	ubDNDI_RESP(5,105)<8;4,2>		{ NoDDClr, NoDDChk } 	// copy line of U directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT_2(4,17)<4>   	ubDNDI_RESP(5,121)<8;4,2>		{ NoDDClr, NoDDChk } 	// copy line of U directly to memory as optimization
+
+	mov (4)     mubMSGHDR_DN_OUT_2(4,3)<4>   	ubDNDI_RESP(5,104)<8;4,2>			{ NoDDChk }    	// copy line of V directly to memory as optimization
+	mov (4)     mubMSGHDR_DN_OUT_2(4,19)<4>   	ubDNDI_RESP(5,120)<8;4,2>		{ NoDDChk }    	// copy line of V directly to memory as optimization
+
+//send out data through data port
+send (8)    null<1>:d    r31.0		0x5    0xA0A801B:ud
+send (8)    null<1>:d    r36.0	0x5    0xA0A801B:ud
+
+
+
+//End of Thread message
+
+mov (8) r127<1>:ud r0.0<8;8,1>:ud 
+ send (1) null<1>:d r127 0x27 0x02000010
+
+
+.end_code 
+.end_kernel
