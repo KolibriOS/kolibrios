@@ -149,12 +149,14 @@ draw_window:
 	mcall SF_CREATE_WINDOW,(50 shl 16)+420,(30 shl 16)+410,0x33ffffff,,caption
 
 	mov esi,[sc.work_button]
-	mcall SF_DEFINE_BUTTON,(6 shl 16)+19,(6 shl 16)+19,3+0x40000000 ;земля 1
-	mcall ,(36 shl 16)+19,,4+0x40000000 ;земля 2
+	mcall SF_DEFINE_BUTTON,(6 shl 16)+19,(6 shl 16)+19,3+0x40000000 ;земля с меридиан.
+	mcall ,(36 shl 16)+19,,4+0x40000000 ;земля
 
-	mcall SF_PUT_IMAGE,[image_data_toolbar],(21 shl 16)+21,(5 shl 16)+5 ;земля 1
-	;add ebx,2*IMAGE_TOOLBAR_ICON_SIZE
-	mcall ,,,(35 shl 16)+5 ;земля 2
+	mov ebx,[image_data_toolbar]
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	mcall SF_PUT_IMAGE,,(21 shl 16)+21,(5 shl 16)+5 ;земля с меридиан.
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	mcall ,,,(35 shl 16)+5 ;земля
 
 	stdcall [kosglSwapBuffers]
 	mcall SF_REDRAW,SSF_END_DRAW
@@ -302,18 +304,22 @@ stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим б�
 stdcall [glPushMatrix]
 	stdcall [glTranslatef], 0.0,0.0,0.5
 	stdcall [glScalef], [scale], [scale], [scale]
-	;stdcall [glRotatef], [angle_z],0.0,0.0,1.0
 	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
 	stdcall [glRotatef], [angle_x],1.0,0.0,0.0
 
 cmp dword[dr_figure],0
 jne @f
-	; рисование земли
-	stdcall [gluSphere], [qObj], 1.0, 16,16
+	; рисование земли с меридианами
+	stdcall [glColor3f], 0.0, 0.0, 1.0
+	stdcall [gluQuadricDrawStyle], [qObj],GLU_LINE
+	stdcall [gluSphere], [qObj], 1.0, 24,18 ;меридианы
+	stdcall [gluQuadricDrawStyle], [qObj],GLU_FILL
+	stdcall [gluSphere], [qObj], 0.995, 24,18 ;земля
 @@:
 cmp dword[dr_figure],1
 jne @f
 	; рисование земли
+	stdcall [gluQuadricDrawStyle], [qObj],GLU_FILL
 	stdcall [gluSphere], [qObj], 1.0, 64,64
 @@:
 stdcall [glPopMatrix]

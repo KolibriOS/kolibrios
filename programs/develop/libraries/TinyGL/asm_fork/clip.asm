@@ -33,13 +33,10 @@ endl
 	fistp dword[ebx+offs_vert_zp+offs_zbup_y] ;v.zp.y = st0, st0 = st1
 
 	fld dword[ebx+offs_vert_pc+offs_Z] ;st0 = v.pc.Z
-	fmul st0,st1
+	fmulp
 	fmul dword[eax+offs_cont_viewport+offs_vpor_scale+offs_Z]
 	fadd dword[eax+offs_cont_viewport+offs_vpor_trans+offs_Z]
 	fistp dword[ebx+offs_vert_zp+offs_zbup_z] ;v.zp.z = st0, st0 = st1
-
-	ffree st0
-	fincstp
 
 	; color
 	cmp dword[eax+offs_cont_lighting_enabled],0 ;if (context.lighting_enabled)
@@ -77,7 +74,7 @@ align 4
 		fild dword[point]
 		fmul dword[ebx+offs_vert_tex_coord+offs_Y] ;st0 *= v.tex_coord.Y
 		fistp dword[ebx+offs_vert_zp+offs_zbup_t]
-		add dword[ebx+offs_vert_zp+offs_zbup_s],ZB_POINT_T_MIN
+		add dword[ebx+offs_vert_zp+offs_zbup_t],ZB_POINT_T_MIN
 	@@:
 	ret
 endp
@@ -181,12 +178,9 @@ proc interpolate uses eax ebx ecx, q:dword,p0:dword,p1:dword,t:dword
 
 	fld dword[ecx+offs_vert_color+8]
 	fsub dword[ebx+offs_vert_color+8]
-	fmul st0,st1
+	fmulp
 	fadd dword[ebx+offs_vert_color+8]
 	fstp dword[eax+offs_vert_color+8]
-
-	ffree st0
-	fincstp
 	ret
 endp
 

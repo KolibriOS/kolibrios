@@ -465,7 +465,6 @@ end if
 if INTERP_ST eq 1
 	mov ebx,[l1]
 	mov eax,[ebx+offs_zbup_s]
-	add eax,0x00200000 ;прокручиваем горизонтальную координату на 0.5
 	mov [s1],eax ;s1 = l1.s
 	mov eax,[dsdx]
 	imul eax,[dxdy_min]

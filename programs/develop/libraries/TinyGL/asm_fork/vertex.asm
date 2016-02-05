@@ -2,7 +2,7 @@ if DEBUG
 f_vt db ' gl_vertex_transform',0
 end if
 
-align 4
+align 16
 proc glopNormal uses ecx esi edi, context:dword, p:dword
 	mov esi,[p]
 	add esi,4
@@ -14,7 +14,7 @@ proc glopNormal uses ecx esi edi, context:dword, p:dword
 	ret
 endp
 
-align 4
+align 16
 proc glopTexCoord uses ecx esi edi, context:dword, p:dword
 	mov esi,[p]
 	add esi,4
@@ -25,7 +25,7 @@ proc glopTexCoord uses ecx esi edi, context:dword, p:dword
 	ret
 endp
 
-align 4
+align 16
 proc glopEdgeFlag uses eax ebx, context:dword, p:dword
 	mov eax,[context]
 	mov ebx,[p]
@@ -34,7 +34,7 @@ proc glopEdgeFlag uses eax ebx, context:dword, p:dword
 	ret
 endp
 
-align 4
+align 16
 proc glopColor uses eax ecx esi edi, context:dword, p:dword
 locals
 	q rd 7
@@ -69,7 +69,7 @@ endl
 	ret
 endp
 
-align 4
+align 16
 proc gl_eval_viewport uses eax, context:dword
 locals
 	zsize dd ? ;float
@@ -115,7 +115,7 @@ endl
 endp
 
 
-align 4
+align 16
 proc glopBegin uses eax ebx ecx edx, context:dword, p:dword
 locals
 	tmp M4
@@ -134,7 +134,12 @@ endl
 	jnc .end_mmpu
 
 	cmp dword[edx+offs_cont_lighting_enabled],0 ;if(context.lighting_enabled)
-	je @f
+	jne .if_0
+	cmp dword[eax+offs_cont_texture_2d_enabled],0
+	jne .if_0
+		jmp @f
+align 4
+	.if_0:
 if DEBUG ;context.matrix_stack_ptr[0]
 	stdcall gl_print_matrix,dword[edx+offs_cont_matrix_stack_ptr],4
 end if
@@ -155,6 +160,7 @@ if DEBUG ;context.matrix_model_view_inv
 	stdcall gl_print_matrix,ebx,4
 end if
 		jmp .end_if_0
+align 4
 	@@:
 		mov ecx,edx
 		add ecx,offs_cont_matrix_model_projection
@@ -207,17 +213,20 @@ end if
 		mov dword[edx+offs_cont_draw_triangle_front],gl_draw_triangle_select
 		mov dword[edx+offs_cont_draw_triangle_back],gl_draw_triangle_select
 		jmp .end_if_2
+align 4
 	@@:
 
 	cmp dword[edx+offs_cont_polygon_mode_front],GL_POINT
 	jne @f
 		mov dword[edx+offs_cont_draw_triangle_front],gl_draw_triangle_point
 		jmp .end_if_1
+align 4
 	@@:
 	cmp dword[edx+offs_cont_polygon_mode_front],GL_LINE
 	jne @f
 		mov dword[edx+offs_cont_draw_triangle_front],gl_draw_triangle_line
 		jmp .end_if_1
+align 4
 	@@: ;default:
 		mov dword[edx+offs_cont_draw_triangle_front],gl_draw_triangle_fill
 	.end_if_1:
@@ -226,11 +235,13 @@ end if
 	jne @f
 		mov dword[edx+offs_cont_draw_triangle_back],gl_draw_triangle_point
 		jmp .end_if_2
+align 4
 	@@:
 	cmp dword[edx+offs_cont_polygon_mode_back],GL_LINE
 	jne @f
 		mov dword[edx+offs_cont_draw_triangle_back],gl_draw_triangle_line
 		jmp .end_if_2
+align 4
 	@@: ;default:
 	    mov dword[edx+offs_cont_draw_triangle_back],gl_draw_triangle_fill
 	.end_if_2:
@@ -239,13 +250,18 @@ endp
 
 ; coords, tranformation , clip code and projection
 ; TODO : handle all cases
-align 4
+align 16
 proc gl_vertex_transform, context:dword, v:dword
 pushad
 	mov eax,[context]
 	mov edx,[v]
 	cmp dword[eax+offs_cont_lighting_enabled],0 ;if (context.lighting_enabled)
-	je .els_0
+	jne @f
+	cmp dword[eax+offs_cont_texture_2d_enabled],0
+	jne @f
+		jmp .els_0
+align 4
+	@@:
 		; eye coordinates needed for lighting
 		mov ebx,dword[eax+offs_cont_matrix_stack_ptr]
 		finit
@@ -356,6 +372,7 @@ pushad
 		je .end_els
 			stdcall gl_V3_Norm,edx
 		jmp .end_els
+align 4
 	.els_0:
 		; no eye coordinates needed, no normal
 		; NOTE: W = 1 is assumed
@@ -409,6 +426,7 @@ pushad
 			mov ebx,dword[ebx+60] ;ebx = m[15]
 			mov dword[esi+12],ebx ;v.pc.W = m[15]
 			jmp .end_els
+align 4
 		.els_1:
 			fld dword[ebx+48]  ;st0 = m[12]
 			fmul st0,st3       ;st0 *= v.coord.X
@@ -442,7 +460,7 @@ popad
 	ret
 endp
 
-align 4
+align 16
 proc glopVertex, context:dword, p:dword
 locals
 	;ebx = GLVertex * v
@@ -497,6 +515,7 @@ pushad
 	je .els_0
 		stdcall gl_shade_vertex, edx,ebx
 		jmp @f
+align 4
 	.els_0:
 		mov esi,edx
 		add esi,offs_cont_current_color
@@ -518,6 +537,7 @@ pushad
 			add eax,offs_vert_tex_coord
 			stdcall gl_M4_MulV4, eax, dword[edx+offs_cont_matrix_stack_ptr+8]
 			jmp @f
+align 4
 		.els_1:
 			mov esi,edx
 			add esi,offs_cont_current_tex_coord
@@ -542,6 +562,7 @@ pushad
 		stdcall gl_draw_point, edx, dword[edx+offs_cont_vertex] ;dword[edx+...] = &context.vertex[0]
 		mov dword[n],0
 		jmp .end_f
+align 4
 	@@:
 	cmp dword[edx+offs_cont_begin_type],GL_LINES
 	jne @f
@@ -554,6 +575,7 @@ pushad
 			xor eax,eax
 			mov dword[n],eax
 		jmp .end_f
+align 4
 	@@:
 	cmp dword[edx+offs_cont_begin_type],GL_LINE_STRIP
 	je .li_loop
@@ -568,6 +590,7 @@ pushad
 			mov ecx,(sizeof.GLVertex)/4 ;((...)/4) что-бы использовать movsd вместо movsb
 			rep movsd ;context.vertex[2] = context.vertex[0]
 			jmp .end_f
+align 4
 		.els_2:
 		cmp dword[n],2
 		jne .end_f ;else if (n == 2)
@@ -581,6 +604,7 @@ pushad
 			rep movsd ;context.vertex[0] = context.vertex[1]
 			mov dword[n],1
 		jmp .end_f
+align 4
 	@@:
 	cmp dword[edx+offs_cont_begin_type],GL_TRIANGLES
 	jne @f
@@ -597,6 +621,7 @@ pushad
 			xor eax,eax
 			mov dword[n],eax
 		jmp .end_f
+align 4
 	@@:
 	cmp dword[edx+offs_cont_begin_type],GL_TRIANGLE_STRIP
 	jne @f
@@ -619,6 +644,7 @@ pushad
 				sub esp,12
 				stdcall gl_draw_triangle, edx ;v2,v1,v0
 				jmp .end_f
+align 4
 			.case_1:
 				mov [esp-12],eax
 				add eax,sizeof.GLVertex
@@ -628,6 +654,7 @@ pushad
 				sub esp,12
 				stdcall gl_draw_triangle, edx ;v0,v1,v2
 		jmp .end_f
+align 4
 	@@:
 	cmp dword[edx+offs_cont_begin_type],GL_TRIANGLE_FAN
 	jne @f
@@ -647,6 +674,7 @@ pushad
 			rep movsd ;context.vertex[1] = context.vertex[2]
 			mov dword[n],2
 		jmp .end_f
+align 4
 	@@:
 	cmp dword[edx+offs_cont_begin_type],GL_QUADS
 	jne @f
@@ -672,6 +700,7 @@ pushad
 			xor eax,eax
 			mov dword[n],eax
 		jmp .end_f
+align 4
 	@@:
 	cmp dword[edx+offs_cont_begin_type],GL_QUAD_STRIP
 	jne @f
@@ -698,6 +727,7 @@ pushad
 			rep movsd ;context.vertex[0] = context.vertex[2], context.vertex[1] = context.vertex[3]
 			mov dword[n],2
 		jmp .end_f
+align 4
 	@@:
 	cmp dword[edx+offs_cont_begin_type],GL_POLYGON
 	je .end_f
@@ -712,7 +742,7 @@ popad
 	ret
 endp
 
-align 4
+align 16
 proc glopEnd uses eax ebx ecx, context:dword, p:dword
 	mov eax,[context]
 ;    assert(c->in_begin == 1);
@@ -727,6 +757,7 @@ proc glopEnd uses eax ebx ecx, context:dword, p:dword
 			push ebx
 			stdcall gl_draw_line, eax
 		jmp .end_i
+align 4
 	.else_i:
 	cmp dword[eax+offs_cont_begin_type],GL_POLYGON
 	jne .end_i
@@ -743,6 +774,7 @@ proc glopEnd uses eax ebx ecx, context:dword, p:dword
 			push ecx ;ecx = &context.vertex[i-1]
 			stdcall gl_draw_triangle, eax,[eax+offs_cont_vertex]
 		jmp @b
+align 4
 	.end_i:
 	mov dword[eax+offs_cont_in_begin],0
 	ret
