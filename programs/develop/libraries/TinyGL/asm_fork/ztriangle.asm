@@ -1,3 +1,36 @@
+;
+; Опции для функций:
+;
+;INTERP_Z - использование Z буфера (всегда включено)
+;INTERP_RGB - сглажевание цветов
+;INTERP_ST - наложение текстуры в ортогональной проэкции
+;INTERP_STZ - наложение текстуры в перспективной проэкции
+;
+; Функции рисования треугольников:
+;
+;ZB_fillTriangleFlat - треугольник одного цвета
+;ZB_fillTriangleSmooth - треугольник с разными цветами вершин
+;ZB_fillTriangleMapping - треугольник с текстурой в ортогональной проэкции
+;ZB_fillTriangleMappingPerspective - треугольник с текстурой в перспективной проэкции
+;
+
+macro calc_d1d2 f, r1, r2
+{
+	fld dword[fdy2]
+	fmul st0,st2
+	fld dword[fdy1]
+	fmul st0,st2
+	fsubp
+	f#stp dword[r1] ;r1 = (fdy2*d1 - fdy1*d2)
+	fld dword[fdx1]
+	fmulp
+	fld dword[fdx2]
+	fmul st0,st2
+	fsubp
+	f#stp dword[r2] ;r2 = (fdx1*d2 - fdx2*d1)
+	ffree st0 ;d1
+	fincstp
+}
 
 INTERP_Z equ 1
 
@@ -120,7 +153,6 @@ macro DRAW_INIT
 macro PUT_PIXEL _a
 {
 local .end_0
-local .in_mem
 	mov eax,[z]
 	shr eax,ZB_POINT_Z_FRAC_BITS
 	cmp ax,word[esi+2*_a] ;if (zz >= pz[_a])
@@ -130,12 +162,10 @@ local .in_mem
 if TGL_FEATURE_RENDER_BITS eq 24
 		mov ebx,[t]
 		and ebx,0x3fc00000
-		or ebx,[s]
+		mov eax,[s]
+		and eax,0x003fc000
+		or ebx,eax
 		shr ebx,14
-		cmp ebx,256*256-1 ;проверка на выход за пределы текстуры
-		jl .in_mem ;координата 1.0,1.0 может выползать
-			mov ebx,256*256-1 ;переход на последний пиксель текстуры
-		.in_mem:
 		imul ebx,3
 		add ebx,[texture] ;ptr = texture + (((t & 0x3fc00000) | s) >> 14) * 3
 		mov ax,word[ebx]
@@ -193,7 +223,6 @@ macro DRAW_INIT
 macro PUT_PIXEL _a
 {
 local .end_0
-local .in_mem
 	mov eax,[z]
 	shr eax,ZB_POINT_Z_FRAC_BITS
 	cmp ax,word[esi+2*_a] ;if (zz >= pz[_a])
@@ -207,15 +236,6 @@ if TGL_FEATURE_RENDER_BITS eq 24
 		and eax,0x003fc000
 		or ebx,eax
 		shr ebx,14
-if 1
-; не знаю нужна ли сдесь эта проверка
-; функция ZB_fillTriangleMapping без нее не работает
-; на всякий случай делаю и тут такое же
-		cmp ebx,256*256-1 ;проверка на выход за пределы текстуры
-		jl .in_mem ;координата 1.0,1.0 может выползать
-			mov ebx,256*256-1 ;переход на последний пиксель текстуры
-		.in_mem:
-end if
 		imul ebx,3
 		add ebx,[texture] ;ptr = texture + (((t & 0x3fc00000) | (s & 0x003FC000)) >> 14) * 3
 		mov ax,word[ebx]

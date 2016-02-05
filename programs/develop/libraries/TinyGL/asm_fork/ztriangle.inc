@@ -154,15 +154,9 @@ pushad
 	mov [fdy2],eax ;p2.y - p0.y
 
 	fild dword[fdx1]
-	fst dword[fdx1]
-	fild dword[fdy2]
-	fst dword[fdy2]
-	fmulp
+	fimul dword[fdy2]
 	fild dword[fdx2]
-	fst dword[fdx2]
-	fild dword[fdy1]
-	fst dword[fdy1]
-	fmulp
+	fimul dword[fdy1]
 	fsubp ;st0 = st1-st0
 	fst dword[fz] ;fz = fdx1 * fdy2 - fdx2 * fdy1
 	fldz
@@ -175,20 +169,18 @@ pushad
 	fdiv dword[fz] ;fz = 1.0 / fz
 	fst dword[fz]  ;st0 = fz
 
-	fld dword[fdx1]
+	fild dword[fdx1]
 	fmul st0,st1
 	fstp dword[fdx1] ;fdx1 *= fz
-	fld dword[fdy1]
+	fild dword[fdy1]
 	fmul st0,st1
 	fstp dword[fdy1] ;fdy1 *= fz
-	fld dword[fdx2]
+	fild dword[fdx2]
 	fmul st0,st1
 	fstp dword[fdx2] ;fdx2 *= fz
-	fld dword[fdy2]
-	fmul st0,st1
+	fild dword[fdy2]
+	fmulp
 	fstp dword[fdy2] ;fdy2 *= fz
-	ffree st0
-	fincstp
 
 if INTERP_Z eq 1
 	mov eax,[ecx+offs_zbup_z]
@@ -200,22 +192,9 @@ if INTERP_Z eq 1
 	fild dword[d1] ;d1 = p1.z - p0.z
 	fild dword[d2] ;d2 = p2.z - p0.z
 
-	fld dword[fdy2]
-	fmul st0,st2
-	fld dword[fdy1]
-	fmul st0,st2
-	fsubp
-	fistp dword[dzdx] ;dzdx = (int) (fdy2*d1 - fdy1*d2)
-	fld dword[fdx1]
-	fmul st0,st1
-	fld dword[fdx2]
-	fmul st0,st3
-	fsubp
-	fistp dword[dzdy] ;dzdy = (int) (fdx1*d2 - fdx2*d1)
-	ffree st0 ;free d2
-	fincstp
-	ffree st0 ;free d1
-	fincstp
+	;dzdx = (int) (fdy2*d1 - fdy1*d2)
+	;dzdy = (int) (fdx1*d2 - fdx2*d1)
+	calc_d1d2 fi, dzdx, dzdy
 end if
 
 if INTERP_RGB eq 1
@@ -228,22 +207,9 @@ if INTERP_RGB eq 1
 	fild dword[d1] ;d1 = p1.r - p0.r
 	fild dword[d2] ;d2 = p2.r - p0.r
 
-	fld dword[fdy2]
-	fmul st0,st2
-	fld dword[fdy1]
-	fmul st0,st2
-	fsubp
-	fistp dword[drdx] ;drdx = (int) (fdy2*d1 - fdy1*d2)
-	fld dword[fdx1]
-	fmul st0,st1
-	fld dword[fdx2]
-	fmul st0,st3
-	fsubp
-	fistp dword[drdy] ;drdy = (int) (fdx1*d2 - fdx2*d1)
-	ffree st0 ;free d2
-	fincstp
-	ffree st0 ;free d1
-	fincstp
+	;drdx = (int) (fdy2*d1 - fdy1*d2)
+	;drdy = (int) (fdx1*d2 - fdx2*d1)
+	calc_d1d2 fi, drdx, drdy
 
 	mov eax,[ecx+offs_zbup_g]
 	sub eax,[ebx+offs_zbup_g]
@@ -254,22 +220,9 @@ if INTERP_RGB eq 1
 	fild dword[d1] ;d1 = p1.g - p0.g
 	fild dword[d2] ;d2 = p2.g - p0.g
 
-	fld dword[fdy2]
-	fmul st0,st2
-	fld dword[fdy1]
-	fmul st0,st2
-	fsubp
-	fistp dword[dgdx] ;dgdx = (int) (fdy2*d1 - fdy1*d2)
-	fld dword[fdx1]
-	fmul st0,st1
-	fld dword[fdx2]
-	fmul st0,st3
-	fsubp
-	fistp dword[dgdy] ;dgdy = (int) (fdx1*d2 - fdx2*d1)
-	ffree st0 ;free d2
-	fincstp
-	ffree st0 ;free d1
-	fincstp
+	;dgdx = (int) (fdy2*d1 - fdy1*d2)
+	;dgdy = (int) (fdx1*d2 - fdx2*d1)
+	calc_d1d2 fi, dgdx, dgdy
 
 	mov eax,[ecx+offs_zbup_b]
 	sub eax,[ebx+offs_zbup_b]
@@ -280,22 +233,9 @@ if INTERP_RGB eq 1
 	fild dword[d1] ;d1 = p1.b - p0.b
 	fild dword[d2] ;d2 = p2.b - p0.b
 
-	fld dword[fdy2]
-	fmul st0,st2
-	fld dword[fdy1]
-	fmul st0,st2
-	fsubp
-	fistp dword[dbdx] ;dbdx = (int) (fdy2*d1 - fdy1*d2)
-	fld dword[fdx1]
-	fmul st0,st1
-	fld dword[fdx2]
-	fmul st0,st3
-	fsubp
-	fistp dword[dbdy] ;dbdy = (int) (fdx1*d2 - fdx2*d1)
-	ffree st0 ;free d2
-	fincstp
-	ffree st0 ;free d1
-	fincstp
+	;dbdx = (int) (fdy2*d1 - fdy1*d2)
+	;dbdy = (int) (fdx1*d2 - fdx2*d1)
+	calc_d1d2 fi, dbdx, dbdy
 end if
 
 if INTERP_ST eq 1
@@ -308,24 +248,9 @@ if INTERP_ST eq 1
 	fild dword[d1] ;d1 = p1.s - p0.s
 	fild dword[d2] ;d2 = p2.s - p0.s
 
-	fld dword[fdy2]
-	fmul st0,st2
-	fld dword[fdy1]
-	fmul st0,st2
-	fsubp
-	fistp dword[dsdx] ;dsdx = (int) (fdy2*d1 - fdy1*d2)
-	fld dword[fdx2]
-	fmul st0,st2
-	fld dword[fdx1]
-	fmul st0,st2
-	fsub st0,st1
-	fistp dword[dsdy] ;dsdy = (int) (fdx1*d2 - fdx2*d1)
-	ffree st0
-	fincstp
-	ffree st0 ;free d2
-	fincstp
-	ffree st0 ;free d1
-	fincstp
+	;dsdx = (int) (fdy2*d1 - fdy1*d2)
+	;dsdy = (int) (fdx1*d2 - fdx2*d1)
+	calc_d1d2 fi, dsdx, dsdy
 
 	mov eax,[ecx+offs_zbup_t]
 	sub eax,[ebx+offs_zbup_t]
@@ -336,26 +261,9 @@ if INTERP_ST eq 1
 	fild dword[d1] ;d1 = p1.t - p0.t
 	fild dword[d2] ;d2 = p2.t - p0.t
 
-	fld dword[fdy1]
-	fmul st0,st1
-	fld dword[fdy2]
-	fmul st0,st3
-	fsub st0,st1
-	fistp dword[dtdx] ;dtdx = (int) (fdy2*d1 - fdy1*d2)
-	ffree st0
-	fincstp
-	fld dword[fdx2]
-	fmul st0,st2
-	fld dword[fdx1]
-	fmul st0,st2
-	fsub st0,st1
-	fistp dword[dtdy] ;dtdy = (int) (fdx1*d2 - fdx2*d1)
-	ffree st0
-	fincstp
-	ffree st0 ;free d2
-	fincstp
-	ffree st0 ;free d1
-	fincstp
+	;dtdx = (int) (fdy2*d1 - fdy1*d2)
+	;dtdy = (int) (fdx1*d2 - fdx2*d1)
+	calc_d1d2 fi, dtdx, dtdy
 end if
 
 if INTERP_STZ eq 1
@@ -388,50 +296,18 @@ if INTERP_STZ eq 1
 	fld dword[edx+offs_zbup_sz]
 	fsub dword[ebx+offs_zbup_sz] ;d2 = p2.sz - p0.sz
 
-	fld dword[fdy2]
-	fmul st0,st2
-	fld dword[fdy1]
-	fmul st0,st2
-	fsubp
-	fstp dword[dszdx] ;dszdx = (fdy2*d1 - fdy1*d2)
-	fld dword[fdx2]
-	fmul st0,st2
-	fld dword[fdx1]
-	fmul st0,st2
-	fsub st0,st1
-	fstp dword[dszdy] ;dszdy = (fdx1*d2 - fdx2*d1)
-	ffree st0
-	fincstp
-	ffree st0 ;free d2
-	fincstp
-	ffree st0 ;free d1
-	fincstp
+	;dszdx = (fdy2*d1 - fdy1*d2)
+	;dszdy = (fdx1*d2 - fdx2*d1)
+	calc_d1d2 f, dszdx, dszdy
 
 	fld dword[ecx+offs_zbup_tz]
 	fsub dword[ebx+offs_zbup_tz] ;d1 = p1.tz - p0.tz
 	fld dword[edx+offs_zbup_tz]
 	fsub dword[ebx+offs_zbup_tz] ;d2 = p2.tz - p0.tz
 
-	fld dword[fdy1]
-	fmul st0,st1
-	fld dword[fdy2]
-	fmul st0,st3
-	fsub st0,st1
-	fstp dword[dtzdx] ;dtzdx = (fdy2*d1 - fdy1*d2)
-	ffree st0
-	fincstp
-	fld dword[fdx2]
-	fmul st0,st2
-	fld dword[fdx1]
-	fmul st0,st2
-	fsub st0,st1
-	fstp dword[dtzdy] ;dtzdy = (fdx1*d2 - fdx2*d1)
-	ffree st0
-	fincstp
-	ffree st0 ;free d2
-	fincstp
-	ffree st0 ;free d1
-	fincstp
+	;dtzdx = (fdy2*d1 - fdy1*d2)
+	;dtzdy = (fdx1*d2 - fdx2*d1)
+	calc_d1d2 f, dtzdx, dtzdy
 end if
 
 	; screen coordinates
@@ -468,6 +344,7 @@ end if
 				mov [l2],edx
 				mov [pr2],ecx
 				jmp .end_1
+align 4
 			.els_1:
 				mov [l2],ecx
 				mov [pr2],edx
@@ -476,6 +353,7 @@ end if
 			sub eax,[ebx+offs_zbup_y]
 			mov [nb_lines],eax ;nb_lines = p1.y - p0.y
 			jmp .end_0
+align 4
 		.els_0:
 			; second part
 			fldz
@@ -489,6 +367,7 @@ end if
 				mov [pr1],ecx
 				mov [pr2],edx
 				jmp .end_2
+align 4
 			.els_2:
 				mov dword[update_left],1
 				mov dword[update_right],0
@@ -520,6 +399,7 @@ end if
 			shl eax,16
 			div dword[dy1] ;eax = (dx1 << 16) / dy1
 			jmp .end_3
+align 4
 			.otr_dx1:
 			neg eax
 			inc eax
@@ -528,6 +408,7 @@ end if
 			neg eax
 			inc eax
 			jmp .end_3
+align 4
 		.els_3:
 			xor eax,eax
 		.end_3:
@@ -584,6 +465,7 @@ end if
 if INTERP_ST eq 1
 	mov ebx,[l1]
 	mov eax,[ebx+offs_zbup_s]
+	add eax,0x00200000 ;прокручиваем горизонтальную координату на 0.5
 	mov [s1],eax ;s1 = l1.s
 	mov eax,[dsdx]
 	imul eax,[dxdy_min]
@@ -646,6 +528,7 @@ end if
 			shl eax,16
 			div dword[dy2] ;eax = (dx2 << 16) / dy2
 			jmp .end_4
+align 4
 			.otr_dx2:
 			neg eax
 			inc eax ;dx2 *= -1
@@ -654,6 +537,7 @@ end if
 			neg eax
 			inc eax
 			jmp .end_4
+align 4
 		.els_4:
 			xor eax,eax
 		.end_4:
@@ -760,6 +644,7 @@ end if
 			add edi,4*PSZB
 			sub dword[n],4
 		jmp .cycle_1
+align 4
 		.cycle_2: ;while (n>=0)
 		cmp dword[n],0
 		jl .cycle_2_end
@@ -769,6 +654,7 @@ if INTERP_RGB eq 1
 		jnc @f
 			mov dword[or1],0
 			jmp .end_r
+align 4
 		@@:
 		bt dword[or1],16
 		jnc .end_r
@@ -778,6 +664,7 @@ if INTERP_RGB eq 1
 		jnc @f
 			mov dword[og1],0
 			jmp .end_g
+align 4
 		@@:
 		bt dword[og1],16
 		jnc .end_g
@@ -787,6 +674,7 @@ if INTERP_RGB eq 1
 		jnc @f
 			mov dword[ob1],0
 			jmp .end_b
+align 4
 		@@:
 		bt dword[ob1],16
 		jnc .end_b
@@ -800,6 +688,7 @@ end if
 			add edi,PSZB
 			dec dword[n]
 		jmp .cycle_2
+align 4
 		.cycle_2_end:
 end if ;проверка от макроса DRAW_LINE
 
@@ -838,6 +727,7 @@ if INTERP_STZ eq 1
 		fstp dword[tz1]
 end if
 		jmp .end_er
+align 4
 	.els_er:
 		mov eax,[dxdy_min]
 		add [x1],eax
@@ -880,6 +770,7 @@ end if
 			shl eax,1
 			add [pz1],eax
 			jmp .beg_w_lin
+align 4
 		.end_w_lin:
 		inc dword[part]
 		cmp dword[part],2
