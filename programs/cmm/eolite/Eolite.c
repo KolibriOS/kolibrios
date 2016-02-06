@@ -413,6 +413,9 @@ void main()
 								if (Form.left==98) MoveSize(Form.left-20,Form.top-20,OLD,OLD);
 								RunProgram("/sys/File Managers/Eolite", #path);
 								break; 
+						case 050: //Ctrl+M
+								Open_Dir(#inactive_path,WITH_REDRAW);
+								break; 
 						case 028: //Ctrl+Enter
 								if (!itdir) ShowOpenWithDialog();
 								else Open(1);
@@ -592,6 +595,7 @@ void DrawFilePanels()
 		llist_copy(#files, #files_inactive);
 		strcpy(#path, #inactive_path);
 		col_selec = 0xCCCccc;
+		SystemDiscs.Get();
 		SystemDiscs.Draw();
 		files_y = files.y;
 
