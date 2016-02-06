@@ -59,6 +59,7 @@ edit_box address_box = {250,56,34,0xffffff,0x94AECE,0xffffff,0xffffff,0,UML,#add
 CustomCursor CursorPointer;
 dword CursorFile = FROM "pointer.cur";
 
+#include "favicon.h"
 #include "ini.h"
 #include "gui.h"
 #include "label.h"
@@ -243,6 +244,7 @@ void EventOpenDialog()
 void EventOpenAddress(dword _new_address)
 {
 char temp[UML];
+char favicon_address[UML];
 	if (!ESBYTE[_new_address]) return;
 	debugln("====================================");
 	debug("address: ");
@@ -261,6 +263,7 @@ char temp[UML];
 	*/
 
 	io.buffer_data = 0;
+	favicon.get(NULL);
 
 	// - build in page
 	if (!strncmp(#address,"aelia:",6)) {
@@ -297,6 +300,8 @@ char temp[UML];
 			strcpy(#address,downloader.url);
 			DrawAddressBox();
 			io.buffer_data = downloader.bufpointer;
+			get_absolute_url(#favicon_address, #address, "/favicon.ico");
+			favicon.get(#favicon_address);
 		}
 	}
 
@@ -306,6 +311,7 @@ char temp[UML];
 	}
 
 	history.add(#address);
+	favicon.draw(address_box.left-18, address_box.top-1);
 
 	/* 
 	Great! So we have the page in our buffer.
@@ -438,12 +444,14 @@ void DrawPage()
 
 void DrawAddressBox()
 {
-	address_box.left = 97;
+	address_box.left = 97+19;
 	address_box.top = 11;
 	address_box.width = Form.cwidth - address_box.left - 138;
-	DrawRectangle(address_box.left-4, address_box.top-5, address_box.width+6, 23, 0x8C8C8C);
-	DrawWideRectangle(address_box.left-3, address_box.top-3, address_box.width+5, 21, 4, address_box.color);
+	DrawRectangle(address_box.left-4-19, address_box.top-5, address_box.width+6+19, 23, 0x8C8C8C);
+	DrawWideRectangle(address_box.left-3-19, address_box.top-3, address_box.width+5+19, 21, 4, address_box.color);
 	address_box.size = address_box.pos = address_box.shift = address_box.shift_old = strlen(#address);
 	address_box.offset = 0;
 	edit_box_draw stdcall(#address_box);
+	favicon.draw(address_box.left-18, address_box.top-1);
+	DrawBar(address_box.left-2, address_box.top+1, 2, 13, 0xFFFfff);
 }

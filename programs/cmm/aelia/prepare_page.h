@@ -187,8 +187,8 @@ dword DOM_pos;
 						label_draw_bar(stroka_x, stroka_y+label.size.pt+1, get_label_len(text.start), style.color);
 					}
 					WriteTextIntoBuf(stroka_x, stroka_y, style.color, text.start);
-					stroka_x+=char_width[' '];
 				}
+				stroka_x+=char_width[' '];
 				ESBYTE[line_break] >< zeroch; //restore line
 				text.start = line_break;
 				stroka_x = HTML_PADDING_X;
@@ -200,8 +200,8 @@ dword DOM_pos;
 					label_draw_bar(stroka_x, stroka_y+label.size.pt+1, get_label_len(text.start), style.color);
 				}
 				WriteTextIntoBuf(stroka_x, stroka_y, style.color, text.start);
-				stroka_x+=char_width[' '];
 			}
+			stroka_x+=char_width[' '];
 			stroka_x += get_label_len(text.start);
 		}
 		if (ch=='>') {

@@ -316,7 +316,7 @@ void StartPlayingMp3()
 	char item_path[4096];
 	char notify_message[512];
 	StopPlayingMp3();
-	if (!list.count) { NotifyAndBackFocus("'Pixie Player\nPress O key to open file' -St"); return; }
+	if (!list.count) { NotifyAndBackFocus("'Pixie Player\nPress O key to open MP3 file' -St"); return; }
 	if (current_playing_file_n > list.count) { current_playing_file_n = list.count; return; }
 	if (current_playing_file_n < 0) { current_playing_file_n = 0; return; }
 	playback_mode = PLAYBACK_MODE_PLAYING;
