@@ -175,6 +175,8 @@ extra_files = {
  {"kolibrios/lib/i915_dri.drv", "common/lib/i915_dri.drv"},
  {"kolibrios/lib/i965_dri.drv", "common/lib/i965_dri.drv"},
  {"kolibrios/media/fplay", "common/media/fplay"},
+ {"kolibrios/media/updf", "common/media/updf"},
+ {"kolibrios/media/vttf", "common/media/vttf"},
  {"kolibrios/media/zsea/zsea.ini", PROGS .. "/media/zsea/zSea.ini"},
  {"kolibrios/media/zsea/buttons/buttons.png", PROGS .. "/media/zsea/buttons.png"},
  {"kolibrios/res/skins/", "../skins/authors.txt"},
