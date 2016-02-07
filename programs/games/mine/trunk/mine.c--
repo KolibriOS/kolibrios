@@ -102,7 +102,6 @@ inline void fastcall mouse_disable()
 # include "draw.h--"   // drawing functions
 # include "access.h--" // get & set functions
 # include "random.h--" // random number generator
-//? include "uf.h--"     // user field window
 
 
 void init()

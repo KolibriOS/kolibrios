@@ -27,7 +27,7 @@ void draw_window() // Процедура отрисовки окна
   sys_window_redraw(1);
   EBX = xpos << 16 + xsize;
   ECX = ypos << 16 + ysize;
-  sys_draw_window(EBX, ECX, 0x14CCCCCC, colors.w_grab | 0x80000000, "MineSweeper");
+  sys_draw_window(EBX, ECX, 0x14CCCCCC, colors.w_work | 0x80000000, "MineSweeper");
   sys_window_redraw(2);
   
   // Leency ROLLED UP FIX
@@ -135,7 +135,7 @@ void draw_square(int x, y)
 // Таймер
 void draw_time()
 {
-  sys_draw_bar(XST<<16+25, 31<<16+10, 0xCCCCCC);
+  sys_draw_bar(XST<<16+25, 31<<16+14, 0xCCCCCC);
   sys_write_number(0x00030000, time, XST<<16+32, 0x10ff0000);
 }
 
@@ -146,7 +146,7 @@ void draw_minesi()
   EBX = xsize - XST - 25;
   $PUSH EBX
   EBX = EBX << 16 + 25;
-  sys_draw_bar(EBX, 31<<16+10, 0xCCCCCC);
+  sys_draw_bar(EBX, 31<<16+14, 0xCCCCCC);
   $POP EDX
   EDX <<= 16; EDX += 32;
   sys_write_number(0x00030000, cmines, EDX, 0x10ff0000);

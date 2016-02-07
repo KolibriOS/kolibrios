@@ -26,7 +26,6 @@
 ; 31.10.2001 - rdtsc replaced            - quickcode <quickcode@mail.ru>
 ; 28.06.2001 - fasm port & framed blocks - Ville Turjanmaa
 ; 
-;
 
 LEN_X equ 19  ;width of table
 LEN_Y equ 29  ; height of table
@@ -254,50 +253,30 @@ jmp still
 ;   *********************************************
 draw_window:
 
-
-    mov  eax,48
-    mov  ebx,3
-    mov  ecx,sc
-    mov  edx,sizeof.system_colors
-    int  0x40
-
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
-    int  0x40
-
-                                 ; DRAW WINDOW
+  mcall 48,3,sc,sizeof.system_colors
+  mcall 12,1
+  ; DRAW WINDOW
   xor  eax,eax                   ; function 0 : define and draw window
   mov  ebx,320*65536+(LEN_X-BORDER_LEFT-BORDER_RIGHT)*ADOBE_SIZE+X_LOCATION*2
-  mov  ecx,25*65536+ (LEN_Y-BORDER_TOP-BORDER_BOTTOM)*ADOBE_SIZE+Y_LOCATION+30
+  mov  ecx,25*65536+ (LEN_Y-BORDER_TOP-BORDER_BOTTOM)*ADOBE_SIZE+Y_LOCATION+36
   mov  edx,[sc.work]             ; color of work area RRGGBB
   or   edx,0x13000000
   mov  edi,title                 ; WINDOW LABEL
   int  0x40
 
-                                    
-    mov eax,8
-    mov ebx,30*65536+100
-    mov ecx,378*65536+18
-    mov edx,2
-    mov esi,[sc.work_button]
-    int 0x40
-;/////////////////////////////////////////////// Wildwest's  'Pause' button
-    ;mov eax,8
-    mov ebx,132*65536+102
-    mov ecx,378*65536+18
-    mov edx,3
-    mov esi,[sc.work_button];
-    int 0x40
+    mcall 8, 30*65536+100,378*65536+22,2,[sc.work_button] ;new game
+	mcall  ,132*65536+102,            ,3 ;Wildwest's  'Pause' button
+;///////////////////////////////////////////////
 
     mov  eax,4                      ; function 4 : write text to window
-    mov  ebx,164*65536+384          ; [x start] *65536 + [y start]
+    mov  ebx,164*65536+383          ; [x start] *65536 + [y start]
     mov  ecx,[sc.work_button_text]  ; color of text RRGGBB
     or   ecx,0x90000000
     mov  edx,labe                   ; pointer to text
     int  0x40
 ;///////////////////////////////////////////////
     ;mov eax,4
-    mov ebx,49*65536+384
+    mov ebx,49*65536+383
     mov edx,game_finished
     int 0x40
     call draw_table
@@ -306,7 +285,7 @@ draw_window:
     call draw_block
 
     cld
-    mov  ebx,38*65536+35           ; draw info text with function 4
+    mov  ebx,38*65536+32           ; draw info text with function 4
     mov  ecx,[sc.work_text]              ; color
     or   ecx,0x90000000    
     mov  edx,text
@@ -658,7 +637,7 @@ write_score:
     mov  eax,[score]
     call number_to_str
 
-    mov  ebx,90*65536+35          ; draw info text with function 4
+    mov  ebx,90*65536+32          ; draw info text with function 4
     mov  ecx,[sc.work_text]        ; color
     or   ecx,0x50000000    
     mov  edx,number_str
@@ -841,21 +820,21 @@ block_table:
 
 if lang eq ru
 
-  title          db 'íÖíêàë 1.61 - ëíêÖãäà à èêéÅÖã',0
+  title          db 'í•‚‡®· 1.62',0
   labe           db 'èÄìáÄ',0
   text           db 'éÁ™®:',0
   game_finished: db '  çéÇÄü',0
 
 else if lang eq et
 
-  title          db 'TETRIS 1.61 - NOOLED & T‹HIK',0
+  title          db 'Tetris 1.62',0
   labe           db 'PAUS',0
   text           db 'Tulemus:',0
   game_finished: db 'UUS MƒNG',0
 
 else
 
-  title          db 'TETRIS 1.61 - ARROWS & SPACE',0
+  title          db 'Tetris 1.62',0
   labe           db 'PAUSE',0
   text           db 'Score:',0
   game_finished: db 'NEW GAME',0

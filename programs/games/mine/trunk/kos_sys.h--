@@ -65,11 +65,11 @@ struct ProcessInfo
 
 struct SystemColours
 {
-  dword w_frames,
-        w_grab,
-        w_grab_button,
-        w_grab_button_text,
-        w_grab_text,
+  dword nonset1,
+        nonset2,
+        work_3d_dark,
+        work_3d_light,
+        w_title,
         w_work,
         w_work_button,
         w_work_button_text,
