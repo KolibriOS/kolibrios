@@ -674,12 +674,11 @@ end if
     invoke  pathshow.draw, ps_addres
     invoke  checkbox.draw, cb_always
 
-    mcall   13, <207, 66>, <LIST_HEIGHT + 29, 22>, [skin.work_graph]
-    mcall   8, <208, 63>, <LIST_HEIGHT + 30, 19>, 2, [skin.work_button]
+    mcall   8, <208, 63>, <LIST_HEIGHT + 28, 21>, 2, [skin.work_button]
 ;
     mov     ecx, [skin.work_button_text]
     add     ecx, 0x80 shl 24
-    mcall   4, <214, LIST_HEIGHT + 37>, , browse_txt
+    mcall   4, <214, LIST_HEIGHT + 36>, , browse_txt
 
  ;; buttons
     mov     eax, 8
