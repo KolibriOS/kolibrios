@@ -26,7 +26,7 @@
     KEYB_SIZE	     equ 140
 
     sz_cont db "Keyboard ", 0x10
-    sz_head db "Calc+ [v", VERSION, "]", 0
+    sz_head db "Calc+ v", VERSION, 0
     btn_clr db ""
     buttons db "|%^*/-+)(=7894561230"
     edb1    edit_box 0, 8, 12, 0, 0, 0, 0, 0, 480, \
@@ -45,7 +45,7 @@
     mov     [ans.size], 3 * 6 + 9
 
     mcall   40, 100111b
-    mcall   48, 3, scn, 192
+    ; mcall   48, 3, scn, 192
 
 
     m2m     [edb1.color],	       [scn.gui_face]
@@ -83,11 +83,7 @@
     mcall   0, <100, 236 + 100 - 50 - 25>, <100, 66 + LIST_SIZE>, , , sz_head
 
  ; TOOLBAR
-    mov     ebx, (275 - 50 - 25 - 50) shl 16 + 64
-    cmp     [keyb], byte 1
-    jne     @f
-    add     ebx, KEYB_SIZE shl 16
-  @@:
+    mov     ebx, 120 shl 16 + 64
     mcall   8, , <-17, 12>, 2 + 1 shl 30
     add     ebx, 4 shl 16 - (64 + 14)
     mcall   4, , [scn.win_title], sz_cont, 10
@@ -153,17 +149,15 @@
     cmp     [keyb], byte 0
     je	    .open
 
-    mcall   67, -1, -1, 286 - 25, -1
     mov     [keyb], 0
     mov     [sz_cont + 9], byte 0x10
-    jmp     ev_redraw
+    mcall   67, -1, -1, 286 - 25, -1
+    jmp     update
 
  .open:
-    mcall   67, -1, -1, 286 - 25 + KEYB_SIZE, -1
     mov     [keyb], 1
     mov     [sz_cont + 9], byte 0x11
-    jmp     ev_redraw
-
+    mcall   67, -1, -1, 286 - 25 + KEYB_SIZE, -1	
     jmp     update
  .not_keyb:
 
@@ -631,7 +625,6 @@
  ans.size   rd 1
  error_n    rd 1
 
- scn	    sys_colors_new
  timer	    rd 1
  but_id     rd 1
  but_c	    rd 1
@@ -643,5 +636,33 @@
  his_even   rb 1
  history    rb 512 * LIST_ITEM_COUNT
 	    rb 512
+		
+struc system_colors_internal {
+  .3d_face        dd 0xCED0D0
+  .3d_dark        dd 0xD7D7D7
+  .3d_light       dd 0xFEFEFE
+  .win_title      dd 0x2F2F2F
+  .win_body       dd 0xE4DFE1
+  .btn_face       dd 0xEFEBEF
+  .btn_text       dd 0x373C42
+  .win_text       dd 0x000000
+  .panel_frame    dd 0x94AECE
+  .win_face       dd 0xE1E1E1
+  .win_inface     dd 0xE1E1E1
+  .win_frame      dd 0x204962
+  .btn_inface     dd 0xEFEBEF
+  .btn_intext     dd 0xD0D9E8
+  .btn_fctext     dd 0x2D3135
+  .gui_shadow     dd 0xFFFFFF
+  .gui_face       dd 0xFAF8FA
+  .gui_inface     dd 0xF6F3F6
+  .gui_fcface     dd 0xFAF8FA
+  .gui_frame      dd 0x7698C0
+  .gui_text       dd 0x373C42
+  .gui_intext     dd 0x5F5F5F
+  .gui_select     dd 0xC7C9C9
+}
+
+ scn system_colors_internal
 
  memory:
