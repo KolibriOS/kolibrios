@@ -21,20 +21,29 @@
 ;******************************************************************************
 
 ; Подключаем необходимые макросы
-include 'macros.inc'
+include '../../../macros.inc'
 
 ;******************************************************************************
 
 ; НАЧАЛО ПРОГРАММЫ
-meos_app_start
+use32
+	org  0x0
+	db   'MENUET01'      ; 8 byte id
+	dd   0x01            ; title version
+	dd   START           ; start of code
+	dd   I_END           ; size of image
+	dd   E_END           ; memory for app
+	dd   E_END           ; esp
+	dd   0x0,0x0         ; I_Param , I_Icon
+
 ; ОБЛАСТЬ КОДА
-code
+START:
     mov  eax,40       ; сообщим системе, какие события будем обрабатывать
     mov  ebx,0100101b ; маска событий - перерисовка (1) + кнопка (3) + мышь (6
     int  0x40         ; эта команда вызывает системную функцию
 
-    mov  [workarea.cx],10  ; координаты рабочей (клиентской) области
-    mov  [workarea.cy],45  ; для рисования
+    mov  [workarea.cx],5  ; координаты рабочей (клиентской) области
+    mov  [workarea.cy],30  ; для рисования
 
 red:
     call draw_window   ; вызываем процедуру отрисовки окна
@@ -152,9 +161,7 @@ still:            ; ГЛАВНЫЙ ЦИКЛ ПРОГРАММЫ - ЦИКЛ ОБРАБОТКИ СООБЩЕНИЙ
     mov  [mouse_pressed],1
 
     ; Получим координаты курсора мыши (относительно окна)
-    mov  eax,37              ; функция 37 - получить состояние мыши
-    mov  ebx,1               ; подфункция 1
-    int  0x40
+	mcall 37,1 ; получить состояние мыши
 
     ; Переделаем их так, чтобы они были в разных регистрах, т.е. eax и ebx
     mov  ebx,eax
@@ -202,9 +209,9 @@ still:            ; ГЛАВНЫЙ ЦИКЛ ПРОГРАММЫ - ЦИКЛ ОБРАБОТКИ СООБЩЕНИЙ
 ;******************************************************************************
 
 save_canvas:
-    mov  eax,[process.x_size]
+    mov  eax,[proc_info.box.width]
     add  eax,[workarea.cx]
-    mov  ebx,[process.y_size]
+    mov  ebx,[proc_info.box.height]
     add  ebx,[workarea.cy]
 
     jmp still
@@ -217,71 +224,35 @@ save_canvas:
 
 draw_window:
 
-    mov  eax,48                    ; ПОДГРУЖАЕМ СИСТЕМНЫЕ ЦВЕТА
-    mov  ebx,3
-    mov  ecx,sc
-    mov  edx,sizeof.system_colors
-    int  0x40
+    mcall 48,3,sc,sizeof.system_colors                     ; ПОДГРУЖАЕМ СИСТЕМНЫЕ ЦВЕТА
+	mcall 12, 1                    ; начало отрисовки окна
+    mov edx, [sc.work]
+    or  edx, 0x33000000
+    mcall 0, (100 shl 16)+400, (100 shl 16)+300, , , title ; рисуем окно
+	mcall 12, 1
+ 
+    mcall 9,proc_info,-1             ; получим информацию о своем потоке
 
-    mov  eax,12      ; функция 12: сообщить ОС об отрисовке окна
-    mov  ebx,1       ; 1, начинаем рисовать
-    int  0x40
+    mov  eax,[proc_info.box.width]   ; настроим размер рабочей области
+    sub  eax,20                      ; (х размер окна - 20)
+    mov  [workarea.sx],eax
+    mov  eax,[proc_info.box.height]
+    sub  eax,63                      ; (у размер - 63)
+    mov  [workarea.sy],eax
 
-                                   ; СОЗДАЁМ ОКНО
-    mov  eax,0                     ; функция 0 : определить и отрисовать окно
-    mov  ebx,100*65536+400         ; [x старт] *65536 + [x размер]
-    mov  ecx,100*65536+300         ; [y старт] *65536 + [y размер]
-    mov  edx,[sc.work]             ; цвет рабочей области  RRGGBB,8->color gl
-    or   edx,0x02000000
-    mov  esi,[sc.grab]             ; цвет полосы заголовка RRGGBB,8->color gl
-    or   esi,0x80000000
-    mov  edi,[sc.frame]            ; цвет рамки            RRGGBB
-    int  0x40
-
-    mov  eax,9                     ; получим информацию о себе
-    mov  ebx,process
-    mov  ecx,-1
-    int  0x40
-
-    mov  eax,[process.x_size]      ; настроим размер рабочей области
-    add  eax,-20                   ;   (х размер окна - 20)
-    mov  [workarea.sx],eax         ;
-    mov  eax,[process.y_size]      ;
-    add  eax,-60                   ;   (у размер - 60)
-    mov  [workarea.sy],eax         ;
-
-                                   ; ЗАГОЛОВОК ОКНА
-    mov  eax,4                     ; функция 4 : написать в окне текст
-    mov  ebx,8*65536+8             ; [x] *65536 + [y]
-    mov  ecx,[sc.grab_text]        ; цвет
-    or   ecx,0x10000000            ; шрифт
-    mov  edx,header                ; адрес строки
-    mov  esi,header_len            ; и её длина
-    int  0x40
-
-                                   ; КНОПКА ЗАКРЫТИЯ ОКНА
-    mov  eax,8                     ; функция 8 : определить и нарисовать кнопку
-;   mov  ebx,(300-19)*65536+12     ; [x старт] *65536 + [x размер]
-    mov  ebx,[process.x_size]
-    add  ebx,-19
-    shl  ebx,16
-    add  ebx,12
-    mov  ecx,5*65536+12            ; [y старт] *65536 + [y размер]
-    mov  edx,1                     ; идентификатор кнопки
-    mov  esi,[sc.grab_button]      ; цвет кнопки RRGGBB
-    int  0x40
-
-    cmp  [process.y_size],80
+    cmp  [proc_info.box.height],80
     jb   .finish
-
+	
+	mov eax, 8
+	mov edx, 1
     ; создаём кнопки выбора цвета:
-    mov  ebx,10*65536+10           ; начальная x координата и размер
-    mov  ecx,27*65536+10           ; начальная y координата & size
+    mov  ebx,10*65536+15           ; начальная x координата и размер
+    mov  ecx, 7*65536+15           ; начальная y координата & size
  .new_button:
     inc  edx                       ; идентификатор++;
     mov  esi,[btn_colors-8+edx*4]  ; цвет кнопки
     int  0x40                      ; ставим кнопку
-    add  ebx,12*65536              ; следующая кнопка правее на 12
+    add  ebx,18*65536              ; следующая кнопка правее на 12
     cmp  edx,9                     ; сравниваем edx (идентификатор) с 9
     jbe  .new_button               ; если меньше или равно -> ещё одну кпоку
 
@@ -293,25 +264,20 @@ draw_window:
     add  ebx,[workarea.sx]
     add  ecx,[workarea.sy]
     mov  edx,0xffffff
-    int  0x40
+    mcall 13
 
  .finish:
-    mov  eax,12      ; сообщаем системе о завершении отрисовки окна
-    mov  ebx,2
-    int  0x40
-
     ret
 
 ;******************************************************************************
 ; начало области инициализированных данных
 ; если кто ещё не знает, что значит "инициализированные", то поясняю:
 ; это те данные, которым присвоено начальное значение
-data
 
-header:                  ; строка заголовка
-   db  'PAINT v0.2 for MenuetOS'
-header_len = $ - header  ; и её длина
+;data
 
+title db  'Simple Paint v0.3',0 
+   
    mouse_pressed   db  0 ; показывает, нажата ли была мышь в предыдущий момент
 
 ; цвета кнопок
@@ -343,7 +309,7 @@ colors:
 ; здесь данным значения не присвоены. В отличие от иниц., не увеличивают размер
 ; файла
 
-udata
+I_END:
 
    active_color    dd  ?           ; активный цвет
 
@@ -357,9 +323,9 @@ udata
        .sy     dd  ?
 
    sc          system_colors       ; системные цвета
-   process     process_information ; информация о процессе
+   proc_info   process_information ; информация о процессе
 
    restflag    dd  ?
    canvas      rb  800*600*3
 
-meos_app_end
+E_END:

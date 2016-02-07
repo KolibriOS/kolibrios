@@ -81,23 +81,9 @@ align 4
 draw_window:
 pushad
  mcall 12,1
- xor eax,eax
- mov ebx,(10 shl 16)+100
- mov ecx,(10 shl 16)+75
- mov edx,[sc.work]
- or edx,(2 shl 24)+0x10000000+0x20000000
- mov edi,[sc.grab] ;[sc.frame]
- mov esi,[sc.grab]
- int 0x40
-
- mov eax,8
- mov ebx,(80 shl 16)+10
- mov cx,-15
- shl ecx,16
- mov cx,10
- mov edx,1
- mov esi,[sc.grab_button]
- int 0x40
+ mov edx, [sc.work]
+ or  edx, 0x34000000
+ mcall 0, (10 shl 16)+100, (10 shl 16)+75
 
  stdcall [check_box_draw], ch1
  stdcall [check_box_draw], ch2
