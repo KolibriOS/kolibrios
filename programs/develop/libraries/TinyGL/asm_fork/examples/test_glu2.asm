@@ -82,7 +82,7 @@ load_libraries l_libs_start,l_libs_end
 	cmp ebp,l_libs_end
 	jl .test_lib_open
 
-	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.sys_colors_new
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
 	mcall SF_SET_EVENTS_MASK,0x27
 
 	stdcall [kosglMakeCurrent], 5,30,[buf_ogl.w],[buf_ogl.h],ctx1
@@ -536,7 +536,6 @@ align 4
 i_end:
 	run_file_70 FileInfoBlock
 	sc system_colors
-		rb sizeof.sys_colors_new-sizeof.system_colors
 align 16
 	rb 4096
 stacktop:

@@ -144,7 +144,7 @@ start:
 	add ebp,ll_struc_size
 	cmp ebp,l_libs_end
 	jl .test_lib_open
-	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.sys_colors_new
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
 	mcall SF_SET_EVENTS_MASK,0x27
 
 	stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
@@ -1429,7 +1429,6 @@ i_end:
 	procinfo process_information
 	run_file_70 FileInfoBlock
 	sc system_colors
-		rb sizeof.sys_colors_new-sizeof.system_colors
 	angle_x rd 1 ;углы поворота сцены
 	angle_y rd 1
 	angle_z rd 1
