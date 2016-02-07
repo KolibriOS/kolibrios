@@ -352,8 +352,8 @@ wait_event:
     jnz  exit           ; If not key then Alt+F4
 ; key pressed, read it and ignore
     mcall   2
-    cmp eax, 0x1B00        ;Test for Escape key press
-    jnz wait_event
+	cmp	ah, 27		    ; Test Esc key press in ASCII
+	jne	wait_event
 
 ; button pressed; we have only one button, close
 ; also seems to handle Alt+F4
