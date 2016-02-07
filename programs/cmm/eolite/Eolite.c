@@ -592,10 +592,10 @@ void DrawFilePanels()
 	}
 	else
 	{
+		SystemDiscs.Get();
 		llist_copy(#files, #files_inactive);
 		strcpy(#path, #inactive_path);
 		col_selec = 0xCCCccc;
-		SystemDiscs.Get();
 		SystemDiscs.Draw();
 		files_y = files.y;
 
