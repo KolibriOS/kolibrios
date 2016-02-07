@@ -49,7 +49,7 @@ param:
         sub     eax, 399 shl 16
         add     eax, 399
         mov     [xstart], eax
-        mcall   48, 3, sc, sizeof.sys_colors_new
+        mcall   48, 3, sc, sizeof.system_colors
 
         mov     esi, filename
         call    CreateFile
@@ -214,12 +214,12 @@ draw_window:
         xor     esi, esi
         mcall   ,[xstart],,,,title
         mov     ebx, 296 shl 16+31
-        mcall   8,,<4,13>,3,[sc.btn_face]
+        mcall   8,,<4,13>,3,[sc.work_button]
         mov     edx, [vmode]
         lea     edx, [edx*4+duk]
         mov     ecx, 0x80
         shr     ecx, 24
-        add     ecx, [sc.btn_text]
+        add     ecx, [sc.work_button_text]
         mcall   4,<300,7>,,,4
         call    draw_text
         mcall   12, 2                     ; 2, end of draw
@@ -438,7 +438,7 @@ krnl_cnt        dd  ?
 pid_tid         dd  ?
 filepos         dd  ?
 xstart          dd  ?
-sc      sys_colors_new
+sc      system_colors
 
         rd  2
 text1   rb  80*(MAXSTRINGS+1)

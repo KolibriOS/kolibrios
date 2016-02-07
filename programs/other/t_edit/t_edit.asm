@@ -81,7 +81,7 @@ icon_tl_sys dd 0 ;указатель на память для хранения системных иконок
 
 align 4
 start:
-	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.sys_colors_new
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
 
 	mcall SF_SYS_MISC,SSF_HEAP_INIT
 	or eax,eax
@@ -591,7 +591,7 @@ i_end:
 	buf_find rb 302 ;буфер для поиска текста
 	run_file_70 FileInfoBlock 
 	sc system_colors
-		rb sizeof.sys_colors_new-sizeof.system_colors
+		rb sizeof.system_colors
 IncludeUGlobals
 	align 16
 	procinfo process_information

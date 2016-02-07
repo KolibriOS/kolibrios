@@ -433,11 +433,11 @@ check_boxes_set_sys_color2 check1,check1_end,color_table
 ; define window
 	xor	eax,eax
 	mov	ecx,100 shl 16+306
-	mov	edx,[color_table.win_body]
+	mov	edx,[color_table.work]
 	add	edx,34000000h
 	xor	esi,esi
 	xor	edi,edi
-	mcall	,<100,436>,,,[color_table.win_title],caption_str
+	mcall	,<100,436>,,,,caption_str
 	mcall	9,procinfo,-1
 	
 	mov	eax,[procinfo+70] ;status of window
@@ -496,7 +496,7 @@ draw_lines:
 ; draw frame for messages data
 	push	ecx
 	add	ecx,50 shl 16+16
-	mcall	38,<3,423>,,[color_table.gui_frame]
+	mcall	38,<3,423>,,[color_table.work_graph]
 	add	ecx,224*(1 shl 16+1)
 	mcall
 	sub	cx,224
@@ -508,7 +508,7 @@ draw_lines:
 draw_buttons:
 ; define compress button
 	mov	cx,18
-	mcall	8,<351,73>,<1, 17>,2,[color_table.btn_face]
+	mcall	8,<351,73>,<1, 17>,2,[color_table.work_button]
 ; uncompress button
 	add	ecx,18 shl 16
 	inc	edx
@@ -521,7 +521,7 @@ draw_buttons:
 	mcall	,<413,11>
 	shr	ecx,16
 	lea	ebx,[ecx+1A00002h]
-	mcall	4,,[color_table.btn_text],aQuestion,1
+	mcall	4,,[color_table.work_button_text],aQuestion,1
 	pop	esi
 ; define settings buttons
 	mov	ecx,16*2+2
@@ -531,7 +531,7 @@ draw_buttons:
 ; text on settings buttons
 	mov	ebx,8 shl 16+5
 	mov	al,4
-	mov	ecx,[color_table.win_text]
+	mov	ecx,[color_table.work_text]
 	push	buttons1names
 	pop	edx
 	push	8
@@ -543,7 +543,7 @@ draw_buttons:
 	mcall
 	add	edx,esi
 	add	ebx,16
-	mov	ecx,[color_table.btn_text]
+	mov	ecx,[color_table.work_button_text]
 	mcall
 ; text on compress and decompress buttons
 	or	ecx,0x80000000
