@@ -89,8 +89,8 @@ void Draw_List()
 			}
 			else
 			{
-				DrawBar(0, yyy, list[active].w, list[active].item_h, system.color.grab_button);
-				if (i<list[active].count) WriteText(12,yyy+list[active].text_y,0x80,system.color.grab_button_text, #temp_filename);
+				DrawBar(0, yyy, list[active].w, list[active].item_h, 0x94AECE);
+				if (i<list[active].count) WriteText(12,yyy+list[active].text_y,0x80,0x000000, #temp_filename);
 			}
 		}
 		else

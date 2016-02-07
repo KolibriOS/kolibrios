@@ -45,8 +45,18 @@ inline fastcall void GetProcessInfo(dword EBX, ECX)
 	$int  0x40
 }
 
-struct system_colors{
-	dword frame,grab,grab_button,grab_button_text,grab_text,work,work_button,work_button_text,work_text,work_graph;
+struct system_colors {
+dword
+	nonset1,
+	nonset2,
+	work_light,
+	work_dark,
+	nonset3,
+	work,
+	work_button,
+	work_button_text,
+	work_text,
+	work_graph;
 	void get();
 };
 
@@ -55,7 +65,7 @@ void system_colors::get()
 	$push ecx
 	EAX = 48;
 	EBX = 3;
-	ECX = #frame;
+	ECX = #nonset1;
 	EDX = 40;
 	$int 0x40
 	$pop ecx
@@ -68,11 +78,12 @@ inline fastcall dword WaitEvent(){
  $int 0x40
 }
 
-
-inline fastcall word GetKey(){
- EAX = 2;              // just read it key from buffer
- $int  0x40
- EAX = EAX >> 8;	 
+int GetKeyScancode()
+{
+	$mov  eax,2
+	$int  0x40
+	$shr  eax,16
+	return AL;
 }
 
 inline fastcall word GetButtonID(){
@@ -244,3 +255,11 @@ done:
 	$pop ecx
 	$pop ebx
 }
+
+void DrawCaptButton(dword x,y,w,h,id,color_b, color_t,text)
+{
+	if (id>0) DefineButton(x,y,w,h,id,color_b);
+	WriteText(-strlen(text)*6+w/2+x+1,h/2-3+y,0x80,color_t,text);
+}
+
+

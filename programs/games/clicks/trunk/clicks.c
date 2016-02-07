@@ -7,7 +7,7 @@ system_colors sc;
 
 //уровни сложности
 int DIFFICULTY_LEVEL=1; //по-умолчанию среднее поле
-char *BOARD_SIZES[]={ "S", "M", "L", 0 };
+char *BOARD_SIZES[]={ "S\0", "M\0", "L\0", 0 };
 int DIFFICULTY_LEV_PARAMS[]={ 9, 12, 16 };
 
 int BLOCKS_NUM; //количество квадратиков по ’ и по Y
@@ -18,14 +18,14 @@ int blocks_matrix[28*28]; //цвета дл€ пол€ с квадратиками
 #define BLOCK_SIZE 21 //размер квадратика
 #define MARKED 7
 #define DELETED_BLOCK 6
-#define HEADER "Just Clicks v2.1"
+#define HEADER "Just Clicks v2.2"
 
 #ifndef AUTOBUILD
 #include "lang.h--"
 #endif
 
 #ifdef LANG_RUS
-	char NEW_GAME_TEXT[]=" З†≠ЃҐЃ [F2]";
+	char NEW_GAME_TEXT[]="З†≠ЃҐЃ [F2]";
 	char REZULT_TEXT[]="Р•ІгЂмв†в: ";
 #elif LANG_EST
 	char NEW_GAME_TEXT[]="Uus mдng [F2]";
@@ -38,7 +38,7 @@ int blocks_matrix[28*28]; //цвета дл€ пол€ с квадратиками
 
 void main()
 {
-	int key, id;
+	int key_scancode, id;
 
 	BLOCKS_NUM=DIFFICULTY_LEV_PARAMS[DIFFICULTY_LEVEL];
 
@@ -75,10 +75,10 @@ void main()
 				}
 				break;
 			case evKey:
-				key = GetKey();
-				if (key==027) //Escape
+				key_scancode = GetKeyScancode();
+				if (key_scancode==001) //Escape
 					 ExitProcess();
-				if (key==051) //F2
+				if (key_scancode==060) //F2
 				{
 					_NEW_GAME_MARK:
 						new_game();
@@ -181,14 +181,8 @@ void draw_window()
 
 	DrawBar(0,PANEL_Y, PANEL_Y, USER_PANEL_HEIGHT, sc.work); //панель снизу
 
-	//нова€ игра
-	DefineButton(10,PANEL_Y+7, 13*6+6, 20, 2,sc.work_button);
-	WriteText(10+4,PANEL_Y+14,0x80,sc.work_button_text,#NEW_GAME_TEXT,0);
-
-
-	//кнопочкa выбора уровн€ сложности
-	DefineButton(95,PANEL_Y+7, 20,20, 10,sc.work_button);
-	WriteText(95+8,PANEL_Y+14,0x80,sc.work_button_text,BOARD_SIZES[DIFFICULTY_LEVEL],0);
+	DrawCaptButton(10, PANEL_Y+7, 90, 20, 2, sc.work_button, sc.work_button_text,#NEW_GAME_TEXT);
+	DrawCaptButton(105,PANEL_Y+7, 20, 20, 10,sc.work_button, sc.work_button_text,BOARD_SIZES[DIFFICULTY_LEVEL]);
 
 	draw_field();
 
@@ -272,7 +266,7 @@ void draw_field()
 			else
 			{
 				DefineButton(j*BLOCK_SIZE,i*BLOCK_SIZE,BLOCK_SIZE-1,BLOCK_SIZE-1, current_id+100+BT_HIDE,0);
-				PutImage(blocks_matrix[current_id]*1323+#img,21,21,j*BLOCK_SIZE,i*BLOCK_SIZE);
+				PutImage(blocks_matrix[current_id]*1323+#block,21,21,j*BLOCK_SIZE,i*BLOCK_SIZE);
 			}
 		}
 }
