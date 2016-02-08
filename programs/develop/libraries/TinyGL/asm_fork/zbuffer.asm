@@ -7,7 +7,7 @@
 
 ;output:
 ; eax - указатель на ZBuffer (0 если не удача)
-align 4
+align 16
 proc ZB_open uses ecx edi, xsize:dword, ysize:dword, mode:dword,\
 		nb_colors:dword, color_indexes:dword, color_table:dword, frame_buffer:dword
 
@@ -30,13 +30,6 @@ proc ZB_open uses ecx edi, xsize:dword, ysize:dword, mode:dword,\
 	mov eax,[mode]
 	mov [edi+offs_zbuf_mode],eax
 
-if TGL_FEATURE_8_BITS eq 1
-	cmp eax,ZB_MODE_INDEX
-	jne @f
-;ZB_initDither(edi, nb_colors, color_indexes, color_table);
-		jmp .end_s
-	@@:
-end if
 if TGL_FEATURE_32_BITS eq 1
 	cmp eax,ZB_MODE_RGBA
 	je .correct
@@ -83,19 +76,14 @@ endp
 
 ;void ZB_close(ZBuffer * zb)
 ;{
-if TGL_FEATURE_8_BITS eq 1
-;    if (zb->mode == ZB_MODE_INDEX)
-;	ZB_closeDither(zb);
-end if
-;
 ;    if (zb->frame_buffer_allocated)
 ;	gl_free(zb->pbuf);
-;
+
 ;    gl_free(zb->zbuf);
 ;    gl_free(zb);
 ;}
 
-align 4
+align 16
 proc ZB_resize uses eax ebx ecx edi esi, zb:dword, frame_buffer:dword, xsize:dword, ysize:dword
 	mov ebx,[zb]
 
@@ -149,7 +137,7 @@ endp
 ;    unsigned char *p1;
 ;    PIXEL *q;
 ;    int y, n;
-;
+
 ;    q = zb->pbuf;
 ;    p1 = buf;
 ;    n = zb->xsize * PSZB;
@@ -159,7 +147,7 @@ endp
 ;	q = (PIXEL *) ((char *) q + zb->linesize);
 ;    }
 ;}
-;
+
 ;#if TGL_FEATURE_RENDER_BITS == 16
 
 ;/* 32 bpp copy */
@@ -183,10 +171,10 @@ endp
 ;    unsigned short *q;
 ;    unsigned int *p, *p1, v, w0, w1;
 ;    int y, n;
-;
+
 ;    q = zb->pbuf;
 ;    p1 = (unsigned int *) buf;
-;
+
 ;    for (y = 0; y < zb->ysize; y++) {
 ;	p = p1;
 ;	n = zb->xsize >> 2;
@@ -199,7 +187,7 @@ endp
 ;#endif
 ;	    p[0] = w0;
 ;	    p[1] = w1;
-;
+
 ;	    v = *(unsigned int *) (q + 2);
 ;#if BYTE_ORDER == BIG_ENDIAN
 ;	    RGB16_TO_RGB32(w1, w0, v);
@@ -208,11 +196,11 @@ endp
 ;#endif
 ;	    p[2] = w0;
 ;	    p[3] = w1;
-;
+
 ;	    q += 4;
 ;	    p += 4;
 ;	} while (--n > 0);
-;
+
 ;	p1 += linesize;
 ;    }
 ;}
@@ -272,11 +260,11 @@ endp
 ;    unsigned short *q;
 ;    unsigned int *p, *p1, w0, w1, w2, v0, v1;
 ;    int y, n;
-;
+
 ;    q = zb->pbuf;
 ;    p1 = (unsigned int *) buf;
 ;    linesize = linesize * 3;
-;
+
 ;    for (y = 0; y < zb->ysize; y++) {
 ;	p = p1;
 ;	n = zb->xsize >> 2;
@@ -302,16 +290,6 @@ endp
 ;			int linesize)
 ;{
 ;    switch (zb->mode) {
-;#ifdef TGL_FEATURE_8_BITS
-;    case ZB_MODE_INDEX:
-;	ZB_ditherFrameBuffer(zb, buf, linesize >> 1);
-;	break;
-;#endif
-;#ifdef TGL_FEATURE_16_BITS
-;    case ZB_MODE_5R6G5B:
-;	ZB_copyBuffer(zb, buf, linesize);
-;	break;
-;#endif
 ;#ifdef TGL_FEATURE_32_BITS
 ;    case ZB_MODE_RGBA:
 ;	ZB_copyFrameBufferRGB32(zb, buf, linesize >> 1);
@@ -341,10 +319,10 @@ endp
 ;    PIXEL *q;
 ;    unsigned short *p, *p1;
 ;    int y, n;
-;
+
 ;    q = zb->pbuf;
 ;    p1 = (unsigned short *) buf;
-;
+
 ;    for (y = 0; y < zb->ysize; y++) {
 ;	p = p1;
 ;	n = zb->xsize >> 2;
@@ -364,11 +342,6 @@ endp
 ;			int linesize)
 ;{
 ;    switch (zb->mode) {
-;#ifdef TGL_FEATURE_16_BITS
-;    case ZB_MODE_5R6G5B:
-;	ZB_copyFrameBuffer5R6G5B(zb, buf, linesize);
-;	break;
-;#endif
 ;#ifdef TGL_FEATURE_24_BITS
 ;    case ZB_MODE_RGB24:
 ;	ZB_copyBuffer(zb, buf, linesize);
@@ -393,10 +366,10 @@ endp
 ;    PIXEL *q;
 ;    unsigned short *p, *p1;
 ;    int y, n;
-;
+
 ;    q = zb->pbuf;
 ;    p1 = (unsigned short *) buf;
-;
+
 ;    for (y = 0; y < zb->ysize; y++) {
 ;	p = p1;
 ;	n = zb->xsize >> 2;
@@ -411,16 +384,11 @@ endp
 ;	p1 = (unsigned short *)((char *)p1 + linesize);
 ;    }
 ;}
-;
+
 ;void ZB_copyFrameBuffer(ZBuffer * zb, void *buf,
 ;			int linesize)
 ;{
 ;    switch (zb->mode) {
-;#ifdef TGL_FEATURE_16_BITS
-;    case ZB_MODE_5R6G5B:
-;	ZB_copyFrameBuffer5R6G5B(zb, buf, linesize);
-;	break;
-;#endif
 ;#ifdef TGL_FEATURE_32_BITS
 ;    case ZB_MODE_RGBA:
 ;	ZB_copyBuffer(zb, buf, linesize);
@@ -430,15 +398,17 @@ endp
 ;	assert(0);
 ;    }
 ;}
-;
+
 ;#endif /* TGL_FEATURE_RENDER_BITS == 32 */
 
 
 ;
 ; adr must be aligned on an 'int'
 ;
-align 4
-proc memset_s uses eax ecx edi, adr:dword, val:dword, count:dword
+;destroy:
+; ecx, edi
+align 16
+proc memset_s uses eax, adr:dword, val:dword, count:dword
 	mov eax,[val]
 	mov di,ax
 	ror eax,16
@@ -455,7 +425,7 @@ proc memset_s uses eax ecx edi, adr:dword, val:dword, count:dword
 	ret
 endp
 
-align 4
+align 16
 proc memset_l uses eax ecx edi, adr:dword, val:dword, count:dword
 	mov eax,[val]
 	mov ecx,[count]
@@ -465,8 +435,10 @@ proc memset_l uses eax ecx edi, adr:dword, val:dword, count:dword
 endp
 
 ; count must be a multiple of 4 and >= 4
-align 4
-proc memset_RGB24 uses eax ecx edi esi, adr:dword, r:dword, g:dword, b:dword, count:dword
+;destroy:
+; edi, esi
+align 16
+proc memset_RGB24 uses eax ecx, adr:dword, r:dword, g:dword, b:dword, count:dword
 	mov esi,[adr]
 	mov eax,[r] ;копируем в буфер первые 12 байт (минимальное число кратное 3 и 4)
 	mov byte[esi],al
@@ -501,10 +473,8 @@ proc memset_RGB24 uses eax ecx edi esi, adr:dword, r:dword, g:dword, b:dword, co
 		sub ecx,esi ;ecx*=3
 		rep stosd
 		jmp .end_f
-	@@:
-
-	;если r!=g или g!=b или b!=r
-	@@:
+align 16
+	@@: ;если r!=g или g!=b или b!=r
 		movsd
 		movsd
 		movsd
@@ -514,9 +484,9 @@ proc memset_RGB24 uses eax ecx edi esi, adr:dword, r:dword, g:dword, b:dword, co
 	ret
 endp
 
-align 4
-proc ZB_clear uses eax ebx ecx, zb:dword, clear_z:dword, z:dword, clear_color:dword,\
-	r:dword, g:dword, b:dword
+align 16
+proc ZB_clear uses eax ebx ecx edi esi, zb:dword, clear_z:dword, z:dword,\
+	clear_color:dword, r:dword, g:dword, b:dword
 ;if TGL_FEATURE_RENDER_BITS != 24
 ;	color dd ?
 ;end if
@@ -546,14 +516,11 @@ if TGL_FEATURE_RENDER_BITS eq 24
 end if
 		mov ebx,[eax+offs_zbuf_pbuf]
 		mov ecx,[eax+offs_zbuf_ysize]
+align 4
 		.cycle_0:
-if (TGL_FEATURE_RENDER_BITS eq 15) ;or (TGL_FEATURE_RENDER_BITS eq 16)
-			;color = RGB_TO_PIXEL(r, g, b);
-			;memset_s(ebx, color, zb->xsize);
-end if
 if TGL_FEATURE_RENDER_BITS eq 32
-			;color = RGB_TO_PIXEL(r, g, b);
-			;memset_l(ebx, color, zb->xsize);
+			;color = RGB_TO_PIXEL(r, g, b)
+			;memset_l(ebx, color, zb->xsize)
 end if
 if TGL_FEATURE_RENDER_BITS eq 24
 			sub esp,16

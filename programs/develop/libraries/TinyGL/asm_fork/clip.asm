@@ -131,58 +131,59 @@ endp
 
 ; line
 
-align 16
-proc interpolate uses eax ebx ecx, q:dword,p0:dword,p1:dword,t:dword
-	mov eax,[q]
-	mov ebx,[p0]
-	mov ecx,[p1]
+;input:
+;q - регистр с адресом вершины для интерполяции
+;p0 - регистр с адресом 1-й вершины
+;p1 - регистр с адресом 2-й вершины
+;t - float
+macro interpolate q, p0, p1, t
+{
 	fld dword[t]
 
 	; интерполяция по координатам
-	fld dword[ecx+offs_vert_pc]
-	fsub dword[ebx+offs_vert_pc]
+	fld dword[p1+offs_vert_pc]
+	fsub dword[p0+offs_vert_pc]
 	fmul st0,st1
-	fadd dword[ebx+offs_vert_pc]
-	fstp dword[eax+offs_vert_pc] ;q.pc.X = p0.pc.X + (p1.pc.X - p0.pc.X) * t
+	fadd dword[p0+offs_vert_pc]
+	fstp dword[q+offs_vert_pc] ;q.pc.X = p0.pc.X + (p1.pc.X - p0.pc.X) * t
 
-	fld dword[ecx+offs_vert_pc+offs_Y]
-	fsub dword[ebx+offs_vert_pc+offs_Y]
+	fld dword[p1+offs_vert_pc+offs_Y]
+	fsub dword[p0+offs_vert_pc+offs_Y]
 	fmul st0,st1
-	fadd dword[ebx+offs_vert_pc+offs_Y]
-	fstp dword[eax+offs_vert_pc+offs_Y]
+	fadd dword[p0+offs_vert_pc+offs_Y]
+	fstp dword[q+offs_vert_pc+offs_Y]
 
-	fld dword[ecx+offs_vert_pc+offs_Z]
-	fsub dword[ebx+offs_vert_pc+offs_Z]
+	fld dword[p1+offs_vert_pc+offs_Z]
+	fsub dword[p0+offs_vert_pc+offs_Z]
 	fmul st0,st1
-	fadd dword[ebx+offs_vert_pc+offs_Z]
-	fstp dword[eax+offs_vert_pc+offs_Z]
+	fadd dword[p0+offs_vert_pc+offs_Z]
+	fstp dword[q+offs_vert_pc+offs_Z]
 
-	fld dword[ecx+offs_vert_pc+offs_W]
-	fsub dword[ebx+offs_vert_pc+offs_W]
+	fld dword[p1+offs_vert_pc+offs_W]
+	fsub dword[p0+offs_vert_pc+offs_W]
 	fmul st0,st1
-	fadd dword[ebx+offs_vert_pc+offs_W]
-	fstp dword[eax+offs_vert_pc+offs_W]
+	fadd dword[p0+offs_vert_pc+offs_W]
+	fstp dword[q+offs_vert_pc+offs_W]
 
 	; интерполяция по цвету
-	fld dword[ecx+offs_vert_color]
-	fsub dword[ebx+offs_vert_color]
+	fld dword[p1+offs_vert_color]
+	fsub dword[p0+offs_vert_color]
 	fmul st0,st1
-	fadd dword[ebx+offs_vert_color]
-	fstp dword[eax+offs_vert_color]
+	fadd dword[p0+offs_vert_color]
+	fstp dword[q+offs_vert_color]
 
-	fld dword[ecx+offs_vert_color+4]
-	fsub dword[ebx+offs_vert_color+4]
+	fld dword[p1+offs_vert_color+4]
+	fsub dword[p0+offs_vert_color+4]
 	fmul st0,st1
-	fadd dword[ebx+offs_vert_color+4]
-	fstp dword[eax+offs_vert_color+4]
+	fadd dword[p0+offs_vert_color+4]
+	fstp dword[q+offs_vert_color+4]
 
-	fld dword[ecx+offs_vert_color+8]
-	fsub dword[ebx+offs_vert_color+8]
+	fld dword[p1+offs_vert_color+8]
+	fsub dword[p0+offs_vert_color+8]
 	fmulp
-	fadd dword[ebx+offs_vert_color+8]
-	fstp dword[eax+offs_vert_color+8]
-	ret
-endp
+	fadd dword[p0+offs_vert_color+8]
+	fstp dword[q+offs_vert_color+8]
+}
 
 ;
 ; Line Clipping 
@@ -421,10 +422,10 @@ align 4
 
 	mov eax,ebp
 	sub eax,8+2*sizeof.GLVertex ;eax = &q1
-	stdcall interpolate, eax,edi,esi,[tmin]
+	interpolate eax,edi,esi,tmin
 	stdcall gl_transform_to_viewport, edx,eax
 	add eax,sizeof.GLVertex ;eax = &q2
-	stdcall interpolate, eax,edi,esi,[tmax]
+	interpolate eax,edi,esi,tmax
 	stdcall gl_transform_to_viewport, edx,eax
 
 	sub eax,sizeof.GLVertex ;eax = &q1
@@ -586,9 +587,10 @@ endp
 align 4
 clip_proc dd clip_xmin,clip_xmax, clip_ymin,clip_ymax, clip_zmin,clip_zmax
 
+;input:
+;edi - q
 align 16
-proc updateTmp uses eax ebx ecx edx, context:dword, q:dword, p0:dword, p1:dword, t:dword
-	mov ebx,[q]
+proc updateTmp uses eax ecx edx, context:dword, p0:dword, p1:dword, t:dword
 	mov edx,[context]
 	mov eax,[p0]
 	cmp dword[edx+offs_cont_current_shade_model],GL_SMOOTH ;if (context.current_shade_model == GL_SMOOTH)
@@ -598,26 +600,26 @@ proc updateTmp uses eax ebx ecx edx, context:dword, q:dword, p0:dword, p1:dword,
 		fsub dword[eax+offs_vert_color]
 		fmul dword[t]
 		fadd dword[eax+offs_vert_color]
-		fstp dword[ebx+offs_vert_color] ;q.color.v[0]=p0.color.v[0] + (p1.color.v[0]-p0.color.v[0])*t
+		fstp dword[edi+offs_vert_color] ;q.color.v[0]=p0.color.v[0] + (p1.color.v[0]-p0.color.v[0])*t
 		fld dword[ecx+offs_vert_color+4]
 		fsub dword[eax+offs_vert_color+4]
 		fmul dword[t]
 		fadd dword[eax+offs_vert_color+4]
-		fstp dword[ebx+offs_vert_color+4] ;q.color.v[1]=p0.color.v[1] + (p1.color.v[1]-p0.color.v[1])*t
+		fstp dword[edi+offs_vert_color+4] ;q.color.v[1]=p0.color.v[1] + (p1.color.v[1]-p0.color.v[1])*t
 		fld dword[ecx+offs_vert_color+8]
 		fsub dword[eax+offs_vert_color+8]
 		fmul dword[t]
 		fadd dword[eax+offs_vert_color+8]
-		fstp dword[ebx+offs_vert_color+8] ;q.color.v[2]=p0.color.v[2] + (p1.color.v[2]-p0.color.v[2])*t
+		fstp dword[edi+offs_vert_color+8] ;q.color.v[2]=p0.color.v[2] + (p1.color.v[2]-p0.color.v[2])*t
 		jmp @f
 align 4
 	.els_0:
 		mov ecx,[eax+offs_vert_color]
-		mov [ebx+offs_vert_color],ecx ;q.color.v[0]=p0.color.v[0]
+		mov [edi+offs_vert_color],ecx ;q.color.v[0]=p0.color.v[0]
 		mov ecx,[eax+offs_vert_color+4]
-		mov [ebx+offs_vert_color+4],ecx ;q.color.v[1]=p0.color.v[1]
+		mov [edi+offs_vert_color+4],ecx ;q.color.v[1]=p0.color.v[1]
 		mov ecx,[eax+offs_vert_color+8]
-		mov [ebx+offs_vert_color+8],ecx ;q.color.v[2]=p0.color.v[2]
+		mov [edi+offs_vert_color+8],ecx ;q.color.v[2]=p0.color.v[2]
 	@@:
 
 	cmp dword[edx+offs_cont_texture_2d_enabled],0 ;if (context.texture_2d_enabled)
@@ -627,28 +629,28 @@ align 4
 		fsub dword[eax+offs_vert_tex_coord+offs_X]
 		fmul dword[t]
 		fadd dword[eax+offs_vert_tex_coord+offs_X]
-		fstp dword[ebx+offs_vert_tex_coord+offs_X] ;q.tex_coord.X=p0.tex_coord.X + (p1.tex_coord.X-p0.tex_coord.X)*t
+		fstp dword[edi+offs_vert_tex_coord+offs_X] ;q.tex_coord.X=p0.tex_coord.X + (p1.tex_coord.X-p0.tex_coord.X)*t
 		fld dword[ecx+offs_vert_tex_coord+offs_Y]
 		fsub dword[eax+offs_vert_tex_coord+offs_Y]
 		fmul dword[t]
 		fadd dword[eax+offs_vert_tex_coord+offs_Y]
-		fstp dword[ebx+offs_vert_tex_coord+offs_Y] ;q.tex_coord.Y=p0.tex_coord.Y + (p1.tex_coord.Y-p0.tex_coord.Y)*t
+		fstp dword[edi+offs_vert_tex_coord+offs_Y] ;q.tex_coord.Y=p0.tex_coord.Y + (p1.tex_coord.Y-p0.tex_coord.Y)*t
 	@@:
 
-	stdcall gl_clipcode, [ebx+offs_vert_pc+offs_X],[ebx+offs_vert_pc+offs_Y],\
-		[ebx+offs_vert_pc+offs_Z],[ebx+offs_vert_pc+offs_W]
-	mov dword[ebx+offs_vert_clip_code],eax
+	stdcall gl_clipcode, [edi+offs_vert_pc+offs_X],[edi+offs_vert_pc+offs_Y],\
+		[edi+offs_vert_pc+offs_Z],[edi+offs_vert_pc+offs_W]
+	mov dword[edi+offs_vert_clip_code],eax
 	or eax,eax ;if (q.clip_code==0)
 	jnz @f
-		stdcall gl_transform_to_viewport,[context],ebx
-		mov eax,ebx
+		stdcall gl_transform_to_viewport,[context],edi
+		mov eax,edi
 		add eax,offs_vert_zp+offs_zbup_b
 		push eax
 		add eax,offs_zbup_g-offs_zbup_b
 		push eax
 		add eax,offs_zbup_r-offs_zbup_g
 		push eax
-		stdcall RGBFtoRGBI, dword[ebx+offs_vert_color],dword[ebx+offs_vert_color+4],dword[ebx+offs_vert_color+8]
+		stdcall RGBFtoRGBI, dword[edi+offs_vert_color],dword[edi+offs_vert_color+4],dword[edi+offs_vert_color+8]
 	@@:
 	ret
 endp
@@ -885,7 +887,7 @@ align 4
 
 		sub ebx,offs_vert_pc
 		sub ecx,offs_vert_pc
-		stdcall updateTmp,[context],edi,ebx,ecx,eax ;updateTmp(c,&tmp1,q[0],q[1],tt)
+		stdcall updateTmp,[context],ebx,ecx,eax ;(c,&tmp1,q[0],q[1],tt)
 		add ebx,offs_vert_pc
 
 		lea eax,[clip_proc]
@@ -898,7 +900,7 @@ align 4
 		sub edi,offs_vert_pc
 		sub ebx,offs_vert_pc
 		sub edx,offs_vert_pc
-		stdcall updateTmp,[context],edi,ebx,edx,eax ;updateTmp(c,&tmp2,q[0],q[2],tt)
+		stdcall updateTmp,[context],ebx,edx,eax ;(c,&tmp2,q[0],q[2],tt)
 
 		mov eax,[ebx+offs_vert_edge_flag]
 		mov [tmp1.edge_flag],eax ;q[0].edge_flag
@@ -967,7 +969,7 @@ align 4
 		sub edi,(2*sizeof.GLVertex)-offs_vert_pc
 		stdcall dword[eax],edi,ebx,ecx ;clip_proc[clip_bit](&tmp1.pc,&q[0].pc,&q[1].pc)
 		sub edi,offs_vert_pc
-		stdcall updateTmp,[context],edi,[q],[q+4],eax
+		stdcall updateTmp,[context],[q],[q+4],eax
 
 		lea eax,[clip_proc]
 		mov edi,[clip_bit]
@@ -977,7 +979,7 @@ align 4
 		sub edi,sizeof.GLVertex-offs_vert_pc
 		stdcall dword[eax],edi,ebx,edx ;clip_proc[clip_bit](&tmp2.pc,&q[0].pc,&q[2].pc)
 		sub edi,offs_vert_pc
-		stdcall updateTmp,[context],edi,[q],[q+8],eax
+		stdcall updateTmp,[context],[q],[q+8],eax
 
 		mov dword[tmp1.edge_flag],1
 		mov eax,[edx+offs_vert_edge_flag-offs_vert_pc]
