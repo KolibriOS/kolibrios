@@ -32,13 +32,19 @@ draw_window:
     xor  eax,eax                   ; define and draw window
     mov  ebx,100*65536+321
     mov  ecx,70*65536+222
-    mov  edx,0x00000000
+    mov  edx,0x01000000
     mov  esi,0x00000000
     mov  edi,0x00000000
     mcall
+	
+	mcall 13,0*65536+321,0*65536+30,0
+	mcall   ,0*65536+1  ,0*65536+222
+	mcall   ,321*65536+1,0*65536+223
+	mcall   ,0*65536+321,222*65536+1
+	
 
-    mov  al,4      ; 'FIRE FOR MENUET'
-    mov  ebx,110*65536+8
+    mov  al,4      ; 'FIRE FOR KOLIBRI'
+    mov  ebx,106*65536+8
     mov  ecx,dword 0x00FFFFFF
     mov  edx,text
     mov  esi,textlen-text
@@ -242,7 +248,7 @@ type      db  0
 calc      db  0
 delay     dd  0
 FireSeed  dd  0x1234
-text:     db 'FIRE FOR MENUET'
+text:     db 'FIRE FOR KOLIBRI'
 textlen:
 
 I_END:
