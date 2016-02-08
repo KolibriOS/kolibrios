@@ -25,19 +25,14 @@ Parameters:
   * ecx = [coordinate on axis y]*65536 + [size on axis y]
   * edx = 0xXYRRGGBB, where:
     * Y = style of the window:
-      * Y=0 - type I - fixed-size window
       * Y=1 - only define window area, draw nothing
-      * Y=2 - type II - variable-size window
       * Y=3 - skinned window
       * Y=4 - skinned fixed-size window
-      * other possible values (from 5 up to 15) are reserved,
-        function call with such Y is ignored
+      * other possible values (0, 2, from 5 to 15) are reserved
     * RR, GG, BB = accordingly red, green, blue components of a color
       of the working area of the window (are ignored for style Y=1)
     * X = DCBA (bits)
-      * A = 1 - window has caption; for styles Y=3,4 caption string
-                  must be passed in edi, for other styles use
-                  subfunction 1 of function 71
+      * A = 1 - window has caption
       * B = 1 - coordinates of all graphics primitives are relative to
                   window client area
       * C = 1 - don't fill working area on window draw
@@ -47,11 +42,8 @@ Parameters:
   * esi = 0xXYRRGGBB - color of the header
     * RR, GG, BB define color
     * Y=0 - usual window, Y=1 - unmovable window (works for all window styles)
-    * X defines a gradient of header: X=0 - no gradient,
-      X=8 - usual gradient,
-      for windows of a type II X=4 - negative gradient
-    * other values of X and Y are reserved
-  * edi = 0x00RRGGBB - color of the frame
+    * X not used, other values of Y are reserved
+  * edi = caption string for styles Y=3,4 (also can be set by func 71.1)
 Returned value:
   * function does not return value
 Remarks:
@@ -79,34 +71,9 @@ Remarks:
   * The sizes of the window are understood in sence of coordinates
     of the right lower corner. This concerns all other functions too.
     It means, that the real sizes are on 1 pixel more.
-  * The window of type I looks as follows:
-    * draw external frame of color indicated in edi, 1 pixel in width
-    * draw header - rectangle with the left upper corner (1,1) and
-      right lower (xsize-1,min(20,ysize-1)) color indicated in esi
-      (taking a gradient into account)
-    * if ysize>21, fill the working area of the window -
-      rectangle with the left upper corner (1,21) and right lower
-      (xsize-1,ysize-1) (sizes (xsize-1)*(ysize-21)) with color
-      indicated in edx (taking a gradient into account)
-    * if A=1 and caption has been already set by subfunction 1
-      of function 71, it is drawn in the corresponding place of header
   * The window of style Y=1 looks as follows:
     * completely defined by the application
-  * The window of type II looks as follows:
-    * draw external frame of width 1 pixel with the "shaded" color
-      edi (all components of the color decrease twice)
-    * draw intermediate frame of width 3 pixels with color edi
-    * draw internal frame of width 1 pixel with the "shaded" color edi
-    * draw header - rectangle with the left upper corner (4,4)
-      and right lower (xsize-4,min(20,ysize)) color, indicated in esi
-      (taking a gradient into account)
-    * if ysize>=26, fill the working area of the window -
-      rectangle with the left upper corner (5,20) and right lower
-      (xsize-5,ysize-5) with color indicated in edx
-      (taking a gradient into account)
-    * if A=1 and caption has been already set by subfunction 1
-      of function 71, it is drawn in the corresponding place of header
-  * The skinned window looks as follows:
+  * The skinned window Y=3,4 looks as follows:
     * draw external frame of width 1 pixel
       with color 'outer' from the skin
     * draw intermediate frame of width 3 pixel
