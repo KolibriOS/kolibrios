@@ -439,7 +439,7 @@ pushad
 	mov word[w_scr_t1.y_size],ax ;новые размеры скроллинга
 	cmp eax,dword[buf_0.h] ;увеличиваем высоту буфера
 	jle @f
-		stdcall [buf2d_resize],buf_0,0,eax
+		stdcall [buf2d_resize],buf_0,0,eax,1
 		mov dword[offs_last_timer],0 ;для обновления буфера в таймере
 	@@:
 
@@ -1419,9 +1419,9 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru
-capt db 'info 3ds версия 19.01.16',0 ;подпись окна
+capt db 'info 3ds версия 08.02.16',0 ;подпись окна
 else
-capt db 'info 3ds version 19.01.16',0 ;window caption
+capt db 'info 3ds version 08.02.16',0 ;window caption
 end if
 
 align 16

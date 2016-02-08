@@ -1,16 +1,11 @@
 use32
 	org 0x0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 0x1
-	dd start
-	dd i_end ;размер приложения
-	dd mem
-	dd stacktop
-	dd 0
-	dd sys_path
+	dd 1,start,i_end,mem,stacktop,0,sys_path
 
 include '../../../../programs/macros.inc'
 include '../../../../programs/proc32.inc'
+include '../../../../programs/KOSfuncs.inc'
 include '../../../../programs/develop/libraries/box_lib/load_lib.mac'
 include '../../../../programs/dll.inc'
 include '../trunk/str.inc'
@@ -21,7 +16,7 @@ txt_buf rb 8
 include '../trunk/vox_rotate.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel creator 29.01.15',0 ;подпись окна
+caption db 'Voxel creator 08.02.16',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -70,24 +65,22 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 			db 0
 		@@:
 		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0x0
+		copy_path .path_str,[32],file_name,0
 	else
-		copy_path path,[32],file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+		copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
 	end if
 
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
 	mov [buf],eax
 
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 0
+	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov [run_file_70.Count], dword size
-	m2m [run_file_70.Buffer], [buf]
+	mov [run_file_70.Buffer], eax
 	mov byte[run_file_70+20], 0
 	mov [run_file_70.FileName], file_name
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
+	mcall SF_FILE,run_file_70 ;загружаем файл изображения
 	cmp ebx,0xffffffff
 	je @f
 		;определяем вид изображения и переводим его во временный буфер image_data
@@ -109,10 +102,10 @@ start:
 	mov	ebp,lib_0
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
-		mcall -1 ;exit not correct
+		mcall SF_TERMINATE_PROCESS
 	@@:
-	mcall 48,3,sc,sizeof.system_colors
-	mcall 40,0x27
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
+	mcall SF_SET_EVENTS_MASK,0x27
 	stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
 
 	stdcall [buf2d_create], buf_0 ;создание буфера
@@ -126,7 +119,7 @@ start:
 	stdcall mem.Alloc,max_open_file_size
 	mov dword[open_file_img],eax
 
-	mcall 26,9
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov [last_time],eax
 
 align 4
@@ -135,7 +128,7 @@ red_win:
 
 align 4
 still:
-	mcall 26,9
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov ebx,[last_time]
 	add ebx,10 ;задержка
 	cmp ebx,eax
@@ -143,11 +136,7 @@ still:
 		mov ebx,eax
 	@@:
 	sub ebx,eax
-	;cmp ebx,10 ;задержка
-	;ja timer_funct
-	;test ebx,ebx
-	;jz timer_funct
-	mcall 23
+	mcall SF_WAIT_EVENT_TIMEOUT
 	cmp eax,0
 	je timer_funct
 
@@ -166,7 +155,7 @@ timer_funct:
 	je still
 
 	pushad
-	mcall 26,9
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov [last_time],eax
 
 	; скидываем указатели буферов buf_npl_p, buf_npl, buf_npl_n
@@ -394,17 +383,16 @@ need_node:
 align 4
 draw_window:
 pushad
-	mcall 12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
 	; *** рисование главного окна (выполняется 1 раз при запуске) ***
-	xor eax,eax
 	mov edx,[sc.work]
 	or  edx,(3 shl 24)+0x30000000
-	mcall ,(20 shl 16)+410,(20 shl 16)+520,,,caption
+	mcall SF_CREATE_WINDOW,(20 shl 16)+410,(20 shl 16)+520,,,caption
 
 	; *** создание кнопок на панель ***
 	mov esi,[sc.work_button]
-	mcall 8,(5 shl 16)+20,(5 shl 16)+20,3
+	mcall SF_DEFINE_BUTTON,(5 shl 16)+20,(5 shl 16)+20,3
 
 	mov ebx,(30 shl 16)+20
 	mov edx,4
@@ -444,7 +432,7 @@ pushad
 
 	; *** рисование иконок на кнопках ***
 	mov edx,(7 shl 16)+7 ;icon new
-	mcall 7,[image_data_toolbar],(16 shl 16)+16
+	mcall SF_PUT_IMAGE,[image_data_toolbar],(16 shl 16)+16
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;icon open
@@ -478,7 +466,7 @@ pushad
 	call draw_buffers
 	call draw_pok
 
-	mcall 12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 popad
 	ret
 
@@ -513,19 +501,19 @@ draw_pok:
 	mov ecx,[sc.work_text]
 	or  ecx,0x80000000 or (1 shl 30)
 	mov edi,[sc.work] ;цвет фона окна
-	mcall 4,(275 shl 16)+7,,txt_f_size
+	mcall SF_DRAW_TEXT,(275 shl 16)+7,,txt_f_size
 
 	ret
 
 align 4
 key:
-	mcall 2
+	mcall SF_GET_KEY
 	jmp still
 
 
 align 4
 button:
-	mcall 17
+	mcall SF_GET_BUTTON
 	cmp ah,3
 	jne @f
 		call but_new_file
@@ -581,7 +569,7 @@ button:
 	stdcall mem.Free,[image_data_toolbar]
 	stdcall mem.Free,[open_file_vox]
 	stdcall mem.Free,[open_file_img]
-	mcall -1
+	mcall SF_TERMINATE_PROCESS
 
 
 align 4
@@ -641,7 +629,7 @@ but_open_file:
 		cmp bx,28 ;28=0+1+2+...+7
 		jne .err_open
 
-		mcall 71,1,openfile_path
+		mcall SF_SET_CAPTION,1,openfile_path
 		stdcall buf2d_vox_obj_get_size,[open_file_vox]
 		mov [vox_obj_size],eax
 		call draw_object
@@ -1108,11 +1096,11 @@ proc but_run uses eax ebx edi, mode_add:dword
 			jmp .end_0
 		@@:
 			; *** изменяем размеры буферов
-			stdcall [buf2d_resize], edi, eax,eax
+			stdcall [buf2d_resize], edi, eax,eax,1
 			mov edi,buf_npl_p
-			stdcall [buf2d_resize], edi, eax,eax
+			stdcall [buf2d_resize], edi, eax,eax,1
 			mov edi,buf_npl_n
-			stdcall [buf2d_resize], edi, eax,eax
+			stdcall [buf2d_resize], edi, eax,eax,1
 		.end_0:
 		mov dword[n_plane],1
 		mov byte[calc],1
@@ -1205,7 +1193,7 @@ proc open_image_in_buf, buf:dword
 		@@:
 			mov ebx,dword[eax+4]
 			mov ecx,dword[eax+8]
-			stdcall [buf2d_resize], edi, ebx,ecx ;изменяем размеры буфера
+			stdcall [buf2d_resize], edi, ebx,ecx,1 ;изменяем размеры буфера
 			imul ecx,ebx
 			lea ecx,[ecx+ecx*2]
 			mov edi,buf2d_data
