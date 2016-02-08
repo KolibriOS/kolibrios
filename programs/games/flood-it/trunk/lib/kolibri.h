@@ -67,26 +67,15 @@ inline fastcall dword WaitEvent(){
  $int 0x40
 }
 
-
-inline fastcall word GetKey()  //+Gluk fix
+inline fastcall int GetKeyScancode()
 {
-		$push edx
-GETKEY:
-		$mov  eax,2
-		$int  0x40
-		$cmp eax,1
-		$jne GETKEYI
-		$mov ah,dh
-		$jmp GETKEYII //jz?
-GETKEYI:
-		$mov dh,ah
-		$jmp GETKEY
-GETKEYII:
-		$pop edx
-		$shr eax,8
+	$mov  eax,2
+	$int  0x40
+	$shr  eax,16
+	return AL;
 }
 
-inline fastcall word GetButtonID(){
+word GetButtonID(){
  EAX = 17;
  $int  0x40
  EAX = EAX >> 8;
@@ -168,7 +157,7 @@ inline fastcall dword CreateThread(dword ECX,EDX)
 	$int 0x40
 }
 
-inline fastcall dword GetSkinWidth()
+dword GetSkinHeight()
 {
 	$push ebx
 	$mov  eax, 48

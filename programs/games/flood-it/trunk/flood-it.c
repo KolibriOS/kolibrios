@@ -160,31 +160,31 @@ void main()
 					
 					new_game();
 					
-					MoveSize(-1, -1, BLOCK_SIZE*BLOCKS_NUM +14+USER_PANEL_WIDTH, BLOCK_SIZE*BLOCKS_NUM +GetSkinWidth()+14);
+					MoveSize(-1, -1, BLOCK_SIZE*BLOCKS_NUM +14+USER_PANEL_WIDTH, BLOCK_SIZE*BLOCKS_NUM +GetSkinHeight()+14);
 				}
 				break;
 			case evKey:
-				key = GetKey();
-				IF (key==027) //Escape
+				key = GetKeyScancode();
+				IF (key==01) //Escape
 					 ExitProcess();
-				IF (key==050) //F1
+				IF (key==59) //F1
 				{
 					_HELP_MARK:
 						CreateThread(#help,#stak); 
 				}
-				IF (key==051) //F2
+				IF (key==60) //F2
 				{
 					_NEW_GAME_MARK:
 						new_game();
 						draw_clicks_num();
 						draw_field();
 				}
-				IF (key==113) make_turn(0); //Q
-				IF (key==119) make_turn(1); //W
-				IF (key==101) make_turn(2); //E
-				IF (key==097) make_turn(3); //A
-				IF (key==115) make_turn(4); //S
-				IF (key==100) make_turn(5); //D
+				IF (key==16) make_turn(0); //Q
+				IF (key==17) make_turn(1); //W
+				IF (key==18) make_turn(2); //E
+				IF (key==30) make_turn(3); //A
+				IF (key==31) make_turn(4); //S
+				IF (key==32) make_turn(5); //D
 				break;
 			case evReDraw:
 				draw_window();
@@ -214,7 +214,7 @@ void draw_window()
 	
 	sc.get();
 		
-	DefineAndDrawWindow(300,176, BLOCK_SIZE*BLOCKS_NUM +14+USER_PANEL_WIDTH, BLOCK_SIZE*BLOCKS_NUM +GetSkinWidth()+14, 0x74,sc.work,0,0,"Flood-it!"); 
+	DefineAndDrawWindow(300,176, BLOCK_SIZE*BLOCKS_NUM +14+USER_PANEL_WIDTH, BLOCK_SIZE*BLOCKS_NUM +GetSkinHeight()+14, 0x74,sc.work,0,0,"Flood-it!"); 
 	
 	//проверяем не схлопнуто ли окно в заголовок
 	GetProcessInfo(#Form, SelfInfo);
@@ -390,7 +390,7 @@ void draw_clicks_num()
 	#define TEXT_X 21
 	#define TEXT_Y 92
 	
-	DrawBar(8*6+TEXT_X, TEXT_Y, 6*2,9, sc.work);
+	DrawBar(TEXT_X, TEXT_Y, USER_PANEL_WIDTH-TEXT_X-3,9, sc.work);
 	
 	WriteText(TEXT_X,TEXT_Y,0x80,sc.work_text,#CLICKS_TEXT,0);
 
@@ -421,22 +421,18 @@ void help()
 {  
 	int i;
 	
-	loop()
-	switch (WaitEvent())
+	loop() switch (WaitEvent())
 	{
-		CASE evButton: 
-				IF (GetButtonID()==1) ExitProcess();
+		case evButton: 
+				ExitProcess();
+		case evKey:
+				IF (GetKeyScancode()==001) ExitProcess(); //Esc
 				break;
-		CASE evKey:
-				IF (GetKey()==27) ExitProcess(); //Esc
-				break;
-		CASE evReDraw:
+		case evReDraw:
 				for (i=0; HELP_TEXT[i]<>0; i++;) {};
-				
-				DefineAndDrawWindow(500,200,450,i*13+44,0x34,sc.work,0,0,#HELP_WINDOW_CAPTION);
-				
-				WriteText(6,12,0x80,sc.work_text,HELP_TEXT[0],0); //это для жирного шрифта
-				for (i=0; HELP_TEXT[i]<>0; i++;) WriteText(5,i*13+12,0x80,sc.work_text,HELP_TEXT[i],0);
+				DefineAndDrawWindow(400,200,610,i*19+25+GetSkinHeight(),0x34,sc.work,0,0,#HELP_WINDOW_CAPTION);
+				WriteText(6,12,0x90,sc.work_text,HELP_TEXT[0],0); //это для жирного шрифта
+				for (i=0; HELP_TEXT[i]<>0; i++;) WriteText(5,i*19+12,0x90,sc.work_text,HELP_TEXT[i],0);
 	}
 }
 
