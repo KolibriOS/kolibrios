@@ -28,7 +28,10 @@ Parameters:
       * Y=1 - only define window area, draw nothing
       * Y=3 - skinned window
       * Y=4 - skinned fixed-size window
-      * other possible values (0, 2, from 5 to 15) are reserved
+      * Y=0,2 window types are outdated and should not be used anymore, 
+        they are retained for compatibility with old programs.
+      * other possible values (from 5 to 15) are reserved,
+        function call with such Y is ignored
     * RR, GG, BB = accordingly red, green, blue components of a color
       of the working area of the window (are ignored for style Y=1)
     * X = DCBA (bits)
