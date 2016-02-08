@@ -5,29 +5,17 @@ area:
   .width  = 206
   .height = 191
 ;--------------------------------------
-wnd1:
-  .x      = area.x+49
-  .y      = area.y+5
-  .width  = 150
-  .height = 90
-;--------------------------------------
-wnd2:
-  .x      = area.x+35
-  .y      = area.y+35
-  .width  = 150
-  .height = 90
-;--------------------------------------
 wnd3:
-  .x      = area.x+21
-  .y      = area.y+65
-  .width  = 150
-  .height = 90
+  .x      = area.x+32
+  .y      = area.y+35
+  .width  = 160
+  .height = 100
 ;--------------------------------------
 wnd4:
-  .x      = area.x+7
-  .y      = area.y+95
-  .width  = 150
-  .height = 90
+  .x      = area.x+15
+  .y      = area.y+70
+  .width  = 160
+  .height = 100
 ;--------------------------------------
 virtual at edi+SKIN_PARAMS.dtp.data
 	dtp system_colors
@@ -36,70 +24,6 @@ end virtual
 draw_skin:
 	mcall	13,<area.x,area.width>,<area.y+2,area.height>,0x00FFFFFF
 	mov	ebp,not_packed_area
-	mov	edi,[ebp+SKIN_HEADER.params]
-	add	edi,ebp
-	mpack	ebx,wnd1.x,wnd1.width
-	mpack	ecx,wnd1.y,wnd1.height
-	mov	edx,[dtp.frame]
-	call	draw_framerect
-	mcall	13,<wnd1.x+1,wnd1.width-2>,<wnd1.y+1,wnd1.height-2>,dword[dtp.work]
-	mov	eax,38
-	mpack	ebx,wnd1.x+1,wnd1.x+wnd1.width-2
-	mpack	ecx,wnd1.y+1,wnd1.y+1
-	mov	edx,[dtp.grab]
-	mov	esi,20
-;--------------------------------------
-@@:
-	mcall
-	call	dec_edx
-	add	ecx,0x00010001
-	dec	esi
-	jnz	@b
-
-	mov	edi,[ebp+SKIN_HEADER.params]
-	add	edi,ebp
-	mcall	4,<wnd1.x+6,wnd1.y+7>,dword[dtp.grab_text],caption_text,caption_text.size
-	mcall	8,<wnd1.x+wnd1.width-18,12>,<wnd1.y+4,12>,0,[dtp.grab_button]
-	mcall	4,<wnd1.x+wnd1.width-18+4,wnd1.y+4+2>,dword[dtp.grab_button_text],close_text,close_text.size
-;----------------------------------------------------------------------
-	mov	edi,[ebp+SKIN_HEADER.params]
-	add	edi,ebp
-	mpack	ebx,wnd2.x,wnd2.width
-	mpack	ecx,wnd2.y,wnd2.height
-	mov	edx,[dtp.frame]
-	shr	edx,1
-	and	edx,0x007F7F7F
-	call	draw_framerect
-	mpack	ebx,wnd2.x+4,wnd2.width-8
-	mpack	ecx,wnd2.y+4,wnd2.height-8
-	call	draw_framerect
-	mcall	13,<wnd2.x+1,wnd2.width-2>,<wnd2.y+1,3>,[dtp.frame]
-	add	ecx,(wnd2.height-5)*65536
-	mcall
-	mcall	,<wnd2.x+1,3>,<wnd2.y+1,wnd2.height-2>
-	add	ebx,(wnd2.width-5)*65536
-	mcall
-	mcall	,<wnd2.x+5,wnd2.width-10>,<wnd2.y+5,wnd2.height-10>,dword[dtp.work]
-
-	mov	eax,38
-	mpack	ebx,wnd2.x+4,wnd2.x+wnd2.width-5
-	mpack	ecx,wnd2.y+4,wnd2.y+4
-	mov	edx,[dtp.grab]
-	mov	esi,16
-;--------------------------------------
-@@:
-	mcall
-	call	dec_edx
-	add	ecx,0x00010001
-	dec	esi
-	jnz	@b
-
-	mov	edi,[ebp+SKIN_HEADER.params]
-	add	edi,ebp
-	mcall	4,<wnd2.x+8,wnd2.y+7>,dword[dtp.grab_text],caption_text,caption_text.size
-	mcall	8,<wnd2.x+wnd2.width-20,12>,<wnd2.y+4,12>,0,[dtp.grab_button]
-	mcall	4,<wnd2.x+wnd2.width-20+4,wnd2.y+4+2>,dword[dtp.grab_button_text],close_text,close_text.size
-;----------------------------------------------------------------------
 	mov	edi,[ebp+SKIN_HEADER.params]
 	add	edi,ebp
 	mpack	ebx,wnd3.x,wnd3.width
@@ -160,10 +84,12 @@ draw_skin:
 	sub	ax,[edi+SKIN_PARAMS.margin.bottom]
 	shr	ax,1
 	add	ax,[edi+SKIN_PARAMS.margin.top]
-	add	ax,-4
+	add	ax,-9
 	push	eax
 	lea	ebx,[eax+wnd3.x*65536+wnd3.y]
-	mcall	4,,dword[dtp.grab_text],caption_text,caption_text.size
+	mov ecx,dword[dtp.grab_text]
+	add ecx,0x10000000
+	mcall	4,,,caption_text,caption_text.size
 ;---------------------------------------------------------
 	mov	edi,[ebp+SKIN_HEADER.params]
 	add	edi,ebp
@@ -222,7 +148,9 @@ draw_skin:
 	add	edi,ebp
 	pop	eax
 	lea	ebx,[eax+wnd4.x*65536+wnd4.y]
-	mcall	4,,dword[dtp.grab_text],caption_text,caption_text.size
+	mov ecx,dword[dtp.grab_text]
+	add ecx,0x10000000
+	mcall	4,,,caption_text,caption_text.size
 ;----------------------------------------------------------------------
 	mov	edi,[ebp+SKIN_HEADER.buttons]
 	add	edi,ebp
@@ -256,13 +184,13 @@ draw_skin:
 	mcall	13,<wnd4.x+window_text.size*6+20,wnd4.x+wnd4.width-10-\
 			(wnd4.x+window_text.size*6+20)>,,[dtp.work_graph]
 
-	add	ecx,25*65536+8
+	add	ecx,25*65536+10
 	mcall	8,<wnd4.x+wnd4.width/2-button_text.size*3-6,\
 			button_text.size*6+11>,,0,[dtp.work_button]
 
 	shr	ecx,16
 	mov	bx,cx
-	add	ebx,0x00060006
+	add	ebx,0x00060007
 	mcall	4,,[dtp.work_button_text],button_text,button_text.size
 	ret
 ;---------------------------------------------------------------------
