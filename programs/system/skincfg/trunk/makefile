@@ -4,7 +4,7 @@
 FASM=/opt/bin/fasm
 KPACK=/opt/bin/kpack
 LANG=lang.inc
-FILE=desktop
+FILE=skincfg
 SOURCE=${FILE}.asm
 OUT=${FILE}.bin
 

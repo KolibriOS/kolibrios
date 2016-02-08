@@ -270,7 +270,7 @@ tup.append_table(img_files, {
  {"LOADDRV", PROGS .. "/system/loaddrv/loaddrv"},
  {"CPU", PROGS .. "/system/cpu/trunk/cpu"},
  {"CPUID", PROGS .. "/system/cpuid/trunk/CPUID"},
- {"DESKTOP", PROGS .. "/system/desktop/trunk/desktop"},
+ {"SKINCFG", PROGS .. "/system/skincfg/trunk/skincfg"},
  {"DISPTEST", PROGS .. "/system/disptest/trunk/disptest"},
  {"DOCPACK", PROGS .. "/system/docpack/trunk/docpack"},
  {"END", PROGS .. "/system/end/light/end"},

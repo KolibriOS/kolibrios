@@ -61,7 +61,7 @@ fasm system\board\trunk\board.asm %BIN%\develop\board
 fasm system\commouse\trunk\commouse.asm %BIN%\commouse
 fasm system\cpu\trunk\cpu.asm %BIN%\cpu 
 fasm system\cpuid\trunk\cpuid.asm %BIN%\cpuid
-fasm system\desktop\trunk\desktop.asm %BIN%\desktop
+fasm system\skincfg\trunk\skincfg.asm %BIN%\skincfg
 fasm system\docpack\trunk\docpack.asm %BIN%\docpack
 fasm system\end\trunk\end.asm %BIN%\end
 fasm system\gmon\gmon.asm %BIN%\gmon
@@ -237,7 +237,7 @@ fasm media\animage\trunk\animage.asm %BIN%\nightbuild\animage
 fasm media\midamp\trunk\midamp.asm %BIN%\nightbuild\midamp
 fasm develop\heed\trunk\heed.asm %BIN%\nightbuild\heed
 fasm develop\tinypad\trunk\tinypad.asm %BIN%\nightbuild\tinypad
-fasm system\desktop\trunk\desktop.asm %BIN%\nightbuild\desktop
+fasm system\skincfg\trunk\skincfg.asm %BIN%\nightbuild\skincfg
 fasm system\hdd_info\trunk\hdd_info.asm %BIN%\nightbuild\hdd_info
 fasm system\mgb\trunk\mgb.asm %BIN%\nightbuild\mgb
 fasm system\rdsave\trunk\rdsave.asm %BIN%\nightbuild\rdsave
@@ -275,7 +275,7 @@ kpack %BIN%\calendar
 kpack %BIN%\develop\board
 kpack %BIN%\cpu 
 kpack %BIN%\cpuid
-kpack %BIN%\desktop
+kpack %BIN%\skincfg
 kpack %BIN%\docpack
 kpack %BIN%\end
 kpack %BIN%\gmon
@@ -441,7 +441,7 @@ kpack %BIN%\nightbuild\animage
 kpack %BIN%\nightbuild\midamp
 kpack %BIN%\nightbuild\heed
 kpack %BIN%\nightbuild\tinypad
-kpack %BIN%\nightbuild\desktop
+kpack %BIN%\nightbuild\skincfg
 kpack %BIN%\nightbuild\hdd_info
 kpack %BIN%\nightbuild\mgb
 kpack %BIN%\nightbuild\rdsave

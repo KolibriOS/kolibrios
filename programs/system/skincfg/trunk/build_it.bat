@@ -1,6 +1,6 @@
 @erase lang.inc
 @echo lang fix it >lang.inc
-@fasm desktop.asm desktop
-@kpack desktop
+@fasm skincfg.asm skincfg
+@kpack skincfg
 @erase lang.inc
 @pause

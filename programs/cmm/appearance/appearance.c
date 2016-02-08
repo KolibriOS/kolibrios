@@ -138,7 +138,7 @@ void Apply()
 
 OpenFile()
 {
-	if (list[SKINS].active) RunProgram("/sys/desktop", #cur_file_path);
+	if (list[SKINS].active) RunProgram("/sys/skincfg", #cur_file_path);
 	if (list[WALLPAPERS].active) RunProgram("/sys/media/kiv", #cur_file_path);
 }
 
