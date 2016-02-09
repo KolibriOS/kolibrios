@@ -27,49 +27,51 @@
 
 ; COMPILE WITH FASM
 
+format binary as ""
+
 include '../../../macros.inc'    ; decrease code size (optional)
 include 'CELLTYPE.INC'  ; object identifiers
 ;include 'debug.inc'
 ;lang equ ru             ; russian interface; english if undefined
 include 'lang.inc'
 
-CUR_DIR equ '/sys/games/' ; change it to appropriate path
+CUR_DIR equ '/sys/games/'       ; change it to appropriate path
 
-SKIN_SIZE equ 11520         ; size of skin file (16x240)
+SKIN_SIZE       = 11520         ; size of skin file (16x240)
 
 ; field dimensions
-FLD_LEFT equ 43
-FLD_LEFT2 equ FLD_LEFT shl 16
-FLD_TOP equ 40
-FLD_TOP2 equ FLD_TOP shl 16
-IMG_SIZE equ 16 shl 16+16
-SHIFT equ (16 shl 16)
-WND_COLOR equ 0x03aabbcc
+FLD_LEFT        = 43
+FLD_LEFT2       = FLD_LEFT shl 16
+FLD_TOP         = 40
+FLD_TOP2        = FLD_TOP shl 16
+IMG_SIZE        = 16 shl 16+16
+SHIFT           = (16 shl 16)
+WND_COLOR       = 0x00aabbcc
 
 ; level list dimensions
-LEVLIST_XY equ FLD_TOP shl 16+45
-LEVLIST_SPACING equ 10
-LEVWND_X equ 320
-LEVWND_Y equ 200
+LEVLIST_XY      = FLD_TOP shl 16+45
+LEVLIST_SPACING = 10
+LEVWND_X        = 320
+LEVWND_Y        = 200
 
 ; input line dimensions
-INP_X equ 10 shl 16+300
-INP_Y equ 160 shl 16+16
-INP_XY equ 15 shl 16+164
+INP_X           = 10 shl 16+300
+INP_Y           = 160 shl 16+16
+INP_XY          = 15 shl 16+164
 
 ; load button dimensions
-LOAD_X equ 130 shl 16+65
-LOAD_Y equ 180 shl 16+14
-LOAD_XY equ 135 shl 16+184
-CHOOSE_XY equ 40 shl 16+148
+LOAD_X          = 130 shl 16+65
+LOAD_Y          = 180 shl 16+14
+LOAD_XY         = 135 shl 16+184
+CHOOSE_XY       = 40 shl 16+148
 
 
-WIN_XY equ 135 shl 16+25
+WIN_XY          = 135 shl 16+25
 
 ; workmode constants, more defs in CELLTYPE.INC
-WM_WINNER  equ 0x10
-WM_READSET equ 0
-WM_LOSE    equ 0x20
+WM_WINNER       = 0x10
+WM_READSET      = 0
+WM_LOSE         = 0x20
 
 use32
   org    0x0
@@ -83,7 +85,7 @@ use32
   dd     0x0
 
 START:
-    mov  eax,58         ; load skin image-it is in RAW 16x240 BGR
+    mov  eax,70         ; load skin image-it is in RAW 16x240 BGR
     mov  ebx,file_info  ; IrfanView recommended
     int  0x40
     test ebx,ebx
@@ -103,7 +105,7 @@ START:
     mov  [levpage],eax
     mov  word[ll_num],'00'   ; reset some counters
   read_cnf:
-    mov  eax,58
+    mov  eax,70
     mov  ebx,file_info
     int  0x40
     test ebx,ebx        ; load standard levels SOKO-?.LEV instead of custom
@@ -216,7 +218,7 @@ still:
     call valid_move
     cmp  byte[winmode],WM_WINNER
     jne  no_winner
-    mov  ecx,0x20ac0000
+    mov  ecx,0x00ac0000
     mov  edx,win_msg
     mov  esi,win_msg_end-win_msg   ; print victory congratulations
   print_msg:
@@ -344,16 +346,9 @@ draw_window:
     add  ebx,[wnd_width]
     mov  ecx,50*65536
     add  ecx,[wnd_height]
-    mov  edx,WND_COLOR
-    mov  esi,0x805080d0
-    mov  edi,0x005080d0
-    int  0x40
-
-    mov  eax,4
-    mov  ebx,8*65536+8
-    mov  ecx,0x10ddeeff
-    mov  edx,zagolovok
-    mov  esi,zag_konets-zagolovok
+    mov  edx,0x13000000 + WND_COLOR
+    mov  esi,0x005080d0
+    mov  edi,zagolovok
     int  0x40
 
     cmp  byte[workmode],WM_READSET
@@ -385,14 +380,14 @@ draw_window:
     int  0x40
 
     mov  eax,4
-    mov  ecx,0x20107a30
+    mov  ecx,0x00107a30
     mov  ebx,LOAD_XY
     mov  edx,load_char
     mov  esi,loadlen-load_char
     int  0x40
 
     mov  ebx,LEVLIST_XY
-    mov  edi,0x204e00e7
+    mov  edi,0x004e00e7
     xor  esi,esi
     mov  ecx,10
   ll_cycle:
@@ -843,7 +838,7 @@ check_lasers:
     je   no_cl_destroy
     cmp  al,tPlayer
     jne  cl_exit
-    mov  ecx,0x20ac0000
+    mov  ecx,0x00ac0000
     mov  edx,lose_msg
     mov  esi,lose_msg_end-lose_msg  ; print loose message
     mov  byte[winmode],WM_LOSE
@@ -1092,14 +1087,9 @@ else
 end if
 lose_msg_end:
 
-zagolovok:               ; строка заголовка
-if lang eq ru
-     db   'СОКОБАН ДЛЯ'
-else
-     db   'SOKOBAN FOR'
-end if
-     db   ' MENUET'
-zag_konets:              ; и её конец
+zagolovok:
+     db   'Sokoban', 0
+
 
 pic_map:
     db 0xf,9,0,0,1,1,5,6
@@ -1123,12 +1113,11 @@ inp_pos    dd inp_end-fn_input
 entered    dd 0
 
 file_info:
-           dd 0
-           dd 0
-           dd 0x100
-cnf_level  dd strip
-           dd workarea
-file_name  db CUR_DIR
+           dd 0                 ; subfunction - read
+           dd 0, 0              ; file offset
+           dd 0x20000           ; number of bytes to read
+cnf_level  dd strip             ; data buffer
+file_name  db CUR_DIR           ; Filename
 path_end   db 'SKIN.'
 file_num   db 'RAW',0
 
@@ -1136,24 +1125,22 @@ file_num   db 'RAW',0
 
 I_END:  ; конец программы
 
-winmode db ?
-scanptr dd ?
-levpage dd ?
-workmode db ?
-player dw ?
-fld_size dd ?
-levptr dd ?
-wnd_height dd ?
-wnd_width dd ?
-color  db ?
-colcount db ?
-levelcount dd ?
-checkcount db ?
-checkpoint:
-    times 256 dw ?
-levelmap:
-    times 1024 dd ?
-strip rb SKIN_SIZE
+winmode         db ?
+scanptr         dd ?
+levpage         dd ?
+workmode        db ?
+player          dw ?
+fld_size        dd ?
+levptr          dd ?
+wnd_height      dd ?
+wnd_width       dd ?
+color           db ?
+colcount        db ?
+levelcount      dd ?
+checkcount      db ?
+checkpoint      rw 256
+levelmap        rd 1024
+strip           rb SKIN_SIZE
 
 workarea:
   srch  rb 0x10000-($-workarea)
