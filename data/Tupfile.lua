@@ -158,6 +158,7 @@ extra_files = {
  {"kolibrios/games/mun/mun", "common/games/mun/mun"}, 
  {"kolibrios/games/phenix", PROGS .. "/games/phenix/trunk/phenix"},
  {"kolibrios/games/soko/soko", PROGS .. "/games/soko/trunk/SOKO"},
+ {"kolibrios/games/soko/", "common/games/soko/*"},
  {"kolibrios/drivers/ahci/", "common/drivers/ahci/*"},
  {"kolibrios/drivers/atikms/", "common/drivers/atikms/*"},
  {"kolibrios/drivers/i915/", "common/drivers/i915/*"},
