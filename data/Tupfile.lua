@@ -157,7 +157,7 @@ extra_files = {
  {"kolibrios/games/mun/libc.dll", "common/games/mun/libc.dll"},
  {"kolibrios/games/mun/mun", "common/games/mun/mun"}, 
  {"kolibrios/games/phenix", PROGS .. "/games/phenix/trunk/phenix"},
- {"kolibrios/games/soko/soko", PROGS .. "/games/soko"},
+ {"kolibrios/games/soko/soko", PROGS .. "/games/soko/trunk/soko"},
  {"kolibrios/drivers/ahci/", "common/drivers/ahci/*"},
  {"kolibrios/drivers/atikms/", "common/drivers/atikms/*"},
  {"kolibrios/drivers/i915/", "common/drivers/i915/*"},
