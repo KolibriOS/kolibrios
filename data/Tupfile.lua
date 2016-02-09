@@ -441,7 +441,7 @@ tup.append_table(extra_files, {
  {"HD_Load/USB_boot_old/", PROGS .. "/hd_load/usb_boot_old/enable.exe"},
  {"kolibrios/games/arcanii", PROGS .. "/games/arcanii/trunk/arcanii"},
  {"kolibrios/games/bomber/bomber", PROGS .. "/games/bomber/bomber"},
- {"kolibrios/games/bomber/bomberdata.bin", PROGS .. "/games/bomber/bomberdata.bin"},
+ {"kolibrios/games/bomber/bomberdata.bin", PROGS .. "/games/bomber/sounds/bomberdata.bin"},
  {"kolibrios/games/codemaster/binary_master", PROGS .. "/games/codemaster/binary_master"},
  {"kolibrios/games/codemaster/hang_programmer", PROGS .. "/games/codemaster/hang_programmer"},
  {"kolibrios/games/codemaster/kolibri_puzzle", PROGS .. "/games/codemaster/kolibri_puzzle"},
