@@ -823,7 +823,7 @@ proc buf_resize, buf_struc:dword, new_w:dword, new_h:dword, options:dword
 			cmp ebx,buf2d_h
 			jge @f
 				;сжатие по высоте
-				;... еще не поддерживается ...
+				stdcall img_rgb24_hresize, buf2d_data,eax,buf2d_h,ebx
 			@@:
 		.24_end_r:
 		bt dword[options],0 ;измен. буфер
@@ -1825,6 +1825,118 @@ align 4
 		dec ecx
 		jnz .cycyle_1
 	dec dword[lines]
+	jnz .cycyle_0
+popad
+	ret
+endp
+
+;description:
+; сжатие изображения по высоте (размеры буфера не меняются)
+;input:
+; data_rgb - pointer to rgb data
+; size_w - width img in pixels
+; size_h - height img in pixels
+; size_h_new - new height img in pixels
+align 16
+proc img_rgb24_hresize, data_rgb:dword, size_w:dword, size_h:dword, size_h_new:dword
+locals
+	pr dd 0
+	pg dd 0
+	pb dd 0
+	img_n dd ? ;указатель на данные нового изображения
+	cols dd ?
+	lin_b dd ? ;размер линии изображения в байтах
+	data_n dd ? ;указатель на данные для нового столбца пикселей
+endl
+pushad
+;eax - delta for inp. img
+;ebx - delta for outp. img
+;esi - pointer to data_rgb
+	mov esi,[data_rgb]
+	mov [data_n],esi
+	mov eax,[size_w]
+	mov [cols],eax
+	lea eax,[eax+eax*2]
+	mov [lin_b],eax
+align 4
+	.cycyle_0:
+	mov eax,[size_h_new]
+	mov ecx,[size_h]
+	mov ebx,ecx
+	mov esi,[data_n]
+	mov [img_n],esi
+	add dword[data_n],3 ;переход на следующий столбец пикселей
+align 4
+	.cycyle_1:
+		cmp eax,ebx
+		jg .else_0
+			;копируемый пиксель максимально влияет на результат
+			;накапливаем rgb для интерполяции пикселей
+			mov edx,[size_h_new]
+			movzx edi,byte[esi]
+			imul edi,edx
+			add [pb],edi
+			movzx edi,byte[esi+1]
+			imul edi,edx
+			add [pg],edi
+			movzx edi,byte[esi+2]
+			imul edi,edx
+			add [pr],edi
+			cmp eax,ebx
+			je .d2_add
+			jmp .if_0_end
+		.else_0:
+			;копируемый пиксель попадет на границу пикселей
+			mov edx,ebx
+			sub edx,eax
+			add edx,[size_h_new]
+			movzx edi,byte[esi]
+			imul edi,edx
+			add [pb],edi
+			movzx edi,byte[esi+1]
+			imul edi,edx
+			add [pg],edi
+			movzx edi,byte[esi+2]
+			imul edi,edx
+			add [pr],edi
+			;сохраняем готовое rgb
+			.d2_add:
+			push eax
+				mov edi,[img_n]
+				mov eax,[pb]
+				xor edx,edx
+				div dword[size_h] ;eax /= [size_h]
+				stosb
+				mov eax,[pg]
+				xor edx,edx
+				div dword[size_h] ;eax /= [size_h]
+				stosb
+				mov eax,[pr]
+				xor edx,edx
+				div dword[size_h] ;eax /= [size_h]
+				stosb
+			pop eax
+			mov edx,[lin_b]
+			add dword[img_n],edx ;next pixel
+			;обновляем rgb для нового пикселя
+			mov edx,eax
+			sub edx,ebx
+			movzx edi,byte[esi]
+			imul edi,edx
+			mov [pb],edi
+			movzx edi,byte[esi+1]
+			imul edi,edx
+			mov [pg],edi
+			movzx edi,byte[esi+2]
+			imul edi,edx
+			mov [pr],edi
+			add ebx,[size_h]
+		.if_0_end:
+		add eax,[size_h_new]
+		add esi,[lin_b] ;next pixel
+		dec ecx
+		jnz .cycyle_1
+	dec dword[cols]
 	jnz .cycyle_0
 popad
 	ret
