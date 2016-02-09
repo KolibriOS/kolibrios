@@ -161,7 +161,7 @@ extra_files = {
  {"kolibrios/games/lrl/", "common/games/lrl/*"},
  {"kolibrios/games/megamaze", build_type .. "/games/megamaze"},
  {"kolibrios/games/mun/data/", "common/games/mun/data/*"},
- {"kolibrios/games/mun/lib/libc.dll", "common/games/mun/lib/libc.dll"},
+ {"kolibrios/games/mun/libc.dll", "common/games/mun/libc.dll"},
  {"kolibrios/games/mun/mun", "common/games/mun/mun"}, 
  {"kolibrios/games/phenix", PROGS .. "/games/phenix/trunk/phenix"},
  {"kolibrios/games/soko/soko", build_type .. "/games/soko"},
