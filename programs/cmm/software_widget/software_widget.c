@@ -172,7 +172,7 @@ byte process_sections(dword sec_name, f_name)
 void draw_top_bar()
 {
 	DrawBar(0,0,Form.cwidth, list.y-2, system.color.work);
-	DrawBar(0,list.y-2, Form.cwidth, 1, ShadowPixel(system.color.work, 1));
+	DrawBar(0,list.y-2, Form.cwidth, 1, MixColors(system.color.work, system.color.work_graph, 180));
 	DrawBar(0,list.y-1, Form.cwidth, 1, system.color.work_graph);
 	label.write_center(0,5, Form.cwidth, list.y, system.color.work, system.color.work_text, 16, #window_title);
 }
