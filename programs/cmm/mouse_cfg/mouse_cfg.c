@@ -163,11 +163,11 @@ void DrawMouseImage() {
 
 void DrawControls() {
 	DrawBar(pos_x, mouse_frame.start_y + 142, Form.cwidth - pos_x, 120, system.color.work);
-	PanelCfg_MoreLessBox(pos_x, mouse_frame.start_y + 142, 120, 121, mouse_cfg.pointer_speed, POINTER_SPEED);
-	PanelCfg_MoreLessBox(pos_x, mouse_frame.start_y + 170, 122, 123, mouse_cfg.acceleration, ACCELERATION_TEXT);
-	PanelCfg_MoreLessBox(pos_x, mouse_frame.start_y + 198, 124, 125, mouse_cfg.double_click_delay, DOUBLE_CLICK_TEXT);
-	PanelCfg_CheckBox(pos_x, mouse_frame.start_y + 230, 100, MOUSE_EMULATION, mouse_cfg.emulation);
-	PanelCfg_CheckBox(pos_x, mouse_frame.start_y + 254, 101, MADMOUSE, mouse_cfg.madmouse);
+	MoreLessBox(pos_x, mouse_frame.start_y + 142, 120, 121, mouse_cfg.pointer_speed, POINTER_SPEED);
+	MoreLessBox(pos_x, mouse_frame.start_y + 170, 122, 123, mouse_cfg.acceleration, ACCELERATION_TEXT);
+	MoreLessBox(pos_x, mouse_frame.start_y + 198, 124, 125, mouse_cfg.double_click_delay, DOUBLE_CLICK_TEXT);
+	CheckBox(pos_x, mouse_frame.start_y + 230, 100, MOUSE_EMULATION, mouse_cfg.emulation);
+	CheckBox(pos_x, mouse_frame.start_y + 254, 101, MADMOUSE, mouse_cfg.madmouse);
 }
 
 void SetFrameColors() {
@@ -191,16 +191,6 @@ void ExitApp() {
 	ini_set_int stdcall (#system_ini_path, #mouse_category, "double_click_delay", mouse_cfg.double_click_delay);
 	ExitProcess();
 }
-
-
-void PanelCfg_CheckBox(dword x, y, id, text, byte value) {
-	CheckBox(x, y, 14, 14, id, text, system.color.work_graph, system.color.work_text, value);
-}
-
-void PanelCfg_MoreLessBox(dword x, y, id_more, id_less; word value; dword text) {
-	MoreLessBox(x, y, 18, id_more, id_less, #system.color, value, text);
-}
-
 
 
 

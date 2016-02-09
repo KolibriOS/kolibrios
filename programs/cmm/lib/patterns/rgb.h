@@ -1,3 +1,6 @@
+#ifndef INCLUDE_RGB_H
+#define INCLUDE_RGB_H
+#print "[include <rgb.h>]\n"
 
 struct _rgb
 {
@@ -37,3 +40,5 @@ dword _rgb::RgbToDword()
 
 	return rgb_final.RgbToDword();
 }
+
+#endif

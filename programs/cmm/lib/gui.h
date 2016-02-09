@@ -10,6 +10,10 @@
 #include "../lib/strings.h"
 #endif
 
+#ifndef INCLUDE_RGB_H
+#include "../lib/patterns/rgb.h"
+#endif
+
 :void DrawRectangle(dword x,y,w,h,color1)
 {
 	if (w<=0) || (h<=0) return;
@@ -39,8 +43,11 @@
 
 :void DrawCaptButton(dword x,y,w,h,id,color_b, color_t,text)
 {
+	word tx = -strlen(text)*6+w/2+x+1;
+	word ty = h/2-3+y;
 	if (id>0) DefineButton(x,y,w,h,id,color_b);
-	WriteText(-strlen(text)*6+w/2+x+1,h/2-3+y,0x80,color_t,text);
+	WriteText(tx+1,ty+1,0x80,MixColors(color_b,0,200),text);
+	WriteText(tx,ty,0x80,color_t,text);
 }
 
 :void WriteTextCenter(dword x,y,w,color_t,text)
@@ -60,11 +67,12 @@
 	}
 }
 
-:void CheckBox(dword x,y,w,h, bt_id, text, graph_color, text_color, is_checked)
+:void CheckBox(dword x,y,bt_id, text, is_checked)
 {
-	DefineButton(x-1, y-1, strlen(text)*6 + w + 17, h+2, bt_id+BT_HIDE+BT_NOFRAME, graph_color);
-	WriteText(x+w+8, h / 2 + y -3, 0x80, text_color, text);
-	DrawRectangle(x, y, w, h, graph_color);
+	byte w=14, h=14;
+	DefineButton(x-1, y-1, strlen(text)*6 + w + 17, h+2, bt_id+BT_HIDE+BT_NOFRAME, 0);
+	WriteText(x+w+8, h / 2 + y -3, 0x80, system.color.work_text, text);
+	DrawRectangle(x, y, w, h, system.color.work_graph);
 	if (is_checked == 0)
 	{
 		DrawRectangle3D(x+1, y+1, w-2, h-2, 0xDDDddd, 0xffffff);
@@ -72,35 +80,29 @@
 	} 
 	else if (is_checked == 1)
 	{
-		DrawRectangle(x+1, y+1, w-2, h-2, 0xffffff);
-		DrawRectangle(x+2, y+2, w-4, h-4, 0xffffff);
-		DrawBar(x+3, y+3, w-5, h-5, graph_color);
+		DrawWideRectangle(x+1, y+1, w-1, h-1, 2, 0xffffff);
+		DrawBar(x+3, y+3, w-5, h-5, system.color.work_button); //0x13A113
 	}
 	else if (is_checked == 2) //not active
 	{
-		DrawRectangle(x+1, y+1, w-2, h-2, 0xffffff);
-		DrawRectangle(x+2, y+2, w-4, h-4, 0xffffff);
+		DrawWideRectangle(x+1, y+1, w-1, h-1, 2, 0xffffff);
 		DrawBar(x+3, y+3, w-5, h-5, 0x888888);
 	}
 }
 
-:void MoreLessBox(dword x,y,s, bt_id_more, bt_id_less, colors_pointer, value, text)
+:void MoreLessBox(dword x,y, bt_id_more, bt_id_less, value, text)
 {
-	#define VALUE_FIELD_W 26;
-	ESI = colors_pointer;
-	system.color.work_graph = ESI.COLORS.work_graph;
-	system.color.work_text = ESI.COLORS.work_text;
-	system.color.work_button = ESI.COLORS.work_button;
-	system.color.work_button_text = ESI.COLORS.work_button_text;
+	#define VALUE_FIELD_W 26
+	#define SIZE 18
 
-	DrawRectangle(x, y, VALUE_FIELD_W, s, system.color.work_graph);
-	DrawRectangle3D(x+1, y+1, VALUE_FIELD_W-2, s-2, 0xDDDddd, 0xffffff);
-	DrawBar(x+2, y+2, VALUE_FIELD_W-3, s-3, 0xffffff);
-	WriteText(x+6, s / 2 + y -3, 0x80, 0x000000, itoa(value));
+	DrawRectangle(x, y, VALUE_FIELD_W, SIZE, system.color.work_graph);
+	DrawRectangle3D(x+1, y+1, VALUE_FIELD_W-2, SIZE-2, 0xDDDddd, 0xffffff);
+	DrawBar(x+2, y+2, VALUE_FIELD_W-3, SIZE-3, 0xffffff);
+	WriteText(x+6, SIZE / 2 + y -3, 0x80, 0x000000, itoa(value));
 
-	DrawCaptButton(VALUE_FIELD_W + x + 1,     y, s, s, bt_id_more, system.color.work_button, system.color.work_button_text, "+");
-	DrawCaptButton(VALUE_FIELD_W + x + s + 2, y, s, s, bt_id_less, system.color.work_button, system.color.work_button_text, "-");
-	WriteText(x+VALUE_FIELD_W+s+s+10, s / 2 + y -3, 0x80, system.color.work_text, text);
+	DrawCaptButton(VALUE_FIELD_W + x + 1,     y, SIZE, SIZE, bt_id_more, system.color.work_button, system.color.work_button_text, "+");
+	DrawCaptButton(VALUE_FIELD_W + x + SIZE + 2, y, SIZE, SIZE, bt_id_less, system.color.work_button, system.color.work_button_text, "-");
+	WriteText(x+VALUE_FIELD_W+SIZE+SIZE+10, SIZE / 2 + y -3, 0x80, system.color.work_text, text);
 }
 
 :void DrawProgressBar(dword st_x, st_y, st_w, st_h, col_fon, col_border, col_fill, col_text, progress_percent)
@@ -177,21 +179,6 @@
 	}
 }
 
-:dword ShadowPixel(dword dwColor, strength)
-{
-	dword iB, iG, iR;
-	strength = 10 - strength;
-
-	iB = dwColor & 0xFF; dwColor >>= 8;
-	iG = dwColor & 0xFF; dwColor >>= 8;
-	iR = dwColor & 0xFF; dwColor >>= 8;
-
-	iB = strength * iB / 10 << 16;
-	iG = strength * iG / 10 << 8;
-	iR = strength * iR / 10;
-
-	return iR + iG + iB;
-}
 :void ShadowImage(dword color_image, w, h, strength)
 {
 	dword col, to;

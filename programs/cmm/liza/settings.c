@@ -102,8 +102,8 @@ void OptionsWindow()
 	DrawCaptButton(Form.cwidth-79, Form.cheight-32, 70, 25, 19, system.color.work_button, system.color.work_button_text,"Apply");
 
 	WriteTextB(ELEM_X, 20, 0x90, system.color.work_text, "Network settings");
-	CheckBox(ELEM_X, 45, 12, 12, 17, "Use custom settings", system.color.work_graph, system.color.work_text, checked[0]);
-	CheckBox(ELEM_X, 65, 12, 12, 18, "Manual configuration", system.color.work_graph, system.color.work_text, checked[1]);
+	CheckBox(ELEM_X, 45, 17, "Use custom settings", checked[0]);
+	CheckBox(ELEM_X, 65, 18, "Manual configuration", checked[1]);
 	for (i=0; i<4; i++)
 	{
 		WriteText(ELEM_X+40, i*25+4+POP_server_box.top, 0x80, system.color.work_text, text1[i]);

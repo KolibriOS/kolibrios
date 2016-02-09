@@ -31,9 +31,9 @@ void main()
 			if (Form.status_window>2) break;
 			_DRAW_WINDOW_CONTENT:
 			DrawBar(0, 0, Form.cwidth, PANELH, 0xCCCccc);
-			CheckBox2(10, 8, 2, "Bold",  label.bold);
-			CheckBox2(70, 8, 3, "Italic",  label.italic);
-			CheckBox2(140, 8, 4, "Smooth",  label.smooth);
+			CheckBox(10, 8, 2, "Bold",  label.bold);
+			CheckBox(70, 8, 3, "Italic",  label.italic);
+			CheckBox(140, 8, 4, "Smooth",  label.smooth);
 			label.raw_size = free(label.raw);
 			if (!label.font)
 			{
@@ -49,8 +49,4 @@ void main()
 			label.show_buf(0, PANELH);
 	  }
 	}
-}
-
-void CheckBox2(dword x, y, id, text, byte value) {
-	CheckBox(x, y, 14, 14, id, text, system.color.work_graph, system.color.work_text, value);
 }

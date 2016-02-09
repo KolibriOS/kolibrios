@@ -373,7 +373,7 @@ void DrawPropertiesWindow()
 
 void DrawPropertiesCheckBoxes()
 {
-	CheckBox2(22, flags_frame.start_y + 14, 20, PR_T_ONLY_READ, atr_readonly);
-	CheckBox2(22, flags_frame.start_y + 36, 21, PR_T_HIDDEN, atr_hidden);
-	CheckBox2(22, flags_frame.start_y + 58, 22, PR_T_SYSTEM, atr_system);
+	CheckBox(22, flags_frame.start_y + 14, 20, PR_T_ONLY_READ, atr_readonly);
+	CheckBox(22, flags_frame.start_y + 36, 21, PR_T_HIDDEN, atr_hidden);
+	CheckBox(22, flags_frame.start_y + 58, 22, PR_T_SYSTEM, atr_system);
 }

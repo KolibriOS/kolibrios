@@ -82,12 +82,12 @@ void ExitSettings()
 
 void DrawSettingsCheckBoxes()
 {
-	CheckBox2(10, 11, 20, SHOW_DEVICE_CLASS,  show_dev_name);
-	CheckBox2(10, 33, 21, SHOW_REAL_NAMES,  real_files_names_case);
-	CheckBox2(10, 55, 22, NOTIFY_COPY_END,  info_after_copy);
-	CheckBox2(10, 77, 24, USE_TWO_PANELS,  two_panels);
-	MoreLessBox(10, 105, 18, 25, 26, #system.color, files.item_h, LIST_LINE_HEIGHT);
-	if (label.font) MoreLessBox(10, 132, 18, 30, 31, #system.color, label.size.pt, FONT_SIZE_LABEL);
+	CheckBox(10, 11, 20, SHOW_DEVICE_CLASS,  show_dev_name);
+	CheckBox(10, 33, 21, SHOW_REAL_NAMES,  real_files_names_case);
+	CheckBox(10, 55, 22, NOTIFY_COPY_END,  info_after_copy);
+	CheckBox(10, 77, 24, USE_TWO_PANELS,  two_panels);
+	MoreLessBox(10, 105, 25, 26, files.item_h, LIST_LINE_HEIGHT);
+	if (label.font) MoreLessBox(10, 132, 30, 31, label.size.pt, FONT_SIZE_LABEL);
 }
 
 
@@ -147,8 +147,8 @@ void SetAppColors()
 {
 	system.color.work = 0xE4DFE1;
 	system.color.work_text = 0;
-	system.color.work_graph  = 0x9098B0; //A0A0B8; //0x819FC5;
-	system.color.work_button = 0xD2D3D3;
+	system.color.work_graph  = 0x7E87A3; //A0A0B8;
+	system.color.work_button = 0x7E87A3;
 	system.color.work_button_text = 0x000000;
 	col_padding = 0xC8C9C9;
 	col_selec   = 0x94AECE;
@@ -161,9 +161,4 @@ void BigFontsChange()
 	files.item_h = label.size.pt + 4;
 	if (files.item_h<18) files.item_h = 18;
 	files_active.item_h = files_inactive.item_h = files.item_h;
-}
-
-
-void CheckBox2(dword x, y, id, text, byte value) {
-	CheckBox(x, y, 14, 14, id, text, system.color.work_graph, system.color.work_text, value);
 }

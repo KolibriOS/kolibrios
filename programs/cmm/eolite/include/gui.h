@@ -50,10 +50,13 @@ void DrawFlatButton(dword x,y,width,height,id,text)
 	PutPixel(x+width-1, y+1, col_padding);
 	DrawFilledBar(x+2, y+2, width-3, height-3);
 	if (id) DefineButton(x+1,y+1,width-2,height-2,id+BT_HIDE,0xEFEBEF);
-	if (height<18) 
-		WriteText(-strlen(text)*6+width/2+x+1,height/2+y-3,0x80,system.color.work_text,text);
-	else
-		WriteText(-strlen(text)*8+width/2+x+1,height/2+y-6,0x90,system.color.work_text,text);
+	if (height<18) {
+		WriteText(-strlen(text)*6+width/2+x+1,height/2+y-3,0x80,MixColors(system.color.work_text,0xFFFfff,210),text);
+	}
+	else {
+		DrawRectangle3D(x-1,y-1,width+2,height+2,system.color.work,MixColors(system.color.work,system.color.work_graph,200));
+		WriteText(-strlen(text)*8+width/2+x+1,height/2+y-6,0x90,MixColors(system.color.work_text,0xFFFfff,210),text);
+	}
 }
 
 void DrawFilledBar(dword x, y, w, h)

@@ -198,10 +198,10 @@ void DrawLoginScreen()
 	
 	if (!aim)
 	{
-		DrawCaptButton(panel_x,panel_y+90,100,20,11,system.color.work_button, system.color.work_button_text,"Settings");
-		DrawCaptButton(panel_x+120,panel_y+90,100,20,12,system.color.work_button, system.color.work_button_text,"Enter >");
+		DrawCaptButton(panel_x,panel_y+90,100,22,11,system.color.work_button, system.color.work_button_text,"Settings");
+		DrawCaptButton(panel_x+120,panel_y+90,100,22,12,system.color.work_button, system.color.work_button_text,"Enter >");
 	} 
-	else DrawCaptButton(panel_x+120,panel_y+90,100,20,12,system.color.work_button, system.color.work_button_text,"Stop");
+	else DrawCaptButton(panel_x+120,panel_y+90,100,22,12,system.color.work_button, system.color.work_button_text,"Stop");
 	
 	SetLoginStatus(cur_st_text);
 }

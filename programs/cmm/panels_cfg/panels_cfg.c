@@ -175,26 +175,26 @@ void DrawWindowContent(byte panel_type)
 		DefineButton(22, taskbar_frame.start_y + 12, panels_img.w-1, 27-1, 100 + BT_HIDE, 0);
 		_PutImage(22, taskbar_frame.start_y + 12,  37, 27, taskbar_cfg.Attachment * 37 * 27 * 3 + panels_img.data);
 		WriteText(68, taskbar_frame.start_y + 20, 0x80, system.color.work_text, CHANGE_POS);
-		PanelCfg_CheckBox(22, taskbar_frame.start_y +  48, 105, SOFTEN_UP, taskbar_cfg.SoftenUp);
-		PanelCfg_CheckBox(22, taskbar_frame.start_y +  68, 106, SOFTEN_DOWN, taskbar_cfg.SoftenDown);
-		PanelCfg_CheckBox(22, taskbar_frame.start_y +  88, 107, MIN_LEFT_BUTTON, taskbar_cfg.MinLeftButton);
-		PanelCfg_CheckBox(22, taskbar_frame.start_y + 108, 108, MIN_RIGHT_BUTTON, taskbar_cfg.MinRightButton);
+		CheckBox(22, taskbar_frame.start_y +  48, 105, SOFTEN_UP, taskbar_cfg.SoftenUp);
+		CheckBox(22, taskbar_frame.start_y +  68, 106, SOFTEN_DOWN, taskbar_cfg.SoftenDown);
+		CheckBox(22, taskbar_frame.start_y +  88, 107, MIN_LEFT_BUTTON, taskbar_cfg.MinLeftButton);
+		CheckBox(22, taskbar_frame.start_y + 108, 108, MIN_RIGHT_BUTTON, taskbar_cfg.MinRightButton);
 		win_center_x = Form.cwidth / 2;
-		PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y +  48, 111, CLOCK, taskbar_cfg.Clock);
-		PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y +  68, 112, CPU_USAGE, taskbar_cfg.CpuUsage);
-		PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y +  88, 113, CHANGE_LANG, taskbar_cfg.ChangeLang);
-		PanelCfg_CheckBox(win_center_x, taskbar_frame.start_y + 108, 114, MENU_BUTTON, taskbar_cfg.MenuButton);	
-		PanelCfg_MoreLessBox(22, taskbar_frame.start_y + 131, 120, 121, taskbar_cfg.PanelHeight, PANEL_HEIGHT);
-		PanelCfg_MoreLessBox(win_center_x, taskbar_frame.start_y + 131, 122, 123, taskbar_cfg.SoftenHeight, SOFTEN_HEIGHT);
-		PanelCfg_MoreLessBox(22, taskbar_frame.start_y + 159, 124, 125, taskbar_cfg.ButtonOffset, BUTTON_OFFSET);
+		CheckBox(win_center_x, taskbar_frame.start_y +  48, 111, CLOCK, taskbar_cfg.Clock);
+		CheckBox(win_center_x, taskbar_frame.start_y +  68, 112, CPU_USAGE, taskbar_cfg.CpuUsage);
+		CheckBox(win_center_x, taskbar_frame.start_y +  88, 113, CHANGE_LANG, taskbar_cfg.ChangeLang);
+		CheckBox(win_center_x, taskbar_frame.start_y + 108, 114, MENU_BUTTON, taskbar_cfg.MenuButton);	
+		MoreLessBox(22, taskbar_frame.start_y + 131, 120, 121, taskbar_cfg.PanelHeight, PANEL_HEIGHT);
+		MoreLessBox(win_center_x, taskbar_frame.start_y + 131, 122, 123, taskbar_cfg.SoftenHeight, SOFTEN_HEIGHT);
+		MoreLessBox(22, taskbar_frame.start_y + 159, 124, 125, taskbar_cfg.ButtonOffset, BUTTON_OFFSET);
 	}
 	if (panel_type==ALL) || (panel_type==DOCKY)
 	{
 		DefineButton(22, docky_frame.start_y + 12, panels_img.w-1, 27-1, 200 + BT_HIDE, 0);
 		_PutImage(22, docky_frame.start_y + 12,  37, 27, docky_cfg.location + 1 * 37 * 27 * 3 + panels_img.data);
 		WriteText(68, docky_frame.start_y + 20, 0x80, system.color.work_text, CHANGE_POS);
-		PanelCfg_CheckBox(22, docky_frame.start_y + 48, 201, FSIZE,  docky_cfg.fsize);
-		PanelCfg_CheckBox(win_center_x, docky_frame.start_y + 48, 202, ASHOW, docky_cfg.ashow);
+		CheckBox(22, docky_frame.start_y + 48, 201, FSIZE,  docky_cfg.fsize);
+		CheckBox(win_center_x, docky_frame.start_y + 48, 202, ASHOW, docky_cfg.ashow);
 	}
 }
 
@@ -263,15 +263,6 @@ void RestartProcess(byte panel_type)
 	ActivateWindow(GetProcessSlot(Form.ID));
 }
 
-
-
-void PanelCfg_CheckBox(dword x, y, id, text, byte value) {
-	CheckBox(x, y, 14, 14, id, text, system.color.work_graph, system.color.work_text, value);
-}
-
-void PanelCfg_MoreLessBox(dword x, y, id_more, id_less; byte value; dword text) {
-	MoreLessBox(x, y, 18, id_more, id_less, #system.color, value, text);
-}
 
 
 stop:
