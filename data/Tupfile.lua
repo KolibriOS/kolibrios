@@ -89,13 +89,6 @@ if build_type == "rus" then tup.append_table(img_files, {
 }) else tup.append_table(img_files, {
  {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
  {"SETTINGS/GAME_CENTER.INI", "common/settings/game_center.ini"},
- {"GAMES/SKIN.RAW", PROGS .. "/games/soko/trunk/SKIN.RAW"},
- {"GAMES/SOKO-4.LEV", PROGS .. "/games/soko/trunk/SOKO-4.LEV"},
- {"GAMES/SOKO-5.LEV", PROGS .. "/games/soko/trunk/SOKO-5.LEV"},
- {"GAMES/SOKO-6.LEV", PROGS .. "/games/soko/trunk/SOKO-6.LEV"},
- {"GAMES/SOKO-7.LEV", PROGS .. "/games/soko/trunk/SOKO-7.LEV"},
- {"GAMES/SOKO-8.LEV", PROGS .. "/games/soko/trunk/SOKO-8.LEV"},
- {"GAMES/SOKO-9.LEV", PROGS .. "/games/soko/trunk/SOKO-9.LEV"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/example.asm"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
@@ -164,8 +157,7 @@ extra_files = {
  {"kolibrios/games/mun/libc.dll", "common/games/mun/libc.dll"},
  {"kolibrios/games/mun/mun", "common/games/mun/mun"}, 
  {"kolibrios/games/phenix", PROGS .. "/games/phenix/trunk/phenix"},
- {"kolibrios/games/soko/soko", build_type .. "/games/soko"},
- {"kolibrios/games/soko/", "common/games/soko/*"},
+ {"kolibrios/games/soko/soko", PROGS .. "/games/soko"},
  {"kolibrios/drivers/ahci/", "common/drivers/ahci/*"},
  {"kolibrios/drivers/atikms/", "common/drivers/atikms/*"},
  {"kolibrios/drivers/i915/", "common/drivers/i915/*"},
@@ -463,7 +455,6 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"DEVELOP/TESTCON2", PROGS .. "/develop/libraries/console/examples/testcon2_rus"},
 }) else tup.append_table(img_files, {
  {"DEVELOP/TESTCON2", PROGS .. "/develop/libraries/console/examples/testcon2_eng"},
- {"GAMES/SOKO", PROGS .. "/games/soko/trunk/SOKO"},
 }) end
 
 if build_type == "rus" then tup.append_table(extra_files, {
