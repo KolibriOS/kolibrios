@@ -25,44 +25,74 @@ struct FileInfoBlock
 	FileName dd ?
 ends
 
-image_data dd 0 ;указатель на временную память, нужен для преобразования изображения
+align 4
+open_b rb 560
 image_data_toolbar dd 0
-IMAGE_FILE1_SIZE equ 128*144*3+54 ;размер файла с изображением
 IMAGE_TOOLBAR_ICON_SIZE equ 21*21*3
-IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*3+54
 
-macro load_image_file path,buf,size { ;макрос для загрузки изображений
-	;path - может быть переменной или строковым параметром
-	if path eqtype '' ;проверяем задан ли строкой параметр path
-		jmp @f
-			local .path_str
-			.path_str db path ;формируем локальную переменную
-			db 0
-		@@:
-		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0
-	else
-		copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
-	end if
-	stdcall mem.Alloc, dword size ;выделяем память для изображения
+;макрос для загрузки изображений
+; path - может быть переменной или строковым параметром
+; buf - переменная куда будет записан указатель на изображение в формате rgb
+; img_w, img_h - переменные куда будут записаны размеры открываемого
+;    изображения, не обязательные параметры
+macro load_image_file path, buf, img_w, img_h
+{
+if path eqtype '' ;проверяем задан ли строкой параметр path
+	local .path_str
+	jmp @f
+		.path_str db path ;формируем локальную переменную
+		db 0
+	@@:
+	;32 - стандартный адрес по которому должен быть буфер с системным путем
+	copy_path .path_str,[32],file_name,0
+else
+	copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+end if
+    mov [run_file_70.Function], SSF_GET_INFO
+    mov [run_file_70.Position], 0
+    mov [run_file_70.Flags], 0
+    mov dword[run_file_70.Count], 0
+    mov dword[run_file_70.Buffer], open_b
+    mov byte[run_file_70+20], 0
+    mov dword[run_file_70.FileName], file_name
+    mcall SF_FILE,run_file_70
+	or eax,eax
+	jnz @f
+
+    mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
+    stdcall mem.Alloc,ecx ;выделяем память для изображения
 	mov [buf],eax
 	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
-	mov [run_file_70.Count], dword size
+	mov [run_file_70.Count], ecx
 	mov [run_file_70.Buffer], eax
 	mov byte[run_file_70+20], 0
 	mov [run_file_70.FileName], file_name
 	mcall SF_FILE,run_file_70 ;загружаем файл изображения
 	cmp ebx,0xffffffff
 	je @f
-		;определяем вид изображения и переводим его во временный буфер image_data
-		stdcall dword[img_decode], dword[buf],ebx,0
-		mov dword[image_data],eax
-		;преобразуем изображение к формату rgb
-		stdcall dword[img_to_rgb2], dword[image_data],dword[buf]
-		;удаляем временный буфер image_data
-		stdcall dword[img_destroy], dword[image_data]
+		;определяем вид изображения и пишем его параметры
+		stdcall [img_decode], [buf],ebx,0
+		mov ebx,eax
+		;определяем размер декодированного изображения
+		mov ecx,[eax+4] ;+4 = image width
+if img_w eq
+else
+		mov dword[img_w],ecx
+end if
+if img_h eq
+		imul ecx,[eax+8] ;+8 = image height
+else
+		mov eax,[eax+8] ;+8 = image height
+		mov dword[img_h],eax
+		imul ecx,eax
+end if
+		imul ecx,3 ;need for r,g,b
+		stdcall mem.ReAlloc,[buf],ecx ;изменяем размер для буфера
+		mov [buf],eax
+		stdcall [img_to_rgb2], ebx,[buf] ;преобразуем изображение к формату rgb
+		stdcall [img_destroy], ebx ;удаляем временный буфер с параметрами изображения
 	@@:
 }
 
@@ -100,24 +130,23 @@ load_libraries l_libs_start,l_libs_end
 	mov eax,[eax+offs_zbuf_pbuf] ;eax -> ZBuffer.pbuf
 	mov dword[buf_ogl],eax
 
-	load_image_file 'font8x9.bmp', image_data_toolbar,IMAGE_FILE1_SIZE
+	load_image_file 'font8x9.bmp', image_data_toolbar
 	stdcall [buf2d_create_f_img], buf_1,[image_data_toolbar] ;создаем буфер
 	stdcall mem.Free,[image_data_toolbar] ;освобождаем память
 	stdcall [buf2d_conv_24_to_8], buf_1,1 ;делаем буфер прозрачности 8 бит
 	stdcall [buf2d_convert_text_matrix], buf_1
 
-	load_image_file 'toolb_1.png', image_data_toolbar,IMAGE_TOOLBAR_SIZE
-
-	load_image_file 'text_1.png', texture, (256*256*3+54) ;открытие файла текстуры
+	load_image_file 'toolb_1.png', image_data_toolbar
+	load_image_file 'text_1.png', texture, text_w,text_h ;открытие файла текстуры
 
 	;* Setup texturing *
 	stdcall [glTexEnvi], GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL
-	stdcall [glHint], GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST
   
 	;* generate texture object IDs *
 	stdcall [glGenTextures], 1, TexObj
 	stdcall [glBindTexture], GL_TEXTURE_2D, [TexObj]
-	stdcall [glTexImage2D], GL_TEXTURE_2D, 0, 3, 256, 256, 0,  GL_RGB, GL_UNSIGNED_BYTE, [texture]
+	stdcall [glTexImage2D], GL_TEXTURE_2D, 0, 3, [text_w], [text_h],\
+		0, GL_RGB, GL_UNSIGNED_BYTE, [texture]
     
 	stdcall [glTexParameteri], GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST
 	stdcall [glTexParameteri], GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST
@@ -301,8 +330,6 @@ draw_3d:
 stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
 
 stdcall [glPushMatrix]
-	call SetLight
-
 	stdcall [glTranslatef], 0.0,0.0,0.5
 	stdcall [glScalef], [scale], [scale], [scale]
 	stdcall [glRotatef], [angle_z],0.0,0.0,1.0
@@ -396,28 +423,12 @@ stdcall [glPopMatrix]
 	stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_angle_y,5,25,0xffff00
 	ret
 
-align 4
-SetLight:
-	stdcall [glLightfv], GL_LIGHT0, GL_POSITION, light_position
-	stdcall [glLightfv], GL_LIGHT0, GL_SPOT_DIRECTION, light_dir
-
-	stdcall [glLightfv], GL_LIGHT0, GL_DIFFUSE, white_light
-	stdcall [glLightfv], GL_LIGHT0, GL_SPECULAR, white_light
-
-	stdcall [glEnable], GL_COLOR_MATERIAL
-	stdcall [glColorMaterial], GL_FRONT, GL_AMBIENT_AND_DIFFUSE
-	stdcall [glMaterialfv], GL_FRONT, GL_SPECULAR, mat_specular
-	;stdcall [glMaterialf], GL_FRONT, GL_SHININESS, [mat_shininess]
-	stdcall [glLightModelfv], GL_LIGHT_MODEL_AMBIENT, lmodel_ambient
-
-	stdcall [glEnable],GL_LIGHTING
-	stdcall [glEnable],GL_LIGHT0
-ret
-
 dr_figure dd 0
 qObj dd 0
 TexObj dd 0 ;массив указателей на текстуры (в данном случае 1 шт.)
 texture dd 0 ;указатель на память с текстурой
+text_w dd 0
+text_h dd 0
 
 scale dd 0.4
 delt_sc dd 0.05

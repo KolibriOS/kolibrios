@@ -25,44 +25,74 @@ struct FileInfoBlock
 	FileName dd ?
 ends
 
-image_data dd 0 ;указатель на временную память, нужен для преобразования изображения
+align 4
+open_b rb 560
 image_data_toolbar dd 0
-IMAGE_FILE1_SIZE equ 128*144*3+54 ;размер файла с изображением
 IMAGE_TOOLBAR_ICON_SIZE equ 21*21*3
-IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*3+54
 
-macro load_image_file path,buf,size { ;макрос для загрузки изображений
-	;path - может быть переменной или строковым параметром
-	if path eqtype '' ;проверяем задан ли строкой параметр path
-		jmp @f
-			local .path_str
-			.path_str db path ;формируем локальную переменную
-			db 0
-		@@:
-		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0
-	else
-		copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
-	end if
-	stdcall mem.Alloc, dword size ;выделяем память для изображения
+;макрос для загрузки изображений
+; path - может быть переменной или строковым параметром
+; buf - переменная куда будет записан указатель на изображение в формате rgb
+; img_w, img_h - переменные куда будут записаны размеры открываемого
+;    изображения, не обязательные параметры
+macro load_image_file path, buf, img_w, img_h
+{
+if path eqtype '' ;проверяем задан ли строкой параметр path
+	local .path_str
+	jmp @f
+		.path_str db path ;формируем локальную переменную
+		db 0
+	@@:
+	;32 - стандартный адрес по которому должен быть буфер с системным путем
+	copy_path .path_str,[32],file_name,0
+else
+	copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+end if
+    mov [run_file_70.Function], SSF_GET_INFO
+    mov [run_file_70.Position], 0
+    mov [run_file_70.Flags], 0
+    mov dword[run_file_70.Count], 0
+    mov dword[run_file_70.Buffer], open_b
+    mov byte[run_file_70+20], 0
+    mov dword[run_file_70.FileName], file_name
+    mcall SF_FILE,run_file_70
+	or eax,eax
+	jnz @f
+
+    mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
+    stdcall mem.Alloc,ecx ;выделяем память для изображения
 	mov [buf],eax
 	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
-	mov [run_file_70.Count], dword size
+	mov [run_file_70.Count], ecx
 	mov [run_file_70.Buffer], eax
 	mov byte[run_file_70+20], 0
 	mov [run_file_70.FileName], file_name
 	mcall SF_FILE,run_file_70 ;загружаем файл изображения
 	cmp ebx,0xffffffff
 	je @f
-		;определяем вид изображения и переводим его во временный буфер image_data
-		stdcall dword[img_decode], dword[buf],ebx,0
-		mov dword[image_data],eax
-		;преобразуем изображение к формату rgb
-		stdcall dword[img_to_rgb2], dword[image_data],dword[buf]
-		;удаляем временный буфер image_data
-		stdcall dword[img_destroy], dword[image_data]
+		;определяем вид изображения и пишем его параметры
+		stdcall [img_decode], [buf],ebx,0
+		mov ebx,eax
+		;определяем размер декодированного изображения
+		mov ecx,[eax+4] ;+4 = image width
+if img_w eq
+else
+		mov dword[img_w],ecx
+end if
+if img_h eq
+		imul ecx,[eax+8] ;+8 = image height
+else
+		mov eax,[eax+8] ;+8 = image height
+		mov dword[img_h],eax
+		imul ecx,eax
+end if
+		imul ecx,3 ;need for r,g,b
+		stdcall mem.ReAlloc,[buf],ecx ;изменяем размер для буфера
+		mov [buf],eax
+		stdcall [img_to_rgb2], ebx,[buf] ;преобразуем изображение к формату rgb
+		stdcall [img_destroy], ebx ;удаляем временный буфер с параметрами изображения
 	@@:
 }
 
@@ -99,13 +129,13 @@ load_libraries l_libs_start,l_libs_end
 	mov eax,[eax+offs_zbuf_pbuf] ;eax -> ZBuffer.pbuf
 	mov dword[buf_ogl],eax
 
-	load_image_file 'font8x9.bmp', image_data_toolbar,IMAGE_FILE1_SIZE
+	load_image_file 'font8x9.bmp', image_data_toolbar
 	stdcall [buf2d_create_f_img], buf_1,[image_data_toolbar] ;создаем буфер
 	stdcall mem.Free,[image_data_toolbar] ;освобождаем память
 	stdcall [buf2d_conv_24_to_8], buf_1,1 ;делаем буфер прозрачности 8 бит
 	stdcall [buf2d_convert_text_matrix], buf_1
 
-	load_image_file 'toolb_1.png', image_data_toolbar,IMAGE_TOOLBAR_SIZE
+	load_image_file 'toolb_1.png', image_data_toolbar
 	call draw_3d
 
 align 4
@@ -133,12 +163,18 @@ draw_window:
 	mcall SF_DEFINE_BUTTON,(6 shl 16)+19,(6 shl 16)+19,3+0x40000000 ;вершины вкл.
 	mcall ,(36 shl 16)+19,,4+0x40000000 ;каркасные грани вкл.
 	mcall ,(66 shl 16)+19,,5+0x40000000 ;сплошные грани вкл.
+	mcall ,(96 shl 16)+19,,6+0x40000000 ;масштаб +
+	mcall ,(126 shl 16)+19,,7+0x40000000 ;масштаб -
 
 	mcall SF_PUT_IMAGE,[image_data_toolbar],(21 shl 16)+21,(5 shl 16)+5 ;вершины вкл.
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	mcall ,,,(35 shl 16)+5 ;каркасные грани вкл.
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	mcall ,,,(65 shl 16)+5 ;сплошные грани вкл.
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	mcall ,,,(95 shl 16)+5 ;масштаб +
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	mcall ,,,(125 shl 16)+5 ;масштаб -
 
 	stdcall [kosglSwapBuffers]
 	mcall SF_REDRAW,SSF_END_DRAW
@@ -154,31 +190,13 @@ key:
 
 	cmp ah,61 ;+
 	jne @f
-		finit
-		fld dword[scale]
-		fadd dword[delt_sc]
-		fst dword[scale]
-		mov word[NumberSymbolsAD],3
-		fstp qword[Data_Double]
-		call DoubleFloat_to_String
-		mov byte[txt_scale.v],0
-		stdcall str_cat, txt_scale.v,Data_String
-		call draw_3d
-		stdcall [kosglSwapBuffers]
+		call but_zoom_p
+		jmp still
 	@@:
 	cmp ah,45 ;-
 	jne @f
-		finit
-		fld dword[scale]
-		fsub dword[delt_sc]
-		fst dword[scale]
-		mov word[NumberSymbolsAD],3
-		fstp qword[Data_Double]
-		call DoubleFloat_to_String
-		mov byte[txt_scale.v],0
-		stdcall str_cat, txt_scale.v,Data_String
-		call draw_3d
-		stdcall [kosglSwapBuffers]
+		call but_zoom_m
+		jmp still
 	@@:
 	cmp ah,178 ;Up
 	jne @f
@@ -257,6 +275,16 @@ button:
 		call but_st_face
 		jmp still
 	@@:
+	cmp ah,6
+	jne @f
+		call but_zoom_p
+		jmp still
+	@@:
+	cmp ah,7
+	jne @f
+		call but_zoom_m
+		jmp still
+	@@:
 	cmp ah,1
 	jne still
 .exit:
@@ -281,6 +309,36 @@ but_st_line:
 align 4
 but_st_face:
 	stdcall [gluQuadricDrawStyle], [qObj],GLU_FILL
+	call draw_3d
+	stdcall [kosglSwapBuffers]
+	ret
+
+align 4
+but_zoom_p:
+	finit
+	fld dword[scale]
+	fadd dword[delt_sc]
+	fst dword[scale]
+	mov word[NumberSymbolsAD],3
+	fstp qword[Data_Double]
+	call DoubleFloat_to_String
+	mov byte[txt_scale.v],0
+	stdcall str_cat, txt_scale.v,Data_String
+	call draw_3d
+	stdcall [kosglSwapBuffers]
+	ret
+
+align 4
+but_zoom_m:
+	finit
+	fld dword[scale]
+	fsub dword[delt_sc]
+	fst dword[scale]
+	mov word[NumberSymbolsAD],3
+	fstp qword[Data_Double]
+	call DoubleFloat_to_String
+	mov byte[txt_scale.v],0
+	stdcall str_cat, txt_scale.v,Data_String
 	call draw_3d
 	stdcall [kosglSwapBuffers]
 	ret

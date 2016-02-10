@@ -120,6 +120,7 @@ load_libraries l_libs_start,l_libs_end
 	stdcall [glEnable], GL_NORMALIZE ;делам нормали одинаковой величины во избежание артефактов
 	stdcall [gluNewQuadric]
 	mov [qObj],eax
+	stdcall [gluQuadricDrawStyle], eax,GLU_FILL
 	stdcall [gluQuadricTexture], eax,GL_TRUE
 
 	stdcall [glClearColor], 0.0,0.0,0.0,0.0
@@ -137,7 +138,7 @@ load_libraries l_libs_start,l_libs_end
 	stdcall [buf2d_convert_text_matrix], buf_1
 
 	load_image_file 'toolb_1.png', image_data_toolbar
-	load_image_file 'text_2.png', texture, text_w,text_h ;открытие файла текстуры
+	load_image_file 'text_3.png', texture, text_w,text_h ;открытие файла текстуры
 
 	;* Setup texturing *
 	stdcall [glTexEnvi], GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL
@@ -179,20 +180,14 @@ draw_window:
 	mcall SF_CREATE_WINDOW,(50 shl 16)+420,(30 shl 16)+410,0x33ffffff,,caption
 
 	mov esi,[sc.work_button]
-	mcall SF_DEFINE_BUTTON,(6 shl 16)+19,(6 shl 16)+19,3+0x40000000 ;земля с меридиан.
-	mcall ,(36 shl 16)+19,,4+0x40000000 ;земля
-	mcall ,(66 shl 16)+19,,5+0x40000000 ;масштаб +
-	mcall ,(96 shl 16)+19,,6+0x40000000 ;масштаб -
+	mcall SF_DEFINE_BUTTON,(6 shl 16)+19,(6 shl 16)+19,3+0x40000000 ;масштаб +
+	mcall ,(36 shl 16)+19,,4+0x40000000 ;масштаб -
 
 	mov ebx,[image_data_toolbar]
+	add ebx,3*IMAGE_TOOLBAR_ICON_SIZE
+	mcall SF_PUT_IMAGE,,(21 shl 16)+21,(5 shl 16)+5 ;масштаб +
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mcall SF_PUT_IMAGE,,(21 shl 16)+21,(5 shl 16)+5 ;земля с меридиан.
-	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mcall ,,,(35 shl 16)+5 ;земля
-	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mcall ,,,(65 shl 16)+5 ;масштаб +
-	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mcall ,,,(95 shl 16)+5 ;масштаб -
+	mcall ,,,(35 shl 16)+5 ;масштаб -
 
 	stdcall [kosglSwapBuffers]
 	mcall SF_REDRAW,SSF_END_DRAW
@@ -280,20 +275,10 @@ button:
 	mcall SF_GET_BUTTON
 	cmp ah,3
 	jne @f
-		call but_dr_0
-		jmp still
-	@@:
-	cmp ah,4
-	jne @f
-		call but_dr_1
-		jmp still
-	@@:
-	cmp ah,5
-	jne @f
 		call but_zoom_p
 		jmp still
 	@@:
-	cmp ah,6
+	cmp ah,4
 	jne @f
 		call but_zoom_m
 		jmp still
@@ -304,20 +289,6 @@ button:
 	stdcall [gluDeleteQuadric], [qObj]
 	stdcall mem.Free,[image_data_toolbar]
 	mcall SF_TERMINATE_PROCESS
-
-align 4
-but_dr_0:
-	mov dword[dr_figure],0
-	call draw_3d
-	stdcall [kosglSwapBuffers]
-	ret
-
-align 4
-but_dr_1:
-	mov dword[dr_figure],1
-	call draw_3d
-	stdcall [kosglSwapBuffers]
-	ret
 
 align 4
 but_zoom_p:
@@ -360,27 +331,13 @@ draw_3d:
 stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
 
 stdcall [glPushMatrix]
-	stdcall [glTranslatef], 0.0,0.0,0.5
 	stdcall [glScalef], [scale], [scale], [scale]
 	stdcall [glScalef], 1.0, 1.0, 0.1 ;прижимаем сферу, что-бы сразу не вылазила при увеличении
 	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
 	stdcall [glRotatef], [angle_x],1.0,0.0,0.0
 
-cmp dword[dr_figure],0
-jne @f
-	; рисование земли с меридианами
-	stdcall [glColor3f], 0.0, 0.0, 1.0
-	stdcall [gluQuadricDrawStyle], [qObj],GLU_LINE
-	stdcall [gluSphere], [qObj], 1.0, 24,18 ;меридианы
-	stdcall [gluQuadricDrawStyle], [qObj],GLU_FILL
-	stdcall [gluSphere], [qObj], 0.995, 24,18 ;земля
-@@:
-cmp dword[dr_figure],1
-jne @f
-	; рисование земли
-	stdcall [gluQuadricDrawStyle], [qObj],GLU_FILL
+	; рисование панорамы
 	stdcall [gluSphere], [qObj], 1.0, 64,64
-@@:
 stdcall [glPopMatrix]
 
 	stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_scale,5,5,0xffff00
@@ -388,14 +345,13 @@ stdcall [glPopMatrix]
 	stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_angle_x,5,25,0xffff00
 	ret
 
-dr_figure dd 0
 qObj dd 0
 TexObj dd 0 ;массив указателей на текстуры (в данном случае 1 шт.)
 texture dd 0 ;указатель на память с текстурой
 text_w dd 0
 text_h dd 0
 
-scale dd 0.95
+scale dd 1.5
 delt_sc dd 0.05
 angle_z dd 0.0
 angle_x dd 90.0

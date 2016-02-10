@@ -248,7 +248,7 @@ pushad
 		stdcall gl_malloc, 256*256*3
 		mov [pixels1],eax ;pixels1 = gl_malloc(256 * 256 * 3)
 		; no interpolation is done here to respect the original image aliasing !
-;gl_resizeImageNoInterpolate(eax,256,256,[edi+36],edx,esi)
+		stdcall gl_resizeImage, eax,256,256,[edi+36],edx,esi
 		mov dword[do_free],1
 		mov edx,256
 		mov esi,256
@@ -287,17 +287,6 @@ if TGL_FEATURE_RENDER_BITS eq 32
 	or eax,eax ;if(im.pixmap)
 	jz @f
 ;gl_convertRGB_to_8A8R8G8B(eax,[pixels1],ebx,esi)
-	@@:
-end if
-if TGL_FEATURE_RENDER_BITS eq 16
-	mov ebx,edx
-	imul edx,esi
-	shl edx,1
-	stdcall gl_malloc,edx
-	mov [ecx+offs_imag_pixmap],eax ;im.pixmap = gl_malloc(width*height*2)
-	or eax,eax ;if(im.pixmap)
-	jz @f
-;gl_convertRGB_to_5R6G5B(eax,[pixels1],ebx,esi)
 	@@:
 end if
 	cmp dword[do_free],0 ;if (do_free)
