@@ -90,14 +90,14 @@ aini_get_int db 'ini_get_int',0
 aini_set_int db 'ini_set_int',0
 ;---------------------------------------------------------------------
 
-check1 check_box2 20 shl 16 +8,110 shl 16 +8,6,0xffffff,0,0,label4
+check1 check_box2 20 shl 16 +12,108 shl 16 +12,6,0xffffff,0,0,label4,ch_flag_middle
 
 hide        db 'h',0
 asettings   db 'settings',0
 aautosave   db 'autosave',0
 ini_file db  '/sys/settings/rdsave.ini',0
 
-color1 dd 0x019098d0
+color1 dd 0x6068a0
 color2 dd 0xFFFFFF
 color3 dd 0xe4dfe1
 

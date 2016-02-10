@@ -23,10 +23,25 @@ include '../../../dll.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 
-	@use_library
+@use_library
 
+macro DrawBar  x, y, width, height, color 
+{
+	mcall 13, (x) shl 16 + (width), (y) shl 16 + (height), color
+}
+
+macro DrawRectangle  x, y, w, h, color 
+{
+	DrawBar x,y,w,1,color
+	DrawBar x,y+h,w,1
+	DrawBar x,y,1,h
+	DrawBar x+w,y,1,h+1
+}
+
+	
 align 4
 START:
+
 
 load_libraries l_libs_start,end_l_libs
 	inc	eax
@@ -167,8 +182,7 @@ checkbox:
     jmp    still
 
 draw_window:
-    mov   al,12
-    mcall   ,1
+    mcall 12,1
 
     mov   al,14
     mcall				     ;eax=14 - get screen max x & max y
@@ -181,11 +195,13 @@ draw_window:
     lea   ecx,[ecx-70 shl 16+132]
 
     xor   eax,eax
-    mcall  , , ,[color1],0x01000000	   ;define and draw window
+	mov edx, 0x01000000
+	mcall ;define and draw window  
 
+	DrawRectangle 0,0,332,132,[color1]
     mov   al,13
-    mcall   ,<0,333> ,<0,133>
-    mcall   ,<1,331>,<1,131>,[color2]
+    mcall   ,<1,331>,<1,1>,[color2]
+	mcall   ,<1,1>,<1,131>
     mcall   ,<2,330>,<2,130>, [color3]
 
     mov   al,8
