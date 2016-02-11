@@ -23,7 +23,7 @@ void Scroll() {
 		if (sc_slider_h > sc_h-sc_slider_y+56) || (files.first+files.visible>=files.count) sc_slider_y= Form.cheight - 19 - sc_slider_h; //для большого списка 
 	}
 	//slider
-	DrawRectangle(sc_x,sc_slider_y,16,sc_slider_h,system.color.work_graph);
+	DrawRectangle(sc_x,sc_slider_y,16,sc_slider_h,col_graph);
 	DrawRectangle3D(sc_x+1,sc_slider_y+1,14,sc_slider_h-2,0xFEFEFE,col_padding);
 	if (!scroll_used) for (i=0; i<13; i++) DrawBar(sc_x + 2 + i, sc_slider_y+2, 1, sc_slider_h-3, col_palette[13-i]);
 	if (scroll_used)  for (i=0; i<13; i++) DrawBar(sc_x + 2 + i, sc_slider_y+2, 1, sc_slider_h-3, col_palette[i]);
@@ -45,7 +45,7 @@ void Scroll() {
 
 void DrawFlatButton(dword x,y,width,height,id,text)
 {
-	DrawRectangle(x,y,width,height,system.color.work_graph);
+	DrawRectangle(x,y,width,height,col_graph);
 	DrawRectangle3D(x+1,y+1,width-2,height-2,0xFEFEFE,col_padding);
 	PutPixel(x+width-1, y+1, col_padding);
 	DrawFilledBar(x+2, y+2, width-3, height-3);
@@ -54,7 +54,7 @@ void DrawFlatButton(dword x,y,width,height,id,text)
 		WriteText(-strlen(text)*6+width/2+x+1,height/2+y-3,0x80,MixColors(system.color.work_text,0xFFFfff,210),text);
 	}
 	else {
-		DrawRectangle3D(x-1,y-1,width+2,height+2,system.color.work,MixColors(system.color.work,system.color.work_graph,200));
+		DrawRectangle3D(x-1,y-1,width+2,height+2,system.color.work,MixColors(system.color.work,col_graph,200));
 		WriteText(-strlen(text)*8+width/2+x+1,height/2+y-6,0x90,MixColors(system.color.work_text,0xFFFfff,210),text);
 	}
 }
@@ -76,7 +76,7 @@ void DrawEolitePopup(dword b1_text, b2_text)
 	int button_margin = form_w - b1_len - b2_len / 3;
 	int b1_x = dform_x + button_margin;
 	int b2_x = dform_x + button_margin + b1_len + button_margin;
-	DrawPopup(dform_x, 160, form_w, 90, 1, system.color.work, system.color.work_graph);
+	DrawPopup(dform_x, 160, form_w, 90, 1, system.color.work, col_graph);
 	DrawFlatButton(b1_x, 210, b1_len, 24, 301, b1_text);
 	DrawFlatButton(b2_x, 210, b2_len, 24, 302, b2_text);
 }

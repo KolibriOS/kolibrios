@@ -145,14 +145,17 @@ void Write_Error(int error_number)
 
 void SetAppColors()
 {
-	system.color.work = 0xE4DFE1;
-	system.color.work_text = 0;
-	system.color.work_graph  = 0x7E87A3; //A0A0B8;
-	system.color.work_button = 0x7E87A3;
-	system.color.work_button_text = 0x000000;
+	system.color.get();
+	//system.color.work = 0xE4DFE1;
+	//system.color.work_text = 0;
+	//system.color.work_graph  = 0x7E87A3; //A0A0B8;
+	//system.color.work_button = 0x7E87A3;
+	//system.color.work_button_text = 0x000000
+	col_work    = 0xE4DFE1;
 	col_padding = 0xC8C9C9;
 	col_selec   = 0x94AECE;
 	col_lpanel  = 0x00699C;
+	col_graph   = 0x7E87A3;
 }
 
 

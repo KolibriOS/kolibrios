@@ -43,7 +43,8 @@ void about_dialog()
 				DefineAndDrawWindow(Form.left+Form.width/2,Form.top+Form.height/2-114,440,200+GetSkinHeight(),0x34,system.color.work,0);
 				GetProcessInfo(#about_form, SelfInfo);
 				if (about_form.status_window>2) break;
-				_PutImage(10, 23, 86, 86, #logo);
+				logo_pal[0] = system.color.work;
+				PutPaletteImage(#logo,86,86,10,23,8,#logo_pal);
 				WriteTextB(112,16,0x82,0xD49CD2,ABOUT_TITLE);
 				WriteTextB(110,14,0x82,0xBF40BF,ABOUT_TITLE);
 				WriteTextLines(110,53,10010000b,0,DEVELOPERS_TEXT,21);

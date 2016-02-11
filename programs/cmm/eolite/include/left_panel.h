@@ -201,10 +201,10 @@ void Tip(int y, dword caption, id, arrow)
 {
 	DrawBar(17,y,160,1,0xEFEDEE);
 	DrawFilledBar(17, y+1, 160, 16);
-	WriteText(25,y+5,0x80,system.color.work_text,caption);
+	WriteText(25,y+5,0x80,0x000000,caption);
 	if (id) DefineButton(159,y+1,16,16,id+BT_HIDE+BT_NOFRAME,0); //arrow button
-	WriteText(165,y+5,0x80,system.color.work_text,arrow); //arrow
-	DrawBar(17,y+17,160,1,system.color.work_graph);
+	WriteText(165,y+5,0x80,0x000000,arrow); //arrow
+	DrawBar(17,y+17,160,1,col_graph);
 }
 
 void ActionsDraw()

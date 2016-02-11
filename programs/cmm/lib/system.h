@@ -6,8 +6,8 @@
 dword
 	nonset1,
 	nonset2,
-	work_light,
 	work_dark,
+	work_light,
 	nonset3,
 	work,
 	work_button,

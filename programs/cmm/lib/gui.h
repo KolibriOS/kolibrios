@@ -81,13 +81,14 @@
 	else if (is_checked == 1)
 	{
 		DrawWideRectangle(x+1, y+1, w-1, h-1, 2, 0xffffff);
-		DrawBar(x+3, y+3, w-5, h-5, system.color.work_button); //0x13A113
+		DrawBar(x+3, y+3, w-5, h-5, 0x00C000); //0x13A113
 	}
 	else if (is_checked == 2) //not active
 	{
 		DrawWideRectangle(x+1, y+1, w-1, h-1, 2, 0xffffff);
 		DrawBar(x+3, y+3, w-5, h-5, 0x888888);
 	}
+	DrawRectangle3D(x-1,y-1,w+2,h+2,system.color.work_dark,system.color.work_light);
 }
 
 :void MoreLessBox(dword x,y, bt_id_more, bt_id_less, value, text)
@@ -100,9 +101,10 @@
 	DrawBar(x+2, y+2, VALUE_FIELD_W-3, SIZE-3, 0xffffff);
 	WriteText(x+6, SIZE / 2 + y -3, 0x80, 0x000000, itoa(value));
 
-	DrawCaptButton(VALUE_FIELD_W + x + 1,     y, SIZE, SIZE, bt_id_more, system.color.work_button, system.color.work_button_text, "+");
-	DrawCaptButton(VALUE_FIELD_W + x + SIZE + 2, y, SIZE, SIZE, bt_id_less, system.color.work_button, system.color.work_button_text, "-");
+	DrawCaptButton(VALUE_FIELD_W + x,     y, SIZE, SIZE, bt_id_more, system.color.work_button, system.color.work_button_text, "+");
+	DrawCaptButton(VALUE_FIELD_W + x + SIZE, y, SIZE, SIZE, bt_id_less, system.color.work_button, system.color.work_button_text, "-");
 	WriteText(x+VALUE_FIELD_W+SIZE+SIZE+10, SIZE / 2 + y -3, 0x80, system.color.work_text, text);
+	DrawRectangle3D(x-1,y-1,VALUE_FIELD_W+SIZE+SIZE+2,SIZE+2,system.color.work_dark,system.color.work_light);
 }
 
 :void DrawProgressBar(dword st_x, st_y, st_w, st_h, col_fon, col_border, col_fill, col_text, progress_percent)

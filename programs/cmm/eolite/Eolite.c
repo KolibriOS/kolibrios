@@ -30,7 +30,7 @@
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 enum {CREATE_FILE=1, CREATE_FOLDER, RENAME_ITEM }; //NewElement
 
-dword col_padding, col_selec, col_lpanel;
+dword col_padding, col_selec, col_lpanel, col_work, col_graph;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
 
@@ -191,29 +191,25 @@ void main()
 						}
 					}
 				}	
-				if (files.MouseOver(mouse.x, mouse.y))&&((mouse.down|mouse.dblclick|mouse.up))
+				if (files.MouseOver(mouse.x, mouse.y))
 				{
-					//select/open file {
-					if (mouse.key&MOUSE_LEFT)&&((mouse.down)||(mouse.dblclick))
+					//open
+					if (mouse.key&MOUSE_LEFT)&&(mouse.dblclick) 
 					{
-						if (mouse.y>=files.y)//&&(mouse.click)
+						if (mouse.y - files.y / files.item_h + files.first < files.count) 
 						{
-							id = mouse.y - files.y / files.item_h + files.first;
-							if (files.cur_y!=id)
-							{
-								mouse.clearTime();
-								if(!mouse.up)&&(id-files.first<files.visible) {
-									files.cur_y = id;
-									List_ReDraw();
-								}
-							}
-							else IF(mouse.dblclick)Open(0);
+							files.ProcessMouse(mouse.x, mouse.y);
+							List_ReDraw();
+							Open(0);					
 						}
 					}
-					// } select/open file
-					else
-					//file menu {
-					if (mouse.key&MOUSE_RIGHT)&&(mouse.up)
+					//select file
+					else if (mouse.key&MOUSE_LEFT)&&((mouse.down)
+					{
+						if (files.ProcessMouse(mouse.x, mouse.y)) List_ReDraw();
+					}
+					//file menu
+					else if (mouse.key&MOUSE_RIGHT)&&(mouse.up)
 					{
 						menu_call_mouse = 1;
 						
@@ -226,7 +222,6 @@ void main()
 						}
 						break;
 					}
-					// } file menu
 				}
 
 				if (mouse.vert)
@@ -538,23 +533,23 @@ void main()
 
 void draw_window()
 {
-	DefineAndDrawWindow(WinX+rand_n,WinY+rand_n,WinW,WinH,0x73,system.color.work,TITLE,0);
+	DefineAndDrawWindow(WinX+rand_n,WinY+rand_n,WinW,WinH,0x73,NULL,TITLE,0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
 	if (Form.height < 350) { MoveSize(OLD,OLD,OLD,350); return; }
 	if (Form.width  < 480) { MoveSize(OLD,OLD,480,OLD); return; }
 	GetProcessInfo(#Form, SelfInfo); //if win_size changed
 	PutPaletteImage(#toolbar,246,34,0,0,8,#toolbar_pal);
-	DrawBar(127, 8, 1, 25, system.color.work_graph);
-	for (j=0; j<3; j++) DefineButton(toolbar_buttons_x[j]+2,5+2,31-5,29-5,21+j+BT_HIDE,system.color.work);
-	for (j=3; j<6; j++) DefineButton(toolbar_buttons_x[j],5,31,29,21+j+BT_HIDE,system.color.work);
-	DrawBar(246,0,Form.cwidth - 297,12, system.color.work); //upper editbox
-	DrawBar(246,29,Form.cwidth - 297,5,system.color.work);  //under editbox
-	DrawRectangle(246,12,Form.cwidth - 303,16,system.color.work_graph);
+	DrawBar(127, 8, 1, 25, col_graph);
+	for (j=0; j<3; j++) DefineButton(toolbar_buttons_x[j]+2,5+2,31-5,29-5,21+j+BT_HIDE,NULL);
+	for (j=3; j<6; j++) DefineButton(toolbar_buttons_x[j],5,31,29,21+j+BT_HIDE,NULL);
+	DrawBar(246,0, Form.cwidth - 297,12, col_work); //upper editbox
+	DrawBar(246,29,Form.cwidth - 297,5,  col_work); //lower editbox
+	DrawRectangle(246,12,Form.cwidth - 303,16,col_graph);
 	DefineButton(Form.cwidth - 32,6,27,28,51+BT_HIDE+BT_NOFRAME,0); //about
 	PutPaletteImage(#goto_about,56,34,Form.width-65,0,8,#goto_about_pal);
 	//main rectangles
-	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42,system.color.work_graph);
+	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42,col_graph);
 	DrawRectangle(0,39,Form.cwidth-1,Form.cheight - 40,col_palette[4]); //bg
 	for (i=0; i<5; i++) DrawBar(0, 34+i, Form.cwidth, 1, col_palette[8-i]);
 	llist_copy(#files_active, #files);
@@ -575,9 +570,9 @@ void DrawList()
 	if (sort_num==1) sorting_arrow_x = files.w - 141 / 2 + files.x + 18;
 	if (sort_num==2) sorting_arrow_x = files.x + files.w - 90;
 	if (sort_num==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
-	WriteText(sorting_arrow_x,files.y-12,0x80,system.color.work_graph,"\x19");
-	DrawBar(files.x+files.w,files.y,1,files.h,system.color.work_graph);
-	if (two_panels) && (files.x<5) DrawBar(files.x+files.w+16,files.y,1,files.h,system.color.work_graph);	
+	WriteText(sorting_arrow_x,files.y-12,0x80,col_graph,"\x19");
+	DrawBar(files.x+files.w,files.y,1,files.h,col_graph);
+	if (two_panels) && (files.x<5) DrawBar(files.x+files.w+16,files.y,1,files.h,col_graph);	
 }
 
 void DrawFilePanels()
@@ -1112,7 +1107,7 @@ void NewElement_Form(byte crt, dword strng)
 	new_file_ed.left = dform_x+24;
 	edit_box_draw  stdcall (#new_file_ed);
 	DrawRectangle(new_file_ed.left-1, new_file_ed.top-1, new_file_ed.width+2, 16, 0xFFFfff);
-	DrawRectangle(new_file_ed.left-2, new_file_ed.top-2, new_file_ed.width+4, 18, system.color.work_graph);
+	DrawRectangle(new_file_ed.left-2, new_file_ed.top-2, new_file_ed.width+4, 18, col_graph);
 }
 
 void FnProcess(byte N)
