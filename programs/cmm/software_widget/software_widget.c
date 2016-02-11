@@ -118,13 +118,13 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 		icon_id,
 		icon_char_pos;
 
+	//do not show items located in /kolibrios/ if this directory not mounted
+	if (!strncmp(key_value, "/kolibrios/", 11)) && (!kolibrios_mounted) return true;
+
 	if (col==list.column_max) {
 		row++;
 		col=0;
 	}
-
-	//do not show items located in /kolibrios/ if this directory not mounted
-	if (!strncmp(key_value, "/kolibrios/", 11)) && (!kolibrios_mounted) return true;
 
 	if (col==0) DrawBar(0, row * list.item_h + list_pos, Form.cwidth, list.item_h, LIST_BACKGROUND_COLOR);
 	DefineButton(col*list.item_w+6, row*list.item_h + list_pos,list.item_w,list.item_h-5,list.count + 100 + BT_HIDE,0);
