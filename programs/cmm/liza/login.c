@@ -181,20 +181,16 @@ void DrawLoginScreen()
 	DrawBar(0,0, Form.cwidth, Form.cheight, system.color.work);
 	
 	WriteText(panel_x,panel_y,0x80,system.color.work_text,"Your Email:");
-	DrawRectangle(panel_x, panel_y+12, PANEL_W,20, system.color.work_graph); //border
-	DrawRectangle3D(panel_x+1, panel_y+13, PANEL_W-2,18, 0xDDDddd, 0xFFFfff); //shadow
-	DrawRectangle(panel_x+2, panel_y+14, PANEL_W-4,16, 0xFFFfff);
 	login_box.left = panel_x+3;
 	login_box.top = panel_y+15;
 	edit_box_draw stdcall(#login_box);
+	EditBox(#login_box);
 	
 	WriteText(panel_x,panel_y+40,0x80,system.color.work_text,"Password:");
-	DrawRectangle(panel_x, panel_y+52, PANEL_W,20, system.color.work_graph); //border
-	DrawRectangle3D(panel_x+1, panel_y+53, PANEL_W-2,18, 0xDDDddd, 0xFFFfff); //shadow
-	DrawRectangle(panel_x+2, panel_y+54, PANEL_W-4,16, 0xFFFfff);
 	pass_box.left = panel_x+3;
 	pass_box.top = panel_y+55;
 	edit_box_draw stdcall(#pass_box);
+	EditBox(#pass_box);
 	
 	if (!aim)
 	{

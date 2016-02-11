@@ -15,8 +15,7 @@
 	?define INTRO_TEXT_1 "Здесь будет отображаться список"
 	?define INTRO_TEXT_2 "виртуальных дисков в системе."
 	?define INTRO_TEXT_3 "Попробуйте добавить один..."
-	?define INTRO_TEXT_4 "Размер:"
-
+	?define SIZE_TEXT "Размер:"
 	?define NOTIFY_TEXT_NO_DISK    "'Для начала добавьте хотя бы один диск' -W"
 	?define NOTIFY_TEXT_DISK_LIMIT "'Достигнут предел количества виртуальных дисков' -W"
 	?define FREE_RAM_TEXT "Размер свободной оперативной памяти: "
@@ -31,8 +30,7 @@
 	?define INTRO_TEXT_1 " There will be list of mounted"
 	?define INTRO_TEXT_2 " virtual disks."
 	?define INTRO_TEXT_3 " Try to add one..."
-	?define INTRO_TEXT_4 "Size:"
-
+	?define SIZE_TEXT "Size:"
 	?define NOTIFY_TEXT_NO_DISK    "'You need to have at least one disk' -W"
 	?define NOTIFY_TEXT_DISK_LIMIT "'Reached the limit of the number of virtual disks' -W"
 	?define FREE_RAM_TEXT "Free RAM size: "
@@ -48,12 +46,12 @@ char selected;
 proc_info Form;
 
 unsigned char icons[] = FROM "icons.raw";
-#define TOPPANELH 50
+#define TOPPANELH 54
 #define BOTPANELH 20
 
 int	mouse_dd;
 char new_disk_size[5];
-edit_box edit_disk_size= {50,0,5,0xffffff,0x94AECE,0x000000,0xffffff,0,4,#new_disk_size,#mouse_dd, 1000000000000010b};
+edit_box edit_disk_size= {50,0,7,0xffffff,0x94AECE,0xFFFfff,0xffffff,0,4,#new_disk_size,#mouse_dd, 1000000000000010b};
 
 void Main_Window()
 {
@@ -63,7 +61,7 @@ void Main_Window()
    	mem_Init();
 	load_dll(boxlib, #box_lib_init,0);
 	GetSizeDisk();
-	edit_disk_size.left = strlen(INTRO_TEXT_4)*6 + 10;
+	edit_disk_size.left = strlen(SIZE_TEXT)*9 + 10;
 	SetEventMask(0x27);
 	loop()
 	{
@@ -137,14 +135,15 @@ void Main_Window()
 
 			DrawBar(0,0,  Form.cwidth,TOPPANELH, system.color.work);
 			DrawBar(0,TOPPANELH, Form.cwidth,1,  system.color.work_graph);
-			WriteText(6, 9, 0x80, system.color.work_text, INTRO_TEXT_4);
-			WriteText(edit_disk_size.left + edit_disk_size.width + 8, 9, 0x80, system.color.work_text, "MB.");
+			WriteText(6, 6, 0x90, system.color.work_text, SIZE_TEXT);
+			WriteText(edit_disk_size.left + edit_disk_size.width + 12, 6, 0x90, system.color.work_text, "MB.");
 			edit_box_draw stdcall (#edit_disk_size);
+			EditBox(#edit_disk_size);
 			for (i=0, x=6; i<2; i++, x+=strlen(but_text[i])*6+37)
 			{
-				DefineButton(x,25, strlen(but_text[i])*6+28,19, 10+i, system.color.work_button);
-				_PutImage(x+3,28,  14,14,   i*14*14*3+#icons);
-				WriteText(x+22,31, 0x80, system.color.work_button_text, but_text[i]);
+				DefineButton(x,29, strlen(but_text[i])*6+28,19, 10+i, system.color.work_button);
+				_PutImage(x+3,32,  14,14,   i*14*14*3+#icons);
+				WriteText(x+22,35, 0x80, system.color.work_button_text, but_text[i]);
 			}		
 			GetDisks();
 			DrawTmpDisks();
@@ -208,7 +207,7 @@ void DrawTmpDisks()
 	byte i, real_id;
 	int FreeRAM=GetFreeRAM()/1024;
 
-	DrawBar(0,51, Form.cwidth,Form.cheight-TOPPANELH-BOTPANELH-2, 0xFFFFFF);
+	DrawBar(0,TOPPANELH+1, Form.cwidth,Form.cheight-TOPPANELH-BOTPANELH-2, 0xFFFFFF);
 	DrawBar(0,Form.cheight-BOTPANELH-1, Form.cwidth,1, system.color.work_graph);
 	DrawBar(0,Form.cheight-BOTPANELH, Form.cwidth,BOTPANELH, system.color.work);
 	strcpy(#free_ram_text, FREE_RAM_TEXT);

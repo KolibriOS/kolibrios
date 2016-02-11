@@ -107,6 +107,20 @@
 	DrawRectangle3D(x-1,y-1,VALUE_FIELD_W+SIZE+SIZE+2,SIZE+2,system.color.work_dark,system.color.work_light);
 }
 
+:void EditBox(dword edit_box_pointer)
+{
+	dword x,y,w,h;
+	ESI = edit_box_pointer;
+	x = ESI.edit_box.left;
+	y = ESI.edit_box.top;
+	w = ESI.edit_box.width+1;
+	h = 15;
+	DrawRectangle(x-1, y-1, w+2, h+2, 0xFFFfff);
+	DrawRectangle3D(x-2, y-2, w+2, h+2, 0xDDDddd, 0xffffff);
+	DrawRectangle(x-3, y-3, w+6, h+6, system.color.work_graph);
+	DrawRectangle3D(x-4, y-4, w+8, h+8, system.color.work_dark, system.color.work_light);
+}
+
 :void DrawProgressBar(dword st_x, st_y, st_w, st_h, col_fon, col_border, col_fill, col_text, progress_percent)
 {
 	int progress_w;
