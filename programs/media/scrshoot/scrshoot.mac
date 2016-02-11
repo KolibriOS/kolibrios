@@ -224,8 +224,8 @@ struc sys_color_table
 {
 .frames: dd ?  ;+0
 .grab: dd ?    ;+4
-.grab_button: dd ? ;+8
-.grab_button_text: dd ?  ;+12
+.work_3d_dark: dd ? ;+8
+.work_3d_light: dd ?  ;+12
 .grab_text: dd ?  ;+16
 .work: dd ?       ;+20
 .work_button: dd ?;+24

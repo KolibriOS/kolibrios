@@ -232,8 +232,8 @@ struc system_colors
  {
   .frame            dd ?
   .grab             dd ?
-  .grab_button      dd ?
-  .grab_button_text dd ?
+  .work_3d_dark      dd ?
+  .work_3d_light dd ?
   .grab_text        dd ?
   .work             dd ?
   .work_button      dd ?

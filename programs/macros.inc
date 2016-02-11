@@ -467,11 +467,11 @@ struct process_information
 ends
 
 struct system_colors
-  frame            dd ?
-  grab             dd ?
-  grab_button      dd ?
-  grab_button_text dd ?
-  grab_text        dd ?
+  frame            dd ? ;nonset1
+  grab             dd ? ;nonset2
+  work_3d_dark     dd ?
+  work_3d_light    dd ?
+  grab_text        dd ? ;nonset3
   work             dd ?
   work_button      dd ?
   work_button_text dd ?

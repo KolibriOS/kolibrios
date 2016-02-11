@@ -3209,8 +3209,8 @@ app_colours:
 
 w_frame 		rd 1
 w_grab			rd 1
-w_grab_button		rd 1
-w_grab_button_text	rd 1
+w_work_3d_dark		rd 1
+w_work_3d_light	rd 1
 w_grab_text		rd 1
 w_work			rd 1
 w_work_button		rd 1
