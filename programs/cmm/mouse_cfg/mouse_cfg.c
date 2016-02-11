@@ -21,7 +21,7 @@
 	?define POINTER_SPEED "Скорость указателя мыши"
 	?define ACCELERATION_TEXT "Ускорение указателя мыши"
 	?define DOUBLE_CLICK_TEXT "Задержка двойного клика мышью"
-	?define MOUSE_EMULATION "Эмуляция управления указателем через клавиатуру"
+	?define MOUSE_EMULATION "Управление указателем мыши через клавиатуру"
 	?define MADMOUSE "Сквозные для курсора стороны экрана"
 #else
 	?define WINDOW_TITLE "Mouse testing and configuration"
@@ -141,7 +141,7 @@ void main() {
 			
 		case evReDraw:
 				system.color.get();
-				DefineAndDrawWindow(430, 150, 360, 300+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE);
+				DefineAndDrawWindow(430, 150, 424, 310+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window>2) break;
 				SetFrameColors();
@@ -164,10 +164,10 @@ void DrawMouseImage() {
 void DrawControls() {
 	DrawBar(pos_x, mouse_frame.start_y + 142, Form.cwidth - pos_x, 120, system.color.work);
 	MoreLessBox(pos_x, mouse_frame.start_y + 142, 120, 121, mouse_cfg.pointer_speed, POINTER_SPEED);
-	MoreLessBox(pos_x, mouse_frame.start_y + 170, 122, 123, mouse_cfg.acceleration, ACCELERATION_TEXT);
-	MoreLessBox(pos_x, mouse_frame.start_y + 198, 124, 125, mouse_cfg.double_click_delay, DOUBLE_CLICK_TEXT);
-	CheckBox(pos_x, mouse_frame.start_y + 230, 100, MOUSE_EMULATION, mouse_cfg.emulation);
-	CheckBox(pos_x, mouse_frame.start_y + 254, 101, MADMOUSE, mouse_cfg.madmouse);
+	MoreLessBox(pos_x, mouse_frame.start_y + 172, 122, 123, mouse_cfg.acceleration, ACCELERATION_TEXT);
+	MoreLessBox(pos_x, mouse_frame.start_y + 202, 124, 125, mouse_cfg.double_click_delay, DOUBLE_CLICK_TEXT);
+	CheckBox(pos_x, mouse_frame.start_y + 236, 100, MOUSE_EMULATION, mouse_cfg.emulation);
+	CheckBox(pos_x, mouse_frame.start_y + 262, 101, MADMOUSE, mouse_cfg.madmouse);
 }
 
 void SetFrameColors() {

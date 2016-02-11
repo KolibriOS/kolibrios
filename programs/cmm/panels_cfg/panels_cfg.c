@@ -55,8 +55,8 @@
 #endif
 
 
-frame taskbar_frame = { 0, 000, 10, 188, 14, 0x000111, 0xFFFfff, 1, TASK_FRAME_T, 0, 0, 6, 0x000111, 0xCCCccc };
-frame docky_frame = { 0, 000, 10, 73, 217, 0x000111, 0xFFFfff, 1, DOCK_FRAME_T, 0, 0, 6, 0x000111, 0xCCCccc };
+frame taskbar_frame = { 0, NULL, 10, NULL, 16, NULL, 0xFFFfff, 1, TASK_FRAME_T, 0, 1, 12, 0x000111, 0xCCCccc };
+frame docky_frame   = { 0, NULL, 10, NULL, NULL, NULL, 0xFFFfff, 1, DOCK_FRAME_T, 0, 1, 12, 0x000111, 0xCCCccc };
 
 char taskbar_ini_path[] = "/sys/settings/taskbar.ini";
 char taskbar_c_flags[] = "Flags";
@@ -68,17 +68,12 @@ raw_image panels_img = { 37, 27, #panels_img_data };
 
 proc_info Form;
 
-struct docky_cfg {
-	word fsize;
-	byte location, ashow;
-} docky_cfg;
+word dkFsize;
+byte dkLocation, dkAshow;
 
-struct taskbar_cfg {
-	byte Attachment;
-	byte PanelHeight, SoftenHeight, ButtonOffset;
-	byte SoftenUp, SoftenDown, MinLeftButton, MinRightButton, MenuButton,
-	     RunApplButton, ClnDeskButton, Clock, CpuUsage, ChangeLang;
-} taskbar_cfg;
+byte tbAttachment, tbPanelHeight, tbSoftenHeight, tbButtonOffset,
+     tbSoftenUp, tbSoftenDown, tbMinLeftButton, tbMinRightButton, tbMenuButton,
+     tbRunApplButton, tbClnDeskButton, tbClock, tbCpuUsage, tbChangeLang;
 
 enum {
 	TASKBAR,
@@ -104,23 +99,23 @@ void main()
 				//taskbar buttons
 				if (id>=100) && (id<200)
 				{
-					if (id==100) taskbar_cfg.Attachment ^= 1;
-					if (id==105) taskbar_cfg.SoftenUp ^= 1;
-					if (id==106) taskbar_cfg.SoftenDown ^= 1;
-					if (id==107) taskbar_cfg.MinLeftButton ^= 1;
-					if (id==108) taskbar_cfg.MinRightButton ^= 1;
-					if (id==109) taskbar_cfg.RunApplButton ^= 1;
-					if (id==110) taskbar_cfg.ClnDeskButton ^= 1;
-					if (id==111) taskbar_cfg.Clock ^= 1;
-					if (id==112) taskbar_cfg.CpuUsage ^= 1;
-					if (id==113) taskbar_cfg.ChangeLang ^= 1;
-					if (id==114) taskbar_cfg.MenuButton ^= 1;
-					if (id==120) taskbar_cfg.PanelHeight++;
-					if (id==121) && (taskbar_cfg.PanelHeight>6) taskbar_cfg.PanelHeight--;
-					if (id==122) taskbar_cfg.SoftenHeight++;
-					if (id==123) && (taskbar_cfg.SoftenHeight>0) taskbar_cfg.SoftenHeight--;
-					if (id==124) taskbar_cfg.ButtonOffset++;
-					if (id==125) && (taskbar_cfg.ButtonOffset>0) taskbar_cfg.ButtonOffset--;
+					if (id==100) tbAttachment ^= 1;
+					if (id==105) tbSoftenUp ^= 1;
+					if (id==106) tbSoftenDown ^= 1;
+					if (id==107) tbMinLeftButton ^= 1;
+					if (id==108) tbMinRightButton ^= 1;
+					if (id==109) tbRunApplButton ^= 1;
+					if (id==110) tbClnDeskButton ^= 1;
+					if (id==111) tbClock ^= 1;
+					if (id==112) tbCpuUsage ^= 1;
+					if (id==113) tbChangeLang ^= 1;
+					if (id==114) tbMenuButton ^= 1;
+					if (id==120) tbPanelHeight++;
+					if (id==121) && (tbPanelHeight>6) tbPanelHeight--;
+					if (id==122) tbSoftenHeight++;
+					if (id==123) && (tbSoftenHeight>0) tbSoftenHeight--;
+					if (id==124) tbButtonOffset++;
+					if (id==125) && (tbButtonOffset>0) tbButtonOffset--;
 					DrawWindowContent(TASKBAR);
 					SaveCfg(TASKBAR);
 					RestartProcess(TASKBAR);
@@ -130,12 +125,11 @@ void main()
 				{
 					if (id==200)
 					{
-						     if (docky_cfg.location==1) docky_cfg.location = 2;
-						else if (docky_cfg.location==2) docky_cfg.location = 3;
-						else if (docky_cfg.location==3) docky_cfg.location = 1;
+						dkLocation++;
+						if (dkLocation>3) dkLocation=1;
 					}
-					if (id==201) docky_cfg.fsize ^= 1;
-					if (id==202) docky_cfg.ashow ^= 1;
+					if (id==201) dkFsize ^= 1;
+					if (id==202) dkAshow ^= 1;
 					DrawWindowContent(DOCKY);
 					SaveCfg(DOCKY);
 					RestartProcess(DOCKY);
@@ -149,7 +143,7 @@ void main()
 			
 		case evReDraw:
 				system.color.get();
-				DefineAndDrawWindow(130, 150, 400, 300+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE);
+				DefineAndDrawWindow(130, 150, 465, 398+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window>2) break;
 				taskbar_frame.size_x = docky_frame.size_x = - taskbar_frame.start_x * 2 + Form.cwidth;
@@ -163,86 +157,90 @@ void main()
 
 void DrawWindowContent(byte panel_type)
 {
-	word win_center_x;
+	word win_center_x = Form.cwidth / 2 + 20;
+	incn y;
 
+	if (panel_type==ALL) || (panel_type==TASKBAR)
+	{
+		y.n = taskbar_frame.start_y;
+		DefineButton(22, y.inc(18), panels_img.w-1, 27-1, 100 + BT_HIDE, 0);
+		_PutImage(22, y.n, 37, 27, tbAttachment * 37 * 27 * 3 + panels_img.data);
+		WriteText(68, y.inc(7), 0x90, system.color.work_text, CHANGE_POS);
+		CheckBox(22, y.inc(35), 105, SOFTEN_UP, tbSoftenUp);
+		CheckBox(win_center_x, y.n, 111, CLOCK, tbClock);
+		CheckBox(22, y.inc(24), 106, SOFTEN_DOWN, tbSoftenDown);
+		CheckBox(win_center_x, y.n, 112, CPU_USAGE, tbCpuUsage);
+		CheckBox(22, y.inc(24), 107, MIN_LEFT_BUTTON, tbMinLeftButton);
+		CheckBox(win_center_x, y.n, 113, CHANGE_LANG, tbChangeLang);
+		CheckBox(22, y.inc(24), 108, MIN_RIGHT_BUTTON, tbMinRightButton);
+		CheckBox(win_center_x, y.n, 114, MENU_BUTTON, tbMenuButton);	
+		MoreLessBox(22, y.inc(28), 120, 121, tbPanelHeight, PANEL_HEIGHT);
+		MoreLessBox(22, y.inc(32), 122, 123, tbSoftenHeight, SOFTEN_HEIGHT);
+		MoreLessBox(22, y.inc(32), 124, 125, tbButtonOffset, BUTTON_OFFSET);
+		taskbar_frame.size_y = y.inc(32) - taskbar_frame.start_y;
+	}
+	if (panel_type==ALL) || (panel_type==DOCKY)
+	{
+		docky_frame.start_y = y.inc(20);
+		DefineButton(22, y.inc(18), panels_img.w-1, 27-1, 200 + BT_HIDE, 0);
+		_PutImage(22, y.n,  37, 27, dkLocation + 1 * 37 * 27 * 3 + panels_img.data);
+		WriteText(68, y.inc(7), 0x90, system.color.work_text, CHANGE_POS);
+		CheckBox(22, y.inc(35), 201, FSIZE,  dkFsize);
+		CheckBox(win_center_x, y.n, 202, ASHOW, dkAshow);
+		docky_frame.size_y = y.inc(30) - docky_frame.start_y;
+	}
 	if (panel_type==ALL)
 	{
 		frame_draw stdcall (#taskbar_frame);
 		frame_draw stdcall (#docky_frame);
 	}
-	if (panel_type==ALL) || (panel_type==TASKBAR)
-	{
-		DefineButton(22, taskbar_frame.start_y + 12, panels_img.w-1, 27-1, 100 + BT_HIDE, 0);
-		_PutImage(22, taskbar_frame.start_y + 12,  37, 27, taskbar_cfg.Attachment * 37 * 27 * 3 + panels_img.data);
-		WriteText(68, taskbar_frame.start_y + 20, 0x80, system.color.work_text, CHANGE_POS);
-		CheckBox(22, taskbar_frame.start_y +  48, 105, SOFTEN_UP, taskbar_cfg.SoftenUp);
-		CheckBox(22, taskbar_frame.start_y +  68, 106, SOFTEN_DOWN, taskbar_cfg.SoftenDown);
-		CheckBox(22, taskbar_frame.start_y +  88, 107, MIN_LEFT_BUTTON, taskbar_cfg.MinLeftButton);
-		CheckBox(22, taskbar_frame.start_y + 108, 108, MIN_RIGHT_BUTTON, taskbar_cfg.MinRightButton);
-		win_center_x = Form.cwidth / 2;
-		CheckBox(win_center_x, taskbar_frame.start_y +  48, 111, CLOCK, taskbar_cfg.Clock);
-		CheckBox(win_center_x, taskbar_frame.start_y +  68, 112, CPU_USAGE, taskbar_cfg.CpuUsage);
-		CheckBox(win_center_x, taskbar_frame.start_y +  88, 113, CHANGE_LANG, taskbar_cfg.ChangeLang);
-		CheckBox(win_center_x, taskbar_frame.start_y + 108, 114, MENU_BUTTON, taskbar_cfg.MenuButton);	
-		MoreLessBox(22, taskbar_frame.start_y + 131, 120, 121, taskbar_cfg.PanelHeight, PANEL_HEIGHT);
-		MoreLessBox(win_center_x, taskbar_frame.start_y + 131, 122, 123, taskbar_cfg.SoftenHeight, SOFTEN_HEIGHT);
-		MoreLessBox(22, taskbar_frame.start_y + 159, 124, 125, taskbar_cfg.ButtonOffset, BUTTON_OFFSET);
-	}
-	if (panel_type==ALL) || (panel_type==DOCKY)
-	{
-		DefineButton(22, docky_frame.start_y + 12, panels_img.w-1, 27-1, 200 + BT_HIDE, 0);
-		_PutImage(22, docky_frame.start_y + 12,  37, 27, docky_cfg.location + 1 * 37 * 27 * 3 + panels_img.data);
-		WriteText(68, docky_frame.start_y + 20, 0x80, system.color.work_text, CHANGE_POS);
-		CheckBox(22, docky_frame.start_y + 48, 201, FSIZE,  docky_cfg.fsize);
-		CheckBox(win_center_x, docky_frame.start_y + 48, 202, ASHOW, docky_cfg.ashow);
-	}
 }
 
 void LoadCfg()
 { 
-	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "Attachment", 1);     taskbar_cfg.Attachment = EAX;
-	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "SoftenUp", 1);       taskbar_cfg.SoftenUp = EAX;
-	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "SoftenDown", 1);     taskbar_cfg.SoftenDown = EAX;
-	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "MinLeftButton", 1);  taskbar_cfg.MinLeftButton = EAX;
-	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "MinRightButton", 1); taskbar_cfg.MinRightButton = EAX;
-	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "Clock", 1);          taskbar_cfg.Clock = EAX;
-	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "CpuUsage", 1);       taskbar_cfg.CpuUsage = EAX;
-	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "ChangeLang", 1);     taskbar_cfg.ChangeLang = EAX;
-	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "MenuButton", 1);     taskbar_cfg.MenuButton = EAX;
-	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_variables, "PanelHeight", 18);    taskbar_cfg.PanelHeight = EAX;
-	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_variables, "SoftenHeight", 4);    taskbar_cfg.SoftenHeight = EAX;
-	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_variables, "ButtonTopOffset", 3); taskbar_cfg.ButtonOffset = EAX;
-	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_variables, "ButtonBotOffset", 3); taskbar_cfg.ButtonOffset = EAX;
+	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "Attachment", 1);     tbAttachment = EAX;
+	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "SoftenUp", 1);       tbSoftenUp = EAX;
+	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "SoftenDown", 1);     tbSoftenDown = EAX;
+	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "MinLeftButton", 1);  tbMinLeftButton = EAX;
+	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "MinRightButton", 1); tbMinRightButton = EAX;
+	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "Clock", 1);          tbClock = EAX;
+	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "CpuUsage", 1);       tbCpuUsage = EAX;
+	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "ChangeLang", 1);     tbChangeLang = EAX;
+	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "MenuButton", 1);     tbMenuButton = EAX;
+	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_variables, "PanelHeight", 18);    tbPanelHeight = EAX;
+	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_variables, "SoftenHeight", 4);    tbSoftenHeight = EAX;
+	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_variables, "ButtonTopOffset", 3); tbButtonOffset = EAX;
+	ini_get_int stdcall (#taskbar_ini_path, #taskbar_c_variables, "ButtonBotOffset", 3); tbButtonOffset = EAX;
 
-	ini_get_int stdcall (#docky_ini_path, "@", "location", 0);  docky_cfg.location = EAX;
-	ini_get_int stdcall (#docky_ini_path, "@", "fsize", 0);     docky_cfg.fsize = EAX;
-	ini_get_int stdcall (#docky_ini_path, "@", "ashow", 0);     docky_cfg.ashow = EAX;
+	ini_get_int stdcall (#docky_ini_path, "@", "location", 0);  dkLocation = EAX;
+	ini_get_int stdcall (#docky_ini_path, "@", "fsize", 0);     dkFsize = EAX;
+	ini_get_int stdcall (#docky_ini_path, "@", "ashow", 0);     dkAshow = EAX;
 }
 
 void SaveCfg(byte panel_type)
 {
 	if (panel_type==TASKBAR) {
-		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "Attachment", taskbar_cfg.Attachment);
-		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "SoftenUp", taskbar_cfg.SoftenUp);
-		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "SoftenDown", taskbar_cfg.SoftenDown);
-		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "MinLeftButton", taskbar_cfg.MinLeftButton);
-		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "MinRightButton", taskbar_cfg.MinRightButton);
-		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "RunApplButton", taskbar_cfg.RunApplButton);
-		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "ClnDeskButton", taskbar_cfg.ClnDeskButton);
-		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "Clock", taskbar_cfg.Clock);
-		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "CpuUsage", taskbar_cfg.CpuUsage);
-		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "ChangeLang", taskbar_cfg.ChangeLang);
-		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "MenuButton", taskbar_cfg.MenuButton);
-		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_variables, "PanelHeight", taskbar_cfg.PanelHeight);
-		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_variables, "SoftenHeight", taskbar_cfg.SoftenHeight);
-		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_variables, "ButtonTopOffset", taskbar_cfg.ButtonOffset);
-		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_variables, "ButtonBottOffset", taskbar_cfg.ButtonOffset);
+		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "Attachment", tbAttachment);
+		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "SoftenUp", tbSoftenUp);
+		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "SoftenDown", tbSoftenDown);
+		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "MinLeftButton", tbMinLeftButton);
+		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "MinRightButton", tbMinRightButton);
+		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "RunApplButton", tbRunApplButton);
+		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "ClnDeskButton", tbClnDeskButton);
+		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "Clock", tbClock);
+		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "CpuUsage", tbCpuUsage);
+		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "ChangeLang", tbChangeLang);
+		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "MenuButton", tbMenuButton);
+		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_variables, "PanelHeight", tbPanelHeight);
+		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_variables, "SoftenHeight", tbSoftenHeight);
+		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_variables, "ButtonTopOffset", tbButtonOffset);
+		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_variables, "ButtonBottOffset", tbButtonOffset);
 	}
 	if (panel_type==DOCKY) {
-		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "Attachment", taskbar_cfg.Attachment);
-		ini_set_int stdcall (#docky_ini_path, "@", "location", docky_cfg.location);
-		ini_set_int stdcall (#docky_ini_path, "@", "fsize", docky_cfg.fsize);
-		ini_set_int stdcall (#docky_ini_path, "@", "ashow", docky_cfg.ashow);
+		ini_set_int stdcall (#taskbar_ini_path, #taskbar_c_flags, "Attachment", tbAttachment);
+		ini_set_int stdcall (#docky_ini_path, "@", "location", dkLocation);
+		ini_set_int stdcall (#docky_ini_path, "@", "fsize", dkFsize);
+		ini_set_int stdcall (#docky_ini_path, "@", "ashow", dkAshow);
 	}
 }
 

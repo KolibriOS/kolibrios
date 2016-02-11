@@ -64,10 +64,10 @@ void settings_dialog()
 				break;
 				
 			case evReDraw:
-				DefineAndDrawWindow(Form.left + Form.width/2-10, Form.top + Form.height/2 - 75, 370, 243+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
+				DefineAndDrawWindow(Form.left + Form.width/2-10, Form.top + Form.height/2 - 75, 370, 258+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
 				DrawSettingsCheckBoxes();
-				DrawFlatButton(9, 166, strlen(SAVE_PATH_AS_DEFAULT)+3*8, 24, 6, SAVE_PATH_AS_DEFAULT);
-				DrawFlatButton(9, 200, strlen(EDIT_FILE_ASSOCIATIONS)+3*8, 24, 5, EDIT_FILE_ASSOCIATIONS);
+				DrawFlatButton(9, 180, strlen(SAVE_PATH_AS_DEFAULT)+3*8, 24, 6, SAVE_PATH_AS_DEFAULT);
+				DrawFlatButton(9, 216, strlen(EDIT_FILE_ASSOCIATIONS)+3*8, 24, 5, EDIT_FILE_ASSOCIATIONS);
 		}
 	}
 }
@@ -82,12 +82,12 @@ void ExitSettings()
 
 void DrawSettingsCheckBoxes()
 {
-	CheckBox(10, 11, 20, SHOW_DEVICE_CLASS,  show_dev_name);
-	CheckBox(10, 33, 21, SHOW_REAL_NAMES,  real_files_names_case);
-	CheckBox(10, 55, 22, NOTIFY_COPY_END,  info_after_copy);
-	CheckBox(10, 77, 24, USE_TWO_PANELS,  two_panels);
-	MoreLessBox(10, 105, 25, 26, files.item_h, LIST_LINE_HEIGHT);
-	if (label.font) MoreLessBox(10, 132, 30, 31, label.size.pt, FONT_SIZE_LABEL);
+	CheckBox(10, 13, 20, SHOW_DEVICE_CLASS,  show_dev_name);
+	CheckBox(10, 37, 21, SHOW_REAL_NAMES,  real_files_names_case);
+	CheckBox(10, 61, 22, NOTIFY_COPY_END,  info_after_copy);
+	CheckBox(10, 85, 24, USE_TWO_PANELS,  two_panels);
+	MoreLessBox(10, 115, 25, 26, files.item_h, LIST_LINE_HEIGHT);
+	if (label.font) MoreLessBox(10, 144, 30, 31, label.size.pt, FONT_SIZE_LABEL);
 }
 
 

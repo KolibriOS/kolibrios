@@ -26,14 +26,15 @@ void main()
 			if (btn==4) label.smooth ^=1;
 			goto _DRAW_WINDOW_CONTENT;
 		case evReDraw:
+			system.color.get();
 			DefineAndDrawWindow(215,100,500,320,0x74,0xFFFFFF,#title);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
 			_DRAW_WINDOW_CONTENT:
-			DrawBar(0, 0, Form.cwidth, PANELH, 0xCCCccc);
+			DrawBar(0, 0, Form.cwidth, PANELH, system.color.work);
 			CheckBox(10, 8, 2, "Bold",  label.bold);
-			CheckBox(70, 8, 3, "Italic",  label.italic);
-			CheckBox(140, 8, 4, "Smooth",  label.smooth);
+			CheckBox(83, 8, 3, "Italic",  label.italic);
+			CheckBox(170, 8, 4, "Smooth",  label.smooth);
 			label.raw_size = free(label.raw);
 			if (!label.font)
 			{
