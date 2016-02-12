@@ -5,10 +5,10 @@
 :struct COLORS {
 dword
 	nonset1,
-	nonset2,
+	taskbar_color,
 	work_dark,
 	work_light,
-	nonset3,
+	window_title,
 	work,
 	work_button,
 	work_button_text,

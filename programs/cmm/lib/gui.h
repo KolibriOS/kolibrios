@@ -1,4 +1,4 @@
-#ifndef INCLUDE_GUI_H
+	#ifndef INCLUDE_GUI_H
 #define INCLUDE_GUI_H
 #print "[include <gui.h>]\n"
 
@@ -43,11 +43,11 @@
 
 :void DrawCaptButton(dword x,y,w,h,id,color_b, color_t,text)
 {
-	word tx = -strlen(text)*6+w/2+x+1;
-	word ty = h/2-3+y;
+	word tx = -strlen(text)*9+w/2+x+1;
+	word ty = h/2-7+y;
 	if (id>0) DefineButton(x,y,w,h,id,color_b);
-	WriteText(tx+1,ty+1,0x80,MixColors(color_b,0,200),text);
-	WriteText(tx,ty,0x80,color_t,text);
+	WriteText(tx+1,ty+1,0x90,MixColors(color_b,0,230),text);
+	WriteText(tx,ty,0x90,color_t,text);
 }
 
 :void WriteTextCenter(dword x,y,w,color_t,text)
@@ -128,13 +128,14 @@ unsigned char checkbox_flag[507] = {
 
 :void MoreLessBox(dword x,y, bt_id_more, bt_id_less, value, text)
 {
-	#define VALUE_FIELD_W 26
+	#define VALUE_FIELD_W 34
 	#define SIZE 18
+	dword value_text = itoa(value);
 
 	DrawRectangle(x, y, VALUE_FIELD_W, SIZE, system.color.work_graph);
 	DrawRectangle3D(x+1, y+1, VALUE_FIELD_W-2, SIZE-2, 0xDDDddd, 0xffffff);
 	DrawBar(x+2, y+2, VALUE_FIELD_W-3, SIZE-3, 0xffffff);
-	WriteText(x+6, SIZE / 2 + y -3, 0x80, 0x000000, itoa(value));
+	WriteText( -strlen(value_text)+3*8 + x+6, SIZE / 2 + y -6, 0x90, 0x000000, value_text);
 
 	DrawCaptButton(VALUE_FIELD_W + x,     y, SIZE, SIZE, bt_id_more, system.color.work_button, system.color.work_button_text, "+");
 	DrawCaptButton(VALUE_FIELD_W + x + SIZE, y, SIZE, SIZE, bt_id_less, system.color.work_button, system.color.work_button_text, "-");

@@ -162,7 +162,7 @@ void DrawMouseImage() {
 }
 
 void DrawControls() {
-	DrawBar(pos_x, mouse_frame.start_y + 142, Form.cwidth - pos_x, 120, system.color.work);
+	DrawBar(pos_x, mouse_frame.start_y + 142, Form.cwidth - pos_x, 285-142, system.color.work);
 	MoreLessBox(pos_x, mouse_frame.start_y + 142, 120, 121, mouse_cfg.pointer_speed, POINTER_SPEED);
 	MoreLessBox(pos_x, mouse_frame.start_y + 172, 122, 123, mouse_cfg.acceleration, ACCELERATION_TEXT);
 	MoreLessBox(pos_x, mouse_frame.start_y + 202, 124, 125, mouse_cfg.double_click_delay, DOUBLE_CLICK_TEXT);
