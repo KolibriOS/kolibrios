@@ -130,13 +130,13 @@ draw_window:
 	pushad
 	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
-	mcall SF_CREATE_WINDOW,(50 shl 16)+410,(30 shl 16)+425,0x33ffffff,,title1
+	mcall SF_CREATE_WINDOW,(50 shl 16)+410,(30 shl 16)+425,0x33404040,,title1
 	stdcall [kosglSwapBuffers]
 
 	;Title
-	mcall SF_DRAW_TEXT,(300 shl 16)+4,0x808080,fps,   fps.end-fps
-	mcall SF_DRAW_TEXT,(8 shl 16)+4,0x808080,title3,title3.end-title3
-	;mcall SF_DRAW_TEXT,(180 shl 16)+4,0x808080,title2,title2.end-title2
+	mcall SF_DRAW_TEXT,(300 shl 16)+4,0xc0c0c0,fps,   fps.end-fps
+	mcall SF_DRAW_TEXT,(8 shl 16)+4,0xc0c0c0,title3,title3.end-title3
+	;mcall SF_DRAW_TEXT,(180 shl 16)+4,0xc0c0c0,title2,title2.end-title2
 
 	mcall SF_REDRAW,SSF_END_DRAW
 	popad
@@ -210,7 +210,7 @@ title2: db 'F full screen'
 .end: db 0
 title3: db 'ESC - exit'
 .end: db 0
-fps:    db 'FPS:'
+fps:	db 'FPS:'
 .end: db 0
 
 align 4

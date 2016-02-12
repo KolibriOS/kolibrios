@@ -1,100 +1,20 @@
 use32
 	org 0x0
 	db 'MENUET01'
-	dd 1,start,i_end
-	dd mem,stacktop
-	dd 0,cur_dir_path
+	dd 1,start,i_end,mem,stacktop,0,cur_dir_path
 
 include '../../../../../proc32.inc'
 include '../../../../../macros.inc'
 include '../../../../../KOSfuncs.inc'
-include '../../../../../develop/libraries/box_lib/load_lib.mac'
-include '../../../../../dll.inc'
+include '../../../../../load_img.inc'
 include '../opengl_const.inc'
 include '../../../../../develop/info3ds/info_fun_float.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
-struct FileInfoBlock
-	Function dd ?
-	Position dd ?
-	Flags	 dd ?
-	Count	 dd ?
-	Buffer	 dd ?
-		db ?
-	FileName dd ?
-ends
-
 align 4
-open_b rb 560
 image_data_toolbar dd 0
 IMAGE_TOOLBAR_ICON_SIZE equ 21*21*3
-
-;макрос для загрузки изображений
-; path - может быть переменной или строковым параметром
-; buf - переменная куда будет записан указатель на изображение в формате rgb
-; img_w, img_h - переменные куда будут записаны размеры открываемого
-;    изображения, не обязательные параметры
-macro load_image_file path, buf, img_w, img_h
-{
-if path eqtype '' ;проверяем задан ли строкой параметр path
-	local .path_str
-	jmp @f
-		.path_str db path ;формируем локальную переменную
-		db 0
-	@@:
-	;32 - стандартный адрес по которому должен быть буфер с системным путем
-	copy_path .path_str,[32],file_name,0
-else
-	copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
-end if
-    mov [run_file_70.Function], SSF_GET_INFO
-    mov [run_file_70.Position], 0
-    mov [run_file_70.Flags], 0
-    mov dword[run_file_70.Count], 0
-    mov dword[run_file_70.Buffer], open_b
-    mov byte[run_file_70+20], 0
-    mov dword[run_file_70.FileName], file_name
-    mcall SF_FILE,run_file_70
-	or eax,eax
-	jnz @f
-
-    mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
-    stdcall mem.Alloc,ecx ;выделяем память для изображения
-	mov [buf],eax
-	mov [run_file_70.Function], SSF_READ_FILE
-	mov [run_file_70.Position], 0
-	mov [run_file_70.Flags], 0
-	mov [run_file_70.Count], ecx
-	mov [run_file_70.Buffer], eax
-	mov byte[run_file_70+20], 0
-	mov [run_file_70.FileName], file_name
-	mcall SF_FILE,run_file_70 ;загружаем файл изображения
-	cmp ebx,0xffffffff
-	je @f
-		;определяем вид изображения и пишем его параметры
-		stdcall [img_decode], [buf],ebx,0
-		mov ebx,eax
-		;определяем размер декодированного изображения
-		mov ecx,[eax+4] ;+4 = image width
-if img_w eq
-else
-		mov dword[img_w],ecx
-end if
-if img_h eq
-		imul ecx,[eax+8] ;+8 = image height
-else
-		mov eax,[eax+8] ;+8 = image height
-		mov dword[img_h],eax
-		imul ecx,eax
-end if
-		imul ecx,3 ;need for r,g,b
-		stdcall mem.ReAlloc,[buf],ecx ;изменяем размер для буфера
-		mov [buf],eax
-		stdcall [img_to_rgb2], ebx,[buf] ;преобразуем изображение к формату rgb
-		stdcall [img_destroy], ebx ;удаляем временный буфер с параметрами изображения
-	@@:
-}
 
 offs_zbuf_pbuf equ 24 ;const. from 'zbuffer.inc'
 
@@ -129,7 +49,7 @@ load_libraries l_libs_start,l_libs_end
 	mov eax,[eax+offs_zbuf_pbuf] ;eax -> ZBuffer.pbuf
 	mov dword[buf_ogl],eax
 
-	load_image_file 'font8x9.bmp', image_data_toolbar
+	load_image_file 'font8x9.bmp', image_data_toolbar, buf_1.w,buf_1.h
 	stdcall [buf2d_create_f_img], buf_1,[image_data_toolbar] ;создаем буфер
 	stdcall mem.Free,[image_data_toolbar] ;освобождаем память
 	stdcall [buf2d_conv_24_to_8], buf_1,1 ;делаем буфер прозрачности 8 бит
@@ -317,7 +237,15 @@ align 4
 but_zoom_p:
 	finit
 	fld dword[scale]
-	fadd dword[delt_sc]
+	fadd dword[sc_delt]
+	fcom dword[sc_max]
+	fstsw ax
+	sahf
+	jbe @f
+		ffree st0
+		fincstp
+		fld dword[sc_max]
+	@@:
 	fst dword[scale]
 	mov word[NumberSymbolsAD],3
 	fstp qword[Data_Double]
@@ -332,7 +260,15 @@ align 4
 but_zoom_m:
 	finit
 	fld dword[scale]
-	fsub dword[delt_sc]
+	fsub dword[sc_delt]
+	fcom dword[sc_min]
+	fstsw ax
+	sahf
+	ja @f
+		ffree st0
+		fincstp
+		fld dword[sc_min]
+	@@:
 	fst dword[scale]
 	mov word[NumberSymbolsAD],3
 	fstp qword[Data_Double]
@@ -399,8 +335,10 @@ ret
 
 qObj dd 0
 
-scale dd 0.4
-delt_sc dd 0.05
+scale dd 0.4 ;начальный масштаб
+sc_delt dd 0.05 ;изменение масштаба при нажатии
+sc_min dd 0.1 ;минимальный масштаб
+sc_max dd 1.1 ;максимальный масштаб
 angle_z dd 0.0
 angle_y dd 0.0
 delt_size dd 3.0
@@ -576,15 +514,15 @@ buf_ogl:
 align 4
 buf_1:
 	dd 0 ;указатель на буфер изображения
-	dw 25,25 ;+4 left,top
-	dd 128,144 ;+8 w,h
-	dd 0,24 ;+16 color,bit in pixel
+	dd 0 ;+4 left,top
+.w: dd 0
+.h: dd 0,0,24 ;+16 color,bit in pixel
 
 align 4
 l_libs_start:
-	lib_0 l_libs lib_name_0, cur_dir_path, library_path,  system_dir_0,\
+	lib_0 l_libs lib_name_0, cur_dir_path, file_name,  system_dir_0,\
 		err_msg_found_lib_0, head_f_l, import_lib_tinygl,err_msg_import_0,head_f_i
-	lib_1 l_libs lib_name_1, cur_dir_path, library_path,  system_dir_1,\
+	lib_1 l_libs lib_name_1, cur_dir_path, file_name,  system_dir_1,\
 		err_msg_found_lib_1, head_f_l, import_buf2d,  err_msg_import_1,head_f_i
 	lib_2 l_libs lib_name_2, cur_dir_path, file_name, system_dir_2,\
 		err_msg_found_lib_2, head_f_l, import_libimg, err_msg_import_2, head_f_i
@@ -598,6 +536,5 @@ align 16
 	rb 4096
 stacktop:
 	cur_dir_path rb 4096
-	library_path rb 4096
 	file_name rb 4096 
 mem:
