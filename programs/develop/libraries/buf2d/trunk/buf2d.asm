@@ -94,12 +94,15 @@ proc buf_create_f_img, buf_struc:dword, rgb_data:dword
 	pushad
 	mov edi,dword[buf_struc]
 	mov ecx,buf2d_w
+	cmp ecx,1
+	jl .end_create
 	mov ebx,buf2d_h
+	cmp ebx,1
+	jl .end_create
 	imul ecx,ebx
 	cmp buf2d_bits,24
 	jne @f
 		lea ecx,[ecx+ecx*2] ; 24 bit = 3
-		;;;inc ecx ;запасной байт в конце буфера, что-бы не глючили некоторые функции на изображениях кратных 4К
 	@@:
 	cmp buf2d_bits,32
 	jne @f
@@ -117,6 +120,9 @@ proc buf_create_f_img, buf_struc:dword, rgb_data:dword
 		jmp .end_create
 	@@:
 		stdcall buf_clear,edi,buf2d_color ;очистка буфера фоновым цветом
+		jmp .end_create
+	.error:
+		stdcall print_err,sz_buf2d_create_f_img,txt_err_size_0
 	.end_create:
 	popad
 	ret
@@ -1949,9 +1955,13 @@ proc buf_conv_24_to_8, buf_struc:dword, spectr:dword
 	pushad
 	mov edi,dword[buf_struc]
 	cmp buf2d_bits,24
-	jne .error
+	jne .error0
 		mov eax,buf2d_w
+		cmp eax,1
+		jl .error1
 		mov ecx,buf2d_h
+		cmp ecx,1
+		jl .error1
 		imul ecx,eax
 		mov esi,ecx
 		;ebx - память из которой копируется
@@ -1970,8 +1980,11 @@ proc buf_conv_24_to_8, buf_struc:dword, spectr:dword
 		mov buf2d_bits,8
 		invoke mem.realloc,buf2d_data,esi ;уменьшаем память занимаемую буфером
 		jmp .end_conv
-	.error:
+	.error0:
 		stdcall print_err,sz_buf2d_conv_24_to_8,txt_err_n24b
+		jmp .end_conv
+	.error1:
+		stdcall print_err,sz_buf2d_conv_24_to_8,txt_err_size_0
 	.end_conv:
 	popad
 	ret
@@ -3057,6 +3070,7 @@ dither_4:                        ; Atkinson algorithm
 
 include 'fun_voxel.inc' ;функции для работы с воксельной графикой
 
+txt_err_size_0 db 'image size < 1 pixel',13,10,0
 txt_err_n8b db 'need buffer 8 bit',13,10,0
 txt_err_n24b db 'need buffer 24 bit',13,10,0
 txt_err_n32b db 'need buffer 32 bit',13,10,0

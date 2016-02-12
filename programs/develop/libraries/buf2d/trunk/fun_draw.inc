@@ -27,6 +27,9 @@ proc buf_draw_buf, buf_struc:dword
 	ret
 endp
 
+align 4
+txt_err_size_w16 db 'image width < 16 pixels',13,10,0
+
 ;input:
 ; ebx = coord x
 ; ecx = coord y
@@ -948,10 +951,12 @@ proc buf_convert_text_matrix, buf_struc:dword
 	pushad
 	mov edi,dword[buf_struc]
 	cmp buf2d_bits,8
-	jne .error
+	jne .error0
 		mov ecx,buf2d_h
 		mov ebx,ecx
 		shr ebx,4 ;предполагаем что в буфере 16 строк с символами, потому делим на 2^4
+		or ebx,ebx
+		jz .error1
 		mov edx,buf2d_w
 		imul ecx,edx ;ecx = size  8 b
 		invoke mem.alloc,ecx ;выделяем временную память
@@ -1006,8 +1011,11 @@ proc buf_convert_text_matrix, buf_struc:dword
 		rep movsb
 		invoke mem.free,[tmp_mem] ;чистим временную память
 		jmp .end_conv
-	.error:
+	.error0:
 		stdcall print_err,sz_buf2d_convert_text_matrix,txt_err_n8b
+		jmp .end_conv
+	.error1:
+		stdcall print_err,sz_buf2d_convert_text_matrix,txt_err_size_w16
 	.end_conv:
 	popad
 	ret
