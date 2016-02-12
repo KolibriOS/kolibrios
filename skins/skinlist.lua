@@ -79,7 +79,6 @@ skinlist = {
 "_old/Leency/Octo_flat/Octo_flat.skn",
 "_old/Leency/OpusN/OpusN.skn",
 "_old/Leency/Sandwich/Sandwich.skn",
-"_old/Leency/Shkvorka/Shkvorka.skn",
 "_old/Leency/Yeah/Yeah.skn",
 "_old/lightskin/lightskin.skn",
 "_old/macos_l/macos_l.skn",
