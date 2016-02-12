@@ -3,17 +3,17 @@ include '..\me_skin.inc'
 SKIN_PARAMS \
   height          = bmp_center1.height,\  ; skin height
   margins         = [6:5:43:3],\          ; margins [left:top:right:bottom]
-  colors active   = [binner=0x787878:\    ; border inner
-                     bouter=0x646464:\    ; border outer
-                     bframe=0xC5C5C5],\   ; border middle
-  colors inactive = [binner=0x8E8E8E:\    ; border inner
-                     bouter=0x646464:\    ; border outer
-                     bframe=0xE1E1E1],\   ; border middle
+  colors active   = [binner=0xEDEBEB:\    ; border inner
+                     bouter=0x33383A:\    ; border outer
+                     bframe=0xEDEBEB],\   ; border middle
+  colors inactive = [binner=0xEDEBEB:\    ; border inner
+                     bouter=0x747474:\    ; border outer
+                     bframe=0xEDEBEB],\   ; border middle
   dtp             = 'default.dtp'          ; dtp colors
 
 SKIN_BUTTONS \
-  close    = [-31:1][27:18],\             ; buttons coordinates
-  minimize = [-58:1][27:18]               ; [left:top][width:height]
+  close    = [-31:1][27:17],\             ; buttons coordinates
+  minimize = [-59:1][27:17]               ; [left:top][width:height]
 
 SKIN_BITMAPS \
   left active   = bmp_left1,\              ; skin bitmaps pointers

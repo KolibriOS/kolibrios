@@ -1,6 +1,8 @@
 -- Provides list of skins for distribution kit,
 -- included by ../data/Tupfile.lua.
 skinlist = {
+"Leency/Shkvorka/default.skn",
+"Leency/Blueberries/default.skn",
 "loggy/loggy.skn",
 "_old/5imple Alpha/1.5imple Alpha/1.5imple Alpha.skn",
 "_old/5imple Alpha/2.5imple Alpha/2.5imple Alpha.skn",
