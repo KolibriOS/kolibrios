@@ -68,98 +68,33 @@ int stroka_y=5, line_length=0;
 =                                                        =
 ========================================================*/
 
-/* <title>   <meta encoding> <a hrf=""> <img src="" alt=""> <h1>..<h6> <b> <u> <s> <pre> */
-
-struct _DOM {
-	dword start;
-	dword end;
-	dword len;
-};
-
-struct _style {
-	bool b, u, i, s;
-	bool h1, h2, h3, h4, h5, h6;
-	bool a;
-	bool pre;
-	bool ignore;
-	dword color;
-	void clear();
-} style;
-
-void _style::clear()
-{
-	b=u=i=s=0;
-	h1=h2=h3=h4=h5=h6=0;
-	a=0;
-	pre=0;
-	ignore=0;
-	color=0;
-}
-
-struct _text {
-	dword start;
-	int x, y;
-};
-
-struct _tag {
-	dword start;
-	dword name;
-	dword param[10];
-	dword value[10];
-	void parce();
-	int nameis();
-	void clear();
-};
-
-void _tag::parce()
-{
-	dword o = name = start;
-	while (ESBYTE[o]!=' ') && (ESBYTE[o]) o++; //searching for a space after tag name
-	ESBYTE[o] = '\0';
-	strlwr(name);
-}
-
-int _tag::nameis(dword _in_tag_name)
-{
-	if (name) && (strcmp(_in_tag_name, name)==0) return true;
-	return false;
-}
-
-void _tag::clear() 
-{
-	start=name=0;
-}
-
 #define HTML_PADDING_X 8;
 #define HTML_PADDING_Y 5;
 
 
 void ParceHtml(byte draw)
 {
+dword DOM_start, DOM_end, DOM_len, DOM_pos;
 int stroka_x = HTML_PADDING_X;
 int stroka_y = HTML_PADDING_Y;
 dword line_break;
 byte ch, zeroch;
-_DOM DOM;
 _text text;
 _tag tag;
-dword DOM_pos;
 
 	tag.clear();
 	style.clear();
 	/* Create DOM */
 	debugln("creating DOM");
-	DOM.len = strlen(io.buffer_data);
-	DOM.start = malloc(DOM.len);
-	DOM.end = DOM.start + DOM.len;
-	strlcpy(DOM.start, io.buffer_data, DOM.len);
-	//RemoveSpecialSymbols(DOM.start, DOM.len);
-	//DOM.len = strlen(DOM.start);
+	DOM_len = strlen(io.buffer_data);
+	DOM_start = malloc(DOM_len);
+	DOM_end = DOM_start + DOM_len;
+	strlcpy(DOM_start, io.buffer_data, DOM_len);
 
 	/* Parce DOM */
 	debugln("starting DOM parce...");
-	text.start = DOM.start;
-	for (DOM_pos=DOM.start; DOM_pos<DOM.end; DOM_pos++)
+	text.start = DOM_start;
+	for (DOM_pos=DOM_start; DOM_pos<DOM_end; DOM_pos++)
 	{
 		if (ESBYTE[DOM_pos]==0x0D) || (ESBYTE[DOM_pos]==0x0A) ESBYTE[DOM_pos]=' ';
 		ch = ESBYTE[DOM_pos];
@@ -234,5 +169,5 @@ dword DOM_pos;
 		label.size.height = list.count+5*list.item_h;
 		label.raw_size = 0;
 	}
-	free(DOM.start);
+	free(DOM_start);
 }

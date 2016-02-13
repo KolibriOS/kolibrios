@@ -675,9 +675,7 @@ no_new_row:
         cmp     edx, BTNSP_X
         jbe     newbutton
 
-        mcall   , <253, 36>, <55, 22>, 2, 0xF0969D        ; 'C'
-        mcall   , <236,53>, <DISPLAY_Y,DISPLAY_H>, 3, [sc.work]        ; 'dec-bin-hex'
-		mov     esi, [sc.work_button]
+        mcall   , <253, 36>, <55, 22>, 2, 0xF0969D  ; 'C'
 
 
         mov     ecx, [sc.work_button_text]
@@ -718,19 +716,19 @@ print_display:
         mcall   38, < DISPLAY_X+1, DISPLAY_W+DISPLAY_X-1>, <DISPLAY_Y+1, DISPLAY_Y+1>, 0xE0E0E0 ; internal shadow
 		mcall     , < DISPLAY_X+1,  DISPLAY_X+1>, <DISPLAY_Y+2, DISPLAY_Y+DISPLAY_H-1>,          ; internal shadow
 		mcall   13, < DISPLAY_X+2, DISPLAY_W-2>, <DISPLAY_Y+2, DISPLAY_H-2>, 0xFFFfff ; background
+		mcall   8, <236,53>, <DISPLAY_Y,DISPLAY_H>, 3, [sc.work]        ; 'dec-bin-hex'
 		
         mov     ecx, [sc.work_text]
         or      ecx, 0x40000000
         mcall   4, <135,6>,,calc,1,[sc.work]
-
-        mov     ebx, 250 shl 16 + DISPLAY_Y+(DISPLAY_H-14)/2
+		
         mov     edx, [display_type]
         shl     edx, 2
         add     edx, display_type_text
         mov     esi, 3
-        mov     edi, [sc.work]
+		mov     ecx, [sc.work_text]
 		or      ecx, 0x10000000
-        mcall
+        mcall   4,<250,DISPLAY_Y+(DISPLAY_H-14)/2>
 
         cmp     [dsign], byte '+'
         je      positive

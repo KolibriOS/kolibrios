@@ -105,12 +105,12 @@ int check_is_the_adress_local(dword _in)
 	_in++;
 	if(!strncmp(_in,"rd/",3)) return true;
 	if(!strncmp(_in,"fd/",3)) return true;
-	if(!strncmp(_in,"hd/",3)) return true;
-	if(!strncmp(_in,"bd/",3)) return true;
-	if(!strncmp(_in,"cd/",3)) return true;
+	if(!strncmp(_in,"hd",2)) return true;
+	if(!strncmp(_in,"bd",2)) return true;
+	if(!strncmp(_in,"cd",2)) return true;
 	if(!strncmp(_in,"sys/",4)) return true;
 	if(!strncmp(_in,"tmp/",4)) return true;
-	if(!strncmp(_in,"usbhd",6)) return true;
+	if(!strncmp(_in,"usbhd",5)) return true;
 	if(!strncmp(_in,"kolibrios",10)) return true;
 	return false;
 }

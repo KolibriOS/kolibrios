@@ -224,7 +224,7 @@ inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
 		// wb
 		if(b24(i)!=background) && (b24(i+3)==background) && (b24(i+line_w)==background) && (b24(i+3+line_w)!=background)
 		{
-			dark_background = MixColors(background,b24(i),200);
+			dark_background = MixColors(background,b24(i),210);
 			DSDWORD[i+3] = DSDWORD[i+3] & 0xFF000000 | dark_background;
 			DSDWORD[i+line_w] = DSDWORD[i+line_w] & 0xFF000000 | dark_background;			
 		}
@@ -232,7 +232,7 @@ inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
 		// bw
 		else if(b24(i)==background) && (b24(i+3)!=background) && (b24(i+line_w)!=background) && (b24(i+3+line_w)==background)
 		{
-			dark_background = MixColors(background,b24(i+3),200);
+			dark_background = MixColors(background,b24(i+3),210);
 			DSDWORD[i] = DSDWORD[i] & 0xFF000000 | dark_background;
 			DSDWORD[i+3+line_w] = DSDWORD[i+3+line_w] & 0xFF000000 | dark_background;
 		}
