@@ -61,10 +61,10 @@ dword CursorFile = FROM "pointer.cur";
 
 #include "favicon.h"
 #include "ini.h"
-#include "tag.h"
 #include "gui.h"
 #include "label.h"
 #include "link.h"
+#include "tag.h"
 #include "prepare_page.h"
 //#include "special_symbols.h"
 

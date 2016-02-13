@@ -1,7 +1,7 @@
 #ifdef LANG_RUS
 	#define DL_WINDOW_HEADER "Менеджер загрузок"
 	#define START_DOWNLOADING "Начать закачку"
-	#define STOP_DOWNLOADING "Остановить скачивание"
+	#define STOP_DOWNLOADING "Остановить"
 	#define SHOW_IN_FOLDER "Показать в папке"
 	#define OPEN_FILE "Открыть файл"
 	#define FILE_SAVED_AS "'Менеджер загрузок\nФайл сохранен как "
@@ -112,7 +112,7 @@ void DL_Draw_Window()
 	DeleteButton(306);
 	if (downloader.state == STATE_NOT_STARTED) || (downloader.state == STATE_COMPLETED)
 	{
-		DrawCaptButton(cleft, 50, 130, 27, 301, system.color.work_button, system.color.work_button_text, START_DOWNLOADING);	
+		DrawCaptButton(cleft, 50, 140, 27, 301, system.color.work_button, system.color.work_button_text, START_DOWNLOADING);	
 	}
 	if (downloader.state == STATE_IN_PROGRESS)
 	{
