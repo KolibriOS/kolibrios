@@ -32,20 +32,8 @@ use32
         dd      0x0,0x0         ; I_Param , I_Icon
 
 include '../../../macros.inc'
+include '../../../gui_patterns.inc'
 include '../../../KOSfuncs.inc'
-
-macro DrawBar  x, y, width, height, color 
-{
-	mcall 13, (x) shl 16 + (width), (y) shl 16 + (height), color
-}
-
-macro DrawRectangle  x, y, w, h, color 
-{
-	DrawBar x,y,w,1,color
-	DrawBar x,y+h,w,1
-	DrawBar x,y,1,h
-	DrawBar x+w,y,1,h+1
-}
 
 START:
 red:
@@ -649,6 +637,10 @@ atof_convertFractionalPart:
 ;   *********************************************
 
 BTNSP_X equ 39
+DISPLAY_X equ 20
+DISPLAY_Y equ 18
+DISPLAY_W equ 208
+DISPLAY_H equ 26
 
 draw_window:
         mcall   12, 1
@@ -684,7 +676,7 @@ no_new_row:
         jbe     newbutton
 
         mcall   , <253, 36>, <55, 22>, 2, 0xF0969D        ; 'C'
-        mcall   , <235,54>, <20,26>, 3, [sc.work]        ; 'dec-bin-hex'
+        mcall   , <236,53>, <DISPLAY_Y,DISPLAY_H>, 3, [sc.work]        ; 'dec-bin-hex'
 		mov     esi, [sc.work_button]
 
 
@@ -721,16 +713,17 @@ next_button:
 
 print_display:
         pusha
-        mcall   13, < 21, 206>, <22, 24>, 0xFFFfff
-		DrawRectangle 19,20,208,26, [sc.work_graph]
-        mcall   38, < 20, 226>, <21, 21>, 0xE0E0E0 ; internal shadow
-		mcall   38, < 20,  20>, <23, 43>, 0xE0E0E0 ; internal shadow
+		DrawRectangle3D DISPLAY_X-1,DISPLAY_Y-1,DISPLAY_W+2,DISPLAY_H+2, [sc.work_3d_dark], [sc.work_3d_light]
+		DrawRectangle DISPLAY_X,DISPLAY_Y,DISPLAY_W,DISPLAY_H, [sc.work_graph]
+        mcall   38, < DISPLAY_X+1, DISPLAY_W+DISPLAY_X-1>, <DISPLAY_Y+1, DISPLAY_Y+1>, 0xE0E0E0 ; internal shadow
+		mcall     , < DISPLAY_X+1,  DISPLAY_X+1>, <DISPLAY_Y+2, DISPLAY_Y+DISPLAY_H-1>,          ; internal shadow
+		mcall   13, < DISPLAY_X+2, DISPLAY_W-2>, <DISPLAY_Y+2, DISPLAY_H-2>, 0xFFFfff ; background
 		
         mov     ecx, [sc.work_text]
         or      ecx, 0x40000000
-        mcall   4, <135,7>,,calc,1,[sc.work]
+        mcall   4, <135,6>,,calc,1,[sc.work]
 
-        mov     ebx, 250 shl 16 + 26
+        mov     ebx, 250 shl 16 + DISPLAY_Y+(DISPLAY_H-14)/2
         mov     edx, [display_type]
         shl     edx, 2
         add     edx, display_type_text
@@ -810,7 +803,7 @@ clear_all:
 
 ;data
 
-title   db 'Calc 1.4', 0
+title   db 'Calc 1.41', 0
 
 display_type            dd  0    ; 0 = decimal, 1 = hexadecimal, 2= binary
 entry_multiplier        dd  10

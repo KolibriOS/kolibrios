@@ -22,21 +22,9 @@ include '../../../proc32.inc'
 include '../../../dll.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../../gui_patterns.inc'
 
 @use_library
-
-macro DrawBar  x, y, width, height, color 
-{
-	mcall 13, (x) shl 16 + (width), (y) shl 16 + (height), color
-}
-
-macro DrawRectangle  x, y, w, h, color 
-{
-	DrawBar x,y,w,1,color
-	DrawBar x,y+h,w,1
-	DrawBar x,y,1,h
-	DrawBar x+w,y,1,h+1
-}
 
 	
 align 4
