@@ -95,10 +95,10 @@ proc buf_create_f_img, buf_struc:dword, rgb_data:dword
 	mov edi,dword[buf_struc]
 	mov ecx,buf2d_w
 	cmp ecx,1
-	jl .end_create
+	jl .error
 	mov ebx,buf2d_h
 	cmp ebx,1
-	jl .end_create
+	jl .error
 	imul ecx,ebx
 	cmp buf2d_bits,24
 	jne @f
@@ -115,6 +115,8 @@ proc buf_create_f_img, buf_struc:dword, rgb_data:dword
 	jne @f
 		cld
 		mov esi,[rgb_data]
+		or esi,esi
+		jz @f
 		mov edi,eax ;eax=buf2d_data
 		rep movsb ;копируем биты изображения в буфер
 		jmp .end_create
