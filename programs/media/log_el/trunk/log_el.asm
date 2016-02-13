@@ -1,13 +1,7 @@
 use32
 	org 0x0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 0x1
-	dd start
-	dd i_end ;размер приложения
-	dd mem
-	dd stacktop
-	dd 0
-	dd sys_path
+	dd 1,start,i_end,mem,stacktop,0,sys_path
 
 ini_def_c_bkgnd equ 0
 ini_def_c_border equ 0xff0000
@@ -46,20 +40,26 @@ capt_offs equ 10 ;смещение для начала подписи в листе tree1
 
 include '../../../macros.inc'
 include '../../../proc32.inc'
-include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../KOSfuncs.inc'
+include '../../../load_img.inc'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../../dll.inc'
 include 'le_pole.inc'
 include 'le_signal.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Логические элементы 15.11.15',0 ;подпись окна
+caption db 'Логические элементы 13.02.16',0 ;подпись окна
 
 panel_0_coord_top equ 5 ;верхняя координата 0-го ряда панели инструментов
 panel_1_coord_top equ 35
 panel_2_coord_top equ 60
 panel_3_coord_top equ 85
 
+;input:
+; eax - coord x
+; ebx - coord y
+;output:
+; eax - coord x + d_x * cos(angle)
+; ebx - coord y + d_x * sin(angle)
 align 4
 proc move_rotate_x_n90 uses ecx edi, d_x:dword, angle:dword
 	mov edi,[angle] ;угол поворота / 90 (от 0-3)
@@ -74,19 +74,8 @@ proc move_rotate_x_n90 uses ecx edi, d_x:dword, angle:dword
 	mov ecx,[d_x]
 	imul ecx,dword[edi+8]
 	add ebx,ecx
-
 	ret
 endp
-
-struct FileInfoBlock
-	Function dd ?
-	Position dd ?
-	Flags	 dd ?
-	Count	 dd ?
-	Buffer	 dd ?
-		db ?
-	FileName dd ?
-ends
 
 macro elOpt nam,col,box_x,box_y,table, tbl_i_legs, ol0, ol1, ol2
 {
@@ -181,60 +170,15 @@ mcs dd 1, 0, 0, 1,\
 	  -1, 0, 0,-1,\
 	   0,-1, 1, 0
 
-run_file_70 FileInfoBlock
-image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
-
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
-IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*25
 image_data_toolbar dd 0
 
-TREE_ICON_SYS16_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*11+54 ;размер bmp файла с системными иконками
 icon_tl_sys dd 0 ;указатель на память для хранения системных иконок
-TOOLBAR_ICON_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*5+54 ;размер bmp файла с иконками объектов
 icon_toolbar dd 0 ;указатель на память для хранения иконок объектов
 
-IMAGE_FONT_SIZE equ 128*144*3
 image_data_gray dd 0 ;память с временными серыми изображениями в формате 24-bit, из которых будут создаваться трафареты
 
 cursors_count equ 4
-IMAGE_CURSORS_SIZE equ 4096*cursors_count ;размер картинки с курсорами
-
-macro load_image_file path,buf,size { ;макрос для загрузки изображений
-	;path - может быть переменной или строковым параметром
-	if path eqtype '' ;проверяем задан ли строкой параметр path
-		jmp @f
-			local .path_str
-			.path_str db path ;формируем локальную переменную
-			db 0
-		@@:
-		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0
-	else
-		copy_path path,[32],file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
-	end if
-
-	stdcall mem.Alloc, dword size ;выделяем память для изображения
-	mov [buf],eax
-
-	mov [run_file_70.Function], 0
-	mov [run_file_70.Position], 0
-	mov [run_file_70.Flags], 0
-	mov [run_file_70.Count], dword size
-	m2m [run_file_70.Buffer], eax
-	mov byte[run_file_70+20], 0
-	mov [run_file_70.FileName], file_name
-	mcall 70,run_file_70 ;загружаем файл изображения
-	cmp ebx,0xffffffff
-	je @f
-		;определяем вид изображения и переводим его во временный буфер image_data
-		stdcall dword[img_decode], dword[buf],ebx,0
-		mov dword[image_data],eax
-		;преобразуем изображение к формату rgb
-		stdcall dword[img_to_rgb2], dword[image_data],dword[buf]
-		;удаляем временный буфер image_data
-		stdcall dword[img_destroy], dword[image_data]
-	@@:
-}
 
 ini_name db 'log_el.ini',0 ;имя файла
 ini_sec_color db 'Colors',0
@@ -255,10 +199,10 @@ start:
 	mov	ebp,lib_7
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
-		mcall -1 ;exit not correct
+		mcall SF_TERMINATE_PROCESS
 	@@:
-	mcall 48,3,sc,sizeof.system_colors
-	mcall 40,0x27
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
+	mcall SF_SET_EVENTS_MASK,0x27
 
 	;*** считывание настроек из *.ini файла
 	copy_path ini_name,sys_path,file_name,0x0
@@ -295,27 +239,27 @@ start:
 	;*** подготовка диалога
 	stdcall [OpenDialog_Init],OpenDialog_data
 	stdcall [buf2d_create], buf_0 ;создание буфера
-	load_image_file 'toolbar.png', image_data_toolbar,IMAGE_TOOLBAR_SIZE
+	load_image_file 'toolbar.png', image_data_toolbar
 
 	stdcall pole_init, pole
 	stdcall dword[tl_data_init], tree1
 	stdcall dword[tl_data_init], tree2
 
 	;системные иконки 16*16 для tree_list
-	load_image_file 'tl_sys_16.png', icon_tl_sys,TREE_ICON_SYS16_BMP_SIZE
+	load_image_file 'tl_sys_16.png', icon_tl_sys
 	;если изображение не открылось, то в icon_tl_sys будут
 	;не инициализированные данные, но ошибки не будет, т. к. буфер нужного размера
 	mov eax,dword[icon_tl_sys]
 	mov dword[tree1.data_img_sys],eax
 	mov dword[tree2.data_img_sys],eax
 
-	load_image_file 'objects.png', icon_toolbar,TOOLBAR_ICON_BMP_SIZE
+	load_image_file 'objects.png', icon_toolbar
 	mov eax,dword[icon_toolbar]
 	mov dword[tree1.data_img],eax
 	mov dword[tree2.data_img],eax
 
 	;*** загрузка шрифта
-	load_image_file 'font6x9.bmp', image_data_gray,IMAGE_FONT_SIZE
+	load_image_file 'font6x9.bmp', image_data_gray
 	stdcall [buf2d_create_f_img], buf_font,[image_data_gray] ;создаем буфер
 	stdcall mem.Free,[image_data_gray] ;освобождаем память
 
@@ -323,11 +267,11 @@ start:
 	stdcall [buf2d_convert_text_matrix], buf_font
 
 	;*** загрузка курсоров
-	load_image_file 'cursors_gr.png',image_data_gray,IMAGE_CURSORS_SIZE
+	load_image_file 'cursors_gr.png',image_data_gray
 	stdcall [buf2d_create_f_img], buf_curs_8,[image_data_gray] ;создаем буфер
 	stdcall mem.Free,[image_data_gray] ;освобождаем память
 
-	load_image_file 'cursors.png',image_data_gray, IMAGE_CURSORS_SIZE
+	load_image_file 'cursors.png',image_data_gray
 	stdcall [buf2d_create_f_img], buf_curs,[image_data_gray] ;создаем буфер
 	stdcall mem.Free,[image_data_gray] ;освобождаем память
 
@@ -346,7 +290,7 @@ start:
 	stdcall [tl_cur_beg], tree2
 
 	;*** установка времени для таймера
-	mcall 26,9
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov [last_time],eax
 
 align 4
@@ -355,7 +299,7 @@ red_win:
 
 align 4
 still:
-	mcall 26,9
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov ebx,[last_time]
 	add ebx,10 ;задержка
 	cmp ebx,eax
@@ -363,11 +307,7 @@ still:
 		mov ebx,eax
 	@@:
 	sub ebx,eax
-	;cmp ebx,10 ;задержка
-	;ja timer_funct
-	;test ebx,ebx
-	;jz timer_funct
-	mcall 23
+	mcall SF_WAIT_EVENT_TIMEOUT
 	cmp eax,0
 	je timer_funct
 
@@ -386,7 +326,7 @@ still:
 align 4
 timer_funct:
 	pushad
-	mcall 26,9
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov [last_time],eax
 
 	cmp byte[tim_ch],0
@@ -424,7 +364,7 @@ mouse:
 	stdcall [tl_mouse], tree2
 
 	pushad
-	mcall 37,2 ;нажатые кнопки мыши
+	mcall SF_MOUSE_GET,SSF_BUTTON
 	bt eax,0 ;левая кнопка нажата?
 	jc @f
 	bt eax,1 ;правая кнопка нажата?
@@ -436,7 +376,7 @@ mouse:
 	@@:
 	mov esi,eax
 
-	mcall 37,1 ;eax = (x shl 16) + y
+	mcall SF_MOUSE_GET,SSF_WINDOW_POSITION ;eax = (x shl 16) + y
 	cmp ax,word[buf_0.t]
 	jl .end_buf_wnd ;не попали в окно буфера по оси y
 
@@ -693,24 +633,16 @@ endp
 align 4
 draw_window:
 pushad
-	mcall 12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
 	; *** рисование главного окна (выполняется 1 раз при запуске) ***
-	xor eax,eax
-	mov ebx,(20 shl 16)+580
-	mov ecx,(20 shl 16)+415
 	mov edx,[sc.work]
 	or  edx,(3 shl 24)+0x10000000+0x20000000
 	mov edi,caption
-	int 0x40
+	mcall SF_CREATE_WINDOW, (20 shl 16)+580,(20 shl 16)+415
 
 	; *** создание кнопок на панель ***
-	mov eax,8
-	mov ebx,(5 shl 16)+20
-	mov ecx,(panel_0_coord_top shl 16)+20
-	mov edx,3
-	mov esi,[sc.work_button]
-	int 0x40
+	mcall SF_DEFINE_BUTTON, (5 shl 16)+20, (panel_0_coord_top shl 16)+20, 3,, [sc.work_button]
 
 	add ebx,25 shl 16
 	mov edx,4
@@ -769,11 +701,8 @@ pushad
 	int 0x40
 
 	; *** рисование иконок на кнопках ***
-	mov eax,7
-	mov ebx,[image_data_toolbar]
-	mov ecx,(16 shl 16)+16
 	mov edx,(7 shl 16)+panel_0_coord_top+2 ;icon new
-	int 0x40
+	mcall SF_PUT_IMAGE, [image_data_toolbar],(16 shl 16)+16
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;icon open
@@ -830,7 +759,7 @@ pushad
 
 	; *** создание кнопок установки сигналов set_0 и set_1 ***
 	mov esi,[sc.work_button]
-	mcall 8, (5 shl 16)+20, (panel_1_coord_top shl 16)+20, 20
+	mcall SF_DEFINE_BUTTON, (5 shl 16)+20, (panel_1_coord_top shl 16)+20, 20
 
 	add ebx,25 shl 16
 	mov edx,21
@@ -855,7 +784,7 @@ pushad
 	mov ecx,[sc.work_text]
 	or  ecx,0x80000000 ;or (1 shl 30)
 	;mov edi,[sc.work]
-	mcall 4, (12 shl 16)+panel_1_coord_top+6,, txt_set_0
+	mcall SF_DRAW_TEXT, (12 shl 16)+panel_1_coord_top+6,, txt_set_0
 
 	add ebx,25 shl 16
 	mov edx,txt_set_1
@@ -864,7 +793,7 @@ pushad
 	; *** рисование иконок на кнопках ***
 	mov ebx,[image_data_toolbar]
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE*15
-	mcall 7,, (16 shl 16)+16, (62 shl 16)+panel_1_coord_top+2
+	mcall SF_PUT_IMAGE,, (16 shl 16)+16, (62 shl 16)+panel_1_coord_top+2
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16)
@@ -880,7 +809,7 @@ pushad
 
 	; *** создание кнопок рисования провода ***
 	mov esi,[sc.work_button]
-	mcall 8, (5 shl 16)+20, (panel_2_coord_top shl 16)+20, 30
+	mcall SF_DEFINE_BUTTON, (5 shl 16)+20, (panel_2_coord_top shl 16)+20, 30
 
 	add ebx,30 shl 16
 	mov edx,31
@@ -903,13 +832,9 @@ pushad
 	int 0x40
 
 	; *** рисование иконок на кнопках ***
-	mov eax,7
 	mov ebx,[image_data_toolbar]
-	mov ecx,(16 shl 16)+16
-	mov edx,(7 shl 16)+panel_2_coord_top+2 ;иконка стрела
-
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE*19
-	int 0x40
+	mcall SF_PUT_IMAGE,, (16 shl 16)+16,(7 shl 16)+panel_2_coord_top+2 ;иконка стрела
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(30 shl 16) ;icon - рисование провода
@@ -931,21 +856,21 @@ pushad
 	add edx,(25 shl 16) ;icon - затирачка
 	int 0x40
 
-	mcall 12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 popad
 	ret
 
 align 4
 key:
-	mcall 2
-	stdcall [tl_key], dword tree1
-	stdcall [tl_key], dword tree2
+	mcall SF_GET_KEY
+	stdcall [tl_key], tree1
+	stdcall [tl_key], tree2
 	jmp still
 
 
 align 4
 button:
-	mcall 17
+	mcall SF_GET_BUTTON
 	cmp ah,3
 	jne @f
 		call but_new_file
@@ -1087,9 +1012,9 @@ button:
 	stdcall [tl_data_clear], tree2
 	cmp [cursor_pointer],0
 	je @f
-		mcall 37,6,[cursor_pointer]
+		mcall SF_MOUSE_GET,SSF_DEL_CURSOR,[cursor_pointer]
 	@@:
-	mcall -1
+	mcall SF_TERMINATE_PROCESS
 
 ;создание новой схемы
 align 4
@@ -1132,21 +1057,21 @@ but_open_file:
 	jne .end_open_file
 	;код при удачном открытии диалога
 
-	mov [run_file_70.Function], 0
+	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov dword[run_file_70.Count], open_file_lif.end-open_file_lif
 	m2m [run_file_70.Buffer], open_file_lif
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
-	mcall 70,run_file_70 ;загружаем файл
+	mcall SF_FILE,run_file_70 ;загружаем файл
 	cmp ebx,0xffffffff
 	je .end_open_file
 
 		mov dword[f_size],ebx
 		add ebx,open_file_lif
 		mov byte[ebx],0 ;на случай если ранее был открыт файл большего размера чистим конец буфера с файлом
-		mcall 71,1,openfile_path
+		mcall SF_SET_CAPTION,1,openfile_path
 		;---
 
 		;задаем минимальные значения, на случай если в файле будут некоректные размеры
@@ -1820,14 +1745,14 @@ end if
 	stdcall str_len,edi
 
 	;*** запись файла
-	mov [run_file_70.Function], 2
+	mov [run_file_70.Function], SSF_CREATE_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov dword[run_file_70.Count], eax
 	mov [run_file_70.Buffer], edi
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
-	mcall 70,run_file_70 ;сохраняем файл
+	mcall SF_FILE,run_file_70 ;сохраняем файл
 
 	call redraw_pole
 	.end_save_file:
@@ -2345,7 +2270,7 @@ proc but_set_none
 	cmp [cursor_pointer],0
 	je @f
 		push eax ebx ecx
-		mcall 37,6,[cursor_pointer]
+		mcall SF_MOUSE_GET,SSF_DEL_CURSOR,[cursor_pointer]
 		pop ecx ebx eax
 	@@:
 	ret
@@ -2363,12 +2288,12 @@ proc set_pen_mode uses eax ebx ecx edx, mode:dword, icon:dword, hot_p:dword
 		mov ecx,[icon]
 		shl ecx,12 ;умножаем на 4 кб
 		add ecx,[buf_curs.data]
-		mcall 37,4
+		mcall SF_MOUSE_GET,SSF_LOAD_CURSOR
 
 		cmp eax,0
 		je @f
 			mov [cursor_pointer],eax
-			mcall 37,5,[cursor_pointer]
+			mcall SF_MOUSE_GET,SSF_SET_CURSOR,[cursor_pointer]
 	@@:
 	ret
 endp
@@ -2689,10 +2614,11 @@ align 4
 	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
 	or al,0x30  ;данная команда короче чем две выше
 	stosb	    ;записать элемент из регистра al в ячеку памяти es:edi
-	ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
+	ret	      ;вернуться очень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 
 align 16
 i_end:
+	run_file_70 FileInfoBlock
 	rb 1024
 stacktop:
 	sys_path rb 1024

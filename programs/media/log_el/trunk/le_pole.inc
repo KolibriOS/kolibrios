@@ -97,8 +97,6 @@ proc pole_clear uses eax ecx edi, pole:dword
 	mov edi,pole_index
 	@@:
 		stosd ;for(i=0;i<pole_max_cell;i++) pole_index[i]=i;
-		;mov dword[edi],eax
-		;add edi,4
 		inc eax
 		loop @b
 	ret
@@ -1002,16 +1000,14 @@ endp
 ;--------------------------------------
 
 align 4
-proc pole_draw_pok uses eax ebx ecx edx edi esi, pole:dword
+proc pole_draw_pok, pole:dword
+pushad
 	;mov edi,dword[pole]
 
-	mov eax,4 ;рисование текста
-	mov ebx,400*65536+5
 	mov ecx,[sc.work_text]
 	or  ecx,0x80000000 ;or (1 shl 30)
-	mov edx,txt_zoom
 	;mov edi,[sc.work]
-	int 0x40
+	mcall SF_DRAW_TEXT,(400 shl 16)+5,,txt_zoom
 
 	add bx,9
 	mov edx,txt_osob
@@ -1021,22 +1017,20 @@ proc pole_draw_pok uses eax ebx ecx edx edi esi, pole:dword
 	mov edx,txt_info
 	int 0x40
 
-	mov eax,47
 	movzx ecx,byte[zoom]
-	mov ebx,(2 shl 16)
 	mov edx,(400+6*9)*65536+5
 	mov esi,[sc.work_button_text]
 	or  esi,(1 shl 30)
 	mov edi,[sc.work_button]
-	int 0x40 ;масштаб
+	mcall SF_DRAW_NUMBER,(2 shl 16) ;масштаб
 
 	mov edi,dword[pole]
 	mov ecx,pole_index
 	mov ecx,[ecx]
 	mov edi,[sc.work_button]
-	mov ebx,(5 shl 16)
 	add edx,(6*0)*65536+9
-	int 0x40 ;число точек
+	mcall ,(5 shl 16) ;число точек
+popad
 	ret
 endp
 
