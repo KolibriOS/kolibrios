@@ -18,7 +18,8 @@
 ;;           1) fixed arccos
 ;;   Calc 1.33
 ;;           1) align button captions in proper way, finally!
-
+;;   Calc 1.4 - Leency
+;;           1) better GUI, big fonts
 
 use32
         org     0x0
@@ -31,6 +32,20 @@ use32
         dd      0x0,0x0         ; I_Param , I_Icon
 
 include '../../../macros.inc'
+include '../../../KOSfuncs.inc'
+
+macro DrawBar  x, y, width, height, color 
+{
+	mcall 13, (x) shl 16 + (width), (y) shl 16 + (height), color
+}
+
+macro DrawRectangle  x, y, w, h, color 
+{
+	DrawBar x,y,w,1,color
+	DrawBar x,y+h,w,1
+	DrawBar x,y,1,h
+	DrawBar x+w,y,1,h+1
+}
 
 START:
 red:
@@ -633,25 +648,25 @@ atof_convertFractionalPart:
 ;   ******* WINDOW DEFINITIONS AND DRAW *********
 ;   *********************************************
 
+BTNSP_X equ 39
+
 draw_window:
         mcall   12, 1
 
         mcall   48, 3, sc, sizeof.system_colors
 
-        mcall   48, 4
+		mcall SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
 
-        mov     ecx, eax
-        xor     eax, eax                     
-        mov     ebx, 200 shl 16 + 256
-        add     ecx, 200 shl 16 + 163
+		mov     ecx, 200 shl 16 + 210
+		add     ecx, eax                ; add skin height to window height 
         mov     edx, [sc.work]
         or      edx, 0x34000000
-        mov     edi, title
-        mcall
-
-        mov     eax, 8
-        mov     ebx, 19 shl 16 + 28
-        mov     ecx, 55 shl 16 + 18
+		mov     edi, title
+        mcall   0, <250, 317>
+		
+        mov     eax, SF_DEFINE_BUTTON
+        mov     ebx, 19 shl 16 + 36
+        mov     ecx, 55 shl 16 + 22
         mov     edx, 6
         mov     esi, [sc.work_button]
         mov     edi, 7
@@ -659,29 +674,31 @@ newbutton:
         dec     edi
         jnz     no_new_row
         mov     edi, 7
-        mov     ebx, 19 shl 16 + 28
-        add     ecx, 20 shl 16
+        mov     ebx, 19 shl 16 + 36
+        add     ecx, 28 shl 16
 no_new_row:
         mcall
-        add     ebx, 30 shl 16
+        add     ebx, BTNSP_X shl 16
         inc     edx
-        cmp     edx, 39
+        cmp     edx, BTNSP_X
         jbe     newbutton
 
-        mcall   , <199, 28>, <55, 18>, 2        ; 'C'
-        mcall   , <220,  8>, < 7,  8>, 3        ; 'dec-bin-hex'
+        mcall   , <253, 36>, <55, 22>, 2, 0xF0969D        ; 'C'
+        mcall   , <235,54>, <20,26>, 3, [sc.work]        ; 'dec-bin-hex'
+		mov     esi, [sc.work_button]
 
 
         mov     ecx, [sc.work_button_text]
+		or      ecx, 0x10000000
         mov     edx, text
-        mov     edi, 55 - 15
+        mov     edi, 31
 next_line:
         inc     edx
         and     edi, 0x0000ffff
-        add     edi, 20 SHL 16 + 20
+        add     edi, 24 SHL 16 + 28
 next_button:
         movzx   esi, byte[edx - 1]
-        imul    eax, esi, 6
+        imul    eax, esi, 8
         neg     eax
         add     eax, 29
         shr     eax, 1
@@ -691,9 +708,9 @@ next_button:
         mcall   4
         add     edx, esi
         inc     edx
-        add     edi, 30 SHL 16
+        add     edi, BTNSP_X SHL 16
         cmp     [edx - 1], byte 0
-        jne     next_button
+		jne     next_button
         cmp     [edx], byte 'x'
         jne     next_line
 
@@ -705,28 +722,21 @@ next_button:
 print_display:
         pusha
         mcall   13, < 21, 206>, <22, 24>, 0xFFFfff
-        mcall   38, < 19, 227>, <20, 20>, [sc.work_graph]
+		DrawRectangle 19,20,208,26, [sc.work_graph]
         mcall   38, < 20, 226>, <21, 21>, 0xE0E0E0 ; internal shadow
-        mcall   38, < 19, 227>, <45, 45>, [sc.work_graph]
-        mcall   38, < 19,  19>, <21, 44>, [sc.work_graph]
 		mcall   38, < 20,  20>, <23, 43>, 0xE0E0E0 ; internal shadow
-        mcall   38, <227, 227>, <21, 44>, [sc.work_graph]
 		
-        mov     eax, 4
-        mov     ebx, 135 shl 16 + 7
         mov     ecx, [sc.work_text]
         or      ecx, 0x40000000
-        mov     edx, calc
-        mov     esi, 1
-        mov     edi, [sc.work]
-        mcall
+        mcall   4, <135,7>,,calc,1,[sc.work]
 
-        mov     ebx, 198 shl 16 + 8
+        mov     ebx, 250 shl 16 + 26
         mov     edx, [display_type]
         shl     edx, 2
         add     edx, display_type_text
         mov     esi, 3
         mov     edi, [sc.work]
+		or      ecx, 0x10000000
         mcall
 
         cmp     [dsign], byte '+'
@@ -800,7 +810,7 @@ clear_all:
 
 ;data
 
-title   db 'Calc 1.35', 0
+title   db 'Calc 1.4', 0
 
 display_type            dd  0    ; 0 = decimal, 1 = hexadecimal, 2= binary
 entry_multiplier        dd  10
