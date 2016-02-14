@@ -358,6 +358,7 @@ build_dhcp_packet:
         xor     edx, edx
         mov     ebx, 100
         div     ebx                                                     ; Divide by 100 to get number of seconds
+        xchg    al, ah                                                  ; Convert to big endian
         mov     [tx_msg.secs], ax
         mov     [tx_msg.flags], 0
 
