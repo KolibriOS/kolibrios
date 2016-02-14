@@ -121,8 +121,8 @@ include '../netdrv.inc'
         BIT_10                  = 5 ; 10base-T
         BIT_SELECTOR            = 0 ; binary encoded selector CSMA/CD=00001
 
-        BIT_IFG1                = 25
-        BIT_IFG0                = 24
+        BIT_IFG1                = 1 shl 25
+        BIT_IFG0                = 1 shl 24
 
         RX_CONFIG               = (RBLEN shl BIT_RBLEN) or \
                                   (RX_MXDMA shl BIT_RX_MXDMA) or \
