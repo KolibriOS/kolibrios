@@ -145,7 +145,7 @@ align 4
 	add	ebx,TAB_SIZE-2	;54
 
 	push	edi
-	mov	edx,[system_colours.work_button]
+	mov	edx,[system_colours.taskbar]
 	xor	edi,edi
 
 	cmp	ebp,[active_slot_number]	;ecx	; ecx=active slot number
@@ -181,7 +181,7 @@ align 4
 	add	bx,cx
 	
 	mov	edx, procinfo_window_tabs+10
-	mcall	4,,[system_colours.work_button_text],,11
+	mcall	4,,[system_colours.taskbar_text],,11
 ;--------------------------------------
 align 4
 .nodraw:
