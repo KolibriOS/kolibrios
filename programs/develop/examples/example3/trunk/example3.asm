@@ -1,79 +1,136 @@
 ;
 ;   MENU EXAMPLE
 ;
-;   Compile with FASM for Menuet
+;   Compile with FASM for Kolibri
 ;
 
   use32
   org    0x0
-
   db     'MENUET01'    ; 8 byte id
   dd     0x01          ; header version
-  dd     START         ; start of code
-  dd     I_END         ; size of image
-  dd     0x1000        ; memory for app
-  dd     0x1000        ; esp
-  dd     0x0 , 0x0     ; I_Param , I_Icon
+  dd     start         ; start of code
+  dd     i_end         ; size of image
+  dd     mem, stacktop, file_name, sys_path
 
-include  'lang.inc'
-include  '..\..\..\..\macros.inc'
+include 'lang.inc'
+include '../../../../macros.inc'
+include '../../../../proc32.inc'
+include '../../../../KOSfuncs.inc'
+include '../../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../../dll.inc'
 
-START:                             ; start of execution
+KMENUITEM_NORMAL equ 0
+KMENUITEM_SUBMENU equ 1
+KMENUITEM_SEPARATOR equ 2
+
+@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+
+start:                             ; start of execution
+
+	load_libraries l_libs_start,l_libs_end
+	mov	ebp,lib_0
+	.test_lib_open:
+	cmp	dword [ebp+ll_struc_size-4],0
+	jz	@f
+		mcall SF_TERMINATE_PROCESS ;exit not correct
+	@@:
+	add ebp,ll_struc_size
+	cmp ebp,l_libs_end
+	jl .test_lib_open
+
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
+	mcall SF_SET_EVENTS_MASK,0x27
+
+	;kmenu initialisation
+	stdcall [kmenu_init],sc
+	stdcall [ksubmenu_new]
+	mov [main_menu], eax
+
+	stdcall [ksubmenu_new]
+	mov [main_menu_File], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_Load, 110
+	stdcall [ksubmenu_add], [main_menu_File], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_Save, 111
+	stdcall [ksubmenu_add], [main_menu_File], eax
+	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
+	stdcall [ksubmenu_add], [main_menu_File], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_Quit, 112
+	stdcall [ksubmenu_add], [main_menu_File], eax
+	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_File, [main_menu_File]
+	stdcall [ksubmenu_add], [main_menu], eax
+
+	stdcall [ksubmenu_new]
+	mov [main_menu_Edit], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_Copy, 120
+	stdcall [ksubmenu_add], [main_menu_Edit], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_Paste, 121
+	stdcall [ksubmenu_add], [main_menu_Edit], eax
+	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_Edit, [main_menu_Edit]
+	stdcall [ksubmenu_add], [main_menu], eax
+
+	stdcall [ksubmenu_new]
+	mov [main_menu_Test], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_Test1, 130
+	stdcall [ksubmenu_add], [main_menu_Test], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_Test2, 131
+	stdcall [ksubmenu_add], [main_menu_Test], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_Test3, 132
+	stdcall [ksubmenu_add], [main_menu_Test], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_Test4, 133
+	stdcall [ksubmenu_add], [main_menu_Test], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_Test5, 134
+	stdcall [ksubmenu_add], [main_menu_Test], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_Test6, 134
+	stdcall [ksubmenu_add], [main_menu_Test], eax
+	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_Test, [main_menu_Test]
+	stdcall [ksubmenu_add], [main_menu], eax
+
+	stdcall [ksubmenu_new]
+	mov [main_menu_Help], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_Setup, 140
+	stdcall [ksubmenu_add], [main_menu_Help], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_About, 141
+	stdcall [ksubmenu_add], [main_menu_Help], eax
+	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_Help, [main_menu_Help]
+	stdcall [ksubmenu_add], [main_menu], eax
 
   red: 
     call draw_window               ; draw window
-    call clear_data                ; clear status bar
+	stdcall [kmainmenu_draw], [main_menu]
 
 still:
-
-    mov  eax,10                    ; wait here for event
-    mcall                      ; do it
+    mcall SF_WAIT_EVENT
 
     cmp  eax,1                     ; redraw request ?
     jz   red                       ; yes jump to it
-    cmp  eax,2                     ; key in buffer ?
-    jnz   button
+    cmp  eax,2
+    jz   key
+    cmp  eax,3
+    jz   button
+	cmp  eax,6
+	jne  @f 
+		call mouse
+		jmp still
+	@@:
 
-  key:                             ; key
-    mov  eax,2                     ; just read it and ignore
-    mcall                      ; do it
+key:
+    mcall SF_GET_KEY
     jmp  still                     ; start again
 
-  button:                          ; button
-    mov  eax,17                    ; get id
-    mcall                      ; do it
+button:
+	mcall SF_GET_BUTTON
 
-    cmp  ah,1                      ; is it the close button
-    jne  noclose                   ; no then jump code
-    or   eax,-1                    ; close this program
-    mcall                      ; do it
-noclose:
+	mov  [button_press],eax
+	shr  dword[button_press],8
+	call draw_data
 
-    cmp  ah,100                    ; is it main menu
-    jb   not_menu                  ; no then jump code
-    cmp  ah,104                    ; is it main menu
-    ja   not_menu                  ; no then jump code
-    call draw_window               ; redraw window
-    call clear_data                ; clear status info
-    call draw_data                 ; update status info
-    call write_sub                 ; draw a sub menu
-    jmp  still                     ; start again
-not_menu:
+	cmp  ah,1                      ; is it the close button
+	jne  still                     ; no then jump code
+	mcall SF_TERMINATE_PROCESS     ; close this program
 
-    cmp  ah,110                    ; is it a sub menu
-    jb   not_sub                   ; no then jump code
-    cmp  ah,145                    ; is it a sub menu
-    ja   not_sub                   ; no then jump code
-    call draw_window               ; redraw window
-    call clear_data                ; clear status info
-    mov  [button_press],1          ; sub button pressed
-    call draw_data                 ; update status info
-    mov  [button_press],0          ; clear pressed
-    jmp  still                     ; start again
-not_sub:
-
-    jmp  still                     ; start again
-
+mouse:
+	stdcall [kmainmenu_dispatch_cursorevent], [main_menu]
+	ret
 
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
@@ -82,119 +139,33 @@ not_sub:
 draw_window:
 
     push eax                       ; save register
+    mcall SF_REDRAW,SSF_BEGIN_DRAW
 
-    mov  eax,12                    ; function 12: tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
-    mcall                      ; do it
-
-    mov  eax,0                     ; function 0: define and draw window
     mov  ebx,50*65536              ; [x start] *65536
     add  ebx,[x_size]              ; add [x size]
     mov  ecx,50*65536              ; [y start] *65536
     add  ecx,[y_size]              ; add [y size]
-    mov  edx,0x80ffffff            ; colour of work area RRGGBB
-    mov  esi,0x806688dd            ; grab bar colour. negative glide
-    mcall                      ; do it
+    mcall SF_CREATE_WINDOW,,,0xb3ffffff,,window_text
 
-    mov  eax,4                     ; function 4: write text to window
-    mov  ebx,6*65536+7             ; [x start] *65536 + [y start]
-    mov  ecx,0x00ffffff            ; text colour
-    mov  edx,window_text           ; pointer to text beginning
-    mov  esi,12                    ; text length
-    mcall                      ; do it
-
-    mov  eax,8                     ; function 8: define and draw button
-    mov  ebx,(381-18)*65536+13     ; [x start] *65536 + [x size]
-    mov  ecx,4*65536+13            ; [y start] *65536 + [y size]
-    mov  edx,1                     ; button id
-    mov  esi,0x6688dd              ; button color RRGGBB
-    mcall                      ; do it
-
-    mov  eax,13                    ; function 13: draw bar
     mov  ebx,1*65536               ; [x start] *65536
     add  ebx,[x_size]              ; add [x size]
-    dec  ebx                       ; x size - 1
+    sub  ebx,11                    ; x size - 11
     mov  ecx,[y_size]              ; [y start] *65536
-    sub  ecx,17                    ; minus height
+    sub  ecx,47                    ; minus height
     shl  ecx,16                    ; *65536
     add  ecx,17                    ; add height
-    mov  edx,0x006688dd            ; bar colour
-    mcall                      ; do it
+    mcall SF_DRAW_RECT,,,0x006688dd
 
-    mov  eax,4                     ; function 4 : write text to window
     mov  ebx,5*65536               ; [x start] *65536
     add  ebx,[y_size]              ; add [y start]
-    sub  ebx,12                    ; move up
+    sub  ebx,42                    ; move up
     xor  ecx,ecx                   ; text colour
-    mov  edx,button_no             ; pointer to text beginning
-    mov  esi,14                    ; text length
-    mcall                      ; do it
+    mcall SF_DRAW_TEXT,,,button_no,9
 
-    add  ebx,95*65536              ; move xy position
-    mov  edx,menu_text             ; pointer to text beginning
-    mcall                      ; do it
+	call draw_data
 
-    call write_main                ; draw menu
-
-    mov  eax,12                    ; function 12: tell os about windowdraw
-    mov  ebx,2                     ; 2, end of draw
-    mcall                      ; do it
-
+    mcall SF_REDRAW,SSF_END_DRAW
     pop  eax                       ; restore register
-    ret                            ; return
-
- ; ************* WRITE MAIN *************
-
-write_main:
-
-    mov  eax,13                    ; function 13: draw bar
-    mov  ebx,1*65536               ; [x start] *65536
-    add  ebx,[x_size]              ; +[x_size]
-    dec  ebx                       ; x size - 1
-    mov  ecx,21*65536+17           ; [y start] *65536 +[y size]
-    mov  edx,[menu_colour]         ; menu colour
-    mcall                      ; do it
-
-    mov  [main_pos],1              ; start position first button
-    xor  edi,edi                   ; data offset = 0
-
-next_main_item:
-    mov  al,[MENU_DATA+edi]        ; get byte at menu_data + offset
-    cmp  al,'E'                    ; is it the END
-    je   main_get_out              ; yes then exit
-    cmp  al,'0'                    ; is it a main menu item
-    jne  not_main_menu             ; no then jump code
-
-main_menu:
-    mov  al,[MENU_DATA+edi+1]      ; get byte at menu_data + offset + 1
-    cmp  al,'0'                    ; is it a divider
-    je   is_main_bar               ; yes then jump code
-    mov  eax,8                     ; function 8: define button
-    mov  ebx,[main_pos]            ; [x start]
-    shl  ebx,16                    ; *65536
-    add  bl,75                     ; +[x size]
-    mov  ecx,21*65536+16           ; [y start] *65536 +[y size]
-    xor  edx,edx                   ; clear register
-    mov  dl,[MENU_DATA+edi+2]      ; get byte button id number
-    mov  esi,[menu_colour]         ; button colour
-    mcall                      ; do it
-    mov  eax,4                     ; function 4: write text to window
-    add  ebx,6*65536-49            ; move xy position
-    xor  ecx,ecx                   ; text colour
-    mov  edx,MENU_DATA+3           ; point at menu text
-    add  edx,edi                   ; add our offset
-    mov  esi,11                    ; number of characters
-    mcall                      ; do it
-
-is_main_bar:
-    add  [main_pos],76             ; update button position
-
-not_main_menu:
-    add  edi,14                    ; update offset
-    jmp  next_main_item            ; do next menu item
-
-main_get_out:
-
     ret                            ; return
 
 ; *********** DRAW DATA ***********
@@ -202,141 +173,21 @@ main_get_out:
 draw_data:
 
     push eax                       ; save register
-    mov  ebx,0x00030000            ; display 3 decimal characters
-    xor  ecx,ecx                   ; clear register
-    mov  cl,ah                     ; swap data
-    mov  eax,47                    ; function 47: display number to window
-    mov  edx,70*65536              ; [x start] *65536
-    add  edx,[y_size]              ; +[y start]
-    sub  edx,12                    ; move position
-    xor  esi,esi                   ; text colour
-    mcall                      ; do it
-    pop  eax                       ; restore register
-
-    cmp  [button_press],1          ; has a sub button been pressed
-    je   draw_get_out              ; then jump code
-
-    push eax                       ; save register
-    xor  edx,edx                   ; clear register
-    shr  ax,8                      ; move button id into al
-    sub  eax,100                   ; subtract 100
-    mov  dx,14                     ; use record length as multiplier
-    mul  dx                        ; multiply
-    mov  edx,eax                   ; swap registers
-    add  edx,MENU_DATA             ; add offset
-    inc  edx                       ; add 1
-    mov  ebx,188*65536             ; [x start] *65536
-    add  ebx,[y_size]              ; +[y start]
-    sub  ebx,12                    ; move position
-    mov  esi,1                     ; 1 character
-    mov  eax,4                     ; function 4: write text to window
-    xor  ecx,ecx                   ; text colour
-    mcall                      ; do it
-    pop  eax                       ; restore register
-
-draw_get_out:
-    ret                            ; return
-
-; **************** CLEAR DATA ******************
-
-clear_data:
-
-    push eax                       ; save register
-    mov  eax,13                    ; function 13: draw bar
-    mov  ebx,67*65536+23           ; [x start] *65536 +[x size]
     mov  ecx,[y_size]              ; [y start]
-    sub  ecx,15                    ; move position
+    sub  ecx,45                    ; move position
     shl  ecx,16                    ; *65536
     add  ecx,13                    ; [y size]
     mov  edx,0x00aaaaaa            ; bar colour
-    mcall                      ; do it
-    mov  ebx,185*65536+11          ; move position
-    mcall                      ; do it again
+    mcall SF_DRAW_RECT, (67 shl 16)+23
 
+    mov  ebx,0x00030000            ; display 3 decimal characters
+    mov  ecx,[button_press]        ; menu id
+    mov  edx,70*65536              ; [x start] *65536
+    add  edx,[y_size]              ; +[y start]
+    sub  edx,42                    ; move position
+    xor  esi,esi                   ; text colour
+    mcall SF_DRAW_NUMBER
     pop  eax                       ; restore register
-    ret                            ; return
-
- ; ************* WRITE SUB *************
-
-write_sub:
-
-    push eax                       ; save register
-    mov  [but_pos],38              ; y start position offset
-    mov  [sub_pos],1               ; x start position offset
-    xor  edx,edx                   ; clear register
-    shr  ax,8                      ; move button id into al
-    sub  eax,100                   ; subtract 100
-    mov  dx,76                     ; menu width + 1
-    mul  dx                        ; multiply
-    add  [sub_pos],eax             ; add menu position to offset
-    pop  eax                       ; restore register
-
-    xor  edx,edx                   ; clear register
-    shr  ax,8                      ; move button id into al
-    sub  eax,100                   ; subtract 100
-    mov  dx,14                     ; use record length as multiplier
-    mul  dx                        ; multiply
-    add  eax,MENU_DATA             ; add offset
-    inc  eax                       ; plus 1
-    mov  al,[eax]                  ; get menu number byte
-    mov  [menu_number],al          ; save it
-
-    xor  edi,edi                   ; clear offset
-
-next_sub_item:
-    mov  al,[MENU_DATA+edi]        ; get byte at menu_data + offset
-    cmp  al,'E'                    ; is it the END
-    je   sub_get_out               ; yes then exit
-    cmp  al,[menu_number]          ; is it sub menu item
-    jne  not_sub_menu              ; no then jump code
-
-sub_menu:
-    mov  al,[MENU_DATA+edi+1]      ; get byte at menu_data + offset + 1
-    cmp  al,'0'                    ; is it a divider
-    jne  is_sub_button             ; no then jump code
-    mov  eax,13                    ; function 13: draw bar
-    mov  edx,[menu_colour]         ; bar colour
-    mov  ebx,[sub_pos]             ; [x start]
-    shl  ebx,16                    ; *65536
-    add  ebx,76                    ; [x size]
-    mov  ecx,[but_pos]             ; [y start]
-    shl  ecx,16                    ; *65536
-    add  ecx,17                    ; [y size]
-    mcall                      ; do it
-    jmp  is_sub_bar                ; jump button code
-
-is_sub_button:
-    mov  eax,8                     ; function 8: define and draw button
-    xor  edx,edx                   ; clear register
-    mov  dl,[MENU_DATA+edi+2]      ; get byte button id number
-    mov  ebx,[sub_pos]             ; [x start]
-    shl  ebx,16                    ; *65536
-    add  ebx,75                    ; [x size]
-    mov  ecx,[but_pos]             ; [y start]
-    shl  ecx,16                    ; *65536
-    add  ecx,16                    ; [y size]
-    mov  esi,[menu_colour]         ; button colour
-    mcall                      ; do it
-
-    mov  ebx,[sub_pos]             ; [x start]
-    shl  ebx,16                    ; *65536
-    add  ebx,6*65536               ; move position
-    add  ebx,[but_pos]             ; [y start]
-    add  bl,5                      ; move position
-    xor  ecx,ecx                   ; clear register
-    mov  edx,MENU_DATA+3           ; point to button text
-    add  edx,edi                   ; add offset
-    mov  esi,11                    ; number of characters
-    mov  eax,4                     ; function 4: write text to window
-    mcall                      ; do it
-is_sub_bar:
-    add  [but_pos],17              ; move y position
-
-not_sub_menu:
-    add  edi,14                    ; move offset
-    jmp  next_sub_item             ; do next button
-
-sub_get_out:
 
     ret                            ; return
 
@@ -345,82 +196,120 @@ sub_get_out:
 x_size:       dd 381               ; window x size
 y_size:       dd 200               ; window y size
 
-window_text   db 'MENU EXAMPLE'    ; grab bar text
-button_no     db 'BUTTON No:    '  ; status bar text
-menu_text     db 'MENU SELECTED:'  ; status bar text
+if lang eq ru
+window_text   db 'Пример меню',0
+button_no     db 'Кнопка N:'
+else
+window_text   db 'Menu example',0  ; grab bar text
+button_no     db 'Button N:'  ; status bar text
+end if
+
+main_menu dd 0
+main_menu_File dd 0
+main_menu_Edit dd 0
+main_menu_Test dd 0
+main_menu_Help dd 0
+
+if lang eq ru
+
+sz_File db 'Файл',0
+sz_Load db 'Открыть',0
+sz_Save db 'Сохранить',0
+sz_Quit db 'Выход',0
+
+sz_Edit db 'Правка',0
+sz_Copy db 'Копировать',0
+sz_Paste db 'Вставить',0
+
+sz_Test db 'Тест',0
+sz_Test1 db 'Тест 1',0
+sz_Test2 db 'Тест 2',0
+sz_Test3 db 'Тест 3',0
+sz_Test4 db 'Тест 4',0
+sz_Test5 db 'Тест 5',0
+sz_Test6 db 'Тест 6',0
+
+sz_Help db 'Помощь',0
+sz_Setup db 'Настройки',0
+sz_About db 'О программе..',0
+
+else
+
+sz_File db 'File',0
+sz_Load db 'Load',0
+sz_Save db 'Save',0
+sz_Quit db 'Quit',0
+
+sz_Edit db 'Edit',0
+sz_Copy db 'Copy',0
+sz_Paste db 'Paste',0
+
+sz_Test db 'Test',0
+sz_Test1 db 'Test 1',0
+sz_Test2 db 'Test 2',0
+sz_Test3 db 'Test 3',0
+sz_Test4 db 'Test 4',0
+sz_Test5 db 'Test 5',0
+sz_Test6 db 'Test 6',0
+
+sz_Help db 'Help',0
+sz_Setup db 'Setup',0
+sz_About db 'About..',0
+
+end if
 
 button_press  dd 0
 
-menu_colour   dd 0x00aaaaaa        ; menu & button colour
+align 4
+system_dir_0 db '/sys/lib/'
+lib_name_0 db 'kmenu.obj',0
 
-menu_number   db '0'               ; menu selection
+if lang eq ru
+	head_f_i:
+	head_f_l db 'Системная ошибка',0
+	err_msg_found_lib_0 db 'Не найдена библиотека ',39,'kmenu.obj',39,0
+	err_msg_import_0 db 'Ошибка при импорте библиотеки ',39,'kmenu',39,0
+else
+	head_f_i:
+	head_f_l db 'System error',0
+	err_msg_found_lib_0 db 'Sorry I cannot found library ',39,'kmenu.obj',39,0
+	err_msg_import_0 db 'Error on load import library ',39,'kmenu.obj',39,0
+end if
 
-sub_pos       dd 1                 ; sub menu x position
-but_pos       dd 38                ; sub menu y position
+align 4
+l_libs_start:
+	lib_0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
+		err_msg_found_lib_0, head_f_l, import_libkmenu,err_msg_import_0,head_f_i
+l_libs_end:
 
-main_pos      dd 1                 ; main menu x position
+align 4
+import_libkmenu:
+	kmenu_init      dd akmenu_init
+	kmainmenu_draw  dd akmainmenu_draw
+	kmainmenu_dispatch_cursorevent dd akmainmenu_dispatch_cursorevent
+	ksubmenu_new    dd aksubmenu_new
+	ksubmenu_delete dd aksubmenu_delete
+	ksubmenu_draw   dd aksubmenu_draw
+	ksubmenu_add    dd aksubmenu_add
+	kmenuitem_new   dd akmenuitem_new
+	kmenuitem_delete dd akmenuitem_delete
+	kmenuitem_draw  dd akmenuitem_draw
+dd 0,0
+	akmenu_init     db 'kmenu_init',0
+	akmainmenu_draw db 'kmainmenu_draw',0
+	akmainmenu_dispatch_cursorevent db 'kmainmenu_dispatch_cursorevent',0
+	aksubmenu_new   db 'ksubmenu_new',0
+	aksubmenu_delete db 'ksubmenu_delete',0
+	aksubmenu_draw  db 'ksubmenu_draw',0
+	aksubmenu_add   db 'ksubmenu_add',0
+	akmenuitem_new  db 'kmenuitem_new',0
+	akmenuitem_delete db 'kmenuitem_delete',0
+	akmenuitem_draw  db 'kmenuitem_draw',0
 
-MENU_DATA:    db '01'              ; MAIN MENU = 0 - 1 = menu
-              db 100               ; button id
-              db 'FILE       '     ; button text
-              db '02'              ; MAIN MENU = 0 - 2 = menu
-              db 101               ; button id
-              db 'EDIT       '     ; button text
-              db '04'              ; MAIN MENU = 0 - 3 = menu
-              db 102               ; button id
-              db 'TEST       '     ; button text
-              db '00'              ; MAIN MENU = 0 - 0 = divider
-              db 103               ; SPACER ID
-              db '           '     ; SPACER TEXT padding
-              db '03'              ; MAIN MENU = 0 - 4 = menu
-              db 104               ; button id
-              db 'HELP       '     ; button text
-
-              db '11'              ; menu level = 1 - 1 = button
-              db 110               ; button id
-              db 'LOAD       '     ; button text
-              db '11'              ; menu level = 1 - 1 = button
-              db 111               ; button id
-              db 'SAVE       '     ; button text
-              db '10'              ; menu level = 1 - 0 = divider
-              db 112               ; SPACER ID
-              db '           '     ; SPACER TEXT padding
-              db '11'              ; menu level = 1 - 1 = button
-              db 113               ; button id
-              db 'QUIT       '     ; button text
-
-              db '21'              ; menu level = 2 - 1 = button
-              db 120               ; button id
-              db 'COPY       '     ; button text
-              db '21'              ; menu level = 2 - 1 = button
-              db 121               ; button id
-              db 'PASTE      '     ; button text
-
-              db '31'              ; menu level = 3 - 1 = button
-              db 130               ; button id
-              db 'SETUP      '     ; button text
-              db '31'              ; menu level = 3 - 1 = button
-              db 131               ; button id
-              db 'ABOUT..    '     ; button text
-
-              db '41'              ; menu level = 3 - 1 = button
-              db 140               ; button id
-              db 'TEST 1     '     ; button text
-              db '41'              ; menu level = 3 - 1 = button
-              db 141               ; button id
-              db 'TEST 2     '     ; button text
-              db '41'              ; menu level = 3 - 1 = button
-              db 142               ; button id
-              db 'TEST 3     '     ; button text
-              db '41'              ; menu level = 3 - 1 = button
-              db 143               ; button id
-              db 'TEST 4     '     ; button text
-              db '41'              ; menu level = 3 - 1 = button
-              db 144               ; button id
-              db 'TEST 5     '     ; button text
-              db '41'              ; menu level = 3 - 1 = button
-              db 145               ; button id
-              db 'TEST 6     '     ; button text
-
-              db 'END'             ; IMPORTANT need an END
-I_END:
+i_end:
+	sc system_colors
+	rb 2048
+stacktop:
+	sys_path rb 2048
+	file_name rb 4096
+mem:
