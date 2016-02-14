@@ -10,8 +10,8 @@ draw_window:
 
 	mcall	48,3,system_colours,10*4
 
-	mov	eax, [system_colours.taskbar]
-	mov	edx,[system_colours.taskbar]
+	mov	eax, [system_colours+4*6]
+	mov	edx,[system_colours+4*6]
 	mov	eax,COLOR_CHANGE_MAGNITUDE
 	call	subtract_color_change_magnitude
 	mov	[wcolor], edx

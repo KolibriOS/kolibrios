@@ -192,7 +192,7 @@ draw_list_button:
 ; draw page list number
 	mov	edx,ebx
 	add	edx,9 shl 16
-	mcall	47,0x20000,[page_list],,[system_colours.taskbar_text]
+	mcall	47,0x20000,[page_list],,[system_colours.work_button_text]
 @@:
 	ret
 ;---------------------------------------------------------------

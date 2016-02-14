@@ -467,11 +467,11 @@ struct process_information
 ends
 
 struct system_colors
-  taskbar          dd ? ;frame
-  taskbar_text     dd ? ;grab
+  frame            dd ? ;nonset1
+  grab             dd ? ;nonset2
   work_3d_dark     dd ?
   work_3d_light    dd ?
-  window_title     dd ? ;grab_text
+  grab_text        dd ? ;nonset3
   work             dd ?
   work_button      dd ?
   work_button_text dd ?
