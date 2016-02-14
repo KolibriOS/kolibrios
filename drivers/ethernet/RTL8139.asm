@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Realtek 8139 driver for KolibriOS                              ;;
@@ -58,7 +58,7 @@ include '../netdrv.inc'
         REG_MPC                 = 0x4c ; missed packet counter
         REG_9346CR              = 0x50 ; serial eeprom 93C46 command register
         REG_CONFIG1             = 0x52 ; configuration register 1
-        REG_MSR                 = 0x58
+        REG_MSR                 = 0x58 ; Media Status register
         REG_CONFIG4             = 0x5a ; configuration register 4
         REG_HLTCLK              = 0x5b ; undocumented halt clock register
         REG_BMCR                = 0x62 ; basic mode control register
@@ -143,6 +143,7 @@ include '../netdrv.inc'
         EE_93C46_CMD_LENGTH     = 9  ; start bit + cmd + 6bit address
         EE_93C56_CMD_LENGTH     = 11 ; start bit + cmd + 8bit ddress
 
+; See chapter "5.7 Transmit Configuration Register" of RTL8139D(L).pdf
         VER_RTL8139             = 1100000b
         VER_RTL8139A            = 1110000b
         VER_RTL8139AG           = 1110100b
@@ -616,7 +617,7 @@ reset:
 ; Set the mtu, kernel will be able to send now
         mov     [ebx + device.mtu], 1514
 
-        call    cable
+        call    link
 
 ; Indicate that we have successfully reset the card
         xor     eax, eax
@@ -945,7 +946,7 @@ int_handler:
 
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], REG_ISR
-        mov     ax, ISR_FIFOOVW or ISR_RXOVW
+        mov     ax, ISR_FIFOOVW or ISR_RXOVW or ISR_ROK
         out     dx, ax
         pop     ax
 
@@ -957,7 +958,7 @@ int_handler:
 
         DEBUGF  1, "Packet underrun or link changed!\n"
 
-        call    cable
+        call    link
 
 ;----------------------------------------------------
 ; Receive FIFO overflow ?
@@ -970,7 +971,7 @@ int_handler:
 
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], REG_ISR
-        mov     ax, ISR_FIFOOVW or ISR_RXOVW
+        mov     ax, ISR_FIFOOVW or ISR_RXOVW or ISR_ROK
         out     dx, ax
         pop     ax
 
@@ -982,7 +983,7 @@ int_handler:
 
         DEBUGF  2, "Cable length changed!\n"
 
-        call    cable
+        call    link
 
   .fail:
         pop     edi esi ebx
@@ -994,45 +995,45 @@ int_handler:
 
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                     ;;
-;; Update Cable status ;;
-;;                     ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;
+;;                   ;;
+;; Check link status ;;
+;;                   ;;
+;;;;;;;;;;;;;;;;;;;;;;;
 
 align 4
-cable:
+link:
         DEBUGF  1, "Checking link status:\n"
 
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], REG_MSR
-        in      al, dx
+        in      ax, dx
 
         test    al, 1 shl 2             ; 0 = link ok 1 = link fail
         jnz     .notconnected
 
+        mov     ecx, ETH_LINK_10M
         test    al, 1 shl 3             ; 0 = 100 Mbps 1 = 10 Mbps
-        jnz     .10mbps
+        jnz     @f
+        mov     ecx, ETH_LINK_100M
+  @@:
 
-  .100mbps:
-        mov     [ebx + device.state], ETH_LINK_100M
+        set_io  [ebx + device.io_addr], REG_BMCR
+        in      ax, dx
+        test    ax, 1 shl 8             ; Duplex mode
+        jz      @f
+        or      ecx, ETH_LINK_FD
+  @@:
+
+        mov     [ebx + device.state], ecx
         invoke  NetLinkChanged
-        DEBUGF  2, "link changed to 100 mbit\n"
-
-        ret
-
-  .10mbps:
-        mov     [ebx + device.state], ETH_LINK_10M
-        invoke  NetLinkChanged
-        DEBUGF  2, "link changed to 10 mbit\n"
-
+        DEBUGF  2, "link is up\n"
         ret
 
   .notconnected:
         mov     [ebx + device.state], ETH_LINK_DOWN
         invoke  NetLinkChanged
-        DEBUGF  2, "no link\n"
-
+        DEBUGF  2, "link is down\n"
         ret
 
 
