@@ -1041,35 +1041,37 @@ Parameters:
   * ebx = 19 - subfunction number
   * ecx = 0 - subsubfunction number
 Returned value:
-  * eax = current mouse speed
+  * eax = current speed divider
 
 ---------------- Subsubfunction 1 - set mouse speed. -----------------
 Parameters:
   * eax = 18 - function number
   * ebx = 19 - subfunction number
   * ecx = 1 - subsubfunction number
-  * edx = new value for speed
+  * edx = new value for speed divider
 Returned value:
   * function does not return value
 
-Remark: recommended speed = 1, 0 = lock the cursor.
+Remark: recommended speed divider = 4
 
-------------- Subsubfunction 2 - get mouse acceleration. -------------
+-------------- Subsubfunction 2 - get mouse sensitivity --------------
 Parameters:
   * eax = 18 - function number
   * ebx = 19 - subfunction number
   * ecx = 2 - subsubfunction number
 Returned value:
-  * eax = 0 - off, 1 - slight, 2 - medium, 3 - intense
+  * eax = current sensitivity
 
-------------- Subsubfunction 3 - set mouse acceleration. -------------
+-------------- Subsubfunction 3 - set mouse sensitivity --------------
 Parameters:
   * eax = 18 - function number
   * ebx = 19 - subfunction number
   * ecx = 3 - subsubfunction number
-  * edx = 0 - off, 1 - slight, 2 - medium, 3 - intense
+  * edx = new value for sensitivity
 Returned value:
   * function does not return value
+
+Remark: recommended sensitivity = 3
 
 ----------- Subsubfunction 4 - set mouse pointer position. -----------
 Parameters:
@@ -4667,7 +4669,7 @@ Remarks:
   eax - SF_NETWORK_SOCKET (75)
    bl - SSF_GET_OPTIONS (9)
 ======================================================================
-============ Function 75, Subfunction 10, Get socketpair. ===========
+============ Function 75, Subfunction 10, Get socketpair. ============
 ======================================================================
 Parameters:
   * eax = 75 - function number
@@ -4688,12 +4690,16 @@ Parameters:
   * bh = device number
   * bl = subfunction number
 
-Ethernet (0)
+Protocols and subfunctions:
+
+0 - Ethernet:
         0 - Read MAC
 
-IPv4 (1)
-        0 - Read # IP packets sent
-        1 - Read # IP packets received
+    common subfunctions:
+        0 - Read # packets sent
+        1 - Read # packets received
+
+1 - IPv4:
         2 - Read IP
         3 - Write IP
         4 - Read DNS
@@ -4703,22 +4709,13 @@ IPv4 (1)
         8 - Read gateway
         9 - Write gateway
 
-ICMP (2)
-        0 - Read # ICMP packets sent
-        1 - Read # ICMP packets received
+2 - ICMP:
         3 - enable/disable ICMP echo reply
 
-UDP (3)
-        0 - Read # UDP packets sent
-        1 - Read # UDP packets received
+3 - UDP
+4 - TCP
 
-TCP (4)
-        0 - Read # TCP packets sent
-        1 - Read # TCP packets received
-
-ARP (5)
-        0 - Read # ARP packets sent
-        1 - Read # ARP packets received
+5 - ARP:
         2 - Read # ARP entry's
         3 - Read ARP entry
         4 - Add static ARP entry
@@ -4728,7 +4725,6 @@ ARP (5)
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_NETWORK_PROTOCOL (76)
-
 ======================================================================
 ========== Function 77, Subfunction 0, Create futex object ===========
 ======================================================================
@@ -4742,6 +4738,10 @@ Remarks:
   * Use subfunction 1 to destroy the futex.
     The kernel destroys the futexes automatically when the process
     terminates.
+
+---------------------- Constants for registers: ----------------------
+  eax - SF_FUTEX (77)
+  ebx - SSF_CREATE (0)
 ======================================================================
 ========= Function 77, Subfunction 1, Destroy futex object ===========
 ======================================================================
@@ -4754,6 +4754,9 @@ Returned value:
 Remarks:
   * The futex handle must have been created by subfunction 0
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_FUTEX (77)
+  ebx - SSF_DESTROY (1)
 ======================================================================
 =============== Function 77, Subfunction 2, Futex wait ===============
 ======================================================================
@@ -4773,6 +4776,9 @@ Remarks:
     waiting for a wake operation on the futex.
   * The futex handle must have been created by subfunction 0
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_FUTEX (77)
+  ebx - SSF_WAIT (2)
 ======================================================================
 =============== Function 77, Subfunction 3, Futex wake ===============
 ======================================================================
@@ -4789,6 +4795,9 @@ Remarks:
     waiting (e.g., inside futex wait) on the futex dword
   * The futex handle must have been created by subfunction 0
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_FUTEX (77)
+  ebx - SSF_WAKE (3)
 ======================================================================
 =============== Function -1 - terminate thread/process ===============
 ======================================================================
@@ -4804,6 +4813,8 @@ Remarks:
   * This function terminates the current thread. Other thread can be
     killed by call to subfunction 2 of function 18.
 
+---------------------- Constants for registers: ----------------------
+  eax - SF_TERMINATE_PROCESS (-1)
 ======================================================================
 =========================== List of events ===========================
 ======================================================================
@@ -4841,18 +4852,17 @@ Codes of events:
 =================== Error codes of the file system ===================
 ======================================================================
   * 0 = success
-  * 1 = base and/or partition of a hard disk is not defined
-    (by subfunctions 7, 8 of function 21)
   * 2 = function is not supported for the given file system
   * 3 = unknown file system
-  * 4 = reserved, is never returned in the current implementation
   * 5 = file not found
   * 6 = end of file, EOF
   * 7 = pointer lies outside of application memory
   * 8 = disk is full
-  * 9 = FAT table is destroyed
+  * 9 = file system error
   * 10 = access denied
   * 11 = device error
+  * 12 = file system requires more memory
+
 Application start functions can return also following errors:
   * 30 = 0x1E = not enough memory
   * 31 = 0x1F = file is not executable
