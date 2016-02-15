@@ -9,9 +9,9 @@
 #/SYS/refrscrn		""	1	# Refresh screen
 /SYS/SETUP		BOOT	1	# Load device settings
 /SYS/LOADDRV		RDC	1	# videodriver for RDC M2010/M2012
-/SYS/ESKIN		""	1	# Set style
-/SYS/@ICON		""	1	# Multithread icon
 /SYS/@TASKBAR		""	1	# Start taskbar
+/SYS/@ICON		""	1	# Multithread icon
+/SYS/ESKIN		""	1	# Set style
 /SYS/@DOCKY		""	1	# Start docky
 /SYS/NETWORK/NETCFG	A	1	#
 /SYS/NETWORK/@ZEROCONF	""	1	# Network configuration
