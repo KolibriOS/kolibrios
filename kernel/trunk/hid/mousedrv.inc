@@ -35,8 +35,8 @@ endg
 iglobal
 ;--------------------------------------
 align 4
-mouse_speed_factor      dw 1
-mouse_delay             db 1
+mouse_speed_factor      dw 4
+mouse_delay             db 3
 mouse_doubleclick_delay db 64
 endg
 
@@ -480,7 +480,7 @@ redrawmouse:
 ;-----------------------------------------------------------------------------
 
 align 4
-proc set_mouse_data stdcall uses edx, BtnState:dword, XMoving:dword, YMoving:dword, VScroll:dword, HScroll:dword
+proc set_mouse_data stdcall uses ecx edx, BtnState:dword, XMoving:dword, YMoving:dword, VScroll:dword, HScroll:dword
 
         mov     eax, [BtnState]
         and     eax, 0x3FFFFFFF         ; Top 2 bits are used to flag absolute movements
@@ -551,35 +551,17 @@ proc set_mouse_data stdcall uses edx, BtnState:dword, XMoving:dword, YMoving:dwo
 endp
 
 ;-----------------------------------------------------------------------------
-; 3 = (x+1)^2 /4
-; 2 = (x+2)^2 /8
-; 1 = (x+3)^2 /16
-align 4
 mouse_acceleration:
-        cmp     [mouse_delay], 0
-        jz      .end
-        push    eax
-@@:
-        neg     eax
-        jl      @b
-        inc     eax
-        cmp     [mouse_delay], 3
-        adc     eax, 0
-        cmp     [mouse_delay], 2
-        adc     eax, 0
+        neg     ax
+        jl      mouse_acceleration
+        add     al, [mouse_delay]
         mul     al
-        shr     eax, 2
-        cmp     [mouse_delay], 2
-        jz      .2
-        jnc     .3
-        shr     eax, 1
-.2:
-        shr     eax, 1
-.3:
-        pop     edx
-        test    edx, edx
-        jns     .end
-        neg     eax
-.end:
-        imul    [mouse_speed_factor]
+        mov     cx, [mouse_speed_factor]
+        dec     ax
+        shr     ax, cl
+        inc     ax
+        test    eax, eax
+        jns     @f
+        neg     ax
+@@:
         ret
