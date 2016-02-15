@@ -18,8 +18,8 @@
 	?define WINDOW_TITLE "Проверка и настройка параметров мыши"
 	?define CHECK_MOUSE_1 "Нажмите на этой области"
 	?define CHECK_MOUSE_2 "для проверки кнопок мыши"
-	?define POINTER_SPEED "Скорость указателя мыши"
-	?define ACCELERATION_TEXT "Ускорение указателя мыши"
+	?define POINTER_SPEED "Делитель скорости указателя мыши"
+	?define ACCELERATION_TEXT "Чувствительность указателя мыши"
 	?define DOUBLE_CLICK_TEXT "Задержка двойного клика мышью"
 	?define MOUSE_EMULATION "Управление указателем мыши через клавиатуру"
 	?define MADMOUSE "Сквозные для курсора стороны экрана"
@@ -27,8 +27,8 @@
 	?define WINDOW_TITLE "Mouse testing and configuration"
 	?define CHECK_MOUSE_1 "Click on this area to"
 	?define CHECK_MOUSE_2 "check your mouse buttons"
-	?define POINTER_SPEED "Mouse pointer speed"
-	?define ACCELERATION_TEXT "Mouse pointer acceleration"
+	?define POINTER_SPEED "Mouse pointer speed divider"
+	?define ACCELERATION_TEXT "Mouse pointer sensitivity"
 	?define DOUBLE_CLICK_TEXT "Mouse double click delay"
 	?define MOUSE_EMULATION "Enable mouse emulation using keyboard NumPad"
 	?define MADMOUSE "Through screen sides for pointer"
@@ -107,12 +107,12 @@ void main() {
 					mouse_cfg.pointer_speed++;
 					SetMouseSpeed(mouse_cfg.pointer_speed);
 				}
-				if (id==121) && (mouse_cfg.pointer_speed>1)
+				if (id==121) && (mouse_cfg.pointer_speed>0)
 				{
 					mouse_cfg.pointer_speed--;
 					SetMouseSpeed(mouse_cfg.pointer_speed);
 				}
-				if (id==122) && (mouse_cfg.acceleration<3)
+				if (id==122)
 				{
 					mouse_cfg.acceleration++;
 					SetMouseAcceleration(mouse_cfg.acceleration);
@@ -124,12 +124,12 @@ void main() {
 				}
 				if (id==124)
 				{
-					mouse_cfg.double_click_delay+=10;
+					mouse_cfg.double_click_delay+=8;
 					SetMouseDoubleClickDelay(mouse_cfg.double_click_delay);
 				}
 				if (id==125) && (mouse_cfg.double_click_delay>0)
 				{
-					mouse_cfg.double_click_delay-=10;
+					mouse_cfg.double_click_delay-=8;
 					SetMouseDoubleClickDelay(mouse_cfg.double_click_delay);
 				}
 				DrawControls();
