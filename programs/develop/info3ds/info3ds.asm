@@ -6,10 +6,9 @@ use32
 include '../../macros.inc'
 include '../../proc32.inc'
 include '../../KOSfuncs.inc'
-include '../../develop/libraries/box_lib/load_lib.mac'
+include '../../load_img.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../develop/libraries/TinyGL/asm_fork/opengl_const.inc'
-include '../../dll.inc'
 include 'lang.inc'
 include 'info_fun_float.inc'
 include 'info_menu.inc'
@@ -18,16 +17,6 @@ include 'data.inc'
 version_edit equ 1
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-
-struct FileInfoBlock
-	Function dd ?
-	Position dd ?
-	Flags	 dd ?
-	Count	 dd ?
-	Buffer	 dd ?
-		db ?
-	FileName dd ?
-ends
 
 ID_ICON_CHUNK_MAIN equ 0 ;иконка главного блока
 ID_ICON_CHUNK_NOT_FOUND equ 1 ;иконка не известного блока
@@ -39,65 +28,19 @@ FILE_ERROR_CHUNK_SIZE equ -3 ;ошибка в размере блока
 
 include 'info_o3d.inc'
 
+main_wnd_height equ 460 ;высота главного окна программы
+IMAGE_TOOLBAR_ICON_SIZE equ 21*21*3
+
 align 4
 fl255 dd 255.0
-image_data dd 0 ;указатель на временную память, нужен для преобразования изображения
 open_file_data dd 0 ;указатель на память для открытия файлов 3ds
 open_file_size dd 0 ;размер открытого файла
-open_b rb 560
-
-;
-main_wnd_height equ 460 ;высота главного окна программы
-fn_toolbar db 'toolbar.png',0
-IMAGE_TOOLBAR_ICON_SIZE equ 21*21*3
-IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*12+54
 image_data_toolbar dd 0
-;
-TREE_ICON_SYS16_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*11+54 ;размер bmp файла с системными иконками
 icon_tl_sys dd 0 ;указатеель на память для хранения системных иконок
 icon_toolbar dd 0 ;указатеель на память для хранения иконок объектов
-IMAGE_CHUNKS_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*12+54 ;размер bmp файла с иконками объектов
-;
-IMAGE_FILE1_SIZE equ 128*144*3+54 ;размер файла с изображением
+fn_toolbar db 'toolbar.png',0
 
-macro load_image_file path,buf,size { ;макрос для загрузки изображений
-	;path - может быть переменной или строковым параметром
-	if path eqtype '' ;проверяем задан ли строкой параметр path
-		jmp @f
-			local .path_str
-			.path_str db path ;формируем локальную переменную
-			db 0
-		@@:
-		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0
-	else
-		copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
-	end if
-
-	stdcall mem.Alloc, dword size ;выделяем память для изображения
-	mov [buf],eax
-
-	mov [run_file_70.Function], SSF_READ_FILE
-	mov [run_file_70.Position], 0
-	mov [run_file_70.Flags], 0
-	mov [run_file_70.Count], dword size
-	mov [run_file_70.Buffer], eax
-	mov byte[run_file_70+20], 0
-	mov [run_file_70.FileName], file_name
-	mcall SF_FILE,run_file_70 ;загружаем файл изображения
-	cmp ebx,0xffffffff
-	je @f
-		;определяем вид изображения и переводим его во временный буфер image_data
-		stdcall dword[img_decode], dword[buf],ebx,0
-		mov dword[image_data],eax
-		;преобразуем изображение к формату rgb
-		stdcall dword[img_to_rgb2], dword[image_data],dword[buf]
-		;удаляем временный буфер image_data
-		stdcall dword[img_destroy], dword[image_data]
-	@@:
-}
-
-;--------------------------------------
+align 4
 level_stack dd 0
 offs_last_timer dd 0 ;последний сдвиг показаный в функции таймера
 
@@ -191,25 +134,25 @@ start:
 	mov dword[w_scr_t1.type],1
 	stdcall dword[tl_data_init], tree1
 	;системные иконки 16*16 для tree_list
-	load_image_file 'tl_sys_16.png', icon_tl_sys,TREE_ICON_SYS16_BMP_SIZE
+	load_image_file 'tl_sys_16.png', icon_tl_sys
 	;если изображение не открылось, то в icon_tl_sys будут
 	;не инициализированные данные, но ошибки не будет, т. к. буфер нужного размера
 	mov eax,dword[icon_tl_sys]
 	mov dword[tree1.data_img_sys],eax
 
-	load_image_file 'objects.png', icon_toolbar,IMAGE_CHUNKS_SIZE
+	load_image_file 'objects.png', icon_toolbar
 	mov eax,dword[icon_toolbar]
 	mov dword[tree1.data_img],eax
 
 	stdcall [buf2d_create], buf_0 ;создание буфера
 
-	load_image_file 'font8x9.bmp', image_data_toolbar,IMAGE_FILE1_SIZE
+	load_image_file 'font8x9.bmp', image_data_toolbar
 	stdcall [buf2d_create_f_img], buf_1,[image_data_toolbar] ;создаем буфер
 	stdcall mem.Free,[image_data_toolbar] ;освобождаем память
 	stdcall [buf2d_conv_24_to_8], buf_1,1 ;делаем буфер прозрачности 8 бит
 	stdcall [buf2d_convert_text_matrix], buf_1
 
-	load_image_file fn_toolbar, image_data_toolbar,IMAGE_TOOLBAR_SIZE
+	load_image_file fn_toolbar, image_data_toolbar
 
 	;работа с файлом настроек
 	copy_path ini_name,sys_path,file_name,0
@@ -1133,15 +1076,15 @@ l_libs_start:
 		err_msg_found_lib_0, head_f_l, proclib_import,err_msg_import_0, head_f_i
 	lib_1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
 		err_msg_found_lib_1, head_f_l, import_libimg, err_msg_import_1, head_f_i
-	lib_2 l_libs lib_name_2, sys_path, library_path,  system_dir_2,\
+	lib_2 l_libs lib_name_2, sys_path, file_name,  system_dir_2,\
 		err_msg_found_lib_2, head_f_l, import_box_lib,err_msg_import_2,head_f_i
-	lib_3 l_libs lib_name_3, sys_path, library_path,  system_dir_3,\
+	lib_3 l_libs lib_name_3, sys_path, file_name,  system_dir_3,\
 		err_msg_found_lib_3, head_f_l, import_buf2d,  err_msg_import_3,head_f_i
-	lib_4 l_libs lib_name_4, sys_path, library_path,  system_dir_4,\
+	lib_4 l_libs lib_name_4, sys_path, file_name,  system_dir_4,\
 		err_msg_found_lib_4, head_f_l, import_libkmenu,err_msg_import_4,head_f_i
-	lib_5 l_libs lib_name_5, sys_path, library_path,  system_dir_5,\
+	lib_5 l_libs lib_name_5, sys_path, file_name,  system_dir_5,\
 		err_msg_found_lib_5, head_f_l, import_lib_tinygl,err_msg_import_5,head_f_i
-	lib_6 l_libs lib_name_6, sys_path, library_path,  system_dir_6,\
+	lib_6 l_libs lib_name_6, sys_path, file_name,  system_dir_6,\
 		err_msg_found_lib_6, head_f_l, import_libini, err_msg_import_6,head_f_i		
 l_libs_end:
 
@@ -1390,7 +1333,7 @@ buf_ogl:
 align 4
 buf_1:
 	dd 0 ;указатель на буфер изображения
-	dw 25,25 ;+4 left,top
+	dw 0,0 ;+4 left,top
 	dd 128,144 ;+8 w,h
 	dd 0,24 ;+16 color,bit in pixel
 
@@ -1419,9 +1362,9 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru
-capt db 'info 3ds версия 08.02.16',0 ;подпись окна
+capt db 'info 3ds версия 16.02.16',0 ;подпись окна
 else
-capt db 'info 3ds version 08.02.16',0 ;window caption
+capt db 'info 3ds version 16.02.16',0 ;window caption
 end if
 
 align 16
@@ -1445,10 +1388,10 @@ i_end:
 align 16
 thread_coords:
 	rb 2048
+align 16
 stacktop:
 	sys_path rb 2048
-	file_name rb 4096 
-	library_path rb 2048
+	file_name rb 4096
 	plugin_path rb 4096
 	openfile_path rb 4096
 	filename_area rb 256

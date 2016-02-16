@@ -136,6 +136,7 @@ extra_files = {
  {"kolibrios/3D/info3ds/OBJECTS.PNG", PROGS .. "/develop/info3ds/objects.png"},
  {"kolibrios/3D/info3ds/TL_SYS_16.PNG", PROGS .. "/develop/info3ds/tl_sys_16.png"},
  {"kolibrios/3D/info3ds/TOOLBAR.PNG", PROGS .. "/develop/info3ds/toolbar.png"},
+ {"kolibrios/3D/info3ds/FONT8X9.BMP", PROGS .. "/fs/kfar/trunk/font8x9.bmp"},
  {"kolibrios/emul/dosbox/", "common/emul/DosBox/*"},
  {"kolibrios/emul/e80/readme.txt", PROGS .. "/emulator/e80/trunk/readme.txt"},
  {"kolibrios/emul/fceu/fceu", PROGS .. "/emulator/fceu/fceu"},
