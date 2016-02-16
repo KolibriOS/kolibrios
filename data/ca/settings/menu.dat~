@@ -1,0 +1,133 @@
+#0    **** Principal ****
+Centre de jocs          /sys/game_center
+Demos              >      /@1
+Gr ficos           >      /@3
+Multimèdia         >      /@4
+Emuladors          >      /@18
+Desenvolupament    >      /@5
+Sistema            >      /@7
+Procés de dades    >      /@11
+Xarxa              >      /@12
+Altres             >      /@15
+Ajuda                     /sys/docpack
+Executar aplicació        /sys/run
+Aturar                    /sys/end
+#1    **** DEMOS ****
+3D                 >      /@2
+Cercle                    /sys/demos/circle
+Fractal                   /sys/demos/tinyfrac
+Color demo                /sys/demos/colorref
+Ulls                      /sys/demos/eyes
+Tub                       /sys/demos/tube
+Plasma                    /sys/demos/plasma
+Retrocedir                /sys/demos/movback
+Vida                      /sys/demos/life2
+TranTest                  /sys/demos/trantest
+WEB                       /sys/demos/web
+FireWork                  /sys/demos/firework
+UnvWater                  /sys/demos/unvwater
+#2  **** 3D ****
+Protector de pantalla     /sys/3d/crownscr
+3D-laberint               /sys/3d/free3d04
+Cor                       /sys/3d/3dsheart
+VeureDS                   /sys/3d/view3ds
+CubeLine                  /sys/3d/cubeline
+Engranatges               /sys/3d/gears
+zona ondulada-3D          /sys/3d/3dwav
+#3   **** GRµFICS ****
+Visor d'imatges KIV       /sys/media/kiv
+Visor d'imatges zSea      /KolibriOS/media/zsea/zsea
+Animage                   /sys/media/animage
+Efectes d'imatges         /sys/media/imgf/imgf
+Palitra                   /sys/media/palitra
+#4   **** MULTIMÈDIA ****
+Reproductor MP3 Pixie     /sys/media/pixie/pixie
+Fplay - video             /KolibriOS/media/fplay-full
+MidAMP                    /sys/media/midamp
+#5    **** DESARROLLO ****
+Exemples           >      /@6
+Arxivador KPack           /sys/kpack
+Assemblador Flat          /sys/develop/fasm
+Panell de depuració       /sys/develop/board
+Depurador                 /sys/develop/mtdbg
+Hex2Dec2Bin               /sys/develop/h2d2b
+Codis ASCII               /sys/develop/keyascii
+Codis SCAN                /sys/develop/scancode
+#6    **** EXEMPLES ****
+Threads                   /sys/develop/thread
+Selector de color         /sys/demos/cslide
+Exemple de consola 1      /sys/develop/testcon2
+Exemple de consola 2      /sys/develop/test_gets
+Exemple Missatge caixes   /sys/demos/use_mb
+#7    **** SISTEMA ****
+Configuració       >      /@8
+Sensors            >      /@9
+Arxius             >      /@10
+Proves             >      /@16
+Accesibilitat      >      /@17
+Panell depuració       /sys/develop/board
+Terminal                  /sys/terminal
+#8    **** CONFIGURACIÓ ****
+Dispositius               /sys/setup
+Generador de fons         /sys/media/palitra
+Colors i Apariència       /sys/desktop
+Dreseres de teclat        /sys/mykey
+Mode de vídeo ATI         /sys/vmode
+#9    **** SENSORS ****
+Procesos                  /sys/cpu
+Dispositius PCI           /sys/pcidev
+CPUID                     /sys/cpuid
+Monitor de Ghost          /sys/gmon
+K. Bus desconectat        /sys/kbd
+Informació de HDD         /sys/hdd_info
+#10  **** ARCHIUS ****
+KFAR                      /sys/File Managers/kfar
+KFM                       /sys/File Managers/kfm
+Eolite                    /sys/File Managers/Eolite
+Virtual disks             /sys/tmpdisk
+SHELL                     /sys/shell
+Guardar imatge RD         /sys/rdsave
+#11 **** PROCÉS DE DADES ****
+Calculadora               /sys/calc
+Tinypad                   /sys/tinypad
+TextEdit                  /sys/develop/t_edit
+Procesador de tables      /sys/table
+Generador de gràfiques    /sys/graph
+Hex-Editor                /sys/develop/heed
+#12    **** XARXA ****
+Servidors         >      /@13
+Clients           >      /@14
+Dispositius de xarxa     /sys/network/netcfg
+Estat de la xarxa        /sys/network/netstat
+#13    **** SERVIDORS ****
+Dimoni FTP                /sys/network/ftpd
+#14   **** CLIENTS ****
+Client IRC                /sys/network/ircc
+Client FTP                /sys/network/ftpc
+Cliente TFTP              /sys/network/tftpc
+Ping                      /sys/network/ping
+Client Telnet             /sys/network/telnet
+Client Synergy            /sys/network/synergyc
+Resoluci¢ó de noms        /sys/network/nslookup
+Client de baixades        /sys/network/downloader
+Navegador (mode text)     /sys/network/webview
+#15    **** ALTRES ****
+Rellotge analògic         /sys/demos/aclock
+Rellotge binari           /sys/demos/bcdclk
+Contador                  /sys/demos/timer
+Capturador de pantalla    /sys/scrshoot
+Calendari                 /sys/calendar
+Lector de RTF             /sys/rtfread
+#16    **** PROBES        /sys/fspeed
+#17    **** ACCESIBILITAT ****
+Ampliació de pantalla     /sys/magnify
+Teclat en pantalla        /sys/zkey
+Taula de caràcters        /sys/ASCIIVju
+#18    **** EMULADORS ****
+DOSBox DOS Emulador       /KolibriOS/emul/DosBox/dosbox
+e80 (ZX Spectrum)         /KolibriOS/emul/e80/e80
+FCE Ultra - NES           /KolibriOS/emul/fceu/fce
+Gameboy Color             /KolibriOS/emul/gameboy
+ScummVM (aventura)        /KolibriOS/emul/scummvm
+ZSNES Super Nintendo      /KolibriOS/emul/zsnes
+##
