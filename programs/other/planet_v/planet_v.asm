@@ -1,22 +1,14 @@
 ;Огромная благодарность Maxxxx32, Diamond, Heavyiron
-;и другим программистам, а также
-;Теплову Алексею (<Lrz> www.lrz.land.ru)
+;и другим программистам, а также Теплову Алексею
 use32
   org 0x0
   db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-  dd 0x1
-  dd start
-  dd i_end ; размер приложения
-  dd mem
-  dd stacktop
-  dd 0x0
-  dd sys_path
+  dd 1,start,i_end,mem,stacktop,0,sys_path
 
 include '../../proc32.inc'
 include '../../macros.inc'
-include '../../dll.inc'
-
-include '../../develop/libraries/box_lib/load_lib.mac'
+include '../../KOSfuncs.inc'
+include '../../load_img.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 
 min_window_w equ 485 ;минимальная ширина окна
@@ -26,22 +18,9 @@ otst_panel_left equ 265
 include 'tile_fun.inc'
 include 'pl_import.inc'
 
-  @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
-
-struct FileInfoBlock
-	Function dd ?
-	Position dd ?
-	Flags	 dd ?
-	Count	 dd ?
-	Buffer	 dd ?
-		db ?
-	FileName dd ?
-ends
+@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
 fn_metki db 'pl_metki.lst',0
-fn_icon1 db 'tl_sys_16.png',0
-fn_icon2 db 'tl_nod_16.bmp',0
-
 ini_name db 'planet_v.ini',0
 ini_sec  db 'Map',0
 ini_k_cache db 'Cache',0
@@ -53,33 +32,30 @@ ini_ext  db 'ext'
 
 align 4
 start:
-  load_libraries l_libs_start,load_lib_end
+	load_libraries l_libs_start,load_lib_end
 
-;проверка на сколько удачно загузились библиотеки
-	cmp	dword [lib0+ll_struc_size-4],0
-	jnz @f
-	cmp	dword [lib1+ll_struc_size-4],0
-	jnz @f
-	cmp	dword [lib2+ll_struc_size-4],0
-	jnz @f
-	cmp	dword [lib3+ll_struc_size-4],0
-	jnz @f
-	jmp .lib
+	;проверка на сколько удачно загузились библиотеки
+	mov	ebp,lib_0
+	.test_lib_open:
+	cmp	dword [ebp+ll_struc_size-4],0
+	jz	@f
+		mcall SF_TERMINATE_PROCESS ;exit not correct
 	@@:
-		mcall -1 ;exit not correct
-	.lib:
+	add ebp,ll_struc_size
+	cmp ebp,load_lib_end
+	jl .test_lib_open
 
-  copy_path ini_name,sys_path,file_name,0
-  stdcall dword[ini_get_str],file_name,ini_sec,ini_k_cache,dword[edit1.text],dword[edit1.max],ini_def_cache
-  stdcall [str_len],dword[edit1.text],dword[edit1.max]
-  mov dword[edit1.size],eax
-  mov dword[edit1.pos],eax
+	copy_path ini_name,sys_path,file_name,0
+	stdcall dword[ini_get_str],file_name,ini_sec,ini_k_cache,dword[edit1.text],dword[edit1.max],ini_def_cache
+	stdcall [str_len],dword[edit1.text],dword[edit1.max]
+	mov dword[edit1.size],eax
+	mov dword[edit1.pos],eax
 
-  stdcall dword[tl_data_init], tree1
-  stdcall dword[tl_data_init], tree2
+	stdcall dword[tl_data_init], tree1
+	stdcall dword[tl_data_init], tree2
 
 ;считываем расширения карт из *.ini файла
-  mov byte[ini_ext.number],'0'
+	mov byte[ini_ext.number],'0'
 @@: ;считываем параметры от ext1 до ext9
   inc byte[ini_ext.number]
   stdcall dword[ini_get_str],file_name,ini_sec,ini_ext,txt_tile_type_0,dword[tree1.info_capt_len],ini_ext.def
@@ -97,66 +73,34 @@ start:
   stdcall dword[tl_node_add], tree1, 0, txt_tile_type_0
 
 ; init bmp file
-  stdcall mem.Alloc, dword RGB_TILE_SIZE+300 ;300 - запасные байты с учетом заголовка bmp файла
-  mov [bmp_icon],eax
+	stdcall mem.Alloc, dword RGB_TILE_SIZE+300 ;300 - запасные байты с учетом заголовка bmp файла
+	mov [bmp_icon],eax
 
-  stdcall array_tile_function, tile_00,max_tiles_count,tile_init
-  stdcall tiles_init_grid, tile_00,max_tiles_count,max_tiles_cols
+	stdcall array_tile_function, tile_00,max_tiles_count,tile_init
+	stdcall tiles_init_grid, tile_00,max_tiles_count,max_tiles_cols
 
-  stdcall mem.Alloc, dword TREE_ICON_SYS16_BMP_SIZE
-  mov [tree_sys_icon],eax
+	load_image_file 'tl_sys_16.png',tree_sys_icon
+	mov eax,[tree_sys_icon]
+	mov [tree1.data_img_sys],eax
+	mov [tree2.data_img_sys],eax
+	
+	load_image_file 'tl_nod_16.bmp',tree_nod_icon
+	mov eax,[tree_nod_icon]
+	mov [tree1.data_img],eax
+	mov [tree2.data_img],eax
 
-  stdcall mem.Alloc, dword TREE_ICON_NOD16_BMP_SIZE
-  mov [tree_nod_icon],eax
+	mcall SF_SET_EVENTS_MASK,0x27
+	init_checkboxes2 ch1,checkboxes_end
 
-  copy_path fn_icon1,sys_path,file_name,0
-  mov [run_file_70.Function], 0
-  mov [run_file_70.Position], 0
-  mov [run_file_70.Flags], 0
-  mov [run_file_70.Count], TREE_ICON_SYS16_BMP_SIZE
-  m2m [run_file_70.Buffer], [tree_sys_icon]
-  mov byte[run_file_70+20], 0
-  mov [run_file_70.FileName], file_name
-  mcall 70,run_file_70
-  cmp ebx,0xffffffff
-  je @f
-    stdcall dword[img_decode], dword[tree_sys_icon],ebx,0
-    mov dword[data_icon],eax
-    stdcall dword[img_to_rgb2], dword[data_icon],dword[tree_sys_icon]
-    stdcall dword[img_destroy], dword[data_icon]
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
+	;установка системных цветов
+	edit_boxes_set_sys_color edit1,editboxes_end,sc
+	check_boxes_set_sys_color2 ch1,checkboxes_end,sc
 
-    m2m dword[tree1.data_img_sys],dword[tree_sys_icon]
-    m2m dword[tree2.data_img_sys],dword[tree_sys_icon]
-  @@:
+	mov byte[file_name],0
 
-
-  copy_path fn_icon2,sys_path,file_name,0
-  mov [run_file_70.Count], TREE_ICON_NOD16_BMP_SIZE
-  m2m [run_file_70.Buffer], [tree_nod_icon]
-  mcall 70,run_file_70
-  cmp ebx,0xffffffff
-  je @f
-    stdcall dword[img_decode], dword[tree_nod_icon],ebx,0
-    mov dword[data_icon],eax
-    stdcall dword[img_to_rgb2], dword[data_icon],dword[tree_nod_icon]
-    stdcall dword[img_destroy], dword[data_icon]
-
-    m2m dword[tree1.data_img],dword[tree_nod_icon]
-    m2m dword[tree2.data_img],dword[tree_nod_icon]
-  @@:
-
-  mcall 40,0x27 ;маска системных событий
-  init_checkboxes2 ch1,checkboxes_end
-
-  mcall 48,3,sc,sizeof.system_colors
-  ;установка системных цветов
-  edit_boxes_set_sys_color edit1,editboxes_end,sc
-  check_boxes_set_sys_color2 ch1,checkboxes_end,sc
-
-  mov byte[file_name],0
-
-  ; OpenDialog initialisation
-  stdcall [OpenDialog_Init],OpenDialog_data
+	; OpenDialog initialisation
+	stdcall [OpenDialog_Init],OpenDialog_data
 
 align 4
 red_win:
@@ -166,7 +110,7 @@ red_win:
 
 align 4
 still:
-	mcall 10
+	mcall SF_WAIT_EVENT
 
 	cmp al,0x1 ;изм. положение окна
 	jz red_win
@@ -187,7 +131,7 @@ still:
 align 4
 key:
 	push eax ebx
-	mcall 2
+	mcall SF_GET_KEY
 	stdcall [edit_box_key], edit1
 	stdcall [edit_box_key], edit2
 
@@ -250,107 +194,95 @@ key:
 align 4
 draw_window:
 pushad
-  mcall 12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
-  xor eax,eax
-  mov edx,[sc.work]
-  or  edx,0x33000000
-  mov edi,hed
-  mcall ,20*65536+min_window_w,20*65536+min_window_h
+	mov edx,[sc.work]
+	or  edx,0x33000000
+	mcall SF_CREATE_WINDOW,20*65536+min_window_w,20*65536+min_window_h,,,hed
 
-  mcall 9,procinfo,-1
+	mcall SF_THREAD_INFO,procinfo,-1
 
-  cmp dword[procinfo.box.width],min_window_w ; проверяем ширину окна
-  jge @f
-    mov dword[procinfo.box.width],min_window_w ; если окно очень узкое, увеличиваем ширину для избежания глюков
-  @@:
+	cmp dword[procinfo.box.width],min_window_w ; проверяем ширину окна
+	jge @f
+		mov dword[procinfo.box.width],min_window_w ; если окно очень узкое, увеличиваем ширину для избежания глюков
+	@@:
 
-  mov edi,dword[procinfo.box.width]
-  sub edi,min_window_w-otst_panel_left
-  mov dword[tree1.box_left],edi
-  mov dword[tree2.box_left],edi
+	mov edi,dword[procinfo.box.width]
+	sub edi,min_window_w-otst_panel_left
+	mov dword[tree1.box_left],edi
+	mov dword[tree2.box_left],edi
 
-  mov eax,dword[tree2.box_left] ;двигаем скроллинг
-  add eax,dword[tree2.box_width]
-  mov ebx,dword[tree2.p_scroll]
-  mov word[ebx+2],ax
+	mov eax,dword[tree2.box_left] ;двигаем скроллинг
+	add eax,dword[tree2.box_width]
+	mov ebx,dword[tree2.p_scroll]
+	mov word[ebx+2],ax
 
-  mov dword[edit2.left],edi
-  add dword[edit2.left],370-otst_panel_left
+	mov dword[edit2.left],edi
+	add dword[edit2.left],370-otst_panel_left
 
-  stdcall dword[tl_draw],dword tree1
-  stdcall dword[tl_draw],dword tree2
-  mov dword[wScrMetki.all_redraw],1
-  stdcall [scrollbar_ver_draw], dword wScrMetki
+	stdcall dword[tl_draw],dword tree1
+	stdcall dword[tl_draw],dword tree2
+	mov dword[wScrMetki.all_redraw],1
+	stdcall [scrollbar_ver_draw], dword wScrMetki
 
-  mov esi,[sc.work_button]
-  mcall 8,145*65536+20,5*65536+25,6 ;кнопка
+	mov esi,[sc.work_button]
+	mcall SF_DEFINE_BUTTON,145*65536+20,5*65536+25,6
 
-  mcall ,100*65536+20,5*65536+25,5
+	mcall ,100*65536+20,5*65536+25,5
 
-  mov ebx,170*65536+40 ;кнопка вызова диалога OpenDial
-  ;mov ecx,5*65536+25
-  mov edx,13
-  int 0x40
+	mov ebx,170*65536+40 ;кнопка вызова диалога OpenDial
+	mov edx,13
+	int 0x40
 
-  mov bx,di
-  shl ebx,16
-  mov bx,100
-  mov ecx,265*65536+25
-  mov edx,9
-  int 0x40
+	mov bx,di
+	shl ebx,16
+	mov bx,100
+	mov ecx,265*65536+25
+	mov edx,9
+	int 0x40
 
-  ;ebx ...
-  mov ecx,235*65536+25
-  mov edx,8
-  int 0x40
+	;ebx ...
+	mov ecx,235*65536+25
+	mov edx,8
+	int 0x40
 
-  mov bx,di
-  add bx,410-otst_panel_left
-  shl ebx,16
-  mov bx,55
-  ;mov ebx,410*65536+55
-  mov ecx,5*65536+25
-  mov edx,7
-  int 0x40
+	mov bx,di
+	add bx,410-otst_panel_left
+	shl ebx,16
+	mov bx,55
+	mov ecx,5*65536+25
+	mov edx,7
+	int 0x40
 
-  mov bx,di
-  add bx,440-otst_panel_left
-  shl ebx,16
-  mov bx,30
-  ;mov ebx,440*65536+30
-  mov ecx,265*65536+25
-  mov edx,12
-  int 0x40
+	mov bx,di
+	add bx,440-otst_panel_left
+	shl ebx,16
+	mov bx,30
+	mov ecx,265*65536+25
+	mov edx,12
+	int 0x40
 
-  mov bx,di
-  add bx,405-otst_panel_left
-  shl ebx,16
-  mov bx,30
-  ;mov ebx,405*65536+30
-  ;mov ecx,265*65536+25
-  mov edx,11
-  int 0x40
+	mov bx,di
+	add bx,405-otst_panel_left
+	shl ebx,16
+	mov bx,30
+	mov edx,11
+	int 0x40
 
-  mov bx,di
-  add bx,370-otst_panel_left
-  shl ebx,16
-  mov bx,30
-  ;mov ebx,370*65536+30
-  ;mov ecx,265*65536+25
-  mov edx,10
-  int 0x40
+	mov bx,di
+	add bx,370-otst_panel_left
+	shl ebx,16
+	mov bx,30
+	mov edx,10
+	int 0x40
 
-  mov eax,4 ;рисование текста
-  mov ebx,152*65536+13
-  mov ecx,[sc.work_button_text]
-  or  ecx,0x80000000
-  mov edx,txt_zoom_p
-  mcall
+	mov ecx,[sc.work_button_text]
+	or  ecx,0x80000000
+	mcall SF_DRAW_TEXT,152*65536+13,,txt_zoom_p
 
-  mov ebx,107*65536+13
-  mov edx,txt_zoom_m
-  int 0x40
+	mov ebx,107*65536+13
+	mov edx,txt_zoom_m
+	int 0x40
 
   mov bx,di
   add bx,270-otst_panel_left
@@ -416,21 +348,20 @@ pushad
   mov edx,txt141
   int 0x40
 
-  mov bx,135
-  ;mov ebx,265*65536+135
-  mov edx,txt142
-  int 0x40
+	mov bx,135
+	mov edx,txt142
+	int 0x40
 
-  call draw_tiles
+	call draw_tiles
 
-  stdcall [check_box_draw], dword ch1
-  stdcall [check_box_draw], dword ch2
-  stdcall [edit_box_draw], edit1
-  stdcall [edit_box_draw], edit2
+	stdcall [check_box_draw], ch1
+	stdcall [check_box_draw], ch2
+	stdcall [edit_box_draw], edit1
+	stdcall [edit_box_draw], edit2
 
-  mcall 12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 popad
-  ret
+	ret
 
   head_f_i:
   head_f_l  db 'Системная ошибка',0
@@ -462,16 +393,21 @@ lib4_name db 'proc_lib.obj',0
 
 ;library structures
 l_libs_start:
-	lib0 l_libs lib0_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l, boxlib_import,err_message_import0, head_f_i
-	lib1 l_libs lib1_name, sys_path, file_name, system_dir1, err_message_found_lib1, head_f_l, libimg_import, err_message_import1, head_f_i
-	lib2 l_libs lib2_name, sys_path, file_name, system_dir2, err_message_found_lib2, head_f_l, strlib_import, err_message_import2, head_f_i
-	lib3 l_libs lib3_name, sys_path, file_name, system_dir3, err_message_found_lib3, head_f_l, libini_import, err_message_import3, head_f_i
-	lib4 l_libs lib4_name, sys_path, file_name, system_dir4, err_message_found_lib4, head_f_l, proclib_import, err_message_import4, head_f_i
+	lib_0 l_libs lib0_name, sys_path, file_name, system_dir0,\
+		err_message_found_lib0, head_f_l, boxlib_import, err_message_import0, head_f_i
+	lib_1 l_libs lib1_name, sys_path, file_name, system_dir1,\
+		err_message_found_lib1, head_f_l, libimg_import, err_message_import1, head_f_i
+	lib_2 l_libs lib2_name, sys_path, file_name, system_dir2,\
+		err_message_found_lib2, head_f_l, strlib_import, err_message_import2, head_f_i
+	lib_3 l_libs lib3_name, sys_path, file_name, system_dir3,\
+		err_message_found_lib3, head_f_l, libini_import, err_message_import3, head_f_i
+	lib_4 l_libs lib4_name, sys_path, file_name, system_dir4,\
+		err_message_found_lib4, head_f_l, proclib_import, err_message_import4, head_f_i
 load_lib_end:
 
 align 4
 button:
-	mcall 17 ;получить код нажатой кнопки
+	mcall SF_GET_BUTTON
 	cmp ah,5
 	jne @f
 		call but_ZoomM
@@ -529,7 +465,7 @@ button:
 	stdcall dword[tl_data_clear], tree2
 
 ;  stdcall dword[img_destroy], dword[data_icon]
-	mcall -1 ;выход из программы
+	mcall SF_TERMINATE_PROCESS
 
 
 ;input:
@@ -832,17 +768,17 @@ fun_opn_dlg: ;функция для вызова OpenFile диалога
 	popad
 	ret
 
-  txt_met_up db 24,0
-  txt_met_dn db 25,0
-  txt_met_sh db '*',0
-  txt_zoom_m db '-',0
-  txt_zoom_p db '+',0
-  txt151 db 'Добавить метку',0
-  txt152 db 'Сохранить метки',0
-  txt_but_refresh db 'Обновить',0
-  txt_cache db 'Cache:',0
-  txt141 db 'Вид карты',0
-  txt142 db 'Выбор метки',0
+txt_met_up db 24,0
+txt_met_dn db 25,0
+txt_met_sh db '*',0
+txt_zoom_m db '-',0
+txt_zoom_p db '+',0
+txt151 db 'Добавить метку',0
+txt152 db 'Сохранить метки',0
+txt_but_refresh db 'Обновить',0
+txt_cache db 'Cache:',0
+txt141 db 'Вид карты',0
+txt142 db 'Выбор метки',0
 
 ; check_boxes
 ch1 check_box2 (5 shl 16)+12,  (5 shl 16)+12, 6, 0xffffd0, 0x800000, 0, ch_text1, ch_flag_en
@@ -867,7 +803,7 @@ align 4
 wScrMetki scrollbar 16,0, 100,0, 15, 100, 30,0, 0xeeeeee, 0xbbddff, 0, 1
 
 ed_buffer: ;ЄхъёЄ фы  edit
-  .2: rb 32
+.2: rb 32
 
 el_focus dd tree1
 
@@ -881,10 +817,10 @@ run_file_70 FileInfoBlock
 
 
 txt_tile_path db 'tile path',0
-  rb 300
+	rb 300
 txt_tile_type dd txt_tile_type_0 ;указатель на выбранный тип файлов
 txt_tile_type_0 db 0
-  rb 10
+	rb 10
 
 ;---------------------------------------------------------------------
 align 4
@@ -958,7 +894,6 @@ align 4
 		xor edx,edx ;очистить edx
 		div ecx   ;разделить - остаток в edx
 		push edx  ;положить в стек
-		;dec edi  ;смещение необходимое для записи с конца строки
 		call .str ;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
 		pop eax
 	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
@@ -970,24 +905,20 @@ align 4
 	@@:
 	ret	   ;пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 
-
-hed db 'Planet viewer 09.11.15',0 ;подпись окна
-
-sc system_colors  ;системные цвета
+hed db 'Planet viewer 16.02.16',0 ;подпись окна
 mouse_dd dd 0 ;нужно для Shift-а в editbox
+
 align 16
 i_end:
 	procinfo process_information
+	sc system_colors  ;системные цвета
 	rb 1024
+align 16
 stacktop:
-	sys_path rb 4096
-	file_name:
-		rb 4096
-	plugin_path:
-		rb 4096
-	openfile_path:
-		rb 4096
-	filename_area:
-		rb 256
+sys_path rb 4096
+file_name rb 4096
+plugin_path rb 4096
+openfile_path rb 4096
+filename_area rb 256
 mem:
 

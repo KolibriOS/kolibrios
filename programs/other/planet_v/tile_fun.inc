@@ -66,95 +66,95 @@ tile_delta_y	equ  byte[edi+31] ;сдвиг тайла относительно курсора по оси y
 ;передвигаем координату курсора вправо
 align 4
 CursorMoveRight:
-  push ebx ecx
-  xor ebx,ebx
-  xor ecx,ecx
-  mov cl,byte[map.zoom]
-  dec ecx
-  cmp cx,0
-  jle .no_move ;при 0-м масштабе не двигаемся
-  @@:
-    rol ebx,1
-    or ebx,1 ;накапливаем максимальную координату, при даном масштабе
-    loop @b
-  cmp dword[map.coord_x],ebx
-  jge .no_move ;если координата крайняя, не двигаемся
-    inc dword[map.coord_x]
-    ;сдвигаем сетку тайлов влево, что-бы часть тайлов совпали и пришлось меньше загружать новых
-    stdcall tiles_grid_move_left, tile_00,max_tiles_count,max_tiles_cols
-    call but_Refresh
-  .no_move:
-  pop ecx ebx
-  ret
+push ebx ecx
+	xor ebx,ebx
+	xor ecx,ecx
+	mov cl,byte[map.zoom]
+	dec ecx
+	cmp cx,0
+	jle .no_move ;при 0-м масштабе не двигаемся
+	@@:
+		rol ebx,1
+		or ebx,1 ;накапливаем максимальную координату, при даном масштабе
+		loop @b
+	cmp dword[map.coord_x],ebx
+	jge .no_move ;если координата крайняя, не двигаемся
+		inc dword[map.coord_x]
+		;сдвигаем сетку тайлов влево, что-бы часть тайлов совпали и пришлось меньше загружать новых
+		stdcall tiles_grid_move_left, tile_00,max_tiles_count,max_tiles_cols
+		call but_Refresh
+	.no_move:
+pop ecx ebx
+	ret
 
 ;передвигаем координату курсора вниз
 align 4
 CursorMoveDown:
-  push ebx ecx
-  xor ebx,ebx
-  xor ecx,ecx
-  mov cl,byte[map.zoom]
-  dec ecx
-  cmp cx,0
-  jle .no_move ;при 0-м масштабе не двигаемся
-  @@:
-    rol ebx,1
-    or ebx,1 ;накапливаем максимальную координату, при даном масштабе
-    loop @b
-  cmp dword[map.coord_y],ebx
-  jge .no_move ;если координата крайняя, не двигаемся
-    inc dword[map.coord_y]
-    ;сдвигаем сетку тайлов вверх
-    stdcall tiles_grid_move_up, tile_00,max_tiles_count,max_tiles_rows
-    call but_Refresh
-  .no_move:
-  pop ecx ebx
-  ret
+push ebx ecx
+	xor ebx,ebx
+	xor ecx,ecx
+	mov cl,byte[map.zoom]
+	dec ecx
+	cmp cx,0
+	jle .no_move ;при 0-м масштабе не двигаемся
+	@@:
+		rol ebx,1
+		or ebx,1 ;накапливаем максимальную координату, при даном масштабе
+		loop @b
+	cmp dword[map.coord_y],ebx
+	jge .no_move ;если координата крайняя, не двигаемся
+		inc dword[map.coord_y]
+		;сдвигаем сетку тайлов вверх
+		stdcall tiles_grid_move_up, tile_00,max_tiles_count,max_tiles_rows
+		call but_Refresh
+	.no_move:
+pop ecx ebx
+	ret
 
 ;перемещение метки вверх, по списку
 align 4
 but_met_up:
-  stdcall dword[tl_node_move_up], tree2
-  ret
+	stdcall dword[tl_node_move_up], tree2
+	ret
 
 ;перемещение метки вниз, по списку?
 align 4
 but_met_dn:
-  stdcall dword[tl_node_move_down], tree2
-  ret
+	stdcall dword[tl_node_move_down], tree2
+	ret
 
 ;меняем расширение для карты
 align 4
 fun_new_map_type:
-  push eax
-    stdcall dword[tl_node_get_data], tree1
-    cmp eax,0
-    je @f
-      mov dword[txt_tile_type],eax
-    @@:
-  pop eax
-  ret
+push eax
+	stdcall dword[tl_node_get_data], tree1
+	cmp eax,0
+	je @f
+		mov dword[txt_tile_type],eax
+	@@:
+pop eax
+	ret
 
 ;задаем расположение тайлов по сетке
 align 4
 proc tiles_init_grid uses eax ebx ecx edx edi, beg_tiles:dword, count:dword, cols:dword
-  xor eax,eax
-  xor ebx,ebx
-  mov edi,[beg_tiles]
-  mov ecx,[count]
-  mov edx,[cols]
-  @@:
-    mov tile_delta_x,al
-    mov tile_delta_y,bl
-    add edi,size_tile_struc
-    inc ax
-    cmp eax,edx
-    jl .old_lin
-      xor eax,eax
-      inc bx
-    .old_lin:
-    loop @b
-  ret
+	xor eax,eax
+	xor ebx,ebx
+	mov edi,[beg_tiles]
+	mov ecx,[count]
+	mov edx,[cols]
+	@@:
+		mov tile_delta_x,al
+		mov tile_delta_y,bl
+		add edi,size_tile_struc
+		inc ax
+		cmp eax,edx
+		jl .old_lin
+			xor eax,eax
+			inc bx
+		.old_lin:
+		loop @b
+	ret
 endp
 
 ;сдвигаем сетку влево, вылезшие столбцы будут перекинуты на правую сторону
@@ -163,101 +163,101 @@ endp
 ;а значит программа не будет перечитывать их заново, чем и достигается оптимизация
 align 4
 proc tiles_grid_move_left uses eax ebx ecx edx edi, beg_tiles:dword, count:dword, cols:dword
-  xor eax,eax
-  xor ebx,ebx
-  mov edi,[beg_tiles]
-  mov ecx,[count]
-  mov edx,[cols]
-  @@:
-    cmp tile_delta_x,0
-    jne .no_jump
-      add tile_delta_x,dl ;если столбец = 0, то добавляем 'cols' что-бы не вылазил влево
-    .no_jump:
-    dec tile_delta_x
-    add edi,size_tile_struc
-    loop @b
-  ret
+	xor eax,eax
+	xor ebx,ebx
+	mov edi,[beg_tiles]
+	mov ecx,[count]
+	mov edx,[cols]
+	@@:
+		cmp tile_delta_x,0
+		jne .no_jump
+			add tile_delta_x,dl ;если столбец = 0, то добавляем 'cols' что-бы не вылазил влево
+		.no_jump:
+		dec tile_delta_x
+		add edi,size_tile_struc
+		loop @b
+	ret
 endp
 
 ;сдвигаем сетку вправо, вылезшие столбцы будут перекинуты на левую сторону
 ;делает тоже что и tiles_grid_move_left только двигает координаты в другую сторону
 align 4
 proc tiles_grid_move_right uses eax ebx ecx edx edi, beg_tiles:dword, count:dword, cols:dword
-  xor eax,eax
-  xor ebx,ebx
-  mov edi,[beg_tiles]
-  mov ecx,[count]
-  mov edx,[cols]
-  @@:
-    inc tile_delta_x
-    cmp tile_delta_x,dl
-    jl .no_jump
-      mov tile_delta_x,0 ;если столбец = 'cols', то ставим ему 0 что-бы не вылазил вправо
-    .no_jump:
-    add edi,size_tile_struc
-    loop @b
-  ret
+	xor eax,eax
+	xor ebx,ebx
+	mov edi,[beg_tiles]
+	mov ecx,[count]
+	mov edx,[cols]
+	@@:
+		inc tile_delta_x
+		cmp tile_delta_x,dl
+		jl .no_jump
+			mov tile_delta_x,0 ;если столбец = 'cols', то ставим ему 0 что-бы не вылазил вправо
+		.no_jump:
+		add edi,size_tile_struc
+		loop @b
+	ret
 endp
 
 align 4
 proc tiles_grid_move_up uses eax ebx ecx edx edi, beg_tiles:dword, count:dword, rows:dword
-  xor eax,eax
-  xor ebx,ebx
-  mov edi,[beg_tiles]
-  mov ecx,[count]
-  mov edx,[rows]
-  @@:
-    cmp tile_delta_y,0
-    jne .no_jump
-      add tile_delta_y,dl ;если строка = 0, то добавляем 'rows' что-бы не вылазила вниз
-    .no_jump:
-    dec tile_delta_y
-    add edi,size_tile_struc
-    loop @b
-  ret
+	xor eax,eax
+	xor ebx,ebx
+	mov edi,[beg_tiles]
+	mov ecx,[count]
+	mov edx,[rows]
+	@@:
+		cmp tile_delta_y,0
+		jne .no_jump
+			add tile_delta_y,dl ;если строка = 0, то добавляем 'rows' что-бы не вылазила вниз
+		.no_jump:
+		dec tile_delta_y
+		add edi,size_tile_struc
+		loop @b
+	ret
 endp
 
 align 4
 proc tiles_grid_move_down uses eax ebx ecx edx edi, beg_tiles:dword, count:dword, rows:dword
-  xor eax,eax
-  xor ebx,ebx
-  mov edi,[beg_tiles]
-  mov ecx,[count]
-  mov edx,[rows]
-  @@:
-    inc tile_delta_y
-    cmp tile_delta_y,dl
-    jl .no_jump
-      mov tile_delta_y,0 ;если строка = 'rows', то ставим ей 0 что-бы не вылазила вверх
-    .no_jump:
-    add edi,size_tile_struc
-    loop @b
-  ret
+	xor eax,eax
+	xor ebx,ebx
+	mov edi,[beg_tiles]
+	mov ecx,[count]
+	mov edx,[rows]
+	@@:
+		inc tile_delta_y
+		cmp tile_delta_y,dl
+		jl .no_jump
+			mov tile_delta_y,0 ;если строка = 'rows', то ставим ей 0 что-бы не вылазила вверх
+		.no_jump:
+		add edi,size_tile_struc
+		loop @b
+	ret
 endp
 
 align 4
 proc array_tile_function uses ecx edi, beg_tiles:dword, count:dword, funct:dword
-  mov edi,[beg_tiles]
-  mov ecx,[count]
-  @@:
-    stdcall [funct],edi
-    add edi,size_tile_struc
-    loop @b
-  ret
+	mov edi,[beg_tiles]
+	mov ecx,[count]
+	@@:
+		stdcall [funct],edi
+		add edi,size_tile_struc
+		loop @b
+	ret
 endp
 
 align 4
 draw_tiles:
 pushad
-  movzx ecx,byte[map.zoom]
-  mov esi,[sc.work_text]
-  or  esi,0x40000000
-  mov edi,[sc.work]
-  mcall 47,0x20000,, (128 shl 16)+13
+	movzx ecx,byte[map.zoom]
+	mov esi,[sc.work_text]
+	or  esi,0x40000000
+	mov edi,[sc.work]
+	mcall SF_DRAW_NUMBER,0x20000,, (128 shl 16)+13
 
-  stdcall array_tile_function, tile_00,max_tiles_count,draw_tile
+	stdcall array_tile_function, tile_00,max_tiles_count,draw_tile
 popad
-  ret
+	ret
 
 ; edi - pointer tile struct
 ;output:
@@ -266,188 +266,181 @@ popad
 
 align 4
 proc tile_clear_area, height:dword
-  pushad
-    mov eax,13 ;draw rect
+pushad
+	mov cx,dx
+	shl ecx,16
+	mov cx,word[height]
 
-    mov cx,dx
-    shl ecx,16
-    mov cx,word[height]
+	shr edx,16
+	mov bx,dx
+	shl ebx,16
+	mov bx,TILE_LEN_W
 
-    shr edx,16
-    mov bx,dx
-    shl ebx,16
-    mov bx,TILE_LEN_W
-
-    mov edx,0xffffd0
-    int 0x40
-  popad
-  ret
+	mov edx,0xffffd0
+	mcall SF_DRAW_RECT
+popad
+	ret
 endp
 
-;???
+;нарисовать один tile
 align 4
 proc draw_tile, tile:dword
-  pushad
-  mov edi,[tile]
+pushad
+	mov edi,[tile]
 
 ;*** set base point ***
-  mov edx,5*65536+35
-  xor eax,eax
-  mov al,tile_delta_y
-  shl ax,8 ;*256
-  add edx,eax
-  xor eax,eax
-  mov al,tile_delta_x
-  shl eax,8+16
-  add edx,eax
+	mov edx,5*65536+35
+	movzx eax,tile_delta_y
+	shl ax,8 ;*256
+	add edx,eax
+	movzx eax,tile_delta_x
+	shl eax,8+16
+	add edx,eax
 ;*** set base point ***
 
-  mov ebx,dword[procinfo.box.width] ;проверяем влазит ли картинка по оси x
-  sub ebx,min_window_w-5 ;5 - отступ слева для 1-й картинки
-  shl ebx,16
-  mov bx,dx ;нижняя координата пока не учитывается, потому делаем их равными
-  cmp edx,ebx
-  jg .end_f
+	mov ebx,dword[procinfo.box.width] ;проверяем влазит ли картинка по оси x
+	sub ebx,min_window_w-5 ;5 - отступ слева для 1-й картинки
+	shl ebx,16
+	mov bx,dx ;нижняя координата пока не учитывается, потому делаем их равными
+	cmp edx,ebx
+	jg .end_f
 
-  ;проверяем влазит ли картинка по оси y
-  mcall 48,4 ;eax = высота скина
-  mov ecx,dword[procinfo.box.height]
-  mov ebx,edx
-  and ebx,0xffff ;ebx = координата 'y' для вывода тайла
-  add eax,ebx
-  add eax,5+5 ;5-рамка
+	;проверяем влазит ли картинка по оси y
+	mcall SF_STYLE_SETTINGS,SSF_GET_SKIN_HEIGHT ;eax = высота скина
+	mov ecx,dword[procinfo.box.height]
+	mov ebx,edx
+	and ebx,0xffff ;ebx = координата 'y' для вывода тайла
+	add eax,ebx
+	add eax,5+5 ;5-рамка
 
-  cmp ecx,eax
-  jle .end_f
+	cmp ecx,eax
+	jle .end_f
 
-  sub ecx,eax
-  cmp ecx,TILE_LEN_H
-  jle @f
-    mov ecx,TILE_LEN_H
-  @@:
+	sub ecx,eax
+	cmp ecx,TILE_LEN_H
+	jle @f
+		mov ecx,TILE_LEN_H
+	@@:
 
-  mov eax,7
-  bt tile_drobn,SCALE_0BIT_USE
-  jc .draw
-  bt tile_drobn,SCALE_1BIT_USE
-  jc .draw
-  jmp @f
-    .draw:
-    mov ebx,tile_rgb_icon
-    or ecx,TILE_LEN_W*65536 ;задание ширины для целой картинки
-    int 0x40 ;вывод на экран целой или увеличиной картинки
-    jmp .end_clear_tile
-  @@:
-    cmp tile_drobn,FRACT_TILE_ALL
-    je .end_clear_tile
-      stdcall tile_clear_area, ecx ;чистка области тайла
-  .end_clear_tile:
+	mov eax,SF_PUT_IMAGE
+	bt tile_drobn,SCALE_0BIT_USE
+	jc .draw
+	bt tile_drobn,SCALE_1BIT_USE
+	jc .draw
+	jmp @f
+		.draw:
+		mov ebx,tile_rgb_icon
+		or ecx,TILE_LEN_W*65536 ;задание ширины для целой картинки
+		int 0x40 ;вывод на экран целой или увеличиной картинки
+		jmp .end_clear_tile
+	@@:
+		cmp tile_drobn,FRACT_TILE_ALL
+		je .end_clear_tile
+			stdcall tile_clear_area, ecx ;чистка области тайла
+	.end_clear_tile:
 
-    cmp tile_drobn,0
-    je .info ;если нет ни одной дробной картинки
+	cmp tile_drobn,0
+	je .info ;если нет ни одной дробной картинки
 
-mov si,cx ;si - высота нижней дробной картинки
-sub si,TILE_LEN_H/2 ;si - высота нижней дробной картинки
-cmp cx,TILE_LEN_H/2
-jl @f
-  mov cx,TILE_LEN_H/2 ;задание высоты для верхней дробной картинки
-@@:
+	mov si,cx ;si - высота нижней дробной картинки
+	sub si,TILE_LEN_H/2 ;si - высота нижней дробной картинки
+	cmp cx,TILE_LEN_H/2
+	jl @f
+		mov cx,TILE_LEN_H/2 ;задание высоты для верхней дробной картинки
+	@@:
 
-    and ecx,0xffff ;стирание старой ширины
-    or ecx,(TILE_LEN_W/2)*65536 ;задание ширины для дробной картинки
-    mov ebx,tile_drobn_icon
-    bt tile_drobn,FRACT_TILE_BIT00
-    jae @f
-      int 0x40
-    @@:
-    add dx,TILE_LEN_H/2
-    add ebx,RGB_TILE_SIZE_1N4
-    bt tile_drobn,FRACT_TILE_BIT01
-    jae @f
-      xchg cx,si
-      int 0x40
-      xchg cx,si
-    @@:
+	and ecx,0xffff ;стирание старой ширины
+	or ecx,(TILE_LEN_W/2)*65536 ;задание ширины для дробной картинки
+	mov ebx,tile_drobn_icon
+	bt tile_drobn,FRACT_TILE_BIT00
+	jae @f
+		int 0x40
+	@@:
+	add dx,TILE_LEN_H/2
+	add ebx,RGB_TILE_SIZE_1N4
+	bt tile_drobn,FRACT_TILE_BIT01
+	jae @f
+		xchg cx,si
+		int 0x40
+		xchg cx,si
+	@@:
 
-    sub dx,TILE_LEN_H/2
-    ror edx,16
-    add dx,TILE_LEN_W/2
-    ror edx,16
-    add ebx,RGB_TILE_SIZE_1N4
-    bt tile_drobn,FRACT_TILE_BIT10
-    jae @f
-      int 0x40
-    @@:
+	sub dx,TILE_LEN_H/2
+	ror edx,16
+	add dx,TILE_LEN_W/2
+	ror edx,16
+	add ebx,RGB_TILE_SIZE_1N4
+	bt tile_drobn,FRACT_TILE_BIT10
+	jae @f
+		int 0x40
+	@@:
 
-    add dx,TILE_LEN_H/2
-    add ebx,RGB_TILE_SIZE_1N4
-    bt tile_drobn,FRACT_TILE_BIT11
-    jae @f
-      xchg cx,si
-      int 0x40
-    @@:
-
-    jmp .end_f
-  .info: ;вывод информации, при не удачном открытии картинок
-
-;;;jmp .end_f ;test
-  bt tile_drobn,SCALE_0BIT_USE
-  jc .end_f
-  bt tile_drobn,SCALE_1BIT_USE
-  jc .end_f
-
-    mov ebx,edx
-    add ebx,0x30003
-    mov edx,tile_rgb_icon ;при неудачном открытии в tile_rgb_icon путь к файлу
-;;;    mov dword[edx+RGB_TILE_SIZE_1N4],0 ;ставим нули, на случай если в строке с именем файла мусор
-    stdcall [str_len],tile_rgb_icon,RGB_TILE_SIZE_1N4
-    mov edi,eax
-
-    mov eax,4 ;draw text
-    mov ecx,0xff
-;or ecx,0x80000000
-    mov esi,TILE_TEXT_MAX_LEN
-
-    @@:
-      cmp edi,TILE_TEXT_MAX_LEN
-      jg .no_line_last
-	mov esi,edi
-	int 0x40
+	add dx,TILE_LEN_H/2
+	add ebx,RGB_TILE_SIZE_1N4
+	bt tile_drobn,FRACT_TILE_BIT11
+	jae @f
+		xchg cx,si
+		int 0x40
+	@@:
 	jmp .end_f
-      .no_line_last:
-      int 0x40
-      add edx,esi
-      sub edi,esi
-      add ebx,10 ;опускаемся на нижнюю строку
-      jmp @b
-  .end_f:
-  popad
-  ret
+
+	.info: ;вывод информации, при не удачном открытии картинок
+	bt tile_drobn,SCALE_0BIT_USE
+	jc .end_f
+	bt tile_drobn,SCALE_1BIT_USE
+	jc .end_f
+		mov ebx,edx
+		add ebx,0x30003
+		mov edx,tile_rgb_icon ;при неудачном открытии в tile_rgb_icon путь к файлу
+;;;    mov dword[edx+RGB_TILE_SIZE_1N4],0 ;ставим нули, на случай если в строке с именем файла мусор
+		stdcall [str_len],tile_rgb_icon,RGB_TILE_SIZE_1N4
+		mov edi,eax
+
+		mov eax,SF_DRAW_TEXT
+		mov ecx,0xff
+;or ecx,0x80000000
+		mov esi,TILE_TEXT_MAX_LEN
+
+	@@:
+		cmp edi,TILE_TEXT_MAX_LEN
+		jg .no_line_last
+			mov esi,edi
+			int 0x40
+			jmp .end_f
+		.no_line_last:
+		int 0x40
+		add edx,esi
+		sub edi,esi
+		add ebx,10 ;опускаемся на нижнюю строку
+		jmp @b
+	.end_f:
+popad
+	ret
 endp
 
 ;увеличение масштаба
 align 4
 but_ZoomP:
-  cmp byte[map.zoom],24
-  jge @f
-    inc byte[map.zoom]
-    shl dword[map.coord_x],1
-    shl dword[map.coord_y],1
-    call but_Refresh
-  @@:
-  ret
+	cmp byte[map.zoom],24
+	jge @f
+		inc byte[map.zoom]
+		shl dword[map.coord_x],1
+		shl dword[map.coord_y],1
+		call but_Refresh
+	@@:
+	ret
 
 ;уменьшение масштаба
 align 4
 but_ZoomM:
-  cmp byte[map.zoom],1
-  jle @f
-    dec byte[map.zoom]
-    shr dword[map.coord_x],1
-    shr dword[map.coord_y],1
-    call but_Refresh
-  @@:
-  ret
+	cmp byte[map.zoom],1
+	jle @f
+		dec byte[map.zoom]
+		shr dword[map.coord_x],1
+		shr dword[map.coord_y],1
+		call but_Refresh
+	@@:
+	ret
 
 ;сохранение файла с метками
 align 4
@@ -460,13 +453,13 @@ but_MetSave:
 		inc eax ;для записи в файл завершающего нуля
 
 		m2m [run_file_70.Buffer], [bmp_icon]
-		mov [run_file_70.Function], 2
+		mov [run_file_70.Function], SSF_CREATE_FILE
 		mov [run_file_70.Position], 0
 		mov [run_file_70.Flags], 0
 		mov [run_file_70.Count], eax
 		mov byte[run_file_70+20], 0
 		mov [run_file_70.FileName], file_name
-		mcall 70,run_file_70
+		mcall SF_FILE,run_file_70
 	pop edi ecx ebx eax
 	jmp still
 
@@ -478,14 +471,14 @@ but_MetLoad:
 	copy_path fn_metki,sys_path,file_name,0
 	pushad
 		mov byte[met_fr_opn],1
-		mov [run_file_70.Function], 0
+		mov [run_file_70.Function], SSF_READ_FILE
 		mov [run_file_70.Position], 0
 		mov [run_file_70.Flags], 0
 		mov [run_file_70.Count], TREE_ICON_SYS16_BMP_SIZE
 		mov byte[run_file_70+20], 0
 		mov [run_file_70.FileName], file_name
 		m2m [run_file_70.Buffer], [bmp_icon]
-		mcall 70,run_file_70
+		mcall SF_FILE,run_file_70
 		cmp ebx,0xffffffff
 		je @f
 			stdcall [tl_load_mem], tree2,0,[bmp_icon],TREE_ICON_SYS16_BMP_SIZE
@@ -500,17 +493,17 @@ but_MetLoad:
 ;добавление метки
 align 4
 but_MetAdd:
-  push eax
-    mov eax,dword[bmp_icon]
-    m2m dword[eax],  dword[map.coord_x]
-    m2m dword[eax+4],dword[map.coord_y]
-    m2m  word[eax+8], word[map.zoom]
-    add eax,12
-    stdcall dword[str_copy], eax,30,dword[edit2.text],30
-    stdcall dword[tl_node_add], tree2, 0, dword[bmp_icon] 
-    stdcall dword[tl_draw], tree2
-  pop eax
-  jmp still
+push eax
+	mov eax,dword[bmp_icon]
+	m2m dword[eax],  dword[map.coord_x]
+	m2m dword[eax+4],dword[map.coord_y]
+	m2m  word[eax+8], word[map.zoom]
+	add eax,12
+	stdcall dword[str_copy], eax,30,dword[edit2.text],30
+	stdcall dword[tl_node_add], tree2, 0, dword[bmp_icon] 
+	stdcall dword[tl_draw], tree2
+pop eax
+	jmp still
 
 ;переход к выбранной метке
 align 4
@@ -527,14 +520,14 @@ fun_goto_met:
 	pop eax
 	ret
 
-;???
+;обновить карту
 align 4
 but_Refresh:
-  call fun_new_map_type ;проверяем не поменялся ли тип просматриваемых файлов
+	call fun_new_map_type ;проверяем не поменялся ли тип просматриваемых файлов
 
-  stdcall array_tile_function, tile_00,max_tiles_count,load_tile
-  stdcall draw_tiles
-  ret
+	stdcall array_tile_function, tile_00,max_tiles_count,load_tile
+	stdcall draw_tiles
+	ret
 
 align 4
 proc tile_init uses eax edi, tile:dword
@@ -561,8 +554,7 @@ proc load_tile uses eax ebx ecx edi, tile:dword
   mov edi,dword[tile] ;копируем указатель на структуру тайла, что-бы работали константы
 
   stdcall mem_copy, map,edi, 9 ;копируем координаты курсора в структуру тайла
-  xor eax,eax
-  mov al,tile_delta_x
+  movzx eax,tile_delta_x
   add tile_coord_x,eax ;сдвигаем координаты тайла, относительно курсора
   mov al,tile_delta_y
   add tile_coord_y,eax
@@ -686,32 +678,31 @@ proc load_tile uses eax ebx ecx edi, tile:dword
   .opt_drobn_false:
 
 
-  bt dword[ch1.flags],1 ;проверяем опцию 'брать сверху'
-  jae @f
-  cmp tile_drobn,FRACT_TILE_ALL ;если собрана вся картинка, то сверху уже не берем
-  je @f
-    ;не знаем была-ли включена опция 'брать снизу', для которой изменялись координаты
-    ;потому опять копируем координаты курсора в структуру тайла
-    stdcall mem_copy, map,edi, 9
-    xor eax,eax
-    mov al,tile_delta_x
-    add tile_coord_x,eax ;сдвигаем координаты тайла, относительно курсора
-    mov al,tile_delta_y
-    add tile_coord_y,eax
+	bt dword[ch1.flags],1 ;проверяем опцию 'брать сверху'
+	jae @f
+	cmp tile_drobn,FRACT_TILE_ALL ;если собрана вся картинка, то сверху уже не берем
+	je @f
+		;не знаем была-ли включена опция 'брать снизу', для которой изменялись координаты
+		;потому опять копируем координаты курсора в структуру тайла
+		stdcall mem_copy, map,edi, 9
+		movzx eax,tile_delta_x
+		add tile_coord_x,eax ;сдвигаем координаты тайла, относительно курсора
+		mov al,tile_delta_y
+		add tile_coord_y,eax
 
-    xor ecx,ecx
-    .zoom:
-      cmp tile_zoom,0
-      je @f ;просматривается самая верхняя картинка, выходим
-      call get_parent_tiles ;циклический просмотр родительских тайлов
-      bt tile_drobn,SCALE_1BIT_USE
-      jc @f
-      cmp ecx,5 ;5 - ограничение на степень растягивания картинки
-      je @f
-      jmp .zoom
-    @@:
+		xor ecx,ecx
+		.zoom:
+		cmp tile_zoom,0
+		je @f ;просматривается самая верхняя картинка, выходим
+		call get_parent_tiles ;циклический просмотр родительских тайлов
+		bt tile_drobn,SCALE_1BIT_USE
+		jc @f
+		cmp ecx,5 ;5 - ограничение на степень растягивания картинки
+		je @f
+		jmp .zoom
+	@@:
 
-  ret
+	ret
 endp
 
 ;output:
@@ -760,14 +751,14 @@ align 4 ;загружает определенный тайл
 proc load_new_tile, tile:dword
   pushad
 
-  mov [run_file_70.Function], 0
+  mov [run_file_70.Function], SSF_READ_FILE
   mov [run_file_70.Position], 0
   mov [run_file_70.Flags], 0
   mov [run_file_70.Count], RGB_TILE_SIZE+300 ;+54
   m2m [run_file_70.Buffer], [bmp_icon]
   mov byte[run_file_70+20], 0
   mov [run_file_70.FileName], file_name
-  mcall 70,run_file_70
+  mcall SF_FILE,run_file_70
   mov edi,[tile]
 ;  cmp ebx,0xffffffff
 ;  je .no_load
@@ -805,106 +796,104 @@ endp
 ;функция генерирует часть пути к файлу в виде: \z?\?\x?\?\y?
 align 4
 proc get_tile_path uses eax ecx edi esi, tile:dword
-    mov ecx,300
-    mov edi,txt_tile_path
-    @@:
-      mov byte[edi],0 ;чистим строку
-      inc edi
-      loop @b
+	mov ecx,300
+	mov edi,txt_tile_path
+	@@:
+		mov byte[edi],0 ;чистим строку
+		inc edi
+		loop @b
 
-    mov esi,dword[tile] ;берем указатель
+	mov esi,[tile] ;берем указатель
 
-    mov ecx,0x80000000 ;rol 0x80000000,1 = 1
-    xor eax,eax
-    mov al,byte[esi+8] ;+8 = zoom
-    .calc_coord:
-      rol ecx,1 ;ecx = maximum coord
-      dec ax
-      cmp ax,0
-      jg .calc_coord
+	mov ecx,0x80000000 ;rol 0x80000000,1 = 1
+	movzx eax,byte[esi+8] ;+8 = zoom
+	.calc_coord:
+		rol ecx,1 ;ecx = maximum coord
+		dec ax
+		cmp ax,0
+		jg .calc_coord
 
-    mov byte[txt_tile_path],'z'
-    mov edi,txt_tile_path
-    inc edi
-    xor eax,eax
-    mov al,byte[esi+8] ;+8 = zoom
-    stdcall convert_int_to_str, 300
+	mov byte[txt_tile_path],'z'
+	mov edi,txt_tile_path
+	inc edi
+	movzx eax,byte[esi+8] ;+8 = zoom
+	stdcall convert_int_to_str, 300
 
-    inc edi
-    cmp byte[esi+8],9 ;+8 = zoom
-    jle @f
-      inc edi
-    @@:
-    mov byte[edi],'/'
-    inc edi
+	inc edi
+	cmp byte[esi+8],9 ;+8 = zoom
+	jle @f
+		inc edi
+	@@:
+	mov byte[edi],'/'
+	inc edi
 
-    mov eax,[esi] ;coord_x
+	mov eax,[esi] ;coord_x
 cmp eax,ecx
 jge .out_of_rang ;coord_x больше допустимого значения при заданном масштабе
-    shr eax,10
-    stdcall convert_int_to_str, 300
+	shr eax,10
+	stdcall convert_int_to_str, 300
 
-    @@:
-      inc edi
-      cmp byte[edi],'0'
-      jge @b
-    mov byte[edi],'/'
-    inc edi
-    mov byte[edi],'x'
-    inc edi
+	@@:
+		inc edi
+		cmp byte[edi],'0'
+		jge @b
+	mov byte[edi],'/'
+	inc edi
+	mov byte[edi],'x'
+	inc edi
 
-    mov eax,[esi] ;coord_x
-    stdcall convert_int_to_str, 300
+	mov eax,[esi] ;coord_x
+	stdcall convert_int_to_str, 300
 
-    @@:
-      inc edi
-      cmp byte[edi],'0'
-      jl @f
-      cmp byte[edi],'9'
-      jg @f
-      jmp @b
-    @@:
+	@@:
+		inc edi
+		cmp byte[edi],'0'
+		jl @f
+		cmp byte[edi],'9'
+		jg @f
+		jmp @b
+	@@:
 
-    ;coord y
-    mov byte[edi],'/'
-    inc edi
+	;coord y
+	mov byte[edi],'/'
+	inc edi
 
-    mov eax,[esi+4] ;coord_y
+	mov eax,[esi+4] ;coord_y
 cmp eax,ecx
 jge .out_of_rang ;coord_y больше допустимого значения при заданном масштабе
-    shr eax,10
-    stdcall convert_int_to_str, 300
+	shr eax,10
+	stdcall convert_int_to_str, 300
 
-    @@:
-      inc edi
-      cmp byte[edi],'0'
-      jge @b
-    mov byte[edi],'/'
-    inc edi
-    mov byte[edi],'y'
-    inc edi
+	@@:
+		inc edi
+		cmp byte[edi],'0'
+		jge @b
+	mov byte[edi],'/'
+	inc edi
+	mov byte[edi],'y'
+	inc edi
 
-    mov eax,[esi+4] ;coord_y]
-    stdcall convert_int_to_str, 300
+	mov eax,[esi+4] ;coord_y]
+	stdcall convert_int_to_str, 300
 
 .out_of_rang:
-    call get_all_path
-  ret
+	call get_all_path
+	ret
 endp
 
 align 4
 get_all_path: ;функция для собирания полного пути из всех кусков
-  mov ecx,dword[edit1.text]
-  add ecx,dword[edit1.size]
-  dec ecx
+	mov ecx,[edit1.text]
+	add ecx,[edit1.size]
+	dec ecx
 
-  stdcall [str_copy], file_name,4096-1, dword[edit1.text],dword[edit1.max]
+	stdcall [str_copy], file_name,4096-1, [edit1.text],[edit1.max]
 
-  cmp byte[ecx],'/'
-  je @f
-    stdcall [str_catchar],file_name,4096-1, dword '/'
-  @@:
+	cmp byte[ecx],'/'
+	je @f
+		stdcall [str_catchar],file_name,4096-1, dword '/'
+	@@:
 
-  stdcall [str_cat], file_name,4096-1, txt_tile_path,300
-  stdcall [str_cat], file_name,4096-1, dword [txt_tile_type],10
-ret
+	stdcall [str_cat], file_name,4096-1, txt_tile_path,300
+	stdcall [str_cat], file_name,4096-1, [txt_tile_type],10
+	ret
