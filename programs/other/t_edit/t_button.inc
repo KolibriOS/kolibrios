@@ -1,13 +1,3 @@
-struct FileInfoBlock
-	Function dd ?
-	Position dd ?
-	Flags	 dd ?
-	Count	 dd ?
-	Buffer	 dd ?
-		db ?
-	FileName dd ?
-ends
-
 struct symbol
 	c db ?    ; +0 символ
 	col db ?  ; +1 цвет
@@ -412,53 +402,47 @@ but_find_key_w:
 ;description:
 ; выделение/скрытие непечатаемых символов
 align 4
-proc but_sumb_invis, edit:dword
-  push edi
-  mov edi,dword[edit]
+proc but_sumb_invis uses edi, edit:dword
+	mov edi,dword[edit]
 
-  xor ted_mode_invis,1
-  call draw_but_toolbar
-  stdcall [ted_draw],edi
-  pop edi
-  ret
+	xor ted_mode_invis,1
+	call draw_but_toolbar
+	stdcall [ted_draw],edi
+	ret
 endp
 
 ;description:
 ; выделение/скрытие ключевых слов
 align 4
-proc but_k_words_show, edit:dword
-  push edi
-  mov edi,dword[edit]
+proc but_k_words_show uses edi, edit:dword
+	mov edi,dword[edit]
 
-  xor ted_mode_color,1
-  cmp ted_mode_color,0
-  je @f
-    call [ted_text_colored]
-  @@:
-  call draw_but_toolbar
-  stdcall [ted_draw],edi
-  pop edi
-  ret
+	xor ted_mode_color,1
+	cmp ted_mode_color,0
+	je @f
+		call [ted_text_colored]
+	@@:
+	call draw_but_toolbar
+	stdcall [ted_draw],edi
+	ret
 endp
 
 ;description:
 ; вызов/скрытие панели с файлами синтаксиса
 align 4
-proc but_synt_show, edit:dword
-  push edi
-  mov edi,[edit]
+proc but_synt_show uses edi, edit:dword
+	mov edi,[edit]
 
-  cmp ted_panel_id,TED_PANEL_NULL
-  je @f
-    mov ted_panel_id,TED_PANEL_NULL
-    mov ted_wnd_l,0
-    jmp .e_if
-  @@:
-    mov ted_panel_id,TED_PANEL_SYNTAX
-    mov ted_wnd_l,TED_PANEL_WIDTH
-  .e_if:
-  call EvSize
-  stdcall [ted_draw],edi
-  pop edi
-  ret
+	cmp ted_panel_id,TED_PANEL_NULL
+	je @f
+		mov ted_panel_id,TED_PANEL_NULL
+		mov ted_wnd_l,0
+		jmp .e_if
+	@@:
+		mov ted_panel_id,TED_PANEL_SYNTAX
+		mov ted_wnd_l,TED_PANEL_WIDTH
+	.e_if:
+	call EvSize
+	stdcall [ted_draw],edi
+	ret
 endp

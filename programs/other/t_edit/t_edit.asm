@@ -14,11 +14,9 @@ maxSyntaxFileSize equ 410000
 TOOLBAR_ICONS_SIZE equ 1200*20
 
 include '../../proc32.inc'
-;include '../../config.inc'
 include '../../macros.inc'
-include '../../dll.inc'
 include '../../KOSfuncs.inc'
-include '../../develop/libraries/box_lib/load_lib.mac'
+include '../../load_img.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../system/skincfg/trunk/kglobals.inc'
 include '../../system/skincfg/trunk/unpacker.inc'
@@ -33,50 +31,6 @@ include 'wnd_k_words.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
-
-;Макрос для загрузки изображений с использованием библиотеки libimg.obj
-;для использования макроса нужны переменные:
-; - run_file_70 FileInfoBlock
-; - image_data dd 0
-macro load_image_file path,buf,size
-{
-	;path - может быть переменной или строковым параметром
-	if path eqtype '' ;проверяем задан ли строкой параметр path
-		jmp @f
-			local .path_str
-			.path_str db path ;формируем локальную переменную
-			db 0
-		@@:
-		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0
-	else
-		copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
-	end if
-
-	stdcall mem.Alloc, dword size ;выделяем память для изображения
-	mov [buf],eax
-
-	mov [run_file_70.Function], SSF_READ_FILE
-	mov [run_file_70.Position], 0
-	mov [run_file_70.Flags], 0
-	mov [run_file_70.Count], dword size
-	m2m [run_file_70.Buffer], eax
-	mov byte[run_file_70+20], 0
-	mov [run_file_70.FileName], file_name
-	mcall SF_FILE,run_file_70 ;загружаем файл изображения
-	cmp ebx,0xffffffff
-	je @f
-		;определяем вид изображения и переводим его во временный буфер image_data
-		stdcall dword[img_decode], dword[buf],ebx,0
-		mov dword[image_data],eax
-		;преобразуем изображение к формату rgb
-		stdcall dword[img_to_rgb2], dword[image_data],dword[buf]
-		;удаляем временный буфер image_data
-		stdcall dword[img_destroy], dword[image_data]
-	@@:
-}
-
-image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
 icon_tl_sys dd 0 ;указатель на память для хранения системных иконок
 
 align 4
@@ -190,18 +144,18 @@ mov	ebp,lib0
 	stdcall [ksubmenu_add], [main_menu], eax
 	
 ; init toolbar file
-	load_image_file 'te_icon.png', bmp_icon,TOOLBAR_ICONS_SIZE*2 ;умножение на 2 для серых кнопок
+	load_image_file 'te_icon.png', bmp_icon,,,6 ;6 для серых кнопок
 	mov eax,[bmp_icon]
 	add eax,TOOLBAR_ICONS_SIZE
 	stdcall img_to_gray, [bmp_icon],eax,(TOOLBAR_ICONS_SIZE)/3
 ;---------------------------------------------------------------------
 ; читаем файл с курсорами и линиями
-	load_image_file 'tl_sys_16.png', icon_tl_sys,54+3*256*13
+	load_image_file 'tl_sys_16.png', icon_tl_sys
 	mov eax,dword[icon_tl_sys]
 	mov dword[tree1.data_img_sys],eax
 ;---------------------------------------------------------------------
 ; читаем файл с иконками узлов
-	load_image_file 'tl_nod_16.png', icon_tl_sys,54+3*256*2
+	load_image_file 'tl_nod_16.png', icon_tl_sys
 	mov eax,dword[icon_tl_sys]
 	mov dword[tree1.data_img],eax
 ;------------------------------------------------------------------------------
@@ -282,11 +236,11 @@ mov	ebp,lib0
 
 
 
-align 4
+align 16
 red_win:
 	call draw_window
 
-align 4
+align 16
 still:
 	mcall SF_WAIT_EVENT
 	cmp dword[exit_code],1
@@ -304,7 +258,7 @@ still:
 	@@:
 	jmp still
 
-align 4
+align 16
 draw_window:
 	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
@@ -326,25 +280,39 @@ draw_window:
 	mcall SF_REDRAW,SSF_END_DRAW
 	ret
 
-align 4
+align 16
 mouse:
 	stdcall [kmainmenu_dispatch_cursorevent], [main_menu]
-	stdcall [ted_mouse], tedit0
+
+	mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
+	cmp word[tedit0.wnd.top],ax
+	jg .no_edit
+	shr eax,16
+	cmp word[tedit0.wnd.left],ax
+	jg .no_edit
+	mcall SF_MOUSE_GET,SSF_BUTTON_EXT
+	bt eax,24 ;двойной щелчёк левой кнопкой
+	jnc @f
+		stdcall [ted_but_select_word], tedit0
+		jmp still
+	@@:
+		stdcall [ted_mouse], tedit0
+	.no_edit:
 
 	cmp byte[tedit0.panel_id],TED_PANEL_FIND ;if not panel
 	jne @f
-		stdcall [edit_box_mouse], dword edit2
+		stdcall [edit_box_mouse], edit2
 	@@:
 	cmp byte[tedit0.panel_id],TED_PANEL_SYNTAX ;if not panel
-	jne .mouse_end
-	stdcall [tl_mouse], tree1
-.mouse_end:
+	jne @f
+		stdcall [tl_mouse], tree1
+	@@:
 	jmp still
 ;---------------------------------------------------------------------
 
 ;output:
 ; ah = symbol
-align 4
+align 16
 proc KeyConvertToASCII uses ebx, table:dword
 	mov ebx,dword[table] ;convert scan to ascii
 	ror ax,8
@@ -354,158 +322,179 @@ proc KeyConvertToASCII uses ebx, table:dword
 	ret
 endp
 
-align 4
+align 16
 key:
-  mcall SF_KEYBOARD,SSF_GET_CONTROL_KEYS ;66.3 получить состояние управляющих клавиш
-  xor esi,esi
-  mov ecx,1
-  test al,0x03 ;[Shift]
-  jz @f
-    mov cl,2
-    or esi,KM_SHIFT
-  @@:
-  test al,0x0c ;[Ctrl]
-  jz @f
-    or esi,KM_CTRL
-  @@:
-  test al,0x30 ;[Alt]
-  jz @f
-    mov cl,3
-    or esi,KM_ALT
-  @@:
-  test al,0x80 ;[NumLock]
-  jz @f
-    or esi,KM_NUMLOCK
-  @@:
+	mcall SF_KEYBOARD,SSF_GET_CONTROL_KEYS ;66.3 получить состояние управляющих клавиш
+	xor esi,esi
+	mov ecx,1
+	test al,0x03 ;[Shift]
+	jz @f
+		mov cl,2
+		or esi,KM_SHIFT
+	@@:
+	test al,0x0c ;[Ctrl]
+	jz @f
+		or esi,KM_CTRL
+	@@:
+	test al,0x30 ;[Alt]
+	jz @f
+		mov cl,3
+		or esi,KM_ALT
+	@@:
+	test al,0x80 ;[NumLock]
+	jz @f
+		or esi,KM_NUMLOCK
+	@@:
 
-  mcall SF_SYSTEM_GET,SSF_KEYBOARD_LAYOUT,,conv_tabl ;26.2 получить раскладку клавиатуры
-  mcall SF_GET_KEY
-  stdcall [tl_key], tree1
+	mcall SF_SYSTEM_GET,SSF_KEYBOARD_LAYOUT,,conv_tabl ;26.2 получить раскладку клавиатуры
+	mcall SF_GET_KEY
+	stdcall [tl_key], tree1
 
-  test word [edit2.flags],10b;ed_focus ; если не в фокусе, выходим
-  je @f
-    cmp ah,0x80 ;if key up
-    ja still
-    cmp ah,42 ;[Shift] (left)
-    je still
-    cmp ah,54 ;[Shift] (right)
-    je still
-    cmp ah,56 ;[Alt]
-    je still
-    cmp ah,29 ;[Ctrl]
-    je still
-    cmp ah,69 ;[Pause Break]
-    je still
+	test word [edit2.flags],10b;ed_focus ; если не в фокусе, выходим
+	je @f
+		cmp ah,0x80 ;if key up
+		ja still
+		cmp ah,42 ;[Shift] (left)
+		je still
+		cmp ah,54 ;[Shift] (right)
+		je still
+		cmp ah,56 ;[Alt]
+		je still
+		cmp ah,29 ;[Ctrl]
+		je still
+		cmp ah,69 ;[Pause Break]
+		je still
 
-    stdcall KeyConvertToASCII, dword conv_tabl
-    stdcall [edit_box_key], dword edit2
-    jmp still
-  @@:
+		stdcall KeyConvertToASCII, dword conv_tabl
+		stdcall [edit_box_key], dword edit2
+		jmp still
+	@@:
 
-  stdcall [ted_key], tedit0, conv_tabl,esi
-  jmp still
+	stdcall [ted_key], tedit0, conv_tabl,esi
+	jmp still
 
-align 4
+align 16
 button:
+	mcall SF_GET_BUTTON
+	cmp ah,3
+	jne @f
+		call ted_but_new_file
+		jmp still
+	@@:
+	cmp ah,4
+	jne @f
+		call ted_but_open_file
+		jmp still
+	@@:
+	cmp ah,5
+	jne @f
+		call ted_but_save_file
+		jmp still
+	@@:
+	cmp ah,6
+	jne @f
+		stdcall [ted_but_select_word], tedit0
+		jmp still
+	@@:
+	cmp ah,7
+	jne @f
+		stdcall [ted_but_cut], tedit0
+		jmp still
+	@@:
+	cmp ah,8
+	jne @f
+		stdcall [ted_but_copy], tedit0
+		jmp still
+	@@:
+	cmp ah,9
+	jne @f
+		stdcall [ted_but_paste], tedit0
+		jmp still
+	@@:
+	cmp ah,10
+	jne @f
+		call ted_but_find
+		jmp still
+	@@:
+	cmp ah,11
+	jne @f
+		call but_replace
+		jmp still
+	@@:
+	cmp ah,12
+	jne @f
+		call but_find_key_w
+		jmp still
+	@@:
+	cmp ah,13
+	jne @f
+		stdcall [ted_but_sumb_upper], tedit0
+		jmp still
+	@@:
+	cmp ah,14
+	jne @f
+		stdcall [ted_but_sumb_lover], tedit0
+		jmp still
+	@@:
+	cmp ah,15
+	jne @f
+		stdcall [ted_but_reverse], tedit0
+		jmp still
+	@@:
+	cmp ah,16
+	jne @f
+		stdcall [ted_but_undo], tedit0
+		jmp still
+	@@:
+	cmp ah,17
+	jne @f
+		stdcall [ted_but_redo], tedit0
+		jmp still
+	@@:
+	cmp ah,18
+	jne @f
+		stdcall but_sumb_invis, tedit0
+		jmp still
+	@@:
+	cmp ah,19
+	jne @f
+		stdcall but_k_words_show, tedit0
+		jmp still
+	@@:
+	cmp ah,20
+	jne @f
+		stdcall but_synt_show, tedit0
+		jmp still
+	@@:
+	cmp ah,21
+	jne @f
+		stdcall [ted_but_convert_by_table],tedit0,tbl_1251_866
+		jmp still
+	@@:
+	cmp ah,22
+	jne @f
+		stdcall [ted_but_convert_by_table],tedit0,tbl_866_1251
+		jmp still
+	@@:
 
-  mcall SF_GET_BUTTON
-  cmp ah,3
-  jne @f
-    call ted_but_new_file
-  @@:
-  cmp ah,4
-  jne @f
-    call ted_but_open_file
-  @@:
-  cmp ah,5
-  jne @f
-    call ted_but_save_file
-  @@:
-  cmp ah,6
-  jne @f
-    stdcall [ted_but_select_word], tedit0
-  @@:
-  cmp ah,7
-  jne @f
-    stdcall [ted_but_cut], tedit0
-  @@:
-  cmp ah,8
-  jne @f
-    stdcall [ted_but_copy], tedit0
-  @@:
-  cmp ah,9
-  jne @f
-    stdcall [ted_but_paste], tedit0
-  @@:
-  cmp ah,10
-  jne @f
-    call ted_but_find
-  @@:
-  cmp ah,11
-  jne @f
-    call but_replace
-  @@:
-  cmp ah,12
-  jne @f
-    call but_find_key_w
-  @@:
-  cmp ah,13
-  jne @f
-    stdcall [ted_but_sumb_upper], tedit0
-  @@:
-  cmp ah,14
-  jne @f
-    stdcall [ted_but_sumb_lover], tedit0
-  @@:
-  cmp ah,15
-  jne @f
-    stdcall [ted_but_reverse], tedit0
-  @@:
-  cmp ah,16
-  jne @f
-    stdcall [ted_but_undo], tedit0
-  @@:
-  cmp ah,17
-  jne @f
-    stdcall [ted_but_redo], tedit0
-  @@:
-  cmp ah,18
-  jne @f
-    stdcall but_sumb_invis, tedit0
-  @@:
-  cmp ah,19
-  jne @f
-    stdcall but_k_words_show, tedit0
-  @@:
-  cmp ah,20
-  jne @f
-    stdcall but_synt_show, tedit0
-  @@:
-  cmp ah,21
-  jne @f
-    stdcall [ted_but_convert_by_table],tedit0,tbl_1251_866
-  @@:
-  cmp ah,22
-  jne @f
-    stdcall [ted_but_convert_by_table],tedit0,tbl_866_1251
-  @@:
+	cmp ah,200
+	jne @f
+		stdcall ted_but_open_syntax, tedit0
+		jmp still
+	@@:
+	cmp ah,201
+	jne @f
+		stdcall [ted_but_find_next], tedit0
+		jmp still
+	@@:
 
-  cmp ah,200
-  jne @f
-    stdcall ted_but_open_syntax, tedit0
-  @@:
-  cmp ah,201
-  jne @f
-    stdcall [ted_but_find_next], tedit0
-  @@:
+	cmp ah,1
+	je .exit
 
-  cmp ah,1
-  je .exit
-
-  cmp ah,199
-  je .exit
+	cmp ah,199
+	je .exit
   
-  jmp still
+	jmp still
 .exit:
 	cmp dword[exit_code],1
 	je @f
