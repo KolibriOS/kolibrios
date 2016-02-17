@@ -22,7 +22,10 @@ entry START
 proc START c, state:dword, cmdline:dword
 
           cmp [state], DRV_ENTRY
-          jne .nothing
+          je .init
+          cmp [state], DRV_EXIT
+          je .fini
+          jmp .nothing
   .init:
 ; disable keyboard and mouse interrupts
 ; keyboard IRQ handler can interfere badly otherwise
@@ -54,12 +57,12 @@ proc START c, state:dword, cmdline:dword
           test eax,eax
           jnz  .stop_try
           mov  [MouseType],MT_3BScroll
-          
+
           call try_mode_ID4
           test eax,eax
           jnz  .stop_try
           mov  [MouseType],MT_5BScroll
-          
+
   .stop_try:
 
           mov  al, 0xF4        ; enable data reporting
@@ -88,6 +91,10 @@ proc START c, state:dword, cmdline:dword
           call kbd_cmd
   .nothing:
           xor  eax, eax
+          ret
+.fini:
+          mov   al, 0xF5
+          call mouse_cmd
           ret
 
   .exit:

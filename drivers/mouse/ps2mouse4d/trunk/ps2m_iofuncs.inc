@@ -69,11 +69,14 @@ mouse_cmd:
     call kbd_write
     cmp  ah, 1
     je   .fail
- 
+
+    cmp  [mouse_cmd_byte], 0xF5
+    je .ok
     call mouse_read
- 
+
     cmp  al, 0xFA
     jne  .noack
+.ok:
     clc
     ret
   .noack:
@@ -85,8 +88,8 @@ mouse_cmd:
   .fail:
     stc
     ret
-  
-  
+
+
 mouse_read:
     mov  [mouse_nr_tries], 100
   .repeat:
