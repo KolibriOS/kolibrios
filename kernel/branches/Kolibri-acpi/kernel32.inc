@@ -42,7 +42,7 @@ include "gui/event.inc"
 include "gui/font.inc"
 include "gui/button.inc"
 
-; shutdown
+include "boot/shutdown.inc" ; kernel shutdown
 
 ; file system
 

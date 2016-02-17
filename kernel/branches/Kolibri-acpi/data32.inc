@@ -372,11 +372,9 @@ os_stack_seg        rd 1
 srv.fd              rd 1
 srv.bk              rd 1
 
-
 align 16
 
 _display            display_t
-
 
 LFBAddress          dd ?
 

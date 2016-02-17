@@ -463,8 +463,10 @@ acpi_locate:
         call    .check
 
         test    ebx, ebx
-        jnz     .done
+        jz      @F
+        jmp     .done
 
+@@:
         mov     ebx, ACPI_HI_RSDP_WINDOW_START
         mov     edi, ACPI_HI_RSDP_WINDOW_END
         call    .check
