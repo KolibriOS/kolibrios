@@ -32,24 +32,28 @@ proc glopMaterial uses eax ebx ecx edi esi, context:dword, p:dword
 		;add edi,offs_mate_emission ;offs_mate_emission=0
 		rep movsd
 		jmp .end_f
+align 4
 	@@:
 	cmp ebx,GL_AMBIENT
 	jne @f
 		add edi,offs_mate_ambient
 		rep movsd
 		jmp .end_f
+align 4
 	@@:
 	cmp ebx,GL_DIFFUSE
 	jne @f
 		add edi,offs_mate_diffuse
 		rep movsd
 		jmp .end_f
+align 4
 	@@:
 	cmp ebx,GL_SPECULAR
 	jne @f
 		add edi,offs_mate_specular
 		rep movsd
 		jmp .end_f
+align 4
 	@@:
 	cmp ebx,GL_SHININESS
 	jne @f
@@ -61,6 +65,7 @@ proc glopMaterial uses eax ebx ecx edi esi, context:dword, p:dword
 		fimul dword[edi]
 		fistp dword[edi] ;m.shininess_i = (v[0]/128.0f)*SPECULAR_BUFFER_RESOLUTION
 		jmp .end_f
+align 4
 	@@:
 	cmp ebx,GL_AMBIENT_AND_DIFFUSE
 	jne @f
@@ -71,6 +76,7 @@ proc glopMaterial uses eax ebx ecx edi esi, context:dword, p:dword
 		mov ecx,4
 		rep movsd
 		jmp .end_f
+align 4
 	@@: ;default
 ;    assert(0);
 	.end_f:
@@ -115,6 +121,7 @@ pushad
 		mov ecx,4
 		rep movsd ;l.ambient=v
 		jmp .end_f
+align 4
 	@@:
 	cmp ecx,GL_DIFFUSE
 	jne @f
@@ -125,6 +132,7 @@ pushad
 		mov ecx,4
 		rep movsd ;l.diffuse=v
 		jmp .end_f
+align 4
 	@@:
 	cmp ecx,GL_SPECULAR
 	jne @f
@@ -135,6 +143,7 @@ pushad
 		mov ecx,4
 		rep movsd ;l.specular=v
 		jmp .end_f
+align 4
 	@@:
 	cmp ecx,GL_POSITION
 	jne @f
@@ -168,6 +177,7 @@ pushad
 		ffree st0
 		fincstp
 		jmp .end_f
+align 4
 	@@:
 	cmp ecx,GL_SPOT_DIRECTION
 	jne @f
@@ -188,12 +198,14 @@ pushad
 		add edx,offs_ligh_norm_spot_direction
 		stdcall gl_V3_Norm,edx
 		jmp .end_f
+align 4
 	@@:
 	cmp ecx,GL_SPOT_EXPONENT
 	jne @f
 		mov ecx,[ebx+12]
 		mov [edi+offs_ligh_spot_exponent],ecx ;l.spot_exponent=p[3]
 		jmp .end_f
+align 4
 	@@:
 	cmp ecx,GL_SPOT_CUTOFF
 	jne .end_spot_c
@@ -214,24 +226,28 @@ pushad
 		ffree st0
 		fincstp
 		jmp .end_f
+align 4
 	.end_spot_c:
 	cmp ecx,GL_CONSTANT_ATTENUATION
 	jne @f
 		mov ecx,[ebx+12]
 		mov [edi+offs_ligh_attenuation],ecx ;l->attenuation[0]=p[3]
 		jmp .end_f
+align 4
 	@@:
 	cmp ecx,GL_LINEAR_ATTENUATION
 	jne @f
 		mov ecx,[ebx+12]
 		mov [edi+offs_ligh_attenuation+4],ecx ;l->attenuation[1]=p[3]
 		jmp .end_f
+align 4
 	@@:
 	cmp ecx,GL_QUADRATIC_ATTENUATION
 	jne @f
 		mov ecx,[ebx+12]
 		mov [edi+offs_ligh_attenuation+8],ecx ;l->attenuation[2]=p[3]
 		jmp .end_f
+align 4
 	@@: ;default:
 ;    assert(0);
 	.end_f:
@@ -254,18 +270,21 @@ proc glopLightModel uses ebx ecx esi edi, context:dword, p:dword
 		add edi,offs_cont_ambient_light_model
 		rep movsd ;for(i=0;i<4;i++) context.ambient_light_model.v[i]=v[i]
 		jmp .end_f
+align 4
 	@@:
 	cmp ebx,GL_LIGHT_MODEL_LOCAL_VIEWER
 	jne @f
 		fld dword[esi] ;st0 = p[2]
 		fistp dword[edi+offs_cont_local_light_model]
 		jmp .end_f
+align 4
 	@@:
 	cmp ebx,GL_LIGHT_MODEL_TWO_SIDE
 	jne @f
 		fld dword[esi] ;st0 = p[2]
 		fistp dword[edi+offs_cont_light_model_two_side]
 		jmp .end_f
+align 4
 	@@: ;default:
 ;    tgl_warning("glopLightModel: illegal pname: 0x%x\n", ebx);
 ;    //assert(0);
@@ -287,6 +306,7 @@ local .end_m
 		fincstp
 		mov eax,0.0
 		jmp .end_m ;return 0.0
+align 4
 	.o_1:
 	fld1 ;else if (a>=1.0)
 	fcompp
@@ -295,6 +315,7 @@ local .end_m
 	ja .o_2
 		mov eax,1.0
 		jmp .end_m ;return 1.0
+align 4
 	.o_2:
 	mov eax,dword a ;else return a
 	.end_m:
@@ -323,6 +344,7 @@ proc gl_enable_disable_light uses eax ebx ecx, context:dword, light:dword, v:dwo
 		mov [eax+offs_cont_first_light],ebx ;context.first_light = l
 		mov dword[ebx+offs_ligh_prev],0 ;l.prev = NULL
 		jmp .end_f
+align 4
 	@@:
 	xor ecx,ecx
 	cmp dword[v],0
@@ -339,6 +361,7 @@ proc gl_enable_disable_light uses eax ebx ecx, context:dword, light:dword, v:dwo
 		jne .els_0
 			mov [eax+offs_cont_first_light],ecx	;context.first_light = l.next
 			jmp @f
+align 4
 		.els_0:
 			mov eax,[ebx+offs_ligh_prev]
 			mov [eax+offs_ligh_next],ecx ;l.prev.next = l.next
@@ -356,7 +379,7 @@ align 4
 fl_1e_3 dd 1.0e-3
 
 ; non optimized lightening model
-align 4
+align 16
 proc gl_shade_vertex, context:dword, v:dword
 locals
 	R dd ? ;float ebp-96
@@ -452,6 +475,7 @@ pushad
 			mov [d+offs_Z],eax ;d.Z=l.norm_position.v[2]
 			mov dword[att],1.0
 			jmp .els_0_end
+align 4
 		.els_0:
 			; distance attenuation
 			ffree st0 ;l.position.v[3]
@@ -577,6 +601,7 @@ pushad
 					fincstp
 					mov ebx,[ebx+offs_ligh_next]
 					jmp .cycle_0 ;continue
+align 4
 				.els_1:
 					; TODO: optimize
 					fld dword[ebx+offs_ligh_spot_exponent]
@@ -602,6 +627,7 @@ pushad
 						fmul dword[att]
 						fstp dword[att] ;att=att*pow(dot_spot,l.spot_exponent)
 						jmp .if1_end_f1
+align 4
 					@@:
 					ffree st0 ;l.spot_exponent
 					fincstp
@@ -632,6 +658,7 @@ pushad
 				fsub dword[vcoord+offs_Z]
 				fstp dword[s+offs_Z] ;s.Z=d.Z-vcoord.Z
 				jmp .els_2_end
+align 4
 			.els_2:
 				mov eax,[d]
 				mov [s],eax ;s.X=d.X
@@ -734,6 +761,7 @@ pushad
 		fincstp
 		mov ebx,[ebx+offs_ligh_next]
 		jmp .cycle_0
+align 4
 	.cycle_0_end:
 
 	clampf [R],0,1

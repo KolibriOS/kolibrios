@@ -8,10 +8,8 @@ ZB_Z_BITS equ 16
 
 ZB_POINT_Z_FRAC_BITS equ 14
 
-ZB_POINT_S_MIN equ (1 shl 13)
-ZB_POINT_S_MAX equ ( (1 shl 22)-(1 shl 13) )
-ZB_POINT_T_MIN equ (1 shl 21)
-ZB_POINT_T_MAX equ ( (1 shl 30)-(1 shl 21) )
+ZB_POINT_TEXEL_SIZE equ 12 ;точность множителя для вычисления координат текселя
+	;влияет на максимальный размер текстуры
 
 ZB_POINT_RED_MIN equ (1 shl 8)
 ZB_POINT_RED_MAX equ ( (1 shl 16)-1 )
@@ -27,26 +25,7 @@ ZB_MODE_RGBA   equ 3  ; 32 bit rgba mode
 ZB_MODE_RGB24  equ 4  ; 24 bit rgb mode
 ZB_NB_COLORS   equ 225 ; number of colors for 8 bit display
 
-if TGL_FEATURE_RENDER_BITS eq 15
-
-;#define RGB_TO_PIXEL(r,g,b) \
-;  ((((r) >> 1) & 0x7c00) | (((g) >> 6) & 0x03e0) | ((b) >> 11))
-;typedef unsigned short PIXEL;
-; bytes per pixel
-;PSZB equ 2
-; bits per pixel = (1 << PSZH)
-;PSZSH equ 4
-
-else if TGL_FEATURE_RENDER_BITS eq 16
-
-; 16 bit mode
-;#define RGB_TO_PIXEL(r,g,b) \
-;  (((r) & 0xF800) | (((g) >> 5) & 0x07E0) | ((b) >> 11))
-;typedef unsigned short PIXEL;
-;PSZB equ 2
-;PSZSH equ 4
-
-else if TGL_FEATURE_RENDER_BITS eq 24
+if TGL_FEATURE_RENDER_BITS eq 24
 
 macro RGB_TO_PIXEL r,g,b
 {
@@ -94,6 +73,9 @@ struct ZBuffer
 	dctable dd ? ;*unsigned char
 	ctable dd ? ;*int
 	current_texture dd ? ;*PIXEL
+	s_log2 dd ? ;unsigned int
+	s_bound dd ? ;unsigned int
+	t_bound dd ? ;unsigned int
 ends
 
 offs_zbuf_xsize equ 0
@@ -107,6 +89,9 @@ offs_zbuf_nb_colors equ 32
 offs_zbuf_dctable equ 36
 offs_zbuf_ctable equ 40
 offs_zbuf_current_texture equ 44
+offs_zbuf_s_log2 equ 48
+offs_zbuf_s_bound equ 52
+offs_zbuf_t_bound equ 56
 
 struct ZBufferPoint
 	x dd ? ;int ;integer coordinates in the zbuffer

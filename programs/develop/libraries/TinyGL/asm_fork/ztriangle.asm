@@ -133,10 +133,17 @@ locals
 include 'ztriangle.inc'
 
 align 16
-proc ZB_setTexture uses eax ebx, zb:dword, texture:dword
+proc ZB_setTexture uses eax ebx, zb:dword, texture:dword,\
+	s_bound:dword, t_bound:dword, s_log2:dword
 	mov eax,[zb]
 	mov ebx,[texture]
 	mov dword[eax+offs_zbuf_current_texture],ebx
+	mov ebx,[s_log2]
+	mov dword[eax+offs_zbuf_s_log2],ebx
+	mov ebx,[s_bound]
+	mov dword[eax+offs_zbuf_s_bound],ebx
+	mov ebx,[t_bound]
+	mov dword[eax+offs_zbuf_t_bound],ebx
 	ret
 endp
 
@@ -146,8 +153,14 @@ INTERP_ST equ 1
 macro DRAW_INIT
 {
 	mov eax,[zb]
-	mov eax,[eax+offs_zbuf_current_texture]
-	mov [texture],eax
+	mov ebx,[eax+offs_zbuf_current_texture]
+	mov [texture],ebx
+	mov ebx,[eax+offs_zbuf_s_log2]
+	mov [s_log2],ebx ;s_log2 = zb.s_log2
+	mov ebx,[eax+offs_zbuf_s_bound]
+	mov [s_bound],ebx ;s_bound = zb.s_bound
+	mov ebx,[eax+offs_zbuf_t_bound]
+	mov [t_bound],ebx ;t_bound = zb.t_bound
 }
 
 macro PUT_PIXEL _a
@@ -161,11 +174,13 @@ local .end_0
 		mov word[esi+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
 		mov ebx,[t]
-		and ebx,0x3fc00000
+		and ebx,[t_bound]
+		mov ecx,[s_log2]
+		shr ebx,cl ;(t & t_bound) >> s_log2
 		mov eax,[s]
-		and eax,0x003fc000
+		and eax,[s_bound]
+		shr eax,ZB_POINT_TEXEL_SIZE
 		or ebx,eax
-		shr ebx,14
 		imul ebx,3
 		add ebx,[texture] ;ptr = texture + (((t & 0x3fc00000) | s) >> 14) * 3
 		mov ax,word[ebx]
@@ -188,6 +203,9 @@ align 16
 proc ZB_fillTriangleMapping, zb:dword, p0:dword, p1:dword, p2:dword
 locals
 	texture dd ? ;PIXEL*
+	s_log2 dd ? ;unsigned int
+	s_bound dd ? ;unsigned int
+	t_bound dd ? ;unsigned int
 include 'ztriangle.inc'
 
 ;
@@ -195,7 +213,6 @@ include 'ztriangle.inc'
 ; We use the gradient method to make less divisions.
 ; TODO: pipeline the division
 ;
-if 1
 
 INTERP_Z equ 1
 INTERP_STZ equ 1
@@ -205,8 +222,14 @@ NB_INTERP equ 8
 macro DRAW_INIT
 {
 	mov eax,[zb]
-	mov eax,[eax+offs_zbuf_current_texture]
-	mov [texture],eax
+	mov ebx,[eax+offs_zbuf_current_texture]
+	mov [texture],ebx
+	mov ebx,[eax+offs_zbuf_s_log2]
+	mov [s_log2],ebx ;s_log2 = zb.s_log2
+	mov ebx,[eax+offs_zbuf_s_bound]
+	mov [s_bound],ebx ;s_bound = zb.s_bound
+	mov ebx,[eax+offs_zbuf_t_bound]
+	mov [t_bound],ebx ;t_bound = zb.t_bound
 	mov dword[esp-4],NB_INTERP
 	fild dword[esp-4]
 	fild dword[dzdx]
@@ -231,11 +254,13 @@ local .end_0
 		mov word[esi+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
 		mov ebx,[t]
-		and ebx,0x3fc00000
+		and ebx,[t_bound]
+		mov ecx,[s_log2]
+		shr ebx,cl ;(t & t_bound) >> s_log2
 		mov eax,[s]
-		and eax,0x003fc000
+		and eax,[s_bound]
+		shr eax,ZB_POINT_TEXEL_SIZE
 		or ebx,eax
-		shr ebx,14
 		imul ebx,3
 		add ebx,[texture] ;ptr = texture + (((t & 0x3fc00000) | (s & 0x003FC000)) >> 14) * 3
 		mov ax,word[ebx]
@@ -367,64 +392,7 @@ locals
 	ndtzdx dd ? ;float
 	zinv dd ? ;float
 	f_z dd ? ;float - переменная отвечающая за геометрию текстуры
+	s_log2 dd ? ;unsigned int
+	s_bound dd ? ;unsigned int
+	t_bound dd ? ;unsigned int
 include 'ztriangle.inc'
-
-end if
-
-if 0
-
-; slow but exact version (only there for reference, incorrect for 24
-; bits)
-
-INTERP_Z equ 1
-INTERP_STZ equ 1
-
-macro DRAW_INIT
-{
-	mov eax,[zb]
-	mov eax,[eax+offs_zbuf_current_texture]
-	mov [texture],eax
-}
-
-macro PUT_PIXEL _a
-{
-local .end_0
-	mov eax,[z]
-	shr eax,ZB_POINT_Z_FRAC_BITS
-	cmp ax,word[esi+2*_a] ;if (zz >= pz[_a])
-	jl .end_0
-		;edi = pp
-		mov word[esi+2*_a],ax ;пишем в буфер глубины новое значение
-		fild dword[z]
-		fld dword[s_z]
-		fdiv st0,st1
-		fistp dword[esp-4] ;s = (int) (s_z / (float) z)
-		fld dword[t_z]
-		fdiv st0,st1
-		fistp dword[esp-8] ;t = (int) (t_z / (float) z)
-		mov eax,dword[esp-8]
-		and eax,0x3FC00000
-		or eax,dword[esp-4]
-		shr eax,12 ;14
-		add eax,[texture]
-		mov eax,[eax]
-		stosd ;pp[_a] = texture[((t & 0x3FC00000) | s) >> 14]
-		sub edi,4
-	.end_0:
-	mov eax,[dzdx]
-	add [z],eax
-	fld dword[dszdx]
-	fadd dword[s_z]
-	fstp dword[s_z]
-	fld dword,[dtzdx]
-	fadd dword[t_z]
-	fstp dword[t_z]
-}
-
-align 16
-proc ZB_fillTriangleMappingPerspective, zb:dword, p0:dword, p1:dword, p2:dword
-locals
-	texture dd ? ;PIXEL*
-include 'ztriangle.inc'
-
-end if

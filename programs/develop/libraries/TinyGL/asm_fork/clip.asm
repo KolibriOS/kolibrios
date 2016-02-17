@@ -10,9 +10,6 @@ CLIP_ZMAX equ (1<<5)
 
 align 16
 proc gl_transform_to_viewport uses eax ebx ecx, context:dword,v:dword
-locals
-	point dd ?
-endl
 	mov eax,[context]
 	mov ebx,[v]
 
@@ -64,17 +61,19 @@ align 4
 	; texture
 	cmp dword[eax+offs_cont_texture_2d_enabled],0
 	je @f
-		mov dword[point],dword(ZB_POINT_S_MAX - ZB_POINT_S_MIN)
-		fild dword[point]
-		fmul dword[ebx+offs_vert_tex_coord] ;st0 *= v.tex_coord.X
-		fistp dword[ebx+offs_vert_zp+offs_zbup_s]
-		add dword[ebx+offs_vert_zp+offs_zbup_s],ZB_POINT_S_MIN
+		mov eax,[eax+offs_cont_current_texture] ;eax = &context.current_texture
+		mov eax,[eax] ;eax = context.current_texture
+		;[eax+offs_text_images] = im = &context.current_texture.images[0]
 
-		mov dword[point],dword(ZB_POINT_T_MAX - ZB_POINT_T_MIN)
-		fild dword[point]
-		fmul dword[ebx+offs_vert_tex_coord+offs_Y] ;st0 *= v.tex_coord.Y
+		fild dword[eax+offs_text_images+offs_imag_s_bound]
+		fmul dword[ebx+offs_vert_tex_coord+offs_X]
+		fistp dword[ebx+offs_vert_zp+offs_zbup_s]
+		;v.zp.s=(int)(v.tex_coord.X * im.s_bound)
+
+		fild dword[eax+offs_text_images+offs_imag_t_bound]
+		fmul dword[ebx+offs_vert_tex_coord+offs_Y]
 		fistp dword[ebx+offs_vert_zp+offs_zbup_t]
-		add dword[ebx+offs_vert_zp+offs_zbup_t],ZB_POINT_T_MIN
+		;v.zp.t=(int)(v.tex_coord.Y * im.t_bound)
 	@@:
 	ret
 endp
@@ -1042,10 +1041,11 @@ end if
 if PROFILE eq 1
 	inc dword[count_triangles_textured]
 end if
-		mov eax,dword[edx+offs_cont_current_texture]
+		mov eax,[edx+offs_cont_current_texture]
 		mov eax,[eax] ;переход по указателю
 		;так как offs_text_images+offs_imag_pixmap = 0 то context.current_texture.images[0].pixmap = [eax]
-		stdcall ZB_setTexture, dword[edx+offs_cont_zb],dword[eax]
+		stdcall ZB_setTexture, [edx+offs_cont_zb], [eax],\
+			[eax+offs_imag_s_bound],[eax+offs_imag_t_bound],[eax+offs_imag_xsize_log2]
 		mov eax,[p0]
 		add eax,offs_vert_zp
 		push ecx

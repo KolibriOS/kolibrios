@@ -209,6 +209,8 @@ proc glopTexImage2D, context:dword, p:dword
 locals
 	pixels1 dd ?
 	do_free dd ?
+	aligned_width dd ?
+	aligned_height dd ?
 endl
 pushad
 	mov edi,[p]
@@ -236,22 +238,30 @@ pushad
 		stdcall dbg_print,sz_glTexImage2D,err_8 ;"glTexImage2D: combinaison of parameters not handled"
 	@@:
 
+	stdcall gl_getPervPowerOfTwo,edx
+	mov [aligned_width],eax
+	stdcall gl_getPervPowerOfTwo,esi
+	mov [aligned_height],eax
+
 	mov dword[do_free],0
-	cmp edx,256
+	cmp edx,[aligned_width]
 	jne .else
-	cmp esi,256
+	cmp esi,[aligned_height]
 	jne .else
 		mov eax,[edi+36]
 		mov [pixels1],eax ;pixels1=pixels
 		jmp @f
-	.else: ;if (width != 256 || height != 256)
-		stdcall gl_malloc, 256*256*3
-		mov [pixels1],eax ;pixels1 = gl_malloc(256 * 256 * 3)
+align 4
+	.else: ;if (width != aligned_width || height != aligned_height)
+		imul eax,[aligned_width]
+		imul eax,3
+		stdcall gl_malloc, eax
+		mov [pixels1],eax ;pixels1 = gl_malloc(aligned_width * aligned_height * 3)
 		; no interpolation is done here to respect the original image aliasing !
-		stdcall gl_resizeImage, eax,256,256,[edi+36],edx,esi
+		stdcall gl_resizeImage, eax,[aligned_width],[aligned_height],[edi+36],edx,esi
 		mov dword[do_free],1
-		mov edx,256
-		mov esi,256
+		mov edx,[aligned_width]
+		mov esi,[aligned_height]
 	@@:
 
 	mov ecx,[context]
@@ -259,8 +269,29 @@ pushad
 	add ecx,offs_text_images
 	imul ebx,sizeof.GLTexture
 	add ecx,ebx ;ecx = &context.current_texture.images[level]
-	mov dword[ecx+offs_imag_xsize],edx ;im.xsize=width
-	mov dword[ecx+offs_imag_ysize],esi ;im.ysize=height
+	mov [ecx+offs_imag_xsize],edx ;im.xsize=width
+	mov [ecx+offs_imag_ysize],esi ;im.ysize=height
+	mov ebx,edx
+	dec ebx
+	shl ebx,ZB_POINT_TEXEL_SIZE
+	mov [ecx+offs_imag_s_bound],ebx ;im.s_bound = (unsigned int)(width-1)
+	shr ebx,ZB_POINT_TEXEL_SIZE
+
+	mov dword[ecx+offs_imag_xsize_log2],ZB_POINT_TEXEL_SIZE
+	or ebx,ebx
+	jz .set_l2
+	@@:
+		dec dword[ecx+offs_imag_xsize_log2]
+		shr ebx,1
+		or ebx,ebx
+		jnz @b
+	.set_l2:
+	;im.xsize_log2 = ZB_POINT_TEXEL_SIZE-log_2(width)
+	dec esi
+	shl esi,ZB_POINT_TEXEL_SIZE
+	mov [ecx+offs_imag_t_bound],esi ;im.t_bound = (unsigned int)(height-1)
+	shr esi,ZB_POINT_TEXEL_SIZE
+	inc esi
 	cmp dword[ecx+offs_imag_pixmap],0 ;if (im.pixmap!=NULL) 
 	je @f
 		stdcall gl_free, [ecx+offs_imag_pixmap]

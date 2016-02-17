@@ -244,3 +244,20 @@ align 4
 popad
 	ret
 endp
+
+align 4
+proc gl_getPervPowerOfTwo uses ebx, n:dword
+	mov ebx,[n]
+	mov eax,(1 shl ZB_POINT_TEXEL_SIZE) ;max size
+	cmp ebx,eax
+	jge .set
+	@@:
+		shr eax,1
+		cmp ebx,eax
+		jl @b
+	cmp eax,8 ;min size
+	jge .set
+		mov eax,8
+	.set:
+	ret
+endp

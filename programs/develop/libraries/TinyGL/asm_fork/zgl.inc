@@ -169,11 +169,17 @@ struct GLImage
 	pixmap dd ? ;void*
 	xsize dd ? ;int
 	ysize dd ? ;int
+	xsize_log2 dd ? ;unsigned int
+	s_bound dd ? ;unsigned int
+	t_bound dd ? ;unsigned int
 ends
 
 offs_imag_pixmap equ 0
 offs_imag_xsize equ 4
 offs_imag_ysize equ 8
+offs_imag_xsize_log2 equ 12
+offs_imag_s_bound equ 16
+offs_imag_t_bound equ 20
 
 ; textures
 
