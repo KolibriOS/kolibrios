@@ -253,7 +253,7 @@ B32:
         mov     fs, ax
         mov     gs, ax
         mov     ss, ax
-        mov     esp, 0x006CC00       ; Set stack
+        mov     esp, TMP_STACK_TOP       ; Set stack
 
 ; CLEAR 0x280000 - HEAP_BASE
 
@@ -2177,7 +2177,7 @@ sys_end:
 @@:
 
         mov     eax, [TASK_BASE]
-        mov     [eax+TASKDATA.state], 3; terminate this program
+        mov     [eax+TASKDATA.state], TSTATE_ZOMBIE
         call    wakeup_osloop
 
 .waitterm:            ; wait here for termination
@@ -3746,7 +3746,7 @@ nobackgr:
 align 4
 markz:
         push    ecx edx
-        cmp     [edx+TASKDATA.state], 9
+        cmp     [edx+TASKDATA.state], TSTATE_FREE
         jz      .nokill
         lea     edx, [(edx-(CURRENT_TASK and 1FFFFFFFh))*8+SLOT_BASE]
         cmp     [edx+APPDATA.process], sys_proc
@@ -3760,7 +3760,7 @@ markz:
         pop     edx ecx
         test    eax, eax
         jz      @f
-        mov     [edx+TASKDATA.state], byte 3
+        mov     [edx+TASKDATA.state], TSTATE_ZOMBIE
 @@:
         add     edx, 0x20
         loop    markz
@@ -5766,103 +5766,64 @@ yes_shutdown_param:
 .no_shutdown_cpus:
 
         cli
+        call    IRQ_mask_all
 
-if ~ defined extended_primary_loader
-; load kernel.mnt to 0x7000:0
+        mov     eax, [OS_BASE + 0x9030]
+        cmp     al, SYSTEM_RESTART
+        jne     @F
+
+; load kernel.mnt to _CLEAN_ZONE
         mov     ebx, kernel_file_load
         pushad
         call    file_system_lfn
         popad
 
-        mov     esi, restart_kernel_4000+OS_BASE+0x10000 ; move kernel re-starter to 0x4000:0
-        mov     edi, OS_BASE+0x40000
-        mov     ecx, 1000
-        rep movsb
-end if
+        mov     esi, OS_BASE+restart_kernel_5000 ; move kernel re-starter to 0x5000:0
+        mov     edi, OS_BASE+0x50000
+        mov     ecx, (restart_code_end - restart_kernel_5000)/4
+        rep movsd
 
-;        mov     esi, BOOT_VAR    ; restore 0x0 - 0xffff
-;        mov     edi, OS_BASE
-;        mov     ecx, 0x10000/4
-;        cld
-;        rep movsd
-
-        call    IRQ_mask_all
-
-        cmp     byte [OS_BASE + 0x9030], 2
-        jnz     no_acpi_power_off
-
-; scan for RSDP
-; 1) The first 1 Kb of the Extended BIOS Data Area (EBDA).
-        movzx   eax, word [OS_BASE + 0x40E]
-        shl     eax, 4
-        jz      @f
-        mov     ecx, 1024/16
-        call    scan_rsdp
-        jnc     .rsdp_found
 @@:
-; 2) The BIOS read-only memory space between 0E0000h and 0FFFFFh.
-        mov     eax, 0xE0000
-        mov     ecx, 0x2000
-        call    scan_rsdp
-        jc      no_acpi_power_off
-.rsdp_found:
-        mov     esi, [eax+16]   ; esi contains physical address of the RSDT
-        mov     ebp, [ipc_tmp]
-        stdcall map_page, ebp, esi, PG_READ
-        lea     eax, [esi+1000h]
-        lea     edx, [ebp+1000h]
-        stdcall map_page, edx, eax, PG_READ
-        and     esi, 0xFFF
-        add     esi, ebp
-        cmp     dword [esi], 'RSDT'
-        jnz     no_acpi_power_off
-        mov     ecx, [esi+4]
-        sub     ecx, 24h
-        jbe     no_acpi_power_off
-        shr     ecx, 2
-        add     esi, 24h
-.scan_fadt:
-        lodsd
-        mov     ebx, eax
-        lea     eax, [ebp+2000h]
-        stdcall map_page, eax, ebx, PG_READ
-        lea     eax, [ebp+3000h]
-        add     ebx, 0x1000
-        stdcall map_page, eax, ebx, PG_READ
-        and     ebx, 0xFFF
-        lea     ebx, [ebx+ebp+2000h]
+;disable paging
+
+        call    create_trampoline_pgmap
+        mov     cr3, eax
+        jmp     @F
+org $-OS_BASE
+@@:
+        mov     eax, cr0
+        and     eax, 0x7FFFFFFF
+        mov     cr0, eax
+        mov     eax, cr3
+        mov     cr3, eax
+
+        cmp     byte [0x9030], SYSTEM_SHUTDOWN
+        jne     no_acpi_power_off
+
+; system_power_off
+
+        mov     ebx, [acpi_fadt_base-OS_BASE]
         cmp     dword [ebx], 'FACP'
-        jz      .fadt_found
-        loop    .scan_fadt
-        jmp     no_acpi_power_off
-.fadt_found:
-; ebx is linear address of FADT
-        mov     edi, [ebx+40] ; physical address of the DSDT
-        lea     eax, [ebp+4000h]
-        stdcall map_page, eax, edi, PG_READ
-        lea     eax, [ebp+5000h]
-        lea     esi, [edi+0x1000]
-        stdcall map_page, eax, esi, PG_READ
-        and     esi, 0xFFF
-        sub     edi, esi
-        cmp     dword [esi+ebp+4000h], 'DSDT'
-        jnz     no_acpi_power_off
-        mov     eax, [esi+ebp+4004h] ; DSDT length
+        jne     no_acpi_power_off
+        mov     esi, [acpi_dsdt_base-OS_BASE]
+        cmp     dword [esi], 'DSDT'
+        jne     no_acpi_power_off
+        mov     eax, [esi+4] ; DSDT length
         sub     eax, 36+4
         jbe     no_acpi_power_off
         add     esi, 36
 .scan_dsdt:
-        cmp     dword [esi+ebp+4000h], '_S5_'
+        cmp     dword [esi], '_S5_'
         jnz     .scan_dsdt_cont
-        cmp     byte [esi+ebp+4000h+4], 12h ; DefPackage opcode
+        cmp     byte [esi+4], 12h ; DefPackage opcode
         jnz     .scan_dsdt_cont
-        mov     dl, [esi+ebp+4000h+6]
+        mov     dl, [esi+6]
         cmp     dl, 4 ; _S5_ package must contain 4 bytes
                       ; ...in theory; in practice, VirtualBox has 2 bytes
         ja      .scan_dsdt_cont
         cmp     dl, 1
         jb      .scan_dsdt_cont
-        lea     esi, [esi+ebp+4000h+7]
+        lea     esi, [esi+7]
         xor     ecx, ecx
         cmp     byte [esi], 0 ; 0 means zero byte, 0Ah xx means byte xx
         jz      @f
@@ -5884,21 +5845,6 @@ end if
         jmp     do_acpi_power_off
 .scan_dsdt_cont:
         inc     esi
-        cmp     esi, 0x1000
-        jb      @f
-        sub     esi, 0x1000
-        add     edi, 0x1000
-        push    eax
-        lea     eax, [ebp+4000h]
-        stdcall map_page, eax, edi, PG_READ
-        push    PG_READ
-        lea     eax, [edi+1000h]
-        push    eax
-        lea     eax, [ebp+5000h]
-        push    eax
-        stdcall map_page
-        pop     eax
-@@:
         dec     eax
         jnz     .scan_dsdt
         jmp     no_acpi_power_off
@@ -5932,34 +5878,143 @@ do_acpi_power_off:
 @@:
         jmp     $
 
-
-scan_rsdp:
-        add     eax, OS_BASE
-.s:
-        cmp     dword [eax], 'RSD '
-        jnz     .n
-        cmp     dword [eax+4], 'PTR '
-        jnz     .n
-        xor     edx, edx
-        xor     esi, esi
-@@:
-        add     dl, [eax+esi]
-        inc     esi
-        cmp     esi, 20
-        jnz     @b
-        test    dl, dl
-        jz      .ok
-.n:
-        add     eax, 10h
-        loop    .s
-        stc
-.ok:
-        ret
-
 no_acpi_power_off:
-        call    create_trampoline_pgmap
-        mov     cr3, eax
-        jmp     become_real+0x10000
+
+        jmp     0x50000
+
+align 4
+restart_kernel_5000:
+org 0x50000
+
+        cmp     byte [0x9030], SYSTEM_RESTART
+        jne     @F
+
+        xchg    bx, bx
+
+        mov     esi, _CLEAN_ZONE-OS_BASE
+        mov     edi, 0x10000
+        mov     ecx, 0x31000/4
+        cld
+        rep     movsd
+@@:
+
+        xor     ebx, ebx
+        xor     edx, edx
+        xor     ecx, ecx
+        xor     esi, esi
+        xor     edi, edi
+        xor     ebp, ebp
+        lidt    [.idt]
+        lgdt    [.gdt]
+        jmp     8:@f
+align 8
+.gdt:
+; selector 0 - not used
+        dw      23
+        dd      .gdt
+        dw      0
+; selector 8 - code from 5000:0000 to 1000:FFFF
+        dw      0FFFFh
+        dw      0
+        db      5
+        db      10011011b
+        db      00000000b
+        db      0
+; selector 10h - data from 1000:0000 to 1000:FFFF
+        dw      0FFFFh
+        dw      0
+        db      1
+        db      10010011b
+        db      00000000b
+        db      0
+.idt:
+        dw 256*4
+        dd 0
+org $ - 0x50000
+use16
+@@:
+        mov     ax, 10h
+        mov     ds, ax
+        mov     es, ax
+        mov     fs, ax
+        mov     gs, ax
+        mov     ss, ax
+
+        mov     eax, cr0
+        and     eax, not 80000001h
+        mov     cr0, eax
+        jmp     0x5000:.real_mode
+
+align 4
+.real_mode:
+
+; setup stack
+
+        mov     ax, (TMP_STACK_TOP and 0xF0000) shr 4
+        mov     ss, ax
+        mov     esp, TMP_STACK_TOP and 0xFFFF
+
+;remap IRQs
+        mov     al, 0x11
+        out     0x20, al
+        out     0xA0, al
+
+        mov     al, 0x08
+        out     0x21, al
+        mov     al, 0x70
+        out     0xA1, al
+
+        mov     al, 0x04
+        out     0x21, al
+        mov     al, 0x02
+        out     0xA1, al
+
+        mov     al, 0x01
+        out     0x21, al
+        out     0xA1, al
+
+        mov     al, 0xB8
+        out     0x21, al
+        mov     al, 0xBD
+        out     0xA1, al
+
+        mov     al, 00110100b
+        out     43h, al
+        mov     al, 0xFF
+        out     40h, al
+        out     40h, al
+
+        mov     al, byte [es:0x9030]
+        cmp     al, SYSTEM_RESTART
+        je      .do_restart
+
+        jmp $
+
+.do_restart:
+
+        mov     ax, 0x0003     ; set text mode for screen
+        int     0x10
+        sti
+
+; (hint by Black_mirror)
+; We must read data from keyboard port,
+; because there may be situation when previous keyboard interrupt is lost
+; (due to return to real mode and IRQ reprogramming)
+; and next interrupt will not be generated (as keyboard waits for handling)
+        in      al, 0x60
+
+; bootloader interface
+        push    0x1000
+        pop     ds
+        mov     si, kernel_restart_bootblock
+        mov     ax, 'KL'
+        jmp     0x1000:0000
+
+
+align 4
+org restart_kernel_5000 + $
+restart_code_end:
+
 iglobal
 align 4
 realmode_gdt:
@@ -5970,7 +6025,7 @@ realmode_gdt:
 ; selector 8 - code from 1000:0000 to 1000:FFFF
         dw      0FFFFh
         dw      0
-        db      1
+        db      5
         db      10011011b
         db      00000000b
         db      0
@@ -5982,6 +6037,8 @@ realmode_gdt:
         db      00000000b
         db      0
 endg
+
+org $+OS_BASE
 
 if ~ lang eq sp
 diff16 "end of .text segment",0,$

@@ -455,7 +455,25 @@ ACPI_FADT_SIGN             equ 0x50434146
 
 acpi_locate:
         push    ebx
+        push    edi
+
+        movzx   ebx, word [0x40E]
+        shl     ebx, 4
+        lea     ecx, [ebx+1024]
+        call    .check
+
+        test    ebx, ebx
+        jnz     .done
+
         mov     ebx, ACPI_HI_RSDP_WINDOW_START
+        mov     edi, ACPI_HI_RSDP_WINDOW_END
+        call    .check
+.done:
+        mov     eax, ebx
+        pop     edi
+        pop     ebx
+        ret
+
 .check:
         cmp     [ebx], dword 0x20445352
         jne     .next
@@ -472,17 +490,12 @@ acpi_locate:
 
         test    al, al
         jnz     .next
-
-        mov     eax, ebx
-        pop     ebx
         ret
 .next:
         add     ebx, 16
-        cmp     ebx, ACPI_HI_RSDP_WINDOW_END
+        cmp     ebx, edi
         jb      .check
-
-        pop     ebx
-        xor     eax, eax
+        xor     ebx, ebx
         ret
 
 align 4

@@ -634,6 +634,8 @@ ipv4_output:
         push    ecx ax edi
         mov     eax, edi
         call    ipv4_route              ; outputs device number in edi, dest ip in eax, source IP in edx
+        test    eax, eax
+        jz      .no_route
         push    edx
         test    edi, edi
         jz      .loopback
@@ -680,6 +682,12 @@ ipv4_output:
   .eth_error:
         DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_output: ethernet error\n"
         add     esp, 3*4+2+6
+        xor     eax, eax
+        ret
+
+  .no_route:
+        DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_output: No route to host!\n"
+        add     esp, 2*4+2
         xor     eax, eax
         ret
 
@@ -917,7 +925,7 @@ endp
 ;       ebx = outgoing device / 0                                 ;
 ;       edx = Source IP                                           ;
 ;                                                                 ;
-; OUT:  eax = Destination IP (or gateway IP)                      ;
+; OUT:  eax = Destination IP (may be gateway), 0 on error         ;
 ;       edx = Source IP                                           ;
 ;       edi = device number*4                                     ;
 ;                                                                 ;
@@ -926,7 +934,7 @@ endp
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
-ipv4_route:     ; TODO: return error if no valid route found
+ipv4_route:
 
         test    ebx, ebx
         jnz     .got_device
@@ -979,6 +987,7 @@ ipv4_route:     ; TODO: return error if no valid route found
         ret
 
   .fail:
+        xor     eax, eax
         ret
 
 

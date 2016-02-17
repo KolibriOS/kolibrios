@@ -15,7 +15,14 @@ $Revision$
 
 use32
 become_real:
+        xor     ebx, ebx
+        xor     edx, edx
+        xor     ecx, ecx
+        xor     esi, esi
+        xor     edi, edi
+        xor     ebp, ebp
         cli
+        ltr     bx
         lgdt    [realmode_gdt-OS_BASE]
         jmp     8:@f
 use16
@@ -34,10 +41,11 @@ use16
 pr_mode_exit:
 
 ; setup stack
-        mov     ax, 0x3000
+        mov     ax, (TMP_STACK_TOP and 0xF0000) shr 4
         mov     ss, ax
-        mov     esp, 0x0EC00
-; setup ds
+        mov     esp, TMP_STACK_TOP and 0xFFFF
+
+;setup ds
         push    cs
         pop     ds
 
@@ -173,31 +181,41 @@ restart_kernel:
 
         mov     ax, 0x0003     ; set text mode for screen
         int     0x10
-        jmp     0x4000:0000
+        jmp     0x5000:0000
 
-restart_kernel_4000:
+restart_kernel_5001:
         cli
 
         push    ds
         pop     es
-        mov     cx, 0x8000
-        push    cx
-        push    0x7100
-        pop     ds
         xor     si, si
         xor     di, di
-        rep movsw
-        pop     cx
-        mov     ds, cx
+
+        push    0x7100
+        pop     ds
+        mov     cx, 0x4000
+        rep movsd
+
+        push    0x8100
+        pop     ds
         push    0x2000
         pop     es
-        rep movsw
-        push    0x9000
+        mov     cx, 0x4000
+        rep movsd
+
+        push    0x9100
         pop     ds
         push    0x3000
         pop     es
-        mov     cx, 0xE000/2
-        rep movsw
+        mov     cx, 0x4000
+        rep movsd
+xchg bx, bx
+        push    0xA100
+        pop     ds
+        push    0x4000
+        pop     es
+        mov     cx, 0x800
+        rep movsd
 
         wbinvd  ; write and invalidate cache
 

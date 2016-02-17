@@ -358,6 +358,10 @@ STDIN_FILENO    equ 0
 STDOUT_FILENO   equ 1
 STDERR_FILENO   equ 2
 
+SYSTEM_SHUTDOWN    equ 2
+SYSTEM_REBOOT      equ 3
+SYSTEM_RESTART     equ 4
+
 struct SYSCALL_STACK
         _eip            dd ?
         _edi            dd ?    ;  +4
