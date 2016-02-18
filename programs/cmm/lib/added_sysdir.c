@@ -6,7 +6,7 @@ struct sysdir
 } sysdir;
 
 
-:int SetAddApplDir(dword tName, tPath)
+:int SetAdditionalSystemDirectory(dword tName, tPath)
 {
 	int i;
 	strcpy(#sysdir.name, tName);

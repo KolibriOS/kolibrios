@@ -5,8 +5,7 @@
 #include "..\lib\copyf.h"
 
 #include "..\lib\patterns\restart_process.h"
-
-#include "add_appl_dir.c";
+#include "..\lib\added_sysdir.c";
 
 ?define T_END "\'Установка KolibriN успешно завершена.\' -O"
 ?define T_LESS_RAM "Мало свободной оперативной памяти. Могут возникнуть проблемы"
@@ -14,7 +13,7 @@
 void main()
 {
 
-	SetAddApplDir("kolibrios", abspath("install/kolibrios")+1);
+	SetAdditionalSystemDirectory("kolibrios", abspath("install/kolibrios")+1);
 	io.run("/sys/media/kiv", "\\S__/kolibrios/res/Wallpapers/In the wind there is longing.png");
 	io.del("/sys/docpack");
 	copyf(abspath("install/sys"), "/sys");

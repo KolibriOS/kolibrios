@@ -201,6 +201,7 @@ extra_files = {
  {"kolibrios/media/zsea/zsea.ini", PROGS .. "/media/zsea/zSea.ini"},
  {"kolibrios/media/zsea/buttons/buttons.png", PROGS .. "/media/zsea/buttons.png"},
  {"kolibrios/res/skins/", "../skins/authors.txt"},
+ {"kolibrios/settings/app_plus.ini", "common/settings/app_plus.ini"},
  {"kolibrios/utils/appearance", PROGS .. "/cmm/appearance/appearance.com"},
 }
 if build_type == "rus" then tup.append_table(extra_files, {
@@ -509,6 +510,7 @@ tup.append_table(img_files, {
  {"TMPDISK", PROGS .. "/cmm/tmpdisk/tmpdisk.com"},
  {"GAME_CENTER", PROGS .. "/cmm/software_widget/software_widget.com"},
  {"SYSPANEL", PROGS .. "/cmm/software_widget/software_widget.com"},
+ {"APP_PLUS", PROGS .. "/cmm/app_plus/app_plus.com"},
 })
 end -- tup.getconfig('NO_CMM') ~= 'full'
 
