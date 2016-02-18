@@ -418,9 +418,7 @@ align	4
 draw_window:
 	mcall	12,1
 	
-	mcall 48, 4
-	lea	ecx, [50*65536+484+eax]; [y start] *65536 + [y size] + [skin_height]
-	mcall	0,<50,649>,,0x34,,title
+	mcall	0,<50,649>,<50,484>,0x01000000,0x01000000,0x01000000
 
 	mcall	12,2
 	ret
