@@ -141,7 +141,7 @@ extra_files = {
  {"kolibrios/3D/voxel_editor/CURSORS.PNG", PROGS .. "/media/voxel_editor/trunk/cursors.png"},
  {"kolibrios/3D/voxel_editor/CURSORS_GR.PNG", PROGS .. "/media/voxel_editor/trunk/cursors_gr.png"},
  {"kolibrios/3D/voxel_editor/TOOLBAR.PNG", PROGS .. "/media/voxel_editor/trunk/toolbar.png"},
- {"kolibrios/3D/voxel_editor/VOXEL_EDITOR.INI", PROGS .. "/media/voxel_editor/trunk/voxel_editor.ini"},
+ {"kolibrios/3D/voxel_editor/VOX_EDITOR.INI", PROGS .. "/media/voxel_editor/trunk/vox_editor.ini"},
  {"kolibrios/3D/voxel_editor/HOUSE1.VOX", PROGS .. "/media/voxel_editor/trunk/house1.vox"},
  {"kolibrios/3D/voxel_editor/HOUSE2.VOX", PROGS .. "/media/voxel_editor/trunk/house2.vox"},
  {"kolibrios/emul/dosbox/", "common/emul/DosBox/*"},
