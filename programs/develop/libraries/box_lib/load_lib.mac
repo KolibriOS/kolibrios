@@ -117,6 +117,8 @@ local lp1
 local lp2
 local lp3
 local lp4
+local lp5
+local lp6
 local file_name
 
 library_fun_memory_alloc equ 0 ;не использовать в макросах проверку на функции 'lib_init'
@@ -168,6 +170,21 @@ align 4
 	test    esi,esi
 	jz      .str_lp4
 
+	;проверка относительных путей c двумя точками '../'
+	cmp word[esi],'..'
+	jne .lp3
+	dec edi ;для перехода на '/'
+.lp6:
+		add esi,3 ;пропускаем одно поднятие '../'
+.lp5:
+		dec edi ;идем по папкам
+		cmp byte[edi],'/'
+		jnz .lp5
+	cmp word[esi],'..'
+	je .lp6
+	inc edi ;для перехода на '/'
+
+	;копирование относительного пути
 align 4
 .lp3:
 	lodsb
@@ -183,7 +200,7 @@ align 4
 	stosb
 	test    eax,eax
 	jnz     .lp4
-;--------------------------------------------------------------------- 
+;---------------------------------------------------------------------
 	ret
 }
 
@@ -439,15 +456,16 @@ exit_lp2:
 
 macro copy_path lib_name,dir_path,lib_path,point_dir_name
 {
-        pushad  ;save all registers
-        push    dword lib_name
-        push    dword dir_path
-        push    dword lib_path
-        push	dword point_dir_name
-        call    @copy_path
+pushad  ;save all registers
+	push dword lib_name
+	push dword dir_path
+	push dword lib_path
+	push dword point_dir_name
+	call @copy_path
 
-        add     esp,16
-        popad   ;restore all registers
+	add  esp,16
+	;notify_window_run lib_path ;unblok for test load path
+popad   ;restore all registers
 }
 
 ; готовим текст для показа через @notify:

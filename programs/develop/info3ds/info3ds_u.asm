@@ -1113,9 +1113,9 @@ end if
 align 4
 l_libs_start:
 	lib_0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
-		err_msg_found_lib_0, head_f_l, proclib_import,err_msg_import_0, head_f_i
+		err_msg_found_lib_0, head_f_l, proclib_import,err_msg_import_0,head_f_i
 	lib_1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
-		err_msg_found_lib_1, head_f_l, import_libimg, err_msg_import_1, head_f_i
+		err_msg_found_lib_1, head_f_l, import_libimg, err_msg_import_1,head_f_i
 	lib_2 l_libs lib_name_2, sys_path, file_name,  system_dir_2,\
 		err_msg_found_lib_2, head_f_l, import_box_lib,err_msg_import_2,head_f_i
 	lib_3 l_libs lib_name_3, sys_path, file_name,  system_dir_3,\
@@ -1123,7 +1123,7 @@ l_libs_start:
 	lib_4 l_libs lib_name_4, sys_path, file_name,  system_dir_4,\
 		err_msg_found_lib_4, head_f_l, import_libkmenu,err_msg_import_4,head_f_i
 	lib_5 l_libs lib_name_5, sys_path, file_name,  system_dir_5,\
-		err_msg_found_lib_5, head_f_l, import_lib_tinygl,err_msg_import_5,head_f_i
+		err_msg_found_lib_5, head_f_l, import_lib_tinygl,err_msg_import_5,head_f_i,lib_sub_folder
 	lib_6 l_libs lib_name_6, sys_path, file_name,  system_dir_6,\
 		err_msg_found_lib_6, head_f_l, import_libini, err_msg_import_6,head_f_i 	
 l_libs_end:
@@ -1397,10 +1397,12 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru
-capt db 'info 3ds [user] версия 13.02.16',0 ;подпись окна
+capt db 'info 3ds [user] версия 18.02.16',0 ;подпись окна
 else
-capt db 'info 3ds [user] version 13.02.16',0 ;window caption
+capt db 'info 3ds [user] version 18.02.16',0 ;window caption
 end if
+
+lib_sub_folder db '../../lib/',0
 
 align 16
 i_end:
