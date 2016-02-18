@@ -1,44 +1,23 @@
 use32
 	org 0x0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 0x1
-	dd start
-	dd i_end ;размер приложения
-	dd mem
-	dd stacktop
-	dd 0
-	dd sys_path
+	dd 1, start, i_end, mem, stacktop, 0, sys_path
 
 include '../../../../programs/macros.inc'
 include '../../../../programs/proc32.inc'
-include '../../../../programs/develop/libraries/box_lib/load_lib.mac'
-include '../../../dll.inc'
+include '../../../../programs/KOSfuncs.inc'
+include '../../../../programs/load_img.inc'
 include 'vox_draw.inc'
 include 'vox_rotate.inc'
 include 'str.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel editor 02.02.15',0 ;подпись окна
-
-struct FileInfoBlock
-	Function dd ?
-	Position dd ?
-	Flags	 dd ?
-	Count	 dd ?
-	Buffer	 dd ?
-		db ?
-	FileName dd ?
-ends
-
-run_file_70 FileInfoBlock
-image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
+caption db 'Voxel editor 18.02.16',0 ;подпись окна
 
 fn_toolbar db 'toolbar.png',0
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
-IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*27
 image_data_toolbar dd 0
 cursors_count equ 4
-IMAGE_CURSORS_SIZE equ 4096*cursors_count ;размер картинки с курсорами
 
 ;значения задаваемые по умолчанию, без ini файла
 ini_def_window_t equ 10
@@ -65,45 +44,6 @@ key_t_size db 'tile_size',0
 key_f_size db 'file_size',0
 key_col_b db 'c_background',0
 
-macro load_image_file path,buf,size { ;макрос для загрузки изображений
-	;path - может быть переменной или строковым параметром
-	if path eqtype '' ;проверяем задан ли строкой параметр path
-		jmp @f
-			local .path_str
-			.path_str db path ;формируем локальную переменную
-			db 0
-		@@:
-		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0x0
-	else
-		copy_path path,[32],file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
-	end if
-
-	stdcall mem.Alloc, dword size ;выделяем память для изображения
-	mov [buf],eax
-
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 0
-	mov [run_file_70.Position], 0
-	mov [run_file_70.Flags], 0
-	mov [run_file_70.Count], dword size
-	m2m [run_file_70.Buffer], [buf]
-	mov byte[run_file_70+20], 0
-	mov [run_file_70.FileName], file_name
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
-	cmp ebx,0xffffffff
-	je @f
-		;определяем вид изображения и переводим его во временный буфер image_data
-		stdcall dword[img_decode], dword[buf],ebx,0
-		mov dword[image_data],eax
-		;преобразуем изображение к формату rgb
-		stdcall dword[img_to_rgb2], dword[image_data],dword[buf]
-		;удаляем временный буфер image_data
-		stdcall dword[img_destroy], dword[image_data]
-	@@:
-}
-
 OT_MAP_X  equ  0
 OT_MAP_Y  equ  0
 OT_CAPT_X_COLOR equ  5 ;отступ для подписи цвета
@@ -113,17 +53,23 @@ PEN_MODE_CLEAR equ 0 ;режим стирания
 PEN_MODE_SELECT_COLOR equ 2 ;режим выбора цвета
 PEN_MODE_BRUSH equ 3 ;режим работы с кистью
 
+run_file_70 FileInfoBlock
+
 align 4
 start:
 	load_libraries l_libs_start,l_libs_end
-	;проверка на сколько удачно загузилась библиотека
-	mov	ebp,lib_2
+	;проверка на сколько удачно загузились библиотеки
+	mov	ebp,lib_0
+	.test_lib_open:
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
-		mcall -1 ;exit not correct
+		mcall SF_TERMINATE_PROCESS ;exit not correct
 	@@:
-	mcall 48,3,sc,sizeof.system_colors
-	mcall 40,0x27
+	add ebp,ll_struc_size
+	cmp ebp,l_libs_end
+	jl .test_lib_open
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
+	mcall SF_SET_EVENTS_MASK,0xC0000027
 	stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
 
 ;--- load ini file ---
@@ -172,11 +118,11 @@ start:
 	mov [buf_pl.h],eax
 
 	;*** загрузка курсоров
-	load_image_file 'cursors_gr.png',image_data_toolbar,IMAGE_CURSORS_SIZE
+	load_image_file 'cursors_gr.png',image_data_toolbar
 	stdcall [buf2d_create_f_img], buf_curs_8,[image_data_toolbar] ;создаем буфер
 	stdcall mem.Free,[image_data_toolbar] ;освобождаем память
 
-	load_image_file 'cursors.png',image_data_toolbar, IMAGE_CURSORS_SIZE
+	load_image_file 'cursors.png',image_data_toolbar
 	stdcall [buf2d_create_f_img], buf_curs,[image_data_toolbar] ;создаем буфер
 	stdcall mem.Free,[image_data_toolbar] ;освобождаем память
 
@@ -191,7 +137,7 @@ start:
 	stdcall [buf2d_vox_brush_create], buf_vox_g3, vox_6_7_z
 	stdcall [buf2d_vox_brush_create], buf_vox_g2, vox_6_4_z
 
-	load_image_file fn_toolbar, image_data_toolbar,IMAGE_TOOLBAR_SIZE
+	load_image_file fn_toolbar, image_data_toolbar
 
 	stdcall mem.Alloc,[max_open_file_size]
 	mov dword[open_file_vox],eax
@@ -207,7 +153,7 @@ red_win:
 
 align 4
 still:
-	mcall 10
+	mcall SF_WAIT_EVENT
 
 	cmp al,1
 	jz red_win
@@ -217,7 +163,7 @@ still:
 	jz button
 	cmp al,6
 	jne @f
-		mcall 9,procinfo,-1
+		mcall SF_THREAD_INFO,procinfo,-1
 		cmp ax,word[procinfo+4]
 		jne @f ;окно не активно
 		call mouse
@@ -227,10 +173,10 @@ still:
 align 4
 mouse:
 	pushad
-	mcall 37,2
+	mcall SF_MOUSE_GET,SSF_BUTTON
 	bt eax,1 ;right button
 	jnc @f
-		mcall 37,1 ;get mouse coords
+		mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
 		mov ebx,eax
 		shr ebx,16
 		and eax,0xffff
@@ -240,7 +186,7 @@ mouse:
 	@@:
 	bt eax,0 ;left button
 	jnc .end_f
-		mcall 37,1 ;get mouse coords
+		mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
 		mov ebx,eax
 		shr ebx,16
 		and eax,0xffff
@@ -352,7 +298,7 @@ mouse:
 				mov ecx,dword[v_zoom]
 				mov edi,eax
 				mov esi,ebx
-				mcall 66,3
+				mcall SF_KEYBOARD,SSF_GET_CONTROL_KEYS
 				and eax,3 ;3 -> бит 0 левый Shift нажат, бит 1 правый Shift нажат
                 jz .shift_end
                     ;если нажат Shift, то редактируем на верхнем уровне
@@ -432,21 +378,16 @@ convert_y:
 align 4
 draw_window:
 pushad
-	mcall 12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
 	; *** рисование главного окна (выполняется 1 раз при запуске) ***
 	mov edx,[sc.work]
 	or  edx,(3 shl 24)+0x30000000
 	mov edi,caption
-	mcall 0,dword[wnd_s_pos],dword[wnd_s_pos+4]
+	mcall SF_CREATE_WINDOW,dword[wnd_s_pos],dword[wnd_s_pos+4]
 
 	; *** создание кнопок на панель ***
-	mov eax,8
-	mov ebx,(5 shl 16)+20
-	mov ecx,(5 shl 16)+20
-	mov edx,3
-	mov esi,[sc.work_button]
-	int 0x40
+	mcall SF_DEFINE_BUTTON,(5 shl 16)+20,(5 shl 16)+20,3,[sc.work_button]
 
 	mov ebx,(30 shl 16)+20
 	inc edx
@@ -528,11 +469,7 @@ pushad
 	int 0x40
 
 	; *** рисование иконок на кнопках ***
-	mov eax,7
-	mov ebx,[image_data_toolbar]
-	mov ecx,(16 shl 16)+16
-	mov edx,(7 shl 16)+7 ;icon new
-	int 0x40
+	mcall SF_PUT_IMAGE,[image_data_toolbar],(16 shl 16)+16,(7 shl 16)+7 ;icon new
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;icon open
@@ -618,7 +555,7 @@ pushad
 	call draw_objects
 	call draw_pok
 
-	mcall 12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 popad
 	ret
 
@@ -660,12 +597,10 @@ draw_pok:
 	stdcall str_cat, txt_brush.size,edi
 	stdcall str_cat, txt_brush.size,txt_space ;завершающий пробел
 
-	mov eax,4 ;рисование текста
-	mov ebx,(OT_CAPT_X_COLOR shl 16)+OT_CAPT_Y_COLOR+2
 	mov ecx,[sc.work_text]
 	or  ecx,0x80000000 ;or (1 shl 30)
 	mov edx,txt_color
-	int 0x40
+	mcall SF_DRAW_TEXT,(OT_CAPT_X_COLOR shl 16)+OT_CAPT_Y_COLOR+2
 
 	mov edx,txt_curor
 	add ebx,115 shl 16
@@ -691,30 +626,26 @@ draw_pok:
 align 4
 on_change_color:
 pushad
-	mov ebx,((OT_CAPT_X_COLOR+35) shl 16)+16 ;по оси x
-	mov ecx,(OT_CAPT_Y_COLOR shl 16)+12 ;по оси y
-	mov edx,[v_color]
-	mcall 13
+	mcall SF_DRAW_RECT,((OT_CAPT_X_COLOR+35) shl 16)+16,(OT_CAPT_Y_COLOR shl 16)+12,[v_color]
 
-	mov ebx,(1 shl 8)+(6 shl 16)
 	mov ecx,edx
 	mov edx,((OT_CAPT_X_COLOR+55) shl 16)+OT_CAPT_Y_COLOR+2
 	mov esi,[sc.work_text]
 	add esi,(1 shl 30)
 	mov edi,[sc.work]
-	mcall 47
+	mcall SF_DRAW_NUMBER,(1 shl 8)+(6 shl 16)
 popad
 	ret
 
 align 4
 key:
-	mcall 2
+	mcall SF_GET_KEY
 	jmp still
 
 
 align 4
 button:
-	mcall 17
+	mcall SF_GET_BUTTON
 	cmp ah,3
 	jne @f
 		call but_new_file
@@ -842,7 +773,7 @@ button:
 	stdcall [buf2d_delete],buf_curs_8
 	stdcall mem.Free,[image_data_toolbar]
 	stdcall mem.Free,[open_file_vox]
-	mcall -1
+	mcall SF_TERMINATE_PROCESS
 
 ;данные для инициализации воксельного объекта
 align 4
@@ -864,7 +795,6 @@ endp
 
 align 4
 open_file_vox dd 0 ;указатель на область для открытия файлов
-open_b rb 560
 
 align 4
 but_open_file:
@@ -876,16 +806,14 @@ but_open_file:
 	je .end_open_file
 	;код при удачном открытии диалога
 
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 5
+	mov [run_file_70.Function], SSF_GET_INFO
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov dword[run_file_70.Count], 0
 	mov dword[run_file_70.Buffer], open_b
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
-	mov ebx,run_file_70
-	int 0x40
+	mcall SF_FILE,run_file_70
 
 	mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
 	cmp ecx,[max_open_file_size] ;проверяем размер выделенной памяти
@@ -896,23 +824,20 @@ but_open_file:
 		notify_window_run txt_need_memory
 	@@:
 	
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 0
+	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov dword[run_file_70.Count], ecx
 	m2m dword[run_file_70.Buffer], dword[open_file_vox]
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
+	mcall SF_FILE,run_file_70
 	cmp ebx,0xffffffff
 	je .end_open_file
 
-	mcall 71,1,openfile_path
+	mcall SF_SET_CAPTION,1,openfile_path
 
 	;---
-	;
 	mov eax,[open_file_vox]
 	movzx eax,byte[eax]
 	and eax,0xff ;берем масштаб по умолчанию
@@ -941,14 +866,14 @@ but_save_file:
 
 		stdcall buf2d_vox_obj_get_size, ebx
 		mov dword[run_file_70.Count], eax ;размер файла
-		mov [run_file_70.Function], 2
+		mov [run_file_70.Function], SSF_CREATE_FILE
 		mov [run_file_70.Position], 0
 		mov [run_file_70.Flags], 0
 		mov ebx, dword[open_file_vox]
 		mov [run_file_70.Buffer], ebx
 		mov byte[run_file_70+20], 0
 		mov dword[run_file_70.FileName], openfile_path
-		mcall 70,run_file_70 ;загружаем файл изображения
+		mcall SF_FILE,run_file_70 ;загружаем файл изображения
 		cmp ebx,0xffffffff
 		je .end_save_file
 
@@ -1743,12 +1668,12 @@ proc set_pen_mode uses eax ebx ecx edx, mode:dword, icon:dword, hot_p:dword
 		mov ecx,[icon]
 		shl ecx,12 ;умножаем на 4 кб
 		add ecx,[buf_curs.data]
-		mcall 37,4
+		mcall SF_MOUSE_GET,SSF_LOAD_CURSOR
 
 		cmp eax,0
 		je @f
 			mov [cursor_pointer],eax
-			mcall 37,5,[cursor_pointer]
+			mcall SF_MOUSE_GET,SSF_SET_CURSOR,[cursor_pointer]
 	@@:
 	ret
 endp
@@ -1817,9 +1742,9 @@ err_msg_found_lib_3 db 'Не найдена библиотека ',39,'libini.obj',39,0
 err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'libini',39,0
 
 l_libs_start:
-	lib0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
+	lib_0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
 		err_message_found_lib_0, head_f_l, proclib_import,err_message_import_0, head_f_i
-	lib1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
+	lib_1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
 		err_message_found_lib_1, head_f_l, import_libimg, err_message_import_1, head_f_i
 	lib_2 l_libs lib_name_2, sys_path, library_path, system_dir_2,\
 		err_msg_found_lib_2,head_f_l,import_buf2d,err_msg_import_2,head_f_i
@@ -2075,7 +2000,8 @@ align 16
 i_end:
 	wnd_s_pos: ;место для настроек стартовой позиции окна
 		rq 0
-	rb 4096 ;2048
+	rb 4096
+align 16
 stacktop:
 	sys_path rb 1024
 	file_name:

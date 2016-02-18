@@ -96,7 +96,7 @@ start:
 	cmp ebp,l_libs_end
 	jl .test_lib_open
 	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
-	mcall SF_SET_EVENTS_MASK,0x27
+	mcall SF_SET_EVENTS_MASK,0xC0000027
 
 	stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
 
@@ -1069,7 +1069,7 @@ system_dir_3 db '/sys/lib/'
 lib_name_3 db 'buf2d.obj',0
 system_dir_4 db '/sys/lib/'
 lib_name_4 db 'kmenu.obj',0
-system_dir_5 db '/sys/lib/'
+system_dir_5 db '/kolibrios/lib/'
 lib_name_5 db 'tinygl.obj',0
 system_dir_6 db '/sys/lib/'
 lib_name_6 db 'libini.obj',0
@@ -1123,7 +1123,7 @@ l_libs_start:
 	lib_4 l_libs lib_name_4, sys_path, file_name,  system_dir_4,\
 		err_msg_found_lib_4, head_f_l, import_libkmenu,err_msg_import_4,head_f_i
 	lib_5 l_libs lib_name_5, sys_path, file_name,  system_dir_5,\
-		err_msg_found_lib_5, head_f_l, import_lib_tinygl,err_msg_import_5,head_f_i,lib_sub_folder
+		err_msg_found_lib_5, head_f_l, import_lib_tinygl,err_msg_import_5,head_f_i
 	lib_6 l_libs lib_name_6, sys_path, file_name,  system_dir_6,\
 		err_msg_found_lib_6, head_f_l, import_libini, err_msg_import_6,head_f_i 	
 l_libs_end:
@@ -1401,8 +1401,6 @@ capt db 'info 3ds [user] версия 18.02.16',0 ;подпись окна
 else
 capt db 'info 3ds [user] version 18.02.16',0 ;window caption
 end if
-
-lib_sub_folder db '../../lib/',0
 
 align 16
 i_end:
