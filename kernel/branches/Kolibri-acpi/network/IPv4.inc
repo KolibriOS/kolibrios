@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  IPv4.INC                                                       ;;
@@ -939,6 +939,7 @@ ipv4_route:
         test    ebx, ebx
         jnz     .got_device
 
+; Broadcast does not need gateway
         cmp     eax, 0xffffffff
         je      .broadcast
 
@@ -975,6 +976,10 @@ ipv4_route:
         je      .fail
 
         mov     edx, [IP_LIST + edi]            ; Source IP
+
+; Broadcast does not need gateway
+        cmp     eax, 0xffffffff
+        je      @f
 
 ; Check if we should route to gateway or not
         mov     ebx, [IP_LIST + edi]

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -440,103 +440,18 @@ high_code:
 ; -----------------------------------------
         mov     al, [BOOT_VARS+BOOT_DMA]            ; DMA access
         mov     [allow_dma_access], al
-        movzx   eax, byte [BOOT_VARS+BOOT_BPP]      ; bpp
-        mov     [_display.bits_per_pixel], eax
-        mov     [_display.vrefresh], 60
+
         mov     al, [BOOT_VARS+BOOT_DEBUG_PRINT]    ; If nonzero, duplicates debug output to the screen
         mov     [debug_direct_print], al
+
         mov     al, [BOOT_VARS+BOOT_LAUNCHER_START] ; Start the first app (LAUNCHER) after kernel is loaded?
         mov     [launcher_start], al
-        movzx   eax, word [BOOT_VARS+BOOT_X_RES]; X max
-        mov     [_display.width], eax
-        mov     [display_width_standard], eax
-        dec     eax
-        mov     [screen_workarea.right], eax
-        movzx   eax, word [BOOT_VARS+BOOT_Y_RES]; Y max
-        mov     [_display.height], eax
-        mov     [display_height_standard], eax
-        dec     eax
-        mov     [screen_workarea.bottom], eax
-        movzx   eax, word [BOOT_VARS+BOOT_VESA_MODE] ; screen mode
-        mov     dword [SCR_MODE], eax
-;        mov     eax, [BOOT_VAR+0x9014]             ; Vesa 1.2 bnk sw add
-;        mov     [BANK_SWITCH], eax
-        mov     eax, 640 *4                         ; Bytes PerScanLine
-        cmp     [SCR_MODE], word 0x13               ; 320x200
-        je      @f
-        cmp     [SCR_MODE], word 0x12               ; VGA 640x480
-        je      @f
-        movzx   eax, word[BOOT_VARS+BOOT_PITCH]      ; for other modes
-@@:
-        mov     [_display.lfb_pitch], eax
-        mov     eax, [_display.width]
-        mul     [_display.height]
-        mov     [_display.win_map_size], eax
-
-        call    calculate_fast_getting_offset_for_WinMapAddress
-; for Qemu or non standart video cards
-; Unfortunately [BytesPerScanLine] does not always
-;                             equal to [_display.width] * [ScreenBPP] / 8
-        call    calculate_fast_getting_offset_for_LFB
 
         mov     esi, BOOT_VARS+0x9080
         movzx   ecx, byte [esi-1]
         mov     [NumBiosDisks], ecx
         mov     edi, BiosDisksData
         rep movsd
-
-setvideomode:
-
-        mov     eax, [BOOT_VARS+BOOT_LFB]
-        mov     [LFBAddress], eax
-
-        cmp     word [SCR_MODE], 0x0012                 ; VGA (640x480 16 colors)
-        je      .vga
-        cmp     word [SCR_MODE], 0x0013                 ; MCGA (320*200 256 colors)
-        je      .32bpp
-        cmp     byte [_display.bits_per_pixel], 32
-        je      .32bpp
-        cmp     byte [_display.bits_per_pixel], 24
-        je      .24bpp
-        cmp     byte [_display.bits_per_pixel], 16
-        je      .16bpp
-;        cmp     byte [_display.bits_per_pixel], 15
-;        je      .15bpp
-
-  .vga:
-        mov     [PUTPIXEL], VGA_putpixel
-        mov     [GETPIXEL], Vesa20_getpixel32           ; Conversion buffer is 32 bpp
-        mov     [_display.bytes_per_pixel], 4           ; Conversion buffer is 32 bpp
-        jmp     .finish
-
-;  .15bpp:
-;        mov     [PUTPIXEL], Vesa20_putpixel15
-;        mov     [GETPIXEL], Vesa20_getpixel15
-;        mov     [_display.bytes_per_pixel], 2
-;        jmp     .finish
-
-  .16bpp:
-        mov     [PUTPIXEL], Vesa20_putpixel16
-        mov     [GETPIXEL], Vesa20_getpixel16
-        mov     [_display.bytes_per_pixel], 2
-        jmp     .finish
-
-  .24bpp:
-        mov     [PUTPIXEL], Vesa20_putpixel24
-        mov     [GETPIXEL], Vesa20_getpixel24
-        mov     [_display.bytes_per_pixel], 3
-        jmp     .finish
-
-  .32bpp:
-        mov     [PUTPIXEL], Vesa20_putpixel32
-        mov     [GETPIXEL], Vesa20_getpixel32
-        mov     [_display.bytes_per_pixel], 4
-;        jmp     .finish
-
-  .finish:
-        mov     [MOUSE_PICTURE], mousepointer
-        mov     [_display.check_mouse], check_mouse_area_for_putpixel
-        mov     [_display.check_m_pixel], check_mouse_area_for_getpixel
 
 ; -------- Fast System Call init ----------
 ; Intel SYSENTER/SYSEXIT (AMD CPU support it too)
@@ -614,13 +529,16 @@ setvideomode:
         xor     eax, eax
         not     eax
         mov     ecx, 8192/4
-        rep stosd                    ; access to 4096*8=65536 ports
+        rep stosd                           ; access to 4096*8=65536 ports
 
         mov     ax, tss0
         ltr     ax
 
-        mov     [LFBSize], 0xC00000
-        call    init_LFB
+        call    init_video
+        call    init_mtrr
+        mov     [LFBAddress], LFB_BASE
+        mov     ecx, bios_fb
+        call    set_framebuffer
         call    init_fpu
         call    init_malloc
 
