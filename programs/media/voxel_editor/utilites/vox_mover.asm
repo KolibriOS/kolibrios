@@ -1,40 +1,22 @@
 use32
 	org 0x0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 0x1
-	dd start
-	dd i_end ;размер приложения
-	dd mem
-	dd stacktop
-	dd 0
-	dd sys_path
+	dd 1, start, i_end, mem, stacktop, 0, sys_path
 
 include '../../../../programs/macros.inc'
 include '../../../../programs/proc32.inc'
-include '../../../../programs/develop/libraries/box_lib/load_lib.mac'
-include '../../../../programs/dll.inc'
+include '../../../../programs/KOSfuncs.inc'
+include '../../../../programs/load_img.inc'
 include '../trunk/vox_draw.inc'
 include '../trunk/vox_rotate.inc'
 include '../trunk/str.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel mover 29.01.15',0 ;подпись окна
-
-struct FileInfoBlock
-	Function dd ?
-	Position dd ?
-	Flags	 dd ?
-	Count	 dd ?
-	Buffer	 dd ?
-		db ?
-	FileName dd ?
-ends
+caption db 'Voxel mover 19.02.16',0 ;подпись окна
 
 run_file_70 FileInfoBlock
-image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
 
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
-IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*18
 image_data_toolbar dd 0
 
 ;значения задаваемые по умолчанию, без ini файла
@@ -62,45 +44,6 @@ key_t_size db 'tile_size',0
 key_f_size db 'file_size',0
 key_col_b db 'c_background',0
 
-macro load_image_file path,buf,size { ;макрос для загрузки изображений
-	;path - может быть переменной или строковым параметром
-	if path eqtype '' ;проверяем задан ли строкой параметр path
-		jmp @f
-			local .path_str
-			.path_str db path ;формируем локальную переменную
-			db 0
-		@@:
-		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0x0
-	else
-		copy_path path,[32],file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
-	end if
-
-	stdcall mem.Alloc, dword size ;выделяем память для изображения
-	mov [buf],eax
-
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 0
-	mov [run_file_70.Position], 0
-	mov [run_file_70.Flags], 0
-	mov [run_file_70.Count], dword size
-	m2m [run_file_70.Buffer], [buf]
-	mov byte[run_file_70+20], 0
-	mov [run_file_70.FileName], file_name
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
-	cmp ebx,0xffffffff
-	je @f
-		;определяем вид изображения и переводим его во временный буфер image_data
-		stdcall dword[img_decode], dword[buf],ebx,0
-		mov dword[image_data],eax
-		;преобразуем изображение к формату rgb
-		stdcall dword[img_to_rgb2], dword[image_data],dword[buf]
-		;удаляем временный буфер image_data
-		stdcall dword[img_destroy], dword[image_data]
-	@@:
-}
-
 OT_MAP_X  equ  0
 OT_MAP_Y  equ  0
 OT_CAPT_X_COLOR equ  5 ;отступ для подписи цвета
@@ -116,10 +59,10 @@ start:
 	mov	ebp,lib_2
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
-		mcall -1 ;exit not correct
+		mcall SF_TERMINATE_PROCESS
 	@@:
-	mcall 48,3,sc,sizeof.system_colors
-	mcall 40,0x27
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
+	mcall SF_SET_EVENTS_MASK,0xC0000027
 	stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
 
 ;--- load ini file ---
@@ -174,7 +117,7 @@ start:
 
 	stdcall [buf2d_vox_brush_create], buf_vox, vox_6_7_z
 
-	load_image_file 'toolbar_m.png', image_data_toolbar,IMAGE_TOOLBAR_SIZE
+	load_image_file 'toolbar_m.png', image_data_toolbar
 
 	stdcall mem.Alloc,[max_open_file_size]
 	mov dword[open_file_vox],eax
@@ -190,7 +133,7 @@ red_win:
 
 align 4
 still:
-	mcall 10
+	mcall SF_WAIT_EVENT
 
 	cmp al,1
 	jz red_win
@@ -200,7 +143,7 @@ still:
 	jz button
 	cmp al,6
 	jne @f
-		mcall 9,procinfo,-1
+		mcall SF_THREAD_INFO,procinfo,-1
 		cmp ax,word[procinfo+4]
 		jne @f ;окно не активно
 		call mouse
@@ -210,10 +153,10 @@ still:
 align 4
 mouse:
 	pushad
-	mcall 37,2
+	mcall SF_MOUSE_GET,SSF_BUTTON
 	bt eax,1 ;right button
 	jnc @f
-		mcall 37,1 ;get mouse coords
+		mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
 		mov ebx,eax
 		shr ebx,16
 		and eax,0xffff
@@ -223,7 +166,7 @@ mouse:
 	@@:
 	bt eax,0 ;left button
 	jnc .end_f
-		mcall 37,1 ;get mouse coords
+		mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
 		mov ebx,eax
 		shr ebx,16
 		and eax,0xffff
@@ -347,16 +290,16 @@ convert_y:
 align 4
 draw_window:
 pushad
-	mcall 12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
 	; *** рисование главного окна (выполняется 1 раз при запуске) ***
 	mov edx,[sc.work]
 	or  edx,(3 shl 24)+0x30000000
-	mcall 0,dword[wnd_s_pos],dword[wnd_s_pos+4],,,caption
+	mcall SF_CREATE_WINDOW,dword[wnd_s_pos],dword[wnd_s_pos+4],,,caption
 
 	; *** создание кнопок на панель ***
 	mov esi,[sc.work_button]
-	mcall 8,(5 shl 16)+20,(5 shl 16)+20,3
+	mcall SF_DEFINE_BUTTON,(5 shl 16)+20,(5 shl 16)+20,3
 
 	mov ebx,(30 shl 16)+20
 	mov edx,4
@@ -412,7 +355,7 @@ pushad
 
 	; *** рисование иконок на кнопках ***
 	mov edx,(7 shl 16)+7 ;icon new
-	mcall 7,[image_data_toolbar],(16 shl 16)+16
+	mcall SF_PUT_IMAGE,[image_data_toolbar],(16 shl 16)+16
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;icon open
@@ -471,7 +414,7 @@ pushad
 	call draw_objects
 	call draw_pok
 
-	mcall 12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 popad
 	ret
 
@@ -480,7 +423,7 @@ draw_pok:
 	mov esi,[sc.work_button_text]
 	or  esi,(1 shl 30)
 	mov edi,[sc.work_button]
-	mcall 47, (3 shl 16)+(1 shl 31), [v_zoom], ((350+6*9) shl 16)+OT_CAPT_Y_COLOR+2 ;масштаб
+	mcall SF_DRAW_NUMBER, (3 shl 16)+(1 shl 31), [v_zoom], ((350+6*9) shl 16)+OT_CAPT_Y_COLOR+2 ;масштаб
 	mov ecx,[n_plane]
 	add edx,115 shl 16 ;9
 	int 0x40 ;номер сечения
@@ -517,7 +460,7 @@ draw_pok:
 	;рисование текста
 	mov ecx,[sc.work_text]
 	or  ecx,0x80000000 ;or (1 shl 30)
-	mcall 4, (OT_CAPT_X_COLOR shl 16)+OT_CAPT_Y_COLOR+2,,txt_color
+	mcall SF_DRAW_TEXT, (OT_CAPT_X_COLOR shl 16)+OT_CAPT_Y_COLOR+2,,txt_color
 
 	mov edx,txt_curor
 	add ebx,115 shl 16
@@ -545,26 +488,26 @@ on_change_color:
 pushad
 	mov ebx,((OT_CAPT_X_COLOR+35) shl 16)+16 ;по оси x
 	mov ecx,(OT_CAPT_Y_COLOR shl 16)+12 ;по оси y
-	mcall 13,,,[v_color]
+	mcall SF_DRAW_RECT,,,[v_color]
 
 	mov ecx,edx
 	mov edx,((OT_CAPT_X_COLOR+55) shl 16)+OT_CAPT_Y_COLOR+2
 	mov esi,[sc.work_text]
 	add esi,(1 shl 30)
 	mov edi,[sc.work]
-	mcall 47,(1 shl 8)+(6 shl 16)
+	mcall SF_DRAW_NUMBER,(1 shl 8)+(6 shl 16)
 popad
 	ret
 
 align 4
 key:
-	mcall 2
+	mcall SF_GET_KEY
 	jmp still
 
 
 align 4
 button:
-	mcall 17
+	mcall SF_GET_BUTTON
 	cmp ah,3
 	jne @f
 		stdcall but_new_file, [open_file_vox]
@@ -659,7 +602,7 @@ button:
 	stdcall mem.Free,[image_data_toolbar]
 	stdcall mem.Free,[open_file_vox]
 	stdcall mem.Free,[moved_file_vox]
-	mcall -1
+	mcall SF_TERMINATE_PROCESS
 
 ;данные для инициализации воксельного объекта
 align 4
@@ -693,22 +636,20 @@ but_open_file:
 	je .end_open_file
 	;код при удачном открытии диалога
 
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 0
+	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	m2m dword[run_file_70.Count], dword[max_open_file_size]
 	m2m [run_file_70.Buffer], [open_file_vox]
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
+	mcall SF_FILE,run_file_70
 	cmp ebx,0xffffffff
 	je .end_open_file
 
 	;add ebx,[open_file_vox]
 	;mov byte[ebx],0 ;на случай если ранее был открыт файл большего размера чистим конец буфера с файлом
-	mcall 71,1,openfile_path
+	mcall SF_SET_CAPTION,1,openfile_path
 
 	;---
 	mov eax,[open_file_vox]
@@ -739,16 +680,14 @@ but_save_file:
 
 		stdcall buf2d_vox_obj_get_size, ebx
 		mov dword[run_file_70.Count], eax ;размер файла
-		mov eax,70 ;70-я функция работа с файлами
-		mov [run_file_70.Function], 2
+		mov [run_file_70.Function], SSF_CREATE_FILE
 		mov [run_file_70.Position], 0
 		mov [run_file_70.Flags], 0
 		mov ebx, dword[moved_file_vox]
 		mov [run_file_70.Buffer], ebx
 		mov byte[run_file_70+20], 0
 		mov dword[run_file_70.FileName], openfile_path
-		mov ebx,run_file_70
-		int 0x40 ;загружаем файл изображения
+		mcall SF_FILE,run_file_70
 		cmp ebx,0xffffffff
 		je .end_save_file
 

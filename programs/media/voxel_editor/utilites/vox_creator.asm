@@ -6,8 +6,7 @@ use32
 include '../../../../programs/macros.inc'
 include '../../../../programs/proc32.inc'
 include '../../../../programs/KOSfuncs.inc'
-include '../../../../programs/develop/libraries/box_lib/load_lib.mac'
-include '../../../../programs/dll.inc'
+include '../../../../programs/load_img.inc'
 include '../trunk/str.inc'
 
 vox_offs_tree_table equ 4
@@ -16,17 +15,7 @@ txt_buf rb 8
 include '../trunk/vox_rotate.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel creator 08.02.16',0 ;подпись окна
-
-struct FileInfoBlock
-	Function dd ?
-	Position dd ?
-	Flags	 dd ?
-	Count	 dd ?
-	Buffer	 dd ?
-		db ?
-	FileName dd ?
-ends
+caption db 'Voxel creator 19.02.16',0 ;подпись окна
 
 BUF_STRUCT_SIZE equ 21
 buf2d_data equ dword[edi] ;данные буфера изображения
@@ -42,7 +31,6 @@ vox_offs_tree_table equ 4
 vox_offs_data equ 12
 
 run_file_70 FileInfoBlock
-image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
 vox_obj_size dd 0 ;размер воксельного объекта (для ускорения вставки)
 txt_space db ' ',0
 txt_pref db ' б ',0,' Кб',0,' Мб',0,' Гб',0 ;приставки: кило, мега, гига
@@ -51,49 +39,9 @@ txt_f_size: db 'Размер: '
 
 fn_toolbar db 'toolbar.png',0
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
-IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*9
 image_data_toolbar dd 0
 
 max_open_file_size equ 1024*1024 ;1 Mb
-
-macro load_image_file path,buf,size { ;макрос для загрузки изображений
-	;path - может быть переменной или строковым параметром
-	if path eqtype '' ;проверяем задан ли строкой параметр path
-		jmp @f
-			local .path_str
-			.path_str db path ;формируем локальную переменную
-			db 0
-		@@:
-		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0
-	else
-		copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
-	end if
-
-	stdcall mem.Alloc, dword size ;выделяем память для изображения
-	mov [buf],eax
-
-	mov [run_file_70.Function], SSF_READ_FILE
-	mov [run_file_70.Position], 0
-	mov [run_file_70.Flags], 0
-	mov [run_file_70.Count], dword size
-	mov [run_file_70.Buffer], eax
-	mov byte[run_file_70+20], 0
-	mov [run_file_70.FileName], file_name
-	mcall SF_FILE,run_file_70 ;загружаем файл изображения
-	cmp ebx,0xffffffff
-	je @f
-		;определяем вид изображения и переводим его во временный буфер image_data
-		stdcall dword[img_decode], dword[buf],ebx,0
-		mov dword[image_data],eax
-		;преобразуем изображение к формату rgb
-		stdcall dword[img_to_rgb2], dword[image_data],dword[buf]
-		;удаляем временный буфер image_data
-		stdcall dword[img_destroy], dword[image_data]
-	@@:
-}
-
-
 
 align 4
 start:
@@ -112,7 +60,7 @@ start:
 	stdcall [buf2d_create], buf_0z
 	stdcall [buf2d_vox_brush_create], buf_vox, vox_6_7_z
 
-	load_image_file fn_toolbar, image_data_toolbar,IMAGE_TOOLBAR_SIZE
+	load_image_file fn_toolbar, image_data_toolbar
 
 	stdcall mem.Alloc,max_open_file_size
 	mov dword[open_file_vox],eax
@@ -603,16 +551,14 @@ but_open_file:
 	je .end_open_file
 	;код при удачном открытии диалога
 
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 0
+	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov [run_file_70.Count], dword max_open_file_size
 	m2m [run_file_70.Buffer],dword[open_file_vox]
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
+	mcall SF_FILE,run_file_70
 	cmp ebx,0xffffffff
 	je .end_open_file
 		; проверка на правильность воксельного формата
@@ -658,16 +604,14 @@ but_save_file:
 
 		stdcall buf2d_vox_obj_get_size, ebx
 		mov dword[run_file_70.Count], eax ;размер файла
-		mov eax,70 ;70-я функция работа с файлами
-		mov [run_file_70.Function], 2
+		mov [run_file_70.Function], SSF_CREATE_FILE
 		mov [run_file_70.Position], 0
 		mov [run_file_70.Flags], 0
 		mov ebx, dword[open_file_vox]
 		mov [run_file_70.Buffer], ebx
 		mov byte[run_file_70+20], 0
 		mov dword[run_file_70.FileName], openfile_path
-		mov ebx,run_file_70
-		int 0x40 ;загружаем файл изображения
+		mcall SF_FILE,run_file_70
 		cmp ebx,0xffffffff
 		je .end_save_file
 
@@ -1162,39 +1106,35 @@ proc open_image_in_buf, buf:dword
 	;stdcall mem.Alloc, dword size ;выделяем память для изображения
 	;mov [buf],eax
 
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 0
+	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov [run_file_70.Count], dword max_open_file_size
 	m2m [run_file_70.Buffer],dword[open_file_img]
 	mov byte[run_file_70+20], 0
 	mov [run_file_70.FileName], openfile_path
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
+	mcall SF_FILE,run_file_70
 	cmp ebx,0xffffffff
 	je .end_0
-		;определяем вид изображения и переводим его во временный буфер image_data
+		;определяем вид изображения
 		stdcall dword[img_decode], dword[open_file_img],ebx,0
-		cmp eax,0
-		je .end_0 ;если нарушен формат файла
-		mov dword[image_data],eax
+		or eax,eax
+		jz .end_0 ;если нарушен формат файла
+		mov ebx,eax
 		;преобразуем изображение к формату rgb
-		stdcall dword[img_to_rgb2], dword[image_data],dword[open_file_img]
+		stdcall dword[img_to_rgb2], ebx,dword[open_file_img]
 
-		mov eax,dword[image_data]
 		mov edi,[buf]
 		cmp buf2d_data,0
 		jne @f
-			m2m buf2d_w,dword[eax+4] ;+4 = image width
-			m2m buf2d_h,dword[eax+8] ;+8 = image heihht
+			m2m buf2d_w,dword[ebx+4] ;+4 = image width
+			m2m buf2d_h,dword[ebx+8] ;+8 = image heihht
 			stdcall [buf2d_create_f_img], edi,[open_file_img]
 			jmp .end_1
 		@@:
-			mov ebx,dword[eax+4]
-			mov ecx,dword[eax+8]
-			stdcall [buf2d_resize], edi, ebx,ecx,1 ;изменяем размеры буфера
-			imul ecx,ebx
+			mov ecx,dword[ebx+8]
+			stdcall [buf2d_resize], edi, [ebx+4],ecx,1 ;изменяем размеры буфера
+			imul ecx,[ebx+4]
 			lea ecx,[ecx+ecx*2]
 			mov edi,buf2d_data
 			mov esi,[open_file_img]
@@ -1202,8 +1142,8 @@ proc open_image_in_buf, buf:dword
 			rep movsb ;copy image
 		.end_1:
 
-		;удаляем временный буфер image_data
-		stdcall dword[img_destroy], dword[image_data]
+		;удаляем временный буфер в ebx
+		stdcall dword[img_destroy], ebx
 	.end_0:
 
 	call draw_buffers
@@ -1461,12 +1401,12 @@ import_buf2d:
 align 4
 import_msgbox_lib:
 	mb_create dd amb_create
-;	mb_reinit dd amb_reinit
-;	mb_setfunctions dd amb_setfunctions
+;       mb_reinit dd amb_reinit
+;       mb_setfunctions dd amb_setfunctions
 dd 0,0
 	amb_create db 'mb_create',0
-;	amb_reinit db 'mb_reinit',0
-;	amb_setfunctions db 'mb_setfunctions',0
+;       amb_reinit db 'mb_reinit',0
+;       amb_setfunctions db 'mb_setfunctions',0
 
 mouse_dd dd 0x0
 sc system_colors 

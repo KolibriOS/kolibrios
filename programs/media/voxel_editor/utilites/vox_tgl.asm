@@ -5,76 +5,25 @@ use32
 
 include '../../../../programs/macros.inc'
 include '../../../../programs/proc32.inc'
-include '../../../../programs/develop/libraries/box_lib/load_lib.mac'
-include '../../../../programs/dll.inc'
+include '../../../../programs/KOSfuncs.inc'
+include '../../../../programs/load_img.inc'
 include '../../../../programs/develop/libraries/TinyGL/asm_fork/opengl_const.inc'
 include 'vox_3d.inc'
 include '../trunk/str.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel viewer 07.12.15',0 ;подпись окна
-
-struct FileInfoBlock
-	Function dd ?
-	Position dd ?
-	Flags	 dd ?
-	Count	 dd ?
-	Buffer	 dd ?
-		db ?
-	FileName dd ?
-ends
+caption db 'Voxel viewer 19.02.16',0 ;подпись окна
 
 3d_wnd_l equ   5 ;отступ для tinygl буфера слева
 3d_wnd_t equ  30 ;отступ для tinygl буфера сверху
 3d_wnd_w equ 512
 3d_wnd_h equ 512
 
-image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
-
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
 IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*10
 image_data_toolbar dd 0
 
 offs_zbuf_pbuf equ 24
-
-macro load_image_file path,buf,size { ;макрос для загрузки изображений
-	;path - может быть переменной или строковым параметром
-	if path eqtype '' ;проверяем задан ли строкой параметр path
-		jmp @f
-			local .path_str
-			.path_str db path ;формируем локальную переменную
-			db 0
-		@@:
-		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0
-	else
-		copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
-	end if
-
-	stdcall mem.Alloc, dword size ;выделяем память для изображения
-	mov [buf],eax
-
-	mov [run_file_70.Function], 0
-	mov [run_file_70.Position], 0
-	mov [run_file_70.Flags], 0
-	mov [run_file_70.Count], dword size
-	mov [run_file_70.Buffer], eax
-	mov byte[run_file_70+20], 0
-	mov [run_file_70.FileName], file_name
-	mcall 70,run_file_70 ;загружаем файл изображения
-	cmp ebx,0xffffffff
-	je @f
-		;определяем вид изображения и переводим его во временный буфер image_data
-		stdcall dword[img_decode], dword[buf],ebx,0
-		mov dword[image_data],eax
-		;преобразуем изображение к формату rgb
-		stdcall dword[img_to_rgb2], dword[image_data],dword[buf]
-		;удаляем временный буфер image_data
-		stdcall dword[img_destroy], dword[image_data]
-	@@:
-}
-
-
 
 align 4
 start:
@@ -83,20 +32,20 @@ start:
 	mov	ebp,lib_0
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
-		mcall -1 ;exit not correct
+		mcall SF_TERMINATE_PROCESS
 	@@:
-	mcall 48,3,sc,sizeof.system_colors
-	mcall 40,0x27
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
+	mcall SF_SET_EVENTS_MASK,0xC0000027
 	stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
 
 	stdcall [buf2d_create], buf_0 ;создание буфера
 
-	load_image_file 'toolbar_t.png', image_data_toolbar,IMAGE_TOOLBAR_SIZE*2 ;*2 for gray icons
+	load_image_file 'toolbar_t.png', image_data_toolbar,,,6 ;6 - for gray icons
 	mov eax,[image_data_toolbar]
 	add eax,IMAGE_TOOLBAR_SIZE
 	stdcall img_to_gray, [image_data_toolbar],eax,(IMAGE_TOOLBAR_SIZE)/3
 
-	mcall 26,9
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov [last_time],eax
 
 	stdcall [kosglMakeCurrent], 3d_wnd_l,3d_wnd_t,3d_wnd_w,3d_wnd_h,ctx1
@@ -114,7 +63,7 @@ red_win:
 
 align 4
 still:
-	mcall 26,9
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov ebx,[last_time]
 	add ebx,50 ;задержка
 	cmp ebx,eax
@@ -122,7 +71,7 @@ still:
 		mov ebx,eax
 	@@:
 	sub ebx,eax
-	mcall 23
+	mcall SF_WAIT_EVENT_TIMEOUT
 	bt word[opt_auto_rotate],0
 	jnc @f
 		or eax,eax
@@ -145,7 +94,7 @@ still:
 align 4
 timer_funct:
 	pushad
-	mcall 26,9
+	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov [last_time],eax
 
 	;автоматическое изменение угла обзора
@@ -161,17 +110,15 @@ timer_funct:
 align 4
 draw_window:
 pushad
-	mcall 12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
 	; *** рисование главного окна (выполняется 1 раз при запуске) ***
-	xor eax,eax
 	mov edx,[sc.work]
 	or  edx,(3 shl 24)+0x30000000
-	mcall ,(20 shl 16)+800,(20 shl 16)+570,,,caption
+	mcall SF_CREATE_WINDOW,(20 shl 16)+800,(20 shl 16)+570,,,caption
 
 	; *** создание кнопок на панель ***
-	mov esi,[sc.work_button]
-	mcall 8,(5 shl 16)+20,(5 shl 16)+20,3
+	mcall SF_DEFINE_BUTTON,(5 shl 16)+20,(5 shl 16)+20,3,[sc.work_button]
 
 	mov ebx,(30 shl 16)+20
 	mov edx,4
@@ -206,7 +153,7 @@ pushad
 	stdcall [buf2d_draw], buf_0
 	stdcall [kosglSwapBuffers]
 
-	mcall 12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 popad
 	ret
 
@@ -215,7 +162,7 @@ align 4
 draw_toolbar_i:
 	; *** рисование иконок на кнопках ***
 	mov edx,(7 shl 16)+7 ;icon new
-	mcall 7,[image_data_toolbar],(16 shl 16)+16
+	mcall SF_PUT_IMAGE,[image_data_toolbar],(16 shl 16)+16
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;icon open
@@ -278,7 +225,7 @@ draw_toolbar_i:
 
 align 4
 key:
-	mcall 2
+	mcall SF_GET_KEY
 
 	cmp ah,178 ;Up
 	jne @f
@@ -319,13 +266,13 @@ key:
 align 4
 mouse:
 	push eax ebx
-	mcall 37,3
+	mcall SF_MOUSE_GET,SSF_BUTTON_EXT
 	bt eax,0
 	jnc .end_m
 		;mouse l. but. move
 		cmp dword[mouse_drag],1
 		jne .end_m
-		mcall 37,1 ;get mouse coords
+		mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
 		mov ebx,eax
 		shr ebx,16 ;mouse.x
 		cmp ebx,3d_wnd_l
@@ -375,7 +322,7 @@ mouse:
 	bt eax,8
 	jnc .end_d
 		;mouse l. but. press
-		mcall 37,1 ;get mouse coords
+		mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
 		mov ebx,eax
 		shr ebx,16 ;mouse.x
 		cmp ebx,3d_wnd_l
@@ -400,7 +347,7 @@ mouse:
 
 align 4
 button:
-	mcall 17
+	mcall SF_GET_BUTTON
 	cmp ah,3
 	jne @f
 		call but_new_file
@@ -448,7 +395,7 @@ button:
 	stdcall mem.Free,[image_data_toolbar]
 	stdcall mem.Free,[open_file_data]
 	stdcall mem.Free,[open_file_ogl]
-	mcall -1
+	mcall SF_TERMINATE_PROCESS
 
 
 align 4
@@ -461,7 +408,6 @@ but_new_file:
 align 4
 open_file_data dd 0 ;указатель на память для открытия файлов
 open_file_size dd 0 ;размер открытого файла
-open_b rb 560
 open_file_ogl dd 0 ;для записи координат шраней вокселей в показе opengl
 v_zoom dd 0
 
@@ -475,16 +421,14 @@ pushad
 	je .end_open_file
 	;код при удачном открытии диалога
 
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 5
+	mov [run_file_70.Function], SSF_GET_INFO
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov dword[run_file_70.Count], 0
 	mov dword[run_file_70.Buffer], open_b
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
-	mov ebx,run_file_70
-	int 0x40
+	mcall SF_FILE,run_file_70
 
 	;mov eax,dword[open_b+32]
 	;mov edi,txt_buf
@@ -495,21 +439,19 @@ pushad
 	stdcall mem.ReAlloc,[open_file_data],ecx
 	mov [open_file_data],eax
 	
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 0
+	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov dword[run_file_70.Count], ecx
 	m2m dword[run_file_70.Buffer], dword[open_file_data]
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
+	mcall SF_FILE,run_file_70
 	cmp ebx,0xffffffff
 	je .end_open_file
 
 	mov [open_file_size],ebx
-	mcall 71,1,openfile_path
+	mcall SF_SET_CAPTION,1,openfile_path
 
 	mov eax,[open_file_data]
 	movzx eax,byte[eax]
@@ -624,22 +566,19 @@ but_save_file:
 	je .end_save_file
 	;код при удачном открытии диалога
 
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 2
+	mov [run_file_70.Function], SSF_CREATE_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov ebx, dword[open_file_data]
 	;пишем в файл новый масштаб
 	mov edx,dword[v_zoom]
 	mov byte[ebx],dl
-	;
 	mov [run_file_70.Buffer], ebx
 	mov ebx,[open_file_size]
 	mov dword[run_file_70.Count], ebx ;размер файла
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
-	mov ebx,run_file_70
-	int 0x40 ;сохраняем файл
+	mcall SF_FILE,run_file_70
 	;cmp ebx,0xffffffff
 	;je .end_save_file
 	; ... сообщение о неудачном сохранении ...
@@ -799,7 +738,7 @@ draw_3d:
 		;но все же при поворотах будут отсекатся края, которые вылезут за пределы плоскостей отсечения
 		;в версии opengl под Win координаты идут от -1.0 до 1.0 потому там этого делать не нужно
 	stdcall [glScalef], [scale], [scale], [scale] ;увеличиваем воксельный объект, что-бы не был очень маленьким
-	stdcall [glScalef], 1.0, 1.0, 0.5 ;что-бы края объекта не вылазили за грани отсечения
+	stdcall [glScalef], 1.0, 1.0, 0.25 ;что-бы края объекта не вылазили за грани отсечения
 	stdcall [glRotatef], [angle_x],1.0,0.0,0.0
 	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
 	stdcall [glRotatef], [angle_z],0.0,0.0,1.0
@@ -914,6 +853,11 @@ system_dir_2 db '/sys/lib/'
 lib_name_2 db 'buf2d.obj',0
 err_msg_found_lib_2 db 'Не найдена библиотека ',39,'buf2d.obj',39,0
 err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,0
+
+system_dir_3 db '/kolibrios/lib/'
+lib_name_3 db 'tinygl.obj',0
+err_msg_found_lib_3 db 'Не найдена библиотека ',39,'tinygl.obj',39,0
+err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'tinygl',39,0
 
 l_libs_start:
 	lib_0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
@@ -1048,13 +992,6 @@ macro E_LIB n
 	sz_#n db `n,0
 }
 include '../../../../programs/develop/libraries/TinyGL/asm_fork/export.inc'
-
-;--------------------------------------------------
-system_dir_3 db '/sys/lib/'
-lib_name_3 db 'tinygl.obj',0
-err_msg_found_lib_3 db 'Не найдена библиотека ',39,'tinygl.obj',39,0
-err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'tinygl',39,0
-;--------------------------------------------------
 
 last_time dd 0
 
