@@ -9,7 +9,9 @@
 #include "..\lib\gui.h"
 #include "..\lib\obj\proc_lib.h"
 #include "..\lib\patterns\simple_open_dialog.h"
+#include "..\lib\patterns\restart_process.h"
 #include "..\lib\added_sysdir.c"
+
 
 char default_dir[] = "/rd/1";
 od_filter filter2 = {"",0};
@@ -37,6 +39,7 @@ need to reboot system to try again."
 
 void CheckKosMounted()
 {
+	while (CheckProcessExists("SEARCHAP")) pause(2);
 	if (dir_exists("/kolibrios/")) 
 	{
 		if (file_exists(APP_PLUS_INI_PATH))	
@@ -49,9 +52,7 @@ void CheckKosMounted()
 
 void RunAutosearch()
 {
-	dword searchap_run_id;
-	searchap_run_id = io.run("/sys/searchap",0);
-	while (GetProcessSlot(searchap_run_id)) pause(10);
+	io.run("/sys/SEARCHAP",0);
 }
 
 void main()

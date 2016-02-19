@@ -793,7 +793,7 @@ draw_one_button:
 	movzx	ecx,dl
 	imul	ecx,BTN_HEIGHT
 	shl	ecx,16
-	add	ecx,BTN_HEIGHT-1
+	add	ecx,BTN_HEIGHT
 ; edx = button identifier
 	mov	esi,[sc.work]
 	cmp	esi,0xdfdfdf
