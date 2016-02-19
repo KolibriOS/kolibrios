@@ -534,6 +534,11 @@ high_code:
         mov     ax, tss0
         ltr     ax
 
+        mov     eax, sys_proc
+        list_init eax
+        add     eax, PROC.thr_list
+        list_init eax
+
         call    init_video
         call    init_mtrr
         mov     [LFBAddress], LFB_BASE
@@ -625,13 +630,8 @@ high_code:
         mov     esi, boot_setostask
         call    boot_log
 
-        mov     eax, sys_proc
-        lea     edi, [eax+PROC.heap_lock]
+        mov     edi, sys_proc+PROC.heap_lock
         mov     ecx, (PROC.ht_free-PROC.heap_lock)/4
-
-        list_init eax
-        add     eax, PROC.thr_list
-        list_init eax
 
         xor     eax, eax
         cld

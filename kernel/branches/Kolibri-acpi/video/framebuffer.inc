@@ -203,14 +203,41 @@ init_video:
 
 align 4
 set_framebuffer:
-        mov     edx, LFB_BASE shr 22
-        mov     eax, [ecx+FRB.pde]
-        mov     dword [master_tab+edx*4], eax
-        mov     eax, [ecx+FRB.pde+4]
-        mov     dword [master_tab+edx*4+4], eax
-        mov     eax, [ecx+FRB.pde+8]
-        mov     dword [master_tab+edx*4+8], eax
-        mov     eax, [ecx+FRB.pde+12]
-        mov     dword [master_tab+edx*4+12], eax
+        push    esi
+        push    edi
+        lea     esi, [ecx+FRB.pde]
+        mov     eax, sys_proc
+
+        pushfd
+        cli
+        mov     [_display.current_lfb], ecx
+
+.patch_pde:
+        lea     edi, [eax+PROC.pdt_0+4096-32]   ;last 8 pd entries up to 32Mb framebuffer
+        mov     ecx, 8
+        rep movsd                               ;patch pde
+        sub     esi, 32
+        mov     edi, [eax+PROC.list.next]       ;next process/address space
+        xchg    eax, edi
+        cmp     eax, edi
+        jne     .patch_pde
+
+        bt      [cpu_caps], CAPS_PGE
+        jnc     .cr3_flush
+
+        mov     eax, cr4
+        btr     eax, 7                          ;clear cr4.PGE
+        mov     cr4, eax                        ;flush TLB
+        bts     eax, 7
+        mov     cr4, eax                        ;flush TLB
+.exit:
+        popfd
+        pop     edi
+        pop     esi
         ret
+
+.cr3_flush:
+        mov     eax, cr3
+        mov     cr3, eax                        ;flush TLB
+        jmp     .exit
 
