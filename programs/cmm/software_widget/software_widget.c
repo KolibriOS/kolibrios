@@ -58,7 +58,7 @@ void main()
 
 	Libimg_LoadImage(#skin, "/sys/icons32.png");
 	Libimg_FillTransparent(skin.image, skin.w, skin.h, LIST_BACKGROUND_COLOR);
-	kolibrios_mounted = isdir("/kolibrios");
+	kolibrios_mounted = dir_exists("/kolibrios");
 
 	if (param)
 	{

@@ -20,13 +20,29 @@ dword scr = FROM "scr.raw_8bit";
 dword scr_pal[] = {0xFFFFFF,0xBBDDFF,0x4166B5,0xE0E4E6,0xAFBEDD,0xC4D4E8,0x52ACDD,0x000000,
 0xE9DAB2,0xC99811,0xFDF9D4,0xF8B93C,0xFDEEBE,0xFBEBA6,0xDFAF4F,0xF3D57C};
 
+#define APP_PLUS_INI_PATH "/kolibrios/settings/app_plus.ini"
+
+#define APP_PLUS_INI_NOT_EXISTS "'APP+\n/kolibrios/settings/app_plus.ini is not exists.\nProgram terminated.' -tE"
+
+#define WINDOW_TITLE_TEXT "Error"
+#define CONTENT_HEADER_TEXT "/KOLIBRIOS/ NOT MOUNTED"
+#define DESCRIPTION_TEXT "Try to find it manually. It should look
+like image on the right.
+Note: this action can be done only once 
+per 1 session of the OS running. If you 
+will choose the wrong folder then you 
+need to reboot system to try again."
+#define MANUALLY_BUTTON_TEXT "Choose /kolibrios/ folder..."
 
 
 void CheckKosMounted()
 {
-	if (isdir("/kolibrios/")) 
+	if (dir_exists("/kolibrios/")) 
 	{
-		io.run("syspanel", "/kolibrios/settings/app_plus.ini");
+		if (file_exists(APP_PLUS_INI_PATH))	
+			io.run("syspanel", APP_PLUS_INI_PATH);
+		else
+			notify(APP_PLUS_INI_NOT_EXISTS);
 		ExitProcess();
 	}
 }
@@ -68,17 +84,6 @@ void main()
 			draw_window();
 	}
 }
-
-#define WINDOW_TITLE_TEXT "Error"
-#define CONTENT_HEADER_TEXT "/KOLIBRIOS/ NOT MOUNTED"
-#define DESCRIPTION_TEXT "Try to find it manually. It should look
-like image on the right.
-Note: this action can be done only once 
-per 1 session of the OS running. If you 
-will choose the wrong folder then you 
-need to reboot system to try again."
-#define MANUALLY_BUTTON_TEXT "Choose /kolibrios/ folder..."
-
 
 void draw_window()
 {

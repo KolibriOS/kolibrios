@@ -857,7 +857,7 @@ int Del_File2(dword way, sh_progr)
 	dword dirbuf, fcount, i, filename;
 	int error;
 	char del_from[4096];
-	if (isdir(way))
+	if (dir_exists(way))
 	{
 		if (error = GetDir(#dirbuf, #fcount, way, DIRS_ONLYREAL)) del_error = error;
 		for (i=0; i<fcount; i++)

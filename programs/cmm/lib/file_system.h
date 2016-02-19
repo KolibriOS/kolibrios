@@ -197,15 +197,23 @@
 	$int 0x40
 }
 
-:char isdir(dword fpath)
+:char dir_exists(dword fpath)
 {
 	BDVK fpath_atr;
 	GetFileInfo(fpath, #fpath_atr);
 	return fpath_atr.isfolder;
 }
+:char file_exists(dword fpath)
+{
+	BDVK ReadFile_atr;
+	if (! GetFileInfo(fpath, #ReadFile_atr)) return true;
+	return false;
+}
+
 
 :int GetFile(dword buf, filesize, read_path)
 {
+	int return_val = 0;
 	BDVK ReadFile_atr;
 	dword rBuf;
 	if (! GetFileInfo(read_path, #ReadFile_atr))
@@ -215,11 +223,11 @@
 		{
 			ESDWORD[buf] = rBuf;
 			ESDWORD[filesize] = ReadFile_atr.sizelo;
-			return 1;
+			return_val = 1;
 		}
 	}
 	free(rBuf);
-	return 0;
+	return return_val;
 }
 
 enum

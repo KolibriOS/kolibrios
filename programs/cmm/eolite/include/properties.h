@@ -57,7 +57,7 @@ void SetPropertiesDir(dword way)
 {
 	dword dirbuf, fcount, i, filename;
 	dword cur_file;
-	if (isdir(way))
+	if (dir_exists(way))
 	{
 		cur_file = malloc(4096);
 		GetDir(#dirbuf, #fcount, way, DIRS_ONLYREAL);
@@ -105,7 +105,7 @@ void SetProperties(byte prop)
 					SetFileInfo(cur_file, #file_info_general);
 					if (prop==2)
 					{
-						if (isdir(cur_file))
+						if (dir_exists(cur_file))
 						{
 							SetPropertiesDir(cur_file);
 						}
@@ -155,7 +155,7 @@ void GetSizeDir(dword way)
 {
 	dword dirbuf, fcount, i, filename;
 	dword cur_file;
-	if (isdir(way))
+	if (dir_exists(way))
 	{
 		cur_file = malloc(4096);
 		// In the process of recursive descent, memory must be allocated dynamically, 

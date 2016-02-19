@@ -153,7 +153,7 @@ void DrawWindowContent()
 	DrawRectangle3D(list.x-2, list.y-2, list.w+3+scroll1.size_x, list.h+3, system.color.work_dark, system.color.work_light);
 	DrawWideRectangle(list.x-LIST_PADDING, list.y-LIST_PADDING, LIST_PADDING*2+list.w+scroll1.size_x, LIST_PADDING*2+list.h, LIST_PADDING-2, system.color.work);
 	DrawTab(list.x+10, list.y, SKINS, T_SKINS);
-	if (isdir(WALP_STANDART_PATH)) DrawTab(strlen(T_SKINS)*8+TAB_PADDING+list.x+21, list.y, WALLPAPERS, T_WALLPAPERS);
+	if (dir_exists(WALP_STANDART_PATH)) DrawTab(strlen(T_SKINS)*8+TAB_PADDING+list.x+21, list.y, WALLPAPERS, T_WALLPAPERS);
 	DrawRectangle(list.x-1, list.y-1, list.w+1+scroll1.size_x, list.h+1, system.color.work_graph);
 
 	Draw_List();
