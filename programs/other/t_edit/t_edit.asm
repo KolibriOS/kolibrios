@@ -3,12 +3,10 @@
 use32
   org 0x0
   db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-  dd 1, start, i_end, mem, stacktop
-  dd file_name ; command line
-  dd sys_path
+  dd 1, start, i_end, mem, stacktop, file_name, sys_path
 
 MAX_COLOR_WORD_LEN equ 40
-maxChars equ 100002 ;(...+2)
+maxChars equ 100002 ;(колличество символов в новом документе + 2)
 BUF_SIZE equ 4096 ;buffer for copy|paste
 maxSyntaxFileSize equ 410000
 TOOLBAR_ICONS_SIZE equ 1200*20
@@ -31,7 +29,9 @@ include 'wnd_k_words.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
+align 4
 icon_tl_sys dd 0 ;указатель на память для хранения системных иконок
+run_file_70 FileInfoBlock
 
 align 4
 start:
@@ -201,8 +201,12 @@ mov	ebp,lib0
 	mov dword[tedit0.rec.width],eax
 	stdcall dword[ini_get_int],file_name,ini_sec_window,key_symbol_h,ini_def_symbol_h
 	mov dword[tedit0.rec.height],eax
-	lea eax,[eax+eax*2]
-	mov dword[tedit0.rec.top],eax
+	;lea eax,[eax+eax*2]
+	;mov dword[tedit0.rec.top],eax
+	;font size
+	stdcall dword[ini_get_int],file_name,ini_sec_window,key_font_s,ini_def_font_s
+	shl eax,24
+	mov dword[tedit0.font_size],eax
 	;файловые расширения
 	xor edx,edx
 	mov ebx,synt_auto_open
@@ -578,17 +582,17 @@ i_end:
 	last_open_synt_file rb 32 ;имя последнего подключенного файла синтаксиса
 	buf rb BUF_SIZE ;буфер для копирования и вставки
 	buf_find rb 302 ;буфер для поиска текста
-	run_file_70 FileInfoBlock 
 	sc system_colors
-		rb sizeof.system_colors
 IncludeUGlobals
 	align 16
 	procinfo process_information
 		rb 1024
 	thread:
-	rb 1024
+		rb 4096
+align 16
     thread_coords:
 	rb 4096
+align 16
 stacktop:
 	sys_path: ;путь откуда запустился исполняемый файл
 		rb 4096

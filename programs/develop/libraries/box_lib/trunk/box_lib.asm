@@ -1,6 +1,6 @@
 ;*****************************************************************************
 ; Box_Lib - library of graphical components
-; Copyright (C) KolibriOS team 2008-2013. All rights reserved.
+; Copyright (C) KolibriOS team 2008-2016. All rights reserved.
 ;
 ; Authors:
 ; Alexey Teplov aka <Lrz>
@@ -18,6 +18,7 @@ public EXPORTS
 section '.flat' code readable align 16
 include '../../../../macros.inc'
 include '../../../../proc32.inc'
+include '../../../../KOSfuncs.inc'
 include 'bl_sys.mac'
 include 'box_lib.mac' ;macro which should make life easier :)
 ;include '../../../../debug.inc'
@@ -337,12 +338,12 @@ dd	sz_ted_but_redo,		ted_but_redo
 dd	sz_ted_but_reverse,		ted_but_reverse
 dd	sz_ted_but_find_next,		ted_but_find_next
 dd	sz_ted_text_colored,		ted_text_colored
-dd	sz_ted_version, 		0x00000004
+dd	sz_ted_version, 		0x00000005
 
 dd	sz_Frame_draw,			frame.draw
 dd	szVersion_frame,		0x00010001
 
-dd sz_progressbar_draw,     progressbar_draw    
+dd sz_progressbar_draw,     progressbar_draw	
 dd sz_progressbar_progress, progressbar_progress
 
 dd	0,0
@@ -446,7 +447,7 @@ sz_ted_text_colored		db 'ted_text_colored',0
 sz_ted_version			db 'version_text_edit',0
 
 sz_Frame_draw			db 'frame_draw',0
-szVersion_frame			db 'version_frame',0
+szVersion_frame 		db 'version_frame',0
 
-sz_progressbar_draw     db 'progressbar_draw', 0
+sz_progressbar_draw	db 'progressbar_draw', 0
 sz_progressbar_progress db 'progressbar_progress', 0
