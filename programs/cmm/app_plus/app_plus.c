@@ -25,7 +25,7 @@ dword scr_pal[] = {0xFFFFFF,0xBBDDFF,0x4166B5,0xE0E4E6,0xAFBEDD,0xC4D4E8,0x52ACD
 #define APP_PLUS_INI_NOT_EXISTS "'APP+\n/kolibrios/settings/app_plus.ini is not exists.\nProgram terminated.' -tE"
 
 #define WINDOW_TITLE_TEXT "Error"
-#define CONTENT_HEADER_TEXT "/KOLIBRIOS/ NOT MOUNTED"
+#define CONTENT_HEADER_TEXT "/KOLIBRIOS/ IS NOT MOUNTED"
 #define DESCRIPTION_TEXT "Try to find it manually. It should look
 like image on the right.
 Note: this action can be done only once 

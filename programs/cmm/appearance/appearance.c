@@ -181,8 +181,8 @@ void DrawTab(dword x,y, but_id, text)
 
 void DrawScroller()
 {
-	scroll1.bckg_col = 0xBBBbbb;
-	scroll1.frnt_col = system.color.work;
+	scroll1.bckg_col = MixColors(system.color.work, 0xBBBbbb, 80);
+	scroll1.frnt_col = MixColors(system.color.work,0xFFFfff,120);
 	scroll1.line_col = system.color.work_graph;
 
 	scroll1.max_area = list.count;

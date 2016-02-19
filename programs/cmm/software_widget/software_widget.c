@@ -5,7 +5,7 @@ SOFTWARE CENTER v2.8
 #define MEMSIZE 0x9000
 #include "..\lib\strings.h" 
 #include "..\lib\mem.h" 
-#include "..\lib\file_system.h"
+#include "..\lib\io.h"
 #include "..\lib\gui.h"
 
 #include "..\lib\obj\libio_lib.h"
@@ -87,7 +87,7 @@ void main()
 		case evButton:
 			id=GetButtonID();               
 			if (id==1) ExitProcess();
-			if (id>=100) RunProgram(app_path_collection.get(id-100), "");
+			if (id>=100) EventRunApp(id-100);
 			break;
 
 		case evReDraw:
@@ -175,6 +175,16 @@ void draw_top_bar()
 	DrawBar(0,list.y-2, Form.cwidth, 1, MixColors(system.color.work, system.color.work_graph, 180));
 	DrawBar(0,list.y-1, Form.cwidth, 1, system.color.work_graph);
 	label.write_center(0,5, Form.cwidth, list.y, system.color.work, system.color.work_text, 16, #window_title);
+}
+
+void EventRunApp(dword appid)
+{
+	if (file_exists(app_path_collection.get(appid))) {
+		io.run(app_path_collection.get(appid), "");
+	}
+	else {
+		notify("'Application not found' -E");
+	}
 }
 
 

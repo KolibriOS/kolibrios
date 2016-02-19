@@ -203,6 +203,7 @@ extra_files = {
  {"kolibrios/res/skins/", "../skins/authors.txt"},
  {"kolibrios/settings/app_plus.ini", "common/settings/app_plus.ini"},
  {"kolibrios/utils/appearance", PROGS .. "/cmm/appearance/appearance.com"},
+ {"kolibrios/utils/calcplus", PROGS .. "/other/calcplus/calcplus"},
 }
 if build_type == "rus" then tup.append_table(extra_files, {
  {"Docs/cp866/config.txt", build_type .. "/docs/CONFIG.TXT"},

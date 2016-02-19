@@ -1,4 +1,4 @@
-C-- software_widget.c
+@C-- software_widget.c
 @del game_center
 @copy software_widget.com game_center
 @copy software_widget.com syspanel

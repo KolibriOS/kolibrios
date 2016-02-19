@@ -130,14 +130,10 @@ button_draw:
     call    button_draw_all
     ; arrow
     pusha
-    mov     eax , 7
-    mov     ebx , arrowa
-    mov     ecx , 6 shl 16 + 10
-    mov     edx , 46 shl 16 + 13
-    int     0x40
-    mov     ebx , arrowb
-    mov     edx , 17 shl 16 + 13
-    int     0x40
+    mov	ecx,[sc.btn_text]
+    or	ecx,0x90000000
+    mcall	4,<15,11>, ,arrowa
+    mcall	 ,<45,11>, ,arrowb
     popa
     ret
 
