@@ -186,7 +186,7 @@ tree3 tree_list MAX_COLOR_WORD_LEN,3,tl_key_no_edit,\
 	16,16, 0x8080ff,0x0000ff,0xffffff, 5,30,300,160, 16, 0,0, el_focus, w_scr_t3,0
 
 align 4
-edit3 edit_box 80, 70, 8, 0xffffff, 0xff, 0x80ff, 0, 0x8000, MAX_COLOR_WORD_LEN+2, string1, mouse_dd, 0
+edit3 edit_box 80, 70, 8, 0xffffff, 0xff, 0x80ff, 0, 0x8000, MAX_COLOR_WORD_LEN+2, string1, mouse_dd, ed_focus
 editboxes_end:
 
 string1 rb MAX_COLOR_WORD_LEN
