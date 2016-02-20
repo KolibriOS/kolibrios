@@ -23,25 +23,21 @@
 
 #ifdef LANG_RUS
 	?define WINDOW_HEADER "Настройки оформления"
-	?define T_SKINS       "   Стиль окон"
-	?define T_WALLPAPERS  "   Обои"
+	?define T_SKINS       "Стиль окон"
+	?define T_WALLPAPERS  "Обои"
 #else
 	?define WINDOW_HEADER "Appearance"
-	?define T_SKINS       "   Skins"
-	?define T_WALLPAPERS  "   Wallpappers"
+	?define T_SKINS       "Skins"
+	?define T_WALLPAPERS  "Wallpappers"
 #endif
-
-unsigned char icons[]= FROM "icons.raw";
 
 #define PANEL_H 40
 #define LIST_PADDING 20
-#define TAB_PADDING 16
-#define TAB_HEIGHT 25
 #define SKINS_STANDART_PATH "/kolibrios/res/skins"							
 #define WALP_STANDART_PATH "/kolibrios/res/wallpapers"
 
 llist list;
-signed int active_tab, active_skin=-1, active_wallpaper=-1;
+signed int active_skin=-1, active_wallpaper=-1;
 enum { SKINS=2, WALLPAPERS };
 
 char folder_path[4096];
@@ -111,7 +107,7 @@ void main()
 			GetKeys(); 
 			if (list.ProcessKey(key_scancode)) EventApply();
 			if (key_scancode==SCAN_CODE_ENTER) EventOpenFile();
-			if (key_scancode==SCAN_CODE_TAB) if (active_tab==SKINS) EventTabClick(WALLPAPERS); else EventTabClick(SKINS);
+			if (key_scancode==SCAN_CODE_TAB) if (tabs.active_tab==SKINS) EventTabClick(WALLPAPERS); else EventTabClick(SKINS);
 			if (key_scancode==SCAN_CODE_DEL) EventDeleteFile();
 			for (id=list.cur_y+1; id<list.count; id++)
 			{
@@ -152,31 +148,11 @@ void DrawWindowContent()
 	DrawBar(0,0, Form.cwidth, PANEL_H-LIST_PADDING, system.color.work);
 	DrawRectangle3D(list.x-2, list.y-2, list.w+3+scroll1.size_x, list.h+3, system.color.work_dark, system.color.work_light);
 	DrawWideRectangle(list.x-LIST_PADDING, list.y-LIST_PADDING, LIST_PADDING*2+list.w+scroll1.size_x, LIST_PADDING*2+list.h, LIST_PADDING-2, system.color.work);
-	DrawTab(list.x+10, list.y, SKINS, T_SKINS);
-	if (dir_exists(WALP_STANDART_PATH)) DrawTab(strlen(T_SKINS)*8+TAB_PADDING+list.x+21, list.y, WALLPAPERS, T_WALLPAPERS);
+	tabs.draw(list.x+10, list.y, SKINS, T_SKINS);
+	if (dir_exists(WALP_STANDART_PATH)) tabs.draw(strlen(T_SKINS)*8+TAB_PADDING+list.x+21, list.y, WALLPAPERS, T_WALLPAPERS);
 	DrawRectangle(list.x-1, list.y-1, list.w+1+scroll1.size_x, list.h+1, system.color.work_graph);
 
 	Draw_List();
-}
-
-void DrawTab(dword x,y, but_id, text)
-{
-	dword col_bg, col_text;
-	dword w=strlen(text)*8+TAB_PADDING, h=TAB_HEIGHT;
-	y -= h;
-
-	if (but_id==active_tab)
-	{
-		col_bg=system.color.work_button;
-		col_text=system.color.work_button_text;
-	}
-	else
-	{
-		col_bg=system.color.work;
-		col_text=system.color.work_text;
-	} 
-	DrawCaptButton(x,y, w-1,h+1, but_id, col_bg, col_text, text);
-	_PutImage(x+10,h-16/2+y+1,  16,15,   but_id-2*16*15*3+#icons);
 }
 
 void DrawScroller()
@@ -207,8 +183,8 @@ void Open_Dir()
 	{
 		strcpy(#temp_filename, io.dir.position(j));
 		strlwr(#temp_filename);
-		if (active_tab==SKINS) if (strcmpi(#temp_filename+strlen(#temp_filename)-4,".skn")!=0) continue;
-		if (active_tab==WALLPAPERS) if (strcmpi(#temp_filename+strlen(#temp_filename)-4,".txt")==0) continue;
+		if (tabs.active_tab==SKINS) if (strcmpi(#temp_filename+strlen(#temp_filename)-4,".skn")!=0) continue;
+		if (tabs.active_tab==WALLPAPERS) if (strcmpi(#temp_filename+strlen(#temp_filename)-4,".txt")==0) continue;
 		cur = list.count;
 		files_mas[cur]=j;
 		if (!strcmpi("default.skn",#temp_filename)) files_mas[0]><files_mas[list.count];
@@ -252,8 +228,8 @@ void Draw_List()
 
 void EventTabClick(int N)
 {
-	active_tab = N;
-	if (active_tab == SKINS) 
+	tabs.click(N);
+	if (tabs.active_tab == SKINS) 
 	{
 		active_wallpaper = list.cur_y;
 		strcpy(#folder_path, SKINS_STANDART_PATH);
@@ -262,7 +238,7 @@ void EventTabClick(int N)
 		if (!list.count) notify("'No skins were found' -E");
 		list.cur_y = active_skin;
 	}
-	if (active_tab == WALLPAPERS) 
+	if (tabs.active_tab == WALLPAPERS)
 	{
 		active_skin = list.cur_y;
 		strcpy(#folder_path, WALP_STANDART_PATH);
@@ -271,6 +247,7 @@ void EventTabClick(int N)
 		if (!list.count) notify("'No wallpapers were found' -E");
 		list.cur_y = active_wallpaper;
 	}
+	if (list.cur_y>list.visible) list.first=list.cur_y; list.CheckDoesValuesOkey();
 	if (list.w) DrawWindowContent();
 }
 
@@ -283,13 +260,13 @@ void EventDeleteFile()
 
 void EventApply()
 {
-	if (active_tab==SKINS)
+	if (tabs.active_tab==SKINS)
 	{
 		cur = list.cur_y;
 		sprintf(#cur_file_path,"%s/%s",#folder_path,io.dir.position(files_mas[cur]));
 		SetSystemSkin(#cur_file_path);
 	} 
-	if (active_tab==WALLPAPERS)
+	if (tabs.active_tab==WALLPAPERS)
 	{
 		cur = list.cur_y;
 		sprintf(#cur_file_path,"\\S__%s/%s",#folder_path,io.dir.position(files_mas[cur]));
@@ -300,8 +277,8 @@ void EventApply()
 
 void EventOpenFile()
 {
-	if (active_tab==SKINS) RunProgram("/sys/skincfg", #cur_file_path);
-	if (active_tab==WALLPAPERS) RunProgram("/sys/media/kiv", #cur_file_path);
+	if (tabs.active_tab==SKINS) RunProgram("/sys/skincfg", #cur_file_path);
+	if (tabs.active_tab==WALLPAPERS) RunProgram("/sys/media/kiv", #cur_file_path);
 }
 
 stop:

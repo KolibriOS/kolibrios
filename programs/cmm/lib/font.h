@@ -133,7 +133,7 @@
 		}
 		size.width += rw;
 		IF(bold) size.width+=size.TMP_WEIGHT;
-		IF(s=='_') size.width--;
+		//IF(s=='_') size.width--; //http://board.kolibrios.org/viewtopic.php?f=44&t=973&start=645
 		IF(size.offset_x<0)size.offset_x = X;
 }
 :byte LABEL::symbol(signed x,y; byte s; dword image_raw)
@@ -275,7 +275,7 @@ inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
 	len = size.offset_x;
 	WHILE(DSBYTE[text1])
 	{
-		IF(DSBYTE[text1]=='_') len--;
+		//IF(DSBYTE[text1]=='_') len--; //http://board.kolibrios.org/viewtopic.php?f=44&t=973&start=645
 		len+=symbol(len,0,DSBYTE[text1], raw);
 		IF(bold)len+=math.ceil(size.pt/17);
 		text1++;

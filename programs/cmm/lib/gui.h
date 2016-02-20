@@ -267,4 +267,49 @@ dword incn::inc(dword _addition)
 	return n;
 }
 
+
+/*=========================================================
+==
+==                   TABS
+==
+/========================================================*/
+
+#define TAB_PADDING 25
+#define TAB_HEIGHT 25
+
+struct _tabs
+{
+	int active_tab;
+	void draw();
+	int click();
+} tabs;
+
+void _tabs::draw(dword x,y, but_id, text)
+{
+	dword col_bg, col_text;
+	dword w=strlen(text)*8+TAB_PADDING, h=TAB_HEIGHT;
+	y -= h;
+
+	if (but_id==active_tab)
+	{
+		col_bg=system.color.work_button;
+		col_text=system.color.work_button_text;
+	}
+	else
+	{
+		col_bg=system.color.work;
+		col_text=system.color.work_text;
+	} 
+	DrawCaptButton(x,y, w-1,h+1, but_id, col_bg, col_text, text);
+}
+
+int _tabs::click(int N)
+{
+	if (N==active_tab) return false;
+	active_tab = N;
+	return true;
+}
+
+
+
 #endif

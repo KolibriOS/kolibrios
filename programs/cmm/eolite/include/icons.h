@@ -10,7 +10,7 @@ char *ext[]={
 "exe", 7, "msi", 7,
 "sys", 8, "ocx", 8, "drv", 8, "so",  8,
 "inc", 9,
-"chr", 10, "mt",  10, "ttf", 10, "fon", 10,
+"chr", 10, "mt",  10, "ttf", 10, "fon", 10, "kf",  10,
 "asm", 11,
 "mp3", 12, "wav", 12, "mid", 12, "midi",12, "ogg", 12, "wma", 12, "flac",12,
 "skn", 13,
