@@ -1,9 +1,9 @@
 ;
 ;   pipes kolibri
-;   v1.21
+;   v1.4
 ;   2006 by Mario Birkner
 ;
-;   l.mod. 27.08.06/15:11
+;   l.mod. 20.02.16
 ;
 ;   Compile with FASM
 ;
@@ -17,103 +17,18 @@ btcolor  equ  0x005B6200
 
 include '..\..\macros.inc'
 include 'lang.inc'
-; fetch the UTF-8 character in string+offs to char
-; common part for all encodings: translate pseudographics
-; Pseudographics for the boot screen:
-; 0x2500 -> 0xC4, 0x2502 -> 0xB3, 0x250C -> 0xDA, 0x2510 -> 0xBF,
-; 0x2514 -> 0xC0, 0x2518 -> 0xD9, 0x252C -> 0xC2, 0x2534 -> 0xC1, 0x2551 -> 0xBA
-macro fetch_utf8_char string, offs, char, graph
-{ local first_byte, b
-  virtual at 0
-    db string
-    if offs >= $
-      char = -1
-    else
-      ; fetch first byte
-      load first_byte byte from offs
-      if first_byte < 0x80
-        char = first_byte
-        offs = offs + 1
-      else if first_byte < 0xC0
-        .err Invalid UTF-8 string
-      else if first_byte < 0xE0
-        char = first_byte and 0x1F
-        load b byte from offs + 1
-        char = (char shl 6) + (b and 0x3F)
-        offs = offs + 2
-      else if first_byte < 0xF0
-        char = first_byte and 0xF
-        load b byte from offs + 1
-        char = (char shl 6) + (b and 0x3F)
-        load b byte from offs + 2
-        char = (char shl 6) + (b and 0x3F)
-        offs = offs + 3
-      else if first_byte < 0xF8
-        char = first_byte and 0x7
-        load b byte from offs + 1
-        char = (char shl 6) + (b and 0x3F)
-        load b byte from offs + 2
-        char = (char shl 6) + (b and 0x3F)
-        load b byte from offs + 3
-        char = (char shl 6) + (b and 0x3F)
-        offs = offs + 4
-      else
-        .err Invalid UTF-8 string
-      end if
-    end if
-  end virtual
-  if char = 0x2500
-    graph = 0xC4
-  else if char = 0x2502
-    graph = 0xB3
-  else if char = 0x250C
-    graph = 0xDA
-  else if char = 0x2510
-    graph = 0xBF
-  else if char = 0x2514
-    graph = 0xC0
-  else if char = 0x2518
-    graph = 0xD9
-  else if char = 0x252C
-    graph = 0xC2
-  else if char = 0x2534
-    graph = 0xC1
-  else if char = 0x2551
-    graph = 0xBA
-  else
-    graph = 0
-  end if
-}
-; Latin-1 encoding
-; 0x00-0xFF - trivial map
-macro latin1 [arg]
-{ local offs, char, graph
-  offs = 0
-  while 1
-    fetch_utf8_char arg, offs, char, graph
-    if char = -1
-      break
-    end if
-    if graph
-      db graph
-    else if char < 0x100
-      db char
-    else
-      .err Failed to convert to Latin-1
-    end if
-  end while
-}
+
 use32
 
-               org    0x0
-
-               db     'MENUET01'              ; 8 byte id
-               dd     0x01                    ; header version
-               dd     START                   ; start of code
-               dd     I_END                   ; size of image
-               dd     0x100000                ; memory for app
-               dd     0x7fff0                 ; esp
-               dd     0x0 , 0x0               ; I_Param , I_Icon
+	org    0x0
+	
+	db     'MENUET01'              ; 8 byte id
+	dd     0x01                    ; header version
+	dd     START                   ; start of code
+	dd     I_END                   ; size of image
+	dd     0x100000                ; memory for app
+	dd     0x7fff0                 ; esp
+	dd     0x0 , 0x0               ; I_Param , I_Icon
 
 START:                          ; start of execution
      jmp red
@@ -406,36 +321,25 @@ ret
 
 show_score:
 pusha
-mov  eax,13                      ;clear time and score area
-mov  ebx,50 shl 16 +15
-mov  ecx,395 shl 16 +15
-mov  edx,bgcolor
-mcall
-if lang eq et
-add  ebx,60 shl 16 + 30
-else
-add  ebx,60 shl 16 + 20
-end if
-mcall
-add  ebx,80 shl 16
-mcall
 mov  eax,47
 mov  ebx,0x20000
 mov  ecx,[time]
-mov  edx,50*65536+398
+mov  edx,60*65536+395
 mov  esi,fg2color
+mov  edi,bgcolor
+or   esi,0x50000000
 mcall
 mov  ebx,0x50000
 mov  ecx,[score]
 if lang eq et
-add  edx,70 shl 16
+add  edx,88 shl 16
 else
-add  edx,60 shl 16
+add  edx,80 shl 16
 end if
 mcall
 mov  ebx,0x20000
 mov  ecx,[level]
-add  edx,80 shl 16
+add  edx,104 shl 16
 mcall
 
 popa
@@ -541,11 +445,7 @@ draw_message:
 pusha
     cmp  [stat],0
         je .nomessage
-    mov  eax,13
-    mov  ebx,146 shl 16 + 200
-    mov  ecx,190 shl 16 + 40
-    mov  edx,0x0
-    mcall
+    mcall 13,<146,200>,<190,40>,0
     add  ebx,2 shl 16 - 4
     add  ecx,2 shl 16 - 4
     mov  edx,fgcolor
@@ -554,11 +454,10 @@ pusha
         cmp  [stat],3
         jne .stat1
     mov   eax,4
-    mov   ebx,174 shl 16 +206
-    mov   edx,lbl_start_a_new_game+1
-    movzx esi,byte [lbl_start_a_new_game]
+    mov   ebx,159 shl 16 +202
+    mov   edx,lbl_new_game
     mov   ecx,btcolor
-    add   ecx,0x10000000
+    or    ecx,0xB0000000
     mcall
     jmp .nomessage
 
@@ -566,15 +465,13 @@ pusha
     cmp   [stat],1
      je   .winmessage
     mov   eax,4
-    mov   ebx,186 shl 16 +200
-    mov   edx,lbl_gameover+1
-    movzx esi,byte [lbl_gameover]
+    mov   ebx,170 shl 16 +196
+    mov   edx,lbl_gameover
     mov   ecx,btcolor
-    add   ecx,0x10000000
+    or    ecx,0xB0000000
     mcall
     add   ebx,8 shl 16 +17
-    mov   edx,lbl_yscore+1
-    movzx esi,byte [lbl_yscore]
+    mov   edx,lbl_yscore
     mov   ecx,btcolor
     mcall
     mov   esi,ecx       ;color
@@ -588,10 +485,9 @@ pusha
    .winmessage:
     mov   eax,4
     mov   ebx,152 shl 16 +200
-    mov   edx,lbl_win+1
-    movzx esi,byte [lbl_win]
+    mov   edx,lbl_win
     mov   ecx,btcolor
-    add   ecx,0x10000000
+    or    ecx,0xB0000000
     mcall
     mov   ebx,152 shl 16 +217
     add   edx,esi
@@ -606,7 +502,7 @@ pusha
  mov  ebx,15*65536+32
  mov  ecx,50*65536+32
  mov  edx,15*65536+50            ;Spielfeldposition
- mov  esi,10                      ;Spielfeldgroesse Y
+ mov  esi,10                     ;Spielfeldgroesse Y
  .vloop:
   mov  edi,14                    ;Spielfeldgroesse X
   .hloop:
@@ -616,7 +512,7 @@ pusha
     movsx edx, byte [map]
     add  edx,9              ;button-id = map-pos + 10;gen_image inkrements
     add  edx,0x80000000     ;first delete previous button
-        mcall
+    mcall
     sub  edx,0x30000000     ;first delete previous button
     mcall
     pop  edx
@@ -647,42 +543,32 @@ draw_window:
 pusha
 
     mcall 12,1
-        
-    mov  eax,0                     ; function 0 : define and draw window
-    mov  ebx,100*65536+492         ; [x start] *65536 + [x size]
-    mov  ecx,100*65536+420         ; [y start] *65536 + [y size]
-    mov  edx,bgcolor               ; color of work area RRGGBB,8->color gl
-    or   edx,0x14000000
-    mov  edi,title
-    mcall
 
-    mov   eax,8
-    mov   ebx,84*65536+72
-    mov   ecx,28*65536+15
-    mov   edx,2
-    mov   esi,btcolor
-    mcall
-    add   ebx,76 shl 16
+    mov  edx,bgcolor
+    or   edx,0x14000000
+    mcall 0,<100,492>,<100,422>,,,lbl_title
+
+    mcall 8,<100,72>,<28,16>,2,btcolor
+    add   ebx,80 shl 16
     inc   edx
     mcall
-    add   ebx,76 shl 16
+    add   ebx,80 shl 16
     inc   edx
     mcall
 
     mov   eax,4
-    mov   ebx,26 shl 16 +32
+    mov   ebx,20 shl 16 +29
     mov   ecx,fgcolor
-    mov   edx,lbl_toolbar+1
-    movsx esi, byte [lbl_toolbar]
+	or    ecx,0xB0000000
+    mov   edx,lbl_toolbar
     mcall
-    mov   ebx,18 shl 16 +398
-    mov   edx,lbl_score+1
-    movsx esi, byte [lbl_score]
+	or    ecx,0x00000000
+    mov   ebx,18 shl 16 +395
+    mov   edx,lbl_score
     mcall
     mov   ebx,340 shl 16 +405
     mov   ecx,fg3color
-    mov   edx,lbl_copy+1
-    movsx esi,byte [lbl_copy]
+    mov   edx,lbl_copy
     mcall
 
     mcall 12,2
@@ -690,57 +576,34 @@ pusha
     popa
     ret
 
-
-; DATA AREA
+;=================================================
+; DATA - LABELS
+;=================================================
 if lang eq et
-title  db  'Torud',0
-lbl_gameover:
-     db 19
-     latin1 'M ä n g   L ä b i !'
-lbl_start_a_new_game:
-     db 21
-     latin1 'Alusta enne uut mängu'
-lbl_win:
-     db 32
-     latin1 '          T u b l i !           '
-     latin1 '          Lähme edasi!          '
-lbl_yscore:
-     db 12
-     latin1 'Sinu tulemus:'
-lbl_toolbar:
-     db 43
-     latin1 'Uus mäng:     Lihtne     Keskmine     Raske'
-lbl_copy:
-     db 24
-     latin1 'v1.21 2006,Mario Birkner'
-lbl_score:
-     db 28
-     latin1   'Aeg:    Tulemus:       Tase:'
+lbl_title    db 'Torud',0
+lbl_gameover db 'M ä n g   L ä b i !',0
+lbl_new_game db 'Alusta enne uut mängu',0
+lbl_win:     db '          T u b l i !           '
+             db '          Lähme edasi!          ',0
+lbl_yscore   db 'Sinu tulemus:',0
+lbl_toolbar  db 'Uus mäng:  Lihtne    Keskmine   Raske',0
+lbl_copy     db 'v1.21 2006,Mario Birkner',0
+lbl_score    db ' Aeg:   Tulemus:       Tase:',0
 else
-title  db   'Pipes',0
-lbl_gameover:
-     db 19
-     db 'G a m e   O v e r !'
-lbl_start_a_new_game:
-     db 22
-     db 'Start a new game first'
-lbl_win:
-     db 32
-     db '          G r e a t !           '
-     db "       Let's keep going!        "
-lbl_yscore:
-     db 11
-     db 'Your Score:'
-lbl_toolbar:
-     db 43
-     db 'New Game:     Easy       Moderate      Hard'
-lbl_copy:
-     db 24
-     db 'v1.21 2006,Mario Birkner'
-lbl_score:
-     db 28
-     db   'Time:    Score:       Level:'
+lbl_title    db 'Pipes',0
+lbl_gameover db 'G a m e   O v e r !',0
+lbl_new_game db 'Start a new game first',0
+lbl_win:     db '          G r e a t !           '
+             db "       Let's keep going!        ",0
+lbl_yscore   db 'Your Score:',0
+lbl_toolbar  db 'New Game:    Easy     Normal    Hard',0
+lbl_copy     db 'v1.21 2006,Mario Birkner',0
+lbl_score    db 'Time:    Score:       Level:',0
 end if
+
+;=================================================
+; DATA - VARS
+;=================================================
 stat    db 3  ;0=gameplay 1=won 2-lost 3=stopped
 speed   db 0
 time    dd 0
@@ -749,6 +612,9 @@ score   dd 0
 level   dd 1
 half    db 1  ;reduces the random-crosses
 
+;=================================================
+; DATA - RES
+;=================================================
 map:       ;14*10 blocks + position
      db 1  ;<- act. position
      db 9,9,9,9,9,9,9,9,9,9,9,9,9,9
