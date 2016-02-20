@@ -178,8 +178,12 @@
 byte Cp866ToAnsi(byte s) {
 	IF(s>=128)&&(s<=175)s+=64;
 	ELSE IF(s>=224)&&(s<=239)s+=16;
-	ELSE IF(s==241)s=184; //yo
-	ELSE IF(s==240)s=168; //YO
+	ELSE IF(s==241)s=184; //e rus with dots (yo)
+	ELSE IF(s==240)s=168; //E rus with dots (yo)
+	ELSE IF(s==242)s='E'; //E urk (ye)
+	ELSE IF(s==243)s=186; //e urk (ye)
+	ELSE IF(s==244)s='I'; //I urk (yi)
+	ELSE IF(s==245)s=191; //i urk (yi)
 	return s;
 }
 
