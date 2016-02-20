@@ -128,7 +128,6 @@ void main()
 			GetProcessInfo(#Form, SelfInfo);
 			IF (Form.status_window>=2) break;
 		 	DrawWindowContent();
-		 	debugi(menu.list.cur_y);
 	 		if (menu.list.cur_y) {
 				if (menu.list.cur_y == 10) EventOpenFile();
 				if (menu.list.cur_y == 11) EventDeleteFile();

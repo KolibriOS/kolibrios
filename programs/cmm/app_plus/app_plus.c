@@ -39,7 +39,6 @@ need to reboot system to try again."
 
 void CheckKosMounted()
 {
-	while (CheckProcessExists("SEARCHAP")) pause(2);
 	if (dir_exists("/kolibrios/")) 
 	{
 		if (file_exists(APP_PLUS_INI_PATH))	
@@ -52,7 +51,8 @@ void CheckKosMounted()
 
 void RunAutosearch()
 {
-	io.run("/sys/SEARCHAP",0);
+	if (!CheckProcessExists("SEARCHAP")) io.run("/sys/SEARCHAP",0);
+	while (CheckProcessExists("SEARCHAP")) pause(2);
 }
 
 void main()
@@ -75,7 +75,7 @@ void main()
 			if (id==10)
 			{
 				OpenDialog_start stdcall (#o_dialog);
-				if (o_dialog.status) SetAdditionalSystemDirectory("kolibrios", #openfile_path);
+				if (o_dialog.status) SetAdditionalSystemDirectory("kolibrios", #openfile_path+1);
 				pause(3);
 				CheckKosMounted();
 			}

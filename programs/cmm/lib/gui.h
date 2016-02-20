@@ -68,7 +68,7 @@
 	}
 }
 
-unsigned char checkbox_flag[507] = {
+:unsigned char checkbox_flag[507] = {
 	0xFC, 0xD4, 0x04, 0xFC, 0xD4, 0x04, 0xFC, 0xD4, 0x04, 0xFC, 0xD4, 0x04, 0xFC, 0xD4, 0x04, 0xFC, 
 	0xD4, 0x04, 0xFC, 0xD4, 0x04, 0xFC, 0xD4, 0x04, 0xFC, 0xD4, 0x04, 0xFC, 0xD4, 0x04, 0xFC, 0xD4, 
 	0x04, 0xFC, 0xD4, 0x04, 0xFC, 0xC8, 0x04, 0xFC, 0xDC, 0x04, 0xFC, 0xC8, 0x04, 0xFC, 0xC8, 0x04, 
@@ -277,14 +277,14 @@ dword incn::inc(dword _addition)
 #define TAB_PADDING 25
 #define TAB_HEIGHT 25
 
-struct _tabs
+:struct _tabs
 {
 	int active_tab;
 	void draw();
 	int click();
 } tabs;
 
-void _tabs::draw(dword x,y, but_id, text)
+:void _tabs::draw(dword x,y, but_id, text)
 {
 	dword col_bg, col_text;
 	dword w=strlen(text)*8+TAB_PADDING, h=TAB_HEIGHT;
@@ -303,7 +303,7 @@ void _tabs::draw(dword x,y, but_id, text)
 	DrawCaptButton(x,y, w-1,h+1, but_id, col_bg, col_text, text);
 }
 
-int _tabs::click(int N)
+:int _tabs::click(int N)
 {
 	if (N==active_tab) return false;
 	active_tab = N;

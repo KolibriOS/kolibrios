@@ -2,21 +2,21 @@
 #define INCLUDE_RGB_H
 #print "[include <rgb.h>]\n"
 
-struct _rgb
+:struct _rgb
 {
 	byte b,g,r;
 	void DwordToRgb();
 	dword RgbToDword();
 } rgb;
 
-void _rgb::DwordToRgb(dword _dword)
+:void _rgb::DwordToRgb(dword _dword)
 {
 	r = _dword & 0xFF; _dword >>= 8;
 	g = _dword & 0xFF; _dword >>= 8;
 	b = _dword & 0xFF; _dword >>= 8;
 }
 
-dword _rgb::RgbToDword()
+:dword _rgb::RgbToDword()
 {
 	dword _b, _g;
 	_b = b << 16;
