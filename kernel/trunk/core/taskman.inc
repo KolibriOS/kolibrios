@@ -75,7 +75,7 @@ proc fs_execute
          slot_base     dd ?
          file_base     dd ?
          file_size     dd ?
-         handle        dd ? ;temp. for default cursor handle for curr. thread
+;         handle        dd ? ;temp. for default cursor handle for curr. thread
                       ;app header data
          hdr_cmdline   dd ? ;0x00
          hdr_path      dd ? ;0x04
@@ -87,15 +87,15 @@ proc fs_execute
 
         pushad
 
-        cmp     [SCR_MODE], word 0x13
-        jbe     @f
-        pushad
-        stdcall set_cursor, [def_cursor_clock]
-        mov     [handle], eax
-        mov     [redrawmouse_unconditional], 1
-        call    wakeup_osloop
-        popad
-@@:
+;        cmp     [SCR_MODE], word 0x13
+;        jbe     @f
+;        pushad
+;        stdcall set_cursor, [def_cursor_clock]
+;        mov     [handle], eax
+;        mov     [redrawmouse_unconditional], 1
+;        call    wakeup_osloop
+;        popad
+;@@:
         mov     [flags], edx
 
 ; [ebp]  pointer to filename
@@ -256,6 +256,9 @@ proc fs_execute
         test    eax, eax
         jz      .failed
 
+        mov     ebx, [sys_proc+LHEAD.prev]
+        __list_add eax, ebx, sys_proc
+
         mov     ebx, [hdr_mem]
         mov     [eax+PROC.mem_used], ebx
 
@@ -274,8 +277,6 @@ proc fs_execute
 @@:
         mov     [ebx+APPDATA.tls_base], edx
 
-if GREEDY_KERNEL
-else
         mov     ecx, [hdr_mem]
         mov     edi, [file_size]
         add     edi, 4095
@@ -287,7 +288,6 @@ else
         cld
         rep stosb
 @@:
-end if
 
 ; release only virtual space, not phisical memory
 
@@ -315,14 +315,14 @@ end if
         call    unlock_application_table
         mov     eax, esi
 .final:
-        cmp     [SCR_MODE], word 0x13
-        jbe     @f
-        pushad
-        stdcall set_cursor, [handle]
-        mov     [redrawmouse_unconditional], 1
-        call    wakeup_osloop
-        popad
-@@:
+;        cmp     [SCR_MODE], word 0x13
+;        jbe     @f
+;        pushad
+;        stdcall set_cursor, [handle]
+;        mov     [redrawmouse_unconditional], 1
+;        call    wakeup_osloop
+;        popad
+;@@:
         ret
 endp
 
@@ -632,11 +632,11 @@ align 4
 .internal:
         push    ecx
 
-        mov     esi, [ecx+PROC.dlls_list_ptr]
-        call    destroy_all_hdlls
+        mov     esi, ecx
+        list_del esi
 
-;        mov     ecx, pg_data.mutex
-;        call    mutex_lock
+        mov     esi, [esi+PROC.dlls_list_ptr]
+        call    destroy_all_hdlls
 
         mov     esi, [esp]
         add     esi, PROC.pdt_0
@@ -657,9 +657,6 @@ align 4
 
         call    kernel_free     ;ecx still in stack
         stdcall map_page, [tmp_task_ptab], 0, PG_UNMAP
- ;       mov     ecx, pg_data.mutex
- ;       call    mutex_unlock
-
 .exit:
         ret
 

@@ -56,6 +56,7 @@ __exports:
 \
           get_display,           'GetDisplay',         \
           set_screen,            'SetScreen',          \
+          set_framebuffer,       'SetFramebuffer',     \      ; gcc fastcall
           window._.get_rect,     'GetWindowRect',      \      ; gcc fastcall
           pci_api_drv,           'PciApi',             \
           pci_read8,             'PciRead8',           \      ; stdcall

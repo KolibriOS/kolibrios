@@ -358,7 +358,6 @@ free_blocks         rd 1
 mem_block_mask      rd 2
 next_memblock       rd 1
 
-
 mst                 MEM_STATE
 
 pte_valid_mask      rd 1
@@ -374,6 +373,7 @@ srv.bk              rd 1
 align 16
 
 _display            display_t
+bios_fb             FRB
 
 LFBAddress          dd ?
 

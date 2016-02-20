@@ -685,7 +685,7 @@ struct  display_t
         height          dd ?
         bits_per_pixel  dd ?
         vrefresh        dd ?
-        lfb             dd ?
+        current_lfb     dd ?
         lfb_pitch       dd ?
 
         win_map_lock    RWSEM
