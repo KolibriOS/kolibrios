@@ -7,7 +7,7 @@
 
 ; <--- include all MeOS stuff --->
 include "lang.inc"
-include "..\..\..\macros.inc"
+include "..\..\..\..\macros.inc"
 
 TEST_SIZE = 100000	; должно делиться на 4
 

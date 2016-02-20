@@ -5,7 +5,7 @@
 match =TRUE, DEBUG
 {
 
-include '..\..\..\debug.inc'
+include '..\..\..\..\debug.inc'
 
 macro dph1 str
 \{
