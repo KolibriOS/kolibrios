@@ -4,7 +4,7 @@
 
 struct _rgb
 {
-	byte r,g,b;
+	byte b,g,r;
 	void DwordToRgb();
 	dword RgbToDword();
 } rgb;

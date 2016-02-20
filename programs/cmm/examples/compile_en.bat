@@ -1,17 +1,14 @@
-c-- window.c
-c-- collections.c
-c-- menu.c
+@del *.kex
 
-@echo off
-@del _window
-@del _collections
-@del _menu
+@c-- window.c
+@c-- collections.c
+@c-- menu.c
+@c-- rgb.c
 
-@rename window.com _window
-@rename collections.com _collections
-@rename menu.com _menu
+@rename *.com *.kex
+@mkdir bin
+@move *.kex bin\
 
 @del warning.txt
-@echo on
 
 @pause
