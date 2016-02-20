@@ -104,44 +104,50 @@ red:
 
   mcall 12,1
 
+BTN_H equ 21
+  
   mov  edx,[sc.work]
   or   edx,0x34000000
-  mcall 0, <220,120>, <30,FILECOUNT*16+35>, , ,title
+  mcall 0, <220,141>, <30,FILECOUNT*(BTN_H+3)+37>, , ,title
 
   mov   ecx,FILECOUNT
-  mov   ebx,5 shl 16+100
+  mov   ebx,23 shl 16+100
   mov   esi,[sc.work_button]
-  mov   edi,5 shl 16+14
+  mov   edi,5 shl 16+BTN_H
   mov   edx,10
   mov   eax,8
  .btnlp:
   push  ecx
   mcall ,,edi
-  add   edi,16 shl 16
+  add   edi,(BTN_H+3) shl 16
   inc   edx
   pop   ecx
   loop  .btnlp
   mov   ecx,FILECOUNT
   mov   edx,embedded
   xor   edi,edi
-  mov   ebx,25 shl 16+8
+  mov   ebx,30 shl 16+8
   mov   eax,4
  .list:
   lea   edx,[edx+edi+8]
   mov   edi,[edx-8]
   pusha
-  sub   ebx,15 shl 16
-  mcall ,,0xff0000,my_param,1
+  sub   ebx,20 shl 16
+  mov ecx, [sc.work_text]
+  or  ecx, 0x30000000
+  mcall ,,,my_param,1
   inc   [my_param]
   popa
   push  ecx
   mov esi, [edx-4]
   sub esi, 4 ;remove .txt extension
-  mcall ,,[sc.work_button_text]
+  mov ecx, [sc.work_button_text]
+  or  ecx, 0x30000000
+  mcall
   pop   ecx
   add   esi, 4
   add   edx, esi
-  add   ebx,16
+  add   ebx,(BTN_H+3)
   loop  .list
   mcall 12,2
 
