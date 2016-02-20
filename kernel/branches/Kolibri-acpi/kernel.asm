@@ -1100,6 +1100,9 @@ endg
 
 first_app_found:
 
+        mov     ecx, bios_fb
+        call    set_framebuffer
+
 ; START MULTITASKING
 
 ; A 'All set - press ESC to start' messages if need

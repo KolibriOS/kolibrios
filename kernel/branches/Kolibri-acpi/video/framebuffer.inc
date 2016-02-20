@@ -125,6 +125,7 @@ init_video:
         mov     esi, [LFBAddress]
         bt      [cpu_caps], CAPS_PSE
         jnc     .create_page_tables
+
         mov     edx, 0x00400000
         or      esi, PG_GLOBAL+PDE_LARGE+PAT_WC+PG_UWR
         and     esi, [pte_valid_mask]
@@ -208,18 +209,17 @@ set_framebuffer:
         lea     esi, [ecx+FRB.pde]
         mov     eax, sys_proc
 
+        cld
         pushfd
         cli
         mov     [_display.current_lfb], ecx
-
 .patch_pde:
         lea     edi, [eax+PROC.pdt_0+4096-32]   ;last 8 pd entries up to 32Mb framebuffer
-        mov     ecx, 8
+        mov     ecx, 4
         rep movsd                               ;patch pde
-        sub     esi, 32
-        mov     edi, [eax+PROC.list.next]       ;next process/address space
-        xchg    eax, edi
-        cmp     eax, edi
+        sub     esi, 16
+        mov     eax, [eax+PROC.list.next]       ;next process/address space
+        cmp     eax, sys_proc
         jne     .patch_pde
 
         bt      [cpu_caps], CAPS_PGE
