@@ -127,8 +127,9 @@ init_video:
         jnc     .create_page_tables
 
         mov     edx, 0x00400000
-        or      esi, PG_GLOBAL+PDE_LARGE+PAT_WC+PG_UWR
+        or      esi, PG_GLOBAL+PAT_WC+PG_UWR
         and     esi, [pte_valid_mask]
+        or      esi, PDE_LARGE
         mov     [ebp+FRB.pde], esi
         add     esi, edx
         mov     [ebp+FRB.pde+4], esi
