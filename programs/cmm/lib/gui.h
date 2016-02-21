@@ -107,7 +107,8 @@
 {
 	byte w=14, h=14;
 	DefineButton(x-1, y-1, strlen(text)*8 + w + 17, h+2, bt_id+BT_HIDE+BT_NOFRAME, 0);
-	WriteText(x+w+8, h / 2 + y -7, 0x90, system.color.work_text, text);
+	EDI = system.color.work;
+	WriteText(x+w+8, h / 2 + y -7, 0xD0, system.color.work_text, text);
 	DrawRectangle(x, y, w, h, system.color.work_graph);
 	if (is_checked == 0)
 	{
@@ -136,26 +137,29 @@
 	DrawRectangle(x, y, VALUE_FIELD_W, SIZE, system.color.work_graph);
 	DrawRectangle3D(x+1, y+1, VALUE_FIELD_W-2, SIZE-2, 0xDDDddd, 0xffffff);
 	DrawBar(x+2, y+2, VALUE_FIELD_W-3, SIZE-3, 0xffffff);
-	WriteText( -strlen(value_text)+3*8 + x+6, SIZE / 2 + y -6, 0x90, 0x000000, value_text);
+	WriteText( -strlen(value_text)+3*8 + x+6, SIZE / 2 + y -6, 0x90, system.color.work_text, value_text);
 
 	DrawCaptButton(VALUE_FIELD_W + x,     y, SIZE, SIZE, bt_id_more, system.color.work_button, system.color.work_button_text, "+");
 	DrawCaptButton(VALUE_FIELD_W + x + SIZE, y, SIZE, SIZE, bt_id_less, system.color.work_button, system.color.work_button_text, "-");
-	WriteText(x+VALUE_FIELD_W+SIZE+SIZE+10, SIZE / 2 + y -7, 0x90, system.color.work_text, text);
+	EDI = system.color.work;
+	WriteText(x+VALUE_FIELD_W+SIZE+SIZE+10, SIZE / 2 + y -7, 0xD0, system.color.work_text, text);
 	DrawRectangle3D(x-1,y-1,VALUE_FIELD_W+SIZE+SIZE+2,SIZE+2,system.color.work_dark,system.color.work_light);
 }
 
-:void EditBox(dword edit_box_pointer)
+:void DrawEditBox(dword edit_box_pointer)
 {
-	dword x,y,w,h;
+	dword x,y,w,h,bg;
 	ESI = edit_box_pointer;
 	x = ESI.edit_box.left;
 	y = ESI.edit_box.top;
 	w = ESI.edit_box.width+1;
+	if (ESI.edit_box.flags & 100000000000b) bg = 0xCACACA; else bg = 0xFFFfff;
 	h = 15;
-	DrawRectangle(x-1, y-1, w+2, h+2, 0xFFFfff);
-	DrawRectangle3D(x-2, y-2, w+2, h+2, 0xDDDddd, 0xffffff);
+	DrawRectangle(x-1, y-1, w+2, h+2, bg);
+	DrawRectangle3D(x-2, y-2, w+2, h+2, 0xDDDddd, bg);
 	DrawRectangle(x-3, y-3, w+6, h+6, system.color.work_graph);
 	DrawRectangle3D(x-4, y-4, w+8, h+8, system.color.work_dark, system.color.work_light);
+	edit_box_draw  stdcall (edit_box_pointer);
 }
 
 :void DrawProgressBar(dword st_x, st_y, st_w, st_h, col_fon, col_border, col_fill, col_text, progress_percent)

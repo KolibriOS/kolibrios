@@ -11,10 +11,10 @@ unsigned char POP_server1[128]="pop.server.com";
 unsigned char POP_server_port1[5]="110";
 unsigned char SMTP_server1[128]="smtp.server.com";
 unsigned char SMTP_server_port1[5]="25";
-edit_box POP_server_box        = {210,190,90 ,0xffffff,0x94AECE,0xffc90E,0xCACACA,0,sizeof(POP_server1),#POP_server1,#mouse_opt,100000000000b};
-edit_box POP_server_port_box   = {210,190,115,0xffffff,0x94AECE,0xffc90E,0xCACACA,0,5,#POP_server_port1,#mouse_opt,100000000000b};
-edit_box SMTP_server_box       = {210,190,140,0xffffff,0x94AECE,0xffc90E,0xCACACA,0,sizeof(SMTP_server1),#SMTP_server1,#mouse_opt,100000000000b};
-edit_box SMTP_server_port_box  = {210,190,165,0xffffff,0x94AECE,0xffc90E,0xCACACA,0,5,#SMTP_server_port1,#mouse_opt,100000000000b};
+edit_box POP_server_box        = {210,230,125 ,0xffffff,0x94AECE,0xffc90E,0xCACACA,0,sizeof(POP_server1),#POP_server1,#mouse_opt,100000000000b};
+edit_box POP_server_port_box   = {210,230,160,0xffffff,0x94AECE,0xffc90E,0xCACACA,0,5,#POP_server_port1,#mouse_opt,100000000000b};
+edit_box SMTP_server_box       = {210,230,195,0xffffff,0x94AECE,0xffc90E,0xCACACA,0,sizeof(SMTP_server1),#SMTP_server1,#mouse_opt,100000000000b};
+edit_box SMTP_server_port_box  = {210,230,230,0xffffff,0x94AECE,0xffc90E,0xCACACA,0,5,#SMTP_server_port1,#mouse_opt,100000000000b};
 
 
 void SettingsDialog()
@@ -97,20 +97,19 @@ void OptionsWindow()
 {
 	#define ELEM_X 25
 	int i;
+	incn y;
+	y.n=0;
 	DrawBar(0, Form.cheight - 40, Form.cwidth, 1, system.color.work_graph);
 	DrawBar(0, Form.cheight - 40+1, Form.cwidth, 1, LBUMP);
 	DrawCaptButton(Form.cwidth-79, Form.cheight-32, 70, 25, 19, system.color.work_button, system.color.work_button_text,"Apply");
 
-	WriteTextB(ELEM_X, 20, 0x90, system.color.work_text, "Network settings");
-	CheckBox(ELEM_X, 45, 17, "Use custom settings", checked[0]);
-	CheckBox(ELEM_X, 65, 18, "Manual configuration", checked[1]);
-	for (i=0; i<4; i++)
-	{
-		WriteText(ELEM_X+40, i*25+4+POP_server_box.top, 0x80, system.color.work_text, text1[i]);
-		DrawRectangle(POP_server_box.left-1, i*25+POP_server_box.top-1, POP_server_box.width+2, 16, system.color.work_graph);
-	}
-	edit_box_draw stdcall(#POP_server_box);
-	edit_box_draw stdcall(#POP_server_port_box);
-	edit_box_draw stdcall(#SMTP_server_box);
-	edit_box_draw stdcall(#SMTP_server_port_box);
+	WriteText(ELEM_X, y.inc(20), 0x81, system.color.work_text, "Network settings");
+	CheckBox(ELEM_X, y.inc(35), 17, "Use custom settings", checked[0]);
+	CheckBox(ELEM_X, y.inc(30), 18, "Manual configuration", checked[1]);
+	EDI = system.color.work;
+	for (i=0; i<4; i++)	WriteText(ELEM_X+40, i*35+POP_server_box.top, 0xD0, system.color.work_text, text1[i]);
+	DrawEditBox(#POP_server_box);
+	DrawEditBox(#POP_server_port_box);
+	DrawEditBox(#SMTP_server_box);
+	DrawEditBox(#SMTP_server_port_box);
 }

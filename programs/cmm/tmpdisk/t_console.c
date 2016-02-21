@@ -5,7 +5,7 @@
 #ifdef LANG_RUS
 	?define ADD_DISK_TEXT "пробую добавить виртуальный диск"
 	?define DELETE_DISK_TEXT "пробую удалить виртуальный диск"
-	?define DONT_KNOW_DISK_SIZE_TEXT "его размер не указан, 10% свободной ОЗУ будет использовано"
+	?define DONT_KNOW_DISK_SIZE_TEXT "его размер не указан, 20% свободной ОЗУ будет использовано"
 	?define NEW_DISK_TEXT "размер диска будет: "
 	char *rezult_text[]={
 	"операция успешно завершена",
@@ -19,7 +19,7 @@
 #else
 	?define ADD_DISK_TEXT "trying to add disk"
 	?define DELETE_DISK_TEXT "trying to delete virtual disk"
-	?define DONT_KNOW_DISK_SIZE_TEXT "its size is not specified, 10% from free RAM will be used"
+	?define DONT_KNOW_DISK_SIZE_TEXT "its size is not specified, 20% from free RAM will be used"
 	?define NEW_DISK_TEXT "new DiskSize: "
 	char *rezult_text[]={
 	"operation completed successfully",
@@ -64,7 +64,7 @@ char Console_Work()
 			disk_size= strchr(#param, 's');
 			if (!disk_size)
 			{
-				add_disk.DiskSize = GetFreeRAM() / 5;
+				add_disk.DiskSize = GetFreeRAM() / 5 * 2;
 				debugln(DONT_KNOW_DISK_SIZE_TEXT);
 			}				
 			else

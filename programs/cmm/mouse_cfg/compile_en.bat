@@ -3,7 +3,7 @@
 
 @del mouse_cfg
 cls
-c-- mouse_cfg.c
+@c-- mouse_cfg.c
 @rename mouse_cfg.com mouse_cfg
 @kpack mouse_cfg
 @del warning.txt

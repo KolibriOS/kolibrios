@@ -3,7 +3,7 @@
 	?define BTN_CLOSE "Закрыть"
 	?define BTN_APPLY "Применить"
 	?define QUEST_1 "Применить ко всем вложенным"
-	?define QUEST_2 "файлам и папкам"
+	?define QUEST_2 "файлам и папкам?"
 	?define PR_T_NAME "Имя:"
 	?define PR_T_DEST "Расположение:"
 	?define PR_T_SIZE "Размер:"
@@ -21,7 +21,7 @@
 	?define BTN_CLOSE "Close"
 	?define BTN_APPLY "Apply"
 	?define QUEST_1 "Apply to all subfolders"
-	?define QUEST_2 "files and Folders"
+	?define QUEST_2 "files and Folders?"
 	?define PR_T_NAME "Name:"
 	?define PR_T_DEST "Destination:"
 	?define PR_T_SIZE "Size:"
@@ -41,7 +41,7 @@ char path_to_file[4096]="\0";
 char file_name2[4096]="\0";
 edit_box file_name_ed = {195,50,25,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,4098,#file_name2,#mouse_ddd2, 1000000000000000b,2,2};
 edit_box path_to_file_ed = {145,100,46,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,4098,#path_to_file,#mouse_ddd2, 1000000000000000b,2,2};
-frame flags_frame = { 0, 280, 10, 83, 151, 0x000111, 0xFFFfff, 1, FLAGS, 0, 0, 6, 0x000111, 0xFFFFFF };
+frame flags_frame = { 0, 280, 10, 83, 151, 0x000111, 0xFFFfff, 1, FLAGS, 0, 1, 12, 0x000111, 0xFFFFFF };
 
 int file_count, dir_count, size_dir;
 char folder_info[200];
@@ -51,7 +51,7 @@ BDVK file_info_general;
 BDVK file_info_dirsize;
 
 proc_info settings_form;
-byte quest_active, atr_readonly, atr_hidden, atr_system;
+bool quest_active, atr_readonly, atr_hidden, atr_system;
 
 void SetPropertiesDir(dword way)
 {
@@ -142,8 +142,9 @@ void SetProperties(byte prop)
 	ExitProcess();
 }
 
-void Quest()
+void ShowConfirmQuestionPopin()
 {
+	quest_active = 1;
 	DrawPopup(30,80,200,90,1,system.color.work, system.color.work_graph);
 	WriteText(50, 100, 0x80, 0x000000, QUEST_1);
 	WriteText(80, 115, 0x80, 0x000000, QUEST_2);
@@ -249,6 +250,7 @@ void properties_dialog()
 				{
 					IF (id==301) SetProperties(2);
 					IF (id==302) SetProperties(1);
+					quest_active=false;
 					break;
 				}
 				if (id==1) || (id==10)
@@ -260,8 +262,7 @@ void properties_dialog()
 				{
 					if (selected_count) || (itdir)
 					{
-						quest_active = 1;
-						Quest();
+						ShowConfirmQuestionPopin();
 					}
 					else 
 					{
@@ -287,6 +288,7 @@ void properties_dialog()
 				{
 					IF (key_scancode==SCAN_CODE_ENTER) SetProperties(2);
 					IF (key_scancode==SCAN_CODE_ESC) SetProperties(1);
+					quest_active=false;
 					break;
 				}
 				if (key_scancode==SCAN_CODE_ESC)
@@ -298,8 +300,7 @@ void properties_dialog()
 				{
 					if (selected_count) || (itdir)
 					{
-						quest_active = 1;
-						Quest();
+						ShowConfirmQuestionPopin();
 					}
 					else 
 					{
@@ -332,7 +333,7 @@ void DrawPropertiesWindow()
 	
 	if (selected_count)
 	{
-		Put_icon('', 18, 19, 0xFFFfff, 0);
+		DrawIconByExtension('', 18, 19, 0xFFFfff);
 		sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
 		WriteText(50, 23, 0x80, 0x000000, #folder_info);
 		sprintf(#element_size_label,"%s (%d %s)",ConvertSize(size_dir),size_dir,SET_BYTE_LANG);
@@ -341,9 +342,9 @@ void DrawPropertiesWindow()
 	else
 	{
 		if ( file_info_general.isfolder )
-				Put_icon("<DIR>", 18, 19, 0xFFFfff, 0);
+				DrawIconByExtension("<DIR>", 18, 19, 0xFFFfff);
 		else
-				Put_icon(#file_name2+strrchr(#file_name2,'.'), 18, 19, 0xFFFfff, 0);
+				DrawIconByExtension(#file_name2+strrchr(#file_name2,'.'), 18, 19, 0xFFFfff);
 
 		WriteText(50, 13, 0x80, 0x000000, PR_T_NAME);                          
 		edit_box_draw stdcall (#file_name_ed);
@@ -367,6 +368,7 @@ void DrawPropertiesWindow()
 	flags_frame.size_x = - flags_frame.start_x * 2 + settings_form.cwidth - 2;
 	flags_frame.font_color = system.color.work_text;
 	flags_frame.ext_col = system.color.work_graph;
+	flags_frame.font_backgr_color = system.color.work;
 	frame_draw stdcall (#flags_frame);
 	DrawPropertiesCheckBoxes();
 }

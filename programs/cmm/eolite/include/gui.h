@@ -67,16 +67,17 @@ void DrawFilledBar(dword x, y, w, h)
 	DrawBar(x, y+i, w, h-fill_h, col_palette[14-i]);
 }
 
+int popin_w=250;
 void DrawEolitePopup(dword b1_text, b2_text)
 {
-	int form_w=250, button_padding=30;
+	int button_padding=30;
 	int b1_len = strlen(b1_text) * 8 + button_padding;
 	int b2_len = strlen(b2_text) * 8 + button_padding;
-	int dform_x = files.w - form_w / 2 + files.x ;
-	int button_margin = form_w - b1_len - b2_len / 3;
-	int b1_x = dform_x + button_margin;
-	int b2_x = dform_x + button_margin + b1_len + button_margin;
-	DrawPopup(dform_x, 160, form_w, 90, 1, system.color.work, col_graph);
-	DrawFlatButton(b1_x, 210, b1_len, 24, 301, b1_text);
-	DrawFlatButton(b2_x, 210, b2_len, 24, 302, b2_text);
+	int popin_x = files.w - popin_w / 2 + files.x ;
+	int button_margin = popin_w - b1_len - b2_len / 3;
+	int b1_x = popin_x + button_margin;
+	int b2_x = popin_x + button_margin + b1_len + button_margin;
+	DrawPopup(popin_x, 160, popin_w, 90, 1, system.color.work, col_graph);
+	DrawFlatButton(b1_x, 210, b1_len, 24, POPUP_BTN1, b1_text);
+	DrawFlatButton(b2_x, 210, b2_len, 24, POPUP_BTN2, b2_text);
 }

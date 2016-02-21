@@ -3,7 +3,7 @@
 
 @del panels_cfg
 cls
-c-- panels_cfg.c
+@c-- panels_cfg.c
 @pause
 @echo off
 @rename panels_cfg.com panels_cfg

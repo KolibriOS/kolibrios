@@ -137,8 +137,7 @@ void Main_Window()
 			DrawBar(0,TOPPANELH, Form.cwidth,1,  system.color.work_graph);
 			WriteText(6, 6, 0x90, system.color.work_text, SIZE_TEXT);
 			WriteText(edit_disk_size.left + edit_disk_size.width + 12, 6, 0x90, system.color.work_text, "MB.");
-			edit_box_draw stdcall (#edit_disk_size);
-			EditBox(#edit_disk_size);
+			DrawEditBox(#edit_disk_size);
 			for (i=0, x=6; i<2; i++, x+=strlen(but_text[i])*6+37)
 			{
 				DefineButton(x,29, strlen(but_text[i])*6+28,19, 10+i, system.color.work_button);
@@ -155,7 +154,7 @@ void Main_Window()
 void GetSizeDisk()
 {
 	int fr;
-	fr = GetFreeRAM() / 5;
+	fr = GetFreeRAM() / 5 * 2;
 	fr = itoa(fr / 2048);
 	strcpy(#new_disk_size, fr);
 	edit_disk_size.size = edit_disk_size.pos = strlen(#new_disk_size);

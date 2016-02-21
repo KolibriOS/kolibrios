@@ -27,10 +27,10 @@ char *ext[]={
 "grf", 25,
 0,0};
 
-void Put_icon(dword extension, xx, yy, fairing_color, icon_n)
+void DrawIconByExtension(dword extension, xx, yy, fairing_color)
 {
 	int i;
-
+	dword icon_n=0;
 	if (extension) for (i=0; ext[i]!=0; i+=2;)
 	{
 		if (strcmpi(extension, ext[i])==0)
@@ -39,11 +39,9 @@ void Put_icon(dword extension, xx, yy, fairing_color, icon_n)
 			break;
 		}
 	}
-
 	ficons_pal[0] = fairing_color;
 	PutPaletteImage(icon_n*16*15+#ficons,16,15,xx,yy,8,#ficons_pal);
 	if (fairing_color!=0xFFFfff) IconFairing(icon_n, xx, yy, fairing_color);
-	if (icon_n!=17) && (strlen(extension)<9) WriteText(-FileShow.font_size_x/2*strlen(extension)+files.x+files.w-103,yy+3,files.font_type,0,extension);
 }
 
 

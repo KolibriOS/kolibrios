@@ -3,7 +3,7 @@
 
 @del Eolite
 cls
-c-- Eolite.c
+@c-- Eolite.c
 rem @kpack Eolite.com
 @rename Eolite.com Eolite
 

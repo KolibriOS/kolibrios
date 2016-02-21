@@ -1,7 +1,7 @@
 @del lang.h--
 @echo #define LANG_ENG 1 >lang.h--
 
-C-- pixie.c
+@C-- pixie.c
 @del pixie
 @kpack pixie.com
 @rename pixie.com pixie

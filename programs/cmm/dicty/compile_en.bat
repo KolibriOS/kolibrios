@@ -7,4 +7,3 @@ C-- dicty.c
 @del warning.txt
 @del lang.h--
 @pause
-kpack dicty

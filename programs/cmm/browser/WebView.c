@@ -237,7 +237,7 @@ void main()
 							GetAbsoluteURL(#URL);
 							history.back();
 							strcpy(#editURL, #URL);
-							DrawEditBox();
+							DrawEditBoxWebView();
 							OpenPage();
 						}
 						else
@@ -290,7 +290,7 @@ void Draw_Window()
 	img_draw stdcall(skin.image, Form.cwidth-22, address_box.top-3, 16, skin.h, 85, 0);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, col_bg);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, border_color);
-	if (!header) OpenPage(); else { WB1.DrawPage(); DrawEditBox(); }
+	if (!header) OpenPage(); else { WB1.DrawPage(); DrawEditBoxWebView(); }
 	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, scroll_wv.bckg_col);
 	DrawProgress();
 
@@ -426,7 +426,7 @@ void OpenPage()
 		SetPageDefaults();
 		if (!strcmp(#URL, URL_SERVICE_HOME)) WB1.LoadInternalPage(#homepage, sizeof(homepage));
 		else if (!strcmp(#URL, URL_SERVICE_HISTORY)) ShowHistory();
-		DrawEditBox();
+		DrawEditBoxWebView();
 		return;
 	}
 	if (!strncmp(#URL,"http:",5))
@@ -458,7 +458,7 @@ void OpenPage()
 	}
 }
 
-DrawEditBox()
+DrawEditBoxWebView()
 {
 	DrawWideRectangle(address_box.left-2, address_box.top-2, address_box.width+3, 19, 2, address_box.color);
 	address_box.size = address_box.pos = address_box.shift = address_box.shift_old = strlen(#editURL);
@@ -471,7 +471,7 @@ DrawEditBox()
 
 void ShowPage()
 {
-	DrawEditBox();
+	DrawEditBoxWebView();
 	if (!bufsize)
 	{
 		if (http_transfer) WB1.LoadInternalPage(#loading, sizeof(loading));

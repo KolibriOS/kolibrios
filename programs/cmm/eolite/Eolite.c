@@ -1,4 +1,4 @@
-//Leency, Veliant, Punk_Joker & KolibriOS Team 2008-2015
+//Leency, Veliant, Punk_Joker, PavelYakov & KolibriOS Team 2008-2016
 //GNU GPL licence.
 
 #ifndef AUTOBUILD
@@ -16,10 +16,8 @@
 #include "..\lib\random.h"
 #include "..\lib\font.h"
 #include "..\lib\collection.h"
-//obj
 #include "..\lib\obj\libini.h"
 #include "..\lib\obj\box_lib.h"
-//patterns
 #include "..\lib\patterns\history.h"
 
 //images
@@ -27,8 +25,25 @@
 #include "imgs\left_p.txt"
 #include "imgs\icons.txt"
 
-enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
-enum {CREATE_FILE=1, CREATE_FOLDER, RENAME_ITEM }; //NewElement
+//Button IDs
+enum {
+	POPUP_BTN1 = 201,
+	POPUP_BTN2 = 202
+};
+
+//NewElement options
+enum {
+	CREATE_FILE=1, 
+	CREATE_FOLDER, 
+	RENAME_ITEM
+}; 
+
+//OpenDir options
+enum {
+	ONLY_SHOW, 
+	WITH_REDRAW, 
+	ONLY_OPEN
+};
 
 dword col_padding, col_selec, col_lpanel, col_work, col_graph;
 
@@ -104,6 +119,7 @@ char *fd_path_eolite_ini_path;
 #include "include\icons.h"
 #include "include\left_panel.h"
 #include "include\menu.h"
+#include "include\delete.h"
 #include "include\about.h"
 #include "include\properties.h"
 
@@ -193,33 +209,19 @@ void main()
 				}	
 				if (files.MouseOver(mouse.x, mouse.y))
 				{
-					//open
-					if (mouse.key&MOUSE_LEFT)&&(mouse.dblclick) 
-					{
-						if (mouse.y - files.y / files.item_h + files.first < files.count) 
-						{
-							files.ProcessMouse(mouse.x, mouse.y);
-							List_ReDraw();
-							Open(0);					
-						}
-					}
 					//select file
-					else if (mouse.key&MOUSE_LEFT)&&((mouse.down)
+					if (mouse.key&MOUSE_LEFT) && (mouse.up)
 					{
 						if (files.ProcessMouse(mouse.x, mouse.y)) List_ReDraw();
+						else if (mouse.dblclick)) Open(0);
 					}
 					//file menu
-					else if (mouse.key&MOUSE_RIGHT)&&(mouse.up)
+					if (mouse.key&MOUSE_RIGHT)
 					{
 						menu_call_mouse = 1;
-						
-						if (files.MouseOver(mouse.x, mouse.y))
-						{
-							files.cur_y = mouse.y - files.y / files.item_h + files.first;
-							List_ReDraw();
-							menu_stak = malloc(4096);
-							CreateThread(#FileMenu,menu_stak+4092);	
-						}
+						if (files.ProcessMouse(mouse.x, mouse.y)) List_ReDraw();
+						menu_stak = malloc(4096);
+						CreateThread(#FileMenu,menu_stak+4092);
 						break;
 					}
 				}
@@ -293,26 +295,13 @@ void main()
 				break;  
 	//Button pressed-----------------------------------------------------------------------------
 			case evButton:
-				id=GetButtonID();
-				if (id==1)
-				{
-					KillProcess(about_window);
-					SaveIniSettings();
-					ExitProcess();
-				}
-				if (del_active)
-				{
-					if (id==301) || (id==302) Del_File(302-id);
-					break;
-				}
-				if (new_element_active)
-				{
-					if (id==301) || (id==302) NewElement(302-id);
-					break;
-				}
-				
+				id=GetButtonID();				
 				switch(id) 
 				{
+					case 01:
+							KillProcess(about_window);
+							SaveIniSettings();
+							ExitProcess();
 					case 21: //Back
 							GoBack();
 							break;
@@ -346,6 +335,13 @@ void main()
 							break;
 					case 100...120:
 						SystemDiscs.Click(id-100);
+						break;
+					case POPUP_BTN1:
+					case POPUP_BTN2:
+						if (del_active) Del_File(id-POPUP_BTN2);
+						if (new_element_active) NewElement(id-POPUP_BTN2);
+						DeleteButton(POPUP_BTN1);
+						DeleteButton(POPUP_BTN2);
 						break;
 				}
 				break;
@@ -411,7 +407,7 @@ void main()
 						case 050: //Ctrl+M
 								Open_Dir(#inactive_path,WITH_REDRAW);
 								break; 
-						case 028: //Ctrl+Enter
+						case SCAN_CODE_ENTER: //Ctrl+Enter
 								if (!itdir) ShowOpenWithDialog();
 								else Open(1);
 								break;
@@ -683,15 +679,18 @@ void Line_ReDraw(dword bgcol, filenum){
 	if (! TestBit(attr, 4) ) //file or folder?
 	{	
 		ext1 = strrchr(file_name_off,'.') + file_name_off;
-		if (ext1==file_name_off) ext1 = " \0"; //if no extension then show nothing 
-		Put_icon(ext1, files.x+3, files.item_h/2-7+y, bgcol, 0);
-		WriteText(7-strlen(ConvertSize(file.sizelo))*6+files.x+files.w - 58, files.text_y + y +1,files.font_type,0,ConvertSize(file.sizelo));
+		if (ext1==file_name_off) ext1 = NULL; //if no extension then show nothing 
+		WriteText(7-strlen(ConvertSize(file.sizelo))*6+files.x+files.w - 58, files.text_y+y+1, files.font_type, 0, ConvertSize(file.sizelo));
+		if (ext1) && (strlen(ext1)<9) WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, 0, ext1);
 	}
 	else
 	{
-		if (!strncmp(file_name_off,"..",3)) ext1=".."; else ext1="<DIR>";
-		Put_icon(ext1, files.x+3, files.item_h/2-7+y, bgcol, 0);		
+		if (!strncmp(file_name_off,"..",3))	ext1=".."; else {
+			ext1="<DIR>";
+			WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, 0, ext1);
+		}
 	}
+	DrawIconByExtension(ext1, files.x+3, files.item_h/2-7+y, bgcol);
 
 	if (TestBit(attr, 1)) || (TestBit(attr, 2)) text_col=0xA6A6B7; //system or hiden?
 	if (bgcol!=0xFFFfff)
@@ -814,7 +813,7 @@ inline Sorting()
 void Del_Form()
 {
 	dword selected_offset2;
-	int cont = 0;
+	int selected_count = 0;
 	byte f_count[128];
 	int dform_x = files.w - 220 / 2 + files.x;
 	if (!strncmp(#file_name,".",2)) || (!strncmp(#file_name,"..",2)) return;
@@ -826,11 +825,11 @@ void Del_Form()
 		for (i=0; i<files.count; i++) 
 		{
 			selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-			if (ESBYTE[selected_offset2]) cont++;
+			if (ESBYTE[selected_offset2]) selected_count++;
 		}
-		if (cont)
+		if (selected_count)
 		{
-			sprintf(#f_count,"%s%d%s",DEL_MORE_FILES_1,cont,DEL_MORE_FILES_2);
+			sprintf(#f_count,"%s%d%s",DEL_MORE_FILES_1,selected_count,DEL_MORE_FILES_2);
 			WriteText(-strlen(#f_count)*3+110+dform_x,190,0x80,system.color.work_text,#f_count);
 		}
 		else
@@ -849,97 +848,6 @@ void Del_Form()
 		}		
 		del_active=1;
 	}
-}
-
-int del_error;
-int Del_File2(dword way, sh_progr)
-{    
-	dword dirbuf, fcount, i, filename;
-	int error;
-	char del_from[4096];
-	if (dir_exists(way))
-	{
-		if (error = GetDir(#dirbuf, #fcount, way, DIRS_ONLYREAL)) del_error = error;
-		for (i=0; i<fcount; i++)
-		{
-			if (CheckEvent()==evReDraw) draw_window();
-			filename = i*304+dirbuf+72;
-			sprintf(#del_from,"%s/%s",way,filename);
-			if ( TestBit(ESDWORD[filename-40], 4) )
-			{
-				Del_File2(#del_from, 1);
-			}
-			else
-			{
-				if (sh_progr) Operation_Draw_Progress(#del_from);
-				if (error = DeleteFile(#del_from)) del_error = error;
-			}
-		}
-	}
-	if (error = DeleteFile(way)) del_error = error;
-}
-
-void Del_File_Thread()
-{   
-	byte del_from[4096];
-	dword selected_offset2;
-	int tst, count, i;
-	
-	file_count_copy = 0;
-	copy_bar.value = 0; 
-	operation_flag = DELETE_FLAG;
-	
-	if (selected_count)
-	{
-	   for (i=0; i<files.count; i++) 
-		  {
-			   selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-				if (ESBYTE[selected_offset2]) {
-					sprintf(#del_from,"%s%s",#path,file_mas[i]*304+buf+72);
-					GetFileInfo(#del_from, #file_info_count);
-					if ( file_info_count.isfolder ) DirFileCount(#del_from);
-					else file_count_copy++;
-				}
-		   }
-	}
-	else
-	{
-		if (itdir) DirFileCount(#file_path);
-		else file_count_copy++;
-	}
-	
-	copy_bar.max = file_count_copy;
-	
-	del_error = 0;
-	DisplayOperationForm();
-	if (selected_count)
-	{
-		for (i=0; i<files.count; i++) 
-		{
-			selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-			if (ESBYTE[selected_offset2]) {
-				sprintf(#del_from,"%s%s",#path,file_mas[i]*304+buf+72);
-				Del_File2(#del_from, 1);
-			}
-		}
-	}
-	else
-	{
-		Del_File2(#file_path, 1);			
-	}
-	if (del_error) Write_Error(del_error);
-	cmd_free = 6;
-	DialogExit();
-}
-
-void Del_File(byte dodel) {
-	del_active=0;
-	if (dodel)
-	{
-		delete_stak = malloc(40000);
-		CreateThread(#Del_File_Thread,delete_stak+40000-4);
-	}
-	else draw_window();
 }
 
 void SelectFileByName(dword that_file)
@@ -1105,9 +1013,7 @@ void NewElement_Form(byte crt, dword strng)
 	if (new_element_active==3) DrawEolitePopup(T_RENAME, T_CANCEL);
 	else DrawEolitePopup(T_CREATE, T_CANCEL);
 	new_file_ed.left = dform_x+24;
-	edit_box_draw  stdcall (#new_file_ed);
-	DrawRectangle(new_file_ed.left-1, new_file_ed.top-1, new_file_ed.width+2, 16, 0xFFFfff);
-	DrawRectangle(new_file_ed.left-2, new_file_ed.top-2, new_file_ed.width+4, 18, col_graph);
+	DrawEditBox(#new_file_ed);
 }
 
 void FnProcess(byte N)

@@ -51,6 +51,13 @@ inline void debugi(dword d_int)
 	debugln(#tmpch);
 }
 
+:void debugval(dword text,number)
+{
+	debug(text);
+	debug(": ");
+	debugi(number);
+}
+
 :void assert(dword _type, _actual, _expected)
 {
 	char r[4096];

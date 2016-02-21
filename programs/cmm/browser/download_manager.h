@@ -128,9 +128,10 @@ void DL_Draw_Window()
 	ed.left = strlen("URL:")*6 + 10 + cleft;
 	ed.width = DL_Form.cwidth - ed.left - cleft - 3;
 	ed.offset=0;
-	edit_box_draw stdcall(#ed);
-	DrawRectangle(ed.left-1, ed.top-1, ed.width+2, 16, ed.blur_border_color);
-	DrawRectangle(ed.left-2, ed.top-2, ed.width+4, 18, border_color);
+	//edit_box_draw stdcall(#ed);
+	DrawEditBox(#ed);
+	//DrawRectangle(ed.left-1, ed.top-1, ed.width+2, 16, ed.blur_border_color);
+	//DrawRectangle(ed.left-2, ed.top-2, ed.width+4, 18, border_color);
 }
 
 void StartDownloading()

@@ -92,7 +92,7 @@
 		}
 		else
 		{
-			Operation_Draw_Progress(filename);
+			Operation_Draw_Progress(filename+strchr(filename, '/'));
 			if (error=CopyFile(#copy_from2, #copy_in2)) 
 			{
 				if (fabs(error)==8) { debugln("Stop copying."); break;} //TODO: may be need grobal var like stop_all

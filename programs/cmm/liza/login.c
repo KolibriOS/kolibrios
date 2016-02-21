@@ -183,14 +183,12 @@ void DrawLoginScreen()
 	WriteText(panel_x,panel_y,0x80,system.color.work_text,"Your Email:");
 	login_box.left = panel_x+3;
 	login_box.top = panel_y+15;
-	edit_box_draw stdcall(#login_box);
-	EditBox(#login_box);
+	DrawEditBox(#login_box);
 	
 	WriteText(panel_x,panel_y+40,0x80,system.color.work_text,"Password:");
 	pass_box.left = panel_x+3;
 	pass_box.top = panel_y+55;
-	edit_box_draw stdcall(#pass_box);
-	EditBox(#pass_box);
+	DrawEditBox(#pass_box);
 	
 	if (!aim)
 	{

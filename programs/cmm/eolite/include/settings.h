@@ -14,7 +14,7 @@
 	?define EDIT_FILE_ASSOCIATIONS "Edit file associations"
 	?define TITLE_SETT "Settings"
 	?define SHOW_DEVICE_CLASS "Show device class name"
-	?define SHOW_REAL_NAMES "Show real file names without changing case"
+	?define SHOW_REAL_NAMES "Show file names in original case"
 	?define FONT_SIZE_LABEL "Font size"
 	?define USE_TWO_PANELS "Two panels"
 	?define smooth_FONT "Use smooth font"
