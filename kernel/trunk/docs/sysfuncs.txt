@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2081,12 +2081,16 @@ Parameters:
     * bit 31 set = do not display leading zeroes of the number
   * ecx = number (if bl=0) or pointer (if bl=1)
   * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
-  * esi = 0xX0RRGGBB:
-    * RR, GG, BB specify the color
-    * X = ABnn (bits)
-    * nn = font (0/1)
-    * A is ignored
-    * B=1 - fill background with the color edi
+  * esi = 0xXXRRGGBB, where
+    * RR, GG, BB specify text color
+    * XX = 0B0FCSSS (bits):
+      * B=1 - fill background (color = edi)
+      * F specifies the font:
+        0 = 6x9
+        1 = 8x16
+      * C=0 - draw to the window,
+        C=1 - draw to the user buffer (edi)
+      * SSS = (size multiplier)-1, so 0 = x1, 7 = x8
 Returned value:
   * function does not return value
 Remarks:
@@ -2095,8 +2099,6 @@ Remarks:
     and can be written by smaller amount of digits, it is supplemented
     by leading zeroes; if the number is big and can not be written by
     given amount of digits, extra digits are not drawn.
-  * Parameters of fonts are shown in the description of function 4
-    (text output).
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_DRAW_NUMBER (47)
