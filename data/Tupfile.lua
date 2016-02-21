@@ -155,6 +155,7 @@ extra_files = {
  {"kolibrios/demos/life2", "common/demos/life2"},
  {"kolibrios/demos/relay.lif", "common/demos/relay.lif"},
  {"kolibrios/demos/rpento.lif", "common/demos/rpento.lif"},
+ {"kolibrios/games/Almaz", PROGS .. "/games/almaz/almaz"},
  {"kolibrios/games/BabyPainter", "common/games/BabyPainter"},
  {"kolibrios/games/bomber/ackack.bmp", PROGS .. "/games/bomber/ackack.bmp"},
  {"kolibrios/games/bomber/bomb.bmp", PROGS .. "/games/bomber/bomb.bmp"},

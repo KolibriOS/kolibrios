@@ -471,7 +471,7 @@ struct system_colors
   grab             dd ? ;nonset2
   work_3d_dark     dd ?
   work_3d_light    dd ?
-  grab_text        dd ? ;nonset3
+  grab_text        dd ? ;window_title
   work             dd ?
   work_button      dd ?
   work_button_text dd ?
