@@ -39,9 +39,9 @@
 dword mouse_ddd2;
 char path_to_file[4096]="\0";
 char file_name2[4096]="\0";
-edit_box file_name_ed = {215,50,28,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,4098,#file_name2,#mouse_ddd2, 1000000000000000b,2,2};
-edit_box path_to_file_ed = {145,120,49,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,4098,#path_to_file,#mouse_ddd2, 1000000000000000b,2,2};
-frame flags_frame = { 0, 280, 10, 83, 165, 0x000111, 0xFFFfff, 1, FLAGS, 0, 1, 12, 0x000111, 0xFFFFFF };
+edit_box file_name_ed = {230,50,27,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,4098,#file_name2,#mouse_ddd2, 1000000000000000b,2,2};
+edit_box path_to_file_ed = {160,120,49,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,4098,#path_to_file,#mouse_ddd2, 1000000000000000b,2,2};
+frame flags_frame = { 0, NULL, 10, 92, 182, 0x000111, 0xFFFfff, 1, FLAGS, 0, 1, 12, 0x000111, 0xFFFFFF };
 
 int file_count, dir_count, size_dir;
 char folder_info[200];
@@ -320,33 +320,32 @@ void properties_dialog()
 
 void DrawPropertiesWindow()
 {
-	DefineAndDrawWindow(Form.left + 150,150,290,299+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE_PROPERTIES);
+	DefineAndDrawWindow(Form.left + 150,150,305,330+skin_height,0x34,system.color.work,WINDOW_TITLE_PROPERTIES);
 	GetProcessInfo(#settings_form, SelfInfo);
-	DrawFlatButton(settings_form.cwidth - 80 - 13, settings_form.cheight - 34, 80, 24, 10, BTN_CLOSE);
-	DrawFlatButton(settings_form.cwidth - 170 - 13, settings_form.cheight - 34, 80, 24, 11, BTN_APPLY);
-	DrawBar(10, 10, 32, 32, 0xFFFfff);
+	DrawFlatButton(settings_form.cwidth - 93, settings_form.cheight-34, 80, 24, 10, BTN_CLOSE);
+	DrawFlatButton(settings_form.cwidth -183, settings_form.cheight-34, 80, 24, 11, BTN_APPLY);
 	
-	WriteText(10, 52, 0x90, 0x000000, PR_T_DEST);
+	WriteText(10, 48, 0x90, 0x000000, PR_T_DEST);
 	edit_box_draw stdcall (#path_to_file_ed);
 
-	WriteText(10, 69, 0x90, 0x000000, PR_T_SIZE);
+	WriteText(10, 67, 0x90, 0x000000, PR_T_SIZE);
 	
 	if (selected_count)
 	{
-		DrawIconByExtension('', 18, 19, 0xFFFfff);
+		DrawIconByExtension(NULL, 18, 19, system.color.work);
 		sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
-		WriteText(50, 25, 0x90, 0x000000, #folder_info);
+		WriteText(50, 19, 0x90, 0x000000, #folder_info);
 		sprintf(#element_size_label,"%s (%d %s)",ConvertSize(size_dir),size_dir,SET_BYTE_LANG);
-		WriteText(120, 69, 0x90, 0x000000, #element_size_label);
+		WriteText(120, 67, 0x90, 0x000000, #element_size_label);
 	}
 	else
 	{
 		if ( file_info_general.isfolder )
-				DrawIconByExtension("<DIR>", 18, 19, 0xFFFfff);
+				DrawIconByExtension("<DIR>", 18, 19, system.color.work);
 		else
-				DrawIconByExtension(#file_name2+strrchr(#file_name2,'.'), 18, 19, 0xFFFfff);
+				DrawIconByExtension(#file_name2+strrchr(#file_name2,'.'), 18, 19, system.color.work);
 
-		WriteText(50, 13, 0x90, 0x000000, PR_T_NAME);                          
+		WriteText(50, 10, 0x90, 0x000000, PR_T_NAME);                          
 		edit_box_draw stdcall (#file_name_ed);
 		
 		if (!itdir) element_size = file_info_general.sizelo;
@@ -357,10 +356,10 @@ void DrawPropertiesWindow()
 			WriteText(120, 86, 0x90, 0x000000, #folder_info);
 			element_size = size_dir;
 		}
-		WriteTextLines(10,  103, 0x90, 0x000000, CREATED_OPENED_MODIFIED, 17);
-		DrawDate(120,  103, 0, #file_info_general.datecreate);
-        DrawDate(120, 120, 0, #file_info_general.datelastaccess);
-        DrawDate(120, 137, 0, #file_info_general.datelastedit);
+		WriteTextLines(10,  106, 0x90, 0x000000, CREATED_OPENED_MODIFIED, 20);
+		DrawDate(120,  106, 0, #file_info_general.datecreate);
+        DrawDate(120, 126, 0, #file_info_general.datelastaccess);
+        DrawDate(120, 146, 0, #file_info_general.datelastedit);
 
 		sprintf(#element_size_label,"%s (%d %s)",ConvertSize(element_size),element_size,SET_BYTE_LANG);
 		WriteText(120, 69, 0x90, 0x000000, #element_size_label);
@@ -375,7 +374,9 @@ void DrawPropertiesWindow()
 
 void DrawPropertiesCheckBoxes()
 {
-	CheckBox(22, flags_frame.start_y + 14, 20, PR_T_ONLY_READ, atr_readonly);
-	CheckBox(22, flags_frame.start_y + 36, 21, PR_T_HIDDEN, atr_hidden);
-	CheckBox(22, flags_frame.start_y + 58, 22, PR_T_SYSTEM, atr_system);
+	incn y;
+	y.n = flags_frame.start_y;
+	CheckBox(24, y.inc(18), 20, PR_T_ONLY_READ, atr_readonly);
+	CheckBox(24, y.inc(24), 21, PR_T_HIDDEN, atr_hidden);
+	CheckBox(24, y.inc(24), 22, PR_T_SYSTEM, atr_system);
 }
