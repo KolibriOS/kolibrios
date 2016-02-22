@@ -110,7 +110,7 @@ release_firmware(const struct firmware *fw)
         kfree((void*)fw);
     }
 }
-
+/*
 struct platform_device*
 platform_device_register_simple(const char* c, int id, void *r, unsigned int i)
 {
@@ -118,5 +118,5 @@ platform_device_register_simple(const char* c, int id, void *r, unsigned int i)
 
     return &pd;
 };
-
+*/
 

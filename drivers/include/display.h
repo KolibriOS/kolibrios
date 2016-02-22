@@ -1,5 +1,14 @@
-
+typedef struct tag_object  kobj_t;
 typedef struct tag_display display_t;
+
+struct tag_object
+{
+    uint32_t   magic;
+    void      *destroy;
+    kobj_t    *fd;
+    kobj_t    *bk;
+    uint32_t   pid;
+};
 
 typedef struct
 {
@@ -16,6 +25,21 @@ typedef struct
 #define KMS_CURSOR_WIDTH 64
 #define KMS_CURSOR_HEIGHT 64
 
+struct kos_framebuffer
+{
+    struct list_head list;
+    uint32_t    magic;
+    uint32_t    handle;
+    void        *destructor;
+
+    uint32_t    width;
+    uint32_t    height;
+    uint32_t    pitch;
+    uint32_t    format;
+    void        *private;
+    uint32_t    pde[8];
+};
+
 struct tag_display
 {
     u32   x;
@@ -24,7 +48,7 @@ struct tag_display
     u32   height;
     u32   bpp;
     u32   vrefresh;
-    void *lfb;
+    struct kos_framebuffer *current_lfb;
     u32   lfb_pitch;
 
     struct rw_semaphore win_map_lock;
@@ -55,5 +79,4 @@ struct tag_display
 
 extern display_t *os_display;
 
-int   init_cursor(cursor_t *cursor);
-void  __stdcall restore_cursor(int x, int y);
+

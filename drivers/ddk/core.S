@@ -67,8 +67,10 @@
 
     .global _RegService
 
-    .global _SetMouseData
+    .global _SetFramebuffer
+
     .global _SetKeyboardData
+    .global _SetMouseData
 
     .global _SetScreen
     .global _SysMsgBoardStr
@@ -148,9 +150,10 @@
 
     .def  _RegService;        .scl  2;  .type 32; .endef
 
-    .def  _SetScreen;         .scl  2;  .type 32; .endef
-    .def  _SetMouseData;      .scl  2;  .type 32; .endef
+    .def  _SetFramebuffer;    .scl  2;  .type 32; .endef
     .def  _SetKeyboardData;   .scl  2;  .type 32; .endef
+    .def  _SetMouseData;      .scl  2;  .type 32; .endef
+    .def  _SetScreen;         .scl  2;  .type 32; .endef
     .def  _SysMsgBoardStr;    .scl  2;  .type 32; .endef
 
     .def  _TimerHS;           .scl  2;  .type 32; .endef
@@ -226,9 +229,9 @@ _PciWrite8:
 _RaiseEvent:
 _RegService:
 
-_SetMouseData:
+_SetFramebuffer:
 _SetKeyboardData:
-
+_SetMouseData:
 _SetScreen:
 _SysMsgBoardStr:
 
@@ -307,9 +310,9 @@ _WaitEventTimeout:
 
         .ascii " -export:RegService"           # stdcall
 
-        .ascii " -export:SetMouseData"         # stdcall
+        .ascii " -export:SetFramebuffer"       # fastcall
         .ascii " -export:SetKeyboardData"      # stdcall
-
+        .ascii " -export:SetMouseData"         # stdcall
         .ascii " -export:SetScreen"            # stdcall
         .ascii " -export:SysMsgBoardStr"       # stdcall
 
