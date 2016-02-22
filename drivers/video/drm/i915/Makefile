@@ -111,6 +111,7 @@ NAME_SRC=		main.c					\
 			intel_sprite.c				\
 			intel_uncore.c				\
 			kms_display.c				\
+			kos_cursor.c				\
 			utils.c					\
 			fwblob.asm				\
 			../hdmi.c				\

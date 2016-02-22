@@ -165,8 +165,14 @@ static int intelfb_alloc(struct drm_fb_helper *helper,
 
 	size = mode_cmd.pitches[0] * mode_cmd.height;
 	size = PAGE_ALIGN(size);
-	obj = main_fb_obj;
-	obj->map_and_fenceable=true;
+
+	/* If the FB is too big, just don't use it since fbdev is not very
+	 * important and we should probably use that space with FBC or other
+	 * features. */
+	if (size * 2 < dev_priv->gtt.stolen_usable_size)
+		obj = i915_gem_object_create_stolen(dev, size);
+	if (obj == NULL)
+		obj = i915_gem_alloc_object(dev, size);
 	if (!obj) {
 		DRM_ERROR("failed to allocate framebuffer\n");
 		ret = -ENOMEM;
@@ -214,7 +220,6 @@ static int intelfb_create(struct drm_fb_helper *helper,
 
 	mutex_lock(&dev->struct_mutex);
 
-#if 0
 	if (intel_fb &&
 	    (sizes->fb_width > intel_fb->base.width ||
 	     sizes->fb_height > intel_fb->base.height)) {
@@ -225,8 +230,6 @@ static int intelfb_create(struct drm_fb_helper *helper,
 		drm_framebuffer_unreference(&intel_fb->base);
 		intel_fb = ifbdev->fb = NULL;
 	}
-#endif
-
 	if (!intel_fb || WARN_ON(!intel_fb->obj)) {
 		DRM_DEBUG_KMS("no BIOS fb, allocating a new one\n");
 		ret = intelfb_alloc(helper, sizes);
@@ -252,9 +255,6 @@ static int intelfb_create(struct drm_fb_helper *helper,
 	info->par = helper;
 
 	fb = &ifbdev->fb->base;
-
-    if(main_framebuffer == NULL)
-        main_framebuffer = fb;
 
 	ifbdev->helper.fb = fb;
 

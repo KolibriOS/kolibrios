@@ -3205,7 +3205,6 @@ intel_pipe_set_base_atomic(struct drm_crtc *crtc, struct drm_framebuffer *fb,
 	return 0;
 }
 
-#if 0
 static void intel_complete_page_flips(struct drm_device *dev)
 {
 	struct drm_crtc *crtc;
@@ -3302,7 +3301,7 @@ void intel_finish_reset(struct drm_device *dev)
 
 	intel_display_resume(dev);
 
-	intel_hpd_init(dev_priv);
+//	intel_hpd_init(dev_priv);
 
 	drm_modeset_unlock_all(dev);
 }
@@ -3350,7 +3349,6 @@ static bool intel_crtc_has_pending_flip(struct drm_crtc *crtc)
 
 	return pending;
 }
-#endif
 
 static void intel_update_pipe_config(struct intel_crtc *crtc,
 				     struct intel_crtc_state *old_crtc_state)
@@ -3931,6 +3929,28 @@ bool intel_has_pending_fb_unpin(struct drm_device *dev)
 	return false;
 }
 
+static void page_flip_completed(struct intel_crtc *intel_crtc)
+{
+	struct drm_i915_private *dev_priv = to_i915(intel_crtc->base.dev);
+	struct intel_unpin_work *work = intel_crtc->unpin_work;
+
+	/* ensure that the unpin work is consistent wrt ->pending. */
+	smp_rmb();
+	intel_crtc->unpin_work = NULL;
+
+	if (work->event)
+		drm_send_vblank_event(intel_crtc->base.dev,
+				      intel_crtc->pipe,
+				      work->event);
+
+	drm_crtc_vblank_put(&intel_crtc->base);
+
+//	wake_up_all(&dev_priv->pending_flip_queue);
+//	queue_work(dev_priv->wq, &work->work);
+
+//	trace_i915_flip_complete(intel_crtc->plane,
+//				 work->pending_flip_obj);
+}
 #if 0
 void intel_crtc_wait_for_pending_flips(struct drm_crtc *crtc)
 {
@@ -8057,15 +8077,13 @@ i9xx_get_initial_plane_config(struct intel_crtc *crtc,
 	fb->height = ((val >> 0) & 0xfff) + 1;
 
 	val = I915_READ(DSPSTRIDE(pipe));
-//   fb->pitches[0] = val & 0xffffffc0;
-	fb->pitches[0] = 2560*4;
+	fb->pitches[0] = val & 0xffffffc0;
 
 	aligned_height = intel_fb_align_height(dev, fb->height,
 					       fb->pixel_format,
 					       fb->modifier[0]);
 
-//   plane_config->size = fb->pitches[0] * aligned_height;
-    plane_config->size = i915.fbsize*1024*1024;
+	plane_config->size = fb->pitches[0] * aligned_height;
 
 	DRM_DEBUG_KMS("pipe/plane %c/%d with fb: size=%dx%d@%d, offset=%x, pitch %d, size 0x%x\n",
 		      pipe_name(pipe), plane, fb->width, fb->height,
@@ -9123,15 +9141,13 @@ skylake_get_initial_plane_config(struct intel_crtc *crtc,
 	val = I915_READ(PLANE_STRIDE(pipe, 0));
 	stride_mult = intel_fb_stride_alignment(dev, fb->modifier[0],
 						fb->pixel_format);
-//   fb->pitches[0] = (val & 0x3ff) * stride_mult;
-    fb->pitches[0] = 2560*4;
+	fb->pitches[0] = (val & 0x3ff) * stride_mult;
 
 	aligned_height = intel_fb_align_height(dev, fb->height,
 					       fb->pixel_format,
 					       fb->modifier[0]);
 
-//   plane_config->size = fb->pitches[0] * aligned_height;
-    plane_config->size = i915.fbsize*1024*1024;
+	plane_config->size = fb->pitches[0] * aligned_height;
 
 	DRM_DEBUG_KMS("pipe %c with fb: size=%dx%d@%d, offset=%x, pitch %d, size 0x%x\n",
 		      pipe_name(pipe), fb->width, fb->height,
@@ -9222,15 +9238,13 @@ ironlake_get_initial_plane_config(struct intel_crtc *crtc,
 	fb->height = ((val >> 0) & 0xfff) + 1;
 
 	val = I915_READ(DSPSTRIDE(pipe));
-//   fb->pitches[0] = val & 0xffffffc0;
-    fb->pitches[0] = 2560*4;
+	fb->pitches[0] = val & 0xffffffc0;
 
 	aligned_height = intel_fb_align_height(dev, fb->height,
 					       fb->pixel_format,
 					       fb->modifier[0]);
 
-//   plane_config->size = fb->pitches[0] * aligned_height;
-    plane_config->size = i915.fbsize*1024*1024;
+	plane_config->size = fb->pitches[0] * aligned_height;
 
 	DRM_DEBUG_KMS("pipe %c with fb: size=%dx%d@%d, offset=%x, pitch %d, size 0x%x\n",
 		      pipe_name(pipe), fb->width, fb->height,
@@ -10748,7 +10762,6 @@ static void intel_crtc_destroy(struct drm_crtc *crtc)
 	kfree(intel_crtc);
 }
 
-#if 0
 static void intel_unpin_work_fn(struct work_struct *__work)
 {
 	struct intel_unpin_work *work =
@@ -10897,7 +10910,7 @@ static inline void intel_mark_page_flip_active(struct intel_unpin_work *work)
 	/* and that it is marked active as soon as the irq could fire. */
 	smp_wmb();
 }
-
+#if 0
 static int intel_gen2_queue_flip(struct drm_device *dev,
 				 struct drm_crtc *crtc,
 				 struct drm_framebuffer *fb,
@@ -11378,7 +11391,7 @@ void intel_check_page_flip(struct drm_device *dev, int pipe)
 		intel_queue_rps_boost_for_request(dev, work->flip_queued_req);
 	spin_unlock(&dev->event_lock);
 }
-
+#endif
 static int intel_crtc_page_flip(struct drm_crtc *crtc,
 				struct drm_framebuffer *fb,
 				struct drm_pending_vblank_event *event,
@@ -11428,7 +11441,7 @@ static int intel_crtc_page_flip(struct drm_crtc *crtc,
 	work->event = event;
 	work->crtc = crtc;
 	work->old_fb = old_fb;
-	INIT_WORK(&work->work, intel_unpin_work_fn);
+//	INIT_WORK(&work->work, intel_unpin_work_fn);
 
 	ret = drm_crtc_vblank_get(crtc);
 	if (ret)
@@ -11610,7 +11623,6 @@ retry:
 	}
 	return ret;
 }
-#endif
 
 
 /**
@@ -14429,6 +14441,7 @@ static int intel_framebuffer_init(struct drm_device *dev,
 		DRM_ERROR("framebuffer init failed %d\n", ret);
 		return ret;
 	}
+	kolibri_framebuffer_init(intel_fb);
 
 	return 0;
 }
@@ -14937,16 +14950,6 @@ void intel_modeset_init(struct drm_device *dev)
 		 * just get the first one.
 		 */
 		intel_find_initial_plane_obj(crtc, &plane_config);
-		if(!main_fb_obj)
-		{
-			struct drm_framebuffer *fb;
-
-			fb = crtc->base.primary->fb;
-			main_fb_obj = intel_fb_obj(fb);
-			main_fb_obj->map_and_fenceable=true;
-			DRM_DEBUG_KMS("main_fb_obj %p gtt_offset 0x%08lx\n", main_fb_obj, i915_gem_obj_ggtt_offset(main_fb_obj));
-		}
-
 	}
 }
 

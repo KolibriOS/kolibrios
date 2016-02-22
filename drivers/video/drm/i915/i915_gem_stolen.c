@@ -415,16 +415,6 @@ int i915_gem_init_stolen(struct drm_device *dev)
 	 */
 	drm_mm_init(&dev_priv->mm.stolen, 0, dev_priv->gtt.stolen_usable_size);
 
-    {
-        u32 usable_size = dev_priv->gtt.stolen_usable_size >> 20;
-        if(i915.fbsize > usable_size)
-        {
-            i915.fbsize = usable_size;
-            DRM_DEBUG_KMS("Adjust framebuffer size to match reserved memory\n"
-                          "new fbsize %dMB\n",i915.fbsize);
-        }
-    }
-
 	return 0;
 }
 

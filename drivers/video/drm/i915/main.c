@@ -14,7 +14,7 @@
 #include "bitmap.h"
 #include "i915_kos32.h"
 
-#define DRV_NAME "i915 v4.4.1"
+#define DRV_NAME "i915 v4.4.2-dbg2"
 
 #define I915_DEV_CLOSE 0
 #define I915_DEV_INIT  1
@@ -131,9 +131,7 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     if( GetService("DISPLAY") != 0 )
         return 0;
 
-    printf("\n%s build %s %s\nusage: i915 [options]\n"
-           "-f\n"
-           "--fbsize <0-9>  Set framebuffer size in megabytes (default: 16)\n",
+    printf("\n%s build %s %s\nusage: i915 [options]\n",
            DRV_NAME, __DATE__, __TIME__);
 
     printf("--rc6 <-1,0-7>  Enable power-saving render C-state 6.\n"
@@ -172,7 +170,6 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
             {
                 {"log",   required_argument, 0, 'l'},
                 {"mode",  required_argument, 0, 'm'},
-                {"fbsize",required_argument, 0, 'f'},
                 {"video", required_argument, 0, 'v'},
                 {"rc6", required_argument, 0, OPTION_RC6},
                 {"fbc", required_argument, 0, OPTION_FBC},
@@ -181,7 +178,7 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 
             int option_index = 0;
 
-            c = getopt_long (argc, argv, "f:l:m:v:",
+            c = getopt_long (argc, argv, "l:m:v:",
                             long_options, &option_index);
 
             if (c == -1)
@@ -197,11 +194,6 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
                 case OPTION_FBC:
                     i915.enable_fbc = my_atoi(&optarg);
                     printf("i915.fbc = %d\n",i915.enable_fbc);
-                    break;
-
-                case 'f':
-                    i915.fbsize = my_atoi(&optarg);
-                    printf("i915.fbsize =%d\n",i915.fbsize);
                     break;
 
                 case 'l':

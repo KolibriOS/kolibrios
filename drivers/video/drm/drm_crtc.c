@@ -2537,8 +2537,9 @@ int drm_mode_set_config_internal(struct drm_mode_set *set)
 	drm_for_each_crtc(tmp, crtc->dev) {
 		if (tmp->primary->fb)
 			drm_framebuffer_reference(tmp->primary->fb);
-//		if (tmp->old_fb)
-//			drm_framebuffer_unreference(tmp->old_fb);
+		if (tmp->primary->old_fb)
+			drm_framebuffer_unreference(tmp->primary->old_fb);
+		tmp->primary->old_fb = NULL;
 	}
 
 	return ret;

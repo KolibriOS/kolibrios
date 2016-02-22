@@ -377,13 +377,9 @@ static void output_poll_execute(struct work_struct *work)
 
 	mutex_unlock(&dev->mode_config.mutex);
 
-out: ;
+out:;
 
-//   if (changed)
-//       drm_kms_helper_hotplug_event(dev);
 
-//   if (repoll)
-//       schedule_delayed_work(delayed_work, DRM_OUTPUT_POLL_PERIOD);
 }
 
 /**

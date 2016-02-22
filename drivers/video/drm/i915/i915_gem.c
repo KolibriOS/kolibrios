@@ -2786,11 +2786,6 @@ static int __i915_vma_unbind(struct i915_vma *vma, bool wait)
 	struct drm_i915_gem_object *obj = vma->obj;
 	struct drm_i915_private *dev_priv = obj->base.dev->dev_private;
 	int ret;
-    if(obj == get_fb_obj())
-    {
-        WARN(1,"attempt to unbind fb object\n");
-        return 0;
-    };
 
 	if (list_empty(&vma->vma_link))
 		return 0;
@@ -3955,6 +3950,25 @@ struct drm_i915_gem_object *i915_gem_alloc_object(struct drm_device *dev,
 	return obj;
 }
 
+static bool discard_backing_storage(struct drm_i915_gem_object *obj)
+{
+	/* If we are the last user of the backing storage (be it shmemfs
+	 * pages or stolen etc), we know that the pages are going to be
+	 * immediately released. In this case, we can then skip copying
+	 * back the contents from the GPU.
+	 */
+
+	if (obj->madv != I915_MADV_WILLNEED)
+		return false;
+
+	if (obj->base.filp == NULL)
+		return true;
+
+//        printf("filp %p\n", obj->base.filp);
+	shmem_file_delete(obj->base.filp);
+	return true;
+}
+
 void i915_gem_free_object(struct drm_gem_object *gem_obj)
 {
 	struct drm_i915_gem_object *obj = to_intel_bo(gem_obj);
@@ -3997,17 +4011,15 @@ void i915_gem_free_object(struct drm_gem_object *gem_obj)
 
 	if (WARN_ON(obj->pages_pin_count))
 		obj->pages_pin_count = 0;
+	if (discard_backing_storage(obj))
+		obj->madv = I915_MADV_DONTNEED;
 	i915_gem_object_put_pages(obj);
 //   i915_gem_object_free_mmap_offset(obj);
 
 	BUG_ON(obj->pages);
 
-
-    if(obj->base.filp != NULL)
-    {
-//        printf("filp %p\n", obj->base.filp);
-        shmem_file_delete(obj->base.filp);
-    }
+	if (obj->ops->release)
+		obj->ops->release(obj);
 
 	drm_gem_object_release(&obj->base);
 	i915_gem_info_remove_obj(dev_priv, obj->base.size);

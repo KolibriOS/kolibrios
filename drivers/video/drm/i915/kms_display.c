@@ -11,30 +11,22 @@
 
 #include <syscall.h>
 
-#include "bitmap.h"
+//#include "bitmap.h"
 #include <display.h>
 
+void  FASTCALL sysSetFramebuffer(void *fb)__asm__("SetFramebuffer");
+void kolibri_framebuffer_update(struct drm_i915_private *dev_priv, struct kos_framebuffer *kfb);
+void init_system_cursors(struct drm_device *dev);
+
+addr_t dummy_fb_page;
 
 display_t *os_display;
-struct drm_i915_gem_object *main_fb_obj;
-struct drm_framebuffer     *main_framebuffer;
 
 u32 cmd_buffer;
 u32 cmd_offset;
 
 void init_render();
 int  sna_init();
-
-static cursor_t*  __stdcall select_cursor_kms(cursor_t *cursor);
-static void       __stdcall move_cursor_kms(cursor_t *cursor, int x, int y);
-
-void __stdcall restore_cursor(int x, int y)
-{};
-
-void disable_mouse(void)
-{};
-
-struct mutex cursor_lock;
 
 static char *manufacturer_name(unsigned char *x)
 {
@@ -59,19 +51,135 @@ static int count_connector_modes(struct drm_connector* connector)
     return count;
 };
 
+struct drm_framebuffer *get_framebuffer(struct drm_device *dev, struct drm_display_mode *mode, int tiling)
+{
+    struct drm_i915_private *dev_priv = dev->dev_private;
+    struct intel_fbdev     *ifbdev = dev_priv->fbdev;
+    struct intel_framebuffer *intel_fb = ifbdev->fb;
+    struct drm_framebuffer *fb = &intel_fb->base;
+    struct drm_i915_gem_object *obj = NULL;
+    int stride, size;
+
+ENTER();
+
+    stride = mode->hdisplay *4;
+
+    if(tiling)
+    {
+        int gen3size;
+
+        if(IS_GEN3(dev))
+            for (stride = 512; stride < mode->hdisplay * 4; stride <<= 1);
+        else
+            stride = ALIGN(stride, 512);
+        size = stride * ALIGN(mode->vdisplay, 8);
+
+        if(IS_GEN3(dev))
+        {
+            for (gen3size = 1024*1024; gen3size < size; gen3size <<= 1);
+            size = gen3size;
+        }
+        else
+            size = ALIGN(size, 4096);
+    }
+    else
+    {
+        stride = ALIGN(stride, 64);
+        size = stride * ALIGN(mode->vdisplay, 2);
+    }
+
+    dbgprintf("size %x stride %x\n", size, stride);
+
+    if(intel_fb == NULL || size > intel_fb->obj->base.size)
+    {
+        struct drm_mode_fb_cmd2 mode_cmd = {};
+        int ret;
+
+        DRM_DEBUG_KMS("remove old framebuffer\n");
+        drm_framebuffer_remove(fb);
+        ifbdev->fb = NULL;
+        fb = NULL;
+        DRM_DEBUG_KMS("create new framebuffer\n");
+
+        mode_cmd.width  = mode->hdisplay;
+        mode_cmd.height = mode->vdisplay;
+
+        mode_cmd.pitches[0] = stride;
+        mode_cmd.pixel_format = DRM_FORMAT_XRGB8888;
+
+        mutex_lock(&dev->struct_mutex);
+
+        /* If the FB is too big, just don't use it since fbdev is not very
+        * important and we should probably use that space with FBC or other
+        * features. */
+        if (size * 2 < dev_priv->gtt.stolen_usable_size)
+            obj = i915_gem_object_create_stolen(dev, size);
+        if (obj == NULL)
+            obj = i915_gem_alloc_object(dev, size);
+        if (!obj) {
+            DRM_ERROR("failed to allocate framebuffer\n");
+            ret = -ENOMEM;
+            goto out;
+        }
+
+        fb = __intel_framebuffer_create(dev, &mode_cmd, obj);
+        if (IS_ERR(fb)) {
+            ret = PTR_ERR(fb);
+            goto out_unref;
+        }
+
+        /* Flush everything out, we'll be doing GTT only from now on */
+        ret = intel_pin_and_fence_fb_obj(NULL, fb, NULL, NULL, NULL);
+        if (ret) {
+            DRM_ERROR("failed to pin obj: %d\n", ret);
+            goto out_fb;
+        }
+        mutex_unlock(&dev->struct_mutex);
+        ifbdev->fb = to_intel_framebuffer(fb);
+    }
+
+    obj = ifbdev->fb->obj;
+
+    if(tiling)
+    {
+        obj->tiling_mode = I915_TILING_X;
+        fb->modifier[0]  = I915_FORMAT_MOD_X_TILED;
+        obj->fence_dirty = true;
+        obj->stride      = stride;
+    };
+
+    fb->width  = mode->hdisplay;
+    fb->height = mode->vdisplay;
+
+    fb->pitches[0]  =
+    fb->pitches[1]  =
+    fb->pitches[2]  =
+    fb->pitches[3]  = stride;
+
+    fb->bits_per_pixel = 32;
+    fb->depth = 24;
+LEAVE();
+    return fb;
+
+out_fb:
+    drm_framebuffer_remove(fb);
+out_unref:
+    drm_gem_object_unreference(&obj->base);
+out:
+    mutex_unlock(&dev->struct_mutex);
+    return NULL;
+}
+
 static int set_mode(struct drm_device *dev, struct drm_connector *connector,
                     struct drm_crtc *crtc, videomode_t *reqmode, bool strict)
 {
     struct drm_i915_private *dev_priv   = dev->dev_private;
-
     struct drm_mode_config  *config     = &dev->mode_config;
     struct drm_display_mode *mode       = NULL, *tmpmode;
     struct drm_connector    *tmpc;
     struct drm_framebuffer  *fb         = NULL;
     struct drm_mode_set     set;
-    const char *con_name;
-    unsigned hdisplay, vdisplay;
-    int stride;
+    char  con_edid[128];
     int ret;
 
     drm_modeset_lock_all(dev);
@@ -108,73 +216,42 @@ static int set_mode(struct drm_device *dev, struct drm_connector *connector,
         };
     };
 
+out:
+    drm_modeset_unlock_all(dev);
     DRM_ERROR("%s failed\n", __FUNCTION__);
-
     return -1;
 
 do_set:
 
+    drm_modeset_unlock_all(dev);
 
-    con_name = connector->name;
+    fb = get_framebuffer(dev, mode, 1);
+    if(fb == NULL)
+    {
+        DRM_ERROR("%s failed\n", __FUNCTION__);
+        return -1;
+    };
+    drm_framebuffer_reference(fb);
 
-    char  con_edid[128];
+    drm_modeset_lock_all(dev);
 
     memcpy(con_edid, connector->edid_blob_ptr->data, 128);
-    DRM_DEBUG_KMS("Manufacturer: %s Model %x Serial Number %u\n",
+
+    DRM_DEBUG_KMS("set mode %dx%d: crtc %d connector %s\n"
+                  "monitor: %s model %x serial number %u\n",
+                mode->hdisplay, mode->vdisplay,
+                crtc->base.id, connector->name,
             manufacturer_name(con_edid + 0x08),
             (unsigned short)(con_edid[0x0A] + (con_edid[0x0B] << 8)),
             (unsigned int)(con_edid[0x0C] + (con_edid[0x0D] << 8)
             + (con_edid[0x0E] << 16) + (con_edid[0x0F] << 24)));
 
-    DRM_DEBUG_KMS("set mode %d %d: crtc %d connector %s\n",
-              reqmode->width, reqmode->height, crtc->base.id,
-              con_name);
-
     drm_mode_set_crtcinfo(mode, CRTC_INTERLACE_HALVE_V);
-
-    hdisplay = mode->hdisplay;
-    vdisplay = mode->vdisplay;
-
-//    if (crtc->invert_dimensions)
-//        swap(hdisplay, vdisplay);
-
-    fb = crtc->primary->fb;
-    if(fb == NULL)
-        fb = main_framebuffer;
-
-    fb->width  = reqmode->width;
-    fb->height = reqmode->height;
-
-    main_fb_obj->tiling_mode = I915_TILING_X;
-
-    if( main_fb_obj->tiling_mode == I915_TILING_X)
-    {
-        if(IS_GEN3(dev))
-            for (stride = 512; stride < reqmode->width * 4; stride <<= 1);
-        else
-            stride = ALIGN(reqmode->width * 4, 512);
-    }
-    else
-    {
-        stride = ALIGN(reqmode->width * 4, 64);
-    }
-
-    fb->pitches[0]  =
-    fb->pitches[1]  =
-    fb->pitches[2]  =
-    fb->pitches[3]  = stride;
-
-    main_fb_obj->stride  = stride;
-
-    fb->bits_per_pixel = 32;
-    fb->depth = 24;
 
     crtc->enabled = true;
     os_display->crtc = crtc;
 
-    i915_gem_object_put_fence(main_fb_obj);
-
-    printf("fb:%p %dx%dx pitch %d format %x\n",
+    DRM_DEBUG_KMS("fb:%p %dx%dx pitch %d format %x\n",
             fb,fb->width,fb->height,fb->pitches[0],fb->pixel_format);
 
     set.crtc = crtc;
@@ -189,19 +266,34 @@ do_set:
 
     if ( !ret )
     {
-        os_display->width    = fb->width;
-        os_display->height   = fb->height;
-        os_display->vrefresh = drm_mode_vrefresh(mode);
+        struct intel_framebuffer *intel_fb = to_intel_framebuffer(fb);
+        struct kos_framebuffer *kfb = intel_fb->private;
+        kolibri_framebuffer_update(dev_priv, kfb);
+        DRM_DEBUG_KMS("kolibri framebuffer %p\n", kfb);
 
-        sysSetScreen(fb->width, fb->height, fb->pitches[0]);
+        os_display->width    = mode->hdisplay;
+        os_display->height   = mode->vdisplay;
+        os_display->vrefresh = drm_mode_vrefresh(mode);
+        sysSetFramebuffer(intel_fb->private);
+        sysSetScreen(mode->hdisplay, mode->vdisplay, fb->pitches[0]);
+
+        os_display->connector = connector;
+        os_display->crtc = connector->encoder->crtc;
+        os_display->supported_modes = count_connector_modes(connector);
+
+        crtc->cursor_x = os_display->width/2;
+        crtc->cursor_y = os_display->height/2;
+
+        os_display->select_cursor(os_display->cursor);
 
         DRM_DEBUG_KMS("new mode %d x %d pitch %d\n",
-                       fb->width, fb->height, fb->pitches[0]);
+                       mode->hdisplay, mode->vdisplay, fb->pitches[0]);
     }
     else
         DRM_ERROR("failed to set mode %d_%d on crtc %p\n",
                    fb->width, fb->height, crtc);
 
+    drm_framebuffer_unreference(fb);
     drm_modeset_unlock_all(dev);
 
     return ret;
@@ -215,9 +307,19 @@ static int set_mode_ex(struct drm_device *dev,
     struct drm_mode_config  *config   = &dev->mode_config;
     struct drm_framebuffer  *fb       = NULL;
     struct drm_mode_set     set;
+    struct drm_crtc *crtc = NULL;
+
     char  con_edid[128];
     int stride;
     int ret;
+
+    fb = get_framebuffer(dev, mode, 1);
+    if(fb == NULL)
+    {
+        DRM_ERROR("%s failed\n", __FUNCTION__);
+        return -1;
+    };
+    drm_framebuffer_reference(fb);
 
     drm_modeset_lock_all(dev);
 
@@ -229,57 +331,27 @@ static int set_mode_ex(struct drm_device *dev,
         f->dpms(tmpc, DRM_MODE_DPMS_OFF);
     };
 
-    drm_mode_set_crtcinfo(mode, CRTC_INTERLACE_HALVE_V);
-
-    fb = connector->encoder->crtc->primary->fb;
-    if(fb == NULL)
-        fb = main_framebuffer;
-
-    fb->width  = mode->hdisplay;
-    fb->height = mode->vdisplay;;
-
-    main_fb_obj->tiling_mode = I915_TILING_X;
-
-    if( main_fb_obj->tiling_mode == I915_TILING_X)
-    {
-        if(IS_GEN3(dev))
-            for (stride = 512; stride < mode->hdisplay * 4; stride <<= 1);
-        else
-            stride = ALIGN(mode->hdisplay * 4, 512);
-    }
-    else
-    {
-        stride = ALIGN(mode->hdisplay * 4, 64);
-    }
-
-    fb->pitches[0]  =
-    fb->pitches[1]  =
-    fb->pitches[2]  =
-    fb->pitches[3]  = stride;
-
-    main_fb_obj->stride  = stride;
-
-    fb->bits_per_pixel = 32;
-    fb->depth = 24;
-
-    connector->encoder->crtc->enabled = true;
-
-    i915_gem_object_put_fence(main_fb_obj);
+    crtc = connector->encoder->crtc;
 
     memcpy(con_edid, connector->edid_blob_ptr->data, 128);
     DRM_DEBUG_KMS("set mode %dx%d: crtc %d connector %s\n"
                   "monitor: %s model %x serial number %u\n",
-                fb->width, fb->height,
+                mode->hdisplay, mode->vdisplay,
                 connector->encoder->crtc->base.id, connector->name,
                 manufacturer_name(con_edid + 0x08),
                 (unsigned short)(con_edid[0x0A] + (con_edid[0x0B] << 8)),
                 (unsigned int)(con_edid[0x0C] + (con_edid[0x0D] << 8)
                 + (con_edid[0x0E] << 16) + (con_edid[0x0F] << 24)));
 
+    drm_mode_set_crtcinfo(mode, CRTC_INTERLACE_HALVE_V);
+
+    crtc->enabled = true;
+    os_display->crtc = crtc;
+
     DRM_DEBUG_KMS("use framebuffer %p %dx%d pitch %d format %x\n",
             fb,fb->width,fb->height,fb->pitches[0],fb->pixel_format);
 
-    set.crtc = connector->encoder->crtc;
+    set.crtc = crtc;
     set.x = 0;
     set.y = 0;
     set.mode = mode;
@@ -290,13 +362,16 @@ static int set_mode_ex(struct drm_device *dev,
     ret = drm_mode_set_config_internal(&set);
     if ( !ret )
     {
-        struct drm_crtc *crtc = os_display->crtc;
+        struct intel_framebuffer *intel_fb = to_intel_framebuffer(fb);
+        struct kos_framebuffer *kfb = intel_fb->private;
+        kolibri_framebuffer_update(dev_priv, kfb);
+        DRM_DEBUG_KMS("kolibri framebuffer %p\n", kfb);
 
-        os_display->width    = fb->width;
-        os_display->height   = fb->height;
+        os_display->width    = mode->hdisplay;
+        os_display->height   = mode->vdisplay;
         os_display->vrefresh = drm_mode_vrefresh(mode);
-
-        sysSetScreen(fb->width, fb->height, fb->pitches[0]);
+        sysSetFramebuffer(intel_fb->private);
+        sysSetScreen(mode->hdisplay, mode->vdisplay, fb->pitches[0]);
 
         os_display->connector = connector;
         os_display->crtc = connector->encoder->crtc;
@@ -305,17 +380,17 @@ static int set_mode_ex(struct drm_device *dev,
         crtc->cursor_x = os_display->width/2;
         crtc->cursor_y = os_display->height/2;
 
-        select_cursor_kms(os_display->cursor);
+        os_display->select_cursor(os_display->cursor);
 
         DRM_DEBUG_KMS("new mode %d x %d pitch %d\n",
-                       fb->width, fb->height, fb->pitches[0]);
+                       mode->hdisplay, mode->vdisplay, fb->pitches[0]);
     }
     else
         DRM_ERROR(" failed to set mode %d_%d on crtc %p\n",
                    fb->width, fb->height, connector->encoder->crtc);
 
+    drm_framebuffer_unreference(fb);
     drm_modeset_unlock_all(dev);
-
     return ret;
 }
 
@@ -467,11 +542,15 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
     struct drm_connector_helper_funcs *connector_funcs;
     struct drm_connector    *connector = NULL;
     struct drm_crtc         *crtc = NULL;
-    struct drm_framebuffer  *fb;
+    struct drm_plane *plane;
 
-    cursor_t  *cursor;
-    u32      ifl;
     int       ret;
+ENTER();
+
+    drm_for_each_plane(plane, dev)
+    {
+        drm_plane_helper_disable(plane);
+    };
 
     mutex_lock(&dev->mode_config.mutex);
     ret = choose_config(dev, &connector, &crtc);
@@ -482,9 +561,9 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
         return -1;
     };
 
+/*
     mutex_lock(&dev->object_name_lock);
     idr_preload(GFP_KERNEL);
-
     if (!main_fb_obj->base.name) {
         ret = idr_alloc(&dev->object_name_idr, &main_fb_obj->base, 1, 0, GFP_NOWAIT);
 
@@ -492,9 +571,10 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
         main_fb_obj->base.handle_count++;
         DRM_DEBUG_KMS("%s allocate fb name %d\n", __FUNCTION__, main_fb_obj->base.name );
     }
-
     idr_preload_end();
     mutex_unlock(&dev->object_name_lock);
+*/
+    dummy_fb_page = AllocPage();
 
     os_display = GetDisplay();
     os_display->ddev = dev;
@@ -503,32 +583,7 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
     os_display->supported_modes = count_connector_modes(connector);
     mutex_unlock(&dev->mode_config.mutex);
 
-    mutex_init(&cursor_lock);
-    mutex_lock(&dev->struct_mutex);
-
-    ifl = safe_cli();
-    {
-        list_for_each_entry(cursor, &os_display->cursors, list)
-        {
-            init_cursor(cursor);
-        };
-
-        os_display->restore_cursor(0,0);
-        os_display->init_cursor    = init_cursor;
-        os_display->select_cursor  = select_cursor_kms;
-        os_display->show_cursor    = NULL;
-        os_display->move_cursor    = move_cursor_kms;
-        os_display->restore_cursor = restore_cursor;
-        os_display->disable_mouse  = disable_mouse;
-
-        crtc->cursor_x = os_display->width/2;
-        crtc->cursor_y = os_display->height/2;
-
-        select_cursor_kms(os_display->cursor);
-    };
-    safe_sti(ifl);
-
-    mutex_unlock(&dev->struct_mutex);
+    init_system_cursors(dev);
 
     ret = -1;
 
@@ -557,9 +612,7 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
         set_mode(dev, os_display->connector, os_display->crtc, usermode, false);
     };
 
-#ifdef __HWA__
-    err = init_bitmaps();
-#endif
+LEAVE();
 
     return ret;
 };
@@ -745,159 +798,137 @@ void i915_dpms(struct drm_device *dev, int mode)
     f->dpms(os_display->connector, mode);
 };
 
-void __attribute__((regparm(1))) destroy_cursor(cursor_t *cursor)
-{
-    struct drm_i915_gem_object *obj = cursor->cobj;
-    list_del(&cursor->list);
-
-    i915_gem_object_ggtt_unpin(cursor->cobj);
-
-    mutex_lock(&main_device->struct_mutex);
-    drm_gem_object_unreference(&obj->base);
-    mutex_unlock(&main_device->struct_mutex);
-
-    __DestroyObject(cursor);
-};
-
-int init_cursor(cursor_t *cursor)
-{
-    struct drm_i915_private *dev_priv = os_display->ddev->dev_private;
-    struct drm_i915_gem_object *obj;
-    uint32_t *bits;
-    uint32_t *src;
-    void     *mapped;
-
-    int       i,j;
-    int       ret;
-
-    if (dev_priv->info.cursor_needs_physical)
-    {
-        bits = (uint32_t*)KernelAlloc(KMS_CURSOR_WIDTH*KMS_CURSOR_HEIGHT*8);
-        if (unlikely(bits == NULL))
-            return ENOMEM;
-        cursor->cobj = (struct drm_i915_gem_object *)GetPgAddr(bits);
-    }
-    else
-    {
-        obj = i915_gem_alloc_object(os_display->ddev, KMS_CURSOR_WIDTH*KMS_CURSOR_HEIGHT*4);
-        if (unlikely(obj == NULL))
-            return -ENOMEM;
-
-        ret = i915_gem_object_ggtt_pin(obj, &i915_ggtt_view_normal, 128*1024, PIN_GLOBAL);
-        if (ret) {
-            drm_gem_object_unreference(&obj->base);
-            return ret;
-        }
-
-        ret = i915_gem_object_set_to_gtt_domain(obj, true);
-        if (ret)
-        {
-            i915_gem_object_ggtt_unpin(obj);
-            drm_gem_object_unreference(&obj->base);
-            return ret;
-        }
-/* You don't need to worry about fragmentation issues.
- * GTT space is continuous. I guarantee it.                           */
-
-        mapped = bits = (u32*)MapIoMem(dev_priv->gtt.mappable_base + i915_gem_obj_ggtt_offset(obj),
-                    KMS_CURSOR_WIDTH*KMS_CURSOR_HEIGHT*4, PG_SW);
-
-        if (unlikely(bits == NULL))
-        {
-            i915_gem_object_ggtt_unpin(obj);
-            drm_gem_object_unreference(&obj->base);
-            return -ENOMEM;
-        };
-        cursor->cobj = obj;
-    };
-
-    src = cursor->data;
-
-    for(i = 0; i < 32; i++)
-    {
-        for(j = 0; j < 32; j++)
-            *bits++ = *src++;
-        for(j = 32; j < KMS_CURSOR_WIDTH; j++)
-            *bits++ = 0;
-    }
-    for(i = 0; i < KMS_CURSOR_WIDTH*(KMS_CURSOR_HEIGHT-32); i++)
-        *bits++ = 0;
-
-    FreeKernelSpace(mapped);
-
-    KernelFree(cursor->data);
-
-    cursor->data = bits;
-
-    cursor->header.destroy = destroy_cursor;
-
-    return 0;
-}
-
-
-void __stdcall move_cursor_kms(cursor_t *cursor, int x, int y)
-{
-    struct drm_crtc *crtc = os_display->crtc;
-    struct drm_plane_state *cursor_state = crtc->cursor->state;
-
-    x-= cursor->hot_x;
-    y-= cursor->hot_y;
-
-	crtc->cursor_x = x;
-	crtc->cursor_y = y;
-
-    cursor_state->crtc_x = x;
-    cursor_state->crtc_y = y;
-
-	intel_crtc_update_cursor(crtc, 1);
-
-};
-
-cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
-{
-    struct drm_i915_private *dev_priv = os_display->ddev->dev_private;
-    struct drm_crtc   *crtc = os_display->crtc;
-    struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
-
-    cursor_t *old;
-
-    old = os_display->cursor;
-
-    mutex_lock(&cursor_lock);
-
-    os_display->cursor = cursor;
-
-    if (!dev_priv->info.cursor_needs_physical)
-       intel_crtc->cursor_addr = i915_gem_obj_ggtt_offset(cursor->cobj);
-    else
-        intel_crtc->cursor_addr = (addr_t)cursor->cobj;
-
-	intel_crtc->base.cursor->state->crtc_w = 64;
-	intel_crtc->base.cursor->state->crtc_h = 64;
-    intel_crtc->base.cursor->state->rotation = 0;
-    mutex_unlock(&cursor_lock);
-
-    move_cursor_kms(cursor, crtc->cursor_x, crtc->cursor_y);
-    return old;
-};
 
 int i915_fbinfo(struct drm_i915_fb_info *fb)
 {
-    struct drm_i915_private *dev_priv = os_display->ddev->dev_private;
-    struct intel_crtc *crtc = to_intel_crtc(os_display->crtc);
-    struct drm_i915_gem_object *obj = get_fb_obj();
+    u32 ifl;
 
-    fb->name   = obj->base.name;
-    fb->width  = os_display->width;
-    fb->height = os_display->height;
-    fb->pitch  = obj->stride;
-    fb->tiling = obj->tiling_mode;
-    fb->crtc   = crtc->base.base.id;
-    fb->pipe   = crtc->pipe;
+    ifl = safe_cli();
+    {
+        struct drm_i915_private *dev_priv = os_display->ddev->dev_private;
+        struct intel_crtc *crtc = to_intel_crtc(os_display->crtc);
+        struct kos_framebuffer *kfb = os_display->current_lfb;
+        struct intel_framebuffer *intel_fb = (struct intel_framebuffer*)kfb->private;
+        struct drm_i915_gem_object *obj = intel_fb->obj;
 
+        fb->name   = obj->base.name;
+        fb->width  = os_display->width;
+        fb->height = os_display->height;
+        fb->pitch  = obj->stride;
+        fb->tiling = obj->tiling_mode;
+        fb->crtc   = crtc->base.base.id;
+        fb->pipe   = crtc->pipe;
+    }
+    safe_sti(ifl);
     return 0;
 }
 
+
+int kolibri_framebuffer_init(struct intel_framebuffer *intel_fb)
+{
+    struct kos_framebuffer *kfb;
+    addr_t dummy_table;
+    addr_t *pt_addr = NULL;
+    int pde;
+ENTER();
+    kfb = kzalloc(sizeof(struct kos_framebuffer),0);
+    kfb->private = intel_fb;
+
+    for(pde = 0; pde < 8; pde++)
+    {
+        dummy_table = AllocPage();
+        kfb->pde[pde] = dummy_table|PG_UW;
+
+        pt_addr = kmap((struct page*)dummy_table);
+        __builtin_memset(pt_addr,0,4096);
+        kunmap((struct page*)dummy_table);
+    };
+
+    intel_fb->private = kfb;
+LEAVE();
+    return 0;
+#if 0
+    struct sg_page_iter sg_iter;
+    num_pages = obj->base.size/4096;
+    printf("num_pages %d\n",num_pages);
+
+    pte = 0;
+    pde = 0;
+    pt_addr = NULL;
+
+    __sg_page_iter_start(&sg_iter, obj->pages->sgl, sg_nents(obj->pages->sgl), 0);
+    while (__sg_page_iter_next(&sg_iter))
+    {
+        if (pt_addr == NULL)
+    {
+            addr_t pt = AllocPage();
+            kfb->pde[pde] = pt|PG_UW;
+            pde++;
+            pt_addr = kmap_atomic((struct page*)pt);
+    }
+        pt_addr[pte] = sg_page_iter_dma_address(&sg_iter)|PG_UW|PG_WRITEC;
+        if( (pte & 15) == 0)
+            DRM_DEBUG_KMS("pte %x\n",pt_addr[pte]);
+        if (++pte == 1024)
+    {
+            kunmap_atomic(pt_addr);
+            pt_addr = NULL;
+            if (pde == 8)
+                break;
+            pte = 0;
+        }
+        }
+
+    if(pt_addr)
+        {
+        for(;pte < 1024; pte++)
+            pt_addr[pte] = dummy_page|PG_UW;
+        kunmap_atomic(pt_addr);
+        }
+#endif
+};
+
+void kolibri_framebuffer_update(struct drm_i915_private *dev_priv, struct kos_framebuffer *kfb)
+{
+    struct intel_framebuffer *intel_fb = kfb->private;
+    addr_t *pt_addr = NULL;
+    int pte = 0;
+    int pde = 0;
+    int num_pages;
+    addr_t pfn;
+ENTER();
+    num_pages = intel_fb->obj->base.size/4096;
+    pfn = dev_priv->gtt.mappable_base + i915_gem_obj_ggtt_offset(intel_fb->obj);
+
+    while(num_pages)
+        {
+        if (pt_addr == NULL)
+        {
+            addr_t pt = kfb->pde[pde] & 0xFFFFF000;
+            pde++;
+            pt_addr = kmap_atomic((struct page*)pt);
+        }
+        pt_addr[pte] = pfn|PG_UW|PG_WRITEC;
+        pfn+= 4096;
+        num_pages--;
+        if (++pte == 1024)
+        {
+            kunmap_atomic(pt_addr);
+            pt_addr = NULL;
+            if (pde == 8)
+                break;
+            pte = 0;
+        }
+    }
+
+    if(pt_addr)
+    {
+        for(;pte < 1024; pte++)
+            pt_addr[pte] = dummy_fb_page|PG_UW;
+        kunmap_atomic(pt_addr);
+    }
+LEAVE();
+};
 
 typedef struct
 {

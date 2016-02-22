@@ -712,6 +712,10 @@ void intel_panel_set_backlight_acpi(struct intel_connector *connector,
 	hw_level = clamp_user_to_hw(connector, user_level, user_max);
 	panel->backlight.level = hw_level;
 
+
+	if (panel->backlight.enabled)
+		intel_panel_actually_set_backlight(connector, hw_level);
+
 	mutex_unlock(&dev_priv->backlight_lock);
 }
 
@@ -1104,6 +1108,10 @@ void intel_panel_enable_backlight(struct intel_connector *connector)
 	mutex_lock(&dev_priv->backlight_lock);
 
 	WARN_ON(panel->backlight.max == 0);
+
+	if (panel->backlight.level <= panel->backlight.min) {
+		panel->backlight.level = panel->backlight.max;
+	}
 
 	panel->backlight.enable(connector);
 	panel->backlight.enabled = true;
