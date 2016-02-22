@@ -17,7 +17,7 @@
 	?define PR_T_ONLY_READ "Только чтение"
 	?define SET_BYTE_LANG "байт"
 #else // Apply to all subfolders
-	?define WINDOW_TITLE_PROPERTIES "Properties"
+	?define WINoDOW_TITLE_PROPERTIES "Properties"
 	?define BTN_CLOSE "Close"
 	?define BTN_APPLY "Apply"
 	?define QUEST_1 "Apply to all subfolders"
@@ -39,9 +39,9 @@
 dword mouse_ddd2;
 char path_to_file[4096]="\0";
 char file_name2[4096]="\0";
-edit_box file_name_ed = {195,50,25,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,4098,#file_name2,#mouse_ddd2, 1000000000000000b,2,2};
-edit_box path_to_file_ed = {145,100,46,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,4098,#path_to_file,#mouse_ddd2, 1000000000000000b,2,2};
-frame flags_frame = { 0, 280, 10, 83, 151, 0x000111, 0xFFFfff, 1, FLAGS, 0, 1, 12, 0x000111, 0xFFFFFF };
+edit_box file_name_ed = {215,50,28,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,4098,#file_name2,#mouse_ddd2, 1000000000000000b,2,2};
+edit_box path_to_file_ed = {145,120,49,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,4098,#path_to_file,#mouse_ddd2, 1000000000000000b,2,2};
+frame flags_frame = { 0, 280, 10, 83, 165, 0x000111, 0xFFFfff, 1, FLAGS, 0, 1, 12, 0x000111, 0xFFFFFF };
 
 int file_count, dir_count, size_dir;
 char folder_info[200];
@@ -145,11 +145,11 @@ void SetProperties(byte prop)
 void ShowConfirmQuestionPopin()
 {
 	quest_active = 1;
-	DrawPopup(30,80,200,90,1,system.color.work, system.color.work_graph);
-	WriteText(50, 100, 0x80, 0x000000, QUEST_1);
-	WriteText(80, 115, 0x80, 0x000000, QUEST_2);
-	DrawFlatButton(52,138,70,20,301,T_YES);
-	DrawFlatButton(145,138,70,20,302,T_NO);
+	DrawPopup(15,80,250,90,1,system.color.work, system.color.work_graph);
+	WriteText(35, 102, 0x90, 0x000000, QUEST_1);
+	WriteText(65, 117, 0x90, 0x000000, QUEST_2);
+	DrawFlatButton(62,138,70,20,301,T_YES);
+	DrawFlatButton(155,138,70,20,302,T_NO);
 }
 
 void GetSizeDir(dword way)
@@ -320,24 +320,24 @@ void properties_dialog()
 
 void DrawPropertiesWindow()
 {
-	DefineAndDrawWindow(Form.left + 150,150,270,285+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE_PROPERTIES);
+	DefineAndDrawWindow(Form.left + 150,150,290,299+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE_PROPERTIES);
 	GetProcessInfo(#settings_form, SelfInfo);
 	DrawFlatButton(settings_form.cwidth - 80 - 13, settings_form.cheight - 34, 80, 24, 10, BTN_CLOSE);
 	DrawFlatButton(settings_form.cwidth - 170 - 13, settings_form.cheight - 34, 80, 24, 11, BTN_APPLY);
 	DrawBar(10, 10, 32, 32, 0xFFFfff);
 	
-	WriteText(10, 50, 0x80, 0x000000, PR_T_DEST);
+	WriteText(10, 52, 0x90, 0x000000, PR_T_DEST);
 	edit_box_draw stdcall (#path_to_file_ed);
 
-	WriteText(10, 65, 0x80, 0x000000, PR_T_SIZE);
+	WriteText(10, 69, 0x90, 0x000000, PR_T_SIZE);
 	
 	if (selected_count)
 	{
 		DrawIconByExtension('', 18, 19, 0xFFFfff);
 		sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
-		WriteText(50, 23, 0x80, 0x000000, #folder_info);
+		WriteText(50, 25, 0x90, 0x000000, #folder_info);
 		sprintf(#element_size_label,"%s (%d %s)",ConvertSize(size_dir),size_dir,SET_BYTE_LANG);
-		WriteText(100, 65, 0x80, 0x000000, #element_size_label);
+		WriteText(120, 69, 0x90, 0x000000, #element_size_label);
 	}
 	else
 	{
@@ -346,24 +346,24 @@ void DrawPropertiesWindow()
 		else
 				DrawIconByExtension(#file_name2+strrchr(#file_name2,'.'), 18, 19, 0xFFFfff);
 
-		WriteText(50, 13, 0x80, 0x000000, PR_T_NAME);                          
+		WriteText(50, 13, 0x90, 0x000000, PR_T_NAME);                          
 		edit_box_draw stdcall (#file_name_ed);
 		
 		if (!itdir) element_size = file_info_general.sizelo;
 		else
 		{
-			WriteText(10, 80, 0x80, 0x000000, PR_T_CONTAINS);                              
+			WriteText(10, 86, 0x90, 0x000000, PR_T_CONTAINS);                              
 			sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
-			WriteText(100, 80, 0x80, 0x000000, #folder_info);
+			WriteText(120, 86, 0x90, 0x000000, #folder_info);
 			element_size = size_dir;
 		}
-		WriteTextLines(10,  95, 0x80, 0x000000, CREATED_OPENED_MODIFIED, 15);
-		DrawDate(100,  95, 0, #file_info_general.datecreate);
-        DrawDate(100, 110, 0, #file_info_general.datelastaccess);
-        DrawDate(100, 125, 0, #file_info_general.datelastedit);
+		WriteTextLines(10,  103, 0x90, 0x000000, CREATED_OPENED_MODIFIED, 17);
+		DrawDate(120,  103, 0, #file_info_general.datecreate);
+        DrawDate(120, 120, 0, #file_info_general.datelastaccess);
+        DrawDate(120, 137, 0, #file_info_general.datelastedit);
 
 		sprintf(#element_size_label,"%s (%d %s)",ConvertSize(element_size),element_size,SET_BYTE_LANG);
-		WriteText(100, 65, 0x80, 0x000000, #element_size_label);
+		WriteText(120, 69, 0x90, 0x000000, #element_size_label);
 	}
 	flags_frame.size_x = - flags_frame.start_x * 2 + settings_form.cwidth - 2;
 	flags_frame.font_color = system.color.work_text;

@@ -674,7 +674,7 @@ inline fastcall dword GetStartTime()
 	EAX = 47;
 	EBX = 2<<16;
 	EDX = x<<16+y;
-	ESI = 0x80<<24+color;
+	ESI = 0x90<<24+color;
 	ECX = EDI.date.day;
 	$int 0x40;
 	EDX += 18<<16;
