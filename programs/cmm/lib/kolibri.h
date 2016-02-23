@@ -48,102 +48,6 @@ char program_path[4096];
 #define BT_HIDE     0x40000000
 #define BT_NOFRAME  0x20000000
 
-//ASCII KEYS
-#define ASCII_KEY_BS    008
-#define ASCII_KEY_TAB   009
-#define ASCII_KEY_ENTER 013
-#define ASCII_KEY_ESC   027
-#define ASCII_KEY_DEL   182
-#define ASCII_KEY_INS   185
-#define ASCII_KEY_SPACE 032
-
-#define ASCII_KEY_LEFT  176
-#define ASCII_KEY_RIGHT 179
-#define ASCII_KEY_DOWN  177
-#define ASCII_KEY_UP    178
-#define ASCII_KEY_HOME  180
-#define ASCII_KEY_END   181
-#define ASCII_KEY_PGDN  183
-#define ASCII_KEY_PGUP  184
-
-//SCAN CODE KEYS
-#define SCAN_CODE_BS    014
-#define SCAN_CODE_TAB   015
-#define SCAN_CODE_ENTER 028
-#define SCAN_CODE_ESC   001
-#define SCAN_CODE_DEL   083
-#define SCAN_CODE_INS   082
-#define SCAN_CODE_SPACE 057
-			
-#define SCAN_CODE_LEFT  075
-#define SCAN_CODE_RIGHT 077
-#define SCAN_CODE_DOWN  080
-#define SCAN_CODE_UP    072
-#define SCAN_CODE_HOME  071
-#define SCAN_CODE_END   079
-#define SCAN_CODE_PGDN  081
-#define SCAN_CODE_PGUP  073
-
-#define KEY_LSHIFT     00000000001b
-#define KEY_RSHIFT     00000000010b
-#define KEY_LCTRL      00000000100b
-#define KEY_RCTRL      00000001000b
-#define KEY_LALT       00000010000b
-#define KEY_RALT       00000100000b
-#define KEY_CAPSLOCK   00001000000b
-#define KEY_NUMLOCK    00010000000b
-#define KEY_SCROLLLOCK 00100000000b
-#define KEY_LWIN       01000000000b
-#define KEY_RWIN       10000000000b
-
-dword calc(EAX) { return EAX; }
-
-inline fastcall word GetKey()  //+Gluk fix
-{
-		$push edx
-GETKEY:
-		$mov  eax,2
-		$int  0x40
-		$cmp eax,1
-		$jne GETKEYI
-		$mov ah,dh
-		$jmp GETKEYII //jz?
-GETKEYI:
-		$mov dh,ah
-		$jmp GETKEY
-GETKEYII:
-		$pop edx
-		$shr eax,8
-}
-
-
-unsigned char key_ascii;
-dword key_scancode, key_modifier;
-int GetKeys()
-{
-		$push edx
-GETKEY:
-		$mov  eax,2
-		$int  0x40
-		$cmp eax,1
-		$jne GETKEYI
-		$mov eax,edx
-		$jmp GETKEYII
-GETKEYI:
-		$mov edx,eax
-		$jmp GETKEY
-GETKEYII:
-		$pop edx
-	key_ascii = AH;
-	$shr  eax,16
-	key_scancode = AL;
-	//get alt/shift/ctrl key status
-	$mov eax,66
-	$mov ebx,3
-	$int 0x40
-	key_modifier = EAX;
-}
-
 //allow event mask
 #define EVENT_MASK_REDRAW   000000001b
 #define EVENT_MASK_KEYBOARD 000000010b
@@ -158,19 +62,13 @@ GETKEYII:
 #define END_ARGS 0xFF00FF
 //-------------------------------------------------------------------------
 
-#ifndef INCLUDE_SYSTEM_H
 #include "../lib/system.h"
-#endif
-
-#ifndef INCLUDE_MOUSE_H
 #include "../lib/mouse.h"
-#endif
+#include "../lib/keyboard.h"
 
 :struct raw_image {
 	dword w, h, data;
 };
-
-
 
 //------------------------------------------------------------------------------
 :dword wait_event_code;
@@ -221,18 +119,6 @@ inline fastcall dword GetFreeRAM()
 	$mov ebx, 16
 	$int 0x40
 	//return eax = размер свободной памяти в килобайтах
-}
-
-inline void draw_line(dword x1,y1,x2,y2,color)
-{
-	x2--;y2--;y1--;
-	$mov EAX,38
-	EBX = x1<<16;
-	EBX |= x2;
-	ECX = y1<<16;
-	ECX |= y2;
-	$mov EDX,color
-	$int 0x40
 }
 
 inline fastcall dword LoadDriver(ECX) //ECX - имя драйвера
@@ -416,7 +302,6 @@ inline fastcall int GetClientHeight()
 	$mov eax, ebx
 }
 
-
 inline fastcall dword LoadLibrary( ECX)
 {
 	$mov eax, 68 
@@ -428,13 +313,6 @@ inline fastcall int TestBit( EAX, CL)
 {
 	$shr eax,cl
 	$and eax,1
-}
-
-inline fastcall int PlaySpeaker( ESI)
-{
-	$mov eax, 55
-	$mov ebx, 55
-	$int 0x40
 }
 
 //------------------------------------------------------------------------------
@@ -579,20 +457,6 @@ inline RefreshWindow(dword ID_REFRESH,ID_ACTIVE)
 	$int 0x40
 }
 
-inline getIPC(ECX,EDX)
-{
-	$mov EAX,60
-	$mov EBX,2
-	$int 0x40
-}
-
-inline sendIPC(ECX,EDX,ESI)
-{
-	$mov EAX,60
-	$mov EBX,1
-	$int 0x40
-}
-
 void UnsafeDefineButton(dword x,y,w,h,EDX,ESI)
 {
 	EAX = 8;
@@ -635,29 +499,18 @@ inline fastcall dword GetStartTime()
 	CreateThread(#_EventRedrawWindow,#REDRAW_BUFF_EVENT_+4092);
 }
 
-:dword ALERT_TEXT;
-:void dialog_alert()
+:struct obj
 {
-	byte id;
-	loop()switch(WaitEvent())
-	{
-		case evReDraw:
-			DefineAndDrawWindow(215,100,250,200,0x34,0xFFFFFF,"Alert");
-			WriteTextB(5,5,0x90,0x0,ALERT_TEXT);
-		break;
-		case evKey:
-		case evButton:
-			id=GetButtonID();
-			if (id==1) ExitProcess();
-		break;
-	}
-}
-:dword alert(dword text)
+	dword x,y,w,h;
+	void size();
+};
+
+:void obj::size(dword _x, _y, _w, _h)
 {
-	dword mem = malloc(4096);
-	ALERT_TEXT = text;
-	CreateThread(#dialog_alert,mem+4092);
-	return mem;
+	x=_x; 
+	y=_y;
+	w=_w;
+	h=_h;
 }
 
 :struct _screen
@@ -669,7 +522,6 @@ inline fastcall dword GetStartTime()
 
 :void DrawDate(dword x, y, color, in_date)
 {
-	//char text[15];
 	EDI = in_date;
 	EAX = 47;
 	EBX = 2<<16;
@@ -677,17 +529,15 @@ inline fastcall dword GetStartTime()
 	ESI = 0x90<<24+color;
 	ECX = EDI.date.day;
 	$int 0x40;
-	EDX += 18<<16;
+	EDX += 20<<16;
 	ECX = EDI.date.month;
 	$int 0x40;
-	EDX += 18<<16;
+	EDX += 20<<16;
 	EBX = 4<<16;
 	ECX = EDI.date.year;
 	$int 0x40;
-	PutPixel(x+14,y+6,color);
-	PutPixel(x+32,y+6,color);
-	//sprintf(#text,"%d",EDI.date.year);
-	//WriteText(x, y, 0x80, 0x000000, #text);
+	DrawBar(x+17,y+10,2,2,color);
+	DrawBar(x+37,y+10,2,2,color);
 }
 
 :void __path_name__(dword BUF,PATH)

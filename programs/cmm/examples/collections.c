@@ -3,7 +3,6 @@
 #include "../lib/io.h"
 #include "../lib/collection.h"
 
-collection s;
 
 void main()
 {   
@@ -12,7 +11,9 @@ void main()
 	test2();
 }
 
-void test1() {
+void test1()
+ collection s;
+ {
 	s.add("Hello");
 	s.add("World!");
 	debugln(s.get(0)); //-> Hello
@@ -21,16 +22,17 @@ void test1() {
 }
 
 void test2()
-{   
-	int i;
-	s.add("0");
-	s.add("1");
-	s.add("2");
-	s.add("3");
-	for (i=0; i<s.count; i++) debugln(s.get(i)); //-> 0 1 2 3
-	s.count--;
-	s.count--;
-	s.add("4");
-	for (i=0; i<s.count; i++) debugln(s.get(i)); //-> 0 1 4
-	s.drop();
+ collection_int ci;
+ int i;
+ {   
+	ci.add(0);
+	ci.add(1);
+	ci.add(2);
+	ci.add(3);
+	for (i=0; i<ci.count; i++) debugi(ci.get(i)); //-> 0 1 2 3
+	ci.count--;
+	ci.count--;
+	ci.add(4);
+	for (i=0; i<ci.count; i++) debugi(ci.get(i)); //-> 0 1 4
+	ci.drop();
 }
