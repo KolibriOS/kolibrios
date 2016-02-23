@@ -22,7 +22,7 @@ align 4
 start:
 	load_library name_tgl, cur_dir_path, library_path, system_path, \
 		err_message_found_lib, head_f_l, import_lib_tinygl, err_message_import, head_f_i
-	cmp eax,-1
+	cmp eax,SF_TERMINATE_PROCESS
 	jz button.exit
 
 	mcall SF_SET_EVENTS_MASK,0x27
@@ -878,7 +878,7 @@ macro E_LIB n
 include '../export.inc'
 
 ;--------------------------------------------------
-system_path db '/sys/lib/'
+system_path db '/kolibrios/lib/'
 name_tgl db 'tinygl.obj',0
 err_message_found_lib db 'Sorry I cannot load library tinygl.obj',0
 head_f_i:

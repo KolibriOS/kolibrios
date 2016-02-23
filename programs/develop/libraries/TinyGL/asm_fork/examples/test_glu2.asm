@@ -469,7 +469,7 @@ import_libimg:
 	aimg_draw    db 'img_draw',0
 
 ;--------------------------------------------------
-system_dir_0 db '/sys/lib/'
+system_dir_0 db '/kolibrios/lib/'
 lib_name_0 db 'tinygl.obj',0
 system_dir_1 db '/sys/lib/'
 lib_name_1 db 'buf2d.obj',0
