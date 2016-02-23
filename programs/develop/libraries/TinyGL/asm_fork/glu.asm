@@ -127,9 +127,440 @@ align 4
 	ret
 endp
 
-;void gluCylinder(GLUquadricObj *qobj, GLdouble baseRadius, GLdouble topRadius, GLdouble height, GLint slices, GLint stacks )
-;{
-;}
+align 16
+proc gluCylinder qobj:dword, baseRadius:dword, topRadius:dword, height:dword,\
+	slices:dword, stacks:dword
+locals
+	da dq ? ;double
+	r dq ? ;double
+	dr dq ? ;double
+	dz dq ? ;double
+	x dd ? ;float
+	y dd ? ;float
+	z dd ? ;float
+	nz dd ? ;float
+	nsign dd ? ;float
+	i dd ? ;GLint
+	j dd ? ;GLint
+	du dd ? ;float
+	dv dd ? ;float
+	tcx dd ? ;float
+	tcy dd ? ;float
+	x2 dd ? ;float
+	y2 dd ? ;float
+endl
+pushad
+	mov edx,[qobj]
+	fld1
+	cmp dword[edx+offs_qobj_Orientation],GLU_INSIDE
+	jne @f
+		fchs
+	@@:
+	fstp dword[nsign]
+
+	fldpi
+	fadd st0,st0
+	fidiv dword[slices]
+	fstp qword[da] ;da = 2.0*M_PI / slices
+	mov ebx,[topRadius]
+	fld qword[ebx]
+	mov ecx,[baseRadius]
+	fsub qword[ecx]
+	fld st0 ;copy: topRadius-baseRadius
+	fidiv dword[stacks]
+	fstp qword[dr] ;dr = (topRadius-baseRadius) / stacks
+	mov eax,[height]
+	fld qword[eax]
+	fidiv dword[stacks]
+	fstp qword[dz] ;dz = height / stacks
+	fchs
+	fdiv qword[eax]
+	fstp dword[nz] ;nz = (baseRadius-topRadius) / height ; Z component of normal vectors
+
+	cmp dword[edx+offs_qobj_DrawStyle],GLU_POINT
+	jne .else0
+		stdcall glBegin,GL_POINTS
+		mov ebx,[slices]
+		mov dword[i],0
+align 4
+		.cycle_0: ;for (i=0;i<slices;i++)
+			cmp [i],ebx
+			jge .cycle_0_end
+			fild dword[i]
+			fmul qword[da]
+			fld st0
+			fcos
+			fst dword[x] ;x = cos(i*da)
+			fmul dword[nsign]
+			fstp dword[esp-12]
+			fsin
+			fst dword[y] ;y = sin(i*da)
+			fmul dword[nsign]
+			fstp dword[esp-8]
+			fld dword[nz]
+			fmul dword[nsign]
+			fstp dword[esp-4]
+			sub esp,12
+			call glNormal3f ;x*nsign, y*nsign, nz*nsign
+
+			mov dword[z],0.0
+			mov ecx,[baseRadius]
+			fld qword[ecx]
+			fstp qword[r] ;r = baseRadius
+			mov ecx,[stacks]
+			inc ecx
+align 4
+			.cycle_1: ;for (j=0;j<=stacks;j++)
+				mov eax,[z]
+				mov [esp-4],eax
+				fld qword[r]
+				fld st0
+				fmul dword[y]
+				fstp dword[esp-8]
+				fmul dword[x]
+				fstp dword[esp-12]
+				sub esp,12
+				call glVertex3f ;x*r, y*r, z
+				fld dword[z]
+				fadd qword[dz]
+				fstp dword[z] ;z += dz
+				fld qword[r]
+				fadd qword[dr]
+				fstp qword[r] ;r += dr
+				dec ecx
+				jnz .cycle_1
+			inc dword[i]
+			jmp .cycle_0
+align 4
+		.cycle_0_end:
+		call glEnd
+		jmp .end_f
+	.else0:
+	cmp dword[edx+offs_qobj_DrawStyle],GLU_LINE
+	je @f
+	cmp dword[edx+offs_qobj_DrawStyle],GLU_SILHOUETTE
+	je .else2
+		jmp .else1
+	@@:
+		; Draw rings
+		mov dword[z],0.0
+		mov ecx,[baseRadius]
+		fld qword[ecx]
+		fstp qword[r] ;r = baseRadius
+		mov ecx,[stacks]
+		inc ecx
+align 4
+		.cycle_2: ;for (j=0;j<=stacks;j++)
+			stdcall glBegin,GL_LINE_LOOP
+			mov ebx,[slices]
+			mov dword[i],0
+align 4
+			.cycle_3: ;for (i=0;i<slices;i++)
+				cmp [i],ebx
+				jge .cycle_3_end
+				fild dword[i]
+				fmul qword[da]
+				fld st0
+				fcos
+				fst dword[x] ;x = cos(i*da)
+				fmul dword[nsign]
+				fstp dword[esp-12]
+				fsin
+				fst dword[y] ;y = sin(i*da)
+				fmul dword[nsign]
+				fstp dword[esp-8]
+				fld dword[nz]
+				fmul dword[nsign]
+				fstp dword[esp-4]
+				sub esp,12
+				call glNormal3f ;x*nsign, y*nsign, nz*nsign
+				mov eax,[z]
+				mov [esp-4],eax
+				fld qword[r]
+				fld st0
+				fmul dword[y]
+				fstp dword[esp-8]
+				fmul dword[x]
+				fstp dword[esp-12]
+				sub esp,12
+				call glVertex3f ;x*r, y*r, z
+				inc dword[i]
+				jmp .cycle_3
+align 4
+			.cycle_3_end:
+			call glEnd
+			fld dword[z]
+			fadd qword[dz]
+			fstp dword[z] ;z += dz
+			fld qword[r]
+			fadd qword[dr]
+			fstp qword[r] ;r += dr
+			dec ecx
+			jnz .cycle_2
+			jmp .else2_end
+align 4
+		.else2:
+		; draw one ring at each end
+;     if (baseRadius!=0.0) {
+			stdcall glBegin,GL_LINE_LOOP
+align 4
+			.cycle_4: ;for (i=0;i<slices;i++)
+;		{
+;           x = cos(i*da);
+;           y = sin(i*da);
+;           normal3f( x*nsign, y*nsign, nz*nsign );
+;           glVertex3f( x*baseRadius, y*baseRadius, 0.0 );
+;        }
+			call glEnd
+			stdcall glBegin,GL_LINE_LOOP
+align 4
+			.cycle_5: ;for (i=0;i<slices;i++)
+;		{
+;           x = cos(i*da);
+;           y = sin(i*da);
+;           normal3f( x*nsign, y*nsign, nz*nsign );
+;           glVertex3f( x*topRadius, y*topRadius, height );
+;        }
+			call glEnd
+;     }
+		.else2_end:
+		; draw length lines
+		stdcall glBegin,GL_LINES
+		mov ebx,[slices]
+		mov dword[i],0
+align 4
+		.cycle_6: ;for (i=0;i<slices;i++)
+			cmp [i],ebx
+			jge .cycle_6_end
+			fild dword[i]
+			fmul qword[da]
+			fld st0
+			fcos
+			fst dword[x] ;x = cos(i*da)
+			fmul dword[nsign]
+			fstp dword[esp-12]
+			fsin
+			fst dword[y] ;y = sin(i*da)
+			fmul dword[nsign]
+			fstp dword[esp-8]
+			fld dword[nz]
+			fmul dword[nsign]
+			fstp dword[esp-4]
+			sub esp,12
+			call glNormal3f ;x*nsign, y*nsign, nz*nsign
+			mov dword[esp-4],0.0
+			mov ecx,[baseRadius]
+			fld qword[ecx]
+			fld st0
+			fmul dword[y]
+			fstp dword[esp-8]
+			fmul dword[x]
+			fstp dword[esp-12]
+			sub esp,12
+			call glVertex3f ;x*baseRadius, y*baseRadius, 0.0
+			mov eax,[height]
+			fld qword[eax]
+			fstp dword[esp-4]
+			mov ecx,[topRadius]
+			fld qword[ecx]
+			fld st0
+			fmul dword[y]
+			fstp dword[esp-8]
+			fmul dword[x]
+			fstp dword[esp-12]
+			sub esp,12
+			call glVertex3f ;x*topRadius, y*topRadius, height
+			inc dword[i]
+			jmp .cycle_6
+align 4
+		.cycle_6_end:
+		call glEnd
+		jmp .end_f
+align 4
+	.else1:
+	cmp dword[edx+offs_qobj_DrawStyle],GLU_FILL
+	jne .end_f
+		fld1
+		fidiv dword[slices]
+		fstp dword[du] ;du = 1.0 / slices
+		fld1
+		fidiv dword[stacks]
+		fstp dword[dv] ;dv = 1.0 / stacks
+		mov dword[tcx],0.0
+		mov dword[tcy],0.0
+		mov ebx,[slices]
+		mov dword[i],0
+align 4
+		.cycle_7: ;for (i=0;i<slices;i++)
+			cmp [i],ebx
+			jge .cycle_7_end
+			fild dword[i]
+			fmul qword[da]
+			fld st0
+			fcos
+			fstp dword[y] ;y1 = cos(i*da)
+			fsin
+			fchs
+			fstp dword[x] ;x1 = -sin(i*da)
+			inc dword[i]
+			fild dword[i]
+			fmul qword[da]
+			fld st0
+			fcos
+			fstp dword[y2] ;y2 = cos((i+1)*da)
+			fsin
+			fchs
+			fstp dword[x2] ;x2 = -sin((i+1)*da)
+			mov dword[z],0.0
+			mov ecx,[baseRadius]
+			fld qword[ecx]
+			fstp qword[r] ;r = baseRadius
+			mov dword[tcy],0.0
+			stdcall glBegin,GL_QUAD_STRIP
+			mov ecx,[stacks]
+			inc ecx
+align 4
+			.cycle_8: ;for (j=0;j<=stacks;j++)
+
+				fld dword[nsign]
+				ftst
+				fstsw ax
+				sahf
+				jbe .else3
+					;if (nsign>0.0)
+					fld st0
+					fmul dword[nz]
+					fstp dword[esp-4]
+					fld st0
+					fmul dword[y]
+					fstp dword[esp-8]
+					fmul dword[x]
+					fstp dword[esp-12]
+					sub esp,12
+					call glNormal3f ;x1*nsign, y1*nsign, nz*nsign
+					cmp dword[edx+offs_qobj_TextureFlag],0 ;if (qobj.TextureFlag)
+					je @f
+						stdcall glTexCoord2f, [tcx],[tcy]
+					@@:
+					mov eax,[z]
+					mov [esp-4],eax
+					fld qword[r]
+					fld st0
+					fmul dword[y]
+					fstp dword[esp-8]
+					fmul dword[x]
+					fstp dword[esp-12]
+					sub esp,12
+					call glVertex3f ;x1*r, y1*r, z
+					fld dword[nsign]
+					fld st0
+					fmul dword[nz]
+					fstp dword[esp-4]
+					fld st0
+					fmul dword[y2]
+					fstp dword[esp-8]
+					fmul dword[x2]
+					fstp dword[esp-12]
+					sub esp,12
+					call glNormal3f ;x2*nsign, y2*nsign, nz*nsign
+					cmp dword[edx+offs_qobj_TextureFlag],0 ;if (qobj.TextureFlag)
+					je @f
+						push dword[tcy]
+						fld dword[tcx]
+						fadd dword[du]
+						fstp dword[esp-4]
+						sub esp,4
+						call glTexCoord2f ;tcx+du, tcy
+					@@:
+					mov eax,[z]
+					mov [esp-4],eax
+					fld qword[r]
+					fld st0
+					fmul dword[y2]
+					fstp dword[esp-8]
+					fmul dword[x2]
+					fstp dword[esp-12]
+					sub esp,12
+					call glVertex3f ;x2*r, y2*r, z
+					jmp .else3_end
+				.else3:
+					fld st0
+					fmul dword[nz]
+					fstp dword[esp-4]
+					fld st0
+					fmul dword[y2]
+					fstp dword[esp-8]
+					fmul dword[x2]
+					fstp dword[esp-12]
+					sub esp,12
+					call glNormal3f ;x2*nsign, y2*nsign, nz*nsign
+					cmp dword[edx+offs_qobj_TextureFlag],0 ;if (qobj.TextureFlag)
+					je @f
+						stdcall glTexCoord2f, [tcx],[tcy]
+					@@:
+					mov eax,[z]
+					mov [esp-4],eax
+					fld qword[r]
+					fld st0
+					fmul dword[y2]
+					fstp dword[esp-8]
+					fmul dword[x2]
+					fstp dword[esp-12]
+					sub esp,12
+					call glVertex3f ;x2*r, y2*r, z
+					fld dword[nsign]
+					fld st0
+					fmul dword[nz]
+					fstp dword[esp-4]
+					fld st0
+					fmul dword[y]
+					fstp dword[esp-8]
+					fmul dword[x]
+					fstp dword[esp-12]
+					sub esp,12
+					call glNormal3f ;x1*nsign, y1*nsign, nz*nsign
+					cmp dword[edx+offs_qobj_TextureFlag],0 ;if (qobj.TextureFlag)
+					je @f
+						push dword[tcy]
+						fld dword[tcx]
+						fadd dword[du]
+						fstp dword[esp-4]
+						sub esp,4
+						call glTexCoord2f ;tcx+du, tcy
+					@@:
+					mov eax,[z]
+					mov [esp-4],eax
+					fld qword[r]
+					fld st0
+					fmul dword[y]
+					fstp dword[esp-8]
+					fmul dword[x]
+					fstp dword[esp-12]
+					sub esp,12
+					call glVertex3f ;x1*r, y1*r, z
+				.else3_end:
+				fld dword[z]
+				fadd qword[dz]
+				fstp dword[z] ;z += dz
+				fld qword[r]
+				fadd qword[dr]
+				fstp qword[r] ;r += dr
+				fld dword[tcy]
+				fadd dword[dv]
+				fstp dword[tcy] ;tcy += dv
+				dec ecx
+				jnz .cycle_8
+			call glEnd
+			fld dword[tcx]
+			fadd dword[du]
+			fstp dword[tcx] ;tcx += du
+			jmp .cycle_7
+align 4
+		.cycle_7_end:
+	.end_f:
+popad
+	ret
+endp
 
 ; Disk (adapted from Mesa)
 
