@@ -1,14 +1,11 @@
 use32
 	org 0x0
 	db 'MENUET01'
-	dd 0x1
-	dd start
-	dd i_end
-	dd mem,stacktop
-	dd 0,cur_dir_path
+	dd 1,start,i_end,mem,stacktop,0,cur_dir_path
 
 include '../../../../../proc32.inc'
 include '../../../../../macros.inc'
+include '../../../../../KOSfuncs.inc'
 include '../../../../../develop/libraries/box_lib/load_lib.mac'
 include '../../../../../dll.inc'
 include '../opengl_const.inc'
@@ -19,10 +16,10 @@ align 4
 start:
 	load_library name_tgl, cur_dir_path, library_path, system_path, \
 		err_message_found_lib, head_f_l, import_lib_tinygl, err_message_import, head_f_i
-	cmp eax,-1
+	cmp eax,SF_TERMINATE_PROCESS
 	jz button.exit
 
-	mcall 40,0x27
+	mcall SF_SET_EVENTS_MASK,0x27
 
 	;заполняем массив индексов из файла house.3ds (который вшит внутрь данной программы)
 	mov esi,house_3ds
@@ -51,7 +48,7 @@ red_win:
 
 align 4
 still:
-	mcall 10
+	mcall SF_WAIT_EVENT
 	cmp al,1
 	jz red_win
 	cmp al,2
@@ -63,19 +60,19 @@ still:
 align 4
 draw_window:
 	pushad
-	mcall 12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
 	mov edx,0x33ffffff
-	mcall 0,(50 shl 16)+430,(30 shl 16)+400,,,caption
+	mcall SF_CREATE_WINDOW,(50 shl 16)+430,(30 shl 16)+400,,,caption
 	stdcall [kosglSwapBuffers]
 
-	mcall 12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 	popad
 	ret
 
 align 4
 key:
-	mcall 2
+	mcall SF_GET_KEY
 
 	cmp ah,27 ;Esc
 	je button.exit
@@ -133,11 +130,11 @@ key:
 
 align 4
 button:
-	mcall 17
+	mcall SF_GET_BUTTON
 	cmp ah,1
 	jne still
 .exit:
-	mcall -1
+	mcall SF_TERMINATE_PROCESS
 
 
 align 4
@@ -179,7 +176,7 @@ delt_size dd 3.0
 
 align 4
 house_3ds: ;внедряем файл внутрь программы (в идеальном случае должен открыватся через окно диалога, но для облегчения примера вшит внутрь)
-file '../../../../../demos/3DS/3ds_objects/house.3ds'
+file '../../../../../demos/3DS/3ds_objects/House.3ds'
 align 4
 Indices rb 0x1a6*6 ;0x1a6 - число граней, на каждую грань по 3 точки, индекс точки 2 байта
 
@@ -202,10 +199,10 @@ include '../export.inc'
 ;--------------------------------------------------
 system_path db '/sys/lib/'
 name_tgl db 'tinygl.obj',0
-err_message_found_lib db 'Sorry I cannot load library tinygl.obj',0
+err_message_found_lib db 'Sorry I cannot load library ',39,'tinygl.obj',39,0
 head_f_i:
 head_f_l db 'System error',0
-err_message_import db 'Error on load import library tinygl.obj',0
+err_message_import db 'Error on load import library ',39,'tinygl.obj',39,0
 ;--------------------------------------------------
 
 i_end:
