@@ -50,12 +50,13 @@ void settings_dialog()
 				else if (id==21) { action_buf=109; real_files_names_case ^= 1; }
 				else if (id==22) info_after_copy ^= 1;
 				else if (id==24) two_panels ^= true;
+				else if (id==32) show_breadcrumb ^= true;
 				else if (id==25) { files.item_h++; files_active.item_h = files_inactive.item_h = files.item_h; }
 				else if (id==26) && (files.item_h>18) files.item_h--;
 				else if (id==30) { label.size.pt++; IF(!label.changeSIZE()) label.size.pt--; BigFontsChange(); }
 				else if (id==31) { label.size.pt--; IF(!label.changeSIZE()) label.size.pt++; BigFontsChange(); }
 				EventRedrawWindow(Form.left,Form.top);
-				DrawSettingsCheckBoxes();
+				//DrawSettingsCheckBoxes();
 			break;
 					
 			case evKey:
@@ -64,10 +65,8 @@ void settings_dialog()
 				break;
 				
 			case evReDraw:
-				DefineAndDrawWindow(Form.left + Form.width/2-10, Form.top + Form.height/2 - 75, 370, 258+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
+				DefineAndDrawWindow(Form.left + Form.width/2-10, Form.top + Form.height/2 - 75, 370, 282+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
 				DrawSettingsCheckBoxes();
-				DrawFlatButton(9, 180, strlen(SAVE_PATH_AS_DEFAULT)+3*8, 24, 6, SAVE_PATH_AS_DEFAULT);
-				DrawFlatButton(9, 216, strlen(EDIT_FILE_ASSOCIATIONS)+3*8, 24, 5, EDIT_FILE_ASSOCIATIONS);
 		}
 	}
 }
@@ -82,12 +81,17 @@ void ExitSettings()
 
 void DrawSettingsCheckBoxes()
 {
-	CheckBox(10, 13, 20, SHOW_DEVICE_CLASS,  show_dev_name);
-	CheckBox(10, 37, 21, SHOW_REAL_NAMES,  real_files_names_case);
-	CheckBox(10, 61, 22, NOTIFY_COPY_END,  info_after_copy);
-	CheckBox(10, 85, 24, USE_TWO_PANELS,  two_panels);
-	MoreLessBox(10, 115, 25, 26, files.item_h, LIST_LINE_HEIGHT);
-	if (label.font) MoreLessBox(10, 144, 30, 31, label.size.pt, FONT_SIZE_LABEL);
+	incn y;
+	y.n = 0;
+	CheckBox(10, y.inc(13), 20, SHOW_DEVICE_CLASS,  show_dev_name);
+	CheckBox(10, y.inc(24), 21, SHOW_REAL_NAMES,  real_files_names_case);
+	CheckBox(10, y.inc(24), 22, NOTIFY_COPY_END,  info_after_copy);
+	CheckBox(10, y.inc(24), 24, USE_TWO_PANELS,  two_panels);
+	CheckBox(10, y.inc(24), 32, "Show breadcrumbs",  show_breadcrumb);
+	MoreLessBox(10, y.inc(30), 25, 26, files.item_h, LIST_LINE_HEIGHT);
+	if (label.font) MoreLessBox(10, y.inc(30), 30, 31, label.size.pt, FONT_SIZE_LABEL);
+	DrawFlatButton(9, y.inc(35), strlen(SAVE_PATH_AS_DEFAULT)+3*8, 24, 6, SAVE_PATH_AS_DEFAULT);
+	DrawFlatButton(9, y.inc(35), strlen(EDIT_FILE_ASSOCIATIONS)+3*8, 24, 5, EDIT_FILE_ASSOCIATIONS);
 }
 
 

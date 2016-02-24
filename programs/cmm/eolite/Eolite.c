@@ -28,7 +28,8 @@
 //Button IDs
 enum {
 	POPUP_BTN1 = 201,
-	POPUP_BTN2 = 202
+	POPUP_BTN2 = 202,
+	BREADCRUMB_ID = 300
 };
 
 //NewElement options
@@ -98,11 +99,11 @@ int sort_num=2,
 	real_files_names_case=false,
 	info_after_copy=false,
 	two_panels=false,
+	show_breadcrumb=false,
 	active_panel=1;
 //} settings;
 
 edit_box new_file_ed = {171,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0,248,#new_element_name,#mouse_dd,100000000000010b,6,0};
-PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 0};
 PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 byte cmd_free=0;
 #include "include\translations.h"
@@ -122,10 +123,11 @@ char *fd_path_eolite_ini_path;
 #include "include\delete.h"
 #include "include\about.h"
 #include "include\properties.h"
+#include "include\breadcrumbs.h"
 
 void main() 
 {
-	word id;
+	dword id;
 	byte count_sl = 0;
 	signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
 	char can_show, can_select, stats;
@@ -343,6 +345,9 @@ void main()
 						DeleteButton(POPUP_BTN1);
 						DeleteButton(POPUP_BTN2);
 						break;
+					case BREADCRUMB_ID...400:
+						ClickOnBreadCrumb(id-BREADCRUMB_ID);
+						break;
 				}
 				break;
 	//Key pressed-----------------------------------------------------------------------------
@@ -539,11 +544,12 @@ void draw_window()
 	DrawBar(127, 8, 1, 25, col_graph);
 	for (j=0; j<3; j++) DefineButton(toolbar_buttons_x[j]+2,5+2,31-5,29-5,21+j+BT_HIDE,NULL);
 	for (j=3; j<6; j++) DefineButton(toolbar_buttons_x[j],5,31,29,21+j+BT_HIDE,NULL);
-	DrawBar(246,0, Form.cwidth - 297,12, col_work); //upper editbox
-	DrawBar(246,29,Form.cwidth - 297,5,  col_work); //lower editbox
-	DrawRectangle(246,12,Form.cwidth - 303,16,col_graph);
-	DefineButton(Form.cwidth - 32,6,27,28,51+BT_HIDE+BT_NOFRAME,0); //about
-	PutPaletteImage(#goto_about,56,34,Form.width-65,0,8,#goto_about_pal);
+	DrawBar(246,0, Form.cwidth - 246, 34, col_work);
+	if (!show_breadcrumb) {
+		DrawRectangle(246,12,Form.cwidth - 303,16,col_graph);
+		DefineButton(Form.cwidth - 32,6,27,28,51+BT_HIDE+BT_NOFRAME,0); //about
+		PutPaletteImage(#goto_about,56,34,Form.width-65,0,8,#goto_about_pal);
+	}
 	//main rectangles
 	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42,col_graph);
 	DrawRectangle(0,39,Form.cwidth-1,Form.cheight - 40,col_palette[4]); //bg
@@ -753,13 +759,7 @@ void Open_Dir(dword dir_path, redraw){
 	}
 	if (files.count!=-1)
 	{
-		if(!_not_draw)
-		{
-			PathShow.area_size_x = Form.cwidth-306;
-			DrawBar(PathShow.start_x-3, PathShow.start_y-4, PathShow.area_size_x+2, 15, 0xFFFfff);
-			PathShow_prepare stdcall(#PathShow);
-			PathShow_draw stdcall(#PathShow);
-		}
+		if(!_not_draw) if (show_breadcrumb) DrawBreadCrumbs(); else DrawPathBar();
 		history.add(#path);
 		SystemDiscs.Draw();
 		files.visible = files.h / files.item_h;
