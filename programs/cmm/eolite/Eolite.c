@@ -666,15 +666,15 @@ void Line_ReDraw(dword bgcol, filenum){
 		  ext1, attr,
 		  file_offet,
 		  file_name_off,
-		  y=filenum*files.item_h+files.y;
+		  y=filenum*files.item_h+files.y,
+		  icon_y = files.item_h/2-7+y;
 		  BDVK file;
 	char label_file_name[4096];
 	if (filenum==-1) return;
-	DrawBar(files.x,y,3,files.item_h,bgcol); 
+	DrawBar(files.x,y,3,files.item_h,bgcol);
 	DrawBar(files.x+19,y,files.w-19,files.item_h,bgcol);
-	DrawBar(files.x+3,y+17,16,1,bgcol);
-	if (files.item_h>18) DrawBar(files.x+3,y+18,16,files.item_h-18,bgcol);
-	if (files.item_h>15) DrawBar(files.x+3,y,16,files.item_h-15,bgcol); 
+	if (files.item_h>15) DrawBar(files.x+3,y,16,icon_y-y,bgcol);
+	if (files.item_h>16) DrawBar(files.x+3,icon_y+15,16,y+files.item_h-icon_y-15,bgcol);
 
 	file_offet = file_mas[filenum+files.first]*304 + buf+32;
 	attr = ESDWORD[file_offet];
@@ -696,7 +696,7 @@ void Line_ReDraw(dword bgcol, filenum){
 			WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, 0, ext1);
 		}
 	}
-	DrawIconByExtension(ext1, files.x+3, files.item_h/2-7+y, bgcol);
+	DrawIconByExtension(ext1, files.x+3, icon_y, bgcol);
 
 	if (TestBit(attr, 1)) || (TestBit(attr, 2)) text_col=0xA6A6B7; //system or hiden?
 	if (bgcol!=0xFFFfff)

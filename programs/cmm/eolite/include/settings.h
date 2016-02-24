@@ -1,26 +1,26 @@
 
 #ifdef LANG_RUS
-	?define EDIT_FILE_ASSOCIATIONS "Редактировать ассоциации файлов"
 	?define TITLE_SETT "Настройки"
 	?define SHOW_DEVICE_CLASS "Выводить названия класса устройств"
 	?define SHOW_REAL_NAMES "Показывать имена файлов не меняя регистр"
-	?define FONT_SIZE_LABEL "Размер шрифта"
-	?define USE_TWO_PANELS "Две панели"
-	?define smooth_FONT "Использовать сглаженный шрифт"
-	?define LIST_LINE_HEIGHT "Высота строки в списке"
 	?define NOTIFY_COPY_END "Уведомлять о завершении копирования"
+	?define SHOW_BREADCRUMBS "Использовать 'хлебные крошки'"
+	?define USE_TWO_PANELS "Две панели"
+	?define FONT_SIZE_LABEL "Размер шрифта"
+	?define LIST_LINE_HEIGHT "Высота строки в списке"
 	?define SAVE_PATH_AS_DEFAULT "Сделать текущий путь домашним каталогом"
+	?define EDIT_FILE_ASSOCIATIONS "Редактировать ассоциации файлов"
 #else
-	?define EDIT_FILE_ASSOCIATIONS "Edit file associations"
 	?define TITLE_SETT "Settings"
 	?define SHOW_DEVICE_CLASS "Show device class name"
 	?define SHOW_REAL_NAMES "Show file names in original case"
-	?define FONT_SIZE_LABEL "Font size"
-	?define USE_TWO_PANELS "Two panels"
-	?define smooth_FONT "Use smooth font"
-	?define LIST_LINE_HEIGHT "List line height"
 	?define NOTIFY_COPY_END "Notify when copying finished"
+	?define SHOW_BREADCRUMBS "Show breadcrumbs"
+	?define USE_TWO_PANELS "Two panels"
+	?define FONT_SIZE_LABEL "Font size"
+	?define LIST_LINE_HEIGHT "List line height"
 	?define SAVE_PATH_AS_DEFAULT "Save current path as home folder"
+	?define EDIT_FILE_ASSOCIATIONS "Edit file associations"
 #endif
 
 char config_section[] = "Config";
@@ -52,11 +52,10 @@ void settings_dialog()
 				else if (id==24) two_panels ^= true;
 				else if (id==32) show_breadcrumb ^= true;
 				else if (id==25) { files.item_h++; files_active.item_h = files_inactive.item_h = files.item_h; }
-				else if (id==26) && (files.item_h>18) files.item_h--;
+				else if (id==26) && (files.item_h>16) files.item_h--;
 				else if (id==30) { label.size.pt++; IF(!label.changeSIZE()) label.size.pt--; BigFontsChange(); }
 				else if (id==31) { label.size.pt--; IF(!label.changeSIZE()) label.size.pt++; BigFontsChange(); }
 				EventRedrawWindow(Form.left,Form.top);
-				//DrawSettingsCheckBoxes();
 			break;
 					
 			case evKey:
@@ -65,7 +64,7 @@ void settings_dialog()
 				break;
 				
 			case evReDraw:
-				DefineAndDrawWindow(Form.left + Form.width/2-10, Form.top + Form.height/2 - 75, 370, 282+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
+				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 376, 292+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
 				DrawSettingsCheckBoxes();
 		}
 	}
@@ -82,16 +81,17 @@ void ExitSettings()
 void DrawSettingsCheckBoxes()
 {
 	incn y;
+	int x=11;
 	y.n = 0;
-	CheckBox(10, y.inc(13), 20, SHOW_DEVICE_CLASS,  show_dev_name);
-	CheckBox(10, y.inc(24), 21, SHOW_REAL_NAMES,  real_files_names_case);
-	CheckBox(10, y.inc(24), 22, NOTIFY_COPY_END,  info_after_copy);
-	CheckBox(10, y.inc(24), 24, USE_TWO_PANELS,  two_panels);
-	CheckBox(10, y.inc(24), 32, "Show breadcrumbs",  show_breadcrumb);
-	MoreLessBox(10, y.inc(30), 25, 26, files.item_h, LIST_LINE_HEIGHT);
-	if (label.font) MoreLessBox(10, y.inc(30), 30, 31, label.size.pt, FONT_SIZE_LABEL);
-	DrawFlatButton(9, y.inc(35), strlen(SAVE_PATH_AS_DEFAULT)+3*8, 24, 6, SAVE_PATH_AS_DEFAULT);
-	DrawFlatButton(9, y.inc(35), strlen(EDIT_FILE_ASSOCIATIONS)+3*8, 24, 5, EDIT_FILE_ASSOCIATIONS);
+	CheckBox(x, y.inc(14), 20, SHOW_DEVICE_CLASS,  show_dev_name);
+	CheckBox(x, y.inc(25), 21, SHOW_REAL_NAMES,  real_files_names_case);
+	CheckBox(x, y.inc(25), 22, NOTIFY_COPY_END,  info_after_copy);
+	CheckBox(x, y.inc(25), 32, SHOW_BREADCRUMBS,  show_breadcrumb);
+	CheckBox(x, y.inc(25), 24, USE_TWO_PANELS,  two_panels);
+	MoreLessBox(x, y.inc(31), 30, 31, label.size.pt, FONT_SIZE_LABEL);
+	MoreLessBox(x, y.inc(31), 25, 26, files.item_h, LIST_LINE_HEIGHT);
+	DrawFlatButton(x-1, y.inc(36), strlen(SAVE_PATH_AS_DEFAULT)+3*8, 24, 6, SAVE_PATH_AS_DEFAULT);
+	DrawFlatButton(x-1, y.inc(36), strlen(EDIT_FILE_ASSOCIATIONS)+3*8, 24, 5, EDIT_FILE_ASSOCIATIONS);
 }
 
 
