@@ -21,7 +21,6 @@
 #include "..\lib\patterns\history.h"
 
 //images
-#include "imgs\toolbar.txt"
 #include "imgs\left_p.txt"
 #include "imgs\icons.txt"
 
@@ -94,8 +93,8 @@ int rand_n;
 byte CMD_REFRESH;
 
 //struct t_settings {
-int sort_num=2,
-	show_dev_name=true,
+char sort_num=2;
+bool show_dev_name=true,
 	real_files_names_case=false,
 	info_after_copy=false,
 	two_panels=false,
@@ -532,6 +531,12 @@ void main()
 	}
 }
 
+void DrawFavButton(int x)
+{
+	_PutImage(x,10,20,22,#fav);
+	DefineButton(x,11,20-2,22-2,61+BT_HIDE+BT_NOFRAME,0);
+}
+
 void draw_window()
 {
 	DefineAndDrawWindow(WinX+rand_n,WinY+rand_n,WinW,WinH,0x73,NULL,TITLE,0);
@@ -540,16 +545,13 @@ void draw_window()
 	if (Form.height < 350) { MoveSize(OLD,OLD,OLD,350); return; }
 	if (Form.width  < 480) { MoveSize(OLD,OLD,480,OLD); return; }
 	GetProcessInfo(#Form, SelfInfo); //if win_size changed
-	PutPaletteImage(#toolbar,246,34,0,0,8,#toolbar_pal);
+	_PutImage(0,0,246,34,#toolbar);
 	DrawBar(127, 8, 1, 25, col_graph);
 	for (j=0; j<3; j++) DefineButton(toolbar_buttons_x[j]+2,5+2,31-5,29-5,21+j+BT_HIDE,NULL);
 	for (j=3; j<6; j++) DefineButton(toolbar_buttons_x[j],5,31,29,21+j+BT_HIDE,NULL);
 	DrawBar(246,0, Form.cwidth - 246, 34, col_work);
-	if (!show_breadcrumb) {
-		DrawRectangle(246,12,Form.cwidth - 303,16,col_graph);
-		DefineButton(Form.cwidth - 32,6,27,28,51+BT_HIDE+BT_NOFRAME,0); //about
-		PutPaletteImage(#goto_about,56,34,Form.width-65,0,8,#goto_about_pal);
-	}
+	_PutImage(Form.cwidth-17,11,6,18,#dots);
+	DefineButton(Form.cwidth-24,7,20,25,51+BT_HIDE+BT_NOFRAME,0); //dots
 	//main rectangles
 	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42,col_graph);
 	DrawRectangle(0,39,Form.cwidth-1,Form.cheight - 40,col_palette[4]); //bg

@@ -1,4 +1,4 @@
-unsigned char blue_hl[sizeof(file "imgs\blue_hl8.raw")]= FROM "imgs\blue_hl8.raw";
+unsigned char blue_hl[]= FROM "imgs\blue_hl8.raw";
 dword blue_hl_pal[]= {0x0001699C,0x0000699C,0x00026A9C,0x0002699C,
 0x00036A9C,0x00046B9C,0x00046A9C,0x00056B9D,0x00046B9D,0x00066C9D,
 0x00066C9E,0x00056C9D,0x00076D9E,0x00086E9F,0x00066D9E,0x00086D9E,
@@ -17,10 +17,6 @@ dword blue_hl_pal[]= {0x0001699C,0x0000699C,0x00026A9C,0x0002699C,
 0x001E7AA8,0x001C79A6,0x001575A4,0x00207CA8,0x001E7AA7,0x001D79A7,
 0x001976A4,0x00217CA8,0x00227CA8,0x00207BA8,0x001976A5,0x001473A3,0};
 
-unsigned char devices[18*204]= FROM "imgs\dev.raw";
-
-unsigned char factions[14*39] = FROM "imgs\actions.raw";
-
 unsigned char logo[] = FROM "imgs\logo.raw";
 dword logo_pal = {0x0000FF00,0x007C047C,0x00940494,0x00903490,0x00B092AE,
 0x00D43CD4,0x008B0C8B,0x00AE75AE,0x00DF6CDF,0x00AC14AC,0x00976993,
@@ -32,3 +28,9 @@ dword logo_pal = {0x0000FF00,0x007C047C,0x00940494,0x00903490,0x00B092AE,
 0x00FCB80A,0x00FCAC04,0x00AB1BAB,0x00940C94,0x009C0494,0x00770777,
 0x00F4A404,0x00FCBD10,0x00FBBC17,0x00FCC417,0x00FCC628,0x00FCBE17,
 0x00FBBD1F,0x00FCCC34,0x00FBB618,0x00B9A8B8};
+
+unsigned char fav[] = FROM "imgs\fav.raw";
+unsigned char dots[] = FROM "imgs\dots.raw";
+unsigned char toolbar[] = FROM "imgs\toolbar.raw";
+unsigned char devices[]= FROM "imgs\dev.raw";
+unsigned char factions[] = FROM "imgs\actions.raw";

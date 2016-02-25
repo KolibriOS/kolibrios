@@ -2,8 +2,11 @@
 PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 0};
 void DrawPathBar()
 {
-	PathShow.area_size_x = Form.cwidth-306;
-	DrawBar(PathShow.start_x-3, PathShow.start_y-4, PathShow.area_size_x+2, 15, 0xFFFfff);
+	PathShow.area_size_x = Form.cwidth-300;
+	DrawBar(PathShow.start_x-3, PathShow.start_y-6, PathShow.area_size_x+3, 19, 0xFFFfff);
+	DrawRectangle(PathShow.start_x-4,PathShow.start_y-7,PathShow.area_size_x+4,20,col_graph);
+	DrawBar(PathShow.start_x-4, PathShow.start_y+14, PathShow.area_size_x+4, 1, MixColors(col_work,0xFFFfff,120));
+	DrawFavButton(PathShow.start_x+PathShow.area_size_x);
 	PathShow_prepare stdcall(#PathShow);
 	PathShow_draw stdcall(#PathShow);
 }
@@ -34,7 +37,10 @@ void DrawBreadCrumbs()
 		DrawBreadcrumbButton(btn.x, btn.y, btn.w, btn.h, i+BREADCRUMB_ID, text_line);
 		btn.x += btn.w;
 	}
-	DrawBar(btn.x+1,btn.y-1,Form.cwidth-btn.x-5,btn.h+3,col_work);
+	//DrawFavButton(btn.x);
+	//btn.x+=20;
+	btn.x++;
+	DrawBar(btn.x,btn.y-1,Form.cwidth-btn.x-25,btn.h+3,col_work);
 }
 
 
