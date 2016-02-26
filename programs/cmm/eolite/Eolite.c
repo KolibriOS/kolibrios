@@ -339,7 +339,7 @@ void main()
 						break;
 					case POPUP_BTN1:
 					case POPUP_BTN2:
-						if (del_active) Del_File(id-POPUP_BTN2);
+						if (del_active) Del_File(id-POPUP_BTN1);
 						if (new_element_active) NewElement(id-POPUP_BTN2);
 						DeleteButton(POPUP_BTN1);
 						DeleteButton(POPUP_BTN2);
