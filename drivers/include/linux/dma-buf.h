@@ -154,6 +154,36 @@ struct dma_buf_attachment {
 };
 
 /**
+ * struct dma_buf_export_info - holds information needed to export a dma_buf
+ * @exp_name:	name of the exporter - useful for debugging.
+ * @owner:	pointer to exporter module - used for refcounting kernel module
+ * @ops:	Attach allocator-defined dma buf ops to the new buffer
+ * @size:	Size of the buffer
+ * @flags:	mode flags for the file
+ * @resv:	reservation-object, NULL to allocate default one
+ * @priv:	Attach private data of allocator to this buffer
+ *
+ * This structure holds the information required to export the buffer. Used
+ * with dma_buf_export() only.
+ */
+struct dma_buf_export_info {
+	const char *exp_name;
+	struct module *owner;
+	const struct dma_buf_ops *ops;
+	size_t size;
+	int flags;
+	struct reservation_object *resv;
+	void *priv;
+};
+
+/**
+ * helper macro for exporters; zeros and fills in most common values
+ */
+#define DEFINE_DMA_BUF_EXPORT_INFO(a)	\
+	struct dma_buf_export_info a = { .exp_name = KBUILD_MODNAME, \
+					 .owner = THIS_MODULE }
+
+/**
  * get_dma_buf - convenience wrapper for get_file.
  * @dmabuf:	[in]	pointer to dma_buf
  *

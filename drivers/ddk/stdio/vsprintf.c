@@ -41,8 +41,7 @@
 
 #define KSTRTOX_OVERFLOW        (1U << 31)
 
-const char hex_asc[] = "0123456789abcdef";
-const char hex_asc_upper[] = "0123456789ABCDEF";
+
 
 /* Works only for digits and letters, but small and fast */
 #define TOLOWER(x) ((x) | 0x20)
@@ -1080,6 +1079,8 @@ int kptr_restrict = 1;
  *        (legacy clock framework) of the clock
  * - 'Cr' For a clock, it prints the current rate of the clock
  *
+ * ** Please update also Documentation/printk-formats.txt when making changes **
+ *
  * Note: The difference between 'S' and 'F' is that on ia64 and ppc64
  * function pointers are really function descriptors, which contain a
  * pointer to the real address.
@@ -1088,7 +1089,7 @@ static noinline_for_stack
 char *pointer(const char *fmt, char *buf, char *end, void *ptr,
 	      struct printf_spec spec)
 {
-	int default_width = 2 * sizeof(void *) + (spec.flags & SPECIAL ? 2 : 0);
+	const int default_width = 2 * sizeof(void *);
 
 	if (!ptr && *fmt != 'K') {
 		/*
@@ -1315,11 +1316,10 @@ qualifier:
 
 	case 'n':
 		/*
-		 * Since %n poses a greater security risk than utility, treat
-		 * it as an invalid format specifier. Warn about its use so
-		 * that new instances don't get added.
+		 * Since %n poses a greater security risk than
+		 * utility, treat it as any other invalid or
+		 * unsupported format specifier.
 		 */
-//       WARN_ONCE(1, "Please remove ignored %%n in '%s'\n", fmt);
 		/* Fall-through */
 
 	default:
@@ -1357,41 +1357,16 @@ qualifier:
  * @fmt: The format string to use
  * @args: Arguments for the format string
  *
- * This function follows C99 vsnprintf, but has some extensions:
- * %pS output the name of a text symbol with offset
- * %ps output the name of a text symbol without offset
- * %pF output the name of a function pointer with its offset
- * %pf output the name of a function pointer without its offset
- * %pB output the name of a backtrace symbol with its offset
- * %pR output the address range in a struct resource with decoded flags
- * %pr output the address range in a struct resource with raw flags
- * %pb output the bitmap with field width as the number of bits
- * %pbl output the bitmap as range list with field width as the number of bits
- * %pM output a 6-byte MAC address with colons
- * %pMR output a 6-byte MAC address with colons in reversed order
- * %pMF output a 6-byte MAC address with dashes
- * %pm output a 6-byte MAC address without colons
- * %pmR output a 6-byte MAC address without colons in reversed order
- * %pI4 print an IPv4 address without leading zeros
- * %pi4 print an IPv4 address with leading zeros
- * %pI6 print an IPv6 address with colons
- * %pi6 print an IPv6 address without colons
- * %pI6c print an IPv6 address as specified by RFC 5952
- * %pIS depending on sa_family of 'struct sockaddr *' print IPv4/IPv6 address
- * %piS depending on sa_family of 'struct sockaddr *' print IPv4/IPv6 address
- * %pU[bBlL] print a UUID/GUID in big or little endian using lower or upper
- *   case.
- * %*pE[achnops] print an escaped buffer
- * %*ph[CDN] a variable-length hex string with a separator (supports up to 64
- *           bytes of the input)
- * %pC output the name (Common Clock Framework) or address (legacy clock
- *     framework) of a clock
- * %pCn output the name (Common Clock Framework) or address (legacy clock
- *      framework) of a clock
- * %pCr output the current rate of a clock
- * %n is ignored
+ * This function generally follows C99 vsnprintf, but has some
+ * extensions and a few limitations:
  *
- * ** Please update Documentation/printk-formats.txt when making changes **
+ * %n is unsupported
+ * %p* is handled by pointer()
+ *
+ * See pointer() or Documentation/printk-formats.txt for more
+ * extensive description.
+ *
+ * ** Please update the documentation in both places when making changes **
  *
  * The return value is the number of characters which would
  * be generated for the given input, excluding the trailing
@@ -1490,10 +1465,15 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 			break;
 
 		case FORMAT_TYPE_INVALID:
-			if (str < end)
-				*str = '%';
-			++str;
-			break;
+			/*
+			 * Presumably the arguments passed gcc's type
+			 * checking, but there is no safe or sane way
+			 * for us to continue parsing the format and
+			 * fetching from the va_list; the remaining
+			 * specifiers and arguments would be out of
+			 * sync.
+			 */
+			goto out;
 
 		default:
 			switch (spec.type) {
@@ -1538,6 +1518,7 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 		}
 	}
 
+out:
 	if (size > 0) {
 		if (str < end)
 			*str = '\0';

@@ -218,6 +218,9 @@ void run_workqueue(struct workqueue_struct *cwq);
 
 struct workqueue_struct *alloc_workqueue_key(const char *fmt,
                            unsigned int flags, int max_active);
+struct workqueue_struct *alloc_workqueue(const char *fmt,
+                           unsigned int flags,
+                           int max_active);
 
 /**
  * alloc_ordered_workqueue - allocate an ordered workqueue

@@ -684,14 +684,6 @@ typedef union
 	u64 raw;
 }evhandle_t;
 
-struct file
-{
-    struct page  **pages;         /* physical memory backend */
-    unsigned int   count;
-    unsigned int   allocated;
-    void           *vma;
-};
-
 struct vm_area_struct {};
 struct address_space {};
 
@@ -836,11 +828,6 @@ static inline __must_check long __copy_to_user(void __user *to,
         case 4:
             *(u32 __force *)to = *(u32 *)from;
             return 0;
-#ifdef CONFIG_64BIT
-        case 8:
-            *(u64 __force *)to = *(u64 *)from;
-            return 0;
-#endif
         default:
             break;
         }
@@ -848,6 +835,41 @@ static inline __must_check long __copy_to_user(void __user *to,
 
     __builtin_memcpy((void __force *)to, from, n);
     return 0;
+}
+
+static __always_inline unsigned long
+__copy_from_user(void *to, const void __user *from, unsigned long n)
+{
+    if (__builtin_constant_p(n)) {
+        unsigned long ret;
+
+        switch (n) {
+            case 1:
+                *(u8 __force *)to = *(u8 *)from;
+                return 0;
+            case 2:
+                *(u16 __force *)to = *(u16 *)from;
+                return 0;
+            case 4:
+                *(u32 __force *)to = *(u32 *)from;
+                return 0;
+            default:
+                break;
+        }
+    }
+    __builtin_memcpy((void __force *)to, from, n);
+}
+
+static inline long copy_from_user(void *to,
+                const void __user * from, unsigned long n)
+{
+    return __copy_from_user(to, from, n);
+}
+
+static inline long copy_to_user(void __user *to,
+                const void *from, unsigned long n)
+{
+    return __copy_to_user(to, from, n);
 }
 
 void *kmap(struct page *page);
