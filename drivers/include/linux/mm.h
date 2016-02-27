@@ -62,4 +62,8 @@ struct vm_operations_struct {
 };
 #define offset_in_page(p)       ((unsigned long)(p) & ~PAGE_MASK)
 
+
+static inline int set_page_dirty(struct page *page)
+{	return 0; };
+
 #endif

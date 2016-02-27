@@ -49,7 +49,7 @@ void*  STDCALL AllocKernelSpace(size_t size)__asm__("AllocKernelSpace");
 void   STDCALL FreeKernelSpace(void *mem)__asm__("FreeKernelSpace");
 addr_t STDCALL MapIoMem(addr_t base, size_t size, u32 flags)__asm__("MapIoMem");
 void*  STDCALL KernelAlloc(size_t size)__asm__("KernelAlloc");
-void*  STDCALL KernelFree(void *mem)__asm__("KernelFree");
+void*  STDCALL KernelFree(const void *mem)__asm__("KernelFree");
 void*  STDCALL UserAlloc(size_t size)__asm__("UserAlloc");
 int    STDCALL UserFree(void *mem)__asm__("UserFree");
 
@@ -527,10 +527,6 @@ static inline void *vzalloc(unsigned long size)
    return mem;
 };
 
-static inline void vfree(void *addr)
-{
-    KernelFree(addr);
-}
 
 static inline int power_supply_is_system_supplied(void) { return -1; };
 

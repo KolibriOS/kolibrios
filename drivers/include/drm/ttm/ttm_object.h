@@ -40,7 +40,7 @@
 #include <linux/list.h>
 #include <drm/drm_hashtab.h>
 #include <linux/kref.h>
-//#include <linux/rcupdate.h>
+#include <linux/rcupdate.h>
 #include <linux/dma-buf.h>
 #include <ttm/ttm_memory.h>
 
@@ -345,6 +345,6 @@ extern int ttm_prime_handle_to_fd(struct ttm_object_file *tfile,
 				  uint32_t handle, uint32_t flags,
 				  int *prime_fd);
 
-//#define ttm_prime_object_kfree(__obj, __prime)		\
-//	kfree_rcu(__obj, __prime.base.rhead)
+#define ttm_prime_object_kfree(__obj, __prime)		\
+	kfree_rcu(__obj, __prime.base.rhead)
 #endif

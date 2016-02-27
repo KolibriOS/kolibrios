@@ -25,6 +25,8 @@ CORE_SRC=	core.S
 NAME_SRCS:=  				\
 		debug/dbglog.c		\
 		debug/chkstk.S		\
+		dma/dma_alloc.c		\
+		dma/fence.c		\
            	io/create.c		\
            	io/finfo.c		\
            	io/ssize.c		\
@@ -33,6 +35,7 @@ NAME_SRCS:=  				\
 		linux/ctype.c		\
 		linux/dmapool.c		\
 		linux/dmi.c		\
+		linux/fbsysfs.c		\
 		linux/find_next_bit.c	\
 		linux/firmware.c	\
 		linux/gcd.c		\
