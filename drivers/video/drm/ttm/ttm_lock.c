@@ -28,10 +28,9 @@
  * Authors: Thomas Hellstrom <thellstrom-at-vmware-dot-com>
  */
 
-#include <linux/mutex.h>
 #include <drm/ttm/ttm_lock.h>
 #include <drm/ttm/ttm_module.h>
-//#include <linux/atomic.h>
+#include <linux/atomic.h>
 #include <linux/errno.h>
 #include <linux/wait.h>
 #include <linux/sched.h>
@@ -164,7 +163,7 @@ int ttm_write_lock(struct ttm_lock *lock, bool interruptible)
 			spin_unlock(&lock->lock);
 		}
 	} else
-		wait_event(lock->queue, __ttm_read_lock(lock));
+		wait_event(lock->queue, __ttm_write_lock(lock));
 
 	return ret;
 }

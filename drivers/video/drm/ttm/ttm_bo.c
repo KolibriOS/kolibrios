@@ -153,8 +153,8 @@ static void ttm_bo_ref_bug(struct kref *list_kref)
 void ttm_bo_list_ref_sub(struct ttm_buffer_object *bo, int count,
 			 bool never_free)
 {
-//	kref_sub(&bo->list_kref, count,
-//		 (never_free) ? ttm_bo_ref_bug : ttm_bo_release_list);
+	kref_sub(&bo->list_kref, count,
+		 (never_free) ? ttm_bo_ref_bug : ttm_bo_release_list);
 }
 
 void ttm_bo_del_sub_from_lru(struct ttm_buffer_object *bo)
@@ -698,6 +698,8 @@ int ttm_bo_mem_space(struct ttm_buffer_object *bo,
 		if (ret)
 			return ret;
 		man = &bdev->man[mem_type];
+		if (!man->has_type || !man->use_type)
+			continue;
 
 		type_ok = ttm_bo_mt_compatible(man, mem_type, place,
 						&cur_flags);
@@ -705,6 +707,7 @@ int ttm_bo_mem_space(struct ttm_buffer_object *bo,
 		if (!type_ok)
 			continue;
 
+		type_found = true;
 		cur_flags = ttm_bo_select_caching(man, bo->mem.placement,
 						  cur_flags);
 		/*
@@ -717,12 +720,10 @@ int ttm_bo_mem_space(struct ttm_buffer_object *bo,
 		if (mem_type == TTM_PL_SYSTEM)
 			break;
 
-		if (man->has_type && man->use_type) {
-			type_found = true;
 			ret = (*man->func->get_node)(man, bo, place, mem);
 			if (unlikely(ret))
 				return ret;
-		}
+		
 		if (mem->mm_node)
 			break;
 	}
@@ -733,9 +734,6 @@ int ttm_bo_mem_space(struct ttm_buffer_object *bo,
 		return 0;
 	}
 
-	if (!type_found)
-		return -EINVAL;
-
 	for (i = 0; i < placement->num_busy_placement; ++i) {
 		const struct ttm_place *place = &placement->busy_placement[i];
 
@@ -743,11 +741,12 @@ int ttm_bo_mem_space(struct ttm_buffer_object *bo,
 		if (ret)
 			return ret;
 		man = &bdev->man[mem_type];
-		if (!man->has_type)
+		if (!man->has_type || !man->use_type)
 			continue;
 		if (!ttm_bo_mt_compatible(man, mem_type, place, &cur_flags))
 			continue;
 
+		type_found = true;
 		cur_flags = ttm_bo_select_caching(man, bo->mem.placement,
 						  cur_flags);
 		/*
@@ -773,8 +772,13 @@ int ttm_bo_mem_space(struct ttm_buffer_object *bo,
 		if (ret == -ERESTARTSYS)
 			has_erestartsys = true;
 	}
-	ret = (has_erestartsys) ? -ERESTARTSYS : -ENOMEM;
-	return ret;
+
+	if (!type_found) {
+		printk(KERN_ERR TTM_PFX "No compatible memory type found.\n");
+		return -EINVAL;
+	}
+
+	return (has_erestartsys) ? -ERESTARTSYS : -ENOMEM;
 }
 EXPORT_SYMBOL(ttm_bo_mem_space);
 
@@ -1009,6 +1013,61 @@ size_t ttm_bo_dma_acc_size(struct ttm_bo_device *bdev,
 }
 EXPORT_SYMBOL(ttm_bo_dma_acc_size);
 
+int ttm_bo_create(struct ttm_bo_device *bdev,
+			unsigned long size,
+			enum ttm_bo_type type,
+			struct ttm_placement *placement,
+			uint32_t page_alignment,
+			bool interruptible,
+			struct file *persistent_swap_storage,
+			struct ttm_buffer_object **p_bo)
+{
+	struct ttm_buffer_object *bo;
+	size_t acc_size;
+	int ret;
+
+	bo = kzalloc(sizeof(*bo), GFP_KERNEL);
+	if (unlikely(bo == NULL))
+		return -ENOMEM;
+
+	acc_size = ttm_bo_acc_size(bdev, size, sizeof(struct ttm_buffer_object));
+	ret = ttm_bo_init(bdev, bo, size, type, placement, page_alignment,
+			  interruptible, persistent_swap_storage, acc_size,
+			  NULL, NULL, NULL);
+	if (likely(ret == 0))
+		*p_bo = bo;
+
+	return ret;
+}
+EXPORT_SYMBOL(ttm_bo_create);
+
+static int ttm_bo_force_list_clean(struct ttm_bo_device *bdev,
+					unsigned mem_type, bool allow_errors)
+{
+	struct ttm_mem_type_manager *man = &bdev->man[mem_type];
+	struct ttm_bo_global *glob = bdev->glob;
+	int ret;
+
+	/*
+	 * Can't use standard list traversal since we're unlocking.
+	 */
+
+	spin_lock(&glob->lru_lock);
+	while (!list_empty(&man->lru)) {
+		spin_unlock(&glob->lru_lock);
+		ret = ttm_mem_evict_first(bdev, mem_type, NULL, false, false);
+		if (ret) {
+			if (allow_errors) {
+				return ret;
+			} else {
+				pr_err("Cleanup eviction failed\n");
+			}
+		}
+		spin_lock(&glob->lru_lock);
+	}
+	spin_unlock(&glob->lru_lock);
+	return 0;
+}
 int ttm_bo_init_mm(struct ttm_bo_device *bdev, unsigned type,
 			unsigned long p_size)
 {
@@ -1209,4 +1268,51 @@ int ttm_bo_wait(struct ttm_buffer_object *bo,
 }
 EXPORT_SYMBOL(ttm_bo_wait);
 
+int ttm_bo_synccpu_write_grab(struct ttm_buffer_object *bo, bool no_wait)
+{
+	int ret = 0;
 
+	/*
+	 * Using ttm_bo_reserve makes sure the lru lists are updated.
+	 */
+
+	ret = ttm_bo_reserve(bo, true, no_wait, false, NULL);
+	if (unlikely(ret != 0))
+		return ret;
+	ret = ttm_bo_wait(bo, false, true, no_wait);
+	if (likely(ret == 0))
+		atomic_inc(&bo->cpu_writers);
+	ttm_bo_unreserve(bo);
+	return ret;
+}
+EXPORT_SYMBOL(ttm_bo_synccpu_write_grab);
+
+void ttm_bo_synccpu_write_release(struct ttm_buffer_object *bo)
+{
+	atomic_dec(&bo->cpu_writers);
+}
+int ttm_bo_wait_unreserved(struct ttm_buffer_object *bo)
+{
+	int ret;
+
+	/*
+	 * In the absense of a wait_unlocked API,
+	 * Use the bo::wu_mutex to avoid triggering livelocks due to
+	 * concurrent use of this function. Note that this use of
+	 * bo::wu_mutex can go away if we change locking order to
+	 * mmap_sem -> bo::reserve.
+	 */
+	ret = mutex_lock_interruptible(&bo->wu_mutex);
+	if (unlikely(ret != 0))
+		return -ERESTARTSYS;
+	if (!ww_mutex_is_locked(&bo->resv->lock))
+		goto out_unlock;
+	ret = __ttm_bo_reserve(bo, true, false, false, NULL);
+	if (unlikely(ret != 0))
+		goto out_unlock;
+	__ttm_bo_unreserve(bo);
+
+out_unlock:
+	mutex_unlock(&bo->wu_mutex);
+	return ret;
+}

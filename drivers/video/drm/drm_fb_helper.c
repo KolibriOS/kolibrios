@@ -421,8 +421,8 @@ static bool drm_fb_helper_is_bound(struct drm_fb_helper *fb_helper)
 
 	/* Sometimes user space wants everything disabled, so don't steal the
 	 * display if there's a master. */
-	if (dev->primary->master)
-		return false;
+//   if (dev->primary->master)
+//       return false;
 
 	drm_for_each_crtc(crtc, dev) {
 		if (crtc->primary->fb)
@@ -431,6 +431,7 @@ static bool drm_fb_helper_is_bound(struct drm_fb_helper *fb_helper)
 			bound++;
 	}
 
+    dbgprintf("%s bound %d crtcs_bound %d\n", __FUNCTION__, bound, crtcs_bound);
 	if (bound < crtcs_bound)
 		return false;
 
@@ -1844,17 +1845,16 @@ int drm_fb_helper_hotplug_event(struct drm_fb_helper *fb_helper)
 	}
 	DRM_DEBUG_KMS("\n");
 
-	max_width = fb_helper->fb->width;
-	max_height = fb_helper->fb->height;
+    max_width = 8192; //fb_helper->fb->width;
+    max_height = 8192; //fb_helper->fb->height;
 
 	drm_fb_helper_probe_connector_modes(fb_helper, max_width, max_height);
 	mutex_unlock(&fb_helper->dev->mode_config.mutex);
 
-	drm_modeset_lock_all(dev);
-	drm_setup_crtcs(fb_helper);
-	drm_modeset_unlock_all(dev);
-	drm_fb_helper_set_par(fb_helper->fbdev);
-
+//   drm_modeset_lock_all(dev);
+//   drm_setup_crtcs(fb_helper);
+//   drm_modeset_unlock_all(dev);
+//   drm_fb_helper_set_par(fb_helper->fbdev);
 	return 0;
 }
 EXPORT_SYMBOL(drm_fb_helper_hotplug_event);

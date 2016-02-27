@@ -1,6 +1,6 @@
 /**************************************************************************
  *
- * Copyright © 2009 VMware, Inc., Palo Alto, CA., USA
+ * Copyright © 2009-2015 VMware, Inc., Palo Alto, CA., USA
  * All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,66 +30,107 @@
 #include <drm/ttm/ttm_placement.h>
 #include <drm/ttm/ttm_page_alloc.h>
 
-static uint32_t vram_placement_flags = TTM_PL_FLAG_VRAM |
-	TTM_PL_FLAG_CACHED;
-
-static uint32_t vram_ne_placement_flags = TTM_PL_FLAG_VRAM |
-	TTM_PL_FLAG_CACHED |
-	TTM_PL_FLAG_NO_EVICT;
-
-static uint32_t sys_placement_flags = TTM_PL_FLAG_SYSTEM |
-	TTM_PL_FLAG_CACHED;
-
-static uint32_t sys_ne_placement_flags = TTM_PL_FLAG_SYSTEM |
-	TTM_PL_FLAG_CACHED |
-	TTM_PL_FLAG_NO_EVICT;
-
-static uint32_t gmr_placement_flags = VMW_PL_FLAG_GMR |
-	TTM_PL_FLAG_CACHED;
-
-static uint32_t gmr_ne_placement_flags = VMW_PL_FLAG_GMR |
-	TTM_PL_FLAG_CACHED |
-	TTM_PL_FLAG_NO_EVICT;
-
-static uint32_t mob_placement_flags = VMW_PL_FLAG_MOB |
-	TTM_PL_FLAG_CACHED;
-
-struct ttm_placement vmw_vram_placement = {
+static struct ttm_place vram_placement_flags = {
 	.fpfn = 0,
 	.lpfn = 0,
+	.flags = TTM_PL_FLAG_VRAM | TTM_PL_FLAG_CACHED
+};
+
+static struct ttm_place vram_ne_placement_flags = {
+	.fpfn = 0,
+	.lpfn = 0,
+	.flags = TTM_PL_FLAG_VRAM | TTM_PL_FLAG_CACHED | TTM_PL_FLAG_NO_EVICT
+};
+
+static struct ttm_place sys_placement_flags = {
+	.fpfn = 0,
+	.lpfn = 0,
+	.flags = TTM_PL_FLAG_SYSTEM | TTM_PL_FLAG_CACHED
+};
+
+static struct ttm_place sys_ne_placement_flags = {
+	.fpfn = 0,
+	.lpfn = 0,
+	.flags = TTM_PL_FLAG_SYSTEM | TTM_PL_FLAG_CACHED | TTM_PL_FLAG_NO_EVICT
+};
+
+static struct ttm_place gmr_placement_flags = {
+	.fpfn = 0,
+	.lpfn = 0,
+	.flags = VMW_PL_FLAG_GMR | TTM_PL_FLAG_CACHED
+};
+
+static struct ttm_place gmr_ne_placement_flags = {
+	.fpfn = 0,
+	.lpfn = 0,
+	.flags = VMW_PL_FLAG_GMR | TTM_PL_FLAG_CACHED | TTM_PL_FLAG_NO_EVICT
+};
+
+static struct ttm_place mob_placement_flags = {
+	.fpfn = 0,
+	.lpfn = 0,
+	.flags = VMW_PL_FLAG_MOB | TTM_PL_FLAG_CACHED
+};
+
+static struct ttm_place mob_ne_placement_flags = {
+	.fpfn = 0,
+	.lpfn = 0,
+	.flags = VMW_PL_FLAG_MOB | TTM_PL_FLAG_CACHED | TTM_PL_FLAG_NO_EVICT
+};
+
+struct ttm_placement vmw_vram_placement = {
 	.num_placement = 1,
 	.placement = &vram_placement_flags,
 	.num_busy_placement = 1,
 	.busy_placement = &vram_placement_flags
 };
 
-static uint32_t vram_gmr_placement_flags[] = {
-	TTM_PL_FLAG_VRAM | TTM_PL_FLAG_CACHED,
-	VMW_PL_FLAG_GMR | TTM_PL_FLAG_CACHED
+static struct ttm_place vram_gmr_placement_flags[] = {
+	{
+		.fpfn = 0,
+		.lpfn = 0,
+		.flags = TTM_PL_FLAG_VRAM | TTM_PL_FLAG_CACHED
+	}, {
+		.fpfn = 0,
+		.lpfn = 0,
+		.flags = VMW_PL_FLAG_GMR | TTM_PL_FLAG_CACHED
+	}
 };
 
-static uint32_t gmr_vram_placement_flags[] = {
-	VMW_PL_FLAG_GMR | TTM_PL_FLAG_CACHED,
-	TTM_PL_FLAG_VRAM | TTM_PL_FLAG_CACHED
+static struct ttm_place gmr_vram_placement_flags[] = {
+	{
+		.fpfn = 0,
+		.lpfn = 0,
+		.flags = VMW_PL_FLAG_GMR | TTM_PL_FLAG_CACHED
+	}, {
+		.fpfn = 0,
+		.lpfn = 0,
+		.flags = TTM_PL_FLAG_VRAM | TTM_PL_FLAG_CACHED
+	}
 };
 
 struct ttm_placement vmw_vram_gmr_placement = {
-	.fpfn = 0,
-	.lpfn = 0,
 	.num_placement = 2,
 	.placement = vram_gmr_placement_flags,
 	.num_busy_placement = 1,
 	.busy_placement = &gmr_placement_flags
 };
 
-static uint32_t vram_gmr_ne_placement_flags[] = {
-	TTM_PL_FLAG_VRAM | TTM_PL_FLAG_CACHED | TTM_PL_FLAG_NO_EVICT,
-	VMW_PL_FLAG_GMR | TTM_PL_FLAG_CACHED | TTM_PL_FLAG_NO_EVICT
+static struct ttm_place vram_gmr_ne_placement_flags[] = {
+	{
+		.fpfn = 0,
+		.lpfn = 0,
+		.flags = TTM_PL_FLAG_VRAM | TTM_PL_FLAG_CACHED |
+			 TTM_PL_FLAG_NO_EVICT
+	}, {
+		.fpfn = 0,
+		.lpfn = 0,
+		.flags = VMW_PL_FLAG_GMR | TTM_PL_FLAG_CACHED |
+			 TTM_PL_FLAG_NO_EVICT
+	}
 };
 
 struct ttm_placement vmw_vram_gmr_ne_placement = {
-	.fpfn = 0,
-	.lpfn = 0,
 	.num_placement = 2,
 	.placement = vram_gmr_ne_placement_flags,
 	.num_busy_placement = 1,
@@ -97,8 +138,6 @@ struct ttm_placement vmw_vram_gmr_ne_placement = {
 };
 
 struct ttm_placement vmw_vram_sys_placement = {
-	.fpfn = 0,
-	.lpfn = 0,
 	.num_placement = 1,
 	.placement = &vram_placement_flags,
 	.num_busy_placement = 1,
@@ -106,8 +145,6 @@ struct ttm_placement vmw_vram_sys_placement = {
 };
 
 struct ttm_placement vmw_vram_ne_placement = {
-	.fpfn = 0,
-	.lpfn = 0,
 	.num_placement = 1,
 	.placement = &vram_ne_placement_flags,
 	.num_busy_placement = 1,
@@ -115,8 +152,6 @@ struct ttm_placement vmw_vram_ne_placement = {
 };
 
 struct ttm_placement vmw_sys_placement = {
-	.fpfn = 0,
-	.lpfn = 0,
 	.num_placement = 1,
 	.placement = &sys_placement_flags,
 	.num_busy_placement = 1,
@@ -124,24 +159,33 @@ struct ttm_placement vmw_sys_placement = {
 };
 
 struct ttm_placement vmw_sys_ne_placement = {
-	.fpfn = 0,
-	.lpfn = 0,
 	.num_placement = 1,
 	.placement = &sys_ne_placement_flags,
 	.num_busy_placement = 1,
 	.busy_placement = &sys_ne_placement_flags
 };
 
-static uint32_t evictable_placement_flags[] = {
-	TTM_PL_FLAG_SYSTEM | TTM_PL_FLAG_CACHED,
-	TTM_PL_FLAG_VRAM | TTM_PL_FLAG_CACHED,
-	VMW_PL_FLAG_GMR | TTM_PL_FLAG_CACHED,
-	VMW_PL_FLAG_MOB | TTM_PL_FLAG_CACHED
+static struct ttm_place evictable_placement_flags[] = {
+	{
+		.fpfn = 0,
+		.lpfn = 0,
+		.flags = TTM_PL_FLAG_SYSTEM | TTM_PL_FLAG_CACHED
+	}, {
+		.fpfn = 0,
+		.lpfn = 0,
+		.flags = TTM_PL_FLAG_VRAM | TTM_PL_FLAG_CACHED
+	}, {
+		.fpfn = 0,
+		.lpfn = 0,
+		.flags = VMW_PL_FLAG_GMR | TTM_PL_FLAG_CACHED
+	}, {
+		.fpfn = 0,
+		.lpfn = 0,
+		.flags = VMW_PL_FLAG_MOB | TTM_PL_FLAG_CACHED
+	}
 };
 
 struct ttm_placement vmw_evictable_placement = {
-	.fpfn = 0,
-	.lpfn = 0,
 	.num_placement = 4,
 	.placement = evictable_placement_flags,
 	.num_busy_placement = 1,
@@ -149,8 +193,6 @@ struct ttm_placement vmw_evictable_placement = {
 };
 
 struct ttm_placement vmw_srf_placement = {
-	.fpfn = 0,
-	.lpfn = 0,
 	.num_placement = 1,
 	.num_busy_placement = 2,
 	.placement = &gmr_placement_flags,
@@ -158,12 +200,17 @@ struct ttm_placement vmw_srf_placement = {
 };
 
 struct ttm_placement vmw_mob_placement = {
-	.fpfn = 0,
-	.lpfn = 0,
 	.num_placement = 1,
 	.num_busy_placement = 1,
 	.placement = &mob_placement_flags,
 	.busy_placement = &mob_placement_flags
+};
+
+struct ttm_placement vmw_mob_ne_placement = {
+	.num_placement = 1,
+	.num_busy_placement = 1,
+	.placement = &mob_ne_placement_flags,
+	.busy_placement = &mob_ne_placement_flags
 };
 
 struct vmw_ttm_tt {
@@ -526,7 +573,7 @@ static int vmw_ttm_bind(struct ttm_tt *ttm, struct ttm_mem_reg *bo_mem)
 	switch (bo_mem->mem_type) {
 	case VMW_PL_GMR:
 		return vmw_gmr_bind(vmw_be->dev_priv, &vmw_be->vsgt,
-			    ttm->num_pages, vmw_be->gmr_id);
+				    ttm->num_pages, vmw_be->gmr_id);
 	case VMW_PL_MOB:
 		if (unlikely(vmw_be->mob == NULL)) {
 			vmw_be->mob =
@@ -551,7 +598,7 @@ static int vmw_ttm_unbind(struct ttm_tt *ttm)
 
 	switch (vmw_be->mem_type) {
 	case VMW_PL_GMR:
-	vmw_gmr_unbind(vmw_be->dev_priv, vmw_be->gmr_id);
+		vmw_gmr_unbind(vmw_be->dev_priv, vmw_be->gmr_id);
 		break;
 	case VMW_PL_MOB:
 		vmw_mob_unbind(vmw_be->dev_priv, vmw_be->mob);
@@ -576,7 +623,7 @@ static void vmw_ttm_destroy(struct ttm_tt *ttm)
 	if (vmw_be->dev_priv->map_mode == vmw_dma_alloc_coherent)
 		ttm_dma_tt_fini(&vmw_be->dma_ttm);
 	else
-	ttm_tt_fini(ttm);
+		ttm_tt_fini(ttm);
 
 	if (vmw_be->mob)
 		vmw_mob_destroy(vmw_be->mob);
@@ -668,8 +715,8 @@ static struct ttm_tt *vmw_ttm_tt_create(struct ttm_bo_device *bdev,
 
 	return &vmw_be->dma_ttm.ttm;
 out_no_init:
-		kfree(vmw_be);
-		return NULL;
+	kfree(vmw_be);
+	return NULL;
 }
 
 static int vmw_invalidate_caches(struct ttm_bo_device *bdev, uint32_t flags)
@@ -768,49 +815,11 @@ static int vmw_ttm_fault_reserve_notify(struct ttm_buffer_object *bo)
 }
 
 /**
- * FIXME: We're using the old vmware polling method to sync.
- * Do this with fences instead.
- */
-
-static void *vmw_sync_obj_ref(void *sync_obj)
-{
-
-	return (void *)
-		vmw_fence_obj_reference((struct vmw_fence_obj *) sync_obj);
-}
-
-static void vmw_sync_obj_unref(void **sync_obj)
-{
-   vmw_fence_obj_unreference((struct vmw_fence_obj **) sync_obj);
-}
-
-static int vmw_sync_obj_flush(void *sync_obj)
-{
-   vmw_fence_obj_flush((struct vmw_fence_obj *) sync_obj);
-	return 0;
-}
-
-static bool vmw_sync_obj_signaled(void *sync_obj)
-{
-	return	vmw_fence_obj_signaled((struct vmw_fence_obj *) sync_obj,
-				       DRM_VMW_FENCE_FLAG_EXEC);
-
-}
-
-static int vmw_sync_obj_wait(void *sync_obj, bool lazy, bool interruptible)
-{
-	return vmw_fence_obj_wait((struct vmw_fence_obj *) sync_obj,
-				  DRM_VMW_FENCE_FLAG_EXEC,
-				  lazy, interruptible,
-				  VMW_FENCE_WAIT_TIMEOUT);
-}
-
-/**
  * vmw_move_notify - TTM move_notify_callback
  *
- * @bo:             The TTM buffer object about to move.
- * @mem:            The truct ttm_mem_reg indicating to what memory
- *                  region the move is taking place.
+ * @bo: The TTM buffer object about to move.
+ * @mem: The struct ttm_mem_reg indicating to what memory
+ *       region the move is taking place.
  *
  * Calls move_notify for all subsystems needing it.
  * (currently only resources).
@@ -825,15 +834,11 @@ static void vmw_move_notify(struct ttm_buffer_object *bo,
 /**
  * vmw_swap_notify - TTM move_notify_callback
  *
- * @bo:             The TTM buffer object about to be swapped out.
+ * @bo: The TTM buffer object about to be swapped out.
  */
 static void vmw_swap_notify(struct ttm_buffer_object *bo)
 {
-	struct ttm_bo_device *bdev = bo->bdev;
-
-//   spin_lock(&bdev->fence_lock);
-//   ttm_bo_wait(bo, false, false, false);
-//   spin_unlock(&bdev->fence_lock);
+	ttm_bo_wait(bo, false, false, false);
 }
 
 
@@ -846,248 +851,9 @@ struct ttm_bo_driver vmw_bo_driver = {
 	.evict_flags = vmw_evict_flags,
 	.move = NULL,
 	.verify_access = vmw_verify_access,
-	.sync_obj_signaled = vmw_sync_obj_signaled,
-	.sync_obj_wait = vmw_sync_obj_wait,
-	.sync_obj_flush = vmw_sync_obj_flush,
-	.sync_obj_unref = vmw_sync_obj_unref,
-	.sync_obj_ref = vmw_sync_obj_ref,
 	.move_notify = vmw_move_notify,
 	.swap_notify = vmw_swap_notify,
 	.fault_reserve_notify = &vmw_ttm_fault_reserve_notify,
 	.io_mem_reserve = &vmw_ttm_io_mem_reserve,
 	.io_mem_free = &vmw_ttm_io_mem_free,
 };
-
-
-struct scatterlist *sg_next(struct scatterlist *sg)
-{
-    if (sg_is_last(sg))
-        return NULL;
-
-    sg++;
-    if (unlikely(sg_is_chain(sg)))
-            sg = sg_chain_ptr(sg);
-
-    return sg;
-}
-
-
-void __sg_free_table(struct sg_table *table, unsigned int max_ents,
-                     sg_free_fn *free_fn)
-{
-    struct scatterlist *sgl, *next;
-
-    if (unlikely(!table->sgl))
-            return;
-
-    sgl = table->sgl;
-    while (table->orig_nents) {
-        unsigned int alloc_size = table->orig_nents;
-        unsigned int sg_size;
-
-        /*
-         * If we have more than max_ents segments left,
-         * then assign 'next' to the sg table after the current one.
-         * sg_size is then one less than alloc size, since the last
-         * element is the chain pointer.
-         */
-        if (alloc_size > max_ents) {
-                next = sg_chain_ptr(&sgl[max_ents - 1]);
-                alloc_size = max_ents;
-                sg_size = alloc_size - 1;
-        } else {
-                sg_size = alloc_size;
-                next = NULL;
-        }
-
-        table->orig_nents -= sg_size;
-        kfree(sgl);
-        sgl = next;
-    }
-
-    table->sgl = NULL;
-}
-
-void sg_free_table(struct sg_table *table)
-{
-    __sg_free_table(table, SG_MAX_SINGLE_ALLOC, NULL);
-}
-
-int sg_alloc_table(struct sg_table *table, unsigned int nents, gfp_t gfp_mask)
-{
-    struct scatterlist *sg, *prv;
-    unsigned int left;
-    unsigned int max_ents = SG_MAX_SINGLE_ALLOC;
-
-#ifndef ARCH_HAS_SG_CHAIN
-    BUG_ON(nents > max_ents);
-#endif
-
-    memset(table, 0, sizeof(*table));
-
-    left = nents;
-    prv = NULL;
-    do {
-        unsigned int sg_size, alloc_size = left;
-
-        if (alloc_size > max_ents) {
-                alloc_size = max_ents;
-                sg_size = alloc_size - 1;
-        } else
-                sg_size = alloc_size;
-
-        left -= sg_size;
-
-        sg = kmalloc(alloc_size * sizeof(struct scatterlist), gfp_mask);
-        if (unlikely(!sg)) {
-                /*
-                 * Adjust entry count to reflect that the last
-                 * entry of the previous table won't be used for
-                 * linkage.  Without this, sg_kfree() may get
-                 * confused.
-                 */
-                if (prv)
-                        table->nents = ++table->orig_nents;
-
-                goto err;
-        }
-
-        sg_init_table(sg, alloc_size);
-        table->nents = table->orig_nents += sg_size;
-
-        /*
-         * If this is the first mapping, assign the sg table header.
-         * If this is not the first mapping, chain previous part.
-         */
-        if (prv)
-                sg_chain(prv, max_ents, sg);
-        else
-                table->sgl = sg;
-
-        /*
-         * If no more entries after this one, mark the end
-         */
-        if (!left)
-                sg_mark_end(&sg[sg_size - 1]);
-
-        prv = sg;
-    } while (left);
-
-    return 0;
-
-err:
-    __sg_free_table(table, SG_MAX_SINGLE_ALLOC, NULL);
-
-    return -ENOMEM;
-}
-
-
-void sg_init_table(struct scatterlist *sgl, unsigned int nents)
-{
-    memset(sgl, 0, sizeof(*sgl) * nents);
-#ifdef CONFIG_DEBUG_SG
-    {
-            unsigned int i;
-            for (i = 0; i < nents; i++)
-                    sgl[i].sg_magic = SG_MAGIC;
-    }
-#endif
-    sg_mark_end(&sgl[nents - 1]);
-}
-
-
-void __sg_page_iter_start(struct sg_page_iter *piter,
-              struct scatterlist *sglist, unsigned int nents,
-              unsigned long pgoffset)
-{
-    piter->__pg_advance = 0;
-    piter->__nents = nents;
-
-    piter->sg = sglist;
-    piter->sg_pgoffset = pgoffset;
-}
-
-static int sg_page_count(struct scatterlist *sg)
-{
-    return PAGE_ALIGN(sg->offset + sg->length) >> PAGE_SHIFT;
-}
-
-bool __sg_page_iter_next(struct sg_page_iter *piter)
-{
-    if (!piter->__nents || !piter->sg)
-        return false;
-
-    piter->sg_pgoffset += piter->__pg_advance;
-    piter->__pg_advance = 1;
-
-    while (piter->sg_pgoffset >= sg_page_count(piter->sg)) {
-        piter->sg_pgoffset -= sg_page_count(piter->sg);
-        piter->sg = sg_next(piter->sg);
-        if (!--piter->__nents || !piter->sg)
-            return false;
-    }
-
-    return true;
-}
-EXPORT_SYMBOL(__sg_page_iter_next);
-
-
-int sg_alloc_table_from_pages(struct sg_table *sgt,
-        struct page **pages, unsigned int n_pages,
-        unsigned long offset, unsigned long size,
-        gfp_t gfp_mask)
-{
-    unsigned int chunks;
-    unsigned int i;
-    unsigned int cur_page;
-    int ret;
-    struct scatterlist *s;
-
-    /* compute number of contiguous chunks */
-    chunks = 1;
-    for (i = 1; i < n_pages; ++i)
-            if (page_to_pfn(pages[i]) != page_to_pfn(pages[i - 1]) + 1)
-                    ++chunks;
-
-    ret = sg_alloc_table(sgt, chunks, gfp_mask);
-    if (unlikely(ret))
-            return ret;
-
-    /* merging chunks and putting them into the scatterlist */
-    cur_page = 0;
-    for_each_sg(sgt->sgl, s, sgt->orig_nents, i) {
-            unsigned long chunk_size;
-            unsigned int j;
-
-            /* look for the end of the current chunk */
-            for (j = cur_page + 1; j < n_pages; ++j)
-                    if (page_to_pfn(pages[j]) !=
-                        page_to_pfn(pages[j - 1]) + 1)
-                            break;
-
-            chunk_size = ((j - cur_page) << PAGE_SHIFT) - offset;
-            sg_set_page(s, pages[cur_page], min(size, chunk_size), offset);
-            size -= chunk_size;
-            offset = 0;
-            cur_page = j;
-    }
-
-    return 0;
-}
-
-int dma_map_sg(struct device *dev, struct scatterlist *sglist,
-                           int nelems, int dir)
-{
-    struct scatterlist *s;
-    int i;
-
-    for_each_sg(sglist, s, nelems, i) {
-        s->dma_address = (dma_addr_t)sg_phys(s);
-#ifdef CONFIG_NEED_SG_DMA_LENGTH
-        s->dma_length  = s->length;
-#endif
-    }
-
-    return nelems;
-}
-

@@ -3301,7 +3301,7 @@ void intel_finish_reset(struct drm_device *dev)
 
 	intel_display_resume(dev);
 
-//	intel_hpd_init(dev_priv);
+	intel_hpd_init(dev_priv);
 
 	drm_modeset_unlock_all(dev);
 }
@@ -14442,7 +14442,6 @@ static int intel_framebuffer_init(struct drm_device *dev,
 		return ret;
 	}
 	kolibri_framebuffer_init(intel_fb);
-
 	return 0;
 }
 

@@ -334,7 +334,7 @@ static int i915_load_modeset_init(struct drm_device *dev)
 		goto cleanup_gem;
 
 	/* Only enable hotplug handling once the fbdev is fully set up. */
-//	intel_hpd_init(dev_priv);
+	intel_hpd_init(dev_priv);
 
 	/*
 	 * Some ports require correctly set-up hpd registers for detection to
@@ -360,7 +360,7 @@ cleanup_gem:
 cleanup_irq:
 //	drm_irq_uninstall(dev);
 cleanup_gem_stolen:
-//	i915_gem_cleanup_stolen(dev);
+	i915_gem_cleanup_stolen(dev);
 cleanup_vga_switcheroo:
 //	vga_switcheroo_unregister_client(dev->pdev);
 cleanup_vga_client:
@@ -900,7 +900,7 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 	 * so there is no point in running more than one instance of the
 	 * workqueue at any time.  Use an ordered one.
 	 */
-	dev_priv->wq = (struct workqueue_struct *)alloc_ordered_workqueue("i915", 0);
+	dev_priv->wq = alloc_ordered_workqueue("i915", 0);
 	if (dev_priv->wq == NULL) {
 		DRM_ERROR("Failed to create our workqueue.\n");
 		ret = -ENOMEM;
@@ -908,6 +908,12 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 	}
     system_wq = dev_priv->wq;
 
+	dev_priv->hotplug.dp_wq = alloc_ordered_workqueue("i915-dp", 0);
+	if (dev_priv->hotplug.dp_wq == NULL) {
+		DRM_ERROR("Failed to create our dp workqueue.\n");
+		ret = -ENOMEM;
+		goto out_freewq;
+	}
 
 	intel_irq_init(dev_priv);
 	intel_uncore_sanitize(dev);
@@ -971,8 +977,10 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 	return 0;
 
 out_power_well:
+	drm_vblank_cleanup(dev);
 out_gem_unload:
 
+out_freewq:
 out_mtrrfree:
 out_gtt:
 	i915_global_gtt_cleanup(dev);

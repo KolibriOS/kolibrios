@@ -1,6 +1,6 @@
 /**************************************************************************
  *
- * Copyright © 2009 VMware, Inc., Palo Alto, CA., USA
+ * Copyright © 2009-2011 VMware, Inc., Palo Alto, CA., USA
  * All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -57,8 +57,6 @@ static void vmw_ttm_mem_global_release(struct drm_global_reference *ref)
 
 int vmw_ttm_global_init(struct vmw_private *dev_priv)
 {
-    ENTER();
-
 	struct drm_global_reference *global_ref;
 	int ret;
 
@@ -88,7 +86,6 @@ int vmw_ttm_global_init(struct vmw_private *dev_priv)
 		goto out_no_bo;
 	}
 
-    LEAVE();
 	return 0;
 out_no_bo:
 	drm_global_item_unref(&dev_priv->mem_global_ref);

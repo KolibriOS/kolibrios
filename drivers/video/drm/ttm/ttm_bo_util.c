@@ -33,11 +33,11 @@
 #include <drm/ttm/ttm_bo_driver.h>
 #include <drm/ttm/ttm_placement.h>
 #include <drm/drm_vma_manager.h>
-//#include <linux/io.h>
+#include <linux/io.h>
 //#include <linux/highmem.h>
 #include <linux/wait.h>
 #include <linux/slab.h>
-//#include <linux/vmalloc.h>
+#include <linux/vmalloc.h>
 #include <linux/module.h>
 
 #define __pgprot(x)     ((pgprot_t) { (x) } )
@@ -163,7 +163,6 @@ void ttm_mem_io_free(struct ttm_bo_device *bdev,
 }
 EXPORT_SYMBOL(ttm_mem_io_free);
 
-#if 0
 int ttm_mem_io_reserve_vm(struct ttm_buffer_object *bo)
 {
 	struct ttm_mem_reg *mem = &bo->mem;
@@ -183,7 +182,6 @@ int ttm_mem_io_reserve_vm(struct ttm_buffer_object *bo)
 	}
 	return 0;
 }
-#endif
 
 void ttm_mem_io_free_vm(struct ttm_buffer_object *bo)
 {
@@ -216,7 +214,7 @@ static int ttm_mem_reg_ioremap(struct ttm_bo_device *bdev, struct ttm_mem_reg *m
 		if (mem->placement & TTM_PL_FLAG_WC)
 			addr = ioremap_wc(mem->bus.base + mem->bus.offset, mem->bus.size);
 		else
-            addr = ioremap(mem->bus.base + mem->bus.offset, mem->bus.size);
+			addr = ioremap_nocache(mem->bus.base + mem->bus.offset, mem->bus.size);
 		if (!addr) {
 			(void) ttm_mem_io_lock(man, false);
 			ttm_mem_io_free(bdev, mem);
@@ -483,7 +481,7 @@ static int ttm_bo_ioremap(struct ttm_buffer_object *bo,
 			map->virtual = ioremap_wc(bo->mem.bus.base + bo->mem.bus.offset + offset,
 						  size);
 		else
-			map->virtual = ioremap(bo->mem.bus.base + bo->mem.bus.offset + offset,
+			map->virtual = ioremap_nocache(bo->mem.bus.base + bo->mem.bus.offset + offset,
 						       size);
 	}
 	return (!map->virtual) ? -ENOMEM : 0;
@@ -514,15 +512,13 @@ static int ttm_bo_kmap_ttm(struct ttm_buffer_object *bo,
 
 		map->bo_kmap_type = ttm_bo_map_kmap;
 		map->page = ttm->pages[start_page];
-		map->virtual = (void*)MapIoMem(page_to_phys(map->page), 4096, PG_SW);
+		map->virtual = kmap(map->page);
 	} else {
 		/*
 		 * We need to use vmap to get the desired page protection
 		 * or to make the buffer object look contiguous.
 		 */
-		prot = (mem->placement & TTM_PL_FLAG_CACHED) ?
-			PAGE_KERNEL :
-			ttm_io_prot(mem->placement, PAGE_KERNEL);
+		prot = ttm_io_prot(mem->placement, PAGE_KERNEL);
 		map->bo_kmap_type = ttm_bo_map_vmap;
 		map->virtual = vmap(ttm->pages + start_page, num_pages,
 				    0, prot);
@@ -578,8 +574,9 @@ void ttm_bo_kunmap(struct ttm_bo_kmap_obj *map)
 		iounmap(map->virtual);
 		break;
 	case ttm_bo_map_vmap:
+		break;
 	case ttm_bo_map_kmap:
-        FreeKernelSpace(map->virtual);
+		kunmap(map->page);
 		break;
 	case ttm_bo_map_premapped:
 		break;

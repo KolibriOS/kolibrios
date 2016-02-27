@@ -40,13 +40,6 @@
 
 #define BATCH_OFFSET_BIAS (256*1024)
 
-static unsigned long
-copy_from_user(void *to, const void __user *from, unsigned long n)
-{
-    memcpy(to, from, n);
-    return 0;
-}
-
 struct eb_vmas {
 	struct list_head vmas;
 	int and;

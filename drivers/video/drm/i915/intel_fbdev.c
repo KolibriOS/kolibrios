@@ -44,32 +44,6 @@
 #include <drm/i915_drm.h>
 #include "i915_drv.h"
 
-struct fb_info *framebuffer_alloc(size_t size, struct device *dev)
-{
-#define BYTES_PER_LONG (BITS_PER_LONG/8)
-#define PADDING (BYTES_PER_LONG - (sizeof(struct fb_info) % BYTES_PER_LONG))
-    int fb_info_size = sizeof(struct fb_info);
-    struct fb_info *info;
-    char *p;
-
-    if (size)
-        fb_info_size += PADDING;
-
-    p = kzalloc(fb_info_size + size, GFP_KERNEL);
-
-    if (!p)
-        return NULL;
-
-    info = (struct fb_info *) p;
-
-    if (size)
-        info->par = p + fb_info_size;
-
-    return info;
-#undef PADDING
-#undef BYTES_PER_LONG
-}
-
 static int intel_fbdev_set_par(struct fb_info *info)
 {
 	struct drm_fb_helper *fb_helper = info->par;
@@ -267,6 +241,8 @@ static int intelfb_create(struct drm_fb_helper *helper,
 	info->apertures->ranges[0].base = dev->mode_config.fb_base;
 	info->apertures->ranges[0].size = dev_priv->gtt.mappable_end;
 
+	info->fix.smem_start = dev->mode_config.fb_base + i915_gem_obj_ggtt_offset(obj);
+	info->fix.smem_len = size;
 
 	info->screen_base = (void*) 0xFE000000;
 	info->screen_size = size;
@@ -525,6 +501,19 @@ static const struct drm_fb_helper_funcs intel_fb_helper_funcs = {
 	.gamma_get = intel_crtc_fb_gamma_get,
 	.fb_probe = intelfb_create,
 };
+
+static void intel_fbdev_destroy(struct drm_device *dev,
+				struct intel_fbdev *ifbdev)
+{
+
+	drm_fb_helper_unregister_fbi(&ifbdev->helper);
+	drm_fb_helper_release_fbi(&ifbdev->helper);
+
+	drm_fb_helper_fini(&ifbdev->helper);
+
+	drm_framebuffer_unregister_private(&ifbdev->fb->base);
+	drm_framebuffer_remove(&ifbdev->fb->base);
+}
 
 /*
  * Build an intel_fbdev struct using a BIOS allocated framebuffer, if possible.

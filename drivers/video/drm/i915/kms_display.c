@@ -88,7 +88,7 @@ ENTER();
         size = stride * ALIGN(mode->vdisplay, 2);
     }
 
-    dbgprintf("size %x stride %x\n", size, stride);
+    DRM_DEBUG_KMS("size %x stride %x\n", size, stride);
 
     if(intel_fb == NULL || size > intel_fb->obj->base.size)
     {
@@ -148,6 +148,20 @@ ENTER();
         obj->stride      = stride;
     };
 
+    if (obj->base.name == 0)
+    {
+        int ret;
+
+        mutex_lock(&dev->object_name_lock);
+        idr_preload(GFP_KERNEL);
+        ret = idr_alloc(&dev->object_name_idr, &obj->base, 1, 0, GFP_NOWAIT);
+        idr_preload_end();
+        mutex_unlock(&dev->object_name_lock);
+        obj->base.name = ret;
+        obj->base.handle_count++;
+        DRM_DEBUG_KMS("%s allocate fb name %d\n", __FUNCTION__, obj->base.name );
+    }
+
     fb->width  = mode->hdisplay;
     fb->height = mode->vdisplay;
 
@@ -173,11 +187,11 @@ out:
 static int set_mode(struct drm_device *dev, struct drm_connector *connector,
                     struct drm_crtc *crtc, videomode_t *reqmode, bool strict)
 {
-    struct drm_i915_private *dev_priv   = dev->dev_private;
-    struct drm_mode_config  *config     = &dev->mode_config;
-    struct drm_display_mode *mode       = NULL, *tmpmode;
+    struct drm_i915_private *dev_priv = dev->dev_private;
+    struct drm_mode_config  *config   = &dev->mode_config;
+    struct drm_display_mode *mode     = NULL, *tmpmode;
     struct drm_connector    *tmpc;
-    struct drm_framebuffer  *fb         = NULL;
+    struct drm_framebuffer  *fb       = NULL;
     struct drm_mode_set     set;
     char  con_edid[128];
     int ret;
@@ -241,10 +255,10 @@ do_set:
                   "monitor: %s model %x serial number %u\n",
                 mode->hdisplay, mode->vdisplay,
                 crtc->base.id, connector->name,
-            manufacturer_name(con_edid + 0x08),
-            (unsigned short)(con_edid[0x0A] + (con_edid[0x0B] << 8)),
-            (unsigned int)(con_edid[0x0C] + (con_edid[0x0D] << 8)
-            + (con_edid[0x0E] << 16) + (con_edid[0x0F] << 24)));
+                manufacturer_name(con_edid + 0x08),
+                (unsigned short)(con_edid[0x0A] + (con_edid[0x0B] << 8)),
+                (unsigned int)(con_edid[0x0C] + (con_edid[0x0D] << 8)
+                + (con_edid[0x0E] << 16) + (con_edid[0x0F] << 24)));
 
     drm_mode_set_crtcinfo(mode, CRTC_INTERLACE_HALVE_V);
 
@@ -544,7 +558,7 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
     struct drm_crtc         *crtc = NULL;
     struct drm_plane *plane;
 
-    int       ret;
+    int ret;
 ENTER();
 
     drm_for_each_plane(plane, dev)
@@ -561,19 +575,6 @@ ENTER();
         return -1;
     };
 
-/*
-    mutex_lock(&dev->object_name_lock);
-    idr_preload(GFP_KERNEL);
-    if (!main_fb_obj->base.name) {
-        ret = idr_alloc(&dev->object_name_idr, &main_fb_obj->base, 1, 0, GFP_NOWAIT);
-
-        main_fb_obj->base.name = ret;
-        main_fb_obj->base.handle_count++;
-        DRM_DEBUG_KMS("%s allocate fb name %d\n", __FUNCTION__, main_fb_obj->base.name );
-    }
-    idr_preload_end();
-    mutex_unlock(&dev->object_name_lock);
-*/
     dummy_fb_page = AllocPage();
 
     os_display = GetDisplay();
@@ -820,9 +821,9 @@ int i915_fbinfo(struct drm_i915_fb_info *fb)
         fb->pipe   = crtc->pipe;
     }
     safe_sti(ifl);
+
     return 0;
 }
-
 
 int kolibri_framebuffer_init(struct intel_framebuffer *intel_fb)
 {
@@ -830,7 +831,7 @@ int kolibri_framebuffer_init(struct intel_framebuffer *intel_fb)
     addr_t dummy_table;
     addr_t *pt_addr = NULL;
     int pde;
-ENTER();
+
     kfb = kzalloc(sizeof(struct kos_framebuffer),0);
     kfb->private = intel_fb;
 
@@ -845,7 +846,7 @@ ENTER();
     };
 
     intel_fb->private = kfb;
-LEAVE();
+
     return 0;
 #if 0
     struct sg_page_iter sg_iter;
@@ -860,31 +861,31 @@ LEAVE();
     while (__sg_page_iter_next(&sg_iter))
     {
         if (pt_addr == NULL)
-    {
+        {
             addr_t pt = AllocPage();
             kfb->pde[pde] = pt|PG_UW;
             pde++;
             pt_addr = kmap_atomic((struct page*)pt);
-    }
+        }
         pt_addr[pte] = sg_page_iter_dma_address(&sg_iter)|PG_UW|PG_WRITEC;
         if( (pte & 15) == 0)
             DRM_DEBUG_KMS("pte %x\n",pt_addr[pte]);
         if (++pte == 1024)
-    {
+        {
             kunmap_atomic(pt_addr);
             pt_addr = NULL;
             if (pde == 8)
                 break;
             pte = 0;
         }
-        }
+    }
 
     if(pt_addr)
-        {
+    {
         for(;pte < 1024; pte++)
             pt_addr[pte] = dummy_page|PG_UW;
         kunmap_atomic(pt_addr);
-        }
+    }
 #endif
 };
 
@@ -901,7 +902,7 @@ ENTER();
     pfn = dev_priv->gtt.mappable_base + i915_gem_obj_ggtt_offset(intel_fb->obj);
 
     while(num_pages)
-        {
+    {
         if (pt_addr == NULL)
         {
             addr_t pt = kfb->pde[pde] & 0xFFFFF000;

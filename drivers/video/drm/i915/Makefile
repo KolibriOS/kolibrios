@@ -1,8 +1,8 @@
 CC = kos32-gcc
 FASM = fasm.exe
 
-DEFINES	= -DDRM_DEBUG_CODE=0 -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_PCI -DCONFIG_X86_CMPXCHG64
-DEFINES += -DCONFIG_TINY_RCU -DCONFIG_X86_L1_CACHE_SHIFT=6
+DEFINES	= -DDRM_DEBUG_CODE=0 -D__KERNEL__ -DCONFIG_X86 -DCONFIG_X86_32 -DCONFIG_PCI
+DEFINES += -DCONFIG_X86_CMPXCHG64 -DCONFIG_TINY_RCU -DCONFIG_X86_L1_CACHE_SHIFT=6
 DEFINES += -DCONFIG_DRM_FBDEV_EMULATION -DCONFIG_DMI 
 DEFINES += -DKBUILD_MODNAME=\"i915.dll\"
 
@@ -92,6 +92,7 @@ NAME_SRC=		main.c					\
 			intel_frontbuffer.c			\
 			intel_guc_loader.c			\
 			intel_hdmi.c				\
+			intel_hotplug.c				\
 			intel_i2c.c				\
 			intel_lrc.c				\
 			intel_lvds.c				\

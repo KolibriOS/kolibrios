@@ -71,7 +71,8 @@ static void __attribute__((regparm(1))) destroy_cursor(cursor_t *cursor)
 static int init_cursor(cursor_t *cursor)
 {
     display_t *display = GetDisplay();
-    struct drm_i915_private *dev_priv = display->ddev->dev_private;
+    struct drm_device *dev = display->ddev;
+    struct drm_i915_private *dev_priv = dev->dev_private;
     struct drm_i915_gem_object *obj;
     uint32_t *bits;
     uint32_t *src;
@@ -80,32 +81,35 @@ static int init_cursor(cursor_t *cursor)
     int       i,j;
     int       ret;
 
+    mutex_lock(&dev->struct_mutex);
+
     if (dev_priv->info.cursor_needs_physical)
     {
         bits = (uint32_t*)KernelAlloc(KMS_CURSOR_WIDTH*KMS_CURSOR_HEIGHT*8);
         if (unlikely(bits == NULL))
-            return ENOMEM;
+        {
+            ret = -ENOMEM;
+            goto unlock;
+        };
         cursor->cobj = (struct drm_i915_gem_object *)GetPgAddr(bits);
     }
     else
     {
         obj = i915_gem_alloc_object(display->ddev, KMS_CURSOR_WIDTH*KMS_CURSOR_HEIGHT*4);
         if (unlikely(obj == NULL))
-            return -ENOMEM;
+        {
+            ret = -ENOMEM;
+            goto unlock;
+        };
 
         ret = i915_gem_object_ggtt_pin(obj, &i915_ggtt_view_normal, 128*1024, PIN_GLOBAL);
-        if (ret) {
-            drm_gem_object_unreference(&obj->base);
-            return ret;
-        }
+        if (ret)
+            goto unref;
 
         ret = i915_gem_object_set_to_gtt_domain(obj, true);
         if (ret)
-        {
-            i915_gem_object_ggtt_unpin(obj);
-            drm_gem_object_unreference(&obj->base);
-            return ret;
-        }
+            goto unpin;
+
 /* You don't need to worry about fragmentation issues.
  * GTT space is continuous. I guarantee it.                           */
 
@@ -114,12 +118,13 @@ static int init_cursor(cursor_t *cursor)
 
         if (unlikely(bits == NULL))
         {
-            i915_gem_object_ggtt_unpin(obj);
-            drm_gem_object_unreference(&obj->base);
-            return -ENOMEM;
+            ret = -ENOMEM;
+            goto unpin;
         };
         cursor->cobj = obj;
     };
+
+    mutex_unlock(&dev->struct_mutex);
 
     src = cursor->data;
 
@@ -139,6 +144,14 @@ static int init_cursor(cursor_t *cursor)
     cursor->header.destroy = destroy_cursor;
 
     return 0;
+
+unpin:
+    i915_gem_object_ggtt_unpin(obj);
+unref:
+    drm_gem_object_unreference(&obj->base);
+unlock:
+    mutex_unlock(&dev->struct_mutex);
+    return ret;
 }
 
 void init_system_cursors(struct drm_device *dev)
@@ -150,7 +163,6 @@ void init_system_cursors(struct drm_device *dev)
     display = GetDisplay();
 
     mutex_init(&cursor_lock);
-    mutex_lock(&dev->struct_mutex);
 
     ifl = safe_cli();
     {
@@ -172,6 +184,4 @@ void init_system_cursors(struct drm_device *dev)
         select_cursor_kms(display->cursor);
     };
     safe_sti(ifl);
-
-    mutex_unlock(&dev->struct_mutex);
 }

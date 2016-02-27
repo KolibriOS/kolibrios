@@ -45,7 +45,7 @@ drm_clflush_page(struct page *page)
 {
 	uint8_t *page_virtual;
 	unsigned int i;
-	const int size = boot_cpu_data.x86_clflush_size;
+    const int size = x86_clflush_size;
 
 	if (unlikely(page == NULL))
 		return;
@@ -101,7 +101,7 @@ void
 drm_clflush_sg(struct sg_table *st)
 {
 #if defined(CONFIG_X86)
-	if (cpu_has_clflush) {
+    if (1) {
 		struct sg_page_iter sg_iter;
 
 		mb();
@@ -112,8 +112,6 @@ drm_clflush_sg(struct sg_table *st)
 		return;
 	}
 
-	if (wbinvd_on_all_cpus())
-		printk(KERN_ERR "Timed out waiting for cache flush.\n");
 #else
 	printk(KERN_ERR "Architecture has no drm_cache.c support\n");
 	WARN_ON_ONCE(1);

@@ -1445,7 +1445,7 @@ static void intel_get_hpd_pins(u32 *pin_mask, u32 *long_mask,
 
 		*pin_mask |= BIT(i);
 
-//		if (!intel_hpd_pin_to_port(i, &port))
+		if (!intel_hpd_pin_to_port(i, &port))
 			continue;
 
 		if (long_pulse_detect(port, dig_hotplug_reg))
@@ -1699,7 +1699,7 @@ static void i9xx_hpd_irq_handler(struct drm_device *dev)
 					   hotplug_trigger, hpd_status_g4x,
 					   i9xx_port_hotplug_long_detect);
 
-//           intel_hpd_irq_handler(dev, pin_mask, long_mask);
+			intel_hpd_irq_handler(dev, pin_mask, long_mask);
 		}
 
 		if (hotplug_status & DP_AUX_CHANNEL_MASK_INT_STATUS_G4X)
@@ -1711,7 +1711,7 @@ static void i9xx_hpd_irq_handler(struct drm_device *dev)
 			intel_get_hpd_pins(&pin_mask, &long_mask, hotplug_trigger,
 					   hotplug_trigger, hpd_status_i915,
 					   i9xx_port_hotplug_long_detect);
-//           intel_hpd_irq_handler(dev, pin_mask, long_mask);
+			intel_hpd_irq_handler(dev, pin_mask, long_mask);
 		}
 	}
 }
@@ -1819,7 +1819,7 @@ static void ibx_hpd_irq_handler(struct drm_device *dev, u32 hotplug_trigger,
 			   dig_hotplug_reg, hpd,
 			   pch_port_hotplug_long_detect);
 
-//   intel_hpd_irq_handler(dev, pin_mask, long_mask);
+	intel_hpd_irq_handler(dev, pin_mask, long_mask);
 }
 
 static void ibx_irq_handler(struct drm_device *dev, u32 pch_iir)
@@ -1984,6 +1984,9 @@ static void spt_irq_handler(struct drm_device *dev, u32 pch_iir)
 				   spt_port_hotplug2_long_detect);
 	}
 
+	if (pin_mask)
+		intel_hpd_irq_handler(dev, pin_mask, long_mask);
+
 	if (pch_iir & SDE_GMBUS_CPT)
 		gmbus_irq_handler(dev);
 }
@@ -2001,6 +2004,7 @@ static void ilk_hpd_irq_handler(struct drm_device *dev, u32 hotplug_trigger,
 			   dig_hotplug_reg, hpd,
 			   ilk_port_hotplug_long_detect);
 
+	intel_hpd_irq_handler(dev, pin_mask, long_mask);
 }
 
 static void ilk_display_irq_handler(struct drm_device *dev, u32 de_iir)
@@ -2009,8 +2013,8 @@ static void ilk_display_irq_handler(struct drm_device *dev, u32 de_iir)
 	enum pipe pipe;
 	u32 hotplug_trigger = de_iir & DE_DP_A_HOTPLUG;
 
-//   if (hotplug_trigger)
-//       ilk_hpd_irq_handler(dev, hotplug_trigger, hpd_ilk);
+	if (hotplug_trigger)
+		ilk_hpd_irq_handler(dev, hotplug_trigger, hpd_ilk);
 
 	if (de_iir & DE_AUX_CHANNEL_A)
 		dp_aux_irq_handler(dev);
@@ -2189,6 +2193,7 @@ static void bxt_hpd_irq_handler(struct drm_device *dev, u32 hotplug_trigger,
 			   dig_hotplug_reg, hpd,
 			   bxt_port_hotplug_long_detect);
 
+	intel_hpd_irq_handler(dev, pin_mask, long_mask);
 }
 
 static irqreturn_t gen8_irq_handler(int irq, void *arg)
@@ -4316,7 +4321,7 @@ void intel_irq_init(struct drm_i915_private *dev_priv)
 {
 	struct drm_device *dev = dev_priv->dev;
 
-//   intel_hpd_init_work(dev_priv);
+	intel_hpd_init_work(dev_priv);
 
 	INIT_WORK(&dev_priv->rps.work, gen6_pm_rps_work);
 	INIT_WORK(&dev_priv->l3_parity.error_work, ivybridge_parity_work);

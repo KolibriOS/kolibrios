@@ -55,7 +55,6 @@ struct i915_params i915 __read_mostly = {
 	.edp_vswing = 0,
 	.enable_guc_submission = false,
 	.guc_log_level = -1,
-    .fbsize = 16,
     .log_file = NULL,
     .cmdline_mode = NULL,
 };

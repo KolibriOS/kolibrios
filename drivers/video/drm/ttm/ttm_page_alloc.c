@@ -41,7 +41,7 @@
 #include <linux/mm.h>
 #include <linux/seq_file.h> /* for seq_printf */
 #include <linux/slab.h>
-//#include <linux/dma-mapping.h>
+#include <linux/dma-mapping.h>
 
 #include <linux/atomic.h>
 
@@ -122,6 +122,12 @@ struct ttm_pool_manager {
 	};
 };
 
+static void ttm_pool_kobj_release(struct kobject *kobj)
+{
+	struct ttm_pool_manager *m =
+		container_of(kobj, struct ttm_pool_manager, kobj);
+	kfree(m);
+}
 
 static struct ttm_pool_manager *_manager;
 

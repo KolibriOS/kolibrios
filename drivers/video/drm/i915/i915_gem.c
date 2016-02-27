@@ -173,6 +173,128 @@ i915_gem_get_aperture_ioctl(struct drm_device *dev, void *data,
 	return 0;
 }
 
+static int
+i915_gem_object_get_pages_phys(struct drm_i915_gem_object *obj)
+{
+	char *vaddr = obj->phys_handle->vaddr;
+	struct sg_table *st;
+	struct scatterlist *sg;
+	int i;
+
+	if (WARN_ON(i915_gem_object_needs_bit17_swizzle(obj)))
+		return -EINVAL;
+
+
+	st = kmalloc(sizeof(*st), GFP_KERNEL);
+	if (st == NULL)
+		return -ENOMEM;
+
+	if (sg_alloc_table(st, 1, GFP_KERNEL)) {
+		kfree(st);
+		return -ENOMEM;
+	}
+
+	sg = st->sgl;
+	sg->offset = 0;
+	sg->length = obj->base.size;
+
+	sg_dma_address(sg) = obj->phys_handle->busaddr;
+	sg_dma_len(sg) = obj->base.size;
+
+	obj->pages = st;
+	return 0;
+}
+
+static void
+i915_gem_object_put_pages_phys(struct drm_i915_gem_object *obj)
+{
+	int ret;
+
+	BUG_ON(obj->madv == __I915_MADV_PURGED);
+
+	ret = i915_gem_object_set_to_cpu_domain(obj, true);
+	if (ret) {
+		/* In the event of a disaster, abandon all caches and
+		 * hope for the best.
+		 */
+		WARN_ON(ret != -EIO);
+		obj->base.read_domains = obj->base.write_domain = I915_GEM_DOMAIN_CPU;
+	}
+
+	if (obj->madv == I915_MADV_DONTNEED)
+		obj->dirty = 0;
+
+	if (obj->dirty) {
+		obj->dirty = 0;
+	}
+
+	sg_free_table(obj->pages);
+	kfree(obj->pages);
+}
+
+static void
+i915_gem_object_release_phys(struct drm_i915_gem_object *obj)
+{
+	drm_pci_free(obj->base.dev, obj->phys_handle);
+}
+
+static const struct drm_i915_gem_object_ops i915_gem_phys_ops = {
+	.get_pages = i915_gem_object_get_pages_phys,
+	.put_pages = i915_gem_object_put_pages_phys,
+	.release = i915_gem_object_release_phys,
+};
+
+static int
+drop_pages(struct drm_i915_gem_object *obj)
+{
+	struct i915_vma *vma, *next;
+	int ret;
+
+	drm_gem_object_reference(&obj->base);
+	list_for_each_entry_safe(vma, next, &obj->vma_list, vma_link)
+		if (i915_vma_unbind(vma))
+			break;
+
+	ret = i915_gem_object_put_pages(obj);
+	drm_gem_object_unreference(&obj->base);
+
+	return ret;
+}
+
+int
+i915_gem_object_attach_phys(struct drm_i915_gem_object *obj,
+			    int align)
+{
+	drm_dma_handle_t *phys;
+	int ret;
+
+	if (obj->phys_handle) {
+		if ((unsigned long)obj->phys_handle->vaddr & (align -1))
+			return -EBUSY;
+
+		return 0;
+	}
+
+	if (obj->madv != I915_MADV_WILLNEED)
+		return -EFAULT;
+
+	if (obj->base.filp == NULL)
+		return -EINVAL;
+
+	ret = drop_pages(obj);
+	if (ret)
+		return ret;
+
+	/* create a new object */
+	phys = drm_pci_alloc(obj->base.dev, obj->base.size, align);
+	if (!phys)
+		return -ENOMEM;
+
+	obj->phys_handle = phys;
+	obj->ops = &i915_gem_phys_ops;
+
+	return i915_gem_object_get_pages(obj);
+}
 void *i915_gem_object_alloc(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
@@ -633,7 +755,6 @@ shmem_pwrite_fast(struct page *page, int shmem_page_offset, int page_length,
 
 	return ret ? -EFAULT : 0;
 }
-#if 0
 
 /* Only difference to the fast-path function is that this can handle bit17
  * and uses non-atomic copy and kmap functions. */
@@ -668,8 +789,6 @@ shmem_pwrite_slow(struct page *page, int shmem_page_offset, int page_length,
 
 	return ret ? -EFAULT : 0;
 }
-#endif
-
 
 static int
 i915_gem_shmem_pwrite(struct drm_device *dev,
@@ -757,12 +876,10 @@ i915_gem_shmem_pwrite(struct drm_device *dev,
 
 		hit_slowpath = 1;
 		mutex_unlock(&dev->struct_mutex);
-		dbgprintf("%s need shmem_pwrite_slow\n",__FUNCTION__);
-
-//		ret = shmem_pwrite_slow(page, shmem_page_offset, page_length,
-//					user_data, page_do_bit17_swizzling,
-//					partial_cacheline_write,
-//					needs_clflush_after);
+		ret = shmem_pwrite_slow(page, shmem_page_offset, page_length,
+					user_data, page_do_bit17_swizzling,
+					partial_cacheline_write,
+					needs_clflush_after);
 
 		mutex_lock(&dev->struct_mutex);
 
@@ -862,8 +979,9 @@ i915_gem_pwrite_ioctl(struct drm_device *dev, void *data,
 		 * textures). Fallback to the shmem path in that case. */
 	}
 
-	if (ret == -EFAULT || ret == -ENOSPC)
+	if (ret == -EFAULT || ret == -ENOSPC) {
 			ret = i915_gem_shmem_pwrite(dev, obj, args, file);
+	}
 
 out:
 	drm_gem_object_unreference(&obj->base);
@@ -1747,6 +1865,10 @@ i915_gem_object_put_pages_gtt(struct drm_i915_gem_object *obj)
 	}
 
 	i915_gem_gtt_finish_object(obj);
+
+	if (i915_gem_object_needs_bit17_swizzle(obj))
+		i915_gem_object_save_bit_17_swizzle(obj);
+
 	if (obj->madv == I915_MADV_DONTNEED)
 		obj->dirty = 0;
 
@@ -1858,6 +1980,9 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
 	ret = i915_gem_gtt_prepare_object(obj);
 	if (ret)
 		goto err_pages;
+
+	if (i915_gem_object_needs_bit17_swizzle(obj))
+		i915_gem_object_do_bit_17_swizzle(obj);
 
 	if (obj->tiling_mode != I915_TILING_NONE &&
 	    dev_priv->quirks & QUIRK_PIN_SWIZZLED_PAGES)

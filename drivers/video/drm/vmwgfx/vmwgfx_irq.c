@@ -1,6 +1,6 @@
 /**************************************************************************
  *
- * Copyright © 2009 VMware, Inc., Palo Alto, CA., USA
+ * Copyright © 2009-2015 VMware, Inc., Palo Alto, CA., USA
  * All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,9 +28,6 @@
 #include <drm/drmP.h>
 #include "vmwgfx_drv.h"
 
-#define TASK_INTERRUPTIBLE      1
-#define TASK_UNINTERRUPTIBLE    2
-
 #define VMW_FENCE_WRAP (1 << 24)
 
 irqreturn_t vmw_irq_handler(int irq, void *arg)
@@ -39,15 +36,13 @@ irqreturn_t vmw_irq_handler(int irq, void *arg)
 	struct vmw_private *dev_priv = vmw_priv(dev);
 	uint32_t status, masked_status;
 
-	spin_lock(&dev_priv->irq_lock);
 	status = inl(dev_priv->io_start + VMWGFX_IRQSTATUS_PORT);
-	masked_status = status & dev_priv->irq_mask;
-	spin_unlock(&dev_priv->irq_lock);
+	masked_status = status & READ_ONCE(dev_priv->irq_mask);
 
 	if (likely(status))
 		outl(status, dev_priv->io_start + VMWGFX_IRQSTATUS_PORT);
 
-	if (!masked_status)
+	if (!status)
 		return IRQ_NONE;
 
 	if (masked_status & (SVGA_IRQFLAG_ANY_FENCE |
@@ -65,20 +60,15 @@ irqreturn_t vmw_irq_handler(int irq, void *arg)
 
 static bool vmw_fifo_idle(struct vmw_private *dev_priv, uint32_t seqno)
 {
-	uint32_t busy;
 
-	mutex_lock(&dev_priv->hw_mutex);
-	busy = vmw_read(dev_priv, SVGA_REG_BUSY);
-	mutex_unlock(&dev_priv->hw_mutex);
-
-	return (busy == 0);
+	return (vmw_read(dev_priv, SVGA_REG_BUSY) == 0);
 }
 
 void vmw_update_seqno(struct vmw_private *dev_priv,
 			 struct vmw_fifo_state *fifo_state)
 {
-	__le32 __iomem *fifo_mem = dev_priv->mmio_virt;
-	uint32_t seqno = ioread32(fifo_mem + SVGA_FIFO_FENCE);
+	u32 *fifo_mem = dev_priv->mmio_virt;
+	uint32_t seqno = vmw_mmio_read(fifo_mem + SVGA_FIFO_FENCE);
 
 	if (dev_priv->last_read_seqno != seqno) {
 		dev_priv->last_read_seqno = seqno;
@@ -167,8 +157,9 @@ int vmw_fallback_wait(struct vmw_private *dev_priv,
 	}
 //   finish_wait(&dev_priv->fence_queue, &__wait);
 	if (ret == 0 && fifo_idle) {
-		__le32 __iomem *fifo_mem = dev_priv->mmio_virt;
-		iowrite32(signal_seq, fifo_mem + SVGA_FIFO_FENCE);
+		u32 *fifo_mem = dev_priv->mmio_virt;
+
+		vmw_mmio_write(signal_seq, fifo_mem + SVGA_FIFO_FENCE);
 	}
 	wake_up_all(&dev_priv->fence_queue);
 //   if (fifo_idle)
@@ -177,65 +168,51 @@ int vmw_fallback_wait(struct vmw_private *dev_priv,
 	return ret;
 }
 
+void vmw_generic_waiter_add(struct vmw_private *dev_priv,
+			    u32 flag, int *waiter_count)
+{
+	spin_lock(&dev_priv->waiter_lock);
+	if ((*waiter_count)++ == 0) {
+		outl(flag, dev_priv->io_start + VMWGFX_IRQSTATUS_PORT);
+		dev_priv->irq_mask |= flag;
+		vmw_write(dev_priv, SVGA_REG_IRQMASK, dev_priv->irq_mask);
+	}
+	spin_unlock(&dev_priv->waiter_lock);
+}
+
+void vmw_generic_waiter_remove(struct vmw_private *dev_priv,
+			       u32 flag, int *waiter_count)
+{
+	spin_lock(&dev_priv->waiter_lock);
+	if (--(*waiter_count) == 0) {
+		dev_priv->irq_mask &= ~flag;
+		vmw_write(dev_priv, SVGA_REG_IRQMASK, dev_priv->irq_mask);
+	}
+	spin_unlock(&dev_priv->waiter_lock);
+}
+
 void vmw_seqno_waiter_add(struct vmw_private *dev_priv)
 {
-	mutex_lock(&dev_priv->hw_mutex);
-	if (dev_priv->fence_queue_waiters++ == 0) {
-		unsigned long irq_flags;
-
-		spin_lock_irqsave(&dev_priv->irq_lock, irq_flags);
-		outl(SVGA_IRQFLAG_ANY_FENCE,
-		     dev_priv->io_start + VMWGFX_IRQSTATUS_PORT);
-		dev_priv->irq_mask |= SVGA_IRQFLAG_ANY_FENCE;
-		vmw_write(dev_priv, SVGA_REG_IRQMASK, dev_priv->irq_mask);
-		spin_unlock_irqrestore(&dev_priv->irq_lock, irq_flags);
-	}
-	mutex_unlock(&dev_priv->hw_mutex);
+	vmw_generic_waiter_add(dev_priv, SVGA_IRQFLAG_ANY_FENCE,
+			       &dev_priv->fence_queue_waiters);
 }
 
 void vmw_seqno_waiter_remove(struct vmw_private *dev_priv)
 {
-	mutex_lock(&dev_priv->hw_mutex);
-	if (--dev_priv->fence_queue_waiters == 0) {
-		unsigned long irq_flags;
-
-		spin_lock_irqsave(&dev_priv->irq_lock, irq_flags);
-		dev_priv->irq_mask &= ~SVGA_IRQFLAG_ANY_FENCE;
-		vmw_write(dev_priv, SVGA_REG_IRQMASK, dev_priv->irq_mask);
-		spin_unlock_irqrestore(&dev_priv->irq_lock, irq_flags);
-	}
-	mutex_unlock(&dev_priv->hw_mutex);
+	vmw_generic_waiter_remove(dev_priv, SVGA_IRQFLAG_ANY_FENCE,
+				  &dev_priv->fence_queue_waiters);
 }
-
 
 void vmw_goal_waiter_add(struct vmw_private *dev_priv)
 {
-	mutex_lock(&dev_priv->hw_mutex);
-	if (dev_priv->goal_queue_waiters++ == 0) {
-		unsigned long irq_flags;
-
-		spin_lock_irqsave(&dev_priv->irq_lock, irq_flags);
-		outl(SVGA_IRQFLAG_FENCE_GOAL,
-		     dev_priv->io_start + VMWGFX_IRQSTATUS_PORT);
-		dev_priv->irq_mask |= SVGA_IRQFLAG_FENCE_GOAL;
-		vmw_write(dev_priv, SVGA_REG_IRQMASK, dev_priv->irq_mask);
-		spin_unlock_irqrestore(&dev_priv->irq_lock, irq_flags);
-	}
-	mutex_unlock(&dev_priv->hw_mutex);
+	vmw_generic_waiter_add(dev_priv, SVGA_IRQFLAG_FENCE_GOAL,
+			       &dev_priv->goal_queue_waiters);
 }
 
 void vmw_goal_waiter_remove(struct vmw_private *dev_priv)
 {
-	mutex_lock(&dev_priv->hw_mutex);
-	if (--dev_priv->goal_queue_waiters == 0) {
-		unsigned long irq_flags;
-
-		spin_lock_irqsave(&dev_priv->irq_lock, irq_flags);
-		dev_priv->irq_mask &= ~SVGA_IRQFLAG_FENCE_GOAL;
-		vmw_write(dev_priv, SVGA_REG_IRQMASK, dev_priv->irq_mask);
-		spin_unlock_irqrestore(&dev_priv->irq_lock, irq_flags);
-	}
-	mutex_unlock(&dev_priv->hw_mutex);
+	vmw_generic_waiter_remove(dev_priv, SVGA_IRQFLAG_FENCE_GOAL,
+				  &dev_priv->goal_queue_waiters);
 }
 
 int vmw_wait_seqno(struct vmw_private *dev_priv,
@@ -292,7 +269,6 @@ void vmw_irq_preinstall(struct drm_device *dev)
 	if (!(dev_priv->capabilities & SVGA_CAP_IRQMASK))
 		return;
 
-	spin_lock_init(&dev_priv->irq_lock);
 	status = inl(dev_priv->io_start + VMWGFX_IRQSTATUS_PORT);
 	outl(status, dev_priv->io_start + VMWGFX_IRQSTATUS_PORT);
 }
@@ -310,17 +286,8 @@ void vmw_irq_uninstall(struct drm_device *dev)
 	if (!(dev_priv->capabilities & SVGA_CAP_IRQMASK))
 		return;
 
-	mutex_lock(&dev_priv->hw_mutex);
 	vmw_write(dev_priv, SVGA_REG_IRQMASK, 0);
-	mutex_unlock(&dev_priv->hw_mutex);
 
 	status = inl(dev_priv->io_start + VMWGFX_IRQSTATUS_PORT);
 	outl(status, dev_priv->io_start + VMWGFX_IRQSTATUS_PORT);
 }
-
-int autoremove_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *key)
-{
-    list_del_init(&wait->task_list);
-    return 1;
-}
-

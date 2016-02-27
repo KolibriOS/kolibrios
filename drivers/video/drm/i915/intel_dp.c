@@ -4639,8 +4639,23 @@ static bool bxt_digital_port_connected(struct drm_i915_private *dev_priv,
 {
 	struct intel_encoder *intel_encoder = &intel_dig_port->base;
 	enum port port;
-    u32 bit = 0;
+	u32 bit;
 
+	intel_hpd_pin_to_port(intel_encoder->hpd_pin, &port);
+	switch (port) {
+	case PORT_A:
+		bit = BXT_DE_PORT_HP_DDIA;
+		break;
+	case PORT_B:
+		bit = BXT_DE_PORT_HP_DDIB;
+		break;
+	case PORT_C:
+		bit = BXT_DE_PORT_HP_DDIC;
+		break;
+	default:
+		MISSING_CASE(port);
+		return false;
+	}
 
 	return I915_READ(GEN8_DE_PORT_ISR) & bit;
 }
@@ -6099,6 +6114,8 @@ intel_dp_init_connector(struct intel_digital_port *intel_dig_port,
 		u32 temp = I915_READ(PEG_BAND_GAP_DATA);
 		I915_WRITE(PEG_BAND_GAP_DATA, (temp & ~0xf) | 0xd);
 	}
+
+	i915_debugfs_connector_add(connector);
 
 	return true;
 }

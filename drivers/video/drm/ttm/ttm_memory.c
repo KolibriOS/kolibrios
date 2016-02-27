@@ -37,6 +37,7 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 
+#define TTM_MEMORY_ALLOC_RETRIES 4
 
 
 int ttm_mem_global_init(struct ttm_mem_global *glob)
@@ -67,9 +68,25 @@ void ttm_mem_global_release(struct ttm_mem_global *glob)
 
 
 }
-EXPORT_SYMBOL(ttm_mem_global_release);
 
+void ttm_mem_global_free(struct ttm_mem_global *glob,
+			 uint64_t amount)
+{
 
+}
+EXPORT_SYMBOL(ttm_mem_global_free);
+
+int ttm_mem_global_alloc(struct ttm_mem_global *glob, uint64_t memory,
+			 bool no_wait, bool interruptible)
+{
+	/**
+	 * Normal allocations of kernel memory are registered in
+	 * all zones.
+	 */
+
+	return 0;
+}
+EXPORT_SYMBOL(ttm_mem_global_alloc);
 
 size_t ttm_round_pot(size_t size)
 {

@@ -1,69 +1,103 @@
+#include <syscall.h>
+
 #include <drm/drmP.h>
-#include <drm.h>
 
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/mod_devicetable.h>
+#include <linux/pci.h>
 
 #include "vmwgfx_drv.h"
 
-#include <linux/mod_devicetable.h>
-#include <errno-base.h>
-#include <linux/pci.h>
-#include <syscall.h>
+#include <display.h>
 
-#include "bitmap.h"
+#define VMW_DEV_CLOSE 0
+#define VMW_DEV_INIT  1
+#define VMW_DEV_READY 2
+void cpu_detect1();
+int kmap_init();
 
-struct pci_device {
-    uint16_t    domain;
-    uint8_t     bus;
-    uint8_t     dev;
-    uint8_t     func;
-    uint16_t    vendor_id;
-    uint16_t    device_id;
-    uint16_t    subvendor_id;
-    uint16_t    subdevice_id;
-    uint32_t    device_class;
-    uint8_t     revision;
-};
-
+unsigned long volatile jiffies;
+int oops_in_progress;
+int x86_clflush_size;
+unsigned int tsc_khz;
+struct workqueue_struct *system_wq;
+int driver_wq_state;
 struct drm_device *main_device;
 struct drm_file   *drm_file_handlers[256];
+int kms_modeset = 1;
+static char  log[256];
 
 int vmw_init(void);
 int kms_init(struct drm_device *dev);
 void vmw_driver_thread();
-void kms_update();
-void cpu_detect();
 
 void parse_cmdline(char *cmdline, char *log);
 int _stdcall display_handler(ioctl_t *io);
+void kms_update();
+void vmw_fb_update(struct vmw_private *vmw_priv);
 
-
-void get_pci_info(struct pci_device *dev);
 int gem_getparam(struct drm_device *dev, void *data);
 
-int i915_mask_update(struct drm_device *dev, void *data,
-            struct drm_file *file);
-
-
-static char  log[256];
-
-struct workqueue_struct *system_wq;
-int driver_wq_state;
-
-int x86_clflush_size;
-unsigned int tsc_khz;
-
-int kms_modeset = 1;
-
-u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
+void vmw_driver_thread()
 {
+	struct vmw_private *dev_priv = NULL;
+    struct workqueue_struct *cwq = NULL;
+    unsigned long irqflags;
 
+    printf("%s\n",__FUNCTION__);
+
+    while(driver_wq_state == VMW_DEV_INIT)
+    {
+        jiffies = GetClockNs() / 10000000;
+        delay(1);
+    };
+
+    if( driver_wq_state == VMW_DEV_CLOSE)
+    {
+        asm volatile ("int $0x40"::"a"(-1));
+    };
+
+    dev_priv = main_device->dev_private;
+    cwq = system_wq;
+
+    while(driver_wq_state != VMW_DEV_CLOSE )
+    {
+        jiffies = GetClockNs() / 10000000;
+
+ //       kms_update();
+
+        spin_lock_irqsave(&cwq->lock, irqflags);
+        while (!list_empty(&cwq->worklist))
+        {
+            struct work_struct *work = list_entry(cwq->worklist.next,
+                                        struct work_struct, entry);
+            work_func_t f = work->func;
+            list_del_init(cwq->worklist.next);
+
+            spin_unlock_irqrestore(&cwq->lock, irqflags);
+            f(work);
+            spin_lock_irqsave(&cwq->lock, irqflags);
+        }
+        spin_unlock_irqrestore(&cwq->lock, irqflags);
+
+        vmw_fb_update(dev_priv);
+        delay(2);
+    };
+
+    asm volatile ("int $0x40"::"a"(-1));
+}
+
+u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
+{
+    static pci_dev_t device;
+    const struct pci_device_id  *ent;
+    char *safecmdline;
     int     err = 0;
 
     if(action != 1)
     {
-        driver_wq_state = 0;
+        driver_wq_state = VMW_DEV_CLOSE;
         return 0;
     };
 
@@ -79,33 +113,47 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
             return 0;
     }
 
-    dbgprintf(" vmw v3.14-rc1\n cmdline: %s\n", cmdline);
+    cpu_detect1();
 
-    cpu_detect();
-    dbgprintf("\ncache line size %d\n", x86_clflush_size);
-
-    enum_pci_devices();
-
-    err = vmw_init();
-    if(err)
+    err = enum_pci_devices();
+    if( unlikely(err != 0) )
     {
+        dbgprintf("Device enumeration failed\n");
+        return 0;
+    }
+
+    err = kmap_init();
+    if( unlikely(err != 0) )
+    {
+        dbgprintf("kmap initialization failed\n");
+        return 0;
+    }
+
+    driver_wq_state = VMW_DEV_INIT;
+    CreateKernelThread(vmw_driver_thread);
+    err = vmw_init();
+    if(unlikely(err!= 0))
+    {
+        driver_wq_state = VMW_DEV_CLOSE;
         dbgprintf("Epic Fail :(\n");
+        delay(100);
         return 0;
     };
-    kms_init(main_device);
+LINE();
+
+    driver_wq_state = VMW_DEV_READY;
+
+//    kms_init(main_device);
 
     err = RegService("DISPLAY", display_handler);
 
     if( err != 0)
         dbgprintf("Set DISPLAY handler\n");
 
-    driver_wq_state = 1;
 
-    CreateKernelThread(vmw_driver_thread);
 
     return err;
 };
-
 
 #define CURRENT_API     0x0200      /*      2.00     */
 #define COMPATIBLE_API  0x0100      /*      1.00     */
@@ -118,35 +166,9 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 #define SRV_ENUM_MODES          1
 #define SRV_SET_MODE            2
 #define SRV_GET_CAPS            3
-
-#define SRV_CREATE_SURFACE      10
-#define SRV_DESTROY_SURFACE     11
-#define SRV_LOCK_SURFACE        12
-#define SRV_UNLOCK_SURFACE      13
-#define SRV_RESIZE_SURFACE      14
-#define SRV_BLIT_BITMAP         15
-#define SRV_BLIT_TEXTURE        16
-#define SRV_BLIT_VIDEO          17
-
+#define SRV_CMDLINE                 4
 
 #define SRV_GET_PCI_INFO            20
-#define SRV_GET_PARAM               21
-#define SRV_I915_GEM_CREATE         22
-#define SRV_DRM_GEM_CLOSE           23
-#define SRV_I915_GEM_PIN            24
-#define SRV_I915_GEM_SET_CACHEING   25
-#define SRV_I915_GEM_GET_APERTURE   26
-#define SRV_I915_GEM_PWRITE         27
-#define SRV_I915_GEM_BUSY           28
-#define SRV_I915_GEM_SET_DOMAIN     29
-#define SRV_I915_GEM_MMAP           30
-#define SRV_I915_GEM_MMAP_GTT       31
-#define SRV_I915_GEM_THROTTLE       32
-#define SRV_FBINFO                  33
-#define SRV_I915_GEM_EXECBUFFER2    34
-#define SRV_MASK_UPDATE             35
-
-
 
 #define check_input(size) \
     if( unlikely((inp==NULL)||(io->inp_size != (size))) )   \
@@ -161,8 +183,8 @@ int _stdcall display_handler(ioctl_t *io)
     struct drm_file *file;
 
     int    retval = -1;
-    u32_t *inp;
-    u32_t *outp;
+    u32 *inp;
+    u32 *outp;
 
     inp = io->input;
     outp = io->output;
@@ -199,27 +221,6 @@ int _stdcall display_handler(ioctl_t *io)
             retval = get_driver_caps((hwcaps_t*)inp);
             break;
 
-        case SRV_CREATE_SURFACE:
-//            check_input(8);
-//            retval = create_surface(main_device, (struct io_call_10*)inp);
-            break;
-
-        case SRV_LOCK_SURFACE:
-//            retval = lock_surface((struct io_call_12*)inp);
-            break;
-
-        case SRV_RESIZE_SURFACE:
-//            retval = resize_surface((struct io_call_14*)inp);
-            break;
-
-        case SRV_BLIT_BITMAP:
-//            srv_blit_bitmap( inp[0], inp[1], inp[2],
-//                        inp[3], inp[4], inp[5], inp[6]);
-
-//            blit_tex( inp[0], inp[1], inp[2],
-//                    inp[3], inp[4], inp[5], inp[6]);
-
-            break;
 
         case SRV_GET_PCI_INFO:
             get_pci_info((struct pci_device *)inp);
@@ -299,10 +300,10 @@ int _stdcall display_handler(ioctl_t *io)
 #define PCI_CLASS_BRIDGE_HOST   0x0600
 #define PCI_CLASS_BRIDGE_ISA    0x0601
 
-int pci_scan_filter(u32_t id, u32_t busnr, u32_t devfn)
+int pci_scan_filter(u32 id, u32 busnr, u32 devfn)
 {
-    u16_t vendor, device;
-    u32_t class;
+    u16 vendor, device;
+    u32 class;
     int   ret = 0;
 
     vendor   = id & 0xffff;
@@ -353,34 +354,31 @@ void parse_cmdline(char *cmdline, char *log)
     };
 };
 
-
-static inline void __cpuid(unsigned int *eax, unsigned int *ebx,
-                unsigned int *ecx, unsigned int *edx)
+struct mtrr
 {
-    /* ecx is often an input as well as an output. */
-    asm volatile("cpuid"
-        : "=a" (*eax),
-          "=b" (*ebx),
-          "=c" (*ecx),
-          "=d" (*edx)
-        : "0" (*eax), "2" (*ecx)
-        : "memory");
-}
+    u64  base;
+    u64  mask;
+};
 
-
-
-static inline void cpuid(unsigned int op,
-                         unsigned int *eax, unsigned int *ebx,
-                         unsigned int *ecx, unsigned int *edx)
+struct cpuinfo
 {
-        *eax = op;
-        *ecx = 0;
-        __cpuid(eax, ebx, ecx, edx);
-}
+    u64  caps;
+    u64  def_mtrr;
+    u64  mtrr_cap;
+    int    var_mtrr_count;
+    int    fix_mtrr_count;
+    struct mtrr var_mtrr[9];
+    char   model_name[64];
+};
 
-void cpu_detect()
+static u32 deftype_lo, deftype_hi;
+
+void cpu_detect1()
 {
+    struct cpuinfo cpuinfo;
+
     u32 junk, tfms, cap0, misc;
+    int i;
 
     cpuid(0x00000001, &tfms, &misc, &junk, &cap0);
 
@@ -438,6 +436,446 @@ void get_pci_info(struct pci_device *dev)
 #include <drm/drmP.h>
 #include <linux/ctype.h>
 
+
+
+
+#include "vmwgfx_kms.h"
+
+void kms_update();
+
+
+extern struct drm_device *main_device;
+
+#define CURSOR_WIDTH 64
+#define CURSOR_HEIGHT 64
+
+
+display_t *os_display;
+
+static int count_connector_modes(struct drm_connector* connector)
+{
+    struct drm_display_mode  *mode;
+    int count = 0;
+
+    list_for_each_entry(mode, &connector->modes, head)
+    {
+        count++;
+    };
+    return count;
+};
+
+static void __stdcall restore_cursor(int x, int y){};
+static void disable_mouse(void) {};
+
+static void __stdcall move_cursor_kms(cursor_t *cursor, int x, int y)
+{
+    struct drm_crtc *crtc = os_display->crtc;
+    struct vmw_private *dev_priv = vmw_priv(crtc->dev);
+    struct vmw_display_unit *du = vmw_crtc_to_du(crtc);
+
+    du->cursor_x = x;
+    du->cursor_y = y;
+    vmw_cursor_update_position(dev_priv, true, x,y);
+};
+
+static cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
+{
+    struct vmw_private *dev_priv = vmw_priv(os_display->ddev);
+    struct vmw_display_unit *du = vmw_crtc_to_du(os_display->crtc);
+    cursor_t *old;
+
+    old = os_display->cursor;
+    os_display->cursor = cursor;
+
+    vmw_cursor_update_image(dev_priv, cursor->data,
+                    64, 64, cursor->hot_x, cursor->hot_y);
+    vmw_cursor_update_position(dev_priv, true,
+                   du->cursor_x, du->cursor_y);
+    return old;
+};
+
+int kms_init(struct drm_device *dev)
+{
+    struct drm_connector    *connector;
+    struct drm_encoder      *encoder;
+    struct drm_crtc         *crtc = NULL;
+    struct vmw_display_unit *du;
+    cursor_t  *cursor;
+    int        mode_count;
+    u32        ifl;
+    int        err;
+
+    crtc = list_entry(dev->mode_config.crtc_list.next, typeof(*crtc), head);
+    encoder = list_entry(dev->mode_config.encoder_list.next, typeof(*encoder), head);
+    connector = list_entry(dev->mode_config.connector_list.next, typeof(*connector), head);
+    connector->encoder = encoder;
+
+    mode_count = count_connector_modes(connector);
+    if(mode_count == 0)
+    {
+        struct drm_display_mode *mode;
+
+        connector->funcs->fill_modes(connector,
+                                     dev->mode_config.max_width,
+                                     dev->mode_config.max_height);
+
+        list_for_each_entry(mode, &connector->modes, head)
+        mode_count++;
+    };
+
+    DRM_DEBUG_KMS("CONNECTOR %x ID:%d status:%d ENCODER %x CRTC %x ID:%d\n",
+               connector, connector->base.id,
+               connector->status, connector->encoder,
+               crtc, crtc->base.id );
+
+    os_display = GetDisplay();
+
+    os_display->ddev = dev;
+    os_display->connector = connector;
+    os_display->crtc = crtc;
+    os_display->supported_modes = mode_count;
+
+    ifl = safe_cli();
+    {
+        os_display->restore_cursor(0,0);
+        os_display->select_cursor  = select_cursor_kms;
+        os_display->show_cursor    = NULL;
+        os_display->move_cursor    = move_cursor_kms;
+        os_display->restore_cursor = restore_cursor;
+        os_display->disable_mouse  = disable_mouse;
+    };
+    safe_sti(ifl);
+
+    du = vmw_crtc_to_du(os_display->crtc);
+    du->cursor_x = os_display->width/2;
+    du->cursor_y = os_display->height/2;
+    select_cursor_kms(os_display->cursor);
+
+    return 0;
+};
+
+
+void kms_update()
+{
+    struct vmw_private *dev_priv = vmw_priv(main_device);
+    size_t fifo_size;
+    u32    ifl;
+    int i;
+
+    struct {
+        uint32_t header;
+        SVGAFifoCmdUpdate body;
+    } *cmd;
+
+    fifo_size = sizeof(*cmd);
+
+    cmd = vmw_fifo_reserve(dev_priv, fifo_size);
+    if (unlikely(cmd == NULL)) {
+        DRM_ERROR("Fifo reserve failed.\n");
+        return;
+    }
+    os_display = GetDisplay();
+    cmd->header = cpu_to_le32(SVGA_CMD_UPDATE);
+    cmd->body.x = 0;
+    cmd->body.y = 0;
+    cmd->body.width  = os_display->width;
+    cmd->body.height = os_display->height;
+
+    vmw_fifo_commit(dev_priv, fifo_size);
+}
+
+int get_videomodes(videomode_t *mode, int *count)
+{
+    struct drm_display_mode  *drmmode;
+    int err = -1;
+
+    if( *count == 0 )
+    {
+        *count = os_display->supported_modes;
+        err = 0;
+    }
+    else if( mode != NULL )
+    {
+        int i = 0;
+
+        if( *count > os_display->supported_modes)
+            *count = os_display->supported_modes;
+
+        list_for_each_entry(drmmode, &os_display->connector->modes, head)
+        {
+            if( i < *count)
+            {
+//                mode->width  = drm_mode_width(drmmode);
+//                mode->height = drm_mode_height(drmmode);
+                mode->bpp    = 32;
+                mode->freq   = drmmode->vrefresh;
+                i++;
+                mode++;
+            }
+            else break;
+        };
+
+        *count = i;
+        err = 0;
+    };
+
+    return err;
+};
+
+
+bool set_mode(struct drm_device *dev, struct drm_connector *connector,
+              videomode_t *reqmode, bool strict);
+
+
+int set_user_mode(videomode_t *mode)
+{
+    int err = -1;
+
+    dbgprintf("width %d height %d vrefresh %d\n",
+               mode->width, mode->height, mode->freq);
+
+    if( (mode->width  != 0)  &&
+        (mode->height != 0)  &&
+        (mode->freq   != 0 ) &&
+        ( (mode->width   != os_display->width)  ||
+          (mode->height  != os_display->height) ||
+          (mode->freq    != os_display->vrefresh) ) )
+    {
+//        if( set_mode(os_display->ddev, os_display->connector, mode, true) )
+//            err = 0;
+    };
+
+    return err;
+};
+
+struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags)
+{
+    struct file *filep;
+    int count;
+
+    filep = __builtin_malloc(sizeof(*filep));
+
+    if(unlikely(filep == NULL))
+        return ERR_PTR(-ENOMEM);
+
+    count = size / PAGE_SIZE;
+
+    filep->pages = kzalloc(sizeof(struct page *) * count, 0);
+    if(unlikely(filep->pages == NULL))
+    {
+        kfree(filep);
+        return ERR_PTR(-ENOMEM);
+    };
+
+    filep->count     = count;
+    filep->allocated = 0;
+    filep->vma       = NULL;
+
+//    printf("%s file %p pages %p count %d\n",
+//              __FUNCTION__,filep, filep->pages, count);
+
+    return filep;
+}
+
+struct page *shmem_read_mapping_page_gfp(struct file *filep,
+                                         pgoff_t index, gfp_t gfp)
+{
+    struct page *page;
+
+//    dbgprintf("%s, file %p index %d\n", __FUNCTION__, filep, index);
+
+    if(unlikely(index >= filep->count))
+        return ERR_PTR(-EINVAL);
+
+    page = filep->pages[index];
+
+    if(unlikely(page == NULL))
+    {
+        page = (struct page *)AllocPage();
+
+        if(unlikely(page == NULL))
+            return ERR_PTR(-ENOMEM);
+
+        filep->pages[index] = page;
+    };
+
+    return page;
+};
+
+ktime_t ktime_get(void)
+{
+    ktime_t t;
+
+    t.tv64 = GetClockNs();
+
+    return t;
+}
+
+bool reservation_object_test_signaled_rcu(struct reservation_object *obj,
+                                           bool test_all)
+{
+    return true;
+}
+
+int reservation_object_reserve_shared(struct reservation_object *obj)
+{
+    return 0;
+}
+
+void reservation_object_add_shared_fence(struct reservation_object *obj,
+                                          struct fence *fence)
+{};
+
+void reservation_object_add_excl_fence(struct reservation_object *obj,
+                                       struct fence *fence)
+{};
+
+#define KMAP_MAX    256
+
+static struct mutex kmap_mutex;
+static struct page* kmap_table[KMAP_MAX];
+static int kmap_av;
+static int kmap_first;
+static void* kmap_base;
+
+
+int kmap_init()
+{
+    kmap_base = AllocKernelSpace(KMAP_MAX*4096);
+    if(kmap_base == NULL)
+        return -1;
+
+    kmap_av = KMAP_MAX;
+    MutexInit(&kmap_mutex);
+    return 0;
+};
+
+void *kmap(struct page *page)
+{
+    void *vaddr = NULL;
+    int i;
+
+    do
+    {
+        MutexLock(&kmap_mutex);
+        if(kmap_av != 0)
+        {
+            for(i = kmap_first; i < KMAP_MAX; i++)
+            {
+                if(kmap_table[i] == NULL)
+                {
+                    kmap_av--;
+                    kmap_first = i;
+                    kmap_table[i] = page;
+                    vaddr = kmap_base + (i<<12);
+                    MapPage(vaddr,(addr_t)page,3);
+                    break;
+                };
+            };
+        };
+        MutexUnlock(&kmap_mutex);
+    }while(vaddr == NULL);
+
+    return vaddr;
+};
+
+void *kmap_atomic(struct page *page) __attribute__ ((alias ("kmap")));
+
+void kunmap(struct page *page)
+{
+    void *vaddr;
+    int   i;
+
+    MutexLock(&kmap_mutex);
+
+    for(i = 0; i < KMAP_MAX; i++)
+    {
+        if(kmap_table[i] == page)
+        {
+            kmap_av++;
+            if(i < kmap_first)
+                kmap_first = i;
+            kmap_table[i] = NULL;
+            vaddr = kmap_base + (i<<12);
+            MapPage(vaddr,0,0);
+            break;
+        };
+    };
+
+    MutexUnlock(&kmap_mutex);
+};
+
+void kunmap_atomic(void *vaddr)
+{
+    int i;
+
+    MapPage(vaddr,0,0);
+
+    i = (vaddr - kmap_base) >> 12;
+
+    MutexLock(&kmap_mutex);
+
+    kmap_av++;
+    if(i < kmap_first)
+        kmap_first = i;
+    kmap_table[i] = NULL;
+
+    MutexUnlock(&kmap_mutex);
+}
+
+
+#include <linux/rcupdate.h>
+
+struct rcu_ctrlblk {
+        struct rcu_head *rcucblist;     /* List of pending callbacks (CBs). */
+        struct rcu_head **donetail;     /* ->next pointer of last "done" CB. */
+        struct rcu_head **curtail;      /* ->next pointer of last CB. */
+//        RCU_TRACE(long qlen);           /* Number of pending CBs. */
+//        RCU_TRACE(unsigned long gp_start); /* Start time for stalls. */
+//        RCU_TRACE(unsigned long ticks_this_gp); /* Statistic for stalls. */
+//        RCU_TRACE(unsigned long jiffies_stall); /* Jiffies at next stall. */
+//        RCU_TRACE(const char *name);    /* Name of RCU type. */
+};
+
+/* Definition for rcupdate control block. */
+static struct rcu_ctrlblk rcu_sched_ctrlblk = {
+        .donetail       = &rcu_sched_ctrlblk.rcucblist,
+        .curtail        = &rcu_sched_ctrlblk.rcucblist,
+//        RCU_TRACE(.name = "rcu_sched")
+};
+
+static void __call_rcu(struct rcu_head *head,
+                       void (*func)(struct rcu_head *rcu),
+                       struct rcu_ctrlblk *rcp)
+{
+        unsigned long flags;
+
+//        debug_rcu_head_queue(head);
+        head->func = func;
+        head->next = NULL;
+
+        local_irq_save(flags);
+        *rcp->curtail = head;
+        rcp->curtail = &head->next;
+//        RCU_TRACE(rcp->qlen++);
+        local_irq_restore(flags);
+}
+
+/*
+ * Post an RCU callback to be invoked after the end of an RCU-sched grace
+ * period.  But since we have but one CPU, that would be after any
+ * quiescent state.
+ */
+void call_rcu_sched(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
+{
+        __call_rcu(head, func, &rcu_sched_ctrlblk);
+}
+
+
+fb_get_options(const char *name, char **option)
+{
+    return 1;
+}
 
 static void *check_bytes8(const u8 *start, u8 value, unsigned int bytes)
 {
@@ -504,608 +942,177 @@ void *memchr_inv(const void *start, int c, size_t bytes)
         return check_bytes8(start, value, bytes % 8);
 }
 
-int vscnprintf(char *buf, size_t size, const char *fmt, va_list args)
+
+void drm_master_put(struct drm_master **master)
+{};
+
+
+bool ttm_ref_object_exists(struct ttm_object_file *tfile,
+                           struct ttm_base_object *base)
 {
+    return true;
+};
+
+int autoremove_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *key)
+{
+    list_del_init(&wait->task_list);
+    return 1;
+}
+
+
+struct file *fd_array[32];
+
+struct file *fget(unsigned int fd)
+{
+    struct file *file;
+
+    file = fd_array[fd];
+    get_file_rcu(file);
+    return file;
+}
+
+void fput(struct file *file)
+{
+    if (atomic_long_dec_and_test(&file->f_count))
+    {
+
+    }
+}
+
+struct dma_buf *dma_buf_get(int fd)
+{
+        struct file *file;
+
+        file = fget(fd);
+
+        if (!file)
+                return ERR_PTR(-EBADF);
+
+//        if (!is_dma_buf_file(file)) {
+//                fput(file);
+//                return ERR_PTR(-EINVAL);
+//        }
+
+        return file->private_data;
+}
+
+int get_unused_fd_flags(unsigned flags)
+{
+    return 1;
+}
+
+void fd_install(unsigned int fd, struct file *file)
+{
+    fd_array[fd] = file;
+}
+
+int dma_buf_fd(struct dma_buf *dmabuf, int flags)
+{
+        int fd;
+
+        if (!dmabuf || !dmabuf->file)
+                return -EINVAL;
+
+        fd = get_unused_fd_flags(flags);
+        if (fd < 0)
+                return fd;
+
+        fd_install(fd, dmabuf->file);
+
+        return fd;
+}
+
+void dma_buf_put(struct dma_buf *dmabuf)
+{
+        if (WARN_ON(!dmabuf || !dmabuf->file))
+                return;
+
+        fput(dmabuf->file);
+}
+
+
+struct dma_buf *dma_buf_export(const struct dma_buf_export_info *exp_info)
+{
+        struct dma_buf *dmabuf;
+        struct reservation_object *resv = exp_info->resv;
+        struct file *file;
+        size_t alloc_size = sizeof(struct dma_buf);
+
+        if (!exp_info->resv)
+                alloc_size += sizeof(struct reservation_object);
+        else
+                /* prevent &dma_buf[1] == dma_buf->resv */
+                alloc_size += 1;
+
+        if (WARN_ON(!exp_info->priv
+                          || !exp_info->ops
+                          || !exp_info->ops->map_dma_buf
+                          || !exp_info->ops->unmap_dma_buf
+                          || !exp_info->ops->release
+                          || !exp_info->ops->kmap_atomic
+                          || !exp_info->ops->kmap
+                          || !exp_info->ops->mmap)) {
+                return ERR_PTR(-EINVAL);
+        }
+
+        dmabuf = kzalloc(alloc_size, GFP_KERNEL);
+        if (!dmabuf) {
+                return ERR_PTR(-ENOMEM);
+        }
+
+        dmabuf->priv = exp_info->priv;
+        dmabuf->ops = exp_info->ops;
+        dmabuf->size = exp_info->size;
+        dmabuf->exp_name = exp_info->exp_name;
+
+        if (!resv) {
+                resv = (struct reservation_object *)&dmabuf[1];
+                reservation_object_init(resv);
+        }
+//        dmabuf->resv = resv;
+
+//        file = anon_inode_getfile("dmabuf", &dma_buf_fops, dmabuf,
+//                                        exp_info->flags);
+//        if (IS_ERR(file)) {
+//                kfree(dmabuf);
+//                return ERR_CAST(file);
+//        }
+
+//        file->f_mode |= FMODE_LSEEK;
+//        dmabuf->file = file;
+
+        mutex_init(&dmabuf->lock);
+        INIT_LIST_HEAD(&dmabuf->attachments);
+
+//        mutex_lock(&db_list.lock);
+//        list_add(&dmabuf->list_node, &db_list.head);
+//        mutex_unlock(&db_list.lock);
+
+        return dmabuf;
+}
+
+int dma_map_sg(struct device *dev, struct scatterlist *sglist,
+                           int nelems, int dir)
+{
+    struct scatterlist *s;
     int i;
 
-    i = vsnprintf(buf, size, fmt, args);
-
-    if (likely(i < size))
-            return i;
-    if (size != 0)
-            return size - 1;
-    return 0;
-}
-
-
-int scnprintf(char *buf, size_t size, const char *fmt, ...)
-{
-        va_list args;
-        int i;
-
-        va_start(args, fmt);
-        i = vscnprintf(buf, size, fmt, args);
-        va_end(args);
-
-        return i;
-}
-
-
-
-#define _U  0x01    /* upper */
-#define _L  0x02    /* lower */
-#define _D  0x04    /* digit */
-#define _C  0x08    /* cntrl */
-#define _P  0x10    /* punct */
-#define _S  0x20    /* white space (space/lf/tab) */
-#define _X  0x40    /* hex digit */
-#define _SP 0x80    /* hard space (0x20) */
-
-extern const unsigned char _ctype[];
-
-#define __ismask(x) (_ctype[(int)(unsigned char)(x)])
-
-#define isalnum(c)  ((__ismask(c)&(_U|_L|_D)) != 0)
-#define isalpha(c)  ((__ismask(c)&(_U|_L)) != 0)
-#define iscntrl(c)  ((__ismask(c)&(_C)) != 0)
-#define isdigit(c)  ((__ismask(c)&(_D)) != 0)
-#define isgraph(c)  ((__ismask(c)&(_P|_U|_L|_D)) != 0)
-#define islower(c)  ((__ismask(c)&(_L)) != 0)
-#define isprint(c)  ((__ismask(c)&(_P|_U|_L|_D|_SP)) != 0)
-#define ispunct(c)  ((__ismask(c)&(_P)) != 0)
-/* Note: isspace() must return false for %NUL-terminator */
-#define isspace(c)  ((__ismask(c)&(_S)) != 0)
-#define isupper(c)  ((__ismask(c)&(_U)) != 0)
-#define isxdigit(c) ((__ismask(c)&(_D|_X)) != 0)
-
-#define isascii(c) (((unsigned char)(c))<=0x7f)
-#define toascii(c) (((unsigned char)(c))&0x7f)
-
-
-
-//const char hex_asc[] = "0123456789abcdef";
-
-/**
- * hex_to_bin - convert a hex digit to its real value
- * @ch: ascii character represents hex digit
- *
- * hex_to_bin() converts one hex digit to its actual value or -1 in case of bad
- * input.
- */
-int hex_to_bin(char ch)
-{
-    if ((ch >= '0') && (ch <= '9'))
-        return ch - '0';
-    ch = tolower(ch);
-    if ((ch >= 'a') && (ch <= 'f'))
-        return ch - 'a' + 10;
-    return -1;
-}
-EXPORT_SYMBOL(hex_to_bin);
-
-/**
- * hex2bin - convert an ascii hexadecimal string to its binary representation
- * @dst: binary result
- * @src: ascii hexadecimal string
- * @count: result length
- *
- * Return 0 on success, -1 in case of bad input.
- */
-int hex2bin(u8 *dst, const char *src, size_t count)
-{
-    while (count--) {
-        int hi = hex_to_bin(*src++);
-        int lo = hex_to_bin(*src++);
-
-        if ((hi < 0) || (lo < 0))
-            return -1;
-
-        *dst++ = (hi << 4) | lo;
-    }
-    return 0;
-}
-EXPORT_SYMBOL(hex2bin);
-
-/**
- * hex_dump_to_buffer - convert a blob of data to "hex ASCII" in memory
- * @buf: data blob to dump
- * @len: number of bytes in the @buf
- * @rowsize: number of bytes to print per line; must be 16 or 32
- * @groupsize: number of bytes to print at a time (1, 2, 4, 8; default = 1)
- * @linebuf: where to put the converted data
- * @linebuflen: total size of @linebuf, including space for terminating NUL
- * @ascii: include ASCII after the hex output
- *
- * hex_dump_to_buffer() works on one "line" of output at a time, i.e.,
- * 16 or 32 bytes of input data converted to hex + ASCII output.
- *
- * Given a buffer of u8 data, hex_dump_to_buffer() converts the input data
- * to a hex + ASCII dump at the supplied memory location.
- * The converted output is always NUL-terminated.
- *
- * E.g.:
- *   hex_dump_to_buffer(frame->data, frame->len, 16, 1,
- *          linebuf, sizeof(linebuf), true);
- *
- * example output buffer:
- * 40 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e 4f  @ABCDEFGHIJKLMNO
- */
-void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,
-            int groupsize, char *linebuf, size_t linebuflen,
-            bool ascii)
-{
-    const u8 *ptr = buf;
-    u8 ch;
-    int j, lx = 0;
-    int ascii_column;
-
-    if (rowsize != 16 && rowsize != 32)
-        rowsize = 16;
-
-    if (!len)
-        goto nil;
-    if (len > rowsize)      /* limit to one line at a time */
-        len = rowsize;
-    if ((len % groupsize) != 0) /* no mixed size output */
-        groupsize = 1;
-
-    switch (groupsize) {
-    case 8: {
-        const u64 *ptr8 = buf;
-        int ngroups = len / groupsize;
-
-        for (j = 0; j < ngroups; j++)
-            lx += scnprintf(linebuf + lx, linebuflen - lx,
-                    "%s%16.16llx", j ? " " : "",
-                    (unsigned long long)*(ptr8 + j));
-        ascii_column = 17 * ngroups + 2;
-        break;
+    for_each_sg(sglist, s, nelems, i) {
+        s->dma_address = (dma_addr_t)sg_phys(s);
+#ifdef CONFIG_NEED_SG_DMA_LENGTH
+        s->dma_length  = s->length;
+#endif
     }
 
-    case 4: {
-        const u32 *ptr4 = buf;
-        int ngroups = len / groupsize;
-
-        for (j = 0; j < ngroups; j++)
-            lx += scnprintf(linebuf + lx, linebuflen - lx,
-                    "%s%8.8x", j ? " " : "", *(ptr4 + j));
-        ascii_column = 9 * ngroups + 2;
-        break;
-    }
-
-    case 2: {
-        const u16 *ptr2 = buf;
-        int ngroups = len / groupsize;
-
-        for (j = 0; j < ngroups; j++)
-            lx += scnprintf(linebuf + lx, linebuflen - lx,
-                    "%s%4.4x", j ? " " : "", *(ptr2 + j));
-        ascii_column = 5 * ngroups + 2;
-        break;
-    }
-
-    default:
-        for (j = 0; (j < len) && (lx + 3) <= linebuflen; j++) {
-            ch = ptr[j];
-            linebuf[lx++] = hex_asc_hi(ch);
-            linebuf[lx++] = hex_asc_lo(ch);
-            linebuf[lx++] = ' ';
-        }
-        if (j)
-            lx--;
-
-        ascii_column = 3 * rowsize + 2;
-        break;
-    }
-    if (!ascii)
-        goto nil;
-
-    while (lx < (linebuflen - 1) && lx < (ascii_column - 1))
-        linebuf[lx++] = ' ';
-    for (j = 0; (j < len) && (lx + 2) < linebuflen; j++) {
-        ch = ptr[j];
-        linebuf[lx++] = (isascii(ch) && isprint(ch)) ? ch : '.';
-    }
-nil:
-    linebuf[lx++] = '\0';
+    return nelems;
 }
 
-/**
- * print_hex_dump - print a text hex dump to syslog for a binary blob of data
- * @level: kernel log level (e.g. KERN_DEBUG)
- * @prefix_str: string to prefix each line with;
- *  caller supplies trailing spaces for alignment if desired
- * @prefix_type: controls whether prefix of an offset, address, or none
- *  is printed (%DUMP_PREFIX_OFFSET, %DUMP_PREFIX_ADDRESS, %DUMP_PREFIX_NONE)
- * @rowsize: number of bytes to print per line; must be 16 or 32
- * @groupsize: number of bytes to print at a time (1, 2, 4, 8; default = 1)
- * @buf: data blob to dump
- * @len: number of bytes in the @buf
- * @ascii: include ASCII after the hex output
- *
- * Given a buffer of u8 data, print_hex_dump() prints a hex + ASCII dump
- * to the kernel log at the specified kernel log level, with an optional
- * leading prefix.
- *
- * print_hex_dump() works on one "line" of output at a time, i.e.,
- * 16 or 32 bytes of input data converted to hex + ASCII output.
- * print_hex_dump() iterates over the entire input @buf, breaking it into
- * "line size" chunks to format and print.
- *
- * E.g.:
- *   print_hex_dump(KERN_DEBUG, "raw data: ", DUMP_PREFIX_ADDRESS,
- *          16, 1, frame->data, frame->len, true);
- *
- * Example output using %DUMP_PREFIX_OFFSET and 1-byte mode:
- * 0009ab42: 40 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e 4f  @ABCDEFGHIJKLMNO
- * Example output using %DUMP_PREFIX_ADDRESS and 4-byte mode:
- * ffffffff88089af0: 73727170 77767574 7b7a7978 7f7e7d7c  pqrstuvwxyz{|}~.
- */
-void print_hex_dump(const char *level, const char *prefix_str, int prefix_type,
-            int rowsize, int groupsize,
-            const void *buf, size_t len, bool ascii)
+void *vmalloc(unsigned long size)
 {
-    const u8 *ptr = buf;
-    int i, linelen, remaining = len;
-    unsigned char linebuf[32 * 3 + 2 + 32 + 1];
-
-    if (rowsize != 16 && rowsize != 32)
-        rowsize = 16;
-
-    for (i = 0; i < len; i += rowsize) {
-        linelen = min(remaining, rowsize);
-        remaining -= rowsize;
-
-        hex_dump_to_buffer(ptr + i, linelen, rowsize, groupsize,
-                   linebuf, sizeof(linebuf), ascii);
-
-        switch (prefix_type) {
-        case DUMP_PREFIX_ADDRESS:
-            printk("%s%s%p: %s\n",
-                   level, prefix_str, ptr + i, linebuf);
-            break;
-        case DUMP_PREFIX_OFFSET:
-            printk("%s%s%.8x: %s\n", level, prefix_str, i, linebuf);
-            break;
-        default:
-            printk("%s%s%s\n", level, prefix_str, linebuf);
-            break;
-        }
-    }
+    return KernelAlloc(size);
 }
 
-void print_hex_dump_bytes(const char *prefix_str, int prefix_type,
-                          const void *buf, size_t len)
+void vfree(const void *addr)
 {
-    print_hex_dump(KERN_DEBUG, prefix_str, prefix_type, 16, 1,
-                       buf, len, true);
+    KernelFree(addr);
 }
-
-
-
-
-
-
-
-
-
-#include "vmwgfx_kms.h"
-
-void kms_update();
-
-
-extern struct drm_device *main_device;
-
-typedef struct
-{
-    kobj_t     header;
-
-    uint32_t  *data;
-    uint32_t   hot_x;
-    uint32_t   hot_y;
-
-    struct list_head   list;
-    void      *priv;
-}cursor_t;
-
-#define CURSOR_WIDTH 64
-#define CURSOR_HEIGHT 64
-
-struct tag_display
-{
-    int  x;
-    int  y;
-    int  width;
-    int  height;
-    int  bpp;
-    int  vrefresh;
-    int  pitch;
-    int  lfb;
-
-    int  supported_modes;
-    struct drm_device    *ddev;
-    struct drm_connector *connector;
-    struct drm_crtc      *crtc;
-
-    struct list_head   cursors;
-
-    cursor_t   *cursor;
-    int       (*init_cursor)(cursor_t*);
-    cursor_t* (__stdcall *select_cursor)(cursor_t*);
-    void      (*show_cursor)(int show);
-    void      (__stdcall *move_cursor)(cursor_t *cursor, int x, int y);
-    void      (__stdcall *restore_cursor)(int x, int y);
-    void      (*disable_mouse)(void);
-    u32  mask_seqno;
-    u32  check_mouse;
-    u32  check_m_pixel;
-};
-
-display_t *os_display;
-
-static int count_connector_modes(struct drm_connector* connector)
-{
-    struct drm_display_mode  *mode;
-    int count = 0;
-
-    list_for_each_entry(mode, &connector->modes, head)
-    {
-        count++;
-    };
-    return count;
-};
-
-static void __stdcall restore_cursor(int x, int y){};
-static void disable_mouse(void) {};
-
-static void __stdcall move_cursor_kms(cursor_t *cursor, int x, int y)
-{
-    struct drm_crtc *crtc = os_display->crtc;
-    struct vmw_private *dev_priv = vmw_priv(crtc->dev);
-    struct vmw_display_unit *du = vmw_crtc_to_du(crtc);
-
-    du->cursor_x = x;
-    du->cursor_y = y;
-    vmw_cursor_update_position(dev_priv, true, x,y);
-};
-
-static cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
-{
-    struct vmw_private *dev_priv = vmw_priv(os_display->ddev);
-    struct vmw_display_unit *du = vmw_crtc_to_du(os_display->crtc);
-    cursor_t *old;
-
-    old = os_display->cursor;
-    os_display->cursor = cursor;
-
-    vmw_cursor_update_image(dev_priv, cursor->data,
-                    64, 64, cursor->hot_x, cursor->hot_y);
-    vmw_cursor_update_position(dev_priv, true,
-                   du->cursor_x, du->cursor_y);
-    return old;
-};
-
-void vmw_driver_thread()
-{
-    DRM_DEBUG_KMS("%s\n",__FUNCTION__);
-
-    select_cursor_kms(os_display->cursor);
-
-    while(driver_wq_state)
-    {
-        kms_update();
-        delay(2);
-    };
-     __asm__ __volatile__ (
-     "int $0x40"
-     ::"a"(-1));
-}
-
-int kms_init(struct drm_device *dev)
-{
-    struct drm_connector    *connector;
-    struct drm_encoder      *encoder;
-    struct drm_crtc         *crtc = NULL;
-    struct vmw_display_unit *du;
-    cursor_t  *cursor;
-    int        mode_count;
-    u32_t      ifl;
-    int        err;
-
-    crtc = list_entry(dev->mode_config.crtc_list.next, typeof(*crtc), head);
-    encoder = list_entry(dev->mode_config.encoder_list.next, typeof(*encoder), head);
-    connector = list_entry(dev->mode_config.connector_list.next, typeof(*connector), head);
-    connector->encoder = encoder;
-
-    mode_count = count_connector_modes(connector);
-    if(mode_count == 0)
-    {
-        struct drm_display_mode *mode;
-
-        connector->funcs->fill_modes(connector,
-                                     dev->mode_config.max_width,
-                                     dev->mode_config.max_height);
-
-        list_for_each_entry(mode, &connector->modes, head)
-        mode_count++;
-    };
-
-    DRM_DEBUG_KMS("CONNECTOR %x ID:%d status:%d ENCODER %x CRTC %x ID:%d\n",
-               connector, connector->base.id,
-               connector->status, connector->encoder,
-               crtc, crtc->base.id );
-
-    os_display = GetDisplay();
-
-    os_display->ddev = dev;
-    os_display->connector = connector;
-    os_display->crtc = crtc;
-    os_display->supported_modes = mode_count;
-
-    ifl = safe_cli();
-    {
-        os_display->restore_cursor(0,0);
-        os_display->select_cursor  = select_cursor_kms;
-        os_display->show_cursor    = NULL;
-        os_display->move_cursor    = move_cursor_kms;
-        os_display->restore_cursor = restore_cursor;
-        os_display->disable_mouse  = disable_mouse;
-    };
-    safe_sti(ifl);
-
-    du = vmw_crtc_to_du(os_display->crtc);
-    du->cursor_x = os_display->width/2;
-    du->cursor_y = os_display->height/2;
-    select_cursor_kms(os_display->cursor);
-
-    return 0;
-};
-
-
-void kms_update()
-{
-    struct vmw_private *dev_priv = vmw_priv(main_device);
-    size_t fifo_size;
-    u32_t  ifl;
-    int i;
-
-    struct {
-        uint32_t header;
-        SVGAFifoCmdUpdate body;
-    } *cmd;
-
-    fifo_size = sizeof(*cmd);
-
-    cmd = vmw_fifo_reserve(dev_priv, fifo_size);
-    if (unlikely(cmd == NULL)) {
-        DRM_ERROR("Fifo reserve failed.\n");
-        return;
-    }
-
-    cmd->header = cpu_to_le32(SVGA_CMD_UPDATE);
-    cmd->body.x = 0;
-    cmd->body.y = 0;
-    cmd->body.width  = os_display->width;
-    cmd->body.height = os_display->height;
-
-    vmw_fifo_commit(dev_priv, fifo_size);
-}
-
-int get_videomodes(videomode_t *mode, int *count)
-{
-    struct drm_display_mode  *drmmode;
-    int err = -1;
-
-    if( *count == 0 )
-    {
-        *count = os_display->supported_modes;
-        err = 0;
-    }
-    else if( mode != NULL )
-    {
-        int i = 0;
-
-        if( *count > os_display->supported_modes)
-            *count = os_display->supported_modes;
-
-        list_for_each_entry(drmmode, &os_display->connector->modes, head)
-        {
-            if( i < *count)
-            {
-                mode->width  = drm_mode_width(drmmode);
-                mode->height = drm_mode_height(drmmode);
-                mode->bpp    = 32;
-                mode->freq   = drmmode->vrefresh;
-                i++;
-                mode++;
-            }
-            else break;
-        };
-
-        *count = i;
-        err = 0;
-    };
-
-    return err;
-};
-
-
-bool set_mode(struct drm_device *dev, struct drm_connector *connector,
-              videomode_t *reqmode, bool strict);
-
-
-int set_user_mode(videomode_t *mode)
-{
-    int err = -1;
-
-    dbgprintf("width %d height %d vrefresh %d\n",
-               mode->width, mode->height, mode->freq);
-
-    if( (mode->width  != 0)  &&
-        (mode->height != 0)  &&
-        (mode->freq   != 0 ) &&
-        ( (mode->width   != os_display->width)  ||
-          (mode->height  != os_display->height) ||
-          (mode->freq    != os_display->vrefresh) ) )
-    {
-        if( set_mode(os_display->ddev, os_display->connector, mode, true) )
-            err = 0;
-    };
-
-    return err;
-};
-
-struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags)
-{
-    struct file *filep;
-    int count;
-
-    filep = malloc(sizeof(*filep));
-
-    if(unlikely(filep == NULL))
-        return ERR_PTR(-ENOMEM);
-
-    count = size / PAGE_SIZE;
-
-    filep->pages = kzalloc(sizeof(struct page *) * count, 0);
-    if(unlikely(filep->pages == NULL))
-    {
-        kfree(filep);
-        return ERR_PTR(-ENOMEM);
-    };
-
-    filep->count     = count;
-    filep->allocated = 0;
-    filep->vma       = NULL;
-
-//    printf("%s file %p pages %p count %d\n",
-//              __FUNCTION__,filep, filep->pages, count);
-
-    return filep;
-}
-
-struct page *shmem_read_mapping_page_gfp(struct file *filep,
-                                         pgoff_t index, gfp_t gfp)
-{
-    struct page *page;
-
-//    dbgprintf("%s, file %p index %d\n", __FUNCTION__, filep, index);
-
-    if(unlikely(index >= filep->count))
-        return ERR_PTR(-EINVAL);
-
-    page = filep->pages[index];
-
-    if(unlikely(page == NULL))
-    {
-        page = (struct page *)AllocPage();
-
-        if(unlikely(page == NULL))
-            return ERR_PTR(-ENOMEM);
-
-        filep->pages[index] = page;
-    };
-
-    return page;
-};
-

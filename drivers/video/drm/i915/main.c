@@ -14,7 +14,7 @@
 #include "bitmap.h"
 #include "i915_kos32.h"
 
-#define DRV_NAME "i915 v4.4.2-dbg2"
+#define DRV_NAME "i915 v4.4.3"
 
 #define I915_DEV_CLOSE 0
 #define I915_DEV_INIT  1
@@ -60,7 +60,6 @@ void i915_driver_thread()
     };
 
     dev_priv = main_device->dev_private;
-    cwq = dev_priv->wq;
 
     asm volatile("int $0x40":"=a"(tmp):"a"(66),"b"(1),"c"(1));
     asm volatile("int $0x40":"=a"(tmp):"a"(66),"b"(4),"c"(0x46),"d"(0x330));
@@ -92,9 +91,9 @@ void i915_driver_thread()
             else if(key.code == 0xC6)
                 dpms_lock = 0;
         };
+        cwq = dev_priv->wq;
 
         spin_lock_irqsave(&cwq->lock, irqflags);
-
         while (!list_empty(&cwq->worklist))
         {
             struct work_struct *work = list_entry(cwq->worklist.next,
@@ -106,7 +105,22 @@ void i915_driver_thread()
             f(work);
             spin_lock_irqsave(&cwq->lock, irqflags);
         }
+        spin_unlock_irqrestore(&cwq->lock, irqflags);
 
+        cwq = dev_priv->hotplug.dp_wq;
+
+        spin_lock_irqsave(&cwq->lock, irqflags);
+        while (!list_empty(&cwq->worklist))
+        {
+            struct work_struct *work = list_entry(cwq->worklist.next,
+                                        struct work_struct, entry);
+            work_func_t f = work->func;
+            list_del_init(cwq->worklist.next);
+
+            spin_unlock_irqrestore(&cwq->lock, irqflags);
+            f(work);
+            spin_lock_irqsave(&cwq->lock, irqflags);
+        }
         spin_unlock_irqrestore(&cwq->lock, irqflags);
 
         delay(1);

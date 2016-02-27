@@ -53,15 +53,6 @@
 #include <linux/spinlock.h>
 #include <linux/err.h>
 
-extern int i915_fbsize;
-extern struct drm_i915_gem_object *main_fb_obj;
-extern struct drm_framebuffer     *main_framebuffer;
-
-static struct drm_i915_gem_object *get_fb_obj()
-{
-    return main_fb_obj;
-};
-
 #define ioread32(addr)          readl(addr)
 static inline u8 inb(u16 port)
 {
@@ -2692,7 +2683,6 @@ struct i915_params {
 	bool nuclear_pageflip;
 	int edp_vswing;
                 /* Kolibri related */
-    int fbsize;
     char *log_file;
     char *cmdline_mode;
 };

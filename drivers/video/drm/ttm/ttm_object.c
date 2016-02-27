@@ -58,23 +58,13 @@
 
 #define pr_fmt(fmt) "[TTM] " fmt
 
-#include <linux/mutex.h>
-
 #include <drm/ttm/ttm_object.h>
 #include <drm/ttm/ttm_module.h>
 #include <linux/list.h>
 #include <linux/spinlock.h>
 #include <linux/slab.h>
 #include <linux/module.h>
-//#include <linux/atomic.h>
-
-static inline int __must_check kref_get_unless_zero(struct kref *kref)
-{
-    return atomic_add_unless(&kref->refcount, 1, 0);
-}
-
-#define pr_err(fmt, ...) \
-        printk(KERN_ERR pr_fmt(fmt), ##__VA_ARGS__)
+#include <linux/atomic.h>
 
 struct ttm_object_file {
 	struct ttm_object_device *tdev;
@@ -101,6 +91,9 @@ struct ttm_object_device {
 	struct drm_open_hash object_hash;
 	atomic_t object_count;
 	struct ttm_mem_global *mem_glob;
+	struct dma_buf_ops ops;
+	void (*dmabuf_release)(struct dma_buf *dma_buf);
+	size_t dma_buf_size;
 };
 
 /**
@@ -125,6 +118,7 @@ struct ttm_object_device {
  */
 
 struct ttm_ref_object {
+	struct rcu_head rcu_head;
 	struct drm_hash_item hash;
 	struct list_head head;
 	struct kref kref;
@@ -240,7 +234,7 @@ struct ttm_base_object *ttm_base_object_lookup(struct ttm_object_file *tfile,
 	struct drm_open_hash *ht = &tfile->ref_hash[TTM_REF_USAGE];
 	int ret;
 
-//	rcu_read_lock();
+	rcu_read_lock();
 	ret = drm_ht_find_item_rcu(ht, key, &hash);
 
 	if (likely(ret == 0)) {
@@ -248,7 +242,7 @@ struct ttm_base_object *ttm_base_object_lookup(struct ttm_object_file *tfile,
 		if (!kref_get_unless_zero(&base->refcount))
 			base = NULL;
 	}
-//   rcu_read_unlock();
+	rcu_read_unlock();
 
 	return base;
 }
@@ -262,6 +256,7 @@ ttm_base_object_lookup_for_ref(struct ttm_object_device *tdev, uint32_t key)
 	struct drm_open_hash *ht = &tdev->object_hash;
 	int ret;
 
+	rcu_read_lock();
 	ret = drm_ht_find_item_rcu(ht, key, &hash);
 
 	if (likely(ret == 0)) {
@@ -269,6 +264,7 @@ ttm_base_object_lookup_for_ref(struct ttm_object_device *tdev, uint32_t key)
 		if (!kref_get_unless_zero(&base->refcount))
 			base = NULL;
 	}
+	rcu_read_unlock();
 
 	return base;
 }
@@ -288,15 +284,18 @@ int ttm_ref_object_add(struct ttm_object_file *tfile,
 		*existed = true;
 
 	while (ret == -EINVAL) {
+		rcu_read_lock();
 		ret = drm_ht_find_item_rcu(ht, base->hash.key, &hash);
 
 		if (ret == 0) {
 			ref = drm_hash_entry(hash, struct ttm_ref_object, hash);
-			if (!kref_get_unless_zero(&ref->kref)) {
-			break;
-		}
+			if (kref_get_unless_zero(&ref->kref)) {
+				rcu_read_unlock();
+				break;
+			}
 		}
 
+		rcu_read_unlock();
 		ret = ttm_mem_global_alloc(mem_glob, sizeof(*ref),
 					   false, false);
 		if (unlikely(ret != 0))
@@ -355,7 +354,7 @@ static void ttm_ref_object_release(struct kref *kref)
 
 	ttm_base_object_unref(&ref->obj);
 	ttm_mem_global_free(mem_glob, sizeof(*ref));
-	kfree(ref);
+	kfree_rcu(ref, rcu_head);
 	spin_lock(&tfile->lock);
 }
 
@@ -462,12 +461,12 @@ ttm_object_device_init(struct ttm_mem_global *mem_glob,
 	if (ret != 0)
 		goto out_no_object_hash;
 
-//   tdev->ops = *ops;
-//   tdev->dmabuf_release = tdev->ops.release;
-//   tdev->ops.release = ttm_prime_dmabuf_release;
-//   tdev->dma_buf_size = ttm_round_pot(sizeof(struct dma_buf)) +
-//       ttm_round_pot(sizeof(struct file));
-		return tdev;
+	tdev->ops = *ops;
+	tdev->dmabuf_release = tdev->ops.release;
+	tdev->ops.release = ttm_prime_dmabuf_release;
+	tdev->dma_buf_size = ttm_round_pot(sizeof(struct dma_buf)) +
+		ttm_round_pot(sizeof(struct file));
+	return tdev;
 
 out_no_object_hash:
 	kfree(tdev);
@@ -488,3 +487,230 @@ void ttm_object_device_release(struct ttm_object_device **p_tdev)
 	kfree(tdev);
 }
 EXPORT_SYMBOL(ttm_object_device_release);
+
+/**
+ * get_dma_buf_unless_doomed - get a dma_buf reference if possible.
+ *
+ * @dma_buf: Non-refcounted pointer to a struct dma-buf.
+ *
+ * Obtain a file reference from a lookup structure that doesn't refcount
+ * the file, but synchronizes with its release method to make sure it has
+ * not been freed yet. See for example kref_get_unless_zero documentation.
+ * Returns true if refcounting succeeds, false otherwise.
+ *
+ * Nobody really wants this as a public API yet, so let it mature here
+ * for some time...
+ */
+static bool __must_check get_dma_buf_unless_doomed(struct dma_buf *dmabuf)
+{
+	return atomic_long_inc_not_zero(&dmabuf->file->f_count) != 0L;
+}
+
+/**
+ * ttm_prime_refcount_release - refcount release method for a prime object.
+ *
+ * @p_base: Pointer to ttm_base_object pointer.
+ *
+ * This is a wrapper that calls the refcount_release founction of the
+ * underlying object. At the same time it cleans up the prime object.
+ * This function is called when all references to the base object we
+ * derive from are gone.
+ */
+static void ttm_prime_refcount_release(struct ttm_base_object **p_base)
+{
+	struct ttm_base_object *base = *p_base;
+	struct ttm_prime_object *prime;
+
+	*p_base = NULL;
+	prime = container_of(base, struct ttm_prime_object, base);
+	BUG_ON(prime->dma_buf != NULL);
+	mutex_destroy(&prime->mutex);
+	if (prime->refcount_release)
+		prime->refcount_release(&base);
+}
+
+/**
+ * ttm_prime_dmabuf_release - Release method for the dma-bufs we export
+ *
+ * @dma_buf:
+ *
+ * This function first calls the dma_buf release method the driver
+ * provides. Then it cleans up our dma_buf pointer used for lookup,
+ * and finally releases the reference the dma_buf has on our base
+ * object.
+ */
+static void ttm_prime_dmabuf_release(struct dma_buf *dma_buf)
+{
+	struct ttm_prime_object *prime =
+		(struct ttm_prime_object *) dma_buf->priv;
+	struct ttm_base_object *base = &prime->base;
+	struct ttm_object_device *tdev = base->tfile->tdev;
+
+	if (tdev->dmabuf_release)
+		tdev->dmabuf_release(dma_buf);
+	mutex_lock(&prime->mutex);
+	if (prime->dma_buf == dma_buf)
+		prime->dma_buf = NULL;
+	mutex_unlock(&prime->mutex);
+	ttm_mem_global_free(tdev->mem_glob, tdev->dma_buf_size);
+	ttm_base_object_unref(&base);
+}
+
+/**
+ * ttm_prime_fd_to_handle - Get a base object handle from a prime fd
+ *
+ * @tfile: A struct ttm_object_file identifying the caller.
+ * @fd: The prime / dmabuf fd.
+ * @handle: The returned handle.
+ *
+ * This function returns a handle to an object that previously exported
+ * a dma-buf. Note that we don't handle imports yet, because we simply
+ * have no consumers of that implementation.
+ */
+int ttm_prime_fd_to_handle(struct ttm_object_file *tfile,
+			   int fd, u32 *handle)
+{
+	struct ttm_object_device *tdev = tfile->tdev;
+	struct dma_buf *dma_buf;
+	struct ttm_prime_object *prime;
+	struct ttm_base_object *base;
+	int ret;
+
+	dma_buf = dma_buf_get(fd);
+	if (IS_ERR(dma_buf))
+		return PTR_ERR(dma_buf);
+
+	if (dma_buf->ops != &tdev->ops)
+		return -ENOSYS;
+
+	prime = (struct ttm_prime_object *) dma_buf->priv;
+	base = &prime->base;
+	*handle = base->hash.key;
+	ret = ttm_ref_object_add(tfile, base, TTM_REF_USAGE, NULL);
+
+	dma_buf_put(dma_buf);
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(ttm_prime_fd_to_handle);
+
+/**
+ * ttm_prime_handle_to_fd - Return a dma_buf fd from a ttm prime object
+ *
+ * @tfile: Struct ttm_object_file identifying the caller.
+ * @handle: Handle to the object we're exporting from.
+ * @flags: flags for dma-buf creation. We just pass them on.
+ * @prime_fd: The returned file descriptor.
+ *
+ */
+int ttm_prime_handle_to_fd(struct ttm_object_file *tfile,
+			   uint32_t handle, uint32_t flags,
+			   int *prime_fd)
+{
+	struct ttm_object_device *tdev = tfile->tdev;
+	struct ttm_base_object *base;
+	struct dma_buf *dma_buf;
+	struct ttm_prime_object *prime;
+	int ret;
+
+	base = ttm_base_object_lookup(tfile, handle);
+	if (unlikely(base == NULL ||
+		     base->object_type != ttm_prime_type)) {
+		ret = -ENOENT;
+		goto out_unref;
+	}
+
+	prime = container_of(base, struct ttm_prime_object, base);
+	if (unlikely(!base->shareable)) {
+		ret = -EPERM;
+		goto out_unref;
+	}
+
+	ret = mutex_lock_interruptible(&prime->mutex);
+	if (unlikely(ret != 0)) {
+		ret = -ERESTARTSYS;
+		goto out_unref;
+	}
+
+	dma_buf = prime->dma_buf;
+	if (!dma_buf || !get_dma_buf_unless_doomed(dma_buf)) {
+		DEFINE_DMA_BUF_EXPORT_INFO(exp_info);
+
+		exp_info.ops = &tdev->ops;
+		exp_info.size = prime->size;
+		exp_info.flags = flags;
+		exp_info.priv = prime;
+
+		/*
+		 * Need to create a new dma_buf, with memory accounting.
+		 */
+		ret = ttm_mem_global_alloc(tdev->mem_glob, tdev->dma_buf_size,
+					   false, true);
+		if (unlikely(ret != 0)) {
+			mutex_unlock(&prime->mutex);
+			goto out_unref;
+		}
+
+		dma_buf = dma_buf_export(&exp_info);
+		if (IS_ERR(dma_buf)) {
+			ret = PTR_ERR(dma_buf);
+			ttm_mem_global_free(tdev->mem_glob,
+					    tdev->dma_buf_size);
+			mutex_unlock(&prime->mutex);
+			goto out_unref;
+		}
+
+		/*
+		 * dma_buf has taken the base object reference
+		 */
+		base = NULL;
+		prime->dma_buf = dma_buf;
+	}
+	mutex_unlock(&prime->mutex);
+
+	ret = dma_buf_fd(dma_buf, flags);
+	if (ret >= 0) {
+		*prime_fd = ret;
+		ret = 0;
+	} else
+		dma_buf_put(dma_buf);
+
+out_unref:
+	if (base)
+		ttm_base_object_unref(&base);
+	return ret;
+}
+EXPORT_SYMBOL_GPL(ttm_prime_handle_to_fd);
+
+/**
+ * ttm_prime_object_init - Initialize a ttm_prime_object
+ *
+ * @tfile: struct ttm_object_file identifying the caller
+ * @size: The size of the dma_bufs we export.
+ * @prime: The object to be initialized.
+ * @shareable: See ttm_base_object_init
+ * @type: See ttm_base_object_init
+ * @refcount_release: See ttm_base_object_init
+ * @ref_obj_release: See ttm_base_object_init
+ *
+ * Initializes an object which is compatible with the drm_prime model
+ * for data sharing between processes and devices.
+ */
+int ttm_prime_object_init(struct ttm_object_file *tfile, size_t size,
+			  struct ttm_prime_object *prime, bool shareable,
+			  enum ttm_object_type type,
+			  void (*refcount_release) (struct ttm_base_object **),
+			  void (*ref_obj_release) (struct ttm_base_object *,
+						   enum ttm_ref_type ref_type))
+{
+	mutex_init(&prime->mutex);
+	prime->size = PAGE_ALIGN(size);
+	prime->real_type = type;
+	prime->dma_buf = NULL;
+	prime->refcount_release = refcount_release;
+	return ttm_base_object_init(tfile, &prime->base, shareable,
+				    ttm_prime_type,
+				    ttm_prime_refcount_release,
+				    ref_obj_release);
+}
+EXPORT_SYMBOL(ttm_prime_object_init);

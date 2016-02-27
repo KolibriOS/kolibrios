@@ -1,6 +1,6 @@
 /**************************************************************************
  *
- * Copyright © 2009-2011 VMware, Inc., Palo Alto, CA., USA
+ * Copyright © 2009-2015 VMware, Inc., Palo Alto, CA., USA
  * All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,9 +24,6 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  **************************************************************************/
-#define mb()    asm volatile("mfence" : : : "memory")
-#define rmb()   asm volatile("lfence" : : : "memory")
-#define wmb()   asm volatile("sfence" : : : "memory")
 
 #include "vmwgfx_drv.h"
 #include <drm/drmP.h>
@@ -80,8 +77,8 @@ static int vmw_gmr2_bind(struct vmw_private *dev_priv,
 		remap_cmd.offsetPages = remap_pos;
 		remap_cmd.numPages = nr;
 
-	*cmd++ = SVGA_CMD_REMAP_GMR2;
-	memcpy(cmd, &remap_cmd, sizeof(remap_cmd));
+		*cmd++ = SVGA_CMD_REMAP_GMR2;
+		memcpy(cmd, &remap_cmd, sizeof(remap_cmd));
 		cmd += sizeof(remap_cmd) / sizeof(*cmd);
 
 		for (i = 0; i < nr; ++i) {
@@ -141,7 +138,7 @@ int vmw_gmr_bind(struct vmw_private *dev_priv,
 		return 0;
 
 	if (unlikely(!(dev_priv->capabilities & SVGA_CAP_GMR2)))
-    return -EINVAL;
+		return -EINVAL;
 
 	return vmw_gmr2_bind(dev_priv, &data_iter, num_pages, gmr_id);
 }

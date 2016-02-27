@@ -121,6 +121,8 @@ void drm_kms_helper_poll_enable_locked(struct drm_device *dev)
 			poll = true;
 	}
 
+	if (poll)
+		schedule_delayed_work(&dev->mode_config.output_poll_work, DRM_OUTPUT_POLL_PERIOD);
 }
 EXPORT_SYMBOL(drm_kms_helper_poll_enable_locked);
 
@@ -157,6 +159,30 @@ static int drm_helper_probe_single_connector_modes_merge_bits(struct drm_connect
 		old_status = connector->status;
 
 		connector->status = connector->funcs->detect(connector, true);
+
+		/*
+		 * Normally either the driver's hpd code or the poll loop should
+		 * pick up any changes and fire the hotplug event. But if
+		 * userspace sneaks in a probe, we might miss a change. Hence
+		 * check here, and if anything changed start the hotplug code.
+		 */
+		if (old_status != connector->status) {
+			DRM_DEBUG_KMS("[CONNECTOR:%d:%s] status updated from %d to %d\n",
+				      connector->base.id,
+				      connector->name,
+				      old_status, connector->status);
+
+			/*
+			 * The hotplug event code might call into the fb
+			 * helpers, and so expects that we do not hold any
+			 * locks. Fire up the poll struct instead, it will
+			 * disable itself again.
+			 */
+			dev->mode_config.delayed_event = true;
+			if (dev->mode_config.poll_enabled)
+				schedule_delayed_work(&dev->mode_config.output_poll_work,
+						      0);
+		}
 	}
 
 	/* Re-enable polling in case the global poll config changed. */
@@ -297,10 +323,12 @@ EXPORT_SYMBOL(drm_helper_probe_single_connector_modes_nomerge);
  */
 void drm_kms_helper_hotplug_event(struct drm_device *dev)
 {
-	/* send a uevent + call fbdev */
-//   drm_sysfs_hotplug_event(dev);
-//   if (dev->mode_config.funcs->output_poll_changed)
-//       dev->mode_config.funcs->output_poll_changed(dev);
+ENTER();
+    /* send a uevent + call fbdev */
+	drm_sysfs_hotplug_event(dev);
+	if (dev->mode_config.funcs->output_poll_changed)
+		dev->mode_config.funcs->output_poll_changed(dev);
+LEAVE();
 }
 EXPORT_SYMBOL(drm_kms_helper_hotplug_event);
 
@@ -377,9 +405,12 @@ static void output_poll_execute(struct work_struct *work)
 
 	mutex_unlock(&dev->mode_config.mutex);
 
-out:;
+out:
+	if (changed)
+		drm_kms_helper_hotplug_event(dev);
 
-
+	if (repoll)
+		schedule_delayed_work(delayed_work, DRM_OUTPUT_POLL_PERIOD);
 }
 
 /**
@@ -396,7 +427,7 @@ void drm_kms_helper_poll_disable(struct drm_device *dev)
 {
 	if (!dev->mode_config.poll_enabled)
 		return;
-//   cancel_delayed_work_sync(&dev->mode_config.output_poll_work);
+	cancel_delayed_work_sync(&dev->mode_config.output_poll_work);
 }
 EXPORT_SYMBOL(drm_kms_helper_poll_disable);
 
