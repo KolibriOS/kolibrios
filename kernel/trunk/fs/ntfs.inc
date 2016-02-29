@@ -83,10 +83,16 @@ indexRawSize = 10
 indexFlags = 12
 directoryRecordReference = 16
 directoryReferenceReuse = 16h
+fileCreated = 18h
+fileModified = 20h
+recordModified = 28h
+fileAccessed = 30h
 fileAllocatedSize = 38h
 fileRealSize = 40h
 fileFlags = 48h
 fileNameLength = 50h
+namespace = 51h
+fileName = 52h
 
 struct NTFS PARTITION
 Lock            MUTEX   ?   ; Currently operations with one partition
@@ -275,6 +281,7 @@ ntfs_create_partition:
 .nope:
         xor     eax, eax
         jmp     .exit
+
 ; By given bootsector, initialize some NTFS variables
 .ntfs_setup:
         movi    eax, sizeof.NTFS
@@ -309,6 +316,7 @@ ntfs_create_partition:
         mul     [ebp+NTFS.sectors_per_cluster]
         shl     eax, 9
         jmp     .1
+
 @@:
         neg     eax
         mov     ecx, eax
@@ -364,6 +372,7 @@ ntfs_create_partition:
 @@:
         add     eax, [eax+4]
         jmp     .scandata
+
 .founddata:
         cmp     byte [eax+8], 0
         jz      .fail_free_mft
@@ -384,6 +393,7 @@ ntfs_create_partition:
         mov     [eax+4], edx
         inc     [ebp+NTFS.mft_retrieval_size]
         jmp     .scanmcb
+
 .scanmcbend:
         add     esp, 10h
 ; there may be other portions of $DATA attribute in auxiliary records;
@@ -498,6 +508,7 @@ ntfs_create_partition:
         popad
         add     esp, 14h
         jmp     .fail_free_mft
+
 @@:
         mov     esi, [ebp+NTFS.mft_retrieval]
         mov     edi, eax
@@ -601,6 +612,7 @@ ntfs_read_attr:
         pop     eax
         jnz     .mftscan
         jmp     .nomft
+
 @@:
         push    ecx
         add     ecx, eax
@@ -649,16 +661,20 @@ ntfs_read_attr:
         pop     eax
         jz      .nomft
         jmp     .mftscan
-@@:
-        popad
-        ret
+
+.errret2_pop:
+        xor     eax, eax
+.errret_pop:
+        pop     ecx
 .errread:
         pop     ecx
 .errret:
         mov     [esp+28], eax
         stc
+@@:
         popad
         ret
+
 .nomft:
 ; 1. Read file record.
 ; N.B. This will do recursive call of read_attr for $MFT::$Data.
@@ -675,20 +691,22 @@ ntfs_read_attr:
 ; a) For auxiliary records, read base record.
 ; If base record is present, base iRecord may be 0 (for $Mft),
 ; but SequenceNumber is nonzero.
-        cmp     dword [eax+24h], 0
+        cmp     word [eax+baseRecordReuse], 0
         jz      @f
-        mov     eax, [eax+20h]
+        mov     eax, [eax+baseRecordReference]
 .beginfindattr:
         mov     [ebp+NTFS.attr_iRecord], eax
         call    ntfs_read_file_record
         jc      .errret
         jmp     @f
+
 .newAttribute:
         pushad
+        and     [ebp+NTFS.cur_read], 0
 @@:
 ; b) Scan for required attribute and for $ATTR_LIST
         mov     eax, [ebp+NTFS.frs_buffer]
-        movzx   ecx, word [eax+14h]
+        movzx   ecx, word [eax+attributeOffset]
         add     eax, ecx
         mov     ecx, [ebp+NTFS.cur_attr]
         and     [ebp+NTFS.attr_offs], 0
@@ -703,17 +721,19 @@ ntfs_read_attr:
         jnz     .scancont
         mov     [ebp+NTFS.attr_list], eax
         jmp     .scancont
+
 .okattr:
 ; ignore named $DATA attributes (aka NTFS streams)
         cmp     ecx, 0x80
         jnz     @f
-        cmp     byte [eax+9], 0
+        cmp     byte [eax+nameLength], 0
         jnz     .scancont
 @@:
         mov     [ebp+NTFS.attr_offs], eax
 .scancont:
-        add     eax, [eax+4]
+        add     eax, [eax+sizeWithHeader]
         jmp     .scanattr
+
 .continue:
         pushad
         and     [ebp+NTFS.cur_read], 0
@@ -726,20 +746,16 @@ ntfs_read_attr:
         call    .doreadattr
         pop     edx
         pop     ecx
-        jc      @f
+        jc      .ret
         cmp     [ebp+NTFS.bCanContinue], 0
-        jz      @f
+        jz      .ret
         sub     edx, [ebp+NTFS.cur_read]
         neg     edx
         shr     edx, 9
         sub     ecx, edx
         mov     [ebp+NTFS.cur_size], ecx
-        jnz     .not_in_cur
-@@:
-        popad
-        ret
+        jz      .ret
 .noattr:
-.not_in_cur:
         cmp     [ebp+NTFS.cur_attr], 0x20
         jz      @f
         mov     ecx, [ebp+NTFS.attr_list]
@@ -747,9 +763,11 @@ ntfs_read_attr:
         jnz     .lookattr
 .ret_is_attr:
         and     dword [esp+28], 0
-        cmp     [ebp+NTFS.attr_offs], 1     ; CF set <=> attr_offs == 0
+        cmp     [ebp+NTFS.attr_offs], 1     ; define CF
+.ret:
         popad
         ret
+
 .lookattr:
 ; required attribute or required offset was not found in base record;
 ; it may be present in auxiliary records;
@@ -804,6 +822,7 @@ ntfs_read_attr:
         movzx   ecx, word [esi+4]
         add     esi, ecx
         jmp     .scanlist
+
 @@:
 ; ignore named $DATA attributes (aka NTFS streams)
         cmp     eax, 0x80
@@ -822,14 +841,7 @@ ntfs_read_attr:
 ; if attribute is in auxiliary records, its size is defined only in first
         mov     eax, [esi+10h]
         call    ntfs_read_file_record
-        jnc     @f
-.errret_pop:
-        pop     ecx ecx
-        jmp     .errret
-.errret2_pop:
-        xor     eax, eax
-        jmp     .errret_pop
-@@:
+        jc      .errret_pop
         mov     eax, [ebp+NTFS.frs_buffer]
         movzx   ecx, word [eax+14h]
         add     eax, ecx
@@ -842,6 +854,7 @@ ntfs_read_attr:
 .l1:
         add     eax, [eax+4]
         jmp     @b
+
 @@:
         cmp     eax, 0x80
         jnz     @f
@@ -854,6 +867,7 @@ ntfs_read_attr:
         mov     dword [ebp+NTFS.attr_size], eax
         and     dword [ebp+NTFS.attr_size+4], 0
         jmp     .testfz
+
 .sdnores:
         mov     ecx, [eax+30h]
         mov     dword [ebp+NTFS.attr_size], ecx
@@ -868,18 +882,17 @@ ntfs_read_attr:
         ja      @f
         mov     edi, [esi+10h]  ; keep previous iRecord
         jmp     .scanlistcont
+
 @@:
         pop     ecx
 .scanlistfound:
         cmp     edi, -1
-        jnz     @f
-        popad
-        ret
-@@:
+        jz      .ret
         mov     eax, [ebp+NTFS.cur_iRecord]
         mov     [ebp+NTFS.attr_iBaseRecord], eax
         mov     eax, edi
         jmp     .beginfindattr
+
 .scanlistdone:
         pop     ecx
         sub     ecx, ebp
@@ -936,9 +949,9 @@ ntfs_read_attr:
 
 .doreadattr:
         mov     [ebp+NTFS.bCanContinue], 0
-        cmp     byte [ecx+8], 0
+        cmp     byte [ecx+nonResidentFlag], 0
         jnz     .nonresident
-        mov     eax, [ecx+10h]  ; length
+        mov     eax, [ecx+sizeWithoutHeader]
         mov     esi, eax
         mov     edx, [ebp+NTFS.cur_offs]
         shr     eax, 9
@@ -946,7 +959,7 @@ ntfs_read_attr:
         jb      .okret
         shl     edx, 9
         sub     esi, edx
-        movzx   eax, word [ecx+14h]
+        movzx   eax, word [ecx+attributeOffset]
         add     edx, eax
         add     edx, ecx        ; edx -> data
         mov     eax, [ebp+NTFS.cur_size]
@@ -967,6 +980,7 @@ ntfs_read_attr:
         call    memmove
         and     [ebp+NTFS.cur_size], 0      ; CF=0
         ret
+
 .nonresident:
 ; Not all auxiliary records contain correct FileSize info
         mov     eax, dword [ebp+NTFS.attr_size]
@@ -976,8 +990,8 @@ ntfs_read_attr:
         cmp     eax, -1
         pop     eax
         jnz     @f
-        mov     eax, [ecx+30h]  ; FileSize
-        mov     edx, [ecx+34h]
+        mov     eax, [ecx+attributeRealSize]
+        mov     edx, [ecx+attributeRealSize+4]
         mov     dword [ebp+NTFS.attr_size], eax
         mov     dword [ebp+NTFS.attr_size+4], edx
 @@:
@@ -991,6 +1005,7 @@ ntfs_read_attr:
 .okret:
         clc
         ret
+
 @@:
 ; reduce read length
         and     [ebp+NTFS.cur_tail], 0
@@ -1006,7 +1021,7 @@ ntfs_read_attr:
         mov     eax, [ebp+NTFS.cur_offs]
         xor     edx, edx
         div     [ebp+NTFS.sectors_per_cluster]
-        sub     eax, [ecx+10h]  ; first_vbo
+        sub     eax, [ecx+firstVCN]
         jb      .okret
 ; eax = cluster, edx = starting sector
         cmp     [ebp+NTFS.cur_attr], 0x80
@@ -1018,11 +1033,12 @@ ntfs_read_attr:
         jnz     @f
         mov     dword[esp], fs_write64_app
         jmp     @f
+
 .sys:
         push    fs_read64_sys
 @@:
         sub     esp, 10h
-        movzx   esi, word [ecx+20h]     ; mcb_info_ofs
+        movzx   esi, word [ecx+dataRunsOffset]
         add     esi, ecx
         xor     edi, edi
         mov     [ebp+NTFS.fragmentCount], 0
@@ -1074,11 +1090,13 @@ ntfs_read_attr:
 @@:
         clc
         ret
+
 .errread2:
         pop     ecx
         add     esp, 14h
         stc
         ret
+
 .break:
         add     esp, 14h        ; CF=0
         mov     [ebp+NTFS.bCanContinue], 1
@@ -1142,6 +1160,7 @@ ntfs_read_file_record:
 .ret:
         pop     edx ecx
         ret
+
 .errret:
         pop     edx ecx
         xor     eax, eax
@@ -1158,9 +1177,9 @@ ntfs_restore_usa:
         shr     eax, 9
         mov     ecx, eax
         inc     eax
-        cmp     [ebx+6], ax
+        cmp     [ebx+updateSequenceSize], ax
         jnz     .err
-        movzx   eax, word [ebx+4]
+        movzx   eax, word [ebx+updateSequenceOffset]
         lea     esi, [eax+ebx]
         lodsw
         mov     edx, eax
@@ -1175,6 +1194,7 @@ ntfs_restore_usa:
         popad
         clc
         ret
+
 .err:
         popad
         stc
@@ -1245,7 +1265,7 @@ ntfs_find_lfn:
 ; [ebp+NTFS.cur_iRecord] = number of MFT fileRecord
 ; eax -> index in the parent index node
 ; CF=1 -> file not found, eax=0 -> error
-        mov     [ebp+NTFS.cur_iRecord], 5   ; start parse from root cluster
+        mov     [ebp+NTFS.cur_iRecord], 5   ; start from root directory
 .doit2:
         mov     [ebp+NTFS.cur_attr], 0x90   ; $INDEX_ROOT
         and     [ebp+NTFS.cur_offs], 0
@@ -1255,74 +1275,30 @@ ntfs_find_lfn:
         mov     [ebp+NTFS.cur_buf], eax
         call    ntfs_read_attr
         mov     eax, 0
-        jnc     @f
-.ret:
-        ret     4
-@@:
+        jc      .ret
         cmp     [ebp+NTFS.cur_read], 0x20
         jc      .ret
         pushad
         mov     esi, [ebp+NTFS.cur_index_buf]
-        mov     eax, [esi+14h]
-        add     eax, 10h
-        cmp     [ebp+NTFS.cur_read], eax
-        jae     .readok1
-        add     eax, 1FFh
-        shr     eax, 9
-        cmp     eax, [ebp+NTFS.cur_index_size]
-        ja      @f
-.stc_ret:
-        popad
-        stc
-        ret     4
-@@:
-; reallocate
-        push    eax
-        stdcall kernel_free, [ebp+NTFS.cur_index_buf]
-        pop     eax
-        mov     [ebp+NTFS.cur_index_size], eax
-        stdcall kernel_alloc, eax
-        test    eax, eax
-        jnz     @f
-        and     [ebp+NTFS.cur_index_size], 0
-        and     [ebp+NTFS.cur_index_buf], 0
-        jmp     .stc_ret
-@@:
-        mov     [ebp+NTFS.cur_index_buf], eax
-        popad
-        jmp     .doit2
-.readok1:
-        mov     edx, [esi+8]    ; subnode_size
+        mov     edx, [esi+indexRecordSize]
         shr     edx, 9
-        cmp     edx, [ebp+NTFS.cur_index_size]
-        jbe     .ok2
-        push    esi edx
-        stdcall kernel_alloc, edx
-        pop     edx esi
-        test    eax, eax
-        jz      .stc_ret
-        mov     edi, eax
-        mov     ecx, [ebp+NTFS.cur_index_size]
-        shl     ecx, 9-2
-        rep movsd
-        mov     esi, eax
-        mov     [ebp+NTFS.cur_index_size], edx
-        push    esi edx
-        stdcall kernel_free, [ebp+NTFS.cur_index_buf]
-        pop     edx esi
-        mov     [ebp+NTFS.cur_index_buf], esi
-.ok2:
-        add     esi, 10h
+        cmp     [ebp+NTFS.cur_index_size], edx
+        jc      .realloc
+        add     esi, rootNode
+        mov     eax, [esi+nodeRealSize]
+        add     eax, rootNode
+        cmp     [ebp+NTFS.cur_read], eax
+        jc      .err
         mov     edi, [esp+4]
-; edi -> name, esi -> current index data, edx = subnode size
+; edi -> name, esi -> current index node, edx = subnode size
 .scanloop:
-        add     esi, [esi]
+        add     esi, [esi+indexOffset]
 .scanloopint:
-        test    byte [esi+0Ch], 2
+        test    byte [esi+indexFlags], 2
         jnz     .subnode
         push    esi
-        add     esi, 0x52
-        movzx   ecx, byte [esi-2]
+        movzx   ecx, byte [esi+fileNameLength]
+        add     esi, fileName
         push    edi
 @@:
         lodsw
@@ -1342,17 +1318,38 @@ ntfs_find_lfn:
         pop     esi
         jb      .subnode
 .scanloopcont:
-        movzx   eax, word [esi+8]
+        movzx   eax, word [esi+indexAllocatedSize]
         add     esi, eax
         jmp     .scanloopint
+
+.realloc:
+        mov     edi, edx
+        stdcall kernel_alloc, [esi+indexRecordSize]
+        test    eax, eax
+        jz      .err
+        push    [ebp+NTFS.cur_index_buf]
+        mov     [ebp+NTFS.cur_index_buf], eax
+        call    kernel_free
+        mov     [ebp+NTFS.cur_index_size], edi
+        popad
+        jmp     .doit2
+
+.notfound:
+        mov     [esp+1Ch], esi
+.err:
+        popad
+        stc
+.ret:
+        ret     4
+
 .slash:
         pop     eax
         pop     edi
         pop     esi
 .subnode:
-        test    byte [esi+0Ch], 1
+        test    byte [esi+indexFlags], 1
         jz      .notfound
-        movzx   eax, word [esi+8]
+        movzx   eax, word [esi+indexAllocatedSize]
         mov     eax, [esi+eax-8]
         imul    eax, [ebp+NTFS.sectors_per_cluster]
         mov     [ebp+NTFS.cur_offs], eax
@@ -1361,9 +1358,7 @@ ntfs_find_lfn:
         mov     eax, [ebp+NTFS.cur_index_buf]
         mov     esi, eax
         mov     [ebp+NTFS.cur_buf], eax
-        push    edx
-        call    ntfs_read_attr
-        pop     edx
+        call    ntfs_read_attr.newAttribute
         mov     eax, edx
         shl     eax, 9
         cmp     [ebp+NTFS.cur_read], eax
@@ -1374,14 +1369,9 @@ ntfs_find_lfn:
         mov     ebx, esi
         call    ntfs_restore_usa
         jc      .err
-        add     esi, 0x18
+        add     esi, recordNode
         jmp     .scanloop
-.notfound:
-        mov     [esp+1Ch], esi
-.err:
-        popad
-        stc
-        ret     4
+
 .found:
         cmp     byte [edi], 0
         jz      .done
@@ -1390,6 +1380,7 @@ ntfs_find_lfn:
         pop     edi
         pop     esi
         jmp     .scanloopcont
+
 .done:
 .next:
         pop     esi
@@ -1403,12 +1394,10 @@ ntfs_find_lfn:
         cmp     byte [esi-1], 0
         jnz     .doit2
         cmp     dword [esp+4], 0
-        jz      @f
+        jz      .ret
         mov     esi, [esp+4]
         mov     dword [esp+4], 0
         jmp     .doit2
-@@:
-        ret     4
 
 ;----------------------------------------------------------------
 ntfs_ReadFile:
@@ -1417,6 +1406,7 @@ ntfs_ReadFile:
         or      ebx, -1
         movi    eax, ERROR_ACCESS_DENIED
         ret
+
 @@:
         call    ntfs_lock
         stdcall ntfs_find_lfn, [esp+4]
@@ -1425,6 +1415,7 @@ ntfs_ReadFile:
         or      ebx, -1
         movi    eax, ERROR_FILE_NOT_FOUND
         ret
+
 .found:
         mov     [ebp+NTFS.cur_attr], 0x80   ; $DATA
         and     [ebp+NTFS.cur_offs], 0
@@ -1435,6 +1426,7 @@ ntfs_ReadFile:
         or      ebx, -1
         movi    eax, ERROR_ACCESS_DENIED
         ret
+
 @@:
         pushad
         and     dword [esp+10h], 0
@@ -1445,10 +1437,10 @@ ntfs_ReadFile:
         popad
         xor     ebx, ebx
 .eof:
-        push    ERROR_END_OF_FILE
         call    ntfs_unlock
-        pop     eax
+        movi    eax, ERROR_END_OF_FILE
         ret
+
 @@:
         mov     ecx, [ebx+12]
         mov     edx, [ebx+16]
@@ -1487,12 +1479,14 @@ ntfs_ReadFile:
         call    ntfs_unlock
         xor     eax, eax
         ret
+
 @@:
         cmp     [ebp+NTFS.cur_read], 0x200
         jz      .alignedstart
 .eof_ebx:
         popad
         jmp     .eof
+
 .alignedstart:
         mov     eax, [ebx+4]
         push    edx
@@ -1547,103 +1541,41 @@ ntfs_ReadFile:
 ;----------------------------------------------------------------
 ntfs_ReadFolder:
         call    ntfs_lock
-        mov     eax, 5          ; root cluster
+        mov     [ebp+NTFS.cur_iRecord], 5   ; root directory
         cmp     byte [esi], 0
-        jz      .doit
+        jz      @f
         stdcall ntfs_find_lfn, [esp+4]
-        jnc     .doit2
-.notfound:
-        or      ebx, -1
-        push    ERROR_FILE_NOT_FOUND
-.pop_ret:
-        call    ntfs_unlock
-        pop     eax
-        ret
-.doit:
-        mov     [ebp+NTFS.cur_iRecord], eax
-.doit2:
+        jc      ntfsNotFound
+@@:
         mov     [ebp+NTFS.cur_attr], 0x10   ; $STANDARD_INFORMATION
         and     [ebp+NTFS.cur_offs], 0
         mov     [ebp+NTFS.cur_size], 1
         lea     eax, [ebp+NTFS.bitmap_buf]
         mov     [ebp+NTFS.cur_buf], eax
         call    ntfs_read_attr
-        jc      .notfound
+        jc      ntfsFail
         mov     [ebp+NTFS.cur_attr], 0x90   ; $INDEX_ROOT
-        and     [ebp+NTFS.cur_offs], 0
+.doit:
         mov     eax, [ebp+NTFS.cur_index_size]
         mov     [ebp+NTFS.cur_size], eax
         mov     eax, [ebp+NTFS.cur_index_buf]
         mov     [ebp+NTFS.cur_buf], eax
-        call    ntfs_read_attr
-        jnc     .ok
-        test    eax, eax
-        jz      .notfound
-        or      ebx, -1
-        push    ERROR_DEVICE
-        jmp     .pop_ret
-.ok:
+        call    ntfs_read_attr.newAttribute
+        jc      ntfsFail
         cmp     [ebp+NTFS.cur_read], 0x20
-        jae     @f
-        or      ebx, -1
-.fserr:
-        push    ERROR_FAT_TABLE
-        jmp     .pop_ret
-@@:
+        jc      ntfsFail
         pushad
         mov     esi, [ebp+NTFS.cur_index_buf]
-        mov     eax, [esi+14h]
-        add     eax, 10h
-        cmp     [ebp+NTFS.cur_read], eax
-        jae     .readok1
-        add     eax, 1FFh
-        shr     eax, 9
-        cmp     eax, [ebp+NTFS.cur_index_size]
-        ja      @f
-        popad
-        jmp     .fserr
-@@:
-; reallocate
-        push    eax
-        stdcall kernel_free, [ebp+NTFS.cur_index_buf]
-        pop     eax
-        mov     [ebp+NTFS.cur_index_size], eax
-        stdcall kernel_alloc, eax
-        test    eax, eax
-        jnz     @f
-        and     [ebp+NTFS.cur_index_size], 0
-        and     [ebp+NTFS.cur_index_buf], 0
-.nomem:
-        call    ntfs_unlock
-        popad
-        or      ebx, -1
-        movi    eax, ERROR_OUT_OF_MEMORY
-        ret
-@@:
-        mov     [ebp+NTFS.cur_index_buf], eax
-        popad
-        jmp     .doit2
-.readok1:
-        mov     edx, [esi+8]    ; subnode_size
+        mov     edx, [esi+indexRecordSize]
         shr     edx, 9
+        cmp     [ebp+NTFS.cur_index_size], edx
+        jc      .realloc
         mov     [ebp+NTFS.cur_subnode_size], edx
-        cmp     edx, [ebp+NTFS.cur_index_size]
-        jbe     .ok2
-        push    esi edx
-        stdcall kernel_alloc, edx
-        pop     edx esi
-        test    eax, eax
-        jz      .nomem
-        mov     edi, eax
-        mov     ecx, [ebp+NTFS.cur_index_size]
-        shl     ecx, 9-2
-        rep movsd
-        mov     esi, eax
-        mov     [ebp+NTFS.cur_index_size], edx
-        stdcall kernel_free, [ebp+NTFS.cur_index_buf]
-        mov     [ebp+NTFS.cur_index_buf], esi
-.ok2:
-        add     esi, 10h
+        add     esi, rootNode
+        mov     eax, [esi+nodeRealSize]
+        add     eax, rootNode
+        cmp     [ebp+NTFS.cur_read], eax
+        jc      .err
         mov     edx, [ebx+16]
         push    dword [ebx+8]   ; read ANSI/UNICODE name
 ; init header
@@ -1670,14 +1602,31 @@ ntfs_ReadFolder:
         pop     esi
 .skip_specials:
 ; at first, dump index root
-        add     esi, [esi]
+        add     esi, [esi+indexOffset]
 .dump_root:
-        test    byte [esi+0Ch], 2
+        test    byte [esi+indexFlags], 2
         jnz     .dump_root_done
         call    .add_entry
-        movzx   eax, word [esi+8]
+        movzx   eax, word [esi+indexAllocatedSize]
         add     esi, eax
         jmp     .dump_root
+
+.realloc:
+        mov     edi, edx
+        stdcall kernel_alloc, [esi+indexRecordSize]
+        test    eax, eax
+        jz      .err
+        push    [ebp+NTFS.cur_index_buf]
+        mov     [ebp+NTFS.cur_index_buf], eax
+        call    kernel_free
+        mov     [ebp+NTFS.cur_index_size], edi
+        popad
+        jmp     .doit
+
+.err:
+        popad
+        jmp     ntfsFail
+
 .dump_root_done:
 ; now dump all subnodes
         push    ecx edi
@@ -1689,7 +1638,7 @@ ntfs_ReadFolder:
         mov     [ebp+NTFS.cur_attr], 0xB0   ; $BITMAP
         and     [ebp+NTFS.cur_offs], 0
         mov     [ebp+NTFS.cur_size], 2
-        call    ntfs_read_attr
+        call    ntfs_read_attr.newAttribute
         pop     edi ecx
         push    0       ; save offset in $BITMAP attribute
         and     [ebp+NTFS.cur_offs], 0
@@ -1697,14 +1646,13 @@ ntfs_ReadFolder:
         mov     [ebp+NTFS.cur_attr], 0xA0
         mov     eax, [ebp+NTFS.cur_subnode_size]
         mov     [ebp+NTFS.cur_size], eax
-        mov     eax, [ebp+NTFS.cur_index_buf]
-        mov     esi, eax
-        mov     [ebp+NTFS.cur_buf], eax
-        push    [ebp+NTFS.cur_offs]
+        mov     esi, [ebp+NTFS.cur_index_buf]
+        mov     [ebp+NTFS.cur_buf], esi
         mov     eax, [ebp+NTFS.cur_offs]
+        push    eax
         imul    eax, [ebp+NTFS.cur_subnode_size]
         mov     [ebp+NTFS.cur_offs], eax
-        call    ntfs_read_attr
+        call    ntfs_read_attr.newAttribute
         pop     [ebp+NTFS.cur_offs]
         mov     eax, [ebp+NTFS.cur_subnode_size]
         shl     eax, 9
@@ -1723,15 +1671,16 @@ ntfs_ReadFolder:
         call    ntfs_restore_usa
         pop     ebx
         jc      .dump_subnode_done
-        add     esi, 0x18
-        add     esi, [esi]
+        add     esi, recordNode
+        add     esi, [esi+indexOffset]
 .dump_subnode:
-        test    byte [esi+0Ch], 2
+        test    byte [esi+indexFlags], 2
         jnz     .dump_subnode_done
         call    .add_entry
-        movzx   eax, word [esi+8]
+        movzx   eax, word [esi+indexAllocatedSize]
         add     esi, eax
         jmp     .dump_subnode
+
 .dump_subnode_done:
         inc     [ebp+NTFS.cur_offs]
         test    [ebp+NTFS.cur_offs], 0x400*8-1
@@ -1750,11 +1699,12 @@ ntfs_ReadFolder:
         mov     [ebp+NTFS.cur_offs], eax
         mov     [ebp+NTFS.cur_size], 2
         push    eax
-        call    ntfs_read_attr
+        call    ntfs_read_attr.newAttribute
         pop     eax
         pop     [ebp+NTFS.cur_offs]
         push    eax
         jmp     .dumploop
+
 .done:
         pop     eax
         pop     edx
@@ -1781,8 +1731,6 @@ ntfs_ReadFolder:
         inc     dword [eax+4]   ; new file block copied
         mov     eax, [edx+4]
         mov     [edi+4], eax
-;        mov     eax, dword [bitmap_buf+0x20]
-;        or      al, 0x10
         mov     eax, 0x10
         stosd
         scasd
@@ -1812,6 +1760,7 @@ ntfs_ReadFolder:
         pop     edi
         add     edi, 520
         ret
+
 @@:
         rep stosb
         pop     ecx
@@ -1824,11 +1773,11 @@ ntfs_ReadFolder:
 
 .add_entry:
 ; do not return DOS 8.3 names
-        cmp     byte [esi+0x51], 2
+        cmp     byte [esi+namespace], 2
         jz      .ret
 ; do not return system files
 ; ... note that there will be no bad effects if system files also were reported ...
-        cmp     dword [esi], 0x10
+        cmp     dword [esi+fileRecordReference], 0x10
         jb      .ret
         mov     eax, [edx]
         inc     dword [eax+8]   ; new file found
@@ -1840,8 +1789,8 @@ ntfs_ReadFolder:
         mov     eax, [edx+4]    ; flags
         call    ntfs_direntry_to_bdfe
         push    ecx esi edi
-        movzx   ecx, byte [esi+0x50]
-        add     esi, 0x52
+        movzx   ecx, byte [esi+fileNameLength]
+        add     esi, fileName
         test    byte [edi-0x24], 1
         jz      .ansi
         shr     ecx, 1
@@ -1853,6 +1802,7 @@ ntfs_ReadFolder:
         add     edi, 520
         pop     esi ecx
         ret
+
 .ansi:
         jecxz   .skip
 @@:
@@ -1870,7 +1820,7 @@ ntfs_ReadFolder:
 
 ntfs_direntry_to_bdfe:
         mov     [edi+4], eax    ; ANSI/UNICODE name
-        mov     eax, [esi+48h]
+        mov     eax, [esi+fileFlags]
         test    eax, 0x10000000
         jz      @f
         and     eax, not 0x10000000
@@ -1879,128 +1829,100 @@ ntfs_direntry_to_bdfe:
         stosd
         scasd
         push    edx
-        mov     eax, [esi+0x18]
-        mov     edx, [esi+0x1C]
+        mov     eax, [esi+fileCreated]
+        mov     edx, [esi+fileCreated+4]
         call    ntfs_datetime_to_bdfe
-        mov     eax, [esi+0x30]
-        mov     edx, [esi+0x34]
+        mov     eax, [esi+fileAccessed]
+        mov     edx, [esi+fileAccessed+4]
         call    ntfs_datetime_to_bdfe
-        mov     eax, [esi+0x20]
-        mov     edx, [esi+0x24]
+        mov     eax, [esi+fileModified]
+        mov     edx, [esi+fileModified+4]
         call    ntfs_datetime_to_bdfe
         pop     edx
-        mov     eax, [esi+0x40]
+        mov     eax, [esi+fileRealSize]
         stosd
-        mov     eax, [esi+0x44]
+        mov     eax, [esi+fileRealSize+4]
         stosd
         ret
 
 iglobal
-_24             dd      24
-_60             dd      60
-_10000000       dd      10000000
-days400year     dd      365*400+100-4+1
-days100year     dd      365*100+25-1
-days4year       dd      365*4+1
-days1year       dd      365
-months  dd  31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-months2 dd  31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-_400            dd      400
-_100            dd      100
+months  db  31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+months2 db  31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
 endg
 
 ntfs_datetime_to_bdfe:
 ; edx:eax = number of 100-nanosecond intervals since January 1, 1601, in UTC
-        push    eax
+        push    ebx ecx
+        mov     ebx, eax
         mov     eax, edx
         xor     edx, edx
-        div     [_10000000]
-        xchg    eax, [esp]
-        div     [_10000000]
-        pop     edx
-    .sec:
-; edx:eax = number of seconds since January 1, 1601
-        push    eax
-        mov     eax, edx
+        mov     ecx, 10000000
+        div     ecx
+        xchg    eax, ebx
+        div     ecx
+.forEXT:
+        xchg    eax, ebx
         xor     edx, edx
-        div     [_60]
-        xchg    eax, [esp]
-        div     [_60]
+        mov     ecx, 60
+        div     ecx
+        xchg    eax, ebx
+        div     ecx
         mov     [edi], dl
-        pop     edx
+        mov     edx, ebx
 ; edx:eax = number of minutes
-        div     [_60]
+        div     ecx
         mov     [edi+1], dl
-; eax = number of hours (note that 2^64/(10^7*60*60) < 2^32)
+; eax = number of hours
         xor     edx, edx
-        div     [_24]
-        mov     [edi+2], dl
-        mov     [edi+3], byte 0
+        mov     cl, 24
+        div     ecx
+        mov     [edi+2], dx
 ; eax = number of days since January 1, 1601
         xor     edx, edx
-        div     [days400year]
-        imul    eax, 400
-        add     eax, 1601
-        mov     [edi+6], ax
-        mov     eax, edx
-        xor     edx, edx
-        div     [days100year]
-        cmp     al, 4
+        mov     cx, 365
+        div     ecx
+        mov     ebx, eax
+        add     ebx, 1601
+        shr     eax, 2
+        sub     edx, eax
+        mov     cl, 25
+        div     cl
+        xor     ah, ah
+        add     edx, eax
+        shr     eax, 2
+        sub     edx, eax
+        jns     @f
+        dec     ebx
+        add     edx, 365
+        test    bl, 3
         jnz     @f
-        dec     eax
-        add     edx, [days100year]
+        inc     edx
 @@:
-        imul    eax, 100
-        add     [edi+6], ax
-        mov     eax, edx
-        xor     edx, edx
-        div     [days4year]
-        shl     eax, 2
-        add     [edi+6], ax
-        mov     eax, edx
-        xor     edx, edx
-        div     [days1year]
-        cmp     al, 4
-        jnz     @f
-        dec     eax
-        add     edx, [days1year]
-@@:
-        add     [edi+6], ax
-        push    esi edx
-        mov     esi, months
-        movzx   eax, word [edi+6]
-        test    al, 3
-        jnz     .noleap
-        xor     edx, edx
-        push    eax
-        div     [_400]
-        pop     eax
-        test    edx, edx
-        jz      .leap
-        xor     edx, edx
-        div     [_100]
-        test    edx, edx
-        jz      .noleap
-.leap:
-        mov     esi, months2
-.noleap:
-        pop     edx
         xor     eax, eax
-        inc     eax
+        mov     ecx, months-1
+        test    bl, 3
+        jnz     @f
+        add     ecx, 12
 @@:
-        sub     edx, [esi]
-        jb      @f
-        add     esi, 4
+        inc     ecx
         inc     eax
-        jmp     @b
-@@:
-        add     edx, [esi]
-        pop     esi
+        sub     dl, [ecx]
+        jnc     @b
+        dec     dh
+        jns     @b
+        add     dl, [ecx]
         inc     edx
         mov     [edi+4], dl
         mov     [edi+5], al
+        mov     [edi+6], bx
         add     edi, 8
+        pop     ecx ebx
         ret
+
+.sec:
+        push    ebx ecx
+        mov     ebx, edx
+        jmp     .forEXT
 
 ;----------------------------------------------------------------
 ntfs_CreateFolder:
@@ -2015,6 +1937,7 @@ ntfs_CreateFile:
         xor     ebx, ebx
         movi    eax, ERROR_ACCESS_DENIED
         ret
+
 @@: ; 1. Search file
         call    ntfs_lock
         stdcall ntfs_find_lfn, [esp+4]
@@ -2088,16 +2011,17 @@ ntfs_CreateFile:
         cmp     byte [ecx], 0
         jnz     @b
         sub     ecx, esi
-        push    ecx
-        lea     ecx, [ecx*2+52h+7]  ; precalculate index length
-        and     ecx, not 7          ; align 8
+        push    ecx     ; name length
+        shl     ecx, 1
+        add     ecx, fileName+7
+        and     ecx, not 7
         mov     edi, [ebp+NTFS.cur_index_buf]
-        push    esi
-        push    ecx
         mov     edx, [ebx+12]
         mov     [ebp+NTFS.fileRealSize], edx
         mov     edx, [ebx+16]
         mov     [ebp+NTFS.fileDataBuffer], edx
+        push    esi
+        push    ecx     ; index length
         mov     edx, ecx
         cmp     dword [edi], 'INDX'
         jz      .indexRecord
@@ -2142,7 +2066,7 @@ ntfs_CreateFile:
         mov     cl, [esi+attributeOffset]
         add     esi, ecx
         mov     eax, [esi+indexRecordSizeClus]
-        cmp     eax, 128
+        cmp     eax, 129
         jnc     @b
         mov     [ebp+NTFS.fileDataSize], eax
         mov     eax, [esi+indexRecordSize]
@@ -2328,7 +2252,7 @@ ntfs_CreateFile:
         pop     ecx
         mov     [ebp+NTFS.indexOffset], edi
         mov     [edi+fileNameLength], cl
-        add     edi, 52h
+        add     edi, fileName
 @@:         ; record filename
         lodsb
         call    ansi2uni_char
