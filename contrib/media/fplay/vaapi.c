@@ -9,6 +9,7 @@
 #include <va/va.h>
 #include <va/va_drmcommon.h>
 #include <va/drm/va_drm.h>
+#include <alloca.h>
 #include <kos32sys.h>
 #include "winlib/winlib.h"
 #include "fplay.h"
@@ -56,7 +57,7 @@ static const struct hw_profile hw_profiles[] = {
     PE(MPEG4,       MPEG4_SIMPLE,       MPEG4Simple),
     PE(H264,        H264_HIGH,          H264High),
     PE(H264,        H264_MAIN,          H264Main),
-    PE(H264,        H264_BASELINE,      H264Baseline),
+    PE(H264,        H264_CONSTRAINED_BASELINE, H264ConstrainedBaseline),
     PE(VC1,         VC1_ADVANCED,       VC1Advanced),
     PE(VC1,         VC1_MAIN,           VC1Main),
     PE(VC1,         VC1_SIMPLE,         VC1Simple),
@@ -221,10 +222,14 @@ static int has_profile(struct vaapi_context *vaapi, VAProfile profile)
 {
     VAProfile *profiles;
     int        n_profiles;
+    size_t size;
     VAStatus   status;
     int i;
 
-    profiles = calloc(vaMaxNumProfiles(vaapi->display), sizeof(profiles[0]));
+    size = vaMaxNumProfiles(vaapi->display) * sizeof(VAProfile);
+
+    profiles = alloca(size);
+    memset(profiles, 0, size);
 
     status = vaQueryConfigProfiles(vaapi->display,profiles,&n_profiles);
 
@@ -245,10 +250,14 @@ static int has_entrypoint(struct vaapi_context *vaapi, VAProfile profile, VAEntr
 {
     VAEntrypoint *entrypoints;
     int           n_entrypoints;
+    size_t size;
     VAStatus      status;
     int i;
 
-    entrypoints = calloc(vaMaxNumEntrypoints(vaapi->display), sizeof(entrypoints[0]));
+    size = vaMaxNumEntrypoints(vaapi->display) * sizeof(VAEntrypoint);
+
+    entrypoints = alloca(size);
+    memset(entrypoints, 0, size);
 
     status = vaQueryConfigEntrypoints(vaapi->display, profile,
                                       entrypoints, &n_entrypoints);
@@ -278,6 +287,10 @@ static int vaapi_init_decoder(vst_t *vst,VAProfile profile,
     VAStatus status;
 
 ENTER();
+
+    printf("%s profile %x width:%d height:%d\n",
+            __FUNCTION__, profile, picture_width, picture_height);
+
     if (!vaapi)
     {
         FAIL();
@@ -382,37 +395,39 @@ static enum PixelFormat get_format(struct AVCodecContext *avctx,
                                    const enum AVPixelFormat *fmt)
 {
     vst_t *vst = (vst_t*)avctx->opaque;
-    VAProfile profile = VAProfileNone;
+    VAProfile profile = avctx->profile;
+    enum AVCodecID codec = avctx->codec_id;
 
-ENTER();
+    printf("%s codec %d profile %x\n", __FUNCTION__,avctx->codec_id, avctx->profile);
+
+    if (codec == AV_CODEC_ID_H264)
+    {
+        if(profile == FF_PROFILE_H264_BASELINE)
+            profile = FF_PROFILE_H264_CONSTRAINED_BASELINE;
+    };
+
     for (int i = 0; fmt[i] != PIX_FMT_NONE; i++)
     {
-        enum AVCodecID codec = avctx->codec_id;
-
         if (fmt[i] != AV_PIX_FMT_VAAPI_VLD)
             continue;
-
-        if (codec == AV_CODEC_ID_H264)
-        {
-            if (profile == FF_PROFILE_H264_CONSTRAINED_BASELINE)
-                profile = FF_PROFILE_H264_MAIN;
-        };
 
         for (int n = 0; hw_profiles[n].av_codec; n++)
         {
             if (hw_profiles[n].av_codec   == codec &&
-                hw_profiles[n].ff_profile == avctx->profile)
+                hw_profiles[n].ff_profile == profile)
             {
                 profile = hw_profiles[n].va_profile;
                 if (vaapi_init_decoder(vst, profile, VAEntrypointVLD, avctx->width, avctx->height) == 0)
                 {
                     avctx->hwaccel_context = v_context;
-                    return fmt[i]; ;
+                    printf("%s format: %x\n",__FUNCTION__, fmt[i]);
+                    return fmt[i];
                 }
             }
         }
 
     }
+    printf("%s format PIX_FMT_NONE\n",__FUNCTION__);
     return PIX_FMT_NONE;
 }
 
@@ -425,12 +440,11 @@ struct av_surface
 
 static void av_release_buffer(void *opaque, uint8_t *data)
 {
-    struct av_surface surface = *(struct av_surface*)data;
-    av_freep(&data);
 }
 
 static int get_buffer2(AVCodecContext *avctx, AVFrame *pic, int flags)
 {
+    static struct av_surface avsurface;
     vst_t *vst = (vst_t*)avctx->opaque;
     void *surface;
 
@@ -438,14 +452,9 @@ static int get_buffer2(AVCodecContext *avctx, AVFrame *pic, int flags)
 
     pic->data[3] = surface;
 
-    struct av_surface *avsurface;
-    surface = av_malloc(sizeof(*avsurface));
-    if (!surface)
-        return AVERROR(ENOMEM);
-
-    pic->buf[0] = av_buffer_create((uint8_t*)avsurface, sizeof(*avsurface),
-                                     av_release_buffer, avctx,
-                                     AV_BUFFER_FLAG_READONLY);
+    pic->buf[0] = av_buffer_create((uint8_t*)&avsurface, sizeof(avsurface),
+                                    av_release_buffer, avctx,
+                                    AV_BUFFER_FLAG_READONLY);
     return 0;
 }
 
@@ -577,6 +586,90 @@ void va_create_planar(vst_t *vst, vframe_t *vframe)
 
 }
 
+static enum AVCodecID profile_to_codec(VAProfile profile)
+{
+    enum AVCodecID id;
+
+    switch(profile)
+    {
+        case VAProfileMPEG2Simple:
+        case VAProfileMPEG2Main:
+            id = AV_CODEC_ID_MPEG2VIDEO;
+            break;
+
+        case VAProfileMPEG4Simple:
+        case VAProfileMPEG4AdvancedSimple:
+        case VAProfileMPEG4Main:
+            id = AV_CODEC_ID_MPEG4;
+            break;
+
+        case VAProfileH264Baseline:
+        case VAProfileH264Main:
+        case VAProfileH264High:
+        case VAProfileH264ConstrainedBaseline:
+        case VAProfileH264MultiviewHigh:
+        case VAProfileH264StereoHigh:
+            id = AV_CODEC_ID_H264;
+            break;
+
+        case VAProfileVC1Simple:
+        case VAProfileVC1Main:
+        case VAProfileVC1Advanced:
+            id = AV_CODEC_ID_VC1;
+            break;
+
+        case VAProfileHEVCMain:
+        case VAProfileHEVCMain10:
+            id = AV_CODEC_ID_HEVC;
+            break;
+
+        default:
+            id = AV_CODEC_ID_NONE;
+    };
+    return id;
+};
+
+static VAProfile get_profile(VADisplay dpy, enum AVCodecID codec_id)
+{
+    VAProfile profile = VAProfileNone, *profile_list = NULL;
+    int num_profiles, max_num_profiles;
+    enum AVCodecID ff_id;
+    VAStatus va_status;
+    int i;
+
+    max_num_profiles = vaMaxNumProfiles(dpy);
+
+    profile_list = alloca(max_num_profiles * sizeof(VAProfile));
+    if (!profile_list)
+    {
+        printf("Failed to allocate memory for profile list\n");
+        goto err_0;
+    }
+
+    va_status = vaQueryConfigProfiles(dpy, profile_list, &num_profiles);
+    if(!vaapi_check_status(va_status, "vaQueryConfigProfiles()"))
+        goto err_0;
+
+    if(codec_id == AV_CODEC_ID_H263)
+        ff_id = AV_CODEC_ID_H264;
+    else if(codec_id == AV_CODEC_ID_WMV3)
+        ff_id = AV_CODEC_ID_VC1;
+    else
+        ff_id = codec_id;
+
+    for (i = 0; i < num_profiles; i++)
+    {
+        if(ff_id == profile_to_codec(profile_list[i]))
+        {
+            profile = profile_list[i];
+            break;
+        }
+    };
+
+err_0:
+    return profile;
+}
+
 struct decoder* va_init_decoder(vst_t *vst)
 {
     AVCodecContext *vCtx = vst->vCtx;
@@ -597,6 +690,9 @@ struct decoder* va_init_decoder(vst_t *vst)
 
     decoder->hwctx = vaapi_init(dpy);
     if(decoder->hwctx == NULL)
+        goto err_1;
+
+    if(get_profile(dpy, vCtx->codec_id) == VAProfileNone)
         goto err_1;
 
     decoder->Frame = av_frame_alloc();
@@ -645,8 +741,8 @@ struct decoder* va_init_decoder(vst_t *vst)
 err_2:
     av_frame_free(&decoder->Frame);
 err_1:
-    free(decoder);
     vaTerminate(dpy);
+    free(decoder);
 err_0:
     drm_fd = 0;
     return NULL;
