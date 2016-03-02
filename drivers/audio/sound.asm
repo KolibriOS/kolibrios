@@ -59,9 +59,11 @@ CTRL_CT0200       = 0x0006  ; Dell OEM version (EMU10K1X)
 
 CTRL_INTEL_SCH2          =  0x080a
 CTRL_INTEL_HPT           =  0x0c0c
+CTRL_INTEL_0F04          =  0x0F04
 CTRL_INTEL_CPT           =  0x1c20
 CTRL_INTEL_PGB           =  0x1d20
 CTRL_INTEL_PPT1          =  0x1e20
+CTRL_INTEL_2284          =  0x2284
 CTRL_INTEL_82801F        =  0x2668
 CTRL_INTEL_63XXESB       =  0x269a
 CTRL_INTEL_82801G        =  0x27d8
@@ -75,6 +77,18 @@ CTRL_INTEL_PCH           =  0x3b56
 CTRL_INTEL_PCH2          =  0x3b57
 CTRL_INTEL_SCH           =  0x811b
 CTRL_INTEL_LPT           =  0x8c20
+CTRL_INTEL_8ca0          =  0x8cA0
+CTRL_INTEL_8d20          =  0x8d20
+CTRL_INTEL_8d21          =  0x8d21
+CTRL_INTEL_A1F0          =  0xA1F0
+CTRL_INTEL_A270          =  0xA270
+CTRL_INTEL_9C20          =  0x9c20
+CTRL_INTEL_9C21          =  0x9c21
+CTRL_INTEL_9CA0          =  0x9cA0
+CTRL_INTEL_A170          =  0xA170
+CTRL_INTEL_9D70          =  0x9D70
+CTRL_INTEL_5A98          =  0x5A98
+
 
 CTRL_NVIDIA_MCP51        =  0x026c
 CTRL_NVIDIA_MCP55        =  0x0371
@@ -293,25 +307,39 @@ devices         dd (CTRL_ICH  shl 16)+VID_INTEL, intelac97
                 dd (0x5880 shl 16)+0x1274, ensoniq
 
                 dd (CTRL_CT0200 shl 16)+VID_CREATIVE, emu10k1x
-; Intel
-                dd (CTRL_INTEL_SCH2    shl 16)+VID_INTEL, intelhda
-                dd (CTRL_INTEL_HPT     shl 16)+VID_INTEL, intelhda
-                dd (CTRL_INTEL_CPT     shl 16)+VID_INTEL, intelhda
-                dd (CTRL_INTEL_PGB     shl 16)+VID_INTEL, intelhda
-                dd (CTRL_INTEL_PPT1    shl 16)+VID_INTEL, intelhda
-                dd (CTRL_INTEL_82801F  shl 16)+VID_INTEL, intelhda
-                dd (CTRL_INTEL_63XXESB shl 16)+VID_INTEL, intelhda
-                dd (CTRL_INTEL_82801G  shl 16)+VID_INTEL, intelhda
-                dd (CTRL_INTEL_82801H  shl 16)+VID_INTEL, intelhda
-                dd (CTRL_INTEL_82801_UNK1  shl 16)+VID_INTEL, intelhda
-                dd (CTRL_INTEL_82801I  shl 16)+VID_INTEL, intelhda
-                dd (CTRL_INTEL_82801_UNK2  shl 16)+VID_INTEL, intelhda
-                dd (CTRL_INTEL_82801JI shl 16)+VID_INTEL, intelhda
-                dd (CTRL_INTEL_82801JD shl 16)+VID_INTEL, intelhda
-                dd (CTRL_INTEL_PCH     shl 16)+VID_INTEL, intelhda
-                dd (CTRL_INTEL_PCH2    shl 16)+VID_INTEL, intelhda
-                dd (CTRL_INTEL_SCH     shl 16)+VID_INTEL, intelhda
-                dd (CTRL_INTEL_LPT     shl 16)+VID_INTEL, intelhda
+; Intel HDA
+                dd (CTRL_INTEL_SCH2       shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_HPT        shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_0F04       shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_CPT        shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_PGB        shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_PPT1       shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_2284       shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_82801F     shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_63XXESB    shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_82801G     shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_82801H     shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_82801_UNK1 shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_82801I     shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_82801_UNK2 shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_82801JI    shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_82801JD    shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_PCH        shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_PCH2       shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_SCH        shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_LPT        shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_8ca0       shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_8d20       shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_8d21       shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_A1F0       shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_A270       shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_9C20       shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_9C21       shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_9CA0       shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_A170       shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_9D70       shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_5A98       shl 16)+VID_INTEL, intelhda
+
 ; Nvidia
                 dd (CTRL_NVIDIA_MCP51    shl 16)+VID_NVIDIA, intelhda
                 dd (CTRL_NVIDIA_MCP55    shl 16)+VID_NVIDIA, intelhda
