@@ -151,9 +151,9 @@ int main( int argc, char *argv[])
 
             sample_rate = vst.aCtx->sample_rate;
 
-            fmt = test_wav(&whdr);
+            vst.snd_format = test_wav(&whdr);
 
-            if( init_audio(fmt) )
+            if( init_audio(&vst) )
             {
                 decoder_buffer = (uint8_t*)av_mallocz(192000*2+64);
                 if( decoder_buffer != NULL )
@@ -347,7 +347,7 @@ void decoder(vst_t* vst)
                                          rewind_pos, INT64_MAX, 0);
 
                 decoder_state = STOP;
-                break;
+                continue;
 
             case REWIND:
                 while(sound_state != STOP)
@@ -376,7 +376,7 @@ void decoder(vst_t* vst)
                             (double)rewind_pos / AV_TIME_BASE);
                 }
                 decoder_state = PREPARE;
-                break;
+                continue;
         }
     };
 };

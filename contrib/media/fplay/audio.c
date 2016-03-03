@@ -25,12 +25,11 @@ volatile enum player_state sound_state;
 
 static SNDBUF hBuff;
 
-static int snd_format;
 int sample_rate;
 
 static uint32_t samples_written = 0;
 
-int init_audio(int format)
+int init_audio(vst_t* vst)
 {
     int    err;
     int    version =-1;
@@ -49,9 +48,7 @@ int init_audio(int format)
         goto exit_whith_error;
     }
 
-    snd_format = format;
-
-    create_thread(audio_thread, 0, 163840);
+    create_thread(audio_thread, vst, 32768);
 
     return 1;
 
@@ -252,7 +249,7 @@ int audio_thread(void *param)
     char     *errstr;
     int       active;
 
-    if((err = CreateBuffer(snd_format|PCM_RING,0, &hBuff)) != 0)
+    if((err = CreateBuffer(vst->snd_format|PCM_RING,0, &hBuff)) != 0)
     {
         errstr = "Cannot create sound buffer\n\r";
         goto exit_whith_error;

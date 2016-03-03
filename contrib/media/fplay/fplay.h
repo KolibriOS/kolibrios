@@ -152,12 +152,13 @@ struct vstate
     struct list_head output_list;
 
     struct decoder *decoder;
+    int             snd_format;
     volatile int    frames_count;
-    int             has_sound:1;
-    int             audio_timer_valid:1;
-    int             blit_bitmap:1;      /* hardware RGBA blitter    */
-    int             blit_texture:1;     /* hardware RGBA blit and scale */
-    int             blit_planar:1;      /* hardbare YUV blit and scale */
+    unsigned int    has_sound:1;
+    unsigned int    audio_timer_valid:1;
+    unsigned int    blit_bitmap:1;      /* hardware RGBA blitter    */
+    unsigned int    blit_texture:1;     /* hardware RGBA blit and scale */
+    unsigned int    blit_planar:1;      /* hardbare YUV blit and scale */
 };
 
 
@@ -177,7 +178,7 @@ void render_draw_client(render_t *render);
 
 int fplay_init_context(vst_t *vst);
 
-int init_audio(int format);
+int init_audio(vst_t* vst);
 int audio_thread(void *param);
 void set_audio_volume(int left, int right);
 
