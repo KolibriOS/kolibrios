@@ -1,6 +1,6 @@
 
 AR = kos32-ar
-FASM:= fasm.exe
+FASM:= fasm
 
 TARGET:= libsound
 

@@ -103,8 +103,6 @@ endef
 
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
-include $(SRC_PATH)/doc/Makefile
-
 define DOPROG
 OBJS-$(1) += $(1).o $(EXEOBJS) $(OBJS-$(1)-yes)
 $(1)$(PROGSSUF)_g$(EXESUF): $$(OBJS-$(1))

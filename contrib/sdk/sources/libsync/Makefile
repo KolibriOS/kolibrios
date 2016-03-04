@@ -1,6 +1,6 @@
 LIBRARY= libsync
 
-FASM = fasm.exe
+FASM = fasm
 AR = kos32-ar
 ARFLAGS = crs
 
