@@ -11,7 +11,7 @@ CPPFLAGS = -fno-rtti
 
 ARFLAGS= crs
 
-INCLUDES= -I. -I../include/mingw32 -I../include -I../../newlib/libc/include -I/d/mingw/include
+INCLUDES= -I. -I../include/mingw32 -I../include -I../../newlib/libc/include -I/home/autobuild/tools/win32/include
 
 LIBS:=  -ldll -lc.dll
 
