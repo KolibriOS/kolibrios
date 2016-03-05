@@ -100,5 +100,5 @@ _res_slider:        file 'slider.raw'
 _res_progress_bar:  file 'pbar.raw'
 _res_prg_level:     file 'prg_level.raw'
 
-_res_def_font:      file 'IstokWeb.ttf'
+_res_def_font:      file 'istokweb.ttf'
 
