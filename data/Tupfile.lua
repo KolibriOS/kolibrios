@@ -1,4 +1,4 @@
--- Do nothing unless explicitly requested in tup.config.
+﻿-- Do nothing unless explicitly requested in tup.config.
 build_type = tup.getconfig('BUILD_TYPE')
 if build_type == "" then
   return
@@ -49,6 +49,7 @@ img_files = {
  {"SETTINGS/DOCKY.INI", "common/settings/docky.ini"},
  {"SETTINGS/ASSOC.INI", "common/settings/assoc.ini"},
  {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
+ {"SETTINGS/FB2READ.INI", "common/settings/fb2read.ini"},
  {"NOTIFY3.PNG", "common/notify3.png"},
  {"SETTINGS/SYSTEM.INI", "common/settings/system.ini"},
  {"VMODE", "common/vmode"},
