@@ -402,6 +402,7 @@ tup.append_table(img_files, {
  {"LIB/LIBIO.OBJ", PROGS .. "/develop/libraries/libs-dev/libio/libio.obj"},
  {"LIB/MSGBOX.OBJ", PROGS .. "/develop/libraries/msgbox/msgbox.obj"},
  {"LIB/NETWORK.OBJ", PROGS .. "/develop/libraries/network/network.obj"},
+ {"LIB/RASTERWORKS.OBJ", PROGS .. "/develop/libraries/fontRasterWorks(unicode)/RasterWorks.obj"},
  {"LIB/SORT.OBJ", PROGS .. "/develop/libraries/sorter/sort.obj"},
  {"LIB/HTTP.OBJ", PROGS .. "/develop/libraries/http/http.obj"},
  {"LIB/PROC_LIB.OBJ", PROGS .. "/develop/libraries/proc_lib/trunk/proc_lib.obj"},
