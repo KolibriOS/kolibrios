@@ -28,7 +28,7 @@ create_framebuffer:
         mov     ecx, sizeof.FRB
         call    create_object
         test    eax, eax
-        jz .fail
+        jz      .fail
 
         mov     [eax+FRB.magic], 'FRMB'
         mov     [eax+FRB.destroy], 0
@@ -127,8 +127,9 @@ init_video:
         jnc     .create_page_tables
 
         mov     edx, 0x00400000
-        or      esi, PG_GLOBAL+PDE_LARGE+PAT_WC+PG_UWR
+        or      esi, PG_GLOBAL+PAT_WC+PG_UWR
         and     esi, [pte_valid_mask]
+        or      esi, PDE_LARGE
         mov     [ebp+FRB.pde], esi
         add     esi, edx
         mov     [ebp+FRB.pde+4], esi
@@ -187,6 +188,8 @@ init_video:
         call    alloc_page
         lea     edx, [eax+PG_UWR]
         mov     [ebp+FRB.pde], edx
+
+        stdcall map_page, edi, eax, PG_SWR
 
 ; max VGA=640*480*4=1228800 bytes
 ; + 32*640*4=81920 bytes for mouse pointer

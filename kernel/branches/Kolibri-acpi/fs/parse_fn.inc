@@ -5,15 +5,6 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;-------------------------------------------------------------------------
-;
-;  File path partial substitution (according to configuration)
-;
-;
-;     SPraid
-;
-;-------------------------------------------------------------------------
-
 $Revision$
 
 
@@ -245,3 +236,158 @@ proc get_every_key.replace
         stc
         ret
 endp
+
+
+char_todown:
+; convert character in al to downcase, using cp866 encoding
+        cmp     al, 'A'
+        jb      .ret
+        cmp     al, 'Z'
+        jbe     .az
+        cmp     al, 0x80 ; 'А'
+        jb      .ret
+        cmp     al, 0x90 ; 'Р'
+        jb      .rus
+        cmp     al, 0xF0 ; 'Ё'
+        jz      .yo
+        cmp     al, 0x9F ; 'Я'
+        ja      .ret
+; 0x90-0x9F -> 0xE0-0xEF
+        add     al, 0xE0-0x90
+.ret:
+        ret
+
+.az:
+.rus:  ; 0x80-0x8F -> 0xA0-0xAF
+        add     al, 0x20
+        ret
+
+.yo:
+        inc     al
+        ret
+
+
+char_toupper:
+; convert character in al to uppercase, using cp866 encoding
+        cmp     al, 'a'
+        jb      .ret
+        cmp     al, 'z'
+        jbe     .az
+        cmp     al, 0xA0 ; 'а'
+        jb      .ret
+        cmp     al, 0xE0 ; 'р'
+        jb      .rus
+        cmp     al, 0xF1 ; 'ё'
+        jz      .yo
+        cmp     al, 0xEF ; 'я'
+        ja      .ret
+; 0xE0-0xEF -> 0x90-0x9F
+        sub     al, 0xE0-0x90
+.ret:
+        ret
+
+.az:
+.rus:  ; 0xA0-0xAF -> 0x80-0x8F
+        and     al, not 0x20
+        ret
+
+.yo:
+        dec     al
+        ret
+
+
+uni2ansi_str:
+; convert UNICODE zero-terminated string to ASCII-string (codepage 866)
+; in: esi->source, edi->buffer (may be esi=edi)
+; destroys: eax,esi,edi
+        lodsw
+        call    uni2ansi_char
+        stosb
+        test    al, al
+        jnz     uni2ansi_str
+        ret
+
+
+uni2ansi_char:
+; convert UNICODE character in ax to ANSI character in al using cp866 encoding
+        cmp     ax, 0x80
+        jb      .ret
+        cmp     ax, 0xB6
+        jz      .B6
+        cmp     ax, 0x400
+        jb      .unk
+        cmp     ax, 0x410
+        jb      @f
+        cmp     ax, 0x440
+        jb      .rus1
+        cmp     ax, 0x450
+        jb      .rus2
+        cmp     ax, 0x460
+        jb      @f
+.unk:
+        mov     al, '_'
+.ret:
+        ret
+
+.B6:
+        mov     al, 20
+        ret
+
+.rus1:  ; 0x410-0x43F -> 0x80-0xAF
+        add     al, 0x70
+        ret
+
+.rus2:  ; 0x440-0x44F -> 0xE0-0xEF
+        add     al, 0xA0
+        ret
+
+@@:
+        push    ecx edi
+        mov     ecx, 8
+        mov     edi, .table
+        repnz scasb
+        mov     ah, cl
+        pop     edi ecx
+        jnz     .unk
+        mov     al, 0xF7
+        sub     al, ah
+        ret
+
+.table  db  1, 51h, 4, 54h, 7, 57h, 0Eh, 5Eh
+
+
+ansi2uni_char:
+; convert ANSI character in al to UNICODE character in ax, using cp866 encoding
+        movzx   eax, al
+        cmp     al, 0x80
+        jb      @f      ; 0x00-0x7F - trivial map
+        cmp     al, 0xB0
+        jb      .rus    ; 0x80-0xAF -> 0x410-0x43F
+        cmp     al, 0xE0
+        jb      .unk
+        cmp     al, 0xF0
+        jb      .rus2   ; 0xE0-0xEF -> 0x440-0x44F
+        cmp     al, 0xF8
+        jnc     .unk
+        mov     al, [eax+uni2ansi_char.table-0xF0]
+        add     ax, 400h
+        ret
+
+@@:
+        cmp     al, 20
+        jnz     .ret
+        mov     al, 0xB6
+.ret:
+        ret
+
+.rus:
+        add     ax, 0x410-0x80
+        ret
+
+.rus2:
+        add     ax, 0x440-0xE0
+        ret
+
+.unk:
+        mov     al, '_'
+        ret

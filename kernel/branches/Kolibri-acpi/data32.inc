@@ -173,7 +173,6 @@ end if
 vmode          db  '/sys/drivers/VMODE.MDR',0
 ;vrr_m          db  'VRR_M',0
 kernel_file_load:
-
 ; load kernel.mnt to _CLEAN_ZONE
         dd      0       ; subfunction
         dq      0       ; offset in file

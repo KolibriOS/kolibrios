@@ -1100,9 +1100,6 @@ endg
 
 first_app_found:
 
-        mov     ecx, bios_fb
-        call    set_framebuffer
-
 ; START MULTITASKING
 
 ; A 'All set - press ESC to start' messages if need
@@ -1632,9 +1629,13 @@ draw_num_text:
         add     eax, [edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
         add     ebx, eax
         mov     ecx, [esp+64+32-12+4]
-        and     ecx, not 0x80000000     ; force counted string
         mov     eax, [esp+64+8]         ; background color (if given)
         mov     edi, [esp+64+4]
+        and     ecx, 5FFFFFFFh
+        bt      ecx, 27
+        jnc     @f
+        mov     edi, eax
+@@:
         jmp     dtext
 ;-----------------------------------------------------------------------------
 iglobal
