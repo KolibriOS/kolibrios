@@ -984,11 +984,12 @@ endp
 align 4
 proc exif_get_app2, app1:dword, app2:dword
 pushad
+	mov edi,[app2]
 	mov eax,[app1]
+	xor edx,edx
 	cmp [eax],edx
 	je .no_suport ;если не найден указатель на начало exif.app1
 
-	mov edi,[app2]
 	movzx edx,word[eax+offs_m_or_i] ;if 'MM' edx=1
 
 	;начало поиска производителя камеры

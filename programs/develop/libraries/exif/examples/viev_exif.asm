@@ -1,85 +1,24 @@
 use32
 	org 0x0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 0x1
-	dd start
-	dd i_end ;размер приложения
-	dd mem
-	dd stacktop
-	dd 0
-	dd sys_path
+	dd 1, start, i_end, mem, stacktop, 0, sys_path
 
 include '../../../../macros.inc'
 include '../../../../proc32.inc'
-include '../../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../../KOSfuncs.inc'
+include '../../../../load_img.inc'
 include '../../../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../../../dll.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Просмотр информации Exif 23.07.14',0 ;подпись окна
-
-struct FileInfoBlock
-	Function dd ?
-	Position dd ?
-	Flags	 dd ?
-	Count	 dd ?
-	Buffer	 dd ?
-		db ?
-	FileName dd ?
-ends
+caption db 'Просмотр информации Exif 10.03.16',0 ;подпись окна
 
 run_file_70 FileInfoBlock
-image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
 
 fn_toolbar db 'toolbar.png',0
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
-IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*6
 image_data_toolbar dd 0
 
-IMAGE_FILE1_SIZE equ 128*144*3+54 ;размер файла с изображением
-
 memory_file_size dd 512*1024 ;размер памяти для открытия файлов (в начале 512 Kb, но может увеличиватся при необходимости)
-
-macro load_image_file path,buf,size { ;макрос для загрузки изображений
-	;path - может быть переменной или строковым параметром
-	if path eqtype '' ;проверяем задан ли строкой параметр path
-		jmp @f
-			local .path_str
-			.path_str db path ;формируем локальную переменную
-			db 0
-		@@:
-		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0x0
-	else
-		copy_path path,[32],file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
-	end if
-
-	stdcall mem.Alloc, dword size ;выделяем память для изображения
-	mov [buf],eax
-
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 0
-	mov [run_file_70.Position], 0
-	mov [run_file_70.Flags], 0
-	mov [run_file_70.Count], dword size
-	m2m [run_file_70.Buffer], [buf]
-	mov byte[run_file_70+20], 0
-	mov [run_file_70.FileName], file_name
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
-	cmp ebx,0xffffffff
-	je @f
-		;определяем вид изображения и переводим его во временный буфер image_data
-		stdcall dword[img_decode], dword[buf],ebx,0
-		mov dword[image_data],eax
-		;преобразуем изображение к формату rgb
-		stdcall dword[img_to_rgb2], dword[image_data],dword[buf]
-		;удаляем временный буфер image_data
-		stdcall dword[img_destroy], dword[image_data]
-	@@:
-}
-
-
 
 align 4
 start:
@@ -88,21 +27,22 @@ start:
 	mov	ebp,lib_0
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
-		mcall -1 ;exit not correct
+		mcall SF_TERMINATE_PROCESS
 	@@:
-	mcall 48,3,sc,sizeof.system_colors
-	mcall 40,0xC0000027
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
+	mcall SF_SET_EVENTS_MASK,0xC0000027
 	stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
 
 	stdcall [buf2d_create], buf_0 ;создание буфера
+	stdcall [buf2d_create], buf_thumb
 
-	load_image_file 'font8x9.bmp', image_data_toolbar,IMAGE_FILE1_SIZE
+	load_image_file 'font8x9.bmp', image_data_toolbar
 	stdcall [buf2d_create_f_img], buf_1,[image_data_toolbar] ;создаем буфер
 	stdcall mem.Free,[image_data_toolbar] ;освобождаем память
 	stdcall [buf2d_conv_24_to_8], buf_1,1 ;делаем буфер прозрачности 8 бит
 	stdcall [buf2d_convert_text_matrix], buf_1
 
-	load_image_file fn_toolbar, image_data_toolbar,IMAGE_TOOLBAR_SIZE
+	load_image_file fn_toolbar, image_data_toolbar
 
 	stdcall mem.Alloc,[memory_file_size]
 	mov dword[open_file],eax
@@ -115,7 +55,7 @@ red_win:
 
 align 4
 still:
-	mcall 10
+	mcall SF_WAIT_EVENT
 
 	cmp al,1
 	jz red_win
@@ -132,24 +72,17 @@ still:
 align 4
 draw_window:
 pushad
-	mcall 12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
 	; *** рисование главного окна (выполняется 1 раз при запуске) ***
-	xor eax,eax
-	mov ebx,(20 shl 16)+480
-	mov ecx,(20 shl 16)+540
 	mov edx,[sc.work]
 	or  edx,(3 shl 24)+0x30000000
 	mov edi,caption
-	int 0x40
+	mcall SF_CREATE_WINDOW, (20 shl 16)+590, (20 shl 16)+540
 
 	; *** создание кнопок на панель ***
-	mov eax,8
-	mov ebx,(5 shl 16)+20
-	mov ecx,(5 shl 16)+20
-	mov edx,3
 	mov esi,[sc.work_button]
-	int 0x40
+	mcall SF_DEFINE_BUTTON, (5 shl 16)+20, (5 shl 16)+20, 3
 
 	mov ebx,(30 shl 16)+20
 	mov edx,4
@@ -171,12 +104,12 @@ pushad
 	mov edx,8
 	int 0x40
 
-	; *** рисование иконок на кнопках ***
-	mov eax,7
-	mov ebx,[image_data_toolbar]
-	mov ecx,(16 shl 16)+16
-	mov edx,(7 shl 16)+7 ;icon new
+	mov ebx,(160 shl 16)+20
+	mov edx,9
 	int 0x40
+
+	; *** рисование иконок на кнопках ***
+	mcall SF_PUT_IMAGE, [image_data_toolbar], (16 shl 16)+16, (7 shl 16)+7 ;icon new
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;icon open
@@ -186,25 +119,28 @@ pushad
 	int 0x40
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(30 shl 16) ;
+	add edx,(30 shl 16) ;app1 text
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(25 shl 16) ;
+	add edx,(25 shl 16) ;app1 gps
 	int 0x40
-	;add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	;add edx,(25 shl 16) ;
-	;int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;app2 text
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;app2 thumbnail
+	int 0x40
 
 	; *** рисование буфера ***
 	stdcall [buf2d_draw], buf_0
 
-	mcall 12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 popad
 	ret
 
 align 4
 key:
-	mcall 2
+	mcall SF_GET_KEY
 	jmp still
 
 align 4
@@ -214,7 +150,7 @@ mouse:
 
 align 4
 button:
-	mcall 17
+	mcall SF_GET_BUTTON
 	cmp ah,3
 	jne @f
 		call but_new_file
@@ -239,14 +175,19 @@ button:
 	jne @f
 		call but_3
 	@@:
+	cmp ah,9
+	jne @f
+		call but_4
+	@@:
 	cmp ah,1
 	jne still
 .exit:
 	stdcall [buf2d_delete],buf_0
 	stdcall [buf2d_delete],buf_1 ;удаляем буфер
+	stdcall [buf2d_delete],buf_thumb
 	stdcall mem.Free,[image_data_toolbar]
 	stdcall mem.Free,[open_file]
-	mcall -1
+	mcall SF_TERMINATE_PROCESS
 
 
 align 4
@@ -269,16 +210,14 @@ but_open_file:
 	je .end_open_file
 	;код при удачном открытии диалога
 
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 5
+	mov [run_file_70.Function], SSF_GET_INFO
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	mov dword[run_file_70.Count], 0
 	m2m [run_file_70.Buffer], [open_file]
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
+	mcall SF_FILE,run_file_70
 	cmp eax,0
 	jne .end_open_file
 
@@ -293,16 +232,14 @@ but_open_file:
 		stdcall mem.ReAlloc, dword[open_file],ebx
 	@@:
 
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 0
+	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
 	m2m dword[run_file_70.Count], dword[open_file_size]
 	m2m dword[run_file_70.Buffer],dword[open_file]
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
-	mov ebx,run_file_70
-	int 0x40 ;загружаем файл изображения
+	mcall SF_FILE,run_file_70 ;загружаем файл изображения
 	cmp ebx,0xffffffff
 	je .end_open_file
 
@@ -310,13 +247,16 @@ but_open_file:
 	;add ebx,dword[open_file]
 	;mov byte[ebx],0 ;на случай если ранее был открыт файл большего размера чистим конец буфера с файлом
 	stdcall [exif_get_app1], [open_file],h_app1
-	mcall 71,1,openfile_path
+	mcall SF_SET_CAPTION,1,openfile_path
 
 	call draw_file_1
 	.end_open_file:
 	popad
 	ret
 
+;description:
+; информация exif из app1
+; текстовые и числовые данные
 align 4
 draw_file_1:
 pushad
@@ -360,6 +300,9 @@ pushad
 popad
 	ret
 
+;description:
+; информация exif из app1
+; данные о gps
 align 4
 draw_file_2:
 pushad
@@ -403,6 +346,9 @@ pushad
 popad
 	ret
 
+;description:
+; информация exif из app2
+; текстовые и числовые данные
 align 4
 draw_file_3:
 pushad
@@ -425,7 +371,7 @@ pushad
 	cmp dword[h_child],0
 	je .no_found_child
 
-	mov eax,1
+	mov eax,1 ;25
 	sub ebx,5
 	.cycle_1:
 		stdcall [exif_get_app1_tag], h_child,eax,txt_buf,80
@@ -446,6 +392,63 @@ pushad
 popad
 	ret
 
+;description:
+; информация exif из app2
+; картинка для камер Nikon
+align 4
+draw_file_4:
+pushad
+	stdcall [buf2d_clear], buf_0, [buf_0.color]
+	cmp dword[open_file_size],0
+	je .open_file
+
+	mov eax,1
+	mov ebx,1
+
+	;находим app2
+	stdcall [exif_get_app2], h_app1,h_child
+	cmp dword[h_child],0
+	je .no_found_child
+	;считываем дочерние теги
+	stdcall [exif_get_app1_child], h_child,h_child,0x0011
+	cmp dword[h_child],0
+	je .no_found_child
+
+	stdcall [exif_get_app1_child], h_child,h_child_siz,0x0202
+	cmp dword[h_child_siz],0
+	je .no_found_child
+	
+	stdcall [exif_get_app1_child], h_child,h_child,0x0201
+	cmp dword[h_child],0
+	je .no_found_child
+
+	;определяем вид изображения и переводим его во временный буфер ebx
+	stdcall [img_decode],dword[h_child],dword[h_child_siz],0
+	cmp dword[eax+4],1
+	jl .no_found_child
+	cmp dword[eax+8],1
+	jl .no_found_child
+	mov ebx,eax
+	stdcall [buf2d_resize],buf_thumb,[eax+4],[eax+8],1
+	;преобразуем изображение к формату rgb
+	stdcall [img_to_rgb2],ebx,[buf_thumb]
+	;удаляем временный буфер ebx
+	stdcall [img_destroy],ebx
+
+	stdcall [buf2d_bit_blt], buf_0, 0,15, buf_thumb ;рисуем изображение
+	stdcall [buf2d_draw_text], buf_0, buf_1,txt_thumb,3,3,0xb000
+	jmp @f
+
+	.no_found_child:
+		stdcall [buf2d_draw_text], buf_0, buf_1,txt_nochild,3,3,0xb000
+		jmp @f
+	.open_file:
+		stdcall [buf2d_draw_text], buf_0, buf_1,txt_openfile,3,3,0xb000
+	@@:
+	stdcall [buf2d_draw], buf_0
+popad
+	ret
+
 align 4
 but_save_file:
 	pushad
@@ -456,18 +459,36 @@ but_save_file:
 	je .end_save_file
 	;код при удачном открытии диалога
 
-	mov eax,70 ;70-я функция работа с файлами
-	mov [run_file_70.Function], 2
+	mov [run_file_70.Function], SSF_CREATE_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
+
+if 1 ;ставим 1 если сохраняется все изображение
 	mov ebx, dword[open_file]
 	mov [run_file_70.Buffer], ebx
 	mov ebx,[open_file_size]
+end if
+if 0 ;ставим 1 если сохраняется эскиз изображения
+	;находим app2
+	stdcall [exif_get_app2], h_app1,h_child
+	cmp dword[h_child],0
+	je .end_save_file
+	;считываем дочерние теги
+	stdcall [exif_get_app1_child], h_child,h_child,0x0011
+	cmp dword[h_child],0
+	je .end_save_file
+	stdcall [exif_get_app1_child], h_child,h_child,0x0201
+	cmp dword[h_child],0
+	je .end_save_file
+
+	mov ebx,dword[h_child] ;dword[open_file]
+	mov [run_file_70.Buffer], ebx
+	mov ebx,... ; тут должен быть размер эскиза изображения который меньше чем [open_file_size]
+end if
 	mov dword[run_file_70.Count], ebx ;размер файла
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
-	mov ebx,run_file_70
-	int 0x40 ;сохраняем файл изображения
+	mcall SF_FILE,run_file_70 ;сохраняем файл
 	;cmp ebx,0xffffffff
 	;je .end_save_file
 	; ... сообщение о неудачном сохранении ...
@@ -489,6 +510,11 @@ but_2:
 align 4
 but_3:
 	call draw_file_3 ;информация app2
+	ret
+
+align 4
+but_4:
+	call draw_file_4 ;еще какая-то информация ...
 	ret
 
 ;данные для диалога открытия файлов
@@ -560,9 +586,9 @@ l_libs_start:
 		err_message_found_lib_0, head_f_l, proclib_import,err_message_import_0, head_f_i
 	lib_1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
 		err_message_found_lib_1, head_f_l, import_libimg, err_message_import_1, head_f_i
-	lib_2 l_libs lib_name_2, sys_path, library_path, system_dir_2,\
+	lib_2 l_libs lib_name_2, sys_path, file_name, system_dir_2,\
 		err_msg_found_lib_2,head_f_l,import_buf2d,err_msg_import_2,head_f_i
-	lib_3 l_libs lib_name_3, sys_path, library_path, system_dir_3,\
+	lib_3 l_libs lib_name_3, sys_path, file_name, system_dir_3,\
 		err_msg_found_lib_3,head_f_l,import_exif,err_msg_import_3,head_f_i
 l_libs_end:
 
@@ -629,7 +655,9 @@ import_buf2d:
 	buf2d_clear dd sz_buf2d_clear
 	buf2d_draw dd sz_buf2d_draw
 	buf2d_delete dd sz_buf2d_delete
+	buf2d_resize dd sz_buf2d_resize
 	buf2d_conv_24_to_8 dd sz_buf2d_conv_24_to_8
+	buf2d_bit_blt dd sz_buf2d_bit_blt
 	buf2d_convert_text_matrix dd sz_buf2d_convert_text_matrix
 	buf2d_draw_text dd sz_buf2d_draw_text
 	dd 0,0
@@ -639,7 +667,9 @@ import_buf2d:
 	sz_buf2d_clear db 'buf2d_clear',0
 	sz_buf2d_draw db 'buf2d_draw',0
 	sz_buf2d_delete db 'buf2d_delete',0
+	sz_buf2d_resize db 'buf2d_resize',0
 	sz_buf2d_conv_24_to_8 db 'buf2d_conv_24_to_8',0
+	sz_buf2d_bit_blt db 'buf2d_bit_blt',0
 	sz_buf2d_convert_text_matrix db 'buf2d_convert_text_matrix',0
 	sz_buf2d_draw_text db 'buf2d_draw_text',0
 
@@ -664,7 +694,7 @@ align 4
 buf_0: dd 0 ;указатель на буфер изображения
 	dw 5 ;+4 left
 	dw 31 ;+6 top
-.w: dd 456 ;+8 w
+.w: dd 570 ;+8 w
 .h: dd 480 ;+12 h
 .color: dd 0xffffd0 ;+16 color
 	db 24 ;+20 bit in pixel
@@ -679,21 +709,31 @@ buf_1:
 	dd 0 ;+16 color
 	db 24 ;+20 bit in pixel
 
-h_app1  dd 0,0,0 ;структура для заголовка главных тегов
-	dw 0
-h_child dd 0,0,0 ;структура для заголовка дочерних тегов
-	dw 0
+align 4
+buf_thumb:
+	dd 0 ;указатель на буфер изображения
+	dw 0 ;+4 left
+	dw 0 ;+6 top
+	dd 120 ;+8 w
+	dd 100 ;+12 h
+	dd 0 ;+16 color
+	db 24 ;+20 bit in pixel
+
+h_app1	rb 14 ;структура для заголовка главных тегов
+h_child rb 14 ;структура для заголовка дочерних тегов
+h_child_siz rb 14
+
 txt_openfile db 'Откройте файл изображения в формате *.jpg.',0
+txt_thumb db 'Это эскиз изображения из данных app2.',0
 txt_nochild  db 'Информация по этой кнопке не найдена.',0
 txt_buf rb 80
 
+align 16
 i_end:
 	rb 2048
 stacktop:
 	sys_path rb 1024
-	file_name:
-		rb 1024 ;4096 
-	library_path rb 1024
+	file_name rb 4096 
 	plugin_path rb 4096
 	openfile_path rb 4096
 	filename_area rb 256
