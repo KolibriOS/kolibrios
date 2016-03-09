@@ -169,5 +169,17 @@
 /* #undef _ICONV_FROM_ENCODING_WIN_1257 */
 /* #undef _ICONV_FROM_ENCODING_WIN_1258 */
 
+#ifdef STATIC_LIBC
+  #define BUILD_LIBC
+#endif
+
+#ifdef BUILD_LIBC
+  #define __EXPORT
+  #define __IMPORT
+#else
+  #define __EXPORT __attribute__ ((dllexport))
+  #define __IMPORT __attribute__ ((dllimport))
+#endif
+
 #endif /* !__NEWLIB_H__ */
 

@@ -46,6 +46,18 @@ SECTIONS
         ___RUNTIME_PSEUDO_RELOC_LIST_END__ = .;
         __RUNTIME_PSEUDO_RELOC_LIST_END__ = .;
    }
+
+   .eh_frame ALIGN(16) :
+
+   {
+
+	___EH_FRAME_BEGIN___ = .;
+    	*(.eh_frame*);
+	__EH_FRAME_END__ = .;
+
+
+   }
+
    .CRT ALIGN(16) :
    {
          ___crt_xc_start__ = . ;
@@ -113,7 +125,6 @@ SECTIONS
     *(.debug$F)
     *(.drectve)
     *(.note.GNU-stack)
-    *(.eh_frame)
     *(.comment)
     *(.debug_abbrev)
     *(.debug_info)
