@@ -52,6 +52,10 @@ dd gr_927c_Pa
 dw 0x927c ;app2 для Canon
 db 'Ca'
 dd gr_927c_Ca
+
+dw 0x927c ;app2 для Samsung
+db 'Sa'
+dd gr_927c_Sa
 .end:
 
 align 4
@@ -819,6 +823,59 @@ db 0x40,0x24,'FilterInfo',0
 
 dd 0
 
+;данные app2 для Samsung
+align 4
+gr_927c_Sa:
+db 0x00,0x01,'MakerNoteVersion',0	 
+db 0x00,0x02,'DeviceType',0 
+db 0x00,0x03,'SamsungModelID',0
+db 0x00,0x21,'PictureWizard',0
+db 0x00,0x30,'LocalLocationName',0
+db 0x00,0x31,'LocationName',0
+db 0x00,0x35,'PreviewIFD',0
+db 0x00,0x43,'CameraTemperature',0
+db 0x00,0x45,'RawCompressionMode',0
+db 0x01,0x00,'FaceDetect',0
+db 0x01,0x20,'FaceRecognition',0
+db 0x01,0x23,'FaceName',0
+db 0xa0,0x01,'FirmwareName',0
+db 0xa0,0x03,'LensType',0
+db 0xa0,0x04,'LensFirmware',0
+db 0xa0,0x05,'InternalLensSerialNumber',0
+db 0xa0,0x10,'SensorAreas',0
+db 0xa0,0x11,'ColorSpace',0
+db 0xa0,0x12,'SmartRange',0
+db 0xa0,0x13,'ExposureCompensation',0
+db 0xa0,0x14,'ISO',0
+db 0xa0,0x18,'ExposureTime',0
+db 0xa0,0x19,'FNumber',0
+db 0xa0,0x1a,'FocalLengthIn35mmFormat',0
+db 0xa0,0x20,'EncryptionKey',0
+db 0xa0,0x21,'WB_RGGBLevelsUncorrected',0
+db 0xa0,0x22,'WB_RGGBLevelsAuto',0
+db 0xa0,0x23,'WB_RGGBLevelsIlluminator1',0
+db 0xa0,0x24,'WB_RGGBLevelsIlluminator2',0
+db 0xa0,0x28,'WB_RGGBLevelsBlack',0
+db 0xa0,0x30,'ColorMatrix',0
+db 0xa0,0x31,'ColorMatrixSRGB',0
+db 0xa0,0x32,'ColorMatrixAdobeRGB',0
+db 0xa0,0x33,'CbCrMatrixDefault',0
+db 0xa0,0x34,'CbCrMatrix',0
+db 0xa0,0x35,'CbCrGainDefault',0
+db 0xa0,0x36,'CbCrGain',0
+db 0xa0,0x40,'ToneCurveSRGBDefault',0
+db 0xa0,0x41,'ToneCurveAdobeRGBDefault',0
+db 0xa0,0x42,'ToneCurveSRGB',0
+db 0xa0,0x43,'ToneCurveAdobeRGB',0
+db 0xa0,0x48,'RawData?',0
+db 0xa0,0x50,'Distortion?',0
+db 0xa0,0x51,'ChromaticAberration?',0
+db 0xa0,0x52,'Vignetting?',0
+db 0xa0,0x53,'VignettingCorrection?',0
+db 0xa0,0x54,'VignettingSetting?',0
+
+dd 0
+
 ;input:
 ; bof - указатель на начало файла
 ; app1 - указатель для заполнения exif.app1
@@ -957,9 +1014,7 @@ pushad
 		mov ebx,dword[eax+8]
 		bt edx,0
 		jnc @f
-			ror bx,8
-			ror ebx,16
-			ror bx,8
+			bswap ebx
 		@@:
 		mov eax,[app1]
 		add ebx,[eax+4]
@@ -1021,9 +1076,7 @@ pushad
 		mov ebx,dword[eax+4]
 		bt edx,0
 		jnc @f
-			ror bx,8
-			ror ebx,16
-			ror bx,8
+			bswap ebx
 		@@:
 		cmp ebx,4
 		jle .no_suport ;название производителя меньше 4 символов, не поддержиавается
@@ -1031,9 +1084,7 @@ pushad
 		mov ebx,dword[eax+8]
 		bt edx,0
 		jnc @f
-			ror bx,8
-			ror ebx,16
-			ror bx,8
+			bswap ebx
 		@@:
 	
 	;проверка поддерживаемых производителей
@@ -1044,6 +1095,10 @@ pushad
 	cmp dword[ebx],'NIKO'
 	je .suport
 	cmp dword[ebx],'Pana'
+	je .suport
+	cmp dword[ebx],'SAMS'
+	je .suport
+	cmp dword[ebx],'sams'
 	je .suport
 
 	;все остальные не поддерживаются
@@ -1067,23 +1122,36 @@ pushad
 		sub eax,8
 		mov dword[edi+4],eax
 		mov word[edi+offs_id_gr_mak],'Ni'
+		jmp .end_f
 	@@:
 	cmp dword[ebx],'Pana'
 	jne @f
 		;for Panasonic
 		add dword[edi],12
 		mov word[edi+offs_id_gr_mak],'Pa'
+		jmp .end_f
 	@@:
 	cmp dword[ebx],'Cano'
 	jne @f
 		;for Canon
 		mov word[edi+offs_id_gr_mak],'Ca'
+		jmp .end_f
 	@@:
 
-	jmp @f
+	cmp dword[ebx],'SAMS'
+	je @f
+	cmp dword[ebx],'sams'
+	je @f
+		jmp .end_f
+	@@:
+		;for Samsung
+		mov word[edi+offs_id_gr_mak],'Sa'
+		jmp .end_f
+	@@:
+
 	.no_suport:
 		mov dword[edi],0
-	@@:
+	.end_f:
 popad
 	ret
 endp
@@ -1215,9 +1283,7 @@ proc read_tag_value, app1:dword, t_max:dword
 		mov esi,dword[eax+8]
 		bt edx,0
 		jnc @f
-			ror si,8
-			ror esi,16
-			ror si,8
+			bswap esi
 		@@:
 		mov eax,[app1]
 		mov eax,[eax+4]
@@ -1269,9 +1335,7 @@ proc read_tag_value, app1:dword, t_max:dword
 			mov esi,dword[eax+8]
 			bt edx,0
 			jnc @f
-				ror si,8
-				ror esi,16
-				ror si,8
+				bswap esi
 			@@:
 			mov eax,[app1]
 			mov eax,[eax+4]
@@ -1316,9 +1380,7 @@ proc read_tag_value, app1:dword, t_max:dword
 			mov ebx,dword[eax+8]
 			bt edx,0
 			jnc @f
-				ror bx,8
-				ror ebx,16
-				ror bx,8
+				bswap ebx
 			@@:
 			stdcall str_len,edi
 			add edi,eax
@@ -1343,9 +1405,7 @@ proc read_tag_value, app1:dword, t_max:dword
 			mov ebx,dword[eax+8]
 			bt edx,0
 			jnc @f
-				ror bx,8
-				ror ebx,16
-				ror bx,8
+				bswap ebx
 			@@:
 			stdcall str_len,edi
 			add edi,eax
@@ -1355,9 +1415,7 @@ proc read_tag_value, app1:dword, t_max:dword
 			mov eax,[ebx]
 			bt edx,0
 			jnc @f
-				ror ax,8
-				ror eax,16
-				ror ax,8
+				bswap eax
 			@@:
 			stdcall convert_int_to_str, [t_max] ;ставим 1-е число
 			stdcall str_n_cat,edi,txt_div,[t_max] ;ставим знак деления
@@ -1366,9 +1424,7 @@ proc read_tag_value, app1:dword, t_max:dword
 			mov eax,[ebx+4]
 			bt edx,0
 			jnc @f
-				ror ax,8
-				ror eax,16
-				ror ax,8
+				bswap eax
 			@@:
 			stdcall convert_int_to_str, [t_max] ;ставим 2-е число
 		;.over4b_05:
@@ -1433,9 +1489,7 @@ proc read_tag_value, app1:dword, t_max:dword
 			mov esi,dword[eax+8]
 			bt edx,0
 			jnc @f
-				ror si,8
-				ror esi,16
-				ror si,8
+				bswap esi
 			@@:
 			mov eax,[app1]
 			mov eax,[eax+4]
@@ -1488,9 +1542,7 @@ proc read_tag_value, app1:dword, t_max:dword
 			mov ebx,dword[eax+8]
 			bt edx,0
 			jnc @f
-				ror bx,8
-				ror ebx,16
-				ror bx,8
+				bswap ebx
 			@@:
 			stdcall str_len,edi
 			add edi,eax
@@ -1522,9 +1574,7 @@ get_tag_data_size:
 	mov ebx,dword[eax+4]
 	bt edx,0
 	jnc @f
-		ror bx,8
-		ror ebx,16
-		ror bx,8
+		bswap ebx
 	@@:
 	ret
 
@@ -1607,13 +1657,12 @@ align 4
 		xor edx,edx ;очистить edx
 		div ecx   ;разделить - остаток в edx
 		push edx  ;положить в стек
-		;dec edi  ;смещение необходимое для записи с конца строки
 		call .str ;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
 		pop eax
 	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
 	cmp edi,esi
 	jge @f
-		or al,0x30 ;данная команда короче  чем две выше
+		or al,0x30 ;данная команда короче чем две выше
 		stosb      ;записать элемент из регистра al в ячеку памяти es:edi
 		mov byte[edi],0 ;в конец строки ставим 0, что-бы не вылазил мусор
 	@@:
