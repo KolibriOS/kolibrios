@@ -165,19 +165,19 @@ button:
 	@@:
 	cmp ah,6
 	jne @f
-		call but_1
+		call draw_file_1 ;основная информация
 	@@:
 	cmp ah,7
 	jne @f
-		call but_2
+		call draw_file_2 ;информация по GPS
 	@@:
 	cmp ah,8
 	jne @f
-		call but_3
+		call draw_file_3 ;информация app2
 	@@:
 	cmp ah,9
 	jne @f
-		call but_4
+		call draw_file_4
 	@@:
 	cmp ah,1
 	jne still
@@ -222,14 +222,15 @@ but_open_file:
 	jne .end_open_file
 
 	mov eax,[open_file]
-	mov ebx,dword[eax+32] ;dword[eax+32] - размер открываемого файла
-	mov dword[open_file_size],ebx ;ebx - размер открываемого файла
+	mov ebx,[eax+32] ;dword[eax+32] - размер открываемого файла
+	mov [open_file_size],ebx ;ebx - размер открываемого файла
 	;memory_file_size - размер выделенной памяти для файла
-	cmp dword[memory_file_size],ebx
+	cmp [memory_file_size],ebx
 	jge @f
 		;увеличиваем память если не хватило
-		mov dword[memory_file_size],ebx
-		stdcall mem.ReAlloc, dword[open_file],ebx
+		mov [memory_file_size],ebx
+		stdcall mem.ReAlloc, [open_file],ebx
+		mov [open_file],eax
 	@@:
 
 	mov [run_file_70.Function], SSF_READ_FILE
@@ -483,7 +484,7 @@ if 0 ;ставим 1 если сохраняется эскиз изображения
 
 	mov ebx,dword[h_child] ;dword[open_file]
 	mov [run_file_70.Buffer], ebx
-	mov ebx,... ; тут должен быть размер эскиза изображения который меньше чем [open_file_size]
+	mov ebx,dword[h_child_siz] ;размер эскиза изображения
 end if
 	mov dword[run_file_70.Count], ebx ;размер файла
 	mov byte[run_file_70+20], 0
@@ -495,26 +496,6 @@ end if
 
 	.end_save_file:
 	popad
-	ret
-
-align 4
-but_1:
-	call draw_file_1 ;основная информация
-	ret
-
-align 4
-but_2:
-	call draw_file_2 ;информация по GPS
-	ret
-
-align 4
-but_3:
-	call draw_file_3 ;информация app2
-	ret
-
-align 4
-but_4:
-	call draw_file_4 ;еще какая-то информация ...
 	ret
 
 ;данные для диалога открытия файлов
