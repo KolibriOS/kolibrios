@@ -115,6 +115,7 @@ align 4
 proc strnlen stdcall, s:dword, n:dword
 
         push    edi
+        mov     ecx, [n]
         mov     edi, [s]         ; edi = string
         xor     al, al           ; Look for a zero byte
         mov     edx, ecx         ; Save maximum count
