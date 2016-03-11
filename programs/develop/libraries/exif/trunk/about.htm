@@ -52,12 +52,13 @@ table { font-size: 15px; }
 <li><a href="#fun">Функции</a></li>
 <ul>
 <li><a href="#f_1">exif_get_app1</a></li>
-<li><a href="#f_2">exif_get_app1_tag</a></li>
-<li><a href="#f_3">exif_get_app1_child</a></li>
+<li><a href="#f_2">exif_get_tag</a></li>
+<li><a href="#f_5">exif_get_tag_id</a></li>
+<li><a href="#f_3">exif_get_child</a></li>
 <li><a href="#f_4">exif_get_app2</a></li>
 </ul>
 </li>
-<li><a href="#const">Константы для функции exif_get_app1_child</a></li>
+<li><a href="#const">Константы для функции exif_get_child</a></li>
 <li><a href="#tabl_e">Таблица экспорта</a></li>
 <li><a href="#hist">История</a></li>
 </ul>
@@ -86,27 +87,38 @@ h_app1 rb 14</pre>
 <p>где open_file - указатель на данные файла изображения (пока поддерживаются только *.jpg и *.jpeg).</p>
 <p>h_app1 - структура для запоминания начала Exif данных.</p>
 
-<h4><a name="f_2">exif_get_app1_tag</a></h4>
+<h4><a name="f_2">exif_get_tag</a></h4>
 <p>Заполняет текстовую строку именем параметра из Exif и его значением. Пример:</p>
-<pre>stdcall [exif_get_app1_tag], h_app1,3,txt_buf,80
+<pre>stdcall [exif_get_tag], h_app1,3,txt_buf,80
 ...
 h_app1  rb 14
 txt_buf rb 80</pre>
-<p>где h_app1 - структура заполенная в exif_get_app1 или в exif_get_app1_child.</p>
+<p>где h_app1 - структура заполенная в exif_get_app1 или в exif_get_child.</p>
 <p>3 - порядковый номер параметра.</p>
 <p>txt_buf - текстовый буфер для заполнения.</p>
 <p>80 - максимальная длина текста.</p>
 
-<h4><a name="f_3">exif_get_app1_child</a></h4>
+<h4><a name="f_5">exif_get_tag_id</a></h4>
+<p>Заполняет текстовую строку именем параметра из Exif и его значением. Пример:</p>
+<pre>stdcall [exif_get_tag_id], h_app1,0x010f,txt_buf,80
+...
+h_app1  rb 14
+txt_buf rb 80</pre>
+<p>где h_app1 - структура заполенная в exif_get_app1 или в exif_get_child.</p>
+<p>0x010f - код тега в котором содержится название производителя камеры.</p>
+<p>txt_buf - текстовый буфер для заполнения.</p>
+<p>80 - максимальная длина текста.</p>
+
+<h4><a name="f_3">exif_get_child</a></h4>
 <p>Есть простые теги с информацией а есть теги указывающие на списки других тегов. Эта функция берет указатель на начало списка дочерних тегов. Пример:</p>
-<pre>stdcall [exif_get_app1_child], h_app1,h_child,0x8769
+<pre>stdcall [exif_get_child], h_app1,h_child,0x8769
 ...
 h_app1  rb 14
 h_child rb 14</pre>
-<p>где h_app1 - структура заполенная в exif_get_app1 или в exif_get_app1_child.</p>
+<p>где h_app1 - структура заполенная в exif_get_app1 или в exif_get_child.</p>
 <p>h_child - структура для заполения данных списка дочерних тегов.</p>
 <p>0x8769 - код тега (находящегося в списке тегов h_app1), который является указателем на список других дочерних тегов.</p>
-<p>В даном примере функция берет тег 0x8769 и пытается найти его в списке h_app1, если находит то заполняет по нему значения в структуре h_child. Далее к списку h_child можно применять функцию exif_get_app1_tag для взятия значения этих тегов. С помощью этой функции мы как бы переходим внутрь некой &quot;папки&quot; с тегами, которые сразу достать не можем.</p>
+<p>В даном примере функция берет тег 0x8769 и пытается найти его в списке h_app1, если находит то заполняет по нему значения в структуре h_child. Далее к списку h_child можно применять функцию exif_get_tag для взятия значения этих тегов. С помощью этой функции мы как бы переходим внутрь некой &quot;папки&quot; с тегами, которые сразу достать не можем.</p>
 
 <h4><a name="f_4">exif_get_app2</a></h4>
 <p>Эта функция ищет начало данных Exif.app2. Если они найдены то заполняется структура app2. Если не найдены, то первый параметр в структуре делается равным 0. Пример:</p>
@@ -117,8 +129,8 @@ h_app2 rb 14</pre>
 <p>где h_app1 - структура c данными Exif.app1, предварительно заполненная функцией exif_get_app1.</p>
 <p>h_app2 - структура для запоминания начала данных Exif.app2.</p>
 
-<h1><a name="const">Константы для функции exif_get_app1_child</a></h1>
-<p>Здесь приведены некоторые константы, которые могут использоватся как 3-й параметр для функции exif_get_app1_child. Эти константы обозначают специальные теги, которые содержат смещение на дочерние параметры, которые находятся в Exif.</p>
+<h1><a name="const">Константы для функции exif_get_child</a></h1>
+<p>Здесь приведены некоторые константы, которые могут использоватся как 3-й параметр для функции exif_get_child. Эти константы обозначают специальные теги, которые содержат смещение на дочерние параметры, которые находятся в Exif.</p>
 <h4>0x8769</h4>
 <p>Обозначает дополнительные параметры Exif.</p>
 <h4>0x8825</h4>
@@ -129,17 +141,20 @@ h_app2 rb 14</pre>
 <pre>align 4
 import_exif:
 	exif_get_app1 dd sz_exif_get_app1
-	exif_get_app1_tag dd sz_exif_get_app1_tag
-	exif_get_app1_child dd sz_exif_get_app1_child
 	exif_get_app2 dd sz_exif_get_app2
+	exif_get_tag dd sz_exif_get_tag
+	exif_get_tag_id dd sz_exif_get_tag_id
+	exif_get_child dd sz_exif_get_child
 dd 0,0
 	sz_exif_get_app1 db 'exif_get_app1',0
-	sz_exif_get_app1_tag db 'exif_get_app1_tag',0
-	sz_exif_get_app1_child db 'exif_get_app1_child',0
-	sz_exif_get_app2 db 'exif_get_app2',0</pre>
+	sz_exif_get_app2 db 'exif_get_app2',0
+	sz_exif_get_tag db 'exif_get_tag',0
+	sz_exif_get_tag_id db 'exif_get_tag_id',0
+	sz_exif_get_child db 'exif_get_child',0</pre>
 
 <h1><a name="hist">История</a></h1>
 <p>15.07.14 - первая версия библиотеки, пример использования.</p>
 <p>23.07.14 - добавлена функция exif_get_app2.</p>
+<p>11.03.16 - добавлена функция exif_get_tag_id, изменены названия некоторых функций (убрано app1 потому что они могут работать не только с app1).</p>
 </body>
 </html>

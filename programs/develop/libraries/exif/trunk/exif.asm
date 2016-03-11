@@ -928,8 +928,10 @@ endp
 ; num - порядковый номер тега (начинается с 1)
 ; txt - указатель на текст, куда будет записано значение
 ; t_max - максимальный размер текста
+;output:
+; txt - заполняется текстом в виде "параметр: значение", если не найдено то пустая строка
 align 4
-proc exif_get_app1_tag, app1:dword, num:dword, txt:dword, t_max:dword
+proc exif_get_tag, app1:dword, num:dword, txt:dword, t_max:dword
 pushad
 	mov eax,[app1]
 	mov edi,[txt]
@@ -968,13 +970,62 @@ popad
 endp
 
 ;input:
+; app1 - указатель на начало exif.app1
+; id - идентификатор тега значение которого нужно найти
+; txt - указатель на текст, куда будет записано значение
+; t_max - максимальный размер текста
+;output:
+; txt - заполняется текстом в виде "параметр: значение", если не найдено то пустая строка
+align 4
+proc exif_get_tag_id, app1:dword, id:dword, txt:dword, t_max:dword
+pushad
+	mov eax,[app1]
+	mov edi,[txt]
+
+	xor edx,edx
+	mov byte[edi],dl
+	cmp [eax],edx
+	je .end_f ;если не найден указатель на начало exif.app1
+
+	mov ebx,[id]
+	movzx edx,word[eax+offs_m_or_i] ;if 'MM' edx=1
+	bt edx,0
+	jnc @f
+		ror bx,8
+	@@:
+
+	;берем число тегов
+	mov eax,[eax]
+	movzx ecx,word[eax]
+	bt edx,0
+	jnc @f
+		ror cx,8
+	@@:
+	;в ecx - число тегов
+
+	;ищем заданный тег
+	add eax,offs_tag_0
+	.cycle_0:
+		cmp word[eax],bx ;word[eax+0] - код тега
+		je @f
+		add eax,tag_size
+		loop .cycle_0
+	jmp .end_f
+	@@:
+		stdcall read_tag_value,[app1],[t_max]
+	.end_f:
+popad
+	ret
+endp
+
+;input:
 ; app1 - указатель на exif.app1 или на exif.app1.child
 ; child - указатель для заполнения начала дочерних тегов exif.app1.child
 ; c_tag - тег для которого делается поиск дочерних
 ;output:
 ; child - указатель на начало дочерних тегов
 align 4
-proc exif_get_app1_child, app1:dword, child:dword , c_tag:dword
+proc exif_get_child, app1:dword, child:dword , c_tag:dword
 pushad
 	mov eax,[app1]
 	mov edi,[child]
@@ -1106,11 +1157,11 @@ pushad
 
 	.suport:
 	;находим тег 0x8769 (расширенные данные по Exif)
-	stdcall exif_get_app1_child, eax,edi,0x8769
+	stdcall exif_get_child, eax,edi,0x8769
 	cmp dword[edi],0
 	je .no_suport
 	;находим тег 0x927c (данные Maker по камере)
-	stdcall exif_get_app1_child, edi,edi, 0x927c
+	stdcall exif_get_child, edi,edi, 0x927c
 	cmp dword[edi],0
 	je .no_suport
 
@@ -1673,11 +1724,14 @@ align 4
 align 16
 EXPORTS:
 	dd sz_exif_get_app1, exif_get_app1
-	dd sz_exif_get_app1_tag, exif_get_app1_tag
-	dd sz_exif_get_app1_child, exif_get_app1_child
 	dd sz_exif_get_app2, exif_get_app2
+	dd sz_exif_get_tag, exif_get_tag
+	dd sz_exif_get_tag_id, exif_get_tag_id
+	dd sz_exif_get_child, exif_get_child
 	dd 0,0
 	sz_exif_get_app1 db 'exif_get_app1',0
-	sz_exif_get_app1_tag db 'exif_get_app1_tag',0
-	sz_exif_get_app1_child db 'exif_get_app1_child',0
 	sz_exif_get_app2 db 'exif_get_app2',0
+	sz_exif_get_tag db 'exif_get_tag',0
+	sz_exif_get_tag_id db 'exif_get_tag_id',0
+	sz_exif_get_child db 'exif_get_child',0
+

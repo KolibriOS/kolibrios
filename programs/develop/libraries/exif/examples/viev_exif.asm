@@ -10,7 +10,7 @@ include '../../../../load_img.inc'
 include '../../../../develop/libraries/box_lib/trunk/box_lib.mac'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Просмотр информации Exif 10.03.16',0 ;подпись окна
+caption db 'Просмотр информации Exif 11.03.16',0 ;подпись окна
 
 run_file_70 FileInfoBlock
 
@@ -268,7 +268,7 @@ pushad
 	mov eax,1
 	mov ebx,1
 	.cycle_0:
-		stdcall [exif_get_app1_tag], h_app1,eax,txt_buf,80
+		stdcall [exif_get_tag], h_app1,eax,txt_buf,80
 		stdcall [buf2d_draw_text], buf_0, buf_1,txt_buf,3,ebx,0xb0
 		inc eax
 		add ebx,10
@@ -276,14 +276,14 @@ pushad
 		jne .cycle_0
 
 	;считываем дочерние теги для 0x8769
-	stdcall [exif_get_app1_child], h_app1,h_child,0x8769
+	stdcall [exif_get_child], h_app1,h_child,0x8769
 	cmp dword[h_child],0
 	je .no_found_child
 
 	mov eax,1
 	sub ebx,5
 	.cycle_1:
-		stdcall [exif_get_app1_tag], h_child,eax,txt_buf,80
+		stdcall [exif_get_tag], h_child,eax,txt_buf,80
 		stdcall [buf2d_draw_text], buf_0, buf_1,txt_buf,3,ebx,0xb00000
 		inc eax
 		add ebx,10
@@ -314,7 +314,7 @@ pushad
 	mov eax,1
 	mov ebx,1
 	.cycle_0:
-		stdcall [exif_get_app1_tag], h_app1,eax,txt_buf,80
+		stdcall [exif_get_tag], h_app1,eax,txt_buf,80
 		stdcall [buf2d_draw_text], buf_0, buf_1,txt_buf,3,ebx,0xb0
 		inc eax
 		add ebx,10
@@ -322,14 +322,14 @@ pushad
 		jne .cycle_0
 
 	;считываем дочерние теги для 0x8825
-	stdcall [exif_get_app1_child], h_app1,h_child,0x8825
+	stdcall [exif_get_child], h_app1,h_child,0x8825
 	cmp dword[h_child],0
 	je .no_found_child
 
 	mov eax,1
 	sub ebx,5
 	.cycle_1:
-		stdcall [exif_get_app1_tag], h_child,eax,txt_buf,80
+		stdcall [exif_get_tag], h_child,eax,txt_buf,80
 		stdcall [buf2d_draw_text], buf_0, buf_1,txt_buf,3,ebx,0xb00000
 		inc eax
 		add ebx,10
@@ -360,7 +360,7 @@ pushad
 	mov eax,1
 	mov ebx,1
 	.cycle_0:
-		stdcall [exif_get_app1_tag], h_app1,eax,txt_buf,80
+		stdcall [exif_get_tag], h_app1,eax,txt_buf,80
 		stdcall [buf2d_draw_text], buf_0, buf_1,txt_buf,3,ebx,0xb0
 		inc eax
 		add ebx,10
@@ -375,7 +375,7 @@ pushad
 	mov eax,1 ;25
 	sub ebx,5
 	.cycle_1:
-		stdcall [exif_get_app1_tag], h_child,eax,txt_buf,80
+		stdcall [exif_get_tag], h_child,eax,txt_buf,80
 		stdcall [buf2d_draw_text], buf_0, buf_1,txt_buf,3,ebx,0xb00000
 		inc eax
 		add ebx,10
@@ -403,27 +403,42 @@ pushad
 	cmp dword[open_file_size],0
 	je .open_file
 
-	mov eax,1
-	mov ebx,1
+	;выводим общую информацию по снимку:
+	;0x010f - Manufacturer of digicam
+	;0x0110 - Model
+	;0x0132 - Modify date
+	mov ebx,3
+	stdcall [exif_get_tag_id], h_app1,0x010f,txt_buf,80
+	stdcall [buf2d_draw_text], buf_0, buf_1,txt_buf,3,ebx,0xb0
+	add ebx,10
+	stdcall [exif_get_tag_id], h_app1,0x0110,txt_buf,80
+	stdcall [buf2d_draw_text], buf_0, buf_1,txt_buf,3,ebx,0xb0
+	add ebx,10
+	stdcall [exif_get_tag_id], h_app1,0x0132,txt_buf,80
+	stdcall [buf2d_draw_text], buf_0, buf_1,txt_buf,3,ebx,0xb0
+	add ebx,20
 
 	;находим app2
 	stdcall [exif_get_app2], h_app1,h_child
 	cmp dword[h_child],0
 	je .no_found_child
+
 	;считываем дочерние теги
-	stdcall [exif_get_app1_child], h_child,h_child,0x0011
+	;0x0011 - Preview IFD
+	stdcall [exif_get_child], h_child,h_child,0x0011
 	cmp dword[h_child],0
 	je .no_found_child
 
-	stdcall [exif_get_app1_child], h_child,h_child_siz,0x0202
+	;0x0202 - Preview Image Length
+	stdcall [exif_get_child], h_child,h_child_siz,0x0202
 	cmp dword[h_child_siz],0
 	je .no_found_child
 	
-	stdcall [exif_get_app1_child], h_child,h_child,0x0201
+	;0x0201 - Preview Image Start
+	stdcall [exif_get_child], h_child,h_child,0x0201
 	cmp dword[h_child],0
 	je .no_found_child
 
-	;определяем вид изображения и переводим его во временный буфер ebx
 	stdcall [img_decode],dword[h_child],dword[h_child_siz],0
 	cmp dword[eax+4],1
 	jl .no_found_child
@@ -433,15 +448,16 @@ pushad
 	stdcall [buf2d_resize],buf_thumb,[eax+4],[eax+8],1
 	;преобразуем изображение к формату rgb
 	stdcall [img_to_rgb2],ebx,[buf_thumb]
-	;удаляем временный буфер ebx
-	stdcall [img_destroy],ebx
+	stdcall [img_destroy],ebx ;удаляем временный буфер ebx
 
-	stdcall [buf2d_bit_blt], buf_0, 0,15, buf_thumb ;рисуем изображение
-	stdcall [buf2d_draw_text], buf_0, buf_1,txt_thumb,3,3,0xb000
+	mov ebx,43
+	stdcall [buf2d_draw_text], buf_0, buf_1,txt_thumb,3,ebx,0xb000
+	add ebx,10
+	stdcall [buf2d_bit_blt], buf_0, 0,ebx, buf_thumb ;рисуем изображение
 	jmp @f
 
 	.no_found_child:
-		stdcall [buf2d_draw_text], buf_0, buf_1,txt_nochild,3,3,0xb000
+		stdcall [buf2d_draw_text], buf_0, buf_1,txt_nochild,3,ebx,0xb000
 		jmp @f
 	.open_file:
 		stdcall [buf2d_draw_text], buf_0, buf_1,txt_openfile,3,3,0xb000
@@ -475,10 +491,10 @@ if 0 ;ставим 1 если сохраняется эскиз изображения
 	cmp dword[h_child],0
 	je .end_save_file
 	;считываем дочерние теги
-	stdcall [exif_get_app1_child], h_child,h_child,0x0011
+	stdcall [exif_get_child], h_child,h_child,0x0011
 	cmp dword[h_child],0
 	je .end_save_file
-	stdcall [exif_get_app1_child], h_child,h_child,0x0201
+	stdcall [exif_get_child], h_child,h_child,0x0201
 	cmp dword[h_child],0
 	je .end_save_file
 
@@ -657,14 +673,18 @@ import_buf2d:
 align 4
 import_exif: ;описание экспортируемых функций
 	exif_get_app1 dd sz_exif_get_app1
-	exif_get_app1_tag dd sz_exif_get_app1_tag
-	exif_get_app1_child dd sz_exif_get_app1_child
 	exif_get_app2 dd sz_exif_get_app2
+	exif_get_tag dd sz_exif_get_tag
+	exif_get_tag_id dd sz_exif_get_tag_id
+	exif_get_child dd sz_exif_get_child
+
 dd 0,0
 	sz_exif_get_app1 db 'exif_get_app1',0
-	sz_exif_get_app1_tag db 'exif_get_app1_tag',0
-	sz_exif_get_app1_child db 'exif_get_app1_child',0
 	sz_exif_get_app2 db 'exif_get_app2',0
+	sz_exif_get_tag db 'exif_get_tag',0
+	sz_exif_get_tag_id db 'exif_get_tag_id',0
+	sz_exif_get_child db 'exif_get_child',0
+
 
 sc system_colors 
 
