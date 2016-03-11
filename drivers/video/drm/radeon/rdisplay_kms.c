@@ -5,7 +5,6 @@
 #include "radeon_object.h"
 #include "drm_fb_helper.h"
 #include "hmm.h"
-#include "bitmap.h"
 #include <display.h>
 
 extern struct drm_framebuffer *main_fb;
@@ -15,6 +14,9 @@ display_t *os_display;
 
 static cursor_t*  __stdcall select_cursor_kms(cursor_t *cursor);
 static void       __stdcall move_cursor_kms(cursor_t *cursor, int x, int y);
+
+extern int init_cursor(cursor_t *cursor);
+extern void __stdcall restore_cursor(int x, int y);
 
 int radeon_align_pitch(struct radeon_device *rdev, int width, int bpp, bool tiled);
 

@@ -29,7 +29,7 @@
 #include <drm/radeon_drm.h>
 #include "radeon.h"
 
-
+#undef CONFIG_X86
 void* pci_alloc_consistent(struct pci_dev *hwdev, size_t size,
                       addr_t *dma_handle)
 {

@@ -1,5 +1,3 @@
-#define CONFIG_PCI
-
 #include <syscall.h>
 
 #include <linux/kernel.h>
@@ -9,7 +7,6 @@
 #include <linux/pm.h>
 
 #include <linux/pci.h>
-
 
 extern int pci_scan_filter(u32 id, u32 busnr, u32 devfn);
 
@@ -669,13 +666,6 @@ void pci_iounmap(struct pci_dev *dev, void __iomem * addr)
 }
 
 
-static inline void
-_pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
-                         struct resource *res)
-{
-    region->start = res->start;
-    region->end = res->end;
-}
 
 
 int pci_enable_rom(struct pci_dev *pdev)

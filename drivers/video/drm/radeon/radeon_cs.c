@@ -34,13 +34,6 @@
 #define RADEON_CS_MAX_PRIORITY		32u
 #define RADEON_CS_NUM_BUCKETS		(RADEON_CS_MAX_PRIORITY + 1)
 
-static inline unsigned long
-copy_from_user(void *to, const void __user *from, unsigned long n)
-{
-    memcpy(to, from, n);
-    return n;
-}
-
 /* This is based on the bucket sort with O(n) time complexity.
  * An item with priority "i" is added to bucket[i]. The lists are then
  * concatenated in descending order.

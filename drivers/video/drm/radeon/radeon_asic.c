@@ -256,8 +256,7 @@ static struct radeon_asic r100_asic = {
 		.set_clock_gating = &radeon_legacy_set_clock_gating,
 	},
 	.pflip = {
-//		.pre_page_flip = &r100_pre_page_flip,
-//		.page_flip = &r100_page_flip,
+
 	},
 };
 

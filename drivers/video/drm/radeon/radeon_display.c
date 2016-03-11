@@ -1449,6 +1449,15 @@ bool radeon_crtc_scaling_mode_fixup(struct drm_crtc *crtc,
  * \param dev Device to query.
  * \param crtc Crtc to query.
  * \param flags Flags from caller (DRM_CALLED_FROM_VBLIRQ or 0).
+ *              For driver internal use only also supports these flags:
+ *
+ *              USE_REAL_VBLANKSTART to use the real start of vblank instead
+ *              of a fudged earlier start of vblank.
+ *
+ *              GET_DISTANCE_TO_VBLANKSTART to return distance to the
+ *              fudged earlier start of vblank in *vpos and the distance
+ *              to true start of vblank in *hpos.
+ *
  * \param *vpos Location where vertical scanout position should be stored.
  * \param *hpos Location where horizontal scanout position should go.
  * \param *stime Target location for timestamp taken immediately before
@@ -1592,9 +1601,39 @@ int radeon_get_crtc_scanoutpos(struct drm_device *dev, unsigned int pipe,
 		vbl_end = 0;
 	}
 
+	/* Called from driver internal vblank counter query code? */
+	if (flags & GET_DISTANCE_TO_VBLANKSTART) {
+	    /* Caller wants distance from real vbl_start in *hpos */
+	    *hpos = *vpos - vbl_start;
+	}
+
+	/* Fudge vblank to start a few scanlines earlier to handle the
+	 * problem that vblank irqs fire a few scanlines before start
+	 * of vblank. Some driver internal callers need the true vblank
+	 * start to be used and signal this via the USE_REAL_VBLANKSTART flag.
+	 *
+	 * The cause of the "early" vblank irq is that the irq is triggered
+	 * by the line buffer logic when the line buffer read position enters
+	 * the vblank, whereas our crtc scanout position naturally lags the
+	 * line buffer read position.
+	 */
+	if (!(flags & USE_REAL_VBLANKSTART))
+		vbl_start -= rdev->mode_info.crtcs[pipe]->lb_vblank_lead_lines;
+
 	/* Test scanout position against vblank region. */
 	if ((*vpos < vbl_start) && (*vpos >= vbl_end))
 		in_vbl = false;
+
+	/* In vblank? */
+	if (in_vbl)
+	    ret |= DRM_SCANOUTPOS_IN_VBLANK;
+
+	/* Called from driver internal vblank counter query code? */
+	if (flags & GET_DISTANCE_TO_VBLANKSTART) {
+		/* Caller wants distance from fudged earlier vbl_start */
+		*vpos -= vbl_start;
+		return ret;
+	}
 
 	/* Check if inside vblank area and apply corrective offsets:
 	 * vpos will then be >=0 in video scanout area, but negative
@@ -1610,32 +1649,6 @@ int radeon_get_crtc_scanoutpos(struct drm_device *dev, unsigned int pipe,
 
 	/* Correct for shifted end of vbl at vbl_end. */
 	*vpos = *vpos - vbl_end;
-
-	/* In vblank? */
-	if (in_vbl)
-		ret |= DRM_SCANOUTPOS_IN_VBLANK;
-
-	/* Is vpos outside nominal vblank area, but less than
-	 * 1/100 of a frame height away from start of vblank?
-	 * If so, assume this isn't a massively delayed vblank
-	 * interrupt, but a vblank interrupt that fired a few
-	 * microseconds before true start of vblank. Compensate
-	 * by adding a full frame duration to the final timestamp.
-	 * Happens, e.g., on ATI R500, R600.
-	 *
-	 * We only do this if DRM_CALLED_FROM_VBLIRQ.
-	 */
-	if ((flags & DRM_CALLED_FROM_VBLIRQ) && !in_vbl) {
-		vbl_start = mode->crtc_vdisplay;
-		vtotal = mode->crtc_vtotal;
-
-		if (vbl_start - *vpos < vtotal / 100) {
-			*vpos -= vtotal;
-
-			/* Signal this correction as "applied". */
-			ret |= 0x8;
-		}
-	}
 
 	return ret;
 }

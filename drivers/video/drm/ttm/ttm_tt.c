@@ -47,6 +47,7 @@
 #include <drm/ttm/ttm_placement.h>
 #include <drm/ttm/ttm_page_alloc.h>
 
+#undef CONFIG_X86
 /**
  * Allocates storage for pointers to the pages that back the ttm.
  */

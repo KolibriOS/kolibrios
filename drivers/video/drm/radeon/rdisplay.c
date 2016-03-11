@@ -3,7 +3,7 @@
 #include <drm/radeon_drm.h>
 #include "radeon.h"
 #include "radeon_object.h"
-#include "bitmap.h"
+
 #include <display.h>
 
 #include "r100d.h"

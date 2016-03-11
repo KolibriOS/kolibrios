@@ -3128,6 +3128,11 @@ static int r600_startup(struct radeon_device *rdev)
 		return r;
 	}
 
+	r = radeon_audio_init(rdev);
+	if (r) {
+		DRM_ERROR("radeon: audio init failed\n");
+		return r;
+	}
 
 	return 0;
 }

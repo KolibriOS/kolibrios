@@ -120,18 +120,6 @@ extern int radeon_backlight;
 extern int radeon_auxch;
 extern int radeon_mst;
 
-
-static inline u32 ioread32(const volatile void __iomem *addr)
-{
-    return in32((u32)addr);
-}
-
-//static inline void iowrite32(uint32_t b, volatile void __iomem *addr)
-//{
-//    out32((u32)addr, b);
-//}
-
-
 /*
  * Copy from radeon_drv.h so we don't have to include both and have conflicting
  * symbol;
@@ -286,6 +274,7 @@ struct radeon_clock {
 	uint32_t current_dispclk;
 	uint32_t dp_extclk;
 	uint32_t max_pixel_clock;
+	uint32_t vco_freq;
 };
 
 /*
@@ -2386,7 +2375,8 @@ struct radeon_device {
 	struct r600_ih ih; /* r6/700 interrupt ring */
 	struct radeon_rlc rlc;
 	struct radeon_mec mec;
-	struct work_struct hotplug_work;
+	struct delayed_work hotplug_work;
+	struct work_struct dp_work;
 	struct work_struct audio_work;
 	int num_crtc; /* number of crtcs */
 	struct mutex dc_hw_i2c_mutex; /* display controller hw i2c mutex */
@@ -2937,5 +2927,6 @@ drm_get_resource_start(struct drm_device *dev, unsigned int resource);
 resource_size_t
 drm_get_resource_len(struct drm_device *dev, unsigned int resource);
 
+#define ioread32(addr)          readl(addr)
 
 #endif
