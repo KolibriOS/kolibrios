@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2016. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Written by hidnplayr@kolibrios.org                             ;;
@@ -248,6 +248,7 @@ ipcfg:
   .ip_type_ok:
 
         cmp     [option_dns], op_dns_auto
+        jne     .dns_static
         invoke  ini.set_str, net_ini, str_ini_int, str_ini_dns_type, sz_auto, 4
         jmp     @f
   .dns_static:
