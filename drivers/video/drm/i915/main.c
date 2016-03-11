@@ -14,7 +14,7 @@
 #include "bitmap.h"
 #include "i915_kos32.h"
 
-#define DRV_NAME "i915 v4.4.3"
+#define DRV_NAME "i915 v4.4.5"
 
 #define I915_DEV_CLOSE 0
 #define I915_DEV_INIT  1
@@ -253,6 +253,10 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     }
 
     dmi_scan_machine();
+
+    err = fake_framebuffer_create();
+    if( unlikely(err != 0))
+        return 0;
 
     driver_wq_state = I915_DEV_INIT;
     CreateKernelThread(i915_driver_thread);

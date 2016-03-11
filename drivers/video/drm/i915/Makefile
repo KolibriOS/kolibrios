@@ -113,6 +113,7 @@ NAME_SRC=		main.c					\
 			intel_uncore.c				\
 			kms_display.c				\
 			kos_cursor.c				\
+			kos_fb.c				\
 			utils.c					\
 			fwblob.asm				\
 			../hdmi.c				\
@@ -153,7 +154,7 @@ NAME_OBJS = $(patsubst %.S, %.o, $(patsubst %.asm, %.o,\
             $(patsubst %.c, %.o, $(NAME_SRC))))
 
 
-all: $(NAME).dll 
+all: $(NAME).dll
 
 $(NAME).dll: $(NAME_OBJS) $(FW_BINS) $(SRC_DEP) i915.lds Makefile
 	ld -L$(LIBPATH) $(LDFLAGS) -T i915.lds -o $@ $(NAME_OBJS) $(LIBS)  

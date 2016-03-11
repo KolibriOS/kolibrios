@@ -38,7 +38,7 @@
 #include <linux/pm_runtime.h>
 #include <linux/mod_devicetable.h>
 #include <linux/pci.h>
-#include <drm/i915_pciids.h> 
+#include <drm/i915_pciids.h>
 
 #include <drm/drm_crtc_helper.h>
 
@@ -508,7 +508,10 @@ void intel_detect_pch(struct drm_device *dev)
 				dev_priv->pch_type = PCH_SPT;
 				DRM_DEBUG_KMS("Found SunrisePoint LP PCH\n");
 				WARN_ON(!IS_SKYLAKE(dev));
-			} else if (id == INTEL_PCH_P2X_DEVICE_ID_TYPE) {
+			} else if ((id == INTEL_PCH_P2X_DEVICE_ID_TYPE) ||
+				   ((id == INTEL_PCH_QEMU_DEVICE_ID_TYPE) &&
+				    pch->subsystem_vendor == 0x1af4 &&
+				    pch->subsystem_device == 0x1100)) {
 				dev_priv->pch_type = intel_virt_detect_pch(dev);
 			} else
 				continue;

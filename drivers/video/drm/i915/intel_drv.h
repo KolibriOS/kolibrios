@@ -117,7 +117,7 @@ enum intel_output_type {
 
 struct intel_framebuffer {
 	struct drm_framebuffer base;
-    struct drm_i915_gem_object *obj;
+	struct drm_i915_gem_object *obj;
     void   *private;
 };
 

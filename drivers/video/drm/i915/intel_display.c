@@ -3945,13 +3945,13 @@ static void page_flip_completed(struct intel_crtc *intel_crtc)
 
 	drm_crtc_vblank_put(&intel_crtc->base);
 
-//	wake_up_all(&dev_priv->pending_flip_queue);
-//	queue_work(dev_priv->wq, &work->work);
+	wake_up_all(&dev_priv->pending_flip_queue);
+	queue_work(dev_priv->wq, &work->work);
 
-//	trace_i915_flip_complete(intel_crtc->plane,
-//				 work->pending_flip_obj);
+	trace_i915_flip_complete(intel_crtc->plane,
+				 work->pending_flip_obj);
 }
-#if 0
+
 void intel_crtc_wait_for_pending_flips(struct drm_crtc *crtc)
 {
 	struct drm_device *dev = crtc->dev;
@@ -3977,7 +3977,6 @@ void intel_crtc_wait_for_pending_flips(struct drm_crtc *crtc)
 		mutex_unlock(&dev->struct_mutex);
 	}
 }
-#endif
 
 /* Program iCLKIP clock to the desired frequency */
 static void lpt_program_iclkip(struct drm_crtc *crtc)
@@ -4851,6 +4850,9 @@ static void intel_pre_plane_update(struct intel_crtc *crtc)
 		mutex_unlock(&dev->struct_mutex);
 	}
 
+	if (atomic->wait_for_flips)
+		intel_crtc_wait_for_pending_flips(&crtc->base);
+
 	if (atomic->disable_fbc)
 		intel_fbc_disable_crtc(crtc);
 
@@ -4883,7 +4885,7 @@ static void intel_crtc_disable_planes(struct drm_crtc *crtc, unsigned plane_mask
 	 * to compute the mask of flip planes precisely. For the time being
 	 * consider this a flip to a NULL plane.
 	 */
-//	intel_frontbuffer_flip(dev, INTEL_FRONTBUFFER_ALL_MASK(pipe));
+	intel_frontbuffer_flip(dev, INTEL_FRONTBUFFER_ALL_MASK(pipe));
 }
 
 static void ironlake_crtc_enable(struct drm_crtc *crtc)
@@ -6320,6 +6322,7 @@ static void intel_crtc_disable_noatomic(struct drm_crtc *crtc)
 		return;
 
 	if (to_intel_plane_state(crtc->primary->state)->visible) {
+		intel_crtc_wait_for_pending_flips(crtc);
 		intel_pre_disable_primary(crtc);
 
 		intel_crtc_disable_planes(crtc, 1 << drm_plane_index(crtc->primary));
@@ -10910,7 +10913,7 @@ static inline void intel_mark_page_flip_active(struct intel_unpin_work *work)
 	/* and that it is marked active as soon as the irq could fire. */
 	smp_wmb();
 }
-#if 0
+
 static int intel_gen2_queue_flip(struct drm_device *dev,
 				 struct drm_crtc *crtc,
 				 struct drm_framebuffer *fb,
@@ -11373,8 +11376,6 @@ void intel_check_page_flip(struct drm_device *dev, int pipe)
 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
 	struct intel_unpin_work *work;
 
-	WARN_ON(!in_interrupt());
-
 	if (crtc == NULL)
 		return;
 
@@ -11391,7 +11392,7 @@ void intel_check_page_flip(struct drm_device *dev, int pipe)
 		intel_queue_rps_boost_for_request(dev, work->flip_queued_req);
 	spin_unlock(&dev->event_lock);
 }
-#endif
+
 static int intel_crtc_page_flip(struct drm_crtc *crtc,
 				struct drm_framebuffer *fb,
 				struct drm_pending_vblank_event *event,
@@ -11441,7 +11442,7 @@ static int intel_crtc_page_flip(struct drm_crtc *crtc,
 	work->event = event;
 	work->crtc = crtc;
 	work->old_fb = old_fb;
-//	INIT_WORK(&work->work, intel_unpin_work_fn);
+	INIT_WORK(&work->work, intel_unpin_work_fn);
 
 	ret = drm_crtc_vblank_get(crtc);
 	if (ret)
@@ -11468,8 +11469,8 @@ static int intel_crtc_page_flip(struct drm_crtc *crtc,
 	intel_crtc->unpin_work = work;
 	spin_unlock_irq(&dev->event_lock);
 
-	if (atomic_read(&intel_crtc->unpin_work_count) >= 2)
-		flush_workqueue(dev_priv->wq);
+//   if (atomic_read(&intel_crtc->unpin_work_count) >= 2)
+//       flush_workqueue(dev_priv->wq);
 
 	/* Reference the objects for the scheduled work. */
 	drm_framebuffer_reference(work->old_fb);
@@ -11927,11 +11928,21 @@ connected_sink_compute_bpp(struct intel_connector *connector,
 		pipe_config->pipe_bpp = connector->base.display_info.bpc*3;
 	}
 
-	/* Clamp bpp to 8 on screens without EDID 1.4 */
-	if (connector->base.display_info.bpc == 0 && bpp > 24) {
-		DRM_DEBUG_KMS("clamping display bpp (was %d) to default limit of 24\n",
-			      bpp);
-		pipe_config->pipe_bpp = 24;
+	/* Clamp bpp to default limit on screens without EDID 1.4 */
+	if (connector->base.display_info.bpc == 0) {
+		int type = connector->base.connector_type;
+		int clamp_bpp = 24;
+
+		/* Fall back to 18 bpp when DP sink capability is unknown. */
+		if (type == DRM_MODE_CONNECTOR_DisplayPort ||
+		    type == DRM_MODE_CONNECTOR_eDP)
+			clamp_bpp = 18;
+
+		if (bpp > clamp_bpp) {
+			DRM_DEBUG_KMS("clamping display bpp (was %d) to default limit of %d\n",
+				      bpp, clamp_bpp);
+			pipe_config->pipe_bpp = clamp_bpp;
+		}
 	}
 }
 
@@ -13317,7 +13328,7 @@ static const struct drm_crtc_funcs intel_crtc_funcs = {
 	.gamma_set = intel_crtc_gamma_set,
 	.set_config = drm_atomic_helper_set_config,
 	.destroy = intel_crtc_destroy,
-//	.page_flip = intel_crtc_page_flip,
+	.page_flip = intel_crtc_page_flip,
 	.atomic_duplicate_state = intel_crtc_duplicate_state,
 	.atomic_destroy_state = intel_crtc_destroy_state,
 };
@@ -13534,11 +13545,12 @@ intel_check_primary_plane(struct drm_plane *plane,
 	int max_scale = DRM_PLANE_HELPER_NO_SCALING;
 	bool can_position = false;
 
+	if (INTEL_INFO(plane->dev)->gen >= 9) {
 	/* use scaler when colorkey is not required */
-	if (INTEL_INFO(plane->dev)->gen >= 9 &&
-	    state->ckey.flags == I915_SET_COLORKEY_NONE) {
+		if (state->ckey.flags == I915_SET_COLORKEY_NONE) {
 		min_scale = 1;
 		max_scale = skl_max_scale(to_intel_crtc(crtc), crtc_state);
+		}
 		can_position = true;
 	}
 
@@ -14628,10 +14640,33 @@ static void intel_init_display(struct drm_device *dev)
 			broxton_modeset_calc_cdclk;
 	}
 
+	switch (INTEL_INFO(dev)->gen) {
+	case 2:
+		dev_priv->display.queue_flip = intel_gen2_queue_flip;
+		break;
 
+	case 3:
+		dev_priv->display.queue_flip = intel_gen3_queue_flip;
+		break;
 
+	case 4:
+	case 5:
+		dev_priv->display.queue_flip = intel_gen4_queue_flip;
+		break;
 
-
+	case 6:
+		dev_priv->display.queue_flip = intel_gen6_queue_flip;
+		break;
+	case 7:
+	case 8: /* FIXME(BDW): Check that the gen8 RCS flip works. */
+		dev_priv->display.queue_flip = intel_gen7_queue_flip;
+		break;
+	case 9:
+		/* Drop through - unsupported since execlist only. */
+	default:
+		/* Default just returns -ENODEV to indicate unsupported */
+		dev_priv->display.queue_flip = intel_default_queue_flip;
+	}
 
 	mutex_init(&dev_priv->pps_mutex);
 }

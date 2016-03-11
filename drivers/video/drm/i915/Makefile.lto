@@ -2,10 +2,10 @@
 CC = kos32-gcc
 FASM = fasm.exe
 
-DEFINES	 = -DDRM_DEBUG_CODE=1 -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_X86_CMPXCHG64 -DCONFIG_TINY_RCU
-DEFINES  += -DCONFIG_X86_L1_CACHE_SHIFT=6
-DEFINES += -DCONFIG_DRM_FBDEV_EMULATION -DCONFIG_DMI -DKBUILD_MODNAME=\"i915.dll\"
-
+DEFINES	= -DDRM_DEBUG_CODE=0 -D__KERNEL__ -DCONFIG_X86 -DCONFIG_X86_32 -DCONFIG_PCI
+DEFINES += -DCONFIG_X86_CMPXCHG64 -DCONFIG_TINY_RCU -DCONFIG_X86_L1_CACHE_SHIFT=6
+DEFINES += -DCONFIG_DRM_FBDEV_EMULATION -DCONFIG_DMI 
+DEFINES += -DKBUILD_MODNAME=\"i915.dll\"
 
 DDK_TOPDIR      = /d/kos/kolibri/drivers/ddk
 DRV_INCLUDES    = /d/kos/kolibri/drivers/include
@@ -16,7 +16,7 @@ INCLUDES =	-I$(DRV_INCLUDES)	\
 		-I$(DRV_INCLUDES)/uapi	\
 		-I$(DRV_INCLUDES)/drm -I./ -I$(DRV_INCLUDES)
 
-CFLAGS_OPT = -Os -march=i686 -msse2 -fomit-frame-pointer -fno-builtin-printf -fno-ident -mno-stack-arg-probe
+CFLAGS_OPT = -O2 -march=i686 -msse2 -fomit-frame-pointer -fno-builtin-printf -fno-ident -mno-stack-arg-probe
 CFLAGS_OPT+= -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -mno-ms-bitfields -flto
 CFLAGS   = -c $(INCLUDES) $(DEFINES) $(CFLAGS_OPT)
 
@@ -45,6 +45,8 @@ HFILES:=     		$(DRV_INCLUDES)/linux/types.h		\
 
 NAME_SRC=		main.c					\
 			pci.c					\
+			getopt.c				\
+			getopt1.c				\
 			dvo_ch7017.c				\
 			dvo_ch7xxx.c				\
 			dvo_ivch.c				\
@@ -90,6 +92,7 @@ NAME_SRC=		main.c					\
 			intel_frontbuffer.c			\
 			intel_guc_loader.c			\
 			intel_hdmi.c				\
+			intel_hotplug.c				\
 			intel_i2c.c				\
 			intel_lrc.c				\
 			intel_lvds.c				\
@@ -109,6 +112,8 @@ NAME_SRC=		main.c					\
 			intel_sprite.c				\
 			intel_uncore.c				\
 			kms_display.c				\
+			kos_cursor.c				\
+			kos_fb.c				\
 			utils.c					\
 			fwblob.asm				\
 			../hdmi.c				\
@@ -123,7 +128,7 @@ NAME_SRC=		main.c					\
 			$(DRM_TOPDIR)/drm_crtc.c		\
 			$(DRM_TOPDIR)/drm_crtc_helper.c		\
 			$(DRM_TOPDIR)/drm_dp_helper.c		\
-			../drm_dp_mst_topology.c		\
+			$(DRM_TOPDIR)/drm_dp_mst_topology.c	\
 			$(DRM_TOPDIR)/drm_atomic.c		\
 			$(DRM_TOPDIR)/drm_atomic_helper.c	\
 			$(DRM_TOPDIR)/drm_bridge.c		\
@@ -149,7 +154,6 @@ NAME_OBJS = $(patsubst %.S, %.o, $(patsubst %.asm, %.o,\
             $(patsubst %.c, %.o, $(NAME_SRC))))
 
 
-
 all: $(NAME).dll
 
 $(NAME).dll: $(NAME_OBJS) $(FW_BINS) $(SRC_DEP) i915.lds Makefile.lto
@@ -161,6 +165,9 @@ $(NAME).dll: $(NAME_OBJS) $(FW_BINS) $(SRC_DEP) i915.lds Makefile.lto
 
 %.o : %.S $(HFILES) Makefile.lto
 	as -o $@ $<
+
+fwblob.o:  fwblob.asm $(FW_BINS) Makefile
+	$(FASM) $< $@
 
 
 clean:

@@ -560,3 +560,45 @@ void drm_sysfs_hotplug_event(struct drm_device *dev)
     DRM_DEBUG("generating hotplug event\n");
 }
 
+u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder)
+{
+    u32 high = divisor >> 32;
+    u64 quot;
+
+    if (high == 0) {
+        u32 rem32;
+        quot = div_u64_rem(dividend, divisor, &rem32);
+        *remainder = rem32;
+    } else {
+        int n = 1 + fls(high);
+        quot = div_u64(dividend >> n, divisor >> n);
+
+        if (quot != 0)
+            quot--;
+
+        *remainder = dividend - quot * divisor;
+        if (*remainder >= divisor) {
+            quot++;
+            *remainder -= divisor;
+        }
+    }
+
+    return quot;
+}
+
+u64 div64_u64(u64 dividend, u64 divisor)
+{
+        u32 high, d;
+
+        high = divisor >> 32;
+        if (high) {
+                unsigned int shift = fls(high);
+
+                d = divisor >> shift;
+                dividend >>= shift;
+        } else
+                d = divisor;
+
+        return div_u64(dividend, d);
+}
+

@@ -840,6 +840,8 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 		goto put_bridge;
 	}
 
+	set_fake_framebuffer();
+
 	/* This must be called before any calls to HAS_PCH_* */
 	intel_detect_pch(dev);
 

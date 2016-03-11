@@ -44,4 +44,7 @@
 #define trace_i915_va_alloc(vm,start,size,name)
 #define trace_i915_gem_request_notify(ring)
 #define trace_i915_gem_object_pread(obj, offset, size)
+#define trace_i915_flip_complete(plane, pending_flip_obj)
+#define trace_i915_flip_request(plane, obj)
+
 #endif

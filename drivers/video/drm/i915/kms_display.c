@@ -10,15 +10,9 @@
 #include <linux/pci.h>
 
 #include <syscall.h>
-
-//#include "bitmap.h"
 #include <display.h>
 
-void  FASTCALL sysSetFramebuffer(void *fb)__asm__("SetFramebuffer");
-void kolibri_framebuffer_update(struct drm_i915_private *dev_priv, struct kos_framebuffer *kfb);
 void init_system_cursors(struct drm_device *dev);
-
-addr_t dummy_fb_page;
 
 display_t *os_display;
 
@@ -53,33 +47,24 @@ static int count_connector_modes(struct drm_connector* connector)
 
 struct drm_framebuffer *get_framebuffer(struct drm_device *dev, struct drm_display_mode *mode, int tiling)
 {
-    struct drm_i915_private *dev_priv = dev->dev_private;
-    struct intel_fbdev     *ifbdev = dev_priv->fbdev;
-    struct intel_framebuffer *intel_fb = ifbdev->fb;
-    struct drm_framebuffer *fb = &intel_fb->base;
+    struct drm_i915_private    *dev_priv = dev->dev_private;
+    struct intel_fbdev         *ifbdev   = dev_priv->fbdev;
+    struct intel_framebuffer   *intel_fb = ifbdev->fb;
+    struct drm_framebuffer     *fb = &intel_fb->base;
     struct drm_i915_gem_object *obj = NULL;
     int stride, size;
 
-ENTER();
-
     stride = mode->hdisplay *4;
+
+    if(IS_GEN3(dev))
+        tiling = 0;
 
     if(tiling)
     {
         int gen3size;
 
-        if(IS_GEN3(dev))
-            for (stride = 512; stride < mode->hdisplay * 4; stride <<= 1);
-        else
             stride = ALIGN(stride, 512);
         size = stride * ALIGN(mode->vdisplay, 8);
-
-        if(IS_GEN3(dev))
-        {
-            for (gen3size = 1024*1024; gen3size < size; gen3size <<= 1);
-            size = gen3size;
-        }
-        else
             size = ALIGN(size, 4096);
     }
     else
@@ -96,6 +81,7 @@ ENTER();
         int ret;
 
         DRM_DEBUG_KMS("remove old framebuffer\n");
+        set_fake_framebuffer();
         drm_framebuffer_remove(fb);
         ifbdev->fb = NULL;
         fb = NULL;
@@ -172,7 +158,7 @@ ENTER();
 
     fb->bits_per_pixel = 32;
     fb->depth = 24;
-LEAVE();
+
     return fb;
 
 out_fb:
@@ -282,7 +268,7 @@ do_set:
     {
         struct intel_framebuffer *intel_fb = to_intel_framebuffer(fb);
         struct kos_framebuffer *kfb = intel_fb->private;
-        kolibri_framebuffer_update(dev_priv, kfb);
+        kolibri_framebuffer_update(dev, kfb);
         DRM_DEBUG_KMS("kolibri framebuffer %p\n", kfb);
 
         os_display->width    = mode->hdisplay;
@@ -378,7 +364,7 @@ static int set_mode_ex(struct drm_device *dev,
     {
         struct intel_framebuffer *intel_fb = to_intel_framebuffer(fb);
         struct kos_framebuffer *kfb = intel_fb->private;
-        kolibri_framebuffer_update(dev_priv, kfb);
+        kolibri_framebuffer_update(dev, kfb);
         DRM_DEBUG_KMS("kolibri framebuffer %p\n", kfb);
 
         os_display->width    = mode->hdisplay;
@@ -574,8 +560,6 @@ ENTER();
         DRM_DEBUG_KMS("No active connectors!\n");
         return -1;
     };
-
-    dummy_fb_page = AllocPage();
 
     os_display = GetDisplay();
     os_display->ddev = dev;
@@ -815,7 +799,7 @@ int i915_fbinfo(struct drm_i915_fb_info *fb)
         fb->name   = obj->base.name;
         fb->width  = os_display->width;
         fb->height = os_display->height;
-        fb->pitch  = obj->stride;
+        fb->pitch  = os_display->lfb_pitch;
         fb->tiling = obj->tiling_mode;
         fb->crtc   = crtc->base.base.id;
         fb->pipe   = crtc->pipe;
@@ -825,111 +809,6 @@ int i915_fbinfo(struct drm_i915_fb_info *fb)
     return 0;
 }
 
-int kolibri_framebuffer_init(struct intel_framebuffer *intel_fb)
-{
-    struct kos_framebuffer *kfb;
-    addr_t dummy_table;
-    addr_t *pt_addr = NULL;
-    int pde;
-
-    kfb = kzalloc(sizeof(struct kos_framebuffer),0);
-    kfb->private = intel_fb;
-
-    for(pde = 0; pde < 8; pde++)
-    {
-        dummy_table = AllocPage();
-        kfb->pde[pde] = dummy_table|PG_UW;
-
-        pt_addr = kmap((struct page*)dummy_table);
-        __builtin_memset(pt_addr,0,4096);
-        kunmap((struct page*)dummy_table);
-    };
-
-    intel_fb->private = kfb;
-
-    return 0;
-#if 0
-    struct sg_page_iter sg_iter;
-    num_pages = obj->base.size/4096;
-    printf("num_pages %d\n",num_pages);
-
-    pte = 0;
-    pde = 0;
-    pt_addr = NULL;
-
-    __sg_page_iter_start(&sg_iter, obj->pages->sgl, sg_nents(obj->pages->sgl), 0);
-    while (__sg_page_iter_next(&sg_iter))
-    {
-        if (pt_addr == NULL)
-        {
-            addr_t pt = AllocPage();
-            kfb->pde[pde] = pt|PG_UW;
-            pde++;
-            pt_addr = kmap_atomic((struct page*)pt);
-        }
-        pt_addr[pte] = sg_page_iter_dma_address(&sg_iter)|PG_UW|PG_WRITEC;
-        if( (pte & 15) == 0)
-            DRM_DEBUG_KMS("pte %x\n",pt_addr[pte]);
-        if (++pte == 1024)
-        {
-            kunmap_atomic(pt_addr);
-            pt_addr = NULL;
-            if (pde == 8)
-                break;
-            pte = 0;
-        }
-    }
-
-    if(pt_addr)
-    {
-        for(;pte < 1024; pte++)
-            pt_addr[pte] = dummy_page|PG_UW;
-        kunmap_atomic(pt_addr);
-    }
-#endif
-};
-
-void kolibri_framebuffer_update(struct drm_i915_private *dev_priv, struct kos_framebuffer *kfb)
-{
-    struct intel_framebuffer *intel_fb = kfb->private;
-    addr_t *pt_addr = NULL;
-    int pte = 0;
-    int pde = 0;
-    int num_pages;
-    addr_t pfn;
-ENTER();
-    num_pages = intel_fb->obj->base.size/4096;
-    pfn = dev_priv->gtt.mappable_base + i915_gem_obj_ggtt_offset(intel_fb->obj);
-
-    while(num_pages)
-    {
-        if (pt_addr == NULL)
-        {
-            addr_t pt = kfb->pde[pde] & 0xFFFFF000;
-            pde++;
-            pt_addr = kmap_atomic((struct page*)pt);
-        }
-        pt_addr[pte] = pfn|PG_UW|PG_WRITEC;
-        pfn+= 4096;
-        num_pages--;
-        if (++pte == 1024)
-        {
-            kunmap_atomic(pt_addr);
-            pt_addr = NULL;
-            if (pde == 8)
-                break;
-            pte = 0;
-        }
-    }
-
-    if(pt_addr)
-    {
-        for(;pte < 1024; pte++)
-            pt_addr[pte] = dummy_fb_page|PG_UW;
-        kunmap_atomic(pt_addr);
-    }
-LEAVE();
-};
 
 typedef struct
 {
@@ -1411,6 +1290,3 @@ int autoremove_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *
     list_del_init(&wait->task_list);
     return 1;
 }
-
-
-

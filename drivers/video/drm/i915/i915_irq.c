@@ -1657,11 +1657,11 @@ static void valleyview_pipestat_irq_handler(struct drm_device *dev, u32 iir)
 	for_each_pipe(dev_priv, pipe) {
 		if (pipe_stats[pipe] & PIPE_START_VBLANK_INTERRUPT_STATUS &&
 		    intel_pipe_handle_vblank(dev, pipe))
-            /*intel_check_page_flip(dev, pipe)*/;
+			intel_check_page_flip(dev, pipe);
 
 		if (pipe_stats[pipe] & PLANE_FLIP_DONE_INT_STATUS_VLV) {
-//           intel_prepare_page_flip(dev, pipe);
-//           intel_finish_page_flip(dev, pipe);
+			intel_prepare_page_flip(dev, pipe);
+			intel_finish_page_flip(dev, pipe);
 		}
 
 		if (pipe_stats[pipe] & PIPE_CRC_DONE_INTERRUPT_STATUS)
@@ -2028,7 +2028,7 @@ static void ilk_display_irq_handler(struct drm_device *dev, u32 de_iir)
 	for_each_pipe(dev_priv, pipe) {
 		if (de_iir & DE_PIPE_VBLANK(pipe) &&
 		    intel_pipe_handle_vblank(dev, pipe))
-            /*intel_check_page_flip(dev, pipe)*/;
+			intel_check_page_flip(dev, pipe);
 
 		if (de_iir & DE_PIPE_FIFO_UNDERRUN(pipe))
 			intel_cpu_fifo_underrun_irq_handler(dev_priv, pipe);
@@ -2038,8 +2038,8 @@ static void ilk_display_irq_handler(struct drm_device *dev, u32 de_iir)
 
 		/* plane/pipes map 1:1 on ilk+ */
 		if (de_iir & DE_PLANE_FLIP_DONE(pipe)) {
-//			intel_prepare_page_flip(dev, pipe);
-//			intel_finish_page_flip_plane(dev, pipe);
+			intel_prepare_page_flip(dev, pipe);
+			intel_finish_page_flip_plane(dev, pipe);
 		}
 	}
 
@@ -2081,12 +2081,12 @@ static void ivb_display_irq_handler(struct drm_device *dev, u32 de_iir)
 	for_each_pipe(dev_priv, pipe) {
 		if (de_iir & (DE_PIPE_VBLANK_IVB(pipe)) &&
 		    intel_pipe_handle_vblank(dev, pipe))
-            /*intel_check_page_flip(dev, pipe)*/;
+			intel_check_page_flip(dev, pipe);
 
 		/* plane/pipes map 1:1 on ilk+ */
 		if (de_iir & DE_PLANE_FLIP_DONE_IVB(pipe)) {
-//			intel_prepare_page_flip(dev, pipe);
-//			intel_finish_page_flip_plane(dev, pipe);
+			intel_prepare_page_flip(dev, pipe);
+			intel_finish_page_flip_plane(dev, pipe);
 		}
 	}
 
@@ -2290,13 +2290,17 @@ static irqreturn_t gen8_irq_handler(int irq, void *arg)
 
 			if (pipe_iir & GEN8_PIPE_VBLANK &&
 			    intel_pipe_handle_vblank(dev, pipe))
-			/*	intel_check_page_flip(dev, pipe)*/;
+				intel_check_page_flip(dev, pipe);
 
 			if (INTEL_INFO(dev_priv)->gen >= 9)
 				flip_done = pipe_iir & GEN9_PIPE_PLANE1_FLIP_DONE;
 			else
 				flip_done = pipe_iir & GEN8_PIPE_PRIMARY_FLIP_DONE;
 
+			if (flip_done) {
+				intel_prepare_page_flip(dev, pipe);
+				intel_finish_page_flip_plane(dev, pipe);
+			}
 
 			if (pipe_iir & GEN8_PIPE_CDCLK_CRC_DONE)
 				hsw_pipe_crc_irq_handler(dev, pipe);
@@ -2335,9 +2339,13 @@ static irqreturn_t gen8_irq_handler(int irq, void *arg)
 				spt_irq_handler(dev, pch_iir);
 			else
 				cpt_irq_handler(dev, pch_iir);
-		} else
-			DRM_ERROR("The master control interrupt lied (SDE)!\n");
-
+		} else {
+			/*
+			 * Like on previous PCH there seems to be something
+			 * fishy going on with forwarding PCH interrupts.
+			 */
+			DRM_DEBUG_DRIVER("The master control interrupt lied (SDE)!\n");
+		}
 	}
 
 	I915_WRITE_FW(GEN8_MASTER_IRQ, GEN8_MASTER_IRQ_CONTROL);
@@ -2363,6 +2371,8 @@ static void i915_error_wake_up(struct drm_i915_private *dev_priv,
 	for_each_ring(ring, dev_priv, i)
 		wake_up_all(&ring->irq_queue);
 
+	/* Wake up intel_crtc_wait_for_pending_flips, holding crtc->mutex. */
+	wake_up_all(&dev_priv->pending_flip_queue);
 
 	/*
 	 * Signal tasks blocked in i915_gem_wait_for_error that the pending
@@ -3775,12 +3785,12 @@ static bool i8xx_handle_vblank(struct drm_device *dev,
 	if (I915_READ16(ISR) & flip_pending)
 		goto check_page_flip;
 
-//   intel_prepare_page_flip(dev, plane);
-//   intel_finish_page_flip(dev, pipe);
+	intel_prepare_page_flip(dev, plane);
+	intel_finish_page_flip(dev, pipe);
 	return true;
 
 check_page_flip:
-//   intel_check_page_flip(dev, pipe);
+	intel_check_page_flip(dev, pipe);
 	return false;
 }
 
@@ -3959,9 +3969,12 @@ static bool i915_handle_vblank(struct drm_device *dev,
 	if (I915_READ(ISR) & flip_pending)
 		goto check_page_flip;
 
+	intel_prepare_page_flip(dev, plane);
+	intel_finish_page_flip(dev, pipe);
 	return true;
 
 check_page_flip:
+	intel_check_page_flip(dev, pipe);
 	return false;
 }
 
@@ -4449,7 +4462,7 @@ int intel_irq_install(struct drm_i915_private *dev_priv)
 void intel_irq_uninstall(struct drm_i915_private *dev_priv)
 {
 //	drm_irq_uninstall(dev_priv->dev);
-//	intel_hpd_cancel_work(dev_priv);
+	intel_hpd_cancel_work(dev_priv);
 	dev_priv->pm.irqs_enabled = false;
 }
 
