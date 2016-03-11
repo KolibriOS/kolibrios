@@ -147,12 +147,10 @@ msg_unresolved db 'unresolved ',0
 ;end if
 msg_CR         db  13,10,0
 
-szHwMouse       db 'ATI2D',0
 szPS2MDriver    db '/rd/1/drivers/PS2MOUSE.SYS',0
 ;szCOM_MDriver   db 'COM_MOUSE',0
 szVidintel      db '/rd/1/drivers/vidintel.sys',0
 szUSB           db 'USB',0
-szAtiHW         db '/rd/1/drivers/ati2d.drv',0
 
 szEXPORTS      db 'EXPORTS',0
 sz_EXPORTS     db '_EXPORTS',0
@@ -160,8 +158,8 @@ sz_EXPORTS     db '_EXPORTS',0
 szIMPORTS      db 'IMPORTS',0
 
 read_firstapp  db '/sys/'
-firstapp       db  'LAUNCHER',0
-notifyapp      db '@notify',0
+firstapp       db '/RD/1/LAUNCHER',0
+notifyapp      db '/RD/1/@notify',0
 if lang eq ru
 ud_user_message  cp866 'Ошибка: неподдерживаемая инструкция процессора',0
 mtrr_user_message cp866 '"Обнаружена проблема с конфигурацией MTRR.\nПроизводительность может быть пониженной" -dW',0

@@ -501,7 +501,7 @@ struct  APPDATA
         terminate_protection dd ?       ;+176
         keyboard_mode   db ?            ;+180
                         rb 3
-                        dd ?            ;+184
+        exec_params     dd ?            ;+184
         dbg_event_mem   dd ?            ;+188
         dbg_regs        DBG_REGS        ;+192
         wnd_caption     dd ?            ;+212

@@ -575,15 +575,6 @@ proc page_fault_handler
         cmp     ebx, kernel_tabs
         jb      .alloc;.app_tabs  ;таблицы страниц приложения ;
                                   ;просто создадим одну
-if 0 ;пока это просто лишнее
-        cmp     ebx, LFB_BASE
-        jb      .core_tabs        ;таблицы страниц ядра
-                                  ;Ошибка
-  .lfb:
-                                  ;область LFB
-                                  ;Ошибка
-        jmp     .fail
-end if
 .core_tabs:
 .fail:  ;simply return to caller
         mov     esp, ebp

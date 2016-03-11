@@ -761,7 +761,7 @@ endg
         mov     esi, boot_v86machine
         call    boot_log
 ; Initialize system V86 machine
-        call    init_sys_v86
+;        call    init_sys_v86
 
         mov     esi, boot_inittimer
         call    boot_log
@@ -974,7 +974,6 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
         mov     esi, 250            ; wait 1/4 a second
         call    delay_ms
         rdtsc
-        sti
 
         sub     eax, ecx
         xor     edx, edx
