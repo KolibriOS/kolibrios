@@ -761,7 +761,7 @@ endg
         mov     esi, boot_v86machine
         call    boot_log
 ; Initialize system V86 machine
-;        call    init_sys_v86
+        call    init_sys_v86
 
         mov     esi, boot_inittimer
         call    boot_log
