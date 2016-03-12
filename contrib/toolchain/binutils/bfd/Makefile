@@ -6,14 +6,14 @@ CFLAGS   = -c $(CFLAGS_OPT)
 
 INCLUDES=  -I. -I../include -I$(SDK_DIR)/sources/newlib/libc/include -I$(SDK_DIR)/sources/zlib 
 
-DEFINES=  -DHAVE_CONFIG_H -DHAVE_i386pe_vec -DHAVE_i386pei_vec -DHAVE_bfd_elf32_i386_vec -DHAVE_bfd_elf32_little_generic_vec
-DEFINES+= -DHAVE_bfd_elf32_big_generic_vec -DBINDIR="/home/autobuild/tools/win32/bin"
-TDEFS=    -DDEFAULT_VECTOR=i386pe_vec "-DSELECT_VECS=&i386pe_vec,&i386pei_vec,&bfd_elf32_i386_vec,&bfd_elf32_little_generic_vec,&bfd_elf32_big_generic_vec"
-TDEFS+=   "-DSELECT_ARCHITECTURES=&bfd_i386_arch"
-
+DEFINES=  -DHAVE_CONFIG_H -DHAVE_i386_pe_vec -DHAVE_i386_pei_vec -DHAVE_i386_elf32_vec
+DEFINES+= -DHAVE_elf32_le_vec -DHAVE_elf32_be_vec
+DEFINES+= -DBINDIR="/home/autobuild/tools/win32/bin"
+TDEFS=    -DDEFAULT_VECTOR=i386_pe_vec "-DSELECT_VECS=&i386_pe_vec,&i386_pei_vec,&i386_elf32_vec,&elf32_le_vec,&elf32_be_vec"
+TDEFS+=   "-DSELECT_ARCHITECTURES=&bfd_i386_arch" 
 SRCS = \
 	archive.c archures.c bfd.c bfdio.c	\
-	binary.c cache.c coffgen.c cofflink.c	\
+	binary.c cache.c coff-bfd.c coffgen.c cofflink.c	\
 	compress.c corefile.c cpu-i386.c	\
 	dwarf1.c dwarf2.c elf.c	elf32.c		\
 	elf32-gen.c elf32-i386.c elf-attrs.c	\

@@ -3,7 +3,7 @@
 
 
 
-/* Copyright 1995-2013 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2015 Free Software Foundation, Inc.
 
    This file is part of the GNU Binutils.
 
@@ -56,6 +56,7 @@
 #include "ldlex.h"
 #include "ldmisc.h"
 #include "ldctor.h"
+#include "ldbuildid.h"
 #include "coff/internal.h"
 
 /* FIXME: See bfd/peXXigen.c for why we include an architecture specific
@@ -63,9 +64,10 @@
 #include "coff/i386.h"
 #include "coff/pe.h"
 
-/* FIXME: This is a BFD internal header file, and we should not be
+/* FIXME: These are BFD internal header files, and we should not be
    using it here.  */
 #include "../bfd/libcoff.h"
+#include "../bfd/libpei.h"
 
 #include "deffile.h"
 #include "pe-dll.h"
@@ -116,13 +118,15 @@ static int support_old_code = 0;
 static char * thumb_entry_symbol = NULL;
 static lang_assignment_statement_type *image_base_statement = 0;
 static unsigned short pe_dll_characteristics = 0;
-static bfd_boolean insert_timestamp = FALSE;
+static bfd_boolean insert_timestamp = TRUE;
+static const char *emit_build_id;
 
 #ifdef DLL_SUPPORT
 static int pe_enable_stdcall_fixup = -1; /* 0=disable 1=enable.  */
 static char *pe_out_def_filename = NULL;
 static char *pe_implib_filename = NULL;
 static int pe_enable_auto_image_base = 0;
+static unsigned long pe_auto_image_base = 0x61500000;
 static char *pe_dll_search_prefix = NULL;
 #endif
 
@@ -222,6 +226,8 @@ gld_i386pe_before_parse (void)
 #define OPTION_TERMINAL_SERVER_AWARE	(OPTION_WDM_DRIVER + 1)
 /* Determinism.  */
 #define OPTION_INSERT_TIMESTAMP		(OPTION_TERMINAL_SERVER_AWARE + 1)
+#define OPTION_NO_INSERT_TIMESTAMP	(OPTION_INSERT_TIMESTAMP + 1)
+#define OPTION_BUILD_ID			(OPTION_NO_INSERT_TIMESTAMP + 1)
 
 static void
 gldi386pe_add_options
@@ -256,6 +262,7 @@ gldi386pe_add_options
     {"no-leading-underscore", no_argument, NULL, OPTION_NO_LEADING_UNDERSCORE},
     {"leading-underscore", no_argument, NULL, OPTION_LEADING_UNDERSCORE},
     {"insert-timestamp", no_argument, NULL, OPTION_INSERT_TIMESTAMP},
+    {"no-insert-timestamp", no_argument, NULL, OPTION_NO_INSERT_TIMESTAMP},
 #ifdef DLL_SUPPORT
     /* getopt allows abbreviations, so we do this to stop it
        from treating -o as an abbreviation for this option.  */
@@ -276,7 +283,7 @@ gldi386pe_add_options
        treating -c as an abbreviation for these --compat-implib.  */
     {"compat-implib", no_argument, NULL, OPTION_IMP_COMPAT},
     {"compat-implib", no_argument, NULL, OPTION_IMP_COMPAT},
-    {"enable-auto-image-base", no_argument, NULL, OPTION_ENABLE_AUTO_IMAGE_BASE},
+    {"enable-auto-image-base", optional_argument, NULL, OPTION_ENABLE_AUTO_IMAGE_BASE},
     {"disable-auto-image-base", no_argument, NULL, OPTION_DISABLE_AUTO_IMAGE_BASE},
     {"dll-search-prefix", required_argument, NULL, OPTION_DLL_SEARCH_PREFIX},
     {"no-default-excludes", no_argument, NULL, OPTION_NO_DEFAULT_EXCLUDES},
@@ -300,6 +307,7 @@ gldi386pe_add_options
     {"no-bind", no_argument, NULL, OPTION_NO_BIND},
     {"wdmdriver", no_argument, NULL, OPTION_WDM_DRIVER},
     {"tsaware", no_argument, NULL, OPTION_TERMINAL_SERVER_AWARE},
+    {"build-id", optional_argument, NULL, OPTION_BUILD_ID},
     {NULL, no_argument, NULL, 0}
   };
 
@@ -335,7 +343,7 @@ typedef struct
    C visible symbol.  */
 #define U_SIZE(CSTR)   (sizeof (CSTR) + (is_underscoring () == 0 ? 0 : 1))
 
-#define D(field,symbol,def,usc)  {&pe.field,sizeof(pe.field), def, symbol, 0, usc}
+#define D(field,symbol,def,usc)  {&pe.field, sizeof (pe.field), def, symbol, 0, usc}
 
 static definfo init[] =
 {
@@ -389,7 +397,7 @@ gld_i386pe_list_options (FILE *file)
   fprintf (file, _("  --support-old-code                 Support interworking with old code\n"));
   fprintf (file, _("  --[no-]leading-underscore          Set explicit symbol underscore prefix mode\n"));
   fprintf (file, _("  --thumb-entry=<symbol>             Set the entry point to be Thumb <symbol>\n"));
-  fprintf (file, _("  --insert-timestamp                 Use a real timestamp rather than zero.\n"));
+  fprintf (file, _("  --[no-]insert-timestamp            Use a real timestamp rather than zero (default).\n"));
   fprintf (file, _("                                     This makes binaries non-deterministic\n"));
 #ifdef DLL_SUPPORT
   fprintf (file, _("  --add-stdcall-alias                Export symbols with and without @nn\n"));
@@ -405,9 +413,9 @@ gld_i386pe_list_options (FILE *file)
   fprintf (file, _("  --kill-at                          Remove @nn from exported symbols\n"));
   fprintf (file, _("  --out-implib <file>                Generate import library\n"));
   fprintf (file, _("  --output-def <file>                Generate a .DEF file for the built DLL\n"));
-  fprintf (file, _("  --warn-duplicate-exports           Warn about duplicate exports.\n"));
+  fprintf (file, _("  --warn-duplicate-exports           Warn about duplicate exports\n"));
   fprintf (file, _("  --compat-implib                    Create backward compatible import libs;\n                                       create __imp_<SYMBOL> as well.\n"));
-  fprintf (file, _("  --enable-auto-image-base           Automatically choose image base for DLLs\n                                       unless user specifies one\n"));
+  fprintf (file, _("  --enable-auto-image-base[=<address>] Automatically choose image base for DLLs\n                                       (optionally starting with address) unless\n                                       specifically set with --image-base\n"));
   fprintf (file, _("  --disable-auto-image-base          Do not auto-choose image base. (default)\n"));
   fprintf (file, _("  --dll-search-prefix=<string>       When linking dynamically to a dll without\n                                       an importlib, use <string><basename>.dll\n                                       in preference to lib<basename>.dll \n"));
   fprintf (file, _("  --enable-auto-import               Do sophisticated linking of _sym to\n                                       __imp_sym for DATA references\n"));
@@ -428,6 +436,7 @@ gld_i386pe_list_options (FILE *file)
   fprintf (file, _("  --no-bind			 Do not bind this image\n"));
   fprintf (file, _("  --wdmdriver		 Driver uses the WDM model\n"));
   fprintf (file, _("  --tsaware                  Image is Terminal Server aware\n"));
+  fprintf (file, _("  --build-id[=STYLE]         Generate build ID\n"));
 }
 
 
@@ -478,7 +487,7 @@ set_entry_point (void)
   /* Entry point name for arbitrary subsystem numbers.  */
   static const char default_entry[] = "mainCRTStartup";
 
-  if (link_info.shared || dll)
+  if (bfd_link_pic (&link_info) || dll)
     {
 #if defined (TARGET_IS_i386pe)
       entry = "DllMainCRTStartup@12";
@@ -622,6 +631,7 @@ set_pe_stack_heap (char *resname, char *comname)
     einfo (_("%P%F: strange hex info for PE parameter '%s'\n"), optarg);
 }
 
+#define DEFAULT_BUILD_ID_STYLE	"md5"
 
 static bfd_boolean
 gldi386pe_handle_option (int optc)
@@ -695,6 +705,9 @@ gldi386pe_handle_option (int optc)
     case OPTION_INSERT_TIMESTAMP:
       insert_timestamp = TRUE;
       break;
+    case OPTION_NO_INSERT_TIMESTAMP:
+      insert_timestamp = FALSE;
+      break;
 #ifdef DLL_SUPPORT
     case OPTION_OUT_DEF:
       pe_out_def_filename = xstrdup (optarg);
@@ -737,6 +750,12 @@ gldi386pe_handle_option (int optc)
       break;
     case OPTION_ENABLE_AUTO_IMAGE_BASE:
       pe_enable_auto_image_base = 1;
+      if (optarg && *optarg)
+	{
+	  char *end;
+	  pe_auto_image_base = strtoul (optarg, &end, 0);
+	  /* XXX should check that we actually parsed something */
+	}
       break;
     case OPTION_DISABLE_AUTO_IMAGE_BASE:
       pe_enable_auto_image_base = 0;
@@ -807,6 +826,17 @@ gldi386pe_handle_option (int optc)
     case OPTION_TERMINAL_SERVER_AWARE:
       pe_dll_characteristics |= IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE;
       break;
+    case OPTION_BUILD_ID:
+      if (emit_build_id != NULL)
+	{
+	  free ((char *) emit_build_id);
+	  emit_build_id = NULL;
+	}
+      if (optarg == NULL)
+	optarg = DEFAULT_BUILD_ID_STYLE;
+      if (strcmp (optarg, "none"))
+	emit_build_id = xstrdup (optarg);
+      break;
     }
 
   /*  Set DLLCharacteristics bits  */
@@ -846,7 +876,7 @@ static unsigned long
 compute_dll_image_base (const char *ofile)
 {
   unsigned long hash = strhash (ofile);
-  return 0x61300000 + ((hash << 16) & 0x0FFC0000);
+  return pe_auto_image_base + ((hash << 16) & 0x0FFC0000);
 }
 #endif
 
@@ -864,9 +894,9 @@ gld_i386pe_set_symbols (void)
 
   if (!init[IMAGEBASEOFF].inited)
     {
-      if (link_info.relocatable)
+      if (bfd_link_relocatable (&link_info))
 	init[IMAGEBASEOFF].value = 0;
-      else if (init[DLLOFF].value || (link_info.shared && !link_info.pie))
+      else if (init[DLLOFF].value || bfd_link_dll (&link_info))
 	{
 #ifdef DLL_SUPPORT
 	  init[IMAGEBASEOFF].value = (pe_enable_auto_image_base
@@ -882,7 +912,7 @@ gld_i386pe_set_symbols (void)
     }
 
   /* Don't do any symbol assignments if this is a relocatable link.  */
-  if (link_info.relocatable)
+  if (bfd_link_relocatable (&link_info))
     return;
 
   /* Glue the assignments into the abs section.  */
@@ -1075,10 +1105,19 @@ pe_find_data_imports (void)
       if (undef->type == bfd_link_hash_undefined)
 	{
 	  /* C++ symbols are *long*.  */
-	  char buf[4096];
+#define BUF_SIZE 4096
+	  char buf[BUF_SIZE];
 
 	  if (pe_dll_extra_pe_debug)
 	    printf ("%s:%s\n", __FUNCTION__, undef->root.string);
+
+	  if (strlen (undef->root.string) > (BUF_SIZE - 6))
+	    {
+	      /* PR linker/18466.  */
+	      einfo (_("%P: internal error: symbol too long: %s\n"),
+		     undef->root.string);
+	      return;
+	    }
 
 	  sprintf (buf, "__imp_%s", undef->root.string);
 
@@ -1161,6 +1200,169 @@ debug_section_p (bfd *abfd ATTRIBUTE_UNUSED, asection *sect, void *obj)
     *found = 1;
 }
 
+static bfd_boolean
+pecoff_checksum_contents (bfd *abfd,
+			  void (*process) (const void *, size_t, void *),
+			  void *arg)
+{
+  file_ptr filepos = (file_ptr) 0;
+
+  while (1)
+    {
+      unsigned char b;
+      int status;
+
+      if (bfd_seek (abfd, filepos, SEEK_SET) != 0)
+	return 0;
+
+      status = bfd_bread (&b, (bfd_size_type) 1, abfd);
+      if (status < 1)
+        {
+          break;
+        }
+
+      (*process) (&b, 1, arg);
+      filepos += 1;
+    }
+
+  return TRUE;
+}
+
+static bfd_boolean
+write_build_id (bfd *abfd)
+{
+  struct pe_tdata *t = pe_data (abfd);
+  asection *asec;
+  struct bfd_link_order *link_order = NULL;
+  unsigned char *contents;
+  bfd_size_type size;
+  bfd_size_type build_id_size;
+  unsigned char *build_id;
+
+  /* Find the section the .buildid output section has been merged info.  */
+  for (asec = abfd->sections; asec != NULL; asec = asec->next)
+    {
+      struct bfd_link_order *l = NULL;
+      for (l = asec->map_head.link_order; l != NULL; l = l->next)
+        {
+          if (l->type == bfd_indirect_link_order)
+            {
+              if (l->u.indirect.section == t->build_id.sec)
+                {
+                  link_order = l;
+                  break;
+                }
+            }
+        }
+
+      if (link_order)
+        break;
+    }
+
+  if (!link_order)
+    {
+      einfo (_("%P: warning: .buildid section discarded,"
+               " --build-id ignored.\n"));
+      return TRUE;
+    }
+
+  if (t->build_id.sec->contents == NULL)
+    t->build_id.sec->contents = (unsigned char *) xmalloc (t->build_id.sec->size);
+  contents = t->build_id.sec->contents;
+  size = t->build_id.sec->size;
+
+  build_id_size = compute_build_id_size (t->build_id.style);
+  build_id = xmalloc (build_id_size);
+  generate_build_id (abfd, t->build_id.style, pecoff_checksum_contents, build_id, build_id_size);
+
+  bfd_vma ib = pe_data (link_info.output_bfd)->pe_opthdr.ImageBase;
+
+  /* Construct a debug directory entry which points to an immediately following CodeView record.  */
+  struct internal_IMAGE_DEBUG_DIRECTORY idd;
+  idd.Characteristics = 0;
+  idd.TimeDateStamp = 0;
+  idd.MajorVersion = 0;
+  idd.MinorVersion = 0;
+  idd.Type = PE_IMAGE_DEBUG_TYPE_CODEVIEW;
+  idd.SizeOfData = sizeof (CV_INFO_PDB70) + 1;
+  idd.AddressOfRawData = asec->vma - ib + link_order->offset
+    + sizeof (struct external_IMAGE_DEBUG_DIRECTORY);
+  idd.PointerToRawData = asec->filepos + link_order->offset
+    + sizeof (struct external_IMAGE_DEBUG_DIRECTORY);
+
+  struct external_IMAGE_DEBUG_DIRECTORY *ext = (struct external_IMAGE_DEBUG_DIRECTORY *)contents;
+  _bfd_XXi_swap_debugdir_out (abfd, &idd, ext);
+
+  /* Write the debug directory entry.  */
+  if (bfd_seek (abfd, asec->filepos + link_order->offset, SEEK_SET) != 0)
+    return 0;
+
+  if (bfd_bwrite (contents, size, abfd) != size)
+    return 0;
+
+  /* Construct the CodeView record.  */
+  CODEVIEW_INFO cvinfo;
+  cvinfo.CVSignature = CVINFO_PDB70_CVSIGNATURE;
+  cvinfo.Age = 1;
+
+  /* Zero pad or truncate the generated build_id to fit in the CodeView record.  */
+  memset (&(cvinfo.Signature), 0, CV_INFO_SIGNATURE_LENGTH);
+  memcpy (&(cvinfo.Signature), build_id, (build_id_size > CV_INFO_SIGNATURE_LENGTH)
+	  ? CV_INFO_SIGNATURE_LENGTH :  build_id_size);
+
+  free (build_id);
+
+  /* Write the codeview record.  */
+  if (_bfd_XXi_write_codeview_record (abfd, idd.PointerToRawData, &cvinfo) == 0)
+    return 0;
+
+  /* Record the location of the debug directory in the data directory.  */
+  pe_data (link_info.output_bfd)->pe_opthdr.DataDirectory[PE_DEBUG_DATA].VirtualAddress
+    = asec->vma  - ib + link_order->offset;
+  pe_data (link_info.output_bfd)->pe_opthdr.DataDirectory[PE_DEBUG_DATA].Size
+    = sizeof (struct external_IMAGE_DEBUG_DIRECTORY);
+
+  return TRUE;
+}
+
+/* Make .buildid section, and set up coff_tdata->build_id. */
+static bfd_boolean
+setup_build_id (bfd *ibfd)
+{
+  asection *s;
+  flagword flags;
+
+  if (!validate_build_id_style (emit_build_id))
+    {
+      einfo ("%P: warning: unrecognized --build-id style ignored.\n");
+      return FALSE;
+    }
+
+  flags = (SEC_HAS_CONTENTS | SEC_ALLOC | SEC_LOAD | SEC_IN_MEMORY
+	   | SEC_LINKER_CREATED | SEC_READONLY | SEC_DATA);
+  s = bfd_make_section_anyway_with_flags (ibfd, ".buildid", flags);
+  if (s != NULL)
+    {
+      struct pe_tdata *t = pe_data (link_info.output_bfd);
+      t->build_id.after_write_object_contents = &write_build_id;
+      t->build_id.style = emit_build_id;
+      t->build_id.sec = s;
+
+      /* Section is a fixed size:
+	 One IMAGE_DEBUG_DIRECTORY entry, of type IMAGE_DEBUG_TYPE_CODEVIEW,
+	 pointing at a CV_INFO_PDB70 record containing the build-id, with a
+	 null byte for PdbFileName.  */
+      s->size = sizeof (struct external_IMAGE_DEBUG_DIRECTORY)
+	+ sizeof (CV_INFO_PDB70) + 1;
+
+      return TRUE;
+    }
+
+  einfo ("%P: warning: Cannot create .buildid section,"
+	 " --build-id ignored.\n");
+  return FALSE;
+}
+
 static void
 gld_i386pe_after_open (void)
 {
@@ -1178,10 +1380,30 @@ gld_i386pe_after_open (void)
 	printf ("-%s\n", sym->root.string);
       bfd_hash_traverse (&link_info.hash->table, pr_sym, NULL);
 
-      for (a = link_info.input_bfds; a; a = a->link_next)
+      for (a = link_info.input_bfds; a; a = a->link.next)
 	printf ("*%s\n",a->filename);
     }
 #endif
+
+  if (emit_build_id != NULL)
+    {
+      bfd *abfd;
+
+      /* Find a COFF input.  */
+      for (abfd = link_info.input_bfds;
+	   abfd != (bfd *) NULL; abfd = abfd->link.next)
+	if (bfd_get_flavour (abfd) == bfd_target_coff_flavour)
+	  break;
+
+      /* If there are no COFF input files do not try to
+	 add a build-id section.  */
+      if (abfd == NULL
+	  || !setup_build_id (abfd))
+	{
+	  free ((char *) emit_build_id);
+	  emit_build_id = NULL;
+	}
+    }
 
   /* Pass the wacky PE command line options into the output bfd.
      FIXME: This should be done via a function, rather than by
@@ -1205,11 +1427,16 @@ gld_i386pe_after_open (void)
      find it, so enable it in that case.  */
   if (pe_use_coff_long_section_names < 0 && link_info.strip == strip_none)
     {
+      if (bfd_link_relocatable (&link_info))
+	pe_use_coff_long_section_names = 1;
+      else
+	{
       /* Iterate over all sections of all input BFDs, checking
          for any that begin 'debug_' and are long names.  */
       LANG_FOR_EACH_INPUT_STATEMENT (is)
 	{
 	  int found_debug = 0;
+
 	  bfd_map_over_sections (is->the_bfd, debug_section_p, &found_debug);
 	  if (found_debug)
 	    {
@@ -1217,6 +1444,7 @@ gld_i386pe_after_open (void)
 	      break;
 	    }
 	}
+    }
     }
 
   pe_output_file_set_long_section_names (link_info.output_bfd);
@@ -1235,10 +1463,10 @@ gld_i386pe_after_open (void)
     pe_fixup_stdcalls ();
 
 #if defined (TARGET_IS_i386pe)     || defined (TARGET_IS_armpe)     || defined (TARGET_IS_arm_epoc_pe)     || defined (TARGET_IS_arm_wince_pe)
-  if (!link_info.relocatable)
+  if (!bfd_link_relocatable (&link_info))
     pe_dll_build_sections (link_info.output_bfd, &link_info);
 #else
-  if (link_info.shared)
+  if (bfd_link_pic (&link_info))
     pe_dll_build_sections (link_info.output_bfd, &link_info);
   else
     pe_exe_build_sections (link_info.output_bfd, &link_info);
@@ -1658,7 +1886,7 @@ gld_i386pe_unrecognized_file (lang_input_statement_type *entry ATTRIBUTE_UNUSED)
 
 	  /* def_file_print (stdout, pe_def_file); */
 	  if (pe_def_file->is_dll == 1)
-	    link_info.shared = 1;
+	    link_info.type = type_dll;
 
 	  if (pe_def_file->base_address != (bfd_vma)(-1))
 	    {
@@ -1767,9 +1995,10 @@ gld_i386pe_finish (void)
   finish_default ();
 
 #ifdef DLL_SUPPORT
-  if (link_info.shared
+  if (bfd_link_pic (&link_info)
 #if !defined(TARGET_IS_shpe)
-      || (!link_info.relocatable && pe_def_file->num_exports != 0)
+      || (!bfd_link_relocatable (&link_info)
+	  && pe_def_file->num_exports != 0)
 #endif
     )
     {
@@ -1828,7 +2057,7 @@ gld_i386pe_place_orphan (asection *s,
   lang_statement_union_type **pl;
 
   /* Look through the script to see where to place this section.  */
-  if (!link_info.relocatable
+  if (!bfd_link_relocatable (&link_info)
       && (dollar = strchr (secname, '$')) != NULL)
     {
       size_t len = dollar - secname;
@@ -1910,6 +2139,8 @@ gld_i386pe_place_orphan (asection *s,
       struct orphan_save *place;
       lang_output_section_statement_type *after;
       etree_type *address;
+      flagword flags;
+      asection *nexts;
 
       if (!orphan_init_done)
 	{
@@ -1927,14 +2158,26 @@ gld_i386pe_place_orphan (asection *s,
       /* Try to put the new output section in a reasonable place based
 	 on the section name and section flags.  */
 
+      flags = s->flags;
+      nexts = s;
+      while ((nexts = bfd_get_next_section_by_name (nexts->owner, nexts)))
+	if (nexts->output_section == NULL
+	    && (nexts->flags & SEC_EXCLUDE) == 0
+	    && ((nexts->flags ^ flags) & (SEC_LOAD | SEC_ALLOC)) == 0
+	    && (nexts->owner->flags & DYNAMIC) == 0
+	    && nexts->owner->usrdata != NULL
+	    && !(((lang_input_statement_type *) nexts->owner->usrdata)
+		 ->flags.just_syms))
+	  flags = (((flags ^ SEC_READONLY) | (nexts->flags ^ SEC_READONLY))
+		   ^ SEC_READONLY);
       place = NULL;
-      if ((s->flags & SEC_ALLOC) == 0)
+      if ((flags & SEC_ALLOC) == 0)
 	;
-      else if ((s->flags & (SEC_LOAD | SEC_HAS_CONTENTS)) == 0)
+      else if ((flags & (SEC_LOAD | SEC_HAS_CONTENTS)) == 0)
 	place = &hold[orphan_bss];
-      else if ((s->flags & SEC_READONLY) == 0)
+      else if ((flags & SEC_READONLY) == 0)
 	place = &hold[orphan_data];
-      else if ((s->flags & SEC_CODE) == 0)
+      else if ((flags & SEC_CODE) == 0)
 	{
 	  place = (!strncmp (secname, ".idata$", 7) ? &hold[orphan_idata]
 						     : &hold[orphan_rodata]);
@@ -1949,7 +2192,8 @@ gld_i386pe_place_orphan (asection *s,
 	    place->os = lang_output_section_find (place->name);
 	  after = place->os;
 	  if (after == NULL)
-	    after = lang_output_section_find_by_flags (s, &place->os, NULL);
+	    after = lang_output_section_find_by_flags (s, flags, &place->os,
+						       NULL);
 	  if (after == NULL)
 	    /* *ABS* is always the first output section statement.  */
 	    after = (&lang_output_section_statement.head
@@ -1962,7 +2206,7 @@ gld_i386pe_place_orphan (asection *s,
       address = exp_unop (ALIGN_K, exp_nameop (NAME, "__section_alignment__"));
       os = lang_insert_orphan (s, secname, constraint, after, place, address,
 			       &add_child);
-      if (link_info.relocatable)
+      if (bfd_link_relocatable (&link_info))
 	{
 	  os->section_alignment = s->alignment_power;
 	  os->bfd_section->alignment_power = s->alignment_power;
@@ -2039,7 +2283,7 @@ gld_i386pe_open_dynamic_archive
   unsigned int i;
 
 
-  if (! entry->flags.maybe_archive)
+  if (! entry->flags.maybe_archive || entry->flags.full_name_provided)
     return FALSE;
 
   filename = entry->filename;
@@ -2112,11 +2356,15 @@ gld_i386pe_get_script (int *isfile)
 {
   *isfile = 0;
 
-  if (link_info.relocatable && config.build_constructors)
+  if (bfd_link_relocatable (&link_info) && config.build_constructors)
     return
 "/* Script for ld -Ur: link w/out relocation, do create constructors */\n\
+/* Copyright (C) 2014-2015 Free Software Foundation, Inc.\n\
+   Copying and distribution of this script, with or without modification,\n\
+   are permitted in any medium without royalty provided the copyright\n\
+   notice and this notice are preserved.  */\n\
 OUTPUT_FORMAT(pe-i386)\n\
-SEARCH_DIR(\"=/usr/local/lib\"); SEARCH_DIR(\"=/lib\"); SEARCH_DIR(\"=/usr/lib\");\n\
+SEARCH_DIR(\"=/home/autobuild/tools/win32/mingw32/lib\"); SEARCH_DIR(\"=/home/autobuild/tools/win32/lib\"); SEARCH_DIR(\"=/usr/local/lib\"); SEARCH_DIR(\"=/lib\"); SEARCH_DIR(\"=/usr/lib\");\n\
 SECTIONS\n\
 {\n\
   .text  :\n\
@@ -2134,12 +2382,12 @@ SECTIONS\n\
      on fork.  This used to be named \".data\".  The linker used\n\
      to include this between __data_start__ and __data_end__, but that\n\
      breaks building the cygwin32 dll.  Instead, we name the section\n\
-     \".data_cygwin_nocopy\" and explicitly include it after __data_end__. */\n\
-  .data  :\n\
+     \".data_cygwin_nocopy\" and explicitly include it after __data_end__. */\n"
+"  .data  :\n\
   {\n\
     *(.data)\n\
-    *(.data2)\n"
-"    *(.jcr)\n\
+    *(.data2)\n\
+    KEEP(*(.jcr))\n\
   }\n\
   .rdata  :\n\
   {\n\
@@ -2148,11 +2396,250 @@ SECTIONS\n\
   }\n\
   .eh_frame  :\n\
   {\n\
-    *(.eh_frame*)\n\
+    KEEP(*(.eh_frame*))\n\
   }\n\
   .pdata  :\n\
   {\n\
-    *(.pdata)\n\
+    KEEP(*(.pdata))\n\
+  }\n\
+  .bss  :\n\
+  {\n\
+    *(.bss)\n\
+    *(COMMON)\n\
+  }\n\
+  .edata  :\n"
+"  {\n\
+    *(.edata)\n\
+  }\n\
+  /DISCARD/ :\n\
+  {\n\
+    *(.debug$S)\n\
+    *(.debug$T)\n\
+    *(.debug$F)\n\
+    *(.drectve)\n\
+  }\n\
+  .idata  :\n\
+  {\n\
+    /* This cannot currently be handled with grouped sections.\n\
+	See pe.em:sort_sections.  */\n\
+  }\n\
+  .CRT  :\n\
+  {\n\
+    /* ___crt_xl_end__ is defined in the TLS Directory support code */\n\
+  }\n\
+  /* Windows TLS expects .tls$AAA to be at the start and .tls$ZZZ to be\n\
+     at the end of section.  This is important because _tls_start MUST\n\
+     be at the beginning of the section to enable SECREL32 relocations with TLS\n\
+     data.  */\n\
+  .tls  :\n\
+  {\n"
+"  }\n\
+  .endjunk  :\n\
+  {\n\
+    /* end is deprecated, don't use it */\n\
+  }\n\
+  .rsrc  : SUBALIGN(4)\n\
+  {\n\
+    *(.rsrc)\n\
+  }\n\
+  .reloc  :\n\
+  {\n\
+    *(.reloc)\n\
+  }\n\
+  .stab   :\n\
+  {\n\
+    *(.stab)\n\
+  }\n\
+  .stabstr   :\n\
+  {\n\
+    *(.stabstr)\n\
+  }\n\
+  /* DWARF debug sections.\n\
+     Symbols in the DWARF debugging sections are relative to the beginning\n\
+     of the section.  Unlike other targets that fake this by putting the\n\
+     section VMA at 0, the PE format will not allow it.  */\n"
+"  /* DWARF 1.1 and DWARF 2.  */\n\
+  .debug_aranges   :\n\
+  {\n\
+    *(.debug_aranges)\n\
+  }\n\
+  .zdebug_aranges   :\n\
+  {\n\
+    *(.zdebug_aranges)\n\
+  }\n\
+  .debug_pubnames   :\n\
+  {\n\
+    *(.debug_pubnames)\n\
+  }\n\
+  .zdebug_pubnames   :\n\
+  {\n\
+    *(.zdebug_pubnames)\n\
+  }\n\
+  .debug_pubtypes   :\n\
+  {\n\
+    *(.debug_pubtypes)\n\
+  }\n\
+  .zdebug_pubtypes   :\n\
+  {\n\
+    *(.zdebug_pubtypes)\n\
+  }\n\
+  /* DWARF 2.  */\n\
+  .debug_info   :\n\
+  {\n\
+    *(.debug_info)\n\
+  }\n\
+  .zdebug_info   :\n\
+  {\n\
+    *(.zdebug_info)\n\
+  }\n\
+  .debug_abbrev   :\n\
+  {\n\
+    *(.debug_abbrev)\n\
+  }\n\
+  .zdebug_abbrev   :\n\
+  {\n\
+    *(.zdebug_abbrev)\n\
+  }\n\
+  .debug_line   :\n\
+  {\n\
+    *(.debug_line)\n\
+  }\n\
+  .zdebug_line   :\n\
+  {\n\
+    *(.zdebug_line)\n\
+  }\n\
+  .debug_frame   :\n\
+  {\n\
+    *(.debug_frame*)\n\
+  }\n\
+  .zdebug_frame   :\n\
+  {\n\
+    *(.zdebug_frame*)\n\
+  }\n\
+  .debug_str   :\n\
+  {\n\
+    *(.debug_str)\n\
+  }\n\
+  .zdebug_str   :\n\
+  {\n\
+    *(.zdebug_str)\n\
+  }\n\
+  .debug_loc   :\n\
+  {\n\
+    *(.debug_loc)\n\
+  }\n\
+  .zdebug_loc   :\n\
+  {\n\
+    *(.zdebug_loc)\n\
+  }\n\
+  .debug_macinfo   :\n\
+  {\n\
+    *(.debug_macinfo)\n\
+  }\n\
+  .zdebug_macinfo   :\n\
+  {\n\
+    *(.zdebug_macinfo)\n\
+  }\n\
+  /* SGI/MIPS DWARF 2 extensions.  */\n\
+  .debug_weaknames   :\n\
+  {\n\
+    *(.debug_weaknames)\n\
+  }\n\
+  .zdebug_weaknames   :\n\
+  {\n\
+    *(.zdebug_weaknames)\n\
+  }\n\
+  .debug_funcnames   :\n\
+  {\n\
+    *(.debug_funcnames)\n\
+  }\n\
+  .zdebug_funcnames   :\n\
+  {\n\
+    *(.zdebug_funcnames)\n\
+  }\n\
+  .debug_typenames   :\n\
+  {\n\
+    *(.debug_typenames)\n\
+  }\n\
+  .zdebug_typenames   :\n\
+  {\n\
+    *(.zdebug_typenames)\n\
+  }\n\
+  .debug_varnames   :\n\
+  {\n\
+    *(.debug_varnames)\n\
+  }\n\
+  .zdebug_varnames   :\n\
+  {\n\
+    *(.zdebug_varnames)\n\
+  }\n\
+  .debug_macro   :\n\
+  {\n\
+    *(.debug_macro)\n\
+  }\n\
+  .zdebug_macro   :\n\
+  {\n\
+    *(.zdebug_macro)\n\
+  }\n\
+  /* DWARF 3.  */\n\
+  .debug_ranges   :\n\
+  {\n\
+    *(.debug_ranges)\n\
+  }\n\
+  .zdebug_ranges   :\n\
+  {\n\
+    *(.zdebug_ranges)\n\
+  }\n\
+  /* DWARF 4.  */\n\
+  .debug_types   :\n\
+  {\n\
+    *(.debug_types)\n\
+  }\n\
+  .zdebug_types   :\n\
+  {\n\
+    *(.zdebug_types)\n\
+  }\n\
+}\n\n"
+  ; else if (bfd_link_relocatable (&link_info)) return
+"/* Script for ld -r: link without relocation */\n\
+/* Copyright (C) 2014-2015 Free Software Foundation, Inc.\n\
+   Copying and distribution of this script, with or without modification,\n\
+   are permitted in any medium without royalty provided the copyright\n\
+   notice and this notice are preserved.  */\n\
+OUTPUT_FORMAT(pe-i386)\n\
+SEARCH_DIR(\"=/home/autobuild/tools/win32/mingw32/lib\"); SEARCH_DIR(\"=/home/autobuild/tools/win32/lib\"); SEARCH_DIR(\"=/usr/local/lib\"); SEARCH_DIR(\"=/lib\"); SEARCH_DIR(\"=/usr/lib\");\n\
+SECTIONS\n\
+{\n\
+  .text  :\n\
+  {\n\
+    *(.text)\n\
+    *(.glue_7t)\n\
+    *(.glue_7)\n\
+    /* ??? Why is .gcc_exc here?  */\n\
+  }\n\
+  /* The Cygwin32 library uses a section to avoid copying certain data\n\
+     on fork.  This used to be named \".data\".  The linker used\n\
+     to include this between __data_start__ and __data_end__, but that\n\
+     breaks building the cygwin32 dll.  Instead, we name the section\n\
+     \".data_cygwin_nocopy\" and explicitly include it after __data_end__. */\n\
+  .data  :\n\
+  {\n\
+    *(.data)\n\
+    *(.data2)\n"
+"    KEEP(*(.jcr))\n\
+  }\n\
+  .rdata  :\n\
+  {\n\
+    *(.rdata)\n\
+    *(.rdata_runtime_pseudo_reloc)\n\
+  }\n\
+  .eh_frame  :\n\
+  {\n\
+    KEEP(*(.eh_frame*))\n\
+  }\n\
+  .pdata  :\n\
+  {\n\
+    KEEP(*(.pdata))\n\
   }\n\
   .bss  :\n\
   {\n\
@@ -2190,7 +2677,7 @@ SECTIONS\n\
   {\n\
     /* end is deprecated, don't use it */\n"
 "  }\n\
-  .rsrc  :\n\
+  .rsrc  : SUBALIGN(4)\n\
   {\n\
     *(.rsrc)\n\
   }\n\
@@ -2352,245 +2839,14 @@ SECTIONS\n\
     *(.zdebug_types)\n\
   }\n\
 }\n\n"
-  ; else if (link_info.relocatable) return
-"/* Script for ld -r: link without relocation */\n\
-OUTPUT_FORMAT(pe-i386)\n\
-SEARCH_DIR(\"=/usr/local/lib\"); SEARCH_DIR(\"=/lib\"); SEARCH_DIR(\"=/usr/lib\");\n\
-SECTIONS\n\
-{\n\
-  .text  :\n\
-  {\n\
-    *(.text)\n\
-    *(.glue_7t)\n\
-    *(.glue_7)\n\
-    /* ??? Why is .gcc_exc here?  */\n\
-  }\n\
-  /* The Cygwin32 library uses a section to avoid copying certain data\n\
-     on fork.  This used to be named \".data\".  The linker used\n\
-     to include this between __data_start__ and __data_end__, but that\n\
-     breaks building the cygwin32 dll.  Instead, we name the section\n\
-     \".data_cygwin_nocopy\" and explicitly include it after __data_end__. */\n\
-  .data  :\n\
-  {\n\
-    *(.data)\n\
-    *(.data2)\n\
-    *(.jcr)\n\
-  }\n\
-  .rdata  :\n\
-  {\n"
-"    *(.rdata)\n\
-    *(.rdata_runtime_pseudo_reloc)\n\
-  }\n\
-  .eh_frame  :\n\
-  {\n\
-    *(.eh_frame*)\n\
-  }\n\
-  .pdata  :\n\
-  {\n\
-    *(.pdata)\n\
-  }\n\
-  .bss  :\n\
-  {\n\
-    *(.bss)\n\
-    *(COMMON)\n\
-  }\n\
-  .edata  :\n\
-  {\n\
-    *(.edata)\n\
-  }\n\
-  /DISCARD/ :\n\
-  {\n\
-    *(.debug$S)\n\
-    *(.debug$T)\n\
-    *(.debug$F)\n"
-"    *(.drectve)\n\
-  }\n\
-  .idata  :\n\
-  {\n\
-    /* This cannot currently be handled with grouped sections.\n\
-	See pe.em:sort_sections.  */\n\
-  }\n\
-  .CRT  :\n\
-  {\n\
-    /* ___crt_xl_end__ is defined in the TLS Directory support code */\n\
-  }\n\
-  /* Windows TLS expects .tls$AAA to be at the start and .tls$ZZZ to be\n\
-     at the end of section.  This is important because _tls_start MUST\n\
-     be at the beginning of the section to enable SECREL32 relocations with TLS\n\
-     data.  */\n\
-  .tls  :\n\
-  {\n\
-  }\n\
-  .endjunk  :\n\
-  {\n\
-    /* end is deprecated, don't use it */\n\
-  }\n\
-  .rsrc  :\n\
-  {\n\
-    *(.rsrc)\n"
-"  }\n\
-  .reloc  :\n\
-  {\n\
-    *(.reloc)\n\
-  }\n\
-  .stab   :\n\
-  {\n\
-    *(.stab)\n\
-  }\n\
-  .stabstr   :\n\
-  {\n\
-    *(.stabstr)\n\
-  }\n\
-  /* DWARF debug sections.\n\
-     Symbols in the DWARF debugging sections are relative to the beginning\n\
-     of the section.  Unlike other targets that fake this by putting the\n\
-     section VMA at 0, the PE format will not allow it.  */\n\
-  /* DWARF 1.1 and DWARF 2.  */\n\
-  .debug_aranges   :\n\
-  {\n\
-    *(.debug_aranges)\n\
-  }\n\
-  .zdebug_aranges   :\n\
-  {\n\
-    *(.zdebug_aranges)\n"
-"  }\n\
-  .debug_pubnames   :\n\
-  {\n\
-    *(.debug_pubnames)\n\
-  }\n\
-  .zdebug_pubnames   :\n\
-  {\n\
-    *(.zdebug_pubnames)\n\
-  }\n\
-  .debug_pubtypes   :\n\
-  {\n\
-    *(.debug_pubtypes)\n\
-  }\n\
-  .zdebug_pubtypes   :\n\
-  {\n\
-    *(.zdebug_pubtypes)\n\
-  }\n\
-  /* DWARF 2.  */\n\
-  .debug_info   :\n\
-  {\n\
-    *(.debug_info)\n\
-  }\n\
-  .zdebug_info   :\n\
-  {\n\
-    *(.zdebug_info)\n\
-  }\n\
-  .debug_abbrev   :\n\
-  {\n\
-    *(.debug_abbrev)\n\
-  }\n\
-  .zdebug_abbrev   :\n\
-  {\n\
-    *(.zdebug_abbrev)\n\
-  }\n\
-  .debug_line   :\n\
-  {\n\
-    *(.debug_line)\n\
-  }\n\
-  .zdebug_line   :\n\
-  {\n\
-    *(.zdebug_line)\n\
-  }\n\
-  .debug_frame   :\n\
-  {\n\
-    *(.debug_frame*)\n\
-  }\n\
-  .zdebug_frame   :\n\
-  {\n\
-    *(.zdebug_frame*)\n\
-  }\n\
-  .debug_str   :\n\
-  {\n\
-    *(.debug_str)\n\
-  }\n\
-  .zdebug_str   :\n\
-  {\n\
-    *(.zdebug_str)\n\
-  }\n\
-  .debug_loc   :\n\
-  {\n\
-    *(.debug_loc)\n\
-  }\n\
-  .zdebug_loc   :\n\
-  {\n\
-    *(.zdebug_loc)\n\
-  }\n\
-  .debug_macinfo   :\n\
-  {\n\
-    *(.debug_macinfo)\n\
-  }\n\
-  .zdebug_macinfo   :\n\
-  {\n\
-    *(.zdebug_macinfo)\n\
-  }\n\
-  /* SGI/MIPS DWARF 2 extensions.  */\n\
-  .debug_weaknames   :\n\
-  {\n\
-    *(.debug_weaknames)\n\
-  }\n\
-  .zdebug_weaknames   :\n\
-  {\n\
-    *(.zdebug_weaknames)\n\
-  }\n\
-  .debug_funcnames   :\n\
-  {\n\
-    *(.debug_funcnames)\n\
-  }\n\
-  .zdebug_funcnames   :\n\
-  {\n\
-    *(.zdebug_funcnames)\n\
-  }\n\
-  .debug_typenames   :\n\
-  {\n\
-    *(.debug_typenames)\n\
-  }\n\
-  .zdebug_typenames   :\n\
-  {\n\
-    *(.zdebug_typenames)\n\
-  }\n\
-  .debug_varnames   :\n\
-  {\n\
-    *(.debug_varnames)\n\
-  }\n\
-  .zdebug_varnames   :\n\
-  {\n\
-    *(.zdebug_varnames)\n\
-  }\n\
-  .debug_macro   :\n\
-  {\n\
-    *(.debug_macro)\n\
-  }\n\
-  .zdebug_macro   :\n\
-  {\n\
-    *(.zdebug_macro)\n\
-  }\n\
-  /* DWARF 3.  */\n\
-  .debug_ranges   :\n\
-  {\n\
-    *(.debug_ranges)\n\
-  }\n\
-  .zdebug_ranges   :\n\
-  {\n\
-    *(.zdebug_ranges)\n\
-  }\n\
-  /* DWARF 4.  */\n\
-  .debug_types   :\n\
-  {\n\
-    *(.debug_types)\n\
-  }\n\
-  .zdebug_types   :\n\
-  {\n\
-    *(.zdebug_types)\n\
-  }\n\
-}\n\n"
   ; else if (!config.text_read_only) return
 "/* Script for -N: mix text and data on same page; don't align data */\n\
+/* Copyright (C) 2014-2015 Free Software Foundation, Inc.\n\
+   Copying and distribution of this script, with or without modification,\n\
+   are permitted in any medium without royalty provided the copyright\n\
+   notice and this notice are preserved.  */\n\
 OUTPUT_FORMAT(pei-i386)\n\
-SEARCH_DIR(\"=/usr/local/lib\"); SEARCH_DIR(\"=/lib\"); SEARCH_DIR(\"=/usr/lib\");\n\
+SEARCH_DIR(\"=/home/autobuild/tools/win32/mingw32/lib\"); SEARCH_DIR(\"=/home/autobuild/tools/win32/lib\"); SEARCH_DIR(\"=/usr/local/lib\"); SEARCH_DIR(\"=/lib\"); SEARCH_DIR(\"=/usr/lib\");\n\
 SECTIONS\n\
 {\n\
   /* Make the virtual address and file offset synced if the alignment is\n\
@@ -2599,7 +2855,7 @@ SECTIONS\n\
   . = ALIGN(__section_alignment__);\n\
   .text  __image_base__ + ( __section_alignment__ < 0x1000 ? . : __section_alignment__ ) :\n\
   {\n\
-     *(.init)\n\
+     KEEP(*(.init))\n\
     *(.text)\n\
     *(SORT(.text$*))\n\
      *(.text.*)\n\
@@ -2608,12 +2864,12 @@ SECTIONS\n\
     *(.glue_7)\n\
      ___CTOR_LIST__ = .; __CTOR_LIST__ = . ;\n\
 			LONG (-1);*(.ctors); *(.ctor); *(SORT(.ctors.*));  LONG (0);\n\
-     ___DTOR_LIST__ = .; __DTOR_LIST__ = . ;\n\
-			LONG (-1); *(.dtors); *(.dtor); *(SORT(.dtors.*));  LONG (0);\n\
+     ___DTOR_LIST__ = .; __DTOR_LIST__ = . ;\n"
+"			LONG (-1); *(.dtors); *(.dtor); *(SORT(.dtors.*));  LONG (0);\n\
      *(.fini)\n\
     /* ??? Why is .gcc_exc here?  */\n\
-     *(.gcc_exc)\n"
-"    PROVIDE (etext = .);\n\
+     *(.gcc_exc)\n\
+    PROVIDE (etext = .);\n\
     PROVIDE (_etext = .);\n\
      *(.gcc_except_table)\n\
   }\n\
@@ -2628,17 +2884,17 @@ SECTIONS\n\
     *(.data)\n\
     *(.data2)\n\
     *(SORT(.data$*))\n\
-    *(.jcr)\n\
+    KEEP(*(.jcr))\n\
     __data_end__ = . ;\n\
     *(.data_cygwin_nocopy)\n\
   }\n\
   .rdata BLOCK(__section_alignment__) :\n\
-  {\n\
-    *(.rdata)\n\
+  {\n"
+"    *(.rdata)\n\
              *(SORT(.rdata$*))\n\
     __rt_psrelocs_start = .;\n\
-    *(.rdata_runtime_pseudo_reloc)\n"
-"    __rt_psrelocs_end = .;\n\
+    *(.rdata_runtime_pseudo_reloc)\n\
+    __rt_psrelocs_end = .;\n\
   }\n\
   __rt_psrelocs_size = __rt_psrelocs_end - __rt_psrelocs_start;\n\
   ___RUNTIME_PSEUDO_RELOC_LIST_END__ = .;\n\
@@ -2647,23 +2903,23 @@ SECTIONS\n\
   __RUNTIME_PSEUDO_RELOC_LIST__ = . - __rt_psrelocs_size;\n\
   .eh_frame BLOCK(__section_alignment__) :\n\
   {\n\
-    *(.eh_frame*)\n\
+    KEEP(*(.eh_frame*))\n\
   }\n\
   .pdata BLOCK(__section_alignment__) :\n\
   {\n\
-    *(.pdata)\n\
+    KEEP(*(.pdata))\n\
   }\n\
   .bss BLOCK(__section_alignment__) :\n\
   {\n\
     __bss_start__ = . ;\n\
     *(.bss)\n\
     *(COMMON)\n\
-    __bss_end__ = . ;\n\
-  }\n\
+    __bss_end__ = . ;\n"
+"  }\n\
   .edata BLOCK(__section_alignment__) :\n\
   {\n\
-    *(.edata)\n"
-"  }\n\
+    *(.edata)\n\
+  }\n\
   /DISCARD/ :\n\
   {\n\
     *(.debug$S)\n\
@@ -2677,33 +2933,33 @@ SECTIONS\n\
   {\n\
     /* This cannot currently be handled with grouped sections.\n\
 	See pe.em:sort_sections.  */\n\
-    SORT(*)(.idata$2)\n\
-    SORT(*)(.idata$3)\n\
+    KEEP (SORT(*)(.idata$2))\n\
+    KEEP (SORT(*)(.idata$3))\n\
     /* These zeroes mark the end of the import list.  */\n\
     LONG (0); LONG (0); LONG (0); LONG (0); LONG (0);\n\
-    SORT(*)(.idata$4)\n\
+    KEEP (SORT(*)(.idata$4))\n\
     __IAT_start__ = .;\n\
-    SORT(*)(.idata$5)\n\
-    __IAT_end__ = .;\n\
-    SORT(*)(.idata$6)\n\
-    SORT(*)(.idata$7)\n\
-  }\n"
-"  .CRT BLOCK(__section_alignment__) :\n\
+    KEEP (SORT(*)(.idata$5))\n"
+"    __IAT_end__ = .;\n\
+    KEEP (SORT(*)(.idata$6))\n\
+    KEEP (SORT(*)(.idata$7))\n\
+  }\n\
+  .CRT BLOCK(__section_alignment__) :\n\
   {\n\
     ___crt_xc_start__ = . ;\n\
-    *(SORT(.CRT$XC*))  /* C initialization */\n\
+    KEEP (*(SORT(.CRT$XC*)))  /* C initialization */\n\
     ___crt_xc_end__ = . ;\n\
     ___crt_xi_start__ = . ;\n\
-    *(SORT(.CRT$XI*))  /* C++ initialization */\n\
+    KEEP (*(SORT(.CRT$XI*)))  /* C++ initialization */\n\
     ___crt_xi_end__ = . ;\n\
     ___crt_xl_start__ = . ;\n\
-    *(SORT(.CRT$XL*))  /* TLS callbacks */\n\
+    KEEP (*(SORT(.CRT$XL*)))  /* TLS callbacks */\n\
     /* ___crt_xl_end__ is defined in the TLS Directory support code */\n\
     ___crt_xp_start__ = . ;\n\
-    *(SORT(.CRT$XP*))  /* Pre-termination */\n\
+    KEEP (*(SORT(.CRT$XP*)))  /* Pre-termination */\n\
     ___crt_xp_end__ = . ;\n\
     ___crt_xt_start__ = . ;\n\
-    *(SORT(.CRT$XT*))  /* Termination */\n\
+    KEEP (*(SORT(.CRT$XT*)))  /* Termination */\n\
     ___crt_xt_end__ = . ;\n\
   }\n\
   /* Windows TLS expects .tls$AAA to be at the start and .tls$ZZZ to be\n\
@@ -2713,11 +2969,11 @@ SECTIONS\n\
   .tls BLOCK(__section_alignment__) :\n\
   {\n\
     ___tls_start__ = . ;\n\
-    *(.tls$AAA)\n\
-    *(.tls)\n\
-    *(.tls$)\n\
-    *(SORT(.tls$*))\n\
-    *(.tls$ZZZ)\n\
+    KEEP (*(.tls$AAA))\n\
+    KEEP (*(.tls))\n\
+    KEEP (*(.tls$))\n\
+    KEEP (*(SORT(.tls$*)))\n\
+    KEEP (*(.tls$ZZZ))\n\
     ___tls_end__ = . ;\n\
   }\n\
   .endjunk BLOCK(__section_alignment__) :\n\
@@ -2727,10 +2983,10 @@ SECTIONS\n\
     PROVIDE ( _end = .);\n\
      __end__ = .;\n\
   }\n\
-  .rsrc BLOCK(__section_alignment__) :\n\
+  .rsrc BLOCK(__section_alignment__) : SUBALIGN(4)\n\
   {\n\
-    *(.rsrc)\n\
-    *(SORT(.rsrc$*))\n\
+    KEEP (*(.rsrc))\n\
+    KEEP (*(.rsrc$*))\n\
   }\n\
   .reloc BLOCK(__section_alignment__) :\n\
   {\n\
@@ -2892,8 +3148,12 @@ SECTIONS\n\
 }\n\n"
   ; else if (!config.magic_demand_paged) return
 "/* Script for -n: mix text and data on same page */\n\
+/* Copyright (C) 2014-2015 Free Software Foundation, Inc.\n\
+   Copying and distribution of this script, with or without modification,\n\
+   are permitted in any medium without royalty provided the copyright\n\
+   notice and this notice are preserved.  */\n\
 OUTPUT_FORMAT(pei-i386)\n\
-SEARCH_DIR(\"=/usr/local/lib\"); SEARCH_DIR(\"=/lib\"); SEARCH_DIR(\"=/usr/lib\");\n\
+SEARCH_DIR(\"=/home/autobuild/tools/win32/mingw32/lib\"); SEARCH_DIR(\"=/home/autobuild/tools/win32/lib\"); SEARCH_DIR(\"=/usr/local/lib\"); SEARCH_DIR(\"=/lib\"); SEARCH_DIR(\"=/usr/lib\");\n\
 SECTIONS\n\
 {\n\
   /* Make the virtual address and file offset synced if the alignment is\n\
@@ -2902,7 +3162,7 @@ SECTIONS\n\
   . = ALIGN(__section_alignment__);\n\
   .text  __image_base__ + ( __section_alignment__ < 0x1000 ? . : __section_alignment__ ) :\n\
   {\n\
-     *(.init)\n\
+     KEEP(*(.init))\n\
     *(.text)\n\
     *(SORT(.text$*))\n\
      *(.text.*)\n\
@@ -2911,12 +3171,12 @@ SECTIONS\n\
     *(.glue_7)\n\
      ___CTOR_LIST__ = .; __CTOR_LIST__ = . ;\n\
 			LONG (-1);*(.ctors); *(.ctor); *(SORT(.ctors.*));  LONG (0);\n\
-     ___DTOR_LIST__ = .; __DTOR_LIST__ = . ;\n\
-			LONG (-1); *(.dtors); *(.dtor); *(SORT(.dtors.*));  LONG (0);\n\
+     ___DTOR_LIST__ = .; __DTOR_LIST__ = . ;\n"
+"			LONG (-1); *(.dtors); *(.dtor); *(SORT(.dtors.*));  LONG (0);\n\
      *(.fini)\n\
     /* ??? Why is .gcc_exc here?  */\n\
-     *(.gcc_exc)\n"
-"    PROVIDE (etext = .);\n\
+     *(.gcc_exc)\n\
+    PROVIDE (etext = .);\n\
     PROVIDE (_etext = .);\n\
      *(.gcc_except_table)\n\
   }\n\
@@ -2931,17 +3191,17 @@ SECTIONS\n\
     *(.data)\n\
     *(.data2)\n\
     *(SORT(.data$*))\n\
-    *(.jcr)\n\
+    KEEP(*(.jcr))\n\
     __data_end__ = . ;\n\
     *(.data_cygwin_nocopy)\n\
   }\n\
   .rdata BLOCK(__section_alignment__) :\n\
-  {\n\
-    *(.rdata)\n\
+  {\n"
+"    *(.rdata)\n\
              *(SORT(.rdata$*))\n\
     __rt_psrelocs_start = .;\n\
-    *(.rdata_runtime_pseudo_reloc)\n"
-"    __rt_psrelocs_end = .;\n\
+    *(.rdata_runtime_pseudo_reloc)\n\
+    __rt_psrelocs_end = .;\n\
   }\n\
   __rt_psrelocs_size = __rt_psrelocs_end - __rt_psrelocs_start;\n\
   ___RUNTIME_PSEUDO_RELOC_LIST_END__ = .;\n\
@@ -2950,23 +3210,23 @@ SECTIONS\n\
   __RUNTIME_PSEUDO_RELOC_LIST__ = . - __rt_psrelocs_size;\n\
   .eh_frame BLOCK(__section_alignment__) :\n\
   {\n\
-    *(.eh_frame*)\n\
+    KEEP(*(.eh_frame*))\n\
   }\n\
   .pdata BLOCK(__section_alignment__) :\n\
   {\n\
-    *(.pdata)\n\
+    KEEP(*(.pdata))\n\
   }\n\
   .bss BLOCK(__section_alignment__) :\n\
   {\n\
     __bss_start__ = . ;\n\
     *(.bss)\n\
     *(COMMON)\n\
-    __bss_end__ = . ;\n\
-  }\n\
+    __bss_end__ = . ;\n"
+"  }\n\
   .edata BLOCK(__section_alignment__) :\n\
   {\n\
-    *(.edata)\n"
-"  }\n\
+    *(.edata)\n\
+  }\n\
   /DISCARD/ :\n\
   {\n\
     *(.debug$S)\n\
@@ -2980,33 +3240,33 @@ SECTIONS\n\
   {\n\
     /* This cannot currently be handled with grouped sections.\n\
 	See pe.em:sort_sections.  */\n\
-    SORT(*)(.idata$2)\n\
-    SORT(*)(.idata$3)\n\
+    KEEP (SORT(*)(.idata$2))\n\
+    KEEP (SORT(*)(.idata$3))\n\
     /* These zeroes mark the end of the import list.  */\n\
     LONG (0); LONG (0); LONG (0); LONG (0); LONG (0);\n\
-    SORT(*)(.idata$4)\n\
+    KEEP (SORT(*)(.idata$4))\n\
     __IAT_start__ = .;\n\
-    SORT(*)(.idata$5)\n\
-    __IAT_end__ = .;\n\
-    SORT(*)(.idata$6)\n\
-    SORT(*)(.idata$7)\n\
-  }\n"
-"  .CRT BLOCK(__section_alignment__) :\n\
+    KEEP (SORT(*)(.idata$5))\n"
+"    __IAT_end__ = .;\n\
+    KEEP (SORT(*)(.idata$6))\n\
+    KEEP (SORT(*)(.idata$7))\n\
+  }\n\
+  .CRT BLOCK(__section_alignment__) :\n\
   {\n\
     ___crt_xc_start__ = . ;\n\
-    *(SORT(.CRT$XC*))  /* C initialization */\n\
+    KEEP (*(SORT(.CRT$XC*)))  /* C initialization */\n\
     ___crt_xc_end__ = . ;\n\
     ___crt_xi_start__ = . ;\n\
-    *(SORT(.CRT$XI*))  /* C++ initialization */\n\
+    KEEP (*(SORT(.CRT$XI*)))  /* C++ initialization */\n\
     ___crt_xi_end__ = . ;\n\
     ___crt_xl_start__ = . ;\n\
-    *(SORT(.CRT$XL*))  /* TLS callbacks */\n\
+    KEEP (*(SORT(.CRT$XL*)))  /* TLS callbacks */\n\
     /* ___crt_xl_end__ is defined in the TLS Directory support code */\n\
     ___crt_xp_start__ = . ;\n\
-    *(SORT(.CRT$XP*))  /* Pre-termination */\n\
+    KEEP (*(SORT(.CRT$XP*)))  /* Pre-termination */\n\
     ___crt_xp_end__ = . ;\n\
     ___crt_xt_start__ = . ;\n\
-    *(SORT(.CRT$XT*))  /* Termination */\n\
+    KEEP (*(SORT(.CRT$XT*)))  /* Termination */\n\
     ___crt_xt_end__ = . ;\n\
   }\n\
   /* Windows TLS expects .tls$AAA to be at the start and .tls$ZZZ to be\n\
@@ -3016,11 +3276,11 @@ SECTIONS\n\
   .tls BLOCK(__section_alignment__) :\n\
   {\n\
     ___tls_start__ = . ;\n\
-    *(.tls$AAA)\n\
-    *(.tls)\n\
-    *(.tls$)\n\
-    *(SORT(.tls$*))\n\
-    *(.tls$ZZZ)\n\
+    KEEP (*(.tls$AAA))\n\
+    KEEP (*(.tls))\n\
+    KEEP (*(.tls$))\n\
+    KEEP (*(SORT(.tls$*)))\n\
+    KEEP (*(.tls$ZZZ))\n\
     ___tls_end__ = . ;\n\
   }\n\
   .endjunk BLOCK(__section_alignment__) :\n\
@@ -3030,10 +3290,10 @@ SECTIONS\n\
     PROVIDE ( _end = .);\n\
      __end__ = .;\n\
   }\n\
-  .rsrc BLOCK(__section_alignment__) :\n\
+  .rsrc BLOCK(__section_alignment__) : SUBALIGN(4)\n\
   {\n\
-    *(.rsrc)\n\
-    *(SORT(.rsrc$*))\n\
+    KEEP (*(.rsrc))\n\
+    KEEP (*(.rsrc$*))\n\
   }\n\
   .reloc BLOCK(__section_alignment__) :\n\
   {\n\
@@ -3195,8 +3455,12 @@ SECTIONS\n\
 }\n\n"
   ; else if (link_info.pei386_auto_import == 1 && (MERGE_RDATA_V2 || link_info.pei386_runtime_pseudo_reloc != 2)) return
 "/* Script for ld --enable-auto-import: Like the default script except read only data is placed into .data  */\n\
+/* Copyright (C) 2014-2015 Free Software Foundation, Inc.\n\
+   Copying and distribution of this script, with or without modification,\n\
+   are permitted in any medium without royalty provided the copyright\n\
+   notice and this notice are preserved.  */\n\
 OUTPUT_FORMAT(pei-i386)\n\
-SEARCH_DIR(\"=/usr/local/lib\"); SEARCH_DIR(\"=/lib\"); SEARCH_DIR(\"=/usr/lib\");\n\
+SEARCH_DIR(\"=/home/autobuild/tools/win32/mingw32/lib\"); SEARCH_DIR(\"=/home/autobuild/tools/win32/lib\"); SEARCH_DIR(\"=/usr/local/lib\"); SEARCH_DIR(\"=/lib\"); SEARCH_DIR(\"=/usr/lib\");\n\
 SECTIONS\n\
 {\n\
   /* Make the virtual address and file offset synced if the alignment is\n\
@@ -3205,7 +3469,7 @@ SECTIONS\n\
   . = ALIGN(__section_alignment__);\n\
   .text  __image_base__ + ( __section_alignment__ < 0x1000 ? . : __section_alignment__ ) :\n\
   {\n\
-     *(.init)\n\
+     KEEP(*(.init))\n\
     *(.text)\n\
     *(SORT(.text$*))\n\
      *(.text.*)\n\
@@ -3214,12 +3478,12 @@ SECTIONS\n\
     *(.glue_7)\n\
      ___CTOR_LIST__ = .; __CTOR_LIST__ = . ;\n\
 			LONG (-1);*(.ctors); *(.ctor); *(SORT(.ctors.*));  LONG (0);\n\
-     ___DTOR_LIST__ = .; __DTOR_LIST__ = . ;\n\
-			LONG (-1); *(.dtors); *(.dtor); *(SORT(.dtors.*));  LONG (0);\n\
+     ___DTOR_LIST__ = .; __DTOR_LIST__ = . ;\n"
+"			LONG (-1); *(.dtors); *(.dtor); *(SORT(.dtors.*));  LONG (0);\n\
      *(.fini)\n\
     /* ??? Why is .gcc_exc here?  */\n\
-     *(.gcc_exc)\n"
-"    PROVIDE (etext = .);\n\
+     *(.gcc_exc)\n\
+    PROVIDE (etext = .);\n\
     PROVIDE (_etext = .);\n\
      *(.gcc_except_table)\n\
   }\n\
@@ -3236,15 +3500,15 @@ SECTIONS\n\
     *(SORT(.data$*))\n\
             *(.rdata)\n\
 	    *(SORT(.rdata$*))\n\
-    *(.jcr)\n\
+    KEEP(*(.jcr))\n\
     __data_end__ = . ;\n\
     *(.data_cygwin_nocopy)\n\
-  }\n\
-  .rdata BLOCK(__section_alignment__) :\n\
+  }\n"
+"  .rdata BLOCK(__section_alignment__) :\n\
   {\n\
     __rt_psrelocs_start = .;\n\
-    *(.rdata_runtime_pseudo_reloc)\n"
-"    __rt_psrelocs_end = .;\n\
+    *(.rdata_runtime_pseudo_reloc)\n\
+    __rt_psrelocs_end = .;\n\
   }\n\
   __rt_psrelocs_size = __rt_psrelocs_end - __rt_psrelocs_start;\n\
   ___RUNTIME_PSEUDO_RELOC_LIST_END__ = .;\n\
@@ -3253,23 +3517,23 @@ SECTIONS\n\
   __RUNTIME_PSEUDO_RELOC_LIST__ = . - __rt_psrelocs_size;\n\
   .eh_frame BLOCK(__section_alignment__) :\n\
   {\n\
-    *(.eh_frame*)\n\
+    KEEP(*(.eh_frame*))\n\
   }\n\
   .pdata BLOCK(__section_alignment__) :\n\
   {\n\
-    *(.pdata)\n\
+    KEEP(*(.pdata))\n\
   }\n\
   .bss BLOCK(__section_alignment__) :\n\
   {\n\
     __bss_start__ = . ;\n\
     *(.bss)\n\
     *(COMMON)\n\
-    __bss_end__ = . ;\n\
-  }\n\
+    __bss_end__ = . ;\n"
+"  }\n\
   .edata BLOCK(__section_alignment__) :\n\
   {\n\
-    *(.edata)\n"
-"  }\n\
+    *(.edata)\n\
+  }\n\
   /DISCARD/ :\n\
   {\n\
     *(.debug$S)\n\
@@ -3283,33 +3547,33 @@ SECTIONS\n\
   {\n\
     /* This cannot currently be handled with grouped sections.\n\
 	See pe.em:sort_sections.  */\n\
-    SORT(*)(.idata$2)\n\
-    SORT(*)(.idata$3)\n\
+    KEEP (SORT(*)(.idata$2))\n\
+    KEEP (SORT(*)(.idata$3))\n\
     /* These zeroes mark the end of the import list.  */\n\
     LONG (0); LONG (0); LONG (0); LONG (0); LONG (0);\n\
-    SORT(*)(.idata$4)\n\
+    KEEP (SORT(*)(.idata$4))\n\
     __IAT_start__ = .;\n\
-    SORT(*)(.idata$5)\n\
-    __IAT_end__ = .;\n\
-    SORT(*)(.idata$6)\n\
-    SORT(*)(.idata$7)\n\
-  }\n"
-"  .CRT BLOCK(__section_alignment__) :\n\
+    KEEP (SORT(*)(.idata$5))\n"
+"    __IAT_end__ = .;\n\
+    KEEP (SORT(*)(.idata$6))\n\
+    KEEP (SORT(*)(.idata$7))\n\
+  }\n\
+  .CRT BLOCK(__section_alignment__) :\n\
   {\n\
     ___crt_xc_start__ = . ;\n\
-    *(SORT(.CRT$XC*))  /* C initialization */\n\
+    KEEP (*(SORT(.CRT$XC*)))  /* C initialization */\n\
     ___crt_xc_end__ = . ;\n\
     ___crt_xi_start__ = . ;\n\
-    *(SORT(.CRT$XI*))  /* C++ initialization */\n\
+    KEEP (*(SORT(.CRT$XI*)))  /* C++ initialization */\n\
     ___crt_xi_end__ = . ;\n\
     ___crt_xl_start__ = . ;\n\
-    *(SORT(.CRT$XL*))  /* TLS callbacks */\n\
+    KEEP (*(SORT(.CRT$XL*)))  /* TLS callbacks */\n\
     /* ___crt_xl_end__ is defined in the TLS Directory support code */\n\
     ___crt_xp_start__ = . ;\n\
-    *(SORT(.CRT$XP*))  /* Pre-termination */\n\
+    KEEP (*(SORT(.CRT$XP*)))  /* Pre-termination */\n\
     ___crt_xp_end__ = . ;\n\
     ___crt_xt_start__ = . ;\n\
-    *(SORT(.CRT$XT*))  /* Termination */\n\
+    KEEP (*(SORT(.CRT$XT*)))  /* Termination */\n\
     ___crt_xt_end__ = . ;\n\
   }\n\
   /* Windows TLS expects .tls$AAA to be at the start and .tls$ZZZ to be\n\
@@ -3319,11 +3583,11 @@ SECTIONS\n\
   .tls BLOCK(__section_alignment__) :\n\
   {\n\
     ___tls_start__ = . ;\n\
-    *(.tls$AAA)\n\
-    *(.tls)\n\
-    *(.tls$)\n\
-    *(SORT(.tls$*))\n\
-    *(.tls$ZZZ)\n\
+    KEEP (*(.tls$AAA))\n\
+    KEEP (*(.tls))\n\
+    KEEP (*(.tls$))\n\
+    KEEP (*(SORT(.tls$*)))\n\
+    KEEP (*(.tls$ZZZ))\n\
     ___tls_end__ = . ;\n\
   }\n\
   .endjunk BLOCK(__section_alignment__) :\n\
@@ -3333,10 +3597,10 @@ SECTIONS\n\
     PROVIDE ( _end = .);\n\
      __end__ = .;\n\
   }\n\
-  .rsrc BLOCK(__section_alignment__) :\n\
+  .rsrc BLOCK(__section_alignment__) : SUBALIGN(4)\n\
   {\n\
-    *(.rsrc)\n\
-    *(SORT(.rsrc$*))\n\
+    KEEP (*(.rsrc))\n\
+    KEEP (*(.rsrc$*))\n\
   }\n\
   .reloc BLOCK(__section_alignment__) :\n\
   {\n\
@@ -3498,8 +3762,12 @@ SECTIONS\n\
 }\n\n"
   ; else return
 "/* Default linker script, for normal executables */\n\
+/* Copyright (C) 2014-2015 Free Software Foundation, Inc.\n\
+   Copying and distribution of this script, with or without modification,\n\
+   are permitted in any medium without royalty provided the copyright\n\
+   notice and this notice are preserved.  */\n\
 OUTPUT_FORMAT(pei-i386)\n\
-SEARCH_DIR(\"=/usr/local/lib\"); SEARCH_DIR(\"=/lib\"); SEARCH_DIR(\"=/usr/lib\");\n\
+SEARCH_DIR(\"=/home/autobuild/tools/win32/mingw32/lib\"); SEARCH_DIR(\"=/home/autobuild/tools/win32/lib\"); SEARCH_DIR(\"=/usr/local/lib\"); SEARCH_DIR(\"=/lib\"); SEARCH_DIR(\"=/usr/lib\");\n\
 SECTIONS\n\
 {\n\
   /* Make the virtual address and file offset synced if the alignment is\n\
@@ -3508,7 +3776,7 @@ SECTIONS\n\
   . = ALIGN(__section_alignment__);\n\
   .text  __image_base__ + ( __section_alignment__ < 0x1000 ? . : __section_alignment__ ) :\n\
   {\n\
-     *(.init)\n\
+     KEEP(*(.init))\n\
     *(.text)\n\
     *(SORT(.text$*))\n\
      *(.text.*)\n\
@@ -3517,12 +3785,12 @@ SECTIONS\n\
     *(.glue_7)\n\
      ___CTOR_LIST__ = .; __CTOR_LIST__ = . ;\n\
 			LONG (-1);*(.ctors); *(.ctor); *(SORT(.ctors.*));  LONG (0);\n\
-     ___DTOR_LIST__ = .; __DTOR_LIST__ = . ;\n\
-			LONG (-1); *(.dtors); *(.dtor); *(SORT(.dtors.*));  LONG (0);\n\
+     ___DTOR_LIST__ = .; __DTOR_LIST__ = . ;\n"
+"			LONG (-1); *(.dtors); *(.dtor); *(SORT(.dtors.*));  LONG (0);\n\
      *(.fini)\n\
     /* ??? Why is .gcc_exc here?  */\n\
-     *(.gcc_exc)\n"
-"    PROVIDE (etext = .);\n\
+     *(.gcc_exc)\n\
+    PROVIDE (etext = .);\n\
     PROVIDE (_etext = .);\n\
      *(.gcc_except_table)\n\
   }\n\
@@ -3537,17 +3805,17 @@ SECTIONS\n\
     *(.data)\n\
     *(.data2)\n\
     *(SORT(.data$*))\n\
-    *(.jcr)\n\
+    KEEP(*(.jcr))\n\
     __data_end__ = . ;\n\
     *(.data_cygwin_nocopy)\n\
   }\n\
   .rdata BLOCK(__section_alignment__) :\n\
-  {\n\
-    *(.rdata)\n\
+  {\n"
+"    *(.rdata)\n\
              *(SORT(.rdata$*))\n\
     __rt_psrelocs_start = .;\n\
-    *(.rdata_runtime_pseudo_reloc)\n"
-"    __rt_psrelocs_end = .;\n\
+    *(.rdata_runtime_pseudo_reloc)\n\
+    __rt_psrelocs_end = .;\n\
   }\n\
   __rt_psrelocs_size = __rt_psrelocs_end - __rt_psrelocs_start;\n\
   ___RUNTIME_PSEUDO_RELOC_LIST_END__ = .;\n\
@@ -3556,23 +3824,23 @@ SECTIONS\n\
   __RUNTIME_PSEUDO_RELOC_LIST__ = . - __rt_psrelocs_size;\n\
   .eh_frame BLOCK(__section_alignment__) :\n\
   {\n\
-    *(.eh_frame*)\n\
+    KEEP(*(.eh_frame*))\n\
   }\n\
   .pdata BLOCK(__section_alignment__) :\n\
   {\n\
-    *(.pdata)\n\
+    KEEP(*(.pdata))\n\
   }\n\
   .bss BLOCK(__section_alignment__) :\n\
   {\n\
     __bss_start__ = . ;\n\
     *(.bss)\n\
     *(COMMON)\n\
-    __bss_end__ = . ;\n\
-  }\n\
+    __bss_end__ = . ;\n"
+"  }\n\
   .edata BLOCK(__section_alignment__) :\n\
   {\n\
-    *(.edata)\n"
-"  }\n\
+    *(.edata)\n\
+  }\n\
   /DISCARD/ :\n\
   {\n\
     *(.debug$S)\n\
@@ -3586,33 +3854,33 @@ SECTIONS\n\
   {\n\
     /* This cannot currently be handled with grouped sections.\n\
 	See pe.em:sort_sections.  */\n\
-    SORT(*)(.idata$2)\n\
-    SORT(*)(.idata$3)\n\
+    KEEP (SORT(*)(.idata$2))\n\
+    KEEP (SORT(*)(.idata$3))\n\
     /* These zeroes mark the end of the import list.  */\n\
     LONG (0); LONG (0); LONG (0); LONG (0); LONG (0);\n\
-    SORT(*)(.idata$4)\n\
+    KEEP (SORT(*)(.idata$4))\n\
     __IAT_start__ = .;\n\
-    SORT(*)(.idata$5)\n\
-    __IAT_end__ = .;\n\
-    SORT(*)(.idata$6)\n\
-    SORT(*)(.idata$7)\n\
-  }\n"
-"  .CRT BLOCK(__section_alignment__) :\n\
+    KEEP (SORT(*)(.idata$5))\n"
+"    __IAT_end__ = .;\n\
+    KEEP (SORT(*)(.idata$6))\n\
+    KEEP (SORT(*)(.idata$7))\n\
+  }\n\
+  .CRT BLOCK(__section_alignment__) :\n\
   {\n\
     ___crt_xc_start__ = . ;\n\
-    *(SORT(.CRT$XC*))  /* C initialization */\n\
+    KEEP (*(SORT(.CRT$XC*)))  /* C initialization */\n\
     ___crt_xc_end__ = . ;\n\
     ___crt_xi_start__ = . ;\n\
-    *(SORT(.CRT$XI*))  /* C++ initialization */\n\
+    KEEP (*(SORT(.CRT$XI*)))  /* C++ initialization */\n\
     ___crt_xi_end__ = . ;\n\
     ___crt_xl_start__ = . ;\n\
-    *(SORT(.CRT$XL*))  /* TLS callbacks */\n\
+    KEEP (*(SORT(.CRT$XL*)))  /* TLS callbacks */\n\
     /* ___crt_xl_end__ is defined in the TLS Directory support code */\n\
     ___crt_xp_start__ = . ;\n\
-    *(SORT(.CRT$XP*))  /* Pre-termination */\n\
+    KEEP (*(SORT(.CRT$XP*)))  /* Pre-termination */\n\
     ___crt_xp_end__ = . ;\n\
     ___crt_xt_start__ = . ;\n\
-    *(SORT(.CRT$XT*))  /* Termination */\n\
+    KEEP (*(SORT(.CRT$XT*)))  /* Termination */\n\
     ___crt_xt_end__ = . ;\n\
   }\n\
   /* Windows TLS expects .tls$AAA to be at the start and .tls$ZZZ to be\n\
@@ -3622,11 +3890,11 @@ SECTIONS\n\
   .tls BLOCK(__section_alignment__) :\n\
   {\n\
     ___tls_start__ = . ;\n\
-    *(.tls$AAA)\n\
-    *(.tls)\n\
-    *(.tls$)\n\
-    *(SORT(.tls$*))\n\
-    *(.tls$ZZZ)\n\
+    KEEP (*(.tls$AAA))\n\
+    KEEP (*(.tls))\n\
+    KEEP (*(.tls$))\n\
+    KEEP (*(SORT(.tls$*)))\n\
+    KEEP (*(.tls$ZZZ))\n\
     ___tls_end__ = . ;\n\
   }\n\
   .endjunk BLOCK(__section_alignment__) :\n\
@@ -3636,10 +3904,10 @@ SECTIONS\n\
     PROVIDE ( _end = .);\n\
      __end__ = .;\n\
   }\n\
-  .rsrc BLOCK(__section_alignment__) :\n\
+  .rsrc BLOCK(__section_alignment__) : SUBALIGN(4)\n\
   {\n\
-    *(.rsrc)\n\
-    *(SORT(.rsrc$*))\n\
+    KEEP (*(.rsrc))\n\
+    KEEP (*(.rsrc$*))\n\
   }\n\
   .reloc BLOCK(__section_alignment__) :\n\
   {\n\
@@ -3828,5 +4096,6 @@ struct ld_emulation_xfer_struct ld_i386pe_emulation =
   gld_i386pe_list_options,
   gld_i386pe_recognized_file,
   gld_i386pe_find_potential_libraries,
-  NULL	/* new_vers_pattern.  */
+  NULL,	/* new_vers_pattern.  */
+  NULL	/* extra_map_file_text.  */
 };

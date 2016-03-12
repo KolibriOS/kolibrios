@@ -1,5 +1,5 @@
 /* config.h.  Generated from config.in by configure.  */
-/* config.in.  Generated from configure.in by autoheader.  */
+/* config.in.  Generated from configure.ac by autoheader.  */
 
 /* Check that config.h is #included before system headers
    (this works only for glibc, but that should be enough).  */
@@ -7,6 +7,9 @@
 #  error config.h must be #included before system headers
 #endif
 #define __CONFIG_H__ 1
+
+/* Define if you want compressed debug sections by default. */
+/* #undef DEFAULT_FLAG_COMPRESS_DEBUG */
 
 /* Define to 1 if translation of program messages to the user's native
    language is requested. */
@@ -48,17 +51,8 @@
    */
 #define HAVE_DIRENT_H 1
 
-/* Define to 1 if you have the `dlclose' function. */
-/* #undef HAVE_DLCLOSE */
-
 /* Define to 1 if you have the <dlfcn.h> header file. */
 /* #undef HAVE_DLFCN_H */
-
-/* Define to 1 if you have the `dlopen' function. */
-/* #undef HAVE_DLOPEN */
-
-/* Define to 1 if you have the `dlsym' function. */
-/* #undef HAVE_DLSYM */
 
 /* Define to 1 if you have the <elf-hints.h> header file. */
 /* #undef HAVE_ELF_HINTS_H */
@@ -166,19 +160,19 @@
 #define PACKAGE_BUGREPORT ""
 
 /* Define to the full name of this package. */
-#define PACKAGE_NAME ""
+#define PACKAGE_NAME "ld"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING ""
+#define PACKAGE_STRING "ld 2.26"
 
 /* Define to the one symbol short name of this package. */
-#define PACKAGE_TARNAME ""
+#define PACKAGE_TARNAME "ld"
 
 /* Define to the home page for this package. */
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION ""
+#define PACKAGE_VERSION "2.26"
 
 /* The size of `void *', as computed by sizeof. */
 #define SIZEOF_VOID_P 4
@@ -215,7 +209,7 @@
 
 
 /* Version number of package */
-#define VERSION "2.24"
+#define VERSION "2.26"
 
 /* Define to 1 if `lex' declares `yytext' as a `char *' by default, not a
    `char[]'. */

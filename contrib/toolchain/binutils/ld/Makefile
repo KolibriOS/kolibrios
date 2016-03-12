@@ -5,7 +5,9 @@ LIB_DIR:= $(SDK_DIR)/lib
 CFLAGS_OPT = -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -U_MSC_VER -O2 
 CFLAGS_OPT+= -fomit-frame-pointer -fno-ident -mno-ms-bitfields
 CFLAGS_OPT+= -W -Wall -Wmissing-prototypes -Wno-format -Werror
-CFLAGS   = -c -save-temps $(CFLAGS_OPT)
+ELF_CFLAGS = -DELF_LIST_OPTIONS=FALSE -DELF_SHLIB_LIST_OPTIONS=FALSE
+ELF_CFLAGS+= -DELF_PLT_UNWIND_LIST_OPTIONS=FALSE
+CFLAGS   = -c -save-temps $(CFLAGS_OPT) $(ELF_CFLAGS)
 
 INCLUDES= -I. -I../bfd -I../include -I$(SDK_DIR)/sources/newlib/libc/include 
 
@@ -20,11 +22,11 @@ LIBS= -lbfd -liberty -lz -lgcc -lc.dll -lapp
 
 LIBPATH:= -L$(LIB_DIR) -L/home/autobuild/tools/win32/mingw32/lib
 
-LDFLAGS = -static -nostdlib --stack 12582912 -T$(SDK_DIR)/sources/newlib/app.lds --image-base 0
+LDFLAGS = -static -nostdlib --stack 12582912 -T$(SDK_DIR)/sources/newlib/app.lds --image-base 0 --subsystem native
 
 
 SRCS = \
-	deffilep.c ei386pe.c		\
+	deffilep.c ei386pe.c ldbuildid.c\
 	ldcref.c ldctor.c ldemul.c	\
 	ldexp.c  ldfile.c ldgram.c	\
 	ldlang.c ldlex-wrapper.c	\

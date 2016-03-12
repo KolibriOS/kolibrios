@@ -9,10 +9,10 @@
 /* #undef CRAY_STACKSEG_END */
 
 /* Define to 1 if you have the <alloca.h> header file. */
-/* #undef HAVE_ALLOCA_H */
+#define HAVE_ALLOCA_H 1
 
 /* Define to 1 if you have the `asprintf' function. */
-/* #undef HAVE_ASPRINTF */
+#define HAVE_ASPRINTF 1
 
 /* Define to 1 if you have the `atexit' function. */
 #define HAVE_ATEXIT 1
@@ -43,11 +43,11 @@
 
 /* Define to 1 if you have the declaration of `asprintf', and to 0 if you
    don't. */
-#define HAVE_DECL_ASPRINTF 0
+#define HAVE_DECL_ASPRINTF 1
 
 /* Define to 1 if you have the declaration of `basename(char *)', and to 0 if
    you don't. */
-#define HAVE_DECL_BASENAME 0
+#define HAVE_DECL_BASENAME 1
 
 /* Define to 1 if you have the declaration of `calloc', and to 0 if you don't.
    */
@@ -86,7 +86,7 @@
 
 /* Define to 1 if you have the declaration of `vasprintf', and to 0 if you
    don't. */
-#define HAVE_DECL_VASPRINTF 0
+#define HAVE_DECL_VASPRINTF 1
 
 /* Define to 1 if you have the declaration of `vsnprintf', and to 0 if you
    don't. */
@@ -136,6 +136,9 @@
 
 /* Define to 1 if you have the <limits.h> header file. */
 #define HAVE_LIMITS_H 1
+
+/* Define if you have the `long long' type. */
+#define HAVE_LONG_LONG 1
 
 /* Define to 1 if you have the <machine/hal_sysinfo.h> header file. */
 /* #undef HAVE_MACHINE_HAL_SYSINFO_H */
@@ -219,10 +222,10 @@
 #define HAVE_SNPRINTF 1
 
 /* Define to 1 if you have the `spawnve' function. */
-#define HAVE_SPAWNVE 1
+#define HAVE_SPAWNVE 0
 
 /* Define to 1 if you have the `spawnvpe' function. */
-#define HAVE_SPAWNVPE 1
+#define HAVE_SPAWNVPE 0
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #define HAVE_STDINT_H 1
@@ -240,7 +243,7 @@
 /* #undef HAVE_STPNCPY */
 
 /* Define to 1 if you have the `strcasecmp' function. */
-/* #undef HAVE_STRCASECMP */
+#define HAVE_STRCASECMP 1
 
 /* Define to 1 if you have the `strchr' function. */
 #define HAVE_STRCHR 1
@@ -264,7 +267,7 @@
 /* #undef HAVE_STRNDUP */
 
 /* Define to 1 if you have the `strnlen' function. */
-/* #undef HAVE_STRNLEN */
+#define HAVE_STRNLEN 1
 
 /* Define to 1 if you have the `strrchr' function. */
 #define HAVE_STRRCHR 1
@@ -280,6 +283,9 @@
 
 /* Define to 1 if you have the `strtol' function. */
 #define HAVE_STRTOL 1
+
+/* Define to 1 if you have the `strtoll' function. */
+#define HAVE_STRTOLL 1
 
 /* Define to 1 if you have the `strtoul' function. */
 #define HAVE_STRTOUL 1
@@ -440,6 +446,15 @@
 /* The size of `int', as computed by sizeof. */
 #define SIZEOF_INT 4
 
+/* The size of `long', as computed by sizeof. */
+#define SIZEOF_LONG 4
+
+/* The size of `long long', as computed by sizeof. */
+#define SIZEOF_LONG_LONG 8
+
+/* The size of `size_t', as computed by sizeof. */
+#define SIZEOF_SIZE_T 4
+
 /* Define if you know the direction of stack growth for your system; otherwise
    it will be automatically deduced at run-time. STACK_DIRECTION > 0 => grows
    toward higher addresses STACK_DIRECTION < 0 => grows toward lower addresses
@@ -472,6 +487,16 @@
 
 /* Define for large files, on AIX-style hosts. */
 /* #undef _LARGE_FILES */
+
+/* Define to 1 if on MINIX. */
+/* #undef _MINIX */
+
+/* Define to 2 if the system does not provide POSIX.1 features except with
+   this defined. */
+/* #undef _POSIX_1_SOURCE */
+
+/* Define to 1 if you need to in order for `stat' and other things to work. */
+/* #undef _POSIX_SOURCE */
 
 /* Define to empty if `const' does not conform to ANSI C. */
 /* #undef const */

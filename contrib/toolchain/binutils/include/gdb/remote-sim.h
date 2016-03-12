@@ -1,6 +1,6 @@
 /* This file defines the interface between the simulator and gdb.
 
-   Copyright 1993-2013 Free Software Foundation, Inc.
+   Copyright (C) 1993-2015 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -60,9 +60,10 @@ typedef enum {
 } SIM_RC;
 
 
-/* The bfd struct, as an opaque type.  */
+/* Some structs, as opaque types.  */
 
 struct bfd;
+struct host_callback_struct;
 
 
 /* Main simulator entry points.  */
@@ -140,7 +141,7 @@ void sim_close (SIM_DESC sd, int quitting);
    Such manipulation should probably (?) occure in
    sim_create_inferior. */
 
-SIM_RC sim_load (SIM_DESC sd, char *prog, struct bfd *abfd, int from_tty);
+SIM_RC sim_load (SIM_DESC sd, const char *prog, struct bfd *abfd, int from_tty);
 
 
 /* Prepare to run the simulated program.
@@ -273,7 +274,7 @@ void sim_stop_reason (SIM_DESC sd, enum sim_stop *reason, int *sigrc);
    Simulators should be prepared to deal with any combination of NULL
    or empty CMD. */
 
-void sim_do_command (SIM_DESC sd, char *cmd);
+void sim_do_command (SIM_DESC sd, const char *cmd);
 
 /* Complete a command based on the available sim commands.  Returns an
    array of possible matches.  */

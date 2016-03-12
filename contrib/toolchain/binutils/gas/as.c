@@ -1,5 +1,5 @@
 /* as.c - GAS main program.
-   Copyright 1987-2013 Free Software Foundation, Inc.
+   Copyright (C) 1987-2015 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -97,7 +97,7 @@ int debug_memory = 0;
 int verbose = 0;
 
 /* Keep the output file.  */
-int keep_it = 0;
+static int keep_it = 0;
 
 segT reg_section;
 segT expr_section;
@@ -224,6 +224,11 @@ print_version_id (void)
 	   VERSION, TARGET_ALIAS, BFD_VERSION_STRING);
 }
 
+#ifdef DEFAULT_FLAG_COMPRESS_DEBUG
+enum compressed_debug_section_type flag_compress_debug
+  = COMPRESS_DEBUG_GABI_ZLIB;
+#endif
+
 static void
 show_usage (FILE * stream)
 {
@@ -245,14 +250,21 @@ Options:\n\
 
   fprintf (stream, _("\
   --alternate             initially turn on alternate macro syntax\n"));
-#ifdef HAVE_ZLIB_H
+#ifdef DEFAULT_FLAG_COMPRESS_DEBUG
   fprintf (stream, _("\
-  --compress-debug-sections\n\
-                          compress DWARF debug sections using zlib\n"));
+  --compress-debug-sections[={none|zlib|zlib-gnu|zlib-gabi}]\n\
+                          compress DWARF debug sections using zlib [default]\n"));
   fprintf (stream, _("\
   --nocompress-debug-sections\n\
                           don't compress DWARF debug sections\n"));
-#endif /* HAVE_ZLIB_H */
+#else
+  fprintf (stream, _("\
+  --compress-debug-sections[={none|zlib|zlib-gnu|zlib-gabi}]\n\
+                          compress DWARF debug sections using zlib\n"));
+  fprintf (stream, _("\
+  --nocompress-debug-sections\n\
+                          don't compress DWARF debug sections [default]\n"));
+#endif
   fprintf (stream, _("\
   -D                      produce assembler debugging messages\n"));
   fprintf (stream, _("\
@@ -286,6 +298,8 @@ Options:\n\
   fprintf (stream, _("\
   --size-check=[error|warning]\n\
 			  ELF .size directive check (default --size-check=error)\n"));
+  fprintf (stream, _("\
+  --sectname-subst        enable section name substitution sequences\n"));
 #endif
   fprintf (stream, _("\
   -f                      skip whitespace and comment preprocessing\n"));
@@ -449,6 +463,7 @@ parse_args (int * pargc, char *** pargv)
       OPTION_EXECSTACK,
       OPTION_NOEXECSTACK,
       OPTION_SIZE_CHECK,
+      OPTION_SECTNAME_SUBST,
       OPTION_ALTERNATE,
       OPTION_AL,
       OPTION_HASH_TABLE_SIZE,
@@ -473,7 +488,7 @@ parse_args (int * pargc, char *** pargv)
     ,{"a", optional_argument, NULL, 'a'}
     /* Handle -al=<FILE>.  */
     ,{"al", optional_argument, NULL, OPTION_AL}
-    ,{"compress-debug-sections", no_argument, NULL, OPTION_COMPRESS_DEBUG}
+    ,{"compress-debug-sections", optional_argument, NULL, OPTION_COMPRESS_DEBUG}
     ,{"nocompress-debug-sections", no_argument, NULL, OPTION_NOCOMPRESS_DEBUG}
     ,{"debug-prefix-map", required_argument, NULL, OPTION_DEBUG_PREFIX_MAP}
     ,{"defsym", required_argument, NULL, OPTION_DEFSYM}
@@ -483,6 +498,7 @@ parse_args (int * pargc, char *** pargv)
     ,{"execstack", no_argument, NULL, OPTION_EXECSTACK}
     ,{"noexecstack", no_argument, NULL, OPTION_NOEXECSTACK}
     ,{"size-check", required_argument, NULL, OPTION_SIZE_CHECK}
+    ,{"sectname-subst", no_argument, NULL, OPTION_SECTNAME_SUBST}
 #endif
     ,{"fatal-warnings", no_argument, NULL, OPTION_WARN_FATAL}
     ,{"gdwarf-2", no_argument, NULL, OPTION_GDWARF2}
@@ -626,7 +642,7 @@ parse_args (int * pargc, char *** pargv)
 	case OPTION_VERSION:
 	  /* This output is intended to follow the GNU standards document.  */
 	  printf (_("GNU assembler %s\n"), BFD_VERSION_STRING);
-	  printf (_("Copyright 2013 Free Software Foundation, Inc.\n"));
+	  printf (_("Copyright (C) 2015 Free Software Foundation, Inc.\n"));
 	  printf (_("\
 This program is free software; you may redistribute it under the terms of\n\
 the GNU General Public License version 3 or later.\n\
@@ -657,15 +673,31 @@ This program has absolutely no warranty.\n"));
 	  exit (EXIT_SUCCESS);
 
 	case OPTION_COMPRESS_DEBUG:
-#ifdef HAVE_ZLIB_H
-	  flag_compress_debug = 1;
+	  if (optarg)
+	    {
+#if defined OBJ_ELF || defined OBJ_MAYBE_ELF
+	      if (strcasecmp (optarg, "none") == 0)
+		flag_compress_debug = COMPRESS_DEBUG_NONE;
+	      else if (strcasecmp (optarg, "zlib") == 0)
+		flag_compress_debug = COMPRESS_DEBUG_GABI_ZLIB;
+	      else if (strcasecmp (optarg, "zlib-gnu") == 0)
+		flag_compress_debug = COMPRESS_DEBUG_GNU_ZLIB;
+	      else if (strcasecmp (optarg, "zlib-gabi") == 0)
+		flag_compress_debug = COMPRESS_DEBUG_GABI_ZLIB;
+	      else
+		as_fatal (_("Invalid --compress-debug-sections option: `%s'"),
+			  optarg);
 #else
-	  as_warn (_("cannot compress debug sections (zlib not installed)"));
-#endif /* HAVE_ZLIB_H */
+	      as_fatal (_("--compress-debug-sections=%s is unsupported"),
+			optarg);
+#endif
+	    }
+	  else
+	    flag_compress_debug = COMPRESS_DEBUG_GABI_ZLIB;
 	  break;
 
 	case OPTION_NOCOMPRESS_DEBUG:
-	  flag_compress_debug = 0;
+	  flag_compress_debug = COMPRESS_DEBUG_NONE;
 	  break;
 
 	case OPTION_DEBUG_PREFIX_MAP:
@@ -833,6 +865,10 @@ This program has absolutely no warranty.\n"));
 	    flag_size_check = size_check_warning;
 	  else
 	    as_fatal (_("Invalid --size-check= option: `%s'"), optarg);
+	  break;
+
+	case OPTION_SECTNAME_SUBST:
+	  flag_sectname_subst = 1;
 	  break;
 #endif
 	case 'Z':
@@ -1107,32 +1143,6 @@ perform_an_assembly_pass (int argc, char ** argv)
     read_a_source_file ("");
 }
 
-#ifdef OBJ_ELF
-static void
-create_obj_attrs_section (void)
-{
-  segT s;
-  char *p;
-  offsetT size;
-  const char *name;
-
-  size = bfd_elf_obj_attr_size (stdoutput);
-  if (size)
-    {
-      name = get_elf_backend_data (stdoutput)->obj_attrs_section;
-      if (!name)
-	name = ".gnu.attributes";
-      s = subseg_new (name, 0);
-      elf_section_type (s)
-	= get_elf_backend_data (stdoutput)->obj_attrs_section_type;
-      bfd_set_section_flags (stdoutput, s, SEC_READONLY | SEC_DATA);
-      frag_now_fix ();
-      p = frag_more (size);
-      bfd_elf_set_obj_attr_contents (stdoutput, (bfd_byte *)p, size);
-    }
-}
-#endif
-
 
 int
 main (int argc, char ** argv)
@@ -1257,11 +1267,6 @@ main (int argc, char ** argv)
   md_end ();
 #endif
 
-#ifdef OBJ_ELF
-  if (IS_ELF)
-    create_obj_attrs_section ();
-#endif
-
 #if defined OBJ_ELF || defined OBJ_MAYBE_ELF
   if ((flag_execstack || flag_noexecstack)
       && OUTPUT_FLAVOR == bfd_target_elf_flavour)
@@ -1283,20 +1288,45 @@ main (int argc, char ** argv)
      directives from the user or by the backend, emit it now.  */
   cfi_finish ();
 
-  if (seen_at_least_1_file ()
-      && (flag_always_generate_output || had_errors () == 0))
-    keep_it = 1;
+  keep_it = 0;
+  if (seen_at_least_1_file ())
+    {
+      int n_warns, n_errs;
+      char warn_msg[50];
+      char err_msg[50];
+
+      write_object_file ();
+
+      n_warns = had_warnings ();
+      n_errs = had_errors ();
+
+      if (n_warns == 1)
+	sprintf (warn_msg, _("%d warning"), n_warns);
+      else
+	sprintf (warn_msg, _("%d warnings"), n_warns);
+      if (n_errs == 1)
+	sprintf (err_msg, _("%d error"), n_errs);
   else
-    keep_it = 0;
+	sprintf (err_msg, _("%d errors"), n_errs);
 
-  /* This used to be done at the start of write_object_file in
-     write.c, but that caused problems when doing listings when
-     keep_it was zero.  This could probably be moved above md_end, but
-     I didn't want to risk the change.  */
-  subsegs_finish ();
+      if (flag_fatal_warnings && n_warns != 0)
+	{
+	  if (n_errs == 0)
+	    as_bad (_("%s, treating warnings as errors"), warn_msg);
+	  n_errs += n_warns;
+	}
 
-  if (keep_it)
-    write_object_file ();
+      if (n_errs == 0)
+	keep_it = 1;
+      else if (flag_always_generate_output)
+	{
+	  /* The -Z flag indicates that an object file should be generated,
+	     regardless of warnings and errors.  */
+	  keep_it = 1;
+	  fprintf (stderr, _("%s, %s, generating bad object file\n"),
+		   err_msg, warn_msg);
+	}
+    }
 
   fflush (stderr);
 
@@ -1304,19 +1334,13 @@ main (int argc, char ** argv)
   listing_print (listing_filename, argv_orig);
 #endif
 
-  if (flag_fatal_warnings && had_warnings () > 0 && had_errors () == 0)
-    as_bad (_("%d warnings, treating warnings as errors"), had_warnings ());
-
-  if (had_errors () > 0 && ! flag_always_generate_output)
-    keep_it = 0;
-
   input_scrub_end ();
 
   END_PROGRESS (myname);
 
   /* Use xexit instead of return, because under VMS environments they
      may not place the same interpretation on the value given.  */
-  if (had_errors () > 0)
+  if (had_errors () != 0)
     xexit (EXIT_FAILURE);
 
   /* Only generate dependency file if assembler was successful.  */

@@ -1,14 +1,13 @@
-/* A Bison parser, made by GNU Bison 2.3.  */
+/* A Bison parser, made by GNU Bison 3.0.  */
 
-/* Skeleton interface for Bison's Yacc-like parsers in C
+/* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005, 2006
-   Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
 
-   This program is free software; you can redistribute it and/or modify
+   This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
-   any later version.
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -16,9 +15,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301, USA.  */
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 /* As a special exception, you may create a larger work that contains
    part or all of the Bison parser skeleton and distribute that work
@@ -33,31 +30,40 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-/* Tokens.  */
+#ifndef YY_YY_LDGRAM_H_INCLUDED
+# define YY_YY_LDGRAM_H_INCLUDED
+/* Debug traces.  */
+#ifndef YYDEBUG
+# define YYDEBUG 0
+#endif
+#if YYDEBUG
+extern int yydebug;
+#endif
+
+/* Token type.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
-   /* Put the tokens into the symbol table, so that GDB and other debuggers
-      know about them.  */
-   enum yytokentype {
+  enum yytokentype
+  {
      INT = 258,
      NAME = 259,
      LNAME = 260,
-     OREQ = 261,
-     ANDEQ = 262,
-     RSHIFTEQ = 263,
-     LSHIFTEQ = 264,
-     DIVEQ = 265,
-     MULTEQ = 266,
-     MINUSEQ = 267,
-     PLUSEQ = 268,
+    PLUSEQ = 261,
+    MINUSEQ = 262,
+    MULTEQ = 263,
+    DIVEQ = 264,
+    LSHIFTEQ = 265,
+    RSHIFTEQ = 266,
+    ANDEQ = 267,
+    OREQ = 268,
      OROR = 269,
      ANDAND = 270,
-     NE = 271,
-     EQ = 272,
-     GE = 273,
-     LE = 274,
-     RSHIFT = 275,
-     LSHIFT = 276,
+    EQ = 271,
+    NE = 272,
+    LE = 273,
+    GE = 274,
+    LSHIFT = 275,
+    RSHIFT = 276,
      UNARY = 277,
      END = 278,
      ALIGN_K = 279,
@@ -173,22 +179,22 @@
 #define INT 258
 #define NAME 259
 #define LNAME 260
-#define OREQ 261
-#define ANDEQ 262
-#define RSHIFTEQ 263
-#define LSHIFTEQ 264
-#define DIVEQ 265
-#define MULTEQ 266
-#define MINUSEQ 267
-#define PLUSEQ 268
+#define PLUSEQ 261
+#define MINUSEQ 262
+#define MULTEQ 263
+#define DIVEQ 264
+#define LSHIFTEQ 265
+#define RSHIFTEQ 266
+#define ANDEQ 267
+#define OREQ 268
 #define OROR 269
 #define ANDAND 270
-#define NE 271
-#define EQ 272
-#define GE 273
-#define LE 274
-#define RSHIFT 275
-#define LSHIFT 276
+#define EQ 271
+#define NE 272
+#define LE 273
+#define GE 274
+#define LSHIFT 275
+#define RSHIFT 276
 #define UNARY 277
 #define END 278
 #define ALIGN_K 279
@@ -299,13 +305,13 @@
 #define CONSTANT 384
 #define INPUT_DYNAMIC_LIST 385
 
-
-
-
+/* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef union YYSTYPE
-#line 60 "ldgram.y"
+typedef union YYSTYPE YYSTYPE;
+union YYSTYPE
 {
+#line 60 "ldgram.y" /* yacc.c:1915  */
+
   bfd_vma integer;
   struct big_int
     {
@@ -334,14 +340,16 @@ typedef union YYSTYPE
   struct bfd_elf_version_deps *deflist;
   struct bfd_elf_version_expr *versyms;
   struct bfd_elf_version_tree *versnode;
-}
-/* Line 1529 of yacc.c.  */
-#line 340 "ldgram.h"
-	YYSTYPE;
-# define yystype YYSTYPE /* obsolescent; will be withdrawn */
-# define YYSTYPE_IS_DECLARED 1
+
+#line 345 "ldgram.h" /* yacc.c:1915  */
+};
 # define YYSTYPE_IS_TRIVIAL 1
+# define YYSTYPE_IS_DECLARED 1
 #endif
+
 
 extern YYSTYPE yylval;
 
+int yyparse (void);
+
+#endif /* !YY_YY_LDGRAM_H_INCLUDED  */

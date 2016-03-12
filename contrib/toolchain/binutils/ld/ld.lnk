@@ -1,4 +1,4 @@
 -static -nostdlib --stack 12582912 -T/kolibrios/contrib/sdk/sources/newlib/app.lds
---image-base 0 -L/kolibrios/contrib/sdk/lib -o ld-new deffilep.o ei386pe.o ldcref.o ldctor.o ldemul.o ldexp.o ldfile.o ldgram.o
+--image-base 0 -L/kolibrios/contrib/sdk/lib -o ld-new deffilep.o ei386pe.o ldbuildid.o ldcref.o ldctor.o ldemul.o ldexp.o ldfile.o ldgram.o
 ldlang.o ldlex-wrapper.o ldmain.o ldmisc.o ldver.o ldwrite.o lexsup.o mri.o pe-dll.o
 -lbfd -liberty -lz -lgcc -lc.dll -lapp 

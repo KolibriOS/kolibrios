@@ -93,7 +93,7 @@ static const char vartmp[] =
 
 /*
 
-@deftypefn Replacement char* choose_tmpdir ()
+@deftypefn Replacement const char* choose_tmpdir ()
 
 Returns a pointer to a directory path suitable for creating temporary
 files in.
@@ -102,7 +102,7 @@ files in.
 
 */
 
-char *
+const char *
 choose_tmpdir (void)
 {
   return "/tmp0/1/";

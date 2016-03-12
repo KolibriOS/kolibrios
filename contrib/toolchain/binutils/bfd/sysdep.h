@@ -1,6 +1,5 @@
 /* sysdep.h -- handle host dependencies for the BFD library
-   Copyright 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2005, 2007, 2009
-   Free Software Foundation, Inc.
+   Copyright (C) 1995-2015 Free Software Foundation, Inc.
    Written by Cygnus Support.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -27,8 +26,6 @@
 #error sysdep.h must be included in lieu of config.h
 #endif
 
-#include <stdarg.h>
-
 #include "config.h"
 
 #include "ansidecl.h"
@@ -36,6 +33,8 @@
 #ifdef HAVE_STDDEF_H
 #include <stddef.h>
 #endif
+
+#include <stdarg.h>
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -171,6 +170,10 @@ extern int fseeko (FILE *stream, off_t offset, int whence);
 #if !HAVE_DECL_FSEEKO64
 extern int fseeko64 (FILE *stream, off64_t offset, int whence);
 #endif
+#endif
+
+#if !HAVE_DECL_STRNLEN
+size_t strnlen (const char *, size_t);
 #endif
 
 /* Define offsetof for those systems which lack it */

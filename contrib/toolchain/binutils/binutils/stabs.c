@@ -1,6 +1,5 @@
 /* stabs.c -- Parse stabs debugging information
-   Copyright 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
-   2005, 2006, 2007, 2008, 2009, 2010, 2011  Free Software Foundation, Inc.
+   Copyright (C) 1995-2015 Free Software Foundation, Inc.
    Written by Ian Lance Taylor <ian@cygnus.com>.
 
    This file is part of GNU Binutils.
@@ -837,8 +836,6 @@ parse_stab_string (void *dhandle, struct stab_handle *info, int stabtype,
 
     case 'G':
       {
-	char leading;
-	long c;
 	asymbol **ps;
 
 	/* A global symbol.  The value must be extracted from the
@@ -847,6 +844,11 @@ parse_stab_string (void *dhandle, struct stab_handle *info, int stabtype,
 				 (debug_type **) NULL);
 	if (dtype == DEBUG_TYPE_NULL)
 	  return FALSE;
+	if (name != NULL)
+	  {
+	    char leading;
+	    long c;
+
 	leading = bfd_get_symbol_leading_char (info->abfd);
 	for (c = info->symcount, ps = info->syms; c > 0; --c, ++ps)
 	  {
@@ -858,8 +860,11 @@ parse_stab_string (void *dhandle, struct stab_handle *info, int stabtype,
 	    if (*n == *name && strcmp (n, name) == 0)
 	      break;
 	  }
+
 	if (c > 0)
 	  value = bfd_asymbol_value (*ps);
+	  }
+
 	if (! stab_record_variable (dhandle, info, name, dtype, DEBUG_GLOBAL,
 				    value))
 	  return FALSE;
@@ -1769,7 +1774,7 @@ parse_stab_range_type (void *dhandle, struct stab_handle *info, const char *type
 	  else if (n3 == (bfd_signed_vma) 0xffffffff)
 	    return debug_make_int_type (dhandle, 4, TRUE);
 #ifdef BFD64
-	  else if (n3 == ((((bfd_signed_vma) 0xffffffff) << 32) | 0xffffffff))
+	  else if (n3 == (bfd_signed_vma) 0xffffffffffffffffLL)
 	    return debug_make_int_type (dhandle, 8, TRUE);
 #endif
 	}

@@ -1,7 +1,5 @@
 /* BFD back-end for Intel 386 COFF files.
-   Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002, 2003, 2004, 2005, 2007, 2008, 2009, 2010, 2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 1990-2015 Free Software Foundation, Inc.
    Written by Cygnus Support.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -342,6 +340,8 @@ static reloc_howto_type howto_table[] =
 	 PCRELOFFSET)		/* pcrel_offset */
 };
 
+#define NUM_HOWTOS (sizeof (howto_table) / sizeof (howto_table[0]))
+
 /* Turn a howto into a reloc  nunmber */
 
 #define SELECT_RELOC(x,howto) { x.r_type = howto->type; }
@@ -350,7 +350,7 @@ static reloc_howto_type howto_table[] =
 
 #define RTYPE2HOWTO(cache_ptr, dst)					\
   ((cache_ptr)->howto =							\
-   ((dst)->r_type < sizeof (howto_table) / sizeof (howto_table[0])	\
+   ((dst)->r_type < NUM_HOWTOS					\
     ? howto_table + (dst)->r_type					\
     : NULL))
 
@@ -379,7 +379,7 @@ static reloc_howto_type howto_table[] =
       coffsym = (obj_symbols (abfd)				\
 	         + (cache_ptr->sym_ptr_ptr - symbols));		\
     else if (ptr)						\
-      coffsym = coff_symbol_from (abfd, ptr);			\
+      coffsym = coff_symbol_from (ptr);				\
     if (coffsym != (coff_symbol_type *) NULL			\
 	&& coffsym->native->u.syment.n_scnum == 0)		\
       cache_ptr->addend = - coffsym->native->u.syment.n_value;	\
@@ -388,7 +388,8 @@ static reloc_howto_type howto_table[] =
       cache_ptr->addend = - (ptr->section->vma + ptr->value);	\
     else							\
       cache_ptr->addend = 0;					\
-    if (ptr && howto_table[reloc.r_type].pc_relative)		\
+    if (ptr && reloc.r_type < NUM_HOWTOS			\
+	&& howto_table[reloc.r_type].pc_relative)		\
       cache_ptr->addend += asect->vma;				\
   }
 
@@ -416,7 +417,7 @@ coff_pe_i386_relocate_section (bfd *output_bfd,
 			       struct internal_syment *syms,
 			       asection **sections)
 {
-  if (info->relocatable)
+  if (bfd_link_relocatable (info))
     return TRUE;
 
   return _bfd_coff_generic_relocate_section (output_bfd, info, input_bfd,
@@ -440,7 +441,7 @@ coff_i386_rtype_to_howto (bfd *abfd ATTRIBUTE_UNUSED,
 {
   reloc_howto_type *howto;
 
-  if (rel->r_type >= sizeof (howto_table) / sizeof (howto_table[0]))
+  if (rel->r_type >= NUM_HOWTOS)
     {
       bfd_set_error (bfd_error_bad_value);
       return NULL;
@@ -508,7 +509,12 @@ coff_i386_rtype_to_howto (bfd *abfd ATTRIBUTE_UNUSED,
       *addendp -= pe_data(sec->output_section->owner)->pe_opthdr.ImageBase;
     }
 
+  /* PR 17099 - Absolute R_PCRLONG relocations do not need a symbol.  */
+  if (rel->r_type == R_PCRLONG && sym == NULL)
+    *addendp -= rel->r_vaddr;
+  else
   BFD_ASSERT (sym != NULL);
+
   if (rel->r_type == R_SECREL32 && sym != NULL)
     {
       bfd_vma osect_vma;
@@ -576,7 +582,7 @@ coff_i386_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
 {
   unsigned int i;
 
-  for (i = 0; i < sizeof (howto_table) / sizeof (howto_table[0]); i++)
+  for (i = 0; i < NUM_HOWTOS; i++)
     if (howto_table[i].name != NULL
 	&& strcasecmp (howto_table[i].name, r_name) == 0)
       return &howto_table[i];
@@ -607,14 +613,11 @@ coff_i386_is_local_label_name (bfd *abfd, const char *name)
 
 #include "coffcode.h"
 
-#define _bfd_generic_find_nearest_line_discriminator \
-	coff_find_nearest_line_discriminator
-
 const bfd_target
 #ifdef TARGET_SYM
   TARGET_SYM =
 #else
-  i386coff_vec =
+  i386_coff_vec =
 #endif
 {
 #ifdef TARGET_NAME

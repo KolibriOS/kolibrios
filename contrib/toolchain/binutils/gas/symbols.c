@@ -1,7 +1,5 @@
 /* symbols.c -symbol table-
-   Copyright 1987, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
-   2011, 2012 Free Software Foundation, Inc.
+   Copyright (C) 1987-2015 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -106,7 +104,7 @@ symbol_new (const char *name, segT segment, valueT valu, fragS *frag)
 static char *
 save_symbol_name (const char *name)
 {
-  unsigned int name_length;
+  size_t name_length;
   char *ret;
 
   name_length = strlen (name) + 1;	/* +1 for \0.  */
@@ -267,7 +265,7 @@ colon (/* Just seen "x:" - rattle symbols & frags.  */
        const char *sym_name	/* Symbol name, as a cannonical string.  */
        /* We copy this string: OK to alter later.  */)
 {
-  register symbolS *symbolP;	/* Symbol we are working with.  */
+  symbolS *symbolP;	/* Symbol we are working with.  */
 
   /* Sun local labels go out of scope whenever a non-local symbol is
      defined.  */
@@ -484,7 +482,7 @@ colon (/* Just seen "x:" - rattle symbols & frags.  */
 void
 symbol_table_insert (symbolS *symbolP)
 {
-  register const char *error_string;
+  const char *error_string;
 
   know (symbolP);
   know (S_GET_NAME (symbolP));
@@ -512,7 +510,7 @@ symbol_table_insert (symbolS *symbolP)
 symbolS *
 symbol_find_or_make (const char *name)
 {
-  register symbolS *symbolP;
+  symbolS *symbolP;
 
   symbolP = symbol_find (name);
 
@@ -1664,14 +1662,14 @@ define_dollar_label (long label)
    of ^A.  */
 
 char *				/* Return local label name.  */
-dollar_label_name (register long n,	/* we just saw "n$:" : n a number.  */
-		   register int augend	/* 0 for current instance, 1 for new instance.  */)
+dollar_label_name (long n,	/* we just saw "n$:" : n a number.  */
+		   int augend	/* 0 for current instance, 1 for new instance.  */)
 {
   long i;
   /* Returned to caller, then copied.  Used for created names ("4f").  */
   static char symbol_name_build[24];
-  register char *p;
-  register char *q;
+  char *p;
+  char *q;
   char symbol_name_temporary[20];	/* Build up a number, BACKWARDS.  */
 
   know (n >= 0);
@@ -1837,8 +1835,8 @@ fb_label_name (long n,	/* We just saw "n:", "nf" or "nb" : n a number.  */
   long i;
   /* Returned to caller, then copied.  Used for created names ("4f").  */
   static char symbol_name_build[24];
-  register char *p;
-  register char *q;
+  char *p;
+  char *q;
   char symbol_name_temporary[20];	/* Build up a number, BACKWARDS.  */
 
   know (n >= 0);

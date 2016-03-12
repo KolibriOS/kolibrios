@@ -1,7 +1,5 @@
 /* coff object file format
-   Copyright 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998,
-   1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2009, 2010
-   Free Software Foundation, Inc.
+   Copyright (C) 1989-2015 Free Software Foundation, Inc.
 
    This file is part of GAS.
 
@@ -24,7 +22,6 @@
 
 #include "as.h"
 #include "safe-ctype.h"
-#include "obstack.h"
 #include "subsegs.h"
 #include "struc-symbol.h"
 
@@ -390,6 +387,7 @@ coff_obj_symbol_new_hook (symbolS *symbolP)
 
   memset (s, 0, sz);
   coffsymbol (symbol_get_bfdsym (symbolP))->native = (combined_entry_type *) s;
+  coffsymbol (symbol_get_bfdsym (symbolP))->native->is_sym = TRUE;
 
   S_SET_DATA_TYPE (symbolP, T_NULL);
   S_SET_STORAGE_CLASS (symbolP, 0);
@@ -605,8 +603,7 @@ obj_coff_def (int what ATTRIBUTE_UNUSED)
 
   SKIP_WHITESPACES ();
 
-  symbol_name = input_line_pointer;
-  name_end = get_symbol_end ();
+  name_end = get_symbol_name (&symbol_name);
   symbol_name_length = strlen (symbol_name);
   symbol_name_copy = xmalloc (symbol_name_length + 1);
   strcpy (symbol_name_copy, symbol_name);
@@ -622,7 +619,7 @@ obj_coff_def (int what ATTRIBUTE_UNUSED)
   if (S_IS_STRING (def_symbol_in_progress))
     SF_SET_STRING (def_symbol_in_progress);
 
-  *input_line_pointer = name_end;
+  (void) restore_line_pointer (name_end);
 
   demand_empty_rest_of_line ();
 }
@@ -975,8 +972,7 @@ obj_coff_tag (int ignore ATTRIBUTE_UNUSED)
     }
 
   S_SET_NUMBER_AUXILIARY (def_symbol_in_progress, 1);
-  symbol_name = input_line_pointer;
-  name_end = get_symbol_end ();
+  name_end = get_symbol_name (&symbol_name);
 
 #ifdef tc_canonicalize_symbol_name
   symbol_name = tc_canonicalize_symbol_name (symbol_name);
@@ -990,8 +986,8 @@ obj_coff_tag (int ignore ATTRIBUTE_UNUSED)
     as_warn (_("tag not found for .tag %s"), symbol_name);
 
   SF_SET_TAGGED (def_symbol_in_progress);
-  *input_line_pointer = name_end;
 
+  (void) restore_line_pointer (name_end);
   demand_empty_rest_of_line ();
 }
 
@@ -1026,11 +1022,11 @@ obj_coff_val (int ignore ATTRIBUTE_UNUSED)
 
   if (is_name_beginner (*input_line_pointer))
     {
-      char *symbol_name = input_line_pointer;
-      char name_end = get_symbol_end ();
+      char *symbol_name;
+      char name_end = get_symbol_name (&symbol_name);
 
 #ifdef tc_canonicalize_symbol_name
-  symbol_name = tc_canonicalize_symbol_name (symbol_name);
+      symbol_name = tc_canonicalize_symbol_name (symbol_name);
 #endif
       if (streq (symbol_name, "."))
 	{
@@ -1061,7 +1057,7 @@ obj_coff_val (int ignore ATTRIBUTE_UNUSED)
 	}
       /* Otherwise, it is the name of a non debug symbol and its value
          will be calculated later.  */
-      *input_line_pointer = name_end;
+      (void) restore_line_pointer (name_end);
     }
   else
     {
@@ -1172,8 +1168,7 @@ obj_coff_weak (int ignore ATTRIBUTE_UNUSED)
 
   do
     {
-      name = input_line_pointer;
-      c = get_symbol_end ();
+      c = get_symbol_name (&name);
       if (*name == 0)
 	{
 	  as_warn (_("badly formed .weak directive ignored"));
@@ -1183,7 +1178,7 @@ obj_coff_weak (int ignore ATTRIBUTE_UNUSED)
       c = 0;
       symbolP = symbol_find_or_make (name);
       *input_line_pointer = c;
-      SKIP_WHITESPACE ();
+      SKIP_WHITESPACE_AFTER_NAME ();
       S_SET_WEAK (symbolP);
 
       if (c == ',')
@@ -1566,15 +1561,11 @@ obj_coff_section (int ignore ATTRIBUTE_UNUSED)
       return;
     }
 
-  section_name = input_line_pointer;
-  c = get_symbol_end ();
-
+  c = get_symbol_name (&section_name);
   name = xmalloc (input_line_pointer - section_name + 1);
   strcpy (name, section_name);
-
   *input_line_pointer = c;
-
-  SKIP_WHITESPACE ();
+  SKIP_WHITESPACE_AFTER_NAME ();
 
   exp = 0;
   flags = SEC_NO_FLAGS;

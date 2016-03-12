@@ -1,6 +1,7 @@
 #SHS
 /kolibrios/as -o deffilep.o deffilep.s
 /kolibrios/as -o ei386pe.o ei386pe.s
+/kolibrios/as -o ldbuildid.o ldbuildid.s
 /kolibrios/as -o ldcref.o ldcref.s
 /kolibrios/as -o ldctor.o ldctor.s
 /kolibrios/as -o ldemul.o ldemul.s

@@ -1,5 +1,5 @@
 /* config.h.  Generated from config.in by configure.  */
-/* config.in.  Generated from configure.in by autoheader.  */
+/* config.in.  Generated from configure.ac by autoheader.  */
 
 /* Check that config.h is #included before system headers
     (this works only for glibc, but that should be enough).  */
@@ -16,11 +16,15 @@
 /* #undef ENABLE_NLS */
 
 /* Define to 1 if you have the <alloca.h> header file. */
-/* #undef HAVE_ALLOCA_H */
+#define HAVE_ALLOCA_H 1
+
+/* Define to 1 if you have the declaration of `asprintf', and to 0 if you
+   don't. */
+#define HAVE_DECL_ASPRINTF 0
 
 /* Define to 1 if you have the declaration of `basename', and to 0 if you
    don't. */
-#define HAVE_DECL_BASENAME 0
+#define HAVE_DECL_BASENAME 1
 
 /* Define to 1 if you have the declaration of `ffs', and to 0 if you don't. */
 #define HAVE_DECL_FFS 0
@@ -65,9 +69,17 @@
    */
 #define HAVE_DECL_STPCPY 0
 
+/* Define to 1 if you have the declaration of `strnlen', and to 0 if you
+   don't. */
+#define HAVE_DECL_STRNLEN 0
+
 /* Define to 1 if you have the declaration of `strstr', and to 0 if you don't.
    */
 #define HAVE_DECL_STRSTR 1
+
+/* Define to 1 if you have the declaration of `vasprintf', and to 0 if you
+   don't. */
+#define HAVE_DECL_VASPRINTF 0
 
 /* Define to 1 if you have the declaration of `vsnprintf', and to 0 if you
    don't. */
@@ -279,7 +291,7 @@
 #define PACKAGE_NAME "bfd"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "bfd 2.24"
+#define PACKAGE_STRING "bfd 2.26"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "bfd"
@@ -288,7 +300,7 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "2.24"
+#define PACKAGE_VERSION "2.26"
 
 /* The size of `char', as computed by sizeof. */
 /* #undef SIZEOF_CHAR */
@@ -361,7 +373,7 @@
 
 
 /* Version number of package */
-#define VERSION "2.24"
+#define VERSION "2.26"
 
 /* Number of bits in a file offset, on hosts where this is settable. */
 /* #undef _FILE_OFFSET_BITS */

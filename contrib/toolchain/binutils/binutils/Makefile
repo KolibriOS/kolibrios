@@ -15,7 +15,7 @@ LIBS= -lbfd -liberty -lz -lgcc -lc.dll -lapp
 
 LIBPATH:= -L$(LIB_DIR) -L/home/autobuild/tools/win32/mingw32/lib
 
-LDFLAGS = -static -nostdlib --stack 12582912 -T$(SDK_DIR)/sources/newlib/app.lds --image-base 0
+LDFLAGS = -static -nostdlib --stack 12582912 -T$(SDK_DIR)/sources/newlib/app.lds --image-base 0 --subsystem native
 
 
 SRCS = \

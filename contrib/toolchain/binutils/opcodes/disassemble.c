@@ -1,7 +1,5 @@
 /* Select disassembly routine for specified architecture.
-   Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-   2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
-   Free Software Foundation, Inc.
+   Copyright (C) 1994-2015 Free Software Foundation, Inc.
 
    This file is part of the GNU opcodes library.
 
@@ -39,6 +37,7 @@
 #define ARCH_epiphany
 #define ARCH_fr30
 #define ARCH_frv
+#define ARCH_ft32
 #define ARCH_h8300
 #define ARCH_h8500
 #define ARCH_hppa
@@ -67,10 +66,10 @@
 #define ARCH_moxie
 #define ARCH_mt
 #define ARCH_msp430
+#define ARCH_nds32
 #define ARCH_nios2
 #define ARCH_ns32k
-#define ARCH_openrisc
-#define ARCH_or32
+#define ARCH_or1k
 #define ARCH_pdp11
 #define ARCH_pj
 #define ARCH_powerpc
@@ -91,6 +90,7 @@
 #define ARCH_tilepro
 #define ARCH_v850
 #define ARCH_vax
+#define ARCH_visium
 #define ARCH_w65
 #define ARCH_xstormy16
 #define ARCH_xc16x
@@ -211,6 +211,7 @@ disassembler (abfd)
 #endif
 #ifdef ARCH_i386
     case bfd_arch_i386:
+    case bfd_arch_iamcu:
     case bfd_arch_l1om:
     case bfd_arch_k1om:
       disassemble = print_insn_i386;
@@ -296,6 +297,11 @@ disassembler (abfd)
       disassemble = print_insn_msp430;
       break;
 #endif
+#ifdef ARCH_nds32
+    case bfd_arch_nds32:
+      disassemble = print_insn_nds32;
+      break;
+#endif
 #ifdef ARCH_ns32k
     case bfd_arch_ns32k:
       disassemble = print_insn_ns32k;
@@ -347,17 +353,9 @@ disassembler (abfd)
 	disassemble = print_insn_little_nios2;
       break;
 #endif
-#ifdef ARCH_openrisc
-    case bfd_arch_openrisc:
-      disassemble = print_insn_openrisc;
-      break;
-#endif
-#ifdef ARCH_or32
-    case bfd_arch_or32:
-      if (bfd_big_endian (abfd))
-	disassemble = print_insn_big_or32;
-      else
-	disassemble = print_insn_little_or32;
+#ifdef ARCH_or1k
+    case bfd_arch_or1k:
+      disassemble = print_insn_or1k;
       break;
 #endif
 #ifdef ARCH_pdp11
@@ -388,7 +386,7 @@ disassembler (abfd)
 #endif
 #ifdef ARCH_rl78
     case bfd_arch_rl78:
-      disassemble = print_insn_rl78;
+      disassemble = rl78_get_disassembler (abfd);
       break;
 #endif
 #ifdef ARCH_rx
@@ -449,6 +447,11 @@ disassembler (abfd)
       disassemble = print_insn_tic80;
       break;
 #endif
+#ifdef ARCH_ft32
+    case bfd_arch_ft32:
+      disassemble = print_insn_ft32;
+      break;
+#endif
 #ifdef ARCH_v850
     case bfd_arch_v850:
     case bfd_arch_v850_rh850:
@@ -497,6 +500,11 @@ disassembler (abfd)
     case bfd_arch_vax:
       disassemble = print_insn_vax;
       break;
+#endif
+#ifdef ARCH_visium
+     case bfd_arch_visium:
+       disassemble = print_insn_visium;
+       break;
 #endif
 #ifdef ARCH_frv
     case bfd_arch_frv:

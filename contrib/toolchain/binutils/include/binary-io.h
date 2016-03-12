@@ -1,5 +1,5 @@
 /* Binary mode I/O.
-   Copyright (C) 2001, 2003, 2005, 2008 Free Software Foundation, Inc.
+   Copyright (C) 2001-2015 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -40,6 +40,8 @@
 #  include <io.h> /* declares setmode() */
 # else
 #  define setmode _setmode
+#  undef fileno
+#  define fileno _fileno
 # endif
 # ifdef __DJGPP__
 #  include <unistd.h> /* declares isatty() */

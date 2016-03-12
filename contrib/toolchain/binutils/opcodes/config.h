@@ -1,5 +1,5 @@
 /* config.h.  Generated from config.in by configure.  */
-/* config.in.  Generated from configure.in by autoheader.  */
+/* config.in.  Generated from configure.ac by autoheader.  */
 
 /* Check that config.h is #included before system headers
    (this works only for glibc, but that should be enough).  */
@@ -14,7 +14,7 @@
 
 /* Define to 1 if you have the declaration of `basename', and to 0 if you
    don't. */
-#define HAVE_DECL_BASENAME 0
+#define HAVE_DECL_BASENAME 1
 
 /* Define to 1 if you have the declaration of `stpcpy', and to 0 if you don't.
    */
@@ -64,19 +64,19 @@
 #define PACKAGE_BUGREPORT ""
 
 /* Define to the full name of this package. */
-#define PACKAGE_NAME ""
+#define PACKAGE_NAME "opcodes"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING ""
+#define PACKAGE_STRING "opcodes 2.26"
 
 /* Define to the one symbol short name of this package. */
-#define PACKAGE_TARNAME ""
+#define PACKAGE_TARNAME "opcodes"
 
 /* Define to the home page for this package. */
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION ""
+#define PACKAGE_VERSION "2.26"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
@@ -107,7 +107,7 @@
 
 
 /* Version number of package */
-#define VERSION "2.24"
+#define VERSION "2.26"
 
 /* Define to 1 if on MINIX. */
 /* #undef _MINIX */

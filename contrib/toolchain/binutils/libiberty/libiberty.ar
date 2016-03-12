@@ -1,0 +1,8 @@
+crs libiberty.a alloca.o argv.o asprintf.o bcmp.o bcopy.o bzero.o choose-temp.o concat.o cp-demangle.o cp-demint.o
+cplus-dem.o crc32.o dwarfnames.o dyn-string.o fdmatch.o ffs.o fibheap.o filename_cmp.o floatformat.o fnmatch.o
+fopen_unlocked.o getopt.o getopt1.o getpwd.o getruntime.o hashtab.o hex.o index.o insque.o lbasename.o lrealpath.o
+make-relative-prefix.o make-temp-file.o md5.o memmem.o mempcpy.o objalloc.o obstack.o partition.o physmem.o random.o
+regex.o rindex.o safe-ctype.o setenv.o setproctitle.o sha1.o sigsetmask.o simple-object.o simple-object-coff.o
+simple-object-elf.o simple-object-mach-o.o simple-object-xcoff.o sort.o spaces.o splay-tree.o stack-limit.o stpcpy.o
+stpncpy.o strcasecmp.o strerror.o strncasecmp.o strndup.o strnlen.o strverscmp.o timeval-utils.o unlink-if-ordinary.o
+vasprintf.o xatexit.o xexit.o xmalloc.o xmemdup.o xstrdup.o xstrerror.o xstrndup.o
