@@ -47,17 +47,15 @@ prepare_data_pointers:
 	add	[PointerToEditBufer],eax
 	add	[PointerToEditBufer],eax
 
-	add	[PointerToSpriteBufer],eax
-	add	[PointerToSpriteBufer],eax
-	add	[PointerToSpriteBufer],eax
+	shl eax,2
 	add	[PointerToSpriteBufer],eax
 
 	mov	eax,[ScreenPointer]
-	add	eax,(1200*100*3)+50*(20*20*3)+1
+	add	eax,(1200*1000*3)+50*(20*20*3)+1
 	mov	[PointerToPalette],eax
 
 	mov	eax,[ScreenPointer]
-	add	eax,(1200*1000)*3+50*(20*20*3)+8
+	add	eax,(1200*1000*3)+50*(20*20*3)+8
 	mov	[ReserveArray],eax
 	ret
 ;---------------------------------------------------------

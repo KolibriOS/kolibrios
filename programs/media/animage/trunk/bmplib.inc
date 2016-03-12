@@ -77,15 +77,8 @@ convert_to_24bpp:
     mov edi,ebp
     mov  ecx,[bmptoimg_data_area_dwps]
 
-     loop_convert_to_24bpp_x:
-
-       mov edx,[esi]
-       mov [edi],edx
-       add esi,4
-       add edi,4
-
-     dec ecx
-     jnz loop_convert_to_24bpp_x
+     cld
+     rep movsd
 
     sub  esi,[bmptoimg_data_area_bps]
     sub  esi,[bmptoimg_data_area_bps]
