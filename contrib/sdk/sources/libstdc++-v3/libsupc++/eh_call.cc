@@ -140,7 +140,11 @@ __cxa_call_unexpected(void* exc_obj_in)
 			       &new_ptr) != ctm_failed)
 	    __throw_exception_again;
 
-	  if (catch_type->__do_catch(&bad_exc, 0, 1))
+	  // If the exception spec allows std::bad_exception, throw that.
+	  // We don't have a thrown object to compare against, but since
+	  // bad_exception doesn't have virtual bases, that's OK; just pass NULL.
+	  void* obj = NULL;
+	  if (catch_type->__do_catch(&bad_exc, &obj, 1))
 	    bad_exception_allowed = true;
 	}
 

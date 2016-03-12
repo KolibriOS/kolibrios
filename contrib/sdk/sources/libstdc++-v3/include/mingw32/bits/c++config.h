@@ -31,7 +31,7 @@
 #define _GLIBCXX_CXX_CONFIG_H 1
 
 // The current version of the C++ library in compressed ISO date format.
-#define __GLIBCXX__ 20131016
+#define __GLIBCXX__ 20150623
 
 // Macros for various attributes.
 //   _GLIBCXX_PURE
@@ -162,7 +162,7 @@
     }
 
     namespace tr2 { }
-
+    
     namespace decimal { }
 
     namespace chrono { }
@@ -193,7 +193,7 @@ namespace std
 
 
 // Defined if inline namespaces are used for versioning.
-# define _GLIBCXX_INLINE_VERSION 0
+# define _GLIBCXX_INLINE_VERSION 0 
 
 // Inline namespace for symbol versioning.
 #if _GLIBCXX_INLINE_VERSION
@@ -599,7 +599,7 @@ namespace std
 #define _GLIBCXX_HAVE_FABSL 1
 
 /* Define to 1 if you have the <fenv.h> header file. */
-#define _GLIBCXX_HAVE_FENV_H 1
+/* #undef _GLIBCXX_HAVE_FENV_H */
 
 /* Define to 1 if you have the `finite' function. */
 #define _GLIBCXX_HAVE_FINITE 1
@@ -653,7 +653,7 @@ namespace std
 #define _GLIBCXX_HAVE_HYPOTL 1
 
 /* Define if you have the iconv() function. */
-/* #undef _GLIBCXX_HAVE_ICONV */
+#define _GLIBCXX_HAVE_ICONV 1
 
 /* Define to 1 if you have the <ieeefp.h> header file. */
 /* #undef _GLIBCXX_HAVE_IEEEFP_H */
@@ -737,10 +737,10 @@ namespace std
 #define _GLIBCXX_HAVE_LOGL 1
 
 /* Define to 1 if you have the <machine/endian.h> header file. */
-#define _GLIBCXX_HAVE_MACHINE_ENDIAN_H 1
+/* #undef _GLIBCXX_HAVE_MACHINE_ENDIAN_H */
 
 /* Define to 1 if you have the <machine/param.h> header file. */
-#define _GLIBCXX_HAVE_MACHINE_PARAM_H 1
+/* #undef _GLIBCXX_HAVE_MACHINE_PARAM_H */
 
 /* Define if mbstate_t exists in wchar.h. */
 #define _GLIBCXX_HAVE_MBSTATE_T 1
@@ -824,7 +824,7 @@ namespace std
 /* #undef _GLIBCXX_HAVE_STRERROR_L */
 
 /* Define if strerror_r is available in <string.h>. */
-/* #undef _GLIBCXX_HAVE_STRERROR_R */
+#define _GLIBCXX_HAVE_STRERROR_R 1
 
 /* Define to 1 if you have the <strings.h> header file. */
 #define _GLIBCXX_HAVE_STRINGS_H 1
@@ -836,7 +836,7 @@ namespace std
 #define _GLIBCXX_HAVE_STRTOF 1
 
 /* Define to 1 if you have the `strtold' function. */
-//#define _GLIBCXX_HAVE_STRTOLD 1
+#define _GLIBCXX_HAVE_STRTOLD 1
 
 /* Define if strxfrm_l is available in <string.h>. */
 /* #undef _GLIBCXX_HAVE_STRXFRM_L */
@@ -909,7 +909,7 @@ namespace std
 /* #undef _GLIBCXX_HAVE_TGMATH_H */
 
 /* Define to 1 if the target supports thread-local storage. */
-/* #undef _GLIBCXX_HAVE_TLS */
+#define _GLIBCXX_HAVE_TLS 1
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #define _GLIBCXX_HAVE_UNISTD_H 1
@@ -1131,7 +1131,7 @@ namespace std
 /* #undef _GLIBCXX_HAVE___CXA_THREAD_ATEXIT_IMPL */
 
 /* Define as const if the declaration of iconv() needs const. */
-/* #undef _GLIBCXX_ICONV_CONST */
+#define _GLIBCXX_ICONV_CONST 
 
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */
@@ -1292,7 +1292,7 @@ namespace std
 #define _GLIBCXX_USE_FLOAT128 1
 
 /* Defined if gettimeofday is available. */
-#define _GLIBCXX_USE_GETTIMEOFDAY 1
+/* #undef _GLIBCXX_USE_GETTIMEOFDAY */
 
 /* Define if get_nprocs is available in <sys/sysinfo.h>. */
 /* #undef _GLIBCXX_USE_GET_NPROCS */
@@ -1332,7 +1332,7 @@ namespace std
 /* #undef _GLIBCXX_USE_SYSCTL_HW_NCPU */
 
 /* Define if code specialized for wchar_t should be used. */
-//#define _GLIBCXX_USE_WCHAR_T 1
+#define _GLIBCXX_USE_WCHAR_T 1
 
 /* Define to 1 if a verbose library is built, or 0 otherwise. */
 #define _GLIBCXX_VERBOSE 1

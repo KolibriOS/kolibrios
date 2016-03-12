@@ -158,143 +158,143 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   // functions
   using ::acosh;
   using ::acoshf;
-  using ::acoshl;
+//  using ::acoshl;
 
   using ::asinh;
   using ::asinhf;
-  using ::asinhl;
+//  using ::asinhl;
 
   using ::atanh;
   using ::atanhf;
-  using ::atanhl;
+//  using ::atanhl;
 
   using ::cbrt;
   using ::cbrtf;
-  using ::cbrtl;
+//  using ::cbrtl;
 
   using ::copysign;
   using ::copysignf;
-  using ::copysignl;
+//  using ::copysignl;
 
   using ::erf;
   using ::erff;
-  using ::erfl;
+//  using ::erfl;
 
   using ::erfc;
   using ::erfcf;
-  using ::erfcl;
+//  using ::erfcl;
 
   using ::exp2;
   using ::exp2f;
-  using ::exp2l;
+//  using ::exp2l;
 
   using ::expm1;
   using ::expm1f;
-  using ::expm1l;
+//  using ::expm1l;
 
   using ::fdim;
   using ::fdimf;
-  using ::fdiml;
+//  using ::fdiml;
 
   using ::fma;
   using ::fmaf;
-  using ::fmal;
+//  using ::fmal;
 
   using ::fmax;
   using ::fmaxf;
-  using ::fmaxl;
+//  using ::fmaxl;
 
   using ::fmin;
   using ::fminf;
-  using ::fminl;
+//  using ::fminl;
 
   using ::hypot;
   using ::hypotf;
-  using ::hypotl;
+//  using ::hypotl;
 
   using ::ilogb;
   using ::ilogbf;
-  using ::ilogbl;
+//  using ::ilogbl;
 
   using ::lgamma;
   using ::lgammaf;
-  using ::lgammal;
+//  using ::lgammal;
 
   using ::llrint;
   using ::llrintf;
-  using ::llrintl;
+//  using ::llrintl;
 
   using ::llround;
   using ::llroundf;
-  using ::llroundl;
+//  using ::llroundl;
 
   using ::log1p;
   using ::log1pf;
-  using ::log1pl;
+//  using ::log1pl;
 
   using ::log2;
   using ::log2f;
-  using ::log2l;
+//  using ::log2l;
 
   using ::logb;
   using ::logbf;
-  using ::logbl;
+//  using ::logbl;
 
   using ::lrint;
   using ::lrintf;
-  using ::lrintl;
+//  using ::lrintl;
 
   using ::lround;
   using ::lroundf;
-  using ::lroundl;
+//  using ::lroundl;
 
   using ::nan;
   using ::nanf;
-  using ::nanl;
+//  using ::nanl;
 
   using ::nearbyint;
   using ::nearbyintf;
-  using ::nearbyintl;
+//  using ::nearbyintl;
 
   using ::nextafter;
   using ::nextafterf;
-  using ::nextafterl;
+//  using ::nextafterl;
 
-  using ::nexttoward;
-  using ::nexttowardf;
-  using ::nexttowardl;
+//  using ::nexttoward;
+//  using ::nexttowardf;
+//  using ::nexttowardl;
 
   using ::remainder;
   using ::remainderf;
-  using ::remainderl;
+//  using ::remainderl;
 
   using ::remquo;
   using ::remquof;
-  using ::remquol;
+//  using ::remquol;
 
   using ::rint;
   using ::rintf;
-  using ::rintl;
+//  using ::rintl;
 
   using ::round;
   using ::roundf;
-  using ::roundl;
+//  using ::roundl;
 
   using ::scalbln;
   using ::scalblnf;
-  using ::scalblnl;
+//  using ::scalblnl;
 
   using ::scalbn;
   using ::scalbnf;
-  using ::scalbnl;
+//  using ::scalbnl;
 
   using ::tgamma;
   using ::tgammaf;
-  using ::tgammal;
+//  using ::tgammal;
 
   using ::trunc;
   using ::truncf;
-  using ::truncl;
+//  using ::truncl;
 
 #endif
 

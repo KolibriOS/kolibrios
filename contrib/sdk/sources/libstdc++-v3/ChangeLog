@@ -1,3 +1,384 @@
+2015-06-23  Release Manager
+
+	* GCC 4.8.5 released.
+
+2015-06-17  Matthias Klose  <doko@ubuntu.com>
+
+	Backported from mainline
+	2015-06-01  Jonathan Wakely  <jwakely@redhat.com>
+
+	* testsuite/lib/libstdc++.exp (libstdc++_init): Unset LANGUAGE
+	environment variable.
+
+2015-06-04  Renlin Li  <renlin.li@arm.com>
+
+	Backported from mainline
+	2015-06-02  Renlin Li  <renlin.li@arm.com>
+
+	* testsuite/27_io/fpos/14775.cc: Add _GLIBCXX_HAVE_LIMIT_FSIZE check.
+
+2015-03-25  Jonathan Wakely  <jwakely@redhat.com>
+
+	Backport from mainline
+	2015-03-02  Jonathan Wakely  <jwakely@redhat.com>
+
+	PR libstdc++/65279
+	* include/std/scoped_allocator (__inner_type_impl,
+	scoped_allocator_adaptor): Add defaulted copy assignment and move
+	assignment operators.
+	* testsuite/20_util/scoped_allocator/65279.cc: New.
+
+2015-03-25  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	PR libstdc++/65543
+	* include/std/istream (operator>>(basic_istream<>&&, _Tp&): Revert
+	thinko in r150387.
+	* include/std/ostream (operator<<(basic_ostream<>&&, const _Tp&):
+	Likewise.
+	* testsuite/27_io/rvalue_streams-2.cc: New.
+
+2015-01-09  Jonathan Wakely  <jwakely@redhat.com>
+
+	PR libstdc++/60966
+	* include/std/future (packaged_task::operator()): Increment the
+	reference count on the shared state until the function returns.
+
+2014-12-19  Release Manager
+
+	* GCC 4.8.4 released.
+
+2014-12-06  Jonathan Wakely  <jwakely@redhat.com>
+
+	PR libstdc++/63840
+	* include/std/functional (function::function(const function&)): Set
+	_M_manager after operations that might throw.
+	* include/tr1/functional (function::function(const function&),
+	function::function(_Functor, _Useless)): Likewise.
+	* testsuite/20_util/function/63840.cc: New.
+	* testsuite/tr1/3_function_objects/function/63840.cc: New.
+
+	PR libstdc++/61947
+	* include/std/tuple (_Head_base): Use allocator_arg_t parameters to
+	disambiguate unary constructors.
+	(_Tuple_impl): Pass allocator_arg_t arguments.
+	* testsuite/20_util/tuple/61947.cc: New.
+	* testsuite/20_util/uses_allocator/cons_neg.cc: Adjust dg-error line.
+
+	PR libstdc++/59603
+	* include/bits/stl_algo.h (random_shuffle): Prevent self-swapping.
+	* testsuite/25_algorithms/random_shuffle/59603.cc: New.
+
+2014-11-27  Thomas Preud'homme  <thomas.preudhomme@arm.com>
+
+	Backport from mainline
+	2014-09-10  Tony Wang  <tony.wang@arm.com>
+
+	PR target/56846
+	* libsupc++/eh_personality.cc (PERSONALITY_FUNCTION):
+	Return with CONTINUE_UNWINDING when the state pattern
+	contains: _US_VIRTUAL_UNWIND_FRAME | _US_FORCE_UNWIND
+
+2014-11-05  David Edelsohn  <dje.gcc@gmail.com>
+
+	Backported from mainline.
+	2014-10-30  David Edelsohn  <dje.gcc@gmail.com>
+
+	* configure.host (aix4.3+, 5+): Do not use -G in link command.
+
+2014-10-15  Jason Merrill  <jason@redhat.com>
+
+	* libsupc++/dyncast.cc (__dynamic_cast): Handle mid-destruction
+	dynamic_cast more gracefully.
+
+2014-10-14  Kai Tietz  <ktietz@redhat.com>
+
+	PR libstdc++/57440
+	* config/os/mingw32/os_defines.h (_GTHREAD_USE_MUTEX_INIT_FUNC):
+	Define to avoid leak.
+	* config/os/mingw32-w64/os_defines.h: Likewise.
+
+2014-10-03  Jonathan Wakely  <jwakely@redhat.com>
+
+	PR libstdc++/63449
+	* doc/xml/manual/containers.xml: Remove outdated section. Update
+	std::list notes.
+	* doc/html/*: Regenerate.
+
+2014-10-01  Jonathan Wakely  <jwakely@redhat.com>
+
+	* doc/xml/manual/status_cxx2011.xml: Corrections.
+	* doc/html/manual/status.html: Regenerate.
+
+2014-08-28  Samuel Bronson  <naesten@gmail.com>
+
+	Backport r212453 from trunk
+	2014-07-11  Samuel Bronson  <naesten@gmail.com>
+		    Matthias Klose  <doko@ubuntu.com>
+
+	PR libstdc++/58962
+	* python/libstdcxx/v6/printers.py: Port to Python 2+3
+	(imap): New compat function.
+	(izip): Likewise.
+	(Iterator): New mixin to allow writing iterators in Python 3 style
+	regardless of which version we're running on.
+	[Python3] (long) New compat alias for "int".
+	* testsuite/lib/gdb-test.exp: Port to Python 2+3 (print syntax)
+
+	Backport r210625 from trunk
+	2014-05-19  Jonathan Wakely  <jwakely@redhat.com>
+
+	* python/libstdcxx/v6/printers.py: Use Python3 raise syntax.
+
+2014-08-26  John David Anglin  <danglin@gcc.gnu.org>
+
+	* config/abi/post/hppa-linux-gnu/baseline_symbols.txt: Update.
+
+2014-08-26  Jonathan Wakely  <jwakely@redhat.com>
+
+	* doc/xml/manual/status_cxx2011.xml: Correct status table.
+	* doc/html/manual/*: Regenerate.
+
+2014-08-04  Jonathan Wakely  <jwakely@redhat.com>
+
+	Backported from mainline
+	2014-07-29  Jonathan Wakely  <jwakely@redhat.com>
+
+	PR libstdc++/61946
+	* include/ext/rope (rope::rope(char_producer<_CharT>*, size_t, bool,
+	const allocator_type&)): Pass non-const allocator to
+	_S_new_RopeFunction.
+	* testsuite/ext/rope/61946.cc: New.
+
+2014-08-04  Zifei Tong  <zifeitong@gmail.com>
+
+	* libsupc++/atexit_thread.cc (HAVE___CXA_THREAD_ATEXIT_IMPL): Add
+	_GLIBCXX_ prefix to macro.
+
+2014-06-03  Jonathan Wakely  <jwakely@redhat.com>
+
+	Backport from mainline
+	2014-04-15  Jonathan Wakely  <jwakely@redhat.com>
+
+	PR libstdc++/60734
+	* include/bits/stl_tree.h (_Rb_tree::_M_end): Fix invalid cast.
+
+	Backport from mainline
+	2014-05-16  Jonathan Wakely  <jwakely@redhat.com>
+
+	PR libstdc++/60966
+	* include/std/future (__future_base::_State_baseV2::_M_set_result):
+	Signal condition variable after call_once returns.
+	(__future_base::_State_baseV2::_M_do_set): Do not signal here.
+	(promise::set_value, promise::set_exception): Increment the reference
+	count on the shared state until the function returns.
+	* testsuite/30_threads/promise/60966.cc: New.
+
+2014-05-29  Jonathan Wakely  <jwakely@redhat.com>
+
+	* include/tr2/bool_set: Use UTF-8 for accented characters.
+	* scripts/run_doxygen: Handle Doxygen 1.8.x change.
+
+2014-05-22  Release Manager
+
+	* GCC 4.8.3 released.
+
+2014-05-08  Joshua Gay  <jgay@gnu.org>
+
+	PR libstdc++/61117
+	* doc/xml/faq.xml (faq.license.what_restrictions): Replace "open
+	source" with "free software".
+	* doc/html/faq.html: Likewise.
+
+2014-05-08  Jonathan Wakely  <jwakely@redhat.com>
+
+	* include/std/iostream: Fix URL in comment.
+	* src/c++98/ios_init.cc: Fix path in comment.
+
+2014-05-06  Jonathan Wakely  <jwakely@redhat.com>
+
+	Backport from mainline
+	2014-04-15  Jonathan Wakely  <jwakely@redhat.com>
+
+	PR libstdc++/60594
+	* include/std/functional (function::_Callable): Exclude own type
+	from the callable checks.
+	* testsuite/20_util/function/60594.cc: New.
+
+2014-04-27  Jonathan Wakely  <jwakely@redhat.com>
+
+	PR libstdc++/60497
+	* include/std/tuple (get): Qualify calls to prevent ADL.
+	* testsuite/20_util/tuple/60497.cc: New.
+
+2012-04-05  Dominique d'Humieres  <dominiq@lps.ens.fr>
+	    Jack Howarth <howarth@bromo.med.uc.edu>
+
+	PR target/54407
+	* 30_threads/condition_variable/54185.cc: Skip for darwin < 11.
+
+2014-04-04  Bill Schmidt  <wschmidt@linux.vnet.ibm.com>
+
+	Backport from mainline
+	2013-11-15  Ulrich Weigand  <Ulrich.Weigand@de.ibm.com>
+
+	* configure: Regenerate.
+
+2014-04-04  Bill Schmidt  <wschmidt@linux.vnet.ibm.com>
+
+	Backport from mainline r204808:
+
+	2013-11-14  Ulrich Weigand  <Ulrich.Weigand@de.ibm.com>
+
+	* scripts/extract_symvers.in: Ignore <localentry: > fields
+	in readelf --symbols output.
+
+2014-03-26  Jonathan Wakely  <jwakely@redhat.com>
+
+	PR libstdc++/59548
+	* include/debug/safe_unordered_base.h (_Safe_unordered_container_base):
+	Define copy and move constructors that handle iterators correctly.
+	* testsuite/23_containers/unordered_map/59548.cc: New.
+
+2014-03-25  Jonathan Wakely  <jwakely@redhat.com>
+
+	PR libstdc++/60658
+	* include/bits/atomic_base.h (__atomic_base<_PTp*>::is_lock_free()):
+	Use sizeof pointer type not the element type.
+	* testsuite/29_atomics/atomic/60658.cc: New.
+
+2014-03-18  Jonathan Wakely  <jwakely@redhat.com>
+
+	PR libstdc++/60564
+	* include/std/future (__future_base::_Task_state<>): Change
+	constructors to template functions using perfect forwarding.
+	(__create_task_state): Use decayed type as stored task.
+	(packaged_task::packaged_task(_Fn&&)): Forward instead of moving.
+	* testsuite/30_threads/packaged_task/60564.cc: New.
+
+2014-03-12  Roland McGrath  <mcgrathr@google.com>
+	    Mark Seaborn  <mseaborn@google.com>
+
+	PR libstdc++/59392
+	* libsupc++/eh_call.cc (__cxa_call_unexpected): Call __do_catch with
+	the address of a null pointer, not with a null pointer to pointer.
+	Copy comment for this case from eh_personality.cc:__cxa_call_unexpected.
+	* testsuite/18_support/bad_exception/59392.cc: New file.
+
+2014-03-11  Jonathan Wakely  <jwakely@redhat.com>
+
+	Backport from mainline.
+	2014-01-09  Jonathan Wakely  <jwakely@redhat.com>
+
+	PR libstdc++/59680
+	* src/c++11/thread.cc (__sleep_for): Fix call to ::sleep.
+
+2014-03-11  Jonathan Wakely  <jwakely@redhat.com>
+
+	Backport from mainline.
+	2014-01-27  Jonathan Wakely  <jwakely@redhat.com>
+
+	PR libstdc++/59215
+	* include/bits/shared_ptr_base.h
+	(_Sp_counted_base<_S_atomic>::_M_add_ref_lock()): Use relaxed atomic
+	load.
+
+2014-03-11  Jonathan Wakely  <jwakely@redhat.com>
+
+	Backport from mainline.
+
+	2014-01-09  Jonathan Wakely  <jwakely@redhat.com>
+
+	PR libstdc++/59738
+	* include/bits/stl_vector.h (vector<>::_M_move_assign): Restore
+	support for non-Movable types.
+
+	2014-01-08  François Dumont  <fdumont@gcc.gnu.org>
+
+	* include/bits/stl_vector.h (std::vector<>::_M_move_assign): Pass
+	*this allocator instance when building temporary vector instance
+	so that *this allocator does not get moved.
+	* testsuite/23_containers/vector/allocator/move.cc (test01): Add
+	check on a vector iterator.
+	* testsuite/23_containers/vector/allocator/move_assign.cc
+	(test02): Likewise.
+	(test03): New, test with a non-propagating allocator.
+
+	2013-11-15  Jonathan Wakely  <jwakely.gcc@gmail.com>
+
+	* testsuite/23_containers/vector/allocator/move.cc: New
+
+2014-01-27  Jason Merrill  <jason@redhat.com>
+
+	Core DR 475
+	PR c++/41174
+	PR c++/59224
+	* libsupc++/eh_throw.cc (__cxa_throw): Set uncaughtExceptions.
+	* libsupc++/eh_alloc.cc (__cxa_allocate_dependent_exception)
+	(__cxa_allocate_exception): Don't set it here.
+
+2013-12-15  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* config/abi/post/x86_64-linux-gnu/x32/baseline_symbols.txt: Update.
+
+2013-11-22  Jonathan Wakely  <jwakely.gcc@gmail.com>
+
+	* acinclude.m4 (libtool_VERSION): Bump.
+	* configure: Regenerate.
+	* doc/xml/manual/abi.xml: Update version information.
+
+2013-11-05  Jonathan Wakely  <jwakely.gcc@gmail.com>
+
+	* doc/xml/manual/status_cxx2011.xml: Document aligned_union as
+	missing.
+
+	* doc/xml/manual/spine.xml: Update copyright years.
+	* doc/html/*: Regenerate.
+
+2013-11-01  Paolo Carlini  <paolo.carlini@oracle.com>
+
+	PR libstdc++/58952
+	* include/c_global/cstdio: Undef getchar.
+
+2013-10-31  Jonathan Wakely  <jwakely.gcc@gmail.com>
+
+	* testsuite/20_util/shared_ptr/cons/58839.cc: Do not use
+	default_delete<void>.
+
+2013-10-30  Chris Studholme  <cvs@cs.utoronto.ca>
+
+	PR libstdc++/58912
+	* include/bits/shared_ptr_base.h (_Sp_counted_ptr_inplace): Remove
+	unnecessary initialization of storage buffer.
+
+2013-10-29  Jonathan Wakely  <jwakely.gcc@gmail.com>
+
+	PR libstdc++/58839
+	* include/bits/shared_ptr_base.h
+	(__shared_ptr<T>::__shared_ptr(unique_ptr<U,D>&&)): Do not dereference
+	pointer.
+	* testsuite/20_util/shared_ptr/cons/58839.cc: New.
+
+2013-10-20  Chris Jefferson  <chris@bubblescope.net>
+	    Paolo Carlini  <paolo.carlini@oracle.com>
+
+	PR libstdc++/58800
+	* include/bits/stl_algo.h (__unguarded_partition_pivot): Change
+	__last - 2 to __last - 1.
+	* testsuite/25_algorithms/nth_element/58800.cc: New
+
+2013-10-16  François Dumont  <fdumont@gcc.gnu.org>
+
+	PR libstdc++/58191
+	* include/debug/macros.h (__glibcxx_check_partitioned_lower): Add
+	__gnu_debug::__base calls on iterators passed to internal debug
+	check.
+	(__glibcxx_check_partitioned_lower_pred): Likewise.
+	(__glibcxx_check_partitioned_upper): Likewise.
+	(__glibcxx_check_partitioned_upper_pred): Likewise.
+	* include/debug/functions.h (__check_partitioned_lower):
+	Remove code to detect safe iterators.
+	(__check_partitioned_upper): Likewise.
+
 2013-10-16  Release Manager
 
 	* GCC 4.8.2 released.

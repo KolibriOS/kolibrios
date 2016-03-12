@@ -85,11 +85,11 @@ extern char **dupargv (char **) ATTRIBUTE_MALLOC;
 
 /* Expand "@file" arguments in argv.  */
 
-extern void expandargv PARAMS ((int *, char ***));
+extern void expandargv (int *, char ***);
 
 /* Write argv to an @-file, inserting necessary quoting.  */
 
-extern int writeargv PARAMS ((char **, FILE *));
+extern int writeargv (char **, FILE *);
 
 /* Return the number of elements in argv.  */
 

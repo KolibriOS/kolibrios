@@ -351,12 +351,14 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       void
       _M_set_result(function<_Ptr_type()> __res, bool __ignore_failure = false)
       {
-        bool __set = __ignore_failure;
+        bool __set = false;
         // all calls to this function are serialized,
         // side-effects of invoking __res only happen once
         call_once(_M_once, &_State_base::_M_do_set, this, ref(__res),
             ref(__set));
-        if (!__set)
+	if (__set)
+	  _M_cond.notify_all();
+	else if (!__ignore_failure)
           __throw_future_error(int(future_errc::promise_already_satisfied));
       }
 
@@ -471,7 +473,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
           lock_guard<mutex> __lock(_M_mutex);
           _M_result.swap(__res);
         }
-        _M_cond.notify_all();
         __set = true;
       }
 
@@ -983,22 +984,25 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       void
       set_value(const _Res& __r)
       {
+	auto __future = _M_future;
         auto __setter = _State::__setter(this, __r);
-        _M_future->_M_set_result(std::move(__setter));
+        __future->_M_set_result(std::move(__setter));
       }
 
       void
       set_value(_Res&& __r)
       {
+	auto __future = _M_future;
         auto __setter = _State::__setter(this, std::move(__r));
-        _M_future->_M_set_result(std::move(__setter));
+        __future->_M_set_result(std::move(__setter));
       }
 
       void
       set_exception(exception_ptr __p)
       {
+	auto __future = _M_future;
         auto __setter = _State::__setter(__p, this);
-        _M_future->_M_set_result(std::move(__setter));
+        __future->_M_set_result(std::move(__setter));
       }
     };
 
@@ -1081,15 +1085,17 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       void
       set_value(_Res& __r)
       {
+	auto __future = _M_future;
         auto __setter = _State::__setter(this, __r);
-        _M_future->_M_set_result(std::move(__setter));
+        __future->_M_set_result(std::move(__setter));
       }
 
       void
       set_exception(exception_ptr __p)
       {
+	auto __future = _M_future;
         auto __setter = _State::__setter(__p, this);
-        _M_future->_M_set_result(std::move(__setter));
+        __future->_M_set_result(std::move(__setter));
       }
     };
 
@@ -1166,8 +1172,9 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       void
       set_exception(exception_ptr __p)
       {
+	auto __future = _M_future;
         auto __setter = _State::__setter(__p, this);
-        _M_future->_M_set_result(std::move(__setter));
+        __future->_M_set_result(std::move(__setter));
       }
     };
 
@@ -1193,8 +1200,9 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   inline void
   promise<void>::set_value()
   {
+    auto __future = _M_future;
     auto __setter = _State::__setter(this);
-    _M_future->_M_set_result(std::move(__setter));
+    __future->_M_set_result(std::move(__setter));
   }
 
 
@@ -1261,9 +1269,11 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     struct __future_base::_Task_state<_Fn, _Alloc, _Res(_Args...)> final
     : __future_base::_Task_state_base<_Res(_Args...)>
     {
-      _Task_state(_Fn&& __fn, const _Alloc& __a)
-      : _Task_state_base<_Res(_Args...)>(__a), _M_impl(std::move(__fn), __a)
-      { }
+      template<typename _Fn2>
+	_Task_state(_Fn2&& __fn, const _Alloc& __a)
+	: _Task_state_base<_Res(_Args...)>(__a),
+	  _M_impl(std::forward<_Fn2>(__fn), __a)
+	{ }
 
     private:
       virtual void
@@ -1292,19 +1302,21 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
       struct _Impl : _Alloc
       {
-	_Impl(_Fn&& __fn, const _Alloc& __a)
-	  : _Alloc(__a), _M_fn(std::move(__fn)) { }
+	template<typename _Fn2>
+	  _Impl(_Fn2&& __fn, const _Alloc& __a)
+	  : _Alloc(__a), _M_fn(std::forward<_Fn2>(__fn)) { }
 	_Fn _M_fn;
       } _M_impl;
     };
 
-    template<typename _Signature, typename _Fn, typename _Alloc>
-      static shared_ptr<__future_base::_Task_state_base<_Signature>>
-      __create_task_state(_Fn&& __fn, const _Alloc& __a)
-      {
-	typedef __future_base::_Task_state<_Fn, _Alloc, _Signature> _State;
-	return std::allocate_shared<_State>(__a, std::move(__fn), __a);
-      }
+  template<typename _Signature, typename _Fn, typename _Alloc>
+    static shared_ptr<__future_base::_Task_state_base<_Signature>>
+    __create_task_state(_Fn&& __fn, const _Alloc& __a)
+    {
+      typedef typename decay<_Fn>::type _Fn2;
+      typedef __future_base::_Task_state<_Fn2, _Alloc, _Signature> _State;
+      return std::allocate_shared<_State>(__a, std::forward<_Fn>(__fn), __a);
+    }
 
   template<typename _Fn, typename _Alloc, typename _Res, typename... _Args>
     shared_ptr<__future_base::_Task_state_base<_Res(_Args...)>>
@@ -1344,7 +1356,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	       __constrain_pkgdtask<packaged_task, _Fn>::__type>
 	explicit
 	packaged_task(_Fn&& __fn)
-	: packaged_task(allocator_arg, std::allocator<int>(), std::move(__fn))
+	: packaged_task(allocator_arg, std::allocator<int>(),
+			std::forward<_Fn>(__fn))
 	{ }
 
       // _GLIBCXX_RESOLVE_LIB_DEFECTS
@@ -1404,7 +1417,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       operator()(_ArgTypes... __args)
       {
 	__future_base::_State_base::_S_check(_M_state);
-	_M_state->_M_run(std::forward<_ArgTypes>(__args)...);
+	auto __state = _M_state;
+	__state->_M_run(std::forward<_ArgTypes>(__args)...);
       }
 
       void

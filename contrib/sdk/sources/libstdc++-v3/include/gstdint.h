@@ -1,4 +1,4 @@
-/* generated for  xgcc.exe (GCC) 4.8.2 */
+/* generated for  xgcc.exe (GCC) 4.8.5 */
 
 #ifndef GCC_GENERATED_STDINT_H
 #define GCC_GENERATED_STDINT_H 1
