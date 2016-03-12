@@ -44,7 +44,6 @@ include '../../../libio.inc'
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
 COLOR_ORDER equ MENUETOS
-include	'gif_lite.inc'
 include	'bmplib.inc'
 include	'dialog2.inc'
 include	'design.inc'
@@ -55,7 +54,7 @@ include	'cursors.inc'
 include	'load_from_parameters.inc'
 
 START:
-	mcall	68,11
+	mcall SF_SYS_MISC,SSF_HEAP_INIT
 	
 load_libraries l_libs_start,end_l_libs
 
@@ -64,7 +63,7 @@ load_libraries l_libs_start,end_l_libs
 ;--------------------------------------------------------
 ;---------------set events mask--------------------------
 ;--------------------------------------------------------
-	mcall	40,0x80000067 ; 1100111b
+	mcall SF_SET_EVENTS_MASK,0x80000067 ; 1100111b
 ;---------------------------------------------------------
 ;-----------------------init data-------------------------
 ;---------------------------------------------------------
@@ -77,7 +76,7 @@ include	'init_data.inc'
 	call	cleare_work_arrea
 	call	load_icons
 
-;load	cursors
+;load cursors
 	mov	eax,CursorsID
 	call	load_cursors
 
@@ -177,7 +176,7 @@ include	'width_lines.inc'
 ;----------------------------------------------------------
 	dd	0
 panel_picture:
-file 'panel_buttons.gif'
+file 'panel_buttons.png'
 .end:
 ;****************cursors******************
 brush_cursor:
