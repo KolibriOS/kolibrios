@@ -1,6 +1,10 @@
 ;*******************************************************
 ;**************GRAPHICS EDITOR ANIMAGE *****************
 ;*******************************************************
+; version: 1.4
+; last update:  12/03/2016
+; changes:      Use library 'libimg.obj'
+;--------------------------------------------------------
 ; version:	1.3
 ; last update:  05/10/2010
 ; written by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -20,25 +24,28 @@
 
 use32
 org	0x0
-
 	db 'MENUET01'
 	dd 0x1
 	dd START
 	dd IM_END
-	dd I_END	;0x19000;100	kb
-	dd stacktop	;0x19000;
+	dd I_END
+	dd stacktop
 	dd file_path	;parameters
 	dd cur_dir_path
 
-
 include '../../../config.inc'		;for nightbuild
-include	'..\..\..\macros.inc'
+include	'../../../macros.inc'
+include '../../../proc32.inc'
+include '../../../KOSfuncs.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
-	@use_library
+include '../../../dll.inc'
+include '../../../libio.inc'
+
+@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+
 COLOR_ORDER equ MENUETOS
 include	'gif_lite.inc'
 include	'bmplib.inc'
-;include	'dialog.inc'
 include	'dialog2.inc'
 include	'design.inc'
 include	'graphlib.inc'
@@ -78,13 +85,13 @@ include	'init_data.inc'
 ;---------------------------------------------------------
 ;---------Check loading of file from parameters-----------
 ;---------------------------------------------------------
-;	mov	eax,parameters
-;	mov	ebx,file_path
-;	call	check_loading_from_parameters
 	mov	eax,file_path
 	cmp [eax],byte 0
 	jz @f
 	call load_picture
+	call MovePictureToWorkScreen
+	mov [Scroll1CoordinatX],9
+	mov [Scroll2CoordinatY],89
 @@:
 
 ;---------------------------------------------------------------------
@@ -171,6 +178,7 @@ include	'width_lines.inc'
 	dd	0
 panel_picture:
 file 'panel_buttons.gif'
+.end:
 ;****************cursors******************
 brush_cursor:
 file 'brush.cur'
@@ -314,28 +322,12 @@ align 4
 CursorsID	rd 10
 ;---------------------------------------------------------------------
 align 4
-file_path:
-	rb 4096
-;---------------------------------------------------------------------
-align 4
-filename_area:
-	rb 256
-;---------------------------------------------------------------------
-align 4
-temp_dir_pach:
-	rb 4096
-;---------------------------------------------------------------------
-align 4
-library_path:
-	rb 4096
-;---------------------------------------------------------------------
-align 4
-cur_dir_path:
-	rb 4096
-;---------------------------------------------------------------------
-align 4
-procinfo:
-	rb 1024
+file_path rb 4096
+filename_area rb 256
+temp_dir_pach rb 4096
+library_path rb 4096
+cur_dir_path rb 4096
+procinfo: rb 1024
 ;---------------------------------------------------------------------
 align 4
 	rb 4096

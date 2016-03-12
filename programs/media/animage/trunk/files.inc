@@ -116,15 +116,7 @@ save_file:
 ;-------------file information structure-------------------
 ;----------------------------------------------------------
 
-file_information:
- 
-  dd 5
-  dd 0
-  dd 0
-  dd 0
-  dd bufer_for_info
-  dd 0
-  dd filepath
+file_information FileInfoBlock 5,0,0,0,bufer_for_info,0,filepath
 
 filepath rb 1040 
 

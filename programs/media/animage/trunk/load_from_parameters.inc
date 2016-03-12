@@ -1,88 +1,54 @@
 ; load picture from file to memory
+align 4
+open_b rb 560
 
 load_picture:
-	mov	eax,file_path
-	mov	ebx,[ScreenPointer]
-	add	ebx,0x10000
+    mov [file_information.Function], SSF_GET_INFO
+    mov [file_information.Position], 0
+    mov [file_information.Flags], 0
+    mov dword[file_information.Count], 0
+    mov dword[file_information.Buffer], open_b
+    mov byte[file_information+20], 0
+    mov dword[file_information.FileName], file_path
+    mcall SF_FILE,file_information
+	or eax,eax
+	jnz .end_open
 
-	call	load_heading_of_file
-
-	mov	esi,[ScreenPointer]
-	add	esi,0x10000
-;-------------is this BMP file ?----------------
-	xor	eax,eax
-	mov	ax,[esi]
-	mov	[type],ax
-
-	cmp	[type],word 'BM'
-	jne	no_bmp_file_1
-
-	xor	eax,eax
-	xor	ebx,ebx
-	mov	eax,[esi+18]
-	mov	ebx,[esi+22]
-	mov	[Picture_SizeX],eax
-	mov	[Picture_SizeY],ebx
-	jmp	exit_type_1
-
-no_bmp_file_1:
-;-------------is this GIF file ?----------------
-	xor	eax,eax
-	mov	ax,[esi]
-	mov	[type],ax
-	cmp	[type],'GI'
-	jne	no_gif_file_1
-
-	add	esi,6
-	xor	eax,eax
-	xor	ebx,ebx
-	mov	ax,word[esi]
-	mov	bx,word[esi+2]
-	mov	[Picture_SizeX],eax
-	mov	[Picture_SizeY],ebx
-	jmp	exit_type_1
-
-no_gif_file_1:
-	jmp	no_unpakcing_file_1
-
-exit_type_1:
-;----------------------------------------------------------
-;Get momory for unpacking picture and for picture's bufers
-;----------------------------------------------------------
-	call GetMemory
-;----------------------------------------------------------
-;--------------------Load file in memory-------------------
-;----------------------------------------------------------
-
-	mov	eax,file_path
-	mov	ebx,[PointerToCopyPicture]
-	add	ebx,1000
-	call	load_file
-
-;----------------------------------------------------------
-;-------------------Unpacking picture----------------------
-;----------------------------------------------------------
-	mov	esi,[PointerToCopyPicture]
-	add	esi,1000
-	mov	edi,[PointerToPicture]
-	mov	eax,[ScreenPointer]
-	cmp	[type],'BM'
-	jne	no_unpakcing_bmp_file_1
-;BMP DECODER
-	call	bmptoimg
-	mov	[save_flag],1
-	jmp	no_unpakcing_file_1
-
-no_unpakcing_bmp_file_1:
-	cmp	[type],'GI'
-	jne	no_unpakcing_file_1
-;GIF DECODER
-	sub	edi,8
-	call	ReadGIF
-	mov	[save_flag],1
-
-no_unpakcing_file_1:
-	call	MovePictureToWorkScreen
-	mov	[Scroll1CoordinatX],9
-	mov	[Scroll2CoordinatY],89
+    mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
+	add ecx,(1200*1000)*3+50*(20*20*3)+500000+16000+0x4000
+	mcall SF_SYS_MISC,SSF_MEM_REALLOC,,[ScreenPointer]
+	mov [ScreenPointer],eax
+	add eax,0x10000
+	sub ecx,(1200*1000)*3+50*(20*20*3)+500000+16000+0x4000
+	mov [file_information.Function], SSF_READ_FILE
+	mov [file_information.Position], 0
+	mov [file_information.Flags], 0
+	mov [file_information.Count], ecx
+	mov [file_information.Buffer], eax
+	mov byte[file_information+20], 0
+	mov [file_information.FileName], file_path
+	mcall SF_FILE,file_information ;загружаем файл изображения
+	cmp ebx,0xffffffff
+	je .end_open
+		;определяем вид изображения и пишем его параметры
+		mov eax,[ScreenPointer]
+		add eax,0x10000
+		stdcall [img_decode], eax,ebx,0
+		push eax
+		;определяем размер декодированного изображения
+		mov ecx,[eax+4] ;+4 = image width
+		mov dword[Picture_SizeX],ecx
+		mov eax,[eax+8] ;+8 = image height
+		mov dword[Picture_SizeY],eax
+		imul ecx,eax
+		imul ecx,15
+		add ecx,(1200*1000)*3+50*(20*20*3)+500000+16000+0x4000
+		mcall SF_SYS_MISC,SSF_MEM_REALLOC,,[ScreenPointer]
+		mov [ScreenPointer],eax
+		call prepare_data_pointers
+		pop ebx
+		stdcall [img_to_rgb2], ebx,[PointerToPicture] ;преобразуем изображение к формату rgb
+		stdcall [img_destroy], ebx ;удаляем временный буфер с параметрами изображения
+		mov [save_flag],1
+	.end_open:
 	ret

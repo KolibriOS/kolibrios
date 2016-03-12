@@ -2,13 +2,13 @@
 ;---load icons  in memory and draw icons on panel-----------
 ;-----------------------------------------------------------
 load_icons:
-	 mov esi,panel_picture
-	 mov edi,[ScreenPointer]
-	 add edi,(1200*1000*3)
-	 ;mov edi,[PointerToIcons]
-	 call ReadGIF
-
-	 ret
+	stdcall [img_decode], panel_picture, panel_picture.end-panel_picture, 0
+	mov ebx,eax
+	mov edi,[ScreenPointer]
+	add edi,(1200*1000*3)+8
+	stdcall [img_to_rgb2], ebx,edi ;преобразуем изображение к формату rgb
+	stdcall [img_destroy], ebx ;удаляем временный буфер с параметрами изображения
+	ret
 
 draw_icons:
 

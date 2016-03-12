@@ -164,99 +164,14 @@ no_new:
 	cmp	[OpenDialog_data.status],1
 	jne	still
 ;---------------------------------------------------------------------
-open_1:
+;open_1:
 	mcall	40,0x80000027 ; 100111b
 
-	mov	eax,file_path
-	mov	ebx,[ScreenPointer]
-	add	ebx,0x10000
+	call load_picture
 
-	call	load_heading_of_file
-
-	mov	esi,[ScreenPointer]
-	add	esi,0x10000
-;-------------is this BMP file ?----------------
-	xor	eax,eax
-	mov	ax,[esi]
-	mov	[type],ax
-
-	cmp	[type],word 'BM'
-	jne	no_bmp_file
-
-	xor	eax,eax
-	xor	ebx,ebx
-	mov	eax,[esi+18]
-	mov	ebx,[esi+22]
-	mov	[Picture_SizeX],eax
-	mov	[Picture_SizeY],ebx
-	jmp	exit_type
-;---------------------------------------------------------------------
-no_bmp_file:
-;-------------is this GIF file ?----------------
-	xor	eax,eax
-	mov	ax,[esi]
-	mov	[type],ax
-
-	cmp	[type],'GI'
-	jne	no_gif_file
-
-	add	esi,6
-	xor	eax,eax
-	xor	ebx,ebx
-	mov	ax,word[esi]
-	mov	bx,word[esi+2]
-	mov	[Picture_SizeX],eax
-	mov	[Picture_SizeY],ebx
-	jmp	exit_type
-;---------------------------------------------------------------------
-no_gif_file:
-	jmp	no_unpakcing_file
-;---------------------------------------------------------------------
-exit_type:
-;----------------------------------------------------------
-;Get momory for unpacking picture and for picture's bufers
-;----------------------------------------------------------
-	call	GetMemory
-;----------------------------------------------------------
-;--------------------Load file in memory-------------------
-;----------------------------------------------------------
-	mov	eax,file_path
-	mov	ebx,[PointerToCopyPicture]
-	add	ebx,1000
-	call	load_file
-;----------------------------------------------------------
-;-------------------Unpacking picture----------------------
-;----------------------------------------------------------
-	mov	esi,[PointerToCopyPicture]
-	add	esi,1000
-	mov	edi,[PointerToPicture]
-	mov	eax,[ScreenPointer]
-
-	cmp	[type],'BM'
-	jne	no_unpakcing_bmp_file
-	;BMP DECODER
-
-	call	bmptoimg
-
-	mov	[save_flag],1
-	jmp	draw_1
-;---------------------------------------------------------------------
-no_unpakcing_bmp_file:
-	cmp	[type],'GI'
-	jne	no_unpakcing_file
-	;GIF DECODER
-	sub	edi,8
-
-	call	ReadGIF
-
-	mov	[save_flag],1
-	jmp	draw_1
-;---------------------------------------------------------------------
-no_unpakcing_file:
 	call	load_icons
-draw_1:	
 	call	drawwin
-open_2:
+
 	mov	[Scroll1CoordinatX],9
 	mov	[Scroll2CoordinatY],89
 	and	[number_panel],0
