@@ -974,7 +974,6 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
         mov     esi, 250            ; wait 1/4 a second
         call    delay_ms
         rdtsc
-        sti
 
         sub     eax, ecx
         xor     edx, edx

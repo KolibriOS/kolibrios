@@ -134,6 +134,15 @@ file_system_lfn:
         mov     esi, [esi]
         lodsb
 @@:
+        lea     ebp, [esi-1]
+        cmp     dword [ebx], 7
+        jne     @F
+        mov     edx, [ebx+4]
+        mov     ebx, [ebx+8]
+        call    fs_execute; ebp, ebx, edx
+        mov     [image_of_eax], eax
+        ret
+@@:
         cmp     al, '/'
         jz      .notcurdir
         dec     esi
@@ -150,14 +159,6 @@ file_system_lfn:
         jz      .rootdir
         call    process_replace_file_name
 .parse_normal:
-        cmp     dword [ebx], 7
-        jne     @F
-        mov     edx, [ebx+4]
-        mov     ebx, [ebx+8]
-        call    fs_execute; esi+ebp, ebx, edx
-        mov     [image_of_eax], eax
-        ret
-@@:
         mov     edi, rootdirs-8
         xor     ecx, ecx
         push    esi

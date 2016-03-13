@@ -158,8 +158,8 @@ sz_EXPORTS     db '_EXPORTS',0
 szIMPORTS      db 'IMPORTS',0
 
 read_firstapp  db '/sys/'
-firstapp       db  'LAUNCHER',0
-notifyapp      db '@notify',0
+firstapp       db '/RD/1/LAUNCHER',0
+notifyapp      db '/RD/1/@notify',0
 if lang eq ru
 ud_user_message  cp866 'Ошибка: неподдерживаемая инструкция процессора',0
 mtrr_user_message cp866 '"Обнаружена проблема с конфигурацией MTRR.\nПроизводительность может быть пониженной" -dW',0

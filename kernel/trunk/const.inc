@@ -428,6 +428,8 @@ struct  PROC
         ht_free         rd 1            ;htab[0] stdin
         ht_next         rd 1            ;htab[1] stdout
         htab            rd (4096-$)/4   ;htab[2] stderr
+;       htab            rd (4096+3072-$)/4   ;htab[2] stderr
+;       workdir         rb 1024
         pdt_0           rd 1024
 ends
 

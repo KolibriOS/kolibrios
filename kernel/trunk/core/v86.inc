@@ -37,7 +37,7 @@ v86_create:
 ; allocate tables
         mov     ebx, eax
 
-        stdcall create_process, 4096, eax, 4096       ;FIXME
+        stdcall create_process, 4096
         test    eax, eax
         jz      .fail2
 
@@ -50,7 +50,6 @@ v86_create:
         jz      .fail2
 
         mov     [ebx+V86_machine.iopm], eax
-
 
 ; initialize tables
         push    edi
@@ -65,7 +64,6 @@ v86_create:
         pushfd
         cli
         mov     cr3, eax
-
 
 ; now V86 specific: initialize known addresses in first Mb
 
@@ -109,10 +107,8 @@ v86_create:
         add     eax, edx
         loop    @b
 
-        mov     eax, sys_proc
-        push    ebx
-        call    set_cr3
-        pop     ebx
+        mov     eax, [sys_proc+PROC.pdt_0_phys]
+        mov     cr3, eax
         popfd
 
         pop     edi
