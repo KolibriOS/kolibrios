@@ -870,23 +870,35 @@ common_app_entry:
 .copy_full_path:
         mov     esi, [current_slot]
         mov     esi, [esi+APPDATA.cur_dir]
+        mov     ebx, 1023
         mov     al, '/'
         stosb
-@@:
+
+.copy_path:
+        dec     ebx
+        jz      .finish_path
         lodsb
         stosb
         test    al, al
-        jnz     @B
+        jnz     .copy_path
         mov     byte [edi-1], '/'
 
+        cmp     ecx, ebx
+        jbe     @F
+        mov     ecx, ebx
+@@:
         lea     esi, [ebp+sizeof.APP_HDR]
         xor     eax, eax
         rep movsb
         stosb
         jmp     .check_cmdline
 
-.copy_filename:
+.finish_path:
+        xor     eax, eax
+        stosb
+        jmp     .check_cmdline
 
+.copy_filename:
         cmp     byte [esi], '/'
         jne     .copy_full_path
 

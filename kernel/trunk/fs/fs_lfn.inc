@@ -135,6 +135,19 @@ file_system_lfn:
         lodsb
 @@:
         lea     ebp, [esi-1]
+if 0
+        cmp     [ebx], dword 0
+        jne     @F
+        DEBUGF 1,'read file %s\n',ebp
+        jmp     .1
+@@:
+        cmp     [ebx], dword 5
+        jne     @F
+        DEBUGF 1,'get file attributes %s\n',ebp
+@@:
+.1:
+end if
+
         cmp     dword [ebx], 7
         jne     @F
         mov     edx, [ebx+4]
@@ -734,7 +747,7 @@ process_replace_file_name:
 uglobal
 lock_flag_for_f30_3 rb 1
 endg
-        
+
 sys_current_directory:
 ;       mov     esi, [current_slot]
 ;       mov     esi, [esi+APPDATA.cur_dir]
@@ -759,7 +772,7 @@ sys_current_directory:
 ; check lock of the function
         cmp     [lock_flag_for_f30_3], 1
         je      @f
-        
+
         mov     esi, ecx
         mov     edi, sysdir_name1
 ; copying fake directory name
@@ -778,7 +791,7 @@ sys_current_directory:
 ; terminator of name, in case if we get the inlet trash
         xor     eax, eax
         stosb
-; increase the pointer of inputs for procedure "process_replace_file_name"        
+; increase the pointer of inputs for procedure "process_replace_file_name"
         mov     [full_file_name_table.size], 2
 ; block the ability to call f.30.3 because for one session is necessary
 ; for us only once
@@ -786,7 +799,7 @@ sys_current_directory:
         popfd
 @@:
         ret
-        
+
 .get:
 ; sysfunction 30.2: [for app] eax=30,ebx=2,ecx->buffer,edx=len
 ; for our code: ebx->buffer,ecx=len
