@@ -59,7 +59,7 @@
 #ifndef _LINUX_SFI_H
 #define _LINUX_SFI_H
 
-//#include <linux/init.h>
+#include <linux/init.h>
 #include <linux/types.h>
 
 /* Table signatures reserved by the SFI specification */

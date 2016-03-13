@@ -12,7 +12,6 @@
 #ifndef __IDR_H__
 #define __IDR_H__
 
-#include <syscall.h>
 #include <linux/types.h>
 #include <linux/bitops.h>
 #include <linux/init.h>

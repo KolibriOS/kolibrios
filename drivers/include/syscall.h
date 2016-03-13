@@ -486,7 +486,7 @@ static inline void sysSetScreen(int width, int height, int pitch)
     ("" :::"eax","ecx","edx");
 }
 
-int drm_order(unsigned long size);
+void  FASTCALL sysSetFramebuffer(void *fb)__asm__("SetFramebuffer");
 
 static inline void __iomem *ioremap(u32 offset, size_t size)
 {

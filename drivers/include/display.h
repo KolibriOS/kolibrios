@@ -40,6 +40,11 @@ struct kos_framebuffer
     uint32_t    pde[8];
 };
 
+int fake_framebuffer_create();
+void set_fake_framebuffer();
+int kolibri_framebuffer_init(void *param);
+void kolibri_framebuffer_update(struct drm_device *dev, struct kos_framebuffer *kfb);
+
 struct tag_display
 {
     u32   x;

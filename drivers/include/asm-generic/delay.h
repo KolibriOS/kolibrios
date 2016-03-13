@@ -19,9 +19,6 @@ extern void __delay(unsigned long loops);
 #define udelay(n)							\
 	({								\
 		if (__builtin_constant_p(n)) {				\
-			if ((n) / 20000 >= 1)				\
-				 __bad_udelay();			\
-			else						\
 				__const_udelay((n) * 0x10c7ul);		\
 		} else {						\
 			__udelay(n);					\

@@ -37,6 +37,10 @@ static inline void cond_synchronize_rcu(unsigned long oldstate)
 	might_sleep();
 }
 
+static inline unsigned long get_state_synchronize_sched(void)
+{
+	return 0;
+}
 static inline void rcu_barrier_bh(void)
 {
 	wait_rcu_gp(call_rcu_bh);

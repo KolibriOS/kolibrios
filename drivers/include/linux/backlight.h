@@ -7,6 +7,10 @@
 
 #ifndef _LINUX_BACKLIGHT_H
 #define _LINUX_BACKLIGHT_H
+
+#include <linux/device.h>
+#include <linux/fb.h>
+#include <linux/mutex.h>
 /* Notes on locking:
  *
  * backlight_device->ops_lock is an internal backlight lock protecting the

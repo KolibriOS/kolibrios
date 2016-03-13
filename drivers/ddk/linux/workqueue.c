@@ -195,7 +195,7 @@ int mod_timer(struct timer_list *timer, unsigned long expires)
         ret = 1;
     };
 
-    timer->handle = TimerHS(expires, 0, timer->function, timer->data);
+    timer->handle = TimerHS(expires, 0, timer->function, (void*)timer->data);
 
     return ret;
 }

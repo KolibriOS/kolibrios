@@ -318,6 +318,11 @@ struct drm_file {
 	unsigned universal_planes:1;
 	/* true if client understands atomic properties */
 	unsigned atomic:1;
+	/*
+	 * This client is allowed to gain master privileges for @master.
+	 * Protected by struct drm_device::master_mutex.
+	 */
+	unsigned allowed_master:1;
 	struct list_head lhead;
 	struct drm_minor *minor;
 	unsigned long lock_count;

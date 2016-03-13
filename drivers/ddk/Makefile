@@ -44,6 +44,7 @@ NAME_SRCS:=  				\
 		linux/idr.c		\
 		linux/interval_tree.c	\
 		linux/kasprintf.c	\
+		linux/kmap.c		\
 		linux/list_sort.c	\
 		linux/mutex.c		\
 		linux/rbtree.c		\
