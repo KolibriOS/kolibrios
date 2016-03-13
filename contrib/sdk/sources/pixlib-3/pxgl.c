@@ -362,7 +362,7 @@ static GLuint create_rgba_shader(struct shader *shader)
         "   tex_coord   = v_texcoord0.xy;\n"
         "}\n";
 
-    const char *fs_rgba =
+    const char *fs_i965 =
         "uniform sampler2D tex_rgba;\n"
         "uniform sampler2D tex_mask;\n"
         "varying vec2 tex_coord;\n"
@@ -372,8 +372,20 @@ static GLuint create_rgba_shader(struct shader *shader)
         "   gl_FragColor = vec4(texture2D(tex_rgba, tex_coord).rgb, ca);\n"
         "}\n";
 
+    const char *fs_i915 =
+        "uniform sampler2D tex_rgba;\n"
+        "uniform sampler2D tex_mask;\n"
+        "varying vec2 tex_coord;\n"
+        "void main()\n"
+        "{\n"
+        "   float ca = texture2D(tex_mask, tex_coord).a;\n"
+        "   gl_FragColor = vec4(texture2D(tex_rgba, tex_coord).rgb, ca);\n"
+        "}\n";
+
     GLuint prog;
     GLint  vs_shader, fs_shader;
+    const char *fs_src;
+    char *drv_name;
     int ret;
 
     prog = glCreateProgram();
@@ -384,7 +396,16 @@ static GLuint create_rgba_shader(struct shader *shader)
     if(vs_shader == 0)
         goto err;
 
-    fs_shader = create_shader(GL_FRAGMENT_SHADER, fs_rgba);
+    drv_name = (char*)glGetString(0x1F04);
+    printf("Render: %s\n", drv_name);
+
+    if(strstr(drv_name, "i965"))
+        fs_src = fs_i965;
+    else if(strstr(drv_name, "i915"))
+        fs_src = fs_i915;
+    else fs_src = NULL;
+
+    fs_shader = create_shader(GL_FRAGMENT_SHADER, fs_src);
     if(fs_shader == 0)
         goto err;
 
