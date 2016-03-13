@@ -867,7 +867,29 @@ common_app_entry:
         add     esi, ecx
         jmp     .check_cmdline
 
+.copy_full_path:
+        mov     esi, [current_slot]
+        mov     esi, [esi+APPDATA.cur_dir]
+        mov     al, '/'
+        stosb
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @B
+        mov     byte [edi-1], '/'
+
+        lea     esi, [ebp+sizeof.APP_HDR]
+        xor     eax, eax
+        rep movsb
+        stosb
+        jmp     .check_cmdline
+
 .copy_filename:
+
+        cmp     byte [esi], '/'
+        jne     .copy_full_path
+
         rep movsb
         stosb
 
