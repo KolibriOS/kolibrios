@@ -50,11 +50,15 @@ macro _clear_ op
         rep stosd
 }
 
-_strlen:
-        mov     ecx, 0xFFFFFFFF
+align 4
+_strnlen:
+        mov     edx, ecx
         xor     eax, eax
         repne scasb
-        mov     eax, 0xFFFFFFFE
+        jne     @F
+        inc     ecx
+@@:
+        mov     eax, edx
         sub     eax, ecx
         retn
 
@@ -156,7 +160,8 @@ proc fs_execute
         test    edi, edi
         jz      @F
 
-        call    _strlen
+        mov     ecx, 65535
+        call    _strnlen
         cmp     eax, 256
         jb      @F
         lea     ebx, [eax+1]
@@ -185,8 +190,10 @@ proc fs_execute
 
         mov     esi, sizeof.APP_HDR
         add     esi, [cmdline_size]
+
         mov     edi, [filename]
-        call    _strlen
+        mov     ecx, 1023
+        call    _strnlen
         add     esi, eax
         mov     [filename_size], eax
 
@@ -834,7 +841,6 @@ proc map_process_image stdcall, img_size:dword, file_base:dword, file_size:dword
         shr     ecx, 2
         xor     eax, eax
         rep stosd
-
 .done:
 .fail:
         ret
@@ -859,23 +865,39 @@ common_app_entry:
         jnz     .copy_filename
 
         add     esi, ecx
-        jmp     .copy_cmdline
+        jmp     .check_cmdline
 
 .copy_filename:
         rep movsb
         stosb
 
-.copy_cmdline:
+.check_cmdline:
         mov     edi, [ebp+APP_HDR.cmdline]
         mov     ecx, [ebp+APP_HDR.cmdline_size]
         test    edi, edi
         jz      .check_tls_header
 
+        cmp     ecx, 256
+        jb      .copy_cmdline
+
+        mov     edi, [ebp+APP_HDR._emem]
+        add     edi, 4095
+        and     edi, -4096
+        sub     edi, ecx
+        dec     edi
+
+        cmp     word [6], '00'
+        jne     @F
+        mov     [APP_HEADER_00_.i_param], edi
+        jmp     .copy_cmdline
+@@:
+        mov     [APP_HEADER_01_.i_param], edi
+
+.copy_cmdline:
         rep movsb
         stosb
 
 .check_tls_header:
-
         cmp     word [6], '02'
         jne     .cleanup
 
@@ -1044,9 +1066,7 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         ret
 endp
 
-
 align 4
-
 get_stack_base:
         mov     eax, [current_slot]
         mov     eax, [eax+APPDATA.pl0_stack]
