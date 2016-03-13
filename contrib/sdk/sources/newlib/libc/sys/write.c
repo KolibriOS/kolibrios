@@ -86,9 +86,10 @@ static int os_write(int handle, const void *buffer, unsigned len, unsigned *amt 
 
     ioh->offset+= *amt;
 
-    if( *amt != len )
+    if( *amt && *amt != len )
     {
         rc = ENOSPC;
+        errno = rc;
     }
 
     return( rc );
