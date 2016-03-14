@@ -56,9 +56,6 @@ change_task:
 
 uglobal
 align 4
-;  far_jump:
-;   .offs dd ?
-;   .sel  dw ?
    context_counter     dd 0 ;noname & halyavin
    next_usage_update   dd 0
    timer_ticks         dd 0
@@ -103,15 +100,29 @@ do_change_task:
         mov     esp, [ebx+APPDATA.saved_esp]
 ; set new thread io-map
         mov     eax, [ebx+APPDATA.io_map]
-        mov     dword [page_tabs+((tss._io_map_0 and -4096) shr 10)], eax
+;        mov     dword [page_tabs+((tss._io_map_0 and -4096) shr 9)], eax
         mov     eax, [ebx+APPDATA.io_map+4]
-        mov     dword [page_tabs+((tss._io_map_1 and -4096) shr 10)], eax
+;        mov     dword [page_tabs+((tss._io_map_1 and -4096) shr 9)], eax
 ; set new thread memory-map
         mov     eax, [ebx+APPDATA.process]
         cmp     eax, [current_process]
         je      @f
         mov     [current_process], eax
-        mov     eax, [eax+PROC.pdt_0_phys]
+
+        mov     ecx, [eax+PROC.pdt_0_phys]
+        mov     eax, [eax+PROC.pdt_1_phys]
+        or      ecx, PG_READ
+        or      eax, PG_READ
+        mov     [sys_pml3],   ecx
+        mov     [sys_pml3+8], eax
+
+        or      ecx, PG_SWR
+        or      eax, PG_SWR
+
+        mov     [sys_pml2+OS_BASE+8192-20*8], ecx
+        mov     [sys_pml2+OS_BASE+8192-19*8], eax
+
+        mov     eax, sys_pml3-OS_BASE
         mov     cr3, eax
 @@:
 ; set tss.esp0

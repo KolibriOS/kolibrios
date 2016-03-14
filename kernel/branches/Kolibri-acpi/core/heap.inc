@@ -585,7 +585,7 @@ proc init_heap
         mov     [ebx+PROC.heap_top], eax
 
         sub     eax, esi
-        shr     esi, 10
+        shr     esi, 9
         mov     ecx, eax
         sub     eax, PAGE_SIZE
         or      ecx, FREE_BLOCK
@@ -616,7 +616,7 @@ proc user_alloc stdcall, alloc_size:dword
 
         mov     ebx, esi
         shr     ebx, 12
-        mov     eax, [page_tabs+ebx*4]
+        mov     eax, [page_tabs+ebx*8]
         test    al, FREE_BLOCK
         jz      .test_used
         and     eax, 0xFFFFF000
@@ -628,16 +628,16 @@ proc user_alloc stdcall, alloc_size:dword
         sub     eax, ecx
         or      al, FREE_BLOCK
         shr     edx, 12
-        mov     [page_tabs+edx*4], eax
+        mov     [page_tabs+edx*8], eax
 @@:
         or      ecx, USED_BLOCK
-        mov     [page_tabs+ebx*4], ecx
+        mov     [page_tabs+ebx*8], ecx
         shr     ecx, 12
         inc     ebx
         dec     ecx
         jz      .no
 @@:
-        mov     dword [page_tabs+ebx*4], 2
+        mov     dword [page_tabs+ebx*8], 2
         inc     ebx
         dec     ecx
         jnz     @B
@@ -703,7 +703,7 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         jae     .error
         mov     ebx, esi
         shr     ebx, 12
-        mov     eax, [page_tabs+ebx*4]
+        mov     eax, [page_tabs+ebx*8]
         mov     ecx, eax
         and     ecx, 0xFFFFF000
         add     ecx, esi
@@ -740,7 +740,7 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         sub     eax, esi
         jz      .nofirst
         or      al, FREE_BLOCK
-        mov     [page_tabs+ebx*4], eax
+        mov     [page_tabs+ebx*8], eax
 .nofirst:
         mov     eax, [alloc_size]
         add     eax, 0x1FFF
@@ -749,13 +749,13 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         add     edx, eax
         shr     ebx, 12
         or      al, USED_BLOCK
-        mov     [page_tabs+ebx*4], eax
+        mov     [page_tabs+ebx*8], eax
         shr     eax, 12
         dec     eax
         jz      .second_nofill
         inc     ebx
 .fill:
-        mov     dword [page_tabs+ebx*4], 2
+        mov     dword [page_tabs+ebx*8], 2
         inc     ebx
         dec     eax
         jnz     .fill
@@ -764,7 +764,7 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         sub     ecx, edx
         jz      .nothird
         or      cl, FREE_BLOCK
-        mov     [page_tabs+ebx*4], ecx
+        mov     [page_tabs+ebx*8], ecx
 
 .nothird:
         mov     edx, [current_process]
@@ -801,7 +801,7 @@ proc user_free stdcall, base:dword
 
         xor     ebx, ebx
         shr     esi, 12
-        mov     eax, [page_tabs+(esi-1)*4]
+        mov     eax, [page_tabs+(esi-1)*8]
         test    al, USED_BLOCK
         jz      .cantfree
         test    al, DONT_FREE_BLOCK
@@ -810,14 +810,14 @@ proc user_free stdcall, base:dword
         and     eax, not 4095
         mov     ecx, eax
         or      al, FREE_BLOCK
-        mov     [page_tabs+(esi-1)*4], eax
+        mov     [page_tabs+(esi-1)*8], eax
         sub     ecx, 4096
         mov     ebx, ecx
         shr     ecx, 12
         jz      .released
 .release:
         xor     eax, eax
-        xchg    eax, [page_tabs+esi*4]
+        xchg    eax, [page_tabs+esi*8]
         test    al, 1
         jz      @F
         test    eax, PG_SHARED
@@ -877,7 +877,7 @@ proc user_unmap stdcall, base:dword, offset:dword, size:dword
         js      .error
 
         shr     ebx, 12                 ; chek block attributes
-        lea     ebx, [page_tabs+ebx*4]
+        lea     ebx, [page_tabs+ebx*8]
         mov     eax, [ebx-4]            ; block attributes
         test    al, USED_BLOCK
         jz      .error
@@ -885,15 +885,15 @@ proc user_unmap stdcall, base:dword, offset:dword, size:dword
         jnz     .error
 
         shr     edx, 12
-        lea     edx, [page_tabs+edx*4]  ; unmap offset
+        lea     edx, [page_tabs+edx*8]  ; unmap offset
 
         mov     ecx, [size]
         add     ecx, 4095
         shr     ecx, 12                 ; unmap size in pages
 
         shr     eax, 12                 ; block size + 1 page
-        lea     ebx, [ebx+eax*4-4]      ; block end ptr
-        lea     eax, [edx+ecx*4]        ; unmap end ptr
+        lea     ebx, [ebx+eax*8-8]      ; block end ptr
+        lea     eax, [edx+ecx*8]        ; unmap end ptr
 
         cmp     eax, ebx                ; check for overflow
         ja      .error
@@ -914,7 +914,7 @@ proc user_unmap stdcall, base:dword, offset:dword, size:dword
         call    free_page               ; empty c-o-w page instead this ?
 @@:
         add     ebx, 4096
-        add     edx, 4
+        add     edx, 8
         dec     ecx
         jnz     .unmap
 
@@ -935,7 +935,7 @@ user_normalize:
         shr     esi, 12
         shr     edi, 12
 @@:
-        mov     eax, [page_tabs+esi*4]
+        mov     eax, [page_tabs+esi*8]
         test    al, USED_BLOCK
         jz      .test_free
         shr     eax, 12
@@ -950,7 +950,7 @@ user_normalize:
         cmp     edx, edi
         jae     .exit
 
-        mov     ebx, [page_tabs+edx*4]
+        mov     ebx, [page_tabs+edx*8]
         test    bl, USED_BLOCK
         jz      .next_free
 
@@ -961,11 +961,11 @@ user_normalize:
 .next_free:
         test    bl, FREE_BLOCK
         jz      .err
-        and     dword [page_tabs+edx*4], 0
+        and     dword [page_tabs+edx*8], 0
         add     eax, ebx
         and     eax, not 4095
         or      eax, FREE_BLOCK
-        mov     [page_tabs+esi*4], eax
+        mov     [page_tabs+esi*8], eax
         jmp     @B
 .exit:
         xor     eax, eax
@@ -995,7 +995,7 @@ user_realloc:
 
         lea     ecx, [eax - 0x1000]
         shr     ecx, 12
-        mov     edx, [page_tabs+ecx*4]
+        mov     edx, [page_tabs+ecx*8]
         test    dl, USED_BLOCK
         jnz     @f
 ; attempt to realloc invalid pointer
@@ -1024,7 +1024,7 @@ user_realloc:
         jz      .release_done
         dec     edx
         xor     eax, eax
-        xchg    eax, [page_tabs+edx*4]
+        xchg    eax, [page_tabs+edx*8]
         test    al, 1
         jz      .loop
         call    free_page
@@ -1036,14 +1036,14 @@ user_realloc:
         sub     ebx, ecx
         cmp     ebx, 1
         jnz     .nofreeall
-        mov     eax, [page_tabs+ecx*4]
+        mov     eax, [page_tabs+ecx*8]
         and     eax, not 0xFFF
         mov     edx, [current_process]
         mov     ebx, [edx+PROC.mem_used]
         sub     ebx, eax
         add     ebx, 0x1000
         or      al, FREE_BLOCK
-        mov     [page_tabs+ecx*4], eax
+        mov     [page_tabs+ecx*8], eax
         push    esi edi
         mov     esi, [edx+PROC.heap_base]
         mov     edi, [edx+PROC.heap_top]
@@ -1055,7 +1055,7 @@ user_realloc:
         sub     edx, ecx
         shl     ebx, 12
         or      ebx, USED_BLOCK
-        xchg    [page_tabs+ecx*4], ebx
+        xchg    [page_tabs+ecx*8], ebx
         shr     ebx, 12
         sub     ebx, edx
         push    ebx ecx edx
@@ -1079,10 +1079,10 @@ user_realloc:
 @@:
         cmp     edx, esi
         jae     .merge_done
-        mov     eax, [page_tabs+edx*4]
+        mov     eax, [page_tabs+edx*8]
         test    al, USED_BLOCK
         jnz     .merge_done
-        and     dword [page_tabs+edx*4], 0
+        and     dword [page_tabs+edx*8], 0
         shr     eax, 12
         add     edx, eax
         shl     eax, 12
@@ -1091,7 +1091,7 @@ user_realloc:
 .merge_done:
         pop     esi
         or      ebx, FREE_BLOCK
-        mov     [page_tabs+ecx*4], ebx
+        mov     [page_tabs+ecx*8], ebx
 .ret:
         mov     ecx, [current_process]
         lea     ecx, [ecx+PROC.heap_lock]
@@ -1106,7 +1106,7 @@ user_realloc:
         shr     eax, 12
         cmp     edx, eax
         jae     .cant_inplace
-        mov     eax, [page_tabs+edx*4]
+        mov     eax, [page_tabs+edx*8]
         test    al, FREE_BLOCK
         jz      .cant_inplace
         shr     eax, 12
@@ -1116,18 +1116,18 @@ user_realloc:
         jz      @f
         shl     eax, 12
         or      al, FREE_BLOCK
-        mov     [page_tabs+ebx*4], eax
+        mov     [page_tabs+ebx*8], eax
 @@:
         mov     eax, ebx
         sub     eax, ecx
         shl     eax, 12
         or      al, USED_BLOCK
-        mov     [page_tabs+ecx*4], eax
+        mov     [page_tabs+ecx*8], eax
         lea     eax, [ecx+1]
         shl     eax, 12
         push    eax
         push    edi
-        lea     edi, [page_tabs+edx*4]
+        lea     edi, [page_tabs+edx*8]
         mov     eax, 2
         sub     ebx, edx
         mov     ecx, ebx
@@ -1155,7 +1155,7 @@ user_realloc:
 .find_place:
         cmp     esi, edi
         jae     .place_not_found
-        mov     eax, [page_tabs+esi*4]
+        mov     eax, [page_tabs+esi*8]
         test    al, FREE_BLOCK
         jz      .next_place
         shr     eax, 12
@@ -1177,30 +1177,30 @@ user_realloc:
         add     esi, ebx
         shl     eax, 12
         or      al, FREE_BLOCK
-        mov     [page_tabs+esi*4], eax
+        mov     [page_tabs+esi*8], eax
         pop     esi
 @@:
         mov     eax, ebx
         shl     eax, 12
         or      al, USED_BLOCK
-        mov     [page_tabs+esi*4], eax
+        mov     [page_tabs+esi*8], eax
         inc     esi
         mov     eax, esi
         shl     eax, 12
         push    eax
-        mov     eax, [page_tabs+ecx*4]
+        mov     eax, [page_tabs+ecx*8]
         and     eax, not 0xFFF
         or      al, FREE_BLOCK
         sub     edx, ecx
-        mov     [page_tabs+ecx*4], eax
+        mov     [page_tabs+ecx*8], eax
         inc     ecx
         dec     ebx
         dec     edx
         jz      .no
 @@:
         xor     eax, eax
-        xchg    eax, [page_tabs+ecx*4]
-        mov     [page_tabs+esi*4], eax
+        xchg    eax, [page_tabs+ecx*8]
+        mov     [page_tabs+esi*8], eax
         mov     eax, ecx
         shl     eax, 12
         invlpg  [eax]
@@ -1216,7 +1216,7 @@ user_realloc:
         add     [edx+PROC.mem_used], ebx
         pop     ebx
 @@:
-        mov     dword [page_tabs+esi*4], 2
+        mov     dword [page_tabs+esi*8], 2
         inc     esi
         dec     ebx
         jnz     @b
@@ -1441,10 +1441,10 @@ align 4
         mov     [size], ecx
 
         shr     ecx, 12
-        shr     eax, 10
+        shr     eax, 9
 
         mov     esi, [esi+SMEM.base]
-        shr     esi, 10
+        shr     esi, 9
         lea     edi, [page_tabs+eax]
         add     esi, page_tabs
 
@@ -1457,6 +1457,7 @@ align 4
         and     eax, 0xFFFFF000
         or      eax, edx
         stosd
+        movsd
         loop    @B
 
         xor     edx, edx

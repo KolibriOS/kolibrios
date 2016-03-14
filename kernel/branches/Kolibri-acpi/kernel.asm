@@ -292,7 +292,7 @@ B32:
 
 ; ENABLE PAGING
 
-        mov     eax, sys_proc-OS_BASE+PROC.pdt_0
+        mov     eax, sys_pml3-OS_BASE
         mov     cr3, eax
 
         mov     eax, cr0
@@ -358,7 +358,8 @@ high_code:
         bt      [cpu_caps], CAPS_PGE
         jnc     @F
 
-        or      [sys_proc+PROC.pdt_0+(OS_BASE shr 20)], eax
+        or      [sys_pml2], eax
+        or      [sys_pml2+8], eax
         or      ebx, eax
 
         mov     eax, cr4
@@ -369,7 +370,7 @@ high_code:
 
         xor     eax, eax
         mov     dword [sys_proc+PROC.pdt_0], eax
-        mov     dword [sys_proc+PROC.pdt_0+4], eax
+        mov     dword [sys_proc+PROC.pdt_0+8], eax
 
         mov     eax, cr3
         mov     cr3, eax          ; flush TLB
@@ -649,6 +650,7 @@ high_code:
         jbe     @B
 
         mov     [sys_proc+PROC.pdt_0_phys], sys_proc-OS_BASE+PROC.pdt_0
+        mov     [sys_proc+PROC.pdt_1_phys], sys_proc-OS_BASE+PROC.pdt_0+4096
 
         mov     eax, -1
         mov     edi, thr_slot_map+4
@@ -761,7 +763,7 @@ endg
         mov     esi, boot_v86machine
         call    boot_log
 ; Initialize system V86 machine
-        call    init_sys_v86
+;        call    init_sys_v86
 
         mov     esi, boot_inittimer
         call    boot_log
@@ -859,20 +861,8 @@ include 'detect/dev_fd.inc'
 ;-----------------------------------------------------------------------------
 include 'detect/init_ata.inc'
 ;-----------------------------------------------------------------------------
-if 0
-        mov     ax, [OS_BASE+0x10000+bx_from_load]
-        cmp     ax, 'r1'; if using not ram disk, then load librares and parameters {SPraid.simba}
-        je      no_lib_load
 
-        mov     esi, boot_loadlibs
-        call    boot_log
-; LOADING LIBRARES
-        stdcall dll.Load, @IMPORT           ; loading librares for kernel (.obj files)
-        call    load_file_parse_table       ; prepare file parse table
-        call    set_kernel_conf             ; configure devices and gui
-no_lib_load:
-end if
-
+        cli
 ; Display APIC status
         mov     esi, boot_APIC_found
         cmp     [irq_mode], IRQ_APIC
@@ -902,16 +892,9 @@ end if
         inc     edi
         call    display_number_force
 
-; BUILD SCHEDULER
-
-;        call    build_scheduler; sys32.inc
-
-;        mov     esi, boot_devices
-;        call    boot_log
-
 include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
 
-        stdcall load_pe_driver, szVidintel, 0
+;        stdcall load_pe_driver, szVidintel, 0
 
         call    usb_init
 
@@ -1115,7 +1098,7 @@ end if
 
         sti
 
-        call    mtrr_validate
+;        call    mtrr_validate
 
         jmp     osloop
 
@@ -2254,7 +2237,7 @@ sysfn_terminate2:
         cli
         call    sysfn_terminate
         call    unlock_application_table
-        sti
+;        sti
         and     dword [esp+32], 0
         ret
 .not_found:
@@ -2847,7 +2830,7 @@ align 4
         jz      .nomem
         mov     ebx, eax
         shr     ebx, 12
-        or      dword [page_tabs+(ebx-1)*4], DONT_FREE_BLOCK
+        or      dword [page_tabs+(ebx-1)*8], DONT_FREE_BLOCK
         mov     esi, [img_background]
         shr     esi, 12
         mov     ecx, [mem_BACKGROUND]
@@ -2856,16 +2839,16 @@ align 4
 ;--------------------------------------
 align 4
 .z:
-        mov     eax, [page_tabs+ebx*4]
+        mov     eax, [page_tabs+ebx*8]
         test    al, 1
         jz      @f
         call    free_page
 ;--------------------------------------
 align 4
 @@:
-        mov     eax, [page_tabs+esi*4]
+        mov     eax, [page_tabs+esi*8]
         or      al, PG_UWR
-        mov     [page_tabs+ebx*4], eax
+        mov     [page_tabs+ebx*8], eax
         mov     eax, ebx
         shl     eax, 12
         invlpg  [eax]
@@ -2891,7 +2874,7 @@ nosb6:
         mov     eax, ecx
         mov     ebx, ecx
         shr     eax, 12
-        mov     ecx, [page_tabs+(eax-1)*4]
+        mov     ecx, [page_tabs+(eax-1)*8]
         test    cl, USED_BLOCK+DONT_FREE_BLOCK
         jz      .err
         jnp     .err
@@ -2901,7 +2884,7 @@ nosb6:
 ;--------------------------------------
 align 4
 @@:
-        and     dword [page_tabs+eax*4], 0
+        and     dword [page_tabs+eax*8], 0
         mov     edx, eax
         shl     edx, 12
         push    eax
@@ -2910,7 +2893,7 @@ align 4
         inc     eax
         loop    @b
         pop     eax
-        and     dword [page_tabs+(eax-1)*4], not DONT_FREE_BLOCK
+        and     dword [page_tabs+(eax-1)*8], not DONT_FREE_BLOCK
         stdcall user_free, ebx
         mov     [esp+32], eax
         and     [bgrlockpid], 0
@@ -3275,7 +3258,7 @@ sys_clock:
         add     ecx, edx
         movzx   edx, al
         add     ecx, edx
-        sti
+;        sti
         mov     [esp + 32], ecx
         ret
 
@@ -3310,7 +3293,7 @@ sys_date:
         out     0x70, al
         in      al, 0x71
         mov     cl, al
-        sti
+;        sti
         mov     [esp+32], ecx
         ret
 
@@ -4234,7 +4217,7 @@ new_port_access:
 ;       pop     ebp
 no_unmask_io:
         popad                         ; end enable io map
-        sti
+;        sti
 
         mov     eax, [RESERVED_PORTS]
         add     eax, 1

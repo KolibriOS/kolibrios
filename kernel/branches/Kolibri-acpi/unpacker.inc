@@ -8,7 +8,7 @@
 $Revision$
 
 
-; void __stdcall unpack(void* packed_data, void* unpacked_data); 
+; void __stdcall unpack(void* packed_data, void* unpacked_data);
 unpack:
         pushad
         mov     esi, [esp+32+4]

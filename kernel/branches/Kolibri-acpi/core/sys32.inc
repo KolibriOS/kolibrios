@@ -306,13 +306,13 @@ show_error_parameters:
         push    ebx
         shr     ebx, 12
         mov     ecx, ebx
-        shr     ecx, 10
-        mov     edx, [master_tab+ecx*4]
+        shr     ecx, 9
+        mov     edx, [master_tab+ecx*8]
         test    edx, PG_READ
         jz      .fail             ;page table is not created
                                   ;incorrect address in the program
 
-        mov     eax, [page_tabs+ebx*4]
+        mov     eax, [page_tabs+ebx*8]
         test    eax, 2
         jz      .fail             ;address not reserved for use. error
 

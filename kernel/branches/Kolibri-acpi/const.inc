@@ -223,6 +223,7 @@ TASK_ACTIVATE       equ (OS_BASE+0x000FF01)
 TMP_STACK_TOP       equ 0x006CC00
 
 sys_proc            equ (OS_BASE+0x006F000)
+sys_pml2            equ 0x0072000
 
 SLOT_BASE           equ (OS_BASE+0x0080000)
 
@@ -239,10 +240,10 @@ end virtual
 HEAP_BASE           equ (OS_BASE+0x0800000)
 HEAP_MIN_SIZE       equ 0x01000000
 
-page_tabs           equ 0xFDC00000
-app_page_tabs       equ 0xFDC00000
-kernel_tabs         equ (page_tabs+ (OS_BASE shr 10))   ;0xFDE00000
-master_tab          equ (page_tabs+ (page_tabs shr 10)) ;0xFDFF70000
+page_tabs           equ 0xFD800000
+app_page_tabs       equ 0xFD800000
+kernel_tabs         equ (page_tabs+ (OS_BASE shr 9))   ;0xFDE00000
+master_tab          equ (page_tabs+ (page_tabs shr 9)) ;0xFDFF70000
 
 LFB_BASE            equ 0xFE000000
 
@@ -281,7 +282,7 @@ PG_PWT              equ 0x010
 PG_ACCESSED         equ 0x020
 PG_DIRTY            equ 0x040
 PG_PAT              equ 0x080
-PG_GLOBAL           equ 0x100
+PG_GLOBAL           equ 0; 0x100
 PG_SHARED           equ 0x200
 
 PG_SWR              equ 0x003 ; (PG_WRITE+PG_READ)
@@ -428,9 +429,7 @@ struct  PROC
         ht_free         rd 1            ;htab[0] stdin
         ht_next         rd 1            ;htab[1] stdout
         htab            rd (4096-$)/4   ;htab[2] stderr
-;       htab            rd (4096+3072-$)/4   ;htab[2] stderr
-;       workdir         rb 1024
-        pdt_0           rd 1024
+        pdt_0           rd 2048
 ends
 
 struct  DBG_REGS

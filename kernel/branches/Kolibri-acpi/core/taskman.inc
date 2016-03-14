@@ -337,11 +337,11 @@ proc create_process stdcall, app_size:dword
         mov     [process], eax
 
         mov     eax, [app_size]
-        add     eax, 0x3FFFFF
-        shr     eax, 22
+        add     eax, 0x1FFFFF
+        shr     eax, 21
         mov     [app_tabs], eax
 
-        stdcall kernel_alloc, 0x2000
+        stdcall kernel_alloc, 0x3000
         test    eax, eax
         jz      .fail
         mov     [process], eax
@@ -371,20 +371,15 @@ proc create_process stdcall, app_size:dword
         mov     eax, edi
         call    get_pg_addr
         mov     [edi-4096+PROC.pdt_0_phys], eax
+        lea     eax, [edi+4096]
+        call    get_pg_addr
+        mov     [edi-4096+PROC.pdt_1_phys], eax
 
-        mov     ecx, (OS_BASE shr 20)/4
+        mov     ecx, 2048
         xor     eax, eax
         rep stosd
 
-        mov     ecx, (OS_BASE shr 20)/4
-        mov     esi, sys_proc+PROC.pdt_0+(OS_BASE shr 20)
-        rep movsd
-
-        mov     eax, [edi-8192+PROC.pdt_0_phys]
-        or      eax, PG_SWR
-        mov     [edi-4096+(page_tabs shr 20)], eax
-
-        lea     edx, [edi-4096]
+        lea     edx, [edi-8192]
         mov     esi, [app_tabs]
 
 .alloc_page_dir:
@@ -393,6 +388,7 @@ proc create_process stdcall, app_size:dword
         jz      .fail
         or      eax, PG_UWR
         mov     [edx], eax
+        mov     [edx+4], dword 0
 
         mov     edi, [tmp_task_ptab]
         stdcall map_page, edi, eax, PG_SWR
@@ -400,7 +396,7 @@ proc create_process stdcall, app_size:dword
         xor     eax, eax
         rep stosd
 
-        add     edx, 4
+        add     edx, 8
         dec     esi
         jnz     .alloc_page_dir
 
@@ -430,7 +426,7 @@ proc destroy_page_table stdcall, pg_tab:dword
         push    esi
 
         mov     esi, [pg_tab]
-        mov     ecx, 1024
+        mov     ecx, 512
 .free:
         mov     eax, [esi]
         test    eax, 1
@@ -441,7 +437,7 @@ proc destroy_page_table stdcall, pg_tab:dword
         jnz     .next                     ;skip shared pages
         call    free_page
 .next:
-        add     esi, 4
+        add     esi, 8
         dec     ecx
         jnz     .free
         pop     esi
@@ -467,7 +463,7 @@ align 4
 
         mov     esi, [esp]
         add     esi, PROC.pdt_0
-        mov     edi, (0x80000000 shr 20)/4
+        mov     edi, 1024
 .destroy:
         mov     eax, [esi]
         test    eax, 1
@@ -478,7 +474,7 @@ align 4
         mov     eax, [esi]
         call    free_page
 .next:
-        add     esi, 4
+        add     esi, 8
         dec     edi
         jnz     .destroy
 
@@ -808,7 +804,7 @@ proc map_process_image stdcall, img_size:dword, file_base:dword, file_size:dword
         shr     ecx, 12        ; image pages
 
         mov     edi, page_tabs
-        shr     esi, 10
+        shr     esi, 9
         add     esi, edi
 
 .map_image:
@@ -816,6 +812,7 @@ proc map_process_image stdcall, img_size:dword, file_base:dword, file_size:dword
         and     eax, -4096
         or      eax, PG_UWR
         stosd
+        movsd
         dec     edx
         loop    .map_image
 
@@ -827,6 +824,8 @@ proc map_process_image stdcall, img_size:dword, file_base:dword, file_size:dword
         jz      .fail
 
         or      eax, PG_UWR
+        stosd
+        xor     eax, eax
         stosd
         dec     edx
         jnz     .map_bss
@@ -867,7 +866,41 @@ common_app_entry:
         add     esi, ecx
         jmp     .check_cmdline
 
+.copy_full_path:
+        mov     esi, [current_slot]
+        mov     esi, [esi+APPDATA.cur_dir]
+        mov     ebx, 1023
+        mov     al, '/'
+        stosb
+
+.copy_path:
+        dec     ebx
+        jz      .finish_path
+        lodsb
+        stosb
+        test    al, al
+        jnz     .copy_path
+        mov     byte [edi-1], '/'
+
+        cmp     ecx, ebx
+        jbe     @F
+        mov     ecx, ebx
+@@:
+        lea     esi, [ebp+sizeof.APP_HDR]
+        xor     eax, eax
+        rep movsb
+        stosb
+        jmp     .check_cmdline
+
+.finish_path:
+        xor     eax, eax
+        stosb
+        jmp     .check_cmdline
+
 .copy_filename:
+        cmp     byte [esi], '/'
+        jne     .copy_full_path
+
         rep movsb
         stosb
 
@@ -914,8 +947,8 @@ common_app_entry:
         mov     fs, dx
 
 .cleanup:
-        stdcall free_kernel_space, [ebp+APP_HDR.img_base]
-        stdcall kernel_free, ebp
+;        stdcall free_kernel_space, [ebp+APP_HDR.img_base]
+;        stdcall kernel_free, ebp
 .exit:
         popad
         iretd

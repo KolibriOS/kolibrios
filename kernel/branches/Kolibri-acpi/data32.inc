@@ -333,7 +333,10 @@ gdte:
 
 diff16 "end of .data segment",0,$
 
-align 16
+align 32
+
+sys_pml3            rd 4*2
+
 cur_saved_data:
                     rb 4096
 fpu_data:

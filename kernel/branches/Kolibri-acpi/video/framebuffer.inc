@@ -20,7 +20,7 @@ struct FRB
         pitch           rd 1
         format          rd 1
         private         rd 1
-        pde             rd 8
+        pde             rd 16*2
 ends
 
 align 4
@@ -126,17 +126,17 @@ init_video:
         bt      [cpu_caps], CAPS_PSE
         jnc     .create_page_tables
 
-        mov     edx, 0x00400000
+        mov     edx, 0x00200000
         or      esi, PG_GLOBAL+PAT_WC+PG_UWR
         and     esi, [pte_valid_mask]
         or      esi, PDE_LARGE
         mov     [ebp+FRB.pde], esi
         add     esi, edx
-        mov     [ebp+FRB.pde+4], esi
-        add     esi, edx
         mov     [ebp+FRB.pde+8], esi
         add     esi, edx
-        mov     [ebp+FRB.pde+12], esi
+        mov     [ebp+FRB.pde+16], esi
+        add     esi, edx
+        mov     [ebp+FRB.pde+24], esi
         add     esi, edx
 .ok:
         call    calculate_fast_getting_offset_for_WinMapAddress
@@ -154,7 +154,7 @@ init_video:
 
         stdcall alloc_kernel_space, 0x1000
         mov     edi, eax
-        mov     ebx, 4
+        mov     ebx, 8
 
 .new_pd:
         call    alloc_page
@@ -164,13 +164,15 @@ init_video:
         stdcall map_page, edi, eax, PG_SWR
 
         mov     eax, esi
-        mov     ecx, 1024
+        mov     ecx, 512
 @@:
-        stosd
+        mov     [edi], eax
+        mov     [edi+4], dword 0
         add     eax, 0x1000
+        add     edi, 8
         loop    @B
 
-        add     esi, 0x400000
+        add     esi, 0x200000
         add     ebp, 4
         sub     edi, 4096
         dec     ebx
@@ -198,8 +200,10 @@ init_video:
         and     eax, [pte_valid_mask]
         mov     ecx, (1228800+81920)/4096
 @@:
-        stosd
+        mov     [edi], eax
+        mov     [edi+4],dword 0
         add     eax, 0x1000
+        add     edi, 8
         loop    @B
 
         call free_kernel_space
@@ -210,20 +214,17 @@ set_framebuffer:
         push    esi
         push    edi
         lea     esi, [ecx+FRB.pde]
-        mov     eax, sys_proc
+        mov     edi, sys_pml2+OS_BASE+8192-16*8
 
         cld
         pushfd
         cli
+
         mov     [_display.current_lfb], ecx
+
 .patch_pde:
-        lea     edi, [eax+PROC.pdt_0+4096-32]   ;last 8 pd entries up to 32Mb framebuffer
-        mov     ecx, 4
-        rep movsd                               ;patch pde
-        sub     esi, 16
-        mov     eax, [eax+PROC.list.next]       ;next process/address space
-        cmp     eax, sys_proc
-        jne     .patch_pde
+        mov     ecx, 16*2
+        rep movsd
 
         bt      [cpu_caps], CAPS_PGE
         jnc     .cr3_flush

@@ -131,7 +131,7 @@ map_page:
         and     eax, [pte_valid_mask]
         mov     ebx, [esp+8]               ; lin_addr
         shr     ebx, 12
-        mov     [page_tabs+ebx*4], eax
+        mov     [page_tabs+ebx*8], eax
         mov     eax, [esp+8]               ; lin_addr
         pop     ebx
         invlpg  [eax]
@@ -194,7 +194,8 @@ proc map_io_mem stdcall, base:dword, size:dword, flags:dword
         or      edx, [flags]
         and     edx, [pte_valid_mask]
 @@:
-        mov     [page_tabs+eax*4], edx
+        mov     [page_tabs+eax*8], edx
+        mov     [page_tabs+eax*8+4], dword 0
         invlpg  [ebx]
         inc     eax
         add     ebx, edi
@@ -232,12 +233,14 @@ commit_pages:
         and     eax, [pte_valid_mask ]
         mov     edi, ebx
         shr     edi, 12
-        lea     edi, [page_tabs+edi*4]
+        lea     edi, [page_tabs+edi*8]
 @@:
-        stosd
+        mov     [edi], eax
+        mov     [edi+4], dword 0
         invlpg  [ebx]
         add     eax, 0x1000
         add     ebx, 0x1000
+        add     edi, 8
         loop    @B
 
         pop     edi
@@ -264,7 +267,7 @@ release_pages:
         mov     edi, eax
 
         shr     esi, 12
-        lea     esi, [page_tabs+esi*4]
+        lea     esi, [page_tabs+esi*8]
 
         push    ecx
         mov     ecx, pg_data.mutex
@@ -295,7 +298,7 @@ release_pages:
         mov     ebx, eax
 .next:
         add     edi, 0x1000
-        add     esi, 4
+        add     esi, 8
         loop    @B
 
         mov     [pg_data.pages_free], ebp
@@ -320,11 +323,12 @@ unmap_pages:
         mov     edi, eax
         mov     edx, eax
 
-        shr     edi, 10
+        shr     edi, 9
         add     edi, page_tabs
 
         xor     eax, eax
 @@:
+        stosd
         stosd
         invlpg  [edx]
         add     edx, 0x1000
@@ -338,13 +342,14 @@ align 4
 proc map_page_table stdcall, lin_addr:dword, phis_addr:dword
         push    ebx
         mov     ebx, [lin_addr]
-        shr     ebx, 22
+        shr     ebx, 21
         mov     eax, [phis_addr]
         and     eax, not 0xFFF
         or      eax, PG_UWR
-        mov     dword [master_tab+ebx*4], eax
+        mov     [master_tab+ebx*8], eax
+        mov     [master_tab+ebx*8+4], dword 0
         mov     eax, [lin_addr]
-        shr     eax, 10
+        shr     eax, 9
         add     eax, page_tabs
         invlpg  [eax]
         pop     ebx
@@ -437,11 +442,11 @@ proc new_mem_resize stdcall, new_size:dword
         mov     ecx, pg_data.mutex
         call    mutex_lock
 @@:
-        mov     eax, [app_page_tabs+edi*4]
+        mov     eax, [app_page_tabs+edi*8]
         test    eax, 1
         jz      .next
 
-        mov     dword [app_page_tabs+edi*4], 0
+        mov     dword [app_page_tabs+edi*8], 0
         invlpg  [ebx]
         call    free_page
 
@@ -476,10 +481,10 @@ proc new_mem_resize stdcall, new_size:dword
         push    esi                   ;new size
         push    edi                   ;old size
 
-        add     edi, 0x3FFFFF
-        and     edi, not(0x3FFFFF)
-        add     esi, 0x3FFFFF
-        and     esi, not(0x3FFFFF)
+        add     edi, 0x1FFFFF
+        and     edi, not(0x1FFFFF)
+        add     esi, 0x1FFFFF
+        and     esi, not(0x1FFFFF)
 
         cmp     edi, esi
         jae     .grow
@@ -491,7 +496,7 @@ proc new_mem_resize stdcall, new_size:dword
         stdcall map_page_table, edi, eax
 
         push    edi
-        shr     edi, 10
+        shr     edi, 9
         add     edi, page_tabs
         mov     ecx, 1024
         xor     eax, eax
@@ -499,7 +504,7 @@ proc new_mem_resize stdcall, new_size:dword
         rep stosd
         pop     edi
 
-        add     edi, 0x00400000
+        add     edi, 0x00200000
         cmp     edi, esi
         jb      @B
 .grow:
@@ -546,7 +551,7 @@ get_pg_addr:
         cmp     eax, 0x400000
         jb      @f
         shr     eax, 12
-        mov     eax, [page_tabs+(eax+(OS_BASE shr 12))*4]
+        mov     eax, [page_tabs+(eax+(OS_BASE shr 12))*8]
 @@:
         and     eax, 0xFFFFF000
         ret
@@ -588,13 +593,13 @@ proc page_fault_handler
 
         shr     ebx, 12
         mov     ecx, ebx
-        shr     ecx, 10
-        mov     edx, [master_tab+ecx*4]
+        shr     ecx, 9
+        mov     edx, [master_tab+ecx*8]
         test    edx, PG_READ
         jz      .fail             ;таблица страниц не создана
                                   ;неверный адрес в программе
 
-        mov     eax, [page_tabs+ebx*4]
+        mov     eax, [page_tabs+ebx*8]
         test    eax, 2
         jz      .fail             ;адрес не зарезервирован для ;
                                   ;использования. Ошибка
@@ -703,7 +708,7 @@ proc map_mem_ipc stdcall, lin_addr:dword,slot:dword,\
              count   dd ?
              process dd ?
         endl
-
+xchg bx, bx
         mov     [count], 0
         cmp     [buf_size], 0
         jz      .exit
@@ -829,7 +834,7 @@ endp
 ; out: CF cleared <=> failed
 ; destroys: only eax
 proc safe_map_page stdcall, slot:dword, req_access:dword, ofs:dword
-        mov     eax, [esi+edx*4]
+        mov     eax, [esi+edx*8]
         test    al, PG_READ
         jz      .not_present
         test    al, PG_WRITE
@@ -851,7 +856,7 @@ proc safe_map_page stdcall, slot:dword, req_access:dword, ofs:dword
         test    eax, eax
         jz      .fail
         or      al, PG_UWR
-        mov     [esi+edx*4], eax
+        mov     [esi+edx*8], eax
         jmp     .map
 .resolve_readonly:
 ; readonly page, probably copy-on-write
@@ -893,7 +898,7 @@ proc safe_map_page stdcall, slot:dword, req_access:dword, ofs:dword
         test    eax, eax
         jz      .no_hdll
         or      al, PG_UWR
-        mov     [esi+edx*4], eax
+        mov     [esi+edx*8], eax
         stdcall map_page, edi, eax, [req_access]
         push    esi edi
         mov     esi, ebx
@@ -1024,21 +1029,24 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
         mov     edx, ebx
         shr     ebx, 12
         xor     eax, eax
-        mov     [page_tabs+ebx*4], eax
+        mov     [page_tabs+ebx*8], eax
+        mov     [page_tabs+ebx*8+4], eax
         invlpg  [edx]
 
         mov     ebx, [ipc_pdir]
         mov     edx, ebx
         shr     ebx, 12
         xor     eax, eax
-        mov     [page_tabs+ebx*4], eax
+        mov     [page_tabs+ebx*8], eax
+        mov     [page_tabs+ebx*8+4], eax
         invlpg  [edx]
 
         mov     ebx, [ipc_ptab]
         mov     edx, ebx
         shr     ebx, 12
         xor     eax, eax
-        mov     [page_tabs+ebx*4], eax
+        mov     [page_tabs+ebx*8], eax
+        mov     [page_tabs+ebx*8+4], eax
         invlpg  [edx]
 
         mov     eax, [dst_slot]

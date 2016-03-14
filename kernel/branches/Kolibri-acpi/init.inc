@@ -124,29 +124,29 @@ proc init_mem
         mov     edx, (HEAP_BASE-OS_BASE+HEAP_MIN_SIZE)/4096
 .set:
         mov     [pg_data.kernel_pages-OS_BASE], edx
-        shr     edx, 10
+        shr     edx, 9
         mov     [pg_data.kernel_tables-OS_BASE], edx
 
-        xor     eax, eax
-        mov     edi, sys_proc-OS_BASE
-        mov     ecx, 8192/4
-        cld
-        rep stosd
-
-        mov     edx, (sys_proc-OS_BASE+PROC.pdt_0)+ 0x800; (OS_BASE shr 20)
+        mov     edx, sys_pml2
+        mov     edi, 0x0070000  ;sys_proc+PROC.pdt_0-OS_BASE
         bt      [cpu_caps-OS_BASE], CAPS_PSE
         jnc     .no_PSE
 
         mov     ebx, cr4
-        or      ebx, CR4_PSE
+        or      ebx, CR4_PSE+CR4_PAE
         mov     eax, PDE_LARGE+PG_SWR
         mov     cr4, ebx
         dec     [pg_data.kernel_tables-OS_BASE]
 
         mov     [edx], eax
-        add     edx, 4
+        mov     [edi], eax
+        add     edx, 8
+        add     edi, 8
+        add     eax, 0x200000
+        mov     [edx], eax
+        mov     [edi], eax
+        add     edx, 8
 
-        mov     edi, [tmp_page_tabs]
         jmp     .map_kernel_heap        ; new kernel fits to the first 4Mb - nothing to do with ".map_low"
 .no_PSE:
         mov     eax, PG_SWR
@@ -161,28 +161,28 @@ proc init_mem
         jnz     @B
 
 .map_kernel_heap:
-        mov     ecx, [pg_data.kernel_tables-OS_BASE]
-        shl     ecx, 10
-        xor     eax, eax
-        rep stosd
 
         mov     ecx, [pg_data.kernel_tables-OS_BASE]
         mov     eax, [tmp_page_tabs]
         or      eax, PG_SWR
-        mov     edi, edx
 
 .map_kernel_tabs:
-        stosd
+        mov     [edx], eax
         add     eax, 0x1000
+        add     edx, 8
         dec     ecx
         jnz     .map_kernel_tabs
 
-        mov     dword [sys_proc-OS_BASE+PROC.pdt_0+(page_tabs shr 20)], sys_proc+PROC.pdt_0+PG_SWR-OS_BASE
+        mov     dword [sys_pml2+8192-20*8], sys_proc+PROC.pdt_0+PG_SWR-OS_BASE
+        mov     dword [sys_pml2+8192-19*8], sys_proc+PROC.pdt_0+4096+PG_SWR-OS_BASE
+        mov     dword [sys_pml2+8192-18*8], sys_pml2+PG_SWR
+        mov     dword [sys_pml2+8192-17*8], sys_pml2+4096+PG_SWR
 
-        mov     edi, (sys_proc+PROC.pdt_0-OS_BASE)
-        lea     esi, [edi+(OS_BASE shr 20)]
-        movsd
-        movsd
+        mov     [sys_pml3-OS_BASE],   0x0070000+PG_READ   ;sys_proc+PROC.pdt_0+PG_UWR-OS_BASE
+        mov     [sys_pml3+8-OS_BASE], 0x0071000+PG_READ   ;sys_proc+PROC.pdt_0+4096+PG_UWR-OS_BASE
+        mov     [sys_pml3+16-OS_BASE],0x0072000+PG_READ    ;sys_pml2+PG_SWR
+        mov     [sys_pml3+24-OS_BASE],0x0073000+PG_READ    ;sys_pml2+4096+PG_SWR
+
         ret
 endp
 

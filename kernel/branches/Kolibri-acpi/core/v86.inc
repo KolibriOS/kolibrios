@@ -107,8 +107,10 @@ v86_create:
         add     eax, edx
         loop    @b
 
-        mov     eax, [sys_proc+PROC.pdt_0_phys]
-        mov     cr3, eax
+        mov     eax, sys_proc
+        push    ebx
+ ;       call    set_cr3
+        pop     ebx
         popfd
 
         pop     edi

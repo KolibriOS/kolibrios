@@ -594,7 +594,7 @@ proc load_file_umode stdcall, file_name:dword
         jz      .err_2
 
         mov     edx, [file_size]                 ;preallocate page memory
-        shr     eax, 10
+        shr     eax, 9
         lea     edi, [page_tabs+eax]
         add     edx, 4095
         shr     edx, 12
@@ -604,6 +604,8 @@ proc load_file_umode stdcall, file_name:dword
         jz      .err_3
 
         or      eax, PG_UWR
+        stosd
+        xor     eax, eax
         stosd
         dec     edx
         jnz     @B
@@ -649,14 +651,14 @@ proc load_file_umode stdcall, file_name:dword
         test    eax, eax
         jz      .err_2
 
-        shr     eax, 10                          ; and remap pages.
+        shr     eax, 9                          ; and remap pages.
 
         mov     ecx, [file_size]
         add     ecx, 4095
         shr     ecx, 12
 
         mov     esi, [km_file]
-        shr     esi, 10
+        shr     esi, 9
         add     esi, page_tabs
 
         lea     edi, [page_tabs+eax]
@@ -666,6 +668,8 @@ proc load_file_umode stdcall, file_name:dword
         lodsd
         and     eax, 0xFFFFF000
         or      eax, PG_UWR
+        stosd
+        xor     eax, eax
         stosd
         loop    @B
 
@@ -1222,17 +1226,17 @@ proc load_library stdcall, file_name:dword
         mov     [eax+HDLL.parent], esi
         mov     edx, ebx
         shr     edx, 12
-        or      dword [page_tabs+(edx-1)*4], DONT_FREE_BLOCK
+        or      dword [page_tabs+(edx-1)*8], DONT_FREE_BLOCK
 ; copy entries of page table from kernel-side image to usermode
 ; use copy-on-write for user-mode image, so map as readonly
         xor     edi, edi
         mov     ecx, [esi+DLLDESCR.data]
         shr     ecx, 12
 .map_pages_loop:
-        mov     eax, [page_tabs+ecx*4]
+        mov     eax, [page_tabs+ecx*8]
         and     eax, not 0xFFF
         or      al, PG_UR
-        xchg    eax, [page_tabs+edx*4]
+        xchg    eax, [page_tabs+edx*8]
         test    al, 1
         jz      @f
         call    free_page
