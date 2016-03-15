@@ -1,14 +1,14 @@
 ;-----------------------------------------------------------
 ;-------find simvole in string------------------------------
 ;-----------------------------------------------------------
+
+;input:
+;eax=string
+;ebx=symvol
 find_symvol:
-	;eax=string
-	;ebx=symvol
 	mov esi,eax
 	next_symvol:
-	xor ecx,ecx
-	mov cl,[eax]
-	cmp cl,bl
+	cmp byte[eax],bl
 	je symvol_fined
 	inc eax
 	jmp next_symvol

@@ -1,86 +1,4 @@
 ;-----------------------------------------------------------
-;-----------load heading of file in memory------------------
-;-----------------------------------------------------------
-
-load_heading_of_file:
-
-         mov [where_load_file],ebx
-         mov [full_file_path],eax
-
-         mov esi,[full_file_path]
-         mov edi,filepath
-         mov ecx,256
-         rep movsd
-
-         xor eax,eax
-         mov ecx,[where_load_file]
-         mov edx,filepath
-
-         mov [file_information],eax
-         mov [file_information+4],eax
-         mov [file_information+8],eax
-         mov [file_information+12],dword 512
-         mov [file_information+16],ecx
-         mov [file_information+20],al
-         mov [file_information+21],edx
-
-         mov eax,70
-         mov ebx,file_information
-         mcall
-
-         ret
-;-----------------------------------------------------------
-;--------load file in memory--------------------------------
-;-----------------------------------------------------------
-load_file:
-         mov [where_load_file],ebx
-         mov [full_file_path],eax
-
-         mov esi,[full_file_path]
-         mov edi,filepath
-         mov ecx,256
-         rep movsd
-
-         xor eax,eax
-         mov ebx,bufer_for_info
-         mov ecx,filepath
-
-         mov [file_information],dword 5
-         mov [file_information+4],eax
-         mov [file_information+8],eax
-         mov [file_information+12],eax
-         mov [file_information+16],ebx
-         mov [file_information+20],al
-         mov [file_information+21],ecx
-
-         mov eax,70
-	 mov ebx,file_information
-         mcall
-         
-         test eax,eax
-         jnz error_load_file
-
-         xor eax,eax
-         mov ebx,[bufer_for_info+32]
-         mov ecx,[where_load_file]
-         mov edx,filepath
-
-         mov [file_information],eax
-         mov [file_information+4],eax
-         mov [file_information+8],eax
-         mov [file_information+12],ebx
-         mov [file_information+16],ecx
-         mov [file_information+20],al
-         mov [file_information+21],edx
-
-         mov eax,70
-         mov ebx,file_information
-         mcall
-
-         error_load_file:
-
-	 ret
-;-----------------------------------------------------------
 ;---------------save in file from memory--------------------
 ;-----------------------------------------------------------
 save_file:
@@ -98,7 +16,7 @@ save_file:
          mov ecx,[pointer_to_data]
          mov edx,filepath
 
-         mov [file_information],dword 2
+         mov dword[file_information],SSF_CREATE_FILE
          mov [file_information+4],eax
          mov [file_information+8],eax
          mov [file_information+12],ebx
@@ -106,11 +24,9 @@ save_file:
          mov [file_information+20],al
          mov [file_information+21],edx
 
-         mov eax,70
-         mov ebx,file_information
-         mcall
+         mcall SF_FILE,file_information
 
-	 ret
+	ret
 
 ;----------------------------------------------------------
 ;-------------file information structure-------------------

@@ -251,47 +251,39 @@ fps:
 	add	ecx,edx
 	mov	edx,8*65536+20+15+49+5+1
 
-	mcall	7
+	mcall SF_PUT_IMAGE
 	ret
 ;----------------------------------------------------------
 ;--------------------clear screen--------------------------
 ;----------------------------------------------------------
 cleare_screen:
-	mov	eax,[ScreenPointer]
-	mov	ebx,[WorkScreen_SizeX]
-	imul	ebx,[WorkScreen_SizeY]
-	lea	ebx,[ebx+ebx*2]
-	shr	ebx,3
-	inc	ebx
-	mov	esi,0xffffff
-
-clear_screen_loop:
-	mov	[eax],esi
-	mov	[eax+3],esi
-	mov	[eax+6],si
-	add	eax,4+4
-	dec	ebx
-	jnz	clear_screen_loop
+	mov edi,[ScreenPointer]
+	mov ebx,[WorkScreen_SizeX]
+	imul ebx,[WorkScreen_SizeY]
+	lea ebx,[ebx+ebx*2]
+	mov eax,0xffffffff
+	mov ecx,ebx
+	shr ecx,2
+	rep stosd
+	mov ecx,ebx
+	and ecx,3
+	rep stosb
 	ret
 ;----------------------------------------------------------
 ;-------------cleare work arrea(work screen)---------------
 ;----------------------------------------------------------
 cleare_work_arrea:
-	mov	eax,[PointerToPicture]
-	mov	ebx,[Picture_SizeX]
-	imul	ebx,[Picture_SizeY]
-	lea	ebx,[ebx+ebx*2]
-	shr	ebx,3
-	inc	ebx
-	mov	esi,0xffffff
-
-clear_work_arrea_loop:
-	mov	[eax],esi
-	mov	[eax+3],esi
-	mov	[eax+6],si
-	add	eax,4+4
-	dec	ebx
-	jnz	clear_work_arrea_loop
+	mov edi,[PointerToPicture]
+	mov ebx,[Picture_SizeX]
+	imul ebx,[Picture_SizeY]
+	lea ebx,[ebx+ebx*2]
+	mov eax,0xffffffff
+	mov ecx,ebx
+	shr ecx,2
+	rep stosd
+	mov ecx,ebx
+	and ecx,3
+	rep stosb
 	ret
 ;-----------------------------------------------------------
 ;calculate position work screen on a picture
