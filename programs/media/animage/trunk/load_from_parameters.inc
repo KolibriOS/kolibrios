@@ -15,11 +15,11 @@ load_picture:
 	jnz .end_open
 
     mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
-	add ecx,(1200*1000)*3+50*(20*20*3)+500000+16000+0x4000
+	add ecx,mem_screen+mem_panel_b+mem_flood_f
 	mcall SF_SYS_MISC,SSF_MEM_REALLOC,,[ScreenPointer]
 	mov [ScreenPointer],eax
-	add eax,0x10000
-	sub ecx,(1200*1000)*3+50*(20*20*3)+500000+16000+0x4000
+	add eax,mem_screen+mem_panel_b
+	sub ecx,mem_screen+mem_panel_b+mem_flood_f
 	mov [file_information.Function], SSF_READ_FILE
 	mov [file_information.Position], 0
 	mov [file_information.Flags], 0
@@ -32,7 +32,7 @@ load_picture:
 	je .end_open
 		;определяем вид изображения и пишем его параметры
 		mov eax,[ScreenPointer]
-		add eax,0x10000
+		add eax,mem_screen+mem_panel_b
 		stdcall [img_decode], eax,ebx,0
 		push eax
 		;определяем размер декодированного изображения
@@ -42,7 +42,7 @@ load_picture:
 		mov dword[Picture_SizeY],eax
 		imul ecx,eax
 		imul ecx,15
-		add ecx,(1200*1000)*3+50*(20*20*3)+500000+16000+0x4000
+		add ecx,mem_screen+mem_panel_b+mem_flood_f
 		mcall SF_SYS_MISC,SSF_MEM_REALLOC,,[ScreenPointer]
 		mov [ScreenPointer],eax
 		call prepare_data_pointers

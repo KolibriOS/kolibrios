@@ -15,28 +15,28 @@ dialog_line:
 	    call print_cursor
 
       opros:
-	    mov eax,10
-	    mcall
+	    mcall SF_WAIT_EVENT
 
-	    cmp eax,1
+	    cmp eax,1 ;redraw window
+	    je exit_cycle
+	    cmp eax,3 ;press button
 	    je exit_cycle
 
-	    cmp eax,2
+	    cmp eax,2 ;press key
 	    jne opros
 
-	    mov eax,2
-	    mcall
+	    mcall SF_GET_KEY
 	    shr eax,8
 
-	    cmp eax,13
+	    cmp al,13
 	    je exit_cycle
-	    cmp eax,8
+	    cmp al,8
 	    je backspace
-	    cmp eax,176
+	    cmp al,176
 	    je left
-	    cmp eax,179
+	    cmp al,179
 	    je right
-	    cmp eax,32
+	    cmp al,32
 	    je probel
 
 	    inc [position]
@@ -99,41 +99,36 @@ dialog_line:
 	    ret
 ;---------------------------------------------------------------
 print_line:
-	     mov eax,13
-	     mov ebx,[string_x]
-	     mov ecx,[string_y]
-	     mov edx,[MaxSizeString]
-	     shl ebx,16
-	     shl ecx,16
-	     imul edx,6
-	     add ebx,edx
-	     add ebx,2
-	     add ecx,10
-	     mov edx,0xffffff
-	     mcall
-	     mov eax,4
-	     mov ebx,[string_x]
-	     shl ebx,16
-	     add ebx,[string_y]
-	     mov ecx,0
-	     mov edx,string_
-	     mov esi,[MaxSizeString]
-	     mcall
-	     ret
+	mov ebx,[string_x]
+	mov ecx,[string_y]
+	mov edx,[MaxSizeString]
+	shl ebx,16
+	shl ecx,16
+	imul edx,6
+	add ebx,edx
+	add ebx,2
+	add ecx,10
+	mov edx,0xffffff
+	mcall SF_DRAW_RECT
+	mov ebx,[string_x]
+	shl ebx,16
+	add ebx,[string_y]
+	mov edx,string_
+	mov esi,[MaxSizeString]
+	mcall SF_DRAW_TEXT,,0
+	ret
 
 print_cursor:
-	     mov eax,13
-	     mov ebx,[position]
-	     mov ecx,[string_y]
-	     imul ebx,6
-	     add ebx,[string_x]
-	     shl ebx,16
-	     shl ecx,16
-	     add ebx,2
-	     add ecx,8
-	     mov edx,0xff6c58
-	     mcall
-	     ret
+	mov ebx,[position]
+	mov ecx,[string_y]
+	imul ebx,6
+	add ebx,[string_x]
+	shl ebx,16
+	shl ecx,16
+	add ebx,2
+	add ecx,8
+	mcall SF_DRAW_RECT,,,0xff6c58
+	ret
 ;----------------------------------------------------------
 MinMaxCorrect:
 	    mov ebx,[MaxSizeString]

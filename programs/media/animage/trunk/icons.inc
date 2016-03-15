@@ -5,7 +5,7 @@ load_icons:
 	stdcall [img_decode], panel_picture, panel_picture.end-panel_picture, 0
 	mov ebx,eax
 	mov edi,[ScreenPointer]
-	add edi,(1200*1000*3)+8
+	add edi,mem_screen
 	stdcall [img_to_rgb2], ebx,edi ;преобразуем изображение к формату rgb
 	stdcall [img_destroy], ebx ;удаляем временный буфер с параметрами изображения
 	ret
@@ -20,10 +20,9 @@ draw_icons:
 	 shl edx,16
 	 add edx,[Icon_Y]
 	 mov ebx,[ScreenPointer]
-	 add ebx,(1200*1000*3)+8
-	 mov eax,7
+	 add ebx,mem_screen
 	 mov ecx,417*65536+46
-	 mcall
+	 mcall SF_PUT_IMAGE
 
 
 	 ;main buttons of instrumnts

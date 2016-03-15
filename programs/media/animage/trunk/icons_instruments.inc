@@ -169,11 +169,7 @@ TakeButtonInstruments:
 	and ebx,0xffffff
 	mov [Color],ebx
 
-	mov eax,13
-	mov ebx,136*65536+20
-	mov ecx,65*65536+21
-	mov edx,[Color]
-	mcall
+	mcall SF_DRAW_RECT, 136*65536+20, 65*65536+21, [Color]
 
 	jmp still
 	no_pipetka:
@@ -341,7 +337,7 @@ TakeButtonInstruments:
 	lea ecx,[ecx+ecx*2]
 	shl ecx,1
 
-	cmp ecx,500000
+	cmp ecx,mem_flood_f
 	ja normal_size_of_bufer
 
 	mov ebx,[ReserveArray]
@@ -480,7 +476,6 @@ TakeButtonInstruments:
 	mov edi,256
 	xor esi,esi
 	next_rectangle:
-	mov eax,13
 	mov ebx,[x]
 	mov ecx,[y]
 	mov edx,[palitra+esi]
@@ -489,7 +484,7 @@ TakeButtonInstruments:
 	shl ecx,16
 	add ebx,13
 	add ecx,13
-	mcall
+	mcall SF_DRAW_RECT
 	add [x],15
 	cmp [x],20+15*32
 	jl no_new_line
@@ -509,15 +504,13 @@ TakeButtonInstruments:
 	cmp eax,2
 	jne no_keys
 
-	mov eax,2
-	mcall
+	mcall SF_GET_KEY
 
 	no_keys:
 
 	cmp eax,3
 	jne no_buttons
-	mov eax,17
-	mcall
+	mcall SF_GET_BUTTON
 
 	no_buttons:
 
@@ -564,9 +557,7 @@ TakeButtonInstruments:
 	cmp [counter],257
 	jne next_rectangle_column
 
-	mov eax,5
-	mov ebx,10
-	mcall
+	mcall SF_SLEEP,10
 
 	call drawwin
 
@@ -592,13 +583,10 @@ TakeButtonInstruments:
 	mov [OldX],eax
 	mov [OldY],ebx
 	mov [Activate_instrument],1
-	mov eax,[ReserveArray]
-	mov ecx,60000
-	clear_array_line:
-	mov [eax],dword 0
-	add eax,4
-	dec ecx
-	jnz clear_array_line
+	xor eax,eax
+	mov ecx,mem_flood_f/4
+	mov edi,[ReserveArray]
+	rep stosd
 	jmp still
 	no_new_line_xy:
 
@@ -791,13 +779,10 @@ TakeButtonInstruments:
 	mov [OldX],eax
 	mov [OldY],ebx
 	mov [Activate_instrument],1
-	mov eax,[ReserveArray]
-	mov ecx,60000
-	clear_array_rectangle:
-	mov [eax],dword 0
-	add eax,4
-	dec ecx
-	jnz clear_array_rectangle
+	xor eax,eax
+	mov ecx,mem_flood_f/4
+	mov edi,[ReserveArray]
+	rep stosd
 	jmp still
 	no_new_rectangle_xy:
 
@@ -988,13 +973,10 @@ TakeButtonInstruments:
 	mov [OldX],eax
 	mov [OldY],ebx
 	mov [Activate_instrument],1
-	mov eax,[ReserveArray]
-	mov ecx,60000
-	clear_array_circle:
-	mov [eax],dword 0
-	add eax,4
-	dec ecx
-	jnz clear_array_circle
+	xor eax,eax
+	mov ecx,mem_flood_f/4
+	mov edi,[ReserveArray]
+	rep stosd
 	jmp still
 	no_new_circle_xy:
 
@@ -1348,13 +1330,10 @@ TakeButtonInstruments:
 	mov [instrument_used],1
 	and [crossing],0
 	and [finishing_crossing],0
-	mov eax,[ReserveArray]
-	mov ecx,60000
-	clear_array_allocation:
-	mov [eax],dword 0
-	add eax,4
-	dec ecx
-	jnz clear_array_allocation
+	xor eax,eax
+	mov ecx,mem_flood_f/4
+	mov edi,[ReserveArray]
+	rep stosd
 	jmp still
 	no_new_allocation_xy:
 	instrument_not_finished_work:
@@ -1931,13 +1910,10 @@ TakeButtonInstruments:
 	instrument_used_true:
 
 	mov [Activate_instrument],1
-	mov eax,[ReserveArray]
-	mov ecx,60000
-	clear_array_konture:
-	mov [eax],dword 0
-	add eax,4
-	dec ecx
-	jnz clear_array_line
+	xor eax,eax
+	mov ecx,mem_flood_f/4
+	mov edi,[ReserveArray]
+	rep stosd
 
 	no_new_konture_xy:
 
@@ -2137,13 +2113,10 @@ TakeButtonInstruments:
 	mov [OldX],eax
 	mov [OldY],ebx
 	mov [Activate_instrument],1
-	mov eax,[ReserveArray]
-	mov ecx,60000
-	clear_array_ellips:
-	mov [eax],dword 0
-	add eax,4
-	dec ecx
-	jnz clear_array_ellips
+	xor eax,eax
+	mov ecx,mem_flood_f/4
+	mov edi,[ReserveArray]
+	rep stosd
 	jmp still
 	no_new_ellips_xy:
 

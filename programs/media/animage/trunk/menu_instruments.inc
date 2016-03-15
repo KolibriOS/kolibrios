@@ -60,7 +60,7 @@ TakeInstruments:
 	call	print_text
 
 	mov	edx,1000000000000000000000000000000b+1000
-	mcall	8,<177,40>,<115,14>,
+	mcall SF_DEFINE_BUTTON,<177,40>,<115,14>,
 
 	mov	edx,1000000000000000000000000000000b+1001
 	mcall	,,<139,14>,
@@ -69,7 +69,7 @@ TakeInstruments:
 	mcall	,<175,40>,<170,15>
 
 no_activate_space:
-	mcall	10
+	mcall SF_WAIT_EVENT
 
 	cmp	eax,1
 	je	exit_new
@@ -77,7 +77,7 @@ no_activate_space:
 	cmp	eax,3
 	jne	no_activate_space
 
-	mcall	17
+	mcall SF_GET_BUTTON
 	shr	eax,8
 
 	cmp	eax,1000
@@ -130,7 +130,7 @@ no_picture_size_y:
 
 exit_new:
 	mov	edx,11100000000000000000000000000000b+1002
-	mcall	8,<175,40>,<170,15>
+	mcall SF_DEFINE_BUTTON,<175,40>,<170,15>
 
 	mov	edx,11100000000000000000000000000000b+1001
 	mcall	,<177,40>,<139,14>
@@ -154,7 +154,6 @@ no_new:
 	cmp	[number_menu],2
 	jne	no_open
 
-;	opendialog drawwin,open_1,open_2,file_path
 ;---------------------------------------------------------------------
 	mov	[OpenDialog_data.type],0 ; open
 	
@@ -164,13 +163,10 @@ no_new:
 	cmp	[OpenDialog_data.status],1
 	jne	still
 ;---------------------------------------------------------------------
-;open_1:
-	mcall	40,0x80000027 ; 100111b
+	mcall SF_SET_EVENTS_MASK,0x80000027 ;100111b
 
 	call load_picture
-
-	call	load_icons
-	call	drawwin
+	call drawwin
 
 	mov	[Scroll1CoordinatX],9
 	mov	[Scroll2CoordinatY],89
@@ -226,7 +222,7 @@ no_save_:
 ;---------------------------------------------------------------------
 save1:
 save_enter:
-	mcall	40,0x80000027 ; 100111b
+	mcall SF_SET_EVENTS_MASK,0x80000027 ;100111b
 
 	call	analizing_picture_to_palette
 

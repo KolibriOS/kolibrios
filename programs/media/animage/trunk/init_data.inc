@@ -13,20 +13,11 @@
 	mov	[MaxWorkScreen_SizeY],100
 	and	[PosX],0
 	and	[PosY],0
-	mov	[Picture_SizeX],640;400
-	mov	[Picture_SizeY],400;280
+	mov	[Picture_SizeX],640
+	mov	[Picture_SizeY],400
 	mov	[k],1
 
-;   mov [ScreenPointer],I_END ; S = 0, L = 3600000 + 60000 + 500000 = 4160000 = 3,97 Mb
-;   mov [PointerToPicture],     I_END+(1200*1000*3)+50*(20*20*3)+500000 ; S = 4160000, L = 768000 = 750 Kb
-;   mov [PointerToCopyPicture], I_END+(1200*1000*3)+50*(20*20*3)+500000+(640*400*3) ; S = 4928000, L = 768000 = 750 Kb
-;   mov [PointerToCopyPicture2],I_END+(1200*1000*3)+50*(20*20*3)+500000+(640*400*3)*2 ; S = 5696000, L = 768000 = 750 Kb
-;   mov [PointerToEditBufer],   I_END+(1200*1000*3)+50*(20*20*3)+500000+(640*400*3)*3 ; S = 6464000, L = 768000 = 750 Kb
-;   mov [PointerToSpriteBufer], I_END+(1200*1000*3)+50*(20*20*3)+500000+(640*400*3)*4 ; S = 7232000, L = 768000 = 750 Kb
-;   mov [PointerToPalette],     I_END+(1200*100*3)+50*(20*20*3)+1  ; S = 420001
-;   mov [ReserveArray],         I_END+(1200*1000)*3+50*(20*20*3)+8 ; S = 3660008
-
-	mcall	68,12,4096
+	mcall SF_SYS_MISC,SSF_MEM_ALLOC,4096
 	mov	[ScreenPointer],eax
 
 	and	[save_flag],0

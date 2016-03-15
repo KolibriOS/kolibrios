@@ -43,14 +43,13 @@ include '../../../libio.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
-COLOR_ORDER equ MENUETOS
 include	'bmplib.inc'
 include	'dialog2.inc'
 include	'design.inc'
 include	'graphlib.inc'
 
 include	'cursors.inc'
-
+include	'memory.inc'
 include	'load_from_parameters.inc'
 
 START:
@@ -159,7 +158,6 @@ include	'string.inc'
 include	'palette.inc'
 include	'files.inc'
 include	'time.inc'
-include	'memory.inc'
 ;-----------------------------------------------------------
 ;------------variables and data of program------------------
 ;-----------------------------------------------------------

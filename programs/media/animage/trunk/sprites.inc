@@ -20,13 +20,8 @@ SaveFonForSprite:
 	mov ecx,[counter]
 
 	next_pixel_sprite_save:
-	mov eax,[esi]
-	and eax,0xffffff
-	mov [edi],ax
-	shr eax,16
-	mov [edi+2],al
-	add esi,3
-	add edi,3
+	movsw
+	movsb
 	dec ecx
 	jnz next_pixel_sprite_save
 
@@ -57,13 +52,8 @@ PutFonForSprite:
 	mov ecx,[counter]
 
 	next_pixel_sprite_put:
-	mov eax,[esi]
-	and eax,0xffffff
-	mov [edi],ax
-	shr eax,16
-	mov [edi+2],al
-	add esi,3
-	add edi,3
+	movsw
+	movsb
 	dec ecx
 	jnz next_pixel_sprite_put
 
@@ -94,13 +84,8 @@ DrawSprite:
 	mov ecx,[counter]
 
 	next_pixel_sprite_draw:
-	mov eax,[esi]
-	and eax,0xffffff
-	mov [edi],ax
-	shr eax,16
-	mov [edi+2],al
-	add esi,3
-	add edi,3
+	movsw
+	movsb
 	dec ecx
 	jnz next_pixel_sprite_draw
 
