@@ -1,6 +1,7 @@
-#include<menuet/os.h>
+#include<kos32sys.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/types.h>
 #include "SDL.h"
 #include "SDL_sysevents.h"
 #include "SDL_sysvideo.h"
@@ -161,9 +162,9 @@ void MenuetOS_PumpEvents(_THIS)
  int i;
  SDL_keysym key;
  static int ext_code=0;
- static __u8 old_mode=0;
+ static uint8_t old_mode=0;
  for (;;) {
-  i=__menuet__check_for_event();
+   i=check_os_event();
   switch(i)
   {
    case 0:
@@ -172,7 +173,7 @@ void MenuetOS_PumpEvents(_THIS)
     MenuetOS_SDL_RepaintWnd();
     break;
    case 2:
-    key.scancode = __menuet__getkey();
+    key.scancode = get_key;
     if (key.scancode == 0xE0 || key.scancode == 0xE1)
     {ext_code=key.scancode;break;}
     if (ext_code == 0xE1 && (key.scancode & 0x7F) == 0x1D) break;
@@ -198,7 +199,7 @@ void MenuetOS_PumpEvents(_THIS)
     SDL_PrivateKeyboard(code,&key);
     break;
    case 3:
-    if(__menuet__get_button_id()==1) exit(0);
+     if(get_os_button()==1) exit(0);
     break;
    case 6: {
     int __tmp,mx,my;

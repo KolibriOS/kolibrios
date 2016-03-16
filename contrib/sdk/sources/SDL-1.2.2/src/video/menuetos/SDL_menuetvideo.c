@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <menuet/os.h>
+#include <kos32sys.h>
 #include "SDL.h"
 #include "SDL_error.h"
 #include "SDL_video.h"
@@ -10,6 +10,25 @@
 #include "SDL_events_c.h"
 #include "SDL_menuetvideo.h"
 #include <string.h>
+
+struct process_table_entry
+{
+ uint32_t cpu_usage;
+ uint16_t pos_in_windowing_stack;
+ uint16_t win_stack_val_at_ecx;
+ uint16_t reserved1;
+ char name[12];
+ uint32_t memstart;
+ uint32_t memused;
+ uint32_t pid;
+ uint32_t winx_start,winy_start;
+ uint32_t winx_size,winy_size;
+ uint16_t thread_state;
+ uint16_t reserved2;
+ uint32_t client_left,client_top,client_width,client_height;
+ uint8_t window_state;
+ uint8_t reserved3[1024-71];
+};
 
 static SDL_VideoDevice * vm_suf=NULL;
 static int was_initialized=0;
@@ -32,8 +51,8 @@ static int IsStyle4Available=0;
 
 void MenuetOS_SDL_RepaintWnd(void)
 {
- __menuet__window_redraw(1);
- __menuet__define_window(1,1,vm_suf->hidden->win_size_x+9,vm_suf->hidden->win_size_y+get_skinh()+4,
+ begin_draw();
+ sys_create_window(1,1,vm_suf->hidden->win_size_x+9,vm_suf->hidden->win_size_y+get_skinh()+4,
 #ifdef KEEP_OBSOLETE_STYLE3
  	IsStyle4Available?0x34000000:0x33000000
 #else
@@ -41,10 +60,11 @@ void MenuetOS_SDL_RepaintWnd(void)
 #endif
  	,0,(int)vm_suf->hidden->__title);
  if(vm_suf && vm_suf->hidden->__video_buffer)
-  __menuet__putimage(0,0,
+  put_image(0,0,
    vm_suf->hidden->win_size_x,vm_suf->hidden->win_size_y,
    vm_suf->hidden->__video_buffer);
- __menuet__window_redraw(2);
+
+ begin_draw();;
 }
 
 static int MenuetOS_AllocHWSurface(_THIS,SDL_Surface * surface)
@@ -69,7 +89,7 @@ static void MenuetOS_DirectUpdate(_THIS,int numrects,SDL_Rect * rects)
 {
  if(numrects)
  {
-  __menuet__putimage(0,0,
+  put_image(0,0,
    vm_suf->hidden->win_size_x,vm_suf->hidden->win_size_y,
    this->hidden->__video_buffer);
  }
@@ -126,7 +146,7 @@ SDL_Surface * MenuetOS_SetVideoMode(_THIS, SDL_Surface *current, int width, int 
  }
  else
  {
-  __menuet__set_bitfield_for_wanted_events(0x27);
+  set_wanted_events_mask(0x27);
   was_initialized=1;
   MenuetOS_SDL_RepaintWnd();
  }
@@ -194,8 +214,7 @@ static int MenuetOS_VideoInit(_THIS,SDL_PixelFormat * vformat)
 
 static int MenuetOS_FlipHWSurface(_THIS,SDL_Surface * surface)
 {
- __menuet__putimage(0,0,surface->w,surface->h,
-  surface->pixels);
+ put_image(0,0,surface->w,surface->h, surface->pixels);
  return 0;
 }
 
