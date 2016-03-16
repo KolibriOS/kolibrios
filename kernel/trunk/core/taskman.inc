@@ -950,6 +950,13 @@ common_app_entry:
 .cleanup:
         stdcall free_kernel_space, [ebp+APP_HDR.img_base]
         stdcall kernel_free, ebp
+
+        mov     ebx, [current_slot]
+        cmp     [ebx+APPDATA.debugger_slot], 0
+        je      .exit
+        mov     eax, [TASK_BASE]
+        mov     [eax+TASKDATA.state], 1
+        call    change_task
 .exit:
         popad
         iretd
@@ -1090,7 +1097,6 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
 ; set if debuggee
         test    byte [flags], 1
         jz      .no_debug
-        inc     edx ; process state - suspended
         mov     eax, [CURRENT_TASK]
         mov     [SLOT_BASE+ebx*8+APPDATA.debugger_slot], eax
 .no_debug:
