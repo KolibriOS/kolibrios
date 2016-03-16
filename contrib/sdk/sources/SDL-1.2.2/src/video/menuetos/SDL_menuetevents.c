@@ -173,7 +173,7 @@ void MenuetOS_PumpEvents(_THIS)
     MenuetOS_SDL_RepaintWnd();
     break;
    case 2:
-    key.scancode = get_key;
+     key.scancode = get_key().code;
     if (key.scancode == 0xE0 || key.scancode == 0xE1)
     {ext_code=key.scancode;break;}
     if (ext_code == 0xE1 && (key.scancode & 0x7F) == 0x1D) break;
