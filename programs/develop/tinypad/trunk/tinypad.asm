@@ -523,7 +523,7 @@ proc start_fasm ;/////////////////////////////////////////////////////////////
 	mov	dword[edi],',dbg'
 do_run:
 	add	edi,4
-		@@:
+    @@:
 	mov	al,0
 	stosb
 
@@ -688,7 +688,7 @@ section @PARAMS ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ;-----------------------------------------------------------------------------
 
 fasm_parameters:
-
+    rb 1024+256
 p_info	process_information
 p_info2 process_information
 sc	system_colors
