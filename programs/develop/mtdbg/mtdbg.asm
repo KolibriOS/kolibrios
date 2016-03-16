@@ -113,14 +113,6 @@ get_context:
         ret
 
 set_context:
-        ;push    2
-        ;pop     ebx
-        ;push    69
-        ;pop     eax
-        ;mov     ecx, [debuggee_pid]
-        ;mov     esi, context
-        ;push    28h
-        ;pop     edx
         mcall    69, 2, [debuggee_pid], 28h, context
         ret
 
@@ -133,10 +125,6 @@ get_dump:
         push    edi
         rep stosb
         pop     edi
-        ;mov     ecx, [debuggee_pid]
-        ;mov     al, 69
-        ;push    6
-        ;pop     ebx
         mcall    69, 6, [debuggee_pid]
         cmp     eax, -1
         jnz     @f
@@ -248,6 +236,10 @@ do_reload:
     .load_ok:
         mov     [debuggee_pid], eax
         mov     [bSuspended], 1
+        mov     eax, 5
+        mov     ebx, 20
+        int     0x40
+
         push    ecx
         call    get_context
         mov     edi, oldcontext
@@ -716,6 +708,9 @@ dbgmsgstart:
         jz      exception
         dec     eax
         jz      terminated
+        dec     eax
+        jnz     dbg_notify
+
         mov     [bSuspended], 1
         cmp     [bAfterGo], 0
         jnz     after_go_exception
@@ -752,6 +747,13 @@ dbgmsgstart:
         jb      .6
         push    esi
         jmp     exception.done_draw
+
+dbg_notify:
+        int3
+        add     esi, 32
+        push    esi
+        jmp     dbgmsgend
+
 
 ; TODO: make it local
 terminated:
