@@ -65,6 +65,18 @@ void end_draw(void)
     "int $0x40" ::"a"(12),"b"(2));
 };
 
+static inline void 
+put_image(uint16_t x_coord, uint16_t y_coord,
+	  uint16_t size_x, uint16_t size_y, void *img)
+{
+    __asm__ __volatile__("int $0x40" 
+			 ::"a"(25),
+			  "b"(img),
+			  "c"(size_x<<16 | size_y),
+			  "d"(x_coord<<16 | y_coord));
+};
+
+
 static inline
 void sys_create_window(int x, int y, int w, int h, const char *name,
                        color_t workcolor, uint32_t style)
@@ -217,6 +229,17 @@ static inline uint32_t  set_cursor(uint32_t  cursor)
     :"=a"(old)
     :"a"(37), "b"(5), "c"(cursor));
     return old;
+};
+
+static inline uint32_t set_wanted_events_mask(uint32_t event_mask)
+{
+  uint32_t  old_event_mask;
+    __asm__ __volatile__(
+    "int $0x40"
+    :"=a"(old_event_mask)
+    :"a"(40));
+
+    return old_event_mask;
 };
 
 static inline int destroy_cursor(uint32_t cursor)
