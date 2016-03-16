@@ -1,3 +1,100 @@
+macro square_width_put
+{
+local .no_put_to_screen
+local .next_color_put
+local .vertical_width_put
+local .horizontal_width_put
+
+	mov ebx,[ReserveArray]
+	mov eax,[ebx]
+	test eax,eax
+	jz .no_put_to_screen
+	mov ecx,[ebx]
+	add ebx,4
+	xor ebp,ebp
+
+	.next_color_put:
+	;put saved pixels in ReserveArray
+	push ecx
+	mov [counter2],5
+	mov edi,[ebx]
+	push edi
+	.vertical_width_put:
+		mov [counter],5
+
+		.horizontal_width_put:
+			mov edx,[ebx+4807*4+ebp]
+			;and edx,0xffffff
+			mov [edi],dx
+			shr edx,16
+			mov [edi+2],dl
+
+		add edi,3
+		add ebp,4
+		dec [counter]
+		jnz .horizontal_width_put
+
+		mov ecx,[Picture_SizeX]
+		sub ecx,5
+		lea ecx,[ecx+ecx*2]
+		add edi,ecx
+	dec [counter2]
+	jnz .vertical_width_put
+	pop edi
+	pop ecx
+
+	add ebx,4
+	dec ecx
+	jnz .next_color_put
+
+	.no_put_to_screen:
+}
+
+macro square_width_save
+{
+local .next_color_save
+local .vertical_width_save
+local .horizontal_width_save
+	mov ebx,[ReserveArray]
+	mov [ebx],eax
+	mov ecx,eax
+	add ebx,4
+	xor ebp,ebp
+
+	.next_color_save:
+	;save color of pixel in ReserveArray
+	push ecx
+	mov [counter2],5
+	mov edi,[ebx]
+	.vertical_width_save:
+		mov [counter],5
+
+		.horizontal_width_save:
+			mov eax,edi
+			mov edx,[eax]
+			;and edx,0xffffff
+			mov [ebx+4807*4+ebp],dx
+			shr edx,16
+			mov [ebx+4807*4+2+ebp],dl
+
+		add edi,3
+		add ebp,4
+		dec [counter]
+		jnz .horizontal_width_save
+
+		mov ecx,[Picture_SizeX]
+		sub ecx,5
+		lea ecx,[ecx+ecx*2]
+		add edi,ecx
+	dec [counter2]
+	jnz .vertical_width_save
+	pop ecx
+
+	add ebx,4
+	dec ecx
+	jnz .next_color_save
+}
+
 ;-----------------------------------------------------------
 ;-----instruments of panel(icon's instruments)--------------
 ;-----------------------------------------------------------
@@ -50,7 +147,7 @@ TakeButtonInstruments:
 	jmp still
 	no_brush3:
 
-	;************************brush 4************************
+	;*************************brush 4***********************
 	cmp eax,43
 	jne no_brush4
 
@@ -65,7 +162,7 @@ TakeButtonInstruments:
 	jmp still
 	no_brush4:
 
-	;************************brush 5************************
+	;*************************brush 5***********************
 	cmp eax,44
 	jne no_brush5
 
@@ -153,7 +250,7 @@ TakeButtonInstruments:
 	jmp still
 	no_pensil:
 
-	;**********************pipetka**************************
+	;*************************pipetka***********************
 	cmp eax,15
 	jne no_pipetka
 
@@ -174,7 +271,7 @@ TakeButtonInstruments:
 	jmp still
 	no_pipetka:
 
-	;**********************draw brush***********************
+	;*************************draw brush********************
 	cmp eax,11
 	jne no_brush
 
@@ -325,7 +422,7 @@ TakeButtonInstruments:
 	jmp still
 	no_brush:
 
-	;************************Flood Fill*******************
+	;************************Flood Fill*********************
 	cmp eax,14
 	jne no_FloodFill
 
@@ -374,7 +471,7 @@ TakeButtonInstruments:
 
 	no_lastik:
 
-	;******************************************************
+	;*******************************************************
 	cmp eax,12
 	jne  no_spray
 
@@ -461,7 +558,7 @@ TakeButtonInstruments:
 
 	no_spray:
 
-	;***********************palette*************************
+	;************************palette************************
 	cmp eax,51
 	jne no_palette
 
@@ -591,49 +688,7 @@ TakeButtonInstruments:
 	no_new_line_xy:
 
 	;put saved pixels
-	mov ebx,[ReserveArray]
-	mov eax,[ebx]
-	test eax,eax
-	jz no_put_line_to_screen_line
-	mov ecx,[ebx]
-	add ebx,4
-	xor ebp,ebp
-	next_color_put_line:
-	;put saved pixels in ReserveArray
-	push ecx
-	and [counter2],0
-	mov edi,[ebx]
-	push edi
-	vertical_width_put:
-	   and [counter],0
-
-	   horizontal_width_put:
-	      mov edx,[ebx+4807*4+ebp]
-	      and edx,0xffffff
-	      mov [edi],dx
-	      shr edx,16
-	      mov [edi+2],dl
-
-	   add edi,3
-	   add ebp,4
-	   inc [counter]
-	   cmp [counter],5
-	   jne horizontal_width_put
-
-	   mov ecx,[Picture_SizeX]
-	   sub ecx,5
-	   lea ecx,[ecx+ecx*2]
-	   add edi,ecx
-	inc [counter2]
-	cmp [counter2],5
-	jne vertical_width_put
-	pop edi
-	pop ecx
-	add ebx,4
-	dec ecx
-	jnz next_color_put_line
-
-	no_put_line_to_screen_line:
+	square_width_put
 
 	;calculate line
 	mov ebx,[ReserveArray]
@@ -663,51 +718,9 @@ TakeButtonInstruments:
 	no_minimum_y_line:
 
 	call calculate_line
-	;call calculate_rectangle
-	mov [counter],eax
 
 	;save color pixels in ReserveArray
-	mov eax,[counter]
-	mov ebx,[ReserveArray]
-	mov [ebx],eax
-
-	mov ecx,[ebx]
-	add ebx,4
-
-	xor ebp,ebp
-	next_color_save_line:
-	;save color of pixel in ReserveArray
-	push ecx
-	and [counter2],0
-	mov edi,[ebx]
-	vertical_width_save:
-	   and [counter],0
-
-	   horizontal_width_save:
-	      mov eax,edi
-	      mov edx,[eax]
-	      and edx,0xffffff
-	      mov [ebx+4807*4+ebp],dx
-	      shr edx,16
-	      mov [ebx+4807*4+2+ebp],dl
-
-	   add edi,3
-	   add ebp,4
-	   inc [counter]
-	   cmp [counter],5
-	   jne horizontal_width_save
-
-	   mov ecx,[Picture_SizeX]
-	   sub ecx,5
-	   lea ecx,[ecx+ecx*2]
-	   add edi,ecx
-	inc [counter2]
-	cmp [counter2],5
-	jne vertical_width_save
-	pop ecx
-	add ebx,4
-	dec ecx
-	jnz next_color_save_line
+	square_width_save
 
 	;draw calculated pixels on work arrea
 	mov ebx,[ReserveArray]
@@ -763,7 +776,7 @@ TakeButtonInstruments:
 	jmp still
 	no_line:
 
-	;*********************************DRAW RECTANGLE****************************
+	;************************draw rectangle*****************
 	cmp eax,17
 	jne no_rectangle
 
@@ -787,49 +800,7 @@ TakeButtonInstruments:
 	no_new_rectangle_xy:
 
 	;put saved pixels
-	mov ebx,[ReserveArray]
-	mov eax,[ebx]
-	test eax,eax
-	jz no_put_rectangle_to_screen_line
-	mov ecx,[ebx]
-	add ebx,4
-	xor ebp,ebp
-	next_color_put_rectangle:
-	;put saved pixels in ReserveArray
-	push ecx
-	and [counter2],0
-	mov edi,[ebx]
-	push edi
-	vertical_width_put_rectangle:
-	   and [counter],0
-
-	   horizontal_width_put_rectangle:
-	      mov edx,[ebx+4807*4+ebp]
-	      and edx,0xffffff
-	      mov [edi],dx
-	      shr edx,16
-	      mov [edi+2],dl
-
-	   add edi,3
-	   add ebp,4
-	   inc [counter]
-	   cmp [counter],5
-	   jne horizontal_width_put_rectangle
-
-	   mov ecx,[Picture_SizeX]
-	   sub ecx,5
-	   lea ecx,[ecx+ecx*2]
-	   add edi,ecx
-	inc [counter2]
-	cmp [counter2],5
-	jne vertical_width_put_rectangle
-	pop edi
-	pop ecx
-	add ebx,4
-	dec ecx
-	jnz next_color_put_rectangle
-
-	no_put_rectangle_to_screen_line:
+	square_width_put
 
 	;calculate line
 	mov ebx,[ReserveArray]
@@ -859,50 +830,9 @@ TakeButtonInstruments:
 	no_minimum_y_rectangle:
 
 	call calculate_rectangle
-	mov [counter],eax
 
 	;save color pixels in ReserveArray
-	mov eax,[counter]
-	mov ebx,[ReserveArray]
-	mov [ebx],eax
-
-	mov ecx,[ebx]
-	add ebx,4
-
-	xor ebp,ebp
-	next_color_save_rectangle:
-	;save color of pixel in ReserveArray
-	push ecx
-	and [counter2],0
-	mov edi,[ebx]
-	vertical_width_save_rectangle:
-	   and [counter],0
-
-	   horizontal_width_save_rectangle:
-	      mov eax,edi
-	      mov edx,[eax]
-	      and edx,0xffffff
-	      mov [ebx+4807*4+ebp],dx
-	      shr edx,16
-	      mov [ebx+4807*4+2+ebp],dl
-
-	   add edi,3
-	   add ebp,4
-	   inc [counter]
-	   cmp [counter],5
-	   jne horizontal_width_save_rectangle
-
-	   mov ecx,[Picture_SizeX]
-	   sub ecx,5
-	   lea ecx,[ecx+ecx*2]
-	   add edi,ecx
-	inc [counter2]
-	cmp [counter2],5
-	jne vertical_width_save_rectangle
-	pop ecx
-	add ebx,4
-	dec ecx
-	jnz next_color_save_rectangle
+	square_width_save
 
 	;draw calculated pixels on work arrea
 	mov ebx,[ReserveArray]
@@ -957,7 +887,7 @@ TakeButtonInstruments:
 	jmp still
 	no_rectangle:
 
-	;*********************************DRAW CIRCLE****************************
+	;************************draw circle********************
 	cmp eax,18
 	jne no_circle
 
@@ -981,49 +911,7 @@ TakeButtonInstruments:
 	no_new_circle_xy:
 
 	;put saved pixels
-	mov ebx,[ReserveArray]
-	mov eax,[ebx]
-	test eax,eax
-	jz no_put_line_to_screen_circle
-	mov ecx,[ebx]
-	add ebx,4
-	xor ebp,ebp
-	next_color_put_circle:
-	;put saved pixels in ReserveArray
-	push ecx
-	and [counter2],0
-	mov edi,[ebx]
-	push edi
-	vertical_width_put_circle:
-	   and [counter],0
-
-	   horizontal_width_put_circle:
-	      mov edx,[ebx+4807*4+ebp]
-	      and edx,0xffffff
-	      mov [edi],dx
-	      shr edx,16
-	      mov [edi+2],dl
-
-	   add edi,3
-	   add ebp,4
-	   inc [counter]
-	   cmp [counter],5
-	   jne horizontal_width_put_circle
-
-	   mov ecx,[Picture_SizeX]
-	   sub ecx,5
-	   lea ecx,[ecx+ecx*2]
-	   add edi,ecx
-	inc [counter2]
-	cmp [counter2],5
-	jne vertical_width_put_circle
-	pop edi
-	pop ecx
-	add ebx,4
-	dec ecx
-	jnz next_color_put_circle
-
-	no_put_line_to_screen_circle:
+	square_width_put
 
 	mov esi,[ScreenX]
 	mov edi,[ScreenY]
@@ -1141,50 +1029,8 @@ TakeButtonInstruments:
 	mov esi,[Radius]
 	call calculate_circle
 
-	mov [counter],eax
-
 	;save color pixels in ReserveArray
-	mov eax,[counter]
-	mov ebx,[ReserveArray]
-	mov [ebx],eax
-
-	mov ecx,[ebx]
-	add ebx,4
-
-	xor ebp,ebp
-	next_color_save_circle:
-	;save color of pixel in ReserveArray
-	push ecx
-	and [counter2],0
-	mov edi,[ebx]
-	vertical_width_save_circle:
-	   and [counter],0
-
-	   horizontal_width_save_circle:
-	      mov eax,edi
-	      mov edx,[eax]
-	      and edx,0xffffff
-	      mov [ebx+4807*4+ebp],dx
-	      shr edx,16
-	      mov [ebx+4807*4+2+ebp],dl
-
-	   add edi,3
-	   add ebp,4
-	   inc [counter]
-	   cmp [counter],5
-	   jne horizontal_width_save_circle
-
-	   mov ecx,[Picture_SizeX]
-	   sub ecx,5
-	   lea ecx,[ecx+ecx*2]
-	   add edi,ecx
-	inc [counter2]
-	cmp [counter2],5
-	jne vertical_width_save_circle
-	pop ecx
-	add ebx,4
-	dec ecx
-	jnz next_color_save_circle
+	square_width_save
 
 	;draw calculated pixels on work arrea
 	mov ebx,[ReserveArray]
@@ -1250,7 +1096,7 @@ TakeButtonInstruments:
 	jmp still
 	no_1_:
 
-	;*************************zoom 2************************
+	;************************zoom 2*************************
 	cmp eax,46
 	jne no_2_
 	mov [k],2
@@ -1262,7 +1108,7 @@ TakeButtonInstruments:
 	no_2_:
 
 
-	;*************************zoom 3************************
+	;************************zoom 3*************************
 	cmp eax,47
 	jne no_3_
 	mov [k],3
@@ -1273,7 +1119,7 @@ TakeButtonInstruments:
 	jmp still
 	no_3_:
 
-	;*************************zoom 4************************
+	;************************zoom 4*************************
 	cmp eax,48
 	jne no_4_
 	mov [k],4
@@ -1306,7 +1152,7 @@ TakeButtonInstruments:
 	jmp still
 	no_16_:
 
-	;***************allocation of a countour*********************
+	;***************allocation of a countour****************
 	cmp eax,21
 	jne no_allocation
 
@@ -1540,49 +1386,7 @@ TakeButtonInstruments:
 	no_change_coordinats:
 
 	;put saved pixels
-	mov ebx,[ReserveArray]
-	mov eax,[ebx]
-	test eax,eax
-	jz no_put_line_to_screen_allocation
-	mov ecx,[ebx]
-	add ebx,4
-	xor ebp,ebp
-	next_color_put_allocation:
-	;put saved pixels in ReserveArray
-	push ecx
-	and [counter2],0
-	mov edi,[ebx]
-	push edi
-	vertical_width_put_allocation:
-	   and [counter],0
-
-	   horizontal_width_put_allocation:
-	      mov edx,[ebx+4807*4+ebp]
-	      and edx,0xffffff
-	      mov [edi],dx
-	      shr edx,16
-	      mov [edi+2],dl
-
-	   add edi,3
-	   add ebp,4
-	   inc [counter]
-	   cmp [counter],1;5
-	   jne horizontal_width_put_allocation
-
-	   mov ecx,[Picture_SizeX]
-	   sub ecx,1;5
-	   lea ecx,[ecx+ecx*2]
-	   add edi,ecx
-	inc [counter2]
-	cmp [counter2],1;5
-	jne vertical_width_put_allocation
-	pop edi
-	pop ecx
-	add ebx,4
-	dec ecx
-	jnz next_color_put_allocation
-
-	no_put_line_to_screen_allocation:
+	square_width_put
 
 	cmp [DrawSprite_flag],1
 	jne no_activate_put_fon_
@@ -1632,50 +1436,9 @@ TakeButtonInstruments:
 	no_minimum_y_allocation:
 
 	call calculate_rectangle
-	mov [counter],eax
 
 	;save color pixels in ReserveArray
-	mov eax,[counter]
-	mov ebx,[ReserveArray]
-	mov [ebx],eax
-
-	mov ecx,[ebx]
-	add ebx,4
-
-	xor ebp,ebp
-	next_color_save_allocation:
-	;save color of pixel in ReserveArray
-	push ecx
-	and [counter2],0
-	mov edi,[ebx]
-	vertical_width_save_allocation:
-	   and [counter],0
-
-	   horizontal_width_save_allocation:
-	      mov eax,edi
-	      mov edx,[eax]
-	      and edx,0xffffff
-	      mov [ebx+4807*4+ebp],dx
-	      shr edx,16
-	      mov [ebx+4807*4+2+ebp],dl
-
-	   add edi,3
-	   add ebp,4
-	   inc [counter]
-	   cmp [counter],1;5
-	   jne horizontal_width_save_allocation
-
-	   mov ecx,[Picture_SizeX]
-	   sub ecx,1;5
-	   lea ecx,[ecx+ecx*2]
-	   add edi,ecx
-	inc [counter2]
-	cmp [counter2],1;5
-	jne vertical_width_save_allocation
-	pop ecx
-	add ebx,4
-	dec ecx
-	jnz next_color_save_allocation
+	square_width_save
 
 	cmp [DrawSprite_flag],1
 	jne no_save_fon_for_sprite_
@@ -1739,7 +1502,7 @@ TakeButtonInstruments:
 	jmp still
 	no_allocation:
 
-	;*************reflection from left to right******************
+	;*************reflection from left to right*************
 	cmp eax,23
 	jne no_reflection_from_left_to_right
 
@@ -1759,7 +1522,6 @@ TakeButtonInstruments:
 	mov edx,[ReserveArray]
 	and edi,0
 	copy_to_array_line_reflection_y:
-	xor eax,eax
 	mov eax,[ecx]
 	mov ebp,edi
 	lea ebp,[ebp+ebp*2]
@@ -1823,7 +1585,7 @@ TakeButtonInstruments:
 	jmp still
 	no_reflection_from_left_to_right:
 
-	;*************reflection from up to down******************
+	;*************reflection from up to down****************
 	cmp eax,24
 	jne no_reflection_from_up_to_down
 	mov esi,[Picture_SizeX]
@@ -1875,7 +1637,7 @@ TakeButtonInstruments:
 	jmp still
 	no_reflection_from_up_to_down:
 
-	;*********************draw hard contour*******************
+	;*********************draw hard contour*****************
 	cmp eax,20
 	jne no_kontur_
 
@@ -1918,49 +1680,7 @@ TakeButtonInstruments:
 	no_new_konture_xy:
 
 	;put saved pixels
-	mov ebx,[ReserveArray]
-	mov eax,[ebx]
-	test eax,eax
-	jz no_put_line_to_screen_konture
-	mov ecx,[ebx]
-	add ebx,4
-	xor ebp,ebp
-	next_color_put_konture:
-	;put saved pixels in ReserveArray
-	push ecx
-	and [counter2],0
-	mov edi,[ebx]
-	push edi
-	vertical_width_put_konture:
-	   and [counter],0
-
-	   horizontal_width_put_konture:
-	      mov edx,[ebx+4807*4+ebp]
-	      and edx,0xffffff
-	      mov [edi],dx
-	      shr edx,16
-	      mov [edi+2],dl
-
-	   add edi,3
-	   add ebp,4
-	   inc [counter]
-	   cmp [counter],5
-	   jne horizontal_width_put_konture
-
-	   mov ecx,[Picture_SizeX]
-	   sub ecx,5
-	   lea ecx,[ecx+ecx*2]
-	   add edi,ecx
-	inc [counter2]
-	cmp [counter2],5
-	jne vertical_width_put_konture
-	pop edi
-	pop ecx
-	add ebx,4
-	dec ecx
-	jnz next_color_put_konture
-
-	no_put_line_to_screen_konture:
+	square_width_put
 
 	;calculate line
 	mov ebx,[ReserveArray]
@@ -1990,51 +1710,9 @@ TakeButtonInstruments:
 	no_minimum_y_konture:
 
 	call calculate_line
-	;call calculate_rectangle
-	mov [counter],eax
 
 	;save color pixels in ReserveArray
-	mov eax,[counter]
-	mov ebx,[ReserveArray]
-	mov [ebx],eax
-
-	mov ecx,[ebx]
-	add ebx,4
-
-	xor ebp,ebp
-	next_color_save_konture:
-	;save color of pixel in ReserveArray
-	push ecx
-	and [counter2],0
-	mov edi,[ebx]
-	vertical_width_save_konture:
-	   and [counter],0
-
-	   horizontal_width_save_konture:
-	      mov eax,edi
-	      mov edx,[eax]
-	      and edx,0xffffff
-	      mov [ebx+4807*4+ebp],dx
-	      shr edx,16
-	      mov [ebx+4807*4+2+ebp],dl
-
-	   add edi,3
-	   add ebp,4
-	   inc [counter]
-	   cmp [counter],5
-	   jne horizontal_width_save_konture
-
-	   mov ecx,[Picture_SizeX]
-	   sub ecx,5
-	   lea ecx,[ecx+ecx*2]
-	   add edi,ecx
-	inc [counter2]
-	cmp [counter2],5
-	jne vertical_width_save_konture
-	pop ecx
-	add ebx,4
-	dec ecx
-	jnz next_color_save_konture
+	square_width_save
 
 	;draw calculated pixels on work arrea
 	mov ebx,[ReserveArray]
@@ -2097,7 +1775,7 @@ TakeButtonInstruments:
 	jmp still
 
 	no_kontur_:
-	;************************Draw ellips***********************
+	;************************draw ellips********************
 	cmp eax,19
 	jne no_ellips
 
@@ -2121,49 +1799,8 @@ TakeButtonInstruments:
 	no_new_ellips_xy:
 
 	;put saved pixels
-	mov ebx,[ReserveArray]
-	mov eax,[ebx]
-	test eax,eax
-	jz no_put_line_to_screen_ellips
-	mov ecx,[ebx]
-	add ebx,4
-	xor ebp,ebp
-	next_color_put_ellips:
-	;put saved pixels in ReserveArray
-	push ecx
-	and [counter2],0
-	mov edi,[ebx]
-	push edi
-	vertical_width_put_ellips:
-	   and [counter],0
+	square_width_put
 
-	   horizontal_width_put_ellips:
-	      mov edx,[ebx+4807*4+ebp]
-	      and edx,0xffffff
-	      mov [edi],dx
-	      shr edx,16
-	      mov [edi+2],dl
-
-	   add edi,3
-	   add ebp,4
-	   inc [counter]
-	   cmp [counter],5
-	   jne horizontal_width_put_ellips
-
-	   mov ecx,[Picture_SizeX]
-	   sub ecx,5
-	   lea ecx,[ecx+ecx*2]
-	   add edi,ecx
-	inc [counter2]
-	cmp [counter2],5
-	jne vertical_width_put_ellips
-	pop edi
-	pop ecx
-	add ebx,4
-	dec ecx
-	jnz next_color_put_ellips
-
-	no_put_line_to_screen_ellips:
 
 	mov esi,[ScreenX]
 	mov edi,[ScreenY]
@@ -2272,50 +1909,8 @@ TakeButtonInstruments:
 	add esi,[b_ellips]
 	call calculate_ellips
 
-	mov [counter],eax
-
 	;save color pixels in ReserveArray
-	mov eax,[counter]
-	mov ebx,[ReserveArray]
-	mov [ebx],eax
-
-	mov ecx,[ebx]
-	add ebx,4
-
-	xor ebp,ebp
-	next_color_save_ellips:
-	;save color of pixel in ReserveArray
-	push ecx
-	and [counter2],0
-	mov edi,[ebx]
-	vertical_width_save_ellips:
-	   and [counter],0
-
-	   horizontal_width_save_ellips:
-	      mov eax,edi
-	      mov edx,[eax]
-	      and edx,0xffffff
-	      mov [ebx+4807*4+ebp],dx
-	      shr edx,16
-	      mov [ebx+4807*4+2+ebp],dl
-
-	   add edi,3
-	   add ebp,4
-	   inc [counter]
-	   cmp [counter],5
-	   jne horizontal_width_save_ellips
-
-	   mov ecx,[Picture_SizeX]
-	   sub ecx,5
-	   lea ecx,[ecx+ecx*2]
-	   add edi,ecx
-	inc [counter2]
-	cmp [counter2],5
-	jne vertical_width_save_ellips
-	pop ecx
-	add ebx,4
-	dec ecx
-	jnz next_color_save_ellips
+	square_width_save
 
 	;draw calculated pixels on work arrea
 	mov ebx,[ReserveArray]
