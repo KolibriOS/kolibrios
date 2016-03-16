@@ -168,8 +168,6 @@ no_new:
 	call load_picture
 	call drawwin
 
-	mov	[Scroll1CoordinatX],9
-	mov	[Scroll2CoordinatY],89
 	and	[number_panel],0
 	and	[number_menu],0
 	jmp	still

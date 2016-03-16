@@ -59,5 +59,11 @@ prepare_data_pointers:
 	add	eax,mem_screen+mem_panel_b
 	mov	[PointerToPalette],eax
 	mov	[ReserveArray],eax
+
+	;обнуление скроллинга
+	and [PosX],0
+	and [PosY],0
+	mov [Scroll1CoordinatX],9 ;8+1
+	mov [Scroll2CoordinatY],89 ;20+15+1+50+3
 	ret
 ;---------------------------------------------------------

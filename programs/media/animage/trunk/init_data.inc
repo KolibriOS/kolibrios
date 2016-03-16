@@ -1,8 +1,6 @@
 ;---------------------------------------------------------
 ;--------initializate data and params of program----------
 ;---------------------------------------------------------
-	mov	[Scroll1CoordinatX],8+1
-	mov	[Scroll2CoordinatY],20+15+1+50+3
 	mov	[Window_SizeX],640
 	mov	[Window_SizeY],220
 	mov	[Window_CordinatX],50

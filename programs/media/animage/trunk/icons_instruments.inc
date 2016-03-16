@@ -109,8 +109,8 @@ TakeButtonInstruments:
 
 	no_activated_later:
 
-	mov eax,[MaxWorkScreen_SizeX]
-	mov ebx,[MaxWorkScreen_SizeY]
+;	mov eax,[MaxWorkScreen_SizeX] ???
+;	mov ebx,[MaxWorkScreen_SizeY] ???
 
 	mov eax,[PointerToPicture]
 	mov ebx,[ReserveArray]

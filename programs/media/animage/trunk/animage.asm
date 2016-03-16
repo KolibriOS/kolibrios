@@ -88,8 +88,6 @@ include	'init_data.inc'
 	jz @f
 	call load_picture
 	call MovePictureToWorkScreen
-	mov [Scroll1CoordinatX],9
-	mov [Scroll2CoordinatY],89
 @@:
 
 ;---------------------------------------------------------------------
@@ -206,8 +204,8 @@ IM_END:
 ;------------variables and data of program------------------
 ;-----------------------------------------------------------
 time			rd 1
-PosX			rd 1
-PosY			rd 1
+PosX			rd 1 ;scroll x file position
+PosY			rd 1 ;scroll y file position
 PointerToIcons		rd 1
 ScreenPointer		rd 1
 PointerToPicture	rd 1
@@ -215,7 +213,7 @@ PointerToCopyPicture	rd 1
 PointerToCopyPicture2	rd 1
 PointerToEditBufer	rd 1
 PointerToSpriteBufer	rd 1
-PointerToPalette	rd 1
+PointerToPalette	rd 1 ;указатель на пилитру (нужен для сохранения в *.bmp)
 Color			rd 1
 Number_Brush		rd 1
 Brush_SizeX		rd 1
@@ -235,13 +233,13 @@ Window_CordinatX	rd 1
 Window_CordinatY	rd 1
 Picture_SizeX		rd 1
 Picture_SizeY		rd 1
-ScreenX			rd 1
-ScreenY			rd 1
+ScreenX			rd 1 ;координата x курсора с учетом масштаба
+ScreenY			rd 1 ;координата y курсора с учетом масштаба
 WorkScreen_SizeX	rd 1
 WorkScreen_SizeY	rd 1
 MaxWorkScreen_SizeX	rd 1
 MaxWorkScreen_SizeY	rd 1
-k			rd 1
+k			rd 1 ;масштаб
 
 ReserveArray		rd 1
 register		rd 1
@@ -266,8 +264,8 @@ counter_11		rd 1
 number_panel		rd 1
 number_menu		rd 1
 
-Scroll1CoordinatX	rd 1
-Scroll1CoordinatY	rd 1
+Scroll1CoordinatX	rd 1 ;scroll x screen position
+Scroll1CoordinatY	rd 1 ;scroll y screen position
 Scroll1MaxSizeX		rd 1
 Scroll1MaxSizeY		rd 1
 Scroll1SizeX		rd 1

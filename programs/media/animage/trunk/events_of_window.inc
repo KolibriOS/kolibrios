@@ -3,7 +3,7 @@
 ;----------------------------------------------------------
 drawwin:
 	or	ecx,-1
-	mcall	9,procinfo
+	mcall SF_THREAD_INFO,procinfo
 	mov	esi,procinfo
 
 	mov	eax,[esi+34]
@@ -47,7 +47,7 @@ no_znak1:
 
 no_znak2:
 
-	mcall	12,1
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 ;------------------------------------------------
 	mov	ebx,50 ;[Window_CordinatX]
 	mov	ecx,50 ;[Window_CordinatY]
@@ -55,9 +55,7 @@ no_znak2:
 	shl	ecx,16
 	add	ebx,[Window_SizeX]
 	add	ecx,[Window_SizeY]
-	;xor	esi,esi	;0x805080d0
-;	xor	edi,edi	;0x005080d0
-	mcall	0,,,0x53aabbcc,,name_of_program
+	mcall SF_CREATE_WINDOW,,,0x53aabbcc,,name_of_program
 	
 	mov	eax,[procinfo+70] ;staus of window
 	test	eax,100b
@@ -86,10 +84,8 @@ no_znak2:
 	call	draw_icons
 	call	PrintMousePos
 ;------------------------------------------------
-	mov	ecx,[k]
-	and	[PosX],0
-	and	[PosY],0
-	call	MovePictureToWorkScreen
+	mov ecx,[k]
+	call MovePictureToWorkScreen
 ;------------------------------------------------
 	mov	ebx,[WorkScreen_SizeX]
 	add	ebx,5+3
@@ -108,7 +104,7 @@ no_znak2:
 	shl	ecx,16
 	mov	cx,dx
 
-	mcall	13,,,0xc7cbcf
+	mcall SF_DRAW_RECT,,,0xc7cbcf
 ;------------------------------------------------
 	mcall	,<5,3>
 ;------------------------------------------------
@@ -129,7 +125,7 @@ no_znak2:
 	shl	ecx,16
 	mov	cx,dx
 
-	mcall	13,,,0xc7cbcf
+	mcall SF_DRAW_RECT,,,0xc7cbcf
 ;------------------------------------------------
 	mcall	,,<20+15+1+49+2,3>
 ;------------------------------------------------
@@ -168,6 +164,6 @@ no_znak2:
 	call	draw_volume_rectangle	; down and right small area
 ;------------------------------------------------
 .end:
-	mcall	12,2
+	mcall SF_REDRAW,SSF_END_DRAW
 	ret
 ;-----------------------------------------------------------------------------
