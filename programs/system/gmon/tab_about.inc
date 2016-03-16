@@ -1,5 +1,5 @@
 ;
-; Ghost Monitor - утилита (стресс) тестирования и мониторинга системы
+; Ghost Monitor - СѓС‚РёР»РёС‚Р° (СЃС‚СЂРµСЃСЃ) С‚РµСЃС‚РёСЂРѕРІР°РЅРёСЏ Рё РјРѕРЅРёС‚РѕСЂРёРЅРіР° СЃРёСЃС‚РµРјС‹
 ; Copyright (C) 2005, 2006, 2007 Mihailov Ilia (ghost.nsk@mail.ru)
 ; All Right Reserved
 
@@ -7,7 +7,7 @@
 	mov	edx, msg_about
 	mov	ebx, 17 * 65536 + 285
 	call	show_text
-	jmp	end_drow_tab
+	jmp	redraw
 
 if lang eq it
 	msg_about mls \
@@ -26,7 +26,7 @@ if lang eq it
 		'',\
 		'      *** Usare a prioprio rischio ***'
 else
-	msg_about mls \	; должна быть хотябы одна строка
+	msg_about mls \	; РґРѕР»Р¶РЅР° Р±С‹С‚СЊ С…РѕС‚СЏР±С‹ РѕРґРЅР° СЃС‚СЂРѕРєР°
 		'               Ghost Monitor',\
 		'',\
 		' tool for testing and monitoring hardware',\

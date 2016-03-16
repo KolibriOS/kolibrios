@@ -335,6 +335,19 @@ macro mov arg1,arg2
    end if
  }
 
+macro clear_prev_no arg1        ; clears previous number printed at arg1
+ {
+   pusha
+   mov     ebx, 0x00070000
+   mov     ecx, 1000000     ; dummy value
+   mov     edx, arg1
+   mov     esi, 0x40000000 + tcol
+   mov     edi, tcol    ; bg col
+   mov     eax, 47
+   int     0x40
+   popa
+ }
+
 
 struc POINT _t,_dx,_dy {
  .x _t _dx

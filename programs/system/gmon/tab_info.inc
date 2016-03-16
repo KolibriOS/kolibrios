@@ -1,27 +1,27 @@
 ;
-; Ghost Monitor - утилита (стресс) тестирования и мониторинга системы
+; Ghost Monitor - СѓС‚РёР»РёС‚Р° (СЃС‚СЂРµСЃСЃ) С‚РµСЃС‚РёСЂРѕРІР°РЅРёСЏ Рё РјРѕРЅРёС‚РѕСЂРёРЅРіР° СЃРёСЃС‚РµРјС‹
 ; Copyright (C) 2005, 2006, 2007 Mihailov Ilia (ghost.nsk@mail.ru)
 ; All Right Reserved
 
 ;
 ;
-; Вкладка информации о системе
+; Р’РєР»Р°РґРєР° РёРЅС„РѕСЂРјР°С†РёРё Рѕ СЃРёСЃС‚РµРјРµ
 ;
-; Дописать ещё чтоить (маловато будет)
+; Р”РѕРїРёСЃР°С‚СЊ РµС‰С‘ С‡С‚РѕРёС‚СЊ (РјР°Р»РѕРІР°С‚Рѕ Р±СѓРґРµС‚)
 ;
 ;
 
-	; Пишем параметры
+	; РџРёС€РµРј РїР°СЂР°РјРµС‚СЂС‹
 	mov	edx, lab_info_tab
 	mov	ebx, 17 * 65536 + 285
 	call	show_text
 
-	; Пишем производителя процессора
+	; РџРёС€РµРј РїСЂРѕРёР·РІРѕРґРёС‚РµР»СЏ РїСЂРѕС†РµСЃСЃРѕСЂР°
 	mov	edx, Vendor
 	mov	esi, 12
 	mov	ebx, 160 * 65536 + 285
 	int	0x40
-	; Поддержка MMX
+	; РџРѕРґРґРµСЂР¶РєР° MMX
 	mov	ebx, 160 * 65536 + 305
 	mov	esi, 3
 	mov	edx, msg_yes
@@ -29,13 +29,13 @@
 	je	mmx_en
 	mov	edx, msg_no
 mmx_en:	int	0x40
-	; Чип мониторинга
+	; Р§РёРї РјРѕРЅРёС‚РѕСЂРёРЅРіР°
 	mov	edx, [hwm_chip_name]
 	or	ecx, 0x80000000
 	mov	ebx, 160 * 65536 + 325
 	mov	al, 4
 	int	0x40
-	; Частота процессора
+	; Р§Р°СЃС‚РѕС‚Р° РїСЂРѕС†РµСЃСЃРѕСЂР°
 	mov	eax, 18
 	mov	ebx, 5
 	int	0x40
@@ -50,7 +50,7 @@ mmx_en:	int	0x40
 	xor	esi, esi
 	int	0x40
 
-	; push	eax			; Вернуть код после исправления ftoa
+	; push	eax			; Р’РµСЂРЅСѓС‚СЊ РєРѕРґ РїРѕСЃР»Рµ РёСЃРїСЂР°РІР»РµРЅРёСЏ ftoa
 	; fild	dword[esp]
 	; push	1000;000
 	; fidiv	dword[esp]
@@ -67,7 +67,7 @@ mmx_en:	int	0x40
 	; pop	eax
 	; pop	eax
 
-	; Семейство и модель процессора
+	; РЎРµРјРµР№СЃС‚РІРѕ Рё РјРѕРґРµР»СЊ РїСЂРѕС†РµСЃСЃРѕСЂР°
 	mov	eax, 47
 	mov	ebx, 0x10100
 	xor	ecx, ecx
@@ -79,7 +79,7 @@ mmx_en:	int	0x40
 	add	edx, 10 * 65536
 	int	0x40
 
-	; коэффициент умножения
+	; РєРѕСЌС„С„РёС†РёРµРЅС‚ СѓРјРЅРѕР¶РµРЅРёСЏ
 	call	multiplier
 	test	ecx, ecx
 	jz	@f
@@ -100,7 +100,24 @@ mmx_en:	int	0x40
 	pop	eax
 	pop	eax
 @@:
-	; Свободная память
+
+	; Р Р°СЃСЃС‚Р°РІР»СЏРµРј РґРІРѕРµС‚РѕС‡РёСЏ
+	mov	eax, 4
+	mov	ebx, 152 * 65536 + 285
+	mov	edx, dub_p
+	mov	esi, 1
+	mov	ecx, 6		; <- РєРѕР»РёС‡РµСЃС‚РІРѕ СЃС‚СЂРѕРє
+nxt_dp:	push	ecx
+	xor	ecx, ecx
+	int	0x40
+	add	ebx, 10
+	pop	ecx
+	loop	nxt_dp
+;---------------------------------------------------------------------
+	jmp	redraw
+	
+free_mem:
+	; РЎРІРѕР±РѕРґРЅР°СЏ РїР°РјСЏС‚СЊ
 if (OS_version >= 0x0530)
 	mov	eax, 18
 	mov	ebx, 16
@@ -110,23 +127,11 @@ if (OS_version >= 0x0530)
 	mov	eax, 47
 	mov	edx, 160 * 65536 + 335
 	xor	esi, esi
+	clear_prev_no edx
 	int	0x40
 end if
-
-	; Расставляем двоеточия
-	mov	eax, 4
-	mov	ebx, 152 * 65536 + 285
-	mov	edx, dub_p
-	mov	esi, 1
-	mov	ecx, 6		; <- количество строк
-nxt_dp:	push	ecx
-	xor	ecx, ecx
-	int	0x40
-	add	ebx, 10
-	pop	ecx
-	loop	nxt_dp
-;---------------------------------------------------------------------
-	jmp	end_drow_tab
+	jmp end_drow_tab
+	
 dub_p	db	':'
 
 if lang eq it

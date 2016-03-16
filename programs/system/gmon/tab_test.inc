@@ -1,9 +1,9 @@
 ;
-; Ghost Monitor - утилита (стресс) тестирования и мониторинга системы
+; Ghost Monitor - СѓС‚РёР»РёС‚Р° (СЃС‚СЂРµСЃСЃ) С‚РµСЃС‚РёСЂРѕРІР°РЅРёСЏ Рё РјРѕРЅРёС‚РѕСЂРёРЅРіР° СЃРёСЃС‚РµРјС‹
 ; Copyright (C) 2005, 2006, 2007 Mihailov Ilia (ghost.nsk@mail.ru)
 ; All Right Reserved
 ;
-; Вкладка тестов
+; Р’РєР»Р°РґРєР° С‚РµСЃС‚РѕРІ
 ;
 ; "GenuineIntel" - International Electronics
 ; "GenuineTMx86" - Transmeta Processor
@@ -59,7 +59,7 @@ k6n:	int	0x40
 	jne	k7n
 	mov	esi, atcol
 k7n:	int	0x40
-	; Пишем названия кнопок
+	; РџРёС€РµРј РЅР°Р·РІР°РЅРёСЏ РєРЅРѕРїРѕРє
 	mov	eax, 4
 	mov	ebx, 30 * 65536 + 307
 	mov	esi, 7
@@ -110,7 +110,7 @@ nr4:	int	0x40
 	mov	edx, atcol
 	int	0x40
 
-	jmp	end_drow_tab
+	jmp	redraw
 
 tmsg_p	db	'Pentium (Pro/II/III)'	; 7/20
 tmsg_k6	db	'K6 (I/II/III)'		; 13
