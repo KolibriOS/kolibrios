@@ -95,6 +95,61 @@ local .horizontal_width_save
 	jnz .next_color_save
 }
 
+macro draw_calc_pixels brush
+{
+local .next_pixel_put
+local .vertical_width
+local .horizontal_width
+local .no_draw_pixel
+
+	mov ebx,[ReserveArray]
+	mov ecx,[ebx]
+	mov edx,[Color]
+	mov esi,[Color]
+	shr edx,16
+	add ebx,4
+	mov edi,[line_width]
+	dec edi
+	imul edi,25
+	add edi,brush
+	.next_pixel_put:
+
+	mov eax,[ebx]
+	push eax
+	push ecx
+	xor ebp,ebp
+	mov [counter2],5
+
+	.vertical_width:
+		mov [counter],5
+
+		.horizontal_width:
+		xor ecx,ecx
+		mov cl,byte[edi+ebp]
+		test cl,cl
+		jz .no_draw_pixel
+			mov [eax],si
+			mov [eax+2],dl
+		.no_draw_pixel:
+		add eax,3
+		inc ebp
+		dec [counter]
+		jnz .horizontal_width
+
+		mov ecx,[Picture_SizeX]
+		sub ecx,5
+		lea ecx,[ecx+ecx*2]
+		add eax,ecx
+	dec [counter2]
+	jnz .vertical_width
+
+	pop ecx
+	pop eax
+	add ebx,4
+	dec ecx
+	jnz .next_pixel_put
+}
+
 ;-----------------------------------------------------------
 ;-----instruments of panel(icon's instruments)--------------
 ;-----------------------------------------------------------
@@ -723,56 +778,9 @@ TakeButtonInstruments:
 	square_width_save
 
 	;draw calculated pixels on work arrea
-	mov ebx,[ReserveArray]
-	mov ecx,[ebx]
-	mov edx,[Color]
-	mov esi,[Color]
-	shr edx,16
-	add ebx,4
-	mov edi,[line_width]
-	dec edi
-	imul edi,25
-	next_pixel_put_line:
-
-	mov eax,[ebx]
-	push eax
-	push ecx
-	xor ebp,ebp
-	and [counter2],0
-
-	vertical_width:
-	   and [counter],0
-
-	   horizontal_width:
-	   xor ecx,ecx
-	   mov cl,byte[width_pixels+edi+ebp]
-	   test cl,cl
-	     jz no_draw_pixel_line
-	      mov [eax],si
-	      mov [eax+2],dl
-	     no_draw_pixel_line:
-	   add eax,3
-	   inc ebp
-	   inc [counter]
-	   cmp [counter],5
-	   jne horizontal_width
-
-	   mov ecx,[Picture_SizeX]
-	   sub ecx,5
-	   lea ecx,[ecx+ecx*2]
-	   add eax,ecx
-	inc [counter2]
-	cmp [counter2],5
-	jne vertical_width
-
-	pop ecx
-	pop eax
-	add ebx,4
-	dec ecx
-	jnz next_pixel_put_line
+	draw_calc_pixels width_pixels
 
 	call MovePictureToWorkScreen
-
 	jmp still
 	no_line:
 
@@ -835,53 +843,7 @@ TakeButtonInstruments:
 	square_width_save
 
 	;draw calculated pixels on work arrea
-	mov ebx,[ReserveArray]
-	mov ecx,[ebx]
-	mov edx,[Color]
-	mov esi,[Color]
-	shr edx,16
-	add ebx,4
-	mov edi,[line_width]
-	dec edi
-	imul edi,25
-	next_pixel_put_rectangle:
-
-	mov eax,[ebx]
-	push eax
-	push ecx
-	xor ebp,ebp
-	and [counter2],0
-
-	vertical_width_rectangle:
-	   and [counter],0
-
-	   horizontal_width_rectangle:
-	   xor ecx,ecx
-	   mov cl,byte[width_pixels_rectangle+edi+ebp]
-	   test cl,cl
-	     jz no_draw_pixel_rectangle
-	      mov [eax],si
-	      mov [eax+2],dl
-	     no_draw_pixel_rectangle:
-	   add eax,3
-	   inc ebp
-	   inc [counter]
-	   cmp [counter],5
-	   jne horizontal_width_rectangle
-
-	   mov ecx,[Picture_SizeX]
-	   sub ecx,5
-	   lea ecx,[ecx+ecx*2]
-	   add eax,ecx
-	inc [counter2]
-	cmp [counter2],5
-	jne vertical_width_rectangle
-
-	pop ecx
-	pop eax
-	add ebx,4
-	dec ecx
-	jnz next_pixel_put_rectangle
+	draw_calc_pixels width_pixels_rectangle
 
 	call MovePictureToWorkScreen
 	jmp still
@@ -1033,53 +995,7 @@ TakeButtonInstruments:
 	square_width_save
 
 	;draw calculated pixels on work arrea
-	mov ebx,[ReserveArray]
-	mov ecx,[ebx]
-	mov edx,[Color]
-	mov esi,[Color]
-	shr edx,16
-	add ebx,4
-	mov edi,[line_width]
-	dec edi
-	imul edi,25
-	next_pixel_put_circle:
-
-	mov eax,[ebx]
-	push eax
-	push ecx
-	xor ebp,ebp
-	and [counter2],0
-
-	vertical_width_circle:
-	   and [counter],0
-
-	   horizontal_width_circle:
-	   xor ecx,ecx
-	   mov cl,byte[width_pixels+edi+ebp]
-	   test cl,cl
-	     jz no_draw_pixel_circle
-	      mov [eax],si
-	      mov [eax+2],dl
-	     no_draw_pixel_circle:
-	   add eax,3
-	   inc ebp
-	   inc [counter]
-	   cmp [counter],5
-	   jne horizontal_width_circle
-
-	   mov ecx,[Picture_SizeX]
-	   sub ecx,5
-	   lea ecx,[ecx+ecx*2]
-	   add eax,ecx
-	inc [counter2]
-	cmp [counter2],5
-	jne vertical_width_circle
-
-	pop ecx
-	pop eax
-	add ebx,4
-	dec ecx
-	jnz next_pixel_put_circle
+	draw_calc_pixels width_pixels
 
 	call MovePictureToWorkScreen
 	jmp still
@@ -1715,53 +1631,7 @@ TakeButtonInstruments:
 	square_width_save
 
 	;draw calculated pixels on work arrea
-	mov ebx,[ReserveArray]
-	mov ecx,[ebx]
-	mov edx,[Color]
-	mov esi,[Color]
-	shr edx,16
-	add ebx,4
-	mov edi,[line_width]
-	dec edi
-	imul edi,25
-	next_pixel_put_konture:
-
-	mov eax,[ebx]
-	push eax
-	push ecx
-	xor ebp,ebp
-	and [counter2],0
-
-	vertical_width_konture:
-	   and [counter],0
-
-	   horizontal_width_konture:
-	   xor ecx,ecx
-	   mov cl,byte[width_pixels+edi+ebp]
-	   test cl,cl
-	     jz no_draw_pixel_konture
-	      mov [eax],si
-	      mov [eax+2],dl
-	     no_draw_pixel_konture:
-	   add eax,3
-	   inc ebp
-	   inc [counter]
-	   cmp [counter],5
-	   jne horizontal_width_konture
-
-	   mov ecx,[Picture_SizeX]
-	   sub ecx,5
-	   lea ecx,[ecx+ecx*2]
-	   add eax,ecx
-	inc [counter2]
-	cmp [counter2],5
-	jne vertical_width_konture
-
-	pop ecx
-	pop eax
-	add ebx,4
-	dec ecx
-	jnz next_pixel_put_konture
+	draw_calc_pixels width_pixels
 
 	mov eax,[ScreenX]
 	mov ebx,[ScreenY]
@@ -1913,53 +1783,7 @@ TakeButtonInstruments:
 	square_width_save
 
 	;draw calculated pixels on work arrea
-	mov ebx,[ReserveArray]
-	mov ecx,[ebx]
-	mov edx,[Color]
-	mov esi,[Color]
-	shr edx,16
-	add ebx,4
-	mov edi,[line_width]
-	dec edi
-	imul edi,25
-	next_pixel_put_ellips:
-
-	mov eax,[ebx]
-	push eax
-	push ecx
-	xor ebp,ebp
-	and [counter2],0
-
-	vertical_width_ellips:
-	   and [counter],0
-
-	   horizontal_width_ellips:
-	   xor ecx,ecx
-	   mov cl,byte[width_pixels+edi+ebp]
-	   test cl,cl
-	     jz no_draw_pixel_ellips
-	      mov [eax],si
-	      mov [eax+2],dl
-	     no_draw_pixel_ellips:
-	   add eax,3
-	   inc ebp
-	   inc [counter]
-	   cmp [counter],5
-	   jne horizontal_width_ellips
-
-	   mov ecx,[Picture_SizeX]
-	   sub ecx,5
-	   lea ecx,[ecx+ecx*2]
-	   add eax,ecx
-	inc [counter2]
-	cmp [counter2],5
-	jne vertical_width_ellips
-
-	pop ecx
-	pop eax
-	add ebx,4
-	dec ecx
-	jnz next_pixel_put_ellips
+	draw_calc_pixels width_pixels
 
 	call MovePictureToWorkScreen
 	jmp still

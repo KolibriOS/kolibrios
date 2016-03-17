@@ -3,7 +3,7 @@
 ;---------------------------------------------
 mouse:
 	or	ecx,-1
-	mcall	9,procinfo
+	mcall SF_THREAD_INFO,procinfo
 	
 	mov	eax,[procinfo+70] ;staus of window
 	test	eax,100b
@@ -210,47 +210,28 @@ mouse_in_work_arrea:
 	cmp	[Activate_instrument],0
 	jnz	no_undo___
 ;------------begin copy for undo-------------
-	inc	[number_undo]
-	cmp	[number_undo],1
-	jne	no_one__
-
-	mov	edi,[PointerToCopyPicture]
-
-no_one__:
-	cmp	[number_undo],2
-	jne	no_two__
-
-	mov	edi,[PointerToCopyPicture2]
-
-no_two__:
-	cmp	[number_undo],3
-	jne	no_three__
-
-;copy bufer number two to bufer number one
-	mov	esi,[PointerToCopyPicture2]
-	mov	edi,[PointerToCopyPicture]
-	mov	ecx,[Picture_SizeX]
-	imul	ecx,[Picture_SizeY]
-	lea	ecx,[ecx+ecx*2]
-	add	ecx,4
-	shr	ecx,2
-	inc	ecx
+;copy bufer number 2 to bufer number 0
+	mov edi,[PointerToCopyPicture2]
+	mov esi,[PointerToPicture]
+	mov ecx,[Picture_SizeX]
+	imul ecx,[Picture_SizeY]
+	lea ecx,[ecx+ecx*2]
+	mov ebx,ecx
+	shr ecx,2
 	cld
-	rep	movsd
-;end copy
-	dec	[number_undo]
-	mov	edi,[PointerToCopyPicture2]
-
-no_three__:
-	mov	esi,[PointerToPicture]
-	mov	ecx,[Picture_SizeX]
-	imul	ecx,[Picture_SizeY]
-	lea	ecx,[ecx+ecx*2]
-	add	ecx,4
-	shr	ecx,2
-	inc	ecx
-	cld
-	rep	movsd
+	rep movsd
+	mov ecx,ebx
+	and ecx,3
+	rep movsb
+	;call MovePictureToWorkScreen
+;rotate bufers +1
+	and	[number_undo],0 ;erase all undo
+	mov eax,[PointerToPicture]
+	mov ebx,[PointerToCopyPicture]
+	mov ecx,[PointerToCopyPicture2]
+	mov [PointerToPicture],ecx
+	mov [PointerToCopyPicture],eax
+	mov [PointerToCopyPicture2],ebx
 ;--------------end copy for undo-------------
 no_undo___:
 	call	TakeButtonInstruments
@@ -263,7 +244,7 @@ no_use_instruments:
 ;---------get mouse cordinats-------------------
 ;-----------------------------------------------
 GetMouseCoordinats:
-	mcall	37,1
+	mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
 	mov	ebx,eax
 	shr	eax,16
 	and	ebx,0xffff
@@ -274,5 +255,5 @@ GetMouseCoordinats:
 ;-------get mouse attributs----------------------
 ;------------------------------------------------
 GetMouseClick:
-	mcall	37,2
+	mcall SF_MOUSE_GET,SSF_BUTTON
 	ret

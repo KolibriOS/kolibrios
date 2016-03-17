@@ -255,47 +255,31 @@ no_save:
 	cmp	[number_menu],5
 	jne	no_exit_program
 
-	mov	eax,-1
-	mcall
+	mcall SF_TERMINATE_PROCESS
 ;---------------------------------------------------------------------
 no_exit_program:
 no_file:
 ;|||||||||||||||||||||||||||||EDIT|||||||||||||||||||||||||
 ;<<<<<<<<<<UNDO>>>>>>>>>>
 	cmp	[number_panel],6
-	jne	still	;no_edit
+	jne	still ;no_edit
 
 	cmp	[number_menu],1
 	jne	no_undo
 
-	cmp	[number_undo],1
-	jne	no_one____
+	cmp	[number_undo],2 ;2 - maximum undo count
+	jge	no_undo
 
-	mov	esi,[PointerToCopyPicture]
+;rotate bufers -1
+	inc	[number_undo]
+	mov eax,[PointerToPicture]
+	mov ebx,[PointerToCopyPicture]
+	mov ecx,[PointerToCopyPicture2]
+	mov [PointerToPicture],ebx
+	mov [PointerToCopyPicture],ecx
+	mov [PointerToCopyPicture2],eax
 
-no_one____:
-	cmp	[number_undo],2
-	jne	no_two____
-
-	mov	esi,[PointerToCopyPicture2]
-
-no_two____:
-	mov	edi,[PointerToPicture]
-	mov	ecx,[Picture_SizeX]
-	imul	ecx,[Picture_SizeY]
-	lea	ecx,[ecx+ecx*2]
-	add	ecx,4
-	shr	ecx,2
-	cld
-	rep	movsd
-	call	MovePictureToWorkScreen
-
-	dec	[number_undo]
-	jnz	no_null_undo
-
-	mov	[number_undo],1
-
-no_null_undo:
+	call MovePictureToWorkScreen
 	and	[number_panel],0
 	and	[number_menu],0
 	jmp	still
