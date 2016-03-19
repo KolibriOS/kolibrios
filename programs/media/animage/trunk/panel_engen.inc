@@ -267,7 +267,7 @@ PrintMousePos:
 	mov	ecx,52
 	mov	edx,18
 	mov	esi,4
-	call	draw_volume_rectangle
+	call	draw_volume_rectangle ; border for mouse x pos
 
 	mov	eax,[Window_SizeX]
 	sub	eax,75
@@ -275,7 +275,7 @@ PrintMousePos:
 	mov	ecx,52
 	mov	edx,18
 	mov	esi,4
-	call	draw_volume_rectangle
+	call	draw_volume_rectangle ; border for mouse y pos
 
 	mov	eax,[Window_SizeX]
 	sub	eax,70
@@ -344,10 +344,9 @@ draw_scrollers:
 	mov	ebx,[Window_SizeY]
 	sub	ebx,22+10
 	mov	ecx,[Window_SizeX]
-	sub	ecx,10+5+20+10+1
+	sub	ecx,39+ci_scrollh_coord_x_min
 	mov	edx,14+10
 	mov	esi,1
-	mov	[Scroll1CoordinatX],eax
 	mov	[Scroll1CoordinatY],ebx
 	mov	[Scroll1MaxSizeY],edx
 	mov	[Scroll1MaxSizeX],ecx
@@ -363,17 +362,16 @@ draw_scrollers:
 	mov	edi,[Scroll1MaxSizeX]
 	sub	edi,ecx
 	mov	[Scroll1FreeX],edi
-	call	draw_volume_rectangle
+	call draw_volume_rectangle ; horizontal scrollbar polzunok
 
 	mov	eax,[Window_SizeX]
 	sub	eax,22+10
 	mov	ebx,[Scroll2CoordinatY]
 	mov	ecx,14+10
 	mov	edx,[Window_SizeY]
-	sub	edx,20+15+1+49+10+20+11
+	sub	edx,39+ci_scrollv_coord_y_min
 	mov	esi,1
 	mov	[Scroll2CoordinatX],eax
-	mov	[Scroll2CoordinatY],ebx
 	mov	[Scroll2MaxSizeX],ecx
 	mov	[Scroll2MaxSizeY],edx
 
@@ -389,8 +387,7 @@ draw_scrollers:
 	mov	edi,[Scroll2MaxSizeY]
 	sub	edi,edx
 	mov	[Scroll2FreeY],edi
-
-	call	draw_volume_rectangle
+	call draw_volume_rectangle ; vertical scrollbar polzunok
 
 	ret
 

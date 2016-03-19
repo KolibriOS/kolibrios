@@ -1005,8 +1005,7 @@ TakeButtonInstruments:
 	cmp eax,45
 	jne no_1_
 	mov [k],1
-	mov [Scroll1CoordinatX],9
-	mov [Scroll2CoordinatY],89
+	call scrollbar_move_00
 	and [Current_instrument],0
 	call drawwin
 	jmp still
@@ -1017,8 +1016,7 @@ TakeButtonInstruments:
 	jne no_2_
 	mov [k],2
 	call drawwin
-	mov [Scroll1CoordinatX],9
-	mov [Scroll2CoordinatY],89
+	call scrollbar_move_00
 	and [Current_instrument],0
 	jmp still
 	no_2_:
@@ -1029,8 +1027,7 @@ TakeButtonInstruments:
 	jne no_3_
 	mov [k],3
 	call drawwin
-	mov [Scroll1CoordinatX],9
-	mov [Scroll2CoordinatY],89
+	call scrollbar_move_00
 	and [Current_instrument],0
 	jmp still
 	no_3_:
@@ -1040,8 +1037,7 @@ TakeButtonInstruments:
 	jne no_4_
 	mov [k],4
 	call drawwin
-	mov [Scroll1CoordinatX],9
-	mov [Scroll2CoordinatY],89
+	call scrollbar_move_00
 	and [Current_instrument],0
 	jmp still
 	no_4_:
@@ -1051,8 +1047,7 @@ TakeButtonInstruments:
 	jne no_8_
 	mov [k],8
 	call drawwin
-	mov [Scroll1CoordinatX],9
-	mov [Scroll2CoordinatY],89
+	call scrollbar_move_00
 	and [Current_instrument],0
 	jmp still
 	no_8_:
@@ -1062,8 +1057,7 @@ TakeButtonInstruments:
 	jne no_16_
 	mov [k],16
 	call drawwin
-	mov [Scroll1CoordinatX],9
-	mov [Scroll2CoordinatY],89
+	call scrollbar_move_00
 	and [Current_instrument],0
 	jmp still
 	no_16_:

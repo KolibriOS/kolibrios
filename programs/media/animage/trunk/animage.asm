@@ -43,6 +43,21 @@ include '../../../libio.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
+;---------------------------------------------------------
+; *** константы для интерфейса ***
+
+; окно редактора
+ci_edit_wnd_x_pos  equ  5 ;координата x для окна редактора
+ci_edit_wnd_y_pos  equ 87 ;координата y для окна редактора
+ci_edit_wnd_border equ  3 ;рамка вокруг окна редактора
+
+; скроллинги
+ci_scrollh_coord_x_min equ (ci_edit_wnd_x_pos+3) ;минимальная позиция ползунка
+	;горизонтального скроллинга
+ci_scrollv_coord_y_min equ (ci_edit_wnd_y_pos+3) ;минимальная позиция ползунка
+	;вертикального скроллинга
+;---------------------------------------------------------
+
 include	'bmplib.inc'
 include	'dialog2.inc'
 include	'design.inc'
@@ -59,9 +74,7 @@ load_libraries l_libs_start,end_l_libs
 
 	cmp	eax,-1
 	jz	close
-;--------------------------------------------------------
-;---------------set events mask--------------------------
-;--------------------------------------------------------
+
 	mcall SF_SET_EVENTS_MASK,0x80000067 ; 1100111b
 ;---------------------------------------------------------
 ;-----------------------init data-------------------------
@@ -138,9 +151,6 @@ copy_str_1:
 	jnz	@b
 	ret
 ;---------------------------------------------------------------------
-;---------------------------------------------------------
-;---------------------------------------------------------
-;---------------------------------------------------------
 include	'events.inc'
 include	'events_of_window.inc'
 include	'events_of_keys.inc'
@@ -177,25 +187,18 @@ file 'panel_buttons.png'
 ;****************cursors******************
 brush_cursor:
 file 'brush.cur'
-;----------------------------------------------------------
 flood_fill_cursor:
 file 'flood_fill.cur'
-;----------------------------------------------------------
 lastik_cursor:
 file 'lastik.cur'
-;----------------------------------------------------------
 other_cursor:
 file 'other.cur'
-;----------------------------------------------------------
 pencil_cursor:
 file 'pencil.cur'
-;----------------------------------------------------------
 pipette_cursor:
 file 'pipette.cur'
-;----------------------------------------------------------
 spray_cursor:
 file 'spray.cur'
-;----------------------------------------------------------
 zoom_cursor:
 file 'zoom.cur'
 ;----------------------------------------------------------
@@ -268,7 +271,7 @@ Scroll1CoordinatX	rd 1 ;scroll x screen position
 Scroll1CoordinatY	rd 1 ;scroll y screen position
 Scroll1MaxSizeX		rd 1
 Scroll1MaxSizeY		rd 1
-Scroll1SizeX		rd 1
+Scroll1SizeX		rd 1 ;scroll polzunok size
 Scroll1FreeX		rd 1
 
 Scroll2CoordinatX	rd 1

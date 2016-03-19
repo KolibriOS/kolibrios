@@ -45,8 +45,8 @@ no_redraw_panel:
 	mov	ebx,[MouseY]
 	mov	ecx,[WorkScreen_SizeX]
 	mov	edx,[WorkScreen_SizeY]
-	add	ecx,9
-	add	edx,89
+	add	ecx,ci_scrollh_coord_x_min
+	add	edx,ci_scrollv_coord_y_min
 
 	cmp	eax,ecx
 	jae	mouse_scroll
@@ -74,13 +74,13 @@ mouse_scroll:
 	test	eax,eax
 	jz	no_horizontal
 
-	mov	eax,9
+	mov	eax,ci_scrollh_coord_x_min
 	mov	ebx,[Scroll1CoordinatY]
 	mov	ecx,[Scroll1MaxSizeX]
+	inc ecx
 	mov	edx,14+10
 	mov	esi,7
-	inc	ecx
-	call	draw_volume_rectangle
+	call draw_volume_rectangle ; horizontal scrollbar clear
 
 	mov	eax,[MouseX]
 	mov	ebx,[Scroll1SizeX]
@@ -88,13 +88,13 @@ mouse_scroll:
 	sub	eax,ebx
 	mov	ecx,[MouseX]
 	add	ecx,ebx
-	mov	edx,8+1
+	mov	edx,ci_scrollh_coord_x_min
 	add	edx,[Scroll1MaxSizeX]
 	mov	[Scroll1CoordinatX],eax
-	sub	eax,9
+	sub	eax,ci_scrollh_coord_x_min
 	jns	no_min_scroll
 
-	mov	[Scroll1CoordinatX],9
+	mov	[Scroll1CoordinatX],ci_scrollh_coord_x_min
 
 no_min_scroll:
 	cmp	ecx,edx
@@ -106,7 +106,7 @@ no_min_scroll:
 
 no_max_scroll:
 	mov	eax,[Scroll1CoordinatX]
-	sub	eax,9
+	sub	eax,ci_scrollh_coord_x_min
 	mov	ebx,[Picture_SizeX]
 	imul	eax,ebx
 	mov	ebx,[Scroll1MaxSizeX]
@@ -127,12 +127,12 @@ no_horizontal:
 	jz	no_vertical
 
 	mov	eax,[Scroll2CoordinatX]
-	mov	ebx,89
+	mov	ebx,ci_scrollv_coord_y_min
 	mov	ecx,14+10
 	mov	edx,[Scroll2MaxSizeY]
+	inc edx
 	mov	esi,7
-	inc	edx
-	call	draw_volume_rectangle
+	call draw_volume_rectangle ; vertical scrollbar clear
 
 	mov	eax,[MouseY]
 	mov	ebx,[Scroll2SizeY]
@@ -140,14 +140,14 @@ no_horizontal:
 	sub	eax,ebx
 	mov	ecx,[MouseY]
 	add	ecx,ebx
-	mov	edx,89
+	mov	edx,ci_scrollv_coord_y_min
 	add	edx,[Scroll2MaxSizeY]
 	mov	[Scroll2CoordinatY],eax
 
-	sub	eax,89
+	sub	eax,ci_scrollv_coord_y_min
 	jns	no_min_scroll2
 
-	mov	[Scroll2CoordinatY],89
+	mov	[Scroll2CoordinatY],ci_scrollv_coord_y_min
 
 no_min_scroll2:
 	cmp	ecx,edx
@@ -159,7 +159,7 @@ no_min_scroll2:
 
 no_max_scroll2:
 	mov	eax,[Scroll2CoordinatY]
-	sub	eax,89
+	sub	eax,ci_scrollv_coord_y_min
 	mov	ebx,[Picture_SizeY]
 	imul	eax,ebx
 	mov	ebx,[Scroll2MaxSizeY]
@@ -183,13 +183,13 @@ no_scrollers:
 	sub	ecx,36
 	sub	edx,35
 
-	cmp	eax,9
+	cmp	eax,ci_scrollh_coord_x_min
 	jle	not_work_arrea
 
 	cmp	eax,ecx
 	jae	not_work_arrea
 
-	cmp	ebx,20+15+1+50
+	cmp	ebx,ci_scrollv_coord_y_min
 	jle	not_work_arrea
 
 	cmp	ebx,edx

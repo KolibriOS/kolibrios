@@ -1,86 +1,81 @@
 ;------------------------------------------
 ;-------------KEYS-------------------------
 ;------------------------------------------
-   keys:
+align 4
+keys:
 
-   mov eax,2
-   mcall
+   mcall SF_GET_KEY
    shr eax,8
 
-   cmp eax,176
+   cmp al,176
    jne key2
    sub [PosX],20
    jmp change_screen
  key2:
-   cmp eax,179
+   cmp al,179
    jne key3
    add [PosX],20
    jmp change_screen
  key3:
-   cmp eax,177
+   cmp al,177
    jne key4
    add [PosY],20
    jmp change_screen
  key4:
-  cmp eax,178
+  cmp al,178
    jne key5
    sub [PosY],20
    jmp change_screen
  key5:
-   cmp eax,49
+   cmp al,49 ;1
    jne key6
    mov [k],1
-   mov [Scroll1CoordinatX],9
-   mov [Scroll2CoordinatY],89
+   call scrollbar_move_00
    call drawwin
    jmp change_screen
  key6:
-   cmp eax,50
+   cmp al,50 ;2
    jne key7
    mov [k],2
-   mov [Scroll1CoordinatX],9
-   mov [Scroll2CoordinatY],89
+   call scrollbar_move_00
    call drawwin
    jmp change_screen
  key7:
-   cmp eax,52
+   cmp al,52 ;4
    jne key8
    mov [k],4
-   mov [Scroll1CoordinatX],9
-   mov [Scroll2CoordinatY],89
+   call scrollbar_move_00
    call drawwin
    jmp change_screen
  key8:
-   cmp eax,56
+   cmp al,56 ;8
    jne key9
    mov [k],8
-   mov [Scroll1CoordinatX],9
-   mov [Scroll2CoordinatY],89
+   call scrollbar_move_00
    call drawwin
    jmp change_screen
  key9:
-   cmp eax,48
+   cmp al,48 ;0
    jne key10
    mov [k],16
-   mov [Scroll1CoordinatX],9
-   mov [Scroll2CoordinatY],89
+   call scrollbar_move_00
    call drawwin
    jmp change_screen
  key10:
-   cmp eax,255
+   cmp al,255
    jne key11
    call analizing_picture_to_palette
    call drawwin
    jmp change_screen
  key11:
-   cmp eax,27
-   jne still
+   ;cmp al,27 ;Esc
+   ;jne still
+   jmp still
 
     mov eax,CursorsID
     call delete_cursors
 close:
-    mov eax,-1
-    mcall
+    mcall SF_TERMINATE_PROCESS
 
    jmp still
 

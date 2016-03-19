@@ -33,7 +33,6 @@ draw_icons:
 
    main_buttons:
 
-	 mov eax,8
 	 mov ebx,[Icon_X]
 	 mov ecx,[Icon_Y]
 	 dec ebx
@@ -45,7 +44,7 @@ draw_icons:
 	 mov edx,[counter]
 	 add edx,10
 	 add edx,1000000000000000000000000000000b
-	 mcall
+	 mcall SF_DEFINE_BUTTON
 
 
 	 add [Icon_X],22
@@ -63,7 +62,6 @@ draw_icons:
 
 	 next_button_brush:
 
-	 mov eax,8
 	 mov ebx,[Icon_X]
 	 mov ecx,[Icon_Y]
 	 dec ebx
@@ -75,7 +73,7 @@ draw_icons:
 	 mov edx,[counter]
 	 add edx,40
 	 add edx,1000000000000000000000000000000b
-	 mcall
+	 mcall SF_DEFINE_BUTTON
 
 	 add [Icon_X],19
 
@@ -92,7 +90,6 @@ draw_icons:
 
 	 next_button_zoom:
 
-	 mov eax,8
 	 mov ebx,[Icon_X]
 	 mov ecx,[Icon_Y]
 	 dec ebx
@@ -104,7 +101,7 @@ draw_icons:
 	 mov edx,[counter]
 	 add edx,45
 	 add edx,1000000000000000000000000000000b
-	 mcall
+	 mcall SF_DEFINE_BUTTON
 
 	 add [Icon_X],19
 
@@ -117,7 +114,6 @@ draw_icons:
 	 mov [Icon_X],7+105+1
 	 mov [Icon_Y],19+15+4+25+1
 
-	 mov eax,8
 	 mov ebx,[Icon_X]
 	 mov ecx,[Icon_Y]
 	 dec ebx
@@ -128,13 +124,12 @@ draw_icons:
 	 add ecx,21
 	 mov edx,51
 	 add edx,1000000000000000000000000000000b
-	 mcall
+	 mcall SF_DEFINE_BUTTON
 
 	 ; button of color
 	 mov [Icon_X],7+128+1
 	 mov [Icon_Y],19+15+4+25+1
 
-	 mov eax,8
 	 mov ebx,[Icon_X]
 	 mov ecx,[Icon_Y]
 	 dec ebx
@@ -145,12 +140,8 @@ draw_icons:
 	 add ecx,20
 	 mov edx,52
 	 add edx,1000000000000000000000000000000b
-	 mcall
+	 mcall SF_DEFINE_BUTTON
 
-	 mov eax,13
-	 mov ebx,136*65536+19
-	 mov ecx,64*65536+19
-	 mov edx,[Color]
-	 mcall
+	 mcall SF_DRAW_RECT, 136*65536+19,64*65536+19,[Color]
 
 	 ret

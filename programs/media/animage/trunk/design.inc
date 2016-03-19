@@ -1,4 +1,10 @@
 ;----------------------------------------------------------
+;input:
+; eax - start X
+; ebx - start Y
+; ecx - size X
+; edx - size Y
+; esi - colos styles (1...7)
 draw_volume_rectangle:
 	mov	[line_x],eax
 	mov	[line_y],ebx
@@ -83,7 +89,7 @@ exit_colors:
 	add	ebx,[line_size_x]
 	add	ecx,[line_size_y]
 	mov	edx,[color_rectangle]
-	call	draw_rectangle
+	mcall SF_DRAW_RECT
 ;line	1
 	mov	edx,[color_line1]
 	mov	ebx,[line_x]
@@ -197,14 +203,13 @@ no_light_rectangle:
 	mov	[line_size_x],ecx
 	mov	[line_size_y],edx
 	mov	edx,esi
-	mov	eax,13
 	mov	ebx,[line_x]
 	mov	ecx,[line_y]
 	shl	ebx,16
 	shl	ecx,16
 	add	ebx,[line_size_x]
 	add	ecx,[line_size_y]
-	mcall
+	mcall SF_DRAW_RECT
 	ret
 ;----------------------------------------------------------
 draw_conture:
@@ -280,20 +285,14 @@ columnus_true:
 print_text:
 	mov	[text_x],eax
 	mov	[text_y],ebx
-	mov	eax,4
 	mov	ebx,[text_x]
 	shl	ebx,16
 	add	ebx,[text_y]
-	mcall
+	mcall SF_DRAW_TEXT
 	ret
 ;----------------------------------------------------------
-draw_rectangle:
-	mcall	13
-	ret
-;------------------------
 draw_line:
-	mov	eax,38
-	mcall
+	mcall SF_DRAW_LINE
 	ret
 ;----------------------------------------------------------
 ;lightlin 12508927

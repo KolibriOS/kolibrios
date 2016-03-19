@@ -243,14 +243,13 @@ big_pixel_x:
 	jnz	screen_y
 
 fps:
-	;mcall	18,14
 	mov	ebx,[ScreenPointer]
 	mov	ecx,[WorkScreen_SizeX]
 	mov	edx,[WorkScreen_SizeY]
 	shl	ecx,16
 	add	ecx,edx
-	mov	edx,8*65536+20+15+49+5+1
-
+	mov	edx,((ci_edit_wnd_x_pos+ci_edit_wnd_border) shl 16)\
+		+ (ci_edit_wnd_y_pos+ci_edit_wnd_border)
 	mcall SF_PUT_IMAGE
 	ret
 ;----------------------------------------------------------
@@ -289,47 +288,49 @@ cleare_work_arrea:
 ;calculate position work screen on a picture
 ;-----------------------------------------------------------
 CalculatePositionScreen:
-	mov	eax,[Picture_SizeX]
-	mov	ebx,[Picture_SizeY]
-	mov	ecx,[CounterX]
-	mov	edx,[CounterY]
-	sub	eax,ecx
-	sub	ebx,edx
-	cmp	[PosX],eax
-	jle	no_limit_screen_x
-	mov	[PosX],eax
-
-no_limit_screen_x:
-	cmp	[PosY],ebx
-	jle	no_limit_screen_y
-	mov	[PosY],ebx
-
-no_limit_screen_y:
-	cmp	[PosX],0
-	jns	no_minimum_screen_x
-	mov	[PosX],0
-
-no_minimum_screen_x:
-	cmp	[PosY],0
-	jns	no_minimum_screen_y
-	mov	[PosY],0
-
-no_minimum_screen_y:
+	mov eax,[Picture_SizeX]
+	sub eax,[CounterX]
+	cmp [PosX],eax
+	jle @f
+		mov [PosX],eax
+	@@:
+	cmp [PosX],0
+	jns @f
+		mov [PosX],0
+	@@:
+	mov ebx,[Picture_SizeY]
+	sub ebx,[CounterY]
+	cmp [PosY],ebx
+	jle @f
+		mov [PosY],ebx
+	@@:
+	cmp [PosY],0
+	jns @f
+		mov [PosY],0
+	@@:
 	ret
 ;-----------------------------------------------------------
 ;-----------calculate cordinats on work picture--------------
 ;-----------------------------------------------------------
 GetScreenCordinats:
-	mov	eax,[MouseX]
-	mov	ebx,[MouseY]
-	sub	eax,9
-	sub	ebx,87
-	mov	ecx,[k]
+	mov eax,[MouseX]
+	mov ebx,[MouseY]
+	sub eax,ci_edit_wnd_x_pos+ci_edit_wnd_border
+	cmp eax,0
+	jge @f
+		xor eax,eax
+	@@:
+	sub ebx,ci_edit_wnd_y_pos+ci_edit_wnd_border
+	cmp ebx,0
+	jge @f
+		xor ebx,ebx
+	@@:
+	mov ecx,[k]
 	cdq
-	idiv	ecx
-	mov	[ScreenX],eax
-	mov	eax,ebx
+	idiv ecx
+	mov [ScreenX],eax
+	mov eax,ebx
 	cdq
-	idiv	ecx
-	mov	[ScreenY],eax
+	idiv ecx
+	mov [ScreenY],eax
 	ret
