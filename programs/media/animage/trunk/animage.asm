@@ -45,6 +45,15 @@ include '../../../libio.inc'
 
 ;---------------------------------------------------------
 ; *** константы для интерфейса ***
+; *** constants for interface  ***
+
+; корректировки на скин
+ci_offs_skin_w equ 0 ; 5 ;корректировка на ширину рамки скина
+ci_offs_skin_h equ 0 ;24 ;корректировка на высоту скина
+
+; главное окно
+ci_wnd_min_siz_x equ 585 ;minimum size x
+ci_wnd_min_siz_y equ 400 ;minimum size y
 
 ; окно редактора
 ci_edit_wnd_x_pos  equ  5 ;координата x для окна редактора
@@ -52,6 +61,7 @@ ci_edit_wnd_y_pos  equ 87 ;координата y для окна редактора
 ci_edit_wnd_border equ  3 ;рамка вокруг окна редактора
 
 ; скроллинги
+ci_scroll_dim equ 22 ;размеры скроллингов
 ci_scrollh_coord_x_min equ (ci_edit_wnd_x_pos+3) ;минимальная позиция ползунка
 	;горизонтального скроллинга
 ci_scrollv_coord_y_min equ (ci_edit_wnd_y_pos+3) ;минимальная позиция ползунка
@@ -118,11 +128,12 @@ include	'init_data.inc'
 	push    dword OpenDialog_data
 	call    [OpenDialog_Init]
 ;---------------------------------------------------------------------
+red:
+	call	drawwin
 ;----------------------------------------------------------
 ;---------------------MAIN LOOP----------------------------
 ;----------------------------------------------------------
-red:
-	call	drawwin
+align 4
 still:
 	call	event
 

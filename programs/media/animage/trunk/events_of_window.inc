@@ -13,21 +13,22 @@ drawwin:
 	mov	[Window_CordinatX],eax
 	mov	[Window_CordinatY],ebx
 	
-	cmp	ecx,585
-	jae	@f
-		mov	ecx,585 ;minimum size x
+	cmp ecx,ci_wnd_min_siz_x
+	jge @f
+		mov ecx,ci_wnd_min_siz_x
 	@@:
-	cmp	[Window_SizeY],400
-	jae	@f
-		mov	edx,400 ;minimum size y
+	cmp edx,ci_wnd_min_siz_y
+	jge @f
+		mov edx,ci_wnd_min_siz_y
 	@@:
 	mov	[Window_SizeX],ecx
 	mov [Window_SizeY],edx
-
 	mov	[MaxWorkScreen_SizeX],ecx
 	mov	[MaxWorkScreen_SizeY],edx
-	sub	[MaxWorkScreen_SizeX],ci_edit_wnd_x_pos+2*ci_edit_wnd_border+34
-	sub	[MaxWorkScreen_SizeY],ci_edit_wnd_y_pos+2*ci_edit_wnd_border+34
+	sub	[MaxWorkScreen_SizeX],ci_edit_wnd_x_pos+2*ci_edit_wnd_border\
+		+ci_scroll_dim+ci_offs_skin_w+5
+	sub	[MaxWorkScreen_SizeY],ci_edit_wnd_y_pos+2*ci_edit_wnd_border\
+		+ci_scroll_dim+ci_offs_skin_h+5
 
 	cmp	[MaxWorkScreen_SizeX],0
 	jns	no_znak1
@@ -48,12 +49,12 @@ no_znak2:
 	mov	ecx,50 ;[Window_CordinatY]
 	shl	ebx,16
 	shl	ecx,16
-	add	ebx,[Window_SizeX]
-	add	ecx,[Window_SizeY]
+	add	ebx, [Window_SizeX]
+	add	ecx, [Window_SizeY]
 	mcall SF_CREATE_WINDOW,,,0x53aabbcc,,name_of_program
 	
 	mov	eax,[procinfo+70] ;staus of window
-	test	eax,100b
+	test eax,100b
 	jne	.end
 	
 ;------------------------------------------------
@@ -84,12 +85,15 @@ no_znak2:
 ;------------------------------------------------
 	mov	ebx,[WorkScreen_SizeX]
 	add	ebx,ci_edit_wnd_x_pos+ci_edit_wnd_border
+	mov	edx,[Window_SizeX]
+	sub	edx,ebx
+	sub	edx,ci_scroll_dim+5-ci_edit_wnd_border
 	shl	ebx,16
-	mov	bx,ci_edit_wnd_border ;ширина бордюра
+	mov	bx,dx ;ширина бордюра
 	
 	mov	ecx,ci_edit_wnd_y_pos+ci_edit_wnd_border
 	mov	edx,[Window_SizeY]
-	sub	edx,ci_edit_wnd_y_pos+2*ci_edit_wnd_border+34
+	sub	edx,ci_edit_wnd_y_pos+2*ci_edit_wnd_border+ci_scroll_dim+5+ci_offs_skin_h
 	shl	ecx,16
 	mov	cx,dx ;высота бордюра
 
@@ -99,14 +103,17 @@ no_znak2:
 ;------------------------------------------------
 	mov	ebx,ci_edit_wnd_x_pos
 	mov	edx,[Window_SizeX]
-	sub	edx,25+10+ci_edit_wnd_x_pos
+	sub	edx,ci_scroll_dim+5+ci_edit_wnd_x_pos
 	shl	ebx,16
 	mov	bx,dx ;ширина бордюра
 
 	mov	ecx,[WorkScreen_SizeY]
 	add	ecx,ci_edit_wnd_y_pos+ci_edit_wnd_border
+	mov	edx,[Window_SizeY]
+	sub	edx,ecx
+	sub	edx,ci_scroll_dim+5+ci_offs_skin_h;ci_edit_wnd_border
 	shl	ecx,16
-	mov	cx,ci_edit_wnd_border ;высота бордюра
+	mov	cx,dx ;высота бордюра
 
 	mcall SF_DRAW_RECT,,,0xc7cbcf ;бордюр под окном и над скроллингом
 ;------------------------------------------------
@@ -115,29 +122,29 @@ no_znak2:
 	mov	eax,ci_edit_wnd_x_pos
 	mov	ebx,[Window_SizeY]
 	mov	ecx,[Window_SizeX]
-	mov	edx,20+10
+	mov	edx,ci_scroll_dim
 	mov	esi,3
-	sub	ecx,35+ci_edit_wnd_x_pos
-	sub	ebx,25+10
+	sub	ecx,ci_scroll_dim+5+ci_edit_wnd_x_pos+ci_offs_skin_w
+	sub	ebx,ci_scroll_dim+5+ci_offs_skin_h
 	call draw_volume_rectangle ; horizontal scrollbar border
 ;------------------------------------------------
 	mov	eax,[Window_SizeX]
 	mov	ebx,ci_edit_wnd_y_pos
-	mov	ecx,20+10
+	mov	ecx,ci_scroll_dim
 	mov	edx,[Window_SizeY]
 	mov	esi,3
-	sub	eax,25+10
-	sub	edx,35+ci_edit_wnd_y_pos
+	sub	eax,ci_scroll_dim+5+ci_offs_skin_w
+	sub	edx,ci_scroll_dim+5+ci_edit_wnd_y_pos+ci_offs_skin_h
 	call draw_volume_rectangle ; vertical scrollbar border
 	call draw_scrollers
 ;------------------------------------------------
 	mov	eax,[Window_SizeX]
 	mov	ebx,[Window_SizeY]
-	mov	ecx,20+10
-	mov	edx,20+10
+	mov	ecx,ci_scroll_dim
+	mov	edx,ci_scroll_dim
 	mov	esi,6
-	sub	eax,25+10
-	sub	ebx,25+10
+	sub	eax,ci_scroll_dim+5+ci_offs_skin_w
+	sub	ebx,ci_scroll_dim+5+ci_offs_skin_h
 	call draw_volume_rectangle ; down and right small area
 ;------------------------------------------------
 .end:

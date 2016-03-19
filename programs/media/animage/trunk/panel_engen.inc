@@ -78,7 +78,7 @@ print_panel_menu:
 next_icon_delit1:
 	mov	edx,[counter]
 	add	edx,11100000000000000000000000000000b
-	mcall	8
+	mcall SF_DEFINE_BUTTON
 	inc	[counter]
 	cmp	[counter],30
 	jl	next_icon_delit1
@@ -89,7 +89,7 @@ next_icon_delit1:
 next_icon_delit2:
 	mov	edx,[counter]
 	add	edx,11100000000000000000000000000000b
-	mcall	8
+	mcall SF_DEFINE_BUTTON
 	inc	[counter]
 	cmp	[counter],45
 	jl	next_icon_delit2
@@ -100,7 +100,7 @@ next_icon_delit2:
 next_icon_delit3:
 	mov	edx,[counter]
 	add	edx,11100000000000000000000000000000b
-	mcall	8
+	mcall SF_DEFINE_BUTTON
 	inc	[counter]
 	cmp	[counter],50
 	jl	next_icon_delit3
@@ -108,12 +108,12 @@ next_icon_delit3:
 ;delit buttons of palette
 	mov	edx,51
 	add	edx,11100000000000000000000000000000b
-	mcall	8
+	mcall SF_DEFINE_BUTTON
 
 ;delit buttons of color
 	mov	edx,52
 	add	edx,11100000000000000000000000000000b
-	mcall	8
+	mcall SF_DEFINE_BUTTON
 
 	pop	[counter]
 
@@ -196,14 +196,14 @@ no_columnus_menu_text:
 
 
 menu_still:
-	mcall	10
-	mcall	2
-	mcall	17
-	call	GetMouseClick
-	test	eax,eax
-	jz	calculate_counter_menu
+	mcall SF_WAIT_EVENT
+	mcall SF_GET_KEY
+	mcall SF_GET_BUTTON
+	call GetMouseClick
+	test eax,eax
+	jz calculate_counter_menu
 
-	call	GetMouseCoordinats
+	call GetMouseCoordinats
 ;calculate menu counter
 	mov	eax,[counter]
 	dec	eax
@@ -243,7 +243,7 @@ no_columnus_menu_text2:
 
 	pop	edi esi
 
-	mcall	5,15
+	mcall SF_SLEEP,15
 
 	push	[counter]
 	pusha
@@ -300,7 +300,7 @@ PrintMousePos:
 	shl	edx,16
 	add	edx,20+15+6+6
 	and	esi,0
-	mcall	47,<4,0>
+	mcall SF_DRAW_NUMBER,<4,0>
 
 	mov	ecx,[ScreenY]
 	add	ecx,[PosY]
@@ -342,10 +342,10 @@ draw_scrollers:
 	mov	edi,[CounterX]
 	mov	eax,[Scroll1CoordinatX]
 	mov	ebx,[Window_SizeY]
-	sub	ebx,22+10
+	sub	ebx,(ci_scroll_dim-3)+5+ci_offs_skin_h
 	mov	ecx,[Window_SizeX]
-	sub	ecx,39+ci_scrollh_coord_x_min
-	mov	edx,14+10
+	sub	ecx,ci_scroll_dim+5+4+ci_scrollh_coord_x_min+ci_offs_skin_w
+	mov	edx,ci_scroll_dim-6
 	mov	esi,1
 	mov	[Scroll1CoordinatY],ebx
 	mov	[Scroll1MaxSizeY],edx
@@ -365,11 +365,11 @@ draw_scrollers:
 	call draw_volume_rectangle ; horizontal scrollbar polzunok
 
 	mov	eax,[Window_SizeX]
-	sub	eax,22+10
+	sub	eax,(ci_scroll_dim-3)+5+ci_offs_skin_w
 	mov	ebx,[Scroll2CoordinatY]
-	mov	ecx,14+10
+	mov	ecx,ci_scroll_dim-6
 	mov	edx,[Window_SizeY]
-	sub	edx,39+ci_scrollv_coord_y_min
+	sub	edx,ci_scroll_dim+5+4+ci_scrollv_coord_y_min+ci_offs_skin_h
 	mov	esi,1
 	mov	[Scroll2CoordinatX],eax
 	mov	[Scroll2MaxSizeX],ecx

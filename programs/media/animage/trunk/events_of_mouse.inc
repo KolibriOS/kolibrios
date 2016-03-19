@@ -2,14 +2,14 @@
 ;-------------interraction MOUSE--------------
 ;---------------------------------------------
 mouse:
-	or	ecx,-1
+	or ecx,-1
 	mcall SF_THREAD_INFO,procinfo
 	
 	mov	eax,[procinfo+70] ;staus of window
-	test	eax,100b
+	test eax,100b
 	jne	still
 	
-	call	GetMouseCoordinats
+	call GetMouseCoordinats
 ;panel
 	mov	edx,[Window_SizeX]
 	sub	edx,5
@@ -23,10 +23,10 @@ mouse:
 	cmp	eax,5
 	jle	no_panel
 
-	cmp	eax,edx	;585
+	cmp	eax,edx
 	jae	no_panel
 
-	call	GetMouseCoordinats
+	call GetMouseCoordinats
 	mov	[counter],7
 	mov	edi,panel_text
 	jmp	panel_interraction
@@ -40,7 +40,7 @@ no_panel:
 	jmp	panel_interraction
 
 no_redraw_panel:
-	call	GetMouseCoordinats
+	call GetMouseCoordinats
 	mov	eax,[MouseX]
 	mov	ebx,[MouseY]
 	mov	ecx,[WorkScreen_SizeX]
@@ -78,7 +78,7 @@ mouse_scroll:
 	mov	ebx,[Scroll1CoordinatY]
 	mov	ecx,[Scroll1MaxSizeX]
 	inc ecx
-	mov	edx,14+10
+	mov	edx,ci_scroll_dim-6
 	mov	esi,7
 	call draw_volume_rectangle ; horizontal scrollbar clear
 
@@ -128,7 +128,7 @@ no_horizontal:
 
 	mov	eax,[Scroll2CoordinatX]
 	mov	ebx,ci_scrollv_coord_y_min
-	mov	ecx,14+10
+	mov	ecx,ci_scroll_dim-6
 	mov	edx,[Scroll2MaxSizeY]
 	inc edx
 	mov	esi,7
