@@ -105,12 +105,14 @@ _DestroyBuffer@4:     ;str:dword
 
 
 section '.data' align 16 data readable writable
+	
+hSound      dd 0
+hrdwSound   dd ?
 
-public hSound
-public hrdwSound
-
-hSound      dd ?
-hrdwSound   dd ? 
+public hSound as '_hSound'
+public hSound as 'hSound'	
+public hrdwSound as 'hrdwSound'
+public hrdwSound as '_hrdwSound'
 
 szInfinity  db 'INFINITY',0
 szSound     db 'SOUND',0
