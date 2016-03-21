@@ -1,24 +1,31 @@
 ;*******************************************************
 ;**************GRAPHICS EDITOR ANIMAGE *****************
 ;*******************************************************
-; version: 1.4
-; last update:  12/03/2016
-; changes:      Use library 'libimg.obj'
+; version: 1.5
+; last update:  21.03.2016
+; changes:      Use library 'kmenu.obj'
+; autors:       IgorA, Veliant
 ;--------------------------------------------------------
-; version:	1.3
-; last update:  05/10/2010
+; version: 1.4
+; last update:  12.03.2016
+; changes:      Use library 'libimg.obj'
+; autors:       IgorA
+;--------------------------------------------------------
+; version: 1.3
+; last update:  05.10.2010
 ; written by:   Marat Zakiyanov aka Mario79, aka Mario
 ; changes:      Fixed window flicker when redrawing,
 ;               Fixed memory leak for stack
 ;--------------------------------------------------------
-; version:	1.2
-; last update:  30/09/2010
+; version: 1.2
+; last update:  30.09.2010
 ; written by:   Marat Zakiyanov aka Mario79, aka Mario
 ; changes:      Program used function 68 instead 64 is now,
 ;               select path with OpenDialog
 ;--------------------------------------------------------
-; version 1.1 year 9.12.2006
-; AUTORS:
+; version: 1.1
+; last update:  09.12.2006
+; autors:
 ; programming by andrew_programmer
 ; design by golus
 
@@ -48,16 +55,23 @@ include '../../../libio.inc'
 ; *** constants for interface  ***
 
 ; корректировки на скин
-ci_offs_skin_w equ 0 ; 5 ;корректировка на ширину рамки скина
-ci_offs_skin_h equ 0 ;24 ;корректировка на высоту скина
+ci_offs_skin_w equ  5 ;корректировка на ширину рамки скина
+ci_offs_skin_h equ 24 ;корректировка на высоту скина
 
 ; главное окно
 ci_wnd_min_siz_x equ 585 ;minimum size x
 ci_wnd_min_siz_y equ 400 ;minimum size y
 
+; панель инструментов
+ci_panel_x_pos equ  0 ;координата x для панели
+ci_panel_y_pos equ 20 ;координата y для панели
+ci_panel_but_y1 equ ci_panel_y_pos +5 ;координата y для 1-го ряда кнопок
+ci_panel_but_y2 equ ci_panel_y_pos+30 ;координата y для 2-го ряда кнопок
+ci_palete_y_pos equ ci_panel_y_pos+51 ;координата y для палитры цветов
+
 ; окно редактора
-ci_edit_wnd_x_pos  equ  5 ;координата x для окна редактора
-ci_edit_wnd_y_pos  equ 87 ;координата y для окна редактора
+ci_edit_wnd_x_pos  equ  0 ;координата x для окна редактора
+ci_edit_wnd_y_pos  equ 71 ;координата y для окна редактора
 ci_edit_wnd_border equ  3 ;рамка вокруг окна редактора
 
 ; скроллинги
@@ -79,6 +93,7 @@ include	'load_from_parameters.inc'
 
 START:
 	mcall SF_SYS_MISC,SSF_HEAP_INIT
+	mcall SF_STYLE_SETTINGS, SSF_GET_COLORS, syscolors, syscolors_end-syscolors
 	
 load_libraries l_libs_start,end_l_libs
 
@@ -97,6 +112,7 @@ include	'init_data.inc'
 	call	GetMemory
 	call	cleare_work_arrea
 	call	load_icons
+	call	init_main_menu
 
 ;load cursors
 	mov	eax,CursorsID
@@ -177,6 +193,7 @@ include	'string.inc'
 include	'palette.inc'
 include	'files.inc'
 include	'time.inc'
+include	'menu.inc'
 ;-----------------------------------------------------------
 ;------------variables and data of program------------------
 ;-----------------------------------------------------------
@@ -337,6 +354,9 @@ temp_dir_pach rb 4096
 library_path rb 4096
 cur_dir_path rb 4096
 procinfo: rb 1024
+align 4
+syscolors rb 192
+syscolors_end:
 ;---------------------------------------------------------------------
 align 4
 	rb 4096

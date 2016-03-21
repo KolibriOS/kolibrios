@@ -321,7 +321,8 @@ TakeButtonInstruments:
 	and ebx,0xffffff
 	mov [Color],ebx
 
-	mcall SF_DRAW_RECT, 136*65536+20, 65*65536+21, [Color]
+	mcall SF_DRAW_RECT, ((ci_panel_x_pos+130) shl 16)+21,\
+		((ci_panel_y_pos+28) shl 16)+21, [Color]
 
 	jmp still
 	no_pipetka:
@@ -618,13 +619,13 @@ TakeButtonInstruments:
 	jne no_palette
 
 	mov eax,20
-	mov ebx,100
+	mov ebx,ci_palete_y_pos
 	mov ecx,32*10+32*5+7
-	mov edx,8*10+7*10
+	mov edx,140
 	mov  esi,1
 	call draw_volume_rectangle
 	mov [x],20+5
-	mov [y],100+10
+	mov [y],ci_palete_y_pos+10
 	mov edi,256
 	xor esi,esi
 	next_rectangle:
@@ -675,7 +676,7 @@ TakeButtonInstruments:
 	jz wait_events
 	call GetMouseCoordinats
 	mov [x],20+5
-	mov [y],100+10
+	mov [y],ci_palete_y_pos+10
 	mov [counter],0
 	next_rectangle_column:
 	mov eax,[x]

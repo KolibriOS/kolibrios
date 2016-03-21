@@ -4,40 +4,30 @@
 buttons:
 
 	cmp [Current_instrument],21
-	jne no_finish_instrument_button
-
+	jne @f
 	cmp [instrument_used],1
-	jne no_finish_instrument_button
-
+	jne @f
 	cmp [Activate_instrument],0
-	jne no_finish_instrument_button
-
+	jne @f
 	cmp [crossing],1
-	jne no_finish_instrument_button
+	jne @f
+		mov [finishing_crossing],1
+		call TakeButtonInstruments
+	@@:
 
-	mov [finishing_crossing],1
-	call TakeButtonInstruments
-
-	no_finish_instrument_button:
-
-	mov eax,17
-	mcall
+	mcall SF_GET_BUTTON
 
 	shr eax,8
 
 	cmp eax,1
 	jne no_exit
-
-	mov eax,CursorsID
-	call delete_cursors
-
-	or eax,-1
-	mcall
-
+		mov eax,CursorsID
+		call delete_cursors
+		mcall SF_TERMINATE_PROCESS
 	no_exit:
 
-
 	mov [Current_instrument],eax
+	call button_handler_main_menu
 
 	; set cursor for current instrument
 	pushad
@@ -47,8 +37,6 @@ buttons:
 
 	call set_cursor
 	popad
-
-
 
 	cmp eax,10
 	jl still

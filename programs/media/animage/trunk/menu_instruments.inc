@@ -6,76 +6,33 @@ TakeInstruments:
 	cmp	[number_panel],7
 	jne	no_file
 
-;<<<<<NEW>>>>>>>
+; <<< New >>>
 	cmp	[number_menu],1
 	jne	no_new
 
-	mov	eax,80
-	mov	ebx,100
-	mov	ecx,150
-	mov	edx,90
-	mov	 esi,1
-	call	draw_volume_rectangle
-
-	mov	eax,177
-	mov	ebx,115
-	mov	ecx,40
-	mov	edx,14
-	mov	 esi,4
-	call	draw_volume_rectangle
-
-	mov	eax,177
-	mov	ebx,115+24
-	mov	ecx,40
-	mov	edx,14
-	mov	 esi,4
-	call	draw_volume_rectangle
-
-	mov	eax,175
-	mov	ebx,170
-	mov	ecx,40
-	mov	edx,15
-	mov	esi,1
-	call	draw_volume_rectangle
-
-	mov	eax,90
-	mov	ebx,118
-	mov	ecx,0xffffff
-	mov	edx,new_text1
-	mov	esi,14
-	call	print_text
-
-	mov	eax,90
-	mov	ebx,118+24
-	mov	ecx,0xffffff
-	mov	edx,new_text2
-	mov	esi,14
-	call	print_text
-
-	mov	eax,185
-	mov	ebx,175
-	mov	ecx,0xffffff
-	mov	edx,ok_text
-	mov	esi,2
-	call	print_text
+	call dialog2_draw
 
 	mov	edx,1000000000000000000000000000000b+1000
 	mcall SF_DEFINE_BUTTON,<177,40>,<115,14>,
 
 	mov	edx,1000000000000000000000000000000b+1001
-	mcall	,,<139,14>,
+	mcall ,,<139,14>,
 
 	mov	edx,1000000000000000000000000000000b+1002
-	mcall	,<175,40>,<170,15>
+	mcall ,,<170,15>
 
 no_activate_space:
+	mcall SF_SLEEP, 5 ;fix cpu use 100%
 	mcall SF_WAIT_EVENT
 
-	cmp	eax,1
-	je	exit_new
+	cmp eax,1 ;redraw window
+	jne @f
+		call dialog2_draw
+		jmp no_activate_space
+	@@:
 
-	cmp	eax,3
-	jne	no_activate_space
+	cmp eax,3 ;press button
+	jne no_activate_space
 
 	mcall SF_GET_BUTTON
 	shr	eax,8
@@ -98,7 +55,7 @@ no_activate_space:
 	dec	eax
 	mov	[length_number],eax
 	mov	eax,string_
-	call	value
+	call str_to_int
 
 	mov	[Picture_SizeX],eax
 	jmp	no_activate_space
@@ -119,7 +76,7 @@ no_picture_size_x:
 	dec	eax
 	mov	[length_number],eax
 	mov	eax,string_
-	call	value
+	call str_to_int
 
 	mov	[Picture_SizeY],eax
 	jmp	no_activate_space
@@ -130,27 +87,27 @@ no_picture_size_y:
 
 exit_new:
 	mov	edx,11100000000000000000000000000000b+1002
-	mcall SF_DEFINE_BUTTON,<175,40>,<170,15>
+	mcall SF_DEFINE_BUTTON,<177,40>,<170,15>
 
 	mov	edx,11100000000000000000000000000000b+1001
-	mcall	,<177,40>,<139,14>
+	mcall	,,<139,14>
 
 	mov	edx,11100000000000000000000000000000b+1000
 	mcall	,,<115,14>
 
 ;get memory for new picture
-	call	GetMemory
+	call GetMemory
 
 	and	[save_flag],0
 	and	[number_panel],0
 	and	[number_menu],0
 
-	call	cleare_work_arrea
-	call	drawwin
+	call cleare_work_arrea
+	call drawwin
 	jmp	still
 ;---------------------------------------------------------------------
 no_new:
-;<<<<<OPEN>>>>>>>
+; <<< Open >>>
 	cmp	[number_menu],2
 	jne	no_open
 
@@ -173,7 +130,7 @@ no_new:
 	jmp	still
 ;---------------------------------------------------------------------
 no_open:
- ;<<<<<<<<<<<SAVE>>>>>>>>>>>>
+; <<< Save >>>
 	cmp	[number_menu],3
 	jne	no_save_
 
@@ -188,7 +145,7 @@ no_save_file:
 	jmp	still
 ;---------------------------------------------------------------------
 no_save_:
- ;<<<<<<<<<SAVE AS>>>>>>>>>>>
+; <<< Save as >>>
 	cmp	[number_menu],4
 	jne	no_save
 
@@ -211,9 +168,7 @@ no_save_:
 	pop	esi eax
 ;---------------------------------------------------------------------
 	mov	[OpenDialog_data.type],1 ; save
-	
-	push    dword OpenDialog_data
-	call    [OpenDialog_Start]
+	stdcall [OpenDialog_Start],OpenDialog_data
 
 	cmp	[OpenDialog_data.status],1
 	jne	still
@@ -222,7 +177,7 @@ save1:
 save_enter:
 	mcall SF_SET_EVENTS_MASK,0x80000027 ;100111b
 
-	call	analizing_picture_to_palette
+	call analizing_picture_to_palette
 
 	;eax => number of colors in picture
 	mov	ebx,[PointerToPicture]
@@ -251,7 +206,7 @@ save_enter:
 ;	jmp	still
 ;---------------------------------------------------------------------
 no_save:
- ;<<<<<<EXIT>>>>>>>
+; <<< Exit >>>
 	cmp	[number_menu],5
 	jne	no_exit_program
 
@@ -260,10 +215,10 @@ no_save:
 no_exit_program:
 no_file:
 ;|||||||||||||||||||||||||||||EDIT|||||||||||||||||||||||||
-;<<<<<<<<<<UNDO>>>>>>>>>>
 	cmp	[number_panel],6
-	jne	still ;no_edit
+	jne	no_edit
 
+; <<< Undo >>>
 	cmp	[number_menu],1
 	jne	no_undo
 
@@ -280,13 +235,35 @@ no_file:
 	mov [PointerToCopyPicture2],eax
 
 	call MovePictureToWorkScreen
-	and	[number_panel],0
-	and	[number_menu],0
-	jmp	still
+	and [number_panel],0
+	and [number_menu],0
+	jmp still
 ;---------------------------------------------------------------------
 no_undo:
-;<<<<<<<<<<COPY>>>>>>>>>>
-	cmp	[number_menu],2
+; <<< Redo >>>
+	cmp [number_menu],2
+	jne no_redo
+
+	cmp [number_undo],0
+	je no_redo
+
+;rotate bufers +1
+	dec [number_undo]
+	mov eax,[PointerToPicture]
+	mov ebx,[PointerToCopyPicture]
+	mov ecx,[PointerToCopyPicture2]
+	mov [PointerToPicture],ecx
+	mov [PointerToCopyPicture],eax
+	mov [PointerToCopyPicture2],ebx
+
+	call MovePictureToWorkScreen
+	and [number_panel],0
+	and [number_menu],0
+	jmp still
+;---------------------------------------------------------------------
+no_redo:
+; <<< Copy >>>
+	cmp	[number_menu],3
 	jne	no_copy
 
 	cmp	[instrument_used],1
@@ -385,8 +362,8 @@ loop_fill_rectangle_x_copy:
 	jmp	still
 ;---------------------------------------------------------------------
 no_copy:
-;<<<<<<<<<<PASTE>>>>>>>>
-	cmp	[number_menu],3
+; <<< Paste >>>
+	cmp	[number_menu],4
 	jne	no_paste
 
 	cmp	[instrument_used],1
@@ -480,8 +457,8 @@ loop_fill_rectangle_x_paste:
 	jmp	still
 ;---------------------------------------------------------------------
 no_paste:
-;<<<<<<<<<<CUT>>>>>>>>>>
-	cmp	[number_menu],4
+; <<< Cut >>>
+	cmp	[number_menu],5
 	jne	no_cut
 
 	cmp	[instrument_used],1
@@ -573,8 +550,8 @@ loop_fill_rectangle_x:
 	jmp	still
 ;---------------------------------------------------------------------
 no_cut:
-;<<<<<<CLEARE ALL>>>>>>
-	cmp	[number_menu],5
+; <<< Cleare all >>>
+	cmp	[number_menu],6
 	jne	no_cleare_all
 
 	call	cleare_work_arrea
@@ -585,9 +562,9 @@ no_cut:
 	jmp	still
 ;---------------------------------------------------------------------
 no_cleare_all:
-;<<<<<<TO ALLOCATE ALL>>>>>>
-	cmp	[number_menu],6
-	jne	still	;no_to_allocate_all
+; <<< To allocate all >>>
+	cmp	[number_menu],7
+	jne	still ;no_to_allocate_all
 
 	mov	[OldX],1
 	mov	[OldY],1
@@ -608,6 +585,19 @@ no_cleare_all:
 	jmp	still
 ;---------------------------------------------------------------------
 ;no_to_allocate_all:
-;no_edit:
-;	jmp	still
+no_edit:
+;|||||||||||||||||||||||||INSTRUMENTS||||||||||||||||||||||
+	cmp	[number_panel],5
+	jne	no_instruments
+; <<< Pencil >>>
+	cmp	[number_menu],1
+	jne	no_pencil
+
+	; ... todo ...
+
+	and	[number_panel],0
+	and	[number_menu],0
+no_pencil:
+no_instruments:
+	jmp	still
 ;---------------------------------------------------------------------

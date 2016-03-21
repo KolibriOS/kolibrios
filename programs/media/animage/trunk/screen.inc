@@ -245,9 +245,8 @@ big_pixel_x:
 fps:
 	mov	ebx,[ScreenPointer]
 	mov	ecx,[WorkScreen_SizeX]
-	mov	edx,[WorkScreen_SizeY]
 	shl	ecx,16
-	add	ecx,edx
+	add	ecx,[WorkScreen_SizeY]
 	mov	edx,((ci_edit_wnd_x_pos+ci_edit_wnd_border) shl 16)\
 		+ (ci_edit_wnd_y_pos+ci_edit_wnd_border)
 	mcall SF_PUT_IMAGE
@@ -263,6 +262,7 @@ cleare_screen:
 	mov eax,0xffffffff
 	mov ecx,ebx
 	shr ecx,2
+	cld
 	rep stosd
 	mov ecx,ebx
 	and ecx,3
@@ -279,6 +279,7 @@ cleare_work_arrea:
 	mov eax,0xffffffff
 	mov ecx,ebx
 	shr ecx,2
+	cld
 	rep stosd
 	mov ecx,ebx
 	and ecx,3

@@ -11,9 +11,8 @@ load_icons:
 	ret
 
 draw_icons:
-
-	 mov [Icon_X],7
-	 mov [Icon_Y],20+15+4
+	mov [Icon_X],ci_panel_x_pos+2
+	mov [Icon_Y],ci_panel_y_pos+3
 
 	 ;draw panel picture
 	 mov edx,[Icon_X]
@@ -28,13 +27,12 @@ draw_icons:
 	 ;main buttons of instrumnts
 
 	 and [counter],0
-	 mov [Icon_X],9
-	 mov [Icon_Y],21+15+4+1
+	 mov [Icon_X],ci_panel_x_pos+4
 
    main_buttons:
 
 	 mov ebx,[Icon_X]
-	 mov ecx,[Icon_Y]
+	 mov ecx,ci_panel_but_y1
 	 dec ebx
 	 dec ecx
 	 shl ebx,16
@@ -57,13 +55,12 @@ draw_icons:
 	 ;buttons of brushes(and lines width)
 	 and [counter],0
 
-	 mov [Icon_X],8+1
-	 mov [Icon_Y],20+15+4+25+1
+	 mov [Icon_X],ci_panel_x_pos+4
 
 	 next_button_brush:
 
 	 mov ebx,[Icon_X]
-	 mov ecx,[Icon_Y]
+	 mov ecx,ci_panel_but_y2
 	 dec ebx
 	 dec ecx
 	 shl ebx,16
@@ -85,13 +82,12 @@ draw_icons:
 	 ;buttons of zoom
 	 and [counter],0
 
-	 mov [Icon_X],8+155+1
-	 mov [Icon_Y],20+15+4+25+1
+	 mov [Icon_X],ci_panel_x_pos+159
 
 	 next_button_zoom:
 
 	 mov ebx,[Icon_X]
-	 mov ecx,[Icon_Y]
+	 mov ecx,ci_panel_but_y2
 	 dec ebx
 	 dec ecx
 	 shl ebx,16
@@ -111,11 +107,10 @@ draw_icons:
 
 
 	 ; button of palette
-	 mov [Icon_X],7+105+1
-	 mov [Icon_Y],19+15+4+25+1
+	 mov [Icon_X],ci_panel_x_pos+108
 
 	 mov ebx,[Icon_X]
-	 mov ecx,[Icon_Y]
+	 mov ecx,ci_panel_but_y2-1
 	 dec ebx
 	 dec ecx
 	 shl ebx,16
@@ -127,11 +122,10 @@ draw_icons:
 	 mcall SF_DEFINE_BUTTON
 
 	 ; button of color
-	 mov [Icon_X],7+128+1
-	 mov [Icon_Y],19+15+4+25+1
+	 mov [Icon_X],ci_panel_x_pos+131
 
 	 mov ebx,[Icon_X]
-	 mov ecx,[Icon_Y]
+	 mov ecx,ci_panel_but_y1-1
 	 dec ebx
 	 dec ecx
 	 shl ebx,16
@@ -142,6 +136,7 @@ draw_icons:
 	 add edx,1000000000000000000000000000000b
 	 mcall SF_DEFINE_BUTTON
 
-	 mcall SF_DRAW_RECT, 136*65536+19,64*65536+19,[Color]
+	mcall SF_DRAW_RECT, ((ci_panel_x_pos+130) shl 16)+21,\
+		((ci_panel_y_pos+28) shl 16)+21, [Color]
 
-	 ret
+	ret

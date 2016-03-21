@@ -2,76 +2,12 @@
 ;-----interraction panel with user----------------
 ;-------------------------------------------------
 panel_interraction:
-;>>>>>>>>>>>>>>>>>>>>>>>>>>
-;	mcall	18,14
-
 	and	[Panel_flag],0
-;collision with text on panel
-next_columnus_text:
-	mov	eax,[edi]
-	mov	ebx,[edi+4]
-	sub	eax,10
-	sub	ebx,3
-	mov	[Icon_text_x],eax
-	mov	[Icon_text_y],ebx
-
-	mov	esi,[edi+8]
-	imul	esi,10
-	mov	[button_menu_size_x],esi
-	mov	[button_menu_size_y],dword 13
-
-	mov	esi,[edi+8]
-	add	edi,4*3
-	add	edi,esi
-
-	mov	ecx,[MouseX]
-	mov	edx,[MouseY]
-
-	push	edi
-	mov	edi,[button_menu_size_y]
-	mov	esi,[button_menu_size_x]
-	call	columnus
-	pop	edi
-
-	mov	esi,7
-	test	eax,eax
-	jz	no_columnus_text
-
-	mov	esi,1
-	mov	[Panel_flag],1
-	call	GetMouseClick
-	test	eax,eax
-	jz	no_mouse_pressed
-
-;	mcall	18,14
-
-	jmp	print_panel_menu
-
-no_mouse_pressed:
-no_columnus_text:
-	mov	eax,[Icon_text_x]
-	mov	ebx,[Icon_text_y]
-	mov	ecx,[button_menu_size_x]
-	mov	edx,[button_menu_size_y]
-	call	draw_volume_rectangle
-
-	push	[counter]
-	push	edi
-	mov	[counter],7
-	mov	edi,panel_text
-	call	print_panel_text
-	pop	edi
-	pop	[counter]
-
-	dec	[counter]
-	jnz	next_columnus_text
-
 	jmp	still
 ;---------------------------------------------------------
 ;-----draw panel menu(main engin of panel)----------------
 ;---------------------------------------------------------
 print_panel_menu:
-	push	[counter]
 ;delit main buttons(some time)
 	mov	[counter],10
 
@@ -83,7 +19,7 @@ next_icon_delit1:
 	cmp	[counter],30
 	jl	next_icon_delit1
 
-	;delit	buttons	of	brushes
+	;delit buttons of brushes
 	mov	[counter],40
 
 next_icon_delit2:
@@ -94,7 +30,7 @@ next_icon_delit2:
 	cmp	[counter],45
 	jl	next_icon_delit2
 
-	;delit	buttons	of	zoom
+	;delit buttons of zoom
 	mov	[counter],45
 
 next_icon_delit3:
@@ -115,144 +51,18 @@ next_icon_delit3:
 	add	edx,11100000000000000000000000000000b
 	mcall SF_DEFINE_BUTTON
 
-	pop	[counter]
-
-	push	esi
-	mov	esi,[counter]
-	dec	esi
-	shl	esi,4
-
-	mov	eax,[menu_rectangles+esi]
-	mov	ebx,[menu_rectangles+esi+4]
-	mov	ecx,[menu_rectangles+esi+8]
-	mov	edx,[menu_rectangles+esi+12]
-	mov	esi,1
-	mov	[menu_coordinat_x],eax
-	mov	[menu_size_x],ecx
-	call	draw_volume_rectangle
-	pop	esi
-
-calculate_counter_menu:
-;calculate menu counter
-	mov	eax,[counter]
-	dec	eax
-	shl	eax,2
-	mov	ebx,[menu_counters+eax]
-	mov	[counter_menu],ebx
-
-	call	GetMouseCoordinats
-
-	and	[menu_counter],0
-
-	push	esi edi
-;сглаживание анимации >>>>>>>>>>>>>>>>>>
-;	mcall	18,4
-
-menu_loop:
-	mov	eax,[menu_coordinat_x]
-	mov	ebx,36
-	mov	ecx,[MouseX]
-	mov	edx,[MouseY]
-	mov	esi,[menu_size_x]
-	mov	edi,18
-	add	ebx,[menu_counter]
-	add	eax,2
-	sub	esi,3
-	inc	ebx
-	call	columnus
-	mov	esi,7
-
-	test	eax,eax
-	jz	no_columnus_menu_text
-
-	mov	esi,1
-
-no_columnus_menu_text:
-	mov	eax,[menu_coordinat_x]
-	mov	ebx,36
-	mov	ecx,[menu_size_x]
-	mov	edx,18
-	add	ebx,[menu_counter]
-	add	eax,2
-	sub	ecx,3
-	inc	ebx
-	call	draw_volume_rectangle
-	add	[menu_counter],20
-
-	dec	[counter_menu]
-	jnz	menu_loop
-
-;print menu text
-	push	[counter]
-	mov	esi,[counter]
-	dec	esi
-	shl	esi,2
-	mov	edi,[menu_text_en+esi]
-	mov	eax,[menu_counters+esi]
-	mov	[counter],eax
-	call	print_panel_text
-	pop	[counter]
-	pop	edi esi
-
-
-menu_still:
-	mcall SF_WAIT_EVENT
-	mcall SF_GET_KEY
-	mcall SF_GET_BUTTON
-	call GetMouseClick
-	test eax,eax
-	jz calculate_counter_menu
-
 	call GetMouseCoordinats
-;calculate menu counter
-	mov	eax,[counter]
-	dec	eax
-	shl	eax,2
-	mov	ebx,[menu_counters+eax]
-	mov	[counter_menu],ebx
 
 	and	[menu_counter],0
 	and	[counter_11],0
 
-	push	esi edi
-
-menu_loop2:
-	mov	eax,[menu_coordinat_x]
-	mov	ebx,36
-	mov	ecx,[MouseX]
-	mov	edx,[MouseY]
-	mov	esi,[menu_size_x]
-	mov	edi,18
-	add	ebx,[menu_counter]
-	add	eax,2
-	sub	esi,3
-	inc	ebx
-	call	columnus
-
-	inc	[counter_11]
-	test	eax,eax
-	jz	no_columnus_menu_text2
-
-	mov	esi,[counter_11]
-	mov	[number_menu],esi
-
-no_columnus_menu_text2:
-	add	[menu_counter],20
-	dec	[counter_menu]
-	jnz	menu_loop2
-
-	pop	edi esi
-
 	mcall SF_SLEEP,15
 
-	push	[counter]
 	pusha
 	call	drawwin
 	popa
-	pop	[counter]
 
-	mov	eax,[counter]
-	mov	[number_panel],eax
+	mov	[number_panel],0
 
 	jmp	TakeInstruments
 
@@ -262,79 +72,57 @@ no_columnus_menu_text2:
 PrintMousePos:
 	pushad
 	mov	eax,[Window_SizeX]
-	sub	eax,75
-	mov	ebx,20+15+6
+	sub	eax,75+ci_offs_skin_w
+	mov	ebx,ci_panel_y_pos+6
 	mov	ecx,52
 	mov	edx,18
 	mov	esi,4
-	call	draw_volume_rectangle ; border for mouse x pos
+	call draw_volume_rectangle ; border for mouse x pos
 
 	mov	eax,[Window_SizeX]
-	sub	eax,75
-	mov	ebx,20+15+6+18+2
+	sub	eax,75+ci_offs_skin_w
+	mov	ebx,ci_panel_y_pos+6+18+4
 	mov	ecx,52
 	mov	edx,18
 	mov	esi,4
-	call	draw_volume_rectangle ; border for mouse y pos
+	call draw_volume_rectangle ; border for mouse y pos
 
 	mov	eax,[Window_SizeX]
-	sub	eax,70
-	mov	ebx,20+15+6+6
+	sub	eax,70+ci_offs_skin_w
+	mov	ebx,ci_panel_y_pos+6+6
 	and	ecx,0
 	mov	edx,mouse_pos_x
 	mov	esi,2
-	call	print_text
+	call print_text
 
 	mov	eax,[Window_SizeX]
-	sub	eax,70
-	mov	ebx,20+15+6+6+18+1
+	sub	eax,70+ci_offs_skin_w
+	mov	ebx,ci_panel_y_pos+6+6+18+4
 	and	ecx,0
 	mov	edx,mouse_pos_y
 	mov	esi,2
-	call	print_text
+	call print_text
 
 	mov	ecx,[ScreenX]
 	add	ecx,[PosX]
 	mov	edx,[Window_SizeX]
-	sub	edx,55
+	sub	edx,55+ci_offs_skin_w
 	shl	edx,16
-	add	edx,20+15+6+6
+	add	edx,ci_panel_y_pos+6+6
 	and	esi,0
 	mcall SF_DRAW_NUMBER,<4,0>
 
 	mov	ecx,[ScreenY]
 	add	ecx,[PosY]
 	mov	edx,[Window_SizeX]
-	sub	edx,55
+	sub	edx,55+ci_offs_skin_w
 	shl	edx,16
-	add	edx,20+15+6+18+1+6
+	add	edx,ci_panel_y_pos+6+18+4+6
 	mcall
 
 	popad
 	ret
 
-;----------------------------------------------------------
-;----------print text on the panel and menu----------------
-;----------------------------------------------------------
-print_panel_text:
-next_panel_text:
-	mov	eax,[edi]
-	mov	ebx,[edi+4]
-;	xor	ecx,ecx
-	mov	ecx,0x10000000
-	mov	edx,edi
-	add	edx,12
-	mov	esi,[edi+8]
-	add	edi,esi
-	add	edi,3*4
-
-	push	edi
-	call	print_text
-	pop	edi
-
-	dec	[counter]
-	jnz	next_panel_text
-	ret
 ;----------------------------------------------------------
 ;------------draw lines of scoll---------------------------
 ;----------------------------------------------------------

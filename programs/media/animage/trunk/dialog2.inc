@@ -14,16 +14,27 @@ dialog_line:
 	    call print_line
 	    call print_cursor
 
-      opros:
-	    mcall SF_WAIT_EVENT
+opros:
+	mcall SF_SLEEP, 5 ;fix cpu use 100%
+	mcall SF_WAIT_EVENT
 
-	    cmp eax,1 ;redraw window
-	    je exit_cycle
-	    cmp eax,3 ;press button
-	    je exit_cycle
+	cmp eax,1 ;redraw window
+	jne @f
+		call dialog2_draw
 
-	    cmp eax,2 ;press key
-	    jne opros
+		mov ebx,[string_x]
+		shl ebx,16
+		add ebx,[string_y]
+		mov edx,string_
+		mov esi,[MaxSizeString]
+		mcall SF_DRAW_TEXT,,0
+		jmp opros
+	@@:
+	cmp eax,3 ;press button
+	je exit_cycle
+
+	cmp eax,2 ;press key
+	jne opros
 
 	    mcall SF_GET_KEY
 	    shr eax,8
@@ -152,9 +163,13 @@ position      dd 0
 MaxSizeString dd 0
 string_x      dd 0
 string_y      dd 0
-;**********************************************************
+
 ;----------------------------------------------------------
-  value:
+;input:
+; eax - pointer to string
+;output:
+; eax - value
+str_to_int:
 	xor edx,edx
   cycle_value_:
 	xor ebx,ebx
@@ -232,5 +247,58 @@ string_y      dd 0
 	error:
 	mov eax,edx
 	ret
+
 ;----------------------------------------------------------
+align 4
+dialog2_draw:
+	mov	eax,80
+	mov	ebx,100
+	mov	ecx,150
+	mov	edx,90
+	mov esi,1
+	call draw_volume_rectangle ; dialog 'file new'
+
+	mov	eax,177
+	mov	ebx,115
+	mov	ecx,40
+	mov	edx,14
+	mov esi,4
+	call draw_volume_rectangle
+
+	mov	eax,177
+	mov	ebx,115+24
+	mov	ecx,40
+	mov	edx,14
+	mov esi,4
+	call draw_volume_rectangle
+
+	mov	eax,177
+	mov	ebx,170
+	mov	ecx,40
+	mov	edx,15
+	mov	esi,1
+	call draw_volume_rectangle ; button [Ok]
+
+	mov	eax,90
+	mov	ebx,118
+	mov	ecx,0xffffff
+	mov	edx,new_text1
+	mov	esi,14
+	call print_text
+
+	mov	eax,90
+	mov	ebx,118+24
+	mov	ecx,0xffffff
+	mov	edx,new_text2
+	mov	esi,14
+	call print_text
+
+	mov	eax,185
+	mov	ebx,175
+	mov	ecx,0xffffff
+	mov	edx,ok_text
+	mov	esi,2
+	call print_text
+	ret
+
 length_number	dd 0

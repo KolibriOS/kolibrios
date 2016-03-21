@@ -13,10 +13,11 @@ draw_volume_rectangle:
 	cmp	esi,1
 	jne	no_volume_light_rectangle
 
-	mov	[color_rectangle],0xc7cbcf
+	;mov esi,dword[syscolors+20]
+	mov	[color_rectangle],0xc7cbcf ;esi
 	mov	[color_line1],0xaeabae
 	mov	[color_line2],0xffffff
-	mov	[color_line3],0xc7cbcf
+	mov	[color_line3],0xc7cbcf ;esi
 	jmp	exit_colors
 ;----------------------------------------------------------
 no_volume_light_rectangle:
@@ -33,7 +34,8 @@ no_pressed_rectangle:
 	cmp	esi,3
 	jne	no_pressed_panel
 
-	mov	[color_rectangle],0xc7cbcf
+	mov esi,dword[syscolors+20]
+	mov	[color_rectangle],esi
 	mov	[color_line1],0xaeabae
 	mov	[color_line2],7000
 	mov	[color_line3],0xffffff
@@ -63,20 +65,22 @@ no_light_pressed_rectangle:
 	cmp	esi,6
 	jne	no_work_rectangle
 
-	mov	[color_rectangle],0xc7cbcf
+	mov esi,dword[syscolors+20]
+	mov [color_rectangle],esi
 	mov	[color_line1],0xaeabae
-	mov	[color_line2],0xc7cbcf
-	mov	[color_line3],0xc7cbcf
+	mov	[color_line2],esi
+	mov	[color_line3],esi
 	jmp	exit_colors
 ;----------------------------------------------------------
 no_work_rectangle:
 	cmp	esi,7
 	jne	no_work_rectangle_2
 
-	mov	[color_rectangle],0xc7cbcf
-	mov	[color_line1],0xc7cbcf
-	mov	[color_line2],0xc7cbcf
-	mov	[color_line3],0xc7cbcf
+	mov esi,dword[syscolors+20]
+	mov	[color_rectangle],esi
+	mov	[color_line1],esi
+	mov	[color_line2],esi
+	mov	[color_line3],esi
 	jmp	exit_colors
 ;----------------------------------------------------------
 no_work_rectangle_2:

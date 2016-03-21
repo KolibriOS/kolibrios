@@ -2,6 +2,8 @@
 ;-------------interraction MOUSE--------------
 ;---------------------------------------------
 mouse:
+	stdcall [kmainmenu_dispatch_cursorevent], [main_menu]
+
 	or ecx,-1
 	mcall SF_THREAD_INFO,procinfo
 	
@@ -14,11 +16,11 @@ mouse:
 	mov	edx,[Window_SizeX]
 	sub	edx,5
 
-	cmp	ebx,20
-	jle	no_panel
+	;cmp ebx,0
+	;jle no_panel
 
-	cmp	ebx,20+15
-	jae	no_panel
+	cmp ebx,ci_panel_y_pos
+	jae no_panel
 
 	cmp	eax,5
 	jle	no_panel
@@ -27,16 +29,12 @@ mouse:
 	jae	no_panel
 
 	call GetMouseCoordinats
-	mov	[counter],7
-	mov	edi,panel_text
 	jmp	panel_interraction
 
 no_panel:
 	cmp	[Panel_flag],0
 	jz	no_redraw_panel
 
-	mov	[counter],7
-	mov	edi,panel_text
 	jmp	panel_interraction
 
 no_redraw_panel:

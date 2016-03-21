@@ -51,31 +51,25 @@ no_znak2:
 	shl	ecx,16
 	add	ebx, [Window_SizeX]
 	add	ecx, [Window_SizeY]
-	mcall SF_CREATE_WINDOW,,,0x53aabbcc,,name_of_program
+	mcall SF_CREATE_WINDOW,,,0x73aabbcc,,name_of_program
 	
 	mov	eax,[procinfo+70] ;staus of window
 	test eax,100b
 	jne	.end
 	
 ;------------------------------------------------
-	mov	eax,5
-	mov	ebx,20
-	mov	ecx,[Window_SizeX]
-	mov	edx,15
-	mov	esi,6
-	sub	ecx,10
-	call	draw_volume_rectangle ; top menu - file and etc.
+	mov	ebx,[Window_SizeX]
+	sub	ebx,5+ci_panel_x_pos+ci_offs_skin_w-1
+	mcall SF_DRAW_RECT,,ci_panel_y_pos,dword[syscolors+20] ; чистка полосы для меню
 
-	mov	[counter],7
-	mov	edi,panel_text
-	call	print_panel_text
+	call put_main_menu
 ;------------------------------------------------
-	mov	eax,5
-	mov	ebx,20+15+1
+	mov	eax,ci_panel_x_pos
+	mov	ebx,ci_panel_y_pos
 	mov	ecx,[Window_SizeX]
 	mov	edx,50
 	mov	esi,1
-	sub	ecx,10
+	sub	ecx,5+ci_panel_x_pos+ci_offs_skin_w
 	call	draw_volume_rectangle ; tools panel
 	call	draw_icons
 	call	PrintMousePos
@@ -97,7 +91,7 @@ no_znak2:
 	shl	ecx,16
 	mov	cx,dx ;высота бордюра
 
-	mcall SF_DRAW_RECT,,,0xc7cbcf ;бордюр справа от окна перед скроллингом
+	mcall SF_DRAW_RECT,,,dword[syscolors+20] ;бордюр справа от окна перед скроллингом
 ;------------------------------------------------
 	mcall ,<ci_edit_wnd_x_pos,ci_edit_wnd_border> ;бордюр слева от окна
 ;------------------------------------------------
@@ -115,7 +109,7 @@ no_znak2:
 	shl	ecx,16
 	mov	cx,dx ;высота бордюра
 
-	mcall SF_DRAW_RECT,,,0xc7cbcf ;бордюр под окном и над скроллингом
+	mcall SF_DRAW_RECT,,,dword[syscolors+20] ;бордюр под окном и над скроллингом
 ;------------------------------------------------
 	mcall ,,<ci_edit_wnd_y_pos,ci_edit_wnd_border> ;бордюр под панелью и над окном
 ;------------------------------------------------
