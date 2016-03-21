@@ -125,7 +125,7 @@ draw_icons:
 	 mov [Icon_X],ci_panel_x_pos+131
 
 	 mov ebx,[Icon_X]
-	 mov ecx,ci_panel_but_y1-1
+	 mov ecx,ci_panel_but_y2-1
 	 dec ebx
 	 dec ecx
 	 shl ebx,16

@@ -200,88 +200,29 @@ exit_colors:
 	call	draw_line
 	ret
 ;----------------------------------------------------------
-rectangle:
-no_light_rectangle:
-	mov	[line_x],eax
-	mov	[line_y],ebx
-	mov	[line_size_x],ecx
-	mov	[line_size_y],edx
-	mov	edx,esi
-	mov	ebx,[line_x]
-	mov	ecx,[line_y]
-	shl	ebx,16
-	shl	ecx,16
-	add	ebx,[line_size_x]
-	add	ecx,[line_size_y]
-	mcall SF_DRAW_RECT
-	ret
-;----------------------------------------------------------
-draw_conture:
-	mov	[line_x],eax
-	mov	[line_y],ebx
-	mov	[line_size_x],ecx
-	mov	[line_size_y],edx
-	mov	[color_line1],0xaeabae
-;line	1
-	mov	edx,[color_line1]
-	mov	ebx,[line_x]
-	mov	ecx,[line_y]
-	shl	ebx,16
-	shl	ecx,16
-	add	ebx,[line_x]
-	add	ecx,[line_y]
-	add	ebx,[line_size_x]
-	call	draw_line
-;line	2
-	mov	edx,[color_line1]
-	mov	ebx,[line_x]
-	mov	ecx,[line_y]
-	shl	ebx,16
-	shl	ecx,16
-	add	ebx,[line_x]
-	add	ecx,[line_y]
-	add	ecx,[line_size_y]
-	call	draw_line
-;line	3
-	mov	edx,[color_line1]
-	mov	ebx,[line_x]
-	mov	ecx,[line_y]
-	add	ecx,[line_size_y]
-	shl	ebx,16
-	shl	ecx,16
-	add	ebx,[line_x]
-	add	ecx,[line_y]
-	add	ebx,[line_size_x]
-	add	ecx,[line_size_y]
-	call	draw_line
-;line	4
-	mov	edx,[color_line1]
-	mov	ebx,[line_x]
-	mov	ecx,[line_y]
-	add	ebx,[line_size_x]
-	shl	ebx,16
-	shl	ecx,16
-	add	ebx,[line_x]
-	add	ecx,[line_y]
-	add	ebx,[line_size_x]
-	add	ecx,[line_size_y]
-	call	draw_line
-	ret
-;----------------------------------------------------------
+;input:
+; eax - rectangle X
+; ebx - rectangle Y
+; ecx - point X
+; edx - point Y
+; esi - rectangle size X
+; edi - rectangle size Y
+;output:
+; eax - 1 if point in rectangle
 columnus:
 	sub	eax,ecx
-	jns	no_columnus
+	jns	@f
 	neg	eax
 	cmp	eax,esi
-	ja	no_columnus
+	ja	@f
 	sub	ebx,edx
-	jns	no_columnus
+	jns	@f
 	neg	ebx
 	cmp	ebx,edi
-	ja	no_columnus
+	ja	@f
 	mov	eax,1
 	jmp	columnus_true
-no_columnus:
+@@:
 	xor	eax,eax
 columnus_true:
 	ret

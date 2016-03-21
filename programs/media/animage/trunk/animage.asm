@@ -32,21 +32,17 @@
 use32
 org	0x0
 	db 'MENUET01'
-	dd 0x1
-	dd START
-	dd IM_END
-	dd I_END
-	dd stacktop
-	dd file_path	;parameters
-	dd cur_dir_path
+	dd 1, START, IM_END, I_END
+	dd stacktop, file_path, cur_dir_path
 
-include '../../../config.inc'		;for nightbuild
+include '../../../config.inc' ;for nightbuild
 include	'../../../macros.inc'
 include '../../../proc32.inc'
 include '../../../KOSfuncs.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 include '../../../dll.inc'
 include '../../../libio.inc'
+;include '../../../develop/libraries/libs-dev/libimg/libimg.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
@@ -141,8 +137,7 @@ include	'init_data.inc'
 	call	copy_str_1
 @@:
 ;OpenDialog	initialisation
-	push    dword OpenDialog_data
-	call    [OpenDialog_Init]
+	stdcall [OpenDialog_Init], OpenDialog_data
 ;---------------------------------------------------------------------
 red:
 	call	drawwin
@@ -208,7 +203,7 @@ include	'width_lines.inc'
 ;----------------------------------------------------------
 ;-------------------ICON"S picture-------------------------
 ;----------------------------------------------------------
-	dd	0
+align 4
 panel_picture:
 file 'panel_buttons.png'
 .end:
@@ -284,12 +279,7 @@ Icon_X			rd 1
 Icon_Y			rd 1
 counter			rd 1
 counter2		rd 1
-Icon_text_x		rd 1
-Icon_text_y		rd 1
 Panel_flag		rb 1
-counter_menu		rd 1
-menu_coordinat_x	rd 1
-menu_size_x		rd 1
 menu_counter		rd 1
 counter_11		rd 1
 number_panel		rd 1
