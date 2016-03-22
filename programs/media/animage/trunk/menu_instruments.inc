@@ -1,6 +1,18 @@
+macro instrument_set m_num, code
+{
+local no_instrument
+cmp [number_menu],m_num
+jne no_instrument
+	mov	[Current_instrument],code
+	call TakeButtonInstruments
+	jmp end_menu
+no_instrument:
+}
+
 ;-----------------------------------------------------------
 ;-----------instruments of menu-----------------------------
 ;-----------------------------------------------------------
+align 4
 TakeInstruments:
 ;|||||||||||||||||||FILE||||||||||||||||||||||
 	cmp	[number_panel],7
@@ -99,12 +111,10 @@ exit_new:
 	call GetMemory
 
 	and	[save_flag],0
-	and	[number_panel],0
-	and	[number_menu],0
 
 	call cleare_work_arrea
 	call drawwin
-	jmp	still
+	jmp	end_menu
 ;---------------------------------------------------------------------
 no_new:
 ; <<< Open >>>
@@ -118,16 +128,13 @@ no_new:
 	call    [OpenDialog_Start]
 	
 	cmp	[OpenDialog_data.status],1
-	jne	still
+	jne	end_menu
 ;---------------------------------------------------------------------
 	mcall SF_SET_EVENTS_MASK,0x80000027 ;100111b
 
 	call load_picture
 	call drawwin
-
-	and	[number_panel],0
-	and	[number_menu],0
-	jmp	still
+	jmp	end_menu
 ;---------------------------------------------------------------------
 no_open:
 ; <<< Save >>>
@@ -135,14 +142,9 @@ no_open:
 	jne	no_save_
 
 	mov	al,[save_flag]
-	test	al,al
-	jz	no_save_file
+	test al,al
+	jz end_menu
 	jmp	save_enter
-;---------------------------------------------------------------------
-no_save_file:
-	and	[number_panel],0
-	and	[number_menu],0
-	jmp	still
 ;---------------------------------------------------------------------
 no_save_:
 ; <<< Save as >>>
@@ -171,7 +173,7 @@ no_save_:
 	stdcall [OpenDialog_Start],OpenDialog_data
 
 	cmp	[OpenDialog_data.status],1
-	jne	still
+	jne	end_menu
 ;---------------------------------------------------------------------
 save1:
 save_enter:
@@ -195,15 +197,8 @@ save_enter:
 	call	save_file
 
 	mov	[save_flag],1
-	and	[number_panel],0
-	and	[number_menu],0
-	call	drawwin
-	jmp	still
-;---------------------------------------------------------------------
-;save2:
-;	and	[number_panel],0
-;	and	[number_menu],0
-;	jmp	still
+	call drawwin
+	jmp	end_menu
 ;---------------------------------------------------------------------
 no_save:
 ; <<< Exit >>>
@@ -235,9 +230,7 @@ no_file:
 	mov [PointerToCopyPicture2],eax
 
 	call MovePictureToWorkScreen
-	and [number_panel],0
-	and [number_menu],0
-	jmp still
+	jmp end_menu
 ;---------------------------------------------------------------------
 no_undo:
 ; <<< Redo >>>
@@ -257,9 +250,7 @@ no_undo:
 	mov [PointerToCopyPicture2],ebx
 
 	call MovePictureToWorkScreen
-	and [number_panel],0
-	and [number_menu],0
-	jmp still
+	jmp end_menu
 ;---------------------------------------------------------------------
 no_redo:
 ; <<< Copy >>>
@@ -355,11 +346,8 @@ loop_fill_rectangle_x_copy:
 	jl	loop_fill_rectangle_y_copy
 
 	call	MovePictureToWorkScreen
-
-	and	[number_panel],0
-	and	[number_menu],0
 	mov	[DrawSprite_flag],1
-	jmp	still
+	jmp	end_menu
 ;---------------------------------------------------------------------
 no_copy:
 ; <<< Paste >>>
@@ -451,10 +439,8 @@ loop_fill_rectangle_x_paste:
 	jl	loop_fill_rectangle_y_paste
 
 	call	MovePictureToWorkScreen
-	and	[number_panel],0
-	and	[number_menu],0
 	mov	[Paste_flag],1
-	jmp	still
+	jmp	end_menu
 ;---------------------------------------------------------------------
 no_paste:
 ; <<< Cut >>>
@@ -544,10 +530,7 @@ loop_fill_rectangle_x:
 	jl	loop_fill_rectangle_y
 
 	call	MovePictureToWorkScreen
-
-	and	[number_panel],0
-	and	[number_menu],0
-	jmp	still
+	jmp	end_menu
 ;---------------------------------------------------------------------
 no_cut:
 ; <<< Cleare all >>>
@@ -556,15 +539,12 @@ no_cut:
 
 	call	cleare_work_arrea
 	call	MovePictureToWorkScreen
-
-	and	[number_panel],0
-	and	[number_menu],0
-	jmp	still
+	jmp	end_menu
 ;---------------------------------------------------------------------
 no_cleare_all:
 ; <<< To allocate all >>>
 	cmp	[number_menu],7
-	jne	still ;no_to_allocate_all
+	jne	end_menu ;no_to_allocate_all
 
 	mov	[OldX],1
 	mov	[OldY],1
@@ -578,26 +558,32 @@ no_cleare_all:
 	mov	[Activate_instrument],1
 	mov	[Current_instrument],30
 	mov	[crossing],0
-	and	[number_panel],0
-	and	[number_menu],0
 ;	call	TakeButtonInstruments
 ;	call	MovePictureToWorkScreen
-	jmp	still
+	jmp	end_menu
 ;---------------------------------------------------------------------
 ;no_to_allocate_all:
 no_edit:
 ;|||||||||||||||||||||||||INSTRUMENTS||||||||||||||||||||||
 	cmp	[number_panel],5
 	jne	no_instruments
-; <<< Pencil >>>
-	cmp	[number_menu],1
-	jne	no_pencil
 
-	; ... todo ...
+	instrument_set  1,10 ; pensil
+	instrument_set  2,11 ; draw brush
+	instrument_set  3,12 ; spray
+	instrument_set  4,13 ; lastik
+	instrument_set  5,14 ; flood fill
+	instrument_set  6,15 ; pipetka
+	instrument_set  7,16 ; draw line
+	instrument_set  8,17 ; draw rectangle
+	instrument_set  9,18 ; draw circle
+	instrument_set 10,19 ; draw ellips
+	instrument_set 11,20 ; draw hard contour
 
+no_instruments:
+
+end_menu:
 	and	[number_panel],0
 	and	[number_menu],0
-no_pencil:
-no_instruments:
 	jmp	still
 ;---------------------------------------------------------------------

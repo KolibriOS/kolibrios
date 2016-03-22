@@ -13,6 +13,7 @@ buttons:
 	jne @f
 		mov [finishing_crossing],1
 		call TakeButtonInstruments
+		jmp still
 	@@:
 
 	mcall SF_GET_BUTTON
@@ -92,5 +93,4 @@ buttons:
 	no_kontur__:
 
 	call TakeButtonInstruments
-
 	jmp still

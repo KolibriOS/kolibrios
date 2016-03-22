@@ -153,8 +153,39 @@ local .no_draw_pixel
 ;-----------------------------------------------------------
 ;-----instruments of panel(icon's instruments)--------------
 ;-----------------------------------------------------------
-TakeButtonInstruments:
+;input:
+; [Current_instrument] - instrument code
+;
+; *** instrument codes ***
+;10 - pensil
+;11 - draw brush
+;12 - spray
+;13 - lastik
+;14 - flood fill
+;15 - pipetka
+;16 - draw line
+;17 - draw rectangle
+;18 - draw circle
+;19 - draw ellips
+;20 - draw hard contour
+;21 - allocation of a countour
+;23 - reflection from left to right
+;24 - reflection from up to down
+;40 - brush 1
+;41 - brush 2
+;42 - brush 3
+;43 - brush 4
+;44 - brush 5
+;45 - zoom 1
+;46 - zoom 2
+;47 - zoom 3
+;48 - zoom 4
+;49 - zoom 8
+;50 - zoom 16
+;51 - palette
 
+align 4
+TakeButtonInstruments:
 	mov eax,[Current_instrument]
 
 	;*************************brush 1***********************
@@ -168,8 +199,7 @@ TakeButtonInstruments:
 	mov [Current_instrument],ebx
 
 	mov [line_width],1
-
-	jmp still
+	ret
 	no_brush1:
 
 	;*************************brush 2***********************
@@ -183,8 +213,7 @@ TakeButtonInstruments:
 	mov [Current_instrument],ebx
 
 	mov [line_width],2
-
-	jmp still
+	ret
 	no_brush2:
 
 	;*************************brush 3***********************
@@ -198,8 +227,7 @@ TakeButtonInstruments:
 	mov [Current_instrument],ebx
 
 	mov [line_width],3
-
-	jmp still
+	ret
 	no_brush3:
 
 	;*************************brush 4***********************
@@ -213,8 +241,7 @@ TakeButtonInstruments:
 	mov [Current_instrument],ebx
 
 	mov [line_width],4
-
-	jmp still
+	ret
 	no_brush4:
 
 	;*************************brush 5***********************
@@ -228,8 +255,7 @@ TakeButtonInstruments:
 	mov [Current_instrument],ebx
 
 	mov [line_width],5
-
-	jmp still
+	ret
 	no_brush5:
 
 	;*************************pensil************************
@@ -260,9 +286,6 @@ TakeButtonInstruments:
 	mov [OldY],ebx
 
 	no_activated_later:
-
-;	mov eax,[MaxWorkScreen_SizeX] ???
-;	mov ebx,[MaxWorkScreen_SizeY] ???
 
 	mov eax,[PointerToPicture]
 	mov ebx,[ReserveArray]
@@ -302,30 +325,8 @@ TakeButtonInstruments:
 
 	call MovePictureToWorkScreen
 	mov [Activate_instrument],1
-	jmp still
+	ret
 	no_pensil:
-
-	;*************************pipetka***********************
-	cmp eax,15
-	jne no_pipetka
-
-	mov eax,[ScreenY]
-	mov ebx,[Picture_SizeX]
-	add eax,[PosY]
-	imul eax,ebx
-	add eax,[ScreenX]
-	add eax,[PosX]
-	lea eax,[eax+eax*2]
-	add eax,[PointerToPicture]
-	mov ebx,[eax]
-	and ebx,0xffffff
-	mov [Color],ebx
-
-	mcall SF_DRAW_RECT, ((ci_panel_x_pos+130) shl 16)+21,\
-		((ci_panel_y_pos+28) shl 16)+21, [Color]
-
-	jmp still
-	no_pipetka:
 
 	;*************************draw brush********************
 	cmp eax,11
@@ -475,8 +476,39 @@ TakeButtonInstruments:
 	mov eax,[Current_instrument]
 	mov [Last_instrument],eax
 
-	jmp still
+	ret
 	no_brush:
+
+	;*************************pipetka***********************
+	cmp eax,15
+	jne no_pipetka
+
+	mov eax,[ScreenY]
+	mov ebx,[Picture_SizeX]
+	add eax,[PosY]
+	imul eax,ebx
+	add eax,[ScreenX]
+	add eax,[PosX]
+	lea eax,[eax+eax*2]
+	add eax,[PointerToPicture]
+	mov ebx,[eax]
+	and ebx,0xffffff
+	mov [Color],ebx
+
+	mcall SF_DRAW_RECT, ((ci_panel_x_pos+130) shl 16)+21,\
+		((ci_panel_y_pos+28) shl 16)+21, [Color]
+
+	ret
+	no_pipetka:
+
+	;************************lastik*************************
+	cmp eax,13
+	jne no_lastik
+
+	mov [Last_instrument],eax
+	mov [lastik_is_active],1
+	jmp lastik_in
+	no_lastik:
 
 	;************************Flood Fill*********************
 	cmp eax,14
@@ -513,28 +545,17 @@ TakeButtonInstruments:
 
 	call flood_fill
 	call MovePictureToWorkScreen
-
-	jmp still
+	ret
 	no_FloodFill:
 
-	;************************lastik*************************
-	cmp eax,13
-	jne no_lastik
-
-	 mov [Last_instrument],eax
-	 mov [lastik_is_active],1
-	jmp lastik_in
-
-	no_lastik:
-
-	;*******************************************************
+	;************************spray**************************
 	cmp eax,12
-	jne  no_spray
+	jne no_spray
 
 	cmp [Activate_instrument],0
 	jne no_null_spray
 	mov [Activate_instrument],1
-	jmp still
+	ret
 	no_null_spray:
 
 	mov eax,[ScreenX]
@@ -610,8 +631,7 @@ TakeButtonInstruments:
 	jl brush_y_spray
 
 	call MovePictureToWorkScreen
-	jmp still
-
+	ret
 	no_spray:
 
 	;************************palette************************
@@ -649,24 +669,22 @@ TakeButtonInstruments:
 	jnz next_rectangle
 
 	wait_events:
-	call event
+	mcall SF_WAIT_EVENT
 
 	cmp eax,1
-	je still
-
+	jne @f
+		ret
+	@@:
 	cmp eax,2
 	jne no_keys
-
-	mcall SF_GET_KEY
-
+		mcall SF_GET_KEY
+		jmp wait_events
 	no_keys:
-
 	cmp eax,3
 	jne no_buttons
-	mcall SF_GET_BUTTON
-
+		mcall SF_GET_BUTTON
+		jmp wait_events
 	no_buttons:
-
 	cmp eax,6
 	jne wait_events
 
@@ -716,8 +734,7 @@ TakeButtonInstruments:
 
 	mov eax,[Last_instrument]
 	mov [Current_instrument],eax
-
-	jmp still
+	ret
 	no_palette:
 
 	;************************draw line**********************
@@ -739,8 +756,9 @@ TakeButtonInstruments:
 	xor eax,eax
 	mov ecx,mem_flood_f/4
 	mov edi,[ReserveArray]
+	cld
 	rep stosd
-	jmp still
+	ret
 	no_new_line_xy:
 
 	;put saved pixels
@@ -782,7 +800,7 @@ TakeButtonInstruments:
 	draw_calc_pixels width_pixels
 
 	call MovePictureToWorkScreen
-	jmp still
+	ret
 	no_line:
 
 	;************************draw rectangle*****************
@@ -804,8 +822,9 @@ TakeButtonInstruments:
 	xor eax,eax
 	mov ecx,mem_flood_f/4
 	mov edi,[ReserveArray]
+	cld
 	rep stosd
-	jmp still
+	ret
 	no_new_rectangle_xy:
 
 	;put saved pixels
@@ -847,7 +866,7 @@ TakeButtonInstruments:
 	draw_calc_pixels width_pixels_rectangle
 
 	call MovePictureToWorkScreen
-	jmp still
+	ret
 	no_rectangle:
 
 	;************************draw circle********************
@@ -869,8 +888,9 @@ TakeButtonInstruments:
 	xor eax,eax
 	mov ecx,mem_flood_f/4
 	mov edi,[ReserveArray]
+	cld
 	rep stosd
-	jmp still
+	ret
 	no_new_circle_xy:
 
 	;put saved pixels
@@ -999,7 +1019,7 @@ TakeButtonInstruments:
 	draw_calc_pixels width_pixels
 
 	call MovePictureToWorkScreen
-	jmp still
+	ret
 	no_circle:
 
 	;************************zoom 1*************************
@@ -1009,7 +1029,7 @@ TakeButtonInstruments:
 	call scrollbar_move_00
 	and [Current_instrument],0
 	call drawwin
-	jmp still
+	ret
 	no_1_:
 
 	;************************zoom 2*************************
@@ -1019,9 +1039,8 @@ TakeButtonInstruments:
 	call drawwin
 	call scrollbar_move_00
 	and [Current_instrument],0
-	jmp still
+	ret
 	no_2_:
-
 
 	;************************zoom 3*************************
 	cmp eax,47
@@ -1030,7 +1049,7 @@ TakeButtonInstruments:
 	call drawwin
 	call scrollbar_move_00
 	and [Current_instrument],0
-	jmp still
+	ret
 	no_3_:
 
 	;************************zoom 4*************************
@@ -1040,7 +1059,7 @@ TakeButtonInstruments:
 	call drawwin
 	call scrollbar_move_00
 	and [Current_instrument],0
-	jmp still
+	ret
 	no_4_:
 
 	;************************zoom 8*************************
@@ -1050,7 +1069,7 @@ TakeButtonInstruments:
 	call drawwin
 	call scrollbar_move_00
 	and [Current_instrument],0
-	jmp still
+	ret
 	no_8_:
 
 	;************************zoom 16************************
@@ -1060,7 +1079,7 @@ TakeButtonInstruments:
 	call drawwin
 	call scrollbar_move_00
 	and [Current_instrument],0
-	jmp still
+	ret
 	no_16_:
 
 	;***************allocation of a countour****************
@@ -1090,8 +1109,9 @@ TakeButtonInstruments:
 	xor eax,eax
 	mov ecx,mem_flood_f/4
 	mov edi,[ReserveArray]
+	cld
 	rep stosd
-	jmp still
+	ret
 	no_new_allocation_xy:
 	instrument_not_finished_work:
 
@@ -1186,8 +1206,8 @@ TakeButtonInstruments:
 	mov edi,[SpriteSizeY]
 	add ecx,[PosX]
 	add edx,[PosY]
-	inc esi;eax
-	inc edi;ebx
+	inc esi
+	inc edi
 	call columnus
 
 	test eax,eax
@@ -1316,7 +1336,7 @@ TakeButtonInstruments:
 	and [instrument_used],0
 	and [DrawSprite_flag],0
 	call MovePictureToWorkScreen
-	jmp still
+	ret
 	not_finish_from_instrument_crossing:
 
 	;calculate line
@@ -1410,7 +1430,7 @@ TakeButtonInstruments:
 	no_save_shades:
 
 	call MovePictureToWorkScreen
-	jmp still
+	ret
 	no_allocation:
 
 	;*************reflection from left to right*************
@@ -1493,7 +1513,7 @@ TakeButtonInstruments:
 	jnz next_line_reflection_x
 
 	call MovePictureToWorkScreen
-	jmp still
+	ret
 	no_reflection_from_left_to_right:
 
 	;*************reflection from up to down****************
@@ -1545,7 +1565,7 @@ TakeButtonInstruments:
 	jnz next_lines_reflection
 
 	call MovePictureToWorkScreen
-	jmp still
+	ret
 	no_reflection_from_up_to_down:
 
 	;*********************draw hard contour*****************
@@ -1636,10 +1656,9 @@ TakeButtonInstruments:
 	mov [used_OldY],ebx
 
 	call MovePictureToWorkScreen
-
-	jmp still
-
+	ret
 	no_kontur_:
+
 	;************************draw ellips********************
 	cmp eax,19
 	jne no_ellips
@@ -1659,8 +1678,9 @@ TakeButtonInstruments:
 	xor eax,eax
 	mov ecx,mem_flood_f/4
 	mov edi,[ReserveArray]
+	cld
 	rep stosd
-	jmp still
+	ret
 	no_new_ellips_xy:
 
 	;put saved pixels
@@ -1781,9 +1801,7 @@ TakeButtonInstruments:
 	draw_calc_pixels width_pixels
 
 	call MovePictureToWorkScreen
-	jmp still
+	;ret
 	no_ellips:
 
-
-	jmp still
 	ret

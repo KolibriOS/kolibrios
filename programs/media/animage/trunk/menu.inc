@@ -2,6 +2,18 @@ KMENUITEM_NORMAL equ 0
 KMENUITEM_SUBMENU equ 1
 KMENUITEM_SEPARATOR equ 2
 
+macro menu_set code, m_group, m_number
+{
+local no_set
+
+cmp eax, code
+jne no_set
+	mov [number_panel], m_group
+	mov [number_menu], m_number
+	jmp TakeInstruments
+no_set:
+}
+
 init_main_menu:
 	stdcall [kmenu_init], syscolors
 	
@@ -58,6 +70,28 @@ init_main_menu:
 	; init 'Edit' menu
 	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Instr_Pencil, 0x51
 	stdcall [ksubmenu_add], [main_menu_instr], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Instr_Brush, 0x52
+	stdcall [ksubmenu_add], [main_menu_instr], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Instr_Spray, 0x53
+	stdcall [ksubmenu_add], [main_menu_instr], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Instr_Lastik, 0x54
+	stdcall [ksubmenu_add], [main_menu_instr], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Instr_Flood_fill, 0x55
+	stdcall [ksubmenu_add], [main_menu_instr], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Instr_Pipetka, 0x56
+	stdcall [ksubmenu_add], [main_menu_instr], eax
+	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
+	stdcall [ksubmenu_add], [main_menu_instr], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Instr_Line, 0x57
+	stdcall [ksubmenu_add], [main_menu_instr], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Instr_Rectangle, 0x58
+	stdcall [ksubmenu_add], [main_menu_instr], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Instr_Circle, 0x59
+	stdcall [ksubmenu_add], [main_menu_instr], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Instr_Ellips, 0x5a
+	stdcall [ksubmenu_add], [main_menu_instr], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Instr_Hard_contour, 0x5b
+	stdcall [ksubmenu_add], [main_menu_instr], eax
 
 	; add 'Instruments' menu to main
 	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Instr, [main_menu_instr]
@@ -70,78 +104,28 @@ put_main_menu:
 ret
 
 button_handler_main_menu:
-	cmp eax, 0x71
-	jne @f
-		mov [number_panel], 7
-		mov [number_menu], 1
-		jmp TakeInstruments
-@@:
-	cmp eax, 0x72
-	jne @f
-		mov [number_panel], 7
-		mov [number_menu], 2
-		jmp TakeInstruments
-@@:
-	cmp eax, 0x73
-	jne @f
-		mov [number_panel], 7
-		mov [number_menu], 3
-		jmp TakeInstruments
-@@:
-	cmp eax, 0x74
-	jne @f
-		mov [number_panel], 7
-		mov [number_menu], 4
-		jmp TakeInstruments
-@@:
-	cmp eax, 0x75
-	jne @f
-		mov [number_panel], 7
-		mov [number_menu], 5
-		jmp TakeInstruments
-@@:
-	cmp eax, 0x61
-	jne @f
-		mov [number_panel], 6
-		mov [number_menu], 1
-		jmp TakeInstruments
-@@:
-	cmp eax, 0x62
-	jne @f
-		mov [number_panel], 6
-		mov [number_menu], 2
-		jmp TakeInstruments
-@@:
-	cmp eax, 0x63
-	jne @f
-		mov [number_panel], 6
-		mov [number_menu], 3
-		jmp TakeInstruments
-@@:
-	cmp eax, 0x64
-	jne @f
-		mov [number_panel], 6
-		mov [number_menu], 4
-		jmp TakeInstruments
-@@:
-	cmp eax, 0x65
-	jne @f
-		mov [number_panel], 6
-		mov [number_menu], 5
-		jmp TakeInstruments
-@@:
-	cmp eax, 0x66
-	jne @f
-		mov [number_panel], 6
-		mov [number_menu], 6
-		jmp TakeInstruments
-@@:
-	cmp eax, 0x51
-	jne @f
-		mov [number_panel], 5
-		mov [number_menu], 1
-		jmp TakeInstruments
-@@:
+	menu_set 0x71, 7,1
+	menu_set 0x72, 7,2
+	menu_set 0x73, 7,3
+	menu_set 0x74, 7,4
+	menu_set 0x75, 7,5
+	menu_set 0x61, 6,1
+	menu_set 0x62, 6,2
+	menu_set 0x63, 6,3
+	menu_set 0x64, 6,4
+	menu_set 0x65, 6,5
+	menu_set 0x66, 6,6
+	menu_set 0x51, 5,1
+	menu_set 0x52, 5,2
+	menu_set 0x53, 5,3
+	menu_set 0x54, 5,4
+	menu_set 0x55, 5,5
+	menu_set 0x56, 5,6
+	menu_set 0x57, 5,7
+	menu_set 0x58, 5,8
+	menu_set 0x59, 5,9
+	menu_set 0x5a, 5,10
+	menu_set 0x5b, 5,11
 .end_handler:
 ret
 
@@ -167,3 +151,13 @@ sz_main_menu_Edit_ClS   db 'Clear screen', 0
 
 sz_main_menu_Instr       db 'Instruments', 0
 sz_main_menu_Instr_Pencil db 'Pencil', 0
+sz_main_menu_Instr_Brush db 'Brush', 0
+sz_main_menu_Instr_Spray db 'Spray', 0
+sz_main_menu_Instr_Lastik db 'Lastik', 0
+sz_main_menu_Instr_Flood_fill db 'Flood fill', 0
+sz_main_menu_Instr_Pipetka db 'Pipetka', 0
+sz_main_menu_Instr_Line db 'Line', 0
+sz_main_menu_Instr_Rectangle db 'Rectangle', 0
+sz_main_menu_Instr_Circle db 'Circle', 0
+sz_main_menu_Instr_Ellips db 'Ellips', 0
+sz_main_menu_Instr_Hard_contour db 'Hard contour', 0

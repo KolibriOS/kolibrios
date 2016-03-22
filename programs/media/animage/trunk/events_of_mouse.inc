@@ -232,7 +232,8 @@ mouse_in_work_arrea:
 	mov [PointerToCopyPicture2],ebx
 ;--------------end copy for undo-------------
 no_undo___:
-	call	TakeButtonInstruments
+	call TakeButtonInstruments
+	jmp still
 
 no_use_instruments:
 	mov	eax,[Current_instrument]
