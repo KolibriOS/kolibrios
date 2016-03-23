@@ -3,7 +3,7 @@
 	#define START_DOWNLOADING "Начать закачку"
 	#define STOP_DOWNLOADING "Остановить"
 	#define SHOW_IN_FOLDER "Показать в папке"
-	#define OPEN_FILE "Открыть файл"
+	#define OPEN_FILE_TEXT "Открыть файл"
 	#define FILE_SAVED_AS "'Менеджер загрузок\nФайл сохранен как "
 	#define KB_RECEIVED " получено"
 #else
@@ -11,11 +11,11 @@
 	#define START_DOWNLOADING "Start downloading"
 	#define STOP_DOWNLOADING "Stop downloading"
 	#define SHOW_IN_FOLDER "Show in folder"
-	#define OPEN_FILE "Open file"
+	#define OPEN_FILE_TEXT "Open file"
 	#define FILE_SAVED_AS "'Download manager\nFile saved as "
 	#define KB_RECEIVED " received"
 #endif
-char save_to[4096] = "/tmp0/1/Downloads/";
+char save_to[4096] = "/tmp0/1/Downloads";
 
 proc_info DL_Form;
 char downloader_edit[10000];
@@ -25,6 +25,7 @@ edit_box ed = {250,20,20,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(downloader
 progress_bar pb = {0, 170, 51, 225, 12, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
 
 byte downloader_opened;
+char downloader_stak[4096];
 
 
 void Downloader()
@@ -80,9 +81,11 @@ void Downloader()
 				}
 				if (downloader.state == STATE_COMPLETED) 
 				{
+					if (!dir_exists(#save_to)) CreateDir(#save_to);
 					strcpy(#filepath, #save_to);
-					strcat(#filepath, #save_to+strrchr(#save_to, '/'));
-					if (WriteFile(downloader.bufsize, downloader.bufpointer, #filepath)==0)
+					chrcat(#filepath, '/');
+					strcat(#filepath,  #downloader_edit+strrchr(#downloader_edit, '/'));
+					if (WriteFile(downloader.data_downloaded_size, downloader.bufpointer, #filepath)==0)
 						sprintf(#notify_message, "%s%s%s",FILE_SAVED_AS,#filepath,"' -Dt");
 					else
 						sprintf(#notify_message, "%s%s%s","'Download manager\nError! Can\96t save file as ",#filepath,"' -Et");
@@ -122,7 +125,7 @@ void DL_Draw_Window()
 	if (downloader.state == STATE_COMPLETED)
 	{
 		DrawCaptButton(cleft+140, 50, 110, 27, 305, system.color.work_button, system.color.work_button_text, SHOW_IN_FOLDER);
-		DrawCaptButton(cleft+260, 50, 120, 27, 306, system.color.work_button, system.color.work_button_text, OPEN_FILE);	
+		DrawCaptButton(cleft+260, 50, 120, 27, 306, system.color.work_button, system.color.work_button_text, OPEN_FILE_TEXT);	
 	} 
 	WriteText(cleft, ed.top + 4, 0x80, system.color.work_text, "URL:");
 	ed.left = strlen("URL:")*6 + 10 + cleft;

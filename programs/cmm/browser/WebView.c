@@ -565,6 +565,4 @@ void ClickLink()
 	return;
 }
 
-
-char downloader_stak[4096];
 stop:

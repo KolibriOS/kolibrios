@@ -15,6 +15,7 @@
 #include "../lib/patterns/simple_open_dialog.h"
 #include "../lib/patterns/history.h"
 #include "../lib/patterns/http_downloader.h"
+#include "../browser/download_manager.h"
 
 char default_dir[] = "/rd/1";
 od_filter filter2 = {0,0};
@@ -68,7 +69,7 @@ dword CursorFile = FROM "pointer.cur";
 #include "prepare_page.h"
 //#include "special_symbols.h"
 
-#define SANDWICH_MENU "Refresh page\nEdit page\nHistory\nAbout"
+#define SANDWICH_MENU "Refresh page\nEdit page\nHistory\nDownloader\nAbout"
 
 void InitDlls()
 {
@@ -117,7 +118,8 @@ void main()
 					if (menu.list.cur_y==0) EventPageRefresh();
 					if (menu.list.cur_y==1) EventRunEdit();
 					if (menu.list.cur_y==2) EventShowHistory();
-					if (menu.list.cur_y==3) EventShowInfo();
+					if (menu.list.cur_y==3) EventShowDownloader();
+					if (menu.list.cur_y==4) EventShowInfo();
 					menu.list.cur_y = 0;
 				} 
 		}
@@ -389,6 +391,14 @@ void EventShowSandwichMenu()
 void EventPageRefresh()
 {
 	EventOpenAddress(history.current());
+}
+
+void EventShowDownloader()
+{
+	if (!downloader_opened) {
+		downloader_edit = NULL;
+		CreateThread(#Downloader,#downloader_stak+4092);
+	}
 }
 
 /* ------------------------------------------- */
