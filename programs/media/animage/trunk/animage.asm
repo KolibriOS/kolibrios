@@ -105,16 +105,17 @@ include	'init_data.inc'
 ;----------------------------------------------------------
 ;--------get memory and draw window of program-------------
 ;----------------------------------------------------------
-	call	GetMemory
-	call	cleare_work_arrea
-	call	load_icons
-	call	init_main_menu
+	call GetMemory
+	mov	[Current_instrument],10 ;pencil
+	call TakeButtonInstruments  ;set startup instrument
+	call cleare_work_arrea
+	call load_icons
+	call init_main_menu
 
 ;load cursors
 	mov	eax,CursorsID
-	call	load_cursors
+	call load_cursors
 
-	call	drawwin
 ;---------------------------------------------------------
 ;---------check loading of file from parameters-----------
 ;---------------------------------------------------------
@@ -139,8 +140,6 @@ include	'init_data.inc'
 ;OpenDialog	initialisation
 	stdcall [OpenDialog_Init], OpenDialog_data
 ;---------------------------------------------------------------------
-	mov	[Current_instrument],10 ;pencil
-	call TakeButtonInstruments  ;set startup instrument
 
 align 4
 red:
@@ -283,8 +282,6 @@ Icon_X			rd 1
 Icon_Y			rd 1
 counter			rd 1
 counter2		rd 1
-menu_counter		rd 1
-counter_11		rd 1
 number_panel		rd 1
 number_menu		rd 1
 
