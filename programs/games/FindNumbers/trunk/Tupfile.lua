@@ -1,2 +1,6 @@
 if tup.getconfig("NO_CMM") ~= "" then return end
-tup.rule("FindNumbers.c--", "c-- %f" .. tup.getconfig("KPACK_CMD"), "FindNumbers")
+if tup.getconfig("LANG") == "ru"
+then C_LANG = "LANG_RUS"
+else C_LANG = "LANG_ENG" -- this includes default case without config
+end
+tup.rule("FindNumbers.c--", "c-- /D=AUTOBUILD /D=$(C_LANG) %f" .. tup.getconfig("KPACK_CMD"), "FindNumbers")
