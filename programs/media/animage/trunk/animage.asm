@@ -313,6 +313,8 @@ used_OldX		rd 1 ;for draw hard contour
 used_OldY		rd 1
 rectangular_shade_x	rd 1 ;координата x области для копирования
 rectangular_shade_y	rd 1
+paste_img_w rd 1 ;ширина вставляемого изображения
+paste_img_h rd 1 ;высота вставляемого изображения
 crossing_old_x		rd 1
 crossing_old_y		rd 1
 crossing		rd 1

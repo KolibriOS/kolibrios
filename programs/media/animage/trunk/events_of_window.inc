@@ -75,12 +75,12 @@ no_znak2:
 	mov edx, 0xD5CDCB
 	mcall 13
 
-	mov	eax,ci_panel_x_pos
-	mov	ebx,ci_panel_y_pos
-	mov	ecx,[Window_SizeX]
-	mov	edx,50
-	mov	esi,1
-	sub	ecx,5+ci_panel_x_pos+ci_offs_skin_w
+	;mov	eax,ci_panel_x_pos
+	;mov	ebx,ci_panel_y_pos
+	;mov	ecx,[Window_SizeX]
+	;mov	edx,50
+	;mov	esi,1
+	;sub	ecx,5+ci_panel_x_pos+ci_offs_skin_w
 	call	draw_icons
 	call	PrintMousePos
 ;------------------------------------------------

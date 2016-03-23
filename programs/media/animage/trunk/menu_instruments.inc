@@ -313,6 +313,14 @@ no_signum_fill_r_y_copy:
 	sub	ebx,edi
 
 	mov	edx,[PointerToEditBufer]
+	mov	eax,[rectangular_shade_x]
+	sub eax,[OldX]
+	mov [edx],eax ;image.w
+	mov	eax,[rectangular_shade_y]
+	sub eax,[OldY]
+	mov [edx+4],eax ;image.h
+	mov dword[edx+8],24 ;bit in pixel
+	add edx,12 ;copy image parametrs
 	mov	[y],edi
 
 loop_fill_rectangle_y_copy:
@@ -344,6 +352,9 @@ loop_fill_rectangle_x_copy:
 
 	cmp	eax,[rectangular_shade_y]
 	jl	loop_fill_rectangle_y_copy
+
+	;...todo use system buffer...
+	;mcall SF_CLIPBOARD,SSF_WRITE_CB,,[PointerToEditBufer]
 
 	call	MovePictureToWorkScreen
 	mov	[DrawSprite_flag],1
@@ -408,6 +419,15 @@ no_signum_fill_r_x_paste:
 
 no_signum_fill_r_y_paste:
 	mov	edx,[PointerToEditBufer]
+	cmp dword[edx+8],24
+	jne	end_menu
+	mov eax,[edx]
+	add eax,[OldX]
+	mov [paste_img_w],eax
+	mov eax,[edx+4]
+	add eax,[OldY]
+	mov [paste_img_h],eax
+	add edx,12 ;copy image parametrs
 	mov	[y],edi
 
 loop_fill_rectangle_y_paste:
@@ -428,15 +448,21 @@ loop_fill_rectangle_x_paste:
 
 	mov	eax,[x]
 	add	eax,[Dx_]
+	cmp eax,[paste_img_w]
+	je no_paste_data_x
 	mov	[x],eax
 	cmp	eax,[rectangular_shade_x]
 	jl	loop_fill_rectangle_x_paste
+no_paste_data_x:
 
 	mov	eax,[y]
 	add	eax,[Dy_]
+	cmp eax,[paste_img_h]
+	je no_paste_data_y
 	mov	[y],eax
 	cmp	eax,[rectangular_shade_y]
 	jl	loop_fill_rectangle_y_paste
+no_paste_data_y:
 
 	call	MovePictureToWorkScreen
 	mov	[Paste_flag],1

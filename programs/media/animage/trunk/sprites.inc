@@ -1,96 +1,108 @@
 ;-----------------------------------------------------------
-;------------------SaveFonForSprite-------------------------
+;SaveFonForSprite:
+; PointerToPicture -> PointerToSpriteBufer
+;
+;PutFonForSprite:
+; PointerToSpriteBufer -> PointerToPicture
+;
+;DrawSprite:
+; PointerToEditBufer -> PointerToPicture
 ;-----------------------------------------------------------
-SaveFonForSprite:
 
-	mov edi,[PointerToSpriteBufer]
+align 4
+SaveFonForSprite:
 	mov ecx,[SpriteSizeX]
+	or ecx,ecx
+	jz .end_f
 	mov edx,[Picture_SizeX]
-	sub edx,[SpriteSizeX]
+	sub edx,ecx
 	mov esi,[SpriteCoordinatY]
 	imul esi,[Picture_SizeX]
 	add esi,[SpriteCoordinatX]
 	lea edx,[edx+edx*2]
 	lea esi,[esi+esi*2]
 	add esi,[PointerToPicture]
+	mov edi,[PointerToSpriteBufer]
 	mov ebx,[SpriteSizeY]
 	mov [counter],ecx
 
-	next_line_sprite_save:
+	.next_line_sprite_save:
 	mov ecx,[counter]
-
-	next_pixel_sprite_save:
+align 4
+	@@:
 	movsw
 	movsb
 	dec ecx
-	jnz next_pixel_sprite_save
+	jnz @b
 
 	add esi,edx
 	dec ebx
-	jnz next_line_sprite_save
-
+	jnz .next_line_sprite_save
+.end_f:
 	ret
 ;-----------------------------------------------------------
-;-------------------PutFonForSprite-------------------------
-;-----------------------------------------------------------
-PutFonForSprite:
 
-	mov esi,[PointerToSpriteBufer]
+align 4
+PutFonForSprite:
 	mov ecx,[SpriteSizeX]
+	or ecx,ecx
+	jz .end_f
 	mov edx,[Picture_SizeX]
-	sub edx,[SpriteSizeX]
+	sub edx,ecx
 	mov edi,[SpriteOldCoordinatY]
 	imul edi,[Picture_SizeX]
 	add edi,[SpriteOldCoordinatX]
 	lea edx,[edx+edx*2]
 	lea edi,[edi+edi*2]
 	add edi,[PointerToPicture]
+	mov esi,[PointerToSpriteBufer]
 	mov ebx,[SpriteSizeY]
 	mov [counter],ecx
 
-	next_line_sprite_put:
+	.next_line_sprite_put:
 	mov ecx,[counter]
-
-	next_pixel_sprite_put:
+align 4
+	@@:
 	movsw
 	movsb
 	dec ecx
-	jnz next_pixel_sprite_put
+	jnz @b
 
 	add edi,edx
 	dec ebx
-	jnz next_line_sprite_put
-
+	jnz .next_line_sprite_put
+.end_f:
 	ret
 ;-----------------------------------------------------------
-;------------------DrawFonForSprite-------------------------
-;-----------------------------------------------------------
-DrawSprite:
 
-	mov esi,[PointerToEditBufer]
+align 4
+DrawSprite:
 	mov ecx,[SpriteSizeX]
+	or ecx,ecx
+	jz .end_f
 	mov edx,[Picture_SizeX]
-	sub edx,[SpriteSizeX]
+	sub edx,ecx
 	mov edi,[SpriteCoordinatY]
 	imul edi,[Picture_SizeX]
 	add edi,[SpriteCoordinatX]
 	lea edx,[edx+edx*2]
 	lea edi,[edi+edi*2]
 	add edi,[PointerToPicture]
+	mov esi,[PointerToEditBufer]
 	mov ebx,[SpriteSizeY]
 	mov [counter],ecx
 
-	next_line_sprite_draw:
+	.next_line_sprite_draw:
 	mov ecx,[counter]
-
-	next_pixel_sprite_draw:
+align 4
+	@@:
 	movsw
 	movsb
 	dec ecx
-	jnz next_pixel_sprite_draw
+	jnz @b
 
 	add edi,edx
 	dec ebx
-	jnz next_line_sprite_draw
-
+	jnz .next_line_sprite_draw
+.end_f:
 	ret

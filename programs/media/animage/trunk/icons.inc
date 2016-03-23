@@ -82,7 +82,7 @@ draw_icons:
 	 ;buttons of zoom
 	 and [counter],0
 
-	 mov [Icon_X],ci_panel_x_pos+159
+	 mov [Icon_X],ci_panel_x_pos+178
 
 	 next_button_zoom:
 
