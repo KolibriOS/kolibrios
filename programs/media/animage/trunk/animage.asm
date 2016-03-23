@@ -1,10 +1,10 @@
 ;*******************************************************
 ;**************GRAPHICS EDITOR ANIMAGE *****************
 ;*******************************************************
-; version: 1.5
-; last update:  21.03.2016
-; changes:      Use library 'kmenu.obj'
-; autors:       IgorA, Veliant
+; version: 1.51
+; last update:  23.03.2016
+; changes:      Use library 'kmenu.obj', update GUI
+; autors:       IgorA, Veliant, Leency
 ;--------------------------------------------------------
 ; version: 1.4
 ; last update:  12.03.2016

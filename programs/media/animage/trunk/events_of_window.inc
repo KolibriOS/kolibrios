@@ -64,13 +64,23 @@ no_znak2:
 
 	call put_main_menu
 ;------------------------------------------------
+	; draw toolbard background
+	mov ebx, ci_panel_x_pos
+	shl ebx, 16
+	add ebx, [Window_SizeX]
+	sub	ebx, 9
+	mov ecx, ci_panel_y_pos
+	shl ecx, 16
+	add ecx, 51
+	mov edx, 0xD5CDCB
+	mcall 13
+
 	mov	eax,ci_panel_x_pos
 	mov	ebx,ci_panel_y_pos
 	mov	ecx,[Window_SizeX]
 	mov	edx,50
 	mov	esi,1
 	sub	ecx,5+ci_panel_x_pos+ci_offs_skin_w
-	call	draw_volume_rectangle ; tools panel
 	call	draw_icons
 	call	PrintMousePos
 ;------------------------------------------------
