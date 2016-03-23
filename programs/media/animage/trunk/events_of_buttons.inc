@@ -30,15 +30,6 @@ buttons:
 	mov [Current_instrument],eax
 	call button_handler_main_menu
 
-	; set cursor for current instrument
-	pushad
-
-	mov eax,CursorsID
-	mov ebx,[Current_instrument]
-
-	call set_cursor
-	popad
-
 	cmp eax,10
 	jl still
 

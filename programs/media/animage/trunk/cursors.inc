@@ -8,84 +8,49 @@ load_cursors:
 
       mov [PointerToCursorsID],eax
 
-      mov eax, 37
-      mov ebx, 4
-      mov ecx,brush_cursor
-      mov edx,1
-      mcall
+      mcall SF_MOUSE_GET, SSF_LOAD_CURSOR, brush_cursor, 1
 
       mov ebx,[PointerToCursorsID]
       mov [ebx],eax
       add [PointerToCursorsID],4
 
-      mov eax, 37
-      mov ebx, 4
-      mov ecx,flood_fill_cursor
-      mov edx,1
-      mcall
+      mcall SF_MOUSE_GET, SSF_LOAD_CURSOR, flood_fill_cursor, 1
 
       mov ebx,[PointerToCursorsID]
       mov [ebx],eax
       add [PointerToCursorsID],4
 
-      mov eax, 37
-      mov ebx, 4
-      mov ecx,lastik_cursor
-      mov edx,1
-      mcall
+      mcall SF_MOUSE_GET, SSF_LOAD_CURSOR, lastik_cursor, 1
 
       mov ebx,[PointerToCursorsID]
       mov [ebx],eax
       add [PointerToCursorsID],4
 
-
-      mov eax, 37
-      mov ebx, 4
-      mov ecx,other_cursor
-      mov edx,1
-      mcall
-
+      mcall SF_MOUSE_GET, SSF_LOAD_CURSOR, other_cursor, 1
 
       mov ebx,[PointerToCursorsID]
       mov [ebx],eax
       add [PointerToCursorsID],4
 
-      mov eax, 37
-      mov ebx, 4
-      mov ecx,pencil_cursor
-      mov edx,1
-      mcall
-
+      mcall SF_MOUSE_GET, SSF_LOAD_CURSOR, pencil_cursor, 1
 
       mov ebx,[PointerToCursorsID]
       mov [ebx],eax
       add [PointerToCursorsID],4
 
-      mov eax, 37
-      mov ebx, 4
-      mov ecx,pipette_cursor
-      mov edx,1
-      mcall
+      mcall SF_MOUSE_GET, SSF_LOAD_CURSOR, pipette_cursor, 1
 
       mov ebx,[PointerToCursorsID]
       mov [ebx],eax
       add [PointerToCursorsID],4
 
-      mov eax, 37
-      mov ebx, 4
-      mov ecx,spray_cursor
-      mov edx,1
-      mcall
+      mcall SF_MOUSE_GET, SSF_LOAD_CURSOR, spray_cursor, 1
 
       mov ebx,[PointerToCursorsID]
       mov [ebx],eax
       add [PointerToCursorsID],4
 
-      mov eax, 37
-      mov ebx, 4
-      mov ecx,zoom_cursor
-      mov edx,1
-      mcall
+      mcall SF_MOUSE_GET, SSF_LOAD_CURSOR, zoom_cursor, 1
 
       mov ebx,[PointerToCursorsID]
       mov [ebx],eax
@@ -280,15 +245,16 @@ set_cursor:
 
       che:
 
+	cmp eax,8 ;cursors count
+	jg no_change_cursor
+
       dec eax
       shl eax,2
       mov ebx,[PointerToCursorsID]
       add eax,ebx
       mov ecx,[eax]
 
-      mov eax, 37
-      mov ebx, 5
-      mcall
+      mcall SF_MOUSE_GET, SSF_SET_CURSOR
 
       no_change_cursor:
 

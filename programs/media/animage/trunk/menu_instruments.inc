@@ -218,7 +218,7 @@ no_file:
 	jne	no_undo
 
 	cmp	[number_undo],2 ;2 - maximum undo count
-	jge	no_undo
+	jge	end_menu
 
 ;rotate bufers -1
 	inc	[number_undo]
@@ -238,7 +238,7 @@ no_undo:
 	jne no_redo
 
 	cmp [number_undo],0
-	je no_redo
+	je end_menu
 
 ;rotate bufers +1
 	dec [number_undo]
@@ -258,9 +258,9 @@ no_redo:
 	jne	no_copy
 
 	cmp	[instrument_used],1
-	jne	no_copy
+	jne	end_menu
 	cmp	[Activate_instrument],0
-	jne	no_copy
+	jne	end_menu
 
 	mov	eax,[OldX]
 	mov	ebx,[OldY]

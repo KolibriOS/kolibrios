@@ -12,33 +12,6 @@ mouse:
 	jne	still
 	
 	call GetMouseCoordinats
-;panel
-	mov	edx,[Window_SizeX]
-	sub	edx,5
-
-	;cmp ebx,0
-	;jle no_panel
-
-	cmp ebx,ci_panel_y_pos
-	jae no_panel
-
-	cmp	eax,5
-	jle	no_panel
-
-	cmp	eax,edx
-	jae	no_panel
-
-	call GetMouseCoordinats
-	jmp	panel_interraction
-
-no_panel:
-	cmp	[Panel_flag],0
-	jz	no_redraw_panel
-
-	jmp	panel_interraction
-
-no_redraw_panel:
-	call GetMouseCoordinats
 	mov	eax,[MouseX]
 	mov	ebx,[MouseY]
 	mov	ecx,[WorkScreen_SizeX]
@@ -56,9 +29,9 @@ no_redraw_panel:
 mouse_scroll:
 	mov	[exit_from_work_arrea],1 ;mouse situated after work arrea
 ;scrollers
-	call	GetMouseClick
+	call GetMouseClick
 	cmp	eax,1
-	jne	no_click
+	jne	still
 
 	call	GetMouseCoordinats
 ;interraction with horizontal scroller
@@ -169,8 +142,6 @@ no_vertical:
 	call	CalculatePositionScreen
 	call	draw_scrollers
 	call	MovePictureToWorkScreen
-
-no_click:
 	jmp	still
 
 no_scrollers:
@@ -178,8 +149,8 @@ no_scrollers:
 	mov	ebx,[MouseY]
 	mov	ecx,[Window_SizeX]
 	mov	edx,[Window_SizeY]
-	sub	ecx,36
-	sub	edx,35
+	sub	ecx,ci_scroll_dim+ci_edit_wnd_border+5+ci_offs_skin_w
+	sub	edx,ci_scroll_dim+ci_edit_wnd_border+5+ci_offs_skin_h
 
 	cmp	eax,ci_scrollh_coord_x_min
 	jle	not_work_arrea
@@ -196,11 +167,18 @@ no_scrollers:
 
 not_work_arrea:
 	mov	[exit_from_work_arrea],1
+	mcall SF_MOUSE_GET, SSF_SET_CURSOR, 0 ;set standart cursor
 	jmp	still
 
 mouse_in_work_arrea:
 	call	GetScreenCordinats
 	call	PrintMousePos
+
+	;set cursor for current instrument
+	mov eax,CursorsID
+	mov ebx,[Current_instrument]
+	call set_cursor
+
 	call	GetMouseClick
 	test	eax,eax
 	jz	no_use_instruments
@@ -208,7 +186,7 @@ mouse_in_work_arrea:
 	cmp	[Activate_instrument],0
 	jnz	no_undo___
 ;------------begin copy for undo-------------
-;copy bufer number 2 to bufer number 0
+;copy bufer_0 -> bufer_2
 	mov edi,[PointerToCopyPicture2]
 	mov esi,[PointerToPicture]
 	mov ecx,[Picture_SizeX]
@@ -221,7 +199,6 @@ mouse_in_work_arrea:
 	mov ecx,ebx
 	and ecx,3
 	rep movsb
-	;call MovePictureToWorkScreen
 ;rotate bufers +1
 	and	[number_undo],0 ;erase all undo
 	mov eax,[PointerToPicture]
