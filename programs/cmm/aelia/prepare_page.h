@@ -77,6 +77,7 @@ void ParceHtml(byte draw)
 dword DOM_start, DOM_end, DOM_len, DOM_pos;
 int stroka_x = HTML_PADDING_X;
 int stroka_y = HTML_PADDING_Y;
+int size_pt_change;
 dword line_break;
 byte ch, zeroch;
 _text text;
@@ -151,12 +152,31 @@ _tag tag;
 				stroka_x = HTML_PADDING_X;
 				continue;
 			}
-			if 	(tag.nameis("h1")) || (tag.nameis("/h1"))
-				|| (tag.nameis("h2")) || (tag.nameis("/h2")) {
-					stroka_y+= list.item_h;
-					stroka_x = HTML_PADDING_X;
-					continue;					
+			if 	(tag.nameis("h1")) || (tag.nameis("/h1")) ||
+				(tag.nameis("h2")) || (tag.nameis("/h2")) ||
+				(tag.nameis("h3")) || (tag.nameis("/h3")) {
+				if (tag.nameis("h1")) {
+					size_pt_change = 8;
+				} else if (tag.nameis("/h1")) {
+					size_pt_change = -8;
+				} else if (tag.nameis("h2")) {
+					size_pt_change = 6;
+				} else if (tag.nameis("/h2")) {
+					size_pt_change = -6;
+				} else if (tag.nameis("h3")) {
+					size_pt_change = 4;
+				} else if (tag.nameis("/h3")) {
+					size_pt_change = -4;
 				}
+				label.size.pt += size_pt_change;
+				if (size_pt_change > 0) {
+					stroka_y+= list.item_h;
+				} else {
+					stroka_y+= list.item_h - size_pt_change;
+				}
+				stroka_x = HTML_PADDING_X;
+				continue;					
+			}
 			if (tag.nameis("script")) || (tag.nameis("style")) style.ignore = true;
 			if (tag.nameis("/script")) || (tag.nameis("/style")) style.ignore = false;
 			if (tag.nameis("a"))  { style.a = true;  style.color=0x0000FF; }
