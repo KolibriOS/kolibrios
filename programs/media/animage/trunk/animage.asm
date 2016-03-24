@@ -217,21 +217,21 @@ file 'panel_zoom.png'
 .end:
 ;****************cursors******************
 brush_cursor:
-file 'brush.cur'
+file 'cursors/brush.cur'
 flood_fill_cursor:
-file 'flood_fill.cur'
+file 'cursors/flood_fill.cur'
 lastik_cursor:
-file 'lastik.cur'
+file 'cursors/lastik.cur'
 other_cursor:
-file 'other.cur'
+file 'cursors/other.cur'
 pencil_cursor:
-file 'pencil.cur'
+file 'cursors/pencil.cur'
 pipette_cursor:
-file 'pipette.cur'
+file 'cursors/pipette.cur'
 spray_cursor:
-file 'spray.cur'
+file 'cursors/spray.cur'
 zoom_cursor:
-file 'zoom.cur'
+file 'cursors/zoom.cur'
 ;----------------------------------------------------------
 align 4
 IM_END:
