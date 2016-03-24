@@ -8,26 +8,65 @@ load_icons:
 	add edi,mem_screen
 	stdcall [img_to_rgb2], ebx,edi ;преобразуем изображение к формату rgb
 	stdcall [img_destroy], ebx ;удаляем временный буфер с параметрами изображения
+
+	stdcall [img_decode], panel_zoom, panel_zoom.end-panel_zoom, 0
+	mov ebx,eax
+	add edi,mem_panel_but
+	stdcall [img_to_rgb2], ebx,edi
+	stdcall [img_destroy], ebx
 	ret
 
 draw_icons:
 	mov [Icon_X],ci_panel_x_pos+2
 	mov [Icon_Y],ci_panel_y_pos+3
 
-	 ;draw panel picture
-	 mov edx,[Icon_X]
-	 shl edx,16
-	 add edx,[Icon_Y]
-	 mov ebx,[ScreenPointer]
-	 add ebx,mem_screen
-	 mov ecx,417*65536+46
-	 mcall SF_PUT_IMAGE
+	;draw panel picture
+	mov edx,[Icon_X]
+	shl edx,16
+	add edx,[Icon_Y]
+	mov ebx,[ScreenPointer]
+	add ebx,mem_screen
+	mov ecx,417*65536+46
+	mcall SF_PUT_IMAGE
 
+	;draw active zoom button
+	add ebx,mem_panel_but
+	xor eax,eax
+	cmp [k],1
+	je .end_calc
+	inc eax
+	cmp [k],2
+	je @f
+	inc eax
+	cmp [k],3
+	je @f
+	inc eax
+	cmp [k],4
+	je @f
+	inc eax
+	cmp [k],8
+	je @f
+	inc eax
+	cmp [k],16
+	je @f
+	inc eax
+	@@:
+		mov edx,eax
+		imul edx,18*21*3
+		add ebx,edx
+	.end_calc:
+	mov edx,eax
+	imul edx,18+1
+	add edx,ci_panel_zoom_x-1
+	shl edx,16
+	add edx,ci_panel_but_y2-2
+	mov ecx,18*65536+21
+	mcall SF_PUT_IMAGE
 
-	 ;main buttons of instrumnts
+	;main buttons of instrumnts
 
-	 and [counter],0
-	 mov [Icon_X],ci_panel_x_pos+4
+	and [counter],0
+	mov [Icon_X],ci_panel_x_pos+4
 
    main_buttons:
 
@@ -82,7 +121,7 @@ draw_icons:
 	 ;buttons of zoom
 	 and [counter],0
 
-	 mov [Icon_X],ci_panel_x_pos+178
+	 mov [Icon_X],ci_panel_x_pos+ci_panel_zoom_x
 
 	 next_button_zoom:
 

@@ -607,6 +607,14 @@ no_edit:
 	instrument_set 11,20 ; draw hard contour
 
 no_instruments:
+;|||||||||||||||||||||||||FILTERS||||||||||||||||||||||||||
+	cmp	[number_panel],4
+	jne	no_filters
+
+	instrument_set  1,23 ; reflection from left to right
+	instrument_set  2,24 ; reflection from up to down
+
+no_filters:
 
 end_menu:
 	and	[number_panel],0

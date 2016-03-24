@@ -1,7 +1,9 @@
 ; load picture from file to memory
 align 4
 open_b rb 560
+txt_not_memory db 'Cannot open image. Because there is not enough available memory.',0
 
+align 4
 load_picture:
     mov [file_information.Function], SSF_GET_INFO
     mov [file_information.Position], 0
@@ -15,11 +17,11 @@ load_picture:
 	jnz .end_open
 
     mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
-	add ecx,mem_screen+mem_panel_b+mem_flood_f
+	add ecx,mem_screen+mem_panel_all+mem_flood_f
 	mcall SF_SYS_MISC,SSF_MEM_REALLOC,,[ScreenPointer]
 	mov [ScreenPointer],eax
-	add eax,mem_screen+mem_panel_b
-	sub ecx,mem_screen+mem_panel_b+mem_flood_f
+	add eax,mem_screen+mem_panel_all
+	sub ecx,mem_screen+mem_panel_all+mem_flood_f
 	mov [file_information.Function], SSF_READ_FILE
 	mov [file_information.Position], 0
 	mov [file_information.Flags], 0
@@ -32,7 +34,7 @@ load_picture:
 	je .end_open
 		;определяем вид изображения и пишем его параметры
 		mov eax,[ScreenPointer]
-		add eax,mem_screen+mem_panel_b
+		add eax,mem_screen+mem_panel_all
 		stdcall [img_decode], eax,ebx,0
 		push eax
 		;определяем размер декодированного изображения
@@ -42,13 +44,21 @@ load_picture:
 		mov dword[Picture_SizeY],eax
 		imul ecx,eax
 		imul ecx,15
-		add ecx,mem_screen+mem_panel_b+mem_flood_f
+		add ecx,mem_screen+mem_panel_all+mem_flood_f
 		mcall SF_SYS_MISC,SSF_MEM_REALLOC,,[ScreenPointer]
-		mov [ScreenPointer],eax
-		call prepare_data_pointers
-		pop ebx
-		stdcall [img_to_rgb2], ebx,[PointerToPicture] ;преобразуем изображение к формату rgb
+		or eax,eax
+		jnz .have_new_memory
+			notify_window_run txt_not_memory
+			pop ebx
+			jmp @f
+		.have_new_memory:
+			;notify_window_run sz_main_menu_File_Open
+			mov [ScreenPointer],eax
+			call prepare_data_pointers
+			pop ebx
+			stdcall [img_to_rgb2], ebx,[PointerToPicture] ;преобразуем изображение к формату rgb
+			mov [save_flag],1
+		@@:
 		stdcall [img_destroy], ebx ;удаляем временный буфер с параметрами изображения
-		mov [save_flag],1
 	.end_open:
 	ret

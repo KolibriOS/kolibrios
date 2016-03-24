@@ -210,6 +210,7 @@ mouse_in_work_arrea:
 ;--------------end copy for undo-------------
 no_undo___:
 	call TakeButtonInstruments
+
 	jmp still
 
 no_use_instruments:

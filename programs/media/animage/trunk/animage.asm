@@ -59,15 +59,16 @@ ci_wnd_min_siz_x equ 585 ;minimum size x
 ci_wnd_min_siz_y equ 400 ;minimum size y
 
 ; панель инструментов
-ci_panel_x_pos equ  0 ;координата x для панели
-ci_panel_y_pos equ 20 ;координата y для панели
-ci_panel_but_y1 equ ci_panel_y_pos +5 ;координата y для 1-го ряда кнопок
-ci_panel_but_y2 equ ci_panel_y_pos+30 ;координата y для 2-го ряда кнопок
-ci_palete_y_pos equ ci_panel_y_pos+51 ;координата y для палитры цветов
+ci_panel_x_pos equ  0 ;коорд. x для панели
+ci_panel_y_pos equ 20 ;коорд. y для панели
+ci_panel_but_y1 equ ci_panel_y_pos +5 ;коорд. y для 1-го ряда кнопок
+ci_panel_but_y2 equ ci_panel_y_pos+30 ;коорд. y для 2-го ряда кнопок
+ci_palete_y_pos equ ci_panel_y_pos+51 ;коорд. y для палитры цветов
+ci_panel_zoom_x equ 178 ;коорд. x для кнопок панели масштаба
 
 ; окно редактора
-ci_edit_wnd_x_pos  equ  0 ;координата x для окна редактора
-ci_edit_wnd_y_pos  equ 71 ;координата y для окна редактора
+ci_edit_wnd_x_pos  equ  0 ;коорд. x для окна редактора
+ci_edit_wnd_y_pos  equ 71 ;коорд. y для окна редактора
 ci_edit_wnd_border equ  3 ;рамка вокруг окна редактора
 
 ; скроллинги
@@ -195,7 +196,7 @@ include	'menu.inc'
 ;-----------------------------------------------------------
 ;------------variables and data of program------------------
 ;-----------------------------------------------------------
-sound_havent_memory	db 150,64,0
+;sound_havent_memory db 150,64,0
 
 include 'lib_data.inc'
 include	'panel_data.inc'
@@ -209,6 +210,10 @@ include	'width_lines.inc'
 align 4
 panel_picture:
 file 'panel_buttons.png'
+.end:
+align 4
+panel_zoom:
+file 'panel_zoom.png'
 .end:
 ;****************cursors******************
 brush_cursor:

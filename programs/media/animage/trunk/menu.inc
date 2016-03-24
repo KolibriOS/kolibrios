@@ -26,6 +26,8 @@ init_main_menu:
 	mov [main_menu_edit], eax
 	stdcall [ksubmenu_new]
 	mov [main_menu_instr], eax
+	stdcall [ksubmenu_new]
+	mov [main_menu_filters], eax
 	
 	; init 'File' menu
 	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_File_New, 0x71
@@ -67,7 +69,7 @@ init_main_menu:
 	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Edit, [main_menu_edit]
 	stdcall [ksubmenu_add], [main_menu], eax
 
-	; init 'Edit' menu
+	; init 'Instruments' menu
 	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Instr_Pencil, 0x51
 	stdcall [ksubmenu_add], [main_menu_instr], eax
 	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Instr_Brush, 0x52
@@ -97,6 +99,15 @@ init_main_menu:
 	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Instr, [main_menu_instr]
 	stdcall [ksubmenu_add], [main_menu], eax
 
+	; init 'Reflection' menu
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Filters_ReflectionLR, 0x41
+	stdcall [ksubmenu_add], [main_menu_filters], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Filters_ReflectionTB, 0x42
+	stdcall [ksubmenu_add], [main_menu_filters], eax
+
+	; add 'Reflection' menu to main
+	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Filters, [main_menu_filters]
+	stdcall [ksubmenu_add], [main_menu], eax
 	ret
 
 put_main_menu:
@@ -126,6 +137,8 @@ button_handler_main_menu:
 	menu_set 0x59, 5,9
 	menu_set 0x5a, 5,10
 	menu_set 0x5b, 5,11
+	menu_set 0x41, 4,1
+	menu_set 0x42, 4,2
 .end_handler:
 ret
 
@@ -133,6 +146,7 @@ main_menu dd 0
 main_menu_file  dd 0
 main_menu_edit dd 0
 main_menu_instr dd 0
+main_menu_filters dd 0
 
 sz_main_menu_File        db 'File', 0
 sz_main_menu_File_New    db 'New', 0
@@ -161,3 +175,7 @@ sz_main_menu_Instr_Rectangle db 'Rectangle', 0
 sz_main_menu_Instr_Circle db 'Circle', 0
 sz_main_menu_Instr_Ellips db 'Ellips', 0
 sz_main_menu_Instr_Hard_contour db 'Hard contour', 0
+
+sz_main_menu_Filters      db 'Filters', 0
+sz_main_menu_Filters_ReflectionLR db 'Reflection |', 0
+sz_main_menu_Filters_ReflectionTB db 'Reflection -', 0

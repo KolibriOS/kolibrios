@@ -23,7 +23,7 @@ local .horizontal_width_put
 		mov [counter],5
 
 		.horizontal_width_put:
-			mov edx,[ebx+4807*4+ebp]
+			mov edx,[ebx+mem_offs_shape+ebp]
 			;and edx,0xffffff
 			mov [edi],dx
 			shr edx,16
@@ -73,9 +73,9 @@ local .horizontal_width_save
 			mov eax,edi
 			mov edx,[eax]
 			;and edx,0xffffff
-			mov [ebx+4807*4+ebp],dx
+			mov [ebx+mem_offs_shape+ebp],dx
 			shr edx,16
-			mov [ebx+4807*4+2+ebp],dl
+			mov [ebx+mem_offs_shape+2+ebp],dl
 
 		add edi,3
 		add ebp,4
