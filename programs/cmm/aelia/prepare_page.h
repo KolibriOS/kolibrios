@@ -77,7 +77,7 @@ void ParceHtml(byte draw)
 dword DOM_start, DOM_end, DOM_len, DOM_pos;
 int stroka_x = HTML_PADDING_X;
 int stroka_y = HTML_PADDING_Y;
-int size_pt_change;
+int size_pt_change = 0;
 dword line_break;
 byte ch, zeroch;
 _text text;
@@ -119,7 +119,7 @@ _tag tag;
 				}
 				if (draw==true) {
 					if (style.a) {
-						link.add(stroka_x,stroka_y,get_label_len(text.start),list.item_h,text.start," ");
+						link.add(stroka_x,stroka_y + size_pt_change,get_label_len(text.start),list.item_h,text.start," ");
 						label_draw_bar(stroka_x, stroka_y+label.size.pt+1, get_label_len(text.start), style.color);
 					}
 					WriteTextIntoBuf(stroka_x, stroka_y, style.color, text.start);
@@ -132,7 +132,7 @@ _tag tag;
 			}
 			if (draw==true) {
 				if (style.a) {
-					link.add(stroka_x,stroka_y,get_label_len(text.start),list.item_h,text.start," ");	
+					link.add(stroka_x,stroka_y + size_pt_change,get_label_len(text.start),list.item_h,text.start," ");	
 					label_draw_bar(stroka_x, stroka_y+label.size.pt+1, get_label_len(text.start), style.color);
 				}
 				WriteTextIntoBuf(stroka_x, stroka_y, style.color, text.start);
@@ -169,10 +169,12 @@ _tag tag;
 					size_pt_change = -4;
 				}
 				label.size.pt += size_pt_change;
+				get_label_symbols_size();
 				if (size_pt_change > 0) {
-					stroka_y+= list.item_h;
-				} else {
-					stroka_y+= list.item_h - size_pt_change;
+					stroka_y+= list.item_h;//что если будет очень длинная строка в теге?
+				} else {//коммент выше и коммент ниже связаны
+					stroka_y+= list.item_h - size_pt_change;//не очень понятна логика этого места
+					size_pt_change = 0;
 				}
 				stroka_x = HTML_PADDING_X;
 				continue;					
