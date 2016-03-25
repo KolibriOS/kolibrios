@@ -103,50 +103,9 @@ struct _text {
 	dword start;
 	char str[7];
 	int x, y;
-	void fixSpecial();
+	void fixSpecial(dword text);
 };
 
-// function to be called to fix the special symbols
-void _text::fixSpecial() {
-	get_char(start);
-	clean_str();
-}
-
-// function that traverse the text in sarch for a special
-// character starting with & 
-// if found, try to look for the conversion 
-void get_char(dword text) {
-	byte ch;
-	int i = 0, j = 0;
-	dword text2 = text;
-	loop () {
-		ch = ESBYTE[text];
-		if (!ch) return;
-		if (ch=='&') {
-			i = 0;
-			text++;
-			while ( i < 7)  {
-				ch = ESBYTE[text];
-				if (ch == ';') {
-					ESBYTE[text2] = get_symbol();
-					while (j < i) {
-						j++;
-						text2++;
-						ESBYTE[text2] = 0;
-					}
-					//debugln(#str);
-					break;
-				}
-				str[i] = ch;
-				if (!ch) return;
-				text++;
-				i++;
-			}
-		}
-		text++;
-		text2++;
-	}
-}
 
 // unicode conversion for special characters
 char *unicode_tags[]={
@@ -154,9 +113,9 @@ char *unicode_tags[]={
 "#38",   " ",
 "#160",  " ",
 
-"ntilde", "ñ", // spanish n special ñ
-"#224",  0xC3A0, // spanish a with grove accent 'à'
-"#241",  0xC3B1, // spanish symbol
+"ntilde", "n", // spanish n special ñ
+"#224",   "à", // spanish a with grove accent 'à'
+"#241",  "n", // spanish symbol
 
 "copy",  "(c)",
 "#169",  "(c)",
@@ -215,28 +174,81 @@ char *unicode_tags[]={
 "bull",  "-", //âîîáùå çäåñü òî÷êà
 "percnt","%",
 
-0}; 
+0};
+
+// function to be called to fix the special symbols
+void _text::fixSpecial(dword text) {
+	//dword text = start;
+	byte ch;
+	int i , j, z;
+	dword aux;
+	dword text2 = text;
+	loop () {
+		ch = ESBYTE[text];
+		if (!ch) return;
+		if (ch=='&') {
+			i = 0;
+			j = 0;
+			text++;
+			while ( i < 7)  {
+				ch = ESBYTE[text];
+				if (ch == ';') {
+					z = get_symbol(#str);
+					//debugval("z: ", z);
+					aux = unicode_tags[z];
+					strtrim(aux);
+					debugln(aux);
+					ch = ESBYTE[aux];
+					while (ch) {
+						ESBYTE[text2] = ch;
+						aux++;
+						text2++;
+						ch = ESBYTE[aux];
+					}
+					ch = ESBYTE[text2];
+					//debugval("i: ", i);
+					while (ch != ';') {
+						//debugval("j: ", j);
+						ESBYTE[text2] = ' ';
+						text2++;
+						ch = ESBYTE[text2];
+					}
+					ESBYTE[text2] = ' ';
+					//for (j=0;j<i;j++) text--;
+					//debugln(#str);
+					//clean_str();
+					break;
+				}
+				str[i] = ch;
+				if (!ch) return;
+				text++;
+				i++;
+			}
+			for (i=0; i < 7; i++) str[i] = 0;
+		}
+		text++;
+		text2++;
+	}
+}
+
+
 
 // function to look for the conversion od special characters
 // if not found--> return 0
-char get_symbol() {
-	int i;
-	//debugln(#str);
+int get_symbol(char *str2) {
+	int i,j;
+	//debugln(#str2);
 	for (i=0; unicode_tags[i]!=0; i+=2) {
-		if (strcmp(#str, unicode_tags[i]) == 0) {
+		if (strcmp(str2, unicode_tags[i]) == 0) {
+			//j = strlen(unicode_tags[i+1]);
 			//debugval("i: ", i);
-			return unicode_tags[i+1]);
+			//strcat(text2, unicode_tags[i+1]);
+			i++;
+			return i;
 		}
 	}	
-	return 0;
+	return ' ';
 }
 
-// function to clean string str
-void clean_str() {
-	int i;
-	for (i=0; i < 7; i++) {
-		str[i] = 0;
-	}
-}
 
 

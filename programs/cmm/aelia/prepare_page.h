@@ -110,7 +110,7 @@ _tag tag;
 			}
 			strtrim(text.start);
 			// try to change the special symbols that may appear
-			text.fixSpecial();
+			text.fixSpecial(text.start);
 
 			while (get_label_len(text.start) + stroka_x + 30 > list.w)
 			{
