@@ -155,8 +155,8 @@ char *unicode_tags[]={
 "#160",  " ",
 
 "ntilde", "ñ", // spanish n special ñ
-"#224",  0xC3A0, 
-"#241",  0xC3B1, // spanish a with grove accent 'à'
+"#224",  0xC3A0, // spanish a with grove accent 'à'
+"#241",  0xC3B1, // spanish symbol
 
 "copy",  "(c)",
 "#169",  "(c)",

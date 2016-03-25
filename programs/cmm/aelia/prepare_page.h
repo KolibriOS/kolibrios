@@ -84,7 +84,6 @@ dword line_break;
 byte ch, zeroch;
 _text text;
 _tag tag;
-	debugln("-------START PARCING-------");
 	tag.clear();
 	style.clear();
 	/* Create DOM */
@@ -197,5 +196,4 @@ _tag tag;
 		label.raw_size = 0;
 	}
 	free(DOM_start);
-	debugln("-------STOP PARCING--------");
 }
