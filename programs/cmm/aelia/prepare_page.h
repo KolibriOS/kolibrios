@@ -14,7 +14,9 @@ void PreparePage()
 	} else {
 		debugln("<html> tag found");
 		DrawProgress(STEP_2_COUNT_PAGE_HEIGHT);     ParceHtml(false);  //get page height to calculate buffer size
+		// debugln("DONE STEP 2");
 		DrawProgress(STEP_3_DRAW_PAGE_INTO_BUFFER); ParceHtml(true);   //draw text in buffer
+		// debugln("DONE STEP 3");
 	}
 	strcat(#title, " - Aelia");
 	DrawTitle(#title);
@@ -73,8 +75,8 @@ int stroka_y=5, line_length=0;
 
 
 void ParceHtml(byte draw)
-{
-dword DOM_start, DOM_end, DOM_len, DOM_pos;
+{	
+dword DOM_start, DOM_end, DOM_len, DOM_pos, aux2;
 int stroka_x = HTML_PADDING_X;
 int stroka_y = HTML_PADDING_Y;
 int size_pt_change = 0;
@@ -82,7 +84,7 @@ dword line_break;
 byte ch, zeroch;
 _text text;
 _tag tag;
-
+	debugln("-------START PARCING-------");
 	tag.clear();
 	style.clear();
 	/* Create DOM */
@@ -108,6 +110,9 @@ _tag tag;
 				continue;
 			}
 			strtrim(text.start);
+			// try to change the special symbols that may appear
+			text.fixSpecial();
+
 			while (get_label_len(text.start) + stroka_x + 30 > list.w)
 			{
 				zeroch = 0;
@@ -192,4 +197,5 @@ _tag tag;
 		label.raw_size = 0;
 	}
 	free(DOM_start);
+	debugln("-------STOP PARCING--------");
 }

@@ -101,5 +101,142 @@ void _style::clear()
 
 struct _text {
 	dword start;
+	char str[7];
 	int x, y;
+	void fixSpecial();
 };
+
+// function to be called to fix the special symbols
+void _text::fixSpecial() {
+	get_char(start);
+	clean_str();
+}
+
+// function that traverse the text in sarch for a special
+// character starting with & 
+// if found, try to look for the conversion 
+void get_char(dword text) {
+	byte ch;
+	int i = 0, j = 0;
+	dword text2 = text;
+	loop () {
+		ch = ESBYTE[text];
+		if (!ch) return;
+		if (ch=='&') {
+			i = 0;
+			text++;
+			while ( i < 7)  {
+				ch = ESBYTE[text];
+				if (ch == ';') {
+					ESBYTE[text2] = get_symbol();
+					while (j < i) {
+						j++;
+						text2++;
+						ESBYTE[text2] = 0;
+					}
+					//debugln(#str);
+					break;
+				}
+				str[i] = ch;
+				if (!ch) return;
+				text++;
+				i++;
+			}
+		}
+		text++;
+		text2++;
+	}
+}
+
+// unicode conversion for special characters
+char *unicode_tags[]={
+"nbsp",  " ",
+"#38",   " ",
+"#160",  " ",
+
+"ntilde", "ñ", // spanish n special ñ
+"#224",  0xC3A0, 
+"#241",  0xC3B1, // spanish a with grove accent 'à'
+
+"copy",  "(c)",
+"#169",  "(c)",
+
+"trade", "[TM]",
+
+"reg",   "(r)",
+"#174",  "(r)",
+
+"bdquo", ",,",
+
+"amp",   "&",
+"#38",   "&",
+
+"lt",    "<",
+"#60",   "<",
+
+"gt",    ">",
+"#62",   ">",
+
+"minus", "-",
+"ndash", "-",
+"mdash", "-", //--
+"#8722", "-",
+"#8211", "-",
+"#151",  "-",
+"#149",  "-",
+
+"rsquo", "'",
+"#39",   "'",
+"#96",   "'",
+"#8217", "'",
+
+"quot",  "\"",
+"#34",   "\"",
+"ldquo", "\"",
+"rdquo", "\"",
+"#8222", "\"",
+"#8221", "\"",
+
+"laquo", "<<",
+"#171",  "<<",
+"raquo", ">>",
+"#187",  ">>",
+
+"uarr",  "\24",
+"darr",  "\25",
+"rarr",  "\26",
+"larr",  "\27", 
+
+"#1028", "\242",
+"#1030", "I",
+"#1031", "\244",
+
+"#8470", "N",
+"bull",  "-", //âîîáùå çäåñü òî÷êà
+"percnt","%",
+
+0}; 
+
+// function to look for the conversion od special characters
+// if not found--> return 0
+char get_symbol() {
+	int i;
+	debugln(#str);
+	for (i=0; unicode_tags[i]!=0; i+=2) {}
+		if (strcmp(#str, unicode_tags[i]) == 0) {
+			//debugval("i: ", i);
+			return unicode_tags[i+1]);
+		}
+	}	
+	return 0;
+}
+
+// function to clean string str
+void clean_str() {
+	int i;
+	for (i=0; i < 7; i++) {
+		str[i] = 0;
+	}
+}
+
+
