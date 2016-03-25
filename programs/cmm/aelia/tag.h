@@ -221,8 +221,8 @@ char *unicode_tags[]={
 // if not found--> return 0
 char get_symbol() {
 	int i;
-	debugln(#str);
-	for (i=0; unicode_tags[i]!=0; i+=2) {}
+	//debugln(#str);
+	for (i=0; unicode_tags[i]!=0; i+=2) {
 		if (strcmp(#str, unicode_tags[i]) == 0) {
 			//debugval("i: ", i);
 			return unicode_tags[i+1]);
