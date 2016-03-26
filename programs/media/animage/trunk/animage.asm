@@ -269,19 +269,25 @@ Picture_SizeX		rd 1
 Picture_SizeY		rd 1
 ScreenX			rd 1 ;координата x курсора с учетом масштаба
 ScreenY			rd 1 ;координата y курсора с учетом масштаба
-WorkScreen_SizeX	rd 1
-WorkScreen_SizeY	rd 1
+WorkScreen_SizeX	rd 1 ;ширина рабочего экрана
+WorkScreen_SizeY	rd 1 ;высота рабочего экрана
 MaxWorkScreen_SizeX	rd 1
 MaxWorkScreen_SizeY	rd 1
 k			rd 1 ;масштаб
 
-ReserveArray		rd 1
-register		rd 1
-CounterX		rd 1
+ReserveArray		rd 1 ;указатель на память используемую при рисовании фигур
+	;для сохранения участков фона под фигурами, а также для заливки
+CounterX		rd 1 ;число пикселей изображения по ширине, которые попадают
+	;в экран рабочей области, с учетом текущего масштаба
 CounterY		rd 1
-OffsetYPicture		rd 1
-OffsetYWorkScreen	rd 1
-OffsetYBigPixel		rd 1
+OffsetYPicture		rd 1 ;сдвиг по оси y в буфере изображения при рисовании
+	;следующей линии изображения
+OffsetYWorkScreen	rd 1 ;сдвиг по оси y в буфере рабочей области при
+	;рисовании следующей линии пикселей. Чем больше масштаб, тем ниже
+	;нужно опускаться по рабочей области.
+OffsetYBigPixel		rd 1 ;сдвиг по оси y для рисования пикселей на большом
+	;масштабе. Рисуется 1-я полоса пикселя, а потом нужно перейти вниз и
+	;влево для рисования следующей полосы.
 
 Icon_X			rd 1
 Icon_Y			rd 1

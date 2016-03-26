@@ -1164,24 +1164,24 @@ TakeButtonInstruments:
 	mov edi,[rectangular_shade_y]
 
 	sub esi,eax
-	jns no_sign_sprite_size_x
-	neg esi
-	no_sign_sprite_size_x:
+	jns @f
+		neg esi ;sign sprite size x
+	@@:
 
 	sub edi,ebx
-	jns no_sign_sprite_size_y
-	neg edi
-	no_sign_sprite_size_y:
+	jns @f
+		neg edi ;sign sprite size y
+	@@:
 
 	test esi,esi
-	jnz no_null_sprite_x
-	mov esi,1
-	no_null_sprite_x:
+	jnz @f
+		mov esi,1 ;null sprite x
+	@@:
 
 	test edi,edi
-	jnz no_null_sprite_y
-	mov edi,1
-	no_null_sprite_y:
+	jnz @f
+		mov edi,1 ;null sprite y
+	@@:
 
 	mov [SpriteSizeX],esi
 	mov [SpriteSizeY],edi
@@ -1213,7 +1213,6 @@ TakeButtonInstruments:
 	test eax,eax
 	jnz crossing_with_work_area
 	mov [finishing_crossing],1
-	mov [register],1
 	crossing_with_work_area:
 
 	pop [ScreenY]
@@ -1245,68 +1244,66 @@ TakeButtonInstruments:
 	mov [SpriteCoordinatY],ebx
 
 	cmp [SpriteCoordinatX],0
-	jns no_null_sprite_coordinat_x
-	mov [SpriteCoordinatX],1
-	no_null_sprite_coordinat_x:
-
+	jns @f
+		mov [SpriteCoordinatX],1 ;null sprite coordinat x
+	@@:
 	cmp [SpriteCoordinatY],0
-	jns no_null_sprite_coordinat_y
-	mov [SpriteCoordinatY],1
-	no_null_sprite_coordinat_y:
+	jns @f
+		mov [SpriteCoordinatY],1 ;null sprite coordinat y
+	@@:
 
 	mov esi,[rectangular_shade_x]
 	mov edi,[rectangular_shade_y]
 
 	sub esi,[OldX]
-	jns no_znak_size_of_rectangulare_crossing_x
-	neg esi
-	no_znak_size_of_rectangulare_crossing_x:
-
+	jns @f
+		neg esi
+	@@:
 	sub edi,[OldY]
-	jns no_znak_size_of_rectangulare_crossing_y
-	neg edi
-	no_znak_size_of_rectangulare_crossing_y:
+	jns @f
+		neg edi
+	@@:
 
 	mov ecx,[OldX]
 	mov edx,[OldY]
 
 	sub ecx,[PosX]
-	jns no_minimum_x_crossing
-	mov ecx,0
+	jns @f
+	xor ecx,ecx
 	add ecx,[PosX]
 	mov [OldX],ecx
 	add ecx,esi
 	mov [rectangular_shade_x],ecx
-	no_minimum_x_crossing:
+	@@:
 
 	sub edx,[PosY]
-	jns no_minimum_y_crossing
-	mov edx,0
+	jns @f
+	xor edx,edx
 	add edx,[PosY]
 	mov [OldY],edx
 	add edx,edi
 	mov [rectangular_shade_y],edx
-	no_minimum_y_crossing:
+	@@:
 
 	mov ecx,[Picture_SizeX]
 	sub ecx,esi
 	cmp [OldX],ecx
-	jl no_maximum_x_crossing
+	jl @f
 	dec ecx
 	mov [OldX],ecx
 	add ecx,esi
 	mov [rectangular_shade_x],ecx
-	no_maximum_x_crossing:
+	@@:
 
 	mov edx,[Picture_SizeY]
 	sub edx,edi
 	cmp [OldY],edx
-	jl no_maximum_y_crossing
+	jl @f
 	dec edx
 	mov [OldY],edx
 	add edx,edi
 	mov [rectangular_shade_y],edx
-	no_maximum_y_crossing:
+	@@:
 
 	mov eax,[rectangular_shade_x]
 	mov ebx,[rectangular_shade_y]
@@ -1323,9 +1320,9 @@ TakeButtonInstruments:
 	jne no_activate_put_fon_
 
 	cmp [Paste_flag],1
-	je no_put_fon___
-	call PutFonForSprite
-	no_put_fon___:
+	je @f
+		call PutFonForSprite
+	@@:
 	and [Paste_flag],0
 	no_activate_put_fon_:
 
@@ -1355,16 +1352,16 @@ TakeButtonInstruments:
 	mov ebp,[Picture_SizeX]
 	dec ebp
 	cmp esi,ebp
-	jl no_minimum_x_allocation
-	mov esi,ebp
-	no_minimum_x_allocation:
+	jl @f
+		mov esi,ebp ;minimum x allocation
+	@@:
 
 	mov ebp,[Picture_SizeY]
 	dec ebp
 	cmp edi,ebp
-	jl no_minimum_y_allocation
-	mov edi,ebp
-	no_minimum_y_allocation:
+	jl @f
+		mov edi,ebp ;minimum y allocation
+	@@:
 
 	call calculate_rectangle
 
@@ -1372,7 +1369,7 @@ TakeButtonInstruments:
 	square_width_save
 
 	cmp [DrawSprite_flag],1
-	jne no_save_fon_for_sprite_
+	jne @f
 	;save current coordinats as old
 	mov eax,[SpriteCoordinatX]
 	mov ebx,[SpriteCoordinatY]
@@ -1381,40 +1378,12 @@ TakeButtonInstruments:
 
 	call SaveFonForSprite
 
-	no_save_fon_for_sprite_:
-
-	;draw calculated pixels on work arrea
-	mov ebx,[ReserveArray]
-	mov ecx,[ebx]
-	add ebx,4
-	next_pixel_put_allocation:
-
-	mov edx,0x1f3fff
-	mov esi,edx
-	shr edx,16
-
-	mov ebp,ecx
-	and ebp,8
-	cmp ebp,8
-	jne black_color
-	mov si,0xffff
-	mov dl,0xff
-	black_color:
-
-	mov eax,[ebx]
-	mov [eax],si
-	mov [eax+2],dl
-
-	add ebx,4
-	dec ecx
-	jnz next_pixel_put_allocation
+	@@:
 
 	cmp [DrawSprite_flag],1
-	jne no_activate_draw_sprite_
-
-	call DrawSprite
-
-	no_activate_draw_sprite_:
+	jne @f
+		call DrawSprite
+	@@:
 
 	mov al,[instrument_used]
 	test al,al
