@@ -178,7 +178,6 @@ char *unicode_tags[]={
 
 // function to be called to fix the special symbols
 void _text::fixSpecial(dword text) {
-	//dword text = start;
 	byte ch;
 	int i , j, z;
 	dword aux;
@@ -195,28 +194,30 @@ void _text::fixSpecial(dword text) {
 				if (ch == ';') {
 					z = get_symbol(#str);
 					//debugval("z: ", z);
-					aux = unicode_tags[z];
-					strtrim(aux);
-					debugln(aux);
-					ch = ESBYTE[aux];
-					while (ch) {
-						ESBYTE[text2] = ch;
-						aux++;
-						text2++;
-						ch = ESBYTE[aux];
+					if (z == -1) { // not found
+						ch = ' ';
 					}
-					ch = ESBYTE[text2];
-					//debugval("i: ", i);
+					else { // tag found
+						aux = unicode_tags[z];
+						strtrim(aux);
+						debugln(aux);
+						ch = ESBYTE[aux];
+						// copy the special symbol found
+						while (ch) {
+							ESBYTE[text2] = ch;
+							aux++;
+							text2++;
+							ch = ESBYTE[aux];
+						}
+						ch = ESBYTE[text2];
+					}
+					// clean the old symbol
 					while (ch != ';') {
-						//debugval("j: ", j);
-						ESBYTE[text2] = ' ';
+						ESBYTE[text2] = ' ';// should be (char) 0;
 						text2++;
 						ch = ESBYTE[text2];
 					}
-					ESBYTE[text2] = ' ';
-					//for (j=0;j<i;j++) text--;
-					//debugln(#str);
-					//clean_str();
+					ESBYTE[text2] = ' '; // should be '' or char 0
 					break;
 				}
 				str[i] = ch;
@@ -224,7 +225,7 @@ void _text::fixSpecial(dword text) {
 				text++;
 				i++;
 			}
-			for (i=0; i < 7; i++) str[i] = 0;
+			for (i=0; i < 7; i++) str[i] = 0; // clean str
 		}
 		text++;
 		text2++;
@@ -233,21 +234,17 @@ void _text::fixSpecial(dword text) {
 
 
 
-// function to look for the conversion od special characters
-// if not found--> return 0
+// function to look for the conversion of special characters
+// if not found--> return -1
 int get_symbol(char *str2) {
 	int i,j;
 	//debugln(#str2);
 	for (i=0; unicode_tags[i]!=0; i+=2) {
 		if (strcmp(str2, unicode_tags[i]) == 0) {
-			//j = strlen(unicode_tags[i+1]);
-			//debugval("i: ", i);
-			//strcat(text2, unicode_tags[i+1]);
-			i++;
-			return i;
+			return (i+1);
 		}
 	}	
-	return ' ';
+	return -1;
 }
 
 
