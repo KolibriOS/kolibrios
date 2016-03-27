@@ -77,7 +77,7 @@ LIBS:=  -ldll -lc.dll -lgcc
 # 	fasm ../../sound/src/sndgetsize.asm ../../sound/src/sndgetsize.o
 
 %.o : %.asm Makefile
-	nasm -f coff $< -o $@
+	nasm -f win32 $< -o $@
 
 %.obj : %.asm Makefile
 	fasm $< $@
@@ -109,4 +109,6 @@ $(LIBRARY).dll: $(OBJECTS) Makefile
 	$(CC) $(INCLUDES) $(CFLAGS) $(DEFINES)  -o $@ $<
 
 clean: 
-	-rm -f */*/*.o 
+	rm -rf *.o
+	rm -rf */*.o
+	rm -f */*/*.o 

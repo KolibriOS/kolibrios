@@ -10,19 +10,12 @@
 ; 
 
 BITS 32
-
+	
+SECTION .text ALIGN=16
+	
 GLOBAL _ConvertX86
 GLOBAL _x86return
-	
 GLOBAL _Hermes_X86_CPU
-
-
-SECTION .data
-	
-cpu_flags dd 0
-	
-		
-SECTION .text
 		
 ;; _ConvertX86:	 
 ;; [ESP+8] ConverterInfo*
@@ -61,7 +54,7 @@ y_loop:
 
 	jmp [ebp+32]
 
-_x86return:	
+_x86return:
 	add esi,[ebp+12]
 	add edi,[ebp+28]
 	
@@ -124,3 +117,8 @@ _Hermes_X86_CPU:
 .L1:	
 	xor eax,eax
 	ret
+
+section '.DATA' ALIGN=16 
+
+cpu_flags dd 0
+	

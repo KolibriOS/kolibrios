@@ -52,19 +52,14 @@ static int IsStyle4Available=0;
 void MenuetOS_SDL_RepaintWnd(void)
 {
  begin_draw();
- sys_create_window(1,1,vm_suf->hidden->win_size_x+9,vm_suf->hidden->win_size_y+get_skinh()+4,
-#ifdef KEEP_OBSOLETE_STYLE3
- 	IsStyle4Available?0x34000000:0x33000000
-#else
-	0x34000000
-#endif
- 	,0,(int)vm_suf->hidden->__title);
+ sys_create_window(1,1,vm_suf->hidden->win_size_x+9,vm_suf->hidden->win_size_y+get_skinh()+4, (int)vm_suf->hidden->__title, 0x000000,0x34000000);
+
  if(vm_suf && vm_suf->hidden->__video_buffer)
-  put_image(0,0,
+  put_image(1,1,
    vm_suf->hidden->win_size_x,vm_suf->hidden->win_size_y,
    vm_suf->hidden->__video_buffer);
 
- begin_draw();;
+ end_draw();
 }
 
 static int MenuetOS_AllocHWSurface(_THIS,SDL_Surface * surface)
@@ -89,7 +84,7 @@ static void MenuetOS_DirectUpdate(_THIS,int numrects,SDL_Rect * rects)
 {
  if(numrects)
  {
-  put_image(0,0,
+  put_image(1,1,
    vm_suf->hidden->win_size_x,vm_suf->hidden->win_size_y,
    this->hidden->__video_buffer);
  }
@@ -214,7 +209,7 @@ static int MenuetOS_VideoInit(_THIS,SDL_PixelFormat * vformat)
 
 static int MenuetOS_FlipHWSurface(_THIS,SDL_Surface * surface)
 {
- put_image(0,0,surface->w,surface->h, surface->pixels);
+ put_image(1,1,surface->w,surface->h, surface->pixels);
  return 0;
 }
 
