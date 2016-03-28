@@ -11,6 +11,8 @@ mouse:
 	test eax,100b
 	jne	still
 	
+	call GetMouseClick
+
 	call GetMouseCoordinats
 	mov	eax,[MouseX]
 	mov	ebx,[MouseY]
@@ -29,11 +31,10 @@ mouse:
 mouse_scroll:
 	mov	[exit_from_work_arrea],1 ;mouse situated after work arrea
 ;scrollers
-	call GetMouseClick
-	cmp	eax,1
-	jne	still
+	cmp [MouseBut],0
+	je still
 
-	call	GetMouseCoordinats
+	;call GetMouseCoordinats
 ;interraction with horizontal scroller
 	mov	eax,[Scroll1CoordinatX]
 	mov	ebx,[Scroll1CoordinatY]
@@ -179,12 +180,11 @@ mouse_in_work_arrea:
 	mov ebx,[Current_instrument]
 	call set_cursor
 
-	call	GetMouseClick
-	test	eax,eax
-	jz	no_use_instruments
+	cmp [MouseBut],0
+	je no_use_instruments
 
 	cmp	[Activate_instrument],0
-	jnz	no_undo___
+	jne	no_undo___
 ;------------begin copy for undo-------------
 ;copy bufer_0 -> bufer_2
 	mov edi,[PointerToCopyPicture2]
@@ -210,11 +210,9 @@ mouse_in_work_arrea:
 ;--------------end copy for undo-------------
 no_undo___:
 	call TakeButtonInstruments
-
 	jmp still
 
 no_use_instruments:
-	mov	eax,[Current_instrument]
 	and	[Activate_instrument],0
 	jmp	still
 ;-----------------------------------------------
@@ -232,5 +230,6 @@ GetMouseCoordinats:
 ;-------get mouse attributs----------------------
 ;------------------------------------------------
 GetMouseClick:
-	mcall SF_MOUSE_GET,SSF_BUTTON
+	mcall SF_MOUSE_GET,SSF_BUTTON_EXT
+	mov [MouseBut],eax
 	ret

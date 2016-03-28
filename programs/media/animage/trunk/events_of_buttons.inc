@@ -9,9 +9,7 @@ buttons:
 	jne @f
 	cmp [Activate_instrument],0
 	jne @f
-	cmp [crossing],1
-	jne @f
-		mov [finishing_crossing],1
+		;mov [crossing],2
 		call TakeButtonInstruments
 		jmp still
 	@@:
@@ -35,11 +33,9 @@ buttons:
 
 	;save instrumnets 10-40
 	cmp eax,40
-	jae no_save_last_instrument
-
-	 mov [Last_instrument],eax
-
-	no_save_last_instrument:
+	jae @f
+		mov [Last_instrument],eax
+	@@:
 
 	cmp eax,10
 	je still
@@ -57,31 +53,22 @@ buttons:
 	je still
 
 	cmp eax,51
-	jne no_palette_
-
-	call TakeButtonInstruments
-	jmp still
-
-	no_palette_:
+	jne @f
+		call TakeButtonInstruments
+		jmp still
+	@@:
 
 	cmp eax,17
 	je still
 
 	cmp eax,21
-	jne no_allocation__
-
-	and [Activate_instrument],0
-	jmp still
-
-	no_allocation__:
+	je still
 
 	cmp eax,20
-	jne no_kontur__
-
-	and [instrument_used],0
-	jmp still
-
-	no_kontur__:
+	jne @f
+		and [instrument_used],0
+		jmp still
+	@@:
 
 	call TakeButtonInstruments
 	jmp still

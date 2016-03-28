@@ -64,6 +64,8 @@ init_main_menu:
 	stdcall [ksubmenu_add], [main_menu_edit], eax
 	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Edit_ClS, 0x66
 	stdcall [ksubmenu_add], [main_menu_edit], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Edit_SelectAll, 0x67
+	stdcall [ksubmenu_add], [main_menu_edit], eax
 	
 	; add 'Edit' menu to main
 	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Edit, [main_menu_edit]
@@ -126,6 +128,7 @@ button_handler_main_menu:
 	menu_set 0x64, 6,4
 	menu_set 0x65, 6,5
 	menu_set 0x66, 6,6
+	menu_set 0x67, 6,7
 	menu_set 0x51, 5,1
 	menu_set 0x52, 5,2
 	menu_set 0x53, 5,3
@@ -162,6 +165,7 @@ sz_main_menu_Edit_Copy  db 'Copy', 0
 sz_main_menu_Edit_Paste db 'Paste', 0
 sz_main_menu_Edit_Cut   db 'Cut', 0
 sz_main_menu_Edit_ClS   db 'Clear screen', 0
+sz_main_menu_Edit_SelectAll db 'Select all', 0
 
 sz_main_menu_Instr       db 'Instruments', 0
 sz_main_menu_Instr_Pencil db 'Pencil', 0

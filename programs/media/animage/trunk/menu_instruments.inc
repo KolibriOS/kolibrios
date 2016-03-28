@@ -257,19 +257,14 @@ no_redo:
 	cmp	[number_menu],3
 	jne	no_copy
 
-	cmp	[instrument_used],1
-	jne	end_menu
-	cmp	[Activate_instrument],0
-	jne	end_menu
-
-	mov	eax,[OldX]
-	mov	ebx,[OldY]
+	mov	eax,[crossing_old_x]
+	mov	ebx,[crossing_old_y]
 
 	cmp	eax,[rectangular_shade_x]
 	jl	no_remove_x_copy
 
 	mov	ecx,[rectangular_shade_x]
-	mov	[OldX],ecx			 ; OldX <-----> rectangulare_shade_x
+	mov	[crossing_old_x],ecx ; crossing_old_x <-----> rectangulare_shade_x
 	mov	[rectangular_shade_x],eax
 
 no_remove_x_copy:
@@ -277,12 +272,12 @@ no_remove_x_copy:
 	jl	no_remove_y_copy
 
 	mov	ecx,[rectangular_shade_y]
-	mov	[OldY],ecx			 ; OldY <-----> rectangulare_shade_y
+	mov	[crossing_old_y],ecx			 ; crossing_old_y <-----> rectangulare_shade_y
 	mov	[rectangular_shade_y],ebx
 
 no_remove_y_copy:
-	mov	eax,[OldX]
-	mov	ebx,[OldY]
+	mov	eax,[crossing_old_x]
+	mov	ebx,[crossing_old_y]
 	mov	ecx,[rectangular_shade_x]
 	mov	edx,[rectangular_shade_y]
 	inc	eax
@@ -314,10 +309,10 @@ no_signum_fill_r_y_copy:
 
 	mov	edx,[PointerToEditBufer]
 	mov	eax,[rectangular_shade_x]
-	sub eax,[OldX]
+	sub eax,[crossing_old_x]
 	mov [edx],eax ;image.w
 	mov	eax,[rectangular_shade_y]
-	sub eax,[OldY]
+	sub eax,[crossing_old_y]
 	mov [edx+4],eax ;image.h
 	mov dword[edx+8],24 ;bit in pixel
 	add edx,12 ;copy image parametrs
@@ -365,20 +360,14 @@ no_copy:
 	cmp	[number_menu],4
 	jne	no_paste
 
-	cmp	[instrument_used],1
-	jne	no_paste
-
-	cmp	[Activate_instrument],0
-	jne	no_paste
-
-	mov	eax,[OldX]
-	mov	ebx,[OldY]
+	mov	eax,[crossing_old_x]
+	mov	ebx,[crossing_old_y]
 
 	cmp	eax,[rectangular_shade_x]
 	jl	no_remove_x_paste
 
 	mov	ecx,[rectangular_shade_x]
-	mov	[OldX],ecx 		  ; OldX <-----> rectangulare_shade_x
+	mov	[crossing_old_x],ecx ; crossing_old_x <-----> rectangulare_shade_x
 	mov	[rectangular_shade_x],eax
 
 no_remove_x_paste:
@@ -386,12 +375,12 @@ no_remove_x_paste:
 	jl	no_remove_y_paste
 
 	mov	ecx,[rectangular_shade_y]
-	mov	[OldY],ecx 		  ; OldY <-----> rectangulare_shade_y
+	mov	[crossing_old_y],ecx ; crossing_old_y <-----> rectangulare_shade_y
 	mov	[rectangular_shade_y],ebx
 
 no_remove_y_paste:
-	mov	eax,[OldX]
-	mov	ebx,[OldY]
+	mov	eax,[crossing_old_x]
+	mov	ebx,[crossing_old_y]
 	mov	ecx,[rectangular_shade_x]
 	mov	edx,[rectangular_shade_y]
 	inc	eax
@@ -422,10 +411,10 @@ no_signum_fill_r_y_paste:
 	cmp dword[edx+8],24
 	jne	end_menu
 	mov eax,[edx]
-	add eax,[OldX]
+	add eax,[crossing_old_x]
 	mov [paste_img_w],eax
 	mov eax,[edx+4]
-	add eax,[OldY]
+	add eax,[crossing_old_y]
 	mov [paste_img_h],eax
 	add edx,12 ;copy image parametrs
 	mov	[y],edi
@@ -473,20 +462,14 @@ no_paste:
 	cmp	[number_menu],5
 	jne	no_cut
 
-	cmp	[instrument_used],1
-	jne	no_cut
-
-	cmp	[Activate_instrument],0
-	jne	no_cut
-
-	mov	eax,[OldX]
-	mov	ebx,[OldY]
+	mov	eax,[crossing_old_x]
+	mov	ebx,[crossing_old_y]
 
 	cmp	eax,[rectangular_shade_x]
 	jl	no_remove_x_cut
 
 	mov	ecx,[rectangular_shade_x]
-	mov	[OldX],ecx 		  ; OldX <-----> rectangulare_shade_x
+	mov	[crossing_old_x],ecx ; crossing_old_x <-----> rectangulare_shade_x
 	mov	[rectangular_shade_x],eax
 
 no_remove_x_cut:
@@ -494,12 +477,12 @@ no_remove_x_cut:
 	jl	no_remove_y_cut
 
 	mov	ecx,[rectangular_shade_y]
-	mov	[OldY],ecx 		  ; OldY <-----> rectangulare_shade_y
+	mov	[crossing_old_y],ecx ; crossing_old_y <-----> rectangulare_shade_y
 	mov	[rectangular_shade_y],ebx
 
 no_remove_y_cut:
-	mov	eax,[OldX]
-	mov	ebx,[OldY]
+	mov	eax,[crossing_old_x]
+	mov	ebx,[crossing_old_y]
 	mov	ecx,[rectangular_shade_x]
 	mov	edx,[rectangular_shade_y]
 	inc	eax
@@ -570,25 +553,21 @@ no_cut:
 no_cleare_all:
 ; <<< To allocate all >>>
 	cmp	[number_menu],7
-	jne	end_menu ;no_to_allocate_all
+	jne	end_menu
 
-	mov	[OldX],1
-	mov	[OldY],1
+	mov	[crossing_old_x],0
+	mov	[crossing_old_y],0
 	mov	eax,[Picture_SizeX]
 	mov	ebx,[Picture_SizeY]
-	dec	eax
-	dec	ebx
+	dec eax
+	dec ebx
 	mov	[rectangular_shade_x],eax
 	mov	[rectangular_shade_y],ebx
-	mov	[instrument_used],1
-	mov	[Activate_instrument],1
 	mov	[Current_instrument],30
-	mov	[crossing],0
-;	call	TakeButtonInstruments
-;	call	MovePictureToWorkScreen
+	mov	[crossing],2
+	;call MovePictureToWorkScreen
 	jmp	end_menu
 ;---------------------------------------------------------------------
-;no_to_allocate_all:
 no_edit:
 ;|||||||||||||||||||||||||INSTRUMENTS||||||||||||||||||||||
 	cmp	[number_panel],5

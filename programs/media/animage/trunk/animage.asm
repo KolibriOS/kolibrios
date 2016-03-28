@@ -43,6 +43,7 @@ include '../../../develop/libraries/box_lib/load_lib.mac'
 include '../../../dll.inc'
 include '../../../libio.inc'
 ;include '../../../develop/libraries/libs-dev/libimg/libimg.inc'
+;include '../../../debug.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
@@ -261,6 +262,7 @@ OldY			rd 1
 
 MouseX			rd 1
 MouseY			rd 1
+MouseBut			rd 1 ;события от кнопок мыши
 Window_SizeX		rd 1
 Window_SizeY		rd 1
 Window_CordinatX	rd 1
@@ -322,17 +324,17 @@ b_ellips		rd 1
 
 used_OldX		rd 1 ;for draw hard contour
 used_OldY		rd 1
-rectangular_shade_x	rd 1 ;координата x области для копирования
-rectangular_shade_y	rd 1
 paste_img_w rd 1 ;ширина вставляемого изображения
 paste_img_h rd 1 ;высота вставляемого изображения
-crossing_old_x		rd 1
-crossing_old_y		rd 1
-crossing		rd 1
-finishing_crossing	rd 1
+crossing_old_x		rd 1 ;начальная коорд. x области копирования
+crossing_old_y		rd 1 ;начальная коорд. y области копирования
+rectangular_shade_x	rd 1 ;конечная коорд. x области копирования
+rectangular_shade_y	rd 1 ;конечная коорд. y области копирования
+crossing		rd 1 ;0 - выделения нет, 1 - идет процес выделения,
+	;2 - выделение завершено, 3 - область выделения перемещается
 number_undo		rd 1
-SpriteSizeX		rd 1
-SpriteSizeY		rd 1
+SpriteSizeX		rd 1 ;???
+SpriteSizeY		rd 1 ;???
 SpriteCoordinatX	rd 1
 SpriteCoordinatY	rd 1
 SpriteOldCoordinatX	rd 1
@@ -340,7 +342,8 @@ SpriteOldCoordinatY	rd 1
 
 CursorsID	rd 10
 
-Activate_instrument	rb 1
+Activate_instrument	rb 1 ;если равно 0 - то копирование текущего буфера
+	;для его редактирования, если 1 - текущий буфер не копируется
 save_flag		rb 1
 exit_from_work_arrea	rb 1
 lastik_is_active	rb 1

@@ -236,15 +236,15 @@ big_pixel_x:
 
 fps:
 	;calculate selection rect
-	cmp [instrument_used],1
-	jne	.no_selection_rect
+	cmp [crossing],0
+	je .no_selection_rect
 	mov edx,[rectangular_shade_y]
 	sub edx,[PosY]
 	mov ecx,[rectangular_shade_x]
 	sub ecx,[PosX]
-	mov ebx,[OldY]
+	mov ebx,[crossing_old_y]
 	sub ebx,[PosY]
-	mov eax,[OldX]
+	mov eax,[crossing_old_x]
 	sub eax,[PosX]
 	cmp [k],1
 	je .zo_1

@@ -22,7 +22,6 @@
 	mov	[line_width],1
 	mov	[lastik_is_active],0
 	and	[crossing],0
-	and	[finishing_crossing],0
 	and	[number_undo],0
 	and	[instrument_used],0
 	and	[DrawSprite_flag],0

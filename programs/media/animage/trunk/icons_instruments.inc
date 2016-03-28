@@ -1027,7 +1027,7 @@ TakeButtonInstruments:
 	jne no_1_
 	mov [k],1
 	call scrollbar_move_00
-	and [Current_instrument],0
+	and [Current_instrument],0 ;???
 	call drawwin
 	ret
 	no_1_:
@@ -1086,318 +1086,131 @@ TakeButtonInstruments:
 	cmp eax,21
 	jne no_allocation
 
-	cmp [instrument_used],0
-	jnz instrument_not_finished_work
-
-	mov al,[Activate_instrument]
-	test al,al
-	jnz no_new_allocation_xy
-	mov eax,[ScreenX]
-	mov ebx,[ScreenY]
-	add eax,[PosX]
-	add ebx,[PosY]
-	mov [OldX],eax
-	mov [OldY],ebx
-	inc eax
-	inc ebx
-	mov [rectangular_shade_x],eax
-	mov [rectangular_shade_y],ebx
 	mov [Activate_instrument],1
-	mov [instrument_used],1
-	and [crossing],0
-	and [finishing_crossing],0
-	xor eax,eax
-	mov ecx,mem_flood_f/4
-	mov edi,[ReserveArray]
-	cld
-	rep stosd
-	ret
-	no_new_allocation_xy:
-	instrument_not_finished_work:
-
-	mov al,[instrument_used]
-	test al,al
-	jz no_change_coordinats
-
-	cmp [Activate_instrument],0
-	jnz no_change_coordinats
-
-	;save coordinates as old if crossing=0
-	cmp [crossing],0
-	jnz no_save_coordinate_of_crossing
-
-	mov eax,[OldX]
-	mov ebx,[OldY]
-
-	cmp eax,[rectangular_shade_x]
-	jl no_remove_x
-	mov ecx,[rectangular_shade_x]
-	mov [OldX],ecx			  ; OldX <-----> rectangulare_shade_x
-	mov [rectangular_shade_x],eax
-	no_remove_x:
-
-	cmp ebx,[rectangular_shade_y]
-	jl no_remove_y
-	mov ecx,[rectangular_shade_y]
-	mov [OldY],ecx			  ; OldY <-----> rectangulare_shade_y
-	mov [rectangular_shade_y],ebx
-	no_remove_y:
-
-	mov eax,[ScreenX]
-	mov ebx,[ScreenY]
-	add eax,[PosX]
-	add ebx,[PosY]
-	mov [crossing_old_x],eax
-	mov [crossing_old_y],ebx
-	mov [crossing],1
-
-
-	mov eax,[OldX]
-	mov ebx,[OldY]
-	inc eax
-	inc ebx
-	mov [SpriteCoordinatX],eax
-	mov [SpriteCoordinatY],ebx
-	mov [SpriteOldCoordinatX],eax
-	mov [SpriteOldCoordinatY],ebx
-	mov esi,[rectangular_shade_x]
-	mov edi,[rectangular_shade_y]
-
-	sub esi,eax
-	jns @f
-		neg esi ;sign sprite size x
-	@@:
-
-	sub edi,ebx
-	jns @f
-		neg edi ;sign sprite size y
-	@@:
-
-	test esi,esi
-	jnz @f
-		mov esi,1 ;null sprite x
-	@@:
-
-	test edi,edi
-	jnz @f
-		mov edi,1 ;null sprite y
-	@@:
-
-	mov [SpriteSizeX],esi
-	mov [SpriteSizeY],edi
-
-	call SaveFonForSprite
-
-	no_save_coordinate_of_crossing:
-
-	cmp [crossing],0
-	je no_test_crossing_with_work_arrea
-	;if mouse situatad after allocation than exit
-	push [ScreenX]
-	push [ScreenY]
 
 	call GetScreenCordinats
 
-	mov eax,[OldX]
-	mov ebx,[OldY]
-	mov ecx,[ScreenX]
-	mov edx,[ScreenY]
-	mov esi,[SpriteSizeX]
-	mov edi,[SpriteSizeY]
-	add ecx,[PosX]
-	add edx,[PosY]
-	inc esi
-	inc edi
-	call columnus
+	bt [MouseBut],8 ;left button down
+	jnc .left_but_down
+		cmp [crossing],2
+		jne @f
+			;move old selection
+			mov eax,[crossing_old_x]
+			mov ebx,[crossing_old_y]
+			mov ecx,[ScreenX]
+			mov edx,[ScreenY]
+			add ecx,[PosX]
+			add edx,[PosY]
+			mov esi,[rectangular_shade_x]
+			mov edi,[rectangular_shade_y]
+			sub esi,eax
+			sub edi,ebx
+			call columnus
 
-	test eax,eax
-	jnz crossing_with_work_area
-	mov [finishing_crossing],1
-	crossing_with_work_area:
+			test eax,eax
+			jz @f
+				mov [crossing],3
+				mov [OldX],ecx
+				mov [OldY],edx
+				jmp selection_update
+		@@:
+		;start new selection
+		mov eax,[ScreenX]
+		add eax,[PosX]
+		mov [crossing_old_x],eax
+		mov [rectangular_shade_x],eax
+		mov eax,[ScreenY]
+		add eax,[PosY]
+		mov [crossing_old_y],eax
+		mov [rectangular_shade_y],eax
+		mov [crossing],1
+		jmp selection_update
+	.left_but_down:
 
-	pop [ScreenY]
-	pop [ScreenX]
+	bt [MouseBut],0 ;left button press
+	jnc .no_mouse_move
+		cmp [crossing],3
+		jne .no_sel_move
+			;move selection
+			mov eax,[ScreenX]
+			add eax,[PosX]
+			sub eax,[OldX]
+			add [OldX],eax
+			mov ebx,[crossing_old_x]
+			add ebx,eax
+			cmp ebx,0
+			jge @f
+				;exit from left border
+				sub eax,ebx 
+			@@:
+			add [crossing_old_x],eax
+			add [rectangular_shade_x],eax
+			mov eax,[ScreenY]
+			add eax,[PosY]
+			sub eax,[OldY]
+			add [OldY],eax
+			mov ebx,[crossing_old_y]
+			add ebx,eax
+			cmp ebx,0
+			jge @f
+				;exit from top border
+				sub eax,ebx 
+			@@:
+			add [crossing_old_y],eax
+			add [rectangular_shade_y],eax
+			jmp selection_update
+		.no_sel_move:
+		;resize selection
+		mov eax,[ScreenX]
+		add eax,[PosX]
+		mov [rectangular_shade_x],eax
+		mov eax,[ScreenY]
+		add eax,[PosY]
+		mov [rectangular_shade_y],eax
+		jmp selection_update
+	.no_mouse_move:
 
-	no_test_crossing_with_work_arrea:
+	bt [MouseBut],16 ;left button up
+	jnc .left_but_up
+		;finish selection
+		mov eax,[crossing_old_x]
+		mov ebx,[rectangular_shade_x]
+		cmp eax,ebx
+		jle @f
+			mov [crossing_old_x],ebx
+			mov [rectangular_shade_x],eax
+		@@:
+		mov eax,[crossing_old_y]
+		mov ebx,[rectangular_shade_y]
+		cmp eax,ebx
+		jle @f
+			mov [crossing_old_y],ebx
+			mov [rectangular_shade_y],eax
+		@@:
+		mov [crossing],2
+		ret
+	.left_but_up:
 
-	mov eax,[ScreenX]
-	mov ebx,[ScreenY]
-	add eax,[PosX]
-	add ebx,[PosY]
-	mov ecx,eax
-	mov edx,ebx
-	sub eax,[crossing_old_x]  ;dx=(x-oldx)
-	sub ebx,[crossing_old_y]  ;dy=(y-oldy)
-	mov [crossing_old_x],ecx
-	mov [crossing_old_y],edx
+	bt [MouseBut],9 ;right button down
+	jnc .right_but_down
+		;delete select
+		mov [crossing],0
+		jmp selection_update
+	.right_but_down:
 
-	add [OldX],eax		       ;x1=x1+dx
-	add [OldY],ebx		       ;y1=y1+dy
-	add [rectangular_shade_x],eax  ;x2=x2+dx
-	add [rectangular_shade_y],ebx  ;y2+y2+dy
-
-	mov eax,[OldX]
-	mov ebx,[OldY]
-	inc eax
-	inc ebx
-	mov [SpriteCoordinatX],eax
-	mov [SpriteCoordinatY],ebx
-
-	cmp [SpriteCoordinatX],0
-	jns @f
-		mov [SpriteCoordinatX],1 ;null sprite coordinat x
-	@@:
-	cmp [SpriteCoordinatY],0
-	jns @f
-		mov [SpriteCoordinatY],1 ;null sprite coordinat y
-	@@:
-
-	mov esi,[rectangular_shade_x]
-	mov edi,[rectangular_shade_y]
-
-	sub esi,[OldX]
-	jns @f
-		neg esi
-	@@:
-	sub edi,[OldY]
-	jns @f
-		neg edi
-	@@:
-
-	mov ecx,[OldX]
-	mov edx,[OldY]
-
-	sub ecx,[PosX]
-	jns @f
-	xor ecx,ecx
-	add ecx,[PosX]
-	mov [OldX],ecx
-	add ecx,esi
-	mov [rectangular_shade_x],ecx
-	@@:
-
-	sub edx,[PosY]
-	jns @f
-	xor edx,edx
-	add edx,[PosY]
-	mov [OldY],edx
-	add edx,edi
-	mov [rectangular_shade_y],edx
-	@@:
-
-	mov ecx,[Picture_SizeX]
-	sub ecx,esi
-	cmp [OldX],ecx
-	jl @f
-	dec ecx
-	mov [OldX],ecx
-	add ecx,esi
-	mov [rectangular_shade_x],ecx
-	@@:
-
-	mov edx,[Picture_SizeY]
-	sub edx,edi
-	cmp [OldY],edx
-	jl @f
-	dec edx
-	mov [OldY],edx
-	add edx,edi
-	mov [rectangular_shade_y],edx
-	@@:
-
-	mov eax,[rectangular_shade_x]
-	mov ebx,[rectangular_shade_y]
-	sub eax,[PosX]
-	sub ebx,[PosY]
-	mov [ScreenX],eax
-	mov [ScreenY],ebx
-	no_change_coordinats:
-
-	;put saved pixels
-	square_width_put
-
-	cmp [DrawSprite_flag],1
-	jne no_activate_put_fon_
-
+if 0
 	cmp [Paste_flag],1
 	je @f
 		call PutFonForSprite
 	@@:
-	and [Paste_flag],0
-	no_activate_put_fon_:
-
-	cmp [finishing_crossing],0
-	jz not_finish_from_instrument_crossing
-	and [Activate_instrument],0
-	and [crossing],0
-	and [instrument_used],0
-	and [DrawSprite_flag],0
-	call MovePictureToWorkScreen
-	ret
-	not_finish_from_instrument_crossing:
-
-	;calculate line
-	mov ebx,[ReserveArray]
-	add ebx,4
-	mov eax,[PointerToPicture]
-	mov ecx,[Picture_SizeX]
-	mov edx,[OldX]
-	shl edx,16
-	add edx,[OldY]
-	mov esi,[ScreenX]
-	mov edi,[ScreenY]
-	add esi,[PosX]
-	add edi,[PosY]
-
-	mov ebp,[Picture_SizeX]
-	dec ebp
-	cmp esi,ebp
-	jl @f
-		mov esi,ebp ;minimum x allocation
-	@@:
-
-	mov ebp,[Picture_SizeY]
-	dec ebp
-	cmp edi,ebp
-	jl @f
-		mov edi,ebp ;minimum y allocation
-	@@:
-
-	call calculate_rectangle
-
-	;save color pixels in ReserveArray
-	square_width_save
-
 	cmp [DrawSprite_flag],1
 	jne @f
-	;save current coordinats as old
-	mov eax,[SpriteCoordinatX]
-	mov ebx,[SpriteCoordinatY]
-	mov [SpriteOldCoordinatX],eax
-	mov [SpriteOldCoordinatY],ebx
-
-	call SaveFonForSprite
-
-	@@:
-
-	cmp [DrawSprite_flag],1
-	jne @f
+		call SaveFonForSprite
 		call DrawSprite
 	@@:
+end if
 
-	mov al,[instrument_used]
-	test al,al
-	jz no_change_coordinats
-	cmp [Activate_instrument],0
-	jz no_save_shades
-	mov eax,[ScreenX]
-	mov ebx,[ScreenY]
-	add eax,[PosX]
-	add ebx,[PosY]
-	mov [rectangular_shade_x],eax
-	mov [rectangular_shade_y],ebx
-	no_save_shades:
-
+	selection_update:
 	call MovePictureToWorkScreen
 	ret
 	no_allocation:
