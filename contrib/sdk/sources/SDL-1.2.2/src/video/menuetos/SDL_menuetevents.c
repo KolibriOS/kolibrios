@@ -1,4 +1,4 @@
-#include<kos32sys.h>
+#include <kos32sys.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -163,20 +163,28 @@ void MenuetOS_PumpEvents(_THIS)
  SDL_keysym key;
  static int ext_code=0;
  static uint8_t old_mode=0;
+
  for (;;) {
    i=check_os_event();
-  switch(i)
-  {
+   unsigned int k;
+
+   switch(i)
+     {
    case 0:
     return;
    case 1:
+
     MenuetOS_SDL_RepaintWnd();
     break;
+
    case 2:
-     key.scancode = get_key().code;
+     __asm__ __volatile__("int $0x40":"=a"(k):"a"(2));
+     key.scancode = (k >> 8) & 0xFF;
+
     if (key.scancode == 0xE0 || key.scancode == 0xE1)
     {ext_code=key.scancode;break;}
-    if (ext_code == 0xE1 && (key.scancode & 0x7F) == 0x1D) break;
+
+   if (ext_code == 0xE1 && (key.scancode & 0x7F) == 0x1D) { break;}
     if (ext_code == 0xE1 && key.scancode == 0xC5) {ext_code=0;break;}
     key.mod = GetModState();
     if (ext_code == 0xE1) key.mod &= ~KMOD_CTRL;
