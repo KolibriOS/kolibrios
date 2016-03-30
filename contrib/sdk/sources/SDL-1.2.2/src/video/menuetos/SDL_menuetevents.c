@@ -1,7 +1,6 @@
-#include <kos32sys.h>
+#include<menuet/os.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/types.h>
 #include "SDL.h"
 #include "SDL_sysevents.h"
 #include "SDL_sysvideo.h"
@@ -162,29 +161,21 @@ void MenuetOS_PumpEvents(_THIS)
  int i;
  SDL_keysym key;
  static int ext_code=0;
- static uint8_t old_mode=0;
-
+ static __u8 old_mode=0;
  for (;;) {
-   i=check_os_event();
-   unsigned int k;
-
-   switch(i)
-     {
+  i=__menuet__check_for_event();
+  switch(i)
+  {
    case 0:
     return;
    case 1:
-
     MenuetOS_SDL_RepaintWnd();
     break;
-
    case 2:
-     __asm__ __volatile__("int $0x40":"=a"(k):"a"(2));
-     key.scancode = (k >> 8) & 0xFF;
-
+    key.scancode = __menuet__getkey();
     if (key.scancode == 0xE0 || key.scancode == 0xE1)
     {ext_code=key.scancode;break;}
-
-   if (ext_code == 0xE1 && (key.scancode & 0x7F) == 0x1D) { break;}
+    if (ext_code == 0xE1 && (key.scancode & 0x7F) == 0x1D) break;
     if (ext_code == 0xE1 && key.scancode == 0xC5) {ext_code=0;break;}
     key.mod = GetModState();
     if (ext_code == 0xE1) key.mod &= ~KMOD_CTRL;
@@ -207,7 +198,7 @@ void MenuetOS_PumpEvents(_THIS)
     SDL_PrivateKeyboard(code,&key);
     break;
    case 3:
-     if(get_os_button()==1) exit(0);
+    if(__menuet__get_button_id()==1) exit(0);
     break;
    case 6: {
     int __tmp,mx,my;

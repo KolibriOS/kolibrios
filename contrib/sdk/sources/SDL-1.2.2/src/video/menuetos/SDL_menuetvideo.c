@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <kos32sys.h>
+#include <menuet/os.h>
 #include "SDL.h"
 #include "SDL_error.h"
 #include "SDL_video.h"
@@ -10,25 +10,6 @@
 #include "SDL_events_c.h"
 #include "SDL_menuetvideo.h"
 #include <string.h>
-
-struct process_table_entry
-{
- uint32_t cpu_usage;
- uint16_t pos_in_windowing_stack;
- uint16_t win_stack_val_at_ecx;
- uint16_t reserved1;
- char name[12];
- uint32_t memstart;
- uint32_t memused;
- uint32_t pid;
- uint32_t winx_start,winy_start;
- uint32_t winx_size,winy_size;
- uint16_t thread_state;
- uint16_t reserved2;
- uint32_t client_left,client_top,client_width,client_height;
- uint8_t window_state;
- uint8_t reserved3[1024-71];
-};
 
 static SDL_VideoDevice * vm_suf=NULL;
 static int was_initialized=0;
@@ -51,15 +32,22 @@ static int IsStyle4Available=0;
 
 void MenuetOS_SDL_RepaintWnd(void)
 {
- begin_draw();
- sys_create_window(1,1,vm_suf->hidden->win_size_x+9,vm_suf->hidden->win_size_y+get_skinh()+4, (int)vm_suf->hidden->__title, 0x000000,0x34000000);
+ __menuet__window_redraw(1);
+ __menuet__define_window(1,1,vm_suf->hidden->win_size_x+9,vm_suf->hidden->win_size_y+get_skinh()+4,
+#ifdef KEEP_OBSOLETE_STYLE3
+ 	IsStyle4Available?0x34000000:0x33000000
+#else
+	0x34000000
+#endif
+ 	,0,(int)vm_suf->hidden->__title);
+
+ // __asm__ __volatile__("int3");
 
  if(vm_suf && vm_suf->hidden->__video_buffer)
-  put_image(1,1,
+  __menuet__putimage(0,0,
    vm_suf->hidden->win_size_x,vm_suf->hidden->win_size_y,
    vm_suf->hidden->__video_buffer);
-
- end_draw();
+ __menuet__window_redraw(2);
 }
 
 static int MenuetOS_AllocHWSurface(_THIS,SDL_Surface * surface)
@@ -84,7 +72,7 @@ static void MenuetOS_DirectUpdate(_THIS,int numrects,SDL_Rect * rects)
 {
  if(numrects)
  {
-  put_image(1,1,
+  __menuet__putimage(0,0,
    vm_suf->hidden->win_size_x,vm_suf->hidden->win_size_y,
    this->hidden->__video_buffer);
  }
@@ -123,12 +111,33 @@ SDL_Surface * MenuetOS_SetVideoMode(_THIS, SDL_Surface *current, int width, int 
  current->w=width;
  current->h=height;
  current->pitch=width*(bpp>>3);
+
+ char info[100];
+ sprintf(info, "width = %d, height = %d, pitch = %d, bpp = %d\n", current->w, current->h, current->pitch, bpp);
+
+ void debug_board_write_byte(const char ch){
+   __asm__ __volatile__(
+			"int $0x40"
+			:
+			:"a"(63), "b"(1), "c"(ch));
+ }
+
+ void debug_board_write_str(const char* str){
+   while(*str)
+     debug_board_write_byte(*str++);
+ }
+
+ debug_board_write_str(info);
+ // __asm__ __volatile__("int3");
+ 
  current->pixels=this->hidden->__video_buffer=realloc(this->hidden->__video_buffer,
 	current->pitch*current->h);
  this->hidden->__lines=(unsigned char **)realloc(this->hidden->__lines,
 		    sizeof(unsigned char *)*current->h);
+
  for(ly=0,lx=current->pixels;ly<current->h;ly++,lx+=current->pitch)
-  this->hidden->__lines[ly]=lx;
+   this->hidden->__lines[ly]=lx;
+
  this->UpdateRects=MenuetOS_DirectUpdate;
  this->hidden->win_size_x=width;
  this->hidden->win_size_y=height;
@@ -141,7 +150,7 @@ SDL_Surface * MenuetOS_SetVideoMode(_THIS, SDL_Surface *current, int width, int 
  }
  else
  {
-  set_wanted_events_mask(0x27);
+  __menuet__set_bitfield_for_wanted_events(0x27);
   was_initialized=1;
   MenuetOS_SDL_RepaintWnd();
  }
@@ -209,7 +218,8 @@ static int MenuetOS_VideoInit(_THIS,SDL_PixelFormat * vformat)
 
 static int MenuetOS_FlipHWSurface(_THIS,SDL_Surface * surface)
 {
- put_image(1,1,surface->w,surface->h, surface->pixels);
+ __menuet__putimage(0,0,surface->w,surface->h,
+  surface->pixels);
  return 0;
 }
 

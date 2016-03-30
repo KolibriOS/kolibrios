@@ -30,7 +30,7 @@ void SDL_printf_error(const char * fmt,...)
  int pid;
  va_list args;
  va_start(args,fmt);
- printf(fmt,args);
+ __libclog_vprintf(fmt,args);
  exit(-1);
 }
 

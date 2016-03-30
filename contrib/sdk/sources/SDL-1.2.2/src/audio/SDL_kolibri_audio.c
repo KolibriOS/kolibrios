@@ -1,11 +1,11 @@
 #include "SDL_audio.h"
-#include <kos32sys.h>
+#include <menuet/os.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sound.h>
 #include <stdio.h>
 
-static void GetNotify(uint32_t* event)
+static void GetNotify(__u32* event)
 {
         __asm__("int $0x40" :: "a"(68),"b"(14),"c"(event));
 }
@@ -36,9 +36,9 @@ static SNDBUF hBuff=0;
 static char* data=NULL;
 static int audio_tid=0;
 static int main_slot;
-static uint32_t main_tid;
+static __u32 main_tid;
 static char audio_thread_stack[40960];
-static uint32_t used_format=0;
+static __u32 used_format=0;
 static volatile int mix_size=0;
 
 static void (*callback)(void* userdata, Uint8* stream, int len);
@@ -81,20 +81,20 @@ static void audio_thread(void)
 {
 	SDL_printf("audio_thread created\n");
         int bPaused;
-        uint32_t event[6];
+        __u32 event[6];
         // initialize
         if (CreateBuffer(used_format|PCM_RING, 0, &hBuff))
         {
                 audio_response=1;
-		__asm__ __volatile__("int $0x40" ::"a"(-1));
+                __menuet__sys_exit();
         }
         GetBufferSize(hBuff, &mix_size);
         SDL_printf("buffer created, size is %d\n",mix_size);
         mix_size >>= 1;
         data = malloc(mix_size);
         audio_response=1;
-        if (!data) __asm__ __volatile__("int $0x40" ::"a"(-1));
-	// wait for resume
+        if (!data) __menuet__sys_exit();
+        // wait for resume
         while (audio_command!=AUDIO_RESUME)
                 Yield();
         // initialize
@@ -130,19 +130,19 @@ static void audio_thread(void)
                         audio_response = 1;
                         StopBuffer(hBuff);
                         DestroyBuffer(hBuff);
-                        __asm__ __volatile__("int $0x40" ::"a"(-1));
-		}
+                        __menuet__sys_exit();
+                }
                 else
                 {
                 	GetProcessInfo(main_slot);
-                	if (pinfo[0x32]==9 || *(uint32_t*)(pinfo+0x1E)!=main_tid)
+                	if (pinfo[0x32]==9 || *(__u32*)(pinfo+0x1E)!=main_tid)
                 	{
                 		audio_command = AUDIO_DIE;
                 		continue;
                 	}
                 }
                 if (bPaused)
-                        delay(500);
+                        __menuet__delay100(5);
                 else
                 {
                         GetNotify(event);
@@ -230,11 +230,11 @@ int SDL_OpenAudio(SDL_AudioSpec* desired, SDL_AudioSpec* obtained)
         callback=desired->callback;
         userdata=desired->userdata;
         GetProcessInfo(-1);
-        main_tid = *(uint32_t*)(pinfo+0x1E);
+        main_tid = *(__u32*)(pinfo+0x1E);
         for (main_slot=0;;main_slot++)
         {
                 GetProcessInfo(main_slot);
-                if (pinfo[0x32]!=9 && *(uint32_t*)(pinfo+0x1E)==main_tid)
+                if (pinfo[0x32]!=9 && *(__u32*)(pinfo+0x1E)==main_tid)
         	        break;
         }
         audio_tid=CreateThread(audio_thread,audio_thread_stack+40960);

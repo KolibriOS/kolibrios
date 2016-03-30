@@ -15,7 +15,7 @@ extern "C" {
 
 /* Put a variable of the form "name=value" into the environment */
 extern DECLSPEC int SDL_putenv(const char *variable);
-#define sdlputenv(X)   SDL_putenv(X)
+#define putenv(X)   SDL_putenv(X)
 
 /* Retrieve a variable named "name" from the environment */
 extern DECLSPEC char *SDL_getenv(const char *name);

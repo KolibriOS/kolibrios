@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 	}
 	printf("Setting FIRST=VALUE1 in the environment... ");
 	fflush(stdout);
-	if ( sdlputenv("FIRST=VALUE1") == 0 ) {
+	if ( putenv("FIRST=VALUE1") == 0 ) {
 		printf("okay\n");
 	} else {
 		printf("failed\n");
@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
 	}
 	printf("Setting SECOND=VALUE2 in the environment... ");
 	fflush(stdout);
-	if ( sdlputenv("SECOND=VALUE2") == 0 ) {
+	if ( putenv("SECOND=VALUE2") == 0 ) {
 		printf("okay\n");
 	} else {
 		printf("failed\n");
@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
 	}
 	printf("Setting FIRST=NOVALUE in the environment... ");
 	fflush(stdout);
-	if ( sdlputenv("FIRST=NOVALUE") == 0 ) {
+	if ( putenv("FIRST=NOVALUE") == 0 ) {
 		printf("okay\n");
 	} else {
 		printf("failed\n");
