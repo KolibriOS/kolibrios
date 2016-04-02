@@ -340,6 +340,7 @@ tup.append_table(img_files, {
  {"3D/3DWAV", PROGS .. "/demos/3dwav/trunk/3dwav"},
  {"3D/CROWNSCR", PROGS .. "/demos/crownscr/trunk/crownscr"},
  {"3D/FREE3D04", PROGS .. "/demos/free3d04/trunk/free3d04"},
+ {"3D/RAY", PROGS .. "/demos/ray/ray"},
  {"3D/VIEW3DS", PROGS .. "/demos/3DS/VIEW3DS"},
  {"DEMOS/BCDCLK", PROGS .. "/demos/bcdclk/trunk/bcdclk"},
  {"DEMOS/CIRCLE", PROGS .. "/develop/examples/circle/trunk/circle"},
