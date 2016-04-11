@@ -1,0 +1,16 @@
+This is the C Layer for KolibriOS.
+
+Along with the C Library we have, this will serve as the backbone to easily use libraries aand programs available in C.
+This is also useful for porting.
+Also useful for new developers who don't know assembly but know C.
+
+And the beauty is, this is NOT a reimplementation of assembly libraries in C.
+It is only a wrapper on top of C.
+
+As all new things, this will have issues and bugs!
+Please fix it.
+Please let the other developers know what's wrong and how to fix it.
+If you can, fix it yourself!
+
+- ashmew2
+2016-04-11

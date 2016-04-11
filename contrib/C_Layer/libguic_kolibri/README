@@ -1,0 +1,57 @@
+Welcome to the README for GUI LIBRARY FOR KOLIBRIOS IN C.
+
+This library tries to use the wealth of code already written for KolibriOS in assembly.
+
+The files currently available are : 
+
+0) loadboxlib.asm :
+   This is a wrapper created so that C can call assembly functions. 
+   Assemble this to loadboxlib.obj and use with cross compiler linker the .obj file
+   to create correct executables which use this GUI library.
+
+1) kolibri_boxlib.h :
+   This file contains functions for initializing boxlib from C. This is used by the
+   function kolibri_gui_init() in kolibri_gui.h
+
+2)kolibri_button.h:
+	This file contains functions to create and use kolibriOS buttons.
+	
+3)kolibri_checkbox.h:
+	This file contains functions to create and use Check boxes from BOXLIB.
+
+4)kolibri_editbox.h:
+	This file contains functions for creating text boxes (edit boxes from Boxlib)
+
+5)kolibri_colors.h:
+	This file has functions to initialize global kolibri color table
+	so that the GUI can use colors from the System theme.
+
+6)kolibri_gui_elements.h:
+	This defines generic containers for GUI elements so that ANY element 
+	(buttons, editboxes, checkboxes, etc) can have their redraw/mouse/key event
+	functions. This helps create a list of all the elements and draw them together.
+
+ALL FILES ABOVE ARE INCLUDED IN KOLIBRI_GUI.H SO THEY DO NOT NEED TO BE INCLUDED IN THE CODE YOU WRITE.
+
+7)kolibri_gui.h:
+	This is the master file we use. This baby contains everything you need (all GUI elements are included).
+	This also contains event handlers that can be simply called from the main application loop.
+	This will make your life easy on KolibriOS ;) USE IT!
+	The function kolibri_gui_init() needs to be called from all applications using this library.
+
+8)boardmsg.c:
+	Sample application written to show off the library.
+	This application sends messages to Debug Board on KolibriOS.
+	Enter a msg and press the button with the mouse to send messages!
+	This is the first of many applications to come with this library.
+
+---
+NOTES
+
+Refer to boardmsg.c to see how the library is used.
+Use instructions from here to build files in C : http://board.kolibrios.org/viewtopic.php?f=24&t=3117
+
+---
+Suggestions, Feedback and Ideas are welcome and appreciated!
+Please contact : ashmew2 (on board.kolibrios.org) or ashmew2 at gmail dot com for discussing,
+Or post on : http://board.kolibrios.org/viewtopic.php?f=24&t=3117#p62536 so that everyone can participate!

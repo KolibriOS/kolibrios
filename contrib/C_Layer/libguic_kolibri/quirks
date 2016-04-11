@@ -1,0 +1,6 @@
+USE .section '.init' code for writing loader asm C mixed code (in FASM)
+Got to know this by checking out the linker script on KGCC. -Xlinker -verbose .
+Inside the .text section that is being assembled, the .init is placed at the very beginning.
+Let the macros expand, GCC simply places .init on the top and therefore it works.
+
+Inexplicable errors if .init is not used and .text or .flat is used... Took 4 hours to figure out.
