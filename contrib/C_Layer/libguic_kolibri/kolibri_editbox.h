@@ -62,8 +62,7 @@ struct edit_box* kolibri_new_edit_box(unsigned int tlx, unsigned int tly, unsign
     new_textbox -> max = max_chars;
     new_textbox -> text = text_buffer;
     new_textbox -> mouse_variable = 1; /* let the mouse take control? */
-    new_textbox -> flags = 0x00004002; /*ed_focus + ed_always_focus */
-
+    new_textbox -> flags = 0x00000000;
     /* If these lines are uncommented, the executable will crash for no reason at start */
     /* Even though these lines are not ever read it ALWAYS causes a crash, even crashes MTDBG. What gives? */
 
@@ -86,5 +85,5 @@ extern void (*edit_box_draw)(struct edit_box *) __attribute__((__stdcall__));
 extern void editbox_key(struct edit_box *) __attribute__((__stdcall__));
 
 extern void (*edit_box_mouse)(struct edit_box *) __attribute__((__stdcall__));
-
+extern volatile unsigned press_key;
 #endif /* KOLIBRI_EDITBOX_H */

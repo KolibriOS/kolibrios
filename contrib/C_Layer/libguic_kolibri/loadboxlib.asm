@@ -13,7 +13,7 @@ include 'dll.inc'
 	
 public init_boxlib as '_init_boxlib_asm'
 public editbox_key as '_editbox_key@4'
-	
+public press_key as '_press_key'
 ;;; Returns 0 on success. -1 on failure.
 
 proc init_boxlib
@@ -37,13 +37,14 @@ endp
 editbox_key:
 	mov [oldebp], ebp	;Save ebp because GCC is crazy for it otherwise.
 	pop ebp			;Save return address in ebp. Stack top is param now.
-	mcall 2
+	mov eax, dword [press_key]
 	call [edit_box_key]	; The pointer we passed should be on the stack already.
 	push ebp		;push the return address back to stack
 	mov ebp, [oldebp]
 	ret
 	
 oldebp dd ?
+press_key dd ?
 
 @IMPORT:
 library lib_boxlib, 	'box_lib.obj'
