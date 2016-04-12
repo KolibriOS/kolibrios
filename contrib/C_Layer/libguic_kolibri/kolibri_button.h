@@ -9,7 +9,7 @@ struct kolibri_button {
   unsigned int XY;
 };
 
-struct kolibri_button *kolibri_new_button(unsigned int tlx, unsigned int tly, unsigned int sizex, unsigned int sizey, 
+struct kolibri_button *kolibri_new_button(unsigned int tlx, unsigned int tly, unsigned int sizex, unsigned int sizey,
 					  unsigned int identifier, unsigned int color)
 {
   struct kolibri_button* new_button = (struct kolibri_button *)malloc(sizeof(struct kolibri_button));
@@ -18,6 +18,7 @@ struct kolibri_button *kolibri_new_button(unsigned int tlx, unsigned int tly, un
   new_button -> color = color;
   new_button -> identifier = identifier;
   new_button -> XY = 0;
+  return new_button;
 }
 
 void draw_button(struct kolibri_button *some_button)
