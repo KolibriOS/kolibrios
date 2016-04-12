@@ -1,6 +1,11 @@
 #ifndef KOLIBRI_DEBUG_H
 #define KOLIBRI_DEBUG_H
 
+#include <_ansi.h>
+#include <reent.h>
+#include <stdio.h>
+#include <stdarg.h>
+
 /* Write a printf() like function (variable argument list) for
    writing to debug board */
 
@@ -17,5 +22,15 @@ void __attribute__ ((noinline)) debug_board_write_str(const char* str){
     debug_board_write_byte(*str++);
 }
 
+void fdebug_board_write_str(const char *format,...)
+{
+	va_list ap;
+	char log_board[300];
+	
+	va_start (ap, format);
+	vsprintf(log_board, format, ap);
+	va_end(ap);
+	debug_board_write_str(log_board);
+}
 
 #endif /* KOLIBRI_DEBUG_H */
