@@ -21,7 +21,7 @@ int main()
   kolibri_window_add_element(main_window, KOLIBRI_CHECK_BOX, checkbox);
   kolibri_window_add_element(main_window, KOLIBRI_BUTTON, button);
 
-  volatile unsigned press_key;
+  extern volatile unsigned press_key;
 
   do  /* Start of main activity loop */
     {
@@ -31,12 +31,11 @@ int main()
 	}
       else if(gui_event == KOLIBRI_EVENT_KEY)
 	{
-/* siemargl commented out because keys stealed from textinput
 	  key = get_key();
 	  switch (key.code)
 	  {
 		  case 13:
-			if(checkbox -> flags & CHECKBOX_IS_SET) /* Append BoardMsg checkbox is set * /
+			if(checkbox -> flags & CHECKBOX_IS_SET) /* Append BoardMsg checkbox is set */
 				debug_board_write_str("BOARDMSG: ");
 
 			debug_board_write_str(textbox->text);
@@ -44,7 +43,7 @@ int main()
 			break;
 	  }
 	  press_key = key.val;
-*/
+
 	  kolibri_handle_event_key(main_window);
 	}
       else if(gui_event == KOLIBRI_EVENT_BUTTON)
