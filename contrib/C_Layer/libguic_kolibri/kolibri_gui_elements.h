@@ -26,8 +26,8 @@ enum KOLIBRI_GUI_ELEMENT_TYPE {
 
   /* Add elements above this element in order to let KOLIBRI_NUM_GUI_ELEMENTS */
   /* stay at correct value */
-  
-  KOLIBRI_NUM_GUI_ELEMENTS 
+
+  KOLIBRI_NUM_GUI_ELEMENTS
 };
 
 /* Linked list which connects together all the elements drawn inside a GUI window */
@@ -37,11 +37,14 @@ struct kolibri_window_element {
   struct kolibri_window_element *next, *prev;
 };
 
+
+typedef void (*cb_elem_boxlib)(void *) __attribute__((__stdcall__));
+
 /* Generic structure for supporting functions on various elements of Kolibri's GUI */
 struct kolibri_element_operations {
-  void (*redraw_fn)(void *);
-  void (*mouse_fn)(void *);
-  void (*key_fn)(void *);
+ 	cb_elem_boxlib 	redraw_fn;
+ 	cb_elem_boxlib 	mouse_fn;
+ 	cb_elem_boxlib 	key_fn;
 };
 
 /* Structure for a GUI Window on Kolibri. It also contains all the elements drawn in window */
@@ -65,19 +68,20 @@ struct kolibri_element_operations kolibri_gui_op_table[KOLIBRI_NUM_GUI_ELEMENTS]
 void kolibri_init_gui_op_table(void)
 {
 /* Setting up functions for edit box GUI elements*/
-kolibri_gui_op_table[KOLIBRI_EDIT_BOX].redraw_fn = edit_box_draw;
-kolibri_gui_op_table[KOLIBRI_EDIT_BOX].mouse_fn = edit_box_mouse;
-kolibri_gui_op_table[KOLIBRI_EDIT_BOX].key_fn = editbox_key;
+kolibri_gui_op_table[KOLIBRI_EDIT_BOX].redraw_fn = (cb_elem_boxlib)edit_box_draw;
+kolibri_gui_op_table[KOLIBRI_EDIT_BOX].mouse_fn = (cb_elem_boxlib)edit_box_mouse;
+kolibri_gui_op_table[KOLIBRI_EDIT_BOX].key_fn = (cb_elem_boxlib)editbox_key;
 
 /* Setting up functions for check box GUI elements*/
-kolibri_gui_op_table[KOLIBRI_CHECK_BOX].redraw_fn = check_box_draw2;
-kolibri_gui_op_table[KOLIBRI_CHECK_BOX].mouse_fn = check_box_mouse2;
+kolibri_gui_op_table[KOLIBRI_CHECK_BOX].redraw_fn = (cb_elem_boxlib)check_box_draw2;
+kolibri_gui_op_table[KOLIBRI_CHECK_BOX].mouse_fn = (cb_elem_boxlib)check_box_mouse2;
 kolibri_gui_op_table[KOLIBRI_CHECK_BOX].key_fn = NULL;
 
 /* Setting up functions for Kolibri Buttons ( SysFunc 8 )*/
-kolibri_gui_op_table[KOLIBRI_BUTTON].redraw_fn = draw_button;
+kolibri_gui_op_table[KOLIBRI_BUTTON].redraw_fn = (cb_elem_boxlib)draw_button;
 kolibri_gui_op_table[KOLIBRI_BUTTON].mouse_fn = NULL;
 kolibri_gui_op_table[KOLIBRI_BUTTON].key_fn = NULL;
+
 }
 
 /* Create a new main GUI window for KolibriOS */
@@ -94,7 +98,7 @@ struct kolibri_window * kolibri_new_window(int tlx, int tly, int sizex, int size
   new_win->window_title = title;
   new_win->XY = 0x00000013; /* All windows are skinned windows with caption for now */
   new_win->elements = NULL;
-  
+
   return new_win;
 }
 
@@ -102,7 +106,7 @@ struct kolibri_window * kolibri_new_window(int tlx, int tly, int sizex, int size
 void kolibri_window_add_element(struct kolibri_window *some_window, enum KOLIBRI_GUI_ELEMENT_TYPE element_type, void *some_gui_element)
 {
   struct kolibri_window_element *new_element = (struct kolibri_window_element *)malloc(sizeof(struct kolibri_window_element));
-  
+
   new_element -> type = element_type;
   new_element -> element = some_gui_element;
 
@@ -115,7 +119,7 @@ void kolibri_window_add_element(struct kolibri_window *some_window, enum KOLIBRI
   else
     {
       struct kolibri_window_element *last_element = some_window -> elements -> prev;
-  
+
       last_element -> next = new_element;
       new_element -> next = some_window -> elements; /* start of linked list  */
       some_window -> elements -> prev = new_element;
