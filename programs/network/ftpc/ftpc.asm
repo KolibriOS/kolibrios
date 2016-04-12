@@ -48,6 +48,7 @@ include '../../network.inc'
 
 include 'usercommands.inc'
 include 'servercommands.inc'
+include 'parser.inc'
 
 start:
 ; initialize heap for using dynamic blocks
@@ -122,7 +123,7 @@ main:
         invoke  con_set_flags, 0x07
         invoke  con_write_asciiz, str_newline
 
-resolve:
+no_resolve:
         mov     [sockaddr1.port], 21 shl 8
 
 ; delete terminating '\n'
@@ -341,24 +342,54 @@ wait_for_usercommand:
 
   .connected:
 ; request username
+        cmp     [use_params], 1
+        je      .copy_user
+
         invoke  con_write_asciiz, str_user
         mov     dword[buf_cmd], "USER"
         mov     byte[buf_cmd+4], " "
         jmp     .send
 
+  .copy_user: 
+; copy user name to buf_cmd
+        mov     edi, buf_cmd
+        mov     esi, param_user
+  @@:
+        lodsb
+        stosb
+        cmp     byte [esi-1], 0
+        jne     @b
+        jmp     .send
 
   .needpass:
 ; request password
+        cmp     [use_params], 1
+        je      .copy_password
+
         invoke  con_write_asciiz, str_pass
         mov     dword[buf_cmd], "PASS"
         mov     byte[buf_cmd+4], " "
         invoke  con_set_flags, 0x00             ; black text on black background for password
+        jmp     .send
+
+  .copy_password:
+; copy password to buf_cmd
+        mov     edi, buf_cmd
+        mov     esi, param_password
+  @@:
+        lodsb
+        stosb
+        cmp     byte [esi-1], 0
+        jne     @b
 
   .send:
 ; read string
+        cmp     [use_params], 1
+        je      @f
         mov     esi, buf_cmd+5
         invoke  con_gets, esi, 256
 
+  @@:
 ; find end of string
         mov     edi, buf_cmd+5
         mov     ecx, 256
@@ -547,6 +578,8 @@ str_welcome     db 'FTP client for KolibriOS v0.12',10
                 db 10
                 db 'Please enter ftp server address.',10,0
 
+str_ftp         db 'ftp://',0
+
 str_prompt      db '> ',0
 str_resolve     db 'Resolving ',0
 str_newline     db 10,0
@@ -679,5 +712,11 @@ buf_buffer2     rb BUFFERSIZE+1
 buf_cmd         rb 1024                 ; buffer for holding command string
 
 path            rb 1024
+
+use_params      db 0
+param_user      rb 1024
+param_password  rb 1024
+param_server_addr rb 1024
+param_path      rb 1024
 
 mem:
