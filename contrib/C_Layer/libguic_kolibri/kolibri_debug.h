@@ -22,7 +22,7 @@ void __attribute__ ((noinline)) debug_board_write_str(const char* str){
     debug_board_write_byte(*str++);
 }
 
-void fdebug_board_write_str(const char *format,...)
+void debug_board_printf(const char *format,...)
 {
 	va_list ap;
 	char log_board[300];
