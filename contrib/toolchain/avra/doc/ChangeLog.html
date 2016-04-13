@@ -1,0 +1,763 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="generator" content="AsciiDoc 8.5.3" />
+<link rel="stylesheet" href="./xhtml11.css" type="text/css" />
+<link rel="stylesheet" href="./xhtml11-quirks.css" type="text/css" />
+<link rel="stylesheet" href="./layout1.css" type="text/css" />
+<script type="text/javascript">
+/*<![CDATA[*/
+window.onload = function(){asciidoc.footnotes();}
+/*]]>*/
+</script>
+<script type="text/javascript" src="./asciidoc-xhtml11.js"></script>
+<title>AVRA ChangeLog</title>
+</head>
+<body>
+<div id="layout-banner">
+  <div id="layout-title">AVRA</div>
+  <div id="layout-description">Assember for the Atmel AVR microcontroller family</div>
+</div>
+<table>
+<tr valign="top">
+<td id="layout-menu">
+  <div>&#187;<a href="index.html">Home</a></div>
+  <div>&#187;<a href="README.html">Readme</a></div>
+  <div>&#187;<a href="downloads.html">Downloads</a></div>
+  <div>&#187;<a href="ChangeLog.html">ChangeLog</a></div>
+  <div>&#187;<a href="http://sourceforge.net/projects/avra">Sourceforge</a></div>
+  <div id="page-source">&#187;<a href="ChangeLog.txt">Page&nbsp;Source</a></div>
+</td>
+<td>
+<div id="layout-content">
+<div id="header">
+<h1>AVRA ChangeLog</h1>
+</div>
+<div id="content">
+<h2 id="_version_1_3_0_20100628">Version 1.3.0 (20100628)</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>by Jerry Jacobs</p></div>
+<div class="ulist"><div class="title">Additions and changes</div><ul>
+<li>
+<p>
+Added new targets, ATtiny13A, ATtiny24/A, ATtiny44/A, ATtiny84, ATtiny2313A,
+  ATtiny4313, ATmega328P
+</p>
+</li>
+<li>
+<p>
+Added mingw32 support for building windows binairies from linux host
+</p>
+</li>
+<li>
+<p>
+Removed obsolete Dev-C++ for windows building
+</p>
+</li>
+<li>
+<p>
+Updated documentation and rewritten in asciidoc markup language
+</p>
+</li>
+</ul></div>
+<div class="ulist"><div class="title">Bug fixes</div><ul>
+<li>
+<p>
+<strong>FIXED</strong>: 1934647: Handle also <em>#</em> directives because include files don&#8217;t use <em>.</em> directives.
+</p>
+</li>
+<li>
+<p>
+<strong>FIXED</strong>: 1970530: Make whitespace character possible between function name and open bracket.
+</p>
+</li>
+<li>
+<p>
+<strong>FIXED</strong>: 1970630: Make line continuation possible with backslash as the last character of a line.
+</p>
+</li>
+<li>
+<p>
+<strong>FIXED</strong>: 2929406: Change incorrect argument --includedir to includepath.
+</p>
+</li>
+</ul></div>
+</div>
+<h2 id="_version_1_2_3_20071115">Version 1.2.3 (20071115)</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>by Burkhard Arenfeld</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Fix bug 1697037 (Error with single character <em>;</em>)
+</p>
+</li>
+<li>
+<p>
+Better check for line termination. Now a single CR or a FF generates an warning message. Code with bad CR
+  termination could appear, if you edit CR-LF terminated files (WIN/DOS) with linux (LF only) editors.
+</p>
+</li>
+<li>
+<p>
+Add patch 1604128 from Jim Galbraith (New devices ATtiny25/45/85, small fix for ATmega8 (no jmp, call instruction))
+</p>
+</li>
+<li>
+<p>
+Fix bug in handling of special tags (%HOUR% &#8230;). A % without a special tag was replaced by previous tag value.
+</p>
+</li>
+<li>
+<p>
+Use a global timestamp for all functions which needs a time (pi&#8594;time).
+</p>
+</li>
+<li>
+<p>
+Fix bug in handling of unknown args (E.g.: avra --abc &#8594; Segfault).
+</p>
+</li>
+<li>
+<p>
+Fix segfault if .error directive without parameter is used.
+</p>
+</li>
+<li>
+<p>
+Add a warning, if characters with code &gt; 127 are used in .db strings and fix listing output.
+</p>
+</li>
+<li>
+<p>
+Take a look at Testcode_avra-1_2_3.asm, which demonstrate some differences between 1.2.3 and previous releases
+</p>
+</li>
+<li>
+<p>
+AVR000.zip contains some header files for different devices.
+</p>
+</li>
+<li>
+<p>
+Included avra binary was created with ubuntu 7.10 linux
+</p>
+</li>
+</ul></div>
+<div class="ulist"><div class="title">Bug fixes</div><ul>
+<li>
+<p>
+<strong>FIXED</strong>: 1462900: Segfault, if error in -D parameter.
+</p>
+</li>
+<li>
+<p>
+<strong>FIXED</strong>: 1742436: Error in .dseg size check.
+</p>
+</li>
+<li>
+<p>
+<strong>FIXED</strong>: 1742437: Error in EEPROM presence check
+</p>
+</li>
+</ul></div>
+</div>
+<h2 id="_version_1_2_2_20070511">Version 1.2.2 (20070511)</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>by Burkhard Arenfeld</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Check in print_msg() if filename is NULL. Avoid printing a NULL-Pointer.
+</p>
+</li>
+<li>
+<p>
+Warning, if no .DEVICE was found, because address range check doesn&#8217;t work without it
+</p>
+</li>
+<li>
+<p>
+Error, if more than one .DEVICE was found.
+</p>
+</li>
+<li>
+<p>
+Error, if .DEVICE is after any assembled code or .ORG directive, because .DEVICE resets the address
+  counters and the assembler builds wrong code.
+</p>
+</li>
+<li>
+<p>
+Create a list of program segments (see orglist). Every .ORG, .DEVICE, .?SEG is stored, so the
+  assembler now can check for overlapping segments. Now overlapped segments in Flash, Data or EEPROM memory
+  are detected. Very usefull, if .ORG is used to build tables or bootloader code at specific addresses.
+</p>
+</li>
+<li>
+<p>
+Better check for exceeding device space in RAM, Flash or EEPROM memory. Now not the total count of
+  assembled memory is used, instead every assembled address range is checked.
+</p>
+</li>
+<li>
+<p>
+.DSEG and .ESEG now generates an error, if device has no RAM / EEPROM.
+</p>
+</li>
+<li>
+<p>
+Now a warning appears, if a .DEF name is already used as constant or label. Atmel assembler generates this
+  warning, too.
+</p>
+</li>
+<li>
+<p>
+Fix a small bug in the example program.
+</p>
+</li>
+</ul></div>
+</div>
+<h2 id="_version_1_2_1_20061117">Version 1.2.1 (20061117)</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>by Roland Riegel</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Some of the high end AVRs use the SRAM adress range from 0x60 to 0x100 for IO extension.
+  Avra so far used to start with SRAM Usage at 0x60. This is now set from case by case.
+</p>
+</li>
+</ul></div>
+</div>
+<h2 id="_version_1_2_0_20061015">Version 1.2.0 (20061015)</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>by Burkhard Arenfeld</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Patch segfault, if .error is given without parameter
+</p>
+</li>
+<li>
+<p>
+Patch segfault, if .device is given with an invalid parameter
+</p>
+</li>
+<li>
+<p>
+Check in predef_dev() if symbol is already defined. Can happens, if someone
+  tries to define the symbol with the -D parameter. E.g.: <em>avra -D <em>ATMEGA8</em> Test.asm</em>
+  now generate error message, because <em>ATMEGA8</em> is reserved
+</p>
+</li>
+<li>
+<p>
+Add .elseif directive. It&#8217;s the same like .elif. (Original Atmel assembler use .elseif
+  and not .elif)
+</p>
+</li>
+<li>
+<p>
+In .db lines strings can now contain <em>,</em> and <em>;</em> characters.
+</p>
+</li>
+<li>
+<p>
+Allow forward declaration of constants (.equ) except for .ifdef and .ifndef.
+  Invalid forward declarations are checked now. (In the first pass undefined Symbols in
+  .ifdef and .ifndef parameters are stored in a <em>blacklist</em> and checked in the second pass)
+</p>
+</li>
+<li>
+<p>
+Extend the .message directive for better debugging. Now it accept not only a String.
+  You can use a list of expressions like in a .db directive as parameter.
+</p>
+</li>
+<li>
+<p>
+The assembler <em>pass</em> variable moved into the pi struct. I deleted the pass variable from
+  a lot of functions.
+</p>
+</li>
+<li>
+<p>
+New functions in avra.c. It was easier for me, to understand the code without the
+  for(label = first; &#8230;)-loops. Replaced a lot of for(label = &#8230;) -loops by one of this
+  functions.
+</p>
+</li>
+</ul></div>
+</div>
+<h2 id="_version_1_1_1_20060906">Version 1.1.1 (20060906)</h2>
+<div class="sectionbody">
+<div class="ulist"><ul>
+<li>
+<p>
+right shift operator bug
+</p>
+</li>
+<li>
+<p>
+LPM is supported on ATtiny26 but avra say it isn&#8217;t
+</p>
+</li>
+<li>
+<p>
+bugfix for jmp/call opcode
+</p>
+</li>
+<li>
+<p>
+crash due to a strcmp with null pointer when parsing the cmd line args
+</p>
+</li>
+</ul></div>
+</div>
+<h2 id="_version_1_1_0_20051227">Version 1.1.0 (20051227)</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>by Tobias Weber</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+.DW defines were missing in the listfile.
+</p>
+</li>
+<li>
+<p>
+Support for mega8515.
+</p>
+</li>
+<li>
+<p>
+Fix for generic register names and extended macro syntax.
+</p>
+</li>
+<li>
+<p>
+Makefile for lcc-win32 Compiler.
+</p>
+</li>
+<li>
+<p>
+Changed "global" keyword to ".global".
+</p>
+</li>
+<li>
+<p>
+Added .includepath directive that allows setting include path.
+</p>
+</li>
+<li>
+<p>
+segfault when not passing any sourcefiles.
+</p>
+</li>
+<li>
+<p>
+--define FOO=2 does not work as claimed by the documentation.
+</p>
+</li>
+<li>
+<p>
+Added return value, indicating whether avra failed or succeded.
+</p>
+</li>
+<li>
+<p>
+Added support for automake utilities. See manual for more info.
+</p>
+</li>
+<li>
+<p>
+if no code is present, eeprom hex file will be written anyway.
+</p>
+</li>
+<li>
+<p>
+added -W NoRegDef for suppressing Register assignment warnings.
+</p>
+</li>
+<li>
+<p>
+.db values were sometimes wrong printed in lst file with 6 leading F.
+</p>
+</li>
+<li>
+<p>
+Added BYTE1() function equivalent to LOW().
+</p>
+</li>
+<li>
+<p>
+The character " (pharentesis) could not be use as single character like <em>"</em>
+</p>
+</li>
+</ul></div>
+</div>
+<h2 id="_version_1_0_1_20040610">Version 1.0.1 (20040610)</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>by Tobias Weber</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Added meta tags for time and date.
+</p>
+</li>
+<li>
+<p>
+Expression of .elif was cutted off in list file - fixed.
+</p>
+</li>
+<li>
+<p>
+.equ, .org, .defines added to list file output.
+</p>
+</li>
+<li>
+<p>
+Values and expressions of .db assignemts are now listed in listfile.
+</p>
+</li>
+<li>
+<p>
+Added Support for ATmega48, ATmega88 and ATmega168.
+</p>
+</li>
+<li>
+<p>
+Added .include error file name print out.
+</p>
+</li>
+<li>
+<p>
+Fixed seg fault that could happen while using .LIST directive with no
+  listfile switched on.
+</p>
+</li>
+<li>
+<p>
+Error when using comments within macros that made use of sign @ fixed.
+</p>
+</li>
+<li>
+<p>
+Listfile lines are now prefixed with the current segment C,D,E for
+  code, data and eeprom.
+</p>
+</li>
+</ul></div>
+</div>
+<h2 id="_version_1_0_0_20040214">Version 1.0.0 (20040214)</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>by Tobias Weber</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Added support for ATtiny13 and ATtiny2313
+</p>
+</li>
+<li>
+<p>
+List file command line syntax now AVRASM compatible
+</p>
+</li>
+<li>
+<p>
+Map file command line syntax now  AVRASM compatible
+</p>
+</li>
+<li>
+<p>
+Fixed problem with limited macro label running numbers
+</p>
+</li>
+<li>
+<p>
+Now multiple labels can be used within macros
+</p>
+</li>
+<li>
+<p>
+Fixed error output line number for included files
+</p>
+</li>
+<li>
+<p>
+code cleaned up
+</p>
+</li>
+</ul></div>
+</div>
+<h2 id="_version_0_9_1_20030602">Version 0.9.1 (20030602)</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>by Tobias Weber</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+fixed code for Linux compiler
+</p>
+</li>
+<li>
+<p>
+fixed nested macro labels
+</p>
+</li>
+<li>
+<p>
+code cleaned up
+</p>
+</li>
+</ul></div>
+</div>
+<h2 id="_version_0_9_20030523">Version 0.9 (20030523)</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>by Tobias Weber</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Added labels to macros
+</p>
+</li>
+<li>
+<p>
+Added special codes <em>dst</em> and <em>src</em>
+</p>
+</li>
+<li>
+<p>
+Added directive .endmacro, only .endm was allowed so far
+</p>
+</li>
+<li>
+<p>
+Added a return(0); at the end of main() to quiet the Borland C++ 5.5
+  compiler (Jim Galbraith)
+</p>
+</li>
+<li>
+<p>
+Fixed wrong flash size calculation (Jim Galbraith)
+</p>
+</li>
+<li>
+<p>
+In device.c, added ATtiny26 to struct device device_list[] (Jim Galbraith)
+</p>
+</li>
+</ul></div>
+</div>
+<h2 id="_version_0_8_20030307">Version 0.8 (20030307)</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>by Tobias Weber</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Added new macro assembler coding facilities
+</p>
+</li>
+<li>
+<p>
+Added error description for .include directives
+</p>
+</li>
+</ul></div>
+</div>
+<h2 id="_version_0_7_20000217">Version 0.7 (20000217)</h2>
+<div class="sectionbody">
+<div class="ulist"><ul>
+<li>
+<p>
+Added supported() function to check in a .if if a instruction is
+  supported (From Lesha Bogdanow &lt;<a href="mailto:boga@inbox.ru">boga@inbox.ru</a>&gt;).
+</p>
+</li>
+<li>
+<p>
+Added checking of which mnemonic that work on the different AVRs
+  (From Lesha Bogdanow &lt;<a href="mailto:boga@inbox.ru">boga@inbox.ru</a>&gt;).
+</p>
+</li>
+<li>
+<p>
+Added constants <em>DEVICE</em>, <em>FLASH_SIZE</em>, <em>RAM_SIZE</em> and
+  <em>EEPROM_SIZE</em> (From Lesha Bogdanow &lt;<a href="mailto:boga@inbox.ru">boga@inbox.ru</a>&gt;).
+</p>
+</li>
+<li>
+<p>
+Added tiny devices (From Lesha Bogdanow &lt;<a href="mailto:boga@inbox.ru">boga@inbox.ru</a>&gt;).
+</p>
+</li>
+<li>
+<p>
+Changed error on constant out of range into a warning.
+</p>
+</li>
+<li>
+<p>
+Added support for instructions: (E)LPM Rd,Z(+), SPM, ESPM, BREAK,
+  MOVW, MULS, MULSU, FMUL, FMULS, FMULSU
+</p>
+</li>
+<li>
+<p>
+Added support for new devices: ATmega8, ATmega16, ATmega32,
+  ATmega128, ATmega162, ATmega163, ATmega323, AT94K
+</p>
+</li>
+<li>
+<p>
+Added --devices switch to list all supported devices.
+</p>
+</li>
+<li>
+<p>
+Fixed bug in map file name when the name had more than one . (dot)
+</p>
+</li>
+<li>
+<p>
+Added option --includedirs to add additional include dirs in
+  search path.
+</p>
+</li>
+<li>
+<p>
+Added support for creation of intel hex 32 files to be able to
+  address memory above 64KB. Uses 02 records for addresses up to 1MB
+  and 04 record for addresses above 1MB.
+</p>
+</li>
+</ul></div>
+</div>
+<h2 id="_version_0_6_20000124">Version 0.6 (20000124)</h2>
+<div class="sectionbody">
+<div class="ulist"><ul>
+<li>
+<p>
+Added COFF support from Bob Harris &lt;<a href="mailto:rth@McLean.Sparta.Com">rth@McLean.Sparta.Com</a>&gt;
+</p>
+</li>
+</ul></div>
+</div>
+<h2 id="_version_0_5_19990331">Version 0.5 (19990331)</h2>
+<div class="sectionbody">
+<div class="ulist"><ul>
+<li>
+<p>
+Bugfix: a inline string copy did not terminate string.
+</p>
+</li>
+<li>
+<p>
+Fixed bug causing --define symbol=value not to work.
+</p>
+</li>
+<li>
+<p>
+Added output of memory usage.
+</p>
+</li>
+<li>
+<p>
+Fixed bug when there was a { in a comment.
+</p>
+</li>
+<li>
+<p>
+Fixed count for data segment.
+</p>
+</li>
+<li>
+<p>
+Fix to make a forward referenced label in .db/.dw work.
+</p>
+</li>
+<li>
+<p>
+Added ATmega161 and ATtiny15 in list.
+</p>
+</li>
+<li>
+<p>
+rjmp and rcall now wraps around with 4k word devices.
+</p>
+</li>
+<li>
+<p>
+Fixed bug when branching backwards with BRBS or BRBC
+</p>
+</li>
+</ul></div>
+</div>
+<h2 id="_version_0_4_19990202">Version 0.4 (19990202)</h2>
+<div class="sectionbody">
+<div class="ulist"><ul>
+<li>
+<p>
+Added support for global keyword to use on labels in macros.
+</p>
+</li>
+<li>
+<p>
+Fixed get_next_token to handle commas inside ' '
+</p>
+</li>
+<li>
+<p>
+Fixed bug when searching for correct macro_call, so recursive
+  and nested macros will work.
+</p>
+</li>
+<li>
+<p>
+Now handles commas in strings.
+</p>
+</li>
+<li>
+<p>
+Added fix to handle semi colon in a string.
+</p>
+</li>
+<li>
+<p>
+Improved mnemonic parsing for ld and st
+</p>
+</li>
+</ul></div>
+</div>
+</div>
+<div id="footnotes"><hr /></div>
+<div id="footer">
+<div id="footer-text">
+Version 1.3.0<br />
+Last updated 2010-06-28 16:04:24 CEST
+</div>
+<div id="footer-badges">
+<a href="http://validator.w3.org/check?uri=referer">
+  <img style="border:0;width:88px;height:31px"
+    src="http://www.w3.org/Icons/valid-xhtml11-blue"
+    alt="Valid XHTML 1.1" height="31" width="88" />
+</a>
+<a href="http://jigsaw.w3.org/css-validator/">
+  <img style="border:0;width:88px;height:31px"
+    src="http://jigsaw.w3.org/css-validator/images/vcss-blue"
+    alt="Valid CSS!" />
+</a>
+<a href="http://www.mozilla.org/products/firefox/">
+  <img style="border:none; width:110px; height:32px;"
+       src="http://www.spreadfirefox.com/community/images/affiliates/Buttons/110x32/safer.gif"
+       alt="Get Firefox!" />
+</a>
+</div>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</body>
+</html>

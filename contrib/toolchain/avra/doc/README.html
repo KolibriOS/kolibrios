@@ -1,0 +1,759 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="generator" content="AsciiDoc 8.5.3" />
+<link rel="stylesheet" href="./xhtml11.css" type="text/css" />
+<link rel="stylesheet" href="./xhtml11-quirks.css" type="text/css" />
+<link rel="stylesheet" href="./layout1.css" type="text/css" />
+<script type="text/javascript">
+/*<![CDATA[*/
+window.onload = function(){asciidoc.footnotes();}
+/*]]>*/
+</script>
+<script type="text/javascript" src="./asciidoc-xhtml11.js"></script>
+<title>README</title>
+</head>
+<body>
+<div id="layout-banner">
+  <div id="layout-title">AVRA</div>
+  <div id="layout-description">Assember for the Atmel AVR microcontroller family</div>
+</div>
+<table>
+<tr valign="top">
+<td id="layout-menu">
+  <div>&#187;<a href="index.html">Home</a></div>
+  <div>&#187;<a href="README.html">Readme</a></div>
+  <div>&#187;<a href="downloads.html">Downloads</a></div>
+  <div>&#187;<a href="ChangeLog.html">ChangeLog</a></div>
+  <div>&#187;<a href="http://sourceforge.net/projects/avra">Sourceforge</a></div>
+  <div id="page-source">&#187;<a href="README.txt">Page&nbsp;Source</a></div>
+</td>
+<td>
+<div id="layout-content">
+<div id="header">
+<h1>README</h1>
+</div>
+<div id="content">
+<h2 id="_general_and_licensing_information">General and licensing information</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>AVRA v1.3.0 - Assember for the Atmel AVR microcontroller family</p></div>
+<h3 id="_licensing_information">Licensing information</h3><div style="clear:left"></div>
+<div class="paragraph"><p>This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version. Please read below for for information.</p></div>
+<h3 id="_disclaimer">Disclaimer</h3><div style="clear:left"></div>
+<div class="paragraph"><p>This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p></div>
+<h3 id="_gnu_general_public_license">GNU General Public License</h3><div style="clear:left"></div>
+<div class="paragraph"><p>You should have received a copy of the GNU General Public License
+along with this program; see the file "COPYING".  If not, visit
+<a href="http://www.gnu.org">http://www.gnu.org</a> or write to the Free Software Foundation, Inc.,
+59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. You can
+also contact the authors of AVRA to receive a copy of the COPYING file.</p></div>
+<h3 id="_trademarks_and_copyright">Trademarks and copyright</h3><div style="clear:left"></div>
+<div class="paragraph"><p>Atmel, AVR, AVR Studio, Intel, Windows are registered enterprises, brands
+and registered trademarks. The mentioned companies have no relation to
+AVRA and are therefore not responslible for any problems that occur when
+using AVRA. Many thanks for your products, support and efforts.</p></div>
+</div>
+<h2 id="_introducion">Introducion</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>AVRA is an assembler for Atmel AVR microcontrollers, and it is almost
+compatible with Atmel&#8217;s own assembler AVRASM32. The programming
+principles and conceptions are based on the ANSI programming language "C".</p></div>
+<div class="paragraph"><p>The initial version of AVRA was written by John Anders Haugum. He released
+all versions until v0.7. All later versions were released by Tobias Weber.</p></div>
+<h3 id="_differences_between_avra_and_avrasm32">Differences between AVRA and AVRASM32</h3><div style="clear:left"></div>
+<div class="paragraph"><p>There are some differences between the original Atmel assembler AVRASM32 and AVRA. Basically AVRA is designed to replace AVRASM32 without special changes in your current Atmel AVR Studio enviroment.
+Command line options have been adapted as far as it was possible until now. Jumping to fault containing line directly by double-clicking on the error message in the output window does work as with AVRASM32.</p></div>
+<h3 id="_the_differences_in_detail">The differences in detail</h3><div style="clear:left"></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Support for some extra preprocessor directives.
+</p>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.define, .undef, .ifdef, .ifndef, .if, .else, .endif, .elif, .elseif, .warning</tt></pre>
+</div></div>
+</li>
+<li>
+<p>
+Not all command line options are supported.
+      Specifying an eeprom file (-e) is not supported. All eeprom data is
+      put out into a file called program.eep.hex and always Intel hex
+      format. Other hex file formats than Intel are currently not supported.
+</p>
+</li>
+<li>
+<p>
+Forward references not supported for .ifdef and .ifndef directives.
+      This makes sure, that directives like .ifdef and .undef are working
+      properly. If you are familiar with the C programming language, you
+      should get easily into AVRA. See chapter "Programming techniques" for
+      more information about how to write proper code.
+</p>
+</li>
+<li>
+<p>
+Enhanced macro support
+      AVRA has some new features for writing flexible macros. This should
+      increase the ability to reuse code e.g. build your own library.
+</p>
+</li>
+<li>
+<p>
+Debugging support
+      AVRA creates a coff file everytime the assembly was sucessful. This
+      file allows AVR Studio or any coff compatible debugger to simulate
+      or emulate the program.
+</p>
+</li>
+<li>
+<p>
+Meta tags for assembly time
+      This helps you tracking versions of your software and can also be
+      used to generate customer specific serial numbers.
+</p>
+</li>
+</ul></div>
+<h3 id="_compatibility">Compatibility</h3><div style="clear:left"></div>
+<div class="paragraph"><p>Since AVRA is written in ANSI C, it should be possible to compile it on
+most system platforms. If you have problems compiling AVRA, please leave
+a message on the sourceforge message board or send a mail to the
+authors of AVRA.</p></div>
+</div>
+<h2 id="_installation">Installation</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>To install avra you should copy the avra-executable to an apropriate
+location. To compile you should rename the appropriate makefile, and
+perform a make (use smake for Amiga SAS/C, and nmake for Mickeysoft
+visual c++).</p></div>
+<h3 id="_linux">Linux</h3><div style="clear:left"></div>
+<div class="paragraph"><p>To compile avra you need gcc and the automake utilities. These will create
+a ./configure script that evaluates your system enviroment. To get the
+AVRA executable, you have to issue the following commands:</p></div>
+<div class="paragraph"><p>aclocal
+autoconf
+automake -a
+./configure
+make &amp;&amp; make install</p></div>
+<h3 id="_amigaos">AmigaOS</h3><div style="clear:left"></div>
+<div class="paragraph"><p>avra can be copied any apropriate directory. If you are using the source
+distribution a <em>make install</em> will do the same.</p></div>
+<h3 id="_microsoft_windows">Microsoft Windows</h3><div style="clear:left"></div>
+<div class="paragraph"><p>If you received the Windows binary package, look into the \bin
+directory where you can find avra.exe. This should be copied to any
+apropriate location. You can also overwrite AVRASM32.EXE in your
+Atmel AVR Studio. If you want to compile it yourself you could download then
+OpenWatcom C/C++ Toolchain for windows and create a new project and add the C
+and H files to it and compile.</p></div>
+<h3 id="_apple_os_x">Apple OS X</h3><div style="clear:left"></div>
+<div class="paragraph"><p>If you recieved the Apple OS X binary package, look into the bin directory this
+file is compiled universal and should run on intel 32 and 64 bit and powerpc. If
+you want to compile it yourself go to the src directory and invoke <tt>make -f
+makefiles/Makefiles.osx</tt> and then the executable should be created.</p></div>
+</div>
+<h2 id="_synopsis">Synopsis</h2>
+<div class="sectionbody">
+<h3 id="_command_line_usage">Command line usage</h3><div style="clear:left"></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>usage: AVRA [-f][O|M|I|G] output file type
+         [-o &lt;filename&gt;] output file name
+         [-l &lt;filename&gt;] generate list file
+         [-m &lt;mapfile&gt;] generate map file
+         [--define &lt;symbol&gt;[=&lt;value&gt;]]  [--includedir &lt;dir&gt;] [--listmac]
+         [--max_errors &lt;number&gt;] [--devices] [--version]
+         [-h] [--help] general help
+         [-W NoRegDef] supress register redefinition warnings
+         &lt;file to assemble&gt;</tt></pre>
+</div></div>
+<h3 id="_parameter_list">Parameter list</h3><div style="clear:left"></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>--listfile    -l : Create list file
+--mapfile     -m : Create map file
+--define      -D : Define symbol.
+--includedir  -I : Additional include dirs.
+--listmac        : List macro expansion in listfile.
+--max_errors     : Maximum number of errors before exit
+                   (default: 10)
+--devices        : List out supported devices.
+--version        : Version information.
+--help, -h       : This help text.</tt></pre>
+</div></div>
+<h3 id="_warning_supression">Warning supression</h3><div style="clear:left"></div>
+<div class="paragraph"><p>Since avra 1.1 there is a possibility to supress certain warnings.
+Currently only register reassignment warnings can be supressed.</p></div>
+<div class="paragraph"><p>Example: avra -W NoRegDef</p></div>
+</div>
+<h2 id="_programming_techniques">Programming techniques</h2>
+<div class="sectionbody">
+<h3 id="_using_directives">Using directives</h3><div style="clear:left"></div>
+<div class="paragraph"><p>AVRA offers a number of directives that are not part of Atmel&#8217;s
+assembler. These directives should help you creating versatile code that
+can be designed more modular.</p></div>
+<h4 id="_directive_define">Directive .define</h4>
+<div class="paragraph"><p>To define a constant, use ".define". This does the same thing as ".equ",
+it is just a little more C style. Keep in mind that AVRA is not case
+sensitive. Do not mix ".def" and ".define", because ".def" is used to
+assign registers only. This is due to backward compatibility to Atmel&#8217;s
+AVRASM32. Here is an example on how .define can be used.</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.define network 1</tt></pre>
+</div></div>
+<div class="paragraph"><p>Now "network" is set to the value 1. You may want to assemble a specific
+part of your code depeding on a define or switch setting. You can test
+your defined word on existence (.ifdef and .ifndef) as well as on the
+value it represents. The following code shows a way to prevent error
+messages due to testing undefined constants. Conditional directives must
+always end with an .endif directive.</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.ifndef network
+.define network 0
+.endif</tt></pre>
+</div></div>
+<h4 id="_directive_if_and_else">Directive .if and .else</h4>
+<div class="paragraph"><p>The three lines in the last example set the default value of "network".
+In the next example, you see how we can use default values. If a constant
+has not defined previously, it is set to zero. Now you can test wether
+e.g. network support is included into the assemby process.</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.if network = 1
+.include "include\tcpip.asm"
+.else
+.include "include\dummynet.asm"
+.endif</tt></pre>
+</div></div>
+<div class="paragraph"><p>In the second part of the above listing you see the use of .else, which
+defines the part of the condition that is being executed if the equation
+of the preceding .if statement is not equal. You can also use the else
+statement to test another equasion. For that purpose use .elif, which
+means "else if". Always close this conditional part with ".endif"</p></div>
+<h4 id="_directive_error">Directive .error</h4>
+<div class="paragraph"><p>This directive can be used to throw errors if a part in the code has reached
+that should not be reached. The following example shows how we can stop
+the assembly process if a particular value has not been previously set.</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.ifndef network
+.error "network is not configured!" ;the assembler stops here</tt></pre>
+</div></div>
+<h4 id="_directive_nolist_and_list">Directive .nolist and .list</h4>
+<div class="paragraph"><p>The ouput to the list file can be paused by this two directives. After
+avra discovers a .nolist while assembling, it stops output to the list file.
+After a .list directive is detected, it continues the normal list file output.</p></div>
+<h4 id="_directive_includepath">Directive .includepath</h4>
+<div class="paragraph"><p>By default, any file that is included from within the source file must
+either be a single filename or a complete absolute path. With the directive
+.includepath you can set an additional include path . Furthermore you can
+set as many include paths as you want. Be sure not no use same filename
+in separate includes, because then it is no longer clear which one avra
+should take.</p></div>
+</div>
+<h2 id="_using_include_files">Using include files</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>To avoid multiple inclusions of include files, you may use some pre-
+processor directives. See example file stack.asm that is being included
+into the main programm file as well as in other include files.</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.ifndef _STACK_ASM_
+.define _STACK_ASM_</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.include "include/config.inc"</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>; *** stack macro ***</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.dseg
+m_stack:    .byte __stack_size__
+.cseg</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.macro      stack_setup
+    load    [v:w,m_stack + __stack_size__]
+    outp    [SPREG,v:w]
+.endm</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.endif ; avoid multiple inclusion of stack.asm</tt></pre>
+</div></div>
+<h3 id="_using_build_date_meta_tags">Using build date meta tags</h3><div style="clear:left"></div>
+<div class="paragraph"><p>If you like to implement compiler build time and date into your
+program, you can make use of some sepcial tags that avra supports.</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>%MINUTE%  is being replaced by the current minute (00-59)
+%HOUR%    is being replaced by the current hour (00-23)
+%DAY%     is being replaced by the current day of month (01-31)
+%MONTH%   is being replaced by the current month (01-12)
+%YEAR%    is being replaced by the current year (2004-9999)</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>buildtime: .db "Release date %DAY%.%MONTH%.%YEAR% %HOUR%:%MINUTE%"</tt></pre>
+</div></div>
+<div class="paragraph"><p>This line will then assembled by avra into:</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>buildtime: .db "Release date 10.05.2004 19:54"</tt></pre>
+</div></div>
+<div class="paragraph"><p>You may also create a self defined serial number with meta tags:</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.define serialnumber %DAY% + %MONTH%*31 + (%YEAR% - 2000) *31*12</tt></pre>
+</div></div>
+<div class="paragraph"><p>The %TAG% is translated before any other parsing happens. The real
+output can be found in the list file.</p></div>
+</div>
+<h2 id="_macro_features">Macro features</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Sometimes you have to work with 16 bit or greater variables stored
+in 8 bit registers. The enhanced macro support allows you to write short
+and flexible macros that simplify access to big variables. The extended
+mode is active, as soon as you use parenthesis like this "[ ]" to wrap
+macro parameters.</p></div>
+<h3 id="_auto_type_conversion_for_macros">Auto type conversion for macros</h3><div style="clear:left"></div>
+<div class="paragraph"><p>Values representing more than 8 Bits are usualy kept in a set of byte
+wide registers. To simplify 16 Bit or greater operations, I added a new
+language definitions. Words can be written as r16:r17, whereas register
+r16 contains the higher part and register r17 the lower part of this
+16 Bit value.</p></div>
+<h4 id="_macro_data_types">Macro data types</h4>
+<div class="paragraph"><p>There are 3 data types that can be used. They will be added as character
+separated by one underline character.</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>immediate values  _i
+registers         _8,_16,_24,_32,_40,_48,_56,_64
+void parameter    _v</tt></pre>
+</div></div>
+<div class="paragraph"><p>16 Bit Source and Destionation registers <em>dst</em> and <em>src</em></p></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>src = YH:YL
+dst = ZH:ZL</tt></pre>
+</div></div>
+<div class="paragraph"><p>Within the parenthesis, the two words src and dst are interpreted as YH:YL
+and ZH:ZL. Normal code outside of the macro parameter parenthesis can
+still make use of these special key words "src" and "dst".</p></div>
+<h4 id="_examples_for_automatic_type_conversion">Examples for automatic type conversion</h4>
+<div class="paragraph"><p>To simplify the parameters in the demonstration below, we need to
+redefine some registers.</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.def    a = r16   ; general purpose registers
+.def    b = r17
+.def    c = r18
+.def    d = r19</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.def    w = r20   ; working register
+.def    v = r21   ; working register</tt></pre>
+</div></div>
+<div class="paragraph"><p>If we substract 16 Bit values stored in a, higher byte and b, lower byte
+with that in c:d, we usually have to use the following command sequence:</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>sub     b,d
+sbc     a,c</tt></pre>
+</div></div>
+<div class="paragraph"><p>Now we can do the following steps to simplify 16 or more Bit manipulations</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.macro  subs
+.message "no parameters specified"
+.endm</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.macro  subs_16_16
+sub     @1,@3
+sbc     @0,@2
+.endm</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.macro  subs_16_8
+sub     @1,@2
+sbci    @0,0
+.endm</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>;now we can write a 16 Bit subraction as:</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>subs    [a:b,c:d]</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>;or for calculating 16 minus 8 Bit</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>subs    [a:b,c]</tt></pre>
+</div></div>
+<h3 id="_overloading_macros">Overloading macros</h3><div style="clear:left"></div>
+<div class="paragraph"><p>Like in you are used to C functions, you can write macros for different
+parameter lists. If you would like to have a versatile macro, you can
+specify a unique macro for each parameter situation. See the next sample.</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.macro  load</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>; this message is shown if you use the macro within your code
+; specifying no parameters. If your macro allows the case where
+; no parameters are given, exchange .message with your code.</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.message "no parameters specified"
+.endm</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>; Here we define the macro "load" for the case it is being used
+; with two registers as first parameter and a immediate (constant)
+; value as second parameter.</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.macro  load_16_i
+ldi     @0,high(@2)
+ldi     @1,low(@2)
+.endm</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>; the same case, but now with a 32 bit register value as first
+; parameter</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.macro  load_32_i
+ldi     @0,BYTE4(@4)
+ldi     @1,BYTE3(@4)
+ldi     @2,high(@4)
+ldi     @3,low(@4)
+.endm</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>; Now let's see how these macros are being used in the code</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>load    [a:b,15]     ;uses macro load_16_i to load immediate</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>load    [a:b:c:d,15] ;uses macro load_32_i to load immediate</tt></pre>
+</div></div>
+<h3 id="_more_examples">More examples</h3><div style="clear:left"></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.dseg
+counter  .byte 2
+.cseg</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.macro   poke
+.message "no parameters"
+.endm</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.macro   poke_i_16_i
+ldi      @1,high(@3)
+sts      @0+0,@1
+ldi      @2,low(@3)
+sts      @0+1,@2
+.endm</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.macro   poke_i_i
+ldi      w,@1
+sts      @0+0,w
+.endm</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.macro   poke_i_v_i
+ldi      w,high(@3)
+sts      @0+0,w
+ldi      w,low(@3)
+sts      @0+1,w
+.endm</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.macro   poke_i_v_v_v_i
+ldi      w,high(@3)
+sts      @0+0,w
+ldi      w,low(@3)
+sts      @0+1,w
+ldi      w,BYTE3(@3)
+sts      @0+2,w
+ldi      w,BYTE4(@3)
+sts      @0+3,w
+.endm</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>; this writes '9999' into the memory at 'counter'
+; uses only the working register for transfering the values.</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>poke     [counter,w:w,9999]</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>; works same as above, but the transferred value '9999' is also
+; kept in the pair of register a:b</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>poke     [counter,a:b,9999]</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>; in my design 'w' is always working reg. which implies that
+; it cannot be used for normal variables. The following example
+; uses poke_i_i because the parameter contains two immediate values.</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>poke     [counter,9999] ;uses poke_i_i</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>; to be able to choose between a 8,16 or 32 Bit operation, you just
+; add a void parameter.</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>poke     [counter,,9999] ;uses poke_i_v_i</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>; and the same for 32 Bit pokes</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>poke     [counter,,,,9999] ;uses poke_i_v_v_v_i</tt></pre>
+</div></div>
+<h3 id="_loops_within_macros">Loops within macros</h3><div style="clear:left"></div>
+<div class="paragraph"><p>One problem you may have experienced, is that labels defined within macros
+are defined twice if you call the macro for example two times. Now you can
+use labels for macro loops. Loops within macros must end with <em>_%</em>. the
+"%" symbol is replaced by a running number.</p></div>
+<h4 id="_loop_example">Loop example</h4>
+<div class="literalblock">
+<div class="content">
+<pre><tt>; Definition of the macro</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.macro   write_8_8
+write_%:
+     st      Z+,@0
+     dec     @1
+     brne    write_%
+.endm</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>; Use in user code</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>write   [a,b]
+write   [c,d]</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>; After assembling this code, the result looks like this</tt></pre>
+</div></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>write_1:
+     st          Z+,a
+     dec         b
+     brne        write_1
+write_2:
+     st          Z+,c
+     dec         d
+     brne        write_2</tt></pre>
+</div></div>
+</div>
+<h2 id="_warnings_and_errors">Warnings and Errors</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Some errors and warnings may confuse you a little bit so we will try to
+clear some frequently asked questions about such cases.</p></div>
+<h3 id="_constant_out_of_range">Constant out of range</h3><div style="clear:left"></div>
+<div class="paragraph"><p>This warning occurs if a value exceeds the byte or word value of a assignment.
+Read the comment posted by Jim Galbraith:</p></div>
+<div class="paragraph"><p>The expression (~0x80) is a Bitwise Not operation.  This
+operator returns the input expression with all its bits
+inverted.  If 0x80 represents -128, then 0x7f, or +127
+should be ok.  If this is considered as a 32-bit expression
+(AVRA internal representation), then it appears to be more
+like oxffffffff-0x80 or 0xffffffff<sup>0x80.  The result would then
+be 0xffffff7f.  The assembler would then have to be told or it
+would have to decide, based on context, how much
+significance to assign to the higher bits.  I have also
+encountered such conditions with various assemblers,
+including AVRA.  To make sure the assembler does what I
+really want, I use a construct like 0xff-0x80 or 0xff</sup>0x80.
+This way the bit significance cannot extend beyond bit-7 and
+there cannot be any misunderstanding.</p></div>
+<h3 id="_can_8217_t_use_db_directive_in_data_segment">Can&#8217;t use .DB directive in data segment</h3><div style="clear:left"></div>
+<div class="paragraph"><div class="title">DB and .DW is only used to assign constant data in eeprom or code space.</div><p>The reason why using it within data segment is forbidden is, that you
+cannot set ram content at assembly time. The values must be programmed into
+ROM area and at boot read from ROM into RAM. This is up to the user code.
+You can only allocate memory for your variables using labels and the .byte
+directive.</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>.dseg
+my_string: .byte 15</tt></pre>
+</div></div>
+<h3 id="_byte_directive">BYTE directive</h3><div style="clear:left"></div>
+<div class="paragraph"><div class="title">BYTE directive can only be used in data segment (.DSEG)</div><p>This directive cannot be used in code or eeprom region because this only
+allocates memory without assgning distinct values to it. Please use .db
+or .dw instead.</p></div>
+<h3 id="_internal_assembler_error">Internal assembler error</h3><div style="clear:left"></div>
+<div class="paragraph"><p>If you get an "Internal assembler error" please contact the project maintainer
+by sending him a code example and a description of your working enviroment.</p></div>
+</div>
+<h2 id="_avra_internals">AVRA internals</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>This section provides thoughts of the avra internal design. I have to admit
+that the code of avra is anything else than clean and optimized. To increase
+the code readability I will try to give you some standards that should improve
+quality. The following standards are similar to what GNU proposes.</p></div>
+<h3 id="_coding_standards">Coding standards</h3><div style="clear:left"></div>
+<div class="paragraph"><p>Tab space is always 2 spaces. The Tab character (ascii 9) is not used.
+if,while,for are always opened on the same line but closed on the next line.
+The closing bracket is in the same column as the first letter of the loop
+directive.</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>Example:</tt></pre>
+</div></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>    while(i &gt; 0) {
+     do_something();
+    }</tt></pre>
+</div></div>
+</div>
+<h2 id="_credits">Credits</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>We would like to thank the following people for giving contributions,
+patches and bug reports, as well as suggestions and new ideas.</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>      Jon Anders Haugum (project founder)
+      Burkhard Arenfeld (release 1.2.0)
+      Tobias Weber (old maintainer)
+      Jerry Jacobs (release 1.3.0)
+      Bernt Hembre
+      Nils Strøm
+      Roberto Biancardi
+      Qwerty Jones
+      Ben Hitchcock (Maker of the mac port)
+      Daniel Drotos
+      Laurence Boyd II
+      Varuzhan Danielyan
+      Laurence Turner
+      Eugene R. O'Bryan
+      Dmitry Dicky
+      Bob Harris (Maker of coff support)
+      Tobias Weber (enhanced macro support)
+      Lesha Bogdanow
+      Jim Galbraith
+      Mark Brinicombe
+      Igor Nikolayenko
+      Peter Hettkamp
+      Herb Poppe
+      David Burke
+      Alexey Pavluchenko
+      Alan Probandt
+      Mariusz Matuszek
+      Arne Rossius
+      Marti Tichacek
+      Patrick Parity
+      Johannes Overmann
+      Roland Riegel
+      Peter Katzmann
+      Donald D. Davis</tt></pre>
+</div></div>
+<div class="paragraph"><p>And all the anonymous people who submitted patches!</p></div>
+<div class="paragraph"><p>Thank you for your work and support.</p></div>
+</div>
+<h2 id="_references">References</h2>
+<div class="sectionbody">
+<div class="literalblock">
+<div class="content">
+<pre><tt>http://www.suprafluid.com/avra
+http://www.avrfreaks.de
+http://www.atmel.com</tt></pre>
+</div></div>
+</div>
+</div>
+<div id="footnotes"><hr /></div>
+<div id="footer">
+<div id="footer-text">
+Version 1.3.0<br />
+Last updated 2010-06-28 16:04:26 CEST
+</div>
+<div id="footer-badges">
+<a href="http://validator.w3.org/check?uri=referer">
+  <img style="border:0;width:88px;height:31px"
+    src="http://www.w3.org/Icons/valid-xhtml11-blue"
+    alt="Valid XHTML 1.1" height="31" width="88" />
+</a>
+<a href="http://jigsaw.w3.org/css-validator/">
+  <img style="border:0;width:88px;height:31px"
+    src="http://jigsaw.w3.org/css-validator/images/vcss-blue"
+    alt="Valid CSS!" />
+</a>
+<a href="http://www.mozilla.org/products/firefox/">
+  <img style="border:none; width:110px; height:32px;"
+       src="http://www.spreadfirefox.com/community/images/affiliates/Buttons/110x32/safer.gif"
+       alt="Get Firefox!" />
+</a>
+</div>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</body>
+</html>

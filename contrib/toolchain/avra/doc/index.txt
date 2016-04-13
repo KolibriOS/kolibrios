@@ -1,0 +1,23 @@
+AVRA Home Page
+==============
+
+.{revdate}: AVRA {revnumber} Released
+************************************************************************
+This release contains a few improvements, a couple of bug fixes and
+documentation updates.
+
+Read the link:ChangeLog.html[ChangeLog] for a full list of all
+additions, changes and bug fixes. Changes are documented in the
+updated link:README.html[Readme]. See the
+link:downloads.html[Downloads] page for sourcecode and binary releases.
+************************************************************************
+
+Introduction
+------------
+AVRA is an assembler for Atmel AVR microcontrollers, and it is almost
+compatible with Atmel's own assembler AVRASM32. The programming
+principles and conceptions are based on the ANSI programming language "C".
+
+The initial version of AVRA was written by John Anders Haugum in 1999. He
+released all versions until v0.7. All later versions were released by Tobias
+Weber. And version 1.3.0 is released by Jerry Jacobs.

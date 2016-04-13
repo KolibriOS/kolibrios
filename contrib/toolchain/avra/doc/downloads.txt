@@ -1,0 +1,6 @@
+Downloads
+=========
+
+The latest release can always be downloaded from sourceforge.
+
+http://sourceforge.net/projects/avra/files
