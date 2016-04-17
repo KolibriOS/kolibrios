@@ -2945,7 +2945,8 @@ Remarks:
   * Format of image with 24 bits per pixel: the color of each pixel
     is coded as 3 bytes - sequentially blue, green, red components.
   * Format of image with 32 bits per pixel: similar to 24, but
-    one additional ignored byte is present.
+    one additional ignored byte is present. It's format is BGRX,
+    where X is the ignored byte.
   * The call to function 7 is equivalent to call to this function
     with esi=24, ebp=0.
 
