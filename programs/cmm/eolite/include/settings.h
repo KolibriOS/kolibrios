@@ -8,7 +8,8 @@
 	?define USE_TWO_PANELS "Две панели"
 	?define FONT_SIZE_LABEL "Размер шрифта"
 	?define LIST_LINE_HEIGHT "Высота строки в списке"
-	?define SAVE_PATH_AS_DEFAULT "Сделать текущий путь домашним каталогом"
+	?define SAVE_PATH_AS_DEFAULT "Текущий путь"
+	?define SAVE_START_PATH_AS_DEFAULT "Введенный путь"
 	?define EDIT_FILE_ASSOCIATIONS "Редактировать ассоциации файлов"
 #else
 	?define TITLE_SETT "Settings"
@@ -19,20 +20,30 @@
 	?define USE_TWO_PANELS "Two panels"
 	?define FONT_SIZE_LABEL "Font size"
 	?define LIST_LINE_HEIGHT "List line height"
-	?define SAVE_PATH_AS_DEFAULT "Save current path as home folder"
+	?define SAVE_PATH_AS_DEFAULT "Сurrent path"
+	?define SAVE_START_PATH_AS_DEFAULT "Typed path"
 	?define EDIT_FILE_ASSOCIATIONS "Edit file associations"
 #endif
 
 char config_section[] = "Config";
 int WinX, WinY, WinW, WinH;
 
+dword set_mouse_dd;
+char path_start[4096]="\0";
+edit_box path_start_ed = {230,50,57,0xffffff,0x94AECE,0x000000,0xffffff,2,4098,#path_start,#set_mouse_dd, 100000000000010b,0,0};
+
 void settings_dialog()
 {   
 	byte id;
 	active_settings=1;
+	SetEventMask(0x27);
 	loop(){
 		switch(WaitEvent())
 		{
+			case evMouse:
+				edit_box_mouse stdcall (#path_start_ed);
+				break;
+				
 			case evButton: 
 				id=GetButtonID();
 				if (id==1) { ExitSettings(); break; }
@@ -43,7 +54,16 @@ void settings_dialog()
 				}
 				else if (id==6)
 				{
+					strcpy(#path_start,#path);
+					path_start_ed.size = strlen(#path_start);
+					path_start_ed.pos = strlen(#path_start);
 					ini_set_str stdcall (eolite_ini_path, #config_section, "DefaultPath", #path,strlen(#path));
+					edit_box_draw stdcall (#path_start_ed);
+					break;
+				}
+				else if (id==7)
+				{
+					ini_set_str stdcall (eolite_ini_path, #config_section, "DefaultPath", #path_start,strlen(#path_start));
 					break;
 				}
 				else if (id==20) show_dev_name ^= 1;
@@ -56,15 +76,17 @@ void settings_dialog()
 				else if (id==30) { label.size.pt++; IF(!label.changeSIZE()) label.size.pt--; BigFontsChange(); }
 				else if (id==31) { label.size.pt--; IF(!label.changeSIZE()) label.size.pt++; BigFontsChange(); }
 				EventRedrawWindow(Form.left,Form.top);
-			break;
+				break;
 					
 			case evKey:
 				GetKeys();
 				if (key_scancode==SCAN_CODE_ESC) ExitSettings();
+				EAX= key_ascii << 8;
+				edit_box_key stdcall (#path_start_ed);	
 				break;
 				
 			case evReDraw:
-				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 376, 292+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
+				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 376, 312+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
 				DrawSettingsCheckBoxes();
 		}
 	}
@@ -90,7 +112,11 @@ void DrawSettingsCheckBoxes()
 	CheckBox(x, y.inc(25), 24, USE_TWO_PANELS,  two_panels);
 	MoreLessBox(x, y.inc(31), 30, 31, label.size.pt, FONT_SIZE_LABEL);
 	MoreLessBox(x, y.inc(31), 25, 26, files.item_h, LIST_LINE_HEIGHT);
-	DrawFlatButton(x-1, y.inc(36), strlen(SAVE_PATH_AS_DEFAULT)+3*8, 24, 6, SAVE_PATH_AS_DEFAULT);
+	path_start_ed.top = y.inc(31);
+	path_start_ed.left = x;
+	edit_box_draw stdcall (#path_start_ed);
+	DrawFlatButton(x-1, y.inc(26), strlen(SAVE_PATH_AS_DEFAULT)+3*8, 24, 6, SAVE_PATH_AS_DEFAULT);
+	DrawFlatButton(x-1+strlen(SAVE_PATH_AS_DEFAULT)+3*8, y.inc(0), strlen(SAVE_START_PATH_AS_DEFAULT)+3*8, 24, 7, SAVE_START_PATH_AS_DEFAULT);
 	DrawFlatButton(x-1, y.inc(36), strlen(EDIT_FILE_ASSOCIATIONS)+3*8, 24, 5, EDIT_FILE_ASSOCIATIONS);
 }
 
@@ -111,7 +137,9 @@ void LoadIniSettings()
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinW", 550); WinW = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinH", 506); WinH = EAX;
 	ini_get_str stdcall   (eolite_ini_path, #config_section, "DefaultPath", #path,4096,"/rd/1/");
-
+	ini_get_str stdcall   (eolite_ini_path, #config_section, "DefaultPath", #path_start,4096,"/rd/1/");
+	path_start_ed.size = strlen(#path_start);
+	path_start_ed.pos = strlen(#path_start);
 
 	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font file",#temp,4096,DEFAULT_FONT);
 	label.init(#temp);

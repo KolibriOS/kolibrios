@@ -55,6 +55,7 @@ word settings_window;
 byte active_settings=0;
 dword _not_draw = false;
 byte menu_call_mouse=0;
+byte exif_load=0;
 
 byte del_active=0;
 byte new_element_active=0;
