@@ -1,5 +1,5 @@
-#define TITLE "Eolite File Manager v3.57"
-#define ABOUT_TITLE "EOLITE 3.57"
+#define TITLE "Eolite File Manager v3.58"
+#define ABOUT_TITLE "EOLITE 3.58"
 
 #ifdef LANG_RUS
 	?define T_FILE "Файл"
@@ -28,6 +28,7 @@
 	?define T_SELECT_APP_TO_OPEN_WITH "Выберите программу для открытия файла"
 	?define DEL_MORE_FILES_1 "выбранные элементы ("
 	?define DEL_MORE_FILES_2 " шт.)?"
+	?define STATUS_STR "Элементов: %d  Выделенно: %d"
 #else
 	?define T_FILE "File"
 	?define T_TYPE "Type"
@@ -56,4 +57,5 @@
 	?define T_SELECT_APP_TO_OPEN_WITH "Select application to open file"
 	?define DEL_MORE_FILES_1 "selected items("
 	?define DEL_MORE_FILES_2 " pcs.)?"
+	?define STATUS_STR "Elements: %d  Selected: %d"
 #endif

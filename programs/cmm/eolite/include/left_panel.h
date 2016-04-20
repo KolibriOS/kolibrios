@@ -232,7 +232,7 @@ void DrawLeftPanelBg()
 	PutShadow(18,actions_y+75+1,158,1,1,1);
 	DrawBar(2,56,15,actions_y+103,col_lpanel);	          //синий прямоугольник - слева       
 	DrawBar(177,56,15,actions_y+103,col_lpanel);            //синий прямоугольник - справа
-	onTop1 = Form.cheight-start_y-2;
+	onTop1 = Form.cheight-start_y-2-16;
 	if (onTop1 < 268)
 	{
 		PutPaletteImage(#blue_hl, 190, onTop1, 2, start_y, 8, #blue_hl_pal);

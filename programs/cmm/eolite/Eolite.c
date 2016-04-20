@@ -76,6 +76,7 @@ byte
 	file_name[256],
 	new_element_name[256],
 	temp[4096],
+	status_bar_str[50],
 	itdir;
 
 char active_path[4096], inactive_path[4096];
@@ -424,6 +425,7 @@ void main()
 									selected_count++;
 								}
 								List_ReDraw();
+								DrawStatusBar();
 								break;
 						case 022: //Ctrl+U - unselect all files
 								for (i=0; i<files.count; i++) 
@@ -433,6 +435,7 @@ void main()
 								}
 								selected_count = 0;
 								List_ReDraw();
+								DrawStatusBar();
 								break;
 					}
 					break;
@@ -451,6 +454,7 @@ void main()
 								if (!two_panels) break;
 								if (active_panel==1) active_panel=2; else active_panel=1;
 								ChangeActivePanel();
+								DrawStatusBar();
 								break;
 						case 093: //menu
 								menu_call_mouse=0;
@@ -476,6 +480,7 @@ void main()
 								_INSERT_END:
 								files.KeyDown();
 								List_ReDraw();
+								DrawStatusBar();
 								break;
 						case 059...068: //F1-F10
 								FnProcess(key_scancode-58);
@@ -559,6 +564,7 @@ void draw_window()
 	llist_copy(#files_active, #files);
 	strcpy(#active_path, #path);
 	DrawFilePanels();
+	DrawStatusBar();
 	if (del_active) Del_Form();
 	if (new_element_active) NewElement_Form(new_element_active, #new_element_name);
 }
@@ -579,13 +585,20 @@ void DrawList()
 	if (two_panels) && (files.x<5) DrawBar(files.x+files.w+16,files.y,1,files.h,col_graph);	
 }
 
+void DrawStatusBar()
+{
+	DrawBar(1, Form.cheight - 18, Form.cwidth-2, 17, col_palette);
+	sprintf(#status_bar_str, STATUS_STR, files.count, selected_count);
+	WriteText(6,Form.cheight - 13,0x80,0x000000,#status_bar_str);
+}
+
 void DrawFilePanels()
 {
 	int files_y;
 	if (!two_panels)
 	{
 		DrawDeviceAndActionsLeftPanel();
-		files.SetSizes(192, 57, Form.cwidth - 210, Form.cheight - 59, files.item_h);
+		files.SetSizes(192, 57, Form.cwidth - 210, Form.cheight - 75, files.item_h);
 		DrawList();
 		Open_Dir(#path,ONLY_SHOW);
 	}
@@ -603,25 +616,25 @@ void DrawFilePanels()
 			llist_copy(#files, #files_inactive);
 			strcpy(#path, #inactive_path);
 			col_selec = 0xCCCccc;
-			files.SetSizes(Form.cwidth/2, files_y, Form.cwidth/2 -17, Form.cheight-files_y-2, files.item_h);
+			files.SetSizes(Form.cwidth/2, files_y, Form.cwidth/2 -17, Form.cheight-files_y-2-16, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 			llist_copy(#files, #files_active);
 			strcpy(#path, #active_path);
 			col_selec = 0x94AECE;
-			files.SetSizes(2, files_y, Form.cwidth/2-2-17, Form.cheight-files_y-2, files.item_h);
+			files.SetSizes(2, files_y, Form.cwidth/2-2-17, Form.cheight-files_y-2-16, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 		}
 		if (active_panel==2)
 		{
-			files.SetSizes(2, files_y, Form.cwidth/2-2-17, Form.cheight-files_y-2, files.item_h);
+			files.SetSizes(2, files_y, Form.cwidth/2-2-17, Form.cheight-files_y-2-16, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 			llist_copy(#files, #files_active);
 			strcpy(#path, #active_path);
 			col_selec = 0x94AECE;
-			files.SetSizes(Form.cwidth/2, files_y, Form.cwidth/2 -17, Form.cheight-files_y-2, files.item_h);
+			files.SetSizes(Form.cwidth/2, files_y, Form.cwidth/2 -17, Form.cheight-files_y-2-16, files.item_h);
 			DrawList();
 			Open_Dir(#path,WITH_REDRAW);
 		}
