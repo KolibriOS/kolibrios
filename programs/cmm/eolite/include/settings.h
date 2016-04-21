@@ -11,6 +11,7 @@
 	?define SAVE_PATH_AS_DEFAULT "Текущий путь"
 	?define SAVE_START_PATH_AS_DEFAULT "Введенный путь"
 	?define EDIT_FILE_ASSOCIATIONS "Редактировать ассоциации файлов"
+	?define START_PATH "Стартовый путь:"
 #else
 	?define TITLE_SETT "Settings"
 	?define SHOW_DEVICE_CLASS "Show device class name"
@@ -23,6 +24,7 @@
 	?define SAVE_PATH_AS_DEFAULT "Сurrent path"
 	?define SAVE_START_PATH_AS_DEFAULT "Typed path"
 	?define EDIT_FILE_ASSOCIATIONS "Edit file associations"
+	?define START_PATH "Start path:"
 #endif
 
 char config_section[] = "Config";
@@ -30,7 +32,7 @@ int WinX, WinY, WinW, WinH;
 
 dword set_mouse_dd;
 char path_start[4096]="\0";
-edit_box path_start_ed = {230,50,57,0xffffff,0x94AECE,0x000000,0xffffff,2,4098,#path_start,#set_mouse_dd, 100000000000010b,0,0};
+edit_box path_start_ed = {230,50,57,0xffffff,0x94AECE,0xffffff,0xffffff,2,4098,#path_start,#set_mouse_dd, 100000000000010b,0,0};
 
 void settings_dialog()
 {   
@@ -86,7 +88,7 @@ void settings_dialog()
 				break;
 				
 			case evReDraw:
-				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 376, 312+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
+				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 376, 332+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
 				DrawSettingsCheckBoxes();
 		}
 	}
@@ -112,9 +114,10 @@ void DrawSettingsCheckBoxes()
 	CheckBox(x, y.inc(25), 24, USE_TWO_PANELS,  two_panels);
 	MoreLessBox(x, y.inc(31), 30, 31, label.size.pt, FONT_SIZE_LABEL);
 	MoreLessBox(x, y.inc(31), 25, 26, files.item_h, LIST_LINE_HEIGHT);
-	path_start_ed.top = y.inc(31);
+	WriteText(6, y.inc(28), 0xD0, system.color.work_text, START_PATH);
+	path_start_ed.top = y.inc(23);
 	path_start_ed.left = x;
-	edit_box_draw stdcall (#path_start_ed);
+	DrawEditBox(#path_start_ed);
 	DrawFlatButton(x-1, y.inc(26), strlen(SAVE_PATH_AS_DEFAULT)+3*8, 24, 6, SAVE_PATH_AS_DEFAULT);
 	DrawFlatButton(x-1+strlen(SAVE_PATH_AS_DEFAULT)+3*8, y.inc(0), strlen(SAVE_START_PATH_AS_DEFAULT)+3*8, 24, 7, SAVE_START_PATH_AS_DEFAULT);
 	DrawFlatButton(x-1, y.inc(36), strlen(EDIT_FILE_ASSOCIATIONS)+3*8, 24, 5, EDIT_FILE_ASSOCIATIONS);

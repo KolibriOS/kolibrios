@@ -67,7 +67,7 @@ byte list_full_redraw;
 dword buf;
 dword file_mas[6898];
 int selected_count;
-
+int count_dir;
 
 byte
 	path[4096],
@@ -563,8 +563,8 @@ void draw_window()
 	for (i=0; i<5; i++) DrawBar(0, 34+i, Form.cwidth, 1, col_palette[8-i]);
 	llist_copy(#files_active, #files);
 	strcpy(#active_path, #path);
-	DrawFilePanels();
 	DrawStatusBar();
+	DrawFilePanels();
 	if (del_active) Del_Form();
 	if (new_element_active) NewElement_Form(new_element_active, #new_element_name);
 }
@@ -587,8 +587,8 @@ void DrawList()
 
 void DrawStatusBar()
 {
-	DrawBar(1, Form.cheight - 18, Form.cwidth-2, 17, col_palette);
-	sprintf(#status_bar_str, STATUS_STR, files.count, selected_count);
+	DrawBar(1, Form.cheight - 18, Form.cwidth-2, 17, system.color.work);
+	sprintf(#status_bar_str, STATUS_STR, files.count-1, count_dir-1, files.count-count_dir, selected_count);
 	WriteText(6,Form.cheight - 13,0x80,0x000000,#status_bar_str);
 }
 
@@ -753,8 +753,8 @@ void Line_ReDraw(dword bgcol, filenum){
 
 
 void Open_Dir(dword dir_path, redraw){
-	int errornum, maxcount;
-
+	int errornum, maxcount, i;
+	count_dir = 0;
 	if (redraw!=ONLY_SHOW)
 	{
 		if (ESBYTE[dir_path+1]!='\0') ESBYTE[dir_path+strlen(dir_path)-1] = '\0';
@@ -772,6 +772,10 @@ void Open_Dir(dword dir_path, redraw){
 		if (files.count>maxcount) files.count = maxcount;
 		if (files.count>0) && (files.cur_y-files.first==-1) files.cur_y=0;
 	}
+	for (i=0; i<files.count; i++) 
+	{
+		if (TestBit(ESDWORD[i*304+buf+32], 4) ) count_dir++;
+	}
 	if (files.count!=-1)
 	{
 		if(!_not_draw) if (show_breadcrumb) DrawBreadCrumbs(); else DrawPathBar();
@@ -781,12 +785,12 @@ void Open_Dir(dword dir_path, redraw){
 		if (files.count < files.visible) files.visible = files.count;
 		if (redraw!=ONLY_SHOW) Sorting();
 		list_full_redraw = true;
-		if (redraw!=ONLY_OPEN)&&(!_not_draw) List_ReDraw();
+		if (redraw!=ONLY_OPEN)&&(!_not_draw) {DrawStatusBar(); List_ReDraw();}
 	}
 	if (files.count==-1) && (redraw!=ONLY_OPEN) 
 	{
 		files.KeyHome();
-		if(!_not_draw) { list_full_redraw=true; List_ReDraw(); }
+		if(!_not_draw) { list_full_redraw=true; DrawStatusBar(); List_ReDraw(); }
 	}
 }
 
