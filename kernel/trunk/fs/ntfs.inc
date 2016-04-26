@@ -604,7 +604,6 @@ ntfs_read_attr:
         mov     eax, [ebp+NTFS.cur_iRecord]
         mov     [ebp+NTFS.attr_iRecord], eax
         and     [ebp+NTFS.attr_list], 0
-        or      dword [ebp+NTFS.attr_size], -1
         or      dword [ebp+NTFS.attr_size+4], -1
         or      [ebp+NTFS.attr_iBaseRecord], -1
         call    ntfs_read_file_record
@@ -707,7 +706,6 @@ ntfs_read_attr:
         push    [ebp+NTFS.cur_buf]
         push    dword [ebp+NTFS.attr_size]
         push    dword [ebp+NTFS.attr_size+4]
-        or      dword [ebp+NTFS.attr_size], -1
         or      dword [ebp+NTFS.attr_size+4], -1
         and     [ebp+NTFS.cur_offs], 0
         mov     [ebp+NTFS.cur_size], 2
@@ -756,9 +754,7 @@ ntfs_read_attr:
         mov     eax, [esi+8]
         test    eax, eax
         jnz     .testf
-        mov     eax, dword [ebp+NTFS.attr_size]
-        and     eax, dword [ebp+NTFS.attr_size+4]
-        cmp     eax, -1
+        cmp     dword [ebp+NTFS.attr_size+4], -1
         jnz     .testfz
 ; if attribute is in auxiliary records, its size is defined only in first
         mov     eax, [esi+10h]
@@ -845,7 +841,6 @@ ntfs_read_attr:
         push    [ebp+NTFS.cur_buf]
         push    dword [ebp+NTFS.attr_size]
         push    dword [ebp+NTFS.attr_size+4]
-        or      dword [ebp+NTFS.attr_size], -1
         or      dword [ebp+NTFS.attr_size+4], -1
         mov     [ebp+NTFS.cur_offs], edx
         mov     [ebp+NTFS.cur_size], 1
@@ -907,10 +902,7 @@ ntfs_read_attr:
 ; Not all auxiliary records contain correct FileSize info
         mov     eax, dword [ebp+NTFS.attr_size]
         mov     edx, dword [ebp+NTFS.attr_size+4]
-        push    eax
-        and     eax, edx
-        cmp     eax, -1
-        pop     eax
+        cmp     edx, -1
         jnz     @f
         mov     eax, [ecx+attributeRealSize]
         mov     edx, [ecx+attributeRealSize+4]
@@ -1984,7 +1976,7 @@ ntfs_CreateFile:
         mov     [esi+recordRealSize], edx
         shr     ecx, 2
         rep movsd
-        mov     edi, [ebp+NTFS.attr_offs]
+        mov     edi, [ebp+NTFS.indexRoot]
         sub     edi, [ebp+NTFS.frs_buffer]
         add     edi, [ebp+NTFS.cur_index_buf]
         mov     esi, [esp]
@@ -2000,26 +1992,20 @@ ntfs_CreateFile:
         jmp     .common
 
 .growTree:
-        sub     eax, edi
-        sub     eax, rootNode
-        sub     eax, [edi+rootNode+indexOffset]
-        push    eax
         xchg    [ebp+NTFS.secondIndexBuffer], edi
         mov     [ebp+NTFS.cur_index_buf], edi
 ; create indexRecord
         mov     ecx, 10
         xor     eax, eax
         rep stosd
-        mov     esi, [ebp+NTFS.attr_offs]
+        mov     esi, [ebp+NTFS.indexRoot]
         mov     al, [esi+attributeOffset]
         add     esi, eax
-        mov     al, [esi+indexRecordSizeClus]
-        mov     [ebp+NTFS.fileDataSize], eax
         rdtsc
         stosw
         mov     eax, [esi+indexRecordSize]
         cmp     eax, [ebp+NTFS.frs_size]
-        jc      .errorPop4
+        jc      .errorPop3
         shr     eax, 9
         inc     eax
         mov     edi, [ebp+NTFS.cur_index_buf]
@@ -2056,27 +2042,51 @@ ntfs_CreateFile:
         mov     byte [edi+nonLeafFlag], 1
         mov     byte [edi+16+indexAllocatedSize], 18h
         mov     byte [edi+16+indexFlags], 3
-        mov     esi, [ebp+NTFS.attr_offs]
+        mov     esi, [ebp+NTFS.indexRoot]
         add     edi, 28h
         mov     eax, edi
         sub     eax, esi
         mov     word [esi+sizeWithoutHeader], 38h
         xchg    [esi+sizeWithHeader], eax
-        cmp     byte [esi+eax], -1
-        jnz     .errorPop4
+        add     esi, eax
+        mov     [ebp+NTFS.attr_offs], edi
+        cmp     byte [esi], 0xA0
+        jnz     @f
+        cmp     dword [esi+attributeAllocatedSize], 0
+        jz      @f
+        mov     eax, [ebp+NTFS.frs_buffer]
+        mov     ecx, eax
+        add     ecx, [eax+recordRealSize]
+        sub     ecx, esi
+        shr     ecx, 2
+        rep movsd
+        sub     edi, eax
+        mov     [eax+recordRealSize], edi
+        call    .ntfsNodeAlloc
+        jc      ntfsErrorPop3
+        mov     eax, [ebp+NTFS.newRecord]
+        mov     edi, [ebp+NTFS.cur_index_buf]
+        mov     [edi+recordVCN], eax
+        mov     edi, [ebp+NTFS.attr_offs]
+        mov     [edi-8], eax
+        jmp     .refresh
+
+@@:
         mov     cl, 32
         xor     eax, eax
-        push    edi
         rep stosd
+        mov     eax, [ebp+NTFS.cur_subnode_size]
+        cmp     eax, [ebp+NTFS.cur_size]
+        jnz     @f
+        mov     al, 1
+@@:
+        mov     [ebp+NTFS.fileDataSize], eax
         mov     edi, [ebp+NTFS.BitmapStart]
         call    ntfsSpaceAlloc
-        jnc     @f
-        add     esp, 20
-        jmp     ntfsDiskFull
-
-@@:         ; create $IndexAllocation
-        pop     edi
-        mov     [ebp+NTFS.attr_offs], edi
+        movi    eax, ERROR_DISK_FULL
+        jc      ntfsErrorPop3
+; create $IndexAllocation
+        mov     edi, [ebp+NTFS.attr_offs]
         mov     byte [edi+attributeType], 0xA0
         mov     byte [edi+nonResidentFlag], 1
         mov     byte [edi+nameLength], 4
@@ -2121,24 +2131,31 @@ ntfs_CreateFile:
         add     edi, 30h
         sub     edi, esi
         mov     [esi+recordRealSize], edi
-        mov     [ebp+NTFS.cur_buf], esi
-        call    writeRecord     ; fileRecord
         mov     eax, [ebp+NTFS.fileDataStart]
         mul     [ebp+NTFS.sectors_per_cluster]
         mov     [ebp+NTFS.LastRead], eax
+        jmp     @f
+
+.refresh:
+        mov     [ebp+NTFS.cur_size], 0
+        mov     dword [ebp+NTFS.attr_size+4], -1
+        call    ntfs_read_attr.continue
+        movi    eax, ERROR_FS_FAIL
+        jc      ntfsErrorPop3
+@@:
         mov     eax, [ebp+NTFS.cur_index_buf]
         mov     [ebp+NTFS.cur_buf], eax
-        call    writeRecord     ; indexRecord
-        mov     ebx, [ebp+NTFS.cur_index_buf]
-        mov     ax, [ebx+updateSequenceSize]
-        dec     eax
-        shl     eax, 9
-        call    ntfs_restore_usa
+        call    writeRecord
+        mov     eax, [ebp+NTFS.rootLastRead]
+        mov     [ebp+NTFS.LastRead], eax
+        mov     eax, [ebp+NTFS.frs_buffer]
+        mov     [ebp+NTFS.cur_buf], eax
+        call    writeRecord
+        mov     esi, [esp+4]
+        stdcall ntfs_find_lfn.doit2, 0
+        test    eax, eax
+        jz      .errorPop3
         mov     edi, [ebp+NTFS.cur_index_buf]
-        pop     eax
-        add     eax, recordNode
-        add     eax, edi
-        add     eax, [edi+recordNode+indexOffset]
         mov     edx, [esp]
 .indexRecord:
         add     edi, recordNode
@@ -2148,28 +2165,50 @@ ntfs_CreateFile:
         mov     [edi+nodeRealSize], edx
         jmp     .common
 
-.errorPop4:
-        pop     eax
 .errorPop3:
         add     esp, 12
         jmp     ntfsUnsupported
 
-.arborizeTree:
-; directory bitmap
+.ntfsNodeAlloc:
+; in: [ebp+NTFS.attr_offs] -> $IndexAllocation
+;   out:
+; [ebp+NTFS.newRecord] = node VCN
+; [ebp+NTFS.cur_offs]
+; CF=1 -> eax = error code
         mov     esi, [ebp+NTFS.attr_offs]
         add     esi, [esi+sizeWithHeader]
         cmp     byte [esi], 0xB0
-        jnz     .errorPop3
+        jnz     .ret
         movzx   eax, byte [esi+attributeOffset]
         add     esi, eax
         mov     eax, [esi]
         not     eax
         bsf     eax, eax
-        jz      .errorPop3
+        jz      .ret
         bts     [esi], eax
         mul     [ebp+NTFS.cur_subnode_size]
         mov     [ebp+NTFS.newRecord], eax
-; find median index
+        mov     ecx, [ebp+NTFS.cur_size]
+        cmp     ecx, [ebp+NTFS.cur_subnode_size]
+        jz      @f
+        mul     [ebp+NTFS.sectors_per_cluster]
+@@:
+        mov     [ebp+NTFS.cur_offs], eax
+        add     eax, ecx
+        shl     eax, 9
+        mov     esi, [ebp+NTFS.attr_offs]
+        cmp     [esi+attributeAllocatedSize], eax
+        jnc     @f
+        xor     edx, edx
+        jmp     resizeAttribute
+
+.ret:
+        movi    eax, ERROR_UNSUPPORTED_FS
+        stc
+@@:
+        ret
+
+.arborizeTree:      ; find median index
         mov     ecx, [edi+nodeRealSize]
         sub     ecx, [edi+indexOffset]
         shr     ecx, 1
@@ -2180,18 +2219,24 @@ ntfs_CreateFile:
         mov     ax, [edi+indexAllocatedSize]
         sub     ecx, eax
         jnc     @b
+        add     eax, 8
         mov     esi, [ebp+NTFS.secondIndexBuffer]
         cmp     dword [esi], 'INDX'
         jz      .errorPop3      ; move index to the branch node
 ; move index to the root node
         mov     esi, [ebp+NTFS.frs_buffer]
-        mov     ecx, [esi+recordRealSize]
-        add     eax, 8
-        add     ecx, eax
+        mov     ecx, eax
+        add     ecx, 8
+        add     ecx, [esi+recordRealSize]
         cmp     [esi+recordAllocatedSize], ecx
         jc      .errorPop3      ; tree grow required
+        sub     ecx, 8
         mov     [esi+recordRealSize], ecx
         add     esi, ecx
+        push    edi eax esi
+        call    .ntfsNodeAlloc
+        pop     esi eax edi
+        jc      ntfsErrorPop3
         push    edi
         mov     edi, [ebp+NTFS.indexRoot]
         add     [ebp+NTFS.attr_offs], eax
@@ -2255,45 +2300,14 @@ ntfs_CreateFile:
         mov     byte [esi+indexFlags], 2
         mov     esi, [ebp+NTFS.cur_index_buf]
         mov     eax, [ebp+NTFS.newRecord]
-        movzx   edx, word [esi+updateSequenceSize]
-        dec     edx
         mov     [esi+recordVCN], eax
         add     esi, recordNode
         sub     edi, esi
         mov     [esi+nodeRealSize], edi
-; allocate new node
-        add     eax, [ebp+NTFS.cur_subnode_size]
-        cmp     edx, [ebp+NTFS.cur_subnode_size]
-        jz      @f
-        mul     [ebp+NTFS.sectors_per_cluster]
-@@:
-        shl     eax, 9
-        mov     esi, [ebp+NTFS.attr_offs]
-        cmp     [esi+attributeAllocatedSize], eax
-        jnc     .errorPop3
-        call    resizeAttribute
-        jc      ntfsErrorPop3
         mov     eax, [ebp+NTFS.secondIndexBuffer]
         mov     [ebp+NTFS.cur_buf], eax
         call    writeRecord
-        mov     eax, [ebp+NTFS.fileDataStart]
-        mul     [ebp+NTFS.sectors_per_cluster]
-        mov     [ebp+NTFS.LastRead], eax
-        mov     eax, [ebp+NTFS.cur_index_buf]
-        mov     [ebp+NTFS.cur_buf], eax
-        call    writeRecord
-        mov     eax, [ebp+NTFS.rootLastRead]
-        mov     [ebp+NTFS.LastRead], eax
-        mov     eax, [ebp+NTFS.frs_buffer]
-        mov     [ebp+NTFS.cur_buf], eax
-        call    writeRecord
-        mov     esi, [esp+4]
-        stdcall ntfs_find_lfn.doit2, 0
-        test    eax, eax
-        jz      .errorPop3
-        mov     edi, [ebp+NTFS.cur_index_buf]
-        mov     edx, [esp]
-        jmp     .indexRecord
+        jmp     .refresh
 
 .common:
         add     edi, edx
