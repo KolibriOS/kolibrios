@@ -2228,15 +2228,13 @@ ntfs_CreateFile:
         add     ecx, [esi+recordRealSize]
         cmp     [esi+recordAllocatedSize], ecx
         jc      .errorPop3      ; tree grow required
-        sub     ecx, 8
-        mov     [esi+recordRealSize], ecx
-        add     esi, ecx
-        push    edi eax esi
+        push    edi eax
         call    .ntfsNodeAlloc
-        pop     esi eax edi
+        pop     ecx edi
         jc      ntfsErrorPop3
         push    edi
         mov     edi, [ebp+NTFS.indexRoot]
+        mov     eax, ecx
         add     [ebp+NTFS.attr_offs], eax
         add     [edi+sizeWithHeader], eax
         add     [edi+sizeWithoutHeader], eax
@@ -2246,6 +2244,9 @@ ntfs_CreateFile:
         add     [ecx+rootNode+nodeAllocatedSize], eax
         add     ecx, [ebp+NTFS.indexPointer]
         sub     ecx, [ebp+NTFS.secondIndexBuffer]
+        mov     esi, [ebp+NTFS.frs_buffer]
+        add     [esi+recordRealSize], eax
+        add     esi, [esi+recordRealSize]
         mov     edi, esi
         sub     esi, eax
         neg     ecx
