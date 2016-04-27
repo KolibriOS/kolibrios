@@ -8,14 +8,14 @@ __DEBUG__=0
 
 ;start_:
 virtual at 0
-        db 'MENUET01' ; 1. Magic number (8 bytes)
-        dd 0x01       ; 2. Version of executable file
-        dd start       ; 3. Start address
-        dd 0x0        ; 4. Size of image
-        dd 0x100000   ; 5. Size of needed memory
-        dd 0x100000   ; 6. Pointer to stack
-hparams dd 0x0        ; 7. Pointer to program arguments
-hpath   dd 0x0        ; 8. Pointer to program path
+	db 'MENUET01' ; 1. Magic number (8 bytes)
+	dd 0x01       ; 2. Version of executable file
+	dd start       ; 3. Start address
+	dd 0x0	      ; 4. Size of image
+	dd 0x100000   ; 5. Size of needed memory
+	dd 0x100000   ; 6. Pointer to stack
+hparams dd 0x0	      ; 7. Pointer to program arguments
+hpath	dd 0x0	      ; 8. Pointer to program path
 end virtual
 
 start:
@@ -28,12 +28,12 @@ start:
 ;DEBUGF ' path "%s"\n params "%s"\n', .path, .params
 ; check for overflow
     mov  al, [path+buf_len-1]
-    or   al, [params+buf_len-1]
+    or	 al, [params+buf_len-1]
     jnz   .crash
 ; check if path written by OS
     mov  eax, [hparams]
     test eax, eax
-    jz   .without_path
+    jz	 .without_path
     mov  eax, path
 .without_path:
     mov  esi, eax
@@ -41,21 +41,21 @@ start:
 ; retrieving parameters
     mov  esi, params
     xor  edx, edx  ; dl - идёт параметр(1) или разделители(0)
-                   ; dh - символ с которого начался параметр (1 кавычки, 0 остальное)
+		   ; dh - символ с которого начался параметр (1 кавычки, 0 остальное)
     mov  ecx, 1    ; cl = 1
-                   ; ch = 0  просто ноль
+		   ; ch = 0  просто ноль
 .parse: 
     lodsb
     test al, al
-    jz   .run
+    jz	 .run
     test dl, dl
     jnz  .findendparam
-                     ;{если был разделитель
+		     ;{если был разделитель
     cmp  al, ' '
-    jz   .parse  ;загружен пробел, грузим следующий символ
+    jz	 .parse  ;загружен пробел, грузим следующий символ
     mov  dl, cl  ;начинается параметр
     cmp  al, '"'
-    jz   @f      ;загружены кавычки
+    jz	 @f	 ;загружены кавычки
     mov  dh, ch     ;параметр без кавычек
     dec  esi
     call push_param
@@ -69,9 +69,9 @@ start:
 
 .findendparam:
     test dh, dh
-    jz   @f ; без кавычек
+    jz	 @f ; без кавычек
     cmp  al, '"'
-    jz   .clear
+    jz	 .clear
     jmp  .parse
   @@:  
     cmp  al, ' '
@@ -100,7 +100,7 @@ end if
     xor  eax,eax
     dec  eax
     int  0x40
-    dd   -1
+    dd	 -1
 .crash:
 ;DEBUGF 'E:buffer overflowed\n'
     jmp  .exit
@@ -127,10 +127,10 @@ public path as '__path'
 section '.bss'
 buf_len = 0x400
 max_parameters=0x20
-argc     rd 1
-argv     rd max_parameters
-path     rb buf_len
-params   rb buf_len
+argc	 rd 1
+argv	 rd max_parameters
+path	 rb buf_len
+params	 rb buf_len
 
 ;section '.data'
 ;include_debug_strings ; ALWAYS present in data section

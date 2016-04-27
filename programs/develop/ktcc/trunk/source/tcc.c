@@ -1034,7 +1034,8 @@ static inline void tcc_free(void *ptr)
 #ifdef MEM_DEBUG
     mem_cur_size -= malloc_usable_size(ptr);
 #endif
-    free(ptr);
+//2016-04-27 siemargl commented to fix crash temporally. Need to fix
+//    free(ptr);
 }
 
 static void *tcc_malloc(unsigned long size)
@@ -10591,7 +10592,7 @@ int parse_args(TCCState *s, int argc, char **argv)
     return optind;
 }
 
-int app_main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     int i;
     TCCState *s;

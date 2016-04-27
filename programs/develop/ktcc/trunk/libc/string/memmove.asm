@@ -6,7 +6,7 @@ include 'proc32.inc'
 public memcpy
 public memmove
 
-proc memcpy stdcall, to:dword,from:dword,count:dword
+proc memcpy c, to:dword,from:dword,count:dword
 
 	mov ecx,[count]
 	test ecx,ecx
@@ -20,7 +20,7 @@ proc memcpy stdcall, to:dword,from:dword,count:dword
 	ret
 endp
 
-proc memmove stdcall, to:dword,from:dword,count:dword
+proc memmove c, to:dword,from:dword,count:dword
 
 	mov ecx,[count]
 	test ecx,ecx

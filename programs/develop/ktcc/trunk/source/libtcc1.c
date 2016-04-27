@@ -399,7 +399,7 @@ long long __moddi3(long long u, long long v)
     if (vv.s.high < 0)
         vv.ll = __negdi2 (vv.ll);
     
-    __udivmoddi4 (uu.ll, vv.ll, &w);
+    __udivmoddi4 (uu.ll, vv.ll, (UDWtype *) &w);
     if (c)
         w = __negdi2 (w);
     return w;
@@ -466,7 +466,7 @@ long long __shldi3(long long a, int b)
         u.s.high = (unsigned)u.s.low << (b - 32);
         u.s.low = 0;
     } else if (b != 0) {
-        u.s.high = ((unsigned)u.s.high << b) | (u.s.low >> (32 - b));
+        u.s.high = ((unsigned)u.s.high << b) | ((unsigned)u.s.low >> (32 - b));
         u.s.low = (unsigned)u.s.low << b;
     }
     return u.ll;

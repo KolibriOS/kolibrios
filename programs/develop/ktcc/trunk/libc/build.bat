@@ -6,10 +6,10 @@ echo ####################################################
 rem #### CONFIG SECTION ####
 set LIBNAME=libck.a
 set INCLUDE=include
-set CC=
+set CC=kos32-tcc
 set CFLAGS=-c -nostdinc -DGNUC -I"%cd%\%INCLUDE%"
-set AR=
-set ASM=
+set AR=kos32-ar
+set ASM=fasm
 set dirs=stdio memory kolibrisys string stdlib
 rem #### END OF CONFIG SECTION ####
 

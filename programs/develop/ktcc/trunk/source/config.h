@@ -5,3 +5,7 @@
 #define TCC_VERSION "0.9.23"
 //#define TCC_TARGET_PE
 #define TCC_TARGET_MEOS
+
+/* enable bound checking code */
+//#define CONFIG_TCC_BCHECK 1 
+
