@@ -31,8 +31,8 @@ realloc:
 
         mov ebx,20
         mov eax,68
-	mov ecx,[esp+4]
-	mov edx,[esp+8]
+	mov edx,[esp+4]  ; pointer
+	mov ecx,[esp+8]  ; size
         int 0x40
 
         ret 8

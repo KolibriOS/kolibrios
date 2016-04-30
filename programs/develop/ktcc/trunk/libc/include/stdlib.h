@@ -11,8 +11,8 @@ extern int atoib(char *s,int b);
 extern int atoi(char *s);
 extern unsigned char tolower(unsigned char c);
 extern unsigned char toupper(unsigned char c);
-extern void itoab(int n,char* s,int  b);
-extern void itoa(int n,char* s);
+extern char *itoab(int n,char* s,int  b);
+extern char *itoa(int n,char* s);
 
 extern void* stdcall malloc(dword size);
 extern void  stdcall free(void *pointer);

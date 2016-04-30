@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 int format_print(char *dest, size_t maxlen, const char *fmt,va_list argp);
 

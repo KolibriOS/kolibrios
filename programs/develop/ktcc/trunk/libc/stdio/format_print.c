@@ -414,9 +414,11 @@ int format_print(char *dest, size_t maxlen,const char *fmt0, va_list argp)
                                         flag_unsigned=1;
                                         break;
                                         case 'x':
+                                        case 'p':
                                         format_flag=1;
                                         break;
                                         case 'X':
+                                        case 'P':
                                         flag_register=1;
                                         format_flag=1;
                                         break;
@@ -451,7 +453,7 @@ int format_print(char *dest, size_t maxlen,const char *fmt0, va_list argp)
                                         {
                                                 case 'c':
                                                 case 'C':
-                                                if ((pos+1)<maxlen)
+                                                if ((pos+1)<=maxlen)
                                                 {
                                                         //*s=(int)va_arg(argp,char*);
                                                         *s=*((char *)argp);
@@ -461,97 +463,93 @@ int format_print(char *dest, size_t maxlen,const char *fmt0, va_list argp)
                                                 break;
                                                 case 's':
                                                 case 'S':
-                                                str=va_arg(argp,char*);
-                                                length=strlen(str);
-                                                if ((pos+length)<maxlen)
-                                                {
-                                                        memcpy(s,str,length);
-                                                        s=s+length;pos=pos+length;
-                                                }
-                                                break;
+                                                    str=va_arg(argp,char*);
+                                                    length=strlen(str);
+                                                    if (pos + length > maxlen)
+                                                        length = maxlen - pos;
+                                                    memcpy(s,str,length);
+                                                    s=s+length;pos=pos+length;
+                                                    break;
                                                 case 'd':
                                                 case 'D':
                                                 case 'i':
                                                 case 'I':
-                                                if (flag_long==0) {intdigit=va_arg(argp,int);}
-                                                if (flag_long==1) {intdigit=va_arg(argp,long);}
-                                                if (flag_long==2) {intdigit=va_arg(argp,long long);}
-						//intdigit=*((long*)argp);
-                                                //argp=argp+4;
-                                                if ((intdigit>0) && (flag_plus==1) && (pos+1<maxlen))
-                                                {
-                                                        *s='+';
-                                                        s++;
-                                                        pos++;
-                                                }
-                                                length=formatted_long_to_string(intdigit,0,buf);
-                                                if ((pos+length)<maxlen)
-                                                {
-                                                        memcpy(s,buf,length);
-                                                        s=s+length;pos=pos+length;
-                                                }
-						break;
+                                                    if (flag_long==0) {intdigit=va_arg(argp,int);}
+                                                    if (flag_long==1) {intdigit=va_arg(argp,long);}
+                                                    if (flag_long==2) {intdigit=va_arg(argp,long long);}
+                                                    //intdigit=*((long*)argp);
+                                                    //argp=argp+4;
+                                                    if ((intdigit>0) && (flag_plus==1) && (pos+1<=maxlen))
+                                                    {
+                                                            *s='+';
+                                                            s++;
+                                                            pos++;
+                                                    }
+                                                    length=formatted_long_to_string(intdigit,0,buf);
+                                                    if (pos + length > maxlen)
+                                                        length = maxlen - pos;
+                                                    memcpy(s,buf,length);
+                                                    s=s+length;pos=pos+length;
+                                                    break;
                                                 case 'o':
-                                                if (flag_long==0) {intdigit=va_arg(argp,int);}
-                                                if (flag_long==1) {intdigit=va_arg(argp,long);}
-                                                if (flag_long==2) {intdigit=va_arg(argp,long long);}
-                                                //intdigit=*((long int *)argp);
-                                                //argp=argp+4;
+                                                    if (flag_long==0) {intdigit=va_arg(argp,int);}
+                                                    if (flag_long==1) {intdigit=va_arg(argp,long);}
+                                                    if (flag_long==2) {intdigit=va_arg(argp,long long);}
+                                                    //intdigit=*((long int *)argp);
+                                                    //argp=argp+4;
 
-                                                length=formatted_octa_to_string(intdigit,0,flag_register,buf);
-                                                if ((pos+length)<maxlen)
-                                                {
-                                                        memcpy(s,buf,length);
-                                                        s=s+length;pos=pos+length;
-                                                }
-                                                break;
+                                                    length=formatted_octa_to_string(intdigit,0,flag_register,buf);
+                                                    if (pos + length > maxlen)
+                                                        length = maxlen - pos;
+                                                    memcpy(s,buf,length);
+                                                    s=s+length;pos=pos+length;
+                                                    break;
                                                 case 'u':
                                                 case 'U':
-                                                if (flag_long==0) {intdigit=va_arg(argp,int);}
-                                                if (flag_long==1) {intdigit=va_arg(argp,long int);}
-                                                if (flag_long==2) {intdigit=va_arg(argp,long long);}
+                                                    if (flag_long==0) {intdigit=va_arg(argp,int);}
+                                                    if (flag_long==1) {intdigit=va_arg(argp,long int);}
+                                                    if (flag_long==2) {intdigit=va_arg(argp,long long);}
 
-                                                if (flag_unsigned==1) {
-                                                        if (intdigit<0) {intdigit=-intdigit;}
-                                                }
+                                                    if (flag_unsigned==1) {
+                                                            if (intdigit<0) {intdigit=-intdigit;}
+                                                    }
 
-                                                length=formatted_long_to_string(intdigit,0,buf);
-                                                if ((pos+length)<maxlen)
-                                                {
-                                                        memcpy(s,buf,length);
-                                                        s=s+length;pos=pos+length;
-                                                }
-                                                break;
+                                                    length=formatted_long_to_string(intdigit,0,buf);
+                                                    if (pos + length > maxlen)
+                                                        length = maxlen - pos;
+                                                    memcpy(s,buf,length);
+                                                    s=s+length;pos=pos+length;
+                                                    break;
+                                                case 'p':
+                                                case 'P':
                                                 case 'x':
                                                 case 'X':
-                                                if (flag_long==0) {intdigit=va_arg(argp,int);}
-                                                if (flag_long==1) {intdigit=va_arg(argp,long);}
-                                                if (flag_long==2) {intdigit=va_arg(argp,long long);}
-                                                //intdigit=*((long int *)argp);
-                                                //argp=argp+4;
+                                                    if (flag_long==0) {intdigit=va_arg(argp,int);}
+                                                    if (flag_long==1) {intdigit=va_arg(argp,long);}
+                                                    if (flag_long==2) {intdigit=va_arg(argp,long long);}
+                                                    //intdigit=*((long int *)argp);
+                                                    //argp=argp+4;
 
-                                                length=formatted_hex_to_string(intdigit,0,flag_register,buf);
-                                                if ((pos+length)<maxlen)
-                                                {
-                                                        memcpy(s,buf,length);
-                                                        s=s+length;pos=pos+length;
-                                                }
-                                                break;
+                                                    length=formatted_hex_to_string(intdigit,0,flag_register,buf);
+                                                    if (pos + length > maxlen)
+                                                        length = maxlen - pos;
+                                                    memcpy(s,buf,length);
+                                                    s=s+length;pos=pos+length;
+                                                    break;
                                                 case 'z':
                                                 case 'Z':
-                                                intdigit=va_arg(argp,size_t);
+                                                    intdigit=va_arg(argp,size_t);
 
-                                                if (flag_unsigned==1) {
-                                                        if (intdigit<0) {intdigit=-intdigit;}
-                                                }
+                                                    if (flag_unsigned==1) {
+                                                            if (intdigit<0) {intdigit=-intdigit;}
+                                                    }
 
-                                                length=formatted_long_to_string(intdigit,0,buf);
-                                                if ((pos+length)<maxlen)
-                                                {
-                                                        memcpy(s,buf,length);
-                                                        s=s+length;pos=pos+length;
-                                                }
-                                                break;
+                                                    length=formatted_long_to_string(intdigit,0,buf);
+                                                    if (pos + length > maxlen)
+                                                        length = maxlen - pos;
+                                                    memcpy(s,buf,length);
+                                                    s=s+length;pos=pos+length;
+                                                    break;
                                                 default:;
 
                                         }
@@ -717,10 +715,7 @@ int format_print(char *dest, size_t maxlen,const char *fmt0, va_list argp)
                 }
                 else
                 {
-                        if (*fmt=='\0') {break;}
-                        *s=*fmt;
-                        fmt++;
-                        s++;
+                        if (!(*s++ = *fmt++)) break;
                         pos++;
                 }
                 exit_check:;

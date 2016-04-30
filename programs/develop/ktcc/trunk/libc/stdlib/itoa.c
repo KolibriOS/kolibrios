@@ -1,11 +1,12 @@
-#include "stdio.h"
-#include "stdlib.h"
-#include "ctype.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
 
 /*
 ** itoa(n,s) - Convert n to characters in s 
 */
-void itoa(int n,char* s)
+char* itoa(int n,char* s)
 {
   int sign;
   char *ptr;
@@ -16,6 +17,6 @@ void itoa(int n,char* s)
     } while ((n = n / 10) > 0);
   if (sign < 0) *ptr++ = '-';
   *ptr = '\0';
-  reverse(s);
+  return strrev(s);
 }
 

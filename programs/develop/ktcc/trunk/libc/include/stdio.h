@@ -10,7 +10,7 @@ typedef char *va_list;
 #define va_end(ap) (ap = (va_list)0)
 
 #define NULL ((void*)0)
-//extern int stdcall format_print(char *dest, size_t maxlen, const char *fmt0, va_list argp);
+int format_print(char *dest, size_t maxlen,const char *fmt0, va_list argp);
 
 typedef struct {
   char*   buffer;
@@ -53,5 +53,7 @@ extern int cdecl printf(const char *format,...);
 extern int vsnprintf(char *dest, size_t size,const char *format,va_list ap);
 extern int cdecl snprintf(char *dest, size_t size, const char *format,...);
 extern int cdecl sprintf(char *dest,const char *format,...);
+
+#define getc(a) fgetc(a)
 
 #endif

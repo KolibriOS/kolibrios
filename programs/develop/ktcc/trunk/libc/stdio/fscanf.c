@@ -4,7 +4,7 @@ void skipspaces(FILE* file)
 	int c;
 	while(1)
 	{
-		c=getc(file);
+		c=fgetc(file);
 		if (c!=' ' && c!='\r' && c!='\n')
 		{
 			ungetc(c,file);
@@ -12,6 +12,7 @@ void skipspaces(FILE* file)
 		}
 	}
 }
+
 int fscanf(FILE* file,const char* format, ...)
 {
 	int res;
@@ -34,7 +35,7 @@ int fscanf(FILE* file,const char* format, ...)
 			c=fgetc(file);
 			if (c!=*format)
 			{
-				fungetc(c,file);
+				ungetc(c,file);
 				return -1;
 			}
 			format++;

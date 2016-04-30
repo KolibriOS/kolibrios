@@ -128,7 +128,7 @@ FILE* fopen(const char* filename, const char *mode)
         res->filesize=0;
         res->filepos=0;
         res->mode=imode;
-        res->filename=getfullpath(filename);
+        res->filename=(char*)getfullpath(filename);
 
 	if ((imode==FILE_OPEN_READ) || (imode==FILE_OPEN_APPEND))
 	{

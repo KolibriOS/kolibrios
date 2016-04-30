@@ -22,4 +22,5 @@ extern char* strstr(const char*,const char*);
 extern char* strtok(char*,const char*);
 extern int strxfrm(char*,const char*,int);
 extern char* strdup(const char*);
+extern char* strrev(char *p);
 #endif
