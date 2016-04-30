@@ -187,11 +187,11 @@ struct  socket_options
 
 ends
 
-SOCKETBUFFSIZE          = 4096          ; in bytes
+SOCKET_STRUCT_SIZE      = 4096          ; in bytes
 
 SOCKET_QUEUE_SIZE       = 10            ; maximum number of incoming packets queued for 1 socket
 ; the incoming packet queue for sockets is placed in the socket struct itself, at this location from start
-SOCKET_QUEUE_LOCATION   = (SOCKETBUFFSIZE - SOCKET_QUEUE_SIZE*sizeof.socket_queue_entry - sizeof.queue)
+SOCKET_QUEUE_LOCATION   = (SOCKET_STRUCT_SIZE - SOCKET_QUEUE_SIZE*sizeof.socket_queue_entry - sizeof.queue)
 
 uglobal
 align 4
@@ -1368,7 +1368,7 @@ socket_debug:
         jz      .invalid
 
         mov     esi, eax
-        mov     ecx, SOCKETBUFFSIZE/4
+        mov     ecx, SOCKET_STRUCT_SIZE/4
         rep movsd
 
         mov     dword[esp+32], 0
@@ -1591,7 +1591,7 @@ socket_ring_create:
         mov     esi, eax
 
         push    edx
-        stdcall create_ring_buffer, SOCKET_MAXDATA, PG_SWR
+        stdcall create_ring_buffer, SOCKET_BUFFER_SIZE, PG_SWR
         pop     edx
         test    eax, eax
         jz      .fail
@@ -1607,7 +1607,7 @@ socket_ring_create:
         mov     [esi + RING_BUFFER.write_ptr], eax
         mov     [esi + RING_BUFFER.read_ptr], eax
         mov     [esi + RING_BUFFER.size], 0
-        add     eax, SOCKET_MAXDATA
+        add     eax, SOCKET_BUFFER_SIZE
         mov     [esi + RING_BUFFER.end_ptr], eax
         mov     eax, esi
 
@@ -1642,7 +1642,7 @@ socket_ring_write:
         popa
 
 ; calculate available size
-        mov     edi, SOCKET_MAXDATA
+        mov     edi, SOCKET_BUFFER_SIZE
         sub     edi, [eax + RING_BUFFER.size]                   ; available buffer size in edi
         cmp     ecx, edi
         jbe     .copy
@@ -1656,7 +1656,7 @@ socket_ring_write:
         add     edi, ecx
         cmp     edi, [eax + RING_BUFFER.end_ptr]
         jb      @f
-        sub     edi, SOCKET_MAXDATA                             ; WRAP
+        sub     edi, SOCKET_BUFFER_SIZE                         ; WRAP
   @@:
 
         mov     [eax + RING_BUFFER.write_ptr], edi
@@ -1790,7 +1790,7 @@ socket_ring_free:
         mov     edx, [eax + RING_BUFFER.end_ptr]
         cmp     [eax + RING_BUFFER.read_ptr], edx
         jb      @f
-        sub     [eax + RING_BUFFER.read_ptr], SOCKET_MAXDATA
+        sub     [eax + RING_BUFFER.read_ptr], SOCKET_BUFFER_SIZE
        @@:
 
         push    eax ecx
@@ -1905,9 +1905,9 @@ socket_notify:
 ; Socket and thread exists and socket is of non blocking type.
 ; We'll try to flag an event to the thread.
         shl     ecx, 8
-        or      [ecx + SLOT_BASE + APPDATA.event_mask], EVENT_NETWORK
+        or      [SLOT_BASE + ecx + APPDATA.event_mask], EVENT_NETWORK
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: poking thread %u!\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: poking thread %u!\n", ebx
         pop     esi ecx ebx
         ret
 
@@ -1941,7 +1941,7 @@ socket_alloc:
 
         push    ebx
 
-        stdcall kernel_alloc, SOCKETBUFFSIZE
+        stdcall kernel_alloc, SOCKET_STRUCT_SIZE
         or      eax, eax
         jz      .nomem
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_alloc: ptr=%x\n", eax
@@ -1949,7 +1949,7 @@ socket_alloc:
 ; zero-initialize allocated memory
         push    eax
         mov     edi, eax
-        mov     ecx, SOCKETBUFFSIZE / 4
+        mov     ecx, SOCKET_STRUCT_SIZE / 4
         xor     eax, eax
         rep stosd
         pop     eax

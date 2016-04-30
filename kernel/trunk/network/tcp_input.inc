@@ -559,7 +559,7 @@ endl
 
 ; Calculate receive window size
         push    edx
-        mov     eax, SOCKET_MAXDATA
+        mov     eax, SOCKET_BUFFER_SIZE
         sub     eax, [ebx + STREAM_SOCKET.rcv.size]
         DEBUGF  DEBUG_NETWORK_VERBOSE, "Space in receive buffer=%d\n", eax
         mov     edx, [ebx + TCP_SOCKET.RCV_ADV]
@@ -1436,7 +1436,7 @@ align 4
 
         movzx   eax, [edx + TCP_header.UrgentPointer]
         add     eax, [ebx + STREAM_SOCKET.rcv.size]
-        cmp     eax, SOCKET_MAXDATA
+        cmp     eax, SOCKET_BUFFER_SIZE
         jbe     .not_urgent
 
         mov     [edx + TCP_header.UrgentPointer], 0

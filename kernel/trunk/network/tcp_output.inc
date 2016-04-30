@@ -163,7 +163,7 @@ endl
 ;-------------------------------
 ; calculate window advertisement (130)
 
-        mov     ecx, SOCKET_MAXDATA
+        mov     ecx, SOCKET_BUFFER_SIZE
         sub     ecx, [eax + STREAM_SOCKET.rcv.size]
 
 ;------------------------------
@@ -448,10 +448,10 @@ endl
 ; Calculate the receive window.
 ; Dont shrink window, but avoid silly window syndrome
 
-        mov     ebx, SOCKET_MAXDATA
+        mov     ebx, SOCKET_BUFFER_SIZE
         sub     ebx, [eax + STREAM_SOCKET.rcv.size]
 
-        cmp     ebx, SOCKET_MAXDATA/4
+        cmp     ebx, SOCKET_BUFFER_SIZE/4
         jae     @f
         cmp     ebx, [eax + TCP_SOCKET.t_maxseg]
         jae     @f
