@@ -1175,12 +1175,14 @@ ntfs_find_lfn:
 ; in: [esi]+[esp+4] = name
 ;   out:
 ; [ebp+NTFS.cur_iRecord] = target fileRecord
-; eax -> index in the target node
+; eax -> target index in the node
+; [ebp+NTFS.LastRead] = target node location
 ; [ebp+NTFS.indexPointer] -> index, that points the target subnode
+; [ebp+NTFS.nodeLastRead] = branch node location
 ; [ebp+NTFS.indexRoot] -> attribute
+; [ebp+NTFS.rootLastRead] = directory fileRecord location
 ; [ebp+NTFS.cur_size] = index record size in sectors
 ; [ebp+NTFS.cur_subnode_size] = index record size in clusters or sectors
-; [ebp+NTFS.rootLastRead] = directory fileRecord sector
 ; CF=1 -> file not found, eax=0 -> error
         mov     [ebp+NTFS.cur_iRecord], 5   ; start from root directory
 .doit2:
@@ -1281,6 +1283,9 @@ ntfs_find_lfn:
 .subnode:
         test    byte [esi+indexFlags], 1
         jz      .notfound
+        mov     eax, [ebp+NTFS.LastRead]
+        mov     [ebp+NTFS.nodeLastRead], eax
+        mov     [ebp+NTFS.indexPointer], esi
         movzx   eax, word [esi+indexAllocatedSize]
         mov     eax, [esi+eax-8]
         mov     edx, [ebp+NTFS.cur_size]
@@ -1289,7 +1294,6 @@ ntfs_find_lfn:
         jz      @f
         mul     [ebp+NTFS.sectors_per_cluster]
 @@:
-        mov     [ebp+NTFS.indexPointer], esi
         mov     esi, [ebp+NTFS.cur_index_buf]
         xchg    [ebp+NTFS.secondIndexBuffer], esi
         mov     [ebp+NTFS.cur_index_buf], esi
@@ -1992,10 +1996,8 @@ ntfs_CreateFile:
         mov     edi, [ebp+NTFS.cur_index_buf]
         jmp     .common
 
-.growTree:
-        xchg    [ebp+NTFS.secondIndexBuffer], edi
-        mov     [ebp+NTFS.cur_index_buf], edi
-; create indexRecord
+.growTree:  ; create indexRecord
+        mov     edi, [ebp+NTFS.cur_index_buf]
         mov     ecx, 10
         xor     eax, eax
         rep stosd
@@ -2027,6 +2029,8 @@ ntfs_CreateFile:
         sub     ecx, [esi+indexOffset]
         add     eax, ecx
         mov     [edi+nodeRealSize], eax
+        mov     eax, [esi+nonLeafFlag]
+        mov     [edi+nonLeafFlag], eax
         shr     ecx, 2
         add     esi, [esi+indexOffset]
         add     edi, [edi+indexOffset]
@@ -2220,14 +2224,14 @@ ntfs_CreateFile:
         add     eax, 8
         mov     esi, [ebp+NTFS.secondIndexBuffer]
         cmp     dword [esi], 'INDX'
-        jz      .errorPop3      ; move index to the branch node
+        jz      @f
 ; move index to the root node
         mov     esi, [ebp+NTFS.frs_buffer]
         mov     ecx, eax
         add     ecx, 8
         add     ecx, [esi+recordRealSize]
         cmp     [esi+recordAllocatedSize], ecx
-        jc      .errorPop3      ; tree grow required
+        jc      .growTree
         push    edi eax
         call    .ntfsNodeAlloc
         pop     ecx edi
@@ -2269,7 +2273,49 @@ ntfs_CreateFile:
         rep movsd   ; insert index
         mov     eax, [ebp+NTFS.newRecord]
         stosd
-; split node
+        jmp     .splitNode
+
+@@:         ; move index to the branch node
+        add     esi, recordNode
+        mov     ecx, [esi+nodeRealSize]
+        add     eax, ecx
+        cmp     [esi+nodeAllocatedSize], eax
+        jc      .errorPop3      ; tree grow required
+        mov     [esi+nodeRealSize], eax
+        push    edi
+        lea     edi, [esi+eax-4]
+        add     esi, ecx
+        sub     eax, ecx
+        mov     ecx, esi
+        sub     ecx, [ebp+NTFS.indexPointer]
+        shr     ecx, 2
+        sub     esi, 4
+        std
+        rep movsd   ; make space
+        mov     [edi], ecx
+        mov     edi, esi
+        add     edi, 4
+        mov     esi, [esp]
+        add     word [esi+indexAllocatedSize], 8
+        mov     byte [esi+indexFlags], 1
+        mov     ecx, eax
+        sub     ecx, 8
+        shr     ecx, 2
+        cld
+        rep movsd   ; insert index
+        push    esi edi
+        call    .ntfsNodeAlloc
+        pop     edi esi ecx
+        jc      ntfsErrorPop3
+        push    ecx
+        mov     eax, [ebp+NTFS.newRecord]
+        stosd
+        mov     ebx, [ebp+NTFS.secondIndexBuffer]
+        mov     edx, [ebp+NTFS.nodeLastRead]
+        push    esi
+        call    writeRecord
+        pop     esi
+.splitNode:
         mov     edi, [ebp+NTFS.cur_index_buf]
         mov     eax, edi
         add     eax, recordNode
