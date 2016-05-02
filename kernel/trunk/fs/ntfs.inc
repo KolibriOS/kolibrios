@@ -2181,13 +2181,40 @@ ntfs_CreateFile:
         add     esi, [esi+sizeWithHeader]
         cmp     byte [esi], 0xB0
         jnz     .ret
-        movzx   eax, byte [esi+attributeOffset]
-        add     esi, eax
-        mov     eax, [esi]
+        movzx   ecx, word [esi+sizeWithoutHeader]
+        shr     ecx, 2
+        movzx   edi, byte [esi+attributeOffset]
+        add     edi, esi
+        mov     edx, edi
+        or      eax, -1
+        repz scasd
+        jnz     @f
+        cmp     [edi], eax
+        jnz     .ret
+; extend folder $Bitmap
+        add     word [esi+sizeWithHeader], 8
+        add     word [esi+sizeWithoutHeader], 8
+        mov     esi, [ebp+NTFS.frs_buffer]
+        mov     eax, [esi+recordRealSize]
+        add     eax, 8
+        cmp     [esi+recordAllocatedSize], eax
+        jc      .ret
+        mov     [esi+recordRealSize], eax
+        xor     eax, eax
+        stosd
+        mov     [edi], eax
+        mov     [edi+8], eax
+        dec     eax
+        mov     [edi+4], eax
+@@:
+        sub     edi, 4
+        mov     eax, [edi]
         not     eax
         bsf     eax, eax
-        jz      .ret
-        bts     [esi], eax
+        bts     [edi], eax
+        sub     edi, edx
+        shl     edi, 3
+        add     eax, edi
         mul     [ebp+NTFS.cur_subnode_size]
         mov     [ebp+NTFS.newRecord], eax
         mov     ecx, [ebp+NTFS.cur_size]
@@ -2234,11 +2261,9 @@ ntfs_CreateFile:
         jc      .growTree
         push    edi eax
         call    .ntfsNodeAlloc
-        pop     ecx edi
-        jc      ntfsErrorPop3
-        push    edi
+        jc      ntfsErrorPop5
+        pop     eax
         mov     edi, [ebp+NTFS.indexRoot]
-        mov     eax, ecx
         add     [ebp+NTFS.attr_offs], eax
         add     [edi+sizeWithHeader], eax
         add     [edi+sizeWithoutHeader], eax
@@ -2275,17 +2300,50 @@ ntfs_CreateFile:
         stosd
         jmp     .splitNode
 
+.growBranch:    ; move node and replace it with empty one
+        mov     esi, [ebp+NTFS.cur_index_buf]
+        mov     edi, [ebp+NTFS.secondIndexBuffer]
+        mov     eax, [esi+recordVCN]
+        mov     [edi+recordVCN], eax
+        add     edi, recordNode
+        mov     eax, [edi+indexOffset]
+        add     eax, 18h
+        mov     [edi+nodeRealSize], eax
+        add     edi, [edi+indexOffset]
+        mov     ecx, 6
+        xor     eax, eax
+        mov     [ebp+NTFS.indexPointer], edi
+        push    edi
+        rep stosd
+        pop     edi
+        mov     eax, [ebp+NTFS.newRecord]
+        mov     byte [edi+indexAllocatedSize], 18h
+        mov     byte [edi+indexFlags], 3
+        mov     [edi+16], eax
+        mov     [esi+recordVCN], eax
+        mov     eax, [ebp+NTFS.LastRead]
+        mov     [ebp+NTFS.nodeLastRead], eax
+        push    [ebp+NTFS.cur_size]
+        mov     [ebp+NTFS.cur_size], 0
+        call    ntfs_read_attr.continue
+        pop     [ebp+NTFS.cur_size]
+        movi    eax, ERROR_FS_FAIL
+        jc      ntfsErrorPop5
+        pop     eax edi
 @@:         ; move index to the branch node
+        push    edi eax
+        call    .ntfsNodeAlloc
+        jc      ntfsErrorPop5
+        mov     eax, [esp]
+        mov     esi, [ebp+NTFS.secondIndexBuffer]
         add     esi, recordNode
         mov     ecx, [esi+nodeRealSize]
         add     eax, ecx
         cmp     [esi+nodeAllocatedSize], eax
-        jc      .errorPop3      ; tree grow required
+        jc      .growBranch
         mov     [esi+nodeRealSize], eax
-        push    edi
         lea     edi, [esi+eax-4]
         add     esi, ecx
-        sub     eax, ecx
         mov     ecx, esi
         sub     ecx, [ebp+NTFS.indexPointer]
         shr     ecx, 2
@@ -2293,21 +2351,16 @@ ntfs_CreateFile:
         std
         rep movsd   ; make space
         mov     [edi], ecx
+        pop     ecx
+        sub     ecx, 8
+        shr     ecx, 2
         mov     edi, esi
         add     edi, 4
         mov     esi, [esp]
         add     word [esi+indexAllocatedSize], 8
         mov     byte [esi+indexFlags], 1
-        mov     ecx, eax
-        sub     ecx, 8
-        shr     ecx, 2
         cld
         rep movsd   ; insert index
-        push    esi edi
-        call    .ntfsNodeAlloc
-        pop     edi esi ecx
-        jc      ntfsErrorPop3
-        push    ecx
         mov     eax, [ebp+NTFS.newRecord]
         stosd
         mov     ebx, [ebp+NTFS.secondIndexBuffer]
@@ -3996,6 +4049,9 @@ ntfsFail:
 ntfsDiskFull:
         push    ERROR_DISK_FULL
         jmp     ntfsOut
+ntfsErrorPop5:
+        pop     ebx
+        pop     ebx
 ntfsErrorPop3:
         pop     ebx
 ntfsErrorPop2:
