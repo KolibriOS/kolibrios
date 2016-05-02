@@ -3,13 +3,13 @@ use32                                   ; Tell compiler to use 32 bit instructio
 
 section '.init' code			; Keep this line before includes or GCC messes up call addresses
 
-include 'proc32.inc'
-include 'macros.inc'
+include '../../../programs/proc32.inc'
+include '../../../programs/macros.inc'
 purge section,mov,add,sub
 	
-include 'box_lib.mac'
-include 'txtbut.inc'
-include 'dll.inc'
+include '../../../programs/develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../../programs/system/run/trunk/txtbut.inc'
+include '../../../programs/dll.inc'
 	
 public init_boxlib as '_init_boxlib_asm'
 public editbox_key as '_editbox_key@4'
