@@ -119,7 +119,6 @@ mftBitmapLocation   dd  ?   ; starting sector
 attr_size           dq  ?
 attr_offs           dd  ?
 attr_list           dd  ?
-attr_iRecord        dd  ?
 attr_iBaseRecord    dd  ?
 cur_attr            dd  ?   ; attribute type
 cur_iRecord         dd  ?   ; number of fileRecord in MFT
@@ -548,6 +547,7 @@ ntfs_read_attr:
         xor     edx, edx
         div     [ebp+NTFS.sectors_per_cluster]
         mov     ebx, edx
+        mov     [ebp+NTFS.fragmentCount], 0
 ; eax = VCN, ebx = offset in sectors from beginning of cluster
         lea     esi, [ebp+NTFS.mft_retrieval]
         sub     esi, 8
@@ -581,6 +581,7 @@ ntfs_read_attr:
         shl     edi, 9
         add     [ebp+NTFS.cur_read], edi
         add     [ebp+NTFS.cur_buf], edi
+        inc     [ebp+NTFS.fragmentCount]
         xor     eax, eax
         xor     ebx, ebx
         cmp     [ebp+NTFS.cur_size], eax
@@ -603,7 +604,6 @@ ntfs_read_attr:
 ; 1. Read file record.
 ; N.B. This will do recursive call of read_attr for $MFT::$Data.
         mov     eax, [ebp+NTFS.cur_iRecord]
-        mov     [ebp+NTFS.attr_iRecord], eax
         and     [ebp+NTFS.attr_list], 0
         or      dword [ebp+NTFS.attr_size+4], -1
         or      [ebp+NTFS.attr_iBaseRecord], -1
@@ -618,7 +618,6 @@ ntfs_read_attr:
         jz      @f
         mov     eax, [eax+baseRecordReference]
 .beginfindattr:
-        mov     [ebp+NTFS.attr_iRecord], eax
         call    ntfs_read_file_record
         jc      .errret
         jmp     @f
@@ -1023,7 +1022,6 @@ ntfs_read_file_record:
         shrd    eax, edx, 9
         shr     edx, 9
         jnz     .errret
-        push    [ebp+NTFS.attr_iRecord]
         push    [ebp+NTFS.attr_iBaseRecord]
         push    [ebp+NTFS.attr_offs]
         push    [ebp+NTFS.attr_list]
@@ -1055,7 +1053,6 @@ ntfs_read_file_record:
         pop     [ebp+NTFS.attr_list]
         pop     [ebp+NTFS.attr_offs]
         pop     [ebp+NTFS.attr_iBaseRecord]
-        pop     [ebp+NTFS.attr_iRecord]
         jc      .ret
         cmp     edx, [ebp+NTFS.frs_size]
         jnz     .errret
@@ -1197,6 +1194,7 @@ ntfs_find_lfn:
         jc      .ret
         cmp     [ebp+NTFS.cur_read], 0x20
         jc      .ret
+        push    esi
         pushad
         mov     esi, [ebp+NTFS.cur_index_buf]
         mov     eax, [esi+indexRecordSize]
@@ -1266,6 +1264,7 @@ ntfs_find_lfn:
         mov     [ebp+NTFS.cur_index_size], edi
         stdcall kernel_free, edx
         popad
+        pop     eax
         jmp     .doit2
 
 .notfound:
@@ -1273,6 +1272,8 @@ ntfs_find_lfn:
 .err:
         popad
         stc
+.ret2:
+        pop     esi
 .ret:
         ret     4
 
@@ -1316,15 +1317,14 @@ ntfs_find_lfn:
 
 .found:
         cmp     byte [edi], 0
-        jz      .done
+        jz      @f
         cmp     byte [edi], '/'
-        jz      .next
+        jz      @f
         pop     edi
         pop     esi
         jmp     .scanloopcont
 
-.done:
-.next:
+@@:
         pop     esi
         pop     esi
         mov     eax, [esi]
@@ -1334,11 +1334,13 @@ ntfs_find_lfn:
         popad
         inc     esi
         cmp     byte [esi-1], 0
-        jnz     .doit2
-        cmp     dword [esp+4], 0
-        jz      .ret
-        mov     esi, [esp+4]
-        mov     dword [esp+4], 0
+        jnz     @f
+        cmp     dword [esp+8], 0
+        jz      .ret2
+        mov     esi, [esp+8]
+        mov     dword [esp+8], 0
+@@:
+        pop     eax
         jmp     .doit2
 
 ;----------------------------------------------------------------
@@ -2431,7 +2433,7 @@ ntfs_CreateFile:
         shl     eax, 1
         add     eax, 42h
         mov     [edi+indexRawSize], ax
-        mov     eax, [ebp+NTFS.attr_iRecord]
+        mov     eax, [ebp+NTFS.cur_iRecord]
         mov     [edi+directoryRecordReference], eax
         mov     eax, [ebp+NTFS.frs_buffer]
         mov     eax, [eax+reuseCounter]
@@ -2610,9 +2612,14 @@ ntfs_CreateFile:
         mov     edi, [ebp+NTFS.frs_buffer]
         xor     eax, eax
         rep stosd
+        mov     esi, [ebp+NTFS.indexPointer]
+        mov     eax, [ebp+NTFS.newRecord]
+        mov     [esi+fileRecordReference], eax
+        rdtsc
+        mov     [esi+fileReferenceReuse], ax
         mov     edi, [ebp+NTFS.frs_buffer]
 ; record header
-        rdtsc
+        mov     [edi+reuseCounter], ax
         mov     [edi+2ah], ax
         mov     eax, [ebp+NTFS.frs_size]
         mov     [edi+recordAllocatedSize], eax
@@ -2635,7 +2642,6 @@ ntfs_CreateFile:
         mov     byte [edi+attributeOffset], 18h
         add     edi, 48h
 ; $FileName
-        mov     esi, [ebp+NTFS.indexPointer]
         mov     byte [edi+attributeType], 30h
         mov     byte [edi+attributeID], 1
         mov     byte [edi+attributeOffset], 18h
@@ -2743,9 +2749,6 @@ ntfs_CreateFile:
         mov     ecx, 1
         xor     edx, edx
         call    fs_write64_sys
-        mov     edi, [ebp+NTFS.indexPointer]
-        mov     eax, [ebp+NTFS.newRecord]
-        mov     [edi+fileRecordReference], eax
 ; 5. Write directory node
         mov     ebx, [ebp+NTFS.cur_index_buf]
         mov     edx, [ebp+NTFS.nodeLastRead]
@@ -3630,9 +3633,9 @@ ntfs_WriteFile:
 
 ;----------------------------------------------------------------
 ntfs_Delete:
-        xor     ebx, ebx
         cmp     byte [esi], 0
         jnz     @f
+        xor     ebx, ebx
         movi    eax, ERROR_ACCESS_DENIED
         ret
 
@@ -3644,86 +3647,111 @@ ntfs_Delete:
         jc      ntfsDenied
         cmp     [ebp+NTFS.fragmentCount], 1
         jnz     ntfsUnsupported     ; record fragmented
-        mov     edx, [ebp+NTFS.cur_iRecord]
-        shr     edx, 3
-        cmp     edx, [ebp+NTFS.mftBitmapSize]
+        mov     ebx, [eax+directoryRecordReference]
+        mov     [ebp+NTFS.newRecord], ebx
+        mov     bx, [eax+fileReferenceReuse]
+        mov     [ebp+NTFS.indexPointer], esi
+        mov     eax, [ebp+NTFS.cur_iRecord]
+        shr     eax, 3
+        cmp     eax, [ebp+NTFS.mftBitmapSize]
         jnc     ntfsUnsupported
-        mov     edx, [ebp+NTFS.secondIndexBuffer]
-        mov     byte [edx], 0
-        mov     edx, [ebp+NTFS.LastRead]
-        mov     [ebp+NTFS.nodeLastRead], edx
+; examine file record
+        mov     [ebp+NTFS.cur_attr], 0x80   ; file?
+        mov     [ebp+NTFS.cur_offs], 0
+        mov     [ebp+NTFS.cur_size], 0
+        call    ntfs_read_attr
+        jnc     @f
+        xor     eax, eax
+        push    ebx eax eax eax eax
+        mov     [esp+12], esp
+        push    eax
+        mov     ebx, esp
+        mov     [ebp+NTFS.cur_attr], 0x90   ; folder?
+        call    ntfs_ReadFolder.doit
+        mov     edx, [esp+12]
+        add     esp, 20
+        pop     ebx
+        test    eax, eax
+        jnz     .ret
+        cmp     edx, 2
+        jnz     ntfsDenied      ; folder is not empty
+        mov     [ebp+NTFS.cur_attr], 0xA0
+        mov     [ebp+NTFS.cur_offs], 0
+        mov     [ebp+NTFS.cur_size], 0
+        call    ntfs_read_attr.newAttribute
+        jc      .deleteFileRecord
+@@:
+        mov     esi, [ebp+NTFS.frs_buffer]
+        cmp     word [esi+baseRecordReuse], 0
+        jnz     ntfsUnsupported     ; auxiliary record
+        cmp     word [esi+reuseCounter], bx
+        jnz     .backToIndex        ; broken index
+        cmp     byte [esi+recordFlags], 0
+        jz      .writeBitmapMFT     ; record deleted
+        cmp     byte [esi+hardLinkCounter], 3
+        jnc     ntfsUnsupported
+        mov     esi, [ebp+NTFS.attr_offs]
+        cmp     byte [esi+nonResidentFlag], 0
+        jz      .deleteFileRecord
+        movzx   eax, byte [esi+dataRunsOffset]
+        add     esi, eax
+        xor     edi, edi
+        sub     esp, 16
+@@:
+        call    ntfs_decode_mcb_entry
+        jnc     @f
+        cmp     dword[esp+8], 0
+        jz      @b
+        add     edi, [esp+8]
+        mov     ebx, [esp]
+        call    ntfsSpaceFree
+        jnc     @b
+@@:
+        add     esp, 16
+.deleteFileRecord:
+        mov     ebx, [ebp+NTFS.frs_buffer]
+        mov     byte [ebx+recordFlags], 0
+        mov     edx, [ebp+NTFS.mftLastRead]
+        call    writeRecord
+.writeBitmapMFT:
+        mov     eax, [ebp+NTFS.cur_iRecord]
+        mov     ecx, eax
+        shr     eax, 3
+        and     ecx, 7
+        mov     edi, [ebp+NTFS.mftBitmapBuffer]
+        btr     [edi+eax], ecx
+        shr     eax, 9
+        mov     ebx, eax
+        shl     ebx, 9
+        add     eax, [ebp+NTFS.mftBitmapLocation]
+        add     ebx, edi
+        mov     ecx, 1
+        xor     edx, edx
+        call    fs_write64_sys
+.backToIndex:
+        mov     eax, [ebp+NTFS.newRecord]
+        mov     [ebp+NTFS.cur_iRecord], eax
+        mov     esi, [ebp+NTFS.indexPointer]
+        stdcall ntfs_find_lfn.doit2, 0
+        jc      ntfsFail
+        mov     ebx, [ebp+NTFS.secondIndexBuffer]
+        mov     byte [ebx], 0
+        mov     ebx, [ebp+NTFS.LastRead]
+        mov     [ebp+NTFS.nodeLastRead], ebx
+        xor     ebx, ebx
         test    byte [eax+indexFlags], 1
         jz      .deleteIndex    ; no subnode
-        movzx   edx, word [eax+indexAllocatedSize]
         mov     edi, eax
-        mov     eax, [eax+edx-8]
-        mov     edx, [ebp+NTFS.cur_size]
-        push    edx
-        cmp     edx, [ebp+NTFS.cur_subnode_size]
-        jz      @f
-        mul     [ebp+NTFS.sectors_per_cluster]
-@@:
-        mov     [ebp+NTFS.cur_attr], 0xA0
-        mov     [ebp+NTFS.cur_offs], eax
-        push    eax
-        mov     ebx, [ebp+NTFS.secondIndexBuffer]
-        mov     esi, ebx
-        mov     [ebp+NTFS.cur_buf], ebx
-        call    ntfs_read_attr.newAttribute
-        pop     [ebp+NTFS.cur_offs]
-        pop     eax
+        call    .findSubindex
         jc      ntfsFail
-        cmp     dword [esi], 'INDX'
-        jnz     ntfsFail
-        mov     [ebp+NTFS.cur_size], eax
-        shl     eax, 9
-        call    ntfs_restore_usa
-        jc      ntfsFail
-        add     esi, recordNode
-        cmp     byte [esi+nonLeafFlag], 0
-        jnz     ntfsUnsupported ; non leaf node
-        add     esi, [esi+indexOffset]
-        test    byte [esi+indexFlags], 2
-        jnz     .deleteSubnode  ; empty node
-        xor     eax, eax
-@@:
-        add     esi, eax
-        mov     ax, [esi+indexAllocatedSize]
-        test    byte [esi+eax+indexFlags], 2
-        jz      @b
         movzx   edx, word [edi+indexAllocatedSize]
+        test    esi, esi
+        jz      @f
         sub     edx, eax
         sub     edx, 8
+@@:
+        mov     eax, edi
         mov     ebx, esi
-        mov     eax, edi
-        jmp     @f
-
-.deleteSubnode:
-        mov     esi, [ebp+NTFS.attr_offs]
-        add     esi, [esi+sizeWithHeader]
-        cmp     byte [esi], 0xB0
-        jnz     ntfsFail
-        movzx   eax, byte [esi+attributeOffset]
-        add     esi, eax
-        mov     eax, [ebp+NTFS.cur_offs]
-        xor     edx, edx
-        div     [ebp+NTFS.cur_size]
-        mov     edx, eax
-        shr     eax, 3
-        and     edx, 7
-        btr     [esi+eax], edx
-        mov     dx, [edi+indexAllocatedSize]
-        mov     eax, edi
-        mov     edi, [ebp+NTFS.secondIndexBuffer]
-        mov     byte [edi], 0
-        xor     ebx, ebx
-        mov     esi, [ebp+NTFS.cur_index_buf]
-        cmp     dword [esi], 'INDX'
-        jnz     @f
-        mov     esi, [ebp+NTFS.frs_buffer]
-        mov     ecx, [esi+recordRealSize]
-        shr     ecx, 2
-        rep movsd
         jmp     @f
 
 .deleteIndex:
@@ -3736,26 +3764,19 @@ ntfs_Delete:
         mov     edi, [ebp+NTFS.cur_index_buf]
         cmp     dword [edi], 'INDX'
         jz      .indexRecord
-        mov     esi, [ebp+NTFS.frs_buffer]  ; indexRoot
-        mov     ecx, [esi+recordRealSize]
-        shr     ecx, 2
-        rep movsd
-        mov     esi, [ebp+NTFS.cur_index_buf]
+        sub     eax, edi
         mov     edi, [ebp+NTFS.indexRoot]
-        sub     edi, [ebp+NTFS.frs_buffer]
-        add     edi, esi
         sub     [edi+sizeWithHeader], edx
         sub     [edi+sizeWithoutHeader], edx
-        mov     cl, [edi+attributeOffset]
+        movzx   ecx, byte [edi+attributeOffset]
         add     edi, ecx
+        add     eax, edi
         sub     [edi+rootNode+nodeRealSize], edx
         sub     [edi+rootNode+nodeAllocatedSize], edx
-        sub     eax, esi
-        add     eax, edi
-        sub     [esi+recordRealSize], edx
-        mov     ecx, [esi+recordRealSize]
-        cmp     [esi+recordAllocatedSize], ecx
-        jc      ntfsUnsupported
+        mov     edi, [ebp+NTFS.frs_buffer]
+        sub     [edi+recordRealSize], edx
+        mov     ecx, [edi+recordRealSize]
+        cmp     [edi+recordAllocatedSize], ecx
         jmp     @f
 
 .indexRecord:
@@ -3763,10 +3784,9 @@ ntfs_Delete:
         sub     [edi+nodeRealSize], edx
         mov     ecx, [edi+nodeRealSize]
         cmp     [edi+nodeAllocatedSize], ecx
-        jc      ntfsUnsupported
-        add     ecx, recordNode
 @@:
-        add     ecx, [ebp+NTFS.cur_index_buf]
+        jc      ntfsUnsupported
+        add     ecx, edi
         sub     ecx, eax
         mov     esi, eax
         add     esi, edx
@@ -3786,120 +3806,147 @@ ntfs_Delete:
         cld
 @@:
         test    ebx, ebx
-        jz      @f
+        jz      .done
 ; copy index from the subnode to replace deleted pointing index
         movzx   ecx, word [ebx+indexAllocatedSize]
         mov     edx, ecx
+        test    byte [ebx+indexFlags], 1
+        jz      @f
+        sub     ecx, 8
+        movzx   edi, word [ebx+edx+indexAllocatedSize]
+        add     edi, edx
+        mov     esi, [ebx+ecx]
+        mov     [ebx+edi-8], esi
+        mov     [ebx+indexAllocatedSize], cx
+@@:
         shr     ecx, 2
         mov     esi, ebx
         mov     edi, eax
         rep movsd
-        mov     edi, [ebp+NTFS.cur_index_buf]
-        xchg    [ebp+NTFS.secondIndexBuffer], edi
-        mov     [ebp+NTFS.cur_index_buf], edi
         add     word [eax+indexAllocatedSize], 8
         mov     byte [eax+indexFlags], 1
-        mov     eax, [ebp+NTFS.LastRead]
-        xchg    [ebp+NTFS.nodeLastRead], eax
-        mov     [ebp+NTFS.rootLastRead], eax
+        mov     edi, [ebp+NTFS.secondIndexBuffer]
         mov     eax, ebx
         xor     ebx, ebx
         jmp     .indexRecord
 
-.ret:
-        ret
-
-@@:         ; examine file record
-        mov     [ebp+NTFS.cur_attr], 0x80   ; file?
-        mov     [ebp+NTFS.cur_offs], 0
-        mov     [ebp+NTFS.cur_size], 0
-        call    ntfs_read_attr
-        jnc     @f
-        mov     eax, [ebp+NTFS.cur_index_size]
-        shl     eax, 9
-        stdcall kernel_alloc, eax
-        test    eax, eax
-        jz      ntfsFail
-        push    [ebp+NTFS.cur_index_buf]
-        push    [ebp+NTFS.secondIndexBuffer]
-        push    [ebp+NTFS.cur_index_size]
-        mov     [ebp+NTFS.cur_index_buf], eax
-        mov     [ebp+NTFS.secondIndexBuffer], eax
-        xor     eax, eax
-        push    eax eax eax eax
-        mov     [esp+12], esp
-        push    eax
-        mov     ebx, esp
-        mov     [ebp+NTFS.cur_attr], 0x90   ; folder?
-        call    ntfs_ReadFolder.doit
-        push    eax
-        stdcall kernel_free, [ebp+NTFS.cur_index_buf]
-        pop     eax
-        mov     edx, [esp+12]
-        add     esp, 20
-        pop     [ebp+NTFS.cur_index_size]
-        pop     [ebp+NTFS.secondIndexBuffer]
-        pop     [ebp+NTFS.cur_index_buf]
-        test    eax, eax
-        jnz     .ret
-        cmp     edx, 2
-        jnz     ntfsDenied      ; folder is not empty
-        mov     [ebp+NTFS.cur_attr], 0xA0
-        mov     [ebp+NTFS.cur_offs], 0
-        mov     [ebp+NTFS.cur_size], 0
-        call    ntfs_read_attr.newAttribute
-        jc      .writeBitmapMFT
-@@:
-        mov     esi, [ebp+NTFS.frs_buffer]
-        cmp     word [esi+baseRecordReuse], 0
-        jnz     ntfsUnsupported     ; auxiliary record
-        mov     esi, [ebp+NTFS.attr_offs]
-        cmp     byte [esi+nonResidentFlag], 0
-        jz      .writeBitmapMFT
-        movzx   eax, byte [esi+dataRunsOffset]
-        add     esi, eax
-        xor     edi, edi
-        sub     esp, 16
-@@:
-        call    ntfs_decode_mcb_entry
-        jnc     @f
-        cmp     dword[esp+8], 0
-        jz      @b
-        add     edi, [esp+8]
-        mov     ebx, [esp]
-        call    ntfsSpaceFree
-        jnc     @b
-@@:
-        add     esp, 16
-.writeBitmapMFT:    ; "delete" file record
-        mov     eax, [ebp+NTFS.cur_iRecord]
-        mov     ecx, eax
-        shr     eax, 3
-        and     ecx, 7
-        mov     edi, [ebp+NTFS.mftBitmapBuffer]
-        btr     [edi+eax], ecx
-        shr     eax, 9
-        mov     ebx, eax
-        shl     ebx, 9
-        add     eax, [ebp+NTFS.mftBitmapLocation]
-        add     ebx, edi
-        mov     ecx, 1
-        xor     edx, edx
-        call    fs_write64_sys
+.done:
         mov     ebx, [ebp+NTFS.frs_buffer]
-        mov     byte [ebx+recordFlags], 0
-        mov     edx, [ebp+NTFS.mftLastRead]
+        mov     edx, [ebp+NTFS.rootLastRead]
         call    writeRecord
-; write directory node
         mov     ebx, [ebp+NTFS.cur_index_buf]
+        cmp     dword [ebx], 'INDX'
+        jnz     @f
         mov     edx, [ebp+NTFS.nodeLastRead]
         call    writeRecord
+@@:
         mov     ebx, [ebp+NTFS.secondIndexBuffer]
         cmp     byte [ebx], 0
         jz      ntfsDone
-        mov     edx, [ebp+NTFS.rootLastRead]
+        mov     edx, [ebp+NTFS.LastRead]
         call    writeRecord
         jmp     ntfsDone
+
+.findSubindex:
+; in: eax -> index
+;   out:
+; CF=1 -> error
+; esi=0 -> subnode deleted
+; esi -> replacement index
+; eax = index effective size
+        movzx   edx, word [eax+indexAllocatedSize]
+        mov     eax, [eax+edx-8]
+        mov     edx, [ebp+NTFS.cur_size]
+        push    edx
+        cmp     edx, [ebp+NTFS.cur_subnode_size]
+        jz      @f
+        mul     [ebp+NTFS.sectors_per_cluster]
+@@:
+        mov     [ebp+NTFS.cur_attr], 0xA0
+        mov     [ebp+NTFS.cur_offs], eax
+        push    eax
+        mov     ebx, [ebp+NTFS.secondIndexBuffer]
+        mov     esi, ebx
+        mov     [ebp+NTFS.cur_buf], ebx
+        call    ntfs_read_attr.newAttribute
+        pop     [ebp+NTFS.cur_offs]
+        pop     eax
+        jc      .ret
+        cmp     dword [esi], 'INDX'
+        stc
+        jnz     .ret
+        mov     [ebp+NTFS.cur_size], eax
+        shl     eax, 9
+        call    ntfs_restore_usa
+        jc      .ret
+        add     esi, recordNode
+        add     esi, [esi+indexOffset]
+        test    byte [esi+indexFlags], 2
+        jnz     .emptyNode
+        cmp     [ebp+NTFS.fragmentCount], 1
+        stc
+        jnz     .ret    ; record fragmented
+        xor     eax, eax
+@@:
+        add     esi, eax
+        mov     ax, [esi+indexAllocatedSize]
+        test    byte [esi+eax+indexFlags], 2
+        jz      @b
+        test    byte [esi+indexFlags], 1
+        jz      .ret
+        add     eax, esi
+        push    esi
+        push    [ebp+NTFS.cur_offs]
+        call    .findSubindex
+        pop     [ebp+NTFS.cur_offs]
+        pop     edx
+        jc      .ret
+        test    esi, esi
+        jnz     .ret
+        mov     esi, edx
+        mov     ebx, [ebp+NTFS.secondIndexBuffer]
+        mov     [ebp+NTFS.cur_buf], ebx
+        push    [ebp+NTFS.cur_size]
+        call    ntfs_read_attr.continue
+        pop     eax
+        jc      .ret
+        shl     eax, 9
+        call    ntfs_restore_usa
+        jc      .ret
+        movzx   eax, word [esi+indexAllocatedSize]
+        sub     eax, 8
+.ret:
+        ret
+
+.emptyNode:
+        test    byte [esi+indexFlags], 1
+        jz      @f
+        mov     eax, esi
+        push    [ebp+NTFS.cur_offs]
+        call    .findSubindex
+        pop     [ebp+NTFS.cur_offs]
+        jc      .ret
+        test    esi, esi
+        jnz     .ret
+@@:         ; delete node
+        mov     esi, [ebp+NTFS.attr_offs]
+        add     esi, [esi+sizeWithHeader]
+        cmp     byte [esi], 0xB0
+        stc
+        jnz     .ret
+        movzx   eax, byte [esi+attributeOffset]
+        add     esi, eax
+        mov     eax, [ebp+NTFS.cur_offs]
+        xor     edx, edx
+        div     [ebp+NTFS.cur_size]
+        mov     edx, eax
+        shr     eax, 3
+        and     edx, 7
+        btr     [esi+eax], edx
+        mov     esi, [ebp+NTFS.secondIndexBuffer]
+        mov     byte [esi], 0
+        xor     esi, esi
+        ret
 
 ;----------------------------------------------------------------
 ntfs_SetFileEnd:
