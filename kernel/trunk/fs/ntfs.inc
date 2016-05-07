@@ -1875,6 +1875,31 @@ ntfs_datetime_to_bdfe:
         jmp     .forEXT
 
 ;----------------------------------------------------------------
+ntfs_GetFileInfo:
+        cmp     byte [esi], 0
+        jnz     @f
+        movi    eax, ERROR_UNSUPPORTED_FS
+        ret
+@@:
+        call    ntfs_lock
+        stdcall ntfs_find_lfn, [esp+4]
+        jnc     .found
+        test    eax, eax
+        jz      ntfsFail
+        jmp     ntfsNotFound
+
+.found:
+        push    esi edi
+        mov     esi, eax
+        mov     edi, [ebx+16]
+        xor     eax, eax
+        call    ntfs_direntry_to_bdfe
+        pop     edi esi
+        call    ntfs_unlock
+        xor     eax, eax
+        ret
+
+;----------------------------------------------------------------
 ntfs_CreateFolder:
         mov     [ebp+NTFS.bFolder], 1
         jmp     @f
@@ -1897,6 +1922,8 @@ ntfs_CreateFile:
         jc      ntfsDenied
         cmp     [ebp+NTFS.bFolder], 1
         jz      .folder
+        test    byte [eax+fileFlags], 1
+        jnz     ntfsDenied
         cmp     [ebp+NTFS.fragmentCount], 1
         jnz     ntfsUnsupported     ; record fragmented
 ; edit directory node
@@ -1913,9 +1940,19 @@ ntfs_CreateFile:
         add     eax, ecx
         add     eax, esi
 @@:
-        mov     edx, [ebx+12]
-        mov     [eax+fileRealSize], edx
-        mov     dword [eax+fileRealSize+4], 0
+        mov     edi, eax
+        mov     eax, [ebx+12]
+        mov     [edi+fileRealSize], eax
+        mov     dword [edi+fileRealSize+4], 0
+        push    ebx eax
+        call    ntfsGetTime
+        mov     [edi+fileModified], eax
+        mov     [edi+fileModified+4], edx
+        mov     [edi+recordModified], eax
+        mov     [edi+recordModified+4], edx
+        mov     [edi+fileAccessed], eax
+        mov     [edi+fileAccessed+4], edx
+        pop     edx ebx
         mov     eax, [ebp+NTFS.LastRead]
         mov     [ebp+NTFS.nodeLastRead], eax
         mov     [ebp+NTFS.cur_attr], 0x80
@@ -1923,11 +1960,20 @@ ntfs_CreateFile:
         mov     [ebp+NTFS.cur_size], 0
         call    ntfs_read_attr
         jc      ntfsFail
-        mov     ecx, [ebp+NTFS.frs_buffer]
+        mov     esi, edi
+        mov     edi, [ebp+NTFS.frs_buffer]
+        cmp     word [edi+baseRecordReuse], 0
+        jnz     ntfsUnsupported     ; auxiliary record
+        mov     al, [edi+attributeOffset]
+        add     edi, eax
+        mov     al, [edi+attributeOffset]
+        add     edi, eax
+        mov     ecx, 6
+        add     esi, fileModified
+        add     edi, 8
+        rep movsd
         mov     eax, edx
         xor     edx, edx
-        cmp     word [ecx+baseRecordReuse], 0
-        jnz     ntfsUnsupported     ; auxiliary record
         mov     ecx, [ebp+NTFS.attr_offs]
         cmp     word [ecx+attributeFlags], 0
         jnz     ntfsUnsupported
@@ -2426,6 +2472,15 @@ ntfs_CreateFile:
         rep stosd
         cld
         add     edi, 4
+        call    ntfsGetTime
+        mov     [edi+fileCreated], eax
+        mov     [edi+fileCreated+4], edx
+        mov     [edi+fileModified], eax
+        mov     [edi+fileModified+4], edx
+        mov     [edi+recordModified], eax
+        mov     [edi+recordModified+4], edx
+        mov     [edi+fileAccessed], eax
+        mov     [edi+fileAccessed+4], edx
         pop     ecx
         pop     esi
         mov     [edi+indexAllocatedSize], cx    ; fill index with data
@@ -2640,7 +2695,12 @@ ntfs_CreateFile:
         mov     byte [edi+sizeWithHeader], 48h
         mov     byte [edi+sizeWithoutHeader], 30h
         mov     byte [edi+attributeOffset], 18h
-        add     edi, 48h
+        mov     cl, 8
+        add     esi, fileCreated
+        add     edi, 18h
+        rep movsd
+        add     edi, 16
+        mov     esi, [ebp+NTFS.indexPointer]
 ; $FileName
         mov     byte [edi+attributeType], 30h
         mov     byte [edi+attributeID], 1
@@ -3484,8 +3544,8 @@ ntfs_WriteFile:
         jc      ntfsNotFound
         cmp     [ebp+NTFS.cur_iRecord], 16
         jc      ntfsDenied
-        bt      dword [eax+fileFlags], 28
-        jc      ntfsDenied
+        test    dword [eax+fileFlags], 10000001h
+        jnz     ntfsDenied
         cmp     [ebp+NTFS.fragmentCount], 1
         jnz     ntfsUnsupported     ; record fragmented
 ; edit directory node
@@ -3502,12 +3562,22 @@ ntfs_WriteFile:
         add     eax, ecx
         add     eax, esi
 @@:
-        mov     ecx, [ebx+4]
+        mov     edi, eax
+        mov     eax, [ebx+4]
         mov     edx, [ebx+8]
-        add     ecx, [ebx+12]
+        add     eax, [ebx+12]
         adc     edx, 0
-        mov     [eax+fileRealSize], ecx
-        mov     [eax+fileRealSize+4], edx
+        mov     [edi+fileRealSize], eax
+        mov     [edi+fileRealSize+4], edx
+        push    edx eax ebx
+        call    ntfsGetTime
+        mov     [edi+fileModified], eax
+        mov     [edi+fileModified+4], edx
+        mov     [edi+recordModified], eax
+        mov     [edi+recordModified+4], edx
+        mov     [edi+fileAccessed], eax
+        mov     [edi+fileAccessed+4], edx
+        pop     ebx ecx edx
         mov     eax, [ebp+NTFS.LastRead]
         mov     [ebp+NTFS.nodeLastRead], eax
         mov     [ebp+NTFS.cur_attr], 0x80
@@ -3515,10 +3585,19 @@ ntfs_WriteFile:
         mov     [ebp+NTFS.cur_size], 0
         call    ntfs_read_attr
         jc      ntfsFail
-        mov     eax, ecx
-        mov     ecx, [ebp+NTFS.frs_buffer]
-        cmp     word [ecx+baseRecordReuse], 0
+        mov     esi, edi
+        mov     edi, [ebp+NTFS.frs_buffer]
+        cmp     word [edi+baseRecordReuse], 0
         jnz     ntfsUnsupported     ; auxiliary record
+        mov     al, [edi+attributeOffset]
+        add     edi, eax
+        mov     al, [edi+attributeOffset]
+        add     edi, eax
+        mov     eax, ecx
+        mov     ecx, 6
+        add     esi, fileModified
+        add     edi, 8
+        rep movsd
         mov     ecx, [ebp+NTFS.attr_offs]
         cmp     word [ecx+attributeFlags], 0
         jnz     ntfsUnsupported
@@ -3645,6 +3724,8 @@ ntfs_Delete:
         jc      ntfsNotFound
         cmp     [ebp+NTFS.cur_iRecord], 16
         jc      ntfsDenied
+        test    byte [eax+fileFlags], 1
+        jnz     ntfsDenied
         cmp     [ebp+NTFS.fragmentCount], 1
         jnz     ntfsUnsupported     ; record fragmented
         mov     ebx, [eax+directoryRecordReference]
@@ -3686,7 +3767,7 @@ ntfs_Delete:
         jnz     ntfsUnsupported     ; auxiliary record
         cmp     word [esi+reuseCounter], bx
         jnz     .backToIndex        ; broken index
-        cmp     byte [esi+recordFlags], 0
+        test    byte [esi+recordFlags], 1
         jz      .writeBitmapMFT     ; record deleted
         cmp     byte [esi+hardLinkCounter], 3
         jnc     ntfsUnsupported
@@ -3961,8 +4042,8 @@ ntfs_SetFileEnd:
         jc      ntfsNotFound
         cmp     [ebp+NTFS.cur_iRecord], 16
         jc      ntfsDenied
-        bt      dword [eax+fileFlags], 28
-        jc      ntfsDenied
+        test    dword [eax+fileFlags], 10000001h
+        jnz     ntfsDenied
         cmp     [ebp+NTFS.fragmentCount], 1
         jnz     ntfsUnsupported     ; record fragmented
 ; edit directory node
@@ -3979,10 +4060,20 @@ ntfs_SetFileEnd:
         add     eax, ecx
         add     eax, esi
 @@:
-        mov     ecx, [ebx+4]
+        mov     edi, eax
+        mov     eax, [ebx+4]
         mov     edx, [ebx+8]
-        mov     [eax+fileRealSize], ecx
-        mov     [eax+fileRealSize+4], edx
+        mov     [edi+fileRealSize], eax
+        mov     [edi+fileRealSize+4], edx
+        push    edx eax ebx
+        call    ntfsGetTime
+        mov     [edi+fileModified], eax
+        mov     [edi+fileModified+4], edx
+        mov     [edi+recordModified], eax
+        mov     [edi+recordModified+4], edx
+        mov     [edi+fileAccessed], eax
+        mov     [edi+fileAccessed+4], edx
+        pop     ebx ecx edx
         mov     eax, [ebp+NTFS.LastRead]
         mov     [ebp+NTFS.nodeLastRead], eax
         mov     [ebp+NTFS.cur_attr], 0x80
@@ -3990,10 +4081,19 @@ ntfs_SetFileEnd:
         mov     [ebp+NTFS.cur_size], 0
         call    ntfs_read_attr
         jc      ntfsFail
-        mov     eax, ecx
-        mov     ecx, [ebp+NTFS.frs_buffer]
-        cmp     word [ecx+baseRecordReuse], 0
+        mov     esi, edi
+        mov     edi, [ebp+NTFS.frs_buffer]
+        cmp     word [edi+baseRecordReuse], 0
         jnz     ntfsUnsupported     ; auxiliary record
+        mov     al, [edi+attributeOffset]
+        add     edi, eax
+        mov     al, [edi+attributeOffset]
+        add     edi, eax
+        mov     eax, ecx
+        mov     ecx, 6
+        add     esi, fileModified
+        add     edi, 8
+        rep movsd
         mov     ecx, [ebp+NTFS.attr_offs]
         cmp     word [ecx+attributeFlags], 0
         jnz     ntfsUnsupported
@@ -4049,13 +4149,94 @@ ntfs_SetFileEnd:
         call    ntfsSpaceClean
         jmp     ntfsDone
 
-;----------------------------------------------------------------
-ntfs_SetFileInfo:
-        movi    eax, ERROR_UNSUPPORTED_FS
+ntfsReadCMOS:
+        out     70h, al
+        in      al, 71h
+        xor     ah, ah
+        shl     ax, 4
+        shr     al, 4
+        aad
+        ret
+
+ntfsGetTime:
+        mov     al, 7
+        call    ntfsReadCMOS
+        ror     eax, 8
+        mov     al, 8
+        call    ntfsReadCMOS
+        ror     eax, 8
+        mov     al, 9
+        call    ntfsReadCMOS
+        add     eax, 2000
+        ror     eax, 16
+        push    eax
+        xor     eax, eax
+        call    ntfsReadCMOS
+        ror     eax, 8
+        mov     al, 2
+        call    ntfsReadCMOS
+        ror     eax, 8
+        mov     al, 4
+        call    ntfsReadCMOS
+        ror     eax, 16
+        push    eax
+        mov     esi, esp
+        add     esp, 8
+ntfsCalculateTime:
+; in: esi -> data block
+; out: edx:eax = time
+        movzx   eax, word [esi+6]
+        sub     eax, 2001
+        jnc     @f
+        xor     eax, eax
+@@:
+        mov     edx, months
+        mov     ebx, eax
+        inc     eax
+        test    eax, 3
+        jnz     @f
+        add     edx, 12
+@@:
+        movzx   eax, byte [esi+5]
+        dec     eax
+        xor     ecx, ecx
+@@:
+        dec     eax
+        js      @f
+        add     cl, [edx+eax]
+        adc     ch, 0
+        jmp     @b
+@@:
+        mov     eax, ebx
+        mov     edx, 365
+        mul     edx
+        shr     ebx, 2
+        add     eax, ebx
+        add     eax, ecx
+        mov     bl, [esi+4]
+        add     eax, ebx
+        add     eax, 400*365+100-4
+        mov     dl, 24
+        mul     edx
+        mov     bl, [esi+2]
+        add     eax, ebx
+        mov     ecx, 60
+        mul     ecx
+        mov     bl, [esi+1]
+        add     eax, ebx
+        mul     ecx
+        mov     bl, [esi]
+        add     ebx, eax
+        mov     eax, edx
+        mov     ecx, 10000000
+        mul     ecx
+        xchg    eax, ebx
+        mul     ecx
+        add     edx, ebx
         ret
 
 ;----------------------------------------------------------------
-ntfs_GetFileInfo:
+ntfs_SetFileInfo:
         cmp     byte [esi], 0
         jnz     @f
         movi    eax, ERROR_UNSUPPORTED_FS
@@ -4063,20 +4244,49 @@ ntfs_GetFileInfo:
 @@:
         call    ntfs_lock
         stdcall ntfs_find_lfn, [esp+4]
-        jnc     .found
+        jnc     @f
         test    eax, eax
         jz      ntfsFail
         jmp     ntfsNotFound
-.found:
-        push    esi edi
-        mov     esi, eax
-        mov     edi, [ebx+16]
-        xor     eax, eax
-        call    ntfs_direntry_to_bdfe
-        pop     edi esi
-        call    ntfs_unlock
-        xor     eax, eax
-        ret
+
+@@:
+        cmp     [ebp+NTFS.fragmentCount], 1
+        jnz     ntfsUnsupported     ; record fragmented
+        mov     esi, [ebp+NTFS.cur_index_buf]
+        cmp     dword [esi], 'INDX'
+        jz      @f
+        sub     eax, esi
+        mov     esi, [ebp+NTFS.indexRoot]
+        movzx   edx, byte [esi+attributeOffset]
+        add     eax, esi
+        add     eax, edx
+@@:
+        mov     esi, [ebx+16]
+        mov     edi, eax
+        mov     eax, [esi]
+        and     eax, 27h
+        and     byte [edi+fileFlags], -28h
+        or      [edi+fileFlags], al
+        add     esi, 8
+        call    ntfsCalculateTime
+        mov     [edi+fileCreated], eax
+        mov     [edi+fileCreated+4], edx
+        add     esi, 8
+        call    ntfsCalculateTime
+        mov     [edi+fileAccessed], eax
+        mov     [edi+fileAccessed+4], edx
+        add     esi, 8
+        call    ntfsCalculateTime
+        mov     [edi+fileModified], eax
+        mov     [edi+fileModified+4], edx
+        mov     ebx, [ebp+NTFS.cur_index_buf]
+        cmp     dword [ebx], 'INDX'
+        jz      @f
+        mov     ebx, [ebp+NTFS.frs_buffer]
+@@:
+        mov     edx, [ebp+NTFS.LastRead]
+        call    writeRecord
+        jmp     ntfsDone
 
 ntfsUnsupported:
         push    ERROR_UNSUPPORTED_FS
