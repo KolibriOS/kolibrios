@@ -198,6 +198,7 @@ extra_files = {
  {"kolibrios/lib/avcodec-55.dll", "common/lib/avcodec-55.dll"},
  {"kolibrios/lib/avdevice-55.dll", "common/lib/avdevice-55.dll"},
  {"kolibrios/lib/avformat-55.dll", "common/lib/avformat-55.dll"},
+ {"kolibrios/lib/swscale-2.dll", "common/lib/swscale-2.dll"},
  {"kolibrios/lib/avutil-52.dll", "common/lib/avutil-52.dll"},
  {"kolibrios/lib/freetype.dll", "common/lib/freetype.dll"},
  {"kolibrios/lib/i965-video.dll", "common/lib/i965-video.dll"},
