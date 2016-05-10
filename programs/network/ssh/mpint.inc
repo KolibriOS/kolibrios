@@ -394,21 +394,15 @@ proc mpint_sub uses eax esi edi ecx, dst, src
         mov     edi, [dst]
         add     edi, 4
         mov     ecx, MPINT_MAX_LEN/4
-
-        ; dst = dst + (NOT src) + 1
-        stc                     ; Setting CF takes care of the +1
-        pushf
-  @@:
+  .loop:
         lodsd
-        not     eax
-        popf
-        adc     [edi], eax
-        pushf
+        sub     [edi], eax
+        jnc     @f
+        dec     dword [edi+4]
+  @@:
         add     edi, 4
         dec     ecx
-        jnz     @r
-        popf
-
+        jnz     .loop
         ret
 
 endp
