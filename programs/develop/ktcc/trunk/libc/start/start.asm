@@ -1,30 +1,32 @@
 format ELF
 section '.text' executable
 public start
-extrn mf_init
+public start as '_start'
+;extrn mf_init
 extrn main
-public argc as '__ARGS'
+;include 'debug2.inc'
+__DEBUG__=0
 
-__DEBUG__ equ 1
-__DEBUG_LEVEL__ equ 1
-
-include 'DEBUG-FDO.INC'
-
+;start_:
 virtual at 0
 	db 'MENUET01' ; 1. Magic number (8 bytes)
 	dd 0x01       ; 2. Version of executable file
-	dd 0x0	      ; 3. Start address
+	dd start       ; 3. Start address
 	dd 0x0	      ; 4. Size of image
 	dd 0x100000   ; 5. Size of needed memory
 	dd 0x100000   ; 6. Pointer to stack
 hparams dd 0x0	      ; 7. Pointer to program arguments
 hpath	dd 0x0	      ; 8. Pointer to program path
 end virtual
+
 start:
-DEBUGF 1,'Start programm\n'
-    xor  eax,eax
-    call mf_init
-DEBUGF 1,' path "%s"\n params "%s"\n', path, params
+;DEBUGF 'Start programm\n'
+    ;init heap of memory
+    mov eax,68
+    mov ebx,11
+    int 0x40
+
+;DEBUGF ' path "%s"\n params "%s"\n', .path, .params
 ; check for overflow
     mov  al, [path+buf_len-1]
     or	 al, [params+buf_len-1]
@@ -83,25 +85,25 @@ DEBUGF 1,' path "%s"\n params "%s"\n', path, params
     jmp  .parse
 
 .run:
-DEBUGF 1,'call main(%x, %x) with params:\n', [argc], argv
+;DEBUGF 'call main(%x, %x) with params:\n', [argc], argv
 if __DEBUG__ = 1
     mov  ecx, [argc]
   @@:
     lea  esi, [ecx * 4 + argv-4]
-    DEBUGF 1,'%d) "%s"\n', cx, [esi]
+    DEBUGF '0x%x) "%s"\n', cx, [esi]
     loop @b
 end if
     push argv
     push [argc]
     call main
 .exit:
-DEBUGF 1,'Exit from prog with code: %x\n', eax;
+;DEBUGF 'Exit from prog\n';
     xor  eax,eax
     dec  eax
     int  0x40
     dd	 -1
 .crash:
-DEBUGF 1,'E:buffer overflowed\n'
+;DEBUGF 'E:buffer overflowed\n'
     jmp  .exit
 ;============================
 push_param:
@@ -120,6 +122,7 @@ push_param:
 .dont_add:    
     ret
 ;==============================
+public argc as '__argc'
 public params as '__argv'
 public path as '__path'
 
@@ -131,5 +134,5 @@ argv	 rd max_parameters
 path	 rb buf_len
 params	 rb buf_len
 
-section '.data'
-include_debug_strings ; ALWAYS present in data section
+;section '.data'
+;include_debug_strings ; ALWAYS present in data section

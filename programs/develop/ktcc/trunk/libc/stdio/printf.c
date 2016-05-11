@@ -7,7 +7,11 @@ char* dllname="/sys/lib/console.obj";
 int   console_init_status;
 
 char* imports[] = {"START","version","con_init","con_write_asciiz","con_printf","con_exit",NULL};
-char* caption = "Console test - colors";
+char* caption = "Console app";
+extern int __argc;
+extern char** __argv;
+extern char* __path;
+
 
 dword* dll_ver;
 void stdcall (* con_init)(dword wnd_width, dword wnd_height, dword scr_width, dword scr_height, const char* title);
@@ -32,6 +36,7 @@ void printf_link(struct import *exp, char** imports){
                 _ksys_cofflib_getproc(exp, imports[5]);
 }
 
+
 int init_console(void)
 {
   struct import * hDll;
@@ -41,15 +46,15 @@ int init_console(void)
                 return 1;
         }
         printf_link(hDll, imports);
-        debug_out_str("dll loaded\n");
+//        debug_out_str("dll loaded\n");
 
-        con_init(-1, -1, -1, -1, caption);
+        con_init(-1, -1, -1, -1, caption); //__argv[0] && __path dont work
         return(0);
 }
 
 int printf(const char *format,...)
 {
-   int          i;
+   int          i = 0;
    int          printed_simbols;
    va_list      arg;
    char         simbol[]={"%s"};

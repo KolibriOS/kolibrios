@@ -2,7 +2,7 @@
 /* Copyright (C) 1998 DJ Delorie, see COPYING.DJ for details */
 /* Copyright (C) 1995 DJ Delorie, see COPYING.DJ for details */
 
-extern int stdcall integer(float number);
+//extern int stdcall integer(float number);
 
 extern double   acos(double _x);
 extern double   asin(double _x);
@@ -162,6 +162,11 @@ extern float expm1f(float);
 extern float log1pf(float);
 extern float gammaf_r(float, int *);
 extern float lgammaf_r(float, int *);
+
+double round  (double x);
+long double roundl  (long double x);
+
+
 
 //#endif /* !_POSIX_SOURCE */
 //#endif /* !__STRICT_ANSI__ */

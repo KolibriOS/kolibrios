@@ -21,4 +21,10 @@ extern void* stdcall realloc(void* pointer,dword size);
 extern int rand (void);
 extern void srand (unsigned int seed);
 
+double strtod (const char* str, char** endptr);
+long double strtold (const char* str, char** endptr);
+float strtof (const char* str, char** endptr);
+
+
+#define exit(a) _ksys_exit()
 #endif

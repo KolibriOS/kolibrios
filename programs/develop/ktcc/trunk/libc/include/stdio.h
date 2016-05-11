@@ -2,14 +2,18 @@
 #define stdio_h
 
 #include "kolibrisys.h"
-
+#include <stdarg.h>
+/* use stdarg.h
 typedef char *va_list;
 #define _roundsize(n)    ( (sizeof(n) + 3) & ~3 )
 #define va_start(ap,v) (ap = (va_list)&v+_roundsize(v))
 #define va_arg(ap,t)    ( *(t *)((ap += _roundsize(t)) - _roundsize(t)) )
 #define va_end(ap) (ap = (va_list)0)
+*/
+#ifndef NULL
+# define NULL ((void*)0)
+#endif
 
-#define NULL ((void*)0)
 int format_print(char *dest, size_t maxlen,const char *fmt0, va_list argp);
 
 typedef struct {
@@ -20,6 +24,9 @@ typedef struct {
   char*   filename;
   int     mode;
 } FILE;
+
+#define stderr ((FILE*)3) /* works inly for fprintf!!! */
+
 
 #define FILE_OPEN_READ 0
 #define FILE_OPEN_WRITE 1
@@ -55,5 +62,7 @@ extern int cdecl snprintf(char *dest, size_t size, const char *format,...);
 extern int cdecl sprintf(char *dest,const char *format,...);
 
 #define getc(a) fgetc(a)
+char * fgets ( char * str, int num, FILE * stream );
+int putchar ( int character );
 
 #endif

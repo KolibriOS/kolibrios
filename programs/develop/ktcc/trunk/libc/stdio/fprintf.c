@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int format_print(char *dest, size_t maxlen, const char *fmt,va_list argp);
-
 int fprintf(FILE* file, const char* format, ...)
 {
 va_list		arg;
@@ -15,7 +13,10 @@ int		printed;
   //data[0]=(int)&arg-(int)&format;
 
   printed=format_print(buf,8191, format,arg);
-  fwrite(buf,printed,1,file);
+  if (file == stderr)
+  	debug_out_str(buf);
+  else
+  	fwrite(buf,printed,1,file);
   free(buf);
 
   return(printed);
