@@ -1876,12 +1876,10 @@ ntfs_datetime_to_bdfe:
 
 ;----------------------------------------------------------------
 ntfs_GetFileInfo:
-        cmp     byte [esi], 0
-        jnz     @f
-        movi    eax, ERROR_UNSUPPORTED_FS
-        ret
-@@:
         call    ntfs_lock
+        mov     edi, [ebx+16]
+        cmp     byte [esi], 0
+        jz      .volume
         stdcall ntfs_find_lfn, [esp+4]
         jnc     .found
         test    eax, eax
@@ -1889,15 +1887,46 @@ ntfs_GetFileInfo:
         jmp     ntfsNotFound
 
 .found:
-        push    esi edi
         mov     esi, eax
-        mov     edi, [ebx+16]
         xor     eax, eax
         call    ntfs_direntry_to_bdfe
-        pop     edi esi
+.end:
         call    ntfs_unlock
         xor     eax, eax
         ret
+
+.volume:
+        mov     byte [edi], 8
+        mov     eax, [ebx+8]
+        mov     [edi+4], eax
+        mov     eax, dword [ebp+NTFS.Length]
+        mov     edx, dword [ebp+NTFS.Length+4]
+        shld    edx, eax, 9
+        shl     eax, 9
+        mov     [edi+36], edx
+        mov     [edi+32], eax
+        add     edi, 40
+        mov     [ebp+NTFS.cur_buf], edi
+        mov     [ebp+NTFS.cur_iRecord], 3
+        mov     [ebp+NTFS.cur_attr], 0x60
+        mov     [ebp+NTFS.cur_offs], 0
+        mov     [ebp+NTFS.cur_size], 1
+        call    ntfs_read_attr
+        jc      ntfsFail
+        mov     ecx, [ebp+NTFS.cur_read]
+        mov     [edi+ecx], ax
+        cmp     [ebx+8], eax
+        jnz     .end
+        mov     esi, edi
+        shr     ecx, 1
+@@:
+        lodsw
+        call    uni2ansi_char
+        stosb
+        dec     ecx
+        jnz     @b
+        mov     byte [edi], 0
+        jmp     .end
 
 ;----------------------------------------------------------------
 ntfs_CreateFolder:
