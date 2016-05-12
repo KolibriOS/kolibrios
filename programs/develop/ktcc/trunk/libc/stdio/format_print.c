@@ -6,19 +6,17 @@ http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap05.html  is used
 %g explain https://support.microsoft.com/en-us/kb/43392
 
 todo:
--%e
--simplify justifying
--fix %o, %x
 -fix precision in %g
+-%u printed as signed, %x, %o also is promoted to long long
+// FAIL 0x0FFFF7A7E as %x - signed long promotes sign, need %llx or %Lx and type conversion
 -%a
--NAN, INF
 -%n nothing printed
 -%17.18f digits maximum format
-%C as w_char L'x'
+-use %C as w_char L'x' (non standard extension)
+-radix point always '.', no LOCALEs
 */
 
 
-//#include <kolibrisys.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -36,33 +34,174 @@ enum flags_t
         flag_hash_sign  = 0x80,
         flag_point      = 0x100
 };
+int formatted_double_to_string(long double number, int format1, int format2, char *s, int flags);
+int formatted_double_to_string_scientific(long double number, int format1, int format2, char *s, int flags);
+int formatted_long_to_string(long long number, int format1, int prec, char *s, int flags);
+int formatted_hex_to_string(unsigned long long number, int fmt1, int prec, char *s, int flags);
+int formatted_octa_to_string(unsigned long long number, int fmt1, int prec, char *s, int flags);
+
+
+int formatted_double_special(long double number, char *s)
+// return 0 if no special values: NAN, INF. -0.0 ignored
+// http://steve.hollasch.net/cgindex/coding/ieeefloat.html
+{
+    struct IEEExp {
+        unsigned manl:32;
+        unsigned manh:32;
+        unsigned exp:15;
+        unsigned sign:1;
+    } *ip = (struct IEEExp *)&number;
+
+    if (ip->exp != 0x7fff) return 0;
+
+    if (ip->manh == 0x80000000 && ip->manl == 0) // Inf
+    {
+        if(ip->sign)
+            strcpy(s, "-INF");
+        else
+            strcpy(s, "+INF");
+    } else
+    if (ip->manh & ~0x7fffffff)
+        strcpy(s, "QNaN");
+    else
+        strcpy(s, "SNaN");
+
+    return 4;
+}
+
+int copy_and_align(char *dest, int width, char *src, int src_len, char sign, int flags)
+// alingn number in buffer, put sign and fills additional places
+// flags used only flag_left_just and flag_lead_zeros
+// sign can be zero, 0, x, X, space, +, -
+{
+    int     rc = 0, sign_len;
+    char    fill;
+
+    fill = (flags & flag_lead_zeros) ? '0' : ' ';
+    if(sign == 'x' || sign == 'X')
+    {
+        sign_len = 2;
+    } else
+    if (sign)
+        sign_len = 1;
+    else
+        sign_len = 0;
+
+    if ((flags & flag_left_just) || (src_len + sign_len >= width))   // left justify or no room
+    {
+        if (sign)
+        {
+            if(sign == 'x' || sign == 'X')
+            {
+                dest[0] = '0';
+                dest[1] = sign;
+                memcpy(dest + 2, src, src_len);
+                rc = src_len + 2;
+            } else
+            { // single sign
+                dest[0] = sign;
+                memcpy(dest + 1, src, src_len);
+                rc = src_len + 1;
+            }
+        } else
+        {
+            memcpy(dest, src, src_len);
+            rc = src_len;
+        }
+        if (rc < width)
+        {
+            memset(dest + rc, fill, width - rc);
+            rc = width;
+        }
+    } else // right justify and fill
+    {
+        rc = width;
+        memcpy(dest + width - src_len, src, src_len);
+        memset(dest, fill, width - src_len);
+        if (flags & flag_lead_zeros)
+        {
+            if(sign == 'x' || sign == 'X')
+            {
+                dest[0] = '0';
+                dest[1] = sign;
+            } else
+            if (sign) dest[0] = sign;
+        } else
+        {
+            if(sign == 'x' || sign == 'X')
+            {
+                dest[width - src_len - 2] = '0';
+                dest[width - src_len - 1] = sign;
+            } else
+            if (sign) dest[width - src_len - 1] = sign;
+        }
+    }
+    return rc;
+}
 
 int formatted_double_to_string_scientific(long double number, int format1, int format2, char *s, int flags)
 {
-    strcpy(s, "%e not implemented yet, sorry");
-    return strlen(s);
+    long double     norm_digit;
+    long            mul = 0;
+    char            sign = 0;
+    char            buf[50];
+    int     len;
+
+    if((flags & flag_point) == 0) format2 = 6;  // default prec if no point spec
+
+    len = formatted_double_special(number, buf);
+    if (len == 0)
+    {
+        if (number < 0) { sign = '-'; norm_digit = -number; }
+        else
+        {
+            norm_digit = number;
+            if (flags & flag_plus) sign = '+';  else
+            if (flags & flag_space_plus) sign = ' ';
+        }
+        // normalize
+        while (norm_digit < 1.0) { norm_digit *= 10; mul--; }
+        while (norm_digit >= 10.0) { norm_digit /= 10; mul++; }
+
+        len = formatted_double_to_string(norm_digit, 0, format2, buf, flags & ~(flag_plus | flag_space_plus));
+
+        if (flags & flag_register)
+            buf[len++] = 'E';
+        else
+            buf[len++] = 'e';
+
+        len += formatted_long_to_string(mul, 0, 3, buf + len, flag_plus | flag_lead_zeros);
+    }
+    else
+        flags &= ~flag_lead_zeros; // no need for INF, NAN
+
+    len = copy_and_align(s, format1, buf, len, sign, flags);
+
+    return len;
 }
 
 int formatted_double_to_string(long double number, int format1, int format2, char *s, int flags)
 {
-        long double	nafter, beforpointdigit;
-        long long	intdigit, mul;
-        int	    div;
-        int     i;
-        char*   size;
-        int     fmt1;
-        int     fmt2;
-        char    buf[100], *pbuf = buf;
-        char    buf_low[50], *pbuf_lo = buf_low;
+    long double	nafter, beforpointdigit;
+    long long	intdigit, mul;
+    int	    div;
+    int     i;
+    char    sign = 0;
+    int     fmt1;
+    int     fmt2;
+    char    buf[100], *pbuf = buf;
+    char    buf_low[50], *pbuf_lo = buf_low;
 
-        if((flags & flag_point) == 0) format2 = 6;  // default prec if no point spec
+    if((flags & flag_point) == 0) format2 = 6;  // default prec if no point spec
 
-        size = s;
-        if (number < 0) {*s++ = '-'; number = -number; }
+    i = formatted_double_special(number, buf);
+    if (i == 0)
+    {
+        if (number < 0) {sign = '-'; number = -number; }
         else
         {
-            if (flags & flag_plus) *s++ = '+';  else
-            if (flags & flag_space_plus) *s++ = ' ';
+            if (flags & flag_plus) sign = '+';  else
+            if (flags & flag_space_plus) sign = ' ';
         }
 
         fmt1 = 1;
@@ -116,41 +255,28 @@ int formatted_double_to_string(long double number, int format1, int format2, cha
         }
         *pbuf_lo++ = (char)intdigit + '0';
 
-
-        memcpy(s, buf, pbuf - buf);  s += pbuf - buf;
+        // form full number
         if (roundl(nafter) != 0 || fmt2 != 0)
         {
-            *s++ = '.';
-            memcpy(s, buf_low, pbuf_lo - buf_low);  s += pbuf_lo - buf_low;
+            *pbuf++ = '.';
+            memcpy(pbuf, buf_low, pbuf_lo - buf_low);  pbuf += pbuf_lo - buf_low;
         } else if (flags & flag_hash_sign)
-            *s++ = '.';
+            *pbuf++ = '.';
+    }
+    else
+    {
+        flags &= ~flag_lead_zeros; // no need for INF, NAN
+        pbuf += i;
+    }
 
-        // right justifiyng and forward zeros
-        div = (s - size);
-        if ((flags & flag_left_just) == 0 && div < format1)
-        {
-            pbuf = size;
-            if ((flags & flag_lead_zeros) != 0)
-                if (*pbuf == '+' || *pbuf == '-' || *pbuf == ' ') { pbuf++; div--; } // sign already at place
-            for (i = 0; i < div; i++)
-                size[format1 - i - 1] = pbuf[div - 1 - i];
-            for (i = 0; i < format1 - div - (pbuf - size); i++)
-                if (flags & flag_lead_zeros)
-                    pbuf[i] = '0';
-                else
-                    pbuf[i] = ' ';
-
-            return format1;
-        }
-
-        return s - size;
+    return copy_and_align(s, format1, buf, pbuf - buf, sign, flags);
 }
 
 int formatted_long_to_string(long long number, int format1, int prec, char *s, int flags)
 {
         int         i;
         int         fmt;
-        char*       size = s;
+        char        sign = 0;
         long long   digit;
         long long   mul;
         int         div;
@@ -158,19 +284,17 @@ int formatted_long_to_string(long long number, int format1, int prec, char *s, i
 
         if (number == -9223372036854775807LL - 1)  // overflow all our math, cant minus this
         {
-            strcpy(buf, "9223372036854775808");
-            pbuf += 19;
-            *s++ = '-';
-            goto verybig;
+            strcpy(s, "-9223372036854775808");
+            return strlen(s);
         }
 
         if (flags & flag_point) flags &= ~flag_lead_zeros;  // conflicting flags
 
-        if (number < 0) {*s++ = '-'; number = -number; }
+        if (number < 0) {sign = '-'; number = -number; }
         else
         {
-            if (flags & flag_plus) *s++ = '+';  else
-            if (flags & flag_space_plus) *s++ = ' ';
+            if (flags & flag_plus) sign = '+';  else
+            if (flags & flag_space_plus) sign = ' ';
         }
 
         digit = number;
@@ -183,7 +307,7 @@ int formatted_long_to_string(long long number, int format1, int prec, char *s, i
             mul *= 10;
         }
 
-        // add leading zeros
+        // add leading zeros by prec
         for(i = 0; i < prec - fmt; i++) *pbuf++ = '0';
 
         for(i = 0; i < fmt - 1; i++)
@@ -196,136 +320,98 @@ int formatted_long_to_string(long long number, int format1, int prec, char *s, i
         }
         *pbuf++ = (char)digit + '0';
 
-verybig:
-        memcpy(s, buf, pbuf - buf);  s += pbuf - buf;
-
-        // right justifiyng and forward zeros
-        div = (s - size);
-        if ((flags & flag_left_just) == 0 && div < format1)
-        {
-            pbuf = size;
-            if ((flags & flag_lead_zeros) != 0)
-                if (*pbuf == '+' || *pbuf == '-' || *pbuf == ' ') { pbuf++; div--; } // sign already at place
-            for (i = 0; i < div; i++)
-                size[format1 - i - 1] = pbuf[div - 1 - i];
-            for (i = 0; i < format1 - div - (pbuf - size); i++)
-                if (flags & flag_lead_zeros)
-                    pbuf[i] = '0';
-                else
-                    pbuf[i] = ' ';
-
-            return format1;
-        }
-
-        return s - size;
+        return copy_and_align(s, format1, buf, pbuf - buf, sign, flags);
 }
 
-int formatted_hex_to_string(long long number, int fmt1, char *s, int flags)
+int formatted_hex_to_string(unsigned long long number, int fmt1, int prec, char *s, int flags)
 {
-        long    n;
-        int             i,pos;
-//        int             fmt;
-        long    size;
-        int             difference_pos;
-        char            xdigs_lower[16]="0123456789abcdef";
-        char            xdigs_upper[16]="0123456789ABCDEF";
-        char            buf[200];
+    unsigned long long digit, mul;
+    int             i, div, fmt;
+    char            xdigs_lower[16]="0123456789abcdef";
+    char            xdigs_upper[16]="0123456789ABCDEF";
+    char            buf[50], *pbuf = buf, sign;
 
-        n=(long)number;
-        size=(int)s;
-        if (n<0) {*s='-';s++;n=-n;}
+    if (number == -9223372036854775807LL - 1)  // overflow all our math, cant minus this
+    {
+        strcpy(buf, "FFFFFFFFFFFFFFFF");
+        pbuf += strlen(buf);
+    }
+    else
+    {
+        if (flags & flag_point) flags &= ~flag_lead_zeros;  // conflicting flags
 
-        if (n==0) {*s='0';s++;goto end;}
-        for(i=0;i<200;i++) {buf[i]=0;}
+        digit = number;
 
-        i=0;
-        if (flag_register==0)
+        mul = (digit < 0) ? -1 : 1;
+
+        for(i = 0; i < sizeof buf - 2; i++)
         {
-                while (n>0)
-                {
-                        buf[i]=xdigs_lower[n & 15];
-                        n=n>>4;
-                        i++;
-                }
-        }
-        else
-        {
-                while (n>0)
-                {
-                        buf[i]=xdigs_upper[n & 15];
-                        n=n>>4;
-                        i++;
-                }
+            if (digit / mul < 16) { fmt = i + 1; break; }
+            mul <<= 4;
         }
 
-        pos=i;
-        difference_pos=i;
+        // add leading zeros by prec
+        for(i = 0; i < prec - fmt; i++) *pbuf++ = '0';
 
-        for(i=pos-1;i>=0;i--)
+        for(i = 0; i < fmt - 1; i++)
         {
-                *s=buf[i];
-                s++;
+            div = digit / mul;
+            *pbuf++ = (flags & flag_register) ? xdigs_upper[div] : xdigs_lower[div];
+            digit = digit - div * mul;
+            mul >>= 4;
+            if (mul == 1 || mul == -1) break;
         }
+        *pbuf++ = (flags & flag_register) ? xdigs_upper[digit] : xdigs_lower[digit];
+    }
 
-        if (fmt1-difference_pos>0)
-        {
-                for(i=difference_pos+1;i<=fmt1;i++)
-                {
-                        *s=' ';
-                        s++;
-                }
-        }
-        end:size=(int)s-size;
-        return(size);
+    sign = 0;
+    if(flags & flag_hash_sign)
+        sign = (flags & flag_register) ? 'X' : 'x';
+
+    return copy_and_align(s, fmt1, buf, pbuf - buf, sign, flags);
 }
 
-int formatted_octa_to_string(long long number, int fmt1, char *s, int flags)
+int formatted_octa_to_string(unsigned long long number, int fmt1, int prec, char *s, int flags)
 {
-        long    n;
-        int             i,pos;
-//        int             fmt;
-        long   	size;
-        int             difference_pos;
-        char            xdigs_lower[16]="012345678";
-        char            buf[200];
+    unsigned long long digit, mul;
+    int             i, div, fmt;
+    char            xdigs_lower[16]="01234567";
+    char            buf[50], *pbuf = buf;
 
-        n=number;
-        size=(int)s;
-        if (n<0) {*s='-';s++;n=-n;}
+    if (number == -9223372036854775807LL - 1)  // overflow all our math, cant minus this
+    {
+        strcpy(buf, "1777777777777777777777");
+        pbuf += strlen(buf);
+    }
+    else
+    {
+        if (flags & flag_point) flags &= ~flag_lead_zeros;  // conflicting flags
 
-        if (n==0) {*s='0';s++;goto end;}
-        for(i=0;i<200;i++) {buf[i]=0;}
+        digit = number;
 
-        i=0;
-        if (flag_register==0)
+        mul = (digit < 0) ? -1 : 1;
+
+        for(i = 0; i < sizeof buf - 2; i++)
         {
-                while (n>0)
-                {
-                        buf[i]=xdigs_lower[n & 7];
-                        n=n>>3;
-                        i++;
-                }
+            if (digit / mul < 8) { fmt = i + 1; break; }
+            mul <<= 3;
         }
 
-        pos=i;
-        difference_pos=i;
+        // add leading zeros by prec
+        for(i = 0; i < prec - fmt; i++) *pbuf++ = '0';
 
-        for(i=pos-1;i>=0;i--)
+        for(i = 0; i < fmt - 1; i++)
         {
-                *s=buf[i];
-                s++;
+            div = digit / mul;
+            *pbuf++ = xdigs_lower[div & 0x7];
+            digit = digit - div * mul;
+            mul >>= 3;
+            if (mul == 1 || mul == -1) break;
         }
+        *pbuf++ = xdigs_lower[digit];
+    }
 
-        if (fmt1-difference_pos>0)
-        {
-                for(i=difference_pos+1;i<=fmt1;i++)
-                {
-                        *s=' ';
-                        s++;
-                }
-        }
-        end:size=(int)s-size;
-        return(size);
+    return copy_and_align(s, fmt1, buf, pbuf - buf, (flags & flag_hash_sign) ? '0' : 0, flags);
 }
 
 //int vsnprintf (char * s, size_t n, const char * format, va_list arg );
@@ -337,7 +423,6 @@ int format_print(char *dest, size_t maxlen, const char *fmt0, va_list argp)
     size_t                  pos, posc;
     long	long	        intdigit;
     long	double          doubledigit;
-//        float                   floatdigit;
     const   char            *fmt, *fmtc;  // first point to %, fmtc points to specifier
     char                    *s; // pointer to current dest char
     char                    *str;
@@ -473,7 +558,6 @@ int format_print(char *dest, size_t maxlen, const char *fmt0, va_list argp)
         }
 
         // do real work - format arguments values
-
         length = 0;
         switch(*fmtc)
         {
@@ -506,13 +590,13 @@ int format_print(char *dest, size_t maxlen, const char *fmt0, va_list argp)
             if (flag_long == 0) intdigit = va_arg(argp, int); else
             if (flag_long == 1) intdigit = va_arg(argp, long); else
             if (flag_long == 2) intdigit = va_arg(argp, long long);
-            length = formatted_octa_to_string(intdigit, fmt1, buf, flags);
+            length = formatted_octa_to_string(intdigit, fmt1, fmt2, buf, flags);
             break;
         case 'p':   case 'P':   case 'x':   case 'X':
             if (flag_long == 0) intdigit = va_arg(argp, int); else
             if (flag_long == 1) intdigit = va_arg(argp, long); else
             if (flag_long == 2) intdigit = va_arg(argp, long long);
-            length=formatted_hex_to_string(intdigit, fmt1, buf, flags);
+            length=formatted_hex_to_string(intdigit, fmt1, fmt2, buf, flags);
             break;
         case 'a':   case 'A':   case 'f':   case 'F':
             if (flag_long <= 1) doubledigit = va_arg(argp, double); else
