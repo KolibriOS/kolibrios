@@ -1919,6 +1919,7 @@ ntfs_GetFileInfo:
         jnz     .end
         mov     esi, edi
         shr     ecx, 1
+        jz      .end
 @@:
         lodsw
         call    uni2ansi_char
