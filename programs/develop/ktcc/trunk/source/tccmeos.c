@@ -96,7 +96,12 @@ void build_reloc(me_info* me)
 			Elf32_Sym* esym = ((Elf32_Sym *)symtab_section->data)+sym;
 			int sect=esym->st_shndx;
 			ss=findsection(me,sect);
-			if (ss==0) continue;
+			if (ss==0) 
+			{
+            	const char *sym_name = strtab_section->data + esym->st_name;
+    			tcc_error_noabort("undefined symbol '%s'", sym_name);
+				continue;
+			}
 			if (rel->r_offset>s->data_size)
 				continue;
 			if (type==R_386_PC32)
@@ -178,6 +183,15 @@ void assign_addresses(me_info* me)
 	me->header.memory_size=addr;
 	build_reloc(me);
 }
+
+
+const char *tcc_get_symbol_name(int st_name) 
+// return string by index from stringtable section
+{
+	const char *sym_name = strtab_section->data + st_name;
+	return sym_name;
+}
+
 int tcc_find_symbol_me(me_info* me, const char *sym_name)
 {
 	int i;
@@ -199,7 +213,10 @@ int tcc_find_symbol_me(me_info* me, const char *sym_name)
 		}
 	}
 	if (symtab==0 || strtab==0)
+	{
+        tcc_error_noabort("undefined sections .symtab or .strtab on linking '%s'", sym_name);
 		return 0;
+	}
 	Elf32_Sym* s,*se;
 	char* name;
 	s=(Elf32_Sym*)me->s1->sections[symtab]->data;
@@ -213,8 +230,10 @@ int tcc_find_symbol_me(me_info* me, const char *sym_name)
 		}
 		s++;
 	}
+    tcc_error_noabort("undefined symbol '%s'", sym_name);
 	return 0;
 }
+
 const char* me_magic="MENUET01";
 int tcc_output_me(TCCState* s1,const char *filename)
 {
@@ -246,3 +265,26 @@ int tcc_output_me(TCCState* s1,const char *filename)
 	fclose(f);
 	return 0;
 }
+
+#ifndef _WIN32
+
+static inline int get_current_folder(char* buf, int bufsize){
+    register int val;
+    asm volatile ("int $0x40":"=a"(val):"a"(30), "b"(2), "c"(buf), "d"(bufsize));
+    return val;
+}
+
+
+char *getcwd(char *buf, size_t size)
+{
+	int rc = get_current_folder(buf, size);
+	if (rc > size)
+	{
+		errno = ERANGE;
+		return 0;
+	}
+	else
+		return buf;
+}
+
+#endif

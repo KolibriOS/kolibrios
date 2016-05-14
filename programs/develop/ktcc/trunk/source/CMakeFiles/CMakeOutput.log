@@ -1,0 +1,59 @@
+The system is: Windows - 6.1.7601 - AMD64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: D:/VSProjects/MSVC2003/bin/cl.exe 
+Build flags: 
+Id flags: 
+
+The output was:
+0
+Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 13.10.3077 for 80x86
+Copyright (C) Microsoft Corporation 1984-2002. All rights reserved.
+
+CMakeCCompilerId.c
+Microsoft (R) Incremental Linker Version 7.10.3077
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:CMakeCCompilerId.exe 
+CMakeCCompilerId.obj 
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.exe"
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.obj"
+
+The C compiler identification is MSVC, found in "D:/VSProjects/tinycc/tinycc-mob/CMakeFiles/3.5.2/CompilerIdC/CMakeCCompilerId.exe"
+
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: D:/VSProjects/MSVC2003/bin/cl.exe 
+Build flags: 
+Id flags: -c
+
+The output was:
+0
+Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 13.10.3077 for 80x86
+Copyright (C) Microsoft Corporation 1984-2002. All rights reserved.
+
+CMakeCCompilerId.c
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.obj"
+
+The C compiler identification is MSVC, found in "D:/VSProjects/tinycc/tinycc-mob/CMakeFiles/3.5.2/CompilerIdC/CMakeCCompilerId.obj"
+
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: D:/VSProjects/MSVC2003/bin/cl.exe 
+Build flags: 
+Id flags: -c
+
+The output was:
+0
+Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 13.10.3077 for 80x86
+Copyright (C) Microsoft Corporation 1984-2002. All rights reserved.
+
+CMakeCCompilerId.c
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.obj"
+
+The C compiler identification is MSVC, found in "D:/VSProjects/tinycc/tinycc-mob/CMakeFiles/3.5.2/CompilerIdC/CMakeCCompilerId.obj"
+

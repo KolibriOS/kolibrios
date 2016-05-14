@@ -178,7 +178,7 @@ __define_stab (N_NBLCS,  0xF8, "NBLCS")
 /* Second symbol entry containing a length-value for the preceding entry.
    The value is the length.  */
 __define_stab (N_LENG, 0xfe, "LENG")
-
+
 /* The above information, in matrix format.
 
 			STAB MATRIX

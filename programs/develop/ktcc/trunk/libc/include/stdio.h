@@ -62,7 +62,10 @@ extern int cdecl snprintf(char *dest, size_t size, const char *format,...);
 extern int cdecl sprintf(char *dest,const char *format,...);
 
 #define getc(a) fgetc(a)
-char * fgets ( char * str, int num, FILE * stream );
-int putchar ( int character );
+char * fgets (char * str, int num, FILE * stream);
+int putchar (int ch);
+int getchar (void);
+int puts (const char * str);
+char * gets (char * str);
 
 #endif

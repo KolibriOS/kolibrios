@@ -1,12 +1,12 @@
-     DEF_ASM_OP0(pusha, 0x60) /* must be first OP0 */
-     DEF_ASM_OP0(popa, 0x61)
-     DEF_ASM_OP0(clc, 0xf8)
+     DEF_ASM_OP0(clc, 0xf8) /* must be first OP0 */
      DEF_ASM_OP0(cld, 0xfc)
      DEF_ASM_OP0(cli, 0xfa)
      DEF_ASM_OP0(clts, 0x0f06)
      DEF_ASM_OP0(cmc, 0xf5)
      DEF_ASM_OP0(lahf, 0x9f)
      DEF_ASM_OP0(sahf, 0x9e)
+     DEF_ASM_OP0(pusha, 0x60)
+     DEF_ASM_OP0(popa, 0x61)
      DEF_ASM_OP0(pushfl, 0x9c)
      DEF_ASM_OP0(popfl, 0x9d)
      DEF_ASM_OP0(pushf, 0x9c)
@@ -33,8 +33,8 @@
      DEF_ASM_OP0(iret, 0xcf)
      DEF_ASM_OP0(rsm, 0x0faa)
      DEF_ASM_OP0(hlt, 0xf4)
-     DEF_ASM_OP0(wait, 0x9b)
      DEF_ASM_OP0(nop, 0x90)
+     DEF_ASM_OP0(pause, 0xf390)
      DEF_ASM_OP0(xlat, 0xd7)
 
      /* strings */
@@ -74,10 +74,17 @@ ALT(DEF_ASM_OP2(btcw, 0x0fbb, 0, OPC_MODRM | OPC_WL, OPT_REGW, OPT_REGW | OPT_EA
 ALT(DEF_ASM_OP2(btcw, 0x0fba, 7, OPC_MODRM | OPC_WL, OPT_IM8, OPT_REGW | OPT_EA))
 
      /* prefixes */
+     DEF_ASM_OP0(wait, 0x9b)
+     DEF_ASM_OP0(fwait, 0x9b)
+#ifdef I386_ASM_16
+     DEF_ASM_OP0(a32, 0x67)
+     DEF_ASM_OP0(o32, 0x66)
+#else
      DEF_ASM_OP0(aword, 0x67)
      DEF_ASM_OP0(addr16, 0x67)
-     DEF_ASM_OP0(word, 0x66)
+     ALT(DEF_ASM_OP0(word, 0x66))
      DEF_ASM_OP0(data16, 0x66)
+#endif
      DEF_ASM_OP0(lock, 0xf0)
      DEF_ASM_OP0(rep, 0xf3)
      DEF_ASM_OP0(repe, 0xf3)
@@ -201,6 +208,9 @@ ALT(DEF_ASM_OP1(call, 0xff, 2, OPC_MODRM, OPT_INDIR))
 ALT(DEF_ASM_OP1(call, 0xe8, 0, OPC_JMP, OPT_ADDR))
 ALT(DEF_ASM_OP1(jmp, 0xff, 4, OPC_MODRM, OPT_INDIR))
 ALT(DEF_ASM_OP1(jmp, 0xeb, 0, OPC_SHORTJMP | OPC_JMP, OPT_ADDR))
+#ifdef I386_ASM_16
+ALT(DEF_ASM_OP1(jmp, 0xff, 0, OPC_JMP | OPC_WL, OPT_REGW))
+#endif
 
 ALT(DEF_ASM_OP2(lcall, 0x9a, 0, 0, OPT_IM16, OPT_IM32))
 ALT(DEF_ASM_OP1(lcall, 0xff, 3, 0, OPT_EA))
@@ -209,9 +219,12 @@ ALT(DEF_ASM_OP1(ljmp, 0xff, 5, 0, OPT_EA))
 
 ALT(DEF_ASM_OP1(int, 0xcd, 0, 0, OPT_IM8))
 ALT(DEF_ASM_OP1(seto, 0x0f90, 0, OPC_MODRM | OPC_TEST, OPT_REG8 | OPT_EA))
+ALT(DEF_ASM_OP1(setob, 0x0f90, 0, OPC_MODRM | OPC_TEST, OPT_REG8 | OPT_EA))
     DEF_ASM_OP2(enter, 0xc8, 0, 0, OPT_IM16, OPT_IM8)
     DEF_ASM_OP0(leave, 0xc9)
     DEF_ASM_OP0(ret, 0xc3)
+    DEF_ASM_OP0(retl,0xc3)
+ALT(DEF_ASM_OP1(retl,0xc2, 0, 0, OPT_IM16))
 ALT(DEF_ASM_OP1(ret, 0xc2, 0, 0, OPT_IM16))
     DEF_ASM_OP0(lret, 0xcb)
 ALT(DEF_ASM_OP1(lret, 0xca, 0, 0, OPT_IM16))
@@ -230,6 +243,8 @@ ALT(DEF_ASM_OP0L(fcomp, 0xd8d9, 0, 0))
 
 ALT(DEF_ASM_OP1(fadd, 0xd8c0, 0, OPC_FARITH | OPC_REG, OPT_ST))
 ALT(DEF_ASM_OP2(fadd, 0xd8c0, 0, OPC_FARITH | OPC_REG, OPT_ST, OPT_ST0))
+ALT(DEF_ASM_OP2(fadd, 0xdcc0, 0, OPC_FARITH | OPC_REG, OPT_ST0, OPT_ST))
+ALT(DEF_ASM_OP2(fmul, 0xdcc8, 0, OPC_FARITH | OPC_REG, OPT_ST0, OPT_ST))
 ALT(DEF_ASM_OP0L(fadd, 0xdec1, 0, OPC_FARITH))
 ALT(DEF_ASM_OP1(faddp, 0xdec0, 0, OPC_FARITH | OPC_REG, OPT_ST))
 ALT(DEF_ASM_OP2(faddp, 0xdec0, 0, OPC_FARITH | OPC_REG, OPT_ST, OPT_ST0))
@@ -272,7 +287,6 @@ ALT(DEF_ASM_OP1(fiadds, 0xde, 0, OPC_FARITH | OPC_MODRM, OPT_EA))
      DEF_ASM_OP0(fninit, 0xdbe3)
      DEF_ASM_OP0(fnclex, 0xdbe2)
      DEF_ASM_OP0(fnop, 0xd9d0)
-     DEF_ASM_OP0(fwait, 0x9b)
 
     /* fp load */
     DEF_ASM_OP1(fld, 0xd9c0, 0, OPC_REG, OPT_ST)
@@ -350,6 +364,11 @@ ALT(DEF_ASM_OP2(lslw, 0x0f03, 0, OPC_MODRM | OPC_WL, OPT_EA | OPT_REG, OPT_REG))
     DEF_ASM_OP1(verr, 0x0f00, 4, OPC_MODRM, OPT_REG | OPT_EA)
     DEF_ASM_OP1(verw, 0x0f00, 5, OPC_MODRM, OPT_REG | OPT_EA)
 
+#ifdef I386_ASM_16
+    /* 386 */
+    DEF_ASM_OP0(loadall386, 0x0f07)
+#endif
+
     /* 486 */
     DEF_ASM_OP1(bswap, 0x0fc8, 0, OPC_REG, OPT_REG32 )
 ALT(DEF_ASM_OP2(xaddb, 0x0fc0, 0, OPC_MODRM | OPC_BWL, OPT_REG, OPT_REG | OPT_EA ))
@@ -364,7 +383,15 @@ ALT(DEF_ASM_OP2(cmpxchgb, 0x0fb0, 0, OPC_MODRM | OPC_BWL, OPT_REG, OPT_REG | OPT
     
     /* pentium pro */
     ALT(DEF_ASM_OP2(cmovo, 0x0f40, 0, OPC_MODRM | OPC_TEST, OPT_REG32 | OPT_EA, OPT_REG32))
-
+#ifdef I386_ASM_16
+ALT(DEF_ASM_OP2(cmovno, 0x0f41, 0, OPC_MODRM | OPC_TEST, OPT_REG32 | OPT_EA, OPT_REG32))
+ALT(DEF_ASM_OP2(cmovc, 0x0f42, 0, OPC_MODRM | OPC_TEST, OPT_REG32 | OPT_EA, OPT_REG32))
+ALT(DEF_ASM_OP2(cmovnc, 0x0f43, 0, OPC_MODRM | OPC_TEST, OPT_REG32 | OPT_EA, OPT_REG32))
+ALT(DEF_ASM_OP2(cmovz, 0x0f44, 0, OPC_MODRM | OPC_TEST, OPT_REG32 | OPT_EA, OPT_REG32))
+ALT(DEF_ASM_OP2(cmovnz, 0x0f45, 0, OPC_MODRM | OPC_TEST, OPT_REG32 | OPT_EA, OPT_REG32))
+ALT(DEF_ASM_OP2(cmovna, 0x0f46, 0, OPC_MODRM | OPC_TEST, OPT_REG32 | OPT_EA, OPT_REG32))
+ALT(DEF_ASM_OP2(cmova, 0x0f47, 0, OPC_MODRM | OPC_TEST, OPT_REG32 | OPT_EA, OPT_REG32))
+#endif
     DEF_ASM_OP2(fcmovb, 0xdac0, 0, OPC_REG, OPT_ST, OPT_ST0 )
     DEF_ASM_OP2(fcmove, 0xdac8, 0, OPC_REG, OPT_ST, OPT_ST0 )
     DEF_ASM_OP2(fcmovbe, 0xdad0, 0, OPC_REG, OPT_ST, OPT_ST0 )
@@ -381,6 +408,7 @@ ALT(DEF_ASM_OP2(cmpxchgb, 0x0fb0, 0, OPC_MODRM | OPC_BWL, OPT_REG, OPT_REG | OPT
 
     /* mmx */
     DEF_ASM_OP0(emms, 0x0f77) /* must be last OP0 */
+
     DEF_ASM_OP2(movd, 0x0f6e, 0, OPC_MODRM, OPT_EA | OPT_REG32, OPT_MMX )
 ALT(DEF_ASM_OP2(movd, 0x0f7e, 0, OPC_MODRM, OPT_MMX, OPT_EA | OPT_REG32 ))
     DEF_ASM_OP2(movq, 0x0f6f, 0, OPC_MODRM, OPT_EA | OPT_MMX, OPT_MMX )
@@ -437,6 +465,32 @@ ALT(DEF_ASM_OP2(psrlq, 0x0f73, 2, OPC_MODRM, OPT_IM8, OPT_MMX ))
     DEF_ASM_OP2(punpcklwd, 0x0f61, 0, OPC_MODRM, OPT_EA | OPT_MMX, OPT_MMX )
     DEF_ASM_OP2(punpckldq, 0x0f62, 0, OPC_MODRM, OPT_EA | OPT_MMX, OPT_MMX )
     DEF_ASM_OP2(pxor, 0x0fef, 0, OPC_MODRM, OPT_EA | OPT_MMX, OPT_MMX )
+
+    /* sse */
+    DEF_ASM_OP2(movups, 0x0f10, 0, OPC_MODRM, OPT_EA | OPT_REG32, OPT_SSE )
+ALT(DEF_ASM_OP2(movups, 0x0f11, 0, OPC_MODRM, OPT_SSE, OPT_EA | OPT_REG32 ))
+    DEF_ASM_OP2(movaps, 0x0f28, 0, OPC_MODRM, OPT_EA | OPT_REG32, OPT_SSE )
+ALT(DEF_ASM_OP2(movaps, 0x0f29, 0, OPC_MODRM, OPT_SSE, OPT_EA | OPT_REG32 ))
+    DEF_ASM_OP2(movhps, 0x0f16, 0, OPC_MODRM, OPT_EA | OPT_REG32, OPT_SSE )
+ALT(DEF_ASM_OP2(movhps, 0x0f17, 0, OPC_MODRM, OPT_SSE, OPT_EA | OPT_REG32 ))
+    DEF_ASM_OP2(addps, 0x0f58, 0, OPC_MODRM, OPT_EA | OPT_SSE, OPT_SSE )
+    DEF_ASM_OP2(cvtpi2ps, 0x0f2a, 0, OPC_MODRM, OPT_EA | OPT_MMX, OPT_SSE )
+    DEF_ASM_OP2(cvtps2pi, 0x0f2d, 0, OPC_MODRM, OPT_EA | OPT_SSE, OPT_MMX )
+    DEF_ASM_OP2(cvttps2pi, 0x0f2c, 0, OPC_MODRM, OPT_EA | OPT_SSE, OPT_MMX )
+    DEF_ASM_OP2(divps, 0x0f5e, 0, OPC_MODRM, OPT_EA | OPT_SSE, OPT_SSE )
+    DEF_ASM_OP2(maxps, 0x0f5f, 0, OPC_MODRM, OPT_EA | OPT_SSE, OPT_SSE )
+    DEF_ASM_OP2(minps, 0x0f5d, 0, OPC_MODRM, OPT_EA | OPT_SSE, OPT_SSE )
+    DEF_ASM_OP2(mulps, 0x0f59, 0, OPC_MODRM, OPT_EA | OPT_SSE, OPT_SSE )
+    DEF_ASM_OP2(pavgb, 0x0fe0, 0, OPC_MODRM, OPT_EA | OPT_SSE, OPT_SSE )
+    DEF_ASM_OP2(pavgw, 0x0fe3, 0, OPC_MODRM, OPT_EA | OPT_SSE, OPT_SSE )
+    DEF_ASM_OP2(pmaxsw, 0x0fee, 0, OPC_MODRM, OPT_EA | OPT_MMX, OPT_MMX )
+    DEF_ASM_OP2(pmaxub, 0x0fde, 0, OPC_MODRM, OPT_EA | OPT_MMX, OPT_MMX )
+    DEF_ASM_OP2(pminsw, 0x0fea, 0, OPC_MODRM, OPT_EA | OPT_MMX, OPT_MMX )
+    DEF_ASM_OP2(pminub, 0x0fda, 0, OPC_MODRM, OPT_EA | OPT_MMX, OPT_MMX )
+    DEF_ASM_OP2(rcpss, 0x0f53, 0, OPC_MODRM, OPT_EA | OPT_SSE, OPT_SSE )
+    DEF_ASM_OP2(rsqrtps, 0x0f52, 0, OPC_MODRM, OPT_EA | OPT_SSE, OPT_SSE )
+    DEF_ASM_OP2(sqrtps, 0x0f51, 0, OPC_MODRM, OPT_EA | OPT_SSE, OPT_SSE )
+    DEF_ASM_OP2(subps, 0x0f5c, 0, OPC_MODRM, OPT_EA | OPT_SSE, OPT_SSE )
 
 #undef ALT
 #undef DEF_ASM_OP0
