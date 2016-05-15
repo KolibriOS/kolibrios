@@ -68,4 +68,8 @@ int getchar (void);
 int puts (const char * str);
 char * gets (char * str);
 
+typedef int (*virtual_getc)(void *sp, const void *obj);
+typedef void (*virtual_ungetc)(void *sp, int c, const void *obj);
+int format_scan(const void *src, const char *fmt, va_list argp, virtual_getc vgetc, virtual_ungetc vungetc);
+
 #endif
