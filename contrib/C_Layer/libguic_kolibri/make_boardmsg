@@ -1,0 +1,37 @@
+NAME=boardmsg
+CC = kos32-gcc
+LD = kos32-ld
+FASM=fasm
+
+SDK_DIR:= $(abspath ../../sdk)
+
+LDFLAGS = -static -S -nostdlib -T $(SDK_DIR)/sources/newlib/app.lds \
+          --image-base 0 -lgcc /home/autobuild/tools/win32/lib/libdll.a\
+          /home/autobuild/tools/win32/lib/libc.dll.a\
+          /home/autobuild/tools/win32/lib/libapp.a
+
+CFLAGS = -g -U_Win32 -U_WIN32 -U__MINGW32__
+
+INCLUDES= -I $(SDK_DIR)/sources/newlib/libc/include
+LIBPATH:= -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib
+
+
+SOURCES =    loadboxlib.asm boardmsg.c
+
+OBJECTS =  $(patsubst %.asm, %.obj, $(patsubst %.c, %.o, $(SOURCES)))
+
+all:$(NAME)
+
+$(NAME): $(OBJECTS) Makefile
+	$(LD) $(LIBPATH) -o $@ $(OBJECTS) $(LDFLAGS)
+# -ldll -lapp -lc.dll -lgcc -Map $(NAME).map
+	kos32-objcopy $@ -O binary
+
+%.o : %.c Makefile
+	$(CC) -c $(INCLUDES) $(CFLAGS) -o $@ $<
+
+%.obj : %.asm Makefile
+	$(FASM) $< $@
+
+clean:
+	-rm -f *.o *.obj
