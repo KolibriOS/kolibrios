@@ -71,5 +71,12 @@ char * gets (char * str);
 typedef int (*virtual_getc)(void *sp, const void *obj);
 typedef void (*virtual_ungetc)(void *sp, int c, const void *obj);
 int format_scan(const void *src, const char *fmt, va_list argp, virtual_getc vgetc, virtual_ungetc vungetc);
+int vscanf ( const char * format, va_list arg );
+int scanf ( const char * format, ...);
+int vsscanf ( const char * s, const char * format, va_list arg );
+int sscanf ( const char * s, const char * format, ...);
+int vfscanf ( FILE * stream, const char * format, va_list arg );
+
+
 
 #endif

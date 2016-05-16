@@ -6,8 +6,11 @@ int virtual_getc_file(void *sp, const void *obj)
 // get next chat from file obj, save point is ptr to string char ptr
 {
     FILE *f = (FILE *)obj;
+    int     ch = fgetc(f);
 
-    return fgetc(f);
+//printf("getc '%c'[%d];", ch, ch);
+
+    return ch;
 }
 
 void virtual_ungetc_file(void *sp, int c, const void *obj)

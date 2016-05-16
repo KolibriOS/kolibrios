@@ -18,6 +18,8 @@ todo:
 #include <ctype.h>
 #include <math.h>
 #include <stdarg.h>
+typedef int (*virtual_getc)(void *sp, const void *obj);
+typedef void (*virtual_ungetc)(void *sp, int c, const void *obj);
 
 enum flags_t
 {
@@ -170,7 +172,9 @@ int     try_parse_int(long long *digit, int ch, const void *src, void *save, vir
     {
         base = 8;
         ch = vgetc(save, src);
-        if (ch == EOF) return EOF;
+        if (ch == EOF || isspace(ch))
+            have_digits++;
+        else
         if (ch == 'x' || ch == 'X')
         {
             base = 16;
@@ -201,6 +205,8 @@ int     try_parse_int(long long *digit, int ch, const void *src, void *save, vir
             ch = vgetc(save, src);
             if (ch == EOF || isspace(ch)) break; // ok, just finish num
         }
+        else if (ch == EOF || isspace(ch))
+            break;
         else
         {
             vungetc(save, ch, src);
@@ -365,9 +371,9 @@ int format_scan(const void *src, const char *fmt, va_list argp, virtual_getc vge
             arg_str = va_arg(argp, char*);
             if (fmt1 == 0) length = 1;
             else length = fmt1;
-            for (i = 0; i < length; i++)
+            for (i = 0; i < length;)
             {
-                *arg_str++ = ch;
+                *arg_str++ = ch; i++;
                 ch = vgetc(&save, src);
                 if (ch == EOF) break;
             }
