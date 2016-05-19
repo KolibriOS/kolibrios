@@ -7,6 +7,7 @@ char* strdup(const char* str)
 	int len;
 	len=strlen(str)+1;
 	res=malloc(len);
-	memcpy(res,str,len);
+	if(res)
+        memcpy(res,str,len);
 	return res;
 }

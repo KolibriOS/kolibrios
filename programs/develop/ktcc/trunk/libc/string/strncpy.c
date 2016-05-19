@@ -1,4 +1,6 @@
-char* strncpy(char* strDest,const char* strSource,int count)
+#include <string.h>
+
+char* strncpy(char* strDest,const char* strSource,size_t count)
 {
 	char* res;
 	res=strDest;

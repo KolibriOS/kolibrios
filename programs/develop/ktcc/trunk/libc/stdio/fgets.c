@@ -1,12 +1,21 @@
 #include <stdio.h>
 
-char * fgets ( char * str, int num, FILE * stream )
+char * fgets ( char * str, int num, FILE * file )
+// need to ignore \r\n in text mode
 {
 	int rd = 0;
 	char c;
-	while (rd < num - 1) 
+
+    if(!file || !str)
+    {
+        errno = E_INVALIDPTR;
+        return NULL;
+    }
+
+
+	while (rd < num - 1)
 	{
-		c = fgetc(stream);
+		c = fgetc(file);
 		if (EOF == c) break;
 		if ('\n' == c)
 		{
@@ -17,8 +26,8 @@ char * fgets ( char * str, int num, FILE * stream )
 			str[rd++] = c;
 	}
 	if (0 == rd) return NULL;
-	else 
-	{	
+	else
+	{
 		str[rd] = '\0';
 		return str;
 	}

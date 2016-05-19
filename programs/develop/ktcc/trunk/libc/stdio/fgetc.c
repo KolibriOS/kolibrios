@@ -2,6 +2,11 @@
 int fgetc(FILE* file)
 {
 	dword res;
+    if(!file)
+    {
+        errno = E_INVALIDPTR;
+        return EOF;
+    }
 
 	if ((file->mode & 3!=FILE_OPEN_READ) && (file->mode & FILE_OPEN_PLUS==0)) return EOF;
 
@@ -17,6 +22,10 @@ int fgetc(FILE* file)
 			file->filepos++;
   			return (int)file->buffer[0];
 		}
-		else return(res);
+		else
+        {
+            errno = -res;
+            return EOF;  // errors are < 0
+        }
 	}
 }

@@ -57,33 +57,61 @@ libc:
 -no "finished" in title of console program after exit console - use con_exit()
 -bench timing error (0s or 1s)
 -minimal memory allocator
--memmove cannot overlap
 
 
-libc not full
+libc not complete. overall status:
 no files:
 assert.h
-errno.h
+errno.h  - in stdio
 limits.h
 locale.h
 setjmp.h
 signall.h
 time.h
-check functions:
+wchar.h
+wctype.h
+
+
+
+functions absent list:
+
+math.h
+frexp
+ldexp
+modf
+fmod
+
+HUGE_VAL
+NAN
+
 
 stdio.h:
+FOPEN_MAX
+L_tmpnam
+TMP_MAX
 Operations on files: none http://www.cplusplus.com/reference/cstdio/
-reopen
-setbuf, setvbuf
-scanf, sscanf, vfscanf(C11), vscanf(C11), vsscanf(C11)
-vfprintf, vsfprintf
+freopen
+setbuf
+setvbuf
 
-+fgets, gets
-fputs, puts
-getchar
-putc
-+putchar
-Error-handling: only feof
-Macros: only EOF, NULL, FILE
+
+stdlib.h:
+atof
+atol
+strtol, strtoul
+atexit
+getenv
+system
+bsearch
+qsort
+mblen
+mbtowc
+wctomb
+mbstowcs
+wcstombs
+
+string.h
+strxfrm
+
 
 -all files in libc/kolibrisys catalog are stdcall in header, but in asm cdecl

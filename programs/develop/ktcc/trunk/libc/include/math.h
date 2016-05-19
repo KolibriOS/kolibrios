@@ -166,6 +166,13 @@ extern float lgammaf_r(float, int *);
 double round  (double x);
 long double roundl  (long double x);
 
+#ifndef NAN
+# define NAN	(__nan__)
+#endif
+
+#ifndef INFINITY
+# define INFINITY	(__inf__)
+#endif
 
 
 //#endif /* !_POSIX_SOURCE */

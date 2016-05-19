@@ -1,3 +1,4 @@
+#include <stdlib.h>
 /*
 ** return lower-case of c if upper-case, else c
 */

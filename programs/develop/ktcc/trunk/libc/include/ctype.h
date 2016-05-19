@@ -33,3 +33,5 @@ extern unsigned short __is[128];
 #define isascii(c) (!((c)&(~0x7f)))
 #define toascii(c) ((c)&0x7f)
 
+extern unsigned char tolower(unsigned char c);
+extern unsigned char toupper(unsigned char c);

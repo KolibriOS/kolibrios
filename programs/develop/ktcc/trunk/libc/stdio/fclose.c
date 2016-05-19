@@ -2,8 +2,17 @@
 #include <string.h>
 #include <stdlib.h>
 
-void fclose(FILE* file)
+int fclose(FILE* file)
 {
-	free(file->buffer);
+    if(!file)
+    {
+        errno = E_INVALIDPTR;
+        return EOF;
+    }
+
+    if(file->buffer)
+        free(file->buffer);
 	free(file);
+
+	return 0;
 }

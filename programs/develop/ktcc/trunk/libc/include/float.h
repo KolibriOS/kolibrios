@@ -54,4 +54,12 @@
 
 #endif
 
+#ifndef NAN
+# define NAN	(__nan__)
+#endif
+
+#ifndef INFINITY
+# define INFINITY	(__inf__)
+#endif
+
 #endif /* _FLOAT_H_ */

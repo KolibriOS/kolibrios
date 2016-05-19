@@ -1,4 +1,6 @@
-int strspn(const char* string,const char* strCharSet)
+#include <string.h>
+
+size_t strspn(const char* string,const char* strCharSet)
 {
 	int i;
 	const char* temp;
@@ -6,14 +8,15 @@ int strspn(const char* string,const char* strCharSet)
 	while (*string!='\0')
 	{
 		temp=strCharSet;
-		while (temp!='\0')
+		while (*temp!='\0')
 		{
 			if (*temp==*string)
 				break;
-		}	
-		if (temp=='\0')
+            temp++;
+		}
+		if (*temp=='\0')
 			break;
-		*string++;
+		string++;
 		i++;
 	}
 	return i;

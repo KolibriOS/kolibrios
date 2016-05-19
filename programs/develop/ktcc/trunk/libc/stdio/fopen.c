@@ -5,6 +5,9 @@
 extern char __argv;
 extern char __path;
 
+int errno = 0;
+
+
 const char* getfullpath(const char *path){
 
         int i,j,relpath_pos,localpath_size;
@@ -39,14 +42,20 @@ const char* getfullpath(const char *path){
 
         if (local_path==1)
         {
-                i=0x400;
+                i=FILENAME_MAX;
                 //find local path of program
                 while(*(programpath+i)!='/')
                 {
                         i--;
                 }
                 localpath_size=i;
-                newpath=malloc(0x400);
+                newpath=malloc(FILENAME_MAX);
+                if(!newpath)
+                {
+                    errno = E_NOMEM;
+                    return NULL;
+                }
+
                 //copy local path to the new path
                 for(i=0;i<=localpath_size;i++)
                 {
@@ -61,7 +70,7 @@ const char* getfullpath(const char *path){
         }
 
        //if we here than path is a relative
-       i=0x400;
+       i=FILENAME_MAX;
        //find local path of program
        while(*(programpath+i)!='/')
        {
@@ -75,7 +84,12 @@ const char* getfullpath(const char *path){
                 i++;
        }
        filename_size=i;
-       newpath=malloc(0x400);
+       newpath=malloc(FILENAME_MAX);
+        if(!newpath)
+        {
+            errno = E_NOMEM;
+            return NULL;
+        }
         //copy local path to the new path
        for(i=0;i<=localpath_size;i++)
        {
@@ -109,6 +123,11 @@ FILE* fopen(const char* filename, const char *mode)
                 mode++;
         }else
                 return 0;
+        if (*mode=='+')
+        {
+                imode|=FILE_OPEN_PLUS;
+                mode++;
+        }
         if (*mode=='t')
         {
                 imode|=FILE_OPEN_TEXT;
@@ -121,14 +140,22 @@ FILE* fopen(const char* filename, const char *mode)
                 mode++;
         }
         if (*mode!=0)
-                return 0;
+                return NULL;
         res=malloc(sizeof(FILE));
-        res->buffer=malloc(256);
-        res->buffersize=256;
-        res->filesize=0;
-        res->filepos=0;
-        res->mode=imode;
-        res->filename=(char*)getfullpath(filename);
+        if (res)
+        {
+            res->buffer=malloc(BUFSIZ);
+            res->buffersize=BUFSIZ;
+            res->filesize=0;
+            res->filepos=0;
+            res->mode=imode;
+            res->filename=(char*)getfullpath(filename);
+        }
+        if(!res || !res->buffer || !res->filename)
+        {
+            errno = E_NOMEM;
+            return NULL;
+        }
 
 	if ((imode==FILE_OPEN_READ) || (imode==FILE_OPEN_APPEND))
 	{

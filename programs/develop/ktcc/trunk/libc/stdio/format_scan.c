@@ -336,11 +336,7 @@ int format_scan(const void *src, const char *fmt, va_list argp, virtual_getc vge
                     else
                         fmt2 = fmt2 * 10 + (*fmt -'0');
                     break;
-                case '*':
-                    if (flag_point == 0)
-                        fmt1 = va_arg(argp, int);
-                    else
-                        fmt2 = va_arg(argp, int);
+                case '*': // ignoring
                     break;
                 case '.':
                     flags |= flag_point;

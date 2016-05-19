@@ -1,9 +1,11 @@
-int strcspn(const char* string, const char* strCharSet)
+#include <string.h>
+
+size_t strcspn(const char* string, const char* strCharSet)
 {
 	const char* temp;
 	int i;
 	i=0;
-	while(1)
+	while(*string)
 	{
 		temp=strCharSet;
 		while (*temp!='\0')
@@ -14,4 +16,5 @@ int strcspn(const char* string, const char* strCharSet)
 		}
 		i++;string++;
 	}
+	return i;
 }

@@ -10,6 +10,6 @@ memset:
   cld
   rep	stosb
 .no_set:
+  mov eax, [esp+8]
   pop	edi
   ret
-  

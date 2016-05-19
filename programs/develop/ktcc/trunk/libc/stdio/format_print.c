@@ -77,7 +77,7 @@ int copy_and_align(char *dest, int width, char *src, int src_len, char sign, int
     int     rc = 0, sign_len;
     char    fill;
 
-    fill = (flags & flag_lead_zeros) ? '0' : ' ';
+    fill = (flags & flag_lead_zeros)&&((flags & flag_left_just)==0) ? '0' : ' ';
     if(sign == 'x' || sign == 'X')
     {
         sign_len = 2;
@@ -160,7 +160,7 @@ int formatted_double_to_string_scientific(long double number, int format1, int f
             if (flags & flag_space_plus) sign = ' ';
         }
         // normalize
-        while (norm_digit < 1.0) { norm_digit *= 10; mul--; }
+        while (norm_digit < 1.0 && norm_digit > 0) { norm_digit *= 10; mul--; }
         while (norm_digit >= 10.0) { norm_digit /= 10; mul++; }
 
         len = formatted_double_to_string(norm_digit, 0, format2, buf, flags & ~(flag_plus | flag_space_plus));
@@ -612,7 +612,10 @@ int format_print(char *dest, size_t maxlen, const char *fmt0, va_list argp)
  //prec special case, this is just workaround
             if (flag_long <= 1) doubledigit = va_arg(argp, double); else
             if (flag_long == 2) doubledigit = va_arg(argp, long double);
-            length = formatted_double_to_string(doubledigit, fmt1, fmt2, buf, flags);
+            if (flags & flag_point)
+                length = formatted_double_to_string(doubledigit, fmt1, fmt2, buf, flags);
+            else
+                length = formatted_double_to_string(doubledigit, fmt1, 1, buf, flags | flag_point);
             i = formatted_double_to_string_scientific(doubledigit, fmt1, fmt2, buf + sizeof buf / 2, flags);
             if(length > i)
             {

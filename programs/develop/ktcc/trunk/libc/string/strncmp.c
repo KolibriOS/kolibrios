@@ -1,8 +1,10 @@
-int strncmp(const char* string1, const char* string2, int count)
+#include <string.h>
+
+int strncmp(const char* string1, const char* string2, size_t count)
 {
-	while(count>0 && *string1==*string2)
+	while(count>0 && (*string1==*string2))
 	{
-		if (*string1) return 0;
+		if ('\0' == *string1) return 0;
 		++string1;
 		++string2;
 		--count;

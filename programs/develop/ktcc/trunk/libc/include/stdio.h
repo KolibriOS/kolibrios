@@ -14,13 +14,16 @@ typedef char *va_list;
 # define NULL ((void*)0)
 #endif
 
+typedef unsigned int fpos_t;  // 32bit is not enough! 4Gb limit
+typedef unsigned int size_t;
+
 int format_print(char *dest, size_t maxlen,const char *fmt0, va_list argp);
 
 typedef struct {
   char*   buffer;
   dword   buffersize;
-  dword   filesize;
-  dword   filepos;
+  dword   filesize;     // too small
+  dword   filepos;      // too small
   char*   filename;
   int     mode;
 } FILE;
@@ -33,10 +36,12 @@ typedef struct {
 #define FILE_OPEN_APPEND 2
 #define FILE_OPEN_TEXT 4
 #define FILE_OPEN_PLUS 8
-#define EOF -1
+#define EOF (-1)
+#define BUFSIZ (256)
+#define FILENAME_MAX (0x400)
 
 extern FILE* fopen(const char* filename, const char *mode);
-extern void fclose(FILE* file);
+extern int fclose(FILE* file);
 extern int feof(FILE* file);
 extern int fflush(FILE* file);
 extern int fgetc(FILE* file);
@@ -62,6 +67,7 @@ extern int cdecl snprintf(char *dest, size_t size, const char *format,...);
 extern int cdecl sprintf(char *dest,const char *format,...);
 
 #define getc(a) fgetc(a)
+#define putc(a, b) fputc(a, b)
 char * fgets (char * str, int num, FILE * stream);
 int putchar (int ch);
 int getchar (void);
@@ -76,7 +82,29 @@ int scanf ( const char * format, ...);
 int vsscanf ( const char * s, const char * format, va_list arg );
 int sscanf ( const char * s, const char * format, ...);
 int vfscanf ( FILE * stream, const char * format, va_list arg );
+int fputs ( const char * str, FILE * file );
+void clearerr ( FILE * stream );
+int ferror ( FILE * stream );
+void perror ( const char * str );
+int vprintf ( const char * format, va_list arg );
+int vsprintf (char * s, const char * format, va_list arg );
+int vfprintf ( FILE * stream, const char * format, va_list arg );
 
-
+extern int errno;
+/* errors codes from KOS, but minus */
+#define E_SUCCESS (0)
+#define E_UNSUPPORTED (-2)
+#define E_UNKNOWNFS  (-3)
+#define E_NOTFOUND (-5)
+#define E_EOF  (-6)
+#define E_INVALIDPTR (-7)
+#define E_DISKFULL  (-8)
+#define E_FSYSERROR  (-9)
+#define E_ACCESS  (-10)
+#define E_HARDWARE  (-11)
+#define E_NOMEM  (-12)
+/* conversion errors */
+#define ERANGE (-20)
+#define EINVAL (-21)
 
 #endif

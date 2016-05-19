@@ -1,4 +1,4 @@
-#include<string.h>
+#include <string.h>
 
 char* strstr(const char* s, const char* find)
 {

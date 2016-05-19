@@ -1,3 +1,5 @@
+#include <string.h>
+
 char* strpbrk(const char* string, const char* strCharSet)
 {
 	const char* temp;
