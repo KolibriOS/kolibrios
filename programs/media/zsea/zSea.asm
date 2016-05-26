@@ -36,7 +36,7 @@
 	dd IM_END	; size of image
 	dd I_END	; memory for app
 	dd stacktop	; esp
-	dd ext_dest_cmdline	; I_Param
+    dd dest_cmdline ; I_Param
 	dd path		; APPLICATION PACH
 
 include 'lang.inc'
@@ -51,9 +51,6 @@ include '../../proc32.inc'
 include '../../develop/libraries/box_lib/load_lib.mac'
         @use_library    ;use load lib macros
 ;******************************************************************************
-ext_dest_cmdline:
-	dd 0xffffffff
-	dd temp_area
 ;------------------------------------------------------------------------------
 START:				; start of execution
 	mcall	68, 11
@@ -74,7 +71,7 @@ START:				; start of execution
 
 	mcall	48,4
 	mov	[skin_height],eax
-	
+
 	mcall	68,12,1024
 	mov	[menu_data_1.procinfo],eax
 	mov	[menu_data_2.procinfo],eax
@@ -105,12 +102,13 @@ START:				; start of execution
 ;init_ColorDialog	ColorDialog_data
 	push    dword ColorDialog_data
 	call    [ColorDialog_Init]
-	
+
 	call	get_filter_data
 
 ;-----------------------------------------------------
 ; check for parameters
-	cmp	dword [temp_area],'BOOT'
+    mov     esi, [28]
+    cmp dword [esi],'BOOT'
 	jne	.no_boot
 .background:
 	call	load_image
@@ -135,12 +133,12 @@ START:				; start of execution
 @@:
 	dec	esi
 	jnz	.kill_successors
-	
+
 	mcall -1
 ;-----------------------------------------------------
  .no_boot:
 	xor	eax,eax
-	cmp	byte [temp_area],al
+    cmp [esi],al
 	jnz	@f
 	mov	[file_name],eax
 	jmp .no_param
@@ -153,7 +151,7 @@ START:				; start of execution
 	rep	stosd
 
 
-	mov	edi,temp_area	; look for <0> in temp_area
+    mov edi, [28]  ; look for <0> in temp_area
 
 	cmp	[edi],byte "\"
 	jne	.continue
@@ -171,11 +169,13 @@ START:				; start of execution
 	mov	esi,edi
 	mov	ecx,4095 ;257	;	strlen
 	repne scasb
-	lea		ecx, [edi-temp_area]
+    mov     ecx, edi
+    sub     ecx, [28]
 
 	mov	edi,string
 	rep	movsb		; copy string from temp_area to "string" (filename)
-	cmp	[temp_area],byte "\"
+    mov ecx, [28]
+    cmp [ecx],byte "\"
 	je	START.background
 	call	load_directory
 	test	eax,eax
@@ -259,7 +259,7 @@ red_1:
 ;	mov	[scroll_bar_data_horizontal.position],eax
 
 	call draw_window
-	
+
 	cmp	[redraw_wallpaper_flag],0
 	je	still
 	mov	[redraw_wallpaper_flag],0
@@ -268,10 +268,10 @@ red_1:
 ;	jmp  red_1
 still:
 	call	pause_cicle
-	
+
 	cmp	[RAW1_flag],1
 	je	animation_handler
-	
+
 	mcall	48,4
 	cmp	[skin_height],eax
 	je	@f
@@ -308,7 +308,7 @@ red_sort_directory:
 redraw_window:
 	mov	[redraw_flag],byte 0
 	jmp	red_1
-	
+
 ;---------------------------------------------------------------------
 ;	red:
 ;	test	dword [status], 4
@@ -350,7 +350,7 @@ pause_cicle:
 	dec	eax
 	jz	.key
 	dec	eax
-	jnz	.start	
+	jnz	.start
 .button:
 	mcall	-1
 .key:

@@ -55,8 +55,8 @@ plugin_9_name:
 file_name:
 	rb 1024
 ;----------------------
-temp_area:
-	rb  64*1024 ; new max cmdline 64 Kb
+dest_cmdline:
+    rb  256
 ;----------------------
 procinfo:
 process_info:
