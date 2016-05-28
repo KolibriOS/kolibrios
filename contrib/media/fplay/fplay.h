@@ -133,6 +133,8 @@ struct vstate
     AVCodecContext  *aCtx;              /* audio decoder context    */
     AVCodec         *vCodec;            /* video codec              */
     AVCodec         *aCodec;            /* audio codec              */
+    enum AVCodecID  codec_id;
+    int             codec_profile;
     char            *input_file;
     char            *input_name;
     int             vStream;            /* video stream index       */

@@ -398,13 +398,31 @@ static enum PixelFormat get_format(struct AVCodecContext *avctx,
     VAProfile profile = avctx->profile;
     enum AVCodecID codec = avctx->codec_id;
 
-    printf("%s codec %d profile %x\n", __FUNCTION__,avctx->codec_id, avctx->profile);
-
     if (codec == AV_CODEC_ID_H264)
     {
         if(profile == FF_PROFILE_H264_BASELINE)
             profile = FF_PROFILE_H264_CONSTRAINED_BASELINE;
     };
+
+    if(avctx->hwaccel_context != NULL &&
+       (vst->codec_id != codec ||
+       vst->codec_profile != profile))
+    {
+        struct decoder* decoder = vst->decoder;
+
+        printf("\n%s codec changed!!!\n"
+               "old id %d profile %x new id %d profile %x\n",
+                __FUNCTION__, vst->codec_id, vst->codec_profile,
+                codec, profile);
+
+        for(int i = 0; i < decoder->nframes; i++)
+        {
+            vframe_t *vframe = &decoder->vframes[i];
+            vframe->format   = AV_PIX_FMT_NONE;
+        };
+    }
+
+    printf("\n%s codec %d profile %x\n", __FUNCTION__,avctx->codec_id, avctx->profile);
 
     for (int i = 0; fmt[i] != PIX_FMT_NONE; i++)
     {
@@ -420,6 +438,8 @@ static enum PixelFormat get_format(struct AVCodecContext *avctx,
                 if (vaapi_init_decoder(vst, profile, VAEntrypointVLD, avctx->width, avctx->height) == 0)
                 {
                     avctx->hwaccel_context = v_context;
+                    vst->codec_id = codec;
+                    vst->codec_profile = profile;
                     printf("%s format: %x\n",__FUNCTION__, fmt[i]);
                     return fmt[i];
                 }
@@ -457,9 +477,6 @@ static int get_buffer2(AVCodecContext *avctx, AVFrame *pic, int flags)
                                     AV_BUFFER_FLAG_READONLY);
     return 0;
 }
-
-struct vaapi_context va_context_storage;
-
 
 
 #define EGL_TEXTURE_Y_U_V_WL            0x31D7
