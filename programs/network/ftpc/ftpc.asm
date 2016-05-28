@@ -146,10 +146,14 @@ no_resolve:
         cmp     al, 0x20
         jbe     .port_done
         sub     al, '0'
-        jb      error_hostname
-        cmp     al, 9
-        ja      error_hostname
-        lea     ebx, [ebx*4 + ebx]
+        jnb     @f
+        mov     eax, str_err_host
+        jmp     error
+    @@: cmp     al, 9
+        jna     @f
+        mov     eax, str_err_host
+        jmp     error
+    @@: lea     ebx, [ebx*4 + ebx]
         shl     ebx, 1
         add     ebx, eax
         jmp     .portloop
@@ -168,7 +172,10 @@ no_resolve:
         pop     esi
 ; test for error
         test    eax, eax
-        jnz     error_resolve
+        jz      @f
+        mov     eax, str_err_resolve
+        jmp     error
+    @@:
 ; write results
         invoke  con_write_asciiz, str8          ; ' (',0
         mov     eax, [esi+addrinfo.ai_addr]     ; convert IP address to decimal notation
@@ -181,14 +188,18 @@ no_resolve:
 ; open the socket
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
-        je      error_socket
-        mov     [controlsocket], eax
+        jne     @f
+        mov     eax, str_err_socket
+        jmp     error
+    @@: mov     [controlsocket], eax
 ; connect to the server
         invoke  con_write_asciiz, str_connect
         mcall   connect, [controlsocket], sockaddr1, 18
         cmp     eax, -1
-        je      error_connect
-        mov     [status], STATUS_CONNECTING
+        jne     @f
+        mov     eax, str_err_connect
+        jmp     error
+    @@: mov     [status], STATUS_CONNECTING
 ; Tell the user we're waiting for the server now.
         invoke  con_write_asciiz, str_waiting
 
@@ -214,13 +225,17 @@ wait_for_servercommand:
         mcall   23, 50          ; Wait for event with timeout
         mcall   26, 9
         cmp     eax, [timeout]
-        jge     error_timeout
-        mcall   recv, [controlsocket], buf_buffer1, BUFFERSIZE, MSG_DONTWAIT
+        jl      @f
+        mov     eax, str_err_timeout
+        jmp     error
+    @@: mcall   recv, [controlsocket], buf_buffer1, BUFFERSIZE, MSG_DONTWAIT
         test    eax, eax
         jnz     .got_data
         cmp     ebx, EWOULDBLOCK
-        jne     error_socket
-        jmp     .receive_loop
+        je      @f
+        mov     eax, str_err_recv
+        jmp     error
+    @@: jmp     .receive_loop
 
   .got_data:
         mov     [offset], 0
@@ -450,8 +465,10 @@ open_dataconnection:
   .active:
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
-        je      error_socket
-        mov     [datasocket], eax
+        jne     @f
+        mov     eax, str_err_socket
+        jmp     error
+    @@: mov     [datasocket], eax
 
         mov     ax, [acti_port_start]
         xchg    al, ah
@@ -459,11 +476,17 @@ open_dataconnection:
 
         mcall   bind, [datasocket], sockaddr2, 18
         cmp     eax, -1
-        je      error_socket
+        jne     @f
+        mov     eax, str_err_bind
+        jmp     error
+    @@:
 
         mcall   listen, [datasocket], 1
         cmp     eax, -1
-        je      error_socket
+        jne     @f
+        mov     eax, str_err_listen
+        jmp     error
+    @@:
 
         mov     dword[buf_buffer1], 'PORT'
         mov     byte[buf_buffer1+4], ' '
@@ -491,8 +514,10 @@ open_dataconnection:
 
         mcall   accept, [datasocket], sockaddr2, 18        ; time to accept the awaiting connection..
         cmp     eax, -1
-        je      error_socket
-        push    eax
+        jne     @f
+        mov     eax, str_err_accept
+        jmp     error
+    @@: push    eax
         mcall   close, [datasocket]
         pop     [datasocket]
 
@@ -526,29 +551,11 @@ dword_ascii:
         pop     ecx ebx edx
         ret
 
-error_hostname:
+error:
+        push    eax
         invoke  con_set_flags, 0x0c                     ; print errors in red
-        invoke  con_write_asciiz, str_err_host
-        jmp     wait_for_keypress
-
-error_connect:
-        invoke  con_set_flags, 0x0c                     ; print errors in red
-        invoke  con_write_asciiz, str_err_connect
-        jmp     wait_for_keypress
-
-error_timeout:
-        invoke  con_set_flags, 0x0c                     ; print errors in red
-        invoke  con_write_asciiz, str_err_timeout
-        jmp     wait_for_keypress
-
-error_socket:
-        invoke  con_set_flags, 0x0c                     ; print errors in red
-        invoke  con_write_asciiz, str_err_socket
-        jmp     wait_for_keypress
-
-error_resolve:
-        invoke  con_set_flags, 0x0c                     ; print errors in red
-        invoke  con_write_asciiz, str_err_resolve
+        pop     eax
+        invoke  con_write_asciiz, eax
         jmp     wait_for_keypress
 
 error_heap:
@@ -584,11 +591,16 @@ str_prompt      db '> ',0
 str_resolve     db 'Resolving ',0
 str_newline     db 10,0
 str_err_resolve db 10,'Name resolution failed.',10,0
-str_err_socket  db 10,'Socket error.',10,0
+str_err_socket  db 10,'[75,0 socket]: Error creating a socket',10,0
+str_err_bind    db 10,'[75,2 bind]: Error binding to socket',10,0
+str_err_listen  db 10,'[75,3 listen]: Cannot accept incoming connections',10,0
+str_err_accept  db 10,'[75,5 accept]: Error accepting a connection',10,0
+str_err_recv    db 10,'[75,7 recv]: Error receiving data from server',10,0
 str_err_heap    db 10,'Cannot allocate memory from heap.',10,0
 str_err_timeout db 10,'Timeout - no response from server.',10,0
-str_err_connect db 10,'Cannot connect to the server.',10,0
+str_err_connect db 10,'[75,4 connect]: Cannot connect to the server.',10,0
 str_err_host    db 10,'Invalid hostname.',10,0
+str_err_params  db 10,'Invalid parameters',10,0
 str8            db ' (',0
 str9            db ')',10,0
 str_push        db 'Push any key to continue.',0
