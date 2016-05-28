@@ -84,8 +84,10 @@ pasv_ok:
 
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
-        je      error_socket
-        mov     [datasocket], eax
+        jne     @f
+        mov     eax, str_err_socket
+        jmp     error
+    @@: mov     [datasocket], eax
 
         mov     esi, edi
         call    ascii_dec
@@ -105,8 +107,10 @@ pasv_ok:
         invoke  con_write_asciiz, str_open
         mcall   connect, [datasocket], sockaddr2, 18
         cmp     eax, -1
-        je      error_socket
-        jmp     wait_for_servercommand
+        jne     @f
+        mov     eax, str_err_connect
+        jmp     error
+    @@: jmp     wait_for_servercommand
 
   .fail:
         invoke  con_write_asciiz, str_unknown

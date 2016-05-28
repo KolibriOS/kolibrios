@@ -29,8 +29,10 @@ resolve:
   .user:
         lodsb
         cmp     al, 0
-        je      .error
-        stosb
+        jne     @f
+        mov     eax, str_err_params
+        jmp     error
+    @@: stosb
         cmp     byte [esi], ':'
         jne     .user
         mov     word [edi], 0x0a0d
@@ -44,8 +46,10 @@ resolve:
   .pass:   
         lodsb
         cmp     al, 0
-        je      .error
-        stosb
+        jne     @f
+        mov     eax, str_err_params
+        jmp     error
+    @@: stosb
         cmp     byte [esi], '@'
         jne     .pass
         mov     word [edi], 0x0a0d
@@ -57,8 +61,10 @@ resolve:
   .addr:
         lodsb
         cmp     al, 0
-        je      .error
-        stosb
+        jne     @f
+        mov     eax, str_err_params
+        jmp     error
+    @@: stosb
         cmp     byte [esi], ':'
         jne     .addr
         mov     byte [edi], 0
@@ -71,18 +77,24 @@ resolve:
   .port:
         lodsb
         cmp     al, 0
-        je      .error
-        cmp     al, '/'
-        jbe     @f
+        jne     @f
+        mov     eax, str_err_params
+        jmp     error
+    @@: cmp     al, '/'
+        jbe     .port_done
         sub     al, '0'
-        jb      error_hostname
-        cmp     al, 9
-        ja      error_hostname
-        lea     ebx, [ebx*4 + ebx]
+        jnb     @f
+        mov     eax, str_err_host
+        jmp     error
+    @@: cmp     al, 9
+        jna     @f
+        mov     eax, str_err_host
+        jmp     error
+    @@: lea     ebx, [ebx*4 + ebx]
         shl     ebx, 1
         add     ebx, eax
         jmp     .port
-  @@: ; port done
+  .port_done:
         xchg    bl, bh
         mov     [sockaddr1.port], bx
 
@@ -112,5 +124,3 @@ resolve:
 
         jmp     no_resolve.done
 
-  .error:
-        jmp     main ; parameter resolution failed. get input from user
