@@ -4,5 +4,5 @@
 #define TCC_TARGET_I386
 #define ONE_SOURCE
 
-#define COMMIT_4ad186c5ef61_IS_FIXED
+//#define COMMIT_4ad186c5ef61_IS_FIXED
 

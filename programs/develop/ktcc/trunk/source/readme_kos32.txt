@@ -21,17 +21,15 @@ otherwise (error) underscoring all symbols, not only cdecl
 -no symbols (mapfile) for debug, see howtodebugtcc
 
 
--how to use packed attribute see test82
--alias attribute wont work
--unnamed structs in union may lead to compiler internal error
--tcc: error: undefined symbol '__tcc_cvt_ftol' 
---in config.h - used workaround (#define COMMIT_4ad186c5ef61_IS_FIXED
---but this is precision bugfix - see \tests\tests2\000_cvttoftol.c 
+-using __attribute__((packed)) see test82. need naming struct twice as in kos32sys1.h
+-using __attribute__ ((alias xxx)) restricted only for non "static inline" functions 
+-erroneous or "non TCC" member using in nested structs or unions can lead to compiler internal error
 -not working: default search path are ./include ./lib from executable 
 --under KOS need to use -Bpath_to_ktcc
 --start.o not found using -B (kos) - put near your.c file
 -if static var sized more than 14096+ -> crash compiled .exe (kos) 
 ---^ stack size set in menuet header at compile time tccmeos.c:177 about 4k
+-bench timing coarse (0s or 1s), no usec in newlib gettimeofday. OK
 
 Tests status:
 asmtest +
@@ -55,19 +53,17 @@ test46 no stdin - removed funtionality read from console, but file ops works
 
 libc:
 -no "finished" in title of console program after exit console - use con_exit()
--bench timing error (0s or 1s)
--minimal memory allocator
+-used system memory allocator (4096 bytes minimum)
 
 
 libc not complete. overall status:
 no files:
-assert.h
 errno.h  - in stdio
 limits.h
 locale.h
 setjmp.h
 signall.h
-time.h
+time.h  - can use get_tick_count()/100 from kos32sys1.h
 wchar.h
 wctype.h
 
@@ -82,14 +78,12 @@ modf
 fmod
 
 HUGE_VAL
-NAN
-
 
 stdio.h:
-FOPEN_MAX
-L_tmpnam
-TMP_MAX
-Operations on files: none http://www.cplusplus.com/reference/cstdio/
+remove
+rename
+tmpfile
+tmpnam
 freopen
 setbuf
 setvbuf
@@ -114,4 +108,3 @@ string.h
 strxfrm
 
 
--all files in libc/kolibrisys catalog are stdcall in header, but in asm cdecl

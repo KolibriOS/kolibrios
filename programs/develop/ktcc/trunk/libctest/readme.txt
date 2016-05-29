@@ -1,7 +1,7 @@
 most test adapted from "musl-libctest-master" project
 some taken from newlib
 
-Status or tests
+Status or libc tests
 
 ---NOT TESTED---
 no library fns realized

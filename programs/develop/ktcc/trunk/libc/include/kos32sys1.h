@@ -30,17 +30,19 @@ extern "C" {
 
 typedef  unsigned int color_t;
 
-typedef union 
+
+typedef union __attribute__((packed)) pos_t
 {
     uint32_t val;
     struct
     {
         short  x;
         short  y;
-    }xy;
-} __attribute__((packed)) pos_t ;
+    };
+} pos_t;
 
-typedef union 
+
+typedef union __attribute__((packed)) oskey_t
 {
     uint32_t val;
     struct
@@ -48,8 +50,8 @@ typedef union
         uint8_t   state;
         uint8_t   code;
         uint16_t  ctrl_key;
-    }in;
-}__attribute__((packed)) oskey_t ;
+    };
+} oskey_t;
 
 typedef struct
 {
@@ -154,6 +156,7 @@ uint32_t get_skin_height(void)
 };
 
 /*
+// TinyC dont support aliasing of static inline funcs
 static inline void BeginDraw(void) __attribute__ ((alias ("begin_draw")));
 static inline void EndDraw(void) __attribute__ ((alias ("end_draw")));
 static inline void DrawWindow(int x, int y, int w, int h, const char *name,
