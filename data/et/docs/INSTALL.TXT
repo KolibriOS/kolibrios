@@ -1,9 +1,9 @@
-Minimal system requirements for Kolibri 0.7.x.0:
+Minimal system requirements for KolibriOS:
 * CPU: Pentium, AMD 5x86 or Cyrix 5x86 without MMX with frequency 100 MHz
 * RAM: 8 Mb
 * Videocard: supporting VGA (640*480*16 mode) or Vesa
 * Keyboard: AT
-* Mouse: COM or PS/2
+* Mouse: COM, PS/2 or USB
 
 The system can boot from any of following devices:
 - Floppy 3.5
@@ -46,52 +46,35 @@ only FAT volumes are ok.
 3) Moreover, there exist a program which allow load Kolibri directly from
    Windows 95/98/Me (of course, unloading it) - 9x2klbr (author - Diamond),
    supports FAT32 and NTFS.
-4) Usage of the loader GRUB. The way of using file 'memdisk' to load Kolibri
-   has been described by derPENGUIN on english forum
-   (http://meos32.7.forumer.com/viewtopic.php?t=110).
-   The suggested method (described by Alver) is based on that description
-   and was checked on grub-0.97-19mdv2007.0.
-   1. Kolibri can write only on FAT filesystem, so if image file is placed not
-      to FAT volume, the system can not save settings. Therefore if you have
-      FAT32 partition, place 'kolibri.img' there.
-   2. This method requires the file 'memdisk' from the package 'syslinux'
-      (http://syslinux.zytor.com). You may install the whole package or only
-      extract the mentioned file. Only the file 'memdisk' is needed. (After
-      package install it will be in '/usr/lib/syslinux').
-   3. Place the file 'memdisk' to the folder 'boot' or to the partition used
-      for Kolibri.
-   4. Add to the configuration file 'menu.lst' ('grub.conf') lines as follow:
+4) Usage of the loader GRUB. Place the file 'memdisk' to the folder 'boot'
+   or to the partition used for Kolibri.
+   a) For GRUB2, in the folder /etc/grub.d add to one of files next lines:
+
+menuentry 'KolibriOS' {
+      linux16 (hd[Hard disk number],[partition number])[path]/memdisk
+      initrd16 (hd[Hard disk number],[partition number])[path]/kolibri.img
+      }
+
+      example:
+
+menuentry 'KolibriOS' {
+      linux16 (hd0,msdos1)/boot/memdisk
+      initrd16 (hd0,msdos1)/boot/kolibri.img
+      }
+
+      then, run in terminal 'sudo update-grub'.
+
+   b) For old GRUB, add to the configuration file 'menu.lst' next lines:
 
       title KolibriOS
       kernel (hd[Hard disk number],[partition number])[path]/memdisk
       initrd (hd[Hard disk number],[partition number])[path]/kolibri.img
 
-      (Remember that numeration of partitions in GRUB starts from 0.)
-      Example:
+      Remember that numeration in GRUB starts from 0. Example:
+
       title KolibriOS
       kernel (hd0,0)/boot/memdisk
       initrd (hd0,3)/kolibri/kolibri.img
-
-      The initial variant was:
-
-      label KolibriOS
-      root (hd[Hard disk number],[partition number])
-      kernel [path]/memdisk
-      initrd [path]/kolibri.img
-
-      Here 'memdisk' and 'kolibri.img' must be placed on the same partition.
-
-      Example:
-      label KolibriOS
-      root (hd0,0)
-      kernel /boot/memdisk
-      initrd /boot/kolibri.img
-      This example is the variant described on english forum, with install to
-      Linux boot partition (of course, without FAT partition).
-
-5) The previous method could not work as is in GRUB2 (tested by Apocalypse_dn),
-   the commands "linux16" and "initrd16" should be used instead of "kernel"
-   and "initrd" (suggested by vkos).
 
 III. Install to USB-Flash-drive.
 The special loader for FAT32-volumes has been written, it and its installer
