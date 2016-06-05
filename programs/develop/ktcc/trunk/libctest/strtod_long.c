@@ -13,7 +13,7 @@ int main(void)
 	buf[sizeof buf - 1] = 0;
 
 	if ((x=strtod(buf, 0)) != want)
-		t_error("strtod(.11[...]1) got %a want %a\n", x, want);
+		t_error("strtod(.11[...]1) got %.18f want %.18f\n", x, want);
 
 	printf("%s finished\n", __FILE__);
 	return t_status;

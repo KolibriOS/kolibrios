@@ -1,6 +1,6 @@
 /*
  *  TCC - Tiny C Compiler
- * 
+ *
  *  Copyright (c) 2001-2004 Fabrice Bellard
  *
  * This library is free software; you can redistribute it and/or
@@ -113,6 +113,7 @@ static void help(void)
            "  -soname     set name for shared library to be used at runtime\n"
            "  -static     static linking\n"
            "  -Wl,-opt[=val]  set linker option (see manual)\n"
+           "  -stack=size set PE/KOS32 stack size\n"
            "Debugger options:\n"
            "  -g          generate runtime debug info\n"
 #ifdef CONFIG_TCC_BCHECK

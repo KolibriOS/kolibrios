@@ -19,6 +19,9 @@ otherwise (error) underscoring all symbols, not only cdecl
 -impossible using with mingw-gcc compiled lib, incompatible library format:
  .o is PE-format from gcc but ELF from tcc, may be linux-gcc does it ok
 -no symbols (mapfile) for debug, see howtodebugtcc
+-no debug info for -g (kos32 linker imperfection)
+-__fastcall incompatible with other compilers. now stack freed by caller. 
+ must fix i386-gen.c@490,572 (fixed in other branch https://github.com/mirror/tinycc)
 
 
 -using __attribute__((packed)) see test82. need naming struct twice as in kos32sys1.h
@@ -108,3 +111,38 @@ string.h
 strxfrm
 
 
+            Status or libc tests
+
+---FAILED---
+tstring	- need to fix
+
+
+---NOT TESTED---
+no library fns realized
+qsort
+strtol
+time
+
+---HANG---
+sscanf
+>TEST_F(0x1234p56) - no %a formats
+
+
+---STACK IS SMALL---
+tstring	
+strtodlong
+use new -stack=1280000 option
+
+
+--other--
+fscanf 
+-?scanf ignores width specs, '*' and [chars], cant read %a float
+-%n counts as parameter
+
+snprintf
+-some format misturbances
+
+ungetc
+-ungetc fails if filepos == 0 - no tricks
+
+all file ops limited to 2Gb

@@ -27,6 +27,21 @@ extern "C" {
 #define TYPE_3_BORDER_WIDTH  5
 #define WIN_STATE_MINIMIZED  0x02
 #define WIN_STATE_ROLLED     0x04
+#define POS_SCREEN 0
+#define POS_WINDOW 1
+
+#define IPC_NOBUFFER 1
+#define IPC_LOCKED 2
+#define IPC_OVERFLOW 3
+#define IPC_NOPID 4
+
+#define SHM_OPEN        0x00
+#define SHM_OPEN_ALWAYS 0x04
+#define SHM_CREATE      0x08
+#define SHM_READ        0x00
+#define SHM_WRITE       0x01
+
+
 
 typedef  unsigned int color_t;
 
@@ -62,6 +77,60 @@ typedef struct
   void          *output;
   int           out_size;
 }ioctl_t;
+
+typedef union
+{
+    struct
+    {
+        void   *data;
+        size_t  size;
+    } x;
+    unsigned long long raw;
+}ufile_t;
+
+struct kolibri_system_colors {
+  color_t frame_area;
+  color_t grab_bar;
+  color_t grab_bar_button;
+  color_t grab_button_text;
+  color_t grab_text;
+  color_t work_area;
+  color_t work_button;
+  color_t work_button_text;
+  color_t work_text;
+  color_t work_graph;
+};
+
+
+struct blit_call
+{
+    int dstx;
+    int dsty;
+    int w;
+    int h;
+
+    int srcx;
+    int srcy;
+    int srcw;
+    int srch;
+
+    void *bitmap;
+    int   stride;
+};
+
+struct ipc_message
+{
+    uint32_t    pid;        // PID of sending thread
+    uint32_t    datalen;    // data bytes
+    char        data[0];    // data begin
+};
+
+struct ipc_buffer
+{
+    uint32_t    lock;   // nonzero is locked
+    uint32_t    used;   // used bytes in buffer
+    struct ipc_message  data[0];    // data begin
+};
 
 static inline void begin_draw(void)
 {
@@ -155,26 +224,6 @@ uint32_t get_skin_height(void)
     return height;
 };
 
-/*
-// TinyC dont support aliasing of static inline funcs
-static inline void BeginDraw(void) __attribute__ ((alias ("begin_draw")));
-static inline void EndDraw(void) __attribute__ ((alias ("end_draw")));
-static inline void DrawWindow(int x, int y, int w, int h, const char *name,
-                              color_t workcolor, uint32_t style)
-                              __attribute__ ((alias ("sys_create_window")));
-static inline void DefineButton(void) __attribute__ ((alias ("define_button")));
-static inline void DrawLine(int xs, int ys, int xe, int ye, color_t color)
-                            __attribute__ ((alias ("draw_line")));
-static inline void DrawBar(int x, int y, int w, int h, color_t color)
-                           __attribute__ ((alias ("draw_bar")));
-static inline void DrawBitmap(void *bitmap, int x, int y, int w, int h)
-                              __attribute__ ((alias ("draw_bitmap")));
-static inline uint32_t GetSkinHeight(void) __attribute__ ((alias ("get_skin_height")));
-*/
-
-#define POS_SCREEN 0
-#define POS_WINDOW 1
-
 static inline
 pos_t get_mouse_pos(int origin)
 {
@@ -243,15 +292,6 @@ static inline int destroy_cursor(uint32_t cursor)
     return ret;
 };
 
-/*
-static inline pos_t GetMousePos(int origin) __attribute__ ((alias ("get_mouse_pos")));
-static inline uint32_t GetMouseButtons(void) __attribute__ ((alias ("get_mouse_buttons")));
-static inline uint32_t GetMouseWheels(void) __attribute__ ((alias ("get_mouse_wheels")));
-
-static inline uint32_t  LoadCursor(void *path, uint32_t flags) __attribute__ ((alias ("load_cursor")));
-static inline uint32_t SetCursor(uint32_t  cursor) __attribute__ ((alias ("set_cursor")));
-static inline int DestroyCursor(uint32_t cursor) __attribute__ ((alias ("destroy_cursor")));
-*/
 
 static inline
 uint32_t wait_for_event(uint32_t time)
@@ -283,7 +323,6 @@ static inline uint32_t get_os_event()
     :"a"(10));
     return val;
 };
-//static inline uint32_t GetOsEvent(void) __attribute__ ((alias ("get_os_event")));
 
 static inline
 uint32_t get_tick_count(void)
@@ -416,23 +455,6 @@ int *user_unmap(void *base, size_t offset, size_t size)
     return val;
 };
 
-/*
-static inline void *UserAlloc(size_t size) __attribute__ ((alias ("user_alloc")));
-static inline int UserFree(void *mem) __attribute__ ((alias ("user_free")));
-static inline void* UserRealloc(void *mem, size_t size) __attribute__ ((alias ("user_realloc")));
-static inline int *UserUnmap(void *base, size_t offset, size_t size) __attribute__ ((alias ("user_unmap")));
-*/
-
-typedef union
-{
-    struct
-    {
-        void   *data;
-        size_t  size;
-    } x;
-    unsigned long long raw;
-}ufile_t;
-
 static inline ufile_t load_file(const char *path)
 {
     ufile_t uf;
@@ -444,7 +466,6 @@ static inline ufile_t load_file(const char *path)
 
     return uf;
 };
-//static inline ufile_t LoadFile(const char *path) __attribute__ ((alias ("load_file")));
 
 static inline int GetScreenSize()
 {
@@ -465,24 +486,6 @@ static inline void get_proc_info(char *info)
     :
     :"a"(9), "b"(info), "c"(-1)
     :"memory");
-};
-//static inline void GetProcInfo(char *info) __attribute__ ((alias ("get_proc_info")));
-
-
-struct blit_call
-{
-    int dstx;
-    int dsty;
-    int w;
-    int h;
-
-    int srcx;
-    int srcy;
-    int srcw;
-    int srch;
-
-    void *bitmap;
-    int   stride;
 };
 
 static inline void Blit(void *bitmap, int dst_x, int dst_y,
@@ -507,6 +510,9 @@ static inline void Blit(void *bitmap, int dst_x, int dst_y,
     ::"a"(73),"b"(0),"c"(&bc.dstx));
 };
 
+
+// newlib exclusive
+#ifndef __TINYC__
 int create_thread(int (*proc)(void *param), void *param, int stack_size);
 
 void* load_library(const char *name);
@@ -516,7 +522,7 @@ void* get_proc_address(void *handle, const char *proc_name);
 void enumerate_libraries(int (*callback)(void *handle, const char* name,
                                          uint32_t base, uint32_t size, void *user_data),
                          void *user_data);
-
+#endif
 
 // May be next section need to be added in newlibc
 
@@ -577,19 +583,6 @@ int kol_clip_unlock()
     return val;
 }
 
-struct kolibri_system_colors {
-  color_t frame_area;
-  color_t grab_bar;
-  color_t grab_bar_button;
-  color_t grab_button_text;
-  color_t grab_text;
-  color_t work_area;
-  color_t work_button;
-  color_t work_button_text;
-  color_t work_text;
-  color_t work_graph;
-};
-
 static inline void get_system_colors(struct kolibri_system_colors *color_table)
 {
   __asm__ volatile ("int $0x40"
@@ -640,7 +633,7 @@ uint32_t set_event_mask(uint32_t mask)
 
 typedef void (*thread_proc)(void*);
 
-static inline 
+static inline
 int start_thread(thread_proc proc, char* stack_top)
 {
     register int val;
@@ -673,6 +666,55 @@ static inline int get_current_folder(char* buf, int bufsize){
     asm volatile ("int $0x40":"=a"(val):"a"(30), "b"(2), "c"(buf), "d"(bufsize));
     return val;
 }
+
+static inline
+void ipc_set_area(void* buf, int bufsize){
+    asm volatile ("int $0x40"::"a"(60), "b"(1), "c"(buf), "d"(bufsize));
+}
+
+static inline
+int ipc_send_message(int pid_reciever, void *data, int datalen) {
+    register int val;
+    asm volatile ("int $0x40":"=a"(val):"a"(60), "b"(2), "c"(pid_reciever), "d"(data), "S"(datalen));
+    return val;
+}
+
+static inline
+void* shm_open(char *shm_name, int msize, int flags, int *retsz){
+    register int val, cod;
+    asm volatile ("int $0x40":"=a"(val),"=d"(cod):"a"(68), "b"(22), "c"(shm_name), "d"(msize), "S"(flags));
+
+    if(retsz) *retsz = cod;  // errcode if NULL or memsize when open
+    return (void*)val;
+}
+
+static inline
+void shm_close(char *shm_name){
+    asm volatile ("int $0x40"::"a"(68), "b"(23), "c"(shm_name));
+}
+
+static inline
+int start_app(char *app_name, char *args){
+    struct file_op_t
+    {
+        uint32_t    fn;
+        uint32_t    flags;
+        char*       args;
+        uint32_t    res1, res2;
+        char        zero;
+        char*       app_name  __attribute__((packed));
+    } file_op;
+    memset(&file_op, 0, sizeof(file_op));
+    file_op.fn = 7;
+    file_op.args = args;
+    file_op.app_name = app_name;
+
+    register int val;
+    asm volatile ("int $0x40":"=a"(val):"a"(70), "b"(&file_op));
+
+    return val;
+}
+
 
 /*
 static inline char *getcwd(char *buf, size_t size)
@@ -712,6 +754,38 @@ void __attribute__ ((noinline)) debug_board_printf(const char *format,...)
         debug_board_write_str(log_board);
 }
 */
+
+
+
+// TinyC don't support aliasing of static inline funcs
+#ifndef __TINYC__
+static inline void BeginDraw(void) __attribute__ ((alias ("begin_draw")));
+static inline void EndDraw(void) __attribute__ ((alias ("end_draw")));
+static inline void DrawWindow(int x, int y, int w, int h, const char *name,
+                              color_t workcolor, uint32_t style)
+                              __attribute__ ((alias ("sys_create_window")));
+static inline void DefineButton(void) __attribute__ ((alias ("define_button")));
+static inline void DrawLine(int xs, int ys, int xe, int ye, color_t color)
+                            __attribute__ ((alias ("draw_line")));
+static inline void DrawBar(int x, int y, int w, int h, color_t color)
+                           __attribute__ ((alias ("draw_bar")));
+static inline void DrawBitmap(void *bitmap, int x, int y, int w, int h)
+                              __attribute__ ((alias ("draw_bitmap")));
+static inline uint32_t GetSkinHeight(void) __attribute__ ((alias ("get_skin_height")));
+static inline pos_t GetMousePos(int origin) __attribute__ ((alias ("get_mouse_pos")));
+static inline uint32_t GetMouseButtons(void) __attribute__ ((alias ("get_mouse_buttons")));
+static inline uint32_t GetMouseWheels(void) __attribute__ ((alias ("get_mouse_wheels")));
+static inline uint32_t  LoadCursor(void *path, uint32_t flags) __attribute__ ((alias ("load_cursor")));
+static inline uint32_t SetCursor(uint32_t  cursor) __attribute__ ((alias ("set_cursor")));
+static inline int DestroyCursor(uint32_t cursor) __attribute__ ((alias ("destroy_cursor")));
+static inline uint32_t GetOsEvent(void) __attribute__ ((alias ("get_os_event")));
+static inline void *UserAlloc(size_t size) __attribute__ ((alias ("user_alloc")));
+static inline int UserFree(void *mem) __attribute__ ((alias ("user_free")));
+static inline void* UserRealloc(void *mem, size_t size) __attribute__ ((alias ("user_realloc")));
+static inline int *UserUnmap(void *base, size_t offset, size_t size) __attribute__ ((alias ("user_unmap")));
+static inline ufile_t LoadFile(const char *path) __attribute__ ((alias ("load_file")));
+static inline void GetProcInfo(char *info) __attribute__ ((alias ("get_proc_info")));
+#endif
 
 #ifdef __cplusplus
 }

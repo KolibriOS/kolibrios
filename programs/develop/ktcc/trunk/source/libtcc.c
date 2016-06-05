@@ -327,7 +327,7 @@ PUB_FUNC void tcc_free_debug(void *ptr)
 
     mem_cur_size -= header->size;
     header->size = (size_t)-1;
-    
+
     if (header->next)
         header->next->prev = header->prev;
 
@@ -2012,7 +2012,8 @@ enum {
     TCC_OPTION_E,
     TCC_OPTION_MD,
     TCC_OPTION_MF,
-    TCC_OPTION_x
+    TCC_OPTION_x,
+    TCC_OPTION_stack
 };
 
 #define TCC_OPTION_HAS_ARG 0x0001
@@ -2073,6 +2074,7 @@ static const TCCOption tcc_options[] = {
     { "MD", TCC_OPTION_MD, 0},
     { "MF", TCC_OPTION_MF, TCC_OPTION_HAS_ARG },
     { "x", TCC_OPTION_x, TCC_OPTION_HAS_ARG },
+    { "stack", TCC_OPTION_stack, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP},
     { NULL, 0, 0 },
 };
 
@@ -2393,6 +2395,11 @@ ST_FUNC int tcc_parse_args1(TCCState *s, int argc, char **argv)
         case TCC_OPTION_pedantic:
         case TCC_OPTION_pipe:
             /* ignored */
+            break;
+        case TCC_OPTION_stack:
+#ifdef TCC_TARGET_MEOS
+            s->pe_stack_size = strtoul(optarg+1, NULL, 10);
+#endif
             break;
         default:
             if (s->warn_unsupported) {

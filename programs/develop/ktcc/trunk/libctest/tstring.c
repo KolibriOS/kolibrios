@@ -346,9 +346,12 @@ int main()
       j = ((2 * j) >> 2) << 2;
     }
 
-printf("%s finished\n", __FILE__);
+  printf("\n %s finished\n", __FILE__);
   if (test_failed)
+  {
+	printf("\n %s FAILED\n", __FILE__);
     abort();
+  }
   else
     exit(0);
 }

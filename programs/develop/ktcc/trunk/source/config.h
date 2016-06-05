@@ -5,4 +5,4 @@
 #define ONE_SOURCE
 
 //#define COMMIT_4ad186c5ef61_IS_FIXED
-
+//#define CONFIG_TCC_BCHECK
