@@ -18,8 +18,6 @@ otherwise (error) underscoring all symbols, not only cdecl
 -silent (kos) -> writes to debugboard
 -impossible using with mingw-gcc compiled lib, incompatible library format:
  .o is PE-format from gcc but ELF from tcc, may be linux-gcc does it ok
--no symbols (mapfile) for debug, see howtodebugtcc
--no debug info for -g (kos32 linker imperfection)
 -__fastcall incompatible with other compilers. now stack freed by caller. 
  must fix i386-gen.c@490,572 (fixed in other branch https://github.com/mirror/tinycc)
 
@@ -30,8 +28,6 @@ otherwise (error) underscoring all symbols, not only cdecl
 -not working: default search path are ./include ./lib from executable 
 --under KOS need to use -Bpath_to_ktcc
 --start.o not found using -B (kos) - put near your.c file
--if static var sized more than 14096+ -> crash compiled .exe (kos) 
----^ stack size set in menuet header at compile time tccmeos.c:177 about 4k
 -bench timing coarse (0s or 1s), no usec in newlib gettimeofday. OK
 
 Tests status:
@@ -93,9 +89,6 @@ setvbuf
 
 
 stdlib.h:
-atof
-atol
-strtol, strtoul
 atexit
 getenv
 system
@@ -114,13 +107,12 @@ strxfrm
             Status or libc tests
 
 ---FAILED---
-tstring	- need to fix
+strtoul incorrect work with big unsigned > MAX_LONG
 
 
 ---NOT TESTED---
 no library fns realized
 qsort
-strtol
 time
 
 ---HANG---
@@ -129,9 +121,9 @@ sscanf
 
 
 ---STACK IS SMALL---
+use new -stack=1280000 option to pass test
 tstring	
 strtodlong
-use new -stack=1280000 option
 
 
 --other--
@@ -141,6 +133,7 @@ fscanf
 
 snprintf
 -some format misturbances
+-may incorrect prints unsigned > 2147483647L
 
 ungetc
 -ungetc fails if filepos == 0 - no tricks

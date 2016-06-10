@@ -47,7 +47,7 @@ int vscanf ( const char * format, va_list arg )
     return format_scan(NULL, format, arg, &virtual_getc_con, &virtual_ungetc_con);
 };
 
-int kos_scanf ( const char * format, ...)
+int scanf ( const char * format, ...)
 {
    va_list      arg;
    int  n;

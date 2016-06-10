@@ -28,9 +28,10 @@ start:
 
 ;DEBUGF ' path "%s"\n params "%s"\n', .path, .params
 ; check for overflow
-    mov  al, [path+buf_len-1]
-    or	 al, [params+buf_len-1]
-    jnz   .crash
+;; that not work
+;    mov  al, [path+buf_len-1]
+;    or	 al, [params+buf_len-1]
+;    jnz   .crash
 ; check if path written by OS
     mov  eax, [hparams]
     test eax, eax
@@ -126,13 +127,13 @@ public argc as '__argc'
 public params as '__argv'
 public path as '__path'
 
-section '.bss'
+section '.bss' 
 buf_len = 0x400
 max_parameters=0x20
 argc	 rd 1
 argv	 rd max_parameters
-path	 rb buf_len
-params	 rb buf_len
+path	 rb buf_len 
+params	 rb buf_len 
 
 ;section '.data'
 ;include_debug_strings ; ALWAYS present in data section

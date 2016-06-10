@@ -358,7 +358,8 @@ int tcc_output_dbgme(const char *filename, me_info* me)
 // return 1 on error
 {
 	FILE 	*fdbg;
-	char	fname[400], buf[200];
+	char	fname[400],
+            buf[80]; // no more fits in mtdbg string
 
 	strcpy(fname, filename);
 	strcat(fname, ".dbg");

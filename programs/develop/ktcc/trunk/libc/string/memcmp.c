@@ -10,6 +10,8 @@ int memcmp(const void* buf1,const void* buf2,size_t count)
 			return -1;
 		if (*(uc*)buf1>*(uc*)buf2)
 			return 1;
+		(uc*)buf1++;
+		(uc*)buf2++;
 	}
 	return 0;
 }

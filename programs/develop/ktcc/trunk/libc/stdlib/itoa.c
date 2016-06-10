@@ -4,13 +4,17 @@
 #include <string.h>
 
 /*
-** itoa(n,s) - Convert n to characters in s 
+** itoa(n,s) - Convert n to characters in s
 */
-char* itoa(int n,char* s)
+char* __itoa(int n,char* s)
 {
   int sign;
   char *ptr;
   ptr = s;
+
+  if(n == (int)0x80000000)
+    return strcpy(s, "-2147483648");  // overflowed -n
+
   if ((sign = n) < 0) n = -n;
   do {
     *ptr++ = n % 10 + '0';

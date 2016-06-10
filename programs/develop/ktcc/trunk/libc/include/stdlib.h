@@ -12,8 +12,8 @@
 
 extern int atoib(char *s,int b);
 extern int atoi(char *s);
-extern char *itoab(int n,char* s,int  b);
-extern char *itoa(int n,char* s);
+extern char *itoab(unsigned int n,char* s,int  b);
+extern char *__itoa(int n,char* s);
 
 extern void* stdcall malloc(dword size);
 extern void  stdcall free(void *pointer);
@@ -25,6 +25,8 @@ extern void srand (unsigned int seed);
 double strtod (const char* str, char** endptr);
 long double strtold (const char* str, char** endptr);
 float strtof (const char* str, char** endptr);
+long int strtol (const char* str, char** endptr, int base);
+#define strtoul(s, ep, b) ((unsigned long int)strtol(s, ep, b))
 
 void* calloc (size_t num, size_t size);
 
@@ -41,5 +43,8 @@ typedef div_t ldiv_t;
 div_t div (int numer, int denom);
 #define ldiv(a, b) div(a, b)
 #define atol(a) atoi(a)
+#define atof(a) strtod(a, NULL)
+
+
 
 #endif

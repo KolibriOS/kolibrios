@@ -90,6 +90,13 @@ int vprintf ( const char * format, va_list arg );
 int vsprintf (char * s, const char * format, va_list arg );
 int vfprintf ( FILE * stream, const char * format, va_list arg );
 
+
+int tiny_sprintf (char * s, const char * format, ... );
+int tiny_snprintf (char * s, size_t n, const char * format, ... );
+int tiny_vsnprintf (char * s, size_t n, const char * format, va_list args );
+// support %c, %s, %d, %x, %u, %% for 32-bit values only. no width specs, left align
+// always zero-ended
+
 extern int errno;
 /* errors codes from KOS, but minus */
 #ifndef E_SUCCESS
