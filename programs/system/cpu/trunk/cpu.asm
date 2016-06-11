@@ -1,33 +1,7 @@
-;
-;   CPU -process Manager
-;
-;------------------------------------------------------------------------------
-; version:      1.80
-; last update:  07/04/2012
-; changed by:   Marat Zakiyanov aka Mario79, aka Mario
-; changes:      Complete elimination of flicker.
-;               Using f.0 C = 1 - don't fill working area on window draw.
-;               Increasing the size of buttons and a bright color.
-;               Processing "window is rolled up" and "window is minimized"
-;------------------------------------------------------------------------------
-; version:      1.70
-; last update:  04/04/2012
-; changed by:   Marat Zakiyanov aka Mario79, aka Mario
-; changes:      Code refactoring and optimization.
-;               Added russian language support.
-;               Fix - processes information showing  not been updated during
-;               the processing of mouse events.
-;------------------------------------------------------------------------------
-; Many fix's and changes created by:
-;               Diamond, Heavyiron, SPraid, <Lrz>,
-;               Leency, IgorA, kaitz
-;---------------------------------------------------------------------
-;   integrated with load_lib.obj by <Lrz>
-;---------------------------------------------------------------------
-;   additions by M.Lisovin lisovin@26.ru
-;---------------------------------------------------------------------
-;   original author - VTurjanmaa
-;------------------------------------------------------------------------------
+;-----------------------;
+; CPU - process manager ;
+;-----------------------;
+
 format binary as ""
 
         use32
@@ -95,7 +69,7 @@ red:
 align 4
 still:
         mcall   23,100          ; wait here for event 1 sec.
-	
+
 	test	eax,eax
 	jz	still_end
 
@@ -198,24 +172,24 @@ button:
 ; int2str:
         push   0
         mov    ecx, 10
-.push:     
+.push:
         xor    edx, edx
         div    ecx
         add    edx, 48
         push   edx
-        test   eax, eax 
+        test   eax, eax
         jnz     .push
-.pop:     
+.pop:
         pop    eax
         stosb
         test   eax, eax
         jnz    .pop
-; launch tinfo app        
+; launch tinfo app
         mov     ebx, tinfo
         mov     eax, 70
         int     64
         jmp     show_process_info_1
-.terminate:        
+.terminate:
 ;terminate application
         mcall   18,2
         jmp     show_process_info_1
@@ -276,14 +250,7 @@ draw_empty_slot:
         mov     ecx,[curposy]
         shl     ecx,16
         mov     cx,10   ; button height
-        push    ecx
-        add     ecx,3 shl 16
-        mcall   13,<11,95>,,[btn_bacground_color]
-        pop     ecx
-
         mcall   13,<111,393>,,[bar_bacground_color]
-;--------------------------------------
-align 4
 @@:
         ret
 ;------------------------------------------------------------------------------
@@ -295,56 +262,32 @@ draw_next_process:
 ;output:
 ;  edi - next slot (or -1 if no next slot)
 ;registers corrupted!
-;delete old button
-        cmp     [draw_window_flag],0
-        je      @f
-        mov     edx,[index]
-        add     edx,(1 shl 31)+11
-        mcall   8
-;--------------------------------------
-align 4
-@@:
 ;create terminate process button
         mov     ecx,[curposy]
         shl     ecx,16
         mov     cx,13   ; button height
         mov     edx,[index]
         add     edx,11
-        mov     esi,0xccddee    ; 0xaabbcc
-;contrast
+        mov     esi,0xccddee
         test    dword [index],1
-        jz      .change_color_button
-        mov     esi,0xaabbcc    ; 0x8899aa
-;--------------------------------------
-align 4
-.change_color_button:
-        cmp     [draw_window_flag],0
-        je      @f
-        mcall   8,<10,99>
-;--------------------------------------
-align 4
+        jz      @f
+        mov     esi,0xaabbcc
 @@:
+        mcall   8,<10,99>
         mov     [btn_bacground_color],esi
 ;draw background for proccess information
-; ecx was already set
-        mov     edx,0xddffdd    ; 0x88ff88
-;contrast
+        mov     edx,0xddffdd
         test    dword [index],1
-        jz      .change_color_info
-        mov     edx,0xffffff    ; 0xddffdd
-;--------------------------------------
-align 4
-.change_color_info:
+        jz      @f
+        mov     edx,0xffffff
+@@:
         inc     cx
         cmp     [draw_window_flag],0
         je      @f
         mcall   13,<110,395>
-;--------------------------------------
-align 4
 @@:
         mov     [bar_bacground_color],edx
-;nothing else should be done
-;if there is no process for this button
+;nothing else should be done if there is no process for this button
         cmp     edi,-1
         jne     .return_1
 
@@ -430,14 +373,13 @@ align 4
         div     ebx
         mov     [cpu_percent],eax
 ;set text color to display process information
-;([tcolor] variable)
 ;0%      : black
 ;1-80%   : green
 ;81-100% : red
         test    eax,eax
         jnz     .no_black
 
-        mov     [tcolor],eax
+        mov     esi,eax
         jmp     .color_set
 ;--------------------------------------
 align 4
@@ -445,12 +387,12 @@ align 4
         cmp     eax,80
         ja      .no_green
 
-        mov     dword [tcolor],0x107a30
+        mov     esi,0x107a30
         jmp     .color_set
 ;--------------------------------------
 align 4
 .no_green:
-        mov     dword [tcolor],0xac0000
+        mov     esi,0xac0000
 ;--------------------------------------
 align 4
 .color_set:
@@ -459,22 +401,16 @@ align 4
         push    edi
         mov     edx,[curposy]
         add     edx,15*65536+3
-        mov     esi,[tcolor]
-        and     esi,0xffffff
-        or      esi,0x40000000
-        mcall   47,<2,256>,,,,[btn_bacground_color]
+        mcall   47,<2,256>
 ;show process name
         mov     ebx,[curposy]
         add     ebx,40*65536+3
-        mov     ecx,[tcolor]
-        and     ecx,0xffffff
-        or      ecx,0x40000000
-        mcall   4,,,process_info_buffer.process_name,11,[btn_bacground_color]
+        mov     ecx,esi
+        mcall   4,,,process_info_buffer.process_name,11
 ;show pid
         mov     edx,[curposy]
         add     edx,125*65536+3
-        mov     esi,[tcolor]
-        and     esi,0xffffff
+        mov     esi,ecx
         or      esi,0x40000000
         mcall   47,<8,256>,[process_info_buffer.PID],,,[bar_bacground_color]
 ;show cpu usage
@@ -800,7 +736,6 @@ winxpos         rd 1
 winypos         rd 1
 mouse_dd        rd 1
 cpu_percent     rd 1
-tcolor          rd 1
 list_add        rd 1
 curposy         rd 1
 index           rd 1
@@ -821,10 +756,6 @@ process_info_buffer process_information
 align 4
 cur_dir_path:
         rb 1024
-;------------------------------------------------------------------------------
-align 4
         rb 1024
 stack_area:
-;------------------------------------------------------------------------------
 U_END:
-;------------------------------------------------------------------------------
