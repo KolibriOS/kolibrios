@@ -1,0 +1,110 @@
+Compiler                = gcc
+
+#Compiler_Options       = -c -fno-exceptions -D_UNIX_
+Compiler_Options       = -c -fno-exceptions -O2 -D_WIN32_
+
+#-D: _WIN32_ or _UNIX_
+#-D: for _WIN32_ add -D__CONSOLE__
+
+Exe_file                = cmm
+
+
+
+Path_Libs		= -Ld:/TEMP/Dev-Cpp/lib/gcc/mingw32/3.4.2 -Ld:/TEMP/Dev-Cpp/lib/gcc -Ld:/TEMP/Dev-Cpp/lib -Ld:/TEMP/Dev-Cpp/lib
+
+Add_Libs		= d:/TEMP/Dev-Cpp/lib/gcc/mingw32/3.4.2/crtbegin.o d:/TEMP/Dev-Cpp/lib/crt2.o d:/TEMP/Dev-Cpp/lib/gcc/mingw32/3.4.2/crtend.o
+
+Link_Libs		= -lmingw32 -lgcc -lmoldname -lmingwex -lmsvcrt -luser32 -lkernel32 -ladvapi32 -lshell32
+
+My_Libs	 		= main.o toka.o tokb.o tokc.o toke.o tokr.o errors.o debug.o outobj.o outpe.o disasm.o switch.o outle.o pointer.o new_type.o class.o res.o optreg.o libobj.o port.o
+ 
+
+#Link_Libs		= -lmingw32 -lgcc -lmoldname -lmingwex -lmingw32 -lmoldname -lmingwex -lmsvcrt -lgcc  -lmsvcrt -luser32 -lkernel32 -ladvapi32 -lshell32
+
+####################
+## Makefile rules ##
+####################
+
+all        : $(Exe_file)
+
+$(Exe_file) : $(My_Libs)
+	ld -o cmm.exe $(Path_Libs) $(Add_Libs) $(My_Libs) $(Link_Libs)
+#	$(Compiler) -o $(Exe_file) $(All_Libs)
+#	ld -o cmm.exe -Bdynamic d:/TEMP/Dev-Cpp/bin/../lib/gcc/mingw32/3.4.2/crtend.o d:/TEMP/Dev-Cpp/bin/../lib/gcc/mingw32/3.4.2/../../../crt2.o d:/TEMP/Dev-Cpp/bin/../lib/gcc/mingw32/3.4.2/crtbegin.o -Ld:/TEMP/Dev-Cpp/bin/../lib/gcc/mingw32/3.4.2 -Ld:/TEMP/Dev-Cpp/bin/../lib/gcc -Ld:/TEMP/Dev-Cpp/bin/../lib/gcc/mingw32/3.4.2/../../.. -Ld:/TEMP/Dev-Cpp/bin/../lib/gcc/mingw32/3.4.2/../../.. main.o toka.o tokb.o tokc.o toke.o tokr.o errors.o debug.o outobj.o outpe.o disasm.o switch.o outle.o pointer.o new_type.o class.o res.o optreg.o libobj.o port.o -lmingw32 -lgcc -lmoldname -lmingwex -lmsvcrt -luser32 -lkernel32 -ladvapi32 -lshell32 -lmingw32 -lmoldname -lmingwex -lmsvcrt -lgcc 
+
+
+
+
+clean: 	
+	rm *.o
+
+
+# next are the exceptions that don't have to be compiled with the /zu option
+# since they will never be called from a interrupt. hey.. I _tried_ to find
+# a clean solution..
+
+main.o :  main.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+toka.o :  toka.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+tokb.o :  tokb.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+tokc.o :  tokc.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+toke.o :  toke.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+tokr.o :  tokr.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+errors.o :errors.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+debug.o : debug.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+outobj.o : outobj.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+outpe.o : outpe.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+disasm.o : disasm.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+switch.o : switch.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+outle.o : outle.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+pointer.o : pointer.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+new_type.o : new_type.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+class.o : class.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+res.o : res.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+optreg.o : optreg.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+libobj.o : libobj.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+port.o: port.cpp
+	$(Compiler) $(Compiler_Options) $<
+
+.cpp.o:
+	$(Compiler) $(Compiler_Options) $<
+
+.asm.o:
+	fasm $<
