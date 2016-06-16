@@ -1,9 +1,18 @@
 #define _MAIN_
 
 #ifdef _UNIX_
-#define DIV_PATH ':'
-#else
+#define DIV_PATH ':'			//делитель путей в переменной окружени€ PATH
+#define DIV_FOLD '/'			//этим символом раздел€ютс€ папки в пути к файлу
+#endif
+
+#ifdef _WIN32_
 #define DIV_PATH ';'
+#define DIV_FOLD '\\'
+#endif
+
+#ifdef _KOS_
+#define DIV_PATH ';'
+#define DIV_FOLD '/'
 #endif
 
 #include <sys/stat.h>
@@ -24,7 +33,6 @@ char *stubfile=NULL;
 char *winstub=NULL;
 FILE *hout=NULL;
 char *namestartupfile="startup.h--";
-
 
 char outext[4]="com";
 short extflag=TRUE;//расширение можно присвоить
@@ -232,6 +240,7 @@ int main(int argc,char *argv[])
 {
 int count;
 unsigned char pari=FALSE;
+	char *buffer;
 	
 	printf("\nSPHINX C-- Compiler   Version %d.%d%s   %s\r\n",ver1,ver2,betta,__DATE__);
 		
@@ -243,7 +252,7 @@ unsigned char pari=FALSE;
 		outputdata=output;
 		postbuf=(postinfo *)MALLOC(MAXPOSTS*sizeof(postinfo));
 		strcpy((char *)string,argv[0]);
-		rawext=strrchr((char *)string,'\\');
+		rawext=strrchr((char *)string,DIV_FOLD);
 		
 		if(rawext!=NULL){
 			rawext[0]=0;
@@ -256,7 +265,8 @@ unsigned char pari=FALSE;
 		LoadIni("c--.ini");	 
 		
 		for(count=1;count<argc;count++){ //обработка командной строки
-			if(argv[count][0]=='/'||argv[count][0]=='-'){
+			//if(argv[count][0]=='/'||argv[count][0]=='-'){
+			if(argv[count][0]=='-'){
 				if(SelectComand(argv[count]+1,&count)==c_end) BadCommandLine(argv[count]);
 			}
 			else{
@@ -267,7 +277,7 @@ unsigned char pari=FALSE;
 						if(stricmp(rawext,".ini")==0){	//указан ini файл
 							rawfilename=NULL;
 							rawext=NULL;
-							//LoadIni(argv[count]);
+							LoadIni(argv[count]);
 							if(rawfilename==NULL)pari=FALSE;
 						}
 						else{
@@ -1049,23 +1059,21 @@ FILE *inih;
 char m1[256];
 
 							// load name
-	//printf("pth: %s\r\n",name);
-	//if (inih = fopen(name,"rb"))
-	//{_loadIni(inih);return;}
+	if (inih = fopen(name,"rb"))
+	{_loadIni(inih);return;}
 	
-	//if(strcmp(name,"c--.ini")!=0)
-	//		return;
+	if(strcmp(name,"c--.ini")!=0)
+			return;
 
 							//load findpath[0]\c--.ini
-	/*if (findpath[0]!=0)
+	if (findpath[0]!=0)
 	{
-		sprintf(m1,"%s\\%s",findpath[0],name);
-		printf("pth: %s\r\n",m1);
+		sprintf(m1,"%s%s",findpath[0],name);
 		if (inih = fopen(m1,"rb"))
 		{_loadIni(inih);return;}
-	} //http://android-films.net/download4/iz_mashiny_mp4_480x320_android-films.net.torrent
+	}
 							//load PATH[i=0..end]/c--.ini
-	char* pth = 0;//getenv("PATH");	
+	char* pth = getenv("PATH");	
 	if (pth != 0)
 	{
 		char* start;
@@ -1078,11 +1086,10 @@ char m1[256];
 			size = (endp == 0)? strlen(start): endp-start;
 			strncpy(m1, start, size);
 			start += size + 1;
-			if ((m1[size - 1] != '/') && (m1[size - 1] != '\\'))
+			if (m1[size - 1] != DIV_FOLD)
 				m1[size++] = '/';
 			
 			strcpy(m1 + size,"c--.ini");
-			printf("pth: %s\r\n",m1);
 			if (inih = fopen(m1,"rb"))
 			{_loadIni(inih);return;}
 		}
@@ -1097,19 +1104,18 @@ char m1[256];
 	if (p){
 		p++;
 		strcpy(m1+p,"c--.ini");
-		printf("pth: %s\r\n",m1);
-		//if (inih = fopen(m1,"rb"))
-		//{_loadIni(inih);return;}
+		if (inih = fopen(m1,"rb"))
+		{_loadIni(inih);return;}
 	}
-		*/						//for KolibriOS: load /rd/0/settings/c--.ini 
+								//for KolibriOS: load /rd/0/settings/c--.ini 
 	inih = fopen("/rd/1/settings/c--.ini","rb");
-	//for(;;){
-	//	if(fgets(m1,255,inih)==NULL)break;
-	//	if(SelectComand(m1,0)==c_end)BadCommandLine(m1);
-	//}
+	for(;;){
+		if(fgets(m1,255,inih)==NULL)break;
+		if(SelectComand(m1,0)==c_end)BadCommandLine(m1);
+	}
 	fclose(inih);
-	//return;
-//#endif //_KOS_		
+	return;
+#endif //_KOS_		
 }
 			
 /*****************************************************************************
@@ -1146,13 +1152,15 @@ void *mem;
 
 void IncludePath(char *buf)
 {
+	char divfold[3];
+	sprintf(divfold,"%c",DIV_FOLD);
 	if(numfindpath<MAXNUMPATH-1){
 		int len=strlen(buf);
-		if(buf[len-1]=='\\')buf[len-1]=0;
+		if(buf[len-1]==DIV_FOLD)buf[len-1]=0;
 		else len++;
 		char *a=(char *)MALLOC(len+1);
 		strcpy(a,buf);
-		strcat(a,"\\");
+		strcat(a,divfold);
 		findpath[numfindpath]=a;
 		numfindpath++;
 		findpath[numfindpath]="";
