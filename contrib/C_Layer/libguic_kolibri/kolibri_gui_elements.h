@@ -5,6 +5,8 @@
 #include "kolibri_editbox.h"
 #include "kolibri_checkbox.h"
 #include "kolibri_button.h"
+#include "kolibri_progressbar.h"
+#include "kolibri_frame.h"
 
 /* enum KOLIBRI_GUI_ELEMENT_TYPE contains all available GUI items from box_lib */
 /* More elements can be added from other libraries as required */
@@ -81,6 +83,16 @@ kolibri_gui_op_table[KOLIBRI_CHECK_BOX].key_fn = NULL;
 kolibri_gui_op_table[KOLIBRI_BUTTON].redraw_fn = (cb_elem_boxlib)draw_button;
 kolibri_gui_op_table[KOLIBRI_BUTTON].mouse_fn = NULL;
 kolibri_gui_op_table[KOLIBRI_BUTTON].key_fn = NULL;
+
+/* Setting up functions for progress bar GUI elements*/
+kolibri_gui_op_table[KOLIBRI_PROGRESS_BAR].redraw_fn = (cb_elem_boxlib)progressbar_draw;
+kolibri_gui_op_table[KOLIBRI_PROGRESS_BAR].mouse_fn = NULL;
+kolibri_gui_op_table[KOLIBRI_PROGRESS_BAR].key_fn = NULL;
+
+/* Setting up functions for frame GUI elements*/
+kolibri_gui_op_table[KOLIBRI_FRAME].redraw_fn = (cb_elem_boxlib)frame_draw;
+kolibri_gui_op_table[KOLIBRI_FRAME].mouse_fn = NULL;
+kolibri_gui_op_table[KOLIBRI_FRAME].key_fn = NULL;
 
 }
 
