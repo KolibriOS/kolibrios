@@ -47,6 +47,7 @@ enum BUF2D_OPT_CROP {
 };
 
 extern void (*buf2d_create_asm)(struct buf2d_struct *) __attribute__((__stdcall__));
+extern void (*buf2d_curve_bezier_asm)(struct buf2d_struct *, unsigned int, unsigned int, unsigned int, unsigned int) __attribute__((__stdcall__));
 
 struct buf2d_struct* buf2d_create(uint16_t tlx, uint16_t tly, unsigned int sizex, unsigned int sizey, unsigned int font_bgcolor, uint8_t color_bit)
 {
@@ -59,6 +60,11 @@ struct buf2d_struct* buf2d_create(uint16_t tlx, uint16_t tly, unsigned int sizex
 	new_buf2d_struct -> color_bit = color_bit;
 	buf2d_create_asm(new_buf2d_struct);
     return new_buf2d_struct;
+}
+
+void buf2d_curve_bezier(struct buf2d_struct *buf, unsigned int p0_x, unsigned int p0_y, unsigned int p1_x, unsigned int p1_y, unsigned int p2_x, unsigned int p2_y, unsigned int color)
+{
+	buf2d_curve_bezier_asm(buf, (p0_x<<16)+p0_y, (p1_x<<16)+p1_y, (p2_x<<16)+p2_y, color);
 }
 
 extern void (*buf2d_draw)(struct buf2d_struct *) __attribute__((__stdcall__));

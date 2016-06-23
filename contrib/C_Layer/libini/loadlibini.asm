@@ -40,8 +40,10 @@ import  lib_libini, \
         LIBINI_get_str                 , 'ini_get_str'          , \
         LIBINI_get_int  			   , 'ini_get_int'   		, \
         LIBINI_get_color               , 'int_get_color'        , \
+        LIBINI_get_shortcut            , 'int_get_shortcut'     , \
         LIBINI_set_str            	   , 'ini_set_str'          , \
-        LIBINI_set_int         		   , 'ini_set_int'          
+        LIBINI_set_int         		   , 'ini_set_int'          , \          
+        LIBINI_set_color          	   , 'ini_set_color'
         
 public LIBINI_enum_sections         as  '_LIBINI_enum_sections' 
 public LIBINI_enum_keys             as  '_LIBINI_enum_keys'     

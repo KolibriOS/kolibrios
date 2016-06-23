@@ -22,5 +22,8 @@ extern uint32_t (*LIBINI_get_str)(const char*, const char*, const char*, char*, 
 extern uint32_t (*LIBINI_set_str)(const char*, const char*, const char*, const char*, uint32_t) __attribute__((__stdcall__));
 extern uint32_t (*LIBINI_get_int)(const char*, const char*, const char*, uint32_t) __attribute__((__stdcall__));
 extern uint32_t (*LIBINI_set_int)(const char*, const char*, const char*, uint32_t) __attribute__((__stdcall__));
+extern uint32_t (*LIBINI_get_color)(const char*, const char*, const char*, uint32_t) __attribute__((__stdcall__));
+extern uint32_t (*LIBINI_set_color)(const char*, const char*, const char*, uint32_t) __attribute__((__stdcall__));
+extern uint32_t (*LIBINI_get_shortcut)(const char*, const char*, const char*, uint32_t, const char*, uint32_t) __attribute__((__stdcall__));
 
 #endif /* KOLIBRI_LIBINI_H */
