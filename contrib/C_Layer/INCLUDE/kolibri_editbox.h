@@ -3,7 +3,7 @@
 
 #include "kolibri_colors.h"
 
-struct edit_box {
+typedef struct {
   unsigned int width; 
     unsigned int left;
     unsigned int top; 
@@ -25,7 +25,7 @@ struct edit_box {
     unsigned int cl_curs_y;
     unsigned int shift;
     unsigned int shift_old;
-};
+}edit_box;
 
 /* Initializes an Editbox with sane settings, sufficient for most use. 
    This will let you create a box and position it somewhere on the screen. 
@@ -42,10 +42,10 @@ struct edit_box {
    max_chars = Limit of number of characters user can enter into edit box.
 */
 
-struct edit_box* kolibri_new_edit_box(unsigned int tlx, unsigned int tly, unsigned int max_chars)
+edit_box* kolibri_new_edit_box(unsigned int tlx, unsigned int tly, unsigned int max_chars)
 {
     unsigned int PIXELS_PER_CHAR = 7;
-    struct edit_box *new_textbox = (struct edit_box *)malloc(sizeof(struct edit_box));
+    edit_box *new_textbox = (edit_box *)malloc(sizeof(edit_box));
     char *text_buffer = (char *)calloc(max_chars + 1, sizeof(char));
 
     /* Update blur_border_color and shift_color from box_lib.mac macro */
@@ -77,13 +77,13 @@ struct edit_box* kolibri_new_edit_box(unsigned int tlx, unsigned int tly, unsign
     return new_textbox;
 }
 
-extern void (*edit_box_draw)(struct edit_box *) __attribute__((__stdcall__));
+extern void (*edit_box_draw)(edit_box *) __attribute__((__stdcall__));
 
 /* editbox_key is a wrapper written in assembly to handle key press events for editboxes */
 /* because inline assembly in GCC is a PITA and interferes with the EAX (AH) register */
 /* which edit_box_key requires */
-extern void editbox_key(struct edit_box *) __attribute__((__stdcall__));
+extern void editbox_key(edit_box *) __attribute__((__stdcall__));
 
-extern void (*edit_box_mouse)(struct edit_box *) __attribute__((__stdcall__));
+extern void (*edit_box_mouse)(edit_box *) __attribute__((__stdcall__));
 extern volatile unsigned press_key;
 #endif /* KOLIBRI_EDITBOX_H */

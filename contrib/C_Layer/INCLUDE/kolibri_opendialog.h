@@ -5,7 +5,7 @@ char sz_com_area_name[]    = "FFFFFFFF_open_dialog";
 char sz_dir_default_path[] = "/rd/1";
 char sz_start_path[]       = "/rd/1/File managers/opendial";
 
-struct open_dialog {
+typedef struct {
     unsigned int mode;
     unsigned int procinfo;
     unsigned int com_area_name;
@@ -22,19 +22,19 @@ struct open_dialog {
     unsigned short x_start;
     unsigned short y_size;
     unsigned short y_start;
-};
+}open_dialog;
 
-struct od_filter {
+typedef struct {
 	unsigned int size;
 	unsigned char end;
-};
+}od_filter;
 
 void fake_on_redraw(void) {}
 
 struct open_dialog* kolibri_new_open_dialog(unsigned int mode, unsigned short tlx, unsigned short tly, unsigned short x_size, unsigned short y_size)
 {
-    struct open_dialog *new_opendialog = (struct open_dialog *)malloc(sizeof(struct open_dialog));
-    struct od_filter *new_od_filter = (struct od_filter *)malloc(sizeof(struct od_filter));
+    open_dialog *new_opendialog = (open_dialog *)malloc(sizeof(open_dialog));
+    od_filter *new_od_filter = (od_filter *)malloc(sizeof(od_filter));
     char *plugin_path = (char *)calloc(4096, sizeof(char));
 	char *openfile_path = (char *)calloc(4096, sizeof(char));
 	char *proc_info = (char *)calloc(1024, sizeof(char));
@@ -62,6 +62,6 @@ struct open_dialog* kolibri_new_open_dialog(unsigned int mode, unsigned short tl
 	return new_opendialog;
 }
 
-extern void (*OpenDialog_init)(struct open_dialog *) __attribute__((__stdcall__));
-extern void (*OpenDialog_start)(struct open_dialog *) __attribute__((__stdcall__));
+extern void (*OpenDialog_init)(open_dialog *) __attribute__((__stdcall__));
+extern void (*OpenDialog_start)(open_dialog *) __attribute__((__stdcall__));
 #endif /* KOLIBRI_OPENDIALOG_H */

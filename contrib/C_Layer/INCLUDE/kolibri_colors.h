@@ -1,6 +1,6 @@
 #ifndef KOLIBRI_COLORS_H
 #define KOLIBRI_COLORS_H
-struct kolibri_system_colors {
+typedef struct {
   unsigned int color_frame_area;
   unsigned int color_grab_bar;
   unsigned int color_grab_bar_button;
@@ -11,11 +11,11 @@ struct kolibri_system_colors {
   unsigned int color_work_button_text;
   unsigned int color_work_text;
   unsigned int color_work_graph;
-};
+}kolibri_system_colors;
 
-struct kolibri_system_colors kolibri_color_table;
+kolibri_system_colors kolibri_color_table;
 
-void kolibri_get_system_colors(struct kolibri_system_colors *color_table)
+void kolibri_get_system_colors(kolibri_system_colors *color_table)
 {
   __asm__ volatile ("int $0x40"
 		    :

@@ -8,7 +8,7 @@ enum CHECKBOX_FLAGS {
      /* Add more flags later */
 };
 
-struct check_box {
+typedef struct {
     unsigned int left_s;
     unsigned int top_s;
     unsigned int ch_text_margin;
@@ -20,11 +20,11 @@ struct check_box {
 
     /* Users can use members above this */
     unsigned int size_of_str;
-};
+}check_box;
 
-struct check_box* kolibri_new_check_box(unsigned int tlx, unsigned int tly, unsigned int sizex, unsigned int sizey, char *label_text)
+check_box* kolibri_new_check_box(unsigned int tlx, unsigned int tly, unsigned int sizex, unsigned int sizey, char *label_text)
 {
-     struct check_box* new_checkbox = (struct check_box *)malloc(sizeof(struct check_box));
+     check_box* new_checkbox = (check_box *)malloc(sizeof(check_box));
      new_checkbox -> left_s = (tlx << 16) + sizex;
      new_checkbox -> top_s  = (tly << 16) + sizey;
      new_checkbox -> ch_text_margin = 10;
@@ -37,7 +37,7 @@ struct check_box* kolibri_new_check_box(unsigned int tlx, unsigned int tly, unsi
      return new_checkbox;
 }
 
-extern void (*check_box_draw2)(struct check_box *) __attribute__((__stdcall__));
-extern void (*check_box_mouse2)(struct check_box *)__attribute__((__stdcall__));
+extern void (*check_box_draw2)(check_box *) __attribute__((__stdcall__));
+extern void (*check_box_mouse2)(check_box *)__attribute__((__stdcall__));
 
 #endif /* KOLIBRI_CHECKBOX_H */

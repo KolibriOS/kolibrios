@@ -1,4 +1,4 @@
-#include "kolibri_gui.h"
+#include <kolibri_gui.h>
 
 int main()
 {
@@ -12,10 +12,10 @@ int main()
   unsigned int gui_event = KOLIBRI_EVENT_REDRAW;
   oskey_t key;
 
-  struct kolibri_window *main_window = kolibri_new_window(50, 50, 400, 100, "BoardMsg: OpenDialog 0.12");
-  struct check_box *checkbox = kolibri_new_check_box(20, 40, 12, 12, "Append BOARDMSG to entered message.");
-  struct edit_box *textbox = kolibri_new_edit_box(20, 55, 40);
-  struct kolibri_button *button = kolibri_new_button(310, 55, 24, 14, 0x21, kolibri_color_table.color_work_button);
+  kolibri_window *main_window = kolibri_new_window(50, 50, 400, 100, "BoardMsg: OpenDialog 0.12");
+  check_box *checkbox = kolibri_new_check_box(20, 40, 12, 12, "Append BOARDMSG to entered message.");
+  edit_box *textbox = kolibri_new_edit_box(20, 55, 40);
+  kolibri_button *button = kolibri_new_button(310, 55, 24, 14, 0x21, kolibri_color_table.color_work_button);
 
   kolibri_window_add_element(main_window, KOLIBRI_EDIT_BOX, textbox);
   kolibri_window_add_element(main_window, KOLIBRI_CHECK_BOX, checkbox);
@@ -57,7 +57,7 @@ int main()
 			debug_board_write_str(textbox->text);
 			debug_board_write_str("\n");
 			break;
-	      case 0x00000001:
+	      case BUTTON_CLOSE:
 			kolibri_exit();
 	  }
 	 }

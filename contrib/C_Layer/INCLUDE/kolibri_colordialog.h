@@ -4,7 +4,7 @@
 char cd_com_area_name[]    = "FFFFFFFF_color_dialog";
 char cd_start_path[]       = "/rd/1/colrdial";
 
-struct color_dialog {
+typedef struct {
     unsigned int type;
     unsigned int procinfo;
     unsigned int com_area_name;
@@ -18,13 +18,13 @@ struct color_dialog {
     unsigned short y_start;
     unsigned int color_type;
     unsigned int color;
-};
+}color_dialog;
 
 void cd_fake_on_redraw(void) {}
 
 struct open_dialog* kolibri_new_color_dialog(unsigned int type, unsigned short tlx, unsigned short tly, unsigned short x_size, unsigned short y_size)
 {
-    struct color_dialog *new_colordialog = (struct color_dialog *)malloc(sizeof(struct color_dialog));
+    color_dialog *new_colordialog = (color_dialog *)malloc(sizeof(color_dialog));
     char *proc_info = (char *)calloc(1024, sizeof(char));
 	
 	new_colordialog -> type = type;
@@ -43,6 +43,6 @@ struct open_dialog* kolibri_new_color_dialog(unsigned int type, unsigned short t
 	return new_colordialog;
 }
 
-extern void (*ColorDialog_init)(struct open_dialog *) __attribute__((__stdcall__));
-extern void (*ColorDialog_start)(struct open_dialog *) __attribute__((__stdcall__));
+extern void (*ColorDialog_init)(color_dialog *) __attribute__((__stdcall__));
+extern void (*ColorDialog_start)(color_dialog *) __attribute__((__stdcall__));
 #endif /* KOLIBRI_COLORDIALOG_H */

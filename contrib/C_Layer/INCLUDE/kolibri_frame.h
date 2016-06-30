@@ -6,7 +6,7 @@ enum {
 	BOTTON
 };
 
-struct frame {
+typedef struct {
 	unsigned int type;
 	uint16_t size_x;                  
 	uint16_t start_x;                 
@@ -21,11 +21,11 @@ struct frame {
 	unsigned int font_size_y;           
 	unsigned int font_color;            
 	unsigned int font_backgr_color;
-}; 
+}frame; 
 
-struct frame* kolibri_new_frame(uint16_t tlx, uint16_t tly, uint16_t sizex, uint16_t sizey, unsigned int ext_col, unsigned int int_col, unsigned int draw_text_flag, char *text_pointer, unsigned int text_position, unsigned int font_color, unsigned int font_bgcolor)
+frame* kolibri_new_frame(uint16_t tlx, uint16_t tly, uint16_t sizex, uint16_t sizey, unsigned int ext_col, unsigned int int_col, unsigned int draw_text_flag, char *text_pointer, unsigned int text_position, unsigned int font_color, unsigned int font_bgcolor)
 {
-    struct frame *new_frame = (struct frame *)malloc(sizeof(struct frame));
+    frame *new_frame = (frame *)malloc(sizeof(frame));
     new_frame -> type = 0;
     new_frame -> size_x = sizex;               
     new_frame -> start_x = tlx;              
@@ -43,6 +43,6 @@ struct frame* kolibri_new_frame(uint16_t tlx, uint16_t tly, uint16_t sizex, uint
     return new_frame;
 }
 
-extern void (*frame_draw)(struct frame *) __attribute__((__stdcall__));
+extern void (*frame_draw)(frame *) __attribute__((__stdcall__));
 
 #endif /* KOLIBRI_FRAME_H */

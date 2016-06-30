@@ -33,24 +33,24 @@ enum KOLIBRI_GUI_ELEMENT_TYPE {
 };
 
 /* Linked list which connects together all the elements drawn inside a GUI window */
-struct kolibri_window_element {
+typedef struct{
   enum KOLIBRI_GUI_ELEMENT_TYPE type;
   void *element;
-  struct kolibri_window_element *next, *prev;
-};
+  void *next, *prev;
+}kolibri_window_element;
 
 
 typedef void (*cb_elem_boxlib)(void *) __attribute__((__stdcall__));
 
 /* Generic structure for supporting functions on various elements of Kolibri's GUI */
-struct kolibri_element_operations {
+typedef struct {
  	cb_elem_boxlib 	redraw_fn;
  	cb_elem_boxlib 	mouse_fn;
  	cb_elem_boxlib 	key_fn;
-};
+}kolibri_element_operations;
 
 /* Structure for a GUI Window on Kolibri. It also contains all the elements drawn in window */
-struct kolibri_window {
+typedef struct{
   unsigned int topleftx, toplefty;
   unsigned int sizex, sizey;
   char *window_title;
@@ -58,14 +58,14 @@ struct kolibri_window {
   /* Refer to sysfuncs, value to be stored in EDX (Function 0) */
   unsigned int XY;
 
-  struct kolibri_window_element *elements;
-};
+  kolibri_window_element *elements;
+}kolibri_window;
 
 /*---------------------End of Structure and enum definitions---------------*/
 /*---------------------Define various functions for initializing GUI-------*/
 
 /* Master table containing operations for various GUI elements in one place */
-struct kolibri_element_operations kolibri_gui_op_table[KOLIBRI_NUM_GUI_ELEMENTS];
+kolibri_element_operations kolibri_gui_op_table[KOLIBRI_NUM_GUI_ELEMENTS];
 
 void kolibri_init_gui_op_table(void)
 {
@@ -99,9 +99,9 @@ kolibri_gui_op_table[KOLIBRI_FRAME].key_fn = NULL;
 /* Create a new main GUI window for KolibriOS */
 /* tl stands for TOP LEFT. x and y are coordinates. */
 
-struct kolibri_window * kolibri_new_window(int tlx, int tly, int sizex, int sizey, char *title)
+kolibri_window * kolibri_new_window(int tlx, int tly, int sizex, int sizey, char *title)
 {
-  struct kolibri_window *new_win = (struct kolibri_window *)malloc(sizeof(struct kolibri_window));
+  kolibri_window *new_win = (kolibri_window *)malloc(sizeof(kolibri_window));
 
   new_win->topleftx = tlx;
   new_win->toplefty = tly;
@@ -115,9 +115,9 @@ struct kolibri_window * kolibri_new_window(int tlx, int tly, int sizex, int size
 }
 
 /* Add an element to an existing window */
-void kolibri_window_add_element(struct kolibri_window *some_window, enum KOLIBRI_GUI_ELEMENT_TYPE element_type, void *some_gui_element)
+void kolibri_window_add_element(kolibri_window *some_window, enum KOLIBRI_GUI_ELEMENT_TYPE element_type, void *some_gui_element)
 {
-  struct kolibri_window_element *new_element = (struct kolibri_window_element *)malloc(sizeof(struct kolibri_window_element));
+  kolibri_window_element *new_element = (kolibri_window_element *)malloc(sizeof(kolibri_window_element));
 
   new_element -> type = element_type;
   new_element -> element = some_gui_element;
@@ -130,7 +130,7 @@ void kolibri_window_add_element(struct kolibri_window *some_window, enum KOLIBRI
     }
   else
     {
-      struct kolibri_window_element *last_element = some_window -> elements -> prev;
+      kolibri_window_element *last_element = some_window -> elements -> prev;
 
       last_element -> next = new_element;
       new_element -> next = some_window -> elements; /* start of linked list  */

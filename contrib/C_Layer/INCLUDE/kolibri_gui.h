@@ -19,7 +19,9 @@ enum KOLIBRI_GUI_EVENTS {
   KOLIBRI_EVENT_MOUSE = 6     /* Mouse activity (movement, button press) was detected */
 };
 
-void kolibri_handle_event_redraw(struct kolibri_window* some_window)
+#define BUTTON_CLOSE 0x1
+
+void kolibri_handle_event_redraw(kolibri_window* some_window)
 {
   /*  Draw windows with system color table. */
 
@@ -33,7 +35,7 @@ void kolibri_handle_event_redraw(struct kolibri_window* some_window)
   /* Enumerate and draw all window elements here */
   if(some_window->elements) /* Draw all elements added to window */
     {
-      struct kolibri_window_element* current_element = some_window -> elements;
+      kolibri_window_element* current_element = some_window -> elements;
 
       do
 	{
@@ -60,12 +62,12 @@ void kolibri_handle_event_redraw(struct kolibri_window* some_window)
     }
 }
 
-void kolibri_handle_event_key(struct kolibri_window* some_window)
+void kolibri_handle_event_key(kolibri_window* some_window)
 {
   /* Enumerate and trigger key handling functions of window elements here */
   if(some_window->elements)
     {
-      struct kolibri_window_element *current_element = some_window -> elements;
+      kolibri_window_element *current_element = some_window -> elements;
 
       do
 	{
@@ -78,12 +80,12 @@ void kolibri_handle_event_key(struct kolibri_window* some_window)
     }
 }
 
-void kolibri_handle_event_mouse(struct kolibri_window* some_window)
+void kolibri_handle_event_mouse(kolibri_window* some_window)
 {
   /* Enumerate and trigger mouse handling functions of window elements here */
   if(some_window->elements)
     {
-      struct kolibri_window_element *current_element = some_window -> elements;
+      kolibri_window_element *current_element = some_window -> elements;
 
       do
 	{
