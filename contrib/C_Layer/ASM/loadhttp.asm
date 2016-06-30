@@ -3,14 +3,14 @@ use32                                   ; Tell compiler to use 32 bit instructio
 	
 section '.flat' code			; Keep this line before includes or GCC messes up call addresses
 
-include 'struct.inc'
-include 'proc32.inc'
-include 'macros.inc'
+include '../../../programs/struct.inc'
+include '../../../programs/proc32.inc'
+include '../../../programs/macros.inc'
 purge section,mov,add,sub
 
-include 'network.inc'
-include 'http.inc'
-include 'dll.inc'
+include '../../../programs/network.inc'
+include '../../../programs/develop/libraries/http/http.inc'
+include '../../../programs/dll.inc'
 	
 virtual at 0
         http_msg http_msg

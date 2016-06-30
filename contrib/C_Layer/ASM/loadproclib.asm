@@ -4,11 +4,11 @@ use32                                   ; Tell compiler to use 32 bit instructio
 
 section '.init' code			; Keep this line before includes or GCC messes up call addresses
 
-include 'proc32.inc'
-include 'macros.inc'
+include '../../../programs/proc32.inc'
+include '../../../programs/macros.inc'
 purge section,mov,add,sub
 	
-include 'dll.inc'
+include '../../../programs/dll.inc'
 	
 public init_proclib as '_init_proclib_asm'
 ;;; Returns 0 on success. -1 on failure.
