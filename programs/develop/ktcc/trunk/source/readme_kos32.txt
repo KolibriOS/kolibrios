@@ -61,7 +61,7 @@ errno.h  - in stdio
 limits.h
 locale.h
 setjmp.h
-signall.h
+signal.h
 time.h  - can use get_tick_count()/100 from kos32sys1.h
 wchar.h
 wctype.h
@@ -69,14 +69,6 @@ wctype.h
 
 
 functions absent list:
-
-math.h
-frexp
-ldexp
-modf
-fmod
-
-HUGE_VAL
 
 stdio.h:
 remove

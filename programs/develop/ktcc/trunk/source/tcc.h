@@ -348,6 +348,11 @@ static inline void write64le(unsigned char *p, uint64_t x)
 /* -------------------------------------------- */
 /* include the target specific definitions */
 
+#ifdef TCC_TARGET_COFF
+# include "coff.h"
+#endif
+
+
 #define TARGET_DEFS_ONLY
 #ifdef TCC_TARGET_I386
 # include "i386-gen.c"
@@ -362,7 +367,6 @@ static inline void write64le(unsigned char *p, uint64_t x)
 # include "arm64-gen.c"
 #endif
 #ifdef TCC_TARGET_C67
-# include "coff.h"
 # include "c67-gen.c"
 #endif
 #undef TARGET_DEFS_ONLY

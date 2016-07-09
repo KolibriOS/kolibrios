@@ -876,35 +876,35 @@ ST_FUNC int tcc_load_coff(TCCState * s1, int fd)
     }
 
     if (fread(&file_hdr, FILHSZ, 1, f) != 1)
-	tcc_error("error reading .out file for input");
+	tcc_error("error 1 reading .out file for input");
 
     if (fread(&o_filehdr, sizeof(o_filehdr), 1, f) != 1)
-	tcc_error("error reading .out file for input");
+	tcc_error("error 2 reading .out file for input");
 
     // first read the string table
 
     if (fseek(f, file_hdr.f_symptr + file_hdr.f_nsyms * SYMESZ, SEEK_SET))
-	tcc_error("error reading .out file for input");
+	tcc_error("error 3 reading .out file for input");
 
     if (fread(&str_size, sizeof(int), 1, f) != 1)
-	tcc_error("error reading .out file for input");
+	tcc_error("error 4 reading .out file for input");
 
 
     Coff_str_table = (char *) tcc_malloc(str_size);
 
     if (fread(Coff_str_table, str_size - 4, 1, f) != 1)
-	tcc_error("error reading .out file for input");
+	tcc_error("error 5 reading .out file for input");
 
     // read/process all the symbols
 
     // seek back to symbols
 
     if (fseek(f, file_hdr.f_symptr, SEEK_SET))
-	tcc_error("error reading .out file for input");
+	tcc_error("error 6 reading .out file for input");
 
     for (i = 0; i < file_hdr.f_nsyms; i++) {
 	if (fread(&csym, SYMESZ, 1, f) != 1)
-	    tcc_error("error reading .out file for input");
+	    tcc_error("error 7 reading .out file for input");
 
 	if (csym._n._n_n._n_zeroes == 0) {
 	    name = Coff_str_table + csym._n._n_n._n_offset - 4;

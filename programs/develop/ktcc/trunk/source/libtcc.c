@@ -2126,6 +2126,12 @@ ST_FUNC int tcc_parse_args1(TCCState *s, int argc, char **argv)
     int optind = 0;
     ParseArgsState *pas = s->parse_args_state;
 
+/*
+#ifdef TCC_TARGET_MEOS
+// siemargl testing
+	s->output_format = TCC_OUTPUT_FORMAT_COFF;
+#endif
+*/
     while (optind < argc) {
 
         r = argv[optind++];
