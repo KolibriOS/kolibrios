@@ -1,29 +1,46 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2013-2015. All rights reserved. ;;
-;; Distributed under terms of the GNU General Public License    ;;
+;; Copyright (C) KolibriOS team 2013-2016. All rights reserved. ;;
+;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 $Revision$
 
+; XFS external functions
+;   in:
+; ebx -> parameter structure of sysfunc 70
+; ebp -> XFS structure
+; [esi]+[[esp+4]] = name
+;   out:
+; eax, ebx = return values for sysfunc 70
+iglobal
+align 4
+xfs_user_functions:
+        dd      xfs_free
+        dd      (xfs_user_functions_end - xfs_user_functions - 4) / 4
+        dd      xfs_ReadFile
+        dd      xfs_ReadFolder
+        dd      0;xfs_CreateFile
+        dd      0;xfs_WriteFile
+        dd      0;xfs_SetFileEnd
+        dd      xfs_GetFileInfo
+        dd      0;xfs_SetFileInfo
+        dd      0
+        dd      0;xfs_Delete
+        dd      0;xfs_CreateFolder
+xfs_user_functions_end:
+endg
 
 include 'xfs.inc'
 
-;
-; This file contains XFS related code.
-; For more information on XFS check sources below.
-;
-; 1. XFS Filesystem Structure, 2nd Edition, Revision 1. Silicon Graphics Inc. 2006
-; 2. Linux source http://kernel.org
-;
-
-
-; test partition type (valid XFS one?)
-; alloc and fill XFS (see xfs.inc) structure
-; this function is called for each partition
-; returns 0 (not XFS or invalid) / pointer to partition structure
+; Mount if it's a valid XFS partition.
 xfs_create_partition:
+;   in:
+; ebp -> PARTITION structure
+; ebx -> boot sector
+;   out:
+; eax -> XFS structure, 0 = not XFS
         push    ebx ecx edx esi edi
         cmp     dword [esi+DISK.MediaInfo.SectorSize], 512
         jnz     .error
@@ -94,7 +111,7 @@ xfs_create_partition:
         mov     dword[edi + XFS.rootino + 0], eax       ; endian
         mov     eax, dword[ebx + xfs_sb.sb_rootino + 0] ; 64bit
         bswap   eax                                     ; number
-        mov     dword[edi + XFS.rootino + 4], eax       ; 
+        mov     dword[edi + XFS.rootino + 4], eax       ;
 
         mov     eax, [edi + XFS.blocksize]
         mov     ecx, [edi + XFS.dirblklog]
@@ -209,25 +226,6 @@ xfs_create_partition:
         xor     eax, eax
         pop     edi esi edx ecx ebx
         ret
-
-
-iglobal
-align 4
-xfs_user_functions:
-        dd      xfs_free
-        dd      (xfs_user_functions_end - xfs_user_functions - 4) / 4
-        dd      xfs_Read
-        dd      xfs_ReadFolder
-        dd      0;xfs_Rewrite
-        dd      0;xfs_Write
-        dd      0;xfs_SetFileEnd
-        dd      xfs_GetFileInfo
-        dd      0;xfs_SetFileInfo
-        dd      0
-        dd      0;xfs_Delete
-        dd      0;xfs_CreateFolder
-xfs_user_functions_end:
-endg
 
 
 ; lock partition access mutex
@@ -510,10 +508,10 @@ DEBUGF 1,"xfs_dir_get_bdfes: %d entries from %d\n",[esp+8],[esp+4]
         add     eax, eax        ; 4+4=8, iff i8count != 0
     @@:
         mov     dword[edx + 12], 0      ; reserved
-        mov     dword[edx + 16], 0      ; 
-        mov     dword[edx + 20], 0      ; 
-        mov     dword[edx + 24], 0      ; 
-        mov     dword[edx + 28], 0      ; 
+        mov     dword[edx + 16], 0      ;
+        mov     dword[edx + 20], 0      ;
+        mov     dword[edx + 24], 0      ;
+        mov     dword[edx + 28], 0      ;
         add     edx, 32
         lea     esi, [ebx + xfs_inode.di_u + xfs_dir2_sf_hdr.parent + eax]
         dec     ecx
@@ -642,10 +640,10 @@ DEBUGF 1,"xfs_dir_get_bdfes: %d entries from %d\n",[esp+8],[esp+4]
         mov     [ebp + XFS.entries_read], eax
 ;DEBUGF 1,"actually read entries: %d\n",eax
         mov     dword[edx + 12], 0      ; reserved
-        mov     dword[edx + 16], 0      ; 
-        mov     dword[edx + 20], 0      ; 
-        mov     dword[edx + 24], 0      ; 
-        mov     dword[edx + 28], 0      ; 
+        mov     dword[edx + 16], 0      ;
+        mov     dword[edx + 20], 0      ;
+        mov     dword[edx + 24], 0      ;
+        mov     dword[edx + 28], 0      ;
         add     ebx, xfs_dir2_block.u
 
         mov     ecx, [esp + 24]         ; start entry number
@@ -742,10 +740,10 @@ DEBUGF 1,"xfs_dir_get_bdfes: %d entries from %d\n",[esp+8],[esp+4]
         mov     [edx + 4], eax          ; number of actually read entries
 
         mov     dword[edx + 12], 0      ; reserved
-        mov     dword[edx + 16], 0      ; 
-        mov     dword[edx + 20], 0      ; 
-        mov     dword[edx + 24], 0      ; 
-        mov     dword[edx + 28], 0      ; 
+        mov     dword[edx + 16], 0      ;
+        mov     dword[edx + 20], 0      ;
+        mov     dword[edx + 24], 0      ;
+        mov     dword[edx + 28], 0      ;
 
         mov     eax, [ebp + XFS.cur_dirblock]
         add     eax, [ebp + XFS.dirblocksize]
@@ -886,10 +884,10 @@ DEBUGF 1,"xfs_dir_get_bdfes: %d entries from %d\n",[esp+8],[esp+4]
         mov     [edx + 4], eax          ; number of actually read entries
 
         mov     dword[edx + 12], 0      ; reserved
-        mov     dword[edx + 16], 0      ; 
-        mov     dword[edx + 20], 0      ; 
-        mov     dword[edx + 24], 0      ; 
-        mov     dword[edx + 28], 0      ; 
+        mov     dword[edx + 16], 0      ;
+        mov     dword[edx + 20], 0      ;
+        mov     dword[edx + 24], 0      ;
+        mov     dword[edx + 28], 0      ;
 
         mov     eax, [ebp + XFS.cur_dirblock]
         add     eax, [ebp + XFS.dirblocksize]
@@ -1739,28 +1737,22 @@ xfs_get_inode_info:
         mov     eax, [edx + xfs_inode.di_core.di_ctime.t_sec]
         bswap   eax
         push    edx
-        xor     edx, edx
-        add     eax, 3054539008                                     ;(369 * 365 + 89) * 24 * 3600
-        adc     edx, 2
-        call    ntfs_datetime_to_bdfe.sec
+        sub     eax, 978307200  ; 01.01.1970-01.01.2001 = (365*31+8)*24*60*60
+        call    fsTime2bdfe
         pop     edx
 
         mov     eax, [edx + xfs_inode.di_core.di_atime.t_sec]
         bswap   eax
         push    edx
-        xor     edx, edx
-        add     eax, 3054539008                                     ;(369 * 365 + 89) * 24 * 3600
-        adc     edx, 2
-        call    ntfs_datetime_to_bdfe.sec
+        sub     eax, 978307200
+        call    fsTime2bdfe
         pop     edx
 
         mov     eax, [edx + xfs_inode.di_core.di_mtime.t_sec]
         bswap   eax
         push    edx
-        xor     edx, edx
-        add     eax, 3054539008                                     ;(369 * 365 + 89) * 24 * 3600
-        adc     edx, 2
-        call    ntfs_datetime_to_bdfe.sec
+        sub     eax, 978307200
+        call    fsTime2bdfe
         pop     edx
 
   .quit:
@@ -1947,18 +1939,16 @@ xfs_GetFileInfo:
 
 
 ;----------------------------------------------------------------
-; xfs_Read - XFS implementation of reading a file
+; xfs_ReadFile - XFS implementation of reading a file
 ; in:  ebp = pointer to XFS structure
 ; in:  esi+[esp+4] = name
 ; in:  ebx = pointer to parameters from sysfunc 70
 ; out: eax, ebx = return values for sysfunc 70
 ;----------------------------------------------------------------
-xfs_Read:
+xfs_ReadFile:
         push    ebx ecx edx esi edi
         call    xfs_lock
-
         add     esi, [esp + 24]
-;DEBUGF 1,"xfs_Read: %d %d |%s|\n",[ebx+4],[ebx+12],esi
         stdcall xfs_get_inode, esi
         mov     ecx, edx
         or      ecx, eax
@@ -2353,7 +2343,7 @@ xfs_dir2_node_get_numfiles:
         test    eax, eax
         jnz     .error
         jmp     .common
-        
+
   .leaf:
 ;DEBUGF 1,".leaf\n"
         movzx   ecx, word[ebx + xfs_dir2_leaf.hdr.count]
@@ -2514,7 +2504,7 @@ xfs_dir2_btree_get_numfiles:
         test    eax, eax
         jnz     .error
         jmp     .common
-        
+
   .leaf:
 ;DEBUGF 1,".leaf\n"
         movzx   ecx, word[ebx + xfs_dir2_leaf.hdr.count]
@@ -2750,7 +2740,7 @@ DEBUGF 1,".root.not_root\n"
         jmp     .quit
 
   .leaf:
-        
+
         jmp     .quit
 
   .error:

@@ -1,13 +1,36 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
 ;; Copyright (C) KolibriOS team 2004-2016. All rights reserved. ;;
-;; Distributed under terms of the GNU General Public License    ;;
+;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 $Revision$
 
-; NTFS driver
+; NTFS external functions
+;   in:
+; ebx -> parameter structure of sysfunc 70
+; ebp -> NTFS structure
+; [esi]+[[esp+4]] = name
+;   out:
+; eax, ebx = return values for sysfunc 70
+iglobal
+align 4
+ntfs_user_functions:
+        dd      ntfs_free
+        dd      (ntfs_user_functions_end - ntfs_user_functions - 4) / 4
+        dd      ntfs_ReadFile
+        dd      ntfs_ReadFolder
+        dd      ntfs_CreateFile
+        dd      ntfs_WriteFile
+        dd      ntfs_SetFileEnd
+        dd      ntfs_GetFileInfo
+        dd      ntfs_SetFileInfo
+        dd      0
+        dd      ntfs_Delete
+        dd      ntfs_CreateFolder
+ntfs_user_functions_end:
+endg
 
 ; Basic concepts:
 ; File is a FileRecord in the $MFT.
@@ -95,7 +118,7 @@ namespace = 51h
 fileName = 52h
 
 struct NTFS PARTITION
-Lock            MUTEX   ?   ; Currently operations with one partition
+Lock                MUTEX   ; Currently operations with one partition
 ; can not be executed in parallel since the legacy code is not ready.
 sectors_per_cluster dd  ?
 mft_cluster         dd  ?   ; location
@@ -150,31 +173,6 @@ attrlist_buf        rb  1024
 attrlist_mft_buf    rb  1024
 bitmap_buf          rb  1024
 ends
-
-; NTFS external functions
-;   in:
-; ebx -> parameter structure of sysfunc 70
-; ebp -> NTFS structure
-; [esi]+[esp+4] = name
-;   out:
-; eax, ebx = return values for sysfunc 70
-iglobal
-align 4
-ntfs_user_functions:
-        dd      ntfs_free
-        dd      (ntfs_user_functions_end - ntfs_user_functions - 4) / 4
-        dd      ntfs_ReadFile
-        dd      ntfs_ReadFolder
-        dd      ntfs_CreateFile
-        dd      ntfs_WriteFile
-        dd      ntfs_SetFileEnd
-        dd      ntfs_GetFileInfo
-        dd      ntfs_SetFileInfo
-        dd      0
-        dd      ntfs_Delete
-        dd      ntfs_CreateFolder
-ntfs_user_functions_end:
-endg
 
 ntfs_test_bootsec:
 ; in: ebx -> buffer, edx = size of partition
@@ -258,7 +256,14 @@ ntfs_test_bootsec:
         stc
         ret
 
+; Mount if it's a valid NTFS partition.
 ntfs_create_partition:
+;   in:
+; ebp -> PARTITION structure
+; ebx -> boot sector
+; ebx+512 -> buffer
+;   out:
+; eax -> NTFS structure, 0 = not NTFS
         cmp     dword [esi+DISK.MediaInfo.SectorSize], 512
         jnz     .nope
         mov     edx, dword [ebp+PARTITION.Length]
@@ -1684,7 +1689,7 @@ ntfs_ReadFolder:
         mov     eax, 0x10
         stosd
         scasd
-        push    edx
+        push    ebx ecx edx
         mov     eax, dword [ebp+NTFS.bitmap_buf]
         mov     edx, dword [ebp+NTFS.bitmap_buf+4]
         call    ntfs_datetime_to_bdfe
@@ -1694,7 +1699,7 @@ ntfs_ReadFolder:
         mov     eax, dword [ebp+NTFS.bitmap_buf+8]
         mov     edx, dword [ebp+NTFS.bitmap_buf+0xC]
         call    ntfs_datetime_to_bdfe
-        pop     edx
+        pop     edx ecx ebx
         xor     eax, eax
         stosd
         stosd
@@ -1778,7 +1783,7 @@ ntfs_direntry_to_bdfe:
 @@:
         stosd
         scasd
-        push    edx
+        push    ebx ecx edx
         mov     eax, [esi+fileCreated]
         mov     edx, [esi+fileCreated+4]
         call    ntfs_datetime_to_bdfe
@@ -1788,91 +1793,26 @@ ntfs_direntry_to_bdfe:
         mov     eax, [esi+fileModified]
         mov     edx, [esi+fileModified+4]
         call    ntfs_datetime_to_bdfe
-        pop     edx
+        pop     edx ecx ebx
         mov     eax, [esi+fileRealSize]
         stosd
         mov     eax, [esi+fileRealSize+4]
         stosd
         ret
 
-iglobal
-months  db  31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-months2 db  31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-endg
-
 ntfs_datetime_to_bdfe:
-; edx:eax = number of 100-nanosecond intervals since January 1, 1601, in UTC
-        push    ebx ecx
-        mov     ebx, eax
-        mov     eax, edx
-        xor     edx, edx
+; in: edx:eax = seconds since 01.01.1601 x10000000
+; edi -> data block
+; out: edi = edi+8
+        sub     eax, 3365781504
+        sbb     edx, 29389701
         mov     ecx, 10000000
-        div     ecx
-        xchg    eax, ebx
-        div     ecx
-.forEXT:
-        xchg    eax, ebx
+        cmp     edx, ecx
+        jc      @f
         xor     edx, edx
-        mov     ecx, 60
-        div     ecx
-        xchg    eax, ebx
-        div     ecx
-        mov     [edi], dl
-        mov     edx, ebx
-; edx:eax = number of minutes
-        div     ecx
-        mov     [edi+1], dl
-; eax = number of hours
-        xor     edx, edx
-        mov     cl, 24
-        div     ecx
-        mov     [edi+2], dx
-; eax = number of days since January 1, 1601
-        xor     edx, edx
-        mov     cx, 365
-        div     ecx
-        mov     ebx, eax
-        add     ebx, 1601
-        shr     eax, 2
-        sub     edx, eax
-        mov     cl, 25
-        div     cl
-        xor     ah, ah
-        add     edx, eax
-        shr     eax, 2
-        sub     edx, eax
-        jns     @f
-        dec     ebx
-        add     edx, 365
-        test    bl, 3
-        jnz     @f
-        inc     edx
 @@:
-        xor     eax, eax
-        mov     ecx, months-1
-        test    bl, 3
-        jnz     @f
-        add     ecx, 12
-@@:
-        inc     ecx
-        inc     eax
-        sub     dl, [ecx]
-        jnc     @b
-        dec     dh
-        jns     @b
-        add     dl, [ecx]
-        inc     edx
-        mov     [edi+4], dl
-        mov     [edi+5], al
-        mov     [edi+6], bx
-        add     edi, 8
-        pop     ecx ebx
-        ret
-
-.sec:
-        push    ebx ecx
-        mov     ebx, edx
-        jmp     .forEXT
+        div     ecx
+        jmp     fsTime2bdfe
 
 ;----------------------------------------------------------------
 ntfs_GetFileInfo:
@@ -4179,90 +4119,19 @@ ntfs_SetFileEnd:
         call    ntfsSpaceClean
         jmp     ntfsDone
 
-ntfsReadCMOS:
-        out     70h, al
-        in      al, 71h
-        xor     ah, ah
-        shl     ax, 4
-        shr     al, 4
-        aad
-        ret
-
 ntfsGetTime:
-        mov     al, 7
-        call    ntfsReadCMOS
-        ror     eax, 8
-        mov     al, 8
-        call    ntfsReadCMOS
-        ror     eax, 8
-        mov     al, 9
-        call    ntfsReadCMOS
-        add     eax, 2000
-        ror     eax, 16
-        push    eax
-        xor     eax, eax
-        call    ntfsReadCMOS
-        ror     eax, 8
-        mov     al, 2
-        call    ntfsReadCMOS
-        ror     eax, 8
-        mov     al, 4
-        call    ntfsReadCMOS
-        ror     eax, 16
-        push    eax
-        mov     esi, esp
-        add     esp, 8
+        call    fsGetTime
+        jmp     @f
+
 ntfsCalculateTime:
 ; in: esi -> data block
-; out: edx:eax = time
-        movzx   eax, word [esi+6]
-        sub     eax, 2001
-        jnc     @f
-        xor     eax, eax
+; out: edx:eax = seconds since 01.01.1601 x10000000
+        call    fsCalculateTime
 @@:
-        mov     edx, months
-        mov     ebx, eax
-        inc     eax
-        test    eax, 3
-        jnz     @f
-        add     edx, 12
-@@:
-        movzx   eax, byte [esi+5]
-        dec     eax
-        xor     ecx, ecx
-@@:
-        dec     eax
-        js      @f
-        add     cl, [edx+eax]
-        adc     ch, 0
-        jmp     @b
-@@:
-        mov     eax, ebx
-        mov     edx, 365
+        mov     edx, 10000000
         mul     edx
-        shr     ebx, 2
-        add     eax, ebx
-        add     eax, ecx
-        mov     bl, [esi+4]
-        add     eax, ebx
-        add     eax, 400*365+100-4
-        mov     dl, 24
-        mul     edx
-        mov     bl, [esi+2]
-        add     eax, ebx
-        mov     ecx, 60
-        mul     ecx
-        mov     bl, [esi+1]
-        add     eax, ebx
-        mul     ecx
-        mov     bl, [esi]
-        add     ebx, eax
-        mov     eax, edx
-        mov     ecx, 10000000
-        mul     ecx
-        xchg    eax, ebx
-        mul     ecx
-        add     edx, ebx
+        add     eax, 3365781504
+        adc     edx, 29389701
         ret
 
 ;----------------------------------------------------------------

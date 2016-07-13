@@ -141,40 +141,18 @@ deltaToScreen = 28
 .drawUTF8:
         dec     dword [esp]
         js      .done
-@@:
-        movzx   ebx, byte [esi]
-        inc     esi
-        test    bl, bl
+        mov     ecx, 256
+        xor     eax, eax
+        call    utf8to16
+        test    ax, ax
         jz      .done
-        jns     .valid
-        shl     bx, 10
-        jnc     @b
-        mov     bl, [esi]
-        test    bl, bl
-        jns     @b
-        shl     bl, 2
-        jc      @b
-        shr     bh, 2
-        shr     bx, 2
-        inc     esi
-        cmp     bx, 1419
-        jc      .valid
-        shl     bh, 4
-        jns     @f
-.tail:
-        mov     bl, [esi]
-        shl     bl, 1
-        jnc     @b
-        js      @b
-        inc     esi
-        shl     bh, 1
-        js      .tail
+        cmp     eax, 1419
+        jc      @f
+        xor     eax, eax
 @@:
-        xor     ebx, ebx
-.valid:
+        shl     eax, 4
+        lea     ebx, [eax+fontUni]
         pushd   esi edi 16
-        shl     ebx, 4
-        add     ebx, fontUni
         mov     esi, [esp+12+fontMultiplier]
         call    drawChar
         imul    esi, 8*4

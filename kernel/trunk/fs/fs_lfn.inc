@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
-;; Distributed under terms of the GNU General Public License    ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved. ;;
+;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -965,3 +965,11 @@ get_full_file_name:
         jz      .ret.ok
         mov     byte [edi-1], '/'
         jmp     .set_copy_cont
+
+include "parse_fn.inc"
+include "fs_common.inc"
+include "iso9660.inc"   ; read for CD filesystem
+include "fat.inc"
+include "ntfs.inc"
+include "ext.inc"
+include "xfs.asm"

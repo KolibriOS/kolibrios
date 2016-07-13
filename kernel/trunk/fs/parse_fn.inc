@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
-;; Distributed under terms of the GNU General Public License    ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved. ;;
+;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -390,4 +390,73 @@ ansi2uni_char:
 
 .unk:
         mov     al, '_'
+        ret
+
+utf8_to_cp866:
+; in: esi, edi, ecx
+; destroys esi, edi, ecx, eax
+        call    utf8to16
+        js      utf8to16.ret
+        call    uni2ansi_char
+        stosb
+        jmp     utf8_to_cp866
+
+utf8to16:
+;   in:
+; esi -> string
+; ecx = byte counter
+;   out:
+; SF=1 -> end
+; ax = UTF-16 char
+; changes esi, ecx
+        dec     ecx
+        js      .ret
+        lodsb
+        test    al, al
+        jns     .got
+        shl     al, 2
+        jnc     utf8to16
+@@:
+        shl     ax, 8
+        dec     ecx
+        js      .ret
+        lodsb
+        test    al, al
+        jns     .got
+        shl     al, 2
+        jc      @b
+        shr     ah, 2
+        shl     ax, 3
+        jnc     @f
+        shl     eax, 3
+        dec     ecx
+        js      .ret
+        lodsb
+        test    al, al
+        jns     .got
+        shl     al, 2
+        jc      @b
+        shr     eax, 2
+        ret
+
+@@:
+        shr     ax, 5
+        ret
+
+.got:
+        xor     ah, ah
+.ret:
+        ret
+
+strlen:
+; in: esi -> source
+; out: ecx = length
+        push    edi eax
+        or      ecx, -1
+        mov     edi, esi
+        xor     eax, eax
+        repnz scasb
+        inc     ecx
+        not     ecx
+        pop     eax edi
         ret
