@@ -455,16 +455,12 @@ SendCommandToHDD_1:
         cmp     [ATAAddressMode], 1
         ja      @@Err2_4
 ; Проверить корректность номера канала
-        mov     bx, [ChannelNumber]
-        cmp     bx, 1
-        jb      @@Err3_4
-
-        cmp     bx, 2
+        movzx   ebx, [ChannelNumber]
+        dec     ebx
+        cmp     ebx, 1
         ja      @@Err3_4
 ; Установить базовый адрес
-        dec     bx
         shl     ebx, 2
-        movzx   ebx, bx
         mov     eax, [cdpos]
         dec     eax
         shr     eax, 2

@@ -46,7 +46,7 @@ FindHDD_2:
         add     [DeviceNumber], sizeof.HD_DATA
         shl     byte [ebx+DRIVE_DATA], 2
 FindHDD_1:
-        DEBUGF  1, "K : Channel %d ",[ChannelNumber]:2
+        DEBUGF  1, "K : Channel %d ",[ChannelNumber]:1
         DEBUGF  1, "Disk %d\n",[DiskNumber]:1
         push    ebx ecx
         call    ReadHDD_ID
@@ -83,17 +83,14 @@ FindHDD_1:
 
         add     [ebx+DRIVE_DATA], byte 2
 ;--------------------------------------
-.Print_Device_Name: 
+.Print_Device_Name:
         pushad
         pushfd
-
-        xor     ebx, ebx
-        mov     bx, [ChannelNumber]
+        movzx   ebx, [ChannelNumber]
         dec     ebx
         shl     ebx, 1
         add     bl, [DiskNumber]
         shl     ebx, 1
-
         call    calculate_IDE_device_values_storage
 ;--------------------------------------
 .copy_dev_name:
@@ -245,7 +242,7 @@ uglobal
 ; Стандартные базовые адреса каналов 1 и 2
 StandardATABases dw ?, ? ; 1F0h, 170h
 ; Номер канала
-ChannelNumber   dw ?
+ChannelNumber   db ?
 ; Номер диска
 DiskNumber      db ?
 DeviceNumber    db ?
@@ -291,16 +288,12 @@ SendCommandToHDD:
         cmp     [ATAAddressMode], 1
         ja      @@Err2
 ; Проверить корректность номера канала
-        mov     bx, [ChannelNumber]
-        cmp     bx, 1
-        jb      @@Err3
-
-        cmp     bx, 2
+        movzx   ebx, [ChannelNumber]
+        dec     ebx
+        cmp     ebx, 1
         ja      @@Err3
 ; Установить базовый адрес
-        dec     bx
-        shl     bx, 1
-        movzx   ebx, bx
+        shl     ebx, 1
         mov     ax, [ebx+StandardATABases]
         mov     [ATABasePortAddr], ax
 ; Ожидание готовности HDD к приему команды
@@ -449,16 +442,12 @@ ReadCD_ID:
 ;*************************************************
 DeviceReset:
 ; Проверить корректность номера канала
-        mov     bx, [ChannelNumber]
-        cmp     bx, 1
-        jb      @@Err3_2
-
-        cmp     bx, 2
+        movzx   ebx, [ChannelNumber]
+        dec     ebx
+        cmp     ebx, 1
         ja      @@Err3_2
 ; Установить базовый адрес
-        dec     bx
-        shl     bx, 1
-        movzx   ebx, bx
+        shl     ebx, 1
         mov     dx, [ebx+StandardATABases]
         mov     [ATABasePortAddr], dx
 ; Выбрать нужный диск

@@ -5239,7 +5239,7 @@ syscall_cdaudio:
         shr     eax, 1
         and     eax, 1
         inc     eax
-        mov     [ChannelNumber], ax
+        mov     [ChannelNumber], al
         mov     eax, ecx
         and     eax, 1
         mov     [DiskNumber], al

@@ -1144,15 +1144,37 @@ dyndisk_handler:
         jmp     file_system_lfn.maindir_noesi
 .haspartition:
 ; 12. The fs operation has specified some partition.
-; 12a. Store parameters for callback functions.
         push    edx
         push    ecx
-; 12b. Store callback functions.
-        push    dyndisk_cleanup
-        push    fs_dyndisk
-        mov     edi, esp
-; 12c. Let the procedure from fs_lfn.inc do the job.
-        jmp     file_system_lfn.found2
+        xor     eax, eax
+        lodsb
+        sub     eax, '0'
+        jz      .dyndisk_cleanup
+        cmp     eax, 10
+        jnc     .dyndisk_cleanup
+        mov     ecx, eax
+        lodsb
+        cmp     eax, '/'
+        jz      @f
+        test    eax, eax
+        jnz     .dyndisk_cleanup
+        dec     esi
+@@:
+        cmp     byte [esi], 0
+        jnz     @f
+        test    ebp, ebp
+        jz      @f
+        mov     esi, ebp
+        xor     ebp, ebp
+@@:
+        jmp     fs_dyndisk
+
+.dyndisk_cleanup:
+        pop     esi
+        pop     edx
+        mov     dword [esp+32], ERROR_FILE_NOT_FOUND
+        jmp     .cleanup_esi
+
 .access_denied:
 ; 13. Fail the operation with the appropriate code.
         mov     dword [esp+32], ERROR_ACCESS_DENIED
@@ -1168,17 +1190,12 @@ dyndisk_handler:
 ; 15. Return.
         ret
 
-; This is a callback for cleaning up things called from file_system_lfn.found2.
-dyndisk_cleanup:
-        mov     esi, [edi+8]
-        mov     edx, [edi+12]
-        jmp     dyndisk_handler.cleanup_esi
-
 ; This is a callback for enumerating partitions called from
 ; file_system_lfn.maindir in the case of inserted media.
 ; It just increments eax until DISK.NumPartitions reached and then
 ; cleans up.
 fs_dyndisk_next:
+        mov     ecx, [esp+8]
         cmp     eax, [ecx+DISK.NumPartitions]
         jae     .nomore
         inc     eax
@@ -1203,6 +1220,7 @@ fs_dyndisk_next_nomedia:
         clc
         ret
 .nomore:
+        mov     ecx, [esp+8]
         pusha
         mov     esi, ecx
         call    disk_dereference
@@ -1210,13 +1228,11 @@ fs_dyndisk_next_nomedia:
         stc
         ret
 
-; This is a callback for doing real work with selected partition.
-; Currently this is just placeholder, since no file systems are supported.
-; edi = esp -> {dd fs_dyndisk, dd dyndisk_cleanup, dd pointer to DISK, dd media object}
+; esp -> {dd pointer to DISK, dd media object}
 ; ecx = partition number, esi+ebp = ASCIIZ name
 fs_dyndisk:
         dec     ecx     ; convert to zero-based partition index
-        pop     edx edx edx ; edx = pointer to DISK, dword [esp] = NULL or edx
+        pop     edx     ; edx = pointer to DISK, dword [esp] = NULL or edx
 ; If the driver does not support insert notifications and we are the only fs
 ; operation with this disk, ask the driver whether the media
 ; was inserted/removed/changed. Otherwise, assume that media status is valid.

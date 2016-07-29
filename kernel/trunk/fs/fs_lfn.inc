@@ -25,82 +25,7 @@ ERROR_OUT_OF_MEMORY  = 12
 image_of_eax EQU esp+32
 image_of_ebx EQU esp+20
 
-; System function 70 - files with long names (LFN)
-; diamond, 2006
-
-iglobal
-; in this table names must be in lowercase
-rootdirs:
-;**********************************************
-        db      3,'cd0'
-        dd      fs_OnCd0
-        dd      fs_NextCd
-        db      3,'cd1'
-        dd      fs_OnCd1
-        dd      fs_NextCd
-        db      3,'cd2'
-        dd      fs_OnCd2
-        dd      fs_NextCd
-        db      3,'cd3'
-        dd      fs_OnCd3
-        dd      fs_NextCd
-        db      3,'cd4'
-        dd      fs_OnCd4
-        dd      fs_NextCd
-        db      3,'cd5'
-        dd      fs_OnCd5
-        dd      fs_NextCd
-        db      3,'cd6'
-        dd      fs_OnCd6
-        dd      fs_NextCd
-        db      3,'cd7'
-        dd      fs_OnCd7
-        dd      fs_NextCd
-        db      3,'cd8'
-        dd      fs_OnCd8
-        dd      fs_NextCd
-        db      3,'cd9'
-        dd      fs_OnCd9
-        dd      fs_NextCd
-        db      4,'cd10'
-        dd      fs_OnCd10
-        dd      fs_NextCd
-        db      4,'cd11'
-        dd      fs_OnCd11
-        dd      fs_NextCd
-;***********************************************
-        db      0
-
-
-virtual_root_query:
-;**********************************************
-        dd      fs_HasCd0
-        db      'cd0',0
-        dd      fs_HasCd1
-        db      'cd1',0
-        dd      fs_HasCd2
-        db      'cd2',0
-        dd      fs_HasCd3
-        db      'cd3',0
-        dd      fs_HasCd4
-        db      'cd4',0
-        dd      fs_HasCd5
-        db      'cd5',0
-        dd      fs_HasCd6
-        db      'cd6',0
-        dd      fs_HasCd7
-        db      'cd7',0
-        dd      fs_HasCd8
-        db      'cd8',0
-        dd      fs_HasCd9
-        db      'cd9',0
-        dd      fs_HasCd10
-        db      'cd10',0
-        dd      fs_HasCd11
-        db      'cd11',0
-;**********************************************
-        dd      0
-endg
+; System function 70
 
 file_system_lfn_protected:
         pushad
@@ -113,20 +38,18 @@ file_system_lfn_protected:
         ret
 
 file_system_lfn:
-; in: ebx->fileinfo block
-; operation codes:
-; 0 : read file
-; 1 : read folder
-; 2 : create/rewrite file
-; 3 : write/append to file
-; 4 : set end of file
-; 5 : get file/directory attributes structure
-; 6 : set file/directory attributes structure
-; 7 : start application
-; 8 : delete file
-; 9 : create directory
-
-; parse file name
+; in: ebx -> parameter structure
+;   operation codes:
+; 0 = read file
+; 1 = read folder
+; 2 = create/rewrite file
+; 3 = write/append to file
+; 4 = set file end
+; 5 = get file info
+; 6 = set file info
+; start application
+; 8 = delete file/folder
+; 9 = create folder
         lea     esi, [ebx+20]
         lodsb
         test    al, al
@@ -137,24 +60,23 @@ file_system_lfn:
         lea     ebp, [esi-1]
 if 0
         cmp     [ebx], dword 0
-        jne     @F
+        jne     .1
         DEBUGF 1,'read file %s\n',ebp
-        jmp     .1
-@@:
+        jmp     @f
+.1:
         cmp     [ebx], dword 5
-        jne     @F
+        jne     @f
         DEBUGF 1,'get file attributes %s\n',ebp
 @@:
-.1:
 end if
-
-        cmp     dword [ebx], 7
-        jne     @F
+        cmp     dword[ebx], 7   ; start application
+        jne     @f
         mov     edx, [ebx+4]
         mov     ebx, [ebx+8]
-        call    fs_execute; ebp, ebx, edx
+        call    fs_execute      ; ebp, ebx, edx
         mov     [image_of_eax], eax
         ret
+
 @@:
         cmp     al, '/'
         jz      .notcurdir
@@ -167,275 +89,42 @@ end if
         mov     esi, [current_slot]
         mov     esi, [esi+APPDATA.cur_dir]
         jmp     .parse_normal
+
 .notcurdir:
         cmp     byte [esi], 0
         jz      .rootdir
         call    process_replace_file_name
 .parse_normal:
-        mov     edi, rootdirs-8
-        xor     ecx, ecx
-        push    esi
-.scan1:
-        pop     esi
-        add     edi, ecx
-        scasd
-        scasd
-        mov     cl, byte [edi]
-        test    cl, cl
-        jz      .notfound_try
-        inc     edi
-        push    esi
-@@:
-        lodsb
-        or      al, 20h
-        scasb
-        loopz   @b
-        jnz     .scan1
-        lodsb
-        cmp     al, '/'
-        jz      .found1
-        test    al, al
-        jnz     .scan1
-        pop     eax
-; directory /xxx
-.maindir:
-        mov     esi, [edi+4]
-.maindir_noesi:
-        cmp     dword [ebx], 1
-        jnz     .access_denied
-        xor     eax, eax
-        mov     ebp, [ebx+12] ;the number of blocks to read
-        mov     edx, [ebx+16] ;where to write the result
-    ;    add     edx, std_application_base_address
-        push    dword [ebx+4]   ; first block
-        mov     ebx, [ebx+8]    ; flags
-; ebx=flags, [esp]=first block, ebp=number of blocks, edx=return area, esi='Next' handler
-        mov     edi, edx
-        push    ecx
-        mov     ecx, 32/4
-        rep stosd
-        pop     ecx
-        mov     byte [edx], 1   ; version
-.maindir_loop:
-        call    esi
-        jc      .maindir_done
-        inc     dword [edx+8]
-        dec     dword [esp]
-        jns     .maindir_loop
-        dec     ebp
-        js      .maindir_loop
-        inc     dword [edx+4]
-        mov     dword [edi], 0x10       ; attributes: folder
-        mov     dword [edi+4], 1        ; name type: UNICODE
-        push    eax
-        xor     eax, eax
-        add     edi, 8
-        push    ecx
-        mov     ecx, 40/4-2
-        rep stosd
-        pop     ecx
-        pop     eax
-        push    eax edx
-; convert number in eax to decimal UNICODE string
-        push    edi
-        push    ecx
-        push    -'0'
-        mov     ecx, 10
-@@:
-        xor     edx, edx
-        div     ecx
-        push    edx
-        test    eax, eax
-        jnz     @b
-@@:
-        pop     eax
-        add     al, '0'
-        stosb
-        test    bl, 1           ; UNICODE name?
-        jz      .ansi2
-        mov     byte [edi], 0
-        inc     edi
-.ansi2:
-        test    al, al
-        jnz     @b
-        mov     byte [edi-1], 0
-        pop     ecx
-        pop     edi
-; UNICODE name length is 520 bytes, ANSI - 264
-        add     edi, 520
-        test    bl, 1
-        jnz     @f
-        sub     edi, 520-264
-@@:
-        pop     edx eax
-        jmp     .maindir_loop
-.maindir_done:
-        pop     eax
-        mov     ebx, [edx+4]
-        xor     eax, eax
-        dec     ebp
-        js      @f
-        mov     al, ERROR_END_OF_FILE
-@@:
-        mov     [image_of_eax], eax
-        mov     [image_of_ebx], ebx
-        ret
-; directory /
-.rootdir:
-        cmp     dword [ebx], 1  ; read folder?
-        jz      .readroot
-.access_denied:
-        mov     dword [image_of_eax], 10      ; access denied
-        ret
-
-.readroot:
-; virtual root folder - special handler
-        mov     ebp, [ebx+12]
-        mov     edx, [ebx+16]
-    ;    add     edx, std_application_base_address
-        push    dword [ebx+4]   ; first block
-        mov     ebx, [ebx+8]    ; flags
-        xor     eax, eax
-; eax=0, [esp]=first block, ebx=flags, ebp=number of blocks, edx=return area
-        mov     edi, edx
-        mov     ecx, 32/4
-        rep stosd
-        mov     byte [edx], 1   ; version
-        sub     esp, 16
-.readroot_ah_loop2:
-        push    edi
-        lea     edi, [esp+4]
-        call    dyndisk_enum_root
-        pop     edi
-        test    eax, eax
-        jz      .readroot_done_dynamic
-        inc     dword [edx+8]
-        dec     dword [esp+16]
-        jns     .readroot_ah_loop2
-        dec     ebp
-        js      .readroot_ah_loop2
-        push    eax
-        xor     eax, eax
-        inc     dword [edx+4]
-        mov     dword [edi], 0x10       ; attributes: folder
-        mov     dword [edi+4], ebx
-        add     edi, 8
-        mov     ecx, 40/4-2
-        rep stosd
-        push    esi edi
-        lea     esi, [esp+12]
-@@:
-        lodsb
-        stosb
-        test    bl, 1
-        jz      .ansi3
-        mov     byte [edi], 0
-        inc     edi
-.ansi3:
-        test    al, al
-        jnz     @b
-        pop     edi esi eax
-        add     edi, 520
-        test    bl, 1
-        jnz     .readroot_ah_loop2
-        sub     edi, 520-264
-        jmp     .readroot_ah_loop2
-.readroot_done_dynamic:
-        add     esp, 16
-        mov     esi, virtual_root_query
-.readroot_loop:
-        cmp     dword [esi], eax
-        jz      .readroot_done
-        call    dword [esi]
-        add     esi, 4
-        test    eax, eax
-        jnz     @f
-.readroot_next:
-        or      ecx, -1
-        xchg    esi, edi
-        repnz scasb
-        xchg    esi, edi
-        jmp     .readroot_loop
-@@:
-        xor     eax, eax
-        inc     dword [edx+8]
-        dec     dword [esp]
-        jns     .readroot_next
-        dec     ebp
-        js      .readroot_next
-        inc     dword [edx+4]
-        mov     dword [edi], 0x10       ; attributes: folder
-        mov     dword [edi+4], ebx      ; name type: UNICODE
-        add     edi, 8
-        mov     ecx, 40/4-2
-        rep stosd
-        push    edi
-@@:
-        lodsb
-        stosb
-        test    bl, 1
-        jz      .ansi
-        mov     byte [edi], 0
-        inc     edi
-.ansi:
-        test    eax, eax
-        jnz     @b
-        pop     edi
-        add     edi, 520
-        test    bl, 1
-        jnz     .readroot_loop
-        sub     edi, 520-264
-        jmp     .readroot_loop
-.readroot_done:
-        pop     eax
-        mov     ebx, [edx+4]
-        xor     eax, eax
-        dec     ebp
-        js      @f
-        mov     al, ERROR_END_OF_FILE
-@@:
-        mov     [image_of_eax], eax
-        mov     [image_of_ebx], ebx
-        ret
-.notfound_try:
-        call    dyndisk_handler
+        mov     ax, [esi]
+        or      ax, 2020h
+        cmp     ax, 'cd'
+        jz      .CD
+        call    dyndisk_handler ; not returns if success
 .notfound:
-        mov     dword [image_of_eax], ERROR_FILE_NOT_FOUND
-        and     dword [image_of_ebx], 0
+        mov     dword[image_of_eax], ERROR_FILE_NOT_FOUND
         ret
 
-.notfounda:
-        cmp     edi, esp
-        jnz     .notfound
-        call    dword [edi+4]
-        add     esp, 16
-        jmp     .notfound
-
-.found1:
-        pop     eax
-        cmp     byte [esi], 0
-        jz      .maindir
-.found2:
-; read partition number
-        xor     ecx, ecx
+.CD:
+        add     esi, 2
         xor     eax, eax
-@@:
+        lodsb       ; disk number
+        sub     eax, '0'
+        cmp     eax, 10
+        jnc     .notfound
+        mov     edi, eax
         lodsb
+        test    eax, eax
+        jz      .maindir
         cmp     al, '/'
-        jz      .done1
-        test    al, al
-        jz      .done1
-        sub     al, '0'
-        cmp     al, 9
-        ja      .notfounda
-        lea     ecx, [ecx*5]
-        lea     ecx, [ecx*2+eax]
-        jmp     @b
-.done1:
-        jecxz   .notfounda
-        test    al, al
+        jnz     .notfound
+        lodsb       ; partition number
+        test    eax, eax
+        jz      .maindir
+        cmp     al, '1'
+        jnz     .notfound
+        cmp     byte [esi], '/'
         jnz     @f
-        dec     esi
+        inc     esi
 @@:
         cmp     byte [esi], 0
         jnz     @f
@@ -444,164 +133,247 @@ end if
         mov     esi, ebp
         xor     ebp, ebp
 @@:
-; now [edi] contains handler address, ecx - partition number,
-; esi points to ASCIIZ string - rest of name
-        jmp     dword [edi]
-
-; handlers for devices
-; in: ecx = 0 => query virtual directory /xxx
-; in: ecx = partition number
-;     esi -> relative (for device) name
-;     ebx -> fileinfo
-;     ebp = 0 or pointer to rest of name from folder addressed by esi
-; out: [image_of_eax]=image of eax, [image_of_ebx]=image of ebx
-
-fs_NotImplemented:
-        mov     eax, 2
-        ret
-;-----------------------------------------------------------------------------
-fs_OnCd0:
         call    reserve_cd
-        mov     [ChannelNumber], 1
-        mov     [DiskNumber], 0
-        push    6
-        push    1
-        jmp     fs_OnCd
-;-----------------------------------------------------------------------------
-fs_OnCd1:
-        call    reserve_cd
-        mov     [ChannelNumber], 1
-        mov     [DiskNumber], 1
-        push    4
-        push    2
-        jmp     fs_OnCd
-;-----------------------------------------------------------------------------
-fs_OnCd2:
-        call    reserve_cd
-        mov     [ChannelNumber], 2
-        mov     [DiskNumber], 0
-        push    2
-        push    3
-        jmp     fs_OnCd
-;-----------------------------------------------------------------------------
-fs_OnCd3:
-        call    reserve_cd
-        mov     [ChannelNumber], 2
-        mov     [DiskNumber], 1
-        push    0
-        push    4
-        jmp     fs_OnCd
-;-----------------------------------------------------------------------------
-fs_OnCd4:
-        call    reserve_cd
-        mov     [ChannelNumber], 1
-        mov     [DiskNumber], 0
-        push    6
-        push    5
-        jmp     fs_OnCd
-;-----------------------------------------------------------------------------
-fs_OnCd5:
-        call    reserve_cd
-        mov     [ChannelNumber], 1
-        mov     [DiskNumber], 1
-        push    4
-        push    6
-        jmp     fs_OnCd
-;-----------------------------------------------------------------------------
-fs_OnCd6:
-        call    reserve_cd
-        mov     [ChannelNumber], 2
-        mov     [DiskNumber], 0
-        push    2
-        push    7
-        jmp     fs_OnCd
-;-----------------------------------------------------------------------------
-fs_OnCd7:
-        call    reserve_cd
-        mov     [ChannelNumber], 2
-        mov     [DiskNumber], 1
-        push    0
-        push    8
-        jmp     fs_OnCd
-;-----------------------------------------------------------------------------
-fs_OnCd8:
-        call    reserve_cd
-        mov     [ChannelNumber], 1
-        mov     [DiskNumber], 0
-        push    6
-        push    9
-        jmp     fs_OnCd
-;-----------------------------------------------------------------------------
-fs_OnCd9:
-        call    reserve_cd
-        mov     [ChannelNumber], 1
-        mov     [DiskNumber], 1
-        push    4
-        push    10
-        jmp     fs_OnCd
-;-----------------------------------------------------------------------------
-fs_OnCd10:
-        call    reserve_cd
-        mov     [ChannelNumber], 2
-        mov     [DiskNumber], 0
-        push    2
-        push    11
-        jmp     fs_OnCd
-;-----------------------------------------------------------------------------
-fs_OnCd11:
-        call    reserve_cd
-        mov     [ChannelNumber], 2
-        mov     [DiskNumber], 1
-        push    0
-        push    12
-;-----------------------------------------------------------------------------
-fs_OnCd:
-        pop     eax
+        mov     eax, edi
+        bt      eax, 0
+        setc    [DiskNumber]
+        bt      eax, 1
+        setc    [ChannelNumber]
+        inc     [ChannelNumber]
+        inc     eax
         mov     [cdpos], eax
         call    reserve_cd_channel
-        pop     eax
-        cmp     ecx, 0x100
-        jae     .nf
-        push    ecx ebx
-        mov     cl, al
-
-        push    eax
-        mov     eax, [cdpos]
-        dec     eax
-        shr     eax, 2
-        lea     eax, [eax*5]
-        mov     bl, [eax+DRIVE_DATA+1]
-        pop     eax
-
-        shr     bl, cl
-        test    bl, 2
-        pop     ebx ecx
-
-        jnz     @f
-.nf:
-        call    free_cd_channel
-        and     [cd_status], 0
-        mov     dword [image_of_eax], 5       ; not found
-        ret
-@@:
+        mov     eax, edi
+        not     eax
+        and     eax, 3
+        shl     eax, 1
+        inc     eax
+        shr     edi, 2
+        mov     dword[image_of_eax], ERROR_FILE_NOT_FOUND
+        bt      [edi*5+DRIVE_DATA+1], ax
+        jnc     @f
         mov     ecx, [ebx+12]
         mov     edx, [ebx+16]
-    ;    add     edx, std_application_base_address
         mov     eax, [ebx]
+        mov     dword[image_of_eax], ERROR_UNSUPPORTED_FS
         cmp     eax, fs_NumCdServices
-        jae     .not_impl
+        jae     @f
         add     ebx, 4
-        call    dword [fs_CdServices + eax*4]
+        call    dword[fs_CdServices + eax*4]
         call    free_cd_channel
         and     [cd_status], 0
         mov     [image_of_eax], eax
         mov     [image_of_ebx], ebx
         ret
-.not_impl:
+
+@@:
         call    free_cd_channel
         and     [cd_status], 0
-        mov     dword [image_of_eax], 2       ; not implemented
         ret
+
+.nextCD:
+        test    eax, eax    ; partition number
+        stc
+        jnz     @f      ; no more partitions
+        mov     al, 1   ; /cdX/1
+        clc
+@@:
+        ret
+
+.maindir:   ; list partitions
+        mov     esi, .nextCD
+.maindir_noesi:     ; backjump from dyndisk_handler
+        cmp     dword[ebx], 1
+        jnz     .access_denied  ; read folder?
+        push    ecx
+        mov     ebp, [ebx+12]   ; the number of blocks to read
+        mov     edx, [ebx+16]   ; where to write the result
+        push    dword[ebx+4]    ; first block
+        mov     ebx, [ebx+8]    ; flags
+        mov     ecx, 32/4
+        mov     edi, edx
+        xor     eax, eax
+        rep stosd
+        mov     byte [edx], 1   ; version
+.maindir_loop:
+        call    esi
+        jc      .maindir_done
+        inc     dword[edx+8]
+        dec     dword[esp]
+        jns     .maindir_loop
+        dec     ebp
+        js      .maindir_loop
+        inc     dword[edx+4]
+        mov     dword[edi], 16      ; attributes: folder
+        mov     dword[edi+4], ebx   ; name encoding
+        push    eax
+        mov     ecx, 32/4
+        add     edi, 8
+        xor     eax, eax
+        rep stosd
+        pop     eax
+        push    eax edx edi
+; convert number in eax to decimal string
+        push    -'0'
+        mov     ecx, 10
+@@:
+        xor     edx, edx
+        div     ecx
+        push    edx
+        test    eax, eax
+        jnz     @b
+        cmp     ebx, 1
+        jz      .uni
+@@:
+        pop     eax
+        add     eax, '0'
+        stosb
+        test    eax, eax
+        jnz     @b
+        pop     edi edx eax
+        add     edi, 264
+        jmp     .maindir_loop
+
+.uni:
+        pop     eax
+        add     eax, '0'
+        stosw
+        test    eax, eax
+        jnz     .uni
+        pop     edi edx eax
+        add     edi, 520
+        jmp     .maindir_loop
+
+.maindir_done:
+        pop     eax eax
+        mov     ebx, [edx+4]
+        xor     eax, eax
+        dec     ebp
+        js      @f
+        mov     al, ERROR_END_OF_FILE
+@@:
+        mov     [image_of_eax], eax
+        mov     [image_of_ebx], ebx
+        ret
+
+.access_denied:
+        mov     dword[image_of_eax], ERROR_ACCESS_DENIED
+        ret
+
+.rootdir:   ; / - virtual root folder
+        cmp     dword[ebx], 1   ; read folder?
+        jnz     .access_denied
+        mov     ebp, [ebx+12]   ; number of blocks
+        mov     edx, [ebx+16]   ; return area
+        push    dword[ebx+4]    ; first block
+        mov     ebx, [ebx+8]    ; flags
+        mov     ecx, 32/4
+        mov     edi, edx
+        xor     eax, eax
+        rep stosd
+        mov     byte [edx], 1   ; version
+        sub     esp, 16
+.rootdir_loop:
+        push    edi
+        lea     edi, [esp+4]
+        call    dyndisk_enum_root
+        pop     edi
+        test    eax, eax
+        jz      .rootdirCD
+        inc     dword[edx+8]
+        dec     dword[esp+16]
+        jns     .rootdir_loop
+        dec     ebp
+        js      .rootdir_loop
+        inc     dword[edx+4]
+        mov     dword[edi], 16      ; attributes: folder
+        mov     dword[edi+4], ebx   ; name encoding
+        push    eax
+        mov     ecx, 32/4
+        add     edi, 8
+        xor     eax, eax
+        rep stosd
+        push    esi edi
+        lea     esi, [esp+12]
+        cmp     ebx, 1
+        jz      .uni2
+@@:
+        lodsb
+        stosb
+        test    eax, eax
+        jnz     @b
+        pop     edi esi eax
+        add     edi, 264
+        jmp     .rootdir_loop
+
+.uni2:
+        lodsb
+        stosw
+        test    eax, eax
+        jnz     .uni2
+        pop     edi esi eax
+        add     edi, 520
+        jmp     .rootdir_loop
+
+.rootdirCD:
+        add     esp, 16
+        or      esi, -1
+.rootdirCD_loop:
+        inc     esi
+        cmp     esi, 10
+        jnc     .rootdir_done
+        mov     eax, esi
+        not     eax
+        and     eax, 3
+        shl     eax, 1
+        inc     eax
+        mov     ecx, esi
+        shr     ecx, 2
+        bt      [ecx*5+DRIVE_DATA+1], ax
+        jnc     .rootdirCD_loop
+        inc     dword[edx+8]
+        dec     dword[esp]
+        jns     .rootdirCD_loop
+        dec     ebp
+        js      .rootdirCD_loop
+        inc     dword[edx+4]
+        mov     dword[edi], 16      ; attributes: folder
+        mov     dword[edi+4], ebx   ; name encoding
+        mov     ecx, 32/4
+        add     edi, 8
+        xor     eax, eax
+        rep stosd
+        mov     eax, esi
+        add     eax, '0'
+        cmp     ebx, 1
+        jz      @f
+        mov     word [edi], 'cd'
+        mov     [edi+2], ax
+        add     edi, 264
+        jmp     .rootdirCD_loop
+
+@@:
+        mov     dword[edi], 640063h
+        mov     [edi+4], eax
+        add     edi, 520
+        jmp     .rootdirCD_loop
+
+.rootdir_done:
+        pop     eax
+        mov     ebx, [edx+4]
+        xor     eax, eax
+        dec     ebp
+        js      @f
+        mov     al, ERROR_END_OF_FILE
+@@:
+        mov     [image_of_eax], eax
+        mov     [image_of_ebx], ebx
+        ret
+
+fs_NotImplemented:
+        mov     eax, 2
+        ret
+
 ;-----------------------------------------------------------------------------
 fs_CdServices:
         dd      fs_CdRead
@@ -616,89 +388,9 @@ fs_CdServices:
         dd      fs_NotImplemented
 fs_NumCdServices = ($ - fs_CdServices)/4
 ;-----------------------------------------------------------------------------
-fs_HasCd0:
-        test    byte [DRIVE_DATA+1], 10000000b
-        setnz   al
-        ret
-;--------------------------------------
-fs_HasCd1:
-        test    byte [DRIVE_DATA+1], 00100000b
-        setnz   al
-        ret
-;--------------------------------------
-fs_HasCd2:
-        test    byte [DRIVE_DATA+1], 00001000b
-        setnz   al
-        ret
-;--------------------------------------
-fs_HasCd3:
-        test    byte [DRIVE_DATA+1], 00000010b
-        setnz   al
-        ret
-;--------------------------------------
-fs_HasCd4:
-        test    byte [DRIVE_DATA+6], 10000000b
-        setnz   al
-        ret
-;--------------------------------------
-fs_HasCd5:
-        test    byte [DRIVE_DATA+6], 00100000b
-        setnz   al
-        ret
-;--------------------------------------
-fs_HasCd6:
-        test    byte [DRIVE_DATA+6], 00001000b
-        setnz   al
-        ret
-;--------------------------------------
-fs_HasCd7:
-        test    byte [DRIVE_DATA+6], 00000010b
-        setnz   al
-        ret
-;--------------------------------------
-fs_HasCd8:
-        test    byte [DRIVE_DATA+11], 10000000b
-        setnz   al
-        ret
-;--------------------------------------
-fs_HasCd9:
-        test    byte [DRIVE_DATA+11], 00100000b
-        setnz   al
-        ret
-;--------------------------------------
-fs_HasCd10:
-        test    byte [DRIVE_DATA+11], 00001000b
-        setnz   al
-        ret
-;--------------------------------------
-fs_HasCd11:
-        test    byte [DRIVE_DATA+11], 00000010b
-        setnz   al
-        ret
-;-----------------------------------------------------------------------------
-;
-; fs_NextXXX functions:
-; in: eax = partition number, from which start to scan
-; out: CF=1 => no more partitions
-;      CF=0 => eax=next partition number
-;
-;-----------------------------------------------------------------------------
-fs_NextCd:
-; we always have /cdX/1
-        test    eax, eax
-        stc
-        jnz     @f
-        mov     al, 1
-        clc
-@@:
-        ret
-;-----------------------------------------------------------------------------
 process_replace_file_name:
-; in
-; esi - path with filename(f.70)
-;
-; out
-; ebp - full filename
+; in: [esi] = virtual path
+; out: [esi]+[ebp] = physical path
         pushfd
         cli
         mov     ebp, [full_file_name_table]
@@ -707,32 +399,31 @@ process_replace_file_name:
         cmp     edi, [full_file_name_table.size]
         jae     .notfound
         push    esi edi
-        shl     edi, 7 ; edi*128
+        shl     edi, 7
         add     edi, ebp
 @@:
-        cmp     byte [edi], 0 ; end of dir_name
+        cmp     byte [edi], 0
         jz      .dest_done
         lodsb
         test    al, al
         jz      .cont
-        or      al, 20h ; 32 - space char
+        or      al, 20h
         scasb
         jz      @b
-        jmp     .cont
+.cont:
+        pop     edi esi
+        inc     edi
+        jmp     .loop
+
 .dest_done:
         cmp     byte [esi], 0
         jz      .found
         cmp     byte [esi], '/'
         jnz     .cont
         inc     esi
-        jmp     .found
-.cont:
-        pop     edi esi
-        inc     edi
-        jmp     .loop
 .found:
         pop     edi eax
-        shl     edi, 7 ; edi*128
+        shl     edi, 7
         add     edi, ebp
         mov     ebp, esi
         cmp     byte [esi], 0
@@ -743,20 +434,15 @@ process_replace_file_name:
 .ret:
         popfd
         ret
+
 ;-----------------------------------------------------------------------------
 uglobal
 lock_flag_for_f30_3 rb 1
 endg
 
-sys_current_directory:
-;       mov     esi, [current_slot]
-;       mov     esi, [esi+APPDATA.cur_dir]
-;       mov     edx, esi
-
-;get length string of appdata.cur_dir
+sys_current_directory:  ; sysfunction 30
         mov     eax, [current_slot]
         mov     edi, [eax+APPDATA.cur_dir]
-
         dec     ebx
         jz      .set
         dec     ebx
@@ -766,95 +452,72 @@ sys_current_directory:
         ret
 
 .mount_additional_directory:
-; sysfunction 30.2: [for app] eax=30,ebx=3,ecx->dir name+dir path (128)
-; for our code: nothing
-
-; check lock of the function
-        cmp     [lock_flag_for_f30_3], 1
+; in: ecx -> dir name+dir path (128)
+        cmp     [lock_flag_for_f30_3], 1    ; check lock
         je      @f
-
         mov     esi, ecx
         mov     edi, sysdir_name1
-; copying fake directory name
         mov     ecx, 63
         pushfd
         cli
         cld
-        rep movsb
-; terminator of name, in case if we get the inlet trash
+        rep movsb   ; copying fake directory name
         inc     esi
         xor     eax, eax
-        stosb
-; copying real directory path for mounting
+        stosb       ; terminator of name, in case if we get the inlet trash
         mov     ecx, 63
-        rep movsb
-; terminator of name, in case if we get the inlet trash
+        rep movsb   ; copying real directory path for mounting
         xor     eax, eax
         stosb
 ; increase the pointer of inputs for procedure "process_replace_file_name"
         mov     [full_file_name_table.size], 2
-; block the ability to call f.30.3 because for one session is necessary
-; for us only once
-        mov     [lock_flag_for_f30_3], 1
+        mov     [lock_flag_for_f30_3], 1    ; lock
         popfd
 @@:
         ret
 
-.get:
-; sysfunction 30.2: [for app] eax=30,ebx=2,ecx->buffer,edx=len
-; for our code: ebx->buffer,ecx=len
-max_cur_dir     equ     0x1000
+max_cur_dir equ 0x1000  ; length
 
-        mov     ebx, edi
-
+.get:       ; in: ecx -> buffer, edx = length
+        mov     ebx, edi    ; buffer
         push    ecx
         push    edi
-
         xor     eax, eax
         mov     ecx, max_cur_dir
-
-        repne scasb             ;find zerro at and string
-        jnz     .error          ; no zero in cur_dir: internal error, should not happen
-
-        sub     edi, ebx        ;lenght for copy
+        repne scasb
+        jnz     .error
+        sub     edi, ebx
         inc     edi
-        mov     [esp+32+8], edi ;return in eax
-
+        mov     [esp+32+8], edi ; return in eax
         cmp     edx, edi
         jbe     @f
         mov     edx, edi
 @@:
-;source string
         pop     esi
-;destination string
         pop     edi
         cmp     edx, 1
         jbe     .ret
-
-        mov     al, '/'         ;start string with '/'
+        mov     al, '/'
         stosb
         mov     ecx, edx
-        rep movsb               ;copy string
+        rep movsb
 .ret:
         ret
 
 .error:
         add     esp, 8
-        or      dword [esp+32], -1      ;error not found zerro at string ->[eax+APPDATA.cur_dir]
-        ret
-.set:
-; sysfunction 30.1: [for app] eax=30,ebx=1,ecx->string
-; for our code: ebx->string to set
-; use generic resolver with APPDATA.cur_dir as destination
-        push    max_cur_dir     ;0x1000
-        push    edi     ;destination
-        mov     ebx, ecx
-        call    get_full_file_name
+        or      dword[esp+32], -1
         ret
 
-; in: ebx = file name, [esp+4] = destination, [esp+8] = sizeof destination
-; destroys all registers except ebp,esp
+.set:
+        pop     eax
+        push    max_cur_dir
+        push    edi
+        push    eax
+        mov     ebx, ecx
 get_full_file_name:
+; in: ebx -> file name, [esp+4] -> destination, [esp+8] = max length
+; destroys all registers
         push    ebp
         mov     esi, [current_slot]
         mov     esi, [esi+APPDATA.cur_dir]
@@ -866,8 +529,7 @@ get_full_file_name:
         dec     esi
         cmp     byte [ebx], '/'
         jz      .set_absolute
-; string gives relative path
-        mov     edi, [esp+8]    ; destination
+        mov     edi, [esp+8]
 .relative:
         cmp     byte [ebx], 0
         jz      .set_ok
@@ -877,6 +539,7 @@ get_full_file_name:
         jnz     @f
         add     ebx, 2
         jmp     .relative
+
 @@:
         cmp     word [ebx], '..'
         jnz     .doset_relative
@@ -890,6 +553,7 @@ get_full_file_name:
         jnz     @b
         add     ebx, 3
         jmp     .relative
+
 .set_ok:
         cmp     edx, edi        ; is destination equal to APPDATA.cur_dir?
         jz      .set_ok.cur_dir
@@ -898,21 +562,24 @@ get_full_file_name:
         jb      .set_ok.copy
 .fail:
         mov     byte [edi], 0
-        xor     eax, eax        ; fail
+        xor     eax, eax
         pop     ebp
         ret     8
+
 .set_ok.copy:
         mov     ecx, esi
         mov     esi, edx
         rep movsb
         mov     byte [edi], 0
 .ret.ok:
-        mov     al, 1   ; ok
+        mov     al, 1
         pop     ebp
         ret     8
+
 .set_ok.cur_dir:
         mov     byte [esi], 0
         jmp     .ret.ok
+
 .doset_relative:
         cmp     edx, edi
         jz      .doset_relative.cur_dir
@@ -924,6 +591,7 @@ get_full_file_name:
         mov     edx, edi
         rep movsb
         jmp     .doset_relative.copy
+
 .doset_relative.cur_dir:
         mov     edi, esi
 .doset_relative.copy:
@@ -943,6 +611,7 @@ get_full_file_name:
 .overflow:
         dec     edi
         jmp     .fail
+
 .set_absolute:
         lea     esi, [ebx+1]
         call    process_replace_file_name
@@ -958,6 +627,7 @@ get_full_file_name:
         cmp     edi, edx
         jb      .set_copy
         jmp     .overflow
+
 .set_part2:
         mov     esi, ebp
         xor     ebp, ebp
