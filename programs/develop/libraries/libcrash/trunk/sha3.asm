@@ -16,37 +16,6 @@
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-SHA3224_BLOCK_SIZE      = 144
-SHA3256_BLOCK_SIZE      = 136
-SHA3384_BLOCK_SIZE      = 104
-SHA3512_BLOCK_SIZE      = 72
-SHA3MAX_BLOCK_SIZE      = SHA3224_BLOCK_SIZE
-
-SHA3_INIT_SIZE          = 200
-
-SHA3224_HASH_SIZE       = 28
-SHA3256_HASH_SIZE       = 32
-SHA3384_HASH_SIZE       = 48
-SHA3512_HASH_SIZE       = 64
-
-SHA3_ALIGN              = 16
-SHA3_ALIGN_MASK         = SHA3_ALIGN-1
-
-struct ctx_sha3
-        hash            rb SHA3_INIT_SIZE
-                        rb SHA3_ALIGN - (SHA3_INIT_SIZE mod SHA3_ALIGN)
-        block           rb SHA3MAX_BLOCK_SIZE
-                        rb SHA3_ALIGN - (SHA3MAX_BLOCK_SIZE mod SHA3_ALIGN)
-        index           rd 1
-        block_size      rd 1
-        rounds_cnt      rd 1
-                        rd 1    ; align
-        ; tmp vars
-        C               rq 5
-        D               rq 5
-ends
-
-
 macro sha3._.rol_xor nd, ncl, ncr
 {
         movq    mm0, [C + 8*(ncl)]
@@ -324,6 +293,10 @@ proc sha3._.block _hash
 endp
 
 
+sha3224.update = sha3.update
+sha3256.update = sha3.update
+sha3384.update = sha3.update
+sha3512.update = sha3.update
 proc sha3.update _ctx, _msg, _size
   .next_block:
         mov     ebx, [_ctx]
@@ -382,6 +355,10 @@ proc sha3.update _ctx, _msg, _size
 endp
 
 
+sha3224.final = sha3.final
+sha3256.final = sha3.final
+sha3384.final = sha3.final
+sha3512.final = sha3.final
 proc sha3.final _ctx
         pushad
         mov     ebx, [_ctx]

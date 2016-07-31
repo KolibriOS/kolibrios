@@ -16,20 +16,6 @@
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-MD4_BLOCK_SIZE = 64
-MD4_HASH_SIZE  = 16
-MD4_ALIGN      = 4
-MD4_ALIGN_MASK = MD4_ALIGN - 1
-
-struct ctx_md4
-        hash            rb MD4_HASH_SIZE
-        block           rb MD4_BLOCK_SIZE
-        index           rd 1
-        msglen_0        rd 1
-        msglen_1        rd 1
-ends
-
-
 macro md4._.f b, c, d
 {
         mov     eax, c

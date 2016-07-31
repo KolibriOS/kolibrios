@@ -16,20 +16,6 @@
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-MD5_BLOCK_SIZE = 64
-MD5_HASH_SIZE  = 16
-MD5_ALIGN      = 4
-MD5_ALIGN_MASK = MD5_ALIGN - 1
-
-struct ctx_md5
-        hash            rb MD5_HASH_SIZE
-        block           rb MD5_BLOCK_SIZE
-        index           rd 1
-        msglen_0        rd 1
-        msglen_1        rd 1
-ends
-
-
 macro md5._.f b, c, d
 {
         push    c

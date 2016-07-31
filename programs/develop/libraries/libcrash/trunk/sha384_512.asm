@@ -16,38 +16,6 @@
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-SHA384512_BLOCK_SIZE = 128
-SHA384512_INIT_SIZE  = 64
-
-SHA384_HASH_SIZE     = 48
-SHA512_HASH_SIZE     = 64
-
-SHA384512_ALIGN      = 16
-SHA384512_ALIGN_MASK = SHA384512_ALIGN - 1
-
-struct ctx_sha384512
-        hash            rb SHA384512_INIT_SIZE
-        block           rb SHA384512_BLOCK_SIZE
-        index           rd 1
-        msglen_0        rd 1
-        msglen_1        rd 1
-        msglen_2        rd 1
-        msglen_3        rd 1
-                        rd 3    ; align
-        ; tmp vars
-        w               rq 80
-        A               rq 1
-        B               rq 1
-        C               rq 1
-        D               rq 1
-        E               rq 1
-        F               rq 1
-        G               rq 1
-        H               rq 1
-        temp            rq 1
-ends
-
-
 macro sha384512._.chn x, y, z
 {
         movq    mm0, [y]
@@ -350,8 +318,8 @@ end repeat
 restore w,A,B,C,D,E,F,G,H,temp
 endp
 
-
-proc sha384512.update _ctx, _msg, _size
+sha512.update = sha384.update
+proc sha384.update _ctx, _msg, _size
         mov     ebx, [_ctx]
         mov     ecx, [_size]
         add     [ebx + ctx_sha384512.msglen_0], ecx
@@ -409,7 +377,8 @@ proc sha384512.update _ctx, _msg, _size
 endp
 
 
-proc sha384512.final _ctx
+sha512.final = sha384.final
+proc sha384.final _ctx
         mov     ebx, [_ctx]
         lea     edi, [ebx + ctx_sha384512.block]
         mov     ecx, [ebx + ctx_sha384512.msglen_0]

@@ -99,8 +99,7 @@ proc update_data_buffer _left
 endp
 
 
-szZ window_title        ,'libcrash example'
-
+szZ window_title        , 'libcrash example'
 szZ message             , 'hash sums of this file'
 
 hash_strings:

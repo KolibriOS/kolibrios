@@ -16,22 +16,6 @@
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-SHA224256_BLOCK_SIZE = 64
-SHA224256_INIT_SIZE  = 32
-SHA224_HASH_SIZE     = 28
-SHA256_HASH_SIZE     = 32
-SHA224256_ALIGN      = 4
-SHA224256_ALIGN_MASK = SHA224256_ALIGN - 1
-
-struct ctx_sha224256
-        hash            rb SHA224256_INIT_SIZE
-        block           rb SHA224256_BLOCK_SIZE
-        index           rd 1
-        msglen_0        rd 1
-        msglen_1        rd 1
-ends
-
-
 macro sha224256._.chn x, y, z
 {
         mov     eax, [y]
@@ -269,8 +253,8 @@ end repeat
         ret
 endp
 
-
-proc sha224256.update _ctx, _msg, _size
+sha256.update = sha224.update
+proc sha224.update _ctx, _msg, _size
         mov     ebx, [_ctx]
         mov     ecx, [_size]
         add     [ebx + ctx_sha224256.msglen_0], ecx
@@ -326,7 +310,8 @@ proc sha224256.update _ctx, _msg, _size
 endp
 
 
-proc sha224256.final _ctx
+sha256.final = sha224.final
+proc sha224.final _ctx
         mov     ebx, [_ctx]
         lea     edi, [ebx + ctx_sha224256.block]
         mov     ecx, [ebx + ctx_sha224256.msglen_0]

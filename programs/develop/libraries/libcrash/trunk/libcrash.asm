@@ -39,7 +39,7 @@ include 'sha3.asm'
 
 
 proc lib_init
-	ret
+        ret
 endp
 
 
@@ -110,20 +110,55 @@ crash._.table   dd \
         md4.init,     md4.update,       md4.final,       MD4_HASH_SIZE,    \
         md5.init,     md5.update,       md5.final,       MD5_HASH_SIZE,    \
         sha1.init,    sha1.update,      sha1.final,      SHA1_HASH_SIZE,   \
-        sha224.init,  sha224256.update, sha224256.final, SHA224_HASH_SIZE, \
-        sha256.init,  sha224256.update, sha224256.final, SHA256_HASH_SIZE, \
-        sha384.init,  sha384512.update, sha384512.final, SHA384_HASH_SIZE, \
-        sha512.init,  sha384512.update, sha384512.final, SHA512_HASH_SIZE, \
-        sha3224.init, sha3.update,      sha3.final,      SHA3224_HASH_SIZE,\
-        sha3256.init, sha3.update,      sha3.final,      SHA3256_HASH_SIZE,\
-        sha3384.init, sha3.update,      sha3.final,      SHA3384_HASH_SIZE,\
-        sha3512.init, sha3.update,      sha3.final,      SHA3512_HASH_SIZE
+        sha224.init,  sha224.update,    sha224.final,    SHA224_HASH_SIZE, \
+        sha256.init,  sha256.update,    sha256.final,    SHA256_HASH_SIZE, \
+        sha384.init,  sha384.update,    sha384.final,    SHA384_HASH_SIZE, \
+        sha512.init,  sha512.update,    sha512.final,    SHA512_HASH_SIZE, \
+        sha3224.init, sha3224.update,   sha3224.final,   SHA3224_HASH_SIZE,\
+        sha3256.init, sha3256.update,   sha3256.final,   SHA3256_HASH_SIZE,\
+        sha3384.init, sha3384.update,   sha3384.final,   SHA3384_HASH_SIZE,\
+        sha3512.init, sha3512.update,   sha3512.final,   SHA3512_HASH_SIZE
 
 align 4
 @EXPORT:
 
-export                                   \
-    lib_init        , 'lib_init'       , \
-    crash.hash      , 'crash_hash'     , \
-    crash.bin2hex   , 'crash_bin2hex'
-
+export                                          \
+    lib_init,             'lib_init'            , \
+    crash.hash,           'crash_hash'          , \
+    crash.bin2hex,        'crash_bin2hex'       , \
+    crc32.init,           'crc32_init'          , \
+    crc32.update,         'crc32_update'        , \
+    crc32.final,          'crc32_final'         , \
+    md4.init,             'md4_init'            , \
+    md4.update,           'md4_update'          , \
+    md4.final,            'md4_final'           , \
+    md5.init,             'md5_init'            , \
+    md5.update,           'md5_update'          , \
+    md5.final,            'md5_final'           , \
+    sha1.init,            'sha1_init'           , \
+    sha1.update,          'sha1_update'         , \
+    sha1.final,           'sha1_final'          , \
+    sha224.init,          'sha224_init'         , \
+    sha224.update,        'sha224_update'       , \
+    sha224.final,         'sha224_final'        , \
+    sha256.init,          'sha256_init'         , \
+    sha256.update,        'sha256_update'       , \
+    sha256.final,         'sha256_final'        , \
+    sha384.init,          'sha384_init'         , \
+    sha384.update,        'sha384_update'       , \
+    sha384.final,         'sha384_final'        , \
+    sha512.init,          'sha512_init'         , \
+    sha512.update,        'sha512_update'       , \
+    sha512.final,         'sha512_final'        , \
+    sha3224.init,         'sha3_224_init'       , \
+    sha3224.update,       'sha3_224_update'     , \
+    sha3224.final,        'sha3_224_final'      , \
+    sha3256.init,         'sha3_256_init'       , \
+    sha3256.update,       'sha3_256_update'     , \
+    sha3256.final,        'sha3_256_final'      , \
+    sha3384.init,         'sha3_384_init'       , \
+    sha3384.update,       'sha3_384_update'     , \
+    sha3384.final,        'sha3_384_final'      , \
+    sha3512.init,         'sha3_512_init'       , \
+    sha3512.update,       'sha3_512_update'     , \
+    sha3512.final,        'sha3_512_final'

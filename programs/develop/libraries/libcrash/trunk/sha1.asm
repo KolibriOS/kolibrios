@@ -16,20 +16,6 @@
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-SHA1_BLOCK_SIZE = 64
-SHA1_HASH_SIZE  = 20
-SHA1_ALIGN      = 4
-SHA1_ALIGN_MASK = SHA1_ALIGN - 1
-
-struct ctx_sha1
-        hash            rb SHA1_HASH_SIZE
-        block           rb SHA1_BLOCK_SIZE
-        index           rd 1
-        msglen_0        rd 1
-        msglen_1        rd 1
-ends
-
-
 proc sha1._.f
         push    ebx ecx edx
         xor     ecx, edx
