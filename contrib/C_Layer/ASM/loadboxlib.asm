@@ -134,6 +134,7 @@ public edit_box_mouse as '_edit_box_mouse'
 
 public check_box_draw2 as '_check_box_draw2'
 public check_box_mouse2 as '_check_box_mouse2'
+public init_checkbox2 as '_init_checkbox2'
 
 public progressbar_draw as '_progressbar_draw'
 public progressbar_progress as '_progressbar_progress'

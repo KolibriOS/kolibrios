@@ -13,13 +13,15 @@ int main()
   oskey_t key;
 
   kolibri_window *main_window = kolibri_new_window(50, 50, 400, 100, "BoardMsg: OpenDialog 0.12");
-  check_box *checkbox = kolibri_new_check_box(20, 40, 12, 12, "Append BOARDMSG to entered message.");
-  edit_box *textbox = kolibri_new_edit_box(20, 55, 40);
-  kolibri_button *button = kolibri_new_button(310, 55, 24, 14, 0x21, kolibri_color_table.color_work_button);
+  check_box *checkbox = kolibri_new_check_box(20, 45, 12, 12, "Append BOARDMSG to entered message.");
+  edit_box *textbox = kolibri_new_edit_box(20, 60, 40);
+  kolibri_button *button = kolibri_new_button(310, 60, 24, 14, 0x21, kolibri_color_table.color_work_button);
+  frame *fr = kolibri_new_frame(12, 35, 350, 50, 0x00FCFCFC, 0x00DCDCDC, 1, "Frame Title", 0, kolibri_color_table.color_work_text, kolibri_color_table.color_work_area);
 
   kolibri_window_add_element(main_window, KOLIBRI_EDIT_BOX, textbox);
   kolibri_window_add_element(main_window, KOLIBRI_CHECK_BOX, checkbox);
   kolibri_window_add_element(main_window, KOLIBRI_BUTTON, button);
+  kolibri_window_add_element(main_window, KOLIBRI_FRAME, fr);
 
   extern volatile unsigned press_key;
 
@@ -66,7 +68,7 @@ int main()
 	  kolibri_handle_event_mouse(main_window);
 	}
 
-    } while(gui_event = get_os_event()); /* End of main activity loop */
+    } while((gui_event = get_os_event())); /* End of main activity loop */
 
   /* kolibri_quit(); */
 

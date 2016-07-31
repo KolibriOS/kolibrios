@@ -39,7 +39,6 @@ typedef struct{
   void *next, *prev;
 }kolibri_window_element;
 
-
 typedef void (*cb_elem_boxlib)(void *) __attribute__((__stdcall__));
 
 /* Generic structure for supporting functions on various elements of Kolibri's GUI */

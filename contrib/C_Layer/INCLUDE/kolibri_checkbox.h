@@ -22,6 +22,10 @@ typedef struct {
     unsigned int size_of_str;
 }check_box;
 
+extern void (*check_box_draw2)(check_box *) __attribute__((__stdcall__));
+extern void (*check_box_mouse2)(check_box *)__attribute__((__stdcall__));
+extern void (*init_checkbox2)(check_box *)__attribute__((__stdcall__));
+
 check_box* kolibri_new_check_box(unsigned int tlx, unsigned int tly, unsigned int sizex, unsigned int sizey, char *label_text)
 {
      check_box* new_checkbox = (check_box *)malloc(sizeof(check_box));
@@ -34,10 +38,10 @@ check_box* kolibri_new_check_box(unsigned int tlx, unsigned int tly, unsigned in
      new_checkbox -> text = label_text;
      new_checkbox -> flags = 0x00000008;
 
+     (*init_checkbox2)(new_checkbox); // count text width for mouse action and set flags
+
      return new_checkbox;
 }
 
-extern void (*check_box_draw2)(check_box *) __attribute__((__stdcall__));
-extern void (*check_box_mouse2)(check_box *)__attribute__((__stdcall__));
 
 #endif /* KOLIBRI_CHECKBOX_H */
