@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2013, Tomasz Grysztar.
+; Copyright (c) 1999-2016, Tomasz Grysztar.
 ; All rights reserved.
 
 preprocessor:
@@ -42,6 +42,150 @@ preprocessor:
 	mov	[hash_tree],eax
 	mov	[error],eax
 	mov	[macro_status],al
+	mov	[current_line],eax
+	mov	esi,[initial_definitions]
+	test	esi,esi
+	jz	predefinitions_ok
+      process_predefinitions:
+	movzx	ecx,byte [esi]
+	test	ecx,ecx
+	jz	predefinitions_ok
+	inc	esi
+	lea	eax,[esi+ecx]
+	push	eax
+	mov	ch,10b
+	call	add_preprocessor_symbol
+	pop	esi
+	mov	edi,[memory_start]
+	mov	[edx+8],edi
+      convert_predefinition:
+	cmp	edi,[memory_end]
+	jae	out_of_memory
+	lods	byte [esi]
+	or	al,al
+	jz	predefinition_converted
+	cmp	al,20h
+	je	convert_predefinition
+	mov	ah,al
+	mov	ebx,characters
+	xlat	byte [ebx]
+	or	al,al
+	jz	predefinition_separator
+	cmp	ah,27h
+	je	predefinition_string
+	cmp	ah,22h
+	je	predefinition_string
+	mov	byte [edi],1Ah
+	scas	word [edi]
+	xchg	al,ah
+	stos	byte [edi]
+	mov	ebx,characters
+	xor	ecx,ecx
+      predefinition_symbol:
+	lods	byte [esi]
+	stos	byte [edi]
+	xlat	byte [ebx]
+	or	al,al
+	loopnzd predefinition_symbol
+	neg	ecx
+	cmp	ecx,255
+	ja	invalid_definition
+	mov	ebx,edi
+	sub	ebx,ecx
+	mov	byte [ebx-2],cl
+      found_predefinition_separator:
+	dec	edi
+	mov	ah,[esi-1]
+      predefinition_separator:
+	xchg	al,ah
+	or	al,al
+	jz	predefinition_converted
+	cmp	al,20h
+	je	convert_predefinition
+	cmp	al,3Bh
+	je	invalid_definition
+	cmp	al,5Ch
+	je	predefinition_backslash
+	stos	byte [edi]
+	jmp	convert_predefinition
+      predefinition_string:
+	mov	al,22h
+	stos	byte [edi]
+	scas	dword [edi]
+	mov	ebx,edi
+      copy_predefinition_string:
+	lods	byte [esi]
+	stos	byte [edi]
+	or	al,al
+	jz	invalid_definition
+	cmp	al,ah
+	jne	copy_predefinition_string
+	lods	byte [esi]
+	cmp	al,ah
+	je	copy_predefinition_string
+	dec	esi
+	dec	edi
+	mov	eax,edi
+	sub	eax,ebx
+	mov	[ebx-4],eax
+	jmp	convert_predefinition
+      predefinition_backslash:
+	mov	byte [edi],0
+	lods	byte [esi]
+	or	al,al
+	jz	invalid_definition
+	cmp	al,20h
+	je	invalid_definition
+	cmp	al,3Bh
+	je	invalid_definition
+	mov	al,1Ah
+	stos	byte [edi]
+	mov	ecx,edi
+	mov	ax,5C01h
+	stos	word [edi]
+	dec	esi
+      group_predefinition_backslashes:
+	lods	byte [esi]
+	cmp	al,5Ch
+	jne	predefinition_backslashed_symbol
+	stos	byte [edi]
+	inc	byte [ecx]
+	jmp	group_predefinition_backslashes
+      predefinition_backslashed_symbol:
+	cmp	al,20h
+	je	invalid_definition
+	cmp	al,22h
+	je	invalid_definition
+	cmp	al,27h
+	je	invalid_definition
+	cmp	al,3Bh
+	je	invalid_definition
+	mov	ah,al
+	mov	ebx,characters
+	xlat	byte [ebx]
+	or	al,al
+	jz	predefinition_backslashed_symbol_character
+	mov	al,ah
+      convert_predefinition_backslashed_symbol:
+	stos	byte [edi]
+	xlat	byte [ebx]
+	or	al,al
+	jz	found_predefinition_separator
+	inc	byte [ecx]
+	jz	invalid_definition
+	lods	byte [esi]
+	jmp	convert_predefinition_backslashed_symbol
+      predefinition_backslashed_symbol_character:
+	mov	al,ah
+	stos	byte [edi]
+	inc	byte [ecx]
+	jmp	convert_predefinition
+      predefinition_converted:
+	mov	[memory_start],edi
+	sub	edi,[edx+8]
+	mov	[edx+12],edi
+	jmp	process_predefinitions
+      predefinitions_ok:
 	mov	esi,[input_file]
 	mov	edx,esi
 	call	open
@@ -78,7 +222,11 @@ preprocessor:
 	mov	[ebx],eax
 	call	use_postponed_macro
 	pop	edx
-	jmp	process_postponed_list
+	cmp	[macro_status],0
+	je	process_postponed_list
+	mov	eax,[error_line]
+	mov	[current_line],eax
+	jmp	incomplete_macro
       preprocessing_finished:
 	mov	[source_start],edi
 	ret
@@ -275,6 +423,7 @@ convert_line:
 	jne	backslashed_symbol
 	stos	byte [edi]
 	inc	byte [ecx]
+	jz	name_too_long
 	jmp	group_backslashes
       no_end_quote:
 	mov	byte [ebx-5],0
@@ -896,6 +1045,8 @@ define_macro:
 	inc	esi
 	add	esi,eax
 	lods	byte [esi]
+	cmp	al,':'
+	je	macro_argument_with_default_value
 	cmp	al,'='
 	je	macro_argument_with_default_value
 	cmp	al,'*'
@@ -904,10 +1055,13 @@ define_macro:
       macro_argument_end:
 	cmp	al,','
 	je	skip_macro_arguments
+	cmp	al,'&'
+	je	macro_arguments_finisher
 	cmp	al,']'
 	jne	end_macro_arguments
-	lods	byte [esi]
 	not	ebp
+      macro_arguments_finisher:
+	lods	byte [esi]
       end_macro_arguments:
 	or	ebp,ebp
 	jnz	invalid_macro_arguments
@@ -917,7 +1071,7 @@ define_macro:
 	je	found_macro_block
 	jmp	invalid_macro_arguments
       macro_argument_with_default_value:
-	or	[default_argument_value],-1
+	or	[skip_default_argument_value],-1
 	call	skip_macro_argument_value
 	inc	esi
 	jmp	macro_argument_end
@@ -956,9 +1110,11 @@ define_macro:
 	jz	argument_value_end
 	cmp	al,','
 	je	argument_value_end
-	cmp	[default_argument_value],0
+	cmp	[skip_default_argument_value],0
 	je	invalid_macro_arguments
 	cmp	al,'{'
+	je	argument_value_end
+	cmp	al,'&'
 	je	argument_value_end
 	or	ebp,ebp
 	jz	invalid_macro_arguments
@@ -975,9 +1131,11 @@ define_macro:
 	je	argument_string
 	cmp	al,1Ah
 	je	argument_symbol
-	cmp	[default_argument_value],0
+	cmp	[skip_default_argument_value],0
 	je	simple_argument
 	cmp	al,'{'
+	je	argument_value_end
+	cmp	al,'&'
 	je	argument_value_end
 	or	ebp,ebp
 	jz	simple_argument
@@ -1056,6 +1214,7 @@ postpone_directive:
 	xor	ecx,ecx
 	call	add_preprocessor_symbol
 	mov	eax,[current_line]
+	mov	[error_line],eax
 	mov	[edx+12],eax
 	pop	esi
 	mov	[edx+8],esi
@@ -1063,8 +1222,6 @@ postpone_directive:
 	and	al,0F0h
 	or	al,1
 	mov	[macro_status],al
-	mov	eax,[current_line]
-	mov	[error_line],eax
 	lods	byte [esi]
 	or	al,al
 	jz	line_preprocessed
@@ -1079,6 +1236,9 @@ irp_directive:
 	jmp	define_instant_macro
 irps_directive:
 	mov	[base_code],2
+	jmp	define_instant_macro
+irpv_directive:
+	mov	[base_code],3
 	jmp	define_instant_macro
 match_directive:
 	mov	[base_code],10h
@@ -1555,6 +1715,8 @@ use_macro:
 	je	next_argument
 	cmp	al,']'
 	je	next_arguments_group
+	cmp	al,'&'
+	je	arguments_end
 	dec	esi
 	jmp	arguments_end
       next_argument:
@@ -1575,19 +1737,50 @@ use_macro:
 	mov	eax,[counter_limit]
 	call	add_macro_symbol
 	add	esi,ecx
+	xor	eax,eax
+	mov	[default_argument_value],eax
+	cmp	byte [esi],'*'
+	je	required_value
+	cmp	byte [esi],':'
+	je	get_default_value
+	cmp	byte [esi],'='
+	jne	default_value_ok
+      get_default_value:
+	inc	esi
+	mov	[default_argument_value],esi
+	or	[skip_default_argument_value],-1
+	call	skip_macro_argument_value
+	jmp	default_value_ok
+      required_value:
+	inc	esi
+	or	[default_argument_value],-1
+      default_value_ok:
 	xchg	esi,ebx
 	mov	[edx+12],esi
-	mov	[default_argument_value],0
+	mov	[skip_default_argument_value],0
+	cmp	byte [ebx],'&'
+	je	greedy_macro_argument
 	call	skip_macro_argument_value
 	call	finish_macro_argument
+	jmp	got_macro_argument
+      greedy_macro_argument:
+	call	skip_foreign_line
+	dec	esi
+	mov	eax,[edx+12]
+	mov	ecx,esi
+	sub	ecx,eax
+	mov	[edx+8],ecx
+      got_macro_argument:
 	xchg	esi,ebx
-	cmp	byte [esi],'='
-	je	argument_with_default_value
-	cmp	byte [esi],'*'
-	jne	macro_argument_ok
 	cmp	dword [edx+8],0
+	jne	macro_argument_ok
+	mov	eax,[default_argument_value]
+	or	eax,eax
+	jz	macro_argument_ok
+	cmp	eax,-1
 	je	invalid_macro_arguments
-	inc	esi
+	mov	[edx+12],eax
+	call	finish_macro_argument
       macro_argument_ok:
 	ret
       finish_macro_argument:
@@ -1602,17 +1795,6 @@ use_macro:
       argument_value_length_ok:
 	mov	[edx+8],ecx
 	ret
-      argument_with_default_value:
-	inc	esi
-	push	esi
-	or	[default_argument_value],-1
-	call	skip_macro_argument_value
-	pop	eax
-	cmp	dword [edx+8],0
-	jne	macro_argument_ok
-	mov	[edx+12],eax
-	call	finish_macro_argument
-	jmp	macro_argument_ok
       arguments_end:
 	cmp	byte [ebx],0
 	jne	invalid_macro_arguments
@@ -1738,6 +1920,8 @@ do_irp:
 	lods	byte [esi]
 	cmp	[base_code],1
 	ja	irps_name_ok
+	cmp	al,':'
+	je	irp_with_default_value
 	cmp	al,'='
 	je	irp_with_default_value
 	cmp	al,'*'
@@ -1749,13 +1933,17 @@ do_irp:
 	jmp	irp_parameters_start
       irp_with_default_value:
 	xor	ebp,ebp
-	or	[default_argument_value],-1
+	or	[skip_default_argument_value],-1
 	call	skip_macro_argument_value
+	cmp	byte [esi],','
+	jne	invalid_macro_arguments
 	inc	esi
 	jmp	irp_parameters_start
       irps_name_ok:
 	cmp	al,','
 	jne	invalid_macro_arguments
+	cmp	[base_code],3
+	je	irp_parameters_start
 	mov	al,[esi]
 	or	al,al
 	jz	instant_macro_done
@@ -1769,9 +1957,11 @@ do_irp:
 	push	[counter_limit]
 	mov	[counter_limit],eax
 	mov	[struc_name],eax
+	cmp	[base_code],3
+	je	get_irpv_parameter
 	mov	ebx,esi
-	cmp	[base_code],1
-	ja	get_irps_parameter
+	cmp	[base_code],2
+	je	get_irps_parameter
 	mov	edx,[parameters_end]
 	mov	al,[edx]
 	push	eax
@@ -1822,6 +2012,70 @@ do_irp:
       irps_parameters_end:
 	mov	esi,ebx
 	jmp	instant_macro_parameters_ok
+      get_irpv_parameter:
+	lods	byte [esi]
+	cmp	al,1Ah
+	jne	invalid_macro_arguments
+	lods	byte [esi]
+	mov	ebp,esi
+	mov	cl,al
+	mov	ch,10b
+	call	get_preprocessor_symbol
+	jc	instant_macro_finish
+	push	edx
+      mark_variable_value:
+	inc	[counter_limit]
+	mov	[edx+4],ebp
+      next_variable_value:
+	mov	edx,[edx]
+	or	edx,edx
+	jz	variable_values_marked
+	mov	eax,[edx+4]
+	cmp	eax,1
+	jbe	next_variable_value
+	mov	esi,ebp
+	movzx	ecx,byte [esi-1]
+	xchg	edi,eax
+	repe	cmps byte [esi],[edi]
+	xchg	edi,eax
+	je	mark_variable_value
+	jmp	next_variable_value
+      variable_values_marked:
+	pop	edx
+	push	[counter_limit]
+      add_irpv_value:
+	push	edx
+	mov	esi,[instant_macro_start]
+	inc	esi
+	lods	byte [esi]
+	movzx	ecx,al
+	mov	eax,[esp+4]
+	call	add_macro_symbol
+	mov	ebx,edx
+	pop	edx
+	mov	ecx,[edx+12]
+	mov	eax,[edx+8]
+	mov	[ebx+12],eax
+	mov	[ebx+8],ecx
+      collect_next_variable_value:
+	mov	edx,[edx]
+	or	edx,edx
+	jz	variable_values_collected
+	cmp	ebp,[edx+4]
+	jne	collect_next_variable_value
+	dec	dword [esp]
+	jnz	add_irpv_value
+      variable_values_collected:
+	pop	eax
+	mov	esi,ebp
+	movzx	ecx,byte [esi-1]
+	add	esi,ecx
+	cmp	byte [esi],0
+	je	instant_macro_parameters_ok
+	cmp	byte [esi],'{'
+	jne	invalid_macro_arguments
+	jmp	instant_macro_parameters_ok
+
 do_match:
 	mov	ebx,esi
 	call	skip_pattern
@@ -2451,6 +2705,8 @@ reverse_block:
 	mov	[macro_block_line_number],ecx
 	jmp	process_macro_line
 close_macro_block:
+	cmp	esi,[macro_block]
+	je	block_closed
 	cmp	[counter],0
 	je	block_closed
 	jl	reverse_counter

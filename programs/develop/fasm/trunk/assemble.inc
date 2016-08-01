@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2013, Tomasz Grysztar.
+; Copyright (c) 1999-2016, Tomasz Grysztar.
 ; All rights reserved.
 
 assembler:
@@ -32,6 +32,7 @@ assembler:
 	mov	[next_pass_needed],al
 	mov	[output_format],al
 	mov	[adjustment_sign],al
+	mov	[evex_mode],al
 	mov	[code_type],16
 	call	init_addressing_space
       pass_loop:
@@ -192,7 +193,7 @@ assemble_line:
       new_line:
 	lods	dword [esi]
 	mov	[current_line],eax
-	mov	[prefixed_instruction],0
+	and	[prefix_flags],0
 	cmp	[symbols_file],0
 	je	continue_line
 	cmp	[next_pass_needed],0
@@ -329,31 +330,10 @@ assemble_line:
 	cmp	eax,0Fh
 	jb	invalid_use_of_symbol
 	je	reserved_word_used_as_symbol
-	mov	edx,[eax+8]
-	push	edx
-	cmp	[current_pass],0
-	je	get_constant_value
-	test	dl,4
-	jnz	get_constant_value
-	mov	cx,[current_pass]
-	cmp	cx,[eax+16]
-	je	get_constant_value
-	or	dl,4
-	mov	[eax+8],dl
-      get_constant_value:
 	push	eax
-	mov	al,byte [esi-1]
-	push	eax
-	or	[size_override],-1
+	or	[operand_flags],1
 	call	get_value
 	pop	ebx
-	mov	ch,bl
-	pop	ebx
-	pop	ecx
-	test	cl,4
-	jnz	constant_referencing_mode_ok
-	and	byte [ebx+8],not 4
-      constant_referencing_mode_ok:
 	xor	cl,cl
 	mov	ch,[value_type]
 	cmp	ch,3
@@ -453,16 +433,16 @@ assemble_line:
 	or	byte [ebx+0Ah],2
 	jmp	continue_line
       assemble_instruction:
-;        mov     [operand_size],0
-;        mov     [size_override],0
-;        mov     [operand_prefix],0
-;        mov     [opcode_prefix],0
+;	 mov	 [operand_size],0
+;	 mov	 [operand_flags],0
+;	 mov	 [operand_prefix],0
+;	 mov	 [rex_prefix],0
 	and	dword [operand_size],0
-;        mov     [rex_prefix],0
-;        mov     [vex_required],0
-;        mov     [vex_register],0
-;        mov     [immediate_size],0
-	and	dword [rex_prefix],0
+;	 mov	 [opcode_prefix],0
+;	 mov	 [vex_required],0
+;	 mov	 [vex_register],0
+;	 mov	 [immediate_size],0
+	and	dword [opcode_prefix],0
 	call	instruction_handler
       instruction_handler:
 	movzx	ebx,word [esi]
@@ -471,6 +451,8 @@ assemble_line:
 	add	[esp],ebx
 	ret
       instruction_assembled:
+	test	[prefix_flags],not 1
+	jnz	illegal_instruction
 	mov	al,[esi]
 	cmp	al,0Fh
 	je	line_assembled
@@ -671,7 +653,7 @@ load_directive:
 	push	ebx
 	cmp	byte [esi],'.'
 	je	invalid_value
-	or	[size_override],-1
+	or	[operand_flags],1
 	call	get_address_value
 	pop	ebp
 	call	calculate_relative_offset
@@ -718,7 +700,7 @@ store_directive:
 	mov	[operand_size],1
 	jmp	store_value_ok
       sized_store:
-	or	[size_override],-1
+	or	[operand_flags],1
 	call	get_value
       store_value_ok:
 	cmp	[value_type],0
@@ -833,7 +815,7 @@ times_directive:
 	cmp	eax,[stack_limit]
 	jb	stack_overflow
 	push	esi
-	or	[prefixed_instruction],-1
+	or	[prefix_flags],1
 	call	continue_line
 	mov	eax,[counter_limit]
 	cmp	[counter],eax
@@ -1008,8 +990,8 @@ virtual_directive:
       addressing_space_closed:
 	ret
 repeat_directive:
-	cmp	[prefixed_instruction],0
-	jne	unexpected_instruction
+	test	[prefix_flags],1
+	jnz	unexpected_instruction
 	lods	byte [esi]
 	cmp	al,'('
 	jne	invalid_argument
@@ -1030,8 +1012,8 @@ repeat_directive:
 	mov	[ebx+4],eax
 	jmp	instruction_assembled
       end_repeat:
-	cmp	[prefixed_instruction],0
-	jne	unexpected_instruction
+	test	[prefix_flags],1
+	jnz	unexpected_instruction
 	call	find_structure_data
 	jc	unexpected_instruction
 	mov	eax,[counter_limit]
@@ -1062,8 +1044,8 @@ repeat_directive:
 	jne	unexpected_instruction
 	ret
 while_directive:
-	cmp	[prefixed_instruction],0
-	jne	unexpected_instruction
+	test	[prefix_flags],1
+	jnz	unexpected_instruction
 	call	allocate_structure_data
 	mov	word [ebx],while_directive-instruction_handler
 	mov	eax,1
@@ -1093,8 +1075,8 @@ while_directive:
 	pop	ebx
 	jmp	instruction_assembled
       end_while:
-	cmp	[prefixed_instruction],0
-	jne	unexpected_instruction
+	test	[prefix_flags],1
+	jnz	unexpected_instruction
 	call	find_structure_data
 	jc	unexpected_instruction
 	mov	eax,[ebx+4]
@@ -1109,8 +1091,8 @@ while_directive:
 	jne	unexpected_instruction
 	ret
 if_directive:
-	cmp	[prefixed_instruction],0
-	jne	unexpected_instruction
+	test	[prefix_flags],1
+	jnz	unexpected_instruction
 	call	calculate_logical_expression
 	mov	dl,al
 	mov	al,[esi]
@@ -1146,8 +1128,8 @@ if_directive:
 	or	al,-1
 	jmp	make_if_structure
       else_directive:
-	cmp	[prefixed_instruction],0
-	jne	unexpected_instruction
+	test	[prefix_flags],1
+	jnz	unexpected_instruction
 	mov	ax,if_directive-instruction_handler
 	call	find_structure_data
 	jc	unexpected_instruction
@@ -1173,8 +1155,8 @@ if_directive:
 	call	remove_structure_data
 	jmp	instruction_assembled
       end_if:
-	cmp	[prefixed_instruction],0
-	jne	unexpected_instruction
+	test	[prefix_flags],1
+	jnz	unexpected_instruction
 	call	find_structure_data
 	jc	unexpected_instruction
 	call	remove_structure_data
@@ -1377,7 +1359,7 @@ data_bytes:
 	inc	esi
 	or	eax,eax
 	jz	duplicate_zero_times
-	cmp	byte [esi],'{'
+	cmp	byte [esi],91h
 	jne	duplicate_single_data_value
 	inc	esi
       duplicate_data:
@@ -1389,7 +1371,7 @@ data_bytes:
 	lods	byte [esi]
 	cmp	al,','
 	je	duplicated_values
-	cmp	al,'}'
+	cmp	al,92h
 	jne	invalid_argument
 	pop	ebx eax
 	dec	eax
@@ -1407,13 +1389,13 @@ data_bytes:
 	mov	esi,ebx
 	jmp	duplicate_single_data_value
       duplicate_zero_times:
-	cmp	byte [esi],'{'
+	cmp	byte [esi],91h
 	jne	skip_single_data_value
 	inc	esi
       skip_data_value:
 	call	skip_symbol
 	jc	invalid_argument
-	cmp	byte [esi],'}'
+	cmp	byte [esi],92h
 	jne	skip_data_value
 	inc	esi
 	jmp	data_defined

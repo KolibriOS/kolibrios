@@ -1,7 +1,6 @@
 
-
 ; flat assembler core
-; Copyright (c) 1999-2013, Tomasz Grysztar.
+; Copyright (c) 1999-2016, Tomasz Grysztar.
 ; All rights reserved.
 
 calculate_expression:
@@ -12,6 +11,10 @@ calculate_expression:
 	cmp	byte [esi],'.'
 	je	convert_fp
       calculation_loop:
+	mov	eax,[tagged_blocks]
+	sub	eax,0Ch
+	cmp	eax,edi
+	jbe	out_of_memory
 	lods	byte [esi]
 	cmp	al,1
 	je	get_byte_number
@@ -36,12 +39,16 @@ calculate_expression:
 	sub	edi,14h
 	mov	ebx,edi
 	sub	ebx,14h
-	cmp	al,0E0h
+	cmp	al,0F0h
 	je	calculate_rva
-	cmp	al,0E1h
+	cmp	al,0F1h
 	je	calculate_plt
 	cmp	al,0D0h
 	je	calculate_not
+	cmp	al,0E0h
+	je	calculate_bsf
+	cmp	al,0E1h
+	je	calculate_bsr
 	cmp	al,083h
 	je	calculate_neg
 	mov	dx,[ebx+8]
@@ -197,14 +204,8 @@ calculate_expression:
 	mov	al,[ebx+10]
 	or	al,al
 	jz	calculation_loop
-	cmp	[size_override],-1
-	je	calculation_loop
-	cmp	[size_override],0
-	je	check_size
-	cmp	[operand_size],0
-	jne	calculation_loop
-	mov	[operand_size],al
-	jmp	calculation_loop
+	test	[operand_flags],1
+	jnz	calculation_loop
       check_size:
 	xchg	[operand_size],al
 	or	al,al
@@ -623,76 +624,6 @@ calculate_expression:
 	xor	[ebx],eax
 	xor	[ebx+4],edx
 	xor	[ebx+13],cl
-	jz	calculation_loop
-	or	cl,cl
-	jz	xor_size_check
-	xor	eax,[ebx]
-	xor	edx,[ebx+4]
-      xor_size_check:
-	mov	cl,[value_size]
-	cmp	cl,1
-	je	xor_byte_result
-	cmp	cl,2
-	je	xor_word_result
-	cmp	cl,4
-	je	xor_dword_result
-	cmp	cl,6
-	je	xor_pword_result
-	cmp	cl,8
-	jne	calculation_loop
-	xor	edx,[ebx+4]
-	js	xor_result_truncated
-	jmp	calculation_loop
-      xor_pword_result:
-	test	edx,0FFFF0000h
-	jnz	calculation_loop
-	cmp	word [ebx+6],-1
-	jne	calculation_loop
-	xor	dx,[ebx+4]
-	jns	calculation_loop
-	not	word [ebx+6]
-	jmp	xor_result_truncated
-      xor_dword_result:
-	test	edx,edx
-	jnz	calculation_loop
-	cmp	dword [ebx+4],-1
-	jne	calculation_loop
-	xor	eax,[ebx]
-	jns	calculation_loop
-	not	dword [ebx+4]
-	jmp	xor_result_truncated
-      xor_word_result:
-	test	edx,edx
-	jnz	calculation_loop
-	test	eax,0FFFF0000h
-	jnz	calculation_loop
-	cmp	dword [ebx+4],-1
-	jne	calculation_loop
-	cmp	word [ebx+2],-1
-	jne	calculation_loop
-	xor	ax,[ebx]
-	jns	calculation_loop
-	not	dword [ebx+4]
-	not	word [ebx+2]
-	jmp	xor_result_truncated
-      xor_byte_result:
-	test	edx,edx
-	jnz	calculation_loop
-	test	eax,0FFFFFF00h
-	jnz	calculation_loop
-	cmp	dword [ebx+4],-1
-	jne	calculation_loop
-	cmp	word [ebx+2],-1
-	jne	calculation_loop
-	cmp	byte [ebx+1],-1
-	jne	calculation_loop
-	xor	al,[ebx]
-	jns	calculation_loop
-	not	dword [ebx+4]
-	not	word [ebx+2]
-	not	byte [ebx+1]
-      xor_result_truncated:
-	mov	byte [ebx+13],0
 	jmp	calculation_loop
       shr_negative:
 	mov	byte [edi+13],0
@@ -761,25 +692,6 @@ calculate_expression:
       calculate_shr:
 	cmp	byte [edi+13],0
 	jne	shr_negative
-	cmp	byte [ebx+13],0
-	je	do_shr
-	mov	al,[value_size]
-	cmp	al,1
-	je	shr_negative_byte
-	cmp	al,2
-	je	shr_negative_word
-	cmp	al,4
-	je	shr_negative_dword
-	cmp	al,6
-	je	shr_negative_pword
-	cmp	al,8
-	jne	do_shr
-      shr_negative_qword:
-	test	byte [ebx+7],80h
-	jz	do_shr
-      shr_truncated:
-	mov	byte [ebx+13],0
-      do_shr:
 	mov	edx,[ebx+4]
 	mov	eax,[ebx]
 	cmp	dword [edi+4],0
@@ -809,43 +721,6 @@ calculate_expression:
 	mov	dword [ebx],eax
 	mov	dword [ebx+4],eax
 	jmp	calculation_loop
-      shr_negative_byte:
-	cmp	dword [ebx+4],-1
-	jne	do_shr
-	cmp	word [ebx+2],-1
-	jne	do_shr
-	cmp	byte [ebx+1],-1
-	jne	do_shr
-	test	byte [ebx],80h
-	jz	do_shr
-	not	dword [ebx+4]
-	not	word [ebx+2]
-	not	byte [ebx+1]
-	jmp	shr_truncated
-      shr_negative_word:
-	cmp	dword [ebx+4],-1
-	jne	do_shr
-	cmp	word [ebx+2],-1
-	jne	do_shr
-	test	byte [ebx+1],80h
-	jz	do_shr
-	not	dword [ebx+4]
-	not	word [ebx+2]
-	jmp	shr_truncated
-      shr_negative_dword:
-	cmp	dword [ebx+4],-1
-	jne	do_shr
-	test	byte [ebx+3],80h
-	jz	do_shr
-	not	dword [ebx+4]
-	jmp	shr_truncated
-      shr_negative_pword:
-	cmp	word [ebx+6],-1
-	jne	do_shr
-	test	byte [ebx+5],80h
-	jz	do_shr
-	not	word [ebx+6]
-	jmp	shr_truncated
       calculate_not:
 	cmp	word [edi+8],0
 	jne	invalid_expression
@@ -853,56 +728,53 @@ calculate_expression:
 	je	not_ok
 	call	recoverable_misuse
       not_ok:
-	mov	al,[value_size]
-	cmp	al,1
-	je	not_byte
-	cmp	al,2
-	je	not_word
-	cmp	al,4
-	je	not_dword
-	cmp	al,6
-	je	not_pword
-	cmp	al,8
-	je	not_qword
 	not	dword [edi]
 	not	dword [edi+4]
 	not	byte [edi+13]
 	add	edi,14h
 	jmp	calculation_loop
-      not_qword:
-	not	dword [edi]
-	not	dword [edi+4]
-      finish_not:
-	mov	byte [edi+13],0
+      calculate_bsf:
+	cmp	word [edi+8],0
+	jne	invalid_expression
+	cmp	byte [edi+12],0
+	je	bsf_ok
+	call	recoverable_misuse
+      bsf_ok:
+	xor	ecx,ecx
+	bsf	eax,[edi]
+	jnz	finish_bs
+	mov	ecx,32
+	bsf	eax,[edi+4]
+	jnz	finish_bs
+	cmp	byte [edi+13],0
+	jne	finish_bs
+      bs_overflow:
+	call	recoverable_overflow
 	add	edi,14h
 	jmp	calculation_loop
-      not_byte:
-	cmp	dword [edi+4],0
-	jne	not_qword
-	cmp	word [edi+2],0
-	jne	not_qword
-	cmp	byte [edi+1],0
-	jne	not_qword
-	not	byte [edi]
-	jmp	finish_not
-      not_word:
-	cmp	dword [edi+4],0
-	jne	not_qword
-	cmp	word [edi+2],0
-	jne	not_qword
-	not	word [edi]
-	jmp	finish_not
-      not_dword:
-	cmp	dword [edi+4],0
-	jne	not_qword
-	not	dword [edi]
-	jmp	finish_not
-      not_pword:
-	cmp	word [edi+6],0
-	jne	not_qword
-	not	word [edi+4]
-	not	dword [edi]
-	jmp	finish_not
+      calculate_bsr:
+	cmp	word [edi+8],0
+	jne	invalid_expression
+	cmp	byte [edi+12],0
+	je	bsr_ok
+	call	recoverable_misuse
+      bsr_ok:
+	cmp	byte [edi+13],0
+	jne	bs_overflow
+	mov	ecx,32
+	bsr	eax,[edi+4]
+	jnz	finish_bs
+	xor	ecx,ecx
+	bsr	eax,[edi]
+	jz	bs_overflow
+      finish_bs:
+	add	eax,ecx
+	xor	edx,edx
+	mov	[edi],eax
+	mov	[edi+4],edx
+	mov	[edi+13],dl
+	add	edi,14h
+	jmp	calculation_loop
       calculate_neg:
 	cmp	byte [edi+8],0
 	je	neg_first_register_ok
@@ -1158,7 +1030,8 @@ calculate_expression:
 	cmp	al,4
 	je	convert_fp_dword
 	test	al,not 8
-	jnz	invalid_value
+	jz	convert_fp_qword
+	call	recoverable_misuse
       convert_fp_qword:
 	xor	eax,eax
 	xor	edx,edx
@@ -1194,7 +1067,7 @@ calculate_expression:
 	cmp	cx,52
 	ja	value_out_of_range
 	cmp	cx,32
-	jbe	fp_qword_small_shift
+	jb	fp_qword_small_shift
 	sub	cx,32
 	mov	eax,edx
 	xor	edx,edx
@@ -1338,7 +1211,7 @@ calculate_expression:
 
 get_byte_value:
 	mov	[value_size],1
-	mov	[size_override],-1
+	or	[operand_flags],1
 	call	calculate_value
 	or	al,al
 	jz	check_byte_value
@@ -1350,7 +1223,7 @@ get_byte_value:
 	je	byte_positive
 	cmp	edx,-1
 	jne	range_exceeded
-	cmp	eax,-80h
+	cmp	eax,-100h
 	jb	range_exceeded
 	ret
       byte_positive:
@@ -1382,7 +1255,7 @@ get_byte_value:
 	ret
 get_word_value:
 	mov	[value_size],2
-	mov	[size_override],-1
+	or	[operand_flags],1
 	call	calculate_value
 	cmp	al,2
 	jb	check_word_value
@@ -1394,7 +1267,7 @@ get_word_value:
 	je	word_positive
 	cmp	edx,-1
 	jne	range_exceeded
-	cmp	eax,-8000h
+	cmp	eax,-10000h
 	jb	range_exceeded
 	ret
       word_positive:
@@ -1405,7 +1278,7 @@ get_word_value:
 	ret
 get_dword_value:
 	mov	[value_size],4
-	mov	[size_override],-1
+	or	[operand_flags],1
 	call	calculate_value
 	cmp	al,4
 	jne	check_dword_value
@@ -1426,8 +1299,6 @@ get_dword_value:
 	je	dword_positive
 	cmp	edx,-1
 	jne	range_exceeded
-	bt	eax,31
-	jnc	range_exceeded
 	ret
       dword_positive:
 	test	edx,edx
@@ -1435,7 +1306,7 @@ get_dword_value:
 	ret
 get_pword_value:
 	mov	[value_size],6
-	mov	[size_override],-1
+	or	[operand_flags],1
 	call	calculate_value
 	cmp	al,4
 	jne	check_pword_value
@@ -1445,7 +1316,7 @@ get_pword_value:
 	mov	edx,[edi+4]
 	cmp	byte [edi+13],0
 	je	pword_positive
-	cmp	edx,-8000h
+	cmp	edx,-10000h
 	jb	range_exceeded
 	ret
       pword_positive:
@@ -1454,20 +1325,15 @@ get_pword_value:
 	ret
 get_qword_value:
 	mov	[value_size],8
-	mov	[size_override],-1
+	or	[operand_flags],1
 	call	calculate_value
       check_qword_value:
 	mov	eax,[edi]
 	mov	edx,[edi+4]
-	cmp	byte [edi+13],0
-	je	qword_positive
-	cmp	edx,-80000000h
-	jb	range_exceeded
-      qword_positive:
 	ret
 get_count_value:
 	mov	[value_size],8
-	mov	[size_override],-1
+	or	[operand_flags],1
 	call	calculate_expression
 	cmp	word [edi+8],0
 	jne	invalid_value
@@ -1636,33 +1502,31 @@ get_address_value:
 	mov	ax,bx
 	shr	ah,4
 	shr	al,4
-	cmp	ah,0Ch
-	je	check_vsib_address
-	cmp	ah,0Dh
-	je	check_vsib_address
-	cmp	al,0Ch
-	je	check_vsib_address
-	cmp	al,0Dh
-	je	check_vsib_address
 	or	bh,bh
 	jz	check_address_registers
 	or	bl,bl
 	jz	check_address_registers
 	cmp	al,ah
-	jne	invalid_address
+	jne	check_vsib
       check_address_registers:
 	or	al,ah
+	cmp	al,0Ch
+	jae	check_vsib
+	cmp	al,6
+	je	check_vsib
+	cmp	al,7
+	je	check_vsib
 	mov	ah,[address_size]
 	and	ah,0Fh
 	jz	address_registers_sizes_ok
 	cmp	al,ah
-	jne	address_sizes_do_not_match
+	jne	invalid_address
       address_registers_sizes_ok:
 	cmp	al,4
 	je	sib_allowed
 	cmp	al,8
 	je	sib_allowed
-	cmp	al,0Fh
+	cmp	al,9
 	je	check_ip_relative_address
 	cmp	cl,1
 	ja	invalid_address
@@ -1679,13 +1543,15 @@ get_address_value:
       check_ip_relative_address:
 	or	bl,bl
 	jnz	invalid_address
-	cmp	bh,0F8h
+	cmp	bh,98h
 	je	check_rip_relative_address
-	cmp	bh,0F4h
+	cmp	bh,94h
 	jne	invalid_address
 	cmp	[free_address_range],0
-	jne	check_qword_value
-	jmp	check_dword_value
+	je	check_dword_value
+	mov	eax,[edi]
+	mov	edx,[edi+4]
+	ret
       check_rip_relative_address:
 	mov	eax,[edi]
 	cdq
@@ -1792,35 +1658,41 @@ get_address_value:
 	and	al,cl
 	jz	check_immediate_address
 	jmp	invalid_address
-      check_vsib_address:
-	cmp	ah,0Ch
-	je	swap_vsib_registers
-	cmp	ah,0Dh
-	jne	check_vsib_base
+      check_vsib:
+	xor	ah,ah
+      check_vsib_base:
+	test	bh,bh
+	jz	check_vsib_index
+	mov	al,bh
+	shr	al,4
+	cmp	al,4
+	je	check_vsib_base_size
+	cmp	[code_type],64
+	jne	swap_vsib_registers
+	cmp	al,8
+	jne	swap_vsib_registers
+      check_vsib_base_size:
+	mov	ah,[address_size]
+	and	ah,0Fh
+	jz	check_vsib_index
+	cmp	al,ah
+	jne	invalid_address
+      check_vsib_index:
+	mov	al,bl
+	and	al,0E0h
+	cmp	al,0C0h
+	jae	check_index_scale
+	cmp	al,60h
+	je	check_index_scale
+	jmp	invalid_address
       swap_vsib_registers:
+	xor	ah,-1
+	jz	invalid_address
 	cmp	cl,1
 	ja	invalid_address
 	xchg	bl,bh
 	mov	cl,1
-      check_vsib_base:
-	test	bh,bh
-	jz	vsib_base_ok
-	mov	al,bh
-	shr	al,4
-	cmp	al,4
-	je	vsib_base_ok
-	cmp	[code_type],64
-	jne	invalid_address
-	cmp	al,8
-	jne	invalid_address
-      vsib_base_ok:
-	mov	al,bl
-	shr	al,4
-	cmp	al,0Ch
-	je	check_index_scale
-	cmp	al,0Dh
-	je	check_index_scale
-	jmp	invalid_address
+	jmp	check_vsib_base
 
 calculate_relative_offset:
 	cmp	[value_undefined],0
@@ -1912,7 +1784,7 @@ calculate_logical_expression:
 	jmp	logical_loop
   get_value_for_comparison:
 	mov	[value_size],8
-	mov	[size_override],-1
+	or	[operand_flags],1
 	lods	byte [esi]
 	call	calculate_expression
 	cmp	byte [edi+8],0
@@ -1943,7 +1815,7 @@ calculate_logical_expression:
       negation_ok:
 	push	eax
 	mov	al,[esi]
-	cmp	al,'{'
+	cmp	al,91h
 	je	logical_expression
 	cmp	al,0FFh
 	je	invalid_expression
@@ -1965,7 +1837,7 @@ calculate_logical_expression:
 	jz	logical_number
 	cmp	al,0Fh
 	je	logical_number
-	cmp	al,'}'
+	cmp	al,92h
 	je	logical_number
 	cmp	al,'&'
 	je	logical_number
@@ -2124,7 +1996,7 @@ calculate_logical_expression:
 	inc	esi
 	jmp	check_expression
       defined_fp_value:
-	add	esi,12
+	add	esi,12+1
 	jmp	expression_checked
       defined_string:
 	lods	dword [esi]
@@ -2206,7 +2078,7 @@ calculate_logical_expression:
 	mov	[logical_value_wrapping],dl
 	push	eax
 	lods	byte [esi]
-	cmp	al,'}'
+	cmp	al,92h
 	jne	invalid_expression
 	pop	eax
       logical_value_ok:

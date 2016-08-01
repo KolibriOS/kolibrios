@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2013, Tomasz Grysztar.
+; Copyright (c) 1999-2016, Tomasz Grysztar.
 ; All rights reserved.
 
 formatter:
@@ -454,7 +454,8 @@ format_mz:
 	jmp	format_defined
 mark_mz_relocation:
 	push	eax ebx
-	inc	[number_of_relocations]
+	inc	word [number_of_relocations]
+	jz	format_limitations_exceeded
 	mov	ebx,[free_additional_memory]
 	mov	eax,edi
 	sub	eax,[code_start]
@@ -1611,6 +1612,7 @@ make_pe_fixups:
 	sub	esi,eax
 	mov	[free_additional_memory],esi
 	mov	edx,[last_fixup_base]
+	mov	ebx,[last_fixup_header]
 	mov	ebp,edi
 	jecxz	fixups_done
       make_fixup:
@@ -1645,6 +1647,7 @@ make_pe_fixups:
 	loop	make_fixup
       fixups_done:
 	mov	[last_fixup_base],edx
+	mov	[last_fixup_header],ebx
 	pop	esi
 	mov	eax,edi
 	sub	eax,ebp
@@ -3491,8 +3494,22 @@ elf_formatter:
 	shr	eax,8
 	stos	dword [edi]
 	xor	eax,eax
+	push	edx
+	mov	edx,[esi+4]
+	add	edx,[image_base]
+	xchg	eax,[edx]
 	stos	dword [edi]
+	cmp	byte [esi],1
+	je	addend_64bit
+	pop	edx
+	sar	eax,31
 	stos	dword [edi]
+	jmp	relocation_entry_ok
+      addend_64bit:
+	xor	eax,eax
+	xchg	eax,[edx+4]
+	stos	dword [edi]
+	pop	edx
       relocation_entry_ok:
 	add	esi,0Ch
 	jmp	convert_relocations
