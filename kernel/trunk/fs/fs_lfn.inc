@@ -16,11 +16,12 @@ ERROR_FILE_NOT_FOUND = 5
 ERROR_END_OF_FILE    = 6
 ERROR_MEMORY_POINTER = 7
 ERROR_DISK_FULL      = 8
-ERROR_FAT_TABLE      = 9 ;deprecated
 ERROR_FS_FAIL        = 9
 ERROR_ACCESS_DENIED  = 10
 ERROR_DEVICE         = 11
 ERROR_OUT_OF_MEMORY  = 12
+
+maxPathLength = 1000h
 
 image_of_eax EQU esp+32
 image_of_ebx EQU esp+20
@@ -50,25 +51,11 @@ file_system_lfn:
 ; start application
 ; 8 = delete file/folder
 ; 9 = create folder
-        lea     esi, [ebx+20]
-        lodsb
-        test    al, al
+        lea     ebp, [ebx+20]
+        cmp     byte [ebp], 0
         jnz     @f
-        mov     esi, [esi]
-        lodsb
+        mov     ebp, [ebx+21]
 @@:
-        lea     ebp, [esi-1]
-if 0
-        cmp     [ebx], dword 0
-        jne     .1
-        DEBUGF 1,'read file %s\n',ebp
-        jmp     @f
-.1:
-        cmp     [ebx], dword 5
-        jne     @f
-        DEBUGF 1,'get file attributes %s\n',ebp
-@@:
-end if
         cmp     dword[ebx], 7   ; start application
         jne     @f
         mov     edx, [ebx+4]
@@ -78,29 +65,24 @@ end if
         ret
 
 @@:
-        cmp     al, '/'
-        jz      .notcurdir
-        dec     esi
-        mov     ebp, esi
-        test    al, al
-        jnz     @f
-        xor     ebp, ebp
-@@:
-        mov     esi, [current_slot]
-        mov     esi, [esi+APPDATA.cur_dir]
-        jmp     .parse_normal
-
-.notcurdir:
-        cmp     byte [esi], 0
+        cmp     word [ebp], '/'
         jz      .rootdir
-        call    process_replace_file_name
-.parse_normal:
-        mov     ax, [esi]
+        stdcall kernel_alloc, maxPathLength
+        push    ebx
+        mov     ebx, ebp
+        mov     ebp, eax
+        push    maxPathLength
+        push    eax
+        call    get_full_file_name
+        pop     ebx
+        mov     esi, ebp
+        mov     ax, [ebp]
         or      ax, 2020h
         cmp     ax, 'cd'
         jz      .CD
         call    dyndisk_handler ; not returns if success
 .notfound:
+        stdcall kernel_free, ebp
         mov     dword[image_of_eax], ERROR_FILE_NOT_FOUND
         ret
 
@@ -125,13 +107,6 @@ end if
         cmp     byte [esi], '/'
         jnz     @f
         inc     esi
-@@:
-        cmp     byte [esi], 0
-        jnz     @f
-        test    ebp, ebp
-        jz      @f
-        mov     esi, ebp
-        xor     ebp, ebp
 @@:
         call    reserve_cd
         mov     eax, edi
@@ -160,15 +135,12 @@ end if
         jae     @f
         add     ebx, 4
         call    dword[fs_CdServices + eax*4]
-        call    free_cd_channel
-        and     [cd_status], 0
         mov     [image_of_eax], eax
         mov     [image_of_ebx], ebx
-        ret
-
 @@:
         call    free_cd_channel
         and     [cd_status], 0
+        stdcall kernel_free, ebp
         ret
 
 .nextCD:
@@ -183,12 +155,15 @@ end if
 .maindir:   ; list partitions
         mov     esi, .nextCD
 .maindir_noesi:     ; backjump from dyndisk_handler
+        push    ebp
+        mov     ebp, ecx
+        call    kernel_free
         cmp     dword[ebx], 1
         jnz     .access_denied  ; read folder?
-        push    ecx
+        push    ebp
+        pushd   [ebx+4]         ; first block
         mov     ebp, [ebx+12]   ; the number of blocks to read
-        mov     edx, [ebx+16]   ; where to write the result
-        push    dword[ebx+4]    ; first block
+        mov     edx, [ebx+16]   ; buffer
         mov     ebx, [ebx+8]    ; flags
         mov     ecx, 32/4
         mov     edi, edx
@@ -293,8 +268,8 @@ end if
         add     edi, 8
         xor     eax, eax
         rep stosd
-        push    esi edi
-        lea     esi, [esp+12]
+        push    edi
+        lea     esi, [esp+8]
         cmp     ebx, 1
         jz      .uni2
 @@:
@@ -302,7 +277,7 @@ end if
         stosb
         test    eax, eax
         jnz     @b
-        pop     edi esi eax
+        pop     edi eax
         add     edi, 264
         jmp     .rootdir_loop
 
@@ -311,7 +286,7 @@ end if
         stosw
         test    eax, eax
         jnz     .uni2
-        pop     edi esi eax
+        pop     edi eax
         add     edi, 520
         jmp     .rootdir_loop
 
@@ -370,23 +345,6 @@ end if
         mov     [image_of_ebx], ebx
         ret
 
-fs_NotImplemented:
-        mov     eax, 2
-        ret
-
-;-----------------------------------------------------------------------------
-fs_CdServices:
-        dd      fs_CdRead
-        dd      fs_CdReadFolder
-        dd      fs_NotImplemented
-        dd      fs_NotImplemented
-        dd      fs_NotImplemented
-        dd      fs_CdGetFileInfo
-        dd      fs_NotImplemented
-        dd      0
-        dd      fs_NotImplemented
-        dd      fs_NotImplemented
-fs_NumCdServices = ($ - fs_CdServices)/4
 ;-----------------------------------------------------------------------------
 process_replace_file_name:
 ; in: [esi] = virtual path
@@ -476,14 +434,12 @@ sys_current_directory:  ; sysfunction 30
 @@:
         ret
 
-max_cur_dir equ 0x1000  ; length
-
 .get:       ; in: ecx -> buffer, edx = length
         mov     ebx, edi    ; buffer
         push    ecx
         push    edi
         xor     eax, eax
-        mov     ecx, max_cur_dir
+        mov     ecx, maxPathLength
         repne scasb
         jnz     .error
         sub     edi, ebx
@@ -511,7 +467,7 @@ max_cur_dir equ 0x1000  ; length
 
 .set:
         pop     eax
-        push    max_cur_dir
+        push    maxPathLength
         push    edi
         push    eax
         mov     ebx, ecx
@@ -519,17 +475,48 @@ get_full_file_name:
 ; in: ebx -> file name, [esp+4] -> destination, [esp+8] = max length
 ; destroys all registers
         push    ebp
-        mov     esi, [current_slot]
-        mov     esi, [esi+APPDATA.cur_dir]
-        mov     edx, esi
-@@:
-        inc     esi
-        cmp     byte [esi-1], 0
-        jnz     @b
-        dec     esi
         cmp     byte [ebx], '/'
-        jz      .set_absolute
+        jnz     .set_relative
+        lea     esi, [ebx+1]
+        call    process_replace_file_name
         mov     edi, [esp+8]
+        mov     edx, [esp+12]
+        add     edx, edi
+.set_copy:
+        lodsb
+        stosb
+        test    al, al
+        jz      .set_part2
+.set_copy_cont:
+        cmp     edi, edx
+        jb      .set_copy
+.overflow:
+        dec     edi
+.fail:
+        mov     byte [edi], 0
+        xor     eax, eax
+        pop     ebp
+        ret     8
+
+.set_part2:
+        mov     esi, ebp
+        xor     ebp, ebp
+        test    esi, esi
+        jz      .ret.ok
+        mov     byte [edi-1], '/'
+        jmp     .set_copy_cont
+
+.set_relative:
+        mov     edi, [current_slot]
+        mov     edi, [edi+APPDATA.cur_dir]
+        mov     edx, edi
+        mov     ecx, [esp+12]
+        xor     eax, eax
+        repnz scasb
+        mov     esi, edi
+        dec     esi
+        mov     edi, [esp+8]
+        jecxz   .fail
 .relative:
         cmp     byte [ebx], 0
         jz      .set_ok
@@ -556,18 +543,9 @@ get_full_file_name:
 
 .set_ok:
         cmp     edx, edi        ; is destination equal to APPDATA.cur_dir?
-        jz      .set_ok.cur_dir
-        sub     esi, edx
-        cmp     esi, [esp+12]
-        jb      .set_ok.copy
-.fail:
-        mov     byte [edi], 0
-        xor     eax, eax
-        pop     ebp
-        ret     8
-
-.set_ok.copy:
+        jz      @f
         mov     ecx, esi
+        sub     ecx, edx
         mov     esi, edx
         rep movsb
         mov     byte [edi], 0
@@ -576,17 +554,15 @@ get_full_file_name:
         pop     ebp
         ret     8
 
-.set_ok.cur_dir:
+@@:
         mov     byte [esi], 0
         jmp     .ret.ok
 
 .doset_relative:
         cmp     edx, edi
         jz      .doset_relative.cur_dir
-        sub     esi, edx
-        cmp     esi, [esp+12]
-        jae     .fail
         mov     ecx, esi
+        sub     ecx, edx
         mov     esi, edx
         mov     edx, edi
         rep movsb
@@ -608,33 +584,7 @@ get_full_file_name:
         jz      .ret.ok
         cmp     edi, edx
         jb      @b
-.overflow:
-        dec     edi
-        jmp     .fail
-
-.set_absolute:
-        lea     esi, [ebx+1]
-        call    process_replace_file_name
-        mov     edi, [esp+8]
-        mov     edx, [esp+12]
-        add     edx, edi
-.set_copy:
-        lodsb
-        stosb
-        test    al, al
-        jz      .set_part2
-.set_copy_cont:
-        cmp     edi, edx
-        jb      .set_copy
         jmp     .overflow
-
-.set_part2:
-        mov     esi, ebp
-        xor     ebp, ebp
-        test    esi, esi
-        jz      .ret.ok
-        mov     byte [edi-1], '/'
-        jmp     .set_copy_cont
 
 include "parse_fn.inc"
 include "fs_common.inc"

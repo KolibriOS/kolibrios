@@ -1,19 +1,49 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
-;; Distributed under terms of the GNU General Public License    ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved. ;;
+;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 $Revision$
 
-;-----------------------------------------------------------------------------
-uglobal
-cd_current_pointer_of_input    dd  0
-cd_current_pointer_of_input_2  dd  0
-cd_mem_location                dd  0
-cd_counter_block               dd  0
+; CD external functions
+;   in:
+; esi -> path string
+; ebx -> offset in file (qword)
+; ecx = bytes to read
+; edx -> buffer
+;   out:
+; eax, ebx = return values for sysfunc 70
+iglobal
+align 4
+fs_CdServices:
+        dd      fs_CdRead
+        dd      fs_CdReadFolder
+        dd      fs_NotImplemented
+        dd      fs_NotImplemented
+        dd      fs_NotImplemented
+        dd      fs_CdGetFileInfo
+        dd      fs_NotImplemented
+        dd      0
+        dd      fs_NotImplemented
+        dd      fs_NotImplemented
+fs_NumCdServices = ($ - fs_CdServices)/4
 endg
+
+uglobal
+align 4
+cd_current_pointer_of_input     dd  0
+cd_current_pointer_of_input_2   dd  0
+cd_mem_location                 dd  0
+cd_counter_block                dd  0
+cd_status                       dd  0
+endg
+
+;-----------------------------------------------------------------------------
+fs_NotImplemented:
+        movi    eax, ERROR_UNSUPPORTED_FS
+        ret
 ;-----------------------------------------------------------------------------
 reserve_cd:
         cli
@@ -127,23 +157,7 @@ free_cd_channel:
         call    mutex_unlock
         popad
         ret
-;-----------------------------------------------------------------------------
-uglobal
-cd_status dd 0
-endg
-;-----------------------------------------------------------------------------
-;
-;  fs_CdRead - LFN variant for reading CD disk
-;
-;  esi  points to filename /dir1/dir2/.../dirn/file,0
-;  ebx  pointer to 64-bit number = first wanted byte, 0+
-;       may be ebx=0 - start from first byte
-;  ecx  number of bytes to read, 0+
-;  edx  mem location to return data
-;
-;  ret ebx = bytes read or 0xffffffff file not found
-;      eax = 0 ok read or other = errormsg
-;
+
 ;-----------------------------------------------------------------------------
 fs_CdRead:
         push    edi
@@ -277,20 +291,7 @@ fs_CdRead:
         pop     eax edx ecx
         sub     ebx, edx
         jmp     .reteof
-;-----------------------------------------------------------------------------
-;
-;  fs_CdReadFolder - LFN variant for reading CD disk folder
-;
-;  esi  points to filename  /dir1/dir2/.../dirn/file,0
-;  ebx  pointer to structure 32-bit number = first wanted block, 0+
-;                          & flags (bitfields)
-; flags: bit 0: 0=ANSI names, 1=UNICODE names
-;  ecx  number of blocks to read, 0+
-;  edx  mem location to return data
-;
-;  ret ebx = blocks read or 0xffffffff folder not found
-;      eax = 0 ok read or other = errormsg
-;
+
 ;-----------------------------------------------------------------------------
 fs_CdReadFolder:
         push    edi
@@ -538,7 +539,7 @@ cd_get_parameters_of_file_1:
         mov     [edi+12], eax
 ; last access date
         mov     [edi+20], eax
-; last write date 
+; last write date
         mov     [edi+28], eax
 ; get the data type of name
         xor     eax, eax
@@ -559,11 +560,7 @@ cd_get_parameters_of_file_1:
         mov     eax, [ebp-23]
         mov     [edi+32], eax
         ret
-;-----------------------------------------------------------------------------
-;
-;  fs_CdGetFileInfo - LFN variant for CD
-;                     get file/directory attributes structure
-;
+
 ;-----------------------------------------------------------------------------
 fs_CdGetFileInfo:
         cmp     byte [esi], 0
@@ -607,7 +604,7 @@ fs_CdGetFileInfo:
 ;-----------------------------------------------------------------------------
 cd_find_lfn:
         mov     [cd_appl_data], 0
-; in: esi+ebp -> name
+; in: esi -> path string
 ; out: CF=1 - file not found
 ; else CF=0 and [cd_current_pointer_of_input] direntry
         push    eax esi
@@ -684,12 +681,8 @@ cd_find_lfn:
         call    ReadCDWRetr      ; read sector of directory
         cmp     [DevErrorCode], 0
         jne     .access_denied
-
-        push    ebp
         call    cd_find_name_in_buffer
-        pop     ebp
         jnc     .found
-
         sub     eax, 2048
 ; directory is over?
         cmp     eax, 0
@@ -706,7 +699,6 @@ cd_find_lfn:
 ; the end of the file path
         cmp     byte [esi-1], 0
         jz      .done
-  .nested:
         mov     eax, [cd_current_pointer_of_input]
         push    dword [eax+2]
         pop     dword [CDSectorAddress] ; beginning of the directory
@@ -715,14 +707,6 @@ cd_find_lfn:
 ;--------------------------------------
 ; file pointer found
 .done:
-        test    ebp, ebp
-        jz      @f
-
-        mov     esi, ebp
-        xor     ebp, ebp
-        jmp     .nested
-;--------------------------------------
-@@:
         pop     esi eax
         mov     [cd_appl_data], 1
         clc

@@ -11,7 +11,7 @@ $Revision$
 ;   in:
 ; ebx -> parameter structure of sysfunc 70
 ; ebp -> EXTFS structure
-; [esi]+[[esp+4]] = name
+; esi -> path string
 ;   out:
 ; eax, ebx = return values for sysfunc 70
 iglobal
@@ -1444,12 +1444,12 @@ findInode_parent:
         pop     esi
 .get_inode:
         push    ebx edx
-        stdcall findInode, 0
+        call    findInode
         pop     edx ebx
         ret
 
 findInode:
-; in: [esi]+[[esp+4]] = name
+; in: esi -> path string
 ;   out:
 ; [ebp+EXTFS.mainInodeBuffer] = inode
 ; esi = inode number
@@ -1469,7 +1469,7 @@ findInode:
         xor     eax, eax
         xor     dl, dl
         mov     esi, ROOT_INODE
-        ret     4
+        ret
 
 .next_path_part:
         push    [edx+INODE.sectorsUsed]
@@ -1534,12 +1534,7 @@ findInode:
         cmp     edi, esi
         je      .next_folder_block
         cmp     byte [esi], 0
-        jnz     @f
-        cmp     dword[esp+8], 0
         je      .get_inode_ret
-        mov     esi, [esp+8]
-        mov     dword[esp+8], 0
-@@:
         mov     eax, [ebx+DIRENTRY.inodeNumber]
         lea     ebx, [ebp+EXTFS.mainInodeBuffer]
         call    readInode
@@ -1567,18 +1562,18 @@ findInode:
         lea     ebx, [ebp+EXTFS.mainInodeBuffer]
         mov     esi, eax
         call    readInode
-        ret     4
+        ret
 
 .not_found:
         movi    eax, ERROR_FILE_NOT_FOUND
         stc
-        ret     4
+        ret
 
 .error_get_block:
         pop     ebx
 .error_get_inode:
         pop     ebx
-        ret     4
+        ret
 
 writeSuperblock:
         push    ebx
@@ -1614,7 +1609,7 @@ ext_ReadFolder:
         cmp     byte [esi], 0
         jz      .root_folder
         push    ebx
-        stdcall findInode, [esp+4+4]
+        call    findInode
         pop     ebx
         jc      .error_ret
         lea     esi, [ebp+EXTFS.mainInodeBuffer]
@@ -1801,7 +1796,7 @@ ext_ReadFile:
         cmp     byte [esi], 0
         jz      .error  ; root
         mov     [esp], ebx
-        stdcall findInode, [esp+4+4]
+        call    findInode
         pop     ebx
         jc      .error_eax
         push    ERROR_ACCESS_DENIED
@@ -1931,7 +1926,7 @@ ext_GetFileInfo:
         cmp     byte [esi], 0
         jz      .is_root
         push    edx
-        stdcall findInode, [esp+4+4]
+        call    findInode
         mov     ebx, edx
         pop     edx
         lea     esi, [ebp+EXTFS.mainInodeBuffer]
@@ -1982,7 +1977,7 @@ ext_GetFileInfo:
 ext_SetFileInfo:
         call    extfsWritingInit
         pushd   [ebx+16]
-        stdcall findInode, [esp+4+4]
+        call    findInode
         pop     edx
         jc      @f
         push    esi     ; inode number
@@ -2014,7 +2009,7 @@ ext_SetFileInfo:
 ext_Delete:
         call    extfsWritingInit
         push    esi
-        stdcall findInode, [esp+4+4]
+        call    findInode
         mov     ebx, esi
         pop     esi
         push    eax
@@ -2216,7 +2211,7 @@ ext_Delete:
 ext_CreateFolder:
         call    extfsWritingInit
         push    esi
-        stdcall findInode, [esp+4+4]
+        call    findInode
         pop     esi
         jnc     .success    ; exist
         call    findInode_parent
@@ -2300,12 +2295,12 @@ parent_link db "..", 0
 ext_CreateFile:
         call    extfsWritingInit
         push    ebx esi
-        stdcall findInode, [esp+8+4]
+        call    findInode
         mov     esi, [esp]
         jc      @f
         call    ext_unlock
-        stdcall ext_Delete, [esp+8+4]
-        mov     [esp], eax
+        call    ext_Delete
+        push    eax
         call    ext_lock
         pop     eax
         test    eax, eax
@@ -2359,7 +2354,7 @@ ext_CreateFile:
 ext_WriteFile:
         call    extfsWritingInit
         push    0 ebx
-        stdcall findInode, [esp+8+4]
+        call    findInode
         jc      .error
         lea     edx, [ebp+EXTFS.mainInodeBuffer]
         movi    eax, ERROR_ACCESS_DENIED
@@ -2482,7 +2477,7 @@ ext_WriteFile:
 ext_SetFileEnd:
         call    extfsWritingInit
         pushd   [ebx+4]
-        stdcall findInode, [esp+4+4]
+        call    findInode
         pop     ecx
         jc      @f
         lea     edx, [ebp+EXTFS.mainInodeBuffer]

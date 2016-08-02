@@ -1045,8 +1045,7 @@ endg
 ; This function is called from file_system_lfn.
 ; This handler gets the control each time when fn 70 is called
 ; with unknown item of root subdirectory.
-; in: esi -> name
-;     ebp = 0 or rest of name relative to esi
+; in: esi = ebp -> path string
 ; out: if the handler processes path, it must not return in file_system_lfn,
 ;      but instead pop return address and return directly to the caller
 ;      otherwise simply return
@@ -1142,6 +1141,25 @@ dyndisk_handler:
 @@:
 ; 11c. Let the procedure from fs_lfn.inc do the job.
         jmp     file_system_lfn.maindir_noesi
+
+.access_denied:
+        mov     dword [esp+32], ERROR_ACCESS_DENIED
+        mov     esi, ecx        ; disk*dereference assume that esi points to DISK
+.cleanup_esi:
+        test    edx, edx        ; if there are no media, we didn't reference it
+        jz      @f
+        call    disk_media_dereference
+@@:
+        call    disk_dereference
+        stdcall kernel_free, ebp
+        ret
+
+.dyndisk_cleanup:
+        pop     esi
+        pop     edx
+        mov     dword [esp+32], ERROR_FILE_NOT_FOUND
+        jmp     .cleanup_esi
+
 .haspartition:
 ; 12. The fs operation has specified some partition.
         push    edx
@@ -1160,35 +1178,83 @@ dyndisk_handler:
         jnz     .dyndisk_cleanup
         dec     esi
 @@:
-        cmp     byte [esi], 0
-        jnz     @f
-        test    ebp, ebp
-        jz      @f
-        mov     esi, ebp
-        xor     ebp, ebp
-@@:
-        jmp     fs_dyndisk
-
-.dyndisk_cleanup:
-        pop     esi
+        dec     ecx     ; convert to zero-based partition index
+        pop     edx     ; edx = pointer to DISK, dword [esp] = NULL or edx
+; If the driver does not support insert notifications and we are the only fs
+; operation with this disk, ask the driver whether the media
+; was inserted/removed/changed. Otherwise, assume that media status is valid.
+        test    byte [edx+DISK.DriverFlags], DISK_NO_INSERT_NOTIFICATION
+        jz      .media_accurate
+        push    ecx esi
+        mov     esi, edx
+        cmp     dword [esp+8], 0
+        jz      .test_no_media
+        cmp     [esi+DISK.MediaRefCount], 2
+        jnz     .media_accurate_pop
+        lea     edx, [esi+DISK.MediaInfo]
+        and     [edx+DISKMEDIAINFO.Flags], 0
+        mov     al, DISKFUNC.querymedia
+        stdcall disk_call_driver, edx
+        test    eax, eax
+        jz      .media_accurate_pop
+        stdcall disk_media_dereference  ; drop our reference so that disk_media_changed could close the media
+        stdcall disk_media_changed, esi, 0
+        and     dword [esp+8], 0        ; no media
+.test_no_media:
+        stdcall disk_media_changed, esi, 1      ; issue fake notification
+; if querymedia() inside disk_media_changed returns error, the notification is ignored
+        cmp     [esi+DISK.MediaInserted], 0
+        jz      .media_accurate_pop
+        lock inc [esi+DISK.MediaRefCount]
+        mov     dword [esp+8], esi
+.media_accurate_pop:
+        mov     edx, esi
+        pop     esi ecx
+.media_accurate:
+        pop     eax
+        test    eax, eax
+        jz      .nomedia
+        cmp     ecx, [edx+DISK.NumPartitions]
+        jae     .notfound2
+        mov     eax, [edx+DISK.Partitions]
+        mov     eax, [eax+ecx*4]
+        mov     edi, [eax+PARTITION.FSUserFunctions]
+        mov     ecx, [ebx]
+        cmp     [edi+4], ecx
+        jbe     .unsupported
+        push    edx
+        push    ebp
+        mov     ebp, eax
+        call    dword [edi+8+ecx*4]
+        pop     ebp
         pop     edx
-        mov     dword [esp+32], ERROR_FILE_NOT_FOUND
-        jmp     .cleanup_esi
-
-.access_denied:
-; 13. Fail the operation with the appropriate code.
-        mov     dword [esp+32], ERROR_ACCESS_DENIED
+        mov     dword [esp+32], eax
+        mov     dword [esp+20], ebx
 .cleanup:
-; 14. Cleanup.
-        mov     esi, ecx        ; disk*dereference assume that esi points to DISK
-.cleanup_esi:
-        test    edx, edx        ; if there are no media, we didn't reference it
-        jz      @f
+        mov     esi, edx
         call    disk_media_dereference
 @@:
         call    disk_dereference
-; 15. Return.
+        stdcall kernel_free, ebp
         ret
+
+.unsupported:
+        mov     dword [esp+32], ERROR_UNKNOWN_FS
+        cmp     edi, default_fs_functions
+        jz      .cleanup
+        mov     dword [esp+32], ERROR_UNSUPPORTED_FS
+        jmp     .cleanup
+
+.notfound2:
+        mov     dword [esp+32], ERROR_FILE_NOT_FOUND
+        jmp     .cleanup
+
+.nomedia:
+        test    ecx, ecx
+        jnz     .notfound2
+        mov     dword [esp+32], ERROR_DEVICE
+        mov     esi, edx
+        jmp     @b
 
 ; This is a callback for enumerating partitions called from
 ; file_system_lfn.maindir in the case of inserted media.
@@ -1226,86 +1292,6 @@ fs_dyndisk_next_nomedia:
         call    disk_dereference
         popa
         stc
-        ret
-
-; esp -> {dd pointer to DISK, dd media object}
-; ecx = partition number, esi+ebp = ASCIIZ name
-fs_dyndisk:
-        dec     ecx     ; convert to zero-based partition index
-        pop     edx     ; edx = pointer to DISK, dword [esp] = NULL or edx
-; If the driver does not support insert notifications and we are the only fs
-; operation with this disk, ask the driver whether the media
-; was inserted/removed/changed. Otherwise, assume that media status is valid.
-        test    byte [edx+DISK.DriverFlags], DISK_NO_INSERT_NOTIFICATION
-        jz      .media_accurate
-        push    ecx esi
-        mov     esi, edx
-        cmp     dword [esp+8], 0
-        jz      .test_no_media
-        cmp     [esi+DISK.MediaRefCount], 2
-        jnz     .media_accurate_pop
-        lea     edx, [esi+DISK.MediaInfo]
-        and     [edx+DISKMEDIAINFO.Flags], 0
-        mov     al, DISKFUNC.querymedia
-        stdcall disk_call_driver, edx
-        test    eax, eax
-        jz      .media_accurate_pop
-        stdcall disk_media_dereference  ; drop our reference so that disk_media_changed could close the media
-        stdcall disk_media_changed, esi, 0
-        and     dword [esp+8], 0        ; no media
-.test_no_media:
-        stdcall disk_media_changed, esi, 1      ; issue fake notification
-                ; if querymedia() inside disk_media_changed returns error, the notification is ignored
-        cmp     [esi+DISK.MediaInserted], 0
-        jz      .media_accurate_pop
-        lock inc [esi+DISK.MediaRefCount]
-        mov     dword [esp+8], esi
-.media_accurate_pop:
-        mov     edx, esi
-        pop     esi ecx
-.media_accurate:
-        pop     eax
-        test    eax, eax
-        jz      .nomedia
-.main:
-        cmp     ecx, [edx+DISK.NumPartitions]
-        jae     .notfound
-        mov     eax, [edx+DISK.Partitions]
-        mov     eax, [eax+ecx*4]
-        mov     edi, [eax+PARTITION.FSUserFunctions]
-        mov     ecx, [ebx]
-        cmp     [edi+4], ecx
-        jbe     .unsupported
-        push    edx
-        push    ebp
-        mov     ebp, eax
-        call    dword [edi+8+ecx*4]
-        pop     ebp
-        pop     edx
-        mov     dword [esp+32], eax
-        mov     dword [esp+20], ebx
-.cleanup:
-        mov     esi, edx
-        call    disk_media_dereference
-        call    disk_dereference
-        ret
-.nofs:
-        mov     dword [esp+32], ERROR_UNKNOWN_FS
-        jmp     .cleanup
-.notfound:
-        mov     dword [esp+32], ERROR_FILE_NOT_FOUND
-        jmp     .cleanup
-.unsupported:
-        cmp     edi, default_fs_functions
-        jz      .nofs
-        mov     dword [esp+32], ERROR_UNSUPPORTED_FS
-        jmp     .cleanup
-.nomedia:
-        test    ecx, ecx
-        jnz     .notfound
-        mov     dword [esp+32], ERROR_DEVICE
-        mov     esi, edx
-        call    disk_dereference
         ret
 
 ; This function is called from file_system_lfn.

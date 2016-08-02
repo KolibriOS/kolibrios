@@ -1,49 +1,36 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
-;; Distributed under terms of the GNU General Public License    ;;
-;;                                                              ;;
-;;  FAT functions for KolibriOS                                 ;;
-;;                                                              ;;
-;;  Copyright 2002 Paolo Minazzi, paolo.minazzi@inwind.it       ;;
-;;                                                              ;;
-;;  See file COPYING for details                                ;;
-;;  06.2015 fs_read64 - pathoswithin                            ;;
-;;  04.02.2007 LFN create folder - diamond                      ;;
-;;  08.10.2006 LFN delete file/folder - diamond                 ;;
-;;  20.08.2006 LFN set file size (truncate/extend) - diamond    ;;
-;;  17.08.2006 LFN write/append to file - diamond               ;;
-;;  23.06.2006 LFN start application - diamond                  ;;
-;;  15.06.2006 LFN get/set file/folder info - diamond           ;;
-;;  27.05.2006 LFN create/rewrite file - diamond                ;;
-;;  04.05.2006 LFN read folder - diamond                        ;;
-;;  29.04.2006 Elimination of hangup after the                  ;;
-;;             expiration hd_wait_timeout - Mario79             ;;
-;;  23.04.2006 LFN read file - diamond                          ;;
-;;  28.01.2006 find all Fat16/32 partition in all input point   ;;
-;;             to MBR, see file part_set.inc - Mario79          ;;
-;;  15.01.2005 get file size/attr/date, file_append - ATV       ;;
-;;  04.12.2004 skip volume label, file delete bug fixed - ATV   ;;
-;;  29.11.2004 get_free_FAT changed, append dir bug fixed - ATV ;;
-;;  23.11.2004 don't allow overwrite dir with file - ATV        ;;
-;;  18.11.2004 get_disk_info and more error codes - ATV         ;;
-;;  17.11.2004 set_FAT/get_FAT and disk cache rewritten - ATV   ;;
-;;  10.11.2004 removedir clear whole directory structure - ATV  ;;
-;;  08.11.2004 rename - ATV                                     ;;
-;;  30.10.2004 file_read return also dirsize in bytes - ATV     ;;
-;;  20.10.2004 Makedir/Removedir - ATV                          ;;
-;;  14.10.2004 Partition chain/Fat16 - ATV (thanks drh3xx)      ;;
-;;  06.09.2004 Fix free space - Mario79                         ;;
-;;  24.05.2004 Write back buffer for File_write - VT            ;;
-;;  20.05.2004 File_read function to work with syscall 58 - VT  ;;
-;;  30.03.2004 Error parameters at function return - VT         ;;
-;;  29.06.2002 Improved fat32 verification - VT                 ;;
-;;  20.05.2002 Hd status check - VT                             ;;
-;;  01.05.2002 Bugfix in device write - VT                      ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved. ;;
+;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 $Revision$
+
+; FAT external functions
+;   in:
+; ebx -> parameter structure of sysfunc 70
+; ebp -> FAT structure
+; esi -> path string
+;   out:
+; eax, ebx = return values for sysfunc 70
+iglobal
+align 4
+fat_user_functions:
+        dd      fat_free
+        dd      (fat_user_functions_end - fat_user_functions - 4) / 4
+        dd      fat_Read
+        dd      fat_ReadFolder
+        dd      fat_CreateFile
+        dd      fat_Write
+        dd      fat_SetFileEnd
+        dd      fat_GetFileInfo
+        dd      fat_SetFileInfo
+        dd      0
+        dd      fat_Delete
+        dd      fat_CreateFolder
+fat_user_functions_end:
+endg
 
 cache_max equ 1919      ; max. is 1919*512+0x610000=0x6ffe00
 
@@ -57,82 +44,54 @@ PUSHAD_EDI equ [esp+0]
 
 ; Internal data for every FAT partition.
 struct FAT PARTITION
-fs_type              db ?
-fat16_root           db 0       ; flag for fat16 rootdir
-fat_change           db 0       ; 1=fat has changed
-                     rb 1
-Lock            MUTEX   ?       ; currently operations with one partition
+fs_type             db  ?
+fat_change          db  ?   ; 1=fat has changed
+                    rb  2
+Lock                MUTEX   ; currently operations with one partition
 ; can not be executed in parallel since the legacy code is not ready
-SECTORS_PER_FAT      dd 0x1f3a
-NUMBER_OF_FATS       dd 0x2
-SECTORS_PER_CLUSTER  dd 0x8
-BYTES_PER_SECTOR     dd 0x200   ; Note: if BPS <> 512 need lots of changes
-ROOT_CLUSTER         dd 2       ; first rootdir cluster
-FAT_START            dd 0       ; start of fat table
-ROOT_START           dd 0       ; start of rootdir (only fat16)
-ROOT_SECTORS         dd 0       ; count of rootdir sectors (only fat16)
-DATA_START           dd 0       ; start of data area (=first cluster 2)
-LAST_CLUSTER         dd 0       ; last availabe cluster
-ADR_FSINFO           dd 0       ; used only by fat32
-
-fatRESERVED          dd 0x0FFFFFF6
-fatBAD               dd 0x0FFFFFF7
-fatEND               dd 0x0FFFFFF8
-fatMASK              dd 0x0FFFFFFF
-
-fatStartScan         dd 2
-cluster_tmp          dd 0       ; used by analyze_directory
-                                ; and analyze_directory_to_write
-longname_sec1        dd 0       ; used by analyze_directory to save 2 previous
-longname_sec2        dd 0       ; directory sectors for delete long filename
-fat_in_cache         dd -1
-
+SECTORS_PER_FAT     dd  ?
+NUMBER_OF_FATS      dd  ?
+SECTORS_PER_CLUSTER dd  ?
+BYTES_PER_SECTOR    dd  ?   ; Note: if BPS <> 512 need lots of changes
+ROOT_CLUSTER        dd  ?   ; first rootdir cluster
+FAT_START           dd  ?   ; start of fat table
+ROOT_START          dd  ?   ; start of rootdir (only fat16)
+ROOT_SECTORS        dd  ?   ; count of rootdir sectors (only fat16)
+DATA_START          dd  ?   ; start of data area (=first cluster 2)
+LAST_CLUSTER        dd  ?   ; last availabe cluster
+ADR_FSINFO          dd  ?   ; used only by fat32
+fatRESERVED         dd  ?
+fatBAD              dd  ?
+fatEND              dd  ?
+fatMASK             dd  ?
+fatStartScan        dd  ?
+cluster_tmp         dd  ?   ; used by analyze_directory and analyze_directory_to_write
+longname_sec1       dd  ?   ; used by analyze_directory to save 2 previous
+longname_sec2       dd  ?   ; directory sectors for delete long filename
+fat_in_cache        dd  ?
 ; For FAT16/FAT32, this points to 512-byte buffer for the current sector of FAT.
 ; For FAT12, the entire FAT structure is read
 ; and unpacked from 12bit per cluster to word per cluster.
-
 ; Note: work with unpacked copy of FAT12 means
 ; additional memory and additional code for packing/unpacking.
 ; I'm not sure that the economy justifies the cost, but anyway,
 ; there is how work was done before my edits, and I'm just keeping the principle.
-fat_cache_ptr        dd ?
-fat12_unpacked_ptr   dd ?
-buffer               rb 512
-fsinfo_buffer        rb 512
+fat_cache_ptr       dd  ?
+fat12_unpacked_ptr  dd  ?
+buffer              rb  512
+fsinfo_buffer       rb  512
 ends
 
 uglobal
 align 4
-partition_count      dd 0       ; partitions found by set_FAT32_variables
-hd_error             dd 0
-hd_setup             dd 0
-hd_wait_timeout      dd 0
-cache_search_start   dd 0       ; used by find_empty_slot
-endg
-
-uglobal
-align 4
+partition_count     dd  ?   ; partitions found by set_FAT32_variables
+hd_error            dd  ?
+hd_setup            dd  ?
+hd_wait_timeout     dd  ?
+cache_search_start  dd  ?   ; used by find_empty_slot
 Sector512:      ; label for dev_hdcd.inc
 buffer:
 rb 512
-endg
-
-iglobal
-align 4
-fat_user_functions:
-        dd      fat_free
-        dd      (fat_user_functions_end - fat_user_functions - 4) / 4
-        dd      fat_Read
-        dd      fat_ReadFolder
-        dd      fat_Rewrite
-        dd      fat_Write
-        dd      fat_SetFileEnd
-        dd      fat_GetFileInfo
-        dd      fat_SetFileInfo
-        dd      0
-        dd      fat_Delete
-        dd      fat_CreateFolder
-fat_user_functions_end:
 endg
 
 ; these labels are located before the main function to make
@@ -1598,11 +1557,9 @@ bdfe_to_fat_entry:
         ret
 
 hd_find_lfn:
-; in: ebp -> FAT structure
-; in: esi+[esp+4] -> name
+; in: esi -> path string
 ; out: CF=1 - file not found, eax=error code
 ;      else CF=0 and edi->direntry, eax=sector
-; destroys eax
         push    esi edi
         push    0
         push    0
@@ -1618,7 +1575,6 @@ hd_find_lfn:
         jc      .notfound
         cmp     byte [esi], 0
         jz      .found
-.continue:
         test    byte [edi+11], 10h
         jz      .notfound
         and     dword [esp+12], 0
@@ -1629,38 +1585,28 @@ hd_find_lfn:
         mov     dword [esp+4], fat_notroot_first
         mov     dword [esp], fat_notroot_next
         jmp     .loop
+
 .notfound:
         add     esp, 16
         pop     edi esi
         stc
-        ret     4
+        ret
+
 .found:
-        lea     eax, [esp+4+24]
-        cmp     dword [eax], 0
-        jz      @f
-        mov     esi, [eax]
-        and     dword [eax], 0
-        jmp     .continue
-@@:
         lea     eax, [esp+8]
         cmp     dword [eax], 0
         jz      .root
         call    fat_get_sector
         jmp     .cmn
+
 .root:
         mov     eax, [eax+4]
         add     eax, [ebp+FAT.ROOT_START]
 .cmn:
         add     esp, 20         ; CF=0
         pop     esi
-        ret     4
+        ret
 
-;----------------------------------------------------------------
-; fat_Read - FAT implementation of reading a file
-; in:  ebp = pointer to FAT structure
-; in:  esi+[esp+4] = name
-; in:  ebx = pointer to parameters from sysfunc 70
-; out: eax, ebx = return values for sysfunc 70
 ;----------------------------------------------------------------
 fat_Read:
         call    fat_lock
@@ -1674,7 +1620,7 @@ fat_Read:
         mov     eax, ERROR_ACCESS_DENIED
         ret
 @@:
-        stdcall hd_find_lfn, [esp+8]
+        call    hd_find_lfn
         jnc     .found
         pop     edi
         push    eax
@@ -1851,19 +1797,13 @@ fat_Read:
         jmp     .fragmentEnd
 
 ;----------------------------------------------------------------
-; fat_ReadFolder - FAT implementation of reading a folder
-; in:  ebp = pointer to FAT structure
-; in:  esi+[esp+4] = name
-; in:  ebx = pointer to parameters from sysfunc 70
-; out: eax, ebx = return values for sysfunc 70
-;----------------------------------------------------------------
 fat_ReadFolder:
         call    fat_lock
         mov     eax, [ebp+FAT.ROOT_CLUSTER]
         push    edi
         cmp     byte [esi], 0
         jz      .doit
-        stdcall hd_find_lfn, [esp+4+4]
+        call    hd_find_lfn
         jnc     .found
         pop     edi
         push    eax
@@ -2254,26 +2194,13 @@ fshrad:
         ret
 
 ;----------------------------------------------------------------
-; fat_CreateFolder - FAT implementation of creating a folder
-; in:  ebp = pointer to FAT structure
-; in:  esi+[esp+4] = name
-; in:  ebx = pointer to parameters from sysfunc 70
-; out: eax, ebx = return values for sysfunc 70
-;----------------------------------------------------------------
 fat_CreateFolder:
         push    1
-        jmp     fat_Rewrite.common
+        jmp     @f
 
-;----------------------------------------------------------------
-; fat_Rewrite - FAT implementation of creating a new file
-; in:  ebp = pointer to FAT structure
-; in:  esi+[esp+4] = name
-; in:  ebx = pointer to parameters from sysfunc 70
-; out: eax, ebx = return values for sysfunc 70
-;----------------------------------------------------------------
-fat_Rewrite:
+fat_CreateFile:
         push    0
-.common:
+@@:
         call    fat_lock
         pop     eax
         cmp     byte [esi], 0
@@ -2282,11 +2209,7 @@ fat_Rewrite:
         mov     edx, [ebx+16]
         pushad
         xor     edi, edi
-        mov     edx, [esp+4+20h]
         push    esi
-        test    edx, edx
-        jz      @f
-        mov     esi, edx
 @@:
         lodsb
         test    al, al
@@ -2295,12 +2218,11 @@ fat_Rewrite:
         jnz     @b
         lea     edi, [esi-1]
         jmp     @b
+
 @@:
         pop     esi
         test    edi, edi
         jnz     .noroot
-        test    edx, edx
-        jnz     .hasebp
         mov     edx, [ebp+FAT.ROOT_CLUSTER]
         cmp     [ebp+FAT.fs_type], 32
         jz      .pushnotroot
@@ -2315,14 +2237,7 @@ fat_Rewrite:
         push    fat1x_root_first
         push    fat1x_root_next
         jmp     .common1
-.hasebp:
-        mov     eax, ERROR_ACCESS_DENIED
-        cmp     byte [edx], 0
-        jz      .ret1
-        stdcall hd_find_lfn, 0
-        mov     esi, [esp+4+20h]
-        jc      .ret1
-        jmp     .common0
+
 .noroot:
         mov     eax, ERROR_ACCESS_DENIED
         cmp     byte [edi+1], 0
@@ -2330,7 +2245,7 @@ fat_Rewrite:
 ; check existence
         mov     byte [edi], 0
         push    edi
-        stdcall hd_find_lfn, [esp+4+24h]
+        call    hd_find_lfn
         pop     esi
         mov     byte [esi], '/'
         jnc     @f
@@ -2342,15 +2257,15 @@ fat_Rewrite:
         popad
         xor     ebx, ebx
         ret
+
 @@:
         inc     esi
-.common0:
         test    byte [edi+11], 0x10     ; must be directory
         mov     eax, ERROR_ACCESS_DENIED
         jz      .ret1
         mov     edx, [edi+20-2]
         mov     dx, [edi+26]            ; ebp=cluster
-        mov     eax, ERROR_FAT_TABLE
+        mov     eax, ERROR_FS_FAIL
         cmp     edx, 2
         jb      .ret1
 .pushnotroot:
@@ -2366,11 +2281,9 @@ fat_Rewrite:
 .common1:
         call    fat_find_lfn
         jc      .notfound
-; found
         test    byte [edi+11], 10h
         jz      .exists_file
-; found directory; if we are creating directory, return OK,
-;                  if we are creating file, say "access denied"
+; found directory
         add     esp, 36
         call    fat_unlock
         popad
@@ -2381,9 +2294,8 @@ fat_Rewrite:
 @@:
         xor     ebx, ebx
         ret
+
 .exists_file:
-; found file; if we are creating directory, return "access denied",
-;             if we are creating file, delete existing file and continue
         cmp     byte [esp+36+28], 0
         jz      @f
         add     esp, 36
@@ -2392,8 +2304,8 @@ fat_Rewrite:
         mov     eax, ERROR_ACCESS_DENIED
         xor     ebx, ebx
         ret
-@@:
-; delete FAT chain
+
+@@: ; delete FAT chain
         push    edi
         xor     eax, eax
         mov     dword [edi+28], eax     ; zero size
@@ -2415,17 +2327,20 @@ fat_Rewrite:
         jc      .done1
         inc     ecx
         jmp     @b
-.done1:
-        pop     edi
-        call    get_time_for_file
-        mov     [edi+22], ax
-        call    get_date_for_file
-        mov     [edi+24], ax
-        mov     [edi+18], ax
-        or      byte [edi+11], 20h      ; set 'archive' attribute
-        jmp     .doit
-.notfound:
-; file is not found; generate short name
+
+.short_name_found:
+        pop     ecx edi esi
+        call    fat_next_short_name
+        jnc     .test_short_name_loop
+.disk_full:
+        add     esp, 12+36
+        call    fat_unlock
+        popa
+        mov     eax, ERROR_DISK_FULL
+        xor     ebx, ebx
+        ret
+
+.notfound:  ; generate short name
         call    fat_name_is_legal
         jc      @f
         add     esp, 36
@@ -2434,6 +2349,7 @@ fat_Rewrite:
         mov     eax, ERROR_FILE_NOT_FOUND
         xor     ebx, ebx
         ret
+
 @@:
         sub     esp, 12
         mov     edi, esp
@@ -2459,18 +2375,6 @@ fat_Rewrite:
         lea     eax, [esp+12+12+8]
         call    dword [eax-8]
         jnc     .test_short_name_entry
-        jmp     .found
-.short_name_found:
-        pop     ecx edi esi
-        call    fat_next_short_name
-        jnc     .test_short_name_loop
-.disk_full:
-        add     esp, 12+36
-        call    fat_unlock
-        popa
-        mov     eax, ERROR_DISK_FULL
-        xor     ebx, ebx
-        ret
 .found:
         pop     ecx edi esi
 ; now find space in directory
@@ -2489,6 +2393,7 @@ fat_Rewrite:
         inc     esi
         inc     eax
         jmp     @b
+
 @@:
         sub     esi, eax
         add     eax, 12+13
@@ -2518,6 +2423,7 @@ fat_Rewrite:
         mov     eax, ERROR_DEVICE
         xor     ebx, ebx
         ret
+
 .scan_dir:
         cmp     byte [edi], 0
         jz      .free
@@ -2544,6 +2450,7 @@ fat_Rewrite:
         mov     eax, ERROR_DISK_FULL
         xor     ebx, ebx
         ret
+
 .free:
         test    ecx, ecx
         jnz     @f
@@ -2564,17 +2471,17 @@ fat_Rewrite:
 ; on a full disk.
 ; yup, the argument is quite non-intuitive... but what should I do if
 ; the entire function uses such arguments? BTW, it refers to al from pushad,
-; which in turn is filled with 0 in fat_Rewrite and 1 in fat_CreateFolder.
+; which in turn is filled with 0 in fat_CreateFile and 1 in fat_CreateFolder.
         cmp     byte [esp+8+12+8+12+36+28], 0
         jz      .no.preallocate.folder.data
         call    get_free_FAT
         jnc     @f
         add     esp, 8+12+8
         jmp     .disk_full
+
 @@:
         mov     [esp+8+12+8+12+36+20], eax ; store the cluster somewhere
-.no.preallocate.folder.data:
-; calculate name checksum
+.no.preallocate.folder.data:    ; calculate name checksum
         mov     esi, [esp+8+12]
         mov     ecx, 11
         xor     eax, eax
@@ -2622,8 +2529,6 @@ fat_Rewrite:
         loop    .writelfn
         pop     eax
         pop     esi
-;        lea     eax, [esp+8+12+8]
-;        call    dword [eax+16]          ; end write
 .nolfn:
         xchg    esi, [esp]
         mov     ecx, 11
@@ -2659,6 +2564,15 @@ fat_Rewrite:
         push    ecx
         push    edi
         jmp     .doit2
+
+.done1:
+        pop     edi
+        call    get_time_for_file
+        mov     [edi+22], ax
+        call    get_date_for_file
+        mov     [edi+24], ax
+        mov     [edi+18], ax
+        or      byte [edi+11], 20h      ; set 'archive' attribute
 .doit:
         mov     esi, [esp+36+20]
         lea     eax, [esp+8]
@@ -2690,7 +2604,6 @@ fat_Rewrite:
         imul    eax, [ebp+FAT.SECTORS_PER_CLUSTER]
         add     eax, [ebp+FAT.DATA_START]
         push    [ebp+FAT.SECTORS_PER_CLUSTER]
-; write data
 .write_sector:
         cmp     byte [esp+20+36+28], 0
         jnz     .writedir
@@ -2701,6 +2614,7 @@ fat_Rewrite:
         mov     ebx, esi
         add     esi, ecx
         jmp     .writecommon
+
 .writeshort:
         mov     ecx, [esp+12]
         push    ecx
@@ -2741,14 +2655,17 @@ fat_Rewrite:
         pop     edx
         xchg    eax, ecx
         jmp     .write_cluster
+
 .diskfull:
         mov     eax, ERROR_DISK_FULL
         jmp     .ret
+
 .writeerr:
         pop     eax eax
         sub     esi, ecx
         mov     eax, ERROR_DEVICE
         jmp     .ret
+
 .writedone:
         pop     eax eax
 .done:
@@ -2777,6 +2694,7 @@ fat_Rewrite:
         call    fat_unlock
         popad
         ret
+
 .writedir:
         push    512
         lea     edi, [ebp+FAT.buffer]
@@ -2830,38 +2748,27 @@ fat_read_symbols:
         loop    fat_read_symbols
         ret
 
-
-fat_Write.access_denied:
-        push    ERROR_ACCESS_DENIED
-fat_Write.ret0:
-        pop     eax
-        xor     ebx, ebx
-        ret
-
-fat_Write.ret11:
-        push    ERROR_DEVICE
-        jmp     fat_Write.ret0
-
-;----------------------------------------------------------------
-; fat_Write - FAT implementation of writing to file
-; in:  ebp = pointer to FAT structure
-; in:  esi+[esp+4] = name
-; in:  ebx = pointer to parameters from sysfunc 70
-; out: eax, ebx = return values for sysfunc 70
 ;----------------------------------------------------------------
 fat_Write:
         cmp     byte [esi], 0
         jz      .access_denied
         call    fat_lock
         push    edi
-        stdcall hd_find_lfn, [esp+4+4]
+        call    hd_find_lfn
         jnc     .found
         pop     edi
         push    eax
         call    fat_unlock
+.ret0:
+        pop     eax
+        xor     ebx, ebx
+        ret
+
+.access_denied:
+        push    ERROR_ACCESS_DENIED
         jmp     .ret0
-.found:
-; FAT does not support files larger than 4GB
+
+.found:     ; FAT does not support files larger than 4GB
         cmp     dword [ebx+8], 0
         jz      @f
 .eof:
@@ -2875,20 +2782,17 @@ fat_Write:
         mov     ebx, [ebx+4]
 ; now edi points to direntry, ebx=start byte to write,
 ; ecx=number of bytes to write, edx=data pointer
-
 ; extend file if needed
         add     ecx, ebx
         jc      .eof    ; FAT does not support files larger than 4GB
         push    edx
         push    eax     ; save directory sector
         push    0       ; return value=0
-
         call    get_time_for_file
         mov     [edi+22], ax            ; last write time
         call    get_date_for_file
         mov     [edi+24], ax            ; last write date
         mov     [edi+18], ax            ; last access date
-
         push    dword [edi+28]          ; save current file size
         cmp     ecx, [edi+28]
         jbe     .length_ok
@@ -2949,7 +2853,7 @@ fat_Write:
         mov     byte [esp+8], ERROR_DEVICE
         jmp     .ret
 .fat_err:
-        mov     byte [esp+8], ERROR_FAT_TABLE
+        mov     byte [esp+8], ERROR_FS_FAIL
         jmp     .ret
 @@:
 
@@ -3074,7 +2978,7 @@ hd_extend_file.zero_size:
 ; extends file on hd to given size (new data area is undefined)
 ; in: edi->direntry, ecx=new size
 ; out: CF=0 => OK, eax=0
-;      CF=1 => error, eax=code (ERROR_FAT_TABLE or ERROR_DISK_FULL or ERROR_DEVICE)
+;      CF=1 => error, eax=code (ERROR_FS_FAIL or ERROR_DISK_FULL or ERROR_DEVICE)
 hd_extend_file:
         push    esi
         mov     esi, [ebp+FAT.SECTORS_PER_CLUSTER]
@@ -3106,7 +3010,7 @@ hd_extend_file:
         jb      .last_loop
 .fat_err:
         pop     ecx esi
-        push    ERROR_FAT_TABLE
+        push    ERROR_FS_FAIL
         jmp     .ret_err
 .last_found:
         push    eax
@@ -3177,13 +3081,6 @@ fat_update_datetime:
         mov     [edi+18], ax            ; last access date
         ret
 
-
-;----------------------------------------------------------------
-; fat_SetFileEnd - FAT implementation of setting end-of-file
-; in:  ebp = pointer to FAT structure
-; in:  esi+[esp+4] = name
-; in:  ebx = pointer to parameters from sysfunc 70
-; out: eax, ebx = return values for sysfunc 70
 ;----------------------------------------------------------------
 fat_SetFileEnd:
         call    fat_lock
@@ -3198,7 +3095,7 @@ fat_SetFileEnd:
         pop     edi
         ret
 @@:
-        stdcall hd_find_lfn, [esp+4+4]
+        call    hd_find_lfn
         jnc     @f
 .reteax:
         push    eax
@@ -3409,21 +3306,15 @@ fat_SetFileEnd:
         ret
 .error_fat:
         pop     eax
-        mov     byte [esp], ERROR_FAT_TABLE
+        mov     byte [esp], ERROR_FS_FAIL
         jmp     .pop_ret
 .error_fat2:
         pop     eax ecx eax edi
         call    update_disk
         call    fat_unlock
-        movi    eax, ERROR_FAT_TABLE
+        movi    eax, ERROR_FS_FAIL
         ret
 
-;----------------------------------------------------------------
-; fat_GetFileInfo - FAT implementation of getting file info
-; in:  ebp = pointer to FAT structure
-; in:  esi+[esp+4] = name
-; in:  ebx = pointer to parameters from sysfunc 70
-; out: eax, ebx = return values for sysfunc 70
 ;----------------------------------------------------------------
 fat_GetFileInfo:
         cmp     byte [esi], 0
@@ -3433,7 +3324,7 @@ fat_GetFileInfo:
 @@:
         push    edi
         call    fat_lock
-        stdcall hd_find_lfn, [esp+4+4]
+        call    hd_find_lfn
         jc      .error
         push    ebp
         xor     ebp, ebp
@@ -3453,12 +3344,6 @@ fat_GetFileInfo:
         ret
 
 ;----------------------------------------------------------------
-; fat_SetFileInfo - FAT implementation of setting file info
-; in:  ebp = pointer to FAT structure
-; in:  esi+[esp+4] = name
-; in:  ebx = pointer to parameters from sysfunc 70
-; out: eax, ebx = return values for sysfunc 70
-;----------------------------------------------------------------
 fat_SetFileInfo:
         cmp     byte [esi], 0
         jnz     @f
@@ -3467,7 +3352,7 @@ fat_SetFileInfo:
 @@:
         push    edi
         call    fat_lock
-        stdcall hd_find_lfn, [esp+4+4]
+        call    hd_find_lfn
         jc      .error
         push    eax
         mov     edx, [ebx+16]
@@ -3488,12 +3373,6 @@ fat_SetFileInfo:
         ret
 
 ;----------------------------------------------------------------
-; fat_Delete - FAT implementation of deleting a file/folder
-; in:  ebp = pointer to FAT structure
-; in:  esi+[esp+4] = name
-; in:  ebx = pointer to parameters from sysfunc 70
-; out: eax, ebx = return values for sysfunc 70
-;----------------------------------------------------------------
 fat_Delete:
         call    fat_lock
         cmp     byte [esi], 0
@@ -3510,7 +3389,7 @@ fat_Delete:
         and     [ebp+FAT.longname_sec1], 0
         and     [ebp+FAT.longname_sec2], 0
         push    edi
-        stdcall hd_find_lfn, [esp+4+4]
+        call    hd_find_lfn
         jnc     .found
         pop     edi
         push    ERROR_FILE_NOT_FOUND
@@ -3577,7 +3456,7 @@ fat_Delete:
         popad
         pop     edi
         call    fat_unlock
-        movi    eax, ERROR_FAT_TABLE
+        movi    eax, ERROR_FS_FAIL
         ret
 .notempty:
         popad

@@ -11,7 +11,7 @@ $Revision$
 ;   in:
 ; ebx -> parameter structure of sysfunc 70
 ; ebp -> NTFS structure
-; [esi]+[[esp+4]] = name
+; esi -> path string
 ;   out:
 ; eax, ebx = return values for sysfunc 70
 iglobal
@@ -1174,7 +1174,7 @@ unichar_toupper:
         ret
 
 ntfs_find_lfn:
-; in: [esi]+[esp+4] = name
+; in: esi -> path string
 ;   out:
 ; [ebp+NTFS.cur_iRecord] = target fileRecord
 ; eax -> target index in the node
@@ -1280,7 +1280,7 @@ ntfs_find_lfn:
 .ret2:
         pop     esi
 .ret:
-        ret     4
+        ret
 
 .slash:
         pop     eax
@@ -1337,14 +1337,9 @@ ntfs_find_lfn:
         mov     [esp+1Ch], esi
         mov     [esp+4], edi
         popad
-        inc     esi
-        cmp     byte [esi-1], 0
-        jnz     @f
-        cmp     dword [esp+8], 0
+        cmp     byte [esi], 0
         jz      .ret2
-        mov     esi, [esp+8]
-        mov     dword [esp+8], 0
-@@:
+        inc     esi
         pop     eax
         jmp     .doit2
 
@@ -1358,7 +1353,7 @@ ntfs_ReadFile:
 
 @@:
         call    ntfs_lock
-        stdcall ntfs_find_lfn, [esp+4]
+        call    ntfs_find_lfn
         jnc     .found
         call    ntfs_unlock
         or      ebx, -1
@@ -1493,7 +1488,7 @@ ntfs_ReadFolder:
         mov     [ebp+NTFS.cur_iRecord], 5   ; root directory
         cmp     byte [esi], 0
         jz      @f
-        stdcall ntfs_find_lfn, [esp+4]
+        call    ntfs_find_lfn
         jc      ntfsNotFound
 @@:
         mov     [ebp+NTFS.cur_attr], 0x10   ; $STANDARD_INFORMATION
@@ -1820,7 +1815,7 @@ ntfs_GetFileInfo:
         mov     edi, [ebx+16]
         cmp     byte [esi], 0
         jz      .volume
-        stdcall ntfs_find_lfn, [esp+4]
+        call    ntfs_find_lfn
         jnc     .found
         test    eax, eax
         jz      ntfsFail
@@ -1885,7 +1880,7 @@ ntfs_CreateFile:
 
 @@: ; 1. Search file
         call    ntfs_lock
-        stdcall ntfs_find_lfn, [esp+4]
+        call    ntfs_find_lfn
         jc      .notFound
 ; found, rewrite
         cmp     [ebp+NTFS.cur_iRecord], 16
@@ -2172,7 +2167,7 @@ ntfs_CreateFile:
         mov     edx, [ebp+NTFS.rootLastRead]
         call    writeRecord
         mov     esi, [esp+4]
-        stdcall ntfs_find_lfn.doit2, 0
+        call    ntfs_find_lfn.doit2
         test    eax, eax
         jz      .errorPop3
         mov     edi, [ebp+NTFS.cur_index_buf]
@@ -3510,7 +3505,7 @@ ntfs_WriteFile:
         ret
 @@:
         call    ntfs_lock
-        stdcall ntfs_find_lfn, [esp+4]
+        call    ntfs_find_lfn
         jc      ntfsNotFound
         cmp     [ebp+NTFS.cur_iRecord], 16
         jc      ntfsDenied
@@ -3690,7 +3685,7 @@ ntfs_Delete:
 
 @@:
         call    ntfs_lock
-        stdcall ntfs_find_lfn, [esp+4]
+        call    ntfs_find_lfn
         jc      ntfsNotFound
         cmp     [ebp+NTFS.cur_iRecord], 16
         jc      ntfsDenied
@@ -3783,7 +3778,7 @@ ntfs_Delete:
         mov     eax, [ebp+NTFS.newRecord]
         mov     [ebp+NTFS.cur_iRecord], eax
         mov     esi, [ebp+NTFS.indexPointer]
-        stdcall ntfs_find_lfn.doit2, 0
+        call    ntfs_find_lfn.doit2
         jc      ntfsFail
         mov     ebx, [ebp+NTFS.secondIndexBuffer]
         mov     byte [ebx], 0
@@ -4008,7 +4003,7 @@ ntfs_SetFileEnd:
         ret
 @@:
         call    ntfs_lock
-        stdcall ntfs_find_lfn, [esp+4]
+        call    ntfs_find_lfn
         jc      ntfsNotFound
         cmp     [ebp+NTFS.cur_iRecord], 16
         jc      ntfsDenied
@@ -4142,7 +4137,7 @@ ntfs_SetFileInfo:
         ret
 @@:
         call    ntfs_lock
-        stdcall ntfs_find_lfn, [esp+4]
+        call    ntfs_find_lfn
         jnc     @f
         test    eax, eax
         jz      ntfsFail
