@@ -16,26 +16,13 @@
 ;    You should have received a copy of the GNU General Public License
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-AES256_ROUNDS = 14
+AES256_ROUNDS           = 14
+AES256_BLOCKSIZE        = 16
 
 struct aes256_context
         key     rd 4*(AES256_ROUNDS+1)
 ends
 
-proc dump_128bit_hex _ptr
-        pushad
-
-        mov     esi, [_ptr]
-        mov     ecx, 4
-  .next_dword:
-        lodsd
-        bswap   eax
-        DEBUGF  1,'%x',eax
-        loop    .next_dword
-
-        popad
-        ret
-endp
 
 proc aes256_set_encrypt_key _ctx, _userkey
 locals
@@ -48,30 +35,11 @@ endl
 
         mov     esi, [_userkey]
         lea     edi, [ebx + aes256_context.key]
+repeat 8
         lodsd
         bswap   eax
         stosd
-        lodsd
-        bswap   eax
-        stosd
-        lodsd
-        bswap   eax
-        stosd
-        lodsd
-        bswap   eax
-        stosd
-        lodsd
-        bswap   eax
-        stosd
-        lodsd
-        bswap   eax
-        stosd
-        lodsd
-        bswap   eax
-        stosd
-        lodsd
-        bswap   eax
-        stosd
+end repeat
 
         lea     esi, [ebx + aes256_context.key]
 
@@ -176,7 +144,6 @@ endl
         jmp     .while
 
   .done:
-        DEBUGF  1,'                                                     \n'
         pop     edi esi ebx
         ret
 endp
@@ -266,8 +233,7 @@ endl
         push    ebx esi edi
 
         DEBUGF  1,'input  : '
-        stdcall dump_128bit_hex, [_in]
-        DEBUGF  1,'\n'
+        stdcall dump_hex, [_in], 4
 
         mov     ebx, [_key]
         mov     esi, [_in]
@@ -663,8 +629,7 @@ endl
         stosd
 
         DEBUGF  1,'output : '
-        stdcall dump_128bit_hex, [_out]
-        DEBUGF  1,'\n'
+        stdcall dump_hex, [_out], 4
 
         pop     edi esi ebx
         ret
@@ -679,8 +644,7 @@ endl
         push    ebx esi edi
 
         DEBUGF  1,'input  : '
-        stdcall dump_128bit_hex, [_in]
-        DEBUGF  1,'\n'
+        stdcall dump_hex, [_in], 4
 
         mov     ebx, [_key]
         mov     esi, [_in]
@@ -1073,8 +1037,7 @@ endl
         stosd
 
         DEBUGF  1,'output : '
-        stdcall dump_128bit_hex, [_out]
-        DEBUGF  1,'\n'
+        stdcall dump_hex, [_out], 4
 
         pop     edi esi ebx
         ret

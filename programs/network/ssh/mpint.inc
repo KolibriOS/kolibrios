@@ -541,13 +541,13 @@ proc mpint_modexp uses edi eax ebx ecx, dst, base, exp, mod
         ret
 
   .mod_zero:
-        DEBUGF  1, "modexp with modulo 0\n"
+        DEBUGF  3, "modexp with modulo 0\n"
         ; if mod is zero, result = 0
         stdcall mpint_zero, [dst]
         ret
 
   .exp_zero:
-        DEBUGF  1, "modexp with exponent 0\n"
+        DEBUGF  3, "modexp with exponent 0\n"
         ; if exponent is zero, result = 1
         stdcall mpint_zero, [dst]
         mov     eax, [dst]
@@ -556,7 +556,7 @@ proc mpint_modexp uses edi eax ebx ecx, dst, base, exp, mod
         ret
 
   .invalid:
-        DEBUGF  1, "modexp: Invalid input!\n"
+        DEBUGF  3, "modexp: Invalid input!\n"
         ret
 
 endp

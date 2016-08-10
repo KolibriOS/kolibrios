@@ -16,8 +16,8 @@
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 struct aes256_ctr_context aes256_context
-        counter rb 16
-        output  rb 16   ; counter after aes_crypt
+        counter rb AES256_BLOCKSIZE
+        output  rb AES256_BLOCKSIZE     ; counter after aes_crypt
 ends
 
 
@@ -26,10 +26,10 @@ proc aes256_ctr_init _counter
 
         mcall   68, 12, sizeof.aes256_ctr_context
         ; handle errors
-        mov     ecx, 16/4
+        mov     ecx, AES256_BLOCKSIZE/4
         mov     esi, [_counter]
         lea     edi, [eax + aes256_ctr_context.counter]
-        rep     movsd
+        rep movsd
         ; rep movsd is slow, but we don't care while init
 
         pop     edi esi ebx
@@ -42,8 +42,7 @@ proc aes256_ctr_crypt _ctx, _in, _out
         push    ebx esi edi
 
         DEBUGF  1,'plain  : '
-        stdcall dump_128bit_hex, [_in]
-        DEBUGF  1,'\n'
+        stdcall dump_hex, [_in], 4
 
         mov     esi, [_ctx]
         lea     eax, [esi + aes256_ctr_context.key]
@@ -101,8 +100,7 @@ proc aes256_ctr_crypt _ctx, _in, _out
         mov     dword[esi + aes256_ctr_context.counter + 4*3], edx
 
         DEBUGF  1,'cipher : '
-        stdcall dump_128bit_hex, [_out]
-        DEBUGF  1,'\n\n'
+        stdcall dump_hex, [_out], 4
 
         pop     edi esi ebx
         ret

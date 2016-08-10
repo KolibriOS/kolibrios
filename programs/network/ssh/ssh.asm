@@ -18,7 +18,7 @@
 format binary as ""
 
 __DEBUG__       = 1
-__DEBUG_LEVEL__ = 1
+__DEBUG_LEVEL__ = 2             ; 1: Extreme debugging, 2: Debugging, 3: Errors only
 
 BUFFERSIZE      = 4096
 MAX_BITS        = 8192
@@ -33,16 +33,17 @@ use32
         dd      i_end           ; initialized size
         dd      mem+4096        ; required memory
         dd      mem+4096        ; stack pointer
-        dd      hostname        ; parameters
+        dd      params          ; parameters
         dd      0               ; path
 
 include '../../macros.inc'
+;include '../../struct.inc'
 purge mov,add,sub
 include '../../proc32.inc'
 include '../../dll.inc'
 include '../../debug-fdo.inc'
 include '../../network.inc'
-;include '../../develop/libraries/libcrash/trunk/libcrash.inc'
+include '../../develop/libraries/libcrash/trunk/libcrash.inc'
 
 include 'mcodes.inc'
 include 'ssh_transport.inc'
@@ -53,7 +54,7 @@ include 'random.inc'
 include 'aes256.inc'
 include 'aes256-ctr.inc'
 include 'aes256-cbc.inc'
-include '../../fs/kfar/trunk/kfar_arc/sha256.inc'
+include 'hmac_sha256.inc'
 
 ; macros for network byte order
 macro dd_n op {
@@ -68,24 +69,120 @@ macro dw_n op {
            (((op) and 000FFh) shl 8)
 }
 
+proc dump_hex _ptr, _length
+if __DEBUG_LEVEL__ <= 1
+        pushad
+
+        mov     esi, [_ptr]
+        mov     ecx, [_length]
+  .next_dword:
+        lodsd
+        bswap   eax
+        DEBUGF  1,'%x',eax
+        loop    .next_dword
+        DEBUGF  1,'\n'
+
+        popad
+        ret
+end if
+endp
+
+struct  ssh_connection
+
+; Connection
+
+        hostname                rb 1024
+
+        socketnum               dd ?
+
+        sockaddr                dw ?            ; Address family
+        port                    dw ?
+        ip                      dd ?
+                                rb 10
+
+; Encryption/Decryption
+
+        rx_crypt_proc           dd ?
+        tx_crypt_proc           dd ?
+        rx_crypt_ctx_ptr        dd ?
+        tx_crypt_ctx_ptr        dd ?
+        rx_crypt_blocksize      dd ?
+        tx_crypt_blocksize      dd ?
+
+; Message authentication
+
+        rx_mac_proc             dd ?
+        tx_mac_proc             dd ?
+        rx_mac_ctx              hmac_sha256_context
+        tx_mac_ctx              hmac_sha256_context
+        rx_mac_length           dd ?
+        tx_mac_length           dd ?
+
+; Buffers
+
+        rx_seq                  dd ?            ; Packet sequence number for MAC
+        rx_buffer               ssh_packet_header
+                                rb BUFFERSIZE-sizeof.ssh_packet_header
+
+        tx_seq                  dd ?            ; Packet sequence number for MAC
+        tx_buffer               ssh_packet_header
+                                rb BUFFERSIZE-sizeof.ssh_packet_header
+
+        send_data               dw ?
+
+; Output from key exchange
+        dh_K                    dd ?            ; Shared Secret (Big endian)
+                                rb MAX_BITS/8
+        dh_K_length             dd ?            ; Length in little endian
+
+        dh_H                    rb 32           ; Exchange Hash
+        session_id_prefix       db ?
+        session_id              rb 32
+        rx_iv                   rb 32           ; Rx initialisation vector
+        tx_iv                   rb 32           ; Tx initialisation vector
+        rx_enc_key              rb 32           ; Rx encryption key
+        tx_enc_key              rb 32           ; Tx encryption key
+        rx_int_key              rb 32           ; Rx integrity key
+        tx_int_key              rb 32           ; Tx integrity key
+
+; Diffie Hellman
+        dh_p                    dd ?
+                                rb MAX_BITS/8
+        dh_g                    dd ?
+                                rb MAX_BITS/8
+        dh_x                    dd ?
+                                rb MAX_BITS/8
+        dh_e                    dd ?
+                                rb MAX_BITS/8
+        dh_f                    dd ?
+                                rb MAX_BITS/8
+
+        dh_signature            dd ?
+                                rb MAX_BITS/8
+
+        temp_ctx                ctx_sha224256
+        k_h_ctx                 ctx_sha224256
+
+ends
+
 start:
         mcall   68, 11          ; Init heap
 
-        DEBUGF  1, "SSH: Loading libraries\n"
+        DEBUGF  2, "SSH: Loading libraries\n"
         stdcall dll.Load, @IMPORT
         test    eax, eax
         jnz     exit
 
-        DEBUGF  1, "SSH: Init PRNG\n"
+        DEBUGF  2, "SSH: Init PRNG\n"
         call    init_random
 
-        DEBUGF  1, "SSH: Init Console\n"
+        DEBUGF  2, "SSH: Init Console\n"
         invoke  con_start, 1
         invoke  con_init, 80, 25, 80, 25, title
 
-; Check for parameters
-        cmp     byte[hostname], 0
-        jne     resolve
+; Check for parameters TODO
+;        cmp     byte[params], 0
+;        jne     resolve
 
 main:
         invoke  con_cls
@@ -96,7 +193,7 @@ prompt:
 ; write prompt
         invoke  con_write_asciiz, str2
 ; read string
-        mov     esi, hostname
+        mov     esi, con.hostname
         invoke  con_gets, esi, 256
 ; check for exit
         test    eax, eax
@@ -105,10 +202,11 @@ prompt:
         jz      done
 
 resolve:
-        mov     [sockaddr1.port], 22 shl 8
+        mov     [con.sockaddr], AF_INET4
+        mov     [con.port], 22 shl 8
 
 ; delete terminating '\n'
-        mov     esi, hostname
+        mov     esi, con.hostname
   @@:
         lodsb
         cmp     al, ':'
@@ -130,21 +228,21 @@ resolve:
         jb      hostname_error
         cmp     al, 9
         ja      hostname_error
-        lea     ebx, [ebx*4 + ebx]
+        lea     ebx, [ebx*4+ebx]
         shl     ebx, 1
         add     ebx, eax
         jmp     .portloop
 
   .port_done:
         xchg    bl, bh
-        mov     [sockaddr1.port], bx
+        mov     [con.port], bx
 
   .done:
 
 ; resolve name
         push    esp     ; reserve stack place
         push    esp
-        invoke  getaddrinfo, hostname, 0, 0
+        invoke  getaddrinfo, con.hostname, 0, 0
         pop     esi
 ; test for error
         test    eax, eax
@@ -152,7 +250,7 @@ resolve:
 
         invoke  con_cls
         invoke  con_write_asciiz, str3
-        invoke  con_write_asciiz, hostname
+        invoke  con_write_asciiz, con.hostname
 
 ; write results
         invoke  con_write_asciiz, str8
@@ -160,7 +258,7 @@ resolve:
 ; convert IP address to decimal notation
         mov     eax, [esi+addrinfo.ai_addr]
         mov     eax, [eax+sockaddr_in.sin_addr]
-        mov     [sockaddr1.ip], eax
+        mov     [con.ip], eax
         invoke  inet_ntoa, eax
 ; write result
         invoke  con_write_asciiz, eax
@@ -176,47 +274,56 @@ resolve:
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
         jz      socket_err
-        mov     [socketnum], eax
+        mov     [con.socketnum], eax
 
 ; Connect
-        mcall   connect, [socketnum], sockaddr1, 18
+        DEBUGF  2, "Connecting to server\n"
+        mcall   connect, [con.socketnum], con.sockaddr, 18
         test    eax, eax
         jnz     socket_err
 
-; Start calculating hash meanwhile
-        call    sha256_init
+; Start calculating hash
+        invoke  sha256_init, con.temp_ctx
 ; HASH: string  V_C, the client's version string (CR and NL excluded)
-        mov     esi, ssh_ident_ha
-        mov     edx, ssh_ident.length+4-2
-        call    sha256_update
+        invoke  sha256_update, con.temp_ctx, ssh_ident_ha, ssh_ident.length+4-2
 
-; Send our identification string
-        DEBUGF  1, "Sending ID string\n"
-        mcall   send, [socketnum], ssh_ident, ssh_ident.length, 0
+; >> Send our identification string
+        DEBUGF  2, "Sending ID string\n"
+        mcall   send, [con.socketnum], ssh_ident, ssh_ident.length, 0
         cmp     eax, -1
         je      socket_err
 
-; Check protocol version of server
-        mcall   recv, [socketnum], rx_buffer, BUFFERSIZE, 0
+; << Check protocol version of server
+        mcall   recv, [con.socketnum], con.rx_buffer, BUFFERSIZE, 0
         cmp     eax, -1
         je      socket_err
 
-        DEBUGF  1, "Received ID string\n"
-        cmp     dword[rx_buffer], "SSH-"
+        DEBUGF  2, "Received ID string\n"
+        cmp     dword[con.rx_buffer], "SSH-"
         jne     proto_err
-        cmp     dword[rx_buffer+4], "2.0-"
+        cmp     dword[con.rx_buffer+4], "2.0-"
         jne     proto_err
 
 ; HASH: string  V_S, the server's version string (CR and NL excluded)
         lea     edx, [eax+2]
         sub     eax, 2
         bswap   eax
-        mov     [rx_buffer-4], eax
-        mov     esi, rx_buffer-4
-        call    sha256_update
+        mov     dword[con.rx_buffer-4], eax
+        invoke  sha256_update, con.temp_ctx, con.rx_buffer-4, edx
 
-; Key Exchange init
-        DEBUGF  1, "Sending KEX init\n"
+; >> Key Exchange init
+        mov     [con.rx_seq], 0
+        mov     [con.tx_seq], 0
+        mov     [con.rx_crypt_blocksize], 4             ; minimum blocksize
+        mov     [con.tx_crypt_blocksize], 4
+        mov     [con.rx_crypt_proc], 0
+        mov     [con.tx_crypt_proc], 0
+        mov     [con.rx_mac_proc], 0
+        mov     [con.tx_mac_proc], 0
+        mov     [con.rx_mac_length], 0
+        mov     [con.tx_mac_length], 0
+
+        DEBUGF  2, "Sending KEX init\n"
         mov     edi, ssh_kex.cookie
         call    MBRandom
         stosd
@@ -226,32 +333,31 @@ resolve:
         stosd
         call    MBRandom
         stosd
-        stdcall ssh_send_packet, [socketnum], ssh_kex, ssh_kex.length, 0
+        stdcall ssh_send_packet, con, ssh_kex, ssh_kex.length, 0
         cmp     eax, -1
         je      socket_err
 
 ; HASH: string  I_C, the payload of the client's SSH_MSG_KEXINIT
-        mov     eax, [tx_buffer+ssh_header.length]
+        mov     eax, dword[con.tx_buffer+ssh_packet_header.packet_length]
         bswap   eax
-        movzx   ebx, [tx_buffer+ssh_header.padding]
+        movzx   ebx, [con.tx_buffer+ssh_packet_header.padding_length]
         sub     eax, ebx
         dec     eax
         lea     edx, [eax+4]
         bswap   eax
-        mov     [tx_buffer+1], eax
-        mov     esi, tx_buffer+1
-        call    sha256_update
+        mov     dword[con.tx_buffer+1], eax
+        invoke  sha256_update, con.temp_ctx, con.tx_buffer+1, edx
 
-; Check key exchange init of server
-        stdcall ssh_recv_packet, [socketnum], rx_buffer, BUFFERSIZE, 0
+; << Check key exchange init of server
+        stdcall ssh_recv_packet, con, 0
         cmp     eax, -1
         je      socket_err
 
-        cmp     [rx_buffer+ssh_header.message_code], SSH_MSG_KEXINIT
+        cmp     [con.rx_buffer.message_code], SSH_MSG_KEXINIT
         jne     proto_err
-        DEBUGF  1, "Received KEX init\n"
+        DEBUGF  2, "Received KEX init\n"
 
-        lea     esi, [rx_buffer+sizeof.ssh_header+16]
+        lea     esi, [con.rx_buffer+sizeof.ssh_packet_header+16]
         lodsd
         bswap   eax
         DEBUGF  1, "kex_algorithms: %s\n", esi
@@ -295,38 +401,144 @@ resolve:
         lodsb
         DEBUGF  1, "KEX First Packet Follows: %u\n", al
 
-        ; TODO
+        ; TODO: parse this structure and init procedures accordingly
 
 ; HASH: string I_S, the payload of the servers's SSH_MSG_KEXINIT
-        mov     eax, [rx_buffer+ssh_header.length]
-        movzx   ebx, [rx_buffer+ssh_header.padding]
+        mov     eax, dword[con.rx_buffer+ssh_packet_header.packet_length]
+        movzx   ebx, [con.rx_buffer+ssh_packet_header.padding_length]
         sub     eax, ebx
         dec     eax
         lea     edx, [eax+4]
         bswap   eax
-        mov     [rx_buffer+sizeof.ssh_header-5], eax
-        mov     esi, rx_buffer+sizeof.ssh_header-5
-        call    sha256_update
+        mov     dword[con.rx_buffer+sizeof.ssh_packet_header-5], eax
+        invoke  sha256_update, con.temp_ctx, con.rx_buffer+sizeof.ssh_packet_header-5, edx
 
 ; Exchange keys with the server
+
         stdcall dh_gex
         test    eax, eax
         jnz     exit
 
 ; Set keys
-        DEBUGF  1, "SSH: Init encryption\n"
-        stdcall aes256_cbc_init, rx_iv
-        mov     [rx_context], eax
-        stdcall aes256_set_encrypt_key, [rx_context], rx_enc_key
-        mov     [decrypt_proc], aes256_cbc_decrypt
-        mov     [rx_blocksize], 32
 
-        DEBUGF  1, "SSH: Init decryption\n"
-        stdcall aes256_cbc_init, tx_iv
-        mov     [tx_context], eax
-        stdcall aes256_set_decrypt_key, [tx_context], tx_enc_key
-        mov     [encrypt_proc], aes256_cbc_encrypt
-        mov     [tx_blocksize], 32
+        DEBUGF  2, "SSH: Setting encryption keys\n"
+
+        stdcall aes256_cbc_init, con.rx_iv
+        mov     [con.rx_crypt_ctx_ptr], eax
+
+        stdcall aes256_set_decrypt_key, eax, con.rx_enc_key
+        mov     [con.rx_crypt_proc], aes256_cbc_decrypt
+        mov     [con.rx_crypt_blocksize], AES256_BLOCKSIZE
+
+        stdcall aes256_cbc_init, con.tx_iv
+        mov     [con.tx_crypt_ctx_ptr], eax
+
+        stdcall aes256_set_encrypt_key, eax, con.tx_enc_key
+        mov     [con.tx_crypt_proc], aes256_cbc_encrypt
+        mov     [con.tx_crypt_blocksize], AES256_BLOCKSIZE
+
+        stdcall hmac_sha256_setkey, con.rx_mac_ctx, con.rx_int_key, SHA256_HASH_SIZE
+        mov     [con.rx_mac_proc], hmac_sha256
+        mov     [con.rx_mac_length], SHA256_HASH_SIZE
+
+        stdcall hmac_sha256_setkey, con.tx_mac_ctx, con.tx_int_key, SHA256_HASH_SIZE
+        mov     [con.tx_mac_proc], hmac_sha256
+        mov     [con.tx_mac_length], SHA256_HASH_SIZE
+
+; TODO: erase all keys from memory and free the memory
+
+; >> Request service (user-auth)
+
+        DEBUGF  2, "SSH: Requesting service\n"
+
+        stdcall ssh_send_packet, con, ssh_request_service, ssh_request_service.length, 0
+        cmp     eax, -1
+        je      socket_err
+
+; << Check for service acceptance
+
+        stdcall ssh_recv_packet, con, 0
+        cmp     eax, -1
+        je      socket_err
+
+        cmp     [con.rx_buffer.message_code], SSH_MSG_SERVICE_ACCEPT
+        jne     proto_err
+
+; >> Request user authentication
+
+; TODO: Request username from the user
+;        invoke  con_write_asciiz, str12
+;        invoke  con_gets, username, 256
+;        test    eax, eax
+;        jz      done
+
+; TODO: implement password authentication
+
+        DEBUGF  2, "SSH: User authentication\n"
+
+        stdcall ssh_send_packet, con, ssh_request_userauth, ssh_request_userauth.length, 0
+        cmp     eax, -1
+        je      socket_err
+
+; << Check for userauth acceptance
+
+        stdcall ssh_recv_packet, con, 0
+        cmp     eax, -1
+        je      socket_err
+
+        cmp     [con.rx_buffer.message_code], SSH_MSG_USERAUTH_SUCCESS
+        jne     proto_err
+
+; >> Open channel
+
+        DEBUGF  2, "SSH: Open channel\n"
+
+        stdcall ssh_send_packet, con, ssh_channel_open, ssh_channel_open.length, 0
+        cmp     eax, -1
+        je      socket_err
+
+; << Check for channel open confirmation
+
+        stdcall ssh_recv_packet, con, 0
+        cmp     eax, -1
+        je      socket_err
+
+        cmp     [con.rx_buffer.message_code], SSH_MSG_CHANNEL_OPEN_CONFIRMATION
+        jne     proto_err
+
+; >> Channel request: pty
+
+        DEBUGF  2, "SSH: Request pty\n"
+
+        stdcall ssh_send_packet, con, ssh_channel_request, ssh_channel_request.length, 0
+        cmp     eax, -1
+        je      socket_err
+
+; << Check for channel request confirmation
+
+        stdcall ssh_recv_packet, con, 0
+        cmp     eax, -1
+        je      socket_err
+
+        cmp     [con.rx_buffer.message_code], SSH_MSG_CHANNEL_SUCCESS
+        jne     proto_err
+
+; >> Channel request: shell
+
+        DEBUGF  2, "SSH: Request shell\n"
+
+        stdcall ssh_send_packet, con, ssh_shell_request, ssh_shell_request.length, 0
+        cmp     eax, -1
+        je      socket_err
+
+; << Check for channel request confirmation (FIXME: this may not be first packet!)
+
+;        stdcall ssh_recv_packet, con, 0
+;        cmp     eax, -1
+;        je      socket_err
+
+;        cmp     [con.rx_buffer.message_code], SSH_MSG_CHANNEL_SUCCESS
+;        jne     proto_err
 
 ; Launch network thread
         mcall   18, 7
@@ -340,13 +552,26 @@ mainloop:
         test    eax, 0x200                      ; con window closed?
         jnz     exit
 
-        stdcall ssh_recv_packet, [socketnum], rx_buffer, BUFFERSIZE, 0
-        cmp     eax, -1
-        je      closed
+        stdcall ssh_recv_packet, con, 0
+        cmp     eax, 0
+        jbe     closed
 
+        cmp     [con.rx_buffer.message_code], SSH_MSG_CHANNEL_DATA
+        jne     .dump
+
+        mov     eax, dword[con.rx_buffer.message_code+5]
+        bswap   eax
         DEBUGF  1, 'SSH: got %u bytes of data !\n', eax
 
-        mov     esi, rx_buffer
+        lea     esi, [con.rx_buffer.message_code+5+4]
+        mov     ecx, eax
+        lea     edi, [esi + eax]
+        mov     byte [edi], 0
+        invoke  con_write_asciiz, esi
+        jmp     mainloop
+
+  .dump:
+        lea     esi, [con.rx_buffer]
         mov     ecx, eax
         pusha
 @@:
@@ -355,23 +580,22 @@ mainloop:
         dec     ecx
         jnz     @r
         popa
-        lea     edi, [esi + eax]
-        mov     byte [edi], 0
-        invoke  con_write_asciiz, esi
+        DEBUGF  1, "\n"
         jmp     mainloop
 
+
 proto_err:
-        DEBUGF  1, "SSH: protocol error\n"
+        DEBUGF  3, "SSH: protocol error\n"
         invoke  con_write_asciiz, str7
         jmp     prompt
 
 socket_err:
-        DEBUGF  1, "SSH: socket error %d\n", ebx
+        DEBUGF  3, "SSH: socket error %d\n", ebx
         invoke  con_write_asciiz, str6
         jmp     prompt
 
 dns_error:
-        DEBUGF  1, "SSH: DNS error %d\n", eax
+        DEBUGF  3, "SSH: DNS error %d\n", eax
         invoke  con_write_asciiz, str5
         jmp     prompt
 
@@ -386,8 +610,8 @@ closed:
 done:
         invoke  con_exit, 1
 exit:
-        DEBUGF  1, "SSH: Exiting\n"
-        mcall   close, [socketnum]
+        DEBUGF  3, "SSH: Exiting\n"
+        mcall   close, [con.socketnum]
         mcall   -1
 
 
@@ -395,14 +619,8 @@ thread:
         mcall   40, 0
   .loop:
         invoke  con_getch2
-        mov     [send_data], ax
-        xor     esi, esi
-        inc     esi
-        test    al, al
-        jnz     @f
-        inc     esi
-  @@:
-        stdcall ssh_send_packet, [socketnum], send_data, 0
+        mov     [ssh_channel_data+9], al
+        stdcall ssh_send_packet, con, ssh_channel_data, ssh_channel_data.length, 0
 
         invoke  con_get_flags
         test    eax, 0x200                      ; con window closed?
@@ -423,17 +641,12 @@ str8    db      ' (',0
 str9    db      ')',10,0
 str10   db      'Invalid hostname.',10,10,0
 str11   db      10,'Remote host closed the connection.',10,10,0
-
-sockaddr1:
-        dw AF_INET4
-  .port dw 0
-  .ip   dd 0
-        rb 10
+str12   db      'Enter username: ',0
 
 ssh_ident_ha:
         dd_n (ssh_ident.length-2)
 ssh_ident:
-        db "SSH-2.0-KolibriOS_SSH_0.01",13,10
+        db "SSH-2.0-KolibriOS_SSH_0.02",13,10
   .length = $ - ssh_ident
 
 ssh_kex:
@@ -479,9 +692,9 @@ ssh_kex:
 
 ssh_gex_req:
         db SSH_MSG_KEX_DH_GEX_REQUEST
-        dd_n 128                ; DH GEX min
-        dd_n 256                ; DH GEX number of bits
-        dd_n 512                ; DH GEX Max
+        dd_n 128                        ; DH GEX min
+        dd_n 256                        ; DH GEX number of bits
+        dd_n 512                        ; DH GEX Max
   .length = $ - ssh_gex_req
 
 
@@ -490,16 +703,75 @@ ssh_new_keys:
   .length = $ - ssh_new_keys
 
 
+ssh_request_service:
+        db SSH_MSG_SERVICE_REQUEST
+        dd_n 12                         ; String length
+        db "ssh-userauth"               ; Service name
+  .length = $ - ssh_request_service
+
+
+ssh_request_userauth:
+        db SSH_MSG_USERAUTH_REQUEST
+        dd_n 12
+        dd_n 8
+        db "username"                   ; user name in ISO-10646 UTF-8 encoding [RFC3629]
+        dd_n 14
+        db "ssh-connection"             ; service name in US-ASCII
+        dd_n 4
+        db "none"                       ; method name in US-ASCII
+; Other options: publickey, password, hostbased
+  .length = $ - ssh_request_userauth
+
+
+ssh_channel_open:
+        db SSH_MSG_CHANNEL_OPEN
+        dd_n 7
+        db "session"
+        dd_n 0                          ; Sender channel
+        dd_n 1024                       ; Initial window size
+        dd_n 1024                       ; maximum packet size
+  .length = $ - ssh_channel_open
+
+ssh_channel_request:
+        db SSH_MSG_CHANNEL_REQUEST
+        dd_n 0                          ; Recipient channel
+        dd_n 7
+        db "pty-req"
+        db 1                            ; Bool: want reply
+        dd_n 5
+        db "xterm"
+        dd_n 80                         ; terminal width (rows)
+        dd_n 25                         ; terminal height (rows)
+        dd_n 0                          ; terminal width (pixels)
+        dd_n 0                          ; terminal height (pixels)
+
+        dd_n 0                          ; list of supported opcodes
+  .length = $ - ssh_channel_request
+
+ssh_shell_request:
+        db SSH_MSG_CHANNEL_REQUEST
+        dd_n 0                          ; Recipient channel
+        dd_n 5
+        db "shell"
+        db 1                            ; Bool: want reply
+  .length = $ - ssh_shell_request
+
+ssh_channel_data:
+        db SSH_MSG_CHANNEL_DATA
+        dd_n 0                          ; Sender channel
+        dd_n 1
+        db ?
+  .length = $ - ssh_channel_data
+
+
 include_debug_strings
 
-
-; import
 align 4
 @IMPORT:
 
 library network, 'network.obj', \
-        console, 'console.obj';, \
-;        libcrash, 'libcrash.obj'
+        console, 'console.obj', \
+        libcrash, 'libcrash.obj'
 
 import  network, \
         getaddrinfo, 'getaddrinfo', \
@@ -518,61 +790,23 @@ import  console, \
         con_write_string, 'con_write_string', \
         con_get_flags,  'con_get_flags'
 
-;import  libcrash, \
-;        crash.hash, 'crash_hash'
+import  libcrash, \
+        sha256_init, 'sha256_init', \
+        sha256_update, 'sha256_update', \
+        sha256_final, 'sha256_final'
 
 IncludeIGlobals
 
 i_end:
 
-decrypt_proc    dd dummy_encrypt
-encrypt_proc    dd dummy_encrypt
-rx_blocksize    dd 4
-tx_blocksize    dd 4
-rx_context      dd ?
-tx_context      dd ?
-
 IncludeUGlobals
 
-socketnum       dd ?
-rx_packet_length dd ?   ;;;;;
-rx_buffer:      rb BUFFERSIZE+1
-tx_buffer:      rb BUFFERSIZE+1
+params          rb 1024
 
-send_data       dw ?
+con             ssh_connection
 
-hostname        rb 1024
-
-; Diffie Hellman variables
-dh_p            dd ?
-                rb MAX_BITS/8
-dh_g            dd ?
-                rb MAX_BITS/8
-dh_x            dd ?
-                rb MAX_BITS/8
-dh_e            dd ?
-                rb MAX_BITS/8
-dh_f            dd ?
-                rb MAX_BITS/8
-
-dh_signature    dd ?
-                rb MAX_BITS/8
-
-; Output from key exchange
-dh_K            dd ?            ; Shared Secret (Big endian)
-                rb MAX_BITS/8
-  .length       dd ?            ; Length in little endian
-
-dh_H            rb 32           ; Exchange Hash
-session_id      rb 32
-rx_iv           rb 32           ; Rx initialisation vector
-tx_iv           rb 32           ; Tx initialisation vector
-rx_enc_key      rb 32           ; Rx encryption key
-tx_enc_key      rb 32           ; Tx encryption key
-rx_int_key      rb 32           ; Rx integrity key
-tx_int_key      rb 32           ; Tx integrity key
-
-; Temporary values      ; To be removed
+; Temporary values      ; To be removed FIXME
 mpint_tmp       rb MPINT_MAX_LEN+4
+
 
 mem:

@@ -25,39 +25,39 @@ proc dh_gex
 ;----------------------------------------------
 ; >> Send Diffie-Hellman Group Exchange Request
 
-        DEBUGF  1, "Sending GEX\n"
-        stdcall ssh_send_packet, [socketnum], ssh_gex_req, ssh_gex_req.length, 0
+        DEBUGF  2, "Sending GEX\n"
+        stdcall ssh_send_packet, con, ssh_gex_req, ssh_gex_req.length, 0
         cmp     eax, -1
         je      .socket_err
 
 ;---------------------------------------------
 ; << Parse Diffie-Hellman Group Exchange Group
 
-        stdcall ssh_recv_packet, [socketnum], rx_buffer, BUFFERSIZE, 0
+        stdcall ssh_recv_packet, con, 0
         cmp     eax, -1
         je      .socket_err
 
-        cmp     [rx_buffer+ssh_header.message_code], SSH_MSG_KEX_DH_GEX_GROUP
+        cmp     [con.rx_buffer.message_code], SSH_MSG_KEX_DH_GEX_GROUP
         jne     proto_err
-        DEBUGF  1, "Received GEX group\n"
+        DEBUGF  2, "Received GEX group\n"
 
-        mov     esi, rx_buffer+sizeof.ssh_header
-        mov     edi, dh_p
+        mov     esi, con.rx_buffer+sizeof.ssh_packet_header
+        mov     edi, con.dh_p
         DEBUGF  1, "DH modulus (p): "
         call    mpint_to_little_endian
-        stdcall mpint_print, dh_p
+        stdcall mpint_print, con.dh_p
 
         DEBUGF  1, "DH base (g): "
-        mov     edi, dh_g
+        mov     edi, con.dh_g
         call    mpint_to_little_endian
-        stdcall mpint_print, dh_g
+        stdcall mpint_print, con.dh_g
 
 ;-------------------------------------------
 ; >> Send Diffie-Hellman Group Exchange Init
 
 ; generate a random number x, where 1 < x < (p-1)/2
-        mov     edi, dh_x+4
-        mov     [dh_x], DH_PRIVATE_KEY_SIZE/8
+        mov     edi, con.dh_x+4
+        mov     [con.dh_x], DH_PRIVATE_KEY_SIZE/8
         mov     ecx, DH_PRIVATE_KEY_SIZE/8/4
   @@:
         push    ecx
@@ -71,352 +71,300 @@ proc dh_gex
         shl     eax, 1
         jnc     @f
         mov     byte[edi], 0
-        inc     dword[dh_x]
+        inc     dword[con.dh_x]
   @@:
 
 ; Fill remaining bytes with zeros       ; TO BE REMOVED ?
 if ((MAX_BITS-DH_PRIVATE_KEY_SIZE) > 0)
         mov     ecx, (MAX_BITS-DH_PRIVATE_KEY_SIZE)/8/4
         xor     eax, eax
-        rep     stosd
+        rep stosd
 end if
 
         DEBUGF  1, "DH x: "
-        stdcall mpint_length, dh_x;;;;;;;;;;;;;
-        stdcall mpint_print, dh_x
+        stdcall mpint_length, con.dh_x;;;;;;;;;;;;;
+        stdcall mpint_print, con.dh_x
 
 ; Compute e = g^x mod p
-        stdcall mpint_modexp, dh_e, dh_g, dh_x, dh_p
-        stdcall mpint_length, dh_e
+        stdcall mpint_modexp, con.dh_e, con.dh_g, con.dh_x, con.dh_p
+        stdcall mpint_length, con.dh_e
 
         DEBUGF  1, "DH e: "
-        stdcall mpint_print, dh_e
+        stdcall mpint_print, con.dh_e
 
 ; Create group exchange init packet
-        mov     edi, tx_buffer+ssh_header.message_code
+        mov     edi, con.tx_buffer.message_code
         mov     al, SSH_MSG_KEX_DH_GEX_INIT
         stosb
-        mov     esi, dh_e
+        mov     esi, con.dh_e
         call    mpint_to_big_endian
 
-        DEBUGF  1, "Sending GEX init\n"
-        mov     ecx, dword[tx_buffer+ssh_header.message_code+1]
+        DEBUGF  2, "Sending GEX init\n"
+        mov     ecx, dword[con.tx_buffer.message_code+1]
         bswap   ecx
         add     ecx, 5
-        stdcall ssh_send_packet, [socketnum], tx_buffer+ssh_header.message_code, ecx, 0
+        stdcall ssh_send_packet, con, con.tx_buffer.message_code, ecx, 0
         cmp     eax, -1
         je      .socket_err
 
 ;---------------------------------------------
 ; << Parse Diffie-Hellman Group Exchange Reply
 
-        stdcall ssh_recv_packet, [socketnum], rx_buffer, BUFFERSIZE, 0
+        stdcall ssh_recv_packet, con, 0
         cmp     eax, -1
         je      .socket_err
 
-        cmp     [rx_buffer+ssh_header.message_code], SSH_MSG_KEX_DH_GEX_REPLY
+        cmp     [con.rx_buffer.message_code], SSH_MSG_KEX_DH_GEX_REPLY
         jne     .proto_err
 
-        DEBUGF  1, "Received GEX Reply\n"
+        DEBUGF  2, "Received GEX Reply\n"
 
 ;--------------------------------
-; HASH: string  K_S, the host key
-        mov     esi, rx_buffer+sizeof.ssh_header
+; HASH: string K_S, the host key
+        mov     esi, con.rx_buffer+sizeof.ssh_packet_header
         mov     edx, [esi]
         bswap   edx
         add     edx, 4
         lea     ebx, [esi+edx]
         push    ebx
-        call    sha256_update
+        invoke  sha256_update, con.temp_ctx, esi, edx
 
 ;--------------------------------------------------------------------------
-; HASH: uint32  min, minimal size in bits of an acceptable group
-;       uint32  n, preferred size in bits of the group the server will send
-;       uint32  max, maximal size in bits of an acceptable group
-        mov     esi, ssh_gex_req+sizeof.ssh_header-ssh_header.message_code
-        mov     edx, 12
-        call    sha256_update
+; HASH: uint32 min, minimal size in bits of an acceptable group
+;       uint32 n, preferred size in bits of the group the server will send
+;       uint32 max, maximal size in bits of an acceptable group
+        invoke  sha256_update, con.temp_ctx, ssh_gex_req+sizeof.ssh_packet_header-ssh_packet_header.message_code, 12
 
 ;----------------------------
-; HASH: mpint   p, safe prime
-        mov     esi, dh_p
+; HASH: mpint p, safe prime
+        mov     esi, con.dh_p
         mov     edi, mpint_tmp
         call    mpint_to_big_endian
         lea     edx, [eax+4]
-        mov     esi, mpint_tmp
-        call    sha256_update
+        invoke  sha256_update, con.temp_ctx, mpint_tmp, edx
 
 ;----------------------------------------
-; HASH: mpint   g, generator for subgroup
-        mov     esi, dh_g
+; HASH: mpint g, generator for subgroup
+        mov     esi, con.dh_g
         mov     edi, mpint_tmp
         call    mpint_to_big_endian
         lea     edx, [eax+4]
-        mov     esi, mpint_tmp
-        call    sha256_update
+        invoke  sha256_update, con.temp_ctx, mpint_tmp, edx
 
 ;---------------------------------------------------
-; HASH: mpint   e, exchange value sent by the client
-        mov     esi, tx_buffer+sizeof.ssh_header
+; HASH: mpint e, exchange value sent by the client
+        mov     esi, con.tx_buffer+sizeof.ssh_packet_header
         mov     edx, [esi]
         bswap   edx
         add     edx, 4
-        call    sha256_update
+        invoke  sha256_update, con.temp_ctx, esi, edx
 
 ;---------------------------------------------------
-; HASH: mpint   f, exchange value sent by the server
+; HASH: mpint f, exchange value sent by the server
         mov     esi, [esp]
         mov     edx, [esi]
         bswap   edx
         add     edx, 4
-        call    sha256_update
+        invoke  sha256_update, con.temp_ctx, esi, edx
         pop     esi
 
-        mov     edi, dh_f
+        mov     edi, con.dh_f
         call    mpint_to_little_endian
 
         DEBUGF  1, "DH f: "
-        stdcall mpint_print, dh_f
+        stdcall mpint_print, con.dh_f
 
-        mov     edi, dh_signature
+        mov     edi, con.dh_signature
         call    mpint_to_little_endian
 
         DEBUGF  1, "DH signature: "
-        stdcall mpint_print, dh_signature
+        stdcall mpint_print, con.dh_signature
 
 ;--------------------------------------
 ; Calculate shared secret K = f^x mod p
-        stdcall mpint_modexp, rx_buffer, dh_f, dh_x, dh_p
-        stdcall mpint_length, rx_buffer
+        stdcall mpint_modexp, con.rx_buffer, con.dh_f, con.dh_x, con.dh_p
+        stdcall mpint_length, con.rx_buffer
 
         DEBUGF  1, "DH K: "
-        stdcall mpint_print, rx_buffer
+        stdcall mpint_print, con.rx_buffer
 
 ; We always need it in big endian order, so store it as such.
-        mov     edi, dh_K
-        mov     esi, rx_buffer
+        mov     edi, con.dh_K
+        mov     esi, con.rx_buffer
         call    mpint_to_big_endian
-        mov     [dh_K.length], eax
+        mov     [con.dh_K_length], eax
 
 ;-----------------------------------
-; HASH: mpint   K, the shared secret
-        mov     edx, [dh_K.length]
+; HASH: mpint K, the shared secret
+        mov     edx, [con.dh_K_length]
         add     edx, 4
-        mov     esi, dh_K
-        call    sha256_update
+        invoke  sha256_update, con.temp_ctx, con.dh_K, edx
 
 ;-------------------------------
 ; Finalize the exchange hash (H)
-        mov     edi, dh_H
-        call    sha256_final
+        invoke  sha256_final, con.temp_ctx
+        mov     esi, con.temp_ctx.hash
+        mov     edi, con.dh_H
+        mov     ecx, SHA256_HASH_SIZE/4
+        rep movsd
 
         DEBUGF  1, "Exchange hash H: "
-        stdcall dump_256bit_hex, dh_H
+        stdcall dump_hex, con.dh_H, 8
 
 ; TODO: skip this block when re-keying
-        mov     esi, dh_H
-        mov     edi, session_id
-        mov     ecx, 32/4
+        mov     esi, con.dh_H
+        mov     edi, con.session_id
+        mov     ecx, SHA256_HASH_SIZE/4
         rep movsd
 
 ;---------------
 ; Calculate keys
 
-; TODO: re-use partial hash of K and H
+; First, calculate partial hash of K and H so we can re-use it for every key.
+
+        invoke  sha256_init, con.k_h_ctx
+
+        mov     edx, [con.dh_K_length]
+        add     edx, 4
+        invoke  sha256_update, con.k_h_ctx, con.dh_K, edx
+        invoke  sha256_update, con.k_h_ctx, con.dh_H, 32
 
 ;---------------------------------------------------------------
 ; Initial IV client to server: HASH(K || H || "A" || session_id)
 
-        call    sha256_init
-        mov     edx, [dh_K.length]
-        add     edx, 4
-        mov     esi, dh_K
-        call    sha256_update
-        mov     edx, 32
-        mov     esi, dh_H
-        call    sha256_update
-        mov     edx, 1
-        mov     esi, str_A
-        call    sha256_update
-        mov     edx, 32
-        mov     esi, session_id
-        call    sha256_update
-        mov     edi, tx_iv
-        call    sha256_final
+        mov     esi, con.k_h_ctx
+        mov     edi, con.temp_ctx
+        mov     ecx, sizeof.ctx_sha224256/4
+        rep movsd
+        mov     [con.session_id_prefix], 'A'
+        invoke  sha256_update, con.temp_ctx, con.session_id_prefix, 32+1
+        invoke  sha256_final, con.temp_ctx.hash
+        mov     edi, con.tx_iv
+        mov     esi, con.temp_ctx
+        mov     ecx, SHA256_HASH_SIZE/4
+        rep movsd
 
         DEBUGF  1, "Remote IV: "
-        stdcall dump_256bit_hex, tx_iv
+        stdcall dump_hex, con.tx_iv, 8
 
 ;---------------------------------------------------------------
 ; Initial IV server to client: HASH(K || H || "B" || session_id)
 
-        call    sha256_init
-        mov     edx, [dh_K.length]
-        add     edx, 4
-        mov     esi, dh_K
-        call    sha256_update
-        mov     edx, 32
-        mov     esi, dh_H
-        call    sha256_update
-        mov     edx, 1
-        mov     esi, str_B
-        call    sha256_update
-        mov     edx, 32
-        mov     esi, session_id
-        call    sha256_update
-        mov     edi, rx_iv
-        call    sha256_final
+        mov     esi, con.k_h_ctx
+        mov     edi, con.temp_ctx
+        mov     ecx, sizeof.ctx_sha224256/4
+        rep     movsd
+        inc     [con.session_id_prefix]
+        invoke  sha256_update, con.temp_ctx, con.session_id_prefix, 32+1
+        invoke  sha256_final, con.temp_ctx
+        mov     edi, con.rx_iv
+        mov     esi, con.temp_ctx
+        mov     ecx, SHA256_HASH_SIZE/4
+        rep movsd
 
         DEBUGF  1, "Local IV: "
-        stdcall dump_256bit_hex, rx_iv
+        stdcall dump_hex, con.rx_iv, 8
 
 ;-------------------------------------------------------------------
 ; Encryption key client to server: HASH(K || H || "C" || session_id)
 
-        call    sha256_init
-        mov     edx, [dh_K.length]
-        add     edx, 4
-        mov     esi, dh_K
-        call    sha256_update
-        mov     edx, 32
-        mov     esi, dh_H
-        call    sha256_update
-        mov     edx, 1
-        mov     esi, str_C
-        call    sha256_update
-        mov     edx, 32
-        mov     esi, session_id
-        call    sha256_update
-        mov     edi, tx_enc_key
-        call    sha256_final
+        mov     esi, con.k_h_ctx
+        mov     edi, con.temp_ctx
+        mov     ecx, sizeof.ctx_sha224256/4
+        rep     movsd
+        inc     [con.session_id_prefix]
+        invoke  sha256_update, con.temp_ctx, con.session_id_prefix, 32+1
+        invoke  sha256_final, con.temp_ctx
+        mov     edi, con.tx_enc_key
+        mov     esi, con.temp_ctx
+        mov     ecx, SHA256_HASH_SIZE/4
+        rep movsd
 
         DEBUGF  1, "Remote key: "
-        stdcall dump_256bit_hex, tx_enc_key
+        stdcall dump_hex, con.tx_enc_key, 8
 
 ;-------------------------------------------------------------------
 ; Encryption key server to client: HASH(K || H || "D" || session_id)
 
-        call    sha256_init
-        mov     edx, [dh_K.length]
-        add     edx, 4
-        mov     esi, dh_K
-        call    sha256_update
-        mov     edx, 32
-        mov     esi, dh_H
-        call    sha256_update
-        mov     edx, 1
-        mov     esi, str_D
-        call    sha256_update
-        mov     edx, 32
-        mov     esi, session_id
-        call    sha256_update
-        mov     edi, rx_enc_key
-        call    sha256_final
+        mov     esi, con.k_h_ctx
+        mov     edi, con.temp_ctx
+        mov     ecx, sizeof.ctx_sha224256/4
+        rep     movsd
+        inc     [con.session_id_prefix]
+        invoke  sha256_update, con.temp_ctx, con.session_id_prefix, 32+1
+        invoke  sha256_final, con.temp_ctx
+        mov     edi, con.rx_enc_key
+        mov     esi, con.temp_ctx
+        mov     ecx, SHA256_HASH_SIZE/4
+        rep movsd
 
         DEBUGF  1, "Local key: "
-        stdcall dump_256bit_hex, rx_enc_key
+        stdcall dump_hex, con.rx_enc_key, 8
 
 ;------------------------------------------------------------------
 ; Integrity key client to server: HASH(K || H || "E" || session_id)
 
-        call    sha256_init
-        mov     edx, [dh_K.length]
-        add     edx, 4
-        mov     esi, dh_K
-        call    sha256_update
-        mov     edx, 32
-        mov     esi, dh_H
-        call    sha256_update
-        mov     edx, 1
-        mov     esi, str_E
-        call    sha256_update
-        mov     edx, 32
-        mov     esi, session_id
-        call    sha256_update
-        mov     edi, tx_int_key
-        call    sha256_final
+        mov     esi, con.k_h_ctx
+        mov     edi, con.temp_ctx
+        mov     ecx, sizeof.ctx_sha224256/4
+        rep     movsd
+        inc     [con.session_id_prefix]
+        invoke  sha256_update, con.temp_ctx, con.session_id_prefix, 32+1
+        invoke  sha256_final, con.temp_ctx
+        mov     edi, con.tx_int_key
+        mov     esi, con.temp_ctx
+        mov     ecx, SHA256_HASH_SIZE/4
+        rep movsd
 
         DEBUGF  1, "Remote Integrity key: "
-        stdcall dump_256bit_hex, tx_int_key
+        stdcall dump_hex, con.tx_int_key, 8
 
 ;------------------------------------------------------------------
 ; Integrity key server to client: HASH(K || H || "F" || session_id)
 
-        call    sha256_init
-        mov     edx, [dh_K.length]
-        add     edx, 4
-        mov     esi, dh_K
-        call    sha256_update
-        mov     edx, 32
-        mov     esi, dh_H
-        call    sha256_update
-        mov     edx, 1
-        mov     esi, str_F
-        call    sha256_update
-        mov     edx, 32
-        mov     esi, session_id
-        call    sha256_update
-        mov     edi, rx_int_key
-        call    sha256_final
+        mov     esi, con.k_h_ctx
+        mov     edi, con.temp_ctx
+        mov     ecx, sizeof.ctx_sha224256/4
+        rep     movsd
+        inc     [con.session_id_prefix]
+        invoke  sha256_update, con.temp_ctx, con.session_id_prefix, 32+1
+        invoke  sha256_final, con.temp_ctx
+        mov     edi, con.rx_int_key
+        mov     esi, con.temp_ctx
+        mov     ecx, SHA256_HASH_SIZE/4
+        rep movsd
 
         DEBUGF  1, "Local Integrity key: "
-        stdcall dump_256bit_hex, rx_int_key
+        stdcall dump_hex, con.rx_int_key, 8
 
 ;-------------------------------------
 ; << Parse Diffie-Hellman New Keys MSG
 
-        stdcall ssh_recv_packet, [socketnum], rx_buffer, BUFFERSIZE, 0
+        stdcall ssh_recv_packet, con, 0
         cmp     eax, -1
         je      .socket_err
 
-        cmp     [rx_buffer+ssh_header.message_code], SSH_MSG_NEWKEYS
+        cmp     [con.rx_buffer.message_code], SSH_MSG_NEWKEYS
         jne     .proto_err
 
-        DEBUGF  1, "Received New Keys\n"
+        DEBUGF  2, "Received New Keys\n"
 
 ;-------------------------------
 ; >> Reply with New Keys message
 
-        stdcall ssh_send_packet, [socketnum], ssh_new_keys, ssh_new_keys.length, 0
+        stdcall ssh_send_packet, con, ssh_new_keys, ssh_new_keys.length, 0
 
         xor     eax, eax
         ret
 
   .socket_err:
-        DEBUGF  2, "Socket error during key exchange!\n"
+        DEBUGF  3, "Socket error during key exchange!\n"
         mov     eax, 1
         ret
 
   .proto_err:
-        DEBUGF  2, "Protocol error during key exchange!\n"
+        DEBUGF  3, "Protocol error during key exchange!\n"
         mov     eax, 2
         ret
 
 endp
-
-proc dump_256bit_hex _ptr
-        pushad
-
-        mov     esi, [_ptr]
-        mov     ecx, 8
-  .next_dword:
-        lodsd
-        bswap   eax
-        DEBUGF  1,'%x',eax
-        loop    .next_dword
-        DEBUGF  1,'\n'
-
-        popad
-        ret
-endp
-
-iglobal
-
-        str_A   db 'A'
-        str_B   db 'B'
-        str_C   db 'C'
-        str_D   db 'D'
-        str_E   db 'E'
-        str_F   db 'F'
-
-endg

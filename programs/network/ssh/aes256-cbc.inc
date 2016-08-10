@@ -16,7 +16,7 @@
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 struct aes256_cbc_context aes256_context
-        vector  rb 16
+        vector  rb AES256_BLOCKSIZE
 ends
 
 
@@ -25,10 +25,10 @@ proc aes256_cbc_init _vector
 
         mcall   68, 12, sizeof.aes256_cbc_context
         ; handle errors
-        mov     ecx, 16/4
+        mov     ecx, AES256_BLOCKSIZE/4
         mov     esi, [_vector]
         lea     edi, [eax + aes256_cbc_context.vector]
-        rep     movsd
+        rep movsd
         ; rep movsd is slow, but we don't care while init
 
         pop     edi esi ebx
@@ -39,24 +39,16 @@ proc aes256_cbc_encrypt _ctx, _in, _out
         push    ebx esi edi
 
         DEBUGF  1,'plain  : '
-        stdcall dump_128bit_hex, [_in]
-        DEBUGF  1,'\n'
+        stdcall dump_hex, [_in], 4
 
         mov     edi, [_ctx]
         lea     edi, [edi + aes256_cbc_context.vector]
         mov     esi, [_in]
+repeat AES256_BLOCKSIZE/4
         lodsd
         xor     eax, [edi]
         stosd
-        lodsd
-        xor     eax, [edi]
-        stosd
-        lodsd
-        xor     eax, [edi]
-        stosd
-        lodsd
-        xor     eax, [edi]
-        stosd
+end repeat
 
         mov     esi, [_ctx]
         lea     eax, [esi + aes256_cbc_context.key]
@@ -66,25 +58,33 @@ proc aes256_cbc_encrypt _ctx, _in, _out
         mov     esi, [_out]
         mov     eax, [_ctx]
         lea     edi, [eax + aes256_cbc_context.vector]
+repeat AES256_BLOCKSIZE/4
         movsd
-        movsd
-        movsd
-        movsd
+end repeat
 
         DEBUGF  1,'cipher : '
-        stdcall dump_128bit_hex, [_out]
-        DEBUGF  1,'\n\n'
+        stdcall dump_hex, [_out], 4
 
         pop     edi esi ebx
         ret
 endp
 
 proc aes256_cbc_decrypt _ctx, _in, _out
+
+locals
+        temp_iv rb AES256_BLOCKSIZE
+endl
+
         push    ebx esi edi
 
         DEBUGF  1,'cipher : '
-        stdcall dump_128bit_hex, [_in]
-        DEBUGF  1,'\n'
+        stdcall dump_hex, [_in], 4
+
+        mov     esi, [_in]
+        lea     edi, [temp_iv]
+repeat AES256_BLOCKSIZE/4
+        movsd
+end repeat
 
         mov     esi, [_ctx]
         lea     eax, [esi + aes256_cbc_context.key]
@@ -93,30 +93,21 @@ proc aes256_cbc_decrypt _ctx, _in, _out
         mov     esi, [_ctx]
         lea     esi, [esi + aes256_cbc_context.vector]
         mov     edi, [_out]
+repeat AES256_BLOCKSIZE/4
         lodsd
         xor     eax, [edi]
         stosd
-        lodsd
-        xor     eax, [edi]
-        stosd
-        lodsd
-        xor     eax, [edi]
-        stosd
-        lodsd
-        xor     eax, [edi]
-        stosd
+end repeat
 
-        mov     esi, [_in]
+        lea     esi, [temp_iv]
         mov     edi, [_ctx]
         lea     edi, [edi + aes256_cbc_context.vector]
+repeat AES256_BLOCKSIZE/4
         movsd
-        movsd
-        movsd
-        movsd
+end repeat
 
         DEBUGF  1,'plain  : '
-        stdcall dump_128bit_hex, [_out]
-        DEBUGF  1,'\n\n'
+        stdcall dump_hex, [_out], 4
 
         pop     edi esi ebx
         ret

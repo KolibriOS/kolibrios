@@ -15,120 +15,181 @@
 ;    You should have received a copy of the GNU General Public License
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-struct  ssh_header
-        length          dd ?
-        padding         db ?
-        message_code    db ?
+
+struct  ssh_packet_header
+        packet_length   dd ?    ; The length of the packet in bytes, not including 'mac' or the
+                                ; 'packet_length' field itself.
+        padding_length  db ?    ; Length of 'random padding' (bytes).
+
+        message_code    db ?    ; First byte of payload
 ends
 
-proc dummy_encrypt _key, _in, _out
 
-        ret
-endp
-
-proc ssh_recv_packet sock, buf, size, flags
+proc ssh_recv_packet connection, flags
 
 locals
-        bufferptr       dd ?
-        remaining       dd ?
-        padding         dd ?
+        data_length     dd ?    ; Total length of packet without MAC
 endl
 
-        DEBUGF  1, "ssh_recv_packet\n"
+        DEBUGF  2, "> "
 ; Receive first block (Read length, padding length, message code)
-        mcall   recv, [sock], [buf], [rx_blocksize], [flags]
-        DEBUGF  1, "chunk = %u\n", eax
-        cmp     eax, [rx_blocksize]
-        jne     .fail       ;;;;
+        mov     ebx, [connection]
+        mov     ecx, [ebx+ssh_connection.socketnum]
+        mov     esi, [ebx+ssh_connection.rx_crypt_blocksize]
+        lea     edx, [ebx+ssh_connection.rx_buffer]
+        mov     edi, [flags]
+        mcall   recv
+        DEBUGF  1, "chunk = %u ", eax
+        mov     ebx, [connection]
+        cmp     eax, [ebx+ssh_connection.rx_crypt_blocksize]
+        jne     .fail
 
-;        stdcall [decrypt_proc], [rx_context], [buf], [buf]
+; Decrypt first block
+        cmp     [ebx+ssh_connection.rx_crypt_proc], 0
+        je      @f
+        pusha
+        lea     esi, [ebx+ssh_connection.rx_buffer]
+        stdcall [ebx+ssh_connection.rx_crypt_proc], [ebx+ssh_connection.rx_crypt_ctx_ptr], esi, esi
+        popa
+  @@:
 
-        mov     ebx, [buf]
-        movzx   eax, [ebx+ssh_header.padding]
-        mov     [padding], eax
-        mov     eax, [ebx+ssh_header.length]
-        bswap   eax                                             ; length to little endian
-        mov     [ebx+ssh_header.length], eax
-        DEBUGF  1, "ssh_recv_packet length = %u\n", eax
+; Check data length
+        mov     esi, [ebx+ssh_connection.rx_buffer.packet_length]
+        bswap   esi                                             ; convert length to little endian
+        mov     [ebx+ssh_connection.rx_buffer.packet_length], esi
+        DEBUGF  1, "packet length=%u ", esi
+        cmp     esi, BUFFERSIZE
+        ja      .fail                                           ; packet is too large
 
-        cmp     eax, [size]
-        ja      .fail       ;;;;
+; Calculate amount of remaining data
+        add     esi, 4                                          ; Packet length field itself is not included in the count
+        sub     esi, [ebx+ssh_connection.rx_crypt_blocksize]    ; Already received this amount of data
+        add     esi, [ebx+ssh_connection.rx_mac_length]
+        jz      .got_all_data
 
-        sub     eax, [rx_blocksize]
-        add     eax, 4
-        mov     [remaining], eax
-        add     ebx, [rx_blocksize]
-        mov     [bufferptr], ebx
+; Receive remaining data
+        lea     edx, [ebx+ssh_connection.rx_buffer]
+        add     edx, [ebx+ssh_connection.rx_crypt_blocksize]
+        mov     ecx, [ebx+ssh_connection.socketnum]
+        mov     edi, [flags]
   .receive_loop:
-        mcall   recv, [sock], [bufferptr], [remaining], 0
-        DEBUGF  1, "chunk = %u\n", eax
+        mcall   recv
+        DEBUGF  1, "chunk = %u ", eax
         cmp     eax, 0
         jbe     .fail
-        add     [bufferptr], eax
-        sub     [remaining], eax
-        ja      .receive_loop
+        add     edx, eax
+        sub     esi, eax
+        jnz     .receive_loop
 
-;  .decrypt_loop:
-;        stdcall [decrypt_proc], [rx_context], [buf], [buf]
-;        ja      .decrypt_loop
+; Decrypt data
+        mov     ebx, [connection]
+        cmp     [ebx+ssh_connection.rx_crypt_proc], 0
+        je      .decrypt_complete
+        mov     ecx, [ebx+ssh_connection.rx_buffer.packet_length]
+        add     ecx, 4                                          ; Packet_length field itself
+        sub     ecx, [ebx+ssh_connection.rx_crypt_blocksize]    ; Already decrypted this amount of data
+        jz      .decrypt_complete
 
-;  .hmac_loop:
-; TODO
-;        ja      .hmac_loop
+        lea     esi, [ebx+ssh_connection.rx_buffer]
+        add     esi, [ebx+ssh_connection.rx_crypt_blocksize]
+  .decrypt_loop:
+        pusha
+        stdcall [ebx+ssh_connection.rx_crypt_proc], [ebx+ssh_connection.rx_crypt_ctx_ptr], esi, esi
+        popa
+        add     esi, [ebx+ssh_connection.rx_crypt_blocksize]
+        sub     ecx, [ebx+ssh_connection.rx_crypt_blocksize]
+        jnz     .decrypt_loop
+  .decrypt_complete:
 
-; Return usefull data length in eax
-        mov     eax, [buf]
-        movzx   ebx, [eax+ssh_header.padding]
-        mov     eax, [eax+ssh_header.length]
+; Authenticate message
+        cmp     [ebx+ssh_connection.rx_mac_proc], 0
+        je      .mac_complete
+        lea     esi, [ebx+ssh_connection.rx_seq]
+        mov     ecx, [ebx+ssh_connection.rx_buffer.packet_length]
+        add     ecx, 8                                          ; packet_length field itself + sequence number
+        lea     eax, [ebx+ssh_connection.rx_mac_ctx]
+        mov     edx, [ebx+ssh_connection.rx_buffer.packet_length]
+        bswap   edx                                             ; convert length to big endian
+        mov     [ebx+ssh_connection.rx_buffer.packet_length], edx
+        stdcall [ebx+ssh_connection.rx_mac_proc], eax, esi, ecx
+        mov     edx, [ebx+ssh_connection.rx_buffer.packet_length]
+        bswap   edx                                             ; convert length to little endian
+        mov     [ebx+ssh_connection.rx_buffer.packet_length], edx
+
+        lea     esi, [ebx+ssh_connection.rx_mac_ctx]
+        lea     edi, [ebx+ssh_connection.rx_buffer]
+        add     edi, [ebx+ssh_connection.rx_buffer.packet_length]
+        add     edi, 4
+        mov     ecx, [ebx+ssh_connection.rx_mac_length]
+        shr     ecx, 2
+        repe cmpsd
+        jne     .mac_failed
+  .mac_complete:
+        inc     byte[ebx+ssh_connection.rx_seq+3]               ; Update sequence counter
+        jnc     @f
+        inc     byte[ebx+ssh_connection.rx_seq+2]
+        jnc     @f
+        inc     byte[ebx+ssh_connection.rx_seq+1]
+        jnc     @f
+        inc     byte[ebx+ssh_connection.rx_seq+0]
+  @@:
+
+; Return useful data length to the caller via eax register
+  .got_all_data:
+        mov     eax, [ebx+ssh_connection.rx_buffer.packet_length]
+        movzx   ebx, [ebx+ssh_connection.rx_buffer.padding_length]
         sub     eax, ebx
-        DEBUGF  1, "ssh_recv_packet complete, usefull data length=%u\n", eax
+        DEBUGF  1, "useful data length=%u\n", eax
         ret
 
   .fail:
-        DEBUGF  1, "ssh_recv_packet failed!\n"
+        DEBUGF  3, "ssh_recv_packet failed!\n"
+        mov     eax, -1
+        ret
+
+  .mac_failed:
+        DEBUGF  3, "ssh_recv_packet MAC failed!\n"
         mov     eax, -1
         ret
 
 endp
 
 
-proc ssh_send_packet sock, buf, payloadsize, flags
+proc ssh_send_packet connection, buf, payload_size, flags
 
 locals
-        size    dd ?
+        packet_size    dd ?
 endl
-        DEBUGF  1, "ssh_send_packet: size=%u\n", [payloadsize]
+        DEBUGF  2, "< "
 
-        mov     eax, [payloadsize]
-        inc     eax             ; padding length byte
-
-        lea     edx, [eax+4]    ; total packet size (without padding)
-        mov     [size], edx
-        mov     ebx, [tx_blocksize]
+; Pad the packet with random data
+        mov     eax, [payload_size]
+        inc     eax                     ; padding length byte
+        lea     edx, [eax+4]            ; total packet size (without padding and MAC)
+        mov     [packet_size], edx
+        mov     ecx, [connection]
+        mov     ebx, [ecx+ssh_connection.tx_crypt_blocksize]
         dec     ebx
         and     edx, ebx
         neg     edx
-        add     edx, [tx_blocksize]
-        cmp     edx, 4          ; minimum padding size
+        add     edx, [ecx+ssh_connection.tx_crypt_blocksize]
+        cmp     edx, 4                  ; minimum padding size
         jae     @f
-        add     edx, [tx_blocksize]
+        add     edx, [ecx+ssh_connection.tx_crypt_blocksize]
   @@:
-        DEBUGF  1, "Padding %u bytes\n", edx
-        add     [size], edx
+        DEBUGF  1, "padding %u bytes ", edx
+        add     [packet_size], edx
 
         add     eax, edx
-        DEBUGF  1, "Total size: %u\n", eax
+        DEBUGF  1, "total size: %u ", eax
         bswap   eax
-        mov     edi, tx_buffer
-        stosd
+        lea     edi, [ecx+ssh_connection.tx_buffer]
+        stosd                           ; packet_length
         mov     al, dl
-        stosb
+        stosb                           ; padding_length
         mov     esi, [buf]
-;        cmp     esi, edi
-;        je      @f
-        mov     ecx, [payloadsize]
+        mov     ecx, [payload_size]
         rep movsb
-;  @@:
 
         mov     ebx, edx
         mov     esi, edx
@@ -146,8 +207,59 @@ endl
         dec     esi
         jnz     @r
 
-        mcall   send, [sock], tx_buffer, [size], [flags]
+; Message authentication
+        mov     edx, [connection]
+        cmp     [edx+ssh_connection.tx_mac_proc], 0
+        je      .mac_complete
+;        DEBUGF  1, "MAC sequence number: 0x%x\n", [edx+ssh_connection.tx_seq]
+        lea     esi, [edx+ssh_connection.tx_seq]
+        mov     ecx, [packet_size]
+        add     ecx, 4                                          ; Sequence number length
+        lea     eax, [edx+ssh_connection.tx_mac_ctx]
+        stdcall [edx+ssh_connection.tx_mac_proc], eax, esi, ecx
+
+        lea     esi, [edx+ssh_connection.tx_mac_ctx]
+        lea     edi, [edx+ssh_connection.tx_buffer]
+        add     edi, [packet_size]
+        mov     ecx, [edx+ssh_connection.tx_mac_length]
+        shr     ecx, 2
+        rep movsd
+  .mac_complete:
+        inc     byte[edx+ssh_connection.tx_seq+3]               ; Update sequence counter
+        jnc     @f
+        inc     byte[edx+ssh_connection.tx_seq+2]
+        jnc     @f
+        inc     byte[edx+ssh_connection.tx_seq+1]
+        jnc     @f
+        inc     byte[edx+ssh_connection.tx_seq+0]
+  @@:
+
+; Encrypt data
+        cmp     [edx+ssh_connection.tx_crypt_proc], 0
+        je      .encrypt_complete
+        lea     esi, [edx+ssh_connection.tx_buffer]
+        mov     ecx, [packet_size]
+  .encrypt_loop:
+        pusha
+        stdcall [edx+ssh_connection.tx_crypt_proc], [edx+ssh_connection.tx_crypt_ctx_ptr], esi, esi
+        popa
+        add     esi, [edx+ssh_connection.tx_crypt_blocksize]
+        sub     ecx, [edx+ssh_connection.tx_crypt_blocksize]
+        jnz     .encrypt_loop
+  .encrypt_complete:
+
+; Send the packet
+        mov     ebx, [connection]
+        mov     ecx, [ebx+ssh_connection.socketnum]
+        lea     edx, [ebx+ssh_connection.tx_buffer]
+        mov     esi, [packet_size]
+        add     esi, [ebx+ssh_connection.tx_mac_length]
+        mov     edi, [flags]
+        mcall   send
+
+        DEBUGF  1, "\n"
 
         ret
 
 endp
+
