@@ -7,6 +7,10 @@
 #include "kolibri_button.h"
 #include "kolibri_progressbar.h"
 #include "kolibri_frame.h"
+#include "kolibri_scrollbar.h"
+#include "kolibri_statictext.h"
+
+#define X_Y(x,y) (((x)<<16)|(y))
 
 /* enum KOLIBRI_GUI_ELEMENT_TYPE contains all available GUI items from box_lib */
 /* More elements can be added from other libraries as required */
@@ -14,7 +18,8 @@ enum KOLIBRI_GUI_ELEMENT_TYPE {
   KOLIBRI_EDIT_BOX,
   KOLIBRI_CHECK_BOX,
   KOLIBRI_RADIO_BUTTON,
-  KOLIBRI_SCROLL_BAR,
+  KOLIBRI_SCROLL_BAR_H,
+  KOLIBRI_SCROLL_BAR_V,
   KOLIBRI_DYNAMIC_BUTTON,
   KOLIBRI_MENU_BAR,
   KOLIBRI_FILE_BROWSER,
@@ -23,6 +28,8 @@ enum KOLIBRI_GUI_ELEMENT_TYPE {
   KOLIBRI_TEXT_EDITOR,
   KOLIBRI_FRAME,
   KOLIBRI_PROGRESS_BAR,
+  KOLIBRI_STATICTEXT,
+  KOLIBRI_STATICNUM,
 
   KOLIBRI_BUTTON,
 
@@ -87,12 +94,35 @@ kolibri_gui_op_table[KOLIBRI_BUTTON].key_fn = NULL;
 kolibri_gui_op_table[KOLIBRI_PROGRESS_BAR].redraw_fn = (cb_elem_boxlib)progressbar_draw;
 kolibri_gui_op_table[KOLIBRI_PROGRESS_BAR].mouse_fn = NULL;
 kolibri_gui_op_table[KOLIBRI_PROGRESS_BAR].key_fn = NULL;
+debug_board_printf("PROGRESS (%x,%x,%x)\n", progressbar_draw,0,0);
 
 /* Setting up functions for frame GUI elements*/
 kolibri_gui_op_table[KOLIBRI_FRAME].redraw_fn = (cb_elem_boxlib)frame_draw;
 kolibri_gui_op_table[KOLIBRI_FRAME].mouse_fn = NULL;
 kolibri_gui_op_table[KOLIBRI_FRAME].key_fn = NULL;
 
+debug_board_printf("FRAME (%x,%x,%x)\n", frame_draw,0,0);
+
+
+/* scrollbars */
+kolibri_gui_op_table[KOLIBRI_SCROLL_BAR_H].redraw_fn = (cb_elem_boxlib)scrollbar_h_draw;
+kolibri_gui_op_table[KOLIBRI_SCROLL_BAR_H].mouse_fn = (cb_elem_boxlib)scrollbar_h_mouse;
+kolibri_gui_op_table[KOLIBRI_SCROLL_BAR_H].key_fn = NULL;
+debug_board_printf("SCROLL_H (%x,%x,%x)\n", scrollbar_h_draw,scrollbar_h_mouse,0);
+
+kolibri_gui_op_table[KOLIBRI_SCROLL_BAR_V].redraw_fn = (cb_elem_boxlib)scrollbar_v_draw;
+kolibri_gui_op_table[KOLIBRI_SCROLL_BAR_V].mouse_fn = (cb_elem_boxlib)scrollbar_v_mouse;
+kolibri_gui_op_table[KOLIBRI_SCROLL_BAR_V].key_fn = NULL;
+debug_board_printf("SCROLL_V (%x,%x,%x)\n", scrollbar_v_draw,scrollbar_v_mouse,0);
+
+kolibri_gui_op_table[KOLIBRI_STATICTEXT].redraw_fn = (cb_elem_boxlib)statictext_draw;
+kolibri_gui_op_table[KOLIBRI_STATICTEXT].mouse_fn = NULL;
+kolibri_gui_op_table[KOLIBRI_STATICTEXT].key_fn = NULL;
+
+kolibri_gui_op_table[KOLIBRI_STATICNUM].redraw_fn = (cb_elem_boxlib)staticnum_draw;
+kolibri_gui_op_table[KOLIBRI_STATICNUM].mouse_fn = NULL;
+kolibri_gui_op_table[KOLIBRI_STATICNUM].key_fn = NULL;
+debug_board_printf("STATICNUM (%x,%x,%x)\n", staticnum_draw,0,0);
 }
 
 /* Create a new main GUI window for KolibriOS */

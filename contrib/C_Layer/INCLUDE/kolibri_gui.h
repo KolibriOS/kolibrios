@@ -13,13 +13,20 @@
 #include "kolibri_gui_elements.h"
 
 enum KOLIBRI_GUI_EVENTS {
-  KOLIBRI_EVENT_REDRAW = 1,   /* Window and window elements should be redrawn */
-  KOLIBRI_EVENT_KEY = 2,      /* A key on the keyboard was pressed */
-  KOLIBRI_EVENT_BUTTON = 3,   /* A button was clicked with the mouse */
-  KOLIBRI_EVENT_MOUSE = 6     /* Mouse activity (movement, button press) was detected */
+    KOLIBRI_EVENT_NONE = 0,     /* Event queue is empty */
+    KOLIBRI_EVENT_REDRAW = 1,   /* Window and window elements should be redrawn */
+    KOLIBRI_EVENT_KEY = 2,      /* A key on the keyboard was pressed */
+    KOLIBRI_EVENT_BUTTON = 3,   /* A button was clicked with the mouse */
+    KOLIBRI_EVENT_DESKTOP = 5,  /* Desktop redraw finished */
+    KOLIBRI_EVENT_MOUSE = 6,    /* Mouse activity (movement, button press) was detected */
+    KOLIBRI_EVENT_IPC = 7,      /* Interprocess communication notify */
+    KOLIBRI_EVENT_NETWORK = 8,  /* Network event */
+    KOLIBRI_EVENT_DEBUG = 9,    /* Debug subsystem event */
+    KOLIBRI_EVENT_IRQBEGIN = 16 /* 16..31 IRQ0..IRQ15 interrupt =IRQBEGIN+IRQn */
 };
 
 #define BUTTON_CLOSE 0x1
+#define BTN_QUIT 1
 
 void kolibri_handle_event_redraw(kolibri_window* some_window)
 {
@@ -40,7 +47,7 @@ void kolibri_handle_event_redraw(kolibri_window* some_window)
       do
 	{
 	  /* The redraw_fn serves as draw_fn on initial draw */
-	  if(kolibri_gui_op_table[current_element -> type].redraw_fn)
+	  if((int)kolibri_gui_op_table[current_element -> type].redraw_fn > 0)  // -1 if DLL link fail
 	    kolibri_gui_op_table[current_element -> type].redraw_fn(current_element -> element);
 
 //sie after fixing calling conventions no more needed
@@ -72,7 +79,7 @@ void kolibri_handle_event_key(kolibri_window* some_window)
       do
 	{
 	  /* Only execute if the function pointer isn't NULL */
-	  if(kolibri_gui_op_table[current_element -> type].key_fn)
+	  if((int)kolibri_gui_op_table[current_element -> type].key_fn > 0)
 	    kolibri_gui_op_table[current_element -> type].key_fn(current_element -> element);
 
 	  current_element = current_element -> next;
@@ -89,7 +96,7 @@ void kolibri_handle_event_mouse(kolibri_window* some_window)
 
       do
 	{
-	  if(kolibri_gui_op_table[current_element -> type].mouse_fn)
+	  if((int)kolibri_gui_op_table[current_element -> type].mouse_fn > 0)
 	    kolibri_gui_op_table[current_element -> type].mouse_fn(current_element -> element);
 
 	  current_element = current_element -> next;

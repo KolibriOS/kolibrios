@@ -12,7 +12,7 @@ include '../../../programs/system/run/trunk/txtbut.inc'
 include '../../../programs/dll.inc'
 	
 public init_boxlib as '_init_boxlib_asm'
-public editbox_key as '_editbox_key@4'
+public editbox_key_thunk as '_editbox_key@4'   ; renamed due to ambiguity
 public press_key as '_press_key'
 ;;; Returns 0 on success. -1 on failure.
 
@@ -34,7 +34,7 @@ endp
 	
 ;; Wrapper to handle edit_box_key function for editboxes.
 ;; Call this baby from C (refer kolibri_editbox.h for details)
-editbox_key:
+editbox_key_thunk:
 	mov [oldebp], ebp	;Save ebp because GCC is crazy for it otherwise.
 	pop ebp			;Save return address in ebp. Stack top is param now.
 	mov eax, dword [press_key]
@@ -59,12 +59,12 @@ import lib_boxlib, \
 	check_box_mouse2, 'check_box_mouse2' , \
 	option_box_draw,  'option_box_draw' , \
 	option_box_mouse, 'option_box_mouse' , \
-	scroll_bar_vertical_draw, 'scrollbar_ver_draw' , \
-	scroll_bar_vertical_mouse, 'scrollbar_ver_mouse' , \
-	scroll_bar_horizontal_draw, 'scrollbar_hor_draw' , \
-	scroll_bar_horizontal_mouse, 'scrollbar_hor_mouse' , \
-	dinamic_button_draw, 'dbutton_draw' , \
-	dinamic_button_mouse, 'dbutton_mouse' , \
+	scrollbar_v_draw, 'scrollbar_v_draw' , \
+	scrollbar_v_mouse, 'scrollbar_v_mouse' , \
+	scrollbar_h_draw, 'scrollbar_h_draw' , \
+	scrollbar_h_mouse, 'scrollbar_h_mouse' , \
+	dynamic_button_draw, 'dbutton_draw' , \
+	dynamic_button_mouse, 'dbutton_mouse' , \
 	menu_bar_draw, 'menu_bar_draw' , \
 	menu_bar_mouse, 'menu_bar_mouse' , \
 	menu_bar_activate, 'menu_bar_activate' , \
@@ -127,10 +127,12 @@ import lib_boxlib, \
 	frame_draw, 'frame_draw' , \
 	progressbar_draw,'progressbar_draw' , \
 	progressbar_progress, 'progressbar_progress'
+
 	
 public edit_box_draw as '_edit_box_draw'
 public edit_box_key as '_edit_box_key'
 public edit_box_mouse as '_edit_box_mouse'
+public edit_box_set_text as '_edit_box_set_text' 
 
 public check_box_draw2 as '_check_box_draw2'
 public check_box_mouse2 as '_check_box_mouse2'
@@ -140,3 +142,8 @@ public progressbar_draw as '_progressbar_draw'
 public progressbar_progress as '_progressbar_progress'
 
 public frame_draw as '_frame_draw'
+
+public scrollbar_v_draw as '_scrollbar_v_draw'
+public scrollbar_v_mouse as '_scrollbar_v_mouse'
+public scrollbar_h_draw as '_scrollbar_h_draw'
+public scrollbar_h_mouse as '_scrollbar_h_mouse'

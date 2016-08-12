@@ -2,6 +2,6 @@
 FASM = fasm
 
 all: $(patsubst   %.asm,%.obj,$(wildcard   *.asm))
-	mv $^ ../OBJ/
+	mv $^ ../OBJ
 %.obj: %.asm
 	$(FASM) $< $%

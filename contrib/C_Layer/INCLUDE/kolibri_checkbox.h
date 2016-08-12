@@ -3,6 +3,13 @@
 
 #include "kolibri_colors.h"
 
+/*
+ch_flag_en - флаг установленного чек бокса
+ch_flag_top - флаг расположения текста вверху
+ch_flag_middle - флаг расположения текста в центре
+ch_flag_bottom - флаг расположения текста в низу т.е. по умолчанию принимается значение внизу
+*/
+
 enum CHECKBOX_FLAGS {
      CHECKBOX_IS_SET = 0x00000002
      /* Add more flags later */
@@ -32,7 +39,7 @@ check_box* kolibri_new_check_box(unsigned int tlx, unsigned int tly, unsigned in
      new_checkbox -> left_s = (tlx << 16) + sizex;
      new_checkbox -> top_s  = (tly << 16) + sizey;
      new_checkbox -> ch_text_margin = 10;
-     new_checkbox -> color = 0xFFFFFFFF;
+     new_checkbox -> color = 0xFFFFFFFF; // 0x80AABBCC, 31-bit mus be set asciiz
      new_checkbox -> border_color = kolibri_color_table.color_work_graph;
      new_checkbox -> text_color = kolibri_color_table.color_work_text;
      new_checkbox -> text = label_text;
