@@ -9,7 +9,7 @@ $Revision$
 
 ; CD external functions
 ;   in:
-; esi -> path string
+; esi -> path string in UTF-8
 ; ebx -> offset in file (qword)
 ; ecx = bytes to read
 ; edx -> buffer
@@ -604,9 +604,8 @@ fs_CdGetFileInfo:
 ;-----------------------------------------------------------------------------
 cd_find_lfn:
         mov     [cd_appl_data], 0
-; in: esi -> path string
-; out: CF=1 - file not found
-; else CF=0 and [cd_current_pointer_of_input] direntry
+; in: esi -> path string in UTF-8
+; out: [cd_current_pointer_of_input] -> direntry, CF=1 -> file not found
         push    eax esi
 ; Sector 16 - start set of volume descriptors
         call    WaitUnitReady
@@ -754,45 +753,25 @@ cd_get_name:
         ret
 ;-----------------------------------------------------------------------------
 cd_compare_name:
-; compares ASCIIZ-names, case-insensitive (cp866 encoding)
-; in: esi->name, ebp->name
-; out: if names match: ZF=1 and esi->next component of name
-;      else: ZF=0, esi is not changed
-; destroys eax
-        push    esi eax edi
+; in: esi -> UTF-8 name, ebp -> UTF-16BE name
+; out: CF=0 -> names match, esi -> next component of name
+;      CF=1 -> esi is not changed
+        push    edx edi eax esi
         mov     edi, ebp
-;--------------------------------------
 .loop:
-        cld
-        lodsb
-        push    eax
-        call    char_todown
-        call    ansi2uni_char
-        xchg    ah, al
-        scasw
-        pop     eax
-        je      .coincides
-        call    char_toupper
-        call    ansi2uni_char
-        xchg    ah, al
-        sub     edi, 2
-        scasw
+        call    utf8to16
+        call    utf16toUpper
+        mov     edx, eax
+        mov     ax, [edi]
+        xchg    al, ah
+        call    utf16toUpper
+        cmp     ax, dx
         jne     .name_not_coincide
-;--------------------------------------
-.coincides:
+        add     edi, 2
         cmp     [esi], byte '/' ; path separator is end of current element
         je      .done
-
         cmp     [esi], byte 0 ; path separator end of name
-        je      .done
-
-        jmp     .loop
-;--------------------------------------
-.name_not_coincide:
-        pop     edi eax esi
-        stc
-        ret
-;--------------------------------------
+        jne     .loop
 .done:
 ; check end of file
         cmp     [edi], word 3B00h; separator end of file ';'
@@ -808,10 +787,12 @@ cd_compare_name:
         add     eax, ebp
         cmp     edi, eax
         jne     .name_not_coincide
-;--------------------------------------
 .done_1:
-        pop     edi eax
-        add     esp, 4
+        pop     eax eax edi edx
         inc     esi
-        clc
+        ret
+
+.name_not_coincide:
+        pop     esi eax edi edx
+        stc
         ret

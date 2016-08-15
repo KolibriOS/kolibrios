@@ -11,7 +11,7 @@ $Revision$
 ;   in:
 ; ebx -> parameter structure of sysfunc 70
 ; ebp -> NTFS structure
-; esi -> path string
+; esi -> path string in UTF-8
 ;   out:
 ; eax, ebx = return values for sysfunc 70
 iglobal
@@ -1161,20 +1161,8 @@ ntfs_decode_mcb_entry:
         pop     edi ecx eax
         ret
 
-unichar_toupper:
-        push    eax
-        call    uni2ansi_char
-        cmp     al, '_'
-        jz      .unk
-        add     esp, 4
-        call    char_toupper
-        jmp     ansi2uni_char
-.unk:
-        pop     eax
-        ret
-
 ntfs_find_lfn:
-; in: esi -> path string
+; in: esi -> path string in UTF-8
 ;   out:
 ; [ebp+NTFS.cur_iRecord] = target fileRecord
 ; eax -> target index in the node
@@ -1214,39 +1202,40 @@ ntfs_find_lfn:
         add     eax, rootNode
         cmp     [ebp+NTFS.cur_read], eax
         jc      .err
-        mov     edi, [esp+4]
         mov     eax, [ebp+NTFS.mftLastRead]
         mov     [ebp+NTFS.rootLastRead], eax
         mov     eax, [ebp+NTFS.attr_offs]
         mov     [ebp+NTFS.indexRoot], eax
-; edi -> name, esi -> current index node
-.scanloop:
+.scanloop:  ; esi -> current index node
         add     esi, [esi+indexOffset]
 .scanloopint:
+        push    esi
         test    byte [esi+indexFlags], 2
         jnz     .subnode
-        push    esi
         movzx   ecx, byte [esi+fileNameLength]
-        add     esi, fileName
-        push    edi
+        lea     edi, [esi+fileName]
+        mov     esi, [esp+8]
 @@:
-        lodsw
-        call    unichar_toupper
+        call    utf8to16
+        cmp     ax, '/'
+        jz      .subnode
+        call    utf16toUpper
         push    eax
-        mov     al, [edi]
-        inc     edi
-        cmp     al, '/'
-        jz      .slash
-        call    char_toupper
-        call    ansi2uni_char
-        cmp     ax, [esp]
+        mov     ax, [edi]
+        call    utf16toUpper
+        cmp     [esp], ax
         pop     eax
-        loopz   @b
+        jc      .subnode
+        jnz     .scanloopcont
+        add     edi, 2
+        loop    @b
+        call    utf8to16
+        cmp     ax, '/'
         jz      .found
-        pop     edi
-        pop     esi
-        jb      .subnode
+        test    ax, ax
+        jz      .found
 .scanloopcont:
+        pop     esi
         movzx   eax, word [esi+indexAllocatedSize]
         add     esi, eax
         jmp     .scanloopint
@@ -1273,7 +1262,7 @@ ntfs_find_lfn:
         jmp     .doit2
 
 .notfound:
-        mov     [esp+1Ch], esi
+        mov     [esp+28], esi
 .err:
         popad
         stc
@@ -1282,11 +1271,8 @@ ntfs_find_lfn:
 .ret:
         ret
 
-.slash:
-        pop     eax
-        pop     edi
-        pop     esi
 .subnode:
+        pop     esi
         test    byte [esi+indexFlags], 1
         jz      .notfound
         mov     eax, [ebp+NTFS.LastRead]
@@ -1321,25 +1307,14 @@ ntfs_find_lfn:
         jmp     .scanloop
 
 .found:
-        cmp     byte [edi], 0
-        jz      @f
-        cmp     byte [edi], '/'
-        jz      @f
-        pop     edi
-        pop     esi
-        jmp     .scanloopcont
-
-@@:
-        pop     esi
-        pop     esi
-        mov     eax, [esi]
+        mov     [esp+8], esi
+        pop     eax
+        mov     [esp+28], eax
+        mov     eax, [eax+fileRecordReference]
         mov     [ebp+NTFS.cur_iRecord], eax
-        mov     [esp+1Ch], esi
-        mov     [esp+4], edi
         popad
-        cmp     byte [esi], 0
+        cmp     byte [esi-1], 0
         jz      .ret2
-        inc     esi
         pop     eax
         jmp     .doit2
 
@@ -1859,8 +1834,7 @@ ntfs_GetFileInfo:
         lodsw
         call    uni2ansi_char
         stosb
-        dec     ecx
-        jnz     @b
+        loop    @b
         mov     byte [edi], 0
         jmp     .end
 
@@ -1964,25 +1938,29 @@ ntfs_CreateFile:
         cmp     [ebp+NTFS.fragmentCount], 1
         jnz     ntfsUnsupported     ; record fragmented
 ; 2. Prepare directory record
-        mov     ecx, esi
+        mov     edi, esi
+        mov     edx, eax
+        xor     ecx, ecx
 @@:         ; count characters
-        inc     ecx
-        cmp     byte [ecx], '/'
+        call    utf8to16
+        cmp     ax, '/'
         jz      ntfsNotFound    ; path folder not found
-        cmp     byte [ecx], 0
+        inc     ecx
+        test    ax, ax
         jnz     @b
-        sub     ecx, esi
-        push    ecx     ; name length
+        dec     ecx
+        push    ecx     ; name length in chars
+        push    edi
         shl     ecx, 1
         add     ecx, fileName+7
         and     ecx, not 7
         mov     edi, [ebp+NTFS.cur_index_buf]
-        mov     edx, [ebx+12]
-        mov     [ebp+NTFS.fileRealSize], edx
-        mov     edx, [ebx+16]
-        mov     [ebp+NTFS.fileDataBuffer], edx
-        push    esi
+        mov     eax, [ebx+12]
+        mov     [ebp+NTFS.fileRealSize], eax
+        mov     eax, [ebx+16]
+        mov     [ebp+NTFS.fileDataBuffer], eax
         push    ecx     ; index length
+        mov     eax, edx
         mov     edx, ecx
         cmp     dword [edi], 'INDX'
         jz      .indexRecord
@@ -2483,11 +2461,9 @@ ntfs_CreateFile:
         mov     [edi+fileNameLength], cl
         add     edi, fileName
 @@:         ; record filename
-        lodsb
-        call    ansi2uni_char
+        call    utf8to16
         stosw
-        dec     ecx
-        jnz     @b
+        loop    @b
         mov     eax, [ebp+NTFS.LastRead]
         mov     [ebp+NTFS.nodeLastRead], eax
         cmp     [ebp+NTFS.bFolder], 0
@@ -2805,8 +2781,7 @@ writeRecord:
         add     esi, 510
         movsw
         mov     [esi-2], ax
-        dec     ecx
-        jnz     @b
+        loop    @b
         mov     eax, edx
         xor     edx, edx
         pop     ecx

@@ -67,6 +67,11 @@ file_system_lfn:
 @@:
         cmp     word [ebp], '/'
         jz      .rootdir
+        cmp     byte [ebp], 2
+        jnz     @f
+        cmp     dword[ebp+1], '/'
+        jz      .rootdir
+@@:
         stdcall kernel_alloc, maxPathLength
         push    ebx
         mov     ebx, ebp
@@ -75,6 +80,8 @@ file_system_lfn:
         push    eax
         call    get_full_file_name
         pop     ebx
+        test    eax, eax
+        jz      .notfound
         mov     esi, ebp
         mov     ax, [ebp]
         or      ax, 2020h
@@ -349,16 +356,14 @@ file_system_lfn:
 process_replace_file_name:
 ; in: [esi] = virtual path
 ; out: [esi]+[ebp] = physical path
-        pushfd
-        cli
-        mov     ebp, [full_file_name_table]
         xor     edi, edi
+        xor     ebp, ebp
 .loop:
         cmp     edi, [full_file_name_table.size]
         jae     .notfound
         push    esi edi
         shl     edi, 7
-        add     edi, ebp
+        add     edi, [full_file_name_table]
 @@:
         cmp     byte [edi], 0
         jz      .dest_done
@@ -378,24 +383,18 @@ process_replace_file_name:
         jz      .found
         cmp     byte [esi], '/'
         jnz     .cont
-        inc     esi
 .found:
         pop     edi eax
         shl     edi, 7
-        add     edi, ebp
+        add     edi, [full_file_name_table]
         mov     ebp, esi
-        cmp     byte [esi], 0
         lea     esi, [edi+64]
-        jnz     .ret
 .notfound:
-        xor     ebp, ebp
-.ret:
-        popfd
         ret
 
 ;-----------------------------------------------------------------------------
 uglobal
-lock_flag_for_f30_3 rb 1
+addDirSeal db  ?
 endg
 
 sys_current_directory:  ; sysfunction 30
@@ -407,62 +406,86 @@ sys_current_directory:  ; sysfunction 30
         jz      .get
         dec     ebx
         jz      .mount_additional_directory
+        dec     ebx
+        jz      .get16
+@@:
         ret
 
 .mount_additional_directory:
 ; in: ecx -> dir name+dir path (128)
-        cmp     [lock_flag_for_f30_3], 1    ; check lock
-        je      @f
+        mov     al, 1
+        xchg    [addDirSeal], al
+        test    al, al
+        jnz     @b
         mov     esi, ecx
         mov     edi, sysdir_name1
         mov     ecx, 63
-        pushfd
-        cli
-        cld
         rep movsb   ; copying fake directory name
         inc     esi
         xor     eax, eax
         stosb       ; terminator of name, in case if we get the inlet trash
-        mov     ecx, 63
-        rep movsb   ; copying real directory path for mounting
-        xor     eax, eax
-        stosb
-; increase the pointer of inputs for procedure "process_replace_file_name"
-        mov     [full_file_name_table.size], 2
-        mov     [lock_flag_for_f30_3], 1    ; lock
-        popfd
+        mov     cl, 63
+        cmp     word [esi], 2
+        jz      .utf16
+        call    cp866toUTF8_string
 @@:
+        mov     byte [edi], 0
+        mov     [full_file_name_table.size], 2
         ret
 
+.utf16:
+        add     esi, 2
+        call    UTF16to8_string
+        jmp     @b
+
 .get:       ; in: ecx -> buffer, edx = length
-        mov     ebx, edi    ; buffer
-        push    ecx
-        push    edi
-        xor     eax, eax
-        mov     ecx, maxPathLength
-        repne scasb
-        jnz     .error
-        sub     edi, ebx
-        inc     edi
-        mov     [esp+32+8], edi ; return in eax
-        cmp     edx, edi
-        jbe     @f
-        mov     edx, edi
+        mov     esi, edi
+        mov     edi, ecx
+        cmp     edx, maxPathLength
+        jc      @f
+        mov     edx, maxPathLength
 @@:
-        pop     esi
-        pop     edi
-        cmp     edx, 1
-        jbe     .ret
         mov     al, '/'
         stosb
         mov     ecx, edx
-        rep movsb
-.ret:
+        dec     ecx
+@@:
+        dec     ecx
+        js      @f
+        call    utf8to16
+        call    uni2ansi_char
+        stosb
+        test    al, al
+        jnz     @b
+        sub     edx, ecx
+        mov     ecx, edx
+@@:
+        mov     [esp+32], ecx
         ret
 
-.error:
-        add     esp, 8
-        or      dword[esp+32], -1
+.get16:
+        mov     esi, edi
+        mov     edi, ecx
+        cmp     edx, maxPathLength
+        jc      @f
+        mov     edx, maxPathLength
+@@:
+        shr     edx, 1
+        mov     ax, '/'
+        stosw
+        mov     ecx, edx
+        dec     ecx
+@@:
+        dec     ecx
+        js      @f
+        call    utf8to16
+        stosw
+        test    ax, ax
+        jnz     @b
+        sub     edx, ecx
+        mov     ecx, edx
+@@:
+        mov     [esp+32], ecx
         ret
 
 .set:
@@ -473,118 +496,144 @@ sys_current_directory:  ; sysfunction 30
         mov     ebx, ecx
 get_full_file_name:
 ; in: ebx -> file name, [esp+4] -> destination, [esp+8] = max length
-; destroys all registers
-        push    ebp
-        cmp     byte [ebx], '/'
+; out: eax=0 -> out of length
+        push    ebp ebx
+        mov     esi, ebx
+        cmp     byte [ebx], 2
+        jnz     @f
+        inc     esi
+@@:
+        cmp     byte [esi], '/'
         jnz     .set_relative
-        lea     esi, [ebx+1]
+        inc     esi
+        cmp     byte [ebx], 2
+        jnz     @f
+        inc     esi
+@@:
         call    process_replace_file_name
-        mov     edi, [esp+8]
-        mov     edx, [esp+12]
-        add     edx, edi
-.set_copy:
+        mov     edi, [esp+12]
+        mov     ecx, [esp+16]
+        test    ebp, ebp
+        jz      .absolute
+@@:
         lodsb
         stosb
+        dec     ecx
         test    al, al
-        jz      .set_part2
-.set_copy_cont:
-        cmp     edi, edx
-        jb      .set_copy
-.overflow:
+        jnz     @b
+        mov     esi, ebp
         dec     edi
+.absolute:
+        cmp     byte [ebx], 2
+        jz      @f
+        call    cp866toUTF8_string
+        jns     .ret
+        jmp     .fail
+
+@@:
+        call    UTF16to8_string
+        jns     .ret
 .fail:
         mov     byte [edi], 0
         xor     eax, eax
-        pop     ebp
+        pop     ebx ebp
         ret     8
-
-.set_part2:
-        mov     esi, ebp
-        xor     ebp, ebp
-        test    esi, esi
-        jz      .ret.ok
-        mov     byte [edi-1], '/'
-        jmp     .set_copy_cont
 
 .set_relative:
         mov     edi, [current_slot]
         mov     edi, [edi+APPDATA.cur_dir]
         mov     edx, edi
-        mov     ecx, [esp+12]
+        mov     ecx, [esp+16]
         xor     eax, eax
         repnz scasb
         mov     esi, edi
         dec     esi
-        mov     edi, [esp+8]
+        mov     edi, [esp+12]
         jecxz   .fail
+        cmp     byte [ebx], 2
+        jz      .relative16
 .relative:
         cmp     byte [ebx], 0
         jz      .set_ok
         cmp     word [ebx], '.'
         jz      .set_ok
         cmp     word [ebx], './'
-        jnz     @f
-        add     ebx, 2
-        jmp     .relative
-
-@@:
+        jz      .next
         cmp     word [ebx], '..'
         jnz     .doset_relative
         cmp     byte [ebx+2], 0
         jz      @f
         cmp     byte [ebx+2], '/'
         jnz     .doset_relative
+        inc     ebx
 @@:
         dec     esi
         cmp     byte [esi], '/'
         jnz     @b
-        add     ebx, 3
+.next:
+        add     ebx, 2
         jmp     .relative
 
 .set_ok:
-        cmp     edx, edi        ; is destination equal to APPDATA.cur_dir?
+        cmp     edx, edi    ; is destination equal to cur_dir?
         jz      @f
         mov     ecx, esi
         sub     ecx, edx
         mov     esi, edx
         rep movsb
         mov     byte [edi], 0
-.ret.ok:
+.ret:
         mov     al, 1
-        pop     ebp
+        pop     ebx ebp
         ret     8
 
 @@:
         mov     byte [esi], 0
-        jmp     .ret.ok
+        jmp     .ret
 
 .doset_relative:
-        cmp     edx, edi
-        jz      .doset_relative.cur_dir
+        cmp     edx, edi    ; is destination equal to cur_dir?
+        mov     edi, esi
+        jz      @f
+        mov     edi, [esp+12]
         mov     ecx, esi
         sub     ecx, edx
         mov     esi, edx
         mov     edx, edi
         rep movsb
-        jmp     .doset_relative.copy
-
-.doset_relative.cur_dir:
-        mov     edi, esi
-.doset_relative.copy:
-        add     edx, [esp+12]
+@@:
         mov     byte [edi], '/'
         inc     edi
-        cmp     edi, edx
-        jae     .overflow
+        mov     esi, ebx
+        mov     ecx, edx
+        add     ecx, [esp+16]
+        sub     ecx, edi
+        mov     ebx, [esp]
+        jmp     .absolute
+
+.relative16:
+        cmp     word [ebx], 0
+        jz      .set_ok
+        cmp     word [ebx], '.'
+        jnz     .doset_relative
+        cmp     word [ebx+2], 0
+        jz      .set_ok
+        cmp     word [ebx+2], '/'
+        jz      .next16
+        cmp     word [ebx+2], '.'
+        jnz     .doset_relative
+        cmp     word [ebx+4], 0
+        jz      @f
+        cmp     word [ebx+4], '/'
+        jnz     .doset_relative
+        add     ebx, 2
 @@:
-        mov     al, [ebx]
-        inc     ebx
-        stosb
-        test    al, al
-        jz      .ret.ok
-        cmp     edi, edx
-        jb      @b
-        jmp     .overflow
+        dec     esi
+        cmp     byte [esi], '/'
+        jnz     @b
+.next16:
+        add     ebx, 4
+        jmp     .relative16
 
 include "parse_fn.inc"
 include "fs_common.inc"

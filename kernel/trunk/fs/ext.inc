@@ -11,7 +11,7 @@ $Revision$
 ;   in:
 ; ebx -> parameter structure of sysfunc 70
 ; ebp -> EXTFS structure
-; esi -> path string
+; esi -> path string in UTF-8
 ;   out:
 ; eax, ebx = return values for sysfunc 70
 iglobal
@@ -193,7 +193,7 @@ ext2_create_partition:
         cmp     [ebx+SUPERBLOCK.magic], 0xEF53
         jne     .fail
         cmp     [ebx+SUPERBLOCK.state], 1
-        jne     .fail
+        ja      .fail
         test    [ebx+SUPERBLOCK.incompatibleFlags], not INCOMPATIBLE_SUPPORT
         jnz     .fail
         cmp     [ebx+SUPERBLOCK.sectorsPerBlockLog], 6  ; 64KB
@@ -1176,7 +1176,7 @@ linkInode:
 ;   in:
 ; eax = inode on which to link
 ; ebx = inode to link
-; esi -> name
+; esi -> name in UTF-8
 ;  dl = file type
         push    esi edi ebx ecx eax edx
         call    strlen
@@ -1414,9 +1414,9 @@ unlinkInode:
         ret
 
 findInode_parent:
-; in: esi -> path
+; in: esi -> path string in UTF-8
 ;   out:
-; edi -> file name
+; edi -> file name in UTF-8
 ; esi = inode
         push    esi
         xor     edi, edi
@@ -1449,7 +1449,7 @@ findInode_parent:
         ret
 
 findInode:
-; in: esi -> path string
+; in: esi -> path string in UTF-8
 ;   out:
 ; [ebp+EXTFS.mainInodeBuffer] = inode
 ; esi = inode number
@@ -1485,32 +1485,16 @@ findInode:
         call    extfsReadBlock
         jc      .error_get_block
         push    esi edx
-        sub     esp, 256
         mov     edx, ebx
         add     edx, [ebp+EXTFS.bytesPerBlock]
 .start_rec:
         cmp     [ebx+DIRENTRY.inodeNumber], 0
         jz      .next_rec
-        mov     edi, esp
         push    esi
         movzx   ecx, [ebx+DIRENTRY.nameLength]
-        lea     esi, [ebx+DIRENTRY.name]
-        call    utf8_to_cp866
-        mov     ecx, edi
-        lea     edi, [esp+4]
-        sub     ecx, edi    ; number of bytes in resulting string
-        mov     esi, [esp]
-@@: ; edi -> converted string in stack, ecx = size, esi -> original file path
-        jecxz   .test_find
-        dec     ecx
-        lodsb
-        call    char_toupper
-        mov     ah, [edi]
-        inc     edi
-        xchg    al, ah
-        call    char_toupper
-        cmp     al, ah
-        je      @b
+        lea     edi, [ebx+DIRENTRY.name]
+        repz cmpsb
+        jz      .test_find
 @@: ; doesn't match
         pop     esi
 .next_rec:
@@ -1528,8 +1512,7 @@ findInode:
         jne     @b
         inc     esi
 @@:
-        add     esp, 256+4
-        pop     edx edi ecx
+        pop     edx edx edi ecx
 ; ebx -> matched directory entry, esi -> name without parent, or not changed
         cmp     edi, esi
         je      .next_folder_block
@@ -1697,10 +1680,12 @@ ext_ReadFolder:
         inc     dword [edi+8]
         inc     dword [edi+4]
         push    ebx edi ecx esi edx
+        pushd   [edi+12]
         mov     edi, edx
         xor     eax, eax
         mov     ecx, 40 / 4
         rep stosd
+        popd    [edx+4]
         mov     eax, [ebx+DIRENTRY.inodeNumber]
         lea     ebx, [ebp+EXTFS.tempInodeBuffer]
         call    readInode
@@ -1730,16 +1715,25 @@ ext_ReadFolder:
 @@:
         mov     esi, [esp+12]
         movzx   ecx, [esi+DIRENTRY.nameLength]
-        lea     edi, [edx+40]
         lea     esi, [esi+DIRENTRY.name]
-        call    utf8_to_cp866
-        and     byte [edi], 0
-        pop     esi ecx edi ebx
-        cmp     byte [edx+40], '.'
-        jne     @f
-        or      dword [edx], KOS_HIDDEN
+        add     ecx, esi
+        cmp     byte [esi], '.'
+        jnz     @f
+        or      byte [edx], KOS_HIDDEN
 @@:
-        add     edx, 40+264 ; go to the next record
+        lea     edi, [edx+40]
+        cmp     byte [edx+4], 1
+        jz      .utf16
+@@:
+        call    utf8to16
+        call    uni2ansi_char
+        stosb
+        cmp     esi, ecx
+        jc      @b
+        and     byte [edi], 0
+        add     edx, 40+264
+@@:
+        pop     esi ecx edi ebx
         dec     ecx
 .empty_rec:
         movzx   eax, [ebx+DIRENTRY.entryLength]
@@ -1753,6 +1747,15 @@ ext_ReadFolder:
         jb      .wanted_start
         push    .wanted_start
         jmp     .end_block
+
+.utf16:
+        call    utf8to16
+        stosw
+        cmp     esi, ecx
+        jc      .utf16
+        and     word [edi], 0
+        add     edx, 40+520
+        jmp     @b
 
 .end_dir:
         call    ext_unlock

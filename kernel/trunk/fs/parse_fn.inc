@@ -237,76 +237,53 @@ proc get_every_key.replace
         ret
 endp
 
-
-char_todown:
-; convert character in al to downcase, using cp866 encoding
-        cmp     al, 'A'
-        jb      .ret
-        cmp     al, 'Z'
-        jbe     .az
-        cmp     al, 0x80 ; 'А'
-        jb      .ret
-        cmp     al, 0x90 ; 'Р'
-        jb      .rus
-        cmp     al, 0xF0 ; 'Ё'
-        jz      .yo
-        cmp     al, 0x9F ; 'Я'
-        ja      .ret
-; 0x90-0x9F -> 0xE0-0xEF
-        add     al, 0xE0-0x90
-.ret:
-        ret
-
-.az:
-.rus:  ; 0x80-0x8F -> 0xA0-0xAF
-        add     al, 0x20
-        ret
-
-.yo:
-        inc     al
-        ret
-
-
-char_toupper:
-; convert character in al to uppercase, using cp866 encoding
+cp866toUpper:
+; convert cp866 character in al to uppercase
         cmp     al, 'a'
         jb      .ret
         cmp     al, 'z'
-        jbe     .az
-        cmp     al, 0xA0 ; 'а'
+        jbe     @f
+        cmp     al, 0xA0
         jb      .ret
-        cmp     al, 0xE0 ; 'р'
+        cmp     al, 0xB0
+        jb      @f
+        cmp     al, 0xE0
+        jb      .ret
+        cmp     al, 0xF0
         jb      .rus
-        cmp     al, 0xF1 ; 'ё'
-        jz      .yo
-        cmp     al, 0xEF ; 'я'
+        cmp     al, 0xF7
         ja      .ret
-; 0xE0-0xEF -> 0x90-0x9F
-        sub     al, 0xE0-0x90
+        and     eax, -2
 .ret:
         ret
 
-.az:
-.rus:  ; 0xA0-0xAF -> 0x80-0x8F
-        and     al, not 0x20
+@@:
+        sub     eax, 32
         ret
 
-.yo:
-        dec     al
+.rus:
+        sub     eax, 0xE0-0x90
         ret
 
-
-uni2ansi_str:
-; convert UNICODE zero-terminated string to ASCII-string (codepage 866)
-; in: esi->source, edi->buffer (may be esi=edi)
-; destroys: eax,esi,edi
-        lodsw
-        call    uni2ansi_char
-        stosb
-        test    al, al
-        jnz     uni2ansi_str
+utf16toUpper:
+; convert UTF-16 character in ax to uppercase
+        cmp     ax, 'a'
+        jb      .ret
+        cmp     ax, 'z'
+        jbe     @f
+        cmp     ax, 430h
+        jb      .ret
+        cmp     ax, 450h
+        jb      @f
+        cmp     ax, 460h
+        jnc     .ret
+        sub     eax, 80
+.ret:
         ret
 
+@@:
+        sub     eax, 32
+        ret
 
 uni2ansi_char:
 ; convert UNICODE character in ax to ANSI character in al using cp866 encoding
@@ -355,7 +332,6 @@ uni2ansi_char:
 
 .table  db  1, 51h, 4, 54h, 7, 57h, 0Eh, 5Eh
 
-
 ansi2uni_char:
 ; convert ANSI character in al to UNICODE character in ax, using cp866 encoding
         movzx   eax, al
@@ -392,25 +368,85 @@ ansi2uni_char:
         mov     al, '_'
         ret
 
-utf8_to_cp866:
-; in: esi, edi, ecx
-; destroys esi, edi, ecx, eax
-        call    utf8to16
-        js      utf8to16.ret
-        call    uni2ansi_char
-        stosb
-        jmp     utf8_to_cp866
-
-utf8to16:
+cp866toUTF8_string:
 ;   in:
-; esi -> string
-; ecx = byte counter
-;   out:
-; SF=1 -> end
-; ax = UTF-16 char
-; changes esi, ecx
+; esi -> cp866 string (could be zero terminated)
+; edi -> buffer for UTF-8 string
+; ecx = buffer size (signed)
+        lodsb
+        call    ansi2uni_char
+        push    eax
+        call    UTF16to8
+        pop     eax
+        js      @f
+        test    eax, eax
+        jnz     cp866toUTF8_string
+@@:
+        ret
+
+; SF=1 -> counter
+; ZF=1 -> zero char
+
+UTF16to8_string:
+;   in:
+; esi -> UTF-16 string (could be zero terminated)
+; edi -> buffer for UTF-8 string
+; ecx = buffer size (signed)
+        xor     eax, eax
+@@:
+        lodsw
+        push    eax
+        call    UTF16to8
+        pop     eax
+        js      @f
+        test    eax, eax
+        jnz     @b
+@@:
+        ret
+
+UTF16to8:
+;   in:
+; eax = UTF-16 char
+; edi -> buffer for UTF-8 char (increasing)
+; ecx = byte counter (decreasing)
         dec     ecx
         js      .ret
+        cmp     eax, 80h
+        jnc     @f
+        stosb
+        test    eax, eax    ; SF=0
+.ret:
+        ret
+
+@@:
+        dec     ecx
+        js      .ret
+        cmp     eax, 800h
+        jnc     @f
+        shl     eax, 2
+        shr     al, 2
+        or      eax, 1100000010000000b
+        xchg    al, ah
+        stosw
+        ret
+
+@@:
+        dec     ecx
+        js      .ret
+        shl     eax, 4
+        shr     ax, 2
+        shr     al, 2
+        or      eax, 111000001000000010000000b
+        bswap   eax
+        shr     eax, 8
+        stosb
+        shr     eax, 8
+        stosw
+        ret
+
+utf8to16:
+; in: esi -> UTF-8 char (increasing)
+; out: ax = UTF-16 char
         lodsb
         test    al, al
         jns     .got
@@ -418,8 +454,6 @@ utf8to16:
         jnc     utf8to16
 @@:
         shl     ax, 8
-        dec     ecx
-        js      .ret
         lodsb
         test    al, al
         jns     .got
@@ -429,8 +463,6 @@ utf8to16:
         shl     ax, 3
         jnc     @f
         shl     eax, 3
-        dec     ecx
-        js      .ret
         lodsb
         test    al, al
         jns     .got
@@ -445,7 +477,6 @@ utf8to16:
 
 .got:
         xor     ah, ah
-.ret:
         ret
 
 strlen:

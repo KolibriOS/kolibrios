@@ -11,7 +11,7 @@ $Revision$
 ;   in:
 ; ebx -> parameter structure of sysfunc 70
 ; ebp -> FAT structure
-; esi -> path string
+; esi -> path string in UTF-8
 ;   out:
 ; eax, ebx = return values for sysfunc 70
 iglobal
@@ -445,35 +445,20 @@ label fat_legal_chars byte
 endg
 
 fat_name_is_legal:
-; in: esi->(long) name
-; out: CF set <=> legal
-; destroys eax
+; in: esi -> UTF-8 name
+; out: CF=1 -> legal
         push    esi
         xor     eax, eax
 @@:
         lodsb
         test    al, al
-        jz      .done
-        cmp     al, 80h
-        jae     .big
+        js      @b
         test    [fat_legal_chars+eax], 1
         jnz     @b
-.err:
-        pop     esi
-        clc
-        ret
-.big:
-; 0x80-0xAF, 0xE0-0xEF
-        cmp     al, 0xB0
-        jb      @b
-        cmp     al, 0xE0
-        jb      .err
-        cmp     al, 0xF0
-        jb      @b
-        jmp     .err
-.done:
-        sub     esi, [esp]
-        cmp     esi, 257
+        test    al, al
+        jnz     @f
+        stc
+@@:
         pop     esi
         ret
 
@@ -567,9 +552,9 @@ fat_next_short_name:
         ret
 
 fat_gen_short_name:
-; in: esi->long name
-;     edi->buffer (8+3=11 chars)
-; out: buffer filled
+;   in:
+; esi -> UTF-8 name
+; edi -> buffer (8+3=11 chars)
         pushad
         mov     eax, '    '
         push    edi
@@ -583,38 +568,24 @@ fat_gen_short_name:
 .loop:
         lodsb
         test    al, al
+        js      .space
         jz      .done
-        call    char_toupper
-        cmp     al, ' '
-        jz      .space
-        cmp     al, 80h
-        ja      .big
         test    [fat_legal_chars+eax], 2
-        jnz     .symbol
-.inv_symbol:
-        mov     al, '_'
-        or      bh, 1
-.symbol:
+        jz      .space
         cmp     al, '.'
         jz      .dot
-.normal_symbol:
         dec     bl
         jns     .store
-        mov     bl, 0
+        inc     bl
 .space:
         or      bh, 1
         jmp     .loop
+
 .store:
+        call    cp866toUpper
         stosb
         jmp     .loop
-.big:
-        cmp     al, 0xB0
-        jb      .normal_symbol
-        cmp     al, 0xE0
-        jb      .inv_symbol
-        cmp     al, 0xF0
-        jb      .normal_symbol
-        jmp     .inv_symbol
+
 .dot:
         test    bh, 2
         jz      .firstdot
@@ -1187,107 +1158,58 @@ fat_unlock:
         lea     ecx, [ebp+FAT.Lock]
         jmp     mutex_unlock
 
-
 fat_get_name:
-; in: edi->FAT entry
-; out: CF=1 - no valid entry
-; else CF=0 and ebp->ASCIIZ-name
-; (maximum length of filename is 255 (wide) symbols without trailing 0,
-;  but implementation requires buffer 261 words)
-; destroys eax
+; in: edi -> FAT entry
+; out: ebp -> UTF-16 name, CF=1 -> no valid entry
         cmp     byte [edi], 0
         jz      .no
         cmp     byte [edi], 0xE5
-        jnz     @f
-.no:
-        stc
-        ret
-@@:
+        jz      .no
         cmp     byte [edi+11], 0xF
         jz      .longname
         test    byte [edi+11], 8
         jnz     .no
-        push    ecx
-        push    edi ebp
-        test    byte [ebp-4], 1
-        jnz     .unicode_short
-
-        mov     eax, [edi]
-        mov     ecx, [edi+4]
-        mov     [ebp], eax
-        mov     [ebp+4], ecx
-
+        push    ecx esi edi
+        mov     esi, edi
+        mov     edi, ebp
         mov     ecx, 8
 @@:
-        cmp     byte [ebp+ecx-1], ' '
-        loope   @b
-
-        mov     eax, [edi+8]
-        cmp     al, ' '
-        je      .done
-        shl     eax, 8
-        mov     al, '.'
-
-        lea     ebp, [ebp+ecx+1]
-        mov     [ebp], eax
-        mov     ecx, 3
-@@:
-        rol     eax, 8
-        cmp     al, ' '
-        jne     .done
-        loop    @b
-        dec     ebp
-.done:
-        and     byte [ebp+ecx+1], 0   ; CF=0
-        pop     ebp edi ecx
-        ret
-.unicode_short:
-        mov     ecx, 8
-        push    ecx
-@@:
-        mov     al, [edi]
-        inc     edi
+        lodsb
         call    ansi2uni_char
-        mov     [ebp], ax
-        inc     ebp
-        inc     ebp
+        stosw
         loop    @b
-        pop     ecx
+        mov     cl, 8
 @@:
-        cmp     word [ebp-2], ' '
+        cmp     word [edi-2], ' '
         jnz     @f
-        dec     ebp
-        dec     ebp
+        sub     edi, 2
         loop    @b
 @@:
-        mov     word [ebp], '.'
-        inc     ebp
-        inc     ebp
-        mov     ecx, 3
-        push    ecx
+        mov     word [edi], '.'
+        add     edi, 2
+        mov     cl, 3
 @@:
-        mov     al, [edi]
-        inc     edi
+        lodsb
         call    ansi2uni_char
-        mov     [ebp], ax
-        inc     ebp
-        inc     ebp
+        stosw
         loop    @b
-        pop     ecx
+        mov     cl, 3
 @@:
-        cmp     word [ebp-2], ' '
+        cmp     word [edi-2], ' '
         jnz     @f
-        dec     ebp
-        dec     ebp
+        sub     edi, 2
         loop    @b
-        dec     ebp
-        dec     ebp
+        sub     edi, 2
 @@:
-        and     word [ebp], 0   ; CF=0
-        pop     ebp edi ecx
+        and     word [edi], 0   ; CF=0
+        pop     edi esi ecx
         ret
+
+.no:
+        stc
+        ret
+
 .longname:
-; LFN
         mov     al, byte [edi]
         and     eax, 0x3F
         dec     eax
@@ -1295,86 +1217,62 @@ fat_get_name:
         jae     .no     ; ignore invalid entries
         mov     word [ebp+260*2], 0     ; force null-terminating for orphans
         imul    eax, 13*2
-        add     ebp, eax
         test    byte [edi], 0x40
         jz      @f
-        mov     word [ebp+13*2], 0
-@@:
-        push    eax
-; now copy name from edi to ebp ...
-        mov     eax, [edi+1]
-        mov     [ebp], eax      ; symbols 1,2
-        mov     eax, [edi+5]
-        mov     [ebp+4], eax    ; 3,4
-        mov     eax, [edi+9]
-        mov     [ebp+8], ax     ; 5
-        mov     eax, [edi+14]
-        mov     [ebp+10], eax   ; 6,7
-        mov     eax, [edi+18]
-        mov     [ebp+14], eax   ; 8,9
-        mov     eax, [edi+22]
-        mov     [ebp+18], eax   ; 10,11
-        mov     eax, [edi+28]
-        mov     [ebp+22], eax   ; 12,13
-; ... done
-        pop     eax
-        sub     ebp, eax
-        test    eax, eax
-        jz      @f
-; if this is not first entry, more processing required
-        stc
-        ret
-@@:
-; if this is first entry:
-        test    byte [ebp-4], 1
-        jnz     .ret
-; buffer at ebp contains UNICODE name, convert it to ANSI
+        mov     word [ebp+eax+13*2], 0
+@@: ; copy name (13 chars in UTF-16)
         push    esi edi
-        mov     esi, ebp
-        mov     edi, ebp
-        call    uni2ansi_str
+        lea     esi, [edi+1]
+        lea     edi, [ebp+eax]
+        movsd
+        movsd
+        movsd
+        inc     esi
+        sub     edi, 2
+        movsd
+        movsd
+        movsd
+        add     esi, 2
+        movsd
         pop     edi esi
-.ret:
-        clc
+        test    eax, eax
+        jnz     .no ; if this is not first entry, more processing required
         ret
 
 fat_compare_name:
-; compares ASCIIZ-names, case-insensitive (cp866 encoding)
-; in: esi->name, ebp->name
-; out: if names match: ZF=1 and esi->next component of name
-;      else: ZF=0, esi is not changed
-; destroys eax
+; in: esi -> name in UTF-8, ebp -> name in UTF-16
+;   out:
+; ZF=1 -> names match, esi -> next component of name
+; ZF=0 -> esi is not changed
         push    ebp esi
-.loop:
-        mov     al, [ebp]
-        inc     ebp
-        call    char_toupper
-        push    eax
-        lodsb
-        call    char_toupper
-        cmp     al, [esp]
-        jnz     .done
-        pop     eax
-        test    al, al
-        jnz     .loop
-        dec     esi
-        pop     eax
-        pop     ebp
-        xor     eax, eax        ; set ZF flag
-        ret
-.done:
-        cmp     al, '/'
-        jnz     @f
-        cmp     byte [esp], 0
-        jnz     @f
-        mov     [esp+4], esi
 @@:
-        pop     eax
+        call    utf8to16
+        call    utf16toUpper
+        mov     edx, eax
+        mov     ax, [ebp]
+        call    utf16toUpper
+        cmp     ax, dx
+        jnz     .done
+        add     ebp, 2
+        test    ax, ax
+        jnz     @b
+        dec     esi
+        pop     eax ebp
+        xor     eax, eax    ; set ZF
+        ret
+
+.done:
+        cmp     dx, '/'
+        jnz     @f
+        test    ax, ax
+        jnz     @f
+        mov     [esp], esi
+@@:
         pop     esi ebp
         ret
 
 fat_find_lfn:
-; in: esi->name
+; in: esi -> name in UTF-8
 ;     [esp+4] = next
 ;     [esp+8] = first
 ;     [esp+C]... - possibly parameters for first and next
@@ -1385,26 +1283,26 @@ fat_find_lfn:
         call    dword [eax-4]
         jc      .reterr
         sub     esp, 262*2      ; reserve place for LFN
-        push    0               ; for fat_get_name: read ASCII name
 .l1:
-        lea     ebp, [esp+4]
+        lea     ebp, [esp]
         call    fat_get_name
         jc      .l2
         call    fat_compare_name
         jz      .found
 .l2:
-        mov     ebp, [esp+8+262*2+4]
-        lea     eax, [esp+0Ch+20h+262*2+4]
+        mov     ebp, [esp+8+262*2]
+        lea     eax, [esp+0Ch+20h+262*2]
         call    dword [eax-8]
         jnc     .l1
-        add     esp, 262*2+4
+        add     esp, 262*2
 .reterr:
         mov     [esp+28], eax
         stc
         popa
         ret
+
 .found:
-        add     esp, 262*2+4
+        add     esp, 262*2
         mov     ebp, [esp+8]
 ; if this is LFN entry, advance to true entry
         cmp     byte [edi+11], 0xF
@@ -1413,7 +1311,7 @@ fat_find_lfn:
         call    dword [eax-8]
         jc      .reterr
 @@:
-        add     esp, 8          ; CF=0
+        add     esp, 8  ; CF=0
         push    esi
         push    edi
         popa
@@ -1481,9 +1379,8 @@ bdfe_to_fat_date:
 
 fat_entry_to_bdfe:
 ; convert FAT entry at edi to BDFE (block of data of folder entry) at esi, advance esi
-; destroys eax
         mov     eax, [ebp-4]
-        mov     [esi+4], eax    ; ASCII/UNICODE name
+        mov     [esi+4], eax    ; cp866/UNICODE name
 fat_entry_to_bdfe2:
         movzx   eax, byte [edi+11]
         mov     [esi], eax      ; attributes
@@ -1512,6 +1409,7 @@ fat_entry_to_bdfe2:
         push    ecx edi
         lea     edi, [esi+40]
         mov     esi, ebp
+        mov     ecx, 263
         test    byte [esi-4], 1
         jz      .ansi
         mov     ecx, 260/2
@@ -1522,10 +1420,14 @@ fat_entry_to_bdfe2:
         pop     edi ecx
 .ret:
         ret
+
 .ansi:
-        mov     ecx, 264/4
-        rep movsd
-        mov     [edi-1], al
+        lodsw
+        call    uni2ansi_char
+        stosb
+        loop    .ansi
+        xor     eax, eax
+        stosb
         jmp     @b
 
 bdfe_to_fat_entry:
@@ -1557,7 +1459,7 @@ bdfe_to_fat_entry:
         ret
 
 hd_find_lfn:
-; in: esi -> path string
+; in: esi -> path string in UTF-8
 ; out: CF=1 - file not found, eax=error code
 ;      else CF=0 and edi->direntry, eax=sector
         push    esi edi
@@ -1825,7 +1727,7 @@ fat_ReadFolder:
 .doit:
         push    esi
         sub     esp, 262*2      ; reserve space for LFN
-        push    dword [ebx+8]   ; for fat_get_name: read ANSI/UNICODE name
+        push    dword [ebx+8]   ; cp866/UNICODE name
         mov     edx, [ebx+16]   ; pointer to buffer
 ; init header
         push    eax
@@ -2386,22 +2288,19 @@ fat_CreateFile:
         movi    eax, 1     ; 1 entry
         jnz     .notilde
 ; we need ceil(strlen(esi)/13) additional entries = floor((strlen(esi)+12+13)/13) total
-        xor     eax, eax
+        xor     ecx, ecx
+        push    esi
 @@:
-        cmp     byte [esi], 0
-        jz      @f
-        inc     esi
-        inc     eax
-        jmp     @b
-
-@@:
-        sub     esi, eax
-        add     eax, 12+13
+        call    utf8to16
+        inc     ecx
+        test    ax, ax
+        jnz     @b
+        pop     esi
+        mov     eax, ecx
+        add     eax, 12+13-1
         mov     ecx, 13
-        push    edx
         cdq
         div     ecx
-        pop     edx
 .notilde:
         push    -1
         push    -1
@@ -2480,7 +2379,7 @@ fat_CreateFile:
         jmp     .disk_full
 
 @@:
-        mov     [esp+8+12+8+12+36+20], eax ; store the cluster somewhere
+        mov     [esp+8+12+8+12+36+20], eax  ; store the cluster somewhere
 .no.preallocate.folder.data:    ; calculate name checksum
         mov     esi, [esp+8+12]
         mov     ecx, 11
@@ -2490,26 +2389,28 @@ fat_CreateFile:
         add     al, [esi]
         inc     esi
         loop    @b
-        pop     ecx esi
-        pop     edi
+        pop     ecx esi edi
         pop     dword [esp+8+12+12]
         pop     dword [esp+8+12+12]
 ; edi points to first entry in free chunk
         dec     ecx
         jz      .nolfn
-        push    esi
-        push    eax
+        push    esi eax
         lea     eax, [esp+8+8+12+8]
-        call    dword [eax+8]         ; begin write
+        call    dword [eax+8]   ; begin write
         mov     al, 40h
 .writelfn:
         or      al, cl
+        stosb
         mov     esi, [esp+4]
         push    ecx
         dec     ecx
+        jz      @f
         imul    ecx, 13
-        add     esi, ecx
-        stosb
+.scroll:
+        call    utf8to16
+        loop    .scroll
+@@:
         mov     cl, 5
         call    fat_read_symbols
         mov     ax, 0xF
@@ -2524,11 +2425,10 @@ fat_CreateFile:
         call    fat_read_symbols
         pop     ecx
         lea     eax, [esp+8+8+12+8]
-        call    dword [eax+12]         ; next write
+        call    dword [eax+12]  ; next write
         xor     eax, eax
         loop    .writelfn
-        pop     eax
-        pop     esi
+        pop     eax esi
 .nolfn:
         xchg    esi, [esp]
         mov     ecx, 11
@@ -2730,21 +2630,20 @@ fat_CreateFile:
         mov     [edi-32+20], cx
         jmp     .writedircont
 
-fat_read_symbol:
-        or      ax, -1
-        test    esi, esi
-        jz      .retFFFF
-        lodsb
-        test    al, al
-        jnz     ansi2uni_char
-        xor     eax, eax
-        xor     esi, esi
-.retFFFF:
+@@:
+        or      eax, -1
+        rep stosw
         ret
 
 fat_read_symbols:
-        call    fat_read_symbol
+        test    esi, esi
+        jz      @b
+        call    utf8to16
         stosw
+        test    ax, ax
+        jnz     @f
+        xor     esi, esi
+@@:
         loop    fat_read_symbols
         ret
 
