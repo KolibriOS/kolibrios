@@ -141,10 +141,9 @@ deltaToScreen = 28
 .drawUTF8:
         dec     dword [esp]
         js      .done
-        mov     ecx, 256
         xor     eax, eax
         call    utf8to16
-        test    ax, ax
+        test    eax, eax
         jz      .done
         cmp     eax, 1419
         jc      @f
