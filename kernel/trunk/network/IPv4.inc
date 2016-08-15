@@ -626,7 +626,7 @@ ipv4_find_fragment_slot:
 align 4
 ipv4_output:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_output: size=%u ip=0x%x\n", ecx, eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_output: size=%u ip=0x%x\n", ecx, edi
 
         cmp     ecx, 65500              ; Max IPv4 packet size
         ja      .too_large
@@ -986,12 +986,15 @@ ipv4_route:
         and     ebx, [SUBNET_LIST + edi]
         mov     ecx, eax
         and     ecx, [SUBNET_LIST + edi]
+        cmp     ecx, ebx
         je      @f
         mov     eax, [GATEWAY_LIST + edi]
   @@:
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_route: %u\n", edi
         ret
 
   .fail:
+        DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_route failed\n"
         xor     eax, eax
         ret
 
