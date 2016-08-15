@@ -28,7 +28,7 @@ Parameters:
       * Y=1 - only define window area, draw nothing
       * Y=3 - skinned window
       * Y=4 - skinned fixed-size window
-      * Y=0,2 window types are outdated and should not be used anymore, 
+      * Y=0,2 window types are outdated and should not be used anymore,
         they are retained for compatibility with old programs.
       * other possible values (from 5 to 15) are reserved,
         function call with such Y is ignored
@@ -1682,7 +1682,8 @@ Remarks:
 Parameters:
   * eax = 30 - function number
   * ebx = 1 - subfunction number
-  * ecx = pointer to ASCIIZ-string with the path to new current folder
+  * ecx = pointer to string with the path to new current folder,
+    rules of path forming can be found in function 70 description.
 Returned value:
   * function does not return value
 
@@ -1706,17 +1707,39 @@ Parameters:
   * eax = 30 - function number
   * ebx = 3 - subfunction number
   * ecx = pointer to a block of data:
-          sysdir_name     rb 64
-          sysdir_path     rb 64
-For example:
-dir_name1       db 'KolibriOS',0
-                rb 64-10
-dir_path1       db 'HD0/1',0
-                rb 64-6
+    for cp866 encoding:
+key     rb  64
+path    rb  64
+    for UTF-16LE encoding:
+key     rb  64
+        dw  2
+path    rw  31
+    Example:
+align 64
+key     db  'kolibrios',0   ; key must be in lower case
+align 64
+path    db  'HD0/1',0
+
 Returned value:
   * function does not return value
 Remarks:
   * The function can be called only 1 time for 1 session of the OS.
+  * The key is not affected by encoding.
+
+------ Subfunction 4 - get current folder in UTF-16LE encoding. ------
+Parameters:
+  * eax = 30 - function number
+  * ebx = 4 - subfunction number
+  * ecx = pointer to buffer
+  * edx = size of buffer
+Returned value:
+  * eax = number of chars in the buffer (including terminating 0)
+Remarks:
+  * If the buffer is too small to hold all data, only first (edx-2)
+    bytes are copied and than terminating 0 is inserted.
+  * By default, current folder for the thread is "/rd/1".
+  * At process/thread creation the current folder will be inherited
+    from the parent.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_CURRENT_FOLDER (30)
@@ -3825,36 +3848,31 @@ General format of the information structure:
   * +8: dword: high dword of offset (must be 0) or flags field
   * +12 = +0xC: dword: size
   * +16 = +0x10: dword: pointer to data
-  * +20 = +0x14: n db: ASCIIZ-string with the filename
+  * +20 = +0x14: ?: path - zero terminated string
     or
-  * +20 = +0x14: db 0
-  * +21 = +0x15: dd pointer to ASCIIZ-string with the filename
-Specifications - in documentation on the appropriate subfunction.
-Filename is case-insensitive. Russian letters must be written in
-the encoding cp866 (DOS).
+  * +20 = +0x14: byte: 0
+  * +21 = +0x15: dword: pointer to string
+You may set encoding to UTF-16LE by starting the string with a byte with value 2,
+otherwise will be used cp866. Case sensitivity depends on filesystem.
 Format of filename:
-/base/number/dir1/dir2/.../dirn/file,
-where /base/number identifies device, on which file is located:
-one of
-  * /RD/1 = /RAMDISK/1 to access ramdisk
-  * /FD/1 = /FLOPPYDISK/1 to access first floppy drive,
-    /FD/2 = /FLOPPYDISK/2 to access second one
-  * /HD0/x, /HD1/x, /HD2/x, /HD3/x to access accordingly to devices
+  /base/number/dir1/dir2/.../dirn/file,
+where base/number identifies device, on which file is located:
+  * RD/1 = ramdisk
+  * FD/1 = first floppy drive,
+    FD/2 = second floppy drive
+  * HD0/x, HD1/x, HD2/x, HD3/x = hard drives accordingly on
     IDE0 (Primary Master), IDE1 (Primary Slave),
     IDE2 (Secondary Master), IDE3 (Secondary Slave);
-    x - partition number on the selected hard drive, varies from 1
-    to 255 (on each hard drive the indexing starts from 1)
-  * /CD0/1, /CD1/1, /CD2/1, /CD3/1 to access accordingly to
-    CD on IDE0 (Primary Master), IDE1 (Primary Slave),
-    IDE2 (Secondary Master), IDE3 (Secondary Slave)
-  * /SYS means system folder; with the usual boot (from floppy)
-    is equivalent to /RD/1
+    x - partition number on the selected hard drive, starts from 1
+  * CD0/1, CD1/1, CD2/1, CD3/1 = same for cd
+  * SYS = system folder (encoding inaffected key),
+    second key may be set by sysfunction 30.3.
 Examples:
-  * '/rd/1/kernel.asm',0
-  * '/HD0/1/kernel.asm',0
-  * '/hd0/2/menuet/pics/tanzania.bmp',0
-  * '/hd0/1/Program files/NameOfProgram/SomeFile.SomeExtension',0
-  * '/sys/MySuperApp.ini',0
+  * '/sys/example.asm',0
+  * '/rd/1/example.asm',0
+  * '/HD0/1/folder/file.txt',0
+  * '/hd2/2/pics/tanzania.bmp',0
+  * 2,'/',0,'sys','/',0,'F',0,'I',0,'L',0,'E',0,0,0
 Also function supports relative names.  If the path begins not
 with '/', it is considered relative to a current folder. To get or
 set a current folder, use the function 30.
@@ -3896,11 +3914,7 @@ Format of the information structure:
   * +8: dword: 0 (reserved for high dword of offset)
   * +12 = +0xC: dword: number of bytes to read
   * +16 = +0x10: dword: pointer to buffer for data
-  * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
-    given in the general description
-    or
-  * +20 = +0x14: db 0
-  * +21 = +0x15: dd pointer to ASCIIZ-string with file name
+  * +20 = +0x14: path, general rules of names forming
 Returned value:
   * eax = 0 - success, otherwise file system error code
   * ebx = number of read bytes or -1=0xffffffff if file was not found
@@ -3923,27 +3937,21 @@ Parameters:
 Format of the information structure:
   * +0: dword: 1 = subfunction number
   * +4: dword: index of starting block (beginning from 0)
-  * +8: dword: flags field:
-    * bit 0 (mask 1): in what format to return names,
-      0=ANSI, 1=UNICODE
-    * other bits are reserved and must be set to 0 for the future
-      compatibility
+  * +8: dword: encoding:
+    * 0 = cp866 -> byte per char
+    * 1 = UTF-16LE -> word per char
   * +12 = +0xC: dword: number of blocks to read
   * +16 = +0x10: dword: pointer to buffer for data, buffer size
-    must be not less than 32 + [+12]*560 bytes
-  * +20 = +0x14: ASCIIZ-name of folder, the rules of names forming are
-    given in the general description
-    or
-  * +20 = +0x14: db 0
-  * +21 = +0x15: dd pointer to ASCIIZ-string with file name
+    must be not less than 32+n(40+256*enc+8) bytes
+  * +20 = +0x14: path, general rules of names forming
 Returned value:
   * eax = 0 - success, otherwise file system error code
   * ebx = number of files, information on which was written to
     the buffer, or -1=0xffffffff, if folder was not found
 Structure of the buffer:
-  * +0: 32*byte: header
-  * +32 = +0x20: n1*byte: block with information on file 1
-  * +32+n1: n2*byte: block with information on file 2
+  * header (32 bytes)
+  * block with information on file 1
+  * block with information on file 2
   * ...
 Structure of header:
   * +0: dword: version of structure (current is 1)
@@ -3966,11 +3974,9 @@ Structure of block of data for folder entry (BDFE):
       and after archiving this bit is cleared - it can be useful
       for automatically creating of backup-archives as at writing
       this bit is usually set
-  * +4: byte: type of name data:
-    (coincides with bit 0 of flags in the information structure)
-    * 0 = ASCII = 1-byte representation of each character
-    * 1 = UNICODE = 2-byte representation of each character
-  * +5: 3*byte: reserved (zero)
+  * +4: dword: encoding:
+    * 0 = cp866 -> byte per char
+    * 1 = UTF-16LE -> word per char
   * +8: 4*byte: time of file creation
   * +12 = +0xC: 4*byte: date of file creation
   * +16 = +0x10: 4*byte: time of last access (read or write)
@@ -3978,11 +3984,7 @@ Structure of block of data for folder entry (BDFE):
   * +24 = +0x18: 4*byte: time of last modification
   * +28 = +0x1C: 4*byte: date of last modification
   * +32 = +0x20: qword: file size in bytes (up to 16777216 Tb)
-  * +40 = +0x28: name
-    * for ASCII format: maximum length is 263 characters
-      (263 bytes), byte after the name has value 0
-    * for UNICODE format: maximum length is 259 characters
-      (518 bytes), 2 bytes after the name have value 0
+  * +40 = +0x28: (256*enc+8)*byte: name
 Time format:
   * +0: byte: seconds
   * +1: byte: minutes
@@ -3995,11 +3997,10 @@ Date format:
   * +2: word: year
   * for example, 25.11.1979 is written as (in hex) 19 0B BB 07
 Remarks:
-  * If BDFE contains ASCII name, the length of BDFE is 304 bytes,
-    if UNICODE name - 560 bytes. Value of length is aligned
-    on 16-byte bound (to accelerate processing in CPU cache).
-  * First character after a name is zero (ASCIIZ-string). The further
-    data contain garbage.
+  * If BDFE contains cp866 name, the length of BDFE is 304 bytes,
+    if UTF-16LE name - 560 bytes. Value of length is aligned
+    on 16-byte bound to accelerate processing in CPU cache.
+  * Name string is zero terminated, further data contain garbage.
   * If files in folder were ended before requested number was read,
     the function will read as many as it can, and after that return
     eax=6 (EOF).
@@ -4027,11 +4028,7 @@ Format of the information structure:
   * +8: dword: 0 (reserved)
   * +12 = +0xC: dword: number of bytes to write
   * +16 = +0x10: dword: pointer to data
-  * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
-    given in the general description
-    or
-  * +20 = +0x14: db 0
-  * +21 = +0x15: dd pointer to ASCIIZ-string with file name
+  * +20 = +0x14: path, general rules of names forming
 Returned value:
   * eax = 0 - success, otherwise file system error code
   * ebx = number of written bytes (possibly 0)
@@ -4058,11 +4055,7 @@ Format of the information structure:
   * +8: dword: high dword of offset (must be 0 for FAT)
   * +12 = +0xC: dword: number of bytes to write
   * +16 = +0x10: dword: pointer to data
-  * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
-    given in the general description
-    or
-  * +20 = +0x14: db 0
-  * +21 = +0x15: dd pointer to ASCIIZ-string with file name
+  * +20 = +0x14: path, general rules of names forming
 Returned value:
   * eax = 0 - success, otherwise file system error code
   * ebx = number of written bytes (possibly 0)
@@ -4090,11 +4083,7 @@ Format of the information structure:
   * +8: dword: high dword of new file size (must be 0 for FAT)
   * +12 = +0xC: dword: 0 (reserved)
   * +16 = +0x10: dword: 0 (reserved)
-  * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
-    given in the general description
-    or
-  * +20 = +0x14: db 0
-  * +21 = +0x15: dd pointer to ASCIIZ-string with file name
+  * +20 = +0x14: path, general rules of names forming
 Returned value:
   * eax = 0 - success, otherwise file system error code
   * ebx destroyed
@@ -4124,11 +4113,7 @@ Format of the information structure:
   * +8: dword: 0 or flags (for the root folder)
   * +12 = +0xC: dword: 0 (reserved)
   * +16 = +0x10: dword: pointer to buffer for data (40 bytes)
-  * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
-    given in the general description
-    or
-  * +20 = +0x14: db 0
-  * +21 = +0x15: dd pointer to ASCIIZ-string with file name
+  * +20 = +0x14: path, general rules of names forming
 Returned value:
   * eax = 0 - success, otherwise file system error code
   * ebx destroyed
@@ -4154,11 +4139,7 @@ Format of the information structure:
   * +8: dword: 0 (reserved)
   * +12 = +0xC: dword: 0 (reserved)
   * +16 = +0x10: dword: pointer to buffer with attributes (32 bytes)
-  * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
-    given in the general description
-    or
-  * +20 = +0x14: db 0
-  * +21 = +0x15: dd pointer to ASCIIZ-string with file name
+  * +20 = +0x14: path, general rules of names forming
 Returned value:
   * eax = 0 - success, otherwise file system error code
   * ebx destroyed
@@ -4189,11 +4170,7 @@ Format of the information structure:
   * +8: dword: 0 or pointer to ASCIIZ-string with parameters
   * +12 = +0xC: dword: 0 (reserved)
   * +16 = +0x10: dword: 0 (reserved)
-  * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
-    given in the general description
-    or
-  * +20 = +0x14: db 0
-  * +21 = +0x15: dd pointer to ASCIIZ-string with file name
+  * +20 = +0x14: path, general rules of names forming
 Returned value:
   * eax > 0 - program is loaded, eax contains PID
   * eax < 0 - an error has occured, -eax contains
@@ -4222,11 +4199,7 @@ Format of the information structure:
   * +8: dword: 0 (reserved)
   * +12 = +0xC: dword: 0 (reserved)
   * +16 = +0x10: dword: 0 (reserved)
-  * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
-    given in the general description
-    or
-  * +20 = +0x14: db 0
-  * +21 = +0x15: dd pointer to ASCIIZ-string with file name
+  * +20 = +0x14: path, general rules of names forming
 Returned value:
   * eax = 0 - success, otherwise file system error code
   * ebx destroyed
@@ -4250,11 +4223,7 @@ Format of the information structure:
   * +8: dword: 0 (reserved)
   * +12 = +0xC: dword: 0 (reserved)
   * +16 = +0x10: dword: 0 (reserved)
-  * +20 = +0x14: ASCIIZ-name of folder, the rules of names forming are
-    given in the general description
-    or
-  * +20 = +0x14: db 0
-  * +21 = +0x15: dd pointer to ASCIIZ-string with folder name
+  * +20 = +0x14: path, general rules of names forming
 Returned value:
   * eax = 0 - success, otherwise file system error code
   * ebx destroyed
