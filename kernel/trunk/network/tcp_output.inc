@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -30,6 +30,7 @@ proc tcp_output
 
 locals
         temp_bits       db ?
+        window          dd ?
 endl
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: socket=%x state=%u\n", eax, [eax + TCP_SOCKET.t_state]
@@ -470,7 +471,8 @@ endl
         mov     ebx, ecx
   @@:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: window = %u\n", ebx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: window=%u\n", ebx
+        mov     [window], ebx
 
         mov     cl, [eax + TCP_SOCKET.RCV_SCALE]
         shr     ebx, cl
@@ -518,19 +520,19 @@ endl
         push    ecx
         mov     ecx, [esp + 4]
         lea     esi, [esp + 8]
-        shr     ecx, 2                  ; count is in bytes, we will work with dwords
+        shr     ecx, 2                          ; count is in bytes, we will work with dwords
         rep movsd
-        pop     ecx                     ; full TCP packet size
+        pop     ecx                             ; full TCP packet size
 
-        pop     esi                     ; headersize
-        add     esp, esi                ; remove it from stack
+        pop     esi                             ; headersize
+        add     esp, esi                        ; remove it from stack
 
-        push    eax                     ; packet ptr for send proc
+        push    eax                             ; packet ptr for send proc
 
-        mov     edx, edi                ; begin of data
-        sub     edx, esi                ; begin of packet (edi = begin of data)
+        mov     edx, edi                        ; begin of data
+        sub     edx, esi                        ; begin of packet (edi = begin of data)
         push    ecx
-        sub     ecx, esi                ; data size
+        sub     ecx, esi                        ; data size
 
 ;--------------
 ; Copy the data
@@ -629,6 +631,8 @@ endl
         inc     [TCPS_sndtotal]
 
 ; update advertised receive window
+
+        mov     ecx, [window]
         test    ecx, ecx
         jz      @f
         add     ecx, [eax + TCP_SOCKET.RCV_NXT]
