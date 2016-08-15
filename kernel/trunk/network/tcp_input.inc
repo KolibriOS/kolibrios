@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -15,6 +15,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 $Revision$
+
+TCP_BIT_NEEDOUTPUT      = 1 shl 0
+TCP_BIT_TIMESTAMP       = 1 shl 1
+TCP_BIT_DROPSOCKET      = 1 shl 2
+TCP_BIT_FIN_IS_ACKED    = 1 shl 3
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
@@ -65,7 +70,14 @@ tcp_input:
         ret
 
 
-
+;-----------------------------------------------------------------;
+;                                                                 ;
+; TCP_process_input: Process segments from the incoming TCP queue.;
+;                                                                 ;
+;  IN:  /                                                         ;
+;  OUT: /                                                         ;
+;                                                                 ;
+;-----------------------------------------------------------------;
 align 4
 proc tcp_process_input
 
@@ -101,10 +113,8 @@ endl
 
         mov     edx, esi
 
-        cmp     ebx, LOOPBACK_DEVICE
-        je      .checksum_ok
+; Verify the checksum (if not already done by hw)
 
-; re-calculate the checksum (if not already done by hw)
         test    [ebx + NET_DEVICE.hwacc], NET_HWACC_TCP_IPv4_IN
         jnz     .checksum_ok
 
@@ -119,6 +129,7 @@ endl
   .checksum_ok:
 
 ; Verify the data offset
+
         movzx   eax, [edx + TCP_header.DataOffset]
         and     al, 0xf0                        ; Calculate TCP segment header size (throwing away unused reserved bits in TCP header)
         shr     al, 2
@@ -139,8 +150,11 @@ endl
         ntohw   [edx + TCP_header.Window]
         ntohw   [edx + TCP_header.UrgentPointer]
 
-;------------------------
+;-----------------------------------------------------------------------------------
+;
 ; Find the socket pointer
+;
+;-----------------------------------------------------------------------------------
 
 ; IP Packet TCP Destination Port = local Port
 ; (IP Packet SenderAddress = Remote IP)  OR  (Remote IP = 0)
@@ -217,21 +231,28 @@ endl
         push    ecx
         mov     cl, [ebx + TCP_SOCKET.SND_SCALE]
         shl     eax, cl
-        mov     dword [edx + TCP_header.Window], eax    ; word after window is checksum, we dont need checksum anymore
+        mov     dword[edx + TCP_header.Window], eax     ; word after window is checksum, we dont need checksum anymore
         pop     ecx
 
-;---------------------------------------
-; Are we accepting incoming connections?
+;-----------------------------------------------------------------------------------
+;
+; Accept incoming connections
+;
+;-----------------------------------------------------------------------------------
 
         test    [ebx + SOCKET.options], SO_ACCEPTCON
         jz      .no_accept
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Accepting new connection\n"
 
+; Unlock current socket
+
         pusha
         lea     ecx, [ebx + SOCKET.mutex]
         call    mutex_unlock
         popa
+
+; Fork it
 
         push    ecx edx esi edi
         call    socket_fork
@@ -239,6 +260,8 @@ endl
 
         test    eax, eax
         jz      .drop_no_socket
+
+; Success! Use the new socket from now on (it is already locked)
 
         mov     ebx, eax
 
@@ -261,8 +284,11 @@ endl
         mov     [ebx + TCP_SOCKET.timer_keepalive], TCP_time_keep_idle
         or      [ebx + TCP_SOCKET.timer_flags], timer_flag_keepalive
 
-;--------------------
+;-----------------------------------------------------------------------------------
+;
 ; Process TCP options
+;
+;-----------------------------------------------------------------------------------
 
 ;;; FIXME: for LISTEN, options should be called after we determined route, we need it for MSS
 ;;;        cmp     [ebx + TCP_SOCKET.t_state], TCPS_LISTEN ; no options when in listen state
@@ -271,7 +297,7 @@ endl
         push    ecx
 
         mov     ecx, [dataoffset]
-        cmp     ecx, sizeof.TCP_header                  ; Does header contain any options?
+        cmp     ecx, sizeof.TCP_header          ; Does header contain any options?
         je      .no_options
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Segment has options\n"
@@ -395,7 +421,7 @@ endl
         jmp     .opt_loop
 
   .paws_drop:
-        inc     [TCPS_rcvduppack]                       ; update stats
+        inc     [TCPS_rcvduppack]
         add     [TCPS_rcvdupbyte], ecx
         inc     [TCPS_pawsdrop]
         jmp     .drop_after_ack
@@ -404,10 +430,13 @@ endl
 
         pop     ecx
 
-;-----------------------------------------------------------------------
-; Time to do some header prediction (Original Principle by Van Jacobson)
+;-----------------------------------------------------------------------------------
+;
+; Header prediction
+;
+;-----------------------------------------------------------------------------------
 
-; There are two common cases for an uni-directional data transfer.
+; According to Van Jacobson, there are two common cases for an uni-directional data transfer.
 ;
 ; General rule: the packets has no control flags, is in-sequence,
 ;   window width didnt change and we're not retransmitting.
@@ -432,7 +461,7 @@ endl
         cmp     eax, [ebx + TCP_SOCKET.RCV_NXT]
         jne     .not_uni_xfer
 
-        mov     eax, dword [edx + TCP_header.Window]
+        mov     eax, dword[edx + TCP_header.Window]
         cmp     eax, [ebx + TCP_SOCKET.SND_WND]
         jne     .not_uni_xfer
 
@@ -446,21 +475,25 @@ endl
 ; If the following 4 conditions are all true, this segment is a pure ACK.
 ;
 ; - The segment contains no data.
+
         test    ecx, ecx
         jnz     .not_sender
 
 ; - The congestion window is greater than or equal to the current send window.
 ;     This test is true only if the window is fully open, that is, the connection is not in the middle of slow start or congestion avoidance.
+
         mov     eax, [ebx + TCP_SOCKET.SND_CWND]
         cmp     eax, [ebx + TCP_SOCKET.SND_WND]
         jb      .not_uni_xfer
 
 ; - The acknowledgment field in the segment is less than or equal to the maximum sequence number sent.
+
         mov     eax, [edx + TCP_header.AckNumber]
         cmp     eax, [ebx + TCP_SOCKET.SND_MAX]
         ja      .not_uni_xfer
 
 ; - The acknowledgment field in the segment is greater than the largest unacknowledged sequence number.
+
         sub     eax, [ebx + TCP_SOCKET.SND_UNA]
         jbe     .not_uni_xfer
 
@@ -469,7 +502,13 @@ endl
 ;---------------------------------
 ; Packet is a pure ACK, process it
 
+        inc     [TCPS_predack]
+
+        inc     [TCPS_rcvackpack]
+        add     [TCPS_rcvackbyte], eax
+
 ; Delete acknowledged bytes from send buffer
+
         pusha
         mov     ecx, eax
         lea     eax, [ebx + STREAM_SOCKET.snd]
@@ -497,23 +536,28 @@ endl
   .rtt_done:
 
 ; update window pointers
+
         mov     eax, [edx + TCP_header.AckNumber]
         mov     [ebx + TCP_SOCKET.SND_UNA], eax
 
 ; Stop retransmit timer
+
         and     [ebx + TCP_SOCKET.timer_flags], not timer_flag_retransmission
 
 ; Unlock the socket
+
         pusha
         lea     ecx, [ebx + SOCKET.mutex]
         call    mutex_unlock
         popa
 
 ; Awaken waiting processes
+
         mov     eax, ebx
         call    socket_notify
 
 ; Generate more output
+
         call    tcp_output
 
         jmp     .drop_no_socket
@@ -522,14 +566,16 @@ endl
 ; maybe we are the receiver in the uni-xfer then..
 
   .not_sender:
-; - The amount of data in the segment is greater than 0 (data count is in ecx)
 
+; - The amount of data in the segment is greater than 0 (data count is in ecx)
 ; - The acknowledgment field equals the largest unacknowledged sequence number. This means no data is acknowledged by this segment.
+
         mov     eax, [edx + TCP_header.AckNumber]
         cmp     eax, [ebx + TCP_SOCKET.SND_UNA]
         jne     .not_uni_xfer
 
 ; - The reassembly list of out-of-order segments for the connection is empty.
+
         cmp     [ebx + TCP_SOCKET.seg_next], 0
         jne     .not_uni_xfer
 
@@ -550,14 +596,18 @@ endl
 
         jmp     .drop
 
-;--------------------------------------------------
-; Header prediction failed, do it the slow way
+
+;-----------------------------------------------------------------------------------
+;
+; TCP segment processing, the slow way
+;
+;-----------------------------------------------------------------------------------
 
   .not_uni_xfer:
-
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Header prediction failed\n"
 
 ; Calculate receive window size
+
         push    edx
         mov     eax, SOCKET_BUFFER_SIZE
         sub     eax, [ebx + STREAM_SOCKET.rcv.size]
@@ -576,22 +626,29 @@ endl
 ; If we are in listen or syn_sent state, go to that specific code right away
 
         cmp     [ebx + TCP_SOCKET.t_state], TCPS_LISTEN
-        je      .LISTEN
+        je      .state_listen
 
         cmp     [ebx + TCP_SOCKET.t_state], TCPS_SYN_SENT
-        je      .SYN_SENT
+        je      .state_syn_sent
 
-;----------------------------
-; trim any data not in window
+;-----------------------------------------------------------------------------------
+;
+; Trim any data not in window
+;
+;-----------------------------------------------------------------------------------
 
-; 1. Check for duplicate data at beginning of segment
+;-------------------------------------------------
+; Check for duplicate data at beginning of segment
 
 ; Calculate number of bytes we need to drop
+
         mov     eax, [ebx + TCP_SOCKET.RCV_NXT]
         sub     eax, [edx + TCP_header.SequenceNumber]
         jle     .no_duplicate
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: %u bytes duplicate data!\n", eax
+
+; Check for duplicate SYN
 
         test    [edx + TCP_header.Flags], TH_SYN
         jz      .no_dup_syn
@@ -611,34 +668,42 @@ endl
         dec     eax
   .no_dup_syn:
 
-; 2. Check for entire duplicate segment
+;-----------------------------------
+; Check for entire duplicate segment
+
         cmp     eax, ecx                ; eax holds number of bytes to drop, ecx is data size
-        jb      .duplicate
+        jb      .no_complete_dup
         jnz     @f
         test    [edx + TCP_header.Flags], TH_FIN
-        jnz     .duplicate
+        jnz     .no_complete_dup
        @@:
 
 ; Any valid FIN must be to the left of the window.
 ; At this point the FIN must be out of sequence or a duplicate, drop it
+
         and     [edx + TCP_header.Flags], not TH_FIN
 
-; send an ACK and resynchronize and drop any data.
+; send an ACK to resynchronize and drop any data.
 ; But keep on processing for RST or ACK
+
         or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
         mov     eax, ecx
 
+        inc     [TCPS_rcvduppack]
+        add     [TCPS_rcvdupbyte], eax
+        jmp     .dup_processed
+  .no_complete_dup:
         inc     [TCPS_rcvpartduppack]
-
-;;; TODO: update stats
+        add     [TCPS_rcvpartdupbyte], eax
+  .dup_processed:
 
 ;-----------------------------------------------
 ; Remove duplicate data and update urgent offset
 
-  .duplicate:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: trimming duplicate data\n"
 
 ; Trim data from left side of window
+
         add     [dataoffset], eax
         add     [edx + TCP_header.SequenceNumber], eax
         sub     ecx, eax
@@ -648,11 +713,11 @@ endl
         and     [edx + TCP_header.Flags], not (TH_URG)
         mov     [edx + TCP_header.UrgentPointer], 0
        @@:
+  .no_duplicate:
 
 ;--------------------------------------------------
 ; Handle data that arrives after process terminates
 
-  .no_duplicate:
         cmp     [ebx + SOCKET.PID], 0                   ;;; TODO: use socket flags instead??
         jne     .not_terminated
         cmp     [ebx + TCP_SOCKET.t_state], TCPS_CLOSE_WAIT
@@ -664,11 +729,11 @@ endl
         call    tcp_close
         inc     [TCPS_rcvafterclose]
         jmp     .respond_seg_reset
+  .not_terminated:
 
 ;----------------------------------------
 ; Remove data beyond right edge of window
 
-  .not_terminated:
         mov     eax, [edx + TCP_header.SequenceNumber]
         add     eax, ecx
         sub     eax, [ebx + TCP_SOCKET.RCV_NXT]
@@ -677,15 +742,20 @@ endl
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "%d bytes beyond right edge of window\n", eax
 
-;;; TODO: update stats
+        inc     [TCPS_rcvpackafterwin]
+
         cmp     eax, ecx
         jl      .dont_drop_all
+
+        add     [TCPS_rcvbyteafterwin], ecx
+
+;----------------------------------------------------------------------------------------------------
 ; If a new connection request is received while in TIME_WAIT, drop the old connection and start over,
 ; if the sequence numbers are above the previous ones
 
         test    [edx + TCP_header.Flags], TH_SYN
         jz      .no_new_request
-        cmp     [ebx + TCP_SOCKET.t_state], TCPS_TIMED_WAIT
+        cmp     [ebx + TCP_SOCKET.t_state], TCPS_TIME_WAIT
         jne     .no_new_request
 ;        mov     edx, [ebx + TCP_SOCKET.RCV_NXT]
 ;        cmp     edx, [edx + TCP_header.SequenceNumber]
@@ -705,24 +775,31 @@ endl
         jne     .drop_after_ack
 
         or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
-;;; TODO: update stats
+        inc     [TCPS_rcvwinprobe]
   .dont_drop_all:
-;;; TODO: update stats
+        add     [TCPS_rcvbyteafterwin], eax
         DEBUGF  DEBUG_NETWORK_VERBOSE, "Trimming %u bytes from the right of the window\n"
-        sub     ecx, eax        ; remove data from the right side of window (decrease data length)
+
+; remove data from the right side of window (decrease data length)
+
+        sub     ecx, eax
         and     [edx + TCP_header.Flags], not (TH_PUSH or TH_FIN)
   .no_excess_data:
 
-;-----------------
+;-----------------------------------------------------------------------------------
+;
 ; Record timestamp
+;
+;-----------------------------------------------------------------------------------
 
 ; If last ACK falls within this segments sequence numbers, record its timestamp
+
         test    [temp_bits], TCP_BIT_TIMESTAMP
         jz      .no_timestamp
         mov     eax, [ebx + TCP_SOCKET.last_ack_sent]
         sub     eax, [edx + TCP_header.SequenceNumber]
         jb      .no_timestamp
-        test    [ebx + TCP_header.Flags], TH_SYN or TH_FIN      ; syn and fin occupy one byte
+        test    [edx + TCP_header.Flags], TH_SYN or TH_FIN      ; SYN and FIN occupy one byte
         jz      @f
         dec     eax
        @@:
@@ -737,8 +814,11 @@ endl
         mov     [ebx + TCP_SOCKET.ts_recent], eax
   .no_timestamp:
 
-;------------------
-; Process RST flags
+;-----------------------------------------------------------------------------------
+;
+; Process RST flag
+;
+;-----------------------------------------------------------------------------------
 
         test    [edx + TCP_header.Flags], TH_RST
         jz      .no_rst
@@ -749,6 +829,7 @@ endl
         shl     eax, 2
         jmp     dword [eax + .rst_sw_list]
 
+;-----------------------------------------------------------------------------------
   .rst_sw_list:
         dd      .no_rst         ; TCPS_CLOSED
         dd      .no_rst         ; TCPS_LISTEN
@@ -760,28 +841,29 @@ endl
         dd      .rst_close      ; TCPS_CLOSING
         dd      .rst_close      ; TCPS_LAST_ACK
         dd      .econnreset     ; TCPS_FIN_WAIT_2
-        dd      .rst_close      ; TCPS_TIMED_WAIT
+        dd      .rst_close      ; TCPS_TIME_WAIT
 
+;-----------------------------------------------------------------------------------
   .econnrefused:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Connection refused\n"
-
         mov     [ebx + SOCKET.errorcode], ECONNREFUSED
         jmp     .close
 
+;-----------------------------------------------------------------------------------
   .econnreset:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Connection reset\n"
-
         mov     [ebx + SOCKET.errorcode], ECONNRESET
-
   .close:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Closing connection\n"
-
         mov     [ebx + TCP_SOCKET.t_state], TCPS_CLOSED
-;;; TODO: update stats (tcp drops)
+        inc     [TCPS_drops]
+
+
         mov     eax, ebx
         call    tcp_close
         jmp     .drop_no_socket
 
+;-----------------------------------------------------------------------------------
   .rst_close:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Closing with reset\n"
 
@@ -789,10 +871,16 @@ endl
         call    tcp_close
         jmp     .drop_no_socket
 
+;-----------------------------------------------------------------------------------
   .no_rst:
 
-;--------------------------------------
-; handle SYN-full and ACK-less segments
+;-----------------------------------------------------------------------------------
+;
+; Handle SYN-full and ACK-less segments
+;
+;-----------------------------------------------------------------------------------
+
+; If a SYN is in the window, then this is an error so we send an RST and drop the connection
 
         test    [edx + TCP_header.Flags], TH_SYN
         jz      .not_syn_full
@@ -803,11 +891,16 @@ endl
         jmp     .drop_with_reset
   .not_syn_full:
 
-;---------------
-; ACK processing
+; If ACK bit is off, we drop the segment and return
 
         test    [edx + TCP_header.Flags], TH_ACK
         jz      .drop
+
+;----------------------------------------------------------------------------------
+;
+; ACK processing for SYN_RECEIVED state
+;
+;----------------------------------------------------------------------------------
 
         cmp     [ebx + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED
         jb      .ack_processed                                  ; states: closed, listen, syn_sent
@@ -821,7 +914,7 @@ endl
         cmp     eax, [ebx + TCP_SOCKET.SND_MAX]
         ja      .drop_with_reset
 
-;;; TODO: update stats
+        inc     [TCPS_connects]
 
         mov     eax, ebx
         call    socket_is_connected
@@ -834,8 +927,8 @@ endl
         test    [ebx + TCP_SOCKET.t_flags], TF_REQ_SCALE
         jz      @f
 
-        push    word [ebx + TCP_SOCKET.requested_s_scale]       ; Set send and receive scale factors to the received values
-        pop     word [ebx + TCP_SOCKET.SND_SCALE]
+        push    word[ebx + TCP_SOCKET.requested_s_scale]        ; Set send and receive scale factors to the received values
+        pop     word[ebx + TCP_SOCKET.SND_SCALE]
        @@:
 
         call    tcp_reassemble
@@ -843,23 +936,29 @@ endl
         mov     eax, [edx + TCP_header.SequenceNumber]
         dec     eax
         mov     [ebx + TCP_SOCKET.SND_WL1], eax
-
   .no_syn_rcv:
 
+;-----------------------------------------------------------------------------------
+;
+; ACK processing for SYN_RECEIVED state and higher
+;
+;-----------------------------------------------------------------------------------
+
 ;-------------------------
-; check for duplicate ACKs
+; Check for duplicate ACKs
 
         mov     eax, [edx + TCP_header.AckNumber]
         cmp     eax, [ebx + TCP_SOCKET.SND_UNA]
-        ja      .not_dup_ack
+        ja      .dup_ack_complete
 
         test    ecx, ecx
         jnz     .reset_dupacks
 
-        mov     eax, dword [edx + TCP_header.Window]
+        mov     eax, dword[edx + TCP_header.Window]
         cmp     eax, [ebx + TCP_SOCKET.SND_WND]
         jne     .reset_dupacks
 
+        inc     [TCPS_rcvdupack]
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Processing duplicate ACK\n"
 
 ; If we have outstanding data, other than a window probe, this is a completely duplicate ACK
@@ -867,20 +966,21 @@ endl
 ; assume a packet has been dropped and retransmit it. Kludge snd_nxt & the congestion window so we send only this one packet.
 
         test    [ebx + TCP_SOCKET.timer_flags], timer_flag_retransmission
-        jz      @f
+        jz      .reset_dupacks
 
         mov     eax, [edx + TCP_header.AckNumber]
         cmp     eax, [ebx + TCP_SOCKET.SND_UNA]
-        je      .dup_ack
+        jne     .reset_dupacks
 
-       @@:
-        mov     [ebx + TCP_SOCKET.t_dupacks], 0
-        jmp     .not_dup_ack
+; Increment dupplicat ACK counter
+; If it reaches the threshold, re-transmit the missing segment
 
-  .dup_ack:
         inc     [ebx + TCP_SOCKET.t_dupacks]
         cmp     [ebx + TCP_SOCKET.t_dupacks], TCP_re_xmit_thresh
-        jne     .no_re_xmit
+        jb      .dup_ack_complete
+        ja      .another_lost
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Re-transmitting lost segment\n"
 
         push    [ebx + TCP_SOCKET.SND_NXT]              ; >>>>
 
@@ -910,21 +1010,25 @@ endl
         mov     [ebx + TCP_SOCKET.SND_CWND], eax
 
 ; Unlock the socket
+
         push    ebx
         lea     ecx, [ebx + SOCKET.mutex]
         call    mutex_unlock
 
 ; retransmit missing segment
+
         mov     eax, [esp]
         call    tcp_output
 
 ; Lock the socket again
+
         mov     ecx, [esp]
         add     ecx, SOCKET.mutex
         call    mutex_lock
         pop     ebx
 
 ; Continue processing
+
         xor     edx, edx
         mov     eax, [ebx + TCP_SOCKET.t_maxseg]
         mul     [ebx + TCP_SOCKET.t_dupacks]
@@ -936,37 +1040,41 @@ endl
         jb      @f
         mov     [ebx + TCP_SOCKET.SND_NXT], eax
        @@:
-
         jmp     .drop
 
-
-  .no_re_xmit:
-        jbe     .not_dup_ack
-
+  .another_lost:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Increasing congestion window\n"
 
         mov     eax, [ebx + TCP_SOCKET.t_maxseg]
         add     [ebx + TCP_SOCKET.SND_CWND], eax
 
 ; Unlock the socket
+
         push    ebx
         lea     ecx, [ebx + SOCKET.mutex]
         call    mutex_unlock
 
-; retransmit missing segment
+; retransmit missing segment, again
+
         mov     eax, [esp]
         call    tcp_output
 
 ; Lock the socket again
+
         mov     ecx, [esp]
         add     ecx, SOCKET.mutex
         call    mutex_lock
         pop     ebx
 
+; And drop the incoming segment
+
         jmp     .drop
 
+  .reset_dupacks:               ; We got a new ACK, reset duplicate ACK counter
+        mov     [ebx + TCP_SOCKET.t_dupacks], 0
+        jmp     .ack_processed
 
-  .not_dup_ack:
+  .dup_ack_complete:
 
 ;-------------------------------------------------
 ; If the congestion window was inflated to account
@@ -995,8 +1103,11 @@ endl
         add     [TCPS_rcvackbyte], edi
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: acceptable ACK for %u bytes\n", edi
 
-;------------------------------------------
+;-----------------------------------------------------------------------------------
+;
 ; RTT measurements and retransmission timer
+;
+;-----------------------------------------------------------------------------------
 
 ; If we have a timestamp, update smoothed RTT
 
@@ -1021,7 +1132,6 @@ endl
         test    eax, eax
         jz      .rtt_done_
         call    tcp_xmit_timer
-
   .rtt_done_:
 
 ; If all outstanding data is acked, stop retransmit timer and remember to restart (more output or persist)
@@ -1042,25 +1152,28 @@ endl
         or      [ebx + TCP_SOCKET.timer_flags], timer_flag_retransmission
   .no_restart:
 
-
-;-------------------------------------------
+;-----------------------------------------------------------------------------------
+;
 ; Open congestion window in response to ACKs
+;
+;-----------------------------------------------------------------------------------
+
+; If the window gives us less then sstresh packets in flight, open exponentially.
+; Otherwise, open lineary
 
         mov     esi, [ebx + TCP_SOCKET.SND_CWND]
         mov     eax, [ebx + TCP_SOCKET.t_maxseg]
-
         cmp     esi, [ebx + TCP_SOCKET.SND_SSTHRESH]
         jbe     @f
         push    edx
         push    eax
-        mul     eax
-        div     esi
-        pop     edx
-        shr     edx, 3
-        add     eax, edx
+        mul     eax             ; t_maxseg*t_maxseg
+        div     esi             ; t_maxseg*t_maxseg/snd_cwnd
+        pop     edx             ; t_maxseg
+        shr     edx, 3          ; t_maxseg/8
+        add     eax, edx        ; t_maxseg*t_maxseg/snd_cwnd + t_maxseg/8
         pop     edx
        @@:
-
         add     esi, eax
 
         push    ecx
@@ -1075,24 +1188,34 @@ endl
   @@:
         mov     [ebx + TCP_SOCKET.SND_CWND], esi
 
-;------------------------------------------
+;-----------------------------------------------------------------------------------
+;
 ; Remove acknowledged data from send buffer
+;
+;-----------------------------------------------------------------------------------
+
+; If the number of bytes acknowledged exceeds the number of bytes on the send buffer,
+; snd_wnd is decremented by the number of bytes in the send buffer and TCP knows
+; that its FIN has been ACKed. (FIN occupies 1 byte in the sequence number space)
 
         cmp     edi, [ebx + STREAM_SOCKET.snd.size]
-        jbe     .finiacked
+        jbe     .no_fin_ack
+
+; Drop all data in output buffer
 
         push    ecx edx ebx
         mov     ecx, [ebx + STREAM_SOCKET.snd.size]
-        lea     eax, [ebx + STREAM_SOCKET.snd]
         sub     [ebx + TCP_SOCKET.SND_WND], ecx
+        lea     eax, [ebx + STREAM_SOCKET.snd]
         call    socket_ring_free
         pop     ebx edx ecx
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: our FIN is acked\n"
         or      [temp_bits], TCP_BIT_FIN_IS_ACKED
-        jmp     .wakeup
+        jmp     .ack_complete
+  .no_fin_ack:
 
-  .finiacked:
+; Drop acknowledged data
 
         push    ecx edx ebx
         mov     ecx, edi
@@ -1101,17 +1224,19 @@ endl
         pop     ebx
         sub     [ebx + TCP_SOCKET.SND_WND], ecx
         pop     edx ecx
+  .ack_complete:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: our FIN is not acked\n"
-
-;----------------------------------------
+;-----------------------------------------------------------------------------------
+;
 ; Wake up process waiting on send buffer
+;
+;-----------------------------------------------------------------------------------
 
-  .wakeup:
         mov     eax, ebx
         call    socket_notify
 
 ; Update TCPS
+
         mov     eax, [edx + TCP_header.AckNumber]
         mov     [ebx + TCP_SOCKET.SND_UNA], eax
         cmp     eax, [ebx + TCP_SOCKET.SND_NXT]
@@ -1119,14 +1244,16 @@ endl
         mov     [ebx + TCP_SOCKET.SND_NXT], eax
        @@:
 
-; General ACK handling complete
-; Now do the state-specific ones
-; Carry flag is set when our FIN is acked
+;-----------------------------------------------------------------------------------
+;
+; State specific ACK handeling
+;
+;-----------------------------------------------------------------------------------
 
         mov     eax, [ebx + TCP_SOCKET.t_state]
-        jmp     dword [eax*4 + .ACK_sw_list]
+        jmp     dword[.ack_sw_list+eax*4]
 
-  .ACK_sw_list:
+  .ack_sw_list:
         dd      .ack_processed  ; TCPS_CLOSED
         dd      .ack_processed  ; TCPS_LISTEN
         dd      .ack_processed  ; TCPS_SYN_SENT
@@ -1139,10 +1266,16 @@ endl
         dd      .ack_processed  ; TCPS_FIN_WAIT_2
         dd      .ack_tw         ; TCPS_TIMED_WAIT
 
-
+;-----------------------------------------------------------------------------------
   .ack_fw1:
+; If our FIN is now acked, enter FIN_WAIT_2
+
         test    [temp_bits], TCP_BIT_FIN_IS_ACKED
         jz      .ack_processed
+
+; If we can't receive any more data, then closing user can proceed.
+; Starting the timer is contrary to the specification, but if we dont get a FIN,
+; we'll hang forever.
 
         test    [ebx + SOCKET.state], SS_CANTRCVMORE
         jnz     @f
@@ -1154,11 +1287,14 @@ endl
         mov     [ebx + TCP_SOCKET.t_state], TCPS_FIN_WAIT_2
         jmp     .ack_processed
 
+;-----------------------------------------------------------------------------------
   .ack_c:
+; Enter the TIME_WAIT state if our FIN is acked in CLOSED state.
+
         test    [temp_bits], TCP_BIT_FIN_IS_ACKED
         jz      .ack_processed
 
-        mov     [ebx + TCP_SOCKET.t_state], TCPS_TIMED_WAIT
+        mov     [ebx + TCP_SOCKET.t_state], TCPS_TIME_WAIT
         mov     eax, ebx
         call    tcp_cancel_timers
         mov     [ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL
@@ -1167,34 +1303,38 @@ endl
         call    socket_is_disconnected
         jmp     .ack_processed
 
+;-----------------------------------------------------------------------------------
   .ack_la:
+; In LAST_ACK state, we may still be waiting for data to drain and/or to be acked.
+; If our FIN is acked however, enter CLOSED state and return.
+
         test    [temp_bits], TCP_BIT_FIN_IS_ACKED
         jz      .ack_processed
 
         push    ebx
         lea     ecx, [ebx + SOCKET.mutex]
         call    mutex_unlock
-        pop     ebx
+        pop     eax
 
-        mov     eax, ebx
         call    tcp_close
         jmp     .drop_no_socket
 
+;-----------------------------------------------------------------------------------
   .ack_tw:
-        mov     [ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL
-        or      [ebx + TCP_SOCKET.timer_flags], timer_flag_wait
+; In TIME_WAIT state the only thing that should arrive is a retransmission of the remote FIN.
+; Acknowledge it and restart the FINACK timer
+
+        mov     [ebx + TCP_SOCKET.timer_timed_wait], 2*TCP_time_MSL
+        or      [ebx + TCP_SOCKET.timer_flags], timer_flag_2msl
         jmp     .drop_after_ack
 
-  .reset_dupacks:               ; We got a new ACK, reset duplicate ACK counter
-        mov     [ebx + TCP_SOCKET.t_dupacks], 0
-        jmp     .ack_processed
+;-----------------------------------------------------------------------------------
+;
+; Initiation of Passive Open?
+;
+;-----------------------------------------------------------------------------------
 
-;-------
-; LISTEN
-
-align 4
-  .LISTEN:
-
+  .state_listen:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: state=listen\n"
 
         test    [edx + TCP_header.Flags], TH_RST
@@ -1206,9 +1346,12 @@ align 4
         test    [edx + TCP_header.Flags], TH_SYN
         jz      .drop
 
-        inc     [TCPS_accepts]                          ; update stats
+        inc     [TCPS_accepts]
 
 ;;; TODO: check if it's a broadcast or multicast, and drop if so
+
+;-------------------------------------------
+; Processing of SYN received in LISTEN state
 
         push    [edi + IPv4_header.SourceAddress]
         pop     [ebx + IP_SOCKET.RemoteIP]
@@ -1220,7 +1363,7 @@ align 4
         pop     [ebx + TCP_SOCKET.IRS]
 
         mov     eax, [TCP_sequence_num]
-        add     [TCP_sequence_num], 64000 / 2
+        add     [TCP_sequence_num], TCP_ISSINCR / 2
         mov     [ebx + TCP_SOCKET.ISS], eax
         mov     [ebx + TCP_SOCKET.SND_NXT], eax
 
@@ -1251,12 +1394,13 @@ align 4
 
         jmp     .trim
 
-;------------
-; Active Open
+;-----------------------------------------------------------------------------------
+;
+; Completion of active open?
+;
+;-----------------------------------------------------------------------------------
 
-align 4
-  .SYN_SENT:
-
+  .state_syn_sent:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: state=syn_sent\n"
 
         test    [edx + TCP_header.Flags], TH_ACK
@@ -1279,29 +1423,29 @@ align 4
         mov     eax, ebx
         mov     ebx, ECONNREFUSED
         call    tcp_drop
-
         jmp     .drop
        @@:
+
+;-----------------------------------------------------------------------------------
+;
+; Process received SYN in response to an active open
+;
+;-----------------------------------------------------------------------------------
 
         test    [edx + TCP_header.Flags], TH_SYN
         jz      .drop
 
-; at this point, segment seems to be valid
-
         test    [edx + TCP_header.Flags], TH_ACK
-        jz      .no_syn_ack
-
-; now, process received SYN in response to an active open
+        jz      @f
 
         mov     eax, [edx + TCP_header.AckNumber]
         mov     [ebx + TCP_SOCKET.SND_UNA], eax
         cmp     eax, [ebx + TCP_SOCKET.SND_NXT]
         jbe     @f
         mov     [ebx + TCP_SOCKET.SND_NXT], eax
-       @@:
 
-  .no_syn_ack:
         and     [ebx + TCP_SOCKET.timer_flags], not timer_flag_retransmission   ; disable retransmission timer
+       @@:
 
         push    [edx + TCP_header.SequenceNumber]
         pop     [ebx + TCP_SOCKET.IRS]
@@ -1319,9 +1463,10 @@ align 4
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: active open\n"
 
-;;; TODO: update stats
+        inc     [TCPS_connects]
 
 ; set socket state to connected
+
         push    eax
         mov     eax, ebx
         call    socket_is_connected
@@ -1329,6 +1474,7 @@ align 4
         mov     [ebx + TCP_SOCKET.t_state], TCPS_ESTABLISHED
 
 ; Do window scaling on this connection ?
+
         mov     eax, [ebx + TCP_SOCKET.t_flags]
         and     eax, TF_REQ_SCALE or TF_RCVD_SCALE
         cmp     eax, TF_REQ_SCALE or TF_RCVD_SCALE
@@ -1340,32 +1486,49 @@ align 4
 
 ;;; TODO: reassemble packets queue
 
+; If we didnt have time to re-transmit the SYN,
+; Use its rtt as our initial srtt & rtt var.
+
         mov     eax, [ebx + TCP_SOCKET.t_rtt]
         test    eax, eax
         je      .trim
         call    tcp_xmit_timer
         jmp     .trim
 
-  .simultaneous_open:
+;-----------------------------------------------------------------------------------
+;
+; Simultaneous open (We have received a SYN but no ACK)
+;
+;-----------------------------------------------------------------------------------
 
+  .simultaneous_open:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: simultaneous open\n"
-; We have received a syn but no ACK, so we are having a simultaneous open..
         mov     [ebx + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED
 
-;-------------------------------------
+;-----------------------------------------------------------------------------------
+;
 ; Common processing for receipt of SYN
+;
+;-----------------------------------------------------------------------------------
 
   .trim:
+; Advance sequence number to correspond to first data byte.
+; If data, trim to stay within window, dropping FIN if necessary
+
         inc     [edx + TCP_header.SequenceNumber]
 
 ; Drop any received data that doesnt fit in the receive window.
+
         cmp     ecx, [ebx + TCP_SOCKET.RCV_WND]
         jbe     .dont_trim
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: received data does not fit in window, trimming %u bytes\n", eax
-        mov     ecx, [ebx + TCP_SOCKET.RCV_WND]
+        inc     [TCPS_rcvpackafterwin]
+        sub     ecx, [ebx + TCP_SOCKET.RCV_WND]
+        add     [TCPS_rcvbyteafterwin], ecx
+
         and     [edx + TCP_header.Flags], not (TH_FIN)
-;;; TODO: update stats
+        mov     ecx, [ebx + TCP_SOCKET.RCV_WND]
 
   .dont_trim:
         mov     eax, [edx + TCP_header.SequenceNumber]
@@ -1373,40 +1536,64 @@ align 4
         dec     eax
         mov     [ebx + TCP_SOCKET.SND_WL1], eax
 
+;-----------------------------------------------------------------------------------
+;
+; Update window information (step 6 in RFC793)
+;
+;-----------------------------------------------------------------------------------
+
   .ack_processed:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: ACK processed\n"
 
-;----------------------------------------------
-; check if we need to update window information
+; dont look at window if no ACK
 
         test    [edx + TCP_header.Flags], TH_ACK
         jz      .no_window_update
+
+; Does the segment contain new data?
 
         mov     eax, [ebx + TCP_SOCKET.SND_WL1]
         cmp     eax, [edx + TCP_header.SequenceNumber]
         jb      .update_window
         ja      @f
 
+; No new data but a new ACK ?
+
         mov     eax, [ebx + TCP_SOCKET.SND_WL2]
         cmp     eax, [edx + TCP_header.AckNumber]
         jb      .update_window
-        ja      .no_window_update
        @@:
 
-        mov     eax, dword [edx + TCP_header.Window]
+; No new data or ACK but advertised window is larger then current window?
+
+        mov     eax, [ebx + TCP_SOCKET.SND_WL2]
+        cmp     eax, [edx + TCP_header.AckNumber]
+        jne     .no_window_update
+
+        mov     eax, dword[edx + TCP_header.Window]
         cmp     eax, [ebx + TCP_SOCKET.SND_WND]
         jbe     .no_window_update
 
+
+; Keep track of pure window updates
   .update_window:
+        test    ecx, ecx
+        jnz     @f
+        mov     eax, [ebx + TCP_SOCKET.SND_WL2]
+        cmp     eax, [edx + TCP_header.AckNumber]
+        jne     @f
+        mov     eax, dword[edx + TCP_header.Window]
+        cmp     eax, [ebx + TCP_SOCKET.SND_WND]
+        jbe     @f
+        inc     [TCPS_rcvwinupd]
+       @@:
 
-;;; TODO: update stats (Keep track of pure window updates)
-
-        mov     eax, dword [edx + TCP_header.Window]
+        mov     eax, dword[edx + TCP_header.Window]
+        mov     [ebx + TCP_SOCKET.SND_WND], eax
         cmp     eax, [ebx + TCP_SOCKET.max_sndwnd]
         jbe     @f
         mov     [ebx + TCP_SOCKET.max_sndwnd], eax
        @@:
-        mov     [ebx + TCP_SOCKET.SND_WND], eax
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Updating window to %u\n", eax
 
@@ -1417,11 +1604,13 @@ align 4
         pop     [ebx + TCP_SOCKET.SND_WL2]
 
         or      [temp_bits], TCP_BIT_NEEDOUTPUT
-
   .no_window_update:
 
-;-----------------
-; process URG flag
+;-----------------------------------------------------------------------------------
+;
+; Process URG flag
+;
+;-----------------------------------------------------------------------------------
 
         test    [edx + TCP_header.Flags], TH_URG
         jz      .not_urgent
@@ -1429,7 +1618,7 @@ align 4
         cmp     [edx + TCP_header.UrgentPointer], 0
         jz      .not_urgent
 
-        cmp     [ebx + TCP_SOCKET.t_state], TCPS_TIMED_WAIT
+        cmp     [ebx + TCP_SOCKET.t_state], TCPS_TIME_WAIT
         je      .not_urgent
 
 ; Ignore bogus urgent offsets
@@ -1449,13 +1638,14 @@ align 4
 
         ;;; TODO (1051-1093)
 
-
-;---------------------------------------
-; process the data in the segment (1094)
+;-----------------------------------------------------------------------------------
+;
+; Process the data
+;
+;-----------------------------------------------------------------------------------
 
   .do_data:
-
-        cmp     [ebx + TCP_SOCKET.t_state], TCPS_TIMED_WAIT
+        cmp     [ebx + TCP_SOCKET.t_state], TCPS_TIME_WAIT
         jae     .final_processing
 
         test    [edx + TCP_header.Flags], TH_FIN
@@ -1466,19 +1656,23 @@ align 4
        @@:
 
 ; The segment is in order?
+
         mov     eax, [edx + TCP_header.SequenceNumber]
         cmp     eax, [ebx + TCP_SOCKET.RCV_NXT]
         jne     .out_of_order
 
 ; The reassembly queue is empty?
+
         cmp     [ebx + TCP_SOCKET.seg_next], 0
         jne     .out_of_order
 
 ; The connection is established?
+
         cmp     [ebx + TCP_SOCKET.t_state], TCPS_ESTABLISHED
         jne     .out_of_order
 
 ; Ok, lets do this..  Set delayed ACK flag and copy data into socket buffer
+
         or      [ebx + TCP_SOCKET.t_flags], TF_DELACK
 
         pusha
@@ -1490,6 +1684,7 @@ align 4
         popa
 
 ; Wake up the sleeping process
+
         mov     eax, ebx
         call    socket_notify
 
@@ -1505,18 +1700,22 @@ align 4
 
 ; Generate ACK immediately, to let the other end know that a segment was received out of order,
 ; and to tell it what sequence number is expected. This aids the fast-retransmit algorithm.
+
         or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
   .data_done:
 
-;---------------
-; FIN processing
+;-----------------------------------------------------------------------------------
+;
+; Process FIN
+;
+;-----------------------------------------------------------------------------------
 
         test    [edx + TCP_header.Flags], TH_FIN
         jz      .final_processing
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Processing FIN\n"
 
-        cmp     [ebx + TCP_SOCKET.t_state], TCPS_TIMED_WAIT
+        cmp     [ebx + TCP_SOCKET.t_state], TCPS_TIME_WAIT
         jae     .not_first_fin
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: First FIN for this connection\n"
@@ -1529,10 +1728,9 @@ align 4
 
   .not_first_fin:
         mov     eax, [ebx + TCP_SOCKET.t_state]
-        shl     eax, 2
-        jmp     dword [eax + .FIN_sw_list]
+        jmp     dword[.fin_sw_list+eax*4]
 
-  .FIN_sw_list:
+  .fin_sw_list:
         dd      .final_processing       ; TCPS_CLOSED
         dd      .final_processing       ; TCPS_LISTEN
         dd      .final_processing       ; TCPS_SYN_SENT
@@ -1545,26 +1743,40 @@ align 4
         dd      .fin_wait2              ; TCPS_FIN_WAIT_2
         dd      .fin_timed              ; TCPS_TIMED_WAIT
 
+;-----------------------------------------------------------------------------------
   .fin_syn_est:
+; In SYN_RECEIVED and ESTABLISHED state, enter the CLOSE_WAIT state
+
         mov     [ebx + TCP_SOCKET.t_state], TCPS_CLOSE_WAIT
         jmp     .final_processing
 
+;-----------------------------------------------------------------------------------
   .fin_wait1:
+; From FIN_WAIT_1 state, enter CLOSING state (our FIN has not been ACKed)
+
         mov     [ebx + TCP_SOCKET.t_state], TCPS_CLOSING
         jmp     .final_processing
 
+;-----------------------------------------------------------------------------------
   .fin_wait2:
-        mov     [ebx + TCP_SOCKET.t_state], TCPS_TIMED_WAIT
+; From FIN_WAIT_2 state, enter TIME_WAIT state and start the timer
+
+        mov     [ebx + TCP_SOCKET.t_state], TCPS_TIME_WAIT
         mov     eax, ebx
         call    tcp_cancel_timers
         call    socket_is_disconnected
 
+;-----------------------------------------------------------------------------------
   .fin_timed:
+; (re)start the 2 MSL timer
         mov     [ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL
         or      [ebx + TCP_SOCKET.timer_flags], timer_flag_wait
 
-;-----------------
-; Final processing
+;-----------------------------------------------------------------------------------
+;
+; Finally, drop the segment
+;
+;-----------------------------------------------------------------------------------
 
   .final_processing:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Final processing\n"
@@ -1591,11 +1803,13 @@ align 4
         call    net_buff_free
         jmp     .loop
 
+;-----------------------------------------------------------------------------------
+;
+; Drop segment, reply with an RST segment when needed
+;
+;-----------------------------------------------------------------------------------
 
-;-----------------
-; Drop the segment
-
-
+;-----------------------------------------------------------------------------------
   .drop_after_ack:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Drop after ACK\n"
 
@@ -1610,6 +1824,7 @@ align 4
         or      [eax + TCP_SOCKET.t_flags], TF_ACKNOW
         jmp     .need_output
 
+;-----------------------------------------------------------------------------------
   .drop_with_reset:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Drop with reset\n"
 
@@ -1629,9 +1844,6 @@ align 4
         test    [edx + TCP_header.Flags], TH_SYN
         jnz     .respond_syn
         jmp     .done
-
-;---------
-; Respond
 
   .respond_ack:
         push    ebx

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -73,8 +73,8 @@ struct  TCP_SOCKET              IP_SOCKET
         SND_UNA                 dd ?    ; sequence number of unack'ed sent Packets
         SND_NXT                 dd ?    ; next send sequence number to use
         SND_UP                  dd ?    ; urgent pointer
-        SND_WL1                 dd ?    ; window minus one
-        SND_WL2                 dd ?    ;
+        SND_WL1                 dd ?    ; the sequence number of the last segment used to update the send window
+        SND_WL2                 dd ?    ; the acknowledgment number of the last segment used to update the send window
         ISS                     dd ?    ; initial send sequence number
         SND_WND                 dd ?    ; send window
 

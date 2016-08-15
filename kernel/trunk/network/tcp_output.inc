@@ -16,6 +16,8 @@
 
 $Revision$
 
+TCP_BIT_SENDALOT        = 1 shl 0
+
 ;-----------------------------------------------------------------;
 ;                                                                 ;
 ; tcp_output                                                      ;
@@ -64,16 +66,22 @@ endl
   .again:
         mov     [temp_bits], 0
 
-        mov     ebx, [eax + TCP_SOCKET.SND_NXT]         ; calculate offset (71)
-        sub     ebx, [eax + TCP_SOCKET.SND_UNA]         ;
+; Calculate offset
 
-        mov     ecx, [eax + TCP_SOCKET.SND_WND]         ; determine window
-        cmp     ecx, [eax + TCP_SOCKET.SND_CWND]        ;
-        jb      @f                                      ;
-        mov     ecx, [eax + TCP_SOCKET.SND_CWND]        ;
-       @@:                                              ;
+        mov     ebx, [eax + TCP_SOCKET.SND_NXT]
+        sub     ebx, [eax + TCP_SOCKET.SND_UNA]
 
-        call    tcp_outflags                            ; flags in dl
+; Determine window
+
+        mov     ecx, [eax + TCP_SOCKET.SND_WND]
+        cmp     ecx, [eax + TCP_SOCKET.SND_CWND]
+        jb      @f
+        mov     ecx, [eax + TCP_SOCKET.SND_CWND]
+       @@:
+
+; get flags in dl
+
+        call    tcp_outflags
 
 ;------------------------
 ; data being forced out ?
@@ -105,7 +113,7 @@ endl
   .no_force:
 
 ;--------------------------------
-; Calculate how much data to send (106)
+; Calculate how much data to send
 
         mov     esi, [eax + STREAM_SOCKET.snd.size]
         cmp     esi, ecx
@@ -115,24 +123,28 @@ endl
         sub     esi, ebx
 
 ;------------------------
-; check for window shrink (107)
+; check for window shrink
 
-; If FIN has been set, but not ACKed, but we havent been called to retransmit, esi will be -1
+; If FIN has been sent, but not ACKed, but we havent been called to retransmit, esi will be -1
 ; Otherwise, window shrank after we sent into it.
 
         jae     .not_persist
 
 ; enter persist state
+
         xor     esi, esi
 
 ; If window shrank to 0
+
         test    ecx, ecx
         jnz     @f
 
 ; cancel pending retransmit
+
         and     [eax + TCP_SOCKET.timer_flags], not timer_flag_retransmission
 
 ; pull SND_NXT back to (closed) window, We will enter persist state below.
+
         push    [eax + TCP_SOCKET.SND_UNA]
         pop     [eax + TCP_SOCKET.SND_NXT]
        @@:
@@ -142,7 +154,7 @@ endl
   .not_persist:
 
 ;---------------------------
-; Send one segment at a time (124)
+; Send one segment at a time
 
         cmp     esi, [eax + TCP_SOCKET.t_maxseg]
         jbe     @f
@@ -151,7 +163,7 @@ endl
        @@:
 
 ;--------------------------------------------
-; Turn of FIN flag if send buffer not emptied (128)
+; Turn of FIN flag if send buffer not emptied
 
         mov     edi, [eax + TCP_SOCKET.SND_NXT]
         add     edi, esi
@@ -162,13 +174,13 @@ endl
        @@:
 
 ;-------------------------------
-; calculate window advertisement (130)
+; calculate window advertisement
 
         mov     ecx, SOCKET_BUFFER_SIZE
         sub     ecx, [eax + STREAM_SOCKET.rcv.size]
 
 ;------------------------------
-; Sender silly window avoidance (131)
+; Sender silly window avoidance
 
         test    esi, esi
         jz      .len_zero
@@ -203,7 +215,7 @@ endl
   .len_zero:
 
 ;----------------------------------------
-; Check if a window update should be sent (154)
+; Check if a window update should be sent
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: window=%d\n", ecx
 
@@ -227,9 +239,10 @@ endl
         sub     ebx, [eax + TCP_SOCKET.RCV_ADV]
         add     ebx, [eax + TCP_SOCKET.RCV_NXT]
 
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: we can increase window by %d bytes\n", ebx
+
         mov     edi, [eax + TCP_SOCKET.t_maxseg]
         shl     edi, 1
-
         cmp     ebx, edi
         jae     .send
 
@@ -240,7 +253,9 @@ endl
   .no_window:
 
 ;--------------------------
-; Should a segment be sent? (174)
+; Should a segment be sent?
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: Should a segment be sent?\n"
 
         test    [eax + TCP_SOCKET.t_flags], TF_ACKNOW   ; we need to ACK
         jnz     .send
@@ -252,20 +267,24 @@ endl
         cmp     ebx, [eax + TCP_SOCKET.SND_UNA]
         ja      .send
 
-        test    dl, TH_FIN
-        jz      .enter_persist  ; no reason to send, enter persist state
+; Do we need to send a FIN according to our state?
 
-; FIN was set, only send if not already sent, or on retransmit
+        test    dl, TH_FIN
+        jz      .enter_persist                          ; no reason to send, enter persist state
+
+; Do so if we didnt do it already
 
         test    [eax + TCP_SOCKET.t_flags], TF_SENTFIN
         jz      .send
+
+; Or when we need to retransmit the FIN
 
         mov     ebx, [eax + TCP_SOCKET.SND_NXT]
         cmp     ebx, [eax + TCP_SOCKET.SND_UNA]
         je      .send
 
 ;--------------------
-; Enter persist state (191)
+; Enter persist state
 
   .enter_persist:
 
@@ -284,7 +303,7 @@ endl
        @@:
 
 ;----------------------------
-; No reason to send a segment (219)
+; No reason to send a segment
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: No reason to send a segment\n"
 
@@ -300,7 +319,7 @@ endl
 
 ;-----------------------------------------------
 ;
-; Send a segment (222)
+; Send a segment
 ;
 ; eax = socket pointer
 ; esi = data len
@@ -391,7 +410,7 @@ endl
 ; esi = data len
 
 ;---------------------------------------------
-; check if we dont exceed the max segment size (270)
+; check if we dont exceed the max segment size
 
         add     esi, edi                        ; total TCP segment size
         cmp     esi, [eax + TCP_SOCKET.t_maxseg]
@@ -402,6 +421,7 @@ endl
   .no_overflow:
 
 ; Update stats
+
         test    esi, esi
         jz      .zero_data
 
@@ -482,25 +502,25 @@ endl
 ; Start by pushing all TCP header values in reverse order on stack
 ; (essentially, creating the tcp header on the stack!)
 
-        pushw   0       ;        .UrgentPointer          dw ?
-        pushw   0       ;        .Checksum               dw ?
-        pushw   bx      ;        .Window                 dw ?
-        shl     edi, 2  ;        .DataOffset             db ?  only 4 left-most bits
+        pushw   0                               ; UrgentPointer
+        pushw   0                               ; Checksum
+        pushw   bx                              ; Window
+        shl     edi, 2                          ; DataOffset
         shl     dx, 8
-        or      dx, di  ;        .Flags                  db ?
+        or      dx, di                          ; Flags
         pushw   dx
-        shr     edi, 2  ;        .DataOffset             db ?
+        shr     edi, 2                          ; DataOffset
 
-        push    [eax + TCP_SOCKET.RCV_NXT]      ;        .AckNumber              dd ?
+        push    [eax + TCP_SOCKET.RCV_NXT]      ; AckNumber
         ntohd   [esp]
 
-        push    [eax + TCP_SOCKET.SND_NXT]      ;        .SequenceNumber         dd ?
+        push    [eax + TCP_SOCKET.SND_NXT]      ; SequenceNumber
         ntohd   [esp]
 
-        push    [eax + TCP_SOCKET.RemotePort]   ;        .DestinationPort        dw ?
-        push    [eax + TCP_SOCKET.LocalPort]    ;        .SourcePort             dw ?
+        push    [eax + TCP_SOCKET.RemotePort]   ; DestinationPort
+        push    [eax + TCP_SOCKET.LocalPort]    ; SourcePort
 
-        push    edi                     ; header size
+        push    edi                             ; header size
 
 ;---------------------
 ; Create the IP packet
@@ -558,8 +578,8 @@ endl
         pop     ecx                             ; full packet size
         mov     eax, [esp + 8]                  ; socket ptr
 
-;----------------------------------
-; initialize retransmit timer (400)
+;----------------------------
+; initialize retransmit timer
 
 ;TODO: check t_force and persist
 
@@ -584,6 +604,7 @@ endl
        @@:
 
 ; set retransmission timer if not already set, and not doing an ACK or keepalive probe
+
         test    [eax + TCP_SOCKET.timer_flags], timer_flag_retransmission
         jnz     .retransmit_set
 
@@ -598,7 +619,6 @@ endl
         jz      .retransmit_set
         and     [eax + TCP_SOCKET.timer_flags], not timer_flag_persist
         mov     [eax + TCP_SOCKET.t_rxtshift], 0
-
   .retransmit_set:
 
 ;--------------------
@@ -642,10 +662,12 @@ endl
        @@:
 
 ; update last ack sent
+
         push    [eax + TCP_SOCKET.RCV_NXT]
         pop     [eax + TCP_SOCKET.last_ack_sent]
 
 ; clear the ACK flags
+
         and     [eax + TCP_SOCKET.t_flags], not (TF_ACKNOW + TF_DELACK)
 
 ;--------------

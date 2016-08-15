@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -27,7 +27,7 @@ TCPS_FIN_WAIT_1         = 6
 TCPS_CLOSING            = 7
 TCPS_LAST_ACK           = 8
 TCPS_FIN_WAIT_2         = 9
-TCPS_TIMED_WAIT         = 10
+TCPS_TIME_WAIT          = 10
 
 ; Socket Flags
 TF_ACKNOW               = 1 shl 0     ; ack peer immediately
@@ -92,17 +92,11 @@ TCP_mss_default         = 1480        ; default max segment size
 TCP_RTT_SHIFT           = 3
 TCP_RTTVAR_SHIFT        = 2
 
-; bits used by tcp_input and tcp_output
-TCP_BIT_NEEDOUTPUT      = 1 shl 0
-TCP_BIT_TIMESTAMP       = 1 shl 1
-TCP_BIT_DROPSOCKET      = 1 shl 2
-TCP_BIT_FIN_IS_ACKED    = 1 shl 3
-
-TCP_BIT_SENDALOT        = 1 shl 0
-
 TCP_PAWS_IDLE           = 24*24*60*60*100       ; 24 days, in 1/100 seconds
 
 TCP_QUEUE_SIZE          = 50
+
+TCP_ISSINCR             = 128000
 
 struct  TCP_header
 

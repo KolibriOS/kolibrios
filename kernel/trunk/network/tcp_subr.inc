@@ -78,7 +78,7 @@ macro   tcp_rcvseqinit ptr {
 
         push    edi
         mov     edi, [ptr + TCP_SOCKET.IRS]
-        inc     edi
+        inc     edi                             ; SYN ocupies a sequence number
         mov     [ptr + TCP_SOCKET.RCV_NXT], edi
         mov     [ptr + TCP_SOCKET.RCV_ADV], edi
         pop     edi
@@ -216,6 +216,8 @@ tcp_close:
         call    socket_is_disconnected
         call    socket_free
 
+        inc     [TCPS_closed]
+
         xor     eax, eax
         ret
 
@@ -241,7 +243,6 @@ tcp_outflags:
         ret
 
   .flaglist:
-
         db      TH_RST + TH_ACK         ; TCPS_CLOSED
         db      0                       ; TCPS_LISTEN
         db      TH_SYN                  ; TCPS_SYN_SENT
@@ -252,11 +253,7 @@ tcp_outflags:
         db      TH_FIN + TH_ACK         ; TCPS_CLOSING
         db      TH_FIN + TH_ACK         ; TCPS_LAST_ACK
         db               TH_ACK         ; TCPS_FIN_WAIT_2
-        db               TH_ACK         ; TCPS_TIMED_WAIT
-
-
-
-
+        db               TH_ACK         ; TCPS_TIME_WAIT
 
 
 ;-----------------------------------------------------------------;
@@ -502,7 +499,7 @@ tcp_xmit_timer:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_xmit_timer: socket=0x%x rtt=%d0ms\n", ebx, eax
 
-;TODO: update stats
+        inc     [TCPS_rttupdated]
 
         cmp     [ebx + TCP_SOCKET.t_rtt], 0
         je      .no_rtt_yet

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  STACK.INC                                                      ;;
@@ -91,6 +91,7 @@ SO_REUSEADDR            = 1 shl 6
 SO_REUSEPORT            = 1 shl 7
 SO_USELOOPBACK          = 1 shl 8
 SO_BINDTODEVICE         = 1 shl 9
+SO_LINGER               = 1 shl 10
 
 SO_NONBLOCK             = 1 shl 31
 
@@ -131,11 +132,12 @@ EINVAL                  = 11
 EMSGSIZE                = 12
 ENOMEM                  = 18
 EADDRINUSE              = 20
-ECONNREFUSED            = 61
+EADDRNOTAVAIL           = 21
 ECONNRESET              = 52
+ECONNABORTED            = 53
 EISCONN                 = 56
 ETIMEDOUT               = 60
-ECONNABORTED            = 53
+ECONNREFUSED            = 61
 
 ; Api protocol numbers
 API_ETH                 = 0
