@@ -1,5 +1,9 @@
 /*
-    Scrollbar and Progressbar usage example KolibriOS GUI lib
+    KolibriGUI demobox
+    -Scrollbar
+    -Progressbar
+    -StaticText
+    -StaticNum
 
     Free for all
 
@@ -12,8 +16,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "kolibri_gui.h"
 #include "kos32sys.h"
+#include "kolibri_gui.h"
 
 // codes copied from \programs\cmm\lib\keyboard.h, but they're decimal
 //ASCII KEYS

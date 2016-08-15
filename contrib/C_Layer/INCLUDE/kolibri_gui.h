@@ -1,9 +1,6 @@
 #ifndef KOLIBRI_GUI_H
 #define KOLIBRI_GUI_H
 
-#include <stdlib.h> /* for malloc() */
-#include <kos32sys.h>
-
 #include "kolibri_debug.h" /* work with debug board */
 
 /* boxlib loader */

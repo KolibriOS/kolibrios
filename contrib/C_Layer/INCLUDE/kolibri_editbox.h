@@ -6,7 +6,7 @@
 /*  flags meaning
 ed_figure_only= 1000000000000000b   ;одни символы
 ed_always_focus= 100000000000000b
-ed_focus=                     10b   ;фокус приложения
+ed_focus=                     10b   ;фокус ввода приложения
 ed_pass=                       1b   ;поле с паролем
 ed_shift_on=                1000b   ;если не установлен -значит впервые нажат shift,если был установлен, значит мы уже что - то делали удерживая shift
 ed_shift_on_off=1111111111110111b
@@ -25,9 +25,15 @@ ed_insert_cl=   1111111101111111b
 ed_mouse_on =          100000000b
 ed_mous_adn_b=         100011000b
 ed_mouse_on_off=1111111011111111b
+ed_mouse_on_off= not (ed_mouse_on)
+ed_ctrl_on =          1000000000b
+ed_ctrl_off = not (ed_ctrl_on)
+ed_alt_on =          10000000000b
+ed_alt_off = not (ed_alt_on)
+ed_disabled=        100000000000b
 */
 
-typedef struct {
+typedef struct edit_box_t {
   unsigned int width;
     unsigned int left;
     unsigned int top;
@@ -38,7 +44,7 @@ typedef struct {
     unsigned int text_color;
     unsigned int max;
     char *text;
-    unsigned int mouse_variable; // mus be int* pointer to saved mouse pos ??
+    struct edit_box_t** mouse_variable; // must be pointer edit_box** to save focused editbox
     unsigned int flags;
 
     unsigned int size;  // used symbols in buffer without trailing zero
@@ -66,11 +72,11 @@ typedef struct {
    max_chars = Limit of number of characters user can enter into edit box.
 */
 
-edit_box* kolibri_new_edit_box(unsigned int tlx, unsigned int tly, unsigned int max_chars)
+edit_box* kolibri_new_edit_box(unsigned int tlx, unsigned int tly, unsigned int max_chars, edit_box **editbox_interlock)
 {
     unsigned int PIXELS_PER_CHAR = 7;
-    edit_box *new_textbox = (edit_box *)malloc(sizeof(edit_box));
-    char *text_buffer = (char *)calloc(max_chars + 1, sizeof(char));
+    edit_box *new_textbox = (edit_box *)calloc(1, sizeof(edit_box));
+    char *text_buffer = (char *)calloc(max_chars + 2, sizeof(char)); // +2 as asked in box_lib src
 
     /* Update blur_border_color and shift_color from box_lib.mac macro */
     /* edit_boxes_set_sys_color */
@@ -85,18 +91,8 @@ edit_box* kolibri_new_edit_box(unsigned int tlx, unsigned int tly, unsigned int 
     new_textbox -> text_color = kolibri_color_table.color_work_text; /* Always black text when typing */
     new_textbox -> max = max_chars;
     new_textbox -> text = text_buffer;
-    new_textbox -> mouse_variable = 1; /* let the mouse take control? */
+    new_textbox -> mouse_variable = editbox_interlock;
     new_textbox -> flags = 0x00000000;
-    /* If these lines are uncommented, the executable will crash for no reason at start */
-    /* Even though these lines are not ever read it ALWAYS causes a crash, even crashes MTDBG. What gives? */
-
-    new_textbox -> size = 0;
-    new_textbox -> pos = 0;
-    new_textbox -> offset = 0;
-    new_textbox -> cl_curs_x = 0;
-    new_textbox -> cl_curs_y = 0;
-    new_textbox -> shift = 0;
-    new_textbox -> shift_old = 0;
 
     return new_textbox;
 }

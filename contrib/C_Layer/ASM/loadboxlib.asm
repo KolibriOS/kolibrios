@@ -147,3 +147,6 @@ public scrollbar_v_draw as '_scrollbar_v_draw'
 public scrollbar_v_mouse as '_scrollbar_v_mouse'
 public scrollbar_h_draw as '_scrollbar_h_draw'
 public scrollbar_h_mouse as '_scrollbar_h_mouse'
+
+public option_box_draw as '_option_box_draw'
+public option_box_mouse as '_option_box_mouse'

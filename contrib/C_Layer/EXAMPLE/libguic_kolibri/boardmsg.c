@@ -1,3 +1,22 @@
+/*
+    KolibriGUI demobox
+    -Button
+    -CheckBox
+    -EditBox
+    -Frame
+
+    Free for all
+
+    Initially written by ashmew2, 2015
+
+    Updated by Siemargl, 2016
+
+    ToDo
+*/
+
+#include <stdlib.h>
+#include <string.h>
+#include <kos32sys.h>
 #include <kolibri_gui.h>
 
 int main()
@@ -12,13 +31,17 @@ int main()
   unsigned int gui_event = KOLIBRI_EVENT_REDRAW;
   oskey_t key;
 
-  kolibri_window *main_window = kolibri_new_window(50, 50, 400, 100, "BoardMsg: OpenDialog 0.12");
+  kolibri_window *main_window = kolibri_new_window(50, 50, 400, 120, "BoardMsg: OpenDialog 0.12");
   check_box *checkbox = kolibri_new_check_box(20, 45, 12, 12, "Append BOARDMSG to entered message.");
-  edit_box *textbox = kolibri_new_edit_box(20, 60, 40);
+
+  edit_box *editbox_interlock = NULL;
+  edit_box *textbox = kolibri_new_edit_box(20, 60, 40, &editbox_interlock);
+  edit_box *textbox2 = kolibri_new_edit_box(20, 80, 40, &editbox_interlock);
   kolibri_button *button = kolibri_new_button(310, 60, 24, 14, 0x21, kolibri_color_table.color_work_button);
-  frame *fr = kolibri_new_frame(12, 35, 350, 50, 0x00FCFCFC, 0x00DCDCDC, 1, "Frame Title", 0, kolibri_color_table.color_work_text, kolibri_color_table.color_work_area);
+  frame *fr = kolibri_new_frame(X_Y(12, 350), X_Y(35, 70), 0x00FCFCFC, 0x00DCDCDC, "Frame Title", 0, kolibri_color_table.color_work_text, kolibri_color_table.color_work_area);
 
   kolibri_window_add_element(main_window, KOLIBRI_EDIT_BOX, textbox);
+  kolibri_window_add_element(main_window, KOLIBRI_EDIT_BOX, textbox2);
   kolibri_window_add_element(main_window, KOLIBRI_CHECK_BOX, checkbox);
   kolibri_window_add_element(main_window, KOLIBRI_BUTTON, button);
   kolibri_window_add_element(main_window, KOLIBRI_FRAME, fr);
