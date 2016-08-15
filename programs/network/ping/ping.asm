@@ -36,8 +36,8 @@ include '../../dll.inc'
 include '../../struct.inc'
 include '../../network.inc'
 
-include 'icmp.inc'
-include 'ip.inc'
+include '../icmp.inc'
+include '../ip.inc'
 
 
 START:
