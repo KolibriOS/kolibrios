@@ -1186,7 +1186,7 @@ int_handler:
 ;-------------
 ; Update stats
 
-        add     dword [ebx + device.bytes_rx], eax
+        add     dword [ebx + device.bytes_rx], ecx
         adc     dword [ebx + device.bytes_rx + 4], 0
         inc     [ebx + device.packets_rx]
 
