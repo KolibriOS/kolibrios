@@ -30,6 +30,8 @@ enum KOLIBRI_GUI_ELEMENT_TYPE {
   KOLIBRI_NUM_GUI_ELEMENTS
 };
 
+#define X_Y(x,y) (((x)<<16)|(y))
+
 /* Linked list which connects together all the elements drawn inside a GUI window */
 typedef struct{
   enum KOLIBRI_GUI_ELEMENT_TYPE type;
@@ -71,8 +73,8 @@ void kolibri_window_add_element(kolibri_window *some_window, enum KOLIBRI_GUI_EL
 #include "kolibri_scrollbar.h"
 #include "kolibri_statictext.h"
 #include "kolibri_optionbox.h"
+#include "kolibri_menubar.h"
 
-#define X_Y(x,y) (((x)<<16)|(y))
 
 
 
@@ -129,7 +131,11 @@ kolibri_gui_op_table[KOLIBRI_OPTIONGROUP].redraw_fn = (cb_elem_boxlib)option_box
 kolibri_gui_op_table[KOLIBRI_OPTIONGROUP].mouse_fn = (cb_elem_boxlib)option_box_mouse;
 kolibri_gui_op_table[KOLIBRI_OPTIONGROUP].key_fn = NULL;
 
-debug_board_printf("KOLIBRI_OPTIONGROUP (%x,%x,%x)\n", option_box_draw,option_box_mouse,0);
+kolibri_gui_op_table[KOLIBRI_MENU_BAR].redraw_fn = (cb_elem_boxlib)menu_bar_draw;
+kolibri_gui_op_table[KOLIBRI_MENU_BAR].mouse_fn = (cb_elem_boxlib)menu_bar_mouse;
+kolibri_gui_op_table[KOLIBRI_MENU_BAR].key_fn = NULL;
+
+debug_board_printf("KOLIBRI_MENU_BAR (%x,%x,%x)\n", menu_bar_draw,menu_bar_mouse,menu_bar_activate);
 }
 
 /* Create a new main GUI window for KolibriOS */

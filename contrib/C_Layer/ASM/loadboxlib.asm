@@ -150,3 +150,7 @@ public scrollbar_h_mouse as '_scrollbar_h_mouse'
 
 public option_box_draw as '_option_box_draw'
 public option_box_mouse as '_option_box_mouse'
+
+public menu_bar_draw as '_menu_bar_draw' 
+public menu_bar_mouse as '_menu_bar_mouse' 
+public menu_bar_activate as '_menu_bar_activate' 

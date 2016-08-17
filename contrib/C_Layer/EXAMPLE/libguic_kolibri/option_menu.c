@@ -64,6 +64,25 @@ int main()
     int option_index1 = 0;  // index of selected option
     int option_index2 = 0;
 
+    static char *menu1t = "Menu1";
+    static char *menu11t = "Set RED";
+    static char *menu12t = "Set GREEN";
+    static char *menu13t = "Set BLUE";
+    static char *menu14t = "";
+    menubar* menu1 = kolibri_new_menubar_def(X_Y(20, 40), X_Y(25, 15), 80, 100, menu1t, menu11t);
+    gui_add_menubar(main_window, menu1);
+
+    static char *menu2t = "Menu2";
+    static char *menu21t = "Set Option 1";
+    static char *menu22t = "Set Option 2";
+    static char *menu23t = "Set Option 3";
+    static char *menu24t = "";
+    menubar* menu2 = kolibri_new_menubar_def(X_Y(60, 40), X_Y(25, 15), 80, 100, menu2t, menu21t);
+    gui_add_menubar(main_window, menu2);
+
+
+
+
     do  /* Start of main activity loop */
     {
         if(option_index1 != option1sel - opts1)
