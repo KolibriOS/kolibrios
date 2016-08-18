@@ -150,7 +150,7 @@ kolibri_window * kolibri_new_window(int tlx, int tly, int sizex, int sizey, char
   new_win->sizex = sizex;
   new_win->sizey = sizey;
   new_win->window_title = title;
-  new_win->XY = 0x00000013; /* All windows are skinned windows with caption for now */
+  new_win->XY = 0x33;
   new_win->elements = NULL;
 
   return new_win;
