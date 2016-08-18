@@ -28,7 +28,6 @@ use32
   dd	 0x0
   dd	 path
 
-include 'lang.inc'				; language support
 include 'macros.inc' ; useful macroses
 include 'draw.inc'
 include 'brand.inc'	      ;Brand ID decoding
