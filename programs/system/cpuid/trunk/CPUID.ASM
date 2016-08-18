@@ -28,6 +28,8 @@ use32
   dd	 0x0
   dd	 path
 
+include '..\..\..\develop\libraries\box_lib\load_lib.mac'
+include '..\..\..\macros.inc'
 include 'lang.inc'
 include 'draw.inc'
 include 'brand.inc'     ; brand ID decoding
@@ -37,8 +39,6 @@ include 'features.inc'  ; features decoding
 include 'logos.inc'     ; include file where gif's are stored
 include 'rsatest.inc'
 include 'variable.inc'
-include '..\..\..\macros.inc'
-include '..\..\..\develop\libraries\box_lib\load_lib.mac'
 
 @use_library
 
