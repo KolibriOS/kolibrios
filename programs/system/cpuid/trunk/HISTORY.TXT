@@ -3,8 +3,8 @@
 ; target platform: KolibriOS, x86 (IA-32), x86-64 achitectures
 ; compability:     CPUID works in MS Windows by means of emulator KlbrInWin from Diamond http://board.kolibrios.org/viewtopic.php?f=23&t=1273
 ; compiler:        flat assembler 1.70.03
-; version:         2.28
-; last update:     23rd October 2013
+; version:         2.29
+; last update:     12 October 2014
 ; maintained by:   Sergey Kuzmin aka Wildwest
 ; e-mail:          kuzmin_serg@list.ru
 ; site:            http://coolthemes.narod.ru/files.html
@@ -37,7 +37,7 @@
 ; improve support of Vortex86
 ;******************************************************************************
 ;HISTORY:
-;2.3: CPUID   23/10/2013 (not finished)
+;2.3: CPUID   12/10/2014 (not finished)
 ;Authors:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
 ;            Pavel Rymovskiy aka Heavyiron <Heavyiron@pisem.net>
 ;            fedesco
@@ -50,6 +50,7 @@
 ;          (+)  new cache descriptors for Intel;
 ;          (+)  fixed typo, which makes output of Brand ID for AMD CPU's at incorrect place by Heavyiron;
 ;          (+)  fixed typo, which makes selection of incorrect codename for AMD F8x CPU's; 
+;          (+)  added detection of Extended Model for Intel's CPU and example of it's use
 ;Known issues: Sempron marked as AthlonXP
 ;              second window doesn't closed when you close main window
 ;              incorrect multiplier detection for newest CPU

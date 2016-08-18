@@ -158,7 +158,7 @@ noAMDK6:cmp	byte [f], 6
 	and	edx, 6		;  voltage ID control & frequency ID control
 	cmp	edx, 6
 	je	AMDK7M
-@@:	mov	eax, 68		; Athlon/AthlonXP
+@@:	mov	eax, 68 	; Athlon/AthlonXP
 	mov	ebx, 3
 	mov	edx, 0x0C0010015
 	mcall
@@ -171,7 +171,7 @@ noAMDK6:cmp	byte [f], 6
 @@:	mov	cl, [athloncoef + ebx]
 	ret
 
-AMDK7M:	mov	eax, 68		; AthonXP-M
+AMDK7M: mov	eax, 68 	; AthonXP-M
 	mov	ebx, 3
 	mov	edx, 0xC0010042
 	mcall
@@ -186,7 +186,7 @@ noAMDK7:cmp	byte [f], 0xF
 	and	edx, 6		;  voltage ID control & frequency ID control
 	cmp	edx, 6
 	je	AMDK8M
-	mov	eax, 68		; Athon64
+	mov	eax, 68 	; Athon64
 	mov	ebx, 3
 	mov	edx, 0xC0010015
 	mcall
@@ -199,7 +199,7 @@ noAMDK7:cmp	byte [f], 0xF
 	mov	cl, al
 	ret
 
-AMDK8M:	mov	eax, 68		; Athon64-M
+AMDK8M: mov	eax, 68 	; Athon64-M
 	mov	ebx, 3
 	mov	edx, 0xC0010042
 	mcall
@@ -217,7 +217,7 @@ noAMD:	cmp	dword [smallvendor], 'ntel'	; Check for International Electronics CPU
 	jne	noIntelP4
 	cmp	byte [t], 6
 	jne	@f
-	mov	eax, 68		; Pentium M
+	mov	eax, 68 	; Pentium M
 	mov	ebx, 3
 	mov	edx, 0x2A
 	mcall
@@ -229,7 +229,7 @@ noAMD:	cmp	dword [smallvendor], 'ntel'	; Check for International Electronics CPU
 	ret
 @@:	cmp	byte [m], 2
 	jae	@f
-	mov	eax, 68		; Pentium 4 / Xeon (model < 2) Willamete
+	mov	eax, 68 	; Pentium 4 / Xeon (model < 2) Willamete
 	mov	ebx, 3
 	mov	edx, 0x2A
 	mcall
@@ -237,7 +237,7 @@ noAMD:	cmp	dword [smallvendor], 'ntel'	; Check for International Electronics CPU
 	and	eax, 0x0F
 	mov	cl, [p4coef + eax]
 	ret
-@@:	mov	eax, 68		; Pentium 4 / Xeon (model >= 2) NorthWood
+@@:	mov	eax, 68 	; Pentium 4 / Xeon (model >= 2) NorthWood
 	mov	ebx, 3
 	mov	edx, 0x2C
 	mcall
@@ -250,7 +250,26 @@ noAMD:	cmp	dword [smallvendor], 'ntel'	; Check for International Electronics CPU
 noIntelP4:
 	cmp	byte[f], 6
 	jne	noIntelP6
-	mov	eax, 68		; Pentium Pro / Pentium II / Pentium III
+	;edited code for test task-1
+	cmp	byte[em],0x3A	;i3,i5,i7
+	je	newCPU;
+	cmp	byte[em],0x2A	;celeron dekstop, mobile, Xeon E3
+	je	newCPU;
+	cmp	byte[em],0x2D	;i7
+	je	newCPU;
+	cmp	byte[em],0x25	;celeron, pentium, core i3,i5,i7
+	je	newCPU;
+	cmp	byte[em],0x2C	;Xeon 3000
+	je	newCPU;
+	cmp	byte[em],0x1E	;Clarksfield core i7
+	je	newCPU;
+	cmp	byte[em],0x1A	;Bloomfield-2008
+	je	newCPU;
+	cmp	byte[em],0x2E	;NEhlem ~2008
+	je	newCPU;
+
+
+	mov	eax, 68 	; Pentium Pro / Pentium II / Pentium III
 	mov	ebx, 3
 	mov	edx, 0x2A
 	mcall
@@ -280,4 +299,6 @@ noIntelP4:
 noIntel:
 noIntelP6:
 noAMDK8:
+newCPU:
+mov [nomultiplier], 1
   ret

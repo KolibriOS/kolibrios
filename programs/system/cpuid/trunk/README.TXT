@@ -5,7 +5,7 @@ ENGLISH
 Hi! My name is Sergey Kuzmin aka Wildwest. 
 This is one of the mostly famous program for KolibriOS/MenuetOS.
 I called it CPUID. CPUID talks with you CPU and show log. 
-Current version is 2.28 and you can use it on your own risk without any warranty. 
+Current version is 2.29 and you can use it on your own risk without any warranty. 
 E-mail me (kuzmin_serg@list.ru) if you have some problems or suggestions.
 All righs on this program are mine, except parts of code written by other developers.
 
@@ -50,7 +50,7 @@ RUSSIAN
 Привет! Меня зовут Сергей Кузьмин aka Wildwest. 
 Это одна из самых известных программ для KolibriOS/MenuetOS.
 Она называется CPUID и показывает результаты идентификации процессора.
-Это версия 2.28 и ВЫ можете её использовать на свой собственный риск безо всяких гарантий.
+Это версия 2.29 и ВЫ можете её использовать на свой собственный риск безо всяких гарантий.
 Если будут какие-то проблемы или предложения, то напишите мне (kuzmin_serg@list.ru).
 Все права на программу принадлежат мне, кроме прав на части, написанных остальными разработчиками.
 

@@ -1,21 +1,21 @@
 ;******************************************************************************
-; project name:  CPUID                                                        *
-; platform:      KolibriOS, x86 (IA-32), x86-64 achitectures                  *
-; compiler:      flat assembler 1.70.03                                       *
-; version:       2.28                                                         *
-; last update:   23rd October 2013                                            *
-; maintained by: Sergey Kuzmin aka Wildwest                                   *
-; e-mail:        kuzmin_serg@list.ru                                          *
-; site:          http://coolthemes.narod.ru/files.html                        *
-; license:       Copyright 2004-2013 Sergey Kuzmin and co-authors             *
-;                Rules:                                                       *
-;                1)you can use pieces of code in your project, but should     *
-;                mention the original author (include copyright notice);      *
-;                2)if you modify CPUID (improve, port, translate, etc) send   *
-;                your changes to the maintainer or make about post changes    *
-;                at forum  http://board.kolibrios.org/viewtopic.php?f=42&t=594*
+; project name:  CPUID							      *
+; platform:	 KolibriOS, x86 (IA-32), x86-64 achitectures		      *
+; compiler:	 flat assembler 1.70.03 				      *
+; version:	 2.29							      *
+; last update:	 12 October 2014					      *
+; maintained by: Sergey Kuzmin aka Wildwest				      *
+; e-mail:	 kuzmin_serg@list.ru					      *
+; site: 	 http://coolthemes.narod.ru/files.html			      *
+; license:	 Copyright 2004-2014 Sergey Kuzmin and co-authors	      *
+;		 Rules: 						      *
+;		 1)you can use pieces of code in your project, but should     *
+;		 mention the original author (include copyright notice);      *
+;		 2)if you modify CPUID (improve, port, translate,  etc) send   *
+;		 your changes to the maintainer or make about post changes    *
+;		 at forum  http://board.kolibrios.org/viewtopic.php?f=42&t=594*
 ;-----------------------------------------------------------------------------*
-; English comments                                                            *
+; English comments							      *
 ;------------------------------------------------------------------------------
 use32
   org	 0x0
@@ -26,25 +26,45 @@ use32
   dd U_END+4096
   dd U_END+4096
   dd	 0x0
-  dd	 0x0
+  dd	 path
 
-include 'lang.inc'                              ; language support
-include '..\..\..\macros.inc' ; useful macroses
+include 'lang.inc'				; language support
+include 'macros.inc' ; useful macroses
 include 'draw.inc'
-include 'brand.inc'           ;Brand ID decoding
-include 'caches.inc'          ;(L1 and L2 cashes decoding for Intel)
-include 'multipli.inc'        ;(multiplier decoding)
-include 'features.inc'        ;(features decoding)
+include 'brand.inc'	      ;Brand ID decoding
+include 'caches.inc'	      ;(L1 and L2 cashes decoding for Intel)
+include 'multipli.inc'	      ;(multiplier decoding)
+include 'features.inc'	      ;(features decoding)
+
+;include 'gif2img.inc'	      ;macros to convert gif to img
 
 include 'rsatest.inc'
 include 'variable.inc'
+include 'load_lib.mac'
+
+@use_library
+
+START:			;
+	mcall	68,11
+	mcall	66,1,1
+
+load_libraries l_libs_start,end_l_libs
+;-----------------------------------------------------------------------------
+;OpenDialog     initialisation
+	push	dword OpenDialog_data
+	call	[OpenDialog_Init]
+
+	mov	edi,filename_area
+	mov	esi,start_temp_file_name
+	call	copy_file_name_path
+;-----------------------------------------------------------------------------
+	mcall	68,12,4096*8 ; 16 Kb - I hope this will be enough for store of data
+	mov	[store_text_area_start],eax
 
 
-
-START:			;   LET'S GO!!!
 ;------------
 CYCLES:
-;    CPU speed
+;   CPU speed
     mov eax, 18
     mov ebx,5
     mcall
@@ -102,7 +122,7 @@ mov [che], al	     ; number of calls
 multik:
 
 .eaxl:
-test  eax, eax       ;    Test bit 31
+test  eax, eax	     ;    Test bit 31
 js    .ebxl	     ;    <> 0 =>invalid values
 call decodecache24
 .ebxl:
@@ -172,8 +192,9 @@ full:
 
 mov ecx, eax	      ; get Extended model
 shr ecx,16	      ;shift it to the correct position
-and ecx, 0000000Fh 
+and ecx, 0000000Fh
 shl ecx, 4
+mov dword[newpc],ecx	 ;  this value for old pc=0 and for new pc>0
 add ecx, [m]
 mov dword[em],ecx     ;  effective    model
 
@@ -198,7 +219,7 @@ jmp fut
 
 maybe_athlon:
 mov eax, 0x80000001		  ; CPUID ext. function 0x80000001
-cpuid				    
+cpuid
 mov ecx, eax
 shr ecx,8	  ;   shift it to the correct position
 and ecx,0000000Fh ;   get CPU family
@@ -211,15 +232,27 @@ mov dword[em],ecx
 
 fut:
 
-call decode_sse3
+call decode_sse3_5
+
+
+
+;call decode_sse3_5
 ;-
     call decode_extended
 
-mov  dword [myname], $612F6E
+    mov   eax,$80000000
+    cpuid
 
-        cmp     [extc], $80000003
-        jbe     .noname
+    mov   [extc], eax  ; max number of calls
 
+  test	eax, $80000000 ;// Test bit 31
+  jz .noname
+
+  cmp  eax,$80000003
+  ja .mynameis
+  jmp .noname
+
+.mynameis:
     mov       eax,$80000002
     cpuid
     mov   [myname],eax
@@ -238,34 +271,37 @@ mov  dword [myname], $612F6E
     mov   [myname+36],ebx
     mov   [myname+40],ecx
     mov   [myname+44],edx
+    jmp   red
 
 .noname:
-red:			
+red:
 
 ;mov byte [multiplier], 115;     ; for testing
 
-call multipl			      ; get multiplier 
+call decode_sse3
+
+call multipl			      ; get multiplier
 mov byte [multiplier], cl
 
 mov   dword [freqbb], 0
-mov   dword [freqll], 0 
+mov   dword [freqll], 0
 
 mov   ebx, dword [multiplier]
 test  ebx, ebx
 jz output
-
+ 
 calc:
 
 mov eax,dword [ost]   ; example 166474
 imul eax, 10	      ; example 1664740
 xor edx,edx
-div ebx               ; get system clock (if multiplier detected)
+div ebx 	      ; get system clock (if multiplier detected)
 
-xor edx, edx                    ; example eax=16647
+xor edx, edx			; example eax=16647
 mov ebx, 100
 div ebx
-mov dword [freqbb], eax         ; example 166
-mov dword [freqll], edx         ; example 47
+mov dword [freqbb], eax 	; example 166
+mov dword [freqll], edx 	; example 47
 
 xor edx, edx
     mov eax,dword[multiplier]  ; example 115
@@ -278,21 +314,7 @@ output:
 
    call draw_window    ;     Draw window
 
-typedetect:
-        mov     edx, t1
-        cmp     [t], 00b
-        jz      @f
-        mov     edx, t2
-        cmp     [t], 01b
-        jz      @f
-        mov     edx, t3
-        cmp     [t], 11b
-        jz      @f
-        mov     edx, t4
-@@:
-        mov     ebx, 290*65536 + 250
-        mov     ecx, 0x80000000
-        mcall   4
+;HRERE
 
 PROCCORE:    ;   Who are you?
 ; Intel - "GenuineIntel"           +
@@ -306,17 +328,17 @@ PROCCORE:    ;   Who are you?
 ; Transmeta - "GenuineTMx86"       +
 ; National Semiconductor - "Geode by NSC"
 ; Vortex - "Vortex86 SoC"       + initial support
-  cmp dword[smallvendor], 'ntel'
+  cmp dword[smallvendor], 'ntel'   ;1
   jz Intel
-  cmp dword[smallvendor], 'cAMD'
+  cmp dword[smallvendor], 'cAMD'   ;2
   jz AMD
-  cmp dword[smallvendor], 'tead'
+  cmp dword[smallvendor], 'tead'   ;3
   jz Cyrix
-  cmp dword[smallvendor], 'auls'
+  cmp dword[smallvendor], 'auls'    ;4
   jz Centaur
-  cmp dword[smallvendor], 'Mx86'
+  cmp dword[smallvendor], 'Mx86'    ;5
   jz Transmeta
-  cmp dword[smallvendor], ' SoC'
+  cmp dword[smallvendor], ' SoC'    ;6
   jz Vortex
 
 ; cmp ecx, 'UMC '
@@ -332,18 +354,28 @@ PROCCORE:    ;   Who are you?
 ; jmp Other   ;  I don't know what to do with you...
 Other:
 Text 75,70,0x00000000,other, otherlen-other
+
+mov esi, other
+mov edi, [saveproc]
+call concatname
+
     jmp MMXtest
 ;-------------------------
 
 AMD:
 
+;-------------------------------------------------------------------------------
+
 Text 15, 190,0x00000000,cache, cachelen-cache
 
 Text 75,70,,AMDn, AMDnlen-AMDn
-
+mov esi, AMDnNew
+mov edi, saveproc
+call concatname
 	mov	esi, amd
 	call	load_gif
 PutImage 135,107,201,49,img_area+8
+MOV [codeN], 2
 ;         place   size
 
 ; Relax, man. AMD made PRETTY SIMPLE cache detection routine
@@ -400,208 +432,380 @@ pop ecx
 shr ecx, 16
 mov [L2],ecx
 
+movzx edx, dl ;not sure
+mov [linel3], eax
+
+mov eax, edx
+
+and eax,00FF0000h
+shr eax, 16
+mov [wayl3], eax
+
+shr edx, 24
+mov [L3], edx
+
     cmp [f], $5
     jz .fiv
     cmp [f], $6
     jz .si
     cmp [f], $F
     jz fif
+    cmp [f], $10   ;family 16, 010h, 
+    jz ten
+   
+
 .fiv:	 ;     Family=5
-        mov     [micron], 50
-        mov     edx, A50
-        cmp     [m], $0
-        jz      @f
-        mov     [micron], 35
-        mov     edx, A51
-        cmp     [m], $1
-        jz      @f
-        mov     edx, A52
-        cmp     [m], $2
-        jz      @f
-        mov     edx, A53
-        cmp     [m], $3
-        jz      @f
-        mov     [micron], 30
-        mov     edx, A56
-        cmp     [m], $6
-        jz      @f
-        mov     [micron], 25
-        mov     edx, A57
-        cmp     [m], $7
-        jz      @f
-        mov     edx, A58
-        cmp     [m], $8
-        jz      @f
-        mov     edx, A59
-        cmp     [m], $9
-        jz      @f
-        mov     [micron], 18
-        mov     edx, A5D
+	mov	[micron], 50
+	mov	edx, A50
+	cmp	[m], $0
+	jz	@f
+	mov	[micron], 35
+	mov	edx, A51
+	cmp	[m], $1
+	jz	@f
+	mov	edx, A52
+	cmp	[m], $2
+	jz	@f
+	mov	edx, A53
+	cmp	[m], $3
+	jz	@f
+	mov	[micron], 30
+	mov	edx, A56
+	cmp	[m], $6
+	jz	@f
+	mov	[micron], 25
+	mov	edx, A57
+	cmp	[m], $7
+	jz	@f
+	mov	edx, A58
+	cmp	[m], $8
+	jz	@f
+	mov	edx, A59
+	cmp	[m], $9
+	jz	@f
+	mov	[micron], 18
+	mov	edx, A5D
 @@:
-        jmp     @f
+	jmp	@f
 
 .si:   ;    Family=6
-        mov     [micron], 25
-        mov     edx, At1
-        cmp     [m], $1
-        jz      @f
-        mov     [micron], 18
-        mov     edx, At2
-        cmp     [m], $2
-        jz      @f
-        mov     edx, At3
-        cmp     [m], $3
-        jz      @f
-        mov     edx, At4
-        cmp     [m], $4
-        jz      @f
-        cmp     [m], $6
-        jz      A6
-        mov     [micron], 13
-        mov     edx, At7
-        cmp     [m], $7
-        jz      @f
-        cmp     [m], $8
-        jz      A8
-        jmp     AA
+	mov	[micron], 25
+	mov	edx, At1
+	cmp	[m], $1
+	jz	@f
+	mov	[micron], 18
+	mov	edx, At2
+	cmp	[m], $2
+	jz	@f
+	mov	edx, At3
+	cmp	[m], $3
+	jz	@f
+	mov	edx, At4
+	cmp	[m], $4
+	jz	@f
+	cmp	[m], $6
+	jz	A6
+	mov	[micron], 13
+	mov	edx, At7
+	cmp	[m], $7
+	jz	@f
+	cmp	[m], $8
+	jz	A8
+	jmp	AA
 @@:
-        Text    100,70,0x80000000
-        jmp     MMXtest
+	Text	100,70,0x80000000
+	jmp	MMXtest
 A6:
-;        mov     [FRS], 266  ;!!!!!!
+;mov     [FRS], 266  ;!!!!!!
+;Number  315,90,0,3,dword [FRS],0x000000; MHz
 
-;        Number  315,90,0,3,dword [FRS],0x000000; MHz 
+	call	newrating; !!!!
 
-        call    newrating; !!!!
-
-        Text    245,70,0x00000000,pr, prlen-pr
-
-        Number  310,70,0,4,dword [rating],0x000000
-        mov     edx, At6
-        jmp     @b
+	Text	245,70,0x00000000,pr, prlen-pr
+	Number	310,70,0,4,dword [rating],0x000000
+	mov	edx, At6
+	jmp	@b
 
 A8:
 
-;        mov     [FRS], 266	;!!!!!!
+;mov     [FRS], 266     ;!!!!!!
+;Number  315,90,0,3,dword [FRS],0x000000; MHz
 
-;        Number  315,90,0,3,dword [FRS],0x000000; MHz
+	cmp	[L2], 256
+	jl	.App  ; Applebred
 
-        cmp     [L2], 256
-        jl      .App  ; Applebred
+	call	newrating;!!!!
 
-        call    newrating;!!!!
-
-        Text    245,70,0x00000000,pr, prlen-pr
-        Number  310,70,0,4,dword [rating],0x000000
-        mov     edx, At8
-        jmp     @b
+	Text	245,70,0x00000000,pr, prlen-pr
+	Number	310,70,0,4,dword [rating],0x000000
+	mov	edx, At8
+	jmp	@b
 
 .App:
-        mov     edx, At8a
-        jmp     @b
+	mov	edx, At8a
+	jmp	@b
 
 AA:
 
 ;        mov     [FRS], 333; !!!!
-        Text    245,70,0x00000000,pr, prlen-pr
+	Text	245,70,0x00000000,pr, prlen-pr
 
-;        Number  315,90,0,3,dword [FRS],0x000000; MHz 
+;        Number  315,90,0,3,dword [FRS],0x000000; MHz
 
-        mov     edx, Atat
-        cmp     [L2], 256
-        jl      .Tho ; Thorton
-        mov     edx, Ata
+	mov	edx, Atat
+	cmp	[L2], 256
+	jl	.Tho ; Thorton
+	mov	edx, Ata
 .Tho:
-        push    edx
+	push	edx
 
-        call    newrating;!!!!!
+	call	newrating;!!!!!
 
-        Number  310,70,0,4,dword [rating],0x000000
-        pop     edx
-        jmp     @b
+	Number	310,70,0,4,dword [rating],0x000000
+	pop	edx
+	jmp	@b
 
 fif:  ;  AMD-64    Family=15
 
 ;here is a need to rewrite detection of AMD F-th family according to "Revision Guide for
 ;AMD AthlonTM 64 and  AMD OpteronTM  Processors" 25759.pdf
 
-; checking sse3 for new AMD's is needed
-    cmp [m],$1	; Dual-core Opteron      
-    jz .AF1
-    cmp [m],$3	; Toledo 1024 0.09   // Manchester     ||Windsor Dual Core not supported
-    jz .AF3
-    cmp [m],$4	;Athlon 64 Mobile Athlon 64 FX  ClawHammer (1024) 0.13
-    jz .AF4
-    cmp [m],$5	; Opteron     Athlon 64 FX 0.13 (1024)
-    jz .AF5
-    cmp [m],$7	;Athlon 64 Athlon 64 FX  Clawhammer(1024) 0.13   Sledgehammer(1024)  0.13  // SSE3+ SanDiego(1024)
-    jz .AF7
-   cmp [m],$8 ; Athlon 64 Mobile Athlon 64 FX ClawHammer (1024) 0.13
-    jz .AF8
-   cmp [m],$B ; Athlon 64
-    jz .AFB
-   cmp [m],$C ;Athlon 64 Newcastle(512) 0.13  Sempron> Paris (256)   0.13  |SSE3+ Sempron >  Palermo FC0 0.09  // (Venice)
-    jz .AFC
-   cmp [m],$E  ; Athlon 64    //
-    jz .AFE
-   cmp [m],$F ; Athlon 64 Winchester(512) |SSE3+ SanDiego(1024)  Venice (512)  Palermo (256) 0.09
-    jz .AFF
+
+   cmp [m],$1	;Dual-core Opteron
+    jz   AF1.
+   cmp [m],$3	;Toledo 1024 0.09   
+    jz  AF3.
+   cmp [m],$4	;Athlon 64 Mobile Athlon 64 FX  ClawHammer (1024) 0.13
+    jz AF4.
+   cmp [m],$5	;Opteron Athlon 64 FX 0.13 (1024)
+    jz AF5.
+   cmp [m],$7	;Athlon 64 Athlon 64 FX  Clawhammer(1024) 0.13   Sledgehammer(1024)  0.13  // SSE3+ SanDiego(1024)
+    jz AF7.
+   cmp [m],$8   ;Athlon 64 Mobile Athlon 64 FX ClawHammer (1024) 0.13
+    jz AF8.
+   cmp [m],$B   ;Athlon 64
+    jz AFB.
+   cmp [m],$C   ;Athlon 64 Newcastle(512) 0.13  Sempron> Paris (256)   0.13  |SSE3+ Sempron >  Palermo FC0 0.09  // (Venice)
+    jz AFC.
+   cmp [m],$E   ;Athlon 64    
+    jz AFE.
+   cmp [m],$F   ;Athlon 64 Winchester(512) |SSE3+ SanDiego(1024)  Venice (512)  Palermo (256) 0.09
+    jz AFF.
     jmp next_generation
-.AF1:
+    
+ten:      ;family = 10h
+
+cmp [m],$2  
+   jz AB23.
+cmp [m], $8 
+   jz AB83.
+cmp [m], $9   
+  jz AB9.      
+cmp [m], $2         
+  jz AB8check2.
+  
+AB8check2.:
+cmp [s],03h          
+    jz AB8right2.
+cmp [m],$2
+  jz athlonCheck
+  
+athlonCheck:       
+cmp [s],03h
+    jz athlonKuma
+	
+cmp [m], $5    
+ jz AB4.
+cmp [m],$1     
+   jz AB1.     
+cmp [m],$4        
+    jz AB8check.
+    
+AB8check.:
+cmp [s],02h    
+    jz ABC2.
+cmp [s],01h    
+     jz ABC3.
+cmp [m], $9             
+    jz AB6.
+cmp [m], $2
+    jz AB8check. 
+cmp [m], 06h   
+      jz ABM.   
+  
+athlonKuma:
+      mov [micron], 65
+      Text 100,70,0x00000000,AthlonKuma, AthlonKumalen-AthlonKuma
+      mov esi, AthlonKuma
+      mov edi, saveproc + 0x4
+      call concatname
+      jmp MMXtest  
+         
+AB23.:
+      mov [micron], 65
+      Text 100,70,0x00000000,AB23, AB23len-AB23
+      mov esi, AB23
+      mov edi, saveproc + 0x4
+      call concatname
+      jmp MMXtest
+        
+AB83.:
+      mov [micron], 65
+      Text 100,70,0x00000000,AB83, AB83len-AB83
+      mov esi, AB83
+      mov edi, saveproc + 0x4
+      call concatname
+      jmp MMXtest  
+      
+AB9.:
+      mov [micron], 65
+      Text 100,70,0x00000000,AB9, AB9len-AB9
+      mov esi, AB9
+      mov edi, saveproc + 0x4
+      call concatname
+      jmp MMXtest  
+        
+AB8right2.:
+       mov [micron], 65
+      Text 100,70,0x00000000,AB8right2, AB8right2len-AB8right2
+      mov esi, AB8right2
+      mov edi, saveproc + 0x4
+      call concatname
+      jmp MMXtest  
+
+AB4.:
+      mov [micron], 45
+      Text 100,70,0x00000000,AB4, AB4len-AB4
+      mov esi, AB4
+      mov edi, saveproc + 0x4
+      call concatname
+      jmp MMXtest  
+      
+AB1.:
+      mov [micron], 65
+      Text 100,70,0x00000000,AB1, AB1len-AB1
+      mov esi, AB1
+      mov edi, saveproc + 0x4
+      call concatname
+      jmp MMXtest         
+      
+ABC2.:
+      mov [micron], 45
+      Text 100,70,0x00000000,ABC2, ABC2len-ABC2
+      mov esi, ABC2
+      mov edi, saveproc + 0x4
+      call concatname
+      jmp MMXtest   
+      
+AB6.:
+      mov [micron], 45
+      Text 100,70,0x00000000,AB6, AB6len-AB6
+      mov esi, AB6
+      mov edi, saveproc + 0x4
+      call concatname
+      jmp MMXtest      
+   
+ABC3.:
+      mov [micron], 45
+      Text 100,70,0x00000000,ABC3, ABC3len-ABC3
+      mov esi, ABC3
+      mov edi, saveproc + 0x4
+      call concatname
+      jmp MMXtest   
+      
+ABM.:
+      mov [micron], 45
+      Text 100,70,0x00000000,ABM2, ABM2len-ABM
+      mov esi, ABM2
+      mov edi, saveproc + 0x4
+      call concatname
+      jmp MMXtest
+
+AF1.:
     mov [micron], 09  ;?
     Text 100,70,0x00000000,AF1, AF1len-AF1
+    mov esi, AF1
+    mov edi, saveproc + 0x4
+    call concatname
     jmp MMXtest
-.AF3:
+AF3.:
     mov [micron], 09
     Text 100,70,0x00000000,AF3, AF3len-AF3
+    mov esi, AF3
+    mov edi, saveproc + 0x4
+    call concatname
     jmp MMXtest
-.AF4:
+AF4.:
     mov [micron], 13
     Text 100,70,0x00000000,AF4, AF4len-AF4
+    mov esi, AF4
+    mov edi, saveproc + 0x4
+    call concatname
     jmp MMXtest
-.AF5:
+AF5.:
     mov [micron], 13
     Text 100,70,0x00000000,AF5, AF5len-AF5
     jmp MMXtest
-.AF7:
+    
+AF7.:
     mov [micron], 13
     Text 100,70,0x00000000,AF5, AF5len-AF5
+    mov esi, AF5
+    mov edi, saveproc + 0x4
+    call concatname
     jmp MMXtest
-.AF8:
+    
+AF8.:
    mov [micron], 13
-   Text 100,70,0x00000000,AF4, AF4len-AF4  ; AF4, AF5len-AF4
+   Text 100,70,0x00000000,AF4, AF4len-AF4  
+   mov esi, AF4
+    mov edi, saveproc + 0x4
+    call concatname
    jmp MMXtest
-.AFB:
+   
+AFB.:
     mov [micron], 13
-Text 100,70,0x00000000,AF4, AF4len-AF4
+    Text 100,70,0x00000000,AF4, AF4len-AF4
+    mov esi, AF4
+    mov edi, saveproc + 0x4
+    call concatname
  jmp MMXtest
 
-.AFC:
+AFC.:
 cmp [L2], 512
-je .AFCn
+je AFC.n
 
 cmp [sse3sup], 1
-je .AFCnpal
+je AFC.npal
 
-.AFCnpar:  ; paris
+AFC.npar:  ; paris
     mov [micron], 13
     Text 100,70,0x00000000,AFCs, AFCslen-AFCs
+    mov esi, AFCs
+    mov edi, saveproc + 0x4
+    call concatname
     jmp MMXtest
 
-.AFCnpal: ; palermo
+AFC.npal: ; palermo
     mov [micron], 9
     Text 100,70,0x00000000,AFCsp, AFCsplen-AFCsp
+    mov esi, AFCsp
+    mov edi, saveproc + 0x4
+    call concatname
     jmp MMXtest
 
-.AFCn: ;newcastle
+AFC.n: ;newcastle
     mov [micron], 13
     Text 100,70,0x00000000,AFC, AFClen-AFC
+    mov esi, AFC
+    mov edi, saveproc + 0x4
+    call concatname
     jmp MMXtest
 
-.AFE:	; error in cpu
- jmp .AFC
+AFE.:	; error in cpu
+ jmp AFC.
 
-.AFF:
+AFF.:
 
 cmp [sse3sup], 1
 je .AFFsse
@@ -621,35 +825,45 @@ jz .AFp
 
 .AFs:
 Text 100,70,0x00000000,AFS, AFSlen-AFS
+ mov esi, AFS
+ mov edi, saveproc + 0x4
+ call concatname
  jmp MMXtest
 
 .AFd:
 Text 100,70,0x00000000,AFV, AFVlen-AFV
+mov esi, AFV
+    mov edi, saveproc + 0x4
+    call concatname
  jmp MMXtest
 
 .AFp:
 Text 100,70,0x00000000,AFCsp, AFCsplen-AFCsp
+mov esi, AFCsp
+    mov edi, saveproc + 0x4
+    call concatname
  jmp MMXtest
 ;-----------------------------------------------
 Intel:
-Text 75,70,0x00000000,Inteln, Intelnlen-Inteln
-
+mov [codeN], $1   
+Text 75,70,0x00000000,Inteln, Intelnlen-Inteln  
+	mov esi, IntelnNew   
+	mov edi, saveproc
+	call concatname
 	mov	esi, intel
 	call	load_gif
-PutImage 135,107,201,49,img_area+8
-;PutImage 125,107,201,49,img_area+8
-;         place   size
+PutImage 135,107,201,49,img_area+8  
 
 det:
     cmp [f], $5
-    jz .five
+    jz five
     cmp [f], $6
-    jz .six
+    jz six
     cmp [f], $7
-    jz .sev
+    jz sev
     cmp [f], $F
-    jz .fift
-.five:	      ;Family=5
+    jz fift
+five:	     ;Family=5
 
 Text 15, 190,0x00000000,cache, cachelen-cache
 
@@ -669,6 +883,9 @@ Text 15, 190,0x00000000,cache, cachelen-cache
     jz .I8
 .I0:
 Text 110,70,0x00000000,P50, P50len-P50
+    mov esi, P50
+    mov edi, saveproc + 0x6
+    call concatname
    mov [L1d], 8
    mov [L1i], 8
    mov [L2], 256
@@ -676,49 +893,76 @@ Text 110,70,0x00000000,P50, P50len-P50
  jmp MMXtest
 .I1:
 Text 110,70,0x00000000,P5, P5len-P5
+mov esi, P5
+    mov edi, saveproc + 0x6
+    call concatname
    mov [L1d], 8
    mov [L1i], 8
    mov [L2], 256
    mov [micron], 50
  jmp MMXtest
+ 
 .I2:
 Text 110,70,0x00000000,P54C, P54Clen-P54C
+mov esi, P54C
+    mov edi, saveproc + 0x6
+    call concatname
    mov [L1d], 8
    mov [L1i], 8
    mov [L2], 256
    mov [micron], 50
  jmp MMXtest
+ 
 .I3:
 Text 110,70,0x00000000,P54T, P54Tlen-P54T
+mov esi, P54T
+    mov edi, saveproc + 0x6
+    call concatname
    mov [L1d], 8
    mov [L1i], 8
    mov [L2], 256
    mov [micron], 50
  jmp MMXtest
+ 
 .I4:
 Text 110,70,0x00000000,P55C, P55Clen-P55C
+mov esi, P55C
+    mov edi, saveproc + 0x6
+    call concatname
    mov [L1d], 8
    mov [L1i], 8
    mov [L2], 256
    mov [micron], 35
  jmp MMXtest
+ 
+ 
 .I7:
 Text 110,70,0x00000000,P54C, P54Clen-P54C
+mov esi, P54C
+    mov edi, saveproc + 0x6
+    call concatname
    mov [L1d], 8
    mov [L1i], 8
    mov [L2], 256
    mov [micron], 35
  jmp MMXtest
+ 
 .I8:
 Text 110,70,0x00000000,P55C, P55Clen-P55C
+mov esi, P55C
+    mov edi, saveproc + 0x6
+    call concatname
    mov [L1d], 16
    mov [L1i], 16
    mov [L2], 256
    mov [micron], 35
- jmp MMXtest
-.six:		   ;Family=6
+   jmp MMXtest
+ 
+six:		  ;Family=6
 
 Text 15, 190,0x00000000,cache, cachelen-cache
+cmp [newpc],$0
+jnz NEWintel
 
     cmp [m],$0
     jz .I60
@@ -748,85 +992,367 @@ Text 15, 190,0x00000000,cache, cachelen-cache
     jz .I6F
 .I60:
     mov [micron], 50
-Text 110,70,0x00000000,P60, P60len-P60
- jmp MMXtest
+    Text 110,70,0x00000000,P60, P60len-P60
+    mov esi, P60
+    mov edi, saveproc + 0x6
+    call concatname
+    jmp MMXtest
+ 
 .I61:
     mov [micron], 35
-Text 110,70,0x00000000,P61, P61len-P61
- jmp MMXtest
+    Text 110,70,0x00000000,P61, P61len-P61
+    mov esi, P61
+    mov edi, saveproc + 0x6
+    call concatname
+    jmp MMXtest
+    
 .I63:
     mov [micron], 28
-Text 110,70,0x00000000,P63, P63len-P63
- jmp MMXtest
+    Text 110,70,0x00000000,P63, P63len-P63
+    mov esi, P63
+    mov edi, saveproc + 0x6
+    call concatname
+    jmp MMXtest
+    
 .I65:
     mov [micron], 25
     cmp [L2], 0
     jne .pp65  ; Pentium
-Text 110,70,0x00000000,P65c, P65clen-P65c
+    Text 110,70,0x00000000,P65c, P65clen-P65c
+    mov esi, P65c
+    mov edi, saveproc + 0x6
+    call concatname
     jmp MMXtest
+    
 .pp65:
-Text 110,70,0x00000000,P65, P65len-P65
+    Text 110,70,0x00000000,P65, P65len-P65
+    mov esi, P65
+    mov edi, saveproc + 0x6
+    call concatname
     jmp MMXtest
 .I66:
     mov [micron], 25
 Text 110,70,0x00000000,P66, P66len-P66
+mov esi, P66
+    mov edi, saveproc + 0x6
+    call concatname
     jmp MMXtest
 .I67:
     mov [micron], 25
-Text 110,70,0x00000000,P67, P67len-P67 ;but if SSE4.1 supported then it is Intel Core (Penryn) 
+Text 110,70,0x00000000,P67, P67len-P67 ;but if SSE4.1 supported then it is Intel Core (Penryn)
+    mov esi, P67
+    mov edi, saveproc + 0x6
+    call concatname
     jmp MMXtest
+    
 .I68:
     mov [micron], 18
     cmp [L2], 128
     jne .pp68  ; Pentium
 Text 110,70,0x00000000,P68c, P68clen-P68c
+mov esi, P68c
+    mov edi, saveproc + 0x6
+    call concatname
     jmp MMXtest
+    
  .pp68:
 Text 110,70,0x00000000,P68, P68len-P68
+mov esi, P68
+    mov edi, saveproc + 0x6
+    call concatname
     jmp MMXtest
+    
 .I69:
     mov [micron], 13
 Text 110,70,0x00000000,P69 , P69len-P69
+mov esi, P69
+    mov edi, saveproc + 0x6
+    call concatname
     jmp MMXtest
+    
 .I6A:
     mov [micron], 18
-Text 110,70,0x00000000,P6A, P6Alen-P6A ;but if SSE4.2 supported then it is Intel Core (Nehalem) 
+Text 110,70,0x00000000,P6A, P6Alen-P6A ;but if SSE4.2 supported then it is Intel Core (Nehalem)
+    mov esi, P6A
+    mov edi, saveproc + 0x6
+    call concatname
     jmp MMXtest
+    
 .I6B:
     mov [micron], 13
     cmp [L2], 256
     jne .pp6B  ; Pentium
 Text 110,70,0x00000000,P6Bc, P6Bclen-P6Bc
+mov esi, P6Bc
+    mov edi, saveproc + 0x6
+    call concatname
     jmp MMXtest
+    
 .pp6B:
 Text 110,70,0x00000000,P6B, P6Blen-P6B
+mov esi, P6B
+    mov edi, saveproc + 0x6
+    call concatname
     jmp MMXtest
+    
 .I6D:
     mov [micron], 9
 Text 110,70,0x00000000,P6D, P6Dlen-P6D
+mov esi, P6D
+    mov edi, saveproc + 0x6
+    call concatname
     jmp MMXtest
+    
 .I6E:
     mov [micron], 6
 Text 110,70,0x00000000,P6E, P6Elen-P6E
+mov esi, P6E
+    mov edi, saveproc + 0x6
+    call concatname
     jmp MMXtest
+    
 .I6F:
     mov [micron], 6
 Text 110,70,0x00000000,P6F, P6Flen-P6F
+mov esi, P6F
+    mov edi, saveproc + 0x6
+    call concatname
     jmp MMXtest
 
 ;06Ex - Pentium M Yonah 0.065
 ;06Fx - Pentium D Conroe 0.065, Xeon Woodcrest, Celeron D AllenDale, Core 2 Kentsfield
 
-.sev:	 ;Family=7
+NEWintel:    
+
+   cmp [em],$3A   ;IvyBridge 
+    jz I3A 
+   cmp [em],$2A   ;SandyBridge
+    jz I2A
+   cmp [em],$2D  ;SandyBridge-E/EN/EP
+    jz I2D
+   cmp [em],$25   ;Arrandale/Clarksdale
+    jz I25
+   cmp [em],$2C   ;Gulftown/Westmere-EP
+    jz I2C        ;westmere-EP stepping B1 -> micron 0.032
+   cmp [em],$2F   ;Westmere-EX
+    jz I2F
+   cmp [em],$1E   ;Clarksfield/Lynnfield/Jasper Forest
+    jz I1E
+   cmp [em],$1A   ;Bloomfield/Nehalem-EP
+    jz I1A
+   cmp [em],$2E   ;Nehalem-EX
+    jz I2E
+   cmp [em],$17   ;Yorkfield/Wolfdale/Penryn/Harpertown (DP)
+    jz I17
+   cmp [em],$1D   ;Dunnington (MP)
+    jz I1D
+   cmp [em],$0F   ;Clovertown/Kentsfield/Conroe/Merom/Woodcrest
+    jz I0F
+   cmp [em],$16   ;Merom Conroe
+    jz I16
+   cmp [em],$06   ;Cedar Mill/Presler
+    jz I06
+   cmp [em],$03   ;Nocona Irwindale / Prescott
+    jz I03
+   cmp [em],$04   ;NoconaIrwindale / Prescott
+    jz I03
+   cmp [em],$0D   ;Dothan
+    jz I0D
+   cmp [em],$36   ;Cedarview
+    jz I36
+   cmp [em],$26   ;Lincroft
+    jz I26
+   cmp [em],$1C   ;Pineview/Silverthorne
+    jz I1C
+
+Inewunknown:
+    jmp MMXtest
+
+I3A:
+mov [micron], 32
+;Text 110,70,0x00000000,P3A, P3Alen-P3A
+mov [cname], P3A
+mov esi, P3A
+mov edi, saveproc + 0x10
+call concatname
+jmp MMXtest
+
+I2A:
+mov [micron], 32
+;Text 110,70,0x00000000,P2A, P2Alen-P2A
+mov [cname], P2A
+mov esi, P2A
+mov edi, saveproc + 0x10
+call concatname
+jmp MMXtest
+
+I2D:
+mov [micron], 32
+;Text 110,70,0x00000000,P2D, P2Dlen-P2D
+mov [cname], P2D
+mov esi, P2D
+mov edi,saveproc + 0x10
+call concatname
+jmp MMXtest
+
+I25:
+mov [micron], 32
+;Text 110,70,0x00000000,P25, P25len-P25
+mov [cname], P25  ;P25
+mov esi, P25   
+mov edi, saveproc + 0x10  ;12
+call concatname
+jmp MMXtest
+
+I2C:
+mov [micron], 32
+;Text 110,70,0x00000000,P2C, P2Clen-P2C
+mov [cname], P2C
+mov esi, P2C
+mov edi,saveproc + 0x10
+call concatname
+    jmp MMXtest
+
+I2F:
+mov [micron], 32
+;Text 110,70,0x00000000,P2F, P2Flen-P2F
+mov [cname], P2F
+mov esi, P2F
+mov edi, saveproc + 0x10
+call concatname
+    jmp MMXtest
+
+I1E:
+mov [micron], 32
+;Text 110,70,0x00000000,P1E, P1Elen-P1E
+mov [cname], P1E
+mov esi, P1E
+mov edi, saveproc + 0x10
+call concatname
+    jmp MMXtest
+
+I1A:
+mov [micron], 45
+;Text 110,70,0x00000000,P1A, P1Alen-P1A
+mov [cname], P1A
+mov esi, P1A
+mov edi, saveproc + 0x10
+call concatname
+    jmp MMXtest
+
+I2E:
+mov [micron], 45
+;Text 110,70,0x00000000,P2E, P2Elen-P2E
+mov [cname], P2E
+mov esi, P2E
+mov edi, saveproc + 0x10
+call concatname
+    jmp MMXtest
+
+I17:
+mov [micron], 45
+;Text 110,70,0x00000000,P17, P17len-P17
+mov [cname], P17
+mov esi, P17
+mov edi, saveproc + 0x10
+call concatname
+    jmp MMXtest
+    
+I1D:
+mov [micron], 45
+;Text 110,70,0x00000000,P1D, P1Dlen-P1D
+mov [cname], P1D
+mov esi, P1D
+mov edi, saveproc + 0x10
+call concatname
+    jmp MMXtest    
+    
+I0F:
+mov [micron], 65
+;Text 110,70,0x00000000,P0F, P0Flen-P0F
+mov [cname], P0F
+mov esi, P0F
+mov edi, saveproc + 0x10
+call concatname
+    jmp MMXtest    
+    
+I16:
+mov [micron], 65
+;Text 110,70,0x00000000,P16, P16len-P16
+mov [cname], P16
+mov esi, P16
+mov edi, saveproc + 0x10
+call concatname
+    jmp MMXtest 
+
+I06:
+mov [micron], 32
+;Text 110,70,0x00000000,P06, P06len-P06
+mov [cname], P06
+mov esi, P06
+mov edi, saveproc + 0x10
+call concatname
+    jmp MMXtest       
+    
+I03:
+mov [micron], 32
+;Text 110,70,0x00000000,P03, P03len-P03
+mov [cname], P03
+mov esi, P03
+mov edi, saveproc + 0x10
+call concatname
+    jmp MMXtest
+    
+I0D:
+mov [micron], 32
+;Text 110,70,0x00000000,P0D, P0Dlen-P0D
+mov [cname], P0D
+mov esi, P0D
+mov edi, saveproc + 0x10
+call concatname
+    jmp MMXtest
+
+I36:
+mov [micron], 32
+;Text 110,70,0x00000000,P36, P36len-P36
+mov [cname], P36
+mov esi, P36
+mov edi, saveproc + 0x10
+call concatname
+    jmp MMXtest
+
+I26:
+mov [micron], 32
+;Text 110,70,0x00000000,P26, P26len-P26
+mov [cname], P26
+mov esi, P26
+mov edi, saveproc + 0x10
+call concatname
+    jmp MMXtest
+    
+I1C:
+mov [micron], 32
+;Text 110,70,0x00000000,P1C, P1Clen-P1C 
+mov [cname], P1C 
+mov esi, P1C
+mov edi, saveproc + 0x10
+call concatname
+    jmp MMXtest
+    
+
+;;;;;;;;;;;;;;;;;;;
+sev:	;Family=7
 .IS0:
 
-Text 15, 190,0x00000000,cache, cachelen-cache ;?
-
-    mov [micron], 18
+Text 15, 190,0x00000000,cache, cachelen-cache 
+mov [micron], 18
 Text 110,70,0x00000000,PS0, PS0len-PS0
+mov esi, PS0
+mov edi, saveproc + 0x6
+call concatname
  jmp MMXtest
-
-.fift:	  ;Family=15
+ 
+fift:	 ;Family=15
 
 Text 15, 190,0x00000000,cacheP4, cacheP4len-cacheP4
 
@@ -850,9 +1376,15 @@ Text 15, 190,0x00000000,cacheP4, cacheP4len-cacheP4
     cmp [L2], 128
     jne .ppF0  ; Pentium
 Text 110,70,0x00000000,PF0c, PF0clen-PF0c
+mov esi, PF0c
+    mov edi, saveproc + 0x6
+    call concatname
     jmp MMXtest
 .ppF0:
 Text 110,70,0x00000000,PF0, PF0len-PF0
+mov esi, PF0
+    mov edi, saveproc + 0x6
+    call concatname
     jmp MMXtest
 .IF1:
     mov [micron], 18
@@ -867,24 +1399,39 @@ Text 110,70,0x00000000,PF0, PF0len-PF0
   ;jmp MMXtest
 ;.ppF1:
 Text 110,70,0x00000000,PF0, PF0len-PF0
+mov esi, PF0
+    mov edi, saveproc + 0x6
+    call concatname
  jmp MMXtest
 .IF2:
     mov [micron], 13
     cmp [L2], 128
     jne .ppF2  ; Pentium
 Text 110,70,0x00000000,PF2c, PF2clen-PF2c
+mov esi, PF2c
+    mov edi, saveproc + 0x6
+    call concatname
  jmp MMXtest
 .ppF2:
 Text 110,70,0x00000000,PF2, PF2len-PF2
+mov esi, PF2
+    mov edi, saveproc + 0x6
+    call concatname
  jmp MMXtest
 .IF3:
     mov [micron], 09
     cmp [L2], 256
     jne .ppF3  ; Pentium
 Text 110,70,0x00000000,PF3c, PF3clen-PF3c
+mov esi, PF3c
+    mov edi, saveproc + 0x6
+    call concatname
  jmp MMXtest
 .ppF3:
 Text 110,70,0x00000000,PF3, PF3len-PF3
+mov esi, PF3
+    mov edi, saveproc + 0x6
+    call concatname
  jmp MMXtest
 
 .IF5:
@@ -892,9 +1439,15 @@ Text 110,70,0x00000000,PF3, PF3len-PF3
     cmp [L2], 512
     jae .ppF5  ; Pentium
 Text 110,70,0x00000000,PF5c, PF5clen-PF5c
+mov esi, PF5c
+    mov edi, saveproc + 0x6
+    call concatname
  jmp MMXtest
 .ppF5:
 Text 110,70,0x00000000,PF5, PF5len-PF5
+mov esi, PF5
+    mov edi, saveproc + 0x6
+    call concatname
  jmp MMXtest
 
  .IF6:
@@ -902,25 +1455,34 @@ Text 110,70,0x00000000,PF5, PF5len-PF5
     cmp [L2], 512
     ja .ppF6  ; Pentium
 Text 110,70,0x00000000,PF6c, PF6clen-PF6c
+mov esi, PF6c
+    mov edi, saveproc + 0x6
+    call concatname
  jmp MMXtest
 .ppF6:
 Text 110,70,0x00000000,PF6, PF6len-PF6
+mov esi, PF6
+    mov edi, saveproc + 0x6
+    call concatname
  jmp MMXtest
 
 
  next_generation:
 Text 110,70,0x00000000,NG, NGlen-NG
+mov esi, NG
+    mov edi, saveproc + 0x6
+    call concatname
   jmp MMXtest
 ;----------------------------------
 Cyrix:
 
+mov [codeN], 3
 Text 15, 190,0x00000000,cache, cachelen-cache
 
 	mov	esi, cyrix
 	call	load_gif
 PutImage 135,107,201,49,img_area+8
-;PutImage 130,127,201,49,img_area+8
-;         place   size
+
 
     cmp [f], $5
     jz .fivv
@@ -937,7 +1499,13 @@ PutImage 135,107,201,49,img_area+8
     mov [L1d], 8
     mov [L2], 512
 Text 75,70,0x00000000,Cyrixn, Cyrixnlen-Cyrixn
+mov esi, Cyrixn
+    mov edi, saveproc
+    call concatname
 Text 110,70,0x00000000,C52, C52len-C52
+mov esi, C52
+    mov edi, saveproc + 0x6
+    call concatname
     jmp MMXtest
 .C54:
     mov [micron], 50
@@ -945,7 +1513,13 @@ Text 110,70,0x00000000,C52, C52len-C52
     mov [L1d], 8
     mov [L2], 512
 Text 75,70,0x00000000,Cyrixn, Cyrixnlen-Cyrixn
+mov esi, Cyrixn
+    mov edi, saveproc
+    call concatname
 Text 110,70,0x00000000,C54, C54len-C54
+mov esi, C54
+    mov edi, saveproc + 0x6
+    call concatname
     jmp MMXtest
 
 .sixx:	   ;Family=6
@@ -959,7 +1533,13 @@ Text 110,70,0x00000000,C54, C54len-C54
     mov [L1d], 32
     mov [L2], 512
 Text 75,70,0x00000000,Cyrixn, Cyrixnlen-Cyrixn
+mov esi, Cyrixn
+    mov edi, saveproc
+    call concatname
 Text 110,70,0x00000000,C60, C60len-C60
+mov esi, C60
+    mov edi, saveproc + 0x6
+    call concatname
     jmp MMXtest
 .C65:
     mov [micron], 25 ;35?
@@ -967,6 +1547,9 @@ Text 110,70,0x00000000,C60, C60len-C60
     mov [L1d], 32
     mov [L2], 512
 Text 75,70,0x00000000,Centaurn, Centaurnlen-Centaurn
+mov esi, Centaurn
+    mov edi, saveproc
+    call concatname
     mov edx,C65
     mov esi,C65len-C65
     jmp OutProcName
@@ -982,8 +1565,6 @@ shr ecx, 24
 mov [L1d], ecx
 shr edx, 24
 mov [L1i], edx
-
-
 
 ; cache detection routine
 ;CACHE1:
@@ -1067,6 +1648,9 @@ PutImage 135,107,201,49,img_area+8
 ;         place   size
 
 Text 75,70,0x00000000,IDTn, IDTnlen-IDTn
+mov esi, IDTn
+    mov edi, saveproc + 0x4
+    call concatname
     cmp [m],$4
     jz .V54
     cmp [m],$8
@@ -1094,10 +1678,12 @@ sixC:	;Family=6
 	mov	esi, via
 	call	load_gif
 PutImage 135,107,201,49,img_area+8
-;PutImage 125,107,201,49,img_area+8
-;         place   size
+
 
 Text 75,70,0x00000000,Centaurn, Centaurnlen-Centaurn
+mov esi, Centaurn
+    mov edi, saveproc
+    call concatname
     cmp [m],$6
     jz .V66
     cmp [m],$7
@@ -1139,12 +1725,13 @@ Transmeta:
 Text 15, 190,0x00000000,cache, cachelen-cache
 
 Text 75,70,,Tranmsmetan, Tranmsmetanlen-Tranmsmetan
+mov esi, Tranmsmetan
+    mov edi, saveproc
+    call concatname
 
 	mov	esi, transmeta
 	call	load_gif
 PutImage 135,107,201,49,img_area+8
-;PutImage 125,107,201,49,img_area+8
-;         place   size
 
 ; cache detection routine - it is the same as for AMD (almost)
 ;CACHE1:
@@ -1212,10 +1799,10 @@ mov [L2],ecx
     jmp MMXtest
 
 OutProcName:
-        Text    100,70,0
+	Text	100,70,0 
 
 ;----
-;---------------------------------- new 
+;---------------------------------- new
 Vortex:
 
 Text 15, 190,0x00000000,cache, cachelen-cache
@@ -1228,7 +1815,7 @@ PutImage 135,107,201,49,img_area+8
 
     cmp [f], $5
     jz .V54 ;fivvtx
-;.fivvtx:	  ;Family=5
+;.fivvtx:         ;Family=5
 ;    cmp [m],$4
 ;    jz .V54
 .V54:
@@ -1240,6 +1827,9 @@ PutImage 135,107,201,49,img_area+8
     mov [wayli], 4
     mov [wayld], 4
 Text 75,70,0x00000000,Vortexn, Vortexnlen-Vortexn
+mov esi, Vortexn
+    mov edi, saveproc
+    call concatname
 ;Text 110,70,0x00000000,V54, V54len-V54
     jmp MMXtest
 
@@ -1277,65 +1867,64 @@ HTTtest:
 
 TEXTOUT:
 
-Text 15,110,0x00000000,fam, famlen-fam
-Text 15,130,,mode, modelen-mode
-Text 15,150,,step, steplen-step
-;--------L1  L2
-Number 75,170,0,3,dword [L1d],0x000000;
-Number 75,190,,,dword [L1i]
-Number 41,210,0,4,dword[L2]
-Number 35,230,0,5,dword[L3]
-;-----------Features
-Number 258,50,0,2,dword [micron]  ; micron
-
 Text 275,290,0x00000000,HTT, HTTlen-HTT
 Text 275,310,,sse3, sse3len-sse3
-
-Text 15,70,,name, namelen-name
-
 Text 15,290,,MMXs, MMXslen-MMXs
 Text 15,310,,SSE, SSElen-SSE
 Text 95,310,,SSE2, SSE2len-SSE2
-
-    Number 140,170,0,2,dword [wayld],0x000000
-    Number 218,170,,,dword [lineld]
-
-    Number 140,190,,,dword [wayli]
-    Number 218,190,,,dword [lineli]
-
-    Number 140,210,,,dword [wayl2]
-    Number 218,210,,,dword [linel2]
-
-    Number 140,230,,,dword [wayl3]
-    Number 218,230,,,dword [linel3]
 
 ;-------------------
 TEST3DNOW:
 
   xor edx, edx
   cmp [smallvendor], 'ntel'
-  je @f
+;  je @f  ;recent change
+jne .t
+
+.t:
 
   mov	eax, $80000001 ;// Setup extended function 8000_0001h
   cpuid
 
-@@:
-  mov   eax, now+9
-  add   edx, edx
-  call  write_yes_no_cf
+  test	edx, $80000000 ;// Test bit 31
+  jnz	.XIT
 
-  mov   eax, nowp+9
-  add   edx, edx
-  call  write_yes_no_cf
+.NOEXTENDED: ;// 3DNow! technology is supported
+   mov	dword [now+ 9], $6F6E
+   jmp TEST3DNOWP
+.XIT:
+   mov	dword [now+ 9],  $736579
+   jmp TEST3DNOWP
+
+TEST3DNOWP:
+
+  cmp [smallvendor], 'ntel'
+  je .NOEXTENDEDP
+
+.tp:
+
+  mov	eax, $80000001 ;// Setup extended function 8000_0001h
+  cpuid
+
+test	edx, $40000000 ;// Test bit 30
+  jnz	.XITP  ;// 3DNow! technology is supported
+
+.NOEXTENDEDP:
+   mov	dword [nowp+ 9], $6F6E
+   jmp TESTMMXP
+.XITP:
+   mov	dword [nowp+ 9],  $736579
+   jmp TESTMMXP
+   
 
 TESTMMXP:
 
     mov   eax,$80000000
     cpuid
 
-    test eax, eax
-    jns NOEXTENDEDM
-
+    test eax, 80000000h
+    jna NOEXTENDEDM
+    
   ;cmp   eax, $80000000 ;// Is 800_0001h supported?
   ;jz   .NOEXTENDEDM    ;// If not, 3DNow! technology is not supported
   mov	eax, $80000001 ;// Setup extended function 8000_0001h
@@ -1361,14 +1950,15 @@ XITM:
 
 text3d:
 
-Text 175,290,0x00000000,now, nowlen-now
-Text 175,310,,nowp, nowplen-nowp
+Text 15,330,0x00000000,now, nowlen-now
+Text 95,330,,nowp, nowplen-nowp
 Text 95,290,,mmxp, mmxplen-mmxp
 
 jmp still
 
 ;--------------------------
 NO_CPUID:
+ mov [nocpuid], 1
  Text 15,50,0x00000000,oblom, oblomlen-oblom
 
 FREEZE:
@@ -1381,7 +1971,7 @@ still:
 event_wait:
 
     ;================_RAM_==============
-  Number 200,340,0,4,dword [ram_size_a],0xFFFFFF
+  Number 200,350,0,4,dword [ram_size_a],0xFFFFFF ;Number 200,340,0,4,dword [ram_size_a],0xFFFFFF
 
   mov eax, 18
   mov ebx, 16
@@ -1398,13 +1988,11 @@ event_wait:
   shr eax, 10
 
   mov [ram_size_t], eax
+  
+  Text 115,350,0x00000000,ram, ramlen-ram
+  Number 200,350,0,4,dword [ram_size_a],0x000000
+  Number 270,350,,,dword [ram_size_t]
 
-  Text 115,340,0x00000000,ram, ramlen-ram
-  Text 300,340,,mb, mblen-mb
-
-  Number 200,340,0,4,dword [ram_size_a],0x000000
-
-  Number 270,340,,,dword [ram_size_t]
 
 ;==============================
 
@@ -1412,74 +2000,55 @@ event_wait:
 	mov	ebx,50	     ; wait for 0.5 second
 	mcall
 
-    cmp  eax,1		; 
+    cmp  eax,1		;
     je	 red		;  redraw
-    cmp  eax,2		; 
+    je   red2
+    cmp  eax,2		;
     je	 key		;  key
-    cmp  eax,3		; 
+    cmp  eax,3		;
     je	 button 	;  button
-    jmp  still		; 
-  key:			; 
-    mcall		; 
-    jmp  still		; 
-  button:		; 
-    mov  eax,17 	; 
-    mcall		; 
+    jmp  still		;
+  key:			;
+    mcall		;
+    jmp  still		;
+  button:		;
+    mov  eax,17 	;
+    mcall		;
     cmp  ah,1		;  = 1 ?
     je	close		; close
 
     cmp  ah,2		;  = 2 ?
-    je	thread_start	; 
-			; 
-;    cmp  ah,3		;  = 3 ?
+    je	thread_start	;
+
+    cmp  ah, 3
+    je call_OpenDialog
+    
+     mov	eax,11	     ; function 23 - event wait
+   mov  ebx,1
+   mcall 
+   
+   mov	eax,15	     ; function 23 - event wait
+   mov  ebx,3
+   mcall 
+   
+;    cmp  ah,3          ;  = 3 ?
     jne  still
 
-
-;vybor:
-
-; Number 310,70,0,4,dword [rating],0xFFFFFF ;
-
-; Number 315,90,0,3,dword [FRS]; MHz 
-
-;cmp [FRS], 266
-;jz .s1
-;cmp [FRS], 333
-;jz .s2
-;cmp [FRS], 400
-;jz .s3
-
-;.s1:
-;mov [FRS], 333
-;.rating:;
-;call newrating
-; Number 310,70,0,4,dword [rating],0x000000
-
-; Number 315,90,0,3,dword [FRS]; MHz 
-;jmp  still
-;
-;.s2:
-;mov [FRS], 400
-;jmp .rating
-;
-;.s3:
-;mov [FRS], 266
-;jmp .rating
-
 close:
-    mov   eax,-1	
-    mcall	       
+    mov   eax,-1
+    mcall
 
 ;**************************** THREAD-SECOND WINDOW
 thread_start:
 
-    cmp  [num_win2],0	
+    cmp  [num_win2],0
 
-    jne  still		
+    jne  still
 
 ;================================================RSA test
 
 ;test rsa coding speed
-        call    init_test
+	call	init_test
 ;length of module - 256 bit
   mov  eax,26
   mov  ebx,9
@@ -1504,53 +2073,55 @@ CreateTread window_2,thread2_esp
   jmp  still
 
 window_2:
-    mov  [num_win2],1	
-    call draw_window_2	
+    mov  [num_win2],1
+    call draw_window_2
 
-still_2:		
+still_2:
 
-    mov  eax,10 	
-    mcall		
+    mov  eax,10
+    mcall
 
-    cmp  eax,1		
+    cmp  eax,1
     je	 window_2	;  window_2
-    cmp  eax,2		; 
+    cmp  eax,2		;
     je	 key_2		;  key_2
-    cmp  eax,3		; 
+    cmp  eax,3		;
     je	 button_2	;  button_2
 
-    jmp  still_2	; 
+    jmp  still_2	;
 
-  key_2:		; 
-    mcall		; 
-    jmp  still_2	; 
+  key_2:		;
+    mcall		;
+    jmp  still_2	;
 
-  button_2:		; 
-    mov  eax,17 	; 17 
-    mcall		; 
+  button_2:		;
+    mov  eax,17 	; 17
+    mcall		;
 
     cmp  ah,1		; = 1 ?
     jne  still_2	; noclose
 
-    mov  [num_win2],0	; 
+    mov  [num_win2],0	;
 
-    or	 eax,-1 	; 
+    or	 eax,-1 	;
     mcall
 
+
 draw_window_2:
+
+    ;call prepare_text_area
+
     mov  eax,12 		   ; function 12:tell os about windowdraw
     mov  ebx,1h 		    ; 1, start of draw
     mcall
 
 
-  Window 250,250,420,390, 0x33FFFFFF, 0x805080d0, standard
-	  ; place size
+Window 250,250,420,520, 0x33FFFFFF, 0x805080d0, standard  ;460
+; place size
+
 
 Text 15, 10,0x00000000, STDCA, STDCAlen-STDCA
 Text 215, 10,, EXTCA, EXTCAlen-EXTCA
-
-Number 135,10,1*256,8,dword [stdc],0x000000
-Number 335,10,,,dword [extc],
 
 Text 15, 30,0x00000000, FPU, FPUlen-FPU
 Text 115, 30,, VME, VMElen-VME
@@ -1596,7 +2167,7 @@ DrawLine 0,  410, 185,185,0x8080FF  ;10
 
 mov   eax,$80000000
 cpuid
-;mov eax, $03020101   for test of reaction
+;mov eax, $03020101  \A0for test of reaction
 test eax, eax
 js  goooddd
 
@@ -1613,6 +2184,11 @@ Text 15,275,,TM2, TM2len-TM2
 Text 15,295,,VMX, VMXlen-VMX
 Text 15,315,,SVM, SVMlen-SVM
 
+Text 15,355,0x00000000,SMX, SMXlen-SMX
+Text 15,335,0x00000000,PAGE, PAGElen-PAGE
+Text 15,375,0x00000000,MIS, MISlen-MIS
+Text 115,355,0x00000000,WDT, WDTlen-WDT
+
 Text 115,195,,CNXT_ID, CNXT_IDlen-CNXT_ID
 Text 115,215,,CX16, CX16len-CX16
 Text 115,235,,ETPRD, ETPRDlen-ETPRD
@@ -1621,6 +2197,14 @@ Text 115,275,,LAF, LAFlen-LAF
 Text 115,295,,SSSE3, SSSE3len-SSSE3
 Text 115,315,,MCR8, MCR8len-MCR8
 
+
+Text 115,335,0x00000000,EAS, EASlen-EAS   
+
+Text 115,375,0x00000000,DNP, DNPlen-DNP   
+
+
+Text 315,375,0x00000000,SSE5, SSE5len-SSE5
+
 Text 215,195,,MP, MPlen-MP
 Text 215,215,,NX, NXlen-NX
 Text 215,235,,MMXPi, MMXPilen-MMXPi
@@ -1628,21 +2212,83 @@ Text 215,255,,MMXn, MMXnlen-MMXn
 Text 215,275,,FXSRn, FXSRnlen-FXSRn
 Text 215,295,,DCA,DCAlen-DCA
 
+Text 315,295,0x00000000,SSE41,SSE41len-SSE41
+Text 215,335,0x00000000,x2APIC,x2APIClen-x2APIC
+Text 215,355,0x00000000,ABM,ABMlen-ABM
+Text 215,375,0x00000000,OSVW,OSVWlen-OSVW
+
 Text 315,195,,FFXSR, FFXSRlen-FFXSR
 Text 315,215,,TSCP, TSCPlen-TSCP
 Text 315,235,,LM, LMlen-LM
 Text 315,255,,DNo, DNolen-DNo
 Text 315,275,,DN, DNlen-DN
-Text 315,295,,CMPL, CMPLlen-CMPL
-
+Text 215,315,,CMPL, CMPLlen-CMPL
+Text 315,315,0x00000000,SS42,SS42len-SS42
+Text 315,335,0x00000000,PPCNT,PPCNTlen-PPCNT 
+Text 315,295,0x00000000,SSE4A,SSE4Alen-SSE4A   
+Text 315,355,0x00000000,SKINIT_,SKINIT_len-SKINIT_
 
 too:
-DrawLine 0,  410, 335,335,0x8080FF  ;10
+DrawLine 10,  400, 430,430,0x8080FF  ;10
 
-Text 15,350,0x00000000,speed, speedlen-speed
-Text 130,350,,kbpersec, kbperseclen-kbpersec
+Text 15,415,0x00000000,speed, speedlen-speed
+Text 130,415,,kbpersec, kbperseclen-kbpersec
 
-Number 95,350,0,5,dword [iter],0x000000; RSA test results
+DrawLine 10, 80, 400, 400, 0x8080FF    
+
+ Text 90,400,0x80000000,performancestr, 0 
+DrawLine 322, 400, 400, 400, 0x8080FF
+DrawLine 10, 10, 400, 490, 0x8080FF
+DrawLine 400, 400, 400, 490, 0x8080FF
+
+DrawLine 10, 400, 490, 490, 0x8080FF
+
+	      ; your proc
+		Text 20,415,0x808080FF,currentcpu, 0
+		Number 170,415,0,5,dword [iter],0x000000       ; + 15
+		;Text 115,370,,kbpersec, kbperseclen-kbpersec  ;+ 355
+		mov eax, dword[iter]
+		;mov ebx, 100
+		;mul ebx
+		add eax, 215
+		mov word[linelen], ax	; need to store it as drawline corrupts eax
+		DrawLine 215,  [linelen], 416,416,0x8080FF  ;10 + 355 , 357 
+		DrawLine 215,  [linelen], 417,417,0x8080FF  ;10
+		DrawLine 215,  [linelen], 418,418,0x8080FF  ;10
+	;;;	DrawLine 20,  390, 371,371,0x8080FF  ;10
+
+		; sample proc 1
+		Text 20,435,0x80000000,samplename1,0	   ; 10 + 40 + 40 +40 + 380
+		Number 170,435,0,5,dword [samplespeed1],0x000000;   ; 25 + 40 + 40 +40 + 380
+		;Text 115,470,0,kbpersec, kbperseclen-kbpersec	; 25 + 40 + 40 +40 + 380
+		mov eax, dword[samplespeed1]
+		add eax, 215
+		mov dword[linelen], eax   ; need to store it as drawline corrupts eax
+		DrawLine 215,  [linelen], 436,436,0x8080FF  ;27+40 + 40 +40  + 380
+		DrawLine 215,  [linelen], 437,437,0x8080FF  ;10
+		DrawLine 215,  [linelen], 438,438,0x8080FF  ;10
+
+		; sample proc 2
+		Text 20,455,0x80000000,samplename2,0	 ; 10 + 40 + 350
+		Number 170,455,0,5,dword [samplespeed2],0x000000;   ; 25 + 40 + 350
+		;Text 115,410,0,kbpersec, kbperseclen-kbpersec	; 25 + 40 + 350
+		mov eax, dword[samplespeed2]
+		add eax, 215
+		mov dword[linelen], eax   ; need to store it as drawline corrupts eax
+		DrawLine 215,  [linelen], 456,456,0x8080FF  ;27+40 + 355
+		DrawLine 215,  [linelen], 457,457,0x8080FF  ;10
+		DrawLine 215,  [linelen], 458,458,0x8080FF  ;10
+
+	       ; sample proc 3
+		Text 20,475,0x80000000,samplename3,0	 ; 10 + 40 + 40 + 38
+		Number 170,475,0,5,dword [samplespeed3],0x000000;   ; 25 + 40 + 40 + 355
+		;Text 115,440,0,kbpersec, kbperseclen-kbpersec	; 25 + 40 + 40 + 380
+		mov eax, dword[samplespeed3]
+		add eax, 215
+		mov dword[linelen], eax   ; need to store it as drawline corrupts eax
+		DrawLine 215,  [linelen], 476,476,0x8080FF  ;27+40 + 40
+		DrawLine 215,  [linelen], 477,477,0x8080FF  ;10
+		DrawLine 215,  [linelen], 478,478,0x8080FF  ;10
 
     mov  eax,12
     mov  ebx,2h
@@ -1650,6 +2296,16 @@ Number 95,350,0,5,dword [iter],0x000000; RSA test results
 
     ret
 
+linelen  dd 0  
+currentcpu db 'Current CPU',0
+samplename1 db 'Intel Core i5 CPU', 0x000000    ; not real results!
+samplespeed1 dd 62
+samplename2 db 'Intel Core i3 CPU', 0
+samplespeed2 dd 48
+samplename3 db 'Intel Pentium Dual CPU', 0
+samplespeed3 dd 35
+performancestr db 'PERFORMANCE (KB/S in RSA test 256 bit)',0
+ptsstring db ''
 num_win2 db 0
 
 ;   *******  main window *******
@@ -1659,29 +2315,36 @@ draw_window:
    mov	ebx,1h
    mcall
 
-  Window 150,150,350,385, 0x34FFFFFF, 0x805080d0, title
+ Window 150,150,350,430, 0x34FFFFFF, 0x805080d0, title
 	  ; place size
 
-  Button 15,330,92,23,2+0x40000000,0x03FFFFFF   ;  button "press for more"
+   Button 15,345,92,23,2+0x40000000,0x03FFFFFF ; button "press for more"
 
 	mov	esi, knopka
 	mov	edi, img_area2
-	call	load_gif2
-PutImage 15,330,93,24,img_area2+8   ; image "press for more"
+ 	call	load_gif2
+PutImage 15,345,93,24,img_area2+8 ; image "press for more"
 ;         place   size
 
+
+  Button 15,380,92,23,3+0x40000000,0x03FFFFFF ; button "save" 
+
+	mov	esi, knopka2
+	mov	edi, img_area3
+	call	load_gif2
+  PutImage 15,380,93,24,img_area3+8   ; image "save"   
+;         place   size
 
     mov  eax,12
     mov  ebx,2h
     mcall
 
     Text 130,270,0x00000000,instruct, instructlen-instruct
-
-    DrawLine  10,  330, 325,325,0x8080FF
-    DrawLine 330,  330, 275,325;,0x8080FF
-    DrawLine  10,   10, 275,325;,0x8080FF
-    DrawLine  10,  125, 275,275;,0x8080FF
-    DrawLine 230,  330, 275,275;,0x8080FF
+    DrawLine  10,  330, 340,340,0x8080FF  
+    DrawLine 330,  330, 275,340;,0x8080FF   
+    DrawLine  10,   10, 275,340;,0x8080FF 
+    DrawLine  10,  125, 275,275;,0x8080FF  
+    DrawLine 230,  330, 275,275;,0x8080FF 
 
   cmp dword[smallvendor], 'cAMD'
   jne cont
@@ -1689,44 +2352,266 @@ PutImage 15,330,93,24,img_area2+8   ; image "press for more"
   jne cont
 
 ;   Button 240,85,69,15,3,0x030000FF  ;  button for rating
-
 ;    Text 245,90,0x00FFFFFF,FR, FRlen-FR ; text at button
 
    call newrating; !!!!
 
      cont:
+    Text 15,50,0x00000000,tsum, tsumlen-tsum   ;
 
+;Number 82,50,0,4,dword [total],0x000000; MHz
+    mov esi, total
+    mov edi, tsum + 0xB  ;0xA
+    call savenumber
 
-    Text 15,50,0x00000000,tsum, tsumlen-tsum   ; 
-    Text 15,90,,cpuname, cpunamelen-cpuname; 
-    Text 255,250,,typen, typenlen-typen;
-    Text 175, 50,,tech, techlen-tech; 
+    ;Number 110,50,0,2,dword [sot]; KHz
+    mov esi, sot
+    mov edi, tsum + 0x10
+    call savenumber
 
-    Number 82,50,0,4,dword [total],0x000000; MHz
-    Number 110,50,0,2,dword [sot]; KHz
+    ;Number 75,110,1*256,1,dword [f],0x000000 ;
+    mov esi, f
+    mov edi, fam + 0x8     ;0x9
+    call savenumber
 
+    ;Number 75,130,,,dword [m]
+    mov esi, m
+    mov edi, mode + 0x7
+    call savenumber
+
+    ;Number 75,150,,,dword [s]
+    mov esi, s
+    mov edi, step + 0xa   ;0x9
+    call savenumber
+
+    ;Number 110,110,1*256,2,dword [ef]
+    mov esi, ef
+    mov edi, fam + 0xE    ;0x9
+    call savenumber
+
+    ;Number 110,130,,,dword [em]
+    mov esi, em
+    mov edi, mode + 0xE   ;0xD
+    call savenumber
+
+    mov esi, multb
+    mov edi, multil + 0xB
+    call savenumber
+
+    ;Number 105,30,0,1,dword [multa]
+    mov esi, multa
+    mov edi, multil + 0xf
+    call savenumber
+
+    ;Number 140,170,0,2,dword [wayld],0x000000
+    mov esi, wayld
+    mov edi, cache2 + 0x14   ;0x14
+    call savenumber
+
+   ;Number 218,170,,,dword [lineld]
+    mov esi, lineld
+    mov edi, cache2 + 0x21
+    call savenumber
+
+    ;Number 140,190,,,dword [wayli]
+    mov esi, wayli
+    mov edi, cache + 0x14
+    call savenumber
+    ;Number 218,190,,,dword [lineli]
+    mov esi, lineli
+    mov edi, cache + 0x21
+    call savenumber
+
+    ;Number 140,210,,,dword [wayl2]
+    mov esi, wayl2
+    mov edi, cache3 + 0x14
+    call savenumber
+    ;Number 218,210,,,dword [linel2]
+    mov esi, linel2
+    mov edi, cache3 + 0x21
+    call savenumber
+
+    ;Number 140,230,,,dword [wayl3]
+    mov esi, wayl3
+    mov edi, cache4 + 0x14
+    call savenumber
+    ;Number 218,230,,,dword [linel3]
+    mov esi, linel3
+    mov edi, cache4 + 0x21
+    call savenumber
+
+    mov esi, L1d
+    mov edi, cache2 + 0xa 
+    call savenumber
+    
+;Number 75,190,,,dword [ L1i]
+    mov esi, L1i
+    mov edi, cache + 0xa
+    call savenumber
+
+;Number 41,210,0,4,dword[L2]
+    mov esi, L2
+    mov edi, cache3 + 0x4    ;0x3
+    call savenumber
+
+;Number 35,230,0,5,dword[L3]
+    mov esi, L3
+    mov edi, cache4 + 0x4   ;0x3
+    call savenumber
+
+;-----------Features
+;Number 258,50,0,2,dword [micron]  ; micron
+    mov esi, micron
+    mov edi, tech + 0xE
+    call savenumber
+
+    mov esi, stdc
+    mov edi, STDCA + 0x14
+    call savenumber
+
+;Number 335,10,,,dword [extc],
+    mov esi, extc
+    mov edi, EXTCA + 0x14
+    call savenumber
+
+    Text 15,90,,cpuname, cpunamelen-cpuname;
+    Text 255,250,,typen, typenlen-typen
+    Text 175, 50,,tech, techlen-tech;
+   
+   red2:
+ 
+    ;;;;;;;;;;;;;;;;;;;;;;;;
+    goon: 
+    
+    call decodebrand 
+      
+   typedetect:
+	mov	edx, t1
+	cmp	[t], 00b
+	jz	@f
+	mov	edx, t2
+	cmp	[t], 01b
+	jz	@f
+	mov	edx, t3
+	cmp	[t], 11b
+	jz	@f
+	mov	edx, t4
+@@:
+	mov	ebx, 290*65536 + 250
+	mov	ecx, 0x80000000
+	mcall	4
+	
+    Text 15,250,,brandid, brandidlen-brandid
+
+    Text 15,110,0x00000000,fam, famlen-fam
+    Text 15,130,0x00000000,mode, modelen-mode
+    Text 15,150,0x00000000,step, steplen-step
+    
+    Text 275,290,0x00000000,HTT, HTTlen-HTT
+    Text 275,310,,sse3, sse3len-sse3
+    
+    Text 175,290,0x00000000,SSE41, SSE41len-SSE41
+    Text 175,310,0x00000000,SSE42, SSE42len-SSE42 
+    Text 175,330,0x00000000,SSE5, SSE5len-SSE5 
+    
+
+    Text 15,70,,name, namelen-name
+    Text 15,290,,MMXs, MMXslen-MMXs
+    Text 15,310,,SSE, SSElen-SSE
+    Text 95,310,,SSE2, SSE2len-SSE2
+    
+    Text 95,290,,mmxp, mmxplen-mmxp
+    Text 15,330,0x00000000,now, nowlen-now
+    Text 95,330,,nowp, nowplen-nowp  
+    
+    Text 115,350,0x00000000,ram, ramlen-ram
+    Number 200,350,0,4,dword [ram_size_a],0x000000
+    
+    Number 270,350,0,4,dword [ram_size_t]
+    Text 300,350,0x00000000,mb, mblen-mb
+           
+    Text 15, 190,0x00000000,cache, cachelen-cache 
     Text 15,170,0x00000000,cache2, cache2len-cache2
     Text 15,210,,cache3, cache3len-cache3
     Text 15,230,,cache4, cache4len-cache4
-
-
-    Number 75,110,1*256,1,dword [f],0x000000 ; 
-    Number 75,130,,,dword [m]
-    Number 75,150,,,dword [s]
-
-    Number 110,110,1*256,2,dword [ef]
-    Number 110,130,,,dword [em]
-
-Text   15,30,0x00000000,multil, multillen-multil
-Text   175,30,,freql, freqllen-freql
+    Text 110,70,0x00000000,dword[cname], 40
+    call	load_gif
+        
+    cmp [nomultiplier], $1
+    je nomultip
+Text   15,30,0x00000000,multil2, multil2len-multil2
+Text   175,30,0x00000000,freql2, freql2len-freql2
 Number 85,30,0,2,dword [multb],0x000000;
 Number 105,30,0,1,dword [multa]
 Number 259,30,0,4,dword [freqbb]
 Number 289,30,0,2,dword [freqll]
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Text 115,280,0x00000000,logcpus, logcpuslen-logcpus
-;Number 250,280,0,2,dword [number_of_log_cpus],0x000000
+         
+     JumpForCodename: 
+    cmp [codeN], $1
+    je codeNIntel
+    cmp [codeN], $2
+    je codeNAMD
+    cmp [codeN], $3
+    je codeNCyrix
+    cmp [codeN], $4
+    je codeNCentaur
+    cmp [codeN],$5
+    je codeNTransmeta
+    cmp [codeN], $6
+    je codeNVortex
+    
+codeNIntel:
+Text 75,70,0x00000000,Inteln, Intelnlen-Inteln
+mov	esi, intel
+call	load_gif
+PutImage 135,107,201,49,img_area+8  
+jmp nnn
 
+codeNAMD:
+Text 75,70,,AMDn, AMDnlen-AMDn
+mov	esi, amd
+call	load_gif
+PutImage 135,107,201,49,img_area+8
+jmp nnn
+
+codeNCyrix:
+Text 75,70,0x00000000,Cyrixn, Cyrixnlen-Cyrixn
+mov	esi, cyrix
+call	load_gif
+PutImage 135,107,201,49,img_area+8
+jmp nnn
+
+codeNCentaur:
+Text 75,70,0x00000000,IDTn, IDTnlen-IDTn
+mov	esi, idt
+call	load_gif
+PutImage 135,107,201,49,img_area+8
+jmp nnn
+
+codeNTransmeta:
+Text 75,70,,Tranmsmetan, Tranmsmetanlen-Tranmsmetan
+mov	esi, transmeta
+call	load_gif
+PutImage 135,107,201,49,img_area+8
+jmp nnn
+
+codeNVortex:
+Text 75,70,0x00000000,Vortexn, Vortexnlen-Vortexn
+mov	esi, vortex
+call	load_gif
+PutImage 135,107,201,49,img_area+8
+jmp nnn
+ 
+nomultip:
+Text   15,30,0x00000000,multi3, multi3len-multi3
+Text   175,30,0x00000000,freql3, freql3len-freql3 
+Text 259,30,0x00000000, clock0, clock0len-clock0
+
+jmp JumpForCodename
+
+ nnn:
+ 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     Text 15,10,0x00000000,stm, stmlen-stm
 ;  Fix for deleting leading whitespaces
@@ -1742,43 +2627,696 @@ Number 289,30,0,2,dword [freqll]
     mov  esi,mynamelen
     sub  esi,edi
     Text 105, 10, 0x00000000, edi, esi
-;    Text 105,20,0x00000000,myname, mynamelen-myname
 ;-
 Text 15,250,,brandid, brandidlen-brandid
 
-    ret 		; 
+    ret 		;
+
+call_OpenDialog:
+
+    mov     [OpenDialog_data.type],1	    ; Save
+ 
+    push    dword OpenDialog_data
+    call    [OpenDialog_Start]
+
+    cmp     [OpenDialog_data.status],2	    ; OpenDialog does not start
+    je	    .save_file_default_path
+
+    cmp     [OpenDialog_data.status],1
+    jne     still
+
+    call    store_data
+    jmp     still
+
+.save_file_default_path:
+     mov     edi,file_name
+     mov     esi,file_default_path
+     call    copy_file_name_path
+     call    store_data
+     jmp     still
+
+copy_file_name_path:
+	xor	eax,eax
+	cld
+@@:
+	lodsb
+	stosb
+	test	eax,eax
+	jnz	@r
+	ret
+;-----------------------------------------------------------------------------
+prepare_text_area:
+	mov	edi,[store_text_area_start]
+
+	push	edi
+	mov	ecx,4096
+	mov	eax,dword '    '
+	cld
+	rep	stosd
+	pop	edi
+	mov	[store_text_area_end], edi
+
+	mov esi,title  
+	call addstring
+
+	mov esi, stm
+	call addstring
+
+	mov esi, myname
+	call addstring
+
+   cmp [nomultiplier], $1
+	je noMult
+	jne detMulti 
+	 ;jne detFreq
+	 
+	detMulti:
+	mov esi,multil 
+	call addstring
+	jmp detFreq
+	
+	detFreq:
+	mov esi, freql
+	call addstring	
+	
+	noMult:
+	mov esi,multi3 
+	call addstring 
+	
+	mov esi,freql3 
+	call addstring 	 
+
+	mov esi, tech
+	call addstring
+  
+	mov esi, saveproc
+	call addstring
+
+	mov esi, cpuname   
+	call addstring
+
+	mov esi, fam
+	call addstring
+
+	mov esi, mode
+	call addstring
+
+	mov esi, step
+	call addstring
+
+	mov esi, cache2
+	call addstring
+
+	mov esi, cache
+	call addstring
+
+	mov esi, cache3
+	call addstring
+
+	mov esi, cache4
+	call addstring
+
+	mov esi, brandid
+	call addstring
+
+	mov esi, MMXs
+	call addstring
+
+	mov esi, mmxp
+	call addstring
+
+	mov esi, now
+	call addstring
+
+	mov esi, HTT
+	call addstring
+
+	mov esi, SSE
+	call addstring
+	
+	mov esi, SSE41
+	call addstring
+	
+	mov esi, SSE42
+	call addstring
+	
+	mov esi, SSE5
+	call addstring
+
+	mov esi, SSE2
+	call addstring
+
+	mov esi, nowp
+	call addstring
+
+	mov esi, sse3
+	call addstring
+
+	mov esi, standard
+	call addstring
+
+	mov esi, STDCA
+	call addstring
+
+	mov esi, EXTCA
+	call addstring
+
+	mov esi, FPU
+	call addstring
+
+	mov esi, VME
+	call addstring
+
+	mov esi, DE
+	call addstring
+
+	mov esi, PSE
+	call addstring
+
+	mov esi, TSC
+	call addstring
+
+	mov esi, MSR
+	call addstring
+
+	mov esi, PAE
+	call addstring
+
+	mov esi, MCE
+	call addstring
+
+	mov esi, CX8
+	call addstring
+
+	mov esi, APIC
+	call addstring
+
+	mov esi, Res
+	call addstring
+
+	mov esi, SEP
+	call addstring
+
+	mov esi, MTRR
+	call addstring
+
+	mov esi, PGE
+	call addstring
+
+	mov esi, MCA
+	call addstring
+
+	mov esi, CMOV
+	call addstring
+
+	mov esi, PAT
+	call addstring
+
+	mov esi, PSE36
+	call addstring
+
+	mov esi, PSNUM
+	call addstring
+
+	mov esi, CLFLUSHn
+	call addstring
+
+	mov esi, Res
+	call addstring
+
+	mov esi, DTS
+	call addstring
+
+	mov esi, ACPI
+	call addstring
+
+	mov esi, MMX
+	call addstring
+
+	mov esi, FXSR
+	call addstring
+
+	mov esi, SSE
+	call addstring
+
+
+	mov esi, SSn
+	call addstring
+
+	mov esi, HTT
+	call addstring
+
+	mov esi, TM
+	call addstring
+
+	mov esi, IA64
+	call addstring
+
+	mov esi, PBE
+	call addstring
+
+	mov esi, SS3
+	call addstring
+
+	mov esi, CNXT_ID
+	call addstring
+
+	mov esi, MP
+	call addstring
+
+	mov esi, FFXSR
+	call addstring
+
+	mov esi, MON
+	call addstring
+
+	mov esi, CX16
+	call addstring
+
+	mov esi, NX
+	call addstring
+
+	mov esi, TSCP
+	call addstring
+
+	mov esi, DS_CPL
+	call addstring
+
+	mov esi, ETPRD
+	call addstring
+
+	mov esi, MMXPi
+	call addstring
+
+	mov esi, LM
+	call addstring
+
+	mov esi, EST
+	call addstring
+
+	mov esi, SYS
+	call addstring
+
+	mov esi, MMXn
+	call addstring
+
+	mov esi, DNo
+	call addstring
+
+	mov esi, TM2
+	call addstring
+
+	mov esi, LAF
+	call addstring
+
+	mov esi, FFXSR
+	call addstring
+
+	mov esi, DN
+	call addstring
+
+	mov esi, VMX
+	call addstring
+
+	mov esi, SSSE3
+	call addstring
+
+	mov esi, DCA
+	call addstring
+
+	mov esi, CMPL
+	call addstring
+
+	mov esi, SVM
+	call addstring
+
+	mov esi, MCR8
+	call addstring
+	
+	mov esi, SMX
+	call addstring	
+	
+	mov esi, x2APIC
+	call addstring
+	
+	mov esi, PPCNT
+	call addstring
+	
+	mov esi, PAGE
+	call addstring
+	
+	mov esi, EAS
+	call addstring
+	
+	mov esi, ABM
+	call addstring
+	
+  mov esi, MIS
+  call addstring
+  
+  mov  esi,OSVW
+  call addstring
+  
+  mov esi,SKINIT_
+  call addstring
+  
+  mov esi, WDT
+  call addstring
+  
+	ret
+	
+addstring:
+	mov edi, [store_text_area_end]
+	xor eax, eax
+	xor ecx, ecx
+	cld
+@@:
+	lodsb
+	stosb
+	inc	[store_text_area_end]
+	cmp	[esi], byte 0x0
+	jnz	@r
+	mov	al,0Ah
+	stosb
+
+	mov	[store_text_area_end],edi
+	xor	edi,edi
+	xor	esi, esi
+ret
+
+savenumber:
+	xor eax, eax
+	cld
+	lodsw
+	call numbertostring
+	xor esi, esi
+	xor edi, edi
+
+ret
+
+savestring:
+	xor eax, eax
+	cld
+	lodsw
+	;call numbertostring
+	xor esi, esi
+	xor edi, edi
+
+ret
+
+numbertostring:
+	mov bx, 10
+	xor cx, cx
+@@m1:
+	xor dx, dx
+	div bx
+	push dx
+	inc cx
+	test ax, ax
+	jnz @@m1
+@@m2:
+	 pop ax
+	 add al, '0'
+	 stosb
+	 loop @@m2
+ret
+
+concatname:
+	;mov edi, [saveproc]
+	xor eax, eax
+	xor ecx, ecx
+	cld
+@@:
+	lodsb
+	stosb
+	cmp	[esi], byte 0x0
+	jnz	@r
+
+	xor	edi,edi
+	xor	esi, esi
+ret
+
+store_data:
+	call prepare_text_area
+	mov	eax,[store_text_area_start]
+	mov	[fileinfo.return],eax
+	mov	ebx,[store_text_area_end]
+	sub	ebx,eax
+	inc	ebx
+	mov	[fileinfo.size],ebx
+	mcall	70,fileinfo
+ret
+
+
 
 load_gif:
-        mov     edi, img_area
+	mov	edi, img_area
 load_gif2:
-
+ 
 COLOR_ORDER equ MENUETOS
-include 'gif_lite.inc'        ; parse GIF files
+include 'gif_lite.inc'	      ; parse GIF files
 
 ; DATA AREA
 
-title	 db   'CPUID 2.28 by S.Kuzmin & the KolibriOS team',0
+title	 db   'CPUID 2.29 by S.Kuzmin & the KolibriOS team',0
 
+stm:
+   db 'Internal name:', 0 
+
+stmlen:
+
+SS42:
+    db 'SSE4.2:       ',0
+SS42len:
+
+SMX:
+    db 'SMX:       ',0
+SMXlen:
+
+x2APIC:
+    db 'x2APIC:       '
+x2APIClen:
+
+PPCNT:
+    db 'POPCNT:          '
+PPCNTlen:
+
+PAGE:
+    db 'Page1Gb:     '
+PAGElen:
+
+EAS:
+    db 'EAS:                       ',0
+EASlen:
+
+newLabel:
+    db '3DNP:                       ',0
+newLabellen:
+
+
+ABM:
+    db 'ABM:      '
+ABMlen:
+
+SSE4A:
+    db 'SSE4A:       '
+SSE4Alen:
+
+MIS:
+    db 'MIS:      ',0
+MISlen:
+
+DNP:
+    db '3DNP:       '
+DNPlen:
+
+OSVW:
+    db 'OSVW:       ',0
+OSVWlen:
+
+SKINIT_:
+    db 'SKINIT:          ',0
+SKINIT_len:
+
+WDT:
+    db 'WDT:            ',0
+WDTlen:
+
+
+saveproc:
+   db '                                                   ',0
+
+multil:
+  db 'Multiplier:   .          ', 0
+
+multillen:
+
+multil2:
+
+  db 'Multiplier              .'
+
+multil2len:
+
+multi3:
+
+  db 'Multiplier: n/a',0
+
+multi3len:
+
+freql:
+
+  db 'System clock:     .   MHz', 0
+freqllen:
+
+freql2:
+
+  db 'System clock            .   MHz'
+
+
+freql2len:
+
+freql3:
+
+  db 'System clock: n/a '
+
+
+freql3len:
 
 tsum:
 
-if lang eq it
-
-                db 'Frequenza:     .   MHz'
-
-else
-
-                db 'Frequency:     .   MHz'
-
-end if
-
- 
-
- 
+    db 'Frequency:     .    MHz  ',0
 
 tsumlen:
 
- 
+tech:
+
+    db 'Technology: 0.   micron ', 0
+
+techlen:
+
+name:
+
+if lang eq it
+
+    db 'Codename:',0
+
+else
+
+    db 'CODENAME:',0
+
+
+end if
+
+namelen:
+
+vendorname:
+
+if lang eq it
+
+     db 'Vendor CPU              ', 0
+
+else
+
+     db 'CPU VENDOR:             ', 0
+
+end if
+
+vendornamelen:
+
+cpuname:
+
+if lang eq it
+
+     db 'Vendor CPU              ', 0
+
+else
+
+     db 'CPU VENDOR:             ', 0
+
+end if
+
+cpunamelen:
+
+
+fam:
+
+if lang eq it
+
+     db 'Famiglia:   std   ext', 0
+
+else
+
+     db 'FAMILY:   std   ext', 0
+
+end if
+
+famlen:
+
+mode:
+
+if lang eq it
+
+      db 'Modello:    std    ext', 0
+
+else
+
+      db 'MODEL:    std    ext', 0
+
+end if
+
+modelen:
+
+step:
+
+if lang eq it
+
+       db 'Stepping:        ', 0
+
+else
+
+       db 'STEPPING:        ', 0
+
+end if
+
+steplen:
+
+cache:
+
+    db 'L1(inst):     KB       -way set     -byte line size',0
+
+cachelen:
+
+cache2:
+
+     db 'L1(data):     KB       -way set     -byte line size',0
+
+cache2len:
+
+
+cache3:
+
+    db 'L2:      KB            -way set     -byte line size',0
+
+cache3len:
+
+cache4:
+
+   db 'L3:      KB            -way set     -byte line size',0
+
+cache4len:
+
+brandid:
+
+    db 'Brand:', 0
+
+brandidlen:
+
+MMXs:
+
+    db 'MMX:         ',0
+
+MMXslen:
+
 
 total dd 0x0
 
@@ -1788,35 +3326,35 @@ rating dd 0x0
 
 rat dd 0x0  ;
 
- 
+
 
 ram:
 
 if lang eq it
 
-                db 'RAM libera:        su'
+		db 'RAM libera:        su'
 
 else
 
-                db 'Available RAM:     out of'
+		db 'Available RAM:     out of'
 
 end if
 
- 
 
- 
+
+
 
 ramlen:
 
- 
+
 
 NEF:
 
-db 'EXTENDED FEATURES ARE NOT AVAILABLE'
+db 'EXTENDED FEATURES ARE NOT AVAILABLE',0
 
 NEFlen:
 
- 
+
 
 mb :
 
@@ -1824,35 +3362,31 @@ db 'MB'
 
 mblen:
 
- 
 
-;logcpus :
 
-;db 'Number of logical CPU:'
+logcpus :
 
-;logcpuslen:
+db 'Number of logical CPU:'
 
- 
+logcpuslen:
+
+
 
 speed :
 
 if lang eq it
 
-                db 'Performance'
+;		db 'Performance',0
 
 else
 
-                db 'PERFORMANCE:'
+;		db 'PERFORMANCE:',0
 
 end if
 
- 
-
- 
-
 speedlen:
 
- 
+
 
 kbpersec:
 
@@ -1860,249 +3394,97 @@ db 'KB/SEC'
 
 kbperseclen:
 
- 
+
 
 instruct:
 
 if lang eq it
 
-                db 'Set istruzioni'
+		db 'Set istruzioni'
 
 else
 
-                db 'Instruction sets'
+		db 'Instruction sets'
 
 end if
 
- 
-
- 
-
 instructlen:
 
- 
+
 
 standard    db 'Standard and Extended features plus Performance test',0
 
- 
-
-;FR:
-
-;    db 'Choose FSB:'
-
-;FRlen:
-
- 
 
 STDCA:
 
-    db 'Highest STD call is         '
+    db 'Highest STD call is         ',0
 
 STDCAlen:
 
- 
+
 
 EXTCA:
 
-    db 'Highest EXT call is         h'
+    db 'Highest EXT call is         h',0
 
 EXTCAlen:
 
- 
-
-brandid:
-
-    db 'Brand:'
-
-brandidlen:
-
- 
 
 oblom:
 
 if lang eq it
 
-                db 'CPUID non e disponibile'
+		db 'CPUID non e disponibile'
 
 else
 
-                db 'SORRY, CPUID IS NOT AVAILABLE'
+		db 'SORRY, CPUID IS NOT AVAILABLE'
 
 end if
 
- 
-
 oblomlen:
+
 
 other:
 
 if lang eq it
 
-                db 'Questo vendor non e supportato'
+		db 'Questo vendor non e supportato'
 
 else
 
-                db 'SORRY, THIS VENDOR IS NOT SUPPORTED YET'
+		db 'SORRY, THIS VENDOR IS NOT SUPPORTED YET'
 
 end if
-
- 
 
 otherlen:
 
- 
-
-cpuname:
-
-if lang eq it
-
-                db 'Vendor CPU              '
-
-else
-
-                db 'CPU VENDOR:             '
-
-end if
-
- 
-
-cpunamelen:
-
-fam:
-
-if lang eq it
-
-                db 'Famiglia:   std    ext'
-
-else
-
-                db 'FAMILY:     std    ext'
-
-end if
-
- 
-
- 
-
-famlen:
-
-mode:
-
-if lang eq it
-
-                db 'Modello:    std    ext'
-
-else
-
-                db 'MODEL:      std    ext'
-
-end if
-
- 
-
-modelen:
-
-step:
-
-if lang eq it
-
-                db 'Stepping:'
-
-else
-
-                db 'STEPPING:'
-
-end if
-
- 
-
-steplen:
-
- 
-
-cache2:
-
- 
-
-    db 'L1(data):     KB       -way set     -byte line size'
-
-cache2len:
-
- 
-
-cache:
-
-    db 'L1(inst):     KB       -way set     -byte line size'
-
-cachelen:
-
- 
-
-cache3:
-
- 
-
-    db 'L2:      KB            -way set     -byte line size'
-
-cache3len:
-
- 
-
-cache4:
-
-    db 'L3:      KB            -way set     -byte line size'
-
-cache4len:
-
- 
-
 cacheP4:
-
- 
 
     db 'L1(inst):     Kuops    -way set     -byte line size'
 
 cacheP4len:
 
- 
 
-tech:
 
-if lang eq it
-
-                db 'Tecnologia: 0.   micron '
-
-else
-
-                db 'Technology: 0.   micron '
-
-end if
-
- 
-
- 
-
-techlen:
-
- 
 
 typen:
 
 if lang eq it
 
-                db 'Tipo:'
+		db 'Tipo:'
 
 else
 
-                db 'Type:'
+		db 'Type:'
 
 end if
 
- 
+
 
 typenlen:
 
- 
+
 
 pr:
 
@@ -2110,181 +3492,158 @@ pr:
 
 prlen:
 
- 
 
-multil:
 
-  db 'Multiplier:   .'
-
-multillen:
-
- 
-
-freql:
-
-  db 'System clock:     .   MHz'
-
-freqllen:
-
- 
-
-name:
-
-if lang eq it
-
-                db 'Codename:'
-
-else
-
-                db 'CODENAME:'
-
-end if
-
- 
-
-namelen:
-
- 
 
 AMDn:
 
-    db 'AMD'
+    db 'AMD',0
 
 AMDnlen:
 
+AMDnNew:
+
+    db 'CODENAME: AMD',0
+
+AMDnNewlen:
+
 Inteln:
 
-    db 'Intel'
+    db 'Intel',0
 
 Intelnlen:
 
+IntelnNew:
+ db 'CODENAME: Intel',0
+
+IntelnNewlen:
+
+
 Cyrixn:
 
-    db 'Cyrix'
+    db 'Cyrix',0
 
 Cyrixnlen:
 
 IDTn:
 
-     db 'IDT/Centaur'
+     db 'IDT/Centaur',0
 
 IDTnlen:
 
 Centaurn:
 
-     db 'VIA'
+     db 'VIA',0
 
 Centaurnlen:
 
- 
+
 
 Tranmsmetan:
 
-     db 'Transmeta'
+     db 'Transmeta',0
 
 Tranmsmetanlen:
 
 
 Vortexn:
-    db 'Vortex86'
+    db 'Vortex86',0
 Vortexnlen:
 
 
-MMXs:
-
-    db 'MMX:         '
-
-MMXslen:
-
- 
-
 mmxp:
 
-    db 'MMX+:         '
+    db 'MMX+:         ',0
 
 mmxplen:
 
- 
+
 
 HTT:
 
-    db 'HTT:          '
+    db 'HTT:          ',0
 
 HTTlen:
 
- 
 
 HTTn:
 
-    db 'HTT:         '
+    db 'HTT:         ',0
 
 HTTnlen:
 
- 
 
 sse3:
 
-    db 'SSE3:         '
+    db 'SSE3:         ',0
 
 sse3len:
 
+SSE41:
+    db 'SSE4.1:          ',0
+SSE41len:
+
+SSE42:
+    db 'SSE4.2:             ',0
+SSE42len:
+
+SSE5:
+    db 'SSE5:               ',0
+SSE5len:
+
 now:
 
-    db '3DNOW!:         '
+    db '3DNOW!:         ',0
 
 nowlen:
 
 nowp:
 
-    db '3DNOW!+:         '
+    db '3DNOW!+:         ',0
 
 nowplen:
 
- 
-
 ;-Type
 
- 
+t1	db	'OEM',0
 
-t1      db      'OEM',0
+t2	db	'Overdrive',0
 
-t2      db      'Overdrive',0
+t3	db	'Dual',0
 
-t3      db      'Dual',0
+t4	db	'Unknown',0
 
-t4      db      'Unknown',0
 
- 
 
 ;----------Intel
 
 P50:
 
-db 'P5 A-step'
+db 'P5 A-step',0
 
 P50len:
 
 P5:
 
-db 'P5'
+db 'P5',0
 
 P5len:
 
 P54T:
 
-db 'P24T Overdrive'
+db 'P24T Overdrive',0
 
 P54Tlen:
 
 P54C:
 
-db 'P54C'
+db 'P54C',0
 
 P54Clen:
 
 P55C:
 
-db 'P55C (with MMX)'
+db 'P55C (with MMX)',0
 
 P55Clen:
 
@@ -2292,79 +3651,79 @@ P55Clen:
 
 P60:
 
-db 'Pentium Pro A-step'
+db 'Pentium Pro A-step',0
 
 P60len:
 
 P61:
 
-db 'Pentium Pro'
+db 'Pentium Pro',0
 
 P61len:
 
 P63:
 
-db 'Pentium II (Klamath)'
+db 'Pentium II (Klamath)',0
 
 P63len:
 
 P65:
 
-db 'Pentium II (Deschutes)'
+db 'Pentium II (Deschutes)',0
 
 P65len:
 
 P66:
 
-db 'Celeron (Medocino)'
+db 'Celeron (Medocino)',0
 
 P66len:
 
 P67:
 
-db 'Pentium III (Katmai)'
+db 'Pentium III (Katmai)',0
 
 P67len:
 
 P68:
 
-db 'Pentium III (Coppermine)'
+db 'Pentium III (Coppermine)',0
 
 P68len:
 
 P69:
 
-db 'Pentium M (Banias)'
+db 'Pentium M (Banias)',0
 
 P69len:
 
 P6A:
 
-db 'Pentium III Xeon (Cascades)'
+db 'Pentium III Xeon (Cascades)',0
 
 P6Alen:
 
 P6B:
 
-db 'Pentium III (Tualatin)'
+db 'Pentium III (Tualatin)',0
 
 P6Blen:
 
 P6D:
 
-db 'Pentium M (Dothan)'
+db 'Pentium M (Dothan)',0
 
 P6Dlen:
 
 P6E:
 
-db 'Pentium M (Yonah)/ Core'
+db 'Pentium M (Yonah)/ Core',0
 
 P6Elen:
 
 P6F:
 
-db 'Pentium D (Conroe)/ Core 2 (Kentsfield)'
+db 'Pentium D (Conroe)/ Core 2 (Kentsfield)',0
 
 P6Flen:
 
@@ -2372,7 +3731,7 @@ P6Flen:
 
 PS0:
 
-db 'Itanium (IA-64)'
+db 'Itanium (IA-64)',0
 
 PS0len:
 
@@ -2380,31 +3739,31 @@ PS0len:
 
 PF0:
 
-db 'Pentium 4 (Willamete)'
+db 'Pentium 4 (Willamete)',0
 
 PF0len:
 
 PF2:
 
-db 'Pentium 4 (Northwood)'
+db 'Pentium 4 (Northwood)',0
 
 PF2len:
 
 PF3:
 
-db 'Pentium 4 (Prescott)'
+db 'Pentium 4 (Prescott)',0
 
 PF3len:
 
 PF5:
 
-db 'Pentium 4 (Tejas)'
+db 'Pentium 4 (Tejas)',0
 
 PF5len:
 
 PF6:
 
-db 'Pentium 4 (Presler)'
+db 'Pentium 4 (Presler)',0
 
 PF6len:
 
@@ -2412,193 +3771,342 @@ PF6len:
 
 P65c:
 
-db 'Celeron (Covington)'
+db 'Celeron (Covington)',0
 
 P65clen:
 
 P68c:
 
-db 'Celeron (Coppermine)'
+db 'Celeron (Coppermine)',0
 
 P68clen:
 
 P6Bc:
 
-db 'Celeron (Tualatin)'
+db 'Celeron (Tualatin)',0
 
 P6Bclen:
 
 PF0c:
 
-db 'Celeron (Willamete)'
+db 'Celeron (Willamete)',0
 
 PF0clen:
 
 PF2c:
 
-db 'Celeron (Northwood)'
+db 'Celeron (Northwood)',0
 
 PF2clen:
 
 PF3c:
 
-db 'Celeron (Prescott)'
+db 'Celeron (Prescott)',0
 
 PF3clen:
 
 PF5c:
 
-db 'Celeron D (Texas)'
+db 'Celeron D (Texas)',0
 
 PF5clen:
 
 PF6c:
 
-db 'Celeron D (Presler)'
+db 'Celeron D (Presler)',0
 
 PF6clen:
 
+;---------New Intel
+P3A:
+
+db 'IvyBridge',0
+
+P3Alen:
+
+P2A:
+
+db 'Sandy Bridge',0
+
+P2Alen:
+
+P2D:
+db 'Sandy bridge-E',0 
+
+P2Dlen:
+
+
+P25:
+db 'Arrandale',0
+P25len:
+
+P2C:
+db 'Gulftown',0
+P2Clen:
+
+P2F:
+db 'Westmere-EX',0
+P2Flen:
+
+P1E:
+db 'Clarksfield',0
+P1Elen:
+
+P1A:
+db 'Bloomfield',0
+P1Alen:
+
+P2E:
+db 'Nehalem-EX',0
+P2Elen:
+
+P17:
+db 'Yorkfield',0
+P17len:
+
+P1D:
+db 'Dunnington',0
+P1Dlen:
+
+P0F:
+db 'Clovertown',0
+P0Flen:
+
+P16:
+db 'Merom Conroe',0
+P16len:
+
+P06:
+db 'Cedar Mill',0
+P06len:
+
+P03:
+db 'Nocona Irwindale',0
+P03len:
+
+P04:
+db 'NoconaIrwindale',0
+P04len:
+
+P0D:
+db 'Dothan',0
+P0Dlen:
+
+P36:
+db 'Cedarview',0
+P36len:
+
+P26:
+db 'Lincroft',0
+P26len:
+
+P1C:
+db 'Pineview',0
+P1Clen:
+
+
 ;---------AMD
 
-A50     db 'K5 (PR75, PR90, PR100)',0
+A50	db 'K5 (PR75, PR90, PR100)',0
 
-A51     db '5k86 (PR120, PR133)',0
+A51	db '5k86 (PR120, PR133)',0
 
-A52     db '5k86 (PR166)',0
+A52	db '5k86 (PR166)',0
 
-A53     db '5k86 (PR200)',0
+A53	db '5k86 (PR200)',0
 
-A56     db 'K6',0
+A56	db 'K6',0
 
-A57     db 'K6',0
+A57	db 'K6',0
 
-A58     db 'K6-2',0
+A58	db 'K6-2',0
 
-A59     db 'K6-III',0
+A59	db 'K6-III',0
 
-A5D     db 'K6-2+ or K6-III+',0
-
-;-------------------
-
-At1     db 'Athlon',0
-
-At2     db 'Athlon',0
-
-At3     db 'Duron (Spitfire)',0
-
-At4     db 'Athlon (Thunderbird)',0
-
-At6     db 'AthlonXP (Palomino)',0
-
-At7     db 'Duron (Morgan)',0
-
-At8     db 'AthlonXP (Thoroughbred)',0
-
-At8a    db 'Duron (Applebred)',0
-
-Ata     db 'AthlonXP (Barton)',0
-
-Atat    db 'AthlonXP (Thorton)',0
+A5D	db 'K6-2+ or K6-III+',0
 
 ;-------------------
+
+At1	db 'Athlon',0
+
+At2	db 'Athlon',0
+
+At3	db 'Duron (Spitfire)',0
+
+At4	db 'Athlon (Thunderbird)',0
+
+At6	db 'AthlonXP (Palomino)',0
+
+At7	db 'Duron (Morgan)',0
+
+At8	db 'AthlonXP (Thoroughbred)',0
+
+At8a	db 'Duron (Applebred)',0
+
+Ata	db 'AthlonXP (Barton)',0
+
+Atat	db 'AthlonXP (Thorton)',0
+
+;-------------------
+AthlonKuma:
+
+db 'AMD Athlon 7750 Black Edition',0
+
+AthlonKumalen: 
+
+AB23:
+
+db 'Opteron 2300-series',0
+
+AB23len:
+
+AB83:
+
+db 'Opteron 8300-series',0
+
+AB83len:
+
+AB9:
+db 'Phenom X4',0
+
+AB9len:
+
+AB8right2:
+
+db 'Phenom X3',0
+
+AB8right2len:
+
+AB4:
+
+db 'Athlon X2',0
+
+AB4len:
+
+AB1:
+
+db 'Sempron',0
+
+AB1len:
+
+ABC2:
+
+db 'Opteron (Shanghai) 2387',0
+
+ABC2len:
+
+AB6:
+
+db 'Opteron (Magny-Cours)',0
+
+AB6len:
+
+ABC3:
+
+db 'Opteron (Shanghai) 8300 series',0
+
+ABC3len:
+
+ABM2:
+
+db 'Turion II ',0
+
+ABM2len:
+
+;---
 
 AF1:
 
-db 'Dual-core Opteron'
+db 'Dual-core Opteron',0
 
 AF1len:
 
 AF3:
 
-db 'Athlon 64 (Toledo)'
+db 'Athlon 64 (Toledo)',0
 
 AF3len:
 
 AF4:
 
-db 'Athlon 64 (ClawHammer)'
+db 'Athlon 64 (ClawHammer)',0
 
 AF4len:
 
 AF5:
 
-db 'Opteron/Athlon 64 FX (SledgeHammer)'
+db 'Opteron/Athlon 64 FX (SledgeHammer)',0
 
 AF5len:
 
- 
 
 AFC:
 
-db 'Athlon 64 (Newcastle)'
+db 'Athlon 64 (Newcastle)',0
 
 AFClen:
 
- 
 
 AFF:
 
-db 'Athlon 64 (Winchester)'
+db 'Athlon 64 (Winchester)',0
 
 AFFlen:
 
- 
 
 AFS:
 
-db 'Athlon 64 (San Diego)'
+db 'Athlon 64 (San Diego)',0
 
 AFSlen:
 
- 
 
 AFV:
 
-db 'Athlon 64 (Venice)'
+db 'Athlon 64 (Venice)',0
 
 AFVlen:
 
- 
 
 AFCs:
 
-db 'Sempron (Paris)'
+db 'Sempron (Paris)',0
 
 AFCslen:
 
- 
+
 
 AFCsp:
 
-db 'Sempron (Palermo)'
+db 'Sempron (Palermo)',0
 
 AFCsplen:
 
- 
+
 
 ;---------Cyrix
 
 C52:
 
-db '6x86 M1'
+db '6x86 M1',0
 
 C52len:
 
 C54:
 
-db 'MediaGX'
+db 'MediaGX',0
 
 C54len:
 
 C60:
 
-db '6x86MX M2'
+db '6x86MX M2',0
 
 C60len:
 
 C65:
 
-db 'C3 (Cyrix M2)' ;?
+db 'C3 (Cyrix M2)',0 ;?
 
 C65len:
 
@@ -2606,19 +4114,19 @@ C65len:
 
 V54:
 
-db 'WinChip C6'
+db 'WinChip C6',0
 
 V54len:
 
 V58:
 
-db 'WinChip 2'
+db 'WinChip 2',0
 
 V58len:
 
 V59:
 
-db 'WinChip 3'
+db 'WinChip 3',0
 
 V59len:
 
@@ -2626,31 +4134,31 @@ V59len:
 
 V66:
 
-db 'C3 (Samuel)'  ; Joshua is unreleased 065
+db 'C3 (Samuel)',0  ; Joshua is unreleased 065
 
 V66len:
 
 V67:
 
-db 'C3 (Samuel2/Ezra)' ; ?
+db 'C3 (Samuel2/Ezra)',0 ; ?
 
 V67len:
 
 V68:
 
-db 'C3 (Ezra-T/Eden)' ;?
+db 'C3 (Ezra-T/Eden)',0 ;?
 
 V68len:
 
 V69:
 
-db 'C3 (Antaur/Nehemiah)' ;?
+db 'C3 (Antaur/Nehemiah)',0 ;?
 
 V69len:
 
 VA:
 
-db 'C7 (Esther)' ;?
+db 'C7 (Esther)',0 ;?
 
 VAlen:
 
@@ -2658,13 +4166,13 @@ VAlen:
 
 T5:
 
-db 'Crusoe' ;
+db 'Crusoe',0 ;
 
 T5len:
 
 TF:
 
-db 'Efficeon' ;
+db 'Efficeon',0 ;
 
 TFlen:
 
@@ -2672,50 +4180,29 @@ TFlen:
 
 NG:
 
-    db 'Next generation CPU'
+    db 'Next generation CPU',0
 
 NGlen:
 
- 
 
-stm:
+athloncoef	db	110, 115, 120, 125, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 120
 
-if lang eq it
+		db	190, 120, 200, 130, 135, 140, 210, 150, 220, 160, 165, 170, 180, 230, 240
 
-                db 'Nome:  '
+athlonmcoef:	db	110, 115, 120, 125, 50, 55, 60, 65,  70, 75, 80, 85, 90, 95, 100, 105
 
-else
+		db	30, 190, 40, 200, 130, 135, 14, 210, 150, 220, 160, 165, 170, 230, 240
 
-                db 'Internal name:'
+athloncoef3	db	45, 50, 40, 55, 25, 30, 60, 35
 
-end if
+p4coef		db	160, 170, 180, 190, 200, 210, 220, 230, 80, 90, 100, 110, 120, 130, 140, 150	; Pentium 4 (Willamete)
 
- 
+coppercoeff	db	 50, 30, 40, 20, 55, 35,  45, 25,  35, 70, 80, 60, 20, 75, 15, 65, 90, 110, 120, 20, 95, 115, 85, 25, 35, 70,  80, 100,  20, 75,  15, 105
 
-stmlen:
+tualatcoeff	db	120, 35, 35, 40, 55, 35, 115, 35, 160, 70, 80, 60, 40, 75, 35, 65, 90, 110,  35, 35, 95,  35, 85, 35, 35, 35, 130, 100, 140, 35, 150, 105
 
- 
-
-athloncoef      db      110, 115, 120, 125, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 120
-
-                db      190, 120, 200, 130, 135, 140, 210, 150, 220, 160, 165, 170, 180, 230, 240
-
-athlonmcoef:    db      110, 115, 120, 125, 50, 55, 60, 65,  70, 75, 80, 85, 90, 95, 100, 105
-
-                db      30, 190, 40, 200, 130, 135, 14, 210, 150, 220, 160, 165, 170, 230, 240
-
-athloncoef3     db      45, 50, 40, 55, 25, 30, 60, 35
-
-p4coef          db      160, 170, 180, 190, 200, 210, 220, 230, 80, 90, 100, 110, 120, 130, 140, 150    ; Pentium 4 (Willamete)
-
-coppercoeff     db       50, 30, 40, 20, 55, 35,  45, 25,  35, 70, 80, 60, 20, 75, 15, 65, 90, 110, 120, 20, 95, 115, 85, 25, 35, 70,  80, 100,  20, 75,  15, 105
-
-tualatcoeff     db      120, 35, 35, 40, 55, 35, 115, 35, 160, 70, 80, 60, 40, 75, 35, 65, 90, 110,  35, 35, 95,  35, 85, 35, 35, 35, 130, 100, 140, 35, 150, 105
-
- 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;
 
 ;  include images and unpacking- and hasharea
@@ -2727,14 +4214,124 @@ include 'logos.inc' ; include file where gif's are stored
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 I_END:
 
-img_area:          ; image is going to be unpacked to here
-rb 201*49*3+8      ; image resolution (bits to reserve)
+img_area:	   ; image is going to be unpacked to here
+rb 201*49*3+8	   ; image resolution (bits to reserve)
 
-img_area2:         ; image is going to be unpacked to here
-rb 93*24*3+8       ; image resolution (bits to reserve)
+img_area2:	   ; image is going to be unpacked to here
+rb 93*24*3+8	   ; image resolution (bits to reserve)
 
+img_area3:	   ; image is going to be unpacked to here
+rb 93*24*3+8	   ; image resolution (bits to reserve)
+
+gif_hash_area:
+rd 4096+1	   ;hash area size for unpacking gif
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
+
+err_message_found_lib2	db 'proc_lib.obj - Not found!',0
+
+err_message_import2	db 'proc_lib.obj - Wrong import!',0
+
+head_f_i:
+head_f_l	db 'error',0
+;---------------------------------------------------------------------
+l_libs_start:
+
+library02  l_libs system_dir_ProcLib+9, path, library_path, system_dir_ProcLib, \
+err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
+
+end_l_libs:
+;---------------------------------------------------------------------
+align 4
+ProcLib_import:
+OpenDialog_Init 	dd aOpenDialog_Init
+OpenDialog_Start	dd aOpenDialog_Start
+;OpenDialog__Version    dd aOpenDialog_Version
+	dd	0
+	dd	0
+aOpenDialog_Init	db 'OpenDialog_init',0
+aOpenDialog_Start	db 'OpenDialog_start',0
+;aOpenDialog_Version    db 'Version_OpenDialog',0
+;---------------------------------------------------------------------
+align 4
+OpenDialog_data:
+.type			dd 0
+.procinfo		dd Proc_Info	;+4
+.com_area_name		dd communication_area_name	;+8
+.com_area		dd 0	;+12
+.opendir_pach		dd temp_dir_pach	;+16
+.dir_default_pach	dd communication_area_default_pach	;+20
+.start_path		dd open_dialog_path	;+24
+.draw_window		dd draw_window	;+28
+.status 		dd 0	;+32
+.openfile_pach		dd file_name	;+36
+.filename_area		dd filename_area	;+40
+.filter_area		dd Filter
+.x:
+.x_size 		dw 420 ;+48 ; Window X size
+.x_start		dw 10 ;+50 ; Window X position
+.y:
+.y_size 		dw 320 ;+52 ; Window y size
+.y_start		dw 10 ;+54 ; Window Y position
+
+communication_area_name:
+	db 'FFFFFFFF_open_dialog',0
+open_dialog_path:
+	db '/sys/File Managers/opendial',0
+communication_area_default_pach:
+	db '/sys',0
+Filter:
+dd	Filter.end - Filter.1
+.1:
+db	'TXT',0
+db	'LOG',0
+.end:
+dd	0
+
+file_default_path:
+	db '/sys/'
+start_temp_file_name:
+	db 'CPUID.txt',0
+
+;---------------------------------------------------------------------
+align	4
+fileinfo:
+.subfunction	dd 2
+.Offset 	dd 0
+.Offset_1	dd 0
+.size		dd 4096
+.return 	dd 0
+		db 0
+.name:		dd file_name
+
+store_text_area_start	dd ?
+store_text_area_end	dd ?
+store_text_size 	dd ?
+
+;---------------------------------------------------------------------
+library_path:
+	rb 4096
+;---------------------------------------------------------------------
+path:
+	rb 4096
+;---------------------------------------------------------------------
+temp_dir_pach:
+	rb 4096
+;---------------------------------------------------------------------
+file_name:
+	rb 4096
+;---------------------------------------------------------------------
+file_name_1:
+	rb 4096
+;---------------------------------------------------------------------
+filename_area:
+	rb 256
+;---------------------------------------------------------------------
+	rb 4096
+stacktop:
+;---------------------------------------------------------------------
+Proc_Info	process_information
 ; RSA test data
 
 align 4
@@ -2742,18 +4339,18 @@ align 4
   num1 rd 40
 
   num2 rd 40
-
+ 
   num3 rd 40
 
   iter rd 1
 
   openkey rd 1
 
- 
+
 
 IncludeUGlobals
 
- 
+nocpuid db 0x0
 
 ost dd ?
 
@@ -2767,21 +4364,19 @@ s dd ?
 
 t dd ?
 
- 
+
 
 ef dd ?
 
 em dd ?
 
- 
+
 
 multiplier dd ?
 
 multa dd ?
 
 multb dd ?
-
- 
 
 smallvendor dd ?
 
@@ -2797,19 +4392,21 @@ micron dd ?
 
 brand dd ?
 
- 
+newpc  dd ?
+
+nomultiplier  dd ?
 
 ram_size_a dd ?
 
 ram_size_t dd ?
 
- 
+
 
 stdc dd ?
 
 extc dd ?
 
- 
+
 
 FRS dd ?
 
@@ -2817,19 +4414,23 @@ freqsel db ?
 
 sse3sup db ?
 
- 
+sse41sup dd ?
+sse42sup dd ?
+sse5sup dd ?
+
+
 
 freqbb dd ?
 
 freqll dd ?
 
- 
+
 
 wayli dd ?
 
 lineli dd ?
 
- 
+
 
 wayld dd ?
 
@@ -2847,30 +4448,28 @@ wayl3 dd ?
 
 linel3 dd ?
 
- 
-
-;number_of_log_cpus dd ?
-
- 
-
 che db ? ; numbers of calls for Intel caches detection
 
- 
+cname dd ? 
+
+codeN dd ? 
 
 myname:
 
    rb 48
 
 mynamelen:
+   db 0x0
 
- 
 
 align 4
 
- 
+
 
   thread2_stack_area rb 64
 
   thread2_esp = $
 
 U_END:
+
+

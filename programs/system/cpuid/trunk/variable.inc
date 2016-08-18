@@ -100,232 +100,232 @@ brand17len:
  ;features
 
 FPU:
-    db 'FPU:         '
+    db 'FPU:         ',0
 FPUlen:
 
 VME:
-    db 'VME:         '
+    db 'VME:         ',0
 VMElen:
 
 DE:
-    db 'DE:         '
+    db 'DE:         ',0
 DElen:
 
 PSE:
-    db 'PSE:         '
+    db 'PSE:         ',0
 PSElen:
 
 TSC:
-    db 'TSC:         '
+    db 'TSC:         ',0
 TSClen:
 
 MSR:
-    db 'MSR:         '
+    db 'MSR:         ',0
 MSRlen:
 
 PAE:
-    db 'PAE:         '
+    db 'PAE:         ',0
 PAElen:
 
 MCE:
-    db 'MCE:         '
+    db 'MCE:         ',0
 MCElen:
 
 CX8:
-    db 'CX8:         '
+    db 'CX8:         ',0
 CX8len:
 
 APIC:
-    db 'APIC:         '
+    db 'APIC:         ',0
 APIClen:
 
 SEP:
-    db 'SEP:         '
+    db 'SEP:         ',0
 SEPlen:
 
 MTRR:
-    db 'MTRR:         '
+    db 'MTRR:         ',0
 MTRRlen:
 
 PGE:
-    db 'PGE:         '
+    db 'PGE:         ',0
 PGElen:
 
 MCA:
-    db 'MCA:         '
+    db 'MCA:         ',0
 MCAlen:
 
 CMOV:
-    db 'CMOV:         '
+    db 'CMOV:         ',0
 CMOVlen:
 
 PAT:
-    db 'PAT:         '
+    db 'PAT:         ',0
 PATlen:
 
 PSE36:
-    db 'PSE36:         '
+    db 'PSE36:         ',0
 PSE36len:
 
 PSNUM:
-    db 'PSNUM:         '
+    db 'PSNUM:         ',0
 PSNUMlen:
 
 CLFLUSHn:
-    db 'CLFLSH:         '
+    db 'CLFLSH:         ',0
 CLFLUSHnlen:
 
 DTS:
-    db 'DTS:         '
+    db 'DTS:         ',0
 DTSlen:
 
 ACPI:
-    db 'ACPI:         '
+    db 'ACPI:         ',0
 ACPIlen:
 
 MMX:
-    db 'MMX:         '
+    db 'MMX:         ',0
 MMXlen:
 
 FXSR:
-    db 'FXSR:         '
+    db 'FXSR:         ',0
 FXSRlen:
 
 SSE:
-    db 'SSE:         '
+    db 'SSE:         ',0
 SSElen:
 
 SSE2:
-    db 'SSE2:         '
+    db 'SSE2:         ',0
 SSE2len:
 
 SSn:
-    db 'SS:         '
+    db 'SS:         ',0
 SSnlen:
 
 TM:
-    db 'TM:         '
+    db 'TM:         ',0
 TMlen:
 
 IA64:
-    db 'IA64:         '
+    db 'IA64:         ',0
 IA64len:
 
 PBE:
-    db 'PBE:         '
+    db 'PBE:         ',0
 PBElen:
 
 Res:
-    db 'Reserved'
+    db 'Reserved',0
 Reslen:
 
 ;Extended
 
 SS3:
-    db 'SSE3:         '
+    db 'SSE3:         ',0
 SS3len:
 
 MON:
-    db 'MON:          '
+    db 'MON:          ',0
 MONlen:
 
 DS_CPL:
-    db 'DS-CPL:       '
+    db 'DS-CPL:       ',0
 DS_CPLlen:
 
 EST:
-    db 'EST:         '
+    db 'EST:         ',0
 ESTlen:
 
 TM2:
-    db 'TM2:         '
+    db 'TM2:         ',0
 TM2len:
 
 CNXT_ID:
-    db 'CNXT-ID:        '
+    db 'CNXT-ID:        ',0
 CNXT_IDlen:
 
 CX16:
-    db 'CX16:           '
+    db 'CX16:           ',0
 CX16len:
 
 ETPRD:
-    db 'xTPR/ETPRD:       ' ; xTPR
+    db 'xTPR/ETPRD:       ',0 ; xTPR
 ETPRDlen:
 
 ;Extended2
 
 SYS:
-    db 'SYSCALL:            '
+    db 'SYSCALL:            ',0
 SYSlen:
 
 MP:
-    db 'MP:            '
+    db 'MP:            ',0
 MPlen:
 
 NX:
-    db 'NX/XD:            '
+    db 'NX/XD:            ',0
 NXlen:
 
 MMXPi:
-    db 'MMX+:          '
+    db 'MMX+:          ',0
 MMXPilen:
 
 MMXn:
-    db 'MMX:           '
+    db 'MMX:           ',0
 MMXnlen:
 
 FXSRn:
-    db 'FXSR:          '
+    db 'FXSR:          ',0
 FXSRnlen:
 
 FFXSR:
-    db 'FFXSR:           '
+    db 'FFXSR:           ',0
 FFXSRlen:
 
 TSCP:
-    db 'TSCP:            '
+    db 'TSCP:            ',0
 TSCPlen:
 
 LM:
-    db 'EM64T/LM:             ' ; AA64
+    db 'EM64T/LM:             ',0 ; AA64
 LMlen:
 
 DNo:
-    db '3DNow!+:         '
+    db '3DNow!+:         ',0
 DNolen:
 
 DN:
-    db '3DNow!:          '
+    db '3DNow!:          ',0
 DNlen:
 
 LAF:
-    db 'LAHF:           '
+    db 'LAHF:           ',0
 LAFlen:
 
 VMX:
-    db 'VMX:          '
+    db 'VMX:          ',0
 VMXlen:
 
 SSSE3:
-    db 'SSSE3:              '
+    db 'SSSE3:              ',0
 SSSE3len:
 
 DCA:
-    db 'DCA:          '
+    db 'DCA:          ',0
 DCAlen:
 
 
 MCR8:
-    db 'MCR8:              '
+    db 'MCR8:              ',0
 MCR8len:
 
 SVM:
-    db 'SVM:          '
+    db 'SVM:          ',0
 SVMlen:
 
 CMPL:
-    db 'CMPL:          '
+    db 'CMPL:          ',0
 CMPLlen:
 ;================================
 abrand00:
@@ -343,5 +343,13 @@ abrand1len:
 abrand2:
     db 'AMD Opteron MP'
 abrand2len:
+;=====================================
+multi0:
+    db 'n/a'
+multi0len:
 
- 
+;=====================================
+clock0:
+     db 'n/a'
+clock0len:
+
