@@ -36,7 +36,7 @@ int main()
 
   edit_box *editbox_interlock = NULL;
   edit_box *textbox = kolibri_new_edit_box(20, 60, 40, &editbox_interlock);
-  edit_box *textbox2 = kolibri_new_edit_box(20, 80, 40, &editbox_interlock);
+  edit_box *textbox2 = kolibri_new_edit_box(20, 80, 30, &editbox_interlock);
   kolibri_button *button = kolibri_new_button(310, 60, 24, 14, 0x21, kolibri_color_table.color_work_button);
   frame *fr = kolibri_new_frame(X_Y(12, 350), X_Y(35, 70), 0x00FCFCFC, 0x00DCDCDC, "Frame Title", 0, kolibri_color_table.color_work_text, kolibri_color_table.color_work_area);
 
@@ -45,6 +45,8 @@ int main()
   kolibri_window_add_element(main_window, KOLIBRI_CHECK_BOX, checkbox);
   kolibri_window_add_element(main_window, KOLIBRI_BUTTON, button);
   kolibri_window_add_element(main_window, KOLIBRI_FRAME, fr);
+
+  (*edit_box_set_text)(textbox2, "Sample text very long to get shorted");
 
   extern volatile unsigned press_key;
 

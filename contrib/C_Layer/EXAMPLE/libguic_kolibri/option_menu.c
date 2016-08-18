@@ -18,6 +18,39 @@
 #include "kos32sys.h"
 #include "kolibri_gui.h"
 
+#define SCAN_CODE_ALTM  50
+#define SCAN_CODE_ALTE  18
+inline
+uint32_t get_os_keyb_modifiers()
+{
+    register uint32_t val;
+    __asm__ __volatile__(
+    "int $0x40"
+    :"=a"(val)
+    :"a"(66), "b"(3));
+    return val;
+};
+
+#define KEY_LSHIFT     0x1
+#define KEY_RSHIFT     0x2
+#define KEY_LCTRL      0x4
+#define KEY_RCTRL      0x8
+#define KEY_LALT       0x10
+#define KEY_RALT       0x20
+#define KEY_CAPSLOCK   0x40
+#define KEY_NUMLOCK    0x80
+#define KEY_SCROLLLOCK 0x100
+#define KEY_LWIN       0x200
+#define KEY_RWIN       0x400
+
+inline
+void set_os_keyb_mode(int mode)
+// 0 - ASCII, 1 - SCAN
+{
+    __asm__ __volatile__(
+    "int $0x40"
+    ::"a"(66), "b"(1), "c"(mode));
+};
 
 int main()
 {
@@ -64,23 +97,22 @@ int main()
     int option_index1 = 0;  // index of selected option
     int option_index2 = 0;
 
-    static char *menu1t = "Menu1";
-    static char *menu11t = "Set RED";
-    static char *menu12t = "Set GREEN";
-    static char *menu13t = "Set BLUE";
-    static char *menu14t = "";
-    menubar* menu1 = kolibri_new_menubar_def(X_Y(20, 40), X_Y(25, 15), 80, 100, menu1t, menu11t);
+    char *menu1stru[] = {"Menu1", "Set RED", "Set GREEN", "Set BLUE", NULL};
+    menubar* menu1 = kolibri_new_menubar_def(X_Y(10, 40), X_Y(25, 15), 80, 100, menu1stru);
     gui_add_menubar(main_window, menu1);
 
-    static char *menu2t = "Menu2";
-    static char *menu21t = "Set Option 1";
-    static char *menu22t = "Set Option 2";
-    static char *menu23t = "Set Option 3";
-    static char *menu24t = "";
-    menubar* menu2 = kolibri_new_menubar_def(X_Y(60, 40), X_Y(25, 15), 80, 100, menu2t, menu21t);
+    char *menu2stru[] = {"mEnu2", "Set Option 1", "Set Option 2", "Set Option 3", NULL};
+    menubar* menu2 = kolibri_new_menubar_def(X_Y(50, 40), X_Y(25, 15), 80, 100, menu2stru);
     gui_add_menubar(main_window, menu2);
 
+    char *menu3stru[] = {"Quit", NULL};
+    menubar* menu3 = kolibri_new_menubar_def(X_Y(90, 40), X_Y(25, 15), 0, 0, menu3stru);
+    menu3->type = 1;  // no subitems
+    gui_add_menubar(main_window, menu3);
 
+
+
+    set_os_keyb_mode(1); // needed for keyboard use in menu
 
 
     do  /* Start of main activity loop */
@@ -100,7 +132,13 @@ int main()
         case KOLIBRI_EVENT_NONE:
 			break;
         case KOLIBRI_EVENT_KEY:
+            keypress = get_key();
+            debug_board_printf("Key pressed state(%d) code(%d) ctrl_key(%d)  modifiers(%#x)\n", keypress.state, keypress.code, keypress.ctrl_key, get_os_keyb_modifiers());
             kolibri_handle_event_key(main_window); // ???????
+
+            if(keypress.code == SCAN_CODE_ALTM && get_os_keyb_modifiers() & (KEY_LALT | KEY_RALT))
+                (*menu_bar_activate)(menu1); // wont work, immediately redraw command closes menu (
+
 			break;
         case KOLIBRI_EVENT_BUTTON:
             pressed_button = get_os_button();
@@ -115,6 +153,21 @@ int main()
 //            mouse_pos = get_mouse_pos(POS_WINDOW); // window relative
 //            mouse_button = get_mouse_eventstate();
             kolibri_handle_event_mouse(main_window);
+            if(menu1->click && menu1->cursor_out)
+            {
+                option1sel = opts1 + menu1->cursor_out - 1; // check bounds ?
+                (*option_box_draw)(option_group1);
+            }
+            if(menu2->click && menu2->cursor_out)
+            {
+                option2sel = opts2 + menu2->cursor_out - 1; // check bounds ?
+                (*option_box_draw)(option_group2);
+            }
+            if(menu3->click && menu3->cursor_out)
+            {
+                return 0; // quit
+            }
+
             break;
         }
 

@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <string.h>
+#include <kos32sys.h>
 #include <kolibri_gui.h>
 #include <kolibri_kmenu.h>
 
@@ -15,33 +18,34 @@ int main()
   oskey_t key;
 
   kolibri_window *main_window = kolibri_new_window(50, 50, 400, 200, "kmenu example");
-  
+
   kmenu_init(NULL);
-  
+
   void *sub_menu1 = ksubmenu_new();
   ksubmenu_add(sub_menu1, kmenuitem_new(0, "Open", 101));
   ksubmenu_add(sub_menu1, kmenuitem_new(0, "Save", 102));
   ksubmenu_add(sub_menu1, kmenuitem_new(2, "", 0));
   ksubmenu_add(sub_menu1, kmenuitem_new(0, "Exit", 103));
-  
+
   void *sub_menu2 = ksubmenu_new();
   ksubmenu_add(sub_menu2, kmenuitem_new(0, "Find", 201));
   ksubmenu_add(sub_menu2, kmenuitem_new(0, "Replace", 202));
-  
+
   void *sub_menu22 = ksubmenu_new();
   ksubmenu_add(sub_menu22, kmenuitem_new(0, "cp1251", 211));
   ksubmenu_add(sub_menu22, kmenuitem_new(0, "UTF-8", 212));
   ksubmenu_add(sub_menu2, kmenuitem__submenu_new(1, "Encoding", sub_menu22));
-  
+
   void *main_menu = ksubmenu_new();
   ksubmenu_add(main_menu, kmenuitem__submenu_new(1, "File", sub_menu1));
   ksubmenu_add(main_menu, kmenuitem__submenu_new(1, "Edit", sub_menu2));
-  
+
   extern volatile unsigned press_key;
 
   do  /* Start of main activity loop */
     {
-      if(gui_event == KOLIBRI_EVENT_REDRAW)
+      if(gui_event == KOLIBRI_EVENT_REDRAW)#include <string.h>
+
 	{
 	  kolibri_handle_event_redraw(main_window);
 	  kmainmenu_draw(main_menu);
