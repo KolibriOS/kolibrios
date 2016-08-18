@@ -1,0 +1,617 @@
+;13.03.2013 - use @notify
+;08.06.2010 - new macros @use_library_mem
+;08.05.2009 - bugfix
+;14.04.2009 - a macros for code load library the box_lib.obj from '/sys/lib/' or current dirrectory.
+; The macros for load any library/libraries:
+; Copyright (c) 2009, <Lrz>
+; All rights reserved.
+;
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are met:
+;       * Redistributions of source code must retain the above copyright
+;       notice, this list of conditions and the following disclaimer.
+;       * Redistributions in binary form must reproduce the above copyright
+;       notice, this list of conditions and the following disclaimer in the
+;       documentation and/or other materials provided with the distribution.
+;       * Neither the name of the <organization> nor the
+;       names of its contributors may be used to endorse or promote products
+;       derived from this software without specific prior written permission.
+;
+; THIS SOFTWARE IS PROVIDED BY Alexey Teplov aka <Lrz> ''AS IS'' AND ANY
+; EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+; WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+; DISCLAIMED. IN NO EVENT SHALL <copyright holder> BE LIABLE FOR ANY
+; DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+; (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+; ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+;*****************************************************************************
+; This macros based on source code:
+; <Lrz> - Alexey Teplov / Алексей Теплов
+; Mario79, Mario - Marat Zakiyanov / Марат Закиянов
+; Diamondz - Evgeny Grechnikov / Евгений Гречников
+;------------------------
+; DESCRIPTION
+; Macro load_library
+; Logick of work.
+; A first time we must to check system path, where I belive find a system library. System path is "/sys/lib/".
+; If I cannot found my library, i must to check second way. Second way is current dirrectory.
+; If we cannot load library, we must show the error message:
+; "I'm sorry,the programm cannot found system library box_lib.obj."
+; "The find was make on 2 ways: /sys/lib/ and current dirrectory."
+;
+; 
+;---------------------------------------------------------------------
+; Macro sys_load_library
+; A first time we must to check own path in current dirrectory the program, where I belive find a system library.
+; If I cannot found my library, i must to check second way. Second way is system path a "/sys/lib/".
+; If we cannot load library, we must show the error message:
+; "I'm sorry,the programm cannot found system library box_lib.obj."
+; "The find was make on 2 ways: /sys/lib/ and current dirrectory."
+;
+;---------------------------------------------------------------------
+; How can I use it?
+;---------------------------------------------------------------------
+;-Example using single load library
+;-universal load library/librarys
+;load_library  library_name__, cur_dir_path__, library_path__, system_path__, \
+;err_message_found_lib__, head_f_l__, myimport, err_message_import__, head_f_i__
+;-if return code =-1 then exit, else normally work
+;        cmp     eax,-1
+;        jz      exit
+;- Well, if you get 
+;
+;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+;DATA данные
+;Всегда соблюдать последовательность в имени.
+;system_path__      db '/sys/lib/'
+;library_name__     db 'box_lib.obj',0
+; Если есть желание разъединить, то нужно использовать следующию конструкцию
+;system_path__      db '/sys/lib/box_lib.obj',0
+;... любая последовательность других команд и определений.
+;library_name__     db 'box_lib.obj',0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;err_message_found_lib__   db 'Sorry I cannot found library box_lib.obj',0
+;head_f_i__:
+;head_f_l__        db 'System error',0
+;err_message_import__      db 'Error on load import library box_lib.obj',0
+
+;myimport:   
+;
+;edit_box_draw   dd      aEdit_box_draw
+;edit_box_key    dd      aEdit_box_key
+;edit_box_mouse  dd      aEdit_box_mouse
+;version_ed      dd      aVersion_ed
+;
+;check_box_draw  dd      aCheck_box_draw
+;check_box_mouse dd      aCheck_box_mouse
+;version_ch      dd      aVersion_ch
+;
+;option_box_draw  dd      aOption_box_draw
+;option_box_mouse dd      aOption_box_mouse
+;version_op       dd      aVersion_op
+
+;                dd      0
+;                dd      0
+;
+;aEdit_box_draw  db 'edit_box',0
+;aEdit_box_key   db 'edit_box_key',0
+;aEdit_box_mouse db 'edit_box_mouse',0
+;aVersion_ed     db 'version_ed',0
+
+;aCheck_box_draw  db 'check_box_draw',0
+;aCheck_box_mouse db 'check_box_mouse',0
+;aVersion_ch      db 'version_ch',0
+
+;aOption_box_draw  db 'option_box_draw',0
+;aOption_box_mouse db 'option_box_mouse',0
+;aVersion_op       db 'version_op',0
+
+;---------------------------------------------------------------------
+macro @use_library
+{
+local lp1
+local lp2
+local lp3
+local lp4
+local lp5
+local lp6
+local file_name
+
+library_fun_memory_alloc equ 0 ;не использовать в макросах проверку на функции 'lib_init'
+
+align 4
+arrea_xx dd 0
+file_name db '/rd/1/@notify',0
+
+align 4
+run_notify_struct:
+	.Function dd 7
+	.Position dd 0
+	.Flags dd ?
+	.Count dd 0
+	.Buffer dd 0
+		db 0
+	.FileName dd file_name
+;---------------------------------------------------------------------
+
+@library_name     equ    dword [esp+16]
+@cur_dir_path     equ    dword [esp+12]
+@library_path     equ    dword [esp+8]
+@point_dir_name   equ    dword [esp+4]
+
+align 4
+@copy_path:
+	mov     esi,@cur_dir_path
+	mov     edi,@library_path
+	xor     eax,eax
+	cld
+align 4
+.lp1:
+	lodsb
+	stosb
+	test    eax,eax
+	jnz     .lp1
+	mov     esi,edi
+	dec     esi ;переход на символ конца строки @cur_dir_path
+	std
+align 4
+.lp2:
+	lodsb
+	cmp     al,'/'
+	jnz     .lp2
+	mov     edi,esi
+	add     edi,2
+	cld
+	mov     esi,@point_dir_name
+	test    esi,esi
+	jz      .str_lp4
+
+	;проверка относительных путей c двумя точками '../'
+	cmp word[esi],'..'
+	jne .lp3
+	dec edi ;для перехода на '/'
+.lp6:
+		add esi,3 ;пропускаем одно поднятие '../'
+.lp5:
+		dec edi ;идем по папкам
+		cmp byte[edi],'/'
+		jnz .lp5
+	cmp word[esi],'..'
+	je .lp6
+	inc edi ;для перехода на '/'
+
+	;копирование относительного пути
+align 4
+.lp3:
+	lodsb
+	stosb
+	test    eax,eax
+	jnz     .lp3
+	dec     edi
+.str_lp4:
+	mov     esi,@library_name
+align 4
+.lp4:
+	lodsb
+	stosb
+	test    eax,eax
+	jnz     .lp4
+;---------------------------------------------------------------------
+	ret
+}
+
+
+
+macro @use_library_mem mem_alloc,mem_free,mem_realloc,dll_load
+{
+@use_library
+library_fun_memory_alloc equ mem_alloc
+library_fun_memory_free equ mem_free
+library_fun_memory_realloc equ mem_realloc
+library_fun_dll_load equ dll_load
+}
+
+
+macro sys_load_library library_name__, cur_dir_path__, library_path__, system_path__, err_message_found_lib__, head_f_l__, myimport, err_message_import__, head_f_i__,point_dir_name__
+{
+local end_steep
+local exit
+;---------------------------------------------------------------------  
+; loading Box_Lib library 
+
+        mcall   68,19,system_path__   ; load of sys directory
+        test    eax,eax
+        jnz     end_steep 
+
+if point_dir_name__ eq
+  copy_path   library_name__, cur_dir_path__, library_path__,0x0
+else
+  copy_path   library_name__, cur_dir_path__, library_path__,point_dir_name__    ;the macros making way /current pach a program/+ name system library
+end if 
+        
+        mcall   68,19,library_path__ ; load of alternative
+        test    eax,eax
+        jnz     end_steep
+        show_error_window  err_message_found_lib__, head_f_l__    ;show error message /create window
+        jmp     exit
+
+
+align 4
+end_steep:
+
+        import_boxlib myimport, err_message_import__, head_f_i__  ;import
+exit:
+        test    eax,eax
+        jz      @f
+
+        notify_window_run [arrea_xx] ; создаем окно @notify
+        or      eax,-1
+@@:     
+
+;---------------------------------------------------------------------
+}
+
+
+macro load_library library_name__, cur_dir_path__, library_path__, system_path__, err_message_found_lib__, head_f_l__, myimport, err_message_import__, head_f_i__,point_dir_name__
+{
+local end_steep
+local exit
+;---------------------------------------------------------------------  
+; loading Box_Lib library 
+
+if point_dir_name__ eq
+  copy_path   library_name__, cur_dir_path__, library_path__,0x0
+else
+  copy_path   library_name__, cur_dir_path__, library_path__,point_dir_name__    ;the macros making way /current pach a program/+ name system library
+end if 
+
+        mcall   68,19,library_path__ ; load of alternative
+        test    eax,eax
+        jnz     end_steep 
+        
+        mcall   68,19,system_path__ ; load of sys directory
+        test    eax,eax
+        jnz     end_steep
+
+        show_error_window  err_message_found_lib__, head_f_l__    ;show error message /create window
+        jmp     exit
+
+align 4
+end_steep:
+
+        import_boxlib myimport, err_message_import__, head_f_i__  ;import
+exit:
+        test    eax,eax
+        jz      @f
+
+        notify_window_run [arrea_xx] ; создаем окно @notify
+        or      eax,-1
+@@:     
+        
+;---------------------------------------------------------------------
+}
+macro sys_load_libraries _start,_end
+{
+local exit_lp2
+local lp2
+local lp
+local end_steep
+local next
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+library_name__            equ [ebp]
+cur_dir_path__            equ [ebp+4]
+library_path__            equ [ebp+8]
+system_path__             equ [ebp+12]
+err_message_found_lib__   equ [ebp+16]   
+head_f_l__                equ [ebp+20]
+my_import                 equ [ebp+24] 
+err_message_import__      equ [ebp+28]
+head_f_i__                equ [ebp+32]
+point_dir_name__          equ [ebp+36]
+adr_load_lib              equ dword [ebp+40]
+status_lib                equ dword [ebp+44]
+
+        mov     ebp,_start
+        mov     ecx,((_end-_start)/ll_struc_size)
+
+align 4
+lp:     push    ecx
+        mcall   68,19,system_path__   ; load of sys directory
+        test    eax,eax
+        jnz     end_steep 
+
+        copy_path  library_name__, cur_dir_path__, library_path__,point_dir_name__     ;the macros making way /current pach a program/+ name system library
+        
+        mcall   68,19,library_path__ ; load of alternative
+        test    eax,eax
+        jnz     end_steep
+
+        or      status_lib,0x1          ; status of code - enable error - not found library
+
+        show_error_window  err_message_found_lib__, head_f_l__,    ;show error message /create window
+        jmp      next
+
+align 4
+end_steep:
+        mov     adr_load_lib,eax        ;save adr lib in memory
+        import_boxlib my_import, err_message_import__, head_f_i__  ;import
+
+        test    eax,eax
+        jz      next
+
+        or      status_lib,0x2          ; status of code - enable error - import error
+
+next:
+        pop     ecx
+        add     ebp,ll_struc_size
+        dec     ecx
+        jnz     lp
+
+;----------------------------------
+        mov     ebp,_start
+        mov     ecx,((_end-_start)/ll_struc_size)
+
+align 4
+lp2:
+        mov     eax,status_lib
+        test    eax,eax
+        jz      @f
+
+        notify_window_run [arrea_xx] ; создаем окно @notify
+        or      eax,-1
+        jmp     exit_lp2
+
+@@:
+        add     ebp,ll_struc_size
+        dec     ecx
+        jnz     lp2
+exit_lp2:
+}
+
+macro load_libraries _start,_end
+{
+local lp2
+local exit_lp2
+local lp
+local end_steep
+local next
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+library_name__            equ [ebp]
+cur_dir_path__            equ [ebp+4]
+library_path__            equ [ebp+8]
+system_path__             equ [ebp+12]
+err_message_found_lib__   equ [ebp+16]   
+head_f_l__                equ [ebp+20]
+my_import                 equ [ebp+24] 
+err_message_import__      equ [ebp+28]
+head_f_i__                equ [ebp+32]
+point_dir_name__          equ [ebp+36]
+adr_load_lib              equ dword [ebp+40]
+status_lib                equ dword [ebp+44]
+
+        mov     ebp,_start
+        mov     ecx,((_end-_start)/ll_struc_size)
+
+align 4
+lp:     push    ecx
+
+        copy_path    library_name__, cur_dir_path__, library_path__,point_dir_name__   ;the macros making way /current pach a program/+ name system library
+
+        mcall   68,19,library_path__  ; load of alternative
+        test    eax,eax
+        jnz     end_steep 
+        
+        mcall   68,19,system_path__   ; load of sys directory
+        test    eax,eax
+        jnz     end_steep
+
+        or      status_lib,0x1          ; status of code - enable error - not found library
+
+        show_error_window  err_message_found_lib__, head_f_l__    ;show error message /create window
+        jmp      next
+
+align 4
+end_steep:
+        mov     adr_load_lib,eax        ;save adr lib in memory
+
+        import_boxlib my_import, err_message_import__, head_f_i__  ;import
+
+        test    eax,eax
+        jz      next
+
+        or      status_lib,0x2          ; status of code - enable error - import error
+
+next:
+        pop     ecx
+        add     ebp,ll_struc_size
+        dec     ecx
+        jnz     lp
+
+;-----------------------------------------------
+        mov     ebp,_start
+        mov     ecx,((_end-_start)/ll_struc_size)
+
+align 4
+lp2:
+        mov     eax,status_lib
+        test    eax,eax
+        jz      @f
+
+        notify_window_run [arrea_xx] ; создаем окно @notify
+        or      eax,-1
+        jmp     exit_lp2
+
+@@:
+        add     ebp,ll_struc_size
+        dec     ecx
+        jnz     lp2
+exit_lp2:
+
+}
+
+
+macro copy_path lib_name,dir_path,lib_path,point_dir_name
+{
+pushad  ;save all registers
+	push dword lib_name
+	push dword dir_path
+	push dword lib_path
+	push dword point_dir_name
+	call @copy_path
+
+	add  esp,16
+	;notify_window_run lib_path ;unblok for test load path
+popad   ;restore all registers
+}
+
+; готовим текст для показа через @notify:
+; 1) выделяем память в [arrea_xx]
+; 2) копируем err_message и head в [arrea_xx]
+macro show_error_window  err_message, head
+{
+local lp0
+local lp1
+
+pushad
+	mcall 68,11
+	mcall 68,12,4096
+	push eax
+	pop dword [arrea_xx]
+
+	mov edi,eax
+	mov esi,dword head
+	cld
+align 4
+lp0:
+	movsb
+	cmp byte[esi],0
+	jne lp0
+	mov word[edi],'. '
+	add edi,2
+	mov esi,dword err_message
+align 4
+lp1:
+	movsb
+	cmp byte[esi],0
+	jne lp1
+	mov byte[edi],0
+popad
+	or eax,-1  ;увы
+}
+
+; включаем показ сообщения через @notify:
+macro notify_window_run message
+{
+push eax ebx
+	mov eax,message ;параметры для командной строки
+	mov [run_notify_struct.Flags], eax
+	mov eax,70 ;run @notify
+	mov ebx,run_notify_struct
+	int 0x40
+pop ebx eax
+}
+
+
+;входные параметры:
+;eax - адрес библиотеки в памяти
+;myimport - импортируемые функции
+macro import_boxlib myimport, err_message_import__, head_f_i__
+{
+local import_loop
+local import_find
+local lp
+local import_find_next
+local import_found
+local import_done
+local exit
+local e.exit
+local import_not_found
+; initialize import
+        
+        mov     edx, eax
+        mov     esi,myimport
+import_loop:
+        lodsd	;mov eax,dword[esi] ;add esi,4 ;получаем в eax указатель на имя импортируемой функции
+        test    eax, eax
+        jz      import_done ;если указатель на имя функции = 0 (в пользовательской программе)
+        push    edx ;сохраняем начало библиотечных указателей на функции
+import_find:
+        mov     ebx, [ds:edx]
+        test    ebx, ebx
+        jz      import_not_found ;если указатель на имя функции = 0 (в библиотеке)
+        push    eax ;eax - указатель на имя экспортируемой функции (в пользовательской программе)
+lp:
+        mov     cl, [ds:eax]
+        cmp     cl, [ds:ebx] ;сравниваем имена функций в библиотеке и в пользовательской программе
+        jnz     import_find_next ;если названия не совпали
+        test    cl, cl
+        jz      import_found ;если названия совпали, и уже конец строки (cl=0)
+        inc     eax
+        inc     ebx
+        jmp     lp
+import_find_next:
+        pop     eax
+        add     edx, 8 ;8 = 4 байта указатель на название и 4 байта указатель на функцию
+        jmp     import_find
+import_found:
+        pop     ebx ;востанавливаем указатель на имя функции (который был в eax) и освобождаем стек
+        mov     eax, [ds:edx+4] ;eax = указатель на функцию (в библиотеке)
+        mov     [esi-4], eax ;копируем указатель (на функцию) в программу, -4 ставим потому что esi было сдвинуто командой lodsd
+        pop     edx ;устанавливаем edx на начало библиотечных функций
+;--- проверяем совпадает ли имя экспортированной функции с 'lib_init'
+if library_fun_memory_alloc eq 0
+else
+		cmp dword[ebx],'lib_'
+		jne		import_loop
+		cmp dword[ebx+4],'init'
+		jne		import_loop
+;--- если имя функции совпало с 'lib_init' попадаем сюда
+		;подключение функций для работы с памятью
+		;push eax
+		;call dll.Init
+		pushad
+		mov esi,eax
+		mov	eax,library_fun_memory_alloc
+		mov	ebx,library_fun_memory_free
+		mov	ecx,library_fun_memory_realloc
+		mov	edx,library_fun_dll_load
+		call dword esi
+		popad
+end if
+        jmp     import_loop
+import_not_found:
+        add     esp,4
+        show_error_window  err_message_import__, head_f_i__    ;show error message /create window
+        jmp     e.exit
+import_done:
+        xor     eax,eax ;=0 все загрузилось удачно
+e.exit: 
+;---------------------------------------------------------------------
+}
+ll_struc_size = 48;($-library_name__)    ; constant   size of struct
+struc l_libs library_name__, cur_dir_path__, library_path__, system_path__, err_message_found_lib__, head_f_l__, my_import, err_message_import__, head_f_i__,point_dir_name; struct for loading libraries
+{        
+.library_name__           dd library_name__        ; имя загружаемой библиотеки
+.cur_dir_path__           dd cur_dir_path__        ; указатель на буфер в котором содержиться путь от куда была запущена программа
+                        
+.library_path__           dd library_path__        ; указатель на буфер в котором будет софоримирован путь к библиотеки, если нужно вычислить путь до либы с места запуска программы, обычно нужно, в случаях, если либа расположена в той же папке
+.complete_path            dd system_path__         ; путь который четко содержит путь
+
+.err_message_found_lib__  dd err_message_found_lib__
+.head_f_l__               dd head_f_l__
+.my_import                dd my_import
+.err_message_import__     dd err_message_import__
+.head_f_i__               dd head_f_i__
+if point_dir_name eq
+.point_dir_name__	dd 0x0
+else
+.point_dir_name__	dd point_dir_name	   ; имя вложенной дирректории в кторой храняться подгружаемые модули.
+end if 
+.adr_load_lib           dd 0x0
+.status_lib             dd 0x0          ;status of load library
+;
+}

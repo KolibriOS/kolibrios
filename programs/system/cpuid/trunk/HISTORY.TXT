@@ -37,6 +37,37 @@
 ; improve support of Vortex86
 ;******************************************************************************
 ;HISTORY:
+;2.5: CPUID 15/08/2016 (not finished) 
+;Authors: 
+; Manasi Thakkar aka mat1854
+;Features: 
+; (+) added saving of features from fork version 2.26pre in log
+; (+) fixed redraw bug, which appears if user execute save dialog
+; Known issues: Sempron marked as AthlonXP
+; second window doesn't closed when you close main window
+; incorrect cache detection for several models of newest Intel CPU, because they designed for another cache detection approach
+;-----------------------------------------------------------------------------
+;2.4: CPUID 09/08/2016
+;Authors: 
+; Artem Azhbakov aka marting422
+; Nikita Moiseev aka Powerdogesss
+; Manasi Thakkar aka mat1854
+; Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
+;Features: 
+; (+) added detection of Intel Arrandale
+; (+) save log in text file;
+; (+) use Extended models to turn off multiplier detection for CPU's, which aren't supported;
+; (+) show multiplier numbers, if we detect something and show n/a, if we don't;
+; (+) merging of different versions from GSOC students;
+; (+) added detection of codenames for new Intel CPUs: IvyBridge, SandyBridge-E, Gulftown, Westmere-EX, Clarksfield, Bloomfield,Nehalem-EX, Yorkfield, Dunnington, Clovertown, Merom Conroe, Cedar Mill, Nocona Irwindale, NoconaIrwindale, Dothan, Cedarview, Lincroft and Pineview.
+; (+) added detection of AMD k-10 series: AMD Athlon 7750 Black Edition, Opteron 2300-series, Opteron 8300-series, Phenom X4, Phenom X3, Athlon X2, Sempron, Opteron (Shanghai) 2387, Opteron (Magny-Cours), Opteron (Shanghai) 8300 series, Turion II.
+; (+) fixed duplication in txt file
+; (+) save Codename in text file;
+; (+) fixed abstact examples in visualisation block for RSA encoding performance test
+;Known issues: Sempron marked as AthlonXP
+; second window doesn't closed when you close main window
+; incorrect cache detection for several models of newest Intel CPU, because they designed for another cache detection approach
+;-----------------------------------------------------------------------------
 ;2.3: CPUID   12/10/2014 (not finished)
 ;Authors:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
 ;            Pavel Rymovskiy aka Heavyiron <Heavyiron@pisem.net>

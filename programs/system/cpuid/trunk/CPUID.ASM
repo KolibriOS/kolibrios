@@ -432,17 +432,24 @@ pop ecx
 shr ecx, 16
 mov [L2],ecx
 
-movzx edx, dl ;not sure
-mov [linel3], eax
+;CACHE3: edx provides l3 
 
-mov eax, edx
+mov eax, 80000006h
+    cpuid
+    
+movzx eax, cl       ;mov cl to eax, zero extend; cl is counter reg for loop,shifts
+mov dword[linel3], eax   
 
-and eax,00FF0000h
-shr eax, 16
-mov [wayl3], eax
+push edx
+shr edx, 12+1
+and edx, 0x7
+mov eax, 1
+shl eax, cl
+mov dword [wayl3], eax
+pop edx
 
-shr edx, 24
-mov [L3], edx
+shr edx, 18
+mov [L3],ecx
 
     cmp [f], $5
     jz .fiv
@@ -1164,6 +1171,7 @@ NEWintel:
     jz I26
    cmp [em],$1C   ;Pineview/Silverthorne
     jz I1C
+	jnz no_known
 
 Inewunknown:
     jmp MMXtest
@@ -3904,6 +3912,8 @@ P1C:
 db 'Pineview',0
 P1Clen:
 
+no_known:
+db 'SORRY, CODENAME IS NOT SUPPORTED YET '
 
 ;---------AMD
 
