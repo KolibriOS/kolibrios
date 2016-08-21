@@ -14,13 +14,12 @@ int main()
   kolibri_gui_init();
   kolibri_rasterworks_init();
   /* Set gui_event to REDRAW so that window is drawn in first iteration  */
-  
-  unsigned int gui_event;
+  unsigned int gui_event = KOLIBRI_EVENT_REDRAW;
   oskey_t key;
-  unsigned int pressed_button
-  //extern volatile unsigned press_key;
 
   kolibri_window *main_window = kolibri_new_window(50, 50, 800, 300, "rasterworks example");
+  
+  extern volatile unsigned press_key;
   
   int ln_str = countUTF8Z("Пример работы", -1);
   void *buffi = malloc(768*256*3 * sizeof(char));
@@ -39,28 +38,40 @@ int main()
   drawText(buffi, 0, 128, "Пример работы", ln_str, 0xFF000000, 0x8030C18);
   drawText(buffi, 0, 160, "Пример работы", ln_str, 0xFF000000, 0x0F031428);
   
-  while(gui_event = get_os_event())
-  {
-    switch (gui_event)
+  do  /* Start of main activity loop */
     {
-      case KOLIBRI_EVENT_REDRAW:
-	    kolibri_handle_event_redraw(main_window);
-	    DrawBitmap(buffi, 5, 5, 768, 256);
-	    break;
-	    
-	  case KOLIBRI_EVENT_BUTTON:
-	    pressed_button = kolibri_button_get_identifier();
-	    switch (pressed_button)
-	    {
-	        case BUTTON_CLOSE:
-	  		kolibri_exit();
-	    }
-	    break;
-	    
-	  case KOLIBRI_EVENT_MOUSE:
-	    kolibri_handle_event_mouse(main_window);
-	    break;
-    }
-  }
+      if(gui_event == KOLIBRI_EVENT_REDRAW)
+	{
+	  kolibri_handle_event_redraw(main_window);
+	  DrawBitmap(buffi, 5, 5, 768, 256);
+	}
+      else if(gui_event == KOLIBRI_EVENT_KEY)
+	{
+	  key = get_key();
+	  switch (key.code)
+	  {
+	  }
+	  press_key = key.val;
+
+	  kolibri_handle_event_key(main_window);
+	}
+      else if(gui_event == KOLIBRI_EVENT_BUTTON)
+	{
+	  unsigned int pressed_button = kolibri_button_get_identifier();
+	  switch (pressed_button)
+	  {
+	      case BUTTON_CLOSE:
+			kolibri_exit();
+	  }
+	 }
+      else if(gui_event == KOLIBRI_EVENT_MOUSE)
+	{
+	  kolibri_handle_event_mouse(main_window);
+	}
+
+    } while((gui_event = get_os_event())); /* End of main activity loop */
+
+  /* kolibri_quit(); */
+
   return 0;
 }
