@@ -10,22 +10,12 @@ purge section,mov,add,sub
 	
 include '../../../programs/dll.inc'
 	
-public init_libimg as '_init_libimg_asm'
+public init_libimg as '_kolibri_libimg_init'
 ;;; Returns 0 on success. -1 on failure.
 
 proc init_libimg
-	
 	mcall 68,11
-	
 	stdcall dll.Load, @IMPORT
-        test    eax, eax
-        jnz     error
-	
-	mov eax, 0
-	ret
-	
-error:	
-	mov eax, -1
 	ret
 endp	
 

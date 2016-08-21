@@ -16,23 +16,13 @@ virtual at 0
         http_msg http_msg
 end virtual
 
-public init_network as '_init_network_asm'
+public init_network as '_kolibri_http_init'
 	
 ;;; Returns 0 on success. -1 on failure.
 
 proc init_network
-	
 	mcall 68,11
-	
 	stdcall dll.Load, @IMPORT
-        test    eax, eax
-        jnz     error
-	
-	mov eax, 0
-	ret
-	
-error:	
-	mov eax, -1
 	ret
 endp	
 	

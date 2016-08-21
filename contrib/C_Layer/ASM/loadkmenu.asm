@@ -9,22 +9,12 @@ purge section,mov,add,sub
 	
 include '../../../programs/dll.inc'
 	
-public init_kmenu as '_init_kmenu_asm'
+public init_kmenu as '_kolibri_kmenu_init'
 ;;; Returns 0 on success. -1 on failure.
 
 proc init_kmenu
-	
 	mcall 68,11
-	
 	stdcall dll.Load, @IMPORT
-        test    eax, eax
-        jnz     error
-	
-	mov eax, 0
-	ret
-	
-error:	
-	mov eax, -1
 	ret
 endp	
 	

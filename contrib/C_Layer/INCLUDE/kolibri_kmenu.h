@@ -1,21 +1,19 @@
 #ifndef KOLIBRI_KMENU_H
 #define KOLIBRI_KMENU_H
 
-extern int init_kmenu_asm(void); 
+#define KMENUITEM_NORMAL    0
+#define KMENUITEM_SUBMENU   1
+#define KMENUITEM_SEPARATOR 2
 
-int kolibri_kmenu_init(void)
-{
-  int asm_init_status = init_kmenu_asm();
-  
-  /* just return asm_init_status? or return init_boxlib_asm() ?*/
+#define KMENUITEM_MAINMENU   0x80000000
 
-  if(asm_init_status == 0)
-    return 0;
-  else
-    return 1;
-}
+#define KMENUITEM_SEPARATOR_WIDTH 10//170
+#define KMENUITEM_SEPARATOR_HEIGHT 2
 
+#define KMENU_LBORDER_SIZE 2
+#define KMENU_DBORDER_SIZE 1
 
+extern int kolibri_kmenu_init(void); 
 
 extern void (*kmainmenu_draw)(void *) __attribute__((__stdcall__));
 extern void (*kmainmenu_dispatch_cursorevent)(void *) __attribute__((__stdcall__));

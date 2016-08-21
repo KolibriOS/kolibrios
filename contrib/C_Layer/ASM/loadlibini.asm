@@ -10,23 +10,13 @@ purge section,mov,add,sub
 
 include '../../../programs/dll.inc'
 	
-public init_libini as '_init_libini_asm'
+public init_libini as '_kolibri_libini_init'
 	
 ;;; Returns 0 on success. -1 on failure.
 
 proc init_libini
-	
 	mcall 68,11
-	
 	stdcall dll.Load, @IMPORT
-        test    eax, eax
-        jnz     error
-	
-	mov eax, 0
-	ret
-	
-error:	
-	mov eax, -1
 	ret
 endp	
 	

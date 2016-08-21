@@ -10,22 +10,12 @@ purge section,mov,add,sub
 	
 include '../../../programs/dll.inc'
 	
-public init_buf2d as '_init_buf2d_asm'
+public init_buf2d as '_kolibri_buf2d_init'
 ;;; Returns 0 on success. -1 on failure.
 
 proc init_buf2d
-	
 	mcall 68,11
-	
 	stdcall dll.Load, @IMPORT
-        test    eax, eax
-        jnz     error
-	
-	mov eax, 0
-	ret
-	
-error:	
-	mov eax, -1
 	ret
 endp	
 

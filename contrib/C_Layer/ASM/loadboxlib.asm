@@ -11,24 +11,14 @@ include '../../../programs/develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../programs/system/run/trunk/txtbut.inc'
 include '../../../programs/dll.inc'
 	
-public init_boxlib as '_init_boxlib_asm'
+public init_boxlib as '_kolibri_boxlib_init'
 public editbox_key_thunk as '_editbox_key@4'   ; renamed due to ambiguity
 public press_key as '_press_key'
 ;;; Returns 0 on success. -1 on failure.
 
 proc init_boxlib
-	
 	mcall 68,11
-	
 	stdcall dll.Load, @IMPORT
-        test    eax, eax
-        jnz     error
-	
-	mov eax, 0
-	ret
-	
-error:	
-	mov eax, -1
 	ret
 endp	
 	

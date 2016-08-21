@@ -5,20 +5,7 @@
  * voxel function
  */
 
-extern int init_buf2d_asm(void); 
-
-int kolibri_buf2d_init(void)
-{
-  int asm_init_status = init_buf2d_asm();
-  
-  /* just return asm_init_status? or return init_boxlib_asm() ?*/
-
-  if(asm_init_status == 0)
-    return 0;
-  else
-    return 1;
-}
-
+extern int kolibri_buf2d_init(void);
 
 typedef struct {
 	unsigned int *buf_pointer;

@@ -1,17 +1,7 @@
 #ifndef KOLIBRI_LIBIMG_H
 #define KOLIBRI_LIBIMG_H
 
-int kolibri_libimg_init(void)
-{
-  int asm_init_status = init_libimg_asm();
-  
-  /* just return asm_init_status? or return init_libimg_asm() ?*/
-
-  if(asm_init_status == 0)
-    return 0;
-  else
-    return 1;
-}
+extern int kolibri_libimg_init(void);
 
 //list of format id's
 #define LIBIMG_FORMAT_BMP       1

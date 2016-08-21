@@ -10,22 +10,12 @@ purge section,mov,add,sub
 	
 include '../../../programs/dll.inc'
 	
-public init_proclib as '_init_proclib_asm'
+public init_proclib as '_kolibri_proclib_init'
 ;;; Returns 0 on success. -1 on failure.
 
 proc init_proclib
-	
 	mcall 68,11
-	
 	stdcall dll.Load, @IMPORT
-        test    eax, eax
-        jnz     error
-	
-	mov eax, 0
-	ret
-	
-error:	
-	mov eax, -1
 	ret
 endp	
 
