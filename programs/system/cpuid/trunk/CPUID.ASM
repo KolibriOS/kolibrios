@@ -3096,11 +3096,11 @@ ret
 
 
 load_gif:
-	mov	edi, img_area
+	mov	edi, img_areasss
 load_gif2:
  
 COLOR_ORDER equ MENUETOS
-include 'gif_lite.inc'	      ; parse GIF files
+
 
 ; DATA AREA
 
