@@ -4812,49 +4812,41 @@ sys_msg_board_dword:
 msg_board_data_size = 65536 ; Must be power of two
 
 uglobal
-  msg_board_data  rb msg_board_data_size
-  msg_board_count dd 0x0
+msg_board_data  rb  msg_board_data_size
+msg_board_count dd  ?
+endg
+
+iglobal
+msg_board_pos   dd  42*6*65536+10 ; for printing debug output on the screen
 endg
 
 sys_msg_board:
-
-; ebx=1 : write :  bl byte to write
-; ebx=2 :  read :  ebx=0 -> no data, ebx=1 -> data in al
-
-        push    eax ebx                 ; Save eax and ebx, since we're restoring their order required.
+; ebx=1 -> write, cl = byte to write
+; ebx=2 -> read, ecx=0 -> no data, ecx=1 -> data in al
+        push    eax ebx
         mov     eax, ebx
         mov     ebx, ecx
-
         mov     ecx, [msg_board_count]
         cmp     eax, 1
-        jne     .smbl1
+        jne     .read
 
 if defined debug_com_base
-
         push    dx ax
-
-       @@:                              ; Wait for empty transmit register  (yes, this slows down system..)
+@@: ; wait for empty transmit register
         mov     dx, debug_com_base+5
         in      al, dx
         test    al, 1 shl 5
         jz      @r
-
         mov     dx, debug_com_base      ; Output the byte
         mov     al, bl
         out     dx, al
-
         pop     ax dx
-
 end if
 
         mov     [msg_board_data+ecx], bl
-; // if debug_direct_print == 1
         cmp     byte [debug_direct_print], 1
-        jnz     @f
+        jnz     .end
         pusha
-iglobal
-msg_board_pos   dd      (42*6)*65536+10 ; for printing debug output on the screen
-endg
         lea     edx, [msg_board_data+ecx]
         mov     ecx, 0x40FFFFFF
         mov     ebx, [msg_board_pos]
@@ -4863,37 +4855,52 @@ endg
         call    dtext
         popa
         add     word [msg_board_pos+2], 6
+        cmp     word [msg_board_pos+2], 105*6
+        jnc     @f
         cmp     bl, 10
-        jnz     @f
-        mov     word [msg_board_pos+2], (42*6)
+        jnz     .end
+@@:
+        mov     word [msg_board_pos+2], 42*6
         add     word [msg_board_pos], 10
-        mov     ax, word [_display.width]
-        cmp     word [msg_board_pos], ax
-        jb      @f
+        mov     eax, [_display.height]
+        sub     eax, 10
+        cmp     ax, word [msg_board_pos]
+        jnc     @f
         mov     word [msg_board_pos], 10
 @@:
-; // end if
-
-if 0
         pusha
-        mov     al, bl
-        mov     edx, 402h
-        out     dx, al
+        mov     eax, [msg_board_pos]
+        movzx   ebx, ax
+        shr     eax, 16
+        mov     edx, 105*6
+        xor     ecx, ecx
+        mov     edi, 1
+        mov     esi, 9
+@@:
+        call    hline
+        inc     ebx
+        dec     esi
+        jnz     @b
         popa
-end if
+.end:
         inc     ecx
         and     ecx, msg_board_data_size - 1
         mov     [msg_board_count], ecx
-
+.ret:
         pop     ebx eax
         ret
-.smbl1:
-        cmp     eax, 2
-        jne     .smbl2
-        test    ecx, ecx
-        jz      .smbl21
 
-        add     esp, 8                  ; Returning data in ebx and eax, so no need to restore them.
+@@:
+        mov     [esp+32], ecx
+        mov     [esp+20], ecx
+        jmp     .ret
+
+.read:
+        cmp     eax, 2
+        jne     .ret
+        test    ecx, ecx
+        jz      @b
+        add     esp, 8  ; returning data in ebx and eax, so no need to restore them
         mov     eax, msg_board_data+1
         mov     ebx, msg_board_data
         movzx   edx, byte [ebx]
@@ -4901,12 +4908,6 @@ end if
         dec     [msg_board_count]
         mov     [esp + 32], edx ;eax
         mov     [esp + 20], dword 1
-        ret
-.smbl21:
-        mov     [esp+32], ecx
-        mov     [esp+20], ecx
-.smbl2:
-        pop     ebx eax
         ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
