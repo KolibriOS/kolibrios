@@ -3348,7 +3348,8 @@ Remarks:
 Parameters:
   * eax = 68 - function number
   * ebx = 19 - subfunction number
-  * ecx = pointer to ASCIIZ-string with the full path to DLL
+  * ecx = pointer to the string with path to DLL,
+    rules of path forming can be found in function 70 description.
 Returned value:
   * eax = 0 - failed
   * otherwise eax = pointer to DLL export table
@@ -3849,11 +3850,15 @@ General format of the information structure:
   * +12 = +0xC: dword: size
   * +16 = +0x10: dword: pointer to data
   * +20 = +0x14: ?: path - zero terminated string
-    or
+  or
   * +20 = +0x14: byte: 0
   * +21 = +0x15: dword: pointer to string
-You may set encoding to UTF-16LE by starting the string with a byte with value 2,
-otherwise will be used cp866. Case sensitivity depends on filesystem.
+Case sensitivity depends on filesystem.
+To set the encoding, put at the start of the string a byte with next values:
+  * 1 = cp866
+  * 2 = UTF-16LE
+  * 3 = UTF-8
+  otherwise will be used cp866.
 Format of filename:
   /base/number/dir1/dir2/.../dirn/file,
 where base/number identifies device, on which file is located:

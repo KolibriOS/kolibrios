@@ -26,8 +26,6 @@ include "core/irq.inc"          ; interrupt handling functions
 include "core/apic.inc"
 include "core/timers.inc"
 include "core/clipboard.inc"
-include "core/conf_lib.inc"
-include "core/ext_lib.inc"      ; load external library
 
 include "boot/shutdown.inc"     ; kernel shutdown
 
@@ -67,4 +65,6 @@ include "fs/fs_lfn.inc"         ; sysfunction 70
 
 include "network/stack.inc"
 
-include "imports.inc"   ; list of external functions
+; include "imports.inc"
+; include "core/ext_lib.inc"
+; include "core/conf_lib.inc"

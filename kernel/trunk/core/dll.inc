@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
-;; Distributed under terms of the GNU General Public License    ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved. ;;
+;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -900,27 +900,25 @@ coff_get_align:
 
 align 4
 proc load_library stdcall, file_name:dword
-           locals
-             fullname  rb 260
-             fileinfo  rb 40
-             coff      dd ?
-             img_base  dd ?
-           endl
+    locals
+        fullname    dd  ?
+        fileinfo    rb  40
+        coff        dd  ?
+        img_base    dd  ?
+    endl
 
 ; resolve file name
+        stdcall kernel_alloc, maxPathLength
+        mov     [fullname], eax
         mov     ebx, [file_name]
-        lea     edi, [fullname+1]
-        mov     byte [edi-1], '/'
-        stdcall get_full_file_name, edi, 259
-        test    al, al
+        stdcall get_full_file_name, eax, maxPathLength
+        test    eax, eax
         jz      .fail
-
 ; scan for required DLL in list of already loaded for this process,
 ; ignore timestamp
         cli
-
         mov     esi, [current_process]
-        lea     edi, [fullname]
+        mov     edi, [fullname]
         mov     ebx, [esi+PROC.dlls_list_ptr]
         test    ebx, ebx
         jz      .not_in_process
@@ -942,12 +940,16 @@ proc load_library stdcall, file_name:dword
         sub     eax, [ecx+DLLDESCR.defaultbase]
         add     eax, [esi+HDLL.base]
         sti
+        push    eax
+        stdcall kernel_free, [fullname]
+        pop     eax
         ret
+
 .next_in_process:
         mov     esi, [esi+HDLL.fd]
         jmp     .scan_in_process
-.not_in_process:
 
+.not_in_process:
 ; scan in full list, compare timestamp
         sti
         lea     eax, [fileinfo]
@@ -1182,11 +1184,11 @@ proc load_library stdcall, file_name:dword
         mov     [esi+DLLDESCR.bk], eax
         mov     [eax+DLLDESCR.fd], esi
 .dll_already_loaded:
+        stdcall kernel_free, [fullname]
         inc     [esi+DLLDESCR.refcount]
         push    esi
         call    init_heap
         pop     esi
-
         mov     edi, [esi+DLLDESCR.size]
         stdcall user_alloc_at, [esi+DLLDESCR.defaultbase], edi
         test    eax, eax
@@ -1255,6 +1257,7 @@ proc load_library stdcall, file_name:dword
         add     eax, [img_base]
         sti
         ret
+
 .fail_and_free_data:
         stdcall kernel_free, [esi+DLLDESCR.data]
 .fail_and_free_dll:
@@ -1263,8 +1266,10 @@ proc load_library stdcall, file_name:dword
 .fail_and_free_coff:
         stdcall kernel_free, [coff]
 .fail:
+        stdcall kernel_free, [fullname]
         xor     eax, eax
         ret
+
 .fail_and_free_user:
         stdcall user_free, [img_base]
 .fail_and_dereference:

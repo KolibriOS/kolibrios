@@ -56,8 +56,21 @@ file_system_lfn:
         jnz     @f
         mov     ebp, [ebx+21]
 @@:
+        cmp     word [ebp], '/'
+        jz      .rootdir
+        cmp     byte [ebp], 4
+        jnc     @f
+        cmp     byte [ebp], 0
+        jz      @f
+        cmp     word [ebp+1], '/'
+        jnz     @f
+        cmp     byte [ebp], 2
+        jnz     .rootdir
+        cmp     word [ebp+3], 0
+        jz      .rootdir
+@@:
         cmp     dword[ebx], 7   ; start application
-        jne     @f
+        jnz     @f
         mov     edx, [ebx+4]
         mov     ebx, [ebx+8]
         call    fs_execute      ; ebp, ebx, edx
@@ -65,25 +78,16 @@ file_system_lfn:
         ret
 
 @@:
-        cmp     word [ebp], '/'
-        jz      .rootdir
-        cmp     byte [ebp], 2
-        jnz     @f
-        cmp     dword[ebp+1], '/'
-        jz      .rootdir
-@@:
         stdcall kernel_alloc, maxPathLength
         push    ebx
         mov     ebx, ebp
         mov     ebp, eax
-        push    maxPathLength
-        push    eax
-        call    get_full_file_name
+        stdcall get_full_file_name, eax, maxPathLength
         pop     ebx
         test    eax, eax
         jz      .notfound
-        mov     esi, ebp
-        mov     ax, [ebp]
+        lea     esi, [ebp+2]
+        mov     ax, [esi]
         or      ax, 2020h
         cmp     ax, 'cd'
         jz      .CD
@@ -496,11 +500,13 @@ sys_current_directory:  ; sysfunction 30
         mov     ebx, ecx
 get_full_file_name:
 ; in: ebx -> file name, [esp+4] -> destination, [esp+8] = max length
-; out: eax=0 -> out of length
+; out: UTF-8 string, eax=0 -> out of length
         push    ebp ebx
+        cmp     byte [ebx], 0
+        jz      .set_relative
         mov     esi, ebx
-        cmp     byte [ebx], 2
-        jnz     @f
+        cmp     byte [ebx], 4
+        jnc     @f
         inc     esi
 @@:
         cmp     byte [esi], '/'
@@ -513,6 +519,10 @@ get_full_file_name:
         call    process_replace_file_name
         mov     edi, [esp+12]
         mov     ecx, [esp+16]
+        mov     al, 3
+        mov     ah, '/'
+        stosw
+        sub     ecx, 2
         test    ebp, ebp
         jz      .absolute
 @@:
@@ -525,12 +535,23 @@ get_full_file_name:
         dec     edi
 .absolute:
         cmp     byte [ebx], 2
-        jz      @f
+        jz      .utf16
+        cmp     byte [ebx], 3
+        jz      .utf8
         call    cp866toUTF8_string
         jns     .ret
         jmp     .fail
 
-@@:
+.utf8:
+        dec     ecx
+        js      .fail
+        lodsb
+        stosb
+        test    al, al
+        jz      .ret
+        jmp     .utf8
+
+.utf16:
         call    UTF16to8_string
         jns     .ret
 .fail:
@@ -550,7 +571,12 @@ get_full_file_name:
         dec     esi
         mov     edi, [esp+12]
         jecxz   .fail
-        cmp     byte [ebx], 2
+        cmp     byte [ebx], 0
+        jz      .set_ok
+        cmp     byte [ebx], 4
+        jnc     .relative
+        inc     ebx
+        cmp     byte [ebx-1], 2
         jz      .relative16
 .relative:
         cmp     byte [ebx], 0

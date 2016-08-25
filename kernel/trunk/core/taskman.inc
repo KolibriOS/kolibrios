@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
-;; Distributed under terms of the GNU General Public License    ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved. ;;
+;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,6 +41,7 @@ struct  APP_HDR
         img_size        rd 1
         filename_size   rd 1
         cmdline_size    rd 1
+        path_string     rd 1
 ends
 
 macro _clear_ op
@@ -66,50 +67,45 @@ fs_execute_from_sysdir:
         xor     ebx, ebx
 fs_execute_from_sysdir_param:
         xor     edx, edx
-
-align 4
 proc fs_execute
 ; ebx - cmdline
 ; edx - flags
 ; ebp - full filename
+    locals
+        cmdline         rd  1
+        flags           rd  1
+        slot            rd  1
+        slot_base       rd  1
+; app header data
+        hdr_cmdline     rd  1
+        hdr_path        rd  1
+        hdr_eip         rd  1
+        hdr_esp         rd  1
+        hdr_edata       rd  1
+        hdr_emem        rd  1
+        file_base       rd  1
+        file_size       rd  1
+        filename_size   rd  1
+        cmdline_size    rd  1
+        path_string     rd  1
+    endl
 
-       locals
-         filename      rd 1
-         cmdline       rd 1
-         flags         rd 1
-
-         slot          rd 1
-         slot_base     rd 1
-
-;app header data
-
-         hdr_cmdline   rd 1 ;0x00
-         hdr_path      rd 1 ;0x04
-         hdr_eip       rd 1 ;0x08
-         hdr_esp       rd 1 ;0x0C
-         hdr_edata     rd 1 ;0x10
-         hdr_emem      rd 1 ;0x14
-         file_base     rd 1 ;0x18
-         file_size     rd 1 ;0x1c
-         filename_size rd 1 ;0x20
-         cmdline_size  rd 1 ;0x24
-
-       endl
-
-        mov     eax, [ebp]
         mov     [flags], edx
         mov     [cmdline], ebx
-        mov     [filename], eax
+        stdcall kernel_alloc, maxPathLength
+        mov     [path_string], eax
+        mov     ebx, [ebp]
+        stdcall get_full_file_name, eax, maxPathLength
+        test    eax, eax
+        jz      .err_file
 
-        mov     eax, [filename]
-        stdcall load_file, eax
+        stdcall load_file, [path_string]
         mov     esi, -ERROR_FILE_NOT_FOUND
         test    eax, eax
         jz      .err_file
 
         mov     [file_base], eax
         mov     [file_size], ebx
-
         lea     ebx, [hdr_cmdline]
         call    test_app_header
         mov     esi, -0x1F
@@ -117,9 +113,8 @@ proc fs_execute
         jz      .err_hdr
 
         call    lock_application_table
-
         call    alloc_thread_slot
-        mov     esi, -0x20 ; too many processes
+        mov     esi, -0x20  ; too many processes
         test    eax, eax
         jz      .err_0
 
@@ -127,103 +122,80 @@ proc fs_execute
         shl     eax, 8
         lea     edi, [SLOT_BASE+eax]
         mov     [slot_base], edi
-
-;clean extended information about process
+; clean extended information about process
         mov     ecx, 256/4
         xor     eax, eax
         cld
         rep stosd
-
 ; write application name
-        stdcall strrchr, [filename], '/'  ; now eax points to name without path
-
-        lea     esi, [eax+1]
-        test    eax, eax
-        jnz     @F
-        mov     esi, [filename]
-@@:
-        mov     ecx, 11 ; 11 chars for name! 8 - is old value!
+        stdcall strrchr, [path_string], '/'
+        lea     esi, [eax+1]    ; -> name without path
+        mov     ecx, 11
         mov     edi, [slot_base]
-.copy_process_name_loop:
-        lodsb
+@@:
+        call    utf8to16
+        call    uni2ansi_char
         cmp     al, '.'
-        jz      .copy_process_name_done
+        jz      @f
         test    al, al
-        jz      .copy_process_name_done
+        jz      @f
         stosb
-        loop    .copy_process_name_loop
+        loop    @b
 
-.copy_process_name_done:
-
+@@:
         mov     edi, [cmdline]
         xor     eax, eax
         test    edi, edi
-        jz      @F
-
+        jz      @f
         mov     ecx, 65535
         call    _strnlen
         cmp     eax, 256
-        jb      @F
+        jb      @f
         lea     ebx, [eax+1]
         add     [hdr_emem], ebx
 @@:
         mov     [cmdline_size], eax
-
         stdcall create_process, [hdr_emem]
-
-        mov     esi, -30; no memory
+        mov     esi, -30    ; no memory
         test    eax, eax
         jz      .err_hdr
 
         mov     ebx, [sys_proc+LHEAD.prev]
         __list_add eax, ebx, sys_proc
-
         mov     ebx, [hdr_emem]
         mov     [eax+PROC.mem_used], ebx
-
         mov     ebx, [slot_base]
         mov     [ebx+APPDATA.process], eax
-
         lea     edx, [ebx+APPDATA.list]
         lea     ecx, [eax+PROC.thr_list]
         list_add_tail edx, ecx
-
-        mov     esi, sizeof.APP_HDR
-        add     esi, [cmdline_size]
-
-        mov     edi, [filename]
-        mov     ecx, 1023
+        mov     edi, [path_string]
+        mov     ecx, maxPathLength
         call    _strnlen
-        add     esi, eax
         mov     [filename_size], eax
-
-        stdcall kernel_alloc, esi
+        mov     eax, [cmdline_size]
+        add     eax, sizeof.APP_HDR
+        stdcall kernel_alloc, eax
         mov     [ebx+APPDATA.exec_params], eax
         mov     edi, eax
         lea     esi, [hdr_cmdline]
         mov     ecx, sizeof.APP_HDR/4
         rep movsd
-
-        mov     esi, [filename]
-        mov     ecx, [filename_size]
-        rep movsb
         mov     ecx, [cmdline_size]
         mov     esi, [cmdline]
         rep movsb
-
         lea     eax, [hdr_cmdline]
         stdcall set_app_params , [slot], eax, [flags]
-
-        mov     eax, [process_number]       ;set result
+        mov     eax, [process_number]   ;set result
         call    unlock_application_table
         ret
 
 .err_0:
         call    unlock_application_table
-
 .err_hdr:
         stdcall kernel_free, [file_base]
 .err_file:
+        stdcall kernel_free, [path_string]
         mov     eax, esi
         ret
 endp
@@ -848,96 +820,48 @@ endp
 
 align 4
 common_app_entry:
-
         mov     ebp, [current_slot]
         mov     ebp, [ebp+APPDATA.exec_params]
         test    ebp, ebp
         jz      .exit
-
         stdcall map_process_image, [ebp+APP_HDR._emem],\
                 [ebp+APP_HDR.img_base], [ebp+APP_HDR.img_size]
-
-        xor     eax, eax
+        mov     esi, [ebp+APP_HDR.path_string]
         mov     edi, [ebp+APP_HDR.path]
-        lea     esi, [ebp+sizeof.APP_HDR]
-        mov     ecx, [ebp+APP_HDR.filename_size]
+        push    esi
         test    edi, edi
-        jnz     .copy_filename
-
-        add     esi, ecx
-        jmp     .check_cmdline
-
-.copy_full_path:
-        mov     esi, [current_slot]
-        mov     esi, [esi+APPDATA.cur_dir]
-        mov     ebx, 1023
-        mov     al, '/'
-        stosb
-
-.copy_path:
-        dec     ebx
-        jz      .finish_path
-        lodsb
-        stosb
-        test    al, al
-        jnz     .copy_path
-        mov     byte [edi-1], '/'
-
-        cmp     ecx, ebx
-        jbe     @F
-        mov     ecx, ebx
+        jz      @f
+        mov     ecx, [ebp+APP_HDR.filename_size]
+        rep movsb
+        mov     byte [edi], 0
 @@:
-        lea     esi, [ebp+sizeof.APP_HDR]
-        xor     eax, eax
-        rep movsb
-        stosb
-        jmp     .check_cmdline
-
-.finish_path:
-        xor     eax, eax
-        stosb
-        jmp     .check_cmdline
-
-.copy_filename:
-        cmp     byte [esi], '/'
-        jne     .copy_full_path
-
-        rep movsb
-        stosb
-
-.check_cmdline:
+        call    kernel_free
         mov     edi, [ebp+APP_HDR.cmdline]
-        mov     ecx, [ebp+APP_HDR.cmdline_size]
         test    edi, edi
         jz      .check_tls_header
-
+        lea     esi, [ebp+sizeof.APP_HDR]
+        mov     ecx, [ebp+APP_HDR.cmdline_size]
         cmp     ecx, 256
         jb      .copy_cmdline
-
         mov     edi, [ebp+APP_HDR._emem]
         add     edi, 4095
         and     edi, -4096
         sub     edi, ecx
         dec     edi
-
         cmp     word [6], '00'
-        jne     @F
+        jne     @f
         mov     [APP_HEADER_00_.i_param], edi
         jmp     .copy_cmdline
 @@:
         mov     [APP_HEADER_01_.i_param], edi
-
 .copy_cmdline:
         rep movsb
-        stosb
-
+        mov     byte [edi], 0
 .check_tls_header:
         cmp     word [6], '02'
         jne     .cleanup
-
         call    init_heap
         stdcall user_alloc, 4096
-
         mov     edx, [current_slot]
         mov     [edx+APPDATA.tls_base], eax
         mov     [tls_data_l+2], ax
@@ -946,11 +870,9 @@ common_app_entry:
         mov     [tls_data_l+7], ah
         mov     dx, app_tls
         mov     fs, dx
-
 .cleanup:
         stdcall free_kernel_space, [ebp+APP_HDR.img_base]
         stdcall kernel_free, ebp
-
         mov     ebx, [current_slot]
         cmp     [ebx+APPDATA.debugger_slot], 0
         je      .exit
@@ -1018,11 +940,11 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         mov     [SLOT_BASE+APPDATA.saved_esp0+ebx], eax
 
         push    ebx
-        stdcall kernel_alloc, 0x1000
+        stdcall kernel_alloc, maxPathLength
         pop     ebx
         mov     esi, [current_slot]
         mov     esi, [esi+APPDATA.cur_dir]
-        mov     ecx, 0x1000/4
+        mov     ecx, maxPathLength/4
         mov     edi, eax
         mov     [ebx+SLOT_BASE+APPDATA.cur_dir], eax
         rep movsd

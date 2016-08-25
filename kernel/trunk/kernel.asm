@@ -1198,7 +1198,7 @@ proc setup_os_slot
         mov     dword [edx+APPDATA.fd_obj], eax
         mov     dword [edx+APPDATA.bk_obj], eax
 
-        mov     dword [edx+APPDATA.cur_dir], sysdir_path
+        mov     dword [edx+APPDATA.cur_dir], sysdir_path-2
 
         mov     [edx + APPDATA.process], sys_proc
 
