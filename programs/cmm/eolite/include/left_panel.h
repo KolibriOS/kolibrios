@@ -232,14 +232,16 @@ void DrawLeftPanelBg()
 	PutShadow(18,actions_y+75+1,158,1,1,1);
 	DrawBar(2,56,15,actions_y+103,col_lpanel);	          //синий прямоугольник - слева       
 	DrawBar(177,56,15,actions_y+103,col_lpanel);            //синий прямоугольник - справа
-	onTop1 = Form.cheight-start_y-2-16;
+	onTop1 = Form.cheight-start_y-2;
 	if (onTop1 < 268)
 	{
+		if (show_status_bar) onTop1 = Form.cheight-start_y-2-16;
 		PutPaletteImage(#blue_hl, 190, onTop1, 2, start_y, 8, #blue_hl_pal);
 	}
 	else
 	{
 		DrawBar(2,start_y,190, onTop1-268, col_lpanel);
+		if (show_status_bar) onTop1 = Form.cheight-start_y-2-16;
 		PutPaletteImage(#blue_hl, 190, 268, 2, Form.cheight-270, 8, #blue_hl_pal);
 	}
 	PutShadow(17,start_y,160,1,1,3);

@@ -3,6 +3,7 @@
 	?define TITLE_SETT "Настройки"
 	?define SHOW_DEVICE_CLASS "Выводить названия класса устройств"
 	?define SHOW_REAL_NAMES "Показывать имена файлов не меняя регистр"
+	?define SHOW_STATUS_BAR "Показывать статус бар"
 	?define NOTIFY_COPY_END "Уведомлять о завершении копирования"
 	?define SHOW_BREADCRUMBS "Использовать 'хлебные крошки'"
 	?define USE_TWO_PANELS "Две панели"
@@ -16,6 +17,7 @@
 	?define TITLE_SETT "Settings"
 	?define SHOW_DEVICE_CLASS "Show device class name"
 	?define SHOW_REAL_NAMES "Show file names in original case"
+	?define SHOW_STATUS_BAR "Show status bar"
 	?define NOTIFY_COPY_END "Notify when copying finished"
 	?define SHOW_BREADCRUMBS "Show breadcrumbs"
 	?define USE_TWO_PANELS "Two panels"
@@ -75,6 +77,7 @@ void settings_dialog()
 				else if (id==32) show_breadcrumb ^= true;
 				else if (id==25) { files.item_h++; files_active.item_h = files_inactive.item_h = files.item_h; }
 				else if (id==26) && (files.item_h>15) files_inactive.item_h = files.item_h = files.item_h-1;
+				else if (id==27) show_status_bar ^= 1;
 				else if (id==30) { label.size.pt++; IF(!label.changeSIZE()) label.size.pt--; BigFontsChange(); }
 				else if (id==31) { label.size.pt--; IF(!label.changeSIZE()) label.size.pt++; BigFontsChange(); }
 				EventRedrawWindow(Form.left,Form.top);
@@ -88,7 +91,7 @@ void settings_dialog()
 				break;
 				
 			case evReDraw:
-				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 376, 332+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
+				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 376, 357+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
 				DrawSettingsCheckBoxes();
 		}
 	}
@@ -109,6 +112,7 @@ void DrawSettingsCheckBoxes()
 	y.n = 0;
 	CheckBox(x, y.inc(14), 20, SHOW_DEVICE_CLASS,  show_dev_name);
 	CheckBox(x, y.inc(25), 21, SHOW_REAL_NAMES,  real_files_names_case);
+	CheckBox(x, y.inc(25), 27, SHOW_STATUS_BAR,  show_status_bar);
 	CheckBox(x, y.inc(25), 22, NOTIFY_COPY_END,  info_after_copy);
 	CheckBox(x, y.inc(25), 32, SHOW_BREADCRUMBS,  show_breadcrumb);
 	CheckBox(x, y.inc(25), 24, USE_TWO_PANELS,  two_panels);
@@ -130,7 +134,8 @@ void LoadIniSettings()
 	FileShow.font_size_x = files.font_w;
 	FileShow.font_number = 0;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "ShowDeviceName",    1); show_dev_name = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #config_section, "RealFileNamesCase", 0); real_files_names_case = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #config_section, "ShowStatusBar",    1); show_status_bar = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #config_section, "RealFileNamesCase", 1); real_files_names_case = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "InfoAfterCopy",     0); info_after_copy = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "FontSize",         12); label.size.pt = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "TwoPanels",         0); two_panels = EAX;
@@ -154,6 +159,7 @@ void LoadIniSettings()
 void SaveIniSettings()
 {
 	ini_set_int stdcall (eolite_ini_path, #config_section, "ShowDeviceName", show_dev_name);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "ShowStatusBar", show_status_bar);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "RealFileNamesCase", real_files_names_case);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "InfoAfterCopy", info_after_copy);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "FontSize", label.size.pt);
