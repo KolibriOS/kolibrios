@@ -792,6 +792,7 @@ void Open_Dir(dword dir_path, redraw){
 		files.KeyHome();
 		if(!_not_draw) { list_full_redraw=true; DrawStatusBar(); List_ReDraw(); }
 	}
+	SetCurDir(dir_path);
 }
 
 
