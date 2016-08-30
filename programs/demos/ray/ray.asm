@@ -183,7 +183,7 @@ jmp still
 
 
 
-include 'RAY.INC'
+include 'ray.inc'
 
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
