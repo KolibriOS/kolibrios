@@ -6,8 +6,6 @@
 ;   email	    :  macgub3@wp.pl
 ;   web 	    :  http://macgub.hekko.pl
 
-include "../../macros.inc"
-
 timeout equ 3
 XRES equ 500	    ; window size
 YRES equ 500
@@ -171,7 +169,13 @@ still:
 
  call main_loop
 
- mcall 7,screen,<maxx,maxy>,<0,0>
+ mov eax,7
+ mov ebx,screen
+ mov ecx,maxx*65536+maxy
+ xor edx,edx
+ int 0x40
+
+
 
 
 
@@ -179,28 +183,37 @@ jmp still
 
 
 
-include 'ray.inc'
+include 'RAY.INC'
 
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
 ;   *********************************************
 draw_window:
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,1			   ; 2, end of draw
+    int  0x40
 
-	mcall 12,1
+    mov  eax,48            ; get skin height
+    mov  ebx,4
+    int  0x40
 
-    mcall 48,4 ; get skin height
-    lea ecx,[eax + (100 shl 16) + maxy+4]
-    mov edi,title
-    mcall 0,<100,maxx+9>,,0x74000000
+    lea  ecx,[eax + (100 shl 16) + maxy+4]
+    mov  edi,title
+    xor  eax,eax
+    mov  ebx,100*65536+maxx+9   ; [x start] *65536 + [x size]
+    mov  edx,0x74000000    ; window type
+	int  0x40
 
-	mcall 12,2
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,2			   ; 2, end of draw
+    int  0x40
 
     ret
 
 title db 'Ray tracing',0
 xo dd 0.5
 yo dd 0.5
-zo dd 0.1
+zo dd 0.5
 deg_counter dw 0
 one_deg dd 0.017453
 include 'dataray.inc'
