@@ -31,6 +31,12 @@ ID_ICON_POINT_SEL equ 9
 
 FILE_ERROR_CHUNK_SIZE equ -3 ;ошибка в размере блока
 
+size_one_list equ 42+sizeof.obj_3d
+list_offs_chunk_del equ 8 ;может ли блок удалятся
+list_offs_chunk_lev equ 9 ;уровень блока (прописан в данные узла)
+list_offs_p_data equ 10 ;указатель на подпись блока
+list_offs_obj3d equ 14 ;указатель на структуру данных для 3d объекта
+list_offs_text equ 14+sizeof.obj_3d ;сдвиг начала текста в листе
 include 'info_o3d.inc'
 
 align 4
@@ -57,12 +63,6 @@ file_3ds: ;переменные используемые при открытии файла
 .size: dd 0 ;+4 размер блока (для 1-го параметра = размер файла 3ds)
 rb 8*MAX_FILE_LEVEL
 
-size_one_list equ 42+sizeof.obj_3d
-list_offs_chunk_del equ 8 ;может ли блок удалятся
-list_offs_chunk_lev equ 9 ;уровень блока (прописан в данные узла)
-list_offs_p_data equ 10 ;указатель на подпись блока
-list_offs_obj3d equ 14 ;указатель на структуру данных для 3d объекта
-list_offs_text equ 14+sizeof.obj_3d ;сдвиг начала текста в листе
 buffer rb size_one_list ;буфер для добавления структур в список tree1
 
 txt_3ds_symb db 0,0
@@ -113,11 +113,11 @@ start:
 	stdcall [ksubmenu_add], [main_menu_view], eax
 	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Faces_Fill, 7
 	stdcall [ksubmenu_add], [main_menu_view], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Light, 8
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Light, 9
 	stdcall [ksubmenu_add], [main_menu_view], eax
 	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
 	stdcall [ksubmenu_add], [main_menu_view], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Reset, 9
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Reset, 10
 	stdcall [ksubmenu_add], [main_menu_view], eax
 	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_View, [main_menu_view]
 	stdcall [ksubmenu_add], [main_menu], eax
@@ -395,7 +395,7 @@ timer_funct:
 				stdcall draw_material,edi
 				jmp .end_f
 			.ini_mblo:
-				stdcall mat_init,edi ;попытка настроить данные материала
+				stdcall mat_init,edi,eax ;попытка настроить данные материала
 				cmp dword[edi+offs_mat_name],0
 				je .end_f
 					stdcall draw_material,edi
@@ -438,25 +438,28 @@ pushad
 	mov esi,[sc.work_button]
 	mcall SF_DEFINE_BUTTON,(5 shl 16)+20,(24 shl 16)+20,0x40000003
 	mcall ,(30 shl 16)+20,,0x40000004 ;open
-	mcall ,(3d_wnd_l shl 16)+20,,0x40000005 ;вершины вкл./выкл.
-	mcall ,((3d_wnd_l+25) shl 16)+20,,0x40000006 ;грани вкл./выкл.
-	mcall ,((3d_wnd_l+50) shl 16)+20,,0x40000007 ;заливка граней вкл./выкл.
-	mcall ,((3d_wnd_l+75) shl 16)+20,,0x40000008 ;свет вкл./выкл.
-	mcall ,((3d_wnd_l+100) shl 16)+20,,0x40000009 ;сброс
+	mcall ,(3d_wnd_l shl 16)+20,,0x40000005 ;вершины вкл.
+	mcall ,((3d_wnd_l+25) shl 16)+20,,0x40000006 ;каркасные грани вкл.
+	mcall ,((3d_wnd_l+50) shl 16)+20,,0x40000007 ;заливка граней вкл.
+	mcall ,((3d_wnd_l+75) shl 16)+20,,0x40000008 ;грани по материалам вкл.
+	mcall ,((3d_wnd_l+100) shl 16)+20,,0x40000009 ;свет вкл./выкл.
+	mcall ,((3d_wnd_l+125) shl 16)+20,,0x4000000a ;сброс
 
 	mcall SF_PUT_IMAGE,[image_data_toolbar],(21 shl 16)+21,(5 shl 16)+24 ;new
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	mcall ,,,(30 shl 16)+24 ;open
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE*6
-	mcall ,,,((3d_wnd_l) shl 16)+24 ;вершины вкл./выкл.
+	mcall ,,,((3d_wnd_l) shl 16)+24 ;вершины вкл.
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mcall ,,,((3d_wnd_l+25) shl 16)+24 ;грани вкл./выкл.
+	mcall ,,,((3d_wnd_l+25) shl 16)+24 ;каркасные грани вкл.
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mcall ,,,((3d_wnd_l+50) shl 16)+24 ;заливка граней вкл./выкл.
+	mcall ,,,((3d_wnd_l+50) shl 16)+24 ;заливка граней вкл.
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mcall ,,,((3d_wnd_l+75) shl 16)+24 ;свет вкл./выкл.
+	mcall ,,,((3d_wnd_l+100) shl 16)+24 ;свет вкл./выкл.
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mcall ,,,((3d_wnd_l+100) shl 16)+24 ;сброс
+	mcall ,,,((3d_wnd_l+125) shl 16)+24 ;сброс
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	mcall ,,,((3d_wnd_l+75) shl 16)+24 ;грани по материалам вкл.
 
 	mov dword[w_scr_t1.all_redraw],1
 	stdcall [tl_draw], tree1
@@ -561,10 +564,15 @@ button:
 	@@:
 	cmp ah,8
 	jne @f
-		call mnu_light_on_off
+		call mnu_faces_mat
 		jmp still
 	@@:
 	cmp ah,9
+	jne @f
+		call mnu_light_on_off
+		jmp still
+	@@:
+	cmp ah,10
 	jne @f
 		call mnu_reset_settings
 		jmp still
@@ -1397,9 +1405,9 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru
-capt db 'info 3ds [user] версия 18.02.16',0 ;подпись окна
+capt db 'info 3ds [user] версия 02.09.16',0 ;подпись окна
 else
-capt db 'info 3ds [user] version 18.02.16',0 ;window caption
+capt db 'info 3ds [user] version 02.09.16',0 ;window caption
 end if
 
 align 16
@@ -1417,13 +1425,11 @@ i_end:
 	color_vert rd 1
 	color_face rd 1
 	color_select rd 1
-	rb 2048
 align 16
-thread_coords:
-	rb 2048
+	rb 4096
 stacktop:
 	sys_path rb 2048
-	file_name rb 4096 
+	file_name rb 4096
 	plugin_path rb 4096
 	openfile_path rb 4096
 	filename_area rb 256

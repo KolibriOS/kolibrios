@@ -25,6 +25,7 @@ struct obj_3d
 	z_min dd ?
 	z_centr dd ?
 	z_scale dd ?
+	mat1_data dd ? ;данные 1-го материала в объекте
 ends
 
 offs_obj_poi_data equ 0 ;указатель на координаты вершин
@@ -47,6 +48,7 @@ offs_obj_z_max equ 64
 offs_obj_z_min equ 68
 offs_obj_z_centr equ 72
 offs_obj_z_scale equ 76
+offs_obj_mat1_data equ 80
 
 struct material
 	name dd ?
@@ -64,6 +66,7 @@ bit_vertexes equ 0
 bit_faces equ 1
 bit_faces_fill equ 2
 bit_light equ 3
+bit_faces_mat equ 4
 
 ini_name db 'info3ds.ini',0
 ini_sec_w3d db 'Window 3d',0
@@ -118,6 +121,7 @@ proc obj_clear_param uses edi, o_data:dword
 	mov dword[edi+offs_obj_tri_count],0
 	mov dword[edi+offs_obj_normals_tri_count],0
 	mov dword[edi+offs_obj_normals_poi_count],0
+	mov dword[edi+offs_obj_mat1_data],0
 	cmp dword[edi+offs_obj_normals_tri_data],0
 	je @f
 		stdcall mem.Free,[edi+offs_obj_normals_tri_data]
@@ -526,6 +530,13 @@ proc obj_init, o_data:dword
 			mov [edi+offs_obj_tri_count],edx
 			add esi,8 ;2+4+2 (chunk+size+count)
 			mov [edi+offs_obj_tri_data],esi
+
+			;поиск материалов граней
+			shl edx,3
+			add esi,edx
+			cmp word[esi],CHUNK_FACEMAT
+			jne .end_points
+				mov [edi+offs_obj_mat1_data],esi
 		.end_points:
 
 		stdcall obj_set_sizes, edi
@@ -539,8 +550,11 @@ end if
 endp
 
 ;настройка материала
+;input:
+; m_data - указатель на заполняемую структуру с материалом
+; f_data - указательна на блок CHUNK_MATERIAL из файла 3ds
 align 4
-proc mat_init, m_data:dword
+proc mat_init, m_data:dword, f_data:dword
 	pushad
 	mov edi,[m_data]
 
@@ -550,86 +564,82 @@ proc mat_init, m_data:dword
 	mov dword[edi+offs_mat_col_diffuse],0
 	mov dword[edi+offs_mat_col_specular],0
 
-	stdcall [tl_node_get_data],tree1
 	xor edx,edx
-	cmp eax,0
-	je .no_material
-		mov ebx,[eax] ;получаем значение сдвига выбранного блока
-		add ebx,[open_file_data]
-		xor ecx,ecx
-		cmp word[ebx],CHUNK_MATERIAL
-		jne .no_material
-			mov ecx,ebx
-			add ecx,dword[ecx+2] ;граница блока
-			add ebx,6
-		cmp word[ebx],CHUNK_MATNAME
-		jne .no_material
-			;*** (0) ***
-			mov esi,ebx
-			add ebx,6
-			mov [edi+offs_mat_name],ebx
-			sub ebx,6
-			;*** (1) ***
-			.cycle_0: ;цикл для поиска цвета материала
-				add esi,dword[esi+2]
-				cmp word[esi],0xa010
-				je @f
-					cmp ecx,esi
-					jg .cycle_0 ;пока не достигнута грница старшего блока
-					jmp .end_material ;если не нашли цвет материала
-			@@:
-			;если нашли цвет материала
+	mov ebx,[f_data]
+	xor ecx,ecx
+	cmp word[ebx],CHUNK_MATERIAL
+	jne .no_material
+		mov ecx,ebx
+		add ecx,dword[ecx+2] ;граница блока
+		add ebx,6
+	cmp word[ebx],CHUNK_MATNAME
+	jne .no_material
+		;*** (0) ***
+		mov esi,ebx
+		add ebx,6
+		mov [edi+offs_mat_name],ebx
+		sub ebx,6
+		;*** (1) ***
+		.cycle_0: ;цикл для поиска цвета материала
+			add esi,dword[esi+2]
+			cmp word[esi],0xa010
+			je @f
+				cmp ecx,esi
+				jg .cycle_0 ;пока не достигнута грница старшего блока
+				jmp .end_material ;если не нашли цвет материала
+		@@:
+		;если нашли цвет материала
+		add esi,6
+		cmp word[esi],0x0011
+		jne .end_material
 			add esi,6
-			cmp word[esi],0x0011
-			jne .end_material
-				add esi,6
-				mov dl,byte[esi]
-				mov [edi+offs_mat_col_ambient+2],dl
-				mov dx,word[esi+1]
-				ror dx,8
-				mov [edi+offs_mat_col_ambient],dx
-			;*** (2) ***
-			mov esi,ebx
-			.cycle_1: ;цикл для поиска цвета материала
-				add esi,dword[esi+2]
-				cmp word[esi],0xa020
-				je @f
-					cmp ecx,esi
-					jg .cycle_1 ;пока не достигнута грница старшего блока
-					jmp .end_material ;если не нашли цвет материала
-			@@:
-			;если нашли цвет материала
+			mov dl,byte[esi]
+			mov [edi+offs_mat_col_ambient+2],dl
+			mov dx,word[esi+1]
+			ror dx,8
+			mov [edi+offs_mat_col_ambient],dx
+		;*** (2) ***
+		mov esi,ebx
+		.cycle_1: ;цикл для поиска цвета материала
+			add esi,dword[esi+2]
+			cmp word[esi],0xa020
+			je @f
+				cmp ecx,esi
+				jg .cycle_1 ;пока не достигнута грница старшего блока
+				jmp .end_material ;если не нашли цвет материала
+		@@:
+		;если нашли цвет материала
+		add esi,6
+		cmp word[esi],0x0011
+		jne .end_material
 			add esi,6
-			cmp word[esi],0x0011
-			jne .end_material
-				add esi,6
-				mov dl,byte[esi]
-				mov [edi+offs_mat_col_diffuse+2],dl
-				mov dx,word[esi+1]
-				ror dx,8
-				mov [edi+offs_mat_col_diffuse],dx
-			;*** (3) ***
-			mov esi,ebx
-			.cycle_2: ;цикл для поиска цвета материала
-				add esi,dword[esi+2]
-				cmp word[esi],0xa030
-				je @f
-					cmp ecx,esi
-					jg .cycle_2 ;пока не достигнута грница старшего блока
-					jmp .end_material ;если не нашли цвет материала
-			@@:
-			;если нашли цвет материала
+			mov dl,byte[esi]
+			mov [edi+offs_mat_col_diffuse+2],dl
+			mov dx,word[esi+1]
+			ror dx,8
+			mov [edi+offs_mat_col_diffuse],dx
+		;*** (3) ***
+		mov esi,ebx
+		.cycle_2: ;цикл для поиска цвета материала
+			add esi,dword[esi+2]
+			cmp word[esi],0xa030
+			je @f
+				cmp ecx,esi
+				jg .cycle_2 ;пока не достигнута грница старшего блока
+				jmp .end_material ;если не нашли цвет материала
+		@@:
+		;если нашли цвет материала
+		add esi,6
+		cmp word[esi],0x0011
+		jne .end_material
 			add esi,6
-			cmp word[esi],0x0011
-			jne .end_material
-				add esi,6
-				mov dl,byte[esi]
-				mov [edi+offs_mat_col_specular+2],dl
-				mov dx,word[esi+1]
-				ror dx,8
-				mov [edi+offs_mat_col_specular],dx
+			mov dl,byte[esi]
+			mov [edi+offs_mat_col_specular+2],dl
+			mov dx,word[esi+1]
+			ror dx,8
+			mov [edi+offs_mat_col_specular],dx
 
-			.end_material:
+		.end_material:
 	.no_material:
 	popad
 	ret
@@ -713,6 +723,22 @@ end if
 	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
 	stdcall [glRotatef], [angle_x],1.0,0.0,0.0
 	stdcall [glTranslatef], [edi+offs_obj_x_centr],[edi+offs_obj_y_centr],[edi+offs_obj_z_centr]
+
+if version_edit eq 0
+	;рисование граней с использованием цветов материалов
+	bt dword[draw_mode],bit_faces_mat
+	jnc @f
+		mov eax,[edi+offs_obj_mat1_data]
+		.b_found:
+		cmp eax,0
+		je .end_triangles
+			mov ebx,eax
+			stdcall get_mat_color, eax
+			stdcall draw_3d_faces_color, edi,ebx,eax
+			stdcall found_mat_faces, ebx
+		jmp .b_found
+	@@:
+end if
 
 	;рисование точек
 	bt dword[draw_mode],bit_vertexes
@@ -863,7 +889,7 @@ SetLight:
 align 4
 mnu_vertexes_on:
 	or dword[draw_mode], 1 shl bit_vertexes
-	and dword[draw_mode], not (1 shl bit_faces) ;выключаем режим рисования граней (что-бы не мешали)
+	and dword[draw_mode], not ((1 shl bit_faces)+(1 shl bit_faces_mat)) ;выключаем режимы рисования, которые могут мешать
 	call update_obj
 	ret
 
@@ -871,7 +897,7 @@ mnu_vertexes_on:
 align 4
 mnu_edges_on:
 	or dword[draw_mode], 1 shl bit_faces
-	and dword[draw_mode], not ((1 shl bit_vertexes)+(1 shl bit_faces_fill))
+	and dword[draw_mode], not ((1 shl bit_vertexes)+(1 shl bit_faces_fill)+(1 shl bit_faces_mat))
 	call update_obj
 	ret
 
@@ -879,7 +905,7 @@ mnu_edges_on:
 align 4
 mnu_faces_on:
 	or dword[draw_mode], (1 shl bit_faces)+(1 shl bit_faces_fill)
-	and dword[draw_mode], not (1 shl bit_vertexes)
+	and dword[draw_mode], not ((1 shl bit_vertexes)+(1 shl bit_faces_mat))
 	call update_obj
 	ret
 
@@ -908,6 +934,13 @@ update_obj:
 
 else
 
+;включаем режим рисования сплошных граней
+align 4
+mnu_faces_mat:
+	or dword[draw_mode], (1 shl bit_faces_mat)
+	call update_obj
+	ret
+
 align 4
 update_obj:
 push eax ebx
@@ -918,11 +951,119 @@ push eax ebx
 		add ebx,dword[open_file_data] ;получаем значение сдвига в памяти
 		cmp word[ebx],CHUNK_OBJBLOCK
 		jne @f
-			add eax,14 ;14=list_offs_obj3d
-			stdcall draw_3d, eax
+			add eax,list_offs_obj3d
+			stdcall draw_3d,eax
 	@@:
 pop ebx eax
 	ret
+
+;input:
+; p_mat - указатель на данные предыдущего материала
+align 4
+proc found_mat_faces uses ebx, p_mat:dword
+	mov eax,[p_mat]
+	add eax,[eax+2]
+	cmp word[eax],CHUNK_FACEMAT
+	je @f
+		xor eax,eax
+	@@:
+	ret
+endp
+
+align 4
+proc get_mat_color uses ebx ecx edx edi esi, p_mat:dword
+	stdcall [tl_node_poi_get_info], tree1,0
+	mov ecx,eax
+	.cycle_0:
+		cmp ecx,0
+		je .cycle_0_end
+			stdcall [tl_node_poi_get_data], tree1,ecx
+			mov ebx,[eax] ;получаем значение сдвига выбранного блока
+			add ebx,[open_file_data]
+			cmp word[ebx],CHUNK_MATERIAL
+			jne .end_add_p3
+			add eax,list_offs_obj3d
+			mov esi,[eax+offs_mat_name]
+			cmp esi,0
+			jne @f
+				;init material
+				stdcall mat_init,eax,ebx
+				mov esi,[eax+offs_mat_name]
+			@@:
+			mov edi,[p_mat]
+			mov eax,5
+			add edi,eax
+align 4
+			@@:
+				cmp al,0
+				je .found
+				lodsb
+				inc edi
+				cmp byte[edi],al
+				je @b
+		.end_add_p3:
+		stdcall [tl_node_poi_get_next_info], tree1,ecx
+		mov ecx,eax ;переходим к следущему узлу
+		jmp .cycle_0
+	.cycle_0_end:
+
+	.no_found:
+		xor eax,eax
+		jmp .end_f
+	.found:
+		stdcall [tl_node_poi_get_data], tree1,ecx
+		add eax,list_offs_obj3d
+		mov eax,[eax+offs_mat_col_diffuse]
+	.end_f:
+	ret
+endp
+
+align 4
+proc draw_3d_faces_color o_data:dword, p_mat:dword, color:dword
+pushad
+	stdcall [glPolygonMode], GL_FRONT_AND_BACK,GL_FILL
+	stdcall [glColor3ub],[color+2],[color+1],[color]
+	stdcall [glBegin],GL_TRIANGLES
+	mov edi,[o_data]
+	mov esi,[p_mat]
+	add esi,6
+	@@:
+		lodsb
+		cmp al,0
+		jne @b
+	movzx ecx,word[esi] ;ecx - число граней с данным материалом
+	mov edx,[edi+offs_obj_poi_data]
+align 4
+	@@:
+		add esi,2
+		;word[esi] - номер треугольника
+		movzx ebx,word[esi]
+		shl ebx,3
+		add ebx,[edi+offs_obj_tri_data]
+	
+		movzx eax,word[ebx] ;1-я вершина
+		imul eax,12 ;float(x,y,z)
+		add eax,edx
+		stdcall [glVertex3f], [eax],[eax+4],[eax+8]
+
+		movzx eax,word[ebx+2] ;2-я вершина
+		imul eax,12 ;float(x,y,z)
+		add eax,edx
+		stdcall [glVertex3f], [eax],[eax+4],[eax+8]
+
+		movzx eax,word[ebx+4] ;3-я вершина
+		imul eax,12 ;float(x,y,z)
+		add eax,edx
+		stdcall [glVertex3f], [eax],[eax+4],[eax+8]
+		
+		dec ecx
+		jnz @b
+	stdcall [glEnd]
+
+.end_f:
+popad
+	ret
+endp
 
 end if
 
