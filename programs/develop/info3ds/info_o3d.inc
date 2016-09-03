@@ -344,7 +344,8 @@ align 4
 	ret
 endp
 
-;установка нормалей для граней
+;description:
+; вычисление нормалей для граней по 3-м вершинам
 align 4
 proc obj_set_normals, o_data:dword
 locals
@@ -396,76 +397,56 @@ align 4
 			;v1 <-> v2
 			fld dword[edi+12]
 			fsub dword[edi]
-			fstp dword[esi] ;(x1-x2)
+			fstp dword[esi] ;(x2-x1)
 			fld dword[edi+16]
 			fsub dword[edi+4]
-			fstp dword[esi+4] ;(y1-y2)
+			fstp dword[esi+4] ;(y2-y1)
 			fld dword[edi+20]
 			fsub dword[edi+8]
-			fstp dword[esi+8] ;(z1-z2)
+			fstp dword[esi+8] ;(z2-z1)
 			;v2 <-> v3
-			fld dword[edi+24]
-			fsub dword[edi+12]
+			fld dword[edi+12]
+			fsub dword[edi+24]
 			fstp dword[esi+12] ;(x2-x3)
-			fld dword[edi+28]
-			fsub dword[edi+16]
+			fld dword[edi+16]
+			fsub dword[edi+28]
 			fstp dword[esi+16] ;(y2-y3)
-			fld dword[edi+32]
-			fsub dword[edi+20]
+			fld dword[edi+20]
+			fsub dword[edi+32]
 			fstp dword[esi+20] ;(z2-z3)
 			;v3 <-> v1
-			fld dword[edi]
-			fsub dword[edi+24]
+			fld dword[edi+24]
+			fsub dword[edi]
 			fstp dword[esi+24] ;(x3-x1)
-			fld dword[edi+4]
-			fsub dword[edi+28]
+			fld dword[edi+28]
+			fsub dword[edi+4]
 			fstp dword[esi+28] ;(y3-y1)
-			fld dword[edi+8]
-			fsub dword[edi+32]
+			fld dword[edi+32]
+			fsub dword[edi+8]
 			fstp dword[esi+32] ;(z3-z1)
 
-			;a1,a2,a3
+			;A = (y2-y1) * (z3-z1) - (z2-z1) * (y3-y1)
 			fld dword[esi+4]
-			fmul dword[esi+8]
-			fstp dword[edi] ;a1=(y1-y2)*(z1-z2)
-			fld dword[esi+16]
-			fmul dword[esi+20]
-			fstp dword[edi+4] ;a2=(y2-y3)*(z2-z3)
-			fld dword[esi+28]
 			fmul dword[esi+32]
-			fstp dword[edi+8] ;a3=(y3-y1)*(z3-z1)
-			;b1,b2,b3
-			fld dword[esi]
-			fmul dword[esi+8]
-			fstp dword[edi+12] ;b1=(x1-x2)*(z1-z2)
-			fld dword[esi+12]
-			fmul dword[esi+20]
-			fstp dword[edi+16] ;b2=(x2-x3)*(z2-z3)
-			fld dword[esi+24]
-			fmul dword[esi+32]
-			fstp dword[edi+20] ;b3=(x3-x1)*(z3-z1)
-			;c1,с2,с3
-			fld dword[esi]
-			fmul dword[esi+4]
-			fstp dword[edi+24] ;c1=(x1-x2)*(y1-y2)
-			fld dword[esi+12]
-			fmul dword[esi+16]
-			fstp dword[edi+28] ;c2=(x2-x3)*(y2-y3)
-			fld dword[esi+24]
+			fld dword[esi+8]
 			fmul dword[esi+28]
-			fstp dword[edi+32] ;c3=(x3-x1)*(y3-y1)
-			
-			fld dword[edi]
-			fadd dword[edi+4]
-			fadd dword[edi+8]
+			fsubp
 			fstp dword[eax] ;set normal.a
-			fld dword[edi+12]
-			fadd dword[edi+16]
-			fadd dword[edi+20]
+
+			;B = (z2-z1) * (x3-x1) - (x2-x1) * (z3-z1)
+			fld dword[esi+8]
+			fmul dword[esi+24]
+			fld dword[esi]
+			fmul dword[esi+32]
+			fsubp
 			fstp dword[eax+4] ;set normal.b
-			fld dword[edi+24]
-			fadd dword[edi+28]
-			fadd dword[edi+32]
+
+			;C = (x2-x1) * (y3-y1) - (y2-y1) * (x3-x1)
+			fld dword[esi]
+			fmul dword[esi+28]
+			fld dword[esi+4]
+			fmul dword[esi+24]
+			fsubp
 			fstp dword[eax+8] ;set normal.c
 			
 			add edx,8 ;размер треугольника = (3 вершины (по 2б) + свойства (2б))
@@ -832,7 +813,6 @@ end if
 			;
 			bt dword[draw_mode],bit_light
 			jnc .norm
-				;[obj_normals_tri_count]
 				stdcall [glNormal3fv], edx
 				add edx,12
 			.norm:
@@ -1038,6 +1018,15 @@ align 4
 		add esi,2
 		;word[esi] - номер треугольника
 		movzx ebx,word[esi]
+		;нормали для освещения
+		bt dword[draw_mode],bit_light
+		jnc .norm
+			mov eax,ebx
+			imul eax,12
+			add eax,[edi+offs_obj_normals_tri_data]
+			stdcall [glNormal3fv], eax
+		.norm:
+
 		shl ebx,3
 		add ebx,[edi+offs_obj_tri_data]
 	
