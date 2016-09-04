@@ -3540,7 +3540,8 @@ Remarks:
 Parameters:
   * eax = 68 - function number
   * ebx = 27 - subfunction number
-  * ecx = pointer to ASCIIZ-string with the filename
+  * ecx = pointer to the string with path to file,
+    rules of path forming can be found in function 70 description.
 Returned value:
   * eax = pointer to the loaded file, or zero
   * edx = size of the loaded file, or zero
