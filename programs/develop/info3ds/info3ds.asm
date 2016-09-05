@@ -3,6 +3,8 @@ use32
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
 	dd 1, start, i_end, mem, stacktop, file_name, sys_path
 
+version_edit equ 1
+
 include '../../macros.inc'
 include '../../proc32.inc'
 include '../../KOSfuncs.inc'
@@ -13,8 +15,6 @@ include 'lang.inc'
 include 'info_fun_float.inc'
 include 'info_menu.inc'
 include 'data.inc'
-
-version_edit equ 1
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
@@ -105,28 +105,32 @@ start:
 	stdcall [ksubmenu_add], [main_menu_view], eax
 	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Faces_Fill, 7
 	stdcall [ksubmenu_add], [main_menu_view], eax
+	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
+	stdcall [ksubmenu_add], [main_menu_view], eax
 	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Light, 8
+	stdcall [ksubmenu_add], [main_menu_view], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Smooth, 9
 	stdcall [ksubmenu_add], [main_menu_view], eax
 	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
 	stdcall [ksubmenu_add], [main_menu_view], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Reset, 9
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Reset, 10
 	stdcall [ksubmenu_add], [main_menu_view], eax
 	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_View, [main_menu_view]
 	stdcall [ksubmenu_add], [main_menu], eax
 
 	stdcall [ksubmenu_new]
 	mov [main_menu_vertexes], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Vertexes_Select, 10
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Vertexes_Select, 11
 	stdcall [ksubmenu_add], [main_menu_vertexes], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Vertexes_Deselect, 11
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Vertexes_Deselect, 12
 	stdcall [ksubmenu_add], [main_menu_vertexes], eax
 	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
 	stdcall [ksubmenu_add], [main_menu_vertexes], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Average_x, 12
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Average_x, 13
 	stdcall [ksubmenu_add], [main_menu_vertexes], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Average_y, 13
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Average_y, 14
 	stdcall [ksubmenu_add], [main_menu_vertexes], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Average_z, 14
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Average_z, 15
 	stdcall [ksubmenu_add], [main_menu_vertexes], eax
 	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Vertexes, [main_menu_vertexes]
 	stdcall [ksubmenu_add], [main_menu], eax
@@ -176,6 +180,11 @@ start:
 	or eax,eax
 	jz @f
 		or dword[def_dr_mode], 1 shl bit_light
+	@@:
+	stdcall dword[ini_get_int],file_name,ini_sec_w3d,key_ds,1
+	or eax,eax
+	jz @f
+		or dword[def_dr_mode], 1 shl bit_smooth
 	@@:
 	stdcall dword[ini_get_color],file_name,ini_sec_w3d,key_ox,0x0000ff
 	mov [color_ox],eax
@@ -1362,9 +1371,9 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru
-capt db 'info 3ds версия 18.02.16',0 ;подпись окна
+capt db 'info 3ds версия 05.09.16',0 ;подпись окна
 else
-capt db 'info 3ds version 18.02.16',0 ;window caption
+capt db 'info 3ds version 05.09.16',0 ;window caption
 end if
 
 align 16

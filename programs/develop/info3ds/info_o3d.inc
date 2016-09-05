@@ -63,17 +63,20 @@ offs_mat_col_diffuse equ 8
 offs_mat_col_specular equ 12
 
 bit_vertexes equ 0
-bit_faces equ 1
-bit_faces_fill equ 2
+bit_faces equ 1 ;грани рисуются контурами
+bit_faces_fill equ 2 ;грани с заливкой
 bit_light equ 3
-bit_faces_mat equ 4
+bit_faces_mat equ 4 ;грани с цветом материала
+bit_smooth equ 5 ;грани со сглаживанием
 
 ini_name db 'info3ds.ini',0
 ini_sec_w3d db 'Window 3d',0
 key_dv  db 'draw_vertices',0
 key_df  db 'draw_faces',0
 key_dff db 'draw_faces_fill',0
+key_dfm db 'draw_faces_material',0
 key_dl  db 'draw_light',0
+key_ds  db 'draw_smooth',0
 key_ox  db 'col_ox',0
 key_oy  db 'col_oy',0
 key_oz  db 'col_oz',0
@@ -346,6 +349,7 @@ endp
 
 ;description:
 ; вычисление нормалей для граней по 3-м вершинам
+; а также нормалей для сглаживания к вершинам
 align 4
 proc obj_set_normals, o_data:dword
 locals
@@ -448,13 +452,150 @@ align 4
 			fmul dword[esi+24]
 			fsubp
 			fstp dword[eax+8] ;set normal.c
-			
+
+			stdcall V3_Norm,eax
+
 			add edx,8 ;размер треугольника = (3 вершины (по 2б) + свойства (2б))
 			add eax,12
 			dec ebx
 			jnz @b
+
+		;нормали к вершинам
+		mov ebx,[o_data]
+		mov ecx,[ebx+offs_obj_poi_count]
+		mov [ebx+offs_obj_normals_poi_count],ecx
+		cmp ecx,0
+		je .end
+		imul ecx,12
+		stdcall mem.Alloc,ecx
+		mov [ebx+offs_obj_normals_poi_data],eax
+
+		mov edi,eax
+		mov eax,0.0
+		shr ecx,2
+		rep stosd ;очистка 0-ми float
+
+		mov edx,[ebx+offs_obj_tri_count]
+		mov edi,[ebx+offs_obj_tri_data]
+		mov eax,[ebx+offs_obj_normals_tri_data]
+		mov ecx,[ebx+offs_obj_poi_data]
+		mov ebx,[ebx+offs_obj_normals_poi_data]
+align 4
+		.cycle_0: ;по граням
+			movzx esi,word[edi] ;1-я вершина
+			imul esi,12
+			add esi,ecx
+			push esi
+			movzx esi,word[edi+2] ;2-я вершина
+			imul esi,12
+			add esi,ecx
+			push esi
+			movzx esi,word[edi+4] ;3-я вершина
+			imul esi,12
+			add esi,ecx
+			push esi
+
+			movzx esi,word[edi] ;1-я вершина
+			imul esi,12
+			add esi,ebx
+			push esi
+			movzx esi,word[edi+2] ;2-я вершина
+			imul esi,12
+			add esi,ebx
+			push esi
+			movzx esi,word[edi+4] ;3-я вершина
+			imul esi,12
+			add esi,ebx
+			push esi
+
+			stdcall poi_normal_add,eax
+
+			add edi,8
+			add eax,12
+			dec edx
+			jnz .cycle_0
+		.cycle_0_end:
 	.end:
 popad
+	ret
+endp
+
+;input:
+; norm_tr - указатель на нормаль к грани
+; n1, n2, n3 - указатели на нормали вершин
+; c1, c2, c3 - указатели на координаты вершин
+align 4
+proc poi_normal_add uses eax ebx,\
+	norm_tr:dword, n1:dword, n2:dword, n3:dword, c1:dword, c2:dword, c3:dword
+
+	mov ebx,[norm_tr]
+
+	mov eax,[n1]
+	fld dword[eax]
+	fadd dword[ebx]
+	fstp dword[eax]
+	fld dword[eax+4]
+	fadd dword[ebx+4]
+	fstp dword[eax+4]
+	fld dword[eax+8]
+	fadd dword[ebx+8]
+	fstp dword[eax+8]
+
+	mov eax,[n2]
+	fld dword[eax]
+	fadd dword[ebx]
+	fstp dword[eax]
+	fld dword[eax+4]
+	fadd dword[ebx+4]
+	fstp dword[eax+4]
+	fld dword[eax+8]
+	fadd dword[ebx+8]
+	fstp dword[eax+8]
+
+	mov eax,[n3]
+	fld dword[eax]
+	fadd dword[ebx]
+	fstp dword[eax]
+	fld dword[eax+4]
+	fadd dword[ebx+4]
+	fstp dword[eax+4]
+	fld dword[eax+8]
+	fadd dword[ebx+8]
+	fstp dword[eax+8]
+
+	ret
+endp
+
+;description:
+; normalize vector
+align 4
+proc V3_Norm uses eax ebx, a:dword
+	mov ebx,[a]
+	fld dword[ebx]
+	fmul st0,st0
+	fld dword[ebx+4]
+	fmul st0,st0
+	faddp
+	fld dword[ebx+8]
+	fmul st0,st0
+	faddp
+	fsqrt ;st0 = sqrt(a.X^2 +a.Y^2 +a.Z^2)
+	ftst
+	fstsw ax
+	sahf
+	je .r1 ;if (sqrt(...)==0) return 1
+		fld dword[ebx] ;offs_X = 0
+		fdiv st0,st1
+		fstp dword[ebx] ;a.X/=sqrt(...)
+		fld dword[ebx+4]
+		fdiv st0,st1
+		fstp dword[ebx+4] ;a.Y/=sqrt(...)
+		fld dword[ebx+8]
+		fdiv st0,st1
+		fstp dword[ebx+8] ;a.Z/=sqrt(...)
+	.r1:
+	ffree st0
+	fincstp
 	ret
 endp
 
@@ -678,14 +819,6 @@ endp
 align 4
 proc draw_3d uses eax ebx ecx edi, o_data:dword
 	mov edi,[o_data]
-if 0 ;debug
-	stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT
-	mov eax,[edi+offs_obj_poi_data]
-	stdcall convert_int_to_str, txt_select_vert.count,16
-	stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_select_vert,5,3,[color_select]
-	stdcall [kosglSwapBuffers]
-	jmp .end_f
-end if
 	cmp dword[edi+offs_obj_poi_count],2
 	jl .end_f
 	stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
@@ -712,7 +845,7 @@ if version_edit eq 0
 		mov eax,[edi+offs_obj_mat1_data]
 		.b_found:
 		cmp eax,0
-		je .end_triangles
+		je .end_points
 			mov ebx,eax
 			stdcall get_mat_color, eax
 			stdcall draw_3d_faces_color, edi,ebx,eax
@@ -721,6 +854,93 @@ if version_edit eq 0
 	@@:
 end if
 
+	;рисование граней без цветов материалов
+	bt dword[draw_mode],bit_faces
+	jnc .end_triangles
+	cmp dword[edi+offs_obj_tri_count],0
+	je .end_triangles
+	cmp dword[edi+offs_obj_poi_count],0
+	je .end_triangles
+		bt dword[draw_mode],bit_faces_fill
+		jc @f
+			push GL_LINE
+			jmp .end_0
+		@@:
+			push GL_FILL
+		.end_0:
+		stdcall [glPolygonMode], GL_FRONT_AND_BACK ;mode - уже в стеке
+		stdcall [glColor3ub],[color_face+2],[color_face+1],[color_face]
+		
+		bt dword[draw_mode],bit_smooth
+		jnc .triangles_flat
+		bt dword[draw_mode],bit_light
+		jnc .triangles_flat
+			;triangles smooth
+			stdcall [glBegin],GL_TRIANGLES
+			mov eax,[edi+offs_obj_tri_data]
+			mov ecx,[edi+offs_obj_tri_count]
+			mov edx,[edi+offs_obj_normals_tri_data]
+align 4
+			@@:
+				movzx ebx,word[eax] ;1-я вершина
+				imul ebx,12
+					add ebx,[edi+offs_obj_normals_poi_data]
+					stdcall [glNormal3fv], ebx
+					sub ebx,[edi+offs_obj_normals_poi_data]
+				add ebx,[edi+offs_obj_poi_data]
+				stdcall [glVertex3f], [ebx],[ebx+4],[ebx+8]
+				movzx ebx,word[eax+2] ;2-я вершина
+				imul ebx,12
+					add ebx,[edi+offs_obj_normals_poi_data]
+					stdcall [glNormal3fv], ebx
+					sub ebx,[edi+offs_obj_normals_poi_data]
+				add ebx,[edi+offs_obj_poi_data]
+				stdcall [glVertex3f], [ebx],[ebx+4],[ebx+8]
+				movzx ebx,word[eax+4] ;3-я вершина
+				imul ebx,12
+					add ebx,[edi+offs_obj_normals_poi_data]
+					stdcall [glNormal3fv], ebx
+					sub ebx,[edi+offs_obj_normals_poi_data]
+				add ebx,[edi+offs_obj_poi_data]
+				stdcall [glVertex3f], [ebx],[ebx+4],[ebx+8]
+				add eax,8 ;размер треугольника = (3 вершины (по 2б) + свойства (2б))
+				dec ecx
+				jnz @b
+			stdcall [glEnd]
+			jmp .end_points
+
+		.triangles_flat:
+		stdcall [glBegin],GL_TRIANGLES
+		mov eax,[edi+offs_obj_tri_data]
+		mov ecx,[edi+offs_obj_tri_count]
+		mov edx,[edi+offs_obj_normals_tri_data]
+align 4
+		@@:
+			;
+			bt dword[draw_mode],bit_light
+			jnc .norm1
+				stdcall [glNormal3fv], edx
+				add edx,12
+			.norm1:
+			movzx ebx,word[eax] ;1-я вершина
+			imul ebx,12
+			add ebx,[edi+offs_obj_poi_data]
+			stdcall [glVertex3f], [ebx],[ebx+4],[ebx+8]
+			movzx ebx,word[eax+2] ;2-я вершина
+			imul ebx,12
+			add ebx,[edi+offs_obj_poi_data]
+			stdcall [glVertex3f], [ebx],[ebx+4],[ebx+8]
+			movzx ebx,word[eax+4] ;3-я вершина
+			imul ebx,12
+			add ebx,[edi+offs_obj_poi_data]
+			stdcall [glVertex3f], [ebx],[ebx+4],[ebx+8]
+			add eax,8 ;размер треугольника = (3 вершины (по 2б) + свойства (2б))
+			dec ecx
+			jnz @b
+		stdcall [glEnd]
+		jmp .end_points
+	.end_triangles:
+
 	;рисование точек
 	bt dword[draw_mode],bit_vertexes
 	jnc .end_points
@@ -728,7 +948,14 @@ end if
 		stdcall [glBegin],GL_POINTS
 		mov eax,[edi+offs_obj_poi_data]
 		mov ebx,[edi+offs_obj_poi_count]
+		mov edx,[edi+offs_obj_normals_poi_data]
+align 4
 		@@:
+			bt dword[draw_mode],bit_light
+			jnc .norm0
+				stdcall [glNormal3fv], edx
+				add edx,12
+			.norm0:
 			stdcall [glVertex3f], [eax],[eax+4],[eax+8]
 			add eax,12
 			dec ebx
@@ -769,6 +996,7 @@ if version_edit eq 1
 		mov ecx,dword[obj_poi_sel_c]
 		stdcall [glColor3ub],[color_select+2],[color_select+1],[color_select]
 		stdcall dword[tl_node_poi_get_info], tree3,0
+align 4
 		@@:
 			cmp eax,0
 			je .end_select
@@ -788,52 +1016,6 @@ if version_edit eq 1
 			jmp @b
     .end_select:
 end if
-
-	;рисование граней
-	bt dword[draw_mode],bit_faces
-	jnc .end_triangles
-	cmp dword[edi+offs_obj_tri_count],0
-	je .end_triangles
-	cmp dword[edi+offs_obj_poi_count],0
-	je .end_triangles
-		bt dword[draw_mode],bit_faces_fill
-		jc @f
-			push GL_LINE
-			jmp .end_0
-		@@:
-			push GL_FILL
-		.end_0:
-		stdcall [glPolygonMode], GL_FRONT_AND_BACK ;mode - уже в стеке
-		stdcall [glColor3ub],[color_face+2],[color_face+1],[color_face]
-		stdcall [glBegin],GL_TRIANGLES
-		mov eax,[edi+offs_obj_tri_data]
-		mov ecx,[edi+offs_obj_tri_count]
-		mov edx,[edi+offs_obj_normals_tri_data]
-		@@:
-			;
-			bt dword[draw_mode],bit_light
-			jnc .norm
-				stdcall [glNormal3fv], edx
-				add edx,12
-			.norm:
-			;
-			movzx ebx,word[eax] ;1-я вершина
-			imul ebx,12
-			add ebx,[edi+offs_obj_poi_data]
-			stdcall [glVertex3f], [ebx],[ebx+4],[ebx+8]
-			movzx ebx,word[eax+2] ;2-я вершина
-			imul ebx,12
-			add ebx,[edi+offs_obj_poi_data]
-			stdcall [glVertex3f], [ebx],[ebx+4],[ebx+8]
-			movzx ebx,word[eax+4] ;3-я вершина
-			imul ebx,12
-			add ebx,[edi+offs_obj_poi_data]
-			stdcall [glVertex3f], [ebx],[ebx+4],[ebx+8]
-			add eax,8 ;размер треугольника = (3 вершины (по 2б) + свойства (2б))
-			dec ecx
-			jnz @b
-		stdcall [glEnd]
-	.end_triangles:
 
 	stdcall [glPopMatrix]
 if version_edit eq 1
@@ -893,6 +1075,12 @@ mnu_faces_on:
 align 4
 mnu_light_on_off:
 	xor dword[draw_mode], 1 shl bit_light
+	call update_obj
+	ret
+
+align 4
+mnu_smooth_on_off:
+	xor dword[draw_mode], 1 shl bit_smooth
 	call update_obj
 	ret
 
@@ -1013,6 +1201,49 @@ pushad
 		jne @b
 	movzx ecx,word[esi] ;ecx - число граней с данным материалом
 	mov edx,[edi+offs_obj_poi_data]
+
+	bt dword[draw_mode],bit_smooth
+	jnc @f
+	bt dword[draw_mode],bit_light
+	jnc @f
+align 4
+	.cycle_0:
+		add esi,2
+		;word[esi] - номер треугольника
+		movzx ebx,word[esi]
+
+		shl ebx,3
+		add ebx,[edi+offs_obj_tri_data]
+	
+		movzx eax,word[ebx] ;1-я вершина
+		imul eax,12 ;float(x,y,z)
+			add eax,[edi+offs_obj_normals_poi_data]
+			stdcall [glNormal3fv], eax
+			sub eax,[edi+offs_obj_normals_poi_data]
+		add eax,edx
+		stdcall [glVertex3f], [eax],[eax+4],[eax+8]
+
+		movzx eax,word[ebx+2] ;2-я вершина
+		imul eax,12 ;float(x,y,z)
+			add eax,[edi+offs_obj_normals_poi_data]
+			stdcall [glNormal3fv], eax
+			sub eax,[edi+offs_obj_normals_poi_data]
+		add eax,edx
+		stdcall [glVertex3f], [eax],[eax+4],[eax+8]
+
+		movzx eax,word[ebx+4] ;3-я вершина
+		imul eax,12 ;float(x,y,z)
+			add eax,[edi+offs_obj_normals_poi_data]
+			stdcall [glNormal3fv], eax
+			sub eax,[edi+offs_obj_normals_poi_data]
+		add eax,edx
+		stdcall [glVertex3f], [eax],[eax+4],[eax+8]
+		
+		dec ecx
+		jnz .cycle_0
+	stdcall [glEnd]
+	jmp .end_f
+
 align 4
 	@@:
 		add esi,2

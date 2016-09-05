@@ -3,6 +3,8 @@ use32
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
 	dd 1, start, i_end, mem, stacktop, file_name, sys_path
 
+version_edit equ 0
+
 include '../../macros.inc'
 include '../../proc32.inc'
 include '../../KOSfuncs.inc'
@@ -13,8 +15,6 @@ include 'lang.inc'
 include 'info_fun_float.inc'
 include 'info_menu.inc'
 include 'data.inc'
-
-version_edit equ 0
 
 3d_wnd_l equ 205 ;отступ для tinygl буфера слева
 3d_wnd_t equ  47 ;отступ для tinygl буфера сверху
@@ -107,17 +107,23 @@ start:
 
 	stdcall [ksubmenu_new]
 	mov [main_menu_view], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Vertexes, 10
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Vertexes, 5
 	stdcall [ksubmenu_add], [main_menu_view], eax
 	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Faces, 6
 	stdcall [ksubmenu_add], [main_menu_view], eax
 	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Faces_Fill, 7
 	stdcall [ksubmenu_add], [main_menu_view], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Light, 9
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Faces_Mat, 8
 	stdcall [ksubmenu_add], [main_menu_view], eax
 	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
 	stdcall [ksubmenu_add], [main_menu_view], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Reset, 10
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Light, 9
+	stdcall [ksubmenu_add], [main_menu_view], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Smooth, 10
+	stdcall [ksubmenu_add], [main_menu_view], eax
+	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
+	stdcall [ksubmenu_add], [main_menu_view], eax
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_main_menu_Veiw_Reset, 11
 	stdcall [ksubmenu_add], [main_menu_view], eax
 	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_View, [main_menu_view]
 	stdcall [ksubmenu_add], [main_menu], eax
@@ -161,10 +167,20 @@ start:
 	jz @f
 		or dword[def_dr_mode], 1 shl bit_faces_fill
 	@@:
+	stdcall dword[ini_get_int],file_name,ini_sec_w3d,key_dfm,1
+	or eax,eax
+	jz @f
+		or dword[def_dr_mode], 1 shl bit_faces_mat
+	@@:
 	stdcall dword[ini_get_int],file_name,ini_sec_w3d,key_dl,1
 	or eax,eax
 	jz @f
 		or dword[def_dr_mode], 1 shl bit_light
+	@@:
+	stdcall dword[ini_get_int],file_name,ini_sec_w3d,key_ds,1
+	or eax,eax
+	jz @f
+		or dword[def_dr_mode], 1 shl bit_smooth
 	@@:
 	stdcall dword[ini_get_color],file_name,ini_sec_w3d,key_ox,0x0000ff
 	mov [color_ox],eax
@@ -443,7 +459,8 @@ pushad
 	mcall ,((3d_wnd_l+50) shl 16)+20,,0x40000007 ;заливка граней вкл.
 	mcall ,((3d_wnd_l+75) shl 16)+20,,0x40000008 ;грани по материалам вкл.
 	mcall ,((3d_wnd_l+100) shl 16)+20,,0x40000009 ;свет вкл./выкл.
-	mcall ,((3d_wnd_l+125) shl 16)+20,,0x4000000a ;сброс
+	mcall ,((3d_wnd_l+125) shl 16)+20,,0x4000000a ;сглаживание
+	mcall ,((3d_wnd_l+150) shl 16)+20,,0x4000000b ;сброс
 
 	mcall SF_PUT_IMAGE,[image_data_toolbar],(21 shl 16)+21,(5 shl 16)+24 ;new
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
@@ -457,9 +474,11 @@ pushad
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	mcall ,,,((3d_wnd_l+100) shl 16)+24 ;свет вкл./выкл.
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mcall ,,,((3d_wnd_l+125) shl 16)+24 ;сброс
+	mcall ,,,((3d_wnd_l+150) shl 16)+24 ;сброс
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	mcall ,,,((3d_wnd_l+75) shl 16)+24 ;грани по материалам вкл.
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	mcall ,,,((3d_wnd_l+125) shl 16)+24 ;сглаживание
 
 	mov dword[w_scr_t1.all_redraw],1
 	stdcall [tl_draw], tree1
@@ -573,6 +592,11 @@ button:
 		jmp still
 	@@:
 	cmp ah,10
+	jne @f
+		call mnu_smooth_on_off
+		jmp still
+	@@:
+	cmp ah,11
 	jne @f
 		call mnu_reset_settings
 		jmp still
@@ -1405,9 +1429,9 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru
-capt db 'info 3ds [user] версия 02.09.16',0 ;подпись окна
+capt db 'info 3ds [user] версия 05.09.16',0 ;подпись окна
 else
-capt db 'info 3ds [user] version 02.09.16',0 ;window caption
+capt db 'info 3ds [user] version 05.09.16',0 ;window caption
 end if
 
 align 16

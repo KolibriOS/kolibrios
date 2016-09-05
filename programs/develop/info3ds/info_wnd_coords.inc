@@ -482,30 +482,35 @@ prop_button:
 	@@:
 	cmp ah,9
 	jne @f
-		call mnu_reset_settings
+		call mnu_smooth_on_off
 		jmp prop_still.end
 	@@:
 	cmp ah,10
 	jne @f
-		call mnu_vertexes_select
+		call mnu_reset_settings
 		jmp prop_still.end
 	@@:
 	cmp ah,11
 	jne @f
-		call mnu_vertexes_deselect
+		call mnu_vertexes_select
 		jmp prop_still.end
 	@@:
 	cmp ah,12
 	jne @f
-		call mnu_reset_average_x
+		call mnu_vertexes_deselect
 		jmp prop_still.end
 	@@:
 	cmp ah,13
 	jne @f
-		call mnu_reset_average_y
+		call mnu_reset_average_x
 		jmp prop_still.end
 	@@:
 	cmp ah,14
+	jne @f
+		call mnu_reset_average_y
+		jmp prop_still.end
+	@@:
+	cmp ah,15
 	jne @f
 		call mnu_reset_average_z
 		jmp prop_still.end
