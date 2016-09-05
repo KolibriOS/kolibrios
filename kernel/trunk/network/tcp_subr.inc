@@ -428,18 +428,13 @@ local   .done
         jb      .min
         cmp     value, max
         ja      .max
-
         mov     timer, value
         jmp     .done
-
   .min:
-        mov     timer, value
+        mov     timer, min
         jmp     .done
-
   .max:
-        mov     timer, value
-        jmp     .done
-
+        mov     timer, max
   .done:
 }
 
