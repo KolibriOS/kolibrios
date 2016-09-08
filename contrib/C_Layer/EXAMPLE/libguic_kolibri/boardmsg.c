@@ -31,14 +31,14 @@ int main()
   unsigned int gui_event = KOLIBRI_EVENT_REDRAW;
   oskey_t key;
 
-  kolibri_window *main_window = kolibri_new_window(50, 50, 400, 120, "BoardMsg");
-  check_box *checkbox = kolibri_new_check_box(20, 25, 12, 12, "Append BOARDMSG to entered message.");
+  kolibri_window *main_window = kolibri_new_window(50, 40, 400, 120, "BoardMsg");
+  check_box *checkbox = kolibri_new_check_box(20, 15, 12, 12, "Append BOARDMSG to entered message.");
 
   edit_box *editbox_interlock = NULL;
-  edit_box *textbox = kolibri_new_edit_box(20, 40, 40, &editbox_interlock);
-  edit_box *textbox2 = kolibri_new_edit_box(20, 60, 30, &editbox_interlock);
-  kolibri_button *button = kolibri_new_button(310, 40, 24, 14, 0x21, kolibri_color_table.color_work_button);
-  frame *fr = kolibri_new_frame(X_Y(12, 350), X_Y(15, 70), 0x00FCFCFC, 0x00DCDCDC, "Frame Title", 0, kolibri_color_table.color_work_text, kolibri_color_table.color_work_area);
+  edit_box *textbox = kolibri_new_edit_box(20, 30, 40, &editbox_interlock);
+  edit_box *textbox2 = kolibri_new_edit_box(20, 50, 30, &editbox_interlock);
+  kolibri_button *button = kolibri_new_button(310, 30, 24, 14, 0x21, kolibri_color_table.color_work_button);
+  frame *fr = kolibri_new_frame(X_Y(12, 350), X_Y(5, 70), 0x00FCFCFC, 0x00DCDCDC, "Frame Title", 0, kolibri_color_table.color_work_text, kolibri_color_table.color_work_area);
 
   kolibri_window_add_element(main_window, KOLIBRI_EDIT_BOX, textbox);
   kolibri_window_add_element(main_window, KOLIBRI_EDIT_BOX, textbox2);

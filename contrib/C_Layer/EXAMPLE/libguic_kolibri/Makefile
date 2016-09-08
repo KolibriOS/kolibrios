@@ -15,15 +15,24 @@ LIBPATH:= -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib
 
 OBJPATH = $(CLAYER)/OBJ
 
-SOURCES =    boardmsg.c
+SOURCES =    boardmsg.c option_menu.c
 
 OBJECTS =  $(patsubst %.c, %.o, $(SOURCES))
 
-all:$(NAME)
+all: boardmsg option_menu scroll_progress
 
-$(NAME): $(OBJECTS) Makefile
-	$(LD) $(LIBPATH) --subsystem native -o $@ $(OBJECTS) $(OBJPATH)/loadboxlib.obj $(LDFLAGS)
-	#-ldll -lc.dll -lapp -Map $(NAME).map
+scroll_progress: scroll_progress.o
+#	$(LD) $(LIBPATH) --subsystem native -o $@ $^ $(OBJPATH)/loadboxlib.obj $(LDFLAGS)
+	$(LD) $(LIBPATH) --subsystem windows -o $@ $^ $(OBJPATH)/loadboxlib.obj $(LDFLAGS)
+	kos32-objcopy $@ -O binary
+
+
+option_menu: option_menu.o
+	$(LD) $(LIBPATH) --subsystem native -o $@ $^ $(OBJPATH)/loadboxlib.obj $(LDFLAGS)
+	kos32-objcopy $@ -O binary
+
+boardmsg: boardmsg.o
+	$(LD) $(LIBPATH) --subsystem native -o $@ $^ $(OBJPATH)/loadboxlib.obj $(LDFLAGS)
 	kos32-objcopy $@ -O binary
 
 %.o : %.c Makefile

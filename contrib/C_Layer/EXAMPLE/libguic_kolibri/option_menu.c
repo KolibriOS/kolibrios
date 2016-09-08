@@ -68,26 +68,26 @@ int main()
 
 
     // creating GUI using library functions
-    kolibri_window *main_window = kolibri_new_window(50, 50, 400, 160, "OptionBox and Menu demo");
+    kolibri_window *main_window = kolibri_new_window(50, 40, 400, 160, "OptionBox and Menu demo");
     //check_box *checkbox = kolibri_new_check_box(20, 45, 12, 12, "Append BOARDMSG to entered message.");
 
     option_box opts1[3];
     option_box *option1sel = opts1; // intially selected RED
 
-    option_box *op1_1 = gui_optionbox(opts1, X_Y(20, 60), "G1 Item RED", &option1sel);
-    option_box *op1_2 = gui_optionbox(opts1+1, X_Y(20, 80), "G1 Item GREEN", &option1sel);
-    option_box *op1_3 = gui_optionbox(opts1+2, X_Y(20, 100), "G1 Item BLUE", &option1sel);
+    option_box *op1_1 = gui_optionbox(opts1, X_Y(20, 50), "G1 Item RED", &option1sel);
+    option_box *op1_2 = gui_optionbox(opts1+1, X_Y(20, 70), "G1 Item GREEN", &option1sel);
+    option_box *op1_3 = gui_optionbox(opts1+2, X_Y(20, 90), "G1 Item BLUE", &option1sel);
     option_box* option_group1[] = {op1_1, op1_2, op1_3, NULL};
 
     option_box opts2[3];
     option_box *option2sel = opts2 + 1; // intially selected #2
-    option_box *op2_1 = gui_optionbox(&opts2[0], X_Y(140, 60), "G2 Item 1st", &option2sel);
-    option_box *op2_2 = gui_optionbox(&opts2[1], X_Y(140, 80), "G2 Item 2nd", &option2sel);
-    option_box *op2_3 = gui_optionbox(&opts2[2], X_Y(140, 100), "G2 Item 3rd", &option2sel);
+    option_box *op2_1 = gui_optionbox(&opts2[0], X_Y(140, 50), "G2 Item 1st", &option2sel);
+    option_box *op2_2 = gui_optionbox(&opts2[1], X_Y(140, 70), "G2 Item 2nd", &option2sel);
+    option_box *op2_3 = gui_optionbox(&opts2[2], X_Y(140, 90), "G2 Item 3rd", &option2sel);
     option_box* option_group2[] = {op2_1, op2_2, op2_3, NULL};
 
-    frame *fr1 = kolibri_new_frame_def(X_Y(12, 110), X_Y(50, 70), "Option 1");
-    frame *fr2 = kolibri_new_frame_def(X_Y(132, 100), X_Y(50, 70), "Option 2");
+    frame *fr1 = kolibri_new_frame_def(X_Y(12, 110), X_Y(40, 70), "Option 1");
+    frame *fr2 = kolibri_new_frame_def(X_Y(132, 100), X_Y(40, 70), "Option 2");
 
     gui_add_optiongroup(main_window, option_group1);  // new syntax
     gui_add_optiongroup(main_window, option_group2);
@@ -98,15 +98,15 @@ int main()
     int option_index2 = 0;
 
     char *menu1stru[] = {"Menu1", "Set RED", "Set GREEN", "Set BLUE", NULL};
-    menubar* menu1 = kolibri_new_menubar_def(X_Y(10, 40), X_Y(25, 15), 80, 100, menu1stru);
+    menubar* menu1 = kolibri_new_menubar_def(X_Y(10, 40), X_Y(5, 15), 80, 100, menu1stru);
     gui_add_menubar(main_window, menu1);
 
     char *menu2stru[] = {"mEnu2", "Set Option 1", "Set Option 2", "Set Option 3", NULL};
-    menubar* menu2 = kolibri_new_menubar_def(X_Y(50, 40), X_Y(25, 15), 80, 100, menu2stru);
+    menubar* menu2 = kolibri_new_menubar_def(X_Y(50, 40), X_Y(5, 15), 80, 100, menu2stru);
     gui_add_menubar(main_window, menu2);
 
     char *menu3stru[] = {"Quit", NULL};
-    menubar* menu3 = kolibri_new_menubar_def(X_Y(90, 40), X_Y(25, 15), 0, 0, menu3stru);
+    menubar* menu3 = kolibri_new_menubar_def(X_Y(90, 40), X_Y(5, 15), 0, 0, menu3stru);
     menu3->type = 1;  // no subitems
     gui_add_menubar(main_window, menu3);
 
