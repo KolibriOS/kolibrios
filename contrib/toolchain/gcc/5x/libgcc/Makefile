@@ -64,10 +64,10 @@ TPBIT_FUNCS = _pack_tf _unpack_tf _addsub_tf _mul_tf _div_tf \
 	_tf_to_df _tf_to_sf _thenan_tf _tf_to_usi _usi_to_tf
 
 # Additional sources to handle exceptions; overridden by targets as needed.
-LIB2ADDEH = unwind-dw2.c unwind-dw2-fde.c unwind-sjlj.c unwind-c.c
+#LIB2ADDEH = unwind-dw2.c unwind-dw2-fde.c unwind-sjlj.c unwind-c.c
 LIB2ADDEHSTATIC = $(LIB2ADDEH)
 
-#LIB2ADD = $(srcdir)/config/i386/gthr-win32.c
+LIB2ADD = config/i386/gthr-kos32.c
 EH_MODEL = dw2
 CUSTOM_CRTSTUFF = yes
 
@@ -451,7 +451,7 @@ include $(iterator)
 
 c_flags := -fexceptions
 
-#libgcc-objects += $(addsuffix $(objext),$(basename $(notdir $(LIB2ADDEH))))
+libgcc-objects += $(addsuffix $(objext),$(basename $(notdir $(LIB2ADDEH))))
 
 iter-items := $(LIB2ADDEH)
 include $(iterator)
