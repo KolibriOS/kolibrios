@@ -72,34 +72,33 @@ EH_MODEL = dw2
 CUSTOM_CRTSTUFF = yes
 
 
-crtbegin.o: $(srcdir)/config/i386/cygming-crtbegin.c
+#crtbegin.o: config/i386/cygming-crtbegin.c
 
-	$(crt_compile) -fno-omit-frame-pointer  -c $<
+#	$(crt_compile) -fno-omit-frame-pointer  -c $<
 
 
-crtbeginS.o: $(srcdir)/config/i386/cygming-crtbegin.c
+#crtbeginS.o: config/i386/cygming-crtbegin.c
 
-	$(crt_compile) -fno-omit-frame-pointer  -c $< -DCRTSTUFFS_O
+#	$(crt_compile) -fno-omit-frame-pointer  -c $< -DCRTSTUFFS_O
 
 
 # We intentionally use a implementation-reserved init priority of 0,
 
 # so allow the warning.
 
-crtend.o: $(srcdir)/config/i386/cygming-crtend.c
+#crtend.o: config/i386/cygming-crtend.c
 
-	$(crt_compile) -fno-omit-frame-pointer -Wno-error -c $<
+#	$(crt_compile) -fno-omit-frame-pointer -Wno-error -c $<
 
 # This is an endfile, Use -minline-all-stringops to ensure
 
 # that __builtin_memset doesn't refer to the lib function memset().
 
-crtfastmath.o: $(srcdir)/config/i386/crtfastmath.c
+crtfastmath.o: config/i386/crtfastmath.c
 
 	$(gcc_compile) -mfxsr -msse -c $<
 
-LIB1ASMSRC = i386/cygwin.S
-
+LIB1ASMSRC = i386/chkstk.S
 LIB1ASMFUNCS = _chkstk _chkstk_ms 
 
 DFP_ENABLE = true
@@ -216,6 +215,14 @@ LIB2_DIVMOD_FUNCS = _divdi3 _moddi3 _udivdi3 _umoddi3 _udiv_w_sdiv _udivmoddi4
 lib2funcs := $(filter-out $(LIB2FUNCS_EXCLUDE) $(LIB1ASMFUNCS),$(lib2funcs))
 LIB2_DIVMOD_FUNCS := $(filter-out $(LIB2FUNCS_EXCLUDE) $(LIB1ASMFUNCS), \
 		       $(LIB2_DIVMOD_FUNCS))
+
+# Build "libgcc1" (assembly) components.
+
+lib1asmfuncs-o = $(patsubst %,%$(objext),$(LIB1ASMFUNCS))
+$(lib1asmfuncs-o): %$(objext): config/$(LIB1ASMSRC)
+	$(gcc_compile) -DL$* -xassembler-with-cpp -c $< -o $@
+libgcc-objects += $(lib1asmfuncs-o)
+
 
 
 # Build lib2funcs.  For the static library also include LIB2FUNCS_ST.
