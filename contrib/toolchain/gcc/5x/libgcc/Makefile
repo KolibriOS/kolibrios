@@ -15,10 +15,9 @@ enable_vtable_verify = no
 enable_decimal_float = bid
 fixed_point = no
 
-
-#FPBIT = true
-
-#DPBIT = true
+# List of extra object files that should be compiled for this target machine.
+# The rules for compiling them should be in the t-* file for the machine.
+EXTRA_PARTS = crtbegin.o crtend.o crtfastmath.o
 
 CFLAGS_OPT+= -fomit-frame-pointer -fno-ident -mno-ms-bitfields
 CFLAGS_OPT+= -fbuilding-libgcc -fno-stack-protector
@@ -64,7 +63,7 @@ TPBIT_FUNCS = _pack_tf _unpack_tf _addsub_tf _mul_tf _div_tf \
 	_tf_to_df _tf_to_sf _thenan_tf _tf_to_usi _usi_to_tf
 
 # Additional sources to handle exceptions; overridden by targets as needed.
-#LIB2ADDEH = unwind-dw2.c unwind-dw2-fde.c unwind-sjlj.c unwind-c.c
+LIB2ADDEH = unwind-dw2.c unwind-dw2-fde.c unwind-sjlj.c unwind-c.c
 LIB2ADDEHSTATIC = $(LIB2ADDEH)
 
 LIB2ADD = config/i386/gthr-kos32.c
@@ -443,7 +442,7 @@ $(error Unsupported files in LIB2ADD or LIB2ADD_ST.)
 endif
 
 libgcc-objects += $(addsuffix $(objext),$(basename $(notdir $(LIB2ADD))))
-#libgcc-objects += $(addsuffix $(objext),$(basename $(notdir $(LIB2ADD_ST))))
+libgcc-objects += $(addsuffix $(objext),$(basename $(notdir $(LIB2ADD_ST))))
 
 c_flags :=
 iter-items := $(LIB2ADD) $(LIB2ADD_ST)
