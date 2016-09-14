@@ -1334,7 +1334,7 @@ unlinkInode:
 ; ebx = inode to unlink
 ;   out:
 ; eax = current number of links to inode, -1 = error
-        push    edx esi edi ebx
+        push    edx ebx
         lea     ebx, [ebp+EXTFS.tempInodeBuffer]
         call    readInode
         jc      .fail
@@ -1410,65 +1410,40 @@ unlinkInode:
         jc      .fail
         movzx   eax, word [ebx+INODE.linksCount]
 @@:
-        pop     ebx edi esi edx
-        ret
-
-findInode_parent:
-; in: esi -> path string in UTF-8
-;   out:
-; edi -> file name in UTF-8
-; esi = inode
-        push    esi
-        xor     edi, edi
-.loop:
-        cmp     byte [esi], '/'
-        jne     @f
-        mov     edi, esi
-        inc     esi
-        jmp     .loop
-
-@@:
-        inc     esi
-        cmp     byte [esi-1], 0
-        jne     .loop
-        cmp     edi, 0
-        jne     @f
-; parent is root
-        pop     edi
-        dec     esi
-        jmp     .get_inode
-
-@@: ; parent is folder
-        mov     byte [edi], 0
-        inc     edi
-        pop     esi
-.get_inode:
-        push    ebx edx
-        call    findInode
-        pop     edx ebx
+        pop     ebx edx
         ret
 
 findInode:
 ; in: esi -> path string in UTF-8
 ;   out:
-; [ebp+EXTFS.mainInodeBuffer] = inode
-; esi = inode number
-;  dl = first byte of file/folder name
-        lea     edx, [ebp+EXTFS.rootInodeBuffer]
-        cmp     [edx+INODE.sectorsUsed], 0
-        je      .not_found
-        cmp     byte [esi], 0
-        jne     .next_path_part
-; root
-        push    edi ecx
+; edi -> file name in UTF-8
+; esi = last inode number
+; [ebp+EXTFS.mainInodeBuffer] = last inode
+; ecx = parent inode number
+; CF=1 -> file not found, edi=0 -> error
+        push    esi
         lea     esi, [ebp+EXTFS.rootInodeBuffer]
         lea     edi, [ebp+EXTFS.mainInodeBuffer]
         movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
+        mov     edx, esi
         rep movsb
-        pop     ecx edi
+        pop     esi
+        pushd   0 ROOT_INODE
+        cmp     [edx+INODE.sectorsUsed], 0
+        jz      .not_found
+        cmp     byte [esi], 0
+        jnz     .next_path_part
         xor     eax, eax
-        xor     dl, dl
-        mov     esi, ROOT_INODE
+        mov     edi, esi
+        pop     esi ecx
+        ret
+
+@@:
+        pop     esi esi
+.error:
+        pop     esi ecx
+        xor     edi, edi
+        stc
         ret
 
 .next_path_part:
@@ -1478,12 +1453,12 @@ findInode:
         push    ecx
         xchg    esi, edx
         call    extfsGetFileBlock
-        jc      .error_get_block
+        jc      @b
         xchg    esi, edx
         mov     eax, ecx
         mov     ebx, [ebp+EXTFS.mainBlockBuffer]
         call    extfsReadBlock
-        jc      .error_get_block
+        jc      @b
         push    esi edx
         mov     edx, ebx
         add     edx, [ebp+EXTFS.bytesPerBlock]
@@ -1512,50 +1487,37 @@ findInode:
         jne     @b
         inc     esi
 @@:
-        pop     edx edx edi ecx
+        pop     edx edx edi ecx eax
 ; ebx -> matched directory entry, esi -> name without parent, or not changed
         cmp     edi, esi
-        je      .next_folder_block
-        cmp     byte [esi], 0
-        je      .get_inode_ret
-        mov     eax, [ebx+DIRENTRY.inodeNumber]
-        lea     ebx, [ebp+EXTFS.mainInodeBuffer]
-        call    readInode
-        jc      .error_get_inode
-        movzx   eax, [ebx+INODE.accessMode]
-        and     eax, TYPE_MASK
-        cmp     eax, DIRECTORY
-        jne     .not_found      ; path folder is a file
-        pop     ecx
-        mov     edx, ebx
-        jmp     .next_path_part
-
-.next_folder_block:
-        pop     eax
+        jnz     @f
         sub     eax, [ebp+EXTFS.sectorsPerBlock]
         jle     .not_found
         push    eax
         inc     ecx
         jmp     .folder_block_cycle
 
-.get_inode_ret:
+@@:
         pop     eax
-        mov     dl, [ebx+DIRENTRY.name]
+        mov     [esp], eax
         mov     eax, [ebx+DIRENTRY.inodeNumber]
         lea     ebx, [ebp+EXTFS.mainInodeBuffer]
-        mov     esi, eax
+        push    eax
         call    readInode
-        ret
-
+        jc      .error
+        cmp     byte [esi], 0
+        je      .ret
+        mov     edx, ebx
+        movzx   eax, [ebx+INODE.accessMode]
+        and     eax, TYPE_MASK
+        cmp     eax, DIRECTORY
+        jz      .next_path_part
+        xor     edi, edi        ; path folder is a file
 .not_found:
         movi    eax, ERROR_FILE_NOT_FOUND
         stc
-        ret
-
-.error_get_block:
-        pop     ebx
-.error_get_inode:
-        pop     ebx
+.ret:
+        pop     esi ecx
         ret
 
 writeSuperblock:
@@ -1596,8 +1558,8 @@ ext_ReadFolder:
         pop     ebx
         jc      .error_ret
         lea     esi, [ebp+EXTFS.mainInodeBuffer]
-        test    [esi+INODE.accessMode], DIRECTORY
-        jz      .error_not_found
+        test    [esi+INODE.accessMode], FLAG_FILE
+        jnz     .error_not_found
         jmp     @f
 
 .root_folder:
@@ -1705,8 +1667,8 @@ ext_ReadFolder:
         call    fsTime2bdfe
         pop     edx
         or      dword [edx], KOS_DIRECTORY
-        test    [esi+INODE.accessMode], DIRECTORY
-        jnz     @f
+        test    [esi+INODE.accessMode], FLAG_FILE
+        jz      @f
         xor     dword [edx], KOS_DIRECTORY  ; mark as file
         mov     eax, [esi+INODE.fileSize]
         stosd
@@ -1930,7 +1892,6 @@ ext_GetFileInfo:
         jz      .is_root
         push    edx
         call    findInode
-        mov     ebx, edx
         pop     edx
         lea     esi, [ebp+EXTFS.mainInodeBuffer]
         jnc     @f
@@ -1940,9 +1901,10 @@ ext_GetFileInfo:
         ret
 
 .is_root:
-        xor     ebx, ebx
+        mov     edi, esi
         lea     esi, [ebp+EXTFS.rootInodeBuffer]
 @@:
+        mov     bl, [edi]
         xor     eax, eax
         mov     edi, edx
         mov     ecx, 40/4
@@ -1952,8 +1914,8 @@ ext_GetFileInfo:
         or      dword [edx], KOS_HIDDEN
 @@:
         or      dword [edx], KOS_DIRECTORY
-        test    [esi+INODE.accessMode], DIRECTORY
-        jnz     @f
+        test    [esi+INODE.accessMode], FLAG_FILE
+        jz      @f
         xor     dword [edx], KOS_DIRECTORY  ; mark as file
         mov     eax, [esi+INODE.fileSize]
         mov     ebx, [esi+INODE.fileSizeHigh]
@@ -2011,10 +1973,8 @@ ext_SetFileInfo:
 ;----------------------------------------------------------------
 ext_Delete:
         call    extfsWritingInit
-        push    esi
         call    findInode
         mov     ebx, esi
-        pop     esi
         push    eax
         jc      .ret
         pop     eax
@@ -2023,7 +1983,7 @@ ext_Delete:
         and     edx, TYPE_MASK
         cmp     edx, DIRECTORY
         jne     .file
-        push    esi ebx edx 0
+        push    ebx ecx edx 0
         lea     esi, [ebp+EXTFS.mainInodeBuffer]
 .checkDirectory:
         mov     ecx, [esp]
@@ -2057,39 +2017,21 @@ ext_Delete:
         jmp     .checkDirectory
 
 .empty:
-        pop     edx edx ebx esi
+        pop     edx edx ecx ebx
 .file:
-        call    findInode_parent
-        jc      .error
-        mov     eax, esi
-; save file/folder's and parent's inode
-        push    ebx eax
-        cmp     edx, DIRECTORY
-        jne     @f
-; Unlink '.'
-        mov     eax, [esp+4]
+        mov     eax, ecx
+        push    ebx ecx
         call    unlinkInode
         cmp     eax, -1
         je      .error_stack8
-; Unlink '..'
-        mov     eax, [esp+4]
-        mov     ebx, [esp]
-        call    unlinkInode
-        cmp     eax, -1
-        je      .error_stack8
-@@:
-        pop     eax
-        mov     ebx, [esp]
-        call    unlinkInode
-        cmp     eax, -1
-        je      .error_stack4
+        pop     ebx
         test    eax, eax
         jz      @f
-; has hardlinks
         xor     eax, eax
-        mov     [esp], eax
-        jmp     .disk_sync
-
+        cmp     edx, DIRECTORY
+        jnz     .error_stack4_eax   ; hardlinks
+        mov     eax, [esp]
+        call    unlinkInode
 @@:
         mov     eax, [esp]
         lea     ebx, [ebp+EXTFS.mainInodeBuffer]
@@ -2194,9 +2136,7 @@ ext_Delete:
 .not_empty:
         pop     eax
 .error_stack8:
-        pop     eax
-.error_stack4:
-        pop     eax
+        pop     eax eax
         push    ERROR_ACCESS_DENIED
         jmp     .disk_sync
 
@@ -2213,12 +2153,10 @@ ext_Delete:
 ;----------------------------------------------------------------
 ext_CreateFolder:
         call    extfsWritingInit
-        push    esi
         call    findInode
-        pop     esi
         jnc     .success    ; exist
-        call    findInode_parent
-        jc      .error
+        test    edi, edi
+        jz      .error
         mov     eax, esi
         xor     ebx, ebx
         inc     ebx
@@ -2297,28 +2235,18 @@ parent_link db "..", 0
 ;----------------------------------------------------------------
 ext_CreateFile:
         call    extfsWritingInit
-        push    ebx esi
+        push    0 ebx
         call    findInode
-        mov     esi, [esp]
-        jc      @f
-        call    ext_unlock
-        call    ext_Delete
-        push    eax
-        call    ext_lock
-        pop     eax
-        test    eax, eax
-        jnz     .error
-        mov     esi, [esp]
-@@:
-        call    findInode_parent
-        jc      .error
+        jnc     .exist
+        test    edi, edi
+        jz      .error
         mov     eax, esi
         xor     ebx, ebx
         inc     ebx
         call    extfsResourceAlloc
         jc      .error
         inc     ebx
-        push    ebx esi edi
+        push    ebx ebx esi edi
         xor     al, al
         lea     edi, [ebp+EXTFS.tempInodeBuffer]
         movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
@@ -2334,18 +2262,32 @@ ext_CreateFile:
         mov     [ebx+INODE.accessMode], FLAG_FILE or PERMISSIONS
         mov     eax, edx
         call    writeInode
-        jc      .error
+        jc      .error2
 ; link parent to child
         mov     eax, esi
         mov     ebx, edx
         mov     esi, edi
         mov     dl, DIR_FLAG_FILE
         call    linkInode
-        jc      .error
+        jc      .error2
         pop     esi ebx
-        call    ext_unlock
-        jmp     ext_WriteFile
+        push    ebx esi
+        mov     ecx, [ebx+12]
+        jmp     ext_WriteFile.start
 
+.exist:
+        lea     edx, [ebp+EXTFS.mainInodeBuffer]
+        movi    eax, ERROR_ACCESS_DENIED
+        test    [edx+INODE.accessMode], FLAG_FILE
+        jz      .error  ; not a file
+        pop     ebx
+        push    ebx esi
+        mov     eax, esi
+        mov     ecx, [ebx+12]
+        call    extfsTruncateFile
+        jnc     ext_WriteFile.start
+.error2:
+        pop     ebx
 .error:
         push    eax
         call    ext_unlock
@@ -2358,20 +2300,22 @@ ext_WriteFile:
         call    extfsWritingInit
         push    0 ebx
         call    findInode
+        pop     ebx
+        push    ebx esi
         jc      .error
         lea     edx, [ebp+EXTFS.mainInodeBuffer]
         movi    eax, ERROR_ACCESS_DENIED
         test    [edx+INODE.accessMode], FLAG_FILE
         jz      .error  ; not a file
-        mov     ebx, [esp]
-        push    esi     ; inode number
-        mov     eax, esi
         mov     ecx, [ebx+4]
+        add     ecx, [ebx+12]
+.start:
+        mov     eax, esi
         call    extfsExtendFile
-        jc      .error2
+        jc      .error
+        mov     eax, [ebx+4]
         mov     ecx, [ebx+12]
         mov     esi, [ebx+16]
-        mov     eax, [edx+INODE.fileSize]
         push    eax
         xor     edx, edx
         div     [ebp+EXTFS.bytesPerBlock]
@@ -2451,8 +2395,7 @@ ext_WriteFile:
         mov     [esp+12], eax
 .write_inode:
         lea     ebx, [ebp+EXTFS.tempInodeBuffer]
-        pop     [ebx+INODE.fileSize]
-        pop     eax
+        pop     eax eax
         call    writeInode
         pop     ebx
         mov     ebx, [ebx+12]
@@ -2469,10 +2412,8 @@ ext_WriteFile:
         pop     eax
         ret
 
-.error2:
-        pop     ebx
 .error:
-        pop     ebx ebx
+        pop     ebx ebx ebx
         push    eax
         jmp     @b
 
