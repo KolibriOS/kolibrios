@@ -63,7 +63,7 @@ locals
 	oldest dd ? ;GLSpecBuf *
 endl
 	mov edx,[context]
-	mov eax,[edx+offs_cont_specbuf_first]
+	mov eax,[edx+GLContext.specbuf_first]
 	mov [found],eax
 	mov [oldest],eax
 	mov ebx,[shininess_i]
@@ -84,14 +84,14 @@ endl
 	cmp dword[found],0 ;if (found) /* hey, found one! */
 	je @f
 		mov eax,[found]
-		mov ecx,[edx+offs_cont_specbuf_used_counter]
+		mov ecx,[edx+GLContext.specbuf_used_counter]
 		mov [eax+offs_spec_last_used],ecx ;found.last_used = context.specbuf_used_counter
-		inc dword[edx+offs_cont_specbuf_used_counter]
+		inc dword[edx+GLContext.specbuf_used_counter]
 		jmp .end_f ;return found
 	@@:
 	cmp dword[oldest],0 ;if (oldest == NULL || context.specbuf_num_buffers < MAX_SPECULAR_BUFFERS)
 	je @f
-	cmp dword[edx+offs_cont_specbuf_num_buffers],MAX_SPECULAR_BUFFERS
+	cmp dword[edx+GLContext.specbuf_num_buffers],MAX_SPECULAR_BUFFERS
 	jge .end_1
 	@@:
 		; create new buffer
@@ -100,13 +100,13 @@ endl
 	jnz @f
 ;gl_fatal_error("could not allocate specular buffer")
 	@@:
-	inc dword[edx+offs_cont_specbuf_num_buffers]
-	mov ecx,[edx+offs_cont_specbuf_first]
+	inc dword[edx+GLContext.specbuf_num_buffers]
+	mov ecx,[edx+GLContext.specbuf_first]
 	mov [eax+offs_spec_next],ecx
-	mov [edx+offs_cont_specbuf_first],eax
-	mov ecx,[edx+offs_cont_specbuf_used_counter]
+	mov [edx+GLContext.specbuf_first],eax
+	mov ecx,[edx+GLContext.specbuf_used_counter]
 	mov [eax+offs_spec_last_used],ecx
-	inc dword[edx+offs_cont_specbuf_used_counter]
+	inc dword[edx+GLContext.specbuf_used_counter]
 	mov [eax+offs_spec_shininess_i],ebx
 	stdcall calc_buf, eax,dword[shininess]
 	jmp .end_f
@@ -115,9 +115,9 @@ endl
 	;tgl_trace("overwriting spec buffer :(\n");
 	mov eax,[oldest]
 	mov [eax+offs_spec_shininess_i],ebx
-	mov ecx,[edx+offs_cont_specbuf_used_counter]
+	mov ecx,[edx+GLContext.specbuf_used_counter]
 	mov [eax+offs_spec_last_used],ecx
-	inc dword[edx+offs_cont_specbuf_used_counter]
+	inc dword[edx+GLContext.specbuf_used_counter]
 	stdcall calc_buf, eax,dword[shininess]
 	.end_f:
 	ret

@@ -23,16 +23,16 @@ endl
 
 	; we may need to resize the zbuffer
 
-	cmp dword[edx+offs_cont_viewport+offs_vpor_ysize],ecx
+	cmp dword[edx+GLContext.viewport+offs_vpor_ysize],ecx
 	jne @f
 	mov ecx,[xmin]
-	cmp dword[edx+offs_cont_viewport+offs_vpor_xmin],ecx
+	cmp dword[edx+GLContext.viewport+offs_vpor_xmin],ecx
 	jne @f
 	mov ecx,[ymin]
-	cmp dword[edx+offs_cont_viewport+offs_vpor_ymin],ecx
+	cmp dword[edx+GLContext.viewport+offs_vpor_ymin],ecx
 	jne @f
 	mov ecx,[xsize]
-	cmp dword[edx+offs_cont_viewport+offs_vpor_xsize],ecx
+	cmp dword[edx+GLContext.viewport+offs_vpor_xsize],ecx
 	jne @f
 		jmp .end_f
 	@@:
@@ -44,14 +44,14 @@ endl
 	add ecx,[ysize]
 	mov [ysize_req],ecx ;ysize_req = ymin + ysize
 
-	cmp dword[edx+offs_cont_gl_resize_viewport],0
+	cmp dword[edx+GLContext.gl_resize_viewport],0
 	je @f
 		mov eax,ebp
 		sub eax,4
 		push eax
 		sub eax,4
 		push eax
-		stdcall dword[edx+offs_cont_gl_resize_viewport], edx ;gl_resize_viewport(context,&xsize_req,&ysize_req)
+		stdcall dword[edx+GLContext.gl_resize_viewport], edx ;gl_resize_viewport(context,&xsize_req,&ysize_req)
 		cmp eax,0
 		je @f
 			stdcall dbg_print,sz_glViewport,err_4
@@ -70,15 +70,15 @@ endl
 		stdcall dbg_print,sz_glViewport,err_5
 	@@:
 	mov ecx,[xmin]
-	mov dword[edx+offs_cont_viewport+offs_vpor_xmin],ecx
+	mov dword[edx+GLContext.viewport+offs_vpor_xmin],ecx
 	mov ecx,[ymin]
-	mov dword[edx+offs_cont_viewport+offs_vpor_ymin],ecx
+	mov dword[edx+GLContext.viewport+offs_vpor_ymin],ecx
 	mov ecx,[xsize]
-	mov dword[edx+offs_cont_viewport+offs_vpor_xsize],ecx
+	mov dword[edx+GLContext.viewport+offs_vpor_xsize],ecx
 	mov ecx,[ysize]
-	mov dword[edx+offs_cont_viewport+offs_vpor_ysize],ecx
+	mov dword[edx+GLContext.viewport+offs_vpor_ysize],ecx
 
-	mov dword[edx+offs_cont_viewport+offs_vpor_updated],1
+	mov dword[edx+GLContext.viewport+offs_vpor_updated],1
 	.end_f:
 	ret
 endp
@@ -92,62 +92,62 @@ proc glopEnableDisable uses eax ebx ecx, context:dword, p:dword
 
 	cmp ebx,GL_CULL_FACE
 	jne @f
-		mov [eax+offs_cont_cull_face_enabled],ecx
+		mov [eax+GLContext.cull_face_enabled],ecx
 		jmp .end_f
 	@@:
 	cmp ebx,GL_LIGHTING
 	jne @f
-		mov [eax+offs_cont_lighting_enabled],ecx
+		mov [eax+GLContext.lighting_enabled],ecx
 		jmp .end_f
 	@@:
 	cmp ebx,GL_COLOR_MATERIAL
 	jne @f
-		mov [eax+offs_cont_color_material_enabled],ecx
+		mov [eax+GLContext.color_material_enabled],ecx
 		jmp .end_f
 	@@:
 	cmp ebx,GL_TEXTURE_2D
 	jne @f
-		mov [eax+offs_cont_texture_2d_enabled],ecx
+		mov [eax+GLContext.texture_2d_enabled],ecx
 		jmp .end_f
 	@@:
 	cmp ebx,GL_NORMALIZE
 	jne @f
-		mov [eax+offs_cont_normalize_enabled],ecx
+		mov [eax+GLContext.normalize_enabled],ecx
 		jmp .end_f
 	@@:
 	cmp ebx,GL_DEPTH_TEST
 	jne @f
-		mov [eax+offs_cont_depth_test],ecx
+		mov [eax+GLContext.depth_test],ecx
 		jmp .end_f
 	@@:
 	cmp ebx,GL_POLYGON_OFFSET_FILL
 	jne .polygon_offset_fill
 		cmp ecx,0
 		je @f
-			or dword[eax+offs_cont_offset_states],TGL_OFFSET_FILL
+			or dword[eax+GLContext.offset_states],TGL_OFFSET_FILL
 			jmp .end_f
 		@@:
-			and dword[eax+offs_cont_offset_states],not TGL_OFFSET_FILL
+			and dword[eax+GLContext.offset_states],not TGL_OFFSET_FILL
 		jmp .end_f
 	.polygon_offset_fill:
 	cmp ebx,GL_POLYGON_OFFSET_POINT
 	jne .polygon_offset_point
 		cmp ecx,0
 		je @f
-			or dword[eax+offs_cont_offset_states],TGL_OFFSET_POINT
+			or dword[eax+GLContext.offset_states],TGL_OFFSET_POINT
 			jmp .end_f
 		@@:
-			and dword[eax+offs_cont_offset_states],not TGL_OFFSET_POINT
+			and dword[eax+GLContext.offset_states],not TGL_OFFSET_POINT
 		jmp .end_f
 	.polygon_offset_point:
 	cmp ebx,GL_POLYGON_OFFSET_LINE
 	jne .polygon_offset_line
 		cmp ecx,0
 		je @f
-			or dword[eax+offs_cont_offset_states],TGL_OFFSET_LINE
+			or dword[eax+GLContext.offset_states],TGL_OFFSET_LINE
 			jmp .end_f
 		@@:
-			and dword[eax+offs_cont_offset_states],not TGL_OFFSET_LINE
+			and dword[eax+GLContext.offset_states],not TGL_OFFSET_LINE
 		jmp .end_f
 	.polygon_offset_line: ;default:
 	cmp ebx,GL_LIGHT0
@@ -158,7 +158,7 @@ proc glopEnableDisable uses eax ebx ecx, context:dword, p:dword
 		stdcall gl_enable_disable_light, eax,ebx,ecx
 		jmp .end_f
 	.els_0:
-;//fprintf(stderr,"glEnableDisable: 0x%X not supported.\n",code);
+;fprintf(stderr,"glEnableDisable: 0x%X not supported.\n",code);
 	.end_f:
 	ret
 endp
@@ -168,7 +168,7 @@ proc glopShadeModel uses eax ebx, context:dword,p:dword
 	mov eax,[context]
 	mov ebx,[p]
 	mov ebx,[ebx+4]
-	mov [eax+offs_cont_current_shade_model],ebx
+	mov [eax+GLContext.current_shade_model],ebx
 	ret
 endp
 
@@ -177,7 +177,7 @@ proc glopCullFace uses eax ebx, context:dword,p:dword
 	mov eax,[context]
 	mov ebx,[p]
 	mov ebx,[ebx+4]
-	mov [eax+offs_cont_current_cull_face],ebx
+	mov [eax+GLContext.current_cull_face],ebx
 	ret
 endp
 
@@ -186,7 +186,7 @@ proc glopFrontFace uses eax ebx, context:dword,p:dword
 	mov eax,[context]
 	mov ebx,[p]
 	mov ebx,[ebx+4]
-	mov [eax+offs_cont_current_front_face],ebx
+	mov [eax+GLContext.current_front_face],ebx
 	ret
 endp
 
@@ -198,20 +198,20 @@ proc glopPolygonMode uses eax ebx, context:dword,p:dword
 	cmp dword[ebx+4],GL_BACK
 	jne @f
 		mov ebx,[ebx+8]
-		mov [eax+offs_cont_polygon_mode_back],ebx
+		mov [eax+GLContext.polygon_mode_back],ebx
 		jmp .end_f
 	@@:
 	cmp dword[ebx+4],GL_FRONT
 	jne @f
 		mov ebx,[ebx+8]
-		mov [eax+offs_cont_polygon_mode_front],ebx
+		mov [eax+GLContext.polygon_mode_front],ebx
 		jmp .end_f
 	@@:
 	cmp dword[ebx+4],GL_FRONT_AND_BACK
 	jne @f
 		mov ebx,[ebx+8]
-		mov [eax+offs_cont_polygon_mode_front],ebx
-		mov [eax+offs_cont_polygon_mode_back],ebx
+		mov [eax+GLContext.polygon_mode_front],ebx
+		mov [eax+GLContext.polygon_mode_back],ebx
 		jmp .end_f
 	@@:
 ;    assert(0);
@@ -235,8 +235,8 @@ proc glopPolygonOffset uses eax ebx ecx, context:dword,p:dword
 	mov eax,[context]
 	mov ebx,[p]
 	mov ecx,[ebx+4]
-	mov [eax+offs_cont_offset_factor],ecx
+	mov [eax+GLContext.offset_factor],ecx
 	mov ecx,[ebx+8]
-	mov [eax+offs_cont_offset_units],ecx
+	mov [eax+GLContext.offset_units],ecx
 	ret
 endp

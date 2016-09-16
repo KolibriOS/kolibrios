@@ -1021,6 +1021,6 @@ align 4
 proc glDebug uses eax, mode:dword
 	stdcall gl_get_context ;после вызова функции в eax указатель на GLContext
 	push dword[mode]
-	pop dword[eax+offs_cont_print_flag]
+	pop dword[eax+GLContext.print_flag]
 	ret
 endp

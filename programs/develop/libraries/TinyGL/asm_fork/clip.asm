@@ -19,24 +19,24 @@ proc gl_transform_to_viewport uses eax ebx ecx, context:dword,v:dword
 
 	fld dword[ebx+offs_vert_pc+offs_X] ;st0 = v.pc.X
 	fmul st0,st1
-	fmul dword[eax+offs_cont_viewport+offs_vpor_scale+offs_X]
-	fadd dword[eax+offs_cont_viewport+offs_vpor_trans+offs_X]
+	fmul dword[eax+GLContext.viewport+offs_vpor_scale+offs_X]
+	fadd dword[eax+GLContext.viewport+offs_vpor_trans+offs_X]
 	fistp dword[ebx+offs_vert_zp] ;v.zp.x = st0, st0 = st1
 
 	fld dword[ebx+offs_vert_pc+offs_Y] ;st0 = v.pc.Y
 	fmul st0,st1
-	fmul dword[eax+offs_cont_viewport+offs_vpor_scale+offs_Y]
-	fadd dword[eax+offs_cont_viewport+offs_vpor_trans+offs_Y]
+	fmul dword[eax+GLContext.viewport+offs_vpor_scale+offs_Y]
+	fadd dword[eax+GLContext.viewport+offs_vpor_trans+offs_Y]
 	fistp dword[ebx+offs_vert_zp+offs_zbup_y] ;v.zp.y = st0, st0 = st1
 
 	fld dword[ebx+offs_vert_pc+offs_Z] ;st0 = v.pc.Z
 	fmulp
-	fmul dword[eax+offs_cont_viewport+offs_vpor_scale+offs_Z]
-	fadd dword[eax+offs_cont_viewport+offs_vpor_trans+offs_Z]
+	fmul dword[eax+GLContext.viewport+offs_vpor_scale+offs_Z]
+	fadd dword[eax+GLContext.viewport+offs_vpor_trans+offs_Z]
 	fistp dword[ebx+offs_vert_zp+offs_zbup_z] ;v.zp.z = st0, st0 = st1
 
 	; color
-	cmp dword[eax+offs_cont_lighting_enabled],0 ;if (context.lighting_enabled)
+	cmp dword[eax+GLContext.lighting_enabled],0 ;if (context.lighting_enabled)
 	je @f
 		mov ecx,ebx
 		add ecx,offs_vert_zp+offs_zbup_b
@@ -50,18 +50,18 @@ proc gl_transform_to_viewport uses eax ebx ecx, context:dword,v:dword
 align 4
 	@@:
 		; no need to convert to integer if no lighting : take current color
-		mov ecx,[eax+offs_cont_longcurrent_color]
+		mov ecx,[eax+GLContext.longcurrent_color]
 		mov dword[ebx+offs_vert_zp+offs_zbup_r],ecx
-		mov ecx,[eax+offs_cont_longcurrent_color+4]
+		mov ecx,[eax+GLContext.longcurrent_color+4]
 		mov dword[ebx+offs_vert_zp+offs_zbup_g],ecx
-		mov ecx,[eax+offs_cont_longcurrent_color+8]
+		mov ecx,[eax+GLContext.longcurrent_color+8]
 		mov dword[ebx+offs_vert_zp+offs_zbup_b],ecx
 	.end_if:
   
 	; texture
-	cmp dword[eax+offs_cont_texture_2d_enabled],0
+	cmp dword[eax+GLContext.texture_2d_enabled],0
 	je @f
-		mov eax,[eax+offs_cont_current_texture] ;eax = &context.current_texture
+		mov eax,[eax+GLContext.current_texture] ;eax = &context.current_texture
 		mov eax,[eax] ;eax = context.current_texture
 		;[eax+offs_text_images] = im = &context.current_texture.images[0]
 
@@ -116,14 +116,14 @@ proc gl_draw_point uses eax ebx, context:dword, p0:dword
 	cmp dword[ebx+offs_vert_clip_code],0 ;if (p0.clip_code == 0)
 	jne @f
 	mov eax,[context]
-	cmp dword[eax+offs_cont_render_mode],GL_SELECT
+	cmp dword[eax+GLContext.render_mode],GL_SELECT
 	jne .els
 		stdcall gl_add_select, eax,dword[ebx+offs_vert_zp+offs_zbup_z],dword[ebx+offs_vert_zp+offs_zbup_z] ;p0.zp.z,p0.zp.z
 		jmp @f
 align 4
 	.els:
 		add ebx,offs_vert_zp
-		stdcall ZB_plot, dword[eax+offs_cont_zb],ebx
+		stdcall ZB_plot, dword[eax+GLContext.zb],ebx
 	@@:
 	ret
 endp
@@ -285,7 +285,7 @@ pushad
 	cmp dword[esi+offs_vert_clip_code],0
 	jne .els_i
 		;if ( (p1.clip_code | p2.clip_code) == 0)
-		cmp dword[edx+offs_cont_render_mode],GL_SELECT ;if (context.render_mode == GL_SELECT)
+		cmp dword[edx+GLContext.render_mode],GL_SELECT ;if (context.render_mode == GL_SELECT)
 		jne .els_1
 			stdcall gl_add_select1, edx,dword[edi+offs_vert_zp+offs_zbup_z],\
 				dword[esi+offs_vert_zp+offs_zbup_z],dword[esi+offs_vert_zp+offs_zbup_z]
@@ -296,15 +296,15 @@ align 4
 			add esi,offs_vert_zp
 			push esi
 			push edi
-			push dword[edx+offs_cont_zb]
-			cmp dword[edx+offs_cont_depth_test],0
+			push dword[edx+GLContext.zb]
+			cmp dword[edx+GLContext.depth_test],0
 			je .els_2
 				;if (context.depth_test)
-				call ZB_line_z ;, dword[edx+offs_cont_zb],edi,esi
+				call ZB_line_z ;, dword[edx+GLContext.zb],edi,esi
 				jmp .end_f
 align 4
 			.els_2:
-				call ZB_line ;, dword[edx+offs_cont_zb],edi,esi
+				call ZB_line ;, dword[edx+GLContext.zb],edi,esi
 				jmp .end_f
 align 4
 	.els_i:
@@ -451,8 +451,8 @@ align 4
 	push eax
 	sub eax,sizeof.GLVertex ;eax = &q1.zp
 	push eax
-	push dword[edx+offs_cont_zb]
-	cmp dword[edx+offs_cont_depth_test],0
+	push dword[edx+GLContext.zb]
+	cmp dword[edx+GLContext.depth_test],0
 	je .els_3
 		call ZB_line_z ;(context.zb,&q1.zp,&q2.zp)
 		jmp .end_f
@@ -592,7 +592,7 @@ align 16
 proc updateTmp uses eax ecx edx, context:dword, p0:dword, p1:dword, t:dword
 	mov edx,[context]
 	mov eax,[p0]
-	cmp dword[edx+offs_cont_current_shade_model],GL_SMOOTH ;if (context.current_shade_model == GL_SMOOTH)
+	cmp dword[edx+GLContext.current_shade_model],GL_SMOOTH ;if (context.current_shade_model == GL_SMOOTH)
 	jne .els_0
 		mov ecx,[p1]
 		fld dword[ecx+offs_vert_color]
@@ -621,7 +621,7 @@ align 4
 		mov [edi+offs_vert_color+8],ecx ;q.color.v[2]=p0.color.v[2]
 	@@:
 
-	cmp dword[edx+offs_cont_texture_2d_enabled],0 ;if (context.texture_2d_enabled)
+	cmp dword[edx+GLContext.texture_2d_enabled],0 ;if (context.texture_2d_enabled)
 	je @f
 		mov ecx,[p1]
 		fld dword[ecx+offs_vert_tex_coord+offs_X]
@@ -709,37 +709,37 @@ pushad
 			inc dword[front] ;front = norm < 0.0
 		@@:
 		mov edi,[context]
-		mov eax,dword[edi+offs_cont_current_front_face]
+		mov eax,dword[edi+GLContext.current_front_face]
 		xor dword[front],eax ;front ^= context.current_front_face
 
 		; back face culling
-		cmp dword[edi+offs_cont_cull_face_enabled],0
+		cmp dword[edi+GLContext.cull_face_enabled],0
 		je .els_1
 			; most used case first
-			cmp dword[edi+offs_cont_current_cull_face],GL_BACK
+			cmp dword[edi+GLContext.current_cull_face],GL_BACK
 			jne @f
 				cmp dword[front],0
 				je .end_f
-					stdcall dword[edi+offs_cont_draw_triangle_front], edi,ebx,ecx,edx
+					stdcall dword[edi+GLContext.draw_triangle_front], edi,ebx,ecx,edx
 				jmp .end_f
 align 4
 			@@:
-			cmp dword[edi+offs_cont_current_cull_face],GL_FRONT
+			cmp dword[edi+GLContext.current_cull_face],GL_FRONT
 			jne .end_f
 				cmp dword[front],0
 				jne .end_f
-					stdcall dword[edi+offs_cont_draw_triangle_back], edi,ebx,ecx,edx
+					stdcall dword[edi+GLContext.draw_triangle_back], edi,ebx,ecx,edx
 			jmp .end_f
 align 4
 		.els_1:
 			; no culling
 			cmp dword[front],0
 			je @f
-				stdcall dword[edi+offs_cont_draw_triangle_front], edi,ebx,ecx,edx
+				stdcall dword[edi+GLContext.draw_triangle_front], edi,ebx,ecx,edx
 				jmp .end_f
 align 4
 			@@:
-				stdcall dword[edi+offs_cont_draw_triangle_back], edi,ebx,ecx,edx
+				stdcall dword[edi+GLContext.draw_triangle_back], edi,ebx,ecx,edx
 		jmp .end_f
 align 4
 	.els_0:
@@ -1035,24 +1035,24 @@ end if
 	mov ecx,[p2]
 	add ecx,offs_vert_zp
 	mov edx,[context]
-	cmp dword[edx+offs_cont_texture_2d_enabled],0
+	cmp dword[edx+GLContext.texture_2d_enabled],0
 	je .els_i
 		;if (context.texture_2d_enabled)
 if PROFILE eq 1
 	inc dword[count_triangles_textured]
 end if
-		mov eax,[edx+offs_cont_current_texture]
+		mov eax,[edx+GLContext.current_texture]
 		mov eax,[eax] ;переход по указателю
 		;так как offs_text_images+offs_imag_pixmap = 0 то context.current_texture.images[0].pixmap = [eax]
-		stdcall ZB_setTexture, [edx+offs_cont_zb], [eax],\
+		stdcall ZB_setTexture, [edx+GLContext.zb], [eax],\
 			[eax+offs_imag_s_bound],[eax+offs_imag_t_bound],[eax+offs_imag_xsize_log2]
 		mov eax,[p0]
 		add eax,offs_vert_zp
 		push ecx
 		push ebx
 		push eax
-		push dword[edx+offs_cont_zb]
-		cmp dword[edx+offs_cont_matrix_model_projection_no_w_transform],0
+		push dword[edx+GLContext.zb]
+		cmp dword[edx+GLContext.matrix_model_projection_no_w_transform],0
 		je @f
 			call ZB_fillTriangleMappingPerspective
 			jmp .end_f
@@ -1064,14 +1064,14 @@ align 4
 	.els_i:
 		mov eax,[p0]
 		add eax,offs_vert_zp
-		cmp dword[edx+offs_cont_current_shade_model],GL_SMOOTH
+		cmp dword[edx+GLContext.current_shade_model],GL_SMOOTH
 		jne .els
 			;else if (context.current_shade_model == GL_SMOOTH)
-			stdcall ZB_fillTriangleSmooth, dword[edx+offs_cont_zb],eax,ebx,ecx
+			stdcall ZB_fillTriangleSmooth, dword[edx+GLContext.zb],eax,ebx,ecx
 			jmp .end_f
 align 4
 		.els:
-			stdcall ZB_fillTriangleFlat, dword[edx+offs_cont_zb],eax,ebx,ecx
+			stdcall ZB_fillTriangleFlat, dword[edx+GLContext.zb],eax,ebx,ecx
 	.end_f:
 popad
 	ret
@@ -1082,7 +1082,7 @@ endp
 align 16
 proc gl_draw_triangle_line uses eax ebx ecx edx, context:dword, p0:dword,p1:dword,p2:dword
 	mov edx,[context]
-	cmp dword[edx+offs_cont_depth_test],0
+	cmp dword[edx+GLContext.depth_test],0
 	je .els
 		lea ecx,[ZB_line_z]
 		jmp @f
@@ -1099,7 +1099,7 @@ align 4
 		add ebx,offs_vert_zp
 		mov eax,[p1]
 		add eax,offs_vert_zp
-		stdcall ecx,dword[edx+offs_cont_zb],ebx,eax
+		stdcall ecx,dword[edx+GLContext.zb],ebx,eax
 	@@:
 	;if (p1.edge_flag) ZB_line_z(context.zb,&p1.zp,&p2.zp)
 	mov eax,[p1]
@@ -1109,7 +1109,7 @@ align 4
 		add ebx,offs_vert_zp
 		mov eax,[p2]
 		add eax,offs_vert_zp
-		stdcall ecx,dword[edx+offs_cont_zb],ebx,eax
+		stdcall ecx,dword[edx+GLContext.zb],ebx,eax
 	@@:
 	;if (p2.edge_flag) ZB_line_z(context.zb,&p2.zp,&p0.zp);
 	mov eax,[p2]
@@ -1119,7 +1119,7 @@ align 4
 		add ebx,offs_vert_zp
 		mov eax,[p0]
 		add eax,offs_vert_zp
-		stdcall ecx,dword[edx+offs_cont_zb],ebx,eax
+		stdcall ecx,dword[edx+GLContext.zb],ebx,eax
 	@@:
 
 	ret
@@ -1134,21 +1134,21 @@ proc gl_draw_triangle_point uses eax ebx edx, context:dword, p0:dword,p1:dword,p
 	je @f
 		mov ebx,eax
 		add ebx,offs_vert_zp
-		stdcall ZB_plot,dword[edx+offs_cont_zb],ebx
+		stdcall ZB_plot,dword[edx+GLContext.zb],ebx
 	@@:
 	mov eax,[p1]
 	cmp dword[eax+offs_vert_edge_flag],0
 	je @f
 		mov ebx,eax
 		add ebx,offs_vert_zp
-		stdcall ZB_plot,dword[edx+offs_cont_zb],ebx
+		stdcall ZB_plot,dword[edx+GLContext.zb],ebx
 	@@:
 	mov eax,[p2]
 	cmp dword[eax+offs_vert_edge_flag],0
 	je @f
 		mov ebx,eax
 		add ebx,offs_vert_zp
-		stdcall ZB_plot,dword[edx+offs_cont_zb],ebx
+		stdcall ZB_plot,dword[edx+GLContext.zb],ebx
 	@@:
 	ret
 endp

@@ -16,13 +16,13 @@ endl
 	mov ebx,[param]
 	mov ebx,[ebx+4] ;ebx = p[1]
   
-	bt dword[eax+offs_cont_client_states],1 ;2^1=COLOR_ARRAY
+	bt dword[eax+GLContext.client_states],1 ;2^1=COLOR_ARRAY
 	jnc @f
-		mov ecx,[eax+offs_cont_color_array_size]
-		add ecx,[eax+offs_cont_color_array_stride]
+		mov ecx,[eax+GLContext.color_array_size]
+		add ecx,[eax+GLContext.color_array_stride]
 		imul ecx,ebx
 		shl ecx,2
-		add ecx,[eax+offs_cont_color_array] ;ecx = &context.color_array[i]
+		add ecx,[eax+GLContext.color_array] ;ecx = &context.color_array[i]
 		mov ebx,ebp
 		sub ebx,20 ;=sizeof(dd)*5
 		mov edx,[ecx]
@@ -31,7 +31,7 @@ endl
 		mov [ebx+8],edx
 		mov edx,[ecx+8]
 		mov [ebx+12],edx
-		cmp dword[eax+offs_cont_color_array_size],3
+		cmp dword[eax+GLContext.color_array_size],3
 		jg .l0
 			mov edx,1.0
 			jmp .l1
@@ -41,41 +41,41 @@ endl
 		mov [ebx+16],edx
 		stdcall glopColor, eax,ebx
 	@@:
-	bt dword[eax+offs_cont_client_states],2 ;2^2=NORMAL_ARRAY
+	bt dword[eax+GLContext.client_states],2 ;2^2=NORMAL_ARRAY
 	jnc @f
-		mov esi,dword[eax+offs_cont_normal_array_stride]
+		mov esi,dword[eax+GLContext.normal_array_stride]
 		add esi,3
 		imul esi,ebx
 		shl esi,2
-		add esi,[eax+offs_cont_normal_array] ;esi = &normal_array[ebx * (3 + c->normal_array_stride)]
+		add esi,[eax+GLContext.normal_array] ;esi = &normal_array[ebx * (3 + c->normal_array_stride)]
 		mov edi,eax
-		add edi,offs_cont_current_normal
+		add edi,GLContext.current_normal
 		mov ecx,3
 		rep movsd
 		mov dword[edi],0.0
 	@@:
-	bt dword[eax+offs_cont_client_states],3 ;2^3=TEXCOORD_ARRAY
+	bt dword[eax+GLContext.client_states],3 ;2^3=TEXCOORD_ARRAY
 	jnc @f
-		mov ecx,[eax+offs_cont_texcoord_array_size]
-		add ecx,[eax+offs_cont_texcoord_array_stride]
+		mov ecx,[eax+GLContext.texcoord_array_size]
+		add ecx,[eax+GLContext.texcoord_array_stride]
 		imul ecx,ebx
 		shl ecx,2
-		add ecx,[eax+offs_cont_texcoord_array] ;ecx = &context.texcoord_array[i]
+		add ecx,[eax+GLContext.texcoord_array] ;ecx = &context.texcoord_array[i]
 		mov edx,[ecx]
-		mov [eax+offs_cont_current_tex_coord],edx
+		mov [eax+GLContext.current_tex_coord],edx
 		mov edx,[ecx+4]
-		mov [eax+offs_cont_current_tex_coord+4],edx
+		mov [eax+GLContext.current_tex_coord+4],edx
 
-		cmp dword[eax+offs_cont_texcoord_array_size],2
+		cmp dword[eax+GLContext.texcoord_array_size],2
 		jg .l2
 			mov edx,0.0
 			jmp .l3
 		.l2:
 			mov edx,[ecx+8]
 		.l3:
-		mov [eax+offs_cont_current_tex_coord+8],edx
+		mov [eax+GLContext.current_tex_coord+8],edx
 
-		cmp dword[eax+offs_cont_texcoord_array_size],3
+		cmp dword[eax+GLContext.texcoord_array_size],3
 		jg .l4
 			mov edx,1.0
 			jmp .l5
@@ -83,15 +83,15 @@ endl
 			mov edx,[ecx+12]
 		.l5:
 
-		mov [eax+offs_cont_current_tex_coord+12],edx
+		mov [eax+GLContext.current_tex_coord+12],edx
 	@@:
-	bt dword[eax+offs_cont_client_states],0 ;2^0=VERTEX_ARRAY
+	bt dword[eax+GLContext.client_states],0 ;2^0=VERTEX_ARRAY
 	jnc @f
-		mov ecx,[eax+offs_cont_vertex_array_size]
-		add ecx,[eax+offs_cont_vertex_array_stride]
+		mov ecx,[eax+GLContext.vertex_array_size]
+		add ecx,[eax+GLContext.vertex_array_stride]
 		imul ecx,ebx
 		shl ecx,2
-		add ecx,[eax+offs_cont_vertex_array] ;ecx = &context.vertex_array[i]
+		add ecx,[eax+GLContext.vertex_array] ;ecx = &context.vertex_array[i]
 		mov ebx,ebp
 		sub ebx,20 ;=sizeof(dd)*5
 		mov edx,[ecx]
@@ -99,7 +99,7 @@ endl
 		mov edx,[ecx+4]
 		mov [ebx+8],edx
 
-		cmp dword[eax+offs_cont_vertex_array_size],2
+		cmp dword[eax+GLContext.vertex_array_size],2
 		jg .l6
 			mov edx,0.0
 			jmp .l7
@@ -107,7 +107,7 @@ endl
 			mov edx,[ecx+8]
 		.l7:
 		mov [ebx+12],edx
-		cmp dword[eax+offs_cont_vertex_array_size],3
+		cmp dword[eax+GLContext.vertex_array_size],3
 		jg .l8
 			mov edx,1.0
 			jmp .l9
@@ -149,7 +149,7 @@ pushad
 	mov edx,[context]
 	mov ebx,[param]
 	mov ecx,[ebx+12] ;count = param[3].i
-	mov eax,[edx+offs_cont_client_states]
+	mov eax,[edx+GLContext.client_states]
 	mov [states],eax
 	mov eax,[ebx+8]
 	mov [idx],eax ;param[2].i
@@ -166,12 +166,12 @@ align 4
 	jge .cycle_0_end
 		bt dword[states],1 ;2^1=COLOR_ARRAY
 		jnc @f
-			mov esi,[edx+offs_cont_color_array_size]
+			mov esi,[edx+GLContext.color_array_size]
 			mov [size],esi
-			add esi,[edx+offs_cont_color_array_stride]
+			add esi,[edx+GLContext.color_array_stride]
 			imul esi,[idx] ;esi = i
 			shl esi,2
-			add esi,[edx+offs_cont_color_array] ;esi = &context.color_array[i]
+			add esi,[edx+GLContext.color_array] ;esi = &context.color_array[i]
 			mov edi,ebp
 			sub edi,28 ;edi = &p[1]
 			mov ebx,[esi+8]
@@ -203,13 +203,13 @@ align 4
 		@@:
 		bt dword[states],2 ;2^2=NORMAL_ARRAY
 		jnc @f
-			mov esi,[edx+offs_cont_normal_array_stride]
+			mov esi,[edx+GLContext.normal_array_stride]
 			add esi,3
 			imul esi,[idx]
 			shl esi,2
-			add esi,[edx+offs_cont_normal_array] ;esi = &context.normal_array[ idx * (3 + context.normal_array_stride) ]
+			add esi,[edx+GLContext.normal_array] ;esi = &context.normal_array[ idx * (3 + context.normal_array_stride) ]
 			mov edi,edx
-			add edi,offs_cont_current_normal
+			add edi,GLContext.current_normal
 			movsd ;context.current_normal.X = context.normal_array[i]
 			movsd
 			movsd
@@ -217,14 +217,14 @@ align 4
 		@@:
 		bt dword[states],3 ;2^3=TEXCOORD_ARRAY
 		jnc @f
-			mov esi,[edx+offs_cont_texcoord_array_size]
+			mov esi,[edx+GLContext.texcoord_array_size]
 			mov [size],esi
-			add esi,[edx+offs_cont_texcoord_array_stride]
+			add esi,[edx+GLContext.texcoord_array_stride]
 			imul esi,[idx] ;esi = i
 			shl esi,2
-			add esi,[edx+offs_cont_texcoord_array] ;esi = &context.texcoord_array[i]
+			add esi,[edx+GLContext.texcoord_array] ;esi = &context.texcoord_array[i]
 			mov edi,edx
-			add edi,offs_cont_current_tex_coord
+			add edi,GLContext.current_tex_coord
 			movsd ;context.current_tex_coord.X = ccontext.texcoord_array[i]
 			movsd
 			cmp dword[size],2
@@ -244,12 +244,12 @@ align 4
 		@@:
 		bt dword[states],0 ;2^0=VERTEX_ARRAY
 		jnc @f
-			mov esi,[edx+offs_cont_vertex_array_size]
+			mov esi,[edx+GLContext.vertex_array_size]
 			mov [size],esi
-			add esi,[edx+offs_cont_vertex_array_stride]
+			add esi,[edx+GLContext.vertex_array_stride]
 			imul esi,[idx] ;esi = i
 			shl esi,2
-			add esi,[edx+offs_cont_vertex_array] ;esi = &context.vertex_array[i]
+			add esi,[edx+GLContext.vertex_array] ;esi = &context.vertex_array[i]
 			mov edi,ebp
 			sub edi,28 ;edi = &p[1]
 			movsd ;p[1].f = context.vertex_array[i]
@@ -319,7 +319,7 @@ endl
 pushad
 	mov edx,[context]
 	mov ebx,[param]
-	mov eax,[edx+offs_cont_client_states]
+	mov eax,[edx+GLContext.client_states]
 	mov [states],eax
 	mov eax,[ebx+4]
 	mov [p+4],eax ;p[1].i = param[1].i
@@ -353,12 +353,12 @@ align 4
 
 		bt dword[states],1 ;2^1=COLOR_ARRAY
 		jnc @f
-			mov esi,[edx+offs_cont_color_array_size]
+			mov esi,[edx+GLContext.color_array_size]
 			mov [size],esi
-			add esi,[edx+offs_cont_color_array_stride]
+			add esi,[edx+GLContext.color_array_stride]
 			imul esi,[idx] ;esi = i
 			shl esi,2
-			add esi,[edx+offs_cont_color_array] ;esi = &context.color_array[i]
+			add esi,[edx+GLContext.color_array] ;esi = &context.color_array[i]
 			mov edi,ebp
 			sub edi,28 ;edi = &p[1]
 			mov ebx,[esi+8]
@@ -390,13 +390,13 @@ align 4
 		@@:
 		bt dword[states],2 ;2^2=NORMAL_ARRAY
 		jnc @f
-			mov esi,[edx+offs_cont_normal_array_stride]
+			mov esi,[edx+GLContext.normal_array_stride]
 			add esi,3
 			imul esi,[idx] ;esi = idx * (3 + context.normal_array_stride)
 			shl esi,2
-			add esi,[edx+offs_cont_normal_array]
+			add esi,[edx+GLContext.normal_array]
 			mov edi,edx
-			add edi,offs_cont_current_normal
+			add edi,GLContext.current_normal
 			movsd ;context.current_normal.X = context.normal_array[i]
 			movsd
 			movsd
@@ -404,14 +404,14 @@ align 4
 		@@:
 		bt dword[states],3 ;2^3=TEXCOORD_ARRAY
 		jnc @f
-			mov esi,[edx+offs_cont_texcoord_array_size]
+			mov esi,[edx+GLContext.texcoord_array_size]
 			mov [size],esi
-			add esi,[edx+offs_cont_texcoord_array_stride]
+			add esi,[edx+GLContext.texcoord_array_stride]
 			imul esi,[idx] ;esi = i
 			shl esi,2
-			add esi,[edx+offs_cont_texcoord_array] ;esi = &context.texcoord_array[i]
+			add esi,[edx+GLContext.texcoord_array] ;esi = &context.texcoord_array[i]
 			mov edi,edx
-			add edi,offs_cont_current_tex_coord
+			add edi,GLContext.current_tex_coord
 			movsd ;context.current_tex_coord.X = ccontext.texcoord_array[i]
 			movsd
 			cmp dword[size],2
@@ -431,12 +431,12 @@ align 4
 		@@:
 		bt dword[states],0 ;2^0=VERTEX_ARRAY
 		jnc @f
-			mov esi,[edx+offs_cont_vertex_array_size]
+			mov esi,[edx+GLContext.vertex_array_size]
 			mov [size],esi
-			add esi,[edx+offs_cont_vertex_array_stride]
+			add esi,[edx+GLContext.vertex_array_stride]
 			imul esi,[idx] ;esi = i
 			shl esi,2
-			add esi,[edx+offs_cont_vertex_array] ;esi = &context.vertex_array[i]
+			add esi,[edx+GLContext.vertex_array] ;esi = &context.vertex_array[i]
 			mov edi,ebp
 			sub edi,28 ;edi = &p[1]
 			movsd ;p[1].f = context.vertex_array[i]
@@ -499,7 +499,7 @@ proc glopEnableClientState uses eax ebx, context:dword, p:dword
 	mov eax,[context]
 	mov ebx,[p]
 	mov ebx,[ebx+4] ;ebx = p[1]
-	or dword[eax+offs_cont_client_states],ebx
+	or dword[eax+GLContext.client_states],ebx
 	ret
 endp
 
@@ -544,7 +544,7 @@ proc glopDisableClientState uses eax ebx, context:dword, p:dword
 	mov eax,[context]
 	mov ebx,[p]
 	mov ebx,[ebx+4] ;ebx = p[1]
-	and dword[eax+offs_cont_client_states],ebx
+	and dword[eax+GLContext.client_states],ebx
 	ret
 endp
 
@@ -589,11 +589,11 @@ proc glopVertexPointer uses eax ebx ecx, context:dword, p:dword
 	mov eax,[context]
 	mov ebx,[p]
 	mov ecx,[ebx+4] ;ecx = p[1]
-	mov dword[eax+offs_cont_vertex_array_size],ecx
+	mov dword[eax+GLContext.vertex_array_size],ecx
 	mov ecx,[ebx+8] ;ecx = p[2]
-	mov dword[eax+offs_cont_vertex_array_stride],ecx
+	mov dword[eax+GLContext.vertex_array_stride],ecx
 	mov ecx,[ebx+12] ;ecx = p[3]
-	mov dword[eax+offs_cont_vertex_array],ecx
+	mov dword[eax+GLContext.vertex_array],ecx
 	ret
 endp
 
@@ -623,11 +623,11 @@ proc glopColorPointer uses eax ebx ecx, context:dword, p:dword
 	mov eax,[context]
 	mov ebx,[p]
 	mov ecx,[ebx+4] ;ecx = p[1]
-	mov dword[eax+offs_cont_color_array_size],ecx
+	mov dword[eax+GLContext.color_array_size],ecx
 	mov ecx,[ebx+8] ;ecx = p[2]
-	mov dword[eax+offs_cont_color_array_stride],ecx
+	mov dword[eax+GLContext.color_array_stride],ecx
 	mov ecx,[ebx+12] ;ecx = p[3]
-	mov dword[eax+offs_cont_color_array],ecx
+	mov dword[eax+GLContext.color_array],ecx
 	ret
 endp
 
@@ -657,9 +657,9 @@ proc glopNormalPointer uses eax ebx ecx, context:dword, p:dword
 	mov eax,[context]
 	mov ebx,[p]
 	mov ecx,[ebx+4] ;ecx = p[1]
-	mov dword[eax+offs_cont_normal_array_stride],ecx
+	mov dword[eax+GLContext.normal_array_stride],ecx
 	mov ecx,[ebx+8] ;ecx = p[2]
-	mov dword[eax+offs_cont_normal_array],ecx
+	mov dword[eax+GLContext.normal_array],ecx
 	ret
 endp
 
@@ -687,11 +687,11 @@ proc glopTexCoordPointer uses eax ebx ecx, context:dword, p:dword
 	mov eax,[context]
 	mov ebx,[p]
 	mov ecx,[ebx+4] ;ecx = p[1]
-	mov dword[eax+offs_cont_texcoord_array_size],ecx
+	mov dword[eax+GLContext.texcoord_array_size],ecx
 	mov ecx,[ebx+8] ;ecx = p[2]
-	mov dword[eax+offs_cont_texcoord_array_stride],ecx
+	mov dword[eax+GLContext.texcoord_array_stride],ecx
 	mov ecx,[ebx+12] ;ecx = p[3]
-	mov dword[eax+offs_cont_texcoord_array],ecx
+	mov dword[eax+GLContext.texcoord_array],ecx
 	ret
 endp
 

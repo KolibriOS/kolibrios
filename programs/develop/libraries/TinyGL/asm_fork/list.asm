@@ -28,7 +28,7 @@ include 'opinfo.inc'
 align 4
 proc find_list uses ebx, context:dword, list:dword
 	mov eax,[context]
-	mov eax,[eax+offs_cont_shared_state]
+	mov eax,[eax+GLContext.shared_state]
 	mov ebx,[list]
 	shl ebx,2
 	add eax,ebx
@@ -57,7 +57,7 @@ proc delete_list uses eax ebx ecx edx, context:dword, list:dword
 	stdcall gl_free,edx
 	mov ecx,[list]
 	shl ecx,2
-	mov ebx,[ebx+offs_cont_shared_state] ;ebx = &context.shared_state.lists
+	mov ebx,[ebx+GLContext.shared_state] ;ebx = &context.shared_state.lists
 	add ebx,ecx
 	mov dword[ebx],0 ;=NULL
 	ret
@@ -75,7 +75,7 @@ proc alloc_list uses ebx ecx, context:dword, list:dword
 	mov dword[ecx+offs_gpbu_ops],OP_EndList ;ob.ops[0].op=OP_EndList
 
 	mov ebx,[context]
-	mov ebx,[ebx+offs_cont_shared_state]
+	mov ebx,[ebx+GLContext.shared_state]
 	mov ecx,[list]
 	shl ecx,2
 	add ebx,ecx
@@ -122,8 +122,8 @@ pushad
 	shl ecx,2
 	add ecx,ebx
 	mov ecx,[ecx] ;ecx = кол-во параметров в компилируемой функции
-	mov ebx,[edx+offs_cont_current_op_buffer_index]
-	mov eax,[edx+offs_cont_current_op_buffer]
+	mov ebx,[edx+GLContext.current_op_buffer_index]
+	mov eax,[edx+GLContext.current_op_buffer]
 
 	; we should be able to add a NextBuffer opcode
 	mov esi,ebx
@@ -141,7 +141,7 @@ pushad
 		mov dword[esi+offs_gpbu_ops],OP_NextBuffer
 		mov dword[esi+offs_gpbu_ops+4],eax
 
-		mov dword[edx+offs_cont_current_op_buffer],eax
+		mov dword[edx+GLContext.current_op_buffer],eax
 		xor ebx,ebx
 	@@:
 
@@ -153,7 +153,7 @@ pushad
 		movsd
 		inc ebx
 	loop @b
-	mov dword[edx+offs_cont_current_op_buffer_index],ebx
+	mov dword[edx+GLContext.current_op_buffer_index],ebx
 popad
 	ret
 endp
@@ -221,7 +221,7 @@ end if
 	call gl_get_context
 	mov ebx,[p]
 
-	cmp dword[eax+offs_cont_exec_flag],0
+	cmp dword[eax+GLContext.exec_flag],0
 	je @f
 		push ebx
 		push eax
@@ -232,11 +232,11 @@ end if
 		call dword[ecx] ;op_table_func[op](c,p)
 	@@:
 	call gl_get_context
-	cmp dword[eax+offs_cont_compile_flag],0
+	cmp dword[eax+GLContext.compile_flag],0
 	je @f
 		stdcall gl_compile_op,eax,[p]
 	@@:
-	cmp dword[eax+offs_cont_print_flag],0
+	cmp dword[eax+GLContext.print_flag],0
 	je @f
 		;gl_print_op(stderr,p);
 	@@:
@@ -312,16 +312,16 @@ proc glNewList uses eax ebx, list:dword, mode:dword
 	stdcall alloc_list,ebx,[list]
 
 	mov eax,[eax] ;eax = GLList.first_op_buffer
-	mov [ebx+offs_cont_current_op_buffer],eax
-	mov dword[ebx+offs_cont_current_op_buffer_index],0
+	mov [ebx+GLContext.current_op_buffer],eax
+	mov dword[ebx+GLContext.current_op_buffer_index],0
 
-	mov dword[ebx+offs_cont_compile_flag],1
+	mov dword[ebx+GLContext.compile_flag],1
 	xor eax,eax
 	cmp dword[mode],GL_COMPILE_AND_EXECUTE
 	jne @f
 		inc eax ;eax = (mode == GL_COMPILE_AND_EXECUTE)
 	@@:
-	mov [ebx+offs_cont_exec_flag],eax
+	mov [ebx+GLContext.exec_flag],eax
 	ret
 endp
 
@@ -340,8 +340,8 @@ endl
 	sub ebx,4 ;=sizeof(dd)
 	stdcall gl_compile_op,eax,ebx
 
-	mov dword[eax+offs_cont_compile_flag],0
-	mov dword[eax+offs_cont_exec_flag],1
+	mov dword[eax+GLContext.compile_flag],0
+	mov dword[eax+GLContext.exec_flag],1
 	ret
 endp
 
@@ -363,7 +363,7 @@ proc glGenLists uses ebx ecx edx edi esi, range:dword
 	call gl_get_context
 	mov edi,eax
 
-	mov ebx,[eax+offs_cont_shared_state] ;ebx=context.shared_state.lists
+	mov ebx,[eax+GLContext.shared_state] ;ebx=context.shared_state.lists
 	xor edx,edx ;count=0
 	mov ecx,MAX_DISPLAY_LISTS
 	xor esi,esi

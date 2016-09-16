@@ -7,7 +7,7 @@ proc glopNormal uses ecx esi edi, context:dword, p:dword
 	mov esi,[p]
 	add esi,4
 	mov edi,[context]
-	add edi,offs_cont_current_normal
+	add edi,GLContext.current_normal
 	mov ecx,3
 	rep movsd
 	mov dword[edi],0.0 ;context.current_normal.W = 0.0
@@ -19,7 +19,7 @@ proc glopTexCoord uses ecx esi edi, context:dword, p:dword
 	mov esi,[p]
 	add esi,4
 	mov edi,[context]
-	add edi,offs_cont_current_tex_coord
+	add edi,GLContext.current_tex_coord
 	mov ecx,4
 	rep movsd
 	ret
@@ -30,7 +30,7 @@ proc glopEdgeFlag uses eax ebx, context:dword, p:dword
 	mov eax,[context]
 	mov ebx,[p]
 	mov ebx,[ebx+4] ;ebx = p[1]
-	mov dword[eax+offs_cont_current_edge_flag],ebx
+	mov dword[eax+GLContext.current_edge_flag],ebx
 	ret
 endp
 
@@ -44,17 +44,17 @@ endl
 	mov esi,[p]
 	add esi,4
 	mov edi,[context]
-	add edi,offs_cont_current_color
+	add edi,GLContext.current_color
 	mov ecx,7
 	rep movsd
 
 	mov eax,[context]
-	cmp dword[eax+offs_cont_color_material_enabled],0
+	cmp dword[eax+GLContext.color_material_enabled],0
 	je @f
 		mov dword[q],OP_Material
-		mov ecx,[eax+offs_cont_current_color_material_mode]
+		mov ecx,[eax+GLContext.current_color_material_mode]
 		mov dword[q+4],ecx
-		mov ecx,[eax+offs_cont_current_color_material_type]
+		mov ecx,[eax+GLContext.current_color_material_type]
 		mov dword[q+8],ecx
 		mov esi,[p]
 		add esi,4
@@ -75,7 +75,7 @@ locals
 	zsize dd ? ;float
 endl
 	mov eax,[context]
-	add eax,offs_cont_viewport ;eax = (GLViewport*) v
+	add eax,GLContext.viewport ;eax = (GLViewport*) v
 
 	mov dword[zsize],(1 shl (ZB_Z_BITS + ZB_POINT_Z_FRAC_BITS))
 	fild dword[zsize]
@@ -125,35 +125,35 @@ endl
 	mov edx,[context]
 	mov ebx,[p]
 	mov ebx,[ebx+4] ;ebx = p[1]
-	mov [edx+offs_cont_begin_type],ebx
-	mov dword[edx+offs_cont_in_begin],1
-	mov dword[edx+offs_cont_vertex_n],0
-	mov dword[edx+offs_cont_vertex_cnt],0
+	mov [edx+GLContext.begin_type],ebx
+	mov dword[edx+GLContext.in_begin],1
+	mov dword[edx+GLContext.vertex_n],0
+	mov dword[edx+GLContext.vertex_cnt],0
 
-	bt dword[edx+offs_cont_matrix_model_projection_updated],0
+	bt dword[edx+GLContext.matrix_model_projection_updated],0
 	jnc .end_mmpu
 
-	cmp dword[edx+offs_cont_lighting_enabled],0 ;if(context.lighting_enabled)
+	cmp dword[edx+GLContext.lighting_enabled],0 ;if(context.lighting_enabled)
 	jne .if_0
-	cmp dword[eax+offs_cont_texture_2d_enabled],0
+	cmp dword[eax+GLContext.texture_2d_enabled],0
 	jne .if_0
 		jmp @f
 align 4
 	.if_0:
 if DEBUG ;context.matrix_stack_ptr[0]
-	stdcall gl_print_matrix,dword[edx+offs_cont_matrix_stack_ptr],4
+	stdcall gl_print_matrix,dword[edx+GLContext.matrix_stack_ptr],4
 end if
 		; precompute inverse modelview
 		mov ebx,ebp
 		sub ebx,sizeof.M4
-		stdcall gl_M4_Inv, ebx,dword[edx+offs_cont_matrix_stack_ptr]
+		stdcall gl_M4_Inv, ebx,dword[edx+GLContext.matrix_stack_ptr]
 if DEBUG ;tmp
 	stdcall dbg_print,txt_sp,txt_nl
 	stdcall gl_print_matrix,ebx,4
 end if
 		push ebx
 		mov ebx,edx
-		add ebx,offs_cont_matrix_model_view_inv
+		add ebx,GLContext.matrix_model_view_inv
 		stdcall gl_M4_Transpose, ebx
 if DEBUG ;context.matrix_model_view_inv
 	stdcall dbg_print,txt_sp,txt_nl
@@ -163,12 +163,12 @@ end if
 align 4
 	@@:
 		mov ecx,edx
-		add ecx,offs_cont_matrix_model_projection
+		add ecx,GLContext.matrix_model_projection
 		; precompute projection matrix
-		stdcall gl_M4_Mul, ecx,dword[edx+offs_cont_matrix_stack_ptr+4],dword[edx+offs_cont_matrix_stack_ptr]
+		stdcall gl_M4_Mul, ecx,dword[edx+GLContext.matrix_stack_ptr+4],dword[edx+GLContext.matrix_stack_ptr]
 
 		; test to accelerate computation
-		mov dword[edx+offs_cont_matrix_model_projection_no_w_transform],0
+		mov dword[edx+GLContext.matrix_model_projection_no_w_transform],0
 		fldz
 		fld dword[ecx+12*4]
 		fcomp st1
@@ -185,7 +185,7 @@ align 4
 		fstsw ax
 		sahf
 		jne @f
-			mov dword[edx+offs_cont_matrix_model_projection_no_w_transform],1
+			mov dword[edx+GLContext.matrix_model_projection_no_w_transform],1
 		@@:
 		ffree st0 ;0.0
 		fincstp
@@ -193,57 +193,57 @@ align 4
 
 		; test if the texture matrix is not Identity
 		mov eax,edx
-		add eax,offs_cont_matrix_stack_ptr+8
+		add eax,GLContext.matrix_stack_ptr+8
 		stdcall gl_M4_IsId,eax
 		xor eax,1
-		mov dword[edx+offs_cont_apply_texture_matrix],eax
+		mov dword[edx+GLContext.apply_texture_matrix],eax
 
-		mov dword[edx+offs_cont_matrix_model_projection_updated],0
+		mov dword[edx+GLContext.matrix_model_projection_updated],0
 	.end_mmpu:
 
 	; viewport
-	cmp dword[edx+offs_cont_viewport+offs_vpor_updated],0 ;if (context.viewport.updated)
+	cmp dword[edx+GLContext.viewport+offs_vpor_updated],0 ;if (context.viewport.updated)
 	je @f
 		stdcall gl_eval_viewport,edx
-		mov dword[edx+offs_cont_viewport+offs_vpor_updated],0
+		mov dword[edx+GLContext.viewport+offs_vpor_updated],0
 	@@:
 	; triangle drawing functions
-	cmp dword[edx+offs_cont_render_mode],GL_SELECT
+	cmp dword[edx+GLContext.render_mode],GL_SELECT
 	jne @f
-		mov dword[edx+offs_cont_draw_triangle_front],gl_draw_triangle_select
-		mov dword[edx+offs_cont_draw_triangle_back],gl_draw_triangle_select
+		mov dword[edx+GLContext.draw_triangle_front],gl_draw_triangle_select
+		mov dword[edx+GLContext.draw_triangle_back],gl_draw_triangle_select
 		jmp .end_if_2
 align 4
 	@@:
 
-	cmp dword[edx+offs_cont_polygon_mode_front],GL_POINT
+	cmp dword[edx+GLContext.polygon_mode_front],GL_POINT
 	jne @f
-		mov dword[edx+offs_cont_draw_triangle_front],gl_draw_triangle_point
+		mov dword[edx+GLContext.draw_triangle_front],gl_draw_triangle_point
 		jmp .end_if_1
 align 4
 	@@:
-	cmp dword[edx+offs_cont_polygon_mode_front],GL_LINE
+	cmp dword[edx+GLContext.polygon_mode_front],GL_LINE
 	jne @f
-		mov dword[edx+offs_cont_draw_triangle_front],gl_draw_triangle_line
+		mov dword[edx+GLContext.draw_triangle_front],gl_draw_triangle_line
 		jmp .end_if_1
 align 4
 	@@: ;default:
-		mov dword[edx+offs_cont_draw_triangle_front],gl_draw_triangle_fill
+		mov dword[edx+GLContext.draw_triangle_front],gl_draw_triangle_fill
 	.end_if_1:
 
-	cmp dword[edx+offs_cont_polygon_mode_back],GL_POINT
+	cmp dword[edx+GLContext.polygon_mode_back],GL_POINT
 	jne @f
-		mov dword[edx+offs_cont_draw_triangle_back],gl_draw_triangle_point
+		mov dword[edx+GLContext.draw_triangle_back],gl_draw_triangle_point
 		jmp .end_if_2
 align 4
 	@@:
-	cmp dword[edx+offs_cont_polygon_mode_back],GL_LINE
+	cmp dword[edx+GLContext.polygon_mode_back],GL_LINE
 	jne @f
-		mov dword[edx+offs_cont_draw_triangle_back],gl_draw_triangle_line
+		mov dword[edx+GLContext.draw_triangle_back],gl_draw_triangle_line
 		jmp .end_if_2
 align 4
 	@@: ;default:
-	    mov dword[edx+offs_cont_draw_triangle_back],gl_draw_triangle_fill
+	    mov dword[edx+GLContext.draw_triangle_back],gl_draw_triangle_fill
 	.end_if_2:
 	ret
 endp
@@ -255,15 +255,15 @@ proc gl_vertex_transform, context:dword, v:dword
 pushad
 	mov eax,[context]
 	mov edx,[v]
-	cmp dword[eax+offs_cont_lighting_enabled],0 ;if (context.lighting_enabled)
+	cmp dword[eax+GLContext.lighting_enabled],0 ;if (context.lighting_enabled)
 	jne @f
-	cmp dword[eax+offs_cont_texture_2d_enabled],0
+	cmp dword[eax+GLContext.texture_2d_enabled],0
 	jne @f
 		jmp .els_0
 align 4
 	@@:
 		; eye coordinates needed for lighting
-		mov ebx,dword[eax+offs_cont_matrix_stack_ptr]
+		mov ebx,dword[eax+GLContext.matrix_stack_ptr]
 		finit
 		fld dword[edx+offs_vert_coord+offs_X]
 		fld dword[edx+offs_vert_coord+offs_Y]
@@ -292,7 +292,7 @@ align 4
 		fincstp
 
 		; projection coordinates
-		mov ebx,dword[eax+offs_cont_matrix_stack_ptr+4]
+		mov ebx,dword[eax+GLContext.matrix_stack_ptr+4]
 		mov edx,[v]
 
 		fld dword[edx+offs_vert_ec+offs_X]
@@ -327,9 +327,9 @@ align 4
 		fincstp
 
 		mov ebx,eax
-		add ebx,offs_cont_matrix_model_view_inv
+		add ebx,GLContext.matrix_model_view_inv
 		mov edi,eax
-		add edi,offs_cont_current_normal
+		add edi,GLContext.current_normal
 		mov edx,[v]
 
 		fld dword[edi] ;edi = &n
@@ -368,7 +368,7 @@ align 4
 		faddp            ;st0 = v.normal.X
 		fstp dword[edx+8];v.normal.X = n.X * m[8] + n.Y * m[9] + n.Z * m[10]
 
-		cmp dword[eax+offs_cont_normalize_enabled],0
+		cmp dword[eax+GLContext.normalize_enabled],0
 		je .end_els
 			stdcall gl_V3_Norm,edx
 		jmp .end_els
@@ -377,7 +377,7 @@ align 4
 		; no eye coordinates needed, no normal
 		; NOTE: W = 1 is assumed
 		mov ebx,eax
-		add ebx,offs_cont_matrix_model_projection
+		add ebx,GLContext.matrix_model_projection
 
 		finit
 		fld dword[edx+offs_vert_coord+offs_X]
@@ -420,7 +420,7 @@ align 4
 		faddp              ;st0 = v.pc.Z
 		fstp dword[esi+8]  ;v.pc.Z = v.coord.X * m[8] + v.coord.Y * m[9] + v.coord.Z * m[10] + m[11]
 
-		cmp dword[eax+offs_cont_matrix_model_projection_no_w_transform],0
+		cmp dword[eax+GLContext.matrix_model_projection_no_w_transform],0
 		je .els_1
 			;if (context.matrix_model_projection_no_w_transform)
 			mov ebx,dword[ebx+60] ;ebx = m[15]
@@ -471,15 +471,15 @@ pushad
 
 ;    assert(c->in_begin != 0);
 
-	mov ecx,[edx+offs_cont_vertex_n]
+	mov ecx,[edx+GLContext.vertex_n]
 	mov [n],ecx
-	inc dword[edx+offs_cont_vertex_cnt]
+	inc dword[edx+GLContext.vertex_cnt]
 
 	; quick fix to avoid crashes on large polygons
-	mov ecx,[edx+offs_cont_vertex_max]
+	mov ecx,[edx+GLContext.vertex_max]
 	cmp dword[n],ecx
 	jl @f
-		shl dword[edx+offs_cont_vertex_max],1 ; just double size
+		shl dword[edx+GLContext.vertex_max],1 ; just double size
 		imul ecx,2*sizeof.GLVertex
 		stdcall gl_malloc,ecx
 		cmp eax,0
@@ -488,17 +488,17 @@ pushad
 		.no_err:
 		mov edi,eax
 		mov ebx,eax
-		mov esi,[edx+offs_cont_vertex]
+		mov esi,[edx+GLContext.vertex]
 		mov ecx,[n]
 		imul ecx,(sizeof.GLVertex)/4 ;((...)/4) что-бы использовать movsd вместо movsb
 		rep movsd
-		stdcall gl_free,dword[edx+offs_cont_vertex]
-		mov dword[edx+offs_cont_vertex],ebx
+		stdcall gl_free,dword[edx+GLContext.vertex]
+		mov dword[edx+GLContext.vertex],ebx
 	@@:
 	; new vertex entry
 	mov ebx,[n]
 	imul ebx,sizeof.GLVertex
-	add ebx,[edx+offs_cont_vertex]
+	add ebx,[edx+GLContext.vertex]
 	inc dword[n]
 
 	mov esi,[p]
@@ -511,14 +511,14 @@ pushad
 	stdcall gl_vertex_transform, edx, ebx
 
 	; color
-	cmp dword[edx+offs_cont_lighting_enabled],0
+	cmp dword[edx+GLContext.lighting_enabled],0
 	je .els_0
 		stdcall gl_shade_vertex, edx,ebx
 		jmp @f
 align 4
 	.els_0:
 		mov esi,edx
-		add esi,offs_cont_current_color
+		add esi,GLContext.current_color
 		mov edi,ebx
 		add edi,offs_vert_color ;edi = &v.color
 		mov ecx,4
@@ -526,21 +526,21 @@ align 4
 	@@:
 
 	; tex coords
-	cmp dword[edx+offs_cont_texture_2d_enabled],0
+	cmp dword[edx+GLContext.texture_2d_enabled],0
 	je @f
-		cmp dword[edx+offs_cont_apply_texture_matrix],0
+		cmp dword[edx+GLContext.apply_texture_matrix],0
 		je .els_1
 			mov eax,edx
-			add eax,offs_cont_current_tex_coord
+			add eax,GLContext.current_tex_coord
 			push eax ;&context.current_tex_coord
 			mov eax,ebx
 			add eax,offs_vert_tex_coord
-			stdcall gl_M4_MulV4, eax, dword[edx+offs_cont_matrix_stack_ptr+8]
+			stdcall gl_M4_MulV4, eax, dword[edx+GLContext.matrix_stack_ptr+8]
 			jmp @f
 align 4
 		.els_1:
 			mov esi,edx
-			add esi,offs_cont_current_tex_coord
+			add esi,GLContext.current_tex_coord
 			mov edi,ebx
 			add edi,offs_vert_tex_coord
 			mov ecx,4
@@ -554,21 +554,21 @@ align 4
 	@@:
 
 	; edge flag
-	mov eax,[edx+offs_cont_current_edge_flag]
+	mov eax,[edx+GLContext.current_edge_flag]
 	mov dword[ebx+offs_vert_edge_flag],eax ;v.edge_flag = context.current_edge_flag
 
-	cmp dword[edx+offs_cont_begin_type],GL_POINTS
+	cmp dword[edx+GLContext.begin_type],GL_POINTS
 	jne @f
-		stdcall gl_draw_point, edx, dword[edx+offs_cont_vertex] ;dword[edx+...] = &context.vertex[0]
+		stdcall gl_draw_point, edx, dword[edx+GLContext.vertex] ;dword[edx+...] = &context.vertex[0]
 		mov dword[n],0
 		jmp .end_f
 align 4
 	@@:
-	cmp dword[edx+offs_cont_begin_type],GL_LINES
+	cmp dword[edx+GLContext.begin_type],GL_LINES
 	jne @f
 		cmp dword[n],2
 		jne .end_f
-			mov eax,[edx+offs_cont_vertex]
+			mov eax,[edx+GLContext.vertex]
 			push eax
 			add eax,sizeof.GLVertex
 			stdcall gl_draw_line, edx, eax
@@ -577,14 +577,14 @@ align 4
 		jmp .end_f
 align 4
 	@@:
-	cmp dword[edx+offs_cont_begin_type],GL_LINE_STRIP
+	cmp dword[edx+GLContext.begin_type],GL_LINE_STRIP
 	je .li_loop
-	cmp dword[edx+offs_cont_begin_type],GL_LINE_LOOP
+	cmp dword[edx+GLContext.begin_type],GL_LINE_LOOP
 	jne @f
 		.li_loop:
 		cmp dword[n],1
 		jne .els_2
-			mov esi,[edx+offs_cont_vertex]
+			mov esi,[edx+GLContext.vertex]
 			mov edi,esi
 			add edi,2*sizeof.GLVertex
 			mov ecx,(sizeof.GLVertex)/4 ;((...)/4) что-бы использовать movsd вместо movsb
@@ -594,7 +594,7 @@ align 4
 		.els_2:
 		cmp dword[n],2
 		jne .end_f ;else if (n == 2)
-			mov eax,[edx+offs_cont_vertex]
+			mov eax,[edx+GLContext.vertex]
 			push eax
 			mov edi,eax
 			add eax,sizeof.GLVertex
@@ -606,11 +606,11 @@ align 4
 		jmp .end_f
 align 4
 	@@:
-	cmp dword[edx+offs_cont_begin_type],GL_TRIANGLES
+	cmp dword[edx+GLContext.begin_type],GL_TRIANGLES
 	jne @f
 		cmp dword[n],3
 		jne .end_f
-			mov eax,[edx+offs_cont_vertex]
+			mov eax,[edx+GLContext.vertex]
 			mov [esp-12],eax
 			add eax,sizeof.GLVertex
 			mov [esp-8],eax
@@ -623,9 +623,9 @@ align 4
 		jmp .end_f
 align 4
 	@@:
-	cmp dword[edx+offs_cont_begin_type],GL_TRIANGLE_STRIP
+	cmp dword[edx+GLContext.begin_type],GL_TRIANGLE_STRIP
 	jne @f
-		cmp dword[edx+offs_cont_vertex_cnt],3 ;if (context.vertex_cnt >= 3)
+		cmp dword[edx+GLContext.vertex_cnt],3 ;if (context.vertex_cnt >= 3)
 		jl .end_f
 			cmp dword[n],3
 			jne .ts3
@@ -633,8 +633,8 @@ align 4
 				mov dword[n],eax
 			.ts3:
 			; needed to respect triangle orientation
-			mov eax,[edx+offs_cont_vertex]
-			bt dword[edx+offs_cont_vertex_cnt],0
+			mov eax,[edx+GLContext.vertex]
+			bt dword[edx+GLContext.vertex_cnt],0
 			jc .case_1
 				mov [esp-4],eax
 				add eax,sizeof.GLVertex
@@ -656,11 +656,11 @@ align 4
 		jmp .end_f
 align 4
 	@@:
-	cmp dword[edx+offs_cont_begin_type],GL_TRIANGLE_FAN
+	cmp dword[edx+GLContext.begin_type],GL_TRIANGLE_FAN
 	jne @f
 		cmp dword[n],3
 		jne .end_f
-			mov eax,[edx+offs_cont_vertex]
+			mov eax,[edx+GLContext.vertex]
 			mov [esp-12],eax
 			add eax,sizeof.GLVertex
 			mov [esp-8],eax
@@ -676,11 +676,11 @@ align 4
 		jmp .end_f
 align 4
 	@@:
-	cmp dword[edx+offs_cont_begin_type],GL_QUADS
+	cmp dword[edx+GLContext.begin_type],GL_QUADS
 	jne @f
 		cmp dword[n],4
 		jne .end_f
-			mov eax,[edx+offs_cont_vertex]
+			mov eax,[edx+GLContext.vertex]
 			add eax,2*sizeof.GLVertex
 			mov dword[eax+offs_vert_edge_flag],0 ;context.vertex[2].edge_flag = 0
 			push eax
@@ -702,11 +702,11 @@ align 4
 		jmp .end_f
 align 4
 	@@:
-	cmp dword[edx+offs_cont_begin_type],GL_QUAD_STRIP
+	cmp dword[edx+GLContext.begin_type],GL_QUAD_STRIP
 	jne @f
 		cmp dword[n],4
 		jne .end_f
-			mov eax,[edx+offs_cont_vertex]
+			mov eax,[edx+GLContext.vertex]
 			mov [esp-12],eax
 			mov edi,eax
 			add eax,sizeof.GLVertex
@@ -729,7 +729,7 @@ align 4
 		jmp .end_f
 align 4
 	@@:
-	cmp dword[edx+offs_cont_begin_type],GL_POLYGON
+	cmp dword[edx+GLContext.begin_type],GL_POLYGON
 	je .end_f
 ;    default:
 ;       gl_fatal_error("glBegin: type %x not handled\n", c->begin_type);
@@ -737,7 +737,7 @@ align 4
 	.end_f:
 
 	mov ecx,[n]
-	mov [edx+offs_cont_vertex_n],ecx
+	mov [edx+GLContext.vertex_n],ecx
 popad
 	ret
 endp
@@ -747,11 +747,11 @@ proc glopEnd uses eax ebx ecx, context:dword, p:dword
 	mov eax,[context]
 ;    assert(c->in_begin == 1);
 
-	cmp dword[eax+offs_cont_begin_type],GL_LINE_LOOP
+	cmp dword[eax+GLContext.begin_type],GL_LINE_LOOP
 	jne .else_i
-		cmp dword[eax+offs_cont_vertex_cnt],3
+		cmp dword[eax+GLContext.vertex_cnt],3
 		jl .end_i
-			mov ebx,[eax+offs_cont_vertex]
+			mov ebx,[eax+GLContext.vertex]
 			push ebx
 			add ebx,2*sizeof.GLVertex
 			push ebx
@@ -759,23 +759,23 @@ proc glopEnd uses eax ebx ecx, context:dword, p:dword
 		jmp .end_i
 align 4
 	.else_i:
-	cmp dword[eax+offs_cont_begin_type],GL_POLYGON
+	cmp dword[eax+GLContext.begin_type],GL_POLYGON
 	jne .end_i
-		mov ebx,dword[eax+offs_cont_vertex_cnt]
+		mov ebx,dword[eax+GLContext.vertex_cnt]
 		@@: ;while (ebx >= 3)
 		cmp ebx,3
 		jl .end_i
 			dec ebx
 			mov ecx,ebx
 			imul ecx,sizeof.GLVertex
-			add ecx,[eax+offs_cont_vertex]
+			add ecx,[eax+GLContext.vertex]
 			push ecx ;ecx = &context.vertex[i]
 			sub ecx,sizeof.GLVertex
 			push ecx ;ecx = &context.vertex[i-1]
-			stdcall gl_draw_triangle, eax,[eax+offs_cont_vertex]
+			stdcall gl_draw_triangle, eax,[eax+GLContext.vertex]
 		jmp @b
 align 4
 	.end_i:
-	mov dword[eax+offs_cont_in_begin],0
+	mov dword[eax+GLContext.in_begin],0
 	ret
 endp

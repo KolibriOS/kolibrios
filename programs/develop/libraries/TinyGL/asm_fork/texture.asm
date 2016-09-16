@@ -5,7 +5,7 @@
 align 4
 proc find_texture uses ebx ecx, context:dword, h:dword
 	mov ebx,[context]
-	mov ebx,[ebx+offs_cont_shared_state+4] ;ebx = &texture_hash_table
+	mov ebx,[ebx+GLContext.shared_state+4] ;ebx = &texture_hash_table
 	mov eax,[h]
 	and eax,0xff
 	shl eax,2
@@ -34,7 +34,7 @@ proc free_texture uses eax ebx ecx edx, context:dword, h:dword
 	stdcall find_texture,edx,[h] ;t=find_texture(context,h)
 	cmp dword[eax+offs_text_prev],0 ;if (t.prev==NULL)
 	jne .else
-		mov edx,[edx+offs_cont_shared_state+4] ;edx = &context.shared_state.texture_hash_table[0]
+		mov edx,[edx+GLContext.shared_state+4] ;edx = &context.shared_state.texture_hash_table[0]
 		mov ebx,[eax+offs_text_handle]
 		and ebx,0xff
 		shl ebx,2
@@ -80,7 +80,7 @@ proc alloc_texture uses ebx ecx, context:dword, h:dword
 	stdcall gl_zalloc,sizeof.GLTexture
 
 	mov ebx,[context]
-	mov ebx,[ebx+offs_cont_shared_state+4] ;ebx = &texture_hash_table
+	mov ebx,[ebx+GLContext.shared_state+4] ;ebx = &texture_hash_table
 	mov ecx,[h]
 	and ecx,0xff
 	shl ecx,2
@@ -105,9 +105,9 @@ align 4
 proc glInitTextures uses eax edx, context:dword
 	; textures
 	mov edx,[context]
-	mov dword[edx+offs_cont_texture_2d_enabled],0
+	mov dword[edx+GLContext.texture_2d_enabled],0
 	stdcall find_texture,edx,0
-	mov dword[edx+offs_cont_current_texture],eax
+	mov dword[edx+GLContext.current_texture],eax
 	ret
 endp
 
@@ -115,7 +115,7 @@ align 4
 proc glGenTextures uses eax ebx ecx edx esi, n:dword, textures:dword
 ;edx - GLTexture *t
 	call gl_get_context
-	add eax,offs_cont_shared_state+4 ;offset texture_hash_table = 4
+	add eax,GLContext.shared_state+4 ;offset texture_hash_table = 4
 
 	xor ebx,ebx ;max=0
 	xor ecx,ecx ;i=0
@@ -167,7 +167,7 @@ proc glDeleteTextures uses eax ebx ecx edx, n:dword, textures:dword
 		stdcall find_texture,edx,[ecx] ;t=find_texture(context,textures[i])
 		or eax,eax ;if (t!=0)
 		jz @f
-			cmp eax,[edx+offs_cont_current_texture] ;if (t==context.current_texture)
+			cmp eax,[edx+GLContext.current_texture] ;if (t==context.current_texture)
 			jne .end_1
 				stdcall glBindTexture,GL_TEXTURE_2D,0
 			.end_1:
@@ -200,7 +200,7 @@ proc glopBindTexture uses eax ebx edx, context:dword, p:dword
 	jnz @f
 		stdcall alloc_texture, edx,ebx
 	@@:
-	mov [edx+offs_cont_current_texture],eax
+	mov [edx+GLContext.current_texture],eax
 	ret
 endp
 
@@ -265,7 +265,7 @@ align 4
 	@@:
 
 	mov ecx,[context]
-	mov ecx,[ecx+offs_cont_current_texture]
+	mov ecx,[ecx+GLContext.current_texture]
 	add ecx,offs_text_images
 	imul ebx,sizeof.GLTexture
 	add ecx,ebx ;ecx = &context.current_texture.images[level]

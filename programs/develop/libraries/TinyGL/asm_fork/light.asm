@@ -17,7 +17,7 @@ proc glopMaterial uses eax ebx ecx edi esi, context:dword, p:dword
 		mov ecx,GL_BACK
 	@@:
 	mov edi,eax
-	add edi,offs_cont_materials
+	add edi,GLContext.materials
 	cmp ecx,GL_FRONT ;if (mode == GL_FRONT) m=&context.materials[0]
 	je @f
 		add edi,sizeof.GLMaterial ;else m=&context.materials[1]
@@ -88,9 +88,9 @@ proc glopColorMaterial uses eax ebx ecx, context:dword, p:dword
 	mov eax,[context]
 	mov ebx,[p]
 	mov ecx,[ebx+4] ;ecx = p[1]
-	mov dword[eax+offs_cont_current_color_material_mode],ecx
+	mov dword[eax+GLContext.current_color_material_mode],ecx
 	mov ecx,[ebx+8] ;ecx = p[2]
-	mov dword[eax+offs_cont_current_color_material_type],ecx
+	mov dword[eax+GLContext.current_color_material_type],ecx
 	ret
 endp
 
@@ -109,7 +109,7 @@ pushad
 	sub edx,GL_LIGHT0
 	imul edx,sizeof.GLLight
 	add edx,eax
-	add edx,offs_cont_lights
+	add edx,GLContext.lights
 
 	mov ecx,[ebx+8] ;ecx = p[2]
 	cmp ecx,GL_AMBIENT
@@ -151,7 +151,7 @@ align 4
 		add edi,12 ;&p[3]
 		mov esi,ebp
 		sub esi,16 ;&pos
-		stdcall gl_M4_MulV4, esi,dword[eax+offs_cont_matrix_stack_ptr],edi
+		stdcall gl_M4_MulV4, esi,dword[eax+GLContext.matrix_stack_ptr],edi
 		mov edi,edx
 		add edi,offs_ligh_position
 		mov ecx,4
@@ -267,7 +267,7 @@ proc glopLightModel uses ebx ecx esi edi, context:dword, p:dword
 	cmp ebx,GL_LIGHT_MODEL_AMBIENT
 	jne @f
 		mov ecx,4
-		add edi,offs_cont_ambient_light_model
+		add edi,GLContext.ambient_light_model
 		rep movsd ;for(i=0;i<4;i++) context.ambient_light_model.v[i]=v[i]
 		jmp .end_f
 align 4
@@ -275,14 +275,14 @@ align 4
 	cmp ebx,GL_LIGHT_MODEL_LOCAL_VIEWER
 	jne @f
 		fld dword[esi] ;st0 = p[2]
-		fistp dword[edi+offs_cont_local_light_model]
+		fistp dword[edi+GLContext.local_light_model]
 		jmp .end_f
 align 4
 	@@:
 	cmp ebx,GL_LIGHT_MODEL_TWO_SIDE
 	jne @f
 		fld dword[esi] ;st0 = p[2]
-		fistp dword[edi+offs_cont_light_model_two_side]
+		fistp dword[edi+GLContext.light_model_two_side]
 		jmp .end_f
 align 4
 	@@: ;default:
@@ -327,7 +327,7 @@ proc gl_enable_disable_light uses eax ebx ecx, context:dword, light:dword, v:dwo
 	mov ebx,[light]
 	imul ebx,sizeof.GLLight
 	add ebx,eax
-	add ebx,offs_cont_lights
+	add ebx,GLContext.lights
 
 	xor ecx,ecx
 	cmp dword[ebx+offs_ligh_enabled],0
@@ -339,9 +339,9 @@ proc gl_enable_disable_light uses eax ebx ecx, context:dword, light:dword, v:dwo
 	jz @f
 		;if (v && !l.enabled)
 		mov dword[ebx+offs_ligh_enabled],1
-		mov ecx,[eax+offs_cont_first_light]
+		mov ecx,[eax+GLContext.first_light]
 		mov [ebx+offs_ligh_next],ecx
-		mov [eax+offs_cont_first_light],ebx ;context.first_light = l
+		mov [eax+GLContext.first_light],ebx ;context.first_light = l
 		mov dword[ebx+offs_ligh_prev],0 ;l.prev = NULL
 		jmp .end_f
 align 4
@@ -359,7 +359,7 @@ align 4
 		mov ecx,[ebx+offs_ligh_next]
 		cmp dword[ebx+offs_ligh_prev],0 ;if (l.prev == NULL)
 		jne .els_0
-			mov [eax+offs_cont_first_light],ecx	;context.first_light = l.next
+			mov [eax+GLContext.first_light],ecx	;context.first_light = l.next
 			jmp @f
 align 4
 		.els_0:
@@ -416,8 +416,8 @@ pushad
 	mov esi,[v]
 	mov edx,[context]
 	mov ecx,edx
-	add ecx,offs_cont_materials ;ecx(m) = &context.materials[0]
-	mov eax,[edx+offs_cont_light_model_two_side]
+	add ecx,GLContext.materials ;ecx(m) = &context.materials[0]
+	mov eax,[edx+GLContext.light_model_two_side]
 	mov [twoside],eax
 
 	add esi,offs_vert_normal
@@ -428,22 +428,22 @@ pushad
 	movsd ;n.Z=v.normal.Z
 	mov esi,[v]
 
-	fld dword[edx+offs_cont_ambient_light_model]
+	fld dword[edx+GLContext.ambient_light_model]
 	fmul dword[ecx+offs_mate_ambient]
 	fadd dword[ecx] ;offs_mate_emission=0
 	fstp dword[R] ;R=m.emission.v[0]+m.ambient.v[0]*context.ambient_light_model.v[0]
-	fld dword[edx+offs_cont_ambient_light_model+4]
+	fld dword[edx+GLContext.ambient_light_model+4]
 	fmul dword[ecx+offs_mate_ambient+4]
 	fadd dword[ecx+offs_mate_emission+4]
 	fstp dword[G]
-	fld dword[edx+offs_cont_ambient_light_model+8]
+	fld dword[edx+GLContext.ambient_light_model+8]
 	fmul dword[ecx+offs_mate_ambient+8]
 	fadd dword[ecx+offs_mate_emission+8]
 	fstp dword[B]
 	clampf [ecx+offs_mate_diffuse+12],0,1
 	mov [A],eax ;A=clampf(m.diffuse.v[3],0,1)
 
-	mov ebx,[edx+offs_cont_first_light]
+	mov ebx,[edx+GLContext.first_light]
 	.cycle_0: ;for(l=context.first_light;l!=NULL;l=l.next)
 		or ebx,ebx
 		jz .cycle_0_end
@@ -637,7 +637,7 @@ align 4
 			.if1_end:
 
 			; specular light
-			cmp dword[edx+offs_cont_local_light_model],0 ;if (c.local_light_model)
+			cmp dword[edx+GLContext.local_light_model],0 ;if (c.local_light_model)
 			je .els_2
 				mov eax,[esi+offs_vert_ec]
 				mov [vcoord],eax ;vcoord.X=v.ec.X

@@ -60,11 +60,11 @@ macro gl_matrix_update context, reg
 {
 	local .end_0
 	xor reg,reg
-	cmp dword[context+offs_cont_matrix_mode],1
+	cmp dword[context+GLContext.matrix_mode],1
 	jg .end_0
 		inc reg
 	.end_0:
-	mov dword[context+offs_cont_matrix_model_projection_updated],reg
+	mov dword[context+GLContext.matrix_model_projection_updated],reg
 }
 
 align 4
@@ -74,17 +74,17 @@ proc glopMatrixMode uses eax ebx, context:dword, p:dword
 
 	cmp dword[ebx+4],GL_MODELVIEW ;cmp p[1],...
 	jne @f
-		mov dword[eax+offs_cont_matrix_mode],0
+		mov dword[eax+GLContext.matrix_mode],0
 		jmp .end_f
 	@@:
 	cmp dword[ebx+4],GL_PROJECTION
 	jne @f
-		mov dword[eax+offs_cont_matrix_mode],1
+		mov dword[eax+GLContext.matrix_mode],1
 		jmp .end_f
 	@@:
 	cmp dword[ebx+4],GL_TEXTURE
 	jne .def
-		mov dword[eax+offs_cont_matrix_mode],2
+		mov dword[eax+GLContext.matrix_mode],2
 		jmp .end_f
 	.def:
 ;assert(0);
@@ -95,10 +95,10 @@ endp
 align 4
 proc glopLoadMatrix uses eax edi esi, context:dword, p:dword
 	mov eax,[context]
-	mov edi,[eax+offs_cont_matrix_mode]
+	mov edi,[eax+GLContext.matrix_mode]
 	shl edi,2
 	add edi,eax
-	mov edi,dword[edi+offs_cont_matrix_stack_ptr]
+	mov edi,dword[edi+GLContext.matrix_stack_ptr]
 
 	mov esi,[p]
 	add esi,4
@@ -111,11 +111,11 @@ endp
 align 4
 proc glopLoadIdentity uses eax ebx, context:dword, p:dword
 	mov eax,[context]
-	mov ebx,[eax+offs_cont_matrix_mode]
+	mov ebx,[eax+GLContext.matrix_mode]
 	shl ebx,2
 	add ebx,eax
 
-	stdcall gl_M4_Id,[ebx+offs_cont_matrix_stack_ptr]
+	stdcall gl_M4_Id,[ebx+GLContext.matrix_stack_ptr]
 	gl_matrix_update eax,ebx
 	ret
 endp
@@ -132,10 +132,10 @@ endl
 	stdcall gl_M4_Transpose,edi,esi ;транспонируем входную матрицу в локальную матрицу m
 
 	mov eax,[context]
-	mov esi,[eax+offs_cont_matrix_mode]
+	mov esi,[eax+GLContext.matrix_mode]
 	shl esi,2
 	add esi,eax
-	stdcall gl_M4_MulLeft,dword[esi+offs_cont_matrix_stack_ptr],edi
+	stdcall gl_M4_MulLeft,dword[esi+GLContext.matrix_stack_ptr],edi
 
 	gl_matrix_update eax,edi
 	ret
@@ -144,14 +144,14 @@ endp
 align 4
 proc glopPushMatrix uses eax ebx, context:dword, p:dword
 	mov eax,[context]
-	mov ebx,[eax+offs_cont_matrix_mode]
+	mov ebx,[eax+GLContext.matrix_mode]
 
 ;  assert( (c->matrix_stack_ptr[ebx] - c->matrix_stack[ebx] + 1 )
 ;	   < c->matrix_stack_depth_max[ebx] );
 
 	shl ebx,2
 	add ebx,eax
-	add ebx,offs_cont_matrix_stack_ptr
+	add ebx,GLContext.matrix_stack_ptr
 	add dword[ebx],sizeof.M4
 	mov ebx,[ebx] ;ebx = ++context.matrix_stack_ptr[context.matrix_mode]
 
@@ -167,13 +167,13 @@ endp
 align 4
 proc glopPopMatrix uses eax ebx, context:dword, p:dword
 	mov eax,[context]
-	mov ebx,[eax+offs_cont_matrix_mode]
+	mov ebx,[eax+GLContext.matrix_mode]
 
 ;  assert( c->matrix_stack_ptr[n] > c->matrix_stack[n] );
 
 	shl ebx,2
 	add ebx,eax
-	sub dword[ebx+offs_cont_matrix_stack_ptr],sizeof.M4
+	sub dword[ebx+GLContext.matrix_stack_ptr],sizeof.M4
 
 	gl_matrix_update eax,ebx
 	ret
@@ -424,10 +424,10 @@ endl
 	.end_sw:
 
 	mov eax,[context]
-	mov ebx,[eax+offs_cont_matrix_mode]
+	mov ebx,[eax+GLContext.matrix_mode]
 	shl ebx,2
 	add ebx,eax
-	stdcall gl_M4_MulLeft,dword[ebx+offs_cont_matrix_stack_ptr],ecx
+	stdcall gl_M4_MulLeft,dword[ebx+GLContext.matrix_stack_ptr],ecx
 	gl_matrix_update eax,ebx
 	jmp .end_f
 	.f2:
@@ -444,10 +444,10 @@ proc glopScale uses eax ebx ecx, context:dword, p:dword
 	mov ecx,[p]
 
 	mov eax,[context]
-	mov ebx,[eax+offs_cont_matrix_mode]
+	mov ebx,[eax+GLContext.matrix_mode]
 	shl ebx,2
 	add ebx,eax
-	mov ebx,[ebx+offs_cont_matrix_stack_ptr] ;ebx = &m[0]
+	mov ebx,[ebx+GLContext.matrix_stack_ptr] ;ebx = &m[0]
 
 	fld dword[ecx+ 4] ;x
 	fld dword[ecx+ 8] ;y
@@ -481,10 +481,10 @@ proc glopTranslate uses eax ebx ecx, context:dword, p:dword
 	mov ecx,[p]
 
 	mov eax,[context]
-	mov ebx,[eax+offs_cont_matrix_mode]
+	mov ebx,[eax+GLContext.matrix_mode]
 	shl ebx,2
 	add ebx,eax
-	mov ebx,[ebx+offs_cont_matrix_stack_ptr] ;ebx = &m[0]
+	mov ebx,[ebx+GLContext.matrix_stack_ptr] ;ebx = &m[0]
 
 	fld dword[ecx+ 4] ;x
 	fld dword[ecx+ 8] ;y
@@ -594,14 +594,14 @@ endl
 	mov dword[ecx+56],-1.0
 	mov dword[ecx+60],0.0
 
-	mov ebx,[eax+offs_cont_matrix_mode]
+	mov ebx,[eax+GLContext.matrix_mode]
 	shl ebx,2
 	add ebx,eax
-	stdcall gl_M4_MulLeft,dword[ebx+offs_cont_matrix_stack_ptr],ecx
+	stdcall gl_M4_MulLeft,dword[ebx+GLContext.matrix_stack_ptr],ecx
 
 if DEBUG ;glopFrustum
 	stdcall gl_print_matrix,ecx,4
-	stdcall gl_print_matrix,dword[ebx+offs_cont_matrix_stack_ptr],4
+	stdcall gl_print_matrix,dword[ebx+GLContext.matrix_stack_ptr],4
 end if
 	gl_matrix_update eax,ebx
 	ret
