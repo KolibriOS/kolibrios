@@ -19,7 +19,7 @@ SOURCES =    boardmsg.c option_menu.c
 
 OBJECTS =  $(patsubst %.c, %.o, $(SOURCES))
 
-all: boardmsg option_menu scroll_progress
+all: boardmsg option_menu scroll_progress dbutton_files
 
 scroll_progress: scroll_progress.o
 #	$(LD) $(LIBPATH) --subsystem native -o $@ $^ $(OBJPATH)/loadboxlib.obj $(LDFLAGS)
@@ -33,6 +33,10 @@ option_menu: option_menu.o
 
 boardmsg: boardmsg.o
 	$(LD) $(LIBPATH) --subsystem native -o $@ $^ $(OBJPATH)/loadboxlib.obj $(LDFLAGS)
+	kos32-objcopy $@ -O binary
+
+dbutton_files: dbutton_files.o
+	$(LD) $(LIBPATH) --subsystem native -o $@ $^ $(OBJPATH)/loadboxlib.obj $(OBJPATH)/loadproclib.obj $(OBJPATH)/loadlibimg.obj $(LDFLAGS)
 	kos32-objcopy $@ -O binary
 
 %.o : %.c Makefile
