@@ -107,7 +107,7 @@ int main()
         switch(gui_event)
         {
         case KOLIBRI_EVENT_REDRAW:
-            sbh->all_redraw = sbv->all_redraw = 1; // resetted
+            sbh->all_redraw = sbv->all_redraw = 1; // resetted by sbar
             kolibri_handle_event_redraw(main_window);
             valuechange = 0;
             break;
@@ -163,6 +163,7 @@ int main()
 //            mouse_button = get_mouse_eventstate();
             // add logic to find widget under mouse
             kolibri_handle_event_mouse(main_window);
+            // we can optimize a lot, if sb->delta2 == 1 then call sb->mouse() and redraw only if sb->redraw with flag all_redraw = 0 (only runner). Then reset redraw. OMG (
             if (sbh->position != value)  // scrollbars was changed
             {
                 value = sbh->position;

@@ -144,3 +144,9 @@ public option_box_mouse as '_option_box_mouse'
 public menu_bar_draw as '_menu_bar_draw' 
 public menu_bar_mouse as '_menu_bar_mouse' 
 public menu_bar_activate as '_menu_bar_activate' 
+
+public dynamic_button_draw as '_dynamic_button_draw'
+public dynamic_button_mouse as '_dynamic_button_mouse'
+
+public path_show_prepare as '_path_show_prepare'
+public path_show_draw as '_path_show_draw'

@@ -26,7 +26,7 @@ struct open_dialog* kolibri_new_color_dialog(unsigned int type, unsigned short t
 {
     color_dialog *new_colordialog = (color_dialog *)malloc(sizeof(color_dialog));
     char *proc_info = (char *)calloc(1024, sizeof(char));
-	
+
 	new_colordialog -> type = type;
 	new_colordialog -> procinfo = proc_info;
 	new_colordialog -> com_area_name = &cd_com_area_name;
@@ -43,6 +43,7 @@ struct open_dialog* kolibri_new_color_dialog(unsigned int type, unsigned short t
 	return new_colordialog;
 }
 
+extern void kolibri_proclib_init() __attribute__((__stdcall__));
 extern void (*ColorDialog_init)(color_dialog *) __attribute__((__stdcall__));
 extern void (*ColorDialog_start)(color_dialog *) __attribute__((__stdcall__));
 #endif /* KOLIBRI_COLORDIALOG_H */

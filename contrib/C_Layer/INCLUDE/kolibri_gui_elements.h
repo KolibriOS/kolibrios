@@ -21,8 +21,9 @@ enum KOLIBRI_GUI_ELEMENT_TYPE {
   KOLIBRI_PROGRESS_BAR,
   KOLIBRI_STATICTEXT,
   KOLIBRI_STATICNUM,
-
   KOLIBRI_BUTTON,
+  KOLIBRI_D_BUTTON,
+  KOLIBRI_PATHSHOW,
 
   /* Add elements above this element in order to let KOLIBRI_NUM_GUI_ELEMENTS */
   /* stay at correct value */
@@ -65,15 +66,18 @@ typedef struct{
 void kolibri_window_add_element(kolibri_window *some_window, enum KOLIBRI_GUI_ELEMENT_TYPE element_type, void *some_gui_element); // forward declaration
 
 /* GUI Elements being used */
-#include "kolibri_editbox.h"
-#include "kolibri_checkbox.h"
 #include "kolibri_button.h"
-#include "kolibri_progressbar.h"
+#include "kolibri_checkbox.h"
+#include "kolibri_d_button.h"
+#include "kolibri_editbox.h"
 #include "kolibri_frame.h"
+#include "kolibri_menubar.h"
+#include "kolibri_optionbox.h"
+#include "kolibri_pathshow.h"
+#include "kolibri_progressbar.h"
 #include "kolibri_scrollbar.h"
 #include "kolibri_statictext.h"
-#include "kolibri_optionbox.h"
-#include "kolibri_menubar.h"
+
 
 
 
@@ -135,7 +139,15 @@ kolibri_gui_op_table[KOLIBRI_MENU_BAR].redraw_fn = (cb_elem_boxlib)menu_bar_draw
 kolibri_gui_op_table[KOLIBRI_MENU_BAR].mouse_fn = (cb_elem_boxlib)menu_bar_mouse;
 kolibri_gui_op_table[KOLIBRI_MENU_BAR].key_fn = NULL;
 
-debug_board_printf("KOLIBRI_MENU_BAR (%x,%x,%x)\n", menu_bar_draw,menu_bar_mouse,menu_bar_activate);
+kolibri_gui_op_table[KOLIBRI_D_BUTTON].redraw_fn = (cb_elem_boxlib)dynamic_button_draw;
+kolibri_gui_op_table[KOLIBRI_D_BUTTON].mouse_fn = (cb_elem_boxlib)dynamic_button_mouse;
+kolibri_gui_op_table[KOLIBRI_D_BUTTON].key_fn = NULL;
+debug_board_printf("KOLIBRI_D_BUTTON (%x,%x,%x)\n", dynamic_button_draw, dynamic_button_mouse, 0);
+
+kolibri_gui_op_table[KOLIBRI_PATHSHOW].redraw_fn = (cb_elem_boxlib)path_show_draw;
+kolibri_gui_op_table[KOLIBRI_PATHSHOW].mouse_fn = NULL;
+kolibri_gui_op_table[KOLIBRI_PATHSHOW].key_fn = NULL;
+debug_board_printf("KOLIBRI_PATHSHOW (%x,%x,%x)\n", path_show_draw, 0, 0);
 }
 
 /* Create a new main GUI window for KolibriOS */
