@@ -91,7 +91,7 @@ int main()
     statictext *txt = kolibri_new_statictext_def(X_Y(10, 20), "StaticText default 6x9. Use Arrows or PgUp/PgDn");
     statictext *txt2 = kolibri_new_statictext(X_Y(10, 30), "StaticText 8x16 x2:", CP866, 1, kolibri_color_table.color_work_text, 0);
     staticnum *num = kolibri_new_staticnum_def(X_Y(10 + (strlen("StaticText 8x16 x2:") + 2) * 8 * 2, 30), 3, value);
-    scrollbar *sbh = kolibri_new_scrollbar(X_Y(30, 300), X_Y(370, 5), 15, 100, 10, value, kolibri_color_table.color_work_area, kolibri_color_table.color_work_button, 0);
+    scrollbar *sbh = kolibri_new_scrollbar(X_Y(30, 300), X_Y(350, 15), 15, 100, 10, value, kolibri_color_table.color_work_area, kolibri_color_table.color_work_button, 0);
     scrollbar *sbv = kolibri_new_scrollbar(X_Y(370, 15), X_Y(40, 300), 15, 100, 10, value, kolibri_color_table.color_work_area, kolibri_color_table.color_work_button, 0);
     progressbar *pg = kolibri_new_progressbar(0, 100, value, 10, 70, 200, 20);
 

@@ -36,7 +36,7 @@ boardmsg: boardmsg.o
 	kos32-objcopy $@ -O binary
 
 dbutton_files: dbutton_files.o
-	$(LD) $(LIBPATH) --subsystem native -o $@ $^ $(OBJPATH)/loadboxlib.obj $(OBJPATH)/loadproclib.obj $(OBJPATH)/loadlibimg.obj $(LDFLAGS)
+	$(LD) $(LIBPATH) --subsystem native -o $@ $^ $(OBJPATH)/loadboxlib.obj $(OBJPATH)/loadproclib.obj $(OBJPATH)/loadlibimg.obj $(LDFLAGS) -Map=dbutton_files.map
 	kos32-objcopy $@ -O binary
 
 %.o : %.c Makefile

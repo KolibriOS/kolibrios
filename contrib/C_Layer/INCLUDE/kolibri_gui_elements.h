@@ -147,7 +147,7 @@ debug_board_printf("KOLIBRI_D_BUTTON (%x,%x,%x)\n", dynamic_button_draw, dynamic
 kolibri_gui_op_table[KOLIBRI_PATHSHOW].redraw_fn = (cb_elem_boxlib)path_show_draw;
 kolibri_gui_op_table[KOLIBRI_PATHSHOW].mouse_fn = NULL;
 kolibri_gui_op_table[KOLIBRI_PATHSHOW].key_fn = NULL;
-debug_board_printf("KOLIBRI_PATHSHOW (%x,%x,%x)\n", path_show_draw, 0, 0);
+debug_board_printf("KOLIBRI_PATHSHOW (%x,%x,%x)\n", path_show_draw, 0, path_show_prepare);
 }
 
 /* Create a new main GUI window for KolibriOS */

@@ -22,8 +22,9 @@
 #include "kolibri_libimg.h"
 
 char temp_path[4096];
+char** sys_path = (char**)0x20; // hack - get path from KOS header
 
-int main()
+int main(int argc, char **argv)
 {
     /* Load all libraries, initialize global tables like system color table and
     operations table. kolibri_gui_init() will EXIT with mcall -1 if it fails
@@ -44,9 +45,14 @@ int main()
     // load image for buttons
     const int icon_rgb_size = 16*16*3; // every icons 16x16 24bpp
     char *image_data_rgb = malloc(icon_rgb_size * 3),
-         *image_data;
+         *image_data, *pc;
     // make full path + argv
-    FILE *ficon = fopen("reload_16x16_8b.png", "rb");
+    strcpy(temp_path, *sys_path);
+    pc = strrchr(temp_path, '/');
+    if (pc) pc[1] = 0;
+    strcat(temp_path, "reload_16x16_8b.png");
+    debug_board_write_str(temp_path);
+    FILE *ficon = fopen(temp_path, "rb");
     if (!ficon)
     {
         debug_board_write_str("no icons file reload_16x16_8b.png ");
@@ -72,19 +78,19 @@ int main()
 
     pict_button tbar[3];
     gui_add_pict_button(main_window, kolibri_pict_button(&tbar[0], X_Y(10, 16), X_Y(10, 16), image_data_rgb, image_data_rgb + icon_rgb_size, image_data_rgb + icon_rgb_size * 2, 24, NULL, 0));
-    gui_add_pict_button(main_window, kolibri_pict_button(&tbar[1], X_Y(20, 16), X_Y(10, 16), image_data_rgb, image_data_rgb + icon_rgb_size, image_data_rgb + icon_rgb_size * 2, 24, NULL, 0));
-    gui_add_pict_button(main_window, kolibri_pict_button(&tbar[2], X_Y(30, 16), X_Y(10, 16), image_data_rgb, image_data_rgb + icon_rgb_size, image_data_rgb + icon_rgb_size * 2, 24, NULL, 0));
+    gui_add_pict_button(main_window, kolibri_pict_button(&tbar[1], X_Y(35, 16), X_Y(10, 16), image_data_rgb, image_data_rgb + icon_rgb_size, image_data_rgb + icon_rgb_size * 2, 24, NULL, 0));
+    gui_add_pict_button(main_window, kolibri_pict_button(&tbar[2], X_Y(60, 16), X_Y(10, 16), image_data_rgb, image_data_rgb + icon_rgb_size, image_data_rgb + icon_rgb_size * 2, 24, NULL, 0));
 
     statictext labels[3];  //  tips
     gui_add_statictext(main_window, kolibri_statictext_def(&labels[0], X_Y(5, 28), "Open"));
-    gui_add_statictext(main_window, kolibri_statictext_def(&labels[1], X_Y(20, 28), "Save"));
-    gui_add_statictext(main_window, kolibri_statictext_def(&labels[2], X_Y(30, 28), "Select Dir"));
+    gui_add_statictext(main_window, kolibri_statictext_def(&labels[1], X_Y(35, 28), "Save"));
+    gui_add_statictext(main_window, kolibri_statictext_def(&labels[2], X_Y(65, 28), "Select Dir"));
 
     open_dialog *dlg_opensave = kolibri_new_open_dialog(OPEN, 10, 10, 420, 320);
     (*OpenDialog_init)(dlg_opensave);
 
     pathview pview;
-    gui_add_pathview(main_window, kolibri_pathview(&pview, X_Y(10, 40), 330, 0, 0, dlg_opensave->openfile_path, temp_path, 0, 0)); // black font, no background
+    gui_add_pathview(main_window, kolibri_pathview(&pview, X_Y(10, 50), 330, 1, 0, dlg_opensave->openfile_path, temp_path, 0, 0)); // black font, no background, font 1
 
     do  /* Start of main activity loop */
     {
@@ -118,16 +124,19 @@ int main()
                 tbar[0].click = 0;
                 dlg_opensave->mode = OPEN;
                 (*OpenDialog_start)(dlg_opensave);
-                if (dlg_opensave->status != 2 && dlg_opensave->status != 1) // fail or cancel
+                //debug_board_printf("status == %d, buf = %s\n", dlg_opensave->status, dlg_opensave->openfile_path);
+                if (dlg_opensave->status != 2 && dlg_opensave->status != 0) // fail or cancel
+                {
                     (*path_show_prepare)(&pview);
-                kolibri_handle_event_redraw(main_window);
+                    (*path_show_draw)(&pview);
+                }
             }
             if(tbar[1].click)  // save
             {
                 tbar[1].click = 0;
                 dlg_opensave->mode = SAVE;
                 (*OpenDialog_start)(dlg_opensave);
-                if (dlg_opensave->status != 2 && dlg_opensave->status != 1) // fail or cancel
+                if (dlg_opensave->status != 2 && dlg_opensave->status != 0) // fail or cancel
                     (*path_show_prepare)(&pview);
                 kolibri_handle_event_redraw(main_window);
             }
@@ -136,7 +145,7 @@ int main()
                 tbar[2].click = 0;
                 dlg_opensave->mode = SELECT;
                 (*OpenDialog_start)(dlg_opensave);
-                if (dlg_opensave->status != 2 && dlg_opensave->status != 1) // fail or cancel
+                if (dlg_opensave->status != 2 && dlg_opensave->status != 0) // fail or cancel
                     (*path_show_prepare)(&pview);
                 kolibri_handle_event_redraw(main_window);
             }

@@ -87,8 +87,8 @@ import lib_boxlib, \
 	tl_save_mem, 'tl_save_mem' , \
 	tl_load_mem, 'tl_load_mem' , \
 	tl_get_mem_size, 'tl_get_mem_size' , \
-	path_show_prepare, 'pathshow_prepare' , \
-	path_show_draw, 'pathshow_draw' , \
+	path_show_prepare, 'PathShow_prepare' , \
+	path_show_draw, 'PathShow_draw' , \
 	ted_but_sumb_upper, 'ted_but_sumb_upper' , \
 	ted_but_sumb_lover, 'ted_but_sumb_lover' , \
 	ted_but_convert_by_table, 'ted_but_convert_by_table' , \
