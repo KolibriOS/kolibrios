@@ -20,6 +20,7 @@ a copy of the GCC Runtime Library Exception along with this program;
 see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 <http://www.gnu.org/licenses/>.  */
 
+#include <kos32sys.h>
 #include "gthr-kos32.h"
 
 #define FUTEX_INIT      0
@@ -27,26 +28,11 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #define FUTEX_WAIT      2
 #define FUTEX_WAKE      3
 
-unsigned int tls_alloc(void);
-int tls_free(unsigned int key);
-void *tls_get(unsigned int key);
-void *tls_set(unsigned int key, void *val);
-
 #define exchange_acquire(ptr, new) \
   __atomic_exchange_4((ptr), (new), __ATOMIC_ACQUIRE)
 
 #define exchange_release(ptr, new) \
   __atomic_exchange_4((ptr), (new), __ATOMIC_RELEASE)
-
-
-static inline void yield(void)
-{
-    __asm__ __volatile__(
-    "int $0x40"
-    ::"a"(68), "b"(1));
-};
-
-
 
 int __gthr_kos32_once (__gthread_once_t *once, void (*func) (void))
 {
@@ -95,15 +81,12 @@ int __gthr_kos32_key_delete (__gthread_key_t key)
 
 void* __gthr_kos32_getspecific (__gthread_key_t key)
 {
-    void *ptr;
-    ptr = tls_get(key);
-    return ptr;
+    return tls_get(key);
 }
 
 int __gthr_kos32_setspecific (__gthread_key_t key, const void *ptr)
 {
-    tls_set(key, CONST_CAST2(void *, const void *, ptr));
-    return 0;
+    return tls_set(key, CONST_CAST2(void *, const void *, ptr));
 }
 
 void __gthr_kos32_mutex_init_function (__gthread_mutex_t *mutex)
@@ -151,7 +134,7 @@ int __gthr_kos32_mutex_trylock (__gthread_mutex_t *mutex)
 {
     int zero = 0;
 
-    return __atomic_compare_exchange_4(&mutex->lock, &zero, 1,0,__ATOMIC_ACQUIRE,__ATOMIC_RELAXED);
+    return !__atomic_compare_exchange_4(&mutex->lock, &zero, 1,0,__ATOMIC_ACQUIRE,__ATOMIC_RELAXED);
 }
 
 int __gthr_kos32_mutex_unlock (__gthread_mutex_t *mutex)
@@ -173,79 +156,102 @@ int __gthr_kos32_mutex_unlock (__gthread_mutex_t *mutex)
 
 void __gthr_kos32_recursive_mutex_init_function (__gthread_recursive_mutex_t *mutex)
 {
-//  mutex->counter = -1;
-  mutex->depth = 0;
-  mutex->owner = 0;
-//  mutex->sema = CreateSemaphoreW (NULL, 0, 65535, NULL);
+    int handle;
+
+    mutex->lock = 0;
+
+    __asm__ volatile(
+    "int $0x40\t"
+    :"=a"(handle)
+    :"a"(77),"b"(FUTEX_INIT),"c"(mutex));
+    mutex->handle = handle;
+
+    mutex->depth = 0;
+    mutex->owner = 0;
 }
 
-#if 0
-int
-__gthr_win32_recursive_mutex_lock (__gthread_recursive_mutex_t *mutex)
+int __gthr_kos32_recursive_mutex_lock (__gthread_recursive_mutex_t *mutex)
 {
-  DWORD me = GetCurrentThreadId();
-  if (InterlockedIncrement (&mutex->counter) == 0)
+    int tmp;
+
+    unsigned long me = (unsigned long)tls_get(TLS_KEY_LOW_STACK);
+
+    if( __sync_fetch_and_add(&mutex->lock, 1) == 0)
     {
-      mutex->depth = 1;
-      mutex->owner = me;
+        mutex->depth = 1;
+        mutex->owner = me;
+        return 0;
     }
-  else if (mutex->owner == me)
+    else if (mutex->owner == me)
     {
-      InterlockedDecrement (&mutex->counter);
-      ++(mutex->depth);
+        __sync_fetch_and_sub(&mutex->lock, 1);
+        ++(mutex->depth);
     }
-  else if (WaitForSingleObject (mutex->sema, INFINITE) == WAIT_OBJECT_0)
+    else while (exchange_acquire (&mutex->lock, 2) != 0)
     {
-      mutex->depth = 1;
-      mutex->owner = me;
-    }
-  else
-    {
-      /* WaitForSingleObject returns WAIT_FAILED, and we can only do
-         some best-effort cleanup here.  */
-      InterlockedDecrement (&mutex->counter);
-      return 1;
-    }
-  return 0;
+        __asm__ volatile(
+        "int $0x40\t\n"
+        :"=a"(tmp)
+        :"a"(77),"b"(FUTEX_WAIT),
+        "c"(mutex->handle),"d"(2),"S"(0));
+        mutex->depth = 1;
+        mutex->owner = me;
+    };
+
+    return 0;
 }
 
-int
-__gthr_win32_recursive_mutex_trylock (__gthread_recursive_mutex_t *mutex)
+int __gthr_kos32_recursive_mutex_trylock (__gthread_recursive_mutex_t *mutex)
 {
-  DWORD me = GetCurrentThreadId();
-  if (__GTHR_W32_InterlockedCompareExchange (&mutex->counter, 0, -1) < 0)
+    unsigned long me = (unsigned long)tls_get(TLS_KEY_LOW_STACK);
+    int zero = 0;
+
+    if(__atomic_compare_exchange_4(&mutex->lock, &zero, 1,0,__ATOMIC_ACQUIRE,__ATOMIC_RELAXED))
     {
-      mutex->depth = 1;
-      mutex->owner = me;
+        mutex->depth = 1;
+        mutex->owner = me;
     }
-  else if (mutex->owner == me)
-    ++(mutex->depth);
-  else
-    return 1;
+    else if (mutex->owner == me)
+        ++(mutex->depth);
+    else
+        return 1;
 
-  return 0;
+    return 0;
 }
 
-int
-__gthr_win32_recursive_mutex_unlock (__gthread_recursive_mutex_t *mutex)
+int __gthr_kos32_recursive_mutex_unlock (__gthread_recursive_mutex_t *mutex)
 {
-  --(mutex->depth);
-  if (mutex->depth == 0)
+    --(mutex->depth);
+
+    if (mutex->depth == 0)
     {
-      mutex->owner = 0;
+        int prev;
 
-      if (InterlockedDecrement (&mutex->counter) >= 0)
-	return ReleaseSemaphore (mutex->sema, 1, NULL) ? 0 : 1;
-    }
+        prev = exchange_release (&mutex->lock, 0);
 
-  return 0;
+        if (prev != 1)
+        {
+            __asm__ volatile(
+            "int $0x40\t"
+            :"=a"(prev)
+            :"a"(77),"b"(FUTEX_WAKE),
+            "c"(mutex->handle),"d"(1));
+        };
+        mutex->owner = 0;
+    };
+
+    return 0;
 }
 
-int
-__gthr_win32_recursive_mutex_destroy (__gthread_recursive_mutex_t *mutex)
+int __gthr_kos32_recursive_mutex_destroy (__gthread_recursive_mutex_t *mutex)
 {
-  CloseHandle ((HANDLE) mutex->sema);
-  return 0;
+    int retval;
+
+    __asm__ volatile(
+    "int $0x40\t"
+    :"=a"(retval)
+    :"a"(77),"b"(FUTEX_DESTROY),"c"(mutex->handle));
+
+    return 0;
 }
 
-#endif

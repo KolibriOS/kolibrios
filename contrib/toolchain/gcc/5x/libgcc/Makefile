@@ -29,7 +29,7 @@ CFLAGS+= -Wold-style-definition $(CFLAGS_OPT)
 
 DECNUMINC = -Iconfig/libbid -DENABLE_DECIMAL_BID_FORMAT
 
-INCLUDES = -I. -I../gcc -I../include $(DECNUMINC)
+INCLUDES = -I. -I../gcc -I../include -I$(SDK_DIR)/sources/newlib/libc/include $(DECNUMINC)
 
 gcc_compile = $(CC) $(INCLUDES) $(CFLAGS)
 
@@ -66,7 +66,10 @@ TPBIT_FUNCS = _pack_tf _unpack_tf _addsub_tf _mul_tf _div_tf \
 LIB2ADDEH = unwind-dw2.c unwind-dw2-fde.c unwind-sjlj.c unwind-c.c
 LIB2ADDEHSTATIC = $(LIB2ADDEH)
 
-LIB2ADD = config/i386/gthr-kos32.c
+LIB2ADD = config/i386/gthr-kos32.c	\
+	config/i386/kos32-app.c		\
+	config/i386/libc-loader.c
+
 EH_MODEL = dw2
 CUSTOM_CRTSTUFF = yes
 
@@ -97,12 +100,14 @@ crtfastmath.o: config/i386/crtfastmath.c
 
 	$(gcc_compile) -mfxsr -msse -c $<
 
-LIB1ASMSRC = i386/chkstk.S
-LIB1ASMFUNCS = _chkstk _chkstk_ms 
+LIB1ASMSRC = i386/start.S 
+LIB1ASMFUNCS = _chkstk _chkstk_ms _start 
 
 DFP_ENABLE = true
 
 LIB2ADD += config/i386/cpuinfo.c
+LIB2ADD += config/i386/sfp-exceptions.c
+
 
 softfp_float_modes := tf
 softfp_int_modes := si di ti
