@@ -1,6 +1,6 @@
 /*OUTPUT_FORMAT("binary")*/
-SEARCH_DIR("=/mingw32/lib")
 SEARCH_DIR("=/lib")
+SEARCH_DIR("=/mingw32/lib")
 ENTRY(__start)
 SECTIONS
 {
