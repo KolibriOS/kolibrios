@@ -40,7 +40,7 @@
  *  @brief Macro to produce log message when entering a function.
  *  @param __n Input size.
  *  @see _GLIBCXX_VERBOSE_LEVEL */
-#if (_GLIBCXX_VERBOSE_LEVEL == 0)
+#if (_GLIBCXX_VERBOSE_LEVEL == 1)
 #define _GLIBCXX_CALL(__n)
 #endif
 #if (_GLIBCXX_VERBOSE_LEVEL == 1)

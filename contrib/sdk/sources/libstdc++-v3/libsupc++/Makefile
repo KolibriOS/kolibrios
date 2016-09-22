@@ -20,7 +20,6 @@ DEFINES= -DHAVE_CONFIG_H -DIN_GCC -DIN_GLIBCPP_V3 -DUSE_EMUTLS=1 -D_GLIBCXX_HAVE
 
 SOURCES = 					\
 		cp-demangle.c			\
-		gthr_mutex.c			\
 		array_type_info.cc		\
 		atexit_thread.cc		\
 		bad_alloc.cc			\

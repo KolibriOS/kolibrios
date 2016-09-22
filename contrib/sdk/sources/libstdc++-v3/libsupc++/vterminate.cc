@@ -43,6 +43,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   // stderr.
   void __verbose_terminate_handler()
   {
+
     static bool terminating;
     if (terminating)
       {
@@ -61,7 +62,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	{
 	  int status = -1;
 	  char *dem = 0;
-	  
+
 	  dem = __cxa_demangle(name, 0, 0, &status);
 
 	  fputs("terminate called after throwing an instance of '", stderr);
@@ -91,7 +92,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       }
     else
       fputs("terminate called without an active exception\n", stderr);
-    
+
     abort();
   }
 
