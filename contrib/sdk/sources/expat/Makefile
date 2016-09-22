@@ -4,6 +4,8 @@ CC = kos32-gcc
 AR = kos32-ar
 LD = kos32-ld
 
+INSTALLDIR:= /home/autobuild/tools/win32/lib
+
 CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fno-ident -fomit-frame-pointer
 
 ARFLAGS = crs
@@ -29,7 +31,7 @@ all:$(LIBRARY).a
 
 $(LIBRARY).a: $(OBJS) Makefile
 	$(AR) $(ARFLAGS) $(LIBRARY).a $(OBJS)
-	mv -f $(LIBRARY).a ../../lib
+	mv -f $(LIBRARY).a $(INSTALLDIR)
 
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<

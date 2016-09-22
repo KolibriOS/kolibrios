@@ -3,6 +3,7 @@ LIBRARY= libsync
 FASM = fasm
 AR = kos32-ar
 ARFLAGS = crs
+INSTALLDIR:= /home/autobuild/tools/win32/lib
 
 SRCS = 	mutex.asm	\
 	m_destroy.asm	\
@@ -19,7 +20,7 @@ all: libsync.a
 
 libsync.a: $(OBJS) Makefile
 	$(AR) $(ARFLAGS) libsync.a $(OBJS)
-	mv -f libsync.a ../../lib
+	mv -f libsync.a $(INSTALLDIR)
 
 %.o : %.asm Makefile
 	$(FASM) $< $@

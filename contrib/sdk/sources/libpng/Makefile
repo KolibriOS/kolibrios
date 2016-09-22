@@ -5,16 +5,16 @@ AR = kos32-ar
 LD = kos32-ld
 STRIP = kos32-strip
 
+INSTALLDIR:= /home/autobuild/tools/win32/lib
+
 CFLAGS = -UWIN32 -UWindows -U_WINDOWS -U_WIN32 -U__WIN32__ -c -O2 -fno-ident -fomit-frame-pointer
 
-LDFLAGS= -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0
+LDFLAGS= -shared -s -T dll.lds --entry _DllStartup --image-base=0
 LDFLAGS+=  --out-implib $(LIBRARY).dll.a
  
 ARFLAGS:= crs
 
 INCLUDES= -I. -I../newlib/libc/include -I../zlib
-
-LIBPATH:= -L../../lib
 
 LIBS:=  -ldll -lc.dll -lz.dll
 
@@ -47,15 +47,15 @@ ebox:$(LIBRARY).a $(LIBRARY).dll
 
 $(LIBRARY).a: $(OBJECTS) Makefile
 	$(AR) $(ARFLAGS) $(LIBRARY).a $(OBJECTS)
-	mv -f $(LIBRARY).a ../../lib
+	mv -f $(LIBRARY).a $(INSTALLDIR)
 
 $(LIBRARY).dll: libpng16.def $(OBJECTS) Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) -o $@  libpng16.def $(OBJECTS) $(LIBS)
+	$(LD) $(LDFLAGS) -o $@  libpng16.def $(OBJECTS) $(LIBS)
 	$(STRIP) $@
 	#sed -f ../newlib/cmd1.sed libpng16.def > mem
 	#sed -f ../newlib/cmd2.sed mem >libpng.inc
 	mv -f $@ ../../bin
-	mv -f $(LIBRARY).dll.a ../../lib   
+	mv -f $(LIBRARY).dll.a $(INSTALLDIR)
 
 
 %.o : %.c Makefile

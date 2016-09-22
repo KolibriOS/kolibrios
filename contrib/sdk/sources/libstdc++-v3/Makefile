@@ -6,6 +6,8 @@ LD = kos32-ld
 CPP= kos32-g++
 STRIP = kos32-strip
 
+INSTALLDIR:= /home/autobuild/tools/win32/lib
+
 CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fno-ident -fomit-frame-pointer -ffunction-sections -fdata-sections
 CFLAGS+= -fno-rtti -fno-exceptions
 
@@ -127,7 +129,7 @@ all:$(LIBRARY).a
 
 $(LIBRARY).a: $(OBJ98) $(OBJ11) $(com_obj) Makefile
 	$(AR) $(ARFLAGS) $(LIBRARY).a $(OBJ98) $(OBJ11) $(com_obj)
-	mv -f $(LIBRARY).a ../../lib
+	mv -f $(LIBRARY).a $(INSTALLDIR)
 
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<

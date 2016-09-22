@@ -9,16 +9,16 @@ AR = kos32-ar
 LD = kos32-ld
 STRIP = kos32-strip
 
+INSTALLDIR:= /home/autobuild/tools/win32/lib
+
 CFLAGS = -UWIN32 -UWindows -U_WINDOWS -U_WIN32 -U__WIN32__ -c -O2 -fno-ident -fomit-frame-pointer
 
-LDFLAGS= -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0
+LDFLAGS= -shared -s -T dll.lds --entry _DllStartup --image-base=0
 LDFLAGS+=  --out-implib $(LIBRARY).dll.a
 
 ARFLAGS:= crs
 
 INCLUDES= -I. -I../newlib/libc/include -I../zlib
-
-LIBPATH:= -L/home/autobuild/tools/win32/lib
 
 LIBS:=  -ldll -lc.dll -lz.dll
 
@@ -58,13 +58,13 @@ all: $(LIBRARY).a $(LIBRARY).dll
 
 $(LIBRARY).a: $(LIBOBJECTS) Makefile
 	$(AR) $(ARFLAGS) $(LIBRARY).a $(LIBOBJECTS)
-	mv -f $(LIBRARY).a ../../lib
+	mv -f $(LIBRARY).a $(INSTALLDIR)
 
 $(LIBRARY).dll: $(LIBOBJECTS) Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(LIBOBJECTS) $(LIBS)
+	$(LD) $(LDFLAGS) -o $@ $(LIBOBJECTS) $(LIBS)
 	$(STRIP) $@
 	mv -f $@ ../../bin
-	mv -f $(LIBRARY).dll.a ../../lib   
+	mv -f $(LIBRARY).dll.a $(INSTALLDIR)
 
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<

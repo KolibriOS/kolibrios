@@ -5,18 +5,18 @@ AR = kos32-ar
 LD = kos32-ld
 STRIP = kos32-strip
 
+INSTALLDIR:= /home/autobuild/tools/win32/lib
+
 CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -Wall -Winline -fno-ident -fomit-frame-pointer
 
-LDFLAGS = -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0
+LDFLAGS = -shared -s -T dll.lds --entry _DllStartup --image-base=0
 LDFLAGS+= --out-implib lib$(LIBRARY).dll.a
 
 ARFLAGS = crs
 
 INCLUDES= -I../newlib/libc/include -I./include -I./include/freetype/config 
 
-LIBPATH:= -L../../lib -L/home/autobuild/tools/win32/mingw32/lib
-
-LIBS:=  -ldll -lc.dll -lgcc
+LIBS:=  -ldll -lgcc -lc.dll
 
 DEFINES:= -DFT_CONFIG_CONFIG_H="<ftconfig.h>" -DFT_CONFIG_MODULES_H="<ftmodule.h>" -DFT2_BUILD_LIBRARY
 
@@ -77,15 +77,15 @@ ebox:lib$(LIBRARY).a $(LIBRARY).dll
 
 lib$(LIBRARY).a: $(OBJECTS) Makefile
 	$(AR) cvrs lib$(LIBRARY).a $(OBJECTS)
-	mv -f lib$(LIBRARY).a ../../lib
+	mv -f lib$(LIBRARY).a $(INSTALLDIR)
 
 $(LIBRARY).dll: lib$(LIBRARY).def $(OBJECTS) Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ lib$(LIBRARY).def $(OBJECTS) $(LIBS)
+	$(LD) $(LDFLAGS) -o $@ lib$(LIBRARY).def $(OBJECTS) $(LIBS)
 	$(STRIP) $@
 	#sed -f ../newlib/cmd1.sed lib$(LIBRARY).def > mem
 	#sed -f ../newlib/cmd2.sed mem >$(LIBRARY).inc
 	mv -f $@ ../../bin
-	mv -f lib$(LIBRARY).dll.a ../../lib  
+	mv -f lib$(LIBRARY).dll.a $(INSTALLDIR)
 	
 
 %.o : %.c Makefile

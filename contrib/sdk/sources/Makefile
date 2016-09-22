@@ -1,13 +1,13 @@
 
 DLL_DIR:= $(abspath ../bin)
 
-LIB_DIR:= $(abspath ../lib)
+LIB_DIR:= /home/autobuild/tools/win32/lib
 
 # targets 
 
-all: 	libsync newlib zlib libpng freetype pixman cairo	\
-	libdrm pixlib ffmpeg libsupc++ libstdc++ gcc_eh expat 	\
-	Mesa eglut vaapi sound		
+all: 	libsync newlib zlib libpng libjpeg freetype pixman cairo \
+	libdrm pixlib ffmpeg libsupc++ libstdc++ expat	\
+	Mesa eglut vaapi sound
 
 libsync: $(LIB_DIR)/libsync.a
 
@@ -16,9 +16,9 @@ $(LIB_DIR)/libsync.a:
 
 #####################################
 
-newlib: $(DLL_DIR)/libc.dll $(LIB_DIR)/libc.dll.a $(LIB_DIR)/libapp.a $(LIB_DIR)/libdll.a
+newlib: $(DLL_DIR)/libc.dll $(LIB_DIR)/libc.dll.a $(LIB_DIR)/libdll.a
 
-$(DLL_DIR)/libc.dll $(LIB_DIR)/libc.dll.a $(LIB_DIR)/libapp.a $(LIB_DIR)/libdll.a:
+$(DLL_DIR)/libc.dll $(LIB_DIR)/libc.dll.a $(LIB_DIR)/libdll.a:
 	$(MAKE) -C newlib/libc shared 
 	$(MAKE) -C newlib/libc install
 
@@ -35,6 +35,13 @@ libpng: $(DLL_DIR)/libpng16.dll $(LIB_DIR)/libpng16.dll.a $(LIB_DIR)/libpng16.a
 
 $(DLL_DIR)/libpng16.dll $(LIB_DIR)/libpng16.dll.a $(LIB_DIR)/libpng16.a: newlib zlib
 	$(MAKE) -C libpng
+
+#####################################
+
+libjpeg: $(DLL_DIR)/libjpeg.dll $(LIB_DIR)/libjpeg.dll.a $(LIB_DIR)/libjpeg.a
+
+$(DLL_DIR)/libjpeg.dll $(LIB_DIR)/libjpeg.dll.a $(LIB_DIR)/libjpeg.a: newlib zlib
+	$(MAKE) -C libjpeg
 
 #####################################
 
@@ -122,18 +129,11 @@ $(LIB_DIR)/libexpat.a: newlib
 
 #####################################
 
-gcc_eh: $(LIB_DIR)/libgcc_eh.a
-
-$(LIB_DIR)/libgcc_eh.a: newlib
-	$(MAKE) -C gcc_eh
-
-#####################################
-
 Mesa: $(DLL_DIR)/libGL.dll $(DLL_DIR)/libegl.dll $(DLL_DIR)/i965_dri.drv
 
 $(DLL_DIR)/libGL.dll $(DLL_DIR)/libegl.dll $(DLL_DIR)/i965_dri.drv \
 	$(LIB_DIR)/libGL.dll.a $(LIB_DIR)/libegl.dll.a \
-	$(LIB_DIR)/libglsl.a: newlib libdrm libsupc++ gcc_eh expat
+	$(LIB_DIR)/libglsl.a: newlib libdrm libsupc++ expat
 	$(MAKE) -C Mesa/mesa-9.2.5
 
 #####################################
