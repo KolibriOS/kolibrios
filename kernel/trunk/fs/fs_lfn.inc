@@ -444,15 +444,13 @@ sys_current_directory:  ; sysfunction 30
 
 .get:       ; in: ecx -> buffer, edx = length
         mov     esi, edi
+        inc     esi
         mov     edi, ecx
         cmp     edx, maxPathLength
         jc      @f
         mov     edx, maxPathLength
 @@:
-        mov     al, '/'
-        stosb
         mov     ecx, edx
-        dec     ecx
 @@:
         dec     ecx
         js      @f
@@ -469,16 +467,14 @@ sys_current_directory:  ; sysfunction 30
 
 .get16:
         mov     esi, edi
+        inc     esi
         mov     edi, ecx
         cmp     edx, maxPathLength
         jc      @f
         mov     edx, maxPathLength
 @@:
         shr     edx, 1
-        mov     ax, '/'
-        stosw
         mov     ecx, edx
-        dec     ecx
 @@:
         dec     ecx
         js      @f
