@@ -20,6 +20,7 @@ a copy of the GCC Runtime Library Exception along with this program;
 see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 <http://www.gnu.org/licenses/>.  */
 
+#include <errno.h>
 #include <kos32sys.h>
 #include "gthr-kos32.h"
 

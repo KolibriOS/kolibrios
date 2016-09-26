@@ -23,7 +23,7 @@ CFLAGS_OPT+= -fomit-frame-pointer -fno-ident -mno-ms-bitfields
 CFLAGS_OPT+= -fbuilding-libgcc -fno-stack-protector
 
 CFLAGS = -c -O2 -DIN_GCC -DIN_LIBGCC2 -DHAVE_CC_TLS -DUSE_EMUTLS
-CFLAGS+= -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -U_MSC_VER
+CFLAGS+= -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -UWINNT -U_MSC_VER
 CFLAGS+= -W -Wall -Wno-narrowing -Wwrite-strings -Wcast-qual -Wstrict-prototypes
 CFLAGS+= -Wold-style-definition $(CFLAGS_OPT)
 

@@ -36,7 +36,6 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 
 #define __GTHREADS 1
 
-#include <errno.h>
 #include <stddef.h>
 
 #ifndef __UNUSED_PARAM
