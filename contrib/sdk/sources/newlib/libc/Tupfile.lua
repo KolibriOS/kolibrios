@@ -23,7 +23,7 @@ end
 LIBPATH = "-L$(SDK_DIR)/lib -L$(TOOLCHAIN_LIBPATH)"
 STATIC_SRCS = {"crt/start.S", "crt/crt1.c", "crt/crt2.c", "crt/exit.S"}
 LIBDLL_SRCS = {"crt/dllstart.c", "crt/exit.S", "crt/pseudo-reloc.c", "crt/setjmp.S"}
-LIBCDLL_SRCS = {"crt/crt2.c", "crt/pseudo-reloc.c", "crt/exit.S"}
+LIBCDLL_SRCS = {"crt/crt2.c", "crt/pseudo-reloc.c", "crt/exit.S", "crt/setjmp.S"}
 CORE_SRCS = {
   "argz/buf_findstr.c", "argz/envz_get.c",
   "crt/console.asm", "crt/thread.S", "crt/cpu_features.c", "crt/gthr-kos32.c",
