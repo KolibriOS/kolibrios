@@ -26,8 +26,7 @@ LIBDLL_SRCS = {"crt/dllstart.c", "crt/exit.S", "crt/pseudo-reloc.c", "crt/setjmp
 LIBCDLL_SRCS = {"crt/crt2.c", "crt/pseudo-reloc.c", "crt/exit.S", "crt/setjmp.S"}
 CORE_SRCS = {
   "argz/buf_findstr.c", "argz/envz_get.c",
-  "crt/console.asm", "crt/thread.S", "crt/cpu_features.c", "crt/gthr-kos32.c",
-  "crt/tls.c",
+  "crt/console.asm", "crt/thread.S", "crt/cpu_features.c", "crt/tls.c",
   "ctype/ctype_.c", "ctype/isascii.c", "ctype/isblank.c", "ctype/isalnum.c",
   "ctype/isalpha.c", "ctype/iscntrl.c", "ctype/isdigit.c", "ctype/islower.c",
   "ctype/isupper.c", "ctype/isprint.c", "ctype/ispunct.c", "ctype/isspace.c",
