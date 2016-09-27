@@ -12,12 +12,7 @@
 /* Hide the declaration of _fmode with dllimport attribute in stdlib.h to
    avoid problems with older GCC. */
 
-#include <newlib.h>
-#include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <sys/kos_io.h>
 
 struct app_hdr
 {
@@ -32,9 +27,12 @@ struct app_hdr
     int    __subsystem__;
 };
 
-void __init_conio();
-void __fini_conio();
+extern void init_reent();
+extern void init_stdio();
+extern void __init_conio();
+extern void __fini_conio();
 
+extern void tls_init(void);
 extern int main (int, char **, char **);
 
 /* NOTE: The code for initializing the _argv, _argc, and environ variables
@@ -45,8 +43,6 @@ extern int main (int, char **, char **);
 
 char* __appenv;
 int   __appenv_size;
-
-extern char _tls_map[128];
 
 char * __libc_getenv(const char *name)
 {
@@ -168,7 +164,7 @@ static int split_cmdline(char *cmdline, char **argv)
 };
 
 void  __attribute__((noreturn))
-__crt_startup (void)
+__libc_init (void)
 {
     struct   app_hdr *header = NULL;
     int retval = 0;
@@ -176,8 +172,7 @@ __crt_startup (void)
     char **argv;
     int    argc;
 
-    memset(_tls_map, 0xFF, 32*4);
-    _tls_map[0] = 0xE0;
+    tls_init();
     init_reent();
     init_stdio();
 

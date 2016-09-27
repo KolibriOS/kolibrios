@@ -1,7 +1,7 @@
 
 .section .init
 
-.global __start
+.global __crt_start
 
 #tls:0  pid process id
 #tls:4  tid reserved for thread slot
@@ -10,7 +10,7 @@
 #tls:16 reseved for libc
 
 .align 4
-__start:
+__crt_start:
            movl  $68, %eax
            movl  $12, %ebx
            lea  __size_of_stack_reserve__, %ecx
@@ -38,7 +38,7 @@ __start:
 
            addl $1024, %esp
 
-           jmp  ___crt_startup
+           jmp  ___libc_init
 1:
            int3                    #trap to debugger
 

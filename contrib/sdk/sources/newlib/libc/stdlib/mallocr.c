@@ -382,7 +382,7 @@ struct malloc_state {
   size_t     footprint;
   size_t     max_footprint;
   flag_t     mflags;
-  __libc_lock_recursive_t  lock;     /* locate lock among fields that rarely change */
+  _LOCK_RECURSIVE_T    lock;     /* locate lock among fields that rarely change */
   msegment   seg;
   void*      extp;      /* Unused but available for extensions */
   size_t     exts;
@@ -425,11 +425,11 @@ static struct malloc_state _gm_;
 
 __LOCK_INIT_RECURSIVE(static, malloc_global_mutex);
 
-#define ACQUIRE_MALLOC_GLOBAL_LOCK()  __libc_lock_lock_recursive(malloc_global_mutex);
-#define RELEASE_MALLOC_GLOBAL_LOCK()  __libc_lock_unlock_recursive(malloc_global_mutex);
+#define ACQUIRE_MALLOC_GLOBAL_LOCK()  __lock_acquire_recursive(malloc_global_mutex);
+#define RELEASE_MALLOC_GLOBAL_LOCK()  __lock_release_recursive(malloc_global_mutex);
 
-#define PREACTION(M)  ( __libc_lock_lock_recursive((M)->lock))
-#define POSTACTION(M) { __libc_lock_unlock_recursive((M)->lock); }
+#define PREACTION(M)  ( __lock_acquire_recursive((M)->lock))
+#define POSTACTION(M) { __lock_release_recursive((M)->lock); }
 
 /* ---------------------------- Indexing Bins ---------------------------- */
 
@@ -991,7 +991,7 @@ static int init_mparams(void) {
 
     /* Set up lock for main malloc area */
         gm->mflags = mparams.default_mflags;
-        __libc_lock_init_recursive(gm->lock);
+        __lock_init_recursive(gm->lock);
 
         magic = (size_t)(0x12345678 ^ (size_t)0x55555555U);
         magic |= (size_t)8U;    /* ensure nonzero */

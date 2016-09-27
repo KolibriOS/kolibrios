@@ -267,25 +267,25 @@ __LOCK_INIT_RECURSIVE(static, __sinit_lock);
 _VOID
 _DEFUN_VOID(__sfp_lock_acquire)
 {
-  //__lock_acquire_recursive (__sfp_lock);
+  __lock_acquire_recursive (__sfp_lock);
 }
 
 _VOID
 _DEFUN_VOID(__sfp_lock_release)
 {
-  //__lock_release_recursive (__sfp_lock);
+  __lock_release_recursive (__sfp_lock);
 }
 
 _VOID
 _DEFUN_VOID(__sinit_lock_acquire)
 {
-  //__lock_acquire_recursive (__sinit_lock);
+  __lock_acquire_recursive (__sinit_lock);
 }
 
 _VOID
 _DEFUN_VOID(__sinit_lock_release)
 {
-  //__lock_release_recursive (__sinit_lock);
+  __lock_release_recursive (__sinit_lock);
 }
 
 /* Walkable file locking routine.  */

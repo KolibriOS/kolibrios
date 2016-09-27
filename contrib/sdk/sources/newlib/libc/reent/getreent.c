@@ -2,9 +2,10 @@
 
 #include <_ansi.h>
 #include <string.h>
-#include <reent.h>
+#include <sys/reent.h>
 #include <kos32sys.h>
 
+extern _VOID   _EXFUN(__sinit,(struct _reent *));
 
 void init_reent()
 {

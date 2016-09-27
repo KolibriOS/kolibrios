@@ -65,11 +65,11 @@ void end_draw(void)
     "int $0x40" ::"a"(12),"b"(2));
 };
 
-static inline void 
+static inline void
 put_image(uint16_t x_coord, uint16_t y_coord,
 	  uint16_t size_x, uint16_t size_y, void *img)
 {
-    __asm__ __volatile__("int $0x40" 
+    __asm__ __volatile__("int $0x40"
 			 ::"a"(25),
 			  "b"(img),
 			  "c"(size_x<<16 | size_y),
@@ -237,7 +237,7 @@ static inline uint32_t set_wanted_events_mask(uint32_t event_mask)
     __asm__ __volatile__(
     "int $0x40"
     :"=a"(old_event_mask)
-    :"a"(40));
+    :"a"(40),"b"(event_mask));
 
     return old_event_mask;
 };
@@ -273,7 +273,7 @@ uint32_t wait_for_event(uint32_t time)
     return val;
 };
 
-static inline uint32_t check_os_event()
+static inline uint32_t check_os_event(void)
 {
     uint32_t val;
     __asm__ __volatile__(
@@ -283,7 +283,7 @@ static inline uint32_t check_os_event()
     return val;
 };
 
-static inline uint32_t get_os_event()
+static inline uint32_t get_os_event(void)
 {
     uint32_t val;
     __asm__ __volatile__(
@@ -328,7 +328,7 @@ oskey_t get_key(void)
 }
 
 static inline
-uint32_t get_os_button()
+uint32_t get_os_button(void)
 {
     uint32_t val;
     __asm__ __volatile__(
@@ -453,7 +453,7 @@ static inline ufile_t load_file(const char *path)
 };
 static inline ufile_t LoadFile(const char *path) __attribute__ ((alias ("load_file")));
 
-static inline int GetScreenSize()
+static inline int GetScreenSize(void)
 {
     int retval;
 
@@ -513,6 +513,42 @@ static inline void Blit(void *bitmap, int dst_x, int dst_y,
     "int $0x40"
     ::"a"(73),"b"(0),"c"(&bc.dstx));
 };
+
+#define TLS_KEY_PID         0
+#define TLS_KEY_TID         4
+#define TLS_KEY_LOW_STACK   8
+#define TLS_KEY_HIGH_STACK 12
+#define TLS_KEY_LIBC       16
+
+unsigned int tls_alloc(void);
+int tls_free(unsigned int key);
+
+static inline int tls_set(unsigned int key, void *val)
+{
+    int ret = -1;
+    if(key < 4096)
+    {
+        __asm__ __volatile__(
+        "movl %0, %%fs:(%1)"
+        ::"r"(val),"r"(key));
+        ret = 0;
+    }
+    return ret;
+};
+
+static inline void *tls_get(unsigned int key)
+{
+    void *val = (void*)-1;
+    if(key < 4096)
+    {
+        __asm__ __volatile__(
+        "movl %%fs:(%1), %0"
+        :"=r"(val)
+        :"r"(key));
+    };
+    return val;
+}
+
 
 int create_thread(int (*proc)(void *param), void *param, int stack_size);
 

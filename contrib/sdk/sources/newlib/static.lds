@@ -1,6 +1,7 @@
 /*OUTPUT_FORMAT("binary")*/
-
-ENTRY(__start)
+SEARCH_DIR("=/lib")
+SEARCH_DIR("=/mingw32/lib")
+ENTRY(__crt_start)
 SECTIONS
 {
    .text 0x000000:
@@ -76,12 +77,13 @@ SECTIONS
         ___iend = . ;
    }
 
-/*   .eh_frame BLOCK(16) :
+   .eh_frame BLOCK(16) :
    {
         PROVIDE (___EH_FRAME_BEGIN__ = .) ;
         *(.eh_frame*)
+	___FRAME_END__ = . ;
+	LONG(0);
    }
-*/
 
    bss ALIGN(16):
    {

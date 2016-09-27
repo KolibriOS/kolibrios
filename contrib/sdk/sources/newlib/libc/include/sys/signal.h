@@ -13,8 +13,6 @@ extern "C" {
 #include <sys/_sigset.h>
 #include <sys/_timespec.h>
 
-/* #ifndef __STRICT_ANSI__*/
-
 #if !defined(_SIGSET_T_DECLARED)
 #define	_SIGSET_T_DECLARED
 typedef	__sigset_t	sigset_t;
@@ -77,7 +75,7 @@ typedef struct {
 #define SA_NOCLDSTOP 0x1   /* Do not generate SIGCHLD when children stop */
 #define SA_SIGINFO   0x2   /* Invoke the signal catching function with */
                            /*   three arguments instead of one. */
-#if __BSD_VISIBLE || __XSI_VISIBLE || __POSIX_VISIBLE >= 200112
+#if __BSD_VISIBLE || __XSI_VISIBLE >= 4 || __POSIX_VISIBLE >= 200809
 #define SA_ONSTACK   0x4   /* Signal delivery will be on a separate stack. */
 #endif
 
@@ -125,7 +123,7 @@ struct sigaction
 };
 #endif /* defined(__rtems__) */
 
-#if __BSD_VISIBLE || __XSI_VISIBLE || __POSIX_VISIBLE >= 200112
+#if __BSD_VISIBLE || __XSI_VISIBLE >= 4 || __POSIX_VISIBLE >= 200809
 /*
  * Minimum and default signal stack constants. Allow for target overrides
  * from <sys/features.h>.
@@ -158,15 +156,6 @@ typedef struct sigaltstack {
 #define SIG_BLOCK 1	/* set of signals to block */
 #define SIG_UNBLOCK 2	/* set of signals to, well, unblock */
 
-/* These depend upon the type of sigset_t, which right now 
-   is always a long.. They're in the POSIX namespace, but
-   are not ANSI. */
-#define sigaddset(what,sig) (*(what) |= (1<<(sig)), 0)
-#define sigdelset(what,sig) (*(what) &= ~(1<<(sig)), 0)
-#define sigemptyset(what)   (*(what) = 0, 0)
-#define sigfillset(what)    (*(what) = ~(0), 0)
-#define sigismember(what,sig) (((*(what)) & (1<<(sig))) != 0)
-
 int _EXFUN(sigprocmask, (int how, const sigset_t *set, sigset_t *oset));
 
 #if defined(_POSIX_THREADS)
@@ -174,12 +163,6 @@ int _EXFUN(pthread_sigmask, (int how, const sigset_t *set, sigset_t *oset));
 #endif
 
 #if defined(__CYGWIN__) || defined(__rtems__)
-#undef sigaddset
-#undef sigdelset
-#undef sigemptyset
-#undef sigfillset
-#undef sigismember
-
 #ifdef _COMPILING_NEWLIB
 int _EXFUN(_kill, (pid_t, int));
 #endif /* _COMPILING_NEWLIB */
@@ -187,7 +170,7 @@ int _EXFUN(_kill, (pid_t, int));
 
 int _EXFUN(kill, (pid_t, int));
 
-#if defined(__CYGWIN__) || defined(__rtems__)
+#if __BSD_VISIBLE || __XSI_VISIBLE >= 4
 int _EXFUN(killpg, (pid_t, int));
 int _EXFUN(sigaction, (int, const struct sigaction *, struct sigaction *));
 int _EXFUN(sigaddset, (sigset_t *, const int));
@@ -199,10 +182,20 @@ int _EXFUN(sigpending, (sigset_t *));
 int _EXFUN(sigsuspend, (const sigset_t *));
 int _EXFUN(sigpause, (int));
 
-#if defined(__CYGWIN__) || defined(__rtems__)
-#if __BSD_VISIBLE || __XSI_VISIBLE || __POSIX_VISIBLE >= 200112
+#if !defined(__CYGWIN__) && !defined(__rtems__)
+/* These depend upon the type of sigset_t, which right now 
+   is always a long.. They're in the POSIX namespace, but
+   are not ANSI. */
+#define sigaddset(what,sig) (*(what) |= (1<<(sig)), 0)
+#define sigdelset(what,sig) (*(what) &= ~(1<<(sig)), 0)
+#define sigemptyset(what)   (*(what) = 0, 0)
+#define sigfillset(what)    (*(what) = ~(0), 0)
+#define sigismember(what,sig) (((*(what)) & (1<<(sig))) != 0)
+#endif /* !__CYGWIN__ && !__rtems__ */
+#endif /* __BSD_VISIBLE || __XSI_VISIBLE >= 4 */
+
+#if __BSD_VISIBLE || __XSI_VISIBLE >= 4 || __POSIX_VISIBLE >= 200809
 int _EXFUN(sigaltstack, (const stack_t *__restrict, stack_t *__restrict));
-#endif
 #endif
 
 #if defined(_POSIX_THREADS)
@@ -229,10 +222,6 @@ int _EXFUN(sigwait, (const sigset_t *set, int *sig));
 int _EXFUN(sigqueue, (pid_t pid, int signo, const union sigval value));
 
 #endif /* defined(_POSIX_REALTIME_SIGNALS) */
-
-#endif /* defined(__CYGWIN__) || defined(__rtems__) */
-
-/* #endif __STRICT_ANSI__ */
 
 #if defined(___AM29K__)
 /* These all need to be defined for ANSI C, but I don't think they are
@@ -354,7 +343,7 @@ int _EXFUN(sigqueue, (pid_t pid, int signo, const union sigval value));
 #endif
 
 #if defined(__CYGWIN__)
-#if __POSIX_VISIBLE >= 200809
+#if __XSI_VISIBLE >= 4 || __POSIX_VISIBLE >= 200809
 #include <sys/ucontext.h>
 #endif
 #endif

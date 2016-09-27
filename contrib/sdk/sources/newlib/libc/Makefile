@@ -1,10 +1,11 @@
-
 CC = kos32-gcc
 AR = kos32-ar
 LD = kos32-ld
 
-CFLAGS = -c -O2 -fno-ident -fomit-frame-pointer -fexceptions -DMISSING_SYSCALL_NAMES
-LDFLAGS = -shared -s -T libcdll.lds --out-implib libc.dll.a --image-base 0
+INSTALLDIR:= /home/autobuild/tools/win32/lib
+
+CFLAGS = -c -O2 -fno-builtin -fno-ident -fomit-frame-pointer -DMISSING_SYSCALL_NAMES
+LDFLAGS = -shared -s -T libcdll.lds --out-implib libc.dll.a --image-base 0 
 #LDFLAGS+= --output-def libc.orig.def
 ARFLAGS = crs
 
@@ -15,29 +16,20 @@ LIBC_INCLUDES = $(LIBC_TOPDIR)/include
 
 NAME:=	  libc
 
-DEFINES:= -D_IEEE_LIBM -DHAVE_RENAME -DBUILD_LIBC
+DEFINES:= -D_IEEE_LIBM -DHAVE_RENAME -DBUILD_LIBC -DPACKAGE_NAME=\"newlib\"
+DEFINES+= -DPACKAGE_TARNAME=\"newlib\" -DPACKAGE_VERSION=\"2.4.0\"
+SEFINES+= -DPACKAGE_STRING=\"newlib\ 2.4.0\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\"
 
 INCLUDES:=  -I $(LIBC_INCLUDES)
-
-LIBPATH:= -L$(SDK_DIR)/lib -L/home/autobuild/tools/win32/mingw32/lib
 
 STATIC_SRCS:=					\
          		crt/start.S		\
          		crt/crt1.c		\
 			crt/crt2.c		\
-         		crt/chkstk.S		\
          		crt/exit.S
-
-LIBCRT_SRCS:=					\
-			crt/start.S		\
-			crt/crt3.c		\
-			crt/chkstk.S		\
-			crt/pseudo-reloc.c	\
-			pe/crtloader.c
 
 LIBDLL_SRCS:=					\
 			crt/dllstart.c 		\
-         		crt/chkstk.S         	\
          		crt/exit.S           	\
 			crt/pseudo-reloc.c	\
 			crt/setjmp.S
@@ -47,7 +39,6 @@ LIBCDLL_SRCS:=					\
 			crt/crtdll.c		\
 			crt/crt2.c		\
 			crt/pseudo-reloc.c	\
-			crt/chkstk.S		\
 			crt/exit.S		\
 			pe/loader.c
 
@@ -55,11 +46,10 @@ CORE_SRCS:=                   			\
 			argz/buf_findstr.c	\
 			argz/envz_get.c		\
 			crt/console.asm		\
-			crt/emutls.c         	\
 			crt/thread.S         	\
-			crt/tls.S            	\
 			crt/setjmp.S		\
 			crt/cpu_features.c	\
+			crt/tls.c		\
 			ctype/ctype_.c 		\
 			ctype/isascii.c		\
 			ctype/isblank.c		\
@@ -173,14 +163,22 @@ STDLIB_SRCS=                 			\
          		atof.c              	\
          		atoi.c              	\
 			atol.c			\
+			cxa_atexit.c		\
+			cxa_finalize.c		\
          		div.c               	\
          		dtoa.c               	\
          		dtoastub.c          	\
+			efgcvt.c		\
+			ecvtbuf.c		\
+			eprintf.c		\
+			erand48.c		\
          		exit.c              	\
          		gdtoa-gethex.c      	\
          		gdtoa-hexnan.c       	\
          		getenv.c             	\
 			getenv_r.c		\
+			itoa.c			\
+			labs.c			\
          		mprec.c              	\
          		mbtowc.c             	\
          		mbtowc_r.c           	\
@@ -189,7 +187,7 @@ STDLIB_SRCS=                 			\
          		calloc.c             	\
          		malloc.c             	\
         		mallocr.c           	\
-        		 rand.c               	\
+        		rand.c               	\
          		rand_r.c            	\
          		rand48.c            	\
          		realloc.c            	\
@@ -206,6 +204,7 @@ STDLIB_SRCS=                 			\
          		strtoull.c           	\
          		strtoull_r.c        	\
          		system.c            	\
+			utoa.c			\
          		wcrtomb.c           	\
 			wctomb_r.c
 
@@ -241,56 +240,97 @@ STRING_SRCS=      	memcpy.c    		\
          		strtok.c             \
          		strtok_r.c           \
          		strupr.c             \
+			strxfrm.c	     \
          		strcspn.c            \
          		strspn.c             \
          		strcpy.c             \
 			u_strerr.c
 
 STDIO_SRCS=					\
+			asiprintf.c		\
+			asniprintf.c		\
+			asnprintf.c		\
+			asprintf.c		\
 			clearerr.c		\
+			clearerr_u.c		\
 			diprintf.c		\
 			dprintf.c		\
-			printf.c		\
-			putchar.c		\
-			fgetc.c			\
-			fgets.c			\
-			fopen.c			\
 			fclose.c		\
+			fcloseall.c		\
 			fdopen.c		\
 			feof.c			\
+			feof_u.c		\
 			ferror.c		\
+			ferror_u.c		\
 			fflush.c		\
-			flags.c			\
+			fflush_u.c		\
+			fgetc.c			\
+			fgetc_u.c		\
+			fgetpos.c		\
+			fgets.c			\
+			fgets_u.c		\
 			fileno.c		\
+			fileno_u.c		\
 			findfp.c		\
 			fiprintf.c		\
 			fiscanf.c		\
+			flags.c			\
+			fmemopen.c		\
+			fopen.c			\
+			fopencookie.c		\
 			fprintf.c		\
+			fpurge.c		\
 			fputc.c			\
+			fputc_u.c		\
 			fputs.c			\
+			fputs_u.c		\
 			fputwc.c		\
+			fsetpos.c		\
+			funopen.c		\
 			fread.c			\
+			fread_u.c		\
 			freopen.c		\
 			fscanf.c		\
 			fseek.c			\
 			fseeko.c		\
+			fsetlocking.c		\
 			ftell.c			\
 			ftello.c		\
-			fwrite.c		\
 			fvwrite.c		\
 			fwalk.c			\
+			fwide.c			\
+			fwrite.c		\
+			fwrite_u.c		\
+			getc.c			\
+			getc_u.c		\
+			getchar.c		\
+			getchar_u.c		\
+			getdelim.c		\
+			getline.c		\
+			gets.c			\
+			iprintf.c		\
+			iscanf.c		\
 			makebuf.c		\
 			mbstowcs.c		\
 			mktemp.c		\
+			open_memstream.c	\
 			perror.c		\
+			printf.c		\
 			putc.c			\
+			putc_u.c		\
+			putchar.c		\
+			putchar_u.c		\
 			puts.c			\
 			refill.c		\
 			remove.c		\
 			rename.c		\
 			rewind.c		\
 			rget.c			\
+			scanf.c			\
 			sccl.c			\
+			setbuf.c		\
+			setbuffer.c		\
+			setlinebuf.c		\
 			setvbuf.c		\
 			siprintf.c		\
 			siscanf.c		\
@@ -299,15 +339,24 @@ STDIO_SRCS=					\
 			sprintf.c		\
 			sscanf.c		\
 			stdio.c			\
+			stdio_ext.c		\
 			tmpfile.c		\
 			tmpnam.c		\
 			ungetc.c		\
+			vasiprintf.c		\
 			vasniprintf.c		\
 			vasnprintf.c		\
-			vdprintf.c		\
+			vasprintf.c		\
 			vdiprintf.c		\
+			vdprintf.c		\
+			viprintf.c		\
+			viscanf.c		\
+			vprintf.c		\
 			vscanf.c		\
+			vsiprintf.c		\
+			vsiscanf.c		\
 			vsprintf.c		\
+			vsniprintf.c		\
 			vsnprintf.c		\
 			vsscanf.c		\
 			wsetup.c		\
@@ -412,7 +461,7 @@ LIB_OBJS+=				\
 
 
 
-shared: $(NAME).dll libapp.a libdll.a
+shared: $(NAME).dll libdll.a
 
 
 $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
@@ -421,38 +470,50 @@ $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
 	#sed -f cmd2.sed libc.def > mem
 	#sed -f newlib.sed mem > libc.inc
 
-install: libc.dll libc.dll.a libapp.a libdll.a
+install: libc.dll libc.dll.a libdll.a
 	mv -f libc.dll $(SDK_DIR)/bin
-	mv -f libc.dll.a $(SDK_DIR)/lib   
-	mv -f libapp.a $(SDK_DIR)/lib
-	mv -f libdll.a $(SDK_DIR)/lib
-
-libapp.a: $(LIBCRT_OBJS) Makefile
-	$(AR) $(ARFLAGS) libapp.a $(LIBCRT_OBJS)
+	mv -f libc.dll.a $(INSTALLDIR)
+	mv -f libdll.a $(INSTALLDIR)
 
 libdll.a: $(LIBDLL_OBJS) Makefile
 	$(AR) $(ARFLAGS) libdll.a $(LIBDLL_OBJS)
-
 
 static: $(NAME).a
 
 $(NAME).a: $(LIB_OBJS) $(SRC_DEP) Makefile
 	$(AR) $(ARFLAGS) $(NAME).a $(LIB_OBJS)
+	mv -f libc.a $(INSTALLDIR)
 
+crt/crt1.o: crt/crt1.c
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -fno-delete-null-pointer-checks crt/crt1.c -o $@
 
+crt/crtdll.o: crt/crtdll.c
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -fno-delete-null-pointer-checks crt/crtdll.c -o $@
 
-stdio/vfprintf.o: stdio/vfprintf.c
-	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -fshort-enums -DFLOATING_POINT -c stdio/vfprintf.c -o $@
+pe/loader.o: pe/loader.c
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -fno-delete-null-pointer-checks pe/loader.c -o $@
 
-stdio/vfiprintf.o: stdio/vfprintf.c
-	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -fshort-enums -DINTEGER_ONLY -c stdio/vfprintf.c -o $@
-
-stdio/svfprintf.o: stdio/vfprintf.c
-	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -fshort-enums -DSTRING_ONLY -c stdio/vfprintf.c -o $@
+reent/renamer.o: reent/renamer.c
+	$(CC) $(CFLAGS) $(DEFINES) -D_COMPILING_NEWLIB $(INCLUDES) reent/renamer.c -o $@
 
 stdio/svfiprintf.o: stdio/vfprintf.c
-	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -fshort-enums -DINTEGER_ONLY -DSTRING_ONLY -c stdio/vfprintf.c -o $@
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -fshort-enums -DINTEGER_ONLY -DSTRING_ONLY stdio/vfprintf.c -o $@
 
+stdio/svfprintf.o: stdio/vfprintf.c
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -fshort-enums -DSTRING_ONLY stdio/vfprintf.c -o $@
+
+stdio/vfiprintf.o: stdio/vfprintf.c
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -fshort-enums -DINTEGER_ONLY stdio/vfprintf.c -o $@
+
+stdio/vfprintf.o: stdio/vfprintf.c
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -fshort-enums stdio/vfprintf.c -o $@
+
+
+stdio/svfiscanf.o: stdio/vfscanf.c
+	$(CC) $(CFLAGS) $(DEFINES) -DINTEGER_ONLY -DSTRING_ONLY $(INCLUDES) stdio/vfscanf.c -o $@
+
+stdio/svscanf.o: stdio/vfscanf.c
+	$(CC) $(CFLAGS) $(DEFINES) -DSTRING_ONLY $(INCLUDES) stdio/vfscanf.c -o $@
 
 stdio/vfscanf.o: stdio/vfscanf.c
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES)	stdio/vfscanf.c -o $@
@@ -460,12 +521,8 @@ stdio/vfscanf.o: stdio/vfscanf.c
 stdio/vfiscanf.o: stdio/vfscanf.c
 	$(CC) $(CFLAGS) $(DEFINES) -DINTEGER_ONLY $(INCLUDES) stdio/vfscanf.c -o $@
 
-stdio/svscanf.o: stdio/vfscanf.c
-	$(CC) $(CFLAGS) $(DEFINES) -DSTRING_ONLY $(INCLUDES) stdio/vfscanf.c -o $@
 
 
-stdio/svfiscanf.o: stdio/vfscanf.c
-	$(CC) $(CFLAGS) $(DEFINES) -DINTEGER_ONLY -DSTRING_ONLY $(INCLUDES) stdio/vfscanf.c -o $@
 
 
 

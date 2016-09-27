@@ -12,13 +12,8 @@
  * the new terms are clearly indicated on the first page of each file where
  * they apply.
  */
-#include <fcntl.h>
 #include <errno.h>
-#include <string.h>
-#include <stdio.h>
-#include <alloca.h>
-#include <sys/kos_io.h>
-#include "glue.h"
+#include <unistd.h>
 #include "io.h"
 
 #undef erro
@@ -63,7 +58,7 @@ ssize_t read(int fd, void *buf, size_t cnt)
 
     if( iomode_flags & _BINARY )   /* if binary mode */
     {
-        err = read_file(ioh->name, buffer, ioh->offset, cnt, &amount_read);
+        err = ioh->read(ioh->name, buffer, ioh->offset, cnt, &amount_read);
         ioh->offset+= amount_read;
         total_len  = amount_read;
 
@@ -77,7 +72,7 @@ ssize_t read(int fd, void *buf, size_t cnt)
         read_len = cnt;
         do
         {
-            err=read_file(ioh->name,buffer, ioh->offset, cnt, &amount_read);
+            err=ioh->read(ioh->name,buffer, ioh->offset, cnt, &amount_read);
             ioh->offset+=amount_read;
 
             if( amount_read == 0 )

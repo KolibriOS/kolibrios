@@ -14,9 +14,10 @@
  */
 
 #include <fcntl.h>
-#include <errno.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <alloca.h>
+#include <errno.h>
 
 int _rename (char *from, char *to)
 {

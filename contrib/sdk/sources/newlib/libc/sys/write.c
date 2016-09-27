@@ -12,13 +12,10 @@
  * the new terms are clearly indicated on the first page of each file where
  * they apply.
  */
-#include <fcntl.h>
 #include <errno.h>
-#include <string.h>
-#include <stdio.h>
+#include <unistd.h>
 #include <alloca.h>
 #include <sys/kos_io.h>
-#include "glue.h"
 #include "io.h"
 
 #undef erro

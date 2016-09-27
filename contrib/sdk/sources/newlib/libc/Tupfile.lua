@@ -1,6 +1,6 @@
 if tup.getconfig("NO_GCC") ~= "" or tup.getconfig("NO_FASM") ~= "" then return end
 tup.include("../../../../../programs/use_gcc.lua")
-CFLAGS = CFLAGS_OPTIMIZE_SPEED .. " -c -DBUILD_LIBC -DMISSING_SYSCALL_NAMES"
+CFLAGS = CFLAGS_OPTIMIZE_SPEED .. " -c -fno-builtin -DBUILD_LIBC -DMISSING_SYSCALL_NAMES"
 LDFLAGS = "-shared -s -T libcdll.lds --out-implib $(SDK_DIR)/lib/libc.dll.a --image-base 0"
 -- LDFLAGS = LDFLAGS .. " --output-def libc.orig.def"
 
@@ -21,13 +21,12 @@ if TOOLCHAIN_LIBPATH == "" then
   end
 end
 LIBPATH = "-L$(SDK_DIR)/lib -L$(TOOLCHAIN_LIBPATH)"
-STATIC_SRCS = {"crt/start.S", "crt/crt1.c", "crt/crt2.c", "crt/chkstk.S", "crt/exit.c"}
-LIBCRT_SRCS = {"crt/start.S", "crt/crt3.c", "crt/chkstk.S",  "crt/pseudo-reloc.c", "pe/crtloader.c"}
-LIBDLL_SRCS = {"crt/dllstart.c", "crt/chkstk.S", "crt/exit.S", "crt/pseudo-reloc.c", "crt/setjmp.S"}
-LIBCDLL_SRCS = {"crt/crtdll.c", "crt/crt2.c", "crt/pseudo-reloc.c", "crt/chkstk.S", "crt/exit.S", "pe/loader.c"}
+STATIC_SRCS = {"crt/start.S", "crt/crt1.c", "crt/crt2.c", "crt/exit.S"}
+LIBDLL_SRCS = {"crt/dllstart.c", "crt/exit.S", "crt/pseudo-reloc.c", "crt/setjmp.S"}
+LIBCDLL_SRCS = {"crt/crt2.c", "crt/pseudo-reloc.c", "crt/exit.S"}
 CORE_SRCS = {
   "argz/buf_findstr.c", "argz/envz_get.c",
-  "crt/console.asm", "crt/emutls.c", "crt/thread.S", "crt/tls.S", "crt/setjmp.S", "crt/cpu_features.c",
+  "crt/console.asm", "crt/thread.S", "crt/cpu_features.c", "crt/tls.c",
   "ctype/ctype_.c", "ctype/isascii.c", "ctype/isblank.c", "ctype/isalnum.c",
   "ctype/isalpha.c", "ctype/iscntrl.c", "ctype/isdigit.c", "ctype/islower.c",
   "ctype/isupper.c", "ctype/isprint.c", "ctype/ispunct.c", "ctype/isspace.c",
@@ -43,7 +42,7 @@ CORE_SRCS = {
   "reent/closer.c", "reent/fstatr.c", "reent/getreent.c", "reent/gettimeofdayr.c",
   "reent/impure.c", "reent/init_reent.c", "reent/isattyr.c", "reent/linkr.c",
   "reent/lseekr.c", "reent/mutex.c", "reent/openr.c", "reent/readr.c",
-  "reent/renamer.c", "reent/statr.c", "reent/timesr.c", "reent/unlinkr.c",
+  "reent/statr.c", "reent/timesr.c", "reent/unlinkr.c",
   "reent/writer.c",
   "search/qsort.c", "search/bsearch.c",
   "signal/signal.c",
@@ -58,39 +57,214 @@ CORE_SRCS = {
   "time/timelocal.c", "time/tzlock.c", "time/tzset.c", "time/tzset_r.c", "time/tzvars.c"
 }
 STDLIB_SRCS = {
-  "__atexit.c", "__call_atexit.c", "abort.c", "abs.c", "assert.c", "atexit.c",
-  "atof.c", "atoi.c", "atol.c", "div.c", "dtoa.c", "dtoastub.c", "exit.c",
-  "gdtoa-gethex.c", "gdtoa-hexnan.c", "getenv.c", "getenv_r.c","mprec.c", "mbtowc.c",
-  "mbtowc_r.c", "mbrtowc.c", "mlock.c", "calloc.c", "malloc.c", "mallocr.c",
-  "rand.c", "rand_r.c", "rand48.c", "realloc.c", "seed48.c", "srand48.c",
-  "strtod.c", "strtodg.c", "strtol.c", "strtold.c", "strtoll.c", "strtoll_r.c",
-  "strtorx.c","strtoul.c", "strtoull.c", "strtoull_r.c", "system.c", "wcrtomb.c",
+  "__atexit.c",
+  "__call_atexit.c",
+  "abort.c",
+  "abs.c",
+  "assert.c",
+  "atexit.c",
+  "atof.c",
+  "atoi.c",
+  "atol.c",
+  "cxa_atexit.c",
+  "cxa_finalize.c",
+  "div.c",
+  "dtoa.c",
+  "dtoastub.c",
+  "efgcvt.c",
+  "ecvtbuf.c",
+  "eprintf.c",
+  "erand48.c",
+  "exit.c",
+  "gdtoa-gethex.c",
+  "gdtoa-hexnan.c",
+  "getenv.c",
+  "getenv_r.c",
+  "itoa.c",
+  "labs.c",  
+  "mprec.c",
+  "mbtowc.c",
+  "mbtowc_r.c",
+  "mbrtowc.c",
+  "mlock.c",
+  "calloc.c",
+  "malloc.c",
+  "mallocr.c",
+  "rand.c",
+  "rand_r.c",
+  "rand48.c",
+  "realloc.c",
+  "seed48.c",
+  "srand48.c",
+  "strtod.c",
+  "strtodg.c",
+  "strtol.c",
+  "strtold.c",
+  "strtoll.c",
+  "strtoll_r.c",
+  "strtorx.c",
+  "strtoul.c",
+  "strtoull.c",
+  "strtoull_r.c",
+  "system.c",
+  "utoa.c",
+  "wcrtomb.c",
   "wctomb_r.c"
 }
 STRING_SRCS = {
-  "memcpy.c", "memcmp.c", "memmove.c", "memset.c", "memchr.c", "stpcpy.c",
-  "stpncpy.c", "strcat.c", "strchr.c", "strcmp.c", "strcoll.c", "strcasecmp.c",
-  "strncasecmp.c", "strncat.c", "strncmp.c", "strncpy.c", "strndup.c",
-  "strndup_r.c", "strnlen.c", "strcasestr.c", "strdup.c", "strdup_r.c",
-  "strerror.c", "strlen.c", "strrchr.c", "strpbrk.c", "strsep.c", "strstr.c",
-  "strtok.c", "strtok_r.c", "strupr.c", "strcspn.c", "strspn.c", "strcpy.c",
+  "memcpy.c",
+  "memcmp.c",
+  "memmove.c",
+  "memset.c",
+  "memchr.c",
+  "stpcpy.c",
+  "stpncpy.c",
+  "strcat.c",
+  "strchr.c",
+  "strcmp.c",
+  "strcoll.c",
+  "strcasecmp.c",
+  "strncasecmp.c",
+  "strncat.c",
+  "strncmp.c",
+  "strncpy.c",
+  "strndup.c",
+  "strndup_r.c",
+  "strnlen.c",
+  "strcasestr.c",
+  "strdup.c",
+  "strdup_r.c",
+  "strerror.c",
+  "strlen.c",
+  "strrchr.c",
+  "strpbrk.c",
+  "strsep.c",
+  "strstr.c",
+  "strtok.c",
+  "strtok_r.c",
+  "strupr.c",
+  "strxfrm.c",
+  "strcspn.c",
+  "strspn.c",
+  "strcpy.c",
   "u_strerr.c"
 }
 
 STDIO_SRCS = {
-  "clearerr.c", "diprintf.c", "dprintf.c", "printf.c", "putchar.c", "fgetc.c",
-  "fgets.c", "fopen.c", "fclose.c", "fdopen.c", "fflush.c", "flags.c",
-  "fileno.c", "findfp.c", "fiprintf.c", "fiscanf.c", "fprintf.c", "fputc.c",
-  "fputs.c", "fputwc.c", "fread.c", "freopen.c", "fscanf.c", "fseek.c", "fseeko.c",
-  "ftell.c", "ftello.c", "fwrite.c", "fvwrite.c", "fwalk.c", "makebuf.c",
-  "mbstowcs.c", "mktemp.c", "perror.c", "putc.c", "puts.c", "refill.c", "remove.c",
-  "rename.c", "rewind.c", "rget.c", "sccl.c", "setvbuf.c", "siprintf.c",
-  "siscanf.c", "sniprintf.c", "snprintf.c", "sprintf.c", "sscanf.c", "stdio.c",
-  "tmpfile.c", "tmpnam.c", "ungetc.c", "vasniprintf.c", "vasnprintf.c",
-  "vdprintf.c", "vdiprintf.c", "vscanf.c", "vsprintf.c", "vsnprintf.c",
-  "vsscanf.c", "wsetup.c", "wbuf.c"
+  "asiprintf.c",
+  "asniprintf.c",
+  "asnprintf.c",
+  "asprintf.c",
+  "clearerr.c",
+  "diprintf.c",
+  "dprintf.c",
+  "fclose.c",
+  "fcloseall.c",
+  "fdopen.c",
+  "feof.c",
+  "feof_u.c",
+  "ferror.c",
+  "ferror_u.c",
+  "fflush.c",
+  "fflush_u.c",
+  "fgetc.c",
+  "fgetc_u.c",
+  "fgetpos.c",
+  "fgets.c",
+  "fgets_u.c",
+  "fileno.c",
+  "fileno_u.c",
+  "findfp.c",
+  "fiprintf.c",
+  "fiscanf.c",
+  "flags.c",
+  "fmemopen.c",
+  "fopen.c",
+  "fopencookie.c",
+  "fprintf.c",
+  "fpurge.c",
+  "fputc.c",
+  "fputc_u.c",
+  "fputs.c",
+  "fputs_u.c",
+  "fputwc.c",
+  "fsetpos.c",
+  "fread.c",
+  "fread_u.c",
+  "freopen.c",
+  "fscanf.c",
+  "fseek.c",
+  "fseeko.c",
+  "fsetlocking.c",
+  "ftell.c",
+  "ftello.c",
+  "fvwrite.c",
+  "fwalk.c",
+  "fwide.c",
+  "fwrite.c",
+  "fwrite_u.c",
+  "getc.c",
+  "getc_u.c",
+  "getchar.c",
+  "getchar_u.c",
+  "getdelim.c",
+  "getline.c",
+  "gets.c",
+  "iprintf.c",
+  "iscanf.c",
+  "makebuf.c",
+  "mbstowcs.c",
+  "mktemp.c",
+  "open_memstream.c",
+  "perror.c",
+  "printf.c",
+  "putc.c",
+  "putc_u.c",
+  "putchar.c",
+  "putchar_u.c",
+  "puts.c",
+  "refill.c",
+  "remove.c",
+  "rename.c",
+  "rewind.c",
+  "rget.c",
+  "scanf.c",
+  "sccl.c",
+  "setbuf.c",
+  "setbuffer.c",
+  "setlinebuf.c",
+  "setvbuf.c",
+  "siprintf.c",
+  "siscanf.c",
+  "sniprintf.c",
+  "snprintf.c",
+  "sprintf.c",
+  "sscanf.c",
+  "stdio.c",
+  "stdio_ext.c",
+  "tmpfile.c",
+  "tmpnam.c",
+  "ungetc.c",
+  "vasiprintf.c",
+  "vasniprintf.c",
+  "vasnprintf.c",
+  "vasprintf.c",
+  "vdiprintf.c",
+  "vdprintf.c",
+  "viprintf.c",
+  "viscanf.c",
+  "vprintf.c",
+  "vscanf.c",
+  "vsiprintf.c",
+  "vsiscanf.c",
+  "vsprintf.c",
+  "vsniprintf.c",
+  "vsnprintf.c",
+  "vsscanf.c",
+  "wsetup.c",
+  "wbuf.c"
+}   
 
-}
 
 MATH_SRCS = {
   "e_acos.c", "e_acosh.c", "e_asin.c", "e_atan2.c", "e_atanh.c", "e_cosh.c", "e_exp.c", "e_fmod.c",
@@ -162,11 +336,15 @@ function compile(list)
 end
 
 LIB_OBJS = compile(LIB_SRCS)
-LIBCRT_OBJS = compile(LIBCRT_SRCS)
+LIB_OBJS += tup.rule("crt/crtdll.c", "kos32-gcc $(CFLAGS) $(DEFINES) $(INCLUDES) -fno-delete-null-pointer-checks -c crt/crtdll.c -o crt/crtdll.o")
+LIB_OBJS += tup.rule("pe/loader.c", "kos32-gcc $(CFLAGS) $(DEFINES) $(INCLUDES) -fno-delete-null-pointer-checks -c pe/loader.c -o pe/loader.o")
+LIB_OBJS += tup.rule("reent/renamer.c", "kos32-gcc $(CFLAGS) $(DEFINES) $(INCLUDES) -D_COMPILING_NEWLIB -c reent/renamer.c -o reent/renamer.o")
+
 LIBDLL_OBJS = compile(LIBDLL_SRCS)
 
+
 vfprintf_extra_objs = {
-  {"-DFLOATING_POINT", "stdio/vfprintf.o"},
+  {"", "stdio/vfprintf.o"},
   {"-DINTEGER_ONLY", "stdio/vfiprintf.o"},
   {"-DSTRING_ONLY", "stdio/svfprintf.o"},
   {"-DINTEGER_ONLY -DSTRING_ONLY", "stdio/svfiprintf.o"},
@@ -182,10 +360,9 @@ vfscanf_extra_objs = {
   {"-DINTEGER_ONLY -DSTRING_ONLY", "stdio/svfiscanf.o"},
 }
 for i,v in ipairs(vfscanf_extra_objs) do
-  LIB_OBJS += tup.rule("stdio/vfscanf.c", "kos32-gcc $(CFLAGS) $(DEFINES) $(INCLUDES) -fshort-enums " .. v[1] .. " -c %f -o %o", v[2])
+  LIB_OBJS += tup.rule("stdio/vfscanf.c", "kos32-gcc $(CFLAGS) $(DEFINES) $(INCLUDES) " .. v[1] .. " -c %f -o %o", v[2])
 end
 
 tup.rule(LIB_OBJS, "kos32-ld " .. LDFLAGS .. " " .. LIBPATH .. " -o %o %f -lgcc --version-script libc.ver " .. tup.getconfig("KPACK_CMD"),
   {SDK_DIR .. "/bin/libc.dll", extra_outputs = {SDK_DIR .. "/lib/libc.dll.a", SDK_DIR .. "/lib/<libc.dll.a>"}})
-tup.rule(LIBCRT_OBJS, "kos32-ar rcs %o %f", {SDK_DIR .. "/lib/libapp.a", extra_outputs = {SDK_DIR .. "/lib/<libapp.a>"}})
 tup.rule(LIBDLL_OBJS, "kos32-ar rcs %o %f", {SDK_DIR .. "/lib/libdll.a", extra_outputs = {SDK_DIR .. "/lib/<libdll.a>"}})

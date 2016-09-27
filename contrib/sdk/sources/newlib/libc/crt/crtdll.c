@@ -35,19 +35,21 @@ struct app_hdr
     int  (*main)(int argc, char **argv, char **envp);
 };
 
-void _pei386_runtime_relocator (void);
-void init_loader(void *libc_image);
-void init_reent();
-void __init_conio();
-void __fini_conio();
-int link_app();
-void* get_entry_point(void *raw);
-int (*entry)(int, char **, char **);
+extern void _pei386_runtime_relocator (void);
+extern void init_loader(void *libc_image);
+extern void init_reent(void);
+extern void init_stdio(void);
+
+extern void __init_conio(void);
+extern void __fini_conio(void);
+extern int link_app(void);
+extern void* get_entry_point(void *raw);
+
+extern void tls_init(void);
 
 char* __appenv;
 int   __appenv_size;
 
-extern char _tls_map[128];
 
 char * __libc_getenv(const char *name)
 {
@@ -168,10 +170,10 @@ static int split_cmdline(char *cmdline, char **argv)
     return argc;
 };
 
-void  __attribute__((noreturn))
-libc_crt_startup (void *libc_base)
+__attribute__((noreturn))
+void  libc_crt_startup (void *libc_base)
 {
-    struct   app_hdr *header = NULL;
+    struct app_hdr *header = NULL;
     int retval = 0;
 
     char **argv;
@@ -179,15 +181,12 @@ libc_crt_startup (void *libc_base)
 
     _pei386_runtime_relocator();
 
-    memset(_tls_map, 0xFF, 32*4);
-    _tls_map[0] = 0xE0;
+    tls_init();
     init_reent();
     init_stdio();
 
     if(header->__subsystem__ == 3)
         __init_conio();
-
-    __do_global_ctors();
 
  //   __appenv = load_file("/sys/system.env", &__appenv_size);
 

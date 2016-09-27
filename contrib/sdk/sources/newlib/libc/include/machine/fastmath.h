@@ -1,100 +1,122 @@
-#ifdef __sysvnecv70_target
-double EXFUN(fast_sin,(double));
-double EXFUN(fast_cos,(double));
-double EXFUN(fast_tan,(double));
+#ifndef _MACHFASTMATH_H
+#define _MACHFASTMATH_H
 
-double EXFUN(fast_asin,(double));
-double EXFUN(fast_acos,(double));
-double EXFUN(fast_atan,(double));
+#if defined(__GNUC__) && __STDC__ - 0 > 0
 
-double EXFUN(fast_sinh,(double));
-double EXFUN(fast_cosh,(double));
-double EXFUN(fast_tanh,(double));
+#define __str1__(__x) #__x
+#define __str2__(__x) __str1__(__x)
+#define __U_L_PREFIX__ __str2__(__USER_LABEL_PREFIX__)
 
-double EXFUN(fast_asinh,(double));
-double EXFUN(fast_acosh,(double));
-double EXFUN(fast_atanh,(double));
+__extension__ double atan2(double, double)
+  __asm__(__U_L_PREFIX__ "_f_atan2");
+__extension__ double exp(double)
+  __asm__(__U_L_PREFIX__ "_f_exp");
+__extension__ double frexp(double, int*)
+  __asm__(__U_L_PREFIX__ "_f_frexp");
+__extension__ double ldexp(double, int)
+  __asm__(__U_L_PREFIX__ "_f_ldexp");
+__extension__ double log(double)
+  __asm__(__U_L_PREFIX__ "_f_log");
+__extension__ double log10(double)
+  __asm__(__U_L_PREFIX__ "_f_log10");
+__extension__ double pow(double, double)
+  __asm__(__U_L_PREFIX__ "_f_pow");
+__extension__ double tan(double)
+  __asm__(__U_L_PREFIX__ "_f_tan");
 
-double EXFUN(fast_abs,(double));
-double EXFUN(fast_sqrt,(double));
-double EXFUN(fast_exp2,(double));
-double EXFUN(fast_exp10,(double));
-double EXFUN(fast_expe,(double));
-double EXFUN(fast_log10,(double));
-double EXFUN(fast_log2,(double));
-double EXFUN(fast_loge,(double));
+#if !defined(__STRICT_ANSI__) || defined(__cplusplus) || __STDC_VERSION__ >= 199901L
 
 
-#define	sin(x)		fast_sin(x)
-#define	cos(x)		fast_cos(x)
-#define	tan(x)		fast_tan(x)
-#define	asin(x)		fast_asin(x)
-#define	acos(x)		fast_acos(x)
-#define	atan(x)		fast_atan(x)
-#define	sinh(x)		fast_sinh(x)
-#define	cosh(x)		fast_cosh(x)
-#define	tanh(x)		fast_tanh(x)
-#define	asinh(x)	fast_asinh(x)
-#define	acosh(x)	fast_acosh(x)
-#define	atanh(x)	fast_atanh(x)
-#define	abs(x)		fast_abs(x)
-#define	sqrt(x)		fast_sqrt(x)
-#define	exp2(x)		fast_exp2(x)
-#define	exp10(x)	fast_exp10(x)
-#define	expe(x)		fast_expe(x)
-#define	log10(x)	fast_log10(x)
-#define	log2(x)		fast_log2(x)
-#define	loge(x)		fast_loge(x)
-
-#ifdef _HAVE_STDC
-/* These functions are in assembler, they really do take floats. This
-   can only be used with a real ANSI compiler */
-
-float EXFUN(fast_sinf,(float));
-float EXFUN(fast_cosf,(float));
-float EXFUN(fast_tanf,(float));
-
-float EXFUN(fast_asinf,(float));
-float EXFUN(fast_acosf,(float));
-float EXFUN(fast_atanf,(float));
-
-float EXFUN(fast_sinhf,(float));
-float EXFUN(fast_coshf,(float));
-float EXFUN(fast_tanhf,(float));
-
-float EXFUN(fast_asinhf,(float));
-float EXFUN(fast_acoshf,(float));
-float EXFUN(fast_atanhf,(float));
-
-float EXFUN(fast_absf,(float));
-float EXFUN(fast_sqrtf,(float));
-float EXFUN(fast_exp2f,(float));
-float EXFUN(fast_exp10f,(float));
-float EXFUN(fast_expef,(float));
-float EXFUN(fast_log10f,(float));
-float EXFUN(fast_log2f,(float));
-float EXFUN(fast_logef,(float));
-#define	sinf(x)		fast_sinf(x)
-#define	cosf(x)		fast_cosf(x)
-#define	tanf(x)		fast_tanf(x)
-#define	asinf(x)	fast_asinf(x)
-#define	acosf(x)	fast_acosf(x)
-#define	atanf(x)	fast_atanf(x)
-#define	sinhf(x)	fast_sinhf(x)
-#define	coshf(x)	fast_coshf(x)
-#define	tanhf(x)	fast_tanhf(x)
-#define	asinhf(x)	fast_asinhf(x)
-#define	acoshf(x)	fast_acoshf(x)
-#define	atanhf(x)	fast_atanhf(x)
-#define	absf(x)		fast_absf(x)
-#define	sqrtf(x)	fast_sqrtf(x)
-#define	exp2f(x)	fast_exp2f(x)
-#define	exp10f(x)	fast_exp10f(x)
-#define	expef(x)	fast_expef(x)
-#define	log10f(x)	fast_log10f(x)
-#define	log2f(x)	fast_log2f(x)
-#define	logef(x)	fast_logef(x)
+__extension__ float atan2f(float, float)
+  __asm__(__U_L_PREFIX__ "_f_atan2f");
+__extension__ float expf(float)
+  __asm__(__U_L_PREFIX__ "_f_expf");
+__extension__ float frexpf(float, int*)
+  __asm__(__U_L_PREFIX__ "_f_frexpf");
+__extension__ float ldexpf(float, int)
+  __asm__(__U_L_PREFIX__ "_f_ldexpf");
+__extension__ long long llrint(double)
+  __asm__(__U_L_PREFIX__ "_f_llrint");
+__extension__ long long llrintf(float)
+  __asm__(__U_L_PREFIX__ "_f_llrintf");
+__extension__ long long llrintl(long double)
+  __asm__(__U_L_PREFIX__ "_f_llrintl");
+__extension__ float logf(float)
+  __asm__(__U_L_PREFIX__ "_f_logf");
+__extension__ float log10f(float)
+  __asm__(__U_L_PREFIX__ "_f_log10f");
+__extension__ long lrint(double)
+  __asm__(__U_L_PREFIX__ "_f_lrint");
+__extension__ long lrintf(float)
+  __asm__(__U_L_PREFIX__ "_f_lrintf");
+__extension__ long lrintl(long double)
+  __asm__(__U_L_PREFIX__ "_f_lrintl");
+__extension__ float powf(float, float)
+  __asm__(__U_L_PREFIX__ "_f_powf");
+__extension__ double rint(double)
+  __asm__(__U_L_PREFIX__ "_f_rint");
+__extension__ float rintf(float)
+  __asm__(__U_L_PREFIX__ "_f_rintf");
+__extension__ long double rintl(long double)
+  __asm__(__U_L_PREFIX__ "_f_rintl");
+__extension__ float tanf(float)
+  __asm__(__U_L_PREFIX__ "_f_tanf");
 #endif
-/* Override the functions defined in math.h */
-#endif /* __sysvnecv70_target */
 
+#else
+
+double EXFUN(_f_atan2,(double, double));
+double EXFUN(_f_exp,(double));
+double EXFUN(_f_frexp,(double, int*));
+double EXFUN(_f_ldexp,(double, int));
+double EXFUN(_f_log,(double));
+double EXFUN(_f_log10,(double));
+double EXFUN(_f_pow,(double, double));
+
+#define atan2(__y,__x)	_f_atan2((__y),(__x))
+#define exp(__x)	_f_exp(__x)
+#define frexp(__x,__p)	_f_frexp((__x),(__p))
+#define ldexp(__x,__e)	_f_ldexp((__x),(__e))
+#define log(__x)	_f_log(__x)
+#define log10(__x)	_f_log10(__x)
+#define pow(__x,__y)	_f_pow((__x),(__y))
+
+#ifndef __STRICT_ANSI__
+
+float EXFUN(_f_atan2f,(float, float));
+float EXFUN(_f_expf,(float));
+float EXFUN(_f_frexpf,(float, int*));
+float EXFUN(_f_ldexpf,(float, int));
+long long EXFUN(_f_llrint,(double));
+long long EXFUN(_f_llrintf,(float));
+long long EXFUN(_f_llrintl,(long double));
+float EXFUN(_f_logf,(float));
+float EXFUN(_f_log10f,(float));
+long EXFUN(_f_lrint,(double));
+long EXFUN(_f_lrintf,(float));
+long EXFUN(_f_lrintl,(long double));
+float EXFUN(_f_powf,(float, float));
+float EXFUN(_f_rint,(double));
+double EXFUN(_f_rintf,(float));
+long double EXFUN(_f_rintl,(long double));
+
+#define atan2f(__y,__x)	_f_atan2f((__y),(__x))
+#define expf(__x)	_f_expf(__x)
+#define frexpf(__x,__p)	_f_frexpf((__x),(__p))
+#define ldexpf(__x,__e)	_f_ldexpf((__x),(__e))
+#define llrint(__x)	_f_llrint((__x))
+#define llrintf(__x)	_f_llrintf((__x))
+#define llrintl(__x)	_f_llrintl((__x))
+#define logf(__x)	_f_logf(__x)
+#define log10f(__x)	_f_log10f(__x)
+#define lrint(__x)	_f_lrint((__x))
+#define lrintf(__x)	_f_lrintf((__x))
+#define lrintl(__x)	_f_lrintl((__x))
+#define powf(__x,y)	_f_powf((__x),(__y))
+#define rint(__x)	_f_rint((__x))
+#define rintf(__x)	_f_rintf((__x))
+#define rintl(__x)	_f_rintl((__x))
+#endif
+
+#endif /* GCC */
+#endif /* _MACHFASTMATH_H */

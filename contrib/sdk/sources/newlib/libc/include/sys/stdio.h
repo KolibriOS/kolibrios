@@ -9,11 +9,11 @@
    detect if FILE is private to sprintf/sscanf class of functions; if
    set then do nothing as lock is not initialised. */
 #if !defined(_flockfile)
-//#ifndef __SINGLE_THREAD__
-//#  define _flockfile(fp) (((fp)->_flags & __SSTR) ? 0 : __lock_acquire_recursive((fp)->_lock))
-//#else
+#ifndef __SINGLE_THREAD__
+#  define _flockfile(fp) (((fp)->_flags & __SSTR) ? 0 : __lock_acquire_recursive((fp)->_lock))
+#else
 #  define _flockfile(fp)	(_CAST_VOID 0)
-//#endif
+#endif
 #endif
 
 #if !defined(_funlockfile)

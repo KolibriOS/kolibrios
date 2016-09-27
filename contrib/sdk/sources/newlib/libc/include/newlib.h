@@ -11,11 +11,11 @@
 /* #undef _ELIX_LEVEL */
 
 /* Newlib version */
-#define _NEWLIB_VERSION "2.3.0"
+#include <_newlib_version.h>
 
 /* C99 formats support (such as %a, %zu, ...) in IO functions like
  * printf/scanf enabled */
-//#define _WANT_IO_C99_FORMATS
+/* #undef _WANT_IO_C99_FORMATS */
 
 #define __DYNAMIC_REENT__
 
@@ -49,7 +49,7 @@
 
 /* Define if the linker supports .preinit_array/.init_array/.fini_array
  * sections.  */
-#define HAVE_INITFINI_ARRAY 1
+/* #undef HAVE_INITFINI_ARRAY */
 
 /* True if atexit() may dynamically allocate space for cleanup
    functions.  */
@@ -57,6 +57,9 @@
 
 /* True if long double supported.  */
 #define _HAVE_LONG_DOUBLE 1
+
+/* Define if compiler supports -fno-tree-loop-distribute-patterns. */
+#define _HAVE_CC_INHIBIT_LOOP_TO_LIBCALL 1
 
 /* True if long double supported and it is equal to double.  */
 /* #undef _LDBL_EQ_DBL */

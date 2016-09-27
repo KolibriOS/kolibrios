@@ -10,6 +10,7 @@ public _con_get_flags
 public _con_set_flags@4
 public _con_cls
 public _con_write_string@8
+public _con_getch2@0
 
 section '.text' align 16
 
@@ -163,6 +164,9 @@ _con_exit@4:
 align 4
 _con_write_string@8:
         jmp     [con_write_string]
+
+_con_getch2@0:
+        jmp     [con_getch2]
 
 _con_get_flags:
 _con_set_flags@4:

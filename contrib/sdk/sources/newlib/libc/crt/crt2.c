@@ -12,7 +12,7 @@ __thread_startup (int (*entry)(void*), void *param,
 
     __asm__ __volatile__(               // save stack limits
     "movl %0, %%fs:8    \n\t"           // use TLS
-    "movl %1, %%fs:12    \n\t"
+    "movl %1, %%fs:12   \n\t"
     ::"r"(stacklow), "r"(stackhigh));
 
     init_reent();                       // initialize thread reentry structure

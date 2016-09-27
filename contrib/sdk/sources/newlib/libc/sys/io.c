@@ -1,5 +1,6 @@
 
 #include <stddef.h>
+#include <stdio.h>
 #include "io.h"
 
 extern __io_handle __io_tab[64];
@@ -11,8 +12,16 @@ static int fake_io(const char *path, const void *buff,
     return 10;
 };
 
+//static int fake_io_read(const char *path, void *buff,
+//           size_t offset, size_t count, size_t *done) __attribute__ ((alias("fake_io")));
+
 static int fake_io_read(const char *path, void *buff,
-           size_t offset, size_t count, size_t *done) __attribute__ ((alias("fake_io")));
+           size_t offset, size_t count, size_t *done)
+{
+    printf("%s path:%s buf:%p offset:%d count:%d\n",
+            __FUNCTION__, path, buff, offset, count);
+
+}
 
 static int fake_io_write(const char *path, const void *buff,
            size_t offset, size_t count, size_t *done) __attribute__ ((alias("fake_io")));

@@ -85,7 +85,7 @@ SECTIONS
         *(SORT(.data$*))
         *(.jcr)
         __CRT_MT = .;
-        LONG(0);
+        LONG(1);
        	PROVIDE ( __data_end__ = .) ;
         *(.data_cygwin_nocopy)
         ___iend = . ;

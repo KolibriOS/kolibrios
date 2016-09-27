@@ -1,69 +1,47 @@
-#ifndef __SYS_LOCK_H__
-#define __SYS_LOCK_H__
 
-//#define  _LIBC  1
-#define  NOT_IN_libc 1
+#ifndef _SYS_LOCK_H_
+#define _SYS_LOCK_H_
 
-#ifndef __USE_GNU
-#define __USE_GNU 1
-#endif
+#include <sys/cdefs.h>
+#include <stddef.h>
+#include <sys/gthr.h>
 
-void __mutex_lock(volatile int *val);
+typedef __gthread_mutex_t _LOCK_T;
 
-typedef volatile int __libc_lock_t;
-typedef struct { volatile int mutex; } __libc_lock_recursive_t;
+typedef __gthread_recursive_mutex_t _LOCK_RECURSIVE_T;
 
-#define __libc_lock_define(CLASS,NAME) \
-  CLASS __libc_lock_t NAME;
-#define __libc_rwlock_define(CLASS,NAME) \
-  CLASS __libc_rwlock_t NAME;
-#define __libc_lock_define_recursive(CLASS,NAME) \
-  CLASS __libc_lock_recursive_t NAME;
-#define __rtld_lock_define_recursive(CLASS,NAME) \
-  CLASS __rtld_lock_recursive_t NAME;
+#define _MUTEX_INITIALIZER { 0, -1 }
 
-typedef __libc_lock_t _LOCK_T;
-typedef __libc_lock_recursive_t _LOCK_RECURSIVE_T;
+#define _MUTEX_RECURSIVE_INITIALIZER { 0,-1,0,0 }
 
-#define __LOCK_INIT(class,lock) \
-  __libc_lock_define_initialized(class, lock)
+#define __LOCK_INIT(_qualifier, _designator) \
+    _qualifier _LOCK_T _designator = _MUTEX_INITIALIZER
 
-#define __LOCK_INIT_RECURSIVE(class, lock) \
-  __libc_lock_define_initialized_recursive(class, lock)
+#define __LOCK_INIT_RECURSIVE(_qualifier, _designator) \
+    _qualifier _LOCK_RECURSIVE_T _designator = _MUTEX_RECURSIVE_INITIALIZER
 
-#define __libc_lock_define_initialized(CLASS,NAME) \
-  CLASS __libc_lock_t NAME;
+static inline int __libc_lock_acquire(_LOCK_T *lock)
+{
+    if(lock->handle == -1)
+        __gthread_mutex_init_function(lock);
 
-#define __libc_lock_define_initialized_recursive(CLASS,NAME) \
-  CLASS __libc_lock_recursive_t NAME = _LIBC_LOCK_RECURSIVE_INITIALIZER;
+    return __gthread_mutex_lock(lock);
+}
 
-#define _LIBC_LOCK_RECURSIVE_INITIALIZER {0}
+static inline int __libc_lock_acquire_recursive(_LOCK_RECURSIVE_T *lock)
+{
+    if(lock->handle == -1)
+        __gthread_recursive_mutex_init_function(lock);
 
-#define __lock_init(__lock) __libc_lock_init(__lock)
-#define __lock_init_recursive(__lock) __libc_lock_init_recursive(__lock)
-#define __lock_acquire(__lock) __libc_lock_lock(__lock)
-#define __lock_acquire_recursive(__lock) __libc_lock_lock_recursive(__lock)
-#define __lock_release(__lock) __libc_lock_unlock(__lock)
-#define __lock_release_recursive(__lock) __libc_lock_unlock_recursive(__lock)
-#define __lock_try_acquire(__lock) __libc_lock_trylock(__lock)
-#define __lock_try_acquire_recursive(__lock) \
-	__libc_lock_trylock_recursive(__lock)
-#define __lock_close(__lock) __libc_lock_fini(__lock)
-#define __lock_close_recursive(__lock) __libc_lock_fini_recursive(__lock)
+    return __gthread_recursive_mutex_lock(lock);
+}
 
+#define __lock_acquire(_lock) __libc_lock_acquire(&_lock)
+#define __lock_release(_lock) __gthread_mutex_unlock(&_lock)
 
-#define __libc_lock_init_recursive(NAME) ((NAME).mutex=0)
-#define __libc_lock_fini(NAME)
+#define __lock_init_recursive(_lock) __gthread_recursive_mutex_init_function(&_lock)
+#define __lock_acquire_recursive(_lock) __libc_lock_acquire_recursive(&_lock)
+#define __lock_release_recursive(_lock) __gthread_recursive_mutex_unlock(&_lock)
+#define __lock_close_recursive(_lock) __gthread_recursive_mutex_destroy(&_lock)
 
-#define __libc_lock_fini_recursive(NAME) __libc_lock_fini ((NAME).mutex)
-
-
-#define __libc_lock_lock(NAME) __mutex_lock (&(NAME))
-
-/* Lock the recursive named lock variable.  */
-#define __libc_lock_lock_recursive(NAME) __libc_lock_lock ((NAME).mutex)
-
-#define __libc_lock_unlock(NAME) ((NAME)=0)
-#define __libc_lock_unlock_recursive(NAME) __libc_lock_unlock ((NAME).mutex)
-
-#endif /* __SYS_LOCK_H__ */
+#endif /* _SYS_LOCK_H_ */

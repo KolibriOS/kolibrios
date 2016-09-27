@@ -345,7 +345,7 @@ void* create_image(void *raw)
 int link_image(void *img_base, PIMAGE_IMPORT_DESCRIPTOR imp)
 {
     static jmp_buf loader_env;
-    static recursion = -1;
+    static int recursion = -1;
     int warn = 0;
 
     recursion++;
