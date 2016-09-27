@@ -1,5 +1,4 @@
 OUTPUT_FORMAT(pei-i386)
-SEARCH_DIR("=/mingw32/lib")
 
 ENTRY("_libc_crt_startup")
 
