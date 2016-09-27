@@ -2,7 +2,7 @@ if tup.getconfig("NO_GCC") ~= "" then return end
 HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../../../programs" or tup.getconfig("HELPERDIR")
 tup.include(HELPERDIR .. "/use_gcc.lua")
 tup.include(HELPERDIR .. "/use_newlib.lua")
-CFLAGS = CFLAGS .. " -UWIN32 -U_WIN32 -U__WIN32__ -DLUA_COMPAT_ALL -DLUA_ANSI -D__DYNAMIC_REENT__"
+CFLAGS = CFLAGS .. " -UWIN32 -U_WIN32 -U__WIN32__ -DLUA_COMPAT_ALL -DLUA_ANSI"
 compile_gcc{
   "lapi.c",
   "lauxlib.c",
