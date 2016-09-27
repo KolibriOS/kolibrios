@@ -20,7 +20,7 @@ if TOOLCHAIN_LIBPATH == "" then
   else TOOLCHAIN_LIBPATH="/home/autobuild/tools/win32/mingw32/lib"
   end
 end
-LIBPATH = "-L$(SDK_DIR)/lib -L$(TOOLCHAIN_LIBPATH)"
+LIBPATH = "-L$(SDK_DIR)/lib"
 STATIC_SRCS = {"crt/start.S", "crt/crt1.c", "crt/crt2.c", "crt/exit.S"}
 LIBDLL_SRCS = {"crt/dllstart.c", "crt/exit.S", "crt/pseudo-reloc.c", "crt/setjmp.S"}
 LIBCDLL_SRCS = {"crt/crt2.c", "crt/pseudo-reloc.c", "crt/exit.S", "crt/setjmp.S"}
