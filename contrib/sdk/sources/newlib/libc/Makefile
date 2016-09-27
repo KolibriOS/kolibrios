@@ -16,7 +16,8 @@ LIBC_INCLUDES = $(LIBC_TOPDIR)/include
 
 NAME:=	  libc
 
-DEFINES:= -D_IEEE_LIBM -DHAVE_RENAME -DBUILD_LIBC -DPACKAGE_NAME=\"newlib\"
+DEFINES:= -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -U_MSC_VER
+DEFINES+= -D_IEEE_LIBM -DHAVE_RENAME -DBUILD_LIBC -DPACKAGE_NAME=\"newlib\"
 DEFINES+= -DPACKAGE_TARNAME=\"newlib\" -DPACKAGE_VERSION=\"2.4.0\"
 SEFINES+= -DPACKAGE_STRING=\"newlib\ 2.4.0\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\"
 
@@ -46,6 +47,7 @@ CORE_SRCS:=                   			\
 			argz/buf_findstr.c	\
 			argz/envz_get.c		\
 			crt/console.asm		\
+			crt/gthr-kos32.c	\
 			crt/thread.S         	\
 			crt/setjmp.S		\
 			crt/cpu_features.c	\
