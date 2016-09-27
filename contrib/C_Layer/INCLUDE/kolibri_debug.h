@@ -26,7 +26,7 @@ void debug_board_printf(const char *format,...)
 {
 	va_list ap;
 	char log_board[300];
-	
+
 	va_start (ap, format);
 	vsprintf(log_board, format, ap);
 	va_end(ap);

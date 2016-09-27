@@ -17,8 +17,10 @@ public press_key as '_press_key'
 ;;; Returns 0 on success. -1 on failure.
 
 proc init_boxlib
+	pusha
 	mcall 68,11
 	stdcall dll.Load, @IMPORT
+	popa
 	ret
 endp	
 	
@@ -58,9 +60,9 @@ import lib_boxlib, \
 	menu_bar_draw, 'menu_bar_draw' , \
 	menu_bar_mouse, 'menu_bar_mouse' , \
 	menu_bar_activate, 'menu_bar_activate' , \
-	fb_draw_panel, 'filebrowser_draw' , \
-	fb_mouse, 'filebrowser_mouse' , \
-	fb_key, 'filebrowser_key' , \
+	fb_draw_panel, 'FileBrowser_draw' , \
+	fb_mouse, 'FileBrowser_mouse' , \
+	fb_key, 'FileBrowser_key' , \
 	tl_data_init, 'tl_data_init' , \
 	tl_data_clear, 'tl_data_clear' , \
 	tl_info_clear, 'tl_info_clear' , \
@@ -150,3 +152,7 @@ public dynamic_button_mouse as '_dynamic_button_mouse'
 
 public path_show_prepare as '_path_show_prepare'
 public path_show_draw as '_path_show_draw'
+
+public fb_draw_panel as '_filebrowse_draw'
+public fb_mouse as '_filebrowse_mouse'
+public fb_key as '_filebrowse_key'

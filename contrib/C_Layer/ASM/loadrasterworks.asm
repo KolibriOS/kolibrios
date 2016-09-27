@@ -15,8 +15,10 @@ public init_rasterworks as '_kolibri_rasterworks_init'
 ;;; Returns 0 on success. -1 on failure.
 
 proc init_rasterworks
+	pusha
 	mcall 68,11
 	stdcall dll.Load, @IMPORT
+	popa
 	ret
 endp	
 	

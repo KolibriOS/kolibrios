@@ -14,8 +14,10 @@ public init_buf2d as '_kolibri_buf2d_init'
 ;;; Returns 0 on success. -1 on failure.
 
 proc init_buf2d
+	pusha
 	mcall 68,11
 	stdcall dll.Load, @IMPORT
+	popa
 	ret
 endp	
 

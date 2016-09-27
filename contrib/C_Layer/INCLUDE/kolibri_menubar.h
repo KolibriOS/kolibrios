@@ -40,7 +40,7 @@ typedef struct
 } menubar;
 
 
-inline menubar* kolibri_menubar(menubar* bar, uint32_t x_w, uint32_t y_h, uint16_t sub_w, uint16_t sub_h, char **menutext,
+static inline menubar* kolibri_menubar(menubar* bar, uint32_t x_w, uint32_t y_h, uint16_t sub_w, uint16_t sub_h, char **menutext,
                                 color_t sel_font, color_t unsel_font, color_t top_bg, color_t top_select, color_t sub_bg, color_t sub_select)
 {
     static char procinfo[1024];

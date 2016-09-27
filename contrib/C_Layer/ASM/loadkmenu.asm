@@ -13,8 +13,10 @@ public init_kmenu as '_kolibri_kmenu_init'
 ;;; Returns 0 on success. -1 on failure.
 
 proc init_kmenu
+	pusha
 	mcall 68,11
 	stdcall dll.Load, @IMPORT
+	popa
 	ret
 endp	
 	

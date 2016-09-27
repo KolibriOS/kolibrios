@@ -22,7 +22,7 @@
 #include "kolibri_libimg.h"
 
 char temp_path[4096];
-char** sys_path = (char**)0x20; // hack - get path from KOS header
+char** sys_path = (char**)0x20; // hack - get path from KOS header. analog argv[0]
 
 int main(int argc, char **argv)
 {
@@ -48,7 +48,7 @@ int main(int argc, char **argv)
          *image_data, *pc;
     // make full path + argv
     strcpy(temp_path, *sys_path);
-    pc = strrchr(temp_path, '/');
+    pc = strrchr(temp_path, '/');  // this fails if has params with '/' within. use argv[0] instead
     if (pc) pc[1] = 0;
     strcat(temp_path, "reload_16x16_8b.png");
     debug_board_write_str(temp_path);

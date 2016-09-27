@@ -14,8 +14,10 @@ public init_libimg as '_kolibri_libimg_init'
 ;;; Returns 0 on success. -1 on failure.
 
 proc init_libimg
+	pusha
 	mcall 68,11
 	stdcall dll.Load, @IMPORT
+	popa
 	ret
 endp	
 
