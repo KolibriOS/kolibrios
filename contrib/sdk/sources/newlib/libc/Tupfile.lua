@@ -81,7 +81,7 @@ STDLIB_SRCS = {
   "getenv.c",
   "getenv_r.c",
   "itoa.c",
-  "labs.c",  
+  "labs.c",
   "mprec.c",
   "mbtowc.c",
   "mbtowc_r.c",
@@ -263,7 +263,7 @@ STDIO_SRCS = {
   "vsscanf.c",
   "wsetup.c",
   "wbuf.c"
-}   
+}
 
 
 MATH_SRCS = {
@@ -336,9 +336,9 @@ function compile(list)
 end
 
 LIB_OBJS = compile(LIB_SRCS)
-LIB_OBJS += tup.rule("crt/crtdll.c", "kos32-gcc $(CFLAGS) $(DEFINES) $(INCLUDES) -fno-delete-null-pointer-checks -c crt/crtdll.c -o crt/crtdll.o")
-LIB_OBJS += tup.rule("pe/loader.c", "kos32-gcc $(CFLAGS) $(DEFINES) $(INCLUDES) -fno-delete-null-pointer-checks -c pe/loader.c -o pe/loader.o")
-LIB_OBJS += tup.rule("reent/renamer.c", "kos32-gcc $(CFLAGS) $(DEFINES) $(INCLUDES) -D_COMPILING_NEWLIB -c reent/renamer.c -o reent/renamer.o")
+LIB_OBJS += tup.rule("crt/crtdll.c", "kos32-gcc $(CFLAGS) $(DEFINES) $(INCLUDES) -fno-delete-null-pointer-checks -c %f -o %o","crt/crtdll.o")
+LIB_OBJS += tup.rule("pe/loader.c", "kos32-gcc $(CFLAGS) $(DEFINES) $(INCLUDES) -fno-delete-null-pointer-checks -c %f -o %o", "pe/loader.o")
+LIB_OBJS += tup.rule("reent/renamer.c", "kos32-gcc $(CFLAGS) $(DEFINES) $(INCLUDES) -D_COMPILING_NEWLIB -c %f -o %o", "reent/renamer.o")
 
 LIBDLL_OBJS = compile(LIBDLL_SRCS)
 
