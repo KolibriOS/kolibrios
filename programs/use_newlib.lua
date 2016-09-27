@@ -11,6 +11,6 @@ if TOOLCHAIN_LIBPATH == "" then
 end
 
 INCLUDES = INCLUDES .. " -I" .. NEWLIB_BASE .. "/libc/include"
-LDFLAGS = LDFLAGS .. " -T$(NEWLIB_BASE)/app.lds -L$(NEWLIB_LIB) -L$(TOOLCHAIN_LIBPATH) --image-base 0"
-tup.append_table(LIBDEPS, {NEWLIB_LIB .. "/<libapp.a>", NEWLIB_LIB .. "/<libc.dll.a>"})
-LIBS = LIBS .. "-lgcc -lapp -lc.dll"
+LDFLAGS = LDFLAGS .. " -T$(NEWLIB_BASE)/app-dynamic.lds -L$(NEWLIB_LIB) --image-base 0"
+tup.append_table(LIBDEPS, {NEWLIB_LIB .. "/<libc.dll.a>"})
+LIBS = LIBS .. "-lgcc -lc.dll"
