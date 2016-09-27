@@ -1,6 +1,6 @@
 OUTPUT_FORMAT(pei-i386)
-SEARCH_DIR("=/lib")
-SEARCH_DIR("=/mingw32/lib")
+/* SEARCH_DIR("=/lib") */
+/* SEARCH_DIR("=/mingw32/lib") */
 
 SECTIONS
 {
