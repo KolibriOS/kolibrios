@@ -1,6 +1,6 @@
 if tup.getconfig("NO_GCC") ~= "" or tup.getconfig("NO_FASM") ~= "" then return end
 tup.include("../../../../../programs/use_gcc.lua")
-CFLAGS =  "-c -O2 -fno-builtin -fno-ident -fomit-frame-pointer"
+CFLAGS =  "-c -O2 -fno-builtin -fno-ident -fomit-frame-pointer -DMISSING_SYSCALL_NAMES"
 LDFLAGS = "-shared -s -T libcdll.lds --out-implib $(SDK_DIR)/lib/libc.dll.a --image-base 0"
 -- LDFLAGS = LDFLAGS .. " --output-def libc.orig.def"
 
@@ -9,7 +9,7 @@ SDK_DIR = "../../.."
 LIBC_TOPDIR = "."
 LIBC_INCLUDES = "include"
 NAME = "libc"
-DEFINES = "-D_IEEE_LIBM -DHAVE_RENAME"
+DEFINES = "-D_IEEE_LIBM -DHAVE_RENAME -DBUILD_LIBC"
 INCLUDES = "-Iinclude"
 
 TOOLCHAIN_LIBPATH = tup.getconfig("TOOLCHAIN_LIBPATH")
