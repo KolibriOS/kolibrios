@@ -4,6 +4,8 @@ export AR = kos32-ar
 export LD = kos32-ld
 export STRIP = kos32-strip
 
+INSTALLDIR:= /home/autobuild/tools/win32/mingw32/lib
+
 export SDK_DIR:= $(abspath ../../../../sdk)
 
 cpu_type = i386
@@ -467,7 +469,9 @@ all: libgcc.a
 
 libgcc.a : $(libgcc-objects) Makefile
 	$(AR) crs libgcc.a $(libgcc-objects)
-#	mv -f libbfd.a $(SDK_DIR)/lib
+
+install: libgcc.a
+	mv -f libgcc.a $(INSTALLDIR)/libgcc.a
 
 
  
