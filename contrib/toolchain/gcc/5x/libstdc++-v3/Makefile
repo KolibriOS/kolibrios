@@ -35,13 +35,13 @@ cxx98_sources = \
 	src/c++98/compatibility-debug_list-2.cc
 
 cxx11_sources = \
-	compatibility-c++0x.cc \
-	compatibility-atomic-c++0x.cc \
-	compatibility-thread-c++0x.cc \
-	compatibility-chrono.cc \
-	compatibility-condvar.cc
+	src/c++11/compatibility-c++0x.cc \
+	src/c++11/compatibility-atomic-c++0x.cc \
+	src/c++11/compatibility-thread-c++0x.cc \
+	src/c++11/compatibility-chrono.cc \
+	src/c++11/compatibility-condvar.cc
  
-compat_sources = $(cxx98_sources)
+compat_sources = $(cxx98_sources) $(cxx11_sources)
 
 cow_string_host_sources = \
 	src/c++98/collate_members_cow.cc \
@@ -244,7 +244,19 @@ src/c++98/parallel_settings.o: src/c++98/parallel_settings.cc
 
 
 src/c++11/hashtable_c++0x.o: src/c++11/hashtable_c++0x.cc
-	$(CXXCOMPILE) -fimplicit-templates -o $@ $<
+	$(CXXCOMPILE) -std=gnu++11 -fimplicit-templates -o $@ $<
+
+src/c++11/compatibility-c++0x.o: src/c++11/compatibility-c++0x.cc
+	$(CXXCOMPILE) -std=gnu++11 -o $@ $<
+
+src/c++11/compatibility-thread-c++0x.o: src/c++11/compatibility-thread-c++0x.cc 
+	$(CXXCOMPILE) -std=gnu++11 -o $@ $<
+
+src/c++11/compatibility-chrono.o: src/c++11/compatibility-chrono.cc 
+	$(CXXCOMPILE) -std=gnu++11 -o $@ $<
+
+src/c++11/compatibility-condvar.o: src/c++11/compatibility-condvar.cc 
+	$(CXXCOMPILE) -std=gnu++11 -o $@ $<
 
 clean:
 	-rm -f *.o

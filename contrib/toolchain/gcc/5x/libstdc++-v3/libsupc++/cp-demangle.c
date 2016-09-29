@@ -2302,7 +2302,7 @@ cplus_demangle_type (struct d_info *di)
 	  *pret = d_function_type (di);
 	}
       else
-      *pret = cplus_demangle_type (di);
+	*pret = cplus_demangle_type (di);
       if (!*pret)
 	return NULL;
       if ((*pret)->type == DEMANGLE_COMPONENT_RVALUE_REFERENCE_THIS
@@ -2397,11 +2397,11 @@ cplus_demangle_type (struct d_info *di)
 	     candidate.  */
 	  if (! di->is_conversion)
 	    {
-	  if (! d_add_substitution (di, ret))
-	    return NULL;
-	  ret = d_make_comp (di, DEMANGLE_COMPONENT_TEMPLATE, ret,
-			     d_template_args (di));
-	}
+	      if (! d_add_substitution (di, ret))
+		return NULL;
+	      ret = d_make_comp (di, DEMANGLE_COMPONENT_TEMPLATE, ret,
+				 d_template_args (di));
+	    }
 	  else
 	    {
 	      struct demangle_component *args;
@@ -4109,7 +4109,7 @@ cplus_demangle_print_callback (int options,
 				 * sizeof (*dpi.copy_templates));
 #endif
 
-  d_print_comp (&dpi, options, dc);
+    d_print_comp (&dpi, options, dc);
   }
 
   d_print_flush (&dpi);
@@ -4334,7 +4334,7 @@ d_get_saved_scope (struct d_print_info *dpi,
 
 static void
 d_print_comp_inner (struct d_print_info *dpi, int options,
-              const struct demangle_component *dc)
+		  const struct demangle_component *dc)
 {
   /* Magic variable to let reference smashing skip over the next modifier
      without needing to modify *dc.  */
@@ -5785,9 +5785,9 @@ d_print_expr_op (struct d_print_info *dpi, int options,
 
 static void
 d_print_cast (struct d_print_info *dpi, int options,
-              const struct demangle_component *dc)
+		    const struct demangle_component *dc)
 {
-    d_print_comp (dpi, options, d_left (dc));
+  d_print_comp (dpi, options, d_left (dc));
 }
 
 /* Print a conversion operator.  */
@@ -5821,7 +5821,7 @@ d_print_conversion (struct d_print_info *dpi, int options,
 	 parameters from scope after printing the operator name,
 	 so we need to handle the template printing here.  */
       if (dpi->current_template != NULL)
-      dpi->templates = dpt.next;
+	dpi->templates = dpt.next;
 
       if (d_last_char (dpi) == '<')
 	d_append_char (dpi, ' ');
