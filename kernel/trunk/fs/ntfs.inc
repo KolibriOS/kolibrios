@@ -167,8 +167,8 @@ bCanContinue        db  ?
 bFolder             db  ?
 bWriteAttr          db  ?   ; Warning: Don't forget to turn off!!!
 
-align 256
-mft_retrieval       rb  768
+mft_retrieval       rb  512
+align0  rb  1024-NTFS.align0
 attrlist_buf        rb  1024
 attrlist_mft_buf    rb  1024
 bitmap_buf          rb  1024
