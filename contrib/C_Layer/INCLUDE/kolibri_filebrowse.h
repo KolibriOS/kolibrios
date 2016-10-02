@@ -1,130 +1,234 @@
 #ifndef KOLIBRI_FILEBROWSE_H
 #define KOLIBRI_FILEBROWSE_H
 
-typedef struct {
-	uint32_t type;
+struct  __attribute__ ((__packed__)) fs_dirinfo {
+    uint32_t    subfn; // 1 read dir
+    uint32_t    start;
+    uint32_t    flags;
+    uint32_t    size;
+    uint32_t    retval;
+    union {
+        struct __attribute__ ((__packed__)) {
+            uint8_t zero;  // 0
+            char*   ppath;
+        };
+        char path[5];  // up to 4096
+    } ;
+};
+
+static inline
+uint32_t sf_file(int subfn, struct fs_dirinfo* dinfo)
+// retval 0 if ok
+{
+    uint32_t retval;
+    dinfo->subfn = subfn;
+
+    __asm__ __volatile__(
+    "int $0x40 "
+    :"=a"(retval)
+    :"a"(70),"b"(dinfo)
+    :);
+
+    return retval;
+};
+
+
+struct fs_dirheader {
+    uint32_t     version; // 1
+    uint32_t     curn_blocks;  // number of read dir items (BDFE)
+    uint32_t     totl_blocks;  // directory full size
+    char         other[20]; // reserved 0
+};
+
+enum filetype
+{
+    fs_readonly = 1,
+    fs_hidden = 2,
+    fs_system = 4,
+    fs_volumelabel = 8,
+    fs_folder = 0x10,
+    fs_nonarchived = 0x20
+};
+
+struct __attribute__ ((__packed__)) fs_filetime {
+    uint8_t    sec;
+    uint8_t    mm;
+    uint8_t    hour;
+    uint8_t    zero;
+};
+
+struct __attribute__ ((__packed__)) fs_filedate {
+    uint8_t    day;
+    uint8_t    month;
+    uint16_t   year;
+};
+
+/// directory entry cp866
+struct fsBDFE {
+    uint32_t filetype;
+    uint32_t encoding; // 0 - cp866, 1 - utf16le
+    struct fs_filetime tm_created;
+    struct fs_filedate dt_created;
+    struct fs_filetime tm_accessed;
+    struct fs_filedate dt_accessed;
+    struct fs_filetime tm_modified;
+    struct fs_filedate dt_modified;
+    uint64_t size;
+    char   fname[264];
+}; // must be sized 304
+
+/// directory entry UTF16LE
+struct fsBDFE_16 {
+    uint32_t filetype;
+    uint32_t encoding; // 0 - cp866, 1 - utf16le
+    struct fs_filetime tm_created;
+    struct fs_filedate dt_created;
+    struct fs_filetime tm_accessed;
+    struct fs_filedate dt_accessed;
+    struct fs_filetime tm_modified;
+    struct fs_filedate dt_modified;
+    uint64_t size;
+    wchar_t   fname[260];
+}; // must be sized 560
+
+
+typedef struct __attribute__ ((__packed__)) {
+	uint32_t type;  // unused
 	uint32_t x_w;  // 10, 400
 	uint32_t y_h; // 45, 550
 	uint32_t icon_size_xy;  // x_y (16, 16)
-	uint16_t line_size_x;
-	uint16_t line_size_y;  // 18 or 17  - высота линии
-	uint16_t type_size_x;
-	uint16_t size_size_x;
-	uint16_t date_size_x;
-	uint16_t attributes_size_x;
-	uint32_t icon_assoc_area;
-	uint32_t icon_raw_area;   // z_icons.png
+	uint16_t line_size_x;  // not used
+	uint16_t line_size_y;  // 18 or 17  - высота линии - строки с файлом
+	uint16_t type_size_x;  // not used
+	uint16_t size_size_x;  // not used
+	uint16_t date_size_x;  // not used
+	uint16_t attributes_size_x; // not used
+	uint32_t icon_assoc_area;  // not used
+	void* icon_raw_area;   // z_icons.png
 	uint32_t icon_resolution_raw;  // ...
-	uint32_t palette_raw;      // ...
-	uint32_t directory_path_area;
-	uint32_t file_name_area;
-	uint32_t select_flag;
-	color_t background_color;  // 0xffffff
-	color_t select_color; // 0xbbddff
-    color_t select_text_color;
-    color_t text_color;
-    color_t reduct_text_color; // 0xff0000
-    color_t marked_text_color;
-    uint32_t max_panel_line;            // // moved to scrollbar->cur_area, - максимальное число строк в окне
-	uint32_t select_panel_counter;  // 1 if focused
-	uint32_t folder_block;   //  количество блоков данных входа каталога (БДВК) ????? format BDVK == bdfe,, // moved to scrollbar->max_area
-	uint32_t start_draw_line;       // moved to scrollbar->position and back
-	uint16_t start_draw_cursor_line;
-    void* folder_data;      // ??? format 32 byte - header, +4 = number, +32 - bdvk[], size of rec(bdvk cp866) = 304byte
-    uint32_t temp_counter;
-    uint32_t file_name_length;
-    uint32_t marked_file;
-    uint32_t extension_size;
-    uint32_t extension_start;
-    void* type_table; //dd features_table ; +122   ? table format
-    char* ini_file_start;   // icons.ini
+	void* icon_palette_raw;      // ...
+	uint32_t directory_path_area;  // not used
+	uint32_t file_name_area;  // not used
+	uint32_t select_flag;  // widget have focus, set auto on mouseclick
+	color_t background_color;  // self explained, 0xffffff
+	color_t select_color; // self explained, 0xbbddff
+    color_t select_text_color; // self explained
+    color_t text_color; // self explained
+    color_t reduct_text_color; // 0xff0000  - spec color for cutted filenames
+    color_t marked_text_color; // not used
+    uint32_t max_panel_line;    // moved to scrollbar->cur_area, - максимальное число строк в окне, авторасчитывается
+	uint32_t select_panel_counter;  // !=0 if want to draw multiselection ???
+	uint32_t folder_block;   // auto formed, количество блоков данных входа каталога (БДВК) ????? format BDVK == bdfe,, // moved to scrollbar->max_area
+	uint32_t start_draw_line;    // internal - top showed file n. moved to scrollbar->position and back
+	uint16_t start_draw_cursor_line;  //internal
+    void* folder_data;      // 32 byte - dir_header, +4 = number, +32 - bdvk[], size of rec(bdvk cp866) = 304byte
+    uint32_t temp_counter; //internal
+    uint32_t file_name_length; //internal
+    uint32_t marked_file;  // have a mark 0/1 ?
+    uint32_t extension_size;  //internal
+    uint32_t extension_start;  //internal
+    void* type_table; // type buffer
+    char* ini_file_start;   // icons.ini contens - file<>icon association
     char* ini_file_end;     // start + filesize
-    uint32_t draw_scroll_bar;  // 1 = need redraw sb after key()
+    uint32_t draw_scroll_bar;  // 1 = need redraw sb after key(), user - resetted
     uint32_t font_size_xy;  // x_y	(6, 9)
-    uint32_t mouse_keys;
-    uint32_t mouse_keys_old;
-    uint32_t mouse_pos;
-    uint32_t mouse_keys_delta;
+    uint32_t mouse_keys;  // saved internal
+    uint32_t mouse_keys_old; // saved internal
+    uint32_t mouse_pos; // saved internal
+    uint32_t mouse_keys_delta; // saved internal
     uint32_t mouse_key_delay; // 50
-    uint32_t mouse_keys_tick;
-    uint16_t start_draw_cursor_line_2;
-    uint32_t all_redraw;         // 1 - force draw, 2 - ????
-    uint32_t selected_BDVK_adress;
+    uint32_t mouse_keys_tick; // internal timer
+    uint16_t start_draw_cursor_line_2;  // internal cursor line
+    uint32_t all_redraw;         // 0 - skip draw contens, 1 - force draw, 2 - no draw selection (but draw icons), used when scroll
+    struct fsBDFE* selected_BDVK_adress;  // pointer to selected
     uint16_t key_action;   // fill before key(), 1..12, wiki
     uint16_t key_action_num; // fill before key()  fn2 >> 8
-    char* name_temp_area 		dd name_temp_area ;+180
-    uint32_t max_name_temp_size;
-    uint32_t display_name_max_length;
-    uint32_t draw_panel_selection_flag;
-    uint32_t mouse_pos_old;
-    uint32_t marked_counter;
-    char* keymap_pointer 		dd keymap_area ;+204
+    char* name_temp_area;       // temporary string format buffer
+    uint32_t max_name_temp_size;  // sizeof ^
+    uint32_t display_name_max_length;  // autocounted
+    uint32_t draw_panel_selection_flag;  // flag internal showing selected item
+    uint32_t mouse_pos_old;  // saved internal
+    uint32_t marked_counter;  // number of marked files
+    char* keymap_pointer;  // keyboard layout map
 
+} filebrowser;
 
-} file_browser;
+static inline filebrowser* kolibri_filebrowser(filebrowser* fb, uint32_t x_w, uint32_t y_h, uint32_t font_size_xy, uint32_t icon_size_xy, void* icon_raw_area, void* icon_palette_raw, uint32_t icon_res,
+                                         char* ini_file_start, char* ini_file_end,
+                                         color_t font_select, color_t bk_select, color_t font_color, color_t bgcolor, color_t reduct_color)
+{
+    static char name_temp_area[256];
+    static char keymap_area[128];
+    static char type_table[128] = "<DIR> 1023b 00.00.00 00:00     temp1.asm";
+
+    memset(fb, 0, sizeof(filebrowser));
+    fb->x_w = x_w;
+    fb->y_h = y_h;
+    fb->font_size_xy = font_size_xy;
+
+    fb->icon_size_xy = icon_size_xy;
+    fb->icon_raw_area = icon_raw_area;
+    fb->icon_palette_raw = icon_palette_raw;
+    fb->icon_resolution_raw = icon_res;
+
+    fb->line_size_y = (icon_size_xy & 0xFFFF) + 2;
+
+    // constants
+    fb->type_table = type_table;
+    fb->mouse_key_delay = 50;
+    fb->name_temp_area = name_temp_area;
+//    fb->max_name_temp_size = sizeof name_temp_area - 1;
+    fb->keymap_pointer = keymap_area;
+
+    // careful - font sizes may be encoded in colors as SysFn4
+    fb->background_color = bgcolor;  // self explained, 0xffffff
+	fb->select_color = bk_select; // self explained, 0xbbddff
+    fb->select_text_color = font_select; // self explained
+    fb->text_color = font_color; // self explained
+    fb->reduct_text_color = reduct_color; // 0xff0000  - spec color for cutted filenames
+
+    fb->ini_file_start = ini_file_start;
+    fb->ini_file_end = ini_file_end;
 /*
-features_table:
-.type_table:
-	db '<DIR> '
-;---------------------------------------------------------------------
-.size_table:
-	db '1023b '
-;---------------------------------------------------------------------
-.date_table:
-	db '00.00.00 00:00 '
-;---------------------------------------------------------------------
-.year_table:
-	db '    '
-
-name_temp_area:
-	rb 256
-
-keymap_area:
-	rb 128
-
-inline frame* kolibri_filebrowser(frame* f, uint32_t x_w, uint32_t y_h, color_t ext_col, color_t int_col, char *text, uint32_t text_position, color_t font_color, color_t font_bgcolor)
-{
-    f->type = 0;
-    f->x_w = x_w;
-    f->y_h = y_h;
-    f->ext_col = ext_col;
-    f->int_col = int_col;
-    f->draw_text_flag = text != NULL;
-    f->text_pointer = text;
-    f->text_position = text_position;
-    f->font_number = 0;  // 0 == font 6x9, 1==8x16
-    f->font_size_y = 9;
-    f->font_color = font_color | 0x80000000;
-    f->font_bg_color = font_bgcolor;
-
-    return f;
+    void* folder_data;      // 32 byte - dir_header, +4 = number, +32 - bdvk[], size of rec(bdvk cp866) = 304byte
+*/
+    return fb;
 }
 
-inline frame* kolibri_new_frame(uint32_t x_w, uint32_t y_h, color_t ext_col, color_t int_col, char *text, uint32_t text_position, color_t font_color, color_t font_bgcolor)
+static inline filebrowser* kolibri_new_filebrowser(uint32_t x_w, uint32_t y_h, uint32_t font_size_xy, uint32_t icon_size_xy, void* icon_raw_area, void* icon_palette_raw, uint32_t icon_bpp,
+                                         char* ini_file_start, char* ini_file_end,
+                                         color_t font_select, color_t bk_select, color_t font_color, color_t bgcolor, color_t reduct_color)
 {
-    frame *new_frame = (frame *)malloc(sizeof(frame));
-    return kolibri_frame(new_frame, x_w, y_h, ext_col, int_col, text, text_position, font_color, font_bgcolor);
+    filebrowser *new_fb = (filebrowser *)malloc(sizeof(filebrowser));
+    return kolibri_filebrowser(new_fb, x_w, y_h, font_size_xy, icon_size_xy, icon_raw_area, icon_palette_raw, icon_bpp, ini_file_start, ini_file_end,
+                                         font_select, bk_select, font_color, bgcolor, reduct_color);
 }
 
-inline frame* kolibri_frame_def(frame* f, uint32_t x_w, uint32_t y_h, char *text)
+/* loading files leads to link functions even if no using filebrowser
+inline filebrowser* kolibri_filebrowser_def(filebrowser* fb, uint32_t x_w, uint32_t y_h)
 {
-    return kolibri_frame(f, x_w, y_h, 0x00FCFCFC, 0x00DCDCDC, text, TOP, kolibri_color_table.color_work_text, kolibri_color_table.color_work_area);
-}
+    // load default icons and icon association
+    char icons_ini[]       = "/rd/1/File managers/icons.ini";
+    char icons16img[]       = "/rd/1/File managers/z_icons.png";
 
+    return kolibri_filebrowser(fb, x_w, y_h, X_Y(9, 16), X_Y(16, 16), icon_raw_area, icon_palette_raw, icon_res,
+                                         ini_file_start, ini_file_end,
+                                         0x000000, 0xbbddff, kolibri_color_table.color_work_text, kolibri_color_table.color_work_area, 0xff0000);
+}
+*/
+/*
 inline frame* kolibri_new_frame_def(uint32_t x_w, uint32_t y_h, char *text)
 {
     return kolibri_new_frame(x_w, y_h, 0x00FCFCFC, 0x00DCDCDC, text, TOP, kolibri_color_table.color_work_text, kolibri_color_table.color_work_area);
 }
-
-inline void gui_add_frame(kolibri_window *wnd, frame* f)
+*/
+inline void gui_add_filebrowser(kolibri_window *wnd, filebrowser* f)
 {
-    kolibri_window_add_element(wnd, KOLIBRI_FRAME, f);
+    kolibri_window_add_element(wnd, KOLIBRI_FILEBROWSE, f);
 }
 
-FileBrowser_draw - рисование элемента
-FileBrowser_mouse - эта функция должна вызываться при вводе информации с мыши
-FileBrowser_key
+extern void (*filebrowse_draw)(filebrowser *) __attribute__((__stdcall__));
+extern void (*filebrowse_key)(filebrowser *) __attribute__((__stdcall__));
+extern void (*filebrowse_mouse)(filebrowser *) __attribute__((__stdcall__));
 
-extern void (*frame_draw)(frame *) __attribute__((__stdcall__));
-/*
 #endif /* KOLIBRI_FILEBROWSE_H */

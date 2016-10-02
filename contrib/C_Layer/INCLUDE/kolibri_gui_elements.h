@@ -24,6 +24,7 @@ enum KOLIBRI_GUI_ELEMENT_TYPE {
   KOLIBRI_BUTTON,
   KOLIBRI_D_BUTTON,
   KOLIBRI_PATHSHOW,
+  KOLIBRI_FILEBROWSE,
 
   /* Add elements above this element in order to let KOLIBRI_NUM_GUI_ELEMENTS */
   /* stay at correct value */
@@ -77,8 +78,7 @@ void kolibri_window_add_element(kolibri_window *some_window, enum KOLIBRI_GUI_EL
 #include "kolibri_progressbar.h"
 #include "kolibri_scrollbar.h"
 #include "kolibri_statictext.h"
-
-
+#include "kolibri_filebrowse.h"
 
 
 
@@ -142,12 +142,15 @@ kolibri_gui_op_table[KOLIBRI_MENU_BAR].key_fn = NULL;
 kolibri_gui_op_table[KOLIBRI_D_BUTTON].redraw_fn = (cb_elem_boxlib)dynamic_button_draw;
 kolibri_gui_op_table[KOLIBRI_D_BUTTON].mouse_fn = (cb_elem_boxlib)dynamic_button_mouse;
 kolibri_gui_op_table[KOLIBRI_D_BUTTON].key_fn = NULL;
-debug_board_printf("KOLIBRI_D_BUTTON (%x,%x,%x)\n", dynamic_button_draw, dynamic_button_mouse, 0);
 
 kolibri_gui_op_table[KOLIBRI_PATHSHOW].redraw_fn = (cb_elem_boxlib)path_show_draw;
 kolibri_gui_op_table[KOLIBRI_PATHSHOW].mouse_fn = NULL;
 kolibri_gui_op_table[KOLIBRI_PATHSHOW].key_fn = NULL;
-debug_board_printf("KOLIBRI_PATHSHOW (%x,%x,%x)\n", path_show_draw, 0, path_show_prepare);
+
+kolibri_gui_op_table[KOLIBRI_FILEBROWSE].redraw_fn = (cb_elem_boxlib)filebrowse_draw;
+kolibri_gui_op_table[KOLIBRI_FILEBROWSE].mouse_fn = (cb_elem_boxlib)filebrowse_mouse;
+kolibri_gui_op_table[KOLIBRI_FILEBROWSE].key_fn = (cb_elem_boxlib)filebrowse_key;
+debug_board_printf("KOLIBRI_FILEBROWSE (%x,%x,%x)\n", filebrowse_draw, filebrowse_mouse, filebrowse_key);
 }
 
 /* Create a new main GUI window for KolibriOS */
