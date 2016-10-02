@@ -8,7 +8,7 @@ CLAYER:= $(abspath ../../)
 LDFLAGS = -static -S -nostdlib -T $(SDK_DIR)/lib/app-dynamic.lds \
           --image-base 0 -lgcc -ldll -lc.dll 
 
-CFLAGS = -g -U_Win32 -U_WIN32 -U__MINGW32__ -std=gnu90
+CFLAGS = -g -U_Win32 -U_WIN32 -U__MINGW32__ -std=gnu90 -mno-ms-bitfields
 
 INCLUDES= -I. -I$(SDK_DIR)/sources/newlib/libc/include -I$(CLAYER)/INCLUDE
 LIBPATH:= -L $(SDK_DIR)/lib 

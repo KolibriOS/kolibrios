@@ -3,7 +3,8 @@
     -Picture Button
     -StaticText
     -File Open/Save Dialog
-    -Filebrowser (planned)
+    -Filebrowser
+    -Controlling minimal window size
 
     Free for all
 
@@ -16,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "kos32sys.h"
 #include "kolibri_gui.h"
 #include "kolibri_opendialog.h"
@@ -23,6 +25,10 @@
 
 char temp_path[4096];
 char** sys_path = (char**)0x20; // hack - get path from KOS header. analog argv[0]
+
+char*   load_file_inmem(char* fname, int32_t* read_sz); // see below
+void* read_folderdata(char* name);
+void control_minimal_window_size(int wmin, int hmin);
 
 int main(int argc, char **argv)
 {
@@ -44,37 +50,29 @@ int main(int argc, char **argv)
 
     // load image for buttons
     const int icon_rgb_size = 16*16*3; // every icons 16x16 24bpp
-    char *image_data_rgb = malloc(icon_rgb_size * 3),
-         *image_data, *pc;
+    char *image_data_rgb,
+         *image_data,
+         *filedata;
     // make full path + argv
     strcpy(temp_path, *sys_path);
-    pc = strrchr(temp_path, '/');  // this fails if has params with '/' within. use argv[0] instead
+    char *pc = strrchr(temp_path, '/');  // this fails if has params with '/' within. use argv[0] instead
     if (pc) pc[1] = 0;
     strcat(temp_path, "reload_16x16_8b.png");
-    debug_board_write_str(temp_path);
-    FILE *ficon = fopen(temp_path, "rb");
-    if (!ficon)
-    {
-        debug_board_write_str("no icons file reload_16x16_8b.png ");
-        return 1;
-    }
-    int ficon_size = fread(image_data_rgb, 1, icon_rgb_size * 3, ficon);
-    if (ferror(ficon))
-    {
-        debug_board_write_str("error reading file reload_16x16_8b.png ");
-        return 1;
-    }
-    fclose(ficon);
+//    debug_board_write_str(temp_path);
 
+    int32_t read_bytes;
+    filedata = load_file_inmem(temp_path, &read_bytes);
+    image_data_rgb = malloc(icon_rgb_size * 3);  // we know size
     // определяем вид изображения и переводим его во временный буфер image_data
-    image_data = (*img_decode)(image_data_rgb, ficon_size, 0);
+    image_data = (*img_decode)(filedata, read_bytes, 0);
     // преобразуем изображение к формату rgb
     (*img_to_rgb2)(image_data, image_data_rgb);
     // удаляем временный буфер image_data
     (*img_destroy)(image_data);
+    free(filedata);
 
     // creating GUI using library functions
-    kolibri_window *main_window = kolibri_new_window(50, 40, 400, 160, "PictureButton and File dialog demo");
+    kolibri_window *main_window = kolibri_new_window(50, 40, 430, 500, "PictureButton and File dialog demo");
 
     pict_button tbar[3];
     gui_add_pict_button(main_window, kolibri_pict_button(&tbar[0], X_Y(10, 16), X_Y(10, 16), image_data_rgb, image_data_rgb + icon_rgb_size, image_data_rgb + icon_rgb_size * 2, 24, NULL, 0));
@@ -84,7 +82,7 @@ int main(int argc, char **argv)
     statictext labels[3];  //  tips
     gui_add_statictext(main_window, kolibri_statictext_def(&labels[0], X_Y(5, 28), "Open"));
     gui_add_statictext(main_window, kolibri_statictext_def(&labels[1], X_Y(35, 28), "Save"));
-    gui_add_statictext(main_window, kolibri_statictext_def(&labels[2], X_Y(65, 28), "Select Dir"));
+    gui_add_statictext(main_window, kolibri_statictext_def(&labels[2], X_Y(65, 28), "Select Dir & browse"));
 
     open_dialog *dlg_opensave = kolibri_new_open_dialog(OPEN, 10, 10, 420, 320);
     (*OpenDialog_init)(dlg_opensave);
@@ -92,12 +90,37 @@ int main(int argc, char **argv)
     pathview pview;
     gui_add_pathview(main_window, kolibri_pathview(&pview, X_Y(10, 50), 330, 1, 0, dlg_opensave->openfile_path, temp_path, 0, 0)); // black font, no background, font 1
 
+    filebrowser brows;
+    filedata = load_file_inmem("/rd/1/File managers/z_icons.png", &read_bytes);
+    image_data_rgb = malloc(icon_rgb_size * 20);  // we know size
+    // определяем вид изображения и переводим его во временный буфер image_data
+    image_data = (*img_decode)(filedata, read_bytes, 0);
+    // преобразуем изображение к формату rgb
+    (*img_to_rgb2)(image_data, image_data_rgb);
+    // удаляем временный буфер image_data
+    (*img_destroy)(image_data);
+    free(filedata);
+
+    filedata = load_file_inmem("/rd/1/File managers/icons.ini", &read_bytes);
+    gui_add_filebrowser(main_window, kolibri_filebrowser(&brows, X_Y(10, 400), X_Y(80, 300), X_Y(6, 9), X_Y(16, 16), image_data_rgb, NULL, 24,
+                                         filedata, filedata + read_bytes,
+                                         0x00FF00, 0xbbddff, 0x000000, 0xFFFFFF, 0xFF0000));
+
+    // try devices "/" - good
+    brows.folder_data = read_folderdata("/rd/1");
+    brows.select_panel_counter = 1;
+
     do  /* Start of main activity loop */
     {
         switch(gui_event)
         {
         case KOLIBRI_EVENT_REDRAW:
+//???? start red
+//brows.marked_file = 1;
+            control_minimal_window_size(430, 500);
+            brows.all_redraw = 1;
             kolibri_handle_event_redraw(main_window);
+            brows.all_redraw = 0;
             break;
         case KOLIBRI_EVENT_NONE:
 			break;
@@ -117,7 +140,15 @@ int main(int argc, char **argv)
         case KOLIBRI_EVENT_MOUSE:
 //            mouse_pos = get_mouse_pos(POS_WINDOW); // window relative
 //            mouse_button = get_mouse_eventstate();
+//brows.all_redraw = 1;
             kolibri_handle_event_mouse(main_window);
+
+
+            if (brows.mouse_keys_delta == 3)  // double clicked in browser
+            {
+                debug_board_printf("mouse_keys_delta == 3, name %s\n", brows.selected_BDVK_adress->fname);
+                brows.mouse_keys_delta = 0;
+            }
 
             if(tbar[0].click)  // open
             {
@@ -138,7 +169,9 @@ int main(int argc, char **argv)
                 (*OpenDialog_start)(dlg_opensave);
                 if (dlg_opensave->status != 2 && dlg_opensave->status != 0) // fail or cancel
                     (*path_show_prepare)(&pview);
-                kolibri_handle_event_redraw(main_window);
+
+                // just calling line below draws incomplete
+                // kolibri_handle_event_redraw(main_window);
             }
             if(tbar[2].click)  // select
             {
@@ -146,8 +179,15 @@ int main(int argc, char **argv)
                 dlg_opensave->mode = SELECT;
                 (*OpenDialog_start)(dlg_opensave);
                 if (dlg_opensave->status != 2 && dlg_opensave->status != 0) // fail or cancel
+                {
                     (*path_show_prepare)(&pview);
+                    free(brows.folder_data);
+                    brows.folder_data = read_folderdata(dlg_opensave->openfile_path);
+                }
+                // we may redraw here, or just wait next redraw event
+                brows.all_redraw = 1;
                 kolibri_handle_event_redraw(main_window);
+                brows.all_redraw = 0;
             }
 
             break;
@@ -158,4 +198,86 @@ int main(int argc, char **argv)
 
   return 0;
 }
+
+
+char*   load_file_inmem(char* fname, int32_t* read_sz)
+{
+    FILE *f = fopen(fname, "rb");
+    if (!f) {
+        debug_board_printf("Can't open file: %s", fname);
+        exit(1);
+    }
+    if (fseek(f, 0, SEEK_END)) {
+        debug_board_printf("Can't SEEK_END file: %s", fname);
+        exit(1);
+    }
+    int filesize = ftell(f);
+    rewind(f);
+    char* fdata = malloc(filesize);
+    if(!fdata) {
+        debug_board_printf("No memory for file %s", fname);
+        exit(1);
+    }
+    *read_sz = fread(fdata, 1, filesize, f);
+    if (ferror(f)) {
+        debug_board_printf("Error reading file %s", fname);
+        exit(1);
+    }
+    fclose(f);
+
+    return fdata;
+}
+
+void* read_folderdata(char* name)
+{
+    struct fs_dirinfo di;
+    struct fs_dirheader dhead;
+    assert(sizeof di == 25);
+    memset(&di, 0, sizeof di);
+    di.ppath = name;
+    di.retval = (uint32_t)&dhead;
+    int rc = sf_file(1, &di);  // read dir size
+    if(rc) {
+        debug_board_printf("Error reading dir size %s", name);
+        exit(1);
+    }
+    di.size = dhead.totl_blocks;
+
+    char *retdir = malloc(sizeof dhead + dhead.totl_blocks * sizeof(struct fsBDFE));
+    if(!retdir) {
+        debug_board_printf("No memory for dir %s", name);
+        exit(1);
+    }
+    di.retval = (uint32_t)retdir;
+    rc = sf_file(1, &di);  // read dir size
+    if(rc) {
+        debug_board_printf("Error 2 reading dir size %s", name);
+        exit(1);
+    }
+
+    debug_board_printf("Loaded dir [%s] etnries %d,\n first file [%s]\n", name, ((struct fs_dirheader*)(retdir))->curn_blocks, ((struct fsBDFE*)(retdir+32))->fname);
+
+    return retdir;
+}
+
+
+
+void control_minimal_window_size(int wmin, int hmin)
+{
+    char pinfo[1024];
+    get_proc_info(pinfo);
+
+    int win_hight = *(int*)(pinfo + 46),
+        win_width = *(int*)(pinfo + 42);
+    char win_status = pinfo[70];
+
+    if (win_status & 7) return;  // maximized, minimized or titlebar mode
+
+    if (win_width < wmin)
+        __asm__ __volatile__("int $0x40" ::"a"(67), "b"(-1), "c"(-1), "d"(wmin), "S"(-1));  // SF_CHANGE_WINDOW x,y,w,h
+    if (win_hight < hmin)
+        __asm__ __volatile__("int $0x40" ::"a"(67), "b"(-1), "c"(-1), "d"(-1), "S"(hmin));  // x,y,w,h
+
+}
+
 

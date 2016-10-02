@@ -23,23 +23,23 @@ int main()
   kmenu_init(NULL);
 
   ksubmenu_t *sub_menu1 = ksubmenu_new();
-  ksubmenu_add(sub_menu1, kmenuitem_new(0, "Open", 101));
-  ksubmenu_add(sub_menu1, kmenuitem_new(0, "Save", 102));
-  ksubmenu_add(sub_menu1, kmenuitem_new(2, "", 0));
-  ksubmenu_add(sub_menu1, kmenuitem_new(0, "Exit", 103));
+  ksubmenu_add(sub_menu1, kmenuitem_new(KMENUITEM_NORMAL, "Open", 101));
+  ksubmenu_add(sub_menu1, kmenuitem_new(KMENUITEM_NORMAL, "Save", 102));
+  ksubmenu_add(sub_menu1, kmenuitem_new(KMENUITEM_SEPARATOR, NULL, 0));
+  ksubmenu_add(sub_menu1, kmenuitem_new(KMENUITEM_NORMAL, "Exit", 103));
 
   ksubmenu_t *sub_menu2 = ksubmenu_new();
-  ksubmenu_add(sub_menu2, kmenuitem_new(0, "Find", 201));
-  ksubmenu_add(sub_menu2, kmenuitem_new(0, "Replace", 202));
+  ksubmenu_add(sub_menu2, kmenuitem_new(KMENUITEM_NORMAL, "Find", 201));
+  ksubmenu_add(sub_menu2, kmenuitem_new(KMENUITEM_NORMAL, "Replace", 202));
 
   ksubmenu_t *sub_menu22 = ksubmenu_new();
-  ksubmenu_add(sub_menu22, kmenuitem_new(0, "cp1251", 211));
-  ksubmenu_add(sub_menu22, kmenuitem_new(0, "UTF-8", 212));
-  ksubmenu_add(sub_menu2, kmenuitem__submenu_new(1, "Encoding", sub_menu22));
+  ksubmenu_add(sub_menu22, kmenuitem_new(KMENUITEM_NORMAL, "CP1251", 211));
+  ksubmenu_add(sub_menu22, kmenuitem_new(KMENUITEM_NORMAL, "UTF-8", 212));
+  ksubmenu_add(sub_menu2, kmenuitem__submenu_new(KMENUITEM_SUBMENU, "Encoding", sub_menu22));
 
   ksubmenu_t *main_menu = ksubmenu_new();
-  ksubmenu_add(main_menu, kmenuitem__submenu_new(1, "File", sub_menu1));
-  ksubmenu_add(main_menu, kmenuitem__submenu_new(1, "Edit", sub_menu2));
+  ksubmenu_add(main_menu, kmenuitem__submenu_new(KMENUITEM_SUBMENU, "File", sub_menu1));
+  ksubmenu_add(main_menu, kmenuitem__submenu_new(KMENUITEM_SUBMENU, "Edit", sub_menu2));
 
   extern volatile unsigned press_key;
 
