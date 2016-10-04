@@ -247,12 +247,12 @@ inline fastcall ExitProcess()
 
 //------------------------------------------------------------------------------
 
-inline fastcall void SetCurDir( ECX)
-{
-  EAX=30;
-  EBX=1;
-  $int 0x40
-}
+// inline fastcall void SetCurDir( ECX)
+// {
+//   EAX=30;
+//   EBX=1;
+//   $int 0x40
+// }
 
 
 //eax = язык системы (1=eng, 2=fi, 3=ger, 4=rus)
