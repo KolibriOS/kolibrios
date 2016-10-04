@@ -299,7 +299,7 @@ enum
 }
 :dword notify(dword notify_param)
 {
-	return RunProgram("@notify", notify_param);
+	return RunProgram("/sys/@notify", notify_param);
 }
 :dword ConvertSizeToKb(unsigned int bytes)
 {
