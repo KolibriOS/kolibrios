@@ -108,8 +108,16 @@ int main(int argc, char **argv)
 
     // try devices "/" - good
     brows.folder_data = read_folderdata("/rd/1");
-    brows.select_panel_counter = 1;
+    brows.select_panel_counter = 1;  // if want to show selection
 
+kolibri_handle_event_redraw(main_window);
+brows.all_redraw = 1;
+(*filebrowse_draw)(&brows);
+
+
+//???    set_os_keyb_mode(1); // needed for keyboard use in menu
+
+    int extended_key = 0, act = 0;
     do  /* Start of main activity loop */
     {
         switch(gui_event)
@@ -126,7 +134,45 @@ int main(int argc, char **argv)
 			break;
         case KOLIBRI_EVENT_KEY:
             keypress = get_key();
-            kolibri_handle_event_key(main_window);
+            if(keypress.state) break;
+            if (keypress.code == 0xE0){ extended_key = 1; break; }
+
+            act = 0;
+            switch(keypress.ctrl_key)  // ascii scancode
+            {
+            case 80: // arrow down
+                act = 1; break;
+            case 72: // arrow up
+                act = 2; break;
+            case 81: // PageDown
+                act = 3; break;
+            case 73: // PageUp
+                act = 4; break;
+            case 71: // Home
+                act = 5; break;
+            case 79: // End
+                act = 6; break;
+            case 28: // Enter
+                act = 7; break;
+            case 82: // Insert
+                act = 8; break;
+            case 78: // NumPad+   select all
+                act = 9; break;
+            case 74: // NumPad-   deselct
+                act = 10; break;
+            case 55: // NumPad*  invert selection
+                act = 11; break;
+            default:
+                act = 12; // search by letter
+            }
+            brows.key_action = act;
+            brows.key_action_num = keypress.ctrl_key;
+
+            debug_board_printf("key pressed [%X] %d, action %d, ext_flag = %d\n", keypress.val, brows.key_action_num, act, extended_key);
+
+            if (extended_key) extended_key = 0;
+            (*filebrowse_key)(&brows);
+            //kolibri_handle_event_key(main_window);
 			break;
         case KOLIBRI_EVENT_BUTTON:
             pressed_button = get_os_button();
@@ -140,7 +186,7 @@ int main(int argc, char **argv)
         case KOLIBRI_EVENT_MOUSE:
 //            mouse_pos = get_mouse_pos(POS_WINDOW); // window relative
 //            mouse_button = get_mouse_eventstate();
-//brows.all_redraw = 1;
+            brows.select_flag = 0;
             kolibri_handle_event_mouse(main_window);
 
 
@@ -183,6 +229,7 @@ int main(int argc, char **argv)
                     (*path_show_prepare)(&pview);
                     free(brows.folder_data);
                     brows.folder_data = read_folderdata(dlg_opensave->openfile_path);
+                    brows.start_draw_line = brows.start_draw_cursor_line = 0;
                 }
                 // we may redraw here, or just wait next redraw event
                 brows.all_redraw = 1;
@@ -233,6 +280,7 @@ void* read_folderdata(char* name)
     struct fs_dirinfo di;
     struct fs_dirheader dhead;
     assert(sizeof di == 25);
+
     memset(&di, 0, sizeof di);
     di.ppath = name;
     di.retval = (uint32_t)&dhead;
@@ -254,6 +302,11 @@ void* read_folderdata(char* name)
         debug_board_printf("Error 2 reading dir size %s", name);
         exit(1);
     }
+
+    // manual clear mark flag (random junk in fname free space)
+    int i;
+    for (i = 0; i < dhead.totl_blocks; i++)
+        ((struct fsBDFE*)(retdir+32))[i].fname[259] = 0;
 
     debug_board_printf("Loaded dir [%s] etnries %d,\n first file [%s]\n", name, ((struct fs_dirheader*)(retdir))->curn_blocks, ((struct fsBDFE*)(retdir+32))->fname);
 

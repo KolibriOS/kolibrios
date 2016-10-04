@@ -109,10 +109,10 @@ typedef struct __attribute__ ((__packed__)) {
 	void* icon_palette_raw;      // ...
 	uint32_t directory_path_area;  // not used
 	uint32_t file_name_area;  // not used
-	uint32_t select_flag;  // widget have focus, set auto on mouseclick
+	uint32_t select_flag;  // widget have focus, set auto on mouseclick, but need to reset before mouse()
 	color_t background_color;  // self explained, 0xffffff
 	color_t select_color; // self explained, 0xbbddff
-    color_t select_text_color; // self explained
+    color_t select_text_color; // self explained - have a bug - newer used
     color_t text_color; // self explained
     color_t reduct_text_color; // 0xff0000  - spec color for cutted filenames
     color_t marked_text_color; // not used
