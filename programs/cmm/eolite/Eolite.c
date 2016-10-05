@@ -76,7 +76,6 @@ byte
 	file_name[256],
 	new_element_name[256],
 	temp[4096],
-	status_bar_str[50],
 	itdir;
 
 char active_path[4096], inactive_path[4096];
@@ -592,9 +591,12 @@ void DrawList()
 
 void DrawStatusBar()
 {
+	char status_bar_str[50];
+	int go_up_folder_exists=0;
 	if (!show_status_bar) return;
+	if (files.count>0) && (strcmp(file_mas[0]*304+buf+72,"..")==0) go_up_folder_exists=1;;
 	DrawBar(1, Form.cheight - status_bar_h-1, Form.cwidth-2,  status_bar_h, system.color.work);
-	sprintf(#status_bar_str, STATUS_STR, files.count-1, count_dir-1, files.count-count_dir, selected_count);
+	sprintf(#status_bar_str, STATUS_STR, files.count-go_up_folder_exists, count_dir-go_up_folder_exists, files.count-count_dir, selected_count);
 	WriteText(6,Form.cheight - 13,0x80,0x000000,#status_bar_str);
 }
 
@@ -760,7 +762,6 @@ void Line_ReDraw(dword bgcol, filenum){
 
 void Open_Dir(dword dir_path, redraw){
 	int errornum, maxcount, i;
-	count_dir = 0;
 	if (redraw!=ONLY_SHOW)
 	{
 		if (ESBYTE[dir_path+1]!='\0') ESBYTE[dir_path+strlen(dir_path)-1] = '\0';
@@ -778,10 +779,6 @@ void Open_Dir(dword dir_path, redraw){
 		if (files.count>maxcount) files.count = maxcount;
 		if (files.count>0) && (files.cur_y-files.first==-1) files.cur_y=0;
 	}
-	for (i=0; i<files.count; i++) 
-	{
-		if (TestBit(ESDWORD[i*304+buf+32], 4) ) count_dir++;
-	}
 	if (files.count!=-1)
 	{
 		if(!_not_draw) if (show_breadcrumb) DrawBreadCrumbs(); else DrawPathBar();
@@ -792,13 +789,13 @@ void Open_Dir(dword dir_path, redraw){
 		if (redraw!=ONLY_SHOW) Sorting();
 		list_full_redraw = true;
 		if (redraw!=ONLY_OPEN)&&(!_not_draw) {DrawStatusBar(); List_ReDraw();}
+		SetCurDir(dir_path);
 	}
 	if (files.count==-1) && (redraw!=ONLY_OPEN) 
 	{
 		files.KeyHome();
 		if(!_not_draw) { list_full_redraw=true; DrawStatusBar(); List_ReDraw(); }
 	}
-	SetCurDir(dir_path);
 }
 
 
@@ -825,6 +822,7 @@ inline Sorting()
 			l++;
 		}
 	}
+	count_dir = k;
 	//sorting: files first, then folders
 	Sort_by_Name(0,k-1);
 	if (sort_num==1) Sort_by_Name(k,files.count-1);
@@ -885,6 +883,7 @@ void SelectFileByName(dword that_file)
 	for (ind=files.count-1; ind>=0; ind--;) { if (!strcmp(file_mas[ind]*304+buf+72,that_file)) break; }
 	files.cur_y = ind - 1;
 	files.KeyDown();
+	DrawStatusBar();
 	List_ReDraw();
 }
 

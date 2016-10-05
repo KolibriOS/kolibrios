@@ -17,7 +17,7 @@
 //                                                   //
 //===================================================//
 
-?define WINDOW_HEADER "Clipboard viewer v1.01"
+?define WINDOW_HEADER "Clipboard Viewer v1.01"
 ?define T_DELETE_LAST_SLOT "Delete last slot"
 ?define T_DELETE_ALL_SLOTS "Delete all slots"
 ?define T_RESET_BUFFER_LOCK "Reset the lock buffer"
