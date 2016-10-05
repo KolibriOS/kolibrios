@@ -73,7 +73,7 @@ Terminal                  /sys/terminal
 #8    **** Система -> Настройки ****
 Устройства                /sys/setup
 Установить фон            /sys/media/palitra
-Стиль окон                /sys/desktop
+Стиль окон                /sys/skincfg
 Горячие клавиши           /sys/mykey
 Видеорежим для ATI        /sys/vmode
 #9    **** Система -> Сенсоры ****

@@ -71,7 +71,7 @@ Terminal                  /sys/terminal
 #8    **** CONFIGURACIÓ ****
 Dispositius               /sys/setup
 Generador de fons         /sys/media/palitra
-Colors i Apariència       /sys/desktop
+Colors i Apariència       /sys/skincfg
 Dreseres de teclat        /sys/mykey
 Mode de vídeo ATI         /sys/vmode
 #9    **** SENSORS ****

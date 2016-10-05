@@ -71,7 +71,7 @@ Terminal                  /sys/terminal
 #8    **** CONFIGURACI‡N ****
 Dispositivos              /sys/setup
 Generador de fondo        /sys/media/palitra
-Colores y Apariencia      /sys/desktop
+Colores y Apariencia      /sys/skincfg
 Atajos de teclado         /sys/mykey
 Modo de video ATI         /sys/vmode
 #9    **** SENSORES ****

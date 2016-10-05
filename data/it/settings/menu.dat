@@ -70,7 +70,7 @@ Terminal                  /sys/terminal
 #8    **** SETTINGS ****
 Device                    /sys/setup
 Generatore di sfondi      /sys/media/palitra
-Colori e temi             /sys/desktop
+Colori e temi             /sys/skincfg
 MyKey                     /sys/mykey
 Video mode for ATI        /sys/vmode
 #9    **** SYSTEM SENSORS ****

@@ -71,7 +71,7 @@ Terminal                  /sys/terminal
 #8    **** SETTINGS ****
 System                    /sys/setup
 Background generator      /sys/media/palitra
-Colors & Skin             /sys/desktop
+Colors & Skin             /sys/skincfg
 Hotkeys                   /sys/mykey
 ATI video mode            /sys/vmode
 #9    **** SYSTEM MONITORS ****

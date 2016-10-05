@@ -71,7 +71,7 @@ Terminal                  /sys/terminal
 #8    **** SETTINGS ****
 Seadmed                   /sys/setup
 Tausta genereerija        /sys/media/palitra
-Värvid & Teemad           /sys/desktop
+Värvid & Teemad           /sys/skincfg
 MyKey                     /sys/mykey
 ATI video reziim          /sys/vmode
 #9    **** SYSTEM SENSORS ****
