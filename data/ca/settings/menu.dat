@@ -1,5 +1,5 @@
 #0    **** Principal ****
-Centre de jocs          /sys/game_center
+Centre de jocs            /sys/game_center
 Demos              >      /@1
 Gràfics            >      /@3
 Multimèdia         >      /@4
@@ -65,7 +65,8 @@ Sensors            >      /@9
 Arxius             >      /@10
 Proves             >      /@16
 Accesibilitat      >      /@17
-Panell depuració       /sys/develop/board
+Panell depuració          /sys/develop/board
+Clipboard viewer          /sys/develop/clipview
 Terminal                  /sys/terminal
 #8    **** CONFIGURACIÓ ****
 Dispositius               /sys/setup
@@ -95,10 +96,10 @@ Procesador de tables      /sys/table
 Generador de gràfiques    /sys/graph
 Hex-Editor                /sys/develop/heed
 #12    **** XARXA ****
-Servidors         >      /@13
-Clients           >      /@14
-Dispositius de xarxa     /sys/network/netcfg
-Estat de la xarxa        /sys/network/netstat
+Servidors         >       /@13
+Clients           >       /@14
+Dispositius de xarxa      /sys/network/netcfg
+Estat de la xarxa         /sys/network/netstat
 #13    **** SERVIDORS ****
 Dimoni FTP                /sys/network/ftpd
 #14   **** CLIENTS ****

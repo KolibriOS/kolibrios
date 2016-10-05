@@ -66,6 +66,7 @@ File Management    >      /@10
 Testing            >      /@16
 Accessibility      >      /@17
 Debug board               /sys/develop/board
+Clipboard viewer          /sys/develop/clipview
 Terminal                  /sys/terminal
 #8    **** SETTINGS ****
 System                    /sys/setup

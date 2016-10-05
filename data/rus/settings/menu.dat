@@ -68,6 +68,7 @@ Color Slider              /sys/demos/cslide
 Тестирование       >      /@11
 Спец. возможности  >      /@12
 Доска отладки             /sys/develop/board
+Буфер обмена              /sys/develop/clipview
 Terminal                  /sys/terminal
 #8    **** Система -> Настройки ****
 Устройства                /sys/setup
