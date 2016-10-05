@@ -51,6 +51,22 @@
 	WriteText(tx,ty,0x90,color_t,text);
 }
 
+:int DrawStandartCaptButton(dword x, y, id, color_b, color_t, text)
+{
+	int padding_v = 5;
+	int padding_h = 15;
+	int right_margin = 12;
+	int tx = x + padding_h;
+	int ty = y + padding_v;
+	int h = padding_v + padding_v + 16; //16 font height
+	int w = strlen(text)*8 + padding_h + padding_h;
+
+	if (id>0) DefineButton(x,y,w,h,id,color_b);
+	WriteText(tx+1,ty+1,0x90,MixColors(color_b,0,230),text);
+	WriteText(tx,ty,0x90,color_t,text);
+	return w + right_margin;
+}
+
 :void WriteTextCenter(dword x,y,w,color_t,text)
 {
 	WriteText(-strlen(text)*6+w/2+x+1,y,0x80,color_t,text);
