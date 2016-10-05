@@ -307,9 +307,17 @@ enum
 	unsigned int kb;
 	dword kb_line;
 
-	kb_line = itoa(bytes / 1024);
-	strcpy(#size, kb_line);
-	strcat(#size, " Kb");
+	if (bytes >= 1024)
+	{
+		kb_line = itoa(bytes / 1024);
+		strcpy(#size, kb_line);
+		strcat(#size, " Kb");		
+	}
+	else {
+		kb_line = itoa(bytes);
+		strcpy(#size, kb_line);
+		strcat(#size, " b");
+	}
 
 	return #size;
 }
