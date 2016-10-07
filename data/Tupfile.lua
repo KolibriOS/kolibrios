@@ -165,6 +165,7 @@ extra_files = {
  {"kolibrios/emul/fceu/fceu", PROGS .. "/emulator/fceu/fceu"},
  {"kolibrios/emul/fceu/FCEU ReadMe.txt", PROGS .. "/emulator/fceu/FCEU ReadMe.txt"},
  {"kolibrios/emul/", "common/emul/gameboy"},
+ {"kolibrios/emul/", "common/emul/pokemini"},
  {"kolibrios/emul/", "common/emul/scummvm"},
  {"kolibrios/emul/", "common/emul/zsnes"},
  {"kolibrios/demos/ak47.lif", "common/demos/ak47.lif"},
