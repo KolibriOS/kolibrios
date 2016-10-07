@@ -139,7 +139,7 @@ extra_files = {
  {"kolibrios/3D/info3ds/TOOLBAR.PNG", PROGS .. "/develop/info3ds/toolbar.png"},
  {"kolibrios/3D/info3ds/FONT8X9.BMP", PROGS .. "/fs/kfar/trunk/font8x9.bmp"},
  {"kolibrios/3D/md2view/", "common/3d/md2view/*"},
- {"kolibrios/3D/md2view/md2_model", "common/3d/md2view/md2_model/*"},
+ {"kolibrios/3D/md2view/md2_model/", "common/3d/md2view/md2_model/*"},
  {"kolibrios/3D/voxel_editor/VOXEL_EDITOR", PROGS .. "/media/voxel_editor/trunk/voxel_editor"},
  {"kolibrios/3D/voxel_editor/CURSORS.PNG", PROGS .. "/media/voxel_editor/trunk/cursors.png"},
  {"kolibrios/3D/voxel_editor/CURSORS_GR.PNG", PROGS .. "/media/voxel_editor/trunk/cursors_gr.png"},
