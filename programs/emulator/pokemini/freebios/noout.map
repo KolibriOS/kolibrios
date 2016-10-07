@@ -1,0 +1,235 @@
+Archive member included because of file (symbol)
+
+/home/hatsune/menuetos/lib/libc.a(param.o)
+                              /home/hatsune/menuetos/stub/crt0.o (__menuet__app_path_area)
+/home/hatsune/menuetos/lib/libc.a(crt1.o)
+                              /home/hatsune/menuetos/stub/crt0.o (__crt1_startup)
+/home/hatsune/menuetos/lib/libc.a(brk.o)
+                              /home/hatsune/menuetos/lib/libc.a(crt1.o) (init_brk)
+/home/hatsune/menuetos/lib/libc.a(crt0.o)
+                              /home/hatsune/menuetos/lib/libc.a(crt1.o) (__crt0_setup_arguments)
+/home/hatsune/menuetos/lib/libc.a(emu_init.o)
+                              /home/hatsune/menuetos/lib/libc.a(crt1.o) (dosemu_inithandles)
+/home/hatsune/menuetos/lib/libc.a(_main.o)
+                              /home/hatsune/menuetos/lib/libc.a(crt1.o) (__main)
+/home/hatsune/menuetos/lib/libc.a(exit.o)
+                              /home/hatsune/menuetos/lib/libc.a(crt1.o) (exit)
+/home/hatsune/menuetos/lib/libc.a(errno.o)
+                              /home/hatsune/menuetos/lib/libc.a(brk.o) (errno)
+/home/hatsune/menuetos/lib/libc.a(malloc.o)
+                              /home/hatsune/menuetos/lib/libc.a(crt0.o) (malloc)
+/home/hatsune/menuetos/lib/libc.a(strlen.o)
+                              /home/hatsune/menuetos/lib/libc.a(crt0.o) (strlen)
+/home/hatsune/menuetos/lib/libc.a(strcpy.o)
+                              /home/hatsune/menuetos/lib/libc.a(emu_init.o) (strcpy)
+/home/hatsune/menuetos/lib/libc.a(strrchr.o)
+                              /home/hatsune/menuetos/lib/libc.a(emu_init.o) (strrchr)
+/home/hatsune/menuetos/lib/libc.a(delay.o)
+                              /home/hatsune/menuetos/lib/libc.a(malloc.o) (__menuet__delay100)
+/home/hatsune/menuetos/lib/libc.a(memcpy.o)
+                              /home/hatsune/menuetos/lib/libc.a(malloc.o) (memcpy)
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+                0x0000000000400000                __image_base__ = 0x400000
+                0x0000000000000000                __dll__ = 0x0
+                0x0000000000400000                ___ImageBase = 0x400000
+                0x0000000000000010                __section_alignment__ = 0x10
+                0x0000000000000010                __file_alignment__ = 0x10
+                0x0000000000000004                __major_os_version__ = 0x4
+                0x0000000000000000                __minor_os_version__ = 0x0
+                0x0000000000000001                __major_image_version__ = 0x1
+                0x0000000000000000                __minor_image_version__ = 0x0
+                0x0000000000000004                __major_subsystem_version__ = 0x4
+                0x0000000000000000                __minor_subsystem_version__ = 0x0
+                0x0000000000000003                __subsystem__ = 0x3
+                0x0000000000200000                __size_of_stack_reserve__ = 0x200000
+                0x0000000000001000                __size_of_stack_commit__ = 0x1000
+                0x0000000000100000                __size_of_heap_reserve__ = 0x100000
+                0x0000000000001000                __size_of_heap_commit__ = 0x1000
+                0x0000000000000000                __loader_flags__ = 0x0
+                0x0000000000000000                __dll_characteristics__ = 0x0
+
+.text           0x0000000000000000      0x810
+                0x0000000000000000                code = .
+                0x0000000000000000                _code = .
+ *(.A)
+ .A             0x0000000000000000       0x24 /home/hatsune/menuetos/stub/crt0.o
+                0x0000000000000000                __menuet__app_header
+                0x0000000000000014                __menuet__memsize
+ *(.text)
+ .text          0x0000000000000024        0x0 /home/hatsune/menuetos/stub/crt0.o
+                0x0000000000000024                start
+ .text          0x0000000000000024        0x0 freebios.o
+ .text          0x0000000000000024        0x0 /home/hatsune/menuetos/lib/libc.a(param.o)
+ .text          0x0000000000000024       0x40 /home/hatsune/menuetos/lib/libc.a(crt1.o)
+                0x0000000000000024                __crt1_startup
+ .text          0x0000000000000064      0x15c /home/hatsune/menuetos/lib/libc.a(brk.o)
+                0x0000000000000064                init_brk
+                0x00000000000000b8                sbrk
+ .text          0x00000000000001c0      0x140 /home/hatsune/menuetos/lib/libc.a(crt0.o)
+                0x0000000000000243                _exit
+                0x000000000000024d                __crt0_setup_arguments
+ .text          0x0000000000000300       0x78 /home/hatsune/menuetos/lib/libc.a(emu_init.o)
+                0x0000000000000300                dosemu_inithandles
+                0x0000000000000345                init_dir_stack
+ .text          0x0000000000000378       0x3c /home/hatsune/menuetos/lib/libc.a(_main.o)
+                0x0000000000000378                __main
+ .text          0x00000000000003b4       0x24 /home/hatsune/menuetos/lib/libc.a(exit.o)
+                0x00000000000003b4                exit
+ .text          0x00000000000003d8        0xc /home/hatsune/menuetos/lib/libc.a(errno.o)
+                0x00000000000003d8                __isatty
+ .text          0x00000000000003e4      0x384 /home/hatsune/menuetos/lib/libc.a(malloc.o)
+                0x00000000000004b1                malloc
+                0x0000000000000667                free
+                0x0000000000000705                realloc
+ .text          0x0000000000000768       0x18 /home/hatsune/menuetos/lib/libc.a(strlen.o)
+                0x0000000000000768                strlen
+ .text          0x0000000000000780       0x1c /home/hatsune/menuetos/lib/libc.a(strcpy.o)
+                0x0000000000000780                strcpy
+ .text          0x000000000000079c       0x24 /home/hatsune/menuetos/lib/libc.a(strrchr.o)
+                0x000000000000079c                strrchr
+ .text          0x00000000000007c0       0x24 /home/hatsune/menuetos/lib/libc.a(delay.o)
+                0x00000000000007c0                __menuet__delay100
+                0x00000000000007d1                __menuet(int, double, long,...)
+ .text          0x00000000000007e4       0x2c /home/hatsune/menuetos/lib/libc.a(memcpy.o)
+                0x00000000000007e4                memcpy
+ *(.fixup)
+ *(.gnu.warning)
+ *(.gnu.linkonce.t*)
+ *(.const)
+ *(.ro*)
+ *(.gnu.linkonce.r*)
+                0x0000000000000810                ecode = .
+                0x0000000000000810                _ecode = .
+
+.rdata          0x0000000000000810     0x1130
+ .rdata         0x0000000000000810     0x1000 freebios.o
+                0x0000000000000810                FreeBIOS
+ .rdata$zzz     0x0000000000001810       0x14 freebios.o
+ .rdata$zzz     0x0000000000001824       0x14 /home/hatsune/menuetos/lib/libc.a(param.o)
+ .rdata$zzz     0x0000000000001838       0x14 /home/hatsune/menuetos/lib/libc.a(crt1.o)
+ .rdata$zzz     0x000000000000184c       0x14 /home/hatsune/menuetos/lib/libc.a(brk.o)
+ .rdata$zzz     0x0000000000001860       0x14 /home/hatsune/menuetos/lib/libc.a(crt0.o)
+ .rdata$zzz     0x0000000000001874       0x14 /home/hatsune/menuetos/lib/libc.a(emu_init.o)
+ .rdata$zzz     0x0000000000001888       0x14 /home/hatsune/menuetos/lib/libc.a(_main.o)
+ .rdata$zzz     0x000000000000189c       0x14 /home/hatsune/menuetos/lib/libc.a(exit.o)
+ .rdata$zzz     0x00000000000018b0       0x14 /home/hatsune/menuetos/lib/libc.a(errno.o)
+ .rdata$zzz     0x00000000000018c4       0x14 /home/hatsune/menuetos/lib/libc.a(malloc.o)
+ .rdata$zzz     0x00000000000018d8       0x14 /home/hatsune/menuetos/lib/libc.a(strlen.o)
+ .rdata$zzz     0x00000000000018ec       0x14 /home/hatsune/menuetos/lib/libc.a(strcpy.o)
+ .rdata$zzz     0x0000000000001900       0x14 /home/hatsune/menuetos/lib/libc.a(strrchr.o)
+ .rdata$zzz     0x0000000000001914       0x14 /home/hatsune/menuetos/lib/libc.a(delay.o)
+ .rdata$zzz     0x0000000000001928       0x14 /home/hatsune/menuetos/lib/libc.a(memcpy.o)
+
+.data           0x000000000000193c      0x4e0
+                0x000000000000193c                djgpp_first_ctor = .
+ *(.ctor)
+ *(.ctors)
+                0x000000000000193c                djgpp_last_ctor = .
+                0x000000000000193c                djgpp_first_dtor = .
+ *(.dtor)
+ *(.dtors)
+                0x000000000000193c                djgpp_last_dtor = .
+ *(.gcc_exc*)
+                0x000000000000193c                __EH_FRAME_BEGIN__ = .
+ *(.eh_fram*)
+ .eh_frame      0x000000000000193c       0x34 /home/hatsune/menuetos/lib/libc.a(crt1.o)
+ .eh_frame      0x0000000000001970       0x68 /home/hatsune/menuetos/lib/libc.a(brk.o)
+ .eh_frame      0x00000000000019d8       0x9c /home/hatsune/menuetos/lib/libc.a(crt0.o)
+ .eh_frame      0x0000000000001a74       0x58 /home/hatsune/menuetos/lib/libc.a(emu_init.o)
+ .eh_frame      0x0000000000001acc       0x40 /home/hatsune/menuetos/lib/libc.a(_main.o)
+ .eh_frame      0x0000000000001b0c       0x34 /home/hatsune/menuetos/lib/libc.a(exit.o)
+ .eh_frame      0x0000000000001b40       0x38 /home/hatsune/menuetos/lib/libc.a(errno.o)
+ .eh_frame      0x0000000000001b78      0x140 /home/hatsune/menuetos/lib/libc.a(malloc.o)
+ .eh_frame      0x0000000000001cb8       0x3c /home/hatsune/menuetos/lib/libc.a(strlen.o)
+ .eh_frame      0x0000000000001cf4       0x40 /home/hatsune/menuetos/lib/libc.a(strcpy.o)
+ .eh_frame      0x0000000000001d34       0x3c /home/hatsune/menuetos/lib/libc.a(strrchr.o)
+ .eh_frame      0x0000000000001d70       0x60 /home/hatsune/menuetos/lib/libc.a(delay.o)
+ .eh_frame      0x0000000000001dd0       0x40 /home/hatsune/menuetos/lib/libc.a(memcpy.o)
+                0x0000000000001e10                __EH_FRAME_END__ = .
+                0x0000000000001e10        0x4 LONG 0x0
+ *(.gnu.linkonce.d*)
+ *(.rodata)
+ *(.rodata.*)
+ *(.data)
+ .data          0x0000000000001e14        0x0 freebios.o
+ .data          0x0000000000001e14        0x0 /home/hatsune/menuetos/lib/libc.a(param.o)
+ .data          0x0000000000001e14        0x4 /home/hatsune/menuetos/lib/libc.a(crt1.o)
+                0x0000000000001e14                __bss_count
+ .data          0x0000000000001e18        0x0 /home/hatsune/menuetos/lib/libc.a(brk.o)
+ .data          0x0000000000001e18        0x0 /home/hatsune/menuetos/lib/libc.a(crt0.o)
+ .data          0x0000000000001e18        0x0 /home/hatsune/menuetos/lib/libc.a(emu_init.o)
+ .data          0x0000000000001e18        0x4 /home/hatsune/menuetos/lib/libc.a(_main.o)
+ .data          0x0000000000001e1c        0x0 /home/hatsune/menuetos/lib/libc.a(exit.o)
+ .data          0x0000000000001e1c        0x0 /home/hatsune/menuetos/lib/libc.a(errno.o)
+ .data          0x0000000000001e1c        0x0 /home/hatsune/menuetos/lib/libc.a(malloc.o)
+ .data          0x0000000000001e1c        0x0 /home/hatsune/menuetos/lib/libc.a(strlen.o)
+ .data          0x0000000000001e1c        0x0 /home/hatsune/menuetos/lib/libc.a(strcpy.o)
+ .data          0x0000000000001e1c        0x0 /home/hatsune/menuetos/lib/libc.a(strrchr.o)
+ .data          0x0000000000001e1c        0x0 /home/hatsune/menuetos/lib/libc.a(delay.o)
+ .data          0x0000000000001e1c        0x0 /home/hatsune/menuetos/lib/libc.a(memcpy.o)
+                0x0000000000001e1c                edata = .
+                0x0000000000001e1c                _edata = .
+                0x0000000000001e1c                bss = .
+
+.bss            0x0000000000001e1c    0x190bc
+ *(.bss)
+ .bss           0x0000000000001e1c    0x10000 /home/hatsune/menuetos/stub/crt0.o
+ .bss           0x0000000000011e1c        0x0 freebios.o
+ .bss           0x0000000000011e1c      0x800 /home/hatsune/menuetos/lib/libc.a(param.o)
+                0x0000000000011e1c                __menuet__app_path_area
+                0x000000000001221c                __menuet__app_param_area
+ .bss           0x000000000001261c       0x14 /home/hatsune/menuetos/lib/libc.a(crt1.o)
+                0x000000000001261c                __dos_argv0
+                0x0000000000012620                __crt0_argv
+                0x0000000000012624                __crt0_argc
+                0x0000000000012628                _crt0_startup_flags
+                0x000000000001262c                environ
+ .bss           0x0000000000012630       0x18 /home/hatsune/menuetos/lib/libc.a(brk.o)
+ .bss           0x0000000000012648        0x0 /home/hatsune/menuetos/lib/libc.a(crt0.o)
+ .bss           0x0000000000012648     0x8800 /home/hatsune/menuetos/lib/libc.a(emu_init.o)
+                0x0000000000012648                __curdir_buf
+                0x0000000000012a48                _io_handles
+ .bss           0x000000000001ae48        0x0 /home/hatsune/menuetos/lib/libc.a(_main.o)
+ .bss           0x000000000001ae48        0x8 /home/hatsune/menuetos/lib/libc.a(exit.o)
+                0x000000000001ae48                keypress_at_exit
+                0x000000000001ae4c                __atexit_ptr
+ .bss           0x000000000001ae50        0x4 /home/hatsune/menuetos/lib/libc.a(errno.o)
+                0x000000000001ae50                errno
+ .bss           0x000000000001ae54       0x84 /home/hatsune/menuetos/lib/libc.a(malloc.o)
+ .bss           0x000000000001aed8        0x0 /home/hatsune/menuetos/lib/libc.a(strlen.o)
+ .bss           0x000000000001aed8        0x0 /home/hatsune/menuetos/lib/libc.a(strcpy.o)
+ .bss           0x000000000001aed8        0x0 /home/hatsune/menuetos/lib/libc.a(strrchr.o)
+ .bss           0x000000000001aed8        0x0 /home/hatsune/menuetos/lib/libc.a(delay.o)
+ .bss           0x000000000001aed8        0x0 /home/hatsune/menuetos/lib/libc.a(memcpy.o)
+                0x000000000001aed8                end = .
+                0x000000000001aed8                _end = .
+                0x000000000001aed8                ___memsize = .
+
+/DISCARD/
+ *(.debug$S)
+ *(.debug$T)
+ *(.debug$F)
+ *(.drectve)
+ *(.note.GNU-stack)
+ *(.eh_frame)
+ *(.comment)
+ *(.debug_abbrev)
+ *(.debug_info)
+ *(.debug_line)
+ *(.debug_frame)
+ *(.debug_loc)
+ *(.debug_pubnames)
+ *(.debug_aranges)
+ *(.debug_ranges)
+LOAD /home/hatsune/menuetos/stub/crt0.o
+LOAD freebios.o
+LOAD /home/hatsune/menuetos/lib/libm.a
+LOAD /home/hatsune/menuetos/lib/libc.a
+OUTPUT(noout pei-i386)
