@@ -172,6 +172,8 @@ extra_files = {
  {"kolibrios/demos/life2", "common/demos/life2"},
  {"kolibrios/demos/relay.lif", "common/demos/relay.lif"},
  {"kolibrios/demos/rpento.lif", "common/demos/rpento.lif"},
+ {"kolibrios/demos/buddhabrot", PROGS .. "/demos/buddhabrot/trunk/buddhabrot"},
+ {"kolibrios/demos/qjulia", PROGS .. "/demos/qjulia/trunk/qjulia"},
  {"kolibrios/games/Almaz", PROGS .. "/games/almaz/almaz"},
  {"kolibrios/games/BabyPainter", "common/games/BabyPainter"},
  {"kolibrios/games/bomber/ackack.bmp", PROGS .. "/games/bomber/ackack.bmp"},
