@@ -15,7 +15,7 @@ cmd_bye:
 
 ; Close the control connection
         mcall   close, [controlsocket]
-        jmp     main
+        ijmp    eax, interface_addr, interface.server_addr
 
 
 cmd_pwd:
@@ -46,7 +46,7 @@ cmd_cwd:
 cmd_dele:
 
         mov     dword[buf_cmd], "DELE"
-        mov     byte[buf_cmd], " "
+        mov     byte[buf_cmd+4], " "
 
         mov     ecx, 256
         xor     al, al
@@ -76,8 +76,7 @@ cmd_retr:
         call    open_dataconnection
         
 ; Create/open the file
-
-; Create/open the file
+; TODO: check beforehand if the disk has enough free space available to store the file
 
         mov     esi, buf_cmd+5
         mov     ecx, 256-5
@@ -90,9 +89,11 @@ cmd_retr:
         mov     [filestruct.ptr], 0
 
         mcall   70, filestruct
-        cmp     eax, -1
-;        je      fileerror
-
+        test    eax, eax
+        jz      @f
+        call    error_fs
+        jmp     close_datacon
+      @@:
 ; Prepare to write to the file
 
         mov     [filestruct.subfn], 3   ; write to file
@@ -111,7 +112,7 @@ cmd_retr:
         mov     dword[edi - 2], 0x0a0d
         mcall   send, [controlsocket], buf_cmd, , 0
 
-        invoke  con_write_asciiz, buf_cmd     ; print command
+        icall   eax, interface_addr, interface.print, buf_cmd
         jmp     wait_for_servercommand
 
 cmd_rdir:        
@@ -136,15 +137,27 @@ cmd_stor:
 
         mov     [operation], OPERATION_STOR
 
-        mov     [filestruct.subfn], 0   ; read file
+        ; get file size
+        mov     [filestruct.subfn], 5
         mov     [filestruct.offset], 0
         mov     [filestruct.offset+4], 0
-        mov     [filestruct.size], BUFFERSIZE
-        mov     [filestruct.ptr], buf_buffer2
+        mov     [filestruct.size], 0
+        mov     [filestruct.ptr], folder_buf
 
         mov     esi, buf_cmd+5
         mov     ecx, 256-5
         call    set_filename
+
+        mcall   70, filestruct
+
+        mov     eax, dword[folder_buf+32] ; supports file size upto 4GB
+        mov     [file_size], eax
+
+        mov     [filestruct.subfn], 0   ; read file
+        ; mov     [filestruct.offset], 0
+        ; mov     [filestruct.offset+4], 0
+        mov     [filestruct.size], BUFFERSIZE
+        mov     [filestruct.ptr], buf_buffer2
 
         mov     dword[buf_cmd], "STOR"
         mov     byte[buf_cmd+4], " "
@@ -169,19 +182,34 @@ cmd_lcwd:
   .loop:
         lodsb
         cmp     al, 10
-        je      .done
+        je      .check
         test    al, al
-        je      .done
+        je      .check
         loop    .loop
-  .done:
+
+  .check:
         mov     byte[esi-1], 0
+
+        ; check whether entered path is valid (folder exists)
+        mov     [filestruct2.subfn], 5
+        mov     [filestruct2.offset], 0
+        mov     [filestruct2.size], 0
+        mov     [filestruct2.ptr], folder_buf
+        mov     [filestruct2.name], buf_cmd+5
+        mcall   70, filestruct2
+        test    eax, eax
+        jz      @f
+        cmp     eax, 2
+        je      @f
+        call    error_fs
+        jmp     wait_for_usercommand
+
+  @@:
         mcall   30, 1, buf_cmd+5              ; set working directory
+
   .print:
         mcall   30, 2, buf_cmd, 256           ; and read it again
-
-        invoke  con_write_asciiz, str_lcwd
-        invoke  con_write_asciiz, buf_cmd
-        invoke  con_write_asciiz, str_newline
+        icall   eax, interface_addr, interface.print, str_lcwd, buf_cmd, str_newline
 
         jmp     wait_for_usercommand
 
@@ -189,7 +217,7 @@ cmd_lcwd:
 cmd_cdup:
 
         mov     dword[buf_cmd], "CDUP"
-        mov     word[buf_cmd+4], 0x0d0a
+        mov     word[buf_cmd+4], 0x0a0d
         mcall   send, [controlsocket], buf_cmd, 6, 0
 
         jmp     wait_for_servercommand
@@ -224,6 +252,12 @@ cmd_mkd:
 
         mcall   send, [controlsocket], buf_cmd, , 0
 
+        jmp     wait_for_servercommand
+
+
+cmd_abor:
+
+        mcall   close, [datasocket]
         jmp     wait_for_servercommand
 
 

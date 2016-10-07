@@ -5,11 +5,14 @@ server_parser:
 ; first lines will have a dash instead of space after numbers,
 ; thus they are simply ignored in this simple command parser.
 
+        cmp     dword[buf_cmd+4], "Open"
+        je      init_download_count
+
         cmp     dword[buf_cmd], "150 "
         je      data_loop
 
         cmp     dword[buf_cmd], "220 "
-        je      welcome
+        je      connect_ok
 
 ;        cmp     dword[buf_cmd], "226 "
 ;        je      transfer_ok
@@ -33,7 +36,6 @@ server_parser:
         je      welcome
 
         cmp     dword[buf_cmd], "530 "         ; password incorrect
-        mov     [use_params], 0
         je      welcome
 
         cmp     dword[buf_cmd], "550 "
@@ -50,6 +52,11 @@ welcome:
         jmp     wait_for_usercommand
 
 
+connect_ok:
+
+        mov     [status], STATUS_CONNECTED
+        jmp     arg_handler.copy_user
+
 pass:
 
         mov     [status], STATUS_NEEDPASSWORD
@@ -59,20 +66,13 @@ pass:
 login_ok:
 
         mov     [status], STATUS_LOGGED_IN
-        cmp     [use_params], 0
-        je      wait_for_usercommand
 
-        cmp     [param_path+4], 0
-        je      wait_for_usercommand
+        cmp     [param_path], 0x20 ; no path specified
+        jbe     wait_for_usercommand
+        
         ; copy path to buf_cmd and execute CWD
-        mov     edi, buf_cmd
-        mov     esi, param_path
-  @@:
-        lodsb
-        stosb
-        cmp     byte[esi-1], 0
-        jne     @b
-        jmp     cmd_cwd
+        jmp     arg_handler.get_path
+
 
 pasv_ok:
 
@@ -104,7 +104,7 @@ pasv_ok:
         call    ascii_dec
         mov     byte[sockaddr2.port+1], bl
 
-        invoke  con_write_asciiz, str_open
+        icall   eax, interface_addr, interface.print, str_open
         mcall   connect, [datasocket], sockaddr2, 18
         cmp     eax, -1
         jne     @f
@@ -113,19 +113,56 @@ pasv_ok:
     @@: jmp     wait_for_servercommand
 
   .fail:
-        invoke  con_write_asciiz, str_unknown
+        icall   eax, interface_addr, interface.print, str_unknown
         jmp     wait_for_servercommand
 
 
-data_loop:
+; get file size, initialize count for number of bytes downloaded
+init_download_count:
 
-        invoke  con_write_asciiz, str_dot
+        mov     edx, 0
+        ; search for 'Open' in buf_cmd
+        lea     esi, [buf_cmd+3]
+      @@:
+        inc     esi
+        cmp     dword[esi], 'Open'
+        je      @f
+        cmp     byte[esi], 0
+        jne     @b
+        jmp     data_loop
+
+      @@:
+        ; get file size
+        mov     al, '('
+        mov     ecx, -1
+        mov     edi, buf_cmd
+        repne   scasb
+        xor     eax, eax
+        mov     ebx, 10
+        xor     ecx, ecx
+        mov     esi, edi
+      @@:
+        push    eax
+        lodsb
+        sub     al, '0'
+        mov     cl, al
+        pop     eax
+        mul     ebx
+        add     eax, ecx
+        cmp     byte[esi], ' '
+        jne     @b
+        mov     [file_size], eax
+
+data_loop:
 
         cmp     [operation], OPERATION_STOR
         je      .stor
 
+        push    edx
 ; we are receiving data
         mcall   recv, [datasocket], buf_buffer2, BUFFERSIZE, 0
+        pop     edx ; get byte count
+        add     edx, eax
         test    ebx, ebx
         jnz     .done
         mov     byte[buf_buffer2 + eax], 0
@@ -135,10 +172,18 @@ data_loop:
 
         cmp     [operation], OPERATION_RDIR
         je      .rdir
+
+        cmp     [operation], OPERATION_LIST
+        je      .list
         
 ; not retreiving, just print to console
-        invoke  con_write_asciiz, buf_buffer2
+        icall   eax, interface_addr, interface.print, buf_buffer2
         jmp     data_loop
+
+; for console, simply print. for gui, add name to tree list
+  .list:
+        ijmp    ebx, interface_addr, interface.list
+
 
 ; retreiving, save to file
   .retr:
@@ -146,8 +191,15 @@ data_loop:
         mov     [filestruct.size], eax
         push    eax
         mcall   70, filestruct
+        test    eax, eax
+        jz      @f
+        call    error_fs
+        jmp     close_datacon
+      @@:
         pop     eax
         add     [filestruct.offset], eax
+
+        icall   eax, interface_addr, interface.progress
         jmp     data_loop
 
 ; storing, send all data
@@ -156,18 +208,25 @@ data_loop:
         cmp     eax, 6          ; end of file
         je      .last_call
         test    eax, eax        ; error
-;        jne     .fileerror
+        jz      @f
+        call    error_fs
+        jmp     close_datacon
+      @@:
         add     [filestruct.offset], ebx
         mov     esi, ebx
         mcall   send, [datasocket], buf_buffer2, , 0
+        mov     edx, [filestruct.offset]
+        icall   eax, interface_addr, interface.progress
         jmp     .stor
 
   .last_call:
         mov     esi, ebx
         mcall   send, [datasocket], buf_buffer2, , 0
+        mov     edx, [filestruct.offset]
+        icall   eax, interface_addr, interface.progress
 
   .done:
-        invoke  con_write_asciiz, str_close
+        icall   eax, interface_addr, interface.print, str_close
         mcall   close, [datasocket]
         mov     [operation], OPERATION_NONE
         jmp     wait_for_servercommand
@@ -209,7 +268,7 @@ data_loop:
 close_datacon:
         cmp     [operation], OPERATION_NONE
         je      wait_for_usercommand
-        invoke  con_write_asciiz, str_close
+        icall   eax, interface_addr, interface.print, str_close
         mcall   close, [datasocket]
         jmp     wait_for_usercommand
 
