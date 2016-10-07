@@ -16,7 +16,7 @@ char *ext[]={
 "skn", 13,
 "avi", 14, "flv", 14, "mpg", 14, "wmv", 14, "mov", 14, "mkv", 14, "mp4", 14, "vob", 14, "webm", 14,
 "djvu",15, "pdf", 15, "fb2", 15,
-"nes", 18, "smc", 18,
+"nes", 18, "smc", 18, "min", 18,
 "gif", 19, "bmp", 19, "tga", 19, "pcx", 19, "png", 19, "pnm", 19, "jpg", 19, "xcf", 19, "ai",  19,
 "jpeg",19, "raw", 11, "psd", 19, "wbmp",19, "tiff",19, "tif", 19, 
 "3ds", 20, "asc", 20, "ico", 20, "cur", 20, "ani", 20, "vox", 20,

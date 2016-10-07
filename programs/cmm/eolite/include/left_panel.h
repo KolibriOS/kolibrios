@@ -113,7 +113,7 @@ void _SystemDiscs::Get()
 		}
 		if (!strcmp(#sys_discs, "/rd/1/")) 
 		{
-			GetDir(#tempbuf, #temp_file_count, "/kolibrios/", DIRS_ONLYREAL);
+			GetDir(#tempbuf, #temp_file_count, "/kolibrios", DIRS_ONLYREAL);
 			if (temp_file_count) list.add("/kolibrios/");
 			free(tempbuf);
 		}
@@ -239,7 +239,7 @@ void DrawLeftPanelBg()
 	}
 	else
 	{
-		DrawBar(2,start_y,190, onTop1-268, col_lpanel);
+		DrawBar(2,start_y,190, onTop1-268+status_bar_h, col_lpanel);
 		PutPaletteImage(#blue_hl, 190, 268, 2, Form.cheight-270, 8, #blue_hl_pal);
 	}
 	PutShadow(17,start_y,160,1,1,3);
