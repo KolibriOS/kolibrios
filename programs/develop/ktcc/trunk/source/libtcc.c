@@ -777,8 +777,13 @@ static void error1(TCCState *s1, int is_warning, const char *fmt, va_list ap)
         /* default case: stderr */
         if (s1->ppfp) /* print a newline during tcc -E */
             fprintf(s1->ppfp, "\n"), fflush(s1->ppfp);
+#ifndef TCC_TARGET_MEOS 
         fprintf(stderr, "%s\n", buf);
         fflush(stderr); /* print error/warning now (win32) */
+#else 
+        fprintf(stdout, "%s\n", buf);
+        fflush(stdout); /* print error/warning now (win32) */
+#endif
     } else {
         s1->error_func(s1->error_opaque, buf);
     }
@@ -2483,7 +2488,7 @@ PUB_FUNC void tcc_print_stats(TCCState *s, int64_t total_time)
         tt = 0.001;
     if (total_bytes < 1)
         total_bytes = 1;
-    fprintf(stderr, "%d idents, %d lines, %d bytes, %0.3f s, %d lines/s, %0.1f MB/s\n",
+    fprintf(stdout, "%d idents, %d lines, %d bytes, %0.3f s, %d lines/s, %0.1f MB/s\n",
            tok_ident - TOK_IDENT, total_lines, total_bytes,
            tt, (int)(total_lines / tt),
            total_bytes / tt / 1000000.0);

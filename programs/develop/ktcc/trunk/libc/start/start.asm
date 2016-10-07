@@ -33,6 +33,7 @@ start:
 ;    or	 al, [params+buf_len-1]
 ;    jnz   .crash
 ; check if path written by OS
+	mov  [argc], 0
     mov  eax, [hparams]
     test eax, eax
     jz	 .without_path
