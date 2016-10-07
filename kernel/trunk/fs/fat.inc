@@ -1406,18 +1406,19 @@ fat_entry_to_bdfe2:
         mov     [esi+36], eax   ; file size (high dword)
         test    ebp, ebp
         jz      .ret
-        push    ecx edi
-        lea     edi, [esi+40]
+        add     esi, 40
+        push    edi esi
+        mov     edi, esi
         mov     esi, ebp
-        mov     ecx, 263
-        test    byte [esi-4], 1
+        test    byte [ebp-4], 1
         jz      .ansi
-        mov     ecx, 260/2
-        rep movsd
-        mov     [edi-2], ax
-@@:
-        mov     esi, edi
-        pop     edi ecx
+.uni:
+        lodsw
+        stosw
+        test    eax, eax
+        jnz     .uni
+        pop     esi edi
+        add     esi, 520
 .ret:
         ret
 
@@ -1425,10 +1426,11 @@ fat_entry_to_bdfe2:
         lodsw
         call    uni2ansi_char
         stosb
-        loop    .ansi
-        xor     eax, eax
-        stosb
-        jmp     @b
+        test    al, al
+        jnz     .ansi
+        pop     esi edi
+        add     esi, 264
+        ret
 
 bdfe_to_fat_entry:
 ; convert BDFE at edx to FAT entry at edi
