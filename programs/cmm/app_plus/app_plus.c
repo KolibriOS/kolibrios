@@ -39,7 +39,7 @@ need to reboot system to try again."
 
 void CheckKosMounted()
 {
-	if (dir_exists("/kolibrios/")) 
+	if (dir_exists("/kolibrios")) 
 	{
 		if (file_exists(APP_PLUS_INI_PATH))	
 			io.run("syspanel", APP_PLUS_INI_PATH);
