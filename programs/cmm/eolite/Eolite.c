@@ -591,7 +591,7 @@ void DrawList()
 
 void DrawStatusBar()
 {
-	char status_bar_str[50];
+	char status_bar_str[80];
 	int go_up_folder_exists=0;
 	if (!show_status_bar) return;
 	if (files.count>0) && (strcmp(file_mas[0]*304+buf+72,"..")==0) go_up_folder_exists=1;;
