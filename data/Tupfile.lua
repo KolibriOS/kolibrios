@@ -138,6 +138,7 @@ extra_files = {
  {"kolibrios/3D/info3ds/TL_SYS_16.PNG", PROGS .. "/develop/info3ds/tl_sys_16.png"},
  {"kolibrios/3D/info3ds/TOOLBAR.PNG", PROGS .. "/develop/info3ds/toolbar.png"},
  {"kolibrios/3D/info3ds/FONT8X9.BMP", PROGS .. "/fs/kfar/trunk/font8x9.bmp"},
+ {"kolibrios/3D/m2view/", "common/3d/md2view/*"},
  {"kolibrios/3D/voxel_editor/VOXEL_EDITOR", PROGS .. "/media/voxel_editor/trunk/voxel_editor"},
  {"kolibrios/3D/voxel_editor/CURSORS.PNG", PROGS .. "/media/voxel_editor/trunk/cursors.png"},
  {"kolibrios/3D/voxel_editor/CURSORS_GR.PNG", PROGS .. "/media/voxel_editor/trunk/cursors_gr.png"},
@@ -194,6 +195,7 @@ extra_files = {
  {"kolibrios/games/phenix", PROGS .. "/games/phenix/trunk/phenix"},
  {"kolibrios/games/soko/soko", PROGS .. "/games/soko/trunk/SOKO"},
  {"kolibrios/games/soko/", "common/games/soko/*"},
+ {"kolibrios/ggrafx2/", "common/media/grafx2/*"},
  {"kolibrios/drivers/ahci/", "common/drivers/ahci/*"},
  {"kolibrios/drivers/atikms/", "common/drivers/atikms/*"},
  {"kolibrios/drivers/i915/", "common/drivers/i915/*"},
@@ -225,7 +227,7 @@ extra_files = {
  {"kolibrios/settings/app_plus.ini", "common/settings/app_plus.ini"},
  {"kolibrios/utils/appearance", PROGS .. "/cmm/appearance/appearance.com"},
  {"kolibrios/utils/calcplus", PROGS .. "/other/calcplus/calcplus"},
- {"kolibrios/utils/fNav/", "common/File Managers/fNav*"},
+ {"kolibrios/utils/fNav/", "common/File Managers/fNav/*"},
 }
 if build_type == "rus" then tup.append_table(extra_files, {
  {"Docs/cp866/config.txt", build_type .. "/docs/CONFIG.TXT"},
