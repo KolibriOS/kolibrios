@@ -335,176 +335,163 @@ diff16 "end of .data segment",0,$
 
 align 16
 cur_saved_data:
-                    rb 4096
+        rb  4096
 fpu_data:
-                    rb 512
+        rb  512
+draw_data:
+        rb  32*256
+BPSLine_calc_area   rd  1440
+d_width_calc_area   rd  1140
+mouseunder          rd  16*24
 
-mem_block_list      rd 64*2
-mem_used_list       rd 64*2
-mem_hash_cnt        rd 64
+mem_block_list      rd  64*2
+mem_used_list       rd  64*2
+mem_hash_cnt        rd  64
 
-thr_slot_map        rd 8
-
-cpu_freq            rq 1
-
-heap_mutex          MUTEX
-heap_size           rd 1
-heap_free           rd 1
-heap_blocks         rd 1
-free_blocks         rd 1
-
-mem_block_mask      rd 2
-next_memblock       rd 1
-
-mst                 MEM_STATE
-
-pte_valid_mask      rd 1
-page_start          rd 1
-page_end            rd 1
-sys_page_map        rd 1
-os_stack_seg        rd 1
-
-
-srv.fd              rd 1
-srv.bk              rd 1
-
-align 16
+thr_slot_map        rd  8
 
 _display            display_t
 bios_fb             FRB
 
-LFBAddress          dd ?
+mst                 MEM_STATE
 
-SCR_MODE            rw 2
+cpu_freq            dq  ?
 
-PUTPIXEL            dd ?
-GETPIXEL            dd ?
+heap_mutex          MUTEX
+heap_size           dd  ?
+heap_free           dd  ?
+heap_blocks         dd  ?
+free_blocks         dd  ?
+mem_block_mask      rd  2
+next_memblock       dd  ?
+
+pte_valid_mask      dd  ?
+page_start          dd  ?
+page_end            dd  ?
+sys_page_map        dd  ?
+os_stack_seg        dd  ?
+
+srv.fd              dd  ?
+srv.bk              dd  ?
+
+LFBAddress          dd  ?
+
+PUTPIXEL            dd  ?
+GETPIXEL            dd  ?
 
 if VESA_1_2_VIDEO
-BANK_SWITCH         rd 1  reserved for vesa 1.2
-BANK_RW             rd 1
+BANK_SWITCH         dd  ?   ; reserved for vesa 1.2
+BANK_RW             dd  ?
 end if
 
-REDRAW_BACKGROUND   rb 4
+MOUSE_PICTURE       dd  ?
 
-align 4
-draw_data:          rb 32*256
-BPSLine_calc_area   rd 1440
-d_width_calc_area   rd 1140
+def_cursor          dd  ?
+def_cursor_clock    dd  ?
+current_cursor      dd  ?
+hw_cursor           dd  ?
+cur_saved_base      dd  ?
 
-mouseunder          rd 16*24
+cur.lock            dd  ?   ; 1 - lock update, 2- hide
+cur.left            dd  ?   ; cursor clip box
+cur.top             dd  ?
+cur.w               dd  ?
+cur.h               dd  ?
 
-MOUSE_PICTURE       dd ?
+ipc_tmp             dd  ?
+ipc_pdir            dd  ?
+ipc_ptab            dd  ?
 
-MOUSE_SCROLL_H      rw 1
-MOUSE_X:            rw 1
-MOUSE_Y:            rw 1
-MOUSE_SCROLL_V      rw 1
+proc_mem_map        dd  ?
+proc_mem_pdir       dd  ?
+proc_mem_tab        dd  ?
 
-X_UNDER             rw 1
-Y_UNDER             rw 1
-COLOR_TEMP          rd 1
-MOUSE_COLOR_MEM     rd 1
+tmp_task_ptab       dd  ?
 
-BTN_DOWN:           rb 4
+default_io_map      dd  ?
 
-align 4
-def_cursor          rd 1
-def_cursor_clock    rd 1
-current_cursor      rd 1
-hw_cursor           rd 1
-cur_saved_base      rd 1
+LFBSize             dd  ?
 
-cur.lock            rd 1   ;1 - lock update, 2- hide
-cur.left            rd 1   ;cursor clip box
-cur.top             rd 1
-cur.w               rd 1
-cur.h               rd 1
-
-ipc_tmp             rd 1
-ipc_pdir            rd 1
-ipc_ptab            rd 1
-
-proc_mem_map        rd 1
-proc_mem_pdir       rd 1
-proc_mem_tab        rd 1
-
-tmp_task_ptab       rd 1
-
-default_io_map      rd 1
-
-LFBSize             rd 1
-
-current_process     rd 1
-current_slot        rd 1    ; i.e. cureent thread
-
-
-; status
-hd1_status                      rd 1  ; 0 - free : other - pid
-application_table_owner         rd 1  ; 0 - free : other - pid
-application_table_mutex         MUTEX
+current_process     dd  ?
+current_slot        dd  ?   ; i.e. cureent thread
 
 ; device addresses
-mididp                          rd 1
-midisp                          rd 1
+mididp  dd  ?
+midisp  dd  ?
 
-cdbase                          rd 1
-cdid                            rd 1
+cdbase  dd  ?
+cdid    dd  ?
 
-hdbase                          rd 1    ; for boot 0x1f0
-hdid                            rd 1
-hdpos                           rd 1    ; for boot 0x1
-cdpos                           rd 1
+hdbase  dd  ?   ; for boot 0x1f0
+hdid    dd  ?
+hdpos   dd  ?   ; for boot 0x1
+cdpos   dd  ?
 
 ;CPUID information
-cpu_vendor                      rd 3
-cpu_sign                        rd 1
-cpu_info                        rd 1
-cpu_caps                        rd 4
+cpu_vendor  rd  3
+cpu_sign    dd  ?
+cpu_info    dd  ?
+cpu_caps    rd  4
 
+pg_data     PG_DATA
+heap_test   dd  ?
 
-pg_data                         PG_DATA
-heap_test                       rd 1
+skin_data   dd  ?
 
-buttontype                      rd 1
-windowtypechanged               rd 1
+mouse_active    dd  ?
+mouse_pause     dd  ?
 
-hd_entries                      rd 1     ;unused ? 0xfe10
+BgrDrawMode     dd  ?
+BgrDataWidth    dd  ?
+BgrDataHeight   dd  ?
 
-mouse_active                    rd 1
-mouse_pause                     rd 1
+buttontype          dd  ?
+windowtypechanged   dd  ?
 
-redrawmouse_unconditional       rd 1
+debug_step_pointer  dd  ?
 
-img_background                  rd 1
-mem_BACKGROUND                  rd 1
-static_background_data          rd 1
+lba_read_enabled    dd  ?   ; 0 = disabled , 1 = enabled
+pci_access_enabled  dd  ?   ; 0 = disabled , 1 = enabled
 
-BgrDrawMode                     rd 1
-BgrDataWidth                    rd 1
-BgrDataHeight                   rd 1
+NumBiosDisks        dd  ?
+BiosDisksData       rb  200h
+BiosDiskCaches      rb  80h*(cache_ide1-cache_ide0)
+BiosDiskPartitions  rd  80h
 
-skin_data                       rd 1
+img_background          dd  ?
+mem_BACKGROUND          dd  ?
+static_background_data  dd  ?
 
-debug_step_pointer              rd 1
+hd1_status              dd  ?   ; 0 - free : other - pid
+application_table_owner dd  ?   ; 0 - free : other - pid
+application_table_mutex MUTEX
 
-lba_read_enabled                rd 1  ; 0 = disabled , 1 = enabled
-pci_access_enabled              rd 1  ; 0 = disabled , 1 = enabled
+redrawmouse_unconditional   dd  ?
 
-cpu_phys_addr_width             rb 1  ; also known as MAXPHYADDR in Intel manuals
-hdd_appl_data                   rb 1  ; 0 = system cache, 1 - application cache
-cd_appl_data                    rb 1  ; 0 = system cache, 1 - application cache
+MOUSE_SCROLL_H  rw  1
+MOUSE_X:        rw  1
+MOUSE_Y:        rw  1
+MOUSE_SCROLL_V  rw  1
 
-timer_ticks_enable              rb 1  ; for cd driver
+X_UNDER         rw  1
+Y_UNDER         rw  1
+COLOR_TEMP      dd  ?
+MOUSE_COLOR_MEM dd  ?
 
-align 4
-NumBiosDisks                    rd 1
-BiosDisksData                   rb 200h
-BiosDiskCaches                  rb 80h*(cache_ide1-cache_ide0)
-BiosDiskPartitions              rd 80h
+SCR_MODE    rw  2
+
+BTN_DOWN:   rb  4
+
+cpu_phys_addr_width db  ?   ; also known as MAXPHYADDR in Intel manuals
+hdd_appl_data       db  ?   ; 0 = system cache, 1 - application cache
+cd_appl_data        db  ?   ; 0 = system cache, 1 - application cache
+
+timer_ticks_enable  db  ?  ; for cd driver
+
+REDRAW_BACKGROUND   db  ?
 
 align 16
-DRIVE_DATA:                     rb DRIVE_DATA_SIZE
+DRIVE_DATA: rb  DRIVE_DATA_SIZE
 
 IncludeUGlobals
 
@@ -520,16 +507,18 @@ org (OS_BASE+0x0100000)
 ; This should be revisited when/if memory map would become more dynamic.
 RAMDISK_CAPACITY = 2880 ; in sectors
 
-RAMDISK:                        rb RAMDISK_CAPACITY*512
+RAMDISK:
+        rb  RAMDISK_CAPACITY*512
 
 _CLEAN_ZONE:
 
-BgrAuxTable                     rb 32768
+BgrAuxTable     rb  32768
 align 65536
-SB16Buffer                      rb 65536
+SB16Buffer      rb  65536
 
 align 4096
-BUTTON_INFO                     rb 64*1024
-RESERVED_PORTS:                 rb 64*1024
-
-sys_pgmap:                      rb 1024*1024/8
+BUTTON_INFO     rb  64*1024
+RESERVED_PORTS:
+        rb  64*1024
+sys_pgmap:
+        rb  1024*1024/8

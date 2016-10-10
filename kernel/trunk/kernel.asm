@@ -2975,7 +2975,7 @@ nosb8:
         mov     [draw_data+32 + RECT.right], ecx
         mov     [draw_data+32 + RECT.bottom], edx
 
-        inc     byte[REDRAW_BACKGROUND]
+        inc     [REDRAW_BACKGROUND]
         call    wakeup_osloop
 ;--------------------------------------
 align 4
@@ -3004,7 +3004,7 @@ force_redraw_background:
         mov     [draw_data+32 + RECT.right], eax
         mov     [draw_data+32 + RECT.bottom], ebx
         pop     ebx eax
-        inc     byte[REDRAW_BACKGROUND]
+        inc     [REDRAW_BACKGROUND]
         call    wakeup_osloop
         ret
 ;------------------------------------------------------------------------------
@@ -3573,7 +3573,7 @@ align 4
 ;--------------------------------------
 align 4
 mouse_not_active:
-        cmp     byte[REDRAW_BACKGROUND], 0         ; background update ?
+        cmp     [REDRAW_BACKGROUND], 0  ; background update ?
         jz      nobackgr
 
         cmp     [background_defined], 0
@@ -3635,7 +3635,7 @@ set_bgr_event:
         loop    set_bgr_event
         pop     edi ecx
 ;--------- set event 5 stop -----------
-        dec     byte[REDRAW_BACKGROUND]    ; got new update request?
+        dec     [REDRAW_BACKGROUND]     ; got new update request?
         jnz     backgr
 
         xor     eax, eax
@@ -3794,7 +3794,7 @@ bgli:
         cmp     dword[esp], 1
         jnz     .az
 
-        cmp     byte[REDRAW_BACKGROUND], 0
+        cmp     [REDRAW_BACKGROUND], 0
         jz      .az
 
         mov     dl, 0
@@ -3835,7 +3835,7 @@ align 4
 ;--------------------------------------
 align 4
 @@:
-        add     byte[REDRAW_BACKGROUND], dl
+        add     [REDRAW_BACKGROUND], dl
         call    wakeup_osloop
         jmp     newdw8
 ;--------------------------------------
@@ -3857,7 +3857,7 @@ align 4
 
         cmp     dword [esp], 1
         jne     nobgrd
-        inc     byte[REDRAW_BACKGROUND]
+        inc     [REDRAW_BACKGROUND]
         call    wakeup_osloop
 ;--------------------------------------
 align 4
@@ -3943,8 +3943,8 @@ calculatebackground:   ; background
         mov     ecx, [_display.win_map_size]
         shr     ecx, 2
         rep stosd
-
-        mov     byte[REDRAW_BACKGROUND], 0            ; do not draw background!
+        mov     byte[window_data+32+WDATA.z_modif], ZPOS_DESKTOP
+        mov     [REDRAW_BACKGROUND], 0
         ret
 ;-----------------------------------------------------------------------------
 uglobal

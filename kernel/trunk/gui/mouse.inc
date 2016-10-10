@@ -59,11 +59,6 @@ mouse_check_events:
         ; yes it is, activate window user is pointing at, if needed
         call    mouse._.activate_sys_window_under_cursor
 
-; NOTE: this code wouldn't be necessary if we knew
-; that window did already redraw itself after call above
-        or      eax, eax
-        jnz     .exit
-
         ; is there any system button under cursor?
         call    mouse._.find_sys_button_under_cursor
         or      eax, eax
