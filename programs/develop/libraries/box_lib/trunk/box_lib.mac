@@ -499,3 +499,35 @@ PB_MAX            equ +28
 PB_BACK_COLOR     equ +32
 PB_PROGRESS_COLOR equ +36
 PB_FRAME_COLOR    equ +40
+
+; *** Frame constants *** ;
+FR_STYLE         equ +0  ; Dword
+FR_WIDTH         equ +4  ; Word 
+FR_LEFT          equ +6  ; Word 
+FR_HEIGHT        equ +8  ; Word 
+FR_TOP           equ +10 ; Word 
+FR_OUTER_COLOR   equ +12 ; Dword
+FR_INNER_COLOR   equ +16 ; Dword
+FR_FLAGS         equ +20 ; Dword
+FR_TEXT          equ +24 ; Dword
+FR_TEXT_POSITION equ +28 ; Dword
+FR_FONT          equ +32 ; Dword
+FR_FONT_HEIGHT   equ +36 ; Dword
+FR_FORE_COLOR    equ +40 ; Dword
+FR_BACK_COLOR    equ +44 ; Dword
+
+; FR_FLAGS = [x][yyy][z]
+; z        -  Caption
+; yyy      -  BorderStyle
+; x        -  BackStyle
+FR_CAPTION equ 00001b ; [z]
+FR_DOUBLE  equ 00000b ; [yyy]
+FR_RAISED  equ 00010b ; [yyy]
+FR_SUNKEN  equ 00100b ; [yyy]
+FR_ETCHED  equ 00110b ; [yyy]
+FR_RIDGED  equ 01000b ; [yyy]
+FR_FILLED  equ 10000b ; [x]
+
+; FR_TEXT_POSITION
+FR_TEXT_POS_BOTTOM equ 1
+FR_TEXT_POS_TOP    equ 0
