@@ -33,6 +33,7 @@ NAME_SRCS:=  				\
            	io/write.c		\
 		linux/bitmap.c		\
 		linux/ctype.c		\
+		linux/div64.c		\
 		linux/dmapool.c		\
 		linux/dmi.c		\
 		linux/fbsysfs.c		\

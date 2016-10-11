@@ -150,31 +150,4 @@ int dbgprintf(const char* format, ...)
     return len;
 }
 
-int xf86DrvMsg(int skip, int code, const char* format, ...)
-{
-    char      txtbuf[1024];
-    unsigned  writes;
-    va_list   ap;
-
-    int       len = 0;
-
-    va_start(ap, format);
-    if (format)
-        len = vsnprintf(txtbuf, 1024, format, ap);
-    va_end(ap);
-
-    if( len )
-    {
-        SysMsgBoardStr(txtbuf);
-
-        if(dbgfile.path)
-        {
-            write_file(dbgfile.path,txtbuf,dbgfile.offset,len,&writes);
-            dbgfile.offset+=writes;
-        };
-    };
-    return len;
-}
-
-
 
