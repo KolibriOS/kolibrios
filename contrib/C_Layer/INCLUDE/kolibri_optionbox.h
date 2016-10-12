@@ -1,7 +1,7 @@
 #ifndef KOLIBRI_OPTIONBOX_H
 #define KOLIBRI_OPTIONBOX_H
 
-typedef struct option_box_t{
+typedef struct __attribute__ ((__packed__)) option_box_t {
     struct option_box_t **selected;
     uint16_t posx;
     uint16_t posy;

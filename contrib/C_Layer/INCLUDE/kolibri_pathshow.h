@@ -1,7 +1,7 @@
 #ifndef KOLIBRI_PATHSHOW_H
 #define KOLIBRI_PATHSHOW_H
 
-typedef struct {
+typedef struct __attribute__ ((__packed__)) {
 	uint32_t type;
 	uint32_t x_y;
 	uint16_t font_size_x;  // 6 - for font 0, 8 - for font 1

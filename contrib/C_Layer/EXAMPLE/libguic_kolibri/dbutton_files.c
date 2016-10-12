@@ -41,7 +41,6 @@ int main(int argc, char **argv)
     kolibri_proclib_init();  // opensave && color dialogs
     kolibri_libimg_init();  // png handling
 
-
     int gui_event = KOLIBRI_EVENT_REDRAW;
     uint32_t pressed_button = 0;
 //    uint32_t mouse_button;
@@ -110,21 +109,12 @@ int main(int argc, char **argv)
     brows.folder_data = read_folderdata("/rd/1");
     brows.select_panel_counter = 1;  // if want to show selection
 
-kolibri_handle_event_redraw(main_window);
-brows.all_redraw = 1;
-(*filebrowse_draw)(&brows);
-
-
-//???    set_os_keyb_mode(1); // needed for keyboard use in menu
-
     int extended_key = 0, act = 0;
     do  /* Start of main activity loop */
     {
         switch(gui_event)
         {
         case KOLIBRI_EVENT_REDRAW:
-//???? start red
-//brows.marked_file = 1;
             control_minimal_window_size(430, 500);
             brows.all_redraw = 1;
             kolibri_handle_event_redraw(main_window);

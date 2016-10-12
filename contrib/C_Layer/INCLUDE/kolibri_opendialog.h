@@ -11,12 +11,12 @@ enum open_dialog_mode {
     SELECT
 };
 
-typedef struct {
+typedef struct __attribute__ ((__packed__)) {
 	unsigned int size;
 	unsigned char end;
 }od_filter;
 
-typedef struct {
+typedef struct __attribute__ ((__packed__)) {
     unsigned int mode;
     char* procinfo;
     char* com_area_name;

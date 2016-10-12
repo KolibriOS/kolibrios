@@ -7,15 +7,15 @@
 
 extern int kolibri_buf2d_init(void);
 
-typedef struct {
+typedef struct __attribute__ ((__packed__)) {
 	unsigned int *buf_pointer;
-	uint16_t left;                  
-	uint16_t top;                 
-	unsigned int width;   
-	unsigned int height;     
-	unsigned int bgcolor;           
-	uint8_t color_bit;            
-}buf2d_struct; 
+	uint16_t left;
+	uint16_t top;
+	unsigned int width;
+	unsigned int height;
+	unsigned int bgcolor;
+	uint8_t color_bit;
+}buf2d_struct;
 
 enum BUF2D_ALGORITM_FILTR {
 	SIERRA_LITE,
@@ -39,7 +39,7 @@ buf2d_struct* buf2d_create(uint16_t tlx, uint16_t tly, unsigned int sizex, unsig
 {
     buf2d_struct *new_buf2d_struct = (buf2d_struct *)malloc(sizeof(buf2d_struct));
     new_buf2d_struct -> left = tlx;
-	new_buf2d_struct -> top = tly;    
+	new_buf2d_struct -> top = tly;
 	new_buf2d_struct -> width = sizex;
 	new_buf2d_struct -> height = sizey;
 	new_buf2d_struct -> bgcolor = font_bgcolor;

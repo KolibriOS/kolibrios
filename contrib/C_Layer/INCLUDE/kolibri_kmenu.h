@@ -22,7 +22,7 @@ typedef struct {
 	};
 } t_font;
 
-typedef struct {
+typedef struct __attribute__ ((__packed__)) {
 	uint16_t left, top, right, bottom;
 } t_rect;
 
@@ -30,13 +30,13 @@ typedef struct kmenuitem_t{
 	int type;
 	char *text;
 	union {
-		void *submenu;		
+		void *submenu;
 		//kmenuitem_callback_t callback;
 		size_t btnid;
 	};
-	
+
 	void (*paint)(struct kmenuitem_t *item, t_rect *rc) __attribute__((__stdcall__));
-	
+
 	int is_focused;
 	int is_enabled;
 	int is_visible;
@@ -44,7 +44,7 @@ typedef struct kmenuitem_t{
 
 	int font_width, font_height;
 	t_font font;
-	
+
 	size_t left, top;
 	size_t width, height, pref_width, pref_height;
 	size_t margin_left, margin_right, margin_top, margin_bottom;
@@ -54,41 +54,41 @@ typedef struct kmenuitem_t{
 typedef struct ksubmenu_t{
 	kmenuitem_t **items;
 	int count;
-	
+
 	void (*paint)(struct ksubmenu_t *menu) __attribute__((__stdcall__));
-	
+
 	int is_opened;
 	int focus_idx;
-	
+
 	size_t width, height;
 	size_t left, top;
 	int tid;
 	int parent_wnd, parent_tid, submenu_tid, self_wnd;
 	int level;
 	size_t return_btnid;
-	
+
 	int set_new_padding, set_new_margin;
 	t_rect items_padding;
 	t_rect items_margin;
-	
+
 	struct ksubmenu_t *parent;
 } ksubmenu_t;
 
 typedef struct {
 	kmenuitem_t **submenu;
 	int count;
-	
+
 	size_t width, height;
 	size_t left, top;
-	
+
 	int line_height;
-	
+
 	int focus_idx;
 	int submenu_tid;
 } kmenu_t;
 
 
-extern int kolibri_kmenu_init(void); 
+extern int kolibri_kmenu_init(void);
 
 extern void (*kmainmenu_draw)(ksubmenu_t *) __attribute__((__stdcall__));
 extern void (*kmainmenu_dispatch_cursorevent)(ksubmenu_t *) __attribute__((__stdcall__));

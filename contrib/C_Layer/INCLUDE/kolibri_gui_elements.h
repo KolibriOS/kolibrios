@@ -25,6 +25,7 @@ enum KOLIBRI_GUI_ELEMENT_TYPE {
   KOLIBRI_D_BUTTON,
   KOLIBRI_PATHSHOW,
   KOLIBRI_FILEBROWSE,
+  KOLIBRI_EDITOR,
 
   /* Add elements above this element in order to let KOLIBRI_NUM_GUI_ELEMENTS */
   /* stay at correct value */
@@ -79,7 +80,7 @@ void kolibri_window_add_element(kolibri_window *some_window, enum KOLIBRI_GUI_EL
 #include "kolibri_scrollbar.h"
 #include "kolibri_statictext.h"
 #include "kolibri_filebrowse.h"
-
+#include "kolibri_editor.h"
 
 
 /*---------------------Define various functions for initializing GUI-------*/
@@ -150,7 +151,11 @@ kolibri_gui_op_table[KOLIBRI_PATHSHOW].key_fn = NULL;
 kolibri_gui_op_table[KOLIBRI_FILEBROWSE].redraw_fn = (cb_elem_boxlib)filebrowse_draw;
 kolibri_gui_op_table[KOLIBRI_FILEBROWSE].mouse_fn = (cb_elem_boxlib)filebrowse_mouse;
 kolibri_gui_op_table[KOLIBRI_FILEBROWSE].key_fn = (cb_elem_boxlib)filebrowse_key;
-debug_board_printf("KOLIBRI_FILEBROWSE (%x,%x,%x)\n", filebrowse_draw, filebrowse_mouse, filebrowse_key);
+
+kolibri_gui_op_table[KOLIBRI_EDITOR].redraw_fn = (cb_elem_boxlib)ted_draw;
+kolibri_gui_op_table[KOLIBRI_EDITOR].mouse_fn = (cb_elem_boxlib)ted_mouse;
+kolibri_gui_op_table[KOLIBRI_EDITOR].key_fn = (cb_elem_boxlib)editor_key;
+debug_board_printf("KOLIBRI_EDITOR (%x,%x,%x)\n", ted_draw, ted_mouse, editor_key);
 }
 
 /* Create a new main GUI window for KolibriOS */

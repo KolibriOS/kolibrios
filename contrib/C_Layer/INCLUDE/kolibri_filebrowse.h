@@ -112,7 +112,7 @@ typedef struct __attribute__ ((__packed__)) {
 	uint32_t select_flag;  // widget have focus, set auto on mouseclick, but need to reset before mouse()
 	color_t background_color;  // self explained, 0xffffff
 	color_t select_color; // self explained, 0xbbddff
-    color_t select_text_color; // self explained - have a bug - newer used
+    color_t select_text_color; // self explained - have a bug - never really used
     color_t text_color; // self explained
     color_t reduct_text_color; // 0xff0000  - spec color for cutted filenames
     color_t marked_text_color; // not used
@@ -216,12 +216,7 @@ inline filebrowser* kolibri_filebrowser_def(filebrowser* fb, uint32_t x_w, uint3
                                          0x000000, 0xbbddff, kolibri_color_table.color_work_text, kolibri_color_table.color_work_area, 0xff0000);
 }
 */
-/*
-inline frame* kolibri_new_frame_def(uint32_t x_w, uint32_t y_h, char *text)
-{
-    return kolibri_new_frame(x_w, y_h, 0x00FCFCFC, 0x00DCDCDC, text, TOP, kolibri_color_table.color_work_text, kolibri_color_table.color_work_area);
-}
-*/
+
 inline void gui_add_filebrowser(kolibri_window *wnd, filebrowser* f)
 {
     kolibri_window_add_element(wnd, KOLIBRI_FILEBROWSE, f);

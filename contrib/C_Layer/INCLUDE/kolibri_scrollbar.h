@@ -1,7 +1,7 @@
 #ifndef KOLIBRI_SCROLLBAR_H
 #define KOLIBRI_SCROLLBAR_H
 
-typedef struct {
+typedef struct __attribute__ ((__packed__)) {
 //	uint16_t xsize;
 //    uint16_t xpos;
 //    uint16_t ysize;
@@ -9,7 +9,7 @@ typedef struct {
     uint32_t x_w;
     uint32_t y_h;
     uint32_t btn_height;
-    uint32_t type;
+    uint32_t type;  // type 1 - stylish frame, type 2 - ?, type 0 - ?
     uint32_t max_area;
     uint32_t cur_area;
     uint32_t position;

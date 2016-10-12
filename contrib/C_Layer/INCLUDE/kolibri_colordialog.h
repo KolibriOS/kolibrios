@@ -4,7 +4,7 @@
 char cd_com_area_name[]    = "FFFFFFFF_color_dialog";
 char cd_start_path[]       = "/rd/1/colrdial";
 
-typedef struct {
+typedef struct __attribute__ ((__packed__)) {
     unsigned int type;
     unsigned int procinfo;
     unsigned int com_area_name;

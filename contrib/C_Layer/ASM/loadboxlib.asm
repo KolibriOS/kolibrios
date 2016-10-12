@@ -6,11 +6,11 @@ section '.init' code			; Keep this line before includes or GCC messes up call ad
 include '../../../programs/proc32.inc'
 include '../../../programs/macros.inc'
 purge section,mov,add,sub
-	
+
 include '../../../programs/develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../programs/system/run/trunk/txtbut.inc'
 include '../../../programs/dll.inc'
-	
+
 public init_boxlib as '_kolibri_boxlib_init'
 public editbox_key_thunk as '_editbox_key@4'   ; renamed due to ambiguity
 public press_key as '_press_key'
@@ -22,8 +22,8 @@ proc init_boxlib
 	stdcall dll.Load, @IMPORT
 	popa
 	ret
-endp	
-	
+endp
+
 ;; Wrapper to handle edit_box_key function for editboxes.
 ;; Call this baby from C (refer kolibri_editbox.h for details)
 editbox_key_thunk:
@@ -34,7 +34,7 @@ editbox_key_thunk:
 	push ebp		;push the return address back to stack
 	mov ebp, [oldebp]
 	ret
-	
+
 oldebp dd ?
 press_key dd ?
 
@@ -104,7 +104,7 @@ import lib_boxlib, \
 	ted_is_select, 'ted_is_select' , \
 	ted_key, 'ted_key' , \
 	ted_mouse, 'ted_mouse' , \
-	ted_open_file, 'ted_open_file' , \
+	ted_open_file, 'ted_open_file_asm' , \
 	ted_save_file, 'ted_save_file' , \
 	ted_text_add, 'ted_text_add' , \
 	ted_but_select_word, 'ted_but_select_word' , \
@@ -120,11 +120,11 @@ import lib_boxlib, \
 	progressbar_draw,'progressbar_draw' , \
 	progressbar_progress, 'progressbar_progress'
 
-	
+
 public edit_box_draw as '_edit_box_draw'
 public edit_box_key as '_edit_box_key'
 public edit_box_mouse as '_edit_box_mouse'
-public edit_box_set_text as '_edit_box_set_text' 
+public edit_box_set_text as '_edit_box_set_text'
 
 public check_box_draw2 as '_check_box_draw2'
 public check_box_mouse2 as '_check_box_mouse2'
@@ -143,9 +143,9 @@ public scrollbar_h_mouse as '_scrollbar_h_mouse'
 public option_box_draw as '_option_box_draw'
 public option_box_mouse as '_option_box_mouse'
 
-public menu_bar_draw as '_menu_bar_draw' 
-public menu_bar_mouse as '_menu_bar_mouse' 
-public menu_bar_activate as '_menu_bar_activate' 
+public menu_bar_draw as '_menu_bar_draw'
+public menu_bar_mouse as '_menu_bar_mouse'
+public menu_bar_activate as '_menu_bar_activate'
 
 public dynamic_button_draw as '_dynamic_button_draw'
 public dynamic_button_mouse as '_dynamic_button_mouse'
@@ -156,3 +156,30 @@ public path_show_draw as '_path_show_draw'
 public fb_draw_panel as '_filebrowse_draw'
 public fb_mouse as '_filebrowse_mouse'
 public fb_key as '_filebrowse_key'
+
+public ted_but_sumb_upper as '_ted_but_sumb_upper_asm'
+public ted_but_sumb_lover as '_ted_but_sumb_lover_asm'
+public ted_but_convert_by_table as '_ted_but_convert_by_table_asm'
+public ted_can_save as '_ted_can_save_asm'
+public ted_clear as '_ted_clear_asm'
+public ted_delete as '_ted_delete_asm'
+public ted_draw as '_ted_draw'
+public ted_init as '_ted_init_asm'
+public ted_init_scroll_bars as '_ted_init_scroll_bars'
+public ted_init_syntax_file as '_ted_init_syntax_file'
+public ted_is_select as '_ted_is_select_asm'
+public ted_key as '_ted_key_asm'
+public ted_mouse as '_ted_mouse'
+public ted_open_file as '_ted_open_file_asm'
+public ted_save_file as '_ted_save_file_asm'
+public ted_text_add as '_ted_text_add'
+public ted_but_select_word as '_ted_but_select_word'
+public ted_but_cut as '_ted_but_cut_asm'
+public ted_but_copy as '_ted_but_copy'
+public ted_but_paste as '_ted_but_paste'
+public ted_but_undo as '_ted_but_undo_asm'
+public ted_but_redo as '_ted_but_redo_asm'
+public ted_but_reverse as '_ted_but_reverse_asm'
+public ted_but_find_next as '_ted_but_find_next'
+public ted_text_colored as 'ted_text_colored_asm'
+
