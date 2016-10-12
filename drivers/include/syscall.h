@@ -530,5 +530,4 @@ static inline void *vzalloc(unsigned long size)
 
 static inline int power_supply_is_system_supplied(void) { return -1; };
 
-
 #endif

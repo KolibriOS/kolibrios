@@ -5,6 +5,7 @@
 #include <linux/string.h>
 #include <linux/device.h>
 #include <linux/err.h>
+#include <linux/dma-attrs.h>
 #include <linux/dma-direction.h>
 #include <linux/scatterlist.h>
 
@@ -26,6 +27,12 @@ static inline int is_device_dma_capable(struct device *dev)
 {
 	return dev->dma_mask != NULL && *dev->dma_mask != DMA_MASK_NONE;
 }
+
+#ifdef CONFIG_HAS_DMA
+#include <asm/dma-mapping.h>
+#else
+#include <asm-generic/dma-mapping-broken.h>
+#endif
 #ifndef dma_max_pfn
 static inline unsigned long dma_max_pfn(struct device *dev)
 {

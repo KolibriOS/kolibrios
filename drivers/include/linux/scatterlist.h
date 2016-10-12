@@ -378,6 +378,4 @@ bool sg_miter_skip(struct sg_mapping_iter *miter, off_t offset);
 bool sg_miter_next(struct sg_mapping_iter *miter);
 void sg_miter_stop(struct sg_mapping_iter *miter);
 
-#define dma_unmap_sg(d, s, n, r)
-
 #endif /* _LINUX_SCATTERLIST_H */

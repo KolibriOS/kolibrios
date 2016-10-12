@@ -3,6 +3,8 @@
 
 #include <linux/compiler.h>
 
+int printf(const char *fmt, ...);
+
 #define __WARN()                printf("\nWARNING: at %s:%d\n", __FILE__, __LINE__)
 //#define __WARN_printf(arg...)   printf("\nWARNING: at %s:%d\n", __FILE__, __LINE__)
 #define __WARN_printf(arg...)   do { printf(arg); __WARN(); } while (0)

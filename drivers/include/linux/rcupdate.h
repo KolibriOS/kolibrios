@@ -217,6 +217,7 @@ void call_rcu_sched(struct rcu_head *head,
 
 void synchronize_sched(void);
 
+#define wait_rcu_gp(...)
 /**
  * call_rcu_tasks() - Queue an RCU for invocation task-based grace period
  * @head: structure to be used for queueing the RCU updates.

@@ -59,6 +59,13 @@ typedef struct
 
 #pragma pack(pop)
 
+int get_fileinfo(const char *path,FILEINFO *info);
+int create_file(const char *path);
+int set_file_size(const char *path, unsigned size);
+int write_file(const char *path,const void *buff,
+               unsigned offset,unsigned count,unsigned *writes);
+
+
 typedef struct
 {
   char *path;
