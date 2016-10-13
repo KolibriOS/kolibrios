@@ -59,12 +59,13 @@ typedef struct
 int get_fileinfo(const char *path,FILEINFO *info)
 {
    int retval;
+   int tmp;
 
    asm __volatile__
       (
        "pushl $0 \n\t"
        "pushl $0 \n\t"
-       "movl %0, 1(%%esp) \n\t"
+       "movl %2, 1(%%esp) \n\t"
        "pushl %%ebx \n\t"
        "pushl $0 \n\t"
        "pushl $0 \n\t"
@@ -74,7 +75,7 @@ int get_fileinfo(const char *path,FILEINFO *info)
        "movl $70, %%eax \n\t"
        "int $0x40 \n\t"
        "addl $28, %%esp \n\t"
-       :"=a" (retval)
+       :"=a" (retval),"=b"(tmp)
        :"r" (path), "b" (info)
        );
    return retval;

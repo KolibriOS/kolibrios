@@ -3,7 +3,7 @@
     .intel_syntax
 
 .text
-
+    .global _AcpiGetRootPtr
     .global _AllocKernelSpace
     .global _AllocPage
     .global _AllocPages
@@ -83,6 +83,7 @@
     .global _WaitEvent
     .global _WaitEventTimeout
 
+    .def  _AcpiGetRootPtr;  .scl  2;  .type 32; .endef
 
     .def  _AllocKernelSpace;  .scl  2;  .type 32; .endef
     .def  _AllocPage;         .scl  2;  .type 32; .endef
@@ -164,6 +165,7 @@
     .def  _WaitEvent;         .scl  2;  .type 32; .endef
     .def  _WaitEventTimeout;  .scl  2;  .type 32; .endef
 
+_AcpiGetRootPtr:
 
 _AllocKernelSpace:
 _AllocPage:
@@ -246,6 +248,7 @@ _WaitEventTimeout:
 
 .section .drectve
 
+        .ascii " -export:AcpiGetRootPtr"       #
         .ascii " -export:AllocKernelSpace"     # stdcall
 
         .ascii " -export:AllocPage"            # gcc ABI
