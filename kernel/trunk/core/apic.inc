@@ -484,3 +484,7 @@ get_clock_ns:
         mul     edx
         ret
 
+align 4
+acpi_get_root_ptr:
+        mov     eax, [acpi_rsdp]
+        ret

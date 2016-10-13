@@ -130,6 +130,8 @@ __exports:
 \
           get_pcidev_list,       'GetPCIList',         \
 \
+          acpi_get_root_ptr,     'AcpiGetRootPtr',     \
+\
           0,                     'LFBAddress' ; must be the last one
 load kernel_exports_count dword from __exports + 24
 load kernel_exports_addresses dword from __exports + 28

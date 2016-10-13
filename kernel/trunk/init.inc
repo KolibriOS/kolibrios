@@ -536,6 +536,7 @@ check_acpi:
         test    eax, eax
         jz      .done
 
+        mov     [acpi_rsdp-OS_BASE], eax
         mov     ecx, [eax+16]
         mov     edx, ACPI_FADT_SIGN
         mov     [acpi_rsdt_base-OS_BASE], ecx
