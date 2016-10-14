@@ -2944,22 +2944,20 @@ nosb8:
 ; edx = [top]*65536 + [bottom]
         mov     eax, [_display.width]
         mov     ebx, [_display.height]
-        dec     eax
-        dec     ebx
 ; check [right]
         cmp     cx, ax
-        ja      .exit
+        jae     .exit
 ; check [left]
         ror     ecx, 16
         cmp     cx, ax
-        ja      .exit
+        jae     .exit
 ; check [bottom]
         cmp     dx, bx
-        ja      .exit
+        jae     .exit
 ; check [top]
         ror     edx, 16
         cmp     dx, bx
-        ja      .exit
+        jae     .exit
 
         movzx   eax, cx  ; [left]
         movzx   ebx, dx  ; [top]

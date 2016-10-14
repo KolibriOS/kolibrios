@@ -2147,20 +2147,20 @@ vesa20_drawbackground_stretch:
         mov     eax, [BgrDataWidth]
         dec     eax
         xor     edx, edx
-        div     dword [screen_workarea.right]
+        div     dword [_display.width]
         push    eax     ; high
         xor     eax, eax
-        div     dword [screen_workarea.right]
+        div     dword [_display.width]
         push    eax     ; low
 
 ; the same for height
         mov     eax, [BgrDataHeight]
         dec     eax
         xor     edx, edx
-        div     dword [screen_workarea.bottom]
+        div     dword [_display.height]
         push    eax     ; high
         xor     eax, eax
-        div     dword [screen_workarea.bottom]
+        div     dword [_display.height]
         push    eax     ; low
 
 ; External loop for all y from start to end
