@@ -18,7 +18,19 @@ include 'lang.inc'
 include '../../../macros.inc'
 include '../../../debug.inc'
 purge   newline
+;SMALL FONT
 MAXSTRINGS = 45
+LINE_H = 10
+WINDOW_W = 399
+WINDOW_H = MAXSTRINGS*LINE_H+45
+FONT_TYPE = 0x40000000
+;BIG FONT
+; MAXSTRINGS = 30
+; LINE_H = 15
+; WINDOW_W = 630
+; WINDOW_H = MAXSTRINGS*LINE_H+50
+; FONT_TYPE = 0x50000000
+
 ;------------------------------------------------------------------------------
 START:
         call    CheckUnique
@@ -46,8 +58,8 @@ param:
 
         mcall   14
         and     eax, 0xffff0000
-        sub     eax, 399 shl 16
-        add     eax, 399
+        sub     eax, WINDOW_W shl 16
+        add     eax, WINDOW_W
         mov     [xstart], eax
         mcall   48, 3, sc, sizeof.system_colors
 
@@ -207,12 +219,11 @@ draw_window:
         shr     ebx, 16
         mov     ecx, ebx
         shl     ecx, 16
-        add     ecx, MAXSTRINGS*10+45     ; [y start] *65536 + [y size]
-        xor     eax, eax                  ; function 0 : define and draw window
+        add     ecx, WINDOW_H     ; [y start] *65536 + [y size]
         mov     edx, 0xffffff
         or      edx, 0x14000000
         xor     esi, esi
-        mcall   ,[xstart],,,,title
+        mcall   0,[xstart],,,,title
         mov     ebx, 296 shl 16+31
         mcall   8,,<4,13>,3,[sc.work_button]
         mov     edx, [vmode]
@@ -228,7 +239,7 @@ draw_window:
 draw_text:
         mov     ebx, 15*65536+30          ; draw info text with function 4
         xor     ecx, ecx
-        or      ecx, 0x40000000
+        or      ecx, FONT_TYPE
         mov     edi, 0xffffff
         mov     edx, text1
         cmp     [vmode], 0
@@ -255,7 +266,7 @@ draw_text:
         mov     eax, 4
 newline:
         mcall
-        add     ebx, 10
+        add     ebx, LINE_H
         add     edx, 80
         cmp     [edx], byte 'x'
         jne     newline
