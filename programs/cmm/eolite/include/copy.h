@@ -12,24 +12,41 @@ void Copy(dword pcth, char cut)
     dword selected_offset2;
     byte copy_t[4096];
     dword buff_data;
+    dword path_len = 0;
+    dword buffer_len = 0;
+    dword size_buf = 0;
     int ind = 0; 
     if (selected_count)
 	{
-        buff_data = malloc(selected_count*4096+10);
-        ESDWORD[buff_data] = selected_count*4096+10;
-        ESDWORD[buff_data+4] = 3;
-        ESINT[buff_data+8] = selected_count;
         for (i=0; i<files.count; i++) 
         {
             selected_offset2 = file_mas[i]*304 + buf+32 + 7;
             if (ESBYTE[selected_offset2]) {
                 strcpy(#copy_t, #path);
-                strcat(#copy_t, file_mas[i]*304+buf+72);                         
-                strlcpy(ind*4096+buff_data+10, #copy_t, 4096);;
+                strcat(#copy_t, file_mas[i]*304+buf+72);
+                path_len = strlen(#copy_t);
+                size_buf = size_buf + path_len;
+            }
+        }
+        
+        buff_data = malloc(size_buf);
+        ESDWORD[buff_data] = size_buf;
+        ESDWORD[buff_data+4] = 3;
+        ESINT[buff_data+8] = selected_count;    
+        
+        for (i=0; i<files.count; i++) 
+        {
+            selected_offset2 = file_mas[i]*304 + buf+32 + 7;
+            if (ESBYTE[selected_offset2]) {
+                strcpy(#copy_t, #path);
+                strcat(#copy_t, file_mas[i]*304+buf+72);
+                path_len = strlen(#copy_t);
+                strlcpy(buff_data+10+buffer_len+1, #copy_t, path_len);
+                buffer_len = buffer_len + path_len;
                 ind++;
             }
         }
-		clipboard.SetSlotData(selected_count*4096+10, buff_data);
+		clipboard.SetSlotData(size_buf+10, buff_data);
 	}
 	else
 	{
@@ -56,14 +73,18 @@ void PasteThread()
 	int j;
 	int cnt = 0;
 	dword buf;
-	file_count_copy = 0;
+	dword path_len = 0;
+    dword buffer_len = 0;
+    file_count_copy = 0;
 	copy_bar.value = 0; 
-	
-	buf = clipboard.GetSlotData(clipboard.GetSlotCount()-1);
+    
+    buf = clipboard.GetSlotData(clipboard.GetSlotCount()-1);
 	if (DSDWORD[buf+4] != 3) return;
 	cnt = ESINT[buf+8];
 	for (j = 0; j < cnt; j++) {
-		strlcpy(#copy_from, j*4096+buf+10, 4096);
+		if (j==0) strlcpy(#copy_from, buf+10+buffer_len);
+		else strlcpy(#copy_from, buf+10+buffer_len+1);
+		buffer_len = buffer_len + path_len;
 		GetFileInfo(#copy_from, #file_info_count);
 		if ( file_info_count.isfolder ) DirFileCount(#copy_from);
 		else file_count_copy++;
@@ -73,9 +94,14 @@ void PasteThread()
 	if (cut_active)  operation_flag = MOVE_FLAG;
 	else  operation_flag = COPY_FLAG;
 	
-	DisplayOperationForm();
+	path_len = 0;
+    buffer_len = 0;
+    DisplayOperationForm();
 	for (j = 0; j < cnt; j++) {
-		strlcpy(#copy_from, j*4096+buf+10, 4096);
+		if (j==0) strlcpy(#copy_from, buf+10+buffer_len);
+		else strlcpy(#copy_from, buf+10+buffer_len+1);
+		path_len = strlen(#copy_from);
+		buffer_len = buffer_len + path_len;
 		if (!copy_from) DialogExit();
 		strcpy(#copy_to, #path);
 		strcat(#copy_to, #copy_from+strrchr(#copy_from,'/'));
@@ -97,7 +123,7 @@ void PasteThread()
 		}
 		else if (cut_active)
 		{
-			//strcpy(#file_path, #copy_from);
+			strcpy(#file_path, #copy_from);
 			Del_File2(#copy_from, 0);
 			
 		}
@@ -109,3 +135,131 @@ void PasteThread()
 	if (info_after_copy) notify(INFO_AFTER_COPY);
 	DialogExit();
 }
+
+//Another version of the function copy/paste
+
+/*
+void Copy(dword pcth, char cut)
+{
+    dword selected_offset2;
+    byte copy_t[4096];
+    dword buff_data;
+    dword path_len = 0;
+    dword buffer_len = 0;
+    dword size_buf = 0;
+    int ind = 0; 
+    if (selected_count)
+	{
+        for (i=0; i<files.count; i++) 
+        {
+            selected_offset2 = file_mas[i]*304 + buf+32 + 7;
+            if (ESBYTE[selected_offset2]) {
+                strcpy(#copy_t, #path);
+                strcat(#copy_t, file_mas[i]*304+buf+72);
+                path_len = strlen(#copy_t);
+                size_buf = size_buf + path_len + 4;
+            }
+        }
+        
+        buff_data = malloc(size_buf);
+        ESDWORD[buff_data] = size_buf;
+        ESDWORD[buff_data+4] = 3;
+        ESINT[buff_data+8] = selected_count;    
+        
+        for (i=0; i<files.count; i++) 
+        {
+            selected_offset2 = file_mas[i]*304 + buf+32 + 7;
+            if (ESBYTE[selected_offset2]) {
+                strcpy(#copy_t, #path);
+                strcat(#copy_t, file_mas[i]*304+buf+72);
+                path_len = strlen(#copy_t);
+                ESDWORD[buff_data+10+buffer_len] = path_len;
+                strlcpy(buff_data+10+4+buffer_len, #copy_t, path_len);
+                buffer_len = buffer_len + 4 + path_len;
+                ind++;
+            }
+        }
+		clipboard.SetSlotData(size_buf+10, buff_data);
+	}
+	else
+	{
+		buff_data = malloc(4106);
+        ESDWORD[buff_data] = 4106;
+        ESDWORD[buff_data+4] = 3;
+        ESINT[buff_data+8] = 1;
+        strlcpy(buff_data+10, #file_path, 4096);;
+		clipboard.SetSlotData(4106, buff_data);
+	}
+	cut_active = cut;
+	free(buff_data);
+}
+
+
+void PasteThread()
+{
+	char copy_rezult;
+	int j;
+	int cnt = 0;
+	dword buf;
+	dword path_len = 0;
+    dword buffer_len = 0;
+    file_count_copy = 0;
+	copy_bar.value = 0; 
+    
+    buf = clipboard.GetSlotData(clipboard.GetSlotCount()-1);
+	if (DSDWORD[buf+4] != 3) return;
+	cnt = ESINT[buf+8];
+	for (j = 0; j < cnt; j++) {
+		path_len = ESDWORD[buf+10+buffer_len];
+		strlcpy(#copy_from, buf+10+buffer_len+4, path_len);
+		buffer_len = buffer_len + 4 + path_len;
+		GetFileInfo(#copy_from, #file_info_count);
+		if ( file_info_count.isfolder ) DirFileCount(#copy_from);
+		else file_count_copy++;
+	}
+	copy_bar.max = file_count_copy;
+	
+	if (cut_active)  operation_flag = MOVE_FLAG;
+	else  operation_flag = COPY_FLAG;
+	
+	path_len = 0;
+    buffer_len = 0;
+    DisplayOperationForm();
+	for (j = 0; j < cnt; j++) {
+		path_len = ESDWORD[buf+10+buffer_len];
+		strlcpy(#copy_from, buf+10+buffer_len+4, path_len);
+		buffer_len = buffer_len + 4 + path_len;
+		if (!copy_from) DialogExit();
+		strcpy(#copy_to, #path);
+		strcat(#copy_to, #copy_from+strrchr(#copy_from,'/'));
+		if (!strcmp(#copy_from,#copy_to))
+		{
+			strcpy(#copy_to, #path);
+			strcat(#copy_to, "new_");
+			strcat(#copy_to, #copy_from+strrchr(#copy_from,'/'));
+		}
+		if (strstr(#copy_to, #copy_from))
+		{
+			notify("Copy directory into itself is a bad idea...");
+			DialogExit();
+		}
+
+		if (copy_rezult = copyf(#copy_from,#copy_to))
+		{
+			Write_Error(copy_rezult);
+		}
+		else if (cut_active)
+		{
+			strcpy(#file_path, #copy_from);
+			Del_File2(#copy_from, 0);
+			
+		}
+	}
+	if (cut_active)
+	{
+		cut_active=false;
+	}
+	if (info_after_copy) notify(INFO_AFTER_COPY);
+	DialogExit();
+}
+*/
