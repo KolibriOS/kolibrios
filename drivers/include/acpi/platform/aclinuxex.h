@@ -96,9 +96,13 @@ static inline void acpi_os_free(void *memory)
 	kfree(memory);
 }
 
+void *acpi_os_acquire_object(acpi_cache_t * cache);
+
+u32  __attribute__ ((dllimport))  GetPid(void)__asm__("GetPid");
+
 static inline acpi_thread_id acpi_os_get_thread_id(void)
 {
-    return (acpi_thread_id) (unsigned long)-1;
+    return (acpi_thread_id) (unsigned long)GetPid();
 }
 
 /*
