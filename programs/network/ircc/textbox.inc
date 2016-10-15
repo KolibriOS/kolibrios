@@ -23,9 +23,8 @@ text_insert_newlines:                   ; esi = ASCIIZ string
   .more:
         dec     ecx
         jz      .end_of_line
+  .next_byte:
         lodsb                           ; get one character of the string
-        test    al, 0x80
-        jnz     .multiball!
         test    al, al                  ; end of string?
         jz      .almost_done
         cmp     al, ' '                 ; it's a space! remember its position
@@ -33,7 +32,12 @@ text_insert_newlines:                   ; esi = ASCIIZ string
         cmp     al, 13                  ; we already inserted a newline once, make it a space again
         je      .soft_nl
         cmp     al, 10                  ; it's a newline, continue onto the next line
-        jne     .more
+        je      .newline
+        and     al, 0xc0                ; Is it a multi byte UTF8 char?
+        cmp     al, 0x80
+        je      .next_byte
+        jmp     .more
+  .newline:
         inc     edx
         jmp     .next_line
   .soft_nl:
@@ -54,19 +58,6 @@ text_insert_newlines:                   ; esi = ASCIIZ string
 
         ret
 
-  .multiball!:
-        add     esi, 4
-        and     al, 11111000b
-        cmp     al, 11110000b
-        je      .more
-        dec     esi
-        and     al, 11110000b
-        cmp     al, 11100000b
-        je      .more
-        dec     esi
-        jmp     .more
-
-
 
 ;----------------------------------
 ; scan untill next line is reached
@@ -86,12 +77,13 @@ text_nextline:
         je      .done
         cmp     al, 13
         je      .done
+        and     al, 0xc0
+        cmp     al, 0x80
+        je      .loop           ; This byte is the second, third or fourth byte of a multi-byte UTF8 char
         dec     ecx
         jnz     .loop
   .done:
-
         ret
-
 
 ;----------------------------------
 ; print string
