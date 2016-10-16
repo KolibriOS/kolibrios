@@ -19,10 +19,13 @@ SOURCES =    boardmsg.c option_menu.c
 
 OBJECTS =  $(patsubst %.c, %.o, $(SOURCES))
 
-all: boardmsg option_menu scroll_progress dbutton_files
+all: boardmsg option_menu scroll_progress dbutton_files editor_tree_msgbox
+
+editor_tree_msgbox: editor_tree_msgbox.o
+	$(LD) $(LIBPATH) --subsystem windows -o $@ $^ $(OBJPATH)/loadboxlib.obj $(OBJPATH)/loadlibimg.obj $(OBJPATH)/loadmsgbox.obj $(LDFLAGS) -Map=editor_tree_msgbox.map
+	kos32-objcopy $@ -O binary
 
 scroll_progress: scroll_progress.o
-#	$(LD) $(LIBPATH) --subsystem native -o $@ $^ $(OBJPATH)/loadboxlib.obj $(LDFLAGS)
 	$(LD) $(LIBPATH) --subsystem windows -o $@ $^ $(OBJPATH)/loadboxlib.obj $(LDFLAGS)
 	kos32-objcopy $@ -O binary
 
@@ -36,7 +39,7 @@ boardmsg: boardmsg.o
 	kos32-objcopy $@ -O binary
 
 dbutton_files: dbutton_files.o
-	$(LD) $(LIBPATH) --subsystem native -o $@ $^ $(OBJPATH)/loadboxlib.obj $(OBJPATH)/loadproclib.obj $(OBJPATH)/loadlibimg.obj $(LDFLAGS) -Map=dbutton_files.map
+	$(LD) $(LIBPATH) --subsystem native -o $@ $^ $(OBJPATH)/loadboxlib.obj $(OBJPATH)/loadproclib.obj $(OBJPATH)/loadlibimg.obj $(LDFLAGS) 
 	kos32-objcopy $@ -O binary
 
 %.o : %.c Makefile

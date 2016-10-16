@@ -29,16 +29,19 @@ static inline msgbox* kolibri_new_msgbox(char* title, char* text, int def_but, .
 
     msgbox* box = calloc(sizeof(msgbox), 1);
     box->retval = (uint8_t)def_but;
-    char    *pc = box->texts,
-            *but_text = va_arg(vl, char*);
+    char    *pc = box->texts;
     strcpy(pc, title);
     pc += strlen(title) + 1;
+    strcpy(pc, text);
+    pc += strlen(text) + 1;
 
+    char  *but_text = va_arg(vl, char*);
     while (but_text)
     {
         strcpy(pc, but_text);
         pc += strlen(but_text) + 1;
         // assert(pc - box->texts < sizeof box->texts);
+        but_text = va_arg(vl, char*);
     }
 
     va_end(vl);

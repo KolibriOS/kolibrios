@@ -120,7 +120,7 @@ struct editor_syntax_file
 
 static struct editor_syntax_file default_syntax = {
     10,     //count_colors_text
-    0,      // count_key_words dd (f1-text)/48
+    1,      // count_key_words dd (f1-text)/48, minimum 1
     0xf1fcd0, //color_cursor dd 0xf1fcd0
     0x080808, //color_wnd_capt dd 0x080808
     0x1C1C1C, //color_wnd_work dd 0x1C1C1C
@@ -165,28 +165,28 @@ extern void (*ted_but_sumb_upper_asm)(editor *) __attribute__((__stdcall__));
 static inline void editor_selected_toupper(editor *ed)
 {
     __asm__ __volatile__ (
-             "push edi \n\t"
-             "push esi \n\t":::);
+             "push %%edi \n\t"
+             "push %%esi \n\t":::);
 
     (*ted_but_sumb_upper_asm)(ed);
 
     __asm__ __volatile__ (
-             "pop esi \n\t"
-             "pop edi \n\t":::);
+             "pop %%esi \n\t"
+             "pop %%edi \n\t":::);
 }
 
 extern void (*ted_but_sumb_lover_asm)(editor *) __attribute__((__stdcall__));
 static inline void editor_selected_tolower(editor *ed)
 {
     __asm__ __volatile__ (
-             "push edi \n\t"
-             "push esi \n\t":::);
+             "push %%edi \n\t"
+             "push %%esi \n\t":::);
 
     (*ted_but_sumb_lover_asm)(ed);
 
     __asm__ __volatile__ (
-             "pop esi \n\t"
-             "pop edi \n\t":::);
+             "pop %%esi \n\t"
+             "pop %%edi \n\t":::);
 }
 
 
@@ -194,28 +194,28 @@ extern void (*ted_but_convert_by_table_asm)(editor *, char* table) __attribute__
 static inline void editor_convert_by_table(editor *ed, char* table)
 {
     __asm__ __volatile__ (
-             "push edi \n\t"
-             "push esi \n\t":::);
+             "push %%edi \n\t"
+             "push %%esi \n\t":::);
 
     (*ted_but_convert_by_table_asm)(ed, table);
 
     __asm__ __volatile__ (
-             "pop esi \n\t"
-             "pop edi \n\t":::);
+             "pop %%esi \n\t"
+             "pop %%edi \n\t":::);
 }
 
 extern int (*ted_can_save_asm)(editor *) __attribute__((__stdcall__));
 static inline int editor_can_save(editor *ed)
-/// return 1 if can be saved
+/// return 1 if need to be saved (has changes), 0 otherwise
 {
     int ret;
     __asm__ __volatile__ (
-             "push edi \n\t":::);
+             "push %%edi \n\t":::);
 
     (*ted_can_save_asm)(ed);
 
     __asm__ __volatile__ (
-             "pop edi \n\t":"=a"(ret)::);
+             "pop %%edi \n\t":"=a"(ret)::);
     return ret;
 }
 
@@ -224,12 +224,12 @@ static inline void editor_clear(editor *ed, int all)
 /// all==1 - clear all memory
 {
     __asm__ __volatile__ (
-             "push edi \n\t":::);
+             "push %%edi \n\t":::);
 
     (*ted_clear_asm)(ed, all);
 
     __asm__ __volatile__ (
-             "pop edi \n\t":::);
+             "pop %%edi \n\t":::);
 }
 
 extern void (*ted_delete_asm)(editor *) __attribute__((__stdcall__));
@@ -237,12 +237,12 @@ static inline void editor_delete(editor *ed)
 /// frees all memory (destroy)
 {
     __asm__ __volatile__ (
-             "push edi \n\t":::);
+             "push %%edi \n\t":::);
 
     (*ted_delete_asm)(ed);
 
     __asm__ __volatile__ (
-             "pop edi \n\t":::);
+             "pop %%edi \n\t":::);
     free(ed->scr_w);
     free(ed->scr_h);
     free(ed->buffer);
@@ -254,12 +254,12 @@ static inline void editor_init(editor *ed)
 /// allocate memory
 {
     __asm__ __volatile__ (
-             "push edi \n\t":::);
+             "push %%edi \n\t":::);
 
     (*ted_init_asm)(ed);
 
     __asm__ __volatile__ (
-             "pop edi \n\t":::);
+             "pop %%edi \n\t":::);
 }
 
 extern int (*ted_is_select)(editor *) __attribute__((__stdcall__));
@@ -268,12 +268,12 @@ static inline int editor_is_select(editor *ed)
 {
     int ret;
     __asm__ __volatile__ (
-             "push ebx \n\t":::);
+             "push %%ebx \n\t":::);
 
     (*ted_is_select)(ed);
 
     __asm__ __volatile__ (
-             "pop ebx \n\t":"=a"(ret)::);
+             "pop %%ebx \n\t":"=a"(ret)::);
     return ret;
 }
 
@@ -303,12 +303,12 @@ static inline int editor_openfile(editor *ed, char *fname, int *readbytes)
     int     ret;
     struct fs_dirinfo   di;
     __asm__ __volatile__ (
-             "push edi \n\t":::);
+             "push %%edi \n\t":::);
 
     (*ted_open_file_asm)(ed, &di, fname);
 
     __asm__ __volatile__ (
-             "pop edi \n\t":"=b"(*readbytes), "=a"(ret)::);
+             "pop %%edi \n\t":"=b"(*readbytes), "=a"(ret)::);
     return ret;
 }
 
@@ -327,50 +327,50 @@ extern void (*ted_but_cut)(editor *) __attribute__((__stdcall__));
 static inline void editor_cut(editor *ed)
 {
     __asm__ __volatile__ (
-             "push edi \n\t":::);
+             "push %%edi \n\t":::);
 
     (*ted_but_cut)(ed);
 
     __asm__ __volatile__ (
-             "pop edi \n\t":::);
+             "pop %%edi \n\t":::);
 }
 
 extern void (*ted_but_undo)(editor *) __attribute__((__stdcall__));
 static inline void editor_undo(editor *ed)
 {
     __asm__ __volatile__ (
-             "push edi \n\t":::);
+             "push %%edi \n\t":::);
 
     (*ted_but_undo)(ed);
 
     __asm__ __volatile__ (
-             "pop edi \n\t":::);
+             "pop %%edi \n\t":::);
 }
 
 extern void (*ted_but_redo)(editor *) __attribute__((__stdcall__));
 static inline void editor_redo(editor *ed)
 {
     __asm__ __volatile__ (
-             "push edi \n\t":::);
+             "push %%edi \n\t":::);
 
     (*ted_but_redo)(ed);
 
     __asm__ __volatile__ (
-             "pop edi \n\t":::);
+             "pop %%edi \n\t":::);
 }
 
 extern void (*ted_but_reverse)(editor *) __attribute__((__stdcall__));
 static inline void editor_reverse(editor *ed)
 {
     __asm__ __volatile__ (
-             "push edi \n\t"
-             "push ebx\n\t":::);
+             "push %%edi \n\t"
+             "push %%ebx\n\t":::);
 
     (*ted_but_reverse)(ed);
 
     __asm__ __volatile__ (
-             "pop ebx \n\t"
-             "pop edi \n\t":::);
+             "pop %%ebx \n\t"
+             "pop %%edi \n\t":::);
 }
 
 extern void (*ted_text_colored_asm)() __attribute__((__stdcall__));
@@ -428,7 +428,7 @@ static void editor_key(editor* ed)
     editor_keyboard(ed, conv_table, ed_ctrl, get_key().val);
 }
 
-inline void gui_add_editor(kolibri_window *wnd, editor* e)
+static inline void gui_add_editor(kolibri_window *wnd, editor* e)
 {
     kolibri_window_add_element(wnd, KOLIBRI_EDITOR, e);
 }
@@ -472,8 +472,8 @@ static inline editor* kolibri_new_editor(uint32_t x_w, uint32_t y_h, uint32_t fo
 */
     ed->symbol_new_line = 20;  // ascii(20)
 
-    ed->scr_w = kolibri_new_scrollbar_def(0, 0, 100, 30, 0);
-    ed->scr_h = kolibri_new_scrollbar_def(0, 0, 100, 30, 0);
+    ed->scr_w = kolibri_new_scrollbar_def(X_Y(50, 16), X_Y(50, 300), 100, 30, 0);
+    ed->scr_h = kolibri_new_scrollbar_def(X_Y(0, 150), X_Y(50, 16), 100, 30, 0);
 
     ed->buffer_size = TE_BUF_SIZE;
     ed->buffer = malloc(TE_BUF_SIZE);
