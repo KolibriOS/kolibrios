@@ -228,7 +228,7 @@ frame_start
 	and	eax,0xffffff
 	add	ecx,eax
 
-	mov	edx,fr_text_pointer
+	mov    eax, fr
 
 	mov	eax,fr_font_backgr_color
 	and	eax,0xffffff
