@@ -25,7 +25,7 @@ void Copy(dword pcth, char cut)
                 strcpy(#copy_t, #path);
                 strcat(#copy_t, file_mas[i]*304+buf+72);
                 path_len = strlen(#copy_t);
-                size_buf = size_buf + path_len;
+                size_buf = size_buf + path_len + 4;
             }
         }
         
@@ -41,8 +41,9 @@ void Copy(dword pcth, char cut)
                 strcpy(#copy_t, #path);
                 strcat(#copy_t, file_mas[i]*304+buf+72);
                 path_len = strlen(#copy_t);
-                strlcpy(buff_data+10+buffer_len+1, #copy_t, path_len);
-                buffer_len = buffer_len + path_len;
+                ESDWORD[buff_data+10+buffer_len] = path_len;
+                strlcpy(buff_data+10+4+buffer_len, #copy_t, path_len);
+                buffer_len = buffer_len + 4 + path_len;
                 ind++;
             }
         }
@@ -50,17 +51,18 @@ void Copy(dword pcth, char cut)
 	}
 	else
 	{
-		buff_data = malloc(4106);
-        ESDWORD[buff_data] = 4106;
+		path_len = strlen(#file_path)+4;
+		buff_data = malloc(path_len);
+        ESDWORD[buff_data] = path_len;
         ESDWORD[buff_data+4] = 3;
         ESINT[buff_data+8] = 1;
-        strlcpy(buff_data+10, #file_path, 4096);;
-		clipboard.SetSlotData(4106, buff_data);
+        ESDWORD[buff_data+10] = path_len;
+        strlcpy(buff_data+14, #file_path, path_len);;
+		clipboard.SetSlotData(path_len+10, buff_data);
 	}
 	cut_active = cut;
 	free(buff_data);
 }
-
 
 void Paste() {
 	copy_stak = malloc(64000);
@@ -82,9 +84,9 @@ void PasteThread()
 	if (DSDWORD[buf+4] != 3) return;
 	cnt = ESINT[buf+8];
 	for (j = 0; j < cnt; j++) {
-		if (j==0) strlcpy(#copy_from, buf+10+buffer_len);
-		else strlcpy(#copy_from, buf+10+buffer_len+1);
-		buffer_len = buffer_len + path_len;
+		path_len = ESDWORD[buf+10+buffer_len];
+		strlcpy(#copy_from, buf+10+buffer_len+4, path_len);
+		buffer_len = buffer_len + 4 + path_len;
 		GetFileInfo(#copy_from, #file_info_count);
 		if ( file_info_count.isfolder ) DirFileCount(#copy_from);
 		else file_count_copy++;
@@ -98,10 +100,9 @@ void PasteThread()
     buffer_len = 0;
     DisplayOperationForm();
 	for (j = 0; j < cnt; j++) {
-		if (j==0) strlcpy(#copy_from, buf+10+buffer_len);
-		else strlcpy(#copy_from, buf+10+buffer_len+1);
-		path_len = strlen(#copy_from);
-		buffer_len = buffer_len + path_len;
+		path_len = ESDWORD[buf+10+buffer_len];
+		strlcpy(#copy_from, buf+10+buffer_len+4, path_len);
+		buffer_len = buffer_len + 4 + path_len;
 		if (!copy_from) DialogExit();
 		strcpy(#copy_to, #path);
 		strcat(#copy_to, #copy_from+strrchr(#copy_from,'/'));
@@ -157,7 +158,7 @@ void Copy(dword pcth, char cut)
                 strcpy(#copy_t, #path);
                 strcat(#copy_t, file_mas[i]*304+buf+72);
                 path_len = strlen(#copy_t);
-                size_buf = size_buf + path_len + 4;
+                size_buf = size_buf + path_len;
             }
         }
         
@@ -173,9 +174,8 @@ void Copy(dword pcth, char cut)
                 strcpy(#copy_t, #path);
                 strcat(#copy_t, file_mas[i]*304+buf+72);
                 path_len = strlen(#copy_t);
-                ESDWORD[buff_data+10+buffer_len] = path_len;
-                strlcpy(buff_data+10+4+buffer_len, #copy_t, path_len);
-                buffer_len = buffer_len + 4 + path_len;
+                strlcpy(buff_data+10+buffer_len+1, #copy_t, path_len);
+                buffer_len = buffer_len + path_len;
                 ind++;
             }
         }
@@ -195,6 +195,11 @@ void Copy(dword pcth, char cut)
 }
 
 
+void Paste() {
+	copy_stak = malloc(64000);
+	CreateThread(#PasteThread,copy_stak+64000-4);
+}
+
 void PasteThread()
 {
 	char copy_rezult;
@@ -205,14 +210,14 @@ void PasteThread()
     dword buffer_len = 0;
     file_count_copy = 0;
 	copy_bar.value = 0; 
-    
+    debugln("Step 1");
     buf = clipboard.GetSlotData(clipboard.GetSlotCount()-1);
 	if (DSDWORD[buf+4] != 3) return;
 	cnt = ESINT[buf+8];
 	for (j = 0; j < cnt; j++) {
-		path_len = ESDWORD[buf+10+buffer_len];
-		strlcpy(#copy_from, buf+10+buffer_len+4, path_len);
-		buffer_len = buffer_len + 4 + path_len;
+		if (j==0) strlcpy(#copy_from, buf+10+buffer_len);
+		else strlcpy(#copy_from, buf+10+buffer_len+1);
+		buffer_len = buffer_len + path_len;
 		GetFileInfo(#copy_from, #file_info_count);
 		if ( file_info_count.isfolder ) DirFileCount(#copy_from);
 		else file_count_copy++;
@@ -222,13 +227,20 @@ void PasteThread()
 	if (cut_active)  operation_flag = MOVE_FLAG;
 	else  operation_flag = COPY_FLAG;
 	
-	path_len = 0;
+	debugln("Step 2");
+    path_len = 0;
     buffer_len = 0;
     DisplayOperationForm();
 	for (j = 0; j < cnt; j++) {
-		path_len = ESDWORD[buf+10+buffer_len];
-		strlcpy(#copy_from, buf+10+buffer_len+4, path_len);
-		buffer_len = buffer_len + 4 + path_len;
+		if (j==0) strlcpy(#copy_from, buf+10+buffer_len);
+		else strlcpy(#copy_from, buf+10+buffer_len+1);
+		debugln(#copy_from);
+		path_len = strlen(#copy_from);
+		debugi(path_len);
+		debug("Step ");
+		debugi(j);
+		debugln(" ");
+		buffer_len = buffer_len + path_len;
 		if (!copy_from) DialogExit();
 		strcpy(#copy_to, #path);
 		strcat(#copy_to, #copy_from+strrchr(#copy_from,'/'));
@@ -255,11 +267,13 @@ void PasteThread()
 			
 		}
 	}
+	debugln("Step 3000");
 	if (cut_active)
 	{
 		cut_active=false;
 	}
 	if (info_after_copy) notify(INFO_AFTER_COPY);
 	DialogExit();
-}
-*/
+}*/
+
+

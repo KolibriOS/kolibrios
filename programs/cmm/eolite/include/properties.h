@@ -353,6 +353,26 @@ void properties_dialog()
 void DrawPropertiesWindow()
 {
 	DefineAndDrawWindow(Form.left + 150,150,305,360+skin_height,0x34,system.color.work,WINDOW_TITLE_PROPERTIES);
+	if ( !asm test path_to_file_ed.flags, 2)
+	{
+		path_to_file_ed.blur_border_color = system.color.work;
+		path_to_file_ed.color = system.color.work;
+	}
+	else
+	{
+		path_to_file_ed.blur_border_color = 0x000000;
+		path_to_file_ed.color = 0xffffff;
+	}
+	if ( !asm test path_to_file_ed.flags, 2)
+	{
+		file_name_ed.blur_border_color = system.color.work;
+		file_name_ed.color = system.color.work;
+	}
+	else
+	{
+		file_name_ed.blur_border_color = 0x000000;
+		file_name_ed.color = 0xffffff;
+	}
 	GetProcessInfo(#settings_form, SelfInfo);
 	DrawFlatButton(10, 5, 80, 24, 12, TAB_T_BASIC);
 	if (exif_load==1) DrawFlatButton(92, 5, 80, 24, 13, TAB_T_DETAILS);
