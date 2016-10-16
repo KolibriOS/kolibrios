@@ -1103,30 +1103,30 @@ f68:
         jbe     sys_sheduler
 
         cmp     ebx, 11
-        jb      .fail
+        jb      undefined_syscall
 
         cmp     ebx, 27
-        ja      .fail
+        ja      undefined_syscall
 
         jmp     dword [f68call+ebx*4-11*4]
 .11:
         call    init_heap
-        mov     [esp+32], eax
+        mov     [esp+SYSCALL_STACK._eax], eax
         ret
 .12:
         stdcall user_alloc, ecx
-        mov     [esp+32], eax
+        mov     [esp+SYSCALL_STACK._eax], eax
         ret
 .13:
         stdcall user_free, ecx
-        mov     [esp+32], eax
+        mov     [esp+SYSCALL_STACK._eax], eax
         ret
 .14:
         cmp     ecx, OS_BASE
         jae     .fail
         mov     edi, ecx
         call    get_event_ex
-        mov     [esp+32], eax
+        mov     [esp+SYSCALL_STACK._eax], eax
         ret
 .16:
         test    ecx, ecx
@@ -1134,23 +1134,23 @@ f68:
         cmp     ecx, OS_BASE
         jae     .fail
         stdcall get_service, ecx
-        mov     [esp+32], eax
+        mov     [esp+SYSCALL_STACK._eax], eax
         ret
 .17:
         call    srv_handlerEx   ;ecx
-        mov     [esp+32], eax
+        mov     [esp+SYSCALL_STACK._eax], eax
         ret
 .19:
         cmp     ecx, OS_BASE
         jae     .fail
         stdcall load_library, ecx
-        mov     [esp+32], eax
+        mov     [esp+SYSCALL_STACK._eax], eax
         ret
 .20:
         mov     eax, edx
         mov     ebx, ecx
         call    user_realloc            ;in: eax = pointer, ebx = new size
-        mov     [esp+32], eax
+        mov     [esp+SYSCALL_STACK._eax], eax
         ret
 .21:
         cmp     ecx, OS_BASE
@@ -1160,15 +1160,15 @@ f68:
         jae     .fail
 
         stdcall load_pe_driver, ecx, edx
-        mov     [esp+32], eax
+        mov     [esp+SYSCALL_STACK._eax], eax
         ret
 .22:
         cmp     ecx, OS_BASE
         jae     .fail
 
         stdcall shmem_open, ecx, edx, esi
-        mov     [esp+24], edx
-        mov     [esp+32], eax
+        mov     [esp+SYSCALL_STACK._edx], edx
+        mov     [esp+SYSCALL_STACK._eax], eax
         ret
 
 .23:
@@ -1176,21 +1176,21 @@ f68:
         jae     .fail
 
         stdcall shmem_close, ecx
-        mov     [esp+32], eax
+        mov     [esp+SYSCALL_STACK._eax], eax
         ret
 .24:
         mov     eax, [current_slot]
         xchg    ecx, [eax+APPDATA.exc_handler]
         xchg    edx, [eax+APPDATA.except_mask]
-        mov     [esp+32], ecx ; reg_eax+8
-        mov     [esp+20], edx ; reg_ebx+8
+        mov     [esp+SYSCALL_STACK._ebx], edx
+        mov     [esp+SYSCALL_STACK._eax], ecx
         ret
 .25:
         cmp     ecx, 32
         jae     .fail
         mov     eax, [current_slot]
         btr     [eax+APPDATA.except_mask], ecx
-        setc    byte[esp+32]
+        setc    byte[esp+SYSCALL_STACK._eax]
         jecxz   @f
         bts     [eax+APPDATA.except_mask], ecx
 @@:
@@ -1198,7 +1198,7 @@ f68:
 
 .26:
         stdcall user_unmap, ecx, edx, esi
-        mov     [esp+32], eax
+        mov     [esp+SYSCALL_STACK._eax], eax
         ret
 
 .27:
@@ -1206,13 +1206,13 @@ f68:
         jae     .fail
 
         stdcall load_file_umode, ecx
-        mov     [esp+24], edx
-        mov     [esp+32], eax
+        mov     [esp+SYSCALL_STACK._edx], edx
+        mov     [esp+SYSCALL_STACK._eax], eax
         ret
 
 .fail:
         xor     eax, eax
-        mov     [esp+32], eax
+        mov     [esp+SYSCALL_STACK._eax], eax
         ret
 
 
