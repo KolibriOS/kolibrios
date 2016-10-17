@@ -2598,6 +2598,7 @@ EXPORTS:
         dd      szcon_cls,              con_cls
         dd      szcon_get_cursor_pos,   con_get_cursor_pos
         dd      szcon_set_cursor_pos,   con_set_cursor_pos
+        dd      szcon_set_title,        con_set_title
         dd      0
 
 con_flags       dd      7
@@ -2635,6 +2636,7 @@ szcon_set_cursor_height db 'con_set_cursor_height',0
 szcon_cls               db 'con_cls',0
 szcon_get_cursor_pos    db 'con_get_cursor_pos',0
 szcon_set_cursor_pos    db 'con_set_cursor_pos',0
+szcon_set_title         db 'con_set_title',0
 
 con.thread_err      db 'Cannot create console thread!',13,10,0
 con.nomem_err       db 'Not enough memory!',13,10,0
