@@ -575,7 +575,7 @@ void DrawStatusBar()
 	char status_bar_str[80];
 	int go_up_folder_exists=0;
 	if (!show_status_bar) return;
-	if (files.count>0) && (strcmp(file_mas[0]*304+buf+72,"..")==0) go_up_folder_exists=1;;
+	if (files.count>0) && (strcmp(file_mas[0]*304+buf+72,"..")==0) go_up_folder_exists=1;
 	DrawBar(1, Form.cheight - status_bar_h-1, Form.cwidth-2,  status_bar_h, system.color.work);
 	sprintf(#status_bar_str, STATUS_STR, files.count-go_up_folder_exists, count_dir-go_up_folder_exists, files.count-count_dir, selected_count);
 	WriteText(6,Form.cheight - 13,0x80,0x000000,#status_bar_str);
@@ -785,9 +785,10 @@ inline Sorting()
 {
 	dword k=0, l=1;
 	dword file_off;
-	if (!strncmp(#path,"/",2)) //do not sort
+	if (!strcmp(#path,"/")) //do not sort root folder
 	{
 		for(k=1;k<files.count;k++;) file_mas[k]=k;
+		count_dir = k;
 		return;
 	}
 	for (j=files.count-1, file_off=files.count-1*304+buf+32; j>=0; j--, file_off-=304;)  //files | folders
