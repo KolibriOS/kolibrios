@@ -420,22 +420,12 @@ void main()
 								else Open(1);
 								break;
 						case 030: //Ctrl+A - select all files
-								for (i=0; i<files.count; i++) 
-								{
-									selected_offset = file_mas[i]*304 + buf+32 + 7;
-									if (!i) if (!strncmp(selected_offset+33, "..", 2)) continue; //do not selec ".." directory
-									ESBYTE[selected_offset] = 1;
-									selected_count++;
-								}
+								for (i=0; i<files.count; i++) setElementSelectedFlag(i, true);
 								List_ReDraw();
 								DrawStatusBar();
 								break;
 						case 022: //Ctrl+U - unselect all files
-								for (i=0; i<files.count; i++) 
-								{
-									selected_offset = file_mas[i]*304 + buf+32 + 7;
-									ESBYTE[selected_offset] = 0;
-								}
+								for (i=0; i<files.count; i++) setElementSelectedFlag(i, false);
 								selected_count = 0;
 								List_ReDraw();
 								DrawStatusBar();
@@ -469,17 +459,8 @@ void main()
 								break;
 						case SCAN_CODE_INS:
 								selected_offset = file_mas[files.cur_y]*304 + buf+32 + 7;
-								if (files.cur_y==0) && (!strncmp(selected_offset+33, "..", 2)) goto _INSERT_END; //do not selec ".." directory
-								if (ESBYTE[selected_offset])
-								{
-									ESBYTE[selected_offset]=0;
-									selected_count--;
-								}
-								else
-								{
-									ESBYTE[selected_offset] = 1;
-									selected_count++;
-								}
+								if (ESBYTE[selected_offset]) setElementSelectedFlag(files.cur_y, false);
+								else setElementSelectedFlag(files.cur_y, true);
 								_INSERT_END:
 								files.KeyDown();
 								List_ReDraw();
@@ -764,6 +745,7 @@ void Open_Dir(dword dir_path, redraw){
 	int errornum, maxcount, i;
 	if (redraw!=ONLY_SHOW)
 	{
+		selected_count = 0;
 		if (ESBYTE[dir_path+1]!='\0') ESBYTE[dir_path+strlen(dir_path)-1] = '\0';
 		if (buf) free(buf);
 		errornum = GetDir(#buf, #files.count, dir_path, DIRS_NOROOT);
@@ -836,8 +818,6 @@ inline Sorting()
 
 void Del_Form()
 {
-	dword selected_offset2;
-	int selected_count = 0;
 	byte f_count[128];
 	int dform_x = files.w - 220 / 2 + files.x;
 	if (!strncmp(#file_name,".",2)) || (!strncmp(#file_name,"..",2)) return;
@@ -846,11 +826,6 @@ void Del_Form()
 		if (!files.count) return;
 		DrawEolitePopup(T_YES, T_NO);
 		WriteText(-strlen(T_DELETE_FILE)*3+110+dform_x,175,0x80,system.color.work_text,T_DELETE_FILE);
-		for (i=0; i<files.count; i++) 
-		{
-			selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-			if (ESBYTE[selected_offset2]) selected_count++;
-		}
 		if (selected_count)
 		{
 			sprintf(#f_count,"%s%d%s",DEL_MORE_FILES_1,selected_count,DEL_MORE_FILES_2);

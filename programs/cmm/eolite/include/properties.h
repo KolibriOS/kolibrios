@@ -206,7 +206,6 @@ void GetSizeMoreFiles(dword way)
 			sprintf(#cur_file,"%s%s",way,file_mas[i]*304+buf+72);
 			if (TestBit(ESDWORD[file_mas[i]*304+buf+32], 4) )
 			{
-				debugln(#cur_file);
 				GetSizeDir(#cur_file);
 				dir_count++;
 			}
@@ -234,7 +233,6 @@ void properties_dialog()
 	if (selected_count)
 	{
 		GetSizeMoreFiles(#path);
-		debugi(size_dir);
 		atr_readonly = 0;
 		atr_hidden = 0;
 		atr_system = 0;

@@ -81,7 +81,6 @@ void Del_File_Thread()
 
 void Del_File(byte dodel) {
 	del_active=0;
-	debugi(dodel);
 	if (dodel)
 	{
 		delete_stak = malloc(40000);
