@@ -165,6 +165,8 @@ STDLIB_SRCS=                 			\
          		atof.c              	\
          		atoi.c              	\
 			atol.c			\
+			btowc.c			\
+         		calloc.c             	\
 			cxa_atexit.c		\
 			cxa_finalize.c		\
          		div.c               	\
@@ -180,18 +182,28 @@ STDLIB_SRCS=                 			\
          		getenv.c             	\
 			getenv_r.c		\
 			itoa.c			\
+			ldiv.c			\
 			labs.c			\
-         		mprec.c              	\
-         		mbtowc.c             	\
-         		mbtowc_r.c           	\
-         		mbrtowc.c           	\
-         		mlock.c              	\
-         		calloc.c             	\
+			ldtoa.c			\
          		malloc.c             	\
         		mallocr.c           	\
+			mblen.c			\
+			mblen_r.c		\
+			mbrlen.c		\
+         		mbrtowc.c           	\
+			mbsinit.c		\
+			mbsnrtowcs.c		\
+			mbsrtowcs.c		\
+			mbstowcs.c		\
+			mbstowcs_r.c		\
+			mbtowc.c		\
+			mbtowc_r.c		\
+         		mlock.c              	\
+         		mprec.c              	\
         		rand.c               	\
          		rand_r.c            	\
          		rand48.c            	\
+			random.c		\
          		realloc.c            	\
          		seed48.c             	\
          		srand48.c            	\
@@ -208,6 +220,20 @@ STDLIB_SRCS=                 			\
          		system.c            	\
 			utoa.c			\
          		wcrtomb.c           	\
+			wcsnrtombs.c		\
+			wcsrtombs.c		\
+			wcstod.c		\
+			wcstol.c		\
+			wcstold.c		\
+			wcstoll.c		\
+			wcstoll_r.c		\
+			wcstombs.c		\
+			wcstombs_r.c		\
+			wcstoul.c		\
+			wcstoull.c		\
+			wcstoull_r.c		\
+			wctob.c			\
+			wctomb.c		\
 			wctomb_r.c
 
 
@@ -322,6 +348,10 @@ STDIO_SRCS=					\
 			fgetpos.c		\
 			fgets.c			\
 			fgets_u.c		\
+			fgetwc.c		\
+			fgetwc_u.c		\
+			fgetws.c		\
+			fgetws_u.c		\
 			fileno.c		\
 			fileno_u.c		\
 			findfp.c		\
@@ -338,6 +368,9 @@ STDIO_SRCS=					\
 			fputs.c			\
 			fputs_u.c		\
 			fputwc.c		\
+			fputwc_u.c		\
+			fputws.c		\
+			fputws_u.c		\
 			fsetpos.c		\
 			funopen.c		\
 			fread.c			\
@@ -352,8 +385,10 @@ STDIO_SRCS=					\
 			fvwrite.c		\
 			fwalk.c			\
 			fwide.c			\
+			fwprintf.c		\
 			fwrite.c		\
 			fwrite_u.c		\
+			fwscanf.c		\
 			getc.c			\
 			getc_u.c		\
 			getchar.c		\
@@ -361,10 +396,14 @@ STDIO_SRCS=					\
 			getdelim.c		\
 			getline.c		\
 			gets.c			\
+			getw.c			\
+			getwc.c			\
+			getwc_u.c		\
+			getwchar.c		\
+			getwchar_u.c		\
 			iprintf.c		\
 			iscanf.c		\
 			makebuf.c		\
-			mbstowcs.c		\
 			mktemp.c		\
 			open_memstream.c	\
 			perror.c		\
@@ -374,6 +413,11 @@ STDIO_SRCS=					\
 			putchar.c		\
 			putchar_u.c		\
 			puts.c			\
+			putw.c			\
+			putwc.c			\
+			putwc_u.c		\
+			putwchar.c		\
+			putwchar_u.c		\
 			refill.c		\
 			remove.c		\
 			rename.c		\
@@ -393,15 +437,19 @@ STDIO_SRCS=					\
 			sscanf.c		\
 			stdio.c			\
 			stdio_ext.c		\
+			swprintf.c		\
+			swscanf.c		\
 			tmpfile.c		\
 			tmpnam.c		\
 			ungetc.c		\
+			ungetwc.c		\
 			vasiprintf.c		\
 			vasniprintf.c		\
 			vasnprintf.c		\
 			vasprintf.c		\
 			vdiprintf.c		\
 			vdprintf.c		\
+			vfwscanf.c		\
 			viprintf.c		\
 			viscanf.c		\
 			vprintf.c		\
@@ -412,8 +460,14 @@ STDIO_SRCS=					\
 			vsniprintf.c		\
 			vsnprintf.c		\
 			vsscanf.c		\
-			wsetup.c		\
-			wbuf.c
+			vswprintf.c		\
+			vswscanf.c		\
+			vwprintf.c		\
+			vwscanf.c		\
+			wbuf.c			\
+			wprintf.c		\
+			wscanf.c		\
+			wsetup.c
 
 
 MATH_SRCS = 	e_acos.c e_acosh.c e_asin.c e_atan2.c e_atanh.c e_cosh.c e_exp.c e_fmod.c	\
@@ -481,10 +535,16 @@ PRINTF_OBJS= 	stdio/vfprintf.o	\
 		stdio/vfiprintf.o	\
 		stdio/svfprintf.o	\
 		stdio/svfiprintf.o	\
+		stdio/svfiwprintf.o 	\
+		stdio/svfwprintf.o	\
+		stdio/vfiwprintf.o	\
+		stdio/vfwprintf.o	\
 		stdio/vfscanf.o		\
 		stdio/vfiscanf.o	\
 		stdio/svscanf.o		\
-		stdio/svfiscanf.o
+		stdio/svfiscanf.o	\
+		stdio/svfiwscanf.o	\
+		stdio/svfwscanf.o
 
 ifeq ($(findstring static,$(MAKECMDGOALS)),static)
 
@@ -561,7 +621,18 @@ stdio/vfiprintf.o: stdio/vfprintf.c
 stdio/vfprintf.o: stdio/vfprintf.c
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -fshort-enums stdio/vfprintf.c -o $@
 
+stdio/svfiwprintf.o: stdio/vfwprintf.c
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -fshort-enums -DINTEGER_ONLY -DSTRING_ONLY stdio/vfwprintf.c -o $@
 
+stdio/svfwprintf.o: stdio/vfwprintf.c
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -fshort-enums -DSTRING_ONLY stdio/vfwprintf.c -o $@
+
+stdio/vfiwprintf.o: stdio/vfwprintf.c
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -fshort-enums -DINTEGER_ONLY stdio/vfwprintf.c -o $@
+
+stdio/vfwprintf.o: stdio/vfwprintf.c
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -fshort-enums stdio/vfwprintf.c -o $@
+ 
 stdio/svfiscanf.o: stdio/vfscanf.c
 	$(CC) $(CFLAGS) $(DEFINES) -DINTEGER_ONLY -DSTRING_ONLY $(INCLUDES) stdio/vfscanf.c -o $@
 
@@ -574,7 +645,14 @@ stdio/vfscanf.o: stdio/vfscanf.c
 stdio/vfiscanf.o: stdio/vfscanf.c
 	$(CC) $(CFLAGS) $(DEFINES) -DINTEGER_ONLY $(INCLUDES) stdio/vfscanf.c -o $@
 
-
+stdio/svfiwscanf.o: stdio/vfwscanf.c
+	$(CC) $(CFLAGS) $(DEFINES) -DINTEGER_ONLY -DSTRING_ONLY $(INCLUDES) stdio/vfwscanf.c -o $@
+ 
+stdio/svfwscanf.o: stdio/vfwscanf.c
+	$(CC) $(CFLAGS) $(DEFINES) -DSTRING_ONLY $(INCLUDES) stdio/vfwscanf.c -o $@
+ 
+stdio/vfiwscanf.o: stdio/vfwscanf.c
+	$(CC) $(CFLAGS) $(DEFINES) -DINTEGER_ONLY $(INCLUDES) stdio/vfwscanf.c -o $@
 
 
 
