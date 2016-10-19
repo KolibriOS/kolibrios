@@ -114,7 +114,7 @@ all: libglsl.a
 
 libglsl.a : $(GLSL_OBJS) Makefile
 	$(AR) crs libglsl.a $(GLSL_OBJS)
-	mv -f libglsl.a $(SDK_DIR)/lib
+	mv -f libglsl.a $(INSTALLDIR)
 
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) -std=c99 $(MESA_DEFS) $(INC_MESA) -o $@ $<

@@ -52,7 +52,7 @@ PUBLIC const char __dri2ConfigOptions[] =
       DRI_CONF_SECTION_END
    DRI_CONF_END;
 
-static const uint __dri2NConfigOptions = 1;
+static const int __dri2NConfigOptions = 1;
 
 /*****************************************************************/
 /** \name Screen handling functions                              */

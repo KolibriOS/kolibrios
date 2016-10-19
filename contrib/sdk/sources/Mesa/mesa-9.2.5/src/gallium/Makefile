@@ -6,7 +6,7 @@ CFLAGS_OPT = -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -U_MSC_VER -Os
 CFLAGS_OPT+= -fomit-frame-pointer -fno-ident -msse2 -mno-ms-bitfields
 CFLAGS   = -c $(CFLAGS_OPT)
 
-LDFLAGS = -nostdlib -shared -s --image-base 0 -T $(SRC_DIR)/newlib/dll.lds -e _DllStartup
+LDFLAGS = -shared -s --image-base 0 -T dll.lds -e _DllStartup
 
 INC_MESA:= -I$(SRC_DIR)/newlib/libc/include -I$(SRC_DIR)/Mesa/mesa-9.2.5/include -I$(MESA_SRC)/mesa
 INC_MESA+= -I$(MESA_SRC)/gallium/include -I$(MESA_SRC)/gallium/auxiliary
@@ -15,9 +15,7 @@ INC_MESA+= -I$(MESA_SRC)/gallium/state_trackers/gbm -I$(MESA_SRC)/gbm/main
 INC_MESA+= -I$(SRC_DIR)/libdrm
 INC_I965:= -I$(SRC_DIR)/libdrm/intel -I$(SRC_DIR)/libdrm/include/drm
 
-LIBPATH:= -L$(SDK_DIR)/lib -L/home/autobuild/tools/win32/mingw32/lib
-
-LIBS:=  -ldll -lgallium -lc.dll -lgcc
+LIBS:=  -ldll -lgallium -lgcc -lc.dll
 
 MESA_DEFS= -DMESA_DLL -DBUILD_GL32 -DMAPI_MODE_UTIL -DMAPI_TABLE_NUM_STATIC=87 -DUSE_X86_ASM -DUSE_MMX_ASM -DUSE_SSE_ASM -DMAPI_TABLE_NUM_DYNAMIC=256
 MESA_DEFS+= -DPACKAGE_NAME=\"Mesa\" -DPACKAGE_VERSION=\"9.2.5\" -DPACKAGE_BUGREPORT=\"https://bugs.freedesktop.org/enter_bug.cgi\?product=Mesa\"
@@ -178,19 +176,19 @@ all: libgallium.a gbm_gallium_drm.dll
 
 libgallium.a: $(GALLIUM_OBJS) Makefile
 	$(AR) crs $@ $(GALLIUM_OBJS)
-	mv -f $@ $(SDK_DIR)/lib
+	mv -f $@ $(INSTALLDIR)
 
 gbm_gallium_drm.dll: libgallium.a $(GBM_OBJS) Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(GBM_OBJS) gbm.def $(LIBS)
+	$(LD) $(LDFLAGS) -o $@ $(GBM_OBJS) gbm.def $(LIBS)
 	mv -f $@ $(SDK_DIR)/bin
   
 i965_dri.drv: $(I965_OBJS) $(MESA_OBJS) dri.def Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(I965_OBJS) $(MESA_OBJS) dri.def $(LIBS)
+	$(LD) $(LDFLAGS) -o $@ $(I965_OBJS) $(MESA_OBJS) dri.def $(LIBS)
 	mv -f $@ $(SDK_DIR)/bin
 
 osmesa.dll: $(MESA_OBJS) $(OSMESA_OBJS) osmesa.def Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) --out-implib libosmesa.dll.a -o $@ $(MESA_OBJS) $(OSMESA_OBJS) osmesa.def $(LIBS)
-	mv -f libosmesa.dll.a $(SDK_DIR)/lib
+	$(LD) $(LDFLAGS) --out-implib libosmesa.dll.a -o $@ $(MESA_OBJS) $(OSMESA_OBJS) osmesa.def $(LIBS)
+	mv -f libosmesa.dll.a $(INSTALLDIR)
 	mv -f $@ $(SDK_DIR)/bin
 
 %.o : %.c Makefile

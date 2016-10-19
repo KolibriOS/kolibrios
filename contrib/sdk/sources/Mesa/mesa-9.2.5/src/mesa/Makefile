@@ -6,16 +6,14 @@ CFLAGS_OPT = -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -U_MSC_VER -Os
 CFLAGS_OPT+= -fomit-frame-pointer -fno-ident -mno-ms-bitfields
 CFLAGS   = -c $(CFLAGS_OPT)
 
-LDFLAGS = -nostdlib -shared -s --image-base 0 -T $(SRC_DIR)/newlib/dll.lds -e _DllStartup
+LDFLAGS = -shared -s --image-base 0 -T dll.lds -e _DllStartup
 
 INC_MESA:= -I$(SRC_DIR)/newlib/libc/include -I$(SRC_DIR)/Mesa/mesa-9.2.5/include 
 INC_MESA+= -I./ -I$(MESA_SRC)/glsl -I$(MESA_SRC)/mesa -I$(MESA_SRC)/mapi
 INC_MESA+= -I$(SRC_DIR)/libdrm -I$(MESA_SRC) -I$(SRC_DIR)/expat/lib
 INC_I965:= -I$(SRC_DIR)/libdrm/intel -I$(SRC_DIR)/libdrm/include/drm -I$(MESA_SRC)/mesa/drivers/dri/common 
 
-LIBPATH:= -L$(SDK_DIR)/lib -L/home/autobuild/tools/win32/mingw32/lib
-
-LIBS:=  -ldll -lglsl -lGL.dll -lsupc++ -lgcc_eh -ldrm.dll -lexpat -lc.dll -lgcc
+LIBS:=  -ldll -lglsl -lGL.dll -lsupc++ -ldrm.dll -lexpat -lgcc -lc.dll
 
 MESA_DEFS= -DMESA_DLL -DBUILD_GL32 -DMAPI_MODE_UTIL -DMAPI_TABLE_NUM_STATIC=87 -DUSE_X86_ASM -DUSE_MMX_ASM -DUSE_SSE_ASM -DMAPI_TABLE_NUM_DYNAMIC=256
 MESA_DEFS+= -DPACKAGE_NAME=\"Mesa\" -DPACKAGE_VERSION=\"9.2.5\" -DPACKAGE_BUGREPORT=\"https://bugs.freedesktop.org/enter_bug.cgi\?product=Mesa\"
@@ -436,8 +434,8 @@ i915_dri.drv: $(I915_OBJS) $(MESA_OBJS) dri.def Makefile
 	mv -f $@ $(SDK_DIR)/bin
 
 osmesa.dll: $(MESA_OBJS) $(OSMESA_OBJS) osmesa.def Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) --out-implib libosmesa.dll.a -o $@ $(MESA_OBJS) $(OSMESA_OBJS) osmesa.def $(LIBS)
-	mv -f libosmesa.dll.a $(SDK_DIR)/lib
+	$(LD) $(LDFLAGS) --out-implib libosmesa.dll.a -o $@ $(MESA_OBJS) $(OSMESA_OBJS) osmesa.def $(LIBS)
+	mv -f libosmesa.dll.a $(INSTALLDIR)
 	mv -f $@ $(SDK_DIR)/bin
 
 %.o : %.c Makefile
