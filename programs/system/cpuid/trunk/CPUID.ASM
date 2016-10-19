@@ -39,6 +39,7 @@ include 'features.inc'  ; features decoding
 include 'logos.inc'     ; include file where gif's are stored
 include 'rsatest.inc'
 include 'variable.inc'
+include 'gif_lite.inc'
 
 @use_library
 
@@ -2328,7 +2329,7 @@ draw_window:
 
 	mov	esi, knopka
 	mov	edi, img_area2
- 	call	load_gif2
+ 	call	ReadGIF
 PutImage 15,345,93,24,img_area2+8 ; image "press for more"
 ;         place   size
 
@@ -2337,7 +2338,7 @@ PutImage 15,345,93,24,img_area2+8 ; image "press for more"
 
 	mov	esi, knopka2
 	mov	edi, img_area3
-	call	load_gif2
+	call	ReadGIF
   PutImage 15,380,93,24,img_area3+8   ; image "save"
 ;         place   size
 
@@ -3073,13 +3074,10 @@ store_data:
 	mcall	70,fileinfo
 ret
 
-
-
 load_gif:
 	mov	edi, img_area
-load_gif2:
+        jmp     ReadGIF
 
-COLOR_ORDER equ MENUETOS
 
 ; DATA AREA
 
@@ -4330,143 +4328,77 @@ stacktop:
 ;---------------------------------------------------------------------
 Proc_Info	process_information
 ; RSA test data
-
 align 4
-
   num1 rd 40
-
   num2 rd 40
-
   num3 rd 40
-
   iter rd 1
-
   openkey rd 1
-
 
 
 IncludeUGlobals
 
-nocpuid db 0x0
-
+nocpuid db ?
 ost dd ?
-
 sot dd ?
-
 f dd ?
-
 m dd ?
-
 s dd ?
-
 t dd ?
 
-
-
 ef dd ?
-
 em dd ?
 
-
-
 multiplier dd ?
-
 multa dd ?
-
 multb dd ?
-
 smallvendor dd ?
-
 L1d  dd ?
-
 L1i  dd ?
-
 L2   dd ?
-
 L3   dd ?
-
 micron dd ?
-
-brand dd ?
-
+brand  dd ?
 newpc  dd ?
-
-nomultiplier  dd ?
-
+nomultiplier dd ?
 ram_size_a dd ?
-
 ram_size_t dd ?
 
-
-
 stdc dd ?
-
 extc dd ?
 
-
-
 FRS dd ?
-
 freqsel db ?
-
 sse3sup db ?
-
 sse41sup dd ?
 sse42sup dd ?
 sse5sup dd ?
 
-
-
 freqbb dd ?
-
 freqll dd ?
 
-
-
 wayli dd ?
-
 lineli dd ?
 
-
-
 wayld dd ?
-
 lineld dd ?
 
-
-
 wayl2 dd ?
-
 linel2 dd ?
 
-
-
 wayl3 dd ?
-
 linel3 dd ?
-
 che db ? ; numbers of calls for Intel caches detection
-
 cname dd ?
-
 codeN dd ?
 
 myname:
-
    rb 48
 
 mynamelen:
-   db 0x0
-
+   db ?
 
 align 4
-
-
-
   thread2_stack_area rb 64
-
   thread2_esp = $
-
 U_END:
-
-
