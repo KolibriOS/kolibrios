@@ -11,7 +11,7 @@ STACK_SIZE                        equ 256
 PROC_INFO_SIZE                    equ 1024
 TMP_BUFFER_SIZE                   equ 64
 ; ---------------------------------------------------------------------------- ;
-TEXT_WIDTH                        equ 6
+TEXT_WIDTH                        equ 8
 BOLD_TEXT_WIDTH                   equ TEXT_WIDTH + 1
 ; ---------------------------------------------------------------------------- ;
 COLUMN1_MAX_COUNT                 equ 13
@@ -23,11 +23,16 @@ COLUMN1_PADDING                   equ COLUMN_PADDING
 COLUMN2_PADDING                   equ COLUMN_PADDING
 COLUMN3_PADDING                   equ COLUMN_PADDING
 ; ---------------------------------------------------------------------------- ;
-ITEM_HEIGHT                       equ 15
-TEXT_HEIGHT                       equ 9
+ITEM_HEIGHT                       equ 22
+TEXT_HEIGHT                       equ 16
+%comment
 COLUMN1_ITEM_WIDTH                equ COLUMN1_MAX_COUNT * BOLD_TEXT_WIDTH + COLUMN1_PADDING * 2
 COLUMN2_ITEM_WIDTH                equ COLUMN2_MAX_COUNT * BOLD_TEXT_WIDTH + COLUMN2_PADDING * 2
 COLUMN3_ITEM_WIDTH                equ COLUMN3_MAX_COUNT * BOLD_TEXT_WIDTH + COLUMN3_PADDING * 2
+%endcomment
+COLUMN1_ITEM_WIDTH                equ COLUMN1_MAX_COUNT * TEXT_WIDTH + COLUMN1_PADDING * 2
+COLUMN2_ITEM_WIDTH                equ COLUMN2_MAX_COUNT * TEXT_WIDTH + COLUMN2_PADDING * 2
+COLUMN3_ITEM_WIDTH                equ COLUMN3_MAX_COUNT * TEXT_WIDTH + COLUMN3_PADDING * 2
 ITEM_MARGIN                       equ 6
 ITEM_BACK_COLOR_1                 equ 0x00EAEAEA
 ITEM_BACK_COLOR_2                 equ 0x00F4F4F4
@@ -223,7 +228,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword sz_cpu_usage
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
 ; [cpu_usage]
         push   dword [thread_info + THREAD_INFO.cpu_usage]
         call   uint2str
@@ -234,7 +239,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   ChangeBackColor
         add    y, dword ITEM_HEIGHT
 %endmacro
@@ -246,7 +251,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword sz_win_stack_pos
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
 ; [win_stack_pos]
         movzx  eax, word [thread_info + THREAD_INFO.win_stack_pos]
         push   eax
@@ -258,7 +263,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   ChangeBackColor
         add    y, dword ITEM_HEIGHT
 %endmacro
@@ -270,14 +275,14 @@ sz_undefined                      db "UnDef               ",0
         push   dword sz_name
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
 ; name
         push   dword COLUMN2_TEXT_X
         push   dword y
         push   dword (thread_info + THREAD_INFO.name)
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   ChangeBackColor
         add    y, dword ITEM_HEIGHT
 %endmacro
@@ -289,7 +294,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword sz_mem_address
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
 ; [mem_address]
         push   dword [thread_info + THREAD_INFO.mem_address]
         call   uint2str
@@ -300,7 +305,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   ChangeBackColor
         add    y, dword ITEM_HEIGHT
 %endmacro
@@ -312,7 +317,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword sz_mem_usage
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
 ; [mem_usage]
         push   dword [thread_info + THREAD_INFO.mem_usage]
         call   uint2str
@@ -323,7 +328,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   ChangeBackColor
         add    y, dword ITEM_HEIGHT
 %endmacro
@@ -335,7 +340,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword sz_identifier
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
 ; [identifier]
         push   dword [thread_info + THREAD_INFO.identifier]
         call   uint2str
@@ -346,7 +351,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   ChangeBackColor
         add    y, dword ITEM_HEIGHT
 %endmacro
@@ -358,7 +363,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword sz_x
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
 ; [x]
         push   dword [thread_info + THREAD_INFO.x]
         call   uint2str
@@ -369,7 +374,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   ChangeBackColor
         add    y, dword ITEM_HEIGHT
 %endmacro
@@ -381,7 +386,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword sz_y
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
 ; [y]
         push   dword [thread_info + THREAD_INFO.y]
         call   uint2str
@@ -392,7 +397,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   ChangeBackColor
         add    y, dword ITEM_HEIGHT
 %endmacro
@@ -404,7 +409,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword sz_size_x
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
 ; [size_x]
         push   dword [thread_info + THREAD_INFO.size_x]
         call   uint2str
@@ -415,7 +420,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   ChangeBackColor
         add    y, dword ITEM_HEIGHT
 %endmacro
@@ -427,7 +432,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword sz_size_y
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
 ; [size_y]
         push   dword [thread_info + THREAD_INFO.size_y]
         call   uint2str
@@ -438,7 +443,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   ChangeBackColor
         add    y, dword ITEM_HEIGHT
 %endmacro
@@ -450,7 +455,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword sz_thread_state
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
 ; decoded_thread_state & [thread_state]
         movzx  eax, word [thread_info + THREAD_INFO.thread_state]
         push   eax ; for "call uint2str" below
@@ -497,7 +502,7 @@ sz_undefined                      db "UnDef               ",0
         push   eax
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   uint2str
         push   dword COLUMN2_MAX_COUNT
         call   PadBuffSpaces
@@ -506,7 +511,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   ChangeBackColor
         add    y, dword ITEM_HEIGHT
 %endmacro
@@ -518,7 +523,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword sz_client_x
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
 ; [client_x]
         push   dword [thread_info + THREAD_INFO.client_x]
         call   uint2str
@@ -529,7 +534,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   ChangeBackColor
         add    y, dword ITEM_HEIGHT
 %endmacro
@@ -541,7 +546,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword sz_client_y
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
 ; [client_y]
         push   dword [thread_info + THREAD_INFO.client_y]
         call   uint2str
@@ -552,7 +557,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   ChangeBackColor
         add    y, dword ITEM_HEIGHT
 %endmacro
@@ -564,7 +569,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword sz_client_size_x
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
 ; [client_size_x]
         push   dword [thread_info + THREAD_INFO.client_size_x]
         call   uint2str
@@ -575,7 +580,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   ChangeBackColor
         add    y, dword ITEM_HEIGHT
 %endmacro
@@ -587,7 +592,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword sz_client_size_y
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
 ; [client_size_y]
         push   dword [thread_info + THREAD_INFO.client_size_y]
         call   uint2str
@@ -598,7 +603,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   ChangeBackColor
         add    y, dword ITEM_HEIGHT
 %endmacro
@@ -610,7 +615,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword sz_window_state
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
 ; decoded_window_state & [window_state]
         movzx  eax, byte [thread_info + THREAD_INFO.window_state]
         push   eax ; for "call uint2str" below
@@ -642,7 +647,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   uint2str
         push   dword COLUMN2_MAX_COUNT
         call   PadBuffSpaces
@@ -651,7 +656,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   ChangeBackColor
         add    y, dword ITEM_HEIGHT
 %endmacro
@@ -663,7 +668,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword sz_event_mask
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
 ; decoded_event_mask & [event_mask]
         mov    eax, [thread_info + THREAD_INFO.event_mask]
         push   eax ; for "call uint2str" below
@@ -731,7 +736,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   uint2str
         push   dword COLUMN2_MAX_COUNT
         call   PadBuffSpaces
@@ -740,7 +745,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   ChangeBackColor
         add    y, dword ITEM_HEIGHT
 %endmacro
@@ -754,7 +759,7 @@ sz_undefined                      db "UnDef               ",0
         push   dword sz_keyboard_mode
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
 ; decoded_keyboard_mode & [keyboard_mode]
         movzx  eax, byte [thread_info + THREAD_INFO.keyboard_mode]
         push   eax ; for "call uint2str" below
@@ -776,14 +781,14 @@ sz_undefined                      db "UnDef               ",0
         push   eax
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   uint2str
         push   dword COLUMN2_TEXT_X
         push   dword y
         push   dword tmpbuffer
         push   dword [fore_color]
         push   dword [back_color]
-        call   DrawTextBold
+        call   DrawText
         call   ChangeBackColor
         add    y, dword ITEM_HEIGHT
 %endmacro
@@ -1033,6 +1038,30 @@ StringConcatenate:
 %undef str
 ; ---------------------------------------------------------------------------- ;
 align 4
+DrawText:
+%define x          [esp + 20]
+%define y          [esp + 16]
+%define text       [esp + 12]
+%define fore_color [esp +  8]
+%define back_color [esp +  4]
+        mov    eax, 4
+        mov    ecx, fore_color
+        mov    edi, back_color
+        mov    edx, text
+        mov    ebx, x
+        shl    ebx, 16
+        or     ebx, y
+        or     ecx, 0xD0000000
+        int    64
+        ret    20
+%undef x
+%undef y
+%undef text
+%undef fore_color
+%undef back_color
+; ---------------------------------------------------------------------------- ;
+%comment
+align 4
 DrawTextBold:
 %define x          [esp + 20]
 %define y          [esp + 16]
@@ -1051,12 +1080,12 @@ align 4
 .next:
         test   [edx], byte 0xFF
         jz     .done
-        or     ecx, 0x40000000
+        or     ecx, 0x50000000
         int    64
         add    ebx, (1 << 16)
-        and    ecx, 0x00FFFFFF
+        and    ecx, 0x10FFFFFF
         int    64
-        add    ebx, (6 << 16)
+        add    ebx, (TEXT_WIDTH << 16)
         inc    edx
         jmp    .next
 align 4
@@ -1067,6 +1096,7 @@ align 4
 %undef text
 %undef fore_color
 %undef back_color
+%endcomment
 ; ---------------------------------------------------------------------------- ;
 align 4
 ChangeBackColor:
