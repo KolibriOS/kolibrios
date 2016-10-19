@@ -62,7 +62,7 @@ $(SUBDIR)$(SLIBNAME_WITH_MAJOR): $(OBJS) $(SLIBOBJS) $(SUBDIR)lib$(NAME).ver
 	$(Q)cd ./$(SUBDIR) && $(LN_S) $(SLIBNAME_WITH_MAJOR) $(SLIBNAME)
 	cd ..
 	mv -f $(SUBDIR)$(SLIBNAME_WITH_MAJOR) ../../../bin
-	mv -f $(SUBDIR)lib$(SLIBNAME).a ../../../lib
+	mv -f $(SUBDIR)lib$(SLIBNAME).a /home/autobuild/tools/win32/lib
 
 
 ifdef SUBDIR

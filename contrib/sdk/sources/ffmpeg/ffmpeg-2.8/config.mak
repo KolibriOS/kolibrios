@@ -59,9 +59,9 @@ DLLTOOL=dlltool
 WINDRES=windres
 DEPWINDRES=gcc
 DOXYGEN=doxygen
-LDFLAGS=-L../../../lib -L/home/autobuild/tools/win32/mingw32/lib --output-def $$(@:$(SLIBSUF)=.orig.def) -nostdlib --enable-runtime-pseudo-reloc
+LDFLAGS= --output-def $$(@:$(SLIBSUF)=.orig.def) --enable-runtime-pseudo-reloc
 LDEXEFLAGS=
-SHFLAGS=-shared -s -T../../newlib/dll.lds -Bsymbolic --entry _DllStartup --image-base 0 --out-implib $(SUBDIR)lib$(SLIBNAME:$(SLIBSUF)=.dll.a) --version-script $(SUBDIR)lib$(NAME).ver -ldll
+SHFLAGS=-shared -s -T dll.lds -Bsymbolic --entry _DllStartup --image-base 0 --out-implib $(SUBDIR)lib$(SLIBNAME:$(SLIBSUF)=.dll.a) --version-script $(SUBDIR)lib$(NAME).ver -ldll
 ASMSTRIPFLAGS= -wN '..@*'
 YASMFLAGS=-f win32  -DPREFIX
 BUILDSUF=
@@ -102,7 +102,7 @@ TARGET_SAMPLES=$(SAMPLES)
 CFLAGS-ffplay=
 ZLIB=-lz
 LIB_INSTALL_EXTRA_CMD=$$(RANLIB) "$(LIBDIR)/$(LIBNAME)"
-EXTRALIBS=-ldll -lz.dll -lva.dll -lc.dll -lgcc
+EXTRALIBS=-ldll -lz.dll -lva.dll -lgcc -lc.dll
 COMPAT_OBJS=
 EXEOBJS=
 INSTALL=install
