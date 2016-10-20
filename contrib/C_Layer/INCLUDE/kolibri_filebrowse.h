@@ -226,4 +226,52 @@ extern void (*filebrowse_draw)(filebrowser *) __attribute__((__stdcall__));
 extern void (*filebrowse_key)(filebrowser *) __attribute__((__stdcall__));
 extern void (*filebrowse_mouse)(filebrowser *) __attribute__((__stdcall__));
 
+__attribute__((__stdcall__)) static inline void filebrowser_key(filebrowser *fb, oskey_t keypress)
+/// wrapper for key, translate keypress (ASCII mode) to action for browser
+{
+//    if (!fb->select_flag) return;  // same reaction as other controls
+
+    int extended_key = 0, act = 0;
+
+    if(keypress.state) return;
+    if (keypress.code == 0xE0){ extended_key = 1; return; }
+
+    act = 0;
+    switch(keypress.ctrl_key)  // ascii scancode
+    {
+    case 80: // arrow down
+        act = 1; break;
+    case 72: // arrow up
+        act = 2; break;
+    case 81: // PageDown
+        act = 3; break;
+    case 73: // PageUp
+        act = 4; break;
+    case 71: // Home
+        act = 5; break;
+    case 79: // End
+        act = 6; break;
+    case 28: // Enter
+        act = 7; break;
+    case 82: // Insert
+        act = 8; break;
+    case 78: // NumPad+   select all
+        act = 9; break;
+    case 74: // NumPad-   deselct
+        act = 10; break;
+    case 55: // NumPad*  invert selection
+        act = 11; break;
+    default:
+        act = 12; // search by letter
+    }
+    fb->key_action = act;
+    fb->key_action_num = keypress.ctrl_key;
+
+//    debug_board_printf("key pressed [%X] %d, action %d, ext_flag = %d\n", keypress.val, brows.key_action_num, act, extended_key);
+
+    if (extended_key) extended_key = 0;
+    (*filebrowse_key)(fb);
+}
+
+
 #endif /* KOLIBRI_FILEBROWSE_H */

@@ -29,7 +29,7 @@ typedef struct __attribute__ ((__packed__)) {
     uint32_t run_size;
     uint32_t position2;
     uint32_t work_size;
-    uint32_t all_redraw;
+    uint32_t all_redraw;  // need to be set =1 before each redraw
     uint32_t ar_offset;
 } scrollbar;
 

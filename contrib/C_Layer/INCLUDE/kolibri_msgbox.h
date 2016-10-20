@@ -5,7 +5,7 @@
 typedef struct __attribute__ ((__packed__)) {
     uint8_t     retval;  // 0 - win closed, 1 to n - button num, also default button on start
     uint8_t     reserv;
-    char        texts[2048];      // mus be enough ;-)
+    char        texts[2048];      // must be enough ;-)
     char        msgbox_stack[1024];
     uint32_t    top_stack;
 } msgbox;
@@ -49,7 +49,7 @@ static inline msgbox* kolibri_new_msgbox(char* title, char* text, int def_but, .
     return box;
 }
 
-void kolibri_start_msgbox(msgbox* box, msgbox_callback cb[])
+static inline void kolibri_start_msgbox(msgbox* box, msgbox_callback cb[])
 {
     if (!msgbox_inited)
     {

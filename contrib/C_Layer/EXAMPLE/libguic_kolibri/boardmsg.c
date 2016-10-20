@@ -69,9 +69,7 @@ int main()
 			debug_board_write_str("\n");
 			break;
 	  }
-	  press_key = key.val;
-
-	  kolibri_handle_event_key(main_window);
+	  kolibri_handle_event_key(main_window, key);
 	}
       else if(gui_event == KOLIBRI_EVENT_BUTTON)
 	{

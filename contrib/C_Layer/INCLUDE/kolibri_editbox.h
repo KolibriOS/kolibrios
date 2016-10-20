@@ -5,8 +5,8 @@
 
 /*  flags meaning
 ed_figure_only= 1000000000000000b   ;одни символы
-ed_always_focus= 100000000000000b
-ed_focus=                     10b   ;фокус ввода приложения
+ed_always_focus= 100000000000000b   // всегда с курсором (фокусом)
+ed_focus=                     10b   ;фокус ввода приложения, мышится самостоятельно
 ed_pass=                       1b   ;поле с паролем
 ed_shift_on=                1000b   ;если не установлен -значит впервые нажат shift,если был установлен, значит мы уже что - то делали удерживая shift
 ed_shift_on_off=1111111111110111b
@@ -43,8 +43,8 @@ typedef struct edit_box_t {
     unsigned int blur_border_color;
     unsigned int text_color;
     unsigned int max;
-    char *text;
-    struct edit_box_t** mouse_variable; // must be pointer edit_box** to save focused editbox
+    char        *text;
+    void        *mouse_variable; // must be pointer edit_box** to save focused editbox
     unsigned int flags;
 
     unsigned int size;  // used symbols in buffer without trailing zero
@@ -72,7 +72,7 @@ typedef struct edit_box_t {
    max_chars = Limit of number of characters user can enter into edit box.
 */
 
-edit_box* kolibri_new_edit_box(unsigned int tlx, unsigned int tly, unsigned int max_chars, edit_box **editbox_interlock)
+edit_box* kolibri_new_edit_box(unsigned int tlx, unsigned int tly, unsigned int max_chars, void *editbox_interlock)
 {
     unsigned int PIXELS_PER_CHAR = 7;
     edit_box *new_textbox = (edit_box *)calloc(1, sizeof(edit_box));
@@ -99,12 +99,24 @@ edit_box* kolibri_new_edit_box(unsigned int tlx, unsigned int tly, unsigned int 
 
 extern void (*edit_box_draw)(edit_box *) __attribute__((__stdcall__));
 
+extern void (*edit_box_key)(edit_box *) __attribute__((__stdcall__));
 /* editbox_key is a wrapper written in assembly to handle key press events for editboxes */
 /* because inline assembly in GCC is a PITA and interferes with the EAX (AH) register */
 /* which edit_box_key requires */
-extern void editbox_key(edit_box *) __attribute__((__stdcall__));
+__attribute__((__stdcall__)) void editbox_key(edit_box *e, oskey_t ch)
+/// если flags не содержит ed_focus, игнорирует ввод
+/// если flags содержит ed_mouse_on или ed_disabled, игнорирует ввод
+/// на вводе ожидает ch - код клавиши, только в режиме ASCII
+{
+    __asm__ __volatile__ (
+             "push %2\n\t"
+             "call *%1 \n\t"::"a"(ch.val), "m"(edit_box_key), "m"(e):);
+}
 
 extern void (*edit_box_mouse)(edit_box *) __attribute__((__stdcall__));
+/// при щелчке не левой кнопкой, обнуляет *mouse_variable! и сбрасывает флаг ed_mouse_on
+
+
 extern void (*edit_box_set_text)(edit_box *, char *) __attribute__((__stdcall__));
 extern volatile unsigned press_key;
 #endif /* KOLIBRI_EDITBOX_H */

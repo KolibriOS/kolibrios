@@ -35,7 +35,8 @@ option_menu: option_menu.o
 	kos32-objcopy $@ -O binary
 
 boardmsg: boardmsg.o
-	$(LD) $(LIBPATH) --subsystem native -o $@ $^ $(OBJPATH)/loadboxlib.obj $(LDFLAGS)
+	$(LD) $(LIBPATH) --subsystem native -o $@ $^ $(OBJPATH)/loadboxlib.obj $(LDFLAGS) -Map=boardmsg.map
+#	strip $@
 	kos32-objcopy $@ -O binary
 
 dbutton_files: dbutton_files.o

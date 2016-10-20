@@ -9,7 +9,7 @@
 /* Write a printf() like function (variable argument list) for
    writing to debug board */
 
-inline void debug_board_write_byte(const char ch){
+static inline void debug_board_write_byte(const char ch){
     __asm__ __volatile__(
     "int $0x40"
     :
@@ -22,7 +22,7 @@ void __attribute__ ((noinline)) debug_board_write_str(const char* str){
     debug_board_write_byte(*str++);
 }
 
-void debug_board_printf(const char *format,...)
+static inline void debug_board_printf(const char *format,...)
 {
 	va_list ap;
 	char log_board[300];
@@ -31,6 +31,15 @@ void debug_board_printf(const char *format,...)
 	vsprintf(log_board, format, ap);
 	va_end(ap);
 	debug_board_write_str(log_board);
+}
+
+__attribute__ ((noinline)) void trap(int n)
+{
+    // nothing todo, just see n in debugger. use "bp trap" command
+    __asm__ __volatile__(
+    "nop"
+    :
+    :"a"(n));
 }
 
 #endif /* KOLIBRI_DEBUG_H */

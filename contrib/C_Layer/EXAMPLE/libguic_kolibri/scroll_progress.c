@@ -147,7 +147,7 @@ int main()
                     }
                 break;
             }
-            kolibri_handle_event_key(main_window); // ???????
+            kolibri_handle_event_key(main_window, keypress);
 			break;
         case KOLIBRI_EVENT_BUTTON:
             pressed_button = get_os_button();

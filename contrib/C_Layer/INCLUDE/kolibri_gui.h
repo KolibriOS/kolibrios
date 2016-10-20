@@ -66,7 +66,7 @@ void kolibri_handle_event_redraw(kolibri_window* some_window)
     }
 }
 
-void kolibri_handle_event_key(kolibri_window* some_window)
+void kolibri_handle_event_key(kolibri_window* some_window, oskey_t key)
 {
   /* Enumerate and trigger key handling functions of window elements here */
   if(some_window->elements)
@@ -75,9 +75,9 @@ void kolibri_handle_event_key(kolibri_window* some_window)
 
       do
 	{
-	  /* Only execute if the function pointer isn't NULL */
+	  /* Only execute if the function pointer isn't NULL, or -1 (fail to find in export table) */
 	  if((int)kolibri_gui_op_table[current_element -> type].key_fn > 0)
-	    kolibri_gui_op_table[current_element -> type].key_fn(current_element -> element);
+	    kolibri_gui_op_table[current_element -> type].key_fn(current_element -> element, key);
 
 	  current_element = current_element -> next;
 	} while(current_element != some_window->elements); /* Have we covered all elements? */

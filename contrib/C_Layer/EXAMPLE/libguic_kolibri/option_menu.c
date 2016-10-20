@@ -134,7 +134,7 @@ int main()
         case KOLIBRI_EVENT_KEY:
             keypress = get_key();
             debug_board_printf("Key pressed state(%d) code(%d) ctrl_key(%d)  modifiers(%#x)\n", keypress.state, keypress.code, keypress.ctrl_key, get_os_keyb_modifiers());
-            kolibri_handle_event_key(main_window); // ???????
+            kolibri_handle_event_key(main_window, keypress);
 
             if(keypress.code == SCAN_CODE_ALTM && get_os_keyb_modifiers() & (KEY_LALT | KEY_RALT))
                 (*menu_bar_activate)(menu1); // wont work, immediately redraw command closes menu (  . but Alt+F1 worked in opendial.asm:463

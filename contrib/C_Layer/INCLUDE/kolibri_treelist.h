@@ -74,7 +74,7 @@ static inline treelist* kolibri_new_treelist( uint32_t x_w, uint32_t y_h, uint16
     tl->info_capt_len = info_capt_len;
     tl->info_capt_offs = info_capt_offs;
     tl->el_focus = el_focus;
-    tl->p_scroll = kolibri_new_scrollbar_def(X_Y(0, 16), X_Y(70, 30), 100, 30, 0);
+    tl->p_scroll = kolibri_new_scrollbar_def(X_Y(0, 16), X_Y(0, 0), 100, 30, 0);
     return tl;
 }
 
@@ -89,6 +89,12 @@ extern void (*tl_mouse)(treelist *) __attribute__((__stdcall__));
 
 ///вывод списка на экран
 extern void (*tl_draw)(treelist *) __attribute__((__stdcall__));
+__attribute__((__stdcall__)) static inline void treelist_draw(treelist *tl)
+{
+    tl->p_scroll->all_redraw = 1;
+    (*tl_draw)(tl);
+}
+
 
 ///перемещаем узел вверх
 extern void (*tl_node_move_up)(treelist *) __attribute__((__stdcall__));
@@ -120,6 +126,7 @@ static inline void treelist_data_clear(treelist *tl)
 
     __asm__ __volatile__ (
              "pop %%edi \n\t":::);
+    free(tl->p_scroll);
 }
 
 extern void (*tl_info_clear_asm)(treelist *) __attribute__((__stdcall__));
@@ -137,17 +144,13 @@ static inline void treelist_info_clear(treelist *tl)
 
 extern void (*tl_key_asm)(treelist *) __attribute__((__stdcall__));
 ///реакция на клавиатуру
-static inline void treelist_key(treelist *tl)
+__attribute__((__stdcall__)) static inline void treelist_key(treelist *tl, oskey_t code)
 {
     __asm__ __volatile__ (
-             "push %%ebx \n\t"
-             "push %%edi \n\t":::);
+             "push %2\n\t"
+             "call *%1 \n\t"::"a"(code.val), "m"(tl_key_asm), "m"(tl):);  // indirect call with asterisk *
 
-    (*tl_key_asm)(tl);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t"
-             "pop %%ebx \n\t":::);
+//    (*tl_key_asm)(tl);
 }
 
 extern void (*tl_info_undo_asm)(treelist *) __attribute__((__stdcall__));

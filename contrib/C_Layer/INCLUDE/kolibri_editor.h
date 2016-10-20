@@ -24,8 +24,8 @@ typedef struct __attribute__ ((__packed__)) {
     uint32_t    y_pos;  //50
     uint32_t    width;  //440
     uint32_t    hight;  //150
-    uint32_t    w_pane;      //30 ширина панели в окне
-    uint32_t    h_pane;      //25 высота панели в окне
+    uint32_t    w_pane;      //30 ширина панели в окне, width of left pane with line numbers
+    uint32_t    h_pane;      //25 высота панели в окне, hight of top pane with Rows, Cols Undo info
     uint32_t    width_sym;  //9 ширина символа (знакоместа) в окне
     uint32_t    hight_sym;  //16 высота символа (знакоместа) в окне
 	uint8_t     drag_m;     // выделение от мыши
@@ -285,15 +285,21 @@ enum control_keys {
 };
 
 extern void (*ted_key_asm)(editor *, char* table, int control) __attribute__((__stdcall__));
-static inline void editor_keyboard(editor *ed, char* table, enum control_keys control, int ch)
+static inline __attribute__((__stdcall__)) void editor_keyboard(editor *ed, char* table, enum control_keys control, int ch)
 /// control is KM_SHIFT, KM_ALT, KM_CTRL, KM_NUMLOCK,
 /// ch = GET_KEY
 /// table = SF_SYSTEM_GET,SSF_KEYBOARD_LAYOUT
 {
     __asm__ __volatile__ (
+             "push %4\n\t"
+             "push %3\n\t"
+             "push %2\n\t"
+             "call *%1 \n\t"::"a"(ch), "m"(ted_key_asm), "m"(ed), "m"(table), "m"(control):);
+/*
+    __asm__ __volatile__ (
              "nop \n\t"::"a"(ch):);
-
     (*ted_key_asm)(ed, table, control);
+*/
 }
 
 extern void (*ted_open_file_asm)(editor *, struct fs_dirinfo*, char *fname) __attribute__((__stdcall__));
@@ -410,10 +416,12 @@ int get_keyboard_layout(int opt, char* buf)
     return lang;
 };
 
-
-static void editor_key(editor* ed)
+__attribute__((__stdcall__))
+static void editor_key(editor* ed, oskey_t key)
 // callback for gui
 {
+    //if(ed->el_focus != ed) return;  // need to check not to lose keyb buffer
+
     uint32_t control = get_control_keys();
     enum control_keys ed_ctrl = 0;
     int ly_opt = 1;
@@ -425,7 +433,7 @@ static void editor_key(editor* ed)
     char conv_table[128];
     get_keyboard_layout(ly_opt, conv_table);
 
-    editor_keyboard(ed, conv_table, ed_ctrl, get_key().val);
+    editor_keyboard(ed, conv_table, ed_ctrl, key.val);
 }
 
 static inline void gui_add_editor(kolibri_window *wnd, editor* e)
@@ -433,7 +441,7 @@ static inline void gui_add_editor(kolibri_window *wnd, editor* e)
     kolibri_window_add_element(wnd, KOLIBRI_EDITOR, e);
 }
 
-static inline editor* kolibri_new_editor(uint32_t x_w, uint32_t y_h, uint32_t font, uint32_t max_chars, editor **editor_interlock)
+static inline editor* kolibri_new_editor(uint32_t x_w, uint32_t y_h, uint32_t font, uint32_t max_chars, void *editor_interlock)
 /// font - 0b10SSS 8x16 size multiply (SSS+1), 0xSSS - 6x9 multiply (SSS+1)
 
 {
@@ -443,7 +451,8 @@ static inline editor* kolibri_new_editor(uint32_t x_w, uint32_t y_h, uint32_t fo
     ed->y_pos = y_h >> 16;
     ed->hight = y_h & 0xFFFF;
 
-    // no panel, w_pane, h_pane == 0
+    ed->w_pane = 30;
+    ed->h_pane = 20;
     // font
     if (font == 0) font = 0x10;  // default 16 = 8x16
     int font_multipl = (font & 7) + 1;
@@ -472,8 +481,8 @@ static inline editor* kolibri_new_editor(uint32_t x_w, uint32_t y_h, uint32_t fo
 */
     ed->symbol_new_line = 20;  // ascii(20)
 
-    ed->scr_w = kolibri_new_scrollbar_def(X_Y(50, 16), X_Y(50, 300), 100, 30, 0);
-    ed->scr_h = kolibri_new_scrollbar_def(X_Y(0, 150), X_Y(50, 16), 100, 30, 0);
+    ed->scr_w = kolibri_new_scrollbar_def(X_Y(0, 16), X_Y(0, 0), 100, 30, 0);  // cur_area will be inited ltr, max & pos undef
+    ed->scr_h = kolibri_new_scrollbar_def(X_Y(0, 0), X_Y(0, 16), 100, 30, 0);  // cur_area will be inited ltr, max & pos undef
 
     ed->buffer_size = TE_BUF_SIZE;
     ed->buffer = malloc(TE_BUF_SIZE);
@@ -482,6 +491,8 @@ static inline editor* kolibri_new_editor(uint32_t x_w, uint32_t y_h, uint32_t fo
     ed->cur_ins = 1; // insert mode default
     ed->mode_color = 1; // can select text
     ed->mode_invis = 1; // show nonprinted symbols
+
+    ed->el_focus = editor_interlock;
 
     // ??? saveregs ax,cx,di
     editor_init(ed);  // memory allocation, cleaning

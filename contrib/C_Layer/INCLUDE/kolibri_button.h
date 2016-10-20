@@ -21,7 +21,8 @@ kolibri_button *kolibri_new_button(unsigned int tlx, unsigned int tly, unsigned 
   return new_button;
 }
 
-void draw_button(kolibri_button *some_button)
+__attribute__((__stdcall__))
+static inline void draw_button(kolibri_button *some_button)
 {
   define_button(some_button -> x65536sizex, some_button -> y65536sizey, some_button -> identifier, some_button -> color);
 }

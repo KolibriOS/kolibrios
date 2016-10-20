@@ -44,12 +44,13 @@ typedef struct{
 }kolibri_window_element;
 
 typedef void (*cb_elem_boxlib)(void *) __attribute__((__stdcall__));
+typedef void (*cbkey_elem_boxlib)(void *, oskey_t) __attribute__((__stdcall__));
 
 /* Generic structure for supporting functions on various elements of Kolibri's GUI */
 typedef struct {
  	cb_elem_boxlib 	redraw_fn;
  	cb_elem_boxlib 	mouse_fn;
- 	cb_elem_boxlib 	key_fn;
+ 	cbkey_elem_boxlib 	key_fn;
 }kolibri_element_operations;
 
 /* Structure for a GUI Window on Kolibri. It also contains all the elements drawn in window */
@@ -95,7 +96,7 @@ void kolibri_init_gui_op_table(void)
 /* Setting up functions for edit box GUI elements*/
 kolibri_gui_op_table[KOLIBRI_EDIT_BOX].redraw_fn = (cb_elem_boxlib)edit_box_draw;
 kolibri_gui_op_table[KOLIBRI_EDIT_BOX].mouse_fn = (cb_elem_boxlib)edit_box_mouse;
-kolibri_gui_op_table[KOLIBRI_EDIT_BOX].key_fn = (cb_elem_boxlib)editbox_key;
+kolibri_gui_op_table[KOLIBRI_EDIT_BOX].key_fn = (cbkey_elem_boxlib)editbox_key;
 
 /* Setting up functions for check box GUI elements*/
 kolibri_gui_op_table[KOLIBRI_CHECK_BOX].redraw_fn = (cb_elem_boxlib)check_box_draw2;
@@ -152,17 +153,16 @@ kolibri_gui_op_table[KOLIBRI_PATHSHOW].key_fn = NULL;
 
 kolibri_gui_op_table[KOLIBRI_FILEBROWSE].redraw_fn = (cb_elem_boxlib)filebrowse_draw;
 kolibri_gui_op_table[KOLIBRI_FILEBROWSE].mouse_fn = (cb_elem_boxlib)filebrowse_mouse;
-kolibri_gui_op_table[KOLIBRI_FILEBROWSE].key_fn = (cb_elem_boxlib)filebrowse_key;
+kolibri_gui_op_table[KOLIBRI_FILEBROWSE].key_fn = (cbkey_elem_boxlib)filebrowser_key;
 
 kolibri_gui_op_table[KOLIBRI_EDITOR].redraw_fn = (cb_elem_boxlib)ted_draw;
 kolibri_gui_op_table[KOLIBRI_EDITOR].mouse_fn = (cb_elem_boxlib)ted_mouse;
-kolibri_gui_op_table[KOLIBRI_EDITOR].key_fn = (cb_elem_boxlib)editor_key;
-debug_board_printf("KOLIBRI_EDITOR (%x,%x,%x)\n", ted_draw, ted_mouse, editor_key);
+kolibri_gui_op_table[KOLIBRI_EDITOR].key_fn = (cbkey_elem_boxlib)editor_key;
 
-kolibri_gui_op_table[KOLIBRI_TREELIST].redraw_fn = (cb_elem_boxlib)tl_draw;
+kolibri_gui_op_table[KOLIBRI_TREELIST].redraw_fn = (cb_elem_boxlib)treelist_draw;
 kolibri_gui_op_table[KOLIBRI_TREELIST].mouse_fn = (cb_elem_boxlib)tl_mouse;
-kolibri_gui_op_table[KOLIBRI_TREELIST].key_fn = (cb_elem_boxlib)treelist_key;
-debug_board_printf("KOLIBRI_TREELIST (%x,%x,%x)\n", tl_draw, tl_mouse, treelist_key);
+kolibri_gui_op_table[KOLIBRI_TREELIST].key_fn = (cbkey_elem_boxlib)treelist_key;
+debug_board_printf("KOLIBRI_TREELIST (%x,%x,%x)\n", treelist_draw, tl_mouse, treelist_key);
 }
 
 /* Create a new main GUI window for KolibriOS */

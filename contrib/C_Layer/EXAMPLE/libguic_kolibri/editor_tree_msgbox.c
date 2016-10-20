@@ -28,6 +28,15 @@ char fname[4096];
 char*   load_file_inmem(char* fname, int32_t* read_sz); // see below
 char*   load_image_file(char* fname); // see below
 
+void set_os_keyb_mode(int mode)
+// 0 - ASCII, 1 - SCAN
+{
+    __asm__ __volatile__(
+    "int $0x40"
+    ::"a"(66), "b"(1), "c"(mode));
+};
+
+
 int main(int argc, char **argv)
 {
     /* Load all libraries, initialize global tables like system color table and
@@ -36,6 +45,7 @@ int main(int argc, char **argv)
     elements can be used after a successful call to this function
     */
     kolibri_gui_init();
+    set_os_keyb_mode(1); // scan code mode needed for editor
 //    kolibri_proclib_init();  // opensave && color dialogs
     kolibri_libimg_init();  // png handling
 
@@ -43,7 +53,7 @@ int main(int argc, char **argv)
     uint32_t pressed_button = 0;
 //    uint32_t mouse_button;
 //    pos_t   mouse_pos;
-    oskey_t keypress;
+//    oskey_t keypress;
 
     // make full path + argv
     strcpy(run_path, argv[0]);
@@ -55,12 +65,22 @@ int main(int argc, char **argv)
     kolibri_window *main_window = kolibri_new_window(50, 40, 490, 500, "Editor, TreeView and MsgBox demo");
 
     editor *ed;
-    editor *ed_lock;
+    void *ed_lock;
 
-    gui_add_editor(main_window, ed = kolibri_new_editor(X_Y(0, 440), X_Y(20, 150), 0x1001, 2048, &ed_lock));
+    gui_add_editor(main_window, ed = kolibri_new_editor(X_Y(0, 440), X_Y(20, 150), 0x11, 2048, &ed_lock));  // 0x11 font 8x16 sized x2
     ed_lock = ed;
+/*
+    // load sample file
+    int res, len;
+    res = editor_openfile(ed, "/rd/1/boardlog.txt", &len);
+    debug_board_printf("loaded sample file err=%d, len=%d\n", res, len);
+*/
+    //adding sample text @cursor
+    char *sampletext = "==========ADDED SAMPLE TEXT==========\n";
+    (*ted_text_add)(ed, sampletext, strlen(sampletext), 0);
 
-    treelist *tl = kolibri_new_treelist(X_Y(0, 440), X_Y(200, 200), 16, X_Y(16, 16), 100, 50, 0, 0, TL_KEY_NO_EDIT | TL_DRAW_PAR_LINE, &ed_lock, 0x8080ff, 0x0000ff, 0xffffff);
+    // treelist as tree
+    treelist *tl = kolibri_new_treelist(X_Y(0, 200), X_Y(200, 200), 16, X_Y(16, 16), 100, 50, 0, 0, TL_KEY_NO_EDIT | TL_DRAW_PAR_LINE, &ed_lock, 0x8080ff, 0x0000ff, 0xffffff);
     treelist_data_init(tl);
 
     // читаем файл с курсорами и линиями
@@ -75,8 +95,16 @@ int main(int argc, char **argv)
 
     treelist_node_add(tl, "node1", 1, 0, 0); // где 1 номер иконки с книгой
     treelist_cursor_next(tl);
+    treelist_node_add(tl, "node1.1", 1, 0, 1);
+    treelist_cursor_next(tl);
+    treelist_node_add(tl, "node1.1.1", 0, 0, 2);
+    treelist_cursor_next(tl);
+    treelist_node_add(tl, "node1.2", 1, 0, 1);
+    treelist_cursor_next(tl);
 
-    treelist_node_add(tl, "node2", 1, 0, 0);
+    treelist_node_add(tl, "node2", 1, 1, 0);  // closed node
+    treelist_cursor_next(tl);
+    treelist_node_add(tl, "node2.1", 1, 0, 1);
     treelist_cursor_next(tl);
 
     treelist_node_add(tl, "node3", 1, 0, 0);
@@ -85,8 +113,28 @@ int main(int argc, char **argv)
     treelist_cursor_begin(tl); //;ставим курсор на начало списка
     gui_add_treelist(main_window, tl);
 
+    // treelist as listbox
+    treelist *tl2 = kolibri_new_treelist(X_Y(220, 200), X_Y(200, 200), 16, X_Y(16, 16), 100, 50, 0, 0, TL_LISTBOX_MODE, &ed_lock, 0x8080ff, 0x0000ff, 0xffffff);
+    treelist_data_init(tl2);
+
+    tl2->data_img_sys = tl->data_img_sys;
+    tl2->data_img = tl->data_img;
+
+    treelist_node_add(tl2, "list1", 0, 0, 0); // где 1 номер иконки с книгой
+    treelist_cursor_next(tl2);
+
+    treelist_node_add(tl2, "list2", 0, 0, 0);
+    treelist_cursor_next(tl2);
+
+    treelist_node_add(tl2, "list3", 0, 0, 0);
+    treelist_cursor_next(tl2);
+
+    treelist_cursor_begin(tl2); //;ставим курсор на начало списка
+    gui_add_treelist(main_window, tl2);
+
     msgbox* box = kolibri_new_msgbox("Exit", "Are\rYOU\rSure?", 3, "YES", "Absolute", "Not Yet", NULL);  // default NOT
 
+    oskey_t key;
     do  /* Start of main activity loop */
     {
         switch(gui_event)
@@ -99,10 +147,20 @@ int main(int argc, char **argv)
         case KOLIBRI_EVENT_NONE:
 			break;
         case KOLIBRI_EVENT_KEY:
+            key = get_key();
+trap(0x55); // for stop in debug
             if (ed_lock == ed)
-                editor_key(ed);
+                editor_key(ed, key);
+            else if(ed_lock == tl)
+            {
+                treelist_key(tl, key);
+            }
+            else if(ed_lock == tl2)
+            {
+                treelist_key(tl2, key);
+            }
             else
-                kolibri_handle_event_key(main_window);
+                kolibri_handle_event_key(main_window, key);
 			break;
         case KOLIBRI_EVENT_BUTTON:
             pressed_button = get_os_button();

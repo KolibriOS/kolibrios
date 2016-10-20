@@ -109,7 +109,6 @@ int main(int argc, char **argv)
     brows.folder_data = read_folderdata("/rd/1");
     brows.select_panel_counter = 1;  // if want to show selection
 
-    int extended_key = 0, act = 0;
     do  /* Start of main activity loop */
     {
         switch(gui_event)
@@ -124,44 +123,7 @@ int main(int argc, char **argv)
 			break;
         case KOLIBRI_EVENT_KEY:
             keypress = get_key();
-            if(keypress.state) break;
-            if (keypress.code == 0xE0){ extended_key = 1; break; }
-
-            act = 0;
-            switch(keypress.ctrl_key)  // ascii scancode
-            {
-            case 80: // arrow down
-                act = 1; break;
-            case 72: // arrow up
-                act = 2; break;
-            case 81: // PageDown
-                act = 3; break;
-            case 73: // PageUp
-                act = 4; break;
-            case 71: // Home
-                act = 5; break;
-            case 79: // End
-                act = 6; break;
-            case 28: // Enter
-                act = 7; break;
-            case 82: // Insert
-                act = 8; break;
-            case 78: // NumPad+   select all
-                act = 9; break;
-            case 74: // NumPad-   deselct
-                act = 10; break;
-            case 55: // NumPad*  invert selection
-                act = 11; break;
-            default:
-                act = 12; // search by letter
-            }
-            brows.key_action = act;
-            brows.key_action_num = keypress.ctrl_key;
-
-            debug_board_printf("key pressed [%X] %d, action %d, ext_flag = %d\n", keypress.val, brows.key_action_num, act, extended_key);
-
-            if (extended_key) extended_key = 0;
-            (*filebrowse_key)(&brows);
+            filebrowser_key(&brows, keypress);
             //kolibri_handle_event_key(main_window);
 			break;
         case KOLIBRI_EVENT_BUTTON:
