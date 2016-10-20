@@ -25,11 +25,11 @@ COLUMN3_PADDING                   equ COLUMN_PADDING
 ; ---------------------------------------------------------------------------- ;
 ITEM_HEIGHT                       equ 22
 TEXT_HEIGHT                       equ 16
-%comment
+%IF 0
 COLUMN1_ITEM_WIDTH                equ COLUMN1_MAX_COUNT * BOLD_TEXT_WIDTH + COLUMN1_PADDING * 2
 COLUMN2_ITEM_WIDTH                equ COLUMN2_MAX_COUNT * BOLD_TEXT_WIDTH + COLUMN2_PADDING * 2
 COLUMN3_ITEM_WIDTH                equ COLUMN3_MAX_COUNT * BOLD_TEXT_WIDTH + COLUMN3_PADDING * 2
-%endcomment
+%ENDIF
 COLUMN1_ITEM_WIDTH                equ COLUMN1_MAX_COUNT * TEXT_WIDTH + COLUMN1_PADDING * 2
 COLUMN2_ITEM_WIDTH                equ COLUMN2_MAX_COUNT * TEXT_WIDTH + COLUMN2_PADDING * 2
 COLUMN3_ITEM_WIDTH                equ COLUMN3_MAX_COUNT * TEXT_WIDTH + COLUMN3_PADDING * 2
@@ -1060,7 +1060,7 @@ DrawText:
 %undef fore_color
 %undef back_color
 ; ---------------------------------------------------------------------------- ;
-%comment
+%IF 0
 align 4
 DrawTextBold:
 %define x          [esp + 20]
@@ -1096,7 +1096,7 @@ align 4
 %undef text
 %undef fore_color
 %undef back_color
-%endcomment
+%ENDIF
 ; ---------------------------------------------------------------------------- ;
 align 4
 ChangeBackColor:
