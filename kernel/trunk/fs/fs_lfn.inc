@@ -145,7 +145,9 @@ file_system_lfn:
         cmp     eax, fs_NumCdServices
         jae     @f
         add     ebx, 4
+        push    ebp
         call    dword[fs_CdServices + eax*4]
+        pop     ebp
         mov     [image_of_eax], eax
         mov     [image_of_ebx], ebx
 @@:
