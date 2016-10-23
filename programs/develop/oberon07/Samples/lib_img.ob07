@@ -1,0 +1,97 @@
+MODULE lib_img;
+
+IMPORT sys := SYSTEM, KOSAPI, libimg, File;
+
+
+TYPE
+
+  TWindow = RECORD
+
+    Left, Top, Width, Height: INTEGER;
+    Color: INTEGER;
+    Header: ARRAY 256 OF CHAR
+
+  END;
+
+VAR
+
+ img, rgb, width, height: INTEGER;
+
+
+PROCEDURE WindowRedrawStatus(p: INTEGER);
+VAR aux: INTEGER;
+BEGIN
+  aux := KOSAPI.sysfunc2(12, p)
+END WindowRedrawStatus;
+
+
+PROCEDURE DefineAndDrawWindow(x, y, width, height, color, style, hcolor, hstyle: INTEGER; htext: ARRAY OF CHAR);
+VAR aux: INTEGER;
+BEGIN
+  aux := KOSAPI.sysfunc6(0, x * 65536 + width, y * 65536 + height, color + LSL(style, 24), hcolor + LSL(hstyle, 24), sys.ADR(htext[0]))
+END DefineAndDrawWindow;
+
+
+PROCEDURE WaitForEvent(): INTEGER;
+  RETURN KOSAPI.sysfunc1(10)
+END WaitForEvent;
+
+
+PROCEDURE PutImage(x, y, rgb, width, height: INTEGER);
+VAR aux: INTEGER;
+BEGIN
+  aux := KOSAPI.sysfunc7(65, rgb + 8, width * 65536 + height, x * 65536 + y, 24, 0, 0)
+END PutImage;
+
+
+PROCEDURE draw_window(Window: TWindow);
+BEGIN
+  WindowRedrawStatus(1);
+  DefineAndDrawWindow(Window.Left, Window.Top, Window.Width, Window.Height, Window.Color, 51, 0, 0, Window.Header);
+  PutImage(10, 10, rgb, width, height);
+  WindowRedrawStatus(2)
+END draw_window;
+
+
+PROCEDURE LoadImage(FName: ARRAY OF CHAR);
+VAR data, size: INTEGER;
+BEGIN
+  data := File.Load(FName, size);
+  IF data # 0 THEN
+    img := libimg.img_decode(data, size, 0);
+    data := KOSAPI.free(data);
+    IF img # 0 THEN
+      rgb := libimg.img_to_rgb(img);
+      IF rgb # 0 THEN
+	sys.GET(img + 4, width);
+	sys.GET(img + 8, height)
+      END
+    END
+  END
+END LoadImage;
+
+
+PROCEDURE main;
+VAR Window: TWindow;
+    exit: BOOLEAN;
+BEGIN
+  Window.Left	:= 200;
+  Window.Top	:= 200;
+  Window.Width	:= 400;
+  Window.Height := 300;
+  Window.Color	:= 00C0C0C0H;
+  Window.Header := "libimg";
+  LoadImage("/rd/1/toolbar.png");
+  exit := FALSE;
+  REPEAT
+    CASE WaitForEvent() OF
+    |1: draw_window(Window)
+    |3: exit := TRUE
+    ELSE
+    END
+  UNTIL exit
+END main;
+
+BEGIN
+  main
+END lib_img.

@@ -1,0 +1,426 @@
+(*
+    Copyright 2016 Anton Krotov
+
+    This file is part of Compiler.
+
+    Compiler is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Compiler is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Compiler. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE UTILS;
+
+IMPORT sys := SYSTEM, H := HOST, ERRORS;
+
+CONST
+
+  OS* = H.OS;
+  Slash* = H.Slash;
+  Ext* = ".ob07";
+  MAX_PATH = 1024;
+  MAX_PARAM = 1024;
+  Date* = 1451606400; (* 2016-01-01 *)
+
+TYPE
+
+  STRING* = ARRAY MAX_PATH OF CHAR;
+
+  ITEM* = POINTER TO rITEM;
+
+  rITEM* = RECORD
+    Next*, Prev*: ITEM
+  END;
+
+  LIST* = POINTER TO RECORD
+    First*, Last*: ITEM;
+    Count*: INTEGER
+  END;
+
+  STRCONST* = POINTER TO RECORD (rITEM)
+    Str*: STRING;
+    Len*, Number*: INTEGER
+  END;
+
+VAR
+
+  Params: ARRAY MAX_PARAM, 2 OF INTEGER;
+  ParamCount*, Line*, Unit*: INTEGER;  
+  FileName: STRING;
+
+PROCEDURE SetFile*(F: STRING);
+BEGIN
+  FileName := F
+END SetFile;
+
+PROCEDURE IsInf*(x: LONGREAL): BOOLEAN;
+  RETURN ABS(x) = sys.INF(LONGREAL)
+END IsInf;
+
+PROCEDURE GetChar(adr: INTEGER): CHAR;
+VAR res: CHAR;
+BEGIN
+  sys.GET(adr, res)
+  RETURN res
+END GetChar;
+
+PROCEDURE ParamParse(count: INTEGER);
+VAR c: CHAR; cond, p: INTEGER;
+
+  PROCEDURE ChangeCond(A, B, C: INTEGER);
+  BEGIN
+    cond := C;
+    CASE c OF
+    |0X: cond := 6
+    |1X..20X: cond := A
+    |22X: cond := B
+    ELSE
+    END
+  END ChangeCond;
+
+BEGIN
+  p := H.GetCommandLine();
+  cond := 0;
+  WHILE (count < MAX_PARAM) & (cond # 6) DO
+    c := GetChar(p);
+    CASE cond OF
+    |0: ChangeCond(0, 4, 1); IF cond = 1 THEN Params[count, 0] := p END
+    |4: ChangeCond(5, 0, 5); IF cond = 5 THEN Params[count, 0] := p END
+    |1: ChangeCond(0, 3, 1); IF cond IN {0, 6} THEN Params[count, 1] := p - 1; INC(count) END
+    |3, 5: ChangeCond(cond, 1, cond); IF cond = 6 THEN Params[count, 1] := p - 1; INC(count) END
+    ELSE
+    END;
+    INC(p)
+  END;
+  ParamCount := count - 1
+END ParamParse;
+
+PROCEDURE ParamStr*(VAR str: ARRAY OF CHAR; n: INTEGER);
+VAR i, j, len: INTEGER; c: CHAR;
+BEGIN
+  j := 0;
+  IF n <= ParamCount THEN
+    len := LEN(str) - 1;
+    i := Params[n, 0];
+    WHILE (j < len) & (i <= Params[n, 1]) DO
+      c := GetChar(i);
+      IF c # 22X THEN
+	str[j] := c;
+	INC(j)
+      END;
+      INC(i)
+    END
+  END;
+  str[j] := 0X
+END ParamStr;
+
+PROCEDURE GetMem*(n: INTEGER): INTEGER;
+  RETURN H.malloc(n)
+END GetMem;
+
+PROCEDURE CloseF*(F: INTEGER);
+BEGIN
+  H.CloseFile(F)
+END CloseF;
+
+PROCEDURE Read*(F, Buffer, Count: INTEGER): INTEGER;
+  RETURN H.FileRW(F, Buffer, Count, FALSE)
+END Read;
+
+PROCEDURE Write*(F, Buffer, Count: INTEGER): INTEGER;
+  RETURN H.FileRW(F, Buffer, Count, TRUE)
+END Write;
+
+PROCEDURE FileSize*(F: INTEGER): INTEGER;
+  RETURN H.FileSize(F)
+END FileSize;
+
+PROCEDURE CharC*(x: CHAR);
+VAR str: ARRAY 2 OF CHAR;
+BEGIN
+  str[0] := x;
+  str[1] := 0X;
+  H.OutString(str)
+END CharC;
+
+PROCEDURE Int*(x: INTEGER);
+VAR i: INTEGER; buf: ARRAY 11 OF INTEGER;
+BEGIN
+  i := 0;
+  REPEAT
+    buf[i] := x MOD 10;
+    x := x DIV 10;
+    INC(i)
+  UNTIL x = 0;
+  REPEAT
+    DEC(i);
+    CharC(CHR(buf[i] + ORD("0")))
+  UNTIL i = 0
+END Int;
+
+PROCEDURE Ln*;
+BEGIN
+  CharC(0DX);
+  CharC(0AX)
+END Ln;
+
+PROCEDURE OutString*(str: ARRAY OF CHAR);
+BEGIN
+  H.OutString(str)
+END OutString;
+
+PROCEDURE ErrMsg*(code: INTEGER);
+VAR str: ARRAY 1024 OF CHAR;
+BEGIN
+  ERRORS.ErrorMsg(code, str);
+  OutString("error: ("); Int(code); OutString(") "); OutString(str); Ln
+END ErrMsg;
+
+PROCEDURE ErrMsgPos*(line, col, code: INTEGER);
+VAR s: STRING;
+BEGIN
+  ErrMsg(code);
+  OutString("file:  "); OutString(FileName); Ln;
+  OutString("line:  "); Int(line); Ln;
+  OutString("pos:   "); Int(col); Ln;
+END ErrMsgPos;
+
+PROCEDURE UnitLine*(newUnit, newLine: INTEGER);
+BEGIN
+  Unit := newUnit;
+  Line := newLine
+END UnitLine;
+
+PROCEDURE min*(a, b: INTEGER): INTEGER;
+BEGIN
+  IF a > b THEN
+    a := b
+  END
+  RETURN a
+END min;
+
+PROCEDURE Align*(n: INTEGER): INTEGER;
+  RETURN (4 - n MOD 4) MOD 4
+END Align;
+
+PROCEDURE CAP(x: CHAR): CHAR;
+BEGIN
+  IF (x >= "a") & (x <= "z") THEN
+    x := CHR(ORD(x) - 32)
+  END
+  RETURN x
+END CAP;
+
+PROCEDURE streq*(a, b: ARRAY OF CHAR): BOOLEAN;
+VAR i: INTEGER;
+BEGIN
+  i := -1;
+  REPEAT
+    INC(i)
+  UNTIL (CAP(a[i]) # CAP(b[i])) OR (a[i] = 0X) OR (b[i] = 0X)
+  RETURN a[i] = b[i]
+END streq;
+
+PROCEDURE concat*(VAR L: STRING; R: STRING);
+VAR i, n, pos: INTEGER;
+BEGIN
+  n := LENGTH(R);
+  i := 0;
+  pos := LENGTH(L);
+  WHILE (i <= n) & (pos < LEN(L)) DO
+    L[pos] := R[i];
+    INC(pos);
+    INC(i)
+  END
+END concat;
+
+PROCEDURE GetStr*(this: LIST; str: STRING): STRCONST;
+VAR res: STRCONST;
+BEGIN
+  res := this.First(STRCONST);
+  WHILE (res # NIL) & (res.Str # str) DO
+    res := res.Next(STRCONST)
+  END
+  RETURN res
+END GetStr;
+
+PROCEDURE Push*(this: LIST; item: ITEM);
+BEGIN
+  IF this.Count = 0 THEN
+    this.First := item;
+    item.Prev := NIL
+  ELSE
+    this.Last.Next := item;
+    item.Prev := this.Last
+  END;
+  INC(this.Count);
+  this.Last := item;
+  item.Next := NIL
+END Push;
+
+PROCEDURE Insert*(this: LIST; item, prev: ITEM);
+BEGIN
+  IF prev # this.Last THEN
+    item.Next := prev.Next;
+    item.Prev := prev;
+    prev.Next := item;
+    item.Next.Prev := item;
+    INC(this.Count)
+  ELSE
+    Push(this, item)
+  END
+END Insert;
+
+PROCEDURE Clear*(this: LIST);
+BEGIN
+  this.First := NIL;
+  this.Last := NIL;
+  this.Count := 0
+END Clear;
+
+PROCEDURE Revers(VAR str: STRING);
+VAR a, b: INTEGER; c: CHAR;
+BEGIN
+  a := 0;
+  b := LENGTH(str) - 1;
+  WHILE a < b DO
+    c := str[a];
+    str[a] := str[b];
+    str[b] := c;
+    INC(a);
+    DEC(b)
+  END
+END Revers;
+
+PROCEDURE Split*(FName: STRING; VAR Path, Name, Ext: STRING);
+VAR i, j, k: INTEGER;
+BEGIN
+  i := LENGTH(FName) - 1;
+  j := 0;
+  WHILE (i >= 0) & (FName[i] # Slash) DO
+    Name[j] := FName[i];
+    DEC(i);
+    INC(j)
+  END;
+  Name[j] := 0X;
+  Revers(Name);
+  j := 0;
+  k := LENGTH(Name) - 1;
+  WHILE (k >= 0) & (Name[k] # ".") DO
+    Ext[j] := Name[k];
+    DEC(k);
+    INC(j)
+  END;
+  IF k >= 0 THEN
+    Name[k] := 0X;
+    Ext[j] := ".";
+    INC(j)
+  ELSE
+    j := 0
+  END;
+  Ext[j] := 0X;
+  Revers(Ext);
+  FOR j := 0 TO i DO
+    Path[j] := FName[j]
+  END;
+  Path[i + 1] := 0X
+END Split;
+	  
+PROCEDURE LinuxParam;
+VAR p, i, str: INTEGER; c: CHAR;
+BEGIN
+  p := H.GetCommandLine();
+  sys.GET(p, ParamCount);
+  sys.GET(p + 4, p);
+  FOR i := 0 TO ParamCount - 1 DO
+    sys.GET(p + i * 4, str);
+    Params[i, 0] := str;
+    REPEAT
+      sys.GET(str, c);
+      INC(str)
+    UNTIL c = 0X;
+    Params[i, 1] := str - 1
+  END;
+  DEC(ParamCount)
+END LinuxParam;    
+
+PROCEDURE Time*;
+VAR sec, dsec: INTEGER;
+BEGIN
+  OutString("elapsed time ");
+  H.Time(sec, dsec);
+  sec := sec - H.sec;
+  dsec := dsec - H.dsec;
+  dsec := dsec + sec * 100;
+  Int(dsec DIV 100); CharC(".");
+  dsec := dsec MOD 100;
+  IF dsec < 10 THEN
+    Int(0)
+  END;
+  Int(dsec); OutString(" sec"); Ln
+END Time;
+
+PROCEDURE HALT*(n: INTEGER);
+BEGIN
+  Time;
+  H.ExitProcess(n)
+END HALT;
+
+PROCEDURE MemErr*(err: BOOLEAN);
+BEGIN
+  IF err THEN
+    ErrMsg(72);
+    HALT(1)
+  END
+END MemErr;
+
+PROCEDURE CreateList*(): LIST;
+VAR nov: LIST;
+BEGIN
+  NEW(nov);
+  MemErr(nov = NIL)
+  RETURN nov
+END CreateList;
+
+PROCEDURE CreateF*(FName: ARRAY OF CHAR): INTEGER;
+  RETURN H.CreateFile(FName)
+END CreateF;
+
+PROCEDURE OpenF*(FName: ARRAY OF CHAR(*; Mode: INTEGER*)): INTEGER;
+  RETURN H.OpenFile(FName)
+END OpenF;
+
+PROCEDURE Init;
+VAR p: INTEGER;
+
+  PROCEDURE last(VAR p: INTEGER);
+  BEGIN
+    WHILE GetChar(p) # 0X DO INC(p) END;
+    DEC(p)
+  END last;
+
+BEGIN
+  H.init;
+  IF OS = "WIN" THEN
+    ParamParse(0)
+  ELSIF OS = "KOS" THEN
+    ParamParse(1);
+    Params[0, 0] := H.GetName();
+    Params[0, 1] := Params[0, 0];
+    last(Params[0, 1])
+  ELSIF OS = "LNX" THEN
+    LinuxParam
+  END
+END Init;
+
+BEGIN
+  Init
+END UTILS.

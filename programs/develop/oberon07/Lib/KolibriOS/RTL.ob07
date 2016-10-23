@@ -1,0 +1,279 @@
+(*
+    Copyright 2016 Anton Krotov
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE RTL;
+
+IMPORT sys := SYSTEM, API;
+
+TYPE
+
+  IntArray = ARRAY 2048 OF INTEGER;
+  STRING = ARRAY 2048 OF CHAR;
+  PROC = PROCEDURE;
+
+VAR
+
+  SelfName, rtab: INTEGER; CloseProc: PROC;
+
+PROCEDURE [stdcall] _halt*(n: INTEGER);
+BEGIN
+  API.ExitProcess(n)
+END _halt;
+
+PROCEDURE [stdcall] _newrec*(size, t: INTEGER; VAR ptr: INTEGER);
+BEGIN
+  ptr := API._NEW(size);
+  IF ptr # 0 THEN
+    sys.PUT(ptr, t);
+    INC(ptr, 4)
+  END
+END _newrec;
+
+PROCEDURE [stdcall] _disprec*(VAR ptr: INTEGER);
+BEGIN
+  IF ptr # 0 THEN
+    ptr := API._DISPOSE(ptr - 4)
+  END
+END _disprec;
+
+PROCEDURE [stdcall] _rset*(y, x: INTEGER);
+BEGIN
+  sys.CODE("8B45088B4D0C3BC87F0A83F91F760B83F81F760633C0C9C2080083F9007D0233C983F81F7E05B81F000000BA000000802BC8F7D9D3FA83E81F8BC8F7D9D3EA8BC2C9C20800")
+END _rset;
+
+PROCEDURE [stdcall] _inset*(y, x: INTEGER);
+BEGIN
+  sys.CODE("8B45088B4D0C83F91F7709D3E883E001C9C20800C933C0C20800")
+END _inset;
+
+PROCEDURE [stdcall] _checktype*(table, t, r: INTEGER);
+BEGIN
+  table := rtab;
+  sys.CODE("8B450C8B4D1085C975076A0158C9C20C008B51FC8B4D083BD0740D85D27409C1E20203D18B12EBEF33C93BC20F94C18BC1C9C20C00")
+END _checktype;
+
+PROCEDURE [stdcall] _savearr*(size, source, dest: INTEGER);
+BEGIN
+  sys.CODE("9CFC8BD78BC68B7D108B750C8B4D08F3A48BFA8BF09D")
+END _savearr;
+
+PROCEDURE [stdcall] _saverec*(dyn, stat, size, source, dest: INTEGER): BOOLEAN;
+VAR res: BOOLEAN;
+BEGIN
+  res := dyn = stat;
+  IF res THEN
+    _savearr(size, source, dest)
+  END
+  RETURN res
+END _saverec;
+
+PROCEDURE [stdcall] _arrayidx*(Dim: INTEGER; VAR Arr: IntArray; bsize, idx, c: INTEGER);
+VAR i, m: INTEGER;
+BEGIN
+  m := bsize * idx;
+  FOR i := 4 TO Dim + 2 DO
+    m := m * Arr[i]
+  END;
+  IF (Arr[3] > idx) & (idx >= 0) THEN
+    Arr[3] := c + m
+  ELSE
+    Arr[3] := 0
+  END
+END _arrayidx;
+
+PROCEDURE [stdcall] _arrayidx1*(VAR Arr: IntArray; bsize, idx, c: INTEGER);
+BEGIN
+  IF (Arr[3] > idx) & (idx >= 0) THEN
+    Arr[3] := bsize * idx + c
+  ELSE
+    Arr[3] := 0
+  END
+END _arrayidx1;
+
+PROCEDURE [stdcall] _arrayrot*(m, n: INTEGER; VAR Arr: IntArray);
+VAR i, j, t: INTEGER;
+BEGIN
+  FOR i := 1 TO n DO
+    t := Arr[0];
+    FOR j := 0 TO m + n - 1 DO
+      Arr[j] := Arr[j + 1]
+    END;
+    Arr[m + n] := t
+  END
+END _arrayrot;
+
+PROCEDURE Min(a, b: INTEGER): INTEGER;
+BEGIN
+  IF a > b THEN
+    a := b
+  END
+  RETURN a
+END Min;
+
+PROCEDURE [stdcall] _length*(s: ARRAY OF CHAR): INTEGER;
+BEGIN
+  sys.CODE("8B4508");     //  mov     eax, [ebp + 08h]
+  sys.CODE("8B4D0C");     //  mov     ecx, [ebp + 0Ch]
+  sys.CODE("48");         //  dec     eax
+			  //  L1:
+  sys.CODE("40");         //  inc     eax
+  sys.CODE("803800");     //  cmp     byte ptr [eax], 0
+  sys.CODE("7403");       //  jz      L2
+  sys.CODE("E2F8");       //  loop    L1
+  sys.CODE("40");         //  inc     eax
+			  //  L2:
+  sys.CODE("2B4508");     //  sub     eax, [ebp + 08h]
+  sys.CODE("C9");         //  leave
+  sys.CODE("C20800");     //  ret     08h
+  RETURN 0
+END _length;
+
+PROCEDURE [stdcall] _strcopy*(b, blen, a, alen: INTEGER);
+BEGIN
+  _savearr(Min(alen, blen), a, b);
+  IF blen > alen THEN
+    sys.PUT(b + alen, 0X)
+  END
+END _strcopy;
+
+PROCEDURE [stdcall] _strcmp*(op: INTEGER; b, a: ARRAY OF CHAR): BOOLEAN;
+VAR i: INTEGER; Res: BOOLEAN;
+BEGIN
+  i := API.strncmp(sys.ADR(a), sys.ADR(b), Min(LEN(a), LEN(b)));
+  IF i = 0 THEN
+    i := _length(a) - _length(b)
+  END;
+  CASE op OF
+  |0: Res := i = 0
+  |1: Res := i # 0
+  |2: Res := i < 0
+  |3: Res := i > 0
+  |4: Res := i <= 0
+  |5: Res := i >= 0
+  ELSE
+  END
+  RETURN Res
+END _strcmp;
+
+PROCEDURE [stdcall] _lstrcmp*(op: INTEGER; b: CHAR; a: ARRAY OF CHAR): BOOLEAN;
+VAR s: ARRAY 2 OF CHAR;
+BEGIN
+  s[0] := b;
+  s[1] := 0X;
+  RETURN _strcmp(op, s, a)
+END _lstrcmp;
+
+PROCEDURE [stdcall] _rstrcmp*(op: INTEGER; b: ARRAY OF CHAR; a: CHAR): BOOLEAN;
+VAR s: ARRAY 2 OF CHAR;
+BEGIN
+  s[0] := a;
+  s[1] := 0X;
+  RETURN _strcmp(op, b, s)
+END _rstrcmp;
+
+PROCEDURE Int(x: INTEGER; VAR str: STRING);
+VAR i, a, b: INTEGER; c: CHAR;
+BEGIN
+  i := 0;
+  a := 0;
+  REPEAT
+    str[i] := CHR(x MOD 10 + ORD("0"));
+    x := x DIV 10;
+    INC(i)
+  UNTIL x = 0;
+  b := i - 1;
+  WHILE a < b DO
+    c := str[a];
+    str[a] := str[b];
+    str[b] := c;
+    INC(a);
+    DEC(b)
+  END;
+  str[i] := 0X
+END Int;
+
+PROCEDURE [stdcall] _assrt*(code, m: INTEGER; modname: STRING; line: INTEGER);
+VAR msg, int: STRING; pos, n: INTEGER;
+
+  PROCEDURE StrAppend(s: STRING);
+  VAR i, n: INTEGER;
+  BEGIN
+    n := LEN(s);
+    i := 0;
+    WHILE (i < n) & (s[i] # 0X) DO
+      msg[pos] := s[i];
+      INC(pos);
+      INC(i)
+    END
+  END StrAppend;
+
+BEGIN
+  pos := 0;
+  n := line MOD 16;
+  line := line DIV 16;
+  CASE n OF
+  |1: StrAppend("assertion failure")
+  |2: StrAppend("variable of a procedure type has NIL as value")
+  |3: StrAppend("typeguard error")
+  |4: StrAppend("inadmissible dynamic type")
+  |5: StrAppend("index check error")
+  |6: StrAppend("NIL pointer dereference")
+  |7: StrAppend("invalid value in case statement")
+  |8: StrAppend("division by zero")
+  ELSE
+  END;
+  StrAppend(0DX);
+  StrAppend(0AX);
+  StrAppend("module ");
+  StrAppend(modname);
+  StrAppend(0DX);
+  StrAppend(0AX);
+  StrAppend("line ");
+  Int(line, int);
+  StrAppend(int);
+  IF m = 2 THEN
+    StrAppend(0DX);
+    StrAppend(0AX);
+    StrAppend("code ");
+    Int(code, int);
+    StrAppend(int)
+  END;
+  API.DebugMsg(sys.ADR(msg), SelfName)
+END _assrt;
+
+PROCEDURE [stdcall] _close*;
+BEGIN
+  IF CloseProc # NIL THEN
+    CloseProc
+  END
+END _close;
+
+PROCEDURE [stdcall] _init*(self, rec, gsize, gadr, esp: INTEGER);
+BEGIN
+  API.zeromem(gsize, gadr);
+  API.init(esp);
+  SelfName := self;
+  rtab := rec;
+  CloseProc := NIL
+END _init;
+
+PROCEDURE SetClose*(proc: PROC);
+BEGIN
+  CloseProc := proc
+END SetClose;
+
+END RTL.

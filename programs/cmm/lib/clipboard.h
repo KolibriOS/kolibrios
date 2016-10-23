@@ -46,7 +46,7 @@ dword Clipboard::GetSlotData( ECX) //ECX = slot number
 	slot_data.type = DSDWORD[result+4];
 	slot_data.encoding = DSDWORD[result+8];
 	if (slot_data.type == SLOT_DATA_TYPE_TEXT) slot_data.content = result+12;
-	else slot_data.content = result+10;
+	else slot_data.content = result+8;
 	return result;
 }
 

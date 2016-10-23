@@ -1,0 +1,141 @@
+(*
+    Copyright 2016 Anton Krotov
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE HOST;
+
+IMPORT sys := SYSTEM, API;
+
+CONST
+
+  OS* = "WIN";
+  Slash* = "\";
+
+  OFS_MAXPATHNAME = 128;
+
+TYPE
+
+  OFSTRUCT = RECORD
+    cBytes: CHAR;
+    fFixedDisk: CHAR;
+    nErrCode: sys.CARD16;
+    Reserved1: sys.CARD16;
+    Reserved2: sys.CARD16;
+    szPathName: ARRAY OFS_MAXPATHNAME OF CHAR
+  END;
+
+VAR
+
+  sec*, dsec*, hConsoleOutput: INTEGER;
+
+  GetStdHandle: PROCEDURE [winapi] (nStdHandle: INTEGER): INTEGER;
+  CloseFile*: PROCEDURE [winapi] (hObject: INTEGER): INTEGER;
+  _CreateFile*: PROCEDURE [winapi] (lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes,
+    dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile: INTEGER): INTEGER;
+  _OpenFile*: PROCEDURE [winapi] (lpFileName: INTEGER; lpReOpenBuff: OFSTRUCT; uStyle: INTEGER): INTEGER;
+  ReadFile, WriteFile: PROCEDURE [winapi] (hFile, Buffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped: INTEGER): INTEGER;
+  GetCommandLine*: PROCEDURE [winapi] (): INTEGER;
+  GetTickCount: PROCEDURE [winapi] (): INTEGER;
+  Alloc: PROCEDURE [winapi] (uFlags, dwBytes: INTEGER): INTEGER;
+  ExitProcess*: PROCEDURE [winapi] (code: INTEGER);
+  SetFilePointer: PROCEDURE [winapi] (hFile, lDistanceToMove, lpDistanceToMoveHigh, dwMoveMethod: INTEGER): INTEGER;
+
+PROCEDURE FileRW*(hFile, Buffer, nNumberOfBytes: INTEGER; write: BOOLEAN): INTEGER;
+VAR res: INTEGER;
+BEGIN
+  IF write THEN
+    WriteFile(hFile, Buffer, nNumberOfBytes, sys.ADR(res), 0)
+  ELSE
+    ReadFile(hFile, Buffer, nNumberOfBytes, sys.ADR(res), 0)
+  END
+  RETURN res
+END FileRW;
+
+PROCEDURE OutString* (str: ARRAY OF CHAR);
+VAR res: INTEGER;
+BEGIN
+  res := FileRW(hConsoleOutput, sys.ADR(str[0]), LENGTH(str), TRUE)
+END OutString;
+
+PROCEDURE CreateFile* (FName: ARRAY OF CHAR): INTEGER;
+VAR res: INTEGER; 
+BEGIN
+  res := _CreateFile(sys.ADR(FName[0]), 0C0000000H, 0, 0, 2, 80H, 0);
+  IF res = -1 THEN
+    res := 0
+  END
+  RETURN res
+END CreateFile;
+
+PROCEDURE OpenFile* (FName: ARRAY OF CHAR): INTEGER;
+VAR res: INTEGER; ofstr: OFSTRUCT;
+BEGIN
+  res := _OpenFile(sys.ADR(FName[0]), ofstr, 0);
+  IF res = -1 THEN
+    res := 0
+  END
+  RETURN res
+END OpenFile;
+
+PROCEDURE FileSize*(F: INTEGER): INTEGER;
+VAR res: INTEGER;
+BEGIN
+  res := SetFilePointer(F, 0, 0, 2);
+  SetFilePointer(F, 0, 0, 0)
+  RETURN res
+END FileSize;
+
+PROCEDURE GetProc(name: ARRAY OF CHAR; hMOD, adr: INTEGER);
+BEGIN
+  sys.PUT(adr, API.GetProcAddress(hMOD, sys.ADR(name[0])))
+END GetProc;
+
+PROCEDURE Time*(VAR sec, dsec: INTEGER);
+VAR t: INTEGER;
+BEGIN
+  t := GetTickCount() DIV 10;
+  sec := t DIV 100;
+  dsec := t MOD 100
+END Time;
+
+PROCEDURE malloc*(size: INTEGER): INTEGER;
+  RETURN Alloc(64, size)
+END malloc;
+
+PROCEDURE init*;
+VAR lib: INTEGER;
+BEGIN  
+  lib := API.LoadLibraryA(sys.ADR("kernel32.dll"));
+  GetProc("GetTickCount", lib, sys.ADR(GetTickCount));
+  Time(sec, dsec);
+  GetProc("GetStdHandle", lib, sys.ADR(GetStdHandle));
+  GetProc("CreateFileA", lib, sys.ADR(_CreateFile));
+  GetProc("CloseHandle", lib, sys.ADR(CloseFile));
+  GetProc("OpenFile", lib, sys.ADR(_OpenFile));
+  GetProc("ReadFile", lib, sys.ADR(ReadFile));
+  GetProc("WriteFile", lib, sys.ADR(WriteFile));
+  GetProc("GetCommandLineA", lib, sys.ADR(GetCommandLine));
+  GetProc("ExitProcess", lib, sys.ADR(ExitProcess));
+  GetProc("GlobalAlloc", lib, sys.ADR(Alloc));
+  GetProc("SetFilePointer", lib, sys.ADR(SetFilePointer));
+  hConsoleOutput := GetStdHandle(-11)
+END init;
+
+PROCEDURE GetName*(): INTEGER;
+  RETURN 0
+END GetName;
+
+END HOST.

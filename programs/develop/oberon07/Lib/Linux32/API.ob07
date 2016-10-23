@@ -1,0 +1,143 @@
+(*
+    Copyright 2016 Anton Krotov
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE API;
+
+IMPORT sys := SYSTEM;
+
+TYPE
+
+  TP* = ARRAY 2 OF INTEGER;
+
+VAR
+
+  Param*: INTEGER;
+
+  sec*		  : INTEGER;
+  dsec* 	  : INTEGER;
+  stdin*	  : INTEGER;
+  stdout*	  : INTEGER;
+  stderr*	  : INTEGER;
+  dlopen*	  : PROCEDURE [cdecl] (filename, flag: INTEGER): INTEGER;
+  dlsym*	  : PROCEDURE [cdecl] (handle, symbol: INTEGER): INTEGER;
+  _malloc*	  : PROCEDURE [cdecl] (size: INTEGER): INTEGER;
+  free* 	  : PROCEDURE [cdecl] (ptr: INTEGER);
+  fopen*	  : PROCEDURE [cdecl] (fname, fmode: INTEGER): INTEGER;
+  fclose*, ftell* : PROCEDURE [cdecl] (file: INTEGER): INTEGER;
+  fwrite*, fread* : PROCEDURE [cdecl] (buffer, bytes, blocks, file: INTEGER): INTEGER;
+  fseek*	  : PROCEDURE [cdecl] (file, offset, origin: INTEGER): INTEGER;
+  exit* 	  : PROCEDURE [cdecl] (code: INTEGER);
+  strncmp*	  : PROCEDURE [cdecl] (str1, str2, n: INTEGER): INTEGER;
+  strlen*	  : PROCEDURE [cdecl] (str: INTEGER): INTEGER;
+  clock_gettime*  : PROCEDURE [cdecl] (clock_id: INTEGER; VAR tp: TP): INTEGER;
+
+PROCEDURE [stdcall] zeromem* (size, adr: INTEGER);
+BEGIN
+  sys.CODE("578B7D0C8B4D0833C09CFCF3AB9D5F")
+END zeromem;
+
+PROCEDURE Align(n, m: INTEGER): INTEGER;
+  RETURN n + (m - n MOD m) MOD m
+END Align;
+
+PROCEDURE malloc* (Bytes: INTEGER): INTEGER;
+VAR res: INTEGER;
+BEGIN
+  Bytes := Align(Bytes, 4);
+  res := _malloc(Bytes);
+  IF res # 0 THEN
+    zeromem(ASR(Bytes, 2), res)
+  END
+  RETURN res
+END malloc;
+
+PROCEDURE Free* (hMem: INTEGER): INTEGER;
+BEGIN
+  free(hMem)
+  RETURN 0
+END Free;
+
+PROCEDURE _NEW*(size: INTEGER): INTEGER;
+  RETURN malloc(size)
+END _NEW;
+
+PROCEDURE _DISPOSE*(p: INTEGER): INTEGER;
+  RETURN Free(p)
+END _DISPOSE;
+
+PROCEDURE ConOut(str, length: INTEGER);
+BEGIN
+  length := fwrite(str, length, 1, stdout)
+END ConOut;
+
+PROCEDURE DebugMsg* (lpText, lpCaption: INTEGER);
+VAR eol: ARRAY 3 OF CHAR;
+BEGIN
+  eol[0] := 0DX;
+  eol[1] := 0AX;
+  eol[2] := 00X;
+  ConOut(sys.ADR(eol), 2);
+  ConOut(lpCaption, strlen(lpCaption));
+  ConOut(sys.ADR(":"), 1);
+  ConOut(sys.ADR(eol), 2);
+  ConOut(lpText, strlen(lpText));
+  ConOut(sys.ADR(eol), 2);
+END DebugMsg;
+
+PROCEDURE ExitProcess* (code: INTEGER);
+BEGIN
+  exit(code)
+END ExitProcess;
+
+PROCEDURE GetProc(name: ARRAY OF CHAR; hMOD, adr: INTEGER);
+VAR H: INTEGER;
+BEGIN
+  H := dlsym(hMOD, sys.ADR(name[0]));
+  ASSERT(H # 0);
+  sys.PUT(adr, H);
+END GetProc;
+
+PROCEDURE init* (esp: INTEGER);
+VAR lib, proc: INTEGER;
+BEGIN
+  Param := esp;
+  sys.MOVE(Param + 12, sys.ADR(dlopen), 4);
+  sys.MOVE(Param + 16, sys.ADR(dlsym),	4);
+  sys.MOVE(Param + 20, sys.ADR(exit),	4);
+  sys.MOVE(Param + 24, sys.ADR(stdin),	4);
+  sys.MOVE(Param + 28, sys.ADR(stdout), 4);
+  sys.MOVE(Param + 32, sys.ADR(stderr), 4);
+  sys.MOVE(Param + 36, sys.ADR(_malloc), 4);
+  sys.MOVE(Param + 40, sys.ADR(free),	4);
+  sys.MOVE(Param + 44, sys.ADR(fopen),	4);
+  sys.MOVE(Param + 48, sys.ADR(fclose), 4);
+  sys.MOVE(Param + 52, sys.ADR(fwrite), 4);
+  sys.MOVE(Param + 56, sys.ADR(fread),	4);
+  sys.MOVE(Param + 60, sys.ADR(fseek),	4);
+  sys.MOVE(Param + 64, sys.ADR(ftell),	4);
+
+  lib := dlopen(sys.ADR("libc.so.6"), 1);
+  ASSERT(lib # 0);
+  GetProc("strncmp", lib, sys.ADR(strncmp));
+  GetProc("strlen", lib, sys.ADR(strlen));
+
+  lib := dlopen(sys.ADR("librt.so.1"), 1);
+  ASSERT(lib # 0);
+  GetProc("clock_gettime", lib, sys.ADR(clock_gettime));
+END init;
+
+END API.

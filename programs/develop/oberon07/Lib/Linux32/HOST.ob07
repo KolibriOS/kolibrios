@@ -1,0 +1,121 @@
+(*
+    Copyright 2016 Anton Krotov
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE HOST;
+
+IMPORT sys := SYSTEM, API;
+
+CONST
+
+  OS* = "LNX";
+  Slash* = "/";
+
+VAR
+
+  fsize  : INTEGER;
+
+  sec*	 : INTEGER;
+  dsec*  : INTEGER;
+
+PROCEDURE GetCommandLine* (): INTEGER;
+  RETURN API.Param
+END GetCommandLine;
+
+PROCEDURE CloseFile* (File: INTEGER);
+BEGIN
+  File := API.fclose(File)
+END CloseFile;
+
+PROCEDURE FileRW* (hFile, Buffer, nNumberOfBytes: INTEGER; write: BOOLEAN): INTEGER;
+VAR res: INTEGER;
+BEGIN
+  IF write THEN
+    res := API.fwrite(Buffer, nNumberOfBytes, 1, hFile) * nNumberOfBytes
+  ELSE
+    res := API.fread(Buffer, nNumberOfBytes, 1, hFile) * nNumberOfBytes
+  END
+  RETURN res
+END FileRW;
+
+PROCEDURE OutString* (str: ARRAY OF CHAR);
+VAR res: INTEGER;
+BEGIN
+  res := FileRW(API.stdout, sys.ADR(str), LENGTH(str), TRUE)
+END OutString;
+
+PROCEDURE CreateFile* (FName: ARRAY OF CHAR): INTEGER;
+  RETURN API.fopen(sys.ADR(FName), sys.ADR("wb"))
+END CreateFile;
+
+PROCEDURE OpenFile* (FName: ARRAY OF CHAR): INTEGER;
+VAR F, res: INTEGER;
+BEGIN
+  F := API.fopen(sys.ADR(FName), sys.ADR("rb"));
+  IF F # 0 THEN
+    res   := API.fseek(F, 0, 2);
+    fsize := API.ftell(F);
+    res   := API.fseek(F, 0, 0)
+  END
+  RETURN F
+END OpenFile;
+
+PROCEDURE FileSize* (F: INTEGER): INTEGER;
+  RETURN fsize
+END FileSize;
+
+PROCEDURE Align(n, m: INTEGER): INTEGER;
+  RETURN n + (m - n MOD m) MOD m
+END Align;
+
+PROCEDURE malloc* (Bytes: INTEGER): INTEGER;
+VAR res: INTEGER;
+BEGIN
+  Bytes := Align(Bytes, 4);
+  res := API.malloc(Bytes);
+  IF res # 0 THEN
+    API.zeromem(ASR(Bytes, 2), res)
+  END
+  RETURN res
+END malloc;
+
+PROCEDURE ExitProcess* (code: INTEGER);
+BEGIN
+  API.exit(code)
+END ExitProcess;
+
+PROCEDURE Time* (VAR sec, dsec: INTEGER);
+VAR tp: API.TP;
+BEGIN
+  IF API.clock_gettime(0, tp) = 0 THEN
+    sec := tp[0];
+    dsec := tp[1] DIV 10000000
+  ELSE
+    sec := 0;
+    dsec := 0
+  END
+END Time;
+
+PROCEDURE init*;
+BEGIN
+  Time(sec, dsec)
+END init;
+
+PROCEDURE GetName*(): INTEGER;
+  RETURN 0
+END GetName;
+
+END HOST.

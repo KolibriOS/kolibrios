@@ -1,0 +1,159 @@
+MODULE RasterW;
+
+IMPORT sys := SYSTEM, RW := RasterWorks, KOSAPI;
+
+
+TYPE
+
+  TWindow = RECORD
+
+    Left, Top, Width, Height: INTEGER;
+    Color: INTEGER;
+    Header: ARRAY 256 OF CHAR
+
+  END;
+
+
+VAR
+
+  canvas : INTEGER;
+  bpp32  : BOOLEAN;
+
+
+PROCEDURE CreateCanvas(width, height: INTEGER; bpp32: BOOLEAN): INTEGER;
+VAR canvas: INTEGER;
+BEGIN
+  canvas := KOSAPI.malloc(width * height * (3 + ORD(bpp32)) + 8);
+  sys.PUT(canvas, width);
+  sys.PUT(canvas + 4, height)
+  RETURN canvas
+END CreateCanvas;
+
+
+PROCEDURE ClearCanvas(canvas, color: INTEGER; bpp32: BOOLEAN);
+VAR data, width, height, i: INTEGER;
+BEGIN
+  sys.GET(canvas, width);
+  sys.GET(canvas + 4, height);
+  data := canvas + 8;
+  IF bpp32 THEN
+    FOR i := 1 TO width * height DO
+      sys.PUT(data, color); INC(data, 4)
+    END
+  ELSE
+    FOR i := 1 TO width * height - 1 DO
+      sys.PUT(data, color); INC(data, 3)
+    END;
+    sys.MOVE(sys.ADR(color), data, 3)
+  END
+END ClearCanvas;
+
+
+PROCEDURE WindowRedrawStatus(p: INTEGER);
+VAR aux: INTEGER;
+BEGIN
+  aux := KOSAPI.sysfunc2(12, p)
+END WindowRedrawStatus;
+
+
+PROCEDURE DefineAndDrawWindow(x, y, width, height, color, style, hcolor, hstyle: INTEGER; htext: ARRAY OF CHAR);
+VAR aux: INTEGER;
+BEGIN
+  aux := KOSAPI.sysfunc6(0, x * 65536 + width, y * 65536 + height, color + LSL(style, 24), hcolor + LSL(hstyle, 24), sys.ADR(htext[0]))
+END DefineAndDrawWindow;
+
+
+PROCEDURE WaitForEvent(): INTEGER;
+  RETURN KOSAPI.sysfunc1(10)
+END WaitForEvent;
+
+
+PROCEDURE ExitApp;
+VAR aux: INTEGER;
+BEGIN
+  aux := KOSAPI.sysfunc1(-1)
+END ExitApp;
+
+
+PROCEDURE DrawCanvas(canvas: INTEGER; x, y: INTEGER; bpp32: BOOLEAN);
+VAR xsize, ysize, aux: INTEGER;
+BEGIN
+  sys.GET(canvas,     xsize);
+  sys.GET(canvas + 4, ysize);
+  aux := KOSAPI.sysfunc7(65, canvas + 8, xsize * 65536 + ysize, x * 65536 + y, 24 + 8 * ORD(bpp32), 0, 0)
+END DrawCanvas;
+
+
+PROCEDURE TextOut(canvas, x, y: INTEGER; string: ARRAY OF CHAR; color, params: INTEGER);
+VAR width: INTEGER;
+BEGIN
+  width := RW.drawText(canvas, x, y, sys.ADR(string[0]), LENGTH(string), color + 0FF000000H, params)
+END TextOut;
+
+
+PROCEDURE DrawText;
+VAR x, y: INTEGER;
+BEGIN
+  ClearCanvas(canvas, 00FFFFFFH, bpp32);
+
+  x := 0; y := 0;
+
+  TextOut(canvas,  x,  y,  "font size 16",    000000FFH,  RW.params(  16,  0,  RW.cp866,  RW.bpp32 * ORD(bpp32) 		    ) );
+	y := y + 16;
+	x := x + 20;
+  TextOut(canvas,  x,  y,  "font size 12",    00FF0000H,  RW.params(  12,  0,  RW.cp866,  RW.bpp32 * ORD(bpp32) 		    ) );
+	y := y + 12;
+	x := x + 20;
+  TextOut(canvas,  x,  y,  "italic",	      00808080H,  RW.params(  16,  0,  RW.cp866,  RW.bpp32 * ORD(bpp32) + RW.italic	    ) );
+	y := y + 16;
+	x := x + 20;
+  TextOut(canvas,  x,  y,  "bold",	      00000000H,  RW.params(  16,  0,  RW.cp866,  RW.bpp32 * ORD(bpp32) + RW.bold	    ) );
+	y := y + 16;
+	x := x + 20;
+  TextOut(canvas,  x,  y,  "underline",       00000000H,  RW.params(  16,  0,  RW.cp866,  RW.bpp32 * ORD(bpp32) + RW.underline	    ) );
+	y := y + 16;
+	x := x + 20;
+  TextOut(canvas,  x,  y,  "strike-through",  00000000H,  RW.params(  16,  0,  RW.cp866,  RW.bpp32 * ORD(bpp32) + RW.strike_through ) );
+	y := y + 16;
+	x := x + 20;
+
+  DrawCanvas(canvas, 10, 10, bpp32);
+END DrawText;
+
+
+PROCEDURE draw_window(Window: TWindow);
+BEGIN
+  WindowRedrawStatus(1);
+  DefineAndDrawWindow(Window.Left, Window.Top, Window.Width, Window.Height, Window.Color, 51, 0, 0, Window.Header);
+  DrawText;
+  WindowRedrawStatus(2);
+END draw_window;
+
+
+PROCEDURE main;
+VAR Window: TWindow;
+BEGIN
+
+  Window.Left	:= 200;
+  Window.Top	:= 200;
+  Window.Width	:= 400;
+  Window.Height := 300;
+  Window.Color	:= 00C0C0C0H;
+  Window.Header := "RasterWorks";
+
+  bpp32 := FALSE;
+  canvas := CreateCanvas(Window.Width - 30, Window.Height - 50, bpp32);
+
+  WHILE TRUE DO
+    CASE WaitForEvent() OF
+    |1: draw_window(Window)
+    |3: ExitApp
+    ELSE
+    END
+  END
+
+END main;
+
+BEGIN
+  main
+END RasterW.

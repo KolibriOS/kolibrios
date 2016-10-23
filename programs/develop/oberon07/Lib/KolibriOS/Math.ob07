@@ -1,0 +1,254 @@
+(*
+    Copyright 2016 Anton Krotov
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Math;
+
+IMPORT sys := SYSTEM;
+
+CONST pi* = 3.141592653589793D+00;
+      e*  = 2.718281828459045D+00;
+
+VAR Inf*, nInf*: LONGREAL;
+
+PROCEDURE IsNan*(x: LONGREAL): BOOLEAN;
+VAR h, l: SET;
+BEGIN
+  sys.GET(sys.ADR(x), l);
+  sys.GET(sys.ADR(x) + 4, h);
+  RETURN (h * {20..30} = {20..30}) & ((h * {0..19} # {}) OR (l * {0..31} # {}))
+END IsNan;
+
+PROCEDURE IsInf*(x: LONGREAL): BOOLEAN;
+  RETURN ABS(x) = sys.INF(LONGREAL)
+END IsInf;
+
+PROCEDURE Max(A, B: LONGREAL): LONGREAL;
+VAR Res: LONGREAL;
+BEGIN
+  IF A > B THEN
+    Res := A
+  ELSE
+    Res := B
+  END
+  RETURN Res
+END Max;
+
+PROCEDURE Min(A, B: LONGREAL): LONGREAL;
+VAR Res: LONGREAL;
+BEGIN
+  IF A < B THEN
+    Res := A
+  ELSE
+    Res := B
+  END
+  RETURN Res
+END Min;
+
+PROCEDURE SameValue(A, B: LONGREAL): BOOLEAN;
+VAR Epsilon: LONGREAL; Res: BOOLEAN;
+BEGIN
+  Epsilon := Max(Min(ABS(A), ABS(B)) * 1.0D-12, 1.0D-12);
+  IF A > B THEN
+    Res := (A - B) <= Epsilon
+  ELSE
+    Res := (B - A) <= Epsilon
+  END
+  RETURN Res
+END SameValue;
+
+PROCEDURE IsZero(x: LONGREAL): BOOLEAN;
+  RETURN ABS(x) <= 1.0D-12
+END IsZero;
+
+PROCEDURE [stdcall] sqrt*(x: LONGREAL): LONGREAL;
+BEGIN
+  sys.CODE("DD4508D9FAC9C20800")
+  RETURN 0.0D0
+END sqrt;
+
+PROCEDURE [stdcall] sin*(x: LONGREAL): LONGREAL;
+BEGIN
+  sys.CODE("DD4508D9FEC9C20800")
+  RETURN 0.0D0
+END sin;
+
+PROCEDURE [stdcall] cos*(x: LONGREAL): LONGREAL;
+BEGIN
+  sys.CODE("DD4508D9FFC9C20800")
+  RETURN 0.0D0
+END cos;
+
+PROCEDURE [stdcall] tan*(x: LONGREAL): LONGREAL;
+BEGIN
+  sys.CODE("DD4508D9F2DEC9C9C20800")
+  RETURN 0.0D0
+END tan;
+
+PROCEDURE [stdcall] arctan2*(y, x: LONGREAL): LONGREAL;
+BEGIN
+  sys.CODE("DD4508DD4510D9F3C9C21000")
+  RETURN 0.0D0
+END arctan2;
+
+PROCEDURE [stdcall] ln*(x: LONGREAL): LONGREAL;
+BEGIN
+  sys.CODE("D9EDDD4508D9F1C9C20800")
+  RETURN 0.0D0
+END ln;
+
+PROCEDURE [stdcall] log*(base, x: LONGREAL): LONGREAL;
+BEGIN
+  sys.CODE("D9E8DD4510D9F1D9E8DD4508D9F1DEF9C9C21000")
+  RETURN 0.0D0
+END log;
+
+PROCEDURE [stdcall] exp*(x: LONGREAL): LONGREAL;
+BEGIN
+  sys.CODE("DD4508D9EADEC9D9C0D9FCDCE9D9C9D9F0D9E8DEC1D9FDDDD9C9C20800")
+  RETURN 0.0D0
+END exp;
+
+PROCEDURE [stdcall] round*(x: LONGREAL): LONGREAL;
+BEGIN
+  sys.CODE("DD4508D97DF4D97DF666814DF60003D96DF6D9FCD96DF4C9C20800")
+  RETURN 0.0D0
+END round;
+
+PROCEDURE [stdcall] frac*(x: LONGREAL): LONGREAL;
+BEGIN
+  sys.CODE("50DD4508D9C0D93C24D97C240266814C2402000FD96C2402D9FCD92C24DEE9C9C20800")
+  RETURN 0.0D0
+END frac;
+
+PROCEDURE arcsin*(x: LONGREAL): LONGREAL;
+  RETURN arctan2(x, sqrt(1.0D0 - x * x))
+END arcsin;
+
+PROCEDURE arccos*(x: LONGREAL): LONGREAL;
+  RETURN arctan2(sqrt(1.0D0 - x * x), x)
+END arccos;
+
+PROCEDURE arctan*(x: LONGREAL): LONGREAL;
+  RETURN arctan2(x, 1.0D0)
+END arctan;
+
+PROCEDURE sinh*(x: LONGREAL): LONGREAL;
+VAR Res: LONGREAL;
+BEGIN
+  IF IsZero(x) THEN
+    Res := 0.0D0
+  ELSE
+    Res := (exp(x) - exp(-x)) / 2.0D0
+  END
+  RETURN Res
+END sinh;
+
+PROCEDURE cosh*(x: LONGREAL): LONGREAL;
+VAR Res: LONGREAL;
+BEGIN
+  IF IsZero(x) THEN
+    Res := 1.0D0
+  ELSE
+    Res := (exp(x) + exp(-x)) / 2.0D0
+  END
+  RETURN Res
+END cosh;
+
+PROCEDURE tanh*(x: LONGREAL): LONGREAL;
+VAR Res: LONGREAL;
+BEGIN
+  IF IsZero(x) THEN
+    Res := 0.0D0
+  ELSE
+    Res := sinh(x) / cosh(x)
+  END
+  RETURN Res
+END tanh;
+
+PROCEDURE arcsinh*(x: LONGREAL): LONGREAL;
+  RETURN ln(x + sqrt((x * x) + 1.0D0))
+END arcsinh;
+
+PROCEDURE arccosh*(x: LONGREAL): LONGREAL;
+  RETURN ln(x + sqrt((x - 1.0D0) / (x + 1.0D0)) * (x + 1.0D0))
+END arccosh;
+
+PROCEDURE arctanh*(x: LONGREAL): LONGREAL;
+VAR Res: LONGREAL;
+BEGIN
+  IF SameValue(x, 1.0D0) THEN
+    Res := Inf
+  ELSIF SameValue(x, -1.0D0) THEN
+    Res := nInf
+  ELSE
+    Res := 0.5D0 * ln((1.0D0 + x) / (1.0D0 - x))
+  END
+  RETURN Res
+END arctanh;
+
+PROCEDURE floor*(x: LONGREAL): LONGREAL;
+VAR f: LONGREAL;
+BEGIN
+  f := frac(x);
+  x := x - f;
+  IF f < 0.0D0 THEN
+    x := x - 1.0D0
+  END
+  RETURN x
+END floor;
+
+PROCEDURE ceil*(x: LONGREAL): LONGREAL;
+VAR f: LONGREAL;
+BEGIN
+  f := frac(x);
+  x := x - f;
+  IF f > 0.0D0 THEN
+    x := x + 1.0D0
+  END
+  RETURN x
+END ceil;
+
+PROCEDURE power*(base, exponent: LONGREAL): LONGREAL;
+VAR Res: LONGREAL;
+BEGIN
+  IF exponent = 0.0D0 THEN
+    Res := 1.0D0
+  ELSIF (base = 0.0D0) & (exponent > 0.0D0) THEN
+    Res := 0.0D0
+  ELSE
+    Res := exp(exponent * ln(base))
+  END
+  RETURN Res
+END power;
+
+PROCEDURE sgn*(x: LONGREAL): INTEGER;
+VAR Res: INTEGER;
+BEGIN
+  IF x > 0.0D0 THEN
+    Res := 1
+  ELSIF x < 0.0D0 THEN
+    Res := -1
+  ELSE
+    Res := 0
+  END
+  RETURN Res
+END sgn;
+
+BEGIN
+  Inf := sys.INF(LONGREAL);
+  nInf := -sys.INF(LONGREAL)
+END Math.

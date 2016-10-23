@@ -1,0 +1,75 @@
+(*
+    Copyright 2016 Anton Krotov
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE API;
+
+IMPORT sys := SYSTEM;
+
+VAR
+
+  Alloc*: PROCEDURE [winapi] (uFlags, dwBytes: INTEGER): INTEGER;
+  Free*: PROCEDURE [winapi] (hMem: INTEGER): INTEGER;
+  MessageBoxA*: PROCEDURE [winapi] (hWnd, lpText, lpCaption, uType: INTEGER): INTEGER;
+  ExitProcess*: PROCEDURE [winapi] (code: INTEGER);
+  strncmp*: PROCEDURE [cdecl] (a, b, n: INTEGER): INTEGER;
+
+  GetProcAddress*: PROCEDURE [winapi] (hModule, name: INTEGER): INTEGER;
+  LoadLibraryA*: PROCEDURE [winapi] (name: INTEGER): INTEGER;
+
+PROCEDURE zeromem*(size, adr: INTEGER);
+END zeromem;
+
+PROCEDURE DebugMsg*(lpText, lpCaption: INTEGER);
+BEGIN
+  MessageBoxA(0, lpText, lpCaption, 16)
+END DebugMsg;
+
+PROCEDURE GetProc(name: ARRAY OF CHAR; hMOD, adr: INTEGER);
+VAR H: INTEGER;
+BEGIN
+  H := GetProcAddress(hMOD, sys.ADR(name[0]));
+  ASSERT(H # 0);
+  sys.PUT(adr, H);
+END GetProc;
+
+PROCEDURE _NEW*(size: INTEGER): INTEGER;
+  RETURN Alloc(64, size)
+END _NEW;
+
+PROCEDURE _DISPOSE*(p: INTEGER): INTEGER;
+  RETURN Free(p)
+END _DISPOSE;
+
+PROCEDURE init* (esp: INTEGER);
+VAR lib: INTEGER;
+BEGIN
+  sys.GET(esp, GetProcAddress);
+  sys.GET(esp + 4, LoadLibraryA);
+
+  lib := LoadLibraryA(sys.ADR("kernel32.dll"));
+  GetProc("ExitProcess", lib, sys.ADR(ExitProcess));
+  GetProc("GlobalAlloc", lib, sys.ADR(Alloc));
+  GetProc("GlobalFree", lib, sys.ADR(Free));
+
+  lib := LoadLibraryA(sys.ADR("msvcrt.dll"));
+  GetProc("strncmp", lib, sys.ADR(strncmp));
+
+  lib := LoadLibraryA(sys.ADR("user32.dll"));
+  GetProc("MessageBoxA", lib, sys.ADR(MessageBoxA));
+END init;
+
+END API.

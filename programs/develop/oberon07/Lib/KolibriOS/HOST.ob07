@@ -1,0 +1,270 @@
+(*
+    Copyright 2016 Anton Krotov
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE HOST;
+
+IMPORT sys := SYSTEM, API;
+
+CONST
+
+  OS* = "KOS";
+  Slash* = "/";
+
+TYPE
+
+  FILENAME = ARRAY 2048 OF CHAR;
+
+  OFSTRUCT = RECORD
+    subfunc, pos, hpos, bytes, buf: INTEGER;
+    name: FILENAME
+  END;
+
+VAR
+
+  con_init		 : PROCEDURE [stdcall] (wnd_width, wnd_height, scr_width, scr_height, title: INTEGER);
+  con_exit		 : PROCEDURE [stdcall] (bCloseWindow: BOOLEAN);
+  con_write_asciiz	 : PROCEDURE [stdcall] (string: INTEGER);
+
+  fsize, sec*, dsec*: INTEGER;
+
+PROCEDURE [stdcall] sysfunc1(arg1: INTEGER): INTEGER;
+BEGIN
+  sys.CODE("8B4508");           (* mov     eax, [ebp + 08h] *)
+  sys.CODE("CD40");             (* int     40h              *)
+  sys.CODE("C9");               (* leave                    *)
+  sys.CODE("C20400");           (* ret     04h              *)
+  RETURN 0
+END sysfunc1;
+
+PROCEDURE [stdcall] sysfunc2(arg1, arg2: INTEGER): INTEGER;
+BEGIN
+  sys.CODE("53");               (* push    ebx              *)
+  sys.CODE("8B4508");           (* mov     eax, [ebp + 08h] *)
+  sys.CODE("8B5D0C");           (* mov     ebx, [ebp + 0Ch] *)
+  sys.CODE("CD40");             (* int     40h              *)
+  sys.CODE("5B");               (* pop     ebx              *)
+  sys.CODE("C9");               (* leave                    *)
+  sys.CODE("C20800");           (* ret     08h              *)
+  RETURN 0
+END sysfunc2;
+
+PROCEDURE [stdcall] sysfunc3(arg1, arg2, arg3: INTEGER): INTEGER;
+BEGIN
+  sys.CODE("53");               (* push    ebx              *)
+  sys.CODE("8B4508");           (* mov     eax, [ebp + 08h] *)
+  sys.CODE("8B5D0C");           (* mov     ebx, [ebp + 0Ch] *)
+  sys.CODE("8B4D10");           (* mov     ecx, [ebp + 10h] *)
+  sys.CODE("CD40");             (* int     40h              *)
+  sys.CODE("5B");               (* pop     ebx              *)
+  sys.CODE("C9");               (* leave                    *)
+  sys.CODE("C20C00");           (* ret     0Ch              *)
+  RETURN 0
+END sysfunc3;
+
+PROCEDURE [stdcall] sysfunc22(arg1, arg2: INTEGER; VAR res2: INTEGER): INTEGER;
+BEGIN
+  sys.CODE("53");               (* push    ebx              *)
+  sys.CODE("8B4508");           (* mov     eax, [ebp + 08h] *)
+  sys.CODE("8B5D0C");           (* mov     ebx, [ebp + 0Ch] *)
+  sys.CODE("CD40");             (* int     40h              *)
+  sys.CODE("8B4D10");           (* mov     ecx, [ebp + 10h] *)
+  sys.CODE("8919");             (* mov     [ecx], ebx       *)
+  sys.CODE("5B");               (* pop     ebx              *)
+  sys.CODE("C9");               (* leave                    *)
+  sys.CODE("C20C00");           (* ret     0Ch              *)
+  RETURN 0
+END sysfunc22;
+
+PROCEDURE GetProcAdr(name: ARRAY OF CHAR; lib: INTEGER): INTEGER;
+VAR cur, procname, adr: INTEGER;
+
+  PROCEDURE streq(str1, str2: INTEGER): BOOLEAN;
+  VAR c1, c2: CHAR;
+  BEGIN
+    REPEAT
+      sys.GET(str1, c1);
+      sys.GET(str2, c2);
+      INC(str1);
+      INC(str2)
+    UNTIL (c1 # c2) OR (c1 = 0X)
+    RETURN c1 = c2
+  END streq;
+
+BEGIN
+  adr := 0;
+  IF (lib # 0) & (name # "") THEN
+    cur := lib;
+    REPEAT
+      sys.GET(cur, procname);
+      INC(cur, 8)
+    UNTIL (procname = 0) OR streq(procname, sys.ADR(name[0]));
+    IF procname # 0 THEN
+      sys.GET(cur - 4, adr)
+    END
+  END
+  RETURN adr
+END GetProcAdr;
+
+PROCEDURE Time*(VAR sec, dsec: INTEGER);
+VAR t: INTEGER;
+BEGIN
+  t := sysfunc2(26, 9);
+  sec := t DIV 100;
+  dsec := t MOD 100
+END Time;
+
+PROCEDURE init*;
+VAR Lib: INTEGER;
+
+  PROCEDURE GetProc(v: INTEGER; name: ARRAY OF CHAR);
+  VAR a: INTEGER;
+  BEGIN
+    a := GetProcAdr(name, Lib);
+    sys.PUT(v, a)
+  END GetProc;
+
+BEGIN
+  Time(sec, dsec);
+  Lib := sysfunc3(68, 19, sys.ADR("/rd/1/lib/console.obj"));
+  IF Lib # 0 THEN
+    GetProc(sys.ADR(con_init),	       "con_init");
+    GetProc(sys.ADR(con_exit),	       "con_exit");
+    GetProc(sys.ADR(con_write_asciiz), "con_write_asciiz");
+    IF con_init # NIL THEN
+      con_init(-1, -1, -1, -1, sys.ADR("Oberon-07/11 for KolibriOS"))
+    END
+  END
+END init;
+
+PROCEDURE ExitProcess* (n: INTEGER);
+BEGIN
+  IF con_exit # NIL THEN
+    con_exit(FALSE)
+  END;
+  n := sysfunc1(-1)
+END ExitProcess;
+
+PROCEDURE GetCommandLine*(): INTEGER;
+VAR param: INTEGER;
+BEGIN
+  sys.GET(28, param)
+  RETURN param
+END GetCommandLine;
+
+PROCEDURE GetName*(): INTEGER;
+VAR name: INTEGER;
+BEGIN
+  sys.GET(32, name)
+  RETURN name
+END GetName;
+
+PROCEDURE malloc*(size: INTEGER): INTEGER;
+  RETURN sysfunc3(68, 12, size)
+END malloc;
+
+PROCEDURE CloseFile*(hObject: INTEGER);
+VAR pFS: POINTER TO OFSTRUCT;
+BEGIN
+  sys.PUT(sys.ADR(pFS), hObject);
+  DISPOSE(pFS)
+END CloseFile;
+
+PROCEDURE _OCFile(FileName: ARRAY OF CHAR; VAR FS: OFSTRUCT; mode: INTEGER; VAR fsize: INTEGER): INTEGER;
+VAR buf: ARRAY 40 OF CHAR; res: INTEGER;
+BEGIN
+  FS.subfunc := mode;
+  FS.pos := 0;
+  FS.hpos := 0;
+  FS.bytes := 0;
+  FS.buf := sys.ADR(buf);
+  COPY(FileName, FS.name);
+  IF sysfunc22(70, sys.ADR(FS), res) = 0 THEN
+    res := sys.ADR(FS);
+    sys.GET(sys.ADR(buf) + 32, fsize)
+  ELSE
+    res := 0
+  END
+  RETURN res
+END _OCFile;
+
+PROCEDURE IOFile(VAR FS: OFSTRUCT; Buffer, bytes, io: INTEGER): INTEGER;
+VAR res1, res: INTEGER;
+BEGIN
+  FS.subfunc := io;
+  FS.bytes := bytes;
+  FS.buf := Buffer;
+  res1 := sysfunc22(70, sys.ADR(FS), res);
+  IF res = -1 THEN
+    res := 0
+  END;
+  FS.pos := FS.pos + res
+  RETURN res
+END IOFile;
+
+PROCEDURE OCFile(FName: ARRAY OF CHAR; mode: INTEGER): INTEGER;
+VAR FS: OFSTRUCT; pFS: POINTER TO OFSTRUCT; res: INTEGER;
+BEGIN
+  IF _OCFile(FName, FS, mode, fsize) # 0 THEN
+    NEW(pFS);
+    IF pFS = NIL THEN
+      res := 0
+    ELSE
+      sys.GET(sys.ADR(pFS), res);
+      pFS^ := FS
+    END
+  ELSE
+    res := 0
+  END
+  RETURN res
+END OCFile;
+
+PROCEDURE CreateFile* (FName: ARRAY OF CHAR): INTEGER;
+  RETURN OCFile(FName, 2)
+END CreateFile;
+
+PROCEDURE OpenFile* (FName: ARRAY OF CHAR): INTEGER;
+  RETURN OCFile(FName, 5)
+END OpenFile;
+
+PROCEDURE FileSize* (F: INTEGER): INTEGER;
+  RETURN fsize
+END FileSize;
+
+PROCEDURE FileRW* (hFile, Buffer, nNumberOfBytes: INTEGER; write: BOOLEAN): INTEGER;
+VAR pFS: POINTER TO OFSTRUCT; res: INTEGER;
+BEGIN
+  IF hFile # 0 THEN
+    sys.PUT(sys.ADR(pFS), hFile);
+    res := IOFile(pFS^, Buffer, nNumberOfBytes, 3 * ORD(write))
+  ELSE
+    res := 0
+  END
+  RETURN res
+END FileRW;
+
+PROCEDURE OutString* (str: ARRAY OF CHAR);
+VAR n: INTEGER;
+BEGIN
+  n := ORD(str[0] = 3X);
+  IF con_write_asciiz # NIL THEN
+    con_write_asciiz(sys.ADR(str[n]))
+  ELSE
+    API.DebugMsg(sys.ADR(str[n]), 0)
+  END
+END OutString;
+
+END HOST.

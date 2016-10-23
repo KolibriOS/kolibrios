@@ -1,0 +1,114 @@
+MODULE Dialogs;
+
+IMPORT KOSAPI, sys := SYSTEM, OpenDlg, ColorDlg;
+
+VAR header: ARRAY 1024 OF CHAR; back_color: INTEGER;
+
+PROCEDURE WindowRedrawStatus(p: INTEGER);
+VAR aux: INTEGER;
+BEGIN
+  aux := KOSAPI.sysfunc2(12, p)
+END WindowRedrawStatus;
+
+PROCEDURE DefineAndDrawWindow(x, y, w, h, color, style, hcolor, hstyle, htext: INTEGER);
+VAR aux: INTEGER;
+BEGIN
+  aux := KOSAPI.sysfunc6(0, x * 65536 + w, y * 65536 + h, color + LSL(style, 24), hcolor + LSL(hstyle, 24), htext)
+END DefineAndDrawWindow;
+
+PROCEDURE WaitForEvent(): INTEGER;
+  RETURN KOSAPI.sysfunc1(10)
+END WaitForEvent;
+
+PROCEDURE ExitApp;
+VAR aux: INTEGER;
+BEGIN
+  aux := KOSAPI.sysfunc1(-1)
+END ExitApp;
+
+PROCEDURE pause(t: INTEGER);
+VAR aux: INTEGER;
+BEGIN
+  aux := KOSAPI.sysfunc2(5, t)
+END pause;
+
+PROCEDURE Buttons;
+
+  PROCEDURE Button(id, X, Y, W, H: INTEGER; Caption: ARRAY OF CHAR);
+  VAR n, aux: INTEGER;
+  BEGIN
+    n := LENGTH(Caption);
+    aux := KOSAPI.sysfunc5(8, X * 65536 + W, Y * 65536 + H, id, 00C0C0C0H);
+    X := X + (W - 8 * n) DIV 2;
+    Y := Y + (H - 14) DIV 2;
+    aux := KOSAPI.sysfunc6(4, X * 65536 + Y, LSL(48, 24), sys.ADR(Caption[0]), n, 0)
+  END Button;
+
+BEGIN
+  Button(17,  5, 5, 70, 25, "open");
+  Button(18, 85, 5, 70, 25, "color");
+END Buttons;
+
+PROCEDURE draw_window;
+BEGIN
+  WindowRedrawStatus(1);
+  DefineAndDrawWindow(200, 200, 500, 100, back_color, 51, 0, 0, sys.ADR(header[0]));
+  Buttons;
+  WindowRedrawStatus(2);
+END draw_window;
+
+PROCEDURE OpenFile(Open: OpenDlg.Dialog);
+BEGIN
+  IF Open # NIL THEN
+    OpenDlg.Show(Open, 500, 450);
+    WHILE Open.status = 2 DO
+      pause(30)
+    END;
+    IF Open.status = 1 THEN
+      COPY(Open.FilePath, header)
+    END
+  END
+END OpenFile;
+
+PROCEDURE SelColor(Color: ColorDlg.Dialog);
+BEGIN
+  IF Color # NIL THEN
+    ColorDlg.Show(Color);
+    WHILE Color.status = 2 DO
+      pause(30)
+    END;
+    IF Color.status = 1 THEN
+      back_color := Color.color
+    END
+  END
+END SelColor;
+
+PROCEDURE main;
+VAR Open: OpenDlg.Dialog; Color: ColorDlg.Dialog; res, al: INTEGER;
+BEGIN
+  back_color := 00FFFFFFH;
+  header := "Dialogs";
+  draw_window;
+  Open := OpenDlg.Create(draw_window, 0, "/rd/1", "ASM|TXT|INI");
+  Color := ColorDlg.Create(draw_window);
+  WHILE TRUE DO
+    CASE WaitForEvent() OF
+    |1: draw_window
+    |3: res := KOSAPI.sysfunc1(17);
+        al := LSR(LSL(res, 24), 24);
+        res := LSR(res, 8);
+        IF al = 0 THEN
+          CASE res OF
+          | 1: ExitApp
+          |17: OpenFile(Open)
+          |18: SelColor(Color)
+          END
+        END
+    ELSE
+    END
+  END
+END main;
+
+BEGIN
+  main
+END Dialogs.
