@@ -102,45 +102,20 @@ extern void (*tl_node_move_up)(treelist *) __attribute__((__stdcall__));
 ///перемещаем узел вниз
 extern void (*tl_node_move_down)(treelist *) __attribute__((__stdcall__));
 
-extern void (*tl_data_init_asm)(treelist *) __attribute__((__stdcall__));
 ///выделение памяти для структур списка и основной информации (конструктор)
-static inline void treelist_data_init(treelist *tl)
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
+extern void (*tl_data_init)(treelist *) __attribute__((__stdcall__));
 
-    (*tl_data_init_asm)(tl);
 
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":::);
-}
-
-extern void (*tl_data_clear_asm)(treelist *) __attribute__((__stdcall__));
 ///очистка памяти элемента (деструктор)
+extern void (*tl_data_clear)(treelist *) __attribute__((__stdcall__));
 static inline void treelist_data_clear(treelist *tl)
 {
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
-
-    (*tl_data_clear_asm)(tl);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":::);
+    (*tl_data_clear)(tl);
     free(tl->p_scroll);
 }
 
-extern void (*tl_info_clear_asm)(treelist *) __attribute__((__stdcall__));
 ///очистка списка (информации)
-static inline void treelist_info_clear(treelist *tl)
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
-
-    (*tl_info_clear_asm)(tl);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":::);
-}
+extern void (*tl_info_clear)(treelist *) __attribute__((__stdcall__));
 
 extern void (*tl_key_asm)(treelist *) __attribute__((__stdcall__));
 ///реакция на клавиатуру
@@ -153,33 +128,13 @@ __attribute__((__stdcall__)) static inline void treelist_key(treelist *tl, oskey
 //    (*tl_key_asm)(tl);
 }
 
-extern void (*tl_info_undo_asm)(treelist *) __attribute__((__stdcall__));
 ///отмена действия
-static inline void treelist_undo(treelist *tl)
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
+extern void (*tl_info_undo)(treelist *) __attribute__((__stdcall__));
 
-    (*tl_info_undo_asm)(tl);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":::);
-}
-
-extern void (*tl_info_redo_asm)(treelist *) __attribute__((__stdcall__));
 ///повтор действия
-static inline void treelist_redo(treelist *tl)
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
+extern void (*tl_info_redo)(treelist *) __attribute__((__stdcall__));
 
-    (*tl_info_redo_asm)(tl);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":::);
-}
-
-extern void (*tl_node_add_asm)(treelist *, uint32_t n_opt, void *n_info) __attribute__((__stdcall__));
+extern void (*tl_node_add)(treelist *, uint32_t n_opt, void *n_info) __attribute__((__stdcall__));
 ///добавить узел
 ///input:
 /// tlist - указатель на структуру листа
@@ -187,235 +142,68 @@ extern void (*tl_node_add_asm)(treelist *, uint32_t n_opt, void *n_info) __attri
 /// n_info - указатель на добавляемые данные
 static inline void treelist_node_add(treelist *tl, void *n_info, uint16_t type, uint8_t clos, uint8_t lev)
 {
-    __asm__ __volatile__ (
-             "push %%ebx \n\t"
-             "push %%edi \n\t":::);
-
     uint32_t    n_opt = (type << 16) | (clos << 8) | lev;
-    (*tl_node_add_asm)(tl, n_opt, n_info);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t"
-             "pop %%ebx \n\t":::);
+    (*tl_node_add)(tl, n_opt, n_info);
 }
 
-extern void (*tl_node_set_data_asm)(treelist *, void *n_info) __attribute__((__stdcall__));
 ///записать в текущий узел
 ///input:
 /// tlist - указатель на структуру листа
 /// n_info - указатель на данные
-static inline void treelist_node_setdata(treelist *tl, void *n_info)
-{
-    __asm__ __volatile__ (
-             "push %%esi \n\t"
-             "push %%edi \n\t":::);
+extern void (*tl_node_set_data)(treelist *, void *n_info) __attribute__((__stdcall__));
 
-    (*tl_node_set_data_asm)(tl, n_info);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t"
-             "pop %%esi \n\t":::);
-}
-
-extern void* (*tl_node_get_data_asm)(treelist *) __attribute__((__stdcall__));
 ///взять указатель на данные узла под курсором
-static inline void* treelist_getdata(treelist *tl)
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
+extern void* (*tl_node_get_data)(treelist *) __attribute__((__stdcall__));
 
-    void *res =
-    (*tl_node_get_data_asm)(tl);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":::);
-    return res;
-}
-
-extern void (*tl_node_delete_asm)(treelist *) __attribute__((__stdcall__));
 ///удалить узел под курсором
-static inline void treelist_node_delete(treelist *tl)
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
+extern void (*tl_node_delete)(treelist *) __attribute__((__stdcall__));
 
-    (*tl_node_delete_asm)(tl);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":::);
-}
-
-extern void (*tl_cur_beg_asm)(treelist *) __attribute__((__stdcall__));
 ///поставить курсор на первый узел
-static inline void treelist_cursor_begin(treelist *tl)
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
+extern void (*tl_cur_beg)(treelist *) __attribute__((__stdcall__));
 
-    (*tl_cur_beg_asm)(tl);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":::);
-}
-
-extern void (*tl_cur_next_asm)(treelist *) __attribute__((__stdcall__));
 ///перенести курсор на 1 позицию ниже
-static inline void treelist_cursor_next(treelist *tl)
-{
-    __asm__ __volatile__ (
-             "push %%ebx \n\t"
-             "push %%esi \n\t"
-             "push %%edi \n\t":::);
+extern void (*tl_cur_next)(treelist *) __attribute__((__stdcall__));
 
-    (*tl_cur_next_asm)(tl);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t"
-             "pop %%esi \n\t"
-             "pop %%ebx \n\t":::);
-}
-
-extern void (*tl_cur_perv_asm)(treelist *) __attribute__((__stdcall__));
 ///перенести курсор на 1 позицию выше
-static inline void treelist_cursor_prev(treelist *tl)
-{
-    __asm__ __volatile__ (
-             "push %%ebx \n\t"
-             "push %%esi \n\t"
-             "push %%edi \n\t":::);
+extern void (*tl_cur_perv)(treelist *) __attribute__((__stdcall__));
 
-    (*tl_cur_perv_asm)(tl);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t"
-             "pop %%esi \n\t"
-             "pop %%ebx \n\t":::);
-}
-
-extern void (*tl_node_close_open_asm)(treelist *) __attribute__((__stdcall__));
 ///открыть/закрыть узел (работает с узлами которые имеют дочерние узлы)
-static inline void treelist_close_open(treelist *tl)
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
+extern void (*tl_node_close_open)(treelist *) __attribute__((__stdcall__));
 
-    (*tl_node_close_open_asm)(tl);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":::);
-}
-
-extern void (*tl_node_lev_inc_asm)(treelist *) __attribute__((__stdcall__));
 ///увеличить уровень
-static inline void treelist_level_inc(treelist *tl)
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
+extern void (*tl_node_lev_inc)(treelist *) __attribute__((__stdcall__));
 
-    (*tl_node_lev_inc_asm)(tl);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":::);
-}
-
-extern void (*tl_node_lev_dec_asm)(treelist *) __attribute__((__stdcall__));
 ///уменьшить уровень
-static inline void treelist_level_dec(treelist *tl)
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
+extern void (*tl_node_lev_dec)(treelist *) __attribute__((__stdcall__));
 
-    (*tl_node_lev_dec_asm)(tl);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":::);
-}
-
-extern treelist_node* (*tl_node_poi_get_info_asm)(treelist *, int node_ind) __attribute__((__stdcall__));
 ///взять указатель на структуру узла в указанной позиции
 ///input:
 /// tlist - pointer to 'TreeList' struct
 /// node_ind - node index
 ///output - pointer to node info or NULL
-static inline treelist_node* treelist_getnode(treelist *tl, int node_ind)
-{
-    __asm__ __volatile__ (
-             "push %%ebx \n\t"
-             "push %%edi \n\t":::);
+extern treelist_node* (*tl_node_poi_get_info)(treelist *, int node_ind) __attribute__((__stdcall__));
 
-    treelist_node *ret =
-    (*tl_node_poi_get_info_asm)(tl, node_ind);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t"
-             "pop %%ebx \n\t":::);
-    return ret;
-}
-
-extern treelist_node* (*tl_node_poi_get_next_info_asm)(treelist *, treelist_node*) __attribute__((__stdcall__));
 ///взять указатель на следущую структуру узла
 ///input:
 /// tlist - pointer to 'TreeList' struct
 /// node_p - node param struct
 ///output - pointer to next node struct or NULL
-static inline treelist_node* treelist_getnode_next(treelist *tl, treelist_node* node)
-{
-    __asm__ __volatile__ (
-             "push %%ebx \n\t"
-             "push %%edi \n\t":::);
+extern treelist_node* (*tl_node_poi_get_next_info)(treelist *, treelist_node*) __attribute__((__stdcall__));
 
-    treelist_node *ret =
-    (*tl_node_poi_get_next_info_asm)(tl, node);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t"
-             "pop %%ebx \n\t":::);
-    return ret;
-}
-
-extern void* (*_tl_node_poi_get_data_asm)(treelist *, treelist_node*) __attribute__((__stdcall__));
 ///;взять указатель на данные узла
 ///input:
 /// tlist - pointer to 'TreeList' struct
 /// node_p - node param struct
 ///output - pointer
-static inline void* treelist_getnode_data(treelist *tl, treelist_node *node)
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
+extern void* (*_tl_node_poi_get_data)(treelist *, treelist_node*) __attribute__((__stdcall__));
 
-    void *ret =
-    (*_tl_node_poi_get_data_asm)(tl, node);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":::);
-    return ret;
-}
-
-extern int (*tl_save_mem_asm)(treelist *, int opt, void *h_mem, int mem_size) __attribute__((__stdcall__));
 /// tlist - pointer to 'TreeList' struct
 /// opt - options: 0 - first element, 1 - add next element
 /// h_mem - pointer to memory
 /// mem_size - memory size
 ///output - error code
-static inline int treelist_save2mem(treelist *tl, int opt, void *h_mem, int mem_size)
-{
-    __asm__ __volatile__ (
-             "push %%ebx \n\t"
-             "push %%esi \n\t"
-             "push %%edi \n\t":::);
+extern int (*tl_save_mem)(treelist *, int opt, void *h_mem, int mem_size) __attribute__((__stdcall__));
 
-    int ret =
-    (*tl_save_mem_asm)(tl, opt, h_mem, mem_size);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t"
-             "pop %%esi \n\t"
-             "pop %%ebx \n\t":::);
-    return ret;
-}
-
-extern int (*_tl_load_mem_asm)(treelist *, int opt, void *h_mem, int mem_size) __attribute__((__stdcall__));
 /**input:
 ; tlist - pointer to 'TreeList' struct
 ; opt   - options: element index + (2*(add mode)+(init mode)) shl 16, tl_load_mode_add        equ 0x20000 ;опция считывания в режиме добавления информации
@@ -436,40 +224,11 @@ extern int (*_tl_load_mem_asm)(treelist *, int opt, void *h_mem, int mem_size) _
 ; +22 - (4) scroll pos
 ;memory data format:
 ; +26 - (info size + 8) * count nodes */
-static inline int treelist_load4mem(treelist *tl, int opt, void *h_mem, int mem_size)
-{
-    __asm__ __volatile__ (
-             "push %%ebx \n\t"
-             "push %%esi \n\t"
-             "push %%edi \n\t":::);
+extern int (*_tl_load_mem)(treelist *, int opt, void *h_mem, int mem_size) __attribute__((__stdcall__));
 
-    int ret =
-    (*_tl_load_mem_asm)(tl, opt, h_mem, mem_size);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t"
-             "pop %%esi \n\t"
-             "pop %%ebx \n\t":::);
-    return ret;
-}
-
-extern int (*tl_get_mem_size_asm)(treelist *, void *h_mem) __attribute__((__stdcall__));
 /// ;берет размер памяти занятой функцией tl_save_mem при сохранении элементов
 /// tlist - pointer to 'TreeList' struct
 /// h_mem - pointer to saved memory
-static inline int treelist_get_memsize(treelist *tl, void *h_mem)
-{
-    __asm__ __volatile__ (
-             "push %%ebx \n\t"
-             "push %%edi \n\t":::);
-
-    int ret =
-    (*tl_get_mem_size_asm)(tl, h_mem);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t"
-             "pop %%ebx \n\t":::);
-    return ret;
-}
+extern int (*tl_get_mem_size)(treelist *, void *h_mem) __attribute__((__stdcall__));
 
 #endif //KOLIBRI_TREELIST_H

@@ -12,8 +12,8 @@ typedef void (*editor_callback)(void);
 struct __attribute__ ((__packed__)) editor_symbol {
 	uint8_t     c;      //  +0 символ
 	uint8_t     col;    //  +1 цвет
-	struct editor_symbol   *prev;   //  +2
-	struct editor_symbol   *next;   //  +6 указатели
+	uint32_t    prev;   //  +2 индекс предыдущего
+	uint32_t    next;   //  +6 указатели (индекс следующего)
 	uint32_t    tc;     //  +10 врем. создания
 	uint32_t    td;     // +14 врем. удаления
 };
@@ -39,8 +39,8 @@ typedef struct __attribute__ ((__packed__)) {
 	uint32_t    seln_x1;
 	uint32_t    seln_y1;
 	struct editor_symbol   *tex;    // text memory pointer
-	struct editor_symbol   *tex_1;  // text first symbol pointer
-	struct editor_symbol   *tex_end;// text end memory pointer
+	struct editor_symbol   *tex_1;  // указатель за последним существующим символом (конец файла)
+	struct editor_symbol   *tex_end;// text end memory pointer (указатель за концом выделенного буфера для текста)
 	uint32_t    cur_x;      //координата x курсора
 	uint32_t    cur_y;      //координата y курсора
 	uint32_t    max_chars;  // TE_MAXCHARS ;+86 максимальное число символов в одном документе
@@ -161,121 +161,34 @@ extern void (*ted_but_find_next)(editor *) __attribute__((__stdcall__));
 
 
 
-extern void (*ted_but_sumb_upper_asm)(editor *) __attribute__((__stdcall__));
-static inline void editor_selected_toupper(editor *ed)
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t"
-             "push %%esi \n\t":::);
+extern void (*ted_but_sumb_upper)(editor *) __attribute__((__stdcall__));
 
-    (*ted_but_sumb_upper_asm)(ed);
+extern void (*ted_but_sumb_lover)(editor *) __attribute__((__stdcall__));
 
-    __asm__ __volatile__ (
-             "pop %%esi \n\t"
-             "pop %%edi \n\t":::);
-}
+extern void (*ted_but_convert_by_table)(editor *, char* table) __attribute__((__stdcall__));
 
-extern void (*ted_but_sumb_lover_asm)(editor *) __attribute__((__stdcall__));
-static inline void editor_selected_tolower(editor *ed)
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t"
-             "push %%esi \n\t":::);
-
-    (*ted_but_sumb_lover_asm)(ed);
-
-    __asm__ __volatile__ (
-             "pop %%esi \n\t"
-             "pop %%edi \n\t":::);
-}
-
-
-extern void (*ted_but_convert_by_table_asm)(editor *, char* table) __attribute__((__stdcall__));
-static inline void editor_convert_by_table(editor *ed, char* table)
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t"
-             "push %%esi \n\t":::);
-
-    (*ted_but_convert_by_table_asm)(ed, table);
-
-    __asm__ __volatile__ (
-             "pop %%esi \n\t"
-             "pop %%edi \n\t":::);
-}
-
-extern int (*ted_can_save_asm)(editor *) __attribute__((__stdcall__));
-static inline int editor_can_save(editor *ed)
 /// return 1 if need to be saved (has changes), 0 otherwise
-{
-    int ret;
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
+extern int (*ted_can_save)(editor *) __attribute__((__stdcall__));
 
-    (*ted_can_save_asm)(ed);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":"=a"(ret)::);
-    return ret;
-}
-
-extern void (*ted_clear_asm)(editor *, int) __attribute__((__stdcall__));
-static inline void editor_clear(editor *ed, int all)
 /// all==1 - clear all memory
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
+extern void (*ted_clear)(editor *, int all) __attribute__((__stdcall__));
 
-    (*ted_clear_asm)(ed, all);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":::);
-}
-
-extern void (*ted_delete_asm)(editor *) __attribute__((__stdcall__));
+extern void (*ted_delete)(editor *) __attribute__((__stdcall__));
 static inline void editor_delete(editor *ed)
 /// frees all memory (destroy)
 {
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
-
-    (*ted_delete_asm)(ed);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":::);
+    (*ted_delete)(ed);
     free(ed->scr_w);
     free(ed->scr_h);
     free(ed->buffer);
     free(ed->buffer_find);
 }
 
-extern void (*ted_init_asm)(editor *) __attribute__((__stdcall__));
-static inline void editor_init(editor *ed)
 /// allocate memory
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
+extern void (*ted_init)(editor *) __attribute__((__stdcall__));
 
-    (*ted_init_asm)(ed);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":::);
-}
-
-extern int (*ted_is_select)(editor *) __attribute__((__stdcall__));
-static inline int editor_is_select(editor *ed)
 /// return 1 if have selection
-{
-    int ret;
-    __asm__ __volatile__ (
-             "push %%ebx \n\t":::);
-
-    (*ted_is_select)(ed);
-
-    __asm__ __volatile__ (
-             "pop %%ebx \n\t":"=a"(ret)::);
-    return ret;
-}
+extern int (*ted_is_select)(editor *) __attribute__((__stdcall__));
 
 enum control_keys {
     KM_SHIFT = 0x00010000,
@@ -330,62 +243,19 @@ static inline int editor_savefile(editor *ed, char *fname)
 }
 
 extern void (*ted_but_cut)(editor *) __attribute__((__stdcall__));
-static inline void editor_cut(editor *ed)
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
-
-    (*ted_but_cut)(ed);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":::);
-}
 
 extern void (*ted_but_undo)(editor *) __attribute__((__stdcall__));
-static inline void editor_undo(editor *ed)
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
-
-    (*ted_but_undo)(ed);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":::);
-}
 
 extern void (*ted_but_redo)(editor *) __attribute__((__stdcall__));
-static inline void editor_redo(editor *ed)
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t":::);
-
-    (*ted_but_redo)(ed);
-
-    __asm__ __volatile__ (
-             "pop %%edi \n\t":::);
-}
 
 extern void (*ted_but_reverse)(editor *) __attribute__((__stdcall__));
-static inline void editor_reverse(editor *ed)
-{
-    __asm__ __volatile__ (
-             "push %%edi \n\t"
-             "push %%ebx\n\t":::);
-
-    (*ted_but_reverse)(ed);
-
-    __asm__ __volatile__ (
-             "pop %%ebx \n\t"
-             "pop %%edi \n\t":::);
-}
 
 extern void (*ted_text_colored_asm)() __attribute__((__stdcall__));
 static inline void editor_text_colored(editor *ed)
 {
     __asm__ __volatile__ (
-             "nop \n\t"::"D"(ed):);
+             "call *%0 \n\t"::"m"(ted_text_colored_asm), "D"(ed):);
 
-    (*ted_text_colored_asm)();
 }
 
 static inline
@@ -494,8 +364,7 @@ static inline editor* kolibri_new_editor(uint32_t x_w, uint32_t y_h, uint32_t fo
 
     ed->el_focus = editor_interlock;
 
-    // ??? saveregs ax,cx,di
-    editor_init(ed);  // memory allocation, cleaning
+    (*ted_init)(ed);  // memory allocation, cleaning
     ed->syntax_file = (char*)&default_syntax;
     (*ted_init_syntax_file)(ed); // load colors and syntax highlight
     ed->help_text_f1 = f1_table; // override if not aligned immediately after syntax words
@@ -504,5 +373,53 @@ static inline editor* kolibri_new_editor(uint32_t x_w, uint32_t y_h, uint32_t fo
     return ed;
 }
 
+/// return 1 if symbol is not visible (deleted or undo-ed)
+static inline int editor_symbol_not_vis(editor* ed, struct editor_symbol* sym)
+{
+    return (sym->td && sym->td + ed->tim_undo <= ed->tim_ch) || (sym->tc > ed->tim_ch - ed->tim_undo);
+}
 
+/// returns next good symbol by index
+static inline
+uint32_t editor_iterat_next(editor* ed, uint32_t idx)
+{
+    uint32_t  i;
+    if (ed->tim_undo)
+    {
+        for (i = ed->tex[idx].next; i != 0 && (ed->tex[i].c == '\n' || editor_symbol_not_vis(ed, ed->tex + i)); i = ed->tex[i].next);
+    } else
+    {
+        for (i = ed->tex[idx].next; i != 0 && (ed->tex[i].c == '\n' || ed->tex[i].td); i = ed->tex[i].next);
+    }
+    return i;
+}
+
+// returns malloc'ed mem
+static inline
+char*  editor_get_text(editor* ed)
+{
+    char    *buf = malloc(ed->max_chars), *pc = buf;
+    if (!pc) return NULL;
+
+    int  i;
+//    *pc++ = ed->tex[0].c;
+    for (i = ed->tex[0].next; i; i = editor_iterat_next(ed, i)) *pc++ = ed->tex[i].c;
+    *pc++ = '\0';
+
+    return buf;
+}
+
+/*
+char*  editor_get_text20(editor* ed)
+{
+    char    *buf = malloc(ed->max_chars), *pc = buf;
+    if (!pc) return NULL;
+
+    int  i = ed->tex[0].next, c = 0;
+    for (; i > 0 && c < 30; c++, i = ed->tex[i].next) *pc++ = ed->tex[i].c;
+    *pc++ = '\0';
+
+    return buf;
+}
+*/
 #endif // KOLIBRI_EDITOR_H

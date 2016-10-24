@@ -69,19 +69,19 @@ int main(int argc, char **argv)
 
     gui_add_editor(main_window, ed = kolibri_new_editor(X_Y(0, 440), X_Y(20, 150), 0x11, 2048, &ed_lock));  // 0x11 font 8x16 sized x2
     ed_lock = ed;
-/*
+
     // load sample file
-    int res, len;
-    res = editor_openfile(ed, "/rd/1/boardlog.txt", &len);
-    debug_board_printf("loaded sample file err=%d, len=%d\n", res, len);
-*/
+    //int res, len;
+    //res = editor_openfile(ed, "/rd/1/boardlog.txt", &len);
+    //debug_board_printf("loaded sample file err=%d, len=%d\n", res, len);
+
     //adding sample text @cursor
-    char *sampletext = "==========ADDED SAMPLE TEXT==========\n";
+    char *sampletext = "*123*=========ADDED SAMPLE TEXT=========*789*\n";
     (*ted_text_add)(ed, sampletext, strlen(sampletext), 0);
 
     // treelist as tree
     treelist *tl = kolibri_new_treelist(X_Y(0, 200), X_Y(200, 200), 16, X_Y(16, 16), 100, 50, 0, 0, TL_KEY_NO_EDIT | TL_DRAW_PAR_LINE, &ed_lock, 0x8080ff, 0x0000ff, 0xffffff);
-    treelist_data_init(tl);
+    (*tl_data_init)(tl);
 
     // читаем файл с курсорами и линиями
     strcpy(fname, run_path);
@@ -94,42 +94,42 @@ int main(int argc, char **argv)
     tl->data_img = load_image_file(fname);
 
     treelist_node_add(tl, "node1", 1, 0, 0); // где 1 номер иконки с книгой
-    treelist_cursor_next(tl);
+    (*tl_cur_next)(tl);
     treelist_node_add(tl, "node1.1", 1, 0, 1);
-    treelist_cursor_next(tl);
+    (*tl_cur_next)(tl);
     treelist_node_add(tl, "node1.1.1", 0, 0, 2);
-    treelist_cursor_next(tl);
+    (*tl_cur_next)(tl);
     treelist_node_add(tl, "node1.2", 1, 0, 1);
-    treelist_cursor_next(tl);
+    (*tl_cur_next)(tl);
 
     treelist_node_add(tl, "node2", 1, 1, 0);  // closed node
-    treelist_cursor_next(tl);
+    (*tl_cur_next)(tl);
     treelist_node_add(tl, "node2.1", 1, 0, 1);
-    treelist_cursor_next(tl);
+    (*tl_cur_next)(tl);
 
     treelist_node_add(tl, "node3", 1, 0, 0);
-    treelist_cursor_next(tl);
+    (*tl_cur_next)(tl);
 
-    treelist_cursor_begin(tl); //;ставим курсор на начало списка
+    (*tl_cur_beg)(tl); //;ставим курсор на начало списка
     gui_add_treelist(main_window, tl);
 
     // treelist as listbox
     treelist *tl2 = kolibri_new_treelist(X_Y(220, 200), X_Y(200, 200), 16, X_Y(16, 16), 100, 50, 0, 0, TL_LISTBOX_MODE, &ed_lock, 0x8080ff, 0x0000ff, 0xffffff);
-    treelist_data_init(tl2);
+    (*tl_data_init)(tl2);
 
     tl2->data_img_sys = tl->data_img_sys;
     tl2->data_img = tl->data_img;
 
     treelist_node_add(tl2, "list1", 0, 0, 0); // где 1 номер иконки с книгой
-    treelist_cursor_next(tl2);
+    (*tl_cur_next)(tl2);
 
     treelist_node_add(tl2, "list2", 0, 0, 0);
-    treelist_cursor_next(tl2);
+    (*tl_cur_next)(tl2);
 
     treelist_node_add(tl2, "list3", 0, 0, 0);
-    treelist_cursor_next(tl2);
+    (*tl_cur_next)(tl2);
 
-    treelist_cursor_begin(tl2); //;ставим курсор на начало списка
+    (*tl_cur_beg)(tl2); //;ставим курсор на начало списка
     gui_add_treelist(main_window, tl2);
 
     msgbox* box = kolibri_new_msgbox("Exit", "Are\rYOU\rSure?", 3, "YES", "Absolute", "Not Yet", NULL);  // default NOT
@@ -148,7 +148,6 @@ int main(int argc, char **argv)
 			break;
         case KOLIBRI_EVENT_KEY:
             key = get_key();
-trap(0x55); // for stop in debug
             if (ed_lock == ed)
                 editor_key(ed, key);
             else if(ed_lock == tl)
@@ -181,6 +180,14 @@ trap(0x55); // for stop in debug
     } while(1) ; /* End of main activity loop */
 
 clearing:
+trap(0x55); // for stop in debug
+    //res = editor_savefile(ed, "/tmp0/1/editorlog.txt");
+    pc = editor_get_text(ed);
+    debug_board_printf("saved text \"%s\"\n", pc);
+    free(pc);
+
+
+
     editor_delete(ed);
     treelist_data_clear(tl);
 
