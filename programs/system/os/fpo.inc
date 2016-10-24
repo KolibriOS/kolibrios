@@ -10,8 +10,12 @@ local loc,regcount
         regcount = regcount+1
         push    reg
     \}
-    parmbase@proc equ esp+4+regcount*4
-    localbase@proc equ esp-localbytes
+    if loc
+        sub     esp, loc
+    end if
+    parmbase@proc equ esp+4+loc+regcount*4
+    localbase@proc equ esp
+    fpo_localsize = loc
 }
 macro fpo_epilogue procname,flag,parmbytes,localbytes,reglist
 {

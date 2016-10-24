@@ -59,6 +59,9 @@ struct IMAGE_OPTIONAL_HEADER32
   DataDirectory                 IMAGE_DATA_DIRECTORY ?
   Directories                   rb  sizeof.IMAGE_DATA_DIRECTORY*15
 ends
+IMAGE_DIRECTORY_ENTRY_EXPORT = 0
+IMAGE_DIRECTORY_ENTRY_IMPORT = 1
+IMAGE_DIRECTORY_ENTRY_BASERELOC = 5
 
 struct IMAGE_FILE_HEADER
   Machine               dw ?
@@ -69,6 +72,8 @@ struct IMAGE_FILE_HEADER
   SizeOfOptionalHeader  dw ?
   Characteristics       dw ?
 ends
+IMAGE_FILE_RELOCS_STRIPPED = 1
+IMAGE_FILE_DLL = 0x2000
 
 struct IMAGE_NT_HEADERS
   Signature         dd ?
@@ -97,6 +102,13 @@ struct IMAGE_IMPORT_DIRECTORY
   Name                  dd ?
   FirstThunk            dd ?
 ends
+
+struct IMAGE_BASE_RELOCATION
+  VirtualAddress        dd ?
+  SizeOfBlock           dd ?
+ends
+IMAGE_REL_BASED_ABSOLUTE = 0
+IMAGE_REL_BASED_HIGHLOW = 3
 
 struct IMAGE_DOS_HEADER
   e_magic               dw ?
