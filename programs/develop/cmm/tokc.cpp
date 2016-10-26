@@ -1,6 +1,7 @@
 #define _TOKC_
 
 #include <fcntl.h>	 /* O_ constant definitions */
+#include <unistd.h>	 
 #include "tok.h"
 
 void GetFileTime(int fd,struct ftime *buf);

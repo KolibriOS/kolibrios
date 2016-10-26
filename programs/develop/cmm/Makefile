@@ -1,19 +1,26 @@
-Compiler                = gcc
+Compiler                = kos32-gcc
 Linker					= kos32-ld
 
-Includes 		= -I d:\TEMP\mprog\kos\includes
+SDK_DIR:= $(abspath ../../../contrib/sdk)
 
-Compiler_Options       = -c -fno-exceptions -D_KOS_
+Includes = -Id:\TEMP\mprog\kos\includes -I$(SDK_DIR)/sources/newlib/libc/include
+
+Compatib_Posix = -Dstricmp=strcasecmp -Dstrnicmp=strncasecmp
+
+Compiler_Options = -c -fno-exceptions -D_KOS_ -U_Win32 -U_WIN32 -U__MINGW32__ \
+	-mno-ms-bitfields -Wno-write-strings $(Includes) $(Compatib_Posix)
 
 Exe_file                = cmm.kex
 
 
-Path_Libs		= -Ld:/TEMP/Dev-Cpp/lib/kos 
+Path_Libs		= -Ld:/TEMP/Dev-Cpp/lib/kos -L $(SDK_DIR)/lib
 #-Ld:/TEMP/Dev-Cpp/lib/gcc/mingw32/3.4.2 -Ld:/TEMP/Dev-Cpp/lib/gcc -Ld:/TEMP/Dev-Cpp/lib -Ld:/TEMP/Dev-Cpp/lib
 
 Add_Libs		=
 
-Link_Libs		= -lc -lgcc
+#Link_Libs		= -lc -lgcc
+Link_Libs = -static -S -nostdlib -T $(SDK_DIR)/lib/app-dynamic.lds \
+          --image-base 0 -lgcc -ldll -lc.dll 
 
 My_Libs	 		= main.o port.o toka.o tokb.o tokc.o toke.o tokr.o errors.o debug.o outobj.o outpe.o disasm.o switch.o outle.o pointer.o new_type.o class.o res.o optreg.o libobj.o
  
@@ -24,7 +31,7 @@ My_Libs	 		= main.o port.o toka.o tokb.o tokc.o toke.o tokr.o errors.o debug.o o
 all        : $(Exe_file)
 
 $(Exe_file) : $(My_Libs)
-	$(Linker) -o cmm.kex -static -nostdlib -T static.lds --stack 0x100000 $(Path_Libs) $(Add_Libs) $(My_Libs) $(Link_Libs)
+	$(Linker) -o cmm.kex --stack 0x100000 $(Path_Libs) $(Add_Libs) $(My_Libs) $(Link_Libs)
 	objcopy cmm.kex -O binary
 	kpack cmm.kex
 
