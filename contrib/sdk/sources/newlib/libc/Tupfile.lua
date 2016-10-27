@@ -385,7 +385,6 @@ STDIO_SRCS = {
   "iprintf.c",
   "iscanf.c",
   "makebuf.c",
-  "mbstowcs.c",
   "mktemp.c",
   "open_memstream.c",
   "perror.c",
