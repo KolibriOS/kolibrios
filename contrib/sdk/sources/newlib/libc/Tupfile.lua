@@ -566,7 +566,7 @@ vfwscanf_extra_objs = {
   {"-DSTRING_ONLY", "stdio/svfwscanf.o"},
   {"-DINTEGER_ONLY -DSTRING_ONLY", "stdio/svfiwscanf.o"},
 }
-for i,v in ipairs(vfscanf_extra_objs) do
+for i,v in ipairs(vfwscanf_extra_objs) do
   LIB_OBJS += tup.rule("stdio/vfwscanf.c", "kos32-gcc $(CFLAGS) $(DEFINES) $(INCLUDES) " .. v[1] .. " -c %f -o %o", v[2])
 end
 
