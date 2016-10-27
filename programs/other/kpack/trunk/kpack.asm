@@ -425,7 +425,7 @@ draw_window:
 ; start redraw
 	mcall	12,1
 	
-	mcall	48,3,color_table,192
+	mcall	48,3,color_table,40
 ;--------------------------------------
 edit_boxes_set_sys_color edit1,editboxes_end,color_table
 check_boxes_set_sys_color2 check1,check1_end,color_table
