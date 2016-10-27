@@ -355,7 +355,7 @@ STDIO_SRCS = {
   "fputwc.c",
   "fputwc_u.c",
   "fputws.c",
-  "fputws_u.c"
+  "fputws_u.c",
   "fsetpos.c",
   "funopen.c",
   "fread.c",
