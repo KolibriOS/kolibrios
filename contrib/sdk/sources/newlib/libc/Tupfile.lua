@@ -21,14 +21,12 @@ if TOOLCHAIN_LIBPATH == "" then
   end
 end
 LIBPATH = "-L$(SDK_DIR)/lib"
-STATIC_SRCS = {"crt/start.S", "crt/crt1.c", "crt/crt2.c", "crt/exit.S"}
+STATIC_SRCS = {"crt/start.S", "crt/crt2.c", "crt/exit.S"}
 LIBDLL_SRCS = {"crt/dllstart.c", "crt/exit.S", "crt/pseudo-reloc.c", "crt/setjmp.S"}
 LIBCDLL_SRCS = {
-  "crt/crtdll.c",
   "crt/crt2.c",
   "crt/pseudo-reloc.c",
-  "crt/exit.S",
-  "pe/loader.c"
+  "crt/exit.S"
 }
 CORE_SRCS = {
   "argz/buf_findstr.c",
@@ -224,7 +222,6 @@ STDLIB_SRCS = {
 STRING_SRCS = {
   "bcmp.c",
   "bcopy.c",
-
   "bzero.c",
   "explicit_bzero.c",
   "gnu_basename.c",
