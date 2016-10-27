@@ -12,7 +12,9 @@ do_sinus:
    mov	   edi,[Zbuffer_ptr]
    push    edi
    ;  clear Zbuffer temporally used as image buffer
-   mov	   ecx,SIZE_X*SIZE_Y
+   movzx   ecx,word[size_x_var]
+   movzx   eax,word[size_y_var]
+   imul    ecx,eax  ;SIZE_X*SIZE_Y
    xor	   eax,eax
    cld
    rep	   stosd
@@ -67,11 +69,12 @@ end if
    mov	   eax,.new_y
    or	   eax,eax
    jl	   .skip
-   cmp	   eax,SIZE_Y
+   movzx   ebx,word[size_y_var]
+   cmp	   eax,ebx  ;SIZE_Y
    jg	   .skip
-;   mov     edx,SIZE_X
-;   mul     edx
-   shl	   eax,9
+   movzx   edx,word[size_x_var]
+   mul	   edx
+;   shl     eax,9
    add	   eax,dword .x
    lea	   ebx,[eax*3]
    mov	   eax,[esi]
@@ -79,17 +82,24 @@ end if
  .skip:
    add	   esi,3
    inc	   dword .x
-   cmp	   dword .x,SIZE_X
+   movzx   edx,word[size_x_var]
+   cmp	   dword .x,edx  ;SIZE_X
    jl	   .again
    mov	   dword .x,0
    inc	   dword .y
-   cmp	   dword .y,SIZE_Y
+   movzx   edx,word[size_y_var]
+   cmp	   dword .y,edx   ;SIZE_Y
    jl	   .again
 
    ; copy from temporary buffer -> Zbuffer to screen
    mov	   esi,[Zbuffer_ptr]
    mov	   edi,[screen_ptr]
-   mov	   ecx,SIZE_X*SIZE_Y*3/4
+   movzx   ecx,word[size_x_var]
+   movzx   eax,word[size_y_var]
+   imul    ecx,eax
+   lea	   ecx,[ecx*3]
+   shr	   ecx,2
+ ;  mov     ecx,SIZE_X*SIZE_Y*3/4
    cld
    rep	   movsd
 
@@ -112,11 +122,11 @@ draw_dots:
    jl	   @f
    or	   bx,bx
    jl	   @f
-   cmp	   ax,SIZE_Y
+   cmp	   ax,[size_y_var]  ;SIZE_Y
    jge	   @f
-   cmp	   bx,SIZE_X
+   cmp	   bx,[size_x_var]  ;SIZE_X
    jge	   @f
-   mov	   edx,SIZE_X	   ; SIZE_X not only power of 2   -> 256,512,...
+   movzx   edx,word[size_x_var]  ;SIZE_X      ; SIZE_X not only power of 2   -> 256,512,...
    mul	   edx
    add	   eax,ebx
    mov	   edi,[screen_ptr]
@@ -130,7 +140,100 @@ draw_dots:
 
 ret
 
-do_emboss:
+do_emboss:   ; sse2 version only
+if Ext >= SSE2
+ movzx ecx,[bumps_deep_flag]
+ inc   ecx
+ call  blur_screen    ;blur n times
+
+ mov   eax,[size_y_var]  ;load both x, y
+ mov   ebx,eax
+ shr   ebx,16
+ cwde
+ mul   ebx
+ mov   ecx,eax
+ sub   ecx,ebx
+ sub   ecx,ebx
+ mov   esi,[screen_ptr]
+ mov   edi,[Zbuffer_ptr]
+ lea   ebx,[ebx*3]
+ mov   edx,esi
+ add   esi,ebx
+ lea   ebx,[ebx+esi]
+ pxor  xmm0,xmm0
+ push  eax
+@@:
+ movlps     xmm1,[esi+3]
+ movhps     xmm1,[esi+6]
+ punpcklbw  xmm1,xmm0
+ movlps     xmm2,[esi-3]
+ movhps     xmm2,[esi]
+ punpcklbw  xmm2,xmm0
+ movlps     xmm3,[ebx]
+ movhps     xmm3,[ebx+3]
+ movlps     xmm4,[edx]
+ movhps     xmm4,[edx+3]
+ punpcklbw  xmm3,xmm0
+ punpcklbw  xmm4,xmm0
+ psubsw     xmm1,xmm2
+ paddw	    xmm1,[.bias]
+ psubsw     xmm3,xmm4
+ paddw	    xmm3,[.bias]
+ pmulhw     xmm1,xmm3
+ movaps      xmm7,xmm1
+ movaps      xmm6,xmm1
+ psrlq	     xmm7,2*8
+ psrlq	     xmm6,4*8
+ pmaxsw      xmm1,xmm7
+ pmaxsw      xmm1,xmm6
+
+if 0
+ movaps      xmm7,xmm3
+ movaps      xmm6,xmm3
+ psrlq	     xmm7,2*8
+ psrlq	     xmm6,4*8
+ pmaxsw      xmm3,xmm7
+ pmaxsw      xmm3,xmm6
+end if
+ pmaxsw      xmm1,xmm3
+
+ movd	     eax,xmm1
+ movzx	     eax,al
+ lea	     eax,[eax*3+envmap_cub]
+ mov	     eax,[eax]
+ mov	    [edi],eax  ;xmm1
+ psrldq     xmm1,8
+ movd	    eax,xmm1
+ movzx	    eax,al
+ lea	    eax,[eax*3+envmap_cub]
+ mov	    eax,[eax]
+ mov	    [edi+4],eax
+
+
+ add	edi,8
+ add	esi,6
+ add	ebx,6
+ add	edx,6
+ sub	ecx,2
+ jnc	@b
+
+
+ pop	ecx  ;,eax
+ mov	edi,[screen_ptr]
+ mov	esi,[Zbuffer_ptr]
+@@:
+ movsd
+ dec	edi
+ loop	@b
+end if
+ret
+
+align 16
+ .bias:
+    dw 128, 128, 128, 128, 128, 128, 128, 128
+
+if 0  ; old emb proc
+
  ;  emboss -  after drawing all,
  ;  transfer screen buffer into bump map
  ;  and draw two bump triangles
@@ -227,6 +330,7 @@ end if
 
 	pop	ebp
 ret
+end if
 ;********************************EMBOSS DONE*******************************
 
 

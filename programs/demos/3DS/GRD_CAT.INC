@@ -514,7 +514,9 @@ gouraud_line_z:
 	mov	ax,.y
 	or	ax,ax
 	jl	.gl_quit
-	cmp	ax,SIZE_Y
+	mov	bx,[size_y_var]
+	dec	bx
+	cmp	ax,bx ;SIZE_Y
 	jge	.gl_quit
 
 	mov	eax,dword[.x1]
@@ -531,7 +533,9 @@ gouraud_line_z:
 	xchg	eax,.z2
 	mov	.z1,eax
    @@:
-	cmp	word[.x1],SIZE_X
+	mov	bx,[size_x_var]
+	dec	bx
+	cmp	word[.x1],bx  ;SIZE_X
 	jge	.gl_quit
 	cmp	word[.x2],0
 	jle	.gl_quit
@@ -594,12 +598,14 @@ gouraud_line_z:
 	add	word[.c1b],ax
 
       @@:
-	cmp	word[.x2],SIZE_X
+	mov	bx,[size_x_var]
+	dec	bx
+	cmp	word[.x2],bx  ;SIZE_X
 	jl	@f
-	mov	word[.x2],SIZE_X
+	mov	word[.x2],bx  ;SIZE_X
      @@:
 	sub	esp,16	    ; calculate memory begin
-	mov	edx,SIZE_X	 ; in buffers
+	movzx	edx,word[size_x_var]  ;SIZE_X       ; in buffers
 	movzx	eax,.y
 	mul	edx
 	movzx	edx,word[.x1]

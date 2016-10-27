@@ -41,7 +41,15 @@ smooth_line:
 .ccoord 	equ ebp-60  ;current coordinate
 .czbuf		equ ebp-64
 .cscr		equ ebp-68
-;.lasty          equ ebp-72
+.xres		equ ebp-72
+.yres		equ ebp-76
+.xresm1 	equ ebp-80
+.yresm1 	equ ebp-84
+.xresp1 	equ ebp-88
+.yresp1 	equ ebp-92
+.xres3		equ ebp-96
+.xres4		equ ebp-100
+
 macro .update_cur_var
 {
 if Ext=NON
@@ -126,15 +134,35 @@ end if
     or		eax,ebx
     test	eax,80008000h
     jne 	.end_line
-    cmp 	word[.x1],SIZE_X
+    movzx	edx,word [size_x_var]
+    mov 	[.xres],edx
+    movzx	ecx,word [size_y_var]
+    mov 	[.yres],ecx
+    cmp 	word[.x1],dx  ;SIZE_X
     jg		.end_line
-    cmp 	word[.x2],SIZE_X
+    cmp 	word[.x2],dx  ;SIZE_X
     jg		.end_line
-    cmp 	word[.y1],SIZE_Y
+    cmp 	word[.y1],cx  ;SIZE_Y
     jg		.end_line
-    cmp 	word[.y2],SIZE_Y
+    cmp 	word[.y2],cx  ;SIZE_Y
     jg		.end_line
 
+    mov 	edx,[.xres]
+    shl 	edx,2
+    mov 	[.xres4],edx
+    shr 	edx,2
+    lea 	edx,[edx*3]
+    mov 	[.xres3],edx
+    mov 	edx,[.xres]
+    mov 	ecx,[.yres]
+    dec 	edx
+    dec 	ecx
+    mov 	[.xresm1],edx
+    mov 	[.yresm1],ecx
+    add 	edx,2
+    add 	ecx,2
+    mov 	[.xresp1],edx
+    mov 	[.yresp1],ecx
 
     mov 	[.screen],edi
     mov 	cx,[.x1]
@@ -181,7 +209,7 @@ end if
 
     call	.calc_delta
 
-    mov 	eax,SIZE_X
+    movzx	eax,word [size_x_var]  ;SIZE_X
     movsx	ebx,word[.y1]
     mul 	ebx
     add 	esi,eax
@@ -247,7 +275,7 @@ end if
 
     call	.calc_delta
 
-    mov 	eax,SIZE_X
+    movzx	eax,word[size_x_var]  ;SIZE_X
     movsx	ebx,word[.y1]
     mul 	ebx
     add 	esi,eax
@@ -290,8 +318,8 @@ end if
     .draw_pixel
 
 @@:
-    add 	edi,SIZE_X*3
-    add 	esi,SIZE_X*4
+    add 	edi,[.xres3]
+    add 	esi,[.xres4]
 
     .update_cur_var
 
@@ -318,7 +346,7 @@ end if
 
     call	.calc_delta
 
-    mov 	eax,SIZE_X
+    mov 	eax,[.xres]
     movsx	ebx,word[.y1] ;calc begin values in screen and Z buffers
     mul 	ebx
     lea 	ebx,[3*eax]
@@ -359,12 +387,16 @@ end if
 @@:
     cmp 	dword[.delta_y],0
     jl		@f
-    add 	edi,SIZE_X*3+3
-    add 	esi,SIZE_X*4+4
+    add 	edi,[.xres3]  ;SIZE_X*3+3
+    add 	edi,3
+    add 	esi,[.xres4]  ;SIZE_X*4+4
+    add 	esi,4
     jmp 	.d45_1
 @@:
-    sub 	edi,(SIZE_X*3)-3
-    sub 	esi,(SIZE_X*4)-4
+    sub 	edi,[.xres3]  ;(SIZE_X*3)-3
+    sub 	edi,3
+    sub 	esi,[.xres4]  ;(SIZE_X*4)-4
+    sub 	esi,4
 .d45_1:
     .update_cur_var
 
@@ -395,7 +427,7 @@ end if
 
     call	.calc_delta
 
-    mov 	eax,SIZE_X
+    mov 	eax,[.xres] ;SIZE_X
     movsx	ebx,word[.y1] ;calc begin values in screen and Z buffers
     mul 	ebx
     lea 	ebx,[3*eax]
@@ -446,9 +478,11 @@ end if
 
 @@:
     mov 	eax,[.delta]
+    mov 	ebx,[.xres3]
     add 	[.ccoord],eax
-    add 	dword[.cscr],SIZE_X*3  ;
-    add 	dword[.czbuf],SIZE_X*4
+    mov 	eax,[.xres4]
+    add 	dword[.cscr],ebx  ;SIZE_X*3  ;
+    add 	dword[.czbuf],eax  ;SIZE_X*4
 .d_m_v1:
 
     .update_cur_var
@@ -518,7 +552,7 @@ end if
     mov 	esi,[.czbuf]
     mov 	eax,[.ccoord]	 ; ccoord - cur y coordinate
     sar 	eax,ROUND
-    mov 	ebx,SIZE_X
+    mov 	ebx,[.xres]  ;SIZE_X
     mul 	ebx
     add 	esi,eax
     lea 	eax,[eax*3]

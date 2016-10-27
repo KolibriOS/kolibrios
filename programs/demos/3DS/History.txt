@@ -1,4 +1,8 @@
 
+View3ds 0.065 - Feb 2015
+1. Asc files support.
+-----------------------------------------------------------------------------------
+
 View3ds 0.064 - Nov 2012
 1. Bug fixes.
 -----------------------------------------------------------------------------------
@@ -29,9 +33,9 @@ View3ds 0.059 - June 2011.
 -----------------------------------------------------------------------------------
 
 View3ds 0.058 - June 2011.
-1. Blur function optimization on SSE and SSE2 (buttons 'blur' and 'fire').   
+1. Blur function optimization on SSE and SSE2 (buttons 'blur' and 'fire').
 -----------------------------------------------------------------------------------
-   
+
 View3ds 0.057 - April 2011.
 1. By opening file bigger then ~18 KB, and choosing env mode program terminate.
    I remove this bug
@@ -89,7 +93,7 @@ View3ds 0.03 - March 2007.
 1. Two shading models: smooth + texture, spherical environment mapping + texture.
    Version only with z coordinate interpolation.
 2. Bit changed rotary. I took attempt in SSE instuctions. ( matrix multiplication )
-3. Color position depend drawing model  instead spot light ( I hope,spot light come
+3. Color position depend drawing model	instead spot light ( I hope,spot light come
    back in future ).
 -----------------------------------------------------------------------------------
 

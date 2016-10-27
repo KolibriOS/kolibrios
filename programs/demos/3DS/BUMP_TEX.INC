@@ -1279,7 +1279,8 @@ bump_tex_line_z:
 	mov	ecx,.y
 	or	ecx,ecx
 	jl	.bl_end
-	cmp	ecx,SIZE_Y
+	movzx	edx,word[size_y_var]
+	cmp	ecx,edx  ;SIZE_Y
 	jge	.bl_end
 
 	cmp	eax,ebx
@@ -1380,7 +1381,9 @@ end if
 
 	push	eax
 	push	ebx	      ;store x1, x2
-	cmp	dword .x1,SIZE_X
+	movzx	ebx,word[size_x_var]
+    ;    mov     eax,.x1
+	cmp	dword .x1,ebx  ;dword .x1,SIZE_X
 	jge	.bl_end
 	cmp	dword .x2,0
 	jle	.bl_end
@@ -1532,11 +1535,14 @@ end if
 	add	.ty1,eax
 
       @@:
-	cmp	dword .x2,SIZE_X
+   ;     mov     ebx,.x2
+	movzx	eax,word[size_x_var]
+       ; cmp     dword .x2,SIZE_X
+	cmp	dword .x2,eax  ; eax,ebx
 	jl	@f
-	mov	dword .x2,SIZE_X
+	mov	dword .x2,eax  ;SIZE_X
       @@:
-	mov	eax,SIZE_X	 ;calc memory begin in buffers
+	movzx	eax,word[size_x_var]  ;SIZE_X       ;calc memory begin in buffers
 	mul	.y
 	add	eax,.x1
 	lea	esi,[4*eax]

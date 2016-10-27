@@ -95,22 +95,22 @@ tex_triangle_z:
 	and	 edx,eax
 	test	 edx,80008000h	; Check both X&Y at once
 	jne	 .tt_loop2_end
-	cmp	 ax,SIZE_Y
-	jl	 @f
-	cmp	 bx,SIZE_Y
-	jl	 @f
-	cmp	 cx,SIZE_Y
-	jl	 @f
+    ;    cmp      ax,SIZE_Y
+    ;    jl       @f
+    ;    cmp      bx,SIZE_Y
+    ;    jl       @f
+    ;    cmp      cx,SIZE_Y
+    ;    jl       @f
 	ror	 eax,16
 	ror	 ebx,16
 	ror	 ecx,16
-	cmp	 ax,SIZE_X
-	jl	 @f
-	cmp	 bx,SIZE_X
-	jl	 @f
-	cmp	 cx,SIZE_X
-	jl	 @f
-	jmp	 .tt_loop2_end
+    ;    cmp      ax,SIZE_X
+    ;    jl       @f
+    ;    cmp      bx,SIZE_X
+    ;    jl       @f
+    ;    cmp      cx,SIZE_X
+    ;    jl       @f
+    ;    jmp      .tt_loop2_end
      @@:
 	mov	 eax,dword[.tex_x1] ; texture coords must be in [0..TEX_X(Y)]
 	mov	 ebx,dword[.tex_x2]
@@ -440,7 +440,9 @@ textured_line_z:
 	mov	ax,.y
 	or	ax,ax
 	jl	.tl_quit
-	cmp	ax,SIZE_Y
+	mov	bx,[size_y_var]
+	dec	bx
+	cmp	ax,bx  ;SIZE_Y
 	jge	.tl_quit
 
 	mov	ax,.x1
@@ -472,7 +474,9 @@ end if
 	mov	.z1,eax
 
      .tl_ok:
-	cmp	.x1,SIZE_X
+	mov	cx,[size_x_var]
+	dec	cx
+	cmp	.x1,cx	 ;SIZE_X
 	jge	.tl_quit
 	cmp	.x2,0
 	jle	.tl_quit
@@ -517,13 +521,13 @@ end if
 	add	dword[.tex_x1],eax
 
       @@:
-	cmp	.x2,SIZE_X
+	cmp	.x2,cx ;SIZE_X
 	jl	@f
-	mov	.x2,SIZE_X
+	mov	.x2,cx	;SIZE_X
       @@:
 
 	movsx	ebx,.y	      ; calc mem begin in buffers
-	mov	eax,SIZE_X
+	movzx	eax,word[size_x_var]  ;SIZE_X
 	mul	ebx
 	movsx	ebx,.x1
 	add	eax,ebx

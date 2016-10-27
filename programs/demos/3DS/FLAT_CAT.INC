@@ -291,10 +291,10 @@ flat_line_z:
      mov	ax,.y
      or 	ax,ax
      jl 	.fl_quit
-;;     mov        bx,[size_y]
-;;     dec        bx
-     cmp	ax,[size_y]
-     cmp	ax,SIZE_Y-1
+     mov	bx,[size_y_var]
+     dec	bx
+     cmp	ax,bx ;[size_y_var]
+  ;   cmp        ax,SIZE_Y-1
      jg 	.fl_quit
 
  ;    cmp        .x1,0
@@ -318,9 +318,9 @@ flat_line_z:
      xchg	edx,.z2
      mov	.z1,edx
    .fl_ok:
-   ;;  mov        bx,[size_x]
-   ;;  dec        bx
-     cmp	.x1,SIZE_X-1
+     mov	bx,[size_x_var]
+     dec	bx
+     cmp	.x1,bx ;SIZE_X-1
      jg 	.fl_quit
      cmp	.x2,0
      jle	.fl_quit
@@ -343,11 +343,12 @@ flat_line_z:
      add	.z1,eax
      mov	.x1,0
     @@:
-     cmp	.x2,SIZE_X
+     movzx	edx,word[size_x_var]
+     cmp	.x2,dx ;[size_x_var] ;SIZE_X
      jl 	@f
-     mov	.x2,SIZE_X
+     mov	.x2,dx ;[size_x_var] ;SIZE_X
     @@:
-     mov	edx,SIZE_X
+ ;    movzx      edx,[size_x_var] ;SIZE_X
      movsx	eax,.y
      mul	edx		     ; edi = edi + (SIZE_X * y + x1)*3
      movsx	edx,.x1

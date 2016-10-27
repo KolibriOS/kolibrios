@@ -97,11 +97,12 @@ bump_triangle:
        test    edx,80000000h   ; Check only X
        jne     .loop23_done
 
-       cmp     .x1,SIZE_X    ; {
+       mov     dx,[size_x_var]
+       cmp     .x1,dx  ;SIZE_X    ; {
        jg      .loop23_done
-       cmp     .x2,SIZE_X     ; This can be optimized with effort
+       cmp     .x2,dx  ;SIZE_X     ; This can be optimized with effort
        jg      .loop23_done
-       cmp     .x3,SIZE_X
+       cmp     .x3,dx  ;SIZE_X
        jg      .loop23_done    ; {
 
 
@@ -462,7 +463,8 @@ bump_line:
 	mov	ecx,.y
 	or	ecx,ecx
 	jl	.bl_end
-	cmp	ecx,SIZE_Y
+	movzx	edx,word[size_y_var]
+	cmp	ecx,edx  ;SIZE_Y
 	jge	.bl_end
 
 	cmp	eax,ebx
@@ -497,8 +499,10 @@ end if
   .bl_ok:
 	push	eax
 	push	ebx	      ;store x1, x2
+	movzx	eax,word[size_x_var]
+	lea	eax,[eax*3]
 
-	mov	eax,SIZE_X*3
+     ;   mov     eax,SIZE_X*3
 	mov	ebx,.y
 	mul	ebx
 	mov	ecx,.x1

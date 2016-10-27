@@ -12,8 +12,8 @@
 	xobs		dw	0 ;SIZE_X / 2 ;200 ;observer  = camera
 	yobs		dw	0 ;SIZE_Y / 2 ;200 ;coordinates
 	zobs		dw	-500
-	size_x		dw	SIZE_X
-	size_y		dw	SIZE_Y
+     ;   size_x          dw      SIZE_X
+     ;   size_y          dw      SIZE_Y
 
 	re_alloc_flag db 0
 	angle_counter dw 0
@@ -80,7 +80,7 @@ catmull_flag   db 1
 	       db 8
 	       db 'culling   '
 	       db 2
-culling_flag   db 1
+culling_flag   db 0
 	       dd onoff_f
 
 	       db 9
@@ -314,7 +314,7 @@ base_vector:
       if Ext=SSE2
 	db   ' (SSE2)'
       end if
-	db   ' 0.065',0
+	db   ' 0.066',0
     labellen:
 	STRdata db '-1        '
 
@@ -436,6 +436,10 @@ align 8
 	screen_ptr		dd ?
 	Zbuffer_ptr		dd ?
      ;   edges_ptr               dd ?
+	size_y_var:
+				dw ?
+	size_x_var:
+				dw ?
 
    ;===
 

@@ -747,16 +747,29 @@ if Ext>=SSE2
 	 shufps     xmm5,xmm5,0
      .again_blur:
 	 push	    ecx
-	 mov	    edi,screen
-	 mov	    ecx,SIZE_X*3/4
+	 mov	    edi,[screen_ptr]
+	 movzx	    ecx,word[size_x_var]  ;SIZE_X*3/4
+	 lea	    ecx,[ecx*3]
+	 shr	    ecx,2
+   ;      mov        ecx,SIZE_X*3/4
 	 xor	    eax,eax
 	 rep	    stosd
-
-	 mov	    ecx,(SIZE_X*(SIZE_Y-3))*3/16
+   if 1
+	 movzx	    ebx,word[size_x_var]
+	 movzx	    ecx,word[size_y_var]
+	 sub	    ecx,3
+	 imul	    ecx,ebx
+	 lea	    ecx,[ecx*3]
+	 shr	    ecx,4
+	 lea	    ebx,[ebx*3]
+       ;  mov        ecx,(SIZE_X*(SIZE_Y-3))*3/16
      .blr:
      @@:
-	 movaps     xmm0,[edi+SIZE_X*3]
-	 movaps     xmm1,[edi-SIZE_X*3]
+	 push	    ecx
+	 movups     xmm0,[edi+ebx]
+	 mov	    ecx,edi
+	 sub	    ecx,ebx
+	 movups     xmm1,[ecx]
 	 movups     xmm2,[edi-3]
 	 movups     xmm3,[edi+3]
 
@@ -766,14 +779,17 @@ if Ext>=SSE2
 
 	 psubusb    xmm0,xmm5  ; importand if fire
 
-	 movaps     [edi],xmm0
+	 movups     [edi],xmm0
 	 add	    edi,16
 	 add	    esi,16
-
+	 pop	    ecx
 	 loop	    .blr
-
+    end if
 	 xor	    eax,eax
-	 mov	    ecx,SIZE_X*3/4
+	 movzx	    ecx,word[size_x_var]
+	 lea	    ecx,[ecx*3]
+	 shr	    ecx,2
+    ;     mov        ecx,SIZE_X*3/4
 	 rep	    stosd
 	 pop	    ecx
 	 loop	    .again_blur
@@ -790,17 +806,25 @@ if Ext=SSE
 	 movq	    mm4,[esp]
      .again_blur:
 	 push	    ecx
-	 mov	    edi,screen
-	 mov	    ecx,SIZE_X*3/4
+	 mov	    edi,[screen_ptr]
+	 movzx	    ecx,word[size_x_var]  ;SIZE_X*3/4
+	 lea	    ecx,[ecx*3]
+	 shr	    ecx,2
      ;    pxor       mm5,mm5
 	 xor	    eax,eax
 	 rep	    stosd
-
-	 mov	    ecx,(SIZE_X*(SIZE_Y-3))*3/8
+	 movzx	    ebx,word[size_x_var]
+	 movzx	    ecx,word[size_y_var]
+	 sub	    ecx,3
+	 imul	    ecx,ebx
+	 lea	    ecx,[ecx*3]
+	 shr	    ecx,3
+	 lea	    ebx,[ebx*3]
+       ;  mov        ecx,(SIZE_X*(SIZE_Y-3))*3/8
      .blr:
      @@:
-	 movq	    mm0,[edi+SIZE_X*3]
-	 movq	    mm1,[edi-SIZE_X*3]
+	 movq	    mm0,[edi+ebx]
+	 movq	    mm1,[edi-ebx]
 	 movq	    mm2,[edi-3]
 	 movq	    mm3,[edi+3]
 
@@ -817,7 +841,10 @@ if Ext=SSE
 	 loop	     .blr
 
 	 xor	    eax,eax
-	 mov	    ecx,SIZE_X*3/4
+	 mov	    ecx,[size_x_var]
+	 lea	    ecx,[ecx*3]
+	 shr	    ecx,2
+       ;  SIZE_X*3/4
 	 rep	    stosd
 	 pop	     ecx
 	 loop	    .again_blur
@@ -833,7 +860,7 @@ if Ext=MMX
 	 push	    dword 0x01010101
 .again_blur:
 	 push	    ecx
-	 mov	    edi,screen
+	 mov	    edi,[screen_ptr]
 	 mov	    ecx,SIZE_X*3/4
 	 pxor	    mm5,mm5
 	 xor	    eax,eax

@@ -82,37 +82,37 @@ tex_triangle:
   or edx,ecx
   test edx,80008000h
   jne .tt_end
-
+  mov  dx,[size_x_var]
  ; or ax,ax
  ; jl .tt_end
-  cmp ax,SIZE_Y
-  jg .tt_end
+;  cmp ax,SIZE_Y
+;  jg .tt_end
   ror eax,16
  ; or ax,ax
  ; jl .tt_end
-  cmp ax,SIZE_X
+  cmp ax,dx  ;SIZE_X
   jg .tt_end
   rol eax,16
 
  ; or bx,bx
  ; jl .tt_end
-  cmp bx,SIZE_Y
-  jg .tt_end
+;  cmp bx,SIZE_Y
+;  jg .tt_end
   ror ebx,16
  ; or bx,bx
  ; jl .tt_end
-  cmp bx,SIZE_X
+  cmp bx,dx ;SIZE_X
   jg .tt_end
   rol ebx,16
 
  ; or cx,cx
  ; jl .tt_end
-  cmp cx,SIZE_Y
-  jg .tt_end
+;  cmp cx,SIZE_Y
+;  jg .tt_end
   ror ecx,16
  ; or cx,cx
  ; jl .tt_end
-  cmp cx,SIZE_X
+  cmp cx,dx  ;SIZE_X
   jg .tt_end
   rol ecx,16		       ; uff.. parameters was checked
 
@@ -432,7 +432,8 @@ textured_line:
   mov	ax,.y
   or	ax,ax
   jl	.tl_quit
-  cmp	ax,SIZE_Y
+  mov	dx,[size_y_var]
+  cmp	ax,dx ;SIZE_Y
   jg	.tl_quit
 
   mov	ax,.x1
@@ -465,7 +466,9 @@ end if
 
   mov	ebx,edi
   movsx edi,.y
-  mov	eax,SIZE_X*3
+  movzx eax,word[size_x_var]
+  lea	eax,[eax*3]
+;  mov   eax,SIZE_X*3
   mul	edi
   mov	edi,eax
   movsx eax,.x1

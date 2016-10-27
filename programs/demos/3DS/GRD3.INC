@@ -78,14 +78,17 @@ gouraud_triangle:
        or edx,ecx
        test edx,80000000h
        jne .gt_loop2_end
+
+       mov dx,[size_x_var]
+       dec dx
        shr eax,16
-       cmp ax,SIZE_X-1
+       cmp ax,dx  ;SIZE_X-1
        jg .gt_loop2_end
        shr ebx,16
-       cmp bx,SIZE_X-1
+       cmp bx,dx  ;SIZE_X-1
        jg .gt_loop2_end
        shr ecx,16
-       cmp cx,SIZE_X-1
+       cmp cx,dx  ;SIZE_X-1
        jg .gt_loop2_end
 
 
@@ -443,7 +446,9 @@ gouraud_line:
        mov ax,.y
        or ax,ax
        jl .gl_quit
-       cmp ax,SIZE_Y-1
+       mov  dx,[size_y_var]
+       dec  dx
+       cmp ax,dx    ;SIZE_Y-1
        jg .gl_quit
 
        mov ax,.x1
@@ -479,7 +484,9 @@ end if
   ;     jl .gl_quit
 
        movsx ecx,.y
-       mov eax,SIZE_X*3
+       movzx eax,word[size_x_var]
+       lea eax,[eax*3]
+  ;     mov eax,SIZE_X*3
        mul ecx
        movsx ebx,word .x1
        lea ecx,[ebx*2+eax]

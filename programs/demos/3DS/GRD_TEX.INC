@@ -742,7 +742,7 @@ horizontal_tex_grd_line:
 	or	cx,cx
 	jl	.quit_l
 
-	cmp	cx,SIZE_Y
+	cmp	cx,word[size_y_var]  ;SIZE_Y
 	jge	.quit_l
 
 	cmp	ax,bx
@@ -805,7 +805,7 @@ end if
     @@:
 	or	bx,bx
 	jle	.quit_l
-	cmp	ax,SIZE_X
+	cmp	ax,word[size_x_var]  ;SIZE_X
 	jge	.quit_l
 
 	push	ax
@@ -880,7 +880,7 @@ end if
 	imul   ebx
 	add    .tex_y1,eax
    @@:
-	mov	  edx,SIZE_X
+	movsx	  edx,word[size_x_var]	;SIZE_X
 	cmp	  .x2,dx
 	jl	  @f
 	mov	  .x2,dx

@@ -47,11 +47,12 @@ draw_triangle:
 	test	edx,80008000h	; Check both X&Y at once
 	jne	.end_triangle
 
-	cmp	word[.x1],SIZE_X    ; {
+	mov	dx,[size_x_var]
+	cmp	word[.x1],dx  ;SIZE_X    ; {
 	jg	.end_triangle
-	cmp	word[.x2],SIZE_X     ; This can be optimized with effort
+	cmp	word[.x2],dx  ;SIZE_X     ; This can be optimized with effort
 	jg	.end_triangle
-	cmp	word[.x3],SIZE_X
+	cmp	word[.x3],dx  ;SIZE_X
 	jg	.end_triangle	; }
 
 	shr	eax,16
@@ -176,10 +177,13 @@ ret
 	jcxz	.end_hor_l
 ;        or      edx,edx
 ;        jl      .end_hor_l
-	cmp	edx,SIZE_Y
+	movzx	esi,word[size_y_var]
+	cmp	edx,esi  ;SIZE_Y
 	jg	.end_hor_l
 	push	eax
-	mov	eax,SIZE_X*3
+	movzx	eax,word[size_x_var]
+	lea	eax,[eax*3]
+   ;     mov     eax,SIZE_X*3
 	mul	edx
 	add	edi,eax 	; calculate line begin adress
 	;add     edi,ebx
