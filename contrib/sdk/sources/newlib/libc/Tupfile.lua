@@ -86,7 +86,6 @@ CORE_SRCS = {
   "reent/mutex.c",
   "reent/openr.c",
   "reent/readr.c",
-  "reent/renamer.c",
   "reent/statr.c",
   "reent/timesr.c",
   "reent/unlinkr.c",
