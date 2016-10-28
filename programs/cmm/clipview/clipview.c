@@ -123,9 +123,9 @@ void DrawWindowContent()
 	DrawBar(0,Form.cheight-PANEL_BOTTOM_H, Form.cwidth, PANEL_BOTTOM_H, system.color.work);
 	DrawRectangle3D(list.x-2, list.y-2, list.w+3+scroll1.size_x, list.h+3, system.color.work_dark, system.color.work_light);
 	DrawWideRectangle(list.x-LIST_PADDING, list.y-LIST_PADDING, LIST_PADDING*2+list.w+scroll1.size_x, LIST_PADDING*2+list.h, LIST_PADDING-2, system.color.work);
-	button_x += DrawStandartCaptButton(button_x, list.y + list.h + 8, BT_DELETE_LAST_SLOT, system.color.work_button, system.color.work_button_text, T_DELETE_LAST_SLOT);
-	button_x += DrawStandartCaptButton(button_x, list.y + list.h + 8, BT_DELETE_ALL_SLOTS, system.color.work_button, system.color.work_button_text, T_DELETE_ALL_SLOTS);
-	button_x += DrawStandartCaptButton(button_x, list.y + list.h + 8, BT_UNLOCK, system.color.work_button, system.color.work_button_text, T_RESET_BUFFER_LOCK);
+	button_x += DrawStandartCaptButton(button_x, list.y + list.h + 8, BT_DELETE_LAST_SLOT, T_DELETE_LAST_SLOT);
+	button_x += DrawStandartCaptButton(button_x, list.y + list.h + 8, BT_DELETE_ALL_SLOTS, T_DELETE_ALL_SLOTS);
+	button_x += DrawStandartCaptButton(button_x, list.y + list.h + 8, BT_UNLOCK, T_RESET_BUFFER_LOCK);
 	DrawRectangle(list.x-1, list.y-1, list.w+1+scroll1.size_x, list.h+1, system.color.work_graph);
 	WriteText(list.x+12, list.y - 23, list.font_type, system.color.work_text, T_COLUMNS_TITLE);
 	WriteText(list.x+list.w-68, list.y - 23, list.font_type, system.color.work_text, T_COLUMN_VIEW);
