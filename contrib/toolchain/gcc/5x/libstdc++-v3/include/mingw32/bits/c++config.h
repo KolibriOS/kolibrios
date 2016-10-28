@@ -805,7 +805,7 @@ namespace std
 /* #undef _GLIBCXX_HAVE_MACHINE_PARAM_H */
 
 /* Define if mbstate_t exists in wchar.h. */
-//#define _GLIBCXX_HAVE_MBSTATE_T 1
+#define _GLIBCXX_HAVE_MBSTATE_T 1
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define _GLIBCXX_HAVE_MEMORY_H 1
@@ -989,22 +989,22 @@ namespace std
 #define _GLIBCXX_HAVE_UTIME_H 1
 
 /* Defined if vfwscanf exists. */
-//#define _GLIBCXX_HAVE_VFWSCANF 1
+#define _GLIBCXX_HAVE_VFWSCANF 1
 
 /* Defined if vswscanf exists. */
-//#define _GLIBCXX_HAVE_VSWSCANF 1
+#define _GLIBCXX_HAVE_VSWSCANF 1
 
 /* Defined if vwscanf exists. */
-//#define _GLIBCXX_HAVE_VWSCANF 1
+#define _GLIBCXX_HAVE_VWSCANF 1
 
 /* Define to 1 if you have the <wchar.h> header file. */
-//#define _GLIBCXX_HAVE_WCHAR_H 1
+#define _GLIBCXX_HAVE_WCHAR_H 1
 
 /* Defined if wcstof exists. */
-//#define _GLIBCXX_HAVE_WCSTOF 1
+#define _GLIBCXX_HAVE_WCSTOF 1
 
 /* Define to 1 if you have the <wctype.h> header file. */
-//#define _GLIBCXX_HAVE_WCTYPE_H 1
+#define _GLIBCXX_HAVE_WCTYPE_H 1
 
 /* Defined if Sleep exists. */
 #define _GLIBCXX_HAVE_WIN32_SLEEP 1
@@ -1344,7 +1344,7 @@ namespace std
 
 /* Define if C99 types in <stdint.h> should be imported in <tr1/cstdint> in
    namespace std::tr1. */
-//#define _GLIBCXX_USE_C99_STDINT_TR1 1
+#define _GLIBCXX_USE_C99_STDINT_TR1 1
 
 /* Defined if clock_gettime syscall has monotonic and realtime clock support.
    */
@@ -1429,7 +1429,7 @@ namespace std
 /* #undef _GLIBCXX_USE_UTIMENSAT */
 
 /* Define if code specialized for wchar_t should be used. */
-//#define _GLIBCXX_USE_WCHAR_T 1
+#define _GLIBCXX_USE_WCHAR_T 1
 
 /* Define to 1 if a verbose library is built, or 0 otherwise. */
 #define _GLIBCXX_VERBOSE 1

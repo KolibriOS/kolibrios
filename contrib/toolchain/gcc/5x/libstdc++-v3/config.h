@@ -809,7 +809,7 @@
 
 /* Define if C99 types in <stdint.h> should be imported in <tr1/cstdint> in
    namespace std::tr1. */
-//#define _GLIBCXX_USE_C99_STDINT_TR1 1
+#define _GLIBCXX_USE_C99_STDINT_TR1 1
 
 /* Defined if clock_gettime has monotonic clock support. */
 /* #undef _GLIBCXX_USE_CLOCK_MONOTONIC */
@@ -865,7 +865,7 @@
 /* #undef _GLIBCXX_USE_SYSCTL_HW_NCPU */
 
 /* Define if code specialized for wchar_t should be used. */
-//#define _GLIBCXX_USE_WCHAR_T 1
+#define _GLIBCXX_USE_WCHAR_T 1
 
 /* Define to 1 if a verbose library is built, or 0 otherwise. */
 #define _GLIBCXX_VERBOSE 1
