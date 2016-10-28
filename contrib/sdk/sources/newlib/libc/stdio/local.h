@@ -151,15 +151,15 @@ extern int    _EXFUN(__svfwscanf_r,(struct _reent *,FILE *, _CONST wchar_t *,va_
 extern int    _EXFUN(__ssvfwscanf_r,(struct _reent *,FILE *, _CONST wchar_t *,va_list));
 extern int    _EXFUN(__svfiwscanf_r,(struct _reent *,FILE *, _CONST wchar_t *,va_list));
 extern int    _EXFUN(__ssvfiwscanf_r,(struct _reent *,FILE *, _CONST wchar_t *,va_list));
-int	      _EXFUN(_svfprintf_r,(struct _reent *, FILE *, const char *, 
+int	      _EXFUN(_svfprintf_r,(struct _reent *, FILE *, const char *,
 				  va_list)
                			_ATTRIBUTE ((__format__ (__printf__, 3, 0))));
-int	      _EXFUN(_svfiprintf_r,(struct _reent *, FILE *, const char *, 
+int	      _EXFUN(_svfiprintf_r,(struct _reent *, FILE *, const char *,
 				  va_list)
                			_ATTRIBUTE ((__format__ (__printf__, 3, 0))));
-int	      _EXFUN(_svfwprintf_r,(struct _reent *, FILE *, const wchar_t *, 
+int	      _EXFUN(_svfwprintf_r,(struct _reent *, FILE *, const wchar_t *,
 				  va_list));
-int	      _EXFUN(_svfiwprintf_r,(struct _reent *, FILE *, const wchar_t *, 
+int	      _EXFUN(_svfiwprintf_r,(struct _reent *, FILE *, const wchar_t *,
 				  va_list));
 extern FILE  *_EXFUN(__sfp,(struct _reent *));
 extern int    _EXFUN(__sflags,(struct _reent *,_CONST char*, int*));
@@ -263,14 +263,11 @@ extern _READ_WRITE_RETURN_TYPE _EXFUN(__swrite64,(struct _reent *, void *,
 #define ORIENT(fp,ori)					\
   do								\
     {								\
-      if (!((fp)->_flags & __SORD))	\
-	{							\
 	  (fp)->_flags |= __SORD;				\
 	  if (ori > 0)						\
 	    (fp)->_flags2 |= __SWID;				\
 	  else							\
 	    (fp)->_flags2 &= ~__SWID;				\
-	}							\
     }								\
   while (0)
 #else

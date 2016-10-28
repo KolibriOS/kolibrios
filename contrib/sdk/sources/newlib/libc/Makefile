@@ -78,6 +78,7 @@ CORE_SRCS:=                   			\
          		ctype/iswupper.c     	\
          		ctype/iswxdigit.c    	\
          		ctype/isxdigit.c     	\
+			ctype/jp2uc.c		\
 			ctype/toascii.c		\
 			ctype/tolower.c      	\
 			ctype/toupper.c		\

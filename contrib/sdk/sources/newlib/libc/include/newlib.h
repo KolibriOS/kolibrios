@@ -17,8 +17,6 @@
  * printf/scanf enabled */
 #define _WANT_IO_C99_FORMATS
 
-#define __DYNAMIC_REENT__
-
 /* long long type support in IO functions like printf/scanf enabled */
 #define _WANT_IO_LONG_LONG
 
@@ -36,10 +34,10 @@
 /* #undef _WANT_REENT_SMALL */
 
 /* Multibyte supported */
-/* #undef _MB_CAPABLE */
+#define _MB_CAPABLE
 
 /* MB_LEN_MAX */
-#define _MB_LEN_MAX 1
+#define _MB_LEN_MAX 2
 
 /* ICONV enabled */
 /* #undef _ICONV_ENABLED */
@@ -63,6 +61,21 @@
 
 /* True if long double supported and it is equal to double.  */
 /* #undef _LDBL_EQ_DBL */
+
+/* Define if wide char orientation is supported.  */
+#define _WIDE_ORIENT 1
+
+/* Define if unbuffered stream file optimization is supported.  */
+#define _UNBUF_STREAM_OPT 1
+
+/* Define if lite version of exit supported.  */
+/* #undef _LITE_EXIT */
+
+/* Define if declare atexit data as global.  */
+/* #undef _REENT_GLOBAL_ATEXIT */
+
+/* Define if small footprint nano-formatted-IO implementation used.  */
+/* #undef _NANO_FORMATTED_IO */
 
 /*
  * Iconv encodings enabled ("to" direction)
@@ -171,6 +184,8 @@
 /* #undef _ICONV_FROM_ENCODING_WIN_1256 */
 /* #undef _ICONV_FROM_ENCODING_WIN_1257 */
 /* #undef _ICONV_FROM_ENCODING_WIN_1258 */
+
+#define __DYNAMIC_REENT__
 
 #ifdef STATIC_LIBC
   #define BUILD_LIBC
