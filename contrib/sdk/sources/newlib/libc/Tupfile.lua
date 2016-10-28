@@ -526,6 +526,8 @@ LIB_OBJS = compile(LIB_SRCS)
 LIB_OBJS += tup.rule("crt/crtdll.c", "kos32-gcc $(CFLAGS) $(DEFINES) $(INCLUDES) -fno-delete-null-pointer-checks -c %f -o %o","crt/crtdll.o")
 LIB_OBJS += tup.rule("pe/loader.c", "kos32-gcc $(CFLAGS) $(DEFINES) $(INCLUDES) -fno-delete-null-pointer-checks -c %f -o %o", "pe/loader.o")
 LIB_OBJS += tup.rule("reent/renamer.c", "kos32-gcc $(CFLAGS) $(DEFINES) $(INCLUDES) -D_COMPILING_NEWLIB -c %f -o %o", "reent/renamer.o")
+LIB_OBJS += tup.rule("time/strftime.c", "kos32-gcc $(CFLAGS) $(DEFINES) -DMAKE_WCSFTIME $(INCLUDES) -c %f -o %o", "time/wcsftime.o")
+
 
 LIBDLL_OBJS = compile(LIBDLL_SRCS)
 

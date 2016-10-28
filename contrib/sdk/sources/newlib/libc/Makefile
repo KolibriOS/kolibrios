@@ -573,7 +573,7 @@ LIB_OBJS+=				\
 		$(PRINTF_OBJS)		\
 		$(MATH_OBJS)
 
-
+LIB_OBJS+= time/wcsftime.o
 
 shared: $(NAME).dll libdll.a
 
@@ -655,7 +655,8 @@ stdio/svfwscanf.o: stdio/vfwscanf.c
 stdio/vfiwscanf.o: stdio/vfwscanf.c
 	$(CC) $(CFLAGS) $(DEFINES) -DINTEGER_ONLY $(INCLUDES) stdio/vfwscanf.c -o $@
 
-
+time/wcsftime.o: time/strftime.c
+	$(CC) $(CFLAGS) $(DEFINES) -DMAKE_WCSFTIME $(INCLUDES) time/strftime.c -o $@
 
 
 %.obj : %.asm Makefile

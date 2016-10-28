@@ -105,9 +105,7 @@ LIBC {
             __kernel_tanf;
             __libc_getenv;
             __lo0bits;
-            __locale_charset;
             __locale_cjk_lang;
-            __locale_mb_cur_max;
             __locale_msgcharset;
             __lshift;
             __mb_cur_max;
