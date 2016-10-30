@@ -4667,46 +4667,299 @@ Parameters:
   * bh = device number
   * bl = subfunction number
 
-Protocols and subfunctions:
-		Unless otherwise specified, output is in eax, additional input in ecx
+======================================================================
+==== Function 76, Protocol 0 - Ethernet, Subfunction 0, Read MAC. ====
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 0 (Ethernet)
+  * bh = device number
+  * bl = 0 (Read MAC)
+Returned value:
+  * eax = -1 on error, otherwise lower bits of MAC
+  * bx = upper bits of MAC
+  
+======================================================================
+= Function 76, Protocol 1 - IPv4, Subfunction 0, Read # Packets sent =
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 1 (IPv4)
+  * bh = device number
+  * bl = 0 (Read # packets sent)
+Returned value:
+  * eax = number of packets sent (-1 on error)
+  
+======================================================================
+= Function 76, Protocol 1 - IPv4, Subfunction 1, Read # Packets rcvd =
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 1 (IPv4)
+  * bh = device number
+  * bl = 1 (Read # packets received)
+Returned value:
+  * eax = number of packets received (-1 on error)
+  
+======================================================================
+=== Function 76, Protocol 1 - IPv4, Subfunction 2, Read IP address ===
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 1 (IPv4)
+  * bh = device number
+  * bl = 2 (Read IP address)
+Returned value:
+  * eax = IP address (-1 on error)
+  
+======================================================================
+=== Function 76, Protocol 1 - IPv4, Subfunction 3, Set IP address ====
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 1 (IPv4)
+  * bh = device number
+  * bl = 3 (Set IP address)
+  * ecx = IP address
+Returned value:
+  * eax = -1 on error
 
-0 - Ethernet:
-        0 - Read MAC:
-			returns lower part of mac in EAX, upper part in BX
+======================================================================
+== Function 76, Protocol 1 - IPv4, Subfunction 4, Read DNS address ===
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 1 (IPv4)
+  * bh = device number
+  * bl = 4 (Read DNS server IP address)
+Returned value:
+  * eax = DNS server IP address (-1 on error)
+  
+======================================================================
+=== Function 76, Protocol 1 - IPv4, Subfunction 5, Set DNS address ===
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 1 (IPv4)
+  * bh = device number
+  * bl = 5 (Set DNS address)
+  * ecx = DNS server IP address
+Returned value:
+  * eax = -1 on error
 
-1 - IPv4:
-        0 - Read # packets sent
-        1 - Read # packets received
-        2 - Read IP
-        3 - Write IP
-        4 - Read DNS
-        5 - Write DNS
-        6 - Read subnet
-        7 - Write subnet
-        8 - Read gateway
-        9 - Write gateway
+======================================================================
+== Function 76, Protocol 1 - IPv4, Subfunction 6, Read subnet mask ===
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 1 (IPv4)
+  * bh = device number
+  * bl = 6 (Read subnet mask)
+Returned value:
+  * eax = subnet mask (-1 on error)
+  
+======================================================================
+=== Function 76, Protocol 1 - IPv4, Subfunction 7, Set subnet mask ===
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 1 (IPv4)
+  * bh = device number
+  * bl = 7 (Set DNS address)
+  * ecx = subnet mask
+Returned value:
+  * eax = -1 on error
+ 
+======================================================================
+===== Function 76, Protocol 1 - IPv4, Subfunction 8, Read gateway ====
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 1 (IPv4)
+  * bh = device number
+  * bl = 8 (Read gateway IP address)
+Returned value:
+  * eax = gateway IP address (-1 on error)
+  
+======================================================================
+===== Function 76, Protocol 1 - IPv4, Subfunction 9, Set gateway =====
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 1 (IPv4)
+  * bh = device number
+  * bl = 9 (Set getway address)
+  * ecx = gateway IP address
+Returned value:
+  * eax = -1 on error
+  
+======================================================================
+= Function 76, Protocol 2 - ICMP, Subfunction 0, Read # Packets sent =
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 2 (ICMP)
+  * bh = device number
+  * bl = 0 (Read # packets sent)
+Returned value:
+  * eax = number of packets sent (-1 on error)
+  
+======================================================================
+= Function 76, Protocol 2 - ICMP, Subfunction 1, Read # Packets rcvd =
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 2 (ICMP)
+  * bh = device number
+  * bl = 1 (Read # packets received)
+Returned value:
+  * eax = number of packets received (-1 on error)
+  
+======================================================================
+= Function 76, Protocol 3 - UDP, Subfunction 0, Read # Packets sent ==
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 3 (UDP)
+  * bh = device number
+  * bl = 0 (Read # packets sent)
+Returned value:
+  * eax = number of packets sent (-1 on error)
+  
+======================================================================
+= Function 76, Protocol 3 - UDP, Subfunction 1, Read # Packets rcvd ==
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 3 (UDP)
+  * bh = device number
+  * bl = 1 (Read # packets received)
+Returned value:
+  * eax = number of packets received (-1 on error)
+  
+======================================================================
+= Function 76, Protocol 4 - TCP, Subfunction 0, Read # Packets sent ==
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 4 (TCP)
+  * bh = device number
+  * bl = 0 (Read # packets sent)
+Returned value:
+  * eax = number of packets sent (-1 on error)
+  
+======================================================================
+= Function 76, Protocol 4 - TCP, Subfunction 1, Read # Packets rcvd ==
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 4 (TCP)
+  * bh = device number
+  * bl = 1 (Read # packets received)
+Returned value:
+  * eax = number of packets received (-1 on error)
+  
+======================================================================
+= Function 76, Protocol 5 - ARP, Subfunction 0, Read # Packets sent ==
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 5 (ARP)
+  * bh = device number
+  * bl = 0 (Read # packets sent)
+Returned value:
+  * eax = number of packets sent (-1 on error)
+  
+======================================================================
+= Function 76, Protocol 5 - ARP, Subfunction 1, Read # Packets rcvd ==
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 5 (ARP)
+  * bh = device number
+  * bl = 1 (Read # packets received)
+Returned value:
+  * eax = number of packets received (-1 on error)
+  
+======================================================================
+== Function 76, Protocol 5 - ARP, Subfunction 2, Read # ARP entries ==
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 5 (ARP)
+  * bh = device number
+  * bl = 2 (Read # current entries in the ARP table)
+Returned value:
+  * eax = number of entries (-1 on error)
 
-2 - ICMP:
-        0 - Read # packets sent
-        1 - Read # packets received
+======================================================================
+==== Function 76, Protocol 5 - ARP, Subfunction 3, Read ARP entry ====
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 5 (ARP)
+  * bh = device number
+  * bl = 3 (Read ARP entry)
+  * ecx = ARP entry number (0 based)
+  * edi = ptr to buffer where ARP entry will be written
+Returned value:
+  * eax = -1 on error
+Remarks: 
+	ARP_entry struct is defined in ARP.inc in kernel and currently looks like this:
+struct  ARP_entry
+        IP              dd ?
+        MAC             dp ?
+        Status          dw ?
+        TTL             dw ?
+ends 
 
-3 - UDP:
-        0 - Read # packets sent
-        1 - Read # packets received
+======================================================================
+==== Function 76, Protocol 5 - ARP, Subfunction 4, Add ARP entry ====
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 5 (ARP)
+  * bh = device number
+  * bl = 4 (Add ARP entry)
+  * esi = ptr to buffer holding ARP entry
+Returned value:
+  * eax = -1 on error
+Remarks: 
+	See previous function for details on ARP entry.
+	
+======================================================================
+=== Function 76, Protocol 5 - ARP, Subfunction 5, Remove ARP entry ====
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 5 (ARP)
+  * bh = device number
+  * bl = 3 (Read ARP entry)
+  * ecx = ARP entry number (0 based), use -1 to clear whole ARP table.
+Returned value:
+  * eax = -1 on error
+
+======================================================================
+=== Function 76, Protocol 5 - ARP, Subfunction 6, Send ARP announce ==
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 5 (ARP)
+  * bh = device number
+  * bl = 6 (Send ARP announce)
+Returned value:
+  * eax = -1 on error
 		
-4 - TCP:
-        0 - Read # packets sent
-        1 - Read # packets received
-
-5 - ARP:
-        0 - Read # packets sent
-        1 - Read # packets received
-        2 - Read # ARP entry's
-        3 - Read ARP entry
-        4 - Add static ARP entry
-        5 - Remove ARP entry (-1 = remove all)
-        6 - Send ARP announce on specified interface
-        7 - Read # ARP conflicts (IP address conflicts)
+======================================================================
+=== Function 76, Protocol 5 - ARP, Subfunction 7, Read # conflicts ===
+======================================================================
+Parameters:
+  * eax = 76 - function number
+  * high half of ebx = 5 (ARP)
+  * bh = device number
+  * bl = 7 (Read # IP address conflicts that have occured)
+Returned value:
+  * eax = # IP address conflicts (-1 on error)
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_NETWORK_PROTOCOL (76)
