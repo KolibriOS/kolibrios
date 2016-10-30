@@ -42,7 +42,7 @@ void Del_File_Thread()
 		{
 			selected_offset2 = file_mas[i]*304 + buf+32 + 7;
 			if (ESBYTE[selected_offset2]) {
-				sprintf(#del_from,"%s%s",#path,file_mas[i]*304+buf+72);
+				sprintf(#del_from,"%s/%s",#path,file_mas[i]*304+buf+72);
 				GetFileInfo(#del_from, #file_info_count);
 				if ( file_info_count.isfolder ) DirFileCount(#del_from);
 				else file_count_copy++;
@@ -65,7 +65,7 @@ void Del_File_Thread()
 		{
 			selected_offset2 = file_mas[i]*304 + buf+32 + 7;
 			if (ESBYTE[selected_offset2]) {
-				sprintf(#del_from,"%s%s",#path,file_mas[i]*304+buf+72);
+				sprintf(#del_from,"%s/%s",#path,file_mas[i]*304+buf+72);
 				Del_File2(#del_from, 1);
 			}
 		}

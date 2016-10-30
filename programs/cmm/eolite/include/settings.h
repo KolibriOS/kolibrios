@@ -144,8 +144,8 @@ void LoadIniSettings()
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinY", 50); WinY = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinW", 550); WinW = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinH", 506); WinH = EAX;
-	ini_get_str stdcall   (eolite_ini_path, #config_section, "DefaultPath", #path,4096,"/rd/1/");
-	ini_get_str stdcall   (eolite_ini_path, #config_section, "DefaultPath", #path_start,4096,"/rd/1/");
+	ini_get_str stdcall   (eolite_ini_path, #config_section, "DefaultPath", #path,4096,"/rd/1");
+	ini_get_str stdcall   (eolite_ini_path, #config_section, "DefaultPath", #path_start,4096,"/rd/1");
 	path_start_ed.size = strlen(#path_start);
 	path_start_ed.pos = strlen(#path_start);
 

@@ -26,14 +26,12 @@ void Copy(dword pcth, char cut)
 
 	if (files.count<=0) return; //no files
 	if (selected_count==0) setElementSelectedFlag(files.cur_y, true); //no element selected by "insert", so we copy current element
-	debugi(selected_count);
 	size_buf = 4;
 	for (i=0; i<files.count; i++) 
 	{
 		selected_offset2 = file_mas[i]*304 + buf+32 + 7;
 		if (ESBYTE[selected_offset2]) {
-			strcpy(#copy_t, #path);
-			strcat(#copy_t, file_mas[i]*304+buf+72);
+			sprintf(#copy_t,"%s/%s",#path,file_mas[i]*304+buf+72);
 			path_len = strlen(#copy_t);
 			size_buf += path_len + 1;
 		}
@@ -48,12 +46,10 @@ void Copy(dword pcth, char cut)
 	{
 		selected_offset2 = file_mas[i]*304 + buf+32 + 7;
 		if (ESBYTE[selected_offset2]) {
-			strcpy(copy_buf_offset, #path);
-			strcat(copy_buf_offset, file_mas[i]*304+buf+72);
+			sprintf(copy_buf_offset,"%s/%s",#path,file_mas[i]*304+buf+72);
 			copy_buf_offset += strlen(copy_buf_offset) + 1;
 		}
 	}
-	WriteFile(size_buf, buff_data, "/rd/1/log.log");
 	if (selected_count==1) setElementSelectedFlag(files.cur_y, false);
 	clipboard.SetSlotData(size_buf, buff_data);
 	cut_active = cut;
@@ -96,13 +92,10 @@ void PasteThread()
 	for (j = 0; j < paste_elements_count; j++) {
 		strcpy(#copy_from, path_offset);
 		if (!copy_from) DialogExit();
-		strcpy(#copy_to, #path);
-		strcat(#copy_to, #copy_from+strrchr(#copy_from,'/'));
+		sprintf(#copy_to, "%s/%s", #path, #copy_from+strrchr(#copy_from,'/'));
 		if (!strcmp(#copy_from,#copy_to))
 		{
-			strcpy(#copy_to, #path);
-			strcat(#copy_to, "NEW_");
-			strcat(#copy_to, #copy_from+strrchr(#copy_from,'/'));
+			sprintf(#copy_to, "%s/NEW_%s", #path, #copy_from+strrchr(#copy_from,'/'));
 		}
 		if (strstr(#copy_to, #copy_from))
 		{

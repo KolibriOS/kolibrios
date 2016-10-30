@@ -103,18 +103,18 @@ void _SystemDiscs::Get()
 	dev_num = EBX;
 	for (i1=0; i1<dev_num; i1++)
 	{
-		sprintf(#dev_name,"/%s/",i1*304+ devbuf+72);
+		sprintf(#dev_name,"/%s",i1*304+ devbuf+72);
 		Open_Dir(#dev_name, ONLY_OPEN);
 		dev_disc_num = files.count;
 		for (j1=0; j1<dev_disc_num; j1++;)
 		{
-			sprintf(#sys_discs,"%s%s/",#dev_name,j1*304+ buf+72);
+			sprintf(#sys_discs,"%s/%s",#dev_name,j1*304+ buf+72);
 			list.add(#sys_discs);
 		}
-		if (!strcmp(#sys_discs, "/rd/1/")) 
+		if (!strcmp(#sys_discs, "/rd/1")) 
 		{
 			GetDir(#tempbuf, #temp_file_count, "/kolibrios", DIRS_ONLYREAL);
-			if (temp_file_count) list.add("/kolibrios/");
+			if (temp_file_count) list.add("/kolibrios");
 			free(tempbuf);
 		}
 	}
@@ -134,7 +134,6 @@ void _SystemDiscs::Draw()
 	for (i=0;i<list.count;i++)
 	{
 		strcpy(#dev_name, list.get(i));
-		dev_name[strlen(#dev_name)-1]=NULL;
 		GetDiskIconAndName(dev_name[1], #dev_icon, #disc_name);
 		if (strstr(#path, #dev_name)) is_active=true; else is_active=false;
 		if (two_panels)

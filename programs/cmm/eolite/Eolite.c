@@ -152,7 +152,7 @@ void main()
 	if (param)
 	{
 		strcpy(#path, #param);
-		if (path[strlen(#path)-1]!='/') chrcat(#path, '/'); //add "/" to the end of the string
+		if (path[strlen(#path)-1]=='/') path[strlen(#path)-1]=NULL; //no "/" in the end
 	}		
 	
 	Open_Dir(#path,ONLY_OPEN);
@@ -707,7 +707,8 @@ void Line_ReDraw(dword bgcol, filenum){
 	{
 		itdir = TestBit(attr, 4);
 		strcpy(#file_name, file_name_off);
-		sprintf(#file_path,"%s%s",#path,file_name_off);
+		if (!strcmp(#path,"/")) sprintf(#file_path,"%s%s",#path,file_name_off);
+			else sprintf(#file_path,"%s/%s",#path,file_name_off);
 		if (text_col==0xA6A6B7) text_col=0xFFFFFF;
 	}
 	if (file.selected) text_col=0xFF0000;
@@ -746,10 +747,8 @@ void Open_Dir(dword dir_path, redraw){
 	if (redraw!=ONLY_SHOW)
 	{
 		selected_count = 0;
-		if (ESBYTE[dir_path+1]!='\0') ESBYTE[dir_path+strlen(dir_path)-1] = '\0';
 		if (buf) free(buf);
 		errornum = GetDir(#buf, #files.count, dir_path, DIRS_NOROOT);
-		if (ESBYTE[dir_path+1]!='\0') chrcat(dir_path, '/');
 		if (errornum)
 		{
 			history.add(#path);
@@ -866,14 +865,14 @@ void SelectFileByName(dword that_file)
 
 void Dir_Up()
 {
-	char cur_folder[4096];
+	char old_folder_name[4096];
 	i=strlen(#path)-1;
 	if (i==0) return;
-	path[i]=0x00;
+	//path[i]=0x00;
 	i = strrchr(#path, '/');
-	strcpy(#cur_folder, #path+i);
-	path[i]=0x00;
-	SelectFileByName(#cur_folder);
+	strcpy(#old_folder_name, #path+i);
+	if (i>1) path[i-1]=NULL; else path[i]=NULL;
+	SelectFileByName(#old_folder_name);
 }
 
 void Open(byte rez)
@@ -884,7 +883,6 @@ void Open(byte rez)
 	{
 		if (!strncmp(#file_name,"..",3)) return;
 		strcpy(#temp, #file_path);
-		if (path[strlen(#temp)-1]!='/') chrcat(#temp, '/'); //need "/" in the end
 		RunProgram("/sys/File Managers/Eolite", #temp);
 		return;
 	}
@@ -897,7 +895,6 @@ void Open(byte rez)
 	{
 		if (!strncmp(#file_name,"..",3)) { Dir_Up(); return; }
 		strcpy(#path, #file_path);
-		if (path[strlen(#path)-1]!='/') chrcat(#path, '/'); //need "/" in the end
 		files.first=files.cur_y=0;
 		Open_Dir(#path,WITH_REDRAW);
 	}
@@ -907,7 +904,6 @@ inline fastcall void GoBack()
 {
 	char cur_folder[4096];
 	strcpy(#cur_folder, #path);
-	cur_folder[strlen(#cur_folder)-1]=0x00; //delete last '/'
 	if (history.back()) {
 		strcpy(#path, history.current());
 		SelectFileByName(#cur_folder+strrchr(#cur_folder,'/'));
@@ -927,7 +923,7 @@ void NewElement(byte newf)
 	byte del_rezult, copy_rezult, info_result;
 	if (newf)
 	{
-		sprintf(#temp,"%s%s",#path,new_file_ed.text);
+		sprintf(#temp,"%s/%s",#path,new_file_ed.text);
 		info_result = GetFileInfo(#temp, #element_info);
 		switch(new_element_active)
 		{

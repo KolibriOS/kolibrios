@@ -203,7 +203,7 @@ void GetSizeMoreFiles(dword way)
     {
         selected_offset2 = file_mas[i]*304 + buf+32 + 7;
         if (ESBYTE[selected_offset2]) {
-			sprintf(#cur_file,"%s%s",way,file_mas[i]*304+buf+72);
+			sprintf(#cur_file,"%s/%s",way,file_mas[i]*304+buf+72);
 			if (TestBit(ESDWORD[file_mas[i]*304+buf+32], 4) )
 			{
 				GetSizeDir(#cur_file);
