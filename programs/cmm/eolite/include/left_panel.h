@@ -135,7 +135,7 @@ void _SystemDiscs::Draw()
 	{
 		strcpy(#dev_name, list.get(i));
 		GetDiskIconAndName(dev_name[1], #dev_icon, #disc_name);
-		if (strstr(#path, #dev_name)) is_active=true; else is_active=false;
+		if (strstr(#path, #dev_name)-#path==0) is_active=true; else is_active=false;
 		if (two_panels)
 		{
 			name_len = strlen(#dev_name)-1*8;

@@ -208,15 +208,15 @@ START:				; start of execution
 ; теперь в ecx номер процесса
 ;	mov	[process],ecx
 ;---------------------------------------------------------------------
-	cmp	[wnd_width],635
+	cmp	[wnd_width],778
 	jae	@f
-	mov	[wnd_width],635
+	mov	[wnd_width],778
 @@:
 	mcall 48, 5     ; GetClientTop, fix for case when @patel in the top
     shr ebx, 16
 	mov	ecx,ebx
 	shl ecx,16
-	add ecx,150	   ; [y start] *65536 + [y size]
+	add ecx,523	   ; [y start] *65536 + [y size]
 	cmp	[wnd_height],ecx
 	jae	@f
 	mov	[wnd_height],ecx
