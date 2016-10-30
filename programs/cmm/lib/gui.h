@@ -291,9 +291,6 @@ TODO: scroll
 	buf_end = strlen(buf_start) + buf_start;
 	label_length_max  = w / 8; // 8 big font char width
 
-	//DrawRectangle(x-2, y-2, w+4, h+4, system.color.work_graph);
-	//DrawRectangle3D(x-1, y-1, w+2, h+2, 0xDDDddd, 0xffffff);
-
 	loop() 
 	{
 		if (bg_col!=-1) DrawBar(x, y, w+1, line_h, bg_col);

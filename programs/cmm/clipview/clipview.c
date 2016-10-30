@@ -17,7 +17,7 @@
 //                                                   //
 //===================================================//
 
-?define WINDOW_HEADER "Clipboard Viewer v1.01"
+?define WINDOW_HEADER "Clipboard Viewer v1.02"
 ?define T_DELETE_LAST_SLOT "Delete last slot"
 ?define T_DELETE_ALL_SLOTS "Delete all slots"
 ?define T_RESET_BUFFER_LOCK "Reset the lock buffer"
@@ -149,17 +149,23 @@ void DrawScroller()
 	scrollbar_v_draw(#scroll1);
 }
 
+replace_char(dword in_str, char from_char, to_char, int length) {
+	int i;
+	for (i=0; i<length; i++) {
+		if (ESBYTE[in_str+i] == from_char) ESBYTE[in_str+i] = to_char;
+	}
+	ESBYTE[in_str+length]=0;
+}
 
 void Draw_List()
 {
-	int i, yyy, list_last, slot_data_type_number;
-	dword text_color = 0x000000;
-	char line_text[512];
+	int i, yyy, list_last, slot_data_type_number, length;
+	dword line_text[2048];
 	dword size_kb;
+	dword text_color = 0;
 
 	list.count = clipboard.GetSlotCount();
 	list.CheckDoesValuesOkey();
-
 
 	if (list.count > list.visible) list_last = list.visible; else list_last = list.count;
 
@@ -181,11 +187,15 @@ void Draw_List()
 		DefineButton(list.x+list.w - 95, yyy, 50, list.item_h, 100+i+BT_HIDE, NULL);
 		DefineButton(list.x+list.w - 95 + 51, yyy, 40, list.item_h, 300+i+BT_HIDE, NULL);
 
-		strlcpy(#line_text, clipboard.slot_data.content, list.w-236 - 95/list.font_w-3);
+		length = list.w-236 - 95 / list.font_w - 2;
+		if (clipboard.slot_data.size-8 < length) length = clipboard.slot_data.size-8;
+		memmov(#line_text, clipboard.slot_data.content, length);
+		replace_char(#line_text, 0, 31, length); // 31 is a dot
 		WriteText(list.x+236, yyy+list.text_y, list.font_type, text_color, #line_text);
 	}
 	DrawBar(list.x,i*list.item_h+list.y, list.w, -i*list.item_h+ list.h, 0xFFFfff);
-	if (!list.count) WriteText(-strlen(T_CLIPBOARD_IS_EMPTY)*list.font_w + list.w / 2 + list.x + 1, list.h / 2 - 8 + list.y, list.font_type, 0x999999, T_CLIPBOARD_IS_EMPTY);
+	if (!list.count) WriteText(-strlen(T_CLIPBOARD_IS_EMPTY)*list.font_w + list.w / 2 + list.x + 1, 
+		list.h / 2 - 8 + list.y, list.font_type, 0x999999, T_CLIPBOARD_IS_EMPTY);
 	DrawScroller();
 }
 
