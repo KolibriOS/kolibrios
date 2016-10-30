@@ -4668,15 +4668,15 @@ Parameters:
   * bl = subfunction number
 
 Protocols and subfunctions:
+		Unless otherwise specified, output is in eax, additional input in ecx
 
 0 - Ethernet:
-        0 - Read MAC
-
-    common subfunctions:
-        0 - Read # packets sent
-        1 - Read # packets received
+        0 - Read MAC:
+			returns lower part of mac in EAX, upper part in BX
 
 1 - IPv4:
+        0 - Read # packets sent
+        1 - Read # packets received
         2 - Read IP
         3 - Write IP
         4 - Read DNS
@@ -4687,12 +4687,20 @@ Protocols and subfunctions:
         9 - Write gateway
 
 2 - ICMP:
-        3 - enable/disable ICMP echo reply
+        0 - Read # packets sent
+        1 - Read # packets received
 
-3 - UDP
-4 - TCP
+3 - UDP:
+        0 - Read # packets sent
+        1 - Read # packets received
+		
+4 - TCP:
+        0 - Read # packets sent
+        1 - Read # packets received
 
 5 - ARP:
+        0 - Read # packets sent
+        1 - Read # packets received
         2 - Read # ARP entry's
         3 - Read ARP entry
         4 - Add static ARP entry
