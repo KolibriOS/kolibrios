@@ -1,41 +1,40 @@
+empty_label: db '                                             ',0 
+TEXT_HOME: db 'Home',0
+TEXT_ENTER: db 'Enter',0
+TEXT_END: db 'End',0
+TEXT_CANCEL: db 'x',0
+
+strlen_var dd 0
+
 if lang eq ru
-  label2:
-      db   'Выключить       Ядро',0
-  label3:
-      db   'Перезапуск     Отмена',0
-  label4:
-      db   'Сохранить настройки (Ctrl-S)',0
-
+	TEXT_TITLE: db 'Завершение работы',0
+	TEXT_RDSAVE1: db 'Сохраненить изменения, сделанные',0
+	TEXT_RDSAVE2: db 'в процессе работы в системе (Ctrl+S)',0
+	TEXT_KERNEL: db 'Ядро',0
+	TEXT_REBOOT: db 'Перезагрузка',0
+	TEXT_OFF: db 'Выключение',0
 else if lang eq ge
-  label2:
-      db   ' Beenden       Kernel',0
-  label3:
-      db   ' Neustart    Abbrechen',0
-  label4:
-      db   'Save your settings (Ctrl-S)',0
-
+	TEXT_TITLE: db 'Shutdown computer',0
+	TEXT_RDSAVE1: db 'Save all changes that were done',0
+	TEXT_RDSAVE2: db 'during system work (Ctrl+S)',0
+	TEXT_KERNEL: db 'Kernel',0
+	TEXT_REBOOT: db 'Neustart',0
+	TEXT_OFF: db 'Beenden',0
 else if lang eq it
-  label2:
-      db   '  Spegni       Kernel',0
-  label3:
-      db   ' Riavvio      Annulla',0
-  label4:
-      db   'Salva impostazioni (Ctrl-S)',0
-
+	TEXT_TITLE: db 'Shutdown computer',0
+	TEXT_RDSAVE1: db 'Save all changes that were done',0
+	TEXT_RDSAVE2: db 'during system work (Ctrl+S)',0
+	TEXT_KERNEL: db 'Kernel',0
+	TEXT_REBOOT: db 'Riavvio',0
+	TEXT_OFF: db 'Spegni',0
 else
-  label2:
-      db   'Power off      Kernel',0
-  label3:
-      db   ' Restart       Cancel',0
-  label4:
-      db   'Save your settings (Ctrl-S)',0
-
+	TEXT_TITLE: db 'Shutdown computer',0
+	TEXT_RDSAVE1: db 'Save all changes that were done',0
+	TEXT_RDSAVE2: db 'during system work (Ctrl+S)',0
+	TEXT_KERNEL: db 'Kernel',0
+	TEXT_REBOOT: db 'Reboot',0
+	TEXT_OFF: db 'Power off',0
 end if
-
-  label5:
-      db   ' (End)                     (Home)',0
-  label6:
-      db   '(Enter)                    (Esc)',0
 
 rdsave:
         dd  7,0,hide,0,0
@@ -90,24 +89,13 @@ aini_get_int db 'ini_get_int',0
 aini_set_int db 'ini_set_int',0
 ;---------------------------------------------------------------------
 
-check1 check_box2 20 shl 16 +12,108 shl 16 +12,6,0xffffff,0,0,label4,ch_flag_middle
+check1 check_box2 32 shl 16 +15, 70 shl 16 +15,6,0xffffff,0x757575,0x00CC00, empty_label, ch_flag_middle
 
 hide        db 'h',0
 asettings   db 'settings',0
 aautosave   db 'autosave',0
 ini_file db  '/sys/settings/rdsave.ini',0
 
-color1 dd 0x6068a0
-color2 dd 0xFFFFFF
-color3 dd 0xe4dfe1
-
-color4 dd 0x990022
-color5 dd 0xaa7700
-color6 dd 0x777777
-color7 dd 0x007700
-
-color8 dd 0x81FFFFFF
-color9 dd 0x80FFFFFF
 
 If fade=1
 

@@ -1,6 +1,6 @@
 
 ; END
-; KolibriOS Team 2005-2015
+; KolibriOS Team 2005-2016
 
 fade equ 0
 
@@ -23,6 +23,16 @@ include '../../../dll.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../gui_patterns.inc'
+include "../../../string.inc"
+
+WIN_W equ 440
+WIN_H equ 200
+BOT_PANEL_H equ 70
+
+CANCEL_BUTTON_ID equ 1+BT_HIDE
+HOME_BUTTON_ID equ 3
+REBOOT_BUTTON_ID equ 2
+POWEROFF_BUTTON_ID equ 4
 
 @use_library
 
@@ -171,41 +181,66 @@ checkbox:
 
 draw_window:
     mcall 12,1
-
+	
     mov   al,14
     mcall				     ;eax=14 - get screen max x & max y
     movzx ecx,ax
     shr   eax,17
     shl   eax,16
-    lea   ebx,[eax-165 shl 16+332]
+    lea   ebx,[eax-(WIN_W/2) shl 16+WIN_W-1]
     shr   ecx,1
     shl   ecx,16
-    lea   ecx,[ecx-70 shl 16+132]
+    lea   ecx,[ecx-(WIN_H/2) shl 16+WIN_H-1]
 
     xor   eax,eax
-	mov edx, 0x01000000
-	mcall ;define and draw window  
-
-	DrawRectangle 0,0,332,132,[color1]
-    mov   al,13
-    mcall   ,<1,331>,<1,1>,[color2]
-	mcall   ,<1,1>,<1,131>
-    mcall   ,<2,330>,<2,130>, [color3]
-
-    mov   al,8
-    mcall   ,<16,144> ,<16,36>,4,[color4]     ;eax=8 - draw buttons
-    mcall   ,<170,144>,       ,2,[color5]
-    mcall   ,	      ,<62,36>,1,[color6]
-    mcall   ,<16,144> ,       ,3,[color7]
-
-    mov   al,4
-    mcall   ,<28,19> ,[color8],label2	     ;eax=4 - write text
-    mcall   ,<28,65> ,	      ,label3
-    mcall   ,<64,40> ,[color9],label5
-    mcall   ,<64,86> ,	     ,label6
+	mov edx, 0x41000000
+	mcall ;define and draw window
+	
+	DrawWideRectangle 0, 0, WIN_W, WIN_H, 2, 0xA3A7AA
+	DrawBar 2, 2, WIN_W-4, WIN_H-BOT_PANEL_H-2, 0x202020
+	DrawBar 2, WIN_H-BOT_PANEL_H-2, WIN_W-4, BOT_PANEL_H, 0x4B4B4B
+	WriteText 30, 27, 10010001b, 0xFFFfff, TEXT_TITLE
+	WriteText 55, 70, 10010000b, 0xFFFfff, TEXT_RDSAVE1
+	WriteText 55, 86, 10010000b, 0xFFFfff, TEXT_RDSAVE2
+	
+	DefineButton  WIN_W-33, 2, 32, 20, CANCEL_BUTTON_ID, 0
+	WriteText  WIN_W-23, 5, 10000001b, 0xFFFfff, TEXT_CANCEL
 
     push  dword check1
     call  [check_box_draw2]
+
+macro EndButton  x, bgcol, id, but_text, hotkey_text
+{
+	buty equ WIN_H-60
+	butw equ 116
+	buth equ 43
+	DrawWideRectangle x-3, buty-3, butw+6, buth+6, 3, 0x202020
+	DefineButton x, buty, butw-1, buth-1, id, bgcol
+	; WriteTextBold -strlen(but_text)*8 + butw / 2 + x, buty+8,  10010000b, 0xFFFfff, but_text
+	; WriteText     -strlen(but_text)*6 + butw / 2 + x, buty+26, 10000000b, 0xFFFfff, hotkey_text
+	stdcall string.length, but_text
+	mov  ebx,eax
+	imul ebx,4
+	neg  ebx
+	add  ebx,butw / 2 + x
+	shl  ebx,16
+	add  ebx,buty+8
+	mcall 4, , 10010000b shl 24 + 0xFFFfff, but_text
+	add ebx,1 shl 16
+	mcall
+	stdcall string.length, hotkey_text
+	mov  ebx,eax
+	imul ebx,3
+	neg  ebx
+	add  ebx,butw / 2 + x
+	shl  ebx,16
+	add  ebx,buty+26
+	mcall 4, , 10000000b shl 24 + 0xFFFfff, hotkey_text
+}
+
+	EndButton  20, 0x4E91C5, HOME_BUTTON_ID,     TEXT_KERNEL, TEXT_HOME
+	EndButton 160, 0x55C891, REBOOT_BUTTON_ID,   TEXT_REBOOT, TEXT_ENTER
+	EndButton 300, 0xC75C54, POWEROFF_BUTTON_ID, TEXT_OFF,    TEXT_END
 
     mov   al,12
     mcall   ,2
