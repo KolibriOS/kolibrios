@@ -172,7 +172,7 @@ macro put_short s, w
 align 4
 proc send_bits uses eax ecx edi, s:dword, value:dword, length:dword
 ;    Tracevv((stderr," l %2d v %4x ", length, value));
-;zlib_debug 'send_bits value = %d',[value]
+	zlib_debug 'send_bits value = %d',[value]
 ;if DEBUG eq 1
 	mov eax,[length]
 	cmp eax,0
@@ -180,7 +180,7 @@ proc send_bits uses eax ecx edi, s:dword, value:dword, length:dword
 	cmp eax,15
 	jle .end1
 	@@:
-		zlib_debug 'invalid length' ;Assert(..>0 && ..<=15)
+		zlib_assert 'invalid length' ;Assert(..>0 && ..<=15)
 	.end1:
 	mov edi,[s]
 	add [edi+deflate_state.bits_sent],eax
@@ -390,7 +390,7 @@ endp
 align 4
 proc _tr_init uses eax edi, s:dword
 	mov edi,[s]
-;zlib_debug '_tr_init'
+	zlib_debug '_tr_init'
 	call tr_static_init
 
 	mov eax,edi
@@ -530,7 +530,7 @@ endl
 pushad
 	mov edi,[s]
 	mov eax,[k]
-;zlib_debug 'pqdownheap k = %d',eax
+	zlib_debug 'pqdownheap k = %d',eax
 	mov esi,eax
 	shl esi,1
 	mov ax,[edi+deflate_state.heap+2*eax]
@@ -604,7 +604,7 @@ locals
 	overflow dd 0 ;int ;number of elements with bit length too large
 endl
 pushad
-;zlib_debug 'gen_bitlen'
+	zlib_debug 'gen_bitlen'
 	mov edi,[s]
 	mov edx,[desc]
 	mov eax,[edx+tree_desc.dyn_tree]
@@ -817,7 +817,7 @@ locals
 endl
 	; The distribution counts are first used to generate the code values
 	; without bit reversal.
-;zlib_debug 'gen_codes'
+	zlib_debug 'gen_codes'
 	mov ebx,ebp
 	sub ebx,2*(MAX_BITS+1)
 
@@ -846,7 +846,7 @@ endl
 	dec ax
 	cmp ax,(1 shl MAX_BITS)-1
 	je @f
-		zlib_debug 'inconsistent bit counts' ;Assert(..==..)
+		zlib_assert 'inconsistent bit counts' ;Assert(..==..)
 	@@:
 ;    Tracev((stderr,"\ngen_codes: max_code %d ", max_code));
 
@@ -910,7 +910,7 @@ endl
 	mov ecx,[ecx+static_tree_desc.elems]
 	mov [elems],ecx
 	mov edi,[s]
-;zlib_debug 'build_tree cycle0 ecx = %d',ecx
+	zlib_debug 'build_tree cycle0 ecx = %d',ecx
 
 	mov dword[edi+deflate_state.heap_len],0
 	mov dword[edi+deflate_state.heap_max],HEAP_SIZE
@@ -1103,7 +1103,7 @@ locals
 	min_count dd 4 ;int ;min repeat count
 endl
 	mov edi,[s]
-;zlib_debug 'scan_tree'
+	zlib_debug 'scan_tree'
 	mov eax,[tree]
 	movzx eax,word[eax+Len]
 	mov [nextlen],eax
@@ -1227,7 +1227,7 @@ locals
 	min_count dd 4 ;int ;min repeat count
 endl
 	mov edi,[s]
-;zlib_debug 'send_tree'
+	zlib_debug 'send_tree'
 	; *** tree[max_code+1].Len = -1 ;guard already set
 	mov eax,[tree]
 	movzx eax,word[eax+Len]
@@ -1287,7 +1287,7 @@ align 4
 			cmp dword[count],6
 			jle .end8
 			@@:
-				zlib_debug ' 3_6?' ;Assert(..>=.. && ..<=..)
+				zlib_assert ' 3_6?' ;Assert(..>=.. && ..<=..)
 			.end8:
 			mov ebx,edi
 			add ebx,deflate_state.bl_tree
@@ -1410,7 +1410,7 @@ endp
 align 4
 proc send_all_trees uses eax ebx ecx edi, s:dword, lcodes:dword, dcodes:dword, blcodes:dword
 ;ecx = index in bl_order
-;zlib_debug 'send_all_trees'
+	zlib_debug 'send_all_trees'
 	cmp dword[lcodes],257
 	jl @f
 	cmp dword[dcodes],1
@@ -1418,7 +1418,7 @@ proc send_all_trees uses eax ebx ecx edi, s:dword, lcodes:dword, dcodes:dword, b
 	cmp dword[blcodes],4
 	jge .end0
 	@@:
-		zlib_debug 'not enough codes' ;Assert(..>=.. && ..>=.. && ..>=..)
+		zlib_assert 'not enough codes' ;Assert(..>=.. && ..>=.. && ..>=..)
 	.end0:
 	cmp dword[lcodes],L_CODES
 	jg @f
@@ -1427,7 +1427,7 @@ proc send_all_trees uses eax ebx ecx edi, s:dword, lcodes:dword, dcodes:dword, b
 	cmp dword[blcodes],BL_CODES
 	jle .end1
 	@@:
-		zlib_debug 'too many codes' ;Assert(..<=.. && ..<=.. && ..<=..)
+		zlib_assert 'too many codes' ;Assert(..<=.. && ..<=.. && ..<=..)
 	.end1:
 ;    Tracev((stderr, "\nbl counts: "));
 	mov edi,[s]
@@ -1549,7 +1549,7 @@ locals
 endl
 	; Build the Huffman trees unless a stored block is forced
 	mov edi,[s]
-;zlib_debug '_tr_flush_block'
+	zlib_debug '_tr_flush_block'
 	cmp word[edi+deflate_state.level],0
 	jle .end0 ;if (..>0)
 
@@ -1601,7 +1601,7 @@ endl
 	.end0: ;else
 		cmp dword[buf],0
 		jne @f
-			zlib_debug 'lost buf' ;Assert(..!=0)
+			zlib_assert 'lost buf' ;Assert(..!=0)
 		@@:
 		mov eax,[stored_len]
 		add eax,5
@@ -1705,7 +1705,7 @@ endp
 align 4
 proc _tr_tally uses ebx edi, s:dword, dist:dword, lc:dword
 	mov edi,[s]
-;zlib_debug '_tr_tally'
+	zlib_debug '_tr_tally'
 	mov eax,[edi+deflate_state.last_lit]
 	shl eax,1
 	add eax,[edi+deflate_state.d_buf]
@@ -1737,7 +1737,7 @@ proc _tr_tally uses ebx edi, s:dword, dist:dword, lc:dword
 		cmp ax,D_CODES
 		jl .end2
 		@@:
-			zlib_debug '_tr_tally: bad match' ;Assert(..<.. && ..<=.. && ..<..)
+			zlib_assert '_tr_tally: bad match' ;Assert(..<.. && ..<=.. && ..<..)
 		.end2:
 		mov eax,[lc]
 		add eax,_length_code
@@ -1853,7 +1853,7 @@ endl
 			mov [u_code],eax
 			cmp eax,D_CODES
 			jl @f
-				zlib_debug 'bad d_code' ;Assert(..<..)
+				zlib_assert 'bad d_code' ;Assert(..<..)
 			@@:
 			send_code edi, [u_code], [dtree] ;send the distance code
 			mov eax,[u_code]
@@ -1877,7 +1877,7 @@ endl
 		add eax,[edi+deflate_state.lit_bufsize]
 		cmp word[edi+deflate_state.pending],ax
 		jl @f
-			zlib_debug 'pendingBuf overflow' ;Assert(..<..)
+			zlib_assert 'pendingBuf overflow' ;Assert(..<..)
 		@@:
 		mov eax,[edi+deflate_state.last_lit]
 		cmp [lx],eax
@@ -1911,10 +1911,9 @@ proc detect_data_type uses ebx ecx edi, s:dword
 	; 0xf3ffc07f = binary 11110011111111111100000001111111
 locals
 	black_mask dd 0xf3ffc07f
-;    int n;
 endl
 	mov edi,[s]
-;zlib_debug 'detect_data_type'
+	zlib_debug 'detect_data_type'
 
 	; Check for non-textual ("black-listed") bytes.
 	xor ecx,ecx
@@ -1985,7 +1984,7 @@ endp
 ;    int len       ;its bit length
 align 4
 proc bi_reverse uses ebx, p1code:dword, len:dword
-;zlib_debug 'bi_reverse'
+	zlib_debug 'bi_reverse'
 	xor eax,eax
 	@@: ;do
 		mov ebx,[p1code]

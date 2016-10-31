@@ -9,7 +9,8 @@
 
 macro ERR_MSG err
 {
-	mov ecx,Z_NEED_DICT-err
+	mov ecx,Z_NEED_DICT
+	sub ecx,err
 	mov ecx,[4*ecx+z_errmsg]
 }
 

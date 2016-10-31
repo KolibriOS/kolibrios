@@ -11,6 +11,7 @@ FASTEST equ 1
 GEN_TREES_H equ 0
 DEBUG equ 0
 DYNAMIC_CRC_TABLE equ 1
+Z_SOLO equ 0
 
 ; define NO_GZIP when compiling if you want to disable gzip header and
 ; trailer creation by deflate().  NO_GZIP would be used to avoid linking in
@@ -20,12 +21,19 @@ GZIP equ 1
 
 macro zlib_debug fmt,p1
 {
-local .end_t
-local .m_fmt
-jmp .end_t
+if DEBUG eq 1
+	zlib_assert fmt,p1
+end if
+}
+
+macro zlib_assert fmt,p1
+{
+	local .end_t
+	local .m_fmt
+	jmp .end_t
 	.m_fmt db fmt,13,10,0
 align 4
-.end_t:
+	.end_t:
 if p1 eq
 	stdcall dbg_print,0,.m_fmt
 else
@@ -36,6 +44,7 @@ end if
 include 'zlib.inc'
 include 'deflate.inc'
 include 'zutil.asm'
+include '../kfar_arc/crc.inc'
 include 'crc32.asm'
 include 'adler32.asm'
 include 'trees.asm'
@@ -169,6 +178,9 @@ EXPORTS:
 	dd	adeflateReset,	deflateReset
 	dd	adeflate,	deflate
 	dd	adeflateEnd,	deflateEnd
+	dd	adeflateCopy,	deflateCopy
+	dd	azError,	zError
+	dd	acalc_crc32,	calc_crc32
 	dd	0
 
 ; exported names
@@ -177,3 +189,6 @@ adeflateInit2	db	'deflateInit2',0
 adeflateReset	db	'deflateReset',0
 adeflate	db	'deflate',0
 adeflateEnd	db	'deflateEnd',0
+adeflateCopy	db	'deflateCopy',0
+azError	db	'zError',0
+acalc_crc32	db	'calc_crc32',0

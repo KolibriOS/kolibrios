@@ -198,10 +198,10 @@ endp
 
 ; =========================================================================
 ;int (strm, level, version, stream_size)
-;    z_streamp strm;
-;    int level;
-;    const char *version;
-;    int stream_size;
+;    z_streamp strm
+;    int level
+;    const char *version
+;    int stream_size
 align 4
 proc deflateInit_, strm:dword, level:dword, version:dword, stream_size:dword
 	stdcall deflateInit2_, [strm], [level], Z_DEFLATED, MAX_WBITS, DEF_MEM_LEVEL,\
@@ -220,14 +220,14 @@ endp
 ; =========================================================================
 ;int (strm, level, method, windowBits, memLevel, strategy,
 ;                  version, stream_size)
-;    z_streamp strm;
-;    int  level;
-;    int  method;
-;    int  windowBits;
-;    int  memLevel;
-;    int  strategy;
-;    const char *version;
-;    int stream_size;
+;    z_streamp strm
+;    int  level
+;    int  method
+;    int  windowBits
+;    int  memLevel
+;    int  strategy
+;    const char *version
+;    int stream_size
 align 4
 proc deflateInit2_ uses ebx ecx edx edi, strm:dword, level:dword, method:dword,\
 	windowBits:dword, memLevel:dword, strategy:dword, version:dword, stream_size:dword
@@ -433,9 +433,9 @@ endp
 
 ; =========================================================================
 ;int (strm, dictionary, dictLength)
-;    z_streamp strm;
-;    const Bytef *dictionary;
-;    uInt  dictLength;
+;    z_streamp strm
+;    const Bytef *dictionary
+;    uInt  dictLength
 align 4
 proc deflateSetDictionary uses ebx edi, strm:dword, dictionary:dword, dictLength:dword
 locals
@@ -518,7 +518,7 @@ endp
 
 ; =========================================================================
 ;int (strm)
-;    z_streamp strm;
+;    z_streamp strm
 align 4
 proc deflateResetKeep uses ebx edi, strm:dword
 ;    deflate_state *s;
@@ -563,7 +563,7 @@ proc deflateResetKeep uses ebx edi, strm:dword
 if GZIP eq 1
 	cmp dword[edi+deflate_state.wrap],2
 	jne @f
-		stdcall calc_crc32, 0, Z_NULL, 0
+		xor eax,eax ;stdcall calc_crc32, 0, Z_NULL, 0
 	@@:
 end if
 	mov dword[ebx+z_stream.adler],eax
@@ -578,11 +578,11 @@ endp
 
 ; =========================================================================
 ;int (strm)
-;    z_streamp strm;
+;    z_streamp strm
 align 4
 proc deflateReset uses ebx, strm:dword
 	mov ebx,[strm]
-;zlib_debug 'deflateReset'
+	zlib_debug 'deflateReset'
 	stdcall deflateResetKeep, ebx
 	cmp eax,0
 	jne @f ;if (..==Z_OK)
@@ -593,8 +593,8 @@ endp
 
 ; =========================================================================
 ;int (strm, head)
-;    z_streamp strm;
-;    gz_headerp head;
+;    z_streamp strm
+;    gz_headerp head
 align 4
 proc deflateSetHeader uses ebx, strm:dword, head:dword
 	mov ebx,[strm]
@@ -621,9 +621,9 @@ endp
 
 ; =========================================================================
 ;int (strm, pending, bits)
-;    unsigned *pending;
-;    int *bits;
-;    z_streamp strm;
+;    unsigned *pending
+;    int *bits
+;    z_streamp strm
 align 4
 proc deflatePending uses ebx edi, strm:dword, pending:dword, bits:dword
 	mov ebx,[strm]
@@ -655,9 +655,9 @@ endp
 
 ; =========================================================================
 ;int (strm, bits, value)
-;    z_streamp strm;
-;    int bits;
-;    int value;
+;    z_streamp strm
+;    int bits
+;    int value
 align 4
 proc deflatePrime uses ebx edi, strm:dword, bits:dword, value:dword
 ;    int put;
@@ -691,9 +691,9 @@ endp
 
 ; =========================================================================
 ;int (strm, level, strategy)
-;    z_streamp strm;
-;    int level;
-;    int strategy;
+;    z_streamp strm
+;    int level
+;    int strategy
 align 4
 proc deflateParams uses ebx edi, strm:dword, level:dword, strategy:dword
 ;    compress_func func;
@@ -748,11 +748,11 @@ endp
 
 ; =========================================================================
 ;int (strm, good_length, max_lazy, nice_length, max_chain)
-;    z_streamp strm;
-;    int good_length;
-;    int max_lazy;
-;    int nice_length;
-;    int max_chain;
+;    z_streamp strm
+;    int good_length
+;    int max_lazy
+;    int nice_length
+;    int max_chain
 align 4
 proc deflateTune uses ebx, strm:dword, good_length:dword, max_lazy:dword,\
 			nice_length:dword, max_chain:dword
@@ -797,14 +797,14 @@ endp
 ; allocation.
 
 ;uLong (strm, sourceLen)
-;    z_streamp strm;
-;    uLong sourceLen;
+;    z_streamp strm
+;    uLong sourceLen
 align 4
 proc deflateBound, strm:dword, sourceLen:dword
 ;    deflate_state *s;
 ;    uLong complen, wraplen;
 ;    Bytef *str;
-;zlib_debug 'deflateBound'
+	zlib_debug 'deflateBound'
 
 	; conservative upper bound for compressed data
 ;    complen = sourceLen +
@@ -863,8 +863,8 @@ endp
 ; pending_buf.
 
 ;void (s, b)
-;    deflate_state *s;
-;    uInt b;
+;    deflate_state *s
+;    uInt b
 align 4
 proc putShortMSB uses ebx ecx, s:dword, b:dword
 	mov ebx,[s]
@@ -881,13 +881,13 @@ endp
 ; (See also read_buf()).
 
 ;void (strm)
-;    z_streamp strm;
+;    z_streamp strm
 align 4
 proc flush_pending uses eax ebx ecx edx, strm:dword
 ;ecx - len
 ;edx - deflate_state *s
 ;ebx - strm
-;zlib_debug 'flush_pending'
+	zlib_debug 'flush_pending'
 	mov ebx,[strm]
 	mov edx,[ebx+z_stream.state]
 
@@ -916,8 +916,8 @@ endp
 
 ; =========================================================================
 ;int (strm, flush)
-;    z_streamp strm;
-;    int flush;
+;    z_streamp strm
+;    int flush
 align 4
 proc deflate uses ebx ecx edx edi esi, strm:dword, flush:dword
 locals
@@ -973,7 +973,7 @@ zlib_debug 'deflate strm = %d',ebx
 if GZIP eq 1
 		cmp dword[edi+deflate_state.wrap],2
 		jne .end1 ;if (..==..)
-			stdcall calc_crc32, 0, Z_NULL, 0
+			xor eax,eax ;stdcall calc_crc32, 0, Z_NULL, 0
 			mov [ebx+z_stream.adler],eax
 			put_byte edi, 31
 			put_byte edi, 139
@@ -1107,7 +1107,7 @@ end if
 				bswap ecx
 				put_dword edi, ecx
 			@@:
-			stdcall calc_crc32, 0, Z_NULL, 0
+			xor eax,eax ;stdcall calc_crc32, 0, Z_NULL, 0
 			mov [ebx+z_stream.adler],eax
 	.end2:
 if GZIP eq 1
@@ -1307,7 +1307,7 @@ if GZIP eq 1
 				mov ecx,[ebx+z_stream.adler]
 				put_byte edi, cl
 				put_byte edi, ch
-				stdcall calc_crc32, 0, Z_NULL, 0
+				xor eax,eax ;stdcall calc_crc32, 0, Z_NULL, 0
 				mov [ebx+z_stream.adler],eax
 				mov dword[edi+deflate_state.status],BUSY_STATE
 			@@:
@@ -1447,7 +1447,7 @@ end if
 	.end11:
 	cmp word[ebx+z_stream.avail_out],0
 	jg @f
-		zlib_debug 'bug2' ;Assert(..>0)
+		zlib_assert 'bug2' ;Assert(..>0)
 	@@:
 
 	cmp dword[flush],Z_FINISH
@@ -1496,7 +1496,7 @@ endp
 
 ; =========================================================================
 ;int (strm)
-;    z_streamp strm;
+;    z_streamp strm
 align 4
 proc deflateEnd uses ebx ecx edx, strm:dword
 	mov ebx,[strm]
@@ -1553,15 +1553,13 @@ endp
 ; doesn't have enough memory anyway to duplicate compression states).
 
 ;int (dest, source)
-;    z_streamp dest;
-;    z_streamp source;
+;    z_streamp dest
+;    z_streamp source
 align 4
-proc deflateCopy uses edx edi esi, dest:dword, source:dword
-locals
-	overlay dd ? ;uint_16p
-endl
-;edi = ds; deflate_state*
-;esi = ss; deflate_state*
+proc deflateCopy uses ebx edx edi esi, dest:dword, source:dword
+;ebx = overlay ;uint_16p
+;edi = ds ;deflate_state*
+;esi = ss ;deflate_state*
 
 	mov esi,[source]
 	cmp esi,Z_NULL
@@ -1597,7 +1595,7 @@ endl
 	ZALLOC edx, [edi+deflate_state.hash_size], 4 ;sizeof.dd
 	mov dword[edi+deflate_state.head],eax
 	ZALLOC edx, [edi+deflate_state.lit_bufsize], 4 ;sizeof.dw+2
-	mov [overlay],eax
+	mov ebx,eax
 	mov dword[edi+deflate_state.pending_buf],eax
 
 	cmp dword[edi+deflate_state.window],Z_NULL
@@ -1618,13 +1616,26 @@ endl
 	mov eax,[edi+deflate_state.w_size]
 	shl eax,1 ;*= 2*sizeof.db
 	stdcall zmemcpy, [edi+deflate_state.window], [esi+deflate_state.window], eax
-;    zmemcpy((voidpf)ds->prev, (voidpf)ss->prev, ds->w_size * sizeof(Pos));
-;    zmemcpy((voidpf)ds->head, (voidpf)ss->head, ds->hash_size * sizeof(Pos));
-;    zmemcpy(ds->pending_buf, ss->pending_buf, (uInt)ds->pending_buf_size);
+	mov eax,[edi+deflate_state.w_size]
+	shl eax,2 ;*= sizeof.dd
+	stdcall zmemcpy, [edi+deflate_state.prev], [esi+deflate_state.prev], eax
+	mov eax,[edi+deflate_state.hash_size]
+	shl eax,2 ;*= sizeof.dd
+	stdcall zmemcpy, [edi+deflate_state.head], [esi+deflate_state.head], eax
+	stdcall zmemcpy, [edi+deflate_state.pending_buf], [esi+deflate_state.pending_buf], [edi+deflate_state.pending_buf_size]
 
-;    ds->pending_out = ds->pending_buf + (ss->pending_out - ss->pending_buf);
-;    ds->d_buf = overlay + ds->lit_bufsize/sizeof(uint_16);
-;    ds->l_buf = ds->pending_buf + (1+sizeof(uint_16))*ds->lit_bufsize;
+	mov eax,[edi+deflate_state.pending_buf]
+	add eax,[esi+deflate_state.pending_out]
+	sub eax,[esi+deflate_state.pending_buf]
+	mov [edi+deflate_state.pending_out],eax
+	mov eax,[edi+deflate_state.lit_bufsize]
+	shr eax,1 ;/=sizeof.uint_16
+	add eax,ebx
+	mov [edi+deflate_state.d_buf],eax
+	mov eax,[edi+deflate_state.lit_bufsize]
+	imul eax,3 ;*=1+sizeof.uint_16
+	add eax,[edi+deflate_state.pending_buf]
+	mov [edi+deflate_state.l_buf],eax
 
 	mov eax,edi
 	add eax,deflate_state.dyn_ltree
@@ -1647,9 +1658,9 @@ endp
 ; (See also flush_pending()).
 
 ;int (strm, buf, size)
-;    z_streamp strm;
-;    Bytef *buf;
-;    unsigned size;
+;    z_streamp strm
+;    Bytef *buf
+;    unsigned size
 align 4
 proc read_buf uses ebx ecx, strm:dword, buf:dword, size:dword
 	mov ebx,[strm]
@@ -1739,8 +1750,8 @@ end if
 endp
 
 ;uInt (s, cur_match)
-;    deflate_state *s;
-;    IPos cur_match;                             /* current match */
+;    deflate_state *s
+;    IPos cur_match ;current match
 align 4
 proc longest_match uses ebx ecx edx edi esi, s:dword, cur_match:dword
 if FASTEST eq 0
@@ -1771,18 +1782,9 @@ if FASTEST eq 0
 ;    Posf *prev = s->prev;
 ;    uInt wmask = s->w_mask;
 
-if UNALIGNED_OK eq 1
-	; Compare two bytes at a time. Note: this is not always beneficial.
-	; Try with and without -DUNALIGNED_OK to check.
-
-;    register Bytef *strend = s->window + s->strstart + MAX_MATCH - 1;
-;    register uint_16 scan_start = *(uint_16p*)scan;
-;    register uint_16 scan_end   = *(uint_16p*)(scan+best_len-1);
-else
 ;    register Bytef *strend = s->window + s->strstart + MAX_MATCH;
 ;    register Byte scan_end1  = scan[best_len-1];
 ;    register Byte scan_end   = scan[best_len];
-end if
 
 	; The code is optimized for HASH_BITS >= 8 and MAX_MATCH-2 multiple of 16.
 	; It is easy to get rid of this optimization if necessary.
@@ -1811,41 +1813,6 @@ end if
 	; conditional jumps will be made that depend on those values.
 	; However the length of the match is limited to the lookahead, so
 	; the output of deflate is not affected by the uninitialized values.
-
-if ((UNALIGNED_OK eq 1) & MAX_MATCH == 258)
-	; This code assumes sizeof(unsigned short) == 2. Do not use
-	; UNALIGNED_OK if your compiler uses a different size.
-
-;        if (*(uint_16p*)(match+best_len-1) != scan_end ||
-;            *(uint_16p*)match != scan_start) continue;
-
-	; It is not necessary to compare scan[2] and match[2] since they are
-	; always equal when the other bytes match, given that the hash keys
-	; are equal and that HASH_BITS >= 8. Compare 2 bytes at a time at
-	; strstart+3, +5, ... up to strstart+257. We check for insufficient
-	; lookahead only every 4th comparison; the 128th check will be made
-	; at strstart+257. If MAX_MATCH-2 is not a multiple of 8, it is
-	; necessary to put more guard bytes at the end of the window, or
-	; to check more often for insufficient lookahead.
-
-;        Assert(scan[2] == match[2], "scan[2]?");
-;        scan++, match++;
-;        do {
-;        } while (*(uint_16p*)(scan+=2) == *(uint_16p*)(match+=2) &&
-;                 *(uint_16p*)(scan+=2) == *(uint_16p*)(match+=2) &&
-;                 *(uint_16p*)(scan+=2) == *(uint_16p*)(match+=2) &&
-;                 *(uint_16p*)(scan+=2) == *(uint_16p*)(match+=2) &&
-;                 scan < strend);
-	; The funny "do {}" generates better code on most compilers
-
-	; Here, scan <= window+strstart+257
-;        Assert(scan <= s->window+(unsigned)(s->window_size-1), "wild scan");
-;        if (*scan == *match) scan++;
-
-;        len = (MAX_MATCH - 1) - (int)(strend-scan);
-;        scan = strend - (MAX_MATCH-1);
-
-else ;UNALIGNED_OK
 
 ;        if (match[best_len]   != scan_end  ||
 ;            match[best_len-1] != scan_end1 ||
@@ -1876,18 +1843,12 @@ else ;UNALIGNED_OK
 ;        len = MAX_MATCH - (int)(strend - scan);
 ;        scan = strend - MAX_MATCH;
 
-end if ;UNALIGNED_OK
-
 ;        if (len > best_len) {
 ;            s->match_start = cur_match;
 ;            best_len = len;
 ;            if (len >= nice_match) break;
-if UNALIGNED_OK eq 1
-;            scan_end = *(uint_16p*)(scan+best_len-1);
-else
 ;            scan_end1  = scan[best_len-1];
 ;            scan_end   = scan[best_len];
-end if
 ;        }
 ;    } while ((cur_match = prev[cur_match & wmask]) > limit
 ;             && --chain_length != 0);
@@ -1901,7 +1862,7 @@ else ;FASTEST
 ; ---------------------------------------------------------------------------
 ; Optimized version for FASTEST only
 	mov edx,[s]
-;zlib_debug 'longest_match'
+	zlib_debug 'longest_match'
 
 	; The code is optimized for HASH_BITS >= 8 and MAX_MATCH-2 multiple of 16.
 	; It is easy to get rid of this optimization if necessary.
@@ -1909,19 +1870,19 @@ else ;FASTEST
 if MAX_MATCH <> 258
 	cmp dword[edx+deflate_state.hash_bits],8
 	jge @f
-		zlib_debug 'Code too clever' ;Assert(..>=.. && ..==..)
+		zlib_assert 'Code too clever' ;Assert(..>=.. && ..==..)
 	@@:
 end if
 	mov eax,[edx+deflate_state.window_size]
 	sub eax,MIN_LOOKAHEAD
 	cmp [edx+deflate_state.strstart],eax
 	jle @f
-		zlib_debug 'need lookahead' ;Assert(..<=..)
+		zlib_assert 'need lookahead' ;Assert(..<=..)
 	@@:
 	mov eax,[edx+deflate_state.strstart]
 	cmp [cur_match],eax
 	jl @f
-		zlib_debug 'no future' ;Assert(..<..)
+		zlib_assert 'no future' ;Assert(..<..)
 	@@:
 
 	mov esi,[edx+deflate_state.window]
@@ -1950,7 +1911,7 @@ end if
 	mov al,byte[edi]
 	cmp al,byte[esi]
 	je @f
-		zlib_debug 'match[2]?' ;Assert(..==..)
+		zlib_assert 'match[2]?' ;Assert(..==..)
 	@@:
 
 	; We check for insufficient lookahead only every 8th comparison;
@@ -1969,7 +1930,7 @@ align 4
 	add eax,[edx+deflate_state.window]
 	cmp edi,eax
 	jle @f
-		zlib_debug 'wild scan' ;Assert(..<=..)
+		zlib_assert 'wild scan' ;Assert(..<=..)
 	@@:
 	sub edi,ebx
 	;edi = len
@@ -1997,9 +1958,9 @@ endp
 ; Check that the match at match_start is indeed a match.
 
 ;void (s, start, match, length)
-;    deflate_state *s;
-;    IPos start, match;
-;    int length;
+;    deflate_state *s
+;    IPos start, match
+;    int length
 align 4
 proc check_match, s:dword, start:dword, p3match:dword, length:dword
 if DEBUG eq 1
@@ -2042,17 +2003,17 @@ pushad
 	;Объем свободного пространства в конце окна.
 ;ecx = wsize ;uInt
 ;edx = s.strm
-;zlib_debug 'fill_window'
+	zlib_debug 'fill_window'
 	mov edi,[s]
 	cmp dword[edi+deflate_state.lookahead],MIN_LOOKAHEAD
 	jl @f
-		zlib_debug 'already enough lookahead' ;Assert(..<..)
+		zlib_assert 'already enough lookahead' ;Assert(..<..)
 	@@:
 
 	mov ecx,[edi+deflate_state.w_size]
 	mov edx,[edi+deflate_state.strm]
 	.cycle0: ;do
-;zlib_debug 'do'
+	zlib_debug 'do'
 		mov ebx,[edi+deflate_state.window_size]
 		sub ebx,[edi+deflate_state.lookahead]
 		sub ebx,[edi+deflate_state.strstart]
@@ -2135,7 +2096,7 @@ end if
 
 		cmp ebx,2
 		jge @f
-			zlib_debug 'more < 2' ;Assert(..>=..)
+			zlib_assert 'more < 2' ;Assert(..>=..)
 		@@:
 		mov eax,[edi+deflate_state.window]
 		add eax,[edi+deflate_state.strstart]
@@ -2260,7 +2221,7 @@ end if
 	sub eax,MIN_LOOKAHEAD
 	cmp [edi+deflate_state.strstart],eax
 	jle @f
-		zlib_debug 'not enough room for search' ;Assert(..<=..)
+		zlib_assert 'not enough room for search' ;Assert(..<=..)
 	@@:
 popad
 	ret
@@ -2317,8 +2278,8 @@ end if
 ; window to pending_buf.
 
 ;block_state (s, flush)
-;    deflate_state *s;
-;    int flush;
+;    deflate_state *s
+;    int flush
 align 4
 proc deflate_stored uses ebx ecx edi, s:dword, flush:dword
 ; Stored blocks are limited to 0xffff bytes, pending_buf is limited
@@ -2741,7 +2702,7 @@ align 4
 	.cycle0end:
 	cmp dword[flush],Z_NO_FLUSH
 	jne @f
-		zlib_debug 'no flush?' ;Assert (..!=..)
+		zlib_assert 'no flush?' ;Assert (..!=..)
 	@@:
 	cmp dword[edi+deflate_state.match_available],0
 	je @f ;if (..)
@@ -2780,8 +2741,8 @@ endp
 ; deflate switches away from Z_RLE.)
 
 ;block_state (s, flush)
-;    deflate_state *s;
-;    int flush;
+;    deflate_state *s
+;    int flush
 align 4
 proc deflate_rle uses ecx edx edi esi, s:dword, flush:dword
 locals
@@ -2846,7 +2807,7 @@ align 4
 			add eax,[edx+deflate_state.window]
 			cmp edi,eax
 			jle .end1
-				zlib_debug 'wild scan' ;Assert(..<=..)
+				zlib_assert 'wild scan' ;Assert(..<=..)
 		.end1:
 
 		; Emit match if have run of MIN_MATCH or longer, else emit literal
@@ -2903,8 +2864,8 @@ endp
 ; (It will be regenerated if this run of deflate switches away from Huffman.)
 
 ;block_state (s, flush)
-;    deflate_state *s;
-;    int flush;
+;    deflate_state *s
+;    int flush
 align 4
 proc deflate_huff uses ebx edi, s:dword, flush:dword
 locals

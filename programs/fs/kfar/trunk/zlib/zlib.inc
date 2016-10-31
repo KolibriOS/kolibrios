@@ -212,7 +212,7 @@ zlib_version equ zlibVersion
 ;        inflateBackInit_((strm), (windowBits), (window), \
 ;                      ZLIB_VERSION, (int)sizeof(z_stream))
 
-;#ifndef Z_SOLO
+if Z_SOLO eq 0
 
 ; gzgetc() macro and its supporting function and exposed data structure.  Note
 ; that the real internal state is much larger than the exposed structure.
@@ -234,7 +234,7 @@ zlib_version equ zlibVersion
 ;#else
 ;#  define gzgetc(g) \
 ;          ((g)->have ? ((g)->have--, (g)->pos++, *((g)->next)++) : gzgetc(g))
-;end if
+end if
 
 ; provide 64-bit offset functions if _LARGEFILE64_SOURCE defined, and/or
 ; change the regular functions to 64 bits if _FILE_OFFSET_BITS is 64 (if
@@ -251,12 +251,5 @@ zlib_version equ zlibVersion
 ;#if defined(_WIN32) && !defined(Z_SOLO)
 ;gzFile         gzopen_w OF((const wchar_t *path,
 ;                                            const char *mode));
-;end if
-;#if defined(STDC) || defined(Z_HAVE_STDARG_H)
-;#  ifndef Z_SOLO
-;int            ZEXPORTVA gzvprintf Z_ARG((gzFile file,
-;                                                  const char *format,
-;                                                  va_list va));
-;#  endif
 ;end if
 

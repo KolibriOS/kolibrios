@@ -106,9 +106,9 @@ button:
 	cmp ah,1
 	jne still
 
-.exit:
+.exit: ; конец программы
   	mcall SF_SYS_MISC,SSF_MEM_FREE,[m2]
-    mcall SF_TERMINATE_PROCESS ; иначе конец программы
+    mcall SF_TERMINATE_PROCESS
 
 align 4
 draw_window:
@@ -164,7 +164,11 @@ test_code:
 	mov ecx,[m0size]
 	mov word[eax+z_stream.avail_in],cx ;размер сжимаемыж данных
 	mov [eax+z_stream.next_out],m1 ;устанавливаем буфер для сжатия
-	mov word[eax+z_stream.avail_out],1024 ;размер буфера для сжатия
+	mov word[eax+z_stream.avail_out],1024 ;размер буфера для сжатия (максимум 16 Кб)
+
+	;вычисляем crc для сжимаемыж данных
+	stdcall [calc_crc32], 0,m0,ecx
+	mov edx,eax
 
 	;call print_z_struct
 
@@ -172,21 +176,30 @@ test_code:
 
 	;call print_z_struct
 
-	;размер сжатых данных: 1024-word[eax+z_stream.avail_out]
-	mov eax,my_strm
+	;размер сжатых данных: 1024-word[my_strm.avail_out]
 	mov ecx,1024
-	sub cx,word[eax+z_stream.avail_out]
+	sub cx,word[my_strm.avail_out]
 	mov [m1size],ecx
 
-;assert(ret != Z_STREAM_ERROR)
-;while (strm.avail_out == 0)
+	;assert(ret != Z_STREAM_ERROR)
+	;while (strm.avail_out == 0)
 
+	;ставим crc на сжатые данные
+	mov ecx,[m1size]
+	sub ecx,4
+	add ecx,m1
+	mov [ecx],edx
+
+	;формирование текста для отображения сжатых данных
+	;в 16-ричном виде, нужно только для примера
 	mov ebx,[m1size]
 	mov esi,m1
 	mov edi,buf
 	mov edx,7
+align 4
 	.cycle1: ;rows
 	mov ecx,32
+align 4
 	.cycle0: ;cols
 		stdcall hex_in_str, edi,[esi],2
 		add edi,2
@@ -199,10 +212,10 @@ test_code:
 	mov byte[edi-1],0
 	dec edx
 	jnz .cycle1
-
 	.cycle1end:
 	mov byte[edi],0
 
+	;удаление буфера с ранее распакованными данными
 	mcall SF_SYS_MISC,SSF_MEM_FREE,[m2]
 	
 	mov eax,[m1size]
@@ -211,7 +224,7 @@ test_code:
 	mov eax,m1
 	add eax,2
 	stdcall [deflate_unpack],eax,m2size
-	mov [m2],eax
+	mov [m2],eax ;запись новых распакованных данных
 	mov ecx,[m0size] ;;; ???
 	mov [m2size],ecx
 	ret
@@ -243,6 +256,7 @@ import_zlib:
 	deflateReset	dd sz_deflateReset
 	deflate			dd sz_deflate
 	deflateEnd		dd sz_deflateEnd
+	calc_crc32		dd sz_calc_crc32
 
 	dd 0,0
 
@@ -252,6 +266,8 @@ import_zlib:
 	sz_deflateReset db 'deflateReset',0
 	sz_deflate db 'deflate',0
 	sz_deflateEnd db 'deflateEnd',0
+	sz_calc_crc32 db 'calc_crc32',0
+
 ;--------------------------------------------------
 system_dir_0 db '/sys/lib/'
 lib_name_0 db 'archiver.obj',0

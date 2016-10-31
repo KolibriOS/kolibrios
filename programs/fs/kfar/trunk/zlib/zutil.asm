@@ -107,38 +107,33 @@ end if
 	ret
 endp
 
-;if DEBUG
-
-;#    define verbose 0
-;int z_verbose = verbose;
-
 ;void (m)
-;    char *m;
+;    char *m
 align 4
 proc z_error, m:dword
 ;    fprintf(stderr, "%s\n", m);
 ;    exit(1);
 	ret
 endp
-;end if
 
 ; exported to allow conversion of error code to string for compress() and
 ; uncompress()
 
 ;const char * (err)
-;    int err;
+;    int err
 align 4
-proc zError, err:dword
-;    return ERR_MSG(err);
+proc zError uses ecx, err:dword
+	ERR_MSG [err]
+	mov eax,ecx
 	ret
 endp
 
 ;#ifndef HAVE_MEMCPY
 
 ;void (dest, source, len)
-;    Bytef* dest;
-;    const Bytef* source;
-;    uInt  len;
+;    Bytef* dest
+;    const Bytef* source
+;    uInt  len
 align 4
 proc zmemcpy uses ecx edi esi, dest:dword, source:dword, len:dword
 	mov ecx,[len]
@@ -155,9 +150,9 @@ zlib_debug 'zmemcpy size = %d',ecx
 endp
 
 ;int (s1, s2, len)
-;    const Bytef* s1;
-;    const Bytef* s2;
-;    uInt  len;
+;    const Bytef* s1
+;    const Bytef* s2
+;    uInt  len
 align 4
 proc zmemcmp, s1:dword, s2:dword, len:dword
 ;    uInt j;
@@ -170,8 +165,8 @@ proc zmemcmp, s1:dword, s2:dword, len:dword
 endp
 
 ;void (dest, len)
-;    Bytef* dest;
-;    uInt  len;
+;    Bytef* dest
+;    uInt  len
 align 4
 proc zmemzero, dest:dword, len:dword
 ;    if (len == 0) return;
@@ -181,8 +176,6 @@ proc zmemzero, dest:dword, len:dword
 	ret
 endp
 ;end if
-
-;#ifndef Z_SOLO
 
 ;voidpf (voidpf opaque, unsigned items, unsigned size)
 align 4
@@ -200,4 +193,3 @@ proc zcfree uses eax ebx ecx, opaque:dword, p2ptr:dword
 	ret
 endp
 
-;end if /* !Z_SOLO */

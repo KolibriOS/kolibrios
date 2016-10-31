@@ -94,30 +94,10 @@ if DYNAMIC_CRC_TABLE eq 1
 	je @f ;if (..)
 		call make_crc_table
 	@@:
-end if ;DYNAMIC_CRC_TABLE
+end if
 	mov eax,crc_table
 	ret
 endp
-
-; =========================================================================
-macro DO1
-{
-	xor al,byte[esi]
-	xor al,ah
-	mov eax,[crc_table+eax*4]
-	inc esi
-}
-macro DO8
-{
-	DO1
-	DO1
-	DO1
-	DO1
-	DO1
-	DO1
-	DO1
-	DO1
-}
 
 ; =========================================================================
 ;unsigned long (crc, buf, len)
@@ -140,26 +120,8 @@ if DYNAMIC_CRC_TABLE eq 1
 end if
 
 	mov eax,[p1crc]
-	xor eax,0xffffffff
-	mov [p1crc],eax
 	mov ecx,[len]
-align 4
-	.cycle0:
-	cmp ecx,8
-	jl @f
-		DO8
-		sub ecx,8
-		jmp .cycle0
-align 4
-	@@:
-	cmp ecx,1
-	jl @f
-		DO1
-		dec ecx
-		jmp @b
-	@@:
-	mov eax,[p1crc]
-	xor eax,0xffffffff
+	call crc
 .end_f:
 	ret
 endp

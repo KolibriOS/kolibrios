@@ -247,8 +247,7 @@ macro put_byte s, c
 }
 macro put_dword s, d
 {
-;mov eax,d
-;zlib_debug '(%d)',eax
+	zlib_debug '(%d)',d
 	movzx eax,word[s+deflate_state.pending]
 	add eax,[s+deflate_state.pending_buf]
 	mov dword[eax],d
