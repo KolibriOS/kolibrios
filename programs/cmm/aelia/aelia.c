@@ -203,7 +203,6 @@ void HandleKeyEvent()
 				EventChangeEncoding();
 				break;
 		}
-		return;
 	}
 	if (list.ProcessKey(key_scancode)) {
 		DrawPage();
@@ -212,7 +211,7 @@ void HandleKeyEvent()
 	if (key_ascii != 0x0d)
 	&& (key_ascii != ASCII_KEY_PGDN) 
 	&& (key_ascii != ASCII_KEY_PGUP) {
-		EAX = key_ascii << 8; 
+		EAX = key_editbox;
 		edit_box_key stdcall(#address_box);
 	}
 }

@@ -165,8 +165,10 @@ void main()
 				GetKeys();
 				if (address_box.flags & 0b10)  
 				{
-					if (key_ascii == ASCII_KEY_ENTER) Scan(key_scancode); else
-					if (key_ascii != 0x0d) && (key_ascii != 183) && (key_ascii != 184) {EAX = key_ascii << 8; edit_box_key stdcall(#address_box);}
+					if (key_ascii == ASCII_KEY_ENTER) Scan(key_scancode); else {
+						EAX = key_editbox; 
+						edit_box_key stdcall(#address_box);
+					}
 				}
 				else 
 				{

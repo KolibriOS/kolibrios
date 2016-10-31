@@ -155,7 +155,7 @@ void LoginBoxLoop()
 					GetSettings();
 					DrawLoginScreen();
 				}
-				EAX=key_ascii<<8;
+				EAX = key_editbox;
 				edit_box_key stdcall(#login_box);
 				edit_box_key stdcall(#pass_box);
 				break;

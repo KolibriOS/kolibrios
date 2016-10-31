@@ -338,7 +338,7 @@ void properties_dialog()
 					}
 					break;
 				}
-				EAX = key_ascii << 8;
+				EAX = key_editbox;
 				edit_box_key stdcall(#file_name_ed);
 				edit_box_key stdcall(#path_to_file_ed);
 				break;

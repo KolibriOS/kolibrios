@@ -368,7 +368,7 @@ void main()
 				{
 					if (key_scancode == SCAN_CODE_ENTER) NewElement(true);
 					if (key_scancode == SCAN_CODE_ESC) NewElement(false);
-					EAX= key_ascii << 8;
+					EAX = key_editbox;
 					edit_box_key stdcall (#new_file_ed);
 					break;
 				}
