@@ -55,7 +55,7 @@ edit_box edit_disk_size= {50,0,7,0xffffff,0x94AECE,0xFFFfff,0xffffff,0,4,#new_di
 
 void Main_Window()
 {
-	word id, key;
+	word id;
 	int i, x;
 	
    	mem_Init();
@@ -85,51 +85,66 @@ void Main_Window()
 			}
             break;
         case evKey:
-			key = GetKey();
-			switch(key) 
+			GetKeys();
+			// PROCESS KEYS WHEN EDIT BOX INACTIVE
+			if ( !asm test edit_disk_size.flags, 2)	switch(key_scancode) 
 			{
-				case 9:
-					if ( !asm test edit_disk_size.flags, 2) edit_disk_size.flags=1000000000000010b;
-					else edit_disk_size.flags=1000000000000000b;
+				case SCAN_CODE_TAB:
+					edit_disk_size.flags=1000000000000010b;
 					edit_box_draw stdcall (#edit_disk_size);
+					DrawTmpDisks();
 					break;
-				case 185:
-					AddDisk();
-					break;
-				case 182:
-					if (disk_num<>0) DelDisk();
-					break;
-				case 13:
-					if ( !asm test edit_disk_size.flags, 2) OpenTmpDisk();
-					else AddDisk();
-					break;
-				case 178:
+				case SCAN_CODE_UP:
 					if (selected==0) break;
 					selected--;
 					DrawTmpDisks();
 					break;
-				case 177:
+				case SCAN_CODE_DOWN:
 					if (selected+2>disk_num) break;
 					selected++;
 					DrawTmpDisks();
 					break;
-				case 176:
+				case SCAN_CODE_LEFT:
 					if (selected<3) break;
 					selected-=3;
 					DrawTmpDisks();
 					break;
-				case 179:
+				case SCAN_CODE_RIGHT:
 					if (selected+4>disk_num) break;
 					selected+=3;
 					DrawTmpDisks();
+					break;					
+				case SCAN_CODE_INS:
+					AddDisk();
+					break;
+				case SCAN_CODE_DEL:
+					if (disk_num<>0) DelDisk();
+					break;
+				case SCAN_CODE_ENTER:
+					OpenTmpDisk();
 					break;
 			}
-			EAX=key<<8;
-			edit_box_key stdcall(#edit_disk_size);
+			// PROCESS KEYS WHEN EDIT BOX ACTIVE		
+			else switch(key_scancode) 
+			{
+				case SCAN_CODE_TAB:
+					edit_disk_size.flags=1000000000000000b;
+					edit_box_draw stdcall (#edit_disk_size);
+					DrawTmpDisks();
+					break;
+				case SCAN_CODE_ENTER:
+				case SCAN_CODE_INS:
+					AddDisk();
+					break;
+				default:
+					EAX = key_editbox;
+					edit_box_key stdcall(#edit_disk_size);
+					break;
+			}
 			break;
          case evReDraw:			
 			system.color.get();
-			DefineAndDrawWindow(170,150,314,270,0x74,system.color.work,"Virtual Disk Manager 0.62",0);
+			DefineAndDrawWindow(170,150,314,270,0x74,system.color.work,"Virtual Disk Manager 0.65",0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
 
@@ -202,6 +217,9 @@ unsigned int disk_pos_y[]={60,95,130, 60, 95, 130, 60, 95,130, 60, 85,130};
 
 void DrawTmpDisks()
 {
+	dword selection_color;
+	dword selection_active = 0x0080FF;
+	dword selection_inactive = 0x757489;
 	char free_ram_text[60];
 	byte i, real_id;
 	int FreeRAM=GetFreeRAM()/1024;
@@ -230,7 +248,8 @@ void DrawTmpDisks()
 		WriteText(disk_pos_x[i]+25,disk_pos_y[i]+19, 0x80, 0x888888, ConvertSize(disk_sizes[real_id]));
 		_PutImage(disk_pos_x[i]+5,disk_pos_y[i]+4, 14,14, 2*14*14*3+#icons);
 		if (selected==i) {
-			DrawWideRectangle(disk_pos_x[i], disk_pos_y[i], 65, 30, 2, 0x0080FF);
+			if ( !asm test edit_disk_size.flags, 2) selection_color = selection_active; else selection_color = selection_inactive;
+			DrawWideRectangle(disk_pos_x[i], disk_pos_y[i], 65, 30, 2, selection_color);
 			PutPixel(disk_pos_x[i], disk_pos_y[i], 0xFFFfff);
 		}
 	}

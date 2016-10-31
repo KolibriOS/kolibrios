@@ -68,8 +68,7 @@ void main()
 			break;
 
         case evKey:
-			GetKeys();			
-			EAX=key_ascii<<8;
+			GetKeys();
 			edit_box_key stdcall(#edit1);	
 			Translate();
 			break;

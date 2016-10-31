@@ -70,9 +70,8 @@ GETKEYII:
 		$shr eax,8
 }
 
-
 unsigned char key_ascii;
-dword key_scancode, key_modifier;
+dword key_scancode, key_modifier, key_editbox;
 int GetKeys()
 {
 		$push edx
@@ -88,6 +87,7 @@ GETKEYI:
 		$jmp GETKEY
 GETKEYII:
 		$pop edx
+	key_editbox = EAX;
 	key_ascii = AH;
 	$shr  eax,16
 	key_scancode = AL;
@@ -96,6 +96,7 @@ GETKEYII:
 	$mov ebx,3
 	$int 0x40
 	key_modifier = EAX;
+	EAX = key_editbox;
 }
 
 #endif
