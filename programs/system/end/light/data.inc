@@ -8,8 +8,8 @@ strlen_var dd 0
 
 if lang eq ru
 	TEXT_TITLE: db 'Завершение работы',0
-	TEXT_RDSAVE1: db 'Сохраненить изменения, сделанные',0
-	TEXT_RDSAVE2: db 'в процессе работы в системе (Ctrl+S)',0
+	TEXT_RDSAVE1: db 'Сохранить изменения, сделанные в',0
+	TEXT_RDSAVE2: db 'процессе работы в системе (Ctrl+S)',0
 	TEXT_KERNEL: db 'Ядро',0
 	TEXT_REBOOT: db 'Перезагрузка',0
 	TEXT_OFF: db 'Выключение',0
