@@ -1,4 +1,9 @@
 
+View 3ds 0,066 - X 2016
+1. App window size according to current screen resolution.
+2. New emboss procedure.
+-----------------------------------------------------------------------------------
+
 View3ds 0.065 - Feb 2015
 1. Asc files support.
 -----------------------------------------------------------------------------------

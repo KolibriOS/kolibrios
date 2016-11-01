@@ -1,10 +1,10 @@
-View3ds 0.066 - tiny viewer to .3ds and .asc files with several graphics
+View3ds 0.067 - tiny viewer to .3ds and .asc files with several graphics
 		effects implementation.
 
 
 What's new?
-1. App window size according to current screen resolution;
-2, New emboss procedure.
+1. Sizable app window.
+
 
 Buttons description:
 1. rotary: choosing rotary axle: x, y, x+y.
@@ -35,4 +35,4 @@ Buttons description:
 20. bright - -> decrease picture brightness.
 21. wav effect -> do effect based sine function.
 
-			 Maciej Guba		 X 2016
+			 Maciej Guba		 XI 2016

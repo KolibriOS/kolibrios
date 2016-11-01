@@ -749,8 +749,9 @@ if Ext>=SSE2
 	 push	    ecx
 	 mov	    edi,[screen_ptr]
 	 movzx	    ecx,word[size_x_var]  ;SIZE_X*3/4
-	 lea	    ecx,[ecx*3]
+	 lea	    ecx,[ecx*3+1]
 	 shr	    ecx,2
+
    ;      mov        ecx,SIZE_X*3/4
 	 xor	    eax,eax
 	 rep	    stosd

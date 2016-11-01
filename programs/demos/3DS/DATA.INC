@@ -38,7 +38,7 @@
 	XYZpartices:
 		      db 'X','Y','Z'
 	i10	      dw 10
-
+	draw_win_at_first db 1
 
 	menu:
 	       db 2		   ; button number  = index
@@ -314,7 +314,7 @@ base_vector:
       if Ext=SSE2
 	db   ' (SSE2)'
       end if
-	db   ' 0.066',0
+	db   ' 0.067',0
     labellen:
 	STRdata db '-1        '
 
@@ -440,6 +440,10 @@ align 8
 				dw ?
 	size_x_var:
 				dw ?
+	x_start:
+				dw ?
+	y_start:
+				dw ?
 
    ;===
 
@@ -526,6 +530,8 @@ end if
     ;    screen          rb      SIZE_X * SIZE_Y * 3   ; screen buffer
 ;align 16
      ;   Z_buffer        rb      SIZE_X * SIZE_Y * 4
+	procinfo:
+			rb     1024 ; process info
 	I_Param 	rb	256
 	memStack	rb	4000 ;memory area for stack
 align  16
