@@ -153,7 +153,7 @@
 	DrawRectangle(x, y, VALUE_FIELD_W, SIZE, system.color.work_graph);
 	DrawRectangle3D(x+1, y+1, VALUE_FIELD_W-2, SIZE-2, 0xDDDddd, 0xffffff);
 	DrawBar(x+2, y+2, VALUE_FIELD_W-3, SIZE-3, 0xffffff);
-	WriteText( -strlen(value_text)+3*8 + x+6, SIZE / 2 + y -6, 0x90, system.color.work_text, value_text);
+	WriteText( -strlen(value_text)+3*8 + x+6, SIZE / 2 + y -6, 0x90, 0x333333, value_text);
 
 	DrawCaptButton(VALUE_FIELD_W + x,     y, SIZE, SIZE, bt_id_more, system.color.work_button, system.color.work_button_text, "+");
 	DrawCaptButton(VALUE_FIELD_W + x + SIZE, y, SIZE, SIZE, bt_id_less, system.color.work_button, system.color.work_button_text, "-");
@@ -171,10 +171,10 @@
 	w = ESI.edit_box.width+1;
 	if (ESI.edit_box.flags & 100000000000b) bg = 0xCACACA; else bg = 0xFFFfff;
 	h = 15;
-	DrawRectangle(x-1, y-1, w+2, h+2, bg);
-	DrawRectangle3D(x-2, y-2, w+2, h+2, 0xDDDddd, bg);
-	DrawRectangle(x-3, y-3, w+6, h+6, system.color.work_graph);
-	DrawRectangle3D(x-4, y-4, w+8, h+8, system.color.work_dark, system.color.work_light);
+	DrawRectangle(x-1, y-1, w+1, h+1, bg);
+	DrawRectangle3D(x-2, y-2, w+3, h+3, 0xDDDddd, bg);
+	DrawRectangle(x-3, y-3, w+5, h+5, system.color.work_graph);
+	DrawRectangle3D(x-4, y-4, w+7, h+7, system.color.work_dark, system.color.work_light);
 	edit_box_draw  stdcall (edit_box_pointer);
 }
 

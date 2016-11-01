@@ -3,12 +3,12 @@ include '..\me_skin.inc'
 SKIN_PARAMS \
   height          = bmp_center1.height,\  ; skin height
   margins         = [6:5:43:3],\          ; margins [left:top:right:bottom]
-  colors active   = [binner=0xC8C8C8:\    ; border inner
+  colors active   = [binner=0x626262:\    ; border inner
                      bouter=0x33383A:\    ; border outer
-                     bframe=0xC8C8C8],\   ; border middle
-  colors inactive = [binner=0xC8C8C8:\    ; border inner
+                     bframe=0x626262],\   ; border middle
+  colors inactive = [binner=0x626262:\    ; border inner
                      bouter=0x747474:\    ; border outer
-                     bframe=0xC8C8C8],\   ; border middle
+                     bframe=0x626262],\   ; border middle
   dtp             = 'default.dtp'          ; dtp colors
 
 SKIN_BUTTONS \
