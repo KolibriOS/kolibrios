@@ -115,7 +115,7 @@ BEGIN
   Char(0AX)
 END Ln;
 
-PROCEDURE FixReal*(x: LONGREAL; width, p: INTEGER);
+PROCEDURE _FixReal(x: LONGREAL; width, p: INTEGER);
 VAR e, len, i: INTEGER; y: LONGREAL; minus: BOOLEAN;
 BEGIN
   IF IsNan(x) OR IsInf(x) THEN
@@ -195,7 +195,7 @@ BEGIN
       DEC(p)
     END
   END
-END FixReal;
+END _FixReal;
 
 PROCEDURE Real*(x: LONGREAL; width: INTEGER);
 VAR e, n, i: INTEGER; minus: BOOLEAN;
@@ -236,7 +236,8 @@ BEGIN
     IF minus THEN
       x := -x
     END;
-    FixReal(x, width, width - 3);
+    Realp := Real;
+    _FixReal(x, width, width - 3);
     Char("E");
     IF e >= 0 THEN
       Char("+")
@@ -254,9 +255,13 @@ BEGIN
   END
 END Real;
 
+PROCEDURE FixReal*(x: LONGREAL; width, p: INTEGER);
+BEGIN
+  Realp := Real;
+  _FixReal(x, width, p)
+END FixReal;
+
 PROCEDURE Open*;
 END Open;
 
-BEGIN
-  Realp := Real
 END Out.

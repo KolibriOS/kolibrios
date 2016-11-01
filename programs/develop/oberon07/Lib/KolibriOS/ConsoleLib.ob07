@@ -56,6 +56,7 @@ VAR
     cls*	       : PROCEDURE [stdcall] ();
     get_cursor_pos*    : PROCEDURE [stdcall] (VAR x, y: INTEGER);
     set_cursor_pos*    : PROCEDURE [stdcall] (x, y: INTEGER);
+    set_title*	       : PROCEDURE [stdcall] (title: INTEGER);
 
 PROCEDURE open*(wnd_width, wnd_height, scr_width, scr_height: INTEGER; title: ARRAY OF CHAR);
 BEGIN
@@ -94,6 +95,7 @@ BEGIN
   GetProc(sys.ADR(cls), 	      "con_cls");
   GetProc(sys.ADR(get_cursor_pos),    "con_get_cursor_pos");
   GetProc(sys.ADR(set_cursor_pos),    "con_set_cursor_pos");
+  GetProc(sys.ADR(set_title),	      "con_set_title");
 END main;
 
 BEGIN

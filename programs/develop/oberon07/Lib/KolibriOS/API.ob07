@@ -34,6 +34,14 @@ BEGIN
   sys.CODE("578B7D0C8B4D0833C09CFCF3AB9D5F")
 END zeromem;
 
+PROCEDURE mem_commit*(adr, size: INTEGER);
+VAR tmp: INTEGER;
+BEGIN
+  FOR tmp := adr TO adr + size - 1 BY 4096 DO
+    sys.PUT(tmp, 0)
+  END
+END mem_commit;
+
 PROCEDURE strncmp*(a, b, n: INTEGER): INTEGER;
 VAR A, B: CHAR; Res: INTEGER;
 BEGIN
@@ -97,28 +105,37 @@ BEGIN
       sys.PUT(res, size);
       INC(res, 4)
     ELSE
+      temp := 0;
       IF heap + size >= endheap THEN
 	IF sysfunc2(18, 16) > ASR(HEAP_SIZE, 10) THEN
-	  heap := sysfunc3(68, 12, HEAP_SIZE);
+	  temp := sysfunc3(68, 12, HEAP_SIZE)
+	ELSE
+	  temp := 0
+	END;
+	IF temp # 0 THEN
+	  mem_commit(temp, HEAP_SIZE);
+	  heap := temp;
 	  endheap := heap + HEAP_SIZE
 	ELSE
-	  heap := 0
+	  temp := -1
 	END
       END;
-      IF heap # 0 THEN
+      IF (heap # 0) & (temp # -1) THEN
 	sys.PUT(heap, size);
 	res := heap + 4;
 	heap := heap + size
       ELSE
-	endheap := 0;
 	res := 0
       END
     END
   ELSE
     IF sysfunc2(18, 16) > ASR(size, 10) THEN
       res := sysfunc3(68, 12, size);
-      sys.PUT(res, size);
-      INC(res, 4)
+      IF res # 0 THEN
+	mem_commit(res, size);
+	sys.PUT(res, size);
+	INC(res, 4)
+      END
     ELSE
       res := 0
     END

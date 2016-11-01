@@ -80,7 +80,7 @@ PROCEDURE GetArg*(n: INTEGER; VAR s: ARRAY OF CHAR);
 VAR i, j, len: INTEGER; c: CHAR;
 BEGIN
   j := 0;
-  IF n < argc + 1 THEN
+  IF n < argc THEN
     len := LEN(s) - 1;
     i := Params[n, 0];
     WHILE (j < len) & (i <= Params[n, 1]) DO

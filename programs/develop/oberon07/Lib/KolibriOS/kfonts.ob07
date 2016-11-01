@@ -17,7 +17,7 @@
 
 MODULE kfonts;
 
-IMPORT sys := SYSTEM;
+IMPORT sys := SYSTEM, File, KOSAPI;
 
 CONST
 
@@ -48,36 +48,6 @@ TYPE
 
   TFont* = POINTER TO TFont_desc;
 
-
-PROCEDURE [stdcall] LoadFile(file_name: INTEGER; VAR size: INTEGER): INTEGER;
-BEGIN
-  sys.CODE("53");               (* push    ebx              *)
-  sys.CODE("6A44");             (* push    68               *)
-  sys.CODE("58");               (* pop     eax              *)
-  sys.CODE("6A1B");             (* push    27               *)
-  sys.CODE("5B");               (* pop     ebx              *)
-  sys.CODE("8B4D08");           (* mov     ecx, [ebp + 08h] *)
-  sys.CODE("CD40");             (* int     40h              *)
-  sys.CODE("8B4D0C");           (* mov     ecx, [ebp + 0Ch] *)
-  sys.CODE("8911");             (* mov     [ecx], edx       *)
-  sys.CODE("5B");               (* pop     ebx              *)
-  sys.CODE("C9");               (* leave                    *)
-  sys.CODE("C20800");           (* ret     08h              *)
-  RETURN 0
-END LoadFile;
-
-PROCEDURE [stdcall] sysfunc3(arg1, arg2, arg3: INTEGER): INTEGER;
-BEGIN
-  sys.CODE("53");               (* push    ebx              *)
-  sys.CODE("8B4508");           (* mov     eax, [ebp + 08h] *)
-  sys.CODE("8B5D0C");           (* mov     ebx, [ebp + 0Ch] *)
-  sys.CODE("8B4D10");           (* mov     ecx, [ebp + 10h] *)
-  sys.CODE("CD40");             (* int     40h              *)
-  sys.CODE("5B");               (* pop     ebx              *)
-  sys.CODE("C9");               (* leave                    *)
-  sys.CODE("C20C00");           (* ret     0Ch              *)
-  RETURN 0
-END sysfunc3;
 
 PROCEDURE [stdcall] zeromem(size, adr: INTEGER);
 BEGIN
@@ -260,13 +230,13 @@ BEGIN
   xsize := glyph.xsize;
   xmax := x0 + xsize;
   mem := Font.mem + glyph.base;
+  getrgb(color, r0, g0, b0);
   FOR i := mem TO mem + xsize * Font.height - 1 DO
     sys.GET(i, ch);
     IF ch = 1X THEN
-      pset(buf, x, y, color, bpp32)
+      pset(buf, x, y, color, bpp32);
     ELSIF (ch = 2X) & smoothing THEN
       getrgb(pget(buf, x, y, bpp32), r, g, b);
-      getrgb(color, r0, g0, b0);
       r := (r * 3 + r0) DIV 4;
       g := (g * 3 + g0) DIV 4;
       b := (b * 3 + b0) DIV 4;
@@ -289,31 +259,6 @@ BEGIN
   END
 END hline;
 
-PROCEDURE TextOut*(Font: TFont; canvas, x, y, str, length, color, params: INTEGER);
-VAR width: INTEGER; c: CHAR; bpp32, smoothing: BOOLEAN;
-BEGIN
-  IF Font # NIL THEN
-    smoothing := 4 IN BITS(params);
-    bpp32 := 5 IN BITS(params);
-    sys.GET(str, c);
-    WHILE (length > 0) OR (length = -1) & (c # 0X) DO
-      INC(str);
-      width := OutChar(Font^, ORD(c), x, y, canvas, bpp32, smoothing, color, params);
-      IF 3 IN BITS(params) THEN
-	hline(canvas, x + ORD(1 IN BITS(params)) * ((Font.height DIV 2) DIV 3), y + Font.height DIV 2, width, color, bpp32)
-      END;
-      IF 2 IN BITS(params) THEN
-	hline(canvas, x, y + Font.height - 1, width, color, bpp32)
-      END;
-      x := x + width;
-      IF length > 0 THEN
-	DEC(length)
-      END;
-      sys.GET(str, c)
-    END
-  END
-END TextOut;
-
 PROCEDURE TextWidth*(Font: TFont; str, length, params: INTEGER): INTEGER;
 VAR res: INTEGER; c: CHAR;
 BEGIN
@@ -327,7 +272,9 @@ BEGIN
       IF length > 0 THEN
 	DEC(length)
       END;
-      sys.GET(str, c)
+      IF length # 0 THEN
+	sys.GET(str, c)
+      END
     END
   END
   RETURN res
@@ -343,6 +290,74 @@ BEGIN
   END
   RETURN res
 END TextHeight;
+
+PROCEDURE TextClipLeft(Font: TFont; str, length, params: INTEGER; VAR x: INTEGER): INTEGER;
+VAR x1: INTEGER; c: CHAR;
+BEGIN
+  params := params MOD 4;
+  sys.GET(str, c);
+  WHILE (length > 0) OR (length = -1) & (c # 0X) DO
+    INC(str);
+    x1 := x;
+    x := x + Font.glyphs[params, ORD(c)].width;
+    IF x > 0 THEN
+      length := 0;
+    END;
+    IF length > 0 THEN
+      DEC(length)
+    END;
+    IF length # 0 THEN
+      sys.GET(str, c)
+    END
+  END;
+  x := x1
+  RETURN str - 1
+END TextClipLeft;
+
+PROCEDURE TextOut*(Font: TFont; canvas, x, y, str, length, color, params: INTEGER);
+VAR width, xsize, ysize, str1, n: INTEGER; c: CHAR; bpp32, smoothing, underline, strike: BOOLEAN;
+BEGIN
+  IF Font # NIL THEN
+    sys.GET(canvas,	xsize);
+    sys.GET(canvas + 4, ysize);
+    IF (y <= -TextHeight(Font)) OR (y >= ysize) THEN
+      length := 0
+    END;
+    IF length # 0 THEN
+      smoothing := 4 IN BITS(params);
+      bpp32 := 5 IN BITS(params);
+      underline := 2 IN BITS(params);
+      strike := 3 IN BITS(params);
+      str1 := TextClipLeft(Font, str, length, params, x);
+      n := str1 - str;
+      str := str1;
+      IF length >= n THEN
+	length := length - n
+      END;
+      sys.GET(str, c)
+    END;
+    WHILE (length > 0) OR (length = -1) & (c # 0X) DO
+      INC(str);
+      width := OutChar(Font^, ORD(c), x, y, canvas, bpp32, smoothing, color, params);
+      IF strike THEN
+	hline(canvas, x + ORD(1 IN BITS(params)) * ((Font.height DIV 2) DIV 3), y + Font.height DIV 2, width + 2, color, bpp32)
+      END;
+      IF underline THEN
+	hline(canvas, x, y + Font.height - 1, width + 2, color, bpp32)
+      END;
+      x := x + width;
+      IF x > xsize THEN
+	length := 0
+      END;
+      IF length > 0 THEN
+	DEC(length)
+      END;
+      IF length # 0 THEN
+	sys.GET(str, c)
+      END
+    END
+  END
+END TextOut;
 
 PROCEDURE SetSize*(_Font: TFont; font_size: INTEGER): BOOLEAN;
 VAR temp, offset, fsize, i, memsize, mem: INTEGER;
@@ -381,10 +396,10 @@ BEGIN
 		    Font.mempos := 0;
 		    memsize := (Font.width + 10) * Font.height * 1024;
 		    mem := Font.mem;
-		    Font.mem := sysfunc3(68, 12, memsize);
+		    Font.mem := KOSAPI.sysfunc3(68, 12, memsize);
 		    IF Font.mem # 0 THEN
 		      IF mem # 0 THEN
-			mem := sysfunc3(68, 13, mem)
+			mem := KOSAPI.sysfunc3(68, 13, mem)
 		      END;
 		      zeromem(memsize DIV 4, Font.mem);
 		      FOR i := 0 TO 255 DO
@@ -441,10 +456,10 @@ PROCEDURE Destroy*(VAR Font: TFont);
 BEGIN
   IF Font # NIL THEN
     IF Font.mem # 0 THEN
-      Font.mem := sysfunc3(68, 13, Font.mem)
+      Font.mem := KOSAPI.sysfunc3(68, 13, Font.mem)
     END;
     IF Font.data # 0 THEN
-      Font.data := sysfunc3(68, 13, Font.data)
+      Font.data := KOSAPI.sysfunc3(68, 13, Font.data)
     END;
     DISPOSE(Font)
   END
@@ -453,7 +468,7 @@ END Destroy;
 PROCEDURE LoadFont*(file_name: ARRAY OF CHAR): TFont;
 VAR Font: TFont; data, size, n: INTEGER;
 BEGIN
-  data := LoadFile(sys.ADR(file_name[0]), size);
+  data := File.Load(file_name, size);
   IF (data # 0) & (size > 156) THEN
     NEW(Font);
     Font.data := data;
@@ -468,7 +483,7 @@ BEGIN
     END
   ELSE
     IF data # 0 THEN
-      data := sysfunc3(68, 13, data)
+      data := KOSAPI.sysfunc3(68, 13, data)
     END;
     Font := NIL
   END
