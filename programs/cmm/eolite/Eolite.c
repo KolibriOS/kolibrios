@@ -458,10 +458,8 @@ void main()
 								Del_Form();
 								break;
 						case SCAN_CODE_INS:
-								selected_offset = file_mas[files.cur_y]*304 + buf+32 + 7;
-								if (ESBYTE[selected_offset]) setElementSelectedFlag(files.cur_y, false);
+								if (getElementSelectedFlag(files.cur_y) == true) setElementSelectedFlag(files.cur_y, false);
 								else setElementSelectedFlag(files.cur_y, true);
-								_INSERT_END:
 								files.KeyDown();
 								List_ReDraw();
 								DrawStatusBar();

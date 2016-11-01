@@ -95,7 +95,6 @@ void SetPropertiesDir(dword way)
 void SetProperties(byte prop)
 {
 	dword cur_file;
-	dword selected_offset2;
 
 	if (prop==1) || (prop==2)
 	{
@@ -104,8 +103,7 @@ void SetProperties(byte prop)
 			cur_file = malloc(4096);
 			for (i=0; i<files.count; i++) 
 			{
-				selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-				if (ESBYTE[selected_offset2])
+				if (getElementSelectedFlag(i) == true) 
 				{
 					strcpy(cur_file, #path);
 					strcat(cur_file, file_mas[i]*304+buf+72);
@@ -147,9 +145,9 @@ void SetProperties(byte prop)
 	}
 	cmd_free=3;
 	_not_draw = true;
-    Open_Dir(#path,WITH_REDRAW);
-    _not_draw = false;
-    EventRedrawWindow(Form.left,Form.top);
+	Open_Dir(#path,WITH_REDRAW);
+	_not_draw = false;
+	EventRedrawWindow(Form.left,Form.top);
 	ExitProcess();
 }
 
@@ -197,12 +195,11 @@ void GetSizeDir(dword way)
 void GetSizeMoreFiles(dword way)
 {
 	char cur_file[4096];
-	dword selected_offset2;
 	
 	for (i=0; i<files.count; i++) 
-    {
-        selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-        if (ESBYTE[selected_offset2]) {
+	{
+		if (getElementSelectedFlag(i) == true) 
+		{
 			sprintf(#cur_file,"%s/%s",way,file_mas[i]*304+buf+72);
 			if (TestBit(ESDWORD[file_mas[i]*304+buf+32], 4) )
 			{
@@ -215,15 +212,13 @@ void GetSizeMoreFiles(dword way)
 				size_dir += file_info_dirsize.sizelo;
 				file_count++;
 			}
-        }
+		}
 	}  
 }
 
 void properties_dialog()
 {
 	byte id;
-	dword file_name_off;
-	dword selected_offset2;
 	
 	DSBYTE[#folder_info]=0;
 	file_count = 0;
@@ -386,7 +381,7 @@ void DrawPropertiesWindow()
 		
 		if (selected_count)
 		{
-			DrawIconByExtension(NULL, 18, 19, system.color.work);
+			DrawIconByExtension(NULL, 18, 49, system.color.work);
 			sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
 			WriteText(50, 49, 0x90, 0x000000, #folder_info);
 			sprintf(#element_size_label,"%s (%d %s)",ConvertSize(size_dir),size_dir,SET_BYTE_LANG);

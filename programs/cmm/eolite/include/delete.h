@@ -29,7 +29,6 @@ int Del_File2(dword way, sh_progr)
 void Del_File_Thread()
 {   
 	byte del_from[4096];
-	dword selected_offset2;
 	int tst, count, i;
 	
 	file_count_copy = 0;
@@ -40,8 +39,7 @@ void Del_File_Thread()
 	{
 	   for (i=0; i<files.count; i++) 
 		{
-			selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-			if (ESBYTE[selected_offset2]) {
+			if (getElementSelectedFlag(i) == true) {
 				sprintf(#del_from,"%s/%s",#path,file_mas[i]*304+buf+72);
 				GetFileInfo(#del_from, #file_info_count);
 				if ( file_info_count.isfolder ) DirFileCount(#del_from);
@@ -63,8 +61,7 @@ void Del_File_Thread()
 	{
 		for (i=0; i<files.count; i++) 
 		{
-			selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-			if (ESBYTE[selected_offset2]) {
+			if (getElementSelectedFlag(i) == true) {
 				sprintf(#del_from,"%s/%s",#path,file_mas[i]*304+buf+72);
 				Del_File2(#del_from, 1);
 			}

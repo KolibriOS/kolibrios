@@ -50,10 +50,6 @@ void properties_dialog()
 {
 	byte id;
 	byte key;
-	dword file_name_off;
-	dword element_size;
-	dword selected_offset2;
-	char element_size_label[32];
 	proc_info settings_form;
 	
 	IF (active_properties) ExitProcess();

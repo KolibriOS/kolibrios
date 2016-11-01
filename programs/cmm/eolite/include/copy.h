@@ -7,17 +7,21 @@ enum {NOCUT, CUT};
 
 Clipboard clipboard;
 
-void setElementSelectedFlag(dword n, bool state) {
+void setElementSelectedFlag(dword n, int state) {
 	dword selected_offset = file_mas[n]*304 + buf+32 + 7;
-	if (!n) if (!strncmp(selected_offset+33, "..", 2)) return; //do not selec ".." directory
 	ESBYTE[selected_offset] = state;
+	if (n==0) && (strncmp(file_mas[n]*304+buf+72,"..",2)==0) ESBYTE[selected_offset] = false; //do not selec ".." directory
 	if (state==true) selected_count++;
 	if (state==false) selected_count--;
 }
 
+int getElementSelectedFlag(dword n) {
+	dword selected_offset = file_mas[n]*304 + buf+32 + 7;
+	return ESBYTE[selected_offset];
+}
+
 void Copy(dword pcth, char cut)
 {
-	dword selected_offset2;
 	byte copy_t[4096];
 	dword buff_data;
 	dword path_len = 0;
@@ -29,8 +33,7 @@ void Copy(dword pcth, char cut)
 	size_buf = 4;
 	for (i=0; i<files.count; i++) 
 	{
-		selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-		if (ESBYTE[selected_offset2]) {
+		if (getElementSelectedFlag(i) == true) {
 			sprintf(#copy_t,"%s/%s",#path,file_mas[i]*304+buf+72);
 			path_len = strlen(#copy_t);
 			size_buf += path_len + 1;
@@ -44,8 +47,7 @@ void Copy(dword pcth, char cut)
 	copy_buf_offset = buff_data + 10;
 	for (i=0; i<files.count; i++) 
 	{
-		selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-		if (ESBYTE[selected_offset2]) {
+		if (getElementSelectedFlag(i) == true) {
 			sprintf(copy_buf_offset,"%s/%s",#path,file_mas[i]*304+buf+72);
 			copy_buf_offset += strlen(copy_buf_offset) + 1;
 		}
