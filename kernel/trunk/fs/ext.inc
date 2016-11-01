@@ -377,6 +377,7 @@ extfsResourceFree:
         jc      @f
         inc     [ebp+EXTFS.superblock.blocksFree+ecx*4]
 @@:
+        xor     eax, eax
         pop     edx ebx
         ret
 
@@ -384,68 +385,11 @@ extfsResourceFree:
         pop     eax
 .fail:
         pop     eax
-        movi    eax, ERROR_DEVICE
         jmp     @b
 
-freeDoublyIndirectBlock:
-; in: eax = doubly-indirect block number
-; out: eax=1 -> finished
-        test    eax, eax
-        jz      .complete
-        push    eax
-        mov     ebx, [ebp+EXTFS.mainBlockBuffer]
-        call    extfsReadBlock
-        pop     eax
-        jc      .ret
-        xor     ecx, ecx
-        call    extfsResourceFree
-        mov     edx, ebx
-        add     edx, [ebp+EXTFS.bytesPerBlock]
-@@:
-        mov     eax, [ebx]
-        test    eax, eax
-        jz      .complete
-        call    extfsResourceFree
-        add     ebx, 4
-        cmp     ebx, edx
-        jb      @b
-.ret:
-        xor     eax, eax
-        ret
-
-.complete:
-        inc     eax
-        ret
-
-inodeBlockAlloc:    ; also erases
-; in: esi -> inode, eax = inode number
-; out: ebx = block number
-        xor     ebx, ebx
-        call    extfsResourceAlloc
-        jc      @f
-        push    ebx ecx edi
-        mov     ecx, [ebp+EXTFS.dwordsPerBlock]
-        mov     edi, [ebp+EXTFS.tempBlockBuffer]
-        mov     ebx, edi
-        xor     eax, eax
-        rep stosd
-        pop     edi ecx eax
-        push    eax
-        call    extfsWriteBlock
-        pop     ebx
-        jc      @f
-        mov     eax, [ebp+EXTFS.sectorsPerBlock]
-        add     [esi+INODE.sectorsUsed], eax
-        xor     eax, eax
-@@:
-        ret
-
-extfsResourceAlloc:
-;   in:
-; eax = inode number
-; ebx=0 -> block, ebx=1 -> inode
-;   out:
-; ebx = block/inode number
+extfsInodeAlloc:
+; in: eax = parent inode number
+; out: ebx = allocated inode number
         push    ecx edx esi edi
         dec     eax
         xor     edx, edx
@@ -455,23 +399,20 @@ extfsResourceAlloc:
 .test_block_group:
         call    extfsReadDescriptor
         jc      .fail
-        dec     [eax+BGDESCR.blocksFree+ebx*2]
+        dec     [eax+BGDESCR.inodesFree]
         js      .next
-        mov     edx, [eax+BGDESCR.blockBitmap+ebx*4]
+        mov     edx, [eax+BGDESCR.inodeBitmap]
         mov     eax, [esp]
         call    extfsWriteDescriptor
         jc      .fail
-        push    ebx
         mov     eax, edx
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         mov     edi, ebx
         call    extfsReadBlock
-        pop     ebx
         jc      .fail
-        mov     ecx, [ebp+EXTFS.superblock.blocksPerGroup+ebx*8]
+        mov     ecx, [ebp+EXTFS.superblock.inodesPerGroup]
         or      eax, -1
         shr     ecx, 5
-        jz      .next
         repz scasd
         jz      .next
         sub     edi, 4
@@ -484,15 +425,12 @@ extfsResourceAlloc:
         add     eax, edi
         mov     ecx, eax
         mov     eax, edx
-        push    ebx
-        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         call    extfsWriteBlock
-        pop     ebx
         jc      .fail
         pop     eax
-        mul     [ebp+EXTFS.superblock.blocksPerGroup+ebx*8]
+        mul     [ebp+EXTFS.superblock.inodesPerGroup]
         add     eax, ecx
-        dec     [ebp+EXTFS.superblock.blocksFree+ebx*4]
+        dec     [ebp+EXTFS.superblock.inodesFree]
         mov     ebx, eax
         pop     eax
         xor     eax, eax
@@ -511,16 +449,13 @@ extfsResourceAlloc:
 .forward:
         inc     dword[esp]
         mov     eax, [esp]
-        mul     [ebp+EXTFS.superblock.blocksPerGroup+ebx*8]
-        neg     ebx
-        cmp     eax, [ebp+EXTFS.superblock.blocksTotal+ebx*4]
+        mul     [ebp+EXTFS.superblock.inodesPerGroup]
+        cmp     eax, [ebp+EXTFS.superblock.inodesTotal]
         ja      @f
-        neg     ebx
         mov     eax, [esp]
         jmp     .test_block_group
 
 @@:
-        neg     ebx
         mov     eax, [esp+4]
         mov     [esp], eax
         mov     esi, .backward
@@ -529,6 +464,166 @@ extfsResourceAlloc:
         jc      .fail
         mov     eax, [esp]
         jmp     .test_block_group
+
+extfsExtentAlloc:
+;   in:
+; eax = parent inode number
+; ecx = blocks max
+;   out:
+; ebx = first block number
+; ecx = blocks allocated
+        push    edx esi edi ecx
+        dec     eax
+        xor     edx, edx
+        div     [ebp+EXTFS.superblock.inodesPerGroup]
+        push    eax eax
+.test_block_group:
+        call    extfsReadDescriptor
+        jc      .fail
+        dec     [eax+BGDESCR.blocksFree]
+        js      .next
+        mov     eax, [eax+BGDESCR.blockBitmap]
+        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
+        mov     edx, eax
+        mov     edi, ebx
+        call    extfsReadBlock
+        jc      .fail
+        mov     ecx, [ebp+EXTFS.superblock.blocksPerGroup]
+        shr     ecx, 5
+        or      eax, -1
+        repz scasd
+        jz      .next
+        mov     esi, edi
+        sub     esi, 4
+        push    edx ecx
+        mov     eax, [esi]
+        not     eax
+        bsf     ecx, eax
+        not     eax
+        shr     eax, cl
+        shl     eax, cl
+        mov     ebx, 32
+        bsf     ebx, eax
+        sub     ebx, ecx
+        mov     eax, [esp+16]
+        cmp     ebx, eax
+        jc      @f
+        mov     ebx, eax
+@@:
+        xchg    ebx, ecx
+        or      eax, -1
+        shl     eax, cl
+        not     eax
+        xchg    ebx, ecx
+        shl     eax, cl
+        or      [esi], eax
+        sub     esi, [ebp+EXTFS.tempBlockBuffer]
+        shl     esi, 3
+        add     esi, ecx
+        mov     eax, [esp+16]
+        sub     eax, ebx
+        mov     [esp+16], ebx
+        add     ebx, ecx
+        pop     ecx
+        test    eax, eax
+        jz      .done
+        cmp     ebx, 32
+        jnz     .done
+        jecxz   .done
+        mov     ebx, eax
+        shr     eax, 5
+        inc     eax
+        and     ebx, 31
+        cmp     ecx, eax
+        jnc     @f
+        mov     eax, ecx
+        mov     bl, 32
+@@:
+        mov     ecx, eax
+        shl     eax, 5
+        add     [esp+12], eax
+        xor     eax, eax
+        push    edi
+        repz scasd
+        jz      @f
+        mov     eax, [edi-4]
+        bsf     eax, eax
+        xchg    eax, ebx
+        test    ecx, ecx
+        jnz     @f
+        cmp     ebx, eax
+        jc      @f
+        mov     ebx, eax
+@@:
+        inc     ecx
+        shl     ecx, 5
+        sub     ecx, ebx
+        sub     [esp+16], ecx
+        mov     ecx, edi
+        pop     edi
+        sub     ecx, edi
+        shr     ecx, 2
+        dec     ecx
+        or      eax, -1
+        rep stosd
+        mov     ecx, ebx
+        shl     eax, cl
+        not     eax
+        or      [edi], eax
+.done:
+        pop     eax
+        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
+        call    extfsWriteBlock
+        jc      .fail
+        mov     eax, [esp]
+        call    extfsReadDescriptor
+        jc      .fail
+        mov     ecx, [esp+8]
+        sub     [eax+BGDESCR.blocksFree], cx
+        jc      .fail
+        sub     [ebp+EXTFS.superblock.blocksFree], ecx
+        mov     eax, [esp]
+        call    extfsWriteDescriptor
+        jc      .fail
+        pop     eax ebx
+        mul     [ebp+EXTFS.superblock.blocksPerGroup]
+        mov     ebx, eax
+        add     ebx, esi
+        xor     eax, eax
+        pop     ecx
+.ret:
+        pop     edi esi edx
+        ret
+
+.fail:
+        pop     eax eax
+        movi    eax, ERROR_DEVICE
+        xor     ecx, ecx
+        jmp     .ret
+
+.next:      ; search forward, then backward
+        pop     eax
+        cmp     eax, [esp]
+        jc      .backward
+        inc     eax
+        push    eax
+        mul     [ebp+EXTFS.superblock.blocksPerGroup]
+        cmp     eax, [ebp+EXTFS.superblock.blocksTotal]
+        ja      @f
+        mov     eax, [esp]
+        jmp     .test_block_group
+
+@@:
+        pop     eax eax
+        push    eax
+.backward:
+        dec     eax
+        push    eax
+        jns     .test_block_group
+        pop     eax eax
+        movi    eax, ERROR_DISK_FULL
+        xor     ecx, ecx
+        jmp     .ret
 
 extfsGetFileBlock:
 ; in: esi -> inode, ecx = file block number
@@ -666,159 +761,6 @@ extfsGetFileBlock:
         pop     ebx edx
         ret
 
-extfsSetFileBlock:
-;   in:
-; ecx = file block number
-; edi = block number
-; edx = inode number
-; esi -> inode
-        push    ebx ecx edx
-        cmp     ecx, 12
-        jb      .direct_block
-        sub     ecx, 12
-        cmp     ecx, [ebp+EXTFS.dwordsPerBlock]
-        jb      .indirect_block
-        sub     ecx, [ebp+EXTFS.dwordsPerBlock]
-        cmp     ecx, [ebp+EXTFS.dwordsPerBranch]
-        jb      .double_indirect_block
-; triple indirect blocks
-        sub     ecx, [ebp+EXTFS.dwordsPerBranch]
-        mov     eax, [esi+INODE.tripleAddress]
-        test    eax, eax
-        jnz     @f
-        mov     eax, edx
-        call    inodeBlockAlloc
-        jc      .ret
-        mov     [esi+INODE.tripleAddress], ebx
-        mov     eax, ebx
-@@:
-        push    eax
-        mov     ebx, [ebp+EXTFS.mainBlockBuffer]
-        call    extfsReadBlock
-        jc      .fail_alloc_4
-        xor     edx, edx
-        mov     eax, ecx
-        div     [ebp+EXTFS.dwordsPerBranch]
-; eax = number in triply-indirect block, edx = number in branch
-        lea     ecx, [ebx+eax*4]
-        mov     eax, [ebx+eax*4]
-        test    eax, eax
-        jnz     @f
-        mov     eax, [esp+4]
-        call    inodeBlockAlloc
-        jc      .fail_alloc_4
-        mov     [ecx], ebx
-        mov     eax, [esp]
-        mov     ebx, [ebp+EXTFS.mainBlockBuffer]
-        call    extfsWriteBlock
-        jc      .fail_alloc_4
-        mov     eax, [ecx]
-@@:
-        mov     [esp], eax
-        call    extfsReadBlock
-        jc      .fail_alloc_4
-        mov     eax, edx
-        jmp     @f
-
-.double_indirect_block:
-        mov     eax, [esi+INODE.doubleAddress]
-        test    eax, eax
-        jnz     .double_indirect_present
-        mov     eax, edx
-        call    inodeBlockAlloc
-        jc      .ret
-        mov     [esi+INODE.doubleAddress], ebx
-        mov     eax, ebx
-.double_indirect_present:
-        push    eax
-        mov     ebx, [ebp+EXTFS.mainBlockBuffer]
-        call    extfsReadBlock
-        jc      .fail_alloc_4
-        mov     eax, ecx
-@@:
-        xor     edx, edx
-        div     [ebp+EXTFS.dwordsPerBlock]
-; eax = number in doubly-indirect block, edx = number in indirect block
-        lea     ecx, [ebx+edx*4]
-        push    ecx
-        lea     ecx, [ebx+eax*4]
-        cmp     dword[ecx], 0
-        jne     @f
-        mov     eax, [esp+8]
-        call    inodeBlockAlloc
-        jc      .fail_alloc_8
-        mov     [ecx], ebx
-        mov     eax, [esp+4]
-        mov     ebx, [ebp+EXTFS.mainBlockBuffer]
-        call    extfsWriteBlock
-        jc      .fail_alloc_8
-@@:
-        mov     eax, [ecx]
-        push    eax
-        call    extfsReadBlock
-        jc      .fail_alloc_12
-        pop     eax ecx edx
-        mov     [ecx], edi
-        call    extfsWriteBlock
-        jmp     .ret
-
-.indirect_block:
-        mov     eax, [esi+INODE.addressBlock]
-        test    eax, eax
-        jnz     @f
-        mov     eax, edx
-        call    inodeBlockAlloc
-        jc      .ret
-        mov     [esi+INODE.addressBlock], ebx
-        mov     eax, ebx
-@@:
-        push    eax
-        mov     ebx, [ebp+EXTFS.mainBlockBuffer]
-        call    extfsReadBlock
-        jc      .fail_alloc_4
-        mov     [ebx+ecx*4], edi
-        pop     eax
-        call    extfsWriteBlock
-        jmp     .ret
-
-.direct_block:
-        mov     [esi+INODE.blockNumbers+ecx*4], edi
-        xor     eax, eax
-.ret:
-        pop     edx ecx ebx
-        ret
-
-.fail_alloc_12:
-        pop     ebx
-.fail_alloc_8:
-        pop     ebx
-.fail_alloc_4:
-        pop     ebx
-        jmp     .ret
-
-extfsFileBlockAlloc:
-;   in:
-; esi -> inode
-; edx = inode number
-; eax = file block number
-;   out:
-; edi = allocated block number
-        push    ebx ecx
-        mov     ecx, eax
-        mov     eax, edx
-        xor     ebx, ebx
-        call    extfsResourceAlloc
-        jc      @f
-        mov     edi, ebx
-        call    extfsSetFileBlock
-        jc      @f
-        mov     eax, [ebp+EXTFS.sectorsPerBlock]
-        add     [esi+INODE.sectorsUsed], eax
-        xor     eax, eax
-@@:
-        pop     ecx ebx
-        ret
-
 extfsReadFileBlock:
 ;   in:
 ; eax = file block number
@@ -943,6 +885,161 @@ readInode:
         pop     ebx ecx esi edi edx
         ret
 
+indirectBlockAlloc:
+;   in:
+; edi -> indirect block number
+; ebx = starting extent block
+; ecx = extent size
+; edx = starting file block
+        mov     eax, [edi]
+        test    eax, eax
+        jz      .newBlock
+        push    edi ebx ecx
+        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
+        call    extfsReadBlock
+        jc      .err2
+        lea     edi, [ebx+edx*4]
+        test    edx, edx
+        jz      @f
+        cmp     dword[edi-4], 0
+        jnz     @f
+        pop     ecx ebx edi
+.err:
+        mov     al, ERROR_FS_FAIL
+        stc
+        ret
+
+.err2:
+        pop     ecx ebx edi
+        ret
+
+.newBlock:
+        test    edx, edx
+        jnz     .err
+        mov     [edi], ebx
+        inc     ebx
+        dec     ecx
+        push    edi ebx ecx
+        mov     ecx, [ebp+EXTFS.dwordsPerBlock]
+        mov     edi, [ebp+EXTFS.tempBlockBuffer]
+        push    edi
+        rep stosd
+        pop     edi
+@@:
+        mov     ecx, [ebp+EXTFS.dwordsPerBlock]
+        sub     ecx, edx
+        pop     ebx eax
+        sub     ebx, ecx
+        jnc     @f
+        add     ecx, ebx
+        xor     ebx, ebx
+@@:
+        jecxz   .done
+        add     edx, ecx
+@@:
+        stosd
+        inc     eax
+        loop    @b
+.done:
+        pop     edi
+        push    eax ebx
+        mov     eax, [edi]
+        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
+        call    extfsWriteBlock
+        pop     ecx ebx
+        ret
+
+doublyIndirectBlockAlloc:
+;   in:
+; edi -> indirect block number
+; edx = starting file block
+; ebx = starting extent block
+; ecx = extent size
+; [esp+4] = rest of size
+; [esp+8] = parent inode number
+        mov     eax, [edi]
+        test    eax, eax
+        jz      .newBlock
+        push    edi ecx ebx
+        mov     ebx, [ebp+EXTFS.mainBlockBuffer]
+        call    extfsReadBlock
+        jc      .err2
+        mov     eax, edx
+        xor     edx, edx
+        mov     ecx, [ebp+EXTFS.dwordsPerBlock]
+        div     ecx
+        lea     edi, [ebx+eax*4]
+        pop     ebx
+        test    eax, eax
+        jz      @f
+        cmp     dword[edi-4], 0
+        jnz     @f
+        pop     ecx edi
+.err:
+        mov     al, ERROR_FS_FAIL
+        stc
+        ret
+
+.err2:
+        pop     ebx ecx edi
+        ret
+
+.newBlock:
+        test    edx, edx
+        jnz     .err
+        mov     [edi], ebx
+        inc     ebx
+        dec     ecx
+        inc     dword[esp+4]
+        push    edi ecx
+        mov     ecx, [ebp+EXTFS.dwordsPerBlock]
+        mov     edi, [ebp+EXTFS.mainBlockBuffer]
+        push    ecx edi
+        rep stosd
+        pop     edi ecx
+@@:
+        sub     ecx, eax
+        xchg    [esp], ecx
+.loop:
+        cmp     dword[edi], 0
+        jnz     @f
+        inc     dword[esp+12]
+@@:
+        jecxz   .extentAlloc
+        call    indirectBlockAlloc
+        jc      .end
+        cmp     edx, [ebp+EXTFS.dwordsPerBlock]
+        jnz     @b
+        add     edi, 4
+        xor     edx, edx
+        dec     dword[esp]
+        jnz     .loop
+.end:
+        pop     edi edi
+        push    ebx eax
+        mov     eax, [edi]
+        mov     ebx, [ebp+EXTFS.mainBlockBuffer]
+        call    extfsWriteBlock
+        pop     ebx
+        add     eax, ebx
+        xor     ebx, ebx
+        cmp     ebx, eax
+        pop     ebx
+        ret
+
+.extentAlloc:
+        mov     ecx, [esp+12]
+        xor     eax, eax
+        jecxz   .end
+        mov     eax, [esp+16]
+        call    extfsExtentAlloc
+        jc      .end
+        sub     [esp+12], ecx
+        mov     eax, ecx
+        imul    eax, [ebp+EXTFS.sectorsPerBlock]
+        add     [ebp+EXTFS.inodeBuffer.sectorsUsed], eax
+        jmp     @b
+
 extfsExtendFile:
 ;   in:
 ; [ebp+EXTFS.inodeBuffer] = inode
@@ -950,41 +1047,280 @@ extfsExtendFile:
 ; ecx = new size
         push    ebx ecx edx esi edi eax
         lea     esi, [ebp+EXTFS.inodeBuffer]
-        mov     eax, [esi+INODE.fileSize]
-        sub     ecx, eax
-        jna     .ret
-        mov     ebx, eax
-        xor     edx, edx
-        div     [ebp+EXTFS.bytesPerBlock]
-        test    edx, edx
-        jz      .start_aligned
-        mov     eax, [ebp+EXTFS.bytesPerBlock]
-        sub     eax, edx
-        cmp     eax, ecx
-        jbe     @f
         mov     eax, ecx
+        mov     edx, [esi+INODE.fileSize]
+        cmp     edx, eax
+        jnc     .ret
+        mov     [esi+INODE.fileSize], eax
+        mov     ecx, [ebp+EXTFS.sectorsPerBlockLog]
+        add     ecx, 9
+        dec     eax
+        shr     eax, cl
+        inc     eax
+        sub     edx, 1
+        jc      @f
+        shr     edx, cl
 @@:
-        add     ebx, eax
-        sub     ecx, eax
+        inc     edx
+        sub     eax, edx
+        jz      .ret
+        push    eax
+@@:
+        mov     ecx, [esp]
+        mov     eax, [esp+4]
+        test    ecx, ecx
         jz      .done
-.start_aligned:
+        call    extfsExtentAlloc
+        jc      .errDone
+        sub     [esp], ecx
+        mov     eax, ecx
+        imul    eax, [ebp+EXTFS.sectorsPerBlock]
+        add     [esi+INODE.sectorsUsed], eax
+        cmp     edx, 12
+        jc      .directBlocks
+        sub     edx, 12
+        cmp     edx, [ebp+EXTFS.dwordsPerBlock]
+        jc      .indirectBlocks
+        sub     edx, [ebp+EXTFS.dwordsPerBlock]
+        cmp     edx, [ebp+EXTFS.dwordsPerBranch]
+        jc      .doublyIndirectBlock
+        sub     edx, [ebp+EXTFS.dwordsPerBranch]
+        jmp     .triplyIndirectBlock
+
+.newExtent:
+        jmp     @b
+
+.directBlocks:
+        lea     edi, [esi+INODE.blockNumbers+edx*4]
+        test    edx, edx
+        jz      @f
+        cmp     dword[edi-4], 0
+        jz      .errDone
+@@:
         mov     eax, ebx
+        mov     ebx, ecx
+        mov     ecx, 12
+        sub     ecx, edx
+        sub     ebx, ecx
+        jnc     @f
+        add     ecx, ebx
+        xor     ebx, ebx
+@@:
+        add     edx, ecx
+@@:
+        stosd
+        inc     eax
+        loop    @b
+        mov     ecx, ebx
+        mov     ebx, eax
+        jecxz   .newExtent
         xor     edx, edx
-        div     [ebp+EXTFS.bytesPerBlock]
-        mov     edx, [esp]
-        call    extfsFileBlockAlloc
-        jc      .error
-        mov     eax, [ebp+EXTFS.bytesPerBlock]
-        add     ebx, eax
-        sub     ecx, eax
-        ja      .start_aligned
+.indirectBlocks:
+        lea     edi, [esi+INODE.addressBlock]
+        cmp     dword[edi], 0
+        jnz     @f
+        inc     dword[esp]
+@@:
+        call    indirectBlockAlloc
+        jc      .errDone
+        add     edx, 12
+        jecxz   .newExtent
+        xor     edx, edx
+.doublyIndirectBlock:
+        lea     edi, [esi+INODE.doubleAddress]
+        call    doublyIndirectBlockAlloc
+        jc      .errDone
+        mov     edx, [ebp+EXTFS.dwordsPerBranch]
+        add     edx, [ebp+EXTFS.dwordsPerBlock]
+        add     edx, 12
+        jecxz   .newExtent
+        xor     edx, edx
+.triplyIndirectBlock:
+        push    ecx ebx edx
+        stdcall kernel_alloc, [ebp+EXTFS.bytesPerBlock]
+        pop     edx
+        mov     esi, eax
+        mov     eax, [ebp+EXTFS.inodeBuffer.tripleAddress]
+        test    eax, eax
+        jz      .newBlock
+        mov     ebx, esi
+        call    extfsReadBlock
+        pop     ebx ecx
+        jc      .errFree
+        mov     eax, edx
+        xor     edx, edx
+        div     [ebp+EXTFS.dwordsPerBranch]
+        lea     edi, [esi+eax*4]
+        test    eax, eax
+        jz      @f
+        cmp     dword[edi-4], 0
+        jnz     @f
+        mov     al, ERROR_FS_FAIL
+.errFree:
+        push    ecx eax
+        stdcall kernel_free, esi
+        pop     eax ecx
+.errDone:
+        imul    ecx, [ebp+EXTFS.sectorsPerBlock]
+        sub     [ebp+EXTFS.inodeBuffer.sectorsUsed], ecx
+        pop     ebx
+        imul    ebx, [ebp+EXTFS.sectorsPerBlock]
         add     ebx, ecx
+        shl     ebx, 9
+        sub     [ebp+EXTFS.inodeBuffer.fileSize], ebx
+        stc
+        jmp     .ret
+
+.newBlock:
+        pop     ebx ecx
+        mov     al, ERROR_FS_FAIL
+        test    edx, edx
+        jnz     .errFree
+        mov     [ebp+EXTFS.inodeBuffer.tripleAddress], ebx
+        inc     ebx
+        dec     ecx
+        inc     dword[esp]
+        push    ecx
+        mov     ecx, [ebp+EXTFS.dwordsPerBlock]
+        mov     edi, esi
+        xor     eax, eax
+        rep stosd
+        mov     edi, esi
+        pop     ecx
+@@:
+        jecxz   .extentAlloc
+        call    doublyIndirectBlockAlloc
+        jc      .errSave
+        add     edi, 4
+        jmp     @b
+
+.extentAlloc:
+        mov     ecx, [esp]
+        mov     eax, [esp+4]
+        jecxz   @f
+        call    extfsExtentAlloc
+        jc      .errSave
+        sub     [esp], ecx
+        mov     eax, ecx
+        imul    eax, [ebp+EXTFS.sectorsPerBlock]
+        add     [ebp+EXTFS.inodeBuffer.sectorsUsed], eax
+        jmp     @b
+
+@@:
+        mov     eax, [ebp+EXTFS.inodeBuffer.tripleAddress]
+        mov     ebx, esi
+        call    extfsWriteBlock
+        stdcall kernel_free, esi
 .done:
         xor     eax, eax
-.error:
-        mov     [esi+INODE.fileSize], ebx
+        pop     edi
 .ret:
         pop     edi edi esi edx ecx ebx
+        ret
+
+.errSave:
+        push    eax
+        mov     eax, [ebp+EXTFS.inodeBuffer.tripleAddress]
+        mov     ebx, esi
+        call    extfsWriteBlock
+        pop     eax
+        jmp     .errFree
+
+freeIndirectBlock:
+; in: edi -> indirect block number, edx = starting block
+; out: edi = edi+4, eax=-1 -> done, eax=0 -> end
+        pushd   ecx 0 edi edx
+        mov     eax, [edi]
+        test    eax, eax
+        jz      .ret
+        mov     ebx, [ebp+EXTFS.mainBlockBuffer]
+        call    extfsReadBlock
+        jc      .ret
+        lea     edi, [ebx+edx*4]
+        neg     edx
+        add     edx, [ebp+EXTFS.dwordsPerBlock]
+        xor     ecx, ecx
+@@:
+        mov     eax, [edi]
+        test    eax, eax
+        jz      .end
+        call    extfsResourceFree
+        stosd
+        dec     edx
+        jnz     @b
+        dec     dword[esp+8]
+.end:
+        pop     edx edi
+        mov     eax, [edi]
+        test    edx, edx
+        jnz     @f
+        call    extfsResourceFree
+        stosd
+        jmp     .done
+
+@@:
+        call    extfsWriteBlock
+        add     edi, 4
+.done:
+        pop     eax ecx
+        xor     edx, edx
+        ret
+
+.ret:
+        pop     edi edi edx ecx
+        ret
+
+freeDoublyIndirectBlock:
+; in: edi -> doubly-indirect block number, edx = starting block
+; out: edi = edi+4, eax=-1 -> done, eax=0 -> end
+        mov     eax, [edi]
+        test    eax, eax
+        jz      .ret
+        push    ecx eax edx
+        stdcall kernel_alloc, [ebp+EXTFS.bytesPerBlock]
+        mov     ebx, eax
+        pop     edx eax
+        pushd   0 ebx edx
+        call    extfsReadBlock
+        jc      .err
+        mov     eax, edx
+        xor     edx, edx
+        mov     ecx, [ebp+EXTFS.dwordsPerBlock]
+        div     ecx
+        sub     ecx, eax
+        push    edi
+        lea     edi, [ebx+eax*4]
+@@:
+        call    freeIndirectBlock
+        test    eax, eax
+        jz      .end
+        dec     ecx
+        jnz     @b
+        dec     dword[esp+12]
+.end:
+        pop     edi edx
+        mov     eax, [edi]
+        test    edx, edx
+        jnz     @f
+        xor     ecx, ecx
+        call    extfsResourceFree
+        stosd
+        jmp     .done
+
+@@:
+        mov     ebx, [esp]
+        call    extfsWriteBlock
+        add     edi, 4
+        jmp     .done
+
+.err:
+        mov     [esp+8], eax
+        pop     eax
+.done:
+        call    kernel_free
+        pop     eax ecx
+.ret:
+        xor     edx, edx
         ret
 
 extfsTruncateFile:
@@ -993,61 +1329,94 @@ extfsTruncateFile:
 ; ecx = new size
         push    ebx ecx edx esi edi
         lea     esi, [ebp+EXTFS.inodeBuffer]
-        mov     eax, [esi+INODE.fileSize]
-        sub     ecx, eax
+        cmp     ecx, [esi+INODE.fileSize]
         jnc     .ret
-        neg     ecx
+        mov     [esi+INODE.fileSize], ecx
+        mov     edx, ecx
+        jecxz   .directBlocks
+        dec     edx
+        mov     ecx, [ebp+EXTFS.sectorsPerBlockLog]
+        add     ecx, 9
+        shr     edx, cl
+        inc     edx
+        cmp     edx, 12
+        jc      .directBlocks
+        sub     edx, 12
+        cmp     edx, [ebp+EXTFS.dwordsPerBlock]
+        jc      .indirectBlocks
+        sub     edx, [ebp+EXTFS.dwordsPerBlock]
+        cmp     edx, [ebp+EXTFS.dwordsPerBranch]
+        jc      .doublyIndirectBlock
+        sub     edx, [ebp+EXTFS.dwordsPerBranch]
+        jmp     .triplyIndirectBlock
+
+.directBlocks:
+        lea     edi, [esi+INODE.blockNumbers+edx*4]
+        neg     edx
+        add     edx, 12
+        xor     ecx, ecx
+@@:
+        mov     eax, [edi]
+        test    eax, eax
+        jz      .ret
+        call    extfsResourceFree
+        stosd
+        dec     edx
+        jnz     @b
+.indirectBlocks:
+        lea     edi, [esi+INODE.addressBlock]
+        call    freeIndirectBlock
+        test    eax, eax
+        jz      .ret
+.doublyIndirectBlock:
+        lea     edi, [esi+INODE.doubleAddress]
+        call    freeDoublyIndirectBlock
+        test    eax, eax
+        jz      .ret
+.triplyIndirectBlock:
+        mov     eax, [esi+INODE.tripleAddress]
+        test    eax, eax
+        jz      .ret
+        push    eax edx
+        stdcall kernel_alloc, [ebp+EXTFS.bytesPerBlock]
         mov     ebx, eax
+        pop     edx eax
+        push    ebx eax edx
+        call    extfsReadBlock
+        jc      .err
+        mov     eax, edx
         xor     edx, edx
-        div     [ebp+EXTFS.bytesPerBlock]
+        div     [ebp+EXTFS.dwordsPerBranch]
+        mov     ecx, [ebp+EXTFS.dwordsPerBlock]
+        sub     ecx, eax
+        lea     edi, [ebx+eax*4]
+@@:
+        call    freeDoublyIndirectBlock
+        test    eax, eax
+        jz      .end
+        dec     ecx
+        jnz     @b
+.end:
+        pop     edx eax
         test    edx, edx
         jnz     @f
-.start_aligned:
-        mov     edx, [ebp+EXTFS.bytesPerBlock]
-        dec     eax
-@@:
-        cmp     ecx, edx
-        jc      .tail
-        push    ecx edx
-        mov     edi, eax
-        mov     ecx, eax
-        call    extfsGetFileBlock
-        jc      .error
-        test    ecx, ecx
-        jz      @f
-        mov     eax, ecx
         xor     ecx, ecx
         call    extfsResourceFree
-        mov     ecx, edi
-        xor     edi, edi
-        movi    edx, ROOT_INODE
-        call    extfsSetFileBlock
-        mov     eax, [ebp+EXTFS.sectorsPerBlock]
-        sub     [esi+INODE.sectorsUsed], eax
-@@:
-        pop     edx ecx
-        sub     ebx, edx
-        sub     ecx, edx
-        jz      .done
-        mov     eax, ebx
-        xor     edx, edx
-        div     [ebp+EXTFS.bytesPerBlock]
-        jmp     .start_aligned
+        mov     [esi+INODE.tripleAddress], eax
+        jmp     .done
 
-.tail:      ; handle the remaining bytes
-        sub     ebx, ecx
-.done:
-        xor     eax, eax
 @@:
-        mov     [esi+INODE.fileSize], ebx
+        mov     ebx, [esp]
+        call    extfsWriteBlock
+        jmp     .done
+
+.err:
+        pop     eax eax
+.done:
+        call    kernel_free
 .ret:
         pop     edi esi edx ecx ebx
         ret
-
-.error:
-        pop     edx ecx
-        jmp     @b
-
 
 linkInode:
 ;   in:
@@ -1065,7 +1434,8 @@ linkInode:
         call    readInode
         jc      .error_inode_read
         mov     ecx, [ebp+EXTFS.sectorsPerBlockLog]
-        mov     eax, [esi+INODE.sectorsUsed]
+        add     ecx, 9
+        mov     eax, [esi+INODE.fileSize]
         shr     eax, cl
         xor     ecx, ecx
 .searchBlock:
@@ -1116,6 +1486,18 @@ linkInode:
         inc     ecx
         jmp     .searchBlock
 
+.alloc_block:
+        mov     ecx, [esi+INODE.fileSize]
+        add     ecx, [ebp+EXTFS.bytesPerBlock]
+        mov     eax, [esp+24]
+        call    extfsExtendFile
+        jc      .error_get_inode_block
+        mov     eax, [esp+24]
+        mov     ebx, esi
+        call    writeInode
+        jc      .error_get_inode_block
+        jmp     @f
+
 .zeroLength:
         mov     [edi+DIRENTRY.entryLength], cx
         mov     eax, edx
@@ -1130,27 +1512,13 @@ linkInode:
         call    extfsWriteBlock
         jc      .error_get_inode_block
         inc     dword[esp]
+@@:
         mov     ecx, [esp]
         call    extfsGetFileBlock
         jc      .error_get_inode_block
         test    ecx, ecx
         jz      .alloc_block
         push    ecx
-        jmp     .prepare_block
-
-.alloc_block:
-        mov     eax, [esp]
-        mov     edx, [esp+24]
-        call    extfsFileBlockAlloc
-        jc      .error_get_inode_block
-        mov     eax, [ebp+EXTFS.bytesPerBlock]
-        add     [esi+INODE.fileSize], eax
-        mov     eax, [esp+24]
-        mov     ebx, esi
-        call    writeInode
-        jc      .error_get_inode_block
-        push    edi     ; save the block we just allocated
-.prepare_block:
         mov     edi, [ebp+EXTFS.tempBlockBuffer]
         mov     eax, [ebp+EXTFS.bytesPerBlock]
         mov     [edi+DIRENTRY.entryLength], ax
@@ -1913,65 +2281,13 @@ ext_Delete:
         lea     ebx, [ebp+EXTFS.inodeBuffer]
         call    readInode
         jc      .error_stack4_eax
-; free file's data
-        lea     esi, [ebp+EXTFS.inodeBuffer]
         xor     ecx, ecx
-@@:
-        push    ecx
-        call    extfsGetFileBlock
-        jc      .error_stack8_eax
-        mov     eax, ecx
-        test    eax, eax
-        jz      @f
-        xor     ecx, ecx
-        call    extfsResourceFree
-        pop     ecx
-        inc     ecx
-        jmp     @b
-
-@@: ; free indirect blocks
-        pop     ecx
-        push    edx
-        lea     edi, [ebp+EXTFS.inodeBuffer]
-        mov     eax, [edi+INODE.addressBlock]
-        test    eax, eax
-        jz      .success
-        xor     ecx, ecx
-        call    extfsResourceFree
-        mov     eax, [edi+INODE.doubleAddress]
-        call    freeDoublyIndirectBlock
-        cmp     eax, 1
-        je      .success
-        mov     eax, [edi+INODE.tripleAddress]
-        test    eax, eax
-        jz      .success
-        xor     edx, edx
-        mov     ecx, eax
-@@:
-        mov     eax, ecx
-        mov     ebx, [ebp+EXTFS.mainBlockBuffer]
-        call    extfsReadBlock
-        jc      .error_stack8_eax
-        mov     eax, [ebx+edx]
-        test    eax, eax
-        jz      @f
-        push    ecx edx
-        call    freeDoublyIndirectBlock
-        pop     edx ecx
-        cmp     eax, 1
-        je      @f
-        add     edx, 4
-        cmp     edx, [ebp+EXTFS.bytesPerBlock]
-        jb      @b
-@@:
-        mov     eax, ecx
-        xor     ecx, ecx
-        call    extfsResourceFree
-.success:   ; clear the inode, and add deletion time
+        call    extfsTruncateFile   ; free file's data
         xor     eax, eax
         movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
         rep stosb
         lea     edi, [ebp+EXTFS.inodeBuffer]
+        push    edx
         call    fsGetTime
         pop     edx
         add     eax, 978307200
@@ -2010,19 +2326,16 @@ ext_Delete:
         ret
 
 .not_empty:
-        pop     eax
+        pop     eax eax
 .error_stack8:
         pop     eax eax
         push    ERROR_ACCESS_DENIED
         jmp     .disk_sync
 
 .not_empty_eax:
-        pop     ebx
-.error_stack8_eax:
-        pop     ebx
+        add     esp, 12
 .error_stack4_eax:
         pop     ebx
-.error:
         push    eax
         jmp     .disk_sync
 
@@ -2034,9 +2347,7 @@ ext_CreateFolder:
         test    edi, edi
         jz      .error
         mov     eax, esi
-        xor     ebx, ebx
-        inc     ebx
-        call    extfsResourceAlloc
+        call    extfsInodeAlloc
         jc      .error
         inc     ebx
         push    ebx esi edi
@@ -2117,9 +2428,7 @@ ext_CreateFile:
         test    edi, edi
         jz      .error
         mov     eax, esi
-        xor     ebx, ebx
-        inc     ebx
-        call    extfsResourceAlloc
+        call    extfsInodeAlloc
         jc      .error
         inc     ebx
         push    ebx ebx esi edi
@@ -2160,7 +2469,8 @@ ext_CreateFile:
         push    ebx esi
         mov     ecx, [ebx+12]
         call    extfsTruncateFile
-        jnc     ext_WriteFile.start
+        jmp     ext_WriteFile.start
+
 .error2:
         pop     ebx
 .error:
@@ -2187,9 +2497,11 @@ ext_WriteFile:
 .start:
         mov     eax, esi
         call    extfsExtendFile
-        jc      .error
-        mov     eax, [ebx+4]
         mov     ecx, [ebx+12]
+        push    eax
+        jc      .error_inode_size
+        pop     eax
+        mov     eax, [ebx+4]
         mov     ebx, [ebx+16]
         push    eax
         xor     edx, edx
@@ -2281,11 +2593,11 @@ ext_SetFileEnd:
         call    extfsWritingInit
         pushd   [ebx+4]
         call    findInode
-        jc      .error
+        jc      .error2
         lea     edi, [ebp+EXTFS.inodeBuffer]
         movi    eax, ERROR_ACCESS_DENIED
         cmp     [edi+INODE.accessMode], FLAG_FILE
-        jnz     .error  ; not a file
+        jnz     .error2 ; not a file
         pop     ecx
         push    esi
         mov     ebx, [edi+INODE.fileSize]
@@ -2293,7 +2605,6 @@ ext_SetFileEnd:
         cmp     ebx, ecx
         jc      @f
         call    extfsTruncateFile
-        jc      .error
         jmp     .done
 
 @@:
@@ -2349,15 +2660,19 @@ ext_SetFileEnd:
         inc     edi
         loop    @b
 .done:
-        mov     eax, [esp]
+        xor     eax, eax
+.error:
+        xchg    eax, [esp]
         lea     ebx, [ebp+EXTFS.inodeBuffer]
         call    writeInode
-        jc      .error
+        jnc     @f
+        mov     [esp], eax
+@@:
         call    writeSuperblock
         mov     esi, [ebp+PARTITION.Disk]
         call    disk_sync
-        xor     eax, eax
-.error:
+        mov     eax, [esp]
+.error2:
         mov     [esp], eax
         call    ext_unlock
         pop     eax
