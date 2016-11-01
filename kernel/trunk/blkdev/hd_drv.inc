@@ -75,7 +75,6 @@ ide_read:
 
 ide_write:
         mov     al, 35h     ; WRITE DMA EXT
-
 proc ide_read_write stdcall uses esi edi ebx, \
         hd_data, buffer, startsector:qword, numsectors
         ; hd_data = pointer to hd*_data
@@ -153,6 +152,7 @@ endl
         add     [sector], ecx
         adc     word [sector+4], 0
         jmp     .next
+
 .LBA28:
         add     eax, [sectors_todo]
         add     eax, 0xF0000000
@@ -177,6 +177,7 @@ endl
         jz      .out
         add     [sector], ecx
         jmp     .next28
+
 ; loop is done, either due to error or because everything is done
 ; release the global lock and return the corresponding status
 .out:
@@ -314,6 +315,7 @@ IDE_transfer:
         jnz     .aligned
         sub     edi, 8
         jmp     @f
+
 .end:
         mov     ecx, [blockSize]
         mov     [edi+4], ecx
@@ -372,6 +374,7 @@ IDE_transfer:
         call    wait_event_timeout
         test    eax, eax
         jnz     @f
+        dbgstr 'IDE DMA IRQ timeout'
         mov     [IDE_common_irq_param], 0
         mov     eax, [eventPointer]
         mov     ebx, [eventID]
@@ -439,7 +442,7 @@ IDE_transfer:
         cmp     [hd_setup], 1   ; do not mark error for setup request
         jz      @f
         test    al, 1   ; previous command ended up with an error
-        jnz     .hd_error
+        jnz     .pio_error
 @@:
         pushfd
         cli
@@ -450,6 +453,7 @@ IDE_transfer:
         jnc     .write
         rep insw
         jmp     @f
+
 .write:
         rep outsw
 @@:
@@ -458,25 +462,20 @@ IDE_transfer:
         dec     dword [blockSize]
         jnz     .sectorTransfer
         ret
+
+.pio_error:
+        dbgstr 'IDE PIO transfer error'
 .hd_error:
         cmp     bl, 30h
         jnc     hd_write_error
 ;-----------------------------------------------------------------
 hd_read_error:
-        if lang eq sp
-        DEBUGF 1,"K : FS - HD error de lectura\n"
-        else
-        DEBUGF 1,"K : FS - HD read error\n"
-        end if
+        dbgstr 'HD read error'
         stc
         ret
 ;-----------------------------------------------------------------
 hd_write_error:
-        if lang eq sp
-        DEBUGF 1,"K : FS - HD error de escritura\n"
-        else
-        DEBUGF 1,"K : FS - HD write error\n"
-        end if
+        dbgstr 'HD write error'
         stc
         ret
 ;-----------------------------------------------------------------
@@ -491,12 +490,9 @@ check_hd_wait_timeout:
         cmp     [hd_wait_timeout], eax
         jc      @f
         ret
+
 @@:
-        if lang eq sp
-        DEBUGF 1,"K : FS - HD tiempo de espera agotado\n"
-        else
-        DEBUGF 1,"K : FS - HD timeout\n"
-        end if
+        dbgstr 'IDE device timeout'
         stc
         ret
 ;-----------------------------------------------------------------
@@ -517,7 +513,7 @@ IDE_common_irq_handler:
 ; remove the interrupt request and raise the event for the waiting code.
 ; In the case a), just return zero - not our interrupt.
 ; In the case b), remove the interrupt request and hope for the best.
-; DEBUGF  1, 'K : IDE_irq_handler %x\n', [IDE_common_irq_param]:2
+; DEBUGF 1, 'K : IDE_irq_handler %x\n', [IDE_common_irq_param]:2
         mov     ecx, [esp+4]
         mov     dx, [ecx+IDE_DATA.RegsBaseAddres]
         add     edx, 2  ; Bus Master IDE Status register
@@ -528,9 +524,9 @@ IDE_common_irq_handler:
         in      al, dx
         test    al, 4
         jnz     .interrupt_from_secondary
-.exit_notour:
         xor     eax, eax ; not our interrupt
         ret
+
 .interrupt_from_primary:
         out     dx, al  ; clear Interrupt bit
         sub     edx, 2
@@ -538,12 +534,13 @@ IDE_common_irq_handler:
         out     dx, al  ; clear Bus Master IDE Command register
         mov     dx, [ecx+IDE_DATA.BAR0_val]
         add     edx, 7
-        in      al, dx ; read status register
+        in      al, dx  ; read status register
         cmp     [IDE_common_irq_param], 14
         jz      .raise
 .exit_our:
         mov     al, 1
         ret
+
 .interrupt_from_secondary:
         out     dx, al  ; clear Interrupt bit
         sub     edx, 2
@@ -551,7 +548,7 @@ IDE_common_irq_handler:
         out     dx, al  ; clear Bus Master IDE Command register
         mov     dx, [ecx+IDE_DATA.BAR2_val]
         add     edx, 7
-        in      al, dx ; read status register
+        in      al, dx  ; read status register
         cmp     [IDE_common_irq_param], 15
         jnz     .exit_our
 .raise:
@@ -566,4 +563,3 @@ IDE_common_irq_handler:
         popad
         mov     al, 1   ; remove the interrupt request
         ret
-;-----------------------------------------------------------------
