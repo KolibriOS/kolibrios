@@ -205,6 +205,8 @@ extra_files = {
  {"kolibrios/grafx2/scripts/libs/", "common/media/grafx2/scripts/*"},
  {"kolibrios/grafx2/skins/", "common/media/grafx2/skins/*"},
  {"kolibrios/grafx2/", "common/media/grafx2/*"},
+ {"kolibrios/drivers/drvinf.ini", "common/drivers/drvinf.ini"},
+ {"kolibrios/drivers/drvinst.kex", "common/drivers/drvinst.com"},
  {"kolibrios/drivers/ahci/", "common/drivers/ahci/*"},
  {"kolibrios/drivers/atikms/", "common/drivers/atikms/*"},
  {"kolibrios/drivers/i915/", "common/drivers/i915/*"},

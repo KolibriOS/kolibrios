@@ -11,6 +11,8 @@
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/libio_lib.h"
 #include "../lib/obj/libini.h"
+#include "../lib/collection.h"
+#include "../lib/io.h"
 #include "../lib/patterns/select_list.h"
 
 //===================================================//
@@ -37,6 +39,14 @@ proc_info Form;
 #define WINDOW_STEP_DRIVER_LIST 2;
 char window_step = WINDOW_STEP_INTRO;
 
+collection ini_sections;
+
+char drvinf_path[4096] = "/sys/drvinf.ini";
+char cur_version[64];
+char cur_description[1024];
+char cur_readme_path[4096];
+char cur_install_path[4096];
+
 //===================================================//
 //                                                   //
 //                       CODE                        //
@@ -45,18 +55,14 @@ char window_step = WINDOW_STEP_INTRO;
 
 void GetIniData()
 {
-	ini_enum_sections stdcall ("/sys/drvinf.ini", #process_sections);
+	select_list.count = 0;
+	ini_enum_sections stdcall (#drvinf_path, #process_sections);
 }
 
 byte process_sections(dword sec_name, f_name)
 {
-	ini_enum_keys stdcall (f_name, sec_name, #process_keys);
-	return true;
-}
-
-byte process_keys(dword key_value, key_name, sec_name, f_name)
-{
-	debugln(key_value);
+	select_list.count++;
+	ini_sections.add(sec_name);
 	return true;
 }
 
@@ -66,12 +72,12 @@ void main()
 	load_dll(libio,  #libio_init,1);
 	load_dll(libini, #lib_init,1);
 	load_dll(boxlib, #box_lib_init,0);
-	//GetIniData();
+	GetIniData();
 	SetEventMask(0x27);
 	loop() switch(WaitEvent())
 	{
 		case evMouse:
-			if (!CheckActiveProcess(Form.ID)) return;
+			if (!CheckActiveProcess(Form.ID)) break;
 			SelectList_ProcessMouse();
 			break;
 
@@ -109,22 +115,24 @@ void draw_intro_window()
 void draw_driver_list_window()
 {
 	int PADDING = 12;
-	int right_frame_x = Form.cwidth/2 + PADDING + calc(PADDING/2);
+	int right_frame_x = Form.cwidth*46/100;
+	int readme_w = 0;
 	//LEFT FRAME
-	select_list.count = 4;
 	SelectList_Init(PADDING, 
 		PADDING, 
-		Form.cwidth/2 - PADDING - scroll1.size_x, 
+		right_frame_x - PADDING - PADDING - 8 - scroll1.size_x, 
 		Form.cheight - PADDING - PADDING, 
 		false);
 	SelectList_Draw();
 	//RIGHT FRAME
-	WriteTextB(right_frame_x, PADDING+3, 0x81, system.color.work_text, "ATI KMS");
-	WriteText(right_frame_x, PADDING+23, 0x80, MixColors(system.color.work, system.color.work_text,120), "ver 4.4");
-	DrawTextViewArea(right_frame_x-2, PADDING+53, Form.cwidth - right_frame_x - PADDING, Form.cheight-100, 
-		T_CAUTION_PARAGRAPH, -1, system.color.work_text);
-	right_frame_x += DrawStandartCaptButton(right_frame_x, Form.cheight-40, BUTTON_ID_README, T_README);
-	DrawStandartCaptButton(right_frame_x, Form.cheight-40, BUTTON_ID_INSTALL, T_INSTALL);
+	GetCurrentSectionData();
+	DrawBar(right_frame_x, PADDING+3, Form.cwidth - right_frame_x - PADDING, 80, system.color.work);
+	WriteTextB(right_frame_x, PADDING+3, 0x81, system.color.work_text, ini_sections.get(select_list.cur_y));
+	WriteText(right_frame_x, PADDING+23, 0x80, system.color.work_text, #cur_version);
+	if(cur_readme_path[0]) readme_w = DrawStandartCaptButton(right_frame_x, PADDING+45, BUTTON_ID_README, T_README);
+	DrawStandartCaptButton(right_frame_x + readme_w, PADDING+45, BUTTON_ID_INSTALL, T_INSTALL);
+	DrawTextViewArea(right_frame_x-2, PADDING+83, Form.cwidth - right_frame_x - PADDING, Form.cheight-PADDING-PADDING, 
+		#cur_description, system.color.work, system.color.work_text);
 }
 
 void SelectList_DrawLine(dword i)
@@ -136,18 +144,27 @@ void SelectList_DrawLine(dword i)
 	if (select_list.cur_y-select_list.first==i)
 	{
 		DrawBar(select_list.x, yyy, select_list.w, select_list.item_h, system.color.work_button);
-		WriteText(select_list.x+12,yyy+select_list.text_y,select_list.font_type,system.color.work_button_text, "Hello");
+		WriteText(select_list.x+12,yyy+select_list.text_y,select_list.font_type,system.color.work_button_text, ini_sections.get(i));
 	}
 	else
 	{
 		DrawBar(select_list.x,yyy,select_list.w, select_list.item_h, 0xFFFfff);
-		WriteText(select_list.x+12,yyy+select_list.text_y,select_list.font_type,0, "Hello");
+		WriteText(select_list.x+12,yyy+select_list.text_y,select_list.font_type,0, ini_sections.get(i));
 	}
 }
 
 void SelectList_LineChanged()
 {
-	SelectList_Draw();
+	draw_driver_list_window();
+}
+
+void GetCurrentSectionData()
+{
+	dword cur_section_name = ini_sections.get(select_list.cur_y);
+	ini_get_str stdcall (#drvinf_path, cur_section_name, "ver", #cur_version, sizeof(cur_version), 0);
+	ini_get_str stdcall (#drvinf_path, cur_section_name, "description", #cur_description, sizeof(cur_description), 0);
+	ini_get_str stdcall (#drvinf_path, cur_section_name, "readme", #cur_readme_path, sizeof(cur_readme_path), 0);
+	ini_get_str stdcall (#drvinf_path, cur_section_name, "install", #cur_install_path, sizeof(cur_install_path), 0);
 }
 
 //===================================================//
@@ -161,6 +178,9 @@ void Event_DrawWindow()
 	system.color.get();
 	DefineAndDrawWindow(215, 100, 600, 400, 0x33, system.color.work, WINDOW_TITLE);
 	GetProcessInfo(#Form, SelfInfo);
+	if (Form.status_window>2) return;
+	if (Form.width  < 450) { MoveSize(OLD,OLD,450,OLD); return; }
+	if (Form.height < 250) { MoveSize(OLD,OLD,OLD,250); return; }
 	if (window_step == WINDOW_STEP_INTRO) draw_intro_window();
 	if (window_step == WINDOW_STEP_DRIVER_LIST) draw_driver_list_window();
 	return;
@@ -174,10 +194,10 @@ void Event_AsseptRisk()
 
 void Event_ShowReadme()
 {
-	return;
+	io.run("/sys/textreader", #cur_readme_path);
 }
 
 void Event_RunInstall()
 {
-	return;
+	io.run(#cur_install_path, NULL);
 }
