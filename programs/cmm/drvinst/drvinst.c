@@ -41,7 +41,7 @@ char window_step = WINDOW_STEP_INTRO;
 
 collection ini_sections;
 
-char drvinf_path[4096] = "/sys/drvinf.ini";
+char drvinf_path[4096] = "/kolibrios/drivers/drvinf.ini";
 char cur_version[64];
 char cur_description[1024];
 char cur_readme_path[4096];
