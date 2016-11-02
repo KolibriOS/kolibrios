@@ -26,7 +26,7 @@ dword  I_Path       = #program_path;
 char param[4096];
 char program_path[4096];
 
-#define bool      char
+#define bool      int
 
 #define NULL      0
 #define OLD      -1

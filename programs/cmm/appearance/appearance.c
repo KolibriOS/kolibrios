@@ -13,6 +13,7 @@
 #include "..\lib\menu.h"
 #include "..\lib\gui.h"
 #include "..\lib\obj\box_lib.h"
+#include "..\lib\patterns\select_list.h"
 
 
 //===================================================//
@@ -36,7 +37,6 @@
 #define SKINS_STANDART_PATH "/kolibrios/res/skins"							
 #define WALP_STANDART_PATH "/kolibrios/res/wallpapers"
 
-llist list;
 signed int active_skin=-1, active_wallpaper=-1;
 enum { SKINS=2, WALLPAPERS };
 
@@ -48,9 +48,6 @@ int files_mas[400];
 int cur;
 
 proc_info Form;
-
-scroll_bar scroll1 = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
-
 
 //===================================================//
 //                                                   //
@@ -71,25 +68,25 @@ void main()
 			if (!CheckActiveProcess(Form.ID)) break;
 			mouse.get();
 			scrollbar_v_mouse (#scroll1);
-			if (list.first != scroll1.position)
+			if (select_list.first != scroll1.position)
 			{
-				list.first = scroll1.position;
-				Draw_List();
+				select_list.first = scroll1.position;
+				DrawSelectList(select_list.count);
 				break;
 			}
 
-	  		if (mouse.vert) && (list.MouseScroll(mouse.vert)) Draw_List();
+	  		if (mouse.vert) && (select_list.MouseScroll(mouse.vert)) DrawSelectList(select_list.count);
 
 	  		if (mouse.up)&&(mouse_clicked)
 	  		{
-	  			if (mouse.lkm) && (list.ProcessMouse(mouse.x, mouse.y)) EventApply();
+	  			if (mouse.lkm) && (select_list.ProcessMouse(mouse.x, mouse.y)) EventApply();
 	  			mouse_clicked=false;
 	  		}
-	  		else if (mouse.down)&&(mouse.lkm) && (list.MouseOver(mouse.x, mouse.y)) mouse_clicked=true;
+	  		else if (mouse.down)&&(mouse.lkm) && (select_list.MouseOver(mouse.x, mouse.y)) mouse_clicked=true;
 
 	  		if (mouse.down)&&(mouse.pkm) {
-	  			list.ProcessMouse(mouse.x, mouse.y);
-				Draw_List();
+	  			select_list.ProcessMouse(mouse.x, mouse.y);
+				DrawSelectList(select_list.count);
 	  			menu.show(Form.left+mouse.x, Form.top+mouse.y+skin_height, 136, "Open file     Enter\nDelete          Del", 10); 
 	  		}
 
@@ -105,17 +102,17 @@ void main()
 	  
 		case evKey:
 			GetKeys(); 
-			if (list.ProcessKey(key_scancode)) EventApply();
+			if (select_list.ProcessKey(key_scancode)) EventApply();
 			if (key_scancode==SCAN_CODE_ENTER) EventOpenFile();
 			if (key_scancode==SCAN_CODE_TAB) if (tabs.active_tab==SKINS) EventTabClick(WALLPAPERS); else EventTabClick(SKINS);
 			if (key_scancode==SCAN_CODE_DEL) EventDeleteFile();
-			for (id=list.cur_y+1; id<list.count; id++)
+			for (id=select_list.cur_y+1; id<select_list.count; id++)
 			{
 				strcpy(#temp_filename, io.dir.position(files_mas[id]));
 				if (temp_filename[0]==key_ascii) || (temp_filename[0]==key_ascii-32)
 				{
-					list.cur_y = id - 1;
-					list.KeyDown();
+					select_list.cur_y = id - 1;
+					select_list.KeyDown();
 					EventApply();
 					break;
 				}
@@ -139,43 +136,26 @@ void main()
 void DrawWindowContent()
 {
 	int id;
-	list.SetFont(8, 14, 0x90);
-	id = list.cur_y;
-	list.SetSizes(LIST_PADDING, PANEL_H, Form.cwidth-scroll1.size_x-LIST_PADDING-LIST_PADDING, Form.cheight-PANEL_H-LIST_PADDING, 20);
-	list.cur_y = id;
+	id = select_list.cur_y;
+	InitSelectList(LIST_PADDING, PANEL_H, Form.cwidth-scroll1.size_x-LIST_PADDING-LIST_PADDING, Form.cheight-PANEL_H-LIST_PADDING, false);
+	select_list.cur_y = id;
 
 	DrawBar(0,0, Form.cwidth, PANEL_H-LIST_PADDING, system.color.work);
-	DrawRectangle3D(list.x-2, list.y-2, list.w+3+scroll1.size_x, list.h+3, system.color.work_dark, system.color.work_light);
-	DrawWideRectangle(list.x-LIST_PADDING, list.y-LIST_PADDING, LIST_PADDING*2+list.w+scroll1.size_x, LIST_PADDING*2+list.h, LIST_PADDING-2, system.color.work);
-	tabs.draw(list.x+10, list.y, SKINS, T_SKINS);
-	if (dir_exists(WALP_STANDART_PATH)) tabs.draw(strlen(T_SKINS)*8+TAB_PADDING+list.x+21, list.y, WALLPAPERS, T_WALLPAPERS);
-	DrawRectangle(list.x-1, list.y-1, list.w+1+scroll1.size_x, list.h+1, system.color.work_graph);
+	DrawRectangle3D(select_list.x-2, select_list.y-2, select_list.w+3+scroll1.size_x, select_list.h+3, system.color.work_dark, system.color.work_light);
+	DrawWideRectangle(select_list.x-LIST_PADDING, select_list.y-LIST_PADDING, LIST_PADDING*2+select_list.w+scroll1.size_x, LIST_PADDING*2+select_list.h, LIST_PADDING-2, system.color.work);
+	tabs.draw(select_list.x+10, select_list.y, SKINS, T_SKINS);
+	if (dir_exists(WALP_STANDART_PATH)) tabs.draw(strlen(T_SKINS)*8+TAB_PADDING+select_list.x+21, select_list.y, WALLPAPERS, T_WALLPAPERS);
+	DrawRectangle(select_list.x-1, select_list.y-1, select_list.w+1+scroll1.size_x, select_list.h+1, system.color.work_graph);
 
-	Draw_List();
+	DrawSelectList(select_list.count);
 }
 
-void DrawScroller()
-{
-	scroll1.bckg_col = MixColors(system.color.work, 0xBBBbbb, 80);
-	scroll1.frnt_col = MixColors(system.color.work,0xFFFfff,120);
-	scroll1.line_col = system.color.work_graph;
 
-	scroll1.max_area = list.count;
-	scroll1.cur_area = list.visible;
-	scroll1.position = list.first;
-
-	scroll1.all_redraw=1;
-	scroll1.start_x = list.x + list.w;
-	scroll1.start_y = list.y-1;
-	scroll1.size_y = list.h+2;
-
-	scrollbar_v_draw(#scroll1);
-}
 
 void Open_Dir()
 {
 	int j;
-	list.count = 0;
+	select_list.count = 0;
 	if(io.dir.buffer)free(io.dir.buffer);
 	io.dir.load(#folder_path,DIR_ONLYREAL);
 	for (j=0; j<io.dir.count; j++)
@@ -184,39 +164,32 @@ void Open_Dir()
 		strlwr(#temp_filename);
 		if (tabs.active_tab==SKINS) if (strcmpi(#temp_filename+strlen(#temp_filename)-4,".skn")!=0) continue;
 		if (tabs.active_tab==WALLPAPERS) if (strcmpi(#temp_filename+strlen(#temp_filename)-4,".txt")==0) continue;
-		cur = list.count;
+		cur = select_list.count;
 		files_mas[cur]=j;
-		if (!strcmpi("default.skn",#temp_filename)) files_mas[0]><files_mas[list.count];
-		list.count++;
+		if (!strcmpi("default.skn",#temp_filename)) files_mas[0]><files_mas[select_list.count];
+		select_list.count++;
 	}
 }
 
-void Draw_List()
+void DrawSelectList_Line(dword i)
 {
-	int i, yyy, list_last;
+	int yyy, list_last;
 
-	if (list.count > list.visible) list_last = list.visible; else list_last = list.count;
-
-	for (i=0; (i<list_last); i++;)
+	cur = select_list.first + i;
+	strcpy(#temp_filename, io.dir.position(files_mas[cur]));
+	temp_filename[strlen(#temp_filename)-4] = 0;
+	yyy = i*select_list.item_h+select_list.y;
+	
+	if (select_list.cur_y-select_list.first==i)
 	{
-		cur = list.first + i;
-		strcpy(#temp_filename, io.dir.position(files_mas[cur]));
-		temp_filename[strlen(#temp_filename)-4] = 0;
-		yyy = i*list.item_h+list.y;
-		
-		if (list.cur_y-list.first==i)
-		{
-			DrawBar(list.x, yyy, list.w, list.item_h, system.color.work_button);
-			WriteText(list.x+12,yyy+list.text_y,list.font_type,system.color.work_button_text, #temp_filename);
-		}
-		else
-		{
-			DrawBar(list.x,yyy,list.w, list.item_h, 0xFFFfff);
-			WriteText(list.x+12,yyy+list.text_y,list.font_type,0, #temp_filename);
-		}
+		DrawBar(select_list.x, yyy, select_list.w, select_list.item_h, system.color.work_button);
+		WriteText(select_list.x+12,yyy+select_list.text_y,select_list.font_type,system.color.work_button_text, #temp_filename);
 	}
-	DrawBar(list.x,i*list.item_h+list.y, list.w, -i*list.item_h+ list.h, 0xFFFfff);
-	DrawScroller();
+	else
+	{
+		DrawBar(select_list.x,yyy,select_list.w, select_list.item_h, 0xFFFfff);
+		WriteText(select_list.x+12,yyy+select_list.text_y,select_list.font_type,0, #temp_filename);
+	}
 }
 
 //===================================================//
@@ -230,24 +203,24 @@ void EventTabClick(int N)
 	tabs.click(N);
 	if (tabs.active_tab == SKINS) 
 	{
-		active_wallpaper = list.cur_y;
+		active_wallpaper = select_list.cur_y;
 		strcpy(#folder_path, SKINS_STANDART_PATH);
-		list.ClearList();
+		select_list.ClearList();
 		Open_Dir();
-		if (!list.count) notify("'No skins were found' -E");
-		list.cur_y = active_skin;
+		if (!select_list.count) notify("'No skins were found' -E");
+		select_list.cur_y = active_skin;
 	}
 	if (tabs.active_tab == WALLPAPERS)
 	{
-		active_skin = list.cur_y;
+		active_skin = select_list.cur_y;
 		strcpy(#folder_path, WALP_STANDART_PATH);
-		list.ClearList();
+		select_list.ClearList();
 		Open_Dir();
-		if (!list.count) notify("'No wallpapers were found' -E");
-		list.cur_y = active_wallpaper;
+		if (!select_list.count) notify("'No wallpapers were found' -E");
+		select_list.cur_y = active_wallpaper;
 	}
-	if (list.cur_y>list.visible) list.first=list.cur_y; list.CheckDoesValuesOkey();
-	if (list.w) DrawWindowContent();
+	if (select_list.cur_y>select_list.visible) select_list.first=select_list.cur_y; select_list.CheckDoesValuesOkey();
+	if (select_list.w) DrawWindowContent();
 }
 
 void EventDeleteFile()
@@ -261,16 +234,16 @@ void EventApply()
 {
 	if (tabs.active_tab==SKINS)
 	{
-		cur = list.cur_y;
+		cur = select_list.cur_y;
 		sprintf(#cur_file_path,"%s/%s",#folder_path,io.dir.position(files_mas[cur]));
 		SetSystemSkin(#cur_file_path);
 	} 
 	if (tabs.active_tab==WALLPAPERS)
 	{
-		cur = list.cur_y;
+		cur = select_list.cur_y;
 		sprintf(#cur_file_path,"\\S__%s/%s",#folder_path,io.dir.position(files_mas[cur]));
 		RunProgram("/sys/media/kiv", #cur_file_path);
-		Draw_List();
+		DrawSelectList(select_list.count);
 	}
 }
 

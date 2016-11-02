@@ -10,6 +10,8 @@
 #include "..\lib\gui.h"
 #include "..\lib\obj\box_lib.h"
 
+#include "..\lib\patterns\select_list.h"
+
 
 //===================================================//
 //                                                   //
@@ -24,7 +26,6 @@
 ?define T_COLUMNS_TITLE "# | Data size | Data type | Contents"
 ?define T_COLUMN_VIEW "View"
 ?define T_VIEW_OPTIONS "TEXT  HEX"
-?define T_CLIPBOARD_IS_EMPTY "Clipboard is empty"
 ?define DEFAULT_SAVE_PATH "/tmp0/1/clipview.tmp"
 char *data_type[] = { "Text", "Image", "RAW", "Unknown" };
 
@@ -34,18 +35,13 @@ enum {
 	BT_UNLOCK
 };
 
-
 #define PANEL_TOP_H 20
 #define PANEL_BOTTOM_H 30
 #define LIST_PADDING 12
 
-llist list;
-
 proc_info Form;
 
 Clipboard clipboard;
-
-scroll_bar scroll1 = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
 
 //===================================================//
@@ -57,9 +53,6 @@ scroll_bar scroll1 = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0
 void main()
 {   
 	int id;
-
-	list.SetFont(8, 14, 0x90);
-	list.no_selection = true;
 	SetEventMask(0x27);
 	load_dll(boxlib, #box_lib_init,0);
 	loop() 
@@ -71,13 +64,13 @@ void main()
 			if (!CheckActiveProcess(Form.ID)) break;
 			mouse.get();
 			scrollbar_v_mouse (#scroll1);
-			if (list.first != scroll1.position)
+			if (select_list.first != scroll1.position)
 			{
-				list.first = scroll1.position;
-				Draw_List();
+				select_list.first = scroll1.position;
+				DrawSelectList(clipboard.GetSlotCount());
 				break;
 			}
-	  		if (mouse.vert) && (list.MouseScroll(mouse.vert)) Draw_List();
+	  		if (mouse.vert) && (select_list.MouseScroll(mouse.vert)) DrawSelectList(clipboard.GetSlotCount());
 	  		break;
 
 
@@ -93,7 +86,7 @@ void main()
 	  
 		case evKey:
 			GetKeys(); 
-			if (list.ProcessKey(key_scancode)) Draw_List();
+			if (select_list.ProcessKey(key_scancode)) DrawSelectList(clipboard.GetSlotCount());
 			break;
 		 
 		case evReDraw:
@@ -103,14 +96,19 @@ void main()
 			IF (Form.status_window>=2) break;
 			if (Form.height < 200) { MoveSize(OLD,OLD,OLD,200); break; }
 			if (Form.width  < 570) { MoveSize(OLD,OLD,570,OLD); break; }
-			list.SetSizes(LIST_PADDING, LIST_PADDING+PANEL_TOP_H, Form.cwidth-LIST_PADDING-LIST_PADDING-scroll1.size_x, 
-				Form.cheight-PANEL_BOTTOM_H-PANEL_TOP_H-LIST_PADDING-LIST_PADDING, 20);
+			InitSelectList(
+				LIST_PADDING, 
+				LIST_PADDING+PANEL_TOP_H, 
+				Form.cwidth-LIST_PADDING-LIST_PADDING-scroll1.size_x, 
+				Form.cheight-PANEL_BOTTOM_H-PANEL_TOP_H-LIST_PADDING-LIST_PADDING,
+				true
+			);
 		 	DrawWindowContent();
-		 	Draw_List();
+		 	DrawSelectList(clipboard.GetSlotCount());
 		 	break;
 
 		default:
-			if (clipboard.GetSlotCount() > list.count) Draw_List();
+			if (clipboard.GetSlotCount() > select_list.count) DrawSelectList(clipboard.GetSlotCount());
 			break;
 	  }
    }
@@ -118,36 +116,46 @@ void main()
 
 void DrawWindowContent()
 {
-	int button_x = list.x;
+	int button_x = select_list.x;
 	DrawBar(0,0, Form.cwidth, PANEL_TOP_H, system.color.work);
 	DrawBar(0,Form.cheight-PANEL_BOTTOM_H, Form.cwidth, PANEL_BOTTOM_H, system.color.work);
-	DrawRectangle3D(list.x-2, list.y-2, list.w+3+scroll1.size_x, list.h+3, system.color.work_dark, system.color.work_light);
-	DrawWideRectangle(list.x-LIST_PADDING, list.y-LIST_PADDING, LIST_PADDING*2+list.w+scroll1.size_x, LIST_PADDING*2+list.h, LIST_PADDING-2, system.color.work);
-	button_x += DrawStandartCaptButton(button_x, list.y + list.h + 8, BT_DELETE_LAST_SLOT, T_DELETE_LAST_SLOT);
-	button_x += DrawStandartCaptButton(button_x, list.y + list.h + 8, BT_DELETE_ALL_SLOTS, T_DELETE_ALL_SLOTS);
-	button_x += DrawStandartCaptButton(button_x, list.y + list.h + 8, BT_UNLOCK, T_RESET_BUFFER_LOCK);
-	DrawRectangle(list.x-1, list.y-1, list.w+1+scroll1.size_x, list.h+1, system.color.work_graph);
-	WriteText(list.x+12, list.y - 23, list.font_type, system.color.work_text, T_COLUMNS_TITLE);
-	WriteText(list.x+list.w-68, list.y - 23, list.font_type, system.color.work_text, T_COLUMN_VIEW);
+	DrawRectangle3D(select_list.x-2, select_list.y-2, select_list.w+3+scroll1.size_x, select_list.h+3, system.color.work_dark, system.color.work_light);
+	DrawWideRectangle(select_list.x-LIST_PADDING, select_list.y-LIST_PADDING, LIST_PADDING*2+select_list.w+scroll1.size_x, LIST_PADDING*2+select_list.h, LIST_PADDING-2, system.color.work);
+	button_x += DrawStandartCaptButton(button_x, select_list.y + select_list.h + 8, BT_DELETE_LAST_SLOT, T_DELETE_LAST_SLOT);
+	button_x += DrawStandartCaptButton(button_x, select_list.y + select_list.h + 8, BT_DELETE_ALL_SLOTS, T_DELETE_ALL_SLOTS);
+	button_x += DrawStandartCaptButton(button_x, select_list.y + select_list.h + 8, BT_UNLOCK, T_RESET_BUFFER_LOCK);
+	DrawRectangle(select_list.x-1, select_list.y-1, select_list.w+1+scroll1.size_x, select_list.h+1, system.color.work_graph);
+	WriteText(select_list.x+12, select_list.y - 23, select_list.font_type, system.color.work_text, T_COLUMNS_TITLE);
+	WriteText(select_list.x+select_list.w-68, select_list.y - 23, select_list.font_type, system.color.work_text, T_COLUMN_VIEW);
 }
 
-void DrawScroller()
+void DrawSelectList_Line(dword i)
 {
-	scroll1.bckg_col = MixColors(system.color.work, 0xBBBbbb, 80);
-	scroll1.frnt_col = MixColors(system.color.work,0xFFFfff,120);
-	scroll1.line_col = system.color.work_graph;
+	int yyy, length, slot_data_type_number;
+	dword line_text[2048];
+	dword size_kb;
+	dword text_color = 0;
 
-	scroll1.max_area = list.count;
-	scroll1.cur_area = list.visible;
-	scroll1.position = list.first;
+	clipboard.GetSlotData(select_list.first + i);
+	yyy = i*select_list.item_h+select_list.y;
+	WriteText(select_list.x+12, yyy+select_list.text_y, select_list.font_type, text_color, itoa(select_list.first + i));
+	//WriteText(select_list.x+44, yyy+select_list.text_y, select_list.font_type, text_color, itoa(clipboard.slot_data.size));
+	size_kb = ConvertSizeToKb(clipboard.slot_data.size);
+	WriteText(select_list.x+44, yyy+select_list.text_y, select_list.font_type, text_color, size_kb);
+	slot_data_type_number = clipboard.slot_data.type;
+	WriteText(select_list.x+140, yyy+select_list.text_y, select_list.font_type, text_color, data_type[slot_data_type_number]);
+	WriteText(select_list.x+select_list.w - 88, yyy+select_list.text_y, select_list.font_type, 0x006597, T_VIEW_OPTIONS);
+	DefineButton(select_list.x+select_list.w - 95, yyy, 50, select_list.item_h, 100+i+BT_HIDE, NULL);
+	DefineButton(select_list.x+select_list.w - 95 + 51, yyy, 40, select_list.item_h, 300+i+BT_HIDE, NULL);
 
-	scroll1.all_redraw=1;
-	scroll1.start_x = list.x + list.w;
-	scroll1.start_y = list.y-1;
-	scroll1.size_y = list.h+2;
-
-	scrollbar_v_draw(#scroll1);
+	length = select_list.w-236 - 95 / select_list.font_w - 2;
+	if (clipboard.slot_data.size-8 < length) length = clipboard.slot_data.size-8;
+	memmov(#line_text, clipboard.slot_data.content, length);
+	replace_char(#line_text, 0, 31, length); // 31 is a dot
+	WriteText(select_list.x+236, yyy+select_list.text_y, select_list.font_type, text_color, #line_text);
 }
+
+
 
 replace_char(dword in_str, char from_char, to_char, int length) {
 	int i;
@@ -155,48 +163,6 @@ replace_char(dword in_str, char from_char, to_char, int length) {
 		if (ESBYTE[in_str+i] == from_char) ESBYTE[in_str+i] = to_char;
 	}
 	ESBYTE[in_str+length]=0;
-}
-
-void Draw_List()
-{
-	int i, yyy, list_last, slot_data_type_number, length;
-	dword line_text[2048];
-	dword size_kb;
-	dword text_color = 0;
-
-	list.count = clipboard.GetSlotCount();
-	list.CheckDoesValuesOkey();
-
-	if (list.count > list.visible) list_last = list.visible; else list_last = list.count;
-
-	for (i=0; i<list.visible; i++;) DeleteButton(list.first + i + 100);
-	for (i=0; i<list.visible; i++;) DeleteButton(list.first + i + 300);
-
-	for (i=0; i<list_last; i++;)
-	{
-		clipboard.GetSlotData(list.first + i);
-		yyy = i*list.item_h+list.y;		
-		DrawBar(list.x,yyy,list.w, list.item_h, 0xFFFfff);
-		WriteText(list.x+12, yyy+list.text_y, list.font_type, text_color, itoa(list.first + i));
-		//WriteText(list.x+44, yyy+list.text_y, list.font_type, text_color, itoa(clipboard.slot_data.size));
-		size_kb = ConvertSizeToKb(clipboard.slot_data.size);
-		WriteText(list.x+44, yyy+list.text_y, list.font_type, text_color, size_kb);
-		slot_data_type_number = clipboard.slot_data.type;
-		WriteText(list.x+140, yyy+list.text_y, list.font_type, text_color, data_type[slot_data_type_number]);
-		WriteText(list.x+list.w - 88, yyy+list.text_y, list.font_type, 0x006597, T_VIEW_OPTIONS);
-		DefineButton(list.x+list.w - 95, yyy, 50, list.item_h, 100+i+BT_HIDE, NULL);
-		DefineButton(list.x+list.w - 95 + 51, yyy, 40, list.item_h, 300+i+BT_HIDE, NULL);
-
-		length = list.w-236 - 95 / list.font_w - 2;
-		if (clipboard.slot_data.size-8 < length) length = clipboard.slot_data.size-8;
-		memmov(#line_text, clipboard.slot_data.content, length);
-		replace_char(#line_text, 0, 31, length); // 31 is a dot
-		WriteText(list.x+236, yyy+list.text_y, list.font_type, text_color, #line_text);
-	}
-	DrawBar(list.x,i*list.item_h+list.y, list.w, -i*list.item_h+ list.h, 0xFFFfff);
-	if (!list.count) WriteText(-strlen(T_CLIPBOARD_IS_EMPTY)*list.font_w + list.w / 2 + list.x + 1, 
-		list.h / 2 - 8 + list.y, list.font_type, 0x999999, T_CLIPBOARD_IS_EMPTY);
-	DrawScroller();
 }
 
 int SaveSlotContents(int slot_id) {
@@ -221,18 +187,18 @@ int SaveSlotContents(int slot_id) {
 void EventDeleteLastSlot()
 {
 	clipboard.DelLastSlot();
-	Draw_List();
+	DrawSelectList(clipboard.GetSlotCount());
 }
 
 void EventDeleteAllSlots()
 {
 	while (clipboard.GetSlotCount()) clipboard.DelLastSlot();
-	Draw_List();
+	DrawSelectList(clipboard.GetSlotCount());
 }
 
 void EventResetBufferLock() {
 	clipboard.ResetBlockingBuffer();
-	Draw_List();
+	DrawSelectList(clipboard.GetSlotCount());
 }
 
 void EventOpenAsText(int slot_id) {

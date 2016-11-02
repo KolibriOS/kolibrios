@@ -7,7 +7,7 @@ SKIN_PARAMS \
                      bouter=0x33383A:\    ; border outer
                      bframe=0x626262],\   ; border middle
   colors inactive = [binner=0x626262:\    ; border inner
-                     bouter=0x747474:\    ; border outer
+                     bouter=0x33383A:\    ; border outer
                      bframe=0x626262],\   ; border middle
   dtp             = 'default.dtp'          ; dtp colors
 

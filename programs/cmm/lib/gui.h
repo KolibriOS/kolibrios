@@ -279,10 +279,11 @@ Normal line break '\n' must be applied.
 Long lines should be breaked by word. 
 TODO: scroll
 */
-:int DrawTextViewArea(int x,y,w,h,line_h, dword buf_start, bg_col, text_col)
+:int DrawTextViewArea(int x,y,w,h, dword buf_start, bg_col, text_col)
 {
 	dword write_start;
 	dword buf_end;
+	int line_h = 15;
 	int label_length_max;
 	int write_length;
 	bool end_found;
