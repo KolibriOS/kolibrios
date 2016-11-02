@@ -66,32 +66,14 @@ void main()
 	{
 	  	case evMouse:
 			if (!CheckActiveProcess(Form.ID)) break;
-			mouse.get();
-			scrollbar_v_mouse (#scroll1);
-			if (select_list.first != scroll1.position)
-			{
-				select_list.first = scroll1.position;
-				DrawSelectList(select_list.count);
-				break;
-			}
-
-	  		if (mouse.vert) && (select_list.MouseScroll(mouse.vert)) DrawSelectList(select_list.count);
-
-	  		if (mouse.up)&&(mouse_clicked)
-	  		{
-	  			if (mouse.lkm) && (select_list.ProcessMouse(mouse.x, mouse.y)) EventApply();
-	  			mouse_clicked=false;
-	  		}
-	  		else if (mouse.down)&&(mouse.lkm) && (select_list.MouseOver(mouse.x, mouse.y)) mouse_clicked=true;
+			SelectList_ProcessMouse();
 
 	  		if (mouse.down)&&(mouse.pkm) {
 	  			select_list.ProcessMouse(mouse.x, mouse.y);
-				DrawSelectList(select_list.count);
+				SelectList_Draw();
 	  			menu.show(Form.left+mouse.x, Form.top+mouse.y+skin_height, 136, "Open file     Enter\nDelete          Del", 10); 
 	  		}
-
 	  		break;
-
 
 		case evButton:
 			id=GetButtonID();
@@ -137,7 +119,13 @@ void DrawWindowContent()
 {
 	int id;
 	id = select_list.cur_y;
-	InitSelectList(LIST_PADDING, PANEL_H, Form.cwidth-scroll1.size_x-LIST_PADDING-LIST_PADDING, Form.cheight-PANEL_H-LIST_PADDING, false);
+	SelectList_Init(
+		LIST_PADDING, 
+		PANEL_H, 
+		Form.cwidth-scroll1.size_x-LIST_PADDING-LIST_PADDING, 
+		Form.cheight-PANEL_H-LIST_PADDING, 
+		false
+		);
 	select_list.cur_y = id;
 
 	DrawBar(0,0, Form.cwidth, PANEL_H-LIST_PADDING, system.color.work);
@@ -147,7 +135,7 @@ void DrawWindowContent()
 	if (dir_exists(WALP_STANDART_PATH)) tabs.draw(strlen(T_SKINS)*8+TAB_PADDING+select_list.x+21, select_list.y, WALLPAPERS, T_WALLPAPERS);
 	DrawRectangle(select_list.x-1, select_list.y-1, select_list.w+1+scroll1.size_x, select_list.h+1, system.color.work_graph);
 
-	DrawSelectList(select_list.count);
+	SelectList_Draw();
 }
 
 
@@ -171,7 +159,7 @@ void Open_Dir()
 	}
 }
 
-void DrawSelectList_Line(dword i)
+void SelectList_DrawLine(dword i)
 {
 	int yyy, list_last;
 
@@ -190,6 +178,11 @@ void DrawSelectList_Line(dword i)
 		DrawBar(select_list.x,yyy,select_list.w, select_list.item_h, 0xFFFfff);
 		WriteText(select_list.x+12,yyy+select_list.text_y,select_list.font_type,0, #temp_filename);
 	}
+}
+
+void SelectList_LineChanged() 
+{
+	EventApply();
 }
 
 //===================================================//
@@ -243,7 +236,7 @@ void EventApply()
 		cur = select_list.cur_y;
 		sprintf(#cur_file_path,"\\S__%s/%s",#folder_path,io.dir.position(files_mas[cur]));
 		RunProgram("/sys/media/kiv", #cur_file_path);
-		DrawSelectList(select_list.count);
+		SelectList_Draw();
 	}
 }
 

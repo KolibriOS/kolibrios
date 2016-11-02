@@ -4,38 +4,55 @@ dword select_list_count_offset;
 
 ?define T_SELECT_LIST_NO_DATA "No data to show"
 
-void InitSelectList(dword _x, _y, _w, _h, _no_selection)
+void SelectList_Init(dword _x, _y, _w, _h, _no_selection)
 {
 	select_list.no_selection = _no_selection;
 	select_list.SetFont(8, 14, 0x90);
 	select_list.SetSizes(_x, _y, _w, _h, 20);
 }
 
-void DrawSelectList(dword _items_count)
+void SelectList_Draw()
 {
 	int i, list_last;
 
-	select_list.count = _items_count;
 	select_list.CheckDoesValuesOkey();
 
 	if (select_list.count > select_list.visible) list_last = select_list.visible; else list_last = select_list.count;
 
-	for (i=0; i<select_list.visible; i++;) DeleteButton(select_list.first + i + 100);
-	for (i=0; i<select_list.visible; i++;) DeleteButton(select_list.first + i + 300);
-
 	for (i=0; i<list_last; i++;)
 	{
 		DrawBar(select_list.x,i*select_list.item_h+select_list.y,select_list.w, select_list.item_h, 0xFFFfff);
-		DrawSelectList_Line(i); //NEED TO BE IMPLEMENTED IN APP
+		SelectList_DrawLine(i); //NEED TO BE IMPLEMENTED IN APP
 	}
 	DrawBar(select_list.x,i*select_list.item_h+select_list.y, select_list.w, -i*select_list.item_h+ select_list.h, 0xFFFfff);
 	if (!select_list.count) WriteText(-strlen(T_SELECT_LIST_NO_DATA)*select_list.font_w + select_list.w / 2 + select_list.x + 1, 
 		select_list.h / 2 - 8 + select_list.y, select_list.font_type, 0x999999, T_SELECT_LIST_NO_DATA);
-	DrawSelectListScroller();
+	SelectList_DrawScroller();
+}
+
+void SelectList_ProcessMouse()
+{
+	int mouse_clicked;
+	mouse.get();
+	scrollbar_v_mouse (#scroll1);
+	if (select_list.first != scroll1.position)
+	{
+		select_list.first = scroll1.position;
+		SelectList_Draw();
+	}
+	
+	if (mouse.vert) && (select_list.MouseScroll(mouse.vert)) SelectList_Draw();
+
+	if (mouse.up)&&(mouse_clicked)
+	{
+		if (mouse.lkm) && (select_list.ProcessMouse(mouse.x, mouse.y)) SelectList_LineChanged();
+		mouse_clicked=false;
+	}
+	else if (mouse.down)&&(mouse.lkm) && (select_list.MouseOver(mouse.x, mouse.y)) mouse_clicked=true;
 }
 
 
-void DrawSelectListScroller()
+void SelectList_DrawScroller()
 {
 	scroll1.bckg_col = MixColors(system.color.work, 0xBBBbbb, 80);
 	scroll1.frnt_col = MixColors(system.color.work,0xFFFfff,120);

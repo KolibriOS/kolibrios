@@ -2,7 +2,7 @@
 	?include "lang.h--"
 #endif
 
-#define MEMSIZE 0xDFE800
+#define MEMSIZE 4096*20
 #include "..\lib\mem.h"
 #include "..\lib\strings.h"
 #include "..\lib\list_box.h"
@@ -62,17 +62,8 @@ void main()
 	  {
 	  	case evMouse:
 			if (!CheckActiveProcess(Form.ID)) break;
-			mouse.get();
-			scrollbar_v_mouse (#scroll1);
-			if (select_list.first != scroll1.position)
-			{
-				select_list.first = scroll1.position;
-				DrawSelectList(clipboard.GetSlotCount());
-				break;
-			}
-	  		if (mouse.vert) && (select_list.MouseScroll(mouse.vert)) DrawSelectList(clipboard.GetSlotCount());
+			SelectList_ProcessMouse();
 	  		break;
-
 
 		case evButton:
 			id=GetButtonID();
@@ -86,7 +77,7 @@ void main()
 	  
 		case evKey:
 			GetKeys(); 
-			if (select_list.ProcessKey(key_scancode)) DrawSelectList(clipboard.GetSlotCount());
+			if (select_list.ProcessKey(key_scancode)) ClipViewSelectListDraw();
 			break;
 		 
 		case evReDraw:
@@ -96,19 +87,19 @@ void main()
 			IF (Form.status_window>=2) break;
 			if (Form.height < 200) { MoveSize(OLD,OLD,OLD,200); break; }
 			if (Form.width  < 570) { MoveSize(OLD,OLD,570,OLD); break; }
-			InitSelectList(
+			SelectList_Init(
 				LIST_PADDING, 
 				LIST_PADDING+PANEL_TOP_H, 
 				Form.cwidth-LIST_PADDING-LIST_PADDING-scroll1.size_x, 
 				Form.cheight-PANEL_BOTTOM_H-PANEL_TOP_H-LIST_PADDING-LIST_PADDING,
 				true
-			);
+				);
 		 	DrawWindowContent();
-		 	DrawSelectList(clipboard.GetSlotCount());
+		 	ClipViewSelectListDraw();
 		 	break;
 
 		default:
-			if (clipboard.GetSlotCount() > select_list.count) DrawSelectList(clipboard.GetSlotCount());
+			if (clipboard.GetSlotCount() > select_list.count) ClipViewSelectListDraw();
 			break;
 	  }
    }
@@ -129,7 +120,7 @@ void DrawWindowContent()
 	WriteText(select_list.x+select_list.w-68, select_list.y - 23, select_list.font_type, system.color.work_text, T_COLUMN_VIEW);
 }
 
-void DrawSelectList_Line(dword i)
+void SelectList_DrawLine(dword i)
 {
 	int yyy, length, slot_data_type_number;
 	dword line_text[2048];
@@ -178,6 +169,15 @@ int SaveSlotContents(int slot_id) {
 	}
 }
 
+void ClipViewSelectListDraw() {
+	select_list.count = clipboard.GetSlotCount();
+	SelectList_Draw();
+}
+
+void SelectList_LineChanged() {
+	return;
+}
+
 //===================================================//
 //                                                   //
 //                     EVENTS                        //
@@ -186,19 +186,22 @@ int SaveSlotContents(int slot_id) {
 
 void EventDeleteLastSlot()
 {
+	int i;
+	for (i=0; i<select_list.visible; i++;) DeleteButton(select_list.first + i + 100);
+	for (i=0; i<select_list.visible; i++;) DeleteButton(select_list.first + i + 300);
 	clipboard.DelLastSlot();
-	DrawSelectList(clipboard.GetSlotCount());
+	ClipViewSelectListDraw();
 }
 
 void EventDeleteAllSlots()
 {
 	while (clipboard.GetSlotCount()) clipboard.DelLastSlot();
-	DrawSelectList(clipboard.GetSlotCount());
+	ClipViewSelectListDraw();
 }
 
 void EventResetBufferLock() {
 	clipboard.ResetBlockingBuffer();
-	DrawSelectList(clipboard.GetSlotCount());
+	ClipViewSelectListDraw();
 }
 
 void EventOpenAsText(int slot_id) {
