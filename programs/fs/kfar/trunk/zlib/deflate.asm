@@ -934,8 +934,7 @@ zlib_debug 'deflate strm = %d',ebx
 	cmp dword[flush],Z_BLOCK
 	jg @f
 	cmp dword[flush],0
-	jl @f ;if (..==0 || ..==0 || ..>.. || ..<0)
-		jmp .end10
+	jge .end10 ;if (..==0 || ..==0 || ..>.. || ..<0)
 	@@:
 		mov eax,Z_STREAM_ERROR
 		jmp .end_f
@@ -951,7 +950,7 @@ zlib_debug 'deflate strm = %d',ebx
 	jne .end0
 	cmp dword[flush],Z_FINISH
 	je .end0
-	.beg0: ;if (..==0 || (..==0 && ..!=0) || (..=.. && ..!=..))
+	.beg0: ;if (..==0 || (..==0 && ..!=0) || (..==.. && ..!=..))
 		ERR_RETURN ebx, Z_STREAM_ERROR
 		jmp .end_f
 	.end0:
@@ -1068,12 +1067,13 @@ end if
 
 			mov esi,3
 			cmp word[edi+deflate_state.strategy],Z_HUFFMAN_ONLY
-			jl @f
+			jge @f
 			cmp word[edi+deflate_state.level],2
-			jge @f ;if (..>=.. || ..<..)
+			jge .end30 ;if (..>=.. || ..<..)
+			@@:
 				xor esi,esi
 				jmp .end4
-			@@:
+			.end30:
 			cmp word[edi+deflate_state.level],6
 			jge @f ;else if (..<..)
 				mov esi,1
@@ -1391,16 +1391,14 @@ end if
 		cmp edx,finish_started
 		je @f
 		cmp edx,finish_done
-		je @f
-			jmp .end18
+		jne .end18
 		@@: ;if (..==.. || ..==..)
 			mov dword[edi+deflate_state.status],FINISH_STATE
 		.end18:
 		cmp edx,need_more
 		je @f
 		cmp edx,finish_started
-		je @f
-			jmp .end19
+		jne .end19
 		@@: ;if (..==.. || ..==..)
 			cmp word[ebx+z_stream.avail_out],0
 			jne @f ;if (..==0)
@@ -2382,7 +2380,7 @@ locals
 endl
 ;ecx = hash_head ;IPos ;head of the hash chain
 	mov edi,[s]
-zlib_debug 'deflate_fast'
+	zlib_debug 'deflate_fast'
 
 	.cycle0: ;for (..)
 	; Make sure that we always have enough lookahead, except
@@ -2537,7 +2535,7 @@ locals
 endl
 ;ecx = hash_head ;IPos ;head of the hash chain
 	mov edi,[s]
-zlib_debug 'deflate_slow'
+	zlib_debug 'deflate_slow'
 
 	; Process the input block.
 	.cycle0: ;for (;;)
@@ -2747,11 +2745,10 @@ align 4
 proc deflate_rle uses ecx edx edi esi, s:dword, flush:dword
 locals
 	bflush dd ? ;int ;set if current block must be flushed
-;    uInt prev;              /* byte at distance one to match */
-;    Bytef *scan, *strend;   /* scan goes up to strend for length of run */	
 endl
 	mov edx,[s]
-zlib_debug 'deflate_rle'
+	zlib_debug 'deflate_rle'
+align 4
 	.cycle0: ;for (;;)
 		; Make sure that we always have enough lookahead, except
 		; at the end of the input file. We need MAX_MATCH bytes
@@ -2789,8 +2786,8 @@ align 4
 			jnz .end2
 			scasb
 			jnz .end2 ;if (..==.. && ..==.. && ..==..)
-				;edi = scan
-				; al = prev
+				;edi = scan ;scan goes up to strend for length of run
+				; al = prev ;byte at distance one to match
 				;ecx = strend-scan
 				mov ecx,MAX_MATCH-2
 				repz scasb
@@ -2872,7 +2869,8 @@ locals
 	bflush dd ? ;int ;set if current block must be flushed
 endl
 	mov edi,[s]
-zlib_debug 'deflate_huff'
+	zlib_debug 'deflate_huff'
+align 4
 	.cycle0: ;for (;;)
 		; Make sure that we have a literal to write.
 		cmp dword[edi+deflate_state.lookahead],0
@@ -2881,12 +2879,10 @@ zlib_debug 'deflate_huff'
 			cmp dword[edi+deflate_state.lookahead],0
 			jne .end0 ;if (..==0)
 				cmp dword[flush],Z_NO_FLUSH
-				jne @f ;if (..==..)
+				jne .cycle0end ;if (..==..)
 					mov eax,need_more
 					jmp .end_f
-align 4
-				@@:
-			jmp .cycle0end ;flush the current block
+				;flush the current block
 align 4
 		.end0:
 
