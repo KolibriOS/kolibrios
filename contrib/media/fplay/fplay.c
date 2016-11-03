@@ -30,8 +30,7 @@ int64_t  rewind_pos;
 
 int64_t stream_duration;
 
-int threads_running = DECODER_THREAD;
-
+volatile int threads_running = DECODER_THREAD;
 
 int main( int argc, char *argv[])
 {
@@ -113,7 +112,6 @@ int main( int argc, char *argv[])
         return -1; // Didn't find a video stream
     };
 
-  //   __asm__ __volatile__("int3");
 
     INIT_LIST_HEAD(&vst.input_list);
     INIT_LIST_HEAD(&vst.output_list);
@@ -126,6 +124,8 @@ int main( int argc, char *argv[])
 
     vst.vCtx = vst.fCtx->streams[vst.vStream]->codec;
     vst.aCtx = vst.fCtx->streams[vst.aStream]->codec;
+
+//    __asm__ __volatile__("int3");
 
     if(init_video_decoder(&vst) != 0 )
         return -1;
@@ -193,7 +193,9 @@ int main( int argc, char *argv[])
     if(astream.lock.handle)
         mutex_destroy(&astream.lock);
 
-    fini_video_decoder(&vst);
+    vst.decoder->fini(&vst);
+    avcodec_close(vst.vCtx);
+
     mutex_destroy(&vst.q_video.lock);
     mutex_destroy(&vst.q_audio.lock);
     mutex_destroy(&vst.decoder_lock);

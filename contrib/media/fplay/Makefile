@@ -16,13 +16,11 @@ LIB_DIR:= $(SDK_DIR)/lib
 INCLUDES= -I. -I$(SDK_DIR)/sources/newlib/libc/include -I$(SDK_DIR)/sources/ffmpeg/ffmpeg-2.8
 INCLUDES+=-I$(SDK_DIR)/sources/freetype/include -I$(SDK_DIR)/sources/vaapi/libva-1.6.2
 
-DEFINES= -DDEBUG=1 -DHAVE_VAAPI -DPACKAGE_NAME=\"Fplay-vaapi\"
+DEFINES= -DDEBUG=1 -D_GNU_SOURCE -DHAVE_VAAPI -DPACKAGE_NAME=\"Fplay-vaapi\"
 LIBS:= -lavdevice.dll -lavformat.dll -lavcodec.dll -lavutil.dll -lswscale.dll
-LIBS+= -lswresample.dll -lsound -lpixlib3 -lfreetype.dll -lva.dll -lgcc -lc.dll -lapp
+LIBS+= -lswresample.dll -lsound -lpixlib3 -lfreetype.dll -lva.dll -lgcc -lc.dll
 
-LIBPATH:= -L$(LIB_DIR) -L/home/autobuild/tools/win32/mingw32/lib
-
-LDFLAGS = -static -nostdlib --stack 0x200000 -Map fplay.map -T$(SDK_DIR)/sources/newlib/app.lds --image-base 0
+LDFLAGS = -static --subsystem native --stack 0x200000 -Map fplay.map -Tapp-dynamic.lds --image-base 0
 
 SOURCES = 	opendial.asm			\
 		audio.c				\
@@ -46,7 +44,7 @@ OBJECTS =  $(patsubst %.asm, %.o, $(patsubst %.c, %.o, $(SOURCES)))
 all:$(NAME)
 
 $(NAME): $(OBJECTS) Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) --subsystem native -o $@ $(OBJECTS) $(LIBS)
+	$(LD) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBS)
 	kos32-objcopy $@ -O binary
 
 %.o : %.c Makefile

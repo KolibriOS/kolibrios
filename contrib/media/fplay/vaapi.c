@@ -37,10 +37,18 @@ struct hw_profile
 #undef  ARRAY_ELEMS
 #define ARRAY_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
+struct va_decoder
+{
+    struct decoder decoder;
+    VADisplay      dpy;
+    void          *hwctx;
+    VASurfaceID    v_surface_id[16];
+};
+
+static struct va_decoder va_decoder;
+
 static int drm_fd = 0;
 static struct vaapi_context *v_context;
-
-static VASurfaceID v_surface_id[16];
 
 #define HAS_HEVC VA_CHECK_VERSION(0, 38, 0)
 #define HAS_VP9 (VA_CHECK_VERSION(0, 38, 1) && defined(FF_PROFILE_VP9_0))
@@ -281,6 +289,7 @@ static int vaapi_init_decoder(vst_t *vst,VAProfile profile,
                               unsigned int picture_height)
 {
     struct vaapi_context* const vaapi = v_context;
+    struct va_decoder *hw_decoder = (struct va_decoder*)vst->decoder;
     VAConfigAttrib attrib;
     VAConfigID  config_id = VA_INVALID_ID;
     VAContextID context_id = VA_INVALID_ID;
@@ -309,8 +318,18 @@ ENTER();
         return -1;
     };
 
+    if (vaapi->context_id != VA_INVALID_ID)
+        vaDestroyContext(vaapi->display, vaapi->context_id);
+
+    if (hw_decoder->decoder.has_surfaces)
+    {
+        vaDestroySurfaces(vaapi->display,hw_decoder->v_surface_id,hw_decoder->decoder.nframes);
+        hw_decoder->decoder.has_surfaces = 0;
+    }
+
     if (vaapi->config_id != VA_INVALID_ID)
         vaDestroyConfig(vaapi->display, vaapi->config_id);
+
 
     attrib.type = VAConfigAttribRTFormat;
 
@@ -341,17 +360,20 @@ ENTER();
 
     printf("vaCreateSurfaces %dx%d\n",picture_width,picture_height);
     status = vaCreateSurfaces(vaapi->display, VA_RT_FORMAT_YUV420, picture_width, picture_height,
-                              v_surface_id,vst->decoder->nframes,NULL,0);
+                              hw_decoder->v_surface_id,hw_decoder->decoder.nframes,NULL,0);
     if (!vaapi_check_status(status, "vaCreateSurfaces()"))
     {
         FAIL();
         return -1;
     };
+
+    hw_decoder->decoder.has_surfaces = 1;
+
     {
         VAImage vaimage;
         VABufferInfo info = {0};
 
-        vaDeriveImage(vaapi->display,v_surface_id[0],&vaimage);
+        vaDeriveImage(vaapi->display,hw_decoder->v_surface_id[0],&vaimage);
         printf("vaDeriveImage: %x  fourcc: %x\n"
                "offset0: %d pitch0: %d\n"
                "offset1: %d pitch1: %d\n"
@@ -376,7 +398,7 @@ ENTER();
     status = vaCreateContext(vaapi->display, config_id,
                              picture_width, picture_height,
                              VA_PROGRESSIVE,
-                             v_surface_id, vst->decoder->nframes,
+                             hw_decoder->v_surface_id, vst->decoder->nframes,
                              &context_id);
     if (!vaapi_check_status(status, "vaCreateContext()"))
     {
@@ -395,24 +417,19 @@ static enum PixelFormat get_format(struct AVCodecContext *avctx,
                                    const enum AVPixelFormat *fmt)
 {
     vst_t *vst = (vst_t*)avctx->opaque;
+    struct va_decoder* hw_decoder = (struct va_decoder*)vst->decoder;
+    struct decoder* decoder = &hw_decoder->decoder;
     VAProfile profile = avctx->profile;
     enum AVCodecID codec = avctx->codec_id;
 
-    if (codec == AV_CODEC_ID_H264)
+    if(avctx->hwaccel_context != NULL)
     {
-        if(profile == FF_PROFILE_H264_BASELINE)
-            profile = FF_PROFILE_H264_CONSTRAINED_BASELINE;
-    };
-
-    if(avctx->hwaccel_context != NULL &&
-       (vst->codec_id != codec ||
-       vst->codec_profile != profile))
+        if(decoder->codec_id != avctx->codec_id ||
+           decoder->profile  != avctx->profile)
     {
-        struct decoder* decoder = vst->decoder;
-
         printf("\n%s codec changed!!!\n"
                "old id %d profile %x new id %d profile %x\n",
-                __FUNCTION__, vst->codec_id, vst->codec_profile,
+                    __FUNCTION__, decoder->codec_id, decoder->profile,
                 codec, profile);
 
         for(int i = 0; i < decoder->nframes; i++)
@@ -421,6 +438,15 @@ static enum PixelFormat get_format(struct AVCodecContext *avctx,
             vframe->format   = AV_PIX_FMT_NONE;
         };
     }
+        else
+            return AV_PIX_FMT_VAAPI_VLD;
+    }
+
+    if (codec == AV_CODEC_ID_H264)
+    {
+        if(profile == FF_PROFILE_H264_BASELINE)
+            profile = FF_PROFILE_H264_CONSTRAINED_BASELINE;
+    };
 
     printf("\n%s codec %d profile %x\n", __FUNCTION__,avctx->codec_id, avctx->profile);
 
@@ -438,8 +464,6 @@ static enum PixelFormat get_format(struct AVCodecContext *avctx,
                 if (vaapi_init_decoder(vst, profile, VAEntrypointVLD, avctx->width, avctx->height) == 0)
                 {
                     avctx->hwaccel_context = v_context;
-                    vst->codec_id = codec;
-                    vst->codec_profile = profile;
                     printf("%s format: %x\n",__FUNCTION__, fmt[i]);
                     return fmt[i];
                 }
@@ -466,9 +490,10 @@ static int get_buffer2(AVCodecContext *avctx, AVFrame *pic, int flags)
 {
     static struct av_surface avsurface;
     vst_t *vst = (vst_t*)avctx->opaque;
+    struct va_decoder* hw_decoder = (struct va_decoder*)vst->decoder;
     void *surface;
 
-    surface = (void *)(uintptr_t)v_surface_id[vst->decoder->active_frame->index];
+    surface = (void *)(uintptr_t)hw_decoder->v_surface_id[vst->decoder->active_frame->index];
 
     pic->data[3] = surface;
 
@@ -547,18 +572,25 @@ enum wl_drm_format {
 void va_create_planar(vst_t *vst, vframe_t *vframe)
 {
     struct vaapi_context* const vaapi = v_context;
+    struct va_decoder* hw_decoder = (struct va_decoder*)vst->decoder;
     VABufferInfo info = {0};
 
     VAImage vaimage;
     VAStatus status;
     planar_t *planar;
 
-    vaSyncSurface(vaapi->display,v_surface_id[vframe->index]);
+    vaSyncSurface(vaapi->display,hw_decoder->v_surface_id[vframe->index]);
 
     if(vframe->format != AV_PIX_FMT_NONE)
         return;
 
-    status = vaDeriveImage(vaapi->display,v_surface_id[vframe->index],&vaimage);
+    if(vframe->planar != NULL)
+    {
+        pxDestroyPlanar(vframe->planar);
+        vframe->planar = NULL;
+    };
+
+    status = vaDeriveImage(vaapi->display,hw_decoder->v_surface_id[vframe->index],&vaimage);
     if (!vaapi_check_status(status, "vaDeriveImage()"))
     {
         FAIL();
@@ -687,29 +719,57 @@ err_0:
     return profile;
 }
 
-struct decoder* va_init_decoder(vst_t *vst)
+static void fini_va_decoder(vst_t *vst)
+{
+    struct vaapi_context* const vaapi = v_context;
+    struct va_decoder *hw_decoder = (struct va_decoder*)vst->decoder;
+ENTER();
+    for(int i = 0; i < hw_decoder->decoder.nframes; i++)
+    {
+        vframe_t *vframe = &hw_decoder->decoder.vframes[i];
+        if(vframe->planar != NULL)
+        {
+            printf("destroy planar %d\n", i);
+            pxDestroyPlanar(vframe->planar);
+            vframe->planar = NULL;
+        };
+    };
+
+    av_frame_free(&hw_decoder->decoder.Frame);
+
+    if (vaapi->context_id != VA_INVALID_ID)
+        vaDestroyContext(vaapi->display, vaapi->context_id);
+
+    if (hw_decoder->decoder.has_surfaces)
+        vaDestroySurfaces(vaapi->display,hw_decoder->v_surface_id,hw_decoder->decoder.nframes);
+
+    if (vaapi->config_id != VA_INVALID_ID)
+        vaDestroyConfig(vaapi->display, vaapi->config_id);
+
+    vaTerminate(hw_decoder->dpy);
+LEAVE();
+};
+
+
+struct decoder* init_va_decoder(vst_t *vst)
 {
     AVCodecContext *vCtx = vst->vCtx;
-    struct decoder *decoder;
-    VADisplay dpy;
+    struct va_decoder *hw_decoder = &va_decoder;
+    struct decoder *decoder = &hw_decoder->decoder;
 
     drm_fd = get_service("DISPLAY");
     if (drm_fd == 0)
         return NULL;
 
-    dpy = vaGetDisplayDRM(drm_fd);
-    if (dpy == NULL)
+    hw_decoder->dpy = vaGetDisplayDRM(drm_fd);
+    if (hw_decoder->dpy == NULL)
         goto err_0;
 
-    decoder = calloc(1, sizeof(struct decoder));
-    if(decoder == NULL)
-        goto err_0;
-
-    decoder->hwctx = vaapi_init(dpy);
-    if(decoder->hwctx == NULL)
+    hw_decoder->hwctx = vaapi_init(hw_decoder->dpy);
+    if(hw_decoder->hwctx == NULL)
         goto err_1;
 
-    if(get_profile(dpy, vCtx->codec_id) == VAProfileNone)
+    if(get_profile(hw_decoder->dpy, vCtx->codec_id) == VAProfileNone)
         goto err_1;
 
     decoder->Frame = av_frame_alloc();
@@ -728,8 +788,6 @@ struct decoder* va_init_decoder(vst_t *vst)
         vframe->format    = AV_PIX_FMT_NONE;
         vframe->is_hw_pic = 1;
         vframe->index     = i;
-        vframe->pts       = 0;
-        vframe->ready     = 0;
         list_add_tail(&vframe->list, &vst->input_list);
     };
 
@@ -747,19 +805,20 @@ struct decoder* va_init_decoder(vst_t *vst)
 
     decoder->name     = vst->vCodec->name;
     decoder->codec_id = vCtx->codec_id;
+    decoder->profile  = vCtx->profile;
     decoder->pix_fmt  = vCtx->pix_fmt;
     decoder->width    = vCtx->width;
     decoder->height   = vCtx->height;
     decoder->is_hw    = 1;
     decoder->frame_reorder = 1;
+    decoder->fini     = fini_va_decoder;
 
-    return decoder;
+    return (struct decoder*)decoder;
 
 err_2:
     av_frame_free(&decoder->Frame);
 err_1:
-    vaTerminate(dpy);
-    free(decoder);
+    vaTerminate(hw_decoder->dpy);
 err_0:
     drm_fd = 0;
     return NULL;

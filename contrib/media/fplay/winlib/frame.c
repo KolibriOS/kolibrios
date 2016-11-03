@@ -134,7 +134,7 @@ int draw_frame(window_t *win)
 int frame_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
 {
     static  pos_t spos;
-    static  track_mode;
+    static  int track_mode;
 
     uint32_t cursor;
     ctrl_t   *child;

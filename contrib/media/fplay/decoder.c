@@ -14,6 +14,27 @@
 #include "sound.h"
 #include "fplay.h"
 
+static struct decoder ffmpeg_decoder;
+static struct decoder* init_ffmpeg_decoder(vst_t *vst);
+
+static decoder_init_fn* decoders[] = {
+    init_va_decoder,
+    init_ffmpeg_decoder,
+    NULL
+};
+
+static void fini_ffmpeg_decoder(vst_t *vst)
+{
+    av_frame_free(&vst->decoder->Frame);
+
+    for(int i = 0; i < vst->decoder->nframes; i++)
+    {
+        vframe_t *vframe;
+        vframe = &vst->decoder->vframes[i];
+        avpicture_free(&vframe->picture);
+    };
+};
+
 static struct decoder* init_ffmpeg_decoder(vst_t *vst)
 {
     AVCodecContext *vCtx = vst->vCtx;
@@ -21,9 +42,7 @@ static struct decoder* init_ffmpeg_decoder(vst_t *vst)
     vframe_t *vframe;
     int i, ret;
 
-    decoder = calloc(1, sizeof(struct decoder));
-    if(decoder == NULL)
-        return NULL;
+    decoder = &ffmpeg_decoder;
 
     decoder->Frame = av_frame_alloc();
     if(decoder->Frame == NULL)
@@ -42,8 +61,6 @@ static struct decoder* init_ffmpeg_decoder(vst_t *vst)
 
         vframe->format = vCtx->pix_fmt;
         vframe->index  = i;
-        vframe->pts    = 0;
-        vframe->ready  = 0;
         list_add_tail(&vframe->list, &vst->input_list);
     };
 
@@ -59,7 +76,8 @@ static struct decoder* init_ffmpeg_decoder(vst_t *vst)
     decoder->width    = vCtx->width;
     decoder->height   = vCtx->height;
     decoder->codec_id = vCtx->codec_id;
-
+    decoder->profile  = vCtx->profile;
+    decoder->fini     = fini_ffmpeg_decoder;
     return decoder;
 
 err_1:
@@ -68,59 +86,9 @@ err_1:
         vframe = &decoder->vframes[i];
         avpicture_free(&vframe->picture);
     };
-    av_frame_free(&decoder->Frame);
 err_0:
-    free(decoder);
     return NULL;
 }
-
-int init_video_decoder(vst_t *vst)
-{
-    AVCodecContext *vCtx = vst->vCtx;
-
-    vst->vCodec = avcodec_find_decoder(vCtx->codec_id);
-
-    if(vst->vCodec == NULL)
-    {
-        printf("Unsupported codec with id %d for input stream %d\n",
-        vst->vCtx->codec_id, vst->vStream);
-        return -1;
-    }
-
-    vst->decoder = va_init_decoder(vst);
-    if(vst->decoder == NULL)
-        vst->decoder = init_ffmpeg_decoder(vst);
-
-    if(vst->decoder != NULL)
-    {
-        printf("%dx%d %s %s%s decoder\n",
-                vst->decoder->width, vst->decoder->height,
-                av_get_pix_fmt_name(vst->decoder->pix_fmt),
-                vst->decoder->is_hw == 0 ? "ffmpeg ":"vaapi ",
-                vst->decoder->name);
-
-        return 0;
-    };
-
-    return -1;
-}
-
-void fini_video_decoder(vst_t *vst)
-{
-    avcodec_close(vst->vCtx);
-
-    if(vst->decoder->is_hw != 0)
-        return;
-
-    for(int i = 0; i < vst->decoder->nframes; i++)
-    {
-        vframe_t *vframe;
-        vframe = &vst->decoder->vframes[i];
-        avpicture_free(&vframe->picture);
-    };
-    av_frame_free(&vst->decoder->Frame);
-    free(vst->decoder);
-};
 
 static vframe_t *get_input_frame(vst_t *vst)
 {
@@ -228,5 +196,38 @@ int decode_video(vst_t* vst)
     av_free_packet(&pkt);
 
     return 1;
+}
+
+int init_video_decoder(vst_t *vst)
+{
+    decoder_init_fn **init_fn;
+    AVCodecContext *vCtx = vst->vCtx;
+    int i;
+
+    vst->vCodec = avcodec_find_decoder(vCtx->codec_id);
+
+    if(vst->vCodec == NULL)
+    {
+        printf("Unsupported codec with id %d for input stream %d\n",
+        vst->vCtx->codec_id, vst->vStream);
+        return -1;
+    }
+
+    for(init_fn = decoders; init_fn != NULL; init_fn++)
+    {
+        vst->decoder = (*init_fn)(vst);
+        if(vst->decoder != NULL)
+        {
+            printf("%dx%d %s %s%s decoder\n",
+                    vst->decoder->width, vst->decoder->height,
+                    av_get_pix_fmt_name(vst->decoder->pix_fmt),
+                    vst->decoder->is_hw == 0 ? "ffmpeg ":"vaapi ",
+                    vst->decoder->name);
+
+            return 0;
+        };
+    }
+
+    return -1;
 }
 

@@ -114,17 +114,22 @@ struct decoder
 {
     const char     *name;
     enum AVCodecID  codec_id;
+    int             profile;
     enum AVPixelFormat pix_fmt;
     int             width;
     int             height;
     AVFrame        *Frame;
     vframe_t       *active_frame;
-    void           *hwctx;
-    int             is_hw:1;
-    int             frame_reorder:1;
-    int             nframes;
     vframe_t        vframes[16];
+    int             nframes;
+    int             is_hw:1;
+    int             has_surfaces:1;
+    int             frame_reorder:1;
+    void          (*fini)(vst_t *vst);
 };
+
+typedef struct decoder* decoder_init_fn(vst_t *vst);
+struct decoder* init_va_decoder(vst_t *vst);
 
 struct vstate
 {
@@ -133,8 +138,6 @@ struct vstate
     AVCodecContext  *aCtx;              /* audio decoder context    */
     AVCodec         *vCodec;            /* video codec              */
     AVCodec         *aCodec;            /* audio codec              */
-    enum AVCodecID  codec_id;
-    int             codec_profile;
     char            *input_file;
     char            *input_name;
     int             vStream;            /* video stream index       */
@@ -152,6 +155,7 @@ struct vstate
     mutex_t         output_lock;
     struct list_head input_list;
     struct list_head output_list;
+    struct list_head destructor_list;
 
     struct decoder *decoder;
     int             snd_format;
@@ -168,7 +172,7 @@ struct vstate
 #define AUDIO_THREAD    2
 #define VIDEO_THREAD    4
 
-extern int threads_running;
+extern volatile int threads_running;
 extern astream_t astream;
 
 render_t *create_render(vst_t *vst, window_t *win, uint32_t flags);
@@ -216,4 +220,5 @@ char *get_moviefile();
 #define ENTER()   printf("enter %s\n",__FUNCTION__)
 #define LEAVE()   printf("leave %s\n",__FUNCTION__)
 #define FAIL()    printf("fail %s\n",__FUNCTION__)
+
 

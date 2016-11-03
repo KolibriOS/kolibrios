@@ -1,8 +1,9 @@
-
+#include <sys/types.h>
 #include <stdint.h>
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include "winlib/winlib.h"
