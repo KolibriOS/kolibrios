@@ -1,5 +1,7 @@
 #include <ddk.h>
 #include <linux/mm.h>
+#include <linux/scatterlist.h>
+#include <linux/dma-mapping.h>
 #include <drm/drmP.h>
 #include <drm/i915_drm.h>
 #include "i915_drv.h"
@@ -175,23 +177,27 @@ void *memchr_inv(const void *start, int c, size_t bytes)
 }
 
 
-
-int dma_map_sg(struct device *dev, struct scatterlist *sglist,
-                           int nelems, int dir)
+int dma_map_sg(struct device *dev, struct scatterlist *sg, int nents,
+           enum dma_data_direction direction)
 {
     struct scatterlist *s;
     int i;
 
-    for_each_sg(sglist, s, nelems, i) {
+    for_each_sg(sg, s, nents, i) {
         s->dma_address = (dma_addr_t)sg_phys(s);
 #ifdef CONFIG_NEED_SG_DMA_LENGTH
         s->dma_length  = s->length;
 #endif
     }
 
-    return nelems;
+    return nents;
 }
 
+void
+dma_unmap_sg(struct device *dev, struct scatterlist *sg, int nhwentries,
+             enum dma_data_direction direction)
+{
+};
 
 
 #define _U  0x01    /* upper */
@@ -261,98 +267,6 @@ void *kmemdup(const void *src, size_t len, gfp_t gfp)
 }
 
 
-#define KMAP_MAX    256
-
-static struct mutex kmap_mutex;
-static struct page* kmap_table[KMAP_MAX];
-static int kmap_av;
-static int kmap_first;
-static void* kmap_base;
-
-
-int kmap_init()
-{
-    kmap_base = AllocKernelSpace(KMAP_MAX*4096);
-    if(kmap_base == NULL)
-        return -1;
-
-    kmap_av = KMAP_MAX;
-    MutexInit(&kmap_mutex);
-    return 0;
-};
-
-void *kmap(struct page *page)
-{
-    void *vaddr = NULL;
-    int i;
-
-    do
-    {
-        MutexLock(&kmap_mutex);
-        if(kmap_av != 0)
-        {
-            for(i = kmap_first; i < KMAP_MAX; i++)
-            {
-                if(kmap_table[i] == NULL)
-                {
-                    kmap_av--;
-                    kmap_first = i;
-                    kmap_table[i] = page;
-                    vaddr = kmap_base + (i<<12);
-                    MapPage(vaddr,(addr_t)page,3);
-                    break;
-                };
-            };
-        };
-        MutexUnlock(&kmap_mutex);
-    }while(vaddr == NULL);
-
-    return vaddr;
-};
-
-void *kmap_atomic(struct page *page) __attribute__ ((alias ("kmap")));
-
-void kunmap(struct page *page)
-{
-    void *vaddr;
-    int   i;
-
-    MutexLock(&kmap_mutex);
-
-    for(i = 0; i < KMAP_MAX; i++)
-    {
-        if(kmap_table[i] == page)
-        {
-            kmap_av++;
-            if(i < kmap_first)
-                kmap_first = i;
-            kmap_table[i] = NULL;
-            vaddr = kmap_base + (i<<12);
-            MapPage(vaddr,0,0);
-            break;
-        };
-    };
-
-    MutexUnlock(&kmap_mutex);
-};
-
-void kunmap_atomic(void *vaddr)
-{
-    int i;
-
-    MapPage(vaddr,0,0);
-
-    i = (vaddr - kmap_base) >> 12;
-
-    MutexLock(&kmap_mutex);
-
-    kmap_av++;
-    if(i < kmap_first)
-        kmap_first = i;
-    kmap_table[i] = NULL;
-
-    MutexUnlock(&kmap_mutex);
-}
 
 void msleep(unsigned int msecs)
 {
@@ -684,7 +598,7 @@ int split_cmdline(char *cmdline, char **argv)
 };
 
 
-fb_get_options(const char *name, char **option)
+int fb_get_options(const char *name, char **option)
 {
     char *opt, *options = NULL;
     int retval = 1;

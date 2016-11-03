@@ -2685,8 +2685,6 @@ int drm_mode_setcrtc(struct drm_device *dev, void *data,
 			goto out;
 		}
 
-		drm_mode_set_crtcinfo(mode, CRTC_INTERLACE_HALVE_V);
-
 		/*
 		 * Check whether the primary plane supports the fb pixel format.
 		 * Drivers not implementing the universal planes API use a
@@ -2743,10 +2741,10 @@ int drm_mode_setcrtc(struct drm_device *dev, void *data,
 
 		for (i = 0; i < crtc_req->count_connectors; i++) {
 			set_connectors_ptr = (uint32_t __user *)(unsigned long)crtc_req->set_connectors_ptr;
-//           if (get_user(out_id, &set_connectors_ptr[i])) {
-//               ret = -EFAULT;
-//               goto out;
-//           }
+			if (get_user(out_id, &set_connectors_ptr[i])) {
+				ret = -EFAULT;
+				goto out;
+			}
 
 			connector = drm_connector_find(dev, out_id);
 			if (!connector) {
@@ -3419,7 +3417,6 @@ out_err1:
 
 	return ret;
 }
-
 
 /**
  * drm_fb_release - remove and free the FBs on this file

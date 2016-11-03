@@ -582,6 +582,9 @@ static int intel_gtt_init(void)
 	gtt_map_size = intel_private.gtt_total_entries * 4;
 
 	intel_private.gtt = NULL;
+	if (intel_gtt_can_wc())
+		intel_private.gtt = ioremap_wc(intel_private.gtt_phys_addr,
+					       gtt_map_size);
 	if (intel_private.gtt == NULL)
 		intel_private.gtt = ioremap(intel_private.gtt_phys_addr,
 					    gtt_map_size);
@@ -954,7 +957,7 @@ static void intel_i9xx_setup_flush(void)
 	}
 
 	if (intel_private.ifp_resource.start)
-		intel_private.i9xx_flush_page = ioremap(intel_private.ifp_resource.start, PAGE_SIZE);
+		intel_private.i9xx_flush_page = ioremap_nocache(intel_private.ifp_resource.start, PAGE_SIZE);
 	if (!intel_private.i9xx_flush_page)
 		dev_err(&intel_private.pcidev->dev,
 			"can't ioremap flush page - no chipset flushing\n");

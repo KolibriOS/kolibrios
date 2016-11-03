@@ -32,7 +32,7 @@
 #endif
 #endif
 
-#include <stdio.h>
+//#include <stdio.h>
 
 #include "getopt.h"
 

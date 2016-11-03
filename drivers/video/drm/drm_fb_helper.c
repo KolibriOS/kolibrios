@@ -431,7 +431,6 @@ static bool drm_fb_helper_is_bound(struct drm_fb_helper *fb_helper)
 			bound++;
 	}
 
-    dbgprintf("%s bound %d crtcs_bound %d\n", __FUNCTION__, bound, crtcs_bound);
 	if (bound < crtcs_bound)
 		return false;
 
@@ -1588,7 +1587,6 @@ static int drm_pick_crtcs(struct drm_fb_helper *fb_helper,
 			  int n, int width, int height)
 {
 	int c, o;
-	struct drm_device *dev = fb_helper->dev;
 	struct drm_connector *connector;
 	const struct drm_connector_helper_funcs *connector_funcs;
 	struct drm_encoder *encoder;
@@ -1607,7 +1605,7 @@ static int drm_pick_crtcs(struct drm_fb_helper *fb_helper,
 	if (modes[n] == NULL)
 		return best_score;
 
-	crtcs = kzalloc(dev->mode_config.num_connector *
+	crtcs = kzalloc(fb_helper->connector_count *
 			sizeof(struct drm_fb_helper_crtc *), GFP_KERNEL);
 	if (!crtcs)
 		return best_score;
@@ -1653,7 +1651,7 @@ static int drm_pick_crtcs(struct drm_fb_helper *fb_helper,
 		if (score > best_score) {
 			best_score = score;
 			memcpy(best_crtcs, crtcs,
-			       dev->mode_config.num_connector *
+			       fb_helper->connector_count *
 			       sizeof(struct drm_fb_helper_crtc *));
 		}
 	}

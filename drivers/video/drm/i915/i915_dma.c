@@ -40,7 +40,7 @@
 #include "i915_trace.h"
 #include <linux/pci.h>
 #include <linux/vgaarb.h>
-//#include <linux/acpi.h>
+#include <linux/acpi.h>
 //#include <linux/pnp.h>
 //#include <linux/vga_switcheroo.h>
 #include <linux/slab.h>
@@ -230,8 +230,6 @@ intel_setup_mchbar(struct drm_device *dev)
 */
 	dev_priv->mchbar_need_disable = true;
 
-	DRM_INFO("enable MCHBAR\n");
-
 	/* Space is allocated or reserved, so enable it. */
 	if (IS_I915G(dev) || IS_I915GM(dev)) {
 		pci_write_config_dword(dev_priv->bridge_dev, DEVEN_REG,
@@ -312,6 +310,8 @@ static int i915_load_modeset_init(struct drm_device *dev)
 	ret = intel_irq_install(dev_priv);
 	if (ret)
 		goto cleanup_gem_stolen;
+
+	intel_setup_gmbus(dev);
 
 	/* Important: The output setup functions called by modeset_init need
 	 * working irqs for e.g. gmbus and dp aux transfers. */
@@ -922,7 +922,6 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 
 	/* Try to make sure MCHBAR is enabled before poking at it */
 	intel_setup_mchbar(dev);
-	intel_setup_gmbus(dev);
 	intel_opregion_setup(dev);
 
 	i915_gem_load(dev);
@@ -1066,7 +1065,6 @@ int i915_driver_unload(struct drm_device *dev)
 
 	intel_csr_ucode_fini(dev);
 
-	intel_teardown_gmbus(dev);
 	intel_teardown_mchbar(dev);
 
 	destroy_workqueue(dev_priv->hotplug.dp_wq);

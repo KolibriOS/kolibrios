@@ -1388,8 +1388,16 @@ intel_hdmi_detect(struct drm_connector *connector, bool force)
 				hdmi_to_dig_port(intel_hdmi));
 	}
 
-	if (!live_status)
-		DRM_DEBUG_KMS("Live status not up!");
+	if (!live_status) {
+		DRM_DEBUG_KMS("HDMI live status down\n");
+		/*
+		 * Live status register is not reliable on all intel platforms.
+		 * So consider live_status only for certain platforms, for
+		 * others, read EDID to determine presence of sink.
+		 */
+		if (INTEL_INFO(dev_priv)->gen < 7 || IS_IVYBRIDGE(dev_priv))
+			live_status = true;
+	}
 
 	intel_hdmi_unset_edid(connector);
 
@@ -2021,6 +2029,9 @@ void intel_hdmi_init_connector(struct intel_digital_port *intel_dig_port,
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	enum port port = intel_dig_port->port;
 	uint8_t alternate_ddc_pin;
+
+	DRM_DEBUG_KMS("Adding HDMI connector on port %c\n",
+		      port_name(port));
 
 	drm_connector_init(dev, connector, &intel_hdmi_connector_funcs,
 			   DRM_MODE_CONNECTOR_HDMIA);

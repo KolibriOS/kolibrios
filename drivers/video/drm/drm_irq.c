@@ -1239,6 +1239,7 @@ void drm_vblank_off(struct drm_device *dev, unsigned int pipe)
 	DRM_DEBUG_VBL("crtc %d, vblank enabled %d, inmodeset %d\n",
 		      pipe, vblank->enabled, vblank->inmodeset);
 	vblank_disable_and_save(dev, pipe);
+
 	wake_up(&vblank->queue);
 
 	/*

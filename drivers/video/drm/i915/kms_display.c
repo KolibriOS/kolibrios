@@ -5,6 +5,7 @@
 #include <uapi/drm/drm.h>
 #include "i915_drv.h"
 #include "intel_drv.h"
+#include <drm/drm_plane_helper.h>
 #include <linux/module.h>
 #include <linux/mod_devicetable.h>
 #include <linux/pci.h>
@@ -1016,7 +1017,7 @@ int i915_mask_update_ex(struct drm_device *dev, void *data,
     struct drm_i915_mask_update *mask = data;
     struct drm_gem_object *obj;
     static unsigned int mask_seqno[256];
-    static warn_count;
+    static int warn_count;
 
     rect_t win;
     u32    winw,winh;

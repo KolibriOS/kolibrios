@@ -130,6 +130,7 @@ drm_clflush_virt_range(void *addr, unsigned long length)
 		mb();
 		for (; addr < end; addr += size)
 			clflush(addr);
+		clflush(end - 1); /* force serialisation */
 		mb();
 		return;
 	}

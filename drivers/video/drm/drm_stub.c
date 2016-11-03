@@ -32,6 +32,7 @@
 #include <linux/slab.h>
 #include <drm/drmP.h>
 #include <drm/drm_core.h>
+#include "drm_internal.h"
 
 unsigned int drm_debug = 0;	/* 1 to enable debug output */
 EXPORT_SYMBOL(drm_debug);

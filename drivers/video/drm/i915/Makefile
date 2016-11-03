@@ -16,7 +16,7 @@ INCLUDES =	-I$(DRV_INCLUDES)	\
 		-I$(DRV_INCLUDES)/drm -I./ -I$(DRV_INCLUDES)
 
 CFLAGS= -c -O2 $(INCLUDES) $(DEFINES) -march=i686 -fno-ident -msse2 -fomit-frame-pointer -fno-builtin-printf
-CFLAGS+= -mno-stack-arg-probe -mno-ms-bitfields
+CFLAGS+= -mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -mno-ms-bitfields
 
 LIBPATH:= $(DDK_TOPDIR)
 

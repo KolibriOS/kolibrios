@@ -253,8 +253,8 @@ drm_gem_handle_delete(struct drm_file *filp, u32 handle)
 
 	if (dev->driver->gem_close_object)
 		dev->driver->gem_close_object(obj, filp);
-	drm_gem_object_handle_unreference_unlocked(obj);
 
+	drm_gem_object_handle_unreference_unlocked(obj);
 	return 0;
 }
 EXPORT_SYMBOL(drm_gem_handle_delete);

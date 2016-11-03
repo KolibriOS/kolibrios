@@ -34,9 +34,10 @@
 #include "intel_drv.h"
 #include <linux/shmem_fs.h>
 #include <linux/slab.h>
-//#include <linux/swap.h>
-#include <linux/scatterlist.h>
+#include <linux/swap.h>
 #include <linux/pci.h>
+#include <linux/dma-buf.h>
+
 #define RQ_BUG_ON(expr)
 
 extern int x86_clflush_size;
@@ -1261,7 +1262,7 @@ int i915_gem_request_add_to_client(struct drm_i915_gem_request *req,
 	list_add_tail(&req->client_list, &file_priv->mm.request_list);
 	spin_unlock(&file_priv->mm.lock);
 
-	req->pid = 1;
+    req->pid = (struct pid*)1;
 
 	return 0;
 }
@@ -1278,6 +1279,7 @@ i915_gem_request_remove_from_client(struct drm_i915_gem_request *request)
 	list_del(&request->client_list);
 	request->file_priv = NULL;
 	spin_unlock(&file_priv->mm.lock);
+	request->pid = NULL;
 }
 
 static void i915_gem_request_retire(struct drm_i915_gem_request *request)
@@ -1306,6 +1308,7 @@ __i915_gem_request_retire__upto(struct drm_i915_gem_request *req)
 	struct intel_engine_cs *engine = req->ring;
 	struct drm_i915_gem_request *tmp;
 
+	lockdep_assert_held(&engine->dev->struct_mutex);
 
 	if (list_empty(&req->list))
 		return;

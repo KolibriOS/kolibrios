@@ -8,13 +8,15 @@
 #include <linux/module.h>
 #include <linux/mod_devicetable.h>
 #include <linux/pci.h>
+#include <linux/dmi.h>
+#include "../drm_internal.h"
 
 #include "getopt.h"
 
 #include "bitmap.h"
 #include "i915_kos32.h"
 
-#define DRV_NAME "i915 v4.4.5"
+#define DRV_NAME "i915 v4.4.30"
 
 #define I915_DEV_CLOSE 0
 #define I915_DEV_INIT  1
@@ -24,6 +26,16 @@ static int my_atoi(char **cmd);
 static char* parse_mode(char *p, videomode_t *mode);
 void cpu_detect1();
 int kmap_init();
+int fake_framebuffer_create();
+int i915_init(void);
+int init_display_kms(struct drm_device *dev, videomode_t *usermode);
+int get_videomodes(videomode_t *mode, int *count);
+int set_user_mode(videomode_t *mode);
+int i915_fbinfo(struct drm_i915_fb_info *fb);
+int i915_mask_update_ex(struct drm_device *dev, void *data,
+            struct drm_file *file);
+
+
 
 unsigned long volatile jiffies;
 int oops_in_progress;
@@ -534,7 +546,7 @@ int _stdcall display_handler(ioctl_t *io)
             break;
 
         case SRV_FBINFO:
-            retval = i915_fbinfo(inp);
+            retval = i915_fbinfo((struct drm_i915_fb_info*)inp);
             break;
 
         case SRV_MASK_UPDATE:
