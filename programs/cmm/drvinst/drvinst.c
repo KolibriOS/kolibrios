@@ -1,5 +1,9 @@
 #define MEMSIZE 4096*20
 
+#ifndef AUTOBUILD
+#include "lang.h--"
+#endif
+
 //===================================================//
 //                                                   //
 //                       LIB                         //
@@ -23,12 +27,21 @@
 
 proc_info Form;
 
-#define WINDOW_TITLE "Driver Installer"
-#define T_CAUTION_TITLE "CAUTION"
-#define T_CAUTION_PARAGRAPH "Installing additional drivers can be harmful to the stability of the operation system and potentionally can harm hardware."
-#define T_ASSEPT_RISK "I assept the risk"
-#define T_README "Readme"
-#define T_INSTALL "Install"
+#ifdef LANG_RUS
+	#define WINDOW_TITLE "Установщик драйверов"
+	#define T_CAUTION_TITLE "ПРЕДУПРЕЖДЕНИЕ"
+	#define T_CAUTION_PARAGRAPH "Установка дополнительных драйверов может нанести вред стабильности операционной системы и потенциально привести к порче оборудования."
+	#define T_ASSEPT_RISK "Я принимаю риск"
+	#define T_README "Readme"
+	#define T_INSTALL "Установить"
+#else
+	#define WINDOW_TITLE "Driver Installer"
+	#define T_CAUTION_TITLE "CAUTION"
+	#define T_CAUTION_PARAGRAPH "Installing additional drivers can be harmful to the stability of the operation system and potentionally can harm hardware."
+	#define T_ASSEPT_RISK "I accept the risk"
+	#define T_README "Readme"
+	#define T_INSTALL "Install"
+#endif
 
 #define BUTTON_ID_ASSEPT_RISK 10
 #define BUTTON_ID_README 11
@@ -124,6 +137,7 @@ void draw_driver_list_window()
 		Form.cheight - PADDING - PADDING, 
 		false);
 	SelectList_Draw();
+	SelectList_DrawBorder();
 	//RIGHT FRAME
 	GetCurrentSectionData();
 	DrawBar(right_frame_x, PADDING+3, Form.cwidth - right_frame_x - PADDING, 80, system.color.work);
@@ -158,13 +172,16 @@ void SelectList_LineChanged()
 	draw_driver_list_window();
 }
 
+
 void GetCurrentSectionData()
 {
-	dword cur_section_name = ini_sections.get(select_list.cur_y);
-	ini_get_str stdcall (#drvinf_path, cur_section_name, "ver", #cur_version, sizeof(cur_version), 0);
-	ini_get_str stdcall (#drvinf_path, cur_section_name, "description", #cur_description, sizeof(cur_description), 0);
-	ini_get_str stdcall (#drvinf_path, cur_section_name, "readme", #cur_readme_path, sizeof(cur_readme_path), 0);
-	ini_get_str stdcall (#drvinf_path, cur_section_name, "install", #cur_install_path, sizeof(cur_install_path), 0);
+	dword section_name = ini_sections.get(select_list.cur_y);
+	dword description_name;
+	if (GetSystemLanguage() == SYS_LANG_RUS) description_name = "description_ru"; else description_name = "description_en";
+	ini_get_str stdcall (#drvinf_path, section_name, "ver", #cur_version, sizeof(cur_version), 0);
+	ini_get_str stdcall (#drvinf_path, section_name, description_name, #cur_description, sizeof(cur_description), 0);
+	ini_get_str stdcall (#drvinf_path, section_name, "readme", #cur_readme_path, sizeof(cur_readme_path), 0);
+	ini_get_str stdcall (#drvinf_path, section_name, "install", #cur_install_path, sizeof(cur_install_path), 0);
 }
 
 //===================================================//

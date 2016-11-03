@@ -127,15 +127,14 @@ void DrawWindowContent()
 		false
 		);
 	select_list.cur_y = id;
-
 	DrawBar(0,0, Form.cwidth, PANEL_H-LIST_PADDING, system.color.work);
-	DrawRectangle3D(select_list.x-2, select_list.y-2, select_list.w+3+scroll1.size_x, select_list.h+3, system.color.work_dark, system.color.work_light);
-	DrawWideRectangle(select_list.x-LIST_PADDING, select_list.y-LIST_PADDING, LIST_PADDING*2+select_list.w+scroll1.size_x, LIST_PADDING*2+select_list.h, LIST_PADDING-2, system.color.work);
+	DrawWideRectangle(select_list.x-LIST_PADDING, select_list.y-LIST_PADDING, LIST_PADDING*2+select_list.w+scroll1.size_x, 
+		LIST_PADDING*2+select_list.h, LIST_PADDING-2, system.color.work);
 	tabs.draw(select_list.x+10, select_list.y, SKINS, T_SKINS);
-	if (dir_exists(WALP_STANDART_PATH)) tabs.draw(strlen(T_SKINS)*8+TAB_PADDING+select_list.x+21, select_list.y, WALLPAPERS, T_WALLPAPERS);
-	DrawRectangle(select_list.x-1, select_list.y-1, select_list.w+1+scroll1.size_x, select_list.h+1, system.color.work_graph);
-
+	if (dir_exists(WALP_STANDART_PATH)) tabs.draw(strlen(T_SKINS)*8+TAB_PADDING+select_list.x+21, select_list.y, 
+		WALLPAPERS, T_WALLPAPERS);
 	SelectList_Draw();
+	SelectList_DrawBorder();
 }
 
 

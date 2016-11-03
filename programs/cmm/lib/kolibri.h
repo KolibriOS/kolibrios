@@ -256,6 +256,10 @@ inline fastcall void SetCurDir( ECX)
 
 
 //eax = язык системы (1=eng, 2=fi, 3=ger, 4=rus)
+#define SYS_LANG_ENG 1
+#define SYS_LANG_FIN 2
+#define SYS_LANG_GER 3
+#define SYS_LANG_RUS 4
 inline fastcall int GetSystemLanguage()
 {
 	EAX = 26;

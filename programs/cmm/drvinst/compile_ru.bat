@@ -1,5 +1,5 @@
 @del lang.h--
-@echo #define LANG_ENG 1 >lang.h--
+@echo #define LANG_RUS 1 >lang.h--
 
 @del *.kex
 @c-- drvinst.c

@@ -95,7 +95,6 @@ void main()
 				true
 				);
 		 	DrawWindowContent();
-		 	ClipViewSelectListDraw();
 		 	break;
 
 		default:
@@ -110,14 +109,14 @@ void DrawWindowContent()
 	int button_x = select_list.x;
 	DrawBar(0,0, Form.cwidth, PANEL_TOP_H, system.color.work);
 	DrawBar(0,Form.cheight-PANEL_BOTTOM_H, Form.cwidth, PANEL_BOTTOM_H, system.color.work);
-	DrawRectangle3D(select_list.x-2, select_list.y-2, select_list.w+3+scroll1.size_x, select_list.h+3, system.color.work_dark, system.color.work_light);
 	DrawWideRectangle(select_list.x-LIST_PADDING, select_list.y-LIST_PADDING, LIST_PADDING*2+select_list.w+scroll1.size_x, LIST_PADDING*2+select_list.h, LIST_PADDING-2, system.color.work);
 	button_x += DrawStandartCaptButton(button_x, select_list.y + select_list.h + 8, BT_DELETE_LAST_SLOT, T_DELETE_LAST_SLOT);
 	button_x += DrawStandartCaptButton(button_x, select_list.y + select_list.h + 8, BT_DELETE_ALL_SLOTS, T_DELETE_ALL_SLOTS);
 	button_x += DrawStandartCaptButton(button_x, select_list.y + select_list.h + 8, BT_UNLOCK, T_RESET_BUFFER_LOCK);
-	DrawRectangle(select_list.x-1, select_list.y-1, select_list.w+1+scroll1.size_x, select_list.h+1, system.color.work_graph);
 	WriteText(select_list.x+12, select_list.y - 23, select_list.font_type, system.color.work_text, T_COLUMNS_TITLE);
 	WriteText(select_list.x+select_list.w-68, select_list.y - 23, select_list.font_type, system.color.work_text, T_COLUMN_VIEW);
+ 	ClipViewSelectListDraw();
+ 	SelectList_DrawBorder();
 }
 
 void SelectList_DrawLine(dword i)

@@ -51,6 +51,10 @@ void SelectList_ProcessMouse()
 	else if (mouse.down)&&(mouse.lkm) && (select_list.MouseOver(mouse.x, mouse.y)) mouse_clicked=true;
 }
 
+void SelectList_DrawBorder() {
+	DrawRectangle3D(select_list.x-2, select_list.y-2, select_list.w+3+scroll1.size_x, select_list.h+3, system.color.work_dark, system.color.work_light);
+	DrawRectangle(select_list.x-1, select_list.y-1, select_list.w+1+scroll1.size_x, select_list.h+1, system.color.work_graph);
+}
 
 void SelectList_DrawScroller()
 {

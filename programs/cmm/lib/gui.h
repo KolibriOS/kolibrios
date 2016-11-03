@@ -316,7 +316,7 @@ TODO: scroll
 			if (end_found != true) write_length = label_length_max; //no white space, so we write label_length_max
 		}
 		ESI = write_length; //set text length attribute for WriteText()
-		WriteText(x+1, y, 0x10, text_col, write_start);
+		WriteText(x, y, 0x10, text_col, write_start);
 		// if (editpos >= write_start-buf_start) && (editpos <= write_start-buf_start + write_length) {
 		// 	WriteTextB(-write_start+buf_start+editpos * 8 + x - 5 +1, y, 0x90, 0xFF0000, "|");
 		// }
