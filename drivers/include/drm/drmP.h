@@ -741,6 +741,9 @@ struct drm_device {
 //   struct drm_agp_head *agp;   /**< AGP data */
 
 	struct pci_dev *pdev;		/**< PCI device structure */
+#ifdef __alpha__
+	struct pci_controller *hose;
+#endif
 
 	unsigned int num_crtcs;                  /**< Number of CRTCs on this device */
 
