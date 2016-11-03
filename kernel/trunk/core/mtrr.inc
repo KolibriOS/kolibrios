@@ -923,10 +923,8 @@ proc mtrr_validate
 .exit:
         ret
 .fail:
-        ; mov     ebx, mtrr_user_message
-        ; mov     ebp, notifyapp
-        ; call    fs_execute_from_sysdir_param
-        mov     eax, mtrr_user_message
-        DEBUGF  1, "K : %s \n", eax
+        mov     ebx, mtrr_user_message
+        mov     ebp, notifyapp
+        call    fs_execute_from_sysdir_param
         ret
 endp
