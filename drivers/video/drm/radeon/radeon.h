@@ -65,13 +65,13 @@
 #include <linux/list.h>
 #include <linux/kref.h>
 #include <linux/interval_tree.h>
-#include <asm/div64.h>
+#include <linux/hashtable.h>
 #include <linux/fence.h>
 
 #include <ttm/ttm_bo_api.h>
 #include <ttm/ttm_bo_driver.h>
 #include <ttm/ttm_placement.h>
-//#include <ttm/ttm_module.h>
+#include <ttm/ttm_module.h>
 #include <ttm/ttm_execbuf_util.h>
 #include <linux/rwsem.h>
 

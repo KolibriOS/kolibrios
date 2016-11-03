@@ -29,17 +29,6 @@
 #include <drm/radeon_drm.h>
 #include "radeon.h"
 
-#undef CONFIG_X86
-void* pci_alloc_consistent(struct pci_dev *hwdev, size_t size,
-                      addr_t *dma_handle)
-{
-
-    size = (size + 0x7FFF) & ~0x7FFF;
-
-    *dma_handle = AllocPages(size >> 12);
-    return (void*)MapIoMem(*dma_handle, size, PG_SW+PG_NOCACHE);
-}
-
 /*
  * GART
  * The GART (Graphics Aperture Remapping Table) is an aperture

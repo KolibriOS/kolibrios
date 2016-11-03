@@ -820,7 +820,7 @@ out_unlock:
 	return ret;
 }
 
-static bool ttm_bo_mem_compat(struct ttm_placement *placement,
+bool ttm_bo_mem_compat(struct ttm_placement *placement,
 			      struct ttm_mem_reg *mem,
 			      uint32_t *new_flags)
 {
@@ -854,6 +854,7 @@ static bool ttm_bo_mem_compat(struct ttm_placement *placement,
 
 	return false;
 }
+EXPORT_SYMBOL(ttm_bo_mem_compat);
 
 int ttm_bo_validate(struct ttm_buffer_object *bo,
 			struct ttm_placement *placement,

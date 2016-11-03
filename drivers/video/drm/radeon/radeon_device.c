@@ -35,7 +35,6 @@
 #include "radeon.h"
 #include "atom.h"
 
-#include "bitmap.h"
 #include "display.h"
 
 
@@ -825,6 +824,8 @@ int radeon_dummy_page_init(struct radeon_device *rdev)
 		return -ENOMEM;
 	rdev->dummy_page.addr = pci_map_page(rdev->pdev, rdev->dummy_page.page,
 					0, PAGE_SIZE, PCI_DMA_BIDIRECTIONAL);
+	rdev->dummy_page.entry = radeon_gart_get_page_entry(rdev->dummy_page.addr,
+							    RADEON_GART_PAGE_DUMMY);
 	return 0;
 }
 
@@ -1473,6 +1474,8 @@ int radeon_gpu_reset(struct radeon_device *rdev)
 		up_write(&rdev->exclusive_lock);
 		return 0;
 	}
+
+	atomic_inc(&rdev->gpu_reset_counter);
 
     radeon_save_bios_scratch_regs(rdev);
     /* block TTM */
