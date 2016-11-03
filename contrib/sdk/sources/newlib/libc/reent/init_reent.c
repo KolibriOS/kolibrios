@@ -8,11 +8,8 @@ void init_global_reent()
 
     ent =_GLOBAL_REENT;
 
-    _REENT_INIT_PTR(ent);
-
     __asm__ __volatile__(
     "movl %0, %%fs:16"
     ::"r"(ent));
-//    __sinit(ent);
 }
 

@@ -27,7 +27,7 @@ struct app_hdr
     int    __subsystem__;
 };
 
-extern void init_reent();
+extern void init_global_reent();
 extern void init_stdio();
 extern void __init_conio();
 extern void __fini_conio();
@@ -173,7 +173,7 @@ __libc_init (void)
     int    argc;
 
     tls_init();
-    init_reent();
+    init_global_reent();
     init_stdio();
 
     if(header->__subsystem__ == 3)

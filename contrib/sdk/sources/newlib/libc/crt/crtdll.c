@@ -37,7 +37,7 @@ struct app_hdr
 
 extern void _pei386_runtime_relocator (void);
 extern void init_loader(void *libc_image);
-extern void init_reent(void);
+extern void init_global_reent(void);
 extern void init_stdio(void);
 
 extern void __init_conio(void);
@@ -182,7 +182,7 @@ void  libc_crt_startup (void *libc_base)
     _pei386_runtime_relocator();
 
     tls_init();
-    init_reent();
+    init_global_reent();
     init_stdio();
 
     if(header->__subsystem__ == 3)

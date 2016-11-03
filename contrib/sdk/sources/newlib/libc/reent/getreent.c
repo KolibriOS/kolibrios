@@ -13,7 +13,7 @@ void init_reent()
 
     ent = user_alloc(sizeof(struct _reent));
 
-    _REENT_INIT_PTR(ent);
+    _REENT_INIT_PTR_ZEROED(ent);
 
     __asm__ __volatile__(
     "movl %0, %%fs:16"
