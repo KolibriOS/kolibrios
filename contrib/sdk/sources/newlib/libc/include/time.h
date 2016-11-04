@@ -174,10 +174,10 @@ int _EXFUN(clock_getres,  (clockid_t clock_id, struct timespec *res));
 
 /* Create a Per-Process Timer, P1003.1b-1993, p. 264 */
 
-int _EXFUN(timer_create,
-  	(clockid_t clock_id,
- 	struct sigevent *__restrict evp,
-	timer_t *__restrict timerid));
+//int _EXFUN(timer_create,
+//  	(clockid_t clock_id,
+// 	struct sigevent *__restrict evp,
+//	timer_t *__restrict timerid));
 
 /* Delete a Per_process Timer, P1003.1b-1993, p. 266 */
 
