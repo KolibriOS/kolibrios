@@ -8,17 +8,15 @@ STRIP = kos32-strip
 CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -Wall -Winline -fno-ident
 CFLAGS+= -mno-ms-bitfields -fomit-frame-pointer
 
-LDFLAGS = -shared -s -nostdlib -T ../../newlib/dll.lds --entry _DllStartup --image-base=0
-LDFLAGS+= --version-script i965-video.ver --out-implib lib$(LIBRARY).dll.a
+LDFLAGS = -shared -s -T dll.lds --entry _DllStartup --image-base=0
+LDFLAGS+= --version-script i965-video.ver
 
 ARFLAGS = crs
 
 INCLUDES= -I../../newlib/libc/include -I../../libdrm -I../../libdrm/intel -I../../libdrm/include/drm
 INCLUDES+= -I../libva-1.6.2 
 
-LIBPATH:= -L../../../lib -L/home/autobuild/tools/win32/mingw32/lib
-
-LIBS:=  -ldll -ldrm -lc.dll -lgcc
+LIBS:=  -ldll -ldrm.dll -lgcc -lc.dll
 
 DEFINES:= -DHAVE_CONFIG_H
 
@@ -77,11 +75,9 @@ OBJECTS     = $(patsubst %.c, %.o, $(SOURCES))
 all: $(LIBRARY).dll
 
 $(LIBRARY).dll: $(OBJECTS) Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(OBJECTS) $(LIBS)
+	$(LD) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBS)
 	$(STRIP) $@
 	mv -f $@ ../../../bin
-	mv -f lib$(LIBRARY).dll.a ../../../lib  
-	
 
 %.o : %.c Makefile
 	$(CC) $(INCLUDES) $(CFLAGS) $(DEFINES)  -o $@ $<

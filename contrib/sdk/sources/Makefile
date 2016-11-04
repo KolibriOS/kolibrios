@@ -6,7 +6,7 @@ LIB_DIR:= /home/autobuild/tools/win32/lib
 # targets 
 
 all: 	libsync newlib zlib libpng libjpeg freetype pixman cairo \
-	libdrm pixlib ffmpeg libsupc++ libstdc++ expat	\
+	libdrm pixlib ffmpeg expat	\
 	Mesa eglut vaapi sound
 
 libsync: $(LIB_DIR)/libsync.a
@@ -133,7 +133,7 @@ Mesa: $(DLL_DIR)/libGL.dll $(DLL_DIR)/libegl.dll $(DLL_DIR)/i965_dri.drv
 
 $(DLL_DIR)/libGL.dll $(DLL_DIR)/libegl.dll $(DLL_DIR)/i965_dri.drv \
 	$(LIB_DIR)/libGL.dll.a $(LIB_DIR)/libegl.dll.a \
-	$(LIB_DIR)/libglsl.a: newlib libdrm libsupc++ expat
+	$(LIB_DIR)/libglsl.a: newlib libdrm expat
 	$(MAKE) -C Mesa/mesa-9.2.5
 
 #####################################

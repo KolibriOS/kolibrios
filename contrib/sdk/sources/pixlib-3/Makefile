@@ -5,9 +5,11 @@ AR = kos32-ar
 LD = kos32-ld
 STRIP = kos32-strip
 
+INSTALLDIR:= /home/autobuild/tools/win32/lib
+
 ARFLAGS = crs
 CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fno-ident -fomit-frame-pointer
-LDFLAGS:= -shared -s -nostdlib -Map px.map -T ../newlib/dll.lds --entry _DllStartup --image-base=0
+LDFLAGS:= -shared -s -Map px.map -T dll.lds --entry _DllStartup --image-base=0
 LDFLAGS+= --file-alignment 256
 
 INCLUDES= -I. -I../newlib/libc/include 
@@ -15,9 +17,7 @@ INCLUDES= -I. -I../newlib/libc/include
 PXGL_INCLUDES= $(INCLUDES) -I../libdrm/intel -I../libdrm/include
 PXGL_INCLUDES+= -I ../Mesa/mesa-9.2.5/include -I../Mesa/mesa-9.2.5/src/gbm/main
  
-LIBPATH:= -L../../lib -L/home/autobuild/tools/win32/mingw32/lib
-
-LIBS:=  -ldll -legl.dll -lGL.dll -lc.dll -lgcc
+LIBS:=  -ldll -legl.dll -lGL.dll -lgcc -lc.dll
 #LIBS+= -ldrm.dll
 
 DEFINES:= -DNDEBUG
@@ -35,10 +35,10 @@ all: lib$(LIBRARY).a pixlib-gl.dll
 
 lib$(LIBRARY).a: $(OBJ_PIXLIB) Makefile
 	$(AR) $(ARFLAGS) lib$(LIBRARY).a $(OBJ_PIXLIB)
-	mv -f lib$(LIBRARY).a ../../lib
+	mv -f lib$(LIBRARY).a $(INSTALLDIR)
 
 pixlib-gl.dll: $(OBJ_PXGL) Makefile
-	$(LD) $(LDFLAGS) $(PXFLAGS) $(LIBPATH) -o $@ $(OBJ_PXGL) $(LIBS)
+	$(LD) $(LDFLAGS) $(PXFLAGS) -o $@ $(OBJ_PXGL) $(LIBS)
 	mv -f $@ ../../bin
 
 pixlib3.o : pixlib3.c Makefile

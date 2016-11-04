@@ -16,6 +16,8 @@ LD = kos32-ld
 AR = kos32-ar
 STRIP = kos32-strip
 
+INSTALLDIR:= /home/autobuild/tools/win32/lib
+
 CFLAGS = $(LOC) -DHAVE_UNISTD_H -U_Win32 -U_WIN32 -U__MINGW32__ -O2 -Wall -fno-ident -fomit-frame-pointer 
 
 AS = $(CC)
@@ -25,11 +27,9 @@ LDFLAGS = $(LOC)
 
 ARFLAGS = rcs
 
-LDFLAGS:=  -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --out-implib $(IMPLIB)
+LDFLAGS:=  -shared -s -T dll.lds --entry _DllStartup --image-base=0 --out-implib $(IMPLIB)
 
 INCLUDES= -I../newlib/libc/include
-
-LIBPATH:= -L../../lib
 
 LIBS:=  -ldll -lc.dll
 
@@ -53,17 +53,17 @@ ebox: $(STATICLIB) $(SHAREDLIB) $(IMPLIB) Makefile
 
 $(STATICLIB): $(OBJS) $(OBJA) Makefile
 	$(AR) $(ARFLAGS) $@ $(OBJS) $(OBJA)
-	mv -f libz.a ../../lib
+	mv -f libz.a $(INSTALLDIR)
 
 $(IMPLIB): $(SHAREDLIB)
 
 $(SHAREDLIB): zlib.def $(OBJS) $(OBJA) Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ zlib.def $(OBJS) $(OBJA) $(LIBS) 
+	$(LD) $(LDFLAGS) -o $@ zlib.def $(OBJS) $(OBJA) $(LIBS) 
 	$(STRIP) $@
 	#sed -f ../newlib/cmd1.sed zlib.def > mem
 	#sed -f ../newlib/cmd2.sed mem >zlib.inc 
 	mv -f libz.dll ../../bin
-	mv -f libz.dll.a ../../lib   
+	mv -f libz.dll.a $(INSTALLDIR)
 
 
 adler32.o: zlib.h zconf.h

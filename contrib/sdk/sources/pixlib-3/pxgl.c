@@ -807,7 +807,7 @@ static int hw_blit(bitmap_t *bitmap, int dst_x, int dst_y,
 
     state  = *(uint8_t*)(proc_info+70);
     if(state & (WIN_STATE_MINIMIZED|WIN_STATE_ROLLED))
-        return;
+        return 0;
 
     winx = *(uint32_t*)(proc_info+34);
     winy = *(uint32_t*)(proc_info+38);
@@ -818,7 +818,7 @@ static int hw_blit(bitmap_t *bitmap, int dst_x, int dst_y,
     if( 0 != drm_ioctl(px->fd, SRV_FBINFO, &fb))
     {
         DBG("failed to get framebuffer info\n");
-        return;
+        return 0;
     };
 
     if( fb.width  != px->scr_width ||
@@ -830,7 +830,7 @@ static int hw_blit(bitmap_t *bitmap, int dst_x, int dst_y,
         eglDestroyImageKHR(px->dpy, px->screen);
 
         if(update_fb(px, fb.name, fb.pitch))
-            return;
+            return 0;
     };
 
     update.handle = px->mask.handle;
@@ -843,7 +843,7 @@ static int hw_blit(bitmap_t *bitmap, int dst_x, int dst_y,
 
     if(drm_ioctl(px->fd, SRV_MASK_UPDATE_EX, &update))
     {
-        return;
+        return 0;
     }
 
     xscale = 1.0/px->scr_width;
@@ -886,7 +886,7 @@ static int hw_blit(bitmap_t *bitmap, int dst_x, int dst_y,
 
     glFlush();
 
-    return;
+    return 0;
 };
 
 static int hw_blit_planar(planar_t *planar, int dst_x, int dst_y,
@@ -905,7 +905,7 @@ static int hw_blit_planar(planar_t *planar, int dst_x, int dst_y,
 
     state  = *(uint8_t*)(proc_info+70);
     if(state & (WIN_STATE_MINIMIZED|WIN_STATE_ROLLED))
-        return;
+        return 0;
 
     winx = *(uint32_t*)(proc_info+34);
     winy = *(uint32_t*)(proc_info+38);
@@ -916,7 +916,7 @@ static int hw_blit_planar(planar_t *planar, int dst_x, int dst_y,
     if( 0 != drm_ioctl(px->fd, SRV_FBINFO, &fb))
     {
         DBG("failed to get framebuffer info\n");
-        return;
+        return 0;
     };
 
     if( fb.width  != px->scr_width ||
@@ -928,7 +928,7 @@ static int hw_blit_planar(planar_t *planar, int dst_x, int dst_y,
         eglDestroyImageKHR(px->dpy, px->screen);
 
         if(update_fb(px, fb.name, fb.pitch))
-            return;
+            return 0;
     };
 
     update.handle = px->mask.handle;
@@ -941,7 +941,7 @@ static int hw_blit_planar(planar_t *planar, int dst_x, int dst_y,
 
     if(drm_ioctl(px->fd, SRV_MASK_UPDATE_EX, &update))
     {
-        return;
+        return 0;
     }
 
     xscale = 1.0/px->scr_width;
@@ -988,7 +988,7 @@ static int hw_blit_planar(planar_t *planar, int dst_x, int dst_y,
 
     glFlush();
 
-    return;
+    return 0;
 };
 
 static int hw_create_client(int x, int y, uint32_t width, uint32_t height)
