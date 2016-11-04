@@ -538,6 +538,15 @@ do {	register unsigned int __old __asm("o0");		\
 /* General user-level programmer's API: unprivileged */
 extern int           drmAvailable(void);
 extern int           drmOpen(const char *name, const char *busid);
+
+#define DRM_NODE_PRIMARY 0
+#define DRM_NODE_CONTROL 1
+#define DRM_NODE_RENDER  2
+#define DRM_NODE_MAX     3
+
+extern int           drmOpenWithType(const char *name, const char *busid,
+                                     int type);
+
 extern int           drmOpenControl(int minor);
 extern int           drmOpenRender(int minor);
 extern int           drmClose(int fd);
@@ -691,6 +700,7 @@ extern int  drmSLLookupNeighbors(void *l, unsigned long key,
 				 unsigned long *next_key, void **next_value);
 
 extern int drmOpenOnce(void *unused, const char *BusID, int *newlyopened);
+extern int drmOpenOnceWithType(const char *BusID, int *newlyopened, int type);
 extern void drmCloseOnce(int fd);
 extern void drmMsg(const char *format, ...) DRM_PRINTFLIKE(1, 2);
 

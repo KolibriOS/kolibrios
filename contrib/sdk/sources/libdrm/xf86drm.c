@@ -36,15 +36,20 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <unistd.h>
 #include <string.h>
 #include <strings.h>
 #include <ctype.h>
+#include <dirent.h>
 #include <stddef.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <limits.h>
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <stdarg.h>
 
 /* Not all systems have MAP_FAILED defined */
