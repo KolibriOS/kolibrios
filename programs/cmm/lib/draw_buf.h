@@ -6,11 +6,11 @@
 #include "../lib/kolibri.h"
 #endif
 
-dword buf_data;
+unsigned buf_data;
 
 
 struct DrawBufer {
-	int bufx, bufy, bufw, bufh;
+	unsigned bufx, bufy, bufw, bufh;
 	byte zoom;
 
 	void Init();
@@ -25,6 +25,7 @@ struct DrawBufer {
 
 void DrawBufer::Init(int i_bufx, i_bufy, i_bufw, i_bufh)
 {
+	if (!zoom) zoom = 1;
 	bufx = i_bufx;
 	bufy = i_bufy;
 	bufw = i_bufw * zoom; 
@@ -35,14 +36,14 @@ void DrawBufer::Init(int i_bufx, i_bufy, i_bufw, i_bufh)
 	ESDWORD[buf_data+4] = bufh;
 }
 
-void DrawBufer::Fill(dword fill_color)
+void DrawBufer::Fill(unsigned fill_color)
 {
-	int i;
-	int max_i = bufw * bufh * 4 + buf_data + 8;
+	unsigned i;
+	unsigned max_i = bufw * bufh * 4 + buf_data + 8;
 	for (i=buf_data+8; i<max_i; i+=4) ESDWORD[i] = fill_color;
 }
 
-void DrawBufer::DrawBar(dword x, y, w, h, color)
+void DrawBufer::DrawBar(unsigned x, y, w, h, color)
 {
 	int i, j;
 	for (j=0; j<h; j++)
@@ -51,14 +52,14 @@ void DrawBufer::DrawBar(dword x, y, w, h, color)
 	}
 }
 
-void DrawBufer::PutPixel(dword x, y, color)
+void DrawBufer::PutPixel(unsigned x, y, color)
 {
 	int pos = y*bufw+x*4+8+buf_data;
 	ESDWORD[pos] = color;
 }
 
 char shift[]={8,8,4,4};
-void DrawBufer::Skew(dword x, y, w, h)
+void DrawBufer::Skew(unsigned x, y, w, h)
 {
 	int i, j;
 	for (j=0; j<=3; j++)
@@ -68,7 +69,7 @@ void DrawBufer::Skew(dword x, y, w, h)
 	}
 }
 
-void DrawBufer::AlignRight(dword x,y,w,h, content_width)
+void DrawBufer::AlignRight(unsigned x,y,w,h, content_width)
 {
 	int i, j, l;
 	int content_left = w - content_width / 2;
@@ -81,7 +82,7 @@ void DrawBufer::AlignRight(dword x,y,w,h, content_width)
 	}
 }
 
-void DrawBufer::AlignCenter(dword x,y,w,h, content_width)
+void DrawBufer::AlignCenter(unsigned x,y,w,h, content_width)
 {
 	int i, j, l;
 	int content_left = w - content_width / 2;
@@ -98,7 +99,7 @@ void DrawBufer::AlignCenter(dword x,y,w,h, content_width)
 void DrawBufer::Zoom2x()
 {
 	int i, s;
-	dword point_x, max_i, zline_w, s_inc;
+	unsigned point_x, max_i, zline_w, s_inc;
 
 	point_x = 0;
 	max_i = bufw * bufh * 4 + buf_data+8;
