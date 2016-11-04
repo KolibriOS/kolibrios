@@ -245,22 +245,14 @@ title db 'Zlib test, press on [Up], [Down], [Left], [Right]',0
 align 4
 import_archiver:
 	deflate_unpack dd sz_deflate_unpack
-	dd 0,0
-	sz_deflate_unpack db 'deflate_unpack',0
-
-align 4
-import_zlib:
-;	dd sz_lib_init
 	deflateInit		dd sz_deflateInit
 	deflateInit2	dd sz_deflateInit2
 	deflateReset	dd sz_deflateReset
 	deflate			dd sz_deflate
 	deflateEnd		dd sz_deflateEnd
 	calc_crc32		dd sz_calc_crc32
-
 	dd 0,0
-
-;	sz_lib_init db 'lib_init',0
+	sz_deflate_unpack db 'deflate_unpack',0
 	sz_deflateInit db 'deflateInit',0
 	sz_deflateInit2 db 'deflateInit2',0
 	sz_deflateReset db 'deflateReset',0
@@ -272,21 +264,14 @@ import_zlib:
 system_dir_0 db '/sys/lib/'
 lib_name_0 db 'archiver.obj',0
 
-system_dir_1 db '/sys/lib/'
-lib_name_1 db 'zlib.obj',0
-
 err_message_found_lib0 db 'Sorry I cannot load library archiver.obj',0
-err_message_found_lib1 db 'Sorry I cannot load library zlib.obj',0
 head_f_i:
 head_f_l db 'System error',0
 err_message_import0 db 'Error on load import library archiver.obj',0
-err_message_import1 db 'Error on load import library zlib.obj',0
 
 l_libs_start:
 	lib0 l_libs lib_name_0, cur_dir_path, library_path, system_dir_0,\
 		err_message_found_lib0, head_f_l, import_archiver,err_message_import0, head_f_i
-	lib1 l_libs lib_name_1, cur_dir_path, library_path, system_dir_1,\
-		err_message_found_lib1, head_f_l, import_zlib, err_message_import1, head_f_i
 load_lib_end:
 ;---------------------------------------------------------------------
 

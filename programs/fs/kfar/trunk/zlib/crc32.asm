@@ -23,8 +23,8 @@ if DYNAMIC_CRC_TABLE eq 1
 
 align 4
 crc_table_empty dd 1
-align 4
-crc_table rd TBLS*256
+;align 4
+;crc_table rd TBLS*256
 
 ;  Generate tables for a byte-wise 32-bit CRC calculation on the polynomial:
 ;  x^32+x^26+x^23+x^22+x^16+x^12+x^11+x^10+x^8+x^7+x^5+x^4+x^2+x+1.

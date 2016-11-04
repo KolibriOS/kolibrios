@@ -1,7 +1,3 @@
-format MS COFF
-public EXPORTS
-
-section '.flat' code readable align 16
 
 include '../../../../proc32.inc'
 include '../../../../macros.inc'
@@ -44,7 +40,7 @@ end if
 include 'zlib.inc'
 include 'deflate.inc'
 include 'zutil.asm'
-include '../kfar_arc/crc.inc'
+;include '../kfar_arc/crc.inc'
 include 'crc32.asm'
 include 'adler32.asm'
 include 'trees.asm'
@@ -170,25 +166,3 @@ align 4
 	@@:
 	ret
 
-; export table
-align 4
-EXPORTS:
-	dd	adeflateInit,	deflateInit
-	dd	adeflateInit2,	deflateInit2
-	dd	adeflateReset,	deflateReset
-	dd	adeflate,	deflate
-	dd	adeflateEnd,	deflateEnd
-	dd	adeflateCopy,	deflateCopy
-	dd	azError,	zError
-	dd	acalc_crc32,	calc_crc32
-	dd	0
-
-; exported names
-adeflateInit	db	'deflateInit',0
-adeflateInit2	db	'deflateInit2',0
-adeflateReset	db	'deflateReset',0
-adeflate	db	'deflate',0
-adeflateEnd	db	'deflateEnd',0
-adeflateCopy	db	'deflateCopy',0
-azError	db	'zError',0
-acalc_crc32	db	'calc_crc32',0

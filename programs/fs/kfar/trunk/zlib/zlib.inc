@@ -226,30 +226,15 @@ if Z_SOLO eq 0
 ;    unsigned char *next;
 ;    z_off64_t pos;
 ;};
-;int gzgetc_ OF((gzFile file));  /* backward compatibility */
-;if Z_PREFIX_SET
+
+if Z_PREFIX_SET eq 1
 ;#  undef z_gzgetc
 ;#  define z_gzgetc(g) \
 ;          ((g)->have ? ((g)->have--, (g)->pos++, *((g)->next)++) : gzgetc(g))
-;#else
+else
 ;#  define gzgetc(g) \
 ;          ((g)->have ? ((g)->have--, (g)->pos++, *((g)->next)++) : gzgetc(g))
 end if
 
-; provide 64-bit offset functions if _LARGEFILE64_SOURCE defined, and/or
-; change the regular functions to 64 bits if _FILE_OFFSET_BITS is 64 (if
-; both are true, the application gets the *64 functions, and the regular
-; functions are changed to 64 bits) -- in case these are set on systems
-; without large file support, _LFS64_LARGEFILE must also be true
-
-; undocumented functions
-;const char   * zError           OF((int));
-;int            inflateSyncPoint OF((z_streamp));
-;const z_crc_t FAR * get_crc_table    OF((void));
-;int            inflateUndermine OF((z_streamp, int));
-;int            inflateResetKeep OF((z_streamp));
-;#if defined(_WIN32) && !defined(Z_SOLO)
-;gzFile         gzopen_w OF((const wchar_t *path,
-;                                            const char *mode));
-;end if
+end if
 
