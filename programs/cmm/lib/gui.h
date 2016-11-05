@@ -57,7 +57,7 @@
 	int padding_h = 15;
 	int right_margin = 12;
 	int tx = x + padding_h;
-	int ty = y + padding_v;
+	int ty = y + padding_v+1;
 	int h = padding_v + padding_v + 16; //16 font height
 	int w = strlen(text)*8 + padding_h + padding_h;
 
@@ -170,12 +170,12 @@
 	y = ESI.edit_box.top;
 	w = ESI.edit_box.width+1;
 	if (ESI.edit_box.flags & 100000000000b) bg = 0xCACACA; else bg = 0xFFFfff;
-	h = 15;
+	edit_box_draw  stdcall (edit_box_pointer);
+	h = ESI.edit_box.ed_height+2;
 	DrawRectangle(x-1, y-1, w+1, h+1, bg);
 	DrawRectangle3D(x-2, y-2, w+3, h+3, 0xDDDddd, bg);
 	DrawRectangle(x-3, y-3, w+5, h+5, system.color.work_graph);
 	DrawRectangle3D(x-4, y-4, w+7, h+7, system.color.work_dark, system.color.work_light);
-	edit_box_draw  stdcall (edit_box_pointer);
 }
 
 :void DrawProgressBar(dword st_x, st_y, st_w, st_h, col_fon, col_border, col_fill, col_text, progress_percent)

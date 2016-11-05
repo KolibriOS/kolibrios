@@ -34,7 +34,7 @@ int WinX, WinY, WinW, WinH;
 
 dword set_mouse_dd;
 char path_start[4096]="\0";
-edit_box path_start_ed = {230,50,57,0xffffff,0x94AECE,0xffffff,0xffffff,2,4098,#path_start,#set_mouse_dd, 100000000000010b,0,0};
+edit_box path_start_ed = {290,50,57,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,4098,#path_start,#set_mouse_dd, 100000000000010b,0,0};
 
 void settings_dialog()
 {   
@@ -91,7 +91,7 @@ void settings_dialog()
 				break;
 				
 			case evReDraw:
-				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 376, 357+GetSkinHeight(),0x34,system.color.work,TITLE_SETT);
+				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 376, 370+skin_height,0x34,system.color.work,TITLE_SETT);
 				DrawSettingsCheckBoxes();
 		}
 	}
@@ -108,7 +108,7 @@ void ExitSettings()
 void DrawSettingsCheckBoxes()
 {
 	incn y;
-	int x=11;
+	int x=11, but_x;
 	y.n = 0;
 	CheckBox(x, y.inc(14), 20, SHOW_DEVICE_CLASS,  show_dev_name);
 	CheckBox(x, y.inc(25), 21, SHOW_REAL_NAMES,  real_files_names_case);
@@ -122,9 +122,9 @@ void DrawSettingsCheckBoxes()
 	path_start_ed.top = y.inc(23);
 	path_start_ed.left = x;
 	DrawEditBox(#path_start_ed);
-	DrawFlatButton(x-1, y.inc(26), strlen(SAVE_PATH_AS_DEFAULT)+3*8, 24, 6, SAVE_PATH_AS_DEFAULT);
-	DrawFlatButton(x-1+strlen(SAVE_PATH_AS_DEFAULT)+3*8, y.inc(0), strlen(SAVE_START_PATH_AS_DEFAULT)+3*8, 24, 7, SAVE_START_PATH_AS_DEFAULT);
-	DrawFlatButton(x-1, y.inc(36), strlen(EDIT_FILE_ASSOCIATIONS)+3*8, 24, 5, EDIT_FILE_ASSOCIATIONS);
+	but_x = DrawFlatButton(x-1, y.inc(34), 6, SAVE_PATH_AS_DEFAULT);
+	DrawFlatButton(x-1+but_x, y.inc(0), 7, SAVE_START_PATH_AS_DEFAULT);
+	DrawFlatButton(x-1, y.inc(38), 5, EDIT_FILE_ASSOCIATIONS);
 }
 
 

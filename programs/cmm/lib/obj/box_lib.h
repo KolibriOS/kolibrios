@@ -163,7 +163,9 @@ dword width,
 	cl_curs_x,
 	cl_curs_y,
 	shift,
-	shift_old;
+	shift_old,
+	ed_height,
+	ed_char_width;
 };
 
 struct checkbox2

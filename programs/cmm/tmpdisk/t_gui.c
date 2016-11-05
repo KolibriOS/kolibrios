@@ -6,12 +6,8 @@
 #include "..\lib\obj\box_lib.h"
 
 #ifdef LANG_RUS
-	unsigned char *but_text[]={
-	"Добавить диск [Ins]",
-	"Удалить диск [Del]",
-	"Добавить [Ctrl+Enter]",
-	0};
-	
+	?define T_ADD_DISK " Добавить диск [Ins]"	
+	?define T_DELETE_DISK " Удалить диск [Del]"
 	?define INTRO_TEXT_1 "Здесь будет отображаться список"
 	?define INTRO_TEXT_2 "виртуальных дисков в системе."
 	?define INTRO_TEXT_3 "Попробуйте добавить один..."
@@ -21,12 +17,8 @@
 	?define FREE_RAM_TEXT "Размер свободной оперативной памяти: "
 	
 #else
-	unsigned char *but_text[]={
-	"Add disk [Ins]",
-	"Delete disk [Del]",
-	"Add [Ctrl+Enter]",
-	0};
-	
+	?define T_ADD_DISK " Add disk [Ins]"
+	?define T_DELETE_DISK " Delete disk [Del]"
 	?define INTRO_TEXT_1 " There will be list of mounted"
 	?define INTRO_TEXT_2 " virtual disks."
 	?define INTRO_TEXT_3 " Try to add one..."
@@ -46,19 +38,18 @@ char selected;
 proc_info Form;
 
 unsigned char icons[] = FROM "icons.raw";
-#define TOPPANELH 54
-#define BOTPANELH 20
+#define TOPPANELH 68
+#define BOTPANELH 26
 
 int	mouse_dd;
 char new_disk_size[5];
-edit_box edit_disk_size= {50,0,7,0xffffff,0x94AECE,0xFFFfff,0xffffff,0,4,#new_disk_size,#mouse_dd, 1000000000000010b};
+edit_box edit_disk_size= {50,0,7,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,4,#new_disk_size,#mouse_dd, 1000000000000010b};
 
 void Main_Window()
 {
 	word id;
-	int i, x;
-	
-   	mem_Init();
+	int x;
+
 	load_dll(boxlib, #box_lib_init,0);
 	GetSizeDisk();
 	edit_disk_size.left = strlen(SIZE_TEXT)*9 + 10;
@@ -144,21 +135,20 @@ void Main_Window()
 			break;
          case evReDraw:			
 			system.color.get();
-			DefineAndDrawWindow(170,150,314,270,0x74,system.color.work,"Virtual Disk Manager 0.65",0);
+			DefineAndDrawWindow(170,150,405,290,0x74,system.color.work,"Virtual Disk Manager 0.66",0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
 
 			DrawBar(0,0,  Form.cwidth,TOPPANELH, system.color.work);
 			DrawBar(0,TOPPANELH, Form.cwidth,1,  system.color.work_graph);
-			WriteText(6, 6, 0x90, system.color.work_text, SIZE_TEXT);
-			WriteText(edit_disk_size.left + edit_disk_size.width + 12, 6, 0x90, system.color.work_text, "MB.");
+			WriteText(6, 9, 0x90, system.color.work_text, SIZE_TEXT);
+			WriteText(edit_disk_size.left + edit_disk_size.width + 12, 9, 0x90, system.color.work_text, "MB.");
 			DrawEditBox(#edit_disk_size);
-			for (i=0, x=6; i<2; i++, x+=strlen(but_text[i])*6+37)
-			{
-				DefineButton(x,29, strlen(but_text[i])*6+28,19, 10+i, system.color.work_button);
-				_PutImage(x+3,32,  14,14,   i*14*14*3+#icons);
-				WriteText(x+22,35, 0x80, system.color.work_button_text, but_text[i]);
-			}		
+			x = 6;
+			x = 6 + DrawStandartCaptButton(6, 36, 10, T_ADD_DISK);
+			DrawStandartCaptButton(x, 36, 11, T_DELETE_DISK);
+			_PutImage(6+6, 42,  14,14,   #icons);
+			_PutImage(x+6, 42,  14,14,   1*14*14*3+#icons);		
 			GetDisks();
 			DrawTmpDisks();
 		}
@@ -212,8 +202,8 @@ void GetDisks()
 }
 
 
-unsigned int disk_pos_x[]={13,13,13,85,85,85,157,157,157,229,229,229};
-unsigned int disk_pos_y[]={60,95,130, 60, 95, 130, 60, 95,130, 60, 85,130};
+unsigned int disk_pos_x[]={13,13,13,102,102,102,191,191,191,279,279,279};
+unsigned int disk_pos_y[]={79,127,175, 79,127,175, 79,127,175, 79,127,175};
 
 void DrawTmpDisks()
 {
@@ -227,29 +217,27 @@ void DrawTmpDisks()
 	DrawBar(0,TOPPANELH+1, Form.cwidth,Form.cheight-TOPPANELH-BOTPANELH-2, 0xFFFFFF);
 	DrawBar(0,Form.cheight-BOTPANELH-1, Form.cwidth,1, system.color.work_graph);
 	DrawBar(0,Form.cheight-BOTPANELH, Form.cwidth,BOTPANELH, system.color.work);
-	strcpy(#free_ram_text, FREE_RAM_TEXT);
-	strcat(#free_ram_text, itoa(FreeRAM));
-	strcat(#free_ram_text, " MB");
-	WriteText(10, Form.cheight-13, 0x80, system.color.work_text, #free_ram_text);
+	sprintf(#free_ram_text, "%s%i MB", FREE_RAM_TEXT, FreeRAM);
+	WriteText(10, Form.cheight-20, 0x90, system.color.work_text, #free_ram_text);
 	if (disk_num==0)
 	{
-		WriteText(17,65,    0x90, 0x777777, INTRO_TEXT_1);
-		WriteText(17,65+15, 0x90, 0x777777, INTRO_TEXT_2);
-		WriteText(17,65+42, 0x90, 0x777777, INTRO_TEXT_3);
+		WriteText(17,TOPPANELH+15,    0x90, 0x777777, INTRO_TEXT_1);
+		WriteText(17,TOPPANELH+15+15, 0x90, 0x777777, INTRO_TEXT_2);
+		WriteText(17,TOPPANELH+15+42, 0x90, 0x777777, INTRO_TEXT_3);
 		return;
 	};
 	if (selected>=disk_num) selected=disk_num-1; //restore selected
 	for (i=0; i<10; i++) DeleteButton(20+i);
 	for (i=0; i<disk_num; i++)
 	{
-		DefineButton(disk_pos_x[i], disk_pos_y[i], 65, 30, 20+i, 0xFFFfff);
-		WriteText(disk_pos_x[i]+25,disk_pos_y[i]+2,  10110000b, 0, #disk_list[i].Item);
+		DefineButton(disk_pos_x[i], disk_pos_y[i], 80, 40, 20+i, 0xFFFfff);
+		WriteText(disk_pos_x[i]+26,disk_pos_y[i]+6,  10110000b, 0x222222, #disk_list[i].Item);
 		real_id = disk_list[i].Item[3] - '0';
-		WriteText(disk_pos_x[i]+25,disk_pos_y[i]+19, 0x80, 0x888888, ConvertSize(disk_sizes[real_id]));
-		_PutImage(disk_pos_x[i]+5,disk_pos_y[i]+4, 14,14, 2*14*14*3+#icons);
+		WriteText(disk_pos_x[i]+27,disk_pos_y[i]+24, 0x80, 0x555555, ConvertSize(disk_sizes[real_id]));
+		_PutImage(disk_pos_x[i]+6,disk_pos_y[i]+6, 14,14, 2*14*14*3+#icons);
 		if (selected==i) {
 			if ( !asm test edit_disk_size.flags, 2) selection_color = selection_active; else selection_color = selection_inactive;
-			DrawWideRectangle(disk_pos_x[i], disk_pos_y[i], 65, 30, 2, selection_color);
+			DrawWideRectangle(disk_pos_x[i], disk_pos_y[i], 80, 40, 2, selection_color);
 			PutPixel(disk_pos_x[i], disk_pos_y[i], 0xFFFfff);
 		}
 	}

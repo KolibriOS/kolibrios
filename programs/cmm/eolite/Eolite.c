@@ -107,7 +107,7 @@ bool show_dev_name=true,
 #define STATUS_BAR_H 16;
 int status_bar_h = 0;
 
-edit_box new_file_ed = {171,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0,248,#new_element_name,#mouse_dd,100000000000010b,6,0};
+edit_box new_file_ed = {200,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0x10000000,248,#new_element_name,#mouse_dd,100000000000010b,6,0};
 PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 byte cmd_free=0;
 #include "include\translations.h"
@@ -555,11 +555,11 @@ void draw_window()
 void DrawList() 
 {
 	word sorting_arrow_x;
-	DrawFlatButton(files.x, files.y-17,     files.w - 141,16,31,T_FILE);
-	DrawFlatButton(files.x + files.w - 141, files.y-17,73,16,32,T_TYPE);
-	DrawFlatButton(files.x + files.w -  68, files.y-17,68,16,33,T_SIZE);
-	DrawFlatButton(files.x + files.w,       files.y-17,16,16, 0,"\x18");
-	DrawFlatButton(files.x + files.w,files.y+files.h-16,16,16,0,"\x19");
+	DrawFlatButtonSmall(files.x, files.y-17,     files.w - 141,16,31,T_FILE);
+	DrawFlatButtonSmall(files.x + files.w - 141, files.y-17,73,16,32,T_TYPE);
+	DrawFlatButtonSmall(files.x + files.w -  68, files.y-17,68,16,33,T_SIZE);
+	DrawFlatButtonSmall(files.x + files.w,       files.y-17,16,16, 0,"\x18");
+	DrawFlatButtonSmall(files.x + files.w,files.y+files.h-16,16,16,0,"\x19");
 	if (sort_num==1) sorting_arrow_x = files.w - 141 / 2 + files.x + 18;
 	if (sort_num==2) sorting_arrow_x = files.x + files.w - 90;
 	if (sort_num==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
@@ -1007,7 +1007,7 @@ void NewElement_Form(byte crt, dword strng)
 	}
 	if (new_element_active==3) DrawEolitePopup(T_RENAME, T_CANCEL);
 	else DrawEolitePopup(T_CREATE, T_CANCEL);
-	new_file_ed.left = dform_x+24;
+	new_file_ed.left = dform_x+10;
 	DrawEditBox(#new_file_ed);
 }
 

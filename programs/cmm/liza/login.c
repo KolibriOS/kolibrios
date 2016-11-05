@@ -9,8 +9,8 @@ int panel_x, panel_y;
 int	mouse_dd;
 unsigned char email_text[128];
 unsigned char pass_text[32];
-edit_box login_box= {PANEL_W-6,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(email_text)+2,#email_text,#mouse_dd,0b10};
-edit_box pass_box= {PANEL_W-6,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(pass_text)+2,#pass_text,#mouse_dd,0b1};
+edit_box login_box= {PANEL_W-6,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(email_text)+2,#email_text,#mouse_dd,0b10};
+edit_box pass_box= {PANEL_W-6,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(pass_text)+2,#pass_text,#mouse_dd,0b1};
 
 
 void LoginNetworkProcess()
@@ -180,22 +180,22 @@ void DrawLoginScreen()
 
 	DrawBar(0,0, Form.cwidth, Form.cheight, system.color.work);
 	
-	WriteText(panel_x,panel_y,0x80,system.color.work_text,"Your Email:");
+	WriteText(panel_x,panel_y-3,0x80,system.color.work_text,"Your Email:");
 	login_box.left = panel_x+3;
-	login_box.top = panel_y+15;
+	login_box.top = panel_y+12;
 	DrawEditBox(#login_box);
 	
-	WriteText(panel_x,panel_y+40,0x80,system.color.work_text,"Password:");
+	WriteText(panel_x,panel_y+45,0x80,system.color.work_text,"Password:");
 	pass_box.left = panel_x+3;
-	pass_box.top = panel_y+55;
+	pass_box.top = panel_y+60;
 	DrawEditBox(#pass_box);
 	
 	if (!aim)
 	{
-		DrawCaptButton(panel_x,panel_y+90,100,22,11,system.color.work_button, system.color.work_button_text,"Settings");
-		DrawCaptButton(panel_x+120,panel_y+90,100,22,12,system.color.work_button, system.color.work_button_text,"Enter >");
+		DrawCaptButton(panel_x,panel_y+100,100,26,11,system.color.work_button, system.color.work_button_text,"Settings");
+		DrawCaptButton(panel_x+120,panel_y+100,100,26,12,system.color.work_button, system.color.work_button_text,"Enter >");
 	} 
-	else DrawCaptButton(panel_x+120,panel_y+90,100,22,12,system.color.work_button, system.color.work_button_text,"Stop");
+	else DrawCaptButton(panel_x+120,panel_y+100,100,26,12,system.color.work_button, system.color.work_button_text,"Stop");
 	
 	SetLoginStatus(cur_st_text);
 }

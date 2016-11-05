@@ -42,20 +42,31 @@ void Scroll() {
 	}
 }
 
-void DrawFlatButton(dword x,y,width,height,id,text)
+void DrawFlatButtonSmall(dword x,y,width,height,id,text)
 {
 	DrawRectangle(x,y,width,height,col_graph);
 	DrawRectangle3D(x+1,y+1,width-2,height-2,0xFEFEFE,col_padding);
 	PutPixel(x+width-1, y+1, col_padding);
 	DrawFilledBar(x+2, y+2, width-3, height-3);
 	if (id) DefineButton(x+1,y+1,width-2,height-2,id+BT_HIDE,0xEFEBEF);
-	if (height<18) {
-		WriteText(-strlen(text)*6+width/2+x+1,height/2+y-3,0x80,0x333333,text);
-	}
-	else {
-		DrawRectangle3D(x-1,y-1,width+2,height+2,system.color.work,MixColors(system.color.work,col_graph,200));
-		WriteText(-strlen(text)*8+width/2+x+1,height/2+y-6,0x90,0x333333,text);
-	}
+	WriteText(-strlen(text)*6+width/2+x+1,height/2+y-3,0x80,0x333333,text);
+}
+
+int DrawFlatButton(dword x, y, id, text)
+{
+	int padding_w = 15;
+	int width = strlen(text) * 8 + padding_w + padding_w;
+	int height = 25;
+	dword border_3d_light = MixColors(system.color.work_button,0xFFFfff,140);
+	dword border_3d_dark  = MixColors(system.color.work_button,0x111111,220);
+	dword border_light    = MixColors(system.color.work_button,0x111111,140);
+	dword border_dark     = MixColors(system.color.work_button,0x111111,100);
+	DrawRectangle3D(x,y,width,height,border_light, border_dark);
+	DrawRectangle3D(x+1,y+1,width-2,height-2, border_3d_light, border_3d_dark);
+	DrawBar(x+2, y+2, width-3, height-3, system.color.work_button);
+	if (id) DefineButton(x+1,y+1,width-2,height-2,id+BT_HIDE,0xEFEBEF);
+	WriteText(x+padding_w,height/2+y-6,0x90,system.color.work_button_text,text);
+	return width + padding_w;
 }
 
 
@@ -67,17 +78,12 @@ void DrawFilledBar(dword x, y, w, h)
 	DrawBar(x, y+i, w, h-fill_h, col_palette[14-i]);
 }
 
-int popin_w=250;
+int popin_w=260;
 void DrawEolitePopup(dword b1_text, b2_text)
 {
-	int button_padding=30;
-	int b1_len = strlen(b1_text) * 8 + button_padding;
-	int b2_len = strlen(b2_text) * 8 + button_padding;
+	int but_x;
 	int popin_x = files.w - popin_w / 2 + files.x ;
-	int button_margin = popin_w - b1_len - b2_len / 3;
-	int b1_x = popin_x + button_margin;
-	int b2_x = popin_x + button_margin + b1_len + button_margin;
-	DrawPopup(popin_x, 160, popin_w, 90, 1, system.color.work, col_graph);
-	DrawFlatButton(b1_x, 210, b1_len, 24, POPUP_BTN1, b1_text);
-	DrawFlatButton(b2_x, 210, b2_len, 24, POPUP_BTN2, b2_text);
+	DrawPopup(popin_x, 160, popin_w, 95, 1, system.color.work, col_graph);
+	but_x = DrawFlatButton(popin_x+23, 215, POPUP_BTN1, b1_text);
+	DrawFlatButton(popin_x+23 + but_x, 215, POPUP_BTN2, b2_text);
 }

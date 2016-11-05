@@ -157,8 +157,8 @@ void ShowConfirmQuestionPopin()
 	DrawPopup(15,80,250,90,1,system.color.work, system.color.work_graph);
 	WriteText(35, 102, 0x90, 0x000000, QUEST_1);
 	WriteText(65, 117, 0x90, 0x000000, QUEST_2);
-	DrawFlatButton(62,138,70,20,301,T_YES);
-	DrawFlatButton(155,138,70,20,302,T_NO);
+	DrawFlatButton(62,138,301,T_YES);
+	DrawFlatButton(155,138,302,T_NO);
 }
 
 void GetSizeDir(dword way)
@@ -367,25 +367,25 @@ void DrawPropertiesWindow()
 		file_name_ed.color = 0xffffff;
 	}
 	GetProcessInfo(#settings_form, SelfInfo);
-	DrawFlatButton(10, 5, 80, 24, 12, TAB_T_BASIC);
-	if (exif_load==1) DrawFlatButton(92, 5, 80, 24, 13, TAB_T_DETAILS);
-	DrawFlatButton(settings_form.cwidth - 93, settings_form.cheight-34, 80, 24, 10, BTN_CLOSE);
-	DrawFlatButton(settings_form.cwidth -183, settings_form.cheight-34, 80, 24, 11, BTN_APPLY);
+	DrawFlatButton(10, 5, 12, TAB_T_BASIC);
+	if (exif_load==1) DrawFlatButton(92, 5, 13, TAB_T_DETAILS);
+	DrawFlatButton(settings_form.cwidth - 96, settings_form.cheight-34, 10, BTN_CLOSE);
+	DrawFlatButton(settings_form.cwidth -208, settings_form.cheight-34, 11, BTN_APPLY);
 	
 	if (active_tab == TAB_BASIC)
 	{
-		WriteText(10, 78, 0x90, 0x000000, PR_T_DEST);
+		WriteText(10, 78, 0x90, system.color.work_text, PR_T_DEST);
 		edit_box_draw stdcall (#path_to_file_ed);
 	
-		WriteText(10, 97, 0x90, 0x000000, PR_T_SIZE);
+		WriteText(10, 97, 0x90, system.color.work_text, PR_T_SIZE);
 		
 		if (selected_count)
 		{
 			DrawIconByExtension(NULL, 18, 49, system.color.work);
 			sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
-			WriteText(50, 49, 0x90, 0x000000, #folder_info);
+			WriteText(50, 49, 0x90, system.color.work_text, #folder_info);
 			sprintf(#element_size_label,"%s (%d %s)",ConvertSize(size_dir),size_dir,SET_BYTE_LANG);
-			WriteText(120, 97, 0x90, 0x000000, #element_size_label);
+			WriteText(120, 97, 0x90, system.color.work_text, #element_size_label);
 		}
 		else
 		{
@@ -394,24 +394,24 @@ void DrawPropertiesWindow()
 			else
 					DrawIconByExtension(#file_name2+strrchr(#file_name2,'.'), 18, 49, system.color.work);
 	
-			WriteText(50, 40, 0x90, 0x000000, PR_T_NAME);                          
+			WriteText(50, 40, 0x90, system.color.work_text, PR_T_NAME);                          
 			edit_box_draw stdcall (#file_name_ed);
 			
 			if (!itdir) element_size = file_info_general.sizelo;
 			else
 			{
-				WriteText(10,116, 0x90, 0x000000, PR_T_CONTAINS);                              
+				WriteText(10,116, 0x90, system.color.work_text, PR_T_CONTAINS);                              
 				sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
-				WriteText(120, 116, 0x90, 0x000000, #folder_info);
+				WriteText(120, 116, 0x90, system.color.work_text, #folder_info);
 				element_size = size_dir;
 			}
-			WriteTextLines(10,  136, 0x90, 0x000000, CREATED_OPENED_MODIFIED, 20);
-			DrawDate(120,  136, 0, #file_info_general.datecreate);
-			DrawDate(120, 156, 0, #file_info_general.datelastaccess);
-			DrawDate(120, 176, 0, #file_info_general.datelastedit);
+			WriteTextLines(10,  136, 0x90, system.color.work_text, CREATED_OPENED_MODIFIED, 20);
+			DrawDate(120,  136, system.color.work, #file_info_general.datecreate);
+			DrawDate(120, 156, system.color.work, #file_info_general.datelastaccess);
+			DrawDate(120, 176, system.color.work, #file_info_general.datelastedit);
 	
 			sprintf(#element_size_label,"%s (%d %s)",ConvertSize(element_size),element_size,SET_BYTE_LANG);
-			WriteText(120, 99, 0x90, 0x000000, #element_size_label);
+			WriteText(120, 99, 0x90, system.color.work_text, #element_size_label);
 		}
 		flags_frame.size_x = - flags_frame.start_x * 2 + settings_form.cwidth - 2;
 		flags_frame.font_color = system.color.work_text;
@@ -422,7 +422,7 @@ void DrawPropertiesWindow()
 	}
 	else
 	{
-		WriteText(10, 78, 0x90, 0x000000, "EXIF");
+		WriteText(10, 78, 0x90, system.color.work_text, "EXIF");
 	}
 }
 

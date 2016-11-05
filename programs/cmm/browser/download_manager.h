@@ -21,7 +21,7 @@ proc_info DL_Form;
 char downloader_edit[10000];
 char filepath[4096];
 int mouse_twbi;
-edit_box ed = {250,20,20,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(downloader_edit),#downloader_edit,#mouse_twbi,2,19,19};
+edit_box ed = {250,20,20,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(downloader_edit),#downloader_edit,#mouse_twbi,2,19,19};
 progress_bar pb = {0, 170, 51, 225, 12, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
  
 byte downloader_opened;
@@ -65,7 +65,7 @@ void Downloader()
  
             case evReDraw:
                 system.color.get();
-                DefineAndDrawWindow(215, 100, 420, 120, 0x74, system.color.work, DL_WINDOW_HEADER, 0);
+                DefineAndDrawWindow(215, 100, 580, 120, 0x74, system.color.work, DL_WINDOW_HEADER, 0);
                 GetProcessInfo(#DL_Form, SelfInfo);
                 if (DL_Form.status_window>2) break;
                 if (DL_Form.height<120) MoveSize(OLD,OLD,OLD,120);
@@ -121,26 +121,27 @@ void Key_Scan(int id)
  
 void DL_Draw_Window()
 {  
-    byte cleft = 15;
+    int cleft = 15;
+    int but_x;
     DrawBar(0,0, DL_Form.cwidth, DL_Form.cheight, system.color.work);
     DeleteButton(305);
     DeleteButton(306);
     if (downloader.state == STATE_NOT_STARTED) || (downloader.state == STATE_COMPLETED)
     {
-        DrawCaptButton(cleft, 50, 140, 27, 301, system.color.work_button, system.color.work_button_text, START_DOWNLOADING);   
+        but_x = cleft + DrawStandartCaptButton(cleft, 55, 301, START_DOWNLOADING);   
     }
     if (downloader.state == STATE_IN_PROGRESS)
     {
-        DrawCaptButton(cleft, 50, 140, 27, 302, system.color.work_button, system.color.work_button_text, STOP_DOWNLOADING);
+        DrawStandartCaptButton(cleft, 55, 302, STOP_DOWNLOADING);
         DrawDownloading();
     }
-    if (downloader.state == STATE_COMPLETED)
+    if (filepath[0])
     {
-        DrawCaptButton(cleft+140, 50, 110, 27, 305, system.color.work_button, system.color.work_button_text, SHOW_IN_FOLDER);
-        DrawCaptButton(cleft+260, 50, 120, 27, 306, system.color.work_button, system.color.work_button_text, OPEN_FILE_TEXT);  
+        but_x += DrawStandartCaptButton(but_x, 55, 305, SHOW_IN_FOLDER);
+        DrawStandartCaptButton(but_x, 55, 306, OPEN_FILE_TEXT);  
     }
-    WriteText(cleft, ed.top + 4, 0x80, system.color.work_text, "URL:");
-    ed.left = strlen("URL:")*6 + 10 + cleft;
+    WriteText(cleft, ed.top + 4, 0x90, system.color.work_text, "URL:");
+    ed.left = strlen("URL:")*8 + 10 + cleft;
     ed.width = DL_Form.cwidth - ed.left - cleft - 3;
     ed.offset=0;
     //edit_box_draw stdcall(#ed);

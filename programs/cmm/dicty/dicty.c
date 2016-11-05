@@ -24,7 +24,7 @@
 
 proc_info Form;
 char edword[256], search_word[256], translate_result[4096];
-#define TOPH 44
+#define TOPH 45
 
 #define TEXT_ENG_RUS "ENG\26RUS"
 #define TEXT_RUS_ENG "RUS\26ENG"
@@ -35,7 +35,7 @@ char edword[256], search_word[256], translate_result[4096];
 int active_dict=2;
 
 int mouse_dd;
-edit_box edit1= {200,16,16,0xffffff,0x94AECE,0xffffff,0x94AECE,0,248,#edword,#mouse_dd,100000000000010b};
+edit_box edit1= {200,13,13,0xffffff,0x94AECE,0xffffff,0x94AECE,0x10000000,248,#edword,#mouse_dd,100000000000010b};
 
 
 void main()
@@ -84,9 +84,9 @@ void main()
 			DrawBar(0, TOPH, Form.width-9, 1, system.color.work_graph);
 			edit1.width=Form.width-edit1.left-edit1.left-9 - 116;
 			edit_box_draw stdcall(#edit1);
-			DrawWideRectangle(edit1.left-2, edit1.top-2, edit1.width+3, 19, 2, 0xffffff);
-			DrawRectangle(edit1.left-3, edit1.top-3, edit1.width+4, 20, system.color.work_graph);
-			WriteText(Form.width-120, edit1.top, 0x90, system.color.work_text, TEXT_VOCABULARIES);
+			DrawWideRectangle(edit1.left-2, edit1.top-2, edit1.width+3, 25, 2, 0xffffff);
+			DrawRectangle(edit1.left-3, edit1.top-3, edit1.width+4, 26, system.color.work_graph);
+			WriteText(Form.width-120, edit1.top+3, 0x90, system.color.work_text, TEXT_VOCABULARIES);
 			DrawTranslation();
 			DrawLangButtons();
       }
@@ -97,9 +97,9 @@ void main()
 void DrawLangButtons()
 {
 	dword direction;
-	DefineButton(Form.width-88, edit1.top-4, 20, 20, BUTTON_CHANGE_LANGUAGE, system.color.work_button);
+	DefineButton(Form.width-88, edit1.top-4+3, 20, 20, BUTTON_CHANGE_LANGUAGE, system.color.work_button);
 	if (active_dict == ENG_RUS) direction = "\26"; else direction = "\27";
-	WriteText(Form.width-82, edit1.top-1, 10000001b, system.color.work_button_text, direction);
+	WriteText(Form.width-82, edit1.top-1+3, 10000001b, system.color.work_button_text, direction);
 }
 
 void Translate()
@@ -161,7 +161,8 @@ void DrawTranslation()
 	strttl(#draw_buf);
 	WriteTextB(10+1, y_pos+8, 10000001b, 0x800080, #search_word);
 
-	DrawTextViewArea(10, y_pos+31, Form.cwidth-20, Form.cheight-30, 15, 
+	debugln(#draw_buf);
+	DrawTextViewArea(10, y_pos+31, Form.cwidth-20, Form.cheight-30, 
 		#draw_buf, -1, 0x000000);
 }
 
