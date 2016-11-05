@@ -1,83 +1,86 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Basic macros for use EditBox                             ;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-ed_width        equ [edi]               ;ширина компонента
-ed_left         equ [edi+4]             ;положение по оси х
-ed_top          equ [edi+8]             ;положение по оси у
-ed_color        equ [edi+12]            ;цвет фона компонента
-shift_color     equ [edi+16]            ;=0x6a9480 для примера возьем желеный цвет бокса
-ed_focus_border_color   equ [edi+20]    ;цвет рамки компонента
-ed_blur_border_color    equ [edi+24]    ;цвет не активного компонента
-ed_text_color   equ [edi+28]            ;цвет текста
-ed_max          equ [edi+32]                    ;кол-во символов которые можно максимально ввести
-ed_text         equ [edi+36]                    ;указатель на буфер
-ed_mouse_variable       equ [edi+40]    ; указатель на переменную для бокса/группы 
-ed_flags        equ [edi+44]            ;флаги
-bp_flags        equ [ebp+44]            ;в некоторых процедурах edi используется, взамен указатель храниться в ebp
-ed_size equ [edi+48]                    ;кол-во символов
-bp_size equ [ebp+48]                    ;кол-во симвполов, для адресации испльзуется ebpб edi занят
-ed_pos  equ [edi+52]                    ;позиция курсора
-ed_offset       equ [edi+56]            ;смещение
-cl_curs_x       equ [edi+60]            ;предыдущее координата курсора по х
-cl_curs_y       equ [edi+64]            ;предыдущее координата курсора по у
-ed_shift_pos    equ [edi+68]            ;положение курсора
-ed_shift_pos_old equ [edi+72]           ;старое положение курсора
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; basic macros for EditBox ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ed_width        equ [edi]       ; field width
+ed_left         equ [edi+4]     ; left border X
+ed_top          equ [edi+8]     ; top border Y
+ed_color        equ [edi+12]    ; field color
+shift_color     equ [edi+16]    ; select color
+ed_focus_border_color   equ [edi+20]    ; border color active
+ed_blur_border_color    equ [edi+24]    ; border color inactive
+ed_text_color   equ [edi+28]    ; color and font (as in sysfunc 4)
+ed_max          equ [edi+32]    ; chars max
+ed_text         equ [edi+36]    ; buffer pointer
+ed_mouse_variable   equ [edi+40]    ; pointer
+ed_flags        equ [edi+44]
+bp_flags        equ [ebp+44]
+ed_size         equ [edi+48]    ; chars currently
+bp_size         equ [ebp+48]
+ed_pos          equ [edi+52]    ; carret current position
+ed_offset       equ [edi+56]
+cl_curs_x       equ [edi+60]    ; previous cursor X
+cl_curs_y       equ [edi+64]    ; previous cursor Y
+ed_shift_pos    equ [edi+68]    ; selection current position
+ed_shift_pos_old    equ [edi+72]    ; selection previous position
+ed_height       equ [edi+76]
+ed_char_width   equ [edi+80]
 
-ed_struc_size=76
+ed_struc_size = 84
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Bit mask from editbox 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-ed_figure_only= 1000000000000000b   ;одни символы
-ed_always_focus= 100000000000000b
-ed_focus=                     10b   ;фокус приложения
-ed_pass=                       1b   ;поле с паролем
-ed_shift_on=                1000b   ;если не установлен -значит впервые нажат shift,если был установлен, значит мы уже что - то делали удерживая shift
-ed_shift_on_off= not (ed_shift_on)
-ed_shift=                    100b   ;включается при нажатии на shift т.е. если нажимаю
-ed_shift_off= not (ed_shift)
-ed_shift_bac=              10000b   ;бит для очистки выделеного shift т.е. при установке говорит что есть выделение
-ed_shift_bac_cl= not (ed_shift_bac)
-ed_shift_cl=  not (ed_shift or ed_shift_bac or ed_shift_on)
-ed_shift_mcl= not (ed_shift)
-ed_left_fl=               100000b
-ed_right_fl= not (ed_left_fl)
-ed_offset_fl=            1000000b
-ed_offset_cl= not (ed_offset_fl)
-ed_insert=              10000000b
-ed_insert_cl= not (ed_insert)
-ed_mouse_on =          100000000b
-ed_mous_adn_b=         100011000b
-ed_mouse_on_off= not (ed_mouse_on)
-ed_ctrl_on =          1000000000b
-ed_ctrl_off = not (ed_ctrl_on)
-ed_alt_on =          10000000000b
-ed_alt_off = not (ed_alt_on)
-ed_disabled=        100000000000b
-ed_height=14 ; высота
+;;;;;;;;;;;;;;;;;;;;;;;
+;; flags for EditBox ;;
+;;;;;;;;;;;;;;;;;;;;;;;
+ed_pass         = 1     ; password mode
+ed_focus        = 2     ; active
+ed_shift        = 4     ; shift holded
+ed_shift_on     = 8     ; selection active
+ed_shift_bac    = 16    ; clear selection
+ed_left_fl      = 32
+ed_offset_fl    = 64
+ed_insert       = 128
+ed_mouse_on     = 256
+ed_ctrl_on      = 512
+ed_alt_on       = 400h
+ed_disabled     = 800h
+ed_always_focus = 4000h
+ed_figure_only  = 8000h
+ed_mous_adn_b   = ed_mouse_on or ed_shift_on or ed_shift_bac
+ed_shift_off    = not ed_shift
+ed_shift_mcl    = not ed_shift
+ed_shift_on_off = not ed_shift_on
+ed_shift_bac_cl = not ed_shift_bac
+ed_shift_cl     = not (ed_shift or ed_shift_on or ed_shift_bac)
+ed_right_fl     = not ed_left_fl
+ed_offset_cl    = not ed_offset_fl
+ed_insert_cl    = not ed_insert
+ed_mouse_on_off = not ed_mouse_on
+ed_ctrl_off     = not ed_ctrl_on
+ed_alt_off      = not ed_alt_on
 
 struc  edit_box width,left,top,color,shift_color,focus_border_color,\
        blur_border_color,text_color,max,text,mouse_variable,flags,size,pos
 {
-.width dd width
-.left  dd left
-.top   dd top
-.color dd color
-.shift_color dd shift_color
-.focus_border_color dd focus_border_color
-.blur_border_color  dd blur_border_color
-.text_color dd text_color
-.max  dd max
-.text dd text
-.mouse_variable dd mouse_variable
-.flags  dd flags+0
-.size   dd size+0
-.pos    dd pos+0
-.offset dd 0
-.cl_curs_x dd 0
-.cl_curs_y dd 0
-.shift     dd 0
-.shift_old dd 0
+.width  dd  width
+.left   dd  left
+.top    dd  top
+.color  dd  color
+.shift_color        dd  shift_color
+.focus_border_color dd  focus_border_color
+.blur_border_color  dd  blur_border_color
+.text_color         dd  text_color
+.max    dd  max
+.text   dd  text
+.mouse_variable     dd  mouse_variable
+.flags  dd  flags
+.size   dd  size
+.pos    dd  pos
+.offset dd  0
+.cl_curs_x  dd  0
+.cl_curs_y  dd  0
+.shift      dd  0
+.shift_old  dd  0
+.height     dd  0
+.char_width dd  0
 }
 
 macro edit_boxes_set_sys_color start,end,color_table
@@ -115,12 +118,12 @@ macro edit_boxes_set_sys_color start,end,color_table
 ;Basic macros for use CheckBox                            ;
 ;Last change 17.01.2013                                   ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-ch_text_margin equ [edi+8] ;=4 расстояние от прямоугольника чек бокса до надписи 
+ch_text_margin equ [edi+8] ;=4 расстояние от прямоугольника чек бокса до надписи
 ch_color equ [edi+12]      ;цвет внутри checkbox
 ch_border_color equ [edi+16] ; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
 ch_text_color   equ [edi+20] ;[edi+4]  ;цвет текста
-ch_text_ptr     equ [edi+24] ;указатель на начало текстовой строки 
-ch_flags equ [edi+28]      ;флаги 
+ch_text_ptr     equ [edi+24] ;указатель на начало текстовой строки
+ch_flags equ [edi+28]      ;флаги
 
 ch_struc_size=36                ;размер структуры
 ch_flag_en=10b                  ;флаг установленного чек бокса.
@@ -130,11 +133,11 @@ ch_flag_bottom=1000b            ;флаг расположения текста в низу т.е. по умолчан
 
 2ch_left_s      equ [ebp]       ;кордината начала рисования по х
 2ch_top_s       equ [ebp+4]     ;координата начала рисования по у
-2ch_text_margin equ [ebp+8]     ;=4 расстояние от прямоугольника чек бокса до надписи 
+2ch_text_margin equ [ebp+8]     ;=4 расстояние от прямоугольника чек бокса до надписи
 2ch_color       equ [ebp+12]    ;цвет внутри checkbox
 2ch_border_color        equ [ebp+16]    ; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
 2ch_text_color  equ [ebp+20]    ;[edi+4]  ;цвет текста
-2ch_text_ptr    equ [ebp+24]    ;указатель на начало текстовой строки 
+2ch_text_ptr    equ [ebp+24]    ;указатель на начало текстовой строки
 2ch_flags       equ [ebp+28]    ;флаги
 2ch_sz_str      equ [ebp+32]    ;длинна строки, вычисляется при инициализации компонента
 
@@ -251,12 +254,12 @@ op_flag_en=10b
 option_group equ [edi]
 op_left equ [edi+4]    ;координата начала рисования по х
 op_top equ [edi+6]     ;координата начала рисования по у
-op_text_margin equ [edi+8]      ;=4 расстояние от прямоугольника чек бокса до надписи 
-op_size equ [edi+12]             ;12 размер квадрата чек бокса 
+op_text_margin equ [edi+8]      ;=4 расстояние от прямоугольника чек бокса до надписи
+op_size equ [edi+12]             ;12 размер квадрата чек бокса
 op_color equ [edi+16]
 op_border_color equ [edi+20] ; or [edi+4] ;цвет рамки optionbox ее можно задать самостоятельно
 op_text_color equ   [edi+24];[edi+4]  ;цвет текста
-op_text_ptr equ [edi+28]    ;указатель на начало текстовой строки 
+op_text_ptr equ [edi+28]    ;указатель на начало текстовой строки
 op_text_length equ [edi+32]
 op_flags equ [edi+36]       ;флаги
 
@@ -502,10 +505,10 @@ PB_FRAME_COLOR    equ +40
 
 ; *** Frame constants *** ;
 FR_STYLE         equ +0  ; Dword
-FR_WIDTH         equ +4  ; Word 
-FR_LEFT          equ +6  ; Word 
-FR_HEIGHT        equ +8  ; Word 
-FR_TOP           equ +10 ; Word 
+FR_WIDTH         equ +4  ; Word
+FR_LEFT          equ +6  ; Word
+FR_HEIGHT        equ +8  ; Word
+FR_TOP           equ +10 ; Word
 FR_OUTER_COLOR   equ +12 ; Dword
 FR_INNER_COLOR   equ +16 ; Dword
 FR_FLAGS         equ +20 ; Dword
