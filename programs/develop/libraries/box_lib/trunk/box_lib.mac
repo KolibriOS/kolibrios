@@ -71,9 +71,9 @@ struc  edit_box width,left,top,color,shift_color,focus_border_color,\
 .max    dd  max
 .text   dd  text
 .mouse_variable     dd  mouse_variable
-.flags  dd  flags
-.size   dd  size
-.pos    dd  pos
+.flags  dd  flags+0
+.size   dd  size+0
+.pos    dd  pos+0
 .offset dd  0
 .cl_curs_x  dd  0
 .cl_curs_y  dd  0
