@@ -1,10 +1,10 @@
 #ifdef LANG_RUS
-    #define DL_WINDOW_HEADER "Менеджер з грузок"
-    #define START_DOWNLOADING "Н ч ть з к чку"
-    #define STOP_DOWNLOADING "Ост новить"
-    #define SHOW_IN_FOLDER "Пок з ть в п пке"
-    #define OPEN_FILE_TEXT "Открыть ф йл"
-    #define FILE_SAVED_AS "'Менеджер з грузок\nФ йл сохр нен к к "
+    #define DL_WINDOW_HEADER "Менеджер загрузок"
+    #define START_DOWNLOADING "Начать закачку"
+    #define STOP_DOWNLOADING "Остановить"
+    #define SHOW_IN_FOLDER "Показать в папке"
+    #define OPEN_FILE_TEXT "Открыть файл"
+    #define FILE_SAVED_AS "'Менеджер загрузок\nФайл сохранен как "
     #define KB_RECEIVED " получено"
 #else
     #define DL_WINDOW_HEADER "Download Manager"
@@ -33,7 +33,7 @@ char aux[2048];
  
 void Downloader()  
 {
-    int key;
+    int key, i;
     char notify_message[4296];
     downloader_opened = 1;
     SetEventMask(0x27);
@@ -93,6 +93,8 @@ void Downloader()
 	                    aux[strlen(#aux)-1] = 0;
 	                }
 	                strcat(#filepath,  #aux+strrchr(#aux, '/'));
+					
+					for (i=0; i<strlen(#filepath); i++) if(filepath[i]==':')||(filepath[i]=='?')filepath[i]='-';
 	 
 	                if (WriteFile(downloader.data_downloaded_size, downloader.bufpointer, #filepath)==0)
 	                    sprintf(#notify_message, "%s%s%s",FILE_SAVED_AS,#filepath,"' -Dt");
