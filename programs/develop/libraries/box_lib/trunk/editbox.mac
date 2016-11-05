@@ -228,7 +228,7 @@ edit_box.draw_text:
         add     ebx,2
         shl     ebx,16
         add     ebx,ed_top
-        add     ebx,2
+        add     ebx,3
         mov     ecx,ed_text_color
         test    dword ed_flags,ed_pass
         jnz     .password
@@ -270,7 +270,6 @@ edit_box.draw_bg_eax:
         inc     ecx
         shl     ecx,16
         add     ecx,ed_height
-        dec     ecx
         mcall   13
         ret
 
@@ -310,7 +309,7 @@ edit_box.draw_cursor:
         shl     ecx,16
         add     ecx,edx
         add     ecx,ed_height
-        sub     ecx,4
+        sub     ecx,3
         mov     cl_curs_x,ebx
         mov     cl_curs_y,ecx
         mov     edx,ed_text_color
@@ -322,41 +321,36 @@ edit_box.draw_curs:
 ;--- процедура рисования рамки ----------------------------
 ;----------------------------------------------------------
 edit_box.draw_border:
-;--- цвет рамки ---
         test    word ed_flags,ed_focus
         mov     edx,ed_focus_border_color
         jne     @f
         mov     edx,ed_blur_border_color
 @@:
-;--- сверху ---
-        mov     eax,38
         mov     ebx,ed_left
         mov     ecx,ebx
         shl     ebx,16
-        mov     bx,cx
+        add     ebx,ecx
         add     ebx,ed_width
         mov     ecx,ed_top
         mov     esi,ecx
         shl     ecx,16
-        mov     cx,si
-        mcall
-;--- снизу ---
+        add     ecx,esi
+        mcall   38  ; top
         mov     esi,ecx
+        inc     ecx
         add     ecx,ed_height
         mov     ebp,ecx
         shl     ecx,16
         mov     cx,bp
-        mcall
-;--- слева ---
+        mcall   ; bottom
         mov     cx,si
         mov     ebp,ebx
         sub     ebx,ed_width
-        mcall
-;--- справа ---
+        mcall   ; left
         mov     ebx,ebp
         shl     ebx,16
         mov     bx,bp
-        mcall
+        mcall   ; right
         ret
 
 ;----------------------------------------------------------
