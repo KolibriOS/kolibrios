@@ -370,10 +370,11 @@ proc service_proc stdcall, ioctl:dword
         ret
 
 ; If an error occured, remove all allocated data and exit (returning -1 in eax)
-
   .destroy:
-        ; todo: unregister device from device_list
-        ; todo: reset device into virgin state
+        ; unregister device from device_list
+        mov     eax, [devices]
+        mov     dword[device_list-4+4*eax], 0
+        dec     [devices]
 
   .err:
         DEBUGF  2, "Error, removing all data !\n"
@@ -508,17 +509,6 @@ probe:
 reset:
         DEBUGF  1, "Reset\n"
 
-; attach int handler
-        movzx   eax, [ebx + device.irq_line]
-        DEBUGF  1, "Attaching int handler to irq %x\n", eax:1
-        invoke  AttachIntHandler, eax, int_handler, ebx
-        test    eax, eax
-        jnz     @f
-        DEBUGF  2, "Could not attach int handler!\n"
-        or      eax, -1
-        ret
-       @@:
-
 ; reset chip
         DEBUGF  1, "Resetting chip\n"
         set_io  [ebx + device.io_addr], 0
@@ -533,10 +523,23 @@ reset:
         dec     cx
         jns     .wait_for_reset
         DEBUGF  2, "Reset timeout!\n"
+        or      eax, -1
+        ret
   .reset_completed:
 
 ; Read MAC address
         call    read_mac
+
+; attach int handler
+        movzx   eax, [ebx + device.irq_line]
+        DEBUGF  1, "Attaching int handler to irq %x\n", eax:1
+        invoke  AttachIntHandler, eax, int_handler, ebx
+        test    eax, eax
+        jnz     @f
+        DEBUGF  2, "Could not attach int handler!\n"
+        or      eax, -1
+        ret
+       @@:
 
 ; unlock config and BMCR registers
         set_io  [ebx + device.io_addr], 0
