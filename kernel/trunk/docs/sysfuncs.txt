@@ -756,7 +756,7 @@ Returned value:
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYSTEM (18)
-  ebx - SSF_GET_CPU_REQUENCY (5)
+  ebx - SSF_GET_CPU_FREQUENCY (5)
 ======================================================================
  Function 18, subfunction 6 - save ramdisk to the file on hard drive.
 ======================================================================
