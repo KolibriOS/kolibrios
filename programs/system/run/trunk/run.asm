@@ -1,9 +1,5 @@
-; 24.07.2008 <Lrz> обновлен Edit бокс
-; 01.02.07 - обновлён editbox
-; 31.01.07 - исправлена некорректная отрисовка при большом значении высоты скина
-;            выравнивание снизу относительно рабочей области экрана
-window_y=67
-window_x=400
+window_h=85
+window_w=430
 ;--- другие макросы ---
 include '../../../develop/libraries/box_lib/load_lib.mac'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
@@ -170,17 +166,17 @@ draw_window:
 	mov	dx,ax
 	mcall	14
 	xor	ecx,ecx
-	sub	cx,window_y+2
+	sub	cx,window_h+40
 	sub	cx,dx
 	add	cx,si
 	shl	ecx,16
 	mov	cx,dx
-	add	cx,window_y
+	add	cx,window_h
 	shr	eax,16
 	mov	bx,ax
-	sub	bx,window_x
+	sub	bx,window_w
 	shl	ebx,15
-	mov	bx,window_x
+	mov	bx,window_w
 	mov	edx,[sc.work]
 	or	edx,0x33000000
 	xor	esi,esi
@@ -194,17 +190,19 @@ draw_window:
 	mov	[input_fn.width],eax
 	mov	[run_but.width],ax
 
-	xor	bx,bx
-	shl	ebx,16
-	mov	bx,ax
-	add	bx,10
-	mov	cx,45
-	push	cx
-	shl	ecx,16
-	pop	cx
-	mov	edx,[sc.work_graph]
-	mcall	38
-;        draw_edit_box input_fn
+	; ; draw line
+	; xor	bx,bx
+	; shl	ebx,16
+	; mov	bx,ax
+	; add	bx,10
+	; mov	cx,58
+	; push	cx
+	; shl	ecx,16
+	; pop	cx
+	; mov	edx,[sc.work_graph]
+	; mcall	38
+
+	; draw_edit_box input_fn
 	push	dword input_fn
 	call	[edit_box_draw]
 
@@ -218,7 +216,7 @@ ret
 draw_status:
 	mov	ebx,[procinfo.box.width]
 	sub	bx,10
-	mov	ecx,(50)*65536+12
+	mov	ecx,(60)*65536+15
 	mov	edx,[sc.work]
 	mcall	13
 draw_status_text:
@@ -231,11 +229,12 @@ draw_status_text:
 	jmp	@b
 @@:
 	mov	ecx,[sc.work_text]
-	mcall	4,5*65536+(50)
+	or  ecx,0x90000000
+	mcall	4,5*65536+(60)
 ret
 
-run_but txt_button 0,5,15,25,2,0,0,run_but_text,
-input_fn edit_box 0,5,5,0xffffff,0x6a9480,0,0xaaaaaa,0,511,fn,mouse_dd,ed_focus+ed_always_focus
+run_but txt_button 0,5,20,33,2,0,0x90000000,run_but_text,
+input_fn edit_box 0,5,5,0xffffff,0x6a9480,0,0xaaaaaa,0x90000000,511,fn,mouse_dd,ed_focus+ed_always_focus
 ;mouse_flag: dd 0x0
 input_fn_end:
 if lang eq ru
