@@ -58,19 +58,10 @@ inline void debugi(dword d_int)
 	debugi(number);
 }
 
-:void assert(dword _type, _actual, _expected)
+:void die(dword _last_msg)
 {
-	char r[4096];
-	if (_type=='s') {
-		if (streq(_actual, _expected)) return;
-		sprintf(#r, "==========nok{\nactual: %s\nexpected: %s", _actual, _expected);
-		debugln(#r);
-	}
-	if (_type=='i') {
-		if (_actual == _expected)) return;
-		sprintf(#r, "==========nok{\nactual: %i\nexpected: %i", _actual, _expected);
-		debugln(#r);
-	}
+	debugln(_last_msg);
+	ExitProcess();
 }
 
 #endif
