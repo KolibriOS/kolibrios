@@ -188,7 +188,7 @@ void TWebBrowser::Prepare(){
 				if (bukva == '\9') || (bukva == '\x0a') || (bukva == '\x0d') bukva = ' ';
 				if (!ignor_param) && (bukva <>' ')
 				{
-					if (strlen(#tag)<sizeof(tag)) chrcat(#tag, bukva);
+					if (strlen(#tag)+1<sizeof(tag)) chrcat(#tag, bukva);
 				}
 				else
 				{
@@ -201,12 +201,11 @@ void TWebBrowser::Prepare(){
 
 			if (tag[strlen(#tag)-1]=='/') tag[strlen(#tag)-1]=NULL; //for br/
 			if (tagparam) GetNextParam();
-
 			Perenos();
 			DrawStyle();
 			line = NULL;
 			if (tag) SetStyle(); //обработка тегов
-			strcpy(#oldtag, #tag);
+			strlcpy(#oldtag, #tag, sizeof(oldtag));
 			tag = attr = tagparam = ignor_param = NULL;
 			break;
 		default:

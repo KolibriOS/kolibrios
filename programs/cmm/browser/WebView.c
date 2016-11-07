@@ -31,7 +31,7 @@
 char homepage[] = FROM "html\\homepage.htm";
 
 #ifdef LANG_RUS
-char version[]=" Текстовый браузер 1.48";
+char version[]=" Текстовый браузер 1.49";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -269,7 +269,7 @@ void SetElementSizes()
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w;
 	WB1.list.visible = WB1.list.h - 5 / WB1.list.item_h;
 	if (WB1.list.w!=WB1.DrawBuf.bufw) {
-		WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h * 30);
+		WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 4096 * 7400 / WB1.list.w);
 		Scan(REFRESH_BUTTON);
 	}
 }
