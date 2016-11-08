@@ -80,7 +80,7 @@ int main(int argc, char **argv)
     (*ted_text_add)(ed, sampletext, strlen(sampletext), 0);
 
     // treelist as tree
-    treelist *tl = kolibri_new_treelist(X_Y(0, 200), X_Y(200, 200), 16, X_Y(16, 16), 100, 50, 0, 0, TL_KEY_NO_EDIT | TL_DRAW_PAR_LINE, &ed_lock, 0x8080ff, 0x0000ff, 0xffffff);
+    treelist *tl = kolibri_new_treelist(X_Y(0, 200), X_Y(200, 200), 16, X_Y(16, 16), 100, 50, 0, 0, /*TL_KEY_NO_EDIT |*/ TL_DRAW_PAR_LINE, &ed_lock, 0x8080ff, 0x0000ff, 0xffffff);
     (*tl_data_init)(tl);
 
     // читаем файл с курсорами и линиями
@@ -113,12 +113,13 @@ int main(int argc, char **argv)
     (*tl_cur_beg)(tl); //;ставим курсор на начало списка
     gui_add_treelist(main_window, tl);
 
-    // treelist as listbox
-    treelist *tl2 = kolibri_new_treelist(X_Y(220, 200), X_Y(200, 200), 16, X_Y(16, 16), 100, 50, 0, 0, TL_LISTBOX_MODE, &ed_lock, 0x8080ff, 0x0000ff, 0xffffff);
+    // treelist as listbox, no caption, no icons
+    treelist *tl2 = kolibri_new_treelist(X_Y(220, 200), X_Y(200, 200), 0, X_Y(16, 16), 100, 50, 0, 0, TL_LISTBOX_MODE, &ed_lock, 0x8080ff, 0x0000ff, 0xffffff);
     (*tl_data_init)(tl2);
+    // tl->col_zag |= 0x10000000; // 0x10 in txt color must give font 9x16, but this not work, only 6x8 font (
 
     tl2->data_img_sys = tl->data_img_sys;
-    tl2->data_img = tl->data_img;
+    //tl2->data_img = tl->data_img; - no icons will be drawed
 
     treelist_node_add(tl2, "list1", 0, 0, 0); // где 1 номер иконки с книгой
     (*tl_cur_next)(tl2);

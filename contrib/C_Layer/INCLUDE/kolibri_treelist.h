@@ -4,7 +4,7 @@
 
 /// константы стиля
 enum tl_style {
-    TL_KEY_NO_EDIT  = 1,    // элемент нельзя редактировать на клавиатуре (изменять уровни, удалять)
+    TL_KEY_NO_EDIT  = 1,    // элемент нельзя редактировать на клавиатуре (изменять уровни стрелками, удалять DEL)
     TL_DRAW_PAR_LINE = 2,   // рисовать линии к родительскому узлу
     TL_LISTBOX_MODE  = 4    //стиль не отображает уровни (как в ListBox все одного уровня)
 };
@@ -55,6 +55,8 @@ typedef struct __attribute__ ((__packed__)) {
     void       *on_press;   // +84 указатель на функцию, которая вызывается при нажатии Enter
 } treelist;
 
+// capt_cy may be 0 = no caption
+// if icon_size is 16x16, and data_img id NULL, no icons - useful in list mode
 static inline treelist* kolibri_new_treelist( uint32_t x_w, uint32_t y_h, uint16_t capt_cy, uint32_t icon_size_xy, uint16_t info_size, uint32_t info_max_count,
                                              uint16_t info_capt_len, uint16_t info_capt_offs, enum tl_style style, void *el_focus, color_t back, color_t title, color_t txt)
 {
@@ -74,6 +76,7 @@ static inline treelist* kolibri_new_treelist( uint32_t x_w, uint32_t y_h, uint16
     tl->info_capt_len = info_capt_len;
     tl->info_capt_offs = info_capt_offs;
     tl->el_focus = el_focus;
+    tl->capt_cy = capt_cy;
     tl->p_scroll = kolibri_new_scrollbar_def(X_Y(0, 16), X_Y(0, 0), 100, 30, 0);
     return tl;
 }

@@ -55,6 +55,8 @@ typedef struct edit_box_t {
     unsigned int cl_curs_y;
     unsigned int shift;
     unsigned int shift_old;
+    unsigned int height;
+    unsigned int char_width;
 }edit_box;
 
 /* Initializes an Editbox with sane settings, sufficient for most use.
