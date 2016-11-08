@@ -17,7 +17,7 @@ dd cur_dir_path      ; указатель на адрес, куда помещается строка, содержащая пу
 include '../../../../../proc32.inc'
 include '../../../../../macros.inc'
 include '../../../../../KOSfuncs.inc'
-include '../../../../../Dll.inc'	; malloc fn
+include '../../../../../dll.inc'	; malloc fn
 include '../../trunk/box_lib.mac'
 include '../../load_lib.mac'
 ;include 'proc32.inc'
