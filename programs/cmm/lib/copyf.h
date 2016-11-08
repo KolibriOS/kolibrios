@@ -43,7 +43,7 @@
 	}
 	else
 	{
-		cbuf = malloc(CopyFile_atr.sizelo);	
+		cbuf = malloc(CopyFile_atr.sizelo);
 		if (error = ReadFile(0, CopyFile_atr.sizelo, cbuf, copy_from3))
 		{
 			debugln("Error: CopyFile->ReadFile");
@@ -93,7 +93,7 @@
 		else
 		{
 			Operation_Draw_Progress(filename+strchr(filename, '/'));
-			if (error=CopyFile(#copy_from2, #copy_in2)) 
+			if (error=CopyFile(#copy_from2, #copy_in2))
 			{
 				if (fabs(error)==8) { debugln("Stop copying."); break;} //TODO: may be need grobal var like stop_all
 				error=CopyFile(#copy_from2, #copy_in2); // #2 :)
@@ -114,12 +114,12 @@
 	"Ошибка #5: файл или папка не найдены",
 	"Ошибка #6: конец файла",
 	"Ошибка #7: указатель находится все памяти приложения",
-	"Ошибка #8: недостаточно места на диске",
-	"Ошибка #9: таблица FAT разрушена",
+	"Ошибка #8: недостаточно места на разделе",
+	"Ошибка #9: ошибка файловой системы",
 	"Ошибка #10: доступ запрещен",
 	"Ошибка #11: ошибка устройства",
 	0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 
+	0, 0, 0, 0, 0, 0, 0, 0, 0,
 	"Ошибка #30: недостаточно памяти",
 	"Ошибка #31: файл не является исполняемым",
 	"Ошибка #32: слишком много процессов", 0};
@@ -133,12 +133,12 @@
 	"Error #5 - File or folder not found",
 	"Error #6 - End of file",
 	"Error #7 - Pointer lies outside of application memory",
-	"Error #8 - Too less disk space",
-	"Error #9 - FAT table is destroyed",
+	"Error #8 - Not enough space on partition",
+	"Error #9 - File system error",
 	"Error #10 - Access denied",
 	"Error #11 - Device error",
 	0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 
+	0, 0, 0, 0, 0, 0, 0, 0, 0,
 	"Error #30 - Not enough memory",
 	"Error #31 - File is not executable",
 	"Error #32 - Too many processes", 0};
@@ -146,7 +146,7 @@
 
 :dword get_error(int N)
 {
-	char error[256];  
+	char error[256];
 	N = fabs(N);
 	if (N<=33) strcpy(#error, ERROR_TEXT[N]);
 	else sprintf(#error,"%d%s",N," - Unknown error number O_o");
