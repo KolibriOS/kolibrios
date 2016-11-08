@@ -114,6 +114,9 @@ use_frame
 ;--------------------------------------------------
 use_progressbar
 
+;--------------------------------------------------
+include 'tooltip.asm' ;tooltip
+
 ;input:
 ; eax = указатель на функцию выделения памяти
 ; ebx = ... освобождения памяти
@@ -346,6 +349,12 @@ dd	szVersion_frame,		0x00010001
 dd sz_progressbar_draw,     progressbar_draw	
 dd sz_progressbar_progress, progressbar_progress
 
+dd sz_tooltip_init, tooltip_init
+dd sz_tooltip_delete, tooltip_delete
+dd sz_tooltip_test_show, tooltip_test_show
+dd sz_tooltip_mouse, tooltip_mouse
+dd sz_get_font_size, get_font_size
+
 dd	0,0
 
 
@@ -451,3 +460,9 @@ szVersion_frame 		db 'version_frame',0
 
 sz_progressbar_draw	db 'progressbar_draw', 0
 sz_progressbar_progress db 'progressbar_progress', 0
+
+sz_tooltip_init			db 'tooltip_init', 0
+sz_tooltip_delete		db 'tooltip_delete', 0
+sz_tooltip_test_show	db 'tooltip_test_show', 0
+sz_tooltip_mouse		db 'tooltip_mouse', 0
+sz_get_font_size		db 'get_font_size', 0

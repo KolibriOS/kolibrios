@@ -531,3 +531,27 @@ FR_FILLED  equ 10000b ; [x]
 ; FR_TEXT_POSITION
 FR_TEXT_POS_BOTTOM equ 1
 FR_TEXT_POS_TOP    equ 0
+
+;-----------------------------------------------------------------------------
+
+struc tooltip txt, next, zone_x, zone_w, zone_y, zone_h, col_txt, col_bkg, tm_wait
+{
+    .txt     dd  txt   ; указатель на текст asciiz, разделитель \r 13
+    .next    dd  next	; следующиий tooltip в цепочке или 0
+    .zone_y  dw  zone_y   ; зона контроля (в 90% случаев совпадает с размером контрола)
+    .zone_x  dw  zone_x   ;
+    .zone_h  dw  zone_h   ;
+    .zone_w  dw  zone_w   ;
+    .col_txt dd  col_txt   ; цвет текста тултипа, включая размер SysFn4
+    .col_bkg dd  col_bkg   ; цвет фона тултипа
+    .tm_wait dw  tm_wait   ; время ожидания х10мс
+;временные переменные
+    .font_sz dd  ?   ; font size
+    .mouse   dd  ?   ; предыдущее положение (x, y)
+    .tm_strt dd  ?   ; время запуска таймера (входа мыши в зону) х10мс
+    .video   dd  ?   ; память для сохраненного под тултипом
+    .video_y dw  ?    ; координаты запомненной области экрана, или 0 если пусто
+    .video_x dw  ?
+    .video_h dw  ?    ; размер предрасчитывается при init
+    .video_w dw  ?
+}
