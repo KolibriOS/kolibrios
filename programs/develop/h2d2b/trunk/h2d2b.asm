@@ -1,3 +1,6 @@
+;;      h2d2b v0.5 big fonts by Leency      ;;
+;;      09.11.2016                          ;;
+
 ;;      h2d2b v0.4 use editbox by IgorA     ;;
 ;;      30.08.2011                          ;;
 
@@ -6,6 +9,8 @@
 
 ;;      hex2dec2bin 0.2 by Alexei Ershov    ;;
 ;;      16.11.2006                          ;;
+
+WIN_W = 364
 
 use32
     org 0x0
@@ -161,51 +166,54 @@ mouse:
 	or	edx, [sys_colors.work]
 	;mov	esi, 0x80000000
 	;or	esi, [sys_colors.grab_text]
-    mcall 0, 200*65536+300, 200*65536+175, ,,title
+    mcall 0, 200*65536+WIN_W, 200*65536+179, ,,title
 
 	
-    mcall  8, 15      *65536+ 38, 90*65536+ 15, 2, [sys_colors.work_button] ; кнопка shl
-    mcall  ,		       ,110*65536+ 15,	,	   ; кнопка sal
-    mcall  , (300-53)*65536+ 38, 90*65536+ 15, 3,	   ; кнопка shr
-    mcall  ,		       ,110*65536+ 15, 4,	   ; кнопка sar
-    mcall  ,		       ,145*65536+ 15, 5,	   ; кнопка Ok
+    mcall  8,         15*65536+42,106*65536+ 21, 2, [sys_colors.work_button] ; кнопка shl
+    mcall   ,         70*65536+42,             ,  , ; кнопка sal
+    mcall   , (WIN_W-55)*65536+42,             , 3, ; кнопка shr
+    mcall   ,(WIN_W-111)*65536+42,             , 4, ; кнопка sar
+    mcall   , (WIN_W-72)*65536+58,145*65536+ 21, 5, ; кнопка Ok
 
-	mov	ecx, 0x80000000
+	mov	ecx, 0x90000000
 	or	ecx, [sys_colors.work_text]
     mcall  4, 15*65536+30,   , binstr,
-    mcall  , 15*65536+44,   , decstr,
-    mcall  , 15*65536+58,   ,sdecstr,
-    mcall  , 15*65536+72,   , hexstr,
-    mcall  , 15*65536+150,  , numstr,
+    mcall   , 15*65536+46,   , decstr,
+    mcall   , 15*65536+62,   ,sdecstr,
+    mcall   , 15*65536+78,   , hexstr,
+    mcall   , 15*65536+150,  , numstr,
 
-	mov	ecx, 0x80000000
+	mov	ecx, 0x90000000
 	or	ecx, [sys_colors.work_button_text]
-    mcall  ,	   26*65536+94, 	, shlstr,3
-    mcall  , (300-42)*65536+94, 	, shrstr,
-    mcall  ,	   26*65536+114,	, salstr,
-    mcall  , (300-42)*65536+114,	, sarstr,
-	mcall  , (300-42-3)*65536+149,	, Okstr,
+    mcall  , 23*65536+109, , shl_sal_sar_shr_button_caption
+	mcall  , (WIN_W-59)*65536+149,	, Okstr,
     mov    ecx, [num]
 
-	
-    mcall  47, 8*65536+256,,240*65536+72,[sys_colors.work_text]    ; 16-ная
-    mcall    , 10*65536,   ,228*65536+44,     ; 10-ная
-    mcall    , 8*65536+512,,240*65536+30,     ; 2-ная
+	mov esi, [sys_colors.work_text]
+	or  esi, 0x90000000
+
+    mcall  47, 10*65536,   ,(WIN_W-92)*65536+62,    ; 10-ная со знаком
+	BIN_LINE_BLOCK_W = 76
+    mcall 47, 8*65536+512,,(WIN_W-BIN_LINE_BLOCK_W)*65536+30 ; 2-ная	
     ror    ecx, 8
-    mcall    ,		  ,,(240-56)*65536+30,
+	mov    edx, (WIN_W-BIN_LINE_BLOCK_W*2)*65536+30
+	mcall
     ror    ecx, 8
-    mcall    ,		  ,,(240-56*2)*65536+30,
+    mov    edx, (WIN_W-BIN_LINE_BLOCK_W*3)*65536+30
+	mcall
     ror    ecx, 8
-    mcall    ,		  ,,(240-56*3)*65536+30,
+    mov    edx, (WIN_W-BIN_LINE_BLOCK_W*4)*65536+30
+	mcall
     ror    ecx, 8
     mov    [minus], '+'
     jnc    @f
     mov    [minus], '-'
     neg    ecx
 @@:
-    mcall   ,  10*65536,,228*65536+58,	      ; 10-ная со знаком
-    mcall  4, 222*65536+58, 0, minus, 1
-    mcall 38, 15*65536+300-15, 137*65536+137, [sys_colors.work_graph]
+    mcall   , 10*65536,   ,(WIN_W-92)*65536+46,    ; 10-ная
+	mcall   , 8*65536+256,,(WIN_W-76)*65536+78,    ; 16-ная
+    mcall  4, (WIN_W-102)*65536+58, 0x90000000, minus, 1
+    mcall 38, 15*65536+WIN_W-15, 137*65536+137, [sys_colors.work_graph]
 	stdcall [edit_box_draw], edit1
     mcall 12, 2 		   ; функция 12: сообщить ОС об отрисовке окна
 
@@ -253,16 +261,13 @@ string1_end:
   num	dd  0
 
 
- title db 'hex2dec2bin 0.4',0
+ title db 'hex2dec2bin 0.5',0
  minus	db '-',0
  hexstr db 'hex:',0
  binstr db 'bin:',0
  decstr db 'dec:',0
  sdecstr db 'signed dec:',0
- shlstr db 'shl',0
- salstr db 'sal',0
- shrstr db 'shr',0
- sarstr db 'sar',0
+ shl_sal_sar_shr_button_caption db 'shl    sal                    sar    shr',0
 
 if lang eq ru
 	numstr db 'Число:',0
@@ -271,13 +276,13 @@ if lang eq ru
 	head_f_l db 'Системная ошибка',0
 else
 	numstr db 'Number:',0
-	Okstr db 'Ok',0
+	Okstr db 'Enter',0
 	head_f_i:
 	head_f_l db 'System error',0
 end if
 
 mouse_dd dd 0
-edit1 edit_box 182, 59, 146, 0xffffff, 0xff, 0x80ff, 0, 0x8000, (string1_end-string1), string1 , mouse_dd, ed_focus+ed_always_focus
+edit1 edit_box (WIN_W-67-82), 67, 146, 0xffffff, 0xff, 0x80ff, 0, 0x90000000, (string1_end-string1), string1 , mouse_dd, ed_focus+ed_always_focus
 
 editboxes_end:
 
