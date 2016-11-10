@@ -1,4 +1,4 @@
-console.dll exports the following functions
+console.obj exports the following functions
 
 typedef unsigned long dword; /* 32-bit unsigned integer */
 typedef unsigned short word; /* 16-bit unsigned integer */

@@ -1,8 +1,35 @@
-format PE GUI 0.8 ; initialize console ourselves
+
 include 'proc32.inc'
-include '../../../../import.inc'
+
+DLL_ENTRY equ 1
+DLL_EXIT  equ -1
+REQ_DLL_VER equ 4
+
+use32
+        db      'MENUET01'
+        dd      1
+        dd      start
+        dd      i_end
+        dd      mem
+        dd      mem
+        dd      0
+        dd      0
 
 start:
+        stdcall load_dll_and_import, dllname, imports
+        test    eax, eax
+        jz      exit
+
+; check version
+        cmp     word [dll_ver], REQ_DLL_VER
+        jb      exit
+        cmp     word [dll_ver+2], REQ_DLL_VER
+        ja      exit
+        push    DLL_ENTRY
+        call    [dll_start]
+
+; yes! Now do some work (gets2() demo in this case).
+
         push    caption
         push    25
         push    80
@@ -39,8 +66,8 @@ done:
         push    1
         call    [con_exit]
 exit:
-        xor     eax, eax
-        ret
+        or      eax, -1
+        int     0x40
 
 proc mycallback stdcall, keycode:dword, pstr:dword, pn:dword, ppos:dword
         mov     eax, [keycode]
@@ -133,16 +160,80 @@ proc mycallback stdcall, keycode:dword, pstr:dword, pn:dword, ppos:dword
         ret
 endp
 
+proc load_dll_and_import stdcall, _dllname:dword, _imports:dword
+        pushad
+; load DLL
+        push    68
+        pop     eax
+        push    19
+        pop     ebx
+        mov     ecx, [_dllname]
+        int     0x40
+        test    eax, eax
+        jz      import_fail
+
+; initialize import
+        mov     edi, eax
+        mov     esi, [_imports]
+import_loop:
+        lodsd
+        test    eax, eax
+        jz      import_done
+        mov     edx, edi
+import_find:
+        mov     ebx, [edx]
+        test    ebx, ebx
+        jz      import_not_found
+        push    eax
+@@:
+        mov     cl, [eax]
+        cmp     cl, [ebx]
+        jnz     import_find_next
+        test    cl, cl
+        jz      import_found
+        inc     eax
+        inc     ebx
+        jmp     @b
+import_find_next:
+        pop     eax
+        add     edx, 8
+        jmp     import_find
+import_found:
+        pop     eax
+        mov     eax, [edx+4]
+        mov     [esi-4], eax
+        jmp     import_loop
+import_not_found:
+import_fail:
+        popad
+        xor     eax, eax
+        ret
+import_done:
+        popad
+        xor     eax, eax
+        inc     eax
+        ret
+endp
 
 align 4
-data import
-library console, 'console.dll'
-import console, \
-        con_init, 'con_init', \
-        con_write_asciiz, 'con_write_asciiz', \
-        con_exit, 'con_exit', \
-        con_gets2, 'con_gets2'
-end data
+
+imports:
+dll_start          dd szStart
+dll_ver            dd szVersion
+con_init           dd szcon_init
+con_write_asciiz   dd szcon_write_asciiz
+con_exit           dd szcon_exit
+con_gets2          dd szcon_gets2
+                   dd 0
+
+szStart            db 'START',0
+szVersion          db 'version',0
+szcon_init         db 'con_init',0
+szcon_write_asciiz db 'con_write_asciiz',0
+szcon_exit         db 'con_exit',0
+szcon_gets2        db 'con_gets2',0
+
+dllname  db '/sys/lib/console.obj',0
 
 caption            db 'Console test - gets2()',0
 str1               db 'Enter string (empty for exit): ',0
@@ -155,4 +246,10 @@ str5.len = $ - str5
 str6               db 'next line in the history'
 str6.len = $ - str6
 
+i_end:
+
 s rb 256
+
+align 4
+rb 2048 ; stack
+mem:

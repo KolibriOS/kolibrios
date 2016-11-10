@@ -1,13 +1,31 @@
 ; Функции работы с консолью для программ КолибриОС
 ; diamond, 2006-2008
 
-format PE console 0.8 DLL at 7FEF0000h
 
-section '.flat' code readable executable
+format MS COFF
+
+public EXPORTS
+
+section '.flat' code readable align 16
 
 include 'font.inc'
 include 'conscrl.inc'
-include '../../../export.inc'
+
+;void __stdcall START(dword state);
+START:
+; N.B. The current kernel implementation does not require
+;      evident heap initialization, because if DLL is loaded, heap is already initialized
+;      (if heap was not initialized, loader does this implicitly).
+;      So this action does nothing useful, but nothing harmful.
+        push    ebx
+        push    68
+        pop     eax
+        push    11
+        pop     ebx
+        int     0x40
+        pop     ebx
+        or      eax, -1
+        ret     4
 
 ; Инициализация консоли
 ; void __stdcall con_init(dword wnd_width, dword wnd_height,
@@ -15,11 +33,6 @@ include '../../../export.inc'
 
 align 4
 con_init:
-        mov     [con_flags], 7
-        mov     [con.cursor_height], (15*font_height+50)/100
-        mov     [con.input_start], con.input_buffer
-        mov     [con.input_end], con.input_buffer
-        mov     [con.entered_char], -1
 
         pop     eax
         pop     [con.wnd_width]
@@ -1827,7 +1840,6 @@ con.wake:
 
 ; Поток окна консоли. Обрабатывает ввод и вывод.
 con.thread:
-        or      [con.vscroll_pt], -1
 ; Поток реагирует на IPC, которое используется только для того, чтобы его можно было "разбудить"
         push    40
         pop     eax
@@ -1837,7 +1849,6 @@ con.thread:
         mov     al, 60
         mov     bl, 1
         mov     ecx, con.ipc_buf
-        mov     byte [ecx+4], 8
         push    0x11
         pop     edx
         int     0x40
@@ -2534,56 +2545,108 @@ con.def_scr_height  dd    300
 con.def_wnd_x       dd    200
 con.def_wnd_y       dd    50
 
+con.init_cmd db 0
 con.title_init_console db "Console",0
 
-align 4
-data export
-export 'console.dll', \
-        version, 'version', \
-        con_init, 'con_init', \
-        con_write_asciiz, 'con_write_asciiz', \
-        con_write_length, 'con_write_string', \
-        con_printf, 'con_printf', \
-        con_exit, 'con_exit', \
-        con_get_flags, 'con_get_flags', \
-        con_set_flags, 'con_set_flags', \
-        con_kbhit, 'con_kbhit', \
-        con_getch, 'con_getch', \
-        con_getch2, 'con_getch2', \
-        con_gets, 'con_gets', \
-        con_gets2, 'con_gets2', \
-        con_get_font_height, 'con_get_font_height', \
-        con_get_cursor_height, 'con_get_cursor_height', \
-        con_set_cursor_height, 'con_set_cursor_height', \
-        con_cls, 'con_cls', \
-        con_get_cursor_pos, 'con_get_cursor_pos', \
-        con_set_cursor_pos, 'con_set_cursor_pos', \
-        con_set_title, 'con_set_title'
-end data
+struc process_info
+{
+  cpu_usage               dd ?  ; +0
+  window_stack_position   dw ?  ; +4
+  window_stack_value      dw ?  ; +6
+                          dw ?  ; +8
+  process_name            rb 12 ; +10
+  memory_start            dd ?  ; +22
+  used_memory             dd ?  ; +26
+  PID                     dd ?  ; +30
+  box.x                   dd ?  ; +34
+  box.y                   dd ?  ; +38
+  box.width               dd ?  ; +42
+  box.height              dd ?  ; +46
+  slot_state              dw ?  ; +50
+                          dw ?  ; +52
+  client_box.x            dd ?  ; +54
+  client_box.y            dd ?  ; +58
+  client_box.width        dd ?  ; +62
+  client_box.height       dd ?  ; +66
+  wnd_state               db ?  ; +70
+  rb (1024-71)
+}
+process_info_buffer process_info
+window_status           rd 1
 
-version dd 0x00020008
+con.vscroll_pt      dd    -1
+
+align 16
+EXPORTS:
+        dd      szStart,                START
+        dd      szVersion,              0x00020008
+        dd      szcon_init,             con_init
+        dd      szcon_write_asciiz,     con_write_asciiz
+        dd      szcon_write_string,     con_write_length
+        dd      szcon_printf,           con_printf
+        dd      szcon_exit,             con_exit
+        dd      szcon_get_flags,        con_get_flags
+        dd      szcon_set_flags,        con_set_flags
+        dd      szcon_kbhit,            con_kbhit
+        dd      szcon_getch,            con_getch
+        dd      szcon_getch2,           con_getch2
+        dd      szcon_gets,             con_gets
+        dd      szcon_gets2,            con_gets2
+        dd      szcon_get_font_height,  con_get_font_height
+        dd      szcon_get_cursor_height,con_get_cursor_height
+        dd      szcon_set_cursor_height,con_set_cursor_height
+        dd      szcon_cls,              con_cls
+        dd      szcon_get_cursor_pos,   con_get_cursor_pos
+        dd      szcon_set_cursor_pos,   con_set_cursor_pos
+        dd      szcon_set_title,        con_set_title
+        dd      0
+
+con_flags       dd      7
+con.cursor_height dd    (15*font_height+50)/100
+con.input_start dd      con.input_buffer
+con.input_end   dd      con.input_buffer
+
+con_esc_attr_n  dd      0
+con_esc_attrs   dd      0,0,0,0
+con_esc         db      0
+con_sci         db      0
+
+con.entered_char dw     -1
+con.bGetchRequested db  0
+con.bWasE0       db     0
+
+szStart                 db 'START',0
+
+szcon_init              db 'con_init',0
+szcon_write_asciiz      db 'con_write_asciiz',0
+szcon_write_string      db 'con_write_string',0
+szcon_printf            db 'con_printf',0
+szcon_exit              db 'con_exit',0
+szVersion               db 'version',0
+szcon_get_flags         db 'con_get_flags',0
+szcon_set_flags         db 'con_set_flags',0
+szcon_kbhit             db 'con_kbhit',0
+szcon_getch             db 'con_getch',0
+szcon_getch2            db 'con_getch2',0
+szcon_gets              db 'con_gets',0
+szcon_gets2             db 'con_gets2',0
+szcon_get_font_height   db 'con_get_font_height',0
+szcon_get_cursor_height db 'con_get_cursor_height',0
+szcon_set_cursor_height db 'con_set_cursor_height',0
+szcon_cls               db 'con_cls',0
+szcon_get_cursor_pos    db 'con_get_cursor_pos',0
+szcon_set_cursor_pos    db 'con_set_cursor_pos',0
+szcon_set_title         db 'con_set_title',0
+
 con.thread_err      db 'Cannot create console thread!',13,10,0
 con.nomem_err       db 'Not enough memory!',13,10,0
 con.aFinished       db ' [Finished]',0
 con.aNull           db '(null)',0
 con.beep                db      0x90, 0x3C, 0x00
+con.ipc_buf         dd 0,8,0,0
+                    db 0
 
-section '.data' data readable writable
-con_flags       dd      ?
-con.cursor_height dd    ?
-con.input_start dd      ?
-con.input_end   dd      ?
-
-con_esc_attr_n  dd      ?
-con_esc_attrs   dd      ?,?,?,?
-con_esc         db      ?
-con_sci         db      ?
-
-con.entered_char dw     ?
-con.bGetchRequested db  ?
-con.bWasE0       db     ?
-
-con.init_cmd db ?
+section '.data' data readable writable align 16
 
 con.finished_title          rb 256
 
@@ -2612,14 +2675,11 @@ con.bUpPressed_saved        rb 1
 con.bDownPressed_saved      rb 1
 con.bScrollingUp_saved      rb 1
 con.bScrollingDown_saved    rb 1
-con.vscroll_pt      dd    ?
 
 con.input_buffer                rw      128
 con.input_buffer_end = $
 
 con.kbd_layout          rb      128
-
-con.ipc_buf rb 0x11
 
 ; 1 = exit, 2 = set title, 3 = redraw, 4 = getch
 con.thread_op               rb 1
@@ -2630,29 +2690,3 @@ con.bScrollingDown          rb 1
 
 con.stack                   rb 1024
 con.stack_top = $
-
-struc process_info
-{
-  cpu_usage               dd ?  ; +0
-  window_stack_position   dw ?  ; +4
-  window_stack_value      dw ?  ; +6
-                          dw ?  ; +8
-  process_name            rb 12 ; +10
-  memory_start            dd ?  ; +22
-  used_memory             dd ?  ; +26
-  PID                     dd ?  ; +30
-  box.x                   dd ?  ; +34
-  box.y                   dd ?  ; +38
-  box.width               dd ?  ; +42
-  box.height              dd ?  ; +46
-  slot_state              dw ?  ; +50
-                          dw ?  ; +52
-  client_box.x            dd ?  ; +54
-  client_box.y            dd ?  ; +58
-  client_box.width        dd ?  ; +62
-  client_box.height       dd ?  ; +66
-  wnd_state               db ?  ; +70
-  rb (1024-71)
-}
-process_info_buffer process_info
-window_status           rd 1

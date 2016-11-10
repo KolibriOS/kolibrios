@@ -27,6 +27,7 @@ end virtual
 virtual at 0
 file filename:pehea,0F8h
 load NumberOfSections           word  from 6
+load TimeDateStamp              dword from 8
 load SizeOfOptionalHeader       word  from 14h
 if SizeOfOptionalHeader<>0E0h
 error Nonstandard PE header
@@ -103,14 +104,25 @@ DeltaDeleted = NumBytesDeleted and not (FileAlignment - 1)
 ; Use store instead of declaring SizeOfHeaders - DeltaDeleted directly in dd
 ; to avoid the second compilation pass.
 store dword SizeOfHeaders - DeltaDeleted at SizeOfHeadersField
+TimeStampInExportTable = 0
 ; sections
 repeat NumberOfSections
 file filename:pehea+0F8h+(%-1)*28h,18h
-load a dword from $-4
-store dword a-DeltaDeleted at $-4
+load VirtualSize dword from $-10h
+load VirtualAddress dword from $-0Ch
+load SizeOfRawData dword from $-8
+load PointerToRawData dword from $-4
+PointerToRawData = PointerToRawData - DeltaDeleted
+store dword PointerToRawData at $-4
+if DirRVA_EXPORT <> 0 & DirRVA_EXPORT+4 >= VirtualAddress & DirRVA_EXPORT+8 <= VirtualAddress + VirtualSize & DirRVA_EXPORT+8 <= VirtualAddress + SizeOfRawData
+TimeStampInExportTable = DirRVA_EXPORT+4 - VirtualAddress + PointerToRawData
+end if
 file filename:pehea+0F8h+(%-1)*28h+24h,4
 end repeat
 ; padding to keep FileAlignment
 times NumBytesDeleted - DeltaDeleted db 0
 ; data
 file filename:pehea+0F8h+NumberOfSections*28h
+if TimeDateStamp <> 0
+store dword TimeDateStamp at TimeStampInExportTable
+end if

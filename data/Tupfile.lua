@@ -383,7 +383,7 @@ tup.append_table(img_files, {
  {"DEVELOP/MTDBG", PROGS .. "/develop/mtdbg/mtdbg"},
  {"DEVELOP/SCANCODE", PROGS .. "/develop/scancode/trunk/scancode"},
  {"DEVELOP/T_EDIT", PROGS .. "/other/t_edit/t_edit"},
- {"DEVELOP/test_gets", PROGS .. "/develop/libraries/console/examples/test_gets"},
+ {"DEVELOP/test_gets", PROGS .. "/develop/libraries/console_coff/examples/test_gets"},
  {"DEVELOP/THREAD", PROGS .. "/develop/examples/thread/trunk/thread"},
  {"DEVELOP/INFO/ASM.SYN", PROGS .. "/other/t_edit/info/asm.syn"},
  {"DEVELOP/INFO/CPP_KOL_CLA.SYN", PROGS .. "/other/t_edit/info/cpp_kol_cla.syn"},
@@ -415,7 +415,7 @@ tup.append_table(img_files, {
  {"LIB/ARCHIVER.OBJ", PROGS .. "/fs/kfar/trunk/kfar_arc/kfar_arc.obj"},
  {"LIB/BOX_LIB.OBJ", PROGS .. "/develop/libraries/box_lib/trunk/box_lib.obj"},
  {"LIB/BUF2D.OBJ", PROGS .. "/develop/libraries/buf2d/trunk/buf2d.obj"},
- {"LIB/CONSOLE.OBJ", PROGS .. "/develop/libraries/console/console.obj"},
+ {"LIB/CONSOLE.OBJ", PROGS .. "/develop/libraries/console_coff/console.obj"},
  {"LIB/LIBGFX.OBJ", PROGS .. "/develop/libraries/libs-dev/libgfx/libgfx.obj"},
  {"LIB/LIBIMG.OBJ", PROGS .. "/develop/libraries/libs-dev/libimg/libimg.obj"},
  {"LIB/LIBINI.OBJ", PROGS .. "/develop/libraries/libs-dev/libini/libini.obj"},
@@ -509,9 +509,9 @@ tup.append_table(extra_files, {
 -- For russian build, add russian-only programs.
 if build_type == "rus" then tup.append_table(img_files, {
  {"PERIOD", PROGS .. "/other/period/trunk/period"},
- {"DEVELOP/TESTCON2", PROGS .. "/develop/libraries/console/examples/testcon2_rus"},
+ {"DEVELOP/TESTCON2", PROGS .. "/develop/libraries/console_coff/examples/testcon2_rus"},
 }) else tup.append_table(img_files, {
- {"DEVELOP/TESTCON2", PROGS .. "/develop/libraries/console/examples/testcon2_eng"},
+ {"DEVELOP/TESTCON2", PROGS .. "/develop/libraries/console_coff/examples/testcon2_eng"},
 }) end
 
 if build_type == "rus" then tup.append_table(extra_files, {
