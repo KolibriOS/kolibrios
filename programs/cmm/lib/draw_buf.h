@@ -13,7 +13,7 @@ struct DrawBufer {
 	unsigned bufx, bufy, bufw, bufh;
 	byte zoom;
 
-	void Init();
+	bool Init();
 	void Show();
 	void Fill();
 	void Skew();
@@ -23,7 +23,7 @@ struct DrawBufer {
 	void AlignRight();
 };
 
-void DrawBufer::Init(int i_bufx, i_bufy, i_bufw, i_bufh)
+bool DrawBufer::Init(int i_bufx, i_bufy, i_bufw, i_bufh)
 {
 	if (!zoom) zoom = 1;
 	bufx = i_bufx;
@@ -32,8 +32,11 @@ void DrawBufer::Init(int i_bufx, i_bufy, i_bufw, i_bufh)
 	bufh = i_bufh * zoom;
 	free(buf_data);
 	buf_data = malloc(bufw * bufh * 4 + 8);
+	//debugval("buf_data",buf_data);
+	if (!buf_data) return false;
 	ESDWORD[buf_data] = bufw;
 	ESDWORD[buf_data+4] = bufh;
+	return true;
 }
 
 void DrawBufer::Fill(unsigned fill_color)

@@ -8,13 +8,12 @@
 #endif
 
 //libraries
-#define MEMSIZE 1060000
+#define MEMSIZE 4096 * 256
 #include "..\lib\gui.h"
 #include "..\lib\draw_buf.h"
 #include "..\lib\list_box.h"
 #include "..\lib\cursor.h"
 #include "..\lib\collection.h"
-#include "..\lib\font.h"
 #include "..\lib\menu.h"
 
 //*.obj libraries
@@ -28,14 +27,14 @@
 #include "..\lib\patterns\history.h"
 #include "..\lib\patterns\http_downloader.h"
 
-char homepage[] = FROM "html\\homepage.htm";
+char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]=" Текстовый браузер 1.49";
+char version[]="Текстовый браузер 1.5";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
-char page_not_found[] = FROM "html\page_not_found_ru.htm";
+char page_not_found[] = FROM "html\\page_not_found_ru.htm""\0";
 char accept_language[]= "Accept-Language: ru\n";
 char rmb_menu[] = 
 "Посмотреть исходник
@@ -44,11 +43,11 @@ char rmb_menu[] =
 Очистить кэш картинок
 Менеджер загрузок";
 #else
-char version[]=" Text-based Browser 1.49";
+char version[]="Text-based Browser 1.5";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
-char page_not_found[] = FROM "html\page_not_found_en.htm";
+char page_not_found[] = FROM "html\\page_not_found_en.htm""\0";
 char accept_language[]= "Accept-Language: en\n";
 char rmb_menu[] =
 "View source
@@ -111,9 +110,6 @@ edit_box address_box = {250,56,34,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(U
 
 void main()
 {
-	dword btn;
-	int half_scroll_size;
-	int scroll_used=0, show_menu;
 	CursorPointer.Load(#CursorFile);
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libio, #libio_init,1);
@@ -127,7 +123,6 @@ void main()
 	WB1.DrawBuf.zoom = 1;
 	WB1.list.SetFont(8, 14, 10011000b);
 	WB1.list.no_selection = true;
-	label.init(DEFAULT_FONT);
 	SetEventMask(0xa7);
 	BEGIN_LOOP_APPLICATION:
 		WaitEventTimeout(2);
@@ -156,29 +151,28 @@ void main()
 				break;
 
 			case evButton:
-				btn=GetButtonID();
-				if (btn==1)	ExitProcess();
-				Scan(btn);
+				ProcessEvent(GetButtonID());
 				break;
 
 			case evKey:
 				GetKeys();
 				if (address_box.flags & 0b10)  
 				{
-					if (key_ascii == ASCII_KEY_ENTER) Scan(key_scancode); else {
+					if (key_ascii == ASCII_KEY_ENTER) ProcessEvent(key_scancode); else {
 						EAX = key_editbox; 
 						edit_box_key stdcall(#address_box);
 					}
 				}
 				else 
 				{
-					Scan(key_scancode);
+					if (WB1.list.ProcessKey(key_scancode)) WB1.DrawPage();
+					else ProcessEvent(key_scancode);
 				}
 				break;
 
 			case evReDraw:
 				if (menu.list.cur_y) {
-					Scan(menu.list.cur_y);
+					ProcessEvent(menu.list.cur_y);
 					menu.list.cur_y = 0;
 				}
 				DefineAndDrawWindow(GetScreenWidth()-800/2,GetScreenHeight()-600/2,800,600,0x73,col_bg,0,0);
@@ -216,7 +210,7 @@ void main()
 									do {
 										$lodsb;
 										$stosb;
-									} while (AL != 0) && (AL != 13) && (AL != 10));
+									} while (AL != 0) && (AL != 13) && (AL != 10);
 									DSBYTE[EDI-1]='\0';
 								}
 							}
@@ -269,8 +263,9 @@ void SetElementSizes()
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w;
 	WB1.list.visible = WB1.list.h - 5 / WB1.list.item_h;
 	if (WB1.list.w!=WB1.DrawBuf.bufw) {
-		WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 4096 * 7400 / WB1.list.w);
-		Scan(REFRESH_BUTTON);
+		if (WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 2048 * WB1.list.item_h) == false)
+		die("Memory allocation error! Seems to be too little RAM.");
+		ProcessEvent(REFRESH_BUTTON);
 	}
 }
 
@@ -278,7 +273,6 @@ void SetElementSizes()
 
 void Draw_Window()
 {
-	int list__w, list__h;
 	DrawBar(0,0, Form.cwidth,TOOLBAR_H-2, panel_color);
 	DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, 0xD7D0D3);
 	DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, border_color);
@@ -295,26 +289,16 @@ void Draw_Window()
 	if (!header) OpenPage(); else { WB1.DrawPage(); DrawEditBoxWebView(); }
 	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, scroll_wv.bckg_col);
 	DrawProgress();
-
-	/*
-	list__w = 200;
-	list__h = 200;
-	label.raw_size = 0;
-	label.write_buf(10,10, list__w, list__h, 0xFFFFFF, 0, 11, "Hello World!");
-	label.write_buf(10,23, list__w, list__h, 0xFFFFFF, 0xFF00FF, 12, "How are you?");
-	label.write_buf(11,40, list__w, list__h, 0xFFFFFF, 0x2E74BB, 15, "Fine");
-	label.apply_smooth();
-	label.show_buf(0,0);
-	*/
 }
 
 
-void Scan(dword id__)
+void ProcessEvent(dword id__)
 {
-	action_buf=0;
-	if (WB1.list.ProcessKey(id__)) WB1.DrawPage();
-	else switch (id__)
+	switch (id__)
 	{
+		case 1:
+			ExitProcess();
+			return;
 		case SCAN_CODE_BS:
 		case BACK_BUTTON:
 			if (history.back()) {

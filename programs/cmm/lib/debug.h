@@ -58,10 +58,4 @@ inline void debugi(dword d_int)
 	debugi(number);
 }
 
-:void die(dword _last_msg)
-{
-	debugln(_last_msg);
-	ExitProcess();
-}
-
 #endif

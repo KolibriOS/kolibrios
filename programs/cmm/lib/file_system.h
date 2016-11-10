@@ -301,6 +301,11 @@ enum
 {
 	return RunProgram("/sys/@notify", notify_param);
 }
+:void die(dword _last_msg)
+{
+	notify(_last_msg);
+	ExitProcess();
+}
 :dword ConvertSizeToKb(unsigned int bytes)
 {
 	unsigned char size[25]=0;
