@@ -123,6 +123,6 @@ end repeat
 times NumBytesDeleted - DeltaDeleted db 0
 ; data
 file filename:pehea+0F8h+NumberOfSections*28h
-if TimeDateStamp <> 0
+if TimeDateStamp <> 0 and TimeStampInExportTable <> 0
 store dword TimeDateStamp at TimeStampInExportTable
 end if
