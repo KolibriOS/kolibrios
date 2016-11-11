@@ -943,7 +943,7 @@ zlib_debug 'deflate strm = %d',ebx
 	je .beg0
 	cmp dword[ebx+z_stream.next_in],Z_NULL
 	jne @f
-	cmp word[ebx+z_stream.avail_in],0
+	cmp dword[ebx+z_stream.avail_in],0
 	jne .beg0
 	@@:
 	cmp dword[edi+deflate_state.status],FINISH_STATE
@@ -1338,7 +1338,7 @@ end if
 		; returning Z_STREAM_END instead of Z_BUF_ERROR.
 		jmp @f
 	.end13:
-	cmp word[ebx+z_stream.avail_in],0
+	cmp dword[ebx+z_stream.avail_in],0
 	jne @f
 	RANK dword[old_flush],esi
 	RANK dword[flush],eax
@@ -1353,7 +1353,7 @@ end if
 	; User must not provide more input after the first FINISH:
 	cmp dword[edi+deflate_state.status],FINISH_STATE
 	jne @f
-	cmp word[ebx+z_stream.avail_in],0
+	cmp dword[ebx+z_stream.avail_in],0
 	je @f ;if (..==.. && ..!=0)
 		ERR_RETURN ebx, Z_BUF_ERROR
 		jmp .end_f
@@ -1361,7 +1361,7 @@ end if
 
 	; Start a new block or continue the current one.
 
-	cmp word[ebx+z_stream.avail_in],0
+	cmp dword[ebx+z_stream.avail_in],0
 	jne @f
 	cmp dword[edi+deflate_state.lookahead],0
 	jne @f
@@ -1662,7 +1662,7 @@ endp
 align 4
 proc read_buf uses ebx ecx, strm:dword, buf:dword, size:dword
 	mov ebx,[strm]
-	movzx eax,word[ebx+z_stream.avail_in]
+	mov eax,[ebx+z_stream.avail_in]
 
 	cmp eax,[size]
 	jle @f ;if (..>..)
@@ -1674,7 +1674,7 @@ proc read_buf uses ebx ecx, strm:dword, buf:dword, size:dword
 		jmp .end_f ;if (..==0) return 0
 	@@:
 
-	sub [ebx+z_stream.avail_in],ax
+	sub [ebx+z_stream.avail_in],eax
 
 	stdcall zmemcpy, [buf],[ebx+z_stream.next_in],eax
 	mov ecx,[ebx+z_stream.state]
@@ -2078,7 +2078,7 @@ end if
 			pop ecx ebx
 			add ebx,ecx
 		.end0:
-		cmp word[edx+z_stream.avail_in],0
+		cmp dword[edx+z_stream.avail_in],0
 		je .cycle0end ;if (..==0) break
 
 		; If there was no sliding:
@@ -2157,7 +2157,7 @@ end if
 
 		cmp dword[edi+deflate_state.lookahead],MIN_LOOKAHEAD
 		jge .cycle0end
-		cmp word[edx+z_stream.avail_in],0
+		cmp dword[edx+z_stream.avail_in],0
 		jne .cycle0
 	.cycle0end: ;while (..<.. && ..!=..)
 

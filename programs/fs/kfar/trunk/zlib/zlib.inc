@@ -72,7 +72,7 @@ ZLIB_VER_SUBREVISION equ 0
 
 struct z_stream ;z_stream_s
 	next_in dd ? ;z_const Bytef * ;next input byte
-	avail_in dw ? ;uInt  ;number of bytes available at next_in
+	avail_in dd ? ;uInt  ;number of bytes available at next_in
 	total_in dd ? ;uLong ;total number of input bytes read so far
 
 	next_out dd ? ;Bytef * ;next output byte should be put there

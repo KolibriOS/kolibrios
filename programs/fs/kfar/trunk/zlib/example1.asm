@@ -162,7 +162,7 @@ test_code:
 	mov eax,my_strm
 	mov [eax+z_stream.next_in],m0 ;устанавливаем память для сжатия
 	mov ecx,[m0size]
-	mov word[eax+z_stream.avail_in],cx ;размер сжимаемыж данных
+	mov [eax+z_stream.avail_in],ecx ;размер сжимаемыж данных
 	mov [eax+z_stream.next_out],m1 ;устанавливаем буфер для сжатия
 	mov word[eax+z_stream.avail_out],1024 ;размер буфера для сжатия (максимум 16 Кб)
 
