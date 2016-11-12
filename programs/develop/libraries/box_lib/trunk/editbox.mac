@@ -207,7 +207,7 @@ edit_box.draw_shift:
         test    word ed_flags,ed_shift_bac ;установка флага, выделенной области
         jz      @f
         mov     ebp,shift_color
-        mov     ebx,ed_shift_pos
+        movzx   ebx, word ed_shift_pos
         call    edit_box_key.sh_cl_
 @@:     ret
 ;----------------------------------------------------------
@@ -284,36 +284,36 @@ edit_box.get_n:
         ret
 
 ;----------------------------------------------------------
-;--- процедура рисования курсора --------------------------
+;------------------ Draw Cursor Procedure -----------------
 ;----------------------------------------------------------
-;входные ebp- цвет
+; in: ebp = Color
 edit_box.clear_cursor:
-        mov     edx,ebp
-        mov     ebx,cl_curs_x
-        mov     ecx,cl_curs_y
+        mov     edx, ebp
+        movzx   ebx, word cl_curs_x
+        movzx   ecx, word cl_curs_y   
         jmp     edit_box.draw_curs
 
 edit_box.draw_cursor:
-        mov     eax,ed_pos
-        sub     eax,ed_offset
-        mul     dword ed_char_width
-        mov     ebx,eax
-        add     ebx,ed_left
-        inc     ebx
-        mov     edx,ebx
-        shl     ebx,16
-        add     ebx,edx
-        mov     ecx,ed_top
-        add     ecx,2
-        mov     edx,ecx
-        shl     ecx,16
-        add     ecx,edx
-        add     ecx,ed_height
-        sub     ecx,3
-        mov     cl_curs_x,ebx
-        mov     cl_curs_y,ecx
-        mov     edx,ed_text_color
-edit_box.draw_curs:
+        mov     edx, ed_text_color          
+        mov     eax, ed_pos
+        sub     eax, ed_offset
+        mul     dword ed_char_width        
+        mov     ebx, eax
+        add     ebx, ed_left
+        inc     ebx    
+        mov     ecx, ed_top
+        add     ecx, 2        
+        mov     cl_curs_x, bx
+        mov     cl_curs_y, cx
+edit_box.draw_curs:        
+        mov     eax, ebx        
+        shl     ebx, 16
+        or      ebx, eax
+        mov     eax, ecx                     
+        shl     ecx, 16
+        or      ecx, eax
+        add     ecx, ed_height
+        sub     ecx, 3
         mcall   38
         ret
 
@@ -444,7 +444,7 @@ edit_box_key.shift:
         je      edit_box_key.f_exit
         mov     ebp,shift_color
         or      word ed_flags,ed_shift_bac ;установка флага, выделенной области
-        mov     ebx,ed_shift_pos
+        movzx   ebx, word ed_shift_pos
         call    edit_box_key.sh_cl_
         jmp     edit_box.draw_cursor_text
 
@@ -544,10 +544,10 @@ edit_box_key.draw_wigwag_cl:
 edit_box_key.sh_first_sh:
         test    word ed_flags,ed_shift
         je      @f
-        mov     ed_shift_pos_old,ebx
+        mov     ed_shift_pos_old,bx
         test    word ed_flags,ed_shift_on
         jne     @f
-        mov     ed_shift_pos,ebx
+        mov     ed_shift_pos,bx
         or      word ed_flags,ed_shift_on
 @@:     ret
 ;Обработка крайних положений в editbox при нажатом shift
@@ -560,7 +560,7 @@ edit_box_key.sh_st_of:
         je      @f
         call    edit_box.draw_bg
         mov     ebp,ed_color
-        mov     ebx,ed_shift_pos
+        movzx   ebx, word ed_shift_pos
         call    edit_box_key.sh_cl_  ;очистка выделеного фрагмента
         and     word ed_flags,ed_shift_cl ; очистка от того, что убрали выделение
         jmp     edit_box.draw_cursor_text
@@ -576,7 +576,7 @@ edit_box_key.sh_enable:
         je      @f
         call    edit_box.check_offset
         mov     ebp,ed_color
-        mov     ebx,ed_shift_pos
+        movzx   ebx, word ed_shift_pos
         call    edit_box_key.sh_cl_  ;очистка выделенного фрагмента
         call    edit_box_key.draw_wigwag_cl
         and     word ed_flags,ed_shift_cl ; 1вар не нужно
@@ -591,9 +591,9 @@ edit_box_key.sh_ext_en:
         test    word ed_flags,ed_offset_fl
         je      @f
 ;Рисование закрашенных прямоугольников и их очистка
-        mov     eax,ed_shift_pos
+        movzx   eax, word ed_shift_pos
         mov     ebx,ed_pos
-        mov     ecx,ed_shift_pos_old
+        movzx   ecx, word ed_shift_pos_old
 ;проверка и рисование закрашенных областей
         cmp     eax,ecx
         je      edit_box_key.1_shem
@@ -616,7 +616,7 @@ edit_box_key.sh_e_end:
         ret
 
 @@:     mov     ebp,shift_color
-        mov     ebx,ed_shift_pos
+        movzx   ebx, word ed_shift_pos
         call    edit_box_key.sh_cl_
         jmp     edit_box_key.sh_e_end
 ;функция для обработки shift при нажатии home and end
@@ -626,13 +626,13 @@ edit_box_key.sh_home_end:
         test    word ed_flags,ed_shift_bac
         je      @f
         mov     ebp,ed_color
-        mov     ebx,ed_shift_pos_old
+        movzx   ebx, word ed_shift_pos_old
         call    edit_box_key.sh_cl_
 @@:
         test    word ed_flags,ed_shift
         je      edit_box_key.sh_exit_ ;выйти
         mov     ebp,shift_color
-        mov     ebx,ed_shift_pos
+        movzx   ebx, word ed_shift_pos
         call    edit_box_key.sh_cl_
         or      word ed_flags,ed_shift_bac ;установка флага, выделенной области
         jmp     edit_box_key.sh_e_end
@@ -661,7 +661,7 @@ edit_box_key.del_char:
         mov     esi,ed_text
         test    word ed_flags,ed_shift_on
         je      @f
-        mov     eax,ed_shift_pos
+        movzx   eax, word ed_shift_pos
         mov     ebx,esi
         cmp     eax,ecx
         jae     edit_box_key.dh_n
@@ -671,7 +671,7 @@ edit_box_key.del_char:
         add     ebx,eax  ;eax меньше
         sub     edx,ecx
         add     esi,ecx
-        mov     ed_shift_pos,ebp
+        mov     ed_shift_pos,bp
         jmp     edit_box_key.del_ch_sh
 
 edit_box_key.dh_n:
@@ -680,7 +680,7 @@ edit_box_key.dh_n:
         add     ebx,ecx
         sub     edx,eax
         add     esi,eax
-        mov     ed_shift_pos,ebp
+        mov     ed_shift_pos,bp
         jmp     edit_box_key.del_ch_sh
 
 @@:     add     esi,ecx ;указатель + смещение к реальному буферу
@@ -848,14 +848,14 @@ macro are_key_shift_press
         pusha
 ; clear input area
         mov     ebp,ed_color
-        mov     ebx,ed_shift_pos
+        movzx   ebx, word ed_shift_pos
         call    edit_box_key.sh_cl_
         mov     ebp,ed_size
         call    edit_box_key.clear_bg
         popa
         call    edit_box_key.del_char
         mov     ebx,ed_size
-        sub     ebx,ed_shift_pos
+        sub     bx,ed_shift_pos
         mov     ed_size,ebx
         pop     eax
 @@:
@@ -966,7 +966,7 @@ edit_box_key.draw_all:
         push    edit_box_key.shift
         test    word ed_flags,ed_shift_on
         je      @f
-        mov     eax,ed_shift_pos
+        movzx   eax, word ed_shift_pos
         mov     ebx,ed_size
         sub     ebx,eax
         mov     ed_size,ebx
@@ -1159,9 +1159,9 @@ edit_box_mouse.mouse_wigwag:
 edit_box_mouse.mdraw:
         mov     ed_pos,eax
 ;Рисование закрашенных прямоугольников и их очистка
-        mov     ecx,ed_shift_pos
-        mov     ebx,ed_shift_pos_old
-        mov     ed_shift_pos_old,eax
+        movzx   ecx, word ed_shift_pos
+        movzx   ebx, word ed_shift_pos_old
+        mov     ed_shift_pos_old,ax
 ;проверка и рисование закрашенных областей
         cmp     ecx,ebx
         je      edit_box_mouse.m1_shem  ;движения не было ранее
@@ -1195,7 +1195,7 @@ edit_box_mouse.mleft:
         dec     eax
         call    edit_box.check_offset
         push    eax
-        mov     ebx,ed_shift_pos
+        movzx   ebx, word ed_shift_pos
         mov     ebp,shift_color
         call    edit_box_key.sh_cl_
         pop     eax
@@ -1208,7 +1208,7 @@ edit_box_mouse.mright:
         jae     edit_box_mouse.mwigvag
         inc     eax
         call    edit_box.check_offset
-        mov     ebx,ed_shift_pos
+        movzx   ebx, word ed_shift_pos
         mov     ebp,shift_color
         push    eax
         call    edit_box_key.sh_cl_
@@ -1253,7 +1253,7 @@ edit_box_mouse._mshift:
         test    word ed_flags,ed_shift_bac
         je      @f
         mov     ebp,ed_color
-        mov     ebx,ed_shift_pos
+        movzx   ebx, word ed_shift_pos
         push    eax
         call    edit_box_key.sh_cl_
         and     word ed_flags,ed_shift_bac_cl
@@ -1261,7 +1261,7 @@ edit_box_mouse._mshift:
 @@:
         test    word ed_flags,ed_mouse_on
         jne     @f
-        mov     ed_shift_pos,eax
+        mov     ed_shift_pos,ax
         or      word  ed_flags,ed_mouse_on
         mov     ed_pos,eax
         mov     ebx,ed_mouse_variable
@@ -1271,12 +1271,12 @@ edit_box_mouse._mshift:
         call    edit_box.draw_bg
         jmp     edit_box_mouse.m_sh
 
-@@:     cmp     eax,ed_shift_pos
+@@:     cmp     ax,ed_shift_pos
         je      edit_box.editbox_exit
         mov     ed_pos,eax
         call    edit_box.draw_bg
         mov     ebp,shift_color
-        mov     ebx,ed_shift_pos
+        movzx   ebx, word ed_shift_pos
         call    edit_box_key.sh_cl_
         or      word ed_flags,ed_mous_adn_b
 edit_box_mouse.m_sh:
