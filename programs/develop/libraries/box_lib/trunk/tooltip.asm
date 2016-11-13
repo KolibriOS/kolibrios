@@ -86,7 +86,7 @@ endl
     test edi, edi
     jne .list_next
     xor eax, eax
-    inc eax ; god return
+    inc eax ; good return
 .exitp:
 	ret
 endp
