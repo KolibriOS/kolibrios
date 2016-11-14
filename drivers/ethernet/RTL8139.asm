@@ -144,26 +144,30 @@ include '../netdrv.inc'
         EE_93C56_CMD_LENGTH     = 11 ; start bit + cmd + 8bit ddress
 
 ; See chapter "5.7 Transmit Configuration Register" of RTL8139D(L).pdf
-        VER_RTL8139             = 1100000b
+        VER_RTL8139             = 1000000b
+        VER_RTL8139_K           = 1100000b
         VER_RTL8139A            = 1110000b
-        VER_RTL8139AG           = 1110100b
+        VER_RTL8139A_G          = 1110010b
         VER_RTL8139B            = 1111000b
-        VER_RTL8130             = VER_RTL8139B
+        VER_RTL8130             = 1111100b
         VER_RTL8139C            = 1110100b
         VER_RTL8100             = 1111010b
-        VER_RTL8100B            = 1110101b
-        VER_RTL8139D            = VER_RTL8100B
-        VER_RTL8139CP           = 1110110b
+        VER_RTL8100_8139D       = 1110101b
         VER_RTL8101             = 1110111b
 
-        IDX_RTL8139             = 0
-        IDX_RTL8139A            = 1
-        IDX_RTL8139B            = 2
-        IDX_RTL8139C            = 3
-        IDX_RTL8100             = 4
-        IDX_RTL8139D            = 5
-        IDX_RTL8139D            = 6
-        IDX_RTL8101             = 7
+        IDX_UNKNOWN             = 0
+        IDX_RTL8139             = 1
+        IDX_RTL8139_K           = 2
+        IDX_RTL8139A            = 3
+        IDX_RTL8139A_G          = 4
+        IDX_RTL8139B            = 5
+        IDX_RTL8130             = 6
+        IDX_RTL8139C            = 7
+        IDX_RTL8100             = 8
+        IDX_RTL8100_8139D       = 9
+        IDX_RTL8101             = 10
+
+        HW_VERSIONS             = 10
 
         ISR_SERR                = 1 shl 15
         ISR_TIMEOUT             = 1 shl 14
@@ -300,7 +304,7 @@ proc service_proc stdcall, ioctl:dword
         cmp     [devices], MAX_DEVICES                  ; First check if the driver can handle one more card
         jae     .fail
 
-        allocate_and_clear ebx, sizeof.device, .fail      ; Allocate the buffer for device structure
+        allocate_and_clear ebx, sizeof.device, .fail    ; Allocate the buffer for device structure
 
 ; Fill in the direct call addresses into the struct
 
@@ -327,8 +331,8 @@ proc service_proc stdcall, ioctl:dword
         invoke  PciRead8, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.interrupt_line
         mov     [ebx + device.irq_line], al
 
-        DEBUGF  1, "Hooking into device, dev:%x, bus:%x, irq:%x, I/O addr:%x\n",\
-        [ebx + device.pci_dev]:1,[ebx + device.pci_bus]:1,[ebx + device.irq_line]:1,[ebx + device.io_addr]:4
+        DEBUGF  1, "Hooking into device, devfn:%x, bus:%x, irq:%x, I/O addr:%x\n",\
+        [ebx + device.pci_dev]:2,[ebx + device.pci_bus]:2,[ebx + device.irq_line]:2,[ebx + device.io_addr]:4
 
 ; Allocate the receive buffer
 
@@ -377,7 +381,7 @@ proc service_proc stdcall, ioctl:dword
         dec     [devices]
 
   .err:
-        DEBUGF  2, "Error, removing all data !\n"
+        DEBUGF  2, "Fatal error occured, aborting\n"
         invoke  KernelFree, [ebx + device.rx_buffer]
         invoke  KernelFree, ebx
 
@@ -421,82 +425,82 @@ probe:
 
 ; Make the device a bus master
         invoke  PciRead32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command
-        or      al, PCI_CMD_MASTER
+        or      al, PCI_CMD_MASTER or PCI_CMD_PIO
         invoke  PciWrite32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command, eax
 
-; get chip version
-        set_io  [ebx + device.io_addr], 0
-        set_io  [ebx + device.io_addr], REG_TXCONFIG + 2
-        in      ax, dx
-        shr     ah, 2
-        shr     ax, 6
-        and     al, 01111111b
-
-; now find it in our array
-        mov     ecx, HW_VER_ARRAY_SIZE-1
-  .chip_ver_loop:
-        cmp     al, [hw_ver_array + ecx]
-        je      .chip_ver_found
-        dec     ecx
-        jns     .chip_ver_loop
-  .unknown:
-        mov     ecx, 8
-  .chip_ver_found:
-        cmp     ecx, 8
-        ja      .unknown
-
-        mov     [ebx + device.hw_ver_id], cl
-
-        mov     ecx, [crosslist+ecx*4]
-        mov     [ebx + device.name], ecx
-
-        DEBUGF  1, "Chip version: %s\n", ecx
-
-; wake up the chip
+; wake up old chips
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], REG_HLTCLK
         mov     al, 'R'         ; run the clock
         out     dx, al
 
-; unlock config and BMCR registers
-        set_io  [ebx + device.io_addr], REG_9346CR
-        mov     al, (1 shl BIT_93C46_EEM1) or (1 shl BIT_93C46_EEM0)
-        out     dx, al
+; get chip version
+        set_io  [ebx + device.io_addr], REG_TXCONFIG
+        in      eax, dx
+        shr     eax, 16
+        shr     ah, 2
+        shr     ax, 6
+        and     al, 0x7f
+        DEBUGF  1, "Chip version: %x\n", eax:2
 
-; enable power management
-        set_io  [ebx + device.io_addr], REG_CONFIG1
-        in      al, dx
+; now find it in our array
+        mov     ecx, HW_VERSIONS
+  @@:
+        cmp     al, [hw_ver_array + ecx]
+        je      @f
+        dec     ecx
+        jnz     @r
+  @@:
+        mov     [ebx + device.hw_ver_id], cl
+        mov     ecx, [hw_ver_names+ecx*4]
+        mov     [ebx + device.name], ecx
+        DEBUGF  1, "Chip version: %s\n", ecx
+
         cmp     [ebx + device.hw_ver_id], IDX_RTL8139B
         jae     .new_chip
+
 ; wake up older chips
+  .old_chip:
+        DEBUGF  1, "Wake up chip old style\n"
+        set_io  [ebx + device.io_addr], REG_CONFIG1
+        in      al, dx
         and     al, not ((1 shl BIT_SLEEP) or (1 shl BIT_PWRDWN))
         out     dx, al
-        jmp     .finish_wake_up
+        jmp     .done
 
 ; set LWAKE pin to active high (default value).
 ; it is for Wake-On-LAN functionality of some motherboards.
 ; this signal is used to inform the motherboard to execute a wake-up process.
 ; only at newer chips.
   .new_chip:
+        DEBUGF  1, "Wake up chip new style\n"
+; unlock config and BMCR registers
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], REG_9346CR
+        mov     al, (1 shl BIT_93C46_EEM1) or (1 shl BIT_93C46_EEM0)
+        out     dx, al
+
+;
+        set_io  [ebx + device.io_addr], REG_CONFIG1
+        in      al, dx
         or      al, (1 shl BIT_PMEn)
         and     al, not (1 shl BIT_LWACT)
         out     dx, al
 
+;
         set_io  [ebx + device.io_addr], REG_CONFIG4
         in      al, dx
         and     al, not (1 shl BIT_LWPTN)
         out     dx, al
 
 ; lock config and BMCR registers
-  .finish_wake_up:
         xor     al, al
-        set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], REG_9346CR
         out     dx, al
+
+  .done:
         DEBUGF  1, "probing done!\n"
-
         xor     eax, eax
-
         ret
 
 
@@ -516,16 +520,16 @@ reset:
         mov     al, 1 shl BIT_RST
         out     dx, al
         mov     cx, 1000                ; wait no longer for the reset
-  .wait_for_reset:
+  @@:
         in      al, dx
         test    al, 1 shl BIT_RST
-        jz      .reset_completed        ; RST remains 1 during reset
+        jz      @f                      ; RST remains 1 during reset
         dec     cx
-        jns     .wait_for_reset
+        jnz     @r
         DEBUGF  2, "Reset timeout!\n"
         or      eax, -1
         ret
-  .reset_completed:
+  @@:
 
 ; Read MAC address
         call    read_mac
@@ -539,7 +543,7 @@ reset:
         DEBUGF  2, "Could not attach int handler!\n"
         or      eax, -1
         ret
-       @@:
+  @@:
 
 ; unlock config and BMCR registers
         set_io  [ebx + device.io_addr], 0
@@ -620,6 +624,7 @@ reset:
 ; Set the mtu, kernel will be able to send now
         mov     [ebx + device.mtu], 1514
 
+; Detect current link status
         call    link
 
 ; Indicate that we have successfully reset the card
@@ -1122,43 +1127,47 @@ include '../peimport.inc'
 
 my_service      db 'RTL8139',0                    ; max 16 chars include zero
 
-device_1        db 'Realtek 8139',0
-device_2        db 'Realtek 8139A',0
-device_3        db 'Realtek 8139B',0
-device_4        db 'Realtek 8139C',0
-device_5        db 'Realtek 8100',0
-device_6        db 'Realtek 8139D',0
-device_7        db 'Realtek 8139CP',0
-device_8        db 'Realtek 8101',0
-device_unknown  db 'Unknown RTL8139 clone', 0
+sz_unknown              db 'Unknown RTL8139 clone', 0
+sz_RTL8139              db 'Realtek 8139',0
+sz_RTL8139_K            db 'Realtek 8139 rev K',0
+sz_RTL8139A             db 'Realtek 8139A',0
+sz_RTL8139A_G           db 'Realtek 8139A rev G',0
+sz_RTL8139B             db 'Realtek 8139B',0
+sz_RTL8130              db 'Realtek 8130',0
+sz_RTL8139C             db 'Realtek 8139C',0
+sz_RTL8100              db 'Realtek 8100',0
+sz_RTL8100_8139D        db 'Realtek 8100B / 8139D',0
+sz_RTL8101              db 'Realtek 8101',0
 
-crosslist:
-        dd device_1
-        dd device_2
-        dd device_3
-        dd device_4
-        dd device_5
-        dd device_6
-        dd device_7
-        dd device_8
-        dd device_unknown
+hw_ver_names:
+        dd sz_unknown
+        dd sz_RTL8139
+        dd sz_RTL8139_K
+        dd sz_RTL8139A
+        dd sz_RTL8139A_G
+        dd sz_RTL8139B
+        dd sz_RTL8130
+        dd sz_RTL8139C
+        dd sz_RTL8100
+        dd sz_RTL8100_8139D
+        dd sz_RTL8101
 
-hw_ver_array:                    ; This array is used by the probe routine to find out wich version of the RTL8139 we are working with
+hw_ver_array:                   ; This array is used by the probe routine to find out wich version of the RTL8139 we are working with
+        db 0
         db VER_RTL8139
+        db VER_RTL8139_K
         db VER_RTL8139A
+        db VER_RTL8139A_G
         db VER_RTL8139B
+        db VER_RTL8130
         db VER_RTL8139C
         db VER_RTL8100
-        db VER_RTL8139D
-        db VER_RTL8139CP
+        db VER_RTL8100_8139D
         db VER_RTL8101
-        db 0
 
-HW_VER_ARRAY_SIZE = $-hw_ver_array
-
-include_debug_strings                           ; All data wich FDO uses will be included here
+include_debug_strings           ; All data wich FDO uses will be included here
 
 align 4
 devices         dd 0
-device_list     rd MAX_DEVICES                   ; This list contains all pointers to device structures the driver is handling
+device_list     rd MAX_DEVICES  ; This list contains all pointers to device structures the driver is handling
 
