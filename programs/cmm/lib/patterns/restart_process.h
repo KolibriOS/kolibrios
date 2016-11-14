@@ -10,10 +10,12 @@ enum {
 	SINGLE
 };
 
+#define MAX_PROCESS_COUNT 256
+
 :int CheckProcessExists(dword proc_name) {
 	int i;
 	proc_info Process;
-	for (i=0; i<1000; i++;)
+	for (i=0; i<MAX_PROCESS_COUNT; i++;)
 	{
 		GetProcessInfo(#Process, i);
 		if (strcmpi(#Process.name, proc_name)==0) return 1;
@@ -24,7 +26,7 @@ enum {
 :void KillProcessByName(dword proc_name, byte multiple) {
 	int i;
 	proc_info Process;
-	for (i=0; i<1000; i++;)
+	for (i=0; i<MAX_PROCESS_COUNT; i++;)
 	{
 		GetProcessInfo(#Process, i);
 		if (strcmpi(#Process.name, proc_name)==0) 

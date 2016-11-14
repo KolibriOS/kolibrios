@@ -11,6 +11,7 @@
 #include "../lib/obj/box_lib.h"
 #include "../lib/io.h"
 #include "../lib/patterns/select_list.h"
+#include "../lib/patterns/restart_process.h"
 
 //===================================================//
 //                                                   //
@@ -133,7 +134,7 @@ void GetProcessList()
 {
 	int i, j;
 	select_list.count=0;
-	for (i=0; i<65535; i++)
+	for (i=0; i<MAX_PROCESS_COUNT; i++)
 	{
 		GetProcessInfo(#Process, i);
 		if (Process.name) 

@@ -171,7 +171,7 @@
 	w = ESI.edit_box.width+1;
 	if (ESI.edit_box.flags & 100000000000b) bg = 0xCACACA; else bg = 0xFFFfff;
 	edit_box_draw  stdcall (edit_box_pointer);
-	h = ESI.edit_box.ed_height+2;
+	h = 22;
 	DrawRectangle(x-1, y-1, w+1, h+1, bg);
 	DrawRectangle3D(x-2, y-2, w+3, h+3, 0xDDDddd, bg);
 	DrawRectangle(x-3, y-3, w+5, h+5, system.color.work_graph);
