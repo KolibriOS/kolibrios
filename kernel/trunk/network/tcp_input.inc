@@ -859,17 +859,12 @@ endl
         inc     [TCPS_drops]
 
 
-        mov     eax, ebx
-        call    tcp_close
-        jmp     .drop_no_socket
+        jmp     .drop
 
 ;-----------------------------------------------------------------------------------
   .rst_close:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Closing with reset\n"
-
-        mov     eax, ebx
-        call    tcp_close
-        jmp     .drop_no_socket
+        jmp     .unlock_and_close
 
 ;-----------------------------------------------------------------------------------
   .no_rst:
@@ -1311,6 +1306,7 @@ endl
         test    [temp_bits], TCP_BIT_FIN_IS_ACKED
         jz      .ack_processed
 
+  .unlock_and_close:
         push    ebx
         lea     ecx, [ebx + SOCKET.mutex]
         call    mutex_unlock
