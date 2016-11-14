@@ -311,7 +311,6 @@ getaddrinfo:                                                                 ;;
         mcall   23      ; wait for event - must be stack event
 ; 2d. Check for timeout.
         test    eax, eax
-        lea     eax, [esp+4]    ; pointer to (1)
         jz      .timeout
 ; 3. Got packet. Call processing function.
         push    edi     ; second parameter: pointer to result
@@ -329,6 +328,7 @@ getaddrinfo:                                                                 ;;
         jbe     .wait
 .timeout:
 ; 5. Timeout: abort and return error
+        lea     eax, [esp+4]    ; pointer to (1)
         push    eax
         call    getaddrinfo_abort
         and     dword [edi], 0
@@ -678,17 +678,18 @@ lock    xadd    [DNSrequestID], eax     ; atomically increment ID, get old value
         mcall   76, API_IPv4 + (1 shl 8) + 4 ; protocol IP=0, device number=0, function=get DNS address
         cmp     eax, -1
         je      .ret.dnserr
-        mov     esi, eax        ; put server address to esi
+        push    eax             ; save server address to the stack
 ; 8. Open UDP socketnum to DNS server, port 53.
 ; 8a. Create new socketnum.
-        mcall   75, 0, AF_INET4, SOCK_DGRAM
+        mcall   75, 0, AF_INET4, SOCK_DGRAM, 0
+        pop     esi             ; restore server address saved at step 7
         cmp     eax, -1 ; error?
         jz      .ret.dnserr
         mov     ecx, eax        ; put socketnum handle to ecx
 ; 8b. Create sockaddr structure on the stack.
         push    0
         push    0       ; sin_zero
-        push    esi     ; sin_addr
+        push    edi     ; sin_addr
         push    AF_INET4 + (53 shl 24)
                         ; sin_family and sin_port in network byte order
 ; 8c. Connect.
