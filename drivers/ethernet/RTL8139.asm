@@ -153,6 +153,7 @@ include '../netdrv.inc'
         VER_RTL8139C            = 1110100b
         VER_RTL8100             = 1111010b
         VER_RTL8100_8139D       = 1110101b
+        VER_RTL8139CP           = 1110110b
         VER_RTL8101             = 1110111b
 
         IDX_UNKNOWN             = 0
@@ -165,9 +166,10 @@ include '../netdrv.inc'
         IDX_RTL8139C            = 7
         IDX_RTL8100             = 8
         IDX_RTL8100_8139D       = 9
-        IDX_RTL8101             = 10
+        IDX_RTL8139CP           = 10
+        IDX_RTL8101             = 11
 
-        HW_VERSIONS             = 10
+        HW_VERSIONS             = 11
 
         ISR_SERR                = 1 shl 15
         ISR_TIMEOUT             = 1 shl 14
@@ -435,9 +437,9 @@ probe:
         out     dx, al
 
 ; get chip version
-        set_io  [ebx + device.io_addr], REG_TXCONFIG
-        in      eax, dx
-        shr     eax, 16
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], REG_TXCONFIG + 2
+        in      ax, dx
         shr     ah, 2
         shr     ax, 6
         and     al, 0x7f
@@ -1137,6 +1139,7 @@ sz_RTL8130              db 'Realtek 8130',0
 sz_RTL8139C             db 'Realtek 8139C',0
 sz_RTL8100              db 'Realtek 8100',0
 sz_RTL8100_8139D        db 'Realtek 8100B / 8139D',0
+sz_RTL8139CP            db 'Realtek 8139CP', 0
 sz_RTL8101              db 'Realtek 8101',0
 
 hw_ver_names:
@@ -1150,6 +1153,7 @@ hw_ver_names:
         dd sz_RTL8139C
         dd sz_RTL8100
         dd sz_RTL8100_8139D
+        dd sz_RTL8139CP
         dd sz_RTL8101
 
 hw_ver_array:                   ; This array is used by the probe routine to find out wich version of the RTL8139 we are working with
@@ -1163,6 +1167,7 @@ hw_ver_array:                   ; This array is used by the probe routine to fin
         db VER_RTL8139C
         db VER_RTL8100
         db VER_RTL8100_8139D
+        db VER_RTL8139CP
         db VER_RTL8101
 
 include_debug_strings           ; All data wich FDO uses will be included here
