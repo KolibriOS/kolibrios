@@ -17,6 +17,7 @@ LIBC_INCLUDES = $(LIBC_TOPDIR)/include
 NAME:=	  libc
 
 DEFINES:= -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -U_MSC_VER
+DEFINES+= -D_MB_EXTENDED_CHARSETS_WINDOWS=1
 DEFINES+= -D_IEEE_LIBM -DHAVE_RENAME -DBUILD_LIBC -DPACKAGE_NAME=\"newlib\"
 DEFINES+= -DPACKAGE_TARNAME=\"newlib\" -DPACKAGE_VERSION=\"2.4.0\"
 SEFINES+= -DPACKAGE_STRING=\"newlib\ 2.4.0\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\"
@@ -69,15 +70,15 @@ CORE_SRCS:=                   			\
 			ctype/iswalpha.c     	\
 			ctype/iswblank.c     	\
 			ctype/iswcntrl.c     	\
-         		ctype/iswdigit.c     	\
-         		ctype/iswgraph.c     	\
-         		ctype/iswlower.c     	\
-         		ctype/iswprint.c     	\
-         		ctype/iswpunct.c     	\
-         		ctype/iswspace.c     	\
-         		ctype/iswupper.c     	\
-         		ctype/iswxdigit.c    	\
-         		ctype/isxdigit.c     	\
+    		ctype/iswdigit.c     	\
+    		ctype/iswgraph.c     	\
+    		ctype/iswlower.c     	\
+    		ctype/iswprint.c     	\
+    		ctype/iswpunct.c     	\
+    		ctype/iswspace.c     	\
+    		ctype/iswupper.c     	\
+    		ctype/iswxdigit.c    	\
+    		ctype/isxdigit.c     	\
 			ctype/jp2uc.c		\
 			ctype/toascii.c		\
 			ctype/tolower.c      	\
@@ -157,30 +158,30 @@ CORE_SRCS:=                   			\
 
 
 STDLIB_SRCS=                 			\
-         		__atexit.c          	\
-         		__call_atexit.c     	\
-         		abort.c              	\
-         		abs.c               	\
+    		__atexit.c          	\
+    		__call_atexit.c     	\
+    		abort.c              	\
+    		abs.c               	\
 			assert.c		\
 			atexit.c		\
-         		atof.c              	\
-         		atoi.c              	\
+    		atof.c              	\
+    		atoi.c              	\
 			atol.c			\
 			btowc.c			\
-         		calloc.c             	\
+    		calloc.c             	\
 			cxa_atexit.c		\
 			cxa_finalize.c		\
-         		div.c               	\
-         		dtoa.c               	\
-         		dtoastub.c          	\
+    		div.c               	\
+    		dtoa.c               	\
+    		dtoastub.c          	\
 			efgcvt.c		\
 			ecvtbuf.c		\
 			eprintf.c		\
 			erand48.c		\
-         		exit.c              	\
-         		gdtoa-gethex.c      	\
-         		gdtoa-hexnan.c       	\
-         		getenv.c             	\
+    		exit.c              	\
+    		gdtoa-gethex.c      	\
+    		gdtoa-hexnan.c       	\
+    		getenv.c             	\
 			getenv_r.c		\
 			itoa.c			\
 			ldiv.c			\
@@ -206,6 +207,7 @@ STDLIB_SRCS=                 			\
          		rand48.c            	\
 			random.c		\
          		realloc.c            	\
+			sb_charsets.c		\
          		seed48.c             	\
          		srand48.c            	\
          		strtod.c            	\

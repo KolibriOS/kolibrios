@@ -9,7 +9,7 @@ SDK_DIR = "../../.."
 LIBC_TOPDIR = "."
 LIBC_INCLUDES = "include"
 NAME = "libc"
-DEFINES = "-U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -U_MSC_VER-D_IEEE_LIBM -DHAVE_RENAME -DBUILD_LIBC"
+DEFINES = "-U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -U_MSC_VER -D_MB_EXTENDED_CHARSETS_WINDOWS=1 -D_IEEE_LIBM -DHAVE_RENAME -DBUILD_LIBC"
 INCLUDES = "-Iinclude"
 
 TOOLCHAIN_LIBPATH = tup.getconfig("TOOLCHAIN_LIBPATH")
@@ -188,6 +188,7 @@ STDLIB_SRCS = {
   "rand48.c",
   "random.c",
   "realloc.c",
+  "sb_charsets.c",
   "seed48.c",
   "srand48.c",
   "strtod.c",
