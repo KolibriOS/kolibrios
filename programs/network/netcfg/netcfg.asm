@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2014. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2016. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  netcfg.asm - Network driver control center for KolibriOS       ;;
@@ -14,6 +14,9 @@
 
 format binary as ""
 
+__DEBUG__       = 1
+__DEBUG_LEVEL__ = 1
+
 use32
                org    0x0
 
@@ -25,9 +28,8 @@ use32
                dd     (I_END+0x100)        ; esp
                dd     param, 0x0           ; I_Param , I_Icon
 
-type_ethernet equ 1
-
 include '../../macros.inc'
+include '../../debug-fdo.inc'
 
 START:
         ; first, check boot parameters
@@ -304,12 +306,12 @@ load_and_start:
 
         call    get_drv_ptr
         cmp     eax, lbl_none
-        je      .next
+        je      .notsupp
 
         mov     ecx, eax
         mcall   68, 16
         test    eax, eax
-        jz      .next
+        jz      .fail
         mov     [IOCTL.handle], eax
 
         mov     al, [V_Dev]
@@ -325,10 +327,18 @@ load_and_start:
 
         mcall   68, 17, IOCTL
 
-       .next:
+  .next:
         cmp     byte[param], 'A'
         je      Start_Enum.nextDev
         jmp     exit
+
+  .fail:
+        DEBUGF  1,"Could not load network driver %s\n", ecx
+        jmp     .next
+
+  .notsupp:
+        DEBUGF  1,"Unsupported PCI network card detected: 0x%x:0x%x\n", [PCI_Vendor]:4, [PCI_Device]:4
+        jmp     .next
 
 
 
@@ -458,38 +468,32 @@ get_drv_ptr:
         mov     ebx, driverlist        ; ebx is the current pointer
         mov     ecx, dword[PCI_Vendor] ; the device/vendor id of we want to find
 
-       driverloop:
+  .driverloop:
         inc     ebx
-
-        cmp     byte[ebx],0
-        jne     driverloop
-
+        cmp     byte[ebx], 0
+        jne     .driverloop
         inc     ebx                    ; the device/vendor id list for the driver eax is pointing to starts here.
 
-       deviceloop:
-        cmp     dword[ebx],0
-        je      nextdriver
-
-        cmp     dword[ebx],ecx
-        je      driverfound
-
+  .deviceloop:
+        cmp     dword[ebx], 0
+        je      .nextdriver
+        cmp     dword[ebx], ecx
+        je      .driverfound
         add     ebx, 4
-        jmp     deviceloop
+        jmp     .deviceloop
 
-       nextdriver:
+  .nextdriver:
         add     ebx, 4
+        cmp     dword[ebx], 0
+        je      .nodriver
+        mov     eax, ebx
+        jmp     .driverloop
 
-        cmp     dword[ebx],0
-        je      nodriver
-
-        mov     eax,ebx
-        jmp     driverloop
-
-       nodriver:
+  .nodriver:
         mov     eax, lbl_none          ; lets print the vendor Name
         ret
 
-       driverfound:
+  .driverfound:
         ret
 
 include 'vendors.inc'
@@ -516,7 +520,9 @@ btn_start       db 'Start device',0
 btn_reset       db 'Reset device',0
 btn_stop        db 'Stop device',0
 lbl_none        db 'none',0
-load_error      db 'Could not load driver!',0
+load_error      db 'Could not load network driver!',0
+
+include_debug_strings
 
 hardwareinfo:
    .type        db 1 ; pci
