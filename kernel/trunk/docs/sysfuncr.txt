@@ -4563,6 +4563,9 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
   * ecx = номер сокета
   * edx = указатель на структуру sockaddr
   * esi = длина структуры sockaddr
+Формат структуры SockAddr:
+  * +0: Word: Family
+  * +2: 14*Byte: Data
 Возвращаемое значение:
   * eax = -1 для ошибки
   * ebx = код ошибки
@@ -4594,6 +4597,9 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
   * ecx = номер сокета
   * edx = указатель на структуру sockaddr
   * esi = длина структуры sockaddr
+Формат структуры SockAddr:
+  * +0: Word: Family
+  * +2: 14*Byte: Data  
 Возвращаемое значение:
   * eax = -1 для ошибки
   * ebx = код ошибки
@@ -4610,6 +4616,9 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
   * ecx = номер сокета
   * edx = указатель на структуру sockaddr
   * esi = длина структуры sockaddr
+Формат структуры SockAddr:
+  * +0: Word: Family
+  * +2: 14*Byte: Data  
 Возвращаемое значение:
   * eax = номер сокета из принятого сокета, -1 для ошибки
   * ebx = код ошибки

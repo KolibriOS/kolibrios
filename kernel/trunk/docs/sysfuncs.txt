@@ -4513,6 +4513,9 @@ Parameters:
   * ecx = socket number
   * edx = pointer to sockaddr structure
   * esi = length of sockaddr structure
+Format of SockAddr structure:
+  * +0: Word: Family
+  * +2: 14*Byte: Data
 Returned value:
   * eax = -1 on error
   * ebx = errorcode
@@ -4544,6 +4547,9 @@ Parameters:
   * ecx = socket number
   * edx = pointer to sockaddr structure
   * esi = length of sockaddr structure
+Format of SockAddr structure:
+  * +0: Word: Family
+  * +2: 14*Byte: Data  
 Returned value:
   * eax = -1 on error
   * ebx = errorcode
@@ -4560,6 +4566,9 @@ Parameters:
   * ecx = socket number
   * edx = pointer to sockaddr structure
   * esi = length of sockaddr structure
+Format of SockAddr structure:
+  * +0: Word: Family
+  * +2: 14*Byte: Data  
 Returned value:
   * eax = socket number of accepted socket, -1 on error
   * ebx = errorcode
