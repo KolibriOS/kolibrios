@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;; i8255x (Intel eepro 100) driver for KolibriOS                   ;;
@@ -43,53 +43,59 @@ include '../macros.inc'
 include '../fdo.inc'
 include '../netdrv.inc'
 
+; I/O registers
+REG_SCB_STATUS          = 0
+REG_SCB_CMD             = 2
+REG_SCB_PTR             = 4
+REG_PORT                = 8
+REG_EEPROM              = 14
+REG_MDI_CTRL            = 16
+
+; Port commands
+PORT_SOFT_RESET         = 0x0
+PORT_SELF_TEST          = 0x1
+PORT_SELECTIVE_RESET    = 0x2
+PORT_DUMP               = 0x3
+PORT_DUMP_WAKEUP        = 0x7
+PORT_PTR_MASK           = 0xfffffff0
+
 ; Serial EEPROM
-
-EE_SK           = 1 shl 0       ; serial clock
-EE_CS           = 1 shl 1       ; chip select
-EE_DI           = 1 shl 2       ; data in
-EE_DO           = 1 shl 3       ; data out
-EE_MASK         = EE_SK + EE_CS + EE_DI + EE_DO
-
+EE_SK                   = 1 shl 0       ; serial clock
+EE_CS                   = 1 shl 1       ; chip select
+EE_DI                   = 1 shl 2       ; data in
+EE_DO                   = 1 shl 3       ; data out
+EE_MASK                 = EE_SK + EE_CS + EE_DI + EE_DO
 ; opcodes, first bit is start bit and must be 1
-EE_READ         = 110b
-EE_WRITE        = 101b
-EE_ERASE        = 111b
+EE_READ                 = 110b
+EE_WRITE                = 101b
+EE_ERASE                = 111b
 
 ; The SCB accepts the following controls for the Tx and Rx units:
+CU_START                = 0x0010
+CU_RESUME               = 0x0020
+CU_STATSADDR            = 0x0040
+CU_SHOWSTATS            = 0x0050        ; Dump statistics counters.
+CU_CMD_BASE             = 0x0060        ; Base address to add CU commands.
+CU_DUMPSTATS            = 0x0070        ; Dump then reset stats counters.
 
-CU_START        = 0x0010
-CU_RESUME       = 0x0020
-CU_STATSADDR    = 0x0040
-CU_SHOWSTATS    = 0x0050        ; Dump statistics counters.
-CU_CMD_BASE     = 0x0060        ; Base address to add CU commands.
-CU_DUMPSTATS    = 0x0070        ; Dump then reset stats counters.
+RX_START                = 0x0001
+RX_RESUME               = 0x0002
+RX_ABORT                = 0x0004
+RX_ADDR_LOAD            = 0x0006
+RX_RESUMENR             = 0x0007
+INT_MASK                = 0x0100
+DRVR_INT                = 0x0200        ; Driver generated interrupt
 
-RX_START        = 0x0001
-RX_RESUME       = 0x0002
-RX_ABORT        = 0x0004
-RX_ADDR_LOAD    = 0x0006
-RX_RESUMENR     = 0x0007
-INT_MASK        = 0x0100
-DRVR_INT        = 0x0200        ; Driver generated interrupt
-
-REG_SCB_STATUS  = 0
-REG_SCB_CMD     = 2
-REG_SCB_PTR     = 4
-REG_PORT        = 8
-REG_EEPROM      = 14
-REG_MDI_CTRL    = 16
-
-PHY_100a        = 0x000003E0
-PHY_100c        = 0x035002A8
-PHY_82555_tx    = 0x015002A8
-PHY_nsc_tx      = 0x5C002000
-PHY_82562_et    = 0x033002A8
-PHY_82562_em    = 0x032002A8
-PHY_82562_ek    = 0x031002A8
-PHY_82562_eh    = 0x017002A8
-PHY_82552_v     = 0xd061004d
-PHY_unknown     = 0xFFFFFFFF
+PHY_100a                = 0x000003E0
+PHY_100c                = 0x035002A8
+PHY_82555_tx            = 0x015002A8
+PHY_nsc_tx              = 0x5C002000
+PHY_82562_et            = 0x033002A8
+PHY_82562_em            = 0x032002A8
+PHY_82562_ek            = 0x031002A8
+PHY_82562_eh            = 0x017002A8
+PHY_82552_v             = 0xd061004d
+PHY_unknown             = 0xFFFFFFFF
 
 MAC_82557_D100_A        = 0
 MAC_82557_D100_B        = 1
@@ -318,7 +324,7 @@ proc service_proc stdcall, ioctl:dword
         mov     [ebx + device.reset], reset
         mov     [ebx + device.transmit], transmit
         mov     [ebx + device.unload], unload
-        mov     [ebx + device.name], my_service
+        mov     [ebx + device.name], devicename
 
 ; save the pci bus and device numbers
 
@@ -338,23 +344,18 @@ proc service_proc stdcall, ioctl:dword
         invoke  PciRead8, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.interrupt_line
         mov     [ebx + device.irq_line], al
 
-        DEBUGF  1,"Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
-        [ebx + device.pci_dev]:1,[ebx + device.pci_bus]:1,[ebx + device.irq_line]:1,[ebx + device.io_addr]:4
+        DEBUGF  1,"Hooking into device, devfn:%x, bus:%x, irq:%x, addr:%x\n",\
+        [ebx + device.pci_dev]:2,[ebx + device.pci_bus]:2,[ebx + device.irq_line]:2,[ebx + device.io_addr]:4
 
 ; Ok, the eth_device structure is ready, let's probe the device
-
-        pushf
-        cli                     ; disable ints untilm initialisation is done
-
-        call    probe                                                   ; this function will output in eax
-        test    eax, eax
-        jnz     .err                                                    ; If an error occured, exit
 
         mov     eax, [devices]                                          ; Add the device structure to our device list
         mov     [device_list+4*eax], ebx                                ; (IRQ handler uses this list to find device)
         inc     [devices]                                               ;
 
-        popf
+        call    probe                                                   ; this function will output in eax
+        test    eax, eax
+        jnz     .err                                                 ; If an error occured, exit
 
         mov     [ebx + device.type], NET_TYPE_ETH
         invoke  NetRegDev
@@ -375,7 +376,6 @@ proc service_proc stdcall, ioctl:dword
         ret
 
 ; If an error occured, remove all allocated data and exit (returning -1 in eax)
-
   .err:
         invoke  KernelFree, ebx
 
@@ -423,7 +423,7 @@ probe:
 
 ; Make the device a bus master
         invoke  PciRead32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command
-        or      al, PCI_CMD_MASTER
+        or      al, PCI_CMD_MASTER or PCI_CMD_PIO
         invoke  PciWrite32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command, eax
 
 ;---------------------------
@@ -452,11 +452,6 @@ probe:
 
   .found:
 
-        call    ee_get_width
-        call    MAC_read_eeprom
-
-        ;;; TODO: detect phy
-
 
 
 ;----------
@@ -480,16 +475,45 @@ reset:
 
         DEBUGF  1,"Resetting\n"
 
-;---------------
-; reset the card
+;----------------
+; Selective reset
 
         set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], REG_EEPROM
+        mov     eax, PORT_SELECTIVE_RESET
+        out     dx, eax
+
+        mov     esi, 1
+        invoke  Sleep
+
+;-----------
+; Soft reset
+
         set_io  [ebx + device.io_addr], REG_PORT
-        xor     eax, eax        ; Software Reset
+        mov     eax, PORT_SOFT_RESET
         out     dx, eax
 
         mov     esi, 10
-        invoke  Sleep           ; Give the card time to warm up.
+        invoke  Sleep
+
+;-------------
+; Read PHY IDs
+
+        mov     cx, 1
+        mov     dx, MII_PHYSID1
+        call    mdio_read
+        DEBUGF  1, "PHY ID1: 0x%x\n", ax
+
+        mov     cx, 1
+        mov     dx, MII_PHYSID2
+        call    mdio_read
+        DEBUGF  1, "PHY ID2: 0x%x\n", ax
+
+;---------------------
+; Read MAC from eeprom
+
+        call    ee_get_width
+        call    mac_read_eeprom
 
 ;---------------------------------
 ; Tell device where to store stats
@@ -810,7 +834,7 @@ int_handler:
         pop     edi esi ebx
         xor     eax, eax
 
-        ret                                     ; If no device was found, abort (The irq was probably for a device, not registered to this driver)
+        ret                                         ; If no device was found, abort (The irq was probably for a device, not registered to this driver)
 
   .got_it:
 
@@ -991,15 +1015,15 @@ ee_read:        ; esi = address to read
         movzx   ecx, [ebx + device.ee_bus_width]
         add     ecx, 3
 
-        mov     al, EE_CS
-        out     dx, al
+        mov     ax, 0x4800 + EE_CS
+        out     dx, ax
         call    udelay
 
 ;-----------------------
 ; Write this to the chip
 
   .loop:
-        mov     al, EE_CS + EE_SK
+        mov     al, EE_CS
         shl     esi, 1
         jnc     @f
         or      al, EE_DI
@@ -1007,7 +1031,7 @@ ee_read:        ; esi = address to read
         out     dx, al
         call    udelay
 
-        and     al, not EE_SK
+        or      al, EE_SK
         out     dx, al
         call    udelay
 
@@ -1021,7 +1045,11 @@ ee_read:        ; esi = address to read
 
   .loop2:
         shl     esi, 1
-        mov     al, EE_CS + EE_SK
+        mov     al, EE_CS
+        out     dx, al
+        call    udelay
+
+        or      al, EE_SK
         out     dx, al
         call    udelay
 
@@ -1031,18 +1059,13 @@ ee_read:        ; esi = address to read
         inc     esi
        @@:
 
-        mov     al, EE_CS
-        out     dx, al
-        call    udelay
-
         loop    .loop2
 
 ;-----------------------
 ; de-activate the eeprom
 
-        xor     ax, ax
-        out     dx, ax
-
+        xor     al, al
+        out     dx, al
 
         DEBUGF  1,"0x%x\n", esi:4
         ret
@@ -1069,14 +1092,14 @@ ee_write:       ; esi = address to write to, di = data
         movzx   ecx, [ebx + device.ee_bus_width]
         add     ecx, 3
 
-        mov     al, EE_CS       ; enable chip
-        out     dx, al
+        mov     ax, 0x4800 + EE_CS       ; enable chip
+        out     dx, ax
 
 ;-----------------------
 ; Write this to the chip
 
   .loop:
-        mov     al, EE_CS + EE_SK
+        mov     al, EE_CS
         shl     esi, 1
         jnc     @f
         or      al, EE_DI
@@ -1084,7 +1107,7 @@ ee_write:       ; esi = address to write to, di = data
         out     dx, al
         call    udelay
 
-        and     al, not EE_SK
+        or      al, EE_SK
         out     dx, al
         call    udelay
 
@@ -1096,7 +1119,7 @@ ee_write:       ; esi = address to write to, di = data
         mov     ecx, 16
 
   .loop2:
-        mov     al, EE_CS + EE_SK
+        mov     al, EE_CS
         shl     di, 1
         jnc     @f
         or      al, EE_DI
@@ -1104,7 +1127,7 @@ ee_write:       ; esi = address to write to, di = data
         out     dx, al
         call    udelay
 
-        and     al, not EE_SK
+        or      al, EE_SK
         out     dx, al
         call    udelay
 
@@ -1127,23 +1150,23 @@ ee_get_width:
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], REG_EEPROM
 
-        mov     al, EE_CS      ; activate eeprom
-        out     dx, al
+        mov     ax, 0x4800 + EE_CS      ; activate eeprom
+        out     dx, ax
         call    udelay
 
         mov     si, EE_READ shl 13
         xor     ecx, ecx
   .loop:
-        mov     al, EE_CS + EE_SK
+        mov     al, EE_CS
         shl     si, 1
         jnc     @f
         or      al, EE_DI
        @@:
-        out     dx, al
+        out     dx, ax
         call    udelay
 
-        and     al, not EE_SK
-        out     dx, al
+        or      al, EE_SK
+        out     dx, ax
         call    udelay
 
         inc     ecx
@@ -1156,9 +1179,9 @@ ee_get_width:
         jnz     .loop
 
         xor     al, al
-        out     dx, al          ; de-activate eeprom
+        out     dx, al                  ; de-activate eeprom
 
-        sub     cl, 3           ; dont count the opcode bits
+        sub     cl, 3                   ; dont count the opcode bits
         mov     [ebx + device.ee_bus_width], cl
         DEBUGF  1, "Eeprom width=%u bit\n", ecx
 
@@ -1166,9 +1189,8 @@ ee_get_width:
 
   .give_up:
         DEBUGF  2, "Eeprom not found!\n"
-
         xor     al, al
-        out     dx, al          ; de-activate eeprom
+        out     dx, al                  ; de-activate eeprom
 
         ret
 
@@ -1195,9 +1217,8 @@ mdio_read:
         DEBUGF  1,"MDIO read\n"
 
         shl     ecx, 21                 ; PHY addr
-        shl     edx, 16                 ; PHY reg addr
-
         mov     eax, ecx
+        shl     edx, 16                 ; PHY reg addr
         or      eax, edx
         or      eax, 10b shl 26         ; read opcode
 
@@ -1212,6 +1233,8 @@ mdio_read:
         jz      .wait
 
         ret
+
+
 
 ; ax = data
 ; cx = phy addr
@@ -1245,14 +1268,9 @@ mdio_write:
 
         ret
 
-read_mac:
-
-        ret
-
-
 
 align 4
-MAC_read_eeprom:
+mac_read_eeprom:
 
         mov     esi, 0
         call    ee_read
@@ -1268,16 +1286,6 @@ MAC_read_eeprom:
 
 
         ret
-
-
-align 4
-MAC_write:
-
-;;;;
-
-        ret
-
-
 
 
 ; End of code
@@ -1297,49 +1305,48 @@ confcmd_data    db 22, 0x08, 0, 0, 0, 0x80, 0x32, 0x03, 1
 
 
 device_id_list:
-
-        dw 0x1029
-        dw 0x1030
-        dw 0x1031
-        dw 0x1032
-        dw 0x1033
-        dw 0x1034
-        dw 0x1038
-        dw 0x1039
-        dw 0x103A
-        dw 0x103B
-        dw 0x103C
-        dw 0x103D
-        dw 0x103E
-        dw 0x1050
-        dw 0x1051
-        dw 0x1052
-        dw 0x1053
-        dw 0x1054
-        dw 0x1055
-        dw 0x1056
-        dw 0x1057
-        dw 0x1059
-        dw 0x1064
-        dw 0x1065
-        dw 0x1066
-        dw 0x1067
-        dw 0x1068
-        dw 0x1069
-        dw 0x106A
-        dw 0x106B
-        dw 0x1091
-        dw 0x1092
-        dw 0x1093
-        dw 0x1094
-        dw 0x1095
-        dw 0x10fe
-        dw 0x1209
-        dw 0x1229
-        dw 0x2449
-        dw 0x2459
-        dw 0x245D
-        dw 0x27DC
+dw 0x1029
+dw 0x1030
+dw 0x1031
+dw 0x1032
+dw 0x1033
+dw 0x1034
+dw 0x1038
+dw 0x1039
+dw 0x103A
+dw 0x103B
+dw 0x103C
+dw 0x103D
+dw 0x103E
+dw 0x1050
+dw 0x1051
+dw 0x1052
+dw 0x1053
+dw 0x1054
+dw 0x1055
+dw 0x1056
+dw 0x1057
+dw 0x1059
+dw 0x1064
+dw 0x1065
+dw 0x1066
+dw 0x1067
+dw 0x1068
+dw 0x1069
+dw 0x106A
+dw 0x106B
+dw 0x1091
+dw 0x1092
+dw 0x1093
+dw 0x1094
+dw 0x1095
+dw 0x10fe
+dw 0x1209
+dw 0x1229
+dw 0x2449
+dw 0x2459
+dw 0x245D
+dw 0x27DC
 
 DEVICE_IDs = ($ - device_id_list) / 2
 
