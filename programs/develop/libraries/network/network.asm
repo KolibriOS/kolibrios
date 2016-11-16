@@ -689,7 +689,7 @@ lock    xadd    [DNSrequestID], eax     ; atomically increment ID, get old value
 ; 8b. Create sockaddr structure on the stack.
         push    0
         push    0       ; sin_zero
-        push    edi     ; sin_addr
+        push    esi     ; sin_addr
         push    AF_INET4 + (53 shl 24)
                         ; sin_family and sin_port in network byte order
 ; 8c. Connect.
