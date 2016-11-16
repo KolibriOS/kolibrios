@@ -764,6 +764,10 @@ proc set_mtrr stdcall, base:dword,size:dword,mem_type:dword
 ; find unused register
         mov     ecx, 0x201
 .scan:
+        mov     eax, [num_variable_mtrrs]
+        lea     eax, [0x200+eax*2]
+        cmp     ecx, eax
+        jae     .ret
         rdmsr
         dec     ecx
         test    ah, 8
@@ -776,10 +780,7 @@ proc set_mtrr stdcall, base:dword,size:dword,mem_type:dword
         jz      .ret
 @@:
         add     ecx, 3
-        mov     eax, [num_variable_mtrrs]
-        lea     eax, [0x200+eax*2]
-        cmp     ecx, eax
-        jb      .scan
+        jmp     .scan
 ; no free registers, ignore the call
 .ret:
         ret
