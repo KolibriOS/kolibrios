@@ -313,6 +313,7 @@ getaddrinfo:                                                                 ;;
         test    eax, eax
         jz      .timeout
 ; 3. Got packet. Call processing function.
+        lea     eax, [esp+4]
         push    edi     ; second parameter: pointer to result
         push    eax     ; first parameter: pointer to reqdata
         call    getaddrinfo_process
