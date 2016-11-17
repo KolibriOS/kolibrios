@@ -25,13 +25,29 @@ struct DrawBufer {
 
 bool DrawBufer::Init(int i_bufx, i_bufy, i_bufw, i_bufh)
 {
+	dword alloc_size, free_ram_size;
+	char error_str[256];
 	if (!zoom) zoom = 1;
 	bufx = i_bufx;
 	bufy = i_bufy;
 	bufw = i_bufw * zoom; 
 	bufh = i_bufh * zoom;
 	free(buf_data);
-	buf_data = malloc(bufw * bufh * 4 + 8);
+	$mov eax, 18
+	$mov ebx, 16
+	$int 0x40
+	free_ram_size = EAX * 1024;
+	alloc_size = bufw * bufh * 4 + 8;
+	if (alloc_size >= free_ram_size) {
+		sprintf(#error_str,
+"'DrawBufer needs more memory than currenly available.
+Application could be unstable.
+
+Requested size: %i Kb. 
+Free RAM: %i Kb' -E", alloc_size/1024, free_ram_size/1024);
+		notify(#error_str);
+	}
+	buf_data = malloc(alloc_size);
 	//debugval("buf_data",buf_data);
 	if (!buf_data) return false;
 	ESDWORD[buf_data] = bufw;

@@ -30,7 +30,7 @@
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.5";
+char version[]="Текстовый браузер 1.51";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -43,7 +43,7 @@ char rmb_menu[] =
 Очистить кэш картинок
 Менеджер загрузок";
 #else
-char version[]="Text-based Browser 1.5";
+char version[]="Text-based Browser 1.51";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -263,8 +263,7 @@ void SetElementSizes()
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w;
 	WB1.list.visible = WB1.list.h - 5 / WB1.list.item_h;
 	if (WB1.list.w!=WB1.DrawBuf.bufw) {
-		if (WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 2048 * WB1.list.item_h) == false)
-		die("Memory allocation error! Seems to be too little RAM.");
+		WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 2048 * WB1.list.item_h);
 		ProcessEvent(REFRESH_BUTTON);
 	}
 }
