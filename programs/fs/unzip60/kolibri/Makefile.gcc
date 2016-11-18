@@ -273,7 +273,7 @@ UNZIP_H = unzip.h unzpriv.h globals.h
 all:    unzip$(EXE)
 
 unzip$(EXE): $(OBJU) $(LIBBZIP2)
-	$(LD) $(LDFLAGS) $(LDVER) $(OBJU) $(LD_BZ2LIB) $(LDLIBS)
+	$(LD) $(LDFLAGS) $(LDVER) $(OBJU) $(LD_BZ2LIB) $(LDLIBS) -Map=unzip.exe.map
 	kos32-objcopy $@ -O binary
 
 unzipsfx$(EXE): $(OBJX) $(LIBBZIP2X)

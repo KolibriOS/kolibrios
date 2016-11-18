@@ -116,7 +116,7 @@ struct dirent* readdir(DIR *dirp)
 
     int rc = sf_file(1, &di);  // read dir
     if(rc) {
-        fprintf(stderr, "Error %d reading dir item %s", rc, dirp->entry.d_name);
+        fprintf(stderr, "Error %d reading dir item %s\n", rc, dirp->entry.d_name);
         errno = rc;
         return NULL;
     }
@@ -144,19 +144,51 @@ void rewinddir(DIR *dirp)
 
 int	mkdir(const char *_path, mode_t m)
 {
-    struct fs_dirinfo di;
-    memset(&di, 0, sizeof di);
-    di.ppath = (char*)_path;
+    char   namebuffer[1050]; // need for save data after di!!!
+    struct fs_dirinfo *di = (struct fs_dirinfo *)namebuffer;
 
-    int rc = sf_file(9, &di);  // creat dir
+debug_board_printf("mkdir start (%s)\n", _path);
+    memset(di, 0, sizeof(struct fs_dirinfo));
+    //di.ppath = (char*)_path;  // dont work with 70.9
+    strcpy(di->path, _path);
+
+    int rc = sf_file(9, di);  // creat dir
     if(rc) {
-        fprintf(stderr, "Error %d creating dir item %s", rc, _path);
+        fprintf(stderr, "Error %d creating dir item %s\n", rc, _path);
         errno = rc;
         return -1;
     }
 
+debug_board_printf("mkdir end (%s)\n", _path);
     return 0;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////
+void __attribute__ ((noinline)) debug_board_write_str(const char* str){
+  while(*str)
+    debug_board_write_byte(*str++);
+}
+
+void __attribute__ ((noinline)) debug_board_printf(const char *format,...)
+{
+        va_list ap;
+        char log_board[300];
+
+        va_start (ap, format);
+        vsnprintf(log_board, sizeof log_board, format, ap);
+        va_end(ap);
+        debug_board_write_str(log_board);
+}
+
+__attribute__ ((noinline)) void trap(int n)
+{
+    // nothing todo, just see n in debugger. use "bp trap" command
+    __asm__ __volatile__(
+    "nop"
+    :
+    :"a"(n));
+}
+
 
 
 /* tested example
