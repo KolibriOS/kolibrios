@@ -43,7 +43,7 @@ bool DrawBufer::Init(int i_bufx, i_bufy, i_bufw, i_bufh)
 "'DrawBufer needs more memory than currenly available.
 Application could be unstable.
 
-Requested size: %i Kb. 
+Requested size: %i Kb
 Free RAM: %i Kb' -E", alloc_size/1024, free_ram_size/1024);
 		notify(#error_str);
 	}
