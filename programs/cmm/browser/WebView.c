@@ -30,7 +30,7 @@
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.52";
+char version[]="Текстовый браузер 1.53";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -43,7 +43,7 @@ char rmb_menu[] =
 Очистить кэш картинок
 Менеджер загрузок";
 #else
-char version[]="Text-based Browser 1.52";
+char version[]="Text-based Browser 1.53";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -73,7 +73,7 @@ int action_buf;
 dword http_transfer = 0;
 dword http_buffer;
 
-dword TOOLBAR_H = 33;
+dword TOOLBAR_H = 40;
 dword STATUSBAR_H = 15;
 dword col_bg;
 dword panel_color;
@@ -105,7 +105,7 @@ enum {
 
 char editURL[sizeof(URL)];
 int	mouse_twb;
-edit_box address_box = {250,56,34,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(URL),#editURL,#mouse_twb,2,19,19};
+edit_box address_box = {250,60,30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(URL),#editURL,#mouse_twb,2,19,19};
 
 
 void main()
@@ -260,8 +260,8 @@ void main()
 
 void SetElementSizes()
 {
-	address_box.top = TOOLBAR_H/2-7;
-	address_box.width = Form.cwidth - address_box.left - 25 - 22;
+	address_box.top = TOOLBAR_H/2-10;
+	address_box.width = Form.cwidth - address_box.left - 50;
 	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x / WB1.DrawBuf.zoom, 
 		Form.cheight - TOOLBAR_H - STATUSBAR_H, WB1.list.font_h + WB1.DrawBuf.zoom + WB1.DrawBuf.zoom * WB1.DrawBuf.zoom);
 	WB1.list.wheel_size = 7;
@@ -281,13 +281,13 @@ void Draw_Window()
 	DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, 0xD7D0D3);
 	DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, border_color);
 	SetElementSizes();
-	DrawRectangle(address_box.left-3, address_box.top-3, address_box.width+5, 20,border_color);
-	DefineButton(address_box.left-50, address_box.top-2, 23, skin.h-2, BACK_BUTTON+BT_HIDE, 0);
-	DefineButton(address_box.left-26, address_box.top-2, 23, skin.h-2, FORWARD_BUTTON+BT_HIDE, 0);
-	img_draw stdcall(skin.image, address_box.left-51, address_box.top-3, 48, skin.h, 3, 0);
+	DrawRectangle(address_box.left-3, address_box.top-3, address_box.width+5, 25,border_color);
+	DefineButton(address_box.left-52, address_box.top-2, 24, skin.h-2, BACK_BUTTON+BT_HIDE, 0);
+	DefineButton(address_box.left-27, address_box.top-2, 24, skin.h-2, FORWARD_BUTTON+BT_HIDE, 0);
+	img_draw stdcall(skin.image, address_box.left-53, address_box.top-3, 51, skin.h, 3, 0);
 	DefineButton(address_box.left+address_box.width+1, address_box.top-3, 16, skin.h-1, REFRESH_BUTTON+BT_HIDE+BT_NOFRAME, 0);
-	DefineButton(Form.cwidth-24, address_box.top-3, 19, skin.h-1, SANDWICH_BUTTON+BT_HIDE, 0);
-	img_draw stdcall(skin.image, Form.cwidth-22, address_box.top-3, 16, skin.h, 85, 0);
+	DefineButton(Form.cwidth-27, address_box.top-3, 23, skin.h-1, SANDWICH_BUTTON+BT_HIDE, 0);
+	img_draw stdcall(skin.image, Form.cwidth-24, address_box.top-3, 17, skin.h, 87, 0);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, col_bg);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, border_color);
 	if (!header) OpenPage(); else { WB1.DrawPage(); DrawEditBoxWebView(); }
@@ -392,7 +392,7 @@ void StopLoading()
 		bufpointer = free(bufpointer);
 	}
 	wv_progress_bar.value = 0;
-	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, 52, 0);
+	DrawEditBoxWebView();
 }
 
 void SetPageDefaults()
@@ -451,11 +451,12 @@ void OpenPage()
 
 DrawEditBoxWebView()
 {
-	DrawWideRectangle(address_box.left-2, address_box.top-2, address_box.width+3, 19, 2, address_box.color);
+	DrawBar(address_box.left-2, address_box.top-2, address_box.width+3, 2, address_box.color);
+	DrawBar(address_box.left-2, address_box.top, 2, 22, address_box.color);
 	address_box.size = address_box.pos = address_box.shift = address_box.shift_old = strlen(#editURL);
 	address_box.offset = 0;
 	edit_box_draw stdcall(#address_box);
-	if (http_transfer > 0) EAX = 131; else EAX = 52;
+	if (http_transfer > 0) EAX = 131; else EAX = 54;
 	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, EAX, 0);
 }
 
@@ -500,7 +501,7 @@ void DrawProgress()
 	unsigned long btn;
 	if (http_transfer == 0) return;
 	if (wv_progress_bar.max) btn = address_box.width*wv_progress_bar.value/wv_progress_bar.max; else btn = 30;
-	DrawBar(address_box.left-2, address_box.top+15, btn, 2, wv_progress_bar.progress_color);
+	DrawBar(address_box.left-2, address_box.top+20, btn, 2, wv_progress_bar.progress_color);
 }
 
 void ClickLink()
@@ -541,9 +542,9 @@ void ClickLink()
 		return;
 	}
 
-	if (!strcmp(#URL,"https://"))
+	if (!strncmp(#URL,"https://",8))
 	{
-		notify("HTTPS protocol is not supported yet");	
+		notify("'HTTPS protocol is not supported yet' -E");	
 	}
 	
 	GetAbsoluteURL(#URL);

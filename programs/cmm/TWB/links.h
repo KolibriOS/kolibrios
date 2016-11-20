@@ -71,7 +71,7 @@ void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
 	{
 		if (mx>links[i].x) && (my>links[i].y) && (mx<links[i].x+links[i].w) && (my<links[i].y+links[i].h)
 		{
-			if (mouse.down) DrawRectangle(links[active].x, links[active].y, links[active].w, links[active].h, 0);
+			if (mouse.down) DrawRectangle(links[active].x, -WB1.list.first*WB1.list.item_h + links[active].y, links[active].w, links[active].h, 0);
 			if (mouse.up) ClickLink();
 			if (active==i) return;
 			CursorPointer.Set();
