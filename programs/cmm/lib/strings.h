@@ -181,7 +181,7 @@ inline signed int strcmp(dword text1, text2)
 	return 0;
 }
 
-inline signed int streq(dword text1, text2) {
+:bool strequ(dword text1, text2) {
 	if (!strcmp(text1,text2)) return true; else return false;
 }
 

@@ -46,6 +46,7 @@ dword text_color_index;
 dword link_color_inactive;
 dword link_color_active;
 dword bg_color;
+dword block_bg_color;
 
 int stroka;
 int stolbec;
@@ -124,7 +125,7 @@ void TWebBrowser::Prepare(){
 	style.align = ALIGN_LEFT;
 	link_color_inactive = 0x0000FF;
 	link_color_active = 0xFF0000;
-	bg_color = 0xFFFFFF;
+	bg_color = block_bg_color = 0xFFFFFF;
 	DrawBuf.Fill(bg_color);
 	PageLinks.Clear();
 	strcpy(#header, #version);
@@ -289,7 +290,7 @@ void TWebBrowser::SetStyle() {
 			if (isattr("text=")) text_colors[0]=GetColor(#val);
 			if (isattr("bgcolor="))
 			{
-				bg_color=GetColor(#val);
+				bg_color = block_bg_color = GetColor(#val);
 				DrawBuf.Fill(bg_color);
 			}
 		} while(GetNextParam());
@@ -336,13 +337,12 @@ void TWebBrowser::SetStyle() {
 		else if (text_color_index > 0) text_color_index--;
 		return;
 	}
+	if (istag("bg")) {
+		if (opened) {block_bg_color=GetColor(#val); NewLine();}
+		if (!opened) block_bg_color=bg_color;
+	}
 	if (istag("div")) || (istag("header")) || (istag("article")) || (istag("footer")) {
 		IF(oldtag[0] != 'h') NewLine();
-		if (isattr("bgcolor="))
-		{
-			bg_color=GetColor(#val);
-			DrawBuf.Fill(bg_color);
-		}
 		return;
 	}
 	if (istag("p")) {
@@ -475,6 +475,7 @@ void TWebBrowser::NewLine()
 	onleft = list.x + 5;
 	ontop = stroka * list.item_h + list.y + 5;
 	if (t_html) && (!t_body) return;
+	if (block_bg_color!=bg_color) DrawBuf.DrawBar(0, stroka+1*list.item_h+5, DrawBuf.bufw, list.item_h, block_bg_color);
 	if (stroka * list.item_h + 5 >= 0) && ( stroka + 1 * list.item_h + 5 < list.h) && (!anchor)
 	{
 		if (style.align == ALIGN_CENTER) && (DrawBuf.zoom==1) DrawBuf.AlignCenter(onleft,ontop,list.w,list.item_h,stolbec * list.font_w);
@@ -485,9 +486,9 @@ void TWebBrowser::NewLine()
 	if (style.li) stolbec = style.li_tab * 5;
 }
 //============================================================================================
-int istag(dword text) { if (!strcmp(#tag,text)) return 1; else return 0; }
-int isattr(dword text) { if (!strcmp(#attr,text)) return 1; else return 0; }
-int isval(dword text) { if (!strcmp(#val,text)) return 1; else return 0; }
+int istag(dword text) { if (!strcmp(#tag,text)) return true; else return false; }
+int isattr(dword text) { if (!strcmp(#attr,text)) return true; else return false; }
+int isval(dword text) { if (!strcmp(#val,text)) return true; else return false; }
 //============================================================================================
 void TWebBrowser::DrawPage()
 {

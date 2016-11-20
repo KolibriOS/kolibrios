@@ -30,7 +30,7 @@
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.51";
+char version[]="Текстовый браузер 1.52";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -43,7 +43,7 @@ char rmb_menu[] =
 Очистить кэш картинок
 Менеджер загрузок";
 #else
-char version[]="Text-based Browser 1.51";
+char version[]="Text-based Browser 1.52";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -212,6 +212,11 @@ void main()
 										$stosb;
 									} while (AL != 0) && (AL != 13) && (AL != 10);
 									DSBYTE[EDI-1]='\0';
+									if (!strcmp(#URL,"https://"))
+									{
+										notify("HTTPS protocol is not supported yet");
+										StopLoading();		
+									}
 								}
 							}
 							else
@@ -313,7 +318,8 @@ void ProcessEvent(dword id__)
 			return;
 		case GOTOURL_BUTTON:
 		case SCAN_CODE_ENTER:
-			if (!strncmp(#editURL,"http:",5)) || (editURL[0]=='/') || (!strncmp(#editURL,"WebView:",9))
+			if (!strncmp(#editURL,"http:",5)) || (editURL[0]=='/') 
+			|| (!strncmp(#editURL,"https:",6)) || (!strncmp(#editURL,"WebView:",8))
 			{
 				strcpy(#URL, #editURL);
 			}
@@ -466,7 +472,6 @@ void ShowPage()
 	{
 		WB1.Prepare();
 	}
-	//if (!header) strcpy(#header, #version);
 	if (!strcmp(#version, #header)) DrawTitle(#header);
 }
 
@@ -510,35 +515,24 @@ void ClickLink()
 	//#1
 	if (URL[0] == '#')
 	{
-		strcpy(#anchor, #URL+strrchr(#URL, '#'));		
-		strcpy(#URL, history.current());
-		WB1.list.first=WB1.list.count-WB1.list.visible;
-		ShowPage();
+		if (URL[1] == NULL) {
+			WB1.list.first = 0;
+			strcpy(#URL, history.current());
+		}
+		else {
+			strlcpy(#anchor, #URL+strrchr(#URL, '#'), sizeof(anchor));
+			strcpy(#URL, history.current());
+		}
+		ShowPage();			
 		return;
 	}
 	//liner.ru#1
-	if (strrchr(#URL, '#')!=-1)
+	if (strrchr(#URL, '#')!=0)
 	{
 		strcpy(#anchor, #URL+strrchr(#URL, '#'));
 		URL[strrchr(#URL, '#')-1] = 0x00;
 	}
-	
-	GetAbsoluteURL(#URL);
-	
-	if (UrlExtIs(".png")==1) || (UrlExtIs(".gif")==1) || (UrlExtIs(".jpg")==1) || (UrlExtIs(".zip")==1) || (UrlExtIs(".kex")==1)
-	|| (UrlExtIs(".7z")==1) || (UrlExtIs("netcfg")==1) 
-	{
-		//notify(#URL);
-		if (!strncmp(#URL,"http://", 7))
-		{
-			strcpy(#downloader_edit, #URL);
-			CreateThread(#Downloader,#downloader_stak+4092);
-		}
-		else RunProgram("@open", #URL);
-		strcpy(#editURL, history.current());
-		strcpy(#URL, history.current());
-		return;
-	}
+
 	if (!strncmp(#URL,"mailto:", 7))
 	{
 		notify(#URL);
@@ -546,8 +540,37 @@ void ClickLink()
 		strcpy(#URL, history.current());
 		return;
 	}
+
+	if (!strcmp(#URL,"https://"))
+	{
+		notify("HTTPS protocol is not supported yet");	
+	}
+	
+	GetAbsoluteURL(#URL);
+
+	if (strncmp(#URL,"http://",7)!=0)
+	{
+		if (UrlExtIs(".htm")!=true) && (UrlExtIs(".html")!=true)
+		{	
+			RunProgram("/sys/@open", #URL);
+			strcpy(#editURL, history.current());
+			strcpy(#URL, history.current());
+			return;
+		}
+	}
+	else	
+	{
+		if (UrlExtIs(".png")==true) || (UrlExtIs(".gif")==true) || (UrlExtIs(".jpg")==true) 
+		|| (UrlExtIs(".zip")==true) || (UrlExtIs(".kex")==true)
+		|| (UrlExtIs(".7z")==true) || (UrlExtIs("netcfg")==true) {		
+			strcpy(#downloader_edit, #URL);
+			CreateThread(#Downloader,#downloader_stak+4092);
+			strcpy(#editURL, history.current());
+			strcpy(#URL, history.current());
+			return;
+		}
+	}
 	OpenPage();
-	return;
 }
 
 stop:
