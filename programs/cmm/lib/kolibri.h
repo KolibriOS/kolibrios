@@ -360,22 +360,24 @@ inline fastcall void DrawTitle( ECX)
 	$int 0x40;
 }
 
-void WriteTextB(dword x,y,byte fontType, dword color, EDX)
+:void WriteTextB(dword x,y,byte fontType, dword color, str_offset)
 {
 	EAX = 4;
 	EBX = x<<16+y;
 	ECX = fontType<<24+color;
+	EDX = str_offset;
 	ESI = 0;
 	$int 0x40;
 	$add ebx, 1<<16
 	$int 0x40
 }
 
-void WriteText(dword x,y,byte fontType, dword color, EDX)
+:void WriteText(dword x,y,byte fontType, dword color, str_offset)
 {
 	EAX = 4;
 	EBX = x<<16+y;
 	ECX = fontType<<24+color;
+	EDX = str_offset;
 	$int 0x40;
 }
 
@@ -387,18 +389,20 @@ dword WriteBufText(dword x,y,byte fontType, dword color, EDX, EDI)
 	$int 0x40;
 }
 
-void WriteNumber(dword x,y,byte fontType, dword color, count, ECX)
+void WriteNumber(dword x,y,byte fontType, dword color, count, number_or_offset)
 {
 	EAX = 47;
 	EBX = count<<16;
+	ECX = number_or_offset;
 	EDX = x<<16+y;
 	ESI = fontType<<24+color;
 	$int 0x40;
 }
 
-void CopyScreen(dword EBX, x, y, w, h)
+:void CopyScreen(dword dst_offset, x, y, w, h)
 {
   EAX = 36;
+  EBX = dst_offset;
   ECX = w << 16 + h;
   EDX = x << 16 + y;
   $int  0x40;
@@ -411,10 +415,10 @@ void CopyScreen(dword EBX, x, y, w, h)
 	$int 0x40
 }
 
-
-void _PutImage(dword x,y, w,h, EBX)
+:void _PutImage(dword x,y, w,h, data_offset)
 {
 	EAX = 7;
+	EBX = data_offset;
 	ECX = w<<16+h;
 	EDX = x<<16+y;
 	$int 0x40
@@ -609,6 +613,8 @@ void ______INIT______()
 	__generator = GetStartTime();
 	
 	mem_init();
+
+	if (program_path[0]!='/') I_Path++;
 
 	main();
 	ExitProcess();

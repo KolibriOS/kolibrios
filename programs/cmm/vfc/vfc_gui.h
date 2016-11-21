@@ -59,7 +59,7 @@ void gui()
 				break;
 			case BID_COMPARE:
 				sprintf(#run_param, "\"%s\" \"%s\"", #src_box_text, #dst_box_text);
-				io.run(#program_path+1, #run_param);
+				io.run(I_Path, #run_param);
 				break;
 			}
 			break;

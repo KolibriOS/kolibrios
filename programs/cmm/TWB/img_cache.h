@@ -82,7 +82,6 @@ void ImageCache::Images(int left1, top1, width1)
 		imgh=WB1.list.y+WB1.list.h-top1-5;
 	}	
 	if (imgh<=0) return;
-	if (anchor) return;
 	
 	img_draw stdcall (pics[cur_pic].image, left1-5, top1, imgw, imgh,0,img_lines_first);
 	DrawBar(left1+imgw - 5, top1, WB1.list.w-imgw, imgh, bg_color);

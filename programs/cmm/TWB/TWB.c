@@ -157,7 +157,7 @@ void TWebBrowser::Prepare(){
 				break;
 			}
 		case '\9':
-			if (style.pre) //иначе идём на 0x0d	
+			if (style.pre) //otherwise go to 0x0d	
 			{
 				tab_len = strlen(#line) % 4;
 				if (!tab_len) tab_len = 4;
@@ -183,7 +183,7 @@ void TWebBrowser::Prepare(){
 				bufpos++;
 			}
 			tag = attr = tagparam = ignor_param = NULL;
-			while (ESBYTE[bufpos] !='>') && (bufpos < bufpointer + bufsize) //получаем тег и его параметры
+			while (ESBYTE[bufpos] !='>') && (bufpos < bufpointer + bufsize) //ГЇГ®Г«ГіГ·Г ГҐГ¬ ГІГҐГЈ ГЁ ГҐГЈГ® ГЇГ Г°Г Г¬ГҐГІГ°Г»
 			{
 				bukva = ESBYTE[bufpos];
 				if (bukva == '\9') || (bukva == '\x0a') || (bukva == '\x0d') bukva = ' ';
@@ -205,7 +205,7 @@ void TWebBrowser::Prepare(){
 			Perenos();
 			DrawStyle();
 			line = NULL;
-			if (tag) SetStyle(); //обработка тегов
+			if (tag) SetStyle();
 			strlcpy(#oldtag, #tag, sizeof(oldtag));
 			tag = attr = tagparam = ignor_param = NULL;
 			break;
@@ -226,7 +226,7 @@ void TWebBrowser::Prepare(){
 	NewLine();
 	DrawPage();
 	if (list.first == 0) list.count = stroka;
-	if (anchor) //если посреди текста появится новый якорь - будет бесконечный цикл
+	if (anchor)
 	{
 		anchor=NULL;
 		list.first=anchor_line_num;
@@ -253,7 +253,6 @@ void TWebBrowser::SetStyle() {
 	int top1 = stroka * list.item_h + list.y + 5;
 	byte opened;
 	byte meta_encoding;
-	//проверяем тег открывается или закрывается
 	if (tag[0] == '/') 
 	{
 		 opened = 0;
@@ -268,7 +267,7 @@ void TWebBrowser::SetStyle() {
 	if (istag("form")) if (!opened) ignor_text = false;
 	if(istag("title")) {
 		if (opened) header=NULL;
-		else if (!stroka) DrawTitle(#header); //тег закрылся - вывели строку
+		else if (!stroka) DrawTitle(#header);
 		return;
 	}
 	if (ignor_text) return;
@@ -279,7 +278,7 @@ void TWebBrowser::SetStyle() {
 		if (!opened) strcat(#line, "\" ");
 		return;
 	}
-	if (anchor) && (isattr("id=")) { //очень плохо!!! потому что если не последний тег, работать не будет
+	if (anchor) if (isattr("id=")) || (isattr("name=")) { //very bad: if the tag is not the last it wound work
 		if (!strcmp(#anchor, #val))	anchor_line_num=list.first+stroka;
 	}	
 	if (istag("body")) {
@@ -300,7 +299,7 @@ void TWebBrowser::SetStyle() {
 	if (istag("a")) {
 		if (opened)
 		{
-			if (link) IF(text_color_index > 0) text_color_index--; //если предыдущий тег а не был закрыт
+			if (link) IF(text_color_index > 0) text_color_index--; //ГҐГ±Г«ГЁ ГЇГ°ГҐГ¤Г»Г¤ГіГ№ГЁГ© ГІГҐГЈ Г  Г­ГҐ ГЎГ»Г« Г§Г ГЄГ°Г»ГІ
 			do{
 				if (isattr("href=")) && (!strstr(#val,"javascript:"))
 				{
@@ -309,13 +308,6 @@ void TWebBrowser::SetStyle() {
 					link = 1;
 					text_colors[text_color_index] = link_color_inactive;
 					PageLinks.AddLink(#val, DrawBuf.zoom * stolbec * list.font_w + left1, top1-DrawBuf.zoom);
-				}
-				if (anchor) && (isattr("name="))
-				{
-					if (!strcmp(#anchor, #val))
-					{
-						anchor_line_num=list.first+stroka;
-					}
 				}
 			} while(GetNextParam());
 		}
@@ -419,7 +411,7 @@ void TWebBrowser::SetStyle() {
 		do{
 			if (isattr("charset=")) || (isattr("content=")) || (isattr("encoding="))
 			{
-				strcpy(#val, #val[strrchr(#val, '=')]); //поиск в content=
+				strcpy(#val, #val[strrchr(#val, '=')]); //search in content=
 				strlwr(#val);
 				if      (isval("utf-8"))        || (isval("utf8"))        meta_encoding = CH_UTF8;
 				else if (isval("koi8-r"))       || (isval("koi8-u"))      meta_encoding = CH_KOI8;

@@ -70,9 +70,9 @@ GETKEYII:
 		$shr eax,8
 }
 
-unsigned char key_ascii;
-dword key_scancode, key_modifier, key_editbox;
-int GetKeys()
+:unsigned char key_ascii;
+:dword key_scancode, key_modifier, key_editbox;
+:int GetKeys()
 {
 		$push edx
 GETKEY:

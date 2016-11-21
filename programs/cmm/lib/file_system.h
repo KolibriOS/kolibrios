@@ -278,7 +278,7 @@ enum
 	}
 	else
 	{
-		strcpy(#absolute_path, #program_path);
+		strcpy(#absolute_path, I_Path);
 		absolute_path[strrchr(#absolute_path, '/')] = '\0';
 		strcat(#absolute_path, relative_path);
 	}

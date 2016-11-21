@@ -66,7 +66,7 @@ void main()
 	}
 	else
 	{
-		strcat(#settings_ini_path, #program_path + strrchr(#program_path, '/'));
+		strcat(#settings_ini_path, I_Path + strrchr(I_Path, '/'));
 		strcat(#settings_ini_path, ".ini");		
 	}
 	

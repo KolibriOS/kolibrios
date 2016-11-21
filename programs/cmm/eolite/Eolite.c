@@ -71,7 +71,6 @@ int count_dir;
 
 byte
 	path[4096],
-	DefaultPath[4096],
 	file_path[4096],
 	file_name[256],
 	new_element_name[256],
@@ -91,7 +90,6 @@ int mouse_dd, sc_slider_h;
 int j, i;
 int action_buf;
 int rand_n;
-byte CMD_REFRESH;
 
 //struct t_settings {
 char sort_num=2;
@@ -134,10 +132,7 @@ void main()
 	dword id;
 	byte count_sl = 0;
 	signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
-	char can_show, can_select, stats;
-	dword selected_offset;
-	dword IPC_LEN,IPC_ID;
-	char IPC_BUF[10];
+	char stats;
 	rand_n = random(40);
 
 	load_dll(boxlib, #box_lib_init,0);
@@ -410,7 +405,7 @@ void main()
 								break;
 						case 049: //Ctrl+N - create new window
 								if (Form.left==98) MoveSize(Form.left-20,Form.top-20,OLD,OLD);
-								RunProgram("/sys/File Managers/Eolite", #path);
+								RunProgram(I_Path, #path);
 								break; 
 						case 050: //Ctrl+M
 								Open_Dir(#inactive_path,WITH_REDRAW);
@@ -881,7 +876,7 @@ void Open(byte rez)
 	{
 		if (!strncmp(#file_name,"..",3)) return;
 		strcpy(#temp, #file_path);
-		RunProgram("/sys/File Managers/Eolite", #temp);
+		RunProgram(I_Path, #temp);
 		return;
 	}
 	if (!files.count) return;
