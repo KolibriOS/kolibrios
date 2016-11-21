@@ -17,6 +17,8 @@
 ;;                                                                                                ;;
 ;;================================================================================================;;
 
+include 'libpng/png.asm'
+
 ;;================================================================================================;;
 ;;proc img.is.png _data, _length ;////////////////////////////////////////////////////////////////;;
 img.is.png:
@@ -1076,6 +1078,64 @@ local .l1
 	ret
 ;endp
 
-img.encode.png:
-	xor	eax, eax
-	ret	12
+
+
+;;================================================================================================;;
+align 4
+proc img.encode.png uses ebx edx, _img:dword, _common:dword, _specific:dword
+;;------------------------------------------------------------------------------------------------;;
+;? Encode image into raw data in png format                                                       ;;
+;;------------------------------------------------------------------------------------------------;;
+;> [_img]      = pointer to image                                                                 ;;
+;> [_common]   = format independent options                                                       ;;
+;> [_specific] = 0 / pointer to the structure of format specific options                          ;;
+;;------------------------------------------------------------------------------------------------;;
+;< eax = 0 / pointer to encoded data                                                              ;;
+;< ecx = error code / the size of encoded data                                                    ;;
+;;================================================================================================;;
+locals
+	encoded_file rd 1
+	encoded_file_size rd 1
+	simag png_image
+endl
+	mov ebx,[_img]
+	mov	eax,[ebx+Image.Type]
+	cmp	eax,Image.bpp24
+	je @f
+		mov	ecx,LIBIMG_ERROR_BIT_DEPTH
+		jmp	.error
+	@@:
+
+	mov edx,ebp
+	sub edx,sizeof.png_image
+	mov dword[edx+png_image.version],PNG_IMAGE_VERSION
+	mov ecx,[ebx+Image.Width]
+	mov [edx+png_image.width],ecx ;Image width in pixels (columns)
+	mov eax,[ebx+Image.Height]
+	mov [edx+png_image.height],eax ;Image height in pixels (rows)
+	mov dword[edx+png_image.format],PNG_COLOR_TYPE_RGB
+	;mov dword[edx+png_image.flags],PNG_IMAGE_FLAG_???
+
+	imul ecx,3
+	mov edi,ecx
+	imul edi,[ebx+Image.Height]
+	mov [encoded_file_size],edi
+	stdcall [mem.alloc],edi
+	test eax,eax
+	jnz	@f
+		mov	ecx,LIBIMG_ERROR_OUT_OF_MEMORY
+		jmp	.error
+    @@:
+	mov [encoded_file],eax
+	mov edi,edx
+	sub edi,4
+	stdcall png_image_write_to_memory, edx,eax,edi,0,[ebx+Image.Data],ecx,0
+	mov	eax,[encoded_file]
+	mov	ecx,[encoded_file_size]
+	jmp	.quit
+
+.error:
+	xor	eax,eax
+.quit:
+	ret
+endp

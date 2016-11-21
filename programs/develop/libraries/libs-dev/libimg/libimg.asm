@@ -68,6 +68,11 @@ proc lib_init ;/////////////////////////////////////////////////////////////////
     mov [mem.realloc], ecx
     mov [dll.load], edx
 
+    or edx,edx
+    jz @f
+      invoke dll.load, @IMPORT
+    @@:
+
     call    img.initialize.jpeg
 
     xor eax, eax
@@ -2417,7 +2422,7 @@ img.formats_table:
   .ico  dd LIBIMG_FORMAT_ICO,  img.is.ico,  img.decode.ico_cur, img.encode.ico, 0
   .cur  dd LIBIMG_FORMAT_CUR,  img.is.cur,  img.decode.ico_cur, img.encode.cur, 0
   .gif  dd LIBIMG_FORMAT_GIF,  img.is.gif,  img.decode.gif,     img.encode.gif, 0
-  .png  dd LIBIMG_FORMAT_PNG,  img.is.png,  img.decode.png,     img.encode.png, 0
+  .png  dd LIBIMG_FORMAT_PNG,  img.is.png,  img.decode.png,     img.encode.png, 1 + (1 SHL Image.bpp24)
   .jpg  dd LIBIMG_FORMAT_JPEG, img.is.jpg,  img.decode.jpg,     img.encode.jpg, 0
   .tga  dd LIBIMG_FORMAT_TGA,  img.is.tga,  img.decode.tga,     img.encode.tga, 0
   .pcx  dd LIBIMG_FORMAT_PCX,  img.is.pcx,  img.decode.pcx,     img.encode.pcx, 0
@@ -2771,12 +2776,17 @@ export                                      \
 
 ; import from deflate unpacker
 ; is initialized only when PNG loading is requested
-align 4
+align 16
 @IMPORT:
 
 library archiver, 'archiver.obj'
 import  archiver, \
-    deflate_unpack2, 'deflate_unpack2'
+    deflate_unpack2, 'deflate_unpack2',\
+    deflateInit2,    'deflateInit2',\
+    deflateReset,    'deflateReset',\
+    deflate,         'deflate',\
+    deflateEnd,      'deflateEnd',\
+    calc_crc32,      'calc_crc32'
 
 align 4
 ; mutex for unpacker loading
