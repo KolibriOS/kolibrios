@@ -31,18 +31,17 @@ ScreenSaver               /sys/3d/crownscr
 3D-labyrinth              /sys/3d/free3d04
 Heart                     /sys/3d/3dsheart
 View3DS                   /sys/3d/view3ds
-CubeLine                  /sys/3d/cubeline
 Gears                     /sys/3d/gears
 3D-waved area             /sys/3d/3dwav
 #3   **** GRµFICOS ****
 Image viewer KIV          /sys/media/kiv
-Image viewer zSea         /KolibriOS/media/zsea/zsea
+Image viewer zSea         /kolibrios/media/zsea/zsea
 Animage                   /sys/media/animage
 Efectos de im genes       /sys/media/imgf/imgf
 Palitra                   /sys/media/palitra
 #4   **** MULTIMEDIA ****
 Pixie MP3 Player          /sys/media/pixie/pixie
-Fplay - video             /KolibriOS/media/fplay-full
+Fplay - video             /kolibrios/media/fplay-full
 MidAMP                    /sys/media/midamp
 #5    **** DESARROLLO ****
 Ejemplos           >      /@6
@@ -129,10 +128,10 @@ Ampliaci¢n de pantalla    /sys/magnify
 Teclado en pantalla       /sys/zkey
 Tabla de caracteres       /sys/ASCIIVju
 #18    **** EMULATORS ****
-DOSBox DOS Emulator       /KolibriOS/emul/DosBox/dosbox
-e80 (ZX Spectrum)         /KolibriOS/emul/e80/e80
-FCE Ultra - NES           /KolibriOS/emul/fceu/fce
-Gameboy Color             /KolibriOS/emul/gameboy
-ScummVM (adventure)       /KolibriOS/emul/scummvm
-ZSNES Super Nintendo      /KolibriOS/emul/zsnes
+DOSBox DOS Emulator       /kolibrios/emul/DosBox/dosbox
+e80 (ZX Spectrum)         /kolibrios/emul/e80/e80
+FCE Ultra - NES           /kolibrios/emul/fceu/fce
+Gameboy Color             /kolibrios/emul/gameboy
+ScummVM (adventure)       /kolibrios/emul/scummvm
+ZSNES Super Nintendo      /kolibrios/emul/zsnes
 ##

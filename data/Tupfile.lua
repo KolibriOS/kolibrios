@@ -157,7 +157,6 @@ extra_files = {
  {"kolibrios/3D/voxel_utilites/TOOLBAR_T.PNG" , PROGS .. "/media/voxel_editor/utilites/toolbar_t.png"},
  {"kolibrios/3D/FONT8X9.BMP", PROGS .. "/fs/kfar/trunk/font8x9.bmp"},
  {"kolibrios/3D/TOOLB_1.PNG", PROGS .. "/develop/libraries/TinyGL/asm_fork/examples/toolb_1.png"},
- {"kolibrios/3D/GEARS", PROGS .. "/develop/libraries/TinyGL/asm_fork/examples/gears"},
  {"kolibrios/3D/TEST_GLU1", PROGS .. "/develop/libraries/TinyGL/asm_fork/examples/test_glu1"},
  {"kolibrios/3D/TEST_GLU2", PROGS .. "/develop/libraries/TinyGL/asm_fork/examples/test_glu2"},
  {"kolibrios/3D/TEXT_2.PNG", PROGS .. "/develop/libraries/TinyGL/asm_fork/examples/text_2.png"},
@@ -359,6 +358,7 @@ tup.append_table(img_files, {
  {"3D/3DWAV", PROGS .. "/demos/3dwav/trunk/3dwav"},
  {"3D/CROWNSCR", PROGS .. "/demos/crownscr/trunk/crownscr"},
  {"3D/FREE3D04", PROGS .. "/demos/free3d04/trunk/free3d04"},
+ {"3D/GEARS", PROGS .. "/develop/libraries/TinyGL/asm_fork/examples/gears"},
  {"3D/RAY", PROGS .. "/demos/ray/ray"},
  {"3D/VIEW3DS", PROGS .. "/demos/3DS/VIEW3DS"},
  {"DEMOS/BCDCLK", PROGS .. "/demos/bcdclk/trunk/bcdclk"},
@@ -573,13 +573,12 @@ end -- tup.getconfig('NO_MSVC') ~= 'full'
 -- Programs that require GCC to compile.
 if tup.getconfig('NO_GCC') ~= 'full' then
 tup.append_table(img_files, {
- {"3D/GEARS", PROGS .. "/demos/gears/trunk/gears"},
  {"GAMES/CHECKERS", PROGS .. "/games/checkers/trunk/checkers"},
  {"GAMES/REVERSI", PROGS .. "/games/reversi/trunk/reversi"},
  {"SHELL", PROGS .. "/system/shell/shell"},
 })
 tup.append_table(extra_files, {
- {"kolibrios/demos/cubeline", PROGS .. "/demos/cubeline/trunk/cubeline"},
+ {"kolibrios/3D/cubeline", PROGS .. "/demos/cubeline/trunk/cubeline"},
  {"kolibrios/emul/e80/e80", PROGS .. "/emulator/e80/trunk/e80"},
  {"kolibrios/games/2048/", PROGS .. "/games/2048/2048"},
  {"kolibrios/games/donkey", PROGS .. "/games/donkey/donkey"},

@@ -31,19 +31,18 @@ UnvWater                  /sys/demos/unvwater
 3D-Лабиринт               /sys/3d/free3d04
 Сердце                    /sys/3d/3dsheart
 Просмотрщик 3DS           /sys/3d/view3ds
-CubeLine                  /sys/3d/cubeline
 Шестерёнки                /sys/3d/gears
 FlatWave                  /sys/3d/flatwav
 3D-Волны                  /sys/3d/3dwav
 #3    **** Графика ****
 Просмотр фото KIV         /sys/media/kiv
-Просмотр фото zSea        /KolibriOS/media/zsea/zsea
+Просмотр фото zSea        /kolibrios/media/zsea/zsea
 Редактор Animage          /sys/media/animage
 Наложение фильтров        /sys/media/imgf/imgf
 Палитра                   /sys/media/palitra
 #4    **** Мультимедиа ****
 Аудиоплеер Pixie          /sys/media/pixie/pixie
-Видеоплеер Fplay          /KolibriOS/media/fplay-full
+Видеоплеер Fplay          /kolibrios/media/fplay-full
 Midi-плеер                /sys/media/midamp
 #5    **** Разработка ****
 Примеры            >      /@6
@@ -133,10 +132,10 @@ DNS lookup                /sys/network/nslookup
 Бинарные часы             /sys/demos/bcdclk
 Таймер                    /sys/demos/timer
 #18    **** Эмуляторы ****
-DOSBox DOS Emulator       /KolibriOS/emul/DosBox/dosbox
-e80 (ZX Spectrum)         /KolibriOS/emul/e80/e80
-FCE Ultra - NES           /KolibriOS/emul/fceu/fce
-Gameboy Color             /KolibriOS/emul/gameboy
-ScummVM (adventure)       /KolibriOS/emul/scummvm
-ZSNES Super Nintendo      /KolibriOS/emul/zsnes
+DOSBox DOS Emulator       /kolibrios/emul/DosBox/dosbox
+e80 (ZX Spectrum)         /kolibrios/emul/e80/e80
+FCE Ultra - NES           /kolibrios/emul/fceu/fce
+Gameboy Color             /kolibrios/emul/gameboy
+ScummVM (adventure)       /kolibrios/emul/scummvm
+ZSNES Super Nintendo      /kolibrios/emul/zsnes
 ##

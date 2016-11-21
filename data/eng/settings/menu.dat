@@ -21,7 +21,7 @@ Eyes                      /sys/demos/eyes
 Tube                      /sys/demos/tube
 Plasma                    /sys/demos/plasma
 Moveback                  /sys/demos/movback
-Life*                     /KolibriOS/demos/life2
+Life*                     /kolibrios/demos/life2
 TranTest                  /sys/demos/trantest
 WEB                       /sys/demos/web
 FireWork                  /sys/demos/firework
@@ -29,20 +29,19 @@ UnvWater                  /sys/demos/unvwater
 #2  **** 3D demos ****
 ScreenSaver               /sys/3d/crownscr
 3D-labyrinth              /sys/3d/free3d04
-Heart*                    /KolibriOS/3d/3dsheart
+Heart*                    /kolibrios/3d/3dsheart
 View3DS                   /sys/3d/view3ds
-CubeLine                  /sys/3d/cubeline
 Gears                     /sys/3d/gears
 3D-waved area             /sys/3d/3dwav
 #3   **** GRAPHICS ****
 Kolibri Image Viewer      /sys/media/kiv
-zSea* (image viewer)      /KolibriOS/media/zsea/zsea
+zSea* (image viewer)      /kolibrios/media/zsea/zsea
 Animage                   /sys/media/animage
 Image Filtering           /sys/media/imgf/imgf
 Palitra                   /sys/media/palitra
 #4   **** MULTIMEDIA ****
 Pixie (MP3 player)        /sys/media/pixie/pixie
-Fplay* (video player)     /KolibriOS/media/fplay-full
+Fplay* (video player)     /kolibrios/media/fplay-full
 MidAMP                    /sys/media/midamp
 #5    **** PROGRAMMING ****
 Examples           >      /@6
@@ -129,10 +128,10 @@ Screen magnifier          /sys/magnify
 Screen keyboard           /sys/zkey
 Character table           /sys/ASCIIVju
 #18    **** EMULATORS ****
-DOSBox* (DOS PC)          /KolibriOS/emul/DosBox/dosbox
-e80* (ZX Spectrum)        /KolibriOS/emul/e80/e80
-FCE Ultra* (NES)          /KolibriOS/emul/fceu/fce
-Gameboy Color*            /KolibriOS/emul/gameboy
-ScummVM* (adventure)      /KolibriOS/emul/scummvm
-ZSNES* (super Nintendo)   /KolibriOS/emul/zsnes
+DOSBox* (DOS PC)          /kolibrios/emul/DosBox/dosbox
+e80* (ZX Spectrum)        /kolibrios/emul/e80/e80
+FCE Ultra* (NES)          /kolibrios/emul/fceu/fce
+Gameboy Color*            /kolibrios/emul/gameboy
+ScummVM* (adventure)      /kolibrios/emul/scummvm
+ZSNES* (super Nintendo)   /kolibrios/emul/zsnes
 ##
