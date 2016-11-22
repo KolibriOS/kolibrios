@@ -878,7 +878,7 @@ macro E_LIB n
 include '../export.inc'
 
 ;--------------------------------------------------
-system_path db '/kolibrios/lib/'
+system_path db '/sys/lib/'
 name_tgl db 'tinygl.obj',0
 err_message_found_lib db 'Sorry I cannot load library tinygl.obj',0
 head_f_i:
