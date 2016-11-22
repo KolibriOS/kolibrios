@@ -28,7 +28,7 @@ void DrawBreadCrumbs()
 			breadCrumb.add(i+1);
 		}
 	}
-	btn.size(246,10,NULL,20);
+	btn.set_size(246,10,NULL,20);
 	area_w = Form.cwidth - btn.x - 20;
 	for (i=0; i<breadCrumb.count-1; i++)
 	{
