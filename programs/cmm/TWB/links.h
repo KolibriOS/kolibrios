@@ -1,8 +1,11 @@
 CustomCursor CursorPointer;
 dword CursorFile = FROM "../TWB/pointer.cur";
+#include "..\lib\collection.h"
 
 #define NOLINE    0
 #define UNDERLINE 1
+
+#define MAXLINKS 400
 
 struct array_link {
 	dword link, text;
@@ -11,8 +14,8 @@ struct array_link {
 };
 
 struct LinksArray {
-	array_link links[400];
-	char page_links[64000];
+	array_link links[MAXLINKS];
+	collection page_links;
 	dword buflen;
 	int count, active;
 	void Hover();
@@ -24,25 +27,24 @@ struct LinksArray {
 
 void LinksArray::AddLink(dword lpath, int link_x, link_y)
 {
+	if (count>= MAXLINKS) return;
 	links[count].x = link_x;
 	links[count].y = link_y;
 
-	links[count].link = buflen;
-	strcpy(buflen, lpath);
-	buflen += strlen(lpath)+1;
+	page_links.add(lpath);
+	links[count].link = page_links.get(page_links.count-1);
 	count++;
 }
 
 void LinksArray::AddText(dword new_text, int link_w, link_h, link_underline)
 {
-	if (count<1) return;
+	if (count>= MAXLINKS) || (!count) return;
 	links[count-1].w = link_w;
 	links[count-1].h = link_h;
 	links[count-1].underline = link_underline;
 
-	links[count-1].text = buflen;
-	strcpy(buflen, new_text);
-	buflen += strlen(new_text)+1;
+	page_links.add(new_text);
+	links[count-1].text = page_links.get(page_links.count-1);
 }
 
 dword LinksArray::GetURL(int id)
@@ -52,9 +54,8 @@ dword LinksArray::GetURL(int id)
 
 void LinksArray::Clear()
 {
-	int i;
-	for (i=0; i<=count; i++) DeleteButton(i+400);
-	buflen = #page_links;
+	page_links.drop();
+	page_links.realloc_size = 4096 * 32;
 	count = 0;
 	active = -1;
 	CursorPointer.Restore();

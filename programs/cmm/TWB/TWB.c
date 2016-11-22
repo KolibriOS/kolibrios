@@ -224,8 +224,8 @@ void TWebBrowser::Prepare(){
 	}
 	DrawStyle();
 	NewLine();
-	DrawPage();
 	if (list.first == 0) list.count = stroka;
+	DrawPage();
 	if (anchor)
 	{
 		anchor=NULL;

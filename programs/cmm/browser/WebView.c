@@ -8,7 +8,7 @@
 #endif
 
 //libraries
-#define MEMSIZE 4096 * 256
+#define MEMSIZE 4096 * 200
 #include "..\lib\gui.h"
 #include "..\lib\draw_buf.h"
 #include "..\lib\list_box.h"
@@ -30,7 +30,7 @@
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.53";
+char version[]="Текстовый браузер 1.55";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -43,7 +43,7 @@ char rmb_menu[] =
 Очистить кэш картинок
 Менеджер загрузок";
 #else
-char version[]="Text-based Browser 1.53";
+char version[]="Text-based Browser 1.55";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -212,10 +212,11 @@ void main()
 										$stosb;
 									} while (AL != 0) && (AL != 13) && (AL != 10);
 									DSBYTE[EDI-1]='\0';
-									if (!strcmp(#URL,"https://"))
+									if (!strncmp(#URL,"https://",8))
 									{
 										notify("HTTPS protocol is not supported yet");
-										StopLoading();		
+										StopLoading();
+										break;	
 									}
 								}
 							}
@@ -403,7 +404,8 @@ void SetPageDefaults()
 	cur_encoding = CH_NULL;
 	if (o_bufpointer) o_bufpointer = free(o_bufpointer);
 	anchor_line_num=WB1.list.first;
-	anchor[0]='|';
+	//anchor[0]='|';
+	anchor=NULL;
 }
 
 void OpenPage()

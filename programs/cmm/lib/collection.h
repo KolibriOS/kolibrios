@@ -63,7 +63,7 @@ void collection::drop() {
 =                                                        =
 ========================================================*/
 
-struct collection_int
+:struct collection_int
 {
 	int count;
 	dword element[4096*3];
@@ -72,19 +72,19 @@ struct collection_int
 	void drop();
 };
 
-int collection_int::add(dword in) {
+:int collection_int::add(dword in) {
 	if (count >= 4096*3) return 0;
 	element[count] = in;
 	count++;
 	return 1;
 }
 
-dword collection_int::get(dword pos) {
+:dword collection_int::get(dword pos) {
 	if (pos<0) || (pos>=count) return 0;
 	return element[pos];
 }
 
-void collection_int::drop() {
+:void collection_int::drop() {
 	element[0] = 
 	count = 0;
 }

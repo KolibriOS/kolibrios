@@ -518,10 +518,10 @@ inline fastcall dword GetStartTime()
 :struct obj
 {
 	dword x,y,w,h;
-	void size();
+	void set_size();
 };
 
-:void obj::size(dword _x, _y, _w, _h)
+:void obj::set_size(dword _x, _y, _w, _h)
 {
 	x=_x; 
 	y=_y;

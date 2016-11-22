@@ -38,6 +38,8 @@ void Downloader()
     downloader_opened = 1;
     SetEventMask(0x27);
  
+    filepath[0] = NULL;
+    
     downloader.Stop();
     if (downloader_edit[0]) StartDownloading(); else strcpy(#downloader_edit, "http://");
     ed.size = ed.pos = ed.shift = ed.shift_old = strlen(#downloader_edit);
@@ -116,7 +118,7 @@ void Key_Scan(int id)
     if (id==301) && (downloader.http_transfer <= 0) StartDownloading();
     if (id==302) StopDownloading();
     if (id==305) RunProgram("/sys/File managers/Eolite", #save_to);
-    if (id==306) RunProgram("@open", #filepath);
+    if (id==306) RunProgram("/sys/@open", #filepath);
 }
  
 void DL_Draw_Window()
