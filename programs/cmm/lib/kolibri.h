@@ -510,7 +510,7 @@ inline fastcall dword GetStartTime()
 	loop()switch(WaitEvent())
 	{
 		case evReDraw:
-			DefineAndDrawWindow(X_EventRedrawWindow,Y_EventRedrawWindow,100,1,1,0x34,0xFFFFFF,"",0);
+			DefineAndDrawWindow(X_EventRedrawWindow,Y_EventRedrawWindow,100,1,0x34,0xFFFFFF,NULL,0);
 			pause(10);
 			ExitProcess();
 			break;
