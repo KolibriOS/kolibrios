@@ -187,10 +187,6 @@
 
 #define __DYNAMIC_REENT__
 
-#ifdef STATIC_LIBC
-  #define BUILD_LIBC
-#endif
-
 #ifdef BUILD_LIBC
   #define __EXPORT
   #define __IMPORT
