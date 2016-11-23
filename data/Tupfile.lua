@@ -539,6 +539,7 @@ tup.append_table(img_files, {
  {"File Managers/EOLITE", PROGS .. "/cmm/eolite/Eolite.com"},
  {"FONT_VIEWER", PROGS .. "/cmm/kf_font_viewer/font_viewer.com"},
  {"GAMES/CLICKS", PROGS .. "/games/clicks/trunk/clicks.com"},
+ {"DEVELOP/DIFF", PROGS .. "/cmm/diff/diff.com"},
  {"GAMES/FindNumbers", PROGS .. "/games/FindNumbers/trunk/FindNumbers"},
  {"GAMES/flood-it", PROGS .. "/games/flood-it/trunk/flood-it.com"},
  {"GAMES/MINE", PROGS .. "/games/mine/trunk/mine"},

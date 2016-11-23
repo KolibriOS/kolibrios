@@ -42,7 +42,7 @@ Efectes d'imatges         /sys/media/imgf/imgf
 Palitra                   /sys/media/palitra
 #4   **** MULTIMÈDIA ****
 Reproductor MP3 Pixie     /sys/media/pixie/pixie
-Fplay - video             /KolibriOS/media/fplay-full
+Fplay - video             /KolibriOS/media/fplay
 MidAMP                    /sys/media/midamp
 #5    **** DESARROLLO ****
 Exemples           >      /@6

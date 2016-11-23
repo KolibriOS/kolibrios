@@ -42,13 +42,15 @@ FlatWave                  /sys/3d/flatwav
 Палитра                   /sys/media/palitra
 #4    **** Мультимедиа ****
 Аудиоплеер Pixie          /sys/media/pixie/pixie
-Видеоплеер Fplay          /kolibrios/media/fplay-full
+Аудиоплеер AC97SND        /sys/media/ac97snd
+Видеоплеер Fplay          /kolibrios/media/fplay
 Midi-плеер                /sys/media/midamp
 #5    **** Разработка ****
 Примеры            >      /@6
 Упаковщик KPack           /sys/kpack
 Flat Assembler            /sys/develop/fasm
 Доска отладки             /sys/develop/board
+Diff tool                 /sys/develop/diff
 Отладчик                  /sys/develop/mtdbg
 Пипетка                   /sys/pipetka
 Hex2Dec2Bin               /sys/develop/h2d2b

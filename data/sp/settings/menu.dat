@@ -41,12 +41,14 @@ Efectos de im genes       /sys/media/imgf/imgf
 Palitra                   /sys/media/palitra
 #4   **** MULTIMEDIA ****
 Pixie MP3 Player          /sys/media/pixie/pixie
-Fplay - video             /kolibrios/media/fplay-full
+AC97SND Audioplayer       /sys/media/ac97snd
+Fplay - video             /kolibrios/media/fplay
 MidAMP                    /sys/media/midamp
 #5    **** DESARROLLO ****
 Ejemplos           >      /@6
 Archiver KPack            /sys/kpack
 Flat Assembler            /sys/develop/fasm
+Diff Tool                 /sys/develop/diff
 Debug Board               /sys/develop/board
 Debugger                  /sys/develop/mtdbg
 Hex2Dec2Bin               /sys/develop/h2d2b
@@ -57,7 +59,7 @@ Threads                   /sys/develop/thread
 Selector de color         /sys/demos/cslide
 Ejemplo de consola 1      /sys/develop/testcon2
 Ejemplo de consola 2      /sys/develop/test_gets
-Ejemplo de Message Boxes  /sys/demos/use_mb
+Ejemplo de Messages       /sys/demos/use_mb
 #7    **** SISTEMA ****
 Configuraci¢n      >      /@8
 Sensores           >      /@9

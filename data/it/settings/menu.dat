@@ -40,12 +40,14 @@ Animage                   /sys/media/animage
 Palitra                   /sys/media/palitra
 #4   **** MULTIMEDIA ****
 Pixie MP3 Player          /sys/media/pixie/pixie
-Fplay - video             /KolibriOS/media/fplay-full
+AC97SND Audioplayer       /sys/media/ac97snd
+Fplay - video             /KolibriOS/media/fplay
 MidAMP                    /sys/media/midamp
 #5    **** PROGRAMMING ****
 Esempi             >      /@6
 Gestore di archivi KPack  /sys/kpack
 Compilatore FASM          /sys/develop/fasm
+Diff Tool                 /sys/develop/diff
 Debug Board               /sys/develop/board
 Debugger                  /sys/develop/mtdbg
 Hex2Dec2Bin               /sys/develop/h2d2b

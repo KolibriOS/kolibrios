@@ -35,18 +35,20 @@ Gears                     /sys/3d/gears
 3D-waved area             /sys/3d/3dwav
 #3   **** GRAPHICS ****
 Kolibri Image Viewer      /sys/media/kiv
-zSea* (image viewer)      /kolibrios/media/zsea/zsea
+zSea* Image Viewer      /kolibrios/media/zsea/zsea
 Animage                   /sys/media/animage
 Image Filtering           /sys/media/imgf/imgf
 Palitra                   /sys/media/palitra
 #4   **** MULTIMEDIA ****
 Pixie (MP3 player)        /sys/media/pixie/pixie
-Fplay* (video player)     /kolibrios/media/fplay-full
+AC97SND Audioplayer       /sys/media/ac97snd
+Fplay* Video player       /kolibrios/media/fplay
 MidAMP                    /sys/media/midamp
 #5    **** PROGRAMMING ****
 Examples           >      /@6
 KPack Archiver            /sys/kpack
 Flat Assembler            /sys/develop/fasm
+Diff Tool                 /sys/develop/diff
 Debug Board               /sys/develop/board
 Debugger                  /sys/develop/mtdbg
 Base Converter            /sys/develop/h2d2b

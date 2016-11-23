@@ -41,12 +41,14 @@ Image Filtering           /sys/media/imgf/imgf
 Palitra                   /sys/media/palitra
 #4   **** MULTIMEDIA ****
 Pixie MP3 Player          /sys/media/pixie/pixie
-Fplay - video             /kolibrios/media/fplay-full
+AC97SND Audioplayer       /sys/media/ac97snd
+Fplay - video             /kolibrios/media/fplay
 MidAMP                    /sys/media/midamp
 #5    **** PROGRAMMING ****
 Examples           >      /@6
 Arhivaator KPack          /sys/kpack
 Flat Assembler            /sys/develop/fasm
+Diff Tool                 /sys/develop/diff
 Silumisaken               /sys/develop/board
 Silur                     /sys/develop/mtdbg
 Hex2Dec2Bin               /sys/develop/h2d2b
