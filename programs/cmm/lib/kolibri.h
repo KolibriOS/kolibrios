@@ -66,7 +66,7 @@ char program_path[4096];
 #include "../lib/mouse.h"
 #include "../lib/keyboard.h"
 
-:dword calc(EAX) { return EAX; }
+inline fastcall dword calc(EAX) { return EAX; }
 
 :struct raw_image {
 	dword w, h, data;
