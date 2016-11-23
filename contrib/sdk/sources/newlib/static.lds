@@ -9,7 +9,7 @@ SECTIONS
         LONG(0x554e454D);
         LONG(0x32305445);
         LONG(1);
-        LONG(__start);
+        LONG(__crt_start);
         LONG(___iend);
         LONG(___memsize);
         LONG(___stacktop);

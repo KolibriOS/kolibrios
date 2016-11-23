@@ -553,6 +553,7 @@ ifeq ($(findstring static,$(MAKECMDGOALS)),static)
 
 LIB_SRCS:=  	$(STATIC_SRCS)
 LIB_OBJS:=  	$(STATIC_OBJS)
+CFLAGS += -DSTATIC_LIBC
 
 else
 
@@ -582,9 +583,9 @@ shared: $(NAME).dll libdll.a
 
 $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(LIB_OBJS) -lgcc --version-script libc.ver
-	#sed -e "s/ @[^ ]*//" libc.orig.def > libc.def
-	#sed -f cmd2.sed libc.def > mem
-	#sed -f newlib.sed mem > libc.inc
+#sed -e "s/ @[^ ]*//" libc.orig.def > libc.def
+#sed -f cmd2.sed libc.def > mem
+#sed -f newlib.sed mem > libc.inc
 
 install: libc.dll libc.dll.a libdll.a
 	mv -f libc.dll $(SDK_DIR)/bin
@@ -665,6 +666,9 @@ time/wcsftime.o: time/strftime.c
 	fasm $< $
 
 %.o : %.c Makefile
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
+
+%.o : %.S Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
 
 

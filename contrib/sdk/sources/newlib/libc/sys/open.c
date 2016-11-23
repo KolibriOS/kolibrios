@@ -115,6 +115,7 @@ int open (const char * filename, int flags, ...)
     if(hid < 0)
     {
         errno = EMFILE;
+        __io_free(hid);
         return (-1);
     };
 
@@ -136,6 +137,7 @@ int open (const char * filename, int flags, ...)
         if( !err )
         {
             errno = EEXIST;
+            __io_free(hid);
             return (-1);
         };
     }
@@ -147,6 +149,7 @@ int open (const char * filename, int flags, ...)
         if( err )
         {
             errno = EACCES;
+            __io_free(hid);
             return -1;
         };
     };
