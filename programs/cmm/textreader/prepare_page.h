@@ -44,7 +44,7 @@ dword line_start=io.buffer_data;
 			}
 		}
 	}
-	if (mode==COUNT_BUF_HEIGHT) list.count++;
+	if (mode==COUNT_BUF_HEIGHT) list.count+=2;
 	if (mode==DRAW_BUF) label.write_buf(8,stroka_y,list.w,label.size.height, 0xFFFFFF, 0, label.size.pt, line_start);
 }
 
@@ -61,7 +61,7 @@ void PreparePage()
 	Parcer(COUNT_BUF_HEIGHT);
 	
 	//draw text in buffer
-	list.SetSizes(0, TOOLBAR_H, list.w, Form.cheight-TOOLBAR_H, label.size.pt+1);
+	list.SetSizes(0, TOOLBAR_H, list.w, Form.cheight-TOOLBAR_H, label.size.pt+3);
 	if (list.count < list.visible) list.count = list.visible;
 	label.size.height = list.count+1*list.item_h;
 	label.raw_size = 0;

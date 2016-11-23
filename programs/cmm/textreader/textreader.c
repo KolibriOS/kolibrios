@@ -19,7 +19,7 @@
 #define DEFAULT_EDITOR "/sys/tinypad"
 
 #define INTRO_TEXT "This is a plain Text Reader.\nTry to open some text file."
-#define VERSION "Text Reader v1.1"
+#define VERSION "Text Reader v1.2"
 #define ABOUT "Idea: Leency, punk_joker
 Code: Leency, Veliant, KolibriOS Team
 
@@ -96,6 +96,7 @@ void main()
 					encoding = menu.list.cur_y - 10;
 					OpenFile(#param); 
 					PreparePage();
+					menu.list.cur_y = NULL;
 				};
 				draw_window();
 		}
