@@ -346,7 +346,7 @@ tup.append_table(img_files, {
  {"PCIDEV", PROGS .. "/system/pcidev/trunk/PCIDEV"},
  {"RDSAVE", PROGS .. "/system/rdsave/trunk/rdsave"},
  {"RTFREAD", PROGS .. "/other/rtfread/trunk/rtfread"},
- {"RUN", PROGS .. "/system/run/trunk/run"},
+ {"RUN", PROGS .. "/system/RunOD/RunOD"},
  {"SEARCHAP", PROGS .. "/system/searchap/searchap"},
  {"SCRSHOOT", PROGS .. "/media/scrshoot/scrshoot"},
  {"SETUP", PROGS .. "/system/setup/trunk/setup"},
