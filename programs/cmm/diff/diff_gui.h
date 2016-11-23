@@ -28,6 +28,8 @@ void gui()
 	OpenDialog_init stdcall (#o_dialog);
 	SetEventMask(0x27);
 
+	debugln("GUI");
+
 	loop() switch(WaitEvent())
 	{
 		case evMouse:
@@ -93,7 +95,7 @@ void gui()
 void draw_window()
 {
 	system.color.get();
-	DefineAndDrawWindow(215, 100, 450, 195 + skin_height, 0x34, system.color.work, #window_title);
+	DefineAndDrawWindow(215, 100, 450, 195 + skin_height, 0x34, system.color.work, #window_title,0);
 	GetProcessInfo(#Form, SelfInfo);
 
 	WriteText(src_box.left-2, src_box.top-21, 0x90, system.color.work_text, "First file:");

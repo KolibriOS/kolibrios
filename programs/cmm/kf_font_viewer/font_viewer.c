@@ -33,7 +33,7 @@ void main()
 			goto _DRAW_WINDOW_CONTENT;
 		case evReDraw:
 			system.color.get();
-			DefineAndDrawWindow(215,100,500,320+skin_height,0x74,0xFFFFFF,#title);
+			DefineAndDrawWindow(215,100,500,320+skin_height,0x74,0xFFFFFF,#title,0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
 			_DRAW_WINDOW_CONTENT:

@@ -29,7 +29,7 @@ void draw_window()
 {
 	proc_info Form;
 	int i;
-	DefineAndDrawWindow(215,100,350,300,0x34,0xFFFFFF,"Window header");
+	DefineAndDrawWindow(215,100,350,300,0x34,0xFFFFFF,"Window header",0);
 	GetProcessInfo(#Form, SelfInfo);
 	for (i=0; i<io.dir.count; i++)
 	{

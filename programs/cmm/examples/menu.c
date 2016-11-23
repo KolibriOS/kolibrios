@@ -59,7 +59,7 @@ void main()
 		if (menu.list.cur_y) {
 			if (menu.list.cur_y > butv.id) && (menu.list.cur_y < buta.id) category = menu.list.cur_y - butv.id;
 		}
-		DefineAndDrawWindow(215,100,350,300,0x34,0xFFFFFF,"Window header");
+		DefineAndDrawWindow(215,100,350,300,0x34,0xFFFFFF,"Window header",0);
 		GetProcessInfo(#Form, SelfInfo);
 		WriteText(10,110,0x80,0,#param);
 		DrawCaptButton(butv.x, butv.y, butv.w, butv.h, butv.id, 0xCCCccc, 0x000000, "Vegetables");

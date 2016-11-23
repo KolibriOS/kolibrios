@@ -193,7 +193,7 @@ void GetCurrentSectionData()
 void Event_DrawWindow() 
 {
 	system.color.get();
-	DefineAndDrawWindow(215, 100, 600, 400, 0x33, system.color.work, WINDOW_TITLE);
+	DefineAndDrawWindow(215, 100, 600, 400, 0x33, system.color.work, WINDOW_TITLE,0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
 	if (Form.width  < 450) { MoveSize(OLD,OLD,450,OLD); return; }

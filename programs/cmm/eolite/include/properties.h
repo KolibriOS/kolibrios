@@ -345,7 +345,7 @@ void properties_dialog()
 
 void DrawPropertiesWindow()
 {
-	DefineAndDrawWindow(Form.left + 150,150,305,360+skin_height,0x34,system.color.work,WINDOW_TITLE_PROPERTIES);
+	DefineAndDrawWindow(Form.left + 150,150,305,360+skin_height,0x34,system.color.work,WINDOW_TITLE_PROPERTIES,0);
 	if ( !asm test path_to_file_ed.flags, 2)
 	{
 		path_to_file_ed.blur_border_color = system.color.work;

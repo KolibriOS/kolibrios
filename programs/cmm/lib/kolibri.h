@@ -331,18 +331,18 @@ inline fastcall int TestBit( EAX, CL)
 
 //------------------------------------------------------------------------------
 
-:void DefineAndDrawWindow(dword x, y, size_w, size_h, byte WindowType,dword WindowAreaColor, bgcolor, title)
+:void DefineAndDrawWindow(dword _x, _y, _w, _h, _window_type, _bgcolor, _title, _flags)
 {
 	EAX = 12;              // function 12:tell os about windowdraw
 	EBX = 1;
 	$int 0x40
 	
 	$xor EAX,EAX
-	EBX = x << 16 + size_w; 
-	ECX = y << 16 + size_h;
-	EDX = WindowType << 24 | WindowAreaColor;
-	EDI = bgcolor;
-	ESI = title;
+	EBX = _x << 16 + _w; 
+	ECX = _y << 16 + _h;
+	EDX = _window_type << 24 | _bgcolor;
+	EDI = _title;
+	ESI = _flags;
 	$int 0x40
 
 
@@ -510,7 +510,7 @@ inline fastcall dword GetStartTime()
 	loop()switch(WaitEvent())
 	{
 		case evReDraw:
-			DefineAndDrawWindow(X_EventRedrawWindow,Y_EventRedrawWindow,100,1,1,0x34,0xFFFFFF,"");
+			DefineAndDrawWindow(X_EventRedrawWindow,Y_EventRedrawWindow,100,1,1,0x34,0xFFFFFF,"",0);
 			pause(10);
 			ExitProcess();
 			break;

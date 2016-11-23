@@ -91,7 +91,7 @@ void settings_dialog()
 				break;
 				
 			case evReDraw:
-				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 376, 370+skin_height,0x34,system.color.work,TITLE_SETT);
+				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 376, 370+skin_height,0x34,system.color.work,TITLE_SETT,0);
 				DrawSettingsCheckBoxes();
 		}
 	}

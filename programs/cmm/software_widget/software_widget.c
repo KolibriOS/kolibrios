@@ -92,7 +92,7 @@ void main()
 
 		case evReDraw:
 			system.color.get();
-			DefineAndDrawWindow(GetScreenWidth()-window_width/2,GetScreenHeight()-window_height/2,window_width,window_height,0x74,system.color.work,"");
+			DefineAndDrawWindow(screen.width-window_width/2,screen.height-window_height/2,window_width,window_height,0x74,system.color.work,"",0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) { DrawTitle(#window_title); break; } else DrawTitle("");
 			draw_top_bar();

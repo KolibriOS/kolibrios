@@ -32,6 +32,6 @@ void main()
 
 void draw_window()
 {
-	DefineAndDrawWindow(215, 100, 350, 300, 0x34, 0xEEEeee, "Window title");
+	DefineAndDrawWindow(215, 100, 350, 300, 0x34, 0xEEEeee, "Window title",0);
 	GetProcessInfo(#Form, SelfInfo);
 }

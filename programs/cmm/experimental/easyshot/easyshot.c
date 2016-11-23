@@ -54,7 +54,7 @@ void main()
          
 		case evReDraw:
 			sc.get();
-			DefineAndDrawWindow(b_screen_width/4, b_screen_height/4, s_screen_width + 9, s_screen_height + GetSkinHeight() + 45,0x74, 0, "EasyShot v0.2",0);
+			DefineAndDrawWindow(b_screen_width/4, b_screen_height/4, s_screen_width + 9, s_screen_height + skin_height + 45,0x74, 0, "EasyShot v0.2",0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
 			DrawBar(0, 0, Form.cwidth, 41, sc.work);

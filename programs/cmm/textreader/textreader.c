@@ -259,7 +259,7 @@ void OpenFile(dword f_path)
 
 void draw_window()
 {
-	DefineAndDrawWindow(Form.left,Form.top,Form.width,Form.height,0x73,0,#title);
+	DefineAndDrawWindow(Form.left,Form.top,Form.width,Form.height,0x73,0,#title,0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
 

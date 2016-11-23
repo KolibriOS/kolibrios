@@ -11,13 +11,13 @@ IO io1, io2;
 
 #include "32user32.h"
 #include "objects.h"
-#include "vfc_gui.h"
+#include "diff_gui.h"
 
 #define mincmpstrings 2
 #define maxcmpstrings 10
 #define maxcmpoffset  100
 
-char window_title[] = "Visual Text Comparer (Diff tool)";
+char window_title[] = "Kolibri Diff tool (Visual Text Comparer)";
 
 char* srcfilename;
 char* dstfilename;

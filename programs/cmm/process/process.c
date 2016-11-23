@@ -99,7 +99,7 @@ void main()
 			break;
 		case evReDraw:
 			system.color.get();
-			DefineAndDrawWindow(screen.width-400/2,screen.height-450/2,400,454,0x73,0,T_WINDOW_TITLE);
+			DefineAndDrawWindow(screen.width-400/2,screen.height-450/2,400,454,0x73,0,T_WINDOW_TITLE,0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
 			if (Form.width  < 300) { MoveSize(OLD,OLD,300,OLD); break; }

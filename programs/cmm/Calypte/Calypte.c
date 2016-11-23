@@ -312,7 +312,7 @@ void main()
 void draw_window()
 {
 	system.color.get();
-	DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2,WIN_W,WIN_H,0x73,0xFFFFFF,#win_title);
+	DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2,WIN_W,WIN_H,0x73,0xFFFFFF,#win_title,0);
 	GetProcessInfo(#Form, SelfInfo);
 	DrawBar(0, 0, Form.cwidth, TOPPANELH, system.color.work);
 	DrawBar(0, Form.cheight-BOTPANELH, Form.cwidth, BOTPANELH, system.color.work);

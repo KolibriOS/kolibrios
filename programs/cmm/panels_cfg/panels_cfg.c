@@ -143,7 +143,7 @@ void main()
 			
 		case evReDraw:
 				system.color.get();
-				DefineAndDrawWindow(130, 150, 465, 398+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE);
+				DefineAndDrawWindow(130, 150, 465, 398+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE,0);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window>2) break;
 				taskbar_frame.size_x = docky_frame.size_x = - taskbar_frame.start_x * 2 + Form.cwidth;

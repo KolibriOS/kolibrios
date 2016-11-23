@@ -92,7 +92,7 @@ void draw_window()
 	dword x=30;
 	y.n=0;
 	system.color.get();
-	DefineAndDrawWindow(screen.width-570/2, 100, 570, 280+skin_height, 0x34, system.color.work, WINDOW_TITLE_TEXT);
+	DefineAndDrawWindow(screen.width-570/2, 100, 570, 280+skin_height, 0x34, system.color.work, WINDOW_TITLE_TEXT,0);
 	GetProcessInfo(#Form, SelfInfo);
 	WriteTextB(x+2,y.inc(20)+2,0x81,MixColors(system.color.work, 0xB92234,220),CONTENT_HEADER_TEXT);
 	WriteTextB(x,y.n,0x81,0xB92234,CONTENT_HEADER_TEXT);
