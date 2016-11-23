@@ -50,8 +50,6 @@
 #define KEY_LWIN       01000000000b
 #define KEY_RWIN       10000000000b
 
-dword calc(EAX) { return EAX; }
-
 inline fastcall word GetKey()  //+Gluk fix
 {
 		$push edx

@@ -66,6 +66,8 @@ char program_path[4096];
 #include "../lib/mouse.h"
 #include "../lib/keyboard.h"
 
+:dword calc(EAX) { return EAX; }
+
 :struct raw_image {
 	dword w, h, data;
 };
@@ -329,7 +331,7 @@ inline fastcall int TestBit( EAX, CL)
 
 //------------------------------------------------------------------------------
 
-void DefineAndDrawWindow(dword x, y, size_w, size_h, byte WindowType,dword WindowAreaColor, EDI, ESI)
+:void DefineAndDrawWindow(dword x, y, size_w, size_h, byte WindowType,dword WindowAreaColor, bgcolor, title)
 {
 	EAX = 12;              // function 12:tell os about windowdraw
 	EBX = 1;
@@ -338,9 +340,11 @@ void DefineAndDrawWindow(dword x, y, size_w, size_h, byte WindowType,dword Windo
 	$xor EAX,EAX
 	EBX = x << 16 + size_w; 
 	ECX = y << 16 + size_h;
-
 	EDX = WindowType << 24 | WindowAreaColor;
+	EDI = bgcolor;
+	ESI = title;
 	$int 0x40
+
 
 	EAX = 12;              // function 12:tell os about windowdraw
 	EBX = 2;
@@ -381,15 +385,17 @@ inline fastcall void DrawTitle( ECX)
 	$int 0x40;
 }
 
-dword WriteBufText(dword x,y,byte fontType, dword color, EDX, EDI)
+:dword WriteBufText(dword x,y,byte fontType, dword color, str_offset, buf_offset)
 {
 	EAX = 4;
 	EBX = x<<16+y;
 	ECX = fontType<<24+color;
+	EDX = str_offset;
+	EDI = buf_offset;
 	$int 0x40;
 }
 
-void WriteNumber(dword x,y,byte fontType, dword color, count, number_or_offset)
+:void WriteNumber(dword x,y,byte fontType, dword color, count, number_or_offset)
 {
 	EAX = 47;
 	EBX = count<<16;
@@ -431,7 +437,7 @@ void PutPaletteImage(dword EBX,w,h,x,y,ESI,EDI)
 	EDX = x<<16+y;
 	EBP = 0;
 	$int 0x40
-} 
+}
 
 inline fastcall void PutPixel( EBX,ECX,EDX)
 {
@@ -439,12 +445,13 @@ inline fastcall void PutPixel( EBX,ECX,EDX)
   $int 0x40
 }
 
-void DrawBar(dword x,y,w,h,EDX)
+:void DrawBar(dword x,y,w,h,color)
 {
 	if (h<=0) || (h>60000) || (w<=0) || (w>60000) return; //bad boy :)
 	EAX = 13;
 	EBX = x<<16+w;
 	ECX = y<<16+h;
+	EDX = color;
 	$int 0x40
 }
 
@@ -473,11 +480,13 @@ inline RefreshWindow(dword ID_REFRESH,ID_ACTIVE)
 	$int 0x40
 }
 
-void UnsafeDefineButton(dword x,y,w,h,EDX,ESI)
+:void UnsafeDefineButton(dword x,y,w,h,id,color)
 {
 	EAX = 8;
 	EBX = x<<16+w;
 	ECX = y<<16+h;
+	EDX = id;
+	ESI = color;
 	$int 0x40
 }
 
@@ -608,7 +617,6 @@ void ______INIT______()
 	screen.width  = GetScreenWidth();
 	screen.height = GetScreenHeight();
 	
-	//program_path_length = strlen(I_Path);
 	DOUBLE_CLICK_DELAY = GetMouseDoubleClickDelay();
 	__generator = GetStartTime();
 	

@@ -102,11 +102,9 @@ void main()
 {
 	int id;
 
-	byte mouse_clicked;
 	dword tmp_x,tmp_y;
 	dword z1,z2;
 	
-	mem_Init();
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libio, #libio_init,1);
 	load_dll(libimg, #libimg_init,1);

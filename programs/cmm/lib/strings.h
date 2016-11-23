@@ -356,9 +356,9 @@ inline fastcall void strcat( EDI, ESI)
     }
 }
 
-void strncat(dword text1, text2, signed len)
-	signed o1,o2;
-	char s;
+:void strncat(dword text1, text2, signed len)
+signed o1,o2;
+char s;
 {
 	s = DSBYTE[text1];
 	while(s){
@@ -413,13 +413,13 @@ inline fastcall signed int strrchr( ESI,BL)
 }
 
 
-int chrnum(dword searchin, char symbol)
+inline fastcall unsigned int chrnum( ESI, BL)
 {
     int num = 0;
-    while(DSBYTE[searchin])
+    while(DSBYTE[ESI])
     { 
-        if (DSBYTE[searchin] == symbol)    num++;
-        searchin++;
+        if (DSBYTE[ESI] == BL) num++;
+        ESI++;
     }
     return num;
 }
