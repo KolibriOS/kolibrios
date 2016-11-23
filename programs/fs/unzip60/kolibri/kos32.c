@@ -11,14 +11,21 @@ go in unzip60 directory (below this file) and
 Contains:
     version()
     mapattr()
+    mapname()
     checkdir()
+    close_outfile()
+    get_extattribs()
+    do_wild()
 
-extract.o:extract.c:(.text+0x1410): undefined reference to `mapname'
-extract.o:extract.c:(.text+0x241d): undefined reference to `close_outfile'
-extract.o:extract.c:(.text+0x2e09): undefined reference to `checkdir'
-process.o:process.c:(.text+0x13e9): undefined reference to `checkdir'
-process.o:process.c:(.text+0x15a1): undefined reference to `do_wild'
-kolibri\makefile.gcc:276: recipe for target 'unzip.exe' failed
+todo
+	russian filenames in arh
+	datetime restore
+	overwrite request not in stderr	
+    
+	too many open files error EMFILE when DEBUG - error in newlib open. fixed
+	-d dir error.  Use -ddir or -d dir/
+	
+	release, sizing removing old compression methods or zlib
 */
 
 #define FATTR   FS_HIDDEN+FS_SYSTEM+FS_SUBDIR
@@ -770,6 +777,7 @@ void close_outfile(__G)    /* GRR: change to return PK-style warning level */
 
 #if (defined(NO_FCHOWN))
     fclose(G.outfile);
+    Trace((stdout, "File (%s) closed\n", FnFilter1(G.filename)));
 #endif
 
 // kos. add set file datetime ?

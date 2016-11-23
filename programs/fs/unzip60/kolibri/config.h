@@ -13,8 +13,8 @@ Started by Siemargl @Nov 2016
 #include <unistd.h>
 #include <dirent.h>
 
-
-#define DEBUG
+// moved to makefile, in kilibri leads to bug EMFILES
+//#define DEBUG
 
 #define DIR_END       '/'
 #define NO_STRNICMP

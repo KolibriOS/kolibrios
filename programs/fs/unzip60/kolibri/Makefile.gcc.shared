@@ -19,7 +19,9 @@
 SDK_DIR:= $(abspath ../../../contrib/sdk)
 NOASM=1
 CC_CPU_OPT=-march=pentium 
-#USEZLIB=1
+
+###  still not work - EMFILE error
+###USEZLIB=1
 
 ### Optional section
 

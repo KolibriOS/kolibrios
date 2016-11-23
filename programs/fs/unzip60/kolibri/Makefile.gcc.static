@@ -19,7 +19,11 @@
 SDK_DIR:= $(abspath ../../../contrib/sdk)
 NOASM=1
 CC_CPU_OPT=-march=pentium 
-#USEZLIB=1
+## debug may lead to handle leak, so only 59 file max unziped
+#DEBUG=1
+
+###  still not work - EMFILE error
+###USEZLIB=1
 
 ### Optional section
 
@@ -99,7 +103,7 @@ INCLUDES= -I $(SDK_DIR)/sources/newlib/libc/include -I $(SDK_DIR)/sources/zlib
 LIBPATH = -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib
 
 CC_ENVIR_OPT = -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -DKOS32 \
-	$(INCLUDES)
+	$(INCLUDES) -DSTATIC_LIBC
 
 ### Compiler-specific section
 
@@ -127,9 +131,9 @@ AS_WARN_OPT = $(CC_WARN_OPT)
 LD_WARN_OPT =
 
 # Debug version
-CC_DEBUG_OPT = -g
+CC_DEBUG_OPT = -g -DDEBUG
 AS_DEBUG_OPT = $(CC_DEBUG_OPT)
-LD_DEBUG_OPT = $(CC_DEBUG_OPT)
+LD_DEBUG_OPT = -g
 
 # Release version
 CC_RELEASE_OPT =
@@ -153,16 +157,19 @@ CC_OUT_OPT = -o
 # Other specific options
 CC_SPECIFIC_OPT = -c $(CC_ENVIR_OPT)
 AS_SPECIFIC_OPT = -c
-LD_SPECIFIC_OPT = -o $@ -static -S -nostdlib -T $(SDK_DIR)/sources/newlib/app-dynamic.lds \
+###LD_SPECIFIC_OPT = -o $@ -static -S -nostdlib -T $(SDK_DIR)/sources/newlib/app-dynamic.lds 
+
+LD_SPECIFIC_OPT = -o $@ -static -S -nostdlib -T $(SDK_DIR)/sources/newlib/static.lds \
           --image-base 0 $(LIBPATH)
 
 # Libraries for the debug & release version
 # (GCC 2.95 and newer does not require the system library specifications)
-# -lapp only for gcc 4.8
+# -lapp only for gcc 4.8 with newlib 2.2!!!
 ifdef USEZLIB
-LD_RELEASE_LIBS = -lz -lgcc -ldll -lc.dll -lapp
+---LD_RELEASE_LIBS = -lz -lgcc -ldll -lc.dll -lapp
 else
-LD_RELEASE_LIBS = -lgcc -ldll -lc.dll -lapp
+##LD_RELEASE_LIBS = -lgcc -ldll -lc.dll -lapp
+LD_RELEASE_LIBS = -lc -lgcc -lc
 endif
 LD_DEBUG_LIBS = $(LD_RELEASE_LIBS)
 
