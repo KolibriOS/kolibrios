@@ -75,7 +75,7 @@ struct deflate_state ;internal_state
 	pending_buf dd ? ;Bytef *;output still pending
 	pending_buf_size dd ? ;ulg ;size of pending_buf
 	pending_out dd ? ;Bytef * ;next pending byte to output to the stream
-	pending dw ? ;uInt ;nb of bytes in the pending buffer
+	pending dd ? ;uInt ;nb of bytes in the pending buffer
 	wrap    dd ? ;int ;bit 0 true for zlib, bit 1 true for gzip
 	gzhead  dd ? ;gz_headerp ;gzip header information to write
 	gzindex dd ? ;uInt ;where in extra, name, or comment

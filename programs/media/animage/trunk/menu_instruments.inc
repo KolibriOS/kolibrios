@@ -153,7 +153,7 @@ no_save_:
 
 ; savedialog drawwin,save1,save2,file_path
 ;---------------------------------------------------------------------
-; replace extension to '.bmp'
+; replace extension to '.png'
 	push	eax esi
 	mov	esi,[OpenDialog_data.filename_area]
 	xor	eax,eax
@@ -165,7 +165,7 @@ no_save_:
 	sub	esi,5
 	cmp	[esi],byte '.'
 	jne	@f
-	mov	[esi],dword '.bmp'
+	mov	[esi],dword '.png'
 @@:
 	pop	esi eax
 ;---------------------------------------------------------------------
@@ -178,6 +178,42 @@ no_save_:
 save1:
 save_enter:
 	mcall SF_SET_EVENTS_MASK,0x80000027 ;100111b
+
+	xor al,al
+	mov edi,file_path
+	repne scasb
+	mov eax,[edi-5]
+	or eax,0x20202000 ;down register
+	cmp eax,'.png'
+	jne .end0
+		;create image struct
+		stdcall [img_create], [Picture_SizeX], [Picture_SizeY], Image.bpp24
+		test eax,eax
+		jz @f
+			;copy image
+			mov edi,[eax+Image.Data]
+			mov esi,[PointerToPicture]
+			mov ecx,[Picture_SizeX]
+			imul ecx,[Picture_SizeY]
+			imul ecx,3
+			rep movsb
+
+			;encode image
+			stdcall [img_encode], eax, LIBIMG_FORMAT_PNG, 0
+			test eax,eax
+			jz @f
+
+			;copy output image
+			mov edi,[PointerToEditBufer]
+			mov esi,eax
+			mov eax,ecx
+			rep movsb
+		@@:
+		mov	ecx,eax
+		mov	eax,file_path
+		mov	ebx,[PointerToEditBufer]
+		jmp .end1
+	.end0:
 
 	call analizing_picture_to_palette
 
@@ -194,6 +230,7 @@ save_enter:
 	mov	ecx,ebx
 	mov	ebx,[PointerToEditBufer]
 
+	.end1:
 	call	save_file
 
 	mov	[save_flag],1

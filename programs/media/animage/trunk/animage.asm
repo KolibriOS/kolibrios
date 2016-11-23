@@ -1,6 +1,11 @@
 ;*******************************************************
 ;**************GRAPHICS EDITOR ANIMAGE *****************
 ;*******************************************************
+; version: 1.52
+; last update:  23.11.2016
+; changes:      Can save *.png files
+; autors:       IgorA
+;--------------------------------------------------------
 ; version: 1.51
 ; last update:  23.03.2016
 ; changes:      Use library 'kmenu.obj', update GUI
@@ -42,7 +47,7 @@ include '../../../KOSfuncs.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 include '../../../dll.inc'
 include '../../../libio.inc'
-;include '../../../develop/libraries/libs-dev/libimg/libimg.inc'
+include '../../../develop/libraries/libs-dev/libimg/libimg.inc'
 ;include '../../../debug.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load

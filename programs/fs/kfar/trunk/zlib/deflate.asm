@@ -544,7 +544,7 @@ proc deflateResetKeep uses ebx edi, strm:dword
 	mov dword[ebx+z_stream.msg],Z_NULL ;use zfree if we ever allocate msg dynamically
 	mov word[ebx+z_stream.data_type],Z_UNKNOWN
 
-	mov word[edi+deflate_state.pending],0
+	mov dword[edi+deflate_state.pending],0
 	mov eax,[edi+deflate_state.pending_buf]
 	mov [edi+deflate_state.pending_out],eax
 
@@ -639,7 +639,7 @@ proc deflatePending uses ebx edi, strm:dword, pending:dword, bits:dword
 	cmp dword[pending],Z_NULL
 	je @f ;if (..!=..)
 		mov eax,[pending]
-		movzx ebx,word[edi+deflate_state.pending]
+		mov ebx,[edi+deflate_state.pending]
 		mov [eax],ebx
 	@@:
 	cmp dword[bits],Z_NULL
@@ -892,7 +892,7 @@ proc flush_pending uses eax ebx ecx edx, strm:dword
 	mov edx,[ebx+z_stream.state]
 
 	stdcall _tr_flush_bits, edx
-	movzx ecx,word[edx+deflate_state.pending]
+	mov ecx,[edx+deflate_state.pending]
 	cmp cx,[ebx+z_stream.avail_out]
 	jle @f ;if (..>..)
 		movzx ecx,word[ebx+z_stream.avail_out]
@@ -905,8 +905,8 @@ proc flush_pending uses eax ebx ecx edx, strm:dword
 	add [edx+deflate_state.pending_out],ecx
 	add [ebx+z_stream.total_out],ecx
 	sub [ebx+z_stream.avail_out],cx
-	sub [edx+deflate_state.pending],cx
-	cmp word[edx+deflate_state.pending],0
+	sub [edx+deflate_state.pending],ecx
+	cmp dword[edx+deflate_state.pending],0
 	jne @f ;if (..==0)
 		mov eax,[edx+deflate_state.pending_buf]
 		mov [edx+deflate_state.pending_out],eax
@@ -1048,9 +1048,8 @@ if GZIP eq 1
 				@@:
 				cmp dword[edx+gz_header.hcrc],0
 				je @f ;if (..)
-					movzx eax,word[edi+deflate_state.pending]
 					stdcall calc_crc32, [ebx+z_stream.adler],\
-						[edi+deflate_state.pending_buf], eax
+						[edi+deflate_state.pending_buf], [edi+deflate_state.pending]
 					mov [ebx+z_stream.adler],eax
 				@@:
 				mov dword[edi+deflate_state.gzindex],0
@@ -1116,21 +1115,21 @@ if GZIP eq 1
 	jne .end5 ;if (..==..)
 		cmp dword[edx+gz_header.extra],Z_NULL
 		je .end21 ;if (..!=..)
-			movzx esi,word[edi+deflate_state.pending]
+			mov esi,[edi+deflate_state.pending]
 			;esi = beg ;start of bytes to update crc
 
 			movzx ecx,word[edx+gz_header.extra_len]
 			.cycle0: ;while (..<..)
 			cmp dword[edi+deflate_state.gzindex],ecx
 			jge .cycle0end
-				movzx eax,word[edi+deflate_state.pending]
+				mov eax,[edi+deflate_state.pending]
 				cmp eax,[edi+deflate_state.pending_buf_size]
 				jne .end24 ;if (..==..)
 					mov dword[edx+gz_header.hcrc],0
 					je @f
-					cmp [edi+deflate_state.pending],si
+					cmp [edi+deflate_state.pending],esi
 					jle @f ;if (.. && ..>..)
-						movzx ecx,word[edi+deflate_state.pending]
+						mov ecx,[edi+deflate_state.pending]
 						sub ecx,esi
 						mov eax,[edi+deflate_state.pending_buf]
 						add eax,esi
@@ -1138,7 +1137,7 @@ if GZIP eq 1
 						mov [ebx+z_stream.adler],eax
 					@@:
 					stdcall flush_pending, ebx
-					movzx esi,word[edi+deflate_state.pending]
+					mov esi,[edi+deflate_state.pending]
 					cmp esi,[edi+deflate_state.pending_buf_size]
 					je .cycle0end ;if (..==..) break
 				.end24:
@@ -1153,9 +1152,9 @@ if GZIP eq 1
 			.cycle0end:
 			mov dword[edx+gz_header.hcrc],0
 			je @f
-			cmp [edi+deflate_state.pending],si
+			cmp [edi+deflate_state.pending],esi
 			jle @f ;if (.. && ..>..)
-				movzx ecx,word[edi+deflate_state.pending]
+				mov ecx,[edi+deflate_state.pending]
 				sub ecx,esi
 				mov eax,[edi+deflate_state.pending_buf]
 				add eax,esi
@@ -1175,18 +1174,18 @@ if GZIP eq 1
 	jne .end6 ;if (..==..)
 		cmp dword[edx+gz_header.name],Z_NULL
 		je .end22 ;if (..!=..)
-			movzx esi,word[edi+deflate_state.pending]
+			mov esi,[edi+deflate_state.pending]
 			;esi = beg ;start of bytes to update crc
 
 			.cycle1: ;do
-				movzx eax,word[edi+deflate_state.pending]
+				mov eax,[edi+deflate_state.pending]
 				cmp eax,[edi+deflate_state.pending_buf_size]
 				jne .end25 ;if (..==..)
 					mov dword[edx+gz_header.hcrc],0
 					je @f
-					cmp [edi+deflate_state.pending],si
+					cmp [edi+deflate_state.pending],esi
 					jle @f ;if (.. && ..>..)
-						movzx ecx,word[edi+deflate_state.pending]
+						mov ecx,[edi+deflate_state.pending]
 						sub ecx,esi
 						mov eax,[edi+deflate_state.pending_buf]
 						add eax,esi
@@ -1194,9 +1193,8 @@ if GZIP eq 1
 						mov [ebx+z_stream.adler],eax
 					@@:
 					stdcall flush_pending, ebx
-					movzx esi,word[edi+deflate_state.pending]
-					movzx eax,word[edi+deflate_state.pending]
-					cmp eax,[edi+deflate_state.pending_buf_size]
+					mov esi,[edi+deflate_state.pending]
+					cmp esi,[edi+deflate_state.pending_buf_size]
 					jne .end25 ;if (..==..)
 						mov dword[val],1
 						jmp .cycle1end
@@ -1214,9 +1212,9 @@ if GZIP eq 1
 			.cycle1end:
 			mov dword[edx+gz_header.hcrc],0
 			je @f
-			cmp [edi+deflate_state.pending],si
+			cmp [edi+deflate_state.pending],esi
 			jle @f ;if (.. && ..>..)
-				movzx ecx,word[edi+deflate_state.pending]
+				mov ecx,[edi+deflate_state.pending]
 				sub ecx,esi
 				mov eax,[edi+deflate_state.pending_buf]
 				add eax,esi
@@ -1235,18 +1233,18 @@ if GZIP eq 1
 	jne .end7 ;if (..==..)
 		cmp dword[edx+gz_header.comment],Z_NULL
 		je .end23 ;if (..!=..)
-			movzx esi,word[edi+deflate_state.pending]
+			mov esi,[edi+deflate_state.pending]
 			;esi = beg ;start of bytes to update crc
 
 			.cycle2: ;do
-				movzx eax,word[edi+deflate_state.pending]
+				mov eax,[edi+deflate_state.pending]
 				cmp eax,[edi+deflate_state.pending_buf_size]
 				jne .end26 ;if (..==..)
 					mov dword[edx+gz_header.hcrc],0
 					je @f
-					cmp [edi+deflate_state.pending],si
+					cmp [edi+deflate_state.pending],esi
 					jle @f ;if (.. && ..>..)
-						movzx ecx,word[edi+deflate_state.pending]
+						mov ecx,[edi+deflate_state.pending]
 						sub ecx,esi
 						mov eax,[edi+deflate_state.pending_buf]
 						add eax,esi
@@ -1254,9 +1252,8 @@ if GZIP eq 1
 						mov [ebx+z_stream.adler],eax
 					@@:
 					stdcall flush_pending, ebx
-					movzx esi,word[edi+deflate_state.pending]
-					movzx eax,word[edi+deflate_state.pending]
-					cmp eax,[edi+deflate_state.pending_buf_size]
+					mov esi,[edi+deflate_state.pending]
+					cmp esi,[edi+deflate_state.pending_buf_size]
 					jne .end26 ;if (..==..)
 						mov dword[val],1
 						jmp .cycle2end
@@ -1274,9 +1271,9 @@ if GZIP eq 1
 			.cycle2end:
 			mov dword[edx+gz_header.hcrc],0
 			je @f
-			cmp [edi+deflate_state.pending],si
+			cmp [edi+deflate_state.pending],esi
 			jle @f ;if (.. && ..>..)
-				movzx ecx,word[edi+deflate_state.pending]
+				mov ecx,[edi+deflate_state.pending]
 				sub ecx,esi
 				mov eax,[edi+deflate_state.pending_buf]
 				add eax,esi
@@ -1294,13 +1291,13 @@ if GZIP eq 1
 	jne .end8 ;if (..==..)
 		cmp dword[edx+gz_header.hcrc],0
 		je .end9 ;if (..)
-			movzx ecx,word[edi+deflate_state.pending]
+			mov ecx,[edi+deflate_state.pending]
 			add ecx,2
 			cmp ecx,[edi+deflate_state.pending_buf_size]
 			jle @f ;if (..>..)
 				stdcall flush_pending, ebx
 			@@:
-			movzx ecx,word[edi+deflate_state.pending]
+			mov ecx,[edi+deflate_state.pending]
 			add ecx,2
 			cmp ecx,[edi+deflate_state.pending_buf_size]
 			jg @f ;if (..<=..)
@@ -1318,7 +1315,7 @@ if GZIP eq 1
 end if
 
 	; Flush as much pending output as possible
-	cmp word[edi+deflate_state.pending],0
+	cmp dword[edi+deflate_state.pending],0
 	je .end13 ;if (..!=0)
 		stdcall flush_pending, ebx
 		cmp word[ebx+z_stream.avail_out],0
@@ -1478,13 +1475,13 @@ end if
 	; If avail_out is zero, the application will call deflate again
 	; to flush the rest.
 
-	cmp word[edi+deflate_state.pending],0
+	cmp dword[edi+deflate_state.pending],0
 	jle @f ;if (..>0) ;write the trailer only once!
-		neg word[edi+deflate_state.pending]
-		inc word[edi+deflate_state.pending]
+		neg dword[edi+deflate_state.pending]
+		inc dword[edi+deflate_state.pending]
 	@@:
 	mov eax,Z_OK
-	cmp word[edi+deflate_state.pending],0
+	cmp dword[edi+deflate_state.pending],0
 	je .end_f
 		mov eax,Z_STREAM_END
 .end_f:

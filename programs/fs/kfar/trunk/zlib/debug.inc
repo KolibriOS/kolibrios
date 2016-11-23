@@ -123,7 +123,7 @@ dd deflate_state.status,4,ta2
 dd deflate_state.pending_buf,4,ta3
 dd deflate_state.pending_buf_size,4,ta4
 dd deflate_state.pending_out,4,ta5
-dd deflate_state.pending,2,ta6
+dd deflate_state.pending,4,ta6
 dd deflate_state.wrap,4,ta7
 dd deflate_state.gzhead,4,ta8
 dd deflate_state.gzindex,4,ta9

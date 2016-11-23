@@ -155,10 +155,10 @@ pop ebx eax
 
 macro put_short s, w
 {
-	movzx eax,word[s+deflate_state.pending]
+	mov eax,[s+deflate_state.pending]
 	add eax,[s+deflate_state.pending_buf]
 	mov word[eax],w
-	add word[s+deflate_state.pending],2
+	add dword[s+deflate_state.pending],2
 }
 
 ; ===========================================================================
@@ -1875,7 +1875,7 @@ endl
 		mov eax,[lx]
 		shl eax,1
 		add eax,[edi+deflate_state.lit_bufsize]
-		cmp word[edi+deflate_state.pending],ax
+		cmp [edi+deflate_state.pending],eax
 		jl @f
 			zlib_assert 'pendingBuf overflow' ;Assert(..<..)
 		@@:
