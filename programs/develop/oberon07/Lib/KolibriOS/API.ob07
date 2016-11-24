@@ -60,7 +60,7 @@ BEGIN
   RETURN Res
 END strncmp;
 
-PROCEDURE [stdcall] sysfunc1(arg1: INTEGER): INTEGER;
+PROCEDURE [stdcall] sysfunc1*(arg1: INTEGER): INTEGER;
 BEGIN
   sys.CODE("8B4508");           (* mov     eax, [ebp + 08h] *)
   sys.CODE("CD40");             (* int     40h              *)
@@ -69,7 +69,7 @@ BEGIN
   RETURN 0
 END sysfunc1;
 
-PROCEDURE [stdcall] sysfunc2(arg1, arg2: INTEGER): INTEGER;
+PROCEDURE [stdcall] sysfunc2*(arg1, arg2: INTEGER): INTEGER;
 BEGIN
   sys.CODE("53");               (* push    ebx              *)
   sys.CODE("8B4508");           (* mov     eax, [ebp + 08h] *)
@@ -81,7 +81,7 @@ BEGIN
   RETURN 0
 END sysfunc2;
 
-PROCEDURE [stdcall] sysfunc3(arg1, arg2, arg3: INTEGER): INTEGER;
+PROCEDURE [stdcall] sysfunc3*(arg1, arg2, arg3: INTEGER): INTEGER;
 BEGIN
   sys.CODE("53");               (* push    ebx              *)
   sys.CODE("8B4508");           (* mov     eax, [ebp + 08h] *)

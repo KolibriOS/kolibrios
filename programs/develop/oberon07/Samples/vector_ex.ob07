@@ -1,0 +1,57 @@
+MODULE vector_ex;
+
+IMPORT C := ConsoleLib, Out, V := Vector;
+
+
+TYPE
+
+  STRING = ARRAY 240 OF CHAR;
+
+  Item	 = POINTER TO RECORD (V.ANYREC) inf: STRING END;
+
+
+PROCEDURE add(v: V.VECTOR; s: STRING);
+VAR item: Item;
+BEGIN
+  NEW(item);
+  item.inf := s;
+  V.push(v, item)
+END add;
+
+
+PROCEDURE print(v: V.VECTOR; first, last: INTEGER);
+VAR any  : V.ANYPTR;
+    i	 : INTEGER;
+BEGIN
+  i := first;
+  WHILE i <= last DO
+    any := V.get(v, i);
+    Out.String(any(Item).inf);
+    Out.Ln;
+    INC(i)
+  END;
+END print;
+
+
+PROCEDURE main;
+VAR v: V.VECTOR;
+BEGIN
+  C.open(-1, -1, -1, -1, "vector");
+
+  v := V.create(1024);
+
+  add(v, "abc");
+  add(v, "def");
+  add(v, "123");
+  add(v, "qwerty");
+  add(v, "hello");
+
+  print(v, 0, V.count(v) - 1);
+
+  C.exit(FALSE)
+END main;
+
+
+BEGIN
+  main
+END vector_ex.
