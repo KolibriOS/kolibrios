@@ -141,7 +141,7 @@ void main() {
 			
 		case evReDraw:
 				system.color.get();
-				DefineAndDrawWindow(430, 150, 424, 310+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE);
+				DefineAndDrawWindow(430, 150, 424, 310+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE,0);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window>2) break;
 				SetFrameColors();

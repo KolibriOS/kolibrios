@@ -1,11 +1,11 @@
 @del lang.h--
 @echo #define LANG_RUS 1 >lang.h--
 
-@del mouse_cfg
+@del mousecfg
 cls
-@c-- mouse_cfg.c
-@rename mouse_cfg.com mouse_cfg
-@kpack mouse_cfg
+@c-- mousecfg.c
+@rename mousecfg.com mousecfg
+@kpack mousecfg
 @del warning.txt
 @del lang.h--
 @pause

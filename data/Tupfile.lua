@@ -544,7 +544,7 @@ tup.append_table(img_files, {
  {"GAMES/flood-it", PROGS .. "/games/flood-it/trunk/flood-it.com"},
  {"GAMES/MINE", PROGS .. "/games/mine/trunk/mine"},
  {"MEDIA/PIXIE/PIXIE", PROGS .. "/cmm/pixie/pixie.com"},
- {"MOUSE_CFG", PROGS .. "/cmm/mouse_cfg/mouse_cfg.com"},
+ {"MOUSECFG", PROGS .. "/cmm/mousecfg/mousecfg.com"},
  {"NETWORK/WEBVIEW", PROGS .. "/cmm/browser/WebView.com"},
  {"PANELS_CFG", PROGS .. "/cmm/panels_cfg/panels_cfg.com"},
  {"TEXTREADER", PROGS .. "/cmm/textreader/textreader.com"},
