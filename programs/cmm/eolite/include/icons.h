@@ -27,8 +27,9 @@ char *ext[]={
 "grf", 25,
 0,0};
 
-void DrawIconByExtension(dword extension, xx, yy, fairing_color)
+void DrawIconByExtension(dword file_path, extension, xx, yy, fairing_color)
 {
+	char BYTE_HEAD_FILE[4];
 	int i;
 	dword icon_n=0;
 	if (extension) for (i=0; ext[i]!=0; i+=2;)
@@ -38,6 +39,13 @@ void DrawIconByExtension(dword extension, xx, yy, fairing_color)
 			icon_n = ext[i+1];
 			break;
 		}
+	} 
+	else if (file_path)
+	{
+		//if (!strncmp(file_path, "/rd/1",5)) || (!strncmp(file_path, "/tmp",4)) {
+			ReadFile(0,4,#BYTE_HEAD_FILE,file_path);
+			IF(DSDWORD[#BYTE_HEAD_FILE]=='KCPK')||(DSDWORD[#BYTE_HEAD_FILE]=='UNEM') icon_n = 6;
+		//}
 	}
 	ficons_pal[0] = fairing_color;
 	PutPaletteImage(icon_n*16*15+#ficons,16,15,xx,yy,8,#ficons_pal);

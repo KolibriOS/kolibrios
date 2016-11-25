@@ -345,6 +345,8 @@ void properties_dialog()
 
 void DrawPropertiesWindow()
 {
+	dword ext1;
+	char temp_path[sizeof(file_path)];
 	DefineAndDrawWindow(Form.left + 150,150,305,360+skin_height,0x34,system.color.work,WINDOW_TITLE_PROPERTIES,0);
 	if ( !asm test path_to_file_ed.flags, 2)
 	{
@@ -381,7 +383,7 @@ void DrawPropertiesWindow()
 		
 		if (selected_count)
 		{
-			DrawIconByExtension(NULL, 18, 49, system.color.work);
+			DrawIconByExtension(NULL, NULL, 18, 49, system.color.work);
 			sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
 			WriteText(50, 49, 0x90, system.color.work_text, #folder_info);
 			sprintf(#element_size_label,"%s (%d %s)",ConvertSize(size_dir),size_dir,SET_BYTE_LANG);
@@ -390,10 +392,14 @@ void DrawPropertiesWindow()
 		else
 		{
 			if ( file_info_general.isfolder )
-					DrawIconByExtension("<DIR>", 18, 49, system.color.work);
-			else
-					DrawIconByExtension(#file_name2+strrchr(#file_name2,'.'), 18, 49, system.color.work);
-	
+					DrawIconByExtension(NULL, "<DIR>", 18, 49, system.color.work);
+			else {
+				sprintf(#temp_path,"%s/%s",#path,#file_name2);
+				debugln(#temp_path);
+				ext1 = strrchr(#file_name2,'.');
+				if (ext1) ext1 += #file_name2;
+				DrawIconByExtension(#temp_path, ext1, 18, 49, system.color.work);
+			}
 			WriteText(50, 40, 0x90, system.color.work_text, PR_T_NAME);                          
 			edit_box_draw stdcall (#file_name_ed);
 			

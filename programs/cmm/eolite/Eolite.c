@@ -666,6 +666,7 @@ void Line_ReDraw(dword bgcol, filenum){
 		  y=filenum*files.item_h+files.y,
 		  icon_y = files.item_h/2-7+y;
 		  BDVK file;
+		  char temp_path[sizeof(file_path)];
 	char label_file_name[4096];
 	if (filenum==-1) return;
 	DrawBar(files.x,y,3,files.item_h,bgcol);
@@ -693,7 +694,8 @@ void Line_ReDraw(dword bgcol, filenum){
 			WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, 0, ext1);
 		}
 	}
-	DrawIconByExtension(ext1, files.x+3, icon_y, bgcol);
+	sprintf(#temp_path,"%s/%s",#path,file_name_off);
+	DrawIconByExtension(#temp_path, ext1, files.x+3, icon_y, bgcol);
 
 	if (TestBit(attr, 1)) || (TestBit(attr, 2)) text_col=0xA6A6B7; //system or hiden?
 	if (bgcol!=0xFFFfff)

@@ -57,7 +57,7 @@ void Operation_Draw_Progress(dword filename) {
 	}
 	copy_bar.width = Dialog_Form.cwidth-32 - 100;
 	DisplayOperationForm();
-	DrawIconByExtension(filename+strrchr(filename,'.'), 16, 19, system.color.work);
+	DrawIconByExtension(filename, filename+strrchr(filename,'.'), 16, 19, system.color.work);
 	DrawBar(45, 32, Dialog_Form.cwidth-45, 15, system.color.work);
 	WriteText(45, 32, 0x90, 0x000000, filename);
 	progressbar_draw stdcall (#copy_bar);
