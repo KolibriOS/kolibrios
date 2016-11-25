@@ -510,10 +510,18 @@ get_full_file_name:
         cmp     byte [esi], '/'
         jnz     .set_relative
         inc     esi
-        cmp     byte [ebx], 2
-        jnz     @f
+        cmp     byte [esi], 4
+        jnc     @f
+        mov     ebx, esi
+        inc     esi
+        cmp     byte [esi], '/'
+        jnz     .start
         inc     esi
 @@:
+        cmp     byte [ebx], 2
+        jnz     .start
+        inc     esi
+.start:
         call    process_replace_file_name
         mov     edi, [esp+12]
         mov     ecx, [esp+16]

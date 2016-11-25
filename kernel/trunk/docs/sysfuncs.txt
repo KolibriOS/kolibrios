@@ -3670,6 +3670,7 @@ Parameters:
   * ebx = 2 - subfunction number
   * ecx = thread identifier
   * edx = size of context structure, must be 0x28=40 bytes
+  * esi -> context structure
 Returned value:
   * function does not return value
 Format of context structure is shown in the description of
@@ -3855,12 +3856,16 @@ General format of the information structure:
   * +20 = +0x14: byte: 0
   * +21 = +0x15: dword: pointer to string
 Case sensitivity depends on filesystem.
+If a path not begins with '/', it is considered a relative.
+To get or set the current folder, use the function 30.
+'../' in the beginning means a lift by one folder relatively current folder.
 To set the encoding, put at the start of the string a byte with next values:
   * 1 = cp866
   * 2 = UTF-16LE
   * 3 = UTF-8
-  otherwise will be used cp866.
-Format of filename:
+  otherwise will be used cp866. In an absolute path
+  you may put this byte after the '/' or put an additional '/' before it.
+Format of an absolute path:
   /base/number/dir1/dir2/.../dirn/file,
 where base/number identifies device, on which file is located:
   * RD/1 = ramdisk
@@ -3879,9 +3884,6 @@ Examples:
   * '/HD0/1/folder/file.txt',0
   * '/hd2/2/pics/tanzania.bmp',0
   * 2,'/',0,'sys','/',0,'F',0,'I',0,'L',0,'E',0,0,0
-Also function supports relative names.  If the path begins not
-with '/', it is considered relative to a current folder. To get or
-set a current folder, use the function 30.
 
 Available subfunctions:
   * subfunction 0 - read file
@@ -4094,11 +4096,9 @@ Returned value:
   * eax = 0 - success, otherwise file system error code
   * ebx destroyed
 Remarks:
-  * If the new file size is less than old one, file is truncated.
-    If the new size is greater than old one, file is expanded with
-    characters with code 0. If the new size is equal to old one,
-    the only result of call is set date/time of modification and
-    access to the current date/time.
+  * If new file size is less than old one, file will be truncated.
+    If new size is greater than old one, file will be expanded, and if
+    size difference is up to 16 MB, new space will be cleared with 0.
   * If there is not enough free space on disk for expansion, the
     function will expand to maximum possible size and then return
     error code 8.
@@ -4549,7 +4549,7 @@ Parameters:
   * esi = length of sockaddr structure
 Format of SockAddr structure:
   * +0: Word: Family
-  * +2: 14*Byte: Data  
+  * +2: 14*Byte: Data
 Returned value:
   * eax = -1 on error
   * ebx = errorcode
@@ -4568,7 +4568,7 @@ Parameters:
   * esi = length of sockaddr structure
 Format of SockAddr structure:
   * +0: Word: Family
-  * +2: 14*Byte: Data  
+  * +2: 14*Byte: Data
 Returned value:
   * eax = socket number of accepted socket, -1 on error
   * ebx = errorcode
@@ -4687,7 +4687,7 @@ Parameters:
 Returned value:
   * eax = -1 on error, otherwise lower bits of MAC
   * bx = upper bits of MAC
-  
+
 ======================================================================
 = Function 76, Protocol 1 - IPv4, Subfunction 0, Read # Packets sent =
 ======================================================================
@@ -4698,7 +4698,7 @@ Parameters:
   * bl = 0 (Read # packets sent)
 Returned value:
   * eax = number of packets sent (-1 on error)
-  
+
 ======================================================================
 = Function 76, Protocol 1 - IPv4, Subfunction 1, Read # Packets rcvd =
 ======================================================================
@@ -4709,7 +4709,7 @@ Parameters:
   * bl = 1 (Read # packets received)
 Returned value:
   * eax = number of packets received (-1 on error)
-  
+
 ======================================================================
 === Function 76, Protocol 1 - IPv4, Subfunction 2, Read IP address ===
 ======================================================================
@@ -4720,7 +4720,7 @@ Parameters:
   * bl = 2 (Read IP address)
 Returned value:
   * eax = IP address (-1 on error)
-  
+
 ======================================================================
 === Function 76, Protocol 1 - IPv4, Subfunction 3, Set IP address ====
 ======================================================================
@@ -4743,7 +4743,7 @@ Parameters:
   * bl = 4 (Read DNS server IP address)
 Returned value:
   * eax = DNS server IP address (-1 on error)
-  
+
 ======================================================================
 === Function 76, Protocol 1 - IPv4, Subfunction 5, Set DNS address ===
 ======================================================================
@@ -4766,7 +4766,7 @@ Parameters:
   * bl = 6 (Read subnet mask)
 Returned value:
   * eax = subnet mask (-1 on error)
-  
+
 ======================================================================
 === Function 76, Protocol 1 - IPv4, Subfunction 7, Set subnet mask ===
 ======================================================================
@@ -4778,7 +4778,7 @@ Parameters:
   * ecx = subnet mask
 Returned value:
   * eax = -1 on error
- 
+
 ======================================================================
 ===== Function 76, Protocol 1 - IPv4, Subfunction 8, Read gateway ====
 ======================================================================
@@ -4789,7 +4789,7 @@ Parameters:
   * bl = 8 (Read gateway IP address)
 Returned value:
   * eax = gateway IP address (-1 on error)
-  
+
 ======================================================================
 ===== Function 76, Protocol 1 - IPv4, Subfunction 9, Set gateway =====
 ======================================================================
@@ -4801,7 +4801,7 @@ Parameters:
   * ecx = gateway IP address
 Returned value:
   * eax = -1 on error
-  
+
 ======================================================================
 = Function 76, Protocol 2 - ICMP, Subfunction 0, Read # Packets sent =
 ======================================================================
@@ -4812,7 +4812,7 @@ Parameters:
   * bl = 0 (Read # packets sent)
 Returned value:
   * eax = number of packets sent (-1 on error)
-  
+
 ======================================================================
 = Function 76, Protocol 2 - ICMP, Subfunction 1, Read # Packets rcvd =
 ======================================================================
@@ -4823,7 +4823,7 @@ Parameters:
   * bl = 1 (Read # packets received)
 Returned value:
   * eax = number of packets received (-1 on error)
-  
+
 ======================================================================
 = Function 76, Protocol 3 - UDP, Subfunction 0, Read # Packets sent ==
 ======================================================================
@@ -4834,7 +4834,7 @@ Parameters:
   * bl = 0 (Read # packets sent)
 Returned value:
   * eax = number of packets sent (-1 on error)
-  
+
 ======================================================================
 = Function 76, Protocol 3 - UDP, Subfunction 1, Read # Packets rcvd ==
 ======================================================================
@@ -4845,7 +4845,7 @@ Parameters:
   * bl = 1 (Read # packets received)
 Returned value:
   * eax = number of packets received (-1 on error)
-  
+
 ======================================================================
 = Function 76, Protocol 4 - TCP, Subfunction 0, Read # Packets sent ==
 ======================================================================
@@ -4856,7 +4856,7 @@ Parameters:
   * bl = 0 (Read # packets sent)
 Returned value:
   * eax = number of packets sent (-1 on error)
-  
+
 ======================================================================
 = Function 76, Protocol 4 - TCP, Subfunction 1, Read # Packets rcvd ==
 ======================================================================
@@ -4867,7 +4867,7 @@ Parameters:
   * bl = 1 (Read # packets received)
 Returned value:
   * eax = number of packets received (-1 on error)
-  
+
 ======================================================================
 = Function 76, Protocol 5 - ARP, Subfunction 0, Read # Packets sent ==
 ======================================================================
@@ -4878,7 +4878,7 @@ Parameters:
   * bl = 0 (Read # packets sent)
 Returned value:
   * eax = number of packets sent (-1 on error)
-  
+
 ======================================================================
 = Function 76, Protocol 5 - ARP, Subfunction 1, Read # Packets rcvd ==
 ======================================================================
@@ -4889,7 +4889,7 @@ Parameters:
   * bl = 1 (Read # packets received)
 Returned value:
   * eax = number of packets received (-1 on error)
-  
+
 ======================================================================
 == Function 76, Protocol 5 - ARP, Subfunction 2, Read # ARP entries ==
 ======================================================================
@@ -4913,14 +4913,14 @@ Parameters:
   * edi = ptr to buffer where ARP entry will be written
 Returned value:
   * eax = -1 on error
-Remarks: 
+Remarks:
 	ARP_entry struct is defined in ARP.inc in kernel and currently looks like this:
 struct  ARP_entry
         IP              dd ?
         MAC             dp ?
         Status          dw ?
         TTL             dw ?
-ends 
+ends
 
 ======================================================================
 ==== Function 76, Protocol 5 - ARP, Subfunction 4, Add ARP entry ====
@@ -4933,9 +4933,9 @@ Parameters:
   * esi = ptr to buffer holding ARP entry
 Returned value:
   * eax = -1 on error
-Remarks: 
+Remarks:
 	See previous function for details on ARP entry.
-	
+
 ======================================================================
 === Function 76, Protocol 5 - ARP, Subfunction 5, Remove ARP entry ====
 ======================================================================
@@ -4958,7 +4958,7 @@ Parameters:
   * bl = 6 (Send ARP announce)
 Returned value:
   * eax = -1 on error
-		
+
 ======================================================================
 === Function 76, Protocol 5 - ARP, Subfunction 7, Read # conflicts ===
 ======================================================================

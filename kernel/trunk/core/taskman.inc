@@ -828,10 +828,16 @@ common_app_entry:
                 [ebp+APP_HDR.img_base], [ebp+APP_HDR.img_size]
         mov     esi, [ebp+APP_HDR.path_string]
         mov     edi, [ebp+APP_HDR.path]
+        mov     ecx, [ebp+APP_HDR.filename_size]
+        cmp     ecx, 1023
+        jc      @f
+        mov     ecx, 1022
+@@:
         push    esi
         test    edi, edi
         jz      @f
-        mov     ecx, [ebp+APP_HDR.filename_size]
+        mov     al, '/'
+        stosb
         rep movsb
         mov     byte [edi], 0
 @@:
