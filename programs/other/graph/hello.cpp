@@ -46,7 +46,7 @@ char *funct = NULL;
 
 char edit_path[1024];
 //Dword editbox_y = WND_H - 16, editbox_w = WND_W - 70;
-edit_box mybox = {0,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0x10000000,sizeof(edit_path),(dword)&edit_path, 64, 100000000000010b}; 
+edit_box mybox = {0,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0x10000000,sizeof(edit_path),(dword)&edit_path, 64, 16386}; //100000000000010b}; 
 
 
 char *full_head;
