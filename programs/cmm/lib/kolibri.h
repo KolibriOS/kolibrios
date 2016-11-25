@@ -608,7 +608,7 @@ dword __generator;  // random number generator - для генерации случайных чисел
 //The initialization of the initial data before running
 void ______INIT______()
 {
-	if (program_path[0]!='/') I_Path++;
+	//if (program_path[0]!='/') I_Path++;
 	
 	self.dir = #__BUF_DIR__;
 	self.file = 0;

@@ -10,8 +10,8 @@ const char str_filename[]="Filename:";
 const char str_editfile[]="Edit";
 
 // начальные размеры
-#define WND_W 400
-#define WND_H 300
+#define WND_W 600
+#define WND_H 470
 
 #define LIGHTGREEN 0xff0000
 #define WHITE 0xffffff
@@ -46,7 +46,7 @@ char *funct = NULL;
 
 char edit_path[1024];
 //Dword editbox_y = WND_H - 16, editbox_w = WND_W - 70;
-edit_box mybox = {0,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0,512,(dword)&edit_path, 64}; 
+edit_box mybox = {0,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0x10000000,sizeof(edit_path),(dword)&edit_path, 64, 100000000000010b}; 
 
 
 char *full_head;
