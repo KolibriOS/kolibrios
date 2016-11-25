@@ -229,22 +229,10 @@
 	dword pos;
 	if(!PATH) return self.dir;
 	pos = PATH;
-	if(DSBYTE[pos]=='/')
+	if(DSBYTE[pos]=='/') || (!strncmp(PATH,"./",2))
 	{
-		pos++;
-		if(!strncmp(pos,"sys/",4)) return PATH;
-		if(!strncmp(pos,"kolibrios/",10)) return PATH;
-		if(!strncmp(pos,"rd/",3)) return PATH;
-		if(!strncmp(pos,"fd/",3)) return PATH;
-		if(!strncmp(pos,"cd",2)) return PATH;
-		if(!strncmp(pos,"hd",2)) return PATH;
-		if(!strncmp(pos,"bd",2)) return PATH;
-		if(!strncmp(pos,"tmp",3)) return PATH;
-		if(!strncmp(pos,"usbhd",5)) return PATH;
-		sprintf(#__PATH_NEW,"/sys%s",PATH);
-		return #__PATH_NEW;
+		return PATH;
 	}
-	if(!strncmp(PATH,"./",2)) return PATH;
 	sprintf(#__PATH_NEW,"%s/%s",self.dir,PATH);
 	return #__PATH_NEW;
 }
@@ -337,6 +325,7 @@
     __file_F70.rezerv = 0;
     __file_F70.param2 = rparam;
     __file_F70.name = path.path(rpath);
+    debugln(__file_F70.name);
     $mov eax,70
     $mov ebx,#__file_F70.func
     $int 0x40

@@ -28,8 +28,6 @@ void gui()
 	OpenDialog_init stdcall (#o_dialog);
 	SetEventMask(0x27);
 
-	debugln("GUI");
-
 	loop() switch(WaitEvent())
 	{
 		case evMouse:

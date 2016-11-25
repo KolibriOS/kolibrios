@@ -4,7 +4,7 @@ int encoding;
 
 void LoadIniSettings()
 {
-	strcpy(#ini_path, "/sys/settings/treader.ini");
+	strcpy(#ini_path, "/sys/settings/txtread.ini");
 	ini_get_int stdcall   (#ini_path, #config_section, "FontSize",  14); label.size.pt = EAX;
 	ini_get_int stdcall   (#ini_path, #config_section, "Encoding",  CH_CP866); encoding = EAX;
 	ini_get_int stdcall   (#ini_path, #config_section, "WinX", 150); Form.left = EAX;
