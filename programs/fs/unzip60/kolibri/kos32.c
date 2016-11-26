@@ -154,6 +154,8 @@ int mapname(__G__ renamed)
     else
         ++cp;                   /* point to start of last component of path */
 
+fprintf(stderr, "mapname start[%s]\n", cp);
+
 /*---------------------------------------------------------------------------
     Begin main loop through characters in filename.
   ---------------------------------------------------------------------------*/
@@ -180,7 +182,7 @@ int mapname(__G__ renamed)
                 lastsemi = (char *)NULL; /* leave direct. semi-colons alone */
                 break;
 
-#ifdef __CYGWIN__   /* Cygwin runs on Win32, apply FAT/NTFS filename rules */
+#ifdef KOS32   /* Cygwin runs on Win32, apply FAT/NTFS filename rules */
             case ':':         /* drive spec not stored, so no colon allowed */
             case '\\':        /* '\\' may come as normal filename char (not */
             case '<':         /*  dir sep char!) from unix-like file system */
@@ -205,7 +207,7 @@ int mapname(__G__ renamed)
                 break;            /*  later, if requested */
 #endif
 
-#ifdef MTS
+#ifdef KOS32
             case ' ':             /* change spaces to underscore under */
                 *pp++ = '_';      /*  MTS; leave as spaces under Unix */
                 break;
@@ -217,11 +219,6 @@ int mapname(__G__ renamed)
                  */
                 if ((isprint(workch) || (128 <= workch && workch <= 254)))
                     *pp++ = (char)workch;
-/*kos
-                if (uO.cflxflag ||
-                    (isprint(workch) || (128 <= workch && workch <= 254)))
-                    *pp++ = (char)workch;
-*/
         } /* end switch */
 
     } /* end while loop */
@@ -325,6 +322,9 @@ int mapname(__G__ renamed)
 
     checkdir(__G__ pathcomp, APPEND_NAME);  /* returns 1 if truncated: care? */
     checkdir(__G__ G.filename, GETPATH);
+
+fprintf(stderr, "mapname end[%s]\n", pathcomp);
+
 
     return error;
 
@@ -467,6 +467,12 @@ int checkdir(__G__ pathcomp, flag)
   ---------------------------------------------------------------------------*/
 
     if (FUNCTION == GETPATH) {
+        if(G.native_is_utf8)
+        {
+            pathcomp[0] = 3;  // kolibri utf8 flag
+            strcpy(pathcomp + 1, G.buildpath);
+        }
+            else
         strcpy(pathcomp, G.buildpath);
         Trace((stderr, "getting and freeing path [%s]\n",
           FnFilter1(pathcomp)));

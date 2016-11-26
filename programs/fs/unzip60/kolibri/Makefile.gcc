@@ -20,6 +20,8 @@ SDK_DIR:= $(abspath ../../../contrib/sdk)
 NOASM=1
 CC_CPU_OPT=-march=pentium 
 #USEZLIB=1
+#DEBUG=1
+
 
 ### Optional section
 
@@ -127,9 +129,9 @@ AS_WARN_OPT = $(CC_WARN_OPT)
 LD_WARN_OPT =
 
 # Debug version
-CC_DEBUG_OPT = -g
+CC_DEBUG_OPT = -g -DDEBUG
 AS_DEBUG_OPT = $(CC_DEBUG_OPT)
-LD_DEBUG_OPT = $(CC_DEBUG_OPT)
+LD_DEBUG_OPT = -g
 
 # Release version
 CC_RELEASE_OPT =

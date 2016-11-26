@@ -790,6 +790,10 @@ int unzip(__G__ argc, argv)
          *       UnZip maintainer, a successful switch to "en-US.UTF-8"
          *       resulted in garbage display of all non-basic ASCII characters.
          */
+#ifdef KOS32
+        /* manual override */
+        G.native_is_utf8 = TRUE;
+#endif
     }
 # endif /* UTF8_MAYBE_NATIVE */
 

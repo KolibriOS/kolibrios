@@ -13,9 +13,6 @@ Started by Siemargl @Nov 2016
 #include <unistd.h>
 #include <dirent.h>
 
-// moved to makefile, in kilibri leads to bug EMFILES
-//#define DEBUG
-
 #define DIR_END       '/'
 #define NO_STRNICMP
 #define STRNICMP zstrnicmp
@@ -27,6 +24,9 @@ Started by Siemargl @Nov 2016
 #define getch() getchar() /* not correct, but may not be on a console */
 #define HAVE_WORKING_GETCH
 
+#define UNICODE_SUPPORT
+#define UTF8_MAYBE_NATIVE
+#define NO_NL_LANGINFO
 /*
 #  ifdef DATE_FORMAT
 #    undef DATE_FORMAT

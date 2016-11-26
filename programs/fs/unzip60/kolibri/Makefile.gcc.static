@@ -103,7 +103,7 @@ INCLUDES= -I $(SDK_DIR)/sources/newlib/libc/include -I $(SDK_DIR)/sources/zlib
 LIBPATH = -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib
 
 CC_ENVIR_OPT = -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -DKOS32 \
-	$(INCLUDES) -DSTATIC_LIBC
+	$(INCLUDES) -DSTATIC_LIBC -DBUILD_LIBC
 
 ### Compiler-specific section
 
