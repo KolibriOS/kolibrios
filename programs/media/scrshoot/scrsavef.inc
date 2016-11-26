@@ -34,7 +34,6 @@ pusha
         bt      word [ch6.flags],1
         jnc     @f
         mov     eax,[cur_number]
-        ;mov     ebx,4
         movsx   ebx,byte [sign_n]
         push    ebx
         call    int_to_str
@@ -45,117 +44,46 @@ pusha
         jmp     .next
 .str_end:
 
-;;;;clean memory 
+        mcall   SF_SYS_MISC, SSF_MEM_FREE, [sf_buf.bmp_header]
 
-        mov     ecx,dword [sf_buf.bmp_header]
-        mov     ebx,13
-        mov     eax,68
-        mcall
+	;create image struct
+	movsx ebx,word[scr_buf.width]
+	movsx edx,word[scr_buf.height]
+	stdcall [img_create], ebx, edx, Image.bpp24
+	mov [sf_buf.bmp_area],eax
+	test eax,eax
+	jz @f
+		;copy foto to image buffer
+		mov edi,[eax+Image.Data]
+		mov esi,[scr_buf.ptr]
+		movsx ecx,word[scr_buf.width]
+		movsx edx,word[scr_buf.height]
+		imul ecx,edx
+		imul ecx,3
+		rep movsb
 
-; Вычисляем, сколько байт нужно прибавлять к каждой строке,
-; чтобы следующая была выравнена на 4 байта.
-; Результат помещаем в edi.
+		;encode image
+		stdcall [img_encode], eax, LIBIMG_FORMAT_PNG, 0
+		test eax,eax
+		jz @f
 
-        xor     edx,edx
-        movzx   eax,word [scr_buf.width]  ; eax = ширина картинки
-        lea     eax,[eax*3]               ; eax = байт на строку картинки
-        mov     ebx,4                     ; ebx = 4
-        mov     edi,ebx                   ; edi = 4
-        div     ebx                       ; eax = байт на строку картинки div 4  edx = байт... mod 4
-        sub     edi,edx                   ; edi = количество байт
-        test    edx,edx
-        jnz     @f
-        xor     edi,edi
-@@:
+		mov [sf_buf.bmp_header],eax
+		mov [sf_buf.end],ecx
+	@@:
+	stdcall [img_destroy], [sf_buf.bmp_area]
 
-        ; выделяем память
-;        mov     ecx,[scr_buf.end_ptr]
-;        mov     [sf_buf.bmp_header],ecx
-
-;        add     ecx,0x36
-;        mov     [sf_buf.bmp_area],ecx
-        movsx   ebx,word [scr_buf.width]
-        movsx   edx,word [scr_buf.height]
-        ;imul    ebx,edx
-        lea     ebx,[ebx*3]
-        add     ebx,edi
-        imul    ebx,edx
-        mov     ecx,ebx
-
-;        mov     [sf_buf.end],ecx
-        add     ecx,0x36
-        mov     ebx,12
-        mov     eax,68
-        mcall
-
-        mov     [sf_buf.bmp_header],eax 
-        add     eax,0x36
-        mov     [sf_buf.bmp_area],eax
-        add     eax,ecx
-        sub     eax,0x36
-        mov     [sf_buf.end],eax
-
-;        push    edi
         ; заполняем структуру для сохранения файла
         mov     ebp,fs_struc
-        mov     [ebp],dword 2
+        mov     [ebp],dword SSF_CREATE_FILE
 
         mov     eax,[sf_buf.bmp_header]
-        mov     ebx,[sf_buf.end]
-        sub     ebx,eax
-        mov     [ebp+12],ebx
+        mov     ecx,[sf_buf.end]
+        mov     [ebp+12],ecx ;file size
         mov     [ebp+16],eax
         mov     [ebp+21],dword file_name
 
-        ; заполняем заголовок bmp
-        mov     ebp,[sf_buf.bmp_header]
-        mov     [ebp],word 'BM'
-        mov     ebx,[sf_buf.end]
-        sub     ebx,[sf_buf.bmp_area]
-        mov     [ebp+34],ebx    ; размер картинки
-        mov     [ebp+10],dword 0x36     ; размер заголовка
-        add     ebx,0x36
-        mov     [ebp+2],ebx ; размер файла
-        mov     [ebp+14],dword 0x28
-        movzx   eax,word [scr_buf.width]
-        mov     [ebp+18],eax ; горизонтальный размер
-        movzx   eax,word [scr_buf.height]
-        mov     [ebp+22],eax ; вертикльный размер
-        mov     [ebp+26],word 1
-        mov     [ebp+28],word 24
-
-        ; сохраняем
-        mov     esi,[scr_buf.ptr]
-        mov     edi,[sf_buf.end]
-        movzx   edx,word [scr_buf.height]
-        movzx   ebx,word [scr_buf.width]
-        lea     ebx,[ebx*3]
-        mov     ecx,ebx
-        
-        test    ebx,11b
-        jz      @f
-        shr     ebx,2
-        inc     ebx
-        shl     ebx,2
-@@:
-        mov     eax,ebx
-        sub     eax,ecx
-        cld
-align 4
-.next_str:
-        sub     edi,ebx
-        mov     ecx,ebx
-        shr     ecx,2
-        rep     movsd
-        sub     edi,ebx
-        sub     esi,eax
-        dec     edx
-        jnz     .next_str 
-
-       draw_status saving
-        mov     eax,70
-        mov     ebx,fs_struc
-        mcall
+        draw_status saving
+        mcall   SF_FILE, fs_struc
 
         test    eax,eax
         jne     save_error

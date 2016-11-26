@@ -1,34 +1,38 @@
 ;
 ;   Screenshooter for Kolibri
 ;
+;---------------------------------------------------------------------
+; Автор программы Евтихов Максим (Maxxxx32)
+;
+; 26.11.16 - IgorA снимки сохраняються в формате *.png
+; 02.11.10 - Используется checkbox версии 2
+;
 ; version:	1.2
 ; last update:  08/09/2010
 ; written by:   Marat Zakiyanov aka Mario79, aka Mario
 ; changes:      select path for save with OpenDialog,
 ;               bag fix for threads stacks
-;---------------------------------------------------------------------
-; 01.06.09 - Компоненты беруться из системной библиотеки <Lrz>
-; Автор программы Евтихов Максим (Maxxxx32)
-; 24.07.2008 <Lrz> обновлен editbox
+; 01.06.09 - <Lrz> компоненты беруться из системной библиотеки
+; 24.07.08 - <Lrz> обновлен editbox
 ; 01.02.07 - обновлён editbox
 ; 31.01.07 - всё теперь рисуется относительно клиентской области
-; 02.11.10 - Используется checkbox версии 2
+
 
 format binary as ""
 
 title equ 'Screenshooter v 1.2' ; Заголовок окна
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
-;include '../../develop/examples/editbox/trunk/editbox.inc'
 include '../../config.inc'		;for nightbuild
+include '../../proc32.inc'
 include '../../macros.inc'
+include '../../KOSfuncs.inc'
+include '../../develop/libraries/libs-dev/libimg/libimg.inc'
 include 'txtbut.inc'
 include 'label.inc'
 include 'textwork.inc'
 include 'scrshoot.mac'
 
-;include 'macros.inc'  ; вставляем макросы
-;        meos_header  cmdstr ; вставляем заголовок программы
 use32		     
     org 0x0
     db 'MENUET01'
@@ -40,8 +44,10 @@ use32
     dd cmdstr
     dd cur_dir_path
 
+include '../../dll.inc'
+
 align 4
-	@use_library
+	@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 	use_txt_button				;  |
 	use_label				;  |-- GUI компоненты и некоторые процедуры
 	use_text_work				; /
@@ -54,26 +60,12 @@ include 'lang.inc'
 
 macro get_sys_colors col_buf
 {
-	;mov     eax,48
-	push	48
-	pop	eax
-	;mov     ebx,3
-	push	3
-	pop	ebx
-	;mov     ecx,col_buf
-	push	col_buf
-	pop	ecx
-	;mov     edx,40
-	push	40
-	pop	edx
-	mcall
+	mcall SF_STYLE_SETTINGS, SSF_GET_COLORS, col_buf, 40
 }
 
 ;--- начало программы ---
 align 4
 start:
-;sys_load_library  library_name, cur_dir_path, library_path, system_path, \
-;err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
 
 load_libraries l_libs_start,end_l_libs
 
@@ -83,9 +75,7 @@ load_libraries l_libs_start,end_l_libs
 	test	eax,eax
 	jz	close
 ;;;;;;;;;;;;;;;; init memory 68/11
-	mov	eax,68
-	mov	ebx,11
-	mcall
+	mcall SF_SYS_MISC, SSF_HEAP_INIT
 	test	eax,eax
 	jz	close
 
@@ -112,31 +102,21 @@ load_libraries l_libs_start,end_l_libs
 	jnz	@b
 	
 ;OpenDialog	initialisation
-	push    dword OpenDialog_data
-	call    [OpenDialog_Init]
+	stdcall    [OpenDialog_Init], OpenDialog_data
 
 ; prepare for PathShow
-	push	dword PathShow_data_1
-	call	[PathShow_prepare]
+	stdcall	[PathShow_prepare], PathShow_data_1
 ;---------------------------------------------------------------------	
 	;mov     al,[gs:1280*4*1024]
 		    ; устанавливаем ipc буффер
-	push	60
-	pop	eax
-	;mov     ebx,1
 	xor	ebx,ebx
 	inc	ebx
-	mov	ecx,app_ipc
-	mov	edx,32
-	mcall
+	mcall SF_IPC,, app_ipc, 32
 
-	push	66   ; устанавливаем глобальную горячую клавишу
-	pop	eax
-	push	eax
-	mov	ebx,4
+	; устанавливаем глобальную горячую клавишу
 	mov	cl,55	 ; 55 - PrintScrn
 	xor	edx,edx
-	mcall
+	mcall SF_KEYBOARD, SSF_SET_SYS_HOTKEY
 
 	mov	ebx,app
 	call	get_slot_n
@@ -156,7 +136,6 @@ red:
 	txt_but_set_sys_color buttons,buttons_end,sc		 ; \
 	labels_set_sys_color labels,labels_end,sc		 ; |
 	check_boxes_set_sys_color2 check_boxes,check_boxes_end,sc; |
-;	check_boxes_set_sys_color check_boxes,check_boxes_end,sc ; |
 	edit_boxes_set_sys_color editboxes,editboxes_end,sc	 ; /
 
 	get_screen_prop scr ; получаем информацию об экране
@@ -181,8 +160,8 @@ red:
 	jmp	close
 ;------------------------------------------------------------------------------	
 draw_window_direct:
-	mcall	12,1
-	mcall	14
+	mcall SF_REDRAW, SSF_BEGIN_DRAW
+	mcall SF_GET_SCREEN_SIZE
 ; eax = [xsize]*65536 + [ysize]
 	mov	ebx,eax
 	shr	ebx,17
@@ -195,13 +174,12 @@ draw_window_direct:
 	sub	ecx,50
 	shl	ecx,16
 	mov	cx,100
-	xor	eax,eax
 	xor	esi,esi
-	mcall	,,,0x34ffffff,,grab_text
+	mcall SF_CREATE_WINDOW,,,0x34ffffff,,grab_text
 
-	mcall	4,<10,30>,0x90000000,saving
+	mcall SF_DRAW_TEXT, <10,30>,0x90000000,saving
 	
-	mcall	12,2
+	mcall SF_REDRAW, SSF_END_DRAW
 	ret
 ;------------------------------------------------------------------------------	
 no_boot:
@@ -221,17 +199,10 @@ key:
 	jmp	still
 @@:
 ;        key_edit_boxes editboxes,editboxes_end
-;	push	dword edit1
-;	call	[edit_box_key]
-
-	push	dword edit2
-	call	[edit_box_key]
-
-	push	dword edit3
-	call	[edit_box_key]
-
-	push	dword edit4
-	call	[edit_box_key]
+;	stdcall	[edit_box_key], edit1
+	stdcall	[edit_box_key], edit2
+	stdcall	[edit_box_key], edit3
+	stdcall	[edit_box_key], edit4
 
 	jmp	still
 button:
@@ -245,30 +216,12 @@ mouse:
 	cmp	eax,[slot_n]
 	jne	still
 ;----------------------------------
-;	push	dword edit1
-;	call	[edit_box_mouse]
-	push	dword edit2
-	call	[edit_box_mouse]
-	push	dword edit3
-	call	[edit_box_mouse]
-	push	dword edit4
-	call	[edit_box_mouse]
+;	stdcall	[edit_box_mouse], edit1
+	stdcall	[edit_box_mouse], edit2
+	stdcall	[edit_box_mouse], edit3
+	stdcall	[edit_box_mouse], edit4
 ;----------------------------------
 	checkboxes_mouse2	check_boxes,check_boxes_end
-;	push	dword ch1
-;	call	[check_box_mouse]
-;	push	dword ch2
-;	call	[check_box_mouse]
-;	push	dword ch3
-;	call	[check_box_mouse]
-;	push	dword ch4
-;	call	[check_box_mouse]
-;	push	dword ch5
-;	call	[check_box_mouse]
-;	push	dword ch6
-;	call	[check_box_mouse]
-;	push	dword use_rect
-;	call	[check_box_mouse]
 ;-----------------------------------
 ;        mouse_check_boxes check_boxes,check_boxes_end
 ;        mouse_edit_boxes editboxes,editboxes_end
@@ -301,10 +254,7 @@ p_close:
 
 	bt	dword [flags],3
 	jnc	@f
-	mov    eax,18
-	mov	ebx,eax
-	mov	ecx,[set_rect_window_pid]
-	mcall
+	mcall SF_SYSTEM, SSF_TERMINATE_THREAD_ID, [set_rect_window_pid]
 @@:
 
 close:
@@ -313,7 +263,7 @@ close:
 ;---------------------------------------------------------------------
 draw_PathShow:
 	pusha
-	mcall	13,<4,302>,<35,15>,0xffffff
+	mcall SF_DRAW_RECT, <4,302>, <35,15>, 0xffffff
 ; draw for PathShow
 	push	dword PathShow_data_1
 	call	[PathShow_draw]
@@ -326,7 +276,6 @@ draw_window:
 start_draw_window	 ; начало перерисовки
 	; определяем окно
 	get_skin_height
-	mov	ebx,100*65536+320
 	mov	ecx,100*65536+220
 	add	cx,ax
 	mov	edx,[sc.work]
@@ -334,31 +283,25 @@ start_draw_window	 ; начало перерисовки
 	xor	esi,esi
 	;xor     edi,edi
 	mov	edi,grab_text
-	xor	eax,eax
-	mcall
+	mcall SF_CREATE_WINDOW, 100*65536+320
 
-	mov	eax,47		   ; выводим числа в окно
-	mov	bx,4
-	shl	ebx,16
+	; выводим числа в окно
+	mov	ebx,4 shl 16
 	movsx	ecx,word [scr.width] ; ширина экрана
-	mov	dx,95
-	shl	edx,16
+	mov	edx,95 shl 16
 	mov	dx,[label1.top]
 	push	dx
 	mov	esi,[sc.work_text]
-	mcall
+	mcall SF_DRAW_NUMBER
 	movsx	ecx,word [scr.height]	; высота экрана
 	mov	dx,[label2.top]
 	mcall
-	mov	bx,2
-	shl	ebx,16
+	mov	ebx,2 shl 16
 	movsx	ecx,word [scr.bitspp]	; бит на пиксель
-	mov	dx,240
-	shl	edx,16
+	mov	edx,240 shl 16
 	pop	dx
 	mcall
-	mov	bx,6
-	shl	ebx,16
+	mov	ebx,6 shl 16
 	mov	ecx,[scr.bytesps]	; байт на строку
 	mov	dx,[label2.top]
 	mcall
@@ -369,14 +312,10 @@ start_draw_window	 ; начало перерисовки
 	draw_labels labels,labels_end		 ; метки
 ;        draw_edit_boxes editboxes,editboxes_end  ; edit_box
 ;------ show check editbox -----------
-;	push	dword edit1
-;	call	[edit_box_draw]
-	push	dword edit2												     
-	call	[edit_box_draw]
-	push	dword edit3
-	call	[edit_box_draw]
-	push	dword edit4
-	call	[edit_box_draw]
+;	stdcall	[edit_box_draw], edit1
+	stdcall	[edit_box_draw], edit2
+	stdcall	[edit_box_draw], edit3
+	stdcall	[edit_box_draw], edit4
 ;------ end check all editbox -------
 
 	call	draw_PathShow
@@ -384,20 +323,6 @@ start_draw_window	 ; начало перерисовки
 	draw_txt_buttons buttons,buttons_end	 ; кнопки
 ;        draw_check_boxes check_boxes,check_boxes_end ; флажки
 ;------ check all checkbox ---------
-;	push	dword ch1
-;	call	[check_box_draw]
-;	push	dword ch2
-;	call	[check_box_draw]	
-;	push	dword ch3
-;	call	[check_box_draw]
-;	push	dword ch4
-;	call	[check_box_draw]
-;	push	dword ch5
-;	call	[check_box_draw]
-;	push	dword ch6
-;	call	[check_box_draw]
-;	push	dword use_rect
-;	call	[check_box_draw]
 
 	checkboxes_draw2	check_boxes,check_boxes_end
 
@@ -461,15 +386,13 @@ shoot:
 	
 	call	[OpenDialog_data.draw_window]
 ; invoke OpenDialog
-	push    dword OpenDialog_data
-	call    [OpenDialog_Start]
+	stdcall    [OpenDialog_Start], OpenDialog_data
 	cmp	[OpenDialog_data.status],1
 	je	.1
 	ret
 .1:
 ; prepare for PathShow
-	push	dword PathShow_data_1
-	call	[PathShow_prepare]
+	stdcall	[PathShow_prepare], PathShow_data_1
 	
 	call	[OpenDialog_data.draw_window]
 
@@ -488,10 +411,7 @@ ret
 ;--- получить память для снимка ---
 get_mem_for_shoot:
 ;clean memory
-	mov	ecx,dword [scr_buf.ptr]
-	mov	ebx,13
-	mov	eax,68
-	mcall
+	mcall SF_SYS_MISC, SSF_MEM_FREE, [scr_buf.ptr]
 
 	bt	dword [use_rect.flags],1 ; фоткать область экрана
 	jc	.use_area
@@ -506,9 +426,7 @@ get_mem_for_shoot:
 	imul	ecx,ebx
 	lea	ecx,[ecx*3]
 ;        add     ecx,i_end
-	mov	ebx,12
-	mov	eax,68
-	mcall
+	mcall SF_SYS_MISC, SSF_MEM_ALLOC
 	mov	[scr_buf.ptr],eax
 	add	eax,ecx
 	mov	[scr_buf.end_ptr],ecx
@@ -519,12 +437,9 @@ show_scr_window:
 pusha
 	bt	dword [flags],0
 	jnc	@f
-	mov	eax,51
 	xor	ebx,ebx
 	inc	ebx
-	mov	ecx,scr_window
-	mov	edx,i_end_tread-512
-	mcall
+	mcall SF_CREATE_THREAD,, scr_window, i_end_tread-512
 @@:
 popa
 ret
@@ -542,35 +457,26 @@ draw_number:
 	mov	edi,sign_n_input
 	call	zstr_to_int
 	mov	[sign_n],al
-	mov	eax,13
-	mov	ebx,150*65536+96
 	mov	cx,[label9.top]
 	shl	ecx,16
 	mov	cx,10
 	mov	edx,[sc.work]
-	mcall
-	mov	eax,47
+	mcall SF_DRAW_RECT, 150*65536+96
 	movsx	bx,byte [sign_n]
 	shl	ebx,16
-	mov	ecx,[cur_number]
-	mov	dx,150
-	shl	edx,16
+	mov	edx,150 shl 16
 	mov	dx,[label9.top]
 	mov	esi,[sc.work_text]
-	mcall
+	mcall SF_DRAW_NUMBER,, [cur_number]
 ret
 
 ;--- процедура, запускающая поток автосъемки ---
 start_autoshoot:
 	bts	dword [flags],1
 	jc	@f
-	mov	eax,51
-	;mov     ebx,1
 	xor	ebx,ebx
 	inc	ebx
-	mov	ecx,autoshoot
-	mov	edx,i_end_tread
-	mcall
+	mcall SF_CREATE_THREAD,, autoshoot, i_end_tread
 @@:
 ret
 
@@ -587,12 +493,8 @@ autoshoot:
 .next:
 	bt	dword [flags],1
 	jnc	close
-	mov	eax,60
-	mov	ebx,2
-	mov	ecx,[app.pid]
-	mov	edx,messages.draw_number
 	mov	esi,2
-	mcall
+	mcall SF_IPC, SSF_SEND_MESSAGE, [app.pid], messages.draw_number
 	call	shoot
 	jmp	autoshoot.next
 .close:
@@ -601,17 +503,12 @@ autoshoot:
 ;--- процедура прорисовки строки состояния ---
 ; (должна вызываться потоком главного окна)
 dr_st:
-	mov	eax,38		    ; отрезок
-	mov	ebx,0*65536+310
-	mov	ecx,198*65536+198
-	mov	edx,[sc.work_graph]
-	mcall
+	mcall SF_DRAW_LINE, 0*65536+310, 198*65536+198, [sc.work_graph]
 
-	mov	eax,13		    ; полоска
 	mov	bx,310
 	mov	ecx,199*65536+15
 	mov	edx,[sc.work]
-	mcall
+	mcall SF_DRAW_RECT ; полоска
 
 	mov	edi,status
 	call	draw_label
@@ -621,17 +518,15 @@ ret
 ; вход ebx - буффер 1024 байт
 ; выход ecx - номер слота
 get_slot_n:
-	mov	eax,9
 	xor	ecx,ecx
 	dec	ecx
-	mcall
+	mcall SF_THREAD_INFO
 
 	mov	edx,[ebx+30]
 	xor	ecx,ecx
 @@:
-	mov	eax,9
 	inc	ecx
-	mcall
+	mcall SF_THREAD_INFO
 	cmp	[ebx+30],edx
 	je	@f
 	jmp	@b
@@ -646,15 +541,13 @@ one_shoot:
 ;--- процедра, запускающая поток, сохраняющий снимок ---
 save_shoot:
 ; invoke OpenDialog
-	push    dword OpenDialog_data
-	call    [OpenDialog_Start]
+	stdcall    [OpenDialog_Start], OpenDialog_data
 	cmp	[OpenDialog_data.status],1
 	je	.1
 	ret
 .1:
 ; prepare for PathShow
-	push	dword PathShow_data_1
-	call	[PathShow_prepare]
+	stdcall	[PathShow_prepare], PathShow_data_1
 
 	call	draw_PathShow
 
@@ -666,11 +559,9 @@ save_shoot:
 	bt	dword [flags],1
 	jc	.running
 
-	mov	eax,51
-	;mov     ebx,1
 	xor	ebx,ebx
 	inc	ebx
-	mcall
+	mcall SF_CREATE_THREAD
 .running:
 ret
 
@@ -680,12 +571,8 @@ one_shoot_thread:
 	activ_window
 	bt	dword [ch1.flags],1   ; минимизировать окно ?
 	jnc	 @f
-	mov	eax,60
-	mov	ebx,2
-	mov	ecx,[app.pid]
-	mov	edx,messages.min_window
 	mov	esi,2
-	mcall
+	mcall SF_IPC, SSF_SEND_MESSAGE, [app.pid], messages.min_window
 @@:
 	call	shoot
 	btr	dword [flags],2
@@ -694,12 +581,8 @@ one_shoot_thread:
 ;--- процедура, отправляющая главному окну сообщение о перерисовке
 ; строки состояния ---
 send_draw_status:
-	mov	eax,60
-	mov	ebx,2
-	mov	ecx,[app.pid]
-	mov	edx,messages.draw_status
 	mov	esi,2
-	mcall
+	mcall SF_IPC, SSF_SEND_MESSAGE, [app.pid], messages.draw_status
 ret
 
 ;--- поток, сохраняюий файл ---
@@ -714,34 +597,24 @@ save_shoot_thread:
 show_set_rect_window:
 	bts	dword [flags],3
 	jc	@f
-	mov	eax,51
 	xor	ebx,ebx
 	inc	ebx
-	mov	ecx,set_rect_window
-	mov	edx,set_rect_window_esp
-	mcall
+	mcall SF_CREATE_THREAD,, set_rect_window, set_rect_window_esp
 
 	mov	[set_rect_window_pid],eax
 ret
 
 @@:
-	mov	eax,18
-	mov	ebx,eax
-	mov	ecx,[set_rect_window_pid]
-	mcall
+	mcall SF_SYSTEM, SSF_TERMINATE_THREAD_ID, [set_rect_window_pid]
 	btr	dword [flags],3
 ret
 
 ;--- получение информации об активном окне ---
 get_active_window_info:
-	mov    eax,18
-	mov    ebx,7
-	mcall
+	mcall SF_SYSTEM, SSF_GET_ACTIVE_WINDOW
 
 	mov	ecx,eax
-	mov	eax,9
-	mov	ebx,active_app
-	mcall
+	mcall SF_THREAD_INFO, active_app
 ret
 
 ;====================================================================
@@ -778,6 +651,9 @@ err_message_found_lib1, head_f_l, Box_lib_import, err_message_import1, head_f_i
 
 library02  l_libs system_dir_ProcLib+9, cur_dir_path, library_path, system_dir_ProcLib, \
 err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
+
+library03  l_libs system_dir_LibImg+9, cur_dir_path, library_path, system_dir_LibImg, \
+err_message_found_lib3, head_f_l, import_libimg, err_message_import3, head_f_i
 
 end_l_libs:
 ;---------------------------------------------------------------------
@@ -958,11 +834,11 @@ communication_area_default_pach:
 Filter:
 dd	Filter.end - Filter
 .1:
-db	'BMP',0
+db	'PNG',0
 .end:
 db	0
 
-start_temp_file_name:	db '1.bmp',0
+start_temp_file_name:	db '1.png',0
 
 ;---------------------------------------------------------------------
 sign_n_input:
@@ -979,7 +855,7 @@ mouse_flag: dd 0x0
 align 4
 
 ed_buffer:
-.1: db '/sys/1.bmp',0
+.1: db '/sys/1.png',0
 ;rb 287
 .2:
 	db '100',0
@@ -1061,26 +937,13 @@ set_rect_window_esp:
 mouse_dd	rd 1
 ;---------------------------------------------------------------------
 align 4
-cur_dir_path:
-	rb 4096
-;---------------------------------------------------------------------
-library_path:
-	rb 4096
-;---------------------------------------------------------------------
-temp_dir_pach:
-	rb 4096
-;---------------------------------------------------------------------
-text_work_area:
-	rb 1024
-;---------------------------------------------------------------------
-fname_buf:
-	rb 4096
-;---------------------------------------------------------------------
-procinfo:
-	rb 1024
-;---------------------------------------------------------------------
-filename_area:
-	rb 256
+cur_dir_path   rb 4096
+library_path   rb 4096
+temp_dir_pach  rb 4096
+text_work_area rb 1024
+fname_buf      rb 4096
+procinfo       rb 1024
+filename_area  rb  256
 ;---------------------------------------------------------------------
 	rb 1024
 i_end_tread:

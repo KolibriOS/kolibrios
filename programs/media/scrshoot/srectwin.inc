@@ -16,18 +16,10 @@ set_rect_window:
 .key:
         get_key
 
-        push    dword rect_input.left
-        call    [edit_box_key]
-
-        push    dword rect_input.top
-        call    [edit_box_key]
-
-        push    dword rect_input.width
-        call    [edit_box_key]
-
-        push    dword rect_input.height
-        call    [edit_box_key]
-;        key_edit_boxes rect_input,rect_input_end
+        stdcall    [edit_box_key], rect_input.left
+        stdcall    [edit_box_key], rect_input.top
+        stdcall    [edit_box_key], rect_input.width
+        stdcall    [edit_box_key], rect_input.height
 
         call    read_rect
         call    draw_rect_on_screen
@@ -50,57 +42,33 @@ set_rect_window:
         cmp     eax,[set_rect_window_slot]
         jne     .still
 
-        push    dword rect_input.left
-        call    [edit_box_mouse]
-
-        push    dword rect_input.top
-        call    [edit_box_mouse]
-
-        push    dword rect_input.width
-        call    [edit_box_mouse]
-
-        push    dword rect_input.height
-        call    [edit_box_mouse]
+        stdcall    [edit_box_mouse], rect_input.left
+        stdcall    [edit_box_mouse], rect_input.top
+        stdcall    [edit_box_mouse], rect_input.width
+        stdcall    [edit_box_mouse], rect_input.height
 
 ;;;;;;;;;;;;;;;;;;;;;;
-        push    dword use_rect_active_window
-        call    [check_box_mouse]
-
-;        mouse_edit_boxes rect_input,rect_input_end
-;        mouse_check_boxes riw_check_boxes,riw_check_boxes_end
+        stdcall    [check_box_mouse], use_rect_active_window
 
         jmp     .still
 
 .draw_window:
         start_draw_window
 
-        xor     eax,eax
-        mov     ebx,100*65536+250
-        mov     ecx,100*65536+130
         mov     edx,[sc.work]
         add     edx,0x33000000
         mov     edi,riw_grab_text
         xor     esi,esi
-        mcall
+        mcall   SF_CREATE_WINDOW, 100*65536+250, 100*65536+130
 
         draw_labels rect_input_labels,rect_input_labels_end
 
-        push    dword rect_input.left
-        call    [edit_box_draw]
-
-        push    dword rect_input.top
-        call    [edit_box_draw]
-
-        push    dword rect_input.width
-        call    [edit_box_draw]
-
-        push    dword rect_input.height
-        call    [edit_box_draw]
+        stdcall    [edit_box_draw], rect_input.left
+        stdcall    [edit_box_draw], rect_input.top
+        stdcall    [edit_box_draw], rect_input.width
+        stdcall    [edit_box_draw], rect_input.height
 ;;;;;;;;;;;;;;;;;;;;;;
-        push    dword use_rect_active_window
-        call    [check_box_draw]
-;        draw_edit_boxes rect_input,rect_input_end
-;        draw_check_boxes riw_check_boxes,riw_check_boxes_end
+        stdcall    [check_box_draw], use_rect_active_window
 
         call    read_rect
         call    draw_rect_on_screen
@@ -169,11 +137,8 @@ ret
 
 draw_rect_on_screen:
 
-        mov     eax,13
-        mov     ebx,150*65536+80
-        mov     ecx,5*65536+60
         xor     edx,edx
-        mcall
+        mcall   SF_DRAW_RECT, 150*65536+80, 5*65536+60
 
         ;movzx   eax,word [rect.left]
         ;mul     word [scr.width]
@@ -214,9 +179,7 @@ draw_rect_on_screen:
         pop     bx
         pop     cx
 
-        mov     edx,0xffffff
-        mov     eax,13
-        mcall
+        mcall   SF_DRAW_RECT,,,0xffffff
 ret
 
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -225,16 +188,33 @@ ret
 
 system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
 system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
+system_dir_LibImg   db '/sys/lib/libimg.obj',0
+
+if lang eq ru
+head_f_i:
+head_f_l	db 'Системная ошибка',0
+
+err_message_found_lib1	db 'box_lib.obj - не найдена!',0
+err_message_found_lib2	db 'proc_lib.obj - не найдена!',0
+err_message_found_lib3	db 'libimg.obj - не найдена!',0
+
+err_message_import1	db 'box_lib.obj - ошибка импорта!',0
+err_message_import2	db 'proc_lib.obj - ошибка импорта!',0
+err_message_import3	db 'libimg.obj - ошибка импорта!',0
+
+else
 
 head_f_i:
 head_f_l	db 'System error',0
 
 err_message_found_lib1	db 'box_lib.obj - Not found!',0
 err_message_found_lib2	db 'proc_lib.obj - Not found!',0
+err_message_found_lib3	db 'libimg.obj - Not found!',0
 
 err_message_import1	db 'box_lib.obj - Wrong import!',0
 err_message_import2	db 'proc_lib.obj - Wrong import!',0
-
+err_message_import3	db 'libimg.obj - Wrong import!',0
+end if
 ;---------------------------------------------------------------------
 align 4
 ProcLib_import:
@@ -252,51 +232,24 @@ Box_lib_import:
 ;init_lib		dd a_init
 ;version_lib		dd a_version
 
-
 edit_box_draw		dd aEdit_box_draw
 edit_box_key		dd aEdit_box_key
 edit_box_mouse		dd aEdit_box_mouse
 ;version_ed		dd aVersion_ed
-
 
 init_checkbox		dd aInit_checkbox
 check_box_draw		dd aCheck_box_draw
 check_box_mouse 	dd aCheck_box_mouse
 ;version_ch	dd	aVersion_ch
 
-;check_box_draw		dd aCheck_box_draw
-;check_box_mouse		dd aCheck_box_mouse
-;version_ch		dd aVersion_ch
-
 option_box_draw	dd aOption_box_draw
 option_box_mouse	dd aOption_box_mouse
 ;version_op		dd aVersion_op
 
-;scrollbar_ver_draw	dd aScrollbar_ver_draw
-;scrollbar_ver_mouse	dd aScrollbar_ver_mouse
-;scrollbar_hor_draw	dd aScrollbar_hor_draw
-;scrollbar_hor_mouse	dd aScrollbar_hor_mouse
-;version_scrollbar	dd aVersion_scrollbar
-
-;dinamic_button_draw	dd aDbutton_draw
-;dinamic_button_mouse	dd aDbutton_mouse
-;version_dbutton	dd aVersion_dbutton
-
-;menu_bar_draw		dd aMenu_bar_draw
-;menu_bar_mouse		dd aMenu_bar_mouse
-;menu_bar_activate	dd aMenu_bar_activate
-;version_menu_bar	dd aVersion_menu_bar
-
-;FileBrowser_draw	dd aFileBrowser_draw
-;FileBrowser_mouse	dd aFileBrowser_mouse
-;FileBrowser_key	dd aFileBrowser_key
-;Version_FileBrowser	dd aVersion_FileBrowser
-
 PathShow_prepare	dd sz_PathShow_prepare
 PathShow_draw		dd sz_PathShow_draw
 ;Version_path_show	dd szVersion_path_show
-			dd 0
-			dd 0
+			dd 0,0
 
 ;a_init			db 'lib_init',0
 ;a_version		db 'version',0
@@ -312,69 +265,99 @@ aCheck_box_draw  db 'check_box_draw2',0
 aCheck_box_mouse db 'check_box_mouse2',0
 ;aVersion_ch	 db 'version_ch2',0
 
-;aCheck_box_draw	db 'check_box_draw',0
-;aCheck_box_mouse	db 'check_box_mouse',0
-;aVersion_ch		db 'version_ch',0
-
 aOption_box_draw	db 'option_box_draw',0
 aOption_box_mouse	db 'option_box_mouse',0
 ;aVersion_op		db 'version_op',0
-
-;aScrollbar_ver_draw	db 'scrollbar_v_draw',0
-;aScrollbar_ver_mouse	db 'scrollbar_v_mouse',0
-;aScrollbar_hor_draw	db 'scrollbar_h_draw',0
-;aScrollbar_hor_mouse	db 'scrollbar_h_mouse',0
-;aVersion_scrollbar	db 'version_scrollbar',0
-
-;aDbutton_draw		db 'dbutton_draw',0
-;aDbutton_mouse		db 'dbutton_mouse',0
-;aVersion_dbutton	db 'version_dbutton',0
-
-;aMenu_bar_draw		db 'menu_bar_draw',0
-;aMenu_bar_mouse		db 'menu_bar_mouse',0
-;aMenu_bar_activate	db 'menu_bar_activate',0
-;aVersion_menu_bar	db 'version_menu_bar',0
-
-;aFileBrowser_draw	db 'FileBrowser_draw',0
-;aFileBrowser_mouse	db 'FileBrowser_mouse',0
-;aFileBrowser_key	db 'FileBrowser_key',0
-;aVersion_FileBrowser	db 'version_FileBrowser',0
 
 sz_PathShow_prepare	db 'PathShow_prepare',0
 sz_PathShow_draw	db 'PathShow_draw',0
 ;szVersion_path_show	db 'version_PathShow',0
 ;---------------------------------------------------------------------
-
+align 4
+import_libimg:
+	dd alib_init1
+	img_is_img  dd aimg_is_img
+	img_info    dd aimg_info
+	img_from_file dd aimg_from_file
+	img_to_file dd aimg_to_file
+	img_from_rgb dd aimg_from_rgb
+	img_to_rgb  dd aimg_to_rgb
+	img_to_rgb2 dd aimg_to_rgb2
+	img_decode  dd aimg_decode
+	img_encode  dd aimg_encode
+	img_create  dd aimg_create
+	img_destroy dd aimg_destroy
+	img_destroy_layer dd aimg_destroy_layer
+	img_count   dd aimg_count
+	img_lock_bits dd aimg_lock_bits
+	img_unlock_bits dd aimg_unlock_bits
+	img_flip    dd aimg_flip
+	img_flip_layer dd aimg_flip_layer
+	img_rotate  dd aimg_rotate
+	img_rotate_layer dd aimg_rotate_layer
+	img_draw    dd aimg_draw
+dd 0,0
+	alib_init1   db 'lib_init',0
+	aimg_is_img  db 'img_is_img',0
+	aimg_info    db 'img_info',0
+	aimg_from_file db 'img_from_file',0
+	aimg_to_file db 'img_to_file',0
+	aimg_from_rgb db 'img_from_rgb',0
+	aimg_to_rgb  db 'img_to_rgb',0
+	aimg_to_rgb2 db 'img_to_rgb2',0
+	aimg_decode  db 'img_decode',0
+	aimg_encode  db 'img_encode',0
+	aimg_create  db 'img_create',0
+	aimg_destroy db 'img_destroy',0
+	aimg_destroy_layer db 'img_destroy_layer',0
+	aimg_count   db 'img_count',0
+	aimg_lock_bits db 'img_lock_bits',0
+	aimg_unlock_bits db 'img_unlock_bits',0
+	aimg_flip    db 'img_flip',0
+	aimg_flip_layer db 'img_flip_layer',0
+	aimg_rotate  db 'img_rotate',0
+	aimg_rotate_layer db 'img_rotate_layer',0
+	aimg_draw    db 'img_draw',0
+;---------------------------------------------------------------------
 ;width,left,top,color,shift_color,focus_border_color,\
 ;       blur_border_color,text_color,max,text,mouse_variable,flags,size,pos
 
 rect_input:
-.left   edit_box 35,95,5, cl_white,0,0,0,5,rect_input_buffer.left,mouse_dd1,ed_figure_only+ed_focus
-.top    edit_box 35,95,25,cl_white,0,0,0,5,rect_input_buffer.top,mouse_dd1,ed_figure_only
-.width  edit_box 35,95,45,cl_white,0,0,0,5,rect_input_buffer.width,mouse_dd1,ed_figure_only
+.left   edit_box 35,95,5, cl_white,0,0,0,5,rect_input_buffer.left,  mouse_dd1,ed_figure_only+ed_focus
+.top    edit_box 35,95,25,cl_white,0,0,0,5,rect_input_buffer.top,   mouse_dd1,ed_figure_only
+.width  edit_box 35,95,45,cl_white,0,0,0,5,rect_input_buffer.width, mouse_dd1,ed_figure_only
 .height edit_box 35,95,65,cl_white,0,0,0,5,rect_input_buffer.height,mouse_dd1,ed_figure_only
 rect_input_end:
 mouse_dd1	rd 1
 rect_input_labels:
-.left label 10,10,0,rect_input_labels_text.left
-.top label 10,30,0,rect_input_labels_text.top
-.width label 10,50,0,rect_input_labels_text.width
+.left   label 10,10,0,rect_input_labels_text.left
+.top    label 10,30,0,rect_input_labels_text.top
+.width  label 10,50,0,rect_input_labels_text.width
 .height label 10,70,0,rect_input_labels_text.height
 rect_input_labels_end:
 
 rect_input_labels_text:
+if lang eq ru
 .left db 'Отступ слева:',0
 .top  db 'Отступ сверху:',0
 .width  db 'Ширина:',0
 .height db 'Высота:',0
+else
+.left db 'Left:',0
+.top  db 'Top:',0
+.width  db 'Width:',0
+.height db 'Height:',0
+end if
 
 riw_check_boxes:
 use_rect_active_window check_box2 (10 shl 16)+10,(85 shl 16) +10,5,cl_white,0,0,\
 riw_check_boxes_text, ch_flag_bottom
 riw_check_boxes_end:
 
-riw_check_boxes_text:
-db 'Использовать область активного окна',0
-
-
+if lang eq ru
+riw_check_boxes_text db 'Использовать область активного окна',0
 riw_grab_text db 'Координаты и размеры области:',0
+else
+riw_check_boxes_text db 'Use area of the active window',0
+riw_grab_text db 'Coordinates and size of the field:',0
+end if
