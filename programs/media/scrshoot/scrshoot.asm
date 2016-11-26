@@ -44,6 +44,7 @@ use32
     dd cmdstr
     dd cur_dir_path
 
+include 'lang.inc'
 include '../../dll.inc'
 
 align 4
@@ -51,12 +52,11 @@ align 4
 	use_txt_button				;  |
 	use_label				;  |-- GUI компоненты и некоторые процедуры
 	use_text_work				; /
+
 include 'scrwin.inc'  ; вставляем код окна прдпросмотра
 include 'scrsavef.inc'; вставляем процедуру сохранения файла
-
 include 'gp.inc'
 include 'srectwin.inc'
-include 'lang.inc'
 
 macro get_sys_colors col_buf
 {
@@ -198,7 +198,6 @@ key:
 	mov	[PrintScreen],0
 	jmp	still
 @@:
-;        key_edit_boxes editboxes,editboxes_end
 ;	stdcall	[edit_box_key], edit1
 	stdcall	[edit_box_key], edit2
 	stdcall	[edit_box_key], edit3
@@ -223,8 +222,6 @@ mouse:
 ;----------------------------------
 	checkboxes_mouse2	check_boxes,check_boxes_end
 ;-----------------------------------
-;        mouse_check_boxes check_boxes,check_boxes_end
-;        mouse_edit_boxes editboxes,editboxes_end
 	jmp	still
 ipc:
 	cmp	word [app_ipc+8],2
@@ -310,7 +307,6 @@ start_draw_window	 ; начало перерисовки
 	call	dr_st
 
 	draw_labels labels,labels_end		 ; метки
-;        draw_edit_boxes editboxes,editboxes_end  ; edit_box
 ;------ show check editbox -----------
 ;	stdcall	[edit_box_draw], edit1
 	stdcall	[edit_box_draw], edit2
@@ -321,7 +317,6 @@ start_draw_window	 ; начало перерисовки
 	call	draw_PathShow
 
 	draw_txt_buttons buttons,buttons_end	 ; кнопки
-;        draw_check_boxes check_boxes,check_boxes_end ; флажки
 ;------ check all checkbox ---------
 
 	checkboxes_draw2	check_boxes,check_boxes_end
@@ -432,7 +427,7 @@ get_mem_for_shoot:
 	mov	[scr_buf.end_ptr],ecx
 ret
 
-;--- содать окно проедпросмотра ---
+;--- содать окно предпросмотра ---
 show_scr_window:
 pusha
 	bt	dword [flags],0
@@ -903,10 +898,10 @@ set_rect_window_slot dd ?
 ;---------------------------------------------------------------------
 align 4
 rect_input_buffer:
-.left rb 6
-.top  rb 6
-.width	rb 6
-.height rb 6
+.left rb 8
+.top  rb 8
+.width  rb 8
+.height rb 8
 
 cmdstr rb 257
 ;---------------------------------------------------------------------

@@ -1,3 +1,4 @@
+align 4
 set_rect_window:
         mov     ebx,set_rect_window_procinfo
         call    get_slot_n
@@ -5,11 +6,13 @@ set_rect_window:
         mov     [set_rect_window_slot],ecx
 
         set_events_mask (evm_redraw+evm_key+evm_button+evm_mouse)
-.red:
+        call    init_rect
         edit_boxes_set_sys_color rect_input,rect_input_end,sc
+.red:
         labels_set_sys_color rect_input_labels,rect_input_labels_end,sc
         check_boxes_set_sys_color2 riw_check_boxes,riw_check_boxes_end,sc
         call    .draw_window
+align 4
 .still:
         wait_event .red,.key,.button,.mouse
 
@@ -76,6 +79,56 @@ set_rect_window:
         stop_draw_window
 ret
 
+align 4
+init_rect:
+        bt      dword [use_rect_active_window.flags],1
+        jc      init_rect_from_active_window
+pushad
+        mov     edi,rect_input_buffer.left
+        movsx   eax,word[rect.left]
+		mov     ecx,rect_input.left
+		call    init_editbox
+        mov     edi,rect_input_buffer.top
+        movsx   eax,word[rect.top]
+		mov     ecx,rect_input.top
+		call    init_editbox
+        mov     edi,rect_input_buffer.width
+        movsx   eax,word[rect.width]
+		mov     ecx,rect_input.width
+		call    init_editbox
+        mov     edi,rect_input_buffer.height
+        movsx   eax,word[rect.height]
+		mov     ecx,rect_input.height
+		call    init_editbox
+popad
+ret
+
+align 4
+init_rect_from_active_window:
+
+ret
+
+align 4
+init_editbox:
+		push    edi
+		push    ecx
+		xor     ebx,ebx
+		inc     ebx
+		cmp     eax,10
+		jl @f
+		inc     ebx
+		@@:
+		cmp     eax,100
+		jl @f
+		inc     ebx
+		@@:
+		cmp     eax,1000
+		jl @f
+		inc     ebx
+		@@:
+		call    int_to_str
+		call    [edit_box_set_text] ;ecx,edi
+ret
 ;--------------------------------------------------------------------
 ;--- Считывание облати ----------------------------------------------
 ;--------------------------------------------------------------------
@@ -235,6 +288,7 @@ Box_lib_import:
 edit_box_draw		dd aEdit_box_draw
 edit_box_key		dd aEdit_box_key
 edit_box_mouse		dd aEdit_box_mouse
+edit_box_set_text	dd aEdit_box_set_text
 ;version_ed		dd aVersion_ed
 
 init_checkbox		dd aInit_checkbox
@@ -257,6 +311,7 @@ PathShow_draw		dd sz_PathShow_draw
 aEdit_box_draw		db 'edit_box',0
 aEdit_box_key		db 'edit_box_key',0
 aEdit_box_mouse		db 'edit_box_mouse',0
+aEdit_box_set_text	db 'edit_box_set_text',0
 ;aVersion_ed		db 'version_ed',0
 
 
@@ -323,10 +378,10 @@ dd 0,0
 ;       blur_border_color,text_color,max,text,mouse_variable,flags,size,pos
 
 rect_input:
-.left   edit_box 35,95,5, cl_white,0,0,0,5,rect_input_buffer.left,  mouse_dd1,ed_figure_only+ed_focus
-.top    edit_box 35,95,25,cl_white,0,0,0,5,rect_input_buffer.top,   mouse_dd1,ed_figure_only
-.width  edit_box 35,95,45,cl_white,0,0,0,5,rect_input_buffer.width, mouse_dd1,ed_figure_only
-.height edit_box 35,95,65,cl_white,0,0,0,5,rect_input_buffer.height,mouse_dd1,ed_figure_only
+.left   edit_box 35,95,5, cl_white,0,0,0,0,5,rect_input_buffer.left,  mouse_dd1,ed_figure_only ;+ed_focus
+.top    edit_box 35,95,25,cl_white,0,0,0,0,5,rect_input_buffer.top,   mouse_dd1,ed_figure_only
+.width  edit_box 35,95,45,cl_white,0,0,0,0,5,rect_input_buffer.width, mouse_dd1,ed_figure_only
+.height edit_box 35,95,65,cl_white,0,0,0,0,5,rect_input_buffer.height,mouse_dd1,ed_figure_only
 rect_input_end:
 mouse_dd1	rd 1
 rect_input_labels:
