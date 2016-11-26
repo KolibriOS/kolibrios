@@ -553,7 +553,6 @@ ifeq ($(findstring static,$(MAKECMDGOALS)),static)
 
 LIB_SRCS:=  	$(STATIC_SRCS)
 LIB_OBJS:=  	$(STATIC_OBJS)
-CFLAGS += -DSTATIC_LIBC
 
 else
 
