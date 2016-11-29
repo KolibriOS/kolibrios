@@ -98,8 +98,7 @@ endp
 
 macro set_default_heap
 {
-        mov     ebp, FS_PROCESS_DATA
-        mov     ebp, [ebp+0x18]
+        mov     ebp, [default_heap]
 .got_mspace:
 }
 
@@ -295,8 +294,7 @@ if FOOTERS
         mov     [malloc_magic], eax
 end if
         stdcall create_mspace, edx, 1
-        mov     ecx, FS_PROCESS_DATA
-        mov     [ecx+0x18], eax
+        mov     [default_heap], eax
 }
 
 proc heap_corrupted
@@ -317,7 +315,7 @@ proc heap_corrupted
         jz      @f
         call    FS_SYSCALL_PTR
         inc     esi
-        cmp     esi, ebx
+        cmp     esi, edx
         jb      @b
 @@:
         mov     esi, heap_corrupted_msg

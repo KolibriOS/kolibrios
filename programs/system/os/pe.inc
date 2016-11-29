@@ -19,6 +19,9 @@ STRIPPED_PE_SIGNATURE = 0x4503 ; 'PE' xor 'S'
 SPE_DIRECTORY_IMPORT    = 0
 SPE_DIRECTORY_EXPORT    = 1
 SPE_DIRECTORY_BASERELOC = 2
+SPE_DIRECTORY_EXCEPTION = 3
+SPE_DIRECTORY_TLS       = 4
+SPE_DIRECTORY_BOUND_IMPORT = 5
 
 struct IMAGE_DATA_DIRECTORY
   VirtualAddress dd  ?
@@ -62,6 +65,12 @@ ends
 IMAGE_DIRECTORY_ENTRY_EXPORT = 0
 IMAGE_DIRECTORY_ENTRY_IMPORT = 1
 IMAGE_DIRECTORY_ENTRY_BASERELOC = 5
+IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT = 11
+
+IMAGE_SUBSYSTEM_UNKNOWN = 0
+IMAGE_SUBSYSTEM_NATIVE = 1
+IMAGE_SUBSYSTEM_WINDOWS_GUI = 2
+IMAGE_SUBSYSTEM_WINDOWS_CUI = 3
 
 struct IMAGE_FILE_HEADER
   Machine               dw ?
@@ -95,12 +104,17 @@ struct IMAGE_EXPORT_DIRECTORY
   AddressOfNameOrdinals dd  ?
 ends
 
-struct IMAGE_IMPORT_DIRECTORY
+struct IMAGE_IMPORT_DESCRIPTOR
   OriginalFirstThunk    dd ?
   TimeDateStamp         dd ?
   ForwarderChain        dd ?
   Name                  dd ?
   FirstThunk            dd ?
+ends
+
+struct IMAGE_IMPORT_BY_NAME
+  Hint                  dw ?
+  Name                  rb 0
 ends
 
 struct IMAGE_BASE_RELOCATION
@@ -143,4 +157,10 @@ struct IMAGE_SECTION_HEADER
   NumberOfRelocations   dw ?
   NumberOfLinenumbers   dw ?
   Characteristics       dd ?
+ends
+
+struct IMAGE_BOUND_IMPORT_DESCRIPTOR
+  TimeDateStamp         dd ?
+  OffsetModuleName      dw ?
+  NumberOfModuleForwarderRefs dw ?
 ends

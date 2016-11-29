@@ -444,5 +444,5 @@ logfile_mode    db      'w',0
 align 4
 logfile dd      ?
 errno   dd      ?
-FS_PROCESS_DATA = process_data
+default_heap    dd      ?
 process_data    rd      1024

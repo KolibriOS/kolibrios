@@ -10,7 +10,6 @@ section '.text' code readable executable
 FS_STACK_MAX equ dword [fs:4]
 FS_STACK_MIN equ dword [fs:8]
 FS_SELF_PTR equ dword [fs:0x18]
-FS_PROCESS_DATA equ dword [fs:0x30]
 FS_ERRNO equ dword [fs:0x34]
 FS_SYSCALL_PTR equ dword [fs:0xC0]
 
@@ -40,8 +39,10 @@ command_line    dd      ?
 environment     dd      ?
 ends
 
+include 'sync.inc'
 include 'malloc.inc'
 include 'peloader.inc'
+include 'modules.inc'
 include 'cmdline.inc'
 
 proc syscall_int40
@@ -75,10 +76,6 @@ prologue@proc equ fpo_prologue
 epilogue@proc equ fpo_epilogue
 
 proc start stdcall, dll_base, reason, reserved
-locals
-exe_base dd ?
-exe_path_size dd ?
-endl
 ; 1. Do nothing unless called by the kernel for DLL_PROCESS_ATTACH.
         cmp     [reason], DLL_PROCESS_ATTACH
         jnz     .nothing
@@ -112,15 +109,8 @@ endl
         call    fixup_pe_relocations
         pop     ecx
         jc      .die
-; 2d. Allocate process data.
-        mov     eax, 68
-        mov     ebx, 12
-        mov     ecx, 0x1000
-        call    FS_SYSCALL_PTR
-        mov     FS_PROCESS_DATA, eax
-; 2e. Initialize process heap.
+; 2d. Initialize process heap.
         mov     eax, [ebp+kernel_init_data.exe_base]
-        mov     [exe_base], eax
         mov     edx, [eax+STRIPPED_PE_HEADER.SizeOfHeapReserve]
         cmp     word [eax], 'MZ'
         jnz     @f
@@ -128,6 +118,43 @@ endl
         mov     edx, [eax+IMAGE_NT_HEADERS.OptionalHeader.SizeOfHeapReserve]
 @@:
         malloc_init
+; 2e. Allocate and fill MODULE structs for main exe and kolibri.dll.
+        mov     eax, [ebp+kernel_init_data.exe_path]
+@@:
+        inc     eax
+        cmp     byte [eax-1], 0
+        jnz     @b
+        sub     eax, [ebp+kernel_init_data.exe_path]
+        push    eax
+        add     eax, sizeof.MODULE
+        stdcall malloc, eax
+        test    eax, eax
+        jz      .die
+        mov     ebx, eax
+        stdcall malloc, sizeof.MODULE + kolibri_dll.size
+        test    eax, eax
+        jz      .die
+        mov     edx, modules_list
+        mov     [edx+MODULE.next], ebx
+        mov     [ebx+MODULE.next], eax
+        mov     [eax+MODULE.next], edx
+        mov     [edx+MODULE.prev], eax
+        mov     [eax+MODULE.prev], ebx
+        mov     [ebx+MODULE.prev], edx
+        push    esi
+        mov     esi, kolibri_dll
+        mov     ecx, kolibri_dll.size
+        lea     edi, [eax+MODULE.path]
+        rep movsb
+        pop     esi
+        call    init_module_struct
+        mov     eax, ebx
+        mov     esi, [ebp+kernel_init_data.exe_path]
+        pop     ecx
+        lea     edi, [ebx+MODULE.path]
+        rep movsb
+        mov     esi, [ebp+kernel_init_data.exe_base]
+        call    init_module_struct
 ; 2f. Copy rest of init struct and free memory.
 ; Parse command line to argc/argv here and move arguments to the heap
 ; in order to save memory: init struct and heap use different pages,
@@ -138,13 +165,6 @@ endl
         mov     FS_STACK_MIN, eax
         add     eax, [ebp+kernel_init_data.stack_size]
         mov     FS_STACK_MAX, eax
-        mov     eax, [ebp+kernel_init_data.exe_path]
-@@:
-        inc     eax
-        cmp     byte [eax-1], 0
-        jnz     @b
-        sub     eax, [ebp+kernel_init_data.exe_path]
-        mov     [exe_path_size], eax
         mov     esi, [ebp+kernel_init_data.command_line]
         xor     edx, edx
         xor     edi, edi
@@ -156,16 +176,16 @@ endl
         mov     [.argc], ebx
         sub     esi, [ebp+kernel_init_data.command_line]
         lea     esi, [esi+(ebx+1)*4]
-        add     esi, [exe_path_size]
         stdcall malloc, esi
+        test    eax, eax
+        jz      .die
         mov     [.argv], eax
         mov     edx, eax
-        lea     edi, [eax+ebx*4]
-        mov     esi, [ebp+kernel_init_data.exe_path]
-        mov     [edx], edi
+        lea     edi, [eax+(ebx+1)*4]
+        mov     eax, [modules_list + MODULE.next]
+        add     eax, MODULE.path
+        mov     [edx], eax
         add     edx, 4
-        mov     ecx, [exe_path_size]
-        rep movsb
         mov     esi, [ebp+kernel_init_data.command_line]
         call    parse_cmdline
         and     dword [edx], 0 ; argv[argc] = NULL
@@ -174,23 +194,56 @@ endl
         mov     ebx, 13
         mov     ecx, ebp
         call    FS_SYSCALL_PTR
+; 2g. Initialize mutex for list of MODULEs.
+        mov     ecx, modules_mutex
+        call    mutex_init
+; 2h. For console applications, call console.dll!con_init with default parameters.
+        mov     eax, [modules_list + MODULE.next]
+        mov     esi, [eax+MODULE.base]
+        mov     al, [esi+STRIPPED_PE_HEADER.Subsystem]
+        cmp     byte [esi], 'M'
+        jnz     @f
+        mov     eax, [esi+3Ch]
+        mov     al, byte [esi+eax+IMAGE_NT_HEADERS.OptionalHeader.Subsystem]
+@@:
+        cmp     al, IMAGE_SUBSYSTEM_WINDOWS_CUI
+        jnz     .noconsole
+        stdcall dlopen, console_dll, 0
+        test    eax, eax
+        jz      .noconsole
+        stdcall dlsym, eax, con_init_str
+        test    eax, eax
+        jz      .noconsole
+        mov     edx, [modules_list + MODULE.next]
+        stdcall eax, -1, -1, -1, -1, [edx+MODULE.filename]
+.noconsole:
 ; 3. Configure modules: main EXE and possible statically linked DLLs.
-        mov     esi, [exe_base]
-        mov     eax, [.argv]
-        pushd   [eax]
+        mov     eax, [modules_list + MODULE.next]
+        mov     esi, [eax+MODULE.base]
+        add     eax, MODULE.path
+        push    eax
         call    fixup_pe_relocations
         pop     ecx
         jc      .die
+        mutex_lock modules_mutex
+        mov     esi, [modules_list + MODULE.next]
+        call    resolve_pe_imports
+        mov     ebx, eax
+        mutex_unlock modules_mutex
+        test    ebx, ebx
+        jnz     .die
 ; 4. Call exe entry point.
+        mov     esi, [esi+MODULE.base]
         mov     edx, [esi+STRIPPED_PE_HEADER.AddressOfEntryPoint]
-        cmp     word [esi], 'MZ'
+        cmp     byte [esi], 'M'
         jnz     @f
         mov     ecx, [esi+IMAGE_DOS_HEADER.e_lfanew]
         add     ecx, esi
         mov     edx, [ecx+IMAGE_NT_HEADERS.OptionalHeader.AddressOfEntryPoint]
 @@:
         add     edx, esi
-        add     esp, fpo_localsize+4
+        pop     ecx
+        mov     [process_initialized], 1
         call    edx
 ; If exe entry point has returned control, die.
         jmp     .die
@@ -246,18 +299,46 @@ export 'kolibri.dll' \
         , mspace_realloc, 'mspace_realloc' \
         , mspace_realloc_in_place, 'mspace_realloc_in_place' \
         , mspace_memalign, 'mspace_memalign' \
+        , dlopen, 'dlopen' \
+        , dlclose, 'dlclose' \
+        , dlsym, 'dlsym' \
 
 end data
 
-kolibri_dll             db      'kolibri.dll',0
+kolibri_dll             db      '/rd/1/lib/kolibri.dll',0
+.size = $ - kolibri_dll
+
+console_dll             db      'console.dll',0
+con_init_str            db      'con_init',0
 
 msg_version_mismatch    db      'S : Version mismatch between kernel and kolibri.dll',13,10,0
-msg_bad_relocation1     db      'S : Bad relocation type in ',0
+msg_bad_relocation      db      'Bad relocation type in ',0
 msg_newline             db      13,10,0
 msg_relocated1          db      'S : fixups for ',0
 msg_relocated2          db      ' applied',13,10,0
+msg_noreloc1            db      'Module ',0
+msg_noreloc2            db      ' is not at preferred base and has no fixups',0
+loader_debugboard_prefix db     'S : ',0
+notify_program          db      '/rd/1/@notify',0
+msg_cannot_open         db      'Cannot open ',0
+msg_paths_begin         db      ' in any of '
 
-if FOOTERS
+module_path1    db      '/rd/1/lib/'
+.size = $ - module_path1
+                        db      ', '
+module_path2    db      '/kolibrios/lib/'
+.size = $ - module_path2
+                        db      ', ',0
+msg_export_name_not_found       db      'Exported function ',0
+msg_export_ordinal_not_found    db      'Exported ordinal #',0
+msg_export_not_found    db      ' not found in module ',0
+msg_unknown             db      '<unknown>',0
+
 section '.data' data readable writable
+if FOOTERS
 malloc_magic    dd      ?
 end if
+default_heap    dd      ?
+modules_list    rd      2
+modules_mutex   MUTEX
+process_initialized     db      ?
