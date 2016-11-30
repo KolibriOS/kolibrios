@@ -64,6 +64,7 @@ typedef struct
 
 int create_file(const char *path);
 int get_fileinfo(const char *path, fileinfo_t *info);
+int set_fileinfo(const char *path, fileinfo_t *info);
 int read_file(const char *path, void *buff,
                size_t offset, size_t count, size_t *reads);
 int write_file(const char *path,const void *buff,

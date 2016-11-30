@@ -394,9 +394,9 @@ shared: $(NAME).dll libapp.a libdll.a
 
 $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(LIB_OBJS) -lgcc --version-script libc.ver
-	#sed -e "s/ @[^ ]*//" libc.orig.def > libc.def
-	#sed -f cmd2.sed libc.def > mem
-	#sed -f newlib.sed mem > libc.inc
+#sed -e "s/ @[^ ]*//" libc.orig.def > libc.def
+#sed -f cmd2.sed libc.def > mem
+#sed -f newlib.sed mem > libc.inc
 
 install: libc.dll libc.dll.a libapp.a libdll.a
 	mv -f libc.dll $(SDK_DIR)/bin
