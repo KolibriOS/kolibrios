@@ -3,9 +3,9 @@
 #endif
 
 #define MEMSIZE 4096 * 1024 * 2
-#include <strings.h>
-#include <gui.h>
-#include <obj\box_lib.h>
+#include "../lib/strings.h"
+#include "../lib/gui.h"
+#include "../lib/obj/box_lib.h"
 
 #ifdef LANG_RUS
   #define WINDOW_TITLE "Словарик 2.3"
