@@ -28,6 +28,137 @@ make_vector:
 
 ret
 end if
+reverse_mx_3x3:
+; esi - source matrix
+; edi - desired reversed matrix
+
+  push	ebp
+  mov	ebp,esp
+  sub	esp,4
+  .det	equ  ebp-4
+
+  fninit
+  fld  dword[esi]
+  fmul dword[esi+16]
+  fmul dword[esi+32]
+  fld  dword[esi+12]
+  fmul dword[esi+28]
+  fmul dword[esi+8]
+  faddp
+  fld  dword[esi+24]
+  fmul dword[esi+4]
+  fmul dword[esi+20]
+  faddp
+  fld  dword[esi]
+  fmul dword[esi+28]
+  fmul dword[esi+20]
+  fchs
+  faddp
+  fld  dword[esi+24]
+  fmul dword[esi+16]
+  fmul dword[esi+8]
+  fchs
+  faddp
+  fld  dword[esi+12]
+  fmul dword[esi+4]
+  fmul dword[esi+32]
+  fchs
+  faddp
+  fstp dword[.det]
+  cmp  dword[.det],0
+  jne  @f
+  int3
+ @@:
+ ; fld1
+ ; fdiv dword[.det]
+ ; fstp dword[.det]
+
+  fld  dword[esi+16]
+  fmul dword[esi+32]
+  fld  dword[esi+20]
+  fmul dword[esi+28]
+  fchs
+  faddp
+  fdiv dword[.det]
+  fstp dword[edi]
+
+  fld  dword[esi+8]
+  fmul dword[esi+28]
+  fld  dword[esi+4]
+  fmul dword[esi+32]
+  fchs
+  faddp
+  fdiv dword[.det]
+  fstp dword[edi+4]
+
+  fld  dword[esi+4]
+  fmul dword[esi+20]
+  fld  dword[esi+8]
+  fmul dword[esi+16]
+  fchs
+  faddp
+  fdiv dword[.det]
+  fstp dword[edi+8]
+
+  fld  dword[esi+20]
+  fmul dword[esi+24]
+  fld  dword[esi+12]
+  fmul dword[esi+32]
+  fchs
+  faddp
+  fdiv dword[.det]
+  fstp dword[edi+12]
+
+  fld  dword[esi]
+  fmul dword[esi+32]
+  fld  dword[esi+8]
+  fmul dword[esi+24]
+  fchs
+  faddp
+  fdiv dword[.det]
+  fstp dword[edi+16]
+
+  fld  dword[esi+8]
+  fmul dword[esi+12]
+  fld  dword[esi]
+  fmul dword[esi+20]
+  fchs
+  faddp
+  fdiv dword[.det]
+  fstp dword[edi+20]
+
+  fld  dword[esi+12]
+  fmul dword[esi+28]
+  fld  dword[esi+16]
+  fmul dword[esi+24]
+  fchs
+  faddp
+  fdiv dword[.det]
+  fstp dword[edi+24]
+
+  fld  dword[esi+4]
+  fmul dword[esi+24]
+  fld  dword[esi]
+  fmul dword[esi+28]
+  fchs
+  faddp
+  fdiv dword[.det]
+  fstp dword[edi+28]
+
+  fld  dword[esi]
+  fmul dword[esi+16]
+  fld  dword[esi+4]
+  fmul dword[esi+12]
+  fchs
+  faddp
+  fdiv dword[.det]
+  fstp dword[edi+32]
+
+
+  mov  esp,ebp
+  pop  ebp
+ret
+
 make_vector_r:
 	fninit
 	fld	dword[edi]		  ;edi+x3d
@@ -211,7 +342,7 @@ make_rotation_matrix:
      faddp
      fstp      dword[edi+24]
 
-     fld       .siny
+     fld       .cosy
      fmul      .sinz
      fstp      dword[edi+4]
 
@@ -377,6 +508,7 @@ ret
 translate_points:  ; just convert into integer; z coord still needed
     fninit
   .again:
+  if 0
     fld    dword[esi+8]
  ;   fmul   [rsscale]
     fist   word[edi+4]
@@ -403,7 +535,19 @@ translate_points:  ; just convert into integer; z coord still needed
     fiadd  [yobs]
     fiadd  [vect_y]
     fistp  word[edi+2]
-
+   end if
+   ; movups   xmm0,[esi]
+   ; cvtps2dq xmm0,xmm0
+   ; packsdw xmm0,xmm0
+   ; movq     [edi]
+    fld    dword[esi]
+    fiadd  [vect_x]
+    fistp  word[edi]
+    fld    dword[esi+4]
+    fiadd  [vect_y]
+    fistp  word[edi+2]
+    fld    dword[esi+8]
+    fistp  word[edi+4]
     add    esi,12
     add    edi,6
     dec    ecx

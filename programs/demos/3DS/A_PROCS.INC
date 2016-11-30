@@ -176,9 +176,9 @@ if Ext >= SSE2
  punpcklbw  xmm3,xmm0
  punpcklbw  xmm4,xmm0
  psubsw     xmm1,xmm2
- paddw	    xmm1,[.bias]
+ paddw	    xmm1,[emboss_bias]
  psubsw     xmm3,xmm4
- paddw	    xmm3,[.bias]
+ paddw	    xmm3,[emboss_bias]
  pmulhw     xmm1,xmm3
  movaps      xmm7,xmm1
  movaps      xmm6,xmm1
@@ -228,9 +228,9 @@ end if
 end if
 ret
 
-align 16
- .bias:
-    dw 128, 128, 128, 128, 128, 128, 128, 128
+;align 16
+; emboss_bias:
+;    dw 128, 128, 128, 128, 128, 128, 128, 128
 
 if 0  ; old emb proc
 

@@ -1,14 +1,14 @@
 
-; application : View3ds ver. 0.067 - tiny .3ds and .asc files viewer
-;               with a few graphics effects demonstration.
+; application : View3ds ver. 0.068 - tiny .3ds and .asc files viewer
+;		with a few graphics effects demonstration.
 ; compiler    : FASM
 ; system      : KolibriOS
 ; author      : Macgub aka Maciej Guba
 ; email       : macgub3@wp.pl
-; web         : www.macgub.hekko.pl
+; web	      : www.macgub.hekko.pl
 ; Fell free to use this intro in your own distribution of KolibriOS.
 ; Special greetings to KolibriOS team .
-; I hope because my intros Christian Belive will be near to each of You.
+; I hope because my demos Christian Belive will be near to each of You.
 
 
 ; Some adjustments made by Madis Kalme
@@ -20,19 +20,19 @@
 
 
 SIZE_X equ 512
-SIZE_Y equ 512				     ;      /////     I want definitely
-TIMEOUT equ 10				     ;     ------     say:
-ROUND equ 10				     ;     \ @ @/     keep smiling every
-TEX_X equ 512	 ; texture width             ;      \ ./    / day.
-TEX_Y equ 512	 ;         height            ;       \/    /
-TEX_SHIFT equ 9  ; texture width shifting    ;     __||__ /
-TEXTURE_SIZE EQU (TEX_X * TEX_Y)-1	     ;   /|      |
-TEX equ SHIFTING ; TEX={SHIFTING | FLUENTLY} ;  / \      /
-FLUENTLY = 0				     ; /   |    |
-SHIFTING = 1				     ;     ------
-CATMULL_SHIFT equ 8			     ;      |  |
-LIGHT_SIZE equ 22			     ;      |  |
-NON   =   0				     ;     -/  \-
+SIZE_Y equ 512				     ;	    /////     I want definitely
+TIMEOUT equ 10				     ;	   ------     say:
+ROUND equ 10				     ;	   \ @ @/     keep smiling every
+TEX_X equ 512	 ; texture width	     ;	    \ ./    / day.
+TEX_Y equ 512	 ;	   height	     ;	     \/    /
+TEX_SHIFT equ 9  ; texture width shifting    ;	   __||__ /
+TEXTURE_SIZE EQU (TEX_X * TEX_Y)-1	     ;	 /|	 |
+TEX equ SHIFTING ; TEX={SHIFTING | FLUENTLY} ;	/ \	 /
+FLUENTLY = 0				     ; /   |	|
+SHIFTING = 1				     ;	   ------
+CATMULL_SHIFT equ 8			     ;	    |  |
+LIGHT_SIZE equ 22			     ;	    |  |
+NON   =   0				     ;	   -/  \-
 MMX   =   1
 SSE   =   2
 SSE2  =   3
@@ -54,10 +54,10 @@ use32
 
 START:	  ; start of execution
 	cld
-     ;   mov    eax,14   ; window size according to cur res ...
-     ;   int    0x40
-     ;   sub    eax,150 shl 16 + 150
-	mov    eax, 600 shl 16 + 600 ; ... or set manually
+	     ;	 mov	eax,14	 ; window size according to cur res ...
+     ;	 int	0x40
+     ;	 sub	eax,150 shl 16 + 150
+	mov    eax, 500 shl 16 + 600 ; ... or set manually
 	mov    [size_y_var],ax
 	shr    ax,1
 	mov    [vect_y],ax
@@ -115,7 +115,7 @@ START:	  ; start of execution
     .opt:
 
 
-     ;   call   alloc_buffer_mem ; alloc memfor screnn and z buffer
+     ;	 call	alloc_buffer_mem ; alloc memfor screnn and z buffer
 
 	call   optimize_object1     ;  proc in file b_procs.asm
 				    ;  set point(0,0,0) in center and  calc all coords
@@ -132,16 +132,33 @@ START:	  ; start of execution
 	call   calc_bumpmap
 	call   calc_bumpmap_coords   ; bump and texture mapping
 	call   draw_window
-	mov	[draw_win_at_first],0
-
+    ;	 mov	 [draw_win_at_first],0
+;	 mov	eax,40	       ; set events mask
+;	 mov	ebx,1100000000000000000000000100111b
+;	 int	0x40
 still:
+	cmp    [edit_flag],1
+	jne    @f
+	mov    eax,40	      ; set events mask
+	mov    ebx,1100000000000000000000000100111b
+	jmp    .int
+      @@:
+	mov    eax,40	      ; set events mask
+	mov    ebx,111b
+      .int:
+	int    0x40
 
-	mov	eax,23		; wait here for event with timeout
+	mov	eax,23
 	mov	ebx,TIMEOUT
-	cmp	[speed_flag],1
-	jne	.skip
+	cmp	[speed_flag],0
+	je	.skip
 	mov	eax,11
-    .skip:
+     .skip:
+	cmp	[edit_flag],1
+	jne	@f
+	mov	eax,10
+
+      @@:
 	int	0x40
 
 	cmp	eax,1		; redraw request ?
@@ -150,7 +167,16 @@ still:
 	je	key
 	cmp	eax,3		; button in buffer ?
 	je	button
-
+	cmp	eax,6
+	jne	@f
+	cmp	[edit_flag],1
+	jne	@f
+	mov	eax,37
+	mov	ebx,3	;read mouse state
+	int	0x40
+	mov	[mouse_state],eax
+	call	edit
+       @@:
 	jmp	noclose
 
     red:   ; redraw
@@ -203,9 +229,9 @@ still:
 	jne	.next_m6
 	cmp	[dr_flag],2
 	jne	@f
-   ;     call    init_envmap2    ;   <----! this don't works in env mode
-				 ;          and more than ~18 kb objects
- ;       call    init_envmap_cub2
+   ;	 call	 init_envmap2	 ;   <----! this don't works in env mode
+				 ;	    and more than ~18 kb objects
+ ;	 call	 init_envmap_cub2
      @@:
 	cmp	[dr_flag],4
 	jne	@f
@@ -216,7 +242,7 @@ still:
 				      ; ah = 5 -> scale-
 	cmp	ah,5
 	jne	@f
-	mov	[scale],0.7
+	mov	dword[scale],0.7
 	fninit
 	fld	[rsscale]
 	fmul	[scale]
@@ -225,26 +251,26 @@ still:
       @@:
 	cmp	ah,6		     ; ah = 6 ->  scale+
 	jne	@f
-	mov	[scale],1.3
+	mov	dword[scale],1.3
 	fninit
 	fld	[rsscale]
 	fmul	[scale]
 	fstp	[rsscale]
 
       @@:
-	cmp	ah,9	; lights random                 ;    'flat'  0
+	cmp	ah,9	; lights random 		;    'flat'  0
 	jne	.next_m5				;    'grd '  1
 	call	make_random_lights			;    'env '  2
 	call	normalize_all_light_vectors		;    'bump'  3
-	call	do_color_buffer   ; intit color_map     ;    'tex '  4
-      ;  cmp     [emboss_flag],1                         ;    'pos '  5
-      ;  je      @f                                      ;    'dots'  6
-      ;  cmp     [dr_flag],8
-      ;  jge     @f
-      ;  cmp     [dr_flag],2                             ;    'txgr'  7
-      ;  jl      .next_m5                            ;    '2tex'  8
-      ;  cmp     [dr_flag],3                             ;    'btex'  9
-      ;  jg      .next_m5
+	call	do_color_buffer   ; intit color_map	;    'tex '  4
+      ;  cmp	 [emboss_flag],1			 ;    'pos '  5
+      ;  je	 @f					 ;    'dots'  6
+      ;  cmp	 [dr_flag],8
+      ;  jge	 @f
+      ;  cmp	 [dr_flag],2				 ;    'txgr'  7
+      ;  jl	 .next_m5			     ;	  '2tex'  8
+      ;  cmp	 [dr_flag],3				 ;    'btex'  9
+      ;  jg	 .next_m5
     ; @@:
 	call	init_envmap2	; update env map if shading model = environment or bump
     .next_m5:
@@ -266,15 +292,15 @@ still:
 	cmp	 [emboss_flag],1
 	call	 init_envmap2
      @@:
-;        cmp      ah,17
-;        jne      .next_m
-;        cmp      [move_flag],2
-;        jne      @f
-;        call     draw_window             ; redraw other labels to navigation buttons
+;	 cmp	  ah,17
+;	 jne	  .next_m
+;	 cmp	  [move_flag],2
+;	 jne	  @f
+;	 call	  draw_window		  ; redraw other labels to navigation buttons
 ;      @@:
-;        cmp      [move_flag],0
-;        jne      .next_m
-;        call     draw_window             ; redraw other labels to navigation buttons
+;	 cmp	  [move_flag],0
+;	 jne	  .next_m
+;	 call	  draw_window		  ; redraw other labels to navigation buttons
      .next_m:
 	cmp	 ah,18
 	jne	 .next_m2
@@ -329,8 +355,8 @@ still:
 	jne	.next
 	cmp	[move_flag],0
 	jne	@f
-;        cmp     [move_flag],2
-;        je      .set_light1
+;	 cmp	 [move_flag],2
+;	 je	 .set_light1
 	sub	[vect_y],10
 	jmp	.next
       @@:
@@ -341,19 +367,19 @@ still:
       @@:
 	sub	[sin_amplitude],10
 ;--------------------------------------------------
-;      .set_light1:          ;  r -
-;        movzx   ebx,[light_no_flag]  ; * 22
-;        mov     ecx,ebx
-;        shl     ebx,4
-;        shl     ecx,1
-;        add     ebx,ecx
-;        shl     ecx,1
-;        add     ebx,ecx
-;        add     ebx,lights+6    ; 6 -> light vector size
+;      .set_light1:	     ;	r -
+;	 movzx	 ebx,[light_no_flag]  ; * 22
+;	 mov	 ecx,ebx
+;	 shl	 ebx,4
+;	 shl	 ecx,1
+;	 add	 ebx,ecx
+;	 shl	 ecx,1
+;	 add	 ebx,ecx
+;	 add	 ebx,lights+6	 ; 6 -> light vector size
 ;
-;        movzx   ecx,[light_comp_flag]
-;        lea     ecx,[ecx*3}
-;        add     ebx,ecx         ; ebx ->  color to set
+;	 movzx	 ecx,[light_comp_flag]
+;	 lea	 ecx,[ecx*3}
+;	 add	 ebx,ecx	 ; ebx ->  color to set
 
 ;---------------------------------------------------
       .next:
@@ -414,7 +440,7 @@ still:
 	jne	.next5
 	cmp	[move_flag],0
 	jne	 @f
-      ;  call    add_vector
+      ;  call	 add_vector
 	add	[vect_y],10
 	jmp	.next5
       @@:
@@ -430,6 +456,8 @@ still:
 
     noclose:
 
+	cmp	[edit_flag],1
+	jz	.end_rot
 	cmp	[r_flag],2
 	jne	.no_x
 	inc	[angle_x]
@@ -487,9 +515,9 @@ still:
 	movzx	ecx,[points_count_var]
 	call	translate_points
 
-;        cmp     [dr_flag],5
-;        jne     @f
-;        call    calc_attenuation_light
+;	 cmp	 [dr_flag],5
+;	 jne	 @f
+;	 call	 calc_attenuation_light
 ;     @@:
 	cmp	[fire_flag],0
 	jne	@f
@@ -516,6 +544,19 @@ still:
 	jmp	 .blurrr
       @@:
 	call	draw_triangles	; draw all triangles from the list
+	cmp    [edit_flag],0
+	jz     .no_edit
+	call   clear_vertices_index
+	call   draw_handlers
+    ;	 call	edit
+
+
+
+
+
+
+    .no_edit:
+
       .blurrr:
 	cmp  [sinus_flag],0
 	je   @f
@@ -652,75 +693,7 @@ else
     jnc     .oop1
 end if
   .no_dec_bright:
-;======================================commmented====================
-if 0
-if Ext >= SSE
-    cmp     [max_flag],0
-    je	    .no_max
-    ;movzx   ebx,[max_flag]
- .again_max:
-;    push       ecx
-    mov        edi,screen
-    mov        ecx,SIZE_X*3/4
-  ;   ;    pxor       mm5,mm5
-    xor        eax,eax
-    rep        stosd
 
-    mov        ecx,(SIZE_X*(SIZE_Y-3))*3/8
-  .calc_max:
-  @@:
-    movq       mm0,[edi+SIZE_X*3]
-    movq       mm1,[edi-SIZE_X*3]
-    movq       mm2,[edi-3]
-    movq       mm3,[edi+3]
-
-    pmaxub	mm0,mm1
-    pmaxub	mm2,mm3
-    pmaxub	mm0,mm2
-
-    movq       [edi],mm0
-    add 	edi,8
-    loop	@b
-
-    xor        eax,eax
-    mov        ecx,SIZE_X*3/4
-    rep        stosd
-end if
-
-.no_max:
-
-if Ext >= SSE
-    cmp     [min_flag],0
-    je	    .no_min
-;    push       ecx
-    mov        edi,screen
-    mov        ecx,SIZE_X*3/4
-  ;   ;    pxor       mm5,mm5
-    xor        eax,eax
-    rep        stosd
-
-    mov        ecx,(SIZE_X*(SIZE_Y-3))*3/8
-  @@:
-    movq       mm0,[edi+SIZE_X*3]
-    movq       mm1,[edi-SIZE_X*3]
-    movq       mm2,[edi-3]
-    movq       mm3,[edi+3]
-
-    pminub	mm0,mm1
-    pminub	mm2,mm3
-    pminub	mm0,mm2
-
-    movq       [edi],mm0
-    add 	edi,8
-    loop	@b
-
-    xor        eax,eax
-
-    mov        ecx,SIZE_X*3/4
-    rep        stosd
-end if
-.no_min:
-end if
 
     RDTSC
     sub eax,[esp]
@@ -741,7 +714,7 @@ end if
     mov     ebx,[screen_ptr]
     mov     ecx,[size_y_var]
   ;  mov     ecx,SIZE_X shl 16 + SIZE_Y
-    mov     edx,5 shl 16 + 25
+    mov     edx,[offset_y]  ;5 shl 16 + 25
     int     0x40
 
     mov  eax,13
@@ -792,10 +765,184 @@ include "BUMP_TEX.INC"
 include "GRD_TEX.INC"
 include "TWO_TEX.INC"
 include "ASC.INC"
+clear_vertices_index:
+    mov   edi,[vertices_index_ptr]
+    movzx eax,word[size_x_var]
+    movzx ecx,word[size_y_var]
+    imul  ecx,eax
+    xor   eax,eax
+    shr   ecx,1
+    rep   stosd
+ret
+edit:	  ; mmx required, edit mesh by vertex
+	push   ebp
+	mov    ebp,esp
+	sub    esp,128
+
+	.y_coord equ ebp-2
+	.x_coord equ ebp-4
+	.points_translated equ ebp-10
+	.points 	   equ ebp-22
+	.points_rotated    equ ebp-34
+	.mx		   equ ebp-70
+
+    macro check_bar
+    {
+	movzx  ebx,word[.x_coord]
+	movzx  ecx,word[.y_coord]
+	movzx  edx,word[size_x_var]
+	imul   edx,ecx
+	add    ebx,edx
+
+	lea    ecx,[ebx*2]
+	lea    ebx,[ebx*3]
+	add    ebx,[screen_ptr]
+	mov    ebx,[ebx]
+	and    ebx,0x00ffffff
+	cmp    ebx,0x00ff0000 ; is handle bar  ?
+    }
+
+	emms
+	mov	eax,37	; get mouse state
+	mov	ebx,1	; x = 5, y = 25 - offsets
+	int	0x40
+
+	mov	ebx,[offset_y] ;5 shl 16 + 25
+	movd	mm0,ebx
+	movd	mm1,eax
+	movd	mm3,[size_y_var]
+	pcmpgtw mm0,mm1
+	pcmpgtw mm3,mm1
+	pxor	mm3,mm0
+	movd	eax,mm3
+	mov	cx,ax
+	shr	eax,16
+	and	ax,cx
+	or	ax,ax
+	jz	.no_edit
 
 
+	movd	mm0,ebx
+	psubw	mm1,mm0
+	movd	eax,mm1
+
+      ; store both x and y coordinates
+	ror    eax,16
+       ; push	eax
+       ; sub	esp,256
+	mov    [.x_coord],eax
+	test   word[mouse_state],100000000b
+	jz     .not_press  ; check if left mouse button press
+
+	;  left button	pressed
+
+   ; macro check_bar
+   ; {
+   ;	 movzx	ebx,word[.x_coord]
+   ;	 movzx	ecx,word[.y_coord]
+   ;	 imul	ebx,ecx
+   ;	 lea	ecx,[ebx*2]
+   ;	 lea	ebx,[ebx*3]
+   ;	 add	ebx,[screen_ptr]
+   ;	 mov	ebx,[ebx]
+   ;	 and	ebx,0x00ffffff
+   ;	 cmp	ebx,0x00ff0000 ; is handle bar	?
+   ; }
+
+	check_bar
+	jne    .no_edit
+	add    ecx,[vertices_index_ptr]
+	mov    cx,word[ecx]
+	inc    cx
+
+
+	mov    [vertex_edit_no],cx ;if vert_edit_no = 0, no vertex selected
+
+	mov    eax,dword[.x_coord]
+	mov    dword[edit_end_x],eax
+	mov    dword[edit_start_x],eax
+	jmp    .end
+      .not_press:
+	test   byte[mouse_state],1b	  ; check if left button is held
+	jz     .not_held
+       ; check_bar
+       ; jne	.no_edit
+       ; add	ecx,[vertices_index_ptr]
+       ; mov	cx,[ecx]
+       ; inc	cx
+	cmp    [vertex_edit_no],0 ; cx	; vertex number
+	je     .end
+	push   dword[.x_coord]
+	pop    dword[edit_end_x]
+	jmp    .end
+      .not_held:
+	shr    [mouse_state],16
+	test   byte[mouse_state],1b  ; test if left button released
+	jz     .end
+	check_bar
+	jne    .end
+
+	movzx  esi,[vertex_edit_no]
+	dec    esi
+	lea    esi,[esi*3]
+	add    esi,esi
+	add    esi,[points_translated_ptr]
+	emms
+
+	movd	mm1,dword[esi]
+	paddw	mm1,mm0
+	psubw	mm1,qword[vect_x]
+	movd	dword[esi],mm1
+
+	lea    edi,[.points]
+     ; detranslate
+	fninit
+	fild word[esi+4]
+	fstp dword[edi+8]
+	fild word[esi+2]
+	fisub word[offset_x]
+	fstp dword[edi+4]
+	fild word[esi]
+	fisub word[offset_y]   ; proteza
+	fstp dword[edi]
+
+	mov	esi,matrix
+	lea	edi,[.mx]
+	call	reverse_mx_3x3
+
+	lea	esi,[.points]
+	lea	edi,[.points_rotated]
+	lea	ebx,[.mx]
+	mov	ecx,1
+	call	rotary
+
+   ;	inject into vertex list
+	movzx	edi,[vertex_edit_no]
+	dec	edi
+	lea	edi,[edi*3]
+	shl	edi,2
+	add	edi,[points_ptr]
+	lea	esi,[.points_rotated]
+	mov	ecx,3
+	cld
+	rep	movsd
+
+
+	mov    dword[edit_end_x],0
+	mov    [vertex_edit_no],0
+
+      .no_edit:
+      .end:
+      mov   esp,ebp
+      pop   ebp
+ret
 
 alloc_buffer_mem:
+    push    ebp
+    mov     ebp,esp
+    .temp   equ ebp-4
+    push    dword 0
+
     mov     eax, 68
     mov     ebx, 11
     int     0x40    ;  -> create heap, to be sure
@@ -804,30 +951,42 @@ alloc_buffer_mem:
     movzx    ecx,word[size_x_var]
     movzx    eax,word[size_y_var]
     mul      ecx
-   ; add      eax,100
-    push     eax
+
+    mov      [.temp],eax
     lea      ecx,[eax*3]
+    add      ecx,256
     mov      eax,68
     mov      ebx,20
     mov      edx,[screen_ptr]
-    cmp      [draw_win_at_first],1
-    jne      @f
-    xor      edx,edx
-  @@:
     int      0x40
+  ;  and      eax,0xfffffff0
     mov      [screen_ptr],eax
 
-    pop      ecx
+    mov      ecx,[.temp]
     shl      ecx,2
+    add      ecx,256
     mov      eax,68
     mov      ebx,20
     mov      edx,[Zbuffer_ptr]
-    cmp      [draw_win_at_first],1
-    jne      @f
-    xor      edx,edx
-  @@:
     int      0x40
+  ;  and      eax,0xfffffff0
     mov      [Zbuffer_ptr],eax
+
+
+    mov      ecx,[.temp]
+    add      ecx,ecx
+    add      ecx,256
+    mov      eax,68
+    mov      ebx,20
+    mov      edx,[vertices_index_ptr]
+    int      0x40
+  ;  and      eax,0xfffffff0
+    mov      [vertices_index_ptr],eax
+
+    mov      esp,ebp
+    pop      ebp
+
+
 
 if 0
 ;old Menuet style alloc
@@ -843,7 +1002,7 @@ if 0
     add      ecx,eax
     add      ecx,MEM_END
     mov      ebx,1
-    mov      eax,64	; allocate mem  - resize app mem
+    mov      eax,64	; allocate mem	- resize app mem
     int      0x40
     mov      [screen_ptr],MEM_END
     mov      [Zbuffer_ptr],MEM_END
@@ -854,7 +1013,7 @@ ret
 
 update_flags:
 ; updates flags and writing flag description
-; in    ah - button number
+; in	ah - button number
 	push	ax
 	mov	edi,menu
       .ch_another:
@@ -874,7 +1033,7 @@ update_flags:
 	jne	.ch_another
      .write:
 ;     clreol   {pascal never dies}
-;          * eax = 13 - function number
+;	   * eax = 13 - function number
 ;  * ebx = [coordinate on axis x]*65536 + [size on axis x]
 ;  * ecx = [coordinate on axis y]*65536 + [size on axis y]
 ;  * edx = color 0xRRGGBB or 0x80RRGGBB for gradient fill
@@ -916,7 +1075,7 @@ ret
 normalize_all_light_vectors:
 	mov	edi,lights
      @@:
-	call	normalize_vector	   ;       3dmath.inc
+	call	normalize_vector	   ;	   3dmath.inc
 	add	edi,LIGHT_SIZE
 	cmp	edi,lightsend	;ecx
 	jl	@b
@@ -924,14 +1083,14 @@ ret
 
 calc_bumpmap_coords:	  ; map texture, bump
 ;macro .comment222
-;                                ; planar mapping
-;        mov     esi,points
-;        mov     edi,tex_points
+;				 ; planar mapping
+;	 mov	 esi,points
+;	 mov	 edi,tex_points
 ;      @@:
-;         add     esi,2
-;         movsd
-;         cmp     dword[esi],dword -1
-;         jne     @b
+;	  add	  esi,2
+;	  movsd
+;	  cmp	  dword[esi],dword -1
+;	  jne	  @b
 
 ;      .Pi2  equ dword[ebp-4]
 
@@ -945,15 +1104,15 @@ calc_bumpmap_coords:	  ; map texture, bump
       mov	edi,tex_points
       movzx	ecx,[points_count_var]
       inc	ecx
-;      cmp       [map_tex_flag],1
-;      jne       .cylindric
+;      cmp	 [map_tex_flag],1
+;      jne	 .cylindric
       ; spherical mapping around y axle
 
    @@:
       fld	dword[esi]     ; x coord
       fld	dword[esi+8]   ; z coord
       fpatan		       ; arctg(st1/st)
-;      fdiv      .Pi2
+;      fdiv	 .Pi2
       fdiv	st0,st1
       fimul	[tex_x_div2]
       fiadd	[tex_x_div2]
@@ -980,26 +1139,26 @@ calc_bumpmap_coords:	  ; map texture, bump
       add      edi,4
       loop     @b
       ffree    st0
-;      jmp      .end_map
+;      jmp	.end_map
 ;  .cylindric:
-;       fld     dword[esi]     ; around y axle
-;       fld     dword[esi+8]
-;       fpatan
-;       fdiv    st0,st1
-;       fimul   [tex_x_div2]
-;       fiadd   [tex_x_div2]
-;       fistp   word[edi]
+;	fld	dword[esi]     ; around y axle
+;	fld	dword[esi+8]
+;	fpatan
+;	fdiv	st0,st1
+;	fimul	[tex_x_div2]
+;	fiadd	[tex_x_div2]
+;	fistp	word[edi]
 
-;       fld     dword[esi+4]
-;       fimul   [tex_y_div2]
-;       fiadd   [tex_y_div2]
-;       fistp   word[edi+2]
+;	fld	dword[esi+4]
+;	fimul	[tex_y_div2]
+;	fiadd	[tex_y_div2]
+;	fistp	word[edi+2]
 
-;       add     esi,12
-;       add     edi,4
-;       loop    .cylindric
-;       ffree    st0
-;;      mov      esp,ebp
+;	add	esi,12
+;	add	edi,4
+;	loop	.cylindric
+;	ffree	 st0
+;;	mov	 esp,ebp
 ;   .end_map:
 ret
 
@@ -1019,9 +1178,9 @@ init_envmap2:	      ; do env_map using many light sources
 	 mov	  edi,envmap
 	 fninit
 
-	 mov	  dx,- TEX_Y / 2 ;256   ; dx - vertical coordinate = y
+	 mov	  dx,- TEX_Y / 2 ;256	; dx - vertical coordinate = y
     .ie_ver:
-	 mov	  cx,- TEX_X / 2 ;256   ; cx - horizontal coord = x
+	 mov	  cx,- TEX_X / 2 ;256	; cx - horizontal coord = x
     .ie_hor:
 	 xor	  ebx,ebx
 	 mov	  dword .col_b, 0
@@ -1093,8 +1252,8 @@ init_envmap2:	      ; do env_map using many light sources
 	 mov	  al,byte[esi+15]   ; r
 	 push	  ax
 	 push	  eax	      ; earlier - dot pr
-      ;  fstp     .dot_product
-      ;  push     .dot_product
+      ;  fstp	  .dot_product
+      ;  push	  .dot_product
 	 call	  calc_one_col
 	 pop	  ebp
 	 ; eax-0x00rrggbb
@@ -1135,7 +1294,7 @@ ret
 
 
 do_color_buffer:	 ; do color buffer for Gouraud, flat shading
-;env_map 512 x 512 x 3 bytes    ; many lights using
+;env_map 512 x 512 x 3 bytes	; many lights using
 .temp  equ word   [ebp-2]
 .nz    equ dword  [ebp-6]  ; dword
 .ny    equ dword  [ebp-10]
@@ -1150,9 +1309,9 @@ do_color_buffer:	 ; do color buffer for Gouraud, flat shading
 	 mov	  edi,color_map
 	 fninit
 
-	 mov	  dx,- TEX_Y / 2 ;-256   ; dx - vertical coordinate = y
+	 mov	  dx,- TEX_Y / 2 ;-256	 ; dx - vertical coordinate = y
     .ie_ver:
-	 mov	  cx,- TEX_X / 2 ;256   ; cx - horizontal coord = x
+	 mov	  cx,- TEX_X / 2 ;256	; cx - horizontal coord = x
     .ie_hor:
 	 mov	  .temp,cx
 	 fild	  .temp
@@ -1217,8 +1376,8 @@ do_color_buffer:	 ; do color buffer for Gouraud, flat shading
 	 mov	  al,byte[esi+15]   ; r
 	 push	  ax
 	 push	  eax	      ; earlier - dot pr
-      ;  fstp     .dot_product
-      ;  push     .dot_product
+      ;  fstp	  .dot_product
+      ;  push	  .dot_product
 	 call	  calc_one_col
 	 pop	  ebp
 	 ; eax-0x00rrggbb
@@ -1317,7 +1476,7 @@ init_point_normals:
 	push	  esi
 	mov	  esi,ecx
 	lea	  esi,[esi*3]
-       ; lea       esi,[triangles_normals+esi*4]
+       ; lea	   esi,[triangles_normals+esi*4]
 	shl	  esi,2
 	add	  esi,[triangles_normals_ptr]
 
@@ -1371,16 +1530,16 @@ init_triangles_normals2:
 	mov	ebx,vectors
 	movzx	esi,word[ebp]	       ; first point index
 	lea	esi,[esi*3]
-;        lea     esi,[points+esi*2]     ; esi - pointer to 1st 3d point
+;	 lea	 esi,[points+esi*2]	; esi - pointer to 1st 3d point
 	shl	esi,2
 	add	esi,[points_ptr]
 	movzx	edi,word[ebp+2] 	 ; first point index
 	lea	edi,[edi*3]
 	shl	edi,2
 	add	edi,[points_ptr]
-;        movzx   edi,word[ebp+2]        ; second point index
-;        lea     edi,[edi*3]
-;        lea     edi,[points+edi*2]     ; edi - pointer to 2nd 3d point
+;	 movzx	 edi,word[ebp+2]	; second point index
+;	 lea	 edi,[edi*3]
+;	 lea	 edi,[points+edi*2]	; edi - pointer to 2nd 3d point
 	call	make_vector_r
 	add	ebx,12
 	mov	esi,edi
@@ -1388,7 +1547,7 @@ init_triangles_normals2:
 	lea	edi,[edi*3]
 	shl	edi,2
 	add	edi,[points_ptr]
-;        lea     edi,[points+edi*2]
+;	 lea	 edi,[points+edi*2]
 	call	make_vector_r
 	mov	edi,ebx 		; edi - pointer to 2nd vector
 	mov	esi,ebx
@@ -1425,7 +1584,7 @@ sort_triangles:
 
 	mov	ax,cx
        ; cwd
-       ; idiv    word[i3]
+       ; idiv	 word[i3]
 	movsd			; store vertex coordinates
 	movsw
 	stosw			; middle vertex coordinate  'z' in triangles_with_z list
@@ -1434,8 +1593,8 @@ sort_triangles:
 	movsd			; copy end mark
 	mov	eax,4
 	lea	edx,[edi-8-trizdd]
-     ;   lea     edx, [edi-8]
-     ;   sub     edx,[triangles_w_z_ptr]
+     ;	 lea	 edx, [edi-8]
+     ;	 sub	 edx,[triangles_w_z_ptr]
 	mov	[high],edx
 	call	quicksort
 	mov	eax,4
@@ -1451,10 +1610,10 @@ sort_triangles:
 	lea	ecx,[eax+edx]
 	shr	ecx,4
 	lea	ecx,[ecx*8-4];
-;        mov     edi,[triangles_w_z_ptr]
-;        mov     ebx,[edi+eax]
-;        mov     esi,[edi+ecx]
-;        mov     edi,[edi+edx]
+;	 mov	 edi,[triangles_w_z_ptr]
+;	 mov	 ebx,[edi+eax]
+;	 mov	 esi,[edi+ecx]
+;	 mov	 edi,[edi+edx]
 	mov	ebx,[trizdd+eax]; trizdd[l]
 	mov	esi,[trizdd+ecx]; trizdd[i]
 	mov	edi,[trizdd+edx]; trizdd[h]
@@ -1470,13 +1629,13 @@ sort_triangles:
 	mov	ebx,[trizdd+eax]
 	mov	esi,[trizdd+ecx]
       else
-;        push    ebx
-;        mov     ebx,[triangles_w_z_ptr]
-;        movq    mm0,[ebx+eax-4]
-;        movq    mm1,[ebx+ecx-4]
-;        movq    [ebx+ecx-4],mm0
-;        movq    [ebx+eax-4],mm1
-;        pop     ebx
+;	 push	 ebx
+;	 mov	 ebx,[triangles_w_z_ptr]
+;	 movq	 mm0,[ebx+eax-4]
+;	 movq	 mm1,[ebx+ecx-4]
+;	 movq	 [ebx+ecx-4],mm0
+;	 movq	 [ebx+eax-4],mm1
+;	 pop	 ebx
 	movq	mm0,[trizdq+eax-4]
 	movq	mm1,[trizdq+ecx-4]
 	movq	[trizdq+ecx-4],mm0
@@ -1496,17 +1655,17 @@ sort_triangles:
 	mov	ebx,[trizdd+eax]
 	mov	edi,[trizdd+edx]
       else
-;        push    ebx
-;        mov     ebx,[triangles_w_z_ptr]
-;        movq    mm0,[ebx+eax-4]
-;        movq    mm1,[ebx+edx-4]
-;        movq    [ebx+edx-4],mm0
-;        movq    [ebx+eax-4],mm1
+;	 push	 ebx
+;	 mov	 ebx,[triangles_w_z_ptr]
+;	 movq	 mm0,[ebx+eax-4]
+;	 movq	 mm1,[ebx+edx-4]
+;	 movq	 [ebx+edx-4],mm0
+;	 movq	 [ebx+eax-4],mm1
 	movq	mm0,[trizdq+eax-4]
 	movq	mm1,[trizdq+edx-4]
 	movq	[trizdq+edx-4],mm0
 	movq	[trizdq+eax-4],mm1
-;        pop     ebx
+;	 pop	 ebx
 	xchg	ebx,edi
       end if
       @@:
@@ -1520,13 +1679,13 @@ sort_triangles:
 	mov	[trizdd+ecx-4],edi
 	mov	[trizdd+edx-4],esi
       else
-;        push    ebx
-;        mov     ebx,[triangles_w_z_ptr]
-;        movq    mm0,[ebx+ecx-4]
-;        movq    mm1,[ebx+edx-4]
-;        movq    [ebx+edx-4],mm0
-;        movq    [ebx+ecx-4],mm1
-;        pop     ebx
+;	 push	 ebx
+;	 mov	 ebx,[triangles_w_z_ptr]
+;	 movq	 mm0,[ebx+ecx-4]
+;	 movq	 mm1,[ebx+edx-4]
+;	 movq	 [ebx+edx-4],mm0
+;	 movq	 [ebx+ecx-4],mm1
+;	 pop	 ebx
 
 	movq	mm0,[trizdq+ecx-4]
 	movq	mm1,[trizdq+edx-4]
@@ -1547,13 +1706,13 @@ sort_triangles:
 	mov	[trizdd+ecx-4],esi
 	mov	[trizdd+ebp-4],edi
       else
-;        push    ebx
-;        mov     ebx,[triangles_w_z_ptr]
-;        movq    mm0,[ebx+ebp-4]
-;        movq    mm1,[ebx+ecx-4]
-;        movq    [ebx+ecx-4],mm0
-;        movq    [ebx+ebp-4],mm1
-;        pop     ebx
+;	 push	 ebx
+;	 mov	 ebx,[triangles_w_z_ptr]
+;	 movq	 mm0,[ebx+ebp-4]
+;	 movq	 mm1,[ebx+ecx-4]
+;	 movq	 [ebx+ecx-4],mm0
+;	 movq	 [ebx+ebp-4],mm1
+;	 pop	 ebx
 
 	movq	mm0,[trizdq+ebp-4]
 	movq	mm1,[trizdq+ecx-4]
@@ -1562,20 +1721,20 @@ sort_triangles:
       end if
 	mov	ecx,edx    ;   i; direction
 	mov	ebx,[trizdd+ebp]; trizdd[j]
-;        mov     ebx, [triangles_w_z_ptr]
-;        add     ebx, ebp
+;	 mov	 ebx, [triangles_w_z_ptr]
+;	 add	 ebx, ebp
 
- ;       push    eax
- ;       mov     eax, [triangles_w_z_ptr]
+ ;	 push	 eax
+ ;	 mov	 eax, [triangles_w_z_ptr]
       .loop:
 	sub	ecx,8		; direction
 	cmp	[trizdd+ecx],ebx
-;        cmp     [eax+ecx],ebx
+;	 cmp	 [eax+ecx],ebx
 	jl	.loop		; direction
       @@:
 	add	ebp,8		; direction
 	cmp	[trizdd+ebp],ebx
-;        cmp     [eax+ebp],ebx
+;	 cmp	 [eax+ebp],ebx
 	jg	@b		; direction
 	cmp	ebp,ecx
 	jge	@f		; direction
@@ -1589,17 +1748,17 @@ sort_triangles:
 	mov	[trizdd+ebp-4],edi
 	mov	[trizdd+ecx-4],esi
       else
-;        movq    mm0,[eax+ecx-4]
-;        movq    mm1,[eax+ebp-4]
-;        movq    [eax+ebp-4],mm0
-;        movq    [eax+ecx-4],mm1
+;	 movq	 mm0,[eax+ecx-4]
+;	 movq	 mm1,[eax+ebp-4]
+;	 movq	 [eax+ebp-4],mm0
+;	 movq	 [eax+ecx-4],mm1
 	movq	mm0,[trizdq+ecx-4]
 	movq	mm1,[trizdq+ebp-4]
 	movq	[trizdq+ebp-4],mm0
 	movq	[trizdq+ecx-4],mm1
       end if
 	jmp	.loop
-;        pop     eax
+;	 pop	 eax
       @@:
       if Ext=NON
 	mov	esi,[trizdd+ecx]
@@ -1611,13 +1770,13 @@ sort_triangles:
 	mov	[trizdd+eax+4],edi
 	mov	[trizdd+ecx-4],esi
       else
-;        push    edx
-;        mov     edx,[triangles_w_z_ptr]
-;        movq    mm0,[edx+ecx-4]
-;        movq    mm1,[edx+eax+4]; dir
-;        movq    [edx+eax+4],mm0; dir
-;        movq    [edx+ecx-4],mm1
-;        pop     edx
+;	 push	 edx
+;	 mov	 edx,[triangles_w_z_ptr]
+;	 movq	 mm0,[edx+ecx-4]
+;	 movq	 mm1,[edx+eax+4]; dir
+;	 movq	 [edx+eax+4],mm0; dir
+;	 movq	 [edx+ecx-4],mm1
+;	 pop	 edx
 
 	movq	mm0,[trizdq+ecx-4]
 	movq	mm1,[trizdq+eax+4]; dir
@@ -1639,25 +1798,25 @@ sort_triangles:
 	cmp	esi,edx
 	ja	.exit
 	mov	ebx,[trizdd+esi]
-;        mov     ebx,[triangles_w_z_ptr]
-;        add     ebx,esi
+;	 mov	 ebx,[triangles_w_z_ptr]
+;	 add	 ebx,esi
       if Ext=NON
 	mov	ecx,[trizdd+esi-4]
       else
-;        push    ebx
-;        mov     ebx,[triangles_w_z_ptr]
-;        movq    mm1,[ebx+esi-4]
+;	 push	 ebx
+;	 mov	 ebx,[triangles_w_z_ptr]
+;	 movq	 mm1,[ebx+esi-4]
 	movq	mm1,[trizdq+esi-4]
-;        pop     ebx
+;	 pop	 ebx
       end if
 	mov	edi,esi
       @@:
 	cmp	edi,eax
 	jna	@f
-;        push    eax
-;        mov     eax,[triangles_w_z_ptr]
-;        cmp     [eax+edi-8],ebx
-;        pop     eax
+;	 push	 eax
+;	 mov	 eax,[triangles_w_z_ptr]
+;	 cmp	 [eax+edi-8],ebx
+;	 pop	 eax
        cmp     [trizdd+edi-8],ebx
 	jg	@f		   ; direction
       if Ext=NON
@@ -1666,13 +1825,13 @@ sort_triangles:
 	mov	ebp,[trizdd+edi-12]
 	mov	[trizdd+edi-4],ebp
       else
-;        push    eax
-;        mov     eax,[triangles_w_z_ptr]
-;        movq    mm0,[eax+edi-12]
-;        movq    [eax+edi-4],mm0
+;	 push	 eax
+;	 mov	 eax,[triangles_w_z_ptr]
+;	 movq	 mm0,[eax+edi-12]
+;	 movq	 [eax+edi-4],mm0
 	movq	mm0,[trizdq+edi-12]
 	movq	[trizdq+edi-4],mm0
-;        pop     eax
+;	 pop	 eax
       end if
 	sub	edi,8
 	jmp	@b
@@ -1681,11 +1840,11 @@ sort_triangles:
 	mov	[trizdd+edi],ebx
 	mov	[trizdd+edi-4],ecx
       else
-;        push    eax
-;        mov     eax,[triangles_w_z_ptr]
-;        movq    [eax+edi-4],mm1
+;	 push	 eax
+;	 mov	 eax,[triangles_w_z_ptr]
+;	 movq	 [eax+edi-4],mm1
 	movq	[trizdq+edi-4],mm1
-;        pop     eax
+;	 pop	 eax
       end if
 	jmp	.start
       .exit:
@@ -1693,8 +1852,8 @@ sort_triangles:
    end_sort:
     ; translate triangles_with_z to sorted_triangles
 	mov	esi,triangles_with_z
-;        mov      esi,[triangles_w_z_ptr]
-      ;  mov     edi,sorted_triangles
+;	 mov	  esi,[triangles_w_z_ptr]
+      ;  mov	 edi,sorted_triangles
 	mov	 edi,[triangles_ptr]
     again_copy:
       if Ext=NON
@@ -1710,7 +1869,7 @@ sort_triangles:
 	cmp	dword[esi],-1
 	jne	again_copy
 ;      if Ext=MMX
-;        emms
+;	 emms
 ;      end if
 	movsd  ; copy end mark too
 ret
@@ -1757,6 +1916,25 @@ ret
 
 
 draw_triangles:
+
+	emms
+      ;  update translated list  MMX required
+	cmp	[vertex_edit_no],0
+	je	@f
+	movzx	eax,[vertex_edit_no]
+	dec	eax
+	movd	mm0,[edit_end_x]
+	psubw	mm0,[edit_start_x]
+	lea	eax,[eax*3]
+	add	eax,eax
+	add	eax,[points_translated_ptr]
+	movd	mm1,dword[eax]
+	paddw	mm1,mm0
+	movd	dword[eax],mm1
+    @@:
+
+
+
 	mov esi,[triangles_ptr]
 	mov [edges_counter],0
     .again_dts:
@@ -1769,6 +1947,10 @@ draw_triangles:
 	push	ebp
 	add	ebp,eax
 	mov	eax,[ebp]
+	cmp	[vertex_edit_no],0
+	jne	@f
+
+      @@:
 	mov	dword[xx1],eax
 	mov	eax,[ebp+4]
 	mov	[zz1],ax
@@ -1792,7 +1974,7 @@ draw_triangles:
 	mov	[point_index3],ax
 	lea	eax,[eax*3]
 	add	eax,eax
-    ;    push    ebp
+    ;	 push	 ebp
 	add	ebp,eax
 	mov	eax,[ebp]
 	mov	dword[xx3],eax
@@ -1801,8 +1983,8 @@ draw_triangles:
       else
 	mov	eax,dword[esi]		 ; don't know MMX
 	mov	dword[point_index1],eax
-       ; shr     eax,16
-       ; mov     [point_index2],ax
+       ; shr	 eax,16
+       ; mov	 [point_index2],ax
 	mov	ax,word[esi+4]
 	mov	[point_index3],ax
 	movq	mm0,[esi]
@@ -1821,8 +2003,46 @@ draw_triangles:
 	movq	qword[xx1],mm0
 	movq	qword[xx2],mm1
 	movq	qword[xx3],mm2
-;        emms
-      end if				  ; *********************************
+;	 emms
+      end if  ; *********************************
+ if 0
+	cmp	[vertex_edit_no],0
+	jne	.no_edit
+	mov	ax,[vertex_edit_no]
+	dec	ax
+	cmp	ax,[point_index1]
+	jne	@f
+	movd	mm0,[edit_start_x]
+	psubw	mm0,[edit_end_x]
+	movd	mm1,dword[xx1]
+	paddw	mm1,mm0
+	movd	dword[xx1],mm1
+	jmp	.no_edit
+       @@:
+
+	cmp	ax,[point_index2]
+	jne	@f
+	movd	mm0,[edit_start_x]
+	psubw	mm0,[edit_end_x]
+	movd	mm1,dword[xx2]
+	paddw	mm1,mm0
+	movd	dword[xx2],mm1
+	jmp	.no_edit
+       @@:
+
+	cmp	ax,[point_index3]
+	jne	@f
+	movd	mm0,[edit_start_x]
+	psubw	mm0,[edit_end_x]
+	movd	mm1,dword[xx3]
+	paddw	mm1,mm0
+	movd	dword[xx3],mm1
+	jmp	.no_edit
+       @@:
+
+
+    .no_edit:
+end if
 	push esi			  ;
 	fninit				  ; DO culling AT FIRST
 	cmp	[culling_flag],1	  ; (if culling_flag = 1)
@@ -1834,7 +2054,7 @@ draw_triangles:
 	lea	eax,[eax*3]
 	shl	eax,2
 	add	eax,[points_normals_rot_ptr]
-;        lea     eax,[eax+point_normals_rotated]
+;	 lea	 eax,[eax+point_normals_rotated]
 	fld	dword[eax+8]		 ; *****************************
 	ftst				 ; CHECKING OF Z COOFICIENT OF
 	fstsw	ax			 ; NORMAL VECTOR
@@ -1910,44 +2130,44 @@ draw_triangles:
 	jnz	 .again_grd_draw
 	jmp	 .both_draw
 
-   ;     movzx   edi,[point_index3]   ;gouraud shading according to light vector
-   ;     lea     edi,[edi*3]
-   ;     lea     edi,[4*edi+point_normals_rotated] ; edi - normal
-   ;     mov     esi,light_vector
-   ;     call    dot_product
-   ;     fabs
-   ;     fimul   [orginal_color_r]
-   ;     fistp   [temp_col]
-   ;     and     [temp_col],0x00ff
-   ;     push    [temp_col]
-   ;     push    [temp_col]
-   ;     push    [temp_col]
+   ;	 movzx	 edi,[point_index3]   ;gouraud shading according to light vector
+   ;	 lea	 edi,[edi*3]
+   ;	 lea	 edi,[4*edi+point_normals_rotated] ; edi - normal
+   ;	 mov	 esi,light_vector
+   ;	 call	 dot_product
+   ;	 fabs
+   ;	 fimul	 [orginal_color_r]
+   ;	 fistp	 [temp_col]
+   ;	 and	 [temp_col],0x00ff
+   ;	 push	 [temp_col]
+   ;	 push	 [temp_col]
+   ;	 push	 [temp_col]
 
-   ;     movzx   edi,[point_index2]
-   ;     lea     edi,[edi*3]
-   ;     lea     edi,[4*edi+point_normals_rotated] ; edi - normal
-   ;     mov     esi,light_vector
-   ;     call    dot_product
-   ;     fabs
-   ;     fimul   [orginal_color_r]
-   ;     fistp    [temp_col]
-   ;     and     [temp_col],0x00ff
-   ;     push    [temp_col]
-   ;     push    [temp_col]
-   ;     push    [temp_col]
+   ;	 movzx	 edi,[point_index2]
+   ;	 lea	 edi,[edi*3]
+   ;	 lea	 edi,[4*edi+point_normals_rotated] ; edi - normal
+   ;	 mov	 esi,light_vector
+   ;	 call	 dot_product
+   ;	 fabs
+   ;	 fimul	 [orginal_color_r]
+   ;	 fistp	  [temp_col]
+   ;	 and	 [temp_col],0x00ff
+   ;	 push	 [temp_col]
+   ;	 push	 [temp_col]
+   ;	 push	 [temp_col]
 
-   ;     movzx   edi,[point_index1]
-   ;     lea     edi,[edi*3]
-   ;     lea     edi,[4*edi+point_normals_rotated] ; edi - normal
-   ;     mov     esi,light_vector
-   ;     call    dot_product
-   ;     fabs
-   ;     fimul   [orginal_color_r]
-   ;     fistp   [temp_col]
-   ;     and     [temp_col],0x00ff
-   ;     push    [temp_col]
-   ;     push    [temp_col]
-   ;     push    [temp_col]
+   ;	 movzx	 edi,[point_index1]
+   ;	 lea	 edi,[edi*3]
+   ;	 lea	 edi,[4*edi+point_normals_rotated] ; edi - normal
+   ;	 mov	 esi,light_vector
+   ;	 call	 dot_product
+   ;	 fabs
+   ;	 fimul	 [orginal_color_r]
+   ;	 fistp	 [temp_col]
+   ;	 and	 [temp_col],0x00ff
+   ;	 push	 [temp_col]
+   ;	 push	 [temp_col]
+   ;	 push	 [temp_col]
    .rainbow:
 	cmp	[catmull_flag],1      ; put on stack z coordinate if necessary
 	jne	 @f
@@ -1987,7 +2207,7 @@ draw_triangles:
 	mov	edi,[screen_ptr]
 	cmp	[catmull_flag],0
 	je	@f
-  ;      lea     esi,[Z_buffer]
+  ;	 lea	 esi,[Z_buffer]
 	mov	esi,[Zbuffer_ptr]
 	call	gouraud_triangle_z
 	jmp	.end_draw
@@ -2033,17 +2253,17 @@ draw_triangles:
 
 
 
-     ;   mov     ax,[zz1]      ; z position depend draw
-     ;   add     ax,[zz2]
-     ;   add     ax,[zz3]
-     ;   cwd
-     ;   idiv    [i3] ;    = -((a+b+c)/3+130)
-     ;   add     ax,130
-     ;   neg     al
-     ;   xor     edx,edx
-     ;   mov     ah,al           ;set color according to z position
-     ;   shl     eax,8
-     ;   mov     edx,eax
+     ;	 mov	 ax,[zz1]      ; z position depend draw
+     ;	 add	 ax,[zz2]
+     ;	 add	 ax,[zz3]
+     ;	 cwd
+     ;	 idiv	 [i3] ;    = -((a+b+c)/3+130)
+     ;	 add	 ax,130
+     ;	 neg	 al
+     ;	 xor	 edx,edx
+     ;	 mov	 ah,al		 ;set color according to z position
+     ;	 shl	 eax,8
+     ;	 mov	 edx,eax
 
 	mov	eax,dword[xx1]
 	ror	eax,16
@@ -2051,11 +2271,11 @@ draw_triangles:
 	ror	ebx,16
 	mov	ecx,dword[xx3]
 	ror	ecx,16
-       ; mov     edi,screen
+       ; mov	 edi,screen
 	mov	edi,[screen_ptr]
 	cmp	[catmull_flag],0
 	je	@f
-   ;     lea     esi,[Z_buffer]
+   ;	 lea	 esi,[Z_buffer]
 	mov	esi,[Zbuffer_ptr]
 	push	word[zz3]
 	push	word[zz2]
@@ -2083,17 +2303,17 @@ draw_triangles:
 	shl	eax,2
 	add	eax,[points_normals_rot_ptr]	   ;point_normals_rotated
 ; #
-;        fld     dword[eax]
-;        fmul    dword[eax+4]
-;        fld1
-;        fld1
-;        faddp
-;        fmulp
-;        fimul   [correct_tex]
-;        fiadd   [correct_tex]
-;        fistp   word[edi]
-;        mov     word[edi+2],0
-;;        fistp   word[edi+2]
+;	 fld	 dword[eax]
+;	 fmul	 dword[eax+4]
+;	 fld1
+;	 fld1
+;	 faddp
+;	 fmulp
+;	 fimul	 [correct_tex]
+;	 fiadd	 [correct_tex]
+;	 fistp	 word[edi]
+;	 mov	 word[edi+2],0
+;;	  fistp   word[edi+2]
 ; # last change
 	; texture x=(rotated point normal -> x * 255)+255
 	fld	dword[eax]
@@ -2120,7 +2340,7 @@ draw_triangles:
 	mov	esi,envmap
 	cmp	[catmull_flag],0
 	je	@f
-  ;      mov     edx,Z_buffer
+  ;	 mov	 edx,Z_buffer
 	mov	edx,[Zbuffer_ptr]
 	call	tex_triangle_z
 	jmp	.end_draw
@@ -2156,18 +2376,18 @@ draw_triangles:
 	fiadd	[correct_tex]
 	fistp	word[edi]
 	mov	word[edi+2],0
-;        fistp   word[edi+2]
+;	 fistp	 word[edi+2]
 ; # last change
-;        ; texture x=(rotated point normal -> x * 255)+255
-;        fld     dword[eax]
-;        fimul   [correct_tex]
-;        fiadd   [correct_tex]
-;        fistp   word[edi]
-;        ; texture y=(rotated point normal -> y * 255)+255
-;        fld     dword[eax+4]
-;        fimul   [correct_tex]
-;        fiadd   [correct_tex]
-;        fistp   word[edi+2]
+;	 ; texture x=(rotated point normal -> x * 255)+255
+;	 fld	 dword[eax]
+;	 fimul	 [correct_tex]
+;	 fiadd	 [correct_tex]
+;	 fistp	 word[edi]
+;	 ; texture y=(rotated point normal -> y * 255)+255
+;	 fld	 dword[eax+4]
+;	 fimul	 [correct_tex]
+;	 fiadd	 [correct_tex]
+;	 fistp	 word[edi+2]
 ; # end of last ch.
 	add	edi,4
 	add	esi,2
@@ -2183,7 +2403,7 @@ draw_triangles:
 	mov	esi,envmap_cub
 	cmp	[catmull_flag],0
 	je	@f
-  ;      mov     edx,Z_buffer
+  ;	 mov	 edx,Z_buffer
 	mov	edx,[Zbuffer_ptr]
 	call	tex_triangle_z
 	jmp	.end_draw
@@ -2197,7 +2417,7 @@ draw_triangles:
 	; fninit
 	cmp	[catmull_flag],0
 	je	@f
-;        push    Z_buffer
+;	 push	 Z_buffer
 	push	[Zbuffer_ptr]
 	push	[zz3]
 	push	[zz2]
@@ -2234,17 +2454,17 @@ draw_triangles:
 	movzx  esi,[point_index2]
 	shl    esi,2
 	add    esi,tex_points
-;       lea    esi,[esi*3]
-;       lea    esi,[points+2+esi*2]
+;	lea    esi,[esi*3]
+;	lea    esi,[points+2+esi*2]
 	push   dword[esi]
-  ;     push   dword[xx2]
+  ;	push   dword[xx2]
 	movzx  esi,[point_index1]
 	shl    esi,2
 	add    esi,tex_points
-;       lea     esi,[esi*3]
-;       lea     esi,[points+2+esi*2]
+;	lea	esi,[esi*3]
+;	lea	esi,[points+2+esi*2]
 	push   dword[esi]
-   ;    push     dword[xx1]
+   ;	push	 dword[xx1]
 
 	mov	eax,dword[xx1]
 	ror	eax,16
@@ -2296,47 +2516,47 @@ draw_triangles:
 	mov	esi,texmap
 	cmp	[catmull_flag],0
 	je	@f
-   ;     mov     edx,Z_buffer
+   ;	 mov	 edx,Z_buffer
 	mov	edx,[Zbuffer_ptr]
 	call	tex_triangle_z
- ;       call    tex_plus_grd_trianlgle
+ ;	 call	 tex_plus_grd_trianlgle
 	jmp	.end_draw
       @@:
 	call	tex_triangle
 	jmp	.end_draw
 ;      .ray:
-;        grd_triangle according to points index
-;        cmp     [catmull_flag],0
-;        je      @f
-;        push    [zz3]                   ; spot light with attenuation
+;	 grd_triangle according to points index
+;	 cmp	 [catmull_flag],0
+;	 je	 @f
+;	 push	 [zz3]			 ; spot light with attenuation
 ;     @@:
-;        movzx   eax,[point_index3]      ; env_map - points color list
-;        shl     eax,1                   ; each color as word, 0x00rr00gg00bb..
-;        lea     eax,[3*eax+bumpmap]
-;        push    word[eax]
-;        push    word[eax+2]
-;        push    word[eax+4]
-;        cmp     [catmull_flag],0
-;        je      @f
-;        push    [zz2]
+;	 movzx	 eax,[point_index3]	 ; env_map - points color list
+;	 shl	 eax,1			 ; each color as word, 0x00rr00gg00bb..
+;	 lea	 eax,[3*eax+bumpmap]
+;	 push	 word[eax]
+;	 push	 word[eax+2]
+;	 push	 word[eax+4]
+;	 cmp	 [catmull_flag],0
+;	 je	 @f
+;	 push	 [zz2]
 ;    @@:
-;        movzx   eax,[point_index2]      ; env_map - points color list
-;        shl     eax,1                   ; each color as word, 0x00rr00gg00bb..
-;        lea     eax,[eax*3+bumpmap]
-;        push    word[eax]
-;        push    word[eax+2]
-;        push    word[eax+4]
-;        cmp     [catmull_flag],0
-;        je      @f
-;        push    [zz1]
+;	 movzx	 eax,[point_index2]	 ; env_map - points color list
+;	 shl	 eax,1			 ; each color as word, 0x00rr00gg00bb..
+;	 lea	 eax,[eax*3+bumpmap]
+;	 push	 word[eax]
+;	 push	 word[eax+2]
+;	 push	 word[eax+4]
+;	 cmp	 [catmull_flag],0
+;	 je	 @f
+;	 push	 [zz1]
 ;     @@:
-;        movzx   eax,[point_index1]      ; env_map - points color list
-;        shl     eax,1                   ; each color as word, 0xrr00gg00bb00..
-;        lea     eax,[eax*3+bumpmap]
-;        push    word[eax]
-;        push    word[eax+2]
-;        push    word[eax+4]
-;        jmp     .both_draw
+;	 movzx	 eax,[point_index1]	 ; env_map - points color list
+;	 shl	 eax,1			 ; each color as word, 0xrr00gg00bb00..
+;	 lea	 eax,[eax*3+bumpmap]
+;	 push	 word[eax]
+;	 push	 word[eax+2]
+;	 push	 word[eax+4]
+;	 jmp	 .both_draw
 
      .grd_tex:		  ; smooth shading + texture
 	 push	ebp
@@ -2521,9 +2741,9 @@ draw_triangles:
 	add	esi,2
 	loop	@b
 
-;        push  dword 1 shl 16 + 1  ; emap coords
-;        push  dword 127 shl 16 + 1
-;        push  dword 127 shl 16 + 127
+;	 push  dword 1 shl 16 + 1  ; emap coords
+;	 push  dword 127 shl 16 + 1
+;	 push  dword 127 shl 16 + 127
 
 	movzx  esi,[point_index3]      ; bump map coords
 	shl    esi,2
@@ -2539,9 +2759,9 @@ draw_triangles:
 	add    esi,tex_points
 	push   dword[esi]
 
-;        push  dword 1 shl 16 + 127
-;        push  dword 127 shl 16 + 127
-;        push  dword 1 shl 16 + 1  ; bump coords
+;	 push  dword 1 shl 16 + 127
+;	 push  dword 127 shl 16 + 127
+;	 push  dword 1 shl 16 + 1  ; bump coords
 
 	mov	eax,dword[xx1]
 	ror	eax,16
@@ -2590,11 +2810,11 @@ draw_triangles:
 	dec	 ecx
 	jnz	 .again_line_param
 
-;        mov     eax,[edges_ptr]         ;   this not works correctly
-;        add     eax,[edges_counter]     ;   I mean chosing overlapped  edges.
-;        mov     bl,[eax]                ;
-;        test    bl,00000001b            ;
-;        jz      @f                      ;
+;	 mov	 eax,[edges_ptr]	 ;   this not works correctly
+;	 add	 eax,[edges_counter]	 ;   I mean chosing overlapped	edges.
+;	 mov	 bl,[eax]		 ;
+;	 test	 bl,00000001b		 ;
+;	 jz	 @f			 ;
 	mov	edi,[screen_ptr]
 	mov	esi,[Zbuffer_ptr]
 
@@ -2624,11 +2844,11 @@ draw_triangles:
 
 	call	smooth_line
      @@:
-;        mov     eax,[edges_ptr]       ;  this not works correctly
-;        add     eax,[edges_counter]
-;        mov     bl,[eax]
-;        test    bl,00000010b
-;        jz      @f
+;	 mov	 eax,[edges_ptr]       ;  this not works correctly
+;	 add	 eax,[edges_counter]
+;	 mov	 bl,[eax]
+;	 test	 bl,00000010b
+;	 jz	 @f
 
 	mov	edi,[screen_ptr]
 	mov	esi,[Zbuffer_ptr]
@@ -2660,11 +2880,11 @@ draw_triangles:
 	call	smooth_line
       @@:
 
-;        mov     eax,[edges_ptr]        ;  this not works correctly
-;        add     eax,[edges_counter]    ;
-;        mov     bl,[eax]               ;
-;        test    bl,00000100b           ;
-;        jz      @f                     ;
+;	 mov	 eax,[edges_ptr]	;  this not works correctly
+;	 add	 eax,[edges_counter]	;
+;	 mov	 bl,[eax]		;
+;	 test	 bl,00000100b		;
+;	 jz	 @f			;
 
 	mov	edi,[screen_ptr]
 	mov	esi,[Zbuffer_ptr]
@@ -2705,6 +2925,111 @@ draw_triangles:
 ret
 
 
+
+
+
+
+
+draw_handlers:
+
+       push  ebp
+       mov   ebp,esp
+
+       .counter  equ ebp-16
+       .xres3m18 equ ebp-8
+       .xres2m12 equ ebp-12
+
+
+     ; init counter
+       sub   esp,12
+       push  dword 0
+
+       movzx eax,word[size_x_var]
+       lea   ebx,[eax*3]
+       sub   ebx,18
+       add   eax,eax
+       sub   eax,12
+       mov   [.xres3m18],ebx
+       mov   [.xres2m12],eax
+
+       mov   esi,[points_translated_ptr]
+     .loop:
+       push  esi
+					 ; DO culling AT FIRST
+	cmp	[culling_flag],1	 ; (if culling_flag = 1)
+	jne	.no_culling
+	mov	edi,[.counter]		 ; *********************************
+	lea	edi,[edi*3]
+	shl	edi,2
+	add	edi,[points_normals_rot_ptr]
+	mov	eax,[edi+8]		 ; check sign of z coof
+	shr	eax,31
+	cmp	eax,1
+	jnz	.skip
+    .no_culling:
+       mov   eax,[esi]
+       movzx ebx,ax	    ; ebx - x
+       shr   eax,16	    ; eax - y
+       cmp   eax,4	    ; check if markers not exceedes screen
+       jle   .skip
+       cmp   ebx,4
+       jle   .skip
+       movzx edx,word[size_x_var]
+       sub   edx,4
+       movzx ecx,word[size_y_var]
+       sub   ecx,4
+       cmp   ebx,edx
+       jge   .skip
+       cmp   eax,ecx
+       jge   .skip
+
+       movzx edx,word[size_x_var]
+    ;	sub   ebx,3
+    ;	sub   eax,3
+       imul  eax,edx
+       add   eax,ebx
+       lea   edi,[eax*3]
+       lea   eax,[eax*2]
+       ; draw bar 6x6
+       add   edi,[screen_ptr]
+       add   eax,dword[vertices_index_ptr]
+
+
+
+
+       mov   edx,[.counter]
+       mov   ecx,6
+
+     .oop:
+       push  ecx
+       mov   ecx,6
+
+     @@:
+       mov   word[edi],0x0000 ;ax
+       mov   byte[edi+2],0xff	;al
+       mov   word[eax],dx
+       add   eax,2
+       add   edi,3
+       loop  @b
+       add   edi,[.xres3m18]
+       add   eax,[.xres2m12]
+       pop   ecx
+       loop  .oop
+
+    .skip:
+       pop   esi
+       add   esi,6
+       inc   dword[.counter]
+       mov   ecx,[.counter]
+       cmp   cx,[points_count_var]
+       jng   .loop
+
+       mov   esp,ebp
+       pop   ebp
+
+ret
+
+
 fill_Z_buffer:
 	mov	eax,0x70000000
 	mov	edi,[Zbuffer_ptr]
@@ -2735,7 +3060,7 @@ fill_Z_buffer:
       end if
 ret
 
-read_tp_variables:	      ; read [triangles_count_var] and  [points_count_var]
+read_tp_variables:	      ; read [triangles_count_var] and	[points_count_var]
 			      ; and  allocate memory
 	xor	ebx,ebx
 	xor	ebp,ebp
@@ -2807,7 +3132,7 @@ read_tp_variables:	      ; read [triangles_count_var] and  [points_count_var]
 
 	add	ebx,6
 	add	esi,12
-     ;   dec     ecx
+     ;	 dec	 ecx
 	loop	 @b
       @@:
 
@@ -2825,7 +3150,7 @@ read_tp_variables:	      ; read [triangles_count_var] and  [points_count_var]
 	add	esi,8
 	dec	ecx
 	jnz	@b
-;        xor     ecx,ecx
+;	 xor	 ecx,ecx
 	add	ebp,edx
 	jmp	.find4k
 	mov	eax,-1 ;<---mark if OK
@@ -2846,11 +3171,11 @@ read_from_file:
    end if
 	cmp	[esi],word 4D4Dh
 	jne	.exit ;Must be legal .3DS file
-;        cmp     dword[esi+2],EndFile-SourceFile
-;        jne     .exit ;This must tell the length
+;	 cmp	 dword[esi+2],EndFile-SourceFile
+;	 jne	 .exit ;This must tell the length
 	mov	eax,dword[esi+2]
-  ;      cmp     eax,[fsize]
-  ;      jne     .exit
+  ;	 cmp	 eax,[fsize]
+  ;	 jne	 .exit
 
 	add	eax,esi
 	mov	[EndFile],eax	 ;
@@ -2900,26 +3225,26 @@ read_from_file:
      @@:
 	push	edi
 	mov	edi,[points_ptr]
-	push	dword[esi+4]
-	pop	dword[edi+ebx*2+0]
-	push	dword[esi+8]
-	pop	dword[edi+ebx*2+4]
 	push	dword[esi+0]
+	pop	dword[edi+ebx*2+0]
+	push	dword[esi+4]
+	pop	dword[edi+ebx*2+4]
+	push	dword[esi+8]
 	pop	dword[edi+ebx*2+8]
 	pop	edi
-;        fld     dword[esi+4]
-;        fstp    dword[real_points+ebx*2+0]  ; x
-;        fld     dword[esi+8]
-;        fstp   dword[real_points+ebx*2+4]  ; y
-;        fld     dword[esi+0]
-;        fstp   dword[real_points+ebx*2+8]  ; z
+;	 fld	 dword[esi+4]
+;	 fstp	 dword[real_points+ebx*2+0]  ; x
+;	 fld	 dword[esi+8]
+;	 fstp	dword[real_points+ebx*2+4]  ; y
+;	 fld	 dword[esi+0]
+;	 fstp	dword[real_points+ebx*2+8]  ; z
 
 	add	ebx,6
 	add	esi,12
 	dec	ecx
 	jnz	@b
       @@:
-  ;      mov     dword[points+ebx],-1
+  ;	 mov	 dword[points+ebx],-1
 	push	edi
 	mov	edi,[points_ptr]
 	mov	dword[edi+ebx*2],-1	   ; end mark (not always in use)
@@ -2933,7 +3258,7 @@ read_from_file:
 	movzx	ecx,word[esi+6]
 	add	[triangles_count_var],cx
 	add	esi,8
-	;mov     edi,triangles
+	;mov	 edi,triangles
       @@:
 	movsd
 	movsw
@@ -2969,28 +3294,28 @@ alloc_mem_for_tp:
 	int	0x40		       ;  -> allocate memory to triangles
 	mov	[triangles_ptr], eax   ;  -> eax = pointer to allocated mem
 
-;        mov     eax, 68
-;        movzx   ecx, [triangles_count_var]
-;        inc     ecx
-;        mov     edx,[edges_ptr]
-;        int     0x40                   ;  -> allocate memory to edges
-;        mov     [edges_ptr], eax   ;  -> eax = pointer to allocated mem
+;	 mov	 eax, 68
+;	 movzx	 ecx, [triangles_count_var]
+;	 inc	 ecx
+;	 mov	 edx,[edges_ptr]
+;	 int	 0x40			;  -> allocate memory to edges
+;	 mov	 [edges_ptr], eax   ;  -> eax = pointer to allocated mem
 
-;        mov     eax,-1                       ; fill edges list
-;        movzx   ecx,[triangles_count_var]    ; importand if object generated
-;        shr     ecx,2
-;        inc     ecx
-;        mov     edi,[edges_ptr]
-;        cld
-;        rep     stosd
+;	 mov	 eax,-1 		      ; fill edges list
+;	 movzx	 ecx,[triangles_count_var]    ; importand if object generated
+;	 shr	 ecx,2
+;	 inc	 ecx
+;	 mov	 edi,[edges_ptr]
+;	 cld
+;	 rep	 stosd
 
 
-;        mov     eax, 68
-;        mov     ebx, 12
-;        movzx   ecx, [triangles_count_var]
-;        shl     ecx, 4
-;        int     0x40
-;        mov     [triangles_w_z_ptr], eax   ; for trainagles_with_z list
+;	 mov	 eax, 68
+;	 mov	 ebx, 12
+;	 movzx	 ecx, [triangles_count_var]
+;	 shl	 ecx, 4
+;	 int	 0x40
+;	 mov	 [triangles_w_z_ptr], eax   ; for trainagles_with_z list
 					    ; ststic  memory
 
 	mov	eax, 68
@@ -3001,6 +3326,13 @@ alloc_mem_for_tp:
 	int	0x40			       ;  -> allocate memory for triangles normals
 	mov	[triangles_normals_ptr], eax   ;  -> eax = pointer to allocated mem
 
+   ;	 mov	 eax, 68
+   ;	 movzx	 ecx,[points_count_var]
+   ;	 lea	 ecx,[2+ecx*2]
+   ;	 mov	 edx,dword [vertices_index_ptr]
+   ;	 int	 0x40
+   ;	 mov	 dword[vertices_index_ptr], eax
+
 	mov	eax, 68
 	movzx	ecx, [points_count_var]
 	lea	ecx,[3+ecx*3]
@@ -3008,9 +3340,14 @@ alloc_mem_for_tp:
 	mov	edx,[points_normals_ptr]
 	int	0x40
 	mov	[points_normals_ptr], eax
+      ;  int3
+
+
+      ;  int3
+
 
 	mov	eax, 68
-    ;    mov     ebx, 12
+    ;	 mov	 ebx, 12
 	movzx	ecx, [points_count_var]
 	lea	ecx,[3+ecx*3]
 	shl	ecx, 2
@@ -3067,7 +3404,6 @@ if USE_LFN
     int     0x40		   ; -> read file
 
     mov     [fsize],ebx
-
     cmp     eax,6
     jnz     @f
     xor     eax,eax	;;;;---
@@ -3081,10 +3417,13 @@ else
     shr      eax,9
     inc      eax
     mov      [fsize],eax
+
+
+
 ;    mov      ecx,ebx
 ;    add      ecx,MEM_END
 ;    mov      ebx,1
-;    mov      eax,64     ; allocate mem  - resize app mem
+;    mov      eax,64	 ; allocate mem  - resize app mem
 			; for points and  triangles
     int      0x40
 
@@ -3146,14 +3485,14 @@ buttons:				      ; draw some buttons (all but navigation and close )
 	cmp	byte[edi+11],255		; if max_flag=255
 	je	@f				; skip
 	; flag description
-;       mov     eax,4                           ; function 4 : write text to window
-;       movzx   ebx,byte[edi]
-;       sub     bl,2
-;       lea     ebx,[ebx*3]
-;       lea     ebx,[ebx*5]
-;       add     ebx,(SIZE_X+12+70)*65536+28     ; [x start] *65536 + [y start]
+;	mov	eax,4				; function 4 : write text to window
+;	movzx	ebx,byte[edi]
+;	sub	bl,2
+;	lea	ebx,[ebx*3]
+;	lea	ebx,[ebx*5]
+;	add	ebx,(SIZE_X+12+70)*65536+28	; [x start] *65536 + [y start]
 	add	ebx,70*65536
-;       mov     ecx,0x00ddeeff                  ; font 1 & color ( 0xF0RRGGBB )
+;	mov	ecx,0x00ddeeff			; font 1 & color ( 0xF0RRGGBB )
 	movzx	edx,byte[edi+12]		; current flag
 	shl	edx,2				; * 4 = text length
 	add	edx,dword[edi+13]		; pointer to text beginning
@@ -3179,8 +3518,8 @@ ret
 	shl	ebx,16
 	mov	cx,[y_start]
 	shl	ecx,16
-;ebx -  [x start] *65536 + [x size]
-;ecx -  [y start] *65536 + [y size]
+;ebx -	[x start] *65536 + [x size]
+;ecx -	[y start] *65536 + [y size]
 	mov	bx,[size_x_var]
 	add	bx,115
 	mov	cx,[size_y_var]
@@ -3192,9 +3531,9 @@ ret
 
 	call	buttons 	; more buttons
 
-	.Y_ADD equ 1   ;-> offset of 'add vector' buttons
+	.Y_ADD equ 2   ;-> offset of 'add vector' buttons
 
-	; ADD VECTOR LABEL      ; add vector buttons - 30 ++
+	; ADD VECTOR LABEL	; add vector buttons - 30 ++
 	mov	eax,4		; function 4 : write text to window
 	movzx	ebx,word[size_x_var]
 	shl	ebx,16
@@ -3202,9 +3541,9 @@ ret
 	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelvector      ; pointer to text beginning
 	mov	esi,labelvectorend-labelvector	   ; text length
-    ;    cmp     [move_flag],2
-    ;    jne     @f
-    ;    add     edx,navigation_size
+    ;	 cmp	 [move_flag],2
+    ;	 jne	 @f
+    ;	 add	 edx,navigation_size
     ;  @@:
 	int	0x40
 	 ; VECTOR Y- BUTTON
@@ -3225,8 +3564,8 @@ ret
 	mov	edx,labelyminus      ; pointer to text beginning
 	mov	esi,labelyminusend-labelyminus	   ; text length
 	cmp	[move_flag],2
-   ;     jne     @f
-   ;     add     edx,navigation_size
+   ;	 jne	 @f
+   ;	 add	 edx,navigation_size
    ;   @@:
 	int	0x40
 	; VECTOR Z+ BUTTON
@@ -3246,9 +3585,9 @@ ret
 	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelzplus	    ; pointer to text beginning
 	mov	esi,labelzplusend-labelzplus	 ; text length
-   ;     cmp     [move_flag],2
-   ;     jne     @f
-   ;     add     edx,navigation_size
+   ;	 cmp	 [move_flag],2
+   ;	 jne	 @f
+   ;	 add	 edx,navigation_size
    ;   @@:
 
 	int	0x40
@@ -3269,9 +3608,9 @@ ret
 	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelxminus      ; pointer to text beginning
 	mov	esi,labelxminusend-labelxminus	   ; text length
-   ;     cmp     [move_flag],2
-   ;     jne     @f
-   ;     add     edx,navigation_size
+   ;	 cmp	 [move_flag],2
+   ;	 jne	 @f
+   ;	 add	 edx,navigation_size
    ;   @@:
 	int	0x40
 	; VECTOR x+ BUTTON
@@ -3291,9 +3630,9 @@ ret
 	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelxplus	    ; pointer to text beginning
 	mov	esi,labelxplusend-labelxplus	 ; text length
-   ;     cmp     [move_flag],2
-   ;     jne     @f
-   ;     add     edx,navigation_size
+   ;	 cmp	 [move_flag],2
+   ;	 jne	 @f
+   ;	 add	 edx,navigation_size
    ;   @@:
 	int	0x40
 	; VECTOR z- BUTTON
@@ -3313,9 +3652,9 @@ ret
 	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelzminus      ; pointer to text beginning
 	mov	esi,labelzminusend-labelzminus	   ; text length
-   ;     cmp     [move_flag],2
-   ;     jne     @f
-   ;     add     edx,navigation_size
+   ;	 cmp	 [move_flag],2
+   ;	 jne	 @f
+   ;	 add	 edx,navigation_size
    ;   @@:
 	int	0x40
        ;VECTOR Y+ BUTTON
@@ -3335,9 +3674,9 @@ ret
 	mov	ecx,0x00ddeeff	; font 1 & color ( 0xF0RRGGBB )
 	mov	edx,labelyplus	    ; pointer to text beginning
 	mov	esi,labelyplusend-labelyplus	 ; text length
-   ;     cmp     [move_flag],2
-   ;     jne     @f
-   ;     add     edx,navigation_size
+   ;	 cmp	 [move_flag],2
+   ;	 jne	 @f
+   ;	 add	 edx,navigation_size
    ;   @@:
 	int	0x40
 
@@ -3347,7 +3686,7 @@ ret
 	ret
 
 
-   ; DATA AREA  ************************************
+   ; DATA AREA	************************************
 
    include 'DATA.INC'
    align 16

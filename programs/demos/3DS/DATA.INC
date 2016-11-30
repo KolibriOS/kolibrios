@@ -11,7 +11,7 @@
 	tex_y_div2	dw	TEX_Y  / 2
 	xobs		dw	0 ;SIZE_X / 2 ;200 ;observer  = camera
 	yobs		dw	0 ;SIZE_Y / 2 ;200 ;coordinates
-	zobs		dw	-500
+	zobs		dw	-1000
      ;   size_x          dw      SIZE_X
      ;   size_y          dw      SIZE_Y
 
@@ -38,8 +38,32 @@
 	XYZpartices:
 		      db 'X','Y','Z'
 	i10	      dw 10
-	draw_win_at_first db 1
+	offset_y:
+	i25	      dw 25  ; screen buff offset
+	offset_x:
+	i5	      dw 5
+	triangles_ptr		dd 0
+	triangles_w_z_ptr	dd 0
+	triangles_normals_ptr	dd 0
+	points_normals_ptr	dd 0
+	points_normals_rot_ptr	dd 0
+	points_ptr		dd 0
+	points_rotated_ptr	dd 0
+	points_translated_ptr	dd 0
+	screen_ptr		dd 0
+	Zbuffer_ptr		dd 0
+	vertices_index_ptr	dd 0
 
+
+     ;   draw_win_at_first db 1
+	vertex_edit_no	  dw 0
+	edit_start_x:
+			  dw 0
+	edit_start_y	  dw 0
+	edit_end_x:
+			  dw 0
+	edit_end_y	  dw 0
+	mouse_state	      dd 0
 	menu:
 	       db 2		   ; button number  = index
 	       db 'rotary    '	   ; label
@@ -179,6 +203,12 @@ dec_bright_flag   db 0 ;1
 sinus_flag	  db 0
 		  dd onoff_f
 
+
+		  db 25
+		  db 'editor    '
+		  db 2
+ edit_flag	  db 0
+		  dd onoff_f
 ;                  db 24
 ;                  db 'max       '
 ;                  db 2
@@ -314,7 +344,7 @@ base_vector:
       if Ext=SSE2
 	db   ' (SSE2)'
       end if
-	db   ' 0.067',0
+	db   ' 0.068',0
     labellen:
 	STRdata db '-1        '
 
@@ -343,7 +373,7 @@ else
 		db   '/rd/1/teapot.3ds',0
 end if
 
-I_END:
+  ;I_END:
 
       rb 256
 
@@ -390,7 +420,11 @@ lights:
 ;===============================================
 
 lightsend:
+align 16
+    emboss_bias:
+	   dw 128, 128, 128, 128, 128, 128, 128, 128
 
+I_END:
 if USE_LFN = 0
 hash_table rb 4096
 SourceFile:
@@ -425,16 +459,20 @@ align 8
    ;==
 	triangles_count_var	dw ?
 	points_count_var	dw ?
-	triangles_ptr		dd ?
-	triangles_w_z_ptr	dd ?
-	triangles_normals_ptr	dd ?
-	points_normals_ptr	dd ?
-	points_normals_rot_ptr	dd ?
-	points_ptr		dd ?
-	points_rotated_ptr	dd ?
-	points_translated_ptr	dd ?
-	screen_ptr		dd ?
-	Zbuffer_ptr		dd ?
+     ;   triangles_ptr           dd ?
+     ;   triangles_w_z_ptr       dd ?
+     ;   triangles_normals_ptr   dd ?
+     ;   points_normals_ptr      dd ?
+     ;   points_normals_rot_ptr  dd ?
+     ;   points_ptr              dd ?
+     ;   points_rotated_ptr      dd ?
+     ;   points_translated_ptr   dd ?
+     ;   screen_ptr              dd ?
+     ;   Zbuffer_ptr             dd ?
+     ;   vertices_index_ptr      dd ?
+      ;  edit_start_x:
+				dw ?	; don't change order
+      ;  edit_start_y            dw ?
      ;   edges_ptr               dd ?
 	size_y_var:
 				dw ?

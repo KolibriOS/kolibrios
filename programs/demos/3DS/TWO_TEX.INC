@@ -788,7 +788,9 @@ two_tex_line_z:
 	mov	ecx,.y
 	or	ecx,ecx
 	jl	.bl_end
-	cmp	cx,word[size_y_var]  ;SIZE_Y
+	mov	dx,word[size_y_var]
+	dec	dx
+	cmp	cx,dx	;word[size_y_var]  ;SIZE_Y
 	jge	.bl_end
 
 	cmp	eax,ebx
@@ -827,6 +829,7 @@ end if
 	push	eax ebx    ;store x1, x2
 	mov	ebx,.x1
 	movzx	edx,word[size_x_var]
+	dec	edx
 	cmp	ebx,edx
   ;      cmp     bx,word[size_x_var]  ;SIZE_X
 	jg	.bl_end
@@ -836,7 +839,7 @@ end if
 	mov	ebx,.x2
 	sub	ebx,.x1
 
-if Ext>=SSE
+if  Ext >= SSE
 
        sub	 esp,16
        cvtsi2ss  xmm3,ebx	     ;rcps

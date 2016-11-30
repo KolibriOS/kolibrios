@@ -1,5 +1,8 @@
+View3ds 0.067 - XI 2016
+1. Sizable app window.
+-----------------------------------------------------------------------------------
 
-View 3ds 0,066 - X 2016
+View3ds 0,066 - X 2016
 1. App window size according to current screen resolution.
 2. New emboss procedure.
 -----------------------------------------------------------------------------------

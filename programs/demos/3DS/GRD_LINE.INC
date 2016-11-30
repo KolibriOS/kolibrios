@@ -77,7 +77,7 @@ end if
 macro .draw_pixel
 {
     mov 	[esi],ebx	       ; actualize Z buffer
-if Ext=SSE2
+if Ext>=SSE2
     movaps	xmm7,xmm1 ;[.cb] ;;xmm1
     shufps	xmm7,xmm7,00111001b
     psrld	xmm7,ROUND
@@ -136,8 +136,10 @@ end if
     jne 	.end_line
     movzx	edx,word [size_x_var]
     mov 	[.xres],edx
+    dec 	edx
     movzx	ecx,word [size_y_var]
     mov 	[.yres],ecx
+    dec 	ecx
     cmp 	word[.x1],dx  ;SIZE_X
     jg		.end_line
     cmp 	word[.x2],dx  ;SIZE_X
@@ -209,7 +211,7 @@ end if
 
     call	.calc_delta
 
-    movzx	eax,word [size_x_var]  ;SIZE_X
+    mov 	eax,[.xres]  ;SIZE_X
     movsx	ebx,word[.y1]
     mul 	ebx
     add 	esi,eax
@@ -275,7 +277,7 @@ end if
 
     call	.calc_delta
 
-    movzx	eax,word[size_x_var]  ;SIZE_X
+    mov 	eax,[.xres]  ;SIZE_X
     movsx	ebx,word[.y1]
     mul 	ebx
     add 	esi,eax
