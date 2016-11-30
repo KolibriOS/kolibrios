@@ -4,8 +4,8 @@
 
 #define MEMSIZE 4096*10
 
-#include <io.h>
-#include <gui.h>
+#include "../lib/io.h"
+#include "../lib/gui.h"
 
 proc_info Form;
 

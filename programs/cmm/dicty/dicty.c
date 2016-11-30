@@ -2,40 +2,43 @@
 	#include "lang.h--"
 #endif
 
-#define MEMSIZE 0x8000
-#include "..\lib\strings.h"
-#include "..\lib\io.h"
-#include "..\lib\gui.h"
-#include "..\lib\obj\box_lib.h"
+#define MEMSIZE 4096 * 1024 * 2
+#include <strings.h>
+#include <gui.h>
+#include <obj\box_lib.h>
 
 #ifdef LANG_RUS
-  #define WINDOW_TITLE "Словарик 2.2"
-  #define DICTIONARY_NOT_FOUND "Словарь не найден"
+  #define WINDOW_TITLE "Словарик 2.3"
   #define DICTIONARY_LOADED "Словарь загружен"
   #define WORD_NOT_FOUND "Слово не найдено в словаре"
   #define ERROR "Ошибка #%d"
 #else
-  #define WINDOW_TITLE "Dictionary v2.2"
-  #define DICTIONARY_NOT_FOUND "Dictionary not found"
+  #define WINDOW_TITLE "Dictionary v2.3"
   #define DICTIONARY_LOADED "Dictionary loaded"
   #define WORD_NOT_FOUND "Word isn't found in the dictionary"
   #define ERROR "Error #%d"
   #endif
 
 proc_info Form;
-char edword[256], search_word[256], translate_result[4096];
+char edit_text[256], search_word[256], translate_result[4096];
 #define TOPH 45
+
+unsigned char eng_rus[] = FROM "eng_rus.dict""\0";
+unsigned char rus_eng[] = FROM "rus_eng.dict""\0";
+dword io_buffer_data;
 
 #define TEXT_ENG_RUS "ENG\26RUS"
 #define TEXT_RUS_ENG "RUS\26ENG"
-#define TEXT_VOCABULARIES "ENG     RUS"
+#define TEXT_VOC_R_E "ENG     RUS"
+#define TEXT_VOC_E_R "RUS     ENG"
 #define ENG_RUS 0
 #define RUS_ENG 1
 #define BUTTON_CHANGE_LANGUAGE 10
 int active_dict=2;
 
 int mouse_dd;
-edit_box edit1= {200,13,13,0xffffff,0x94AECE,0xffffff,0x94AECE,0x10000000,248,#edword,#mouse_dd,100000000000010b};
+edit_box edit1= {200,13,13,0xffffff,0x94AECE,0xffffff,0x94AECE,0x10000000,248,#edit_text,#mouse_dd,100000000000010b};
+
 
 
 void main()
@@ -45,8 +48,8 @@ void main()
 	OpenDictionary(ENG_RUS);
 	if (param)
 	{
-		strcpy(#edword, #param);
-		edit1.size=edit1.pos=strlen(#edword);
+		strcpy(#edit_text, #param);
+		edit1.size=edit1.pos=strlen(#edit_text);
 		Translate();
 	}
 	SetEventMask(0x27);
@@ -86,7 +89,6 @@ void main()
 			edit_box_draw stdcall(#edit1);
 			DrawWideRectangle(edit1.left-2, edit1.top-2, edit1.width+3, 25, 2, 0xffffff);
 			DrawRectangle(edit1.left-3, edit1.top-3, edit1.width+4, 26, system.color.work_graph);
-			WriteText(Form.width-120, edit1.top+3, 0x90, system.color.work_text, TEXT_VOCABULARIES);
 			DrawTranslation();
 			DrawLangButtons();
       }
@@ -97,21 +99,23 @@ void main()
 void DrawLangButtons()
 {
 	dword direction;
+	DrawBar(Form.width-120, edit1.top+3, 100, 25, system.color.work);
 	DefineButton(Form.width-88, edit1.top-4+3, 20, 20, BUTTON_CHANGE_LANGUAGE, system.color.work_button);
-	if (active_dict == ENG_RUS) direction = "\26"; else direction = "\27";
-	WriteText(Form.width-82, edit1.top-1+3, 10000001b, system.color.work_button_text, direction);
+	WriteText(Form.width-82, edit1.top-1+3, 10000001b, system.color.work_button_text, "\26");
+	if (active_dict == ENG_RUS) direction = TEXT_VOC_R_E; else direction = TEXT_VOC_E_R;
+	WriteText(Form.width-120, edit1.top+3, 0x90, system.color.work_text, direction);
 }
 
 void Translate()
 {
 	dword translation_start, translation_end;
 
-	sprintf(#search_word, "\10%s\13", #edword);
+	sprintf(#search_word, "\10%s\13", #edit_text);
 	strupr(#search_word);
 
-	if (!io.FILES_SIZE) || (!edword) goto _TR_END;
+	if (!edit_text) goto _TR_END;
 
-	translation_start = strstr(io.buffer_data, #search_word);
+	translation_start = strstr(io_buffer_data, #search_word);
 	if (!translation_start) 
 	{
 		strcpy(#translate_result, WORD_NOT_FOUND); 
@@ -130,23 +134,19 @@ void Translate()
 
 void OpenDictionary(dword dict_id)
 {
-	dword res;
 	if (dict_id==active_dict) return;
 	active_dict = dict_id;
-	if (io.buffer_data) free(io.buffer_data);
-	if (active_dict==ENG_RUS) res=io.read("dictionaries/eng - rus.dict");
-	if (active_dict==RUS_ENG) res=io.read("dictionaries/rus - eng.dict");	
-	if (!io.buffer_data)
+	if (active_dict==ENG_RUS) 
 	{
-		sprintf(#search_word, ERROR, res);
-		strcpy(#translate_result, DICTIONARY_NOT_FOUND);
+		io_buffer_data=#eng_rus;
+		strcpy(#search_word, TEXT_ENG_RUS);
 	}
-	else
+	if (active_dict==RUS_ENG) 
 	{
-		if (active_dict==ENG_RUS) strcpy(#search_word, TEXT_ENG_RUS);
-		if (active_dict==RUS_ENG) strcpy(#search_word, TEXT_RUS_ENG);
-		strcpy(#translate_result, DICTIONARY_LOADED);
+		io_buffer_data=#rus_eng;
+		strcpy(#search_word, TEXT_RUS_ENG);
 	}
+	strcpy(#translate_result, DICTIONARY_LOADED);
 	DrawTranslation();	
 }
 

@@ -873,7 +873,7 @@ inline cdecl int sprintf(dword buf, format,...)
 	}
 	END_FUNC_SPRINTF:
 	DSBYTE[buf] = 0;
-	return buf-ret;
+	return ret;
 }
 
 inline signed strcoll(dword text1,text2)

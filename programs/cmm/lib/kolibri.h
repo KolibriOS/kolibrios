@@ -616,8 +616,8 @@ void ______INIT______()
 	__path_name__(#__BUF_DIR__,I_Path);
 	
 	skin_height   = GetSkinHeight();
-	screen.width  = GetScreenWidth();
-	screen.height = GetScreenHeight();
+	screen.width  = GetScreenWidth()+1;
+	screen.height = GetScreenHeight()+1;
 	
 	DOUBLE_CLICK_DELAY = GetMouseDoubleClickDelay();
 	__generator = GetStartTime();
