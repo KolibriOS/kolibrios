@@ -294,20 +294,20 @@ draw_window:
 ; draw window
         mov     edx, [sc.work]
         or      edx, 0x34000000
-        mcall   0, <50, 320>, <350, 110>, , 0, title
+        mcall   0, <50, 420>, <350, 120>, , 0, title
 
 ; draw button
-        mcall   8, <229,75>, <60,16>, 22, [sc.work_button]
+        mcall   8, <320,75>, <50,24>, 22, [sc.work_button]
 
 ; draw button text
         mov     ecx, [sc.work_button_text]
-        or      ecx, 80000000h
-        mcall   4, <240,65>, , [btn_text]
+        or      ecx, 90000000h
+        mcall   4, <325,56>, , [btn_text]
 
 ; draw status text
         mov     ecx, [sc.work_text]
-        or      ecx, 80000000h
-        mcall   4, <10,65>, , [status]
+        or      ecx, 90000000h
+        mcall   4, <10,70>, , [status]
 
 ; draw editbox
         edit_boxes_set_sys_color edit1, editboxes_end, sc
@@ -364,7 +364,7 @@ fileopen        dd 7
                 dd 0                    ; reserved
                 db "/sys/@open", 0      ; path
 
-edit1           edit_box 299, 5, 10, 0xffffff, 0x0000ff, 0x0080ff, 0x000000, 0x8000, URLMAXLEN, url, mouse_dd, ed_focus+ed_always_focus, 0, 0
+edit1           edit_box 400, 5, 10, 0xffffff, 0x0000ff, 0x0080ff, 0x000000, 0x90000000, URLMAXLEN, url, mouse_dd, ed_focus+ed_always_focus, 0, 0
 editboxes_end:
 
 identifier      dd 0
@@ -401,7 +401,7 @@ OpenDialog_data:
 .x_start                dw 200  ; Window X position
 .y:
 .y_size                 dw 320  ; Window y size
-.y_start                dw 120  ; Window Y position
+.y_start                dw 140  ; Window Y position
 
 communication_area_name         db 'FFFFFFFF_open_dialog',0
 open_dialog_path                db '/sys/File Managers/opendial',0
@@ -414,7 +414,7 @@ db      0
 pb:
 .value          dd 0
 .left           dd 5
-.top            dd 35
+.top            dd 45
 .width          dd 300
 .height         dd 16
 .style          dd 1

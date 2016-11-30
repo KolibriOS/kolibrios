@@ -570,7 +570,7 @@ void draw_window(void)
 	if (he == 0)
 		he = WND_H;
 
-	mybox.top = he - 45;
+	mybox.top = he - 50;
 	mybox.width = wi - mybox.left - 80;
 
 	kos_WindowRedrawStatus(1);
