@@ -366,13 +366,13 @@ extfsExtentFree:
         jc      .fail
         pop     eax
         push    ecx ebx edx
-        add     [ebp+EXTFS.superblock.blocksFree], ecx
         mov     edi, eax
         shr     edi, 5
         shl     edi, 2
         add     edi, ebx
-        and     eax, 31
         mov     edx, ecx
+        and     eax, 31
+        jz      .aligned
         mov     ecx, 32
         sub     ecx, eax
         sub     edx, ecx
@@ -387,15 +387,15 @@ extfsExtentFree:
         shl     ebx, cl
         not     ebx
         and     [edi], ebx
-        mov     ecx, edx
-        jecxz   @f
-        shr     ecx, 5
         add     edi, 4
         xor     eax, eax
+.aligned:
+        mov     ecx, edx
+        shr     ecx, 5
         rep stosd
         and     edx, 31
+        jz      @f
         mov     ecx, edx
-        jecxz   @f
         not     eax
         shl     eax, cl
         and     [edi], eax
@@ -404,6 +404,7 @@ extfsExtentFree:
         call    extfsWriteBlock
         pop     ecx
         mov     eax, ecx
+        add     [ebp+EXTFS.superblock.blocksFree], ecx
         mul     [ebp+EXTFS.sectorsPerBlock]
         sub     [ebp+EXTFS.inodeBuffer.sectorsUsed], eax
 .ret:
@@ -429,6 +430,8 @@ extfsInodeAlloc:
 .test_block_group:
         call    extfsReadDescriptor
         jc      .fail
+        cmp     [ebx+BGDESCR.blocksFree], 0
+        jz      .next
         dec     [ebx+BGDESCR.inodesFree]
         js      .next
         mov     edx, [ebx+BGDESCR.inodeBitmap]
@@ -522,22 +525,23 @@ extfsExtentAlloc:
         not     eax
         shr     eax, cl
         shl     eax, cl
-        bsf     ebx, eax
-        jnz     @f
         mov     ebx, 32
-@@:
+        bsf     ebx, eax
         sub     ebx, ecx
         mov     eax, [esp+16]
         cmp     ebx, eax
         jc      @f
         mov     ebx, eax
 @@:
-        xchg    ebx, ecx
         or      eax, -1
+        cmp     ebx, 32
+        jz      @f
+        xchg    ebx, ecx
         shl     eax, cl
         not     eax
         xchg    ebx, ecx
         shl     eax, cl
+@@:
         or      [esi], eax
         sub     esi, [ebp+EXTFS.tempBlockBuffer]
         shl     esi, 3
@@ -589,8 +593,9 @@ extfsExtentAlloc:
         or      eax, -1
         rep stosd
         mov     ecx, ebx
-        shl     eax, cl
-        not     eax
+        neg     ecx
+        add     ecx, 32
+        shr     eax, cl
         or      [edi], eax
 .done:
         pop     eax
@@ -821,6 +826,13 @@ writeInode:
         add     eax, 978307200
         mov     [edi+INODE.inodeModified], eax
         pop     eax
+        cmp     eax, ROOT_INODE
+        jnz     @f
+        movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
+        mov     esi, edi
+        mov     edi, [ebp+EXTFS.rootInodeBuffer]
+        rep movsb
+@@:
         call    getInodeLocation
         jc      .ret
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
@@ -829,10 +841,10 @@ writeInode:
         test    eax, eax
         jnz     @f
         mov     eax, ecx
-        mov     esi, edi
         movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
         mov     edi, edx
         add     edi, ebx
+        mov     esi, [esp]
         rep movsb
         call    fs_write32_sys
 .ret:
