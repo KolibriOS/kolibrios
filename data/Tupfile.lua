@@ -206,7 +206,6 @@ extra_files = {
  {"kolibrios/grafx2/skins/", "common/media/grafx2/skins/*"},
  {"kolibrios/grafx2/", "common/media/grafx2/*"},
  {"kolibrios/drivers/drvinf.ini", "common/drivers/drvinf.ini"},
- {"kolibrios/drivers/drvinst.kex", PROGS .. "/cmm/drvinst/drvinst.com"},
  {"kolibrios/drivers/ahci/", "common/drivers/ahci/*"},
  {"kolibrios/drivers/atikms/", "common/drivers/atikms/*"},
  {"kolibrios/drivers/i915/", "common/drivers/i915/*"},
@@ -235,7 +234,6 @@ extra_files = {
  {"kolibrios/media/zsea/buttons/buttons.png", PROGS .. "/media/zsea/buttons.png"},
  {"kolibrios/res/skins/", "../skins/authors.txt"},
  {"kolibrios/settings/app_plus.ini", "common/settings/app_plus.ini"},
- {"kolibrios/utils/appearance", PROGS .. "/cmm/appearance/appearance.com"},
  {"kolibrios/utils/calcplus", PROGS .. "/other/calcplus/calcplus"},
  {"kolibrios/utils/fNav/", "common/File Managers/fNav/*"},
 }
@@ -535,23 +533,28 @@ end -- tup.getconfig('NO_NASM') ~= 'full'
 -- Programs that require C-- to compile.
 if tup.getconfig('NO_CMM') ~= 'full' then
 tup.append_table(img_files, {
+ {"APP_PLUS", PROGS .. "/cmm/app_plus/app_plus.com"},
+ {"TXTREAD", PROGS .. "/cmm/txtread/txtread.com"},
+ {"TMPDISK", PROGS .. "/cmm/tmpdisk/tmpdisk.com"},
+ {"GAME_CENTER", PROGS .. "/cmm/software_widget/software_widget.com"},
+ {"SYSPANEL", PROGS .. "/cmm/software_widget/software_widget.com"},
  {"DEVELOP/CLIPVIEW", PROGS .. "/cmm/clipview/clipview.com"},
  {"File Managers/EOLITE", PROGS .. "/cmm/eolite/Eolite.com"},
  {"FONT_VIEWER", PROGS .. "/cmm/kf_font_viewer/font_viewer.com"},
  {"GAMES/CLICKS", PROGS .. "/games/clicks/trunk/clicks.com"},
  {"DEVELOP/DIFF", PROGS .. "/cmm/diff/diff.com"},
  {"GAMES/FindNumbers", PROGS .. "/games/FindNumbers/trunk/FindNumbers"},
- {"GAMES/flood-it", PROGS .. "/games/flood-it/trunk/flood-it.com"},
+ {"GAMES/FLOOD-IT", PROGS .. "/games/flood-it/trunk/flood-it.com"},
  {"GAMES/MINE", PROGS .. "/games/mine/trunk/mine"},
  {"MEDIA/PIXIE/PIXIE", PROGS .. "/cmm/pixie/pixie.com"},
  {"MOUSECFG", PROGS .. "/cmm/mousecfg/mousecfg.com"},
  {"NETWORK/WEBVIEW", PROGS .. "/cmm/browser/WebView.com"},
  {"PANELS_CFG", PROGS .. "/cmm/panels_cfg/panels_cfg.com"},
- {"txtread", PROGS .. "/cmm/txtread/txtread.com"},
- {"TMPDISK", PROGS .. "/cmm/tmpdisk/tmpdisk.com"},
- {"GAME_CENTER", PROGS .. "/cmm/software_widget/software_widget.com"},
- {"SYSPANEL", PROGS .. "/cmm/software_widget/software_widget.com"},
- {"APP_PLUS", PROGS .. "/cmm/app_plus/app_plus.com"},
+})
+tup.append_table(extra_files, {
+ {"kolibrios/drivers/DRVINST.KEX", PROGS .. "/cmm/drvinst/drvinst.com"},
+ {"kolibrios/utils/DICTY.KEX", PROGS .. "/cmm/dicty/dicty.com"},
+ {"kolibrios/utils/appearance.kex", PROGS .. "/cmm/appearance/appearance.com"},
 })
 end -- tup.getconfig('NO_CMM') ~= 'full'
 
