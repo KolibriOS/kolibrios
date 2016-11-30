@@ -16,16 +16,14 @@ Contains:
     close_outfile()
     get_extattribs()
     do_wild()
+    set_direc_attribs()
+    defer_dir_attribs()
 
 todo
-	russian filenames in arh
-	datetime restore
-	overwrite request not in stderr	
-    
-	too many open files error EMFILE when DEBUG - error in newlib open. fixed
-	-d dir error.  Use -ddir or -d dir/
-	
-	release, sizing removing old compression methods or zlib
+	datetime restore for dirs. buf in unzip - crash when SET_DIR_ATTRIB
+fixed partial
+	-d dir error (only in unicode).  Use -ddir or -d dir/
+	russian filenames in arhives. Now works cp866 version, unicode need to fix @kos32.c:470 (GETPATH)
 */
 
 #define FATTR   FS_HIDDEN+FS_SYSTEM+FS_SUBDIR
@@ -37,6 +35,12 @@ todo
 
 // Siemargl fork of Kolibri system API
 #include "kos32sys1.h"
+
+static ZCONST char CannotSetItemTimestamps[] =
+  "warning:  cannot set modif./access times for %s\n          %s\n";
+static ZCONST char CannotGetTimestamps[] =
+  " (warning) cannot get fileinfo for %s\n";
+
 
 /********************************************************************************************************************/
 /***  Function version()  */
@@ -154,7 +158,7 @@ int mapname(__G__ renamed)
     else
         ++cp;                   /* point to start of last component of path */
 
-fprintf(stderr, "mapname start[%s]\n", cp);
+    Trace((stderr, "mapname start[%s]\n", cp));
 
 /*---------------------------------------------------------------------------
     Begin main loop through characters in filename.
@@ -323,7 +327,7 @@ fprintf(stderr, "mapname start[%s]\n", cp);
     checkdir(__G__ pathcomp, APPEND_NAME);  /* returns 1 if truncated: care? */
     checkdir(__G__ G.filename, GETPATH);
 
-fprintf(stderr, "mapname end[%s]\n", pathcomp);
+    Trace((stderr, "mapname end[%s]\n", pathcomp));
 
 
     return error;
@@ -465,14 +469,24 @@ int checkdir(__G__ pathcomp, flag)
     GETPATH:  copy full path to the string pointed at by pathcomp, and free
     G.buildpath.
   ---------------------------------------------------------------------------*/
-
     if (FUNCTION == GETPATH) {
+// kolibri UTf8 support
+#ifdef UNICODE_SUPPORT
         if(G.native_is_utf8)
         {
-            pathcomp[0] = 3;  // kolibri utf8 flag
-            strcpy(pathcomp + 1, G.buildpath);
+			if (G.buildpath[0] == '/')
+			{
+	            pathcomp[0] = '/';  // kolibri utf8 flag
+    	        pathcomp[1] = 3;  // kolibri utf8 flag
+        	    strcpy(pathcomp + 2, G.buildpath);
+			} else
+			{
+    	        pathcomp[0] = 3;  // kolibri utf8 flag
+        	    strcpy(pathcomp + 1, G.buildpath);
+			}
         }
             else
+#endif // UNICODE_SUPPORT
         strcpy(pathcomp, G.buildpath);
         Trace((stderr, "getting and freeing path [%s]\n",
           FnFilter1(pathcomp)));
@@ -622,59 +636,24 @@ int checkdir(__G__ pathcomp, flag)
 
 } /* end function checkdir() */
 
-static int get_extattribs OF((__GPRO__ iztimes *pzt, ulg z_uidgid[2]));
 
-static int get_extattribs(__G__ pzt, z_uidgid)
-    __GDEF
-    iztimes *pzt;
-    ulg z_uidgid[2];
+/****************************/
+/* Function dos_to_kolibri_time() */
+/****************************/
+void dos_to_kolibri_time(unsigned dos_datetime, unsigned *fdat, unsigned *ftim)
 {
-/*---------------------------------------------------------------------------
-    Convert from MSDOS-format local time and date to Unix-format 32-bit GMT
-    time:  adjust base year from 1980 to 1970, do usual conversions from
-    yy/mm/dd hh:mm:ss to elapsed seconds, and account for timezone and day-
-    light savings time differences.  If we have a Unix extra field, however,
-    we're laughing:  both mtime and atime are ours.  On the other hand, we
-    then have to check for restoration of UID/GID.
-  ---------------------------------------------------------------------------*/
-    int have_uidgid_flg;
-    unsigned eb_izux_flg;
+    char* pc = (char*)fdat;
+    *pc++ = (dos_datetime >> 16) & 0x1F; // day
+    *pc++ = (dos_datetime >> 21) & 0xF; // month
+    short *ps = (short*)pc;
+    *ps = (dos_datetime >> 25) + 1980; // year
+    *ftim = 0;
+    pc = (char*)ftim;
+    *pc++ = (dos_datetime & 0x1F) << 1; // sec
+    *pc++ = (dos_datetime >> 5) & 0x3F; // min
+    *pc = (dos_datetime >> 11) & 0x1F; // hour
+} /* end function dos_to_kolibri_time() */
 
-    eb_izux_flg = 0; // kos32
-/*
-    (G.extra_field ? ef_scan_for_izux(G.extra_field,
-                   G.lrec.extra_field_length, 0, G.lrec.last_mod_dos_datetime,
-#ifdef IZ_CHECK_TZ
-                   (G.tz_is_valid ? pzt : NULL),
-#else
-                   pzt,
-#endif
-                   z_uidgid) : 0);
-*/
-    if (eb_izux_flg & EB_UT_FL_MTIME) {
-        TTrace((stderr, "\nget_extattribs:  Unix e.f. modif. time = %ld\n",
-          pzt->mtime));
-    } else {
-        pzt->mtime = dos_to_unix_time(G.lrec.last_mod_dos_datetime);
-    }
-    if (eb_izux_flg & EB_UT_FL_ATIME) {
-        TTrace((stderr, "get_extattribs:  Unix e.f. access time = %ld\n",
-          pzt->atime));
-    } else {
-        pzt->atime = pzt->mtime;
-        TTrace((stderr, "\nget_extattribs:  modification/access times = %ld\n",
-          pzt->mtime));
-    }
-
-    /* if -X option was specified and we have UID/GID info, restore it */
-    have_uidgid_flg =
-#ifdef RESTORE_UIDGID
-            (uO.X_flag && (eb_izux_flg & EB_UX2_VALID));
-#else
-            0;
-#endif
-    return have_uidgid_flg;
-}
 
 /****************************/
 /* Function close_outfile() */
@@ -683,159 +662,36 @@ static int get_extattribs(__G__ pzt, z_uidgid)
 void close_outfile(__G)    /* GRR: change to return PK-style warning level */
     __GDEF
 {
-    union {
-        iztimes t3;             /* mtime, atime, ctime */
-        ztimbuf t2;             /* modtime, actime */
-    } zt;
-    ulg z_uidgid[2];
-    int have_uidgid_flg;
-
-    have_uidgid_flg = get_extattribs(__G__ &(zt.t3), z_uidgid);
-
-/*---------------------------------------------------------------------------
-    If symbolic links are supported, allocate storage for a symlink control
-    structure, put the uncompressed "data" and other required info in it, and
-    add the structure to the "deferred symlinks" chain.  Since we know it's a
-    symbolic link to start with, we shouldn't have to worry about overflowing
-    unsigned ints with unsigned longs.
-  ---------------------------------------------------------------------------*/
-
-#ifdef SYMLINKS
-    if (G.symlnk) {
-        extent ucsize = (extent)G.lrec.ucsize;
-# ifdef SET_SYMLINK_ATTRIBS
-        extent attribsize = sizeof(unsigned) +
-                            (have_uidgid_flg ? sizeof(z_uidgid) : 0);
-# else
-        extent attribsize = 0;
-# endif
-        /* size of the symlink entry is the sum of
-         *  (struct size (includes 1st '\0') + 1 additional trailing '\0'),
-         *  system specific attribute data size (might be 0),
-         *  and the lengths of name and link target.
-         */
-        extent slnk_entrysize = (sizeof(slinkentry) + 1) + attribsize +
-                                ucsize + strlen(G.filename);
-        slinkentry *slnk_entry;
-
-        if (slnk_entrysize < ucsize) {
-            Info(slide, 0x201, ((char *)slide,
-              "warning:  symbolic link (%s) failed: mem alloc overflow\n",
-              FnFilter1(G.filename)));
-            fclose(G.outfile);
-            return;
-        }
-
-        if ((slnk_entry = (slinkentry *)malloc(slnk_entrysize)) == NULL) {
-            Info(slide, 0x201, ((char *)slide,
-              "warning:  symbolic link (%s) failed: no mem\n",
-              FnFilter1(G.filename)));
-            fclose(G.outfile);
-            return;
-        }
-        slnk_entry->next = NULL;
-        slnk_entry->targetlen = ucsize;
-        slnk_entry->attriblen = attribsize;
-# ifdef SET_SYMLINK_ATTRIBS
-        memcpy(slnk_entry->buf, &(G.pInfo->file_attr),
-               sizeof(unsigned));
-        if (have_uidgid_flg)
-            memcpy(slnk_entry->buf + 4, z_uidgid, sizeof(z_uidgid));
-# endif
-        slnk_entry->target = slnk_entry->buf + slnk_entry->attriblen;
-        slnk_entry->fname = slnk_entry->target + ucsize + 1;
-        strcpy(slnk_entry->fname, G.filename);
-
-        /* move back to the start of the file to re-read the "link data" */
-        rewind(G.outfile);
-
-        if (fread(slnk_entry->target, 1, ucsize, G.outfile) != ucsize)
-        {
-            Info(slide, 0x201, ((char *)slide,
-              "warning:  symbolic link (%s) failed\n",
-              FnFilter1(G.filename)));
-            free(slnk_entry);
-            fclose(G.outfile);
-            return;
-        }
-        fclose(G.outfile);                  /* close "link" file for good... */
-        slnk_entry->target[ucsize] = '\0';
-        if (QCOND2)
-            Info(slide, 0, ((char *)slide, "-> %s ",
-              FnFilter1(slnk_entry->target)));
-        /* add this symlink record to the list of deferred symlinks */
-        if (G.slink_last != NULL)
-            G.slink_last->next = slnk_entry;
-        else
-            G.slink_head = slnk_entry;
-        G.slink_last = slnk_entry;
-        return;
-    }
-#endif /* SYMLINKS */
-
-#ifdef QLZIP
-    if (G.extra_field) {
-        static void qlfix OF((__GPRO__ uch *ef_ptr, unsigned ef_len));
-
-        qlfix(__G__ G.extra_field, G.lrec.extra_field_length);
-    }
-#endif
 
 #if (defined(NO_FCHOWN))
     fclose(G.outfile);
     Trace((stdout, "File (%s) closed\n", FnFilter1(G.filename)));
 #endif
 
-// kos. add set file datetime ?
-#ifndef KOS32
-    /* if -X option was specified and we have UID/GID info, restore it */
-    if (have_uidgid_flg
-        /* check that both uid and gid values fit into their data sizes */
-        && ((ulg)(uid_t)(z_uidgid[0]) == z_uidgid[0])
-        && ((ulg)(gid_t)(z_uidgid[1]) == z_uidgid[1])) {
-        TTrace((stderr, "close_outfile:  restoring Unix UID/GID info\n"));
-#if (defined(NO_FCHOWN))
-        if (chown(G.filename, (uid_t)z_uidgid[0], (gid_t)z_uidgid[1]))
-#else
-        if (fchown(fileno(G.outfile), (uid_t)z_uidgid[0], (gid_t)z_uidgid[1]))
-#endif
-        {
-            if (uO.qflag)
-                Info(slide, 0x201, ((char *)slide, CannotSetItemUidGid,
-                  z_uidgid[0], z_uidgid[1], FnFilter1(G.filename),
-                  strerror(errno)));
-            else
-                Info(slide, 0x201, ((char *)slide, CannotSetUidGid,
-                  z_uidgid[0], z_uidgid[1], strerror(errno)));
-        }
-    }
-
-#if (!defined(NO_FCHOWN) && defined(NO_FCHMOD))
-    fclose(G.outfile);
-#endif
-
-#if (!defined(NO_FCHOWN) && !defined(NO_FCHMOD))
-/*---------------------------------------------------------------------------
-    Change the file permissions from default ones to those stored in the
-    zipfile.
-  ---------------------------------------------------------------------------*/
-
-    if (fchmod(fileno(G.outfile), filtattr(__G__ G.pInfo->file_attr)))
-        perror("fchmod (file attributes) error");
-
-    fclose(G.outfile);
-#endif /* !NO_FCHOWN && !NO_FCHMOD */
-
     /* skip restoring time stamps on user's request */
     if (uO.D_flag <= 1) {
         /* set the file's access and modification times */
-        if (utime(G.filename, &(zt.t2))) {
-            if (uO.qflag)
-                Info(slide, 0x201, ((char *)slide, CannotSetItemTimestamps,
+        /* siemargl: dont using extra fields */
+        unsigned ftim, fdat;
+        dos_to_kolibri_time(G.lrec.last_mod_dos_datetime, &fdat, &ftim);
+
+        fileinfo_t  finfo;
+        if (get_fileinfo(G.filename, &finfo))
+        {
+            Info(slide, 1, ((char *)slide, CannotGetTimestamps,
+                  FnFilter1(G.filename)));
+            return;
+        }
+        finfo.flags = G.pInfo->file_attr;
+        finfo.cr_time = finfo.acc_time = finfo.mod_time = ftim;
+        finfo.cr_date = finfo.acc_date = finfo.mod_date = fdat;
+        Trace((stderr, "Trying to set fileinfo[%s] date %X, time %X, attr %X\n", FnFilter1(G.filename), fdat, ftim, finfo.flags));
+
+        if (set_fileinfo(G.filename, &finfo))
+        {
+            Info(slide, 1, ((char *)slide, CannotSetItemTimestamps,
                   FnFilter1(G.filename), strerror(errno)));
-            else
-                Info(slide, 0x201, ((char *)slide, CannotSetTimestamps,
-                  strerror(errno)));
+            return;
         }
     }
 
@@ -851,7 +707,6 @@ void close_outfile(__G)    /* GRR: change to return PK-style warning level */
 #endif
 #endif /* NO_FCHOWN || NO_FCHMOD */
 
-#endif // 0
 
 } /* end function close_outfile() */
 
@@ -977,4 +832,49 @@ char *do_wild(__G__ wildspec)
     return (char *)NULL;
 
 } /* end function do_wild() */
+
+#ifdef SET_DIR_ATTRIB
+int defer_dir_attribs(__G__ pd)
+    __GDEF
+    direntry **pd;
+{
+    // do nothing
+    return PK_OK;
+}
+
+int set_direc_attribs(__G__ d)
+    __GDEF
+    direntry *d;
+{
+    /* skip restoring time stamps on user's request */
+    if (uO.D_flag <= 0) {
+        /* set the file's access and modification times */
+        /* siemargl: dont using extra fields */
+        unsigned ftim, fdat;
+        dos_to_kolibri_time(G.lrec.last_mod_dos_datetime, &fdat, &ftim);
+
+        fileinfo_t  finfo;
+        if (get_fileinfo(G.filename, &finfo))
+        {
+            Info(slide, 1, ((char *)slide, CannotGetTimestamps,
+                  FnFilter1(G.filename)));
+            return PK_WARN;
+        }
+        finfo.flags = G.pInfo->file_attr;
+        finfo.cr_time = finfo.acc_time = finfo.mod_time = ftim;
+        finfo.cr_date = finfo.acc_date = finfo.mod_date = fdat;
+        Trace((stderr, "Trying to set dirinfo[%s] date %X, time %X, attr %X\n", FnFilter1(G.filename), fdat, ftim, finfo.flags));
+
+        if (set_fileinfo(G.filename, &finfo))
+        {
+            Info(slide, 1, ((char *)slide, CannotSetItemTimestamps,
+                  FnFilter1(G.filename), strerror(errno)));
+            return PK_WARN;
+        }
+    }
+
+    return PK_OK;
+} /* end function set_direc_attribs() */
+
+#endif // SET_DIR_ATTRIB
 

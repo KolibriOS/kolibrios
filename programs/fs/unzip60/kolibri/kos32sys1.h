@@ -8,6 +8,7 @@
 
 //#include <newlib.h>
 //#include <stdint.h>
+//#include <sys/kos_io.h>
 #include <stddef.h>
 #include <stdarg.h>
 typedef unsigned int uint32_t;
@@ -141,7 +142,7 @@ typedef struct __attribute__((packed)) file_op_t
     char*       args;
     uint32_t    res1, res2;
     char        zero;
-    char*       app_name  
+    char*       app_name
 #ifdef __TINYC__
   __attribute__((packed))
 #endif
@@ -862,7 +863,7 @@ static inline
 int font_size(int color)
 /// decode font size in pixels from color as SysFn4
 /// returns (width, hight)
-{            
+{
     int font = color >> 24;
     int font_multipl = (font & 7) + 1;
 	int width_sym, hight_sym;

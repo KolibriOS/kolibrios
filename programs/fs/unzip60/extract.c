@@ -653,6 +653,8 @@ int extract_or_test_files(__G)    /* return PK-type error code */
   ---------------------------------------------------------------------------*/
 
 #ifdef SET_DIR_ATTRIB
+//Trace((stderr, "SET_DIR_ATTRIB[%d] \n", num_dirs));  hmm, too big number
+
     if (num_dirs > 0) {
         sorted_dirlist = (direntry **)malloc(num_dirs*sizeof(direntry *));
         if (sorted_dirlist == (direntry **)NULL) {
@@ -1483,12 +1485,12 @@ startover:
 #else /* !WINDLL */
                 extent fnlen;
 reprompt:
-                Info(slide, 0x81, ((char *)slide,
+                Info(slide, 0x81 & 0xFE, ((char *)slide,
                   LoadFarString(ReplaceQuery),
                   FnFilter1(G.filename)));
                 if (fgets(G.answerbuf, sizeof(G.answerbuf), stdin)
                     == (char *)NULL) {
-                    Info(slide, 1, ((char *)slide,
+                    Info(slide, 1 & 0xFE, ((char *)slide,
                       LoadFarString(AssumeNone)));
                     *G.answerbuf = 'N';
                     if (!error_in_archive)
@@ -1498,7 +1500,7 @@ reprompt:
                     case 'r':
                     case 'R':
                         do {
-                            Info(slide, 0x81, ((char *)slide,
+                            Info(slide, 0x81 & 0xFE, ((char *)slide,
                               LoadFarString(NewNameQuery)));
                             fgets(G.filename, FILNAMSIZ, stdin);
                             /* usually get \n here:  better check for it */
@@ -1538,7 +1540,7 @@ reprompt:
                         fnlen = strlen(G.answerbuf);
                         if (lastchar(G.answerbuf, fnlen) == '\n')
                             G.answerbuf[--fnlen] = '\0';
-                        Info(slide, 1, ((char *)slide,
+                        Info(slide, 1 & 0xFE, ((char *)slide,
                           LoadFarString(InvalidResponse), G.answerbuf));
                         goto reprompt;   /* yet another goto? */
                 } /* end switch (*answerbuf) */

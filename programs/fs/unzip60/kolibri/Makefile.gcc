@@ -18,9 +18,9 @@
 #               emulation environment.
 SDK_DIR:= $(abspath ../../../contrib/sdk)
 NOASM=1
-CC_CPU_OPT=-march=pentium 
+CC_CPU_OPT=-march=pentium
 #USEZLIB=1
-#DEBUG=1
+DEBUG=1
 
 
 ### Optional section
@@ -97,7 +97,7 @@ CC_ENVIR_OPT = -DWIN32 -DFORCE_WIN32_OVER_UNIX
 endif
 endif
 ### kolibri specific
-INCLUDES= -I $(SDK_DIR)/sources/newlib/libc/include -I $(SDK_DIR)/sources/zlib 
+INCLUDES= -I $(SDK_DIR)/sources/newlib/libc/include -I $(SDK_DIR)/sources/zlib
 LIBPATH = -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib
 
 CC_ENVIR_OPT = -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -DKOS32 \
@@ -164,7 +164,7 @@ LD_SPECIFIC_OPT = -o $@ -static -S -nostdlib -T $(SDK_DIR)/sources/newlib/app-dy
 ifdef USEZLIB
 LD_RELEASE_LIBS = -lz -lgcc -ldll -lc.dll -lapp
 else
-LD_RELEASE_LIBS = -lgcc -ldll -lc.dll -lapp
+LD_RELEASE_LIBS = -lgcc -ldll -lc.dll
 endif
 LD_DEBUG_LIBS = $(LD_RELEASE_LIBS)
 
@@ -260,7 +260,7 @@ OBJB4 = unreducb$(OBJ) unshrnkb$(OBJ) zipinfob$(OBJ)
 ###OBJBS = win32b$(OBJ) win32i64b$(OBJ) ntb$(OBJ)
 OBJB  = $(OBJLIB) $(OBJB1) $(OBJB2) $(OBJB3) $(OBJB4) $(OBJA) $(OBJBS)
 
-UNZIP_H = unzip.h unzpriv.h globals.h 
+UNZIP_H = unzip.h unzpriv.h globals.h
 ###win32/w32cfg.h
 ###WINDLL_H = windll/windll.h windll/structs.h windll/decs.h
 ###DLLDEF = windll/windllgcc.def
@@ -335,7 +335,7 @@ zipinfo$(OBJ):  zipinfo.c $(UNZIP_H)
 crc_i386$(OBJ): crc_i386.S
 
 
-kos32$(OBJ): kolibri/kos32.c kolibri/kos32sys1.h 
+kos32$(OBJ): kolibri/kos32.c kolibri/kos32sys1.h
 	$(CC) $(CFLAGS) $(CVER) $(GENFLAGS) -I. $<
 dirent$(OBJ): kolibri/dirent.c kolibri/kos32sys1.h
 	$(CC) $(CFLAGS) $(CVER) $(GENFLAGS) -I. $<

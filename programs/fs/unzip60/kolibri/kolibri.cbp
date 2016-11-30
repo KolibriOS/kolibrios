@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="kolibri" />
+		<Option makefile="kolibri/Makefile.gcc" />
+		<Option makefile_is_custom="1" />
+		<Option execution_dir="D:/VSProjects/_kos/programs/fs/unzip60/" />
+		<Option pch_mode="2" />
+		<Option compiler="kolibri_gnu_gcc_compiler" />
+		<MakeCommands>
+			<Build command="$make -f $makefile " />
+			<CompileFile command="$make -f $makefile $file" />
+			<Clean command="$make -f $makefile clean$target" />
+			<DistClean command="$make -f $makefile distclean$target" />
+			<AskRebuildNeeded command="$make -q -f $makefile $target" />
+			<SilentBuild command="$make -f $makefile  &gt; $(CMD_NULL)" />
+		</MakeCommands>
+		<Build>
+			<Target title="Debug">
+				<Option output="Debug/kolibri" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Debug/" />
+				<Option type="1" />
+				<Option compiler="kolibri_gnu_gcc_compiler" />
+				<MakeCommands>
+					<Build command="$make -f $makefile" />
+					<CompileFile command="$make -f $makefile $file" />
+					<Clean command="$make -f $makefile clean" />
+					<DistClean command="$make -f $makefile distclean$target" />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile &gt; $(CMD_NULL)" />
+				</MakeCommands>
+			</Target>
+			<Target title="Release">
+				<Option output="Release/kolibri" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Release/" />
+				<Option type="1" />
+				<Option compiler="kolibri_gnu_gcc_compiler" />
+			</Target>
+		</Build>
+		<Unit filename="../acorn/riscos.h" />
+		<Unit filename="../acorn/swiven.h" />
+		<Unit filename="../acorn/swiven.s" />
+		<Unit filename="../amiga/amiga.h" />
+		<Unit filename="../amiga/z-stat.h" />
+		<Unit filename="../aosvs/aosvs.h" />
+		<Unit filename="../api.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../apihelp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../atheos/athcfg.h" />
+		<Unit filename="../atheos/atheos.h" />
+		<Unit filename="../beos/beocfg.h" />
+		<Unit filename="../beos/beos.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../beos/beos.h" />
+		<Unit filename="../beos/beosmain.cpp" />
+		<Unit filename="../cmsmvs/vmmvs.h" />
+		<Unit filename="../cmsmvs/vmstat.h" />
+		<Unit filename="../consts.h" />
+		<Unit filename="../crc32.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../crc32.h" />
+		<Unit filename="../crc_i386.S" />
+		<Unit filename="../crypt.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../crypt.h" />
+		<Unit filename="../ebcdic.h" />
+		<Unit filename="../envargs.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../explode.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../extract.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../fileio.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../flexos/flexos.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../flexos/flxcfg.h" />
+		<Unit filename="../funzip.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../gbloffs.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../globals.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../globals.h" />
+		<Unit filename="../human68k/crc_68.s" />
+		<Unit filename="../human68k/flate.s" />
+		<Unit filename="../inflate.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../inflate.h" />
+		<Unit filename="../list.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../macos/UnZp.h" />
+		<Unit filename="../macos/UnZpLib.h" />
+		<Unit filename="../macos/UnZpSFX.h" />
+		<Unit filename="../macos/UnZpSx.h" />
+		<Unit filename="../macos/source/charmap.h" />
+		<Unit filename="../macos/source/getenv.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../macos/source/helpers.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../macos/source/helpers.h" />
+		<Unit filename="../macos/source/macbin3.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../macos/source/macbin3.h" />
+		<Unit filename="../macos/source/maccfg.h" />
+		<Unit filename="../macos/source/macdir.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../macos/source/macdir.h" />
+		<Unit filename="../macos/source/macos.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../macos/source/macscreen.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../macos/source/macstat.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../macos/source/macstat.h" />
+		<Unit filename="../macos/source/macstuff.h" />
+		<Unit filename="../macos/source/mactime.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../macos/source/mactime.h" />
+		<Unit filename="../macos/source/macunzip.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../macos/source/pathname.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../macos/source/pathname.h" />
+		<Unit filename="../macos/source/sxunzip.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../match.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../msdos/crc_i86.asm" />
+		<Unit filename="../msdos/doscfg.h" />
+		<Unit filename="../msdos/msdos.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../netware/netware.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../netware/nlmcfg.h" />
+		<Unit filename="../os2/os2.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../os2/os2acl.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../os2/os2acl.h" />
+		<Unit filename="../os2/os2cfg.h" />
+		<Unit filename="../os2/os2data.h" />
+		<Unit filename="../os2/rexxapi.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../os2/rexxhelp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../process.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../qdos/callstub.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../qdos/config.S" />
+		<Unit filename="../qdos/crc68.s" />
+		<Unit filename="../qdos/izqdos.h" />
+		<Unit filename="../qdos/makesfx.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../qdos/qdos.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../tandem/tandem.h" />
+		<Unit filename="../tandem/tannsk.h" />
+		<Unit filename="../theos/charconv.h" />
+		<Unit filename="../theos/oldstat.h" />
+		<Unit filename="../theos/stat.h" />
+		<Unit filename="../theos/thscfg.h" />
+		<Unit filename="../timezone.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../timezone.h" />
+		<Unit filename="../tops20/tops20.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../ttyio.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../ttyio.h" />
+		<Unit filename="../ubz2err.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../unix/unix.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../unix/unxcfg.h" />
+		<Unit filename="../unreduce.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../unshrink.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../unzip.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../unzip.h" />
+		<Unit filename="../unzipstb.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../unzpriv.h" />
+		<Unit filename="../unzvers.h" />
+		<Unit filename="../vms/bzlib.h" />
+		<Unit filename="../vms/infback9.h" />
+		<Unit filename="../vms/unixio_gcc.h" />
+		<Unit filename="../vms/unixlib_gcc.h" />
+		<Unit filename="../vms/vms.h" />
+		<Unit filename="../vms/vmscfg.h" />
+		<Unit filename="../vms/vmsdefs.h" />
+		<Unit filename="../vms/zlib.h" />
+		<Unit filename="../win32/crc_i386.asm" />
+		<Unit filename="../win32/crc_i386.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../win32/crc_lcc.asm" />
+		<Unit filename="../win32/nt.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../win32/nt.h" />
+		<Unit filename="../win32/rsxntwin.h" />
+		<Unit filename="../win32/w32cfg.h" />
+		<Unit filename="../win32/win32.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../win32/win32i64.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../win32/winapp.rc">
+			<Option compilerVar="WINDRES" />
+		</Unit>
+		<Unit filename="../wince/inc/conio.h" />
+		<Unit filename="../wince/inc/errno.h" />
+		<Unit filename="../wince/inc/locale.h" />
+		<Unit filename="../wince/inc/signal.h" />
+		<Unit filename="../wince/inc/stdio.h" />
+		<Unit filename="../wince/intrface.cpp" />
+		<Unit filename="../wince/intrface.h" />
+		<Unit filename="../wince/punzip.h" />
+		<Unit filename="../wince/punzip.rc">
+			<Option compilerVar="WINDRES" />
+		</Unit>
+		<Unit filename="../wince/resource.h" />
+		<Unit filename="../wince/wcecfg.h" />
+		<Unit filename="../wince/wcemain.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../wince/wince.cpp" />
+		<Unit filename="../wince/wince.h" />
+		<Unit filename="../wince/winmain.cpp" />
+		<Unit filename="../wince/winmain.h" />
+		<Unit filename="../windll/decs.h" />
+		<Unit filename="../windll/guisfx/dialog.h" />
+		<Unit filename="../windll/guisfx/sfxwiz.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../windll/guisfx/sfxwiz.rc">
+			<Option compilerVar="WINDRES" />
+		</Unit>
+		<Unit filename="../windll/structs.h" />
+		<Unit filename="../windll/uzexampl.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../windll/uzexampl.h" />
+		<Unit filename="../windll/windll.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../windll/windll.h" />
+		<Unit filename="../windll/windll.rc">
+			<Option compilerVar="WINDRES" />
+		</Unit>
+		<Unit filename="../zip.h" />
+		<Unit filename="../zipinfo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="Makefile.gcc" />
+		<Unit filename="config.h" />
+		<Unit filename="dirent.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="kos32.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="kos32sys1.h" />
+		<Unit filename="main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

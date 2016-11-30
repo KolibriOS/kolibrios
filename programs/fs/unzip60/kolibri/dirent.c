@@ -3,7 +3,7 @@ Kolibri OS port for gcc 5.4
 
 Started by Siemargl @Nov 2016
 
-Contains realisation of directory handling functions:
+Contains realization of directory handling functions:
     mkdir()
     closedir()
     opendir()
@@ -20,6 +20,7 @@ Contains realisation of directory handling functions:
 #include <sys/stat.h>
 #include <assert.h>
 #include "kos32sys1.h"
+#include "sys/kos_io.h"
 
 /* defined in newlib headers
 int	_EXFUN(mkdir,( const char *_path, mode_t __mode ));
@@ -147,7 +148,7 @@ int	mkdir(const char *_path, mode_t m)
     char   namebuffer[1050]; // need for save data after di!!!
     struct fs_dirinfo *di = (struct fs_dirinfo *)namebuffer;
 
-debug_board_printf("mkdir start (%s)\n", _path);
+//debug_board_printf("mkdir start (%s)\n", _path);
     memset(di, 0, sizeof(struct fs_dirinfo));
     //di.ppath = (char*)_path;  // dont work with 70.9
     strcpy(di->path, _path);
@@ -159,7 +160,7 @@ debug_board_printf("mkdir start (%s)\n", _path);
         return -1;
     }
 
-debug_board_printf("mkdir end (%s)\n", _path);
+//debug_board_printf("mkdir end (%s)\n", _path);
     return 0;
 }
 
@@ -230,3 +231,27 @@ void* read_folderdata(char* name)
     return retdir;
 }
 */
+
+// while not in newlib
+int set_fileinfo(const char *path, fileinfo_t *info)
+{
+    int retval;
+
+    __asm__ __volatile__ (
+    "pushl $0 \n\t"
+    "pushl $0 \n\t"
+    "movl %1, 1(%%esp) \n\t"
+    "pushl %%ebx \n\t"
+    "pushl $0 \n\t"
+    "pushl $0 \n\t"
+    "pushl $0 \n\t"
+    "pushl $6 \n\t"
+    "movl %%esp, %%ebx \n\t"
+    "movl $70, %%eax \n\t"
+    "int $0x40 \n\t"
+    "addl $28, %%esp \n\t"
+    :"=a" (retval)
+    :"r" (path), "b" (info));
+   return retval;
+};
+

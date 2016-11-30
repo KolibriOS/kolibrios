@@ -1214,7 +1214,7 @@ static int disk_error(__G)
     __GDEF
 {
     /* OK to use slide[] here because this file is finished regardless */
-    Info(slide, 0x4a1, ((char *)slide, LoadFarString(DiskFullQuery),
+    Info(slide, 0x4a1 & 0xFE, ((char *)slide, LoadFarString(DiskFullQuery),
       FnFilter1(G.filename)));
 
 #ifndef WINDLL
