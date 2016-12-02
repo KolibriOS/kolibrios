@@ -32,8 +32,7 @@ pushad
 			jge .end_f
 			movzx eax,byte[ecx+png_unknown_chunk.location]
 			and eax,[where]
-			cmp eax,0
-			je .end0 ;if (..!=0)
+			jz .end0 ;if (..!=0)
 			; If per-chunk unknown chunk handling is enabled use it, otherwise
 			; just write the chunks the application has set.
 
@@ -108,8 +107,7 @@ pushad
 
 	mov eax,[edi+png_struct.mode]
 	and eax,PNG_WROTE_INFO_BEFORE_PLTE
-	cmp eax,0
-	jne .end_f ;if (..==0)
+	jnz .end_f ;if (..==0)
 
 		; Write PNG signature
 		stdcall png_write_sig, edi
@@ -117,8 +115,7 @@ pushad
 if PNG_MNG_FEATURES_SUPPORTED eq 1
 		mov eax,[edi+png_struct.mode]
 		and eax,PNG_HAVE_PNG_SIGNATURE
-		cmp eax,0
-		je @f
+		jz @f
 		cmp dword[edi+png_struct.mng_features_permitted],0
 		je @f ;if(..!=0 && ..!=0)
 			png_warning edi, 'MNG features are not allowed in a PNG datastream'
@@ -161,16 +158,13 @@ if PNG_GAMMA_SUPPORTED eq 1
 if PNG_WRITE_gAMA_SUPPORTED eq 1
 	movzx eax,word[esi+png_info_def.colorspace.flags]
 	and eax,PNG_COLORSPACE_INVALID
-	cmp eax,0
-	jne @f
+	jnz @f
 	movzx eax,word[esi+png_info_def.colorspace.flags]
 	and eax,PNG_COLORSPACE_FROM_gAMA
-	cmp eax,0
-	je @f
+	jz @f
 	mov eax,[esi+png_info_def.valid]
 	and eax,PNG_INFO_gAMA
-	cmp eax,0
-	je @f ;if (..==0 && ..!=0 && ..!=0)
+	jz @f ;if (..==0 && ..!=0 && ..!=0)
 		stdcall png_write_gAMA_fixed, edi, [esi+png_info_def.colorspace.gamma]
 	@@:
 end if
@@ -183,17 +177,14 @@ if PNG_COLORSPACE_SUPPORTED eq 1
 if PNG_WRITE_iCCP_SUPPORTED eq 1
 	movzx eax,word[esi+png_info_def.colorspace.flags]
 	and eax,PNG_COLORSPACE_INVALID
-	cmp eax,0
-	jne .end0
+	jnz .end0
 	mov eax,[esi+png_info_def.valid]
 	and eax,PNG_INFO_iCCP
-	cmp eax,0
-	je .end0 ;if (..==0 && ..!=0)
+	jz .end0 ;if (..==0 && ..!=0)
 if PNG_WRITE_sRGB_SUPPORTED eq 1
 		mov eax,[esi+png_info_def.valid]
 		and eax,PNG_INFO_sRGB
-		cmp eax,0
-		je @f ;if (..!=0)
+		jz @f ;if (..!=0)
 			png_app_warning edi, 'profile matches sRGB but writing iCCP instead'
 		@@:
 end if
@@ -208,12 +199,10 @@ end if
 if PNG_WRITE_sRGB_SUPPORTED eq 1
 	movzx eax,word[esi+png_info_def.colorspace.flags]
 	and eax,PNG_COLORSPACE_INVALID
-	cmp eax,0
-	jne .end1
+	jnz .end1
 	mov eax,[esi+png_info_def.valid]
 	and eax,PNG_INFO_sRGB
-	cmp eax,0
-	je .end1 ;if (..==0 && ..!=0)
+	jz .end1 ;if (..==0 && ..!=0)
 		movzx eax,word[esi+png_info_def.colorspace.rendering_intent]
 		stdcall png_write_sRGB, edi, eax
 	.end1:
@@ -223,8 +212,7 @@ end if ;COLORSPACE
 if PNG_WRITE_sBIT_SUPPORTED eq 1
 	mov eax,[esi+png_info_def.valid]
 	and eax,PNG_INFO_sBIT
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		movzx eax,byte[esi+png_info_def.color_type]
 		push eax
 		mov eax,esi
@@ -237,16 +225,13 @@ if PNG_COLORSPACE_SUPPORTED eq 1
 if PNG_WRITE_cHRM_SUPPORTED eq 1
 	movzx eax,word[esi+png_info_def.colorspace.flags]
 	and eax,PNG_COLORSPACE_INVALID
-	cmp eax,0
-	jne @f
+	jnz @f
 	movzx eax,word[esi+png_info_def.colorspace.flags]
 	and eax,PNG_COLORSPACE_FROM_cHRM
-	cmp eax,0
-	je @f
+	jz @f
 	mov eax,[esi+png_info_def.valid]
 	and eax,PNG_INFO_cHRM
-	cmp eax,0
-	je @f ;if (..==0 && ..!=0 && ..!=0)
+	jz @f ;if (..==0 && ..!=0 && ..!=0)
 		stdcall png_write_cHRM_fixed, edi, [esi+png_info_def.colorspace.end_points_xy]
 	@@:
 end if
@@ -281,8 +266,7 @@ pushad
 
 	mov eax,[esi+png_info_def.valid]
 	and eax,PNG_INFO_PLTE
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		movzx eax,word[esi+png_info_def.num_palette]
 		stdcall png_write_PLTE, edi, [esi+png_info_def.palette], eax
 		jmp .end_0
@@ -296,8 +280,7 @@ pushad
 if PNG_WRITE_tRNS_SUPPORTED eq 1
 	mov eax,[esi+png_info_def.valid]
 	and eax,PNG_INFO_tRNS
-	cmp eax,0
-	je .end_1 ;if (..!=0)
+	jz .end_1 ;if (..!=0)
 if PNG_WRITE_INVERT_ALPHA_SUPPORTED eq 1
 	; Invert the alpha channel (in tRNS)
 ;      if ((png_ptr->transformations & PNG_INVERT_ALPHA) != 0 &&
@@ -324,8 +307,7 @@ end if
 if PNG_WRITE_bKGD_SUPPORTED eq 1
 	mov eax,[esi+png_info_def.valid]
 	and eax,PNG_INFO_bKGD
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		mov eax,esi
 		add eax,png_info_def.background
 		movzx ebx,byte[esi+png_info_def.color_type]
@@ -336,8 +318,7 @@ end if
 if PNG_WRITE_hIST_SUPPORTED eq 1
 	mov eax,[esi+png_info_def.valid]
 	and eax,PNG_INFO_hIST
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		movzx ebx,word[esi+png_info_def.num_palette]
 		stdcall png_write_hIST, edi, [esi+png_info_def.hist], ebx
 	@@:
@@ -346,8 +327,7 @@ end if
 if PNG_WRITE_oFFs_SUPPORTED eq 1
 	mov eax,[esi+png_info_def.valid]
 	and eax,PNG_INFO_oFFs
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		movzx ebx,byte[esi+png_info_def.offset_unit_type]
 		stdcall png_write_oFFs, edi, [esi+png_info_def.x_offset], [esi+png_info_def.y_offset], ebx
 	@@:
@@ -356,8 +336,7 @@ end if
 if PNG_WRITE_pCAL_SUPPORTED eq 1
 	mov eax,[esi+png_info_def.valid]
 	and eax,PNG_INFO_pCAL
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		movzx ebx,byte[esi+png_info_def.pcal_type]
 		movzx ecx,byte[esi+png_info_def.pcal_nparams]
 		stdcall png_write_pCAL, edi, [esi+png_info_def.pcal_purpose], [esi+png_info_def.pcal_X0], [esi+png_info_def.pcal_X1], ebx, ecx, [esi+png_info_def.pcal_units], [esi+png_info_def.pcal_params]
@@ -367,8 +346,7 @@ end if
 if PNG_WRITE_sCAL_SUPPORTED eq 1
 	mov eax,[esi+png_info_def.valid]
 	and eax,PNG_INFO_sCAL
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		movzx ebx,byte[esi+png_info_def.scal_unit]
 		stdcall png_write_sCAL_s, edi, ebx, [esi+png_info_def.scal_s_width], [esi+png_info_def.scal_s_height]
 	@@:
@@ -377,8 +355,7 @@ end if ;sCAL
 if PNG_WRITE_pHYs_SUPPORTED eq 1
 	mov eax,[esi+png_info_def.valid]
 	and eax,PNG_INFO_pHYs
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		movzx ebx,byte[esi+png_info_def.phys_unit_type]
 		stdcall png_write_pHYs, edi, [esi+png_info_def.x_pixels_per_unit], [esi+png_info_def.y_pixels_per_unit], ebx
 	@@:
@@ -387,8 +364,7 @@ end if ;pHYs
 if PNG_WRITE_tIME_SUPPORTED eq 1
 	mov eax,[esi+png_info_def.valid]
 	and eax,PNG_INFO_tIME
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		mov eax,esi
 		add eax,png_info_def.mod_time
 		stdcall png_write_tIME, edi, eax
@@ -399,8 +375,7 @@ end if ;tIME
 if PNG_WRITE_sPLT_SUPPORTED eq 1
 	mov eax,[esi+png_info_def.valid]
 	and eax,PNG_INFO_sPLT
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		mov eax,[esi+png_info_def.splt_palettes]
 		mov ecx,[esi+png_info_def.splt_palettes_num]
 		cmp ecx,1
@@ -495,8 +470,7 @@ pushad
 
 	mov eax,[edi+png_struct.mode]
 	and eax,PNG_HAVE_IDAT
-	cmp eax,0
-	jne @f ;if (..==0)
+	jnz @f ;if (..==0)
 		png_error edi, 'No IDATs written into file'
 	@@:
 
@@ -519,12 +493,10 @@ if PNG_WRITE_tIME_SUPPORTED eq 1
 		; Check to see if user has supplied a time chunk
 		mov eax,[esi+png_info_def.valid]
 		and eax,PNG_INFO_tIME
-		cmp eax,0
-		je @f
+		jz @f
 		mov eax,[edi+png_struct.mode]
 		and eax,PNG_WROTE_tIME
-		cmp eax,0
-		jne @f ;if (..!=0 && ..==0)
+		jnz @f ;if (..!=0 && ..==0)
 			mov eax,esi
 			add eax,png_info_def.mod_time
 			stdcall png_write_tIME, edi, eax
@@ -652,8 +624,7 @@ proc png_convert_from_time_t, ptime:dword, ttime:dword
 endp
 
 ; Initialize png_ptr structure, and allocate any memory needed
-;png_structp (charp user_png_ver, voidp error_ptr,
-;    png_error_ptr error_fn, png_error_ptr warn_fn)
+;png_structp (charp user_png_ver, voidp error_ptr, png_error_ptr error_fn, png_error_ptr warn_fn)
 align 4
 proc png_create_write_struct, user_png_ver:dword, error_ptr:dword, error_fn:dword, warn_fn:dword
 if PNG_USER_MEM_SUPPORTED eq 1
@@ -801,8 +772,7 @@ proc png_do_write_intrapixel uses eax ebx ecx edx edi, row_info:dword, row:dword
 	mov ebx,[row_info]
 	movzx eax,byte[ebx+png_row_info.color_type]
 	and eax,PNG_COLOR_MASK_COLOR
-	cmp eax,0
-	je .end_f ;if (..!=0)
+	jz .end_f ;if (..!=0)
 		;edx = bytes_per_pixel
 		mov ecx,[ebx+png_row_info.width] ;ecx = row_width
 		cmp byte[ebx+png_row_info.bit_depth],8 ;if (..==8)
@@ -904,8 +874,7 @@ png_debug1 1, 'in png_write_row (row %u)',[edi+png_struct.row_number]
 	; Make sure we wrote the header info
 	mov eax,[edi+png_struct.mode]
 	and eax,PNG_WROTE_INFO_BEFORE_PLTE
-	cmp eax,0
-	jne @f ;if(..==0)
+	jnz @f ;if(..==0)
 		png_error edi, 'png_write_info was never called before png_write_row'
 	@@:
 
@@ -913,8 +882,7 @@ png_debug1 1, 'in png_write_row (row %u)',[edi+png_struct.row_number]
 if (PNG_WRITE_INVERT_SUPPORTED eq 0) & (PNG_READ_INVERT_SUPPORTED eq 1)
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_INVERT_MONO
-	cmp eax,0
-	je @f ;if(..!=0)
+	jz @f ;if(..!=0)
 		png_warning edi, 'PNG_WRITE_INVERT_SUPPORTED is not defined'
 	@@:
 end if
@@ -922,8 +890,7 @@ end if
 if (PNG_WRITE_FILLER_SUPPORTED eq 0) & (PNG_READ_FILLER_SUPPORTED eq 1)
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_FILLER
-	cmp eax,0
-	je @f ;if(..!=0)
+	jz @f ;if(..!=0)
 		png_warning edi, 'PNG_WRITE_FILLER_SUPPORTED is not defined'
 	@@:
 end if
@@ -931,8 +898,7 @@ end if
 if (PNG_WRITE_PACKSWAP_SUPPORTED eq 0) & (PNG_READ_PACKSWAP_SUPPORTED eq 1)
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_PACKSWAP
-	cmp eax,0
-	je @f ;if(..!=0)
+	jz @f ;if(..!=0)
 		png_warning edi, 'PNG_WRITE_PACKSWAP_SUPPORTED is not defined'
 	@@:
 end if
@@ -940,8 +906,7 @@ end if
 if (PNG_WRITE_PACK_SUPPORTED eq 0) & (PNG_READ_PACK_SUPPORTED eq 1)
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_PACK
-	cmp eax,0
-	je @f ;if(..!=0)
+	jz @f ;if(..!=0)
 		png_warning edi, 'PNG_WRITE_PACK_SUPPORTED is not defined'
 	@@:
 end if
@@ -949,8 +914,7 @@ end if
 if (PNG_WRITE_SHIFT_SUPPORTED eq 0) & (PNG_READ_SHIFT_SUPPORTED eq 1)
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_SHIFT
-	cmp eax,0
-	je @f ;if(..!=0)
+	jz @f ;if(..!=0)
 		png_warning edi, 'PNG_WRITE_SHIFT_SUPPORTED is not defined'
 	@@:
 end if
@@ -958,8 +922,7 @@ end if
 if (PNG_WRITE_BGR_SUPPORTED eq 0) & (PNG_READ_BGR_SUPPORTED eq 1)
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_BGR
-	cmp eax,0
-	je @f ;if(..!=0)
+	jz @f ;if(..!=0)
 		png_warning edi, 'PNG_WRITE_BGR_SUPPORTED is not defined'
 	@@:
 end if
@@ -967,8 +930,7 @@ end if
 if (PNG_WRITE_SWAP_SUPPORTED eq 0) & (PNG_READ_SWAP_SUPPORTED eq 1)
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_SWAP_BYTES
-	cmp eax,0
-	je @f ;if(..!=0)
+	jz @f ;if(..!=0)
 		png_warning edi, 'PNG_WRITE_SWAP_SUPPORTED is not defined'
 	@@:
 end if
@@ -982,14 +944,12 @@ if PNG_WRITE_INTERLACING_SUPPORTED eq 1
 	je .end1
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_INTERLACE
-	cmp eax,0
-	je .end1 ;if(..!=0 && ..!=0)
+	jz .end1 ;if(..!=0 && ..!=0)
 		cmp byte[edi+png_struct.pass],0
 		jne @f
 			mov eax,[edi+png_struct.row_number]
 			and eax,0x07
-			cmp eax,0
-			je .end1 ;if (..!=0)
+			jz .end1 ;if (..!=0)
 				stdcall png_write_finish_row, edi
 				jmp .end_f
 		@@:
@@ -997,8 +957,7 @@ if PNG_WRITE_INTERLACING_SUPPORTED eq 1
 		jne @f
 			mov eax,[edi+png_struct.row_number]
 			and eax,0x07
-			cmp eax,0
-			jne .end2
+			jnz .end2
 			cmp dword[edi+png_struct.width],5
 			jge .end1 ;if (..!=0 || ..<..)
 			.end2:
@@ -1018,8 +977,7 @@ if PNG_WRITE_INTERLACING_SUPPORTED eq 1
 		jne @f
 			mov eax,[edi+png_struct.row_number]
 			and eax,0x03
-			cmp eax,0
-			jne .end3
+			jnz .end3
 			cmp dword[edi+png_struct.width],3
 			jge .end1 ;if (..!=0 || ..<..)
 			.end3:
@@ -1039,8 +997,7 @@ if PNG_WRITE_INTERLACING_SUPPORTED eq 1
 		jne @f
 			mov eax,[edi+png_struct.row_number]
 			and eax,0x01
-			cmp eax,0
-			jne .end4
+			jnz .end4
 			cmp dword[edi+png_struct.width],2
 			jge .end1 ;if (..!=0 || ..<..)
 			.end4:
@@ -1051,8 +1008,7 @@ if PNG_WRITE_INTERLACING_SUPPORTED eq 1
 		jne .end1
 			mov eax,[edi+png_struct.row_number]
 			and eax,0x01
-			cmp eax,0
-			jne .end1 ;if (..==0)
+			jnz .end1 ;if (..==0)
 				stdcall png_write_finish_row, edi
 				jmp .end_f
 	.end1:
@@ -1104,8 +1060,7 @@ if PNG_WRITE_INTERLACING_SUPPORTED eq 1
 	jge @f
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_INTERLACE
-	cmp eax,0
-	je @f ;if (.. && ..<.. && ..!=0)
+	jz @f ;if (.. && ..<.. && ..!=0)
 		movzx eax,byte[edi+png_struct.pass]
 		push eax
 		mov eax,[edi+png_struct.row_buf]
@@ -1151,8 +1106,7 @@ if PNG_MNG_FEATURES_SUPPORTED eq 1
 
 	mov eax,[edi+png_struct.mng_features_permitted]
 	and eax,PNG_FLAG_MNG_FILTER_64
-	cmp eax,0
-	je @f
+	jz @f
 	cmp byte[edi+png_struct.filter_type],PNG_INTRAPIXEL_DIFFERENCING
 	jne @f ;if (..!=0 && ..==..)
 		; Intrapixel differencing
@@ -1240,8 +1194,7 @@ proc png_write_destroy uses eax edi, png_ptr:dword
 	mov edi,[png_ptr]
 	mov eax,[edi+png_struct.flags]
 	and eax,PNG_FLAG_ZSTREAM_INITIALIZED
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		mov eax,edi
 		add eax,png_struct.zstream
 		stdcall [deflateEnd], eax
@@ -1408,8 +1361,7 @@ if PNG_WRITE_FILTER_SUPPORTED eq 1
 			@@:
 			mov eax,[filters]
 			and eax,PNG_FILTER_UP or PNG_FILTER_AVG or PNG_FILTER_PAETH
-			cmp eax,0
-			je @f
+			jz @f
 			cmp dword[edi+png_struct.prev_row],0
 			je @f;if (..!=0 && ..==0)
 				; This is the error case, however it is benign - the previous row
@@ -1423,26 +1375,22 @@ if PNG_WRITE_FILTER_SUPPORTED eq 1
 
 			mov eax,[filters]
 			and eax,PNG_FILTER_SUB
-			cmp eax,0
-			je @f ;if (..)
+			jz @f ;if (..)
 				inc ebx
 			@@:
 			mov eax,[filters]
 			and eax,PNG_FILTER_UP
-			cmp eax,0
-			je @f ;if (..)
+			jz @f ;if (..)
 				inc ebx
 			@@:
 			mov eax,[filters]
 			and eax,PNG_FILTER_AVG
-			cmp eax,0
-			je @f ;if (..)
+			jz @f ;if (..)
 				inc ebx
 			@@:
 			mov eax,[filters]
 			and eax,PNG_FILTER_PAETH
-			cmp eax,0
-			je @f ;if (..)
+			jz @f ;if (..)
 				inc ebx
 			@@:
 			; Allocate needed row buffers if they have not already been
@@ -1741,8 +1689,7 @@ pushad
 	; Invert monochrome pixels
 	mov eax,[transforms]
 	and eax,PNG_TRANSFORM_INVERT_MONO
-	cmp eax,0
-	je @f ;if(..!=0)
+	jz @f ;if(..!=0)
 if PNG_WRITE_INVERT_SUPPORTED eq 1
 		stdcall png_set_invert_mono,edi
 else
@@ -1756,13 +1703,11 @@ end if
 
 	mov eax,[transforms]
 	and eax,PNG_TRANSFORM_SHIFT
-	cmp eax,0
-	je @f ;if(..!=0)
+	jz @f ;if(..!=0)
 if PNG_WRITE_SHIFT_SUPPORTED eq 1
 	mov eax,[esi+png_info_def.valid]
 	and eax,PNG_INFO_sBIT
-	cmp eax,0
-	je @f ;if(..!=0)
+	jz @f ;if(..!=0)
 		mov eax,esi
 		add eax,png_info_def.sig_bit
 		stdcall png_set_shift, edi, eax
@@ -1775,8 +1720,7 @@ end if
 	; Pack pixels into bytes
 	mov eax,[transforms]
 	and eax,PNG_TRANSFORM_PACKING
-	cmp eax,0
-	je @f ;if(..!=0)
+	jz @f ;if(..!=0)
 if PNG_WRITE_PACK_SUPPORTED eq 1
 		stdcall png_set_packing, edi
 else
@@ -1788,8 +1732,7 @@ end if
 	; Swap location of alpha bytes from ARGB to RGBA
 	mov eax,[transforms]
 	and eax,PNG_TRANSFORM_SWAP_ALPHA
-	cmp eax,0
-	je @f ;if(..!=0)
+	jz @f ;if(..!=0)
 if PNG_WRITE_SWAP_ALPHA_SUPPORTED eq 1
 		stdcall png_set_swap_alpha, edi
 else
@@ -1804,16 +1747,13 @@ end if
 
 	mov eax,[transforms]
 	and eax,PNG_TRANSFORM_STRIP_FILLER_AFTER or PNG_TRANSFORM_STRIP_FILLER_BEFORE
-	cmp eax,0
-	je .end_0 ;if(..!=0)
+	jz .end_0 ;if(..!=0)
 if PNG_WRITE_FILLER_SUPPORTED eq 1
 	and eax,PNG_TRANSFORM_STRIP_FILLER_AFTER
-	cmp eax,0
-	je .end_1 ;if(..!=0)
+	jz .end_1 ;if(..!=0)
 		mov eax,[transforms]
 		and eax,PNG_TRANSFORM_STRIP_FILLER_BEFORE
-		cmp eax,0
-		je @f ;if(..!=0)
+		jz @f ;if(..!=0)
             cStr ,'PNG_TRANSFORM_STRIP_FILLER: BEFORE+AFTER not supported'
 			stdcall png_app_error edi, eax
 		@@:
@@ -1832,8 +1772,7 @@ end if
 	; Flip BGR pixels to RGB
 	mov eax,[transforms]
 	and eax,PNG_TRANSFORM_BGR
-	cmp eax,0
-	je @f ;if(..!=0)
+	jz @f ;if(..!=0)
 if PNG_WRITE_BGR_SUPPORTED eq 1
 		stdcall png_set_bgr, edi
 else
@@ -1845,8 +1784,7 @@ end if
 	; Swap bytes of 16-bit files to most significant byte first
 	mov eax,[transforms]
 	and eax,PNG_TRANSFORM_SWAP_ENDIAN
-	cmp eax,0
-	je @f ;if(..!=0)
+	jz @f ;if(..!=0)
 if PNG_WRITE_SWAP_SUPPORTED eq 1
 		stdcall png_set_swap, edi
 else
@@ -1858,8 +1796,7 @@ end if
 	; Swap bits of 1-bit, 2-bit, 4-bit packed pixel formats
 	mov eax,[transforms]
 	and eax,PNG_TRANSFORM_PACKSWAP
-	cmp eax,0
-	je @f ;if(..!=0)
+	jz @f ;if(..!=0)
 if PNG_WRITE_PACKSWAP_SUPPORTED eq 1
 		stdcall png_set_packswap, edi
 else
@@ -1871,8 +1808,7 @@ end if
 	; Invert the alpha channel from opacity to transparency
 	mov eax,[transforms]
 	and eax,PNG_TRANSFORM_INVERT_ALPHA
-	cmp eax,0
-	je @f ;if(..!=0)
+	jz @f ;if(..!=0)
 if PNG_WRITE_INVERT_ALPHA_SUPPORTED eq 1
 		stdcall png_set_invert_alpha, edi
 else
@@ -2001,11 +1937,10 @@ endl
 	mov ecx,[ebx+png_image_write_control.local_row]
 	mov [output_row],ecx
 
+	mov ecx,1
 	mov eax,[edx+png_image.format]
 	and eax,PNG_FORMAT_FLAG_COLOR
-	mov ecx,1
-	cmp eax,0
-	je @f
+	jz @f
 		mov ecx,3
 	@@:
 	mov [channels],ecx
@@ -2014,13 +1949,11 @@ endl
 
 	mov eax,[edx+png_image.format]
 	and eax,PNG_FORMAT_FLAG_ALPHA
-	cmp eax,0
-	je .end0 ;if (..!=0)
+	jz .end0 ;if (..!=0)
 if PNG_SIMPLIFIED_WRITE_AFIRST_SUPPORTED eq 1
 	mov eax,[edx+png_image.format]
 	and eax,PNG_FORMAT_FLAG_AFIRST
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		mov dword[aindex],-1
 		inc dword[input_row] ;To point to the first component
 		inc dword[output_row]
@@ -2197,11 +2130,10 @@ endl
 	mov ecx,[ebx+png_image_write_control.local_row]
 	mov [output_row],ecx
 
+	mov ecx,1
 	mov eax,[edx+png_image.format]
 	and eax,PNG_FORMAT_FLAG_COLOR
-	mov ecx,1
-	cmp eax,0
-	je @f
+	jz @f
 		mov ecx,3
 	@@:
 	mov [channels],ecx
@@ -2210,8 +2142,7 @@ endl
 
 	mov eax,[edx+png_image.format]
 	and eax,PNG_FORMAT_FLAG_ALPHA
-	cmp eax,0
-	je .end0 ;if (..!=0)
+	jz .end0 ;if (..!=0)
 ;      bytep row_end;
 ;      int aindex;
 
@@ -2345,12 +2276,10 @@ pushad
 if (PNG_FORMAT_BGR_SUPPORTED eq 1) & (PNG_SIMPLIFIED_WRITE_AFIRST_SUPPORTED eq 1)
 	mov eax,ecx
 	and eax,PNG_FORMAT_FLAG_AFIRST
-	cmp eax,0
-	je @f
+	jz @f
 	mov eax,ecx
 	and eax,PNG_FORMAT_FLAG_ALPHA
-	cmp eax,0
-	je @f
+	jz @f
 		mov dword[afirst],-1
 	@@:
 end if
@@ -2358,8 +2287,7 @@ end if
 if PNG_FORMAT_BGR_SUPPORTED eq 1
 	mov eax,ecx
 	and eax,PNG_FORMAT_FLAG_BGR
-	cmp eax,0
-	je @f
+	jz @f
 		mov dword[bgr],2
 	@@:
 end if
@@ -2604,8 +2532,7 @@ end if
 	; Set the required transforms then write the rows in the correct order.
 	mov eax,[format]
 	and eax,PNG_FORMAT_FLAG_COLORMAP
-	cmp eax,0
-	je .end4 ;if (..!=0)
+	jz .end4 ;if (..!=0)
 		cmp dword[edx+png_image_write_control.colormap],0
 		je .end6
 		mov eax,[ebx+png_image.colormap_entries]
@@ -2639,14 +2566,12 @@ end if
 		xor ecx,ecx
 		mov eax,[format]
 		and eax,PNG_FORMAT_FLAG_COLOR
-		cmp eax,0
-		je @f
+		jz @f
 			or ecx,PNG_COLOR_MASK_COLOR
 		@@:
 		mov eax,[format]
 		and eax,PNG_FORMAT_FLAG_ALPHA
-		cmp eax,0
-		je @f
+		jz @f
 			or ecx,PNG_COLOR_MASK_ALPHA
 		@@:
 		mov eax,8
@@ -2670,8 +2595,7 @@ end if
 
 		mov eax,[ebx+png_image.flags]
 		and eax,PNG_IMAGE_FLAG_COLORSPACE_NOT_sRGB
-		cmp eax,0
-		jne @f ;if (..==0)
+		jnz @f ;if (..==0)
 			stdcall png_set_cHRM_fixed, edi, esi,\
 			31270, 32900,\ ;white
 			64000, 33000,\ ;red
@@ -2681,8 +2605,7 @@ end if
 	@@:
 	mov eax,[ebx+png_image.flags]
 	and eax,PNG_IMAGE_FLAG_COLORSPACE_NOT_sRGB
-	cmp eax,0
-	jne @f ;else if (..==0)
+	jnz @f ;else if (..==0)
 		stdcall png_set_sRGB, edi, esi, PNG_sRGB_INTENT_PERCEPTUAL
 		jmp .end7
 	@@: ;else
@@ -2710,14 +2633,12 @@ end if
 if PNG_SIMPLIFIED_WRITE_BGR_SUPPORTED eq 1
 	mov eax,[format]
 	and eax,PNG_FORMAT_FLAG_BGR
-	cmp eax,0
-	je .end12 ;if (..!=0)
+	jz .end12 ;if (..!=0)
 		cmp dword[colormap],0
 		jne @f
 		mov eax,[format]
 		and eax,PNG_FORMAT_FLAG_COLOR
-		cmp eax,0
-		je @f ;if (..==0 && ..!=0)
+		jz @f ;if (..==0 && ..!=0)
 			stdcall png_set_bgr, edi
 		@@:
 		and dword[format], not PNG_FORMAT_FLAG_BGR
@@ -2727,14 +2648,12 @@ end if
 if PNG_SIMPLIFIED_WRITE_AFIRST_SUPPORTED eq 1
 	mov eax,[format]
 	and eax,PNG_FORMAT_FLAG_AFIRST
-	cmp eax,0
-	je .end13 ;if (..!=0)
+	jz .end13 ;if (..!=0)
 		cmp dword[colormap],0
 		jne @f
 		mov eax,[format]
 		and eax,PNG_FORMAT_FLAG_ALPHA
-		cmp eax,0
-		je @f ;if (..==0 && ..!=0)
+		jz @f ;if (..==0 && ..!=0)
 			stdcall png_set_swap_alpha, edi
 		@@:
 		and dword[format], not PNG_FORMAT_FLAG_AFIRST
@@ -2754,8 +2673,7 @@ end if
 	; That should have handled all (both) the transforms.
 	mov eax,[format]
 	and eax, not (PNG_FORMAT_FLAG_COLOR or PNG_FORMAT_FLAG_LINEAR or PNG_FORMAT_FLAG_ALPHA or PNG_FORMAT_FLAG_COLORMAP)
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		png_error edi, 'png_write_image: unsupported transformation'
 	@@:
 
@@ -2783,8 +2701,7 @@ end if
 	; Apply 'fast' options if the flag is set.
 	mov eax,[ebx+png_image.flags]
 	and eax,PNG_IMAGE_FLAG_FAST
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		stdcall png_set_filter, edi, PNG_FILTER_TYPE_BASE, PNG_NO_FILTERS
 		; NOTE: determined by experiment using pngstest, this reflects some
 		; balance between the time to write the image once and the time to read
@@ -2919,12 +2836,19 @@ align 4
 	mov esi,[width]
 	imul esi,3 ;esi - rowbytes
 
+	inc esi
 	mov edi,[png_ptr]
 	cmp dword[edi+png_struct.try_row],0
 	jne @f ;if (..==0)
 		stdcall png_malloc, edi, esi
 		mov [edi+png_struct.try_row],eax
 	@@:
+	cmp dword[edi+png_struct.tst_row],0
+	jne @f ;if (..==0)
+		stdcall png_malloc, edi, esi
+		mov [edi+png_struct.tst_row],eax
+	@@:
+	dec esi
 
 	mov edi,[buf_f]
 	add edi,[len]
@@ -2956,22 +2880,47 @@ align 4
 		pop esi
 		mov [mins],ebx
 
-		push edx edi esi
+		push edx
 		mov edx,[png_ptr]
+		mov eax,[edx+png_struct.tst_row]
+		mov byte[eax],0 ;not filter
+
 		; Up filter
 		stdcall png_setup_up_row, edx, esi, [mins]
 		cmp eax,[mins]
-		jge .end2 ;if (..<..)
-;png_debug 3, '(Up)'
-			mov eax,[edx+png_struct.try_row]
-			cmp eax,0
-			je .end2 ;if (..!=0)
-				mov ecx,esi
-				inc ecx
-				mov esi,eax
-				rep movsb ;copy row
-		.end2:
-		pop esi edi edx
+		jge @f ;if (..<..)
+			mov [mins],eax
+			stdcall copy_row_mins, [edx+png_struct.tst_row], [edx+png_struct.try_row]
+		@@:
+
+		; Find out how many bytes offset each pixel is
+		movzx ebx,byte[edx+png_struct.pixel_depth]
+		add ebx,7
+		shr ebx,3
+
+		; Sub filter
+		stdcall png_setup_sub_row, edx, ebx, esi, [mins]
+		cmp eax,[mins]
+		jge @f ;if (..<..)
+			mov [mins],eax
+			stdcall copy_row_mins, [edx+png_struct.tst_row], [edx+png_struct.try_row]
+		@@:
+
+		; Avg filter
+		stdcall png_setup_avg_row, edx, ebx, esi, [mins]
+		cmp eax,[mins]
+		jge @f ;if (..<..)
+			mov [mins],eax
+			stdcall copy_row_mins, [edx+png_struct.tst_row], [edx+png_struct.try_row]
+		@@:
+
+		; Copy best row
+		mov eax,[edx+png_struct.tst_row]
+		cmp byte[eax],0
+		je @f
+			stdcall copy_row_mins, edi, [edx+png_struct.tst_row]
+		@@:
+		pop edx
 		jmp .cycle3
 	.cycle3end:
 	
@@ -3011,8 +2960,7 @@ end if
 if PNG_WRITE_OPTIMIZE_CMF_SUPPORTED eq 1
 	mov eax,[edi+png_struct.mode]
 	and eax,PNG_HAVE_IDAT
-	cmp eax,0
-	jne @f
+	jnz @f
 	cmp byte[edi+png_struct.compression_type],PNG_COMPRESSION_TYPE_BASE
 	jne @f ;if (..==0 && ..==..)
 		stdcall png_image_size, edi
@@ -3034,11 +2982,28 @@ end if
 		stdcall png_free, edi, [edi+png_struct.try_row]
 		mov dword[edi+png_struct.try_row],0
 	@@:
+	cmp dword[edi+png_struct.tst_row],0
+	je @f ;if (..!=0)
+		stdcall png_free, edi, [edi+png_struct.tst_row]
+		mov dword[edi+png_struct.tst_row],0
+	@@:
 	stdcall png_free, edi, [m1]
 .end0:
 	stdcall png_free, edi, [buf_f]
 .end_f:
 popad
+	ret
+endp
+
+;input:
+; esi - rowbytes
+align 4
+proc copy_row_mins uses edi esi, dest:dword, sour:dword
+	mov ecx,esi
+	inc ecx
+	mov edi,[dest]
+	mov esi,[sour]
+	rep movsb
 	ret
 endp
 

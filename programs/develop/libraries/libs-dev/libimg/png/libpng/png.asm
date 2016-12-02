@@ -173,8 +173,7 @@ endl
 	@@: ;else ;critical
 		mov eax,[edi+png_struct.flags]
 		and eax,PNG_FLAG_CRC_CRITICAL_IGNORE
-		cmp eax,0
-		je .end0 ;if (..!=0)
+		jz .end0 ;if (..!=0)
 			mov dword[need_crc],0
 	.end0:
 
@@ -552,8 +551,7 @@ if PNG_tRNS_SUPPORTED eq 1
 	mov eax,[mask]
 	and eax,PNG_FREE_TRNS
 	and eax,[esi+png_info_def.free_me]
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		and dword[esi+png_info_def.valid], not PNG_INFO_tRNS
 		stdcall png_free, edi, [esi+png_info_def.trans_alpha]
 		mov dword[esi+png_info_def.trans_alpha],0
@@ -566,8 +564,7 @@ if PNG_sCAL_SUPPORTED eq 1
 	mov eax,[mask]
 	and eax,PNG_FREE_SCAL
 	and eax,[esi+png_info_def.free_me]
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		stdcall png_free, edi, [esi+png_info_def.scal_s_width]
 		stdcall png_free, edi, [esi+png_info_def.scal_s_height]
 		mov dword[esi+png_info_def.scal_s_width],0
@@ -604,8 +601,7 @@ if PNG_iCCP_SUPPORTED eq 1
 	mov eax,[mask]
 	and eax,PNG_FREE_ICCP
 	and eax,[esi+png_info_def.free_me]
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		stdcall png_free, edi, [esi+png_info_def.iccp_name]
 		stdcall png_free, edi, [esi+png_info_def.iccp_profile]
 		mov dword[esi+png_info_def.iccp_name],0
@@ -674,8 +670,7 @@ if PNG_hIST_SUPPORTED eq 1
 	mov eax,[mask]
 	and eax,PNG_FREE_HIST
 	and eax,[esi+png_info_def.free_me]
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		stdcall png_free, edi, [esi+png_info_def.hist]
 		mov dword[esi+png_info_def.hist],0
 		and dword[esi+png_info_def.valid], not PNG_INFO_hIST
@@ -686,8 +681,7 @@ end if
 	mov eax,[mask]
 	and eax,PNG_FREE_PLTE
 	and eax,[esi+png_info_def.free_me]
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		stdcall png_free, edi, [esi+png_info_def.palette]
 		mov dword[esi+png_info_def.palette],0
 		and dword[esi+png_info_def.valid],not PNG_INFO_PLTE

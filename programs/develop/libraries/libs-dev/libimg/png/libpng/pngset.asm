@@ -16,20 +16,28 @@
 ; info struct and allows us to change the structure in the future.
 
 
-;void (png_structrp png_ptr, png_inforp info_ptr, png_const_color_16p background)
+;void (png_structrp png_ptr, png_inforp info_ptr, png_color_16p background)
 align 4
-proc png_set_bKGD, png_ptr:dword, info_ptr:dword, background:dword
+proc png_set_bKGD uses ecx edi esi, png_ptr:dword, info_ptr:dword, background:dword
 	png_debug1 1, 'in %s storage function', 'bKGD'
 
-;   if (png_ptr == NULL || info_ptr == NULL || background == NULL)
-;      return;
+	cmp dword[png_ptr],0
+	je .end_f
+	mov edi,[info_ptr]
+	cmp edi,0
+	je .end_f
+	mov esi,[background]
+	cmp esi,0
+	je .end_f ;if (..==0 || ..==0 || ..==0) return
 
-;   info_ptr->background = *background;
-;   info_ptr->valid |= PNG_INFO_bKGD;
+	or dword[edi+png_info_def.valid],PNG_INFO_bKGD
+	add edi,png_info_def.background
+	mov ecx,sizeof.png_color_16
+	rep movsb
+.end_f:
 	ret
 endp
 
-;if PNG_cHRM_SUPPORTED
 ;void (png_structrp png_ptr, png_inforp info_ptr,
 ;    png_fixed_point white_x, png_fixed_point white_y, png_fixed_point red_x,
 ;    png_fixed_point red_y, png_fixed_point green_x, png_fixed_point green_y,
@@ -99,7 +107,7 @@ proc png_set_cHRM_XYZ_fixed uses edi esi, png_ptr:dword, info_ptr:dword,\
 ;       &XYZ, 2) != 0)
 ;      info_ptr->colorspace.flags |= PNG_COLORSPACE_FROM_cHRM;
 
-	stdcall png_colorspace_sync_info, edi, esi;
+	stdcall png_colorspace_sync_info, edi, esi
 .end_f:
 	ret
 endp
@@ -141,8 +149,6 @@ proc png_set_cHRM_XYZ, png_ptr:dword, info_ptr:dword, red_X:dword, red_Y:dword, 
 	ret
 endp
 
-;end if /* cHRM */
-
 ;void (png_structrp png_ptr, png_inforp info_ptr, png_fixed_point file_gamma)
 align 4
 proc png_set_gAMA_fixed uses eax edi esi, png_ptr:dword, info_ptr:dword, file_gamma:dword
@@ -172,8 +178,7 @@ proc png_set_gAMA uses eax, png_ptr:dword, info_ptr:dword, file_gamma:dword
 	ret
 endp
 
-;void (png_structrp png_ptr, png_inforp info_ptr,
-;    png_const_uint_16p hist)
+;void (png_structrp png_ptr, png_inforp info_ptr, png_uint_16p hist)
 align 4
 proc png_set_hIST uses edi esi, png_ptr:dword, info_ptr:dword, hist:dword
 ;   int i;
@@ -352,17 +357,15 @@ proc png_set_pCAL uses edi esi, png_ptr:dword, info_ptr:dword, purpose:dword, X0
 	cmp dword[type],0
 	jl @f
 	cmp dword[type],3
-	jg @f ;if (..<0 || ..>3)
-		jmp .end0
+	jle .end0 ;if (..<0 || ..>3)
 	@@:
 		png_error edi, 'Invalid pCAL equation type'
 	.end0:
 
-	cmp dword[type],0
+	cmp dword[nparams],0
 	jl @f
-	cmp dword[type],255
-	jg @f ;if (..<0 || ..>255)
-		jmp .end1
+	cmp dword[nparams],255
+	jle .end1 ;if (..<0 || ..>255)
 	@@:
 		png_error edi, 'Invalid pCAL parameter count'
 	.end1:
@@ -588,8 +591,7 @@ proc png_set_pHYs, png_ptr:dword, info_ptr:dword, res_x:dword, res_y:dword, unit
 	ret
 endp
 
-;void (png_structrp png_ptr, png_inforp info_ptr,
-;    png_const_colorp palette, int num_palette)
+;void (png_structrp png_ptr, png_inforp info_ptr, png_colorp palette, int num_palette)
 align 4
 proc png_set_PLTE uses eax edi esi, png_ptr:dword, info_ptr:dword, palette:dword, num_palette:dword
 ;   uint_32 max_palette_length;
@@ -657,8 +659,7 @@ end if
 	ret
 endp
 
-;void (png_structrp png_ptr, png_inforp info_ptr,
-;    png_const_color_8p sig_bit)
+;void (png_structrp png_ptr, png_inforp info_ptr, png_color_8p sig_bit)
 align 4
 proc png_set_sBIT, png_ptr:dword, info_ptr:dword, sig_bit:dword
 	png_debug1 1, 'in %s storage function', 'sBIT'
@@ -783,8 +784,7 @@ proc png_set_iCCP uses edi esi, png_ptr:dword, info_ptr:dword, name:dword, compr
 	ret
 endp
 
-;void (png_structrp png_ptr, png_inforp info_ptr,
-;    png_const_textp text_ptr, int num_text)
+;void (png_structrp png_ptr, png_inforp info_ptr, png_textp text_ptr, int num_text)
 align 4
 proc png_set_text uses eax edi, png_ptr:dword, info_ptr:dword, text_ptr:dword, num_text:dword
 	mov edi,[png_ptr]
@@ -798,7 +798,7 @@ proc png_set_text uses eax edi, png_ptr:dword, info_ptr:dword, text_ptr:dword, n
 endp
 
 ;int (png_structrp png_ptr, png_inforp info_ptr,
-;    png_const_textp text_ptr, int num_text)
+;    png_textp text_ptr, int num_text)
 align 4
 proc png_set_text_2, png_ptr:dword, info_ptr:dword, text_ptr:dword, num_text:dword
 ;   int i;
@@ -991,7 +991,7 @@ end if
 	ret
 endp
 
-;void (png_structrp png_ptr, png_inforp info_ptr, png_const_timep mod_time)
+;void (png_structrp png_ptr, png_inforp info_ptr, png_timep mod_time)
 align 4
 proc png_set_tIME uses eax ebx ecx edi esi, png_ptr:dword, info_ptr:dword, mod_time:dword
 	png_debug1 1, 'in %s storage function', 'tIME'
@@ -1040,7 +1040,7 @@ proc png_set_tIME uses eax ebx ecx edi esi, png_ptr:dword, info_ptr:dword, mod_t
 endp
 
 ;void (png_structrp png_ptr, png_inforp info_ptr,
-;    bytep trans_alpha, int num_trans, png_const_color_16p trans_color)
+;    bytep trans_alpha, int num_trans, png_color_16p trans_color)
 align 4
 proc png_set_tRNS, png_ptr:dword, info_ptr:dword, trans_alpha:dword, num_trans:dword, trans_color:dword
 	png_debug1 1, 'in %s storage function', 'tRNS'
@@ -1106,7 +1106,7 @@ endp
 
 ;if PNG_sPLT_SUPPORTED
 ;void (png_structrp png_ptr,
-;    png_inforp info_ptr, png_const_sPLT_tp entries, int nentries)
+;    png_inforp info_ptr, png_sPLT_tp entries, int nentries)
 
 ;  entries        - array of png_sPLT_t structures
 ;                   to be added to the list of palettes
@@ -1190,7 +1190,7 @@ proc png_set_sPLT, png_ptr:dword, info_ptr:dword, entries:dword, nentries:dword
 ;      memcpy(np->entries, entries->entries,
 ;          entries->nentries * sizeof (png_sPLT_entry));
 
-;      /* Note that 'continue' skips the advance of the out pointer and out
+	; Note that 'continue' skips the advance of the out pointer and out
 	; count, so an invalid entry is not added.
 
 ;      info_ptr->valid |= PNG_INFO_sPLT;
@@ -1211,7 +1211,7 @@ align 4
 proc check_location, png_ptr:dword, location:dword
 ;   location &= (PNG_HAVE_IHDR|PNG_HAVE_PLTE|PNG_AFTER_IDAT);
 
-;   /* New in 1.6.0; copy the location and check it.  This is an API
+	; New in 1.6.0; copy the location and check it.  This is an API
 	; change; previously the app had to use the
 	; png_set_unknown_chunk_location API below for each chunk.
 
@@ -1225,13 +1225,13 @@ proc check_location, png_ptr:dword, location:dword
 ;          (PNG_HAVE_IHDR|PNG_HAVE_PLTE|PNG_AFTER_IDAT));
 ;   }
 
-;   /* This need not be an internal error - if the app calls
+	; This need not be an internal error - if the app calls
 	; png_set_unknown_chunks on a read pointer it must get the location right.
 
 ;   if (location == 0)
 ;      png_error(png_ptr, "invalid location in png_set_unknown_chunks");
 
-;   /* Now reduce the location to the top-most set bit by removing each least
+	; Now reduce the location to the top-most set bit by removing each least
 	; significant bit in turn.
 
 ;   while (location != (location & -location))
@@ -1245,7 +1245,7 @@ proc check_location, png_ptr:dword, location:dword
 endp
 
 ;void (png_structrp png_ptr,
-;    png_inforp info_ptr, png_const_unknown_chunkp unknowns, int num_unknowns)
+;    png_inforp info_ptr, png_unknown_chunkp unknowns, int num_unknowns)
 align 4
 proc png_set_unknown_chunks uses edi esi, png_ptr:dword, info_ptr:dword, unknowns:dword, num_unknowns:dword
 ;   png_unknown_chunkp np;
@@ -1657,7 +1657,7 @@ if PNG_WRITE_SUPPORTED eq 1
 ;      }
 
 ;#ifndef __COVERITY__
-;      /* Some compilers complain that this is always false.  However, it
+	; Some compilers complain that this is always false.  However, it
 	; can be true when integer overflow happens.
 
 ;      if (size > ZLIB_IO_MAX)
@@ -1834,7 +1834,7 @@ proc png_check_keyword, png_ptr:dword, key:dword, new_key:dword
 ;         bad_character = 32;
 ;   }
 
-;   /* Terminate the keyword */
+	; Terminate the keyword
 ;   *new_key = 0;
 
 ;   if (key_len == 0)

@@ -808,53 +808,11 @@ else
 end if
 }
 
-; Allocate and initialize png_ptr struct for reading, and any other memory.
-;PNG_EXPORTA(4, png_structp, png_create_read_struct,
-;    (charp user_png_ver, voidp error_ptr,
-;    png_error_ptr error_fn, png_error_ptr warn_fn),
-;    PNG_ALLOCATED);
-
-; Moved from pngconf.h in 1.4.0 and modified to ensure setjmp/longjmp
-; match up.
-
-; Read the information before the actual image data.
-PNG_EXPORT 22, void, png_read_info, '(png_structrp png_ptr, png_inforp info_ptr)'
-
-; Convert to a US string format: there is no localization support in this
-; routine.  The original implementation used a 29 character buffer in
-; png_struct, this will be removed in future versions.
-
-;#if PNG_LIBPNG_VER < 10700
-; To do: remove this from libpng17 (and from libpng17/png.c and pngstruct.h)
-;PNG_EXPORTA(23, charp, png_convert_to_rfc1123, (png_structrp png_ptr,
-;    png_const_timep ptime),PNG_DEPRECATED);
-;end if
-
-; Expand data to 24-bit RGB, or 8-bit grayscale, with alpha if available.
-PNG_EXPORT 26, void, png_set_expand, '(png_structrp png_ptr)'
-PNG_EXPORT 27, void, png_set_expand_gray_1_2_4_to_8, '(png_structrp png_ptr)'
-PNG_EXPORT 28, void, png_set_palette_to_rgb, '(png_structrp png_ptr)'
-PNG_EXPORT 29, void, png_set_tRNS_to_alpha, '(png_structrp png_ptr)'
-
-; Expand to 16-bit channels, forces conversion of palette to RGB and expansion
-; of a tRNS chunk if present.
-PNG_EXPORT 221, void, png_set_expand_16, '(png_structrp png_ptr)'
-
-; Expand the grayscale to 24-bit RGB if necessary.
-PNG_EXPORT 31, void, png_set_gray_to_rgb, '(png_structrp png_ptr)'
-
 ; Reduce RGB to grayscale.
 PNG_ERROR_ACTION_NONE equ 1
 PNG_ERROR_ACTION_WARN equ 2
 PNG_ERROR_ACTION_ERROR equ 3
 PNG_RGB_TO_GRAY_DEFAULT equ (-1) ;for red/green coefficients
-
-PNG_EXPORT 32, void, png_set_rgb_to_gray, '(png_structrp png_ptr, int error_action, double red, double green)'
-PNG_EXPORT 33, void, png_set_rgb_to_gray_fixed, '(png_structrp png_ptr, int error_action, png_fixed_point red, png_fixed_point green)'
-
-PNG_EXPORT 34, byte, png_get_rgb_to_gray_status, '(png_const_structrp png_ptr)'
-
-PNG_EXPORT 35, void, png_build_grayscale_palette, '(int bit_depth, png_colorp palette)'
 
 ; How the alpha channel is interpreted - this affects how the color channels
 ; of a PNG file are returned to the calling application when an alpha channel,
@@ -897,9 +855,6 @@ PNG_ALPHA_PREMULTIPLIED equ 1 ;as above
 PNG_ALPHA_OPTIMIZED    equ 2 ;'PNG' for opaque pixels, else 'STANDARD'
 PNG_ALPHA_BROKEN       equ 3 ;the alpha channel is gamma encoded
 
-PNG_EXPORT 227, void, png_set_alpha_mode, '(png_structrp png_ptr, int mode, double output_gamma)'
-PNG_EXPORT 228, void, png_set_alpha_mode_fixed, '(png_structrp png_ptr, int mode, png_fixed_point output_gamma)'
-
 if (PNG_GAMMA_SUPPORTED eq 1) | (PNG_READ_ALPHA_MODE_SUPPORTED eq 1)
 ; The output_gamma value is a screen gamma in libpng terminology: it expresses
 ; how to decode the output values, not how they are encoded.
@@ -909,83 +864,6 @@ PNG_GAMMA_MAC_18 equ -2       ;Old Mac '1.8' gamma and color space
 PNG_GAMMA_sRGB   equ 220000   ;Television standards--matches sRGB gamma
 PNG_GAMMA_LINEAR equ PNG_FP_1 ;Linear
 end if
-
-; The following are examples of calls to png_set_alpha_mode to achieve the
-; required overall gamma correction and, where necessary, alpha
-; premultiplication.
-
-; png_set_alpha_mode(pp, PNG_ALPHA_PNG, PNG_DEFAULT_sRGB);
-;    This is the default libpng handling of the alpha channel - it is not
-;    pre-multiplied into the color components.  In addition the call states
-;    that the output is for a sRGB system and causes all PNG files without gAMA
-;    chunks to be assumed to be encoded using sRGB.
-
-; png_set_alpha_mode(pp, PNG_ALPHA_PNG, PNG_GAMMA_MAC);
-;    In this case the output is assumed to be something like an sRGB conformant
-;    display preceeded by a power-law lookup table of power 1.45.  This is how
-;    early Mac systems behaved.
-
-; png_set_alpha_mode(pp, PNG_ALPHA_STANDARD, PNG_GAMMA_LINEAR);
-;    This is the classic Jim Blinn approach and will work in academic
-;    environments where everything is done by the book.  It has the shortcoming
-;    of assuming that input PNG data with no gamma information is linear - this
-;    is unlikely to be correct unless the PNG files where generated locally.
-;    Most of the time the output precision will be so low as to show
-;    significant banding in dark areas of the image.
-
-; png_set_expand_16(pp);
-; png_set_alpha_mode(pp, PNG_ALPHA_STANDARD, PNG_DEFAULT_sRGB);
-;    This is a somewhat more realistic Jim Blinn inspired approach.  PNG files
-;    are assumed to have the sRGB encoding if not marked with a gamma value and
-;    the output is always 16 bits per component.  This permits accurate scaling
-;    and processing of the data.  If you know that your input PNG files were
-;    generated locally you might need to replace PNG_DEFAULT_sRGB with the
-;    correct value for your system.
-
-; png_set_alpha_mode(pp, PNG_ALPHA_OPTIMIZED, PNG_DEFAULT_sRGB);
-;    If you just need to composite the PNG image onto an existing background
-;    and if you control the code that does this you can use the optimization
-;    setting.  In this case you just copy completely opaque pixels to the
-;    output.  For pixels that are not completely transparent (you just skip
-;    those) you do the composition math using png_composite or png_composite_16
-;    below then encode the resultant 8-bit or 16-bit values to match the output
-;    encoding.
-
-; Other cases
-;    If neither the PNG nor the standard linear encoding work for you because
-;    of the software or hardware you use then you have a big problem.  The PNG
-;    case will probably result in halos around the image.  The linear encoding
-;    will probably result in a washed out, too bright, image (it's actually too
-;    contrasty.)  Try the ALPHA_OPTIMIZED mode above - this will probably
-;    substantially reduce the halos.  Alternatively try:
-
-; png_set_alpha_mode(pp, PNG_ALPHA_BROKEN, PNG_DEFAULT_sRGB);
-;    This option will also reduce the halos, but there will be slight dark
-;    halos round the opaque parts of the image where the background is light.
-;    In the OPTIMIZED mode the halos will be light halos where the background
-;    is dark.  Take your pick - the halos are unavoidable unless you can get
-;    your hardware/software fixed!  (The OPTIMIZED approach is slightly
-;    faster.)
-
-; When the default gamma of PNG files doesn't match the output gamma.
-;    If you have PNG files with no gamma information png_set_alpha_mode allows
-;    you to provide a default gamma, but it also sets the ouput gamma to the
-;    matching value.  If you know your PNG files have a gamma that doesn't
-;    match the output you can take advantage of the fact that
-;    png_set_alpha_mode always sets the output gamma but only sets the PNG
-;    default if it is not already set:
-
-; png_set_alpha_mode(pp, PNG_ALPHA_PNG, PNG_DEFAULT_sRGB);
-; png_set_alpha_mode(pp, PNG_ALPHA_PNG, PNG_GAMMA_MAC);
-;    The first call sets both the default and the output gamma values, the
-;    second call overrides the output gamma without changing the default.  This
-;    is easier than achieving the same effect with png_set_gamma.  You must use
-;    PNG_ALPHA_PNG for the first call - internal checking in png_set_alpha will
-;    fire if more than one call to png_set_alpha_mode and png_set_background is
-;    made in the same read operation, however multiple calls with PNG_ALPHA_PNG
-;    are ignored.
-
-PNG_EXPORT 36, void, png_set_strip_alpha, '(png_structrp png_ptr)'
 
 ; The values of the PNG_FILLER_ defines should NOT be changed
 PNG_FILLER_BEFORE equ 0
@@ -998,9 +876,6 @@ PNG_FILLER_AFTER equ 1
 ; read.  Doing so will result in unexpected behavior and possible warnings or
 ; errors if the PNG file contains a bKGD chunk.
 
-PNG_EXPORT 47, void, png_set_background, '(png_structrp png_ptr, png_const_color_16p background_color, int background_gamma_code, int need_expand, double background_gamma)'
-PNG_EXPORT 215, void, png_set_background_fixed, '(png_structrp png_ptr, png_const_color_16p background_color, int background_gamma_code, int need_expand, png_fixed_point background_gamma)'
-
 if PNG_READ_BACKGROUND_SUPPORTED eq 1
 PNG_BACKGROUND_GAMMA_UNKNOWN equ 0
 PNG_BACKGROUND_GAMMA_SCREEN equ 1
@@ -1008,22 +883,12 @@ PNG_BACKGROUND_GAMMA_FILE   equ 2
 PNG_BACKGROUND_GAMMA_UNIQUE equ 3
 end if
 
-; Scale a 16-bit depth file down to 8-bit, accurately.
-PNG_EXPORT 229, void, png_set_scale_16, '(png_structrp png_ptr)'
-
-;#define PNG_READ_16_TO_8_SUPPORTED /* Name prior to 1.5.4 */
-; Strip the second byte of information from a 16-bit depth file.
-PNG_EXPORT 48, void, png_set_strip_16, '(png_structrp png_ptr)'
-
-; Turn on quantizing, and reduce the palette to the number of colors
-; available.
-
-PNG_EXPORT 49, void, png_set_quantize, '(png_structrp png_ptr, png_colorp palette, int num_palette, int maximum_colors, png_const_uint_16p histogram, int full_quantize)'
+;PNG_READ_16_TO_8_SUPPORTED equ 1 ;Name prior to 1.5.4
 
 ; The threshold on gamma processing is configurable but hard-wired into the
 ; library.  The following is the floating point variant.
 
-;#define PNG_GAMMA_THRESHOLD (PNG_GAMMA_THRESHOLD_FIXED*.00001)
+PNG_GAMMA_THRESHOLD equ (PNG_GAMMA_THRESHOLD_FIXED*.00001)
 
 ; Handle gamma correction. Screen_gamma=(display_exponent).
 ; NOTE: this API simply sets the screen and file gamma values. It will
@@ -1031,37 +896,6 @@ PNG_EXPORT 49, void, png_set_quantize, '(png_structrp png_ptr, png_colorp palett
 ; the file header has been read - use with care  - call before reading the PNG
 ; file for best results!
 
-; These routines accept the same gamma values as png_set_alpha_mode (described
-; above).  The PNG_GAMMA_ defines and PNG_DEFAULT_sRGB can be passed to either
-; API (floating point or fixed.)  Notice, however, that the 'file_gamma' value
-; is the inverse of a 'screen gamma' value.
-
-PNG_EXPORT 50, void, png_set_gamma, '(png_structrp png_ptr, double screen_gamma, double override_file_gamma)'
-PNG_EXPORT 208, void, png_set_gamma_fixed, '(png_structrp png_ptr, png_fixed_point screen_gamma, png_fixed_point override_file_gamma)'
-
-; Optional update palette with requested transformations
-PNG_EXPORT 53, void, png_start_read_image, '(png_structrp png_ptr)'
-
-; Optional call to update the users info structure
-PNG_EXPORT 54, void, png_read_update_info, '(png_structrp png_ptr, png_inforp info_ptr)'
-
-; Read one or more rows of image data.
-PNG_EXPORT 55, void, png_read_rows, '(png_structrp png_ptr, bytepp row, bytepp display_row, uint_32 num_rows)'
-
-; Read a row of data.
-PNG_EXPORT 56, void, png_read_row, '(png_structrp png_ptr, bytep row, bytep display_row)'
-
-; Read the whole image into memory at once.
-PNG_EXPORT 57, void, png_read_image, '(png_structrp png_ptr, bytepp image)'
-
-; Read the end of the PNG file.
-PNG_EXPORT 62, void, png_read_end, '(png_structrp png_ptr, png_inforp info_ptr)'
-
-; Free any memory associated with the png_struct and the png_info_structs
-PNG_EXPORT 64, void, png_destroy_read_struct, '(png_structpp png_ptr_ptr, png_infopp info_ptr_ptr, png_infopp end_info_ptr_ptr)'
-
-; Set the libpng method of handling chunk CRC errors
-PNG_EXPORT 66, void, png_set_crc_action, '(png_structrp png_ptr, int crit_action, int ancil_action)'
 
 ; Values for png_set_crc_action() say how to handle CRC errors in
 ; ancillary and critical chunks, and whether to use the data contained
@@ -1121,46 +955,6 @@ PNG_FILTER_HEURISTIC_LAST      equ 3 ;Not a valid value
 ; Replace the default data input function with a user supplied one.
 PNG_EXPORT 78, void, png_set_read_fn, '(png_structrp png_ptr, voidp io_ptr, png_rw_ptr read_data_fn)'
 
-PNG_EXPORT 80, void, png_set_read_status_fn, '(png_structrp png_ptr, png_read_status_ptr read_row_fn)'
-
-PNG_EXPORT 84, void, png_set_read_user_transform_fn, '(png_structrp png_ptr, png_user_transform_ptr read_user_transform_fn)'
-
-if PNG_PROGRESSIVE_READ_SUPPORTED eq 1
-; Sets the function callbacks for the push reader, and a pointer to a
-; user-defined structure available to the callback functions.
-
-PNG_EXPORT 90, void, png_set_progressive_read_fn, '(png_structrp png_ptr, voidp progressive_ptr, png_progressive_info_ptr info_fn, png_progressive_row_ptr row_fn, png_progressive_end_ptr end_fn)'
-
-; Returns the user pointer associated with the push read functions
-PNG_EXPORT 91, voidp, png_get_progressive_ptr, '(png_const_structrp png_ptr)'
-
-; Function to be called when data becomes available
-PNG_EXPORT 92, void, png_process_data, '(png_structrp png_ptr, png_inforp info_ptr, bytep buffer, png_size_t buffer_size)'
-
-; A function which may be called *only* within png_process_data to stop the
-; processing of any more data.  The function returns the number of bytes
-; remaining, excluding any that libpng has cached internally.  A subsequent
-; call to png_process_data must supply these bytes again.  If the argument
-; 'save' is set to true the routine will first save all the pending data and
-; will always return 0.
-
-PNG_EXPORT 219, png_size_t, png_process_data_pause, '(png_structrp, int save)'
-
-; A function which may be called *only* outside (after) a call to
-; png_process_data.  It returns the number of bytes of data to skip in the
-; input.  Normally it will return 0, but if it returns a non-zero value the
-; application must skip than number of bytes of input data and pass the
-; following data to the next call to png_process_data.
-
-PNG_EXPORT 220, uint_32, png_process_data_skip, '(png_structrp)'
-
-; Function that combines rows.  'new_row' is a flag that should come from
-; the callback and be non-NULL if anything needs to be done; the library
-; stores its own version of the new data internally and ignores the passed
-; in value.
-
-PNG_EXPORT 93, void, png_progressive_combine_row, '(png_const_structrp png_ptr, bytep old_row, bytep new_row)'
-end if ;PROGRESSIVE_READ
 
 ; Reassign responsibility for freeing existing data, whether allocated
 ; by libpng or by the application; this works on the png_info structure passed
@@ -1228,61 +1022,6 @@ macro png_benign_error h,txt
 ;#  endif
 ;end if
 
-; Returns number of color channels in image.
-PNG_EXPORT 114, byte, png_get_channels, '(png_const_structrp png_ptr, png_const_inforp info_ptr)'
-
-; Returns pixel aspect ratio, computed from pHYs chunk data.
-PNG_EXPORT 125, float, png_get_pixel_aspect_ratio, '(png_const_structrp png_ptr, png_const_inforp info_ptr)'
-PNG_EXPORT 210, png_fixed_point, png_get_pixel_aspect_ratio_fixed, '(png_const_structrp png_ptr, png_const_inforp info_ptr)'
-
-; Returns image x, y offset in pixels or microns, from oFFs chunk data.
-PNG_EXPORT 126, int_32, png_get_x_offset_pixels, '(png_const_structrp png_ptr, png_const_inforp info_ptr)'
-PNG_EXPORT 127, int_32, png_get_y_offset_pixels, '(png_const_structrp png_ptr, png_const_inforp info_ptr)'
-PNG_EXPORT 128, int_32, png_get_x_offset_microns, '(png_const_structrp png_ptr, png_const_inforp info_ptr)'
-PNG_EXPORT 129, int_32, png_get_y_offset_microns, '(png_const_structrp png_ptr, png_const_inforp info_ptr)'
-
-; Returns pointer to signature string read from PNG header
-PNG_EXPORT 130, bytep, png_get_signature, '(png_const_structrp png_ptr, png_const_inforp info_ptr)'
-
-PNG_EXPORT 131, uint_32, png_get_bKGD, '(png_const_structrp png_ptr, png_inforp info_ptr, png_color_16p *background)'
-
-PNG_EXPORT 133, uint_32, png_get_cHRM, '(png_const_structrp png_ptr, png_const_inforp info_ptr, double *white_x, double *white_y, double *red_x, double *red_y, double *green_x, double *green_y, double *blue_x, double *blue_y)'
-PNG_EXPORT 230, uint_32, png_get_cHRM_XYZ, '(png_const_structrp png_ptr, png_const_inforp info_ptr, double *red_X, double *red_Y, double *red_Z, double *green_X, double *green_Y, double *green_Z, double *blue_X, double *blue_Y, double *blue_Z)'
-PNG_EXPORT 134, uint_32, png_get_cHRM_fixed, '(png_const_structrp png_ptr, png_const_inforp info_ptr, png_fixed_point *int_white_x, png_fixed_point *int_white_y, png_fixed_point *int_red_x, png_fixed_point *int_red_y, png_fixed_point *int_green_x, png_fixed_point *int_green_y, png_fixed_point *int_blue_x, png_fixed_point *int_blue_y)'
-
-PNG_EXPORT 137, uint_32, png_get_gAMA, '(png_const_structrp png_ptr, png_const_inforp info_ptr, double *file_gamma)'
-PNG_EXPORT 138, uint_32, png_get_gAMA_fixed, '(png_const_structrp png_ptr, png_const_inforp info_ptr, png_fixed_point *int_file_gamma)'
-
-PNG_EXPORT 145, uint_32, png_get_oFFs, '(png_const_structrp png_ptr, png_const_inforp info_ptr, int_32 *offset_x, int_32 *offset_y, int *unit_type)'
-
-PNG_EXPORT 147, uint_32, png_get_pCAL, '(png_const_structrp png_ptr, png_inforp info_ptr, charp *purpose, int_32 *X0, int_32 *X1, int *type, int *nparams, charp *units, charpp *params)'
-
-PNG_EXPORT 149, uint_32, png_get_pHYs, '(png_const_structrp png_ptr, png_const_inforp info_ptr, uint_32 *res_x, uint_32 *res_y, int *unit_type)'
-
-PNG_EXPORT 151, uint_32, png_get_PLTE, '(png_const_structrp png_ptr, png_inforp info_ptr, png_colorp *palette, int *num_palette)'
-
-PNG_EXPORT 153, uint_32, png_get_sBIT, '(png_const_structrp png_ptr, png_inforp info_ptr, png_color_8p *sig_bit)'
-
-PNG_EXPORT 155, uint_32, png_get_sRGB, '(png_const_structrp png_ptr, png_const_inforp info_ptr, int *file_srgb_intent)'
-
-; png_get_text also returns the number of text chunks in *num_text
-PNG_EXPORT 162, int, png_get_text, '(png_const_structrp png_ptr, png_inforp info_ptr, png_textp *text_ptr, int *num_text)'
-
-PNG_EXPORT 164, uint_32, png_get_tIME, '(png_const_structrp png_ptr, png_inforp info_ptr, png_timep *mod_time)'
-
-PNG_EXPORT 166, uint_32, png_get_tRNS, '(png_const_structrp png_ptr, png_inforp info_ptr, bytep *trans_alpha, int *num_trans, png_color_16p *trans_color)'
-
-PNG_EXPORT 168, uint_32, png_get_sCAL, '(png_const_structrp png_ptr, png_const_inforp info_ptr, int *unit, double *width, double *height)'
-
-; NOTE: this API is currently implemented using floating point arithmetic,
-; consequently it can only be used on systems with floating point support.
-; In any case the range of values supported by png_fixed_point is small and it
-; is highly recommended that png_get_sCAL_s be used instead.
-
-PNG_EXPORT 214, uint_32, png_get_sCAL_fixed, '(png_const_structrp png_ptr, png_const_inforp info_ptr, int *unit, png_fixed_point *width, png_fixed_point *height)'
-
-PNG_EXPORT 170, void, png_set_sCAL, '(png_const_structrp png_ptr, png_inforp info_ptr, int unit, double width, double height)'
-PNG_EXPORT 171, void, png_set_sCAL_s, '(png_const_structrp png_ptr, png_inforp info_ptr, int unit, charp swidth, charp sheight)'
 
 ; Provide the default handling for all unknown chunks or, optionally, for
 ; specific unknown chunks.
@@ -1383,9 +1122,6 @@ PNG_EXPORT 171, void, png_set_sCAL_s, '(png_const_structrp png_ptr, png_inforp i
 ;    be processed by libpng.
 
 
-; The "params" pointer is currently not used and is for future expansion.
-PNG_EXPORT 178, void, png_read_png, '(png_structrp png_ptr, png_inforp info_ptr, int transforms, voidp params)'
-
 ; For use in png_set_keep_unknown, added to version 1.2.6
 PNG_HANDLE_CHUNK_AS_DEFAULT  equ 0
 PNG_HANDLE_CHUNK_NEVER       equ 1
@@ -1413,7 +1149,7 @@ PNG_IO_MASK_LOC    equ 0x00f0 ; current location: sig/hdr/data/crc
 ; libpng interlace handling is turned off the macros may be used to handle
 ; interlaced images within the application.
 
-;#define PNG_INTERLACE_ADAM7_PASSES 7
+PNG_INTERLACE_ADAM7_PASSES equ 7
 
 ; Two macros to return the first row and first column of the original,
 ; full, image which appears in a given pass.  'pass' is in the range 0
@@ -1423,8 +1159,8 @@ macro PNG_PASS_START_ROW pass
 {
 	push ebx ecx
 	mov eax,pass
+	mov ebx,eax
 	not eax
-	mov ebx,pass
 	and eax,1
 	shr ebx,1
 	mov ecx,3
@@ -1437,7 +1173,7 @@ macro PNG_PASS_START_COL pass
 {
 	push ebx ecx
 	mov eax,pass
-	mov ebx,pass
+	mov ebx,eax
 	and eax,1
 	inc ebx
 	shr ebx,1
@@ -1597,14 +1333,7 @@ pop ecx
 ;       32767) / 65535))
 ;end if /* READ_COMPOSITE_NODIV */
 
-PNG_EXPORT 201, uint_32, png_get_uint_32, '(bytep buf)'
-PNG_EXPORT 202, uint_16, png_get_uint_16, '(bytep buf)'
-PNG_EXPORT 203, int_32, png_get_int_32, '(bytep buf)'
-
-PNG_EXPORT 204, uint_32, png_get_uint_31, '(png_const_structrp png_ptr, bytep buf)'
-; No png_get_int_16 -- may be added if there's a real need for it.
-
-;if PNG_USE_READ_MACROS
+if PNG_USE_READ_MACROS eq 1
 ; Inline macros to do direct reads of bytes from the input buffer.
 ; The png_get_int_32() routine assumes we are using two's complement
 ; format for negative values, which is almost certainly true.
@@ -1627,23 +1356,7 @@ PNG_EXPORT 204, uint_32, png_get_uint_31, '(png_const_structrp png_ptr, bytep bu
 ;   ((int_32)((*(buf) & 0x80) \
 ;    ? -((int_32)(((png_get_uint_32(buf)^0xffffffffU)+1U)&0x7fffffffU)) \
 ;    : (int_32)png_get_uint_32(buf)))
-
-; If PNG_PREFIX is defined the same thing as below happens in pnglibconf.h,
-; but defining a macro name prefixed with PNG_PREFIX.
-
-;#  ifndef PNG_PREFIX
-;#    define png_get_uint_32(buf) PNG_get_uint_32(buf)
-;#    define png_get_uint_16(buf) PNG_get_uint_16(buf)
-;#    define png_get_int_32(buf)  PNG_get_int_32(buf)
-;#  endif
-;#else
-;#  ifdef PNG_PREFIX
-	; No macros; revert to the (redefined) function
-;#    define PNG_get_uint_32 (png_get_uint_32)
-;#    define PNG_get_uint_16 (png_get_uint_16)
-;#    define PNG_get_int_32  (png_get_int_32)
-;#  endif
-;end if
+end if
 
 ;/*******************************************************************************
 ; Section 5: SIMPLIFIED API
@@ -1804,13 +1517,9 @@ PNG_FORMAT_FLAG_COLOR    equ 0x02 ;color format: otherwise grayscale
 PNG_FORMAT_FLAG_LINEAR   equ 0x04 ;2-byte channels else 1-byte
 PNG_FORMAT_FLAG_COLORMAP equ 0x08 ;image data is color-mapped
 
-;if PNG_FORMAT_BGR_SUPPORTED
 PNG_FORMAT_FLAG_BGR   equ 0x10 ;BGR colors, else order is RGB
-;end if
 
-;if PNG_FORMAT_AFIRST_SUPPORTED
 PNG_FORMAT_FLAG_AFIRST equ 0x20 ;alpha channel comes first
-;end if
 
 ; Commonly used formats have predefined macros.
 
@@ -2007,63 +1716,8 @@ PNG_IMAGE_FLAG_16BIT_sRGB equ 0x04
 ; NOTE: the flag can only be set after the png_image_begin_read_ call,
 ; because that call initializes the 'flags' field.
 
-
-;if PNG_SIMPLIFIED_READ_SUPPORTED
-; READ APIs
-; ---------
-
-; The png_image passed to the read APIs must have been initialized by setting
-; the png_controlp field 'opaque' to NULL (or, safer, memset the whole thing.)
-
-if PNG_STDIO_SUPPORTED eq 1
-PNG_EXPORT 234, int, png_image_begin_read_from_file, '(png_imagep image, const char *file_name)'
-; The named file is opened for read and the image header is filled in
-; from the PNG header in the file.
-
-PNG_EXPORT 235, int, png_image_begin_read_from_stdio, '(png_imagep image, FILE* file)'
-; The PNG header is read from the stdio FILE object.
-end if ;STDIO
-
-PNG_EXPORT 236, int, png_image_begin_read_from_memory, '(png_imagep image, png_const_voidp memory, png_size_t size)'
-; The PNG header is read from the given memory buffer.
-
-PNG_EXPORT 237, int, png_image_finish_read, '(png_imagep image, png_const_colorp background, void *buffer, int_32 row_stride, void *colormap)'
-; Finish reading the image into the supplied buffer and clean up the
-; png_image structure.
-
-; row_stride is the step, in byte or 2-byte units as appropriate,
-; between adjacent rows.  A positive stride indicates that the top-most row
-; is first in the buffer - the normal top-down arrangement.  A negative
-; stride indicates that the bottom-most row is first in the buffer.
-
-; background need only be supplied if an alpha channel must be removed from
-; a byte format and the removal is to be done by compositing on a solid
-; color; otherwise it may be NULL and any composition will be done directly
-; onto the buffer.  The value is an sRGB color to use for the background,
-; for grayscale output the green channel is used.
-
-; background must be supplied when an alpha channel must be removed from a
-; single byte color-mapped output format, in other words if:
-
-; 1) The original format from png_image_begin_read_from_* had
-;    PNG_FORMAT_FLAG_ALPHA set.
-; 2) The format set by the application does not.
-; 3) The format set by the application has PNG_FORMAT_FLAG_COLORMAP set and
-;    PNG_FORMAT_FLAG_LINEAR *not* set.
-
-; For linear output removing the alpha channel is always done by compositing
-; on black and background is ignored.
-
-; colormap must be supplied when PNG_FORMAT_FLAG_COLORMAP is set.  It must
-; be at least the size (in bytes) returned by PNG_IMAGE_COLORMAP_SIZE.
-; image->colormap_entries will be updated to the actual number of entries
-; written to the colormap; this may be less than the original value.
-
-
-;end if /* SIMPLIFIED_READ */
-
-;if PNG_SIMPLIFIED_WRITE_SUPPORTED
-;/* WRITE APIS
+if PNG_SIMPLIFIED_WRITE_SUPPORTED eq 1
+; WRITE APIS
 ; ----------
 ; For write you must initialize a png_image structure to describe the image to
 ; be written.  To do this use memset to set the whole structure to 0 then
@@ -2140,8 +1794,8 @@ PNG_EXPORT 237, int, png_image_finish_read, '(png_imagep image, png_const_colorp
 
 ;#define PNG_IMAGE_COMPRESSED_SIZE_MAX(image)\
 ;   PNG_ZLIB_MAX_SIZE((png_alloc_size_t)PNG_IMAGE_DATA_SIZE(image))
-;   /* An upper bound on the size of the data in the PNG IDAT chunks. */
-;
+	; An upper bound on the size of the data in the PNG IDAT chunks.
+
 ;#define PNG_IMAGE_PNG_SIZE_MAX_(image, image_size)\
 ;   ((8U/*sig*/+25U/*IHDR*/+16U/*gAMA*/+44U/*cHRM*/+12U/*IEND*/+\
 ;    (((image).format&PNG_FORMAT_FLAG_COLORMAP)?/*colormap: PLTE, tRNS*/\
@@ -2149,11 +1803,11 @@ PNG_EXPORT 237, int, png_image_finish_read, '(png_imagep image, png_const_colorp
 ;    (((image).format&PNG_FORMAT_FLAG_ALPHA)?\
 ;    12U/*tRNS*/+(image).colormap_entries:0U):0U)+\
 ;    12U)+(12U*((image_size)/PNG_ZBUF_SIZE))/*IDAT*/+(image_size))
-;   /* A helper for the following macro; if your compiler cannot handle the
+
+; A helper for the following macro; if your compiler cannot handle the
 ; following macro use this one with the result of
 ; PNG_IMAGE_COMPRESSED_SIZE_MAX(image) as the second argument (most
 ; compilers should handle this just fine.)
-
 
 ;#define PNG_IMAGE_PNG_SIZE_MAX(image)\
 ;   PNG_IMAGE_PNG_SIZE_MAX_(image, PNG_IMAGE_COMPRESSED_SIZE_MAX(image))
@@ -2162,7 +1816,7 @@ PNG_EXPORT 237, int, png_image_finish_read, '(png_imagep image, png_const_colorp
 ; overflow even though PNG_IMAGE_DATA_SIZE does not overflow; the write will
 ; run out of buffer space but return a corrected size which should work.
 
-;end if /* SIMPLIFIED_WRITE */
+end if ;SIMPLIFIED_WRITE
 ;/*******************************************************************************
 ;  END OF SIMPLIFIED API
 ; ******************************************************************************/

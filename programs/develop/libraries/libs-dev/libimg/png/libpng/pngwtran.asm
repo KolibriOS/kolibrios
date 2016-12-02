@@ -501,11 +501,10 @@ proc png_do_write_transformations uses eax ebx edi esi, png_ptr:dword, row_info:
 if PNG_WRITE_USER_TRANSFORM_SUPPORTED eq 1
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_USER_TRANSFORM
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 	mov eax,[edi+png_struct.write_user_transform_fn]
-	cmp eax,0
-	je @f ;if (..!=0)
+	test eax,eax
+	jz @f ;if (..!=0)
 		stdcall eax, edi, esi, ebx ;User write transform function
 		; row_info:
 		;  uint_32 width    ;width of row
@@ -520,8 +519,7 @@ end if
 if PNG_WRITE_FILLER_SUPPORTED eq 1
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_FILLER
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		mov eax,[edi+png_struct.flags]
 		and eax,PNG_FLAG_FILLER_AFTER
 		not eax
@@ -532,8 +530,7 @@ end if
 if PNG_WRITE_PACKSWAP_SUPPORTED eq 1
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_PACKSWAP
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		stdcall png_do_packswap, esi, ebx
 	@@:
 end if
@@ -541,8 +538,7 @@ end if
 if PNG_WRITE_PACK_SUPPORTED eq 1
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_PACK
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		movzx eax,byte[edi+png_struct.bit_depth]
 		stdcall png_do_pack, esi, ebx, eax
 	@@:
@@ -552,8 +548,7 @@ if PNG_WRITE_SWAP_SUPPORTED eq 1
 if PNG_16BIT_SUPPORTED eq 1
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_SWAP_BYTES
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		stdcall png_do_swap, esi, ebx
 	@@:
 end if
@@ -562,8 +557,7 @@ end if
 if PNG_WRITE_SHIFT_SUPPORTED eq 1
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_SHIFT
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		mov eax,edi
 		add eax,png_struct.shift
 		stdcall png_do_shift, esi, ebx, eax
@@ -573,8 +567,7 @@ end if
 if PNG_WRITE_SWAP_ALPHA_SUPPORTED eq 1
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_SWAP_ALPHA
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		stdcall png_do_write_swap_alpha, esi, ebx
 	@@:
 end if
@@ -582,8 +575,7 @@ end if
 if PNG_WRITE_INVERT_ALPHA_SUPPORTED eq 1
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_INVERT_ALPHA
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		stdcall png_do_write_invert_alpha, esi, ebx
 	@@:
 end if
@@ -591,8 +583,7 @@ end if
 if PNG_WRITE_BGR_SUPPORTED eq 1
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_BGR
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		stdcall png_do_bgr, esi, ebx
 	@@:
 end if
@@ -600,8 +591,7 @@ end if
 if PNG_WRITE_INVERT_SUPPORTED eq 1
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_INVERT_MONO
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		stdcall png_do_invert, esi, ebx
 	@@:
 end if

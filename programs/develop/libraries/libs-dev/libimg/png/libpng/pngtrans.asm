@@ -822,7 +822,7 @@ if PNG_READ_USER_TRANSFORM_SUPPORTED eq 1
 	cmp eax,0
 	je @f ;if (..!=0 && ..!=0)
 		cStr ,'info change after png_start_read_image or png_read_update_info'
-		stdcall png_app_error edi, eax
+		stdcall png_app_error, edi, eax
 		jmp .end_f
 	@@:
 end if

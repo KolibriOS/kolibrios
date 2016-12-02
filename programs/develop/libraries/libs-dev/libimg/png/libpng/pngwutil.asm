@@ -2887,11 +2887,14 @@ endl
 	inc edx
 	.cycle1:
 		lodsb
-		mov ah,byte[ebx]
-		shr ah,1
-		sub al,ah
-		mov ah,byte[edx]
-		shr ah,1
+		shl eax,24
+		movzx ax,byte[ebx]
+		add al,byte[edx]
+		jnc @f
+			mov ah,1
+		@@:
+		shr ax,1
+		rol eax,8
 		sub al,ah
 		stosb
 		png_setup_abs [sum]
