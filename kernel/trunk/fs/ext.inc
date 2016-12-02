@@ -2248,22 +2248,20 @@ ext_Delete:
         jc      .error_stack4_eax
         xor     ecx, ecx
         call    extfsTruncateFile   ; free file's data
-        xor     eax, eax
         movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
-        rep stosb
         lea     edi, [ebp+EXTFS.inodeBuffer]
-        push    edx
+        xor     eax, eax
+        push    edx edi
+        rep stosb
         call    fsGetTime
-        pop     edx
+        pop     ebx ecx
         add     eax, 978307200
-        mov     [edi+INODE.deletedTime], eax
+        mov     [ebx+INODE.deletedTime], eax
         mov     eax, [esp]
-        mov     ebx, edi
         call    writeInode
         jc      .error_stack4_eax
         pop     eax
         dec     eax
-        mov     ecx, edx
         xor     edx, edx
         div     [ebp+EXTFS.superblock.inodesPerGroup]
         push    edx eax
