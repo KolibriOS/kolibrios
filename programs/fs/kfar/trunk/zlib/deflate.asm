@@ -893,7 +893,8 @@ proc flush_pending uses eax ebx ecx edx, strm:dword
 
 	stdcall _tr_flush_bits, edx
 	mov ecx,[edx+deflate_state.pending]
-	cmp cx,[ebx+z_stream.avail_out]
+	movzx eax,word[ebx+z_stream.avail_out]
+	cmp ecx,eax
 	jle @f ;if (..>..)
 		movzx ecx,word[ebx+z_stream.avail_out]
 	@@:

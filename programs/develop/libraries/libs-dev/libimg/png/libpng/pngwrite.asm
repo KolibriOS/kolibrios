@@ -2946,7 +2946,8 @@ align 4
 		je .end1
 
 		add ecx,16*1024
-		sub cx,[edi+png_struct.zstream.avail_out]
+		movzx eax,word[edi+png_struct.zstream.avail_out]
+		sub ecx,eax
 		cmp word[edi+png_struct.zstream.avail_out],0
 	je .cycle4 ;while (strm.avail_out == 0)
 if 0
@@ -2967,7 +2968,6 @@ if PNG_WRITE_OPTIMIZE_CMF_SUPPORTED eq 1
 		stdcall optimize_cmf, [m1], eax
 	@@:
 end if
-
 	stdcall png_write_complete_chunk, edi, png_IDAT, [m1], ecx
 	or dword[edi+png_struct.mode],PNG_HAVE_IDAT
 

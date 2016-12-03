@@ -410,8 +410,7 @@ end if
 	jne .end1 ;if (..==..)
 		mov eax,[edi+png_struct.flags]
 		and eax,PNG_FLAG_ZLIB_CUSTOM_STRATEGY
-		cmp eax,0
-		je @f ;if (..!=0)
+		jz @f ;if (..!=0)
 			mov eax,[edi+png_struct.zlib_strategy]
 			mov dword[strategy],eax
 			jmp .end2
@@ -477,8 +476,7 @@ end if
 	; Check against the previous initialized values, if any.
 	mov eax,[edi+png_struct.flags]
 	and eax,PNG_FLAG_ZSTREAM_INITIALIZED
-	cmp eax,0
-	je .end4
+	jz .end4
 	mov eax,[level]
 	cmp [edi+png_struct.zlib_set_level],eax
 	jne @f
@@ -520,8 +518,7 @@ end if
 	add ecx,png_struct.zstream
 	mov eax,[edi+png_struct.flags]
 	and eax,PNG_FLAG_ZSTREAM_INITIALIZED
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 		stdcall [deflateReset], ecx
 		jmp .end5
 	@@: ;else
@@ -1100,8 +1097,7 @@ if PNG_MNG_FEATURES_SUPPORTED eq 1
 	jg @f
 	mov eax,[edi+png_struct.mng_features_permitted]
 	and eax,PNG_FLAG_MNG_EMPTY_PLTE
-	cmp eax,0
-	jne .end1
+	jnz .end1
 	cmp [num_pal],0
 	jne .end1
 	@@:
@@ -1118,8 +1114,7 @@ end if
 
 	movzx eax,byte[edi+png_struct.color_type]
 	and eax,PNG_COLOR_MASK_COLOR
-	cmp eax,0
-	jne @f ;if (..==0)
+	jnz @f ;if (..==0)
 		png_warning edi, 'Ignoring request to write a PLTE chunk in grayscale PNG'
 		jmp .end_f
 	@@:
@@ -1276,8 +1271,7 @@ align 4
 if PNG_WRITE_OPTIMIZE_CMF_SUPPORTED eq 1
 			mov eax,[edi+png_struct.mode]
 			and eax,PNG_HAVE_IDAT
-			cmp eax,0
-			jne @f
+			jnz @f
 			cmp byte[edi+png_struct.compression_type],PNG_COMPRESSION_TYPE_BASE
 			jne @f ;if (..==0 && ..==..)
 				stdcall png_image_size, edi
@@ -1327,15 +1321,15 @@ end if
 			mov edx,[edi+png_struct.zbuffer_list]
 			add edx,png_compression_buffer.output
 			mov ecx,[edi+png_struct.zbuffer_size]
-			sub cx,[edi+png_struct.zstream.avail_out]
+			movzx eax,word[edi+png_struct.zstream.avail_out]
+			sub ecx,eax
 			;edx = data
 			;ecx = size
 
 if PNG_WRITE_OPTIMIZE_CMF_SUPPORTED eq 1
 			mov eax,[edi+png_struct.mode]
 			and eax,PNG_HAVE_IDAT
-			cmp eax,0
-			jne @f
+			jnz @f
 			cmp byte[edi+png_struct.compression_type],PNG_COMPRESSION_TYPE_BASE
 			jne @f ;if (..==0 && ..==..)
 				stdcall png_image_size, edi
@@ -2423,8 +2417,7 @@ if PNG_WRITE_INTERLACING_SUPPORTED eq 1
 	je @f
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_INTERLACE
-	cmp eax,0
-	jne @f ;if(..!=0 && ..==0)
+	jnz @f ;if(..!=0 && ..==0)
 		movzx ecx,byte[png_pass_yinc]
 		mov eax,[edi+png_struct.height]
 		add eax,ecx
@@ -2479,8 +2472,7 @@ if PNG_WRITE_INTERLACING_SUPPORTED eq 1
 		mov dword[edi+png_struct.row_number],0
 		mov eax,[edi+png_struct.transformations]
 		and eax,PNG_INTERLACE
-		cmp eax,0
-		je @f ;if (..!=0)
+		jz @f ;if (..!=0)
 			inc byte[edi+png_struct.pass]
 			jmp .end1
 		@@: ;else
@@ -2520,8 +2512,7 @@ if PNG_WRITE_INTERLACING_SUPPORTED eq 1
 
 				mov eax,[edi+png_struct.transformations]
 				and eax,PNG_INTERLACE
-				cmp eax,0
-				jne .cycle0end ;if(..!=0) break
+				jnz .cycle0end ;if(..!=0) break
 
 				cmp dword[edi+png_struct.usr_width],0
 				je .cycle0
@@ -2876,7 +2867,7 @@ endl
 		shr ah,1
 		sub al,ah
 		stosb
-		png_setup_abs [sum]
+		png_setup_abs dword[sum]
 		inc ebx
 		loop .cycle0
 
@@ -2897,7 +2888,7 @@ endl
 		rol eax,8
 		sub al,ah
 		stosb
-		png_setup_abs [sum]
+		png_setup_abs dword[sum]
 		mov eax,[sum]
 		cmp eax,[lmins]
 		jg .cycle1end ;if (..>..) ;We are already worse, don't continue.
@@ -3140,8 +3131,7 @@ else
 	@@:
 	mov eax,[filter_to_do]
 	and eax,PNG_FILTER_NONE
-	cmp eax,0
-	je .end0
+	jz .end0
 	cmp dword[filter_to_do],PNG_FILTER_NONE
 	je .end0 ;else if (..!=0 && ..!=..)
 		; Overflow not possible and multiple filters in the list, including the
@@ -3171,8 +3161,7 @@ else
 		jmp .end1
 	@@:
 	and eax,PNG_FILTER_SUB
-	cmp eax,0
-	je .end1 ;else if (..!=0)
+	jz .end1 ;else if (..!=0)
 		stdcall png_setup_sub_row, edi, [bpp], [row_bytes], [mins]
 		cmp eax,[mins]
 		jge .end1 ;if (..<..)
@@ -3198,8 +3187,7 @@ else
 		jmp .end2
 	@@:
 	and eax,PNG_FILTER_UP
-	cmp eax,0
-	je .end2 ;else if (..!=0)
+	jz .end2 ;else if (..!=0)
 		stdcall png_setup_up_row, edi, [row_bytes], [mins]
 		cmp eax,[mins]
 		jge .end2 ;if (..<..)
@@ -3225,8 +3213,7 @@ else
 		jmp .end3
 	@@:
 	and eax,PNG_FILTER_AVG
-	cmp eax,0
-	je .end3 ;else if (..!=0)
+	jz .end3 ;else if (..!=0)
 		stdcall png_setup_avg_row, edi, [bpp], [row_bytes], [mins]
 		cmp eax,[mins]
 		jge .end3 ;if (..<..)
@@ -3252,8 +3239,7 @@ else
 		jmp .end4
 	@@:
 	and eax,PNG_FILTER_PAETH
-	cmp eax,0
-	je .end4 ;else if (..!=0)
+	jz .end4 ;else if (..!=0)
 		stdcall png_setup_paeth_row, edi, [bpp], [row_bytes], [mins]
 		cmp eax,[mins]
 		jge .end4 ;if (..<..)

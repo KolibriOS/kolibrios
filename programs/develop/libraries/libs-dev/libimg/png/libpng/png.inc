@@ -743,40 +743,7 @@ PNG_ALL_MNG_FEATURES       equ 0x05
 ; full explanation, see example.c for the summary.  This just provides
 ; a simple one line description of the use of each function.
 
-; The PNG_EXPORT() and PNG_EXPORTA() macros used below are defined in
-; pngconf.h and in the *.dfn files in the scripts directory.
 
-;   PNG_EXPORT(ordinal, type, name, (args));
-
-;       ordinal:    ordinal that is used while building
-;                   *.def files. The ordinal value is only
-;                   relevant when preprocessing png.h with
-;                   the *.dfn files for building symbol table
-;                   entries, and are removed by pngconf.h.
-;       type:       return type of the function
-;       name:       function name
-;       args:       function arguments, with types
-
-; When we wish to append attributes to a function prototype we use
-; the PNG_EXPORTA() macro instead.
-
-;   PNG_EXPORTA(ordinal, type, name, (args), attributes);
-
-;       ordinal, type, name, and args: same as in PNG_EXPORT().
-;       attributes: function attributes
-
-macro PNG_EXPORT ordinal, typ, nam, arg
-{
-align 4
-nam:
-local .end_t
-local .m_txt
-jmp .end_t
-	.m_txt db `nam,13,10,0
-.end_t:
-	stdcall dbg_print,txt_zv,.m_txt
-ret
-}
 
 ; Simple signature checking function.  This is the same as calling
 ; png_check_sig(sig, n) := !png_sig_cmp(sig, 0, n).
@@ -943,23 +910,6 @@ PNG_FILTER_HEURISTIC_UNWEIGHTED equ 1 ;Used by libpng < 0.95
 PNG_FILTER_HEURISTIC_WEIGHTED  equ 2 ;Experimental feature
 PNG_FILTER_HEURISTIC_LAST      equ 3 ;Not a valid value
 
-; These next functions are called for input/output, memory, and error
-; handling.  They are in the file pngrio.c, pngwio.c, and pngerror.c,
-; and call standard C I/O routines such as fread(), fwrite(), and
-; fprintf().  These functions can be made to use other I/O routines
-; at run time for those applications that need to handle I/O in a
-; different manner by calling png_set_???_fn().  See libpng-manual.txt for
-; more information.
-
-
-; Replace the default data input function with a user supplied one.
-PNG_EXPORT 78, void, png_set_read_fn, '(png_structrp png_ptr, voidp io_ptr, png_rw_ptr read_data_fn)'
-
-
-; Reassign responsibility for freeing existing data, whether allocated
-; by libpng or by the application; this works on the png_info structure passed
-; in, it does not change the state for other png_info structures.
-
 ; It is unlikely that this function works correctly as of 1.6.0 and using it
 ; may result either in memory leaks or double free of allocated data.
 
@@ -985,29 +935,16 @@ PNG_FREE_ALL  equ 0x7fff
 PNG_FREE_MUL  equ 0x4220 ;PNG_FREE_SPLT|PNG_FREE_TEXT|PNG_FREE_UNKN
 
 ;if PNG_ERROR_TEXT_SUPPORTED
-; The same, but the chunk name is prepended to the error string.
-;PNG_EXPORTA(103, void, png_chunk_error, (png_const_structrp png_ptr,
-;    charp error_message), PNG_NORETURN);
 
 ;#else
-; Fatal error in PNG image of libpng - can't continue
-;PNG_EXPORTA(104, void, png_err, (png_const_structrp png_ptr), PNG_NORETURN);
 ;#  define png_chunk_error(s1,s2) png_err(s1)
 ;end if
 
-; Non-fatal error in libpng, chunk name is prepended to message.
-PNG_EXPORT 106, void, png_chunk_warning, '(png_const_structrp png_ptr, charp warning_message)'
 ;#else
 ;#  define png_warning(s1,s2) ((void)(s1))
 ;#  define png_chunk_warning(s1,s2) ((void)(s1))
 
-; Benign error in libpng.  Can continue, but may have a problem.
-; User can choose whether to handle as a fatal error or as a warning.
-PNG_EXPORT 107, void, png_benign_error, '(png_const_structrp png_ptr, charp warning_message)'
-
 ;if PNG_READ_SUPPORTED
-; Same, chunk name is prepended to message (only during read)
-PNG_EXPORT 108, void, png_chunk_benign_error, '(png_const_structrp png_ptr, charp warning_message)'
 
 ;#else
 ;#  ifdef PNG_ALLOW_BENIGN_ERRORS
