@@ -136,7 +136,7 @@ void main()
 				{
 					PageLinks.Hover(mouse.x, WB1.list.first*WB1.list.item_h + mouse.y, link_color_inactive, link_color_active, bg_color);
 					if (bufsize) && (mouse.pkm) && (mouse.up) {
-						menu.show(Form.left+mouse.x-6,Form.top+mouse.y+skin_height+3, 180, #rmb_menu, VIEW_SOURCE);
+						EventShowMenu(mouse.x, mouse.y);
 						break;
 					}
 					if (WB1.list.MouseScroll(mouse.vert)) WB1.DrawPage();
@@ -342,9 +342,7 @@ void ProcessEvent(dword id__)
 			else OpenPage();
 			return;
 		case SANDWICH_BUTTON:
-			mouse.y = TOOLBAR_H-6;
-			mouse.x = Form.cwidth - 167;
-			menu.show(Form.left+mouse.x-6,Form.top+mouse.y+skin_height+3, 180, #rmb_menu, VIEW_SOURCE);
+			EventShowMenu(Form.cwidth - 215, TOOLBAR_H-6);
 			return;
 		case VIEW_SOURCE:
 			WB1.list.first = 0;
@@ -574,6 +572,11 @@ void ClickLink()
 		}
 	}
 	OpenPage();
+}
+
+void EventShowMenu(dword _left, _top)
+{
+	menu.show(Form.left+_left-6,Form.top+_top+skin_height+3, 220, #rmb_menu, VIEW_SOURCE);
 }
 
 stop:

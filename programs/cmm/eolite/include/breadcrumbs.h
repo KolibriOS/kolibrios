@@ -28,6 +28,7 @@ void DrawBreadCrumbs()
 			breadCrumb.add(i+1);
 		}
 	}
+	breadCrumb.add(i+1);
 	btn.set_size(246,10,NULL,20);
 	area_w = Form.cwidth - btn.x - 20;
 	for (i=0; i<breadCrumb.count-1; i++)
@@ -50,7 +51,7 @@ void ClickOnBreadCrumb(unsigned clickid)
 	for (i=0; i!=clickid+2; i++) {
 		slashpos=strchr(slashpos,'/')+1;
 	}
-	ESBYTE[slashpos] = NULL;
+	ESBYTE[slashpos-1] = NULL;
 	Open_Dir(#path,WITH_REDRAW);
 }
 

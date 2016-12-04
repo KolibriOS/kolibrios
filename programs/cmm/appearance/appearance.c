@@ -71,7 +71,7 @@ void main()
 	  		if (mouse.down)&&(mouse.pkm) {
 	  			select_list.ProcessMouse(mouse.x, mouse.y);
 				SelectList_Draw();
-	  			menu.show(Form.left+mouse.x, Form.top+mouse.y+skin_height, 136, "Open file     Enter\nDelete          Del", 10); 
+	  			menu.show(Form.left+mouse.x, Form.top+mouse.y+skin_height, 185, "Open file     Enter\nDelete          Del", 10); 
 	  		}
 	  		break;
 

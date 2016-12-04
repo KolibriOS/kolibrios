@@ -43,11 +43,11 @@ void main()
 		if (id==1) ExitProcess();
 		if (id==butv.id) {
 			menu.selected = category+1;
-			menu.show(Form.left+5 + butv.x, Form.top+skin_height + butv.y + butv.h, 100, #vegetables, butv.id);
+			menu.show(Form.left+5 + butv.x, Form.top+skin_height + butv.y + butv.h, 140, #vegetables, butv.id);
 		}
 		if (id==buta.id) {
 			menu.selected = 0;
-			menu.show(Form.left+5 + buta.x, Form.top+skin_height + buta.y + buta.h, 120,    #animals, buta.id);
+			menu.show(Form.left+5 + buta.x, Form.top+skin_height + buta.y + buta.h, 140,    #animals, buta.id);
 		}
 		break;
 

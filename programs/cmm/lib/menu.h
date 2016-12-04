@@ -18,7 +18,7 @@ void _menu::show(dword _appear_x, _appear_y, _menu_width, _text, _identifier)
 	list.cur_y = -1;
 	list.ClearList();
 	list.count = chrnum(text, '\n')+1;
-	list.SetSizes(2,2,_menu_width,list.count*19,19);
+	list.SetSizes(2,2,_menu_width,list.count*24,24);
 
 	CreateThread(#_menu_thread,#stak+4092);
 }
@@ -57,8 +57,8 @@ void _menu_draw_list()
 		if (N==menu.list.cur_y) bgcol=0xFFFfff; else bgcol=0xE4DFE1;
 		DrawBar(menu.list.x, N*menu.list.item_h+menu.list.y, menu.list.w-3, menu.list.item_h, bgcol);
 	}
-	WriteTextLines(13, menu.list.item_h-8/2+menu.list.y, 0x80, 0, menu.text, menu.list.item_h);
-	if (menu.selected) WriteText(5, menu.selected-1*menu.list.item_h+7, 0x80, 0xEE0000, "\x10");
+	WriteTextLines(13, menu.list.item_h-12/2+menu.list.y, 0x90, 0, menu.text, menu.list.item_h);
+	if (menu.selected) WriteText(5, menu.selected-1*menu.list.item_h+11, 0x80, 0xEE0000, "\x10");
 }
 
 void _menu_item_click()

@@ -542,6 +542,7 @@ void draw_window()
 	llist_copy(#files_active, #files);
 	strcpy(#active_path, #path);
 	DrawStatusBar();
+	Open_Dir(#path,ONLY_OPEN);
 	DrawFilePanels();
 	if (del_active) Del_Form();
 	if (new_element_active) NewElement_Form(new_element_active, #new_element_name);
