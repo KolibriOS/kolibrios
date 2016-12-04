@@ -193,7 +193,8 @@ byte Cp866ToAnsi(byte s) {
 	IF(font)free(font);
 	label_io.read(font_path);
 	IF(!EAX) {
-		notify("'Error: KFONT is not loaded.' -E"); 
+		debugln(font_path);
+		io.run("/sys/@notify", "'Error: KFONT is not loaded.' -E"); 
 		return false;
 	}
 	font_begin = font = label_io.buffer_data;
