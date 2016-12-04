@@ -46,7 +46,6 @@ dword text_color_index;
 dword link_color_inactive;
 dword link_color_active;
 dword bg_color;
-dword block_bg_color;
 
 int stroka;
 int stolbec;
@@ -80,7 +79,7 @@ void TWebBrowser::DrawStyle()
 	{
 		ChangeCharset("UTF-8", "CP866", #line);
 		strcpy(#header, #line);
-		strcat(#header, " -");
+		strcat(#header, " - ");
 		strcat(#header, #version);
 		line = 0;
 		return;
@@ -125,7 +124,7 @@ void TWebBrowser::Prepare(){
 	style.align = ALIGN_LEFT;
 	link_color_inactive = 0x0000FF;
 	link_color_active = 0xFF0000;
-	bg_color = block_bg_color = 0xFFFFFF;
+	bg_color = 0xFFFFFF;
 	DrawBuf.Fill(bg_color);
 	PageLinks.Clear();
 	strcpy(#header, #version);
@@ -133,14 +132,16 @@ void TWebBrowser::Prepare(){
 	stolbec = 0;
 	line = 0;
 	//for plaint text use CP866 for other UTF
-	if (strstri(bufpointer, "html")) 
+	if (strstri(bufpointer, "html")!=-1) 
 	{
-		style.pre = 0;
+		debugln("<html> found");
+		style.pre = false;
 		cur_encoding = CH_NULL;
 	}
 	else
 	{
-		style.pre = 1;
+		debugln("no <html>");
+		style.pre = true;
 		cur_encoding = CH_NULL;
 	}
 	for (bufpos=bufpointer ; (bufpos < bufpointer+bufsize) && (ESBYTE[bufpos]!=0) ; bufpos++;)
@@ -153,9 +154,11 @@ void TWebBrowser::Prepare(){
 			if (style.pre)
 			{
 				DrawStyle();
+				line = NULL;
 				NewLine();
 				break;
 			}
+			goto DEFAULT_MARK;
 		case '\9':
 			if (style.pre) //otherwise go to 0x0d	
 			{
@@ -164,7 +167,7 @@ void TWebBrowser::Prepare(){
 				for (j=0; j<tab_len; j++;) chrcat(#line,' ');
 				break;
 			}
-			goto DEFAULT_MARK;		
+			goto DEFAULT_MARK;
 		case '&': //&nbsp; and so on
 			bufpos++;
 			tag=0;
@@ -289,7 +292,7 @@ void TWebBrowser::SetStyle() {
 			if (isattr("text=")) text_colors[0]=GetColor(#val);
 			if (isattr("bgcolor="))
 			{
-				bg_color = block_bg_color = GetColor(#val);
+				bg_color = GetColor(#val);
 				DrawBuf.Fill(bg_color);
 			}
 		} while(GetNextParam());
@@ -328,10 +331,6 @@ void TWebBrowser::SetStyle() {
 		}
 		else if (text_color_index > 0) text_color_index--;
 		return;
-	}
-	if (istag("bg")) {
-		if (opened) {block_bg_color=GetColor(#val); NewLine();}
-		if (!opened) block_bg_color=bg_color;
 	}
 	if (istag("div")) || (istag("header")) || (istag("article")) || (istag("footer")) {
 		IF(oldtag[0] != 'h') NewLine();
@@ -467,7 +466,6 @@ void TWebBrowser::NewLine()
 	onleft = list.x + 5;
 	ontop = stroka * list.item_h + list.y + 5;
 	if (t_html) && (!t_body) return;
-	if (block_bg_color!=bg_color) DrawBuf.DrawBar(0, stroka+1*list.item_h+5, DrawBuf.bufw, list.item_h, block_bg_color);
 	if (stroka * list.item_h + 5 >= 0) && ( stroka + 1 * list.item_h + 5 < list.h) && (!anchor)
 	{
 		if (style.align == ALIGN_CENTER) && (DrawBuf.zoom==1) DrawBuf.AlignCenter(onleft,ontop,list.w,list.item_h,stolbec * list.font_w);

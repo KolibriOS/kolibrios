@@ -59,7 +59,7 @@ void Operation_Draw_Progress(dword filename) {
 	DisplayOperationForm();
 	DrawIconByExtension(filename, filename+strrchr(filename,'.'), 16, 19, system.color.work);
 	DrawBar(45, 32, Dialog_Form.cwidth-45, 15, system.color.work);
-	WriteText(45, 32, 0x90, 0x000000, filename);
+	WriteText(45, 32, 0x90, system.color.work_text, filename);
 	progressbar_draw stdcall (#copy_bar);
 	progressbar_progress stdcall (#copy_bar);
 	//copy_bar.value++;

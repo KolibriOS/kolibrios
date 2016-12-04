@@ -570,9 +570,9 @@ void DrawStatusBar()
 	int go_up_folder_exists=0;
 	if (!show_status_bar) return;
 	if (files.count>0) && (strcmp(file_mas[0]*304+buf+72,"..")==0) go_up_folder_exists=1;
-	DrawBar(1, Form.cheight - status_bar_h-1, Form.cwidth-2,  status_bar_h, col_work);
+	DrawBar(1, Form.cheight - status_bar_h-1, Form.cwidth-2,  status_bar_h, system.color.work);
 	sprintf(#status_bar_str, STATUS_STR, files.count-go_up_folder_exists, count_dir-go_up_folder_exists, files.count-count_dir, selected_count);
-	WriteText(6,Form.cheight - 13,0x80,0x000000,#status_bar_str);
+	WriteText(6,Form.cheight - 13,0x80,system.color.work_text,#status_bar_str);
 }
 
 void DrawFilePanels()
