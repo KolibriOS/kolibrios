@@ -3192,16 +3192,18 @@ ntfsSpaceAlloc:
 ;   out:
 ; [ebp+NTFS.fileDataStart] = allocated block starting cluster
 ; CF=1 -> disk full
-        push    eax
         mov     ecx, [ebp+NTFS.BitmapBuffer]
         add     edi, ecx
         add     ecx, [ebp+NTFS.BitmapSize]
         sub     ecx, edi
-        jnc     @f
+        ja      @f
+        push    eax
         call    bitmapBuffering
+        pop     eax
         shl     ecx, 2
 @@:
         shr     ecx, 2
+        push    ecx
         mov     eax, [ebp+NTFS.fileDataSize]
         shr     eax, 5
         jz      .small
@@ -3254,59 +3256,56 @@ ntfsSpaceAlloc:
         add     esp, 8
         jmp     .start
 
-.small:     ; less than 32 clusters
-        mov     eax, -1
-        repz scasd          ; search for zero bits
-        test    ecx, ecx
-        jnz     @f
-        call    bitmapBuffering
-        jmp     .small
 @@:
         sub     edi, 4
-        mov     eax, [edi]
+        call    bitmapBuffering
+        push    ecx
+.small:     ; less than 32 clusters
+        pop     ecx
+        or      eax, -1
+        repz scasd
+        jecxz   @b
+        push    ecx
+        mov     eax, [edi-4]
         not     eax
 @@:
-        bsf     ebx, eax    ; first 0
-        jz      .again
+        bsf     ecx, eax    ; first 0
+        jz      .small
         not     eax
         shr     eax, cl
         shl     eax, cl
         bsf     edx, eax    ; next 1
         jz      @f
-        sub     edx, ebx
+        sub     edx, ecx
         cmp     edx, [ebp+NTFS.fileDataSize]
         jnc     .got        ; fits inside
-        bsf     ebx, eax
+        bsf     ecx, eax
         not     eax
         shr     eax, cl
         shl     eax, cl
         jmp     @b
+
 @@:         ; next dword
-        mov     eax, [edi+4]
+        mov     eax, [edi]
         bsf     edx, eax
         jz      .got        ; empty
         add     edx, 32
-        sub     edx, ebx
+        sub     edx, ecx
         cmp     edx, [ebp+NTFS.fileDataSize]
-        jnc     .got        ; share between dwords
-.again:
-        add     edi, 4
-        jmp     .small
-
+        jc      .small
 .got:
-        push    ebx         ; starting bit
+        sub     edi, 4
+        push    ecx         ; starting bit
         push    edi         ; starting dword
 .done:      ; mark space
-        mov     ecx, [esp+4]
+        pop     edi ecx
         cmp     ecx, 32
         jc      @f
         xor     ecx, ecx
-        add     dword [esp], 4
-        mov     [esp+4], ecx
+        add     edi, 4
 @@:
-        mov     edi, [esp]
-        xor     eax, eax
-        dec     eax
+        push    ecx edi
+        or      eax, -1
         shr     eax, cl
         shl     eax, cl
         neg     ecx
@@ -3324,8 +3323,7 @@ ntfsSpaceAlloc:
         push    ecx
         shr     ecx, 5
         add     edi, 4
-        xor     eax, eax
-        dec     eax
+        or      eax, -1
         rep stosd
         pop     ecx
         and     ecx, 31
@@ -3362,7 +3360,6 @@ ntfsSpaceFree:
         mov     eax, edi
         add     eax, ebx
         shr     eax, 3
-        inc     eax
         cmp     eax, [ebp+NTFS.BitmapSize]
         jc      @f
         add     eax, [ebp+NTFS.BitmapBuffer]
@@ -3447,17 +3444,18 @@ bitmapBuffering:
         call    fs_read64_app
         test    eax, eax
         jnz     .err
-        add     [ebp+NTFS.BitmapSize], 8000h
-        mov     eax, [ebp+NTFS.BitmapTotalSize]
-        cmp     eax, [ebp+NTFS.BitmapSize]
+        mov     eax, [ebp+NTFS.BitmapSize]
+        add     eax, 8000h
+        cmp     [ebp+NTFS.BitmapTotalSize], eax
         jnc     @f
-        mov     [ebp+NTFS.BitmapSize], eax
+        mov     eax, [ebp+NTFS.BitmapTotalSize]
 @@:
+        mov     [ebp+NTFS.BitmapSize], eax
         pop     ebx
         mov     ecx, [ebp+NTFS.BitmapBuffer]
-        add     ecx, [ebp+NTFS.BitmapSize]
+        add     ecx, eax
         sub     ecx, edi
-        jc      bitmapBuffering
+        jbe     bitmapBuffering
         shr     ecx, 2
         ret
 
