@@ -58,7 +58,6 @@ img_files = {
  {"File Managers/ICONS.INI", "common/File Managers/icons.ini"},
  {"File Managers/KFM.INI", "common/File Managers/kfm.ini"},
  {"LIB/PIXLIB.OBJ", "common/lib/pixlib.obj"},
- {"LIB/FS.OBJ", "common/lib/fs.obj"},
  {"LIB/ARRAY.OBJ", "common/lib/array.obj"},
  {"LIB/LIBRARY.OBJ", "common/lib/library.obj"},
  {"LIB/ICONV.OBJ", "common/lib/iconv.obj"},

@@ -5,8 +5,8 @@
 #include "../lib/math.h"
 #endif
 
-#ifndef INCLUDE_FS_H
-#include "../lib/obj/fs.h"
+#ifndef INCLUDE_IO_H
+#include "../lib/io.h"
 #endif
 
 #include "../lib/patterns/rgb.h"
@@ -180,27 +180,25 @@ byte Cp866ToAnsi(byte s) {
 	ELSE IF(s>=224)&&(s<=239)s+=16;
 	ELSE IF(s==241)s=184; //e rus with dots (yo)
 	ELSE IF(s==240)s=168; //E rus with dots (yo)
-	ELSE IF(s==242)s='E'; //E urk (ye)
-	ELSE IF(s==243)s=186; //e urk (ye)
-	ELSE IF(s==244)s='I'; //I urk (yi)
-	ELSE IF(s==245)s=191; //i urk (yi)
+	ELSE IF(s==242)s='E'; //E ukr (ye)
+	ELSE IF(s==243)s=186; //e ukr (ye)
+	ELSE IF(s==244)s='I'; //I ukr (yi)
+	ELSE IF(s==245)s=191; //i ukr (yi)
 	return s;
 }
 
 :byte LABEL::init(dword font_path)
 {
-	lib_init_fs();
+	IO label_io;
 	IF(font)free(font);
-	IF(!fs.read(font_path)) {
-		debug("Error while loading font: "); 
-		debugln(font_path); 
-		//io.run("/sys/@notify","'Error: Font is not loaded.' -E");
+	label_io.read(font_path);
+	IF(!EAX) {
+		notify("'Error: KFONT is not loaded.' -E"); 
 		return false;
 	}
-	font_begin = font = EAX;
-	EBX = font_begin + ECX;
-	height = DSBYTE[EBX-1];
-	width = DSBYTE[EBX-2];
+	font_begin = font = label_io.buffer_data;
+	height = DSBYTE[calc(font_begin+label_io.FILES_SIZE)-1];
+	width = DSBYTE[calc(font_begin+label_io.FILES_SIZE)-2];
 	block = math.ceil(height*width/32);
 	smooth = true;
 	return true;
