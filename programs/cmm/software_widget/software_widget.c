@@ -2,7 +2,7 @@
 SOFTWARE CENTER v2.8
 */
 
-#define MEMSIZE 0x9000
+#define MEMSIZE 4096 * 15
 #include "..\lib\strings.h" 
 #include "..\lib\mem.h" 
 #include "..\lib\io.h"
