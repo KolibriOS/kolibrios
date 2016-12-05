@@ -545,7 +545,7 @@ get_full_file_name:
         cmp     byte [ebx], 3
         jz      .utf8
         call    cp866toUTF8_string
-        jns     .ret
+        jns     .end
         jmp     .fail
 
 .utf8:
@@ -554,12 +554,12 @@ get_full_file_name:
         lodsb
         stosb
         test    al, al
-        jz      .ret
+        jz      .end
         jmp     .utf8
 
 .utf16:
         call    UTF16to8_string
-        jns     .ret
+        jns     .end
 .fail:
         mov     byte [edi], 0
         xor     eax, eax
@@ -580,50 +580,9 @@ get_full_file_name:
         cmp     byte [ebx], 0
         jz      .set_ok
         cmp     byte [ebx], 4
-        jnc     .relative
-        inc     ebx
-        cmp     byte [ebx-1], 2
-        jz      .relative16
-.relative:
-        cmp     byte [ebx], 0
-        jz      .set_ok
-        cmp     word [ebx], '.'
-        jz      .set_ok
-        cmp     word [ebx], './'
-        jz      .next
-        cmp     word [ebx], '..'
-        jnz     .doset_relative
-        cmp     byte [ebx+2], 0
-        jz      @f
-        cmp     byte [ebx+2], '/'
-        jnz     .doset_relative
+        jnc     @f
         inc     ebx
 @@:
-        dec     esi
-        cmp     byte [esi], '/'
-        jnz     @b
-.next:
-        add     ebx, 2
-        jmp     .relative
-
-.set_ok:
-        cmp     edx, edi    ; is destination equal to cur_dir?
-        jz      @f
-        mov     ecx, esi
-        sub     ecx, edx
-        mov     esi, edx
-        rep movsb
-        mov     byte [edi], 0
-.ret:
-        mov     al, 1
-        pop     ebx ebp
-        ret     8
-
-@@:
-        mov     byte [esi], 0
-        jmp     .ret
-
-.doset_relative:
         cmp     edx, edi    ; is destination equal to cur_dir?
         mov     edi, esi
         jz      @f
@@ -643,29 +602,67 @@ get_full_file_name:
         mov     ebx, [esp]
         jmp     .absolute
 
-.relative16:
-        cmp     word [ebx], 0
-        jz      .set_ok
-        cmp     word [ebx], '.'
-        jnz     .doset_relative
-        cmp     word [ebx+2], 0
-        jz      .set_ok
-        cmp     word [ebx+2], '/'
-        jz      .next16
-        cmp     word [ebx+2], '.'
-        jnz     .doset_relative
-        cmp     word [ebx+4], 0
+.set_ok:
+        cmp     edx, edi    ; is destination equal to cur_dir?
         jz      @f
-        cmp     word [ebx+4], '/'
-        jnz     .doset_relative
-        add     ebx, 2
+        mov     ecx, esi
+        sub     ecx, edx
+        mov     esi, edx
+        rep movsb
+        mov     byte [edi], 0
 @@:
-        dec     esi
+        mov     al, 1
+        pop     ebx ebp
+        ret     8
+
+.end:
+        or      ecx, -1
+        mov     edi, [esp+12]
+        xor     eax, eax
+        push    edi
+        repnz scasb
+        not     ecx
+        pop     edi
+.parse:
+        mov     al, '/'
+        repnz scasb
+        jecxz   @b
+        cmp     byte [edi], '.'
+        jnz     .parse
+        mov     esi, edi
+@@:
+        lodsw
+        sub     ecx, 2
+        cmp     ax, './'
+        jz      @b
+        cmp     ax, '..'
+        jnz     @f
         cmp     byte [esi], '/'
-        jnz     @b
-.next16:
-        add     ebx, 4
-        jmp     .relative16
+        jnz     @f
+        mov     edx, ecx
+        mov     ecx, edi
+        sub     ecx, [esp+12]
+        sub     ecx, 2
+        jc      .fail
+        sub     edi, 2
+        lodsb
+        dec     edx
+        std
+        repnz scasb
+        cld
+        add     edi, 2
+        mov     ecx, edx
+        jmp     @b
+
+@@:
+        sub     esi, 2
+        add     ecx, 2
+        cmp     esi, edi
+        jz      .parse
+        push    edi ecx
+        rep movsb
+        pop     ecx edi
+        jmp     .parse
 
 include "parse_fn.inc"
 include "fs_common.inc"
