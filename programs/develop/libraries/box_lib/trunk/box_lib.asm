@@ -31,13 +31,7 @@ dll.load    dd ?
 
 ;----------------------------------------------------
 ;EditBox
-;----------------------------------------------------
-align 16
-use_editbox_draw	;macro reveals the function of the display.
-align 16
-use_editbox_key 	;macro reveals processing function of the keypad.
-align 16
-use_editbox_mouse	;macro reveals processing function of the mouse.
+include 'editbox.asm' ;editbox
 
 ;----------------------------------------------------
 ;CheckBox2

@@ -1,4 +1,3 @@
-include 'editbox.mac'		;macro which should make life easier :) specially for editbox
 include 'checkbox2.mac'		;macro implements checkbox version 2
 include 'optionbox.mac'		;macro implements optionbox
 include 'scrollbar.mac'		;macro implements scrollbar
