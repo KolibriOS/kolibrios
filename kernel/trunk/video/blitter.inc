@@ -206,10 +206,13 @@ virtual at sizeof.BLITTER
 .position       dd      ? ; (x shl 16) + y
 ; ???
 .extra_var1     dd      ?
+.flags          dd      ?
 .local_vars_size = $
 end virtual
         sub     esp, .local_vars_size
-
+        
+        mov     [esp+.flags], ebx
+        
         mov     eax, [TASK_BASE]
         mov     ebx, [eax-twdw + WDATA.box.width]
         mov     edx, [eax-twdw + WDATA.box.height]
@@ -262,6 +265,14 @@ end virtual
         mov     ebp, [esp+BLITTER.dst_y]
         add     ebx, [eax-twdw + WDATA.box.left]
         add     ebp, [eax-twdw + WDATA.box.top]
+        
+        test    [esp+.flags], BLIT_CLIENT_RELATIVE
+        jz      .no_client_relative        
+
+        mov     eax, [current_slot]
+        add     ebx, [eax + APPDATA.wnd_clientbox.left]
+        add     ebp, [eax + APPDATA.wnd_clientbox.top]
+.no_client_relative:
 
         mov     ecx, ebx
         add     ecx, [esp+BLITTER.w]

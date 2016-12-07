@@ -362,6 +362,8 @@ SYSTEM_SHUTDOWN    equ 2
 SYSTEM_REBOOT      equ 3
 SYSTEM_RESTART     equ 4
 
+BLIT_CLIENT_RELATIVE equ 0x20000000
+
 struct SYSCALL_STACK
         _eip            dd ?
         _edi            dd ?    ;  +4

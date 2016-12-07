@@ -4285,13 +4285,14 @@ Parameters:
   * eax = 73 - function number
 
   * ebx = ROP and optional flags
-     31           6 5  4 3   0
-     [  reserved  ][T][B][ROP]
+     31      30 29 28       6 5  4 3   0
+     [reserved][CR][reserved][T][B][ROP]
      ROP - raster operation code
         0: Copy
      1-15: reserved
      B   - blit into the background surface
      T   - transparent blit
+     CR  - blit client relative
 
   * ecx = pointer to the function parameters
         destination offset and clipping
