@@ -34,14 +34,8 @@ dll.load    dd ?
 include 'editbox.asm' ;editbox
 
 ;----------------------------------------------------
-;CheckBox2
-;----------------------------------------------------
-align 16
-_init_checkbox2 	;macro for init checkbox
-align 16
-use_checkbox_draw2	;macro reveals the function of the display.
-align 16
-use_checkbox_mouse2	;macro reveals processing function of the mouse.
+;CheckBox
+include 'checkbox.asm' ;checkbox
 
 ;--------------------------------------------------
 ;radiobutton Group
