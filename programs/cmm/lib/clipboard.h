@@ -32,9 +32,9 @@ dword Clipboard::GetSlotCount()
 }
 
 #define SLOT_DATA_TYPE_TEXT 0
-#define SLOT_DATA_TYPE_IMAGE 1
-#define SLOT_DATA_TYPE_RAW 2
-#define SLOT_DATA_TYPE_RESERVED 3
+#define SLOT_DATA_TYPE_TEXT_WITH_BLOCK_SELECTION 1
+#define SLOT_DATA_TYPE_IMAGE 2
+#define SLOT_DATA_TYPE_RAW 3
 dword Clipboard::GetSlotData( ECX) //ECX = slot number
 {
 	dword result;

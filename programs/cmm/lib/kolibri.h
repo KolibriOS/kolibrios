@@ -58,8 +58,6 @@ char program_path[4096];
 #define EVENT_MASK_NETWORK  010000000b
 #define EVENT_MASK_DEBUG    100000000b
 
-//ARGS FUNCTION
-#define END_ARGS 0xFF00FF
 //-------------------------------------------------------------------------
 
 #include "../lib/system.h"
@@ -120,23 +118,23 @@ inline fastcall dword GetFreeRAM()
 	$mov eax, 18
 	$mov ebx, 16
 	$int 0x40
-	//return eax = размер свободной памяти в килобайтах
+	//return eax = Г°Г Г§Г¬ГҐГ° Г±ГўГ®ГЎГ®Г¤Г­Г®Г© ГЇГ Г¬ГїГІГЁ Гў ГЄГЁГ«Г®ГЎГ Г©ГІГ Гµ
 }
 
-inline fastcall dword LoadDriver(ECX) //ECX - имя драйвера
+inline fastcall dword LoadDriver(ECX) //ECX - ГЁГ¬Гї Г¤Г°Г Г©ГўГҐГ°Г 
 {
 	$mov eax, 68
 	$mov ebx, 16
 	$int 0x40
-	//return 0 - неудача, иначе eax = хэндл драйвера 
+	//return 0 - Г­ГҐГіГ¤Г Г·Г , ГЁГ­Г Г·ГҐ eax = ГµГЅГ­Г¤Г« Г¤Г°Г Г©ГўГҐГ°Г  
 }
 
-inline fastcall dword RuleDriver(ECX) //указатель на управляющую структуру
+inline fastcall dword RuleDriver(ECX) //ГіГЄГ Г§Г ГІГҐГ«Гј Г­Г  ГіГЇГ°Г ГўГ«ГїГѕГ№ГіГѕ Г±ГІГ°ГіГЄГІГіГ°Гі
 {
 	$mov eax, 68
 	$mov ebx, 17
 	$int 0x40
-	//return eax = определяется драйвером
+	//return eax = Г®ГЇГ°ГҐГ¤ГҐГ«ГїГҐГІГ±Гї Г¤Г°Г Г©ГўГҐГ°Г®Г¬
 }
 
 struct proc_info
@@ -257,7 +255,7 @@ inline fastcall void SetCurDir( ECX)
 }
 
 
-//eax = язык системы (1=eng, 2=fi, 3=ger, 4=rus)
+//eax = ГїГ§Г»ГЄ Г±ГЁГ±ГІГҐГ¬Г» (1=eng, 2=fi, 3=ger, 4=rus)
 #define SYS_LANG_ENG 1
 #define SYS_LANG_FIN 2
 #define SYS_LANG_GER 3
@@ -364,6 +362,18 @@ inline fastcall void DrawTitle( ECX)
 	$int 0x40;
 }
 
+// @EDX is a procewss id, -1 for self
+// @ESI is a new LayerBehaviour
+// @RETURN: EAX, 0 is fail, 1 is success
+#define WINDOW_LAYER_ALWAYS_ON_TOP 1
+inline fastcall dword SetWindowLayerBehaviour(EDX, ESI)
+{
+	EAX = 18;
+	EBX = 25;
+	ECX = 2;
+	$int 64
+}
+
 :void WriteTextB(dword x,y,byte fontType, dword color, str_offset)
 {
 	EAX = 4;
@@ -414,11 +424,11 @@ inline fastcall void DrawTitle( ECX)
   $int  0x40;
 }
 
-:dword GetPixelColor(dword x, x_size, y)
+:dword GetPixelColorFromScreen(dword _x, _y)
 {
-	$mov eax, 35
-	EBX= y*x_size+x;
-	$int 0x40
+	EAX = 35;
+	EBX = _y * screen.width + _x;
+	$int 64
 }
 
 :void _PutImage(dword x,y, w,h, data_offset)
@@ -488,6 +498,37 @@ inline RefreshWindow(dword ID_REFRESH,ID_ACTIVE)
 	EDX = id;
 	ESI = color;
 	$int 0x40
+}
+
+void DefineDragableWindow(dword _x, _y, _w, _h)
+{
+	DefineAndDrawWindow(_x, _y, _w, _h, 0x41,0x000000,NULL,0b);
+}
+
+:void EventDragWindow()
+{
+	dword tmp_x,tmp_y;
+	dword z1,z2;
+	tmp_x = mouse.x;
+	tmp_y = mouse.y;
+	do {
+		mouse.get();
+		if (tmp_x!=mouse.x) || (tmp_y!=mouse.y) 
+		{
+			z1 = Form.left + mouse.x - tmp_x;
+			z2 = Form.top + mouse.y - tmp_y;
+			if(z1<=10) || (z1>20000) z1=0; else if(z1>screen.width-Form.width-10)z1=screen.width-Form.width;
+			if(z2<=10) || (z2>20000) z2=0; else if(z2>screen.height-Form.height-10)z2=screen.height-Form.height;
+			MoveSize(z1 , z2, OLD, OLD);
+			draw_window();
+		}
+		pause(1);
+	} while (mouse.lkm);
+}
+
+:void DefineHiddenButton(dword _x, _y, _w, _h, _id)
+{
+	DefineButton(_x, _y, _w, _h, _id + BT_HIDE, 0);
 }
 
 inline fastcall void DeleteButton( EDX)
@@ -601,7 +642,7 @@ char __BUF_DIR__[4096];
 	dword path;
 } self;
 
-dword __generator;  // random number generator - для генерации случайных чисел
+dword __generator;  // random number generator - Г¤Г«Гї ГЈГҐГ­ГҐГ°Г Г¶ГЁГЁ Г±Г«ГіГ·Г Г©Г­Г»Гµ Г·ГЁГ±ГҐГ«
 
 :dword program_path_length;
 

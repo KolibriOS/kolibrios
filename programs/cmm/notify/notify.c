@@ -116,7 +116,7 @@ void main()
 	TEXT_Y = WIN_SIZE_Y/2-4;
 	
 	//emulate multithread :)
-	while (GetPixelColor(SCREEN_SIZE_X-1, SCREEN_SIZE_X, WIN_Y)==0x333333) WIN_Y+=WIN_SIZE_Y+17;
+	while (GetPixelColorFromScreen(SCREEN_SIZE_X-1, WIN_Y)==0x333333) WIN_Y+=WIN_SIZE_Y+17;
 
 	shadow_buf_24 = malloc(WIN_SIZE_X*WIN_SIZE_Y*3);
 	shadow_buf_32 = malloc(WIN_SIZE_X*WIN_SIZE_Y*4+8);

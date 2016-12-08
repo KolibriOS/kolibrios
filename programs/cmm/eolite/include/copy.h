@@ -42,7 +42,7 @@ void Copy(dword pcth, char cut)
 	size_buf += 20;
 	buff_data = malloc(size_buf);
 	ESDWORD[buff_data] = size_buf;
-	ESDWORD[buff_data+4] = 3;
+	ESDWORD[buff_data+4] = SLOT_DATA_TYPE_RAW;
 	ESINT[buff_data+8] = selected_count;
 	copy_buf_offset = buff_data + 10;
 	for (i=0; i<files.count; i++) 

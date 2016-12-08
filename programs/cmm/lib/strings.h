@@ -794,6 +794,7 @@ inline signed csshexdec(dword text)
 
 inline cdecl int sprintf(dword buf, format,...)
 {
+	#define END_ARGS 0xFF00FF //ARGS FUNCTION
 	byte s;
 	char X[10];
 	dword ret, tmp, l;
