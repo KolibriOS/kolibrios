@@ -1,13 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
-;; Distributed under terms of the GNU General Public License    ;;
-;;                                                              ;;
-;;                                                              ;;
-;;  MenuetOS process management, protected ring3                ;;
-;;                                                              ;;
-;;  Distributed under GPL. See file COPYING for details.        ;;
-;;  Copyright 2003 Ville Turjanmaa                              ;;
+;; Copyright (C) KolibriOS team 2004-2016. All rights reserved. ;;
+;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -154,10 +148,9 @@ exc_c:                          ; исключения (все, кроме 7-г�
         mov     eax, [esi+APPDATA.debugger_slot]
         test    eax, eax
         jnz     .debug
-        sti
 ; not debuggee => say error and terminate
-        call    show_error_parameters ;; only ONE using, inline ???
-       ;mov     edx, [TASK_BASE]
+        call    show_error_parameters
+        sti
         mov     [edx + TASKDATA.state], byte 4 ; terminate
         call    wakeup_osloop
         call    change_task
