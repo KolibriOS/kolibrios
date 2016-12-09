@@ -66,11 +66,19 @@ _strnlen:
 fs_execute_from_sysdir:
         xor     ebx, ebx
 fs_execute_from_sysdir_param:
+        stdcall kernel_alloc, maxPathLength
+        push    eax ebx
+        mov     esi, ebp
+        mov     edi, eax
+        xor     eax, eax
+        call    getFullPath
+        pop     ecx ebx
         xor     edx, edx
 proc fs_execute
-; ebx - cmdline
-; edx - flags
-; ebp - full filename
+; edx = flags
+; ecx -> cmdline
+; ebx -> absolute file path
+; eax = string length
     locals
         cmdline         rd  1
         flags           rd  1
@@ -91,16 +99,13 @@ proc fs_execute
     endl
 
         mov     [flags], edx
-        mov     [cmdline], ebx
-        stdcall kernel_alloc, maxPathLength
-        mov     [path_string], eax
-        mov     ebx, [ebp]
-        stdcall get_full_file_name, eax, maxPathLength
+        mov     [cmdline], ecx
+        mov     [path_string], ebx
+        mov     [filename_size], eax
+        mov     esi, -ERROR_FILE_NOT_FOUND
         test    eax, eax
         jz      .err_file
-
-        stdcall load_file, [path_string]
-        mov     esi, -ERROR_FILE_NOT_FOUND
+        stdcall load_file, ebx
         test    eax, eax
         jz      .err_file
 
@@ -141,7 +146,6 @@ proc fs_execute
         jz      @f
         stosb
         loop    @b
-
 @@:
         mov     edi, [cmdline]
         xor     eax, eax
@@ -169,10 +173,6 @@ proc fs_execute
         lea     edx, [ebx+APPDATA.list]
         lea     ecx, [eax+PROC.thr_list]
         list_add_tail edx, ecx
-        mov     edi, [path_string]
-        mov     ecx, maxPathLength
-        call    _strnlen
-        mov     [filename_size], eax
         mov     eax, [cmdline_size]
         add     eax, sizeof.APP_HDR
         stdcall kernel_alloc, eax

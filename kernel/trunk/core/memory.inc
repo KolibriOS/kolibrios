@@ -1101,13 +1101,11 @@ align 4
 f68:
         cmp     ebx, 4
         jbe     sys_sheduler
-
         cmp     ebx, 11
         jb      undefined_syscall
-
         cmp     ebx, 27
         ja      undefined_syscall
-
+        xor     eax, eax
         jmp     dword [f68call+ebx*4-11*4]
 .11:
         call    init_heap
@@ -1143,7 +1141,7 @@ f68:
 .19:
         cmp     ecx, OS_BASE
         jae     .fail
-        stdcall load_library, ecx
+        stdcall load_library, ecx, eax
         mov     [esp+SYSCALL_STACK._eax], eax
         ret
 .20:
@@ -1155,26 +1153,21 @@ f68:
 .21:
         cmp     ecx, OS_BASE
         jae     .fail
-
         cmp     edx, OS_BASE
         jae     .fail
-
         stdcall load_pe_driver, ecx, edx
         mov     [esp+SYSCALL_STACK._eax], eax
         ret
 .22:
         cmp     ecx, OS_BASE
         jae     .fail
-
         stdcall shmem_open, ecx, edx, esi
         mov     [esp+SYSCALL_STACK._edx], edx
         mov     [esp+SYSCALL_STACK._eax], eax
         ret
-
 .23:
         cmp     ecx, OS_BASE
         jae     .fail
-
         stdcall shmem_close, ecx
         mov     [esp+SYSCALL_STACK._eax], eax
         ret
@@ -1195,26 +1188,21 @@ f68:
         bts     [eax+APPDATA.except_mask], ecx
 @@:
         ret
-
 .26:
         stdcall user_unmap, ecx, edx, esi
         mov     [esp+SYSCALL_STACK._eax], eax
         ret
-
 .27:
         cmp     ecx, OS_BASE
         jae     .fail
-
         stdcall load_file_umode, ecx
         mov     [esp+SYSCALL_STACK._edx], edx
         mov     [esp+SYSCALL_STACK._eax], eax
         ret
 
 .fail:
-        xor     eax, eax
         mov     [esp+SYSCALL_STACK._eax], eax
         ret
-
 
 align 4
 f68call:   ; keep this table closer to main code

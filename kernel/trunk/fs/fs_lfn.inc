@@ -40,17 +40,6 @@ file_system_lfn_protected:
 
 file_system_lfn:
 ; in: ebx -> parameter structure
-;   operation codes:
-; 0 = read file
-; 1 = read folder
-; 2 = create/rewrite file
-; 3 = write/append to file
-; 4 = set file end
-; 5 = get file info
-; 6 = set file info
-; start application
-; 8 = delete file/folder
-; 9 = create folder
         lea     ebp, [ebx+20]
         cmp     byte [ebp], 0
         jnz     @f
@@ -69,23 +58,25 @@ file_system_lfn:
         cmp     word [ebp+3], 0
         jz      .rootdir
 @@:
+        stdcall kernel_alloc, maxPathLength
+        push    eax ebx
+        xchg    eax, edi
+        mov     esi, ebp
+        xor     eax, eax
+        call    getFullPath
+        pop     ebx ebp
+        test    eax, eax
+        jz      .notfound
         cmp     dword[ebx], 7   ; start application
         jnz     @f
         mov     edx, [ebx+4]
-        mov     ebx, [ebx+8]
-        call    fs_execute      ; ebp, ebx, edx
+        mov     ecx, [ebx+8]
+        mov     ebx, ebp
+        call    fs_execute
         mov     [image_of_eax], eax
         ret
 
 @@:
-        stdcall kernel_alloc, maxPathLength
-        push    ebx
-        mov     ebx, ebp
-        mov     ebp, eax
-        stdcall get_full_file_name, eax, maxPathLength
-        pop     ebx
-        test    eax, eax
-        jz      .notfound
         lea     esi, [ebp+2]
         mov     ax, [esi]
         or      ax, 2020h
@@ -491,40 +482,42 @@ sys_current_directory:  ; sysfunction 30
         ret
 
 .set:
-        pop     eax
-        push    maxPathLength
-        push    edi
-        push    eax
-        mov     ebx, ecx
-get_full_file_name:
-; in: ebx -> file name, [esp+4] -> destination, [esp+8] = max length
-; out: UTF-8 string, eax=0 -> out of length
-        push    ebp ebx
-        cmp     byte [ebx], 0
-        jz      .set_relative
-        mov     esi, ebx
-        cmp     byte [ebx], 4
-        jnc     @f
-        inc     esi
-@@:
-        cmp     byte [esi], '/'
-        jnz     .set_relative
-        inc     esi
+        mov     esi, ecx
+        xor     eax, eax
+getFullPath:
+; in: esi -> file path, eax = string encoding, edi -> destination
+; out: UTF-8 string (with marker), eax = length, 0 -> error
+        test    eax, eax
+        jnz     @f
         cmp     byte [esi], 4
         jnc     @f
-        mov     ebx, esi
-        inc     esi
-        cmp     byte [esi], '/'
-        jnz     .start
-        inc     esi
+        cmp     byte [esi], 0
+        jz      @f
+        lodsb
 @@:
-        cmp     byte [ebx], 2
+        cmp     byte [esi], '/'
+        jnz     .relative
+        cmp     eax, 2
+        jnz     @f
+        cmp     word [esi], '/'
+        jnz     .relative
+        inc     esi
+        inc     esi
+        jmp     .start
+
+@@:
+        inc     esi
+        cmp     byte [esi], 4
+        jnc     .start
+        lodsb
+        cmp     byte [esi], '/'
         jnz     .start
         inc     esi
 .start:
+        push    eax edi
         call    process_replace_file_name
-        mov     edi, [esp+12]
-        mov     ecx, [esp+16]
+        mov     edi, [esp]
+        mov     ecx, maxPathLength
         mov     al, 3
         mov     ah, '/'
         stosw
@@ -540,9 +533,9 @@ get_full_file_name:
         mov     esi, ebp
         dec     edi
 .absolute:
-        cmp     byte [ebx], 2
+        cmp     byte [esp+4], 2
         jz      .utf16
-        cmp     byte [ebx], 3
+        cmp     byte [esp+4], 3
         jz      .utf8
         call    cp866toUTF8_string
         jns     .end
@@ -562,31 +555,29 @@ get_full_file_name:
         jns     .end
 .fail:
         mov     byte [edi], 0
+        pop     eax eax
         xor     eax, eax
-        pop     ebx ebp
-        ret     8
+        ret
 
-.set_relative:
+.relative:
+        push    eax edi
+        mov     ebx, esi
         mov     edi, [current_slot]
         mov     edi, [edi+APPDATA.cur_dir]
         mov     edx, edi
-        mov     ecx, [esp+16]
+        mov     ecx, maxPathLength
         xor     eax, eax
         repnz scasb
         mov     esi, edi
-        dec     esi
-        mov     edi, [esp+12]
+        mov     edi, [esp]
         jecxz   .fail
         cmp     byte [ebx], 0
         jz      .set_ok
-        cmp     byte [ebx], 4
-        jnc     @f
-        inc     ebx
-@@:
+        dec     esi
         cmp     edx, edi    ; is destination equal to cur_dir?
         mov     edi, esi
         jz      @f
-        mov     edi, [esp+12]
+        mov     edi, [esp]
         mov     ecx, esi
         sub     ecx, edx
         mov     esi, edx
@@ -597,9 +588,8 @@ get_full_file_name:
         inc     edi
         mov     esi, ebx
         mov     ecx, edx
-        add     ecx, [esp+16]
+        add     ecx, maxPathLength
         sub     ecx, edi
-        mov     ebx, [esp]
         jmp     .absolute
 
 .set_ok:
@@ -609,15 +599,16 @@ get_full_file_name:
         sub     ecx, edx
         mov     esi, edx
         rep movsb
-        mov     byte [edi], 0
 @@:
-        mov     al, 1
-        pop     ebx ebp
-        ret     8
+        pop     eax
+        sub     edi, eax
+        pop     eax
+        mov     eax, edi
+        ret
 
 .end:
         or      ecx, -1
-        mov     edi, [esp+12]
+        mov     edi, [esp]
         xor     eax, eax
         push    edi
         repnz scasb
@@ -641,7 +632,7 @@ get_full_file_name:
         jnz     @f
         mov     edx, ecx
         mov     ecx, edi
-        sub     ecx, [esp+12]
+        sub     ecx, [esp]
         sub     ecx, 2
         jc      .fail
         sub     edi, 2

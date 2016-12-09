@@ -899,7 +899,7 @@ coff_get_align:
         ret
 
 align 4
-proc load_library stdcall, file_name:dword
+proc load_library stdcall, file_name:dword, encoding:dword
     locals
         fullname    dd  ?
         fileinfo    rb  40
@@ -910,8 +910,12 @@ proc load_library stdcall, file_name:dword
 ; resolve file name
         stdcall kernel_alloc, maxPathLength
         mov     [fullname], eax
-        mov     ebx, [file_name]
-        stdcall get_full_file_name, eax, maxPathLength
+        mov     edi, eax
+        mov     esi, [file_name]
+        mov     eax, [encoding]
+        push    ebp
+        call    getFullPath
+        pop     ebp
         test    eax, eax
         jz      .fail
 ; scan for required DLL in list of already loaded for this process,
