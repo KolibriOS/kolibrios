@@ -1,12 +1,11 @@
 
-
 scroll_bar scroll_wv = { 15,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
 enum { ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT};
 
 struct _style {
 byte
-	b, i, u, s, h,
+	b, u, s, h,
 	pre,
 	blq,
 	li,
@@ -47,10 +46,13 @@ dword link_color_inactive;
 dword link_color_active;
 dword bg_color;
 
-int stroka;
+int draw_y;
 int stolbec;
 int tab_len;
-int anchor_line_num;
+int anchor_y;
+
+int body_magrin=5;
+int basic_line_h=22;
 
 char URL[10000];
 char header[2048];
@@ -73,14 +75,12 @@ char anchor[256]=0;
 //============================================================================================
 void TWebBrowser::DrawStyle()
 {
-	int start_x, start_y, line_length, stolbec_len, body_magrin=5;
+	int start_x, line_length, stolbec_len;
 	
 	if (!header)
 	{
 		ChangeCharset("UTF-8", "CP866", #line);
-		strcpy(#header, #line);
-		strcat(#header, " - ");
-		strcat(#header, #version);
+		sprintf(#header, "%s - %s", #line, #version);
 		line = 0;
 		return;
 	}
@@ -88,20 +88,17 @@ void TWebBrowser::DrawStyle()
 	
 	if (line) && (!anchor)
 	{
-		start_x = stolbec * list.font_w + body_magrin * DrawBuf.zoom + list.x;
-		start_y = stroka * list.item_h + body_magrin;
+		start_x = stolbec * list.font_w + body_magrin + list.x;
 		stolbec_len = strlen(#line) * DrawBuf.zoom;
 		line_length = stolbec_len * list.font_w;
 
-		if (style.h) stroka++;
-		WriteBufText(start_x, start_y, list.font_type, text_colors[text_color_index], #line, buf_data);
-		if (style.b) WriteBufText(start_x+1, start_y, list.font_type, text_colors[text_color_index], #line, buf_data);
-		if (style.i) { stolbec++; DrawBuf.Skew(start_x, start_y, line_length, list.item_h); } // bug with zoom>1
-		if (style.s) DrawBuf.DrawBar(start_x, list.item_h / 2 - DrawBuf.zoom + start_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
-		if (style.u) DrawBuf.DrawBar(start_x, list.item_h - DrawBuf.zoom - DrawBuf.zoom + start_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
+		WriteBufText(start_x, draw_y, list.font_type, text_colors[text_color_index], #line, buf_data);
+		if (style.b) WriteBufText(start_x+1, draw_y, list.font_type, text_colors[text_color_index], #line, buf_data);
+		if (style.s) DrawBuf.DrawBar(start_x, list.item_h / 2 - DrawBuf.zoom + draw_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
+		if (style.u) DrawBuf.DrawBar(start_x, list.item_h - DrawBuf.zoom - DrawBuf.zoom + draw_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
 		if (link) {
-			DrawBuf.DrawBar(start_x, list.item_h*style.h + list.item_h - DrawBuf.zoom - DrawBuf.zoom + start_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
-			PageLinks.AddText(#line, line_length, list.item_h*style.h + list.item_h, UNDERLINE);
+			DrawBuf.DrawBar(start_x, draw_y + list.item_h - 2, line_length, DrawBuf.zoom, text_colors[text_color_index]);
+			PageLinks.AddText(line_length, list.item_h - 2, UNDERLINE, 1, #line); //TODO: set bigger underline_h for style.h
 		}
 		stolbec += stolbec_len;
 	}
@@ -119,7 +116,7 @@ void TWebBrowser::Prepare(){
 	byte ignor_param;
 	dword bufpos;
 	int line_len;	
-	style.b = style.i = style.u = style.s = style.h = style.blq = t_html = t_body =
+	style.b = style.u = style.s = style.h = style.blq = t_html = t_body =
 	style.li = link = ignor_text = text_color_index = text_colors[0] = style.li_tab = 0;
 	style.align = ALIGN_LEFT;
 	link_color_inactive = 0x0000FF;
@@ -128,7 +125,7 @@ void TWebBrowser::Prepare(){
 	DrawBuf.Fill(bg_color);
 	PageLinks.Clear();
 	strcpy(#header, #version);
-	stroka = -list.first;
+	draw_y = body_magrin;
 	stolbec = 0;
 	line = 0;
 	//for plaint text use CP866 for other UTF
@@ -227,12 +224,12 @@ void TWebBrowser::Prepare(){
 	}
 	DrawStyle();
 	NewLine();
-	if (list.first == 0) list.count = stroka;
+	if (list.first == 0) list.count = draw_y;
 	DrawPage();
 	if (anchor)
 	{
 		anchor=NULL;
-		list.first=anchor_line_num;
+		list.first = anchor_y;
 		Prepare();
 	}
 }
@@ -252,8 +249,7 @@ void TWebBrowser::Perenos()
 }
 //============================================================================================
 void TWebBrowser::SetStyle() {
-	int left1 = 5 + list.x;
-	int top1 = stroka * list.item_h + list.y + 5;
+	int left1 = body_magrin + list.x;
 	byte opened;
 	byte meta_encoding;
 	if (tag[0] == '/') 
@@ -270,7 +266,7 @@ void TWebBrowser::SetStyle() {
 	if (istag("form")) if (!opened) ignor_text = false;
 	if(istag("title")) {
 		if (opened) header=NULL;
-		else if (!stroka) DrawTitle(#header);
+		else DrawTitle(#header);
 		return;
 	}
 	if (ignor_text) return;
@@ -282,7 +278,7 @@ void TWebBrowser::SetStyle() {
 		return;
 	}
 	if (anchor) if (isattr("id=")) || (isattr("name=")) { //very bad: if the tag is not the last it wound work
-		if (!strcmp(#anchor, #val))	anchor_line_num=list.first+stroka;
+		if (!strcmp(#anchor, #val))	anchor_y=draw_y;
 	}	
 	if (istag("body")) {
 		t_body = opened;
@@ -310,7 +306,7 @@ void TWebBrowser::SetStyle() {
 					text_colors[text_color_index] = text_colors[text_color_index-1];
 					link = 1;
 					text_colors[text_color_index] = link_color_inactive;
-					PageLinks.AddLink(#val, DrawBuf.zoom * stolbec * list.font_w + left1, top1-DrawBuf.zoom);
+					PageLinks.AddLink(#val, DrawBuf.zoom * stolbec * list.font_w + left1, draw_y + list.y);
 				}
 			} while(GetNextParam());
 		}
@@ -345,29 +341,31 @@ void TWebBrowser::SetStyle() {
 	if (istag("br")) { NewLine(); return; }
 	if (istag("tr")) { if (opened) NewLine(); return; }
 	if (istag("b")) || (istag("strong")) || (istag("big")) { style.b = opened; return; }
-	if (istag("i")) || (istag("em")) || (istag("subtitle")) { style.i=opened; return; }
 	if (istag("u")) || (istag("ins")) { style.u=opened; return;}
 	if (istag("s")) || (istag("strike")) || (istag("del")) { style.s=opened; return; }
 	if (istag("dd")) { stolbec += 5; return; }
 	if (istag("blockquote")) { style.blq = opened; return; }
 	if (istag("pre")) || (istag("code")) { style.pre = opened; return; }
-	if (istag("img")) { ImgCache.Images( left1, top1, WB1.list.w); return; }
+	if (istag("img")) { ImgCache.Images( left1, draw_y, WB1.list.w); return; }
 	if (istag("h1")) || (istag("h2")) || (istag("h3")) || (istag("h4")) || (istag("caption")) {
 		style.h = opened;
-		NewLine();
 		if (opened)
 		{
+			NewLine();
+			draw_y += 10;
 			WB1.DrawBuf.zoom=2;
 			WB1.list.font_type |= 10011001b;
 			if (isattr("align=")) && (isval("center")) style.align = ALIGN_CENTER;
 			if (isattr("align=")) && (isval("right")) style.align = ALIGN_RIGHT;
-			if (stroka>1) NewLine();
+			list.item_h = basic_line_h * 2;
 		}
 		else
 		{
+			NewLine();
 			WB1.DrawBuf.zoom=1;
 			WB1.list.font_type = 10011000b;
 			style.align = ALIGN_LEFT;
+			list.item_h = basic_line_h;
 		}
 		return;
 	}
@@ -382,8 +380,8 @@ void TWebBrowser::SetStyle() {
 		if (opened)
 		{
 			NewLine();
-			DrawBuf.DrawBar(style.li_tab * 5 * list.font_w * DrawBuf.zoom + list.x, stroka +1 * list.item_h - 3
-			 - DrawBuf.zoom - DrawBuf.zoom, DrawBuf.zoom*2, DrawBuf.zoom*2, 0x454545);
+			DrawBuf.DrawBar(style.li_tab * 5 * list.font_w * DrawBuf.zoom + list.x, 
+				list.item_h - calc(DrawBuf.zoom*2) /2 + draw_y, DrawBuf.zoom*2, DrawBuf.zoom*2, 0x454545);
 		}
 		return;
 	}
@@ -401,7 +399,7 @@ void TWebBrowser::SetStyle() {
 		$push edi;
 		NewLine();
 		$pop edi;
-		DrawBuf.DrawBar(5, list.item_h*stroka+4, list.w-10, 1, EDI);
+		DrawBuf.DrawBar(5, draw_y - 1, list.w-10, 1, EDI);
 		NewLine();
 		return;
 	}
@@ -448,14 +446,11 @@ void TWebBrowser::DrawScroller()
 	scroll_wv.max_area = list.count;
 	scroll_wv.cur_area = list.visible;
 	scroll_wv.position = list.first;
-
 	scroll_wv.all_redraw = 0;
 	scroll_wv.start_x = list.x + list.w;
 	scroll_wv.start_y = list.y;
-
 	scroll_wv.size_y = list.h;
-	scroll_wv.start_x = list.w * DrawBuf.zoom + list.x;
-
+	scroll_wv.start_x = list.w + list.x;
 	scrollbar_v_draw(#scroll_wv);
 }
 //============================================================================================
@@ -463,15 +458,12 @@ void TWebBrowser::NewLine()
 {
 	int onleft, ontop;
 
-	onleft = list.x + 5;
-	ontop = stroka * list.item_h + list.y + 5;
+	if (!stolbec) && (draw_y==body_magrin) return;
+
+	onleft = list.x + body_magrin;
+	ontop = draw_y + list.y;
 	if (t_html) && (!t_body) return;
-	if (stroka * list.item_h + 5 >= 0) && ( stroka + 1 * list.item_h + 5 < list.h) && (!anchor)
-	{
-		if (style.align == ALIGN_CENTER) && (DrawBuf.zoom==1) DrawBuf.AlignCenter(onleft,ontop,list.w,list.item_h,stolbec * list.font_w);
-		if (style.align == ALIGN_RIGHT) && (DrawBuf.zoom==1)  DrawBuf.AlignRight(onleft,ontop,list.w,list.item_h,stolbec * list.font_w);
-	}
-	stroka++;
+	draw_y += list.item_h;
 	if (style.blq) stolbec = 6; else stolbec = 0;
 	if (style.li) stolbec = style.li_tab * 5;
 }
@@ -482,6 +474,6 @@ int isval(dword text) { if (!strcmp(#val,text)) return true; else return false; 
 //============================================================================================
 void TWebBrowser::DrawPage()
 {
-	PutPaletteImage(list.first * list.item_h * DrawBuf.bufw * 4 + buf_data+8, DrawBuf.bufw, list.h, DrawBuf.bufx, DrawBuf.bufy, 32, 0);	
+	PutPaletteImage(list.first * DrawBuf.bufw * 4 + buf_data+8, DrawBuf.bufw, list.h, DrawBuf.bufx, DrawBuf.bufy, 32, 0);	
 	DrawScroller();
 }

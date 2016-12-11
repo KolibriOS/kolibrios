@@ -30,7 +30,7 @@
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.56";
+char version[]="Текстовый браузер 1.57";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -43,7 +43,7 @@ char rmb_menu[] =
 Очистить кэш картинок
 Менеджер загрузок";
 #else
-char version[]="Text-based Browser 1.56";
+char version[]="Text-based Browser 1.57";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -134,7 +134,7 @@ void main()
 				mouse.get();
 				if (WB1.list.MouseOver(mouse.x, mouse.y))
 				{
-					PageLinks.Hover(mouse.x, WB1.list.first*WB1.list.item_h + mouse.y, link_color_inactive, link_color_active, bg_color);
+					PageLinks.Hover(mouse.x, WB1.list.first + mouse.y, link_color_inactive, link_color_active, bg_color);
 					if (bufsize) && (mouse.pkm) && (mouse.up) {
 						EventShowMenu(mouse.x, mouse.y);
 						break;
@@ -214,7 +214,7 @@ void main()
 									DSBYTE[EDI-1]='\0';
 									if (!strncmp(#URL,"https://",8))
 									{
-										notify("HTTPS protocol is not supported yet");
+										ShowErrorMessageThatHttpsIsNotSupportedYet();
 										StopLoading();
 										break;	
 									}
@@ -262,12 +262,13 @@ void main()
 void SetElementSizes()
 {
 	address_box.top = TOOLBAR_H/2-10;
+	basic_line_h = calc(WB1.list.font_h * 130) / 100;
 	address_box.width = Form.cwidth - address_box.left - 50;
 	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x / WB1.DrawBuf.zoom, 
-		Form.cheight - TOOLBAR_H - STATUSBAR_H, WB1.list.font_h + WB1.DrawBuf.zoom + WB1.DrawBuf.zoom * WB1.DrawBuf.zoom);
-	WB1.list.wheel_size = 7;
+		Form.cheight - TOOLBAR_H - STATUSBAR_H, basic_line_h);
+	WB1.list.wheel_size = 7 * basic_line_h;
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w;
-	WB1.list.visible = WB1.list.h - 5 / WB1.list.item_h;
+	WB1.list.visible = WB1.list.h;
 	if (WB1.list.w!=WB1.DrawBuf.bufw) {
 		WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, 2048 * WB1.list.item_h);
 		ProcessEvent(REFRESH_BUTTON);
@@ -398,10 +399,9 @@ void SetPageDefaults()
 {
 	strcpy(#header, #version);
 	WB1.list.count = WB1.list.first = 0;
-	stroka = 0;
 	cur_encoding = CH_NULL;
 	if (o_bufpointer) o_bufpointer = free(o_bufpointer);
-	anchor_line_num=WB1.list.first;
+	anchor_y = WB1.list.first;
 	//anchor[0]='|';
 	anchor=NULL;
 }
@@ -474,7 +474,6 @@ void ShowPage()
 	{
 		WB1.Prepare();
 	}
-	if (!strcmp(#version, #header)) DrawTitle(#header);
 }
 
 byte UrlExtIs(dword ext)
@@ -545,7 +544,7 @@ void ClickLink()
 
 	if (!strncmp(#URL,"https://",8))
 	{
-		notify("'HTTPS protocol is not supported yet' -E");	
+		ShowErrorMessageThatHttpsIsNotSupportedYet();
 	}
 	
 	GetAbsoluteURL(#URL);
@@ -563,8 +562,8 @@ void ClickLink()
 	else	
 	{
 		if (UrlExtIs(".png")==true) || (UrlExtIs(".gif")==true) || (UrlExtIs(".jpg")==true) 
-		|| (UrlExtIs(".zip")==true) || (UrlExtIs(".kex")==true)
-		|| (UrlExtIs(".7z")==true) || (UrlExtIs("netcfg")==true) {		
+		|| (UrlExtIs(".zip")==true) || (UrlExtIs(".kex")==true) || (UrlExtIs(".pdf")==true)
+		|| (UrlExtIs(".7z")==true) {
 			strcpy(#downloader_edit, #URL);
 			CreateThread(#Downloader,#downloader_stak+4092);
 			strcpy(#editURL, history.current());
@@ -578,6 +577,11 @@ void ClickLink()
 void EventShowMenu(dword _left, _top)
 {
 	menu.show(Form.left+_left-6,Form.top+_top+skin_height+3, 220, #rmb_menu, VIEW_SOURCE);
+}
+
+void ShowErrorMessageThatHttpsIsNotSupportedYet()
+{
+	notify("'HTTPS protocol is not supported yet' -E");
 }
 
 stop:

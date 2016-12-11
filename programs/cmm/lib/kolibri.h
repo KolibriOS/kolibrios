@@ -362,10 +362,13 @@ inline fastcall void DrawTitle( ECX)
 	$int 0x40;
 }
 
-// @EDX is a procewss id, -1 for self
+// @EDX is a process id, -1 for self
 // @ESI is a new LayerBehaviour
 // @RETURN: EAX, 0 is fail, 1 is success
-#define WINDOW_LAYER_ALWAYS_ON_TOP 1
+#define ZPOS_DESKTOP     -2
+#define ZPOS_ALWAYS_BACK -1
+#define ZPOS_NORMAL      0
+#define ZPOS_ALWAYS_TOP  1
 inline fastcall dword SetWindowLayerBehaviour(EDX, ESI)
 {
 	EAX = 18;

@@ -58,9 +58,7 @@ void main()
 	byte btn;
 	load_dll(boxlib, #box_lib_init,0);
 	SetEventMask(10000000000000000000000001100111b);
-	debugi(3);
 	GetCpuFrequency();
-	debugi(4);
 	loop()
 	{
 	  WaitEventTimeout(50);

@@ -11,7 +11,8 @@ dword ShowSource()
 	new_buf = malloc(bufsize*5);
 	new_buf_start = new_buf;
 	header[strrchr(#header, '-')-2]=0;
-	new_buf += sprintf(new_buf,"<html><head><title>Source: %s</title><body><pre>",#header);
+	sprintf(new_buf,"<html><head><title>Source: %s</title><body><pre>",#header);
+	new_buf += strlen(new_buf);
 	for (i=bufpointer; i<bufpointer+bufsize; i++) 
 	{
 		ww = ESBYTE[i];
