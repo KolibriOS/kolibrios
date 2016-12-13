@@ -23,6 +23,13 @@ struct DrawBufer {
 	void AlignRight();
 };
 
+char draw_buf_not_enaught_ram[] = 
+"'DrawBufer needs more memory than currenly available.
+Application could be unstable.
+
+Requested size: %i Kb
+Free RAM: %i Kb' -E";
+
 bool DrawBufer::Init(int i_bufx, i_bufy, i_bufw, i_bufh)
 {
 	dword alloc_size, free_ram_size;
@@ -33,18 +40,10 @@ bool DrawBufer::Init(int i_bufx, i_bufy, i_bufw, i_bufh)
 	bufw = i_bufw * zoom; 
 	bufh = i_bufh * zoom;
 	free(buf_data);
-	$mov eax, 18
-	$mov ebx, 16
-	$int 0x40
-	free_ram_size = EAX * 1024;
+	free_ram_size = GetFreeRAM() * 1024;
 	alloc_size = bufw * bufh * 4 + 8;
 	if (alloc_size >= free_ram_size) {
-		sprintf(#error_str,
-"'DrawBufer needs more memory than currenly available.
-Application could be unstable.
-
-Requested size: %i Kb
-Free RAM: %i Kb' -E", alloc_size/1024, free_ram_size/1024);
+		sprintf(#error_str, #draw_buf_not_enaught_ram, alloc_size/1024, free_ram_size/1024);
 		notify(#error_str);
 	}
 	buf_data = malloc(alloc_size);
@@ -67,7 +66,7 @@ void DrawBufer::DrawBar(unsigned x, y, w, h, color)
 	int i, j;
 	for (j=0; j<h; j++)
 	{
-		for (i = y+j*bufw+x*4+8+buf_data; i<y+j*bufw+x+w*4+8+buf_data; i+=4) ESDWORD[i] = color;
+		for (i = y+j*bufw+x<<2+8+buf_data; i<y+j*bufw+x+w<<2+8+buf_data; i+=4) ESDWORD[i] = color;
 	}
 }
 

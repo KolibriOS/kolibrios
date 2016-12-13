@@ -15,6 +15,7 @@
 #include "..\lib\cursor.h"
 #include "..\lib\collection.h"
 #include "..\lib\menu.h"
+#include "..\lib\random.h"
 
 //*.obj libraries
 #include "..\lib\obj\box_lib.h"
@@ -30,7 +31,7 @@
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.57";
+char version[]="Текстовый браузер 1.58";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -43,7 +44,7 @@ char rmb_menu[] =
 Очистить кэш картинок
 Менеджер загрузок";
 #else
-char version[]="Text-based Browser 1.57";
+char version[]="Text-based Browser 1.58";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -56,6 +57,10 @@ History
 Free image cache
 Download Manager";
 #endif
+
+char link_menu[] =
+"Copy link
+Download link";
 
 #define URL_SERVICE_HISTORY "WebView://history"
 #define URL_SERVICE_HOME "WebView://home"
@@ -87,15 +92,14 @@ enum {
 	FORWARD_BUTTON, 
 	REFRESH_BUTTON, 
 	GOTOURL_BUTTON, 
-	SANDWICH_BUTTON
-};
-
-enum {
+	SANDWICH_BUTTON,
 	VIEW_SOURCE=1100,
 	EDIT_SOURCE,
 	VIEW_HISTORY,
 	FREE_IMG_CACHE,
-	DOWNLOAD_MANAGER
+	DOWNLOAD_MANAGER,
+	COPY_LINK=1200,
+	DOWNLOAD_LINK
 };
 
 #include "..\TWB\TWB.c"
@@ -134,9 +138,9 @@ void main()
 				mouse.get();
 				if (WB1.list.MouseOver(mouse.x, mouse.y))
 				{
-					PageLinks.Hover(mouse.x, WB1.list.first + mouse.y, link_color_inactive, link_color_active, bg_color);
-					if (bufsize) && (mouse.pkm) && (mouse.up) {
-						EventShowMenu(mouse.x, mouse.y);
+					if (PageLinks.HoverAndProceed(mouse.x, WB1.list.first + mouse.y))
+					&& (bufsize) && (mouse.pkm) && (mouse.up) {
+						EventShowPageMenu(mouse.x, mouse.y);
 						break;
 					}
 					if (WB1.list.MouseScroll(mouse.vert)) WB1.DrawPage();
@@ -175,7 +179,7 @@ void main()
 					ProcessEvent(menu.list.cur_y);
 					menu.list.cur_y = 0;
 				}
-				DefineAndDrawWindow(GetScreenWidth()-800/2,GetScreenHeight()-600/2,800,600,0x73,col_bg,0,0);
+				DefineAndDrawWindow(GetScreenWidth()-800/2-random(80),GetScreenHeight()-600/2-random(80),800,600,0x73,col_bg,0,0);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window>2) { DrawTitle(#header); break; }
 				if (Form.height<120) { MoveSize(OLD,OLD,OLD,120); break; }
@@ -343,7 +347,7 @@ void ProcessEvent(dword id__)
 			else OpenPage();
 			return;
 		case SANDWICH_BUTTON:
-			EventShowMenu(Form.cwidth - 215, TOOLBAR_H-6);
+			EventShowPageMenu(Form.cwidth - 215, TOOLBAR_H-6);
 			return;
 		case VIEW_SOURCE:
 			WB1.list.first = 0;
@@ -574,14 +578,31 @@ void ClickLink()
 	OpenPage();
 }
 
-void EventShowMenu(dword _left, _top)
+void EventShowPageMenu(dword _left, _top)
 {
 	menu.show(Form.left+_left-6,Form.top+_top+skin_height+3, 220, #rmb_menu, VIEW_SOURCE);
 }
 
+void EventShowLinkMenu(dword _left, _top)
+{
+	menu.show(Form.left+_left-6,Form.top+_top+skin_height+3, 180, #link_menu, COPY_LINK);
+}
+
+
 void ShowErrorMessageThatHttpsIsNotSupportedYet()
 {
 	notify("'HTTPS protocol is not supported yet' -E");
+}
+
+DrawStatusBar(dword _status_text)
+{
+	status_text.start_x = wv_progress_bar.left + wv_progress_bar.width + 10;
+	status_text.start_y = Form.cheight - STATUSBAR_H + 3;
+	status_text.area_size_x = Form.cwidth - status_text.start_x -3;
+	DrawBar(status_text.start_x, status_text.start_y, status_text.area_size_x, 9, col_bg);
+	status_text.text_pointer = _status_text;
+	PathShow_prepare stdcall(#status_text);
+	PathShow_draw stdcall(#status_text);
 }
 
 stop:
