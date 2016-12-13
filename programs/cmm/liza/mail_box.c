@@ -173,7 +173,7 @@ void MailBoxLoop() {
 					break;
 				}
 
-				PageLinks.Hover(mouse.x, mouse.y, link_color_inactive, link_color_active, bg_color);
+				PageLinks.HoverAndProceed(mouse.x, mouse.y);
 
 				if (!mail_list.count) break;
 				if (!panels_drag) { scrollbar_v_mouse (#scroll1); scrollbar_v_mouse (#scroll_wv); }
