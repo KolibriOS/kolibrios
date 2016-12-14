@@ -2939,19 +2939,18 @@ align 4
 	xor ecx,ecx
 align 4
 	.cycle4:
-		mov word[edi+png_struct.zstream.avail_out],16*1024
+		mov dword[edi+png_struct.zstream.avail_out],16*1024
 
 		stdcall [deflate], esi, Z_FINISH ;Z_NO_FLUSH
 		cmp eax,Z_STREAM_ERROR
 		je .end1
 
 		add ecx,16*1024
-		movzx eax,word[edi+png_struct.zstream.avail_out]
-		sub ecx,eax
-		cmp word[edi+png_struct.zstream.avail_out],0
+		sub ecx,[edi+png_struct.zstream.avail_out]
+		cmp dword[edi+png_struct.zstream.avail_out],0
 	je .cycle4 ;while (strm.avail_out == 0)
 if 0
-	mov word[edi+png_struct.zstream.avail_out],16*1024
+	mov dword[edi+png_struct.zstream.avail_out],16*1024
 	stdcall [deflate], esi, Z_FINISH
 	cmp eax,Z_STREAM_ERROR
 	je .end1

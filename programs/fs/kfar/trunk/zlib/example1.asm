@@ -164,7 +164,7 @@ test_code:
 	mov ecx,[m0size]
 	mov [eax+z_stream.avail_in],ecx ;размер сжимаемыж данных
 	mov [eax+z_stream.next_out],m1 ;устанавливаем буфер для сжатия
-	mov word[eax+z_stream.avail_out],1024 ;размер буфера для сжатия (максимум 16 Кб)
+	mov dword[eax+z_stream.avail_out],1024 ;размер буфера для сжатия (максимум 16 Кб)
 
 	;вычисляем crc для сжимаемыж данных
 	stdcall [calc_crc32], 0,m0,ecx
@@ -176,9 +176,9 @@ test_code:
 
 	;call print_z_struct
 
-	;размер сжатых данных: 1024-word[my_strm.avail_out]
+	;размер сжатых данных: 1024-[my_strm.avail_out]
 	mov ecx,1024
-	sub cx,word[my_strm.avail_out]
+	sub ecx,[my_strm.avail_out]
 	mov [m1size],ecx
 
 	;assert(ret != Z_STREAM_ERROR)

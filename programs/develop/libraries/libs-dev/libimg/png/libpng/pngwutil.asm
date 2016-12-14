@@ -509,7 +509,7 @@ end if
 	mov dword[edi+png_struct.zstream.next_in],0
 	mov dword[edi+png_struct.zstream.avail_in],0
 	mov dword[edi+png_struct.zstream.next_out],0
-	mov word[edi+png_struct.zstream.avail_out],0
+	mov dword[edi+png_struct.zstream.avail_out],0
 
 	; Now initialize if required, setting the new parameters, otherwise just
 	; to a simple reset to the previous parameters.
@@ -643,7 +643,7 @@ endl
 	add eax,compression_state.output
 	mov [edi+png_struct.zstream.next_out],eax
 	mov eax,sizeof.compression_state.output ;1024
-	mov [edi+png_struct.zstream.avail_out],ax
+	mov [edi+png_struct.zstream.avail_out],eax
 
 	mov [output_len],eax
 
@@ -659,7 +659,7 @@ endl
 		mov eax,[avail_in]
 		mov [edi+png_struct.zstream.avail_in],eax
 
-		cmp word[edi+png_struct.zstream.avail_out],0
+		cmp dword[edi+png_struct.zstream.avail_out],0
 		jne .end0 ;if (..==0)
 			; Chunk data is limited to 2^31 bytes in length, so the prefix
 			; length must be counted here.
@@ -699,7 +699,7 @@ endl
 			mov eax,[eax+png_compression_buffer.output]
 			mov [edi+png_struct.zstream.next_out],eax
 			mov eax,[edi+png_struct.zbuffer_size]
-			mov [edi+png_struct.zstream.avail_out],ax
+			mov [edi+png_struct.zstream.avail_out],eax
 			add [output_len],eax
 
 			; Move 'end' to the next buffer pointer.
@@ -733,9 +733,9 @@ endl
 	; There may be some space left in the last output buffer. This needs to
 	; be subtracted from output_len.
 
-	movzx eax,word[edi+png_struct.zstream.avail_out]
+	mov eax,[edi+png_struct.zstream.avail_out]
 	sub [output_len],eax
-	mov word[edi+png_struct.zstream.avail_out],0 ;safety
+	mov dword[edi+png_struct.zstream.avail_out],0 ;safety
 	mov eax,[output_len]
 	mov [ebx+compression_state.output_len],eax
 
@@ -1216,7 +1216,7 @@ proc png_compress_IDAT uses eax ebx ecx edx, input:dword, input_len:dword, flush
 		add eax,png_compression_buffer.output
 		mov [edi+png_struct.zstream.next_out],eax
 		mov eax,[edi+png_struct.zbuffer_size]
-		mov [edi+png_struct.zstream.avail_out],ax
+		mov [edi+png_struct.zstream.avail_out],eax
 	.end0:
 
 	; Now loop reading and writing until all the input is consumed or an error
@@ -1258,7 +1258,7 @@ align 4
 		; that these two zstream fields are preserved across the calls, therefore
 		; there is no need to set these up on entry to the loop.
 
-		cmp word[edi+png_struct.zstream.avail_out],0
+		cmp dword[edi+png_struct.zstream.avail_out],0
 		jne .end2 ;if (..==0)
 			mov edx,[edi+png_struct.zbuffer_list]
 			add edx,png_compression_buffer.output
@@ -1283,7 +1283,7 @@ end if
 			or dword[edi+png_struct.mode],PNG_HAVE_IDAT
 
 			mov [edi+png_struct.zstream.next_out],edx
-			mov [edi+png_struct.zstream.avail_out],cx
+			mov [edi+png_struct.zstream.avail_out],ecx
 
 			; For SYNC_FLUSH or FINISH it is essential to keep calling zlib with
 			; the same flush parameter until it has finished output, for NO_FLUSH
@@ -1321,7 +1321,7 @@ end if
 			mov edx,[edi+png_struct.zbuffer_list]
 			add edx,png_compression_buffer.output
 			mov ecx,[edi+png_struct.zbuffer_size]
-			movzx eax,word[edi+png_struct.zstream.avail_out]
+			mov eax,[edi+png_struct.zstream.avail_out]
 			sub ecx,eax
 			;edx = data
 			;ecx = size
@@ -1337,7 +1337,7 @@ if PNG_WRITE_OPTIMIZE_CMF_SUPPORTED eq 1
 			@@:
 end if
 			stdcall png_write_complete_chunk, edi, png_IDAT, edx, ecx
-			mov word[edi+png_struct.zstream.avail_out],0
+			mov dword[edi+png_struct.zstream.avail_out],0
 			mov dword[edi+png_struct.zstream.next_out],0
 			or dword[edi+png_struct.mode], PNG_HAVE_IDAT or PNG_AFTER_IDAT
 

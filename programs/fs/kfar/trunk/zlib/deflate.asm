@@ -439,11 +439,10 @@ endp
 align 4
 proc deflateSetDictionary uses ebx edi, strm:dword, dictionary:dword, dictLength:dword
 locals
-;    deflate_state *s;
 ;    uInt str, n;
-	wrap dd ? ;int
+	wrap  dd ? ;int
 	avail dd ? ;unsigned
-;    z_const unsigned char *next;
+	next  dd ? ;unsigned char*
 endl
 	mov ebx,[strm]
 	cmp ebx,Z_NULL
@@ -461,16 +460,31 @@ endl
 	
 	mov eax,[edi+deflate_state.wrap]
 	mov [wrap],eax
-;    if (wrap == 2 || (wrap == 1 && s->status != INIT_STATE) || s->lookahead)
-;        return Z_STREAM_ERROR;
+	cmp dword[wrap],2
+	je .end1
+	cmp dword[edi+deflate_state.lookahead],0
+	jne .end1
+	cmp dword[wrap],1
+	jne @f
+	cmp dword[edi+deflate_state.status],INIT_STATE
+	je @f
+	.end1: ;if (..==.. || .. || (..==.. && ..!=..)) return ..
+		mov eax,Z_STREAM_ERROR
+		jmp .end_f
+	@@:
 
 	; when using zlib wrappers, compute Adler-32 for provided dictionary
-;    if (wrap == 1)
-;        strm->adler = adler32(strm->adler, dictionary, dictLength);
-;    s->wrap = 0;                    /* avoid computing Adler-32 in read_buf */
+	cmp dword[wrap],1
+	jne @f ;if (..==..)
+		stdcall adler32, [ebx+z_stream.adler], [dictionary], [dictLength]
+		mov [ebx+z_stream.adler],eax
+	@@:
+	mov dword[edi+deflate_state.wrap],0 ;avoid computing Adler-32 in read_buf
 
 	; if dictionary would fill window, just replace the history
-;    if (dictLength >= s->w_size) {
+	mov eax,[edi+deflate_state.w_size]
+	cmp [dictLength],eax
+	jl .end2 ;if (..>=..)
 ;        if (wrap == 0) {            /* already empty otherwise */
 ;            CLEAR_HASH(s);
 ;            s->strstart = 0;
@@ -478,8 +492,9 @@ endl
 ;            s->insert = 0;
 ;        }
 ;        dictionary += dictLength - s->w_size;  /* use the tail */
-;        dictLength = s->w_size;
-;    }
+		mov eax,[edi+deflate_state.w_size]
+		mov [dictLength],eax
+	.end2:
 
 	; insert dictionary into window and hash
 ;    avail = strm->avail_in;
@@ -504,13 +519,19 @@ end if
 ;    }
 ;    s->strstart += s->lookahead;
 ;    s->block_start = (long)s->strstart;
-;    s->insert = s->lookahead;
-;    s->lookahead = 0;
-;    s->match_length = s->prev_length = MIN_MATCH-1;
-;    s->match_available = 0;
-;    strm->next_in = next;
-;    strm->avail_in = avail;
-;    s->wrap = wrap;
+	mov eax,[edi+deflate_state.lookahead]
+	mov [edi+deflate_state.insert],eax
+	mov dword[edi+deflate_state.lookahead],0
+	mov eax,MIN_MATCH-1
+	mov [edi+deflate_state.prev_length],eax
+	mov [edi+deflate_state.match_length],eax
+	mov dword[edi+deflate_state.match_available],0
+	mov eax,[next]
+	mov [ebx+z_stream.next_in],eax
+	mov eax,[avail]
+	mov [ebx+z_stream.avail_in],eax
+	mov eax,[wrap]
+	mov [edi+deflate_state.wrap],eax
 	mov eax,Z_OK
 .end_f:
 	ret
@@ -521,8 +542,6 @@ endp
 ;    z_streamp strm
 align 4
 proc deflateResetKeep uses ebx edi, strm:dword
-;    deflate_state *s;
-
 	mov ebx,[strm]
 	cmp ebx,Z_NULL
 	je @f
@@ -542,7 +561,7 @@ proc deflateResetKeep uses ebx edi, strm:dword
 	mov dword[ebx+z_stream.total_out],0
 	mov dword[ebx+z_stream.total_in],0
 	mov dword[ebx+z_stream.msg],Z_NULL ;use zfree if we ever allocate msg dynamically
-	mov word[ebx+z_stream.data_type],Z_UNKNOWN
+	mov dword[ebx+z_stream.data_type],Z_UNKNOWN
 
 	mov dword[edi+deflate_state.pending],0
 	mov eax,[edi+deflate_state.pending_buf]
@@ -584,7 +603,7 @@ proc deflateReset uses ebx, strm:dword
 	mov ebx,[strm]
 	zlib_debug 'deflateReset'
 	stdcall deflateResetKeep, ebx
-	cmp eax,0
+	cmp eax,Z_OK
 	jne @f ;if (..==Z_OK)
 		stdcall lm_init, [ebx+z_stream.state]
 	@@:
@@ -696,8 +715,10 @@ endp
 ;    int strategy
 align 4
 proc deflateParams uses ebx edi, strm:dword, level:dword, strategy:dword
-;    compress_func func;
-;    int err = Z_OK;
+locals
+	co_func dd ?
+	err dd Z_OK
+endl
 
 	mov ebx,[strm]
 	cmp ebx,Z_NULL
@@ -721,14 +742,26 @@ else
 		mov dword[level],6
 	@@:
 end if
-;    if (level < 0 || level > 9 || strategy < 0 || strategy > Z_FIXED) {
-;        return Z_STREAM_ERROR;
-;    }
-;    func = configuration_table[s->level].func;
+	cmp dword[level],0
+	jl @f
+	cmp dword[level],9
+	jg @f
+	cmp dword[strategy],0
+	jl @f
+	cmp dword[strategy],Z_FIXED
+	jle .end1
+	@@: ;if (..<0 || ..>9 || ..<0 || ..>..)
+		mov eax,Z_STREAM_ERROR
+		jmp .end_f
+	.end1:
+	movzx eax,word[edi+deflate_state.level]
+	imul eax,sizeof.config_s
+	add eax,configuration_table+config_s.co_func
+	mov [co_func],eax
 
-;    if ((strategy != s->strategy || func != configuration_table[level].func) &&
+;    if ((strategy != s->strategy || co_func != configuration_table[level].func) &&
 ;        strm->total_in != 0) {
-	; Flush the last buffer:
+		; Flush the last buffer:
 ;        err = deflate(strm, Z_BLOCK);
 ;        if (err == Z_BUF_ERROR && s->pending == 0)
 ;            err = Z_OK;
@@ -740,8 +773,9 @@ end if
 ;        s->nice_match       = configuration_table[level].nice_length;
 ;        s->max_chain_length = configuration_table[level].max_chain;
 ;    }
-;    s->strategy = strategy;
-;    return err;
+	mov eax,[strategy]
+	mov [edi+deflate_state.strategy],ax
+	mov eax,[err]
 .end_f:
 	ret
 endp
@@ -893,10 +927,10 @@ proc flush_pending uses eax ebx ecx edx, strm:dword
 
 	stdcall _tr_flush_bits, edx
 	mov ecx,[edx+deflate_state.pending]
-	movzx eax,word[ebx+z_stream.avail_out]
+	mov eax,[ebx+z_stream.avail_out]
 	cmp ecx,eax
 	jle @f ;if (..>..)
-		movzx ecx,word[ebx+z_stream.avail_out]
+		mov ecx,eax
 	@@:
 	cmp ecx,0
 	je @f
@@ -905,7 +939,7 @@ proc flush_pending uses eax ebx ecx edx, strm:dword
 	add [ebx+z_stream.next_out],ecx
 	add [edx+deflate_state.pending_out],ecx
 	add [ebx+z_stream.total_out],ecx
-	sub [ebx+z_stream.avail_out],cx
+	sub [ebx+z_stream.avail_out],ecx
 	sub [edx+deflate_state.pending],ecx
 	cmp dword[edx+deflate_state.pending],0
 	jne @f ;if (..==0)
@@ -955,7 +989,7 @@ zlib_debug 'deflate strm = %d',ebx
 		ERR_RETURN ebx, Z_STREAM_ERROR
 		jmp .end_f
 	.end0:
-	cmp word[ebx+z_stream.avail_out],0
+	cmp dword[ebx+z_stream.avail_out],0
 	jne @f ;if (..==0)
 		ERR_RETURN ebx, Z_BUF_ERROR
 		jmp .end_f
@@ -1319,7 +1353,7 @@ end if
 	cmp dword[edi+deflate_state.pending],0
 	je .end13 ;if (..!=0)
 		stdcall flush_pending, ebx
-		cmp word[ebx+z_stream.avail_out],0
+		cmp dword[ebx+z_stream.avail_out],0
 		jne @f ;if (..==0)
 			; Since avail_out is 0, deflate will be called again with
 			; more output space, but possibly with both pending and
@@ -1398,7 +1432,7 @@ end if
 		cmp edx,finish_started
 		jne .end19
 		@@: ;if (..==.. || ..==..)
-			cmp word[ebx+z_stream.avail_out],0
+			cmp dword[ebx+z_stream.avail_out],0
 			jne @f ;if (..==0)
 				mov dword[edi+deflate_state.last_flush],-1 ;avoid BUF_ERROR next call, see above
 			@@:
@@ -1435,13 +1469,13 @@ end if
 					mov dword[edi+deflate_state.insert],0
 		.end16:
 		stdcall flush_pending, ebx
-		cmp word[ebx+z_stream.avail_out],0
+		cmp dword[ebx+z_stream.avail_out],0
 		jne .end11 ;if (..==0)
 			mov dword[edi+deflate_state.last_flush],-1 ;avoid BUF_ERROR at next call, see above
 			mov eax,Z_OK
 			jmp .end_f
 	.end11:
-	cmp word[ebx+z_stream.avail_out],0
+	cmp dword[ebx+z_stream.avail_out],0
 	jg @f
 		zlib_assert 'bug2' ;Assert(..>0)
 	@@:
@@ -1676,7 +1710,7 @@ proc read_buf uses ebx ecx, strm:dword, buf:dword, size:dword
 
 	stdcall zmemcpy, [buf],[ebx+z_stream.next_in],eax
 	mov ecx,[ebx+z_stream.state]
-	cmp [ecx+deflate_state.wrap],1
+	cmp dword[ecx+deflate_state.wrap],1
 	jne @f ;if (..==..)
 		push eax
 		stdcall adler32, [ebx+z_stream.adler], [buf], eax
@@ -1685,7 +1719,7 @@ proc read_buf uses ebx ecx, strm:dword, buf:dword, size:dword
 		jmp .end0
 	@@:
 if GZIP eq 1
-	cmp [ecx+deflate_state.wrap],2
+	cmp dword[ecx+deflate_state.wrap],2
 	jne .end0 ;else if (..==..)
 		push eax
 		stdcall calc_crc32, [ebx+z_stream.adler], [buf], eax
@@ -1763,95 +1797,185 @@ if FASTEST eq 0
 ;#ifndef ASMV
 ; For 80x86 and 680x0, an optimized version will be provided in match.asm or
 ; match.S. The code will be functionally equivalent.
+locals
+	chain_length dd ? ;unsigned ;max hash chain length
+	len        dd ? ;int ;length of current match
+	strend     dd ? ;Bytef *
+	best_len   dd ? ;int ;best match length so far
+	nice_match dd ? ;int ;stop if match long enough
+	limit      dd NIL ;IPos
+	prev       dd ? ;Posf *
+	wmask      dd ? ;uInt
+endl
+	mov edx,[s]
+	mov eax,[edx+deflate_state.max_chain_length]
+	mov [chain_length],eax
+	mov edi,[edx+deflate_state.window]
+	add edi,[edx+deflate_state.strstart]
+	;edi - Bytef *scan ;current string
+	;esi - Bytef *match ;matched string
+	mov eax,[edx+deflate_state.prev_length]
+	mov [best_len],eax
+	mov eax,[edx+deflate_state.nice_match]
+	mov [nice_match],eax
 
-;    unsigned chain_length = s->max_chain_length;/* max hash chain length */
-;    register Bytef *scan = s->window + s->strstart; /* current string */
-;    register Bytef *match;                       /* matched string */
-;    register int len;                           /* length of current match */
-;    int best_len = s->prev_length;              /* best match length so far */
-;    int nice_match = s->nice_match;             /* stop if match long enough */
-;    IPos limit = s->strstart > (IPos)MAX_DIST(s) ?
-;        s->strstart - (IPos)MAX_DIST(s) : NIL;
+	MAX_DIST edx
+	cmp [edx+deflate_state.strstart],eax
+	jle @f
+		mov ecx,[edx+deflate_state.strstart]
+		sub ecx,eax
+		mov [limit],ecx
+	@@:
 	; Stop when cur_match becomes <= limit. To simplify the code,
 	; we prevent matches with the string of window index 0.
-
-;    Posf *prev = s->prev;
-;    uInt wmask = s->w_mask;
-
-;    register Bytef *strend = s->window + s->strstart + MAX_MATCH;
-;    register Byte scan_end1  = scan[best_len-1];
-;    register Byte scan_end   = scan[best_len];
+	mov eax,[edx+deflate_state.prev]
+	mov [prev],eax
+	mov eax,[edx+deflate_state.w_mask]
+	mov [wmask],eax
+	mov eax,edi
+	add eax,MAX_MATCH ;-1 ???
+	mov [strend],eax
+	mov eax,[best_len]
+	dec eax
+	mov bx,[edi+eax]
+	;bl - Byte scan_end1
+	;bh - Byte scan_end
 
 	; The code is optimized for HASH_BITS >= 8 and MAX_MATCH-2 multiple of 16.
 	; It is easy to get rid of this optimization if necessary.
 
-;    Assert(s->hash_bits >= 8 && MAX_MATCH == 258, "Code too clever");
+if MAX_MATCH <> 258
+	cmp dword[edx+deflate_state.hash_bits],8
+	jge @f
+		zlib_assert 'Code too clever' ;Assert(..>=.. && ..==..)
+	@@:
+end if
 
 	; Do not waste too much time if we already have a good match:
-;    if (s->prev_length >= s->good_match) {
-;        chain_length >>= 2;
-;    }
+	mov eax,[edx+deflate_state.good_match]
+	cmp [edx+deflate_state.prev_length],eax
+	jl @f ;if (..>=..)
+		shr dword[chain_length],2
+	@@:
 	; Do not look for matches beyond the end of the input. This is necessary
 	; to make deflate deterministic.
 
-;    if ((uInt)nice_match > s->lookahead) nice_match = s->lookahead;
+	mov eax,[edx+deflate_state.lookahead]
+	cmp dword[nice_match],eax
+	jle @f ;if (..>..)
+		mov [nice_match],eax
+	@@:
 
-;    Assert((ulg)s->strstart <= s->window_size-MIN_LOOKAHEAD, "need lookahead");
+	mov eax,[edx+deflate_state.window_size]
+	sub eax,MIN_LOOKAHEAD
+	cmp [edx+deflate_state.strstart],eax
+	jle .cycle0
+		zlib_assert 'need lookahead' ;Assert(..<=..)
 
-;    do {
-;        Assert(cur_match < s->strstart, "no future");
-;        match = s->window + cur_match;
+align 4
+	.cycle0: ;do
+		mov eax,[edx+deflate_state.strstart]
+		cmp [cur_match],eax
+		jl @f
+			zlib_assert 'no future' ;Assert(..<..)
+		@@:
+		mov esi,[edx+deflate_state.window]
+		add esi,[cur_match]
 
-	; Skip to next match if the match length cannot increase
-	; or if the match length is less than 2.  Note that the checks below
-	; for insufficient lookahead only occur occasionally for performance
-	; reasons.  Therefore uninitialized memory will be accessed, and
-	; conditional jumps will be made that depend on those values.
-	; However the length of the match is limited to the lookahead, so
-	; the output of deflate is not affected by the uninitialized values.
+		; Skip to next match if the match length cannot increase
+		; or if the match length is less than 2.  Note that the checks below
+		; for insufficient lookahead only occur occasionally for performance
+		; reasons.  Therefore uninitialized memory will be accessed, and
+		; conditional jumps will be made that depend on those values.
+		; However the length of the match is limited to the lookahead, so
+		; the output of deflate is not affected by the uninitialized values.
 
-;        if (match[best_len]   != scan_end  ||
-;            match[best_len-1] != scan_end1 ||
-;            *match            != *scan     ||
-;            *++match          != scan[1])      continue;
+		mov eax,[best_len]
+		dec eax
+		cmp word[esi+eax],bx
+		jne .cycle0cont
+		mov al,byte[esi]
+		cmp al,byte[edi]
+		jne .cycle0cont
+		inc esi
+		mov al,byte[esi]
+		cmp al,[edi+1]
+		jne .cycle0cont ;if (..!=.. || ..!=.. || ..!=.. || ..!=..) continue
 
-	; The check at best_len-1 can be removed because it will be made
-	; again later. (This heuristic is not always a win.)
-	; It is not necessary to compare scan[2] and match[2] since they
-	; are always equal when the other bytes match, given that
-	; the hash keys are equal and that HASH_BITS >= 8.
+		; The check at best_len-1 can be removed because it will be made
+		; again later. (This heuristic is not always a win.)
+		; It is not necessary to compare scan[2] and match[2] since they
+		; are always equal when the other bytes match, given that
+		; the hash keys are equal and that HASH_BITS >= 8.
 
-;        scan += 2, match++;
-;        Assert(*scan == *match, "match[2]?");
+		add edi,2
+		inc esi
+		mov al,byte[edi]
+		cmp al,byte[esi]
+		je @f
+			zlib_assert 'match[2]?' ;Assert(..==..)
+		@@:
 
-	; We check for insufficient lookahead only every 8th comparison;
-	; the 256th check will be made at strstart+258.
+		; We check for insufficient lookahead only every 8th comparison;
+		; the 256th check will be made at strstart+258.
 
-;        do {
-;        } while (*++scan == *++match && *++scan == *++match &&
-;                 *++scan == *++match && *++scan == *++match &&
-;                 *++scan == *++match && *++scan == *++match &&
-;                 *++scan == *++match && *++scan == *++match &&
-;                 scan < strend);
+		inc edi
+		inc esi
+		mov ecx,[strend]
+		sub ecx,edi
+		jz @f
+			repe cmpsb
+		@@:
 
-;        Assert(scan <= s->window+(unsigned)(s->window_size-1), "wild scan");
+		mov eax,[edx+deflate_state.window_size]
+		dec eax
+		add eax,[edx+deflate_state.window]
+		cmp edi,eax
+		jle @f
+			zlib_assert 'wild scan' ;Assert(..<=..)
+		@@:
 
-;        len = MAX_MATCH - (int)(strend - scan);
-;        scan = strend - MAX_MATCH;
+		mov eax,MAX_MATCH
+		add eax,edi
+		sub eax,[strend]
+		mov [len],eax
+		mov edi,[strend]
+		sub edi,MAX_MATCH
 
-;        if (len > best_len) {
-;            s->match_start = cur_match;
-;            best_len = len;
-;            if (len >= nice_match) break;
-;            scan_end1  = scan[best_len-1];
-;            scan_end   = scan[best_len];
-;        }
-;    } while ((cur_match = prev[cur_match & wmask]) > limit
-;             && --chain_length != 0);
+		mov eax,[best_len]
+		cmp [len],eax
+		jle .cycle0cont ;if (..>..)
+			mov eax,[cur_match]
+			mov [edx+deflate_state.match_start],eax
+			mov eax,[len]
+			mov [best_len],eax
+			mov eax,[nice_match]
+			cmp [len],eax
+			jge .cycle0end ;if (..>=..) break
+			mov eax,[best_len]
+			dec eax
+			mov bx,[edi+eax]
 
-;    if ((uInt)best_len <= s->lookahead) return (uInt)best_len;
-;    return s->lookahead;
-;end if /* ASMV */
+		.cycle0cont:
+		mov eax,[cur_match]
+		and eax,[wmask]
+		shl eax,2
+		add eax,[prev]
+		mov eax,[eax] ;eax = prev[cur_match & wmask]
+		mov [cur_match],eax
+		cmp eax,[limit]
+		jle .cycle0end
+		dec dword[chain_length]
+		cmp dword[chain_length],0
+		jne .cycle0
+	.cycle0end: ;while (..>.. && ..!=0)
+
+	mov eax,[edx+deflate_state.lookahead]
+	cmp [best_len],eax
+	jg @f ;if (..<=..)
+		mov eax,[best_len]
+	@@:	
+;end if ;ASMV
 
 else ;FASTEST
 
@@ -2054,8 +2178,8 @@ pushad
 				@@:
 			loop .cycle1 ;while (..)
 
-			mov ecx,ebx
 if FASTEST eq 0
+			mov ecx,ebx
 			mov esi,ecx
 			shl esi,2
 			add esi,[edi+deflate_state.prev]
@@ -2253,7 +2377,7 @@ macro FLUSH_BLOCK s, last
 local .end0
 	FLUSH_BLOCK_ONLY s, last
 	mov eax,[s+deflate_state.strm]
-	cmp word[eax+z_stream.avail_out],0
+	cmp dword[eax+z_stream.avail_out],0
 	jne .end0 ;if (..==0)
 if last eq 1
 		mov eax,finish_started
@@ -2576,10 +2700,10 @@ align 4
 		mov dword[edi+deflate_state.match_length],MIN_MATCH-1
 
 		cmp ecx,NIL
-		je @f
+		je .end1
 		mov eax,[edi+deflate_state.prev_length]
 		cmp eax,[edi+deflate_state.max_lazy_match]
-		jge @f
+		jge .end1
 		MAX_DIST edi
 		mov ebx,[edi+deflate_state.strstart]
 		sub ebx,ecx
@@ -2596,14 +2720,18 @@ align 4
 			cmp dword[edi+deflate_state.match_length],5
 			jg .end1
 			cmp word[edi+deflate_state.strategy],Z_FILTERED
-			jne .end1
-;            if (..<=.. && (..==..
-;#if TOO_FAR <= 32767
-;                || (s->match_length == MIN_MATCH &&
-;                    s->strstart - s->match_start > TOO_FAR)
-;end if
-;                ))
-
+if TOO_FAR <= 32767
+			je @f
+				cmp dword[edi+deflate_state.match_length],MIN_MATCH
+				jne .end1
+				mov eax,[edi+deflate_state.strstart]
+				sub eax,[edi+deflate_state.match_start]
+				cmp eax,TOO_FAR
+				jle .end1 ;if (..<=.. && (..==.. || (..==.. && ..>..)))
+			@@:
+else
+			jne .end1 ;if (..<=.. && ..==..)
+end if
 				; If prev_match is also MIN_MATCH, match_start is garbage
 				; but we will ignore the current match anyway.
 
@@ -2615,9 +2743,9 @@ align 4
 
 		mov eax,[edi+deflate_state.prev_length]
 		cmp eax,MIN_MATCH
-		jl .end2:
+		jl .end2
 		cmp [edi+deflate_state.match_length],eax
-		jg .end2: ;if (..>=.. && ..<=..)
+		jg .end2 ;if (..>=.. && ..<=..)
 			mov edx,[edi+deflate_state.strstart]
 			add edx,[edi+deflate_state.lookahead]
 			sub edx,MIN_MATCH
@@ -2681,7 +2809,7 @@ align 4
 			inc dword[edi+deflate_state.strstart]
 			dec dword[edi+deflate_state.lookahead]
 			mov eax,[edi+deflate_state.strm]
-			cmp word[eax+z_stream.avail_out],0
+			cmp dword[eax+z_stream.avail_out],0
 			jne .cycle0 ;if (..==0) return ..
 				mov eax,need_more
 				jmp .end_f

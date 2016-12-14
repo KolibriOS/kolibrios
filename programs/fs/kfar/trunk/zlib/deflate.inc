@@ -144,11 +144,6 @@ struct deflate_state ;internal_state
 	; smaller than this value. This mechanism is used only for compression
 	; levels >= 4.
 
-;#   define max_insert_length  max_lazy_match
-	; Insert new strings in the hash table only if the match length is not
-	; greater than this length. This saves time but degrades compression.
-	; max_insert_length is used only for compression levels <= 3.
-
 	level dw ? ;int ;compression level (1..9)
 	strategy dw ? ;int ;favor or force Huffman coding
 
@@ -231,6 +226,11 @@ end if
 	; longest match routines access bytes past the input.  This is then
 	; updated to the new high water mark.
 ends
+
+deflate_state.max_insert_length equ deflate_state.max_lazy_match
+; Insert new strings in the hash table only if the match length is not
+; greater than this length. This saves time but degrades compression.
+; max_insert_length is used only for compression levels <= 3.
 
 ; Output a byte on the stream.
 ; IN assertion: there is enough room in pending_buf.

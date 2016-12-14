@@ -1555,10 +1555,10 @@ endl
 
 		; Check if the file is binary or text
 		mov ebx,[edi+deflate_state.strm]
-		cmp word[ebx+z_stream.data_type],Z_UNKNOWN
+		cmp dword[ebx+z_stream.data_type],Z_UNKNOWN
 		jne @f ;if (..==..)
 			stdcall detect_data_type, edi
-			mov [ebx+z_stream.data_type],ax
+			mov [ebx+z_stream.data_type],eax
 		@@:
 
 		; Construct the literal and distance trees

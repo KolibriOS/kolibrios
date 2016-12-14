@@ -76,7 +76,7 @@ struct z_stream ;z_stream_s
 	total_in dd ? ;uLong ;total number of input bytes read so far
 
 	next_out dd ? ;Bytef * ;next output byte should be put there
-	avail_out dw ? ;uInt  ;remaining free space at next_out
+	avail_out dd ? ;uInt  ;remaining free space at next_out
 	total_out dd ? ;uLong ;total number of bytes output so far
 
 	msg dd ? ;z_const char * ;last error message, NULL if no error
@@ -86,7 +86,7 @@ struct z_stream ;z_stream_s
 	zfree  dd ? ;free_func  ;used to free the internal state
 	opaque dd ? ;voidpf     ;private data object passed to zalloc and zfree
 
-	data_type dw ? ;int   ;best guess about the data type: binary or text
+	data_type dd ? ;int   ;best guess about the data type: binary or text
 	adler     dd ? ;uLong ;adler32 value of the uncompressed data
 	reserved  dd ? ;uLong ;reserved for future use
 ends
@@ -227,14 +227,8 @@ if Z_SOLO eq 0
 ;    z_off64_t pos;
 ;};
 
-if Z_PREFIX_SET eq 1
-;#  undef z_gzgetc
-;#  define z_gzgetc(g) \
-;          ((g)->have ? ((g)->have--, (g)->pos++, *((g)->next)++) : gzgetc(g))
-else
 ;#  define gzgetc(g) \
 ;          ((g)->have ? ((g)->have--, (g)->pos++, *((g)->next)++) : gzgetc(g))
-end if
 
 end if
 

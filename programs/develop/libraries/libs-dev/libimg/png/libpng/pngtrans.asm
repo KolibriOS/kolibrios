@@ -81,7 +81,7 @@ proc png_set_packswap uses edi, png_ptr:dword
 	ret
 endp
 
-;void (png_structrp png_ptr, png_const_color_8p true_bits)
+;void (png_structrp png_ptr, png_color_8p true_bits)
 align 4
 proc png_set_shift uses ecx edi, png_ptr:dword, true_bits:dword
 	png_debug 1, 'in png_set_shift'
@@ -139,8 +139,7 @@ proc png_set_filler uses eax edi, png_ptr:dword, filler:dword, filler_loc:dword
 
 	mov eax,[edi+png_struct.mode]
 	and eax,PNG_IS_READ_STRUCT
-	cmp eax,0
-	je @f ;if (..!=0)
+	jz @f ;if (..!=0)
 if PNG_READ_FILLER_SUPPORTED eq 1
 		; On read png_set_filler is always valid, regardless of the base PNG
 		; format, because other transformations can give a format where the
@@ -229,8 +228,7 @@ proc png_set_add_alpha uses eax edi, png_ptr:dword, filler:dword, filler_loc:dwo
 	; The above may fail to do anything.
 	mov eax,[edi+png_struct.transformations]
 	and eax,PNG_FILLER
-	cmp eax,0
-	je .end_f ;if (..!=0)
+	jz .end_f ;if (..!=0)
 		or dword[edi+png_struct.transformations],PNG_ADD_ALPHA
 .end_f:
 	ret
@@ -244,8 +242,7 @@ proc png_set_swap_alpha uses edi, png_ptr:dword
 	mov edi,[png_ptr]
 	cmp edi,0
 	je .end_f ;if (..==0) return
-
-;   png_ptr->transformations |= PNG_SWAP_ALPHA;
+		or dword[edi+png_struct.transformations], PNG_SWAP_ALPHA
 .end_f:
 	ret
 endp
@@ -259,8 +256,7 @@ proc png_set_invert_alpha uses edi, png_ptr:dword
 	mov edi,[png_ptr]
 	cmp edi,0
 	je .end_f ;if (..==0) return
-
-;   png_ptr->transformations |= PNG_INVERT_ALPHA;
+		or dword[edi+png_struct.transformations], PNG_INVERT_ALPHA
 .end_f:
 	ret
 endp
@@ -273,8 +269,7 @@ proc png_set_invert_mono uses edi, png_ptr:dword
 	mov edi,[png_ptr]
 	cmp edi,0
 	je .end_f ;if (..==0) return
-
-;   png_ptr->transformations |= PNG_INVERT_MONO;
+		or dword[edi+png_struct.transformations], PNG_INVERT_MONO
 .end_f:
 	ret
 endp
@@ -815,12 +810,10 @@ proc png_set_user_transform_info uses eax edi, png_ptr:dword, user_transform_ptr
 if PNG_READ_USER_TRANSFORM_SUPPORTED eq 1
 	mov eax,[edi+png_struct.mode]
 	and eax,PNG_IS_READ_STRUCT
-	cmp eax,0
-	je @f
+	jz @f
 	mov eax,[edi+png_struct.flags]
 	and eax,PNG_FLAG_ROW_INIT
-	cmp eax,0
-	je @f ;if (..!=0 && ..!=0)
+	jz @f ;if (..!=0 && ..!=0)
 		cStr ,'info change after png_start_read_image or png_read_update_info'
 		stdcall png_app_error, edi, eax
 		jmp .end_f
@@ -842,7 +835,7 @@ endp
 ; associated with this pointer before png_write_destroy and png_read_destroy
 ; are called.
 
-;voidp (png_const_structrp png_ptr)
+;voidp (png_structrp png_ptr)
 align 4
 proc png_get_user_transform_ptr, png_ptr:dword
 	mov eax,[png_ptr]
@@ -853,7 +846,7 @@ proc png_get_user_transform_ptr, png_ptr:dword
 	ret
 endp
 
-;uint_32 (png_const_structrp png_ptr)
+;uint_32 (png_structrp png_ptr)
 align 4
 proc png_get_current_row_number, png_ptr:dword
 	; See the comments in png.inc - this is the sub-image row when reading an
@@ -870,7 +863,7 @@ proc png_get_current_row_number, png_ptr:dword
 	ret
 endp
 
-;byte (png_const_structrp png_ptr)
+;byte (png_structrp png_ptr)
 align 4
 proc png_get_current_pass_number, png_ptr:dword
 	mov eax,[png_ptr]

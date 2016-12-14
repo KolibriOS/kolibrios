@@ -40,17 +40,17 @@ tz14 db 'reserved',13,10,0
 
 sv_2:
 dd z_stream.next_in,4,tz1
-dd z_stream.avail_in,2,tz2
+dd z_stream.avail_in,4,tz2
 dd z_stream.total_in,4,tz3
 dd z_stream.next_out,4,tz4
-dd z_stream.avail_out,2,tz5
+dd z_stream.avail_out,4,tz5
 dd z_stream.total_out,4,tz6
 dd z_stream.msg,4,tz7
 dd z_stream.state,4,tz8
 dd z_stream.zalloc,4,tz9
 dd z_stream.zfree,4,tz10
 dd z_stream.opaque,4,tz11
-dd z_stream.data_type,2,tz12
+dd z_stream.data_type,4,tz12
 dd z_stream.adler,4,tz13
 dd z_stream.reserved,4,tz14
 dd 0,0
