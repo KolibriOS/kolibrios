@@ -1410,26 +1410,36 @@ fat_entry_to_bdfe2:
         push    edi esi
         mov     edi, esi
         mov     esi, ebp
-        test    byte [ebp-4], 1
-        jz      .ansi
-.uni:
-        lodsw
-        stosw
-        test    eax, eax
-        jnz     .uni
-        pop     esi edi
-        add     esi, 520
-.ret:
-        ret
-
-.ansi:
+        cmp     byte [ebp-4], 2
+        jz      .utf16
+        cmp     byte [ebp-4], 3
+        jz      .utf8
+@@:
         lodsw
         call    uni2ansi_char
         stosb
         test    al, al
-        jnz     .ansi
+        jnz     @b
         pop     esi edi
         add     esi, 264
+.ret:
+        ret
+
+.utf8:
+        push    ecx
+        mov     ecx, 519
+        call    UTF16to8_string
+        pop     ecx
+        jmp     @f
+
+.utf16:
+        lodsw
+        stosw
+        test    eax, eax
+        jnz     .utf16
+@@:
+        pop     esi edi
+        add     esi, 520
         ret
 
 bdfe_to_fat_entry:

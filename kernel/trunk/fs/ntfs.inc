@@ -1676,23 +1676,22 @@ ntfs_ReadFolder:
         mov     al, '.'
         push    edi ecx
         lea     ecx, [esi+1]
-        test    byte [edi-0x24], 1
+        cmp     dword[edi-36], 2
+        jz      .utf16sp
+        rep stosb
+        mov     byte [edi], 0
+        pop     ecx edi
+        cmp     dword[edi-36], 3
         jz      @f
-        rep stosw
-        pop     ecx
-        xor     eax, eax
-        stosw
-        pop     edi
-        add     edi, 520
+        add     edi, 264
         ret
 
+.utf16sp:
+        rep stosw
+        mov     word [edi], 0
+        pop     ecx edi
 @@:
-        rep stosb
-        pop     ecx
-        xor     eax, eax
-        stosb
-        pop     edi
-        add     edi, 264
+        add     edi, 520
 .ret:
         ret
 
@@ -1701,9 +1700,10 @@ ntfs_ReadFolder:
         cmp     byte [esi+namespace], 2
         jz      .ret
 ; do not return system files
-; ... note that there will be no bad effects if system files also were reported ...
-        cmp     dword [esi+fileRecordReference], 0x10
+        cmp     dword[esi+fileRecordReference], 16
         jb      .ret
+        cmp     byte [esi+fileNameLength], 0
+        jz      .ret
         mov     eax, [edx]
         inc     dword [eax+8]   ; new file found
         dec     ebx
@@ -1716,32 +1716,41 @@ ntfs_ReadFolder:
         push    ecx esi edi
         movzx   ecx, byte [esi+fileNameLength]
         add     esi, fileName
-        test    byte [edi-0x24], 1
-        jz      .ansi
-        shr     ecx, 1
-        rep movsd
-        adc     ecx, ecx
-        rep movsw
-        and     word [edi], 0
-        pop     edi
-        add     edi, 520
-        pop     esi ecx
-        ret
-
-.ansi:
-        jecxz   .skip
+        cmp     dword[edi-36], 2
+        jz      .utf16
+        cmp     dword[edi-36], 3
+        jz      .utf8
 @@:
         lodsw
         call    uni2ansi_char
         stosb
         loop    @b
-.skip:
-        xor     al, al
-        stosb
-        pop     edi
+        mov     byte [edi], 0
+        pop     edi esi ecx
         add     edi, 264
-        pop     esi ecx
         ret
+
+.utf8:
+        push    ecx
+        mov     cx, 519
+@@:
+        lodsw
+        call    UTF16to8
+        js      @f
+        dec     dword[esp]
+        jnz     @b
+@@:
+        mov     byte [edi], 0
+        pop     edi
+@@:
+        pop     edi esi ecx
+        add     edi, 520
+        ret
+
+.utf16:
+        rep movsw
+        mov     word [edi], 0
+        jmp     @b
 
 ntfs_direntry_to_bdfe:
         mov     [edi+4], eax    ; ANSI/UNICODE name

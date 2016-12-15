@@ -1103,7 +1103,7 @@ f68:
         jbe     sys_sheduler
         cmp     ebx, 11
         jb      undefined_syscall
-        cmp     ebx, 27
+        cmp     ebx, 28
         ja      undefined_syscall
         xor     eax, eax
         jmp     dword [f68call+ebx*4-11*4]
@@ -1138,6 +1138,8 @@ f68:
         call    srv_handlerEx   ;ecx
         mov     [esp+SYSCALL_STACK._eax], eax
         ret
+.18:
+        mov     eax, edx
 .19:
         cmp     ecx, OS_BASE
         jae     .fail
@@ -1199,6 +1201,24 @@ f68:
         mov     [esp+SYSCALL_STACK._edx], edx
         mov     [esp+SYSCALL_STACK._eax], eax
         ret
+.28:
+        cmp     ecx, OS_BASE
+        jae     .fail
+        push    ecx edx
+        stdcall kernel_alloc, maxPathLength
+        mov     edi, eax
+        pop     eax esi
+        push    edi
+        call    getFullPath
+        pop     ebp
+        test    eax, eax
+        jz      @f
+        stdcall load_file_umode, ebp
+        mov     [esp+SYSCALL_STACK._edx], edx
+@@:
+        mov     [esp+SYSCALL_STACK._eax], eax
+        stdcall kernel_free, ebp
+        ret
 
 .fail:
         mov     [esp+SYSCALL_STACK._eax], eax
@@ -1214,7 +1234,7 @@ f68call:   ; keep this table closer to main code
            dd f68.fail ; moved to f68.24
            dd f68.16   ; get_service
            dd f68.17   ; call_service
-           dd f68.fail ; moved to f68.25
+           dd f68.18   ; loadLibUnicode
            dd f68.19   ; load_dll
            dd f68.20   ; user_realloc
            dd f68.21   ; load_driver
@@ -1224,7 +1244,7 @@ f68call:   ; keep this table closer to main code
            dd f68.25   ; unmask exception
            dd f68.26   ; user_unmap
            dd f68.27   ; load_file_umode
-
+           dd f68.28   ; loadFileUnicode
 
 align 4
 proc load_pe_driver stdcall, file:dword, cmdline:dword

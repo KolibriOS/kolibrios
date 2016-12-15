@@ -297,34 +297,44 @@ fs_CdReadFolder:
         push    edi
         call    cd_find_lfn
         jnc     .found
-
         pop     edi
         cmp     [DevErrorCode], 0
         jne     .noaccess_1
-
         or      ebx, -1
         mov     eax, ERROR_FILE_NOT_FOUND
         ret
-;--------------------------------------
+
 .found:
         mov     edi, [cd_current_pointer_of_input]
         test    byte [edi+25], 10b    ; do not allow read directories
         jnz     .found_dir
-
         pop     edi
-;--------------------------------------
 .noaccess_1:
         or      ebx, -1
         mov     eax, ERROR_ACCESS_DENIED
         ret
-;--------------------------------------
+
+.end_buffer:
+        pop     edx eax
+        sub     eax, 2048   ; directory is over?
+        ja      .read_to_buffer
+        mov     eax, [cd_counter_block]
+        mov     [edx+8], eax
+        mov     eax, [ebx]
+        sub     [edx+4], eax
+        xor     eax, eax
+        dec     ecx
+        js      @f
+        mov     al, ERROR_END_OF_FILE
+@@:
+        pop     ecx edi
+        mov     ebx, [edx+4]
+        ret
+
 .found_dir:
         mov     eax, [edi+2]    ; eax=cluster
         mov     [CDSectorAddress], eax
         mov     eax, [edi+10]   ; directory size
-;--------------------------------------
-.doit:
-; init header
         push    eax ecx
         mov     edi, edx
         mov     ecx, 32/4
@@ -334,153 +344,115 @@ fs_CdReadFolder:
         mov     byte [edx], 1   ; version
         mov     [cd_mem_location], edx
         add     [cd_mem_location], 32
-;.mainloop:
         mov     [cd_counter_block], dword 0
         dec     dword [CDSectorAddress]
         push    ecx
-;--------------------------------------
 .read_to_buffer:
         inc     dword [CDSectorAddress]
         mov     [CDDataBuf_pointer], CDDataBuf
-        call    ReadCDWRetr         ; read sector of directory
+        call    ReadCDWRetr     ; read sector of directory
         cmp     [DevErrorCode], 0
         jne     .noaccess_1
-
-        call    .get_names_from_buffer
-        sub     eax, 2048
-; directory is over?
-        ja      .read_to_buffer
-
-        mov     edi, [cd_counter_block]
-        mov     [edx+8], edi
-        mov     edi, [ebx]
-        sub     [edx+4], edi
-        xor     eax, eax
-        dec     ecx
-        js      @f
-
-        mov     al, ERROR_END_OF_FILE
-;--------------------------------------
-@@:
-        pop     ecx edi
-        mov     ebx, [edx+4]
-        ret
-;--------------------------------------
-.get_names_from_buffer:
         mov     [cd_current_pointer_of_input_2], CDDataBuf
-        push    eax esi edi edx
-;--------------------------------------
-.get_names_from_buffer_1:
+        push    eax edx
+.get_names_from_buffer:
         call    cd_get_name
         jc      .end_buffer
-
         inc     dword [cd_counter_block]
         mov     eax, [cd_counter_block]
         cmp     [ebx], eax
-        jae     .get_names_from_buffer_1
-
+        jae     .get_names_from_buffer
         test    ecx, ecx
-        jz      .get_names_from_buffer_1
-
+        jz      .get_names_from_buffer
         mov     edi, [cd_counter_block]
         mov     [edx+4], edi
         dec     ecx
         mov     esi, ebp
-        mov     edi, [cd_mem_location]
+        call    cd_get_parameters_of_file
         add     edi, 40
-        test    dword [ebx+4], 1; 0=ANSI, 1=UNICODE
-        jnz     .unicode
-;--------------------------------------
-.ansi:
+        mov     ax, '.'
+        cmp     dword[ebx+4], 2
+        jz      .utf16
+        cmp     dword[ebx+4], 3
+        jz      .utf8
         cmp     [cd_counter_block], 2
-        jbe     .ansi_parent_directory
-
-        cld
+        jbe     .parentDirectory
+@@:
         lodsw
         xchg    ah, al
         call    uni2ansi_char
-        cld
         stosb
-; check end of file
-        mov     ax, [esi]
-        cmp     ax, word 3B00h ; separator end of file ';'
-        je      .cd_get_parameters_of_file_1
-; check for files not ending with separator
-        movzx   eax, byte [ebp-33]
-        add     eax, ebp
-        sub     eax, 34
-        cmp     esi, eax
-        je      .cd_get_parameters_of_file_1
-; check the end of the directory
-        movzx   eax, byte [ebp-1]
-        add     eax, ebp
-        cmp     esi, eax
-        jb      .ansi
-;--------------------------------------
-.cd_get_parameters_of_file_1:
+        call    .checkForEnd
+        jc      @b
+@@:
         mov     [edi], byte 0
-        call    cd_get_parameters_of_file
         add     [cd_mem_location], 304
-        jmp     .get_names_from_buffer_1
-;--------------------------------------
-.ansi_parent_directory:
-        cmp     [cd_counter_block], 2
-        je      @f
+        jmp     .get_names_from_buffer
 
-        mov     [edi], byte '.'
-        inc     edi
-        jmp     .cd_get_parameters_of_file_1
-;--------------------------------------
+.parentDirectory:
+        stosb
+        cmp     [cd_counter_block], 2
+        jnz     @b
+        stosb
+        jmp     @b
+
+.utf8:
+        add     [cd_mem_location], 256
+        cmp     [cd_counter_block], 2
+        jbe     .parentDirectory
+        push    ecx
+        mov     ecx, 519
 @@:
-        mov     [edi], word '..'
-        add     edi, 2
-        jmp     .cd_get_parameters_of_file_1
-;--------------------------------------
-.unicode:
-        cmp     [cd_counter_block], 2
-        jbe     .unicode_parent_directory
+        lodsw
+        xchg    ah, al
+        call    UTF16to8
+        js      @f
+        call    .checkForEnd
+        jc      @b
+@@:
+        pop     ecx
+        mov     [edi], byte 0
+        add     [cd_mem_location], 304
+        jmp     .get_names_from_buffer
 
-        cld
-        movsw
-; check end of file
+.checkForEnd:
         mov     ax, [esi]
-        cmp     ax, word 3B00h; separator end of file ';'
-        je      .cd_get_parameters_of_file_2
+        cmp     ax, 3B00h   ; ';'
+        jz      @f
 ; check for files not ending with separator
         movzx   eax, byte [ebp-33]
         add     eax, ebp
         sub     eax, 34
         cmp     esi, eax
-        je      .cd_get_parameters_of_file_2
+        jz      @f
 ; check the end of the directory
         movzx   eax, byte [ebp-1]
         add     eax, ebp
         cmp     esi, eax
-        jb      .unicode
-;--------------------------------------
-.cd_get_parameters_of_file_2:
-        mov     [edi], word 0
-        call    cd_get_parameters_of_file
-        add     [cd_mem_location], 560
-        jmp     .get_names_from_buffer_1
-;--------------------------------------
-.unicode_parent_directory:
-        cmp     [cd_counter_block], 2
-        je      @f
-
-        mov     [edi], word 2E00h; '.'
-        add     edi, 2
-        jmp     .cd_get_parameters_of_file_2
-;--------------------------------------
 @@:
-        mov     [edi], dword 2E002E00h; '..'
-        add     edi, 4
-        jmp     .cd_get_parameters_of_file_2
-;--------------------------------------
-.end_buffer:
-        pop     edx edi esi eax
         ret
-;-----------------------------------------------------------------------------
+
+.utf16:
+        cmp     [cd_counter_block], 2
+        jbe     .utf16ParentDirectory
+@@:
+        lodsw
+        xchg    ah, al
+        stosw
+        call    .checkForEnd
+        jc      @b
+@@:
+        mov     [edi], word 0
+        add     [cd_mem_location], 560
+        jmp     .get_names_from_buffer
+
+.utf16ParentDirectory:
+        stosw
+        cmp     [cd_counter_block], 2
+        jnz     @b
+        stosw
+        jmp     @b
+
 cd_get_parameters_of_file:
         mov     edi, [cd_mem_location]
 cd_get_parameters_of_file_1:
@@ -492,9 +464,7 @@ cd_get_parameters_of_file_1:
 ; is a directory?
         test    [ebp-8], byte 2
         jz      .file
-
         inc     eax
-;--------------------------------------
 .file:
 ; not as a volume label in the FAT, in this form not available
 ; file is not a system
@@ -502,14 +472,14 @@ cd_get_parameters_of_file_1:
 ; file is hidden? (attribute of existence)
         test    [ebp-8], byte 1
         jz      .hidden
-
         inc     eax
-;--------------------------------------
 .hidden:
         shl     eax, 1
 ; file is always read-only, as this CD
         inc     eax
         mov     [edi], eax
+        mov     eax, [ebx+4]
+        mov     [edi+4], eax
 ; get the time to file
 ; hour
         movzx   eax, byte [ebp-12]
@@ -541,19 +511,6 @@ cd_get_parameters_of_file_1:
         mov     [edi+20], eax
 ; last write date
         mov     [edi+28], eax
-; get the data type of name
-        xor     eax, eax
-        test    dword [ebx+4], 1; 0=ANSI, 1=UNICODE
-        jnz     .unicode_1
-
-        mov     [edi+4], eax
-        jmp     @f
-;--------------------------------------
-.unicode_1:
-        inc     eax
-        mov     [edi+4], eax
-;--------------------------------------
-@@:
 ; get the file size in bytes
         xor     eax, eax
         mov     [edi+32+4], eax

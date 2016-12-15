@@ -1677,7 +1677,6 @@ Remarks:
 ======================================================================
 ============= Function 30 - work with the current folder. ============
 ======================================================================
-
 --------- Subfunction 1 - set current folder for the thread. ---------
 Parameters:
   * eax = 30 - function number
@@ -1686,7 +1685,7 @@ Parameters:
     rules of path forming can be found in function 70 description.
 Returned value:
   * function does not return value
-
+----------------------------------------------------------------------
 --------- Subfunction 2 - get current folder for the thread. ---------
 Parameters:
   * eax = 30 - function number
@@ -1694,26 +1693,21 @@ Parameters:
   * ecx = pointer to buffer
   * edx = size of buffer
 Returned value:
-  * eax = size of the current folder's name (including terminating 0)
+  * eax = size of the string (including terminating 0)
 Remarks:
-  * If the buffer is too small to hold all data, only first (edx-1)
-    bytes are copied and than terminating 0 is inserted.
+  * If the buffer is too small to hold all path, only part of the string
+    will be copied and terminated with 0.
   * By default, current folder for the thread is "/rd/1".
   * At process/thread creation the current folder will be inherited
     from the parent.
-
+----------------------------------------------------------------------
 --- Subfunction 3 - install the add.system directory for the kernel --
 Parameters:
   * eax = 30 - function number
   * ebx = 3 - subfunction number
   * ecx = pointer to a block of data:
-    for cp866 encoding:
 key     rb  64
 path    rb  64
-    for UTF-16LE encoding:
-key     rb  64
-        dw  2
-path    rw  31
     Example:
 align 64
 key     db  'kolibrios',0   ; key must be in lower case
@@ -1724,19 +1718,29 @@ Returned value:
   * function does not return value
 Remarks:
   * The function can be called only 1 time for 1 session of the OS.
-  * The key is not affected by encoding.
-
------- Subfunction 4 - get current folder in UTF-16LE encoding. ------
+  * On input the symbolic key is not changing by encoding.
+----------------------------------------------------------------------
+---- Subfunction 4 - set current folder, specifying the encoding. ----
 Parameters:
   * eax = 30 - function number
   * ebx = 4 - subfunction number
+  * ecx = pointer to string with the path to new current folder
+  * edx = string encoding, details can be found in function 80 description.
+Returned value:
+  * function does not return value
+----------------------------------------------------------------------
+---- Subfunction 5 - get current folder, specifying the encoding. ----
+Parameters:
+  * eax = 30 - function number
+  * ebx = 5 - subfunction number
   * ecx = pointer to buffer
   * edx = size of buffer
+  * esi = string encoding
 Returned value:
-  * eax = number of chars in the buffer (including terminating 0)
+  * eax = size of the string in bytes (including terminating 0)
 Remarks:
-  * If the buffer is too small to hold all data, only first (edx-2)
-    bytes are copied and than terminating 0 is inserted.
+  * If the buffer is too small to hold all path, only part of the string
+    will be copied and terminated with 0.
   * By default, current folder for the thread is "/rd/1".
   * At process/thread creation the current folder will be inherited
     from the parent.
@@ -3343,6 +3347,22 @@ Remarks:
   eax - SF_SYS_MISC (68)
   ebx - SSF_CONTROL_DRIVER (17)
 ======================================================================
+== Function 68, subfunction 18 - load DLL, specifying the encoding. ==
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 18 - subfunction number
+  * ecx = pointer to the string with path to DLL
+  * edx = string encoding, details can be found in function 80 description.
+Returned value:
+  * eax = 0 - failed
+  * otherwise eax = pointer to DLL export table
+Remarks:
+  * Export table is an array of structures of 2 dword's, terminated
+    by zero. The first dword in structure points to function name,
+    the second dword contains address of function.
+
+======================================================================
 =============== Function 68, subfunction 19 - load DLL. ==============
 ======================================================================
 Parameters:
@@ -3353,10 +3373,6 @@ Parameters:
 Returned value:
   * eax = 0 - failed
   * otherwise eax = pointer to DLL export table
-Remarks:
-  * Export table is an array of structures of 2 dword's, terminated
-    by zero. The first dword in structure points to function name,
-    the second dword contains address of function.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYS_MISC (68)
@@ -3551,6 +3567,20 @@ Remarks:
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYS_MISC (68)
   ebx - SSF_LOAD_FILE (27)
+======================================================================
+== Function 68, subfunction 28 - load file, specifying the encoding ==
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 28 - subfunction number
+  * ecx = pointer to the string with path to file
+  * edx = string encoding, details can be found in function 80 description.
+Returned value:
+  * eax = pointer to the loaded file, or zero
+  * edx = size of the loaded file, or zero
+Remarks:
+  * function loads file and unpacks, if necessary
+
 ======================================================================
 ====================== Function 69 - debugging. ======================
 ======================================================================
@@ -3847,9 +3877,9 @@ Returned value:
   * some subfunctions return value in other registers too
 General format of the information structure:
   * +0: dword: subfunction number
-  * +4: dword: file offset
-  * +8: dword: high dword of offset (must be 0) or flags field
-  * +12 = +0xC: dword: size
+  * +4: dword: offset in file or folder
+  * +8: dword: higher part of offset or flags
+  * +12 = +0xC: dword: size of data
   * +16 = +0x10: dword: pointer to data
   * +20 = +0x14: ?: path - zero terminated string
   or
@@ -3857,14 +3887,15 @@ General format of the information structure:
   * +21 = +0x15: dword: pointer to string
 Case sensitivity depends on filesystem.
 If a path not begins with '/', it is considered a relative.
-To get or set the current folder, use the function 30.
-'../' in the beginning means a lift by one folder relatively current folder.
+To get or set the current folder, use the sysfunction 30.
+'../' in the path means a lift by one folder relatively current folder.
 To set the encoding, put at the start of the string a byte with next values:
   * 1 = cp866
   * 2 = UTF-16LE
   * 3 = UTF-8
   otherwise will be used cp866. In an absolute path
   you may put this byte after the '/' or put an additional '/' before it.
+  Also, you may use the sysfunction 80.
 Format of an absolute path:
   /base/number/dir1/dir2/.../dirn/file,
 where base/number identifies device, on which file is located:
@@ -3945,12 +3976,13 @@ Parameters:
 Format of the information structure:
   * +0: dword: 1 = subfunction number
   * +4: dword: index of starting block (beginning from 0)
-  * +8: dword: encoding:
-    * 0 = cp866 -> byte per char
-    * 1 = UTF-16LE -> word per char
+  * +8: dword: names encoding:
+    0 = default
+    1 = cp866
+    2 = UTF-16LE
+    3 = UTF-8
   * +12 = +0xC: dword: number of blocks to read
-  * +16 = +0x10: dword: pointer to buffer for data, buffer size
-    must be not less than 32+n(40+256*enc+8) bytes
+  * +16 = +0x10: dword: pointer to buffer for data
   * +20 = +0x14: path, general rules of names forming
 Returned value:
   * eax = 0 - success, otherwise file system error code
@@ -3982,9 +4014,7 @@ Structure of block of data for folder entry (BDFE):
       and after archiving this bit is cleared - it can be useful
       for automatically creating of backup-archives as at writing
       this bit is usually set
-  * +4: dword: encoding:
-    * 0 = cp866 -> byte per char
-    * 1 = UTF-16LE -> word per char
+  * +4: dword: encoding, equals to field +8 in the information structure
   * +8: 4*byte: time of file creation
   * +12 = +0xC: 4*byte: date of file creation
   * +16 = +0x10: 4*byte: time of last access (read or write)
@@ -3992,7 +4022,7 @@ Structure of block of data for folder entry (BDFE):
   * +24 = +0x18: 4*byte: time of last modification
   * +28 = +0x1C: 4*byte: date of last modification
   * +32 = +0x20: qword: file size in bytes (up to 16777216 Tb)
-  * +40 = +0x28: (256*enc+8)*byte: name
+  * +40 = +0x28: name, 264 bytes in cp866, otherwise - 520 bytes.
 Time format:
   * +0: byte: seconds
   * +1: byte: minutes
@@ -4006,8 +4036,7 @@ Date format:
   * for example, 25.11.1979 is written as (in hex) 19 0B BB 07
 Remarks:
   * If BDFE contains cp866 name, the length of BDFE is 304 bytes,
-    if UTF-16LE name - 560 bytes. Value of length is aligned
-    on 16-byte bound to accelerate processing in CPU cache.
+    otherwise - 560 bytes.
   * Name string is zero terminated, further data contain garbage.
   * If files in folder were ended before requested number was read,
     the function will read as many as it can, and after that return
@@ -5046,6 +5075,30 @@ Remarks:
 ---------------------- Constants for registers: ----------------------
   eax - SF_FUTEX (77)
   ebx - SSF_WAKE (3)
+======================================================================
+=== Function 80 - file system interface with parameter of encoding ===
+======================================================================
+Parameters:
+  * eax = 80
+  * ebx = pointer to the information structure
+Returned value:
+  * eax = 0 - success; otherwise file system error code
+  * some subfunctions return value in other registers too
+General format of the information structure:
+  * +0: dword: subfunction number
+  * +4: dword: offset in file or folder
+  * +8: dword: higher part of offset or flags
+  * +12 = +0xC: dword: size of data
+  * +16 = +0x10: dword: pointer to data
+  * +20 = +0x14: dword: string encoding:
+    1 = cp866
+    2 = UTF-16LE
+    3 = UTF-8
+    0 = default (supports encoding byte at the start of the string)
+  * +24 = +0x18: dword: pointer to zero terminated string with path
+
+The rest is similar to sysfunction 70.
+
 ======================================================================
 =============== Function -1 - terminate thread/process ===============
 ======================================================================

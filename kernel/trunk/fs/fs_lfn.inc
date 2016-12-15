@@ -38,31 +38,30 @@ file_system_lfn_protected:
         mov     [image_of_ebx], ebx
         ret
 
+fileSystemUnicode:
+; in: ebx -> f.80 parameter structure
+        mov     edi, [ebx+20]
+        mov     esi, [ebx+24]
+        jmp     @f
+
 file_system_lfn:
-; in: ebx -> parameter structure
-        lea     ebp, [ebx+20]
-        cmp     byte [ebp], 0
+; in: ebx -> f.70 parameter structure
+        xor     edi, edi
+        lea     esi, [ebx+20]
+        cmp     byte [esi], 0
         jnz     @f
-        mov     ebp, [ebx+21]
+        mov     esi, [ebx+21]
 @@:
-        cmp     word [ebp], '/'
-        jz      .rootdir
-        cmp     byte [ebp], 4
-        jnc     @f
-        cmp     byte [ebp], 0
-        jz      @f
-        cmp     word [ebp+1], '/'
+        cmp     word [esi], '/'
         jnz     @f
-        cmp     byte [ebp], 2
+        cmp     edi, 2
         jnz     .rootdir
-        cmp     word [ebp+3], 0
+        cmp     dword[esi], '/'
         jz      .rootdir
 @@:
         stdcall kernel_alloc, maxPathLength
         push    eax ebx
         xchg    eax, edi
-        mov     esi, ebp
-        xor     eax, eax
         call    getFullPath
         pop     ebx ebp
         test    eax, eax
@@ -367,8 +366,10 @@ process_replace_file_name:
         lodsb
         test    al, al
         jz      .cont
-        or      al, 20h
         scasb
+        jz      @b
+        or      al, 20h
+        cmp     [edi-1], al
         jz      @b
 .cont:
         pop     edi esi
@@ -397,14 +398,19 @@ endg
 sys_current_directory:  ; sysfunction 30
         mov     eax, [current_slot]
         mov     edi, [eax+APPDATA.cur_dir]
+        xor     eax, eax
         dec     ebx
         jz      .set
         dec     ebx
         jz      .get
         dec     ebx
         jz      .mount_additional_directory
+        mov     eax, edx
         dec     ebx
-        jz      .get16
+        jz      .set
+        mov     eax, esi
+        dec     ebx
+        jz      .get
 @@:
         ret
 
@@ -416,26 +422,17 @@ sys_current_directory:  ; sysfunction 30
         jnz     @b
         mov     esi, ecx
         mov     edi, sysdir_name1
-        mov     ecx, 63
+        mov     ecx, 64
         rep movsb   ; copying fake directory name
-        inc     esi
-        xor     eax, eax
-        stosb       ; terminator of name, in case if we get the inlet trash
+        mov     byte [edi-1], 0
         mov     cl, 63
-        cmp     word [esi], 2
-        jz      .utf16
         call    cp866toUTF8_string
-@@:
         mov     byte [edi], 0
         mov     [full_file_name_table.size], 2
         ret
 
-.utf16:
-        add     esi, 2
-        call    UTF16to8_string
-        jmp     @b
-
-.get:       ; in: ecx -> buffer, edx = length
+.get:
+; in: ecx -> buffer, edx = length, eax = encoding
         mov     esi, edi
         inc     esi
         mov     edi, ecx
@@ -444,6 +441,11 @@ sys_current_directory:  ; sysfunction 30
         mov     edx, maxPathLength
 @@:
         mov     ecx, edx
+        jecxz   .ret
+        cmp     eax, 2
+        jz      .get16
+        cmp     eax, 3
+        jz      .get8
 @@:
         dec     ecx
         js      @f
@@ -453,21 +455,26 @@ sys_current_directory:  ; sysfunction 30
         test    al, al
         jnz     @b
         sub     edx, ecx
-        mov     ecx, edx
 @@:
-        mov     [esp+32], ecx
+        mov     byte [edi-1], 0
+.ret:
+        mov     [esp+32], edx
         ret
 
-.get16:
-        mov     esi, edi
-        inc     esi
-        mov     edi, ecx
-        cmp     edx, maxPathLength
-        jc      @f
-        mov     edx, maxPathLength
-@@:
-        shr     edx, 1
+.get8:
+        push    edi
+        mov     edi, esi
+        xor     eax, eax
+        repnz scasb
+        sub     edx, ecx
         mov     ecx, edx
+        pop     edi
+        rep movsb
+        jmp     @b
+
+.get16:
+        shr     ecx, 1
+        shr     edx, 1
 @@:
         dec     ecx
         js      @f
@@ -476,14 +483,13 @@ sys_current_directory:  ; sysfunction 30
         test    ax, ax
         jnz     @b
         sub     edx, ecx
-        mov     ecx, edx
 @@:
-        mov     [esp+32], ecx
-        ret
+        shl     edx, 1
+        mov     word [edi-2], 0
+        jmp     .ret
 
 .set:
         mov     esi, ecx
-        xor     eax, eax
 getFullPath:
 ; in: esi -> file path, eax = string encoding, edi -> destination
 ; out: UTF-8 string (with marker), eax = length, 0 -> error

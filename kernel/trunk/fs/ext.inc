@@ -1900,13 +1900,15 @@ ext_ReadFolder:
         mov     esi, [esp+12]
         movzx   ecx, [esi+DIRENTRY.nameLength]
         lea     esi, [esi+DIRENTRY.name]
-        add     ecx, esi
         cmp     byte [esi], '.'
         jnz     @f
         or      byte [edx], KOS_HIDDEN
 @@:
         lea     edi, [edx+40]
-        cmp     byte [edx+4], 1
+        cmp     byte [edx+4], 3
+        jz      .utf8
+        add     ecx, esi
+        cmp     byte [edx+4], 2
         jz      .utf16
 @@:
         call    utf8to16
@@ -1931,6 +1933,12 @@ ext_ReadFolder:
         jb      .wanted_start
         push    .wanted_start
         jmp     .end_block
+
+.utf8:
+        rep movsb
+        mov     byte [edi], 0
+        add     edx, 40+520
+        jmp     @b
 
 .utf16:
         call    utf8to16
