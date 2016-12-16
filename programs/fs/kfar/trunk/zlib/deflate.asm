@@ -162,8 +162,9 @@ if FASTEST eq 0
 push ebx
 	mov ebx,[s+deflate_state.w_mask]
 	and ebx,str
+	shl ebx,2
 	add ebx,[s+deflate_state.prev]
-	mov byte[ebx],al
+	mov [ebx],eax
 pop ebx
 end if
 	mov eax,[s+deflate_state.ins_h]
@@ -179,13 +180,13 @@ end if
 
 macro CLEAR_HASH s
 {
+	;mov eax,[s+deflate_state.hash_size]
+	;dec eax
+	;shl eax,2
+	;add eax,[s+deflate_state.head]
+	;mov dword[eax],NIL
 	mov eax,[s+deflate_state.hash_size]
-	dec eax
-	shl eax,2
-	add eax,[s+deflate_state.head]
-	mov dword[eax],NIL
-	mov eax,[s+deflate_state.hash_size]
-	dec eax
+	;dec eax
 	shl eax,2 ;sizeof(*s.head)
 	stdcall zmemzero, [s+deflate_state.head], eax
 }
@@ -587,7 +588,6 @@ if GZIP eq 1
 end if
 	mov dword[ebx+z_stream.adler],eax
 	mov dword[edi+deflate_state.last_flush],Z_NO_FLUSH
-
 	stdcall _tr_init, edi
 
 	mov eax,Z_OK
@@ -1925,6 +1925,8 @@ align 4
 		sub ecx,edi
 		jz @f
 			repe cmpsb
+			dec edi
+			dec esi
 		@@:
 
 		mov eax,[edx+deflate_state.window_size]
@@ -1968,6 +1970,7 @@ align 4
 		dec dword[chain_length]
 		cmp dword[chain_length],0
 		jne .cycle0
+align 4
 	.cycle0end: ;while (..>.. && ..!=0)
 
 	mov eax,[edx+deflate_state.lookahead]
@@ -2281,6 +2284,7 @@ end if
 		jge .cycle0end
 		cmp dword[edx+z_stream.avail_in],0
 		jne .cycle0
+align 4
 	.cycle0end: ;while (..<.. && ..!=..)
 
 	; If the WIN_INIT bytes after the end of the current data have never been
@@ -2405,18 +2409,18 @@ proc deflate_stored uses ebx ecx edi, s:dword, flush:dword
 ; Stored blocks are limited to 0xffff bytes, pending_buf is limited
 ; to pending_buf_size, and each stored block has a 5 byte header:
 	mov edi,[s]
-zlib_debug 'deflate_stored'
+	zlib_debug 'deflate_stored'
 
 	mov ecx,0xffff
 	mov eax,[edi+deflate_state.pending_buf_size]
 	sub eax,5
 	cmp ecx,eax
-	jle @f ;if (..>..)
+	jle .cycle0 ;if (..>..)
 		mov ecx,eax
-	@@:
 	;ecx = max_block_size
 
 	; Copy as much as possible from input to output:
+align 4
 	.cycle0: ;for (;;) {
 		; Fill the window as much as possible:
 		cmp dword[edi+deflate_state.lookahead],1
@@ -2435,7 +2439,10 @@ zlib_debug 'deflate_stored'
 			cmp dword[edi+deflate_state.lookahead],0
 			je .cycle0end ;if (..==0) break ;flush the current block
 		.end0:
-;        Assert(s->block_start >= 0, "block gone");
+		cmp dword[edi+deflate_state.block_start],0
+		jge @f
+			zlib_assert 'block gone' ;Assert(..>=0)
+		@@:
 
 		mov eax,[edi+deflate_state.lookahead]
 		add [edi+deflate_state.strstart],eax
@@ -2823,6 +2830,7 @@ end if
 			dec dword[edi+deflate_state.lookahead]
 		;.end4:
 		jmp .cycle0
+align 4
 	.cycle0end:
 	cmp dword[flush],Z_NO_FLUSH
 	jne @f

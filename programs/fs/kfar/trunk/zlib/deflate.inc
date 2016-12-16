@@ -46,7 +46,7 @@ FINISH_STATE equ 800
 ; Stream status
 
 ; Data structure describing a single value and its code string.
-struct ct_data ;ct_data_s
+struct ct_data
 	fc dw ? ;union
 		;uint_16 freq ;frequency count
 		;uint_16 code ;bit string
@@ -60,7 +60,7 @@ Code equ ct_data.fc ;.code
 Dad  equ ct_data.dale ;.dad
 Len  equ ct_data.dale ;.len
 
-struct tree_desc ;tree_desc_s
+struct tree_desc
 	dyn_tree  dd ? ;ct_data * ;the dynamic tree
 	max_code  dd ? ;int ;largest code with non zero frequency
 	stat_desc dd ? ;static_tree_desc * ;the corresponding static tree
@@ -80,6 +80,7 @@ struct deflate_state ;internal_state
 	gzhead  dd ? ;gz_headerp ;gzip header information to write
 	gzindex dd ? ;uInt ;where in extra, name, or comment
 	method  db ? ;Byte ;can only be DEFLATED
+		rb 3 ;for align
 	last_flush dd ? ;int ;value of flush param for previous deflate call
 
 ; used by deflate.asm:
@@ -171,7 +172,7 @@ struct deflate_state ;internal_state
 	; The sons of heap[n] are heap[2*n] and heap[2*n+1]. heap[0] is not used.
 	; The same heap array is used to build all trees.
 
-	depth rb 2*L_CODES+1 ;uch[]
+	depth rb ((2*L_CODES+1)+3) and (not 3) ;uch[]
 	; Depth of each subtree used as tie breaker for trees of equal frequency
 
 	l_buf dd ? ;uchf * ;buffer for literals or lengths
@@ -237,9 +238,6 @@ deflate_state.max_insert_length equ deflate_state.max_lazy_match
 
 macro put_byte s, c
 {
-;xor eax,eax
-;mov al,c
-;zlib_debug '(%d)',eax
 	movzx eax,word[s+deflate_state.pending]
 	add eax,[s+deflate_state.pending_buf]
 	mov byte[eax],c

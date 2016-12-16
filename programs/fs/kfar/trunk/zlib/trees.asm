@@ -386,7 +386,7 @@ endp
 ; Initialize the tree data structures for a new zlib stream.
 
 ;void (s)
-;    deflate_state* s;
+;    deflate_state* s
 align 4
 proc _tr_init uses eax edi, s:dword
 	mov edi,[s]
@@ -425,7 +425,6 @@ endp
 ;    deflate_state* s
 align 4
 proc init_block uses eax ecx edi, s:dword
-;    int n ;iterates over tree elements
 	mov edi,[s]
 
 	; Initialize the trees.
@@ -451,8 +450,7 @@ proc init_block uses eax ecx edi, s:dword
 		add eax,sizeof.ct_data
 		loop @b
 
-	mov ecx,sizeof.ct_data*END_BLOCK+deflate_state.dyn_ltree+Freq
-	mov word[ecx+edi],1
+	mov word[edi+sizeof.ct_data*END_BLOCK+deflate_state.dyn_ltree+Freq],1
 	mov dword[edi+deflate_state.static_len],0
 	mov dword[edi+deflate_state.opt_len],0
 	mov dword[edi+deflate_state.matches],0
@@ -1357,13 +1355,11 @@ endl
 	mov eax,edi
 	add eax,deflate_state.dyn_ltree
 	stdcall scan_tree, edi, eax, [edi+deflate_state.l_desc.max_code]
-	mov eax,edi
-	add eax,deflate_state.dyn_dtree
+	add eax,deflate_state.dyn_dtree-deflate_state.dyn_ltree
 	stdcall scan_tree, edi, eax, [edi+deflate_state.d_desc.max_code]
 
 	; Build the bit length tree:
-	mov eax,edi
-	add eax,deflate_state.bl_desc
+	add eax,deflate_state.bl_desc-deflate_state.dyn_dtree
 	stdcall build_tree, edi, eax
 	; opt_len now includes the length of the tree representations, except
 	; the lengths of the bit lengths codes and the 5+5+4 bits for the counts.
@@ -1506,7 +1502,7 @@ endp
 ; Flush the bits in the bit buffer to pending output (leaves at most 7 bits)
 
 ;void (s)
-;    deflate_state* s;
+;    deflate_state* s
 align 4
 proc _tr_flush_bits, s:dword
 	stdcall bi_flush, [s]
@@ -1745,13 +1741,11 @@ proc _tr_tally uses ebx edi, s:dword, dist:dword, lc:dword
 		add eax,LITERALS+1
 		imul eax,sizeof.ct_data
 		add eax,edi
-		add eax,deflate_state.dyn_ltree+Freq
-		inc word[eax]
+		inc word[eax+deflate_state.dyn_ltree+Freq]
 		d_code [dist]
 		imul eax,sizeof.ct_data
 		add eax,edi
-		add eax,deflate_state.dyn_dtree+Freq
-		inc word[eax]
+		inc word[eax+deflate_state.dyn_dtree+Freq]
 	.end0:
 
 if TRUNCATE_BLOCK eq 1
@@ -1795,7 +1789,7 @@ endp
 ; Send the block data compressed using the given Huffman trees
 
 ;void (s, ltree, dtree)
-;    deflate_state* s;
+;    deflate_state* s
 ;    ct_data *ltree ;literal tree
 ;    ct_data *dtree ;distance tree
 align 4
@@ -1952,7 +1946,7 @@ endl
 	.end0:
 	mov ecx,32
 	mov ebx,edi
-	add ebx,deflate_state.dyn_ltree+Freq
+	add ebx,deflate_state.dyn_ltree+Freq+32*sizeof.ct_data
 	.cycle1:
 	cmp ecx,LITERALS
 	jge .cycle1end ;for (..;..<..;..,..)

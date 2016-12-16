@@ -3,7 +3,7 @@ include '../../../../proc32.inc'
 include '../../../../macros.inc'
 include '../../../../KOSfuncs.inc'
 
-FASTEST equ 1
+FASTEST equ 0
 GEN_TREES_H equ 0
 DEBUG equ 0
 DYNAMIC_CRC_TABLE equ 1
