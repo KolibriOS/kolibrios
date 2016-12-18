@@ -14,17 +14,6 @@ $Revision$
 
 window.BORDER_SIZE = 5
 
-macro FuncTable name, table_name, [label]
-{
-  common
-    align 4
-    \label name#.#table_name dword
-  forward
-    dd name#.#label
-  common
-    name#.sizeof.#table_name = $ - name#.#table_name
-}
-
 uglobal
   common_colours rd 48
   draw_limits    RECT
@@ -82,85 +71,58 @@ syscall_draw_window: ;///// system function 0 /////////////////////////////////
 ;------------------------------------------------------------------------------
 syscall_display_settings: ;///// system function 48 ///////////////////////////
 ;------------------------------------------------------------------------------
-;; Redraw screen:
-;< ebx = 0
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;; Set button style:
-;< ebx = 1
-;< ecx = 0 (flat) or 1 (with gradient)
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;; Set system color palette:
-;< ebx = 2
-;< ecx = pointer to color table
-;< edx = size of color table
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;; Get system color palette:
-;< ebx = 3
-;< ecx = pointer to color table buffer
-;< edx = size of color table buffer
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;; Get skinned caption height:
-;< ebx = 4
-;> eax = height in pixels
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;; Get screen working area:
-;< ebx = 5
-;> eax = pack[16(left), 16(right)]
-;> ebx = pack[16(top), 16(bottom)]
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;; Set screen working area:
-;< ebx = 6
-;< ecx = pack[16(left), 16(right)]
-;< edx = pack[16(top), 16(bottom)]
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;; Get skin margins:
-;< ebx = 7
-;> eax = pack[16(left), 16(right)]
-;> ebx = pack[16(top), 16(bottom)]
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;; Set skin:
-;< ebx = 8
-;< ecx = pointer to FileInfoBlock struct
-;> eax = FS error code
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;; Get font smoothing:
-;< ebx = 9
-;> eax = 0 — off, 1 — on, 2 — subpixel
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;; Set font smoothing:
-;< ebx = 10
-;< ecx = 0 — off, 1 — on, 2 — subpixel
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;; Get font size:
-;< ebx = 11
-;> eax = height in pixels
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;; Set font size:
-;< ebx = 12
-;< ecx = height in pixels
-;------------------------------------------------------------------------------
-        cmp     ebx, .sizeof.ftable / 4
+        cmp     ebx, 13
         ja      @f
-        jmp     [.ftable + ebx * 4]
-;------------------------------------------------------------------------------
-syscall_display_settings.00:
+        jmp     dword[.ftable + ebx*4]
+
+align 4
+.ftable:
+dd  .redrawWholeScreen
+dd  .setButtonStyle
+dd  .setSystemColors
+dd  .getSystemColors
+dd  .getCaptionHeight
+dd  .getScreenWorkingArea
+dd  .setScreenWorkingArea
+dd  .getSkinMargins
+dd  .setSkin
+dd  .getFontSmoothing
+dd  .setFontSmoothing
+dd  .getFontSize
+dd  .setFontSize
+dd  .setSkinUnicode
+
+.redrawWholeScreen:
         xor     eax, eax
         inc     ebx
         cmp     [windowtypechanged], ebx
-        jne     @f
+        jne     .ret
         mov     [windowtypechanged], eax
-        jmp     syscall_display_settings._.redraw_whole_screen
-;------------------------------------------------------------------------------
-syscall_display_settings.01:
+.redrawScreen:
+        xor     eax, eax
+        mov     [draw_limits.left], eax
+        mov     [draw_limits.top], eax
+        mov     eax, [_display.width]
+        dec     eax
+        mov     [draw_limits.right], eax
+        mov     eax, [_display.height]
+        dec     eax
+        mov     [draw_limits.bottom], eax
+        mov     eax, window_data
+        jmp     redrawscreen
+
+.setButtonStyle:
+; in: ecx: 0 = flat, 1 = with gradient
         and     ecx, 1
         cmp     ecx, [buttontype]
-        je      @f
+        je      .ret
         mov     [buttontype], ecx
         mov     [windowtypechanged], ebx
-@@:
+.ret:
         ret
-;------------------------------------------------------------------------------
-syscall_display_settings.02:
+
+.setSystemColors:
+; in: ecx = pointer to color table, edx = size of color table
         dec     ebx
         mov     esi, ecx
         cmp     edx, 192
@@ -172,8 +134,9 @@ syscall_display_settings.02:
         rep movsb
         mov     [windowtypechanged], ebx
         ret
-;------------------------------------------------------------------------------
-syscall_display_settings.03:
+
+.getSystemColors:
+; in: ecx = pointer to color table, edx = size of color table
         mov     edi, ecx
         cmp     edx, 192
         jnae    @f
@@ -183,13 +146,14 @@ syscall_display_settings.03:
         mov     ecx, edx
         rep movsb
         ret
-;------------------------------------------------------------------------------
-syscall_display_settings.04:
+
+.getCaptionHeight:
         mov     eax, [_skinh]
         mov     [esp + 32], eax
         ret
-;------------------------------------------------------------------------------
-syscall_display_settings.05:
+
+.getScreenWorkingArea:
+; out: eax = pack[left, right], ebx = pack[top, bottom]
         mov     eax, [screen_workarea.left - 2]
         mov     ax, word[screen_workarea.right]
         mov     [esp + 32], eax
@@ -197,8 +161,9 @@ syscall_display_settings.05:
         mov     ax, word[screen_workarea.bottom]
         mov     [esp + 20], eax
         ret
-;------------------------------------------------------------------------------
-syscall_display_settings.06:
+
+.setScreenWorkingArea:
+; in: ecx = pack[left, right], edx = pack[top, bottom]
         xor     esi, esi
         mov     edi, [_display.width]
         dec     edi
@@ -240,49 +205,8 @@ syscall_display_settings.06:
 .check_if_redraw_needed:
         or      esi, esi
         jz      @f
-
         call    repos_windows
-        jmp     syscall_display_settings._.calculate_whole_screen
-;------------------------------------------------------------------------------
-syscall_display_settings.07:
-        mov     eax, [_skinmargins + 0]
-        mov     [esp + 32], eax
-        mov     eax, [_skinmargins + 4]
-        mov     [esp + 20], eax
-@@:
-        ret
-;------------------------------------------------------------------------------
-syscall_display_settings.08:
-        mov     ebx, ecx
-        call    read_skin_file
-        mov     [esp + 32], eax
-        test    eax, eax
-        jnz     @b
-
-        call    syscall_display_settings._.calculate_whole_screen
-        jmp     syscall_display_settings._.redraw_whole_screen
-;------------------------------------------------------------------------------
-syscall_display_settings.09:
-        xor     eax, eax
-        mov     al, [fontSmoothing]
-        mov     [esp + 32], eax
-        ret
-;------------------------------------------------------------------------------
-syscall_display_settings.10:
-        mov     [fontSmoothing], cl
-        ret
-;------------------------------------------------------------------------------
-syscall_display_settings.11:
-        xor     eax, eax
-        mov     al, [fontSize]
-        mov     [esp + 32], eax
-        ret
-;------------------------------------------------------------------------------
-syscall_display_settings.12:
-        mov     [fontSize], cl
-        ret
-;------------------------------------------------------------------------------
-syscall_display_settings._.calculate_whole_screen:
+.calculateScreen:
         xor     eax, eax
         xor     ebx, ebx
         mov     ecx, [_display.width]
@@ -290,19 +214,63 @@ syscall_display_settings._.calculate_whole_screen:
         dec     ecx
         dec     edx
         jmp     calculatescreen
-;------------------------------------------------------------------------------
-syscall_display_settings._.redraw_whole_screen:
+
+.getSkinMargins:
+; out: eax = pack[left, right], ebx = pack[top, bottom]
+        mov     eax, [_skinmargins + 0]
+        mov     [esp + 32], eax
+        mov     eax, [_skinmargins + 4]
+        mov     [esp + 20], eax
+        ret
+
+.setSkin:
+; in: ecx -> file path string
+        mov     ebx, ecx
+        call    read_skin_file
+        mov     [esp + 32], eax
+        test    eax, eax
+        jnz     .ret
+        call    .calculateScreen
+        jmp     .redrawScreen
+
+.getFontSmoothing:
         xor     eax, eax
-        mov     [draw_limits.left], eax
-        mov     [draw_limits.top], eax
-        mov     eax, [_display.width]
-        dec     eax
-        mov     [draw_limits.right], eax
-        mov     eax, [_display.height]
-        dec     eax
-        mov     [draw_limits.bottom], eax
-        mov     eax, window_data
-        jmp     redrawscreen
+        mov     al, [fontSmoothing]
+        mov     [esp + 32], eax
+        ret
+
+.setFontSmoothing:
+        mov     [fontSmoothing], cl
+        ret
+
+.getFontSize:
+        xor     eax, eax
+        mov     al, [fontSize]
+        mov     [esp + 32], eax
+        ret
+
+.setFontSize:
+        mov     [fontSize], cl
+        ret
+
+.setSkinUnicode:
+; in: ecx -> file path string, edx = string encoding
+        push    ecx edx
+        stdcall kernel_alloc, maxPathLength
+        mov     edi, eax
+        pop     eax esi
+        push    edi
+        call    getFullPath
+        test    eax, eax
+        jz      @f
+        mov     ebx, [esp]
+        call    read_skin_file
+        mov     [esp + 32 + 4], eax
+@@:
+        call    kernel_free
+        call    .calculateScreen
+        jmp     .redrawScreen
+
 ;------------------------------------------------------------------------------
 syscall_set_window_shape: ;///// system function 50 ///////////////////////////
 ;------------------------------------------------------------------------------
@@ -616,29 +584,6 @@ align 4
         neg     eax
         mov     [edi + WDATA.box.height], eax
         jmp     .fix_client_box
-;------------------------------------------------------------------------------
-;align 4
-;------------------------------------------------------------------------------
-;sys_window_mouse: ;////////////////////////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? <description>
-;------------------------------------------------------------------------------
-        ; NOTE: commented out since doesn't provide necessary functionality
-        ;       anyway, to be reworked
-;       push    eax
-;
-;       mov     eax, [timer_ticks]
-;       cmp     [new_window_starting], eax
-;       jb      .exit
-;
-;       mov     byte[MOUSE_BACKGROUND], 0
-;       mov     byte[DONT_DRAW_MOUSE], 0
-;
-;       mov     [new_window_starting], eax
-;
-; .exit:
-;       pop     eax
-;        ret
 ;------------------------------------------------------------------------------
 align 4
 ;------------------------------------------------------------------------------
@@ -1046,8 +991,8 @@ align 4
         jz      @f
 
         push    edx
-        call    syscall_display_settings._.calculate_whole_screen
-        call    syscall_display_settings._.redraw_whole_screen
+        call    syscall_display_settings.calculateScreen
+        call    syscall_display_settings.redrawScreen
         pop     edx
 ;--------------------------------------
 align 4
@@ -1381,11 +1326,8 @@ sys_window_moving_handler: ;///////////////////////////////////////////////////
 ;==============================================================================
 
 iglobal
-  FuncTable syscall_display_settings, ftable, \
-    00, 01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12
-
-  align 4
-  window_topleft dd \
+align 4
+window_topleft  dd \
     1, 21, \ ;type 0
     0,  0, \ ;type 1
     5, 20, \ ;type 2
@@ -1393,11 +1335,6 @@ iglobal
     5,  ?    ;type 4 {set by skin}
 endg
 
-;uglobal
-  ; NOTE: commented out since doesn't provide necessary functionality anyway,
-  ;       to be reworked
-; new_window_starting       dd ?
-;endg
 ;------------------------------------------------------------------------------
 align 4
 ;------------------------------------------------------------------------------

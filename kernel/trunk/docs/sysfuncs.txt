@@ -1922,6 +1922,15 @@ Remarks:
   * Values are zeroed after reading.
   * Values are signed.
 
+-------- Subfunction 8 - load cursor, specifying the encoding --------
+Parameters:
+  * eax = 37 - function number
+  * ebx = 8 - subfunction number
+  * ecx = pointer to the cursor file path string
+  * edx = string encoding, details can be found in function 80 description.
+Returned value:
+  * eax = cursor handle, 0 - failed
+
 ---------------------- Constants for registers: ----------------------
   eax - SF_MOUSE_GET (37)
   ebx - SSF_SCREEN_POSITION (0), SSF_WINDOW_POSITION (1),
@@ -2406,6 +2415,27 @@ Parameters:
 ---------------------- Constants for registers: ----------------------
   eax - SF_STYLE_SETTINGS (48)
   ebx - SSF_SET_FONT_SIZE (12)
+======================================================================
+== Function 48, subfunction 13 - set skin, specifying the encoding. ==
+======================================================================
+Parameters:
+  * eax = 48 - function number
+  * ebx = 13 - subfunction number
+  * ecx = pointer to the skin file path string
+  * edx = string encoding, details can be found in function 80 description.
+Returned value:
+  * eax = 0 - success
+  * otherwise eax = file system error code; if file does not
+    contain valid skin, function returns error 3
+    (unknown file system).
+Remarks:
+  * After successful skin loading the system sends to all windows
+    redraw message (the event 1).
+  * At booting the system reads skin from file 'default.skn'
+    on ramdisk.
+  * User can change the skin statically by creating hisself
+    'default.skn' or dynamically with the application 'desktop'.
+
 ======================================================================
 =========== Function 49 - Advanced Power Management (APM). ===========
 ======================================================================

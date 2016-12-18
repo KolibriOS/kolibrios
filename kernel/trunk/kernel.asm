@@ -1871,20 +1871,7 @@ get_timer_ticks:
         mov     eax, [timer_ticks]
         ret
 ;-----------------------------------------------------------------------------
-iglobal
-align 4
-mousefn dd msscreen
-        dd mswin
-        dd msbutton
-        dd msbuttonExt
-        dd app_load_cursor
-        dd app_set_cursor
-        dd app_delete_cursor
-        dd msz
-endg
-;-----------------------------------------------------------------------------
 readmousepos:
-
 ; eax=0 screen relative
 ; eax=1 window relative
 ; eax=2 buttons pressed
@@ -1893,12 +1880,24 @@ readmousepos:
 ; eax=5 set cursor
 ; eax=6 delete cursor
 ; eax=7 get mouse_z
-
-        cmp     ebx, 7
+; eax=8 load cursor unicode
+        cmp     ebx, 8
         ja      @f
-        jmp     [mousefn+ebx*4]
+        jmp     dword[.mousefn+ebx*4]
 
-msscreen:
+align 4
+.mousefn:
+dd  .msscreen
+dd  .mswin
+dd  .msbutton
+dd  .msbuttonExt
+dd  .app_load_cursor
+dd  .app_set_cursor
+dd  .app_delete_cursor
+dd  .msz
+dd  .loadCursorUni
+
+.msscreen:
         mov     eax, [MOUSE_X]
         shl     eax, 16
         mov     ax, [MOUSE_Y]
@@ -1906,7 +1905,7 @@ msscreen:
 @@:
         ret
 
-mswin:
+.mswin:
         mov     eax, [MOUSE_X]
         shl     eax, 16
         mov     ax, [MOUSE_Y]
@@ -1924,17 +1923,17 @@ mswin:
         mov     [esp+36-4], eax
         ret
 
-msbutton:
+.msbutton:
         movzx   eax, byte [BTN_DOWN]
         mov     [esp+36-4], eax
         ret
 
-msbuttonExt:
+.msbuttonExt:
         mov     eax, [BTN_DOWN]
         mov     [esp+36-4], eax
         ret
 
-app_load_cursor:
+.app_load_cursor:
         cmp     ecx, OS_BASE
         jae     @f
         stdcall load_cursor, ecx, edx
@@ -1942,17 +1941,35 @@ app_load_cursor:
 @@:
         ret
 
-app_set_cursor:
+.loadCursorUni:
+        cmp     ecx, OS_BASE
+        jae     @b
+        push    ecx edx
+        stdcall kernel_alloc, maxPathLength
+        mov     edi, eax
+        pop     eax esi
+        push    edi
+        call    getFullPath
+        pop     ebp
+        test    eax, eax
+        jz      @f
+        stdcall load_cursor, ebp, LOAD_FROM_FILE
+        mov     [esp+32], eax
+@@:
+        stdcall kernel_free, ebp
+        ret
+
+.app_set_cursor:
         stdcall set_cursor, ecx
         mov     [esp+36-4], eax
         ret
 
-app_delete_cursor:
+.app_delete_cursor:
         stdcall delete_cursor, ecx
         mov     [esp+36-4], eax
         ret
 
-msz:
+.msz:
         mov     edi, [TASK_COUNT]
         movzx   edi, word [WIN_POS + edi*2]
         cmp     edi, [CURRENT_TASK]
@@ -2278,9 +2295,8 @@ sysfn_deactivate:         ; 18.1 = DEACTIVATE WINDOW
         movzx   esi, word [WIN_STACK + ecx * 2]
         lea     esi, [WIN_POS + esi * 2]
         call    window._.window_deactivate
-
-        call    syscall_display_settings._.calculate_whole_screen
-        call    syscall_display_settings._.redraw_whole_screen
+        call    syscall_display_settings.calculateScreen
+        call    syscall_display_settings.redrawScreen
 .nowindowdeactivate:
         ret
 ;------------------------------------------------------------------------------
