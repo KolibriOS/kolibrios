@@ -2912,7 +2912,7 @@ align 4
 			mov esi,[edx+deflate_state.window]
 			add esi,[edx+deflate_state.strstart]
 			dec esi
-			lodsb
+			lodsb ;prev = *scan; ++scan
 			mov edi,esi
 			scasb
 			jnz .end2
@@ -2925,6 +2925,7 @@ align 4
 				;ecx = strend-scan
 				mov ecx,MAX_MATCH-2
 				repz scasb
+				dec edi
 				sub edi,[edx+deflate_state.window]
 				sub edi,[edx+deflate_state.strstart]
 				mov [edx+deflate_state.match_length],edi

@@ -112,7 +112,7 @@ button:
 
 align 4
 draw_window:
-    mcall SF_REDRAW, SSF_BEGIN_DRAW ; функция 12: сообщить ОС о начале отрисовки
+    mcall SF_REDRAW, SSF_BEGIN_DRAW
     mcall SF_STYLE_SETTINGS, SSF_GET_COLORS, sc,sizeof.system_colors
     mov   edx, [sc.work]         ; цвет фона
     or    edx, 0x33000000        ; и тип окна 3
@@ -127,8 +127,12 @@ draw_window:
 	cStr edx,'Outp. size:'
 	mcall , <10,120>,,,11
 
-	mcall SF_DRAW_NUMBER, (1 shl 16)+1, strategy, <90,10>, 0
-	mcall , (5 shl 16)+1, m0size, <90,20>
+	mov edx,[strategy]
+	imul edx,12
+	add edx,capt_strateg
+	mcall , <90,10>,0,,12
+
+	mcall SF_DRAW_NUMBER, (5 shl 16)+1, m0size, <90,20>
 	mcall , (5 shl 16)+1, m1size, <90,30>
 	mcall , (5 shl 16)+1, m2size, <90,120>
 	;mov ecx,(1 shl 31)
@@ -149,7 +153,7 @@ draw_window:
 	dec esi
 	jnz .cycle1
 
-    mcall SF_REDRAW, SSF_END_DRAW ; функция 12.2, закончили рисовать
+    mcall SF_REDRAW, SSF_END_DRAW
     ret
 
 align 4
@@ -238,9 +242,17 @@ proc print_z_struct uses eax ebx
 	ret
 endp
 
+align 4
 sc system_colors
-
+align 4
 title db 'Zlib test, press on [Up], [Down], [Left], [Right]',0
+
+align 4
+capt_strateg db '0) Default ',0
+db '1) Filtered',0
+db '2) Huffman ',0
+db '3) Rle     ',0
+db '4) Fixed   ',0
 
 align 4
 import_archiver:

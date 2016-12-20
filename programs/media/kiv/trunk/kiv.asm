@@ -12,6 +12,7 @@ include '../../../config.inc'
 include '../../../proc32.inc'
 include '../../../macros.inc'
 include '../../../dll.inc'
+include '../../../KOSfuncs.inc'
 ;include '../../../debug.inc'
 
 include '../../../develop/libraries/libs-dev/libio/libio.inc'
@@ -22,7 +23,7 @@ include '../../../develop/libraries/libs-dev/libimg/libimg.inc'
 ;-----------------------------------------------------------------------------
 
 START:
-    mcall   68, 11
+    mcall   SF_SYS_MISC, SSF_HEAP_INIT
 
     stdcall dll.Load, @IMPORT
     or  eax, eax
@@ -58,7 +59,7 @@ START:
     mov [slide_key], eax
     invoke  ini_get_shortcut, inifilename, aShortcuts, aTglbar, -1, tglbar_mod
     mov [tglbar_key], eax
-    mcall   66, 1, 1    ; set kbd mode to scancodes
+    mcall   SF_KEYBOARD, SSF_SET_INPUT_MODE, 1    ; set kbd mode to scancodes
 
     cmp byte [@PARAMS], 0
     jnz params_given
@@ -82,7 +83,7 @@ START:
     jmp params_given
 
 set_bgr:
-    mcall   15, 4
+    mcall   SF_BACKGROUND_SET, SSF_MODE_BG
     mov eax, @PARAMS + 4
     call    load_image
     jc  exit
@@ -112,7 +113,7 @@ still:
     push    10
     pop eax
     jz  @f
-    mcall   26, 9
+    mcall   SF_SYSTEM_GET, SSF_TIME_COUNT
     mov edx, [cur_frame]
     mov ebx, [cur_frame_time]
     add ebx, [edx + Image.Delay]
@@ -134,12 +135,12 @@ still:
 key:
     xor esi, esi
 keyloop:
-    mcall   2
+    mcall   SF_GET_KEY
     test    al, al
     jnz keyloopdone
     shr eax, 8
     mov ecx, eax
-    mcall   66, 3
+    mcall   SF_KEYBOARD, SSF_GET_CONTROL_KEYS
     mov edx, next_mod
     call    check_shortcut
     jz  .next
@@ -195,14 +196,14 @@ red_update_frame:
     mov eax, [image]
   @@:
     mov [cur_frame], eax
-    mcall   26, 9
+    mcall   SF_SYSTEM_GET, SSF_TIME_COUNT
     mov [cur_frame_time], eax
-    mcall   9, procinfo, -1
+    mcall   SF_THREAD_INFO, procinfo, -1
     call    draw_cur_frame
     jmp still
 
 button:
-    mcall   17
+    mcall   SF_GET_BUTTON
     shr eax, 8
 
     ; flip horizontally
@@ -310,7 +311,7 @@ button:
     jne still
 
   exit:
-    mcall   -1
+    mcall   SF_TERMINATE_PROCESS
 
   redraw_image = red
 
@@ -417,9 +418,9 @@ update_image_sizes:
     jz  .no_resize
     test [wnd_style], 1 SHL 25
     jz .no_resize
-    mcall   48, 4
+    mcall   SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
     add esi, eax
-    mcall   67,-1,-1
+    mcall   SF_CHANGE_WINDOW,-1,-1
 .no_resize:
     ret
 
@@ -427,19 +428,19 @@ set_as_bgr:
     mov esi, [image]
     mov ecx, [esi + Image.Width]
     mov edx, [esi + Image.Height]
-    mcall   15, 1
+    mcall   SF_BACKGROUND_SET, SSF_SIZE_BG
 
-    mcall   15, 6
+    mcall   SF_BACKGROUND_SET, SSF_MAP_BG
     test    eax, eax
     jz  @f
 
     push    eax
     invoke  img.to_rgb2, esi, eax
     pop ecx
-    mcall   15, 7
+    mcall   SF_BACKGROUND_SET, SSF_UNMAP_BG
 
 @@:
-    mcall   15, 3
+    mcall   SF_BACKGROUND_SET, SSF_REDRAW_BG
     ret
 
 slide_show:
@@ -573,13 +574,13 @@ load_directory:
     rep movsb
 @@:
     mov byte [edi], 0
-    mcall   68, 12, 0x1000
+    mcall   SF_SYS_MISC, SSF_MEM_ALLOC, 0x1000
     test    eax, eax
     jz  .ret
     mov ebx, readdir_fileinfo
     mov dword [ebx+12], (0x1000 - 32) / 304
     mov dword [ebx+16], eax
-    mcall   70
+    mcall   SF_FILE
     cmp eax, 6
     jz  .dirok
     test    eax, eax
@@ -589,11 +590,11 @@ load_directory:
     mov [readblocks], ecx
     imul    ecx, 304
     add ecx, 32
-    mcall   68, 20
+    mcall   SF_SYS_MISC, SSF_MEM_REALLOC
     test    eax, eax
     jz  free_directory
     mov [directory_ptr], eax
-    mcall   70, readdir_fileinfo
+    mcall   SF_FILE, readdir_fileinfo
 .dirok:
     cmp ebx, 0
     jle free_directory
@@ -704,7 +705,7 @@ load_directory:
     ret
 
 free_directory:
-    mcall   68, 13, [directory_ptr]
+    mcall   SF_SYS_MISC, SSF_MEM_FREE, [directory_ptr]
     and [directory_ptr], 0
     ret
 
@@ -734,7 +735,7 @@ init_frame:
     test    byte [eax + Image.Flags], Image.IsAnimated
     jz  @f
     push    ebx
-    mcall   26, 9
+    mcall   SF_SYSTEM_GET, SSF_TIME_COUNT
     pop ebx
     mov [cur_frame_time], eax
 @@:
@@ -753,15 +754,15 @@ draw_window:
     mov eax, [image]
     cmp eax, eax
     call update_image_sizes
-    mcall 48, 4
+    mcall SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
     mov esi, [wnd_height]
     add esi, eax
     test byte [bTglbar], 1
     jz @f
-    mcall 67, -1, -1, [wnd_width], 
+    mcall SF_CHANGE_WINDOW, -1, -1, [wnd_width], 
     jmp .mode_not_changed
 @@:
-    mcall 67, [wnd_x], [wnd_y], [wnd_width], 
+    mcall SF_CHANGE_WINDOW, [wnd_x], [wnd_y], [wnd_width], 
     jmp .mode_not_changed
 .mode_slide:
     mov [bg_color], 0x00000000
@@ -769,19 +770,19 @@ draw_window:
     mov [wnd_x], eax
     mov eax, [procinfo.box.top]
     mov [wnd_y], eax
-    mcall 14
+    mcall SF_GET_SCREEN_SIZE
     mov edx, eax
     shr edx, 16
     movzx eax, ax
     mov esi, eax
-    mcall 67, 0, 0, ,
+    mcall SF_CHANGE_WINDOW, 0, 0, ,
     jmp .posok.slide_show
 
 .mode_not_changed:
     cmp [bFirstDraw], 0
     jz  .posok
     or  ecx, -1
-    mcall   9, procinfo
+    mcall   SF_THREAD_INFO, procinfo
 
     test byte [procinfo.wnd_state], 0x04
     jnz .posok
@@ -801,14 +802,14 @@ draw_window:
     cmp eax, -1
     jz  @f
     mov ebx, ecx
-    mcall   67
+    mcall   SF_CHANGE_WINDOW
 @@:
 
 .posok:
     test [wnd_style], 1 SHL 25
     jz .posok.slide_show
-    mcall   12, 1
-    mcall   48, 4
+    mcall   SF_REDRAW, SSF_BEGIN_DRAW
+    mcall   SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
     mov ebp, eax    ; save skin height
     add eax, [wnd_height]
     mov ebx, [wnd_x]
@@ -817,18 +818,18 @@ draw_window:
     mov ecx, [wnd_y]
     shl ecx, 16
     add ecx, eax
-    mcall   0, , , [wnd_style], 0, real_header
+    mcall   SF_CREATE_WINDOW, , , [wnd_style], 0, real_header
     jmp .posok.common
 .posok.slide_show:
-    mcall   12, 1
-    mcall 14
+    mcall   SF_REDRAW, SSF_BEGIN_DRAW
+    mcall SF_GET_SCREEN_SIZE
     mov ebx, eax
     shr ebx, 16
     movzx eax, ax
     mov ecx, eax
-    mcall   0, , , [wnd_style], 0, real_header
+    mcall   SF_CREATE_WINDOW, , , [wnd_style], 0, real_header
 .posok.common:
-    mcall   9, procinfo, -1
+    mcall   SF_THREAD_INFO, procinfo, -1
     mov eax, [procinfo.client_box.width]
     sub eax, [image_padding]
     sub eax, [image_padding]
@@ -859,7 +860,7 @@ draw_window:
     mov ebx, [procinfo.client_box.width]
     inc ebx
     mov ecx, [draw_y]
-    mcall   13, , , [bg_color]
+    mcall   SF_DRAW_RECT, , , [bg_color]
     mov ecx, [procinfo.client_box.height]
     inc ecx
     mov esi, [cur_frame]
@@ -900,7 +901,7 @@ draw_window:
     je .decorations_done
     mov ebx, [procinfo.client_box.width]
     push    ebx
-    mcall   38, , <30, 30>, 0x007F7F7F
+    mcall   SF_DRAW_LINE, , <30, 30>, 0x007F7F7F
     mcall   , <5 + 25 * 1, 5 + 25 * 1>, <0, 30>
     mcall   , <10 + 25 * 3, 10 + 25 * 3>
     mcall   , <15 + 25 * 5, 15 + 25 * 5>
@@ -910,7 +911,7 @@ draw_window:
     imul    ebx, 10001h
     mcall
 
-    mcall   8, <5 + 25 * 0, 20>, <5, 20>, 'opn'+40000000h
+    mcall   SF_DEFINE_BUTTON, <5 + 25 * 0, 20>, <5, 20>, 'opn'+40000000h
     mcall   , <10 + 25 * 1, 20>, , 'bck'+40000000h
     mcall   , <10 + 25 * 2, 20>, , 'fwd'+40000000h
     mcall   , <15 + 25 * 3, 20>, , 'bgr'+40000000h
@@ -931,7 +932,7 @@ draw_window:
 
     mov ebp, (numimages-1)*20
 
-    mcall   65, buttons+openbtn*20, <20, 20>, <5 + 25 * 0, 5>, 8, palette
+    mcall   SF_PUT_IMAGE_EXT, buttons+openbtn*20, <20, 20>, <5 + 25 * 0, 5>, 8, palette
     mcall   , buttons+backbtn*20,    , <10 + 25 * 1, 5>
     mcall   , buttons+forwardbtn*20, , <10 + 25 * 2, 5>
     mcall   , buttons+bgrbtn*20,     , <15 + 25 * 3, 5>
@@ -957,7 +958,7 @@ draw_window:
     call    draw_cur_frame
 
 .nodraw:
-    mcall   12, 2
+    mcall   SF_REDRAW, SSF_END_DRAW
 
     ret
 
