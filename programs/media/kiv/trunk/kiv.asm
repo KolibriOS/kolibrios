@@ -110,7 +110,7 @@ red:
 still:
     mov eax, [image]
     test    byte [eax + Image.Flags], Image.IsAnimated
-    push    10
+    push    SF_WAIT_EVENT
     pop eax
     jz  @f
     mcall   SF_SYSTEM_GET, SSF_TIME_COUNT
@@ -122,7 +122,7 @@ still:
     ja  red_update_frame
     test    ebx, ebx
     jz  red_update_frame
-    push    23
+    push    SF_WAIT_EVENT_TIMEOUT
     pop eax
   @@:
     mcall
@@ -343,6 +343,7 @@ load_image:
     cmp [image], 0
     pushf
     mov [image], eax
+    call    img_resize_to_screen
     call    init_frame
     popf
     call    update_image_sizes
@@ -364,6 +365,67 @@ load_image:
     stc
     ret
 
+align 4
+proc img_resize_to_screen uses eax ebx ecx edx
+	mov ebx, [image]
+	cmp	[ebx+Image.Type],Image.bpp24
+	jne .end_f
+	test [ebx+Image.Flags],Image.IsAnimated
+	jnz .end_f
+	mov eax, [ebx+Image.Data]	
+	mov [buf_0],eax
+	mov eax, [ebx+Image.Width]
+	mov [buf_0.w],eax
+	mov eax, [ebx+Image.Height]
+	mov [buf_0.h],eax
+
+	mcall SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
+	mov edx, [image_padding]
+	shl edx, 1
+	add edx, eax
+	mcall SF_GET_SCREEN_SIZE
+	mov ecx, eax
+	shr ecx, 17
+
+	mov ebx, [image]
+	movzx eax,ax
+	sub eax, edx
+	sub eax, [toolbar_height]
+	sub eax, 5-1 ;5 px = border
+	cmp eax, 1
+	jle .end0
+	cmp eax, [ebx+Image.Height]
+	jl .end1
+	.end0:
+		xor eax,eax
+		jmp .end2
+	.end1:
+		mov [ebx+Image.Height],eax
+	.end2:
+	sub ecx, [image_padding]
+	shl ecx, 1
+	sub ecx, 10-1 ;10 px = 2 borders
+	cmp ecx, 1
+	jle .end3
+	cmp ecx, [ebx+Image.Width]
+	jl .end4
+	.end3:
+		xor ecx,ecx
+		jmp .end5
+	.end4:
+		mov [ebx+Image.Width],ecx
+	.end5:
+	cmp eax,ecx
+	jne @f
+		test eax,eax
+		jz .end_f
+	@@:
+	stdcall [buf2d_resize], buf_0, ecx, eax, 2
+.end_f:
+	ret
+endp
+
+align 4
 free_img_data:
     mov eax, [img_data]
     test    eax, eax
@@ -1126,7 +1188,8 @@ library             \
     libimg , 'libimg.obj' , \
     libini , 'libini.obj' , \
     sort   , 'sort.obj'   , \
-    proc_lib ,'proc_lib.obj'
+    proc_lib ,'proc_lib.obj',\
+	libbuf2d, 'buf2d.obj'
 
 
 import  libio             , \
@@ -1161,6 +1224,17 @@ import  sort, sort.START, 'START', SortDir, 'SortDir', strcmpi, 'strcmpi'
 import  proc_lib, \
     OpenDialog_Init, 'OpenDialog_init', \
     OpenDialog_Start,'OpenDialog_start'
+
+import  libbuf2d, \
+	buf2d_init, 'lib_init', \
+	buf2d_resize, 'buf2d_resize'
+
+align 4
+buf_0: dd 0
+	dw 0,0
+.w: dd 0
+.h: dd 0,0
+	db 24 ;+20 bit in pixel
 
 bFirstDraw  db  0
 bSlideShow  db  0
