@@ -6,17 +6,15 @@
 #include "../lib/kolibri.h"
 #endif
 
-unsigned buf_data;
+dword buf_data;
 
 
 struct DrawBufer {
-	unsigned bufx, bufy, bufw, bufh;
-	byte zoom;
+	dword bufx, bufy, bufw, bufh;
 
 	bool Init();
 	void Show();
 	void Fill();
-	void Skew();
 	void DrawBar();
 	void PutPixel();
 	void AlignCenter();
@@ -27,23 +25,22 @@ char draw_buf_not_enaught_ram[] =
 "'DrawBufer needs more memory than currenly available.
 Application could be unstable.
 
-Requested size: %i Kb
-Free RAM: %i Kb' -E";
+Requested size: %i Mb
+Free RAM: %i Mb' -E";
 
-bool DrawBufer::Init(int i_bufx, i_bufy, i_bufw, i_bufh)
+bool DrawBufer::Init(dword i_bufx, i_bufy, i_bufw, i_bufh)
 {
 	dword alloc_size, free_ram_size;
 	char error_str[256];
-	if (!zoom) zoom = 1;
 	bufx = i_bufx;
 	bufy = i_bufy;
-	bufw = i_bufw * zoom; 
-	bufh = i_bufh * zoom;
+	bufw = i_bufw; 
+	bufh = i_bufh;
 	free(buf_data);
 	free_ram_size = GetFreeRAM() * 1024;
 	alloc_size = bufw * bufh * 4 + 8;
 	if (alloc_size >= free_ram_size) {
-		sprintf(#error_str, #draw_buf_not_enaught_ram, alloc_size/1024, free_ram_size/1024);
+		sprintf(#error_str, #draw_buf_not_enaught_ram, alloc_size/1048576, free_ram_size/1048576);
 		notify(#error_str);
 	}
 	buf_data = malloc(alloc_size);
@@ -54,43 +51,34 @@ bool DrawBufer::Init(int i_bufx, i_bufy, i_bufw, i_bufh)
 	return true;
 }
 
-void DrawBufer::Fill(unsigned fill_color)
+void DrawBufer::Fill(dword fill_color)
 {
-	unsigned i;
-	unsigned max_i = bufw * bufh * 4 + buf_data + 8;
+	dword i;
+	dword max_i = bufw * bufh * 4 + buf_data + 8;
 	for (i=buf_data+8; i<max_i; i+=4) ESDWORD[i] = fill_color;
 }
 
-void DrawBufer::DrawBar(unsigned x, y, w, h, color)
+void DrawBufer::DrawBar(dword x, y, w, h, color)
 {
-	int i, j;
+	dword i, j;
 	for (j=0; j<h; j++)
 	{
-		for (i = y+j*bufw+x<<2+8+buf_data; i<y+j*bufw+x+w<<2+8+buf_data; i+=4) ESDWORD[i] = color;
+		for (i = y+j*bufw+x<<2+8+buf_data; i<y+j*bufw+x+w<<2+8+buf_data; i+=4) {
+			ESDWORD[i] = color;
+		}
 	}
 }
 
-void DrawBufer::PutPixel(unsigned x, y, color)
+void DrawBufer::PutPixel(dword x, y, color)
 {
-	int pos = y*bufw+x*4+8+buf_data;
+	dword pos = y*bufw+x*4+8+buf_data;
 	ESDWORD[pos] = color;
 }
 
-char shift[]={8,8,4,4};
-void DrawBufer::Skew(unsigned x, y, w, h)
+void DrawBufer::AlignRight(dword x,y,w,h, content_width)
 {
-	int i, j;
-	for (j=0; j<=3; j++)
-	{
-		for (i = y+j*bufw+x+w+h*4; i>y+j*bufw+x+h-12*4 ; i-=4)
-								ESDWORD[buf_data+i+8] = ESDWORD[-shift[j]+buf_data+i+8];
-	}
-}
-
-void DrawBufer::AlignRight(unsigned x,y,w,h, content_width)
-{
-	int i, j, l;
-	int content_left = w - content_width / 2;
+	dword i, j, l;
+	dword content_left = w - content_width / 2;
 	for (j=0; j<h; j++)
 	{
 		for (i=j*w+w-x*4, l=j*w+content_width+x*4; (i>=j*w+content_left*4) && (l>=j*w*4); i-=4, l-=4)
@@ -100,10 +88,10 @@ void DrawBufer::AlignRight(unsigned x,y,w,h, content_width)
 	}
 }
 
-void DrawBufer::AlignCenter(unsigned x,y,w,h, content_width)
+void DrawBufer::AlignCenter(dword x,y,w,h, content_width)
 {
-	int i, j, l;
-	int content_left = w - content_width / 2;
+	dword i, j, l;
+	dword content_left = w - content_width / 2;
 	for (j=0; j<h; j++)
 	{
 		for (i=j*w+content_width+content_left*4, l=j*w+content_width+x*4; (i>=j*w+content_left*4) && (l>=j*w*4); i-=4, l-=4)
@@ -114,10 +102,10 @@ void DrawBufer::AlignCenter(unsigned x,y,w,h, content_width)
 }
 
 /*
-void DrawBufer::Zoom2x()
+void DrawBufer::Zoom2x(int zoom)
 {
 	int i, s;
-	unsigned point_x, max_i, zline_w, s_inc;
+	dword point_x, max_i, zline_w, s_inc;
 
 	point_x = 0;
 	max_i = bufw * bufh * 4 + buf_data+8;

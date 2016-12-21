@@ -17,6 +17,7 @@ struct TWebBrowser {
 	llist list;
 	_style style;
 	DrawBufer DrawBuf;
+	int zoom;
 	void Prepare();
 	void SetStyle();
 	void DrawStyle();
@@ -62,7 +63,6 @@ char tag[100];
 char oldtag[100];
 char attr[1200];
 char val[4096];
-char anchor[256]=0;
 
 #include "..\TWB\absolute_url.h"
 #include "..\TWB\links.h"
@@ -75,7 +75,7 @@ char anchor[256]=0;
 //============================================================================================
 void TWebBrowser::DrawStyle()
 {
-	int start_x, line_length, stolbec_len;
+	dword start_x, line_length, stolbec_len;
 	
 	if (!header)
 	{
@@ -86,19 +86,19 @@ void TWebBrowser::DrawStyle()
 	}
 	if (t_html) && (!t_body) return;
 	
-	if (line) && (!anchor)
+	if (line)
 	{
 		start_x = stolbec * list.font_w + body_magrin + list.x;
-		stolbec_len = strlen(#line) * DrawBuf.zoom;
+		stolbec_len = strlen(#line) * zoom;
 		line_length = stolbec_len * list.font_w;
 
 		WriteBufText(start_x, draw_y, list.font_type, text_colors[text_color_index], #line, buf_data);
 		if (style.b) WriteBufText(start_x+1, draw_y, list.font_type, text_colors[text_color_index], #line, buf_data);
-		if (style.s) DrawBuf.DrawBar(start_x, list.item_h / 2 - DrawBuf.zoom + draw_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
-		if (style.u) DrawBuf.DrawBar(start_x, list.item_h - DrawBuf.zoom - DrawBuf.zoom + draw_y, line_length, DrawBuf.zoom, text_colors[text_color_index]);
+		if (style.s) DrawBuf.DrawBar(start_x, list.item_h / 2 - zoom + draw_y, line_length, zoom, text_colors[text_color_index]);
+		if (style.u) DrawBuf.DrawBar(start_x, list.item_h - zoom - zoom + draw_y, line_length, zoom, text_colors[text_color_index]);
 		if (link) {
-			DrawBuf.DrawBar(start_x, draw_y + list.item_h - calc(DrawBuf.zoom*2), line_length, DrawBuf.zoom, text_colors[text_color_index]);
-			PageLinks.AddText(start_x, draw_y + list.y, line_length, list.item_h - calc(DrawBuf.zoom*2), UNDERLINE, DrawBuf.zoom); //TODO: set bigger underline_h for style.h
+			DrawBuf.DrawBar(start_x, draw_y + list.item_h - calc(zoom*2), line_length, zoom, text_colors[text_color_index]);
+			PageLinks.AddText(start_x, draw_y + list.y, line_length, list.item_h - calc(zoom*2), UNDERLINE, zoom); //TODO: set bigger underline_h for style.h
 		}
 		stolbec += stolbec_len;
 	}
@@ -112,10 +112,10 @@ void TWebBrowser::LoadInternalPage(dword bufpos, in_filesize){
 //============================================================================================
 void TWebBrowser::Prepare(){
 	word bukva[2];
-	int j;
+	dword j;
 	byte ignor_param;
 	dword bufpos;
-	int line_len;	
+	dword line_len;	
 	style.b = style.u = style.s = style.h = style.blq = t_html = t_body =
 	style.li = link = ignor_text = text_color_index = text_colors[0] = style.li_tab = 0;
 	style.align = ALIGN_LEFT;
@@ -128,6 +128,7 @@ void TWebBrowser::Prepare(){
 	draw_y = body_magrin;
 	stolbec = 0;
 	line = 0;
+	zoom = 1;
 	//for plaint text use CP866 for other UTF
 	if (strstri(bufpointer, "html")!=-1) 
 	{
@@ -226,21 +227,15 @@ void TWebBrowser::Prepare(){
 	NewLine();
 	if (list.first == 0) list.count = draw_y;
 	DrawPage();
-	if (anchor)
-	{
-		anchor=NULL;
-		list.first = anchor_y;
-		Prepare();
-	}
 }
 //============================================================================================
 void TWebBrowser::Perenos()
 {
 	int perenos_num;
 	char new_line_text[4096];
-	if (strlen(#line)*DrawBuf.zoom + stolbec < list.column_max) return;
+	if (strlen(#line)*zoom + stolbec < list.column_max) return;
 	perenos_num = strrchr(#line, ' ');
-	if (!perenos_num) && (strlen(#line)*DrawBuf.zoom>list.column_max) perenos_num=list.column_max/DrawBuf.zoom;
+	if (!perenos_num) && (strlen(#line)*zoom>list.column_max) perenos_num=list.column_max/zoom;
 	strcpy(#new_line_text, #line + perenos_num);
 	line[perenos_num] = 0x00;
 	DrawStyle();
@@ -277,9 +272,9 @@ void TWebBrowser::SetStyle() {
 		if (!opened) strcat(#line, "\" ");
 		return;
 	}
-	if (anchor) if (isattr("id=")) || (isattr("name=")) { //very bad: if the tag is not the last it wound work
-		if (!strcmp(#anchor, #val))	anchor_y=draw_y;
-	}	
+	//if (isattr("id=")) || (isattr("name=")) { //very bad: if the tag is not the last it wound work
+		//add anchor
+	//}	
 	if (istag("body")) {
 		t_body = opened;
 		do{
@@ -353,7 +348,7 @@ void TWebBrowser::SetStyle() {
 		{
 			NewLine();
 			draw_y += 10;
-			WB1.DrawBuf.zoom=2;
+			WB1.zoom=2;
 			WB1.list.font_type |= 10011001b;
 			if (isattr("align=")) && (isval("center")) style.align = ALIGN_CENTER;
 			if (isattr("align=")) && (isval("right")) style.align = ALIGN_RIGHT;
@@ -362,7 +357,7 @@ void TWebBrowser::SetStyle() {
 		else
 		{
 			NewLine();
-			WB1.DrawBuf.zoom=1;
+			WB1.zoom=1;
 			WB1.list.font_type = 10011000b;
 			style.align = ALIGN_LEFT;
 			list.item_h = basic_line_h;
@@ -380,8 +375,7 @@ void TWebBrowser::SetStyle() {
 		if (opened)
 		{
 			NewLine();
-			DrawBuf.DrawBar(style.li_tab * 5 * list.font_w * DrawBuf.zoom + list.x, 
-				list.item_h - calc(DrawBuf.zoom*2) /2 + draw_y, DrawBuf.zoom*2, DrawBuf.zoom*2, 0x454545);
+			strcpy(#line, "\31 \0");
 		}
 		return;
 	}
@@ -422,9 +416,8 @@ void TWebBrowser::SetStyle() {
 	}
 }
 
-void TWebBrowser::BufEncode(int set_new_encoding)
+void TWebBrowser::BufEncode(dword set_new_encoding)
 {
-	int bufpointer_realsize;
 	if (o_bufpointer==0)
 	{
 		o_bufpointer = malloc(bufsize);
@@ -456,7 +449,7 @@ void TWebBrowser::DrawScroller()
 //============================================================================================
 void TWebBrowser::NewLine()
 {
-	int onleft, ontop;
+	dword onleft, ontop;
 
 	if (!stolbec) && (draw_y==body_magrin) return;
 
@@ -468,9 +461,9 @@ void TWebBrowser::NewLine()
 	if (style.li) stolbec = style.li_tab * 5;
 }
 //============================================================================================
-int istag(dword text) { if (!strcmp(#tag,text)) return true; else return false; }
-int isattr(dword text) { if (!strcmp(#attr,text)) return true; else return false; }
-int isval(dword text) { if (!strcmp(#val,text)) return true; else return false; }
+bool istag(dword text) { if (!strcmp(#tag,text)) return true; else return false; }
+bool isattr(dword text) { if (!strcmp(#attr,text)) return true; else return false; }
+bool isval(dword text) { if (!strcmp(#val,text)) return true; else return false; }
 //============================================================================================
 void TWebBrowser::DrawPage()
 {

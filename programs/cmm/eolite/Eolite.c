@@ -731,7 +731,7 @@ void Line_ReDraw(dword bgcol, filenum){
 			}
 			strcpy(#label_file_name+strlen(#label_file_name)-2, "...");			
 		}
-		label.write(files.x + 23, files.item_h - label.height / 2 + y, bgcol, text_col, label.size.pt, #label_file_name);
+		label.WriteIntoWindow(files.x + 23, files.item_h - label.height / 2 + y, bgcol, text_col, label.size.pt, #label_file_name);
 	}
 	DrawBar(files.x+files.w-141,y,1,files.item_h,system.color.work); //gray line 1
 	DrawBar(files.x+files.w-68,y,1,files.item_h,system.color.work); //gray line 2

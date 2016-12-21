@@ -31,7 +31,7 @@ void WriteTextIntoBuf(int _x, _y; dword _text_col, _text_off)
 		notify(#error_message);
 		return;
 	}
-	label.write_buf(_x, _y, list.w, label.size.height, 0xFFFFFF, _text_col, label.size.pt, _text_off);
+	label.WriteIntoBuffer(_x, _y, list.w, label.size.height, 0xFFFFFF, _text_col, label.size.pt, _text_off);
 	if (_y/list.item_h-list.first==list.visible) DrawPage();
 }
 

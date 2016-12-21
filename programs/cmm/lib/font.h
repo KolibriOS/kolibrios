@@ -18,49 +18,44 @@
 {
 	dword width,height;
 	signed offset_x, offset_y;
-	float offset_i,w_italic;
 	byte pt;
-	byte TMP_WEIGHT;
 };
 :struct LABEL
 {
 	__SIZE size;
 	int width,height;
-	byte bold,italic,smooth;
+	byte bold,smooth;
 	dword color, background;
 	dword font,font_begin;
 	word block;
+	dword raw;
+	dword raw_size;
+
 	byte init();
-	byte changeSIZE();
+	bool changeSIZE();
 	byte symbol();
 	byte symbol_size();
 	dword getsize();
 
-	dword raw;
-	dword raw_size;
-	void apply_smooth();
-	int write_center();
-	int write();
-	void write_buf();
+	void ApplySmooth();
+	int WriteIntoWindow();
+	int WriteIntoWindowCenter();
+	void WriteIntoBuffer();
 	void show_buf();
 } label;
 
-:byte LABEL::changeSIZE()
+:bool LABEL::changeSIZE()
 {
 	dword file_size;
-	dword TMP_DATA;
 	dword ofs;
-	IF(size.pt<9) size.pt = 8;
-	TMP_DATA = font = font_begin;
-	TMP_DATA +=size.pt-8*4;
-	ofs = DSDWORD[TMP_DATA];
-	IF(ofs==-1)return false;
+	if(size.pt<9) size.pt = 8;
+	font = font_begin;
+	ofs = DSDWORD[calc(size.pt-8<<2+font_begin)];
+	if(ofs==-1)return false;
 	font += ofs + 156;
-	TMP_DATA = font;
-	file_size = DSDWORD[TMP_DATA];
-	TMP_DATA = font + file_size;
-	height = DSBYTE[TMP_DATA - 1];
-	width =  DSBYTE[TMP_DATA - 2];
+	file_size = DSDWORD[calc(font)];
+	height = DSBYTE[calc(font+file_size) - 1];
+	width =  DSBYTE[calc(font+file_size) - 2];
 	block = math.ceil(height*width/32);
 	return true;
 }
@@ -68,7 +63,7 @@
 {
 	size.height = size.width = 0;
 	size.offset_x = size.offset_y = -1;
-	IF(size.pt)IF(!changeSIZE())return 0;
+	if(size.pt)if(!changeSIZE())return 0;
 	WHILE(DSBYTE[text1])
 	{
 		symbol_size(DSBYTE[text1]);
@@ -78,13 +73,6 @@
 	$neg size.offset_x
 	size.height += size.offset_y+1;
 	size.width += size.offset_x+1;
-	IF(italic)
-	{
-		size.w_italic = size.height/3;
-		size.offset_i = size.w_italic/size.height;
-		size.width += size.w_italic;
-		size.w_italic = -size.w_italic;
-	}
 	return size.width;
 }
 :byte LABEL::symbol_size(byte s)
@@ -94,58 +82,52 @@
 		dword iii = 0;
 		byte rw=0;
 		byte X;
-		size.TMP_WEIGHT = math.ceil(size.pt/17);
-		IF(s==32)
+		if(bold) size.width+=math.ceil(size.pt/17);
+		if(s==32)
 		{
 			size.width += width/4;
-			IF(bold) size.width+=size.TMP_WEIGHT;
 			return;
 		}
-		IF(s==9)
+		if(s==9)
 		{
 			size.width += width;
-			IF(bold) size.width+=size.TMP_WEIGHT;
 			return;
 		}
 		s = Cp866ToAnsi(s);
-		tmp = 4*block*s + font;
+		tmp = block*s << 2 + font;
 		for(yi=0; yi<height; yi++)
 		{
 			for(xi=0; xi<width; xi++)
 			{
-				IF(iii%32) _ >>= 1;
-				ELSE
+				if(iii%32) _ >>= 1;
+				else
 				{
 					tmp += 4;
 					_ = DSDWORD[tmp];
 				}
-				IF(_&1)
+				if(_&1)
 				{
-					IF(xi>rw)rw=xi;
-					IF(size.height<yi)size.height = yi;
-					IF(size.offset_y<0)size.offset_y = yi;
-					ELSE IF(yi<size.offset_y)size.offset_y = yi;
-					IF(!X) X = xi;
-					ELSE IF(X>xi)X = xi;
+					if(xi>rw)rw=xi;
+					if(size.height<yi)size.height = yi;
+					if(size.offset_y<0)size.offset_y = yi;
+					else if(yi<size.offset_y)size.offset_y = yi;
+					if(!X) X = xi;
+					else if(X>xi)X = xi;
 				}
 				iii++;
 			}
 		}
 		size.width += rw;
-		IF(bold) size.width+=size.TMP_WEIGHT;
-		//IF(s=='_') size.width--; //http://board.kolibrios.org/viewtopic.php?f=44&t=973&start=645
-		IF(size.offset_x<0)size.offset_x = X;
+		if(size.offset_x<0)size.offset_x = X;
 }
 :byte LABEL::symbol(signed x,y; byte s; dword image_raw)
 {
 		dword xi,yi;
 		dword iii = 0;
 		dword offs;
-		float ital = -size.w_italic;
-		dword ___x;
 		byte rw=0;
-		IF(s==32)return width/4;
-		IF(s==9)return width;
+		if(s==32)return width/4;
+		if(s==9)return width;
 		s = Cp866ToAnsi(s);
 		EBX = block*s << 2 + font;
 		for(yi=0; yi<height; yi++)
@@ -153,54 +135,50 @@
 			EDI = size.offset_y + yi + y * size.width * 3 + image_raw;
 			for(xi=0; xi<width; xi++)
 			{
-				IF(iii%32) $shr ecx,1
-				ELSE
+				if(iii%32) $shr ecx,1
+				else
 				{
 						EBX += 4;
 						ECX = DSDWORD[EBX];
 				}
-				IF(ECX&true)
+				if(ECX&true)
 				{
-						IF(xi>rw)rw=xi;
-						___x = x+xi;
-						IF(italic)___x+=math.ceil(ital);
-						offs = ___x*3 + EDI;
+						if(xi>rw)rw=xi;
+						offs = x + xi *3 + EDI;
 						DSDWORD[offs] = DSDWORD[offs] & 0xFF000000 | color;
-						IF(bold) DSDWORD[offs+3] = DSDWORD[offs+3] & 0xFF000000 | color;
+						if(bold) DSDWORD[offs+3] = DSDWORD[offs+3] & 0xFF000000 | color;
 				}
 				iii++;
 			}
-			if (italic) ital-=size.offset_i;
 		}
 		return rw;
 }
 
-byte Cp866ToAnsi(byte s) {
-	IF(s>=128)&&(s<=175)s+=64;
-	ELSE IF(s>=224)&&(s<=239)s+=16;
-	ELSE IF(s==241)s=184; //e rus with dots (yo)
-	ELSE IF(s==240)s=168; //E rus with dots (yo)
-	ELSE IF(s==242)s='E'; //E ukr (ye)
-	ELSE IF(s==243)s=186; //e ukr (ye)
-	ELSE IF(s==244)s='I'; //I ukr (yi)
-	ELSE IF(s==245)s=191; //i ukr (yi)
-	return s;
+inline fastcall Cp866ToAnsi(AL) {
+	if (AL>=128)&&(AL<=175) return AL+64;
+	if (AL>=224)&&(AL<=239) return AL+16;
+	if (AL==241) return 184; //e ruAL with dotAL (yo)
+	if (AL==240) return 168; //E ruAL with dotAL (yo)
+	if (AL==242) return 'E'; //E ukr (ye)
+	if (AL==243) return 186; //e ukr (ye)
+	if (AL==244) return 'I'; //I ukr (yi)
+	if (AL==245) return 191; //i ukr (yi)
+	return AL;
 }
 
 :byte LABEL::init(dword font_path)
 {
 	IO label_io;
-	IF(font)free(font);
+	if(font)free(font);
 	label_io.read(font_path);
-	IF(!EAX) {
+	if(!EAX) {
 		debugln(font_path);
 		label_io.run("/sys/@notify", "'Error: KFONT is not loaded.' -E"); 
 		return false;
 	}
-	font_begin = font = label_io.buffer_data;
-	height = DSBYTE[calc(font_begin+label_io.FILES_SIZE)-1];
-	width = DSBYTE[calc(font_begin+label_io.FILES_SIZE)-2];
-	block = math.ceil(height*width/32);
+	font_begin = label_io.buffer_data;
+	size.pt = 9;
+	changeSIZE();
 	smooth = true;
 	return true;
 }
@@ -214,7 +192,7 @@ byte Cp866ToAnsi(byte s) {
 
 
 inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
-:void LABEL::apply_smooth()
+:void LABEL::ApplySmooth()
 {
 	dword i,line_w,to,dark_background;
 	line_w = size.width * 3;
@@ -242,30 +220,30 @@ inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
 	}
 }
 
-:int LABEL::write_center(dword x,y,w,h; dword _background, _color; byte fontSizePoints; dword txt)
+:int LABEL::WriteIntoWindowCenter(dword x,y,w,h; dword _background, _color; byte fontSizePoints; dword txt)
 {
 	size.pt = fontSizePoints;
 	getsize(txt);
-	return write(w-size.width/2+x,y, _background, _color, fontSizePoints, txt);
+	return WriteIntoWindow(w-size.width/2+x,y, _background, _color, fontSizePoints, txt);
 }
 
-:int LABEL::write(int x,y; dword _background, _color; byte fontSizePoints; dword text1)
+:int LABEL::WriteIntoWindow(int x,y; dword _background, _color; byte fontSizePoints; dword text1)
 {
 	signed len=0;
-	IF(!text1)return false;
-	IF(size.pt)IF(!changeSIZE())return false;
+	if(!text1)return false;
+	if(size.pt)if(!changeSIZE())return false;
 	size.pt = fontSizePoints;
 	getsize(text1);
 	color = _color;
 	background = _background;
 	y -= size.offset_y;
 	EDX = size.width*size.height*3;
-	IF(!raw_size)
+	if(!raw_size)
 	{
 		raw_size = EDX;
 		raw = malloc(raw_size);
 	}
-	ELSE IF(raw_size<EDX)
+	else if(raw_size<EDX)
 	{
 		raw_size = EDX;
 		raw = realloc(raw,raw_size);
@@ -278,21 +256,20 @@ inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
 	len = size.offset_x;
 	WHILE(DSBYTE[text1])
 	{
-		//IF(DSBYTE[text1]=='_') len--; //http://board.kolibrios.org/viewtopic.php?f=44&t=973&start=645
 		len+=symbol(len,0,DSBYTE[text1], raw);
-		IF(bold)len+=math.ceil(size.pt/17);
+		if(bold)len+=math.ceil(size.pt/17);
 		text1++;
 	}
-	IF (smooth) apply_smooth();
+	IF (smooth) ApplySmooth();
 	show_buf(x,y);
 	return len;
 }
 
-:void LABEL::write_buf(int x,y,w,h; dword _background, _color; byte fontSizePoints; dword text1)
+:void LABEL::WriteIntoBuffer(int x,y,w,h; dword _background, _color; byte fontSizePoints; dword text1)
 {
 	dword new_raw_size;
-	IF(!text1)return;
-	IF(size.pt)IF(!changeSIZE())return;
+	if(!text1)return;
+	if(size.pt)if(!changeSIZE())return;
 	
 	if (size.pt != fontSizePoints) {
 		size.pt = fontSizePoints;
@@ -306,7 +283,7 @@ inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
 	size.height = h;
 
 	new_raw_size = w*h*3;
-	IF(raw_size != new_raw_size)
+	if(raw_size != new_raw_size)
 	{
 		raw_size = new_raw_size; 
 		free(raw);
@@ -319,7 +296,7 @@ inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
 	WHILE(DSBYTE[text1])
 	{
 		x+=symbol(x,y,DSBYTE[text1], raw);
-		IF(bold)x+=math.ceil(size.pt/17);
+		if(bold)x+=math.ceil(size.pt/17);
 		text1++;
 	}
 	return;

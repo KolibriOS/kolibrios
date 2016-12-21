@@ -37,7 +37,7 @@ dword line_start=io.buffer_data;
 			if (mode==DRAW_BUF) {
 				EBX = bufoff-line_start;
 				strlcpy(#line, line_start, EBX);
-				label.write_buf(8,stroka_y,list.w,label.size.height, 0xFFFFFF, 0, label.size.pt, #line);
+				label.WriteIntoBuffer(8,stroka_y,list.w,label.size.height, 0xFFFFFF, 0, label.size.pt, #line);
 				stroka_y += list.item_h;
 				line_start = bufoff;
 				line_length = 30;
@@ -45,7 +45,7 @@ dword line_start=io.buffer_data;
 		}
 	}
 	if (mode==COUNT_BUF_HEIGHT) list.count+=2;
-	if (mode==DRAW_BUF) label.write_buf(8,stroka_y,list.w,label.size.height, 0xFFFFFF, 0, label.size.pt, line_start);
+	if (mode==DRAW_BUF) label.WriteIntoBuffer(8,stroka_y,list.w,label.size.height, 0xFFFFFF, 0, label.size.pt, line_start);
 }
 
 void PreparePage() 
@@ -68,6 +68,6 @@ void PreparePage()
 	Parcer(DRAW_BUF);
 
 	//draw result
-	label.apply_smooth();
+	label.ApplySmooth();
 	DrawPage();
 }

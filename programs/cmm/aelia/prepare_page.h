@@ -20,7 +20,7 @@ void PreparePage()
 	}
 	strcat(#title, " - Aelia");
 	DrawTitle(#title);
-	DrawProgress(STEP_4_SMOOTH_FONT);           label.apply_smooth();
+	DrawProgress(STEP_4_SMOOTH_FONT);           label.ApplySmooth();
 	DrawProgress(STEP_5_STOP);                  DrawPage();
 }
 

@@ -1,5 +1,5 @@
-@C-- "textreader.c"
-@del "textreader"
-@rename "textreader.com" "textreader"
+@C-- "txtread.c"
+@del "txtread"
+@rename "txtread.com" "txtread"
 @del warning.txt
 @pause

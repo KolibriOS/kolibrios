@@ -34,11 +34,11 @@ int ImageCache::GetImage(dword i_path)
 }
 
 
-void ImageCache::Images(int left1, top1, width1)
+void ImageCache::Images(dword left1, top1, width1)
 {
 	dword image;
     char img_path[4096], alt[4096]=0;
-    int imgw=0, imgh=0, img_lines_first=0, cur_pic=0;
+    dword imgw=0, imgh=0, img_lines_first=0, cur_pic=0;
 	
 	do{
 		if (isattr("src="))
