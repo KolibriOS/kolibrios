@@ -4301,21 +4301,23 @@ Remarks:
   eax - SF_FILE (70)
  [ebx] - SSF_CREATE_FOLDER (9)
 ======================================================================
-========== Function 71, subfunction 1 - set window caption. ==========
+================== Function 71 - set window caption ==================
 ======================================================================
 Parameters:
   * eax = 71 - function number
-  * ebx = 1 - subfunction number
-  * ecx = pointer to zero terminated string
-Returned value:
-  * function does not return value
-Remarks:
-  * You may set the caption string encoding by putting
-    at the start of the string a byte with next values:
+  * ebx = 1
+  * ecx = pointer to zero terminated string,
+    the string may start with an encoding byte:
     1 = cp866
     2 = UTF-16LE
     3 = UTF-8
-    otherwise will be used cp866.
+  or:
+  * ebx = 2
+  * ecx = pointer to zero terminated string
+  * dl  = string encoding
+Returned value:
+  * function does not return value
+Remarks:
   * Pass NULL in ecx to remove caption.
 
 ---------------------- Constants for registers: ----------------------

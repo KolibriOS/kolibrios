@@ -361,8 +361,17 @@ syscall_window_settings: ;///// system function 71 ////////////////////////////
 ;------------------------------------------------------------------------------
         mov     edi, [CURRENT_TASK]
         shl     edi, 5
-        mov     [edi * 8 + SLOT_BASE + APPDATA.wnd_caption], ecx
         or      [edi + window_data + WDATA.fl_wstyle], WSTYLE_HASCAPTION
+        cmp     ebx, 2
+        jz      @f
+        xor     edx, edx
+@@:
+        cmp     dl, 4
+        jc      @f
+        xor     edx, edx
+@@:
+        mov     [edi*8 + SLOT_BASE + APPDATA.wnd_caption], ecx
+        mov     [edi*8 + SLOT_BASE + APPDATA.captionEncoding], dl
         jmp     window._.draw_window_caption
 ;------------------------------------------------------------------------------
 align 4
@@ -2244,6 +2253,9 @@ align 4
         mov     esi, eax
         add     ebx, ebp
         mov     ecx, [common_colours + 16]
+        mov     al, [edi*8 + SLOT_BASE + APPDATA.captionEncoding]
+        test    al, al
+        jnz     @f
         mov     al, 1
         cmp     byte [edx], 4
         jnc     @f

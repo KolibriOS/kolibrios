@@ -427,11 +427,9 @@ struct  PROC
         io_map_1        rd 1
 
         ht_lock         rd 1
-        ht_free         rd 1            ;htab[0] stdin
-        ht_next         rd 1            ;htab[1] stdout
-        htab            rd (4096-$)/4   ;htab[2] stderr
-;       htab            rd (4096+3072-$)/4   ;htab[2] stderr
-;       workdir         rb 1024
+        ht_free         rd 1                ;htab[0] stdin
+        ht_next         rd 1                ;htab[1] stdout
+        htab            rd 1024-PROC.htab/4 ;htab[2] stderr
         pdt_0           rd 1024
 ends
 
@@ -492,7 +490,6 @@ struct  APPDATA
         draw_bgr_x      dd ?            ;+116
         draw_bgr_y      dd ?            ;+120
                         dd ?            ;+124
-
         wnd_shape       dd ?            ;+128
         wnd_shape_scale dd ?            ;+132
                         dd ?            ;+136
@@ -504,7 +501,8 @@ struct  APPDATA
         debugger_slot   dd ?            ;+172
         terminate_protection dd ?       ;+176
         keyboard_mode   db ?            ;+180
-                        rb 3
+        captionEncoding db ?
+                        rb 2
         exec_params     dd ?            ;+184
         dbg_event_mem   dd ?            ;+188
         dbg_regs        DBG_REGS        ;+192
