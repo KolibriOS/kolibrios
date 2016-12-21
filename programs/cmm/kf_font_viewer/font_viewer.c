@@ -1,6 +1,6 @@
 #define MEMSIZE 0x2EE80
 
-#include "../lib/font.h"
+#include "../lib/kfont.h"
 #include "../lib/gui.h"
 
 #define PANELH 30
@@ -64,7 +64,7 @@ void DrawPreviewPhrase()
 		label.WriteIntoBuffer(10,y,Form.cwidth,Form.cheight-PANELH, 0xFFFFFF, 0, i, #line);
 	}
 	if (label.smooth) label.ApplySmooth();
-	label.show_buf(0, PANELH);
+	label.ShowBuffer(0, PANELH);
 }
 
 void DrawPreviewChars()
@@ -84,5 +84,5 @@ void DrawPreviewChars()
 		}
 	}
 	if (label.smooth) label.ApplySmooth();
-	label.show_buf(0, PANELH);
+	label.ShowBuffer(0, PANELH);
 }

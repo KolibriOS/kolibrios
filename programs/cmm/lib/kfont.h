@@ -41,14 +41,14 @@
 	int WriteIntoWindow();
 	int WriteIntoWindowCenter();
 	void WriteIntoBuffer();
-	void show_buf();
+	void ShowBuffer();
 } label;
 
 :bool LABEL::changeSIZE()
 {
 	dword file_size;
 	dword ofs;
-	if(size.pt<9) size.pt = 8;
+	if(size.pt<9) size.pt = 9;
 	font = font_begin;
 	ofs = DSDWORD[calc(size.pt-8<<2+font_begin)];
 	if(ofs==-1)return false;
@@ -59,10 +59,11 @@
 	block = math.ceil(height*width/32);
 	return true;
 }
-:dword LABEL::getsize(dword text1)
+:dword LABEL::getsize(byte fontSizePoints, dword text1)
 {
 	size.height = size.width = 0;
 	size.offset_x = size.offset_y = -1;
+	size.pt = fontSizePoints;
 	if(size.pt)if(!changeSIZE())return 0;
 	WHILE(DSBYTE[text1])
 	{
@@ -77,81 +78,82 @@
 }
 :byte LABEL::symbol_size(byte s)
 {
-		dword xi,yi;
-		dword tmp,_;
-		dword iii = 0;
-		byte rw=0;
-		byte X;
-		if(bold) size.width+=math.ceil(size.pt/17);
-		if(s==32)
+	//return symbol_size(s);
+	dword xi,yi;
+	dword tmp,_;
+	dword iii = 0;
+	byte rw=0;
+	byte X;
+	if(bold) size.width+=math.ceil(size.pt/17);
+	if(s==32)
+	{
+		size.width += width/4;
+		return;
+	}
+	if(s==9)
+	{
+		size.width += width;
+		return;
+	}
+	s = Cp866ToAnsi(s);
+	tmp = block*s << 2 + font;
+	for(yi=0; yi<height; yi++)
+	{
+		for(xi=0; xi<width; xi++)
 		{
-			size.width += width/4;
-			return;
-		}
-		if(s==9)
-		{
-			size.width += width;
-			return;
-		}
-		s = Cp866ToAnsi(s);
-		tmp = block*s << 2 + font;
-		for(yi=0; yi<height; yi++)
-		{
-			for(xi=0; xi<width; xi++)
+			if(iii%32) _ >>= 1;
+			else
 			{
-				if(iii%32) _ >>= 1;
-				else
-				{
-					tmp += 4;
-					_ = DSDWORD[tmp];
-				}
-				if(_&1)
-				{
-					if(xi>rw)rw=xi;
-					if(size.height<yi)size.height = yi;
-					if(size.offset_y<0)size.offset_y = yi;
-					else if(yi<size.offset_y)size.offset_y = yi;
-					if(!X) X = xi;
-					else if(X>xi)X = xi;
-				}
-				iii++;
+				tmp += 4;
+				_ = DSDWORD[tmp];
 			}
+			if(_&1)
+			{
+				if(xi>rw)rw=xi;
+				if(size.height<yi)size.height = yi;
+				if(size.offset_y<0)size.offset_y = yi;
+				else if(yi<size.offset_y)size.offset_y = yi;
+				if(!X) X = xi;
+				else if(X>xi)X = xi;
+			}
+			iii++;
 		}
-		size.width += rw;
-		if(size.offset_x<0)size.offset_x = X;
+	}
+	size.width += rw;
+	if(size.offset_x<0)size.offset_x = X;
 }
 :byte LABEL::symbol(signed x,y; byte s; dword image_raw)
 {
-		dword xi,yi;
-		dword iii = 0;
-		dword offs;
-		byte rw=0;
-		if(s==32)return width/4;
-		if(s==9)return width;
-		s = Cp866ToAnsi(s);
-		EBX = block*s << 2 + font;
-		for(yi=0; yi<height; yi++)
+	dword xi,yi;
+	dword iii = 0;
+	dword offs;
+	byte rw=0;
+	if(s==32)return width/4;
+	if(s==9)return width;
+	s = Cp866ToAnsi(s);
+	EBX = block*s << 2 + font;
+	for(yi=0; yi<height; yi++)
+	{
+		EDI = size.offset_y + yi + y * size.width * 3 + image_raw;
+		for(xi=0; xi<width; xi++)
 		{
-			EDI = size.offset_y + yi + y * size.width * 3 + image_raw;
-			for(xi=0; xi<width; xi++)
+			if(iii%32) $shr ecx,1
+			else
 			{
-				if(iii%32) $shr ecx,1
-				else
-				{
-						EBX += 4;
-						ECX = DSDWORD[EBX];
-				}
-				if(ECX&true)
-				{
-						if(xi>rw)rw=xi;
-						offs = x + xi *3 + EDI;
-						DSDWORD[offs] = DSDWORD[offs] & 0xFF000000 | color;
-						if(bold) DSDWORD[offs+3] = DSDWORD[offs+3] & 0xFF000000 | color;
-				}
-				iii++;
+					EBX += 4;
+					ECX = DSDWORD[EBX];
 			}
+			if(ECX&true)
+			{
+					if(xi>rw)rw=xi;
+					offs = x + xi *3 + EDI;
+					DSDWORD[offs] = DSDWORD[offs] & 0xFF000000 | color;
+					if(bold) DSDWORD[offs+3] = DSDWORD[offs+3] & 0xFF000000 | color;
+			}
+			iii++;
 		}
-		return rw;
+	}
+	return rw;
 }
 
 inline fastcall Cp866ToAnsi(AL) {
@@ -177,7 +179,6 @@ inline fastcall Cp866ToAnsi(AL) {
 		return false;
 	}
 	font_begin = label_io.buffer_data;
-	size.pt = 9;
 	changeSIZE();
 	smooth = true;
 	return true;
@@ -220,51 +221,6 @@ inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
 	}
 }
 
-:int LABEL::WriteIntoWindowCenter(dword x,y,w,h; dword _background, _color; byte fontSizePoints; dword txt)
-{
-	size.pt = fontSizePoints;
-	getsize(txt);
-	return WriteIntoWindow(w-size.width/2+x,y, _background, _color, fontSizePoints, txt);
-}
-
-:int LABEL::WriteIntoWindow(int x,y; dword _background, _color; byte fontSizePoints; dword text1)
-{
-	signed len=0;
-	if(!text1)return false;
-	if(size.pt)if(!changeSIZE())return false;
-	size.pt = fontSizePoints;
-	getsize(text1);
-	color = _color;
-	background = _background;
-	y -= size.offset_y;
-	EDX = size.width*size.height*3;
-	if(!raw_size)
-	{
-		raw_size = EDX;
-		raw = malloc(raw_size);
-	}
-	else if(raw_size<EDX)
-	{
-		raw_size = EDX;
-		raw = realloc(raw,raw_size);
-	}
-	// Fill background color {
-	EBX = background;
-	EAX = raw_size+raw;
-	for (EDI=raw; EDI<EAX; EDI+=3) ESDWORD[EDI] = EBX;
-	// }
-	len = size.offset_x;
-	WHILE(DSBYTE[text1])
-	{
-		len+=symbol(len,0,DSBYTE[text1], raw);
-		if(bold)len+=math.ceil(size.pt/17);
-		text1++;
-	}
-	IF (smooth) ApplySmooth();
-	show_buf(x,y);
-	return len;
-}
-
 :void LABEL::WriteIntoBuffer(int x,y,w,h; dword _background, _color; byte fontSizePoints; dword text1)
 {
 	dword new_raw_size;
@@ -272,8 +228,7 @@ inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
 	if(size.pt)if(!changeSIZE())return;
 	
 	if (size.pt != fontSizePoints) {
-		size.pt = fontSizePoints;
-		getsize(text1);
+		getsize(fontSizePoints, text1);
 		y -= size.offset_y;
 	}
 	color = _color;
@@ -302,7 +257,25 @@ inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
 	return;
 }
 
-:void LABEL::show_buf(dword x, y){
+:int LABEL::WriteIntoWindow(int x,y; dword _background, _color; byte fontSizePoints; dword text1)
+{
+	if(!text1)return 0;
+	getsize(fontSizePoints, text1);
+	raw_size = NULL;
+	WriteIntoBuffer(0, -size.offset_y, size.width-size.offset_x, 
+		size.height-size.offset_y, _background, _color, fontSizePoints, text1);
+	if (smooth) ApplySmooth();
+	ShowBuffer(x,y);
+	return size.offset_x + size.width;
+}
+
+:int LABEL::WriteIntoWindowCenter(dword x,y,w,h; dword _background, _color; byte fontSizePoints; dword text1)
+{
+	getsize(fontSizePoints, text1);
+	return WriteIntoWindow(w-size.width/2+x,y, _background, _color, fontSizePoints, text1);
+}
+
+:void LABEL::ShowBuffer(dword x, y){
 	_PutImage(x, y, size.width, size.height, raw);
 }
 

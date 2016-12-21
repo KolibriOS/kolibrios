@@ -11,7 +11,7 @@ SOFTWARE CENTER v2.8
 #include "..\lib\obj\libio_lib.h"
 #include "..\lib\obj\libimg_lib.h"
 #include "..\lib\obj\libini.h"
-#include "..\lib\font.h"
+#include "..\lib\kfont.h"
 #include "..\lib\list_box.h"
 #include "..\lib\collection.h"
 #include "..\lib\patterns\libimg_load_skin.h"

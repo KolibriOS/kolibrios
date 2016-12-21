@@ -1,6 +1,6 @@
 #define MEMSIZE 4096*25
 
-#include "../lib/font.h"
+#include "../lib/kfont.h"
 #include "../lib/io.h"
 #include "../lib/gui.h"
 #include "../lib/list_box.h"

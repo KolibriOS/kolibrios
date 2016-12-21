@@ -14,7 +14,7 @@
 #include "..\lib\gui.h"
 #include "..\lib\list_box.h"
 #include "..\lib\random.h"
-#include "..\lib\font.h"
+#include "..\lib\kfont.h"
 #include "..\lib\collection.h"
 #include "..\lib\obj\libini.h"
 #include "..\lib\obj\box_lib.h"
@@ -724,9 +724,9 @@ void Line_ReDraw(dword bgcol, filenum){
 	else
 	{
 		strcpy(#label_file_name, file_name_off);
-		if (label.getsize(#label_file_name) + 141 + 26 > files.w)
+		if (label.getsize(label.size.pt, #label_file_name) + 141 + 26 > files.w)
 		{
-			while (label.getsize(#label_file_name) + 141 + 26 > files.w) {
+			while (label.getsize(label.size.pt, #label_file_name) + 141 + 26 > files.w) {
 				ESBYTE[#label_file_name+strlen(#label_file_name)-1] = NULL;
 			}
 			strcpy(#label_file_name+strlen(#label_file_name)-2, "...");			
