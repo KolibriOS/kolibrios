@@ -5,7 +5,7 @@ int encoding;
 void LoadIniSettings()
 {
 	strcpy(#ini_path, "/sys/settings/txtread.ini");
-	ini_get_int stdcall   (#ini_path, #config_section, "FontSize",  14); label.size.pt = EAX;
+	ini_get_int stdcall   (#ini_path, #config_section, "FontSize",  14); kfont.size.pt = EAX;
 	ini_get_int stdcall   (#ini_path, #config_section, "Encoding",  CH_CP866); encoding = EAX;
 	ini_get_int stdcall   (#ini_path, #config_section, "WinX", 150); Form.left = EAX;
 	ini_get_int stdcall   (#ini_path, #config_section, "WinY", 50); Form.top = EAX;
@@ -15,7 +15,7 @@ void LoadIniSettings()
 
 void SaveIniSettings()
 {
-	ini_set_int stdcall (#ini_path, #config_section, "FontSize", label.size.pt);
+	ini_set_int stdcall (#ini_path, #config_section, "FontSize", kfont.size.pt);
 	ini_set_int stdcall (#ini_path, #config_section, "Encoding", encoding);
 	ini_set_int stdcall (#ini_path, #config_section, "WinX", Form.left);
 	ini_set_int stdcall (#ini_path, #config_section, "WinY", Form.top);

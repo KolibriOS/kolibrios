@@ -37,7 +37,7 @@ dword line_start=io.buffer_data;
 			if (mode==DRAW_BUF) {
 				EBX = bufoff-line_start;
 				strlcpy(#line, line_start, EBX);
-				label.WriteIntoBuffer(8,stroka_y,list.w,label.size.height, 0xFFFFFF, 0, label.size.pt, #line);
+				kfont.WriteIntoBuffer(8,stroka_y,list.w,kfont.size.height, 0xFFFFFF, 0, kfont.size.pt, #line);
 				stroka_y += list.item_h;
 				line_start = bufoff;
 				line_length = 30;
@@ -45,15 +45,15 @@ dword line_start=io.buffer_data;
 		}
 	}
 	if (mode==COUNT_BUF_HEIGHT) list.count+=2;
-	if (mode==DRAW_BUF) label.WriteIntoBuffer(8,stroka_y,list.w,label.size.height, 0xFFFFFF, 0, label.size.pt, line_start);
+	if (mode==DRAW_BUF) kfont.WriteIntoBuffer(8,stroka_y,list.w,kfont.size.height, 0xFFFFFF, 0, kfont.size.pt, line_start);
 }
 
 void PreparePage() 
 {
 	//get font chars width, need to increase performance
 	int i;
-	label.changeSIZE();
-	for (i=0; i<256; i++) char_width[i] = label.symbol_size(i);
+	kfont.changeSIZE();
+	for (i=0; i<256; i++) char_width[i] = kfont.symbol_size(i);
 
 	//get font buffer height
 	list.w = Form.cwidth-scroll.size_x-1;
@@ -61,13 +61,13 @@ void PreparePage()
 	Parcer(COUNT_BUF_HEIGHT);
 	
 	//draw text in buffer
-	list.SetSizes(0, TOOLBAR_H, list.w, Form.cheight-TOOLBAR_H, label.size.pt+3);
+	list.SetSizes(0, TOOLBAR_H, list.w, Form.cheight-TOOLBAR_H, kfont.size.pt+4);
 	if (list.count < list.visible) list.count = list.visible;
-	label.size.height = list.count+1*list.item_h;
-	label.raw_size = 0;
+	kfont.size.height = list.count+1*list.item_h;
+	kfont.raw_size = 0;
 	Parcer(DRAW_BUF);
 
 	//draw result
-	label.ApplySmooth();
+	kfont.ApplySmooth();
 	DrawPage();
 }

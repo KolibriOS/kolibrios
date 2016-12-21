@@ -31,7 +31,7 @@
 	dword raw;
 	dword raw_size;
 
-	byte init();
+	bool init();
 	bool changeSIZE();
 	byte symbol();
 	byte symbol_size();
@@ -42,7 +42,7 @@
 	int WriteIntoWindowCenter();
 	void WriteIntoBuffer();
 	void ShowBuffer();
-} label;
+} kfont;
 
 :bool LABEL::changeSIZE()
 {
@@ -59,6 +59,7 @@
 	block = math.ceil(height*width/32);
 	return true;
 }
+
 :dword LABEL::getsize(byte fontSizePoints, dword text1)
 {
 	size.height = size.width = 0;
@@ -67,7 +68,7 @@
 	if(size.pt)if(!changeSIZE())return 0;
 	WHILE(DSBYTE[text1])
 	{
-		symbol_size(DSBYTE[text1]);
+		size.width += symbol_size(DSBYTE[text1]);
 		text1++;
 	}
 	$neg size.offset_y
@@ -76,84 +77,59 @@
 	size.width += size.offset_x+1;
 	return size.width;
 }
+
 :byte LABEL::symbol_size(byte s)
 {
-	//return symbol_size(s);
-	dword xi,yi;
-	dword tmp,_;
-	dword iii = 0;
-	byte rw=0;
-	byte X;
-	if(bold) size.width+=math.ceil(size.pt/17);
-	if(s==32)
-	{
-		size.width += width/4;
-		return;
-	}
-	if(s==9)
-	{
-		size.width += width;
-		return;
-	}
-	s = Cp866ToAnsi(s);
-	tmp = block*s << 2 + font;
-	for(yi=0; yi<height; yi++)
-	{
-		for(xi=0; xi<width; xi++)
-		{
-			if(iii%32) _ >>= 1;
-			else
-			{
-				tmp += 4;
-				_ = DSDWORD[tmp];
-			}
-			if(_&1)
-			{
-				if(xi>rw)rw=xi;
-				if(size.height<yi)size.height = yi;
-				if(size.offset_y<0)size.offset_y = yi;
-				else if(yi<size.offset_y)size.offset_y = yi;
-				if(!X) X = xi;
-				else if(X>xi)X = xi;
-			}
-			iii++;
-		}
-	}
-	size.width += rw;
-	if(size.offset_x<0)size.offset_x = X;
+	int chaw_width;
+	chaw_width = symbol(0,0, s, 0);
+	if(bold) chaw_width += math.ceil(size.pt/17);
+	return chaw_width;
 }
+
 :byte LABEL::symbol(signed x,y; byte s; dword image_raw)
 {
 	dword xi,yi;
 	dword iii = 0;
 	dword offs;
-	byte rw=0;
+	dword tmp, _;
+	byte X;
+	byte chaw_width=0;
 	if(s==32)return width/4;
 	if(s==9)return width;
 	s = Cp866ToAnsi(s);
-	EBX = block*s << 2 + font;
+	tmp = block*s << 2 + font;
 	for(yi=0; yi<height; yi++)
 	{
 		EDI = size.offset_y + yi + y * size.width * 3 + image_raw;
 		for(xi=0; xi<width; xi++)
 		{
-			if(iii%32) $shr ecx,1
+			if(iii%32) _ >>= 1;
 			else
 			{
-					EBX += 4;
-					ECX = DSDWORD[EBX];
+					tmp += 4;
+					_ = DSDWORD[tmp];
 			}
-			if(ECX&true)
+			if(_&1) //check does the pixel set
 			{
-					if(xi>rw)rw=xi;
+				if(xi>chaw_width)chaw_width=xi;
+				if (image_raw)
+				{
 					offs = x + xi *3 + EDI;
 					DSDWORD[offs] = DSDWORD[offs] & 0xFF000000 | color;
 					if(bold) DSDWORD[offs+3] = DSDWORD[offs+3] & 0xFF000000 | color;
+				}
+				else
+				{
+					if(size.height<yi)size.height = yi;
+					if(size.offset_y<0)size.offset_y = yi; else if(yi<size.offset_y)size.offset_y = yi;
+					if(!X) X = xi; else if(X>xi)X = xi;
+					if(size.offset_x<0)size.offset_x = X;
+				}
 			}
 			iii++;
 		}
 	}
-	return rw;
+	return chaw_width;
 }
 
 inline fastcall Cp866ToAnsi(AL) {
@@ -168,7 +144,7 @@ inline fastcall Cp866ToAnsi(AL) {
 	return AL;
 }
 
-:byte LABEL::init(dword font_path)
+:bool LABEL::init(dword font_path)
 {
 	IO label_io;
 	if(font)free(font);
@@ -206,7 +182,7 @@ inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
 		// wb
 		if(b24(i)!=background) && (b24(i+3)==background) && (b24(i+line_w)==background) && (b24(i+3+line_w)!=background)
 		{
-			dark_background = MixColors(background,b24(i),210);
+			dark_background = MixColors(background,b24(i),200);
 			DSDWORD[i+3] = DSDWORD[i+3] & 0xFF000000 | dark_background;
 			DSDWORD[i+line_w] = DSDWORD[i+line_w] & 0xFF000000 | dark_background;			
 		}
@@ -214,7 +190,7 @@ inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
 		// bw
 		else if(b24(i)==background) && (b24(i+3)!=background) && (b24(i+line_w)!=background) && (b24(i+3+line_w)==background)
 		{
-			dark_background = MixColors(background,b24(i+3),210);
+			dark_background = MixColors(background,b24(i+3),200);
 			DSDWORD[i] = DSDWORD[i] & 0xFF000000 | dark_background;
 			DSDWORD[i+3+line_w] = DSDWORD[i+3+line_w] & 0xFF000000 | dark_background;
 		}
@@ -278,7 +254,6 @@ inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
 :void LABEL::ShowBuffer(dword x, y){
 	_PutImage(x, y, size.width, size.height, raw);
 }
-
 
 
 #endif

@@ -72,7 +72,7 @@ void main()
 {   	
 	InitDlls();	
 	OpenDialog_init stdcall (#o_dialog);
-	label.init(DEFAULT_FONT);
+	kfont.init(DEFAULT_FONT);
 	Libimg_LoadImage(#skin, abspath("toolbar.png"));
 	LoadIniSettings();
 	OpenFile(#param);
@@ -202,18 +202,18 @@ void EventOpenFile()
 
 void EventMagnifyPlus()
 {
-	label.size.pt++;
-	if(!label.changeSIZE())
-		label.size.pt--;
+	kfont.size.pt++;
+	if(!kfont.changeSIZE())
+		kfont.size.pt--;
 	else
 		PreparePage();
 }
 
 void EventMagnifyMinus()
 {
-	label.size.pt--;
-	if(!label.changeSIZE())
-		label.size.pt++;
+	kfont.size.pt--;
+	if(!kfont.changeSIZE())
+		kfont.size.pt++;
 	else
 		PreparePage();
 }
@@ -291,6 +291,6 @@ void draw_window()
 
 void DrawPage()
 {
-	_PutImage(list.x,list.y,list.w,list.h,list.first*list.item_h*list.w*3 + label.raw);
+	_PutImage(list.x,list.y,list.w,list.h,list.first*list.item_h*list.w*3 + kfont.raw);
 	DrawScroller();
 }

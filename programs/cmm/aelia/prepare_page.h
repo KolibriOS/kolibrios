@@ -1,7 +1,7 @@
 
 void PreparePage() 
 {
-	list.SetSizes(0, TOOLBAR_H, Form.cwidth-scroll.size_x-1, Form.cheight-TOOLBAR_H, label.size.pt+2);
+	list.SetSizes(0, TOOLBAR_H, Form.cwidth-scroll.size_x-1, Form.cheight-TOOLBAR_H, kfont.size.pt+2);
 	strcpy(#title, history.current()+strrchr(history.current(),'/'));
 	//get font chars width, need to increase performance
 	get_label_symbols_size();
@@ -20,7 +20,7 @@ void PreparePage()
 	}
 	strcat(#title, " - Aelia");
 	DrawTitle(#title);
-	DrawProgress(STEP_4_SMOOTH_FONT);           label.ApplySmooth();
+	DrawProgress(STEP_4_SMOOTH_FONT);           kfont.ApplySmooth();
 	DrawProgress(STEP_5_STOP);                  DrawPage();
 }
 
@@ -57,8 +57,8 @@ int stroka_y=5, line_length=0;
 	if (draw==false) {
 		list.count = stroka_y/list.item_h+3;
 		if (list.count < list.visible) list.count = list.visible;
-		label.size.height = list.count+5*list.item_h;
-		label.raw_size = 0;
+		kfont.size.height = list.count+5*list.item_h;
+		kfont.raw_size = 0;
 	} 
 	if (draw==true) WriteTextIntoBuf(8, stroka_y, 0x000000, line_start);
 }
@@ -124,7 +124,7 @@ _tag tag;
 				if (draw==true) {
 					if (style.a) {
 						link.add(stroka_x,stroka_y + size_pt_change,get_label_len(text.start),list.item_h,text.start," ");
-						label_draw_bar(stroka_x, stroka_y+label.size.pt+1, get_label_len(text.start), style.color);
+						label_draw_bar(stroka_x, stroka_y+kfont.size.pt+1, get_label_len(text.start), style.color);
 					}
 					WriteTextIntoBuf(stroka_x, stroka_y, style.color, text.start);
 				}
@@ -137,7 +137,7 @@ _tag tag;
 			if (draw==true) {
 				if (style.a) {
 					link.add(stroka_x,stroka_y + size_pt_change,get_label_len(text.start),list.item_h,text.start," ");	
-					label_draw_bar(stroka_x, stroka_y+label.size.pt+1, get_label_len(text.start), style.color);
+					label_draw_bar(stroka_x, stroka_y+kfont.size.pt+1, get_label_len(text.start), style.color);
 				}
 				WriteTextIntoBuf(stroka_x, stroka_y, style.color, text.start);
 			}
@@ -172,7 +172,7 @@ _tag tag;
 				} else if (tag.nameis("/h3")) {
 					size_pt_change = -4;
 				}
-				label.size.pt += size_pt_change;
+				kfont.size.pt += size_pt_change;
 				get_label_symbols_size();
 				if (size_pt_change > 0) {
 					stroka_y+= list.item_h;//что если будет очень длинная строка в теге?
@@ -192,8 +192,8 @@ _tag tag;
 	if (draw==false) {
 		list.count = stroka_y/list.item_h+3;
 		if (list.count < list.visible) list.count = list.visible;
-		label.size.height = list.count+5*list.item_h;
-		label.raw_size = 0;
+		kfont.size.height = list.count+5*list.item_h;
+		kfont.raw_size = 0;
 	}
 	free(DOM_start);
 }

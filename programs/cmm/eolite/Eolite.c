@@ -708,7 +708,7 @@ void Line_ReDraw(dword bgcol, filenum){
 		if (text_col==0xA6A6B7) text_col=0xFFFFFF;
 	}
 	if (file.selected) text_col=0xFF0000;
-	if (label.size.pt==9) || (!label.font)
+	if (kfont.size.pt==9) || (!kfont.font)
 	{
 		if (Form.width>=480)
 		{
@@ -724,14 +724,14 @@ void Line_ReDraw(dword bgcol, filenum){
 	else
 	{
 		strcpy(#label_file_name, file_name_off);
-		if (label.getsize(label.size.pt, #label_file_name) + 141 + 26 > files.w)
+		if (kfont.getsize(kfont.size.pt, #label_file_name) + 141 + 26 > files.w)
 		{
-			while (label.getsize(label.size.pt, #label_file_name) + 141 + 26 > files.w) {
+			while (kfont.getsize(kfont.size.pt, #label_file_name) + 141 + 26 > files.w) {
 				ESBYTE[#label_file_name+strlen(#label_file_name)-1] = NULL;
 			}
 			strcpy(#label_file_name+strlen(#label_file_name)-2, "...");			
 		}
-		label.WriteIntoWindow(files.x + 23, files.item_h - label.height / 2 + y, bgcol, text_col, label.size.pt, #label_file_name);
+		kfont.WriteIntoWindow(files.x + 23, files.item_h - kfont.height / 2 + y, bgcol, text_col, kfont.size.pt, #label_file_name);
 	}
 	DrawBar(files.x+files.w-141,y,1,files.item_h,system.color.work); //gray line 1
 	DrawBar(files.x+files.w-68,y,1,files.item_h,system.color.work); //gray line 2

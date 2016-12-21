@@ -51,7 +51,7 @@ void load_config()
 void main()
 {   
 	dword id;
-	label.init(DEFAULT_FONT);
+	kfont.init(DEFAULT_FONT);
 	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libini, #lib_init,1);
@@ -135,8 +135,8 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 	img_draw stdcall(skin.image, col*list.item_w+tmp-10, row*list.item_h+5 + list_pos, 32, 32, 0, icon_id*32);
 	if (icon_char_pos) ESBYTE[icon_char_pos] = '\0'; //delete icon from string
 	app_path_collection.add(key_value);
-	//label.WriteIntoWindowCenter(col*list.item_w+7,row*list.item_h+47 + list_pos, list.item_w,0, LIST_BACKGROUND_COLOR, 0xDCDCDC, 12, key_name);
-	label.WriteIntoWindowCenter(col*list.item_w+6,row*list.item_h+46 + list_pos, list.item_w,0, LIST_BACKGROUND_COLOR, 0x000000, 12, key_name);
+	//kfont.WriteIntoWindowCenter(col*list.item_w+7,row*list.item_h+47 + list_pos, list.item_w,0, LIST_BACKGROUND_COLOR, 0xDCDCDC, 12, key_name);
+	kfont.WriteIntoWindowCenter(col*list.item_w+6,row*list.item_h+46 + list_pos, list.item_w,0, LIST_BACKGROUND_COLOR, 0x000000, 12, key_name);
 	if (list.cur_y == list.count) DrawWideRectangle(col*list.item_w+6, row*list.item_h + list_pos,list.item_w,list.item_h-5, 2, 0x0080FF);
 	list.count++;
 	col++;
@@ -161,7 +161,7 @@ byte process_sections(dword sec_name, f_name)
 	col = 0;
 	old_row = row;
 	DrawBar(0, row * list.item_h + list_pos, Form.cwidth , 29, LIST_BACKGROUND_COLOR);
-	text_len = label.WriteIntoWindow(10, row * list.item_h + 10 + list_pos, LIST_BACKGROUND_COLOR, 0, 15, sec_name);
+	text_len = kfont.WriteIntoWindow(10, row * list.item_h + 10 + list_pos, LIST_BACKGROUND_COLOR, 0, 15, sec_name);
 	DrawBar(text_len+20, row * list.item_h + list_pos + 20, Form.cwidth-text_len-20, 1, 0xDCDCDC);
 	DrawBar(text_len+20, row * list.item_h + list_pos + 21, Form.cwidth-text_len-20, 1, 0xFCFCFC);
 	list_pos += 29;
@@ -174,7 +174,7 @@ void draw_top_bar()
 	DrawBar(0,0,Form.cwidth, list.y-2, system.color.work);
 	DrawBar(0,list.y-2, Form.cwidth, 1, MixColors(system.color.work, system.color.work_graph, 180));
 	DrawBar(0,list.y-1, Form.cwidth, 1, system.color.work_graph);
-	label.WriteIntoWindowCenter(0,5, Form.cwidth, list.y, system.color.work, system.color.work_text, 16, #window_title);
+	kfont.WriteIntoWindowCenter(0,5, Form.cwidth, list.y, system.color.work, system.color.work_text, 16, #window_title);
 }
 
 void EventRunApp(dword appid)

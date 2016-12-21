@@ -17,7 +17,7 @@ void main()
 	int btn;
 	char title[4196];
 	if (!param) strcpy(#param, DEFAULT_FONT);
-	label.init(#param);
+	kfont.init(#param);
 	tabs.active_tab=PHRASE_TAB;
 	strcpy(#title, "Font preview: ");
 	strcat(#title, #param);
@@ -26,8 +26,8 @@ void main()
 		case evButton:
 			btn = GetButtonID();
 			if (btn==1) ExitProcess();
-			if (btn==STRONG_BTN) label.bold ^=1;
-			if (btn==SMOOTH_BTN) label.smooth ^=1;
+			if (btn==STRONG_BTN) kfont.bold ^=1;
+			if (btn==SMOOTH_BTN) kfont.smooth ^=1;
 			if (btn==PHRASE_TAB) || (btn==CHARS_TAB) tabs.click(btn);
 			goto _DRAW_WINDOW_CONTENT;
 		case evReDraw:
@@ -37,12 +37,12 @@ void main()
 			if (Form.status_window>2) break;
 			_DRAW_WINDOW_CONTENT:
 			DrawBar(0, 0, Form.cwidth, PANELH-1, system.color.work);
-			CheckBox(10, 8, STRONG_BTN, "Bold",  label.bold);
-			CheckBox(83,8, SMOOTH_BTN, "Smooth",  label.smooth);
+			CheckBox(10, 8, STRONG_BTN, "Bold",  kfont.bold);
+			CheckBox(83,8, SMOOTH_BTN, "Smooth",  kfont.smooth);
 			tabs.draw(Form.cwidth-150, PANELH, PHRASE_TAB, "Phrase");
 			tabs.draw(Form.cwidth-70, PANELH, CHARS_TAB, "Chars");
 			DrawBar(0, PANELH-1,Form.cwidth,1,system.color.work_graph);
-			if (!label.font)
+			if (!kfont.font)
 			{
 				DrawBar(0, PANELH, Form.cwidth, Form.cheight - PANELH, 0xFFFfff);
 				WriteText(10, 50, 0x82, 0xFF00FF, "Font is not loaded.");
@@ -57,14 +57,14 @@ void DrawPreviewPhrase()
 {
 	dword i, y;
 	char line[256];
-	label.raw_size = free(label.raw);
-	for (i=10, y=5; i<22; i++, y+=label.height;) //not flexible, need to calculate font count and max line length
+	kfont.raw_size = free(kfont.raw);
+	for (i=10, y=5; i<22; i++, y+=kfont.height;) //not flexible, need to calculate font count and max line length
 	{
 		sprintf(#line,"Размер шрифта/size font %d пикселей.",i);
-		label.WriteIntoBuffer(10,y,Form.cwidth,Form.cheight-PANELH, 0xFFFFFF, 0, i, #line);
+		kfont.WriteIntoBuffer(10,y,Form.cwidth,Form.cheight-PANELH, 0xFFFFFF, 0, i, #line);
 	}
-	if (label.smooth) label.ApplySmooth();
-	label.ShowBuffer(0, PANELH);
+	if (kfont.smooth) kfont.ApplySmooth();
+	kfont.ShowBuffer(0, PANELH);
 }
 
 void DrawPreviewChars()
@@ -72,17 +72,17 @@ void DrawPreviewChars()
 	dword i, x=20, y=0;
 	char line[2];
 	line[1]=NULL;
-	label.raw_size = free(label.raw);
+	kfont.raw_size = free(kfont.raw);
 	for (i=0; i<255; i++) //not flexible, need to calculate font count and max line length
 	{
 		line[0]=i;
-		label.WriteIntoBuffer(x,y,Form.cwidth,Form.cheight-PANELH, 0xFFFFFF, 0, 16, #line);
-		x+= label.height+2;
+		kfont.WriteIntoBuffer(x,y,Form.cwidth,Form.cheight-PANELH, 0xFFFFFF, 0, 16, #line);
+		x+= kfont.height+2;
 		if (x>=Form.cwidth-30) { 
 			x=20;
-			y+=label.height+2;
+			y+=kfont.height+2;
 		}
 	}
-	if (label.smooth) label.ApplySmooth();
-	label.ShowBuffer(0, PANELH);
+	if (kfont.smooth) kfont.ApplySmooth();
+	kfont.ShowBuffer(0, PANELH);
 }

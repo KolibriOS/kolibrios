@@ -78,8 +78,8 @@ void settings_dialog()
 				else if (id==25) { files.item_h++; files_active.item_h = files_inactive.item_h = files.item_h; }
 				else if (id==26) && (files.item_h>15) files_inactive.item_h = files.item_h = files.item_h-1;
 				else if (id==27) show_status_bar ^= 1;
-				else if (id==30) { label.size.pt++; IF(!label.changeSIZE()) label.size.pt--; BigFontsChange(); }
-				else if (id==31) { label.size.pt--; IF(!label.changeSIZE()) label.size.pt++; BigFontsChange(); }
+				else if (id==30) { kfont.size.pt++; IF(!kfont.changeSIZE()) kfont.size.pt--; BigFontsChange(); }
+				else if (id==31) { kfont.size.pt--; IF(!kfont.changeSIZE()) kfont.size.pt++; BigFontsChange(); }
 				EventRedrawWindow(Form.left,Form.top);
 				break;
 					
@@ -116,7 +116,7 @@ void DrawSettingsCheckBoxes()
 	CheckBox(x, y.inc(25), 22, NOTIFY_COPY_END,  info_after_copy);
 	CheckBox(x, y.inc(25), 32, SHOW_BREADCRUMBS,  show_breadcrumb);
 	CheckBox(x, y.inc(25), 24, USE_TWO_PANELS,  two_panels);
-	MoreLessBox(x, y.inc(31), 30, 31, label.size.pt, FONT_SIZE_LABEL);
+	MoreLessBox(x, y.inc(31), 30, 31, kfont.size.pt, FONT_SIZE_LABEL);
 	MoreLessBox(x, y.inc(31), 25, 26, files.item_h, LIST_LINE_HEIGHT);
 	WriteText(6, y.inc(28), 0xD0, system.color.work_text, START_PATH);
 	path_start_ed.top = y.inc(23);
@@ -137,7 +137,7 @@ void LoadIniSettings()
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "ShowStatusBar",    1); show_status_bar = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "RealFileNamesCase", 1); real_files_names_case = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "InfoAfterCopy",     0); info_after_copy = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #config_section, "FontSize",         12); label.size.pt = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #config_section, "FontSize",         12); kfont.size.pt = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "TwoPanels",         0); two_panels = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "LineHeight",       19); files.item_h = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinX", 200); WinX = EAX;
@@ -150,9 +150,9 @@ void LoadIniSettings()
 	path_start_ed.pos = strlen(#path_start);
 
 	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font file",#temp,4096,DEFAULT_FONT);
-	label.init(#temp);
+	kfont.init(#temp);
 	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font smoothing",#temp,4096,"on");
-	if(!strcmp(#temp,"off")) label.smooth = false; else label.smooth = true;
+	if(!strcmp(#temp,"off")) kfont.smooth = false; else kfont.smooth = true;
 }
 
 
@@ -162,7 +162,7 @@ void SaveIniSettings()
 	ini_set_int stdcall (eolite_ini_path, #config_section, "ShowStatusBar", show_status_bar);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "RealFileNamesCase", real_files_names_case);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "InfoAfterCopy", info_after_copy);
-	ini_set_int stdcall (eolite_ini_path, #config_section, "FontSize", label.size.pt);
+	ini_set_int stdcall (eolite_ini_path, #config_section, "FontSize", kfont.size.pt);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "TwoPanels", two_panels);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "LineHeight", files.item_h);
 	ini_set_int stdcall (eolite_ini_path, #config_section, "WinX", Form.left);
@@ -202,7 +202,7 @@ void SetAppColors()
 
 void BigFontsChange()
 {
-	files.item_h = label.size.pt + 4;
+	files.item_h = kfont.size.pt + 4;
 	if (files.item_h<18) files.item_h = 18;
 	files_active.item_h = files_inactive.item_h = files.item_h;
 }

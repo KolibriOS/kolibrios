@@ -88,7 +88,7 @@ void main()
 	InitDlls();	
 	OpenDialog_init stdcall (#o_dialog);
 	CursorPointer.Load(#CursorFile);
-	label.init(DEFAULT_FONT);
+	kfont.init(DEFAULT_FONT);
 	Libimg_LoadImage(#skin, abspath("toolbar.png"));
 	LoadIniSettings();
 	list.no_selection = true;
@@ -328,18 +328,18 @@ char favicon_address[UML];
 
 void EventMagnifyPlus()
 {
-	label.size.pt++;
-	if(!label.changeSIZE())
-		label.size.pt--;
+	kfont.size.pt++;
+	if(!kfont.changeSIZE())
+		kfont.size.pt--;
 	else
 		PreparePage();
 }
 
 void EventMagnifyMinus()
 {
-	label.size.pt--;
-	if(!label.changeSIZE())
-		label.size.pt++;
+	kfont.size.pt--;
+	if(!kfont.changeSIZE())
+		kfont.size.pt++;
 	else
 		PreparePage();
 }
@@ -435,7 +435,7 @@ void draw_window()
 	}
 	else
 	{
-		if (!label.raw) {                           //this code need to be run
+		if (!kfont.raw) {                           //this code need to be run
 			if (param) EventOpenAddress(#param);    //only once at browser sturtup
 			else EventOpenAddress("aelia:home");
 		}
@@ -448,7 +448,7 @@ void draw_window()
 void DrawPage()
 {
 	list.CheckDoesValuesOkey();
-	if (list.count) _PutImage(list.x,list.y,list.w,list.h,list.first*list.item_h*list.w*3 + label.raw);
+	if (list.count) _PutImage(list.x,list.y,list.w,list.h,list.first*list.item_h*list.w*3 + kfont.raw);
 	DrawScroller();
 }
 
