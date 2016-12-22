@@ -17,15 +17,70 @@
 ;;                                                                                                ;;
 ;;================================================================================================;;
 
+
+
 ;;================================================================================================;;
 proc img.convert _src, _dst, _dst_type, _flags, _param                                            ;;
 ;;------------------------------------------------------------------------------------------------;;
-;? scale _image                                                                                   ;;
+;? convert _image                                                                                 ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;> [_src]      = pointer to source image                                                          ;;
+;> [_dst]      = pointer to destination image, or 0 to create a new one                           ;;
+;> [_dst_type] = Image.Type of resulting image                                                    ;;
 ;> [_flags]    = see libimg.inc                                                                   ;;
-;> [_dst_type] = the Image.Type of converted image                                                ;;
-;> [_dst]      = pointer to destination image, if any                                             ;;
+;> [_param]    = depends on _flags fields, see libimg.inc                                         ;;
+;;------------------------------------------------------------------------------------------------;;
+;< eax = 0 / pointer to converted image                                                           ;;
+;< ecx = error code / undefined                                                                   ;;
+;;================================================================================================;;
+        push    ebx esi edi 0 0
+        mov     ebx, [_src]
+    @@:
+        mov     eax, [ebx + Image.Previous]
+        test    eax, eax
+        jz      .loop
+        mov     ebx, eax
+        jmp     @b
+  .loop:
+        stdcall img.convert.layer, ebx, [_dst], [_dst_type], [_flags], [_param]
+        test    eax, eax
+        jz      .error
+        cmp     dword[esp + 4], 0
+        jnz     @f
+        mov     [esp + 4], eax
+    @@:
+        mov     ecx, [esp]
+        jecxz   @f
+        mov     [ecx + Image.Next], eax
+    @@:
+	push	[ebx + Image.Flags]
+	pop	[eax + Image.Flags]
+	push	[ebx + Image.Delay]
+	pop	[eax + Image.Delay]
+        mov     [eax + Image.Previous], ecx
+        mov     [esp], eax
+        mov     ebx, [ebx + Image.Next]
+        test    ebx, ebx
+        jnz     .loop
+  .quit:
+        pop     eax eax edi esi ebx
+        ret
+  .error:
+        pop     eax eax edi esi ebx
+        ret
+endp
+
+
+;;================================================================================================;;
+proc img.convert.layer _src, _dst, _dst_type, _flags, _param                                      ;;
+;;------------------------------------------------------------------------------------------------;;
+;? convert _image layer                                                                           ;;
+;;------------------------------------------------------------------------------------------------;;
+;> [_src]      = pointer to source image                                                          ;;
+;> [_dst]      = pointer to destination image, or 0 to create a new one                           ;;
+;> [_dst_type] = Image.Type of resulting image                                                    ;;
+;> [_flags]    = see libimg.inc                                                                   ;;
+;> [_param]    = depends on _flags fields, see libimg.inc                                         ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = 0 / pointer to converted image                                                           ;;
 ;< ecx = error code / undefined                                                                   ;;
@@ -34,6 +89,8 @@ locals
 	width	rd 1
 	height	rd 1
 endl
+        push    ebx esi edi
+
 	mov	ebx, [_src]
 	mov	eax, 1
 	mov	ecx, [_dst_type]
@@ -151,6 +208,13 @@ endl
 	mov	eax, [_dst]
 	jmp	.quit
 
+  .bpp8g_to_bpp8g:
+	mov	ecx, [ebx + Image.Width]
+	imul	ecx, [ebx + Image.Height]
+	rep	movsb
+	mov	eax, [_dst]
+	jmp	.quit
+
   .bpp8g_to_bpp24:
 	mov	ecx, [ebx + Image.Width]
 	imul	ecx, [ebx + Image.Height]
@@ -197,6 +261,19 @@ endl
 	add	edi, 1
 	sub	ecx, 1
 	jnz	@b
+	mov	eax, [_dst]
+	jmp	.quit
+  .bpp24_to_bpp32:
+	mov	ecx, [ebx + Image.Width]
+	imul	ecx, [ebx + Image.Height]
+    @@:
+        lodsw
+        ror     eax, 16
+        lodsb
+        rol     eax, 16
+        stosd
+        dec     ecx
+        jnz     @b
 	mov	eax, [_dst]
 	jmp	.quit
 
@@ -561,25 +638,28 @@ end repeat
   .error:
 	xor	eax, eax
   .quit:
+        pop     edi esi ebx
 	ret
 endp
 
 
 img.convert.bpp8i.table:
-	dd Image.bpp24, img.convert.bpp8i_to_bpp24
+	dd Image.bpp24, img.convert.layer.bpp8i_to_bpp24
 img.convert.bpp8g.table:
-	dd Image.bpp24, img.convert.bpp8g_to_bpp24
-	dd Image.bpp1,  img.convert.bpp8g_to_bpp1
+	dd Image.bpp24, img.convert.layer.bpp8g_to_bpp24
+	dd Image.bpp8g, img.convert.layer.bpp8g_to_bpp8g
+	dd Image.bpp1,  img.convert.layer.bpp8g_to_bpp1
 img.convert.bpp24.table:
-	dd Image.bpp24, img.convert.bpp24_to_bpp24
-	dd Image.bpp8g, img.convert.bpp24_to_bpp8g
+	dd Image.bpp24, img.convert.layer.bpp24_to_bpp24
+	dd Image.bpp8g, img.convert.layer.bpp24_to_bpp8g
+	dd Image.bpp32, img.convert.layer.bpp24_to_bpp32
 img.convert.bpp32.table:
-	dd Image.bpp24, img.convert.bpp32_to_bpp24
+	dd Image.bpp24, img.convert.layer.bpp32_to_bpp24
 img.convert.bpp15.table:
-	dd Image.bpp24, img.convert.bpp15_to_bpp24
+	dd Image.bpp24, img.convert.layer.bpp15_to_bpp24
 img.convert.bpp16.table:
-	dd Image.bpp24, img.convert.bpp16_to_bpp24
+	dd Image.bpp24, img.convert.layer.bpp16_to_bpp24
 img.convert.bpp1.table:
-	dd Image.bpp24, img.convert.bpp1_to_bpp24
+	dd Image.bpp24, img.convert.layer.bpp1_to_bpp24
 img.convert.bpp8a.table:
-	dd Image.bpp24, img.convert.bpp8a_to_bpp24
+	dd Image.bpp24, img.convert.layer.bpp8a_to_bpp24

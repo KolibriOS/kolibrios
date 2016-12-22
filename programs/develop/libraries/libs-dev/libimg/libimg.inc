@@ -18,68 +18,71 @@
 ;;================================================================================================;;
 
 ; list of format id's
-LIBIMG_FORMAT_BMP	= 1
-LIBIMG_FORMAT_ICO	= 2
-LIBIMG_FORMAT_CUR	= 3
-LIBIMG_FORMAT_GIF	= 4
-LIBIMG_FORMAT_PNG	= 5
-LIBIMG_FORMAT_JPEG	= 6
-LIBIMG_FORMAT_TGA	= 7
-LIBIMG_FORMAT_PCX	= 8
-LIBIMG_FORMAT_XCF	= 9
-LIBIMG_FORMAT_TIFF	= 10
-LIBIMG_FORMAT_PNM	= 11
-LIBIMG_FORMAT_WBMP	= 12
+LIBIMG_FORMAT_BMP       = 1
+LIBIMG_FORMAT_ICO       = 2
+LIBIMG_FORMAT_CUR       = 3
+LIBIMG_FORMAT_GIF       = 4
+LIBIMG_FORMAT_PNG       = 5
+LIBIMG_FORMAT_JPEG      = 6
+LIBIMG_FORMAT_TGA       = 7
+LIBIMG_FORMAT_PCX       = 8
+LIBIMG_FORMAT_XCF       = 9
+LIBIMG_FORMAT_TIFF      = 10
+LIBIMG_FORMAT_PNM       = 11
+LIBIMG_FORMAT_WBMP      = 12
 LIBIMG_FORMAT_XBM	= 13
-LIBIMG_FORMAT_Z80	= 14
+LIBIMG_FORMAT_Z80       = 14
 
 ; scale type                    ; corresponding img.scale params
-LIBIMG_SCALE_INTEGER	= 1     ; scale factor ; reserved 0
-LIBIMG_SCALE_TILE	= 2     ; new width    ; new height
-LIBIMG_SCALE_STRETCH	= 3     ; new width    ; new height
-LIBIMG_SCALE_FIT_RECT	= 4     ; new width    ; new height
-LIBIMG_SCALE_FIT_WIDTH	= 5     ; new width    ; new height
-LIBIMG_SCALE_FIT_HEIGHT	= 6     ; new width    ; new height
-LIBIMG_SCALE_FIT_MAX	= 7     ; new width    ; new height
+LIBIMG_SCALE_NONE       = 0     ; do not scale
+LIBIMG_SCALE_INTEGER    = 1     ; scale factor ; reserved 0
+LIBIMG_SCALE_TILE       = 2     ; new width    ; new height
+LIBIMG_SCALE_STRETCH    = 3     ; new width    ; new height
+LIBIMG_SCALE_FIT_BOTH   = LIBIMG_SCALE_STRETCH
+LIBIMG_SCALE_FIT_MIN    = 4     ; new width    ; new height
+LIBIMG_SCALE_FIT_RECT   = LIBIMG_SCALE_FIT_MIN
+LIBIMG_SCALE_FIT_WIDTH  = 5     ; new width    ; new height
+LIBIMG_SCALE_FIT_HEIGHT = 6     ; new width    ; new height
+LIBIMG_SCALE_FIT_MAX    = 7     ; new width    ; new height
 
 ; interpolation algorithm
-LIBIMG_INTER_NONE	= 0     ; use it with LIBIMG_SCALE_INTEGER, LIBIMG_SCALE_TILE, etc
-LIBIMG_INTER_BILINEAR	= 1
-;LIBIMG_INTER_BICUBIC	= 2
-;LIBIMG_INTER_LANCZOS	= 3
-LIBIMG_INTER_DEFAULT	= LIBIMG_INTER_BILINEAR
+LIBIMG_INTER_NONE       = 0     ; use it with LIBIMG_SCALE_INTEGER, LIBIMG_SCALE_TILE, etc
+LIBIMG_INTER_BILINEAR   = 1
+;LIBIMG_INTER_BICUBIC   = 2
+;LIBIMG_INTER_LANCZOS   = 3
+LIBIMG_INTER_DEFAULT    = LIBIMG_INTER_BILINEAR
 
 ; error codes
-LIBIMG_ERROR_OUT_OF_MEMORY	= 1
-LIBIMG_ERROR_FORMAT		= 2
-LIBIMG_ERROR_CONDITIONS		= 3
-LIBIMG_ERROR_BIT_DEPTH		= 4
-LIBIMG_ERROR_ENCODER		= 5
-LIBIMG_ERROR_SRC_TYPE		= 6
-LIBIMG_ERROR_SCALE		= 7
-LIBIMG_ERROR_INTER		= 8
-LIBIMG_ERROR_NOT_INPLEMENTED	= 9
+LIBIMG_ERROR_OUT_OF_MEMORY      = 1
+LIBIMG_ERROR_FORMAT             = 2
+LIBIMG_ERROR_CONDITIONS         = 3
+LIBIMG_ERROR_BIT_DEPTH          = 4
+LIBIMG_ERROR_ENCODER            = 5
+LIBIMG_ERROR_SRC_TYPE           = 6
+LIBIMG_ERROR_SCALE              = 7
+LIBIMG_ERROR_INTER              = 8
+LIBIMG_ERROR_NOT_INPLEMENTED    = 9
 LIBIMG_ERROR_INVALID_INPUT      = 10
 
 ; encode flags (byte 0x02 of _common option)
-LIBIMG_ENCODE_STRICT_SPECIFIC	= 0x01
+;LIBIMG_ENCODE_STRICT_SPECIFIC	= 0x01
 LIBIMG_ENCODE_STRICT_BIT_DEPTH	= 0x02
-LIBIMG_ENCODE_DELETE_ALPHA	= 0x08
-LIBIMG_ENCODE_FLUSH_ALPHA	= 0x10
+;LIBIMG_ENCODE_DELETE_ALPHA	= 0x08
+;LIBIMG_ENCODE_FLUSH_ALPHA	= 0x10
 
 ; convert flags
-; TBD
+; none so far
 
 struct FormatsTableEntry
-  Format_id	dd ?
-  Is		dd ?
-  Decode	dd ?
-  Encode	dd ?
-  Capabilities	dd ?
+  Format_id     dd ?
+  Is            dd ?
+  Decode        dd ?
+  Encode        dd ?
+  Capabilities  dd ?
 ends
 
 struct Image
-  Checksum dd ? ; ((Width ROL 16) OR Height) XOR Data[0]	; ignored so far
+  Checksum dd ? ; ((Width ROL 16) OR Height) XOR Data[0]        ; ignored so far
   Width    dd ?
   Height   dd ?
   Next     dd ?

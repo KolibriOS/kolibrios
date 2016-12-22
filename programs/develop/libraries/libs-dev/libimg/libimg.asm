@@ -49,7 +49,6 @@ include 'xbm/xbm.asm'
 
 include 'scale.asm'
 include 'convert.asm'
-;include 'transform.asm'
 
 ;;================================================================================================;;
 proc lib_init ;///////////////////////////////////////////////////////////////////////////////////;;
@@ -186,7 +185,10 @@ endp
 ;;================================================================================================;;
 proc img.to_rgb _img ;////////////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? decodes image data into RGB triplets and returns pointer to memory area containing them        ;;
+;? decodes image data into RGB triplets and returns pointer to memory area of following structure:;;
+;? width  dd ?                                                                                    ;;
+;? height dd ?                                                                                    ;;
+;? rgb triplets                                                                                   ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;> [_img] = pointer to source image                                                               ;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -696,13 +698,13 @@ proc img.encode _img, _common, _specific ;//////////////////////////////////////
 ;? encode image to some format                                                                    ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;> [_img]      = pointer to input image                                                           ;;
-;> [_common]   = some most important options                                                      ;;
+;> [_common]   = some most important/common options                                               ;;
 ;     0x00 :  byte : format id (defined in libimg.inc)                                            ;;
 ;     0x01 :  byte : fast encoding (0) / best compression ratio (255)                             ;;
 ;                    0 : store uncompressed data (if supported both by the format and libimg)     ;;
 ;                    1 - 255 : use compression, if supported                                      ;;
 ;                    this option may be ignored if any format specific options are defined        ;;
-;                    i.e. the 0 here will be ignored if some compression algorithm is specified   ;;
+;                    i.e. 0 here will be ignored if particular compression algorithm is specified ;;
 ;     0x02 :  byte : flags (bitfield)                                                             ;;
 ;                   0x01 : return an error if format specific conditions cannot be met            ;;
 ;                   0x02 : preserve current bit depth. means 8bpp/16bpp/24bpp and so on           ;;
@@ -719,65 +721,65 @@ proc img.encode _img, _common, _specific ;//////////////////////////////////////
 ;     3 : specific conditions cannot be satisfied                                                 ;;
 ;     4 : bit depth cannot be preserved                                                           ;;
 ;;================================================================================================;;
-	mov	ebx, [_img]
+        mov     ebx, [_img]
 
-	movzx	eax, byte[_common]
-	dec	eax
-	imul	eax, sizeof.FormatsTableEntry
-	add	eax, FormatsTableEntry.Capabilities
-	add	eax, img.formats_table
-	mov	eax, [eax]
-	test	eax, 1				; is encoding to this format supported at all?
-	jnz	@f
-	mov	ecx, LIBIMG_ERROR_FORMAT
-	jmp	.error
+        movzx   eax, byte[_common]
+        dec     eax
+        imul    eax, sizeof.FormatsTableEntry
+        add     eax, FormatsTableEntry.Capabilities
+        add     eax, img.formats_table
+        mov     eax, [eax]
+        test    eax, 1                          ; is encoding to this format supported at all?
+        jnz     @f
+        mov     ecx, LIBIMG_ERROR_FORMAT
+        jmp     .error
     @@:
-	mov	ecx, [ebx + Image.Type]
-	mov	edx, 1
-	shl	edx, cl
-	test	eax, edx
-	jnz	.bit_depth_ok
-	test	byte[_common+2], LIBIMG_ENCODE_STRICT_BIT_DEPTH
-	jz	@f
-	mov	ecx, LIBIMG_ERROR_BIT_DEPTH
-	jmp	.error
+        mov     ecx, [ebx + Image.Type]
+        mov     edx, 1
+        shl     edx, cl
+        test    eax, edx
+        jnz     .bit_depth_ok
+        test    byte[_common+2], LIBIMG_ENCODE_STRICT_BIT_DEPTH
+        jz      @f
+        mov     ecx, LIBIMG_ERROR_BIT_DEPTH
+        jmp     .error
     @@:
-	mov	edx, 1 SHL Image.bpp24
-	test	eax, edx
-	jnz	@f
-	mov	ecx, LIBIMG_ERROR_BIT_DEPTH
-	jmp	.error
+        mov     edx, 1 SHL Image.bpp24
+        test    eax, edx
+        jnz     @f
+        mov     ecx, LIBIMG_ERROR_BIT_DEPTH
+        jmp     .error
     @@:
-	stdcall	img.create, [ebx + Image.Width], [ebx + Image.Height], Image.bpp24
-	test	eax, eax
-	jnz	@f
-	mov	ecx, LIBIMG_ERROR_OUT_OF_MEMORY
-	jmp	.error
+        stdcall img.create, [ebx + Image.Width], [ebx + Image.Height], Image.bpp24
+        test    eax, eax
+        jnz     @f
+        mov     ecx, LIBIMG_ERROR_OUT_OF_MEMORY
+        jmp     .error
     @@:
-	push	eax
-	stdcall	img.to_rgb2, ebx, [eax + Image.Data]
-	pop	ebx
+        push    eax
+        stdcall img.to_rgb2, ebx, [eax + Image.Data]
+        pop     ebx
 
   .bit_depth_ok:
-	movzx	eax, byte[_common]
-	dec	eax
-	imul	eax, sizeof.FormatsTableEntry
-	add	eax, FormatsTableEntry.Encode
-	add	eax, img.formats_table
-	mov	eax, [eax]
-	stdcall	eax, [_img], [_common], [_specific]
-	push	eax ecx
-	cmp	ebx, [_img]
-	je	@f
-	stdcall	img.destroy, ebx
+        movzx   eax, byte[_common]
+        dec     eax
+        imul    eax, sizeof.FormatsTableEntry
+        add     eax, FormatsTableEntry.Encode
+        add     eax, img.formats_table
+        mov     eax, [eax]
+        stdcall eax, [_img], [_common], [_specific]
+        push    eax ecx
+        cmp     ebx, [_img]
+        je      @f
+        stdcall img.destroy, ebx
     @@:
-	pop	ecx eax
-	jmp	.quit
+        pop     ecx eax
+        jmp     .quit
 
   .error:
-	xor	eax, eax
+        xor     eax, eax
   .quit:
-	ret
+        ret
 endp
 
 ;;================================================================================================;;
@@ -2301,6 +2303,9 @@ endl
 
 
   .flip:
+    stdcall img.flip.layer, [_img], FLIP_VERTICAL
+    test eax, eax
+    jz  .error
     jmp .exit
 
   .exchange_dims:
@@ -2435,15 +2440,15 @@ img.formats_table:
         dd 0
 
 align 4
-img.types_table:	; entries order must correspond to type defnitions in libimg.inc
-         dd 0	; there is no Image.bpp* = 0
+img.types_table:        ; entries order must correspond to type defnitions in libimg.inc
+         dd 0   ; there is no Image.bpp* = 0
   .bpp8i dd (1 SHL Image.bpp24)
   .bpp24 dd (1 SHL Image.bpp24) OR (1 SHL Image.bpp8g)
   .bpp32 dd (1 SHL Image.bpp24)
   .bpp15 dd (1 SHL Image.bpp24)
   .bpp16 dd (1 SHL Image.bpp24)
   .bpp1  dd (1 SHL Image.bpp24)
-  .bpp8g dd (1 SHL Image.bpp24) OR (1 SHL Image.bpp1 )
+  .bpp8g dd (1 SHL Image.bpp24) OR (1 SHL Image.bpp1 ) OR (1 SHL Image.bpp8g)
   .bpp8a dd (1 SHL Image.bpp24)
 
 ;;================================================================================================;;
@@ -2656,11 +2661,12 @@ endp
 ;;================================================================================================;;
 img._.get_scanline_len: ;/////////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? Get scanline length of image in bytes                                                          ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> eax = width of image in pixels                                                                 ;;
+;> ebx = image                                                                                    ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< --- TBD ---                                                                                    ;;
+;< eax = scanline length in bytes                                                                 ;;
 ;;================================================================================================;;
     cmp [ebx + Image.Type], Image.bpp1
     jz  .bpp1.1
@@ -2748,31 +2754,32 @@ align 4
 @EXPORT:
 
 export                                      \
-    lib_init         , 'lib_init'         , \
-    0x00050007       , 'version'          , \
-    img.is_img       , 'img_is_img'       , \
-    img.info         , 'img_info'         , \
-    img.from_file    , 'img_from_file'    , \
-    img.to_file      , 'img_to_file'      , \
-    img.from_rgb     , 'img_from_rgb'     , \
-    img.to_rgb       , 'img_to_rgb'       , \
-    img.to_rgb2      , 'img_to_rgb2'      , \
-    img.decode       , 'img_decode'       , \
-    img.encode       , 'img_encode'       , \
-    img.create       , 'img_create'       , \
-    img.destroy      , 'img_destroy'      , \
-    img.destroy.layer, 'img_destroy_layer', \
-    img.count        , 'img_count'        , \
-    img.lock_bits    , 'img_lock_bits'    , \
-    img.unlock_bits  , 'img_unlock_bits'  , \
-    img.flip         , 'img_flip'         , \
-    img.flip.layer   , 'img_flip_layer'   , \
-    img.rotate       , 'img_rotate'       , \
-    img.rotate.layer , 'img_rotate_layer' , \
-    img.draw         , 'img_draw'         , \
-    img.scale        , 'img_scale'        , \
-    img.convert      , 'img_convert'      , \
-    img.formats_table, 'img_formats_table'
+    lib_init           , 'lib_init'           , \
+    0x00050007         , 'version'            , \
+    img.is_img         , 'img_is_img'         , \
+    img.info           , 'img_info'           , \
+    img.from_file      , 'img_from_file'      , \
+    img.to_file        , 'img_to_file'        , \
+    img.from_rgb       , 'img_from_rgb'       , \
+    img.to_rgb         , 'img_to_rgb'         , \
+    img.to_rgb2        , 'img_to_rgb2'        , \
+    img.decode         , 'img_decode'         , \
+    img.encode         , 'img_encode'         , \
+    img.create         , 'img_create'         , \
+    img.destroy        , 'img_destroy'        , \
+    img.destroy.layer  , 'img_destroy_layer'  , \
+    img.count          , 'img_count'          , \
+    img.lock_bits      , 'img_lock_bits'      , \
+    img.unlock_bits    , 'img_unlock_bits'    , \
+    img.flip           , 'img_flip'           , \
+    img.flip.layer     , 'img_flip_layer'     , \
+    img.rotate         , 'img_rotate'         , \
+    img.rotate.layer   , 'img_rotate_layer'   , \
+    img.draw           , 'img_draw'           , \
+    img.scale          , 'img_scale'          , \
+    img.get_scaled_size, 'img_get_scaled_size', \
+    img.convert        , 'img_convert'        , \
+    img.formats_table  , 'img_formats_table'
 
 ; import from deflate unpacker
 ; is initialized only when PNG loading is requested
