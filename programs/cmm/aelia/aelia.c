@@ -448,7 +448,9 @@ void draw_window()
 void DrawPage()
 {
 	list.CheckDoesValuesOkey();
-	if (list.count) _PutImage(list.x,list.y,list.w,list.h,list.first*list.item_h*list.w*3 + kfont.raw);
+	if (list.count) {
+		kfont.ShowBufferPart(list.x, list.y, list.w, list.h, list.first*list.item_h*list.w);
+	}
 	DrawScroller();
 }
 

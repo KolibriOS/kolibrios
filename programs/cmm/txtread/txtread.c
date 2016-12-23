@@ -291,6 +291,6 @@ void draw_window()
 
 void DrawPage()
 {
-	_PutImage(list.x,list.y,list.w,list.h,list.first*list.item_h*list.w*3 + kfont.raw);
+	kfont.ShowBufferPart(list.x, list.y, list.w, list.h, list.first*list.item_h*list.w);
 	DrawScroller();
 }

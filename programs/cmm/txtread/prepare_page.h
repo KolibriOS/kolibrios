@@ -67,6 +67,7 @@ void PreparePage()
 	kfont.raw_size = 0;
 	Parcer(DRAW_BUF);
 
+	if (list.count > list.visible * 10) DrawPage();
 	//draw result
 	kfont.ApplySmooth();
 	DrawPage();

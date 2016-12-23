@@ -1,7 +1,6 @@
 //HTML Viewer in C--
 //Copyright 2007-2013 by Veliant & Leency
 //Asper, lev, Lrz, Barsuk, Nable...
-//home icon - rachel fu, GPL licence
 
 #ifndef AUTOBUILD
 	#include "lang.h--"

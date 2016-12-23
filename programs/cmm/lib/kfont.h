@@ -1,3 +1,18 @@
+// Сам шрифт представляет.
+
+// Голова:
+// [2 байта символы:KF]
+// [4 байта:указатель на название шрифта]
+// [1 байт:размер массива указателей на размеры шрифтов, указатель 4 байта, т.е. размер = размер массива*4]
+// [размер массива*4 байт:указатели..]
+
+// Тело файла:
+// [4 байта:масштаб ширина][4 байта:масштаб высота][255*4 байт:указатели на символы][масштаб ширина*масштаб высота байт: данные символов..]
+
+// Конец:
+// [Название шрифта:"Times New Roman"]
+
+
 #ifndef INCLUDE_LABEL_H
 #define INCLUDE_LABEL_H
 
@@ -13,6 +28,10 @@
 
 
 #define DEFAULT_FONT "/sys/fonts/Tahoma.kf"
+
+#ifndef KFONT_BPP
+#define KFONT_BPP 4
+#endif
 
 :struct __SIZE
 {
@@ -30,6 +49,7 @@
 	word block;
 	dword raw;
 	dword raw_size;
+	//dword palette[256];
 
 	bool init();
 	bool changeSIZE();
@@ -42,7 +62,24 @@
 	int WriteIntoWindowCenter();
 	void WriteIntoBuffer();
 	void ShowBuffer();
+	void ShowBufferPart();
 } kfont;
+
+:bool LABEL::init(dword font_path)
+{
+	IO label_io;
+	if(font)free(font);
+	label_io.read(font_path);
+	if(!EAX) {
+		debugln(font_path);
+		label_io.run("/sys/@notify", "'Error: KFONT is not loaded.' -E"); 
+		return false;
+	}
+	font_begin = label_io.buffer_data;
+	changeSIZE();
+	smooth = true;
+	return true;
+}
 
 :bool LABEL::changeSIZE()
 {
@@ -100,7 +137,7 @@
 	tmp = block*s << 2 + font;
 	for(yi=0; yi<height; yi++)
 	{
-		EDI = size.offset_y + yi + y * size.width * 3 + image_raw;
+		EDI = size.offset_y + yi + y * size.width * KFONT_BPP + image_raw;
 		for(xi=0; xi<width; xi++)
 		{
 			if(iii%32) _ >>= 1;
@@ -112,11 +149,13 @@
 			if(_&1) //check does the pixel set
 			{
 				if(xi>chaw_width)chaw_width=xi;
+				//in case of image_raw!=0 draw font into bug
+				//in case of image_raw==0 calculate size
 				if (image_raw)
 				{
-					offs = x + xi *3 + EDI;
-					DSDWORD[offs] = DSDWORD[offs] & 0xFF000000 | color;
-					if(bold) DSDWORD[offs+3] = DSDWORD[offs+3] & 0xFF000000 | color;
+					offs = x + xi * KFONT_BPP + EDI;
+					DSDWORD[offs] = color;
+					if(bold) DSDWORD[offs+KFONT_BPP] = color;
 				}
 				else
 				{
@@ -144,55 +183,41 @@ inline fastcall Cp866ToAnsi(AL) {
 	return AL;
 }
 
-:bool LABEL::init(dword font_path)
-{
-	IO label_io;
-	if(font)free(font);
-	label_io.read(font_path);
-	if(!EAX) {
-		debugln(font_path);
-		label_io.run("/sys/@notify", "'Error: KFONT is not loaded.' -E"); 
-		return false;
-	}
-	font_begin = label_io.buffer_data;
-	changeSIZE();
-	smooth = true;
-	return true;
-}
-
-
 /*=====================================================================================
 ===========================                                 ===========================
 ===========================               RAW               ===========================
 ===========================                                 ===========================
 =====================================================================================*/
 
-
-inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
+inline fastcall dword b32(EAX) { return DSDWORD[EAX]; }
 :void LABEL::ApplySmooth()
 {
 	dword i,line_w,to,dark_background;
-	line_w = size.width * 3;
-	to = size.height - 1 * line_w + raw - 3;
-	for(i=raw; i < to; i+=3)
+	line_w = size.width * KFONT_BPP;
+	to = size.height - 1 * line_w + raw - KFONT_BPP;
+	for(i=raw; i < to; i+=KFONT_BPP)
 	{
-		if(i-raw%line_w +3 == line_w) continue;
+		if(i-raw%line_w +KFONT_BPP == line_w) continue;
 		// pixels position, where b - black, w - write
 		// bw
 		// wb
-		if(b24(i)!=background) && (b24(i+3)==background) && (b24(i+line_w)==background) && (b24(i+3+line_w)!=background)
-		{
-			dark_background = MixColors(background,b24(i),200);
-			DSDWORD[i+3] = DSDWORD[i+3] & 0xFF000000 | dark_background;
-			DSDWORD[i+line_w] = DSDWORD[i+line_w] & 0xFF000000 | dark_background;			
+		if(b32(i)!=background) {
+			if (b32(i+KFONT_BPP)==background) 
+			&& (b32(i+line_w)==background) && (b32(i+KFONT_BPP+line_w)!=background)
+			{
+				dark_background = MixColors(background,b32(i),200);
+				DSDWORD[i+KFONT_BPP] = dark_background;
+				DSDWORD[i+line_w] = dark_background;	
+			}
 		}
 		// wb
 		// bw
-		else if(b24(i)==background) && (b24(i+3)!=background) && (b24(i+line_w)!=background) && (b24(i+3+line_w)==background)
+		else if (b32(i+KFONT_BPP)!=background) 
+		&& (b32(i+line_w)!=background) && (b32(i+KFONT_BPP+line_w)==background)
 		{
-			dark_background = MixColors(background,b24(i+3),200);
-			DSDWORD[i] = DSDWORD[i] & 0xFF000000 | dark_background;
-			DSDWORD[i+3+line_w] = DSDWORD[i+3+line_w] & 0xFF000000 | dark_background;
+			dark_background = MixColors(background,b32(i+KFONT_BPP),200);
+			DSDWORD[i] = dark_background;
+			DSDWORD[i+KFONT_BPP+line_w] = dark_background;	
 		}
 	}
 }
@@ -213,7 +238,7 @@ inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
 	size.width = w;
 	size.height = h;
 
-	new_raw_size = w*h*3;
+	new_raw_size = w*h*KFONT_BPP;
 	if(raw_size != new_raw_size)
 	{
 		raw_size = new_raw_size; 
@@ -222,7 +247,7 @@ inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
 		// Fill background color
 		EBX = background;
 		EAX = raw_size+raw;
-		for (EDI=raw; EDI<EAX; EDI+=3) ESDWORD[EDI] = EBX;
+		for (EDI=raw; EDI<EAX; EDI+=KFONT_BPP) ESDWORD[EDI] = EBX;
 	}
 	WHILE(DSBYTE[text1])
 	{
@@ -251,9 +276,16 @@ inline fastcall dword b24(EAX) { return DSDWORD[EAX] & 0x00FFFFFF; }
 	return WriteIntoWindow(w-size.width/2+x,y, _background, _color, fontSizePoints, text1);
 }
 
-:void LABEL::ShowBuffer(dword x, y){
-	_PutImage(x, y, size.width, size.height, raw);
+:void LABEL::ShowBuffer(dword _x, _y)
+{
+	if (4==KFONT_BPP) PutPaletteImage(raw, size.width, size.height, _x, _y, 32, 0);
+	//if (1==KFONT_BPP) PutPaletteImage(raw, size.width, size.height, _x, _y, 8, #palette);
 }
 
+:void LABEL::ShowBufferPart(dword _x, _y, _w, _h, _buf_offset)
+{
+	if (4==KFONT_BPP) PutPaletteImage(_buf_offset * KFONT_BPP + raw, _w, _h, _x, _y, 32, 0);
+	//if (1==KFONT_BPP) PutPaletteImage(_buf_offset * KFONT_BPP + raw, _w, _h, _x, _y, 8, #palette);
+}
 
 #endif
