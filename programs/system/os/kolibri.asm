@@ -44,6 +44,7 @@ include 'malloc.inc'
 include 'peloader.inc'
 include 'modules.inc'
 include 'cmdline.inc'
+include 'thread.inc'
 
 proc syscall_int40
         int     0x40
@@ -302,6 +303,8 @@ export 'kolibri.dll' \
         , dlopen, 'dlopen' \
         , dlclose, 'dlclose' \
         , dlsym, 'dlsym' \
+        , create_thread, 'create_thread' \
+        , exit_thread, 'exit_thread' \
 
 end data
 
