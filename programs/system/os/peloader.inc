@@ -15,6 +15,7 @@ macro init_module_struct_pe_specific
         cmp     [esi+STRIPPED_PE_HEADER.NumberOfRvaAndSizes], SPE_DIRECTORY_EXPORT
         jbe     @f
         mov     edx, [esi+sizeof.STRIPPED_PE_HEADER+SPE_DIRECTORY_EXPORT*sizeof.IMAGE_DATA_DIRECTORY+IMAGE_DATA_DIRECTORY.VirtualAddress]
+        mov     edx, [esi+edx+IMAGE_EXPORT_DIRECTORY.TimeDateStamp]
 @@:
         mov     [eax+MODULE.timestamp], edx
         mov     edx, esi
@@ -117,6 +118,7 @@ end virtual
         fpo_delta = fpo_delta + 4
 ; 2c. Check whether we have mprotect-ed the current page at the previous step.
 ; If so, go to 2e.
+        add     edx, esi
         cmp     [.next_page_addr+fpo_delta], edx
         jz      .mprotected_earlier
 ; 2d. We are going to modify data, so mprotect the current page to be writable.
@@ -130,7 +132,6 @@ PROT_EXEC = 4
         mov     eax, 68
         mov     ebx, 30
         mov     ecx, PROT_READ+PROT_WRITE
-        add     edx, esi
         mov     esi, 0x1000
         call    FS_SYSCALL_PTR
         pop     ecx
@@ -182,13 +183,10 @@ PROT_EXEC = 4
 ; 2i. Restore memory protection changed in 2d.
         pop     ecx
         fpo_delta = fpo_delta - 4
-        cmp     ecx, -1
-        jz      @f
         mov     eax, 68
         mov     ebx, 30
         mov     esi, 0x1000
         call    FS_SYSCALL_PTR
-@@:
         pop     esi
         fpo_delta = fpo_delta - 4
 .pagedone:
@@ -242,12 +240,14 @@ export_base             dd      ?
 export_ptr              dd      ?
 export_size             dd      ?
 import_module           dd      ?
-import_dir              dd      ?
 import_descriptor       dd      ?
+next_forwarder          dd      ?
+bound_import_descriptor dd      ?
 bound_import_dir        dd      ?
-bound_import_cur_module dd      ?
-relocated_bound_modules_count   dd      ?
-relocated_bound_modules_ptr     dd      ?
+bound_modules_count     dd      ?
+bound_modules_ptr       dd      ?
+bound_module            dd      ?
+bound_modules_left      dd      ?
 cur_page                dd      -0x1000 ; the page at 0xFFFFF000 is never allocated
 cur_page_old_access     dd      ?
 next_page               dd      -1
@@ -281,9 +281,9 @@ local .label1, .loop, .done
         mov     ebx, [ebp+IMAGE_IMPORT_DESCRIPTOR.OriginalFirstThunk]
         mov     ebp, [ebp+IMAGE_IMPORT_DESCRIPTOR.FirstThunk]
         test    ebx, ebx
-        jnz     .label1
+        jnz     @f
         mov     ebx, ebp
-.label1:
+@@:
 ; FirstThunk and OriginalFirstThunk are RVAs.
         add     ebx, [esi+MODULE.base]
         add     ebp, [esi+MODULE.base]
@@ -345,14 +345,20 @@ local .ordinal, .common
 ;   we have two parallel arrays of import descriptors and bound descriptors,
 ;   pointed to by two directories. Timestamp field has a special value -1
 ;   in import descriptors, real timestamps are in bound descriptors.
-;   There can be different strategies; we loop over bound descriptors
-;   and scan for corresponding import descriptors only if needed,
-;   this accelerates the fast path where all timestamps are correct and
-;   dependencies are not relocated.
 ; * No import: not really different from normal import with no descriptors.
-; There are two large parts in this function:
-; step 2 handles unbound and old-style bound import, where we loop over import descriptors;
-; step 3 handles new-style bound import, where we loop over bound descriptors.
+; Forwarded exports are the part where binding goes really interesting.
+; The address of forwarded export can change with any library in the chain.
+; In old-style bound import, a descriptor can list only the library itself,
+; so it is impossible to bind forwarded exports at all; thunks that point to
+; forwarded exports are linked in the list starting from ForwarderChain in import descriptor.
+; New-style bound import exists exactly to address this problem; it allows to
+; list several related libraries for one imported module.
+; However, even with new-style bound import, some forwarded exports can
+; still remain unbound: binding tool can fail to load dependent libraries
+; during binding time; the tool from MS SDK for unknown reason just refuses to
+; bind forwarded exports except for built-in white list if subsystem version is
+; < 6.0. So even with new-style bound import, ForwarderChain still can be non-empty.
+; Thus, we always need to look at old-style import descriptor.
 ; 1. Fetch addresses of two directories. We are not interested in their sizes.
 ; ebp = import RVA
 ; ebx = bound import RVA
@@ -378,88 +384,69 @@ local .ordinal, .common
         jbe     .common
         mov     ebx, [eax+IMAGE_NT_HEADERS.OptionalHeader.DataDirectory+IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT*sizeof.IMAGE_DATA_DIRECTORY]
 .common:
-        mov     [import_dir], ebp
-; If bound import is present, go to 3.
-; If both directories are absent, no import - nothing to do.
-; Otherwise, advance to 2.
-        test    ebx, ebx
-        jnz     .bound_import
+; If import directory is not present, no import - nothing to do.
+; Ignore bound import directory in this case.
         test    ebp, ebp
         jz      .done
-; 2. Unbound import or old-style bound import.
-; Repeat 2a-2h for all descriptors in the directory.
         add     ebp, [esi+MODULE.base] ; directories contain RVA
-.normal_import_loop:
-; 2a. Check whether this descriptor is an end mark with zero fields.
+        add     ebx, [esi+MODULE.base] ; directories contain RVA
+        mov     [bound_import_dir], ebx
+        mov     [bound_import_descriptor], ebx
+; Repeat remaining steps for all descriptors in the directory.
+.descriptor_loop:
+; 2. Check whether this descriptor is an end mark with zero fields.
 ; Look at Name field.
         mov     edi, [ebp+IMAGE_IMPORT_DESCRIPTOR.Name]
         test    edi, edi
         jz      .done
-; 2b. Load the target module.
+; 3. Load the target module.
         add     edi, [esi+MODULE.base] ; Name field is RVA
         call    load_imported_module ; should preserve esi,ebp
         test    eax, eax
         jz      .failed
         mov     [import_module], eax
-; 2c. Check whether the descriptor has a non-stale old-style binding.
+; 4. Check whether the descriptor has a non-stale old-style binding.
 ; Zero timestamp means "not bound".
+; Timestamp 0xFFFFFFFF means "new-style binding".
 ; Mismatched timestamp means "stale binding".
-; In both cases, go to 2g.
+; In first and third cases, go to 9.
+; In second case, go to 10 for further checks.
         mov     edx, [ebp+IMAGE_IMPORT_DESCRIPTOR.TimeDateStamp]
         test    edx, edx
-        jz      .resolve_normal_import
+        jz      .resolve_generic
+        cmp     edx, -1
+        jz      .new_binding
         cmp     edx, [eax+MODULE.timestamp]
-        jnz     .resolve_normal_import
-; 2d. The descriptor has a non-stale old-style binding.
+        jnz     .resolve_generic
+; 5. The descriptor has a non-stale old-style binding.
 ; There are two cases when we still need to do something:
 ; * if the target module has been relocated, we need to add
 ;   relocation delta to all addresses;
-; * if some exports are forwarded, old-style binding cannot bind them:
-;   there is only one timestamp field, we can't verify timestamps
-;   of forward targets.
+; * if some exports are forwarded, we need to resolve them.
 ;   Thunks for forwarded exports contain index of next forwarded export
 ;   instead of target address, making a single-linked list terminated by -1.
 ;   ForwarderChain is the head of the list.
-; If both problems are present, we resort to 2g as if binding is stale,
-; it shouldn't be encountered normally anyway: relocations should be avoided,
-; and forwarded exports should be new-style bound.
-; If the target module is not relocated, go to 2f.
-; If the target module is relocated and there are no forwarded exports,
-; advance to 2e.
+; Check for the first problem first; the corresponding code can handle both.
+; If the target module is relocated, go to 8.
+; If the target module is not relocated, but has forwarded exports, go to 7.
+; Otherwise, advance to 6.
+.old_binding:
         cmp     [eax+MODULE.basedelta], 0
-        jz      .normal_import_check_forwarders
+        jnz     .old_binding_relocate
+.check_forwarder_chain:
         cmp     [ebp+IMAGE_IMPORT_DESCRIPTOR.ForwarderChain], -1
-        jnz     .resolve_normal_import
-; 2e. Binding is correct, but we need to add MODULE.basedelta
-; to all imported addresses in FirstThunk array.
-; For consistency with generic-case resolve_import_from_module,
-; check for end of thunks by looking at OriginalFirstThunk array.
-; After that, go to 2h.
-        mov     edx, [ebp+IMAGE_IMPORT_DESCRIPTOR.FirstThunk]
-        add     edx, [esi+MODULE.base]
-        mov     ebx, [ebp+IMAGE_IMPORT_DESCRIPTOR.OriginalFirstThunk]
-        add     ebx, [esi+MODULE.base]
-        mov     edi, [eax+MODULE.basedelta]
-.normal_import_add_delta:
-        cmp     dword [ebx], 0
-        jz      .normal_import_next
-        call    .ensure_writable ; should preserve esi,edi,ebp,ebx,edx
-        add     dword [edx], edi
-        add     edx, 4
-        add     ebx, 4
-        jmp     .normal_import_add_delta
-.normal_import_check_forwarders:
-; 2f. The target module is not relocated.
-; Exports that are not forwarded are correct.
-; Go through ForwarderChain list and resolve all exports from it.
-; After that, go to 2h.
-        mov     edi, [ebp+IMAGE_IMPORT_DESCRIPTOR.ForwarderChain]
-        cmp     edi, -1
-        jz      .normal_import_next ; don't prepare_import_from_module for empty list
+        jnz     .resolve_forward_chain
+.next_descriptor:
+; 6. Advance to next descriptor and continue the loop.
+        add     ebp, sizeof.IMAGE_IMPORT_DESCRIPTOR
+        jmp     .descriptor_loop
+.resolve_forward_chain:
+; 7. Resolve all thunks from ForwarderChain list.
         mov     eax, [import_module]
         mov     eax, [eax+MODULE.base]
         call    prepare_import_from_module
-.normal_import_forward_chain:
+        mov     edi, [ebp+IMAGE_IMPORT_DESCRIPTOR.ForwarderChain]
+.resolve_forward_chain_loop:
         mov     ebx, [ebp+IMAGE_IMPORT_DESCRIPTOR.OriginalFirstThunk]
         add     ebx, [esi+MODULE.base]
         mov     ecx, [ebx+edi*4]
@@ -474,207 +461,256 @@ local .ordinal, .common
         mov     edi, [edx] ; next forwarded export
         mov     [edx], ebx ; store the address
         cmp     edi, -1
-        jnz     .normal_import_forward_chain
-        jmp     .normal_import_next
-.resolve_normal_import:
-; 2g. Run generic-case resolver.
+        jnz     .resolve_forward_chain_loop
+; After resolving, we are done with this import descriptor, go to 6.
+        jmp     .next_descriptor
+.done:
+        call    .restore_protection
+        xor     eax, eax
+        ret
+.old_binding_relocate:
+; 8. The descriptor has a non-stale old-style binding,
+; but the target module is relocated, so we need to add MODULE.basedelta to
+; all addresses. Also, there can be forwarded exports.
+; For consistency with generic-case resolve_import_from_module,
+; check for end of thunks by looking at OriginalFirstThunk array.
+; Note: we assume here that ForwarderChain list is ordered.
+; After that, go to 6.
+        mov     edi, [eax+MODULE.basedelta]
+        cmp     [ebp+IMAGE_IMPORT_DESCRIPTOR.ForwarderChain], -1
+        jz      @f
+        mov     eax, [import_module]
+        mov     eax, [eax+MODULE.base]
+        call    prepare_import_from_module
+@@:
+        mov     edx, [ebp+IMAGE_IMPORT_DESCRIPTOR.FirstThunk]
+        add     edx, [esi+MODULE.base]
+        mov     ebx, [ebp+IMAGE_IMPORT_DESCRIPTOR.OriginalFirstThunk]
+        add     ebx, [esi+MODULE.base]
+        mov     eax, [ebp+IMAGE_IMPORT_DESCRIPTOR.ForwarderChain]
+        lea     eax, [edx+eax*4]
+        mov     [next_forwarder], eax
+.old_binding_relocate_loop:
+        cmp     dword [ebx], 0
+        jz      .next_descriptor
+        call    .ensure_writable ; should preserve esi,edi,ebp,ebx,edx
+        cmp     edx, [next_forwarder]
+        jz      .old_binding_relocate_forwarder
+        add     dword [edx], edi
+.old_binding_relocate_next:
+        add     edx, 4
+        add     ebx, 4
+        jmp     .old_binding_relocate_loop
+.old_binding_relocate_forwarder:
+        mov     ecx, [ebx]
+        get_address_for_thunk
+        test    eax, eax
+        jz      .failed
+        mov     edx, [next_forwarder]
+        mov     ecx, [edx]
+        mov     [edx], eax
+        mov     eax, [ebp+IMAGE_IMPORT_DESCRIPTOR.FirstThunk]
+        add     eax, [esi+MODULE.base]
+        lea     eax, [eax+ecx*4]
+        mov     [next_forwarder], eax
+        jmp     .old_binding_relocate_next
+.resolve_generic:
+; 9. Run generic-case resolver.
         mov     [import_descriptor], ebp
         resolve_import_from_module .failed ; should preserve esi
         mov     ebp, [import_descriptor]
-.normal_import_next:
-; 2h. Advance to next descriptor and continue the loop.
-        add     ebp, sizeof.IMAGE_IMPORT_DESCRIPTOR
-        jmp     .normal_import_loop
-.bound_import:
-; 3. New-style bound import.
-; Repeat 3a-3o for all descriptors in bound import directory.
-        mov     [bound_import_dir], ebx
-        add     ebx, [esi+MODULE.base]
-.bound_import_loop:
-; 3a. Check whether this descriptor is an end mark with zero fields.
+; After that, go to 6.
+        jmp     .next_descriptor
+.new_binding:
+; New-style bound import.
+; 10. Locate the new-style descriptor corresponding to the current
+; import descriptor.
+; 10a. Check the current new-style descriptor: the one that follows
+; previous one, if there was the previous one, or the first one.
+; In most cases, new-style descriptors are in the same order as
+; import descriptors, so full loop in 10b can be avoided.
+        mov     edx, [ebp+IMAGE_IMPORT_DESCRIPTOR.Name]
+        add     edx, [esi+MODULE.base]
+        mov     ebx, [bound_import_descriptor]
         movzx   edi, [ebx+IMAGE_BOUND_IMPORT_DESCRIPTOR.OffsetModuleName]
-        mov     [bound_import_cur_module], edi
         test    edi, edi
-        jz      .done
+        jz      .look_new_binding_hard
+        add     edi, [bound_import_dir]
+        xor     ecx, ecx
+@@:
+        mov     al, [edx+ecx]
+        cmp     al, [edi+ecx]
+        jnz     .look_new_binding_hard
+        test    al, al
+        jz      .new_binding_found
+        inc     ecx
+        jmp     @b
+.look_new_binding_hard:
+; 10b. We are out of luck with the current new-style descriptor,
+; so loop over all of them looking for the matching one.
+        mov     ebx, [bound_import_dir]
+.look_new_binding_loop:
+        movzx   edi, [ebx+IMAGE_BOUND_IMPORT_DESCRIPTOR.OffsetModuleName]
+        add     edi, [bound_import_dir]
+        xor     ecx, ecx
+@@:
+        mov     al, [edx+ecx]
+        cmp     al, [edi+ecx]
+        jnz     .look_new_binding_next
+        test    al, al
+        jz      .new_binding_found
+        inc     ecx
+        jmp     @b
+.look_new_binding_next:
+        movzx   ecx, [ebx+IMAGE_BOUND_IMPORT_DESCRIPTOR.NumberOfModuleForwarderRefs]
+        lea     ebx, [ebx+(ecx+1)*sizeof.IMAGE_BOUND_IMPORT_DESCRIPTOR]
+        jmp     .look_new_binding_loop
+.new_binding_found:
+; 10c. Store the next descriptor for subsequent scans.
+        movzx   ecx, [ebx+IMAGE_BOUND_IMPORT_DESCRIPTOR.NumberOfModuleForwarderRefs]
+        lea     eax, [ebx+(ecx+1)*sizeof.IMAGE_BOUND_IMPORT_DESCRIPTOR]
+        mov     [bound_import_descriptor], eax
 ; Bound import descriptors come in groups.
 ; The first descriptor in each group corresponds to the main imported module.
 ; If some exports from the module are forwarded, additional descriptors
 ; are created for modules where those exports are forwarded to.
 ; Number of additional descriptors is given by one field in the first descriptor.
-; 3b. Prepare for loop at 3c-3f with loading targets of all exports.
-; This includes the target module and all modules in chains of forwarded exports.
-        movzx   ebp, [ebx+IMAGE_BOUND_IMPORT_DESCRIPTOR.NumberOfModuleForwarderRefs]
-        mov     [relocated_bound_modules_count], 0
-        mov     [relocated_bound_modules_ptr], 0
-        mov     [import_module], 0
-.bound_import_forwarder_loop:
-; 3c. Load a referenced module.
-; Names in bound import descriptors are relative to bound import directory,
-; not RVAs.
+; 11. We have already loaded the main module, validate its timestamp.
+; If timestamp does not match, go to 9 to run generic-case resolver.
+        mov     eax, [import_module]
+        mov     edx, [eax+MODULE.timestamp]
+        cmp     edx, [ebx+IMAGE_BOUND_IMPORT_DESCRIPTOR.TimeDateStamp]
+        jnz     .resolve_generic
+; 12. If there are no additional libraries,
+; the situation is exactly same as old-style binding, so go to 5.
+        test    ecx, ecx
+        jz      .old_binding
+; 13. Load additional libraries and validate their timestamps.
+; If at least one timestamp is invalid, resort to generic-case resolving.
+; 13a. Allocate memory for all bound modules, including the main module.
+        lea     ecx, [(ecx+1)*4]
+        stdcall malloc, ecx
+        test    eax, eax
+        jz      .failed
+        mov     [bound_modules_ptr], eax
+; 13b. Store the main module.
+        mov     edx, [import_module]
+        mov     [eax], edx
+        xor     ecx, ecx
+; 13c. Loop over all additional descriptors.
+.newstyle_load_loop:
+        inc     ecx
+        mov     [bound_modules_count], ecx
+        movzx   edi, [ebx+ecx*sizeof.IMAGE_BOUND_IMPORT_DESCRIPTOR+IMAGE_BOUND_IMPORT_DESCRIPTOR.OffsetModuleName]
         add     edi, [bound_import_dir]
         call    load_imported_module ; should preserve ebx,esi,ebp
         test    eax, eax
-        jz      .bound_import_failed
-; The target module is first in the list.
-        cmp     [import_module], 0
-        jnz     @f
-        mov     [import_module], eax
-@@:
-; 3d. Check whether timestamp in the descriptor matches module timestamp.
-; If not, go to 3h which after some preparations will resort to generic-case
-; resolve_import_from_module; in this case, we stop processing the group,
-; resolve_import_from_module will take care about additional modules anyway.
-        mov     edx, [ebx+IMAGE_BOUND_IMPORT_DESCRIPTOR.TimeDateStamp]
-        test    edx, edx
-        jz      .bound_import_wrong_timestamp
-        cmp     edx, [eax+MODULE.timestamp]
-        jnz     .bound_import_wrong_timestamp
-; 3e. Collect all referenced modules that have been relocated.
+        jz      .newstyle_failed
+        mov     ecx, [bound_modules_count]
+        mov     edx, [ebx+ecx*sizeof.IMAGE_BOUND_IMPORT_DESCRIPTOR+IMAGE_BOUND_IMPORT_DESCRIPTOR.TimeDateStamp]
+        cmp     [eax+MODULE.timestamp], edx
+        jnz     .newstyle_stale
+        mov     edx, [bound_modules_ptr]
+        mov     [edx+ecx*4], eax
+        cmp     cx, [ebx+IMAGE_BOUND_IMPORT_DESCRIPTOR.NumberOfModuleForwarderRefs]
+        jb      .newstyle_load_loop
+        inc     ecx
+        mov     [bound_modules_count], ecx
+; New-style binding has correct timestamp.
+; There still can be same two problems as in step 5 with old-style binding.
+; 14. Check whether at least one module is relocated. If so, go to 16.
+.newstyle_check_reloc:
+        mov     eax, [edx]
         cmp     [eax+MODULE.basedelta], 0
-        jz      .bound_import_forwarder_next
-        mov     edi, eax
-; We don't want to reallocate too often, since reallocation
-; may involve copying our data to a new place.
-; We always reserve space that is a power of two; in this way,
-; the wasted space is never greater than the used space,
-; and total time of copying the data is O(number of modules).
-        mov     eax, [relocated_bound_modules_ptr]
-        mov     edx, [relocated_bound_modules_count]
-; X is a power of two or zero if and only if (X and (X - 1)) is zero
-        lea     ecx, [edx-1]
-        test    ecx, edx
-        jnz     .bound_import_norealloc
-; if the current size is zero, allocate 1 item,
-; otherwise double number of items.
-; Item size is 4 bytes.
-        lea     edx, [edx*8]
-        test    edx, edx
-        jnz     @f
-        mov     edx, 4
-@@:
-        stdcall realloc, [relocated_bound_modules_ptr], edx
-        test    eax, eax
-        jz      .bound_import_failed
-        mov     [relocated_bound_modules_ptr], eax
-.bound_import_norealloc:
-        mov     edx, [relocated_bound_modules_count]
-        inc     [relocated_bound_modules_count]
-        mov     [eax+edx*4], edi
-.bound_import_forwarder_next:
-; 3f. Advance to the next descriptor in the group.
-        add     ebx, sizeof.IMAGE_BOUND_IMPORT_DESCRIPTOR
-        movzx   edi, [ebx+IMAGE_BOUND_IMPORT_DESCRIPTOR.OffsetModuleName]
-        dec     ebp
-        jns     .bound_import_forwarder_loop
-; 3g. All timestamps are correct.
-; If all targets are not relocated, then we have nothing to do
-; with exports from the current module, so continue loop at 3a;
-; ebx already points to the next descriptor.
-; Otherwise, go to 3i.
-        cmp     [relocated_bound_modules_count], 0
-        jz      .bound_import_loop
-        jmp     .bound_import_fix
-.bound_import_wrong_timestamp:
-; 3h. We have aborted the loop over the group;
-; advance ebx so that it points to the first descriptor of the next group,
-; make a mark so that 3l will know that we need to reimport everything.
-; We don't need [relocated_bound_modules_count] in this case anymore,
-; use zero value as a mark.
-        lea     ebx, [ebx+(ebp+1)*sizeof.IMAGE_BOUND_IMPORT_DESCRIPTOR]
-        mov     [relocated_bound_modules_count], 0
-.bound_import_fix:
-; 3i. We need to do something with exported addresses.
-; Find corresponding import descriptors; there can be more than one.
-; Repeat 3j-3n for all import descriptors.
-        mov     ebp, [import_dir]
-        add     ebp, [esi+MODULE.base]
-.look_related_descriptors:
-; 3j. Check whether we have reached end of import table.
-; If so, go to 3o.
-        mov     edx, [ebp+IMAGE_IMPORT_DESCRIPTOR.Name]
-        test    edx, edx
-        jz      .bound_import_next
-; 3k. Check whether the current import descriptor matches the current
-; bound import descriptor. Check Name fields.
-; If so, advance to 3l.
-; Otherwise, advance to the next import descriptor and return to 3j.
-        add     edx, [esi+MODULE.base]
-        mov     edi, [bound_import_cur_module]
-@@:
-        mov     al, [edx]
-        cmp     [edi], al
-        jnz     .next_related_descriptor
-        test    al, al
-        jz      .found_related_descriptor
-        inc     edx
-        inc     edi
-        jmp     @b
-.next_related_descriptor_restore:
-        mov     ebp, [import_descriptor]
-.next_related_descriptor:
-        add     ebp, sizeof.IMAGE_IMPORT_DESCRIPTOR
-        jmp     .look_related_descriptors
-.found_related_descriptor:
-; 3l. Check what we should do:
-; advance to 3m, if we need to reimport everything,
-; go to 3n, if we just need to relocate something.
-        mov     [import_descriptor], ebp
-        cmp     [relocated_bound_modules_count], 0
-        jnz     .bound_import_add_delta
-; 3m. Apply resolve_import_from_module and return to 3j.
-        resolve_import_from_module .bound_import_failed ; should preserve ebx,esi
-        jmp     .next_related_descriptor_restore
-.bound_import_add_delta:
-; 3n. Loop over all imported symbols.
-; For every imported symbol, check whether it fits within one of relocated
-; modules, and if so, apply relocation to it.
+        jnz     .newstyle_need_reloc
+        add     edx, 4
+        dec     ecx
+        jnz     .newstyle_check_reloc
+; 15. Bound modules are not relocated.
+; The only remaining problem could be unbound forwarders.
+; Free memory allocated at 13a and let steps 6 and 7 do their work.
+        stdcall free, [bound_modules_ptr]
+        jmp     .check_forwarder_chain
+.newstyle_stale:
+        stdcall free, [bound_modules_ptr]
+        jmp     .resolve_generic
+; 16. The descriptor has a non-stale new-style binding,
+; but at least one of target modules is relocated, so we need to add
+; MODULE.basedelta to addresses from relocated modules.
+; Also, there can be forwarded exports.
 ; For consistency with generic-case resolve_import_from_module,
-; determine end of thunks from OriginalFirstThunk array.
+; check for end of thunks by looking at OriginalFirstThunk array.
+; Note: we assume here that ForwarderChain list is ordered.
+; After that, go to 6.
+.newstyle_need_reloc:
+        mov     eax, [import_module]
+        mov     eax, [eax+MODULE.base]
+        call    prepare_import_from_module
         mov     edx, [ebp+IMAGE_IMPORT_DESCRIPTOR.FirstThunk]
         add     edx, [esi+MODULE.base]
         mov     ebx, [ebp+IMAGE_IMPORT_DESCRIPTOR.OriginalFirstThunk]
         add     ebx, [esi+MODULE.base]
-.bound_import_add_delta_loop:
+        mov     eax, [ebp+IMAGE_IMPORT_DESCRIPTOR.ForwarderChain]
+        lea     eax, [edx+eax*4]
+        mov     [next_forwarder], eax
+.new_binding_relocate_loop:
         cmp     dword [ebx], 0
-        jz      .next_related_descriptor_restore
-        mov     ecx, [relocated_bound_modules_ptr]
-        mov     ebp, [relocated_bound_modules_count]
-        push    esi
-.find_delta_module:
-        mov     esi, [ecx]
-        mov     eax, [edx]
-        sub     eax, [esi+MODULE.base]
-        add     eax, [esi+MODULE.basedelta]
-        cmp     eax, [esi+MODULE.size]
-        jb      .found_delta_module
-        add     ecx, 4
-        dec     ebp
-        jnz     .find_delta_module
-        pop     esi
-.bound_import_add_delta_next:
-        add     ebx, 4
+        jz      .new_binding_relocate_done
+        cmp     edx, [next_forwarder]
+        jz      .new_binding_resolve_thunk
+        mov     [bound_module], 0
+        mov     eax, [bound_modules_count]
+        mov     [bound_modules_left], eax
+        mov     edi, [bound_modules_ptr]
+; There should be at least one module containing address [edx].
+; There can be more than one if preferred address ranges for two modules intersect;
+; in this case, we are forced to resolve address from scratch.
+.new_binding_lookup_module:
+        mov     ecx, [edx]
+        mov     eax, [edi]
+        sub     ecx, [eax+MODULE.base]
+        add     ecx, [eax+MODULE.basedelta]
+        cmp     ecx, [eax+MODULE.size]
+        jae     @f
+        cmp     [bound_module], 0
+        jnz     .new_binding_resolve_thunk
+        mov     [bound_module], eax
+@@:
+        add     edi, 4
+        dec     [bound_modules_left]
+        jnz     .new_binding_lookup_module
+        mov     edi, [bound_module]
+        mov     edi, [edi+MODULE.basedelta]
+        test    edi, edi
+        jz      .new_binding_relocate_next
+        call    .ensure_writable ; should preserve esi,edi,ebp,ebx,edx
+        add     dword [edx], edi
+.new_binding_relocate_next:
         add     edx, 4
-        jmp     .bound_import_add_delta_loop
-.found_delta_module:
-        mov     ebp, [esi+MODULE.basedelta]
-        pop     esi
-        call    .ensure_writable ; should preserve esi,ebp,ebx,edx
-        add     [edx], ebp
-        jmp     .bound_import_add_delta_next
-.bound_import_next:
-; 3o. Free the data we might have allocated and return to 3a.
-        cmp     [relocated_bound_modules_ptr], 0
-        jz      .bound_import_loop
-        stdcall free, [relocated_bound_modules_ptr]
-        jmp     .bound_import_loop
-.done:
-        call    .restore_protection
-        xor     eax, eax
-        ret
-.bound_import_failed:
-        cmp     [relocated_bound_modules_ptr], 0
-        jz      .failed
-        stdcall free, [relocated_bound_modules_ptr]
+        add     ebx, 4
+        jmp     .new_binding_relocate_loop
+.new_binding_resolve_thunk:
+        mov     [bound_modules_left], edx
+        call    .ensure_writable
+        mov     ecx, [ebx]
+        get_address_for_thunk
+        test    eax, eax
+        jz      .newstyle_failed
+        mov     edx, [bound_modules_left]
+        mov     ecx, [edx]
+        mov     [edx], eax
+        cmp     edx, [next_forwarder]
+        jnz     .new_binding_relocate_next
+        mov     eax, [ebp+IMAGE_IMPORT_DESCRIPTOR.FirstThunk]
+        add     eax, [esi+MODULE.base]
+        lea     eax, [eax+ecx*4]
+        mov     [next_forwarder], eax
+        jmp     .new_binding_relocate_next
+.new_binding_relocate_done:
+        stdcall free, [bound_modules_ptr]
+        jmp     .next_descriptor
+.newstyle_failed:
+        stdcall free, [bound_modules_ptr]
 .failed:
         call    .restore_protection
         xor     eax, eax
@@ -797,6 +833,8 @@ proc prepare_import_from_module c, export_base, export_ptr, export_size
         cmp     [eax+STRIPPED_PE_HEADER.NumberOfRvaAndSizes], SPE_DIRECTORY_EXPORT
         jbe     .noexport
         mov     edx, [eax+sizeof.STRIPPED_PE_HEADER+SPE_DIRECTORY_EXPORT*sizeof.IMAGE_DATA_DIRECTORY+IMAGE_DATA_DIRECTORY.VirtualAddress]
+        test    edx, edx
+        jz      .noexport
         add     edx, eax
         mov     [export_ptr], edx
         mov     edx, [eax+sizeof.STRIPPED_PE_HEADER+SPE_DIRECTORY_EXPORT*sizeof.IMAGE_DATA_DIRECTORY+IMAGE_DATA_DIRECTORY.isize]
@@ -808,6 +846,8 @@ proc prepare_import_from_module c, export_base, export_ptr, export_size
         cmp     [ecx+IMAGE_NT_HEADERS.OptionalHeader.NumberOfDirectories], IMAGE_DIRECTORY_ENTRY_EXPORT
         jbe     .noexport
         mov     edx, [ecx+IMAGE_NT_HEADERS.OptionalHeader.DataDirectory.VirtualAddress+IMAGE_DIRECTORY_ENTRY_EXPORT*sizeof.IMAGE_DATA_DIRECTORY]
+        test    edx, edx
+        jz      .noexport
         add     edx, eax
         mov     [export_ptr], edx
         mov     edx, [ecx+IMAGE_NT_HEADERS.OptionalHeader.DataDirectory.isize+IMAGE_DIRECTORY_ENTRY_EXPORT*sizeof.IMAGE_DATA_DIRECTORY]
@@ -885,7 +925,7 @@ endl
         push    ecx esi
         repz cmpsb
         pop     esi ecx
-        jz      .found
+        jz      .hint_ok
 .ignore_hint:
 ; 4. Binary search over name table.
 ; Export names are sorted with respect to repz cmpsb.
@@ -921,23 +961,13 @@ endl
 ; Generic error handler.
 .export_name_not_found:
         mov     ebx, esi
-        mov     esi, [module]
-        test    esi, esi
-        jnz     @f
-        mutex_lock modules_mutex
-        mov     ecx, [export_base]
-        call    find_module_by_addr
-        mutex_unlock modules_mutex
-@@:
-        mov     eax, msg_unknown
-        test    esi, esi
-        jz      @f
-        mov     eax, [esi+MODULE.filename]
-@@:
+        call    .get_module_name
         ccall   loader_say_error, msg_export_name_not_found, ebx, msg_export_not_found, eax, 0
 .return0:
         xor     eax, eax
         ret
+.hint_ok:
+        mov     eax, edx
 .found:
 ; 5. We have found an index in AddressOfNames/AddressOfNameOrdinals arrays,
 ; convert it to index in AddressOfFunctions array.
@@ -958,9 +988,9 @@ endl
 ; 7. Check whether the address is inside the export directory.
 ; If not, we are done.
         add     eax, [export_base]
-        mov     esi, eax
-        sub     esi, edx
-        cmp     esi, [export_size]
+        mov     ebx, eax
+        sub     ebx, edx
+        cmp     ebx, [export_size]
         jb      .export_is_forwarded
         ret
 .export_is_forwarded:
@@ -976,7 +1006,10 @@ endl
         jz      .dot_found
         cmp     byte [eax-1], 0
         jnz     @b
-        jmp     .export_name_not_found
+        call    .get_module_name
+        ccall   loader_say_error, msg_invalid_forwarder, eax, 0
+        xor     eax, eax
+        ret
 .dot_found:
 ; 8b. Allocate the memory.
         sub     eax, ebx
@@ -1057,6 +1090,23 @@ endl
         stdcall free, edi
         xor     eax, eax
         ret
+
+        fpo_delta = fpo_delta + 4
+.get_module_name:
+        mov     esi, [module]
+        test    esi, esi
+        jnz     @f
+        mutex_lock modules_mutex
+        mov     ecx, [export_base]
+        call    find_module_by_addr
+        mutex_unlock modules_mutex
+@@:
+        mov     eax, msg_unknown
+        test    esi, esi
+        jz      @f
+        mov     eax, [esi+MODULE.filename]
+@@:
+        retn
 endp
 
 ; Resolve symbol from a module by name.

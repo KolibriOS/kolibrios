@@ -333,6 +333,7 @@ msg_export_name_not_found       db      'Exported function ',0
 msg_export_ordinal_not_found    db      'Exported ordinal #',0
 msg_export_not_found    db      ' not found in module ',0
 msg_unknown             db      '<unknown>',0
+msg_invalid_forwarder   db      'Invalid forwarded export in module ',0
 
 section '.data' data readable writable
 if FOOTERS
