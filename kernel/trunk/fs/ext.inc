@@ -809,8 +809,8 @@ getInodeLocation:
         mov     ebx, [ebx+BGDESCR.inodeTable]
         mov     ecx, [ebp+EXTFS.sectorsPerBlockLog]
         shl     ebx, cl
-        mov     eax, edx
-        mul     [ebp+EXTFS.superblock.inodeSize]
+        movzx   eax, [ebp+EXTFS.superblock.inodeSize]
+        mul     edx
         mov     edx, eax
         shr     eax, 9
         and     edx, 511
