@@ -61,8 +61,13 @@ endp
 ; Terminates the current thread.
 ; exit_code is reserved; currently ignored
 proc exit_thread stdcall, exit_code
+; Use int 0x40 instead of call FS_SYSCALL_PTR, because we are freeing the stack.
+        mov     eax, 68
+        mov     ebx, 13
+        mov     ecx, FS_STACK_MIN
+        int     0x40
         or      eax, -1
-        call    FS_SYSCALL_PTR
+        int     0x40
 endp
 
 ; Real entry point of threads created by create_thread.
