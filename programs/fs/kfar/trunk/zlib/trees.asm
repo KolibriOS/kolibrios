@@ -732,6 +732,7 @@ align 4
 			dec dword[bits]
 			sub eax,2
 			jmp @b
+align 4
 		@@:
 		dec word[eax]     ;move one leaf down the tree
 		add word[eax+2],2 ;move one overflow item as its brother
@@ -765,10 +766,7 @@ align 4
 			movzx eax,word[edi+deflate_state.heap+2*eax]
 			mov [m],eax ;m = s.heap[--h]
 			cmp eax,[max_code]
-			jle @f ;if (..>..) continue
-				dec ecx
-				jmp .cycle4			
-			@@:
+			jg .cycle4 ;if (..>..) continue
 			mov esi,[m]
 			imul esi,sizeof.ct_data
 			add esi,[tree] ;esi = &tree[m]
@@ -786,9 +784,11 @@ align 4
 			@@:
 			dec ecx
 			jmp .cycle4
+align 4
 		.cycle4end:
 		dec dword[bits]
 		jmp .cycle3
+align 4
 .end_f:
 popad
 	ret
@@ -913,30 +913,26 @@ endl
 	mov dword[edi+deflate_state.heap_len],0
 	mov dword[edi+deflate_state.heap_max],HEAP_SIZE
 
-	cmp ecx,0
-	jle .cycle0end
-	xor edx,edx
+	mov edx,[tree]
+	xor ecx,ecx
 	.cycle0: ;for (..;..<..;..)
-		mov eax,edx
-		imul eax,sizeof.ct_data
-		add eax,[tree]
-		cmp word[eax+Freq],0
+	cmp ecx,[elems]
+	jge .cycle0end
+		cmp word[edx+Freq],0
 		je @f ;if (..!=0)
 			inc dword[edi+deflate_state.heap_len]
 			mov eax,[edi+deflate_state.heap_len]
-			mov [max_code],edx
-			mov [edi+deflate_state.heap+2*eax],dx
-			mov eax,edx
-			add eax,edi
-			add eax,deflate_state.depth
-			mov byte[eax],0
+			mov [max_code],ecx
+			mov [edi+deflate_state.heap+2*eax],cx
+			mov byte[edi+deflate_state.depth+ecx],0
 			jmp .end0
 align 4
 		@@: ;else
-			mov word[eax+Len],0
+			mov word[edx+Len],0
 		.end0:
-		inc edx
-		loop .cycle0
+		add edx,sizeof.ct_data
+		inc ecx
+		jmp .cycle0
 align 4
 	.cycle0end:
 
@@ -1025,12 +1021,10 @@ align 4
 
 		mov eax,ecx
 		add eax,edi
-		add eax,deflate_state.depth
-		mov al,byte[eax]
+		mov al,byte[eax+deflate_state.depth]
 		mov edx,[m]
 		add edx,edi
-		add edx,deflate_state.depth
-		mov ah,byte[edx]
+		mov ah,byte[edx+deflate_state.depth]
 		cmp al,ah
 		jl @f ;if (al>=ah) al=al : al=ah
 			mov al,ah
@@ -1038,8 +1032,7 @@ align 4
 		inc al
 		mov edx,[node]
 		add edx,edi
-		add edx,deflate_state.depth
-		mov byte[edx],al
+		mov byte[edx+deflate_state.depth],al
 
 		mov eax,[node]
 		mov edx,[m]
@@ -1143,8 +1136,7 @@ endl
 			mov eax,[curlen]
 			imul eax,sizeof.ct_data
 			add eax,edi
-			add eax,deflate_state.bl_tree+Freq
-			add word[eax],bx
+			add word[eax+deflate_state.bl_tree+Freq],bx
 			jmp .end4
 		.end1:
 		cmp dword[curlen],0
@@ -1154,14 +1146,12 @@ endl
 			je @f ;if (..!=..)
 				imul eax,sizeof.ct_data
 				add eax,edi
-				add eax,deflate_state.bl_tree+Freq
-				inc word[eax]
+				inc word[eax+deflate_state.bl_tree+Freq]
 			@@:
 			mov eax,REP_3_6
 			imul eax,sizeof.ct_data
 			add eax,edi
-			add eax,deflate_state.bl_tree+Freq
-			inc word[eax]
+			inc word[eax+deflate_state.bl_tree+Freq]
 			jmp .end4
 		.end2:
 		cmp ebx,10
@@ -1169,15 +1159,13 @@ endl
 			mov eax,REPZ_3_10
 			imul eax,sizeof.ct_data
 			add eax,edi
-			add eax,deflate_state.bl_tree+Freq
-			inc word[eax]
+			inc word[eax+deflate_state.bl_tree+Freq]
 			jmp .end4
 		.end3: ;else
 			mov eax,REPZ_11_138
 			imul eax,sizeof.ct_data
 			add eax,edi
-			add eax,deflate_state.bl_tree+Freq
-			inc word[eax]
+			inc word[eax+deflate_state.bl_tree+Freq]
 		.end4:
 		mov dword[curlen],0
 		mov eax,[curlen]
@@ -1230,13 +1218,13 @@ endl
 	mov eax,[tree]
 	movzx eax,word[eax+Len]
 	mov [nextlen],eax
-	cmp eax,0
-	jne @f ;if (..==0)
+	xor ecx,ecx
+	test eax,eax
+	jnz .cycle0 ;if (..==0)
 		mov dword[max_count],138
 		mov dword[min_count],3
-	@@:
 
-	xor ecx,ecx
+align 4
 	.cycle0: ;for (..;..<=..;..)
 	cmp ecx,[max_code]
 	jg .cycle0end
@@ -1257,6 +1245,7 @@ endl
 		jne .end0 ;if (..<.. && ..==..)
 			inc ecx
 			jmp .cycle0 ;continue
+align 4
 		.end0:
 		cmp ebx,[min_count]
 		jge .end1 ;else if (..<..)
@@ -1265,8 +1254,7 @@ endl
 				add ebx,deflate_state.bl_tree
 				send_code edi, [curlen], ebx
 				dec dword[count]
-				cmp dword[count],0
-				jne @b ;while (..!=0)
+				jnz @b ;while (..!=0)
 			jmp .end4
 align 4
 		.end1:
@@ -1378,10 +1366,10 @@ endl
 		movzx eax,byte[eax]
 		imul eax,sizeof.ct_data
 		add eax,edi
-		add eax,deflate_state.bl_tree+Len
-		cmp word[eax],0
+		cmp word[eax+deflate_state.bl_tree+Len],0
 		jne .cycle0end ;if (..!=0) break
 		jmp .cycle0
+align 4
 	.cycle0end:
 	; Update opt_len to include the bit length tree and counts
 	mov eax,[max_blindex]
@@ -1445,10 +1433,9 @@ proc send_all_trees uses eax ebx ecx edi, s:dword, lcodes:dword, dcodes:dword, b
 		add eax,bl_order
 		movzx eax,byte[eax]
 		imul eax,sizeof.ct_data
-		mov ebx,edi
-		add ebx,deflate_state.bl_tree+Len
-		add ebx,eax
-		stdcall send_bits, edi, ebx, 3
+		add eax,edi
+		movzx eax,word[eax+deflate_state.bl_tree+Len]
+		stdcall send_bits, edi, eax, 3
 		inc ecx
 		jmp .cycle0
 align 4
@@ -1989,7 +1976,7 @@ proc bi_reverse uses ebx, p1code:dword, len:dword
 		dec dword[len]
 		cmp dword[len],0
 		jg @b ;while (..>..)
-	shl eax,1
+	shr eax,1
 	ret
 endp
 
