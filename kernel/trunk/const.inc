@@ -747,6 +747,7 @@ struct  IDE_DATA
         BAR3_val             dw ?
         dma_hdd_channel_1    db ?
         dma_hdd_channel_2    db ?
+        pcidev               dd ?       ; pointer to corresponding PCIDEV structure
 ends
 
 struct  IDE_CACHE

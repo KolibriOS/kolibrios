@@ -31,6 +31,7 @@ align 4
         mov     eax, [esi+PCIDEV.class]
         DEBUGF  1, 'K : IDE controller programming interface %x\n', eax
         mov     [ecx+IDE_DATA.ProgrammingInterface], eax
+        mov     [ecx+IDE_DATA.pcidev], esi
 
         mov     ah, [esi+PCIDEV.bus]
         mov     al, 2
@@ -137,6 +138,31 @@ IDE_device_2 rd 2
 IDE_device_3 rd 2
 ;--------------------------------------
 endg
+
+;--------------------------------------
+; set Bus Master bit of Command PCI register
+;--------------------------------------
+set_pci_command_bus_master:
+PCI_COMMAND_BUS_MASTER = 0x0004
+        push    eax ecx
+
+        mov     ecx, [ecx+IDE_DATA.pcidev]
+        mov     ah, [ecx+PCIDEV.bus]
+        mov     al, 1   ; word
+        mov     bh, [ecx+PCIDEV.devfn]
+        mov     bl, 0x4 ; Command register
+        push    eax
+        call    pci_read_reg
+        mov     ecx, eax
+        pop     eax
+        test    ecx, PCI_COMMAND_BUS_MASTER     ; already set?
+        jnz     @f
+        or      ecx, PCI_COMMAND_BUS_MASTER
+        call    pci_write_reg
+@@:
+        pop     ecx eax
+        ret
+
 ;-----------------------------------------------------------------------------
 ; START of initialisation IDE ATA code
 ;-----------------------------------------------------------------------------
@@ -302,6 +328,7 @@ Init_IDE_ATA_controller_2:
         mov     dx, [ecx+IDE_DATA.BAR1_val] ;0x3F4
         add     dx, 2 ;0x3F6
         out     dx, al
+        call    set_pci_command_bus_master
         DEBUGF  1, "K : IDE CH1 DMA enabled\n"
         mov     [ecx+IDE_DATA.dma_hdd_channel_1], byte 1
 ;--------------------------------------
@@ -356,6 +383,7 @@ Init_IDE_ATA_controller_2:
         mov     dx, [ecx+IDE_DATA.BAR3_val] ;0x374
         add     dx, 2 ;0x376
         out     dx, al
+        call    set_pci_command_bus_master
         DEBUGF  1, "K : IDE CH2 DMA enabled\n"
         mov     [ecx+IDE_DATA.dma_hdd_channel_2], byte 1
 ;--------------------------------------
