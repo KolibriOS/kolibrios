@@ -180,7 +180,7 @@ include "detect/biosdisk.inc"
 
 ; CR0 Flags - Protected mode and Paging
 
-        mov     ecx, CR0_PE
+        mov     ecx, CR0_PE+CR0_AM
 
 ; Enabling 32 bit protected mode
 

@@ -58,7 +58,8 @@ iglobal
         dw      0    ;просто выравнивание
 
   msg_fault_sel dd  msg_exc_8,msg_exc_u,msg_exc_a,msg_exc_b
-                dd  msg_exc_c,msg_exc_d,msg_exc_e
+                dd  msg_exc_c,msg_exc_d,msg_exc_e,msg_exc_u
+                dd  msg_exc_u,msg_exc_11
 
   msg_exc_8     db "Double fault", 0
   msg_exc_u     db "Undefined Exception", 0
@@ -67,6 +68,7 @@ iglobal
   msg_exc_c     db "Stack fault", 0
   msg_exc_d     db "General protection fault", 0
   msg_exc_e     db "Page fault", 0
+  msg_exc_11    db "Alignment Check", 0
 
   if lang eq sp
     include 'core/sys32-sp.inc'
@@ -221,7 +223,7 @@ show_error_parameters:
         end if
         cmp     bl, 0x08
         jb      .l0
-        cmp     bl, 0x0e
+        cmp     bl, 0x11
         jbe     .l1
   .l0:
         mov     bl, 0x09
