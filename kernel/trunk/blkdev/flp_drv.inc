@@ -368,7 +368,8 @@ RecalibrateFDD:
 ; Подать команду "Рекалибровка"
         mov     AL, 07h
         call    FDCDataOutput
-        mov     AL, 00h
+        mov     AL, [flp_number]
+        dec     AL
         call    FDCDataOutput
 ; Ожидать завершения операции
         call    WaitFDCInterrupt
@@ -484,6 +485,8 @@ ReadSector:
         call    FDCDataOutput
         mov     AL, [FDD_Head]
         shl     AL, 2
+        or      AL, [flp_number]
+        dec     AL
         call    FDCDataOutput
         mov     AL, [FDD_Track]
         call    FDCDataOutput
@@ -586,6 +589,8 @@ WriteSector:
         call    FDCDataOutput
         mov     AL, [FDD_Head]
         shl     AL, 2
+        or      AL, [flp_number]
+        dec     AL
         call    FDCDataOutput
         mov     AL, [FDD_Track]
         call    FDCDataOutput
