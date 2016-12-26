@@ -500,12 +500,9 @@ local .end0
 	jl .end0
 	jne m_end
 	movzx eax,n
-	add eax,depth
-	mov al,byte[eax]
+	mov al,byte[eax+depth]
 	movzx ebx,m
-	add ebx,depth
-	mov bl,byte[ebx]
-	cmp al,bl
+	cmp al,byte[ebx+depth]
 	jg m_end
 	.end0:
 }
@@ -522,17 +519,13 @@ local .end0
 ;    int      k    ;node to move down
 align 4
 proc pqdownheap, s:dword, tree:dword, k:dword
-locals
-	v dw ?
-endl
 pushad
+	;ecx - v dw
 	mov edi,[s]
-	mov eax,[k]
-	zlib_debug 'pqdownheap k = %d',eax
-	mov esi,eax
+	mov esi,[k]
+	zlib_debug 'pqdownheap k = %d',esi
+	mov cx,[edi+deflate_state.heap+2*esi]
 	shl esi,1
-	mov ax,[edi+deflate_state.heap+2*eax]
-	mov [v],ax
 	;esi = j ;left son of k
 	.cycle0: ;while (..<=..)
 		cmp esi,[edi+deflate_state.heap_len]
@@ -540,34 +533,30 @@ pushad
 		; Set j to the smallest of the two sons:
 		;;cmp esi,[edi+deflate_state.heap_len]
 		jge .end1 ;if (..<.. &&
-		mov ecx,edi
-		add ecx,deflate_state.depth
 		mov edx,esi
 		shl edx,1
 		add edx,edi
 		add edx,deflate_state.heap
-		smaller [tree], word[edx+2], word[edx], ecx, .end1
+		smaller [tree], word[edx+2], word[edx], edi+deflate_state.depth, .end1
 			inc esi
 		.end1:
 		; Exit if v is smaller than both sons
-		mov ecx,edi
-		add ecx,deflate_state.depth
 		mov dx,[edi+deflate_state.heap+2*esi]
-		smaller [tree], [v], dx, ecx, .end2
+		smaller [tree], cx, dx, edi+deflate_state.depth, .end2
 			jmp .cycle0end ;break
 		.end2:
 		; Exchange v with the smallest son
-		mov dx,[edi+deflate_state.heap+2*esi]
+		;;mov dx,[edi+deflate_state.heap+2*esi]
 		mov eax,[k]
 		mov [edi+deflate_state.heap+2*eax],dx
 		mov [k],esi
 		; And continue down the tree, setting j to the left son of k
 		shl esi,1
 		jmp .cycle0
+align 4
 	.cycle0end:
 	mov eax,[k]
-	mov bx,[v]
-	mov [edi+deflate_state.heap+2*eax],bx
+	mov [edi+deflate_state.heap+2*eax],cx
 popad
 	ret
 endp
@@ -1026,7 +1015,7 @@ align 4
 		add edx,edi
 		mov ah,byte[edx+deflate_state.depth]
 		cmp al,ah
-		jl @f ;if (al>=ah) al=al : al=ah
+		jge @f ;if (al>=ah) al=al : al=ah
 			mov al,ah
 		@@:
 		inc al
@@ -1098,8 +1087,8 @@ endl
 	mov eax,[tree]
 	movzx eax,word[eax+Len]
 	mov [nextlen],eax
-	cmp eax,0
-	jne @f ;if (..==0)
+	test eax,eax
+	jnz @f ;if (..==0)
 		mov dword[max_count],138
 		mov dword[min_count],3
 	@@:
@@ -1110,14 +1099,15 @@ endl
 	mov word[eax+Len],0xffff ;guard
 
 	xor ecx,ecx
+align 4
 	.cycle0:
 		cmp ecx,[max_code]
 		jg .cycle0end ;for (..;..<=..;..)
 		mov eax,[nextlen]
 		mov [curlen],eax
-		mov eax,ecx
-		inc eax
-		imul eax,sizeof.ct_data
+		inc ecx
+		mov eax,sizeof.ct_data
+		imul eax,ecx
 		add eax,[tree]
 		movzx eax,word[eax+Len]
 		mov [nextlen],eax
@@ -1127,9 +1117,8 @@ endl
 		jge .end0
 		mov eax,[nextlen]
 		cmp [curlen],eax
-		jne .end0 ;if (..<.. && ..==..)
-			inc ecx
-			jmp .cycle0 ;continue
+		je .cycle0 ;if (..<.. && ..==..) continue
+align 4
 		.end0:
 		cmp ebx,[min_count]
 		jge .end1 ;else if (..<..)
@@ -1138,6 +1127,7 @@ endl
 			add eax,edi
 			add word[eax+deflate_state.bl_tree+Freq],bx
 			jmp .end4
+align 4
 		.end1:
 		cmp dword[curlen],0
 		je .end2 ;else if (..!=0)
@@ -1153,6 +1143,7 @@ endl
 			add eax,edi
 			inc word[eax+deflate_state.bl_tree+Freq]
 			jmp .end4
+align 4
 		.end2:
 		cmp ebx,10
 		jg .end3 ;else if (..<=..)
@@ -1161,34 +1152,34 @@ endl
 			add eax,edi
 			inc word[eax+deflate_state.bl_tree+Freq]
 			jmp .end4
+align 4
 		.end3: ;else
 			mov eax,REPZ_11_138
 			imul eax,sizeof.ct_data
 			add eax,edi
 			inc word[eax+deflate_state.bl_tree+Freq]
 		.end4:
-		mov dword[curlen],0
+		mov dword[count],0
 		mov eax,[curlen]
 		mov [prevlen],eax
-		mov [nextlen],eax
-		cmp eax,0
+		cmp dword[nextlen],0
 		jne .end5 ;if (..==0)
 			mov dword[max_count],138
 			mov dword[min_count],3
-			jmp .end7
+			jmp .cycle0
+align 4
 		.end5:
-		mov eax,[curlen]
 		cmp eax,[nextlen]
 		jne .end6 ;else if (..==..)
 			mov dword[max_count],6
 			mov dword[min_count],3
-			jmp .end7
+			jmp .cycle0
+align 4
 		.end6: ;else
 			mov dword[max_count],7
 			mov dword[min_count],4
-		.end7:
-		inc ecx
 		jmp .cycle0
+align 4
 	.cycle0end:
 	ret
 endp
@@ -1707,6 +1698,7 @@ proc _tr_tally uses ebx edi, s:dword, dist:dword, lc:dword
 		add eax,edi
 		inc word[eax+deflate_state.dyn_ltree+Freq]
 		jmp .end0
+align 4
 	@@: ;else
 		inc dword[edi+deflate_state.matches]
 		; Here, lc is the match length - MIN_MATCH
@@ -1723,16 +1715,13 @@ proc _tr_tally uses ebx edi, s:dword, dist:dword, lc:dword
 			zlib_assert '_tr_tally: bad match' ;Assert(..<.. && ..<=.. && ..<..)
 		.end2:
 		mov eax,[lc]
-		add eax,_length_code
-		movzx eax,byte[eax]
+		movzx eax,byte[eax+_length_code]
 		add eax,LITERALS+1
 		imul eax,sizeof.ct_data
-		add eax,edi
-		inc word[eax+deflate_state.dyn_ltree+Freq]
+		inc word[edi+eax+deflate_state.dyn_ltree+Freq]
 		d_code [dist]
 		imul eax,sizeof.ct_data
-		add eax,edi
-		inc word[eax+deflate_state.dyn_dtree+Freq]
+		inc word[edi+eax+deflate_state.dyn_dtree+Freq]
 	.end0:
 
 if TRUNCATE_BLOCK eq 1
@@ -2067,10 +2056,13 @@ if DEBUG eq 1
 end if
 	mov ecx,[len]
 	mov esi,[buf]
+	jmp .end0
+align 4
 	@@: ;while (len--)
 		lodsb
 		mov bl,al
 		put_byte edi, bl
+	.end0:
 		loop @b
 	ret
 endp
