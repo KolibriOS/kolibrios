@@ -400,8 +400,7 @@ end if
 	cmp dword[edi+deflate_state.head],Z_NULL
 	je .end3
 	cmp dword[edi+deflate_state.pending_buf],Z_NULL
-	je .end3
-		jmp @f
+	jne @f
 	.end3: ;if (..==0 || ..==0 || ..==0 || ..==0)
 		mov dword[edi+deflate_state.status],FINISH_STATE
 		ERR_MSG Z_MEM_ERROR
@@ -438,9 +437,8 @@ endp
 ;    const Bytef *dictionary
 ;    uInt  dictLength
 align 4
-proc deflateSetDictionary uses ebx edi, strm:dword, dictionary:dword, dictLength:dword
+proc deflateSetDictionary uses ebx ecx edx edi esi, strm:dword, dictionary:dword, dictLength:dword
 locals
-;    uInt str, n;
 	wrap  dd ? ;int
 	avail dd ? ;unsigned
 	next  dd ? ;unsigned char*
@@ -452,8 +450,7 @@ endl
 	cmp edi,Z_NULL
 	je @f
 	cmp dword[dictionary],Z_NULL
-	je @f ;if (..==0 || ..==0 || ..==0)
-		jmp .end0
+	jne .end0 ;if (..==0 || ..==0 || ..==0)
 	@@:
 		mov eax,Z_STREAM_ERROR
 		jmp .end_f
@@ -486,40 +483,71 @@ endl
 	mov eax,[edi+deflate_state.w_size]
 	cmp [dictLength],eax
 	jl .end2 ;if (..>=..)
-;        if (wrap == 0) {            /* already empty otherwise */
-;            CLEAR_HASH(s);
-;            s->strstart = 0;
-;            s->block_start = 0L;
-;            s->insert = 0;
-;        }
-;        dictionary += dictLength - s->w_size;  /* use the tail */
+		cmp dword[wrap],0
+		jne @f ;if (..==0) ;already empty otherwise
+			CLEAR_HASH edi
+			mov dword[edi+deflate_state.strstart],0
+			mov dword[edi+deflate_state.block_start],0
+			mov dword[edi+deflate_state.insert],0
+		@@:
+		mov eax,[dictLength]
+		sub eax,[edi+deflate_state.w_size]
+		add [dictionary],eax ;use the tail
 		mov eax,[edi+deflate_state.w_size]
 		mov [dictLength],eax
 	.end2:
 
 	; insert dictionary into window and hash
-;    avail = strm->avail_in;
-;    next = strm->next_in;
-;    strm->avail_in = dictLength;
-;    strm->next_in = (z_const Bytef *)dictionary;
-;    fill_window(s);
-;    while (s->lookahead >= MIN_MATCH) {
-;        str = s->strstart;
-;        n = s->lookahead - (MIN_MATCH-1);
-;        do {
-;            UPDATE_HASH(s, s->ins_h, s->window[str + MIN_MATCH-1]);
+	mov eax,[ebx+z_stream.avail_in]
+	mov [avail],eax
+	mov eax,[ebx+z_stream.next_in]
+	mov [next],eax
+	mov eax,[dictLength]
+	mov [ebx+z_stream.avail_in],eax
+	mov eax,[dictionary]
+	mov [ebx+z_stream.next_in],eax
+	stdcall fill_window, edi
+	.cycle0: ;while (..>=..)
+		mov ecx,[edi+deflate_state.lookahead]
+		cmp ecx,MIN_MATCH
+		jl .cycle0end
+		mov esi,[edi+deflate_state.strstart]
+		;esi = str
+		sub ecx,MIN_MATCH-1
+		.cycle1: ;do
+			mov eax,[edi+deflate_state.window]
+			add eax,esi
+			add eax,MIN_MATCH-1
+			movzx eax,byte[eax]
+			UPDATE_HASH edi, [edi+deflate_state.ins_h], eax
 if FASTEST eq 0
-;            s->prev[str & s->w_mask] = s->head[s->ins_h];
+			mov edx,[edi+deflate_state.ins_h]
+			shl edx,2
+			add edx,[edi+deflate_state.head]
+			mov edx,[edx] ;edx = s.head[s.ins_h]
+			mov eax,esi
+			and eax,[edi+deflate_state.w_mask]
+			shl eax,2
+			add eax,[edi+deflate_state.prev]
+			mov [eax],edx
 end if
-;            s->head[s->ins_h] = (Pos)str;
-;            str++;
-;        } while (--n);
-;        s->strstart = str;
-;        s->lookahead = MIN_MATCH-1;
-;        fill_window(s);
-;    }
-;    s->strstart += s->lookahead;
-;    s->block_start = (long)s->strstart;
+			mov edx,[edi+deflate_state.ins_h]
+			shl edx,2
+			add edx,[edi+deflate_state.head]
+			mov [edx],esi ;s.head[s.ins_h] = str
+			inc esi
+			dec ecx
+			jnz .cycle1 ;while (--..)
+		mov [edi+deflate_state.strstart],esi
+		mov [edi+deflate_state.lookahead],MIN_MATCH-1
+		stdcall fill_window, edi
+		jmp .cycle0
+align 4
+	.cycle0end:
+	mov eax,[edi+deflate_state.strstart]
+	add eax,[edi+deflate_state.lookahead]
+	mov [edi+deflate_state.strstart],eax
+	mov [edi+deflate_state.block_start],eax
 	mov eax,[edi+deflate_state.lookahead]
 	mov [edi+deflate_state.insert],eax
 	mov dword[edi+deflate_state.lookahead],0
@@ -552,8 +580,7 @@ proc deflateResetKeep uses ebx edi, strm:dword
 	cmp dword[ebx+z_stream.zalloc],0
 	je @f
 	cmp dword[ebx+z_stream.zfree],0
-	je @f ;if (..==0 || ..==0 || ..==0 || ..==0)
-		jmp .end0
+	jne .end0 ;if (..==0 || ..==0 || ..==0 || ..==0)
 	@@:
 		mov eax,Z_STREAM_ERROR
 		jmp .end_f
@@ -570,8 +597,7 @@ proc deflateResetKeep uses ebx edi, strm:dword
 
 	cmp dword[edi+deflate_state.wrap],0
 	jge @f ;if (..<0)
-		neg dword[edi+deflate_state.wrap]
-		inc dword[edi+deflate_state.wrap] ;was made negative by deflate(..., Z_FINISH)
+		neg dword[edi+deflate_state.wrap] ;was made negative by deflate(..., Z_FINISH)
 	@@:
 	mov eax,BUSY_STATE
 	cmp dword[edi+deflate_state.wrap],0
@@ -1510,17 +1536,15 @@ end if
 	; If avail_out is zero, the application will call deflate again
 	; to flush the rest.
 
-	cmp dword[edi+deflate_state.pending],0
+	cmp dword[edi+deflate_state.wrap],0
 	jle @f ;if (..>0) ;write the trailer only once!
-		neg dword[edi+deflate_state.pending]
-		inc dword[edi+deflate_state.pending]
+		neg dword[edi+deflate_state.wrap]
 	@@:
 	mov eax,Z_OK
 	cmp dword[edi+deflate_state.pending],0
-	je .end_f
+	jne .end_f
 		mov eax,Z_STREAM_END
 .end_f:
-zlib_debug '  deflate.ret = %d',eax
 	ret
 endp
 
@@ -1731,7 +1755,6 @@ end if
 	add [ebx+z_stream.total_in],eax
 
 .end_f:
-;zlib_debug '  read_buf.ret = %d',eax
 	ret
 endp
 
@@ -1968,8 +1991,7 @@ align 4
 		cmp eax,[limit]
 		jle .cycle0end
 		dec dword[chain_length]
-		cmp dword[chain_length],0
-		jne .cycle0
+		jnz .cycle0
 align 4
 	.cycle0end: ;while (..>.. && ..!=0)
 
@@ -2796,6 +2818,7 @@ end if
 			je .cycle0 ;if (..)
 				FLUSH_BLOCK edi, 0
 			jmp .cycle0
+align 4
 		.end2: ;else if (..)
 		cmp dword[edi+deflate_state.match_available],0
 		je .end3
@@ -2820,7 +2843,7 @@ end if
 			jne .cycle0 ;if (..==0) return ..
 				mov eax,need_more
 				jmp .end_f
-			jmp .cycle0 ;.end4
+align 4
 		.end3: ;else
 			; There is no previous match to compare with, wait for
 			; the next step to decide.
@@ -2828,7 +2851,6 @@ end if
 			mov dword[edi+deflate_state.match_available],1
 			inc dword[edi+deflate_state.strstart]
 			dec dword[edi+deflate_state.lookahead]
-		;.end4:
 		jmp .cycle0
 align 4
 	.cycle0end:
@@ -2931,7 +2953,7 @@ align 4
 				mov [edx+deflate_state.match_length],edi
 				mov eax,[edx+deflate_state.lookahead]
 				cmp [edx+deflate_state.match_length],eax
-				jle .end2
+				jle .end2 ;if (..>..)
 					mov [edx+deflate_state.match_length],eax
 			.end2:
 			mov eax,[edx+deflate_state.window_size]
@@ -3031,9 +3053,8 @@ align 4
 		dec dword[edi+deflate_state.lookahead]
 		inc dword[edi+deflate_state.strstart]
 		cmp dword[bflush],0
-		je @f ;if (..)
+		je .cycle0 ;if (..)
 			FLUSH_BLOCK edi, 0
-		@@:
 		jmp .cycle0
 align 4
 	.cycle0end:
