@@ -372,6 +372,17 @@ macro DEBUGF _level,_format,[_arg] {
  end if
 }
 
+macro DEBUGFG _level, _group, _format, [_arg] {
+ common
+  if _group eqtype
+   DEBUGF _level, _format,_arg
+  else
+   if _level >= _group
+    DEBUGF 999, _format,_arg
+   end if
+  end if
+}
+
 macro __include_debug_strings dummy,[_id,_fmt,_len] {
  common
   local c1,a1,a2
