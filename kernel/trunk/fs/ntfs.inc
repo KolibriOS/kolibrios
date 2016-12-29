@@ -2910,10 +2910,11 @@ resizeAttribute:
         shr     edi, 5
         shl     edi, 2
         push    eax
+        cmp     edi, [ebp+NTFS.BitmapStart]
+        jnc     @f
         cmp     [ebp+NTFS.cur_iRecord], 0
         jz      @f
-        cmp     edi, [ebp+NTFS.BitmapStart]
-        jc      .err1
+        mov     edi, [ebp+NTFS.BitmapStart]
 @@:
         call    ntfsSpaceAlloc
         jc      .err1
