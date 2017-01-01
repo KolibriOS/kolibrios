@@ -1,5 +1,6 @@
 #SHS
-
-about
-echo Введите 'help' для справки
+echo
+ver kernel
+echo
+echo   Введите 'help' для справки
 echo

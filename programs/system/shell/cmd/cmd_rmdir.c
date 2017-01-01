@@ -6,7 +6,7 @@ char		temp[256];
 kol_struct70	k70;
 unsigned	result;
 
-if (NULL == dir)
+if (NULL == dir || strlen(dir) == 0)
 	{
 	#if LANG_ENG
 		printf("  rmdir <directory>\n\r");

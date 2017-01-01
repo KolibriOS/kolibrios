@@ -4,7 +4,7 @@ int cmd_alias(char arg[])
 
 int result;
 
-if (NULL == arg)
+if (NULL == arg || '\0' == arg[0])
 	{
 	alias_list();
 	return TRUE;

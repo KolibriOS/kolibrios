@@ -6,7 +6,7 @@ kol_struct70	k70;
 char		temp[256];
 unsigned	result;
 
-if (NULL == file)
+if (NULL == file || strlen(file) == 0)
 	{
 	#if LANG_ENG
 		printf ("  rm <filename>\n\r");

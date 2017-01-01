@@ -58,13 +58,13 @@ asm volatile ("int $0x40"::"a"(11));
 }
 
 
-void __attribute__((__always_inline__)) kol_paint_start()
+inline void __attribute__((__always_inline__)) kol_paint_start()
 {
 asm volatile ("int $0x40"::"a"(12), "b"(1));
 }
 
 
-void __attribute__((__always_inline__)) kol_paint_end()
+inline void __attribute__((__always_inline__)) kol_paint_end()
 {
 asm volatile ("int $0x40"::"a"(12), "b"(2));
 }
@@ -347,7 +347,7 @@ switch (*fname)
 
 
 
-void __attribute__((__always_inline__)) kol_screen_wait_rr()
+inline void __attribute__((__always_inline__)) kol_screen_wait_rr()
 {
 asm volatile ("int $0x40"::"a"(18), "b"(14));
 }

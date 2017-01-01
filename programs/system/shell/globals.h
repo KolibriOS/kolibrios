@@ -1,5 +1,5 @@
 
-#define SHELL_VERSION "0.7.4"
+#define SHELL_VERSION "0.7.5"
 
 extern char	PATH[256];
 extern char	PARAM[256];
@@ -14,7 +14,7 @@ unsigned	ALIAS_NUM = 0;
 
 /// ===========================================================
 
-#define CMD_HISTORY_NUM 10
+#define CMD_HISTORY_NUM 11
 
 char		CMD[256];
 char		CMD_HISTORY[CMD_HISTORY_NUM][256];

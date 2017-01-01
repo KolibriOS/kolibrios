@@ -14,7 +14,7 @@ if (!strcmp(param, "kernel"))
 	vB = kvbuf+1;
 	vC = kvbuf+2;
 	vD = kvbuf+3;
-	Rev = kvbuf+5;
+	Rev = (unsigned*)(kvbuf + 5);
 
 	#if LANG_ENG
 		printf ("  KolibriOS v%d.%d.%d.%d. Kernel SVN-rev.: %d\n\r", *vA, *vB, *vC, *vD, *Rev);
