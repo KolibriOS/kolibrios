@@ -1,4 +1,9 @@
 ;-----------------------------------------------------------------------------
+; load one or more DLL file in COFF format and try to import functions by our list
+; if first function in import list begins with 'lib_', call it as DLL initialization
+; return eax = 1 as fail, if anyone of .obj file not found in /sys/lib
+; return 0 if all fine, but 0 not garantees in succesfull import - see dll.Link comment
+; dirties all registers! eax, ebx, ecx, edx, esi, edi
 proc dll.Load, import_table:dword
 	mov	esi, [import_table]
   .next_lib:
@@ -37,6 +42,9 @@ proc dll.Load, import_table:dword
 	ret
 endp
 ;-----------------------------------------------------------------------------
+; scans dll export table for a functions we want to import
+; break scan on first unresolved import
+; no return value
 proc dll.Link, exp:dword, imp:dword
 	push	eax
 	mov	esi, [imp]
@@ -58,6 +66,8 @@ proc dll.Link, exp:dword, imp:dword
 	ret
 endp
 ;-----------------------------------------------------------------------------
+; calls lib_init with predefined parameters  
+; no return value
 proc dll.Init, dllentry:dword
 	pushad
 	mov	eax, mem.Alloc
@@ -69,6 +79,8 @@ proc dll.Init, dllentry:dword
 	ret
 endp
 ;-----------------------------------------------------------------------------
+; scans export table for a sz_name function
+; returns in eax function address or 0 if not found
 proc dll.GetProcAddress, exp:dword, sz_name:dword
 	mov	edx, [exp]
 	xor	eax, eax
@@ -85,9 +97,15 @@ proc dll.GetProcAddress, exp:dword, sz_name:dword
   .ok:
 	mov	eax, [edx + 4]
   .end:
+	cmp eax, -1
+	jnz @f
+	xor eax, eax
+  @@:
 	ret
 endp
 ;-----------------------------------------------------------------------------
+; compares strings 
+; returns eax = 0 if equal, -1 otherwise
 proc strcmp, str1:dword, str2:dword
 	push	esi edi
 	mov	esi, [str1]
