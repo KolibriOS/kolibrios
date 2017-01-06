@@ -55,21 +55,39 @@ int strcmp(const char* string1, const char* string2)
 {
 
 while (1)
+	{
+	if (*string1<*string2)
+		return -1;
+	if (*string1>*string2)
+		return 1;
+
+	if (*string1=='\0')
+		return 0;
+
+	string1++;
+	string2++;
+	}
+
+}
+
+int    strnicmp(const char* string1, const char* string2, unsigned count)
 {
-if (*string1<*string2)
-	return -1;
-if (*string1>*string2)
-	return 1;
+int pc = 0;
+while (1)
+	{
+	if (toupper(*string1)<toupper(*string2))
+		return -1;
+	if (toupper(*string1)>toupper(*string2))
+		return 1;
 
-if (*string1=='\0')
-	return 0;
+	if (*string1=='\0' || pc == count)
+		return 0;
 
-string1++;
-string2++;
+	string1++;
+	string2++;
+	pc++;
+	}
 }
-
-}
-
 
 void strcpy(char strDest[], const char strSource[])
 {

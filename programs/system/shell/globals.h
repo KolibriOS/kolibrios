@@ -20,6 +20,7 @@ char		CMD[256];
 char		CMD_HISTORY[CMD_HISTORY_NUM][256];
 char		CMD_NUM = 0;
 char		CMD_HISTORY_NUM_REAL = 0;
+unsigned 	LAST_PID = 0;
 
 /// ===========================================================
 
@@ -66,7 +67,7 @@ int cmd_uptime(char param[]);
 int cmd_killall(char process_name[]);
 int cmd_history(char arg[]);
 int cmd_cp(char param[]);
-
+int cmd_waitfor(char param[]);
 
 /// ===========================================================
 

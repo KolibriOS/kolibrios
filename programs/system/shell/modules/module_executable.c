@@ -48,6 +48,7 @@ if (result > 0)
 	
 	if ( !program_console(result)  )
 		{
+			LAST_PID = result;
 		#if LANG_ENG
 			printf ("  '%s' started. PID = %d\n\r", cmd, result);
 		#elif LANG_RUS

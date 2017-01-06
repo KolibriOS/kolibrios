@@ -16,7 +16,7 @@ const command_t COMMANDS[]=
 	{"ls",      "  Lists the files in a directory. Usage:\n\r    ls ;lists the files in current directory\n\r    ls <directory> ;lists the files at specified folder\n\r", &cmd_ls},
 	{"mkdir",   "  Makes directory. Usage:\n\r    mkdir <folder name> ;creates the folder in working directory\n\r    mkdir <path><folder name> ;create folder by specified path\n\r", &cmd_mkdir},
 	{"more",    "  Displays a file data to the screen. Usage:\n\r    more <file name>\n\r", &cmd_more},
-	{"ps",      "  Lists the current processes running\n\r", &cmd_ps},
+	{"ps",      "  Lists the current processes running\n\r  or shows more info on <procname> and save LASTPID\n\r", &cmd_ps},
 	{"pwd",     "  Displays the name of the working directory\n\r", &cmd_pwd},
 	{"reboot",  "  Reboots the computer or KolibriOS kernel. Usage:\n\r    reboot ;reboot a PC\n\r    reboot kernel ;reboot the KolibriOS kernel\n\r", &cmd_reboot},
 	{"rm",      "  Removes a file. Usage:\n\r    rm file name>\n\r", &cmd_rm},
@@ -26,5 +26,6 @@ const command_t COMMANDS[]=
 	{"touch",   "  Creates an empty file or updates the time/date stamp on a file. Usage:\n\r    touch <file name>\n\r", &cmd_touch},
 	{"uptime",  "  Displays the uptime\n\r", &cmd_uptime},
 	{"ver",     "  Displays version. Usage:\n\r    ver ;Shell version\n\r    ver kernel ;version of KolibriOS kernel\n\r    ver cpu ;information about CPU\n\r", &cmd_ver},
+	{"waitfor", "  Stops console waiting while process finish. Usage:\n\r    waitfor ;waiting previous started executable LASTPID\n\r    waitfor <PID>;awaiting PID finish\n\r", &cmd_waitfor},
 };
 

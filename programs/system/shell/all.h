@@ -42,6 +42,7 @@
 #include "cmd/cmd_uptime.c"
 #include "cmd/cmd_history.c"
 #include "cmd/cmd_cp.c"
+#include "cmd/cmd_waitfor.c"
 
 #include "modules/module_command.c"
 #include "modules/module_program_console.c"

@@ -8,6 +8,8 @@ int i;
 
 if ('\0' == CMD[0]) return;
 
+CMD_NUM = -1;
+
 for (i = 0; i < CMD_HISTORY_NUM_REAL; i++)
 	if ( 0 == strcmp( CMD_HISTORY[i], CMD ) )
 		return;
@@ -19,8 +21,6 @@ strcpy(CMD_HISTORY[0], CMD);
 
 if (CMD_HISTORY_NUM_REAL < CMD_HISTORY_NUM-1)
 	CMD_HISTORY_NUM_REAL++;
-
-CMD_NUM = -1;
 
 }
 

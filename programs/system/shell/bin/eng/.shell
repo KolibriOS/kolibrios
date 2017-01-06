@@ -1,5 +1,6 @@
 #SHS
-
-about
-echo Type 'help' for help
+echo
+ver kernel
+echo
+echo   Type 'help' for help
 echo
