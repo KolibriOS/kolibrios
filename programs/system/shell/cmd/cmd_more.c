@@ -6,7 +6,7 @@ kol_struct70	k70;
 kol_struct_BDVK	bdvk;
 unsigned	result, filesize, pos, i;
 char		buf[81]; //буфер
-char		temp[256];
+char		temp[FILENAME_MAX];
 unsigned	flags;
 
 if (strlen(file)<1)

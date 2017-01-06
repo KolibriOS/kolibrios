@@ -3,7 +3,7 @@ int cmd_touch(char file[])
 {
 
 kol_struct70	k70;
-char		temp[256];
+char		temp[FILENAME_MAX];
 unsigned	result;
 
 if (NULL == file || strlen(file) == 0)
@@ -33,6 +33,8 @@ if ( '/' == file[0])
 else 
 	{
 	strcpy(temp, cur_dir);
+	if (temp[strlen(temp)-1] != '/') 
+		strcat(temp, "/"); // add slash
 	strcat(temp, file);
 	if ( !file_check(temp) )
 		k70.p00 = 2;
@@ -46,6 +48,8 @@ k70.p12 = 0;
 k70.p16 = 0;
 k70.p20 = 0;
 k70.p21 = temp;
+
+//printf("try to touch [%s], fn70(%d)\n\r", temp, k70.p00);
 
 result = kol_file_70(&k70);
 

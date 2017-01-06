@@ -12,6 +12,7 @@
 #define E_NOMEM		30 
 #define E_PARAM		33
 
+#define FILENAME_MAX	1024
 
 #pragma pack(push,1)
 typedef struct 

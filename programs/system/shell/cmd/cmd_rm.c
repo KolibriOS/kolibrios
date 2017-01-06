@@ -3,7 +3,7 @@ int cmd_rm(char file[])
 {
 
 kol_struct70	k70;
-char		temp[256];
+char		temp[FILENAME_MAX];
 unsigned	result;
 
 if (NULL == file || strlen(file) == 0)
@@ -28,6 +28,8 @@ if ( '/' == file[0])
 else 
 	{
 	strcpy(temp, cur_dir);
+	if (temp[strlen(temp)-1] != '/') 
+		strcat(temp, "/"); // add slash
 	strcat(temp, file);
 	
 	if ( !file_check(temp) )

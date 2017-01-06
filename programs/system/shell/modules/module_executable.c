@@ -4,7 +4,7 @@
 int executable_run(char cmd[], char args[])
 {
 
-char	exec[256];
+char	exec[FILENAME_MAX];
 int		result;
 
 if ( '/' == cmd[0]) // если путь абсолютный

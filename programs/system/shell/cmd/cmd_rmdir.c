@@ -2,7 +2,7 @@
 int cmd_rmdir(char dir[])
 {
 
-char		temp[256];
+char		temp[FILENAME_MAX];
 kol_struct70	k70;
 unsigned	result;
 
@@ -33,6 +33,8 @@ if ( '/' == dir[0])
 else
 	{
 	strcpy(temp, cur_dir);
+	if (temp[strlen(temp)-1] != '/') 
+		strcat(temp, "/"); // add slash
 	strcat(temp, dir);
 	k70.p21 = temp;
 	}

@@ -32,8 +32,8 @@ if (argc != 2)
       return TRUE;
    }
 
-filename_in  = (char*) malloc(4096);
-filename_out = (char*) malloc(4096);
+filename_in  = (char*) malloc(FILENAME_MAX);
+filename_out = (char*) malloc(FILENAME_MAX);
 
 if (argv[0][0] != '/')
    {

@@ -121,6 +121,13 @@ strcpy(title, "SHELL ");
 strcat(title, SHELL_VERSION);
 CONSOLE_INIT(title);
 
+if (sizeof (kol_struct70) != 25)
+{
+	printf("Invalid struct align kol_struct70, need to fix compile options\n\r");
+	kol_exit();
+}
+
+
 strcpy(cur_dir, PATH);
 dir_truncate(cur_dir);
 
