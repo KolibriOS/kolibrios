@@ -2083,6 +2083,8 @@ ntfs_CreateFile:
         mov     eax, [ebp+NTFS.cur_subnode_size]
         cmp     eax, [ebp+NTFS.cur_size]
         jnz     @f
+        cmp     [ebp+NTFS.sectors_per_cluster], 1
+        jz      @f
         mov     al, 1
 @@:
         mov     [ebp+NTFS.fileDataSize], eax
