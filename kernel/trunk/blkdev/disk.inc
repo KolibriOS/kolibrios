@@ -216,6 +216,50 @@ struct  PARTITION_TABLE_ENTRY
 ; Length of the partition in sectors.
 ends
 
+; GUID Partition Table Header, UEFI 2.6, Table 18
+struct GPTH
+        Signature                rb 8
+; 'EFI PART'
+        Revision                 dd ?
+; 0x00010000
+        HeaderSize               dd ?
+; Size of this header in bytes, must fit to one sector.
+        HeaderCRC32              dd ?
+; Set this field to zero, compute CRC32 via 0xEDB88320, compare.
+        Reserved                 dd ?
+; Myst be zero.
+        MyLBA                    dq ?
+; LBA of the sector containing this GPT header.
+        AlternateLBA             dq ?
+; LBA of the sector containing the other GPT header.
+; AlternateLBA of Primary GPTH points to Backup one and vice versa.
+        FirstUsableLBA           dq ?
+; Only sectors between first and last UsableLBA may form partitions
+        LastUsableLBA            dq ?
+        DiskGUID                 rb 16
+; Globally Unique IDentifier
+        PartitionEntryLBA        dq ?
+; First LBA of Partition Entry Array.
+; Length in bytes is computed as a product of two following fields.
+        NumberOfPartitionEntries dd ?
+; Actual number of partitions depends on the contents of Partition Entry Array.
+; A partition entry is unused if zeroed.
+        SizeOfPartitionEntry     dd ?   ; in bytes
+        PartitionEntryArrayCRC32 dd ?
+; Same CRC as for GPT header.
+ends
+
+; GPT Partition Entry, UEFI 2.6, Table 19
+struct GPE
+        PartitionTypeGUID       rb 16
+        UniquePartitionGUID     rb 16
+        StartingLBA             dq ?
+        EndingLBA               dq ?
+; Length in sectors is EndingLBA - StartingLBA + 1.
+        Attributes              dq ?
+        PartitionName           rb 72
+ends
+
 ; =============================================================================
 ; ================================ Global data ================================
 ; =============================================================================
@@ -667,7 +711,7 @@ disk_scan_partitions:
         xor     ebp, ebp        ; start from sector zero
         push    ebp             ; no extended partition yet
 ; 4. MBR is 512 bytes long. If sector size is less than 512 bytes,
-; assume no MBR, no partitions and go to 10.
+; assume no MBR, no partitions and go to 11.
         cmp     [esi+DISK.MediaInfo.SectorSize], 512
         jb      .notmbr
 .new_mbr:
@@ -689,9 +733,19 @@ disk_scan_partitions:
         cmp     word [ecx+0x40], 0xaa55
         jnz     .mbr_failed
 ; 8. The MBR is treated differently from EBRs. For MBR we additionally need to
-; execute step 9 and possibly step 10.
+; execute step 10 and possibly step 11.
         test    ebp, ebp
         jnz     .mbr
+; 9. Handle GUID Partition Table
+; 9a. Check if MBR is protective
+        call    is_protective_mbr
+        jnz     .no_gpt
+; 9b. If so, try to scan GPT headers
+        call    disk_scan_gpt
+; 9c. If any GPT header is valid, ignore MBR
+        jz      .done
+; Otherwise process legacy/protective MBR
+.no_gpt:
 ; The partition table can be present or not present. In the first case, we just
 ; read the MBR. In the second case, we just read the bootsector for a
 ; filesystem.
@@ -703,8 +757,8 @@ disk_scan_partitions:
 ;    byte is jmp opcode (0EBh or 0E9h), this is a bootsector which happens to
 ;    have zeros in the place of partition table.
 ; C. Otherwise, this is an MBR.
-; 9. Test for MBR vs bootsector.
-; 9a. Check entries. If any is invalid, go to 10 (rule A).
+; 10. Test for MBR vs bootsector.
+; 10a. Check entries. If any is invalid, go to 11 (rule A).
         call    is_partition_table_entry
         jc      .notmbr
         add     ecx, 10h
@@ -716,25 +770,25 @@ disk_scan_partitions:
         add     ecx, 10h
         call    is_partition_table_entry
         jc      .notmbr
-; 9b. Check types of the entries. If at least one is nonzero, go to 11 (rule C).
+; 10b. Check types of the entries. If at least one is nonzero, go to 12 (rule C).
         mov     al, [ecx-30h+PARTITION_TABLE_ENTRY.Type]
         or      al, [ecx-20h+PARTITION_TABLE_ENTRY.Type]
         or      al, [ecx-10h+PARTITION_TABLE_ENTRY.Type]
         or      al, [ecx+PARTITION_TABLE_ENTRY.Type]
         jnz     .mbr
-; 9c. Empty partition table or bootsector with many zeroes? (rule B)
+; 10c. Empty partition table or bootsector with many zeroes? (rule B)
         cmp     byte [ebx], 0EBh
         jz      .notmbr
         cmp     byte [ebx], 0E9h
         jnz     .mbr
 .notmbr:
-; 10. This is not an  MBR. The media is not partitioned. Create one partition
+; 11. This is not an  MBR. The media is not partitioned. Create one partition
 ; which covers all the media and abort the loop.
         stdcall disk_add_partition, 0, 0, \
                 dword [esi+DISK.MediaInfo.Capacity], dword [esi+DISK.MediaInfo.Capacity+4], esi
         jmp     .done
 .mbr:
-; 11. Process all entries of the new MBR/EBR
+; 12. Process all entries of the new MBR/EBR
         lea     ecx, [ebx+0x1be]        ; ecx -> partition table
         push    0       ; assume no extended partition
         call    process_partition_table_entry
@@ -745,12 +799,12 @@ disk_scan_partitions:
         add     ecx, 10h
         call    process_partition_table_entry
         pop     ebp
-; 12. Test whether we found a new EBR and should continue the loop.
-; 12a. If there was no next EBR, return.
+; 13. Test whether we found a new EBR and should continue the loop.
+; 13a. If there was no next EBR, return.
         test    ebp, ebp
         jz      .done
 ; Ok, we have EBR.
-; 12b. EBRs addresses are relative to the start of extended partition.
+; 13b. EBRs addresses are relative to the start of extended partition.
 ; For simplicity, just abort if an 32-bit overflow occurs; large disks
 ; are most likely partitioned with GPT, not MBR scheme, since the precise
 ; calculation here would increase limit just twice at the price of big
@@ -758,34 +812,231 @@ disk_scan_partitions:
         pop     eax     ; load extended partition
         add     ebp, eax
         jc      .mbr_failed
-; 12c. If extended partition has not yet started, start it.
+; 13c. If extended partition has not yet started, start it.
         test    eax, eax
         jnz     @f
         mov     eax, ebp
 @@:
-; 12c. If the limit is not exceeded, continue the loop.
+; 13d. If the limit is not exceeded, continue the loop.
         dec     dword [esp]
         push    eax     ; store extended partition
         jnz     .new_mbr
 .mbr_failed:
 .done:
-; 13. Cleanup after the loop.
+; 14. Cleanup after the loop.
         pop     eax     ; not important anymore
         pop     eax     ; not important anymore
         pop     ebp     ; restore ebp
-; 14. Release the buffer.
-; 14a. Test whether it is the global buffer or we have allocated it.
+; 15. Release the buffer.
+; 15a. Test whether it is the global buffer or we have allocated it.
         cmp     ebx, mbr_buffer
         jz      .release_partition_buffer
-; 14b. If we have allocated it, free it.
+; 15b. If we have allocated it, free it.
         xchg    eax, ebx
         call    free
         jmp     .nothing
-; 14c. Otherwise, release reference.
+; 15c. Otherwise, release reference.
 .release_partition_buffer:
         lock dec [partition_buffer_users]
 .nothing:
-; 15. Return.
+; 16. Return.
+        ret
+
+
+; This function is called from disk_scan_partitions to validate and parse
+; primary and backup GPTs.
+proc disk_scan_gpt
+; Scan primary GPT (second sector)
+        stdcall scan_gpt, 1, 0
+        test    eax, eax
+; There is no code to restore backup GPT if it's corrupt.
+; Therefore just exit if Primary GPT has been parsed successfully.
+        jz      .exit
+        DEBUGF  1, 'K : Primary GPT is corrupt, trying backup one\n'
+        mov     eax, dword[esi+DISK.MediaInfo.Capacity+0]
+        mov     edx, dword[esi+DISK.MediaInfo.Capacity+4]
+        sub     eax, 1
+        sbb     edx, 0
+; Scan backup GPT (last sector)
+        stdcall scan_gpt, eax, edx
+        test    eax, eax
+        jz      .exit
+        DEBUGF  1, 'K : Backup GPT is also corrupt, fallback to legacy MBR\n'
+.exit:
+; Return value is ZF
+        ret
+endp
+
+
+; This function is called from disk_scan_gpt to process a single GPT.
+proc scan_gpt _mylba:qword
+locals
+        GPEA_len dd ?   ; Length of GPT Partition Entry Array in bytes
+endl
+        push    ebx edi
+; Allocalte memory for GPT header
+        mov     eax, [esi+DISK.MediaInfo.SectorSize]
+        stdcall kernel_alloc, eax
+        test    eax, eax
+        jz      .fail
+; Save pointer to stack, just in case
+        push    eax
+        mov     ebx, eax
+; Read GPT header
+        mov     al, DISKFUNC.read
+        push    1
+        stdcall disk_call_driver, ebx, dword[_mylba+0], dword[_mylba+4], esp
+        pop     ecx
+        test    eax, eax
+        jnz     .fail_free_gpt
+; Check signature
+        cmp     dword[ebx+GPTH.Signature+0], 'EFI '
+        jnz     .fail_free_gpt
+        cmp     dword[ebx+GPTH.Signature+4], 'PART'
+        jnz     .fail_free_gpt
+; Check Revision
+        cmp     [ebx+GPTH.Revision], 0x00010000
+        jnz     .fail_free_gpt
+; Compute and check CRC32
+        xor     edx, edx
+        xchg    edx, [ebx+GPTH.HeaderCRC32]
+        mov     eax, -1
+        stdcall crc_32, 0xEDB88320, ebx, [ebx+GPTH.HeaderSize]
+        xor     eax, -1
+        cmp     eax, edx
+        jnz     .fail_free_gpt
+; Reserved must be zero
+        cmp     [ebx+GPTH.Reserved], 0
+        jnz     .fail_free_gpt
+; MyLBA of GPT header at LBA X must equal X
+        mov     eax, dword[ebx+GPTH.MyLBA+0]
+        mov     edx, dword[ebx+GPTH.MyLBA+4]
+        cmp     eax, dword[_mylba+0]
+        jnz     .fail_free_gpt
+        cmp     edx, dword[_mylba+4]
+        jnz     .fail_free_gpt
+; Capacity - MyLBA = AlternateLBA
+        mov     eax, dword[esi+DISK.MediaInfo.Capacity+0]
+        mov     edx, dword[esi+DISK.MediaInfo.Capacity+4]
+        sub     eax, dword[_mylba+0]
+        sbb     edx, dword[_mylba+4]
+        cmp     eax, dword[ebx+GPTH.AlternateLBA+0]
+; DISK.MediaInfo.Capacity is -1 for ATA devices, disable this check for now.
+;        jnz     .fail_free_gpt
+        cmp     edx, dword[ebx+GPTH.AlternateLBA+4]
+;        jnz     .fail_free_gpt
+
+; Compute GPT Partition Entry Array (GPEA) length in bytes
+        mov     eax, [ebx+GPTH.NumberOfPartitionEntries]
+        mul     [ebx+GPTH.SizeOfPartitionEntry]
+        test    edx, edx        ; far too big
+        jnz     .fail_free_gpt
+; Round up to sector boundary
+        mov     ecx, [esi+DISK.MediaInfo.SectorSize]    ; power of two
+        dec     ecx
+        add     eax, ecx
+        jc      .fail_free_gpt  ; too big
+        not     ecx
+        and     eax, ecx
+; We will need this length to compute CRC32 of GPEA
+        mov     [GPEA_len], eax
+; Allocate memory for GPEA
+        stdcall kernel_alloc, eax
+        test    eax, eax
+        jz      .fail_free_gpt
+; Save to not juggle with registers
+        push    eax
+        mov     edi, eax
+        mov     eax, [GPEA_len]
+        xor     edx, edx
+; Get the number of sectors GPEA fits into
+        div     [esi+DISK.MediaInfo.SectorSize]
+        push    eax     ; esp = pointer to the number of sectors
+        mov     al, DISKFUNC.read
+        stdcall disk_call_driver, edi, dword[ebx+GPTH.PartitionEntryLBA+0], \
+                dword[ebx+GPTH.PartitionEntryLBA+4], esp
+        pop     ecx
+        test    eax, eax
+        jnz     .fail_free_gpea_gpt
+; Compute and check CRC32 of GPEA
+        mov     edx, [ebx+GPTH.PartitionEntryArrayCRC32]
+        mov     eax, -1
+        stdcall crc_32, 0xEDB88320, edi, [GPEA_len]
+        xor     eax, -1
+        cmp     eax, edx
+        jnz     .fail_free_gpea_gpt
+
+; Process partitions, skip zeroed ones.
+.next_gpe:
+        xor     eax, eax
+        mov     ecx, [ebx+GPTH.SizeOfPartitionEntry]
+        repz scasb
+        jz      .skip
+        add     edi, ecx
+        sub     edi, [ebx+GPTH.SizeOfPartitionEntry]
+; Length of a partition in sectors is EndingLBA - StartingLBA + 1
+        mov     eax, dword[edi+GPE.EndingLBA+0]
+        mov     edx, dword[edi+GPE.EndingLBA+4]
+        sub     eax, dword[edi+GPE.StartingLBA+0]
+        sbb     edx, dword[edi+GPE.StartingLBA+4]
+        add     eax, 1
+        adc     edx, 0
+        stdcall disk_add_partition, dword[edi+GPE.StartingLBA+0], \
+                dword[edi+GPE.StartingLBA+4], eax, edx, esi
+        add     edi, [ebx+GPTH.SizeOfPartitionEntry]
+.skip:
+        dec     [ebx+GPTH.NumberOfPartitionEntries]
+        jnz     .next_gpe
+
+; Pointers to GPT header and GPEA are on the stack
+        stdcall kernel_free
+        stdcall kernel_free
+        pop     edi ebx
+        xor     eax, eax
+        ret
+.fail_free_gpea_gpt:
+        stdcall kernel_free
+.fail_free_gpt:
+        stdcall kernel_free
+.fail:
+        pop     edi ebx
+        xor     eax, eax
+        inc     eax
+        ret
+endp
+
+; ecx = pointer to partition records array (MBR + 446)
+is_protective_mbr:
+        push    ecx edi
+        xor     eax, eax
+        cmp     [ecx-6], eax
+        jnz     .exit
+        cmp     [ecx-2], eax
+        jnz     .exit
+; Partition record 0 has specific fields
+        cmp     dword[ecx+0], 0x00020000
+        jnz     .exit
+        cmp     byte[ecx+4], 0xEE
+        jnz     .exit
+        cmp     dword[ecx+8], 1
+        jnz     .exit
+; DISK.MediaInfo.Capacity is -1 for ATA devices, disable this check for now.
+;        cmp     dword[esi+DISK.MediaInfo.Capacity+4], eax
+;        mov     edi, 0xFFFFFFFF
+;        jnz     @f
+;        mov     edi, dword[esi+DISK.MediaInfo.Capacity+0]
+;        dec     edi
+;@@:
+;        cmp     dword[ecx+12], edi
+;        jnz     .exit
+
+; Check that partition records 1-3 are filled with zero
+        lea     edi, [ecx+16]
+        mov     ecx, 16*3/2     ; 3 partitions
+        repz scasw
+.exit:
+        pop     edi ecx
+; Return value is ZF
         ret
 
 ; This is an internal function called from disk_scan_partitions. It checks
