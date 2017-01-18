@@ -227,7 +227,7 @@ struct GPTH
         HeaderCRC32              dd ?
 ; Set this field to zero, compute CRC32 via 0xEDB88320, compare.
         Reserved                 dd ?
-; Myst be zero.
+; Must be zero.
         MyLBA                    dq ?
 ; LBA of the sector containing this GPT header.
         AlternateLBA             dq ?
@@ -846,6 +846,7 @@ disk_scan_partitions:
 ; This function is called from disk_scan_partitions to validate and parse
 ; primary and backup GPTs.
 proc disk_scan_gpt
+        push    ecx
 ; Scan primary GPT (second sector)
         stdcall scan_gpt, 1, 0
         test    eax, eax
@@ -864,6 +865,7 @@ proc disk_scan_gpt
         DEBUGF  1, 'K : Backup GPT is also corrupt, fallback to legacy MBR\n'
 .exit:
 ; Return value is ZF
+        pop     ecx
         ret
 endp
 
@@ -955,8 +957,8 @@ endl
         mov     al, DISKFUNC.read
         stdcall disk_call_driver, edi, dword[ebx+GPTH.PartitionEntryLBA+0], \
                 dword[ebx+GPTH.PartitionEntryLBA+4], esp
-        pop     ecx
         test    eax, eax
+        pop     eax
         jnz     .fail_free_gpea_gpt
 ; Compute and check CRC32 of GPEA
         mov     edx, [ebx+GPTH.PartitionEntryArrayCRC32]
@@ -1009,12 +1011,12 @@ endp
 is_protective_mbr:
         push    ecx edi
         xor     eax, eax
-        cmp     [ecx-6], eax
-        jnz     .exit
-        cmp     [ecx-2], eax
+;        cmp     [ecx-6], eax
+;        jnz     .exit
+        cmp     [ecx-2], ax
         jnz     .exit
 ; Partition record 0 has specific fields
-        cmp     dword[ecx+0], 0x00020000
+        cmp     [ecx+0], al
         jnz     .exit
         cmp     byte[ecx+4], 0xEE
         jnz     .exit
