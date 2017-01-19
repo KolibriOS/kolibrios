@@ -111,14 +111,14 @@ r1: mov  [picks+4],edx             ; update right pick color
     mov  eax,2                     ; just read it and ignore
     mcall
     cmp  al,0                      ; key in buffer?
-    je   k1                        ; yep
+    je   .k1                       ; yep
     jmp  still
-k1: cmp  ah,'H'                    ; cap H ?
-    je   k2                        ; yep
+.k1:cmp  ah,'H'                    ; cap H ?
+    je   .k2                       ; yep
     cmp  ah,'h'                    ; locase h ?
-    je   k2                        ; yep
+    je   .k2                       ; yep
     jmp  still
-k2: call help                      ; show help screen
+.k2:call help                      ; show help screen
     jmp  still
 
   button:                          ; button
