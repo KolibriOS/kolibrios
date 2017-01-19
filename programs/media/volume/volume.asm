@@ -12,7 +12,6 @@
     include "../../macros.inc"
     include "../../proc32.inc"
     include "../../dll.inc"
-    include "macros.inc"
 if DEBUG eq 1
     include "../../debug.inc"
 end if
