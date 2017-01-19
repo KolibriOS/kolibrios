@@ -45,9 +45,8 @@ define BUFF_SIZE 1024
 
 include 'proc32.inc'
 include 'macros.inc'
-include 'libio.inc'
-include '../../../dll.inc'
-include 'lang.inc'
+include 'develop/libraries/libs-dev/libio/libio.inc'
+include 'dll.inc'
 
 purge mov
 
@@ -423,6 +422,21 @@ kobra_use:
 ;;--------------------------------------------------------------------------------------------------
 tid:
 	dd 0
+
+struct FileInfoRun
+  Function     dd 7
+  Flags        dd ?
+  Arguments    dd 0
+  Reserved0    dd ?
+  Reserved1    dd ?
+  union
+    FileName   rb 1024
+    struct
+      Zero       db 0
+      FileNameP  dd ?
+    ends
+  ends  
+ends
 
 LaunchStruct FileInfoRun
 
