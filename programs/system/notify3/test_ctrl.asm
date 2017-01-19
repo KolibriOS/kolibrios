@@ -8,7 +8,6 @@
 ;    include "../../debug.inc"
     include "../../notify.inc"
     include "../../string.inc"
-    include "../../cmp.inc"
 
  @entry:
     mcall   68, 11

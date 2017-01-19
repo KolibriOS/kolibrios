@@ -557,6 +557,14 @@ else
 end if
 }
 
+; replaces /programs/cmp.inc
+irp cond, e, ne, g, ng, l, nl, ge, le {
+  macro cmp#cond a, b, c\{
+    cmp a, b
+    j#cond c
+  \}
+}
+
 ; constants
 
 ; events

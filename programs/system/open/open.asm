@@ -15,7 +15,6 @@
     include "../../proc32.inc"
     include "../../macros.inc"
     include "../../dll.inc"
-    include "../../cmp.inc"
     include "../../string.inc"
     include "../../develop/libraries/box_lib/trunk/box_lib.mac"
 

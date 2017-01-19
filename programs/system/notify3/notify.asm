@@ -4,7 +4,6 @@
     dd	    1, @ENTRY, @end, @memory, @stack, @params, 0
 
     include "../../macros.inc"
-    include "../../cmp.inc"
     include "../../proc32.inc"
     include "../../dll.inc"
 ;    include "../../debug.inc"
