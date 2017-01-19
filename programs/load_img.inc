@@ -17,7 +17,7 @@
 ; подключение некоторых необходимых файлов:
 include 'dll.inc'
 include 'develop/libraries/box_lib/load_lib.mac'
-include 'libio.inc'
+include 'develop/libraries/libs-dev/libio/libio.inc'
 
 align 4
 open_b rb 560
@@ -33,17 +33,17 @@ macro load_image_file path, buf, img_w, img_h, bytes_p_p
 {
 local .end_open
 if path eqtype '' ;проверяем задан ли строкой параметр path
-	local .path_str
-	jmp @f
-		.path_str db path ;формируем локальную переменную
-		db 0
-	@@:
-	;32 - стандартный адрес по которому должен быть буфер с системным путем
-	copy_path .path_str,[32],file_name,0
+        local .path_str
+        jmp @f
+                .path_str db path ;формируем локальную переменную
+                db 0
+        @@:
+        ;32 - стандартный адрес по которому должен быть буфер с системным путем
+        copy_path .path_str,[32],file_name,0
 else
-	copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+        copy_path path,[32],file_name,0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
 end if
-	mov dword[buf],0
+        mov dword[buf],0
 
     mov [run_file_70.Function], SSF_GET_INFO
     mov [run_file_70.Position], 0
@@ -53,46 +53,46 @@ end if
     mov byte[run_file_70+20], 0
     mov dword[run_file_70.FileName], file_name
     mcall SF_FILE,run_file_70
-	or eax,eax
-	jnz .end_open
+        or eax,eax
+        jnz .end_open
 
     mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
     stdcall mem.Alloc,ecx ;выделяем память для изображения
-	mov [buf],eax
-	mov [run_file_70.Function], SSF_READ_FILE
-	mov [run_file_70.Position], 0
-	mov [run_file_70.Flags], 0
-	mov [run_file_70.Count], ecx
-	mov [run_file_70.Buffer], eax
-	mov byte[run_file_70+20], 0
-	mov [run_file_70.FileName], file_name
-	mcall SF_FILE,run_file_70 ;загружаем файл изображения
-	cmp ebx,0xffffffff
-	je .end_open
-		;определяем вид изображения и пишем его параметры
-		stdcall [img_decode], [buf],ebx,0
-		mov ebx,eax
-		;определяем размер декодированного изображения
-		mov ecx,[eax+4] ;+4 = image width
+        mov [buf],eax
+        mov [run_file_70.Function], SSF_READ_FILE
+        mov [run_file_70.Position], 0
+        mov [run_file_70.Flags], 0
+        mov [run_file_70.Count], ecx
+        mov [run_file_70.Buffer], eax
+        mov byte[run_file_70+20], 0
+        mov [run_file_70.FileName], file_name
+        mcall SF_FILE,run_file_70 ;загружаем файл изображения
+        cmp ebx,0xffffffff
+        je .end_open
+                ;определяем вид изображения и пишем его параметры
+                stdcall [img_decode], [buf],ebx,0
+                mov ebx,eax
+                ;определяем размер декодированного изображения
+                mov ecx,[eax+4] ;+4 = image width
 if img_w eq
 else
-		mov dword[img_w],ecx
+                mov dword[img_w],ecx
 end if
 if img_h eq
-		imul ecx,[eax+8] ;+8 = image height
+                imul ecx,[eax+8] ;+8 = image height
 else
-		mov eax,[eax+8] ;+8 = image height
-		mov dword[img_h],eax
-		imul ecx,eax
+                mov eax,[eax+8] ;+8 = image height
+                mov dword[img_h],eax
+                imul ecx,eax
 end if
 if bytes_p_p eq
-		imul ecx,3 ;need for r,g,b
+                imul ecx,3 ;need for r,g,b
 else
-		imul ecx,bytes_p_p
+                imul ecx,bytes_p_p
 end if
-		stdcall mem.ReAlloc,[buf],ecx ;изменяем размер для буфера
-		mov [buf],eax
-		stdcall [img_to_rgb2], ebx,[buf] ;преобразуем изображение к формату rgb
-		stdcall [img_destroy], ebx ;удаляем временный буфер с параметрами изображения
-	.end_open:
+                stdcall mem.ReAlloc,[buf],ecx ;изменяем размер для буфера
+                mov [buf],eax
+                stdcall [img_to_rgb2], ebx,[buf] ;преобразуем изображение к формату rgb
+                stdcall [img_destroy], ebx ;удаляем временный буфер с параметрами изображения
+        .end_open:
 }

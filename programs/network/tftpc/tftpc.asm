@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2014. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  tftpc.asm - TFTP client for KolibriOS                          ;;
@@ -30,7 +30,7 @@ use32
 
 include '../../proc32.inc'
 include '../../macros.inc'
-include '../../libio.inc'
+include '../../develop/libraries/libs-dev/libio/libio.inc'
 include '../../dll.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 
