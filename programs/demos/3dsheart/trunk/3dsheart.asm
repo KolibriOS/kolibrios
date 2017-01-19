@@ -117,7 +117,7 @@ still:
       @@:
 	cmp	ah,5
 	jne	@f			 ;scale-
-	mov	[scale],0.7
+	mov	[scale], dword 0.7
 	fninit
 	fld	[sscale]
 	fmul	[scale]
@@ -131,7 +131,7 @@ still:
       @@:
 	cmp	ah,6
 	jne	@f			; scale+
-	mov	[scale],1.3
+	mov	[scale], dword 1.3
 	fninit
 	fld	[sscale]
 	fmul	[scale]

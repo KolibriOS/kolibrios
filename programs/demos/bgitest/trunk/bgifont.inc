@@ -415,7 +415,7 @@ _BGIfont_Freetext:
     and  [deform],0
     test eax,BGI_ITALIC
     jz	 .norm
-    mov  [deform],0.4
+    mov  [deform], dword 0.4
   .norm:
     mov  ebp,eax
     or	  ebp,BGI_FREE
