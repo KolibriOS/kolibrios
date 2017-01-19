@@ -86,8 +86,8 @@ start: ;////////////////////////////////////////////////////////////////////////
 ;< none                                                                                           ;;
 ;;================================================================================================;;
 ; initialize heap for using dynamic blocks
-        mcall   68,11
-        test    eax,eax
+        mcall   68, 11
+        test    eax, eax
         je      exit2
         
 ; disable all events except network event

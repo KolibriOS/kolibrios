@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ftpd.asm - FTP Daemon for KolibriOS                            ;;
@@ -68,7 +68,7 @@ purge mov,add,sub
 include '../../proc32.inc'
 include '../../dll.inc'
 include '../../struct.inc'
-include '../../libio.inc'
+include '../../develop/libraries/libs-dev/libio/libio.inc'
 
 include '../../network.inc'
 
