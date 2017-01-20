@@ -43,10 +43,10 @@ define DEBUG_MAX_LEN 8
 define DEBUG_DEFAULT 0
 define BUFF_SIZE 1024
 
-include 'proc32.inc'
-include 'macros.inc'
-include 'develop/libraries/libs-dev/libio/libio.inc'
-include 'dll.inc'
+include '../../../proc32.inc'
+include '../../../macros.inc'
+include '../../../develop/libraries/libs-dev/libio/libio.inc'
+include '../../../dll.inc'
 
 purge mov
 
