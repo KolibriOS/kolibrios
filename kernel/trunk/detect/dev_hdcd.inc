@@ -12,7 +12,6 @@ $Revision$
         cmp     [ecx+IDE_DATA.ProgrammingInterface], 0
         je      EndFindHDD
 FindHDD:
-        push    ecx
         xor     ebx, ebx
         inc     ebx
         mov     [DeviceNumber], 0
@@ -28,18 +27,13 @@ FindHDD:
         mov     [ChannelNumber], 1
         mov     [DiskNumber], 0
         call    FindHDD_1
-
         inc     [DiskNumber]
         call    FindHDD_2
-
         inc     [ChannelNumber]
         dec     [DiskNumber]
         call    FindHDD_2
-
         inc     [DiskNumber]
         call    FindHDD_2
-
-        pop     ecx
         jmp     EndFindHDD
 ;-----------------------------------------------------------------------------
 FindHDD_2:
@@ -48,44 +42,44 @@ FindHDD_2:
 FindHDD_1:
         DEBUGF  1, "K : Channel %d ",[ChannelNumber]:1
         DEBUGF  1, "Disk %d\n",[DiskNumber]:1
-        push    ebx ecx
+        push    ecx ebx
         call    ReadHDD_ID
-        pop     ecx ebx
         cmp     [DevErrorCode], 7
         je      .end
         cmp     [DevErrorCode], 0
         jne     .FindCD
-
         cmp     [Sector512+6], word 16
         ja      .FindCD
-
         cmp     [Sector512+12], word 255
         ja      .FindCD
-
-        inc     byte [ebx+DRIVE_DATA]
+        pop     ebx
         movzx   eax, [DeviceNumber]
+        mov     ecx, [Sector512+120]
+        mov     dword[eax+hd0_data.sectors], ecx
+        and     dword[eax+hd0_data.sectors+4], 0
         bt      word [Sector512+166], 10
-        adc     [eax+hd0_data.hd48], 0
+        jnc     .Print_Device_Name
+        mov     [eax+hd0_data.hd48], 1
+        mov     ecx, [Sector512+200]
+        mov     dword[eax+hd0_data.sectors], ecx
+        mov     ecx, [Sector512+204]
+        mov     dword[eax+hd0_data.sectors+4], ecx
         jmp     .Print_Device_Name
 ;--------------------------------------
 .FindCD:
-        push    ebx ecx
         call    DeviceReset
-        pop     ecx ebx
         cmp     [DevErrorCode], 0
         jne     .end
-
-        push    ebx ecx
         call    ReadCD_ID
-        pop     ecx ebx
         cmp     [DevErrorCode], 0
         jne     .end
-
-        add     [ebx+DRIVE_DATA], byte 2
+        pop     ebx
+        inc     byte [ebx+DRIVE_DATA]
 ;--------------------------------------
 .Print_Device_Name:
+        inc     byte [ebx+DRIVE_DATA]
+        pop     ecx
         pushad
-        pushfd
         movzx   ebx, [ChannelNumber]
         dec     ebx
         shl     ebx, 1
@@ -104,42 +98,32 @@ FindHDD_1:
         xchg    ah, al
         stosw
         loop    @b
-
         DEBUGF 1, "K : Dev: %s \n", dev_name
-
         xor     eax, eax
         mov     ax, [Sector512+64*2]
         DEBUGF  1, "K : PIO possible modes %x\n", al
-
         mov     ax, [Sector512+51*2]
         mov     al, ah
         call    convert_Sector512_value
         DEBUGF  1, "K : PIO set mode %x\n", ah
-
         mov     ax, [Sector512+63*2]
         DEBUGF  1, "K : Multiword DMA possible modes %x\n", al
-
         mov     al, ah
         call    convert_Sector512_value
         DEBUGF  1, "K : Multiword DMA set mode %x\n", ah
-
         mov     ax, [Sector512+88*2]
         DEBUGF  1, "K : Ultra DMA possible modes %x\n", al
-
         mov     [ebx+IDE_DEVICE.UDMA_possible_modes], al
-
         mov     al, ah
         call    convert_Sector512_value
         DEBUGF  1, "K : Ultra DMA set mode %x\n", ah
-
         mov     [ebx+IDE_DEVICE.UDMA_set_mode], ah
-
-        popfd
         popad
         ret
-;--------------------------------------
+
 .end:
         DEBUGF  1, "K : Device not found\n"
+        pop     ebx ecx
         ret
 ;-----------------------------------------------------------------------------
 calculate_IDE_device_values_storage:

@@ -10,10 +10,11 @@ $Revision$
 ; HDD driver
 
 struct HD_DATA
-hdbase  dw  ?
-hdid    dw  ?
 hdpos   dw  ?
+hdid    dw  ?
+hdbase  dw  ?
 hd48    dw  ?
+sectors dq  ?
 ends
 ;-----------------------------------------------------------------
 iglobal
@@ -29,18 +30,18 @@ ide_callbacks:
     dd  0   ; use default cache size
 .end:
 
-hd0_data    HD_DATA     ?,  0,  1, 0
-hd1_data    HD_DATA     ?, 16,  2, 0
-hd2_data    HD_DATA     ?,  0,  3, 0
-hd3_data    HD_DATA     ?, 16,  4, 0
-hd4_data    HD_DATA     ?,  0,  5, 0
-hd5_data    HD_DATA     ?, 16,  6, 0
-hd6_data    HD_DATA     ?,  0,  7, 0
-hd7_data    HD_DATA     ?, 16,  8, 0
-hd8_data    HD_DATA     ?,  0,  9, 0
-hd9_data    HD_DATA     ?, 16, 10, 0
-hd10_data   HD_DATA     ?,  0, 11, 0
-hd11_data   HD_DATA     ?, 16, 12, 0
+hd0_data    HD_DATA     1,  0
+hd1_data    HD_DATA     2,  16
+hd2_data    HD_DATA     3,  0
+hd3_data    HD_DATA     4,  16
+hd4_data    HD_DATA     5,  0
+hd5_data    HD_DATA     6,  16
+hd6_data    HD_DATA     7,  0
+hd7_data    HD_DATA     8,  16
+hd8_data    HD_DATA     9,  0
+hd9_data    HD_DATA     10, 16
+hd10_data   HD_DATA     11, 0
+hd11_data   HD_DATA     12, 16
 
 ide_mutex_table:
     dd  ide_channel1_mutex
@@ -191,13 +192,15 @@ endl
         ret
 endp
 ;-----------------------------------------------------------------
-; this is a stub
 proc ide_querymedia stdcall, hd_data, mediainfo
         mov     eax, [mediainfo]
+        mov     edx, [hd_data]
         mov     [eax+DISKMEDIAINFO.Flags], 0
         mov     [eax+DISKMEDIAINFO.SectorSize], 512
-        or      dword [eax+DISKMEDIAINFO.Capacity], 0xFFFFFFFF
-        or      dword [eax+DISKMEDIAINFO.Capacity+4], 0xFFFFFFFF
+        mov     ecx, dword[edx+HD_DATA.sectors]
+        mov     dword[eax+DISKMEDIAINFO.Capacity], ecx
+        mov     ecx, dword[edx+HD_DATA.sectors+4]
+        mov     dword[eax+DISKMEDIAINFO.Capacity+4], ecx
         xor     eax, eax
         ret
 endp
