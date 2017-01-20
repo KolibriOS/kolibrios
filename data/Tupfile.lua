@@ -192,7 +192,7 @@ extra_files = {
  {"kolibrios/games/knight", "common/games/knight"},
  {"kolibrios/games/LaserTank/", "common/games/LaserTank/*"},
  {"kolibrios/games/lrl/", "common/games/lrl/*"},
- {"kolibrios/games/megamaze", "common/games/megamaze"},
+ {"kolibrios/games/megamaze", PROGS .. "/games/megamaze/trunk/megamaze"},
  {"kolibrios/games/mun/data/", "common/games/mun/data/*"},
  {"kolibrios/games/mun/libc.dll", "common/games/mun/libc.dll"},
  {"kolibrios/games/mun/mun", "common/games/mun/mun"}, 
