@@ -454,7 +454,7 @@ lba_read_enabled    dd  ?   ; 0 = disabled , 1 = enabled
 pci_access_enabled  dd  ?   ; 0 = disabled , 1 = enabled
 
 NumBiosDisks        dd  ?
-BiosDisksData       rb  200h
+BiosDisksData       rb  200h    ; struct BiosDiskData
 BiosDiskCaches      rb  80h*(cache_ide1-cache_ide0)
 BiosDiskPartitions  rd  80h
 

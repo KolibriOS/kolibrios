@@ -451,6 +451,7 @@ high_code:
         movzx   ecx, byte [esi-1]
         mov     [NumBiosDisks], ecx
         mov     edi, BiosDisksData
+        shl     ecx, 2
         rep movsd
 
 ; -------- Fast System Call init ----------

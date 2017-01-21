@@ -31,6 +31,14 @@ int13_regs_in       rb sizeof.v86_regs
 int13_regs_out      rb sizeof.v86_regs
 cache_chain_size    db ?
 endg
+
+struct BiosDiskData
+        DriveNumber     db ?
+        IRQ             db ?
+        ATADEVbit       dw ?
+        SectorSize      dd ?
+        Capacity        dq ?
+ends
 ;-----------------------------------------------------------------
 proc bd_read_interface stdcall uses edi, \
         userdata, buffer, startsector:qword, numsectors
@@ -152,13 +160,18 @@ endl
         ret
 endp
 ;-----------------------------------------------------------------
-; This is a stub.
 proc bd_querymedia stdcall, hd_data, mediainfo
-        mov     eax, [mediainfo]
-        mov     [eax+DISKMEDIAINFO.Flags], 0
-        mov     [eax+DISKMEDIAINFO.SectorSize], 512
-        or      dword [eax+DISKMEDIAINFO.Capacity], 0xFFFFFFFF
-        or      dword [eax+DISKMEDIAINFO.Capacity+4], 0xFFFFFFFF
+        mov     edx, [mediainfo]
+        mov     eax, [hd_data]
+        lea     eax, [(eax-80h)*4]
+        lea     eax, [BiosDisksData+eax*4]
+        mov     [edx+DISKMEDIAINFO.Flags], 0
+        mov     ecx, [eax+BiosDiskData.SectorSize]
+        mov     [edx+DISKMEDIAINFO.SectorSize], ecx
+        mov     ecx, dword [eax+BiosDiskData.Capacity+0]
+        mov     eax, dword [eax+BiosDiskData.Capacity+4]
+        mov     dword [edx+DISKMEDIAINFO.Capacity+0], ecx
+        mov     dword [edx+DISKMEDIAINFO.Capacity+4], eax
         xor     eax, eax
         ret
 endp
@@ -253,7 +266,8 @@ int13_call:
         rep stosd
         mov     byte [ebx+v86_regs.eax+1], dl
         mov     eax, [hdpos]
-        lea     eax, [BiosDisksData+(eax-80h)*4]
+        lea     eax, [(eax-80h)*4]
+        lea     eax, [BiosDisksData+eax*4]
         mov     dl, [eax]
         mov     byte [ebx+v86_regs.edx], dl
         movzx   edx, byte [eax+1]

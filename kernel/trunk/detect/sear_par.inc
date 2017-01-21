@@ -216,7 +216,8 @@ search_partitions:
         push    'bd'
 .bdloop:
 ; 3b. Get the drive number for using in /bd* name.
-        movzx   eax, byte [BiosDisksData+esi*4]
+        lea     eax, [esi*4]
+        movzx   eax, [BiosDisksData+eax*4+BiosDiskData.DriveNumber]
         sub     al, 80h
 ; 3c. Convert eax to decimal and store starting with [esp+3].
 ; First 2 bytes in [esp] are "bd".

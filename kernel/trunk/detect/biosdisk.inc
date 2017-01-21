@@ -11,6 +11,7 @@ $Revision$
 ; Detect all BIOS hard drives.
 ; diamond, 2008
 ; Do not include USB mass storages. CleverMouse, 2013
+; Read the number of sectors, bytes per sector. dunkaist, 2017
 
         xor     cx, cx
         mov     es, cx
@@ -65,6 +66,7 @@ bdds:
         mov     al, dl
         stosb
         push    ds
+        push    si
         lds     si, [es:si+1Ah]
         mov     al, [si+6]
         and     al, 0xF
@@ -82,8 +84,9 @@ bdds:
 ;        mov     ax, -1
 @@:
         stosw
+        pop     si
         pop     ds
-        jmp     bddc2
+        jmp     bddc3
 .noide:
         cmp     word [es:si], 42h
         jb      .nousb
@@ -103,6 +106,13 @@ bdds:
 ;        stosb
 ;        mov     ax, -1
 ;        stosw
+bddc3:
+        movzx   eax, word[es:si+24]
+        stosd
+        mov     eax, [es:si+16]
+        stosd
+        mov     eax, [es:si+20]
+        stosd
 bddc2:
         cmp     cl, [es:0x475]
         jae     bdde
