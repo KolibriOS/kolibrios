@@ -923,10 +923,9 @@ endl
         sub     eax, dword[_mylba+0]
         sbb     edx, dword[_mylba+4]
         cmp     eax, dword[ebx+GPTH.AlternateLBA+0]
-; DISK.MediaInfo.Capacity is -1 for ATA devices, disable this check for now.
-;        jnz     .fail_free_gpt
+        jnz     .fail_free_gpt
         cmp     edx, dword[ebx+GPTH.AlternateLBA+4]
-;        jnz     .fail_free_gpt
+        jnz     .fail_free_gpt
 
 ; Compute GPT Partition Entry Array (GPEA) length in bytes
         mov     eax, [ebx+GPTH.NumberOfPartitionEntries]
@@ -1022,15 +1021,14 @@ is_protective_mbr:
         jnz     .exit
         cmp     dword[ecx+8], 1
         jnz     .exit
-; DISK.MediaInfo.Capacity is -1 for ATA devices, disable this check for now.
-;        cmp     dword[esi+DISK.MediaInfo.Capacity+4], eax
-;        mov     edi, 0xFFFFFFFF
-;        jnz     @f
-;        mov     edi, dword[esi+DISK.MediaInfo.Capacity+0]
-;        dec     edi
-;@@:
-;        cmp     dword[ecx+12], edi
-;        jnz     .exit
+        cmp     dword[esi+DISK.MediaInfo.Capacity+4], eax
+        mov     edi, 0xFFFFFFFF
+        jnz     @f
+        mov     edi, dword[esi+DISK.MediaInfo.Capacity+0]
+        dec     edi
+@@:
+        cmp     dword[ecx+12], edi
+        jnz     .exit
 
 ; Check that partition records 1-3 are filled with zero
         lea     edi, [ecx+16]
