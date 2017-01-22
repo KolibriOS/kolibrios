@@ -1525,34 +1525,12 @@ hd_find_lfn:
 fat_Read:
         call    fat_lock
         push    edi
-        cmp     byte [esi], 0
-        jnz     @f
-.noaccess:
-        pop     edi
-        call    fat_unlock
-        or      ebx, -1
-        mov     eax, ERROR_ACCESS_DENIED
-        ret
-@@:
         call    hd_find_lfn
-        jnc     .found
-        pop     edi
-        push    eax
-        call    fat_unlock
-        pop     eax
-        or      ebx, -1
-        ret
-.found:
+        jc      .notFound
         test    byte [edi+11], 0x10     ; do not allow read directories
         jnz     .noaccess
         cmp     dword [ebx+8], 0
-        jz      @f
-        xor     ebx, ebx
-        call    fat_unlock
-        mov     eax, ERROR_END_OF_FILE
-        pop     edi
-        ret
-@@:
+        jnz     .endOfFile
         mov     edx, [ebx+4]    ; file offset
         mov     ecx, [ebx+12]   ; size
         mov     ebx, [ebx+16]   ; buffer
@@ -1583,6 +1561,23 @@ fat_Read:
         call    get_FAT
         jc      .noaccess2
         jmp     @b
+
+.notFound:
+        push    eax
+        jmp     .ret
+
+.noaccess:
+        push    ERROR_ACCESS_DENIED
+        jmp     .ret
+
+.endOfFile:
+        push    ERROR_END_OF_FILE
+.ret:
+        call    fat_unlock
+        pop     eax edi
+        xor     ebx, ebx
+        ret
+
 @@:
         mov     esi, eax
         dec     eax
@@ -1674,6 +1669,7 @@ fat_Read:
         xor     edx, edx
         jecxz   .done
         jmp     .alignedCluster
+
 .readEnd:
         add     ecx, edi
         mov     edi, ecx
@@ -1688,6 +1684,7 @@ fat_Read:
         push    eax
         mov     ecx, eax
         jmp     .readFragment
+
 .noaccess3:
         pop     eax
 .noaccess2:
@@ -1697,12 +1694,15 @@ fat_Read:
         pop     eax edx edi
         sub     ebx, edx
         ret
+
 .fileEnd:
         mov     byte [esp], ERROR_END_OF_FILE
         jmp     .done
+
 .noaccess4:
         mov     byte [esp], ERROR_DEVICE
         jmp     @f
+
 .fileEnd2:
         mov     byte [esp], ERROR_END_OF_FILE
 @@:
@@ -2101,12 +2101,6 @@ fat_get_sector:
         pop     ecx
         ret
 
-fshrad:
-        call    fat_unlock
-        mov     eax, ERROR_ACCESS_DENIED
-        xor     ebx, ebx
-        ret
-
 ;----------------------------------------------------------------
 fat_CreateFolder:
         push    1
@@ -2117,8 +2111,6 @@ fat_CreateFile:
 @@:
         call    fat_lock
         pop     eax
-        cmp     byte [esi], 0
-        jz      fshrad
         mov     ecx, [ebx+12]
         mov     edx, [ebx+16]
         pushad
@@ -2661,33 +2653,12 @@ fat_read_symbols:
 
 ;----------------------------------------------------------------
 fat_Write:
-        cmp     byte [esi], 0
-        jz      .access_denied
         call    fat_lock
         push    edi
         call    hd_find_lfn
-        jnc     .found
-        pop     edi
-        push    eax
-        call    fat_unlock
-.ret0:
-        pop     eax
-        xor     ebx, ebx
-        ret
-
-.access_denied:
-        push    ERROR_ACCESS_DENIED
-        jmp     .ret0
-
-.found:     ; FAT does not support files larger than 4GB
+        jc      .error
         cmp     dword [ebx+8], 0
-        jz      @f
-.eof:
-        pop     edi
-        push    ERROR_END_OF_FILE
-        call    fat_unlock
-        jmp     .ret0
-@@:
+        jnz     .eof    ; FAT does not support files larger than 4GB
         mov     ecx, [ebx+12]
         mov     edx, [ebx+16]
         mov     ebx, [ebx+4]
@@ -2715,16 +2686,7 @@ fat_Write:
 ; hd_extend_file can return three error codes: FAT table error, device error or disk full.
 ; First two cases are fatal errors, in third case we may write some data
         cmp     al, ERROR_DISK_FULL
-        jz      .disk_full
-        call    fat_unlock
-        pop     eax
-        pop     eax
-        pop     ecx
-        pop     edx
-        pop     edi
-        xor     ebx, ebx
-        ret
-.disk_full:
+        jnz     @f
 ; correct number of bytes to write
         mov     ecx, [edi+28]
         cmp     ecx, ebx
@@ -2739,13 +2701,29 @@ fat_Write:
         jz      @f
         mov     byte [esp+4], ERROR_DEVICE
 @@:
+        pop     eax eax ecx edx
+.error:
+        push    eax
+@@:
         call    fat_unlock
-        pop     eax
-        pop     eax
-        pop     ecx
-        pop     edx
-        pop     edi
+        pop     eax edi
+        xor     ebx, ebx
         ret
+
+.eof:
+        push    ERROR_END_OF_FILE
+        jmp     @b
+
+.device_err2:
+        pop     ecx
+.device_err:
+        mov     byte [esp+8], ERROR_DEVICE
+        jmp     .ret
+
+.fat_err:
+        mov     byte [esp+8], ERROR_FS_FAIL
+        jmp     .ret
+
 .length_ok:
         mov     esi, [edi+28]
         mov     eax, [edi+20-2]
@@ -2759,15 +2737,7 @@ fat_Write:
         call    fs_write32_sys
         pop     ebx
         test    eax, eax
-        jz      @f
-.device_err:
-        mov     byte [esp+8], ERROR_DEVICE
-        jmp     .ret
-.fat_err:
-        mov     byte [esp+8], ERROR_FS_FAIL
-        jmp     .ret
-@@:
-
+        jnz     .device_err
 ; now ebx=start pos, ecx=end pos, both lie inside file
         sub     ecx, ebx
         jz      .ret
@@ -2811,11 +2781,7 @@ fat_Write:
         call    fs_read32_app
         test    eax, eax
         pop     ebx eax
-        jz      @f
-.device_err2:
-        pop     ecx
-        jmp     .device_err
-@@:
+        jnz     .device_err2
 .noread:
 ; zero uninitialized data if file was extended (because hd_extend_file does not this)
         push    eax ecx edi
@@ -2996,31 +2962,14 @@ fat_update_datetime:
 fat_SetFileEnd:
         call    fat_lock
         push    edi
-        cmp     byte [esi], 0
-        jnz     @f
-.access_denied:
-        push    ERROR_ACCESS_DENIED
-.ret:
-        call    fat_unlock
-        pop     eax
-        pop     edi
-        ret
-@@:
         call    hd_find_lfn
-        jnc     @f
-.reteax:
-        push    eax
-        jmp     .ret
-@@:
+        jc      .reteax
 ; must not be directory
         test    byte [edi+11], 10h
         jnz     .access_denied
 ; file size must not exceed 4 Gb
         cmp     dword [ebx+8], 0
-        jz      @f
-        push    ERROR_END_OF_FILE
-        jmp     .ret
-@@:
+        jnz     .endOfFile
         push    eax     ; save directory sector
 ; set file modification date/time to current
         call    fat_update_datetime
@@ -3032,12 +2981,22 @@ fat_SetFileEnd:
         lea     ebx, [ebp+FAT.buffer]
         call    fs_write32_sys
         test    eax, eax
-        jz      @f
-        push    ERROR_DEVICE
-        jmp     .ret
-@@:
+        jnz     .errorDevice
         push    0
         jmp     .ret
+
+.access_denied:
+        push    ERROR_ACCESS_DENIED
+        jmp     .ret
+
+.endOfFile:
+        push    ERROR_END_OF_FILE
+        jmp     .ret
+
+.errorDevice:
+        push    ERROR_DEVICE
+        jmp     .ret
+
 .expand:
         push    ebx ebp ecx
         push    dword [edi+28]  ; save old size
@@ -3046,14 +3005,8 @@ fat_SetFileEnd:
         push    eax             ; return code
         jnc     .expand_ok
         cmp     al, ERROR_DISK_FULL
-        jz      .disk_full
-.pop_ret:
-        call    update_disk
-        pop     eax ecx ecx ebp ebx ecx
-        jmp     .reteax
-.expand_ok:
-.disk_full:
-; save directory
+        jnz     .pop_ret
+.expand_ok: ; save directory
         mov     eax, [edi+28]
         xchg    eax, [esp+20]
         lea     ebx, [ebp+FAT.buffer]
@@ -3062,11 +3015,7 @@ fat_SetFileEnd:
         mov     eax, [edi+20-2]
         mov     ax, [edi+26]
         mov     edi, eax
-        jz      @f
-.pop_ret11:
-        mov     byte [esp], ERROR_DEVICE
-        jmp     .pop_ret
-@@:
+        jnz     .pop_ret11
         test    edi, edi
         jz      .pop_ret
 ; now zero new data
@@ -3123,7 +3072,29 @@ fat_SetFileEnd:
         mov     edi, eax
         jnc     .zero_loop
         pop     eax
-        jmp     .pop_ret11
+.pop_ret11:
+        mov     byte [esp], ERROR_DEVICE
+.pop_ret:
+        call    update_disk
+        pop     eax ecx ecx ebp ebx ecx
+.reteax:
+        push    eax
+.ret:
+        call    fat_unlock
+        pop     eax edi
+        ret
+
+.error_fat:
+        pop     eax
+        mov     byte [esp], ERROR_FS_FAIL
+        jmp     .pop_ret
+
+.error_fat2:
+        pop     eax ecx eax
+        call    update_disk
+        push    ERROR_FS_FAIL
+        jmp     .ret
+
 .truncate:
         mov     [edi+28], eax
         push    ecx
@@ -3132,8 +3103,7 @@ fat_SetFileEnd:
         push    eax
         test    eax, eax
         jz      .zero_size
-; find new last cluster
-@@:
+@@: ; find new last cluster
         cmp     ecx, 2
         jb      .error_fat2
         cmp     ecx, [ebp+FAT.fatRESERVED]
@@ -3147,11 +3117,11 @@ fat_SetFileEnd:
         mov     ecx, eax
         jnc     @b
 .device_err3:
-        pop     eax ecx eax edi
+        pop     eax ecx eax
         call    update_disk
-        call    fat_unlock
-        movi    eax, ERROR_DEVICE
-        ret
+        push    ERROR_DEVICE
+        jmp     .ret
+
 @@:
 ; we will zero data at the end of last sector - remember it
         push    ecx
@@ -3166,6 +3136,7 @@ fat_SetFileEnd:
 .device_err4:
         pop     ecx
         jmp     .device_err3
+
 .zero_size:
         and     word [edi+20], 0
         and     word [edi+26], 0
@@ -3215,16 +3186,6 @@ fat_SetFileEnd:
         call    fat_unlock
         xor     eax, eax
         ret
-.error_fat:
-        pop     eax
-        mov     byte [esp], ERROR_FS_FAIL
-        jmp     .pop_ret
-.error_fat2:
-        pop     eax ecx eax edi
-        call    update_disk
-        call    fat_unlock
-        movi    eax, ERROR_FS_FAIL
-        ret
 
 ;----------------------------------------------------------------
 fat_GetFileInfo:
@@ -3256,11 +3217,6 @@ fat_GetFileInfo:
 
 ;----------------------------------------------------------------
 fat_SetFileInfo:
-        cmp     byte [esi], 0
-        jnz     @f
-        mov     eax, 2
-        ret
-@@:
         push    edi
         call    fat_lock
         call    hd_find_lfn
@@ -3286,26 +3242,11 @@ fat_SetFileInfo:
 ;----------------------------------------------------------------
 fat_Delete:
         call    fat_lock
-        cmp     byte [esi], 0
-        jnz     @f
-; cannot delete root!
-.access_denied:
-        push    ERROR_ACCESS_DENIED
-.pop_ret:
-        call    fat_unlock
-        pop     eax
-        xor     ebx, ebx
-        ret
-@@:
         and     [ebp+FAT.longname_sec1], 0
         and     [ebp+FAT.longname_sec2], 0
         push    edi
         call    hd_find_lfn
-        jnc     .found
-        pop     edi
-        push    ERROR_FILE_NOT_FOUND
-        jmp     .pop_ret
-.found:
+        jc      .notFound
         cmp     dword [edi], '.   '
         jz      .access_denied2
         cmp     dword [edi], '..  '
@@ -3359,23 +3300,27 @@ fat_Delete:
 .err1:
         popad
 .err2:
-        pop     edi
+        push    ERROR_DEVICE
+.ret:
         call    fat_unlock
-        movi    eax, ERROR_DEVICE
+        pop     eax edi
         ret
+
+.notFound:
+        push    ERROR_FILE_NOT_FOUND
+        jmp     .ret
+
 .error_fat:
         popad
-        pop     edi
-        call    fat_unlock
-        movi    eax, ERROR_FS_FAIL
-        ret
+        push    ERROR_FS_FAIL
+        jmp     .ret
+
 .notempty:
         popad
 .access_denied2:
-        pop     edi
-        call    fat_unlock
-        movi    eax, ERROR_ACCESS_DENIED
-        ret
+        push    ERROR_ACCESS_DENIED
+        jmp     .ret
+
 .empty:
         popad
         push    eax ebx

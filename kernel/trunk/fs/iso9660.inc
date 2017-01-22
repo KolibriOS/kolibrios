@@ -160,112 +160,88 @@ free_cd_channel:
 
 ;-----------------------------------------------------------------------------
 fs_CdRead:
-        push    edi
-        cmp     byte [esi], 0
-        jnz     @f
-;--------------------------------------
-.noaccess:
-        pop     edi
-;--------------------------------------
-.noaccess_2:
-        or      ebx, -1
-        mov     eax, ERROR_ACCESS_DENIED
-        ret
-;--------------------------------------
-.noaccess_3:
-        pop     eax edx ecx edi
-        jmp     .noaccess_2
-;--------------------------------------
-@@:
         call    cd_find_lfn
-        jnc     .found
-
-        pop     edi
-        cmp     [DevErrorCode], 0
-        jne     .noaccess_2
-
-        or      ebx, -1
-        mov     eax, ERROR_FILE_NOT_FOUND
-        ret
-;--------------------------------------
-.found:
+        jc      .notFound
         mov     edi, [cd_current_pointer_of_input]
-        test    byte [edi+25], 10b; do not allow read directories
+        test    byte [edi+25], 10b  ; do not allow read directories
         jnz     .noaccess
-
         test    ebx, ebx
         jz      .l1
-
         cmp     dword [ebx+4], 0
         jz      @f
-
         xor     ebx, ebx
-;--------------------------------------
-.reteof:
-        mov     eax, 6; end of file
-        pop     edi
+        movi    eax, ERROR_END_OF_FILE
         ret
-;--------------------------------------
+
+.notFound:
+        cmp     [DevErrorCode], 0
+        jne     .noaccess
+        xor     ebx, ebx
+        movi    eax, ERROR_FILE_NOT_FOUND
+        ret
+
+.noaccess_3:
+        pop     eax edx ecx
+.noaccess:
+        xor     ebx, ebx
+        movi    eax, ERROR_ACCESS_DENIED
+        ret
+
 @@:
         mov     ebx, [ebx]
-;--------------------------------------
 .l1:
-        push    ecx edx
-        push    0
-        mov     eax, [edi+10] ; real size of the file section
+        push    ecx edx 0
+        mov     eax, [edi+10]   ; real size of the file section
         sub     eax, ebx
         jb      .eof
-
         cmp     eax, ecx
         jae     @f
-
         mov     ecx, eax
-        mov     byte [esp], 6
-;--------------------------------------
+        pop     eax
+        push    ERROR_END_OF_FILE
 @@:
         mov     eax, [edi+2]
         mov     [CDSectorAddress], eax
-;--------------------------------------
 ; now eax=cluster, ebx=position, ecx=count, edx=buffer for data
 .new_sector:
         test    ecx, ecx
         jz      .done
-
         sub     ebx, 2048
         jae     .next
-
         add     ebx, 2048
         jnz     .incomplete_sector
-
         cmp     ecx, 2048
         jb      .incomplete_sector
 ; we may read and memmove complete sector
         mov     [CDDataBuf_pointer], edx
-        call    ReadCDWRetr ; read sector of file
+        call    ReadCDWRetr
         cmp     [DevErrorCode], 0
         jne     .noaccess_3
-
         add     edx, 2048
         sub     ecx, 2048
-;--------------------------------------
 .next:
         inc     dword [CDSectorAddress]
         jmp     .new_sector
-;--------------------------------------
-.incomplete_sector:
-; we must read and memmove incomplete sector
+
+.eof:
+        pop     eax
+        push    ERROR_END_OF_FILE
+.done:
+        mov     ebx, edx
+        pop     eax edx ecx
+        sub     ebx, edx
+        ret
+
+.incomplete_sector: ; we must read and memmove incomplete sector
         mov     [CDDataBuf_pointer], CDDataBuf
-        call    ReadCDWRetr ; read sector of file
+        call    ReadCDWRetr
         cmp     [DevErrorCode], 0
         jne     .noaccess_3
-
         push    ecx
         add     ecx, ebx
         cmp     ecx, 2048
         jbe     @f
-
         mov     ecx, 2048
-;--------------------------------------
 @@:
         sub     ecx, ebx
         push    edi esi ecx
@@ -279,18 +255,6 @@ fs_CdRead:
         pop     ecx
         xor     ebx, ebx
         jmp     .next
-;--------------------------------------
-.done:
-        mov     ebx, edx
-        pop     eax edx ecx edi
-        sub     ebx, edx
-        ret
-;--------------------------------------
-.eof:
-        mov     ebx, edx
-        pop     eax edx ecx
-        sub     ebx, edx
-        jmp     .reteof
 
 ;-----------------------------------------------------------------------------
 fs_CdReadFolder:

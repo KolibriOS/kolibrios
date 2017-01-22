@@ -1320,47 +1320,18 @@ ntfs_find_lfn:
 
 ;----------------------------------------------------------------
 ntfs_ReadFile:
-        cmp     byte [esi], 0
-        jnz     @f
-        or      ebx, -1
-        movi    eax, ERROR_ACCESS_DENIED
-        ret
-
-@@:
         call    ntfs_lock
         call    ntfs_find_lfn
-        jnc     .found
-        call    ntfs_unlock
-        or      ebx, -1
-        movi    eax, ERROR_FILE_NOT_FOUND
-        ret
-
-.found:
+        jc      ntfsNotFound
         mov     [ebp+NTFS.cur_attr], 0x80   ; $DATA
         and     [ebp+NTFS.cur_offs], 0
         and     [ebp+NTFS.cur_size], 0
         call    ntfs_read_attr
-        jnc     @f
-        call    ntfs_unlock
-        or      ebx, -1
-        movi    eax, ERROR_ACCESS_DENIED
-        ret
-
-@@:
-        pushad
-        and     dword [esp+10h], 0
+        jc      ntfsDenied
         xor     eax, eax
+        push    eax
         cmp     dword [ebx+8], 0x200
-        jb      @f
-.eof0:
-        popad
-        xor     ebx, ebx
-.eof:
-        call    ntfs_unlock
-        movi    eax, ERROR_END_OF_FILE
-        ret
-
-@@:
+        jnc     .eof
         mov     ecx, [ebx+12]
         mov     edx, [ebx+16]
         mov     eax, [ebx+4]
@@ -1379,33 +1350,22 @@ ntfs_ReadFile:
         and     eax, 0x1FF
         lea     esi, [ebp+NTFS.bitmap_buf+eax]
         sub     eax, [ebp+NTFS.cur_read]
-        jae     .eof0
+        jae     .eof
         neg     eax
         push    ecx
         cmp     ecx, eax
         jb      @f
         mov     ecx, eax
 @@:
-        mov     [esp+10h+4], ecx
+        mov     [esp+4], ecx
         mov     edi, edx
         rep movsb
         mov     edx, edi
         pop     ecx
-        sub     ecx, [esp+10h]
-        jnz     @f
-.retok:
-        popad
-        call    ntfs_unlock
-        xor     eax, eax
-        ret
-
-@@:
+        sub     ecx, [esp]
+        jz      .retok
         cmp     [ebp+NTFS.cur_read], 0x200
-        jz      .alignedstart
-.eof_ebx:
-        popad
-        jmp     .eof
-
+        jnz     .eof
 .alignedstart:
         mov     eax, [ebx+4]
         push    edx
@@ -1424,11 +1384,11 @@ ntfs_ReadFile:
         call    ntfs_read_attr.continue
         pop     [ebp+NTFS.cur_offs]
         mov     eax, [ebp+NTFS.cur_read]
-        add     [esp+10h], eax
+        add     [esp], eax
         mov     eax, ecx
         and     eax, not 0x1FF
         cmp     [ebp+NTFS.cur_read], eax
-        jnz     .eof_ebx
+        jnz     .eof
         and     ecx, 0x1FF
         jz      .retok
         add     edx, [ebp+NTFS.cur_read]
@@ -1444,18 +1404,21 @@ ntfs_ReadFile:
         push    ecx
         mov     edi, edx
         lea     esi, [ebp+NTFS.bitmap_buf]
-        add     [esp+10h+4], ecx
+        add     [esp+4], ecx
         rep movsb
         pop     ecx
-        xor     eax, eax
         cmp     ecx, [ebp+NTFS.cur_read]
-        jz      @f
-        mov     al, ERROR_END_OF_FILE
-@@:
-        mov     [esp+1Ch], eax
+        jnz     .eof
+.retok:
+        pushd   0
+.ret:
         call    ntfs_unlock
-        popad
+        pop     eax ebx
         ret
+
+.eof:
+        push    ERROR_END_OF_FILE
+        jmp     .ret
 
 ;----------------------------------------------------------------
 ntfs_ReadFolder:
@@ -1854,13 +1817,6 @@ ntfs_CreateFolder:
 
 ntfs_CreateFile:
         mov     [ebp+NTFS.bFolder], 0
-@@:
-        cmp     byte [esi], 0
-        jnz     @f
-        xor     ebx, ebx
-        movi    eax, ERROR_ACCESS_DENIED
-        ret
-
 @@: ; 1. Search file
         call    ntfs_lock
         call    ntfs_find_lfn
@@ -3483,12 +3439,6 @@ bitmapBuffering:
 
 ;----------------------------------------------------------------
 ntfs_WriteFile:
-        cmp     byte [esi], 0
-        jnz     @f
-        xor     ebx, ebx
-        movi    eax, ERROR_ACCESS_DENIED
-        ret
-@@:
         call    ntfs_lock
         call    ntfs_find_lfn
         jc      ntfsNotFound
@@ -3662,13 +3612,6 @@ ntfs_WriteFile:
 
 ;----------------------------------------------------------------
 ntfs_Delete:
-        cmp     byte [esi], 0
-        jnz     @f
-        xor     ebx, ebx
-        movi    eax, ERROR_ACCESS_DENIED
-        ret
-
-@@:
         call    ntfs_lock
         call    ntfs_find_lfn
         jc      ntfsNotFound
@@ -3981,12 +3924,6 @@ ntfs_Delete:
 
 ;----------------------------------------------------------------
 ntfs_SetFileEnd:
-        cmp     byte [esi], 0
-        jnz     @f
-        xor     ebx, ebx
-        movi    eax, ERROR_ACCESS_DENIED
-        ret
-@@:
         call    ntfs_lock
         call    ntfs_find_lfn
         jc      ntfsNotFound
@@ -4116,11 +4053,6 @@ ntfsCalculateTime:
 
 ;----------------------------------------------------------------
 ntfs_SetFileInfo:
-        cmp     byte [esi], 0
-        jnz     @f
-        movi    eax, ERROR_UNSUPPORTED_FS
-        ret
-@@:
         call    ntfs_lock
         call    ntfs_find_lfn
         jnc     @f

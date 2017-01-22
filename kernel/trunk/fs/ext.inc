@@ -1753,9 +1753,6 @@ writeSuperblock:
         ret
 
 extfsWritingInit:
-        movi    eax, ERROR_ACCESS_DENIED
-        cmp     byte [esi], 0
-        jz      @f
         movi    eax, ERROR_UNSUPPORTED_FS
         test    [ebp+EXTFS.mountType], READ_ONLY
         jnz     @f
@@ -1987,10 +1984,7 @@ ext_ReadFolder:
 ;----------------------------------------------------------------
 ext_ReadFile:
         call    ext_lock
-        pushd   0 ERROR_ACCESS_DENIED
-        cmp     byte [esi], 0
-        jz      .ret  ; root
-        mov     [esp], ebx
+        pushd   0 ebx
         call    findInode
         pop     ebx
         push    eax

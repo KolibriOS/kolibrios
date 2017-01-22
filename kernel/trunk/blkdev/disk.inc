@@ -1393,10 +1393,16 @@ dyndisk_handler:
 ; 11c. Let the procedure from fs_lfn.inc do the job.
         jmp     file_system_lfn.maindir_noesi
 
+.root:
+        pop     ecx edx
+        xor     eax, eax
+        cmp     byte [ebx], 9
+        jz      .cleanup_ecx
 .access_denied:
-        mov     dword [esp+32], ERROR_ACCESS_DENIED
+        movi    eax, ERROR_ACCESS_DENIED
+.cleanup_ecx:
+        mov     [esp+32], eax
         mov     esi, ecx        ; disk*dereference assume that esi points to DISK
-.cleanup_esi:
         test    edx, edx        ; if there are no media, we didn't reference it
         jz      @f
         call    disk_media_dereference
@@ -1406,15 +1412,13 @@ dyndisk_handler:
         ret
 
 .dyndisk_cleanup:
-        pop     esi
-        pop     edx
-        mov     dword [esp+32], ERROR_FILE_NOT_FOUND
-        jmp     .cleanup_esi
+        pop     ecx edx
+        movi    eax, ERROR_FILE_NOT_FOUND
+        jmp     .cleanup_ecx
 
 .haspartition:
 ; 12. The fs operation has specified some partition.
-        push    edx
-        push    ecx
+        push    edx ecx
         xor     eax, eax
         lodsb
         sub     eax, '0'
@@ -1428,6 +1432,13 @@ dyndisk_handler:
         test    eax, eax
         jnz     .dyndisk_cleanup
         dec     esi
+@@:
+        cmp     byte [esi], 0
+        jnz     @f
+        cmp     byte [ebx], 1
+        jz      @f
+        cmp     byte [ebx], 5
+        jnz     .root
 @@:
         dec     ecx     ; convert to zero-based partition index
         pop     edx     ; edx = pointer to DISK, dword [esp] = NULL or edx
@@ -1479,9 +1490,9 @@ dyndisk_handler:
         call    dword [edi+8+ecx*4]
         pop     ebp
         pop     edx
-        mov     dword [esp+32], eax
         mov     dword [esp+20], ebx
 .cleanup:
+        mov     dword [esp+32], eax
         mov     esi, edx
         call    disk_media_dereference
 @@:
@@ -1490,14 +1501,14 @@ dyndisk_handler:
         ret
 
 .unsupported:
-        mov     dword [esp+32], ERROR_UNKNOWN_FS
+        movi    eax, ERROR_UNKNOWN_FS
         cmp     edi, default_fs_functions
         jz      .cleanup
-        mov     dword [esp+32], ERROR_UNSUPPORTED_FS
+        movi    eax, ERROR_UNSUPPORTED_FS
         jmp     .cleanup
 
 .notfound2:
-        mov     dword [esp+32], ERROR_FILE_NOT_FOUND
+        movi    eax, ERROR_FILE_NOT_FOUND
         jmp     .cleanup
 
 .nomedia:
