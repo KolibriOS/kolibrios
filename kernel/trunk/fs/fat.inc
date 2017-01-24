@@ -2707,11 +2707,11 @@ fat_Write:
 @@:
         call    fat_unlock
         pop     eax edi
-        xor     ebx, ebx
         ret
 
 .eof:
         push    ERROR_END_OF_FILE
+        xor     ebx, ebx
         jmp     @b
 
 .device_err2:
