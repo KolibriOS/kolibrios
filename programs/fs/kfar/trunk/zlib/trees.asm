@@ -172,7 +172,6 @@ macro put_short s, w
 align 4
 proc send_bits uses eax ecx edi, s:dword, value:dword, length:dword
 ;    Tracevv((stderr," l %2d v %4x ", length, value));
-	zlib_debug 'send_bits value = %d',[value]
 ;if DEBUG eq 1
 	mov eax,[length]
 	cmp eax,0
@@ -183,7 +182,7 @@ proc send_bits uses eax ecx edi, s:dword, value:dword, length:dword
 		zlib_assert 'invalid length' ;Assert(..>0 && ..<=15)
 	.end1:
 	mov edi,[s]
-	add [edi+deflate_state.bits_sent],eax
+	;;add [edi+deflate_state.bits_sent],eax
 
 	; If not enough room in bi_buf, use (valid) bits from bi_buf and
 	; (16 - bi_valid) bits from value, leaving (width - (16-bi_valid))
@@ -385,12 +384,10 @@ endp
 ; ===========================================================================
 ; Initialize the tree data structures for a new zlib stream.
 
-;void (s)
-;    deflate_state* s
+;void (deflate_state* s)
 align 4
 proc _tr_init uses eax edi, s:dword
 	mov edi,[s]
-	zlib_debug '_tr_init'
 	call tr_static_init
 
 	mov eax,edi
@@ -421,8 +418,7 @@ endp
 ; ===========================================================================
 ; Initialize a new block.
 
-;void (s)
-;    deflate_state* s
+;void (deflate_state* s)
 align 4
 proc init_block uses eax ecx edi, s:dword
 	mov edi,[s]
@@ -469,12 +465,12 @@ SMALLEST equ 1
 macro pqremove s, tree, top
 {
 	mov eax,s
-	add eax,deflate_state.heap+2*SMALLEST
+	add eax,deflate_state.heap+4*SMALLEST
 	movzx top,word[eax]
 push ebx
 	mov ebx,[s+deflate_state.heap_len]
-	mov bx,[s+deflate_state.heap+2*ebx]
-	mov word[eax],bx
+	mov ebx,[s+deflate_state.heap+4*ebx]
+	mov [eax],ebx
 	dec dword[s+deflate_state.heap_len]
 pop ebx
 	stdcall pqdownheap, s, tree, SMALLEST
@@ -488,20 +484,20 @@ macro smaller tree, n, m, depth, m_end
 {
 ;if (..<.. || (..==.. && depth[n] <= depth[m]))
 local .end0
-	movzx eax,n
+	mov eax,n
 	imul eax,sizeof.ct_data
 	add eax,tree
 	mov ax,word[eax+Freq]
-	movzx ebx,m
+	mov ebx,m
 	imul ebx,sizeof.ct_data
 	add ebx,tree
 	mov bx,word[ebx+Freq]
 	cmp ax,bx
 	jl .end0
 	jne m_end
-	movzx eax,n
+	mov eax,n
 	mov al,byte[eax+depth]
-	movzx ebx,m
+	mov ebx,m
 	cmp al,byte[ebx+depth]
 	jg m_end
 	.end0:
@@ -523,8 +519,7 @@ pushad
 	;ecx - v dw
 	mov edi,[s]
 	mov esi,[k]
-	zlib_debug 'pqdownheap k = %d',esi
-	mov cx,[edi+deflate_state.heap+2*esi]
+	mov ecx,[edi+deflate_state.heap+4*esi]
 	shl esi,1
 	;esi = j ;left son of k
 	.cycle0: ;while (..<=..)
@@ -534,21 +529,21 @@ pushad
 		;;cmp esi,[edi+deflate_state.heap_len]
 		jge .end1 ;if (..<.. &&
 		mov edx,esi
-		shl edx,1
+		shl edx,2
 		add edx,edi
 		add edx,deflate_state.heap
-		smaller [tree], word[edx+2], word[edx], edi+deflate_state.depth, .end1
+		smaller [tree], dword[edx+4], dword[edx], edi+deflate_state.depth, .end1
 			inc esi
 		.end1:
 		; Exit if v is smaller than both sons
-		mov dx,[edi+deflate_state.heap+2*esi]
-		smaller [tree], cx, dx, edi+deflate_state.depth, .end2
+		mov edx,[edi+deflate_state.heap+4*esi]
+		smaller [tree], ecx, edx, edi+deflate_state.depth, .end2
 			jmp .cycle0end ;break
 		.end2:
 		; Exchange v with the smallest son
 		;;mov dx,[edi+deflate_state.heap+2*esi]
 		mov eax,[k]
-		mov [edi+deflate_state.heap+2*eax],dx
+		mov [edi+deflate_state.heap+4*eax],edx
 		mov [k],esi
 		; And continue down the tree, setting j to the left son of k
 		shl esi,1
@@ -556,7 +551,7 @@ pushad
 align 4
 	.cycle0end:
 	mov eax,[k]
-	mov [edi+deflate_state.heap+2*eax],cx
+	mov [edi+deflate_state.heap+4*eax],ecx
 popad
 	ret
 endp
@@ -591,7 +586,6 @@ locals
 	overflow dd 0 ;int ;number of elements with bit length too large
 endl
 pushad
-	zlib_debug 'gen_bitlen'
 	mov edi,[s]
 	mov edx,[desc]
 	mov eax,[edx+tree_desc.dyn_tree]
@@ -622,7 +616,7 @@ align 4
 	; overflow in the case of the bit length tree).
 
 	mov eax,[edi+deflate_state.heap_max]
-	movzx eax,word[edi+deflate_state.heap+2*eax]
+	mov eax,[edi+deflate_state.heap+4*eax]
 	imul eax,sizeof.ct_data
 	add eax,[tree]
 	mov word[eax+Len],0 ;root of the heap
@@ -634,7 +628,7 @@ align 4
 	cmp dword[h],HEAP_SIZE
 	jge .cycle1end ;for (..;..<..;..)
 		mov eax,[h]
-		movzx ecx,word[edi+deflate_state.heap+2*eax]
+		mov ecx,[edi+deflate_state.heap+4*eax]
 		;ecx = n
 		mov eax,sizeof.ct_data
 		imul eax,ecx
@@ -752,7 +746,7 @@ align 4
 		je .cycle4end
 			dec dword[h]
 			mov eax,[h]
-			movzx eax,word[edi+deflate_state.heap+2*eax]
+			mov eax,[edi+deflate_state.heap+4*eax]
 			mov [m],eax ;m = s.heap[--h]
 			cmp eax,[max_code]
 			jg .cycle4 ;if (..>..) continue
@@ -804,7 +798,6 @@ locals
 endl
 	; The distribution counts are first used to generate the code values
 	; without bit reversal.
-	zlib_debug 'gen_codes'
 	mov ebx,ebp
 	sub ebx,2*(MAX_BITS+1)
 
@@ -912,7 +905,7 @@ endl
 			inc dword[edi+deflate_state.heap_len]
 			mov eax,[edi+deflate_state.heap_len]
 			mov [max_code],ecx
-			mov [edi+deflate_state.heap+2*eax],cx
+			mov dword[edi+deflate_state.heap+4*eax],ecx
 			mov byte[edi+deflate_state.depth+ecx],0
 			jmp .end0
 align 4
@@ -941,7 +934,7 @@ align 4
 			mov eax,[max_code]
 		@@:
 		mov ecx,[edi+deflate_state.heap_len]
-		mov [edi+deflate_state.heap+2*ecx],ax
+		mov [edi+deflate_state.heap+4*ecx],eax
 		mov [node],eax
 		imul eax,sizeof.ct_data
 		add eax,[tree]
@@ -989,10 +982,10 @@ align 4
 
 		mov eax,[edi+deflate_state.heap_max]
 		dec eax
-		mov [edi+deflate_state.heap+2*eax],cx ;keep the nodes sorted by frequency
+		mov [edi+deflate_state.heap+4*eax],ecx ;keep the nodes sorted by frequency
 		dec eax
 		mov [edi+deflate_state.heap_max],eax
-		mov [edi+deflate_state.heap+2*eax],dx
+		mov [edi+deflate_state.heap+4*eax],edx
 
 		; Create a new node father of n and m
 		;;mov edx,[m]
@@ -1040,16 +1033,16 @@ align 4
 ;end if
 		; and insert the new node in the heap
 		mov ecx,[node]
-		mov [edi+deflate_state.heap+2*SMALLEST],cx
+		mov [edi+deflate_state.heap+4*SMALLEST],ecx
 		inc dword[node]
 		stdcall pqdownheap, edi, [tree], SMALLEST
 		cmp dword[edi+deflate_state.heap_len],2
 		jge .cycle3 ;while (..>=..)
 
-	mov cx,[edi+deflate_state.heap+2*SMALLEST]
+	mov ecx,[edi+deflate_state.heap+4*SMALLEST]
 	dec dword[edi+deflate_state.heap_max]
 	mov eax,[edi+deflate_state.heap_max]
-	mov [edi+deflate_state.heap+2*eax],cx
+	mov [edi+deflate_state.heap+4*eax],ecx
 
 	; At this point, the fields freq and dad are set. We can now
 	; generate the bit lengths.
@@ -1083,7 +1076,6 @@ locals
 	min_count dd 4 ;int ;min repeat count
 endl
 	mov edi,[s]
-	zlib_debug 'scan_tree'
 	mov eax,[tree]
 	movzx eax,word[eax+Len]
 	mov [nextlen],eax
@@ -1204,7 +1196,6 @@ locals
 	min_count dd 4 ;int ;min repeat count
 endl
 	mov edi,[s]
-	zlib_debug 'send_tree'
 	; *** tree[max_code+1].Len = -1 ;guard already set
 	mov eax,[tree]
 	movzx eax,word[eax+Len]
@@ -1214,7 +1205,6 @@ endl
 	jnz .cycle0 ;if (..==0)
 		mov dword[max_count],138
 		mov dword[min_count],3
-
 align 4
 	.cycle0: ;for (..;..<=..;..)
 	cmp ecx,[max_code]
@@ -1322,8 +1312,7 @@ endp
 ; Construct the Huffman tree for the bit lengths and return the index in
 ; bl_order of the last bit length code to send.
 
-;int (s)
-;    deflate_state* s
+;int (deflate_state* s)
 align 4
 proc build_bl_tree uses edi, s:dword
 locals
@@ -1385,7 +1374,6 @@ endp
 align 4
 proc send_all_trees uses eax ebx ecx edi, s:dword, lcodes:dword, dcodes:dword, blcodes:dword
 ;ecx = index in bl_order
-	zlib_debug 'send_all_trees'
 	cmp dword[lcodes],257
 	jl @f
 	cmp dword[dcodes],1
@@ -1479,20 +1467,20 @@ endp
 ; ===========================================================================
 ; Flush the bits in the bit buffer to pending output (leaves at most 7 bits)
 
-;void (s)
-;    deflate_state* s
-align 4
-proc _tr_flush_bits, s:dword
-	stdcall bi_flush, [s]
-	ret
-endp
+;void (deflate_state* s)
+;align 4
+;proc _tr_flush_bits, s:dword
+;	stdcall bi_flush, [s]
+;	ret
+;endp
+
+_tr_flush_bits equ bi_flush
 
 ; ===========================================================================
 ; Send one empty static block to give enough lookahead for inflate.
 ; This takes 10 bits, of which 7 may remain in the bit buffer.
 
-;void (s)
-;    deflate_state* s
+;void (deflate_state* s)
 align 4
 proc _tr_align uses edi, s:dword
 	mov edi,[s]
@@ -1523,7 +1511,6 @@ locals
 endl
 	; Build the Huffman trees unless a stored block is forced
 	mov edi,[s]
-	zlib_debug '_tr_flush_block'
 	cmp word[edi+deflate_state.level],0
 	jle .end0 ;if (..>0)
 
@@ -1728,10 +1715,9 @@ if TRUNCATE_BLOCK eq 1
 	; Try to guess if it is profitable to stop the current block here
 	mov eax,[edi+deflate_state.last_lit]
 	and eax,0x1fff
-	cmp eax,0
-	jne .end1
+	jnz .end1
 	cmp word[edi+deflate_state.level],2
-	jle .end1 ;if (..==.. && ..>..)
+	jle .end1 ;if (..==0 && ..>..)
 	; Compute an upper bound for the compressed length
 ;        ulg out_length = (ulg)s->last_lit*8L;
 ;        ulg in_length = (ulg)((long)s->strstart - s->block_start);
@@ -1775,7 +1761,6 @@ locals
 	lc    dd ? ;int      ;match length or unmatched char (if dist == 0)
 	lx    dd 0 ;unsigned ;running index in l_buf
 	u_code dd ? ;unsigned ;the code to send
-	extra  dd ? ;int      ;number of extra bits to send
 endl
 	mov edi,[s]
 	cmp dword[edi+deflate_state.last_lit],0
@@ -1805,18 +1790,14 @@ endl
 			add eax,LITERALS+1
 			send_code edi, eax, [ltree] ;send the length code
 			mov eax,[u_code]
-			shl eax,2
-			add eax,extra_lbits
-			mov eax,[eax]
-			mov [extra],eax
-			cmp eax,0
-			je @f ;if (..!=0)
+			mov eax,[4*eax+extra_lbits]
+			test eax,eax
+			jz @f ;if (..!=0)
+				push eax ;extra
 				mov eax,[u_code]
-				shl eax,2
-				add eax,base_length
-				mov eax,[eax]
+				mov eax,[4*eax+base_length]
 				sub [lc],eax
-				stdcall send_bits, edi, [lc], [extra] ;send the extra length bits
+				stdcall send_bits, edi, [lc] ;, ... ;send the extra length bits
 			@@:
 			dec dword[dist] ;dist is now the match distance - 1
 			d_code [dist]
@@ -1827,18 +1808,14 @@ endl
 			@@:
 			send_code edi, [u_code], [dtree] ;send the distance code
 			mov eax,[u_code]
-			shl eax,2
-			add eax,extra_dbits
-			mov eax,[eax]
-			mov [extra],eax
-			cmp eax,0
-			je .end1 ;if (..!=0)
+			mov eax,[4*eax+extra_dbits]
+			test eax,eax
+			jz .end1 ;if (..!=0)
+				push eax ;extra
 				mov eax,[u_code]
-				shl eax,2
-				add eax,base_dist
-				mov eax,[eax]
+				mov eax,[4*eax+base_dist]
 				sub [dist],eax
-				stdcall send_bits, edi, [dist], [extra] ;send the extra distance bits
+				stdcall send_bits, edi, [dist] ;, ... ;send the extra distance bits
 		.end1: ;literal or match pair ?
 
 		; Check that the overlay between pending_buf and d_buf+l_buf is ok:
@@ -1954,7 +1931,6 @@ endp
 ;    int len       ;its bit length
 align 4
 proc bi_reverse uses ebx, p1code:dword, len:dword
-	zlib_debug 'bi_reverse'
 	xor eax,eax
 	@@: ;do
 		mov ebx,[p1code]
@@ -1998,8 +1974,7 @@ endp
 ; ===========================================================================
 ; Flush the bit buffer and align the output on a byte boundary
 
-;void (s)
-;    deflate_state* s
+;void (deflate_state* s)
 align 4
 proc bi_windup uses eax ecx edi, s:dword
 	mov edi,[s]

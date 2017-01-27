@@ -137,14 +137,23 @@ endp
 align 4
 proc zmemcpy uses ecx edi esi, dest:dword, source:dword, len:dword
 	mov ecx,[len]
-	cmp ecx,0
-	jle @f
+	test ecx,ecx
+	jz .end0
 		mov edi,[dest]
 		mov esi,[source]
-		rep movsb
-		jmp .end0
-	@@:
-zlib_debug 'zmemcpy size = %d',ecx
+		bt ecx,0 ;кратно 2 ?
+		jnc @f
+			rep movsb
+			jmp .end0
+		@@:
+		bt ecx,1 ;кратно 4 ?
+		jnc @f
+			shr ecx,1
+			rep movsw
+			jmp .end0
+		@@:
+		shr ecx,2
+		rep movsd
 	.end0:
 	ret
 endp

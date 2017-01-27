@@ -26,6 +26,7 @@ macro zlib_assert fmt,p1
 {
 	local .end_t
 	local .m_fmt
+pushf
 	jmp .end_t
 	.m_fmt db fmt,13,10,0
 align 4
@@ -35,6 +36,7 @@ if p1 eq
 else
 	stdcall str_format_dbg, buf_param,.m_fmt,p1
 end if
+popf
 }
 
 include 'zlib.inc'

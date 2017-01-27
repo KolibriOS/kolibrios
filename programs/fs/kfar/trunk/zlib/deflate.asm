@@ -55,10 +55,10 @@ deflate_copyright db ' deflate 1.2.8 Copyright 1995-2013 Jean-loup Gailly and Ma
 ;  Function prototypes.
 
 ;enum block_state
-need_more   equ 1 ;block not completed, need more input or more output
-block_done  equ 2 ;block flush performed
-finish_started equ 3 ;finish started, need only more output at next deflate
-finish_done equ 4 ;finish done, accept no more input or output
+need_more   equ 0 ;block not completed, need more input or more output
+block_done  equ 1 ;block flush performed
+finish_started equ 2 ;finish started, need only more output at next deflate
+finish_done equ 3 ;finish done, accept no more input or output
 
 ; ===========================================================================
 ; Local data
@@ -154,24 +154,25 @@ macro INSERT_STRING s, str, match_head
 	movzx eax,byte[eax]
 	UPDATE_HASH s, [s+deflate_state.ins_h], eax
 	mov eax,[s+deflate_state.ins_h]
-	shl eax,2
+	shl eax,1
 	add eax,[s+deflate_state.head]
-	mov eax,[eax]
+	movzx eax,word[eax]
 	mov match_head,eax
-if FASTEST eq 0
 push ebx
+if FASTEST eq 0
 	mov ebx,[s+deflate_state.w_mask]
 	and ebx,str
-	shl ebx,2
+	shl ebx,1
 	add ebx,[s+deflate_state.prev]
-	mov [ebx],eax
-pop ebx
+	mov [ebx],ax
+
 end if
 	mov eax,[s+deflate_state.ins_h]
-	shl eax,2
+	shl eax,1
 	add eax,[s+deflate_state.head]
-	push str
-	pop dword[eax]
+	mov ebx,str
+	mov [eax],bx
+pop ebx
 }
 
 ; ===========================================================================
@@ -182,12 +183,12 @@ macro CLEAR_HASH s
 {
 	;mov eax,[s+deflate_state.hash_size]
 	;dec eax
-	;shl eax,2
+	;shl eax,1
 	;add eax,[s+deflate_state.head]
-	;mov dword[eax],NIL
+	;mov word[eax],NIL
 	mov eax,[s+deflate_state.hash_size]
 	;dec eax
-	shl eax,2 ;sizeof(*s.head)
+	shl eax,1 ;sizeof(*s.head)
 	stdcall zmemzero, [s+deflate_state.head], eax
 }
 
@@ -372,9 +373,9 @@ end if
 
 	ZALLOC ebx, [edi+deflate_state.w_size], 2 ;2*sizeof(Byte)
 	mov [edi+deflate_state.window],eax
-	ZALLOC ebx, [edi+deflate_state.w_size], 4 ;sizeof(Pos)
+	ZALLOC ebx, [edi+deflate_state.w_size], 2 ;sizeof(Pos)
 	mov [edi+deflate_state.prev],eax
-	ZALLOC ebx, [edi+deflate_state.hash_size], 4 ;sizeof(Pos)
+	ZALLOC ebx, [edi+deflate_state.hash_size], 2 ;sizeof(Pos)
 	mov [edi+deflate_state.head],eax
 
 	mov dword[edi+deflate_state.high_water],0 ;nothing written to s->window yet
@@ -522,19 +523,19 @@ endl
 			UPDATE_HASH edi, [edi+deflate_state.ins_h], eax
 if FASTEST eq 0
 			mov edx,[edi+deflate_state.ins_h]
-			shl edx,2
+			shl edx,1
 			add edx,[edi+deflate_state.head]
-			mov edx,[edx] ;edx = s.head[s.ins_h]
+			movzx edx,word[edx] ;edx = s.head[s.ins_h]
 			mov eax,esi
 			and eax,[edi+deflate_state.w_mask]
-			shl eax,2
+			shl eax,1
 			add eax,[edi+deflate_state.prev]
-			mov [eax],edx
+			mov [eax],dx
 end if
 			mov edx,[edi+deflate_state.ins_h]
-			shl edx,2
+			shl edx,1
 			add edx,[edi+deflate_state.head]
-			mov [edx],esi ;s.head[s.ins_h] = str
+			mov [edx],si ;s.head[s.ins_h] = str
 			inc esi
 			dec ecx
 			jnz .cycle1 ;while (--..)
@@ -940,14 +941,12 @@ endp
 ; to avoid allocating a large strm->next_out buffer and copying into it.
 ; (See also read_buf()).
 
-;void (strm)
-;    z_streamp strm
-align 4
+;void (z_streamp strm)
+align 16
 proc flush_pending uses eax ebx ecx edx, strm:dword
 ;ecx - len
 ;edx - deflate_state *s
 ;ebx - strm
-	zlib_debug 'flush_pending'
 	mov ebx,[strm]
 	mov edx,[ebx+z_stream.state]
 
@@ -958,8 +957,8 @@ proc flush_pending uses eax ebx ecx edx, strm:dword
 	jle @f ;if (..>..)
 		mov ecx,eax
 	@@:
-	cmp ecx,0
-	je @f
+	test ecx,ecx
+	jz @f
 
 	stdcall zmemcpy, [ebx+z_stream.next_out], [edx+deflate_state.pending_out], ecx
 	add [ebx+z_stream.next_out],ecx
@@ -979,14 +978,13 @@ endp
 ;int (strm, flush)
 ;    z_streamp strm
 ;    int flush
-align 4
+align 16
 proc deflate uses ebx ecx edx edi esi, strm:dword, flush:dword
 locals
 	old_flush dd ? ;int ;value of flush param for previous deflate call
 	val dd ?
 endl
 	mov ebx,[strm]
-zlib_debug 'deflate strm = %d',ebx
 	cmp ebx,Z_NULL
 	je @f
 	mov edi,[ebx+z_stream.state] ;s = strm.state
@@ -1180,6 +1178,7 @@ if GZIP eq 1
 			;esi = beg ;start of bytes to update crc
 
 			movzx ecx,word[edx+gz_header.extra_len]
+align 4
 			.cycle0: ;while (..<..)
 			cmp dword[edi+deflate_state.gzindex],ecx
 			jge .cycle0end
@@ -1288,7 +1287,7 @@ if GZIP eq 1
 				mov dword[edi+deflate_state.status],COMMENT_STATE
 			jmp .end6
 		.end22: ;else
-			mov dword[edi+deflate_state.status],COMMENT_STATE;
+			mov dword[edi+deflate_state.status],COMMENT_STATE
 	.end6:
 	cmp dword[edi+deflate_state.status],COMMENT_STATE
 	jne .end7 ;if (..==..)
@@ -1361,14 +1360,13 @@ if GZIP eq 1
 			mov ecx,[edi+deflate_state.pending]
 			add ecx,2
 			cmp ecx,[edi+deflate_state.pending_buf_size]
-			jg @f ;if (..<=..)
+			jg .end8 ;if (..<=..)
 				mov ecx,[ebx+z_stream.adler]
 				put_byte edi, cl
 				put_byte edi, ch
 				xor eax,eax ;stdcall calc_crc32, 0, Z_NULL, 0
 				mov [ebx+z_stream.adler],eax
 				mov dword[edi+deflate_state.status],BUSY_STATE
-			@@:
 			jmp .end8
 		.end9: ;else
 			mov dword[edi+deflate_state.status],BUSY_STATE
@@ -1390,11 +1388,10 @@ end if
 			mov dword[edi+deflate_state.last_flush],-1
 			mov eax,Z_OK
 			jmp .end_f
-		@@:
 		; Make sure there is something to do and avoid duplicate consecutive
 		; flushes. For repeated and useless calls with Z_FINISH, we keep
 		; returning Z_STREAM_END instead of Z_BUF_ERROR.
-		jmp @f
+align 4
 	.end13:
 	cmp dword[ebx+z_stream.avail_in],0
 	jne @f
@@ -1554,7 +1551,6 @@ endp
 align 4
 proc deflateEnd uses ebx ecx edx, strm:dword
 	mov ebx,[strm]
-zlib_debug 'deflateEnd'
 	cmp ebx,Z_NULL
 	je @f
 	mov edx,[ebx+z_stream.state]
@@ -1644,9 +1640,9 @@ proc deflateCopy uses ebx edx edi esi, dest:dword, source:dword
 
 	ZALLOC edx, [edi+deflate_state.w_size], 2 ;2*sizeof.db
 	mov dword[edi+deflate_state.window],eax
-	ZALLOC edx, [edi+deflate_state.w_size], 4 ;sizeof.dd
+	ZALLOC edx, [edi+deflate_state.w_size], 2 ;sizeof.dw
 	mov dword[edi+deflate_state.prev],eax
-	ZALLOC edx, [edi+deflate_state.hash_size], 4 ;sizeof.dd
+	ZALLOC edx, [edi+deflate_state.hash_size], 2 ;sizeof.dw
 	mov dword[edi+deflate_state.head],eax
 	ZALLOC edx, [edi+deflate_state.lit_bufsize], 4 ;sizeof.dw+2
 	mov ebx,eax
@@ -1671,10 +1667,10 @@ proc deflateCopy uses ebx edx edi esi, dest:dword, source:dword
 	shl eax,1 ;*= 2*sizeof.db
 	stdcall zmemcpy, [edi+deflate_state.window], [esi+deflate_state.window], eax
 	mov eax,[edi+deflate_state.w_size]
-	shl eax,2 ;*= sizeof.dd
+	shl eax,1 ;*= sizeof.dw
 	stdcall zmemcpy, [edi+deflate_state.prev], [esi+deflate_state.prev], eax
 	mov eax,[edi+deflate_state.hash_size]
-	shl eax,2 ;*= sizeof.dd
+	shl eax,1 ;*= sizeof.dw
 	stdcall zmemcpy, [edi+deflate_state.head], [esi+deflate_state.head], eax
 	stdcall zmemcpy, [edi+deflate_state.pending_buf], [esi+deflate_state.pending_buf], [edi+deflate_state.pending_buf_size]
 
@@ -1715,7 +1711,7 @@ endp
 ;    z_streamp strm
 ;    Bytef *buf
 ;    unsigned size
-align 4
+align 16
 proc read_buf uses ebx ecx, strm:dword, buf:dword, size:dword
 	mov ebx,[strm]
 	mov eax,[ebx+z_stream.avail_in]
@@ -1740,7 +1736,9 @@ proc read_buf uses ebx ecx, strm:dword, buf:dword, size:dword
 		stdcall adler32, [ebx+z_stream.adler], [buf], eax
 		mov [ebx+z_stream.adler],eax
 		pop eax
+if GZIP eq 1
 		jmp .end0
+end if
 	@@:
 if GZIP eq 1
 	cmp dword[ecx+deflate_state.wrap],2
@@ -1749,8 +1747,8 @@ if GZIP eq 1
 		stdcall calc_crc32, [ebx+z_stream.adler], [buf], eax
 		mov [ebx+z_stream.adler],eax
 		pop eax
-end if
 	.end0:
+end if
 	add [ebx+z_stream.next_in],eax
 	add [ebx+z_stream.total_in],eax
 
@@ -1761,9 +1759,8 @@ endp
 ; ===========================================================================
 ; Initialize the "longest match" routines for a new zlib stream
 
-;void (s)
-;    deflate_state *s
-align 4
+;void (deflate_state *s)
+align 16
 proc lm_init uses eax ebx edi, s:dword
 	mov edi,[s]
 	mov eax,[edi+deflate_state.w_size]
@@ -1805,7 +1802,7 @@ endp
 ;uInt (s, cur_match)
 ;    deflate_state *s
 ;    IPos cur_match ;current match
-align 4
+align 16
 proc longest_match uses ebx ecx edx edi esi, s:dword, cur_match:dword
 if FASTEST eq 0
 ; ===========================================================================
@@ -1984,9 +1981,9 @@ align 4
 		.cycle0cont:
 		mov eax,[cur_match]
 		and eax,[wmask]
-		shl eax,2
+		shl eax,1
 		add eax,[prev]
-		mov eax,[eax] ;eax = prev[cur_match & wmask]
+		movzx eax,word[eax] ;eax = prev[cur_match & wmask]
 		mov [cur_match],eax
 		cmp eax,[limit]
 		jle .cycle0end
@@ -2094,10 +2091,8 @@ align 4
 	@@:
 end if ;FASTEST
 .end_f:
-;zlib_debug '  longest_match.ret = %d',eax
 	ret
 endp
-
 
 ; ===========================================================================
 ; Check that the match at match_start is indeed a match.
@@ -2127,7 +2122,6 @@ end if ;DEBUG
 	ret
 endp
 
-
 ; ===========================================================================
 ; Fill the window when the lookahead becomes insufficient.
 ; Updates strstart and lookahead.
@@ -2138,9 +2132,8 @@ endp
 ;    performed for at least two bytes (required for the zip translate_eol
 ;    option -- not supported here).
 
-;void (s)
-;    deflate_state *s
-align 4
+;void (deflate_state *s)
+align 16
 proc fill_window, s:dword
 pushad
 ;esi = p, str, curr
@@ -2148,7 +2141,6 @@ pushad
 	;Объем свободного пространства в конце окна.
 ;ecx = wsize ;uInt
 ;edx = s.strm
-	zlib_debug 'fill_window'
 	mov edi,[s]
 	cmp dword[edi+deflate_state.lookahead],MIN_LOOKAHEAD
 	jl @f
@@ -2158,7 +2150,6 @@ pushad
 	mov ecx,[edi+deflate_state.w_size]
 	mov edx,[edi+deflate_state.strm]
 	.cycle0: ;do
-	zlib_debug 'do'
 		mov ebx,[edi+deflate_state.window_size]
 		sub ebx,[edi+deflate_state.lookahead]
 		sub ebx,[edi+deflate_state.strstart]
@@ -2177,7 +2168,6 @@ pushad
 			sub [edi+deflate_state.match_start],ecx
 			sub [edi+deflate_state.strstart],ecx ;we now have strstart >= MAX_DIST
 			sub [edi+deflate_state.block_start],ecx
-
 			; Slide the hash table (could be avoided with 32 bit values
 			; at the expense of memory usage). We slide even when level == 0
 			; to keep the hash table consistent if we switch back to level > 0
@@ -2190,32 +2180,31 @@ pushad
 			mov ebx,ecx
 			mov ecx,[edi+deflate_state.hash_size]
 			mov esi,ecx
-			shl esi,2
+			shl esi,1
 			add esi,[edi+deflate_state.head]
 			.cycle1: ;do
-				sub esi,4
-				mov eax,[esi]
-				mov dword[esi],NIL
+				sub esi,2
+				movzx eax,word[esi]
+				mov word[esi],NIL
 				cmp eax,ebx
 				jl @f
 					sub eax,ebx
-					mov dword[esi],eax
+					mov [esi],ax
 				@@:
 			loop .cycle1 ;while (..)
-
 if FASTEST eq 0
 			mov ecx,ebx
 			mov esi,ecx
-			shl esi,2
+			shl esi,1
 			add esi,[edi+deflate_state.prev]
 			.cycle2: ;do
-				sub esi,4
-				mov eax,[esi]
-				mov dword[esi],NIL
+				sub esi,2
+				movzx eax,word[esi]
+				mov word[esi],NIL
 				cmp eax,ebx
 				jl @f
 					sub eax,ebx
-					mov dword[esi],eax
+					mov [esi],ax
 				@@:
 				; If n is not on any hash chain, prev[n] is garbage but
 				; its value will never be used.
@@ -2276,21 +2265,21 @@ end if
 				UPDATE_HASH edi, [edi+deflate_state.ins_h], eax
 if FASTEST eq 0
 				mov eax,[edi+deflate_state.ins_h]
-				shl eax,2
+				shl eax,1
 				add eax,[edi+deflate_state.head]
 				push ebx
 				mov ebx,[edi+deflate_state.w_mask]
 				and ebx,esi
-				shl ebx,2
+				shl ebx,1
 				add ebx,[edi+deflate_state.prev]
-				mov eax,[eax]
-				mov [ebx],eax
+				mov ax,[eax]
+				mov [ebx],ax
 				pop ebx
 end if
 				mov eax,[edi+deflate_state.ins_h]
-				shl eax,2
+				shl eax,1
 				add eax,[edi+deflate_state.head]
-				mov [eax],esi
+				mov [eax],si
 				inc esi
 				dec dword[edi+deflate_state.insert]
 				mov eax,[edi+deflate_state.lookahead]
@@ -2385,7 +2374,7 @@ local .end0
 	sub eax,[s+deflate_state.block_start]
 	push eax
 	xor eax,eax
-	cmp dword[s+deflate_state.block_start],0
+	cmp [s+deflate_state.block_start],eax
 	jl .end0
 		mov eax,[s+deflate_state.block_start]
 		add eax,[s+deflate_state.window]
@@ -2431,7 +2420,6 @@ proc deflate_stored uses ebx ecx edi, s:dword, flush:dword
 ; Stored blocks are limited to 0xffff bytes, pending_buf is limited
 ; to pending_buf_size, and each stored block has a 5 byte header:
 	mov edi,[s]
-	zlib_debug 'deflate_stored'
 
 	mov ecx,0xffff
 	mov eax,[edi+deflate_state.pending_buf_size]
@@ -2443,7 +2431,7 @@ proc deflate_stored uses ebx ecx edi, s:dword, flush:dword
 
 	; Copy as much as possible from input to output:
 align 4
-	.cycle0: ;for (;;) {
+	.cycle0: ;for (;;)
 		; Fill the window as much as possible:
 		cmp dword[edi+deflate_state.lookahead],1
 		jg .end0 ;if (..<=..)
@@ -2531,7 +2519,6 @@ locals
 endl
 ;ecx = hash_head ;IPos ;head of the hash chain
 	mov edi,[s]
-	zlib_debug 'deflate_fast'
 
 	.cycle0: ;for (..)
 	; Make sure that we always have enough lookahead, except
@@ -2686,7 +2673,6 @@ locals
 endl
 ;ecx = hash_head ;IPos ;head of the hash chain
 	mov edi,[s]
-	zlib_debug 'deflate_slow'
 
 	; Process the input block.
 	.cycle0: ;for (;;)
@@ -2903,7 +2889,6 @@ locals
 	bflush dd ? ;int ;set if current block must be flushed
 endl
 	mov edx,[s]
-	zlib_debug 'deflate_rle'
 align 4
 	.cycle0: ;for (;;)
 		; Make sure that we always have enough lookahead, except
@@ -3026,7 +3011,6 @@ locals
 	bflush dd ? ;int ;set if current block must be flushed
 endl
 	mov edi,[s]
-	zlib_debug 'deflate_huff'
 align 4
 	.cycle0: ;for (;;)
 		; Make sure that we have a literal to write.

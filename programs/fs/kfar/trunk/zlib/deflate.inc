@@ -146,7 +146,9 @@ struct deflate_state ;internal_state
 	; levels >= 4.
 
 	level dw ? ;int ;compression level (1..9)
+		rb 2 ;for align
 	strategy dw ? ;int ;favor or force Huffman coding
+		rb 2 ;for align
 
 	good_match dd ? ;uInt
 	; Use a faster search when the previous match is longer than this
@@ -166,7 +168,7 @@ struct deflate_state ;internal_state
 	bl_count rw MAX_BITS+1 ;uint_16[]
 	; number of codes at each bit length for an optimal tree
 
-	heap     rw 2*L_CODES+1 ;int[] ;heap used to build the Huffman trees
+	heap     rd 2*L_CODES+1 ;int[] ;heap used to build the Huffman trees
 	heap_len dd ? ;int ;number of elements in the heap
 	heap_max dd ? ;int ;element of largest frequency
 	; The sons of heap[n] are heap[2*n] and heap[2*n+1]. heap[0] is not used.
@@ -209,11 +211,12 @@ struct deflate_state ;internal_state
 	insert  dd ? ;uInt ;bytes at end of window left to insert
 
 if DEBUG eq 1
-	compressed_len dd ? ;ulg ;total bit length of compressed file mod 2^32
-	bits_sent      dd ? ;ulg ;bit length of compressed data sent mod 2^32
+	;compressed_len dd ? ;ulg ;total bit length of compressed file mod 2^32
+	;bits_sent      dd ? ;ulg ;bit length of compressed data sent mod 2^32
 end if
 
 	bi_buf dw ? ;uint_16
+		rb 2 ;for align
 	; Output buffer. bits are inserted starting at the bottom (least
 	; significant bits).
 
@@ -238,18 +241,17 @@ deflate_state.max_insert_length equ deflate_state.max_lazy_match
 
 macro put_byte s, c
 {
-	movzx eax,word[s+deflate_state.pending]
+	mov eax,[s+deflate_state.pending]
 	add eax,[s+deflate_state.pending_buf]
 	mov byte[eax],c
-	inc word[s+deflate_state.pending]
+	inc dword[s+deflate_state.pending]
 }
 macro put_dword s, d
 {
-	zlib_debug '(%d)',d
-	movzx eax,word[s+deflate_state.pending]
+	mov eax,[s+deflate_state.pending]
 	add eax,[s+deflate_state.pending_buf]
 	mov dword[eax],d
-	add word[s+deflate_state.pending],4
+	add dword[s+deflate_state.pending],4
 }
 
 MIN_LOOKAHEAD equ (MAX_MATCH+MIN_MATCH+1)
@@ -305,8 +307,7 @@ end if
 	inc dword[s+deflate_state.last_lit]
 	and eax,0xff
 	imul eax,sizeof.ct_data
-	add eax,s
-	inc word[eax+deflate_state.dyn_ltree+Freq]
+	inc word[s+eax+deflate_state.dyn_ltree+Freq]
 	xor eax,eax
 	mov ecx,[s+deflate_state.lit_bufsize]
 	dec ecx
