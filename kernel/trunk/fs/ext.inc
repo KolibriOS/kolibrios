@@ -164,6 +164,8 @@ dwordsPerBlock      dd  ?
 dwordsPerBranch     dd  ?   ; dwordsPerBlock ^ 2
 mainBlockBuffer     dd  ?
 tempBlockBuffer     dd  ?
+descriptorTable     dd  ?
+descriptorTableEnd  dd  ?
 align0  rb  200h-EXTFS.align0
 superblock          SUPERBLOCK
 align1  rb  400h-EXTFS.align1
@@ -254,9 +256,33 @@ ext2_create_partition:
         jz      @f
 .read_only:
         or      [ebp+EXTFS.mountType], READ_ONLY
-@@: ; read root inode
+@@:
+        mov     eax, [ebx+SUPERBLOCK.inodesTotal]
+        dec     eax
+        xor     edx, edx
+        div     [ebx+SUPERBLOCK.inodesPerGroup]
+        inc     eax
+        shl     eax, 5
+        push    eax eax
+        call    kernel_alloc
+        pop     ecx
+        test    eax, eax
+        jz      .error2
+        mov     [ebp+EXTFS.descriptorTable], eax
+        mov     ebx, eax
+        add     eax, ecx
+        mov     [ebp+EXTFS.descriptorTableEnd], eax
+        mov     eax, [ebp+EXTFS.superblock.firstGroupBlock]
+        inc     eax
+        mul     [ebp+EXTFS.sectorsPerBlock]
+        dec     ecx
+        shr     ecx, 9
+        inc     ecx
+        call    fs_read64_sys
+        test    eax, eax
+        jnz     @f
+        mov     al, ROOT_INODE
         lea     ebx, [ebp+EXTFS.rootInodeBuffer]
-        mov     eax, ROOT_INODE
         call    readInode
         test    eax, eax
         jnz     @f
@@ -265,6 +291,8 @@ ext2_create_partition:
         ret
 
 @@:
+        stdcall kernel_free, [ebp+EXTFS.descriptorTable]
+.error2:
         stdcall kernel_free, [ebp+EXTFS.mainBlockBuffer]
 .error:
         mov     eax, ebp
@@ -278,8 +306,9 @@ ext2_create_partition:
 ; unmount EXT partition
 ext_free:
 ; in: eax -> EXTFS structure
-        push    eax
-        stdcall kernel_free, [eax+EXTFS.mainBlockBuffer]
+        push    eax [eax+EXTFS.mainBlockBuffer]
+        stdcall kernel_free, [eax+EXTFS.descriptorTable]
+        call    kernel_free
         pop     eax
         jmp     free
 
@@ -303,44 +332,17 @@ extfsReadBlock:
 @@:
         ret
 
-extfsReadDescriptor:
-; in: eax = block group number
-; out: ebx -> block group descriptor
-        push    ecx edx
-        mov     edx, [ebp+EXTFS.superblock.firstGroupBlock]
-        inc     edx
-        mov     ecx, [ebp+EXTFS.sectorsPerBlockLog]
-        shl     edx, cl
-        shl     eax, 5
-        mov     ecx, eax
-        and     ecx, 511
-        shr     eax, 9
-        add     eax, edx
-        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
-        push    ecx
-        call    fs_read32_sys
-        pop     ecx
-        add     ebx, ecx
-        test    eax, eax
-        jz      @f
-        movi    eax, ERROR_DEVICE
-        stc
-@@:
-        pop     edx ecx
-        ret
-
 extfsWriteDescriptor:
-; in: eax = block group number
-        push    ebx ecx edx
-        mov     edx, [ebp+EXTFS.superblock.firstGroupBlock]
-        inc     edx
-        mov     ecx, [ebp+EXTFS.sectorsPerBlockLog]
-        shl     edx, cl
-        shr     eax, 9-5
-        add     eax, edx
-        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
+; in: ebx = block group descriptor
+        mov     eax, [ebp+EXTFS.superblock.firstGroupBlock]
+        inc     eax
+        mul     [ebp+EXTFS.sectorsPerBlock]
+        sub     ebx, [ebp+EXTFS.descriptorTable]
+        shr     ebx, 9
+        add     eax, ebx
+        shl     ebx, 9
+        add     ebx, [ebp+EXTFS.descriptorTable]
         call    fs_write32_sys
-        pop     edx ecx ebx
         ret
 
 extfsExtentFree:
@@ -353,19 +355,24 @@ extfsExtentFree:
         sub     ebx, edx
         sub     ebx, ecx
         jc      .ret
-        push    edx eax
-        call    extfsReadDescriptor
-        jc      .fail2
+        push    edx
+        mov     ebx, [ebp+EXTFS.descriptorTable]
+        shl     eax, 5
+        add     ebx, eax
+        mov     eax, ecx
+        mul     [ebp+EXTFS.sectorsPerBlock]
         add     [ebx+BGDESCR.blocksFree], cx
-        mov     edx, [ebx+BGDESCR.blockBitmap]
-        pop     eax
+        add     [ebp+EXTFS.superblock.blocksFree], ecx
+        sub     [ebp+EXTFS.inodeBuffer.sectorsUsed], eax
+        push    [ebx+BGDESCR.blockBitmap]
         call    extfsWriteDescriptor
-        mov     eax, edx
-        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
-        call    extfsReadBlock
-        jc      .fail
         pop     eax
-        push    ecx ebx edx
+        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
+        mov     edx, eax
+        call    extfsReadBlock
+        pop     eax
+        jc      .ret
+        push    ebx edx
         mov     edi, eax
         shr     edi, 5
         shl     edi, 2
@@ -402,43 +409,35 @@ extfsExtentFree:
 @@:
         pop     eax ebx
         call    extfsWriteBlock
-        pop     ecx
-        mov     eax, ecx
-        add     [ebp+EXTFS.superblock.blocksFree], ecx
-        mul     [ebp+EXTFS.sectorsPerBlock]
-        sub     [ebp+EXTFS.inodeBuffer.sectorsUsed], eax
 .ret:
         pop     edi edx ebx
         xor     eax, eax
         ret
 
-.fail2:
-        pop     eax
-.fail:
-        pop     eax
-        jmp     .ret
-
 extfsInodeAlloc:
 ; in: eax = parent inode number
 ; out: ebx = allocated inode number
-        push    ecx edx esi edi
+        push    ecx edx edi
         dec     eax
         xor     edx, edx
         div     [ebp+EXTFS.superblock.inodesPerGroup]
-        push    eax eax
-        mov     esi, .forward   ; search forward, then backward
+        mov     ebx, [ebp+EXTFS.descriptorTable]
+        shl     eax, 5
+        add     ebx, eax
+        push    ebx
 .test_block_group:
-        call    extfsReadDescriptor
-        jc      .fail
+        push    ebx
         cmp     [ebx+BGDESCR.blocksFree], 0
         jz      .next
+        cmp     [ebx+BGDESCR.inodesFree], 0
+        jz      .next
         dec     [ebx+BGDESCR.inodesFree]
-        js      .next
-        mov     edx, [ebx+BGDESCR.inodeBitmap]
-        mov     eax, [esp]
+        dec     [ebp+EXTFS.superblock.inodesFree]
+        push    [ebx+BGDESCR.inodeBitmap]
         call    extfsWriteDescriptor
-        mov     eax, edx
+        pop     eax
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
+        mov     edx, eax
         mov     edi, ebx
         call    extfsReadBlock
         jc      .fail
@@ -459,35 +458,29 @@ extfsInodeAlloc:
         mov     eax, edx
         call    extfsWriteBlock
         pop     eax
+        sub     eax, [ebp+EXTFS.descriptorTable]
+        shr     eax, 5
         mul     [ebp+EXTFS.superblock.inodesPerGroup]
-        dec     [ebp+EXTFS.superblock.inodesFree]
         lea     ebx, [eax+ecx+1]
         xor     eax, eax
 .ret:
-        pop     edi edi esi edx ecx
+        pop     edi edi edx ecx
         ret
 
-.next:
-        jmp     esi
-
-.forward:
-        inc     dword[esp]
-        mov     eax, [esp]
-        mul     [ebp+EXTFS.superblock.inodesPerGroup]
-        cmp     eax, [ebp+EXTFS.superblock.inodesTotal]
-        ja      @f
-        mov     eax, [esp]
-        jmp     .test_block_group
-
-@@:
-        mov     eax, [esp+4]
-        mov     [esp], eax
-        mov     esi, .backward
+.next:      ; search forward, then backward
+        pop     ebx
+        cmp     ebx, [esp]
+        jc      .backward
+        add     ebx, 32
+        cmp     ebx, [ebp+EXTFS.descriptorTableEnd]
+        jc      .test_block_group
+        mov     ebx, [esp]
 .backward:
-        sub     dword[esp], 1
-        mov     eax, [esp]
+        sub     ebx, 32
+        cmp     ebx, [ebp+EXTFS.descriptorTable]
         jnc     .test_block_group
         movi    eax, ERROR_DISK_FULL
+        push    eax
 .fail:
         pop     edi
         jmp     .ret
@@ -499,12 +492,14 @@ extfsExtentAlloc:
         dec     eax
         xor     edx, edx
         div     [ebp+EXTFS.superblock.inodesPerGroup]
-        push    eax eax
+        mov     ebx, [ebp+EXTFS.descriptorTable]
+        shl     eax, 5
+        add     ebx, eax
+        push    ebx
 .test_block_group:
-        call    extfsReadDescriptor
-        jc      .fail
-        dec     [ebx+BGDESCR.blocksFree]
-        js      .next
+        push    ebx
+        cmp     [ebx+BGDESCR.blocksFree], 0
+        jz      .next
         mov     eax, [ebx+BGDESCR.blockBitmap]
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         mov     edx, eax
@@ -601,16 +596,17 @@ extfsExtentAlloc:
         pop     eax
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         call    extfsWriteBlock
-        mov     eax, [esp]
-        call    extfsReadDescriptor
-        jc      .fail
+        mov     ebx, [esp]
         mov     ecx, [esp+8]
         sub     [ebx+BGDESCR.blocksFree], cx
-        jc      .fail
+        jnc     @f
+        mov     [ebx+BGDESCR.blocksFree], 0
+@@:
         sub     [ebp+EXTFS.superblock.blocksFree], ecx
-        mov     eax, [esp]
         call    extfsWriteDescriptor
         pop     eax ebx
+        sub     eax, [ebp+EXTFS.descriptorTable]
+        shr     eax, 5
         mul     [ebp+EXTFS.superblock.blocksPerGroup]
         mov     ebx, eax
         add     ebx, esi
@@ -625,25 +621,19 @@ extfsExtentAlloc:
         ret
 
 .next:      ; search forward, then backward
-        pop     eax
-        cmp     eax, [esp]
+        pop     ebx
+        cmp     ebx, [esp]
         jc      .backward
-        inc     eax
-        push    eax
-        mul     [ebp+EXTFS.superblock.blocksPerGroup]
-        cmp     eax, [ebp+EXTFS.superblock.blocksTotal]
-        ja      @f
-        mov     eax, [esp]
-        jmp     .test_block_group
-
-@@:
-        pop     eax eax
-        push    eax
+        add     ebx, 32
+        cmp     ebx, [ebp+EXTFS.descriptorTableEnd]
+        jc      .test_block_group
+        mov     ebx, [esp]
 .backward:
-        dec     eax
-        push    eax
-        jns     .test_block_group
+        sub     ebx, 32
+        cmp     ebx, [ebp+EXTFS.descriptorTable]
+        jnc     .test_block_group
         movi    eax, ERROR_DISK_FULL
+        push    eax
 .fail:
         add     esp, 12
         xor     ecx, ecx
@@ -804,18 +794,16 @@ getInodeLocation:
         dec     eax
         xor     edx, edx
         div     [ebp+EXTFS.superblock.inodesPerGroup]
-        call    extfsReadDescriptor
-        jc      @f
-        mov     ebx, [ebx+BGDESCR.inodeTable]
-        mov     ecx, [ebp+EXTFS.sectorsPerBlockLog]
-        shl     ebx, cl
+        shl     eax, 5
+        add     eax, [ebp+EXTFS.descriptorTable]
+        mov     ebx, [eax+BGDESCR.inodeTable]
+        imul    ebx, [ebp+EXTFS.sectorsPerBlock]
         movzx   eax, [ebp+EXTFS.superblock.inodeSize]
         mul     edx
         mov     edx, eax
         shr     eax, 9
         and     edx, 511
         add     eax, ebx
-@@:
         ret
 
 writeInode:
@@ -2266,19 +2254,20 @@ ext_Delete:
         dec     eax
         xor     edx, edx
         div     [ebp+EXTFS.superblock.inodesPerGroup]
-        push    edx eax
-        call    extfsReadDescriptor
-        jc      .error_stack8_eax
+        push    edx
+        mov     ebx, [ebp+EXTFS.descriptorTable]
+        shl     eax, 5
+        add     ebx, eax
         cmp     ecx, DIRECTORY
         jnz     @f
         dec     [ebx+BGDESCR.directoriesCount]
 @@:
         inc     [ebx+BGDESCR.inodesFree]
-        mov     ecx, [ebx+BGDESCR.inodeBitmap]
-        pop     eax
+        push    [ebx+BGDESCR.inodeBitmap]
         call    extfsWriteDescriptor
-        mov     eax, ecx
+        pop     eax
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
+        mov     ecx, eax
         call    extfsReadBlock
         jc      .error_stack4_eax
         pop     eax
@@ -2303,9 +2292,7 @@ ext_Delete:
         ret
 
 .not_empty_eax:
-        pop     ebx ebx
-.error_stack8_eax:
-        pop     ebx
+        add     esp, 12
 .error_stack4_eax:
         pop     ebx
         push    eax
@@ -2367,11 +2354,10 @@ ext_CreateFolder:
         dec     eax
         xor     edx, edx
         div     [ebp+EXTFS.superblock.inodesPerGroup]
-        mov     edx, eax
-        call    extfsReadDescriptor
-        jc      .error
+        mov     ebx, [ebp+EXTFS.descriptorTable]
+        shl     eax, 5
+        add     ebx, eax
         inc     [ebx+BGDESCR.directoriesCount]
-        mov     eax, edx
         call    extfsWriteDescriptor
 .success:
 .error:
