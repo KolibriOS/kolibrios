@@ -1018,28 +1018,34 @@ doublyIndirectBlockAlloc:
 extfsExtendFile:
 ;   in:
 ; [ebp+EXTFS.inodeBuffer] = inode
-; eax = inode number
-; ecx = new size
-        push    ebx ecx edx esi edi eax
+; ecx = inode number
+; edx:eax = new size
+        push    ebx esi edi ecx
         lea     esi, [ebp+EXTFS.inodeBuffer]
-        mov     eax, ecx
-        mov     edx, [esi+INODE.fileSize]
-        cmp     edx, eax
+        mov     ebx, [esi+INODE.fileSize]
+        mov     ecx, [esi+INODE.fileSizeHigh]
+        cmp     ebx, eax
+        sbb     ecx, edx
         jnc     .ret
+        mov     ecx, [esi+INODE.fileSizeHigh]
         mov     [esi+INODE.fileSize], eax
-        mov     ecx, [ebp+EXTFS.sectorsPerBlockLog]
-        add     ecx, 9
-        dec     eax
-        shr     eax, cl
+        mov     [esi+INODE.fileSizeHigh], edx
+        sub     eax, 1
+        sbb     edx, 0
+        div     [ebp+EXTFS.bytesPerBlock]
         inc     eax
-        sub     edx, 1
+        xchg    eax, ebx
+        mov     edx, ecx
+        sub     eax, 1
+        sbb     edx, 0
         jc      @f
-        shr     edx, cl
+        div     [ebp+EXTFS.bytesPerBlock]
 @@:
-        inc     edx
-        sub     eax, edx
+        inc     eax
+        sub     ebx, eax
         jz      .ret
-        push    eax
+        push    ebx
+        mov     edx, eax
 @@:
         mov     ecx, [esp]
         mov     eax, [esp+4]
@@ -1184,7 +1190,7 @@ extfsExtendFile:
         xor     eax, eax
         pop     edi
 .ret:
-        pop     edi edi esi edx ecx ebx
+        pop     edi edi esi ebx
         ret
 
 .errSave:
@@ -1308,19 +1314,21 @@ freeDoublyIndirectBlock:
         ret
 
 extfsTruncateFile:
-; in: ecx = new size, [ebp+EXTFS.inodeBuffer] = inode
-        push    ebx ecx edx esi edi
+; in: edx:eax = new size, [ebp+EXTFS.inodeBuffer] = inode
         lea     esi, [ebp+EXTFS.inodeBuffer]
-        cmp     ecx, [esi+INODE.fileSize]
+        mov     ecx, edx
+        cmp     eax, [esi+INODE.fileSize]
+        sbb     ecx, [esi+INODE.fileSizeHigh]
         jnc     .ret
-        mov     [esi+INODE.fileSize], ecx
-        mov     edx, ecx
-        jecxz   .directBlocks
-        dec     edx
-        mov     ecx, [ebp+EXTFS.sectorsPerBlockLog]
-        add     ecx, 9
-        shr     edx, cl
-        inc     edx
+        mov     [esi+INODE.fileSize], eax
+        mov     [esi+INODE.fileSizeHigh], edx
+        sub     eax, 1
+        sbb     edx, 0
+        jc      @f
+        div     [ebp+EXTFS.bytesPerBlock]
+@@:
+        inc     eax
+        mov     edx, eax
         cmp     edx, 12
         jc      .directBlocks
         sub     edx, 12
@@ -1399,7 +1407,6 @@ extfsTruncateFile:
 .done:
         call    kernel_free
 .ret:
-        pop     edi esi edx ecx ebx
         ret
 
 linkInode:
@@ -1485,9 +1492,10 @@ linkInode:
         push    ecx
         jnz     @f
 .alloc_block:
-        mov     ecx, [esi+INODE.fileSize]
-        add     ecx, [ebp+EXTFS.bytesPerBlock]
-        mov     eax, [esp+24]
+        mov     eax, [esi+INODE.fileSize]
+        add     eax, [ebp+EXTFS.bytesPerBlock]
+        xor     edx, edx
+        mov     ecx, [esp+24]
         call    extfsExtendFile
         jc      .error_get_inode_block
         mov     eax, [esp+24]
@@ -1633,20 +1641,20 @@ findInode:
         mov     edx, esi
         rep movsb
         pop     esi
-        pushd   0 ROOT_INODE
+        pushd   ebx 0 ROOT_INODE
         mov     edi, esi
         cmp     [edx+INODE.fileSize], 0
         jz      .not_found
         cmp     byte [esi], 0
         jnz     .next_path_part
         xor     eax, eax
-        pop     esi ecx
+        pop     esi ecx ebx
         ret
 
 @@:
         pop     esi esi
 .error:
-        pop     esi ecx
+        pop     esi ecx ebx
         xor     edi, edi
         stc
         ret
@@ -1729,7 +1737,7 @@ findInode:
         movi    eax, ERROR_FILE_NOT_FOUND
         stc
 .ret:
-        pop     esi ecx
+        pop     esi ecx ebx
         ret
 
 writeSuperblock:
@@ -1762,9 +1770,7 @@ ext_ReadFolder:
         call    ext_lock
         cmp     byte [esi], 0
         jz      .root_folder
-        push    ebx
         call    findInode
-        pop     ebx
         jc      .error_ret
         lea     esi, [ebp+EXTFS.inodeBuffer]
         test    [esi+INODE.accessMode], FLAG_FILE
@@ -1972,10 +1978,8 @@ ext_ReadFolder:
 ;----------------------------------------------------------------
 ext_ReadFile:
         call    ext_lock
-        pushd   0 ebx
         call    findInode
-        pop     ebx
-        push    eax
+        pushd   0 eax
         jc      .ret
         lea     esi, [ebp+EXTFS.inodeBuffer]
         mov     byte [esp], ERROR_ACCESS_DENIED
@@ -2079,12 +2083,9 @@ ext_ReadFile:
 ;----------------------------------------------------------------
 ext_GetFileInfo:
         call    ext_lock
-        mov     edx, [ebx+16]
         cmp     byte [esi], 0
         jz      .is_root
-        push    edx
         call    findInode
-        pop     edx
         lea     esi, [ebp+EXTFS.inodeBuffer]
         jnc     @f
         push    eax
@@ -2096,6 +2097,7 @@ ext_GetFileInfo:
         mov     edi, esi
         lea     esi, [ebp+EXTFS.rootInodeBuffer]
 @@:
+        mov     edx, [ebx+16]
         mov     bl, [edi]
         xor     eax, eax
         mov     edi, edx
@@ -2133,12 +2135,11 @@ ext_GetFileInfo:
 ;----------------------------------------------------------------
 ext_SetFileInfo:
         call    extfsWritingInit
-        pushd   [ebx+16]
         call    findInode
-        pop     edx
         jc      @f
-        push    esi     ; inode number
-        lea     esi, [edx+16]
+        push    esi
+        mov     esi, [ebx+16]
+        add     esi, 16
         lea     edi, [ebp+EXTFS.inodeBuffer]
         call    fsCalculateTime
         add     eax, 978307200  ; 01.01.1970-01.01.2001 = (365*31+8)*24*60*60
@@ -2236,12 +2237,14 @@ ext_Delete:
         lea     ebx, [ebp+EXTFS.inodeBuffer]
         call    readInode
         jc      .error_stack4_eax
-        xor     ecx, ecx
+        push    edx
+        xor     eax, eax
+        xor     edx, edx
         call    extfsTruncateFile   ; free file's data
         movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
         lea     edi, [ebp+EXTFS.inodeBuffer]
         xor     eax, eax
-        push    edx edi
+        push    edi
         rep stosb
         call    fsGetTime
         pop     ebx ecx
@@ -2408,7 +2411,8 @@ ext_CreateFile:
         call    linkInode
         jc      .error2
         pop     esi ebx
-        mov     ecx, [ebx+12]
+        mov     eax, [ebx+12]
+        xor     edx, edx
         jmp     ext_WriteFile.start
 
 .exist:
@@ -2416,8 +2420,11 @@ ext_CreateFile:
         test    [ebp+EXTFS.inodeBuffer.accessMode], FLAG_FILE
         jz      .error  ; not a file
         pop     ebx
-        mov     ecx, [ebx+12]
+        mov     eax, [ebx+12]
+        xor     edx, edx
+        push    eax edx ebx esi
         call    extfsTruncateFile
+        pop     esi ebx edx eax
         jmp     ext_WriteFile.start
 
 .error2:
@@ -2431,26 +2438,27 @@ ext_CreateFile:
 ;----------------------------------------------------------------
 ext_WriteFile:
         call    extfsWritingInit
-        push    ebx
         call    findInode
-        pop     ebx
         pushd   0 eax
         jc      .ret
         mov     byte [esp], ERROR_ACCESS_DENIED
         test    [ebp+EXTFS.inodeBuffer.accessMode], FLAG_FILE
         jz      .ret    ; not a file
-        mov     ecx, [ebx+4]
-        add     ecx, [ebx+12]
+        mov     byte [esp], 0
+        mov     eax, [ebx+4]
+        mov     edx, [ebx+8]
+        add     eax, [ebx+12]
+        adc     edx, 0
 .start:
         push    esi
-        mov     eax, esi
+        mov     ecx, esi
         call    extfsExtendFile
         jc      .errorExtend
         mov     eax, [ebx+4]
+        mov     edx, [ebx+8]
         mov     ecx, [ebx+12]
         mov     esi, [ebx+16]
 .write:
-        xor     edx, edx
         div     [ebp+EXTFS.bytesPerBlock]
         test    edx, edx
         jz      .aligned
@@ -2547,44 +2555,52 @@ ext_WriteFile:
         ret
 
 .erase:
-        push    eax eax edx
+        push    eax eax edi
         mov     eax, ebx
         jmp     .write
 
 ;----------------------------------------------------------------
 ext_SetFileEnd:
         call    extfsWritingInit
-        pushd   [ebx+4]
         call    findInode
-        pop     ecx
         jc      .error2
         lea     edi, [ebp+EXTFS.inodeBuffer]
         movi    eax, ERROR_ACCESS_DENIED
         test    [edi+INODE.accessMode], FLAG_FILE
         jz      .error2 ; not a file
-        push    esi
+        mov     eax, [ebx+4]
+        mov     edx, [ebx+8]
         mov     ebx, [edi+INODE.fileSize]
-        mov     eax, esi
-        cmp     ebx, ecx
+        mov     ecx, [edi+INODE.fileSizeHigh]
+        push    esi ecx
+        cmp     ebx, eax
+        sbb     ecx, edx
+        mov     ecx, esi
         jnc     @f
         call    extfsExtendFile
+        pop     esi
         jc      .error
-        sub     ecx, ebx
-        cmp     ecx, 1000001h
+        mov     eax, [edi+INODE.fileSize]
+        mov     edx, [edi+INODE.fileSizeHigh]
+        sub     eax, ebx
+        sbb     edx, esi
+        jnz     .done
+        cmp     eax, 1000001h
         jnc     .done
-        push    ecx
-        stdcall kernel_alloc, ecx
+        push    eax
+        stdcall kernel_alloc, eax
         pop     ecx
         test    eax, eax
         jz      .error
         push    ecx
         add     ecx, 3
         shr     ecx, 2
+        mov     edx, esi
         mov     esi, eax
         mov     edi, eax
         xor     eax, eax
         rep stosd
-        pop     ecx edx
+        pop     ecx edi
         push    esi
         call    ext_WriteFile.erase
         call    kernel_free
@@ -2593,6 +2609,7 @@ ext_SetFileEnd:
 
 @@:
         call    extfsTruncateFile
+        pop     eax
 .done:
         xor     eax, eax
 .error:
