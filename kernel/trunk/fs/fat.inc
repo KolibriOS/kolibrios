@@ -3012,10 +3012,14 @@ fat_SetFileEnd:
         lea     ebx, [ebp+FAT.buffer]
         call    fs_write32_sys
         test    eax, eax
+        jnz     .pop_ret11
+        mov     eax, [esp+20]
+        sub     eax, [esp+4]
+        cmp     eax, 1000001h
+        jnc     .pop_ret
         mov     eax, [edi+20-2]
         mov     ax, [edi+26]
         mov     edi, eax
-        jnz     .pop_ret11
         test    edi, edi
         jz      .pop_ret
 ; now zero new data
