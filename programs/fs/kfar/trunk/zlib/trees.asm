@@ -201,7 +201,7 @@ proc send_bits uses eax ecx edi, s:dword, value:dword, length:dword
 		mov eax,[value]
 		mov ecx,Buf_size
 		sub ecx,[edi+deflate_state.bi_valid]
-		shr eax,cl
+		sar eax,cl
 		mov [edi+deflate_state.bi_buf],ax
 		mov eax,[length]
 		sub eax,Buf_size
@@ -1408,12 +1408,8 @@ proc send_all_trees uses eax ebx ecx edi, s:dword, lcodes:dword, dcodes:dword, b
 		cmp ecx,[blcodes]
 		jge .cycle0end ;for (..;..<..;..)
 ;        Tracev((stderr, "\nbl code %2d ", bl_order[ecx]));
-		mov eax,ecx
-		add eax,bl_order
-		movzx eax,byte[eax]
-		imul eax,sizeof.ct_data
-		add eax,edi
-		movzx eax,word[eax+deflate_state.bl_tree+Len]
+		movzx eax,byte[ecx+bl_order]
+		movzx eax,word[edi+sizeof.ct_data*eax+deflate_state.bl_tree+Len]
 		stdcall send_bits, edi, eax, 3
 		inc ecx
 		jmp .cycle0
@@ -1556,7 +1552,7 @@ endl
 ;                s->last_lit));
 
 		cmp eax,[opt_lenb]
-		jg .end1 ;if (..<=..)
+		ja .end1 ;if (..<=..)
 			mov [opt_lenb],eax
 		jmp .end1
 	.end0: ;else
@@ -1577,7 +1573,7 @@ else
 	mov eax,[stored_len]
 	add eax,4
 	cmp eax,[opt_lenb]
-	jg .end2
+	ja .end2
 	cmp dword[buf],0
 	je .end2 ;if (..<=.. && ..!=0)
 		;4: two words for the lengths
@@ -1666,7 +1662,6 @@ endp
 align 4
 proc _tr_tally uses ebx edi, s:dword, dist:dword, lc:dword
 	mov edi,[s]
-	zlib_debug '_tr_tally'
 	mov eax,[edi+deflate_state.last_lit]
 	shl eax,1
 	add eax,[edi+deflate_state.d_buf]
@@ -1681,9 +1676,7 @@ proc _tr_tally uses ebx edi, s:dword, dist:dword, lc:dword
 	jne @f ;if (..==0)
 		; lc is the unmatched char
 		mov eax,[lc]
-		imul eax,sizeof.ct_data
-		add eax,edi
-		inc word[eax+deflate_state.dyn_ltree+Freq]
+		inc word[edi+sizeof.ct_data*eax+deflate_state.dyn_ltree+Freq]
 		jmp .end0
 align 4
 	@@: ;else
@@ -1703,12 +1696,9 @@ align 4
 		.end2:
 		mov eax,[lc]
 		movzx eax,byte[eax+_length_code]
-		add eax,LITERALS+1
-		imul eax,sizeof.ct_data
-		inc word[edi+eax+deflate_state.dyn_ltree+Freq]
+		inc word[edi+sizeof.ct_data*eax+deflate_state.dyn_ltree+sizeof.ct_data*(LITERALS+1)+Freq]
 		d_code [dist]
-		imul eax,sizeof.ct_data
-		inc word[edi+eax+deflate_state.dyn_dtree+Freq]
+		inc word[edi+sizeof.ct_data*eax+deflate_state.dyn_dtree+Freq]
 	.end0:
 
 if TRUNCATE_BLOCK eq 1
@@ -1733,14 +1723,12 @@ if TRUNCATE_BLOCK eq 1
 ;        if (s->matches < s->last_lit/2 && out_length < in_length/2) return 1;
 	.end1:
 end if
-	mov ebx,[edi+deflate_state.last_lit]
-	mov edi,[edi+deflate_state.lit_bufsize]
-	dec edi
+	mov ebx,[edi+deflate_state.lit_bufsize]
+	dec ebx
 	xor eax,eax
-	cmp ebx,edi
-	jne @f
-		inc eax ;return (..==..)
-	@@:
+	cmp [edi+deflate_state.last_lit],ebx
+	sete al ;return (..==..)
+
 	; We avoid equality with lit_bufsize because of wraparound at 64K
 	; on 16 bit machines and because stored blocks are restricted to
 	; 64K-1 bytes.
@@ -1828,7 +1816,7 @@ endl
 		@@:
 		mov eax,[edi+deflate_state.last_lit]
 		cmp [lx],eax
-		jl .cycle0 ;while (..<..)
+		jb .cycle0 ;while (..<..)
 align 4
 	.end0:
 
@@ -1849,8 +1837,7 @@ endp
 ;   (7 {BEL}, 8 {BS}, 11 {VT}, 12 {FF}, 26 {SUB}, 27 {ESC}).
 ; IN assertion: the fields Freq of dyn_ltree are set.
 
-;int (s)
-;    deflate_state* s
+;int (deflate_state* s)
 align 4
 proc detect_data_type uses ebx ecx edi, s:dword
 	; black_mask is the bit mask of black-listed bytes
@@ -1860,7 +1847,6 @@ locals
 	black_mask dd 0xf3ffc07f
 endl
 	mov edi,[s]
-	zlib_debug 'detect_data_type'
 
 	; Check for non-textual ("black-listed") bytes.
 	xor ecx,ecx
@@ -1948,8 +1934,7 @@ endp
 ; ===========================================================================
 ; Flush the bit buffer, keeping at most 7 bits in it.
 
-;void (s)
-;    deflate_state* s
+;void (deflate_state* s)
 align 4
 proc bi_flush uses eax ecx edi, s:dword
 	mov edi,[s]
@@ -2030,6 +2015,8 @@ if DEBUG eq 1
 	add [edi+deflate_state.bits_sent],ecx
 end if
 	mov ecx,[len]
+;	test ecx,ecx
+;	jz .end_f
 	mov esi,[buf]
 	jmp .end0
 align 4
@@ -2039,5 +2026,6 @@ align 4
 		put_byte edi, bl
 	.end0:
 		loop @b
+;	.end_f:
 	ret
 endp

@@ -277,7 +277,7 @@ macro d_code dist
 local .end0
 	mov eax,dist
 	cmp eax,256
-	jl .end0
+	ja .end0
 		shr eax,7
 		add eax,256
 	.end0:
@@ -289,7 +289,6 @@ local .end0
 
 macro _tr_tally_lit s, c, flush
 {
-local .end0
 if DEBUG eq 0
 ; Inline versions of _tr_tally for speed:
 if c eq eax
@@ -306,15 +305,12 @@ end if
 	mov byte[ecx],al
 	inc dword[s+deflate_state.last_lit]
 	and eax,0xff
-	imul eax,sizeof.ct_data
-	inc word[s+eax+deflate_state.dyn_ltree+Freq]
+	inc word[s+sizeof.ct_data*eax+deflate_state.dyn_ltree+Freq]
 	xor eax,eax
 	mov ecx,[s+deflate_state.lit_bufsize]
 	dec ecx
 	cmp [s+deflate_state.last_lit],ecx
-	jne .end0
-		inc eax ;flush = (..==..)
-	.end0:
+	sete al ;flush = (..==..)
 	mov flush, eax
 	pop ecx
 else
@@ -324,25 +320,54 @@ end if
 }
 macro _tr_tally_dist s, distance, length, flush
 {
-if 0 ;;;DEBUG eq 0
+if DEBUG eq 0
 	push ecx
-;   uch len = (length)
+
+    ;s.d_buf[s.last_lit] = dist
+	mov ecx,[s+deflate_state.last_lit]
+	shl ecx,1
+	add ecx,[s+deflate_state.d_buf]
+if distance eq eax
+	mov [ecx],ax
+else
+	mov word[ecx],distance
+end if
+
+    ;s.l_buf[s.last_lit++] = len
+	mov ecx,[s+deflate_state.last_lit]
+	add ecx,[s+deflate_state.l_buf]
+if length eq eax
+	mov [ecx],al
+else if length eq ebx
+	mov [ecx],bl
+else
+	... ;mov byte[ecx],length
+end if
+	inc dword[s+deflate_state.last_lit]
+
+	;dist--
 if distance eq eax
 else
 	mov eax,distance
 end if
-	mov ecx,[s+deflate_state.last_lit]
-	shl ecx,1
-	add ecx,[s+deflate_state.d_buf]
-	mov word[ecx],ax
-	mov ecx,[s+deflate_state.last_lit]
-	add ecx,[s+deflate_state.l_buf]
-	mov byte[ecx],length
-	inc dword[s+deflate_state.last_lit]
 	dec eax
-;    s->dyn_ltree[_length_code[len]+LITERALS+1].Freq++;
-;    s->dyn_dtree[d_code(dist)].Freq++;
-;    flush = (s->last_lit == s->lit_bufsize-1);
+
+	;s.dyn_ltree[_length_code[len]+LITERALS+1].Freq++
+	movzx ecx,byte[ecx]
+	movzx ecx,byte[ecx+_length_code]
+	inc word[s+sizeof.ct_data*ecx+deflate_state.dyn_ltree+sizeof.ct_data*(LITERALS+1)+Freq]
+
+	;s.dyn_dtree[d_code(dist)].Freq++
+	d_code eax
+	inc word[s+sizeof.ct_data*eax+deflate_state.dyn_dtree+Freq]
+
+	;flush = (s.last_lit == s.lit_bufsize-1)
+	mov ecx,[s+deflate_state.lit_bufsize]
+	dec ecx
+	xor eax,eax
+	cmp [s+deflate_state.last_lit],ecx
+	sete al
+	mov flush,eax
 	pop ecx
 else
 	stdcall _tr_tally, s, distance, length

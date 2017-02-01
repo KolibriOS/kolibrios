@@ -1354,13 +1354,13 @@ align 4
 			mov ecx,[edi+deflate_state.pending]
 			add ecx,2
 			cmp ecx,[edi+deflate_state.pending_buf_size]
-			jle @f ;if (..>..)
+			jbe @f ;if (..>..)
 				stdcall flush_pending, ebx
 			@@:
 			mov ecx,[edi+deflate_state.pending]
 			add ecx,2
 			cmp ecx,[edi+deflate_state.pending_buf_size]
-			jg .end8 ;if (..<=..)
+			ja .end8 ;if (..<=..)
 				mov ecx,[ebx+z_stream.adler]
 				put_byte edi, cl
 				put_byte edi, ch
@@ -2157,10 +2157,12 @@ pushad
 		; If the window is almost full and there is insufficient lookahead,
 		; move the upper half to the lower one to make room in the upper half.
 
-		MAX_DIST edi
-		add eax,ecx
+		;;MAX_DIST edi
+		;;add eax,ecx
+		mov eax,[edi+deflate_state.w_size]
+		lea eax,[ecx+eax-MIN_LOOKAHEAD]
 		cmp [edi+deflate_state.strstart],eax
-		jl .end0 ;if (..>=..)
+		jb .end0 ;if (..>=..)
 			push ecx
 			mov eax,[edi+deflate_state.window]
 			add eax,ecx
@@ -2285,14 +2287,14 @@ end if
 				mov eax,[edi+deflate_state.lookahead]
 				add eax,[edi+deflate_state.insert]
 				cmp eax,MIN_MATCH
-				jl .end1 ;if (..<..) break
+				jb .end1 ;if (..<..) break
 			jmp .cycle3
 		.end1:
 		; If the whole input has less than MIN_MATCH bytes, ins_h is garbage,
 		; but this is not important since only literal bytes will be emitted.
 
 		cmp dword[edi+deflate_state.lookahead],MIN_LOOKAHEAD
-		jge .cycle0end
+		jae .cycle0end
 		cmp dword[edx+z_stream.avail_in],0
 		jne .cycle0
 align 4
@@ -2307,20 +2309,20 @@ align 4
 
 	mov eax,[edi+deflate_state.window_size]
 	cmp [edi+deflate_state.high_water],eax
-	jge .end2 ;if (..<..)
+	jae .end2 ;if (..<..)
 		mov esi,[edi+deflate_state.lookahead]
 		add esi,[edi+deflate_state.strstart]
 		;esi = curr
 
 		cmp [edi+deflate_state.high_water],esi
-		jge .end3 ;if (..<..)
+		jae .end3 ;if (..<..)
 			; Previous high water mark below current data -- zero WIN_INIT
 			; bytes or up to end of window, whichever is less.
 
 			mov eax,[edi+deflate_state.window_size]
 			sub eax,esi
 			cmp eax,WIN_INIT
-			jle @f ;if (..>..)
+			jbe @f ;if (..>..)
 				mov eax,WIN_INIT
 			@@:
 			mov edx,[edi+deflate_state.window]
@@ -2333,7 +2335,7 @@ align 4
 		mov eax,esi
 		add eax,WIN_INIT
 		cmp [edi+deflate_state.high_water],eax
-		jge .end2
+		jae .end2
 			; High water mark at or above current data, but below current data
 			; plus WIN_INIT -- zero out to current data plus WIN_INIT, or up
 			; to end of window, whichever is less.
@@ -2343,7 +2345,7 @@ align 4
 			mov edx,[edi+deflate_state.window_size]
 			sub edx,[edi+deflate_state.high_water]
 			cmp eax,edx ;if (..>..)
-			jle @f
+			jbe @f
 				mov eax,edx
 			@@:
 			mov edx,[edi+deflate_state.window]
@@ -2682,10 +2684,10 @@ endl
 	; string following the next match.
 
 		cmp dword[edi+deflate_state.lookahead],MIN_LOOKAHEAD
-		jge .end0 ;if (..<..)
+		jae .end0 ;if (..<..)
 			stdcall fill_window, edi
 			cmp dword[edi+deflate_state.lookahead],MIN_LOOKAHEAD
-			jge @f ;if (..<.. && ..==..)
+			jae @f ;if (..<.. && ..==..)
 			cmp dword[flush],Z_NO_FLUSH
 			jne @f
 				mov eax,need_more
@@ -2702,7 +2704,7 @@ align 4
 
 		mov ecx,NIL
 		cmp dword[edi+deflate_state.lookahead],MIN_MATCH
-		jl @f ;if (..>=..)
+		jb @f ;if (..>=..)
 			INSERT_STRING edi, [edi+deflate_state.strstart], ecx
 		@@:
 
@@ -2718,12 +2720,12 @@ align 4
 		je .end1
 		mov eax,[edi+deflate_state.prev_length]
 		cmp eax,[edi+deflate_state.max_lazy_match]
-		jge .end1
+		jae .end1
 		MAX_DIST edi
 		mov ebx,[edi+deflate_state.strstart]
 		sub ebx,ecx
 		cmp ebx,eax
-		jg .end1 ;if (..!=0 && ..<.. && ..<=..)
+		ja .end1 ;if (..!=0 && ..<.. && ..<=..)
 			; To simplify the code, we prevent matches with the string
 			; of window index 0 (in particular we have to avoid a match
 			; of the string with itself at the start of the input file).
@@ -2733,7 +2735,7 @@ align 4
 			; longest_match() sets match_start
 
 			cmp dword[edi+deflate_state.match_length],5
-			jg .end1
+			ja .end1
 			cmp word[edi+deflate_state.strategy],Z_FILTERED
 if TOO_FAR <= 32767
 			je @f
@@ -2742,7 +2744,7 @@ if TOO_FAR <= 32767
 				mov eax,[edi+deflate_state.strstart]
 				sub eax,[edi+deflate_state.match_start]
 				cmp eax,TOO_FAR
-				jle .end1 ;if (..<=.. && (..==.. || (..==.. && ..>..)))
+				jbe .end1 ;if (..<=.. && (..==.. || (..==.. && ..>..)))
 			@@:
 else
 			jne .end1 ;if (..<=.. && ..==..)
@@ -2758,9 +2760,9 @@ end if
 
 		mov eax,[edi+deflate_state.prev_length]
 		cmp eax,MIN_MATCH
-		jl .end2
+		jb .end2
 		cmp [edi+deflate_state.match_length],eax
-		jg .end2 ;if (..>=.. && ..<=..)
+		ja .end2 ;if (..>=.. && ..<=..)
 			mov edx,[edi+deflate_state.strstart]
 			add edx,[edi+deflate_state.lookahead]
 			sub edx,MIN_MATCH
@@ -2790,7 +2792,7 @@ end if
 			.cycle1: ;do
 				inc dword[edi+deflate_state.strstart]
 				cmp [edi+deflate_state.strstart],edx
-				jg @f ;if (..<=..)
+				ja @f ;if (..<=..)
 					INSERT_STRING edi, [edi+deflate_state.strstart], ecx
 				@@:
 				dec dword[edi+deflate_state.prev_length]
@@ -2856,7 +2858,7 @@ align 4
 	@@:
 	mov eax,[edi+deflate_state.strstart]
 	cmp eax,MIN_MATCH-1
-	jl @f
+	jb @f
 		mov eax,MIN_MATCH-1
 	@@:
 	mov [edi+deflate_state.insert],eax

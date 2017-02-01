@@ -107,8 +107,7 @@ end if
 	ret
 endp
 
-;void (m)
-;    char *m
+;void (char *m)
 align 4
 proc z_error, m:dword
 ;    fprintf(stderr, "%s\n", m);
@@ -119,8 +118,7 @@ endp
 ; exported to allow conversion of error code to string for compress() and
 ; uncompress()
 
-;const char * (err)
-;    int err
+;const char * (int err)
 align 4
 proc zError uses ecx, err:dword
 	ERR_MSG [err]
@@ -173,15 +171,28 @@ proc zmemcmp, s1:dword, s2:dword, len:dword
 	ret
 endp
 
-;void (dest, len)
-;    Bytef* dest
-;    uInt  len
+;void (Bytef* dest, uInt len)
 align 4
-proc zmemzero, dest:dword, len:dword
-;    if (len == 0) return;
-;    do {
-;        *dest++ = 0;  /* ??? to be unrolled */
-;    } while (--len != 0);
+proc zmemzero uses eax ecx edi, dest:dword, len:dword
+	mov ecx,[len]
+	test ecx,ecx
+	jz .end0
+		xor eax,eax
+		mov edi,[dest]
+		bt ecx,0 ;кратно 2 ?
+		jnc @f
+			rep stosb
+			jmp .end0
+		@@:
+		bt ecx,1 ;кратно 4 ?
+		jnc @f
+			shr ecx,1
+			rep stosw
+			jmp .end0
+		@@:
+		shr ecx,2
+		rep stosd
+	.end0:
 	ret
 endp
 ;end if

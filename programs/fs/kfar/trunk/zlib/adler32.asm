@@ -136,13 +136,13 @@ endl
 		movzx eax,byte[ebx]
 		add [adler],eax
 		cmp dword[adler],BASE
-		jl @f ;if (..>=..)
+		jb @f ;if (..>=..)
 			sub dword[adler],BASE
 		@@:
 		mov eax,[adler]
 		add [sum2],eax
 		cmp dword[sum2],BASE
-		jl @f ;if (..>=..)
+		jb @f ;if (..>=..)
 			sub dword[sum2],BASE
 		@@:
 		jmp .combine
