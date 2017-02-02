@@ -157,7 +157,6 @@ READ_ONLY_SUPPORT = 3
 struct EXTFS PARTITION
 Lock                MUTEX
 mountType           dd  ?
-sectorsPerBlockLog  dd  ?   ; shift for 512
 bytesPerBlock       dd  ?
 sectorsPerBlock     dd  ?
 dwordsPerBlock      dd  ?
@@ -199,7 +198,7 @@ ext2_create_partition:
         jnz     .fail
         cmp     [ebx+SUPERBLOCK.sectorsPerBlockLog], 6  ; 64KB
         ja      .fail
-        cmp     [ebx+SUPERBLOCK.inodeSize], 1024
+        cmp     [ebx+SUPERBLOCK.inodeSize], 512
         ja      .fail
         cmp     [ebx+SUPERBLOCK.blocksPerGroup], 0
         je      .fail
@@ -231,7 +230,6 @@ ext2_create_partition:
         rep movsd   ; copy superblock
         mov     ecx, [ebx+SUPERBLOCK.sectorsPerBlockLog]
         inc     ecx
-        mov     [ebp+EXTFS.sectorsPerBlockLog], ecx
         mov     eax, 1
         shl     eax, cl
         mov     [ebp+EXTFS.sectorsPerBlock], eax
@@ -818,11 +816,10 @@ writeInode:
         jnz     @f
         movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
         mov     esi, edi
-        mov     edi, [ebp+EXTFS.rootInodeBuffer]
+        lea     edi, [ebp+EXTFS.rootInodeBuffer]
         rep movsb
 @@:
         call    getInodeLocation
-        jc      .ret
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         mov     ecx, eax
         call    fs_read32_sys
@@ -849,7 +846,6 @@ readInode:
         push    edx edi esi ecx ebx
         mov     edi, ebx
         call    getInodeLocation
-        jc      @f
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         call    fs_read32_sys
         test    eax, eax
@@ -859,7 +855,6 @@ readInode:
         add     esi, ebx
         rep movsb
         xor     eax, eax
-@@:
         pop     ebx ecx esi edi edx
         ret
 
@@ -1424,10 +1419,9 @@ linkInode:
         mov     ebx, esi
         call    readInode
         jc      .error_inode_read
-        mov     ecx, [ebp+EXTFS.sectorsPerBlockLog]
-        add     ecx, 9
         mov     eax, [esi+INODE.fileSize]
-        shr     eax, cl
+        xor     edx, edx
+        div     [ebp+EXTFS.bytesPerBlock]
         xor     ecx, ecx
 .searchBlock:
         push    eax     ; blocks total
@@ -2312,16 +2306,15 @@ ext_CreateFolder:
         call    extfsInodeAlloc
         jc      .error
         push    ebx esi edi
-        xor     al, al
         lea     edi, [ebp+EXTFS.inodeBuffer]
         movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
+        xor     eax, eax
         rep stosb
-        lea     edi, [ebp+EXTFS.inodeBuffer]
         call    fsGetTime
         add     eax, 978307200
-        mov     [edi+INODE.accessedTime], eax
-        mov     [edi+INODE.dataModified], eax
-        mov     ebx, edi
+        lea     ebx, [ebp+EXTFS.inodeBuffer]
+        mov     [ebx+INODE.accessedTime], eax
+        mov     [ebx+INODE.dataModified], eax
         pop     edi esi edx
 ; edx = allocated inode number, edi -> filename, esi = parent inode number
         mov     [ebx+INODE.accessMode], DIRECTORY or PERMISSIONS
@@ -2387,16 +2380,15 @@ ext_CreateFile:
         call    extfsInodeAlloc
         jc      .error
         push    ebx ebx esi edi
-        xor     al, al
         lea     edi, [ebp+EXTFS.inodeBuffer]
         movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
+        xor     eax, eax
         rep stosb
-        lea     edi, [ebp+EXTFS.inodeBuffer]
         call    fsGetTime
         add     eax, 978307200
-        mov     [edi+INODE.accessedTime], eax
-        mov     [edi+INODE.dataModified], eax
-        mov     ebx, edi
+        lea     ebx, [ebp+EXTFS.inodeBuffer]
+        mov     [ebx+INODE.accessedTime], eax
+        mov     [ebx+INODE.dataModified], eax
         pop     edi esi edx
 ; edx = allocated inode number, edi -> filename, esi = parent inode number
         mov     [ebx+INODE.accessMode], FLAG_FILE or PERMISSIONS
