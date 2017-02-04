@@ -566,10 +566,8 @@ endp
 ;     The length opt_len is updated; static_len is also updated if stree is
 ;     not null.
 
-;void (s, desc)
-;    deflate_state* s
-;    tree_desc* desc ;the tree descriptor
-align 4
+;void (deflate_state* s, tree_desc* desc)
+align 16
 proc gen_bitlen, s:dword, desc:dword
 locals
 	tree  dd ? ;ct_data* ;= desc.dyn_tree
@@ -624,19 +622,19 @@ align 4
 	mov eax,[edi+deflate_state.heap_max]
 	inc eax
 	mov [h],eax
+	jmp @f
+align 4
 	.cycle1:
+	inc dword[h]
+	@@:
 	cmp dword[h],HEAP_SIZE
 	jge .cycle1end ;for (..;..<..;..)
-		mov eax,[h]
-		mov ecx,[edi+deflate_state.heap+4*eax]
+		mov    eax,[h]
+		mov    ecx,[edi+4*eax+deflate_state.heap]
 		;ecx = n
-		mov eax,sizeof.ct_data
-		imul eax,ecx
-		add eax,[tree]
-		movzx eax,word[eax+Dad]
-		imul eax,sizeof.ct_data
-		add eax,[tree]
-		movzx eax,word[eax+Len]
+		mov edx,[tree]
+		movzx eax,word[edx+sizeof.ct_data*ecx+Dad]
+		movzx eax,word[edx+sizeof.ct_data*eax+Len]
 		inc eax
 		mov [bits],eax ;bits = tree[tree[n].Dad].Len + 1
 		mov eax,[max_length]
@@ -645,22 +643,14 @@ align 4
 			mov [bits],eax
 			inc dword[overflow]
 		@@:
-		mov esi,[bits]
-		mov eax,sizeof.ct_data
-		imul eax,ecx
-		add eax,[tree]
-		mov word[eax+Len],si
+		mov eax,[bits]
+		mov [edx+sizeof.ct_data*ecx+Len],ax
 		; We overwrite tree[n].Dad which is no longer needed
 
 		cmp ecx,[max_code]
-		jle @f
-			inc dword[h]
-			jmp .cycle1 ;if (..>..) continue ;not a leaf node
-		@@:
+		jg .cycle1 ;if (..>..) continue ;not a leaf node
 
-		mov eax,[bits]
-		shl eax,1 ;*= sizeof.uint_16
-		inc word[eax+edi+deflate_state.bl_count]
+		inc word[edi+2*eax+deflate_state.bl_count]
 		mov dword[xbits],0
 		cmp ecx,[base]
 		jl @f ;if (..>=..)
@@ -671,10 +661,7 @@ align 4
 			mov eax,[eax]
 			mov [xbits],eax
 		@@:
-		mov eax,sizeof.ct_data
-		imul eax,ecx
-		add eax,[tree]
-		movzx eax,word[eax+Freq]
+		movzx eax,word[edx+sizeof.ct_data*ecx+Freq]
 		mov [f],ax
 		mov esi,[bits]
 		add esi,[xbits]
@@ -685,13 +672,12 @@ align 4
 			movzx eax,word[f]
 			mov esi,sizeof.ct_data
 			imul esi,ecx
-			add esi,[tree]
+			add esi,[tree] ;;;must be [stree] but don't work
 			movzx esi,word[esi+Len]
 			add esi,[xbits]
 			imul eax,esi
 			add [edi+deflate_state.static_len],eax
 		@@:
-		inc dword[h]
 		jmp .cycle1
 align 4
 	.cycle1end:
@@ -739,22 +725,19 @@ align 4
 	cmp dword[bits],0
 	je .end_f ;for (..;..!=0;..)
 		mov eax,[bits]
-		shl eax,1 ;*= sizeof.dw
-		movzx ecx,word[eax+edi+deflate_state.bl_count]
+		movzx ecx,word[edi+2*eax+deflate_state.bl_count]
 		.cycle4: ;while (..!=0)
-		cmp ecx,0
-		je .cycle4end
+		test ecx,ecx
+		jz .cycle4end
 			dec dword[h]
 			mov eax,[h]
-			mov eax,[edi+deflate_state.heap+4*eax]
+			mov eax,[edi+4*eax+deflate_state.heap]
 			mov [m],eax ;m = s.heap[--h]
 			cmp eax,[max_code]
 			jg .cycle4 ;if (..>..) continue
 			mov esi,[m]
-			imul esi,sizeof.ct_data
-			add esi,[tree] ;esi = &tree[m]
 			mov eax,[bits]
-			cmp word[esi+Len],ax
+			cmp word[edx+sizeof.ct_data*esi+Len],ax
 			je @f ;if (..!=..)
 ;                Trace((stderr,"code %d bits %d->%d\n", m, tree[m].Len, bits));
 				movzx ebx,word[esi+Len]
@@ -899,7 +882,7 @@ endl
 	xor ecx,ecx
 	.cycle0: ;for (..;..<..;..)
 	cmp ecx,[elems]
-	jge .cycle0end
+	jge .cycle1
 		cmp word[edx+Freq],0
 		je @f ;if (..!=0)
 			inc dword[edi+deflate_state.heap_len]
@@ -915,14 +898,13 @@ align 4
 		add edx,sizeof.ct_data
 		inc ecx
 		jmp .cycle0
-align 4
-	.cycle0end:
 
 	; The pkzip format requires that at least one distance code exists,
 	; and that at least one bit should be sent even if there is only one
 	; possible code. So to avoid special checks later on we force at least
 	; two codes of non zero frequency.
 
+align 4
 	.cycle1: ;while (..<..)
 		cmp dword[edi+deflate_state.heap_len],2
 		jge .cycle1end
@@ -960,7 +942,7 @@ align 4
 	; establish sub-heaps of increasing lengths:
 
 	mov ecx,[edi+deflate_state.heap_len]
-	shr ecx,1
+	sar ecx,1
 	.cycle2: ;for (..;..>=..;..)
 		cmp ecx,1
 		jl .cycle2end

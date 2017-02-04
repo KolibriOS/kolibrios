@@ -275,9 +275,12 @@ macro d_code dist
 ;if (dist < 256) _dist_code[dist]
 ;else _dist_code[ 256+(dist>>7) ]
 local .end0
+if dist eq eax
+else
 	mov eax,dist
+end if
 	cmp eax,256
-	ja .end0
+	jb .end0
 		shr eax,7
 		add eax,256
 	.end0:
