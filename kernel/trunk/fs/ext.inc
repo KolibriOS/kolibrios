@@ -1544,15 +1544,14 @@ linkInode:
         jmp     @b
 
 unlinkInode:
-; in: eax = inode from which to unlink, ebx = inode to unlink
-; out: eax = current number of links to inode, -1 = error
-        push    edx ebx
+; in: eax = directory inode number, esi = inode to unlink
+        push    edi
         lea     ebx, [ebp+EXTFS.inodeBuffer]
         call    readInode
-        jc      .fail
-        push    eax
+        jc      .ret
+        xor     ecx, ecx
 .loop:
-        mov     ecx, [esp]
+        push    ecx
         call    extfsGetExtent
         jc      .fail_loop
         mov     edi, eax
@@ -1560,64 +1559,48 @@ unlinkInode:
         call    extfsReadBlock
         jc      .fail_loop
 .first_dir_entry:   ; edi -> block
-        mov     eax, [esp+4]
-        cmp     [ebx+DIRENTRY.inodeNumber], eax
+        cmp     [ebx+DIRENTRY.inodeNumber], esi
         jne     @f
         mov     [ebx+DIRENTRY.inodeNumber], 0
         mov     word [ebx+DIRENTRY.nameLength], 0   ; fileType = 0
         jmp     .write_block
 
+.fail:
+        pop     edi
+        movi    eax, ERROR_FS_FAIL
+        stc
+.fail_loop:
+        pop     edi
+        jmp     .ret
+
+.next:
+        pop     ecx ecx
+        inc     ecx
+        jmp     .loop
+
 @@:
         mov     edx, ebx
         add     edx, [ebp+EXTFS.bytesPerBlock]
         push    edx
-        mov     edx, ebx
+@@:
         movzx   ecx, [ebx+DIRENTRY.entryLength]
+        jecxz   .fail
+        mov     edx, ebx
         add     ebx, ecx
-.dir_entry:
-        cmp     [ebx+DIRENTRY.inodeNumber], eax
-        jne     @f
+        cmp     ebx, [esp]
+        jnc     .next
+        cmp     [ebx+DIRENTRY.inodeNumber], esi
+        jnz     @b
         mov     cx, [ebx+DIRENTRY.entryLength]
         add     [edx+DIRENTRY.entryLength], cx
         pop     eax
-        jmp     .write_block
-
-@@:
-        mov     edx, ebx
-        movzx   ecx, [ebx+DIRENTRY.entryLength]
-        test    ecx, ecx
-        jz      .fail_inode
-        add     ebx, ecx
-        cmp     ebx, [esp]
-        jb      .dir_entry
-        pop     ecx
-        inc     dword[esp]
-        jmp     .loop
-
-.fail_inode:
-        pop     eax
-.fail_loop:
-        pop     eax
-.fail:
-        or      eax, -1
-        jmp     @f
-
 .write_block:
         pop     eax
         mov     eax, edi
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         call    extfsWriteBlock
-        mov     eax, [esp]
-        lea     ebx, [ebp+EXTFS.inodeBuffer]
-        call    readInode
-        jc      .fail
-        dec     word [ebx+INODE.linksCount]
-        mov     eax, [esp]
-        call    writeInode
-        jc      .fail
-        movzx   eax, word [ebx+INODE.linksCount]
-@@:
-        pop     ebx edx
+.ret:
+        pop     edi
         ret
 
 findInode:
@@ -2161,16 +2144,12 @@ ext_SetFileInfo:
 ext_Delete:
         call    extfsWritingInit
         call    findInode
-        mov     ebx, esi
-        push    eax
-        jc      .ret
-        pop     eax
-        lea     edx, [ebp+EXTFS.inodeBuffer]
-        movzx   edx, [edx+INODE.accessMode]
-        and     edx, TYPE_MASK
-        cmp     edx, DIRECTORY
+        jc      .error
+        push    ecx
+        movzx   edi, [ebp+EXTFS.inodeBuffer.accessMode]
+        and     edi, TYPE_MASK
+        cmp     edi, DIRECTORY
         jne     .file
-        push    ebx ecx edx
         xor     ecx, ecx
 .checkDirectory:
         push    ecx
@@ -2178,60 +2157,70 @@ ext_Delete:
         jc      .empty
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         call    extfsReadBlock
-        jc      .not_empty_eax
+        jc      .error8
         mov     edx, ebx
         add     edx, [ebp+EXTFS.bytesPerBlock]
-        movzx   ecx, [ebx+DIRENTRY.entryLength]
-        add     ebx, ecx
 .dir_entry:
-        cmp     byte [ebx+DIRENTRY.nameLength], 1
-        jne     @f
-        cmp     byte [ebx+DIRENTRY.name], '.'
-        jne     .not_empty
+        movzx   ecx, [ebx+DIRENTRY.nameLength]
+        mov     ax, word [ebx+DIRENTRY.name]
+        jecxz   @f
+        cmp     al, '.'
+        jnz     .not_empty
+        dec     ecx
+        jz      @f
+        cmp     al, ah
+        jnz     .not_empty
+        dec     ecx
+        jnz     .not_empty
 @@:
-        cmp     byte [ebx+DIRENTRY.nameLength], 2
-        jne     .not_empty
-        cmp     word [ebx+DIRENTRY.name], '..'
-        jne     .not_empty
-        movzx   ecx, [ebx+DIRENTRY.entryLength]
+        mov     cx, [ebx+DIRENTRY.entryLength]
+        jecxz   @f
         add     ebx, ecx
         cmp     ebx, edx
         jb      .dir_entry
+@@:
         pop     ecx
         inc     ecx
         jmp     .checkDirectory
 
 .not_empty:
         pop     eax eax
-.error_stack8:
-        pop     eax eax
         push    ERROR_ACCESS_DENIED
         jmp     .ret
 
+.error8:
+        pop     ebx
+.error4:
+        pop     ebx
+.error:
+        push    eax
+        jmp     .ret
+
 .empty:
+        pop     ecx ecx
         cmp     eax, ERROR_END_OF_FILE
-        jnz     .not_empty_eax
-        pop     edx edx ecx ebx
+        jnz     .error
+        push    ecx
 .file:
         mov     eax, ecx
-        push    ebx ecx
         call    unlinkInode
-        cmp     eax, -1
-        je      .error_stack8
-        pop     ebx
-        test    eax, eax
-        jz      @f
-        xor     eax, eax
-        cmp     edx, DIRECTORY
-        jnz     .error_stack4_eax   ; hardlinks
-        mov     eax, [esp]
-        call    unlinkInode
-@@:
-        mov     eax, [esp]
+        jc      .error4
+        pop     eax
         lea     ebx, [ebp+EXTFS.inodeBuffer]
+        cmp     edi, DIRECTORY
+        jnz     @f
+        dec     [ebx+INODE.linksCount]
+        call    writeInode
+@@:
+        mov     eax, esi
         call    readInode
-        jc      .error_stack4_eax
-        push    edx
+        jc      .error
+        dec     [ebx+INODE.linksCount]
+        jz      @f
+        cmp     edi, DIRECTORY
+        jnz     .hardlinks
+@@:
+        push    esi edi
         xor     eax, eax
         xor     edx, edx
         call    extfsTruncateFile   ; free file's data
@@ -2241,13 +2230,10 @@ ext_Delete:
         push    edi
         rep stosb
         call    fsGetTime
-        pop     ebx ecx
+        pop     ebx edi esi
         add     eax, 978307200
         mov     [ebx+INODE.deletedTime], eax
-        mov     eax, [esp]
-        call    writeInode
-        jc      .error_stack4_eax
-        pop     eax
+        mov     eax, esi
         dec     eax
         xor     edx, edx
         div     [ebp+EXTFS.superblock.inodesPerGroup]
@@ -2255,7 +2241,7 @@ ext_Delete:
         mov     ebx, [ebp+EXTFS.descriptorTable]
         shl     eax, 5
         add     ebx, eax
-        cmp     ecx, DIRECTORY
+        cmp     edi, DIRECTORY
         jnz     @f
         dec     [ebx+BGDESCR.directoriesCount]
 @@:
@@ -2266,9 +2252,9 @@ ext_Delete:
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         mov     ecx, eax
         call    extfsReadBlock
-        jc      .error_stack4_eax
-        pop     eax
-        mov     edx, eax
+        pop     edx
+        jc      .error
+        mov     eax, edx
         and     edx, 31
         shr     eax, 5
         shl     eax, 2
@@ -2277,8 +2263,11 @@ ext_Delete:
         mov     eax, ecx
         call    extfsWriteBlock
         inc     [ebp+EXTFS.superblock.inodesFree]
+.hardlinks:
+        mov     eax, esi
+        lea     ebx, [ebp+EXTFS.inodeBuffer]
+        call    writeInode
         push    eax
-.disk_sync:
         call    writeSuperblock
         mov     esi, [ebp+PARTITION.Disk]
         call    disk_sync
@@ -2287,13 +2276,6 @@ ext_Delete:
         xor     ebx, ebx
         pop     eax
         ret
-
-.not_empty_eax:
-        add     esp, 12
-.error_stack4_eax:
-        pop     ebx
-        push    eax
-        jmp     .disk_sync
 
 ;----------------------------------------------------------------
 ext_CreateFolder:
