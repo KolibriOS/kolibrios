@@ -672,7 +672,7 @@ align 4
 			movzx eax,word[f]
 			mov esi,sizeof.ct_data
 			imul esi,ecx
-			add esi,[tree] ;;;must be [stree] but don't work
+			add esi,[stree]
 			movzx esi,word[esi+Len]
 			add esi,[xbits]
 			imul eax,esi
@@ -1133,10 +1133,11 @@ align 4
 			add eax,edi
 			inc word[eax+deflate_state.bl_tree+Freq]
 		.end4:
-		mov dword[count],0
 		mov eax,[curlen]
 		mov [prevlen],eax
-		cmp dword[nextlen],0
+		xor eax,eax
+		mov dword[count],eax
+		cmp dword[nextlen],eax
 		jne .end5 ;if (..==0)
 			mov dword[max_count],138
 			mov dword[min_count],3
@@ -1166,7 +1167,7 @@ endp
 ;    deflate_state* s
 ;    ct_data *tree ;the tree to be scanned
 ;    int max_code  ;and its largest code of non zero frequency
-align 4
+align 16
 proc send_tree uses eax ebx ecx edi, s:dword, tree:dword, max_code:dword
 locals
 	n dd ? ;int ;iterates over all tree elements
@@ -1263,11 +1264,11 @@ align 4
 			sub ebx,11
 			stdcall send_bits, edi, ebx, 7
 		.end4:
-		mov dword[curlen],0
 		mov eax,[curlen]
 		mov [prevlen],eax
-		mov [nextlen],eax
-		cmp eax,0
+		xor eax,eax
+		mov dword[count],eax
+		cmp [nextlen],eax
 		jne .end5 ;if (..==0)
 			mov dword[max_count],138
 			mov dword[min_count],3
