@@ -1196,23 +1196,12 @@ extfsExtendFile:
         pop     eax
         jmp     .errFree
 
-freeIndirectBlock:
-; in: edi -> indirect block number, edx = starting block
-; out: edi = edi+4, eax=-1 -> done, eax=0 -> end
-        pushd   ecx 0 edi edx
-        mov     eax, [edi]
-        test    eax, eax
-        jz      .ret
-        mov     ebx, [ebp+EXTFS.mainBlockBuffer]
-        call    extfsReadBlock
-        jc      .ret
-        lea     edi, [ebx+edx*4]
-        neg     edx
-        add     edx, [ebp+EXTFS.dwordsPerBlock]
-.freeExtent:
+freeBlockList:
+; in: edi -> list of blocks, edx = amount of blocks
+; out: ebx=0 -> end of list
         mov     ebx, [edi]
         test    ebx, ebx
-        jz      .end
+        jz      .ret
         xor     eax, eax
         xor     ecx, ecx
 @@:
@@ -1228,9 +1217,28 @@ freeIndirectBlock:
         mov     eax, ebx
         call    extfsExtentFree
         test    edx, edx
-        jnz     .freeExtent
-        dec     dword[esp+8]
-.end:
+        jnz     freeBlockList
+.ret:
+        ret
+
+freeIndirectBlock:
+; in: edi -> indirect block number, edx = starting block
+; out: edi = edi+4, eax=0 -> end
+        pushd   ecx 0 edi edx
+        mov     eax, [edi]
+        test    eax, eax
+        jz      .ret
+        mov     ebx, [ebp+EXTFS.mainBlockBuffer]
+        call    extfsReadBlock
+        jc      .ret
+        lea     edi, [ebx+edx*4]
+        neg     edx
+        add     edx, [ebp+EXTFS.dwordsPerBlock]
+        call    freeBlockList
+        test    ebx, ebx
+        jz      @f
+        inc     dword[esp+8]
+@@:
         pop     edx edi
         mov     eax, [edi]
         test    edx, edx
@@ -1339,16 +1347,9 @@ extfsTruncateFile:
         lea     edi, [esi+INODE.blockNumbers+edx*4]
         neg     edx
         add     edx, 12
-        xor     ecx, ecx
-        inc     ecx
-@@:
-        mov     eax, [edi]
-        test    eax, eax
+        call    freeBlockList
+        test    ebx, ebx
         jz      .ret
-        call    extfsExtentFree
-        stosd
-        dec     edx
-        jnz     @b
 .indirectBlocks:
         lea     edi, [esi+INODE.addressBlock]
         call    freeIndirectBlock
@@ -1412,9 +1413,7 @@ linkInode:
 ;  dl = file type
         push    esi edi ebx ecx eax edx
         call    strlen
-        add     ecx, 8  ; directory entry size
         push    esi ebx ecx
-        xor     ecx, ecx
         lea     esi, [ebp+EXTFS.inodeBuffer]
         mov     ebx, esi
         call    readInode
@@ -1435,6 +1434,7 @@ linkInode:
         call    extfsReadBlock
         jc      .error_block_read
         mov     ecx, [esp+12]
+        add     ecx, 8  ; directory entry size
         mov     edi, [ebp+EXTFS.tempBlockBuffer]
         mov     edx, edi
         add     edx, [ebp+EXTFS.bytesPerBlock]
@@ -1464,27 +1464,24 @@ linkInode:
         add     edi, eax
         cmp     edi, edx
         jb      .searchSpace
-        pop     ecx ecx eax
+        pop     ecx
+@@:
+        pop     ecx eax
         inc     ecx
         jmp     .searchBlock
 
 .zeroLength:
-        mov     [edi+DIRENTRY.entryLength], cx
         mov     eax, edx
         sub     eax, edi
+        mov     [edi+DIRENTRY.entryLength], ax
         cmp     eax, ecx
         jge     .found
         mov     [edi+DIRENTRY.inodeNumber], 0
-        mov     [edi+DIRENTRY.entryLength], ax
-; this block wasn't linking to the next one, so write it, and use the next block
         pop     eax
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         call    extfsWriteBlock
-        pop     ecx
-        inc     ecx
-        cmp     ecx, [esp]
-        push    ecx
-        jnz     @f
+        jmp     @b
+
 .alloc_block:
         mov     eax, [esi+INODE.fileSize]
         add     eax, [ebp+EXTFS.bytesPerBlock]
@@ -1497,7 +1494,6 @@ linkInode:
         call    writeInode
         jc      .error_get_inode_block
         mov     ecx, [esp]
-@@:
         call    extfsGetExtent
         jc      .error_get_inode_block
         push    eax
@@ -1506,15 +1502,17 @@ linkInode:
         mov     [edi+DIRENTRY.entryLength], ax
 .found:
         pop     edx ecx ecx ecx ebx esi
-        push    ebx
         mov     [edi+DIRENTRY.inodeNumber], ebx
-        sub     ecx, 8
         mov     word [edi+DIRENTRY.nameLength], cx
-        cmp     [ebp+EXTFS.superblock.dynamicVersionFlag], 0
-        je      .name
-        mov     eax, [esp+4]
+        sub     eax, 8
+        cmp     ecx, eax
+        adc     ecx, 0
+        test    [ebp+EXTFS.superblock.incompatibleFlags], 2
+        jz      @f
+        mov     eax, [esp]
         mov     [edi+DIRENTRY.fileType], al
-.name:
+@@:
+        push    ebx
         add     edi, 8
         rep movsb
         mov     eax, edx
@@ -1660,12 +1658,12 @@ findInode:
 @@: ; doesn't match
         pop     esi
 .next_rec:
-        movzx   eax, [ebx+DIRENTRY.entryLength]
-        add     ebx, eax
+        movzx   ecx, [ebx+DIRENTRY.entryLength]
+        jecxz   .stop
+        add     ebx, ecx
         cmp     ebx, edx
         jb      .start_rec
-        push    eax
-        jmp     @f
+        jmp     .stop
 
 .test_find:
         cmp     byte [esi], 0
@@ -1674,7 +1672,9 @@ findInode:
         jne     @b
         inc     esi
 @@:
-        pop     edx edx edi ecx eax
+        pop     edx
+.stop:
+        pop     edx edi ecx eax
 ; ebx -> matched directory entry, esi -> name without parent, or not changed
         cmp     edi, esi
         jnz     @f
