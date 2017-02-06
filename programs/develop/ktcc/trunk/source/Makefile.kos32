@@ -1,7 +1,7 @@
 CC = kos32-gcc
 LD = kos32-ld 
 
-SDK_DIR:= $(abspath ../../../sdk)
+SDK_DIR:= $(abspath ../../../contrib/sdk)
 
 #gcc 4.8
 #LDFLAGS = -static -nostdlib -T $(SDK_DIR)/sources/newlib/static.lds
