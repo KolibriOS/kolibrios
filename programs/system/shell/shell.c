@@ -4,15 +4,16 @@
 /// ===========================================================
 
 int dir_check(char dir[])
+/// just checks, if dir[] is really a directory
 {
 kol_struct70	k70;
 int		result;
 
 k70.p00 = 1;
 k70.p04 = 0;
-k70.p08 = 0;
-k70.p12 = 2*1024*1024; // 2 MB
-k70.p16 = (unsigned) malloc(2*1024*1024);
+//k70.p08 = 0;
+k70.p12 = 2; // enough to read . & ..
+k70.p16 = (unsigned)malloc(32+k70.p12*560);
 k70.p20 = 0;
 k70.p21 = dir;
 
@@ -20,7 +21,7 @@ result = kol_file_70(&k70);
 
 free((void*)k70.p16);
 
-if ( (0 == result)||(6 == result) )
+if ( (0 == result)||(6 == result) )  // 6 is possible ???
 	return TRUE;
 else 
 	return FALSE;
@@ -50,7 +51,7 @@ int		result;
 
 k70.p00 = 0;
 k70.p04 = 0;
-k70.p08 = 0;
+//k70.p08 = 0;
 k70.p12 = 0;
 k70.p16 = 0;
 k70.p20 = 0;

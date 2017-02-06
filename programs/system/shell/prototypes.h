@@ -19,7 +19,7 @@ int command_get_cmd(char cmd[]);
 int script_check(char file[]);
 int script_run(char exec[], char args[]);
 
-int aliases_check(char alias[]);
+int alias_check(char alias[]);
 int alias_search(char alias[]);
 int alias_add(char alias[]);
 int alias_split (char alias[], char s1[], char s2[]);

@@ -12,8 +12,8 @@ int		i, result;
 
 k70.p00 = 1;
 k70.p04 = 0;
-k70.p08 = 0;
-k70.p12 = 10000; 
+//k70.p08 = 0;
+k70.p12 = 2;  // just for test exist & read number of entries
 k70.p16 =  (unsigned) malloc(32+k70.p12*560);
 k70.p20 = 0;
 
@@ -33,6 +33,20 @@ if ( !((result==0) || (result==6)) ) // проверяем существование каталога
 
 n =  (unsigned*) (k70.p16+8);
 num_of_file = *n; // число файлов в каталоге
+
+// now read full directory
+k70.p12 = num_of_file;  
+free( (void*) k70.p16);
+k70.p16 =  (unsigned) malloc(32+k70.p12*560);
+if ( !k70.p16 )
+	return FALSE;
+	
+result = kol_file_70(&k70);
+if ( !((result==0) || (result==6)) ) 
+	{
+	free( (void*) k70.p16);
+	return FALSE;
+	}
 
 for (i = 0; i < num_of_file; i++)
 	{

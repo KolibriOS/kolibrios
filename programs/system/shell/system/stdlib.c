@@ -29,5 +29,5 @@ asm ("int $0x40"::"a"(68), "b"(13), "c"(p) );
 
 void* realloc(void *p, unsigned s)
 {
-asm ("int $0x40"::"a"(68), "b"(12), "c"(p), "d"(s) );
+asm ("int $0x40"::"a"(68), "b"(20), "c"(p), "d"(s) );
 }

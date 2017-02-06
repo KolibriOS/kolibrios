@@ -359,7 +359,7 @@ for (i = 0; i < NUM_OF_CMD; i++)
 	if (!strcmp(cmd, COMMANDS[i].name))
 		{
 		result = ((handler1_t)COMMANDS[i].handler)(args);
-		if (result != TRUE)
+		if (result == FALSE)
 			{
 			#if LANG_ENG
 				printf("  Error!\n\r");

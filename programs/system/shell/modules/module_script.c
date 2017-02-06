@@ -9,7 +9,7 @@ char		buf[4];
 
 k70.p00 = 0;
 k70.p04 = 0;
-k70.p08 = 0;
+//k70.p08 = 0;
 k70.p12 = 4; // читать 4 байта
 k70.p16 = (unsigned) buf;
 k70.p20 = 0;
@@ -30,11 +30,13 @@ int script_run(char exec[], char args[])
 
 kol_struct70	k70;
 kol_struct_BDVK	bdvk;
-unsigned	result, filesize, pos, i;
+unsigned	result, i;
+unsigned	long long filesize, pos;
 char		*buf; //буфер, куда копируется скрипт
 
 k70.p00 = 5;
-k70.p04 = k70.p08 = k70.p12 = 0;
+k70.p04 = k70.p12 = 0;
+//k70.p08 = 0;
 k70.p16 = (unsigned) &bdvk;
 k70.p20 = 0;
 k70.p21 = exec;
@@ -43,16 +45,17 @@ result = kol_file_70(&k70); // получаем информацию о файле
 if ( 0 != result ) 
 	return FALSE;
 
-filesize = bdvk.p32[0]; // получаем размер файла
+filesize = bdvk.p32; // получаем размер файла
 
-buf = malloc(filesize+256);
+buf = malloc(filesize+256); // may fail for over 4Gb file, but impossible case
 if (NULL == buf)
 	return FALSE;
 
 buf[filesize]=0;
 
 k70.p00 = 0;
-k70.p04 = k70.p08 = 0;
+k70.p04 = 0;
+//k70.p08 = 0;
 k70.p12 = filesize;
 k70.p16 = (unsigned) buf;
 k70.p20 = 0;

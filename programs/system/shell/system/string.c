@@ -1,5 +1,6 @@
 
 #include "string.h"
+#include "ctype.h"
 
 void*  memset(void *mem, int c, unsigned size)
 {

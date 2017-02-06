@@ -3,19 +3,18 @@ int cmd_cp(char param[])
 {
 
 char* argv[100];
-int i;
 int argc;
-char *filename_in;
-char *filename_out;
-char *buffer;
+char *filename_in = NULL;
+char *filename_out = NULL;
+char *buffer = NULL;
 
 kol_struct70	k70_in;
 kol_struct70	k70_out;
 
 kol_struct_BDVK	bdvk;
 
-unsigned filesize, result;
-unsigned n; // количество раз копирования по 4 кбайта
+unsigned long long filesize;
+unsigned result, buf_size;
 
 argc = parameters_prepare(param, argv);
 
@@ -58,110 +57,88 @@ if (argv[1][0] != '/')
    {
    strcpy(filename_out, argv[1]);
    }
+   
+// add ability to use directory as destination
+if ( dir_check(filename_out) )
+	{
+		char *fname = strrchr(filename_in, '/') + 1;  // always exist, as we add curdir
+		if (filename_out[strlen(filename_out)-1] != '/')
+			strcat(filename_out, "/"); // add slash
+		strcat(filename_out, fname);
+	}
 
 
 k70_in.p00 = 5;
-k70_in.p04 = k70_in.p08 = k70_in.p12 = 0;
+k70_in.p04 = 0LL;
+k70_in.p12 = 0;
 k70_in.p16 = (unsigned) &bdvk;
 k70_in.p20 = 0;
 k70_in.p21 = filename_in;
 
 result = kol_file_70(&k70_in); // получаем информацию о файле
 if ( 0 != result )
-       {
-       parameters_free(argc, argv);
-       free(filename_in);
-       free(filename_out);
-       return TRUE;
-       }
+	goto lbl_exit;
 
-filesize = bdvk.p32[0]; // получаем размер файла  (ограничение - 4 Гбайта)
-n = filesize / 4096;
+// count buffer size up to 1Mb, but no more than 1/2 of free memory
+buf_size = 1 << 20; // 1Mb
+while( ((buf_size >> 10) > kol_system_memfree()) && (buf_size > 4096) )
+	buf_size /= 2;
 
-buffer = (char*) malloc(4096);
+filesize = bdvk.p32; // получаем размер файла(ограничение - 4 Гбайта только для FAT)
+if (buf_size > filesize)
+	buf_size = (unsigned)filesize;	// may be zero!
+if (buf_size == 0) buf_size = 4096;	// ...
+
+buffer = (char*) malloc(buf_size);
+if (!buffer)
+	{
+		result = E_NOMEM;
+		goto lbl_exit;
+	}
 
 k70_in.p00 = 0;
-k70_in.p08 = 0;
-k70_in.p12 = 4096;
+//k70_in.p08 = 0;
+k70_in.p12 = buf_size;
 k70_in.p16 = (unsigned) buffer;
 k70_in.p20 = 0;
 k70_in.p21 = filename_in;
 
 k70_out.p00 = 2;
-k70_out.p08 = 0;
-k70_out.p12 = 4096;
+//k70_out.p08 = 0;
+k70_out.p12 = buf_size;
 k70_out.p16 = (unsigned) buffer;
 k70_out.p20 = 0;
 k70_out.p21 = filename_out;
 
-i = 0; // для того, чтобы копировать файлы с размером меньше 4 кБайт
-for ( i = 0; i < n; i++)
-    {
-
-    k70_in.p04 = i*4096;
+unsigned long long offset = 0;
+do {
+    k70_in.p04 = offset;
+    if (offset + buf_size > filesize)  // last chunk
+		{
+		k70_in.p12 = k70_out.p12 = (unsigned)(filesize - offset); // filesize % buf_size;
+		}
+    
     result = kol_file_70(&k70_in); // чтение
     if (result != 0)
-       {
-       parameters_free(argc, argv);
-       free(filename_in);
-       free(filename_out);
-       free(buffer);
-       return FALSE;
-       }
+		goto lbl_exit;
 
-    k70_out.p04 = i*4096;
+    k70_out.p04 = offset;
     result = kol_file_70(&k70_out); // запись
     if (result != 0)
-       {
-       parameters_free(argc, argv);
-       free(filename_in);
-       free(filename_out);
-       free(buffer);
-       return FALSE;
-       }
+		goto lbl_exit;
 
-    if (i == 0)
+    if (k70_out.p00 == 2)
        k70_out.p00 = 3; // меняем функцию с создания (2) на дозапись (3)
+	offset += buf_size;
+} while (offset < filesize);
 
-    }
-
-if ( (filesize%4096) != 0 ) // если размер файла не кратен 4 кБайтам
-   {
-
-   k70_in.p12  = filesize%4096;
-   k70_out.p12 = filesize%4096;
-
-   k70_in.p04 = i*4096; // в i должно быть правильное смещение
-   result = kol_file_70(&k70_in); // чтение
-   if (result != 0)
-       {
-       parameters_free(argc, argv);
-       free(filename_in);
-       free(filename_out);
-       free(buffer);
-       return FALSE;
-       }
-
-    k70_out.p04 = i*4096;
-    result = kol_file_70(&k70_out); // запись
-    if (result != 0)
-       {
-       parameters_free(argc, argv);
-       free(filename_in);
-       free(filename_out);
-       free(buffer);
-       return FALSE;
-       }
-
-   }
-
+lbl_exit:
 
 parameters_free(argc, argv);
 free(filename_in);
 free(filename_out);
 free(buffer);
 
-
-return TRUE;
+return (result == 0);
 }
 

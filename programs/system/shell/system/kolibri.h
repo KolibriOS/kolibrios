@@ -18,8 +18,7 @@
 typedef struct 
 {
 unsigned	p00;
-unsigned	p04;
-unsigned	p08;
+unsigned long long	p04;
 unsigned	p12;
 unsigned	p16;
 char		p20;
@@ -40,7 +39,7 @@ unsigned	p16;
 unsigned	p20;
 unsigned	p24;
 unsigned	p28;
-unsigned	p32[2];
+unsigned long long	p32;
 unsigned	p40;
 } kol_struct_BDVK;
 #pragma pack(pop)
