@@ -586,6 +586,7 @@ extfsExtentAlloc:
         or      eax, -1
         rep stosd
         mov     ecx, ebx
+        jecxz   .done
         neg     ecx
         add     ecx, 32
         shr     eax, cl
