@@ -1,7 +1,7 @@
 ; trees.asm -- output deflated data using Huffman coding
 ; Copyright (C) 1995-2012 Jean-loup Gailly
 ; detect_data_type() function provided freely by Cosmin Truta, 2006
-; For conditions of distribution and use, see copyright notice in zlib.h
+; For conditions of distribution and use, see copyright notice in zlib.inc
 
 ;  ALGORITHM
 
@@ -107,7 +107,7 @@ else
 include 'trees.inc'
 end if ;GEN_TREES_H
 
-struct static_tree_desc ;_s
+struct static_tree_desc
 	static_tree dd ? ;const ct_data * ;static tree or NULL
 	extra_bits  dd ? ;const intf * ;extra bits for each code or NULL
 	extra_base  dd ? ;int ;base index for extra_bits
@@ -324,7 +324,7 @@ end if ;(GEN_TREES_H) | !(STDC)
 endp
 
 ; ===========================================================================
-; Genererate the file trees.h describing the static trees.
+; Genererate the file trees.inc describing the static trees.
 
 ;#  define SEPARATOR(i, last, width) \
 ;      ((i) == (last)? "\n};\n\n" :    \
@@ -491,8 +491,7 @@ local .end0
 	mov ebx,m
 	imul ebx,sizeof.ct_data
 	add ebx,tree
-	mov bx,word[ebx+Freq]
-	cmp ax,bx
+	cmp ax,word[ebx+Freq]
 	jl .end0
 	jne m_end
 	mov eax,n
@@ -528,10 +527,7 @@ pushad
 		; Set j to the smallest of the two sons:
 		;;cmp esi,[edi+deflate_state.heap_len]
 		jge .end1 ;if (..<.. &&
-		mov edx,esi
-		shl edx,2
-		add edx,edi
-		add edx,deflate_state.heap
+		lea edx,[edi+4*esi+deflate_state.heap]
 		smaller [tree], dword[edx+4], dword[edx], edi+deflate_state.depth, .end1
 			inc esi
 		.end1:
@@ -629,21 +625,20 @@ align 4
 	@@:
 	cmp dword[h],HEAP_SIZE
 	jge .cycle1end ;for (..;..<..;..)
-		mov    eax,[h]
-		mov    ecx,[edi+4*eax+deflate_state.heap]
+		mov eax,[h]
+		mov ecx,[edi+4*eax+deflate_state.heap]
 		;ecx = n
 		mov edx,[tree]
 		movzx eax,word[edx+sizeof.ct_data*ecx+Dad]
 		movzx eax,word[edx+sizeof.ct_data*eax+Len]
 		inc eax
 		mov [bits],eax ;bits = tree[tree[n].Dad].Len + 1
-		mov eax,[max_length]
-		cmp [bits],eax
+		cmp eax,[max_length]
 		jle @f ;if (..>..)
+			mov eax,[max_length]
 			mov [bits],eax
 			inc dword[overflow]
 		@@:
-		mov eax,[bits]
 		mov [edx+sizeof.ct_data*ecx+Len],ax
 		; We overwrite tree[n].Dad which is no longer needed
 
@@ -668,16 +663,13 @@ align 4
 		imul eax,esi
 		add [edi+deflate_state.opt_len],eax
 		cmp dword[stree],0
-		je @f ;if (..)
+		jne .cycle1 ;if (..)
 			movzx eax,word[f]
-			mov esi,sizeof.ct_data
-			imul esi,ecx
-			add esi,[stree]
-			movzx esi,word[esi+Len]
+			mov esi,[stree]
+			movzx esi,word[esi+sizeof.ct_data*ecx+Len]
 			add esi,[xbits]
 			imul eax,esi
 			add [edi+deflate_state.static_len],eax
-		@@:
 		jmp .cycle1
 align 4
 	.cycle1end:
@@ -736,8 +728,10 @@ align 4
 			cmp eax,[max_code]
 			jg .cycle4 ;if (..>..) continue
 			mov esi,[m]
+			imul esi,sizeof.ct_data
+			add esi,edx ;esi = &tree[m]
 			mov eax,[bits]
-			cmp word[edx+sizeof.ct_data*esi+Len],ax
+			cmp word[esi+Len],ax
 			je @f ;if (..!=..)
 ;                Trace((stderr,"code %d bits %d->%d\n", m, tree[m].Len, bits));
 				movzx ebx,word[esi+Len]
@@ -974,10 +968,8 @@ align 4
 		imul edx,sizeof.ct_data
 		add edx,[tree]
 		mov ax,word[edx+Freq]
-		mov edx,ecx
-		imul edx,sizeof.ct_data
-		add edx,[tree]
-		add ax,word[edx+Freq]
+		mov edx,[tree]
+		add ax,word[edx+sizeof.ct_data*ecx+Freq]
 		mov edx,[node]
 		imul edx,sizeof.ct_data
 		add edx,[tree]
