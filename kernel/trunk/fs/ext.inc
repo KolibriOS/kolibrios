@@ -130,7 +130,6 @@ fsBlock         dd  ?
 ends
 
 ROOT_INODE = 2
-PERMISSIONS = 110110110b
 EXTENTS_USED = 80000h
 TYPE_MASK = 0F000h
 FLAG_FILE = 8000h
@@ -2300,7 +2299,7 @@ ext_CreateFolder:
         mov     [ebx+INODE.dataModified], eax
         pop     edi esi edx
 ; edx = allocated inode number, edi -> filename, esi = parent inode number
-        mov     [ebx+INODE.accessMode], DIRECTORY or PERMISSIONS
+        mov     [ebx+INODE.accessMode], DIRECTORY or 511
         mov     eax, edx
         call    writeInode
         jc      .error
@@ -2374,7 +2373,7 @@ ext_CreateFile:
         mov     [ebx+INODE.dataModified], eax
         pop     edi esi edx
 ; edx = allocated inode number, edi -> filename, esi = parent inode number
-        mov     [ebx+INODE.accessMode], FLAG_FILE or PERMISSIONS
+        mov     [ebx+INODE.accessMode], FLAG_FILE or 110110110b
         mov     eax, edx
         call    writeInode
         jc      .error2
@@ -2434,6 +2433,7 @@ ext_WriteFile:
         mov     ecx, [ebx+12]
         mov     esi, [ebx+16]
 .write:
+        jecxz   .zero
         div     [ebp+EXTFS.bytesPerBlock]
         test    edx, edx
         jz      .aligned
@@ -2470,6 +2470,7 @@ ext_WriteFile:
         pop     eax
         inc     eax
         xor     edx, edx
+.zero:
         jecxz   .done
 .aligned:
         xchg    eax, ecx
