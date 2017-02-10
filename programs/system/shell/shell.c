@@ -129,16 +129,19 @@ if (sizeof (kol_struct70) != 25)
 }
 
 
-strcpy(cur_dir, PATH);
-dir_truncate(cur_dir);
+//strcpy(cur_dir, PATH);
+//dir_truncate(cur_dir);
+getcwd(cur_dir, sizeof cur_dir);
+//printf("curdir %s\n", cur_dir);
 
 con_set_cursor_height(con_get_font_height()-1);
 
 ALIASES = malloc(128*1024);
 
-if (PARAM[0] == 0)
+if (!PARAM || PARAM[0] == 0)
 {
-   strcpy(CMD, cur_dir);
+   strcpy(CMD, PATH);
+   dir_truncate(CMD);
    strcat(CMD, ".shell");
    if ( !file_check(CMD) )
        strcpy(CMD, "/sys/settings/.shell");

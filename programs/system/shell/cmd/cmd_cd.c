@@ -1,11 +1,4 @@
 
-static inline void set_cwd(const char* cwd)
-{
-    __asm__ __volatile__(
-    "int $0x40"
-    ::"a"(30),"b"(1),"c"(cwd));
-};
-
 
 int cmd_cd(char dir[])
 {

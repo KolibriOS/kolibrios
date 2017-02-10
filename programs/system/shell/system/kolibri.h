@@ -114,3 +114,6 @@ void  kol_buffer_close(char name[]);
 int kol_clip_num();
 char* kol_clip_get(int n);
 int kol_clip_set(int n, char buffer[]);
+void set_cwd(const char* cwd);
+int getcwd(char *buf, unsigned size);
+

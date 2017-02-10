@@ -436,3 +436,17 @@ int kol_clip_set(int n, char buffer[])
 {
 asm volatile ("int $0x40"::"a"(54), "b"(2), "c"(n), "d"(buffer));
 }
+
+void set_cwd(const char* cwd)
+{
+    __asm__ __volatile__(
+    "int $0x40"
+    ::"a"(30),"b"(1),"c"(cwd));
+};
+
+int getcwd(char *buf, unsigned size)
+{
+    __asm__ __volatile__(
+    "int $0x40"
+    ::"a"(30),"b"(2),"c"(buf), "d"(size));
+}
