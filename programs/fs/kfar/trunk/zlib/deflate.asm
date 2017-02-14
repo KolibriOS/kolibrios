@@ -287,7 +287,7 @@ if FASTEST eq 1
 	@@:
 else
 	cmp dword[level],Z_DEFAULT_COMPRESSION
-	jne @f ;if (..==0)
+	jne @f ;if (..==..)
 		mov dword[level],6
 	@@:
 end if
@@ -296,7 +296,6 @@ end if
 	jge @f ;if (..<0) ;suppress zlib wrapper
 		mov dword[wrap],0
 		neg dword[windowBits]
-		inc dword[windowBits]
 		jmp .end1
 	@@:
 if GZIP eq 1
@@ -411,7 +410,6 @@ end if
 		jmp .end_f
 	@@:
 	mov eax,[edi+deflate_state.lit_bufsize]
-	shr eax,1 ;/=sizeof(uint_16)
 	add eax,[overlay]
 	mov [edi+deflate_state.d_buf],eax
 	mov eax,[edi+deflate_state.lit_bufsize]
@@ -428,7 +426,6 @@ end if
 
 	stdcall deflateReset, ebx
 .end_f:
-zlib_debug 'deflateInit2_ strategy = %d',[strategy]
 	ret
 endp
 
@@ -628,7 +625,6 @@ endp
 align 4
 proc deflateReset uses ebx, strm:dword
 	mov ebx,[strm]
-	zlib_debug 'deflateReset'
 	stdcall deflateResetKeep, ebx
 	cmp eax,Z_OK
 	jne @f ;if (..==Z_OK)
@@ -765,7 +761,7 @@ if FASTEST eq 1
 	@@:
 else
 	cmp dword[level],Z_DEFAULT_COMPRESSION
-	jne @f ;if (..==0)
+	jne @f ;if (..==..)
 		mov dword[level],6
 	@@:
 end if
@@ -857,63 +853,124 @@ endp
 ; upper bound of about 14% expansion does not seem onerous for output buffer
 ; allocation.
 
-;uLong (strm, sourceLen)
-;    z_streamp strm
-;    uLong sourceLen
+;uLong (z_streamp strm, uLong sourceLen)
 align 4
-proc deflateBound, strm:dword, sourceLen:dword
-;    deflate_state *s;
-;    uLong complen, wraplen;
-;    Bytef *str;
-	zlib_debug 'deflateBound'
+proc deflateBound uses ebx edi, strm:dword, sourceLen:dword
+locals
+	complen dd ?
+	wraplen dd ?
+endl
+;edi = s
 
 	; conservative upper bound for compressed data
-;    complen = sourceLen +
-;              ((sourceLen + 7) >> 3) + ((sourceLen + 63) >> 6) + 5;
+	mov ebx,[sourceLen]
+	mov eax,ebx
+	add eax,7
+	shr eax,3
+	add eax,ebx
+	add ebx,63
+	shr ebx,6
+	lea eax,[eax+ebx+5]
+	mov [complen],eax
 
 	; if can't get parameters, return conservative bound plus zlib wrapper
-;    if (strm == Z_NULL || strm->state == Z_NULL)
-;        return complen + 6;
+	mov eax,[strm]
+	cmp eax,Z_NULL
+	je .end0
+	mov edi,[eax+z_stream.state] ;s = strm.state
+	cmp edi,Z_NULL
+	jne @f
+	.end0: ;if (..==0 || ..==0)
+		mov eax,[complen]
+		add eax,6
+		jmp .end_f
+	@@:
 
 	; compute wrapper length
-;    s = strm->state;
-;    switch (s->wrap) {
-;    case 0:                                 /* raw deflate */
-;        wraplen = 0;
-;        break;
-;    case 1:                                 /* zlib wrapper */
-;        wraplen = 6 + (s->strstart ? 4 : 0);
-;        break;
-;    case 2:                                 /* gzip wrapper */
-;        wraplen = 18;
-;        if (s->gzhead != Z_NULL) {          /* user-supplied gzip header */
-;            if (s->gzhead->extra != Z_NULL)
-;                wraplen += 2 + s->gzhead->extra_len;
-;            str = s->gzhead->name;
-;            if (str != Z_NULL)
-;                do {
-;                    wraplen++;
-;                } while (*str++);
-;            str = s->gzhead->comment;
-;            if (str != Z_NULL)
-;                do {
-;                    wraplen++;
-;                } while (*str++);
-;            if (s->gzhead->hcrc)
-;                wraplen += 2;
-;        }
-;        break;
-;    default:                                /* for compiler happiness */
-;        wraplen = 6;
-;    }
+	mov ebx,[edi+deflate_state.wrap]
+	cmp ebx,0
+	je .end1
+	cmp ebx,1
+	je .end2
+	cmp ebx,2
+	je .end3
+	jmp .end4
+	.end1: ;raw deflate
+		mov dword[wraplen],0
+		jmp .end5
+	.end2: ;zlib wrapper
+		mov eax,[edi+deflate_state.strstart]
+		neg eax
+		sbb eax,eax
+		and eax,4
+		add eax,6
+		mov [wraplen],eax
+		jmp .end5
+	.end3: ;gzip wrapper
+		mov dword[wraplen],18
+		cmp dword[edi+deflate_state.gzhead],Z_NULL ;user-supplied gzip header
+		je .end5
+		mov eax,[edi+deflate_state.gzhead]
+		cmp dword[eax+gz_header.extra],0
+		je @f
+			mov eax,[edi+deflate_state.gzhead]
+			mov eax,[eax+gz_header.extra_len]
+			add dword[wraplen],eax
+			add dword[wraplen],2
+		@@:
+		mov eax,[edi+deflate_state.gzhead]
+		mov eax,[eax+gz_header.name]
+		cmp eax,0
+		je @f
+		.cycle0: ;do
+			inc dword[wraplen]
+			movzx ebx,byte[eax]
+			inc eax
+			test ebx,ebx
+			jne .cycle0
+		@@:
+		mov eax,[edi+deflate_state.gzhead]
+		mov eax,[eax+gz_header.comment]
+		cmp eax,0
+		je @f
+		.cycle1: ;do
+			inc dword[wraplen]
+			movzx ebx,byte[eax]
+			inc eax
+			test ebx,ebx
+			jne .cycle1
+		@@:
+		mov eax,[edi+deflate_state.gzhead]
+		cmp dword[eax+gz_header.hcrc],0
+		je .end5
+			add dword[wraplen],2
+		jmp .end5
+	.end4: ;for compiler happiness
+		mov dword[wraplen],6
+	.end5:
 
 	; if not default parameters, return conservative bound
-;    if (s->w_bits != 15 || s->hash_bits != 8 + 7)
-;        return complen + wraplen;
+	cmp dword[edi+deflate_state.w_bits],15
+	jne .end6
+	cmp dword[edi+deflate_state.hash_bits],8+7
+	je @f
+	.end6: ;if (s->w_bits !=.. || s->hash_bits !=..)
+		mov eax,[complen]
+		add eax,[wraplen]
+		jmp .end_f
+	@@:
 
 	; default settings: return tight bound for that case
-;    return sourceLen + (sourceLen >> 12) + (sourceLen >> 14) +
-;           (sourceLen >> 25) + 13 - 6 + wraplen;
+	mov eax,[sourceLen]
+	mov ebx,eax
+	shr ebx,12
+	add ebx,eax
+	mov edi,eax
+	shr edi,14
+	add ebx,edi
+	shr eax,25
+	add ebx,[wraplen]
+	lea eax,[eax+ebx+7]
 .end_f:
 	ret
 endp
@@ -923,11 +980,9 @@ endp
 ; IN assertion: the stream state is correct and there is enough room in
 ; pending_buf.
 
-;void (s, b)
-;    deflate_state *s
-;    uInt b
+;void (deflate_state *s, uInt b)
 align 4
-proc putShortMSB uses ebx ecx, s:dword, b:dword
+proc putShortMSB uses eax ebx ecx, s:dword, b:dword
 	mov ebx,[s]
 	mov ecx,[b]
 	put_byte ebx, ch
@@ -2004,7 +2059,6 @@ else ;FASTEST
 ; ---------------------------------------------------------------------------
 ; Optimized version for FASTEST only
 	mov edx,[s]
-	zlib_debug 'longest_match'
 
 	; The code is optimized for HASH_BITS >= 8 and MAX_MATCH-2 multiple of 16.
 	; It is easy to get rid of this optimization if necessary.
@@ -2244,7 +2298,7 @@ end if
 		mov eax,[edi+deflate_state.lookahead]
 		add eax,[edi+deflate_state.insert]
 		cmp eax,MIN_MATCH
-		jl .end1 ;if (..>=..)
+		jb .end1 ;if (..>=..)
 			mov esi,[edi+deflate_state.strstart]
 			sub esi,[edi+deflate_state.insert]
 			;esi = str
@@ -2414,9 +2468,7 @@ end if
 ; NOTE: this function should be optimized to avoid extra copying from
 ; window to pending_buf.
 
-;block_state (s, flush)
-;    deflate_state *s
-;    int flush
+;block_state (deflate_state *s, int flush)
 align 4
 proc deflate_stored uses ebx ecx edi, s:dword, flush:dword
 ; Stored blocks are limited to 0xffff bytes, pending_buf is limited
