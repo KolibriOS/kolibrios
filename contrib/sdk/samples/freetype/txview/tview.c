@@ -4,7 +4,6 @@
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 #include "winlib.h"
-#include "draw2.h"
 
 int init_fontlib();
 font_t *create_font(FT_Face face, int size);
@@ -87,7 +86,12 @@ static void txv_redraw(tview_t *txv)
     rect_t rc;
     int i;
 
-    draw_rect(txv->ctx, 0, 0, txv->w, txv->h, 0xFFFFFFFF);
+    rc.l = 0;
+    rc.t = 0;
+    rc.r = txv->w;
+    rc.b = txv->h;
+
+    px_fill_rect(txv->ctx, &rc, 0xFFFFFFFF);
 
     rc.l = txv->margins.l;
     rc.t = txv->margins.t;
@@ -162,14 +166,14 @@ int txv_scroll_down(tview_t *txv)
         dst  = txv->margins.t;
         src  = dst + txv->line_height;
         rows = txv->line_height * (txv->pagesize-1);
-        scroll_ctx(txv->ctx, dst, src, rows );
+        scroll_context(txv->ctx, dst, src, rows );
 
         rc.l = txv->margins.l;
         rc.t = txv->margins.t + rows;
         rc.r = txv->w - txv->margins.r;
         rc.b = rc.t + txv->line_height;
 
-        draw_rect(txv->ctx, rc.l, rc.t, rc.r - rc.l, txv->line_height, 0xFFFFFFFF);
+        px_fill_rect(txv->ctx, &rc, 0xFFFFFFFF);
 
         draw_text_ext(txv->ctx, txv->font, txv->line[txv->endline],
                       txv->line[txv->endline+1]-txv->line[txv->endline], &rc, 0xFF000000);
@@ -181,7 +185,7 @@ int txv_scroll_down(tview_t *txv)
         {
             rc.t+= txv->line_height;
             rc.b+= txv->line_height;
-            draw_rect(txv->ctx, rc.l, rc.t, rc.r - rc.l, txv->line_height, 0xFFFFFFFF);
+            px_fill_rect(txv->ctx, &rc, 0xFFFFFFFF);
             draw_text_ext(txv->ctx, txv->font, txv->line[txv->endline],
                           txv->line[txv->endline+1]-txv->line[txv->endline], &rc, 0xFF000000);
         }
@@ -202,14 +206,14 @@ int txv_scroll_up(tview_t *txv)
         src  = txv->margins.t;
         dst  = src + txv->line_height;
 
-        scroll_ctx(txv->ctx, dst, src, rows);
+        scroll_context(txv->ctx, dst, src, rows);
 
         rc.l = txv->margins.l;
         rc.t = txv->margins.t;
         rc.r = txv->w - txv->margins.r;
         rc.b = rc.t + txv->line_height;
 
-        draw_rect(txv->ctx, rc.l, rc.t, rc.r - rc.l, txv->line_height, 0xFFFFFFFF);
+        px_fill_rect(txv->ctx, &rc, 0xFFFFFFFF);
 
         txv->startline--;
         txv->endline--;
