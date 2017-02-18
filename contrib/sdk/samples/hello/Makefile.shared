@@ -3,12 +3,12 @@ LD = kos32-ld
 
 SDK_DIR:= $(abspath ../..)
 
-LDFLAGS = -static -S -nostdlib -T $(SDK_DIR)/sources/newlib/app.lds --image-base 0
+LDFLAGS = -static -S -Tapp-dynamic.lds --image-base 0
 
 CFLAGS = -c -fno-ident -O2 -fomit-frame-pointer -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32
 
 INCLUDES= -I $(SDK_DIR)/sources/newlib/libc/include
-LIBPATH:= -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib
+LIBPATH:= -L $(SDK_DIR)/lib
 
 SOURCES = hello.c	\
 	  $(NULL)
@@ -18,9 +18,9 @@ OBJECTS =  $(patsubst %.c, %.o, $(SOURCES))
 
 default: hello
 
-hello: $(OBJECTS) Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) -o hello $(OBJECTS) -lgcc -lc.dll -lapp
+hello: $(OBJECTS) Makefile.shared
+	$(LD) $(LDFLAGS) $(LIBPATH) -o hello $(OBJECTS) -lgcc -lc.dll
 	objcopy hello -O binary
 
-%.o : %.c Makefile $(SOURCES)
+%.o : %.c Makefile.shared $(SOURCES)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $<
