@@ -103,8 +103,8 @@ fat_create_partition.free_return0:
 fat_create_partition.return0:
         xor     eax, eax
         ret
+
 fat_create_partition:
-; sector size must be 512
         cmp     dword [esi+DISK.MediaInfo.SectorSize], 512
         jnz     .return0
 ; bootsector must have been successfully read
@@ -145,19 +145,14 @@ fat_create_partition:
         mov     [eax+FAT.fat_change], 0
         push    ebp
         mov     ebp, eax
-
         lea     ecx, [ebp+FAT.Lock]
         call    mutex_init
-
         movzx   eax, word [ebx+0xe]     ; sectors reserved
         mov     [ebp+FAT.FAT_START], eax
-
         movzx   eax, byte [ebx+0xd]     ; sectors per cluster
         mov     [ebp+FAT.SECTORS_PER_CLUSTER], eax
-
         movzx   ecx, word [ebx+0xb]     ; bytes per sector
         mov     [ebp+FAT.BYTES_PER_SECTOR], ecx
-
         movzx   eax, word [ebx+0x11]    ; count of rootdir entries (=0 fat32)
         shl     eax, 5                  ; mul 32
         dec     ecx
@@ -166,14 +161,12 @@ fat_create_partition:
         xor     edx, edx
         div     ecx
         mov     [ebp+FAT.ROOT_SECTORS], eax     ; count of rootdir sectors
-
         movzx   eax, word [ebx+0x16]    ; sectors per fat <65536
         test    eax, eax
         jnz     @f
         mov     eax, [ebx+0x24]         ; sectors per fat
 @@:
         mov     [ebp+FAT.SECTORS_PER_FAT], eax
-
         movzx   eax, byte [ebx+0x10]    ; number of fats
         mov     [ebp+FAT.NUMBER_OF_FATS], eax
         mul     [ebp+FAT.SECTORS_PER_FAT]
@@ -185,13 +178,11 @@ fat_create_partition:
         add     eax, [ebp+FAT.ROOT_SECTORS]     ; rootdir sectors should be 0 on fat32
         jc      .free_return0
         mov     [ebp+FAT.DATA_START], eax       ; data area = rootdir + rootdir_size
-
         movzx   eax, word [ebx+0x13]    ; total sector count <65536
         test    eax, eax
         jnz     @f
         mov     eax, [ebx+0x20]         ; total sector count
 @@:
-; total sector count must not exceed partition size
         cmp     dword [ebp+FAT.Length+4], 0
         jnz     @f
         cmp     eax, dword [ebp+FAT.Length]
@@ -208,11 +199,10 @@ fat_create_partition:
         dec     eax                     ; cluster count
         jz      .free_return0
         mov     [ebp+FAT.fatStartScan], 2
-
-        ; limits by Microsoft Hardware White Paper v1.03
-        cmp     eax, 4085               ; 0xff5
+; limits by Microsoft Hardware White Paper v1.03
+        cmp     eax, 0xff5
         jb      .fat12
-        cmp     eax, 65525              ; 0xfff5
+        cmp     eax, 0xfff5
         jb      .fat16
 .fat32:
         mov     eax, [ebx+0x2c]         ; rootdir cluster
@@ -246,6 +236,7 @@ fat_create_partition:
         mov     eax, ebp
         pop     ebp
         ret
+
 .fat16:
         and     [ebp+FAT.ROOT_CLUSTER], 0
         mov     [ebp+FAT.fatRESERVED], 0x0000FFF6
@@ -254,6 +245,7 @@ fat_create_partition:
         mov     [ebp+FAT.fatMASK], 0x0000FFFF
         mov     al, 16
         jmp     .fat_not_12_finalize
+
 .fat12:
         and     [ebp+FAT.ROOT_CLUSTER], 0
         mov     [ebp+FAT.fatRESERVED], 0xFF6
@@ -264,7 +256,6 @@ fat_create_partition:
         mov     [ebp+FAT.fs_type], al
 ; For FAT12, allocate&read data for entire table:
 ; calculate A = ALIGN_UP(NUM_CLUSTERS, 8),
-; calculatefatchain/restorefatchain will process A items,
 ; allocate ALIGN_UP(A*3/2, 512) bytes for FAT table plus A*2 bytes for unpacked data.
         mov     eax, [ebp+FAT.LAST_CLUSTER]
         and     eax, not 7
@@ -279,8 +270,6 @@ fat_create_partition:
         test    eax, eax
         jz      .free_return0
 ; Read ALIGN_UP(NUM_CLUSTERS*3/2, 512) bytes.
-; Note that this can be less than allocated, this is ok,
-; overallocation simplifies calculatefatchain/restorefatchain.
         push    ebx
         mov     [ebp+FAT.fat_cache_ptr], eax
         mov     edx, [ebp+FAT.LAST_CLUSTER]
@@ -295,21 +284,52 @@ fat_create_partition:
         test    eax, eax
         pop     eax
         jz      @f
-        dbgstr 'Failed to read FAT table'
         mov     eax, [ebp+FAT.fat_cache_ptr]
         call    free
         pop     ebx
         jmp     .free_return0
+
 @@:
         add     ebx, 512
         inc     eax
         cmp     eax, edx
         jb      .read_fat
         mov     [ebp+FAT.fat12_unpacked_ptr], ebx
-        call    calculatefatchain
-        pop     ebx
+        pushad
+        mov     esi, [ebp+FAT.fat_cache_ptr]
+        mov     edi, [ebp+FAT.fat12_unpacked_ptr]
+        mov     edx, [ebp+FAT.LAST_CLUSTER]
+        and     edx, not 7
+        lea     edx, [edi+(edx+8)*2]
+        push    edx
+@@:
+        mov     eax, dword [esi]
+        mov     ebx, dword [esi+4]
+        mov     ecx, dword [esi+8]
+        mov     edx, ecx
+        shr     edx, 4
+        shr     dx, 4
+        xor     ch, ch
+        shld    ecx, ebx, 20
+        shr     cx, 4
+        shld    ebx, eax, 12
+        and     ebx, 0x0fffffff
+        shr     bx, 4
+        shl     eax, 4
+        and     eax, 0x0fffffff
+        shr     ax, 4
+        mov     dword [edi], eax
+        mov     dword [edi+4], ebx
+        mov     dword [edi+8], ecx
+        mov     dword [edi+12], edx
+        add     edi, 16
+        add     esi, 12
+        cmp     edi, [esp]
+        jnz     @b
+        pop     eax
+        popad
         mov     eax, ebp
-        pop     ebp
+        pop     ebx ebp
         ret
 
 fat_free:
@@ -318,111 +338,6 @@ fat_free:
         call    free
         pop     eax
         jmp     free
-
-calculatefatchain:
-
-        pushad
-
-        mov     esi, [ebp+FAT.fat_cache_ptr]
-        mov     edi, [ebp+FAT.fat12_unpacked_ptr]
-
-        mov     edx, [ebp+FAT.LAST_CLUSTER]
-        and     edx, not 7
-        lea     edx, [edi+(edx+8)*2]
-        push    edx
-
- fcnew:
-        mov     eax, dword [esi]
-        mov     ebx, dword [esi+4]
-        mov     ecx, dword [esi+8]
-        mov     edx, ecx
-        shr     edx, 4;8 ok
-        shr     dx, 4;7 ok
-        xor     ch, ch
-        shld    ecx, ebx, 20;6 ok
-        shr     cx, 4;5 ok
-        shld    ebx, eax, 12
-        and     ebx, 0x0fffffff;4 ok
-        shr     bx, 4;3 ok
-        shl     eax, 4
-        and     eax, 0x0fffffff;2 ok
-        shr     ax, 4;1 ok
-        mov     dword [edi], eax
-        mov     dword [edi+4], ebx
-        mov     dword [edi+8], ecx
-        mov     dword [edi+12], edx
-        add     edi, 16
-        add     esi, 12
-
-        cmp     edi, [esp]
-        jnz     fcnew
-        pop     eax
-
-        popad
-        ret
-
-
-restorefatchain:   ; restore fat chain
-
-        pushad
-
-        mov     esi, [ebp+FAT.fat12_unpacked_ptr]
-        mov     edi, [ebp+FAT.fat_cache_ptr]
-
-        mov     edx, [ebp+FAT.LAST_CLUSTER]
-        and     edx, not 7
-        lea     edx, [esi+(edx+8)*2]
-
-  fcnew2:
-        mov     eax, dword [esi]
-        mov     ebx, dword [esi+4]
-        shl     ax, 4
-        shl     eax, 4
-        shl     bx, 4
-        shr     ebx, 4
-        shrd    eax, ebx, 8
-        shr     ebx, 8
-        mov     dword [edi], eax
-        mov     word [edi+4], bx
-        add     edi, 6
-        add     esi, 8
-
-        cmp     esi, edx
-        jb      fcnew2
-
-        mov     esi, [ebp+FAT.NUMBER_OF_FATS]
-        mov     edx, [ebp+FAT.LAST_CLUSTER]
-        lea     edx, [(edx+1)*3 + 512*2-1]
-        shr     edx, 10
-        push    [ebp+FAT.FAT_START]
-
-.write_fats:
-        xor     eax, eax
-        mov     ebx, [ebp+FAT.fat_cache_ptr]
-.loop1:
-        push    eax
-        add     eax, [esp+4]
-        call    fs_write32_sys
-        test    eax, eax
-        pop     eax
-        jnz     .fail
-        add     ebx, 512
-        inc     eax
-        cmp     eax, edx
-        jb      .loop1
-        pop     eax
-        add     eax, [ebp+FAT.SECTORS_PER_FAT]
-        push    eax
-        dec     esi
-        jnz     .write_fats
-        pop     eax
-
-        popad
-        ret
-.fail:
-        dbgstr 'Failed to save FAT'
-        popad
-        ret
 
 iglobal
 label fat_legal_chars byte
@@ -464,8 +379,7 @@ fat_name_is_legal:
 
 fat_next_short_name:
 ; in: edi->8+3 name
-; out: name corrected
-;      CF=1 <=> error
+; out: name corrected, CF=1 -> error
         pushad
         mov     ecx, 8
         mov     al, '~'
@@ -490,12 +404,12 @@ fat_next_short_name:
         popad
         clc
         ret
+
 .tilde:
         push    edi
         add     edi, 7
         xor     ecx, ecx
-@@:
-; after tilde may be only digits and trailing spaces
+@@: ; after tilde may be only digits and trailing spaces
         cmp     byte [edi], '~'
         jz      .break
         cmp     byte [edi], ' '
@@ -504,14 +418,17 @@ fat_next_short_name:
         jnz     .found
         dec     edi
         jmp     @b
+
 .space:
         dec     edi
         inc     ecx
         jmp     @b
+
 .found:
         inc     byte [edi]
         add     dword [esp], 8
         jmp     .zerorest
+
 .break:
         jecxz   .noplace
         inc     edi
@@ -527,6 +444,7 @@ fat_next_short_name:
         popad
         clc
         ret
+
 .noplace:
         dec     edi
         cmp     edi, [esp]
@@ -543,8 +461,8 @@ fat_next_short_name:
         jb      @b
         pop     edi
         popad
-        ;clc    ; automatically
         ret
+
 .err:
         pop     edi
         popad
@@ -611,6 +529,7 @@ fat_gen_short_name:
 .skip:
         mov     bh, 3
         jmp     @f
+
 .firstdot:
         cmp     bl, 8
         jz      .space
@@ -620,6 +539,7 @@ fat_gen_short_name:
         mov     edi, ecx
         mov     bl, 3
         jmp     .loop
+
 .done:
         test    bh, 2
         jz      @f
@@ -633,218 +553,148 @@ fat_gen_short_name:
         popad
         ret
 
-fat12_free_space:
-;---------------------------------------------
-;
-; returns free space in edi
-; rewr.by Mihasik
-;---------------------------------------------
-
-        push    eax ebx ecx
-
-        mov     edi, [ebp+FAT.fat12_unpacked_ptr];start of FAT
-        xor     ax, ax;Free cluster=0x0000 in FAT
-        xor     ebx, ebx;counter
-        mov     ecx, [ebp+FAT.LAST_CLUSTER]
-        inc     ecx
-        cld
-    rdfs1:
-        repne scasw
-        jnz     rdfs2 ;if last cluster not 0
-        inc     ebx
-        test    ecx, ecx
-        jnz     rdfs1
-    rdfs2:
-        shl     ebx, 9;free clusters*512
-        mov     edi, ebx
-
-        pop     ecx ebx eax
-        ret
-
-
-
 set_FAT:
-;--------------------------------
-; input  : EAX = cluster
-;          EDX = value to save
-;          EBP = pointer to FAT structure
-; output : EDX = old value
-;--------------------------------
-; out: CF set <=> error
+; in: eax = cluster, edx = value to save
+; out: edx = old value, CF=1 -> error
         push    eax ebx esi
-
         cmp     eax, 2
-        jb      sfc_error
-        cmp     eax, [ebp+FAT.LAST_CLUSTER]
-        ja      sfc_error
+        jc      .ret
+        cmp     [ebp+FAT.LAST_CLUSTER], eax
+        jc      .ret
         cmp     [ebp+FAT.fs_type], 12
-        je      set_FAT12
+        je      .FAT12
         cmp     [ebp+FAT.fs_type], 16
-        je      sfc_1
+        je      @f
         add     eax, eax
-  sfc_1:
+@@:
         add     eax, eax
         mov     esi, 511
-        and     esi, eax        ; esi = position in fat sector
-        shr     eax, 9          ; eax = fat sector
+        and     esi, eax
+        shr     eax, 9
         add     eax, [ebp+FAT.FAT_START]
         mov     ebx, [ebp+FAT.fat_cache_ptr]
-
-        cmp     eax, [ebp+FAT.fat_in_cache]; is fat sector already in memory?
-        je      sfc_in_cache    ; yes
-
-        cmp     [ebp+FAT.fat_change], 0; is fat changed?
-        je      sfc_no_change   ; no
-        call    write_fat_sector; yes. write it into disk
-        jc      sfc_error
-
-  sfc_no_change:
-        mov     [ebp+FAT.fat_in_cache], eax; save fat sector
+        cmp     eax, [ebp+FAT.fat_in_cache]
+        je      .inCache
+        cmp     [ebp+FAT.fat_change], 0
+        je      @f
+        call    write_fat_sector
+        jc      .ret
+@@:
+        mov     [ebp+FAT.fat_in_cache], eax
         call    fs_read32_sys
         test    eax, eax
-        jne     sfc_error
-
-
-  sfc_in_cache:
+        jne     .error
+.inCache:
         cmp     [ebp+FAT.fs_type], 16
-        jne     sfc_test32
-
-  sfc_set16:
+        jne     .test32
         xchg    [ebx+esi], dx   ; save new value and get old value
-        jmp     sfc_write
+        jmp     .write
 
-  sfc_test32:
+.test32:
         mov     eax, [ebp+FAT.fatMASK]
-
-  sfc_set32:
         and     edx, eax
         xor     eax, -1         ; mask for high bits
         and     eax, [ebx+esi]  ; get high 4 bits
         or      eax, edx
         mov     edx, [ebx+esi]  ; get old value
         mov     [ebx+esi], eax  ; save new value
-
-  sfc_write:
-        mov     [ebp+FAT.fat_change], 1; fat has changed
-
-  sfc_nonzero:
+.write:
+        mov     [ebp+FAT.fat_change], 1
         and     edx, [ebp+FAT.fatMASK]
-
-  sfc_return:
+.ret:
         pop     esi ebx eax
         ret
-  sfc_error:
-        stc
-        jmp     sfc_return
 
-  set_FAT12:
+.error:
+        stc
+        jmp     .ret
+
+.FAT12:
         test    edx, 0xF000
-        jnz     sfc_error
+        jnz     .error
         mov     ebx, [ebp+FAT.fat12_unpacked_ptr]
         xchg    [ebx+eax*2], dx
         mov     [ebp+FAT.fat_change], 1
-        pop     esi ebx eax
-        clc
-        ret
+        jmp     .ret
 
 get_FAT:
-;--------------------------------
-; input  : EAX = cluster
-;          EBP = pointer to FAT structure
-; output : EAX = next cluster
-;--------------------------------
-; out: CF set <=> error
+; in: eax = cluster
+; out: eax = next cluster, CF=1 -> error
         push    ebx esi
-
         cmp     [ebp+FAT.fs_type], 12
-        je      get_FAT12
-
+        je      .FAT12
         cmp     [ebp+FAT.fs_type], 16
-        je      gfc_1
+        je      @f
         add     eax, eax
-  gfc_1:
+@@:
         add     eax, eax
         mov     esi, 511
-        and     esi, eax        ; esi = position in fat sector
-        shr     eax, 9          ; eax = fat sector
+        and     esi, eax
+        shr     eax, 9
         add     eax, [ebp+FAT.FAT_START]
         mov     ebx, [ebp+FAT.fat_cache_ptr]
-
-        cmp     eax, [ebp+FAT.fat_in_cache]; is fat sector already in memory?
-        je      gfc_in_cache
-
-        cmp     [ebp+FAT.fat_change], 0; is fat changed?
-        je      gfc_no_change   ; no
-        call    write_fat_sector; yes. write it into disk
-        jc      hd_error_01
-
-  gfc_no_change:
+        cmp     eax, [ebp+FAT.fat_in_cache]
+        je      .inCache
+        cmp     [ebp+FAT.fat_change], 0
+        je      @f
+        call    write_fat_sector
+        jc      .ret
+@@:
         mov     [ebp+FAT.fat_in_cache], eax
         call    fs_read32_sys
         test    eax, eax
-        jne     hd_error_01
-
-  gfc_in_cache:
+        jnz     .error
+.inCache:
         mov     eax, [ebx+esi]
         and     eax, [ebp+FAT.fatMASK]
-  gfc_return:
+.ret:
         pop     esi ebx
         ret
- hd_error_01:
-        stc
-        jmp     gfc_return
 
-get_FAT12:
+.error:
+        stc
+        jmp     .ret
+
+.FAT12:
         mov     ebx, [ebp+FAT.fat12_unpacked_ptr]
         movzx   eax, word [ebx+eax*2]
-        pop     esi ebx
-        clc
-        ret
-
+        jmp     .ret
 
 get_free_FAT:
-;-----------------------------------------------------------
-; output : if CARRY=0 EAX = # first cluster found free
-;          if CARRY=1 disk full
-; Note   : for more speed need to use fat_cache directly
-;-----------------------------------------------------------
+; out: eax = number of first free cluster, CF=1 -> disk full
         push    ecx
-        mov     ecx, [ebp+FAT.LAST_CLUSTER]; counter for full disk
+        mov     ecx, [ebp+FAT.LAST_CLUSTER]
         mov     eax, [ebp+FAT.fatStartScan]
         cmp     [ebp+FAT.fs_type], 12
         jz      get_free_FAT12
         dec     ecx
         cmp     eax, 2
-        jb      gff_reset
-
-  gff_test:
-        cmp     eax, [ebp+FAT.LAST_CLUSTER]; if above last cluster start at cluster 2
-        jbe     gff_in_range
-  gff_reset:
+        jb      .reset
+.test:
+        cmp     eax, [ebp+FAT.LAST_CLUSTER]
+        jbe     .inRange
+.reset:
         mov     eax, 2
-
-  gff_in_range:
+.inRange:
         push    eax
-        call    get_FAT         ; get cluster state
-        jc      gff_not_found_1
-
-        test    eax, eax        ; is it free?
+        call    get_FAT
+        jc      @f
+        test    eax, eax
         pop     eax
-        je      gff_found       ; yes
-        inc     eax             ; next cluster
-        dec     ecx             ; is all checked?
-        jnz     gff_test        ; no
-
-  gff_not_found:
-        pop     ecx             ; yes. disk is full
+        je      .found
+        inc     eax
+        dec     ecx
+        jnz     .test
+.notFound:
+        pop     ecx
         stc
         ret
 
-  gff_not_found_1:
+@@:
         pop     eax
-        jmp     gff_not_found
+        jmp     .notFound
 
-  gff_found:
+.found:
         lea     ecx, [eax+1]
         mov     [ebp+FAT.fatStartScan], ecx
         pop     ecx
@@ -879,281 +729,184 @@ get_free_FAT12:
         shr     edi, 1
         mov     [ebp+FAT.fatStartScan], edi
         lea     eax, [edi-1]
+@@:
         pop     edi edx ecx
-        ret
-.notfound:
-        pop     edi edx ecx
-        stc
         ret
 
+.notfound:
+        stc
+        jmp     @b
 
 write_fat_sector:
-;-----------------------------------------------------------
-; write changed fat to disk
-;-----------------------------------------------------------
         push    eax ebx ecx
-
         mov     [ebp+FAT.fat_change], 0
         mov     eax, [ebp+FAT.fat_in_cache]
         cmp     eax, -1
-        jz      write_fat_not_used
+        jz      @f
         mov     ebx, [ebp+FAT.fat_cache_ptr]
         mov     ecx, [ebp+FAT.NUMBER_OF_FATS]
-
-  write_next_fat:
+.write_next_fat:
         push    eax
         call    fs_write32_sys
         test    eax, eax
         pop     eax
-        jnz     write_fat_not_used
-
+        jnz     @f
         add     eax, [ebp+FAT.SECTORS_PER_FAT]
         dec     ecx
-        jnz     write_next_fat
-
-  write_fat_not_used:
+        jnz     .write_next_fat
+@@:
         pop     ecx ebx eax
         ret
 
-
-
-
-
-bcd2bin:
-;----------------------------------
-; input  : AL=BCD number (eg. 0x11)
-; output : AH=0
-;          AL=decimal number (eg. 11)
-;----------------------------------
-        xor     ah, ah
-        shl     ax, 4
-        shr     al, 4
-        aad
-        ret
-
-
 get_date_for_file:
-;-----------------------------------------------------
-; Get date from CMOS and pack day,month,year in AX
-; DATE   bits  0..4   : day of month 0..31
-;              5..8   : month of year 1..12
-;              9..15  : count of years from 1980
-;-----------------------------------------------------
-        mov     al, 0x7 ;day
-        out     0x70, al
-        in      al, 0x71
-        call    bcd2bin
+;   out in ax:
+; bits 0-4 = day
+; bits 5-8 = month
+; bits 9-15 = count of years from 1980
+        mov     al, 7
+        call    fsReadCMOS
         ror     eax, 5
-
-        mov     al, 0x8 ;month
-        out     0x70, al
-        in      al, 0x71
-        call    bcd2bin
+        mov     al, 8
+        call    fsReadCMOS
         ror     eax, 4
-
-        mov     al, 0x9 ;year
-        out     0x70, al
-        in      al, 0x71
-        call    bcd2bin
-        add     ax, 20  ;because CMOS return only the two last
-                        ;digit (eg. 2000 -> 00 , 2001 -> 01) and we
-        rol     eax, 9  ;need the difference with 1980 (eg. 2001-1980)
+        mov     al, 9
+        call    fsReadCMOS
+        add     ax, 20
+        rol     eax, 9
         ret
-
 
 get_time_for_file:
-;-----------------------------------------------------
-; Get time from CMOS and pack hour,minute,second in AX
-; TIME   bits  0..4   : second (the low bit is lost)
-;              5..10  : minute 0..59
-;              11..15 : hour 0..23
-;-----------------------------------------------------
-        mov     al, 0x0 ;second
-        out     0x70, al
-        in      al, 0x71
-        call    bcd2bin
+;   out in ax:
+; bits 0-4 = second (the low bit is lost)
+; bits 5-10 = minute
+; bits 11-15 = hour
+        mov     al, 0
+        call    fsReadCMOS
         ror     eax, 6
-
-        mov     al, 0x2 ;minute
-        out     0x70, al
-        in      al, 0x71
-        call    bcd2bin
+        mov     al, 2
+        call    fsReadCMOS
         ror     eax, 6
-
-        mov     al, 0x4 ;hour
-        out     0x70, al
-        in      al, 0x71
-        call    bcd2bin
+        mov     al, 4
+        call    fsReadCMOS
         rol     eax, 11
         ret
 
-
-set_current_time_for_entry:
-;-----------------------------------------------------
-; Set current time/date for file entry
-; input  : ebx = file entry pointer
-;-----------------------------------------------------
-        push    eax
-        call    get_time_for_file; update files date/time
-        mov     [ebx+22], ax
-        call    get_date_for_file
-        mov     [ebx+24], ax
-        pop     eax
-        ret
-
-
-
 add_disk_free_space:
-;-----------------------------------------------------
-; input  : ecx = cluster count
-; Note   : negative = remove clusters from free space
-;          positive = add clusters to free space
-;-----------------------------------------------------
-        test    ecx, ecx        ; no change
-        je      add_dfs_no
-        cmp     [ebp+FAT.fs_type], 32  ; free disk space only used by fat32
-        jne     add_dfs_no
-
+; in: ecx = cluster count (signed)
+        test    ecx, ecx
+        je      .ret
+        cmp     [ebp+FAT.fs_type], 32
+        jne     .ret
         push    eax ebx
         mov     eax, [ebp+FAT.ADR_FSINFO]
         lea     ebx, [ebp+FAT.fsinfo_buffer]
         call    fs_read32_sys
         test    eax, eax
-        jnz     add_not_fs
-
-        cmp     dword [ebx+0x1fc], 0xaa550000; check sector id
-        jne     add_not_fs
-
+        jnz     @f
+        cmp     dword [ebx+0x1fc], 0xaa550000   ; check sector id
+        jne     @f
         add     [ebx+0x1e8], ecx
         push    [ebp+FAT.fatStartScan]
         pop     dword [ebx+0x1ec]
         mov     eax, [ebp+FAT.ADR_FSINFO]
         call    fs_write32_sys
-;    jc    add_not_fs
-
-  add_not_fs:
+@@:
         pop     ebx eax
-
-  add_dfs_no:
+.ret:
         ret
 
-
-
 clear_cluster_chain:
-;-----------------------------------------------------
-; input  : eax = first cluster
-;-----------------------------------------------------
+; in: eax = first cluster
         push    eax ecx edx
         xor     ecx, ecx        ; cluster count
-
-  clean_new_chain:
-        cmp     eax, [ebp+FAT.LAST_CLUSTER]; end of file
-        ja      delete_OK
-        cmp     eax, 2          ; unfinished fat chain or zero length file
-        jb      delete_OK
-        cmp     eax, [ebp+FAT.ROOT_CLUSTER]; don't remove root cluster
-        jz      delete_OK
-
+@@:
+        cmp     eax, [ebp+FAT.LAST_CLUSTER]
+        ja      @f
+        cmp     eax, 2
+        jb      @f
+        cmp     eax, [ebp+FAT.ROOT_CLUSTER]
+        jz      @f
         xor     edx, edx
-        call    set_FAT         ; clear fat entry
-        jc      access_denied_01
+        call    set_FAT
+        jc      .ret
+        inc     ecx
+        mov     eax, edx
+        jmp     @b
 
-        inc     ecx             ; update cluster count
-        mov     eax, edx        ; old cluster
-        jmp     clean_new_chain
-
-  delete_OK:
-        call    add_disk_free_space; add clusters to free disk space
+@@:
+        call    add_disk_free_space
         clc
-  access_denied_01:
+.ret:
         pop     edx ecx eax
         ret
 
-
-if 0
-get_hd_info:
-;-----------------------------------------------------------
-; output : eax = 0 - ok
-;                3 - unknown FS
-;               10 - access denied
-;          edx = cluster size in bytes
-;          ebx = total clusters on disk
-;          ecx = free clusters on disk
-;-----------------------------------------------------------
-        cmp     [ebp+FAT.fs_type], 16
-        jz      info_fat_ok
-        cmp     [ebp+FAT.fs_type], 32
-        jz      info_fat_ok
-        xor     edx, edx
-        xor     ebx, ebx
-        xor     ecx, ecx
-        mov     eax, ERROR_UNKNOWN_FS
-        ret
-
-  info_fat_ok:
-;    call  reserve_hd1
-
-        xor     ecx, ecx        ; count of free clusters
-        mov     eax, 2
-        mov     ebx, [ebp+FAT.LAST_CLUSTER]
-
-  info_cluster:
-        push    eax
-        call    get_FAT         ; get cluster info
-        jc      info_access_denied
-
-        test    eax, eax        ; is it free?
-        jnz     info_used       ; no
-        inc     ecx
-
-  info_used:
-        pop     eax
-        inc     eax
-        cmp     eax, ebx        ; is above last cluster?
-        jbe     info_cluster    ; no. test next cluster
-
-        dec     ebx             ; cluster count
-        imul    edx, [ebp+FAT.SECTORS_PER_CLUSTER], 512; cluster size in bytes
-        xor     eax, eax
-        ret
-
-  info_access_denied:
-        add     esp, 4
-        xor     edx, edx
-        xor     ebx, ebx
-        xor     ecx, ecx
-        mov     eax, ERROR_ACCESS_DENIED
-        ret
-end if
-
 update_disk:
-        cmp     [ebp+FAT.fat_change], 0 ; is fat changed?
-        je      upd_no_change
+        cmp     [ebp+FAT.fat_change], 0
+        jz      .noChange
         cmp     [ebp+FAT.fs_type], 12
         jz      .fat12
-;-----------------------------------------------------------
-; write changed fat and cache to disk
-;-----------------------------------------------------------
-
         call    write_fat_sector
-        jc      update_disk_acces_denied
-        jmp     upd_no_change
-.fat12:
-        call    restorefatchain
-        mov     [ebp+FAT.fat_change], 0
-
-  upd_no_change:
-
-        push    esi
+        jc      .ret
+.noChange:
         mov     esi, [ebp+PARTITION.Disk]
         call    disk_sync
-        pop     esi
-  update_disk_acces_denied:
+.ret:
         ret
+
+.fat12:
+        mov     esi, [ebp+FAT.fat12_unpacked_ptr]
+        mov     edi, [ebp+FAT.fat_cache_ptr]
+        mov     edx, [ebp+FAT.LAST_CLUSTER]
+        and     edx, not 7
+        lea     edx, [esi+(edx+8)*2]
+@@:
+        mov     eax, dword [esi]
+        mov     ebx, dword [esi+4]
+        shl     ax, 4
+        shl     eax, 4
+        shl     bx, 4
+        shr     ebx, 4
+        shrd    eax, ebx, 8
+        shr     ebx, 8
+        mov     dword [edi], eax
+        mov     word [edi+4], bx
+        add     edi, 6
+        add     esi, 8
+        cmp     esi, edx
+        jb      @b
+        mov     esi, [ebp+FAT.NUMBER_OF_FATS]
+        mov     edx, [ebp+FAT.LAST_CLUSTER]
+        lea     edx, [(edx+1)*3 + 512*2-1]
+        shr     edx, 10
+        push    [ebp+FAT.FAT_START]
+.write_fats:
+        xor     eax, eax
+        mov     ebx, [ebp+FAT.fat_cache_ptr]
+.loop1:
+        push    eax
+        add     eax, [esp+4]
+        call    fs_write32_sys
+        test    eax, eax
+        pop     eax
+        jnz     @f
+        add     ebx, 512
+        inc     eax
+        cmp     eax, edx
+        jb      .loop1
+        pop     eax
+        add     eax, [ebp+FAT.SECTORS_PER_FAT]
+        push    eax
+        dec     esi
+        jnz     .write_fats
+@@:
+        pop     eax
+        mov     [ebp+FAT.fat_change], 0
+        jmp     .noChange
 
 fat_lock:
         lea     ecx, [ebp+FAT.Lock]
         jmp     mutex_lock
+
 fat_unlock:
         lea     ecx, [ebp+FAT.Lock]
         jmp     mutex_unlock
@@ -1524,7 +1277,6 @@ hd_find_lfn:
 ;----------------------------------------------------------------
 fat_Read:
         call    fat_lock
-        push    edi
         call    hd_find_lfn
         jc      .notFound
         test    byte [edi+11], 0x10     ; do not allow read directories
@@ -1574,7 +1326,7 @@ fat_Read:
         push    ERROR_END_OF_FILE
 .ret:
         call    fat_unlock
-        pop     eax edi
+        pop     eax
         xor     ebx, ebx
         ret
 
@@ -1691,7 +1443,7 @@ fat_Read:
         mov     byte [esp], ERROR_DEVICE
 .done:
         call    fat_unlock
-        pop     eax edx edi
+        pop     eax edx
         sub     ebx, edx
         ret
 
@@ -1714,26 +1466,12 @@ fat_Read:
 fat_ReadFolder:
         call    fat_lock
         mov     eax, [ebp+FAT.ROOT_CLUSTER]
-        push    edi
         cmp     byte [esi], 0
         jz      .doit
         call    hd_find_lfn
-        jnc     .found
-        pop     edi
-        push    eax
-        call    fat_unlock
-        pop     eax
-        or      ebx, -1
-        ret
-.found:
+        jc      .error
         test    byte [edi+11], 0x10     ; do not allow read files
-        jnz     .found_dir
-        pop     edi
-        call    fat_unlock
-        or      ebx, -1
-        mov     eax, ERROR_ACCESS_DENIED
-        ret
-.found_dir:
+        jz      .accessDenied
         mov     eax, [edi+20-2]
         mov     ax, [edi+26]    ; eax=cluster
 .doit:
@@ -1762,6 +1500,7 @@ fat_ReadFolder:
         push    [ebp+FAT.ROOT_SECTORS]
         push    ebx
         jmp     .new_sector
+
 @@:
         dec     eax
         dec     eax
@@ -1857,39 +1596,54 @@ fat_ReadFolder:
         pop     ebx
         add     esp, 4
         jmp     .new_cluster
+
 .notfound2:
         add     esp, 8
 .notfound:
-        add     esp, 262*2+4
-        pop     esi edi
-        mov     ebx, [edx+4]
-        call    fat_unlock
-        mov     eax, ERROR_DEVICE
-        ret
+        add     esp, 262*2+8
+        push    ERROR_DEVICE
+        jmp     @f
+
 .done:
-        add     esp, 262*2+4+8
-        mov     ebx, [edx+4]
-        xor     eax, eax
+        add     esp, 262*2+16
+        pushd   0
         dec     ecx
         js      @f
-        mov     al, ERROR_END_OF_FILE
+        mov     byte [esp], ERROR_END_OF_FILE
 @@:
-        push    eax
+        mov     ebx, [edx+4]
+.ret:
         call    fat_unlock
         pop     eax
-        pop     esi edi
         ret
+
+.error:
+        push    eax
+        xor     ebx, ebx
+        jmp     .ret
+
+.accessDenied:
+        push    ERROR_ACCESS_DENIED
+        xor     ebx, ebx
+        jmp     .ret
 
 fat1x_root_next:
         push    ecx
         lea     ecx, [ebp+FAT.buffer+0x200-0x20]
         cmp     edi, ecx
         jae     fat1x_root_next_sector
-        pop     ecx
         add     edi, 0x20
-        ret     ; CF=0
+@@:
+        pop     ecx
+        ret
+
+fat1x_root_next_write:
+        push    ecx
+        lea     ecx, [ebp+FAT.buffer+0x200]
+        cmp     edi, ecx
+        jc      @b
+        call    fat1x_root_end_write
 fat1x_root_next_sector:
-; read next sector
         push    [ebp+FAT.longname_sec2]
         pop     [ebp+FAT.longname_sec1]
         mov     ecx, [eax+4]
@@ -1900,11 +1654,8 @@ fat1x_root_next_sector:
         inc     ecx
         mov     [eax+4], ecx
         cmp     ecx, [ebp+FAT.ROOT_SECTORS]
+        jnc     fat_notroot_next_err
         pop     ecx
-        jb      fat1x_root_first
-        mov     eax, ERROR_FILE_NOT_FOUND
-        stc
-        ret
 fat1x_root_first:
         mov     eax, [eax+4]
         add     eax, [ebp+FAT.ROOT_START]
@@ -1914,21 +1665,18 @@ fat1x_root_first:
         call    fs_read32_sys
         pop     ebx
         test    eax, eax
-        jnz     .readerr
-        ret     ; CF=0
-.readerr:
-        mov     eax, ERROR_DEVICE
+        jz      @f
+        movi    eax, ERROR_DEVICE
         stc
+@@:
         ret
-.notfound:
-        mov     eax, ERROR_FILE_NOT_FOUND
-        stc
-        ret
+
 fat1x_root_begin_write:
         push    edi eax
         call    fat1x_root_first
         pop     eax edi
         ret
+
 fat1x_root_end_write:
         pusha
         mov     eax, [eax+4]
@@ -1937,28 +1685,25 @@ fat1x_root_end_write:
         call    fs_write32_sys
         popa
         ret
-fat1x_root_next_write:
-        push    ecx
-        lea     ecx, [ebp+FAT.buffer+0x200]
-        cmp     edi, ecx
-        jae     @f
-        pop     ecx
-        ret
-@@:
-        call    fat1x_root_end_write
-        jmp     fat1x_root_next_sector
-fat1x_root_extend_dir:
-        stc
-        ret
 
 fat_notroot_next:
         push    ecx
         lea     ecx, [ebp+FAT.buffer+0x200-0x20]
         cmp     edi, ecx
         jae     fat_notroot_next_sector
-        pop     ecx
         add     edi, 0x20
-        ret     ; CF=0
+@@:
+        pop     ecx
+        ret
+
+fat_notroot_next_write:
+        push    ecx
+        lea     ecx, [ebp+FAT.buffer+0x200]
+        cmp     edi, ecx
+        jc      @b
+        push    eax
+        call    fat_notroot_end_write
+        pop     eax
 fat_notroot_next_sector:
         push    [ebp+FAT.longname_sec2]
         pop     [ebp+FAT.longname_sec1]
@@ -1972,6 +1717,14 @@ fat_notroot_next_sector:
         jae     fat_notroot_next_cluster
         mov     [eax+4], ecx
         jmp     @f
+
+fat_notroot_next_err:
+        pop     ecx
+        movi    eax, ERROR_FILE_NOT_FOUND
+fat1x_root_extend_dir:
+        stc
+        ret
+
 fat_notroot_next_cluster:
         push    eax
         mov     eax, [eax]
@@ -2003,16 +1756,13 @@ fat_notroot_first:
         stc
 .ret:
         ret
-fat_notroot_next_err:
-        pop     ecx
-        mov     eax, ERROR_FILE_NOT_FOUND
-        stc
-        ret
+
 fat_notroot_begin_write:
         push    eax edi
         call    fat_notroot_first
         pop     edi eax
         ret
+
 fat_notroot_end_write:
         call    fat_get_sector
         push    ebx
@@ -2020,25 +1770,17 @@ fat_notroot_end_write:
         call    fs_write32_sys
         pop     ebx
         ret
-fat_notroot_next_write:
-        push    ecx
-        lea     ecx, [ebp+FAT.buffer+0x200]
-        cmp     edi, ecx
-        jae     @f
-        pop     ecx
-        ret
+
+fat_notroot_extend_dir.writeerr:
+        pop     edx
 @@:
-        push    eax
-        call    fat_notroot_end_write
         pop     eax
-        jmp     fat_notroot_next_sector
+        ret
+
 fat_notroot_extend_dir:
         push    eax
         call    get_free_FAT
-        jnc     .found
-        pop     eax
-        ret     ; CF=1
-.found:
+        jc      @b
         push    edx
         mov     edx, [ebp+FAT.fatEND]
         call    set_FAT
@@ -2049,17 +1791,10 @@ fat_notroot_extend_dir:
         push    edx
         call    set_FAT
         pop     edx
-        jnc     @f
-.writeerr:
-        pop     edx
-        pop     eax
-        stc
-        ret
-@@:
+        jc      .writeerr
         push    ecx
         or      ecx, -1
         call    add_disk_free_space
-; zero new cluster
         mov     ecx, 512/4
         lea     edi, [ebp+FAT.buffer]
         push    edi
@@ -2144,19 +1879,12 @@ fat_CreateFile:
         push    fat1x_root_next
         jmp     .common1
 
-.noroot:
-        mov     eax, ERROR_ACCESS_DENIED
-        cmp     byte [edi+1], 0
-        jz      .ret1
-; check existence
-        mov     byte [edi], 0
-        push    edi
-        call    hd_find_lfn
-        pop     esi
-        mov     byte [esi], '/'
-        jnc     @f
-.notfound0:
-        mov     eax, ERROR_FILE_NOT_FOUND
+.retNotFound:
+        movi    eax, ERROR_FILE_NOT_FOUND
+        jmp     .ret1
+
+.noAccess:
+        movi    eax, ERROR_ACCESS_DENIED
 .ret1:
         mov     [esp+28], eax
         call    fat_unlock
@@ -2164,14 +1892,26 @@ fat_CreateFile:
         xor     ebx, ebx
         ret
 
-@@:
+.full:
+        movi    eax, ERROR_DISK_FULL
+        jmp     .ret1
+
+.noroot:
+        cmp     byte [edi+1], 0
+        jz      .noAccess
+; check existence
+        mov     byte [edi], 0
+        push    edi
+        call    hd_find_lfn
+        pop     esi
+        mov     byte [esi], '/'
+        jc      .retNotFound
         inc     esi
-        test    byte [edi+11], 0x10     ; must be directory
-        mov     eax, ERROR_ACCESS_DENIED
-        jz      .ret1
+        test    byte [edi+11], 0x10
+        jz      .noAccess   ; file
         mov     edx, [edi+20-2]
-        mov     dx, [edi+26]            ; ebp=cluster
-        mov     eax, ERROR_FS_FAIL
+        mov     dx, [edi+26]
+        movi    eax, ERROR_FS_FAIL
         cmp     edx, 2
         jb      .ret1
 .pushnotroot:
@@ -2205,11 +1945,7 @@ fat_CreateFile:
         cmp     byte [esp+36+28], 0
         jz      @f
         add     esp, 36
-        call    fat_unlock
-        popad
-        mov     eax, ERROR_ACCESS_DENIED
-        xor     ebx, ebx
-        ret
+        jmp     .noAccess
 
 @@: ; delete FAT chain
         push    edi
@@ -2240,21 +1976,13 @@ fat_CreateFile:
         jnc     .test_short_name_loop
 .disk_full:
         add     esp, 12+36
-        call    fat_unlock
-        popa
-        mov     eax, ERROR_DISK_FULL
-        xor     ebx, ebx
-        ret
+        jmp     .full
 
 .notfound:  ; generate short name
         call    fat_name_is_legal
         jc      @f
         add     esp, 36
-        call    fat_unlock
-        popad
-        mov     eax, ERROR_FILE_NOT_FOUND
-        xor     ebx, ebx
-        ret
+        jmp     .retNotFound
 
 @@:
         sub     esp, 12
@@ -2321,11 +2049,8 @@ fat_CreateFile:
         jnc     .scan_dir
 .fsfrfe3:
         add     esp, 12+8+12+36
-        call    fat_unlock
-        popad
-        mov     eax, ERROR_DEVICE
-        xor     ebx, ebx
-        ret
+        movi    eax, ERROR_DEVICE
+        jmp     .ret1
 
 .scan_dir:
         cmp     byte [edi], 0
@@ -2348,11 +2073,7 @@ fat_CreateFile:
         pop     eax
         jnc     .scan_dir
         add     esp, 12+8+12+36
-        call    fat_unlock
-        popad
-        mov     eax, ERROR_DISK_FULL
-        xor     ebx, ebx
-        ret
+        jmp     .full
 
 .free:
         test    ecx, ecx
@@ -2519,6 +2240,41 @@ fat_CreateFile:
         add     esi, ecx
         jmp     .writecommon
 
+.writedir:
+        push    512
+        lea     edi, [ebp+FAT.buffer]
+        mov     ebx, edi
+        mov     ecx, [ebp+FAT.SECTORS_PER_CLUSTER]
+        shl     ecx, 9
+        cmp     ecx, [esp+16]
+        jnz     .writedircont
+        dec     dword [esp+20]
+        push    esi
+        mov     ecx, 32/4
+        rep movsd
+        pop     esi
+        mov     dword [edi-32], '.   '
+        mov     dword [edi-32+4], '    '
+        mov     dword [edi-32+8], '    '
+        mov     byte [edi-32+11], 10h
+        push    esi
+        mov     ecx, 32/4
+        rep movsd
+        pop     esi
+        mov     dword [edi-32], '..  '
+        mov     dword [edi-32+4], '    '
+        mov     dword [edi-32+8], '    '
+        mov     byte [edi-32+11], 10h
+        mov     ecx, [esp+20+36]
+        cmp     ecx, [ebp+FAT.ROOT_CLUSTER]
+        jnz     @f
+        xor     ecx, ecx
+@@:
+        mov     word [edi-32+26], cx
+        shr     ecx, 16
+        mov     [edi-32+20], cx
+        jmp     .writedircont
+
 .writeshort:
         mov     ecx, [esp+12]
         push    ecx
@@ -2599,41 +2355,6 @@ fat_CreateFile:
         popad
         ret
 
-.writedir:
-        push    512
-        lea     edi, [ebp+FAT.buffer]
-        mov     ebx, edi
-        mov     ecx, [ebp+FAT.SECTORS_PER_CLUSTER]
-        shl     ecx, 9
-        cmp     ecx, [esp+16]
-        jnz     .writedircont
-        dec     dword [esp+20]
-        push    esi
-        mov     ecx, 32/4
-        rep movsd
-        pop     esi
-        mov     dword [edi-32], '.   '
-        mov     dword [edi-32+4], '    '
-        mov     dword [edi-32+8], '    '
-        mov     byte [edi-32+11], 10h
-        push    esi
-        mov     ecx, 32/4
-        rep movsd
-        pop     esi
-        mov     dword [edi-32], '..  '
-        mov     dword [edi-32+4], '    '
-        mov     dword [edi-32+8], '    '
-        mov     byte [edi-32+11], 10h
-        mov     ecx, [esp+20+36]
-        cmp     ecx, [ebp+FAT.ROOT_CLUSTER]
-        jnz     @f
-        xor     ecx, ecx
-@@:
-        mov     word [edi-32+26], cx
-        shr     ecx, 16
-        mov     [edi-32+20], cx
-        jmp     .writedircont
-
 @@:
         or      eax, -1
         rep stosw
@@ -2654,7 +2375,6 @@ fat_read_symbols:
 ;----------------------------------------------------------------
 fat_Write:
         call    fat_lock
-        push    edi
         call    hd_find_lfn
         jc      .error
         cmp     dword [ebx+8], 0
@@ -2706,7 +2426,7 @@ fat_Write:
         push    eax
 @@:
         call    fat_unlock
-        pop     eax edi
+        pop     eax
         ret
 
 .eof:
@@ -2950,18 +2670,9 @@ hd_extend_file:
         stc
         ret
 
-fat_update_datetime:
-        call    get_time_for_file
-        mov     [edi+22], ax            ; last write time
-        call    get_date_for_file
-        mov     [edi+24], ax            ; last write date
-        mov     [edi+18], ax            ; last access date
-        ret
-
 ;----------------------------------------------------------------
 fat_SetFileEnd:
         call    fat_lock
-        push    edi
         call    hd_find_lfn
         jc      .reteax
 ; must not be directory
@@ -2972,7 +2683,11 @@ fat_SetFileEnd:
         jnz     .endOfFile
         push    eax     ; save directory sector
 ; set file modification date/time to current
-        call    fat_update_datetime
+        call    get_time_for_file
+        mov     [edi+22], ax    ; last write
+        call    get_date_for_file
+        mov     [edi+24], ax    ; last write
+        mov     [edi+18], ax    ; last access
         mov     eax, [ebx+4]
         cmp     eax, [edi+28]
         jb      .truncate
@@ -3085,7 +2800,7 @@ fat_SetFileEnd:
         push    eax
 .ret:
         call    fat_unlock
-        pop     eax edi
+        pop     eax
         ret
 
 .error_fat:
@@ -3185,7 +2900,7 @@ fat_SetFileEnd:
         call    fs_write32_app
         pop     ebx
 .truncate_done:
-        pop     ecx eax edi
+        pop     ecx eax
         call    update_disk
         call    fat_unlock
         xor     eax, eax
@@ -3198,33 +2913,27 @@ fat_GetFileInfo:
         mov     eax, 2
         ret
 @@:
-        push    edi
         call    fat_lock
         call    hd_find_lfn
-        jc      .error
+        jc      @f
         push    ebp
         xor     ebp, ebp
         mov     esi, [ebx+16]
         mov     dword [esi+4], ebp
         call    fat_entry_to_bdfe2
         pop     ebp
-        call    fat_unlock
         xor     eax, eax
-        pop     edi
-        ret
-.error:
+@@:
         push    eax
         call    fat_unlock
         pop     eax
-        pop     edi
         ret
 
 ;----------------------------------------------------------------
 fat_SetFileInfo:
-        push    edi
         call    fat_lock
         call    hd_find_lfn
-        jc      .error
+        jc      @f
         push    eax
         mov     edx, [ebx+16]
         call    bdfe_to_fat_entry
@@ -3232,15 +2941,11 @@ fat_SetFileInfo:
         lea     ebx, [ebp+FAT.buffer]
         call    fs_write32_sys
         call    update_disk
-        call    fat_unlock
-        pop     edi
         xor     eax, eax
-        ret
-.error:
+@@:
         push    eax
         call    fat_unlock
         pop     eax
-        pop     edi
         ret
 
 ;----------------------------------------------------------------
@@ -3248,7 +2953,6 @@ fat_Delete:
         call    fat_lock
         and     [ebp+FAT.longname_sec1], 0
         and     [ebp+FAT.longname_sec2], 0
-        push    edi
         call    hd_find_lfn
         jc      .notFound
         cmp     dword [edi], '.   '
@@ -3307,7 +3011,7 @@ fat_Delete:
         push    ERROR_DEVICE
 .ret:
         call    fat_unlock
-        pop     eax edi
+        pop     eax
         ret
 
 .notFound:
@@ -3377,6 +3081,5 @@ fat_Delete:
         call    clear_cluster_chain
         call    update_disk
         call    fat_unlock
-        pop     edi
         xor     eax, eax
         ret
