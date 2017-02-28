@@ -1797,11 +1797,18 @@ ntfs_GetFileInfo:
         jc      ntfsFail
         mov     ecx, [ebp+NTFS.cur_read]
         mov     [edi+ecx], ax
-        cmp     [ebx+8], eax
-        jnz     .end
-        mov     esi, edi
+        cmp     byte [ebx+8], 2
+        jz      .end
         shr     ecx, 1
         jz      .end
+        mov     esi, edi
+        cmp     byte [ebx+8], 3
+        jnz     @f
+        shl     ecx, 1
+        call    UTF16to8_string
+        mov     byte [edi], 0
+        jmp     .end
+
 @@:
         lodsw
         call    uni2ansi_char
