@@ -78,6 +78,7 @@ fat_in_cache        dd  ?
 ; there is how work was done before my edits, and I'm just keeping the principle.
 fat_cache_ptr       dd  ?
 fat12_unpacked_ptr  dd  ?
+volumeLabel         rb  12
 buffer              rb  512
 fsinfo_buffer       rb  512
 ends
@@ -199,12 +200,16 @@ fat_create_partition:
         dec     eax                     ; cluster count
         jz      .free_return0
         mov     [ebp+FAT.fatStartScan], 2
-; limits by Microsoft Hardware White Paper v1.03
-        cmp     eax, 0xff5
-        jb      .fat12
         cmp     eax, 0xfff5
         jb      .fat16
 .fat32:
+        pusha
+        lea     esi, [ebx+71]
+        lea     edi, [ebp+FAT.volumeLabel]
+        movsd
+        movsd
+        movsd
+        popa
         mov     eax, [ebx+0x2c]         ; rootdir cluster
         mov     [ebp+FAT.ROOT_CLUSTER], eax
         movzx   eax, word [ebx+0x30]
@@ -238,6 +243,15 @@ fat_create_partition:
         ret
 
 .fat16:
+        pusha
+        lea     esi, [ebx+43]
+        lea     edi, [ebp+FAT.volumeLabel]
+        movsd
+        movsd
+        movsd
+        popa
+        cmp     eax, 0xff5
+        jb      .fat12
         and     [ebp+FAT.ROOT_CLUSTER], 0
         mov     [ebp+FAT.fatRESERVED], 0x0000FFF6
         mov     [ebp+FAT.fatBAD], 0x0000FFF7
@@ -912,23 +926,23 @@ fat_unlock:
         jmp     mutex_unlock
 
 fat_get_name:
-; in: edi -> FAT entry
-; out: ebp -> UTF-16 name, CF=1 -> no valid entry
+; in: edi -> FAT entry, esi -> buffer for UTF-16 name
+; out: CF=1 -> no valid entry
         cmp     byte [edi], 0
         jz      .no
         cmp     byte [edi], 0xE5
         jz      .no
         cmp     byte [edi+11], 0xF
         jz      .longname
-        test    byte [edi+11], 8
-        jnz     .no
-        push    ecx esi edi
-        mov     esi, edi
-        mov     edi, ebp
-        mov     ecx, 8
+        push    edi
+        xchg    esi, edi
+        test    byte [esi+11], 8
+        jnz     .label
+        pushd   ecx 8
+        pop     ecx
+        xor     eax, eax
 @@:
         lodsb
-        call    ansi2uni_char
         stosw
         loop    @b
         mov     cl, 8
@@ -943,7 +957,6 @@ fat_get_name:
         mov     cl, 3
 @@:
         lodsb
-        call    ansi2uni_char
         stosw
         loop    @b
         mov     cl, 3
@@ -955,9 +968,15 @@ fat_get_name:
         sub     edi, 2
 @@:
         and     word [edi], 0   ; CF=0
-        pop     edi esi ecx
+        pop     ecx edi
         ret
 
+.label:
+        lea     edi, [ebp+FAT.volumeLabel]
+        movsd
+        movsd
+        movsd
+        pop     edi
 .no:
         stc
         ret
@@ -968,50 +987,73 @@ fat_get_name:
         dec     eax
         cmp     al, 20
         jae     .no     ; ignore invalid entries
-        mov     word [ebp+260*2], 0     ; force null-terminating for orphans
+        mov     word [esi+260*2], 0     ; force null-terminating for orphans
         imul    eax, 13*2
         test    byte [edi], 0x40
         jz      @f
-        mov     word [ebp+eax+13*2], 0
+        mov     word [esi+eax+13*2], 0
 @@: ; copy name (13 chars in UTF-16)
-        push    esi edi
-        lea     esi, [edi+1]
-        lea     edi, [ebp+eax]
+        push    edi
+        inc     edi
+        add     esi, eax
+        xchg    esi, edi
         movsd
         movsd
-        movsd
-        inc     esi
-        sub     edi, 2
+        movsw
+        add     esi, 3
         movsd
         movsd
         movsd
         add     esi, 2
         movsd
-        pop     edi esi
+        pop     edi
         test    eax, eax
         jnz     .no ; if this is not first entry, more processing required
         ret
 
-fat_compare_name:
-; in: esi -> name in UTF-8, ebp -> name in UTF-16
+fat_find_lfn:
+;   in:
+; esi -> path in UTF-8
+; parameters in the stack
 ;   out:
-; ZF=1 -> names match, esi -> next component of name
-; ZF=0 -> esi is not changed
-        push    ebp esi
+; esi -> next name in the path
+; edi -> direntry
+; CF=1 -> file not found, eax = error code
+        lea     eax, [esp+12]
+        call    dword [eax-4]
+        jc      .reterr
+        sub     esp, 262*2      ; reserve place for LFN
+.l1:
+        push    esi
+        lea     esi, [esp+4]
+        call    fat_get_name
+        pop     esi
+        jc      .no
+        push    edi esi
+        lea     edi, [esp+8]
 @@:
         call    utf8to16
         call    utf16toUpper
         mov     edx, eax
-        mov     ax, [ebp]
+        mov     ax, [edi]
         call    utf16toUpper
         cmp     ax, dx
         jnz     .done
-        add     ebp, 2
+        add     edi, 2
         test    ax, ax
         jnz     @b
         dec     esi
-        pop     eax ebp
-        xor     eax, eax    ; set ZF
+        pop     eax edi
+.found:
+        add     esp, 262*2
+; if this is LFN entry, advance to true entry
+        cmp     byte [edi+11], 0xF
+        jnz     @f
+        lea     eax, [esp+12]
+        call    dword[eax-8]
+        jc      .reterr
+@@:
+        xor     eax, eax
         ret
 
 .done:
@@ -1021,53 +1063,15 @@ fat_compare_name:
         jnz     @f
         mov     [esp], esi
 @@:
-        pop     esi ebp
-        ret
-
-fat_find_lfn:
-; in: esi -> name in UTF-8
-;     [esp+4] = next
-;     [esp+8] = first
-;     [esp+C]... - possibly parameters for first and next
-; out: CF=1 - file not found, eax=error code
-;      else CF=0, esi->next name component, edi->direntry
-        pusha
-        lea     eax, [esp+0Ch+20h]
-        call    dword [eax-4]
-        jc      .reterr
-        sub     esp, 262*2      ; reserve place for LFN
-.l1:
-        lea     ebp, [esp]
-        call    fat_get_name
-        jc      .l2
-        call    fat_compare_name
+        pop     esi edi
         jz      .found
-.l2:
-        mov     ebp, [esp+8+262*2]
-        lea     eax, [esp+0Ch+20h+262*2]
-        call    dword [eax-8]
+.no:
+        lea     eax, [esp+262*2+12]
+        call    dword[eax-8]
         jnc     .l1
         add     esp, 262*2
 .reterr:
-        mov     [esp+28], eax
         stc
-        popa
-        ret
-
-.found:
-        add     esp, 262*2
-        mov     ebp, [esp+8]
-; if this is LFN entry, advance to true entry
-        cmp     byte [edi+11], 0xF
-        jnz     @f
-        lea     eax, [esp+0Ch+20h]
-        call    dword [eax-8]
-        jc      .reterr
-@@:
-        add     esp, 8  ; CF=0
-        push    esi
-        push    edi
-        popa
         ret
 
 fat_time_to_bdfe:
@@ -1475,7 +1479,6 @@ fat_ReadFolder:
         mov     eax, [edi+20-2]
         mov     ax, [edi+26]    ; eax=cluster
 .doit:
-        push    esi
         sub     esp, 262*2      ; reserve space for LFN
         push    dword [ebx+8]   ; cp866/UNICODE name
         mov     edx, [ebx+16]   ; pointer to buffer
@@ -1519,10 +1522,10 @@ fat_ReadFolder:
         add     ebx, 512
         push    eax
 .l1:
-        push    ebp
-        lea     ebp, [esp+20]
+        push    esi
+        lea     esi, [esp+20]
         call    fat_get_name
-        pop     ebp
+        pop     esi
         jc      .l2
         cmp     byte [edi+11], 0xF
         jnz     .do_bdfe
@@ -1600,12 +1603,12 @@ fat_ReadFolder:
 .notfound2:
         add     esp, 8
 .notfound:
-        add     esp, 262*2+8
+        add     esp, 262*2+4
         push    ERROR_DEVICE
         jmp     @f
 
 .done:
-        add     esp, 262*2+16
+        add     esp, 262*2+12
         pushd   0
         dec     ecx
         js      @f
@@ -1961,11 +1964,9 @@ fat_CreateFile:
 @@:
         cmp     eax, [ebp+FAT.fatRESERVED]
         jae     .done1
-        push    edx
         xor     edx, edx
         call    set_FAT
         mov     eax, edx
-        pop     edx
         jc      .done1
         inc     ecx
         jmp     @b
@@ -2218,10 +2219,8 @@ fat_CreateFile:
         lea     eax, [esp+16+8]
         call    dword [eax+16]  ; flush directory
         pop     eax
-        push    edx
         mov     edx, [ebp+FAT.fatEND]
         call    set_FAT
-        pop     edx
 .write_cluster:
         push    eax
         dec     eax
@@ -2306,13 +2305,11 @@ fat_CreateFile:
         mov     ecx, eax
         call    get_free_FAT
         jc      .diskfull
-        push    edx
         mov     edx, [ebp+FAT.fatEND]
         call    set_FAT
         xchg    eax, ecx
         mov     edx, ecx
         call    set_FAT
-        pop     edx
         xchg    eax, ecx
         jmp     .write_cluster
 
@@ -2909,10 +2906,7 @@ fat_SetFileEnd:
 ;----------------------------------------------------------------
 fat_GetFileInfo:
         cmp     byte [esi], 0
-        jnz     @f
-        mov     eax, 2
-        ret
-@@:
+        jz      .volume
         call    fat_lock
         call    hd_find_lfn
         jc      @f
@@ -2927,6 +2921,40 @@ fat_GetFileInfo:
         push    eax
         call    fat_unlock
         pop     eax
+        ret
+
+.volume:
+        mov     eax, dword[ebp+FAT.Length]
+        mov     edx, dword[ebp+FAT.Length+4]
+        mov     edi, [ebx+16]
+        shld    edx, eax, 9
+        shl     eax, 9
+        mov     [edi+36], edx
+        mov     [edi+32], eax
+        mov     eax, [ebx+8]
+        mov     byte [edi], 8
+        mov     [edi+4], eax
+        lea     esi, [ebp+FAT.volumeLabel]
+        mov     ecx, 11
+@@:
+        mov     byte [esi+ecx], 0
+        dec     ecx
+        jz      @f
+        cmp     byte [esi+ecx], ' '
+        jz      @b
+@@:
+        mov     cl, 12
+        add     edi, 40
+        cmp     eax, 2
+        jz      @f
+        rep movsb
+        xor     eax, eax
+        ret
+
+@@:
+        lodsb
+        stosw
+        loop    @b
         ret
 
 ;----------------------------------------------------------------
