@@ -663,7 +663,7 @@ align 4
 		imul eax,esi
 		add [edi+deflate_state.opt_len],eax
 		cmp dword[stree],0
-		jne .cycle1 ;if (..)
+		je .cycle1 ;if (..)
 			movzx eax,word[f]
 			mov esi,[stree]
 			movzx esi,word[esi+sizeof.ct_data*ecx+Len]

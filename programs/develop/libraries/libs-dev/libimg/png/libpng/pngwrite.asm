@@ -2941,7 +2941,7 @@ align 4
 	.cycle4:
 		mov dword[edi+png_struct.zstream.avail_out],16*1024
 
-		stdcall [deflate], esi, Z_FINISH ;Z_NO_FLUSH
+		stdcall [deflate], esi, Z_NO_FLUSH
 		cmp eax,Z_STREAM_ERROR
 		je .end1
 
@@ -2949,12 +2949,13 @@ align 4
 		sub ecx,[edi+png_struct.zstream.avail_out]
 		cmp dword[edi+png_struct.zstream.avail_out],0
 	je .cycle4 ;while (strm.avail_out == 0)
-if 0
 	mov dword[edi+png_struct.zstream.avail_out],16*1024
 	stdcall [deflate], esi, Z_FINISH
+	add ecx,16*1024
+	sub ecx,[edi+png_struct.zstream.avail_out]
 	cmp eax,Z_STREAM_ERROR
 	je .end1
-end if
+
 	stdcall [deflateEnd], esi
 
 if PNG_WRITE_OPTIMIZE_CMF_SUPPORTED eq 1
