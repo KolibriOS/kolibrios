@@ -104,6 +104,8 @@ thisBlockGroup      dw  ?
 compatibleFlags     dd  ?
 incompatibleFlags   dd  ?
 RO_compatibleFlags  dd  ?
+UUID                rb  16
+volumeLabel         rb  16
 ends
 
 ; ext4 extent tree
@@ -2059,21 +2061,12 @@ ext_ReadFile:
 
 ;----------------------------------------------------------------
 ext_GetFileInfo:
-        call    ext_lock
         cmp     byte [esi], 0
-        jz      .is_root
+        jz      .volume
+        call    ext_lock
         call    findInode
+        jc      .ret
         lea     esi, [ebp+EXTFS.inodeBuffer]
-        jnc     @f
-        push    eax
-        call    ext_unlock
-        pop     eax
-        ret
-
-.is_root:
-        mov     edi, esi
-        lea     esi, [ebp+EXTFS.rootInodeBuffer]
-@@:
         mov     edx, [ebx+16]
         mov     bl, [edi]
         xor     eax, eax
@@ -2105,8 +2098,52 @@ ext_GetFileInfo:
         mov     eax, [esi+INODE.dataModified]
         sub     eax, 978307200
         call    fsTime2bdfe
-        call    ext_unlock
         xor     eax, eax
+.ret:
+        push    eax
+        call    ext_unlock
+        pop     eax
+        ret
+
+.volume:
+        mov     eax, dword[ebp+EXTFS.Length]
+        mov     edx, dword[ebp+EXTFS.Length+4]
+        mov     edi, [ebx+16]
+        shld    edx, eax, 9
+        shl     eax, 9
+        mov     [edi+36], edx
+        mov     [edi+32], eax
+        mov     eax, [ebx+8]
+        mov     byte [edi], 8
+        mov     [edi+4], eax
+        lea     esi, [ebp+EXTFS.superblock.volumeLabel]
+        mov     ecx, 16
+        add     edi, 40
+        cmp     eax, 3
+        jz      .utf8
+        add     ecx, esi
+        cmp     eax, 2
+        jz      .utf16
+@@:
+        call    utf8to16
+        call    uni2ansi_char
+        stosb
+        cmp     esi, ecx
+        jc      @b
+        jmp     @f
+
+.utf8:
+        rep movsb
+        jmp     @f
+
+.utf16:
+        call    utf8to16
+        stosw
+        cmp     esi, ecx
+        jc      .utf16
+@@:
+        xor     eax, eax
+        mov     [edi], ax
         ret
 
 ;----------------------------------------------------------------
