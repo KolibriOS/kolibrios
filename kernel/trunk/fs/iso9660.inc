@@ -10,7 +10,7 @@ $Revision$
 ; CD external functions
 ;   in:
 ; esi -> path string in UTF-8
-; ebx -> offset in file (qword)
+; ebx -> parameter structure +4
 ; ecx = bytes to read
 ; edx -> buffer
 ;   out:
@@ -484,44 +484,62 @@ cd_get_parameters_of_file_1:
 
 ;-----------------------------------------------------------------------------
 fs_CdGetFileInfo:
-        cmp     byte [esi], 0
-        jnz     @f
-
-        mov     eax, 2
-        ret
-;--------------------------------------
-@@:
-        push    edi
         call    cd_find_lfn
-        pushfd
-        cmp     [DevErrorCode], 0
-        jz      @f
-
-        popfd
-        pop     edi
-        mov     eax, 11
-        ret
-;--------------------------------------
-@@:
-        popfd
-        jnc     @f
-
-        pop     edi
-        mov     eax, ERROR_FILE_NOT_FOUND
-        ret
-;--------------------------------------
-@@:
-
+        movi    eax, ERROR_FILE_NOT_FOUND
+        jc      @f
         mov     edi, edx
-        push    ebp
+        mov     eax, [ebx+4]
+        mov     [edx+4], eax
+        cmp     byte [esi], 0
+        jz      .volume
         mov     ebp, [cd_current_pointer_of_input]
         add     ebp, 33
         call    cd_get_parameters_of_file_1
-        pop     ebp
-        and     dword [edi+4], 0
-        pop     edi
         xor     eax, eax
+@@:
         ret
+
+.volume:
+        mov     ecx, 16
+        mov     esi, CDDataBuf+40
+        add     edi, 40
+        cmp     eax, 2
+        jz      .utf16
+        cmp     eax, 3
+        jz      .utf8
+@@:
+        lodsw
+        xchg    al, ah
+        call    uni2ansi_char
+        stosb
+        loop    @b
+        jmp     .size
+
+.utf16:
+        lodsw
+        xchg    al, ah
+        stosw
+        loop    .utf16
+        jmp     .size
+
+.utf8:
+        mov     ebx, ecx
+        shl     ecx, 1
+@@:
+        lodsw
+        xchg    ah, al
+        call    UTF16to8
+        dec     ebx
+        jnz     @b
+.size:
+        mov     eax, [CDDataBuf+80]
+        shl     eax, 11
+        mov     [edx+32], eax
+        xor     eax, eax
+        mov     [edx+36], eax
+        stosw
+        ret
+
 ;-----------------------------------------------------------------------------
 cd_find_lfn:
         mov     [cd_appl_data], 0
