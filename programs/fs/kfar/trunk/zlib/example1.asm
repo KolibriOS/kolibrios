@@ -170,15 +170,7 @@ test_code:
 	mov [eax+z_stream.next_out],m1 ;устанавливаем буфер для сжатия
 	mov dword[eax+z_stream.avail_out],1024 ;размер буфера для сжатия (максимум 16 Кб)
 
-	;вычисляем crc для сжимаемыж данных
-	stdcall [calc_crc32], 0,m0,ecx
-	mov edx,eax
-
-	;call print_z_struct
-
-	stdcall [deflate], my_strm, Z_FINISH ;Z_NO_FLUSH
-
-	;call print_z_struct
+	stdcall [deflate], my_strm, Z_FINISH
 
 	;размер сжатых данных: 1024-[my_strm.avail_out]
 	mov ecx,1024
@@ -187,12 +179,6 @@ test_code:
 
 	;assert(ret != Z_STREAM_ERROR)
 	;while (strm.avail_out == 0)
-
-	;ставим crc на сжатые данные
-	mov ecx,[m1size]
-	sub ecx,4
-	add ecx,m1
-	mov [ecx],edx
 
 	;формирование текста для отображения сжатых данных
 	;в 16-ричном виде, нужно только для примера
@@ -229,7 +215,7 @@ align 4
 	add eax,2
 	stdcall [deflate_unpack],eax,m2size
 	mov [m2],eax ;запись новых распакованных данных
-	mov ecx,[m0size] ;;; ???
+;;;	mov ecx,[m0size] ;;; ???
 	mov [m2size],ecx
 	ret
 

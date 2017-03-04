@@ -9,12 +9,9 @@ NMAX equ 5552
 
 macro DO1 buf,i
 {
-	mov eax,buf
-	add eax,i
-	movzx eax,byte[eax]
+	movzx eax,byte[buf+i]
 	add [adler],eax
-	mov eax,[adler]
-	add [sum2],eax
+	add edi,[adler]
 }
 macro DO2 buf,i
 {
@@ -113,25 +110,18 @@ end if
 }
 
 ; =========================================================================
-;uLong (adler, buf, len)
-;    uLong adler
-;    const Bytef *buf
-;    uInt len
-align 4
-proc adler32 uses ebx edx, adler:dword, buf:dword, len:dword
-locals
-	sum2 dd ? ;uLong
-endl
-;zlib_debug 'adler32 adler = %d',[adler]
+;uLong (uLong adler, const Bytef *buf, uInt len)
+align 16
+proc adler32 uses ebx ecx edx edi, adler:dword, buf:dword, len:dword
 	; split Adler-32 into component sums
-	mov eax,[adler]
-	shr eax,16
-	mov [sum2],eax
-	and [adler],0xffff
+	mov edi,[adler]
+	shr edi,16
+	and dword[adler],0xffff
 	mov ebx,[buf]
+	mov ecx,[len]
 
 	; in case user likes doing a byte at a time, keep it fast
-	cmp dword[len],1
+	cmp ecx,1
 	jne .end0 ;if (..==..)
 		movzx eax,byte[ebx]
 		add [adler],eax
@@ -139,15 +129,13 @@ endl
 		jb @f ;if (..>=..)
 			sub dword[adler],BASE
 		@@:
-		mov eax,[adler]
-		add [sum2],eax
-		cmp dword[sum2],BASE
-		jb @f ;if (..>=..)
-			sub dword[sum2],BASE
-		@@:
+		add edi,[adler]
+		cmp edi,BASE
+		jae .combine ;if (..>=..)
+			sub edi,BASE
 		jmp .combine
 align 4
-	.end0:
+.end0:
 
 	; initial Adler-32 value (deferred check for len == 1 speed)
 	cmp ebx,Z_NULL
@@ -159,89 +147,82 @@ align 4
 	@@:
 
 	; in case short lengths are provided, keep it somewhat fast
-	cmp dword[len],16
-	jge .end1 ;if (..<..)
+	cmp ecx,16
+	jae .cycle3 ;if (..<..)
 		.cycle0:
-			cmp dword[len],0
-			jne @f ;while (..)
+			mov eax,ecx
+			dec ecx
+			test eax,eax
+			je @f ;while (..)
 			movzx eax,byte[ebx]
-			inc ebx
 			add [adler],eax
-			mov eax,[adler]
-			add [sum2],eax
-			dec dword[len]
+			inc ebx
+			add edi,[adler]
 			jmp .cycle0
 align 4
 		@@:
 		cmp dword[adler],BASE
-		jl @f ;if (..>=..)
+		jb @f ;if (..>=..)
 			sub dword[adler],BASE
 		@@:
-		MOD28 dword[sum2] ;only added so many BASE's
+		MOD28 edi ;only added so many BASE's
 		jmp .combine
-align 4
-	.end1:
 
 	; do length NMAX blocks -- requires just one modulo operation
+align 4
 	.cycle3:
-	cmp dword[len],NMAX
-	jl .cycle3end ;while (..>=..)
-		sub dword[len],NMAX
+	cmp ecx,NMAX
+	jb .cycle3end ;while (..>=..)
+		sub ecx,NMAX
 		mov edx,NMAX/16 ;NMAX is divisible by 16
 		.cycle1: ;do
 			DO16 ebx ;16 sums unrolled
 			add ebx,16
 			dec edx
-			cmp edx,0
-			jg .cycle1 ;while (..)
+			jne .cycle1 ;while (..)
 		MOD [adler]
-		MOD [sum2]
+		MOD edi
 		jmp .cycle3
 align 4
 	.cycle3end:
 
 	; do remaining bytes (less than NMAX, still just one modulo)
-	cmp dword[len],0
-	jne .end2 ;if (..) ;avoid modulos if none remaining
-		@@:
-		cmp dword[len],16
-		jl .cycle2 ;while (..>=..)
-			sub dword[len],16
+	cmp ecx,0
+	je .combine ;if (..) ;avoid modulos if none remaining
+	@@:
+		cmp ecx,16
+		jb .cycle2 ;while (..>=..)
+			sub ecx,16
 			DO16 ebx
 			add ebx,16
 			jmp @b
 align 4
 		.cycle2:
-			cmp dword[len],0
-			jne @f ;while (..)
+			mov eax,ecx
+			dec ecx
+			test eax,eax
+			je @f ;while (..)
 			movzx eax,byte[ebx]
-			inc ebx
 			add [adler],eax
-			mov eax,[adler]
-			add [sum2],eax
-			dec dword[len]
+			inc ebx
+			add edi,[adler]
 			jmp .cycle2
 align 4
 		@@:
 		MOD [adler]
-		MOD [sum2]
-	.end2:
+		MOD edi
 
 	; return recombined sums
 .combine:
-	mov eax,[sum2]
+	mov eax,edi
 	shl eax,16
 	or eax,[adler]
 .end_f:
-;zlib_debug '  adler32.ret = %d',eax
 	ret
 endp
 
 ; =========================================================================
-;uLong (adler1, adler2, len2)
-;    uLong adler1
-;    uLong adler2
-;    z_off64_t len2
+;uLong (uLong adler1, uLong adler2, z_off64_t len2)
 align 4
 proc adler32_combine_, adler1:dword, adler2:dword, len2:dword
 locals

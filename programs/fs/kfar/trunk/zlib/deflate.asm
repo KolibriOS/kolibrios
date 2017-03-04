@@ -341,6 +341,7 @@ end if
 	mov edi,eax ;edi = s
 	mov [ebx+z_stream.state],edi
 	mov [edi+deflate_state.strm],ebx
+	mov dword[edi+deflate_state.status],INIT_STATE ;to pass state test in deflateReset()
 
 	mov eax,[wrap]
 	mov [edi+deflate_state.wrap],eax
@@ -1009,7 +1010,7 @@ proc flush_pending uses eax ebx ecx edx, strm:dword
 	mov ecx,[edx+deflate_state.pending]
 	mov eax,[ebx+z_stream.avail_out]
 	cmp ecx,eax
-	jle @f ;if (..>..)
+	jbe @f ;if (..>..)
 		mov ecx,eax
 	@@:
 	test ecx,ecx
@@ -1220,7 +1221,7 @@ end if
 				bswap ecx
 				put_dword edi, ecx
 			@@:
-			xor eax,eax ;stdcall calc_crc32, 0, Z_NULL, 0
+			stdcall adler32, 0,0,0
 			mov [ebx+z_stream.adler],eax
 	.end2:
 if GZIP eq 1
@@ -1772,7 +1773,7 @@ proc read_buf uses ebx ecx, strm:dword, buf:dword, size:dword
 	mov eax,[ebx+z_stream.avail_in]
 
 	cmp eax,[size]
-	jle @f ;if (..>..)
+	jbe @f ;if (..>..)
 		mov eax,[size]
 	@@:
 	cmp eax,0

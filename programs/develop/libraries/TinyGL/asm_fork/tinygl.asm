@@ -149,9 +149,6 @@ f_zbz db ' ZB_line_z',0
 f_zb db ' ZB_line',0
 f_find_l db 'find_list',0
 f_alloc_l db 'alloc_list',0
-f_is_l db 'glIsList',0
-f_gen_l db 'glGenLists',0
-f_end_l db 'glEndList',0
 f_fill_tr db 'ZB_fillTriangle...',0
 f_fill_tr_nl db ' lines',0
 f_fill_tr_nll db ' len',0
