@@ -1,5 +1,5 @@
-use32   ; включить 32-битный режим ассемблера
-org 0x0 ; адресация с нуля
+use32
+org 0
 	db 'MENUET01'
 	dd 1,START,I_END,MEM,STACKTOP,0,cur_dir_path
 
@@ -215,7 +215,7 @@ align 4
 	add eax,2
 	stdcall [deflate_unpack],eax,m2size
 	mov [m2],eax ;запись новых распакованных данных
-;;;	mov ecx,[m0size] ;;; ???
+	mov ecx,[m0size] ;;; ???
 	mov [m2size],ecx
 	ret
 
