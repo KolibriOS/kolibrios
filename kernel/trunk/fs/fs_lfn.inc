@@ -148,28 +148,32 @@ file_system_lfn:
 
 .nextCD:
         test    eax, eax    ; partition number
-        stc
-        jnz     @f      ; no more partitions
-        mov     al, 1   ; /cdX/1
-        clc
+        jnz     @f
+        inc     eax     ; /cdX/1
+        ret
+
 @@:
+        stc
         ret
 
 .maindir:   ; list partitions
         mov     esi, .nextCD
+        xor     ecx, ecx
 .maindir_noesi:     ; backjump from dyndisk_handler
         push    ebp
         mov     ebp, ecx
         call    kernel_free
-        cmp     dword[ebx], 1
-        jnz     .access_denied  ; read folder?
+        mov     edi, [ebx+16]   ; buffer
+        cmp     byte [ebx], 5
+        jz      .deviceInfo
+        cmp     byte [ebx], 1   ; read folder?
+        jnz     .access_denied
         push    ebp
         pushd   [ebx+4]         ; first block
         mov     ebp, [ebx+12]   ; the number of blocks to read
-        mov     edx, [ebx+16]   ; buffer
         mov     ebx, [ebx+8]    ; flags
         mov     ecx, 32/4
-        mov     edi, edx
+        mov     edx, edi
         xor     eax, eax
         rep stosd
         mov     byte [edx], 1   ; version
@@ -200,7 +204,7 @@ file_system_lfn:
         push    edx
         test    eax, eax
         jnz     @b
-        cmp     ebx, 1
+        cmp     ebx, 2
         jz      .uni
 @@:
         pop     eax
@@ -209,6 +213,8 @@ file_system_lfn:
         test    eax, eax
         jnz     @b
         pop     edi edx eax
+        cmp     ebx, 3
+        jz      @f
         add     edi, 264
         jmp     .maindir_loop
 
@@ -219,6 +225,7 @@ file_system_lfn:
         test    eax, eax
         jnz     .uni
         pop     edi edx eax
+@@:
         add     edi, 520
         jmp     .maindir_loop
 
@@ -238,8 +245,23 @@ file_system_lfn:
         mov     dword[image_of_eax], ERROR_ACCESS_DENIED
         ret
 
+.deviceInfo:
+        test    ebp, ebp
+        jz      @f
+        mov     eax, dword[ebp+DISK.MediaInfo.Capacity]
+        mov     edx, dword[ebp+DISK.MediaInfo.Capacity+4]
+        shld    edx, eax, 9
+        shl     eax, 9
+        mov     [edi+36], edx
+        mov     [edi+32], eax
+@@:
+        and     dword[image_of_eax], 0
+        ret
+
 .rootdir:   ; / - virtual root folder
-        cmp     dword[ebx], 1   ; read folder?
+        cmp     byte [ebx], 5
+        jz      @b
+        cmp     byte [ebx], 1   ; read folder?
         jnz     .access_denied
         mov     ebp, [ebx+12]   ; number of blocks
         mov     edx, [ebx+16]   ; return area
@@ -273,7 +295,7 @@ file_system_lfn:
         rep stosd
         push    edi
         lea     esi, [esp+8]
-        cmp     ebx, 1
+        cmp     ebx, 2
         jz      .uni2
 @@:
         lodsb
@@ -281,6 +303,8 @@ file_system_lfn:
         test    eax, eax
         jnz     @b
         pop     edi eax
+        cmp     ebx, 3
+        jz      @f
         add     edi, 264
         jmp     .rootdir_loop
 
@@ -290,6 +314,7 @@ file_system_lfn:
         test    eax, eax
         jnz     .uni2
         pop     edi eax
+@@:
         add     edi, 520
         jmp     .rootdir_loop
 

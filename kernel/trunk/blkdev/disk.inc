@@ -1379,18 +1379,12 @@ dyndisk_handler:
         cmp     byte [esi], 0
         jnz     .haspartition
 ; 11. The fs operation wants to enumerate partitions.
-; 11a. Only "list directory" operation is applicable to /<diskname> path. Check
-; the operation code. If wrong, go to 13.
-        cmp     dword [ebx], 1
-        jnz     .access_denied
-; 11b. If the media is inserted, use 'fs_dyndisk_next' as an enumeration
-; procedure. Otherwise, use 'fs_dyndisk_next_nomedia'.
+; Check whether the media is inserted.
         mov     esi, fs_dyndisk_next_nomedia
         test    edx, edx
         jz      @f
         mov     esi, fs_dyndisk_next
-@@:
-; 11c. Let the procedure from fs_lfn.inc do the job.
+@@: ; Let the procedure from fs_lfn.inc do the job.
         jmp     file_system_lfn.maindir_noesi
 
 .root:

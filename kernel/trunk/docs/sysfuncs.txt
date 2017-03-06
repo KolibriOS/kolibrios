@@ -4186,8 +4186,8 @@ Information on file is returned in the BDFE format (block of data
 for folder entry), explained in the description of subfunction 1,
 but without filename, except the root folder.
 Remarks:
-  * For the root folder returns size and name of partition.
-  * The function does not support virtual folders such as / and /rd.
+  * For the root folder returns the size and the volume label.
+  * For the device returns only the size.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_FILE (70)
