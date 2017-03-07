@@ -1758,10 +1758,10 @@ ntfs_datetime_to_bdfe:
 
 ;----------------------------------------------------------------
 ntfs_GetFileInfo:
-        call    ntfs_lock
         mov     edi, [ebx+16]
         cmp     byte [esi], 0
         jz      .volume
+        call    ntfs_lock
         call    ntfs_find_lfn
         jnc     .found
         test    eax, eax
@@ -1775,18 +1775,22 @@ ntfs_GetFileInfo:
 .end:
         call    ntfs_unlock
         xor     eax, eax
+@@:
         ret
 
 .volume:
-        mov     byte [edi], 8
-        mov     eax, [ebx+8]
-        mov     [edi+4], eax
         mov     eax, dword [ebp+NTFS.Length]
         mov     edx, dword [ebp+NTFS.Length+4]
         shld    edx, eax, 9
         shl     eax, 9
         mov     [edi+36], edx
         mov     [edi+32], eax
+        mov     eax, [ebx+8]
+        mov     byte [edi], 8
+        mov     [edi+4], eax
+        test    eax, eax
+        jz      @b
+        call    ntfs_lock
         add     edi, 40
         mov     [ebp+NTFS.cur_buf], edi
         mov     [ebp+NTFS.cur_iRecord], 3

@@ -2921,6 +2921,7 @@ fat_GetFileInfo:
         push    eax
         call    fat_unlock
         pop     eax
+@@:
         ret
 
 .volume:
@@ -2934,6 +2935,8 @@ fat_GetFileInfo:
         mov     eax, [ebx+8]
         mov     byte [edi], 8
         mov     [edi+4], eax
+        test    eax, eax
+        jz      @b
         lea     esi, [ebp+FAT.volumeLabel]
         mov     ecx, 11
 @@:

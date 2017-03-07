@@ -2103,6 +2103,7 @@ ext_GetFileInfo:
         push    eax
         call    ext_unlock
         pop     eax
+@@:
         ret
 
 .volume:
@@ -2116,6 +2117,8 @@ ext_GetFileInfo:
         mov     eax, [ebx+8]
         mov     byte [edi], 8
         mov     [edi+4], eax
+        test    eax, eax
+        jz      @b
         lea     esi, [ebp+EXTFS.superblock.volumeLabel]
         mov     ecx, 16
         add     edi, 40

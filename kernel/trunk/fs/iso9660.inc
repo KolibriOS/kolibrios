@@ -500,6 +500,8 @@ fs_CdGetFileInfo:
         ret
 
 .volume:
+        test    eax, eax
+        jz      .size
         mov     ecx, 16
         mov     esi, CDDataBuf+40
         add     edi, 40
@@ -538,6 +540,7 @@ fs_CdGetFileInfo:
         xor     eax, eax
         mov     [edx+36], eax
         stosw
+        mov     byte [edx], 8
         ret
 
 ;-----------------------------------------------------------------------------

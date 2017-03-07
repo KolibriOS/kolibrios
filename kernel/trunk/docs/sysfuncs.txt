@@ -4186,7 +4186,8 @@ Information on file is returned in the BDFE format (block of data
 for folder entry), explained in the description of subfunction 1,
 but without filename, except the root folder.
 Remarks:
-  * For the root folder returns the size and the volume label.
+  * For the root folder returns the partition size,
+    and if encoding byte is non-zero, the volume label.
   * For the device returns only the size.
 
 ---------------------- Constants for registers: ----------------------
