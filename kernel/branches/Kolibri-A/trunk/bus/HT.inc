@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) 2010-13 KolibriOS team.  All rights reserved.  ;;
+;; Copyright (C) 2010-17 KolibriOS team.  All rights reserved.  ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  HT.inc                                                      ;;                                                    ;;
@@ -175,7 +175,8 @@ create_mmio_pte:
 ; ---- map GPU MMRegs  ----
 .map_gpu_mmr:
 	mov	eax, [mmio_pcie_cfg_addr-OS_BASE]	; PCIe space
-	add	eax, 0x08018				; b:0, d:1, f:0, reg=18
+;	add	eax, 0x08018				; b:0, d:1, f:0, reg=18 << fam.14h GPU BAR
+	add	eax, 0x08024				; b:0, d:1, f:0, reg=24 << fam.16h GPU BAR
 	mov	eax, [eax]
 
 	xor	al, al					; physical address
@@ -345,7 +346,7 @@ apic_timer_reset:
 init_hw_cursor:
 	call	alloc_page			 ; eax = phys. addr
 	push	eax
-	or	eax, (PG_NOCACHE + PG_SHARED + PG_UW)	 ; i like dirty hacks
+	or	eax, (PG_NOCACHE + PG_SHARED + PG_UW)	 
 	mov	[mmio_pte + OS_BASE + 15*4], eax ; mapped to the end of GPU MMRegs
 	mov	edi, GPU_CURSOR 		 ; lin. addr
 	invlpg	[edi]
@@ -365,15 +366,16 @@ init_hw_cursor:
 	inc	ecx
 	cmp	ecx, 16
 	je	@f
-	add	edi, 64*4			; new line
+;	add	edi, 64*4			; evergreen cursor is 64x64pix
+	add	edi, 128*4			; si cursor is 128x128pix
 	jmp	.fill64pix
 @@:
 	pop	eax
-	mov	dword[GPU_MMR + 0x0699C], eax	     ; cur_surface_addr
+	mov	dword[GPU_MMR + 0x0699C], eax        ; cur_surface_addr
 	mov	dword[GPU_MMR + 0x069A0], 0x000F000F ; cur_size    = 16x16
-	mov	dword[GPU_MMR + 0x069A4], 0	     ; cur_adr_hi
+	mov	dword[GPU_MMR + 0x069A4], 0          ; cur_adr_hi
 	mov	dword[GPU_MMR + 0x069A8], 0x02000100 ; cur_pos     = 512,256
-	mov	dword[GPU_MMR + 0x069AC], 0	     ; cur_hotspot = 0,0
+	mov	dword[GPU_MMR + 0x069AC], 0          ; cur_hotspot = 0,0
 
 	mov	dword[GPU_MMR + 0x06998], 0x00000301 ; set it!
 
