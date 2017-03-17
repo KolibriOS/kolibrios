@@ -1,11 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2015-2017. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;driver sceletone
 
 format PE DLL native 0.05
 entry START
@@ -23,11 +21,15 @@ entry START
 
 section '.flat' code readable writable executable
 
-include 'proc32.inc'
-include 'struct.inc'
-include 'macros.inc'
-include 'peimport.inc'
-include 'fdo.inc'
+include '../proc32.inc'
+include '../struct.inc'
+include '../macros.inc'
+include '../peimport.inc'
+include '../fdo.inc'
+
+GPIO_PORT_CONFIG_ADDR = 0xF100
+GPIO_DATA_ADDR = 0xF200
+ADC_ADDR = 0xFE00
 
 proc START c, state:dword, cmdline:dword
 
@@ -43,19 +45,59 @@ proc START c, state:dword, cmdline:dword
         jz      .fail
 
 ; Set crossbar base address register in southbridge
-        invoke  PciWrite16, [bus], [dev], 64h, 0x0A00 or 1
+        invoke  PciWrite16, [bus], [dev], 0x64, 0x0A00 or 1
 
 ; Set GPIO base address register in southbridge
-        invoke  PciWrite16, [bus], [dev], 62h, 0xF100 or 1
+        invoke  PciWrite16, [bus], [dev], 0x62, GPIO_PORT_CONFIG_ADDR or 1
+
+        DEBUGF  1,"Setting up ADC\n"
+
+; Enable ADC
+        invoke  PciRead32, [bus], [dev], 0xBC
+        and     eax, not (1 shl 28)
+        invoke  PciWrite32, [bus], [dev], 0xBC, eax
+
+        DEBUGF  1,"1\n"
+
+; Set ADC base address
+        mov     ebx, [dev]
+        inc     ebx
+        invoke  PciRead16, [bus], ebx, 0xDE
+        or      ax, 0x02
+        invoke  PciWrite16, [bus], ebx, 0xDE, eax
+
+        invoke  PciWrite32, [bus], ebx, 0xE0, 0x00500000 or ADC_ADDR
+
+        DEBUGF  1,"2\n"
+
+; set up ADC
+        mov     dx, ADC_ADDR + 1
+        xor     al, al
+        out     dx, al
+
+        DEBUGF  1,"3\n"
+
+; Empty FIFO
+  @@:
+        mov     dx, ADC_ADDR + 2        ; Status register
+        in      al, dx
+        test    al, 0x01                ; FIFO ready
+        jz      @f
+        mov     dx, ADC_ADDR + 4
+        in      ax, dx
+        jmp     @r
+  @@:
+
+        DEBUGF  1,"4\n"
 
 ; Enable GPIO0-9
-        mov     dx, 0xf100
+        mov     dx, GPIO_PORT_CONFIG_ADDR + 0  ; General-Purpose I/O Data & Direction Decode Enable
         mov     eax, 0x000001ff
         out     dx, eax
 
-        mov     ecx, 10
-        mov     dx, 0xf104
-        mov     ax, 0xf200
+        mov     ecx, 10                 ; 10 GPIO ports total
+        mov     dx, GPIO_PORT_CONFIG_ADDR + 4  ; General-Purpose I/O Port0 Data & Direction Decode Address
+        mov     ax, GPIO_DATA_ADDR
   .gpio_init:
 ; Set GPIO data port base address
         out     dx, ax
@@ -71,18 +113,13 @@ proc START c, state:dword, cmdline:dword
 
 ; Set GPIO0 pin 0 as output
         mov     al, 0x01
-        mov     dx, 0xf202
-        out     dx, al
-
-; Set GPIO4 pin 0 as output
-        mov     al, 0x01
-        mov     dx, 0xf212
+        mov     dx, GPIO_DATA_ADDR + 0*4 + 2
         out     dx, al
 
         invoke  RegService, my_service, service_proc
         ret
-.fail:
-.exit:
+  .fail:
+  .exit:
         xor     eax, eax
         ret
 endp
@@ -100,23 +137,49 @@ proc service_proc stdcall, ioctl:dword
         mov     dword [eax], API_VERSION
         xor     eax, eax
         ret
-@@:
+  @@:
         cmp     eax, 1  ; read GPIO P0
-        jne     @f
-        mov     dx, 0xf200
+        jne     .no_gpioread
+        mov     dx, GPIO_DATA_ADDR + 0x00
         in      al, dx
         ret
-@@:
+  .no_gpioread:
         cmp     eax, 2  ; write GPIO P0
-        jne     @f
+        jne     .no_gpiowrite
 
         mov     eax, [ebx + IOCTL.input]
-        mov     dx, 0xf200
+        mov     dx, GPIO_DATA_ADDR + 0x00
         out     dx, al
         xor     eax, eax
         ret
-@@:
-.fail:
+  .no_gpiowrite:
+        cmp     eax, 3  ; read ADC channel 0
+        jne     .no_adcread
+
+        mov     dx, ADC_ADDR + 1
+        mov     al, 1 shl 3             ; Power down ADC
+        out     dx, al
+
+        mov     dx, ADC_ADDR + 0        ; AUX channel select register
+        mov     al, 1 shl 0             ; Enable AUX0 scan
+        out     dx, al
+
+        mov     dx, ADC_ADDR + 1
+        mov     al, 1 shl 0             ; Single shot, no interrupts, start
+        out     dx, al
+
+        mov     dx, ADC_ADDR + 2
+  @@:
+        in      al, dx
+        test    al, 1 shl 0             ; data ready?
+        jz      @r
+
+        mov     dx, ADC_ADDR + 4
+        in      ax, dx                  ; read the data and return to user call
+        DEBUGF  1, "ADC read: 0x%x\n", eax:4
+        ret
+  .no_adcread:
+  .fail:
         or      eax, -1
         ret
 endp
@@ -126,14 +189,14 @@ proc detect
         push    ebx
         invoke  GetPCIList
         mov     ebx, eax
-.next_dev:
+  .next_dev:
         mov     eax, [eax+PCIDEV.fd]
         cmp     eax, ebx
         jz      .err
         mov     edx, [eax+PCIDEV.vendor_device_id]
 
         mov     esi, devices
-@@:
+  @@:
         cmp     dword [esi], 0
         jz      .next_dev
         cmp     edx, [esi]
@@ -142,7 +205,7 @@ proc detect
         add     esi, STRIDE
         jmp     @B
 
-.found:
+  .found:
         movzx   ebx, [eax+PCIDEV.devfn]
         mov     [dev], ebx
         movzx   ebx, [eax+PCIDEV.bus]
@@ -151,7 +214,7 @@ proc detect
         inc     eax
         pop     ebx
         ret
-.err:
+  .err:
         DEBUGF  1,"Could not find vortex86EX south bridge!\n"
         xor     eax, eax
         pop     ebx

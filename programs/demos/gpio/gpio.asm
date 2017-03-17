@@ -77,7 +77,13 @@ key:                                    ; Keypress event handler
         and     al, not 1               ; Clear bit 0
         call    write_gpio0
         jmp     event_wait
-
+  @@:
+        cmp     ah, 'e'
+        jne     @f
+        call    read_adc0
+        mov     ecx, eax
+        mcall   47, 0x00040100,,25 shl 16 + 25, 0x40000000, 0x00ffffff          ; 4 digits hex number in ecx
+        jmp     event_wait
   @@:
         jmp     event_wait              ; Just read the key, ignore it and jump to event_wait.
  
@@ -149,6 +155,12 @@ write_gpio0:
         mov     [IOCTL.input], eax
         mcall   68, 17, IOCTL
         ret
+
+; Read ADC0
+read_adc0:
+        mov     [IOCTL.io_code], 3
+        mcall   68, 17, IOCTL
+        ret
  
 ;  *********************************************
 ;  *************   DATA AREA   *****************
@@ -159,7 +171,8 @@ write_gpio0:
  
 text    db  "This is an 86DUINO GPIO demo program    "
         db  "                                        "
-        db  "press q/w to toggle GPIO 0 pin 0        ", 0
+        db  "press q/w to toggle GPIO 0 pin 0        "
+        db  "or e to read ADC0 channel               ", 0
  
 title   db  "86Duino Example application", 0
 
