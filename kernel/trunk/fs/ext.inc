@@ -1940,7 +1940,7 @@ ext_ReadFolder:
 .error_get_block:
         lea     esp, [edi+32]
 .error_ret:
-        or      ebx, -1
+        xor     ebx, ebx
         push    eax
         call    ext_unlock
         pop     eax

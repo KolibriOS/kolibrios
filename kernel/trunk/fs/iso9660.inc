@@ -264,7 +264,7 @@ fs_CdReadFolder:
         pop     edi
         cmp     [DevErrorCode], 0
         jne     .noaccess_1
-        or      ebx, -1
+        xor     ebx, ebx
         mov     eax, ERROR_FILE_NOT_FOUND
         ret
 
@@ -274,7 +274,7 @@ fs_CdReadFolder:
         jnz     .found_dir
         pop     edi
 .noaccess_1:
-        or      ebx, -1
+        xor     ebx, ebx
         mov     eax, ERROR_ACCESS_DENIED
         ret
 

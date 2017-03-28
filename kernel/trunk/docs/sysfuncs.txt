@@ -3986,7 +3986,7 @@ Format of the information structure:
   * +20 = +0x14: path, general rules of names forming
 Returned value:
   * eax = 0 - success, otherwise file system error code
-  * ebx = number of read bytes or -1=0xffffffff if file was not found
+  * ebx = number of bytes read
 Remarks:
   * If file was ended before last requested block was read,
     the function will read as many as it can, and after that return
@@ -4016,8 +4016,7 @@ Format of the information structure:
   * +20 = +0x14: path, general rules of names forming
 Returned value:
   * eax = 0 - success, otherwise file system error code
-  * ebx = number of files, information on which was written to
-    the buffer, or -1=0xffffffff, if folder was not found
+  * ebx = number of file information blocks, written to the buffer
 Structure of the buffer:
   * header (32 bytes)
   * block with information on file 1
