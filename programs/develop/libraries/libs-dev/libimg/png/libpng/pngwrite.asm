@@ -631,8 +631,8 @@ if PNG_USER_MEM_SUPPORTED eq 1
 	stdcall png_create_png_struct, [user_png_ver], [error_ptr], [error_fn], [warn_fn], 0, 0, 0
 	;eax = png_ptr
 end if ;USER_MEM
-	cmp eax,0
-	je .end0 ;if (..!=0)
+	test eax,eax
+	jz .end0 ;if (..!=0)
 		; Set the zlib control values to defaults; they can be overridden by the
 		; application after the struct has been created.
 
@@ -1839,20 +1839,20 @@ proc png_image_write_init uses ebx ecx edx edi esi, image:dword
 	stdcall png_create_write_struct, PNG_LIBPNG_VER_STRING, ebx, png_safe_error, png_safe_warning
 	;eax = png_ptr
 
-	cmp eax,0
-	je .end0 ;if (..!=0)
+	test eax,eax
+	jz .end0 ;if (..!=0)
 		mov edi,eax
 		stdcall png_create_info_struct, edi
 		;eax = info_ptr
 
-		cmp eax,0
-		je .end1 ;if (..!=0)
+		test eax,eax
+		jz .end1 ;if (..!=0)
 			mov esi,eax
 			stdcall png_malloc_warn, edi, sizeof.png_control
 			;control = eax
 
-			cmp eax,0
-			je .end2 ;if (..!=0)
+			test eax,eax
+			jz .end2 ;if (..!=0)
 				push eax
 				mov edx,edi ; edx = png_ptr
 				mov ecx,sizeof.png_control
@@ -2745,8 +2745,8 @@ end if
 		stdcall png_free, edi, ecx
 
 		; Skip the 'write_end' on error:
-		cmp eax,0
-		je .end_f ;if (..==0) return 0
+		test eax,eax
+		jz .end_f ;if (..==0) return 0
 		jmp .end8
 
 	; Otherwise this is the case where the input is in a format currently
@@ -2793,8 +2793,8 @@ png_debug 1, 'IDAT compress all'
 
 	;create buffer with filters
 	stdcall png_zalloc, edi, 1, [len]
-	cmp eax,0
-	je .end_f
+	test eax,eax
+	jz .end_f
 	mov [buf_f],eax
 
 	mov eax,ZLIB_IO_MAX
@@ -2803,8 +2803,8 @@ png_debug 1, 'IDAT compress all'
 		mov eax,[len]
 	@@:
 	stdcall png_zalloc, edi, 1, eax
-	cmp eax,0
-	je .end0
+	test eax,eax
+	jz .end0
 	mov [m1],eax
 
 	;init buffer with filters
@@ -3100,8 +3100,8 @@ endl
 			@@:
 
 			stdcall png_image_write_init, ebx
-			cmp eax,0
-			je .end3 ;if (..!=0)
+			test eax,eax
+			jz .end3 ;if (..!=0)
 				mov ecx,sizeof.png_image_write_control
 				mov edi,ebp
 				sub edi,ecx

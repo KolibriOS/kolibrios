@@ -126,7 +126,7 @@ end if ;COLORSPACE || GAMMA
 
 struct png_struct
 if PNG_SETJMP_SUPPORTED eq 1
-	jmp_buf_local dd ? ;jmp_buf ;New name in 1.6.0 for jmp_buf in png_struct
+	jmp_buf_local rb 64 ;jmp_buf ;New name in 1.6.0 for jmp_buf in png_struct
 	longjmp_fn   dd ? ;png_longjmp_ptr ;setjmp non-local goto function.
 	jmp_buf_ptr  dd ? ;jmp_buf * ;passed to longjmp_fn
 	jmp_buf_size dd ? ;size_t ;size of the above, if allocated
@@ -154,6 +154,7 @@ if (PNG_READ_USER_TRANSFORM_SUPPORTED eq 1) | (PNG_WRITE_USER_TRANSFORM_SUPPORTE
 	user_transform_ptr dd ? ;voidp ;user supplied struct for user transform
 	user_transform_depth db ? ;byte ;bit depth of user transformed pixels
 	user_transform_channels db ? ;byte ;channels in user transformed pixels
+	rb 2 ;align
 end if
 end if
 
@@ -216,7 +217,7 @@ end if
 	crc dd ? ;uint_32 ;current chunk CRC value
 	palette dd ? ;png_colorp ;palette from the input file
 	num_palette dw ? ;uint_16 ;number of color entries in palette
-
+	rb 2 ;align
 ; Added at libpng-1.5.10
 if PNG_CHECK_FOR_INVALID_INDEX_SUPPORTED eq 1
 	num_palette_max dd ? ;int ;maximum palette index found in IDAT
@@ -237,20 +238,23 @@ end if
 	sig_bytes    db ? ;byte ;magic bytes read/written from start of file
 	maximum_pixel_depth db ? ;byte ;pixel depth used for the row buffers
 	transformed_pixel_depth db ? ;byte ;pixel depth after read/write transforms
-;#if PNG_ZLIB_VERNUM >= 0x1240
-	zstream_start db ? ;byte ;at start of an input zlib stream
-;end if /* Zlib >= 1.2.4 */
+;if PNG_ZLIB_VERNUM >= 0x1240
+	;zstream_start db 1 ;byte ;at start of an input zlib stream
+;end if ;Zlib >= 1.2.4
 if (PNG_READ_FILLER_SUPPORTED eq 1) | (PNG_WRITE_FILLER_SUPPORTED eq 1)
-	filler dw ? ;uint_16 ; filler bytes for pixel expansion
+	filler dw ? ;uint_16 ;filler bytes for pixel expansion
 end if
 
 if (PNG_bKGD_SUPPORTED eq 1) | (PNG_READ_BACKGROUND_SUPPORTED eq 1) | \
 	(PNG_READ_ALPHA_MODE_SUPPORTED eq 1)
 	background_gamma_type db ? ;byte
+	rb 1 ;align
 	background_gamma dd ? ;png_fixed_point
 	background png_color_16 ;background color in screen gamma space
+	rb 1 ;align
 if PNG_READ_GAMMA_SUPPORTED eq 1
 	background_1 png_color_16 ;background normalized to gamma 1.0
+	rb 1 ;align
 end if
 end if ;bKGD
 
@@ -282,12 +286,14 @@ end if
 
 if (PNG_READ_SHIFT_SUPPORTED eq 1) | (PNG_WRITE_SHIFT_SUPPORTED eq 1)
 	shift   png_color_8 ;shift for significant bit tranformation
+	rb 2 ;align
 end if
 
 if (PNG_tRNS_SUPPORTED eq 1) | (PNG_READ_BACKGROUND_SUPPORTED eq 1) \
 	| (PNG_READ_EXPAND_SUPPORTED eq 1) | (PNG_READ_BACKGROUND_SUPPORTED eq 1)
 	trans_alpha dd ? ;bytep ;alpha values for paletted files
 	trans_color png_color_16 ;transparent color for non-paletted files
+	rb 3 ;align
 end if
 
 	read_row_fn  dd ? ;png_read_status_ptr ;called after each row is decoded
@@ -325,6 +331,7 @@ end if
 ; To do: remove this from libpng-1.7
 if PNG_TIME_RFC1123_SUPPORTED eq 1
 	time_buffer rb 29 ;char[29] ;String to hold RFC 1123 time text
+	rb 2 ;align
 end if
 ;end if
 
@@ -355,6 +362,7 @@ if PNG_READ_RGB_TO_GRAY_SUPPORTED eq 1
 	rgb_to_gray_red_coeff   dw ? ;uint_16
 	rgb_to_gray_green_coeff dw ? ;uint_16
 	; deleted in 1.5.5: rgb_to_gray_blue_coeff;
+	rb 2 ;align
 end if
 
 if PNG_MNG_FEATURES_SUPPORTED eq 1
@@ -364,6 +372,7 @@ if PNG_MNG_FEATURES_SUPPORTED eq 1
 
 ; New member added in libpng-1.0.9, ifdef'ed out in 1.0.12, enabled in 1.2.0
 	filter_type db ? ;byte
+	rb 3 ;align
 end if
 
 ; New members added in libpng-1.2.0
@@ -387,6 +396,7 @@ end if
 
 ; New members added in libpng-1.0.16 and 1.2.6
 	compression_type db ? ;byte
+	rb 3 ;align
 
 if PNG_USER_LIMITS_SUPPORTED eq 1
 	user_width_max dd ? ;uint_32
@@ -408,7 +418,8 @@ if PNG_READ_UNKNOWN_CHUNKS_SUPPORTED eq 1
 	; Temporary storage for unknown chunk that the library doesn't recognize,
 	; used while reading the chunk.
 
-;   png_unknown_chunk unknown_chunk;
+	unknown_chunk png_unknown_chunk
+	rb 3 ;align
 end if
 
 ; New member added in libpng-1.2.26
@@ -431,9 +442,8 @@ end if
 	; New member added in libpng-1.5.6
 	big_prev_row dd ? ;bytep
 
-; New member added in libpng-1.5.7
-;   void (*read_filter[PNG_FILTER_VALUE_LAST-1])(png_row_infop row_info,
-;      bytep row, bytep prev_row);
+	; New member added in libpng-1.5.7
+	read_filter rd PNG_FILTER_VALUE_LAST-1
 
 if PNG_READ_SUPPORTED eq 1
 if (PNG_COLORSPACE_SUPPORTED eq 1) | (PNG_GAMMA_SUPPORTED eq 1)

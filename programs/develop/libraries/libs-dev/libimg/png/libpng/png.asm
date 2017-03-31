@@ -10,10 +10,9 @@
 ; For conditions of distribution and use, see the disclaimer
 ; and license in png.inc
 
-crc_table rd 256
+DEBUG equ 0
 
 include '../../../../../../KOSfuncs.inc'
-include '../../../../../../fs/kfar/trunk/kfar_arc/crc.inc'
 include '../../../../../../fs/kfar/trunk/zlib/deflate.inc'
 include 'pngtokos.inc' ;integrate png to kos
 
@@ -1294,8 +1293,8 @@ proc png_colorspace_sync uses ecx edi esi, png_ptr:dword, info_ptr:dword
 	je @f ;if (..==0) ;reduce code size; check here not in the caller
 		mov ecx,sizeof.png_colorspace
 		mov esi,[png_ptr]
-		mov esi,[esi+png_struct.colorspace]
-		mov edi,[edi+png_info_def.colorspace]
+		add esi,png_struct.colorspace
+		add edi,png_info_def.colorspace
 		rep movsb
 		stdcall png_colorspace_sync_info, [png_ptr], [info_ptr]
 	@@:

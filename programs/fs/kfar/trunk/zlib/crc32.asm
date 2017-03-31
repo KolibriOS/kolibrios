@@ -17,14 +17,10 @@
 
 ; Definitions for doing the crc four data bytes at a time.
 
-TBLS equ 1
-
 if DYNAMIC_CRC_TABLE eq 1
 
 align 4
 crc_table_empty dd 1
-;align 4
-;crc_table rd TBLS*256
 
 ;  Generate tables for a byte-wise 32-bit CRC calculation on the polynomial:
 ;  x^32+x^26+x^23+x^22+x^16+x^12+x^11+x^10+x^8+x^7+x^5+x^4+x^2+x+1.
@@ -100,15 +96,12 @@ end if
 endp
 
 ; =========================================================================
-;unsigned long (crc, buf, len)
-;    unsigned long crc
-;    unsigned char *buf
-;    uInt len
+;unsigned long (unsigned long crc, unsigned char *buf, uInt len)
 align 4
 proc calc_crc32 uses ecx esi, p1crc:dword, buf:dword, len:dword
 	xor eax,eax
 	mov esi,[buf]
-zlib_debug 'calc_crc32 buf = %d',esi
+
 	cmp esi,Z_NULL
 	je .end_f ;if (..==0) return 0
 
@@ -121,7 +114,9 @@ end if
 
 	mov eax,[p1crc]
 	mov ecx,[len]
+	push edx
 	call crc
+	pop edx
 .end_f:
 	ret
 endp
@@ -129,9 +124,7 @@ endp
 GF2_DIM equ 32 ;dimension of GF(2) vectors (length of CRC)
 
 ; =========================================================================
-;unsigned long (mat, vec)
-;    unsigned long *mat
-;    unsigned long vec
+;unsigned long (unsigned long *mat, unsigned long vec)
 align 4
 proc gf2_matrix_times, mat:dword, vec:dword
 ;    unsigned long sum;
@@ -148,9 +141,7 @@ proc gf2_matrix_times, mat:dword, vec:dword
 endp
 
 ; =========================================================================
-;local void (square, mat)
-;    unsigned long *square
-;    unsigned long *mat
+;local void (unsigned long *square, unsigned long *mat)
 align 4
 proc gf2_matrix_square, square:dword, mat:dword
 ;    int n;
@@ -161,10 +152,7 @@ proc gf2_matrix_square, square:dword, mat:dword
 endp
 
 ; =========================================================================
-;uLong (crc1, crc2, len2)
-;    uLong crc1
-;    uLong crc2
-;    z_off64_t len2
+;uLong (uLong crc1, uLong crc2, z_off64_t len2)
 align 4
 proc crc32_combine_, crc1:dword, crc2:dword, len2:dword
 ;    int n;
@@ -219,20 +207,14 @@ proc crc32_combine_, crc1:dword, crc2:dword, len2:dword
 endp
 
 ; =========================================================================
-;uLong (crc1, crc2, len2)
-;    uLong crc1
-;    uLong crc2
-;    z_off_t len2
+;uLong (uLong crc1, uLong crc2, z_off_t len2)
 align 4
 proc crc32_combine, crc1:dword, crc2:dword, len2:dword
 	stdcall crc32_combine_, [crc1], [crc2], [len2]
 	ret
 endp
 
-;uLong (crc1, crc2, len2)
-;    uLong crc1
-;    uLong crc2
-;    z_off64_t len2
+;uLong (uLong crc1, uLong crc2, z_off64_t len2)
 align 4
 proc crc32_combine64, crc1:dword, crc2:dword, len2:dword
 	stdcall crc32_combine_, [crc1], [crc2], [len2]

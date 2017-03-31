@@ -82,14 +82,14 @@ locals
 	buf rb 8 ;ebp-8
 endl
 
-;#if defined(PNG_DEBUG) && (PNG_DEBUG > 0)
+if (PNG_DEBUG eq 1) & (PNG_DEBUG > 0)
 ;   PNG_CSTRING_FROM_CHUNK(buf, chunk_name);
 ;   png_debug2(0, "Writing %s chunk, length = %lu", buf, (unsigned long)length);
-;end if
+end if
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f ;if (png_ptr == NULL) return
+	test edi,edi
+	jz .end_f ;if (..==0) return
 
 if PNG_IO_STATE_SUPPORTED eq 1
 	; Inform the I/O callback that the chunk header is being written.
@@ -99,8 +99,7 @@ if PNG_IO_STATE_SUPPORTED eq 1
 end if
 
 	; Write the length and the chunk name
-	mov ebx,ebp
-	sub ebx,8
+	lea ebx,[ebp-8]
 	stdcall png_save_uint_32, ebx, [length]
 	m2m dword[ebx+4],dword[chunk_name]
 	stdcall png_write_data, edi, ebx, 8
@@ -110,9 +109,7 @@ end if
 
 	; Reset the crc and run it over the chunk name
 	stdcall png_reset_crc, edi
-
-	mov ebx,ebp
-	sub ebx,4 ;buf + 4
+	lea ebx,[ebp-4] ;buf + 4
 	stdcall png_calculate_crc, edi, ebx, 4
 
 if PNG_IO_STATE_SUPPORTED eq 1
@@ -199,8 +196,8 @@ endp
 align 4
 proc png_write_complete_chunk uses edi, png_ptr:dword, chunk_name:dword, p3data:dword, length:dword
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f ;if (..==0) return
+	test edi,edi
+	jz .end_f ;if (..==0) return
 
 	; On 64-bit architectures 'length' may not fit in a uint_32.
 	cmp dword[length],PNG_UINT_31_MAX ;if(..>..)
@@ -678,14 +675,14 @@ endl
 			mov eax,[edx]
 			mov [next],eax
 
-			cmp eax,0
-			jne .end1 ;if (..==0)
+			test eax,eax
+			jnz .end1 ;if (..==0)
 				PNG_COMPRESSION_BUFFER_SIZE edi 
 				stdcall png_malloc, edi, eax
 				mov [next],eax
 
-				cmp eax,0
-				jne @f ;if (..==0)
+				test eax,eax
+				jnz @f ;if (..==0)
 					mov esi,Z_MEM_ERROR
 					jmp .cycle0end
 				@@:
@@ -1180,6 +1177,7 @@ endp
 align 4
 proc png_compress_IDAT uses eax ebx ecx edx, input:dword, input_len:dword, flush:dword
 	png_debug 1, 'in png_compress_IDAT'
+
 	cmp dword[edi+png_struct.zowner],png_IDAT
 	je .end0 ;if (..!=..)
 		; First time.   Ensure we have a temporary buffer for compression and
@@ -1232,7 +1230,7 @@ align 4
 		mov eax,ZLIB_IO_MAX
 
 		cmp eax,[input_len]
-		jle @f ;if (..>..)
+		jbe @f ;if (..>..)
 			mov eax,[input_len] ;safe because of the check
 		@@:
 
@@ -1451,8 +1449,8 @@ endl
 	stdcall png_check_keyword, edi, [name], ebx
 	mov [name_len],eax
 
-	cmp eax,0
-	jne @f ;if (..==0)
+	test eax,eax
+	jnz @f ;if (..==0)
 		png_error edi, 'iCCP: invalid keyword'
 	@@:
 
@@ -1955,8 +1953,8 @@ pushad
 	stdcall png_check_keyword, edi, [key], ebx
 	mov [key_len],eax
 
-	cmp eax,0
-	jne @f ;if (..==0)
+	test eax,eax
+	jnz @f ;if (..==0)
 		png_error edi, 'iTXt: invalid keyword'
 	@@:
 
@@ -2103,8 +2101,8 @@ pushad
 	stdcall png_check_keyword, edi, [purpose], ebx
 	mov [purpose_len],eax
 
-	cmp eax,0
-	jne @f ;if(..==0)
+	test eax,eax
+	jnz @f ;if(..==0)
 		png_error edi, 'pCAL: invalid keyword'
 	@@:
 
@@ -2460,8 +2458,6 @@ proc png_write_finish_row uses eax ecx edx edi, png_ptr:dword
 
 	; See if we are done
 	mov eax,[edi+png_struct.row_number]
-;png_debug1 2, '  row_number = %d', eax
-;png_debug1 2, '  num_rows = %d', [edi+png_struct.num_rows]
 	cmp eax,[edi+png_struct.num_rows]
 	jl .end_f ;if (..<..) return
 
@@ -3063,13 +3059,17 @@ locals
 endl
 pushad
 	mov edi,[png_ptr]
-if PNG_WRITE_FILTER_SUPPORTED eq 1
+if PNG_WRITE_FILTER_SUPPORTED eq 0
+mov eax,[edi+png_struct.row_number]
+png_debug1 2, '  (3)= %d', eax
 	mov eax,[edi+png_struct.rowbytes]
 	inc eax
 	stdcall png_write_filtered_row, edi, [edi+png_struct.row_buf], eax
+mov eax,[edi+png_struct.row_number]
+png_debug1 2, '  (4)= %d', eax
 else
 	mov esi,[row_info]
-	mov eax,[edi+png_struct.do_filter]
+	movzx eax,byte[edi+png_struct.do_filter]
 	mov [filter_to_do],eax
 	mov eax,[esi+png_row_info.rowbytes]
 	mov [row_bytes],eax
@@ -3119,8 +3119,8 @@ else
 	mov eax,[edi+png_struct.row_buf]
 	mov [best_row],eax
 
-	cmp PNG_SIZE_MAX/128, dword[row_bytes]
-	jg @f ;if (..<=..)
+	cmp dword[row_bytes],PNG_SIZE_MAX/128
+	jl @f ;if (..>=..)
 		; Overflow can occur in the calculation, just select the lowest set
 		; filter.
 
@@ -3168,8 +3168,8 @@ else
 			mov [mins],eax
 			mov eax,[edi+png_struct.try_row]
 			mov [best_row],eax
-			cmp eax,0
-			je .end1 ;if (..!=0)
+			test eax,eax
+			jz .end1 ;if (..!=0)
 				mov eax,[edi+png_struct.tst_row]
 				mov [edi+png_struct.try_row],eax
 				mov eax,[best_row]
@@ -3194,8 +3194,8 @@ else
 			mov [mins],eax
 			mov eax,[edi+png_struct.try_row]
 			mov [best_row],eax
-			cmp eax,0
-			je .end2 ;if (..!=0)
+			test eax,eax
+			jz .end2 ;if (..!=0)
 				mov eax,[edi+png_struct.tst_row]
 				mov [edi+png_struct.try_row],eax
 				mov eax,[best_row]
@@ -3220,14 +3220,14 @@ else
 			mov [mins],eax
 			mov eax,[edi+png_struct.try_row]
 			mov [best_row],eax
-			cmp eax,0
-			je .end3 ;if (..!=0)
+			test eax,eax
+			jz .end3 ;if (..!=0)
 				mov eax,[edi+png_struct.tst_row]
 				mov [edi+png_struct.try_row],eax
 				mov eax,[best_row]
 				mov [edi+png_struct.tst_row],eax
 	.end3:
-
+if 0 ;;; tmp
 	; Paeth filter
 	mov eax,[filter_to_do]
 	cmp eax,PNG_FILTER_PAETH
@@ -3246,14 +3246,14 @@ else
 			mov [mins],eax
 			mov eax,[edi+png_struct.try_row]
 			mov [best_row],eax
-			cmp eax,0
-			je .end4 ;if (..!=0)
+			test eax,eax
+			jz .end4 ;if (..!=0)
 				mov eax,[edi+png_struct.tst_row]
 				mov [edi+png_struct.try_row],eax
 				mov eax,[best_row]
 				mov [edi+png_struct.tst_row],eax
 	.end4:
-
+end if
 	; Do the actual writing of the filtered row data from the chosen filter.
 	mov eax,[esi+png_row_info.rowbytes]
 	inc eax
@@ -3281,8 +3281,8 @@ proc png_write_filtered_row uses eax ebx edi, png_ptr:dword, filtered_row:dword,
 if PNG_WRITE_FILTER_SUPPORTED eq 1
 	; Swap the current and previous rows
 	mov eax,[edi+png_struct.prev_row]
-	cmp eax,0
-	je @f ;if (..!=0)
+	test eax,eax
+	jz @f ;if (..!=0)
 		;eax = tptr
 		mov ebx,[edi+png_struct.row_buf]
 		mov [edi+png_struct.prev_row],ebx

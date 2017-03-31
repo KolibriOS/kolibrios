@@ -554,6 +554,7 @@ if (PNG_STORE_UNKNOWN_CHUNKS_SUPPORTED eq 1) | (PNG_USER_CHUNKS_SUPPORTED eq 1)
 
 struct png_unknown_chunk
 	name rb 5 ;byte[5] ;Textual chunk name with '\0' terminator
+	rb 3 ;align
 	podata dd ? ;byte* ;Data, should not be modified on read!
 	size dd ? ;png_size_t
 

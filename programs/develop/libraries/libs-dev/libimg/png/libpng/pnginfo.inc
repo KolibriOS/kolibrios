@@ -135,8 +135,7 @@ if PNG_sBIT_SUPPORTED eq 1
 	sig_bit png_color_8 ; significant bits in color channels
 end if
 
-;#if defined(PNG_tRNS_SUPPORTED) || defined(PNG_READ_EXPAND_SUPPORTED) || \
-;defined(PNG_READ_BACKGROUND_SUPPORTED)
+if (PNG_tRNS_SUPPORTED eq 1) | (PNG_READ_EXPAND_SUPPORTED eq 1) | (PNG_READ_BACKGROUND_SUPPORTED eq 1)
 	; The tRNS chunk supplies transparency data for paletted images and
 	; other image types that don't need a full alpha channel.  There are
 	; "num_trans" transparency values for a paletted image, stored in the
@@ -148,7 +147,7 @@ end if
 
 	trans_alpha dd ? ;bytep ; alpha values for paletted image
 	trans_color png_color_16 ;transparent color for non-palette image
-;end if
+end if
 
 if (PNG_bKGD_SUPPORTED eq 1) | (PNG_READ_BACKGROUND_SUPPORTED eq 1)
 	; The bKGD chunk gives the suggested image background color if the

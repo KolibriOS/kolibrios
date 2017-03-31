@@ -1183,16 +1183,16 @@ if PNG_WRITE_SUPPORTED eq 1
 end if
 ;   {
 if PNG_SEQUENTIAL_READ_SUPPORTED eq 1
-;      return png_ptr->IDAT_read_size;
+		mov eax,[eax+png_struct.IDAT_read_size]
 else
 		mov eax,PNG_IDAT_READ_SIZE
-		jmp .end_f
 end if
 ;   }
 
 if PNG_WRITE_SUPPORTED eq 1
+		jmp .end_f
 ;   else
-;      return png_ptr->zbuffer_size;
+		mov eax,[eax+png_struct.zbuffer_size]
 end if
 .end_f:
 	ret
