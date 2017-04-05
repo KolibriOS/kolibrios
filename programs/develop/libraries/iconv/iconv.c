@@ -67,7 +67,11 @@ iconv_t iconv_open(const char *tocode, const char *fromcode) {
 	to=to<<16&0xFFFF0000;
 	from=from&0xFFFF;
 	return to+from;
-		
+}
+
+int iconv_close(iconv_t icd)
+{
+  return 0;
 }
 
 size_t iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft,

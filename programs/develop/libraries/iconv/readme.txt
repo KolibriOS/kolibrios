@@ -2,3 +2,8 @@
 
 Лицензия GPLv2, файлы перекодировщика используют GNU iconv
 iconv - это obj, так что её собирает mingw командой gcc -c iconv.c -o iconv.obj
+
+English
+-------
+
+Compile with : kos32-gcc iconv.c -o iconv.o
