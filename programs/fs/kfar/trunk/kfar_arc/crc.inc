@@ -15,6 +15,12 @@ init_crc_table:
         jnz     .1
         ret
 
+crc_continue:
+; in: eax = pervios crc, ecx = size, esi->buffer
+; out: eax = crc
+        xor     eax,-1
+		jmp crc.loop
+
 crc:
 ; in: ecx=size, esi->buffer
 ; out: eax=crc

@@ -115,7 +115,7 @@ end if
 	mov eax,[p1crc]
 	mov ecx,[len]
 	push edx
-	call crc
+	call crc_continue
 	pop edx
 .end_f:
 	ret

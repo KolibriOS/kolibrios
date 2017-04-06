@@ -174,8 +174,7 @@ if PNG_IO_STATE_SUPPORTED eq 1
 end if
 
 	; Write the crc in a single operation
-	mov ebx,ebp
-	sub ebx,4
+	lea ebx,[ebp-4]
 	stdcall png_save_uint_32, ebx, [edi+png_struct.crc]
 
 	stdcall png_write_data, edi, ebx, 4
@@ -3060,13 +3059,9 @@ endl
 pushad
 	mov edi,[png_ptr]
 if PNG_WRITE_FILTER_SUPPORTED eq 0
-mov eax,[edi+png_struct.row_number]
-png_debug1 2, '  (3)= %d', eax
 	mov eax,[edi+png_struct.rowbytes]
 	inc eax
 	stdcall png_write_filtered_row, edi, [edi+png_struct.row_buf], eax
-mov eax,[edi+png_struct.row_number]
-png_debug1 2, '  (4)= %d', eax
 else
 	mov esi,[row_info]
 	movzx eax,byte[edi+png_struct.do_filter]
@@ -3075,7 +3070,6 @@ else
 	mov [row_bytes],eax
 
 	png_debug 1, 'in png_write_find_filter'
-
 
 	; Find out how many bytes offset each pixel is
 	movzx eax,byte[edi+png_struct.pixel_depth]
