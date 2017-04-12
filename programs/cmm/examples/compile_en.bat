@@ -1,10 +1,6 @@
 @del *.kex
 
-@c-- collections.c
-@c-- console.c
-@c-- menu.c
-@c-- rgb.c
-@c-- window.c
+For /R %%i In (*.c) Do c-- "%%i"
 
 @rename *.com *.kex
 @mkdir bin
