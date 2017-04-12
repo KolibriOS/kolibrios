@@ -1,6 +1,5 @@
 #ifndef INCLUDE_DEBUG_H
 #define INCLUDE_DEBUG_H
-#print "[include <debug.h>]\n"
 
 #ifndef INCLUDE_STRING_H
 #include "../lib/strings.h"

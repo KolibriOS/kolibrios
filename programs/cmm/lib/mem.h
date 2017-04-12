@@ -1,6 +1,5 @@
 #ifndef INCLUDE_MEM_H
 #define INCLUDE_MEM_H
-#print "[include <mem.h>]\n"
 
 #ifndef INCLUDE_KOLIBRI_H
 #include "../lib/kolibri.h"

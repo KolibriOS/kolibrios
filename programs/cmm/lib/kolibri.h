@@ -2,7 +2,6 @@
 
 #ifndef INCLUDE_KOLIBRI_H
 #define INCLUDE_KOLIBRI_H
-#print "[include <kolibri.h>]\n"
 
 #pragma option OST
 #pragma option ON

@@ -1,6 +1,5 @@
 #ifndef INCLUDE_LEXER_H
 #define INCLUDE_LEXER_H
-#print "[include <lexer.h>]\n"
 
 #ifndef INCLUDE_STRING_H
 #include "../lib/strings.h"

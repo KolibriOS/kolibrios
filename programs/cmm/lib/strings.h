@@ -1,6 +1,5 @@
 #ifndef INCLUDE_STRING_H
 #define INCLUDE_STRING_H
-#print "[include <strings.h>]\n"
 
 #ifndef INCLUDE_MEM_H
 #include "../lib/mem.h"

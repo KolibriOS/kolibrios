@@ -1,6 +1,5 @@
 #ifndef INCLUDE_LIBINI_H
 #define INCLUDE_LIBINI_H
-#print "[include <obj/libini.h>]\n"
 
 #ifndef INCLUDE_KOLIBRI_H
 #include "../lib/kolibri.h"

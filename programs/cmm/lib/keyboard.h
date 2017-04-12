@@ -1,6 +1,5 @@
 #ifndef INCLUDE_KEYBOARD_H
 #define INCLUDE_KEYBOARD_H
-#print "[include <keyboard.h>]\n"
 
 //ASCII KEYS
 #define ASCII_KEY_BS    008

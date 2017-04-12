@@ -22,7 +22,6 @@
 
 #ifndef INCLUDE_IO_H
 #define INCLUDE_IO_H
-#print "[include <io.h>]\n"
 
 #ifndef INCLUDE_DATE_H
 #include "../lib/date.h"

@@ -1,6 +1,5 @@
 #ifndef INCLUDE_MOUSE_H
 #define INCLUDE_MOUSE_H
-#print "[include <mouse.h>]\n"
 
 //Button MOUSE
 #define MOUSE_LEFT   001b
