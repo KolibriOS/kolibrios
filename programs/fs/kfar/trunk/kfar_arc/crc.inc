@@ -18,8 +18,9 @@ init_crc_table:
 crc_continue:
 ; in: eax = pervios crc, ecx = size, esi->buffer
 ; out: eax = crc
-        xor     eax,-1
-		jmp crc.loop
+        xor     eax, -1
+        jecxz   crc.end
+        jmp     crc.loop
 
 crc:
 ; in: ecx=size, esi->buffer

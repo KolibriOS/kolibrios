@@ -2942,106 +2942,283 @@ endp
 ;png_size_t (png_structrp png_ptr, const uint_32 bpp,
 ;    const png_size_t row_bytes, const png_size_t lmins)
 align 4
-proc png_setup_paeth_row, png_ptr:dword, bpp:dword, row_bytes:dword, lmins:dword
-;   bytep rp, dp, pp, cp, lp;
-;   png_size_t i;
-;   png_size_t sum = 0;
-;   int v;
+proc png_setup_paeth_row uses ebx ecx edx edi esi, png_ptr:dword, bpp:dword, row_bytes:dword, lmins:dword
+locals
+	pp dd ?
+	sum dd ?
+	v dd ?
+	lp dd ?
+	cp dd ?
+	a dd ?
+	b dd ?
+	c dd ?
+	p dd ?
+	pa dd ?
+	pb dd ?
+	pc dd ?
+endl
+	;ecx - i
+	;edi - dp
+	;esi - rp
+	mov dword[sum],0
+	mov ebx,[png_ptr]
+	mov eax,[ebx+png_struct.try_row]
+	mov byte[eax],PNG_FILTER_VALUE_PAETH
+	xor ecx,ecx
+	mov esi,[ebx+png_struct.row_buf]
+	inc esi
+	mov edi,[ebx+png_struct.try_row]
+	inc edi
+	mov eax,[ebx+png_struct.prev_row]
+	inc eax
+	mov [pp],eax
+	jmp @f
 
-;   png_ptr->try_row[0] = PNG_FILTER_VALUE_PAETH;
+align 4
+.cycle0:
+	inc ecx
+	@@:
+	cmp ecx,[bpp]
+	jae .cycle0end
+	lodsb
+	mov edx,[pp]
+	movzx edx,byte[edx]
+	sub al,dl
+	stosb
+	and eax,0xff
+	mov [v],eax
+	inc dword[pp]
+	cmp eax,0x80
+	jge @f
+		add [sum],eax
+		jmp .cycle0
+	@@:
+	mov eax,0x100
+	sub eax,[v]
+	add [sum],eax
+	jmp .cycle0
+.cycle0end:
 
-;   for (i = 0, rp = png_ptr->row_buf + 1, dp = png_ptr->try_row + 1,
-;       pp = png_ptr->prev_row + 1; i < bpp; i++)
-;   {
-;      v = *dp++ = (byte)(((int)*rp++ - (int)*pp++) & 0xff);
+	mov eax,[ebx+png_struct.row_buf]
+	inc eax
+	mov [lp],eax
+	mov eax,[ebx+png_struct.prev_row]
+	inc eax
+	mov [cp],eax
+	jmp @f
 
-if PNG_USE_ABS eq 1
-;      sum += 128 - abs(v - 128);
-else
-;      sum += (v < 128) ? v : 256 - v;
-end if
-;   }
-
-;   for (lp = png_ptr->row_buf + 1, cp = png_ptr->prev_row + 1; i < row_bytes;
-;        i++)
-;   {
-;      int a, b, c, pa, pb, pc, p;
-
-;      b = *pp++;
-;      c = *cp++;
-;      a = *lp++;
-
-;      p = b - c;
-;      pc = a - c;
-
-if PNG_USE_ABS eq 1
-;      pa = abs(p);
-;      pb = abs(pc);
-;      pc = abs(p + pc);
-else
-;      pa = p < 0 ? -p : p;
-;      pb = pc < 0 ? -pc : pc;
-;      pc = (p + pc) < 0 ? -(p + pc) : p + pc;
-end if
-
-;      p = (pa <= pb && pa <=pc) ? a : (pb <= pc) ? b : c;
-
-;      v = *dp++ = (byte)(((int)*rp++ - p) & 0xff);
-
-if PNG_USE_ABS eq 1
-;      sum += 128 - abs(v - 128);
-else
-;      sum += (v < 128) ? v : 256 - v;
-end if
-
-;      if (sum > lmins)  /* We are already worse, don't continue. */
-;        break;
-;   }
-
-;   return (sum);
+align 4
+.cycle1:
+	inc ecx
+	@@:
+	cmp ecx,[row_bytes]
+	jae .cycle1end
+	mov eax,[pp]
+	movzx ebx,byte[eax]
+	mov [b],ebx
+	inc dword[pp]
+	mov eax,[cp]
+	movzx ebx,byte[eax]
+	mov [c],ebx
+	inc dword[cp]
+	mov eax,[lp]
+	movzx ebx,byte[eax]
+	mov [a],ebx
+	inc dword[lp]
+	mov eax,[b]
+	sub eax,[c]
+	mov [p],eax
+	mov ebx,[a]
+	sub ebx,[c]
+	mov [pc],ebx
+	mov eax,[p]
+	cmp eax,0
+	jge @f
+		neg eax
+	@@:
+	mov [pa],eax
+	mov eax,[pc]
+	cmp eax,0
+	jge @f
+		neg eax
+	@@:
+	mov [pb],eax
+	mov eax,[p]
+	add eax,[pc]
+	jns @f
+		neg eax
+	@@:
+	mov [pc],eax
+	mov eax,[pa]
+	cmp eax,[pb]
+	jg .end0
+	cmp eax,[pc]
+	jg .end0
+		mov eax,[a]
+		jmp .end1
+	.end0:
+		mov eax,[pb]
+		cmp eax,[pc]
+		jg .end2
+			mov eax,[b]
+			jmp .end1
+		.end2:
+			mov eax,[c]
+	.end1:
+	mov [p],eax
+	movzx eax,byte[esi]
+	sub eax,[p]
+	and eax,0xff
+	stosb
+	mov [v],eax
+	inc esi
+	cmp dword[v],0x80
+	jge .end3
+		mov eax,[v]
+		add [sum],eax
+		jmp .end4
+	.end3:
+		mov eax,0x100
+		sub eax,[v]
+		add [sum],eax
+	.end4:
+	mov eax,[sum]
+	cmp eax,[lmins] ;We are already worse, don't continue.
+	jbe .cycle1
+.cycle1end:
+	mov eax,[sum]
 	ret
 endp
 
 ;void (png_structrp png_ptr, const uint_32 bpp, const png_size_t row_bytes)
 align 4
 proc png_setup_paeth_row_only, png_ptr:dword, bpp:dword, row_bytes:dword
-;   bytep rp, dp, pp, cp, lp;
-;   png_size_t i;
+locals
+	pp dd ?
+	lp dd ?
+	cp dd ?
+	a dd ?
+	b dd ?
+	c dd ?
+	p dd ?
+	pa dd ?
+	pb dd ?
+	pc dd ?
+endl
+pushad
+	;ecx - i
+	;edi - dp
+	;esi - rp
+	mov eax,[png_ptr]
+	mov ebx,[eax+png_struct.try_row]
+	mov byte[ebx],4
+	xor ecx,ecx
+	mov edx,[png_ptr]
+	mov eax,[edx+png_struct.row_buf]
+	inc eax
+	mov esi,eax
+	mov ebx,[png_ptr]
+	mov edx,[ebx+png_struct.try_row]
+	inc edx
+	mov edi,edx
+	mov eax,[png_ptr]
+	mov ebx,[eax+png_struct.prev_row]
+	inc ebx
+	mov [pp],ebx
+	jmp @f
 
-;   png_ptr->try_row[0] = PNG_FILTER_VALUE_PAETH;
+align 4
+.cycle0:
+	inc ecx
+	@@:
+	cmp ecx,[bpp]
+	jae .cycle0end
+	lodsb
+	mov ebx,[pp]
+	movzx ebx,byte[ebx]
+	sub al,bl
+	stosb
+	inc dword[pp]
+	jmp .cycle0
+.cycle0end:
 
-;   for (i = 0, rp = png_ptr->row_buf + 1, dp = png_ptr->try_row + 1,
-;       pp = png_ptr->prev_row + 1; i < bpp; i++)
-;   {
-;      *dp++ = (byte)(((int)*rp++ - (int)*pp++) & 0xff);
-;   }
+	mov eax,[png_ptr]
+	mov ebx,[eax+png_struct.row_buf]
+	inc ebx
+	mov [lp],ebx
+	mov edx,[png_ptr]
+	mov eax,[edx+png_struct.prev_row]
+	inc eax
+	mov [cp],eax
+	jmp @f
 
-;   for (lp = png_ptr->row_buf + 1, cp = png_ptr->prev_row + 1; i < row_bytes;
-;        i++)
-;   {
-;      int a, b, c, pa, pb, pc, p;
-
-;      b = *pp++;
-;      c = *cp++;
-;      a = *lp++;
-
-;      p = b - c;
-;      pc = a - c;
-
-if PNG_USE_ABS eq 1
-;      pa = abs(p);
-;      pb = abs(pc);
-;      pc = abs(p + pc);
-else
-;      pa = p < 0 ? -p : p;
-;      pb = pc < 0 ? -pc : pc;
-;      pc = (p + pc) < 0 ? -(p + pc) : p + pc;
-end if
-
-;      p = (pa <= pb && pa <=pc) ? a : (pb <= pc) ? b : c;
-
-;      *dp++ = (byte)(((int)*rp++ - p) & 0xff);
-;   }
+align 4
+.cycle1:
+	inc ecx
+	@@:
+	cmp ecx,[row_bytes]
+	jae .cycle1end
+	mov eax,[pp]
+	movzx ebx,byte[eax]
+	mov [b],ebx
+	inc dword[pp]
+	mov eax,[cp]
+	movzx ebx,byte[eax]
+	mov [c],ebx
+	inc dword[cp]
+	mov eax,[lp]
+	movzx ebx,byte[eax]
+	mov [a],ebx
+	inc dword[lp]
+	mov eax,[b]
+	sub eax,[c]
+	mov [p],eax
+	mov ebx,[a]
+	sub ebx,[c]
+	mov [pc],ebx
+	mov eax,[p]
+	cmp eax,0
+	jge @f
+		neg eax
+	@@:
+	mov [pa],eax
+	mov eax,[pc]
+	cmp eax,0
+	jge @f
+		neg eax
+	@@:
+	mov [pb],eax
+	mov eax,[p]
+	add eax,[pc]
+	jns @f
+		neg eax
+	@@:
+	mov [pc],eax
+	mov eax,[pa]
+	cmp eax,[pb]
+	jg .end0
+	cmp eax,[pc]
+	jg .end0
+		mov eax,[a]
+		jmp .end1
+	.end0:
+		mov eax,[pb]
+		cmp eax,[pc]
+		jg .end2
+			mov eax,[b]
+			jmp .end1
+		.end2:
+			mov eax,[c]
+	.end1:
+	mov [p],eax
+	movzx eax,byte[esi]
+	sub eax,[p]
+	and eax,0xff
+	stosb
+	inc esi
+	jmp .cycle1
+.cycle1end:
+popad
 	ret
 endp
 
@@ -3221,7 +3398,7 @@ else
 				mov eax,[best_row]
 				mov [edi+png_struct.tst_row],eax
 	.end3:
-if 0 ;;; tmp
+
 	; Paeth filter
 	mov eax,[filter_to_do]
 	cmp eax,PNG_FILTER_PAETH
@@ -3247,7 +3424,7 @@ if 0 ;;; tmp
 				mov eax,[best_row]
 				mov [edi+png_struct.tst_row],eax
 	.end4:
-end if
+
 	; Do the actual writing of the filtered row data from the chosen filter.
 	mov eax,[esi+png_row_info.rowbytes]
 	inc eax

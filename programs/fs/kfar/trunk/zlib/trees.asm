@@ -1288,8 +1288,8 @@ endp
 ; bl_order of the last bit length code to send.
 
 ;int (deflate_state* s)
-align 4
-proc build_bl_tree uses edi, s:dword
+align 16
+proc build_bl_tree uses ecx edi, s:dword
 locals
 	max_blindex dd ? ;int ;index of last bit length code of non zero freq
 endl
@@ -1312,18 +1312,18 @@ endl
 	; 3 but the actual value used is 4.)
 
 	mov dword[max_blindex],BL_CODES-1
+	jmp @f
+align 4
 	.cycle0: ;for (..;..>=..;..)
+		dec dword[max_blindex]
+		@@:
 		cmp dword[max_blindex],3
 		jl .cycle0end
-		dec dword[max_blindex]
-		mov eax,[max_blindex]
-		add eax,bl_order
-		movzx eax,byte[eax]
-		imul eax,sizeof.ct_data
-		add eax,edi
-		cmp word[eax+deflate_state.bl_tree+Len],0
-		jne .cycle0end ;if (..!=0) break
-		jmp .cycle0
+		mov ecx,[max_blindex]
+		movzx eax,byte[ecx+bl_order]
+		movzx ecx,word[edi+sizeof.ct_data*eax+deflate_state.bl_tree+Len]
+		jecxz .cycle0
+		jmp .cycle0end
 align 4
 	.cycle0end:
 	; Update opt_len to include the bit length tree and counts

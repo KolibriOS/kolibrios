@@ -2760,7 +2760,7 @@ if 1 ;;; IDAT compress all
 		cmp ecx,1
 		jl .end8
 		stdcall create_compress_IDAT, edi, [edx+png_image_write_control.first_row], ecx, [ebx+png_image.width], [ebx+png_image.height]
-else ;;; not work, IDAT compress by lines
+else ;;; IDAT compress by lines
 		mov ecx,[ebx+png_image.height]
 		cmp ecx,1
 		jl .end8
@@ -2908,6 +2908,14 @@ align 4
 
 		; Avg filter
 		stdcall png_setup_avg_row, edx, ebx, esi, [mins]
+		cmp eax,[mins]
+		jge @f ;if (..<..)
+			mov [mins],eax
+			stdcall copy_row_mins, [edx+png_struct.tst_row], [edx+png_struct.try_row]
+		@@:
+
+		; Paeth filter
+		stdcall png_setup_paeth_row, edx, ebx, esi, [mins]
 		cmp eax,[mins]
 		jge @f ;if (..<..)
 			mov [mins],eax
