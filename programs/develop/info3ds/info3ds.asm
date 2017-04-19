@@ -8,6 +8,7 @@ version_edit equ 1
 include '../../macros.inc'
 include '../../proc32.inc'
 include '../../KOSfuncs.inc'
+include '../../develop/libraries/libs-dev/libimg/libimg.inc'
 include '../../load_img.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../develop/libraries/TinyGL/asm_fork/opengl_const.inc'
@@ -1022,7 +1023,7 @@ Filter:
 dd Filter.end - Filter.1
 .1:
 db '3DS',0
-db 'TXT',0
+db 'PNG',0
 .end:
 db 0
 
@@ -1038,7 +1039,7 @@ system_dir_3 db '/sys/lib/'
 lib_name_3 db 'buf2d.obj',0
 system_dir_4 db '/sys/lib/'
 lib_name_4 db 'kmenu.obj',0
-system_dir_5 db '/kolibrios/lib/'
+system_dir_5 db '/sys/lib/'
 lib_name_5 db 'tinygl.obj',0
 system_dir_6 db '/sys/lib/'
 lib_name_6 db 'libini.obj',0
@@ -1336,7 +1337,8 @@ align 4
 buf_ogl:
 	dd 0 ;указатель на буфер изображения
 	dw 3d_wnd_l,3d_wnd_t ;+4 left,top
-	dd 3d_wnd_w,3d_wnd_h ;+8 w,h
+.w: dd 3d_wnd_w
+.h: dd 3d_wnd_h
 	dd 0,24 ;+16 color,bit in pixel
 
 align 4
@@ -1371,9 +1373,9 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru
-capt db 'info 3ds версия 05.09.16',0 ;подпись окна
+capt db 'info 3ds версия 18.04.17',0 ;подпись окна
 else
-capt db 'info 3ds version 05.09.16',0 ;window caption
+capt db 'info 3ds version 18.04.17',0 ;window caption
 end if
 
 align 16

@@ -1289,10 +1289,9 @@ endp
 
 ;int (deflate_state* s)
 align 16
-proc build_bl_tree uses ecx edi, s:dword
-locals
-	max_blindex dd ? ;int ;index of last bit length code of non zero freq
-endl
+proc build_bl_tree uses ebx ecx edi, s:dword
+	;ebx - max_blindex ;index of last bit length code of non zero freq
+
 	mov edi,[s]
 	; Determine the bit length frequencies for literal and distance trees
 	mov eax,edi
@@ -1311,30 +1310,28 @@ endl
 	; requires that at least 4 bit length codes be sent. (appnote.txt says
 	; 3 but the actual value used is 4.)
 
-	mov dword[max_blindex],BL_CODES-1
+	mov ebx,BL_CODES-1
 	jmp @f
 align 4
 	.cycle0: ;for (..;..>=..;..)
-		dec dword[max_blindex]
+		dec ebx
 		@@:
-		cmp dword[max_blindex],3
+		cmp ebx,3
 		jl .cycle0end
-		mov ecx,[max_blindex]
-		movzx eax,byte[ecx+bl_order]
-		movzx ecx,word[edi+sizeof.ct_data*eax+deflate_state.bl_tree+Len]
+		movzx ecx,byte[ebx+bl_order]
+		movzx ecx,word[edi+sizeof.ct_data*ecx+deflate_state.bl_tree+Len]
 		jecxz .cycle0
-		jmp .cycle0end
 align 4
 	.cycle0end:
 	; Update opt_len to include the bit length tree and counts
-	mov eax,[max_blindex]
+	mov eax,ebx
 	inc eax
 	imul eax,3
 	add eax,5+5+4
 	add [edi+deflate_state.opt_len],eax
 ;    Tracev((stderr, "\ndyn trees: dyn %ld, stat %ld", s->opt_len, s->static_len));
 
-	mov eax,[max_blindex]
+	mov eax,ebx
 	ret
 endp
 
@@ -1343,8 +1340,7 @@ endp
 ; lengths of the bit length codes, the literal tree and the distance tree.
 ; IN assertion: lcodes >= 257, dcodes >= 1, blcodes >= 4.
 
-;void (s, lcodes, dcodes, blcodes)
-;    deflate_state* s
+;void (deflate_state* s, lcodes, dcodes, blcodes)
 ;    int lcodes, dcodes, blcodes ;number of codes for each tree
 align 4
 proc send_all_trees uses eax ebx ecx edi, s:dword, lcodes:dword, dcodes:dword, blcodes:dword

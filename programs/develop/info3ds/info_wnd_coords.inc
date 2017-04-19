@@ -85,14 +85,14 @@ pushad
 			;jmp .set_points
 		@@:
 		.set_points:
-		mov [edi+offs_obj_poi_data],ebx
-		mov [edi+offs_obj_poi_count],edx
+		mov [edi+obj_3d.poi_data],ebx
+		mov [edi+obj_3d.poi_count],edx
 	.no_points:
 
 	;настройка списка объектов
-	mov ebx,[edi+offs_obj_poi_data]
+	mov ebx,[edi+obj_3d.poi_data]
 	mov dword[tree3.info_max_count],2
-	mov edx,[edi+offs_obj_poi_count]
+	mov edx,[edi+obj_3d.poi_count]
 	add dword[tree3.info_max_count],edx ;ставим число узлов, равное колличеству точек (+2 на начало и конец списка)
 	stdcall dword[tl_data_init], tree3
 	mov eax,dword[icon_tl_sys]
@@ -523,10 +523,10 @@ prop_button:
 	mov dword[tree3.data_img_sys],0 ;т. к. они еще используються в других элементах
 	stdcall dword[tl_data_clear], tree3
 	mov edi,o3d
-	stdcall mem.Free,[edi+offs_obj_normals_tri_data]
-	stdcall mem.Free,[edi+offs_obj_normals_poi_data]
-	mov dword[edi+offs_obj_normals_tri_data],0
-	mov dword[edi+offs_obj_normals_poi_data],0
+	stdcall mem.Free,[edi+obj_3d.normals_tri_data]
+	stdcall mem.Free,[edi+obj_3d.normals_poi_data]
+	mov dword[edi+obj_3d.normals_tri_data],0
+	mov dword[edi+obj_3d.normals_poi_data],0
 	mov byte[prop_wnd_run],0 ;обнуляем счетчик окон
 	mcall SF_TERMINATE_PROCESS ;выход из программы
 

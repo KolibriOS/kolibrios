@@ -1,5 +1,5 @@
 use32
-	org 0x0
+	org 0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
 	dd 1, start, i_end, mem, stacktop, file_name, sys_path
 
@@ -8,6 +8,7 @@ version_edit equ 0
 include '../../macros.inc'
 include '../../proc32.inc'
 include '../../KOSfuncs.inc'
+include '../../develop/libraries/libs-dev/libimg/libimg.inc'
 include '../../load_img.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../develop/libraries/TinyGL/asm_fork/opengl_const.inc'
@@ -392,13 +393,13 @@ timer_funct:
 
 			cmp word[eax],CHUNK_OBJBLOCK
 			jne .end_oblo
-			cmp dword[edi+offs_obj_poi_count],2
+			cmp dword[edi+obj_3d.poi_count],2
 			jl .ini_oblo
 				stdcall draw_3d,edi
 				jmp .end_f
 			.ini_oblo:
 				stdcall obj_init,edi ;попытка настроить переменные объекта
-				cmp dword[edi+offs_obj_poi_count],2
+				cmp dword[edi+obj_3d.poi_count],2
 				jl .end_f
 					call mnu_reset_settings ;сброс углов поворота и режимов рисования
 				jmp .end_f
@@ -406,13 +407,13 @@ timer_funct:
 
 			cmp word[eax],CHUNK_MATERIAL
 			jne .end_mblo
-			cmp dword[edi+offs_mat_name],0
+			cmp dword[edi+material.name],0
 			je .ini_mblo
 				stdcall draw_material,edi
 				jmp .end_f
 			.ini_mblo:
 				stdcall mat_init,edi,eax ;попытка настроить данные материала
-				cmp dword[edi+offs_mat_name],0
+				cmp dword[edi+material.name],0
 				je .end_f
 					stdcall draw_material,edi
 				jmp .end_f
@@ -461,6 +462,7 @@ pushad
 	mcall ,((3d_wnd_l+100) shl 16)+20,,0x40000009 ;свет вкл./выкл.
 	mcall ,((3d_wnd_l+125) shl 16)+20,,0x4000000a ;сглаживание
 	mcall ,((3d_wnd_l+150) shl 16)+20,,0x4000000b ;сброс
+	mcall ,((3d_wnd_l+175) shl 16)+20,,0x4000000c ;скрин из 3d окна
 
 	mcall SF_PUT_IMAGE,[image_data_toolbar],(21 shl 16)+21,(5 shl 16)+24 ;new
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
@@ -479,6 +481,8 @@ pushad
 	mcall ,,,((3d_wnd_l+75) shl 16)+24 ;грани по материалам вкл.
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	mcall ,,,((3d_wnd_l+125) shl 16)+24 ;сглаживание
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	mcall ,,,((3d_wnd_l+175) shl 16)+24 ;скрин из 3d окна
 
 	mov dword[w_scr_t1.all_redraw],1
 	stdcall [tl_draw], tree1
@@ -599,6 +603,11 @@ button:
 	cmp ah,11
 	jne @f
 		call mnu_reset_settings
+		jmp still
+	@@:
+	cmp ah,12
+	jne @f
+		call mnu_make_scrshot
 		jmp still
 	@@:
 
@@ -1085,7 +1094,7 @@ Filter:
 dd Filter.end - Filter.1
 .1:
 db '3DS',0
-db 'TXT',0
+db 'PNG',0
 .end:
 db 0
 
@@ -1101,7 +1110,7 @@ system_dir_3 db '/sys/lib/'
 lib_name_3 db 'buf2d.obj',0
 system_dir_4 db '/sys/lib/'
 lib_name_4 db 'kmenu.obj',0
-system_dir_5 db '/kolibrios/lib/'
+system_dir_5 db '/sys/lib/'
 lib_name_5 db 'tinygl.obj',0
 system_dir_6 db '/sys/lib/'
 lib_name_6 db 'libini.obj',0
@@ -1393,7 +1402,8 @@ align 4
 buf_ogl:
 	dd 0 ;указатель на буфер изображения
 	dw 3d_wnd_l,3d_wnd_t ;+4 left,top
-	dd 3d_wnd_w,3d_wnd_h ;+8 w,h
+.w: dd 3d_wnd_w
+.h: dd 3d_wnd_h
 .color: dd 0xffffd0
 	dd 24 ;+16 color,bit in pixel
 
@@ -1429,9 +1439,9 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru
-capt db 'info 3ds [user] версия 05.09.16',0 ;подпись окна
+capt db 'info 3ds [user] версия 18.04.17',0 ;подпись окна
 else
-capt db 'info 3ds [user] version 05.09.16',0 ;window caption
+capt db 'info 3ds [user] version 18.04.17',0 ;window caption
 end if
 
 align 16

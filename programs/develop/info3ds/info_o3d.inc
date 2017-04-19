@@ -28,39 +28,12 @@ struct obj_3d
 	mat1_data dd ? ;данные 1-го материала в объекте
 ends
 
-offs_obj_poi_data equ 0 ;указатель на координаты вершин
-offs_obj_poi_count equ 4 ;колличество вершин
-offs_obj_tri_data equ 8 ;указатель на данные треугольников
-offs_obj_tri_count equ 12 ;колличество треугольников
-offs_obj_normals_poi_data equ 16
-offs_obj_normals_poi_count equ 20
-offs_obj_normals_tri_data equ 24
-offs_obj_normals_tri_count equ 28
-offs_obj_x_max equ 32
-offs_obj_x_min equ 36
-offs_obj_x_centr equ 40
-offs_obj_x_scale equ 44
-offs_obj_y_max equ 48
-offs_obj_y_min equ 52
-offs_obj_y_centr equ 56
-offs_obj_y_scale equ 60
-offs_obj_z_max equ 64
-offs_obj_z_min equ 68
-offs_obj_z_centr equ 72
-offs_obj_z_scale equ 76
-offs_obj_mat1_data equ 80
-
 struct material
 	name dd ?
 	col_ambient dd ? ;цвет материала
 	col_diffuse dd ?
 	col_specular dd ?
 ends
-
-offs_mat_name equ 0
-offs_mat_col_ambient equ 4
-offs_mat_col_diffuse equ 8
-offs_mat_col_specular equ 12
 
 bit_vertexes equ 0
 bit_faces equ 1 ;грани рисуются контурами
@@ -85,8 +58,17 @@ key_vert db 'col_vertices',0
 key_face db 'col_faces',0
 key_select db 'col_select',0
 
+txt_err_save_img_file:
+if lang eq ru
+	db 'Не могу сохранить файл.',0
+else
+	db 'Can',39,'t save file.',0
+end if
 
+align 4
 rad_c dd 150 ;для вычисления радиуса
+png_data dd ?
+png_size dd ?
 
 align 4
 proc hex_in_str, buf:dword,val:dword,zif:dword
@@ -118,22 +100,22 @@ align 4
 proc obj_clear_param uses edi, o_data:dword
 	mov edi,[o_data]
 	;обнуление указателей на данные объектов
-	mov dword[edi+offs_obj_poi_data],0
-	mov dword[edi+offs_obj_poi_count],0
-	mov dword[edi+offs_obj_tri_data],0
-	mov dword[edi+offs_obj_tri_count],0
-	mov dword[edi+offs_obj_normals_tri_count],0
-	mov dword[edi+offs_obj_normals_poi_count],0
-	mov dword[edi+offs_obj_mat1_data],0
-	cmp dword[edi+offs_obj_normals_tri_data],0
+	mov dword[edi+obj_3d.poi_data],0
+	mov dword[edi+obj_3d.poi_count],0
+	mov dword[edi+obj_3d.tri_data],0
+	mov dword[edi+obj_3d.tri_count],0
+	mov dword[edi+obj_3d.normals_tri_count],0
+	mov dword[edi+obj_3d.normals_poi_count],0
+	mov dword[edi+obj_3d.mat1_data],0
+	cmp dword[edi+obj_3d.normals_tri_data],0
 	je @f
-		stdcall mem.Free,[edi+offs_obj_normals_tri_data]
-		mov dword[edi+offs_obj_normals_tri_data],0
+		stdcall mem.Free,[edi+obj_3d.normals_tri_data]
+		mov dword[edi+obj_3d.normals_tri_data],0
 	@@:
-	cmp dword[edi+offs_obj_normals_poi_data],0
+	cmp dword[edi+obj_3d.normals_poi_data],0
 	je @f
-		stdcall mem.Free,[edi+offs_obj_normals_poi_data]
-		mov dword[edi+offs_obj_normals_poi_data],0
+		stdcall mem.Free,[edi+obj_3d.normals_poi_data]
+		mov dword[edi+obj_3d.normals_poi_data],0
 	@@:
 	ret
 endp
@@ -167,43 +149,43 @@ endp
 align 4
 proc obj_set_sizes uses eax ebx esi edi, o_data:dword
 	mov edi,[o_data]
-	cmp dword[edi+offs_obj_poi_count],0
+	cmp dword[edi+obj_3d.poi_count],0
 	je .end
 		finit
-		mov eax,[edi+offs_obj_poi_data]
+		mov eax,[edi+obj_3d.poi_data]
 		mov ebx,dword[eax]
-		mov [edi+offs_obj_x_min],ebx
-		mov [edi+offs_obj_x_max],ebx
+		mov [edi+obj_3d.x_min],ebx
+		mov [edi+obj_3d.x_max],ebx
 		mov ebx,dword[eax+4]
-		mov [edi+offs_obj_y_min],ebx
-		mov [edi+offs_obj_y_max],ebx
+		mov [edi+obj_3d.y_min],ebx
+		mov [edi+obj_3d.y_max],ebx
 		mov ebx,dword[eax+8]
-		mov [edi+offs_obj_z_min],ebx
-		mov [edi+offs_obj_z_max],ebx
+		mov [edi+obj_3d.z_min],ebx
+		mov [edi+obj_3d.z_max],ebx
 
-	mov ebx,[edi+offs_obj_poi_data]
-	mov esi,[edi+offs_obj_poi_count]
+	mov ebx,[edi+obj_3d.poi_data]
+	mov esi,[edi+obj_3d.poi_count]
 align 4
 	.cycle_0: ;работа с координатой x
 		fld dword[ebx]
-		fld dword[edi+offs_obj_x_min]
+		fld dword[edi+obj_3d.x_min]
 		fcomp
 		fstsw ax
 		sahf
 		jb @f
 			mov eax,[ebx]
-			mov [edi+offs_obj_x_min],eax
+			mov [edi+obj_3d.x_min],eax
 			ffree st0
 			fincstp
 			jmp .next_x
 		@@:
-		fld dword[edi+offs_obj_x_max]
+		fld dword[edi+obj_3d.x_max]
 		fcompp
 		fstsw ax
 		sahf
 		ja .next_x
 			mov eax,[ebx]
-			mov [edi+offs_obj_x_max],eax
+			mov [edi+obj_3d.x_max],eax
 		.next_x:
 
 		add ebx,12
@@ -211,44 +193,44 @@ align 4
 		jnz .cycle_0
 
 		fld1
-		fld dword[edi+offs_obj_x_max]
-		fsub dword[edi+offs_obj_x_min]
-		fst dword[edi+offs_obj_x_centr]
+		fld dword[edi+obj_3d.x_max]
+		fsub dword[edi+obj_3d.x_min]
+		fst dword[edi+obj_3d.x_centr]
 		fdivp ;1/size.x
-		fstp dword[edi+offs_obj_x_scale]
+		fstp dword[edi+obj_3d.x_scale]
 
-		fld dword[edi+offs_obj_x_centr]
+		fld dword[edi+obj_3d.x_centr]
 		fld1
 		fld1
 		faddp
 		fdivp ;centr.x = size.x/2
-		fadd dword[edi+offs_obj_x_min]
+		fadd dword[edi+obj_3d.x_min]
 		fchs
-		fstp dword[edi+offs_obj_x_centr]
+		fstp dword[edi+obj_3d.x_centr]
 
-	mov ebx,[edi+offs_obj_poi_data]
-	mov esi,[edi+offs_obj_poi_count]
+	mov ebx,[edi+obj_3d.poi_data]
+	mov esi,[edi+obj_3d.poi_count]
 align 4
 	.cycle_1: ;работа с координатой y
 		fld dword[ebx+4]
-		fld dword[edi+offs_obj_y_min]
+		fld dword[edi+obj_3d.y_min]
 		fcomp
 		fstsw ax
 		sahf
 		jb @f
 			mov eax,[ebx+4]
-			mov [edi+offs_obj_y_min],eax
+			mov [edi+obj_3d.y_min],eax
 			ffree st0
 			fincstp
 			jmp .next_y
 		@@:
-		fld dword[edi+offs_obj_y_max]
+		fld dword[edi+obj_3d.y_max]
 		fcompp
 		fstsw ax
 		sahf
 		ja .next_y
 			mov eax,[ebx+4]
-			mov [edi+offs_obj_y_max],eax
+			mov [edi+obj_3d.y_max],eax
 		.next_y:
 
 		add ebx,12
@@ -256,44 +238,44 @@ align 4
 		jnz .cycle_1
 
 		fld1
-		fld dword[edi+offs_obj_y_max]
-		fsub dword[edi+offs_obj_y_min]
-		fst dword[edi+offs_obj_y_centr]
+		fld dword[edi+obj_3d.y_max]
+		fsub dword[edi+obj_3d.y_min]
+		fst dword[edi+obj_3d.y_centr]
 		fdivp ;1/size.y
-		fstp dword[edi+offs_obj_y_scale]
+		fstp dword[edi+obj_3d.y_scale]
 
-		fld dword[edi+offs_obj_y_centr]
+		fld dword[edi+obj_3d.y_centr]
 		fld1
 		fld1
 		faddp
 		fdivp ;centr.y = size.y/2
-		fadd dword[edi+offs_obj_y_min]
+		fadd dword[edi+obj_3d.y_min]
 		fchs
-		fstp dword[edi+offs_obj_y_centr]
+		fstp dword[edi+obj_3d.y_centr]
 
-	mov ebx,[edi+offs_obj_poi_data]
-	mov esi,[edi+offs_obj_poi_count]
+	mov ebx,[edi+obj_3d.poi_data]
+	mov esi,[edi+obj_3d.poi_count]
 align 4
 	.cycle_2: ;работа с координатой z
 		fld dword[ebx+8]
-		fld dword[edi+offs_obj_z_min]
+		fld dword[edi+obj_3d.z_min]
 		fcomp
 		fstsw ax
 		sahf
 		jb @f
 			mov eax,[ebx+8]
-			mov [edi+offs_obj_z_min],eax
+			mov [edi+obj_3d.z_min],eax
 			ffree st0
 			fincstp
 			jmp .next_z
 		@@:
-		fld dword[edi+offs_obj_z_max]
+		fld dword[edi+obj_3d.z_max]
 		fcompp
 		fstsw ax
 		sahf
 		ja .next_z
 			mov eax,[ebx+8]
-			mov [edi+offs_obj_z_max],eax
+			mov [edi+obj_3d.z_max],eax
 		.next_z:
 
 		add ebx,12
@@ -301,48 +283,48 @@ align 4
 		jnz .cycle_2
 
 		fld1
-		fld dword[edi+offs_obj_z_max]
-		fsub dword[edi+offs_obj_z_min]
-		fst dword[edi+offs_obj_z_centr]
+		fld dword[edi+obj_3d.z_max]
+		fsub dword[edi+obj_3d.z_min]
+		fst dword[edi+obj_3d.z_centr]
 		fdivp ;1/size.z
-		fstp dword[edi+offs_obj_z_scale]
+		fstp dword[edi+obj_3d.z_scale]
 
-		fld dword[edi+offs_obj_z_centr]
+		fld dword[edi+obj_3d.z_centr]
 		fld1
 		fld1
 		faddp
 		fdivp ;centr.z = size.z/2
-		fadd dword[edi+offs_obj_z_min]
+		fadd dword[edi+obj_3d.z_min]
 		fchs
-		fstp dword[edi+offs_obj_z_centr]
+		fstp dword[edi+obj_3d.z_centr]
 
 		;находим радиус для сферы
-		fld dword[edi+offs_obj_x_max]
-		fsub dword[edi+offs_obj_x_min]
-		fld dword[edi+offs_obj_y_max]
-		fsub dword[edi+offs_obj_y_min]
+		fld dword[edi+obj_3d.x_max]
+		fsub dword[edi+obj_3d.x_min]
+		fld dword[edi+obj_3d.y_max]
+		fsub dword[edi+obj_3d.y_min]
 		faddp
 		fild dword[rad_c]
 		fdivp ;radius=(size.x+size.y)/rad_c
 		fstp dword[sph_radius]
 
 	;делаем одинаковый масштаб по осям x и y, что-бы не нарушались пропорции изображения
-	fld dword[edi+offs_obj_y_scale]
+	fld dword[edi+obj_3d.y_scale]
 	fdiv dword[ratio] ;приведение масштаба по оси y учитывая что по высоте экран меньше
-	fcomp dword[edi+offs_obj_x_scale]
+	fcomp dword[edi+obj_3d.x_scale]
 	fstsw ax
 	sahf
 	jb @f
 		;сжатие масштаба по y
-		fld dword[edi+offs_obj_x_scale]
+		fld dword[edi+obj_3d.x_scale]
 		fmul dword[ratio]
-		fstp dword[edi+offs_obj_y_scale] ;масштаб по оси y = масштаб по оси x
+		fstp dword[edi+obj_3d.y_scale] ;масштаб по оси y = масштаб по оси x
 		jmp .end
 	@@:
 		;сжатие масштаба по x >...<
-		fld	dword[edi+offs_obj_x_scale]
+		fld	dword[edi+obj_3d.x_scale]
 		fdiv dword[ratio]
-		fstp dword[edi+offs_obj_x_scale]
+		fstp dword[edi+obj_3d.x_scale]
 	.end:
 	ret
 endp
@@ -358,20 +340,20 @@ locals
 endl
 pushad
 	mov ecx,[o_data]
-	cmp dword[ecx+offs_obj_poi_count],0
+	cmp dword[ecx+obj_3d.poi_count],0
 	je .end
-		mov eax,[ecx+offs_obj_tri_count]
-		mov [ecx+offs_obj_normals_tri_count],eax ;на каждый треугольник 1 нормаль
+		mov eax,[ecx+obj_3d.tri_count]
+		mov [ecx+obj_3d.normals_tri_count],eax ;на каждый треугольник 1 нормаль
 		cmp eax,0
 		je .end
 		finit
 		imul eax,12
 		stdcall mem.Alloc, eax
-		mov [ecx+offs_obj_normals_tri_data],eax
+		mov [ecx+obj_3d.normals_tri_data],eax
 
-		mov edx,[ecx+offs_obj_tri_data]
-		mov ebx,[ecx+offs_obj_tri_count]
-		mov ecx,[ecx+offs_obj_poi_data]
+		mov edx,[ecx+obj_3d.tri_data]
+		mov ebx,[ecx+obj_3d.tri_count]
+		mov ecx,[ecx+obj_3d.poi_data]
 align 4
 		@@:
 			mov edi,ebp
@@ -462,24 +444,24 @@ align 4
 
 		;нормали к вершинам
 		mov ebx,[o_data]
-		mov ecx,[ebx+offs_obj_poi_count]
-		mov [ebx+offs_obj_normals_poi_count],ecx
+		mov ecx,[ebx+obj_3d.poi_count]
+		mov [ebx+obj_3d.normals_poi_count],ecx
 		cmp ecx,0
 		je .end
 		imul ecx,12
 		stdcall mem.Alloc,ecx
-		mov [ebx+offs_obj_normals_poi_data],eax
+		mov [ebx+obj_3d.normals_poi_data],eax
 
 		mov edi,eax
 		mov eax,0.0
 		shr ecx,2
 		rep stosd ;очистка 0-ми float
 
-		mov edx,[ebx+offs_obj_tri_count]
-		mov edi,[ebx+offs_obj_tri_data]
-		mov eax,[ebx+offs_obj_normals_tri_data]
-		mov ecx,[ebx+offs_obj_poi_data]
-		mov ebx,[ebx+offs_obj_normals_poi_data]
+		mov edx,[ebx+obj_3d.tri_count]
+		mov edi,[ebx+obj_3d.tri_data]
+		mov eax,[ebx+obj_3d.normals_tri_data]
+		mov ecx,[ebx+obj_3d.poi_data]
+		mov ebx,[ebx+obj_3d.normals_poi_data]
 align 4
 		.cycle_0: ;по граням
 			movzx esi,word[edi] ;1-я вершина
@@ -636,8 +618,8 @@ proc obj_init, o_data:dword
 			mov esi,ebx
 			movzx edx,word[ebx+6] ;колличество точек
 			add ebx,8
-			mov [edi+offs_obj_poi_data],ebx
-			mov [edi+offs_obj_poi_count],edx
+			mov [edi+obj_3d.poi_data],ebx
+			mov [edi+obj_3d.poi_count],edx
 
 			.cycle_0: ;цикл для поиска треугольников
 				add esi,dword[esi+2]
@@ -649,16 +631,16 @@ proc obj_init, o_data:dword
 			@@:
 			;если нашли треугольники
 			movzx edx,word[esi+6]
-			mov [edi+offs_obj_tri_count],edx
+			mov [edi+obj_3d.tri_count],edx
 			add esi,8 ;2+4+2 (chunk+size+count)
-			mov [edi+offs_obj_tri_data],esi
+			mov [edi+obj_3d.tri_data],esi
 
 			;поиск материалов граней
 			shl edx,3
 			add esi,edx
 			cmp word[esi],CHUNK_FACEMAT
 			jne .end_points
-				mov [edi+offs_obj_mat1_data],esi
+				mov [edi+obj_3d.mat1_data],esi
 		.end_points:
 
 		stdcall obj_set_sizes, edi
@@ -681,10 +663,10 @@ proc mat_init, m_data:dword, f_data:dword
 	mov edi,[m_data]
 
 	;... clear edi ...
-	mov dword[edi+offs_mat_name],0
-	mov dword[edi+offs_mat_col_ambient],0
-	mov dword[edi+offs_mat_col_diffuse],0
-	mov dword[edi+offs_mat_col_specular],0
+	mov dword[edi+material.name],0
+	mov dword[edi+material.col_ambient],0
+	mov dword[edi+material.col_diffuse],0
+	mov dword[edi+material.col_specular],0
 
 	xor edx,edx
 	mov ebx,[f_data]
@@ -699,7 +681,7 @@ proc mat_init, m_data:dword, f_data:dword
 		;*** (0) ***
 		mov esi,ebx
 		add ebx,6
-		mov [edi+offs_mat_name],ebx
+		mov [edi+material.name],ebx
 		sub ebx,6
 		;*** (1) ***
 		.cycle_0: ;цикл для поиска цвета материала
@@ -716,10 +698,10 @@ proc mat_init, m_data:dword, f_data:dword
 		jne .end_material
 			add esi,6
 			mov dl,byte[esi]
-			mov [edi+offs_mat_col_ambient+2],dl
+			mov byte[edi+material.col_ambient+2],dl
 			mov dx,word[esi+1]
 			ror dx,8
-			mov [edi+offs_mat_col_ambient],dx
+			mov word[edi+material.col_ambient],dx
 		;*** (2) ***
 		mov esi,ebx
 		.cycle_1: ;цикл для поиска цвета материала
@@ -736,10 +718,10 @@ proc mat_init, m_data:dword, f_data:dword
 		jne .end_material
 			add esi,6
 			mov dl,byte[esi]
-			mov [edi+offs_mat_col_diffuse+2],dl
+			mov byte[edi+material.col_diffuse+2],dl
 			mov dx,word[esi+1]
 			ror dx,8
-			mov [edi+offs_mat_col_diffuse],dx
+			mov word[edi+material.col_diffuse],dx
 		;*** (3) ***
 		mov esi,ebx
 		.cycle_2: ;цикл для поиска цвета материала
@@ -756,10 +738,10 @@ proc mat_init, m_data:dword, f_data:dword
 		jne .end_material
 			add esi,6
 			mov dl,byte[esi]
-			mov [edi+offs_mat_col_specular+2],dl
+			mov byte[edi+material.col_specular+2],dl
 			mov dx,word[esi+1]
 			ror dx,8
-			mov [edi+offs_mat_col_specular],dx
+			mov word[edi+material.col_specular],dx
 
 		.end_material:
 	.no_material:
@@ -787,10 +769,10 @@ proc draw_material uses edi, m_data:dword
 	stdcall buf_draw_beg, buf_ogl
 	stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_afff,5,35,0xff
 
-	stdcall [buf2d_draw_text], buf_ogl,buf_1,[edi+offs_mat_name],15,45,0 ;имя материала
-	stdcall draw_color, [edi+offs_mat_col_ambient], txt_a010,2,55 ;окружающий цвет
-	stdcall draw_color, [edi+offs_mat_col_diffuse], txt_a020,2,75 ;дифузный цвет
-	stdcall draw_color, [edi+offs_mat_col_specular],txt_a030,2,95 ;зеркальный цвет
+	stdcall [buf2d_draw_text], buf_ogl,buf_1,[edi+material.name],15,45,0 ;имя материала
+	stdcall draw_color, [edi+material.col_ambient], txt_a010,2,55 ;окружающий цвет
+	stdcall draw_color, [edi+material.col_diffuse], txt_a020,2,75 ;дифузный цвет
+	stdcall draw_color, [edi+material.col_specular],txt_a030,2,95 ;зеркальный цвет
 
 	stdcall [buf2d_draw], buf_ogl
 	ret
@@ -819,7 +801,7 @@ endp
 align 4
 proc draw_3d uses eax ebx ecx edi, o_data:dword
 	mov edi,[o_data]
-	cmp dword[edi+offs_obj_poi_count],2
+	cmp dword[edi+obj_3d.poi_count],2
 	jl .end_f
 	stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
 	stdcall [glPushMatrix]
@@ -831,18 +813,18 @@ proc draw_3d uses eax ebx ecx edi, o_data:dword
 		stdcall [glDisable],GL_LIGHTING
 	.end_l:
 	stdcall [glTranslatef], 0.0,0.0,0.5 ;correct for z
-	stdcall [glScalef], [edi+offs_obj_x_scale],[edi+offs_obj_y_scale],[edi+offs_obj_z_scale]
+	stdcall [glScalef], [edi+obj_3d.x_scale],[edi+obj_3d.y_scale],[edi+obj_3d.z_scale]
 	stdcall [glScalef], 1.0,1.0,0.7 ;correct for z
 	stdcall [glRotatef], [angle_z],0.0,0.0,1.0
 	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
 	stdcall [glRotatef], [angle_x],1.0,0.0,0.0
-	stdcall [glTranslatef], [edi+offs_obj_x_centr],[edi+offs_obj_y_centr],[edi+offs_obj_z_centr]
+	stdcall [glTranslatef], [edi+obj_3d.x_centr],[edi+obj_3d.y_centr],[edi+obj_3d.z_centr]
 
 if version_edit eq 0
 	;рисование граней с использованием цветов материалов
 	bt dword[draw_mode],bit_faces_mat
 	jnc @f
-		mov eax,[edi+offs_obj_mat1_data]
+		mov eax,[edi+obj_3d.mat1_data]
 		.b_found:
 		cmp eax,0
 		je .end_points
@@ -857,9 +839,9 @@ end if
 	;рисование граней без цветов материалов
 	bt dword[draw_mode],bit_faces
 	jnc .end_triangles
-	cmp dword[edi+offs_obj_tri_count],0
+	cmp dword[edi+obj_3d.tri_count],0
 	je .end_triangles
-	cmp dword[edi+offs_obj_poi_count],0
+	cmp dword[edi+obj_3d.poi_count],0
 	je .end_triangles
 		bt dword[draw_mode],bit_faces_fill
 		jc @f
@@ -877,31 +859,31 @@ end if
 		jnc .triangles_flat
 			;triangles smooth
 			stdcall [glBegin],GL_TRIANGLES
-			mov eax,[edi+offs_obj_tri_data]
-			mov ecx,[edi+offs_obj_tri_count]
-			mov edx,[edi+offs_obj_normals_tri_data]
+			mov eax,[edi+obj_3d.tri_data]
+			mov ecx,[edi+obj_3d.tri_count]
+			mov edx,[edi+obj_3d.normals_tri_data]
 align 4
 			@@:
 				movzx ebx,word[eax] ;1-я вершина
 				imul ebx,12
-					add ebx,[edi+offs_obj_normals_poi_data]
+					add ebx,[edi+obj_3d.normals_poi_data]
 					stdcall [glNormal3fv], ebx
-					sub ebx,[edi+offs_obj_normals_poi_data]
-				add ebx,[edi+offs_obj_poi_data]
+					sub ebx,[edi+obj_3d.normals_poi_data]
+				add ebx,[edi+obj_3d.poi_data]
 				stdcall [glVertex3f], [ebx],[ebx+4],[ebx+8]
 				movzx ebx,word[eax+2] ;2-я вершина
 				imul ebx,12
-					add ebx,[edi+offs_obj_normals_poi_data]
+					add ebx,[edi+obj_3d.normals_poi_data]
 					stdcall [glNormal3fv], ebx
-					sub ebx,[edi+offs_obj_normals_poi_data]
-				add ebx,[edi+offs_obj_poi_data]
+					sub ebx,[edi+obj_3d.normals_poi_data]
+				add ebx,[edi+obj_3d.poi_data]
 				stdcall [glVertex3f], [ebx],[ebx+4],[ebx+8]
 				movzx ebx,word[eax+4] ;3-я вершина
 				imul ebx,12
-					add ebx,[edi+offs_obj_normals_poi_data]
+					add ebx,[edi+obj_3d.normals_poi_data]
 					stdcall [glNormal3fv], ebx
-					sub ebx,[edi+offs_obj_normals_poi_data]
-				add ebx,[edi+offs_obj_poi_data]
+					sub ebx,[edi+obj_3d.normals_poi_data]
+				add ebx,[edi+obj_3d.poi_data]
 				stdcall [glVertex3f], [ebx],[ebx+4],[ebx+8]
 				add eax,8 ;размер треугольника = (3 вершины (по 2б) + свойства (2б))
 				dec ecx
@@ -911,9 +893,9 @@ align 4
 
 		.triangles_flat:
 		stdcall [glBegin],GL_TRIANGLES
-		mov eax,[edi+offs_obj_tri_data]
-		mov ecx,[edi+offs_obj_tri_count]
-		mov edx,[edi+offs_obj_normals_tri_data]
+		mov eax,[edi+obj_3d.tri_data]
+		mov ecx,[edi+obj_3d.tri_count]
+		mov edx,[edi+obj_3d.normals_tri_data]
 align 4
 		@@:
 			;
@@ -924,15 +906,15 @@ align 4
 			.norm1:
 			movzx ebx,word[eax] ;1-я вершина
 			imul ebx,12
-			add ebx,[edi+offs_obj_poi_data]
+			add ebx,[edi+obj_3d.poi_data]
 			stdcall [glVertex3f], [ebx],[ebx+4],[ebx+8]
 			movzx ebx,word[eax+2] ;2-я вершина
 			imul ebx,12
-			add ebx,[edi+offs_obj_poi_data]
+			add ebx,[edi+obj_3d.poi_data]
 			stdcall [glVertex3f], [ebx],[ebx+4],[ebx+8]
 			movzx ebx,word[eax+4] ;3-я вершина
 			imul ebx,12
-			add ebx,[edi+offs_obj_poi_data]
+			add ebx,[edi+obj_3d.poi_data]
 			stdcall [glVertex3f], [ebx],[ebx+4],[ebx+8]
 			add eax,8 ;размер треугольника = (3 вершины (по 2б) + свойства (2б))
 			dec ecx
@@ -946,9 +928,9 @@ align 4
 	jnc .end_points
 		stdcall [glColor3ub],[color_vert+2],[color_vert+1],[color_vert]
 		stdcall [glBegin],GL_POINTS
-		mov eax,[edi+offs_obj_poi_data]
-		mov ebx,[edi+offs_obj_poi_count]
-		mov edx,[edi+offs_obj_normals_poi_data]
+		mov eax,[edi+obj_3d.poi_data]
+		mov ebx,[edi+obj_3d.poi_count]
+		mov edx,[edi+obj_3d.normals_poi_data]
 align 4
 		@@:
 			bt dword[draw_mode],bit_light
@@ -973,14 +955,14 @@ if version_edit eq 1
 
 		stdcall [glBegin],GL_LINES
 		stdcall [glColor3ub], [color_ox+2],[color_ox+1],[color_ox]
-		stdcall [glVertex3f], [edi+offs_obj_x_min],[eax+4],[eax+8]
-		stdcall [glVertex3f], [edi+offs_obj_x_max],[eax+4],[eax+8]
+		stdcall [glVertex3f], [edi+obj_3d.x_min],[eax+4],[eax+8]
+		stdcall [glVertex3f], [edi+obj_3d.x_max],[eax+4],[eax+8]
 		stdcall [glColor3ub], [color_oy+2],[color_oy+1],[color_oy]
-		stdcall [glVertex3f], [eax],[edi+offs_obj_y_min],[eax+8]
-		stdcall [glVertex3f], [eax],[edi+offs_obj_y_max],[eax+8]
+		stdcall [glVertex3f], [eax],[edi+obj_3d.y_min],[eax+8]
+		stdcall [glVertex3f], [eax],[edi+obj_3d.y_max],[eax+8]
 		stdcall [glColor3ub], [color_oz+2],[color_oz+1],[color_oz]
-		stdcall [glVertex3f], [eax],[eax+4],[edi+offs_obj_z_min]
-		stdcall [glVertex3f], [eax],[eax+4],[edi+offs_obj_z_max]
+		stdcall [glVertex3f], [eax],[eax+4],[edi+obj_3d.z_min]
+		stdcall [glVertex3f], [eax],[eax+4],[edi+obj_3d.z_max]
 		stdcall [glEnd]
 
 		stdcall [glColor3ub],[color_select+2],[color_select+1],[color_select]
@@ -1093,6 +1075,64 @@ mnu_reset_settings:
 	call update_obj
 	ret
 
+align 4
+mnu_make_scrshot:
+	pushad
+	copy_path open_dialog_name,communication_area_default_path,file_name,0
+	mov [OpenDialog_data.type],1
+	stdcall [OpenDialog_Start],OpenDialog_data
+	cmp [OpenDialog_data.status],2
+	je .end_save_file
+		;код при удачном открытии диалога
+		mov dword[png_data],0
+
+		;create image struct
+		stdcall [img_create], [buf_ogl.w], [buf_ogl.h], Image.bpp24
+		mov ebx,eax
+		test eax,eax
+		jz @f
+			;copy foto to image buffer
+			mov edi,[eax+Image.Data]
+			mov esi,[buf_ogl]
+			mov ecx,[buf_ogl.w]
+			mov edx,[buf_ogl.h]
+			imul ecx,edx
+			imul ecx,3
+			shr ecx,2 ;OpenGL buffer align to 4
+			rep movsd
+
+			;encode image
+			stdcall [img_encode], eax, LIBIMG_FORMAT_PNG, 0
+			test eax,eax
+			jz @f
+				mov [png_data],eax
+				mov [png_size],ecx
+		@@:
+		stdcall [img_destroy],ebx
+
+        ; заполняем структуру для сохранения файла
+        mov ebx,run_file_70
+        mov dword[ebx],SSF_CREATE_FILE
+        mov eax,[png_size]
+        mov [ebx+12],eax ;file size
+        mov eax,[png_data]
+        mov [ebx+16],eax
+        mov dword[ebx+FileInfoBlock.FileName], openfile_path
+
+        mcall SF_FILE,run_file_70
+        test eax,eax
+        jnz .save_error
+			;notify_window_run openfile_path
+			jmp @f
+		.save_error:
+			;сообщение о неудачном сохранении
+			notify_window_run txt_err_save_img_file
+		@@:
+		mcall SF_SYS_MISC, SSF_MEM_FREE, [png_data]
+	.end_save_file:
+	popad
+	ret
+
 if version_edit eq 1
 
 align 4
@@ -1151,12 +1191,12 @@ proc get_mat_color uses ebx ecx edx edi esi, p_mat:dword
 			cmp word[ebx],CHUNK_MATERIAL
 			jne .end_add_p3
 			add eax,list_offs_obj3d
-			mov esi,[eax+offs_mat_name]
+			mov esi,[eax+material.name]
 			cmp esi,0
 			jne @f
 				;init material
 				stdcall mat_init,eax,ebx
-				mov esi,[eax+offs_mat_name]
+				mov esi,[eax+material.name]
 			@@:
 			mov edi,[p_mat]
 			mov eax,5
@@ -1181,7 +1221,7 @@ align 4
 	.found:
 		stdcall [tl_node_poi_get_data], tree1,ecx
 		add eax,list_offs_obj3d
-		mov eax,[eax+offs_mat_col_diffuse]
+		mov eax,[eax+material.col_diffuse]
 	.end_f:
 	ret
 endp
@@ -1200,7 +1240,7 @@ pushad
 		cmp al,0
 		jne @b
 	movzx ecx,word[esi] ;ecx - число граней с данным материалом
-	mov edx,[edi+offs_obj_poi_data]
+	mov edx,[edi+obj_3d.poi_data]
 
 	bt dword[draw_mode],bit_smooth
 	jnc @f
@@ -1213,29 +1253,29 @@ align 4
 		movzx ebx,word[esi]
 
 		shl ebx,3
-		add ebx,[edi+offs_obj_tri_data]
+		add ebx,[edi+obj_3d.tri_data]
 	
 		movzx eax,word[ebx] ;1-я вершина
 		imul eax,12 ;float(x,y,z)
-			add eax,[edi+offs_obj_normals_poi_data]
+			add eax,[edi+obj_3d.normals_poi_data]
 			stdcall [glNormal3fv], eax
-			sub eax,[edi+offs_obj_normals_poi_data]
+			sub eax,[edi+obj_3d.normals_poi_data]
 		add eax,edx
 		stdcall [glVertex3f], [eax],[eax+4],[eax+8]
 
 		movzx eax,word[ebx+2] ;2-я вершина
 		imul eax,12 ;float(x,y,z)
-			add eax,[edi+offs_obj_normals_poi_data]
+			add eax,[edi+obj_3d.normals_poi_data]
 			stdcall [glNormal3fv], eax
-			sub eax,[edi+offs_obj_normals_poi_data]
+			sub eax,[edi+obj_3d.normals_poi_data]
 		add eax,edx
 		stdcall [glVertex3f], [eax],[eax+4],[eax+8]
 
 		movzx eax,word[ebx+4] ;3-я вершина
 		imul eax,12 ;float(x,y,z)
-			add eax,[edi+offs_obj_normals_poi_data]
+			add eax,[edi+obj_3d.normals_poi_data]
 			stdcall [glNormal3fv], eax
-			sub eax,[edi+offs_obj_normals_poi_data]
+			sub eax,[edi+obj_3d.normals_poi_data]
 		add eax,edx
 		stdcall [glVertex3f], [eax],[eax+4],[eax+8]
 		
@@ -1254,12 +1294,12 @@ align 4
 		jnc .norm
 			mov eax,ebx
 			imul eax,12
-			add eax,[edi+offs_obj_normals_tri_data]
+			add eax,[edi+obj_3d.normals_tri_data]
 			stdcall [glNormal3fv], eax
 		.norm:
 
 		shl ebx,3
-		add ebx,[edi+offs_obj_tri_data]
+		add ebx,[edi+obj_3d.tri_data]
 	
 		movzx eax,word[ebx] ;1-я вершина
 		imul eax,12 ;float(x,y,z)

@@ -12,7 +12,7 @@ include 'vox_3d.inc'
 include '../trunk/str.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel viewer 19.02.16',0 ;подпись окна
+caption db 'Voxel viewer 18.04.17',0 ;подпись окна
 
 3d_wnd_l equ   5 ;отступ для tinygl буфера слева
 3d_wnd_t equ  30 ;отступ для tinygl буфера сверху
@@ -854,7 +854,7 @@ lib_name_2 db 'buf2d.obj',0
 err_msg_found_lib_2 db 'Не найдена библиотека ',39,'buf2d.obj',39,0
 err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,0
 
-system_dir_3 db '/kolibrios/lib/'
+system_dir_3 db '/sys/lib/'
 lib_name_3 db 'tinygl.obj',0
 err_msg_found_lib_3 db 'Не найдена библиотека ',39,'tinygl.obj',39,0
 err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'tinygl',39,0
