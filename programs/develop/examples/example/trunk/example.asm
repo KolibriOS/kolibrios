@@ -10,16 +10,16 @@ format binary as ""                     ; Binary file format without extension
 
 use32                                   ; Tell compiler to use 32 bit instructions
  
-org 0x0                                 ; the base address of code, always 0x0
+org 0                                   ; the base address of code, always 0x0
 
 ; The header
 
 db 'MENUET01'
-dd 0x01
+dd 1
 dd START
 dd I_END
-dd 0x100000
-dd 0x7fff0
+dd MEM
+dd STACKTOP
 dd 0, 0
  
 ; The code area
@@ -132,7 +132,12 @@ text    db  "It looks like you have just compiled    "
 title   db  "Example application", 0
  
 I_END:
- 
+        rb 4096
+align 16
+STACKTOP:
+
+MEM:
+
 ; The area after I_END is free for use as the application memory, 
 ; just avoid the stack.
 ;
@@ -143,13 +148,13 @@ I_END:
 ;
 ;           + Free for use in the application
 ;
-; 0x7ff00   - Start of stack area
-; 0x7fff0   - End of stack area                 - defined in the header
+; STACKTOP  - Start of stack area               - defined in the header
+; STACKTOP-4096 - End of stack area
 ;
 ;           + Free for use in the application
 ;
-; 0xFFFFF   - End of freely useable memory      - defined in the header
+; MEM       - End of freely useable memory      - defined in the header
 ;
 ; All of the the areas can be modified within the application with a
 ; direct reference.
-; For example, mov [0x80000],byte 1 moves a byte above the stack area.
+; For example, mov [STACKTOP-1],byte 1 moves a byte above the stack area.
