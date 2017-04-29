@@ -20,8 +20,8 @@ proc png_set_bgr uses edi, png_ptr:dword
 	png_debug 1, 'in png_set_bgr'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je @f ;if (..==0) return
+	test edi,edi
+	jz @f ;if (..==0) return
 		or dword[edi+png_struct.transformations], PNG_BGR
 	@@:
 	ret
@@ -34,8 +34,8 @@ proc png_set_swap uses edi, png_ptr:dword
 	png_debug 1, 'in png_set_swap'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je @f ;if (..==0) return
+	test edi,edi
+	jz @f ;if (..==0) return
 
 	cmp byte[edi+png_struct.bit_depth],16
 	jne @f ;if (..==..)
@@ -51,8 +51,8 @@ proc png_set_packing uses edi, png_ptr:dword
 	png_debug 1, 'in png_set_packing'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je @f ;if (..==0) return
+	test edi,edi
+	jz @f ;if (..==0) return
 
 	cmp byte[edi+png_struct.bit_depth],8
 	jge @f ;if (..<..)
@@ -71,8 +71,8 @@ proc png_set_packswap uses edi, png_ptr:dword
 	png_debug 1, 'in png_set_packswap'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je @f ;if (..==0) return
+	test edi,edi
+	jz @f ;if (..==0) return
 
 	cmp byte[edi+png_struct.bit_depth],8
 	jge @f ;if (..<..)
@@ -87,8 +87,8 @@ proc png_set_shift uses ecx edi, png_ptr:dword, true_bits:dword
 	png_debug 1, 'in png_set_shift'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je @f ;if (..==0) return
+	test edi,edi
+	jz @f ;if (..==0) return
 
 	or dword[edi+png_struct.transformations], PNG_SHIFT
 	mov ecx,sizeof.png_color_8
@@ -105,8 +105,8 @@ proc png_set_interlace_handling uses edi, png_ptr:dword
 	png_debug 1, 'in png_set_interlace handling'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je @f
+	test edi,edi
+	jz @f
 	cmp byte[edi+png_struct.interlaced],0
 	je @f ;if(..!=0 && ..!=0)
 		or dword[edi+png_struct.transformations], PNG_INTERLACE
@@ -131,8 +131,8 @@ proc png_set_filler uses eax edi, png_ptr:dword, filler:dword, filler_loc:dword
 	png_debug 1, 'in png_set_filler'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f ;if (..==0) return
+	test edi,edi
+	jz .end_f ;if (..==0) return
 
 	; In libpng 1.6 it is possible to determine whether this is a read or write
 	; operation and therefore to do more checking here for a valid call.
@@ -221,8 +221,8 @@ proc png_set_add_alpha uses eax edi, png_ptr:dword, filler:dword, filler_loc:dwo
 	png_debug 1, 'in png_set_add_alpha'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f ;if (..==0) return
+	test edi,edi
+	jz .end_f ;if (..==0) return
 
 	stdcall png_set_filler, edi, [filler], [filler_loc]
 	; The above may fail to do anything.
@@ -240,8 +240,8 @@ proc png_set_swap_alpha uses edi, png_ptr:dword
 	png_debug 1, 'in png_set_swap_alpha'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f ;if (..==0) return
+	test edi,edi
+	jz .end_f ;if (..==0) return
 		or dword[edi+png_struct.transformations], PNG_SWAP_ALPHA
 .end_f:
 	ret
@@ -254,8 +254,8 @@ proc png_set_invert_alpha uses edi, png_ptr:dword
 	png_debug 1, 'in png_set_invert_alpha'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f ;if (..==0) return
+	test edi,edi
+	jz .end_f ;if (..==0) return
 		or dword[edi+png_struct.transformations], PNG_INVERT_ALPHA
 .end_f:
 	ret
@@ -267,8 +267,8 @@ proc png_set_invert_mono uses edi, png_ptr:dword
 	png_debug 1, 'in png_set_invert_mono'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f ;if (..==0) return
+	test edi,edi
+	jz .end_f ;if (..==0) return
 		or dword[edi+png_struct.transformations], PNG_INVERT_MONO
 .end_f:
 	ret
@@ -277,55 +277,67 @@ endp
 ; Invert monochrome grayscale data
 ;void (png_row_infop row_info, bytep row)
 align 4
-proc png_do_invert, row_info:dword, row:dword
+proc png_do_invert uses eax ebx ecx edx, row_info:dword, row:dword
+	;ecx - i
+	;eax - rp
+	;edx - istop
 	png_debug 1, 'in png_do_invert'
 
-	; This test removed from libpng version 1.0.13 and 1.2.0:
-	;   if (row_info->bit_depth == 1 &&
-
-;   if (row_info->color_type == PNG_COLOR_TYPE_GRAY)
-;   {
-;      bytep rp = row;
-;      png_size_t i;
-;      png_size_t istop = row_info->rowbytes;
-
-;      for (i = 0; i < istop; i++)
-;      {
-;         *rp = (byte)(~(*rp));
-;         rp++;
-;      }
-;   }
-
-;   else if (row_info->color_type == PNG_COLOR_TYPE_GRAY_ALPHA &&
-;      row_info->bit_depth == 8)
-;   {
-;      bytep rp = row;
-;      png_size_t i;
-;      png_size_t istop = row_info->rowbytes;
-
-;      for (i = 0; i < istop; i += 2)
-;      {
-;         *rp = (byte)(~(*rp));
-;         rp += 2;
-;      }
-;   }
-
+	mov ebx,[row_info]
+	cmp byte[ebx+png_row_info.color_type],PNG_COLOR_TYPE_GRAY
+	jne .end0
+	mov eax,[row]
+	mov edx,[ebx+png_row_info.rowbytes]
+	xor ecx,ecx
+	jmp @f
+align 4
+	.cycle0:
+		inc ecx
+	@@:
+		cmp ecx,edx
+		jae .end_f
+		not byte[eax]
+		inc eax
+		jmp .cycle0
+.end0:
+	cmp byte[ebx+png_row_info.color_type],PNG_COLOR_TYPE_GRAY_ALPHA
+	jne .end1
+	cmp byte[ebx+png_row_info.bit_depth],8
+	jne .end1
+	mov eax,[row]
+	mov edx,[ebx+png_row_info.rowbytes]
+	xor ecx,ecx
+	jmp @f
+align 4
+	.cycle1:
+		add ecx,2
+	@@:
+		cmp ecx,edx
+		jae .end_f
+		not byte[eax]
+		add eax,2
+		jmp .cycle1
+.end1:
 if PNG_16BIT_SUPPORTED eq 1
-;   else if (row_info->color_type == PNG_COLOR_TYPE_GRAY_ALPHA &&
-;      row_info->bit_depth == 16)
-;   {
-;      bytep rp = row;
-;      png_size_t i;
-;      png_size_t istop = row_info->rowbytes;
-
-;      for (i = 0; i < istop; i += 4)
-;      {
-;         *rp = (byte)(~(*rp));
-;         *(rp + 1) = (byte)(~(*(rp + 1)));
-;         rp += 4;
-;      }
-;   }
+	cmp byte[ebx+png_row_info.color_type],PNG_COLOR_TYPE_GRAY_ALPHA
+	jne .end_f
+	cmp byte[ebx+png_row_info.bit_depth],16
+	jne .end_f
+	mov eax,[row]
+	mov edx,[ebx+png_row_info.rowbytes]
+	xor ecx,ecx
+	jmp @f
+align 4
+	.cycle2:
+		add ecx,4
+	@@:
+		cmp ecx,edx
+		jae .end_f
+		not word[eax]
+		add eax,4
+		jmp .cycle2
 end if
+.end_f:
 	ret
 endp
 
@@ -624,76 +636,94 @@ endp
 align 4
 proc png_do_bgr, row_info:dword, row:dword
 	png_debug 1, 'in png_do_bgr'
-
-;   if ((row_info->color_type & PNG_COLOR_MASK_COLOR) != 0)
-;   {
-;      uint_32 row_width = row_info->width;
-;      if (row_info->bit_depth == 8)
-;      {
-;         if (row_info->color_type == PNG_COLOR_TYPE_RGB)
-;         {
-;            bytep rp;
-;            uint_32 i;
-
-;            for (i = 0, rp = row; i < row_width; i++, rp += 3)
-;            {
-;               byte save = *rp;
-;               *rp = *(rp + 2);
-;               *(rp + 2) = save;
-;            }
-;         }
-
-;         else if (row_info->color_type == PNG_COLOR_TYPE_RGB_ALPHA)
-;         {
-;            bytep rp;
-;            uint_32 i;
-
-;            for (i = 0, rp = row; i < row_width; i++, rp += 4)
-;            {
-;               byte save = *rp;
-;               *rp = *(rp + 2);
-;               *(rp + 2) = save;
-;            }
-;         }
-;      }
-
+	;ebx - rp
+	;ecx - i
+	;esi - row_width
+pushad
+	mov edi,[row_info]
+	movzx eax,byte[edi+png_row_info.color_type]
+	and eax,PNG_COLOR_MASK_COLOR
+	je .end_f
+	mov esi,[edi+png_row_info.width]
+	cmp byte[edi+png_row_info.bit_depth],8
+	jne .end0
+	cmp byte[edi+png_row_info.color_type],PNG_COLOR_TYPE_RGB
+	jne .end1
+	xor ecx,ecx
+	mov ebx,[row]
+	jmp @f
+align 4
+	.cycle0:
+		inc ecx
+		add ebx,3
+	@@:
+		cmp ecx,esi
+		jae .end_f
+		mov dl,[ebx]
+		mov al,[ebx+2]
+		mov [ebx],al
+		mov [ebx+2],dl
+		jmp .cycle0
+.end1:
+	cmp byte[edi+png_row_info.color_type],PNG_COLOR_TYPE_RGB_ALPHA
+	jne .end_f
+	xor ecx,ecx
+	mov ebx,[row]
+	jmp @f
+align 4
+	.cycle1:
+		inc ecx
+		add ebx,4
+	@@:
+		cmp ecx,esi
+		jae .end_f
+		mov dl,[ebx]
+		mov al,[ebx+2]
+		mov [ebx],al
+		mov [ebx+2],dl
+		jmp .cycle1
+.end0:
 if PNG_16BIT_SUPPORTED eq 1
-;      else if (row_info->bit_depth == 16)
-;      {
-;         if (row_info->color_type == PNG_COLOR_TYPE_RGB)
-;         {
-;            bytep rp;
-;            uint_32 i;
-
-;            for (i = 0, rp = row; i < row_width; i++, rp += 6)
-;            {
-;               byte save = *rp;
-;               *rp = *(rp + 4);
-;               *(rp + 4) = save;
-;               save = *(rp + 1);
-;               *(rp + 1) = *(rp + 5);
-;               *(rp + 5) = save;
-;            }
-;         }
-
-;         else if (row_info->color_type == PNG_COLOR_TYPE_RGB_ALPHA)
-;         {
-;            bytep rp;
-;            uint_32 i;
-
-;            for (i = 0, rp = row; i < row_width; i++, rp += 8)
-;            {
-;               byte save = *rp;
-;               *rp = *(rp + 4);
-;               *(rp + 4) = save;
-;               save = *(rp + 1);
-;               *(rp + 1) = *(rp + 5);
-;               *(rp + 5) = save;
-;            }
-;         }
-;      }
+	cmp byte[edi+png_row_info.bit_depth],16
+	jne .end_f
+	cmp byte[edi+png_row_info.color_type],PNG_COLOR_TYPE_RGB
+	jne .end2
+	xor ecx,ecx
+	mov ebx,[row]
+	jmp @f
+align 4
+	.cycle2:
+		inc ecx
+		add ebx,6
+	@@:
+		cmp ecx,esi
+		jae .end_f
+		mov dx,[ebx]
+		mov ax,[ebx+4]
+		mov [ebx],ax
+		mov [ebx+4],dx
+		jmp .cycle2
+.end2:
+	cmp byte[edi+png_row_info.color_type],PNG_COLOR_TYPE_RGB_ALPHA
+	jne .end_f
+	xor ecx,ecx
+	mov ebx,[row]
+	jmp @f
+align 4
+	.cycle3:
+		inc ecx
+		add ebx,8
+	@@:
+		cmp ecx,esi
+		jae .end_f
+		mov dx,[ebx]
+		mov ax,[ebx+4]
+		mov [ebx],ax
+		mov [ebx+4],dx
+		jmp .cycle3
 end if
-;   }
+.end_f:
+popad
 	ret
 endp
 
@@ -804,8 +834,8 @@ proc png_set_user_transform_info uses eax edi, png_ptr:dword, user_transform_ptr
 	png_debug 1, 'in png_set_user_transform_info'
 
 	mov edi,[png_ptr]
-	cmp edi,0
-	je .end_f
+	test edi,edi
+	jz .end_f
 
 if PNG_READ_USER_TRANSFORM_SUPPORTED eq 1
 	mov eax,[edi+png_struct.mode]

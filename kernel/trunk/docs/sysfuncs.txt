@@ -2548,6 +2548,9 @@ Returned value:
   * eax = if successful - pointer to a memory with data
   * eax = 1 - error
   * eax = -1 - main list area not found
+Remarks:
+  * The function must be used in conjunction with 68.11. The
+    application must pre-initialize the local heap by calling 68.11.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_CLIPBOARD (54)

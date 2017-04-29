@@ -1842,6 +1842,7 @@ proc png_image_write_init uses ebx ecx edx edi esi, image:dword
 	test eax,eax
 	jz .end0 ;if (..!=0)
 		mov edi,eax
+		or dword[eax+png_struct.transformations],PNG_BGR ;transformation rgb for KoliriOS
 		stdcall png_create_info_struct, edi
 		;eax = info_ptr
 
@@ -2753,7 +2754,7 @@ end if
 	; supported by the rest of the libpng write code; call it directly.
 
 	.end9: ;else
-if 1 ;;; IDAT compress all
+if 1 ;;; IDAT compress all (only 24 bit)
 		mov ecx,[edx+png_image_write_control.row_bytes]
 		inc ecx
 		imul ecx,[ebx+png_image.height]
