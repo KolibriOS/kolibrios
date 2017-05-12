@@ -48,15 +48,15 @@ int strcmp (const char* a, const char* b)
 
 
 int encoding(const char *what) {
-	
+
 	if (!strcmp(what,"CP866")) return CP866;
 	if (!strcmp(what,"CP1251")) return CP1251;
+	if (!strcmp(what,"windows-1252")) return CP1252;
 	if (!strcmp(what,"CP1252")) return CP1252;
 	if (!strcmp(what,"KOI8-RU")) return KOI8_RU;
 	if (!strcmp(what,"ISO8859-5")) return ISO8859_5;
 	if (!strcmp(what,"UTF-8")) return UTF_8;
 	return -1;
-	
 }
 
 
