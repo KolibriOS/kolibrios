@@ -109,6 +109,20 @@ size_t iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft,
 		case UTF_8: wctomb=utf8_wctomb; break;
 		default: return -3;
 	}
+
+    if(from == to) {
+      int oc=0,ic=0;
+
+      while(*inbytesleft > 0 && *outbytesleft > 0) {
+        str[oc]=(*inbuf)[ic];
+        ++ic;
+        ++oc;
+        (*inbytesleft)--;
+        (*outbytesleft)--;
+      }
+
+      return 0;
+    }
 	
 	count1=0;
 	count2=0;
