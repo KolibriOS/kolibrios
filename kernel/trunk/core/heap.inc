@@ -595,19 +595,13 @@ endp
 
 align 4
 proc user_alloc stdcall, alloc_size:dword
-
-        push    ebx
-        push    esi
-        push    edi
-
-        mov     ebx, [current_process]
+        push    ebx esi edi
+        call    init_heap
         lea     ecx, [ebx+PROC.heap_lock]
         call    mutex_lock
-
         mov     ecx, [alloc_size]
         add     ecx, (4095+PAGE_SIZE)
         and     ecx, not 4095
-
         mov     esi, dword [ebx+PROC.heap_base] ; heap_base
         mov     edi, dword [ebx+PROC.heap_top]  ; heap_top
 .scan:

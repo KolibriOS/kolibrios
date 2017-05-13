@@ -2548,9 +2548,6 @@ Returned value:
   * eax = if successful - pointer to a memory with data
   * eax = 1 - error
   * eax = -1 - main list area not found
-Remarks:
-  * The function must be used in conjunction with 68.11. The
-    application must pre-initialize the local heap by calling 68.11.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_CLIPBOARD (54)
@@ -2958,10 +2955,8 @@ Returned value:
   * eax = 1 - not enough memory
 Remarks:
   * There is another way to dynamically allocate/free memory -
-    subfunctions 11, 12, 13 of function 68.
-  * The function cannot be used together with 68.11, 68.12, 68.13.
-    The function call will be ignored after creation of process heap
-    with function 68.11.
+    subfunctions 12, 13 and 20 of function 68, but after creation
+    of the process heap 64 function call will be ignored.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_MEMORY_RESIZE (64)
@@ -3263,7 +3258,7 @@ Remarks:
   eax - SF_SYS_MISC (68)
   ebx - SSF_WRITE_MSR (4)
 ======================================================================
-======= Function 68, subfunction 11 - initialize process heap. =======
+=== Function 68, subfunction 11 - manually initialize process heap ===
 ======================================================================
 Parameters:
   * eax = 68 - function number
@@ -3272,11 +3267,10 @@ Returned value:
   * eax = 0 - failed
   * otherwise size of created heap
 Remarks:
-  * The function call initializes heap, from which one can in future
-    allocate and free memory blocks with subfunctions 12 and 13.
+  * The function call initializes heap for subfunctions 12, 13 and 20.
+  * If the process heap is already created, this function will return
+    the size of the existing heap.
     Heap size is equal to total amount of free application memory.
-  * The second function call from the same process results in
-    returning the size of the existing heap.
   * After creation of the heap calls to function 64 will be ignored.
 
 ---------------------- Constants for registers: ----------------------
@@ -3292,8 +3286,6 @@ Parameters:
 Returned value:
   * eax = pointer to the allocated block
 Remarks:
-  * Before this call one must initialize process heap by call to
-    subfunction 11.
   * The function allocates an integer number of pages (4 Kb) in such
     way that the real size of allocated block is more than or equal to
     requested size.
@@ -3421,8 +3413,6 @@ Parameters:
 Returned value:
   * eax = pointer to the reallocated block, 0 = error
 Remarks:
-  * Before this call one must initialize process heap by call to
-    subfunction 11.
   * The function allocates an integer number of pages (4 Kb) in such
     way that the real size of allocated block is more than or equal to
     requested size.
@@ -3485,8 +3475,6 @@ Error codes:
   * E_NOMEM = 30
   * E_PARAM = 33
 Remarks:
-  * Before this call one must initialize process heap by call to
-    subfunction 11.
   * If a new area is created, access flags set maximal rights
     for other processes. An attempt from other process to open
     with denied rights will fail with error code E_ACCESS.
