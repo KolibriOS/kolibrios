@@ -1,0 +1,4 @@
+You should really be using the kpack program instead of kerpack.
+It also builds nicely on Linux.
+
+kpack can be found in $SVN/programs/other/kpack
