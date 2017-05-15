@@ -16,24 +16,29 @@ virtual at 0
         http_msg http_msg
 end virtual
 
-public init_network as '_kolibri_http_init'
+public init_network as '_init_network_asm'
 	
 ;;; Returns 0 on success. -1 on failure.
 
 proc init_network
-	pusha
-	mcall 68,11
 	stdcall dll.Load, @IMPORT
-	popa
+	test    eax, eax
+	jnz     error
+
+	mov eax, 0
 	ret
-endp	
-	
+
+error:
+	mov eax, -1
+	ret
+endp
+
 @IMPORT:
 
 library lib_http,               'http.obj'
 
 import  lib_http, \
-	HTTP_get                , 'get'                 , \
+        HTTP_get                , 'get'                 , \
         HTTP_head               , 'head'                , \
         HTTP_post               , 'post'                , \
         HTTP_find_header_field  , 'find_header_field'   , \
@@ -43,7 +48,7 @@ import  lib_http, \
         HTTP_free               , 'free'                , \
         HTTP_escape             , 'escape'              , \
         HTTP_unescape           , 'unescape'
-	
+
 public HTTP_get as '_http_get_asm'
 public HTTP_head as '_http_head_asm'
 public HTTP_post as '_http_post_asm'
