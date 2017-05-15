@@ -338,6 +338,20 @@ uint32_t get_os_button(void)
     return val>>8;
 };
 
+static inline uint32_t
+heap_init(void)
+{
+    uint32_t heapsize;
+
+    __asm__ __volatile__(
+                         "int $0x40"
+                         :"=a"(heapsize)
+                         :"a"(68),"b"(11)
+                         );
+
+    return heapsize;
+}
+
 static inline uint32_t get_service(char *name)
 {
     uint32_t retval = 0;
