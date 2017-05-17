@@ -35,9 +35,11 @@ dtext:
         mov     ebp, [_display.width]
         xor     edi, edi
         jmp     @f
+
 .ret:
         add     esp, 28
         ret
+
 .redirect:
         mov     ebp, [edi]
         add     edi, 8
@@ -88,12 +90,31 @@ dtext:
         and     eax, 0xFFFFFF
 .bufferReady:
         mov     ebp, eax
+        mov     eax, [esp+8]
+        shr     eax, 2
+        sub     eax, [esp+16]
+        shr     eax, 3
+        xor     edx, edx
+        div     dword[esp+4]
+        mov     ecx, [esp]
+        cmp     eax, ecx
+        jnc     @f
+        mov     [esp], eax
+@@:
         xor     edx, edx
         bt      ebx, 29
         jc      @f
         bt      ebx, 28
         jc      .draw866toUni
+        lea     eax, [eax*4+eax]
+        shr     eax, 2
+        inc     eax
+        mov     [esp], ecx
+        cmp     eax, ecx
+        jnc     .draw866
+        mov     [esp], eax
         jmp     .draw866
+
 @@:
         bt      ebx, 28
         jc      .drawUTF8
@@ -207,7 +228,8 @@ deltaToScreen = 28
         jnz     @f
         pop     eax
         ret
-@@:         ; redraw from buffer to screen
+
+@@: ; redraw from buffer to screen
         push    eax
         sub     ecx, edi
         shr     ecx, 2
@@ -228,6 +250,7 @@ deltaToScreen = 28
         xchg    esi, edi
         pop     ecx
         jmp     .drawPicture
+
 @@:
         pop     edi
         mov     ecx, [esp]
@@ -317,6 +340,7 @@ drawChar:
         jnz     .subpixelLeft
         call    antiAliasing
         jmp     @f
+
 .subpixelLeft:
         mov     cl, bl
         lea     edx, [ecx*8+ecx]
@@ -404,6 +428,7 @@ drawChar:
         jnz     .subpixelRight
         call    antiAliasing
         jmp     @f
+
 .subpixelRight:
         mov     cl, al
         mov     edx, ecx
