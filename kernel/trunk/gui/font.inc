@@ -106,8 +106,10 @@ dtext:
         jc      @f
         bt      ebx, 28
         jc      .draw866toUni
-        lea     eax, [eax*4+eax]
-        shr     eax, 2
+        shl     eax, 3
+        mov     bx, 6
+        div     bx
+        xor     edx, edx
         inc     eax
         mov     [esp], ecx
         cmp     eax, ecx
