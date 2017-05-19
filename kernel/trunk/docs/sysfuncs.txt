@@ -4025,9 +4025,7 @@ Structure of block of data for folder entry (BDFE):
     * bit 0 (mask 1): file is read-only
     * bit 1 (mask 2): file is hidden
     * bit 2 (mask 4): file is system
-    * bit 3 (mask 8): this is not a file but volume label
-      (for one partition meets no more than once and
-      only in root folder)
+    * bit 3 (mask 8): this is the volume label (using by subfunction 5)
     * bit 4 (mask 0x10): this is a folder
     * bit 5 (mask 0x20): file was not archived - many archivation
       programs have an option to archive only files with this bit set,
