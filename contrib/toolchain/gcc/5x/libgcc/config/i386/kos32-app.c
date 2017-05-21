@@ -21,6 +21,14 @@ __crt_startup (void)
 
     if(!img)
     {
+        // Inform the user via BOARD that libc could not be loaded.
+        char *errormsg = "[ERROR] libc.dll failed to load. is /kolibrios folder configured?\n";
+        while (*errormsg) {
+          __asm__ __volatile__("int $0x40"::"a"(63), "b"(1), "c"(*errormsg));
+          ++errormsg;
+        }
+
+        // Exit
         asm ("int $0x40" ::"a"(-1));
     };
 
