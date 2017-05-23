@@ -14,8 +14,8 @@
 
 URLMAXLEN       = 65535
 FILENAMEMAXLEN  = 1024
-__DEBUG_LEVEL__ = 1
-__DEBUG__       = 0
+__DEBUG_LEVEL__ = 2
+__DEBUG__       = 1
 
 format binary as ""
 use32
@@ -50,7 +50,7 @@ proc get_file_over_http targeturl, targetfilename
     mov [write_to_file.bufptr], eax
 
     DEBUGF 1, "---- HTTP : Getting %s\n", [targeturl]
-    invoke  HTTP_get, [targeturl], 0, 0, 0
+    invoke  HTTP_get, [targeturl], 0, FLAG_KEEPALIVE, 0
     cmp     eax, 0
     je .http_error
 	mov [httpstruct], eax
@@ -219,16 +219,18 @@ START:
     
     ;; current_filename is now set to the name of the file
     ;; current_url is now set to the name of the file we will get after download
+	DEBUGF 2, "-------- [START] Fetching : %s\n", current_url
 	stdcall get_file_over_http, current_url, current_filename
+	DEBUGF 2, "-------- [END] Fetching : %s\n", current_url	
 	jmp .get_next_file
 
 .all_files_done:
-	DEBUGF 1, "All FILES DONE!\n"
+	DEBUGF 1, "-------------------------\n"
+	DEBUGF 1, "NETSURF INSTALLED. Enjoy!\n"
     ;; Inform user that all files are done
-	;; print 'fuck off'
 
 .all_files_done_error:
-	DEBUGF 1, "FUCKED BIG TIME with eax = %u!\n", eax
+	DEBUGF 1, "FATAL ERROR: FAILED.\n", eax
     mcall -1
 
 ;---------------------------------------------------------------------
@@ -252,7 +254,9 @@ dirname_res_throbber db '/tmp0/1/res/throbber', 0
 dirname_res_icons    db '/tmp0/1/res/icons', 0
 
 url              db 'www.ashmew2.me/',0
-filelist db 'res/adblock.css', 0
+
+filelist db 'nskolibrios', 0
+         db 'res/adblock.css', 0
          db 'res/quirks.css', 0
          db 'res/Messages', 0
          db 'res/licence.html', 0
@@ -305,7 +309,6 @@ filelist db 'res/adblock.css', 0
          db 'res/icons/stop_g.png', 0
          db 'res/icons/home.png', 0
          db 'res/icons/reload.png', 0
-         db 'nskolibrios', 0
          db 0
 
 current_url      rb URLMAXLEN
