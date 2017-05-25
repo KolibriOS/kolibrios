@@ -44,46 +44,47 @@ end virtual
 ;; Target filename
 proc get_file_over_http targeturl, targetfilename
     pusha
-	xor eax, eax
+    xor eax, eax
     mov [write_to_file.current_offset], eax
     mov [write_to_file.bufsize], eax
     mov [write_to_file.bufptr], eax
 
     DEBUGF 1, "---- HTTP : Getting %s\n", [targeturl]
-    invoke  HTTP_get, [targeturl], 0, FLAG_KEEPALIVE, 0
+    invoke  HTTP_get, [targeturl], 0, FLAG_KEEPALIVE or FLAG_BLOCK, 0
     cmp     eax, 0
     je .http_error
-	mov [httpstruct], eax
+    mov [httpstruct], eax
 
     ;; No HTTP errors, create a new file for the download.
-	DEBUGF 1, "---- Creating new file : %s\n", [targetfilename]
-	mcall 70, create_new_file
+    DEBUGF 1, "---- Creating new file : %s\n", [targetfilename]
+    mcall 70, create_new_file
     cmp eax, 0
     jne .file_error
 
     .http_receive_loop:
-		DEBUGF 1, "---- Receiving over http.\n"
-     	DEBUGF 1, "---- Invoking http receive.\n"
+        DEBUGF 1, "---- Receiving over http.\n"
         invoke HTTP_receive, [httpstruct]
+
         cmp eax, 0
         je .http_transfer_done
 
-	    mov ebp, [httpstruct]
-		DEBUGF 1, "---- http flags = 0x%x.\n", 	[ebp + http_msg.flags]
-	    test [ebp + http_msg.flags], 0xffff0000
+
+        mov ebp, [httpstruct]
+        DEBUGF 1, "---- http flags = 0x%x.\n",     [ebp + http_msg.flags]
+        test [ebp + http_msg.flags], 0xffff0000
         jnz .http_error
 
-	    mov ebp, [ebp + http_msg.content_received]
-	    cmp ebp, [write_to_file.current_offset]
+        mov ebp, [ebp + http_msg.content_received]
+        cmp ebp, [write_to_file.current_offset]
         jle .http_receive_loop
-	    ;; Only proceed if we have more data in HTTP buffer than we have written to file.
+        ;; Only proceed if we have more data in HTTP buffer than we have written to file.
 
         ;; Process data we got (write it to the file)
-	    mov ebp, [httpstruct]
-	    mov ecx, [ebp + http_msg.content_length]
+        mov ebp, [httpstruct]
+        mov ecx, [ebp + http_msg.content_length]
         mov edx, [ebp + http_msg.content_received]
 
-	    DEBUGF 1, "---- Current file write offset : %u (http got : %u / %u)\n", [write_to_file.current_offset], edx, ecx
+        DEBUGF 1, "---- Current file write offset : %u (http got : %u / %u)\n", [write_to_file.current_offset], edx, ecx
         sub edx, [write_to_file.current_offset]
         mov [write_to_file.bufsize], edx
 
@@ -91,32 +92,32 @@ proc get_file_over_http targeturl, targetfilename
         add ecx, [write_to_file.current_offset]
         mov [write_to_file.bufptr], ecx
 
-	    DEBUGF 1, "---- ecx + offset = 0x%x\n", ecx
-	    DEBUGF 1, "---- Writing to file %u bytes at 0x%x to %s\n", [write_to_file.bufsize], [write_to_file.bufptr], current_filename
+        DEBUGF 1, "---- ecx + offset = 0x%x\n", ecx
+        DEBUGF 1, "---- Writing to file %u bytes at 0x%x to %s\n", [write_to_file.bufsize], [write_to_file.bufptr], current_filename
         mcall 70, write_to_file
         cmp eax, 0
         jne .file_error
 
-	    DEBUGF 1, "---- Wrote to file %u bytes.\n", ebx
+        DEBUGF 1, "---- Wrote to file %u bytes.\n", ebx
         add [write_to_file.current_offset], ebx
-	    DEBUGF 1, "---- File offset updated to : %u\n", [write_to_file.current_offset]
-    
+        DEBUGF 1, "---- File offset updated to : %u\n", [write_to_file.current_offset]
+
         jmp .http_receive_loop
 
     .file_error:
-	DEBUGF 1, "file_erroR with eax = %u!", eax
+    DEBUGF 1, "file_erroR with eax = %u!", eax
         mcall -1
 
     .http_error:
-	DEBUGF 1, "http_erroR!"
+    DEBUGF 1, "http_erroR!"
         mcall -1
 
     .http_transfer_done:
-	    ;; Write any remaining bytes from the http buffer into the file
-     	DEBUGF 1, "---- http flags = 0x%x.\n", 	[httpstruct + http_msg.flags]
-        DEBUGF 1, "Got %u bytes in total\n", [httpstruct + http_msg.content_length] 
+        ;; Write any remaining bytes from the http buffer into the file
+         DEBUGF 1, "---- http flags = 0x%x.\n",     [httpstruct + http_msg.flags]
+        DEBUGF 1, "Got %u bytes in total\n", [httpstruct + http_msg.content_length]
 
-	    mov ebp, [httpstruct]
+        mov ebp, [httpstruct]
         mov edx, [ebp + http_msg.content_length]
 
         sub edx, [write_to_file.current_offset]
@@ -126,37 +127,37 @@ proc get_file_over_http targeturl, targetfilename
         add ecx, [write_to_file.current_offset]
         mov [write_to_file.bufptr], ecx
 
-	    DEBUGF 1, "---- Final ecx + offset = 0x%x\n", ecx
-	    DEBUGF 1, "-- Writing to file %u bytes at 0x%x to %s\n", [write_to_file.bufsize], [write_to_file.bufptr], current_filename
+        DEBUGF 1, "---- Final ecx + offset = 0x%x\n", ecx
+        DEBUGF 1, "-- Writing to file %u bytes at 0x%x to %s\n", [write_to_file.bufsize], [write_to_file.bufptr], current_filename
 
         mcall 70, write_to_file
         cmp eax, 0
         jne .file_error
 
-	    DEBUGF 1, "-- Wrote to file %u bytes.\n", ebx
+        DEBUGF 1, "-- Wrote to file %u bytes.\n", ebx
         add [write_to_file.current_offset], ebx
-	    DEBUGF 1, "-- File offset updated to : %u\n", [write_to_file.current_offset]
-	    mov ebp, [httpstruct]
+        DEBUGF 1, "-- File offset updated to : %u\n", [write_to_file.current_offset]
+        mov ebp, [httpstruct]
         mov edx, [ebp + http_msg.content_length]
         cmp [write_to_file.current_offset], edx
         jne .http_transfer_done
 
-	invoke HTTP_free, [httpstruct]
+    invoke HTTP_free, [httpstruct]
 
-	popa
+    popa
     ret
 endp
 
 proc make_new_folder newfolder
-	pusha
+    pusha
 
-	mov eax, [newfolder]
+    mov eax, [newfolder]
     mov [create_new_folder.foldername], eax
-	mcall 70, create_new_folder
+    mcall 70, create_new_folder
     test eax, eax
     jz .success
-    
-	DEBUGF 1, "Failed to create folder: %s\n", [newfolder]
+
+    DEBUGF 1, "Failed to create folder: %s\n", [newfolder]
     mcall -1
 
 .success:
@@ -165,27 +166,31 @@ proc make_new_folder newfolder
 endp
 
 START:
-    mcall   68, 11                  ; init heap so we can allocate memory dynamically
+    mcall   68, 11                  ; init heap
 
 ; load libraries
     stdcall dll.Load, @IMPORT
     test    eax, eax
     jnz     .all_files_done_error
 
-	stdcall make_new_folder, dirname_res
-	stdcall make_new_folder, dirname_res_pointers
-	stdcall make_new_folder, dirname_res_throbber
-	stdcall make_new_folder, dirname_res_icons
+    DEBUGF 2, "-------------------------\n"
+    DEBUGF 2, "NETSURF INSTALLER.\n"
 
-.get_next_file:	
+    stdcall make_new_folder, dirname_res
+    stdcall make_new_folder, dirname_res_pointers
+    stdcall make_new_folder, dirname_res_throbber
+    stdcall make_new_folder, dirname_res_icons
+
+
+.get_next_file:
     mov        edi, current_url
     mov        esi, url
 
     @@:
-	    movsb
+        movsb
         cmp byte[esi], 0
         jne @b
-	;;  Loaded the base URL into current URL
+    ;;  Loaded the base URL into current URL
 
     ;; Move onto the subsequent file.
     mov esi, [filelistoffset]
@@ -193,22 +198,22 @@ START:
     je  .all_files_done
 
     @@:
-	    movsb
+        movsb
         cmp byte[esi], 0
         jne @b
     movsb
 
-	;; DEBUGF 1, "-- Current URL with filename is : %s\n", current_url
+    ;; DEBUGF 1, "-- Current URL with filename is : %s\n", current_url
 
 ; Create name of file we will download to
-	mov esi, download_file_path
+    mov esi, download_file_path
     mov edi, current_filename
-	
+
     @@:
         movsb
         cmp byte[esi], 0
         jne @b
-	
+
     mov esi, [filelistoffset]
     @@:
         movsb
@@ -216,21 +221,23 @@ START:
         jne @b
     movsb
     mov [filelistoffset], esi
-    
+
     ;; current_filename is now set to the name of the file
     ;; current_url is now set to the name of the file we will get after download
-	DEBUGF 2, "-------- [START] Fetching : %s\n", current_url
-	stdcall get_file_over_http, current_url, current_filename
-	DEBUGF 2, "-------- [END] Fetching : %s\n", current_url	
-	jmp .get_next_file
+    DEBUGF 2, "Fetching : %s", current_filename
+    stdcall get_file_over_http, current_url, current_filename
+    DEBUGF 2, "...DONE!\n"
+    jmp .get_next_file
 
 .all_files_done:
-	DEBUGF 1, "-------------------------\n"
-	DEBUGF 1, "NETSURF INSTALLED. Enjoy!\n"
+    DEBUGF 2, "-------------------------\n"
+    DEBUGF 2, "NETSURF INSTALLED. Enjoy!\n"
+    DEBUGF 2, "-------------------------\n"
+    mcall -1
     ;; Inform user that all files are done
 
 .all_files_done_error:
-	DEBUGF 1, "FATAL ERROR: FAILED.\n", eax
+    DEBUGF 1, "FATAL ERROR: FAILED.\n", eax
     mcall -1
 
 ;---------------------------------------------------------------------
@@ -311,12 +318,10 @@ filelist db 'nskolibrios', 0
          db 'res/icons/reload.png', 0
          db 0
 
-current_url      rb URLMAXLEN
 filelistoffset   dd filelist
-current_filename rb FILENAMEMAXLEN
 httpstruct       dd 0
 
-create_new_file	dd 2, 0, 0, 0, 0
+create_new_file    dd 2, 0, 0, 0, 0
     db 0
     dd current_filename
 
@@ -330,5 +335,8 @@ write_to_file    dd 3
  .bufptr         dd 0
                  db 0
                  dd current_filename
-	
+
+socketdata       rb 4096
+current_url      rb URLMAXLEN
+current_filename rb FILENAMEMAXLEN
 I_END:
