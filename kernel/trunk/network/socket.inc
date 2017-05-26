@@ -293,7 +293,7 @@ sys_socket:
 align 4
 socket_open:
 
-        DEBUGF  1, "SOCKET_open: domain=%u type=%u protocol=%x\n ", ecx, edx, esi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_open: domain=%u type=%u protocol=%x ", ecx, edx, esi
 
         push    ecx edx esi
         call    socket_alloc
@@ -692,7 +692,7 @@ socket_accept:
   .block:
         test    [eax + SOCKET.options], SO_NONBLOCK
         jnz     .wouldblock
-        DEBUGF  1, "Calling socket_block at 695\n"
+
         call    socket_block
         jmp     .loop
 
@@ -730,7 +730,6 @@ socket_close:
         call    socket_num_to_ptr
         test    eax, eax
         jz      .invalid
-        DEBUGF  1, "SOCKET_close: socknum=%x\n", eax
 
         mov     dword[esp+32], 0                                ; The socket exists, so we will succeed in closing it.
 
@@ -762,7 +761,6 @@ socket_close:
 
 
   .invalid:
-        DEBUGF  1, "SOCKET_close: INVALID!\n"
         mov     dword[esp+20], EINVAL
         mov     dword[esp+32], -1
         ret
@@ -793,8 +791,6 @@ socket_receive:
         jz      .invalid
 
   .loop:
-        pushf
-        cli
         push    edi
         call    [eax + SOCKET.rcv_proc]
         pop     edi
@@ -810,9 +806,8 @@ socket_receive:
 
         test    [eax + SOCKET.options], SO_NONBLOCK
         jnz     .return_err
-        DEBUGF  1, "Calling socket_block at 813\n"
+
         call    socket_block
-        popf
         jmp     .loop
 
 
@@ -822,7 +817,6 @@ socket_receive:
   .return_err:
         mov     ecx, -1
   .return:
-        popf
         mov     [esp+20], ebx
         mov     [esp+32], ecx
         ret
@@ -1831,7 +1825,7 @@ socket_ring_free:
 align 4
 socket_block:
 
-        DEBUGF  1, "SOCKET_block: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_block: %x\n", eax
 
         push    eax
 
@@ -1856,7 +1850,7 @@ socket_block:
         call    change_task
         pop     eax
 
-        DEBUGF  1, "SOCKET_block: continuing: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_block: continuing\n"
 
         ret
 
@@ -1911,7 +1905,7 @@ socket_notify:
 ; Socket and thread exists and socket is of non blocking type.
 ; We'll try to flag an event to the thread.
         shl     ecx, 8
-        or      [SLOT_BASE + ecx + APPDATA.event_mask], EVENT_NETWORK 
+        or      [SLOT_BASE + ecx + APPDATA.event_mask], EVENT_NETWORK
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: poking thread %u!\n", ebx
         pop     esi ecx ebx
@@ -1924,7 +1918,7 @@ socket_notify:
         and     [eax + SOCKET.state], not SS_BLOCKED    ; Clear the 'socket is blocked' flag
         mov     [esi + TASKDATA.state], 0               ; Run the thread
 
-        DEBUGF  1, "SOCKET_notify: Unblocked socket!\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: Unblocked socket!\n"
         pop     esi ecx ebx
         ret
 

@@ -37,7 +37,7 @@ TCP_BIT_FIN_IS_ACKED    = 1 shl 3
 ;-----------------------------------------------------------------;
 align 4
 tcp_input:
-        DEBUGF 1, "tcp_input!\n"
+
 ; record the current time
         push    [timer_ticks]           ; in 1/100 seconds
         push    ebx ecx esi edx         ; mind the order (see TCP_queue_entry struct)
@@ -54,7 +54,6 @@ tcp_input:
         mov     eax, [TCP_input_event]
         mov     ebx, [eax + EVENT.id]
         xor     esi, esi
-;        DEBUGF  1, "Raising Event on TCP input\n"
         call    raise_event
 
         ret
@@ -97,7 +96,6 @@ endl
         mov     eax, [TCP_input_event]
         mov     ebx, [eax + EVENT.id]
         call    wait_event
-        DEBUGF 1, "Woke up with tcp_input_event\n"
 
   .loop:
         get_from_queue TCP_queue, TCP_QUEUE_SIZE, sizeof.TCP_queue_entry, .wait
@@ -111,7 +109,7 @@ endl
         mov     edi, [esi + TCP_queue_entry.ip_ptr]                     ; ptr to ipv4 header
         mov     esi, [esi + TCP_queue_entry.segment_ptr]                ; change esi last
 
-        DEBUGF  1, "TCP_input: size=%u time=%d\n", ecx, [timer_ticks]
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: size=%u time=%d\n", ecx, [timer_ticks]
 
         mov     edx, esi
 
@@ -141,7 +139,7 @@ endl
 
         sub     ecx, eax                                                ; substract TCP header size from total segment size
         jb      .drop_no_socket                                         ; If total segment size is less then the advertised header size, drop packet
-        DEBUGF  1, "TCP_input: %u bytes of data\n", ecx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: %u bytes of data\n", ecx
 
 ;-------------------------------------------
 ; Convert Big-endian values to little endian
@@ -203,7 +201,7 @@ endl
         call    mutex_unlock
         popa
 
-        DEBUGF  1, "TCP_input: socket ptr=%x state=%u flags=%x\n", ebx, [ebx + TCP_SOCKET.t_state], [edx + TCP_header.Flags]:2
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: socket ptr=%x state=%u flags=%x\n", ebx, [ebx + TCP_SOCKET.t_state], [edx + TCP_header.Flags]:2
 
 ;----------------------------
 ; Check if socket isnt closed
@@ -219,7 +217,7 @@ endl
         call    mutex_lock
         popa
 
-        DEBUGF  1, "TCP_input: socket locked\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: socket locked\n"
 
 ;---------------------------
 ; disable all temporary bits
@@ -245,7 +243,7 @@ endl
         test    [ebx + SOCKET.options], SO_ACCEPTCON
         jz      .no_accept
 
-        DEBUGF  1, "TCP_input: Accepting new connection\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Accepting new connection\n"
 
 ; Unlock current socket
 
@@ -302,7 +300,7 @@ endl
         cmp     ecx, sizeof.TCP_header          ; Does header contain any options?
         je      .no_options
 
-        DEBUGF  1, "TCP_input: Segment has options\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Segment has options\n"
 
         add     ecx, edx
         lea     esi, [edx + sizeof.TCP_header]
@@ -325,7 +323,7 @@ endl
 ;        je      .opt_sack
         cmp     al, TCP_OPT_TIMESTAMP
         je      .opt_timestamp
-        DEBUGF  1, "TCP_input: unknown option:%u\n", al
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: unknown option:%u\n", al
         jmp     .no_options                     ; If we reach here, some unknown options were received, skip them all!
 
   .opt_maxseg:
@@ -339,7 +337,7 @@ endl
         xor     eax, eax
         lodsw
         rol     ax, 8
-        DEBUGF  1, "TCP_input: Maxseg=%u\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Maxseg=%u\n", eax
         call    tcp_mss
        @@:
         jmp     .opt_loop
@@ -353,7 +351,7 @@ endl
         test    [edx + TCP_header.Flags], TH_SYN
         jz      @f
 
-        DEBUGF  1, "TCP_input: Got window scale option\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Got window scale option\n"
         or      [ebx + TCP_SOCKET.t_flags], TF_RCVD_SCALE
 
         lodsb
@@ -372,7 +370,7 @@ endl
         test    [edx + TCP_header.Flags], TH_SYN
         jz      @f
 
-        DEBUGF  1, "TCP_input: Selective Acknowledgement permitted\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Selective Acknowledgement permitted\n"
         or      [ebx + TCP_SOCKET.t_flags], TF_SACK_PERMIT
 
        @@:
@@ -384,7 +382,7 @@ endl
         cmp     al, 10                          ; length must be 10
         jne     .no_options
 
-        DEBUGF  1, "TCP_input: Got timestamp option\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Got timestamp option\n"
 
         test    [edx + TCP_header.Flags], TH_SYN
         jz      @f
@@ -409,7 +407,7 @@ endl
         cmp     eax, [ebx + TCP_SOCKET.ts_val]
         jbe     .no_paws
 
-        DEBUGF  1, "TCP_input: PAWS: detected an old segment\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: PAWS: detected an old segment\n"
 
         mov     eax, [timestamp]
         sub     eax, [ebx + TCP_SOCKET.ts_recent_age]
@@ -499,7 +497,7 @@ endl
         sub     eax, [ebx + TCP_SOCKET.SND_UNA]
         jbe     .not_uni_xfer
 
-        DEBUGF  1, "TCP_input: Header prediction: we are sender\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Header prediction: we are sender\n"
 
 ;---------------------------------
 ; Packet is a pure ACK, process it
@@ -583,7 +581,7 @@ endl
 
 ; Complete processing of received data
 
-        DEBUGF  1, "TCP_input: Header prediction: we are receiving %u bytes\n", ecx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Header prediction: we are receiving %u bytes\n", ecx
 
         mov     esi, [dataoffset]
         add     esi, edx
@@ -592,7 +590,6 @@ endl
         add     [ebx + TCP_SOCKET.RCV_NXT], ecx         ; Update sequence number with number of bytes we have copied
 
         mov     eax, ebx
-        DEBUGF  1, "-- Call socket_notify for data.\n"
         call    socket_notify
 
         or      [ebx + TCP_SOCKET.t_flags], TF_DELACK   ; Set delayed ack flag
@@ -607,22 +604,22 @@ endl
 ;-----------------------------------------------------------------------------------
 
   .not_uni_xfer:
-        DEBUGF  1, "TCP_input: Header prediction failed\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Header prediction failed\n"
 
 ; Calculate receive window size
 
         push    edx
         mov     eax, SOCKET_BUFFER_SIZE
         sub     eax, [ebx + STREAM_SOCKET.rcv.size]
-        DEBUGF  1, "Space in receive buffer=%d\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "Space in receive buffer=%d\n", eax
         mov     edx, [ebx + TCP_SOCKET.RCV_ADV]
         sub     edx, [ebx + TCP_SOCKET.RCV_NXT]
-        DEBUGF  1, "Current advertised window=%d\n", edx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "Current advertised window=%d\n", edx
         cmp     eax, edx
         jg      @f
         mov     eax, edx
        @@:
-        DEBUGF  1, "Receive window size=%d\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "Receive window size=%d\n", eax
         mov     [ebx + TCP_SOCKET.RCV_WND], eax
         pop     edx
 
@@ -649,14 +646,14 @@ endl
         sub     eax, [edx + TCP_header.SequenceNumber]
         jle     .no_duplicate
 
-        DEBUGF  1, "TCP_input: %u bytes duplicate data!\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: %u bytes duplicate data!\n", eax
 
 ; Check for duplicate SYN
 
         test    [edx + TCP_header.Flags], TH_SYN
         jz      .no_dup_syn
 
-        DEBUGF  1, "TCP_input: got duplicate syn\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: got duplicate syn\n"
 
         and     [edx + TCP_header.Flags], not (TH_SYN)
         inc     [edx + TCP_header.SequenceNumber]
@@ -703,7 +700,7 @@ endl
 ;-----------------------------------------------
 ; Remove duplicate data and update urgent offset
 
-        DEBUGF  1, "TCP_input: trimming duplicate data\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: trimming duplicate data\n"
 
 ; Trim data from left side of window
 
@@ -743,7 +740,7 @@ endl
         sub     eax, [ebx + TCP_SOCKET.RCV_WND]         ; eax now holds the number of bytes to drop
         jle     .no_excess_data
 
-        DEBUGF  1, "%d bytes beyond right edge of window\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "%d bytes beyond right edge of window\n", eax
 
         inc     [TCPS_rcvpackafterwin]
 
@@ -781,7 +778,7 @@ endl
         inc     [TCPS_rcvwinprobe]
   .dont_drop_all:
         add     [TCPS_rcvbyteafterwin], eax
-        DEBUGF  1, "Trimming %u bytes from the right of the window\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "Trimming %u bytes from the right of the window\n"
 
 ; remove data from the right side of window (decrease data length)
 
@@ -809,7 +806,7 @@ endl
         sub     eax, ecx
         jae     .no_timestamp
 
-        DEBUGF  1, "Recording timestamp\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "Recording timestamp\n"
 
         mov     eax, [timestamp]
         mov     [ebx + TCP_SOCKET.ts_recent_age], eax
@@ -826,7 +823,7 @@ endl
         test    [edx + TCP_header.Flags], TH_RST
         jz      .no_rst
 
-        DEBUGF  1, "TCP_input: Got an RST flag\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Got an RST flag\n"
 
         mov     eax, [ebx + TCP_SOCKET.t_state]
         shl     eax, 2
@@ -848,16 +845,16 @@ endl
 
 ;-----------------------------------------------------------------------------------
   .econnrefused:
-        DEBUGF  1, "TCP_input: Connection refused\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Connection refused\n"
         mov     [ebx + SOCKET.errorcode], ECONNREFUSED
         jmp     .close
 
 ;-----------------------------------------------------------------------------------
   .econnreset:
-        DEBUGF  1, "TCP_input: Connection reset\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Connection reset\n"
         mov     [ebx + SOCKET.errorcode], ECONNRESET
   .close:
-        DEBUGF  1, "TCP_input: Closing connection\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Closing connection\n"
         mov     [ebx + TCP_SOCKET.t_state], TCPS_CLOSED
         inc     [TCPS_drops]
 
@@ -866,7 +863,7 @@ endl
 
 ;-----------------------------------------------------------------------------------
   .rst_close:
-        DEBUGF  1, "TCP_input: Closing with reset\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Closing with reset\n"
         jmp     .unlock_and_close
 
 ;-----------------------------------------------------------------------------------
@@ -904,7 +901,7 @@ endl
         jb      .ack_processed                                  ; states: closed, listen, syn_sent
         ja      .no_syn_rcv                                     ; established, fin_wait_1, fin_wait_2, close_wait, closing, last_ack, time_wait
 
-        DEBUGF  1, "TCP_input: state=syn_received\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: state=syn_received\n"
 
         mov     eax, [edx + TCP_header.AckNumber]
         cmp     [ebx + TCP_SOCKET.SND_UNA], eax
@@ -957,7 +954,7 @@ endl
         jne     .reset_dupacks
 
         inc     [TCPS_rcvdupack]
-        DEBUGF  1, "TCP_input: Processing duplicate ACK\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Processing duplicate ACK\n"
 
 ; If we have outstanding data, other than a window probe, this is a completely duplicate ACK
 ; (window info didnt change) The ACK is the biggest we've seen and we've seen exactly our rexmt threshold of them,
@@ -978,7 +975,7 @@ endl
         jb      .dup_ack_complete
         ja      .another_lost
 
-        DEBUGF  1, "TCP_input: Re-transmitting lost segment\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Re-transmitting lost segment\n"
 
         push    [ebx + TCP_SOCKET.SND_NXT]              ; >>>>
 
@@ -1041,7 +1038,7 @@ endl
         jmp     .drop
 
   .another_lost:
-        DEBUGF  1, "TCP_input: Increasing congestion window\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Increasing congestion window\n"
 
         mov     eax, [ebx + TCP_SOCKET.t_maxseg]
         add     [ebx + TCP_SOCKET.SND_CWND], eax
@@ -1099,7 +1096,7 @@ endl
         sub     edi, [ebx + TCP_SOCKET.SND_UNA]         ; now we got the number of acked bytes in edi
         inc     [TCPS_rcvackpack]
         add     [TCPS_rcvackbyte], edi
-        DEBUGF  1, "TCP_input: acceptable ACK for %u bytes\n", edi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: acceptable ACK for %u bytes\n", edi
 
 ;-----------------------------------------------------------------------------------
 ;
@@ -1208,7 +1205,7 @@ endl
         call    socket_ring_free
         pop     ebx edx ecx
 
-        DEBUGF  1, "TCP_input: our FIN is acked\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: our FIN is acked\n"
         or      [temp_bits], TCP_BIT_FIN_IS_ACKED
         jmp     .ack_complete
   .no_fin_ack:
@@ -1334,7 +1331,7 @@ endl
 ;-----------------------------------------------------------------------------------
 
   .state_listen:
-        DEBUGF  1, "TCP_input: state=listen\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: state=listen\n"
 
         test    [edx + TCP_header.Flags], TH_RST
         jnz     .drop
@@ -1400,7 +1397,7 @@ endl
 ;-----------------------------------------------------------------------------------
 
   .state_syn_sent:
-        DEBUGF  1, "TCP_input: state=syn_sent\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: state=syn_sent\n"
 
         test    [edx + TCP_header.Flags], TH_ACK
         jz      @f
@@ -1460,7 +1457,7 @@ endl
         test    [edx + TCP_header.Flags], TH_ACK
         jz      .simultaneous_open
 
-        DEBUGF  1, "TCP_input: active open\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: active open\n"
 
         inc     [TCPS_connects]
 
@@ -1501,7 +1498,7 @@ endl
 ;-----------------------------------------------------------------------------------
 
   .simultaneous_open:
-        DEBUGF  1, "TCP_input: simultaneous open\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: simultaneous open\n"
         mov     [ebx + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED
 
 ;-----------------------------------------------------------------------------------
@@ -1521,7 +1518,7 @@ endl
         cmp     ecx, [ebx + TCP_SOCKET.RCV_WND]
         jbe     .dont_trim
 
-        DEBUGF  1, "TCP_input: received data does not fit in window, trimming %u bytes\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: received data does not fit in window, trimming %u bytes\n", eax
         inc     [TCPS_rcvpackafterwin]
         sub     ecx, [ebx + TCP_SOCKET.RCV_WND]
         add     [TCPS_rcvbyteafterwin], ecx
@@ -1542,7 +1539,7 @@ endl
 ;-----------------------------------------------------------------------------------
 
   .ack_processed:
-        DEBUGF  1, "TCP_input: ACK processed\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: ACK processed\n"
 
 ; dont look at window if no ACK
 
@@ -1594,7 +1591,7 @@ endl
         mov     [ebx + TCP_SOCKET.max_sndwnd], eax
        @@:
 
-        DEBUGF  1, "TCP_input: Updating window to %u\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Updating window to %u\n", eax
 
         push    [edx + TCP_header.SequenceNumber]
         pop     [ebx + TCP_SOCKET.SND_WL1]
@@ -1690,7 +1687,7 @@ endl
         jmp     .data_done
 
   .out_of_order:
-        DEBUGF  1,  "TCP data is out of order!\nSequencenumber is %u, we expected %u.\n", \
+        DEBUGF  DEBUG_NETWORK_VERBOSE,  "TCP data is out of order!\nSequencenumber is %u, we expected %u.\n", \
         [edx + TCP_header.SequenceNumber], [ebx + TCP_SOCKET.RCV_NXT]
 
 ; Uh-oh, some data is out of order, lets call TCP reassemble for help
@@ -1712,12 +1709,12 @@ endl
         test    [edx + TCP_header.Flags], TH_FIN
         jz      .final_processing
 
-        DEBUGF  1, "TCP_input: Processing FIN\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Processing FIN\n"
 
         cmp     [ebx + TCP_SOCKET.t_state], TCPS_TIME_WAIT
         jae     .not_first_fin
 
-        DEBUGF  1, "TCP_input: First FIN for this connection\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: First FIN for this connection\n"
 
         mov     eax, ebx
         call    socket_cant_recv_more
@@ -1778,7 +1775,7 @@ endl
 ;-----------------------------------------------------------------------------------
 
   .final_processing:
-        DEBUGF  1, "TCP_input: Final processing\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Final processing\n"
 
         push    ebx
         lea     ecx, [ebx + SOCKET.mutex]
@@ -1790,14 +1787,14 @@ endl
 
         test    [eax + TCP_SOCKET.t_flags], TF_ACKNOW
         jz      .done
-        DEBUGF  1, "TCP_input: ACK now!\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: ACK now!\n"
 
   .need_output:
-        DEBUGF  1, "TCP_input: need output\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: need output\n"
         call    tcp_output
 
   .done:
-        DEBUGF  1, "TCP_input: dumping\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: dumping\n"
 
         call    net_buff_free
         jmp     .loop
@@ -1810,7 +1807,7 @@ endl
 
 ;-----------------------------------------------------------------------------------
   .drop_after_ack:
-        DEBUGF  1, "TCP_input: Drop after ACK\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Drop after ACK\n"
 
         push    edx ebx
         lea     ecx, [ebx + SOCKET.mutex]
@@ -1825,7 +1822,7 @@ endl
 
 ;-----------------------------------------------------------------------------------
   .drop_with_reset:
-        DEBUGF  1, "TCP_input: Drop with reset\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Drop with reset\n"
 
         push    ebx edx
         lea     ecx, [ebx + SOCKET.mutex]
@@ -1897,7 +1894,7 @@ endl
 ; Unlock socket mutex and prepare to drop segment
 
   .drop:
-        DEBUGF  1, "TCP_input: Dropping segment\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Dropping segment\n"
 
         pusha
         lea     ecx, [ebx + SOCKET.mutex]
@@ -1918,7 +1915,7 @@ endl
 ; Drop the segment
 
   .drop_no_socket:
-        DEBUGF  1, "TCP_input: Drop (no socket)\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Drop (no socket)\n"
 
         call    net_buff_free
         jmp     .loop
