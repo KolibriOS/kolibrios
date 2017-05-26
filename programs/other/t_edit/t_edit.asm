@@ -1,7 +1,7 @@
 ;Огромная благодарность всем, кто помогал: кодом/советом/дизайном ...
 
 use32
-  org 0x0
+  org 0
   db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
   dd 1, start, i_end, mem, stacktop, file_name, sys_path
 
@@ -144,18 +144,18 @@ mov	ebp,lib0
 	stdcall [ksubmenu_add], [main_menu], eax
 	
 ; init toolbar file
-	load_image_file 'te_icon.png', bmp_icon,,,6 ;6 для серых кнопок
+	include_image_file 'te_icon.png', bmp_icon,,,6 ;6 для серых кнопок
 	mov eax,[bmp_icon]
 	add eax,TOOLBAR_ICONS_SIZE
 	stdcall img_to_gray, [bmp_icon],eax,(TOOLBAR_ICONS_SIZE)/3
 ;---------------------------------------------------------------------
-; читаем файл с курсорами и линиями
-	load_image_file 'tl_sys_16.png', icon_tl_sys
+; внедряем файл с курсорами и линиями
+	include_image_file '..\..\media\log_el\trunk\tl_sys_16.png', icon_tl_sys
 	mov eax,dword[icon_tl_sys]
 	mov dword[tree1.data_img_sys],eax
 ;---------------------------------------------------------------------
-; читаем файл с иконками узлов
-	load_image_file 'tl_nod_16.png', icon_tl_sys
+; внедряем файл с иконками узлов
+	include_image_file 'tl_nod_16.png', icon_tl_sys
 	mov eax,dword[icon_tl_sys]
 	mov dword[tree1.data_img],eax
 ;------------------------------------------------------------------------------
