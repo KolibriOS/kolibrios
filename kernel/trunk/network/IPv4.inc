@@ -220,7 +220,7 @@ macro ipv4_checksum ptr {
 align 4
 ipv4_input:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: packet from %u.%u.%u.%u ",\
+        DEBUGF  1, "IPv4_input: packet from %u.%u.%u.%u ",\
         [edx + IPv4_header.SourceAddress + 0]:1,[edx + IPv4_header.SourceAddress + 1]:1,\
         [edx + IPv4_header.SourceAddress + 2]:1,[edx + IPv4_header.SourceAddress + 3]:1
         DEBUGF  DEBUG_NETWORK_VERBOSE, "to %u.%u.%u.%u\n",\

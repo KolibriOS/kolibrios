@@ -50,7 +50,7 @@ local .ok, .no_wrap
 
         cmp     [ptr + queue.size], size        ; Check if queue isnt full
         jb      .ok
-
+        DEBUGF  1, "--- Queue is FULL!\n"
         spin_unlock_irqrestore
         jmp     failaddr
 
