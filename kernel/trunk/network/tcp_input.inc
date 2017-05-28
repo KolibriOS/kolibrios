@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -85,6 +85,7 @@ locals
         dataoffset      dd ?
         timestamp       dd ?
         temp_bits       db ?
+        device          dd ?
 endl
 
         xor     esi, esi
@@ -105,8 +106,9 @@ endl
         push    [esi + TCP_queue_entry.buffer_ptr]
 
         mov     ebx, [esi + TCP_queue_entry.device_ptr]
+        mov     [device], ebx
         mov     ecx, [esi + TCP_queue_entry.segment_size]
-        mov     edi, [esi + TCP_queue_entry.ip_ptr]                     ; ptr to ipv4 header
+        mov     edi, [esi + TCP_queue_entry.ip_ptr]     ; ptr to ipv4 header
         mov     esi, [esi + TCP_queue_entry.segment_ptr]                ; change esi last
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: size=%u time=%d\n", ecx, [timer_ticks]
@@ -1880,13 +1882,13 @@ endl
 
   .respond_seg_ack:
         mov     cl, TH_RST
-        xor     ebx, ebx                ; FIXME: find a way to get the receiving device ptr
+        mov     ebx, [device]
         call    tcp_respond_segment
         jmp     .drop_no_socket
 
   .respond_seg_syn:
         mov     cl, TH_RST + TH_ACK
-        xor     ebx, ebx                ; FIXME: find a way to get the receiving device ptr
+        mov     ebx, [device]
         call    tcp_respond_segment
         jmp     .drop_no_socket
 
