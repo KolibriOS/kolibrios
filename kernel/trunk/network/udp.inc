@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  UDP.INC                                                        ;;
@@ -324,18 +324,27 @@ udp_connect:
         call    mutex_lock
         pop     edx eax
 
-; Fill in local IP
-        cmp     [eax + IP_SOCKET.LocalIP], 0
-        jne     @f
-        push    [IP_LIST + 4]                                   ; FIXME: use correct local IP
-        pop     [eax + IP_SOCKET.LocalIP]
-
-; Fill in remote port and IP, overwriting eventually previous values
+; Fill in remote port and IP
         pushw   [edx + 2]
         pop     [eax + UDP_SOCKET.RemotePort]
 
         pushd   [edx + 4]
-        pop     [eax + IP_SOCKET.RemoteIP]
+        pop     [eax + UDP_SOCKET.RemoteIP]
+
+; Find route to host
+        pusha
+        push    eax
+        mov     ebx, [eax + UDP_SOCKET.device]
+        mov     edx, [eax + UDP_SOCKET.LocalIP]
+        mov     eax, [eax + UDP_SOCKET.RemoteIP]
+        call    ipv4_route
+        test    eax, eax
+        jz      .enoroute
+        pop     eax
+        mov     ebx, [NET_DRV_LIST + edi]
+        mov     [eax + UDP_SOCKET.device], ebx
+        mov     [eax + UDP_SOCKET.LocalIP], edx
+        popa
 
 ; Find a local port, if user didnt define one
         cmp     [eax + UDP_SOCKET.LocalPort], 0
@@ -351,6 +360,14 @@ udp_connect:
         call    socket_is_connected
 
         xor     eax, eax
+        ret
+
+  .enoroute:
+        pop     eax
+        popa
+        xor     eax, eax
+        dec     eax
+        mov     ebx, EADDRNOTAVAIL
         ret
 
 
