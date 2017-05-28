@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -89,42 +89,9 @@ tcp_connect:
         test    [eax + SOCKET.state], SS_ISCONNECTED
         jnz     .eisconn
 
-        inc     [TCPS_connattempt]                      ; update stats
-
         push    eax edx
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_lock
-        pop     edx eax
-
-; Fill in local IP
-        cmp     [eax + IP_SOCKET.LocalIP], 0
-        jne     @f
-        push    [IP_LIST + 4]                                   ; FIXME: use correct local IP
-        pop     [eax + IP_SOCKET.LocalIP]
-
-; Fill in remote port and IP
-        pushw   [edx + 2]
-        pop     [eax + TCP_SOCKET.RemotePort]
-
-        pushd   [edx + 4]
-        pop     [eax + IP_SOCKET.RemoteIP]
-
-; Find a local port, if user didnt define one
-        cmp     [eax + TCP_SOCKET.LocalPort], 0
-        jne     @f
-        call    socket_find_port
-       @@:
-
-; Start the TCP sequence
-        mov     [eax + TCP_SOCKET.timer_persist], 0
-        mov     [eax + TCP_SOCKET.t_state], TCPS_SYN_SENT
-
-        push    [TCP_sequence_num]
-        add     [TCP_sequence_num], 6400
-        pop     [eax + TCP_SOCKET.ISS]
-        mov     [eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_init
-
-        tcp_sendseqinit eax
 
         mov     ebx, eax
         lea     eax, [ebx + STREAM_SOCKET.snd]
@@ -136,20 +103,75 @@ tcp_connect:
         call    socket_ring_create
         test    eax, eax
         jz      .nomem
+        pop     edx eax
 
-        push    ebx
-        lea     ecx, [ebx + SOCKET.mutex]
-        call    mutex_unlock
+; Fill in remote port and IP
+        pushw   [edx + 2]
+        pop     [eax + TCP_SOCKET.RemotePort]
+
+        pushd   [edx + 4]
+        pop     [eax + TCP_SOCKET.RemoteIP]
+
+; Find route to host
+        pusha
+        push    eax
+        mov     ebx, [eax + TCP_SOCKET.device]
+        mov     edx, [eax + TCP_SOCKET.LocalIP]
+        mov     eax, [eax + TCP_SOCKET.RemoteIP]
+        call    ipv4_route
+        test    eax, eax
+        jz      .enoroute
         pop     eax
+        mov     ebx, [NET_DRV_LIST + edi]
+        mov     [eax + TCP_SOCKET.device], ebx
+        mov     [eax + TCP_SOCKET.LocalIP], edx
+        popa
+
+; Find a local port, if user didnt define one
+        cmp     [eax + TCP_SOCKET.LocalPort], 0
+        jne     @f
+        call    socket_find_port
+       @@:
+
+; Compute window scaling factor
+        push    ecx
+        xor     ecx, ecx
+        mov     ebx, TCP_max_win
+  @@:
+        cmp     ebx, SOCKET_BUFFER_SIZE
+        ja      @f
+        shl     ebx, 1
+        inc     ecx
+        cmp     ecx, TCP_max_winshift
+        jb      @r
+  @@:
+        mov     [eax + TCP_SOCKET.request_r_scale], cl
+        pop     ecx
 
         call    socket_is_connecting
+        inc     [TCPS_connattempt]
+
+        mov     [eax + TCP_SOCKET.timer_persist], 0
+        mov     [eax + TCP_SOCKET.t_state], TCPS_SYN_SENT
+
+        mov     [eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_init
+
+        push    [TCP_sequence_num]
+        add     [TCP_sequence_num], TCP_ISSINCR/2
+        pop     [eax + TCP_SOCKET.ISS]
+
+        tcp_sendseqinit eax
+
+        push    eax
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_unlock
+        pop     eax
 
 ; Now send the SYN packet to remote end
         push    eax
         call    tcp_output
         pop     eax
 
-  .block:
         test    [eax + SOCKET.options], SO_NONBLOCK
         jz      .waitforit
 
@@ -159,6 +181,7 @@ tcp_connect:
         ret
 
   .nomem:
+        pop     edx eax
         xor     eax, eax
         dec     eax
         mov     ebx, ENOMEM
@@ -168,6 +191,14 @@ tcp_connect:
         xor     eax, eax
         dec     eax
         mov     ebx, EISCONN
+        ret
+
+  .enoroute:
+        pop     eax
+        popa
+        xor     eax, eax
+        dec     eax
+        mov     ebx, EADDRNOTAVAIL
         ret
 
   .waitforit:
@@ -202,6 +233,5 @@ tcp_connect:
 
   .established:
         stdcall cancel_timer_hs, [eax + TCP_SOCKET.timer_connect]
-
         xor     eax, eax
         ret
