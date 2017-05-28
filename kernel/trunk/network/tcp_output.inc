@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -487,7 +487,7 @@ endl
         mov     ecx, [eax + TCP_SOCKET.RCV_ADV]
         sub     ecx, [eax + TCP_SOCKET.RCV_NXT]
         cmp     ebx, ecx
-        ja      @f
+        jg      @f
         mov     ebx, ecx
   @@:
 
