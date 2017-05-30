@@ -1694,12 +1694,14 @@ endl
 
 ; Uh-oh, some data is out of order, lets call TCP reassemble for help
 
-        call    tcp_reassemble
+        call    tcp_reassemble          ;;; TODO!
 
 ; Generate ACK immediately, to let the other end know that a segment was received out of order,
 ; and to tell it what sequence number is expected. This aids the fast-retransmit algorithm.
 
         or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
+
+        jmp     .final_processing       ;;; HACK because of unimplemented reassembly queue!
   .data_done:
 
 ;-----------------------------------------------------------------------------------
