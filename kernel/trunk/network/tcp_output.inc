@@ -312,8 +312,7 @@ endl
         call    mutex_unlock
         popa
 
-; Fixme: returnvalue?
-
+        xor     eax, eax
         ret
 
 
@@ -464,6 +463,23 @@ endl
         inc     [TCPS_sndwinup]
 
   .eos:
+
+;---------------------------------------------------
+; Dont increase sequence number when resending a FIN
+
+        test    dl, TH_FIN
+        jz      .no_fin_retransmit
+
+        test    [eax + TCP_SOCKET.t_flags], TF_SENTFIN
+        jz      .no_fin_retransmit
+
+        mov     ebx, [eax + TCP_SOCKET.SND_NXT]
+        cmp     ebx, [eax + TCP_SOCKET.SND_MAX]
+        jne     .no_fin_retransmit
+
+        dec     [eax + TCP_SOCKET.SND_NXT]
+
+  .no_fin_retransmit:
 
 ;----------------------------------------------------
 ; Calculate the receive window.
