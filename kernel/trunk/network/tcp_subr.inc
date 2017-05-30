@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -303,9 +303,8 @@ tcp_respond:
         stosb
         mov     al, cl
         stosb
-;        mov     ax, [esi + TCP_SOCKET.RCV_WND]
-;        rol     ax, 8
-        mov     ax, 0x00a0      ;;;;;;; FIXME
+        mov     eax, [esi + TCP_SOCKET.RCV_WND]
+        xchg    al, ah
         stosw                   ; window
         xor     eax, eax
         stosd                   ; checksum + urgentpointer
