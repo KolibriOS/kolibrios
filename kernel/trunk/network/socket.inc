@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -63,7 +63,6 @@ struct  TCP_SOCKET              IP_SOCKET
         t_rxtcur                dd ?
         t_dupacks               dd ?
         t_maxseg                dd ?
-        t_force                 dd ?
         t_flags                 dd ?
 
 ;---------------

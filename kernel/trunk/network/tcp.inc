@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -40,6 +40,8 @@ TF_RCVD_SCALE           = 1 shl 6     ; other side has requested scaling
 TF_REQ_TSTMP            = 1 shl 7     ; have/will request timestamps
 TF_RCVD_TSTMP           = 1 shl 8     ; a timestamp was received in SYN
 TF_SACK_PERMIT          = 1 shl 9     ; other side said I could SACK
+
+TF_FORCE                = 1 shl 16    ; force to send a segment
 
 ; Segment flags
 TH_FIN                  = 1 shl 0

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -151,11 +151,11 @@ proc tcp_timer_640ms
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: persist timer expired\n", eax
 
         call    tcp_set_persist
-        mov     [eax + TCP_SOCKET.t_force], 1
+        or      [eax + TCP_SOCKET.t_flags], TF_FORCE
         push    eax
         call    tcp_output
         pop     eax
-        mov     [eax + TCP_SOCKET.t_force], 0
+        and     [eax + TCP_SOCKET.t_flags], not TF_FORCE
 
   .check_more6:
         test    [eax + TCP_SOCKET.timer_flags], timer_flag_wait

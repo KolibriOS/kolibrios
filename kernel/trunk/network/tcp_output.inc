@@ -90,8 +90,8 @@ endl
 ; Otherwise, if window is small but nonzero, and timer expired,
 ; we will send what we can and go to transmit state
 
-        cmp     [eax + TCP_SOCKET.t_force], 0
-        je      .no_force
+        test    [eax + TCP_SOCKET.t_flags], TF_FORCE
+        jz      .no_force
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: forcing data out\n"
 
@@ -200,7 +200,7 @@ endl
         je      .send
        @@:
 
-        test    [eax + TCP_SOCKET.t_force], -1  ;;;
+        test    [eax + TCP_SOCKET.t_flags], TF_FORCE
         jnz     .send
 
         mov     ebx, [eax + TCP_SOCKET.max_sndwnd]
@@ -424,8 +424,8 @@ endl
         test    esi, esi
         jz      .zero_data
 
-        cmp     [eax + TCP_SOCKET.t_force], 1
-        jne     @f
+        test    [eax + TCP_SOCKET.t_flags], TF_FORCE
+        jz      @f
         cmp     esi, 1
         jne     @f
         inc     [TCPS_sndprobe]
