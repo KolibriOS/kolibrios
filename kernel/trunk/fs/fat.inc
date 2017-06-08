@@ -29,6 +29,7 @@ fat_user_functions:
         dd      0
         dd      fat_Delete
         dd      fat_CreateFolder
+        dd      fat_Rename
 fat_user_functions_end:
 endg
 
@@ -46,7 +47,8 @@ PUSHAD_EDI equ [esp+0]
 struct FAT PARTITION
 fs_type             db  ?
 fat_change          db  ?   ; 1=fat has changed
-                    rb  2
+createOption        db  ?
+                    rb  1
 Lock                MUTEX   ; currently operations with one partition
 ; can not be executed in parallel since the legacy code is not ready
 SECTORS_PER_FAT     dd  ?
@@ -1841,16 +1843,16 @@ fat_get_sector:
 
 ;----------------------------------------------------------------
 fat_CreateFolder:
-        push    1
+        mov     [ebp+FAT.createOption], 0
         jmp     @f
 
 fat_CreateFile:
-        push    0
+        mov     [ebp+FAT.createOption], 1
 @@:
         call    fat_lock
-        pop     eax
         mov     ecx, [ebx+12]
         mov     edx, [ebx+16]
+.rename:
         pushad
         xor     edi, edi
         push    esi
@@ -1936,16 +1938,16 @@ fat_CreateFile:
         add     esp, 36
         call    fat_unlock
         popad
-        test    al, al
-        mov     eax, ERROR_ACCESS_DENIED
+        xor     eax, eax
+        cmp     [ebp+FAT.createOption], 0
         jz      @f
-        mov     al, 0
+        mov     al, ERROR_ACCESS_DENIED
 @@:
         xor     ebx, ebx
         ret
 
 .exists_file:
-        cmp     byte [esp+36+28], 0
+        cmp     [ebp+FAT.createOption], 1
         jz      @f
         add     esp, 36
         jmp     .noAccess
@@ -2091,14 +2093,10 @@ fat_CreateFile:
         jb      .scan_cont
 ; found!
         push    esi ecx
-; If creating a directory, allocate one data cluster now and fail immediately
-; if this is impossible. This prevents from creating an invalid directory entry
-; on a full disk.
-; yup, the argument is quite non-intuitive... but what should I do if
-; the entire function uses such arguments? BTW, it refers to al from pushad,
-; which in turn is filled with 0 in fat_CreateFile and 1 in fat_CreateFolder.
-        cmp     byte [esp+8+12+8+12+36+28], 0
-        jz      .no.preallocate.folder.data
+; If creating a directory, allocate one data cluster or fail immediately if this is impossible.
+; This prevents from creating an invalid directory entry on a full disk.
+        cmp     [ebp+FAT.createOption], 0
+        jnz     .notFolder
         call    get_free_FAT
         jnc     @f
         add     esp, 8+12+8
@@ -2106,7 +2104,7 @@ fat_CreateFile:
 
 @@:
         mov     [esp+8+12+8+12+36+20], eax  ; store the cluster somewhere
-.no.preallocate.folder.data:    ; calculate name checksum
+.notFolder: ; calculate name checksum
         mov     esi, [esp+8+12]
         mov     ecx, 11
         xor     eax, eax
@@ -2156,13 +2154,14 @@ fat_CreateFile:
         loop    .writelfn
         pop     eax esi
 .nolfn:
-        xchg    esi, [esp]
+        pop     esi
+        add     esp, 16
         mov     ecx, 11
         rep movsb
+        cmp     [ebp+FAT.createOption], 2
+        jz      .copy
         mov     word [edi], 20h         ; attributes
         sub     edi, 11
-        pop     esi ecx
-        add     esp, 12
         mov     byte [edi+13], 0        ; tenths of a second at file creation time
         call    get_time_for_file
         mov     [edi+14], ax            ; creation time
@@ -2171,17 +2170,14 @@ fat_CreateFile:
         mov     [edi+16], ax            ; creation date
         mov     [edi+24], ax            ; last write date
         mov     [edi+18], ax            ; last access date
-        xor     ecx, ecx
         mov     word [edi+20], cx       ; high word of cluster
         mov     word [edi+26], cx       ; low word of cluster - to be filled
         mov     dword [edi+28], ecx     ; file size - to be filled
-        cmp     byte [esp+36+28], cl
-        jz      .doit
+        cmp     [ebp+FAT.createOption], 0
+        jnz     .doit
 ; create directory
         mov     byte [edi+11], 10h      ; attributes: folder
         mov     esi, edi
-        lea     eax, [esp+8]
-        call    dword [eax+16]  ; flush directory
         mov     eax, [esp+36+20] ; extract saved cluster
         mov     [esp+36+20], edi ; this is needed for calculating arg of add_disk_free_space!
         push    ecx
@@ -2190,6 +2186,13 @@ fat_CreateFile:
         push    ecx
         push    edi
         jmp     .doit2
+
+.copy:
+        lea     esi, [esp+72+11]
+        mov     cl, 21
+        rep movsb
+        sub     edi, 32
+        jmp     .doit
 
 .done1:
         pop     edi
@@ -2205,10 +2208,10 @@ fat_CreateFile:
         call    dword [eax+16]  ; flush directory
         push    ecx
         mov     ecx, [esp+4+36+24]
-        push    ecx
-        push    edi
+        xor     eax, eax
         test    ecx, ecx
         jz      .done
+        push    ecx edi
         call    get_free_FAT
         jc      .diskfull
 .doit2:
@@ -2229,8 +2232,8 @@ fat_CreateFile:
         add     eax, [ebp+FAT.DATA_START]
         push    [ebp+FAT.SECTORS_PER_CLUSTER]
 .write_sector:
-        cmp     byte [esp+20+36+28], 0
-        jnz     .writedir
+        cmp     [ebp+FAT.createOption], 0
+        jz      .writedir
         mov     ecx, 512
         cmp     dword [esp+12], ecx
         jb      .writeshort
@@ -2325,18 +2328,20 @@ fat_CreateFile:
 
 .writedone:
         pop     eax eax
-.done:
         xor     eax, eax
 .ret:
         pop     edi ecx
+        inc     ecx
+.done:
         sub     esi, [esp+4+36+20]
         mov     [esp+4+36+28], eax
         mov     [esp+4+36+16], esi
+        jecxz   @f
         lea     eax, [esp+12]
         call    dword [eax+8]
         mov     [edi+28], esi
         call    dword [eax+16]
-        mov     [esp+36+16], ebx
+@@:
         lea     eax, [esi+511]
         shr     eax, 9
         mov     ecx, [ebp+FAT.SECTORS_PER_CLUSTER]
@@ -2347,8 +2352,11 @@ fat_CreateFile:
         sub     ecx, eax
         call    add_disk_free_space
         add     esp, 36
+        cmp     [ebp+FAT.createOption], 2
+        jz      @f
         call    update_disk
         call    fat_unlock
+@@:
         popad
         ret
 
@@ -3113,4 +3121,39 @@ fat_Delete:
         call    update_disk
         call    fat_unlock
         xor     eax, eax
+        ret
+
+;----------------------------------------------------------------
+fat_Rename:
+; in: edi -> new path string in UTF-8
+        push    esi edi
+        call    fat_lock
+        call    hd_find_lfn
+        pop     ebx
+        jc      .error
+        sub     esp, 32
+        mov     esi, edi
+        mov     edi, esp
+        mov     ecx, 8
+        rep movsd
+        mov     [ebp+FAT.createOption], 2
+        mov     esi, ebx
+        call    fat_CreateFile.rename
+        add     esp, 32
+        pop     esi
+        test    eax, eax
+        jnz     .ret
+        push    eax
+        mov     [ebp+FAT.longname_sec1], eax
+        mov     [ebp+FAT.longname_sec2], eax
+        call    hd_find_lfn
+        jc      .error
+        mov     byte [edi], 0xE5
+        jmp     fat_Delete.lfndel
+
+.error:
+        push    eax
+        call    fat_unlock
+        pop     eax ebx
+.ret:
         ret

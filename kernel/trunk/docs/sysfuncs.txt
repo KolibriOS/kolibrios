@@ -4290,6 +4290,26 @@ Remarks:
   eax - SF_FILE (70)
  [ebx] - SSF_CREATE_FOLDER (9)
 ======================================================================
+============= Function 70, subfunction 10 - rename/move. =============
+======================================================================
+Parameters:
+  * eax = 70 - function number
+  * ebx = pointer to the information structure
+Format of the information structure:
+  * +0: dword: 10 = subfunction number
+  * +4: dword: 0 (reserved)
+  * +8: dword: 0 (reserved)
+  * +12 = +0xC: dword: 0 (reserved)
+  * +16 = +0x10: dword: pointer to the new name/path string
+  * +20 = +0x14: path, general rules of names forming
+Returned value:
+  * eax = 0 - success, otherwise file system error code
+  * ebx destroyed
+Remarks:
+  * New path forming differs from general rules:
+    relative path relates to the target's parent folder,
+    absolute path relates to the partition's root folder.
+======================================================================
 ================== Function 71 - set window caption ==================
 ======================================================================
 Parameters:

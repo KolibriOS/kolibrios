@@ -1478,12 +1478,44 @@ dyndisk_handler:
         mov     ecx, [ebx]
         cmp     [edi+4], ecx
         jbe     .unsupported
-        push    edx
-        push    ebp
-        mov     ebp, eax
-        call    dword [edi+8+ecx*4]
-        pop     ebp
-        pop     edx
+        pushd   edx ebp eax [edi+8+ecx*4]
+        cmp     ecx, 10
+        jnz     .callFS
+        or      ecx, -1
+        mov     edi, esi
+        xor     eax, eax
+        repnz scasb
+        mov     edx, edi
+        dec     edi
+        mov     al, '/'
+        std
+        repnz scasb
+        cld
+        inc     edi
+        mov     [edi], ah
+        mov     ebp, [current_slot]
+        add     ebp, APPDATA.cur_dir
+        pushd   ebx esi edx [ebp] ebp edi
+        sub     esi, 2
+        mov     [ebp], esi
+        mov     edi, edx
+        mov     esi, [ebx+16]
+        mov     eax, [ebx+20]
+        cmp     eax, 4
+        jc      @f
+        xor     eax, eax
+@@:
+        call    getFullPath
+        pop     edi ebp
+        mov     byte [edi], '/'
+        popd    [ebp] edi esi ebx
+        test    eax, eax
+        jz      .errorRename
+        add     edi, 2
+.callFS:
+        pop     eax ebp
+        call    eax
+        pop     ebp edx
         mov     dword [esp+20], ebx
 .cleanup:
         mov     dword [esp+32], eax
@@ -1501,6 +1533,8 @@ dyndisk_handler:
         movi    eax, ERROR_UNSUPPORTED_FS
         jmp     .cleanup
 
+.errorRename:
+        pop     eax eax ebp edx
 .notfound2:
         movi    eax, ERROR_FILE_NOT_FOUND
         jmp     .cleanup
