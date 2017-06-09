@@ -10,9 +10,9 @@
 
 :void _rgb::DwordToRgb(dword _dword)
 {
-	r = _dword & 0xFF; _dword >>= 8;
-	g = _dword & 0xFF; _dword >>= 8;
 	b = _dword & 0xFF; _dword >>= 8;
+	g = _dword & 0xFF; _dword >>= 8;
+	r = _dword & 0xFF; _dword >>= 8;
 }
 
 :dword _rgb::RgbToDword()
