@@ -211,7 +211,7 @@ void Event_AsseptRisk()
 
 void Event_ShowReadme()
 {
-	io.run("/sys/textreader", #cur_readme_path);
+	io.run("/sys/txtread", #cur_readme_path);
 }
 
 void Event_RunInstall()
