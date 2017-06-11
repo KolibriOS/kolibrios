@@ -1,6 +1,6 @@
 ;    ssh.asm - SSH client for KolibriOS
 ;
-;    Copyright (C) 2015-2016 Jeffrey Amelynck
+;    Copyright (C) 2015-2017 Jeffrey Amelynck
 ;
 ;    This program is free software: you can redistribute it and/or modify
 ;    it under the terms of the GNU General Public License as published by
@@ -31,8 +31,8 @@ use32
         dd      1               ; header version
         dd      start           ; entry point
         dd      i_end           ; initialized size
-        dd      mem+4096        ; required memory
-        dd      mem+4096        ; stack pointer
+        dd      mem+65536       ; required memory
+        dd      mem+65536       ; stack pointer
         dd      params          ; parameters
         dd      0               ; path
 
@@ -47,14 +47,19 @@ include '../../develop/libraries/libcrash/trunk/libcrash.inc'
 
 include 'mcodes.inc'
 include 'ssh_transport.inc'
+
 include 'dh_gex.inc'
 
 include 'mpint.inc'
 include 'random.inc'
+
 include 'aes256.inc'
 include 'aes256-ctr.inc'
 include 'aes256-cbc.inc'
+
 include 'hmac_sha256.inc'
+include 'hmac_sha1.inc'
+include 'hmac_md5.inc'
 
 ; macros for network byte order
 macro dd_n op {
@@ -162,6 +167,9 @@ struct  ssh_connection
 
         temp_ctx                ctx_sha224256
         k_h_ctx                 ctx_sha224256
+
+        mpint_tmp               dd ?
+                                rb MAX_BITS/8
 
 ends
 
@@ -692,9 +700,9 @@ ssh_kex:
 
 ssh_gex_req:
         db SSH_MSG_KEX_DH_GEX_REQUEST
-        dd_n 128                        ; DH GEX min
-        dd_n 256                        ; DH GEX number of bits
-        dd_n 512                        ; DH GEX Max
+        dd_n 8192/4                      ; DH GEX min
+        dd_n 8192/2                      ; DH GEX number of bits
+        dd_n 8192                        ; DH GEX Max
   .length = $ - ssh_gex_req
 
 
@@ -793,7 +801,13 @@ import  console, \
 import  libcrash, \
         sha256_init, 'sha256_init', \
         sha256_update, 'sha256_update', \
-        sha256_final, 'sha256_final'
+        sha256_final, 'sha256_final',\
+        sha1_init, 'sha1_init', \
+        sha1_update, 'sha1_update', \
+        sha1_final, 'sha1_final', \
+        md5_init, 'md5_init', \
+        md5_update, 'md5_update', \
+        md5_final, 'md5_final'
 
 IncludeIGlobals
 
@@ -804,9 +818,5 @@ IncludeUGlobals
 params          rb 1024
 
 con             ssh_connection
-
-; Temporary values      ; To be removed FIXME
-mpint_tmp       rb MPINT_MAX_LEN+4
-
 
 mem:

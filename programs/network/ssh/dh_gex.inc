@@ -82,12 +82,10 @@ if ((MAX_BITS-DH_PRIVATE_KEY_SIZE) > 0)
 end if
 
         DEBUGF  1, "DH x: "
-        stdcall mpint_length, con.dh_x;;;;;;;;;;;;;
         stdcall mpint_print, con.dh_x
 
 ; Compute e = g^x mod p
         stdcall mpint_modexp, con.dh_e, con.dh_g, con.dh_x, con.dh_p
-        stdcall mpint_length, con.dh_e
 
         DEBUGF  1, "DH e: "
         stdcall mpint_print, con.dh_e
@@ -138,18 +136,18 @@ end if
 ;----------------------------
 ; HASH: mpint p, safe prime
         mov     esi, con.dh_p
-        mov     edi, mpint_tmp
+        mov     edi, con.mpint_tmp
         call    mpint_to_big_endian
         lea     edx, [eax+4]
-        invoke  sha256_update, con.temp_ctx, mpint_tmp, edx
+        invoke  sha256_update, con.temp_ctx, con.mpint_tmp, edx
 
 ;----------------------------------------
 ; HASH: mpint g, generator for subgroup
         mov     esi, con.dh_g
-        mov     edi, mpint_tmp
+        mov     edi, con.mpint_tmp
         call    mpint_to_big_endian
         lea     edx, [eax+4]
-        invoke  sha256_update, con.temp_ctx, mpint_tmp, edx
+        invoke  sha256_update, con.temp_ctx, con.mpint_tmp, edx
 
 ;---------------------------------------------------
 ; HASH: mpint e, exchange value sent by the client
@@ -183,7 +181,6 @@ end if
 ;--------------------------------------
 ; Calculate shared secret K = f^x mod p
         stdcall mpint_modexp, con.rx_buffer, con.dh_f, con.dh_x, con.dh_p
-        stdcall mpint_length, con.rx_buffer
 
         DEBUGF  1, "DH K: "
         stdcall mpint_print, con.rx_buffer
