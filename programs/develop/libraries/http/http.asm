@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  HTTP library for KolibriOS                                     ;;
@@ -1463,11 +1463,7 @@ endl
 ; Resolve the hostname
         DEBUGF  1, "Resolving hostname\n"
         push    esp     ; reserve stack place
-        push    esp     ; fourth parameter
-        push    0       ; third parameter
-        push    0       ; second parameter
-        push    [hostname]
-        call    [getaddrinfo]
+        invoke  getaddrinfo, [hostname], 0, 0, esp
         pop     esi
         test    eax, eax
         jnz     .error1
@@ -1489,27 +1485,37 @@ endl
         xchg    al, ah
         mov     [esi + sockaddr_in.sin_port], ax
 
-; Connect to the server.
+; Open a new TCP socket
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         test    eax, eax
-        jz      .error2
+        jz      .error3
         mov     [socketnum], eax
         DEBUGF  1, "Socket: 0x%x\n", eax
 
+; Connect to the server
         mcall   connect, [socketnum], [sockaddr], 18
         test    eax, eax
-        jnz     .error2
+        jnz     .error3
         DEBUGF  1, "Socket is now connected.\n"
 
-; free allocated memory
-        call    [freeaddrinfo]
+        invoke  freeaddrinfo            ; Free allocated memory
         mov     eax, [socketnum]
         ret
 
+  .error3:
+        DEBUGF  2, "Could not connect to the remote server\n"
+        invoke  freeaddrinfo            ; Free allocated memory
+        xor     eax, eax
+        ret
+
   .error2:
-; free allocated memory
-        call    [freeaddrinfo]
+        DEBUGF  2, "Resolving hostname failed\n"
+        invoke  freeaddrinfo            ; Free allocated memory
+        xor     eax, eax
+        ret
+
   .error1:
+        DEBUGF  2, "Contacting DNS server failed\n"
         xor     eax, eax
         ret
 
