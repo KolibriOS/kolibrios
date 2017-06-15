@@ -27,6 +27,8 @@ include "core/apic.inc"
 include "core/timers.inc"
 include "core/clipboard.inc"
 
+include "posix/posix.inc"
+
 include "boot/shutdown.inc"     ; kernel shutdown
 
 include "video/vesa20.inc"

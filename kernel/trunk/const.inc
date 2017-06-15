@@ -413,6 +413,29 @@ FUTEX_DESTROY   equ 1
 FUTEX_WAIT      equ 2
 FUTEX_WAKE      equ 3
 
+struct  FILED
+        list            LHEAD
+        magic           rd 1
+        handle          rd 1
+        destroy         rd 1
+        file            rd 1
+ends
+
+struct  PIPE
+        pipe_ops        rd 1
+        buffer          rd 1
+        readers         rd 1
+        writers         rd 1
+
+        pipe_lock       MUTEX
+        count           rd 1
+
+        read_end        rd 1
+        write_end       rd 1
+        rlist           LHEAD
+        wlist           LHEAD
+ends
+
 struct  PROC
         list            LHEAD
         thr_list        LHEAD

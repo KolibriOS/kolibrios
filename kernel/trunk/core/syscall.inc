@@ -175,7 +175,7 @@ iglobal
       dd sys_network             ; 74-reserved for new stack
       dd sys_socket              ; 75-reserved for new stack
       dd sys_protocols           ; 76-reserved for new stack
-      dd sys_synchronization     ; 77
+      dd sys_posix               ; posix support
       dd undefined_syscall       ; 78-free
       dd undefined_syscall       ; 79-free
       dd fileSystemUnicode       ; 80-File system interface for different encodings

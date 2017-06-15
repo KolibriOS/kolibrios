@@ -1437,6 +1437,8 @@ destroy_kernel_object:
         call    free           ;release object memory
         ret
 
+
+;void* __fastcall create_object(size_t size)
 ; param
 ;  ecx= size
 
@@ -1483,5 +1485,35 @@ create_object:
         pop     edi
         pop     esi
         xor     eax, eax
+        ret
+
+
+;int __fastcall destroy_object(struct object *obj)
+
+align 4
+destroy_object:
+        push    esi
+        mov     esi, [current_process]
+        mov     edx, [ecx+FUTEX.handle]
+
+        pushfd
+        cli
+
+        mov     eax, [esi+PROC.ht_next]
+        mov     [esi+PROC.htab+edx*4], eax
+        mov     [esi+PROC.ht_next], edx
+        inc     [esi+PROC.ht_free]
+
+        popfd
+        pop     esi
+
+        mov     eax, ecx
+        call    free
+        xor     eax, eax
+        ret
+.fail:
+        popfd
+        pop     esi
+        mov     eax, -1
         ret
 
