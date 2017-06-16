@@ -88,6 +88,9 @@ sys_read:
         cmp     [ebp+FILED.handle], ecx
         jne     .fail
 
+        test    [ebp+FILED.mode], F_READ
+        jz      .fail
+
         mov     ebp, [ebp+FILED.file]
         mov     eax, [ebp]
         jmp     dword [eax+FILEOP_READ*4]
@@ -114,6 +117,8 @@ sys_write:
         jne     .fail
         cmp     [ebp+FILED.handle], ecx
         jne     .fail
+        test    [ebp+FILED.mode], F_WRITE
+        jz      .fail
 
         mov     ebp, [ebp+FILED.file]
         mov     eax, [ebp]

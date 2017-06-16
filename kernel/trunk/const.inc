@@ -418,6 +418,7 @@ struct  FILED
         magic           rd 1
         handle          rd 1
         destroy         rd 1
+        mode            rd 1
         file            rd 1
 ends
 
