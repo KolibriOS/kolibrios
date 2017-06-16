@@ -40,8 +40,8 @@ sys_pipe2:
         mov     ebp, -EINVAL
         jnz     .fail
 
-        push    ecx
         push    edx
+        push    ecx
         sub     esp, (5-2)*4
 
         mov     ecx, sizeof.FILED
@@ -101,6 +101,9 @@ sys_pipe2:
         mov     [edx+FILED.magic], 'PIPE'
         mov     [edx+FILED.destroy], 0
         mov     [edx+FILED.file], ebp
+
+        mov     eax, [eax+FILED.handle]
+        mov     edx, [edx+FILED.handle]
 
         mov     [ecx], eax
         mov     [ecx+4], edx
@@ -220,14 +223,15 @@ pipe_write:
         jb      .write
         mov     ecx, esi
 .write:
-        mov     esi, [ebp+PIPE.buffer]
-        add     esi, [ebp+PIPE.write_end]
+        mov     esi, edi
+        mov     edi, [ebp+PIPE.buffer]
+        add     edi, [ebp+PIPE.write_end]
         mov     [esp+SYSCALL_STACK._eax], ecx
         add     [ebp+PIPE.count], ecx
         cld
         rep movsb
-        and     esi, 0xFFF
-        mov     [ebp+PIPE.write_end], esi
+        and     edi, 0xFFF
+        mov     [ebp+PIPE.write_end], edi
 
         lea     ecx, [ebp+PIPE.pipe_lock]
         call    mutex_unlock
