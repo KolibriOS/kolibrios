@@ -13,7 +13,7 @@ EFAULT  equ     14
 ;EINVAL  equ     22      11   defined in stack.inc
 ENFILE  equ     23
 EMFILE  equ     24
-
+EPIPE   equ     32
 
 FILEOP_CLOSE    equ     0
 FILEOP_READ     equ     1
@@ -49,8 +49,8 @@ sys_posix_call:
         dd sys_futex        ;7     reserved
         dd sys_posix.fail   ;8     sys_open
         dd sys_posix.fail   ;9     sys_close
-        dd sys_posix.fail   ;10    sys_read
-        dd sys_posix.fail   ;11    sys_write
+        dd sys_read         ;10    read()
+        dd sys_write        ;11    write()
         dd sys_posix.fail   ;12    sys_dup3
         dd sys_pipe2        ;13
 .end:
@@ -91,6 +91,33 @@ sys_read:
         mov     ebp, [ebp+FILED.file]
         mov     eax, [ebp]
         jmp     dword [eax+FILEOP_READ*4]
+.fail:
+        mov     [esp+SYSCALL_STACK._eax], -EBADF
+        ret
+
+;ssize_t write(int fd, const void *buf, size_t count);
+; ecx fd
+; edx buf
+; esi count
+
+align 4
+sys_write:
+        cmp     ecx, STDERR_FILENO
+        jbe     .fail
+        cmp     ecx, (PROC.pdt_0 - PROC.htab)/4
+        jae     .fail
+
+        mov     edi, [current_process]
+        mov     ebp, [edi+PROC.htab+ecx*4]
+
+        cmp     [ebp+FILED.magic], 'PIPE'
+        jne     .fail
+        cmp     [ebp+FILED.handle], ecx
+        jne     .fail
+
+        mov     ebp, [ebp+FILED.file]
+        mov     eax, [ebp]
+        jmp     dword [eax+FILEOP_WRITE*4]
 .fail:
         mov     [esp+SYSCALL_STACK._eax], -EBADF
         ret
