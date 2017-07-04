@@ -57,14 +57,7 @@ int DrawFlatButton(dword x, y, id, text)
 	int padding_w = 15;
 	int width = strlen(text) * 8 + padding_w + padding_w;
 	int height = 25;
-	dword border_3d_light = MixColors(system.color.work_button,0xFFFfff,140);
-	dword border_3d_dark  = MixColors(system.color.work_button,0x111111,220);
-	dword border_light    = MixColors(system.color.work_button,0x111111,140);
-	dword border_dark     = MixColors(system.color.work_button,0x111111,100);
-	DrawRectangle3D(x,y,width,height,border_light, border_dark);
-	DrawRectangle3D(x+1,y+1,width-2,height-2, border_3d_light, border_3d_dark);
-	DrawBar(x+2, y+2, width-3, height-3, system.color.work_button);
-	if (id) DefineButton(x+1,y+1,width-2,height-2,id+BT_HIDE,0xEFEBEF);
+	if (id) DefineButton(x+1,y+1,width-2,height-2,id,system.color.work_button);
 	WriteText(x+padding_w,height/2+y-6,0x90,system.color.work_button_text,text);
 	return width + padding_w;
 }

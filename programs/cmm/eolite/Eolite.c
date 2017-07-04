@@ -146,8 +146,16 @@ void main()
 	SetAppColors();
 	if (param)
 	{
-		strcpy(#path, #param);
-		if (path[strlen(#path)-1]=='/') path[strlen(#path)-1]=NULL; //no "/" in the end
+		if (param[strlen(#param)-1]=='/') param[strlen(#param)-1]=NULL; //no "/" in the end
+
+		if (dir_exists(#param)==true) 
+		{
+			strcpy(#path, #param);
+		}
+		else
+		{
+			notify(T_NOTIFY_APP_PARAM_WRONG);
+		}
 	}		
 	
 	Open_Dir(#path,ONLY_OPEN);
@@ -214,7 +222,7 @@ void main()
 					if (mouse.key&MOUSE_LEFT) && (mouse.up)
 					{
 						if (files.ProcessMouse(mouse.x, mouse.y)) List_ReDraw();
-						else if (mouse.dblclick)) Open(0);
+						else if (mouse.dblclick) Open(0);
 					}
 					//file menu
 					if (mouse.key&MOUSE_RIGHT)
@@ -909,9 +917,9 @@ inline fastcall void GoBack()
 
 void ShowOpenWithDialog()
 {
-	byte param[4097];
-	sprintf(#param,"~%s",#file_path);
-	RunProgram("/sys/@open", #param);
+	byte open_param[4097];
+	sprintf(#open_param,"~%s",#file_path);
+	RunProgram("/sys/@open", #open_param);
 }
 
 void NewElement(byte newf)

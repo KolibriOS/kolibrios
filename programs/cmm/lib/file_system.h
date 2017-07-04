@@ -200,7 +200,7 @@
 :char dir_exists(dword fpath)
 {
 	BDVK fpath_atr;
-	GetFileInfo(fpath, #fpath_atr);
+	if (GetFileInfo(fpath, #fpath_atr) != 0) return false; 
 	return fpath_atr.isfolder;
 }
 :char file_exists(dword fpath)
