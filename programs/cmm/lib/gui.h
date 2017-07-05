@@ -149,12 +149,12 @@
 	#define SIZE 18
 	dword value_text = itoa(value);
 
-	DrawRectangle(x, y, VALUE_FIELD_W, SIZE, system.color.work_graph);
+	DrawRectangle(x, y, VALUE_FIELD_W+1, SIZE, system.color.work_graph);
 	DrawRectangle3D(x+1, y+1, VALUE_FIELD_W-2, SIZE-2, 0xDDDddd, 0xffffff);
 	DrawBar(x+2, y+2, VALUE_FIELD_W-3, SIZE-3, 0xffffff);
 	WriteText( -strlen(value_text)+3*8 + x+6, SIZE / 2 + y -6, 0x90, 0x333333, value_text);
 
-	DrawCaptButton(VALUE_FIELD_W + x,     y, SIZE, SIZE, bt_id_more, system.color.work_button, system.color.work_button_text, "+");
+	DrawCaptButton(VALUE_FIELD_W + x + 1,    y, SIZE, SIZE, bt_id_more, system.color.work_button, system.color.work_button_text, "+");
 	DrawCaptButton(VALUE_FIELD_W + x + SIZE, y, SIZE, SIZE, bt_id_less, system.color.work_button, system.color.work_button_text, "-");
 	EDI = system.color.work;
 	WriteText(x+VALUE_FIELD_W+SIZE+SIZE+10, SIZE / 2 + y -7, 0xD0, system.color.work_text, text);

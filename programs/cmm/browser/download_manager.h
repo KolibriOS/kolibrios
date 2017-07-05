@@ -22,7 +22,7 @@ char downloader_edit[10000];
 char filepath[4096];
 int mouse_twbi;
 edit_box ed = {250,20,20,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(downloader_edit),#downloader_edit,#mouse_twbi,2,19,19};
-progress_bar pb = {0, 170, 51, 225, 12, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
+progress_bar pb = {0, 200, 55, 225, 12, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
  
 byte downloader_opened;
 char downloader_stak[4096];
@@ -146,10 +146,7 @@ void DL_Draw_Window()
     ed.left = strlen("URL:")*8 + 10 + cleft;
     ed.width = DL_Form.cwidth - ed.left - cleft - 3;
     ed.offset=0;
-    //edit_box_draw stdcall(#ed);
     DrawEditBox(#ed);
-    //DrawRectangle(ed.left-1, ed.top-1, ed.width+2, 16, ed.blur_border_color);
-    //DrawRectangle(ed.left-2, ed.top-2, ed.width+4, 18, border_color);
 }
  
 void StartDownloading()

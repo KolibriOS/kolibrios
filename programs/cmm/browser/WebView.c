@@ -30,7 +30,7 @@
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.58";
+char version[]="Текстовый браузер 1.6";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -43,7 +43,7 @@ char rmb_menu[] =
 Очистить кэш картинок
 Менеджер загрузок";
 #else
-char version[]="Text-based Browser 1.58";
+char version[]="Text-based Browser 1.6";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -84,7 +84,8 @@ dword panel_color;
 dword border_color;
 
 progress_bar wv_progress_bar;
-byte souce_mode = false;
+bool souce_mode = false;
+bool open_in_a_new_window = false;
 
 enum { 
 	BACK_BUTTON=1000, 
@@ -503,6 +504,7 @@ void DrawProgress()
 	DrawBar(address_box.left-2, address_box.top+20, btn, 2, wv_progress_bar.progress_color);
 }
 
+
 char anchor[256];
 void ClickLink()
 {
@@ -571,7 +573,17 @@ void ClickLink()
 			return;
 		}
 	}
-	OpenPage();
+	if (open_in_a_new_window)
+	{
+		RunProgram(#program_path, #URL);
+		strcpy(#editURL, history.current());
+		strcpy(#URL, history.current());
+	}
+	else 
+	{
+		OpenPage();
+	}
+	open_in_a_new_window = false;
 }
 
 void EventShowPageMenu(dword _left, _top)

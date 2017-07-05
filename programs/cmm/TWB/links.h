@@ -74,9 +74,8 @@ bool LinksArray::HoverAndProceed(dword mx, my)
 				return false;
 			}
 			if (mouse.mkm) && (mouse.up) {
-			//	strcpy(#URL_temp, links[active].link);
-			//	GetAbsoluteUrl(#URL_temp);
-			//	RunProgram(#program_path, #URL_temp);
+				open_in_a_new_window = true;
+				ClickLink();
 				return false;
 			}
 			if (mouse.lkm) && (mouse.up) { 
