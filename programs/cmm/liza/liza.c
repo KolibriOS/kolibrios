@@ -88,6 +88,8 @@ dword col_bg;
 dword panel_color;
 dword border_color;
 
+bool open_in_a_new_window = false;
+
 progress_bar wv_progress_bar = {0, 10, 83, 150, 12, 0, 0, 100, 0xeeeEEE, 8072B7EBh, 0x9F9F9F};
 
 int http_transfer;
