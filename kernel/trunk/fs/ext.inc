@@ -29,6 +29,7 @@ ext_user_functions:
         dd      0
         dd      ext_Delete
         dd      ext_CreateFolder
+        dd      ext_Rename
 ext_user_functions_end:
 endg
 
@@ -1514,21 +1515,11 @@ linkInode:
         mov     eax, [esp]
         mov     [edi+DIRENTRY.fileType], al
 @@:
-        push    ebx
         add     edi, 8
         rep movsb
         mov     eax, edx
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         call    extfsWriteBlock
-        mov     eax, [esp]
-        lea     ebx, [ebp+EXTFS.inodeBuffer]
-        call    readInode
-        jc      .error_block_write
-        pop     eax
-        inc     [ebx+INODE.linksCount]
-        call    writeInode
-        jc      @f
-        xor     eax, eax
 @@:
         pop     edx ecx ecx ebx edi esi
         ret
@@ -1538,9 +1529,7 @@ linkInode:
 .error_get_inode_block:
         pop     ebx ebx
 .error_inode_read:
-        pop     ebx ebx
-.error_block_write:
-        pop     ebx
+        pop     ebx ebx ebx
         jmp     @b
 
 unlinkInode:
@@ -2340,6 +2329,7 @@ ext_CreateFolder:
         pop     edi esi edx
 ; edx = allocated inode number, edi -> filename, esi = parent inode number
         mov     [ebx+INODE.accessMode], DIRECTORY or 511
+        mov     byte [ebx+INODE.linksCount], 2
         mov     eax, edx
         call    writeInode
         jc      .error
@@ -2362,11 +2352,20 @@ ext_CreateFolder:
         pop     esi edx
         jc      .error
 ; link parent to child
+        push    esi
         mov     eax, esi
         mov     ebx, edx
         mov     esi, edi
         mov     dl, DIR_DIRECTORY
         call    linkInode
+        pop     edx
+        jc      .error
+        push    ebx
+        lea     ebx, [ebp+EXTFS.inodeBuffer]
+        inc     [ebx+INODE.linksCount]
+        mov     eax, edx
+        call    writeInode
+        pop     ebx
         jc      .error
         mov     eax, ebx
         dec     eax
@@ -2414,6 +2413,7 @@ ext_CreateFile:
         pop     edi esi edx
 ; edx = allocated inode number, edi -> filename, esi = parent inode number
         mov     [ebx+INODE.accessMode], FLAG_FILE or 110110110b
+        mov     byte [ebx+INODE.linksCount], 1
         mov     eax, edx
         call    writeInode
         jc      .error2
@@ -2423,6 +2423,10 @@ ext_CreateFile:
         mov     esi, edi
         mov     dl, DIR_FLAG_FILE
         call    linkInode
+        jc      .error2
+        mov     eax, ebx
+        lea     ebx, [ebp+EXTFS.inodeBuffer]
+        call    readInode
         jc      .error2
         pop     esi ebx
         mov     eax, [ebx+12]
@@ -2641,4 +2645,64 @@ ext_SetFileEnd:
         push    eax
         call    ext_unlock
         pop     eax
+        ret
+
+;----------------------------------------------------------------
+ext_Rename:
+        call    extfsWritingInit
+        push    esi
+        mov     esi, edi
+        call    findInode
+        jnc     .error
+        test    edi, edi
+        jz      .error
+        xchg    [esp], esi
+        push    edi
+        call    findInode
+        pop     edi
+        jc      .error
+        xor     edx, edx
+        inc     edx
+        test    [ebp+EXTFS.inodeBuffer.accessMode], DIRECTORY
+        jz      @f
+        inc     edx
+@@:
+        mov     eax, ecx
+        push    ecx edx
+        call    unlinkInode
+        pop     edx ecx
+        jc      .error
+        cmp     edx, 1
+        jz      @f
+        lea     ebx, [ebp+EXTFS.inodeBuffer]
+        dec     [ebx+INODE.linksCount]
+        mov     eax, ecx
+        call    writeInode
+        jc      .error
+@@:
+        mov     ebx, esi
+        mov     esi, edi
+        pop     eax
+        push    eax edx
+        call    linkInode
+        pop     edx
+        jc      .error
+        pop     eax
+        cmp     edx, 1
+        jz      @f
+        lea     ebx, [ebp+EXTFS.inodeBuffer]
+        inc     [ebx+INODE.linksCount]
+        call    writeInode
+@@:
+        call    writeSuperblock
+        mov     esi, [ebp+PARTITION.Disk]
+        call    disk_sync
+        call    ext_unlock
+        xor     eax, eax
+        ret
+
+.error:
+        push    eax
+        call    ext_unlock
+        pop     eax ebx
         ret
