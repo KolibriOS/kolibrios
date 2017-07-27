@@ -33,7 +33,7 @@
  */
 
 #include <linux/spinlock.h>
-//#include <linux/preempt.h>
+#include <linux/preempt.h>
 #include <linux/lockdep.h>
 #include <linux/compiler.h>
 #include <asm/processor.h>

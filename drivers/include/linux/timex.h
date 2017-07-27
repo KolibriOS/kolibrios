@@ -53,12 +53,15 @@
 #ifndef _LINUX_TIMEX_H
 #define _LINUX_TIMEX_H
 
+#include <uapi/linux/timex.h>
+
 #define ADJ_ADJTIME		0x8000	/* switch between adjtime/adjtimex modes */
 #define ADJ_OFFSET_SINGLESHOT	0x0001	/* old-fashioned adjtime */
 #define ADJ_OFFSET_READONLY	0x2000	/* read-only adjtime */
 #include <linux/compiler.h>
 #include <linux/types.h>
 
+#include <asm/timex.h>
 
 #ifndef random_get_entropy
 /*
@@ -147,7 +150,8 @@ extern unsigned long tick_nsec;		/* SHIFTED_HZ period (nsec) */
 #define NTP_INTERVAL_FREQ  (HZ)
 #define NTP_INTERVAL_LENGTH (NSEC_PER_SEC/NTP_INTERVAL_FREQ)
 
-
+extern int do_adjtimex(struct timex *);
+extern void hardpps(const struct timespec64 *, const struct timespec64 *);
 
 int read_current_timer(unsigned long *timer_val);
 void ntp_notify_cmos_timer(void);

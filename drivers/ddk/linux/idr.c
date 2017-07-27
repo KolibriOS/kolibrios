@@ -22,6 +22,7 @@
 
 #ifndef TEST                        // to test in user space...
 #include <linux/slab.h>
+#include <linux/init.h>
 #include <linux/export.h>
 #endif
 #include <linux/err.h>

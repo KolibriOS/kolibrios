@@ -354,7 +354,7 @@ static inline unsigned long _msecs_to_jiffies(const unsigned int m)
  * directly here and from __msecs_to_jiffies() in the case where
  * constant folding is not possible.
  */
-static inline unsigned long msecs_to_jiffies(const unsigned int m)
+static __always_inline unsigned long msecs_to_jiffies(const unsigned int m)
 {
 	if (__builtin_constant_p(m)) {
 		if ((int)m < 0)

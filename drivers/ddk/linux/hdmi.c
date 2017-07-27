@@ -27,10 +27,12 @@
 #include <linux/export.h>
 #include <linux/hdmi.h>
 #include <linux/string.h>
+#include <linux/device.h>
 
-static void hdmi_infoframe_checksum(void *buffer, size_t size)
+#define hdmi_log(fmt, ...) dev_printk(level, dev, fmt, ##__VA_ARGS__)
+
+static u8 hdmi_infoframe_checksum(u8 *ptr, size_t size)
 {
-	u8 *ptr = buffer;
 	u8 csum = 0;
 	size_t i;
 
@@ -38,7 +40,14 @@ static void hdmi_infoframe_checksum(void *buffer, size_t size)
 	for (i = 0; i < size; i++)
 		csum += ptr[i];
 
-	ptr[3] = 256 - csum;
+	return 256 - csum;
+}
+
+static void hdmi_infoframe_set_checksum(void *buffer, size_t size)
+{
+	u8 *ptr = buffer;
+
+	ptr[3] = hdmi_infoframe_checksum(buffer, size);
 }
 
 /**
@@ -136,7 +145,7 @@ ssize_t hdmi_avi_infoframe_pack(struct hdmi_avi_infoframe *frame, void *buffer,
 	ptr[11] = frame->right_bar & 0xff;
 	ptr[12] = (frame->right_bar >> 8) & 0xff;
 
-	hdmi_infoframe_checksum(buffer, length);
+	hdmi_infoframe_set_checksum(buffer, length);
 
 	return length;
 }
@@ -206,7 +215,7 @@ ssize_t hdmi_spd_infoframe_pack(struct hdmi_spd_infoframe *frame, void *buffer,
 
 	ptr[24] = frame->sdi;
 
-	hdmi_infoframe_checksum(buffer, length);
+	hdmi_infoframe_set_checksum(buffer, length);
 
 	return length;
 }
@@ -281,7 +290,7 @@ ssize_t hdmi_audio_infoframe_pack(struct hdmi_audio_infoframe *frame,
 	if (frame->downmix_inhibit)
 		ptr[4] |= BIT(7);
 
-	hdmi_infoframe_checksum(buffer, length);
+	hdmi_infoframe_set_checksum(buffer, length);
 
 	return length;
 }
@@ -373,7 +382,7 @@ ssize_t hdmi_vendor_infoframe_pack(struct hdmi_vendor_infoframe *frame,
 			ptr[9] = (frame->s3d_ext_data & 0xf) << 4;
 	}
 
-	hdmi_infoframe_checksum(buffer, length);
+	hdmi_infoframe_set_checksum(buffer, length);
 
 	return length;
 }

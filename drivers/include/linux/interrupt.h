@@ -6,6 +6,7 @@
 #include <linux/bitops.h>
 #include <linux/irqreturn.h>
 #include <linux/kref.h>
+#include <linux/atomic.h>
 /*
  * These correspond to the IORESOURCE_IRQ_* defines in
  * linux/ioport.h to select the interrupt line behaviour.  When

@@ -13,6 +13,7 @@
 #include <linux/time.h>
 #include <linux/list.h>
 #include <linux/cache.h>
+#include <linux/timer.h>
 #include <linux/init.h>
 #include <asm/div64.h>
 #include <asm/io.h>

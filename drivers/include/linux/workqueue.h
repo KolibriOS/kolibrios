@@ -5,7 +5,7 @@
 #ifndef _LINUX_WORKQUEUE_H
 #define _LINUX_WORKQUEUE_H
 
-#include <linux/list.h>
+#include <linux/timer.h>
 #include <linux/linkage.h>
 #include <linux/bitops.h>
 #include <linux/lockdep.h>

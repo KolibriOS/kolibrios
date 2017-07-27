@@ -12,5 +12,11 @@
 struct file;
 
 extern void fput(struct file *);
+struct fd {
+	struct file *file;
+	unsigned int flags;
+};
+#define FDPUT_FPUT       1
+#define FDPUT_POS_UNLOCK 2
 extern struct file *fget(unsigned int fd);
 #endif /* __LINUX_FILE_H */

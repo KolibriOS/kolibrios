@@ -2,6 +2,9 @@
 #define _LINUX_SWAP_H
 
 #include <linux/spinlock.h>
+#include <linux/list.h>
+#include <linux/fs.h>
+#include <linux/atomic.h>
 
 struct notifier_block;
 
