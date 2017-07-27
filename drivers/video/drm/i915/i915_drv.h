@@ -1173,7 +1173,7 @@ struct intel_gen6_power_mgmt {
 	struct intel_rps_client semaphores, mmioflips;
 
 	/* manual wa residency calculations */
-	struct intel_rps_ei up_ei, down_ei;
+	struct intel_rps_ei ei;
 
 	/*
 	 * Protects RPS/RC6 register access and PCU communication.
@@ -2158,10 +2158,6 @@ struct drm_i915_gem_object {
 	/** Record of address bit 17 of each page at last unbind. */
 	unsigned long *bit_17;
 
-	union {
-		/** for phy allocated objects */
-		struct drm_dma_handle *phys_handle;
-
 		struct i915_gem_userptr {
 			uintptr_t ptr;
 			unsigned read_only :1;
@@ -2172,7 +2168,9 @@ struct drm_i915_gem_object {
 			struct i915_mmu_object *mmu_object;
 			struct work_struct *work;
 		} userptr;
-	};
+
+	/** for phys allocated objects */
+	struct drm_dma_handle *phys_handle;
 };
 #define to_intel_bo(x) container_of(x, struct drm_i915_gem_object, base)
 
@@ -3323,6 +3321,9 @@ static inline bool intel_gmbus_is_forced_bit(struct i2c_adapter *adapter)
 	return container_of(adapter, struct intel_gmbus, adapter)->force_bit;
 }
 extern void intel_i2c_reset(struct drm_device *dev);
+
+/* intel_bios.c */
+bool intel_bios_is_port_present(struct drm_i915_private *dev_priv, enum port port);
 
 /* intel_opregion.c */
 #ifdef CONFIG_ACPI

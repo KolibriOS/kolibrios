@@ -32,6 +32,7 @@
 #include "i915_trace.h"
 #include "intel_drv.h"
 #include <linux/dma_remapping.h>
+#include <linux/uaccess.h>
 
 #define  __EXEC_OBJECT_HAS_PIN (1<<31)
 #define  __EXEC_OBJECT_HAS_FENCE (1<<30)
@@ -541,13 +542,13 @@ i915_gem_execbuffer_relocate(struct eb_vmas *eb)
 	 * acquire the struct mutex again. Obviously this is bad and so
 	 * lockdep complains vehemently.
 	 */
-//	pagefault_disable();
+	pagefault_disable();
 	list_for_each_entry(vma, &eb->vmas, exec_list) {
 		ret = i915_gem_execbuffer_relocate_vma(vma, eb);
 		if (ret)
 			break;
 	}
-//   pagefault_enable();
+	pagefault_enable();
 
 	return ret;
 }

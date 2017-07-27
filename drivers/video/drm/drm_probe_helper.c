@@ -323,12 +323,10 @@ EXPORT_SYMBOL(drm_helper_probe_single_connector_modes_nomerge);
  */
 void drm_kms_helper_hotplug_event(struct drm_device *dev)
 {
-ENTER();
     /* send a uevent + call fbdev */
 	drm_sysfs_hotplug_event(dev);
 	if (dev->mode_config.funcs->output_poll_changed)
 		dev->mode_config.funcs->output_poll_changed(dev);
-LEAVE();
 }
 EXPORT_SYMBOL(drm_kms_helper_hotplug_event);
 

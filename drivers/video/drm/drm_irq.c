@@ -36,7 +36,7 @@
 //#include "drm_trace.h"
 #include "drm_internal.h"
 
-//#include <linux/interrupt.h>   /* For task queue support */
+#include <linux/interrupt.h>	/* For task queue support */
 #include <linux/slab.h>
 
 #include <linux/vgaarb.h>
@@ -1238,6 +1238,9 @@ void drm_vblank_off(struct drm_device *dev, unsigned int pipe)
 	spin_lock(&dev->vbl_lock);
 	DRM_DEBUG_VBL("crtc %d, vblank enabled %d, inmodeset %d\n",
 		      pipe, vblank->enabled, vblank->inmodeset);
+
+	/* Avoid redundant vblank disables without previous drm_vblank_on(). */
+	if (drm_core_check_feature(dev, DRIVER_ATOMIC) || !vblank->inmodeset)
 	vblank_disable_and_save(dev, pipe);
 
 	wake_up(&vblank->queue);

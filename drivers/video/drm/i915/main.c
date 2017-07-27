@@ -16,7 +16,7 @@
 #include "bitmap.h"
 #include "i915_kos32.h"
 
-#define DRV_NAME "i915 v4.4.30"
+#define DRV_NAME "i915 v4.4.78"
 
 #define I915_DEV_CLOSE 0
 #define I915_DEV_INIT  1

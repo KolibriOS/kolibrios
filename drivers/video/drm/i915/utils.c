@@ -396,7 +396,7 @@ static unsigned long round_jiffies_common(unsigned long j, int cpu,
 }
 
 
-unsigned long round_jiffies_up_relative(unsigned long j, int cpu)
+unsigned long round_jiffies_up_relative(unsigned long j)
 {
         unsigned long j0 = jiffies;
 
