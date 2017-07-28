@@ -74,7 +74,7 @@ int radeon_bapm = -1;
 int radeon_backlight = 0;
 int radeon_auxch = -1;
 int radeon_mst = 0;
- 
+
 extern display_t *os_display;
 extern struct drm_device *main_device;
 extern videomode_t usermode;
@@ -1198,7 +1198,7 @@ static void radeon_check_arguments(struct radeon_device *rdev)
 	}
 
 	if (radeon_vm_size < 1) {
-		dev_warn(rdev->dev, "VM size (%d) to small, min is 1GB\n",
+		dev_warn(rdev->dev, "VM size (%d) too small, min is 1GB\n",
 			 radeon_vm_size);
 		radeon_vm_size = 4;
 	}

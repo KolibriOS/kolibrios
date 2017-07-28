@@ -716,7 +716,7 @@ size_t pci_get_rom_size(struct pci_dev *pdev, void __iomem *rom, size_t size)
                 if (readb(image) != 0x55) {
                         dev_err(&pdev->dev, "Invalid ROM contents\n");
                         break;
-            }
+                }
                 if (readb(image + 1) != 0xAA)
                         break;
                 /* get the PCI data structure and check its signature */

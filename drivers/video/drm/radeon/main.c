@@ -5,9 +5,12 @@
 #include "radeon.h"
 #include "bitmap.h"
 
-#define DRV_NAME "atikms v4.4.30"
+#define DRV_NAME "atikms v4.5.7"
 
 void __init dmi_scan_machine(void);
+int printf ( const char * format, ... );
+void parse_cmdline(char *cmdline, videomode_t *mode, char *log, int *kms);
+int kmap_init();
 
 #define KMS_DEV_CLOSE 0
 #define KMS_DEV_INIT  1
@@ -311,14 +314,3 @@ int seq_printf(struct seq_file *m, const char *f, ...)
 //        return ret;
     return 0;
 }
-
-s64 div64_s64(s64 dividend, s64 divisor)
-{
-        s64 quot, t;
-
-        quot = div64_u64(abs(dividend), abs(divisor));
-        t = (dividend ^ divisor) >> 63;
-
-        return (quot ^ t) - t;
-}
-

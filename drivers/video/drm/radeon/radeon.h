@@ -1884,7 +1884,7 @@ struct radeon_asic {
 		void (*pad_ib)(struct radeon_ib *ib);
 	} vm;
 	/* ring specific callbacks */
-	struct radeon_asic_ring *ring[RADEON_NUM_RINGS];
+	const struct radeon_asic_ring *ring[RADEON_NUM_RINGS];
 	/* irqs */
 	struct {
 		int (*set)(struct radeon_device *rdev);
@@ -2382,6 +2382,7 @@ struct radeon_device {
 	struct mutex dc_hw_i2c_mutex; /* display controller hw i2c mutex */
 	bool has_uvd;
 	struct r600_audio audio; /* audio stuff */
+	struct notifier_block acpi_nb;
 	/* only one userspace can use Hyperz features or CMASK at a time */
 	struct drm_file *hyperz_filp;
 	struct drm_file *cmask_filp;
@@ -2926,7 +2927,5 @@ resource_size_t
 drm_get_resource_start(struct drm_device *dev, unsigned int resource);
 resource_size_t
 drm_get_resource_len(struct drm_device *dev, unsigned int resource);
-
-#define ioread32(addr)          readl(addr)
 
 #endif

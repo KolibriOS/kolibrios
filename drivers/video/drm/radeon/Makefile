@@ -1,42 +1,45 @@
-CC = gcc
+CC = kos32-gcc
 LD = ld
 AS = as
 FASM = fasm.exe
 
-DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_X86_CMPXCHG64 -DCONFIG_TINY_RCU
-DEFINES += -DCONFIG_X86_L1_CACHE_SHIFT=6
-DEFINES += -DCONFIG_DRM_FBDEV_EMULATION -DCONFIG_DMI -DCONFIG_ARCH_HAS_CACHE_LINE_SIZE
+DEFINES	 = -DDRM_DEBUG_CODE=0 -D__KERNEL__ -DCONFIG_X86 -DCONFIG_X86_32 -DCONFIG_PCI
+DEFINES += -DCONFIG_X86_CMPXCHG64 -DCONFIG_TINY_RCU -DCONFIG_X86_L1_CACHE_SHIFT=6
+DEFINES += -DCONFIG_DRM_FBDEV_EMULATION -DCONFIG_DMI
+DEFINES += -DKBUILD_MODNAME=\"ati.dll\"
 
-DRV_TOPDIR   = $(CURDIR)/../../..
+DDK_TOPDIR   = $(CURDIR)/../../..
+DDK_INCLUDES = $(DRV_TOPDIR)/include
 DRM_TOPDIR   = $(CURDIR)/..
 
-DRV_INCLUDES = $(DRV_TOPDIR)/include
-
-INCLUDES =	-I$(DRV_INCLUDES)	\
-		-I$(DRV_INCLUDES)/asm 	\
-		-I$(DRV_INCLUDES)/uapi	\
-		-I$(DRV_INCLUDES)/drm -I./ -I$(DRV_INCLUDES)
+INCLUDES =	-I$(DDK_INCLUDES)	\
+		-I$(DDK_INCLUDES)/asm 	\
+		-I$(DDK_INCLUDES)/uapi	\
+		-I$(DDK_INCLUDES)/drm -I./
 
 CFLAGS= -c -O2 $(INCLUDES) $(DEFINES) -march=i686 -fno-ident -fomit-frame-pointer -fno-builtin-printf
 CFLAGS+= -mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -mno-ms-bitfields
 
-LIBPATH:= $(DRV_TOPDIR)/ddk
+LIBPATH:= $(DDK_TOPDIR)
 
 LIBS:=    -lddk -lcore -lgcc
 
-LDFLAGS = -nostdlib -shared -s -Map atikms.map --image-base 0\
+PE_FLAGS = --major-os-version 0 --minor-os-version 7 --major-subsystem-version 0 \
+          --minor-subsystem-version 5 --subsystem native
+
+LDFLAGS = -nostdlib -shared -s $(PE_FLAGS) --image-base 0\
 	  --file-alignment 512 --section-alignment 4096
 
 
 NAME:=	  atikms
 
-HFILES:=     		$(DRV_INCLUDES)/linux/types.h		\
-			$(DRV_INCLUDES)/linux/list.h		\
-			$(DRV_INCLUDES)/linux/pci.h		\
-			$(DRV_INCLUDES)/drm/drmP.h		\
-			$(DRV_INCLUDES)/drm/drm_edid.h		\
-			$(DRV_INCLUDES)/drm/drm_crtc.h		\
-			$(DRV_INCLUDES)/drm/drm_mm.h		\
+HFILES:=     		$(DDK_INCLUDES)/linux/types.h		\
+			$(DDK_INCLUDES)/linux/list.h		\
+			$(DDK_INCLUDES)/linux/pci.h		\
+			$(DDK_INCLUDES)/drm/drmP.h		\
+			$(DDK_INCLUDES)/drm/drm_edid.h		\
+			$(DDK_INCLUDES)/drm/drm_crtc.h		\
+			$(DDK_INCLUDES)/drm/drm_mm.h		\
 			atom.h					\
 			radeon.h				\
 			radeon_asic.h
@@ -233,7 +236,7 @@ $(NAME).dll: $(NAME_OBJS) $(FW_BINS) $(SRC_DEP) $(HFILES) $(LIBPATH)/libcore.a $
 
 
 %.o : %.c $(HFILES) Makefile
-	$(CC) $(CFLAGS) $(DEFINES) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $<
 
 %.o : %.S $(HFILES) Makefile
 	$(AS) -o $@ $<

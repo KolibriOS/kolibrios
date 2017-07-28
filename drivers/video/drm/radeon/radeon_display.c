@@ -681,7 +681,7 @@ void radeon_compute_pll_avivo(struct radeon_pll *pll,
 	else if (pll->flags & RADEON_PLL_PREFER_MINM_OVER_MAXP)
 		/* fix for problems on RS880 */
 		ref_div_max = min(pll->max_ref_div, 7u);
-		else
+	else
 		ref_div_max = pll->max_ref_div;
 
 	/* determine allowed post divider range */
@@ -998,7 +998,7 @@ static int radeon_user_framebuffer_create_handle(struct drm_framebuffer *fb,
 {
 	struct radeon_framebuffer *radeon_fb = to_radeon_framebuffer(fb);
 
-   return NULL;
+   return 0;
 //   return drm_gem_handle_create(file_priv, radeon_fb->obj, handle);
 }
 
@@ -1010,7 +1010,7 @@ static const struct drm_framebuffer_funcs radeon_fb_funcs = {
 int
 radeon_framebuffer_init(struct drm_device *dev,
 			struct radeon_framebuffer *rfb,
-			struct drm_mode_fb_cmd2 *mode_cmd,
+			const struct drm_mode_fb_cmd2 *mode_cmd,
 			struct drm_gem_object *obj)
 {
 	int ret;
@@ -1356,7 +1356,7 @@ bool radeon_crtc_scaling_mode_fixup(struct drm_crtc *crtc,
 	struct drm_device *dev = crtc->dev;
 	struct radeon_device *rdev = dev->dev_private;
 	struct drm_encoder *encoder;
-		struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
+	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
 	struct radeon_encoder *radeon_encoder;
 	struct drm_connector *connector;
 	struct radeon_connector *radeon_connector;
@@ -1380,12 +1380,12 @@ bool radeon_crtc_scaling_mode_fixup(struct drm_crtc *crtc,
 				radeon_crtc->rmx_type = RMX_OFF;
 			else if (mode->hdisplay < radeon_encoder->native_mode.hdisplay ||
 				 mode->vdisplay < radeon_encoder->native_mode.vdisplay)
-			radeon_crtc->rmx_type = radeon_encoder->rmx_type;
+				radeon_crtc->rmx_type = radeon_encoder->rmx_type;
 			else
 				radeon_crtc->rmx_type = RMX_OFF;
 			/* copy native mode */
 			memcpy(&radeon_crtc->native_mode,
-				&radeon_encoder->native_mode,
+			       &radeon_encoder->native_mode,
 				sizeof(struct drm_display_mode));
 			src_v = crtc->mode.vdisplay;
 			dst_v = radeon_crtc->native_mode.vdisplay;
@@ -1402,11 +1402,11 @@ bool radeon_crtc_scaling_mode_fixup(struct drm_crtc *crtc,
 				if (radeon_encoder->underscan_hborder != 0)
 					radeon_crtc->h_border = radeon_encoder->underscan_hborder;
 				else
-				radeon_crtc->h_border = (mode->hdisplay >> 5) + 16;
+					radeon_crtc->h_border = (mode->hdisplay >> 5) + 16;
 				if (radeon_encoder->underscan_vborder != 0)
 					radeon_crtc->v_border = radeon_encoder->underscan_vborder;
 				else
-				radeon_crtc->v_border = (mode->vdisplay >> 5) + 16;
+					radeon_crtc->v_border = (mode->vdisplay >> 5) + 16;
 				radeon_crtc->rmx_type = RMX_FULL;
 				src_v = crtc->mode.vdisplay;
 				dst_v = crtc->mode.vdisplay - (radeon_crtc->v_border * 2);
@@ -1428,7 +1428,7 @@ bool radeon_crtc_scaling_mode_fixup(struct drm_crtc *crtc,
 		}
 	}
 	if (radeon_crtc->rmx_type != RMX_OFF) {
-        fixed20_12 a, b;
+		fixed20_12 a, b;
 		a.full = dfixed_const(src_v);
 		b.full = dfixed_const(dst_v);
 		radeon_crtc->vsc.full = dfixed_div(a, b);

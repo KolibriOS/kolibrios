@@ -809,3 +809,15 @@ int set_memory_wb(unsigned long addr, int numpages)
 {
     return 0;
 };
+
+char *strdup(const char *str)
+{
+    size_t len = strlen(str) + 1;
+    char *copy = __builtin_malloc(len);
+    if (copy)
+    {
+        memcpy (copy, str, len);
+    }
+    return copy;
+}
+

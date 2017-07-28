@@ -267,7 +267,6 @@ void *kmemdup(const void *src, size_t len, gfp_t gfp)
 }
 
 
-
 void msleep(unsigned int msecs)
 {
     msecs /= 10;
