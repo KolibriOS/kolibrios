@@ -11,6 +11,8 @@
 #include <linux/device.h>
 #include <linux/fb.h>
 #include <linux/mutex.h>
+#include <linux/notifier.h>
+
 /* Notes on locking:
  *
  * backlight_device->ops_lock is an internal backlight lock protecting the
@@ -43,4 +45,6 @@ enum backlight_notification {
 	BACKLIGHT_UNREGISTERED,
 };
 
+struct backlight_device;
+struct fb_info;
 #endif

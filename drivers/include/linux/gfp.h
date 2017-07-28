@@ -2,7 +2,7 @@
 #define __LINUX_GFP_H
 
 #include <linux/mmdebug.h>
-#include <linux/types.h>
+#include <linux/mmzone.h>
 #include <linux/stddef.h>
 #include <linux/linkage.h>
 
@@ -29,7 +29,7 @@ struct vm_area_struct;
 #define ___GFP_HARDWALL		0x20000u
 #define ___GFP_THISNODE		0x40000u
 #define ___GFP_ATOMIC		0x80000u
-#define ___GFP_NOACCOUNT	0x100000u
+#define ___GFP_ACCOUNT		0x100000u
 #define ___GFP_NOTRACK		0x200000u
 #define ___GFP_DIRECT_RECLAIM	0x400000u
 #define ___GFP_OTHER_NODE	0x800000u
@@ -72,11 +72,15 @@ struct vm_area_struct;
  *
  * __GFP_THISNODE forces the allocation to be satisified from the requested
  *   node with no fallbacks or placement policy enforcements.
+ *
+ * __GFP_ACCOUNT causes the allocation to be accounted to kmemcg (only relevant
+ *   to kmem allocations).
  */
 #define __GFP_RECLAIMABLE ((__force gfp_t)___GFP_RECLAIMABLE)
 #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)
 #define __GFP_HARDWALL   ((__force gfp_t)___GFP_HARDWALL)
 #define __GFP_THISNODE	((__force gfp_t)___GFP_THISNODE)
+#define __GFP_ACCOUNT	((__force gfp_t)___GFP_ACCOUNT)
 
 /*
  * Watermark modifiers -- controls access to emergency reserves
@@ -103,7 +107,6 @@ struct vm_area_struct;
 #define __GFP_HIGH	((__force gfp_t)___GFP_HIGH)
 #define __GFP_MEMALLOC	((__force gfp_t)___GFP_MEMALLOC)
 #define __GFP_NOMEMALLOC ((__force gfp_t)___GFP_NOMEMALLOC)
-#define __GFP_NOACCOUNT	((__force gfp_t)___GFP_NOACCOUNT)
 
 /*
  * Reclaim modifiers
@@ -196,6 +199,9 @@ struct vm_area_struct;
  * GFP_KERNEL is typical for kernel-internal allocations. The caller requires
  *   ZONE_NORMAL or a lower zone for direct access but can direct reclaim.
  *
+ * GFP_KERNEL_ACCOUNT is the same as GFP_KERNEL, except the allocation is
+ *   accounted to kmemcg.
+ *
  * GFP_NOWAIT is for kernel allocations that should not stall for direct
  *   reclaim, start physical IO or use any filesystem callback.
  *
@@ -235,6 +241,7 @@ struct vm_area_struct;
  */
 #define GFP_ATOMIC	(__GFP_HIGH|__GFP_ATOMIC|__GFP_KSWAPD_RECLAIM)
 #define GFP_KERNEL	(__GFP_RECLAIM | __GFP_IO | __GFP_FS)
+#define GFP_KERNEL_ACCOUNT (GFP_KERNEL | __GFP_ACCOUNT)
 #define GFP_NOWAIT	(__GFP_KSWAPD_RECLAIM)
 #define GFP_NOIO	(__GFP_RECLAIM)
 #define GFP_NOFS	(__GFP_RECLAIM | __GFP_IO)
@@ -249,16 +256,9 @@ struct vm_area_struct;
 			 __GFP_NOMEMALLOC | __GFP_NORETRY | __GFP_NOWARN) & \
 			 ~__GFP_KSWAPD_RECLAIM)
 
-/* Convert GFP flags to their corresponding migrate type */
-#define GFP_MOVABLE_MASK (__GFP_RECLAIMABLE|__GFP_MOVABLE)
-#define GFP_MOVABLE_SHIFT 3
-
-#undef GFP_MOVABLE_MASK
-#undef GFP_MOVABLE_SHIFT
-
 static inline bool gfpflags_allow_blocking(const gfp_t gfp_flags)
 {
-	return (bool __force)(gfp_flags & __GFP_DIRECT_RECLAIM);
+	return !!(gfp_flags & __GFP_DIRECT_RECLAIM);
 }
 
 #ifdef CONFIG_HIGHMEM

@@ -68,13 +68,15 @@ struct va_format {
 
 /*
  * Dummy printk for disabled debugging statements to use whilst maintaining
- * gcc's format and side-effect checking.
+ * gcc's format checking.
  */
-static inline __printf(1, 2)
-int no_printk(const char *fmt, ...)
-{
-	return 0;
-}
+#define no_printk(fmt, ...)			\
+do {						\
+	if (0)					\
+		printk(fmt, ##__VA_ARGS__);	\
+} while (0)
+
+
 
 __printf(1, 2) int dbgprintf(const char *fmt, ...);
 

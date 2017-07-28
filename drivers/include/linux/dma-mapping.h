@@ -8,6 +8,7 @@
 #include <linux/dma-attrs.h>
 #include <linux/dma-direction.h>
 #include <linux/scatterlist.h>
+#include <linux/bug.h>
 
 extern void *
 dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *dma_handle,

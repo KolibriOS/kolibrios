@@ -179,6 +179,8 @@ struct pwm_device *of_pwm_get(struct device_node *np, const char *con_id);
 void pwm_put(struct pwm_device *pwm);
 
 struct pwm_device *devm_pwm_get(struct device *dev, const char *con_id);
+struct pwm_device *devm_of_pwm_get(struct device *dev, struct device_node *np,
+				   const char *con_id);
 void devm_pwm_put(struct device *dev, struct pwm_device *pwm);
 
 bool pwm_can_sleep(struct pwm_device *pwm);
@@ -192,11 +194,36 @@ static inline void *pwm_get_chip_data(struct pwm_device *pwm)
 {
 	return NULL;
 }
+
+static inline int pwmchip_add(struct pwm_chip *chip)
+{
+	return -EINVAL;
+}
+
+static inline int pwmchip_add_inversed(struct pwm_chip *chip)
+{
+	return -EINVAL;
+}
+
+static inline int pwmchip_remove(struct pwm_chip *chip)
+{
+	return -EINVAL;
+}
+
+static inline struct pwm_device *pwm_request_from_chip(struct pwm_chip *chip,
+						       unsigned int index,
+						       const char *label)
+{
+	return ERR_PTR(-ENODEV);
+}
+
 static inline struct pwm_device *pwm_get(struct device *dev,
 					 const char *consumer)
 {
 	return ERR_PTR(-ENODEV);
 }
+
+
 static inline void pwm_put(struct pwm_device *pwm)
 {
 }
@@ -206,6 +233,8 @@ static inline struct pwm_device *devm_pwm_get(struct device *dev,
 {
 	return ERR_PTR(-ENODEV);
 }
+
+
 static inline void devm_pwm_put(struct device *dev, struct pwm_device *pwm)
 {
 }

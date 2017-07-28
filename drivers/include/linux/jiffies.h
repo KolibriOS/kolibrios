@@ -5,12 +5,11 @@
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/time.h>
-//#include <linux/timex.h>
+#include <linux/timex.h>
 //#include <asm/param.h>         /* for HZ */
 
 
 #define HZ              100
-#define CLOCK_TICK_RATE 1193182ul
 
 /*
  * The following defines establish the engineering parameters of the PLL

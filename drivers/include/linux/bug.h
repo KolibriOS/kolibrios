@@ -1,56 +1,26 @@
-#ifndef _ASM_GENERIC_BUG_H
-#define _ASM_GENERIC_BUG_H
+#ifndef _LINUX_BUG_H
+#define _LINUX_BUG_H
 
+#include <asm/bug.h>
 #include <linux/compiler.h>
 
-int printf(const char *fmt, ...);
+enum bug_trap_type {
+	BUG_TRAP_TYPE_NONE = 0,
+	BUG_TRAP_TYPE_WARN = 1,
+	BUG_TRAP_TYPE_BUG = 2,
+};
 
-#define __WARN()                printf("\nWARNING: at %s:%d\n", __FILE__, __LINE__)
-//#define __WARN_printf(arg...)   printf("\nWARNING: at %s:%d\n", __FILE__, __LINE__)
-#define __WARN_printf(arg...)   do { printf(arg); __WARN(); } while (0)
+struct pt_regs;
 
-#define WARN(condition, format...) ({                                   \
-        int __ret_warn_on = !!(condition);                              \
-        if (unlikely(__ret_warn_on))                                    \
-            __WARN_printf(format);                                      \
-        unlikely(__ret_warn_on);                                        \
-})
-
-
-#define WARN_ON(condition) ({                                           \
-        int __ret_warn_on = !!(condition);                              \
-        if (unlikely(__ret_warn_on))                                    \
-                __WARN();                                               \
-        unlikely(__ret_warn_on);                                        \
-})
-
-
-#define WARN_ONCE(condition, format...) ({                      \
-        static bool __warned;                                   \
-        int __ret_warn_once = !!(condition);                    \
-                                                                \
-        if (unlikely(__ret_warn_once))                          \
-                if (WARN(!__warned, format))                    \
-                        __warned = true;                        \
-        unlikely(__ret_warn_once);                              \
-})
-
-
-#define WARN_ON_ONCE(condition) ({                              \
-        static bool __warned;                                   \
-        int __ret_warn_once = !!(condition);                    \
-                                                                \
-        if (unlikely(__ret_warn_once))                          \
-                if (WARN_ON(!__warned))                         \
-                        __warned = true;                        \
-        unlikely(__ret_warn_once);                              \
-})
-
-#define BUG() do { \
-         printk("BUG: failure at %s:%d/%s()!\n", __FILE__, __LINE__, __FUNCTION__); \
- } while (0)
-
-#define BUG_ON(condition) do { if (unlikely(condition)) BUG(); } while(0)
+#ifdef __CHECKER__
+#define BUILD_BUG_ON_NOT_POWER_OF_2(n) (0)
+#define BUILD_BUG_ON_ZERO(e) (0)
+#define BUILD_BUG_ON_NULL(e) ((void*)0)
+#define BUILD_BUG_ON_INVALID(e) (0)
+#define BUILD_BUG_ON_MSG(cond, msg) (0)
+#define BUILD_BUG_ON(condition) (0)
+#define BUILD_BUG() (0)
+#else /* __CHECKER__ */
 
 /* Force a compilation error if a constant expression is not a power of 2 */
 #define BUILD_BUG_ON_NOT_POWER_OF_2(n)			\
@@ -113,10 +83,30 @@ int printf(const char *fmt, ...);
  */
 #define BUILD_BUG() BUILD_BUG_ON_MSG(1, "BUILD_BUG failed")
 
+#endif	/* __CHECKER__ */
 
+#ifdef CONFIG_GENERIC_BUG
+#include <asm-generic/bug.h>
 
+static inline int is_warning_bug(const struct bug_entry *bug)
+{
+	return bug->flags & BUGFLAG_WARNING;
+}
 
-#define pr_warn_once(fmt, ...)                                  \
-        printk_once(KERN_WARNING pr_fmt(fmt), ##__VA_ARGS__)
+const struct bug_entry *find_bug(unsigned long bugaddr);
 
-#endif
+enum bug_trap_type report_bug(unsigned long bug_addr, struct pt_regs *regs);
+
+/* These are defined by the architecture */
+int is_valid_bugaddr(unsigned long addr);
+
+#else	/* !CONFIG_GENERIC_BUG */
+
+static inline enum bug_trap_type report_bug(unsigned long bug_addr,
+					    struct pt_regs *regs)
+{
+	return BUG_TRAP_TYPE_BUG;
+}
+
+#endif	/* CONFIG_GENERIC_BUG */
+#endif	/* _LINUX_BUG_H */

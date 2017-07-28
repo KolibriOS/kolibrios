@@ -65,6 +65,17 @@
 
 #define IRQF_TIMER		(__IRQF_TIMER | IRQF_NO_SUSPEND | IRQF_NO_THREAD)
 
+/*
+ * These values can be returned by request_any_context_irq() and
+ * describe the context the interrupt will be run in.
+ *
+ * IRQC_IS_HARDIRQ - interrupt runs in hardirq context
+ * IRQC_IS_NESTED - interrupt runs in a nested threaded context
+ */
+enum {
+	IRQC_IS_HARDIRQ	= 0,
+	IRQC_IS_NESTED,
+};
 extern int early_irq_init(void);
 extern int arch_probe_nr_irqs(void);
 extern int arch_early_irq_init(void);

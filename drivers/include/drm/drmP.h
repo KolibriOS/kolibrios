@@ -50,6 +50,7 @@
 #include <linux/mutex.h>
 #include <linux/pci.h>
 #include <linux/sched.h>
+#include <linux/wait.h>
 
 #include <linux/firmware.h>
 #include <linux/err.h>
@@ -919,8 +920,7 @@ static inline int drm_debugfs_remove_files(const struct drm_info_list *files,
 #endif
 
 extern struct dma_buf *drm_gem_prime_export(struct drm_device *dev,
-					    struct drm_gem_object *obj,
-					    int flags);
+		struct drm_gem_object *obj, int flags);
 extern int drm_gem_prime_handle_to_fd(struct drm_device *dev,
 		struct drm_file *file_priv, uint32_t handle, uint32_t flags,
 		int *prime_fd);
@@ -950,7 +950,7 @@ void drm_dev_ref(struct drm_device *dev);
 void drm_dev_unref(struct drm_device *dev);
 int drm_dev_register(struct drm_device *dev, unsigned long flags);
 void drm_dev_unregister(struct drm_device *dev);
-int drm_dev_set_unique(struct drm_device *dev, const char *fmt, ...);
+int drm_dev_set_unique(struct drm_device *dev, const char *name);
 
 struct drm_minor *drm_minor_acquire(unsigned int minor_id);
 void drm_minor_release(struct drm_minor *minor);
@@ -971,6 +971,11 @@ extern void drm_pci_exit(struct drm_driver *driver, struct pci_driver *pdriver);
 extern int drm_get_pci_dev(struct pci_dev *pdev,
 			   const struct pci_device_id *ent,
 			   struct drm_driver *driver);
+static inline int drm_pci_set_busid(struct drm_device *dev,
+				    struct drm_master *master)
+{
+	return -ENOSYS;
+}
 #endif
 
 #define DRM_PCIE_SPEED_25 1
@@ -978,12 +983,20 @@ extern int drm_get_pci_dev(struct pci_dev *pdev,
 #define DRM_PCIE_SPEED_80 4
 
 extern int drm_pcie_get_speed_cap_mask(struct drm_device *dev, u32 *speed_mask);
+extern int drm_pcie_get_max_link_width(struct drm_device *dev, u32 *mlw);
+
+/* platform section */
+extern int drm_platform_init(struct drm_driver *driver, struct platform_device *platform_device);
+extern int drm_platform_set_busid(struct drm_device *d, struct drm_master *m);
 
 /* returns true if currently okay to sleep */
 static __inline__ bool drm_can_sleep(void)
 {
 	return true;
 }
+
+/* helper for handling conditionals in various for_each macros */
+#define for_each_if(condition) if (!(condition)) {} else
 
 static __inline__ int drm_device_is_pcie(struct drm_device *dev)
 {

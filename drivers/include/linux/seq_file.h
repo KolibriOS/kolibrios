@@ -5,6 +5,10 @@
 #include <linux/string.h>
 #include <linux/bug.h>
 #include <linux/mutex.h>
+struct file;
+struct path;
+struct inode;
+struct dentry;
 
 struct seq_file {
 	char *buf;

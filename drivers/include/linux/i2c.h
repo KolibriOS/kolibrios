@@ -30,6 +30,7 @@
 #include <linux/device.h>	/* for struct device */
 #include <linux/sched.h>	/* for completion */
 #include <linux/mutex.h>
+#include <linux/swab.h>		/* for swab16 */
 #include <linux/jiffies.h>
 
 extern struct bus_type i2c_bus_type;

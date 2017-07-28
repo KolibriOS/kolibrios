@@ -86,6 +86,11 @@
 #else
 # define SLAB_FAILSLAB		0x00000000UL
 #endif
+#if defined(CONFIG_MEMCG) && !defined(CONFIG_SLOB)
+# define SLAB_ACCOUNT		0x04000000UL	/* Account to memcg */
+#else
+# define SLAB_ACCOUNT		0x00000000UL
+#endif
 
 /* The following flags affect the page allocator grouping pages by mobility */
 #define SLAB_RECLAIM_ACCOUNT	0x00020000UL		/* Objects are reclaimable */
@@ -113,14 +118,14 @@ void kmem_cache_destroy(struct kmem_cache *);
 int kmem_cache_shrink(struct kmem_cache *);
 void kmem_cache_free(struct kmem_cache *, void *);
 
-static inline void *krealloc(void *p, size_t new_size, gfp_t flags)
+static inline void *krealloc(const void *p, size_t new_size, gfp_t flags)
 {
-    return __builtin_realloc(p, new_size);
+    return __builtin_realloc((void*)p, new_size);
 }
 
-static inline void kfree(void *p)
+static inline void kfree(const void *p)
 {
-	__builtin_free(p);
+    __builtin_free((void*)p);
 }
 static __always_inline void *kmalloc(size_t size, gfp_t flags)
 {

@@ -85,10 +85,14 @@ extern int nr_cpu_ids;
  *    only one CPU.
  */
 
-extern const struct cpumask *const cpu_possible_mask;
-extern const struct cpumask *const cpu_online_mask;
-extern const struct cpumask *const cpu_present_mask;
-extern const struct cpumask *const cpu_active_mask;
+extern struct cpumask __cpu_possible_mask;
+extern struct cpumask __cpu_online_mask;
+extern struct cpumask __cpu_present_mask;
+extern struct cpumask __cpu_active_mask;
+#define cpu_possible_mask ((const struct cpumask *)&__cpu_possible_mask)
+#define cpu_online_mask   ((const struct cpumask *)&__cpu_online_mask)
+#define cpu_present_mask  ((const struct cpumask *)&__cpu_present_mask)
+#define cpu_active_mask   ((const struct cpumask *)&__cpu_active_mask)
 
 #if NR_CPUS > 1
 #define num_online_cpus()	cpumask_weight(cpu_online_mask)
@@ -556,7 +560,7 @@ static inline void cpumask_copy(struct cpumask *dstp,
 static inline int cpumask_parse_user(const char __user *buf, int len,
 				     struct cpumask *dstp)
 {
-	return bitmap_parse_user(buf, len, cpumask_bits(dstp), nr_cpumask_bits);
+	return bitmap_parse_user(buf, len, cpumask_bits(dstp), nr_cpu_ids);
 }
 
 /**
@@ -571,7 +575,7 @@ static inline int cpumask_parselist_user(const char __user *buf, int len,
 				     struct cpumask *dstp)
 {
 	return bitmap_parselist_user(buf, len, cpumask_bits(dstp),
-				     nr_cpumask_bits);
+				     nr_cpu_ids);
 }
 
 /**
@@ -586,7 +590,7 @@ static inline int cpumask_parse(const char *buf, struct cpumask *dstp)
 	char *nl = strchr(buf, '\n');
 	unsigned int len = nl ? (unsigned int)(nl - buf) : strlen(buf);
 
-	return bitmap_parse(buf, len, cpumask_bits(dstp), nr_cpumask_bits);
+	return bitmap_parse(buf, len, cpumask_bits(dstp), nr_cpu_ids);
 }
 
 /**
@@ -598,7 +602,7 @@ static inline int cpumask_parse(const char *buf, struct cpumask *dstp)
  */
 static inline int cpulist_parse(const char *buf, struct cpumask *dstp)
 {
-	return bitmap_parselist(buf, cpumask_bits(dstp), nr_cpumask_bits);
+	return bitmap_parselist(buf, cpumask_bits(dstp), nr_cpu_ids);
 }
 
 /**
@@ -716,13 +720,48 @@ extern const DECLARE_BITMAP(cpu_all_bits, NR_CPUS);
 #define for_each_present_cpu(cpu)  for_each_cpu((cpu), cpu_present_mask)
 
 /* Wrappers for arch boot code to manipulate normally-constant masks */
-void set_cpu_possible(unsigned int cpu, bool possible);
-void set_cpu_present(unsigned int cpu, bool present);
-void set_cpu_online(unsigned int cpu, bool online);
-void set_cpu_active(unsigned int cpu, bool active);
 void init_cpu_present(const struct cpumask *src);
 void init_cpu_possible(const struct cpumask *src);
 void init_cpu_online(const struct cpumask *src);
+
+static inline void
+set_cpu_possible(unsigned int cpu, bool possible)
+{
+	if (possible)
+		cpumask_set_cpu(cpu, &__cpu_possible_mask);
+	else
+		cpumask_clear_cpu(cpu, &__cpu_possible_mask);
+}
+
+static inline void
+set_cpu_present(unsigned int cpu, bool present)
+{
+	if (present)
+		cpumask_set_cpu(cpu, &__cpu_present_mask);
+	else
+		cpumask_clear_cpu(cpu, &__cpu_present_mask);
+}
+
+static inline void
+set_cpu_online(unsigned int cpu, bool online)
+{
+	if (online) {
+		cpumask_set_cpu(cpu, &__cpu_online_mask);
+		cpumask_set_cpu(cpu, &__cpu_active_mask);
+	} else {
+		cpumask_clear_cpu(cpu, &__cpu_online_mask);
+	}
+}
+
+static inline void
+set_cpu_active(unsigned int cpu, bool active)
+{
+	if (active)
+		cpumask_set_cpu(cpu, &__cpu_active_mask);
+	else
+		cpumask_clear_cpu(cpu, &__cpu_active_mask);
+}
+
 
 /**
  * to_cpumask - convert an NR_CPUS bitmap to a struct cpumask *

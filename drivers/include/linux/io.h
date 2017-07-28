@@ -22,6 +22,14 @@
 #include <linux/init.h>
 #include <linux/bug.h>
 #include <linux/err.h>
+#include <asm/io.h>
 struct device;
 struct resource;
+
+__visible void __iowrite32_copy(void __iomem *to, const void *from, size_t count);
+void __ioread32_copy(void *to, const void __iomem *from, size_t count);
+void __iowrite64_copy(void __iomem *to, const void *from, size_t count);
+void *memremap(resource_size_t offset, size_t size, unsigned long flags);
+void memunmap(void *addr);
+
 #endif /* _LINUX_IO_H */

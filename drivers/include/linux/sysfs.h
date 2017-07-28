@@ -31,6 +31,15 @@ struct attribute {
 	struct lock_class_key	skey;
 #endif
 };
+struct attribute_group {
+	const char		*name;
+	umode_t			(*is_visible)(struct kobject *,
+					      struct attribute *, int);
+	umode_t			(*is_bin_visible)(struct kobject *,
+						  struct bin_attribute *, int);
+	struct attribute	**attrs;
+	struct bin_attribute	**bin_attrs;
+};
 #ifdef CONFIG_SYSFS
 
 int __must_check sysfs_create_dir_ns(struct kobject *kobj, const void *ns);
@@ -216,6 +225,33 @@ static inline void sysfs_delete_link(struct kobject *k, struct kobject *t,
 {
 }
 
+static inline int sysfs_create_group(struct kobject *kobj,
+				     const struct attribute_group *grp)
+{
+	return 0;
+}
+
+static inline int sysfs_create_groups(struct kobject *kobj,
+				      const struct attribute_group **groups)
+{
+	return 0;
+}
+
+static inline int sysfs_update_group(struct kobject *kobj,
+				const struct attribute_group *grp)
+{
+	return 0;
+}
+
+static inline void sysfs_remove_group(struct kobject *kobj,
+				      const struct attribute_group *grp)
+{
+}
+
+static inline void sysfs_remove_groups(struct kobject *kobj,
+				       const struct attribute_group **groups)
+{
+}
 
 static inline int sysfs_add_file_to_group(struct kobject *kobj,
 		const struct attribute *attr, const char *group)
@@ -225,6 +261,17 @@ static inline int sysfs_add_file_to_group(struct kobject *kobj,
 
 static inline void sysfs_remove_file_from_group(struct kobject *kobj,
 		const struct attribute *attr, const char *group)
+{
+}
+
+static inline int sysfs_merge_group(struct kobject *kobj,
+		       const struct attribute_group *grp)
+{
+	return 0;
+}
+
+static inline void sysfs_unmerge_group(struct kobject *kobj,
+		       const struct attribute_group *grp)
 {
 }
 

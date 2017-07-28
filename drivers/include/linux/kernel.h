@@ -714,32 +714,6 @@ int del_timer(struct timer_list *timer);
 # define del_timer_sync(t)              del_timer(t)
 
 
-#define build_mmio_read(name, size, type, reg, barrier)     \
-static inline type name(const volatile void __iomem *addr)  \
-{ type ret; asm volatile("mov" size " %1,%0":reg (ret)      \
-:"m" (*(volatile type __force *)addr) barrier); return ret; }
-
-#define build_mmio_write(name, size, type, reg, barrier) \
-static inline void name(type val, volatile void __iomem *addr) \
-{ asm volatile("mov" size " %0,%1": :reg (val), \
-"m" (*(volatile type __force *)addr) barrier); }
-
-build_mmio_read(readb, "b", unsigned char, "=q", :"memory")
-build_mmio_read(readw, "w", unsigned short, "=r", :"memory")
-build_mmio_read(readl, "l", unsigned int, "=r", :"memory")
-
-build_mmio_read(__readb, "b", unsigned char, "=q", )
-build_mmio_read(__readw, "w", unsigned short, "=r", )
-build_mmio_read(__readl, "l", unsigned int, "=r", )
-
-build_mmio_write(writeb, "b", unsigned char, "q", :"memory")
-build_mmio_write(writew, "w", unsigned short, "r", :"memory")
-build_mmio_write(writel, "l", unsigned int, "r", :"memory")
-
-build_mmio_write(__writeb, "b", unsigned char, "q", )
-build_mmio_write(__writew, "w", unsigned short, "r", )
-build_mmio_write(__writel, "l", unsigned int, "r", )
-
 #define readb_relaxed(a) __readb(a)
 #define readw_relaxed(a) __readw(a)
 #define readl_relaxed(a) __readl(a)
@@ -872,6 +846,14 @@ static inline long copy_to_user(void __user *to,
     return __copy_to_user(to, from, n);
 }
 
+#define CAP_SYS_ADMIN        21
+
+static inline bool capable(int cap)
+{
+    return true;
+}
+
+
 void *kmap(struct page *page);
 void *kmap_atomic(struct page *page);
 void kunmap(struct page *page);
@@ -879,10 +861,14 @@ void kunmap_atomic(void *vaddr);
 
 typedef u64 async_cookie_t;
 
-#define iowrite32(v, addr)      writel((v), (addr))
+//#define iowrite32(v, addr)      writel((v), (addr))
 
 #define __init
 
 #define CONFIG_PAGE_OFFSET 0
+
+typedef long long __kernel_long_t;
+typedef unsigned long long __kernel_ulong_t;
+#define __kernel_long_t __kernel_long_t
 
 #endif

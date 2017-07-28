@@ -94,4 +94,5 @@ struct file {
 #define FL_UNLOCK_PENDING	512 /* Lease is being broken */
 #define FL_OFDLCK	1024	/* lock is "owned" by struct file */
 #define FL_LAYOUT	2048	/* outstanding pNFS layout */
+struct inode;
 #endif /* _LINUX_FS_H */
