@@ -25,7 +25,6 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <drm/drmP.h>
 #include <drm/drm_mipi_dsi.h>
 
 #include <linux/device.h>

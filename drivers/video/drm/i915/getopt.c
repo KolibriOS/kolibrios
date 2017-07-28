@@ -83,6 +83,9 @@
 #endif
 
 #define strlen __builtin_strlen
+#define strcmp  __builtin_strcmp
+#define strncmp __builtin_strncmp
+#define printf  __builtin_printf
 
 #  define _(msgid)  (msgid)
 

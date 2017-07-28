@@ -10,35 +10,58 @@ format MS COFF
 public ___start_builtin_fw
 public ___end_builtin_fw
 
-section '.text' code readable executable align 16
+section '.rdata' data readable align 16
 
 align 16
 
-macro CP_code [arg]
+macro DMC_code [arg]
 {
-        dd FIRMWARE_#arg#_CP
-        dd arg#_CP_START
-        dd (arg#_CP_END - arg#_CP_START)
+        dd FIRMWARE_#arg#_DMC
+        dd arg#_DMC_START
+        dd (arg#_DMC_END - arg#_DMC_START)
 }
 
-macro CP_firmware [arg]
+macro DMC_firmware [arg]
 {
 forward
-FIRMWARE_#arg#_CP       db 'i915/',`arg,'.bin',0
+FIRMWARE_#arg#_DMC       db 'i915/',`arg,'.bin',0
 forward
 
 align 16
-arg#_CP_START:
+arg#_DMC_START:
         file "firmware/"#`arg#".bin"
-arg#_CP_END:
+arg#_DMC_END:
+}
+
+macro GUC_code [arg]
+{
+        dd FIRMWARE_#arg#_GUC
+        dd arg#_GUC_START
+        dd (arg#_GUC_END - arg#_GUC_START)
+}
+
+macro GUC_firmware [arg]
+{
+forward
+FIRMWARE_#arg#_GUC       db 'i915/',`arg,'.bin',0
+forward
+
+align 16
+arg#_GUC_START:
+        file "firmware/"#`arg#".bin"
+arg#_GUC_END:
 }
 
 ___start_builtin_fw:
 
-CP_code skl_guc_ver4
+DMC_code skl_dmc_ver1
+DMC_code bxt_dmc_ver1
+GUC_code skl_guc_ver4
 
 ___end_builtin_fw:
 
-CP_firmware skl_guc_ver4
+DMC_firmware skl_dmc_ver1
+DMC_firmware bxt_dmc_ver1
+GUC_firmware skl_guc_ver4
 
 

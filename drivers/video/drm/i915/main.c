@@ -16,11 +16,13 @@
 #include "bitmap.h"
 #include "i915_kos32.h"
 
-#define DRV_NAME "i915 v4.4.78"
+#define DRV_NAME "i915 v4.5.7"
 
 #define I915_DEV_CLOSE 0
 #define I915_DEV_INIT  1
 #define I915_DEV_READY 2
+
+int printf ( const char * format, ... );
 
 static int my_atoi(char **cmd);
 static char* parse_mode(char *p, videomode_t *mode);
@@ -42,7 +44,7 @@ int oops_in_progress;
 int x86_clflush_size;
 unsigned int tsc_khz;
 struct workqueue_struct *system_wq;
-int driver_wq_state;
+volatile int driver_wq_state;
 struct drm_device *main_device;
 struct drm_file   *drm_file_handlers[256];
 videomode_t usermode;
@@ -58,8 +60,6 @@ void i915_driver_thread()
     unsigned long irqflags;
     int tmp;
 
-    printf("%s\n",__FUNCTION__);
-
     while(driver_wq_state == I915_DEV_INIT)
     {
         jiffies = GetClockNs() / 10000000;
@@ -67,9 +67,7 @@ void i915_driver_thread()
     };
 
     if( driver_wq_state == I915_DEV_CLOSE)
-    {
         asm volatile ("int $0x40"::"a"(-1));
-    };
 
     dev_priv = main_device->dev_private;
 

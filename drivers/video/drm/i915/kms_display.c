@@ -1,17 +1,13 @@
-
-#define iowrite32(v, addr)      writel((v), (addr))
-
 #include <drm/drmP.h>
-#include <uapi/drm/drm.h>
-#include "i915_drv.h"
 #include "intel_drv.h"
+#include <drm/i915_drm.h>
 #include <drm/drm_plane_helper.h>
-#include <linux/module.h>
-#include <linux/mod_devicetable.h>
-#include <linux/pci.h>
+#include "i915_drv.h"
 
 #include <syscall.h>
 #include <display.h>
+
+int printf ( const char * format, ... );
 
 void init_system_cursors(struct drm_device *dev);
 
@@ -64,9 +60,9 @@ struct drm_framebuffer *get_framebuffer(struct drm_device *dev, struct drm_displ
     {
         int gen3size;
 
-            stride = ALIGN(stride, 512);
+        stride = ALIGN(stride, 512);
         size = stride * ALIGN(mode->vdisplay, 8);
-            size = ALIGN(size, 4096);
+        size = ALIGN(size, 4096);
     }
     else
     {
@@ -116,7 +112,7 @@ struct drm_framebuffer *get_framebuffer(struct drm_device *dev, struct drm_displ
         }
 
         /* Flush everything out, we'll be doing GTT only from now on */
-        ret = intel_pin_and_fence_fb_obj(NULL, fb, NULL, NULL, NULL);
+        ret = intel_pin_and_fence_fb_obj(NULL, fb, NULL);
         if (ret) {
             DRM_ERROR("failed to pin obj: %d\n", ret);
             goto out_fb;

@@ -31,7 +31,8 @@ struct i915_params i915 __read_mostly = {
 	.lvds_channel_mode = 0,
 	.panel_use_ssc = -1,
 	.vbt_sdvo_panel_type = -1,
-    .enable_rc6 = 0,
+	.enable_rc6 = 0,
+	.enable_dc = -1,
 	.enable_fbc = -1,
 	.enable_execlists = -1,
 	.enable_hangcheck = true,
@@ -82,6 +83,11 @@ MODULE_PARM_DESC(enable_rc6,
 	"For example, 3 would enable rc6 and deep rc6, and 7 would enable everything. "
 	"default: -1 (use per-chip default)");
 
+module_param_named_unsafe(enable_dc, i915.enable_dc, int, 0400);
+MODULE_PARM_DESC(enable_dc,
+	"Enable power-saving display C-states. "
+	"(-1=auto [default]; 0=disable; 1=up to DC5; 2=up to DC6)");
+
 module_param_named_unsafe(enable_fbc, i915.enable_fbc, int, 0600);
 MODULE_PARM_DESC(enable_fbc,
 	"Enable frame buffer compression for power savings "
@@ -114,7 +120,7 @@ MODULE_PARM_DESC(enable_hangcheck,
 module_param_named_unsafe(enable_ppgtt, i915.enable_ppgtt, int, 0400);
 MODULE_PARM_DESC(enable_ppgtt,
 	"Override PPGTT usage. "
-	"(-1=auto [default], 0=disabled, 1=aliasing, 2=full)");
+	"(-1=auto [default], 0=disabled, 1=aliasing, 2=full, 3=full with extended address space)");
 
 module_param_named_unsafe(enable_execlists, i915.enable_execlists, int, 0400);
 MODULE_PARM_DESC(enable_execlists,
@@ -128,7 +134,7 @@ module_param_named_unsafe(preliminary_hw_support, i915.preliminary_hw_support, i
 MODULE_PARM_DESC(preliminary_hw_support,
 	"Enable preliminary hardware support.");
 
-module_param_named_unsafe(disable_power_well, i915.disable_power_well, int, 0600);
+module_param_named_unsafe(disable_power_well, i915.disable_power_well, int, 0400);
 MODULE_PARM_DESC(disable_power_well,
 	"Disable display power wells when possible "
 	"(-1=auto [default], 0=power wells always on, 1=power wells disabled when possible)");

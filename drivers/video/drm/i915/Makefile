@@ -80,9 +80,9 @@ NAME_SRC=		main.c					\
 			intel_ddi.c				\
 			intel_display.c				\
 			intel_dp.c				\
+			intel_dp_link_training.c		\
 			intel_dp_mst.c				\
 			intel_dsi.c				\
-			intel_dsi_cmd.c				\
 			intel_dsi_panel_vbt.c			\
 			intel_dsi_pll.c				\
 			intel_dvo.c				\

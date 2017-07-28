@@ -197,7 +197,6 @@ skl_update_plane(struct drm_plane *drm_plane, struct drm_crtc *crtc,
 	const int pipe = intel_plane->pipe;
 	const int plane = intel_plane->plane + 1;
 	u32 plane_ctl, stride_div, stride;
-	int pixel_size = drm_format_plane_cpp(fb->pixel_format, 0);
 	const struct drm_intel_sprite_colorkey *key =
 		&to_intel_plane_state(drm_plane->state)->ckey;
 	u32 surf_addr;
@@ -216,10 +215,6 @@ skl_update_plane(struct drm_plane *drm_plane, struct drm_crtc *crtc,
 
 	rotation = drm_plane->state->rotation;
 	plane_ctl |= skl_plane_ctl_rotation(rotation);
-
-	intel_update_sprite_watermarks(drm_plane, crtc, src_w, src_h,
-				       pixel_size, true,
-				       src_w != crtc_w || src_h != crtc_h);
 
 	stride_div = intel_fb_stride_alignment(dev, fb->modifier[0],
 					       fb->pixel_format);
@@ -302,8 +297,6 @@ skl_disable_plane(struct drm_plane *dplane, struct drm_crtc *crtc)
 
 	I915_WRITE(PLANE_SURF(pipe, plane), 0);
 	POSTING_READ(PLANE_SURF(pipe, plane));
-
-	intel_update_sprite_watermarks(dplane, crtc, 0, 0, 0, false, false);
 }
 
 static void
@@ -546,10 +539,6 @@ ivb_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
 	if (IS_HASWELL(dev) || IS_BROADWELL(dev))
 		sprctl |= SPRITE_PIPE_CSC_ENABLE;
 
-	intel_update_sprite_watermarks(plane, crtc, src_w, src_h, pixel_size,
-				       true,
-				       src_w != crtc_w || src_h != crtc_h);
-
 	/* Sizes are 0 based */
 	src_w--;
 	src_h--;
@@ -682,10 +671,6 @@ ilk_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
 
 	if (IS_GEN6(dev))
 		dvscntr |= DVS_TRICKLE_FEED_DISABLE; /* must disable */
-
-	intel_update_sprite_watermarks(plane, crtc, src_w, src_h,
-				       pixel_size, true,
-				       src_w != crtc_w || src_h != crtc_h);
 
 	/* Sizes are 0 based */
 	src_w--;
@@ -837,8 +822,8 @@ intel_check_sprite_plane(struct drm_plane *plane,
 		hscale = drm_rect_calc_hscale(src, dst, min_scale, max_scale);
 		if (hscale < 0) {
 			DRM_DEBUG_KMS("Horizontal scaling factor out of limits\n");
-			drm_rect_debug_print(src, true);
-			drm_rect_debug_print(dst, false);
+			drm_rect_debug_print("src: ", src, true);
+			drm_rect_debug_print("dst: ", dst, false);
 
 			return hscale;
 		}
@@ -846,8 +831,8 @@ intel_check_sprite_plane(struct drm_plane *plane,
 		vscale = drm_rect_calc_vscale(src, dst, min_scale, max_scale);
 		if (vscale < 0) {
 			DRM_DEBUG_KMS("Vertical scaling factor out of limits\n");
-			drm_rect_debug_print(src, true);
-			drm_rect_debug_print(dst, false);
+			drm_rect_debug_print("src: ", src, true);
+			drm_rect_debug_print("dst: ", dst, false);
 
 			return vscale;
 		}
@@ -943,9 +928,6 @@ intel_commit_sprite_plane(struct drm_plane *plane,
 
 	crtc = crtc ? crtc : plane->crtc;
 
-	if (!crtc->state->active)
-		return;
-
 	if (state->visible) {
 		intel_plane->update_plane(plane, crtc, fb,
 					  state->dst.x1, state->dst.y1,
@@ -974,7 +956,7 @@ int intel_sprite_set_colorkey(struct drm_device *dev, void *data,
 	if ((set->flags & (I915_SET_COLORKEY_DESTINATION | I915_SET_COLORKEY_SOURCE)) == (I915_SET_COLORKEY_DESTINATION | I915_SET_COLORKEY_SOURCE))
 		return -EINVAL;
 
-	if (IS_VALLEYVIEW(dev) &&
+	if ((IS_VALLEYVIEW(dev) || IS_CHERRYVIEW(dev)) &&
 	    set->flags & I915_SET_COLORKEY_DESTINATION)
 		return -EINVAL;
 
@@ -1109,7 +1091,7 @@ intel_plane_init(struct drm_device *dev, enum pipe pipe, int plane)
 			intel_plane->max_downscale = 1;
 		}
 
-		if (IS_VALLEYVIEW(dev)) {
+		if (IS_VALLEYVIEW(dev) || IS_CHERRYVIEW(dev)) {
 			intel_plane->update_plane = vlv_update_plane;
 			intel_plane->disable_plane = vlv_disable_plane;
 
@@ -1146,7 +1128,7 @@ intel_plane_init(struct drm_device *dev, enum pipe pipe, int plane)
 	ret = drm_universal_plane_init(dev, &intel_plane->base, possible_crtcs,
 				       &intel_plane_funcs,
 				       plane_formats, num_plane_formats,
-				       DRM_PLANE_TYPE_OVERLAY);
+				       DRM_PLANE_TYPE_OVERLAY, NULL);
 	if (ret) {
 		kfree(intel_plane);
 		goto out;
