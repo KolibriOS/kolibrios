@@ -594,7 +594,6 @@ set_FAT:
         cmp     [ebp+FAT.fat_change], 0
         je      @f
         call    write_fat_sector
-        jc      .ret
 @@:
         mov     [ebp+FAT.fat_in_cache], eax
         call    fs_read32_sys
@@ -654,7 +653,6 @@ get_FAT:
         cmp     [ebp+FAT.fat_change], 0
         je      @f
         call    write_fat_sector
-        jc      .ret
 @@:
         mov     [ebp+FAT.fat_in_cache], eax
         call    fs_read32_sys
@@ -764,9 +762,7 @@ write_fat_sector:
 .write_next_fat:
         push    eax
         call    fs_write32_sys
-        test    eax, eax
         pop     eax
-        jnz     @f
         add     eax, [ebp+FAT.SECTORS_PER_FAT]
         dec     ecx
         jnz     .write_next_fat
@@ -862,11 +858,9 @@ update_disk:
         cmp     [ebp+FAT.fs_type], 12
         jz      .fat12
         call    write_fat_sector
-        jc      .ret
 .noChange:
         mov     esi, [ebp+PARTITION.Disk]
         call    disk_sync
-.ret:
         ret
 
 .fat12:
@@ -2418,21 +2412,19 @@ fat_Write:
         ja      .length_ok
         push    0
 .ret:
-        pop     eax
-        sub     edx, [esp+12]
-        mov     ebx, edx        ; ebx=number of written bytes
+        pop     eax eax eax ecx ecx
+        sub     edx, ecx
+        push    eax edx
         call    update_disk
-        test    eax, eax
-        jz      @f
-        mov     byte [esp+4], ERROR_DEVICE
-@@:
-        pop     eax eax ecx edx
-.error:
-        push    eax
+        pop     ebx
 @@:
         call    fat_unlock
         pop     eax
         ret
+
+.error:
+        push    eax
+        jmp     @b
 
 .eof:
         push    ERROR_END_OF_FILE
