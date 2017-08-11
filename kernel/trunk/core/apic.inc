@@ -460,17 +460,24 @@ get_clock_ns:
         jne     @B
         popfd
 
+;96-bit arithmetic
+;ebx - low dword
+;esi - medium dword
+;edx - high dword
+
         mul     [hpet_period]
         mov     ebx, eax
         mov     esi, edx
 
         mov     eax, ecx
         mul     [hpet_period]
-        add     eax, esi
-        mov     edx, eax
+        add     esi, eax
+        adc     edx, 0
         mov     eax, ebx
-        shrd    eax, edx, 10
-        shr     edx, 10
+        mov     ebx, esi
+        shrd    eax, ebx, 10
+        shrd    esi, edx, 10
+        mov     edx, esi
 
         pop     esi
         pop     ebx
