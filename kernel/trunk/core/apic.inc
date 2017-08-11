@@ -458,22 +458,20 @@ get_clock_ns:
         mov     ecx, [ebx+0xF4]
         cmp     ecx, edx
         jne     @B
+        popfd
 
         mul     [hpet_period]
-        shrd    eax, edx, 10
-        shr     edx, 10
-
         mov     ebx, eax
         mov     esi, edx
 
         mov     eax, ecx
         mul     [hpet_period]
-        shld    edx, eax, 22
-        shl     eax, 22
-        add     eax, ebx
-        adc     edx, esi
+        add     eax, esi
+        mov     edx, eax
+        mov     eax, ebx
+        shrd    eax, edx, 10
+        shr     edx, 10
 
-        popfd
         pop     esi
         pop     ebx
         ret
