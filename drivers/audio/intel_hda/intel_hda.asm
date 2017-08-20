@@ -2662,12 +2662,12 @@ endp
 
 ;Asper remember to add this functions:
 proc  snd_hda_queue_unsol_event stdcall, par1:dword, par2:dword
-if DEBUG
-	push	esi
-	mov	esi, msgUnsolEvent
-	invoke	SysMsgBoardStr
-	pop	esi
-end if
+;if DEBUG
+;        push    esi
+;        mov     esi, msgUnsolEvent
+;        invoke  SysMsgBoardStr
+;        pop     esi
+;end if
 if USE_UNSOL_EV = 1
 	;Test. Do not make queue, process immediately!
 	;stdcall here snd_hda_read_pin_sense stdcall, nid:dword, trigger_sense:dword
@@ -2962,7 +2962,7 @@ msgPciStat   db 'PCI status      ',0
     msgHDALowMMIo db 'lower mmio base ',0
     msgHDAUpMMIo  db 'upper mmio base ',0
 msgIrqMap    db 'HDA irq map as      ',0
-msgUnsolEvent db 'Unsolicited event!',13,10,0
+;msgUnsolEvent db 'Unsolicited event!',13,10,0
 
 ;Asper [
 if DEBUG
