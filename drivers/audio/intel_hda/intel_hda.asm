@@ -15,7 +15,7 @@ DEBUG_IRQ	equ 0
 USE_SINGLE_MODE equ  0	 ; 1 = Single mode; 0 = Normal mode.
 USE_UNSOL_EV	equ  1	 ; 1 = Use unsolicited events; 0 = Do not use unsolicited events.
 
-TEST_VERSION_NUMBER  equ '019'
+TEST_VERSION_NUMBER  equ '019a'
 
 ;Asper+ [
 SDO_TAG  equ 1	      ;Output stream tag id (any number except 0)
@@ -53,10 +53,10 @@ VID_VMWARE	  equ 0x15AD
 ; Devices
 ; Intel
 CTRL_INTEL_SCH2       equ  0x080a
-CTRL_INTEL_HPT        equ  0x0c0c
+CTRL_INTEL_HPT	      equ  0x0c0c
 CTRL_INTEL_0F04       equ  0x0F04
-CTRL_INTEL_CPT        equ  0x1c20
-CTRL_INTEL_PGB        equ  0x1d20
+CTRL_INTEL_CPT	      equ  0x1c20
+CTRL_INTEL_PGB	      equ  0x1d20
 CTRL_INTEL_PPT1       equ  0x1e20
 CTRL_INTEL_2284       equ  0x2284
 CTRL_INTEL_ICH6       equ  0x2668
@@ -68,10 +68,10 @@ CTRL_INTEL_ICH9       equ  0x293e
 CTRL_INTEL_ICH9_2     equ  0x293f
 CTRL_INTEL_ICH10      equ  0x3a3e
 CTRL_INTEL_ICH10_2    equ  0x3a6e
-CTRL_INTEL_PCH        equ  0x3b56
+CTRL_INTEL_PCH	      equ  0x3b56
 CTRL_INTEL_PCH2       equ  0x3b57
-CTRL_INTEL_SCH        equ  0x811b
-CTRL_INTEL_LPT        equ  0x8c20
+CTRL_INTEL_SCH	      equ  0x811b
+CTRL_INTEL_LPT	      equ  0x8c20
 CTRL_INTEL_8ca0       equ  0x8cA0
 CTRL_INTEL_8d20       equ  0x8d20
 CTRL_INTEL_8d21       equ  0x8d21
@@ -652,6 +652,7 @@ end if
 	stdcall hda_codec_setup_stream, eax, SDO_TAG, 0, 0x11	; Left & Right channels (Back panel)
 ;Asper+ ]
 
+	invoke	TimerHS, 1, 0, snd_hda_automute, 0
 if USE_SINGLE_MODE
 	mov	esi, msgSingleMode
 	invoke	SysMsgBoardStr
@@ -828,7 +829,7 @@ if DEBUG_IRQ
 	push	eax esi
 	;mov     esi, msgIRQ
 	;invoke  SysMsgBoardStr
-	call	GetTimerTicks
+	invoke	GetTimerTicks
 	stdcall fdword2str, 2
 	invoke	SysMsgBoardStr
 	pop	esi eax
@@ -2300,6 +2301,7 @@ endp
 proc  azx_bus_reset
 	call	azx_stop_chip
 	call	azx_init_chip
+	ret
 endp
 
 
@@ -2614,6 +2616,49 @@ endp
 
 ;_______
 
+proc  snd_hda_automute stdcall, data:dword
+	push	eax ebx ecx edx esi
+	mov	esi, [spec.out_pin_node+4]
+	mov	ecx, [spec.out_pin_node]
+	test	esi, esi
+	jnz	@f
+	xchg	ecx, esi
+	test	esi, esi
+	jz	.out
+@@:
+	movzx	edx, word [esi + HDA_GNODE.nid]
+	stdcall is_jack_detectable, edx
+	test	eax, eax
+	jz	.out
+
+	stdcall snd_hda_read_pin_sense, edx, 1
+	test	eax, AC_PINSENSE_PRESENCE
+	jnz	@f
+	xchg	ecx, esi
+@@:
+	; set PIN-Out enable
+	test	esi, esi
+	jz	.out
+	xor	edx, edx
+	test	[esi + HDA_GNODE.pin_caps], AC_PINCAP_HP_DRV
+	jz	@f
+	mov	edx, AC_PINCTL_HP_EN
+@@:
+	or	edx, AC_PINCTL_OUT_EN
+	movzx	eax, [esi + HDA_GNODE.nid]
+	stdcall snd_hda_codec_write, eax, 0, AC_VERB_SET_PIN_WIDGET_CONTROL, edx
+
+	; set PIN-Out disable
+	test	ecx, ecx
+	jz	.out
+	xor	edx, edx
+	movzx	eax, [ecx + HDA_GNODE.nid]
+	stdcall snd_hda_codec_write, eax, 0, AC_VERB_SET_PIN_WIDGET_CONTROL, edx
+.out:
+	pop	esi edx ecx ebx eax
+	ret
+endp
+
 
 ;Asper remember to add this functions:
 proc  snd_hda_queue_unsol_event stdcall, par1:dword, par2:dword
@@ -2627,6 +2672,7 @@ if USE_UNSOL_EV = 0
 	;Test. Do not make queue, process immediately!
 	;stdcall here snd_hda_read_pin_sense stdcall, nid:dword, trigger_sense:dword
 	;and then mute/unmute pin based on the results
+	invoke	TimerHS, 1, 0, snd_hda_automute, 0
 end if
 	ret
 endp
@@ -2690,15 +2736,15 @@ devices:
 	dd (CTRL_INTEL_CPT     shl 16)+VID_INTEL,msg_INTEL_CPT, 	   AZX_DRIVER_PCH
 	dd (CTRL_INTEL_PGB     shl 16)+VID_INTEL,msg_INTEL_PGB, 	   AZX_DRIVER_PCH
 	dd (CTRL_INTEL_PPT1    shl 16)+VID_INTEL,msg_INTEL_PPT1,	   AZX_DRIVER_PCH
-    dd (CTRL_INTEL_ICH6    shl 16)+VID_INTEL,msg_INTEL_ICH6,       AZX_DRIVER_ICH
+    dd (CTRL_INTEL_ICH6    shl 16)+VID_INTEL,msg_INTEL_ICH6,	   AZX_DRIVER_ICH
 	dd (CTRL_INTEL_63XXESB shl 16)+VID_INTEL,msg_INTEL_63XXESB,	   AZX_DRIVER_ICH
-    dd (CTRL_INTEL_ICH7    shl 16)+VID_INTEL,msg_INTEL_ICH7,       AZX_DRIVER_ICH
-    dd (CTRL_INTEL_ICH8    shl 16)+VID_INTEL,msg_INTEL_ICH8,       AZX_DRIVER_ICH
+    dd (CTRL_INTEL_ICH7    shl 16)+VID_INTEL,msg_INTEL_ICH7,	   AZX_DRIVER_ICH
+    dd (CTRL_INTEL_ICH8    shl 16)+VID_INTEL,msg_INTEL_ICH8,	   AZX_DRIVER_ICH
 	dd (CTRL_INTEL_82801_UNK1  shl 16)+VID_INTEL,msg_INTEL_82801_UNK1, AZX_DRIVER_ICH
-    dd (CTRL_INTEL_ICH9    shl 16)+VID_INTEL,msg_INTEL_ICH9,       AZX_DRIVER_ICH
-    dd (CTRL_INTEL_ICH9_2  shl 16)+VID_INTEL,msg_INTEL_ICH9,       AZX_DRIVER_ICH
-    dd (CTRL_INTEL_ICH10   shl 16)+VID_INTEL,msg_INTEL_ICH10,      AZX_DRIVER_ICH
-    dd (CTRL_INTEL_ICH10_2 shl 16)+VID_INTEL,msg_INTEL_ICH10,      AZX_DRIVER_ICH
+    dd (CTRL_INTEL_ICH9    shl 16)+VID_INTEL,msg_INTEL_ICH9,	   AZX_DRIVER_ICH
+    dd (CTRL_INTEL_ICH9_2  shl 16)+VID_INTEL,msg_INTEL_ICH9,	   AZX_DRIVER_ICH
+    dd (CTRL_INTEL_ICH10   shl 16)+VID_INTEL,msg_INTEL_ICH10,	   AZX_DRIVER_ICH
+    dd (CTRL_INTEL_ICH10_2 shl 16)+VID_INTEL,msg_INTEL_ICH10,	   AZX_DRIVER_ICH
 	dd (CTRL_INTEL_PCH     shl 16)+VID_INTEL,msg_INTEL_PCH, 	   AZX_DRIVER_PCH
 	dd (CTRL_INTEL_PCH2    shl 16)+VID_INTEL,msg_INTEL_PCH2,	   AZX_DRIVER_PCH
 	dd (CTRL_INTEL_SCH     shl 16)+VID_INTEL,msg_INTEL_SCH, 	   AZX_DRIVER_SCH
@@ -2714,7 +2760,7 @@ devices:
     dd (CTRL_INTEL_9C21    shl 16)+VID_INTEL,msg_INTEL_LYNX_LP,    AZX_DRIVER_PCH
     dd (CTRL_INTEL_9CA0    shl 16)+VID_INTEL,msg_INTEL_WILD_LP,    AZX_DRIVER_PCH
     dd (CTRL_INTEL_A170    shl 16)+VID_INTEL,msg_INTEL_SUNRISE,    AZX_DRIVER_PCH
-    dd (CTRL_INTEL_9D70    shl 16)+VID_INTEL,msg_INTEL_SUN_LP,     AZX_DRIVER_PCH
+    dd (CTRL_INTEL_9D70    shl 16)+VID_INTEL,msg_INTEL_SUN_LP,	   AZX_DRIVER_PCH
     dd (CTRL_INTEL_5A98    shl 16)+VID_INTEL,msg_INTEL_BROXTON,    AZX_DRIVER_PCH
 
 ; Nvidia
@@ -2800,11 +2846,11 @@ msg_INTEL_PGB		db 'Patsburg',13,10,0
 msg_INTEL_PPT1		db 'Panther Point',13,10,0
 msg_INTEL_LPT		db 'Lynx Point',13,10,0
 msg_INTEL_HPT		db 'Haswell',13,10,0
-msg_INTEL_ICH6      db 'ICH6',13,10,0
+msg_INTEL_ICH6	    db 'ICH6',13,10,0
 msg_INTEL_63XXESB	db '631x/632xESB',13,10,0
-msg_INTEL_ICH7      db 'ICH7', 13,10,0
-msg_INTEL_ICH8      db 'ICH8', 13,10,0
-msg_INTEL_ICH9      db 'ICH9', 13,10,0
+msg_INTEL_ICH7	    db 'ICH7', 13,10,0
+msg_INTEL_ICH8	    db 'ICH8', 13,10,0
+msg_INTEL_ICH9	    db 'ICH9', 13,10,0
 msg_INTEL_ICH10     db 'ICH10',13,10,0
 msg_INTEL_PCH		db 'PCH',13,10,0
 msg_INTEL_PCH2		db 'PCH2',13,10,0
@@ -2916,6 +2962,7 @@ msgPciStat   db 'PCI status      ',0
     msgHDALowMMIo db 'lower mmio base ',0
     msgHDAUpMMIo  db 'upper mmio base ',0
 msgIrqMap    db 'HDA irq map as      ',0
+msgUnsolEvent db 'Unsolicited event!',13,10,0
 
 ;Asper [
 if DEBUG
@@ -2955,7 +3002,6 @@ if DEBUG
     msgPollingCodecOnce      db 'polling the codec once',13,10,0 ;Asper~
     msgSwitchToPollMode      db 'switching to polling mode',13,10,0 ;Asper~
 
-    msgUnsolEvent	     db 'Unsolicited event!',13,10,0
     strSemicolon	     db ':',0
     msgSETUP_FG_NODES	     db 'Setup FG nodes = start_nid:total_nodes = ',0
     msgFG_TYPE		     db 'FG type = ',0
