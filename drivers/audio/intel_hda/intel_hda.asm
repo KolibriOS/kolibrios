@@ -2668,7 +2668,7 @@ if DEBUG
 	invoke	SysMsgBoardStr
 	pop	esi
 end if
-if USE_UNSOL_EV
+if USE_UNSOL_EV = 1
 	;Test. Do not make queue, process immediately!
 	;stdcall here snd_hda_read_pin_sense stdcall, nid:dword, trigger_sense:dword
 	;and then mute/unmute pin based on the results
