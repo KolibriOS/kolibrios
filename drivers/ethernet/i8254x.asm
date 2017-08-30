@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  i8254x driver for KolibriOS                                    ;;
@@ -528,7 +528,7 @@ reset_dontstart:
         mov     dword[esi + REG_PBA], 0x00000004        ; PBA: set the RX buffer size to 4KB (TX buffer is calculated as 64-RX buffer)
         mov     dword[esi + REG_RDTR], 0                ; RDTR: set no delay
 
-        mov     dword[esi + REG_TXCW], 0x80008060       ; TXCW: set ANE, TxConfigWord (Half/Full duplex, Next Page Reqest)
+        mov     dword[esi + REG_TXCW], 0x00008060       ; TXCW: TxConfigWord (Half/Full duplex, Next Page Reqest)
 
         mov     eax, [esi + REG_CTRL]
         or      eax, 1 shl 6 + 1 shl 5
