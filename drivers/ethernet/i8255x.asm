@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;; i8255x (Intel eepro 100) driver for KolibriOS                   ;;
@@ -432,13 +432,11 @@ probe:
         invoke  PciRead32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header.vendor_id ; get device/vendor id
 
         DEBUGF  1,"Vendor_id=0x%x\n", ax
-
         cmp     ax, 0x8086
         jne     .notfound
         shr     eax, 16
 
         DEBUGF  1,"Device_id=0x%x\n", ax
-
         mov     ecx, DEVICE_IDs
         mov     edi, device_id_list
         repne   scasw
@@ -483,7 +481,7 @@ reset:
         mov     eax, PORT_SELECTIVE_RESET
         out     dx, eax
 
-        mov     esi, 1
+        mov     esi, 10
         invoke  Sleep
 
 ;-----------
@@ -616,13 +614,6 @@ reset:
         lea     edi, [ebx + device.confcmd.data]
         mov     ecx, 22
         rep     movsb
-
-        mov     byte[ebx + device.confcmd.data + 1], 0x88  ; fifo of 8 each
-        mov     byte[ebx + device.confcmd.data + 4], 0
-        mov     byte[ebx + device.confcmd.data + 5], 0x80
-        mov     byte[ebx + device.confcmd.data + 15], 0x48
-        mov     byte[ebx + device.confcmd.data + 19], 0x80
-        mov     byte[ebx + device.confcmd.data + 21], 0x05
 
         set_io  [ebx + device.io_addr], REG_SCB_PTR
         lea     eax, [ebx + device.confcmd.status]
