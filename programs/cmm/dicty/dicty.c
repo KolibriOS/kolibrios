@@ -161,7 +161,6 @@ void DrawTranslation()
 	strttl(#draw_buf);
 	WriteTextB(10+1, y_pos+8, 10000001b, 0x800080, #search_word);
 
-	debugln(#draw_buf);
 	DrawTextViewArea(10, y_pos+31, Form.cwidth-20, Form.cheight-30, 
 		#draw_buf, -1, 0x000000);
 }

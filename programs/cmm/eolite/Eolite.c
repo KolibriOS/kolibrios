@@ -45,7 +45,7 @@ enum {
 	ONLY_OPEN
 };
 
-dword col_padding, col_selec, col_lpanel, col_work, col_graph;
+dword col_padding, col_selec, col_lpanel, col_work, col_graph, col_list_line=0xDDD7CF;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
 
@@ -662,8 +662,8 @@ void List_ReDraw()
 	//in the bottom
 	all_lines_h = j * files.item_h;
 	DrawBar(files.x,all_lines_h + files.y,files.w,files.h - all_lines_h,0xFFFFFF);
-	DrawBar(files.x+files.w-141,all_lines_h + files.y,1,files.h - all_lines_h,system.color.work);
-	DrawBar(files.x+files.w-68,all_lines_h + files.y,1,files.h - all_lines_h,system.color.work);
+	DrawBar(files.x+files.w-141,all_lines_h + files.y,1,files.h - all_lines_h,col_list_line);
+	DrawBar(files.x+files.w-68,all_lines_h + files.y,1,files.h - all_lines_h,col_list_line);
 	Scroll();
 }
 
@@ -742,8 +742,8 @@ void Line_ReDraw(dword bgcol, filenum){
 		}
 		kfont.WriteIntoWindow(files.x + 23, files.item_h - kfont.height / 2 + y, bgcol, text_col, kfont.size.pt, #label_file_name);
 	}
-	DrawBar(files.x+files.w-141,y,1,files.item_h,system.color.work); //gray line 1
-	DrawBar(files.x+files.w-68,y,1,files.item_h,system.color.work); //gray line 2
+	DrawBar(files.x+files.w-141,y,1,files.item_h,col_list_line); //gray line 1
+	DrawBar(files.x+files.w-68,y,1,files.item_h,col_list_line); //gray line 2
 }
 
 
