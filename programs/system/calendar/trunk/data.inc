@@ -29,14 +29,20 @@ COL_DROPDOWN_BG  equ 0x666666
 COL_DROPDOWN_T   equ 0x10CCCccc
 COL_NEW_STYLE_T  equ 0xef3333
 
-COL_DATE_INACTIVE_1 equ 0x1379A8
-COL_DATE_INACTIVE_2 equ 0x53ACD1
-COL_DATE_INACTIVE_3 equ 0x7CC0DC
+COL_DATE_INACTIVE_1 equ 0x388CAF
+COL_DATE_INACTIVE_2 equ 0x75B9D5
+COL_DATE_INACTIVE_3 equ 0x9ECBDF
 COL_DATE_INACTIVE_4 equ 0xABD7E8
-COL_DATE_ACTIVE_1   equ 0xB17A00
-COL_DATE_ACTIVE_2   equ 0xEDA700
-COL_DATE_ACTIVE_3   equ 0xFFCC00
-COL_DATE_ACTIVE_4   equ 0xFFE56B
+
+COL_DATE_ACTIVE_1   equ 0xA57F2C
+COL_DATE_ACTIVE_2   equ 0xEFB52D
+COL_DATE_ACTIVE_3   equ 0xFAD84C
+COL_DATE_ACTIVE_4   equ 0xFAE995
+
+COL_DATE_1   equ 0x8C8C8C
+COL_DATE_2   equ 0xFFFfff
+COL_DATE_3   equ 0xF2F2F2
+COL_DATE_4   equ 0xF2F2F2
 
 ; definitions
 WIN_W equ 275
@@ -55,7 +61,7 @@ BT_WBAR_Y equ 283 shl 16+43
 
 B_WBAR_X  equ 1 shl 16+WIN_W-1
 B_WBAR_Y  equ 64 shl 16+20
-B_WEEK	  equ 34 shl 16+64
+B_WEEK	  equ 34 shl 16+66
 B_WX_SHIFT equ 32 shl 16
 
 B_DROP	  equ B_MONTH+16
@@ -270,21 +276,6 @@ else
      db   'Calendar',0
 end if
 
-n_style:
-if lang eq ru
-     db   'Новый стиль'
-else if lang eq de
-     db   'Neuer Stil'
-else if lang eq fr
-     db   'Nouveau'
-else if lang eq et
-     db   'Uus stiil'
-else if lang eq it
-     db   'Nuovo stile'
-else
-     db   'New style'
-end if
-ns_end:
 today_msg:
 if lang eq ru
      db   'Сегодня'

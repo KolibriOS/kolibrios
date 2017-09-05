@@ -93,10 +93,17 @@ macro DrawRect color1,color2,color3,color4 ; pizdec... but optimized well
 	mov bx,1
 	mov cx,DATE_BUTTON_HEIGHT-3
 	mcall
-	; rgiht border-outer
+	; right border-outer
 	mov edx,color2
 	add ebx,1 shl 16
 	sub ecx,1 shl 16
+	add cx,1
+	mcall
+	; right border-outer 2
+	mov edx,color1
+	add ebx,1 shl 16
+	sub ecx,1 shl 16
+	add cx,2
 	add cx,1
 	mcall
 	; bottom border-outer
@@ -108,6 +115,12 @@ macro DrawRect color1,color2,color3,color4 ; pizdec... but optimized well
 	add ebx,1 shl 16
 	mov cx,1
 	mcall
+	; bottom border-outer 2
+	mov edx,color1
+	add ecx,1 shl 16
+	mcall
+	add ebx,1 shl 16
+	sub ecx,1 shl 16
 	; left border-outer
 	mov edx,color4
 	add ebx,1 shl 16
@@ -563,7 +576,7 @@ draw_window:
     mov  ebx,B_SPIN_X ; <
     inc  edx
     mcall
-    add  ebx,54 shl 16 ; >
+    add  ebx,55 shl 16 ; >
     inc  edx
     mcall
     call draw_days
@@ -575,20 +588,6 @@ draw_window:
     mcall  ,185*65536+287, ,plus
     mcall  ,185*65536+317, ,minus
     mcall  , 35*65536+300,0x00CCCCCC,set_date_t,15 ;set date text
-
-
-    mov  ecx,0x10ddeeff
-    mov  edx,n_style
-    mov  esi,ns_end-n_style
-    mov  ebx,B_NS
-    cmp  [new_style],1
-    je	 .high
-    mov  ecx,0xa0a0a0
-    jmp  .int
-  .high:
-    mov  ecx,COL_NEW_STYLE_T
-  .int:
-    mcall
 
     mov  ecx,COL_GO_TODAY_T
     mov  edx,today_msg
@@ -634,7 +633,7 @@ draw_dropdown:
     push ecx
     mov  esi,COL_DROPDOWN_BG
     mcall 8,B_MONTH_X,[esp+4]
-    shr  eax,1
+    mov eax,4
     mov  ebx,[esp+8]
     xchg edx,[esp+12]
     movzx esi,byte[month_name]
@@ -731,6 +730,7 @@ draw_days:
 .draw_but:				     ;draw non selected button
     add  edx,200+1 shl 29
     mcall 8
+	DrawRect COL_DATE_1,COL_DATE_2,COL_DATE_3,COL_DATE_4
 	mov eax,[Year]
 	cmp [curYear],eax
 	jne .out
@@ -741,10 +741,10 @@ draw_days:
 	cmp [curDay],eax
 	jne .out
 	mov edx,0xff0000
-	mov bx,DATE_BUTTON_WIDTH-2
-	mov cx,2
-	add ebx,1 shl 16
-	add ecx,27 shl 16
+	mov bx,DATE_BUTTON_WIDTH-1
+	mov cx,3
+	sub ebx,2 shl 16
+	sub ecx,1 shl 16
 	mcall 13
 .out:
 	mov	eax, [number]
@@ -831,8 +831,6 @@ calculate:
     shr  ecx,2
     add  eax,ecx
     dec  eax
-    cmp  [new_style],0
-    je	 .nonew
     add  eax,2
     xchg eax,ebx
     mov  ecx,100
@@ -841,7 +839,6 @@ calculate:
     sub  ebx,eax
     shr  eax,2
     add  ebx,eax
-  .nonew:
     add  ebx,5
     mov  eax,ebx
     xor  edx,edx
