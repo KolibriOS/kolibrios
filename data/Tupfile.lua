@@ -75,6 +75,7 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"SETTINGS/GAME_CENTER.INI", "rus/settings/game_center.ini"},
  {"SETTINGS/MYKEY.INI", PROGS .. "/system/MyKey/trunk/mykey.ini"},
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/rus/example.asm"},
+ {"RUN", "rus/RUN"},
  {"PIPETKA", build_type .. "/pipetka"},
  {"File Managers/KFAR.INI", build_type .. "/File Managers/kfar.ini"},
  {"GAMES/APPDATA.DAT", build_type .. "/games/appdata.dat"},
@@ -87,6 +88,7 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"SETTINGS/GAME_CENTER.INI", "common/settings/game_center.ini"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/example.asm"},
+ {"RUN", "common/RUN"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
 }) end
 if build_type == "it" then tup.append_table(img_files, {
@@ -340,7 +342,6 @@ tup.append_table(img_files, {
  {"PCIDEV", PROGS .. "/system/pcidev/trunk/PCIDEV"},
  {"RDSAVE", PROGS .. "/system/rdsave/trunk/rdsave"},
  {"RTFREAD", PROGS .. "/other/rtfread/trunk/rtfread"},
- {"RUN", PROGS .. "/system/RunOD/RunOD"},
  {"SEARCHAP", PROGS .. "/system/searchap/searchap"},
  {"SCRSHOOT", PROGS .. "/media/scrshoot/scrshoot"},
  {"SETUP", PROGS .. "/system/setup/trunk/setup"},
