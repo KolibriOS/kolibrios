@@ -518,11 +518,12 @@ end -- tup.getconfig('NO_FASM') ~= 'full'
 -- Programs that require NASM to compile.
 if tup.getconfig('NO_NASM') ~= 'full' then
 tup.append_table(img_files, {
+ {"LOD", PROGS .. "/fs/lod/lod"},
+ {"TINFO", PROGS .. "/system/tinfo/tinfo"},
  {"DEMOS/ACLOCK", PROGS .. "/demos/aclock/trunk/aclock"},
  {"DEMOS/TIMER", PROGS .. "/other/Timer/timer"},
- {"GAMES/C4", PROGS .. "/games/c4/trunk/c4"},
- {"TINFO", PROGS .. "/system/tinfo/tinfo"},
  {"DEVELOP/MSTATE", PROGS .. "/develop/mstate/mstate"},
+ {"GAMES/C4", PROGS .. "/games/c4/trunk/c4"},
 })
 end -- tup.getconfig('NO_NASM') ~= 'full'
 
