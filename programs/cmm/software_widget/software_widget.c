@@ -179,12 +179,24 @@ void draw_top_bar()
 
 void EventRunApp(dword appid)
 {
-	if (file_exists(app_path_collection.get(appid))) {
-		io.run(app_path_collection.get(appid), "");
+	dword app_path = app_path_collection.get(appid);
+	
+	dword param_pos = strchr(app_path, '|');
+	if (param_pos) {
+		ESBYTE[param_pos] = NULL;
+		param_pos++;
 	}
-	else {
+
+	if (file_exists(app_path))
+	{
+		io.run(app_path, param_pos); //0 or offset
+		if (param_pos) ESBYTE[param_pos - 1] = '|';
+	}
+	else
+	{
 		notify("'Application not found' -E");
 	}
+
 }
 
 
