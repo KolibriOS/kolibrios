@@ -15,7 +15,6 @@ img_files = {
  {"MACROS.INC", PROGS .. "/macros.inc"},
  {"CONFIG.INC", PROGS .. "/config.inc"},
  {"STRUCT.INC", PROGS .. "/struct.inc"},
- {"DEINK.PNG", "common/wallpapers/deink.png"},
  {"FB2READ", "common/fb2read"},
  {"ICONS32.PNG", "common/icons32.png"},
  {"INDEX.HTM", "common/index_htm"},
@@ -236,6 +235,7 @@ extra_files = {
  {"kolibrios/utils/calcplus", PROGS .. "/other/calcplus/calcplus"},
  {"kolibrios/utils/fNav/", "common/File Managers/fNav/*"},
  {"kolibrios/res/wallpapers/in_the_wind.png", "common/wallpapers/in_the_wind.png"},
+ {"kolibrios/res/wallpapers/deink.png", "common/wallpapers/deink.png"},
  }
 if build_type == "rus" then tup.append_table(extra_files, {
  {"Docs/cp866/config.txt", build_type .. "/docs/CONFIG.TXT"},
