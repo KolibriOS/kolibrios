@@ -235,7 +235,7 @@ extra_files = {
  {"kolibrios/settings/app_plus.ini", "common/settings/app_plus.ini"},
  {"kolibrios/utils/calcplus", PROGS .. "/other/calcplus/calcplus"},
  {"kolibrios/utils/fNav/", "common/File Managers/fNav/*"},
- {"kolibrios/res/wallpappers/in_the_wind.png", "common/wallpappers/in_the_wind.png"},
+ {"kolibrios/res/wallpapers/in_the_wind.png", "common/wallpapers/in_the_wind.png"},
  }
 if build_type == "rus" then tup.append_table(extra_files, {
  {"Docs/cp866/config.txt", build_type .. "/docs/CONFIG.TXT"},
