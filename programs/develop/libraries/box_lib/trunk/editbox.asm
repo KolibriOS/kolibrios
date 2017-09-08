@@ -358,7 +358,65 @@ edit_box_key.end:
         call    edit_box.draw_shift
         call    edit_box_key.sh_home_end
         jmp     edit_box.draw_cursor_text
-
+;----------------------------------------
+StrInsert:
+; SizeOf(TmpBuf) >= StrLen(Src) + StrLen(Dst) + 1              
+Dst    equ [esp + 20] ; - destination buffer
+Src    equ [esp + 16] ; - source to insert from
+Pos    equ [esp + 12] ; - position for insert
+DstMax equ [esp + 8]  ; - maximum Dst length(exclude terminating null)
+TmpBuf equ [esp + 4]  ; - temporary buffer              
+        xor    edx, edx
+        mov    esi, Dst
+        mov    edi, TmpBuf
+        mov    ecx, Pos
+        add    edx, ecx
+        rep movsb 
+        mov    edi, Src
+        mov    ecx, -1
+        xor    eax, eax
+        repne scasb 
+        mov    eax, -2
+        sub    eax, ecx
+        add    edx, eax
+        mov    esi, Src
+        mov    edi, TmpBuf
+        add    edi, Pos
+        mov    ecx, eax
+        rep movsb 
+        mov    ebx, edi
+        mov    edi, Dst
+        add    edi, Pos
+        mov    ecx, -1
+        xor    eax, eax
+        repne scasb 
+        mov    eax, -2
+        sub    eax, ecx
+        inc    eax
+        add    edx, eax
+        mov    edi, ebx
+        mov    esi, Pos
+        add    esi, Dst
+        mov    ecx, eax
+        rep movsb 
+        mov    esi, TmpBuf
+        mov    edi, Dst
+; ecx = MIN(edx, DstSize)        
+        cmp    edx, DstMax
+        sbb    ecx, ecx                                   
+        and    edx, ecx
+        not    ecx
+        and    ecx, DstMax
+        add    ecx, edx                                   
+        mov    eax, ecx ; return total length
+        rep movsb
+        ret    20
+restore Dst    
+restore Src      
+restore Pos    
+restore DstSize
+restore TmpBuf 
+;----------------------------------------                
 edit_box_key.ctrl_c:
 ; add memory area
         mov     ecx,ed_size
@@ -369,12 +427,24 @@ edit_box_key.ctrl_c:
         mov     [eax+4],ecx ; type 'text'
         inc     ecx
         mov     [eax+8],ecx ; cp866 text encoding
-        mov     ecx,ed_size
+        mov     ecx,ed_pos       
+        movzx   ebx,word ed_shift_pos
+        sub     ecx,ebx
+.abs: ; make ecx = abs(ecx)
+	       neg     ecx
+	       jl	     .abs
         add     ecx,3*4
         mov     [eax],ecx
-        sub     ecx,3*4
+        sub     ecx,3*4        
+        mov     edx,ed_pos
+        movzx   ebx,word ed_shift_pos
+        cmp     edx,ebx
+        jle     @f
+        mov     edx,ebx
+@@:        
 ; copy data
         mov     esi,ed_text
+        add     esi,edx
         push    edi
         mov     edi,eax
         add     edi,3*4
@@ -424,29 +494,50 @@ edit_box_key.ctrl_v:
         jnz     .no_valid_text
         mov     ecx,[eax]
         sub     ecx,3*4
-        cmp     ecx,ed_max
+; in ecx size of string to insert   
+        add     ecx,ed_size
+        mov     edx,ed_max
+        sub     edx,2 ; 2 reserved for edit_box
+        cmp     ecx,edx
         jb      @f
-        mov     ecx,ed_max
+        mov     ecx,edx
 @@:
         mov     esi,eax
         add     esi,3*4
-        mov     ed_size,ecx
-        mov     ed_pos,ecx
         push    eax edi
-        mov     edi,ed_text
-        cld
-@@:
-        lodsb
-        cmp     al,0x0d ; EOS (end of string)
-        je      .replace
-        cmp     al,0x0a ; EOS (end of string)
-        jne     .continue
-.replace:
-        mov     al,0x20 ; space
-.continue:
-        stosb
-        dec     ecx
-        jnz     @b
+;---------------------------------------;         
+        mov     ed_size,ecx
+        inc     ecx        
+        mcall   SF_SYS_MISC,SSF_MEM_ALLOC
+        push    eax ; save mem pointer
+                
+        mov     edx, ed_max
+        sub     edx, 3 ; +1 for StrInsert, +2 as reserved for edit_box
+        
+        push   dword ed_text ; Dst   
+        push   esi           ; Src   
+        push   dword ed_pos  ; Pos in Dst
+        push   edx           ; DstMax
+        push   eax           ; TmpBuf
+        call   StrInsert  
+        
+        pop    eax ; restore mem pointer
+        mcall   SF_SYS_MISC,SSF_MEM_FREE
+;---------------------------------------;        
+;        mov     edi,ed_text
+;        cld
+;@@:
+;        lodsb
+;        cmp     al,0x0d ; EOS (end of string)
+;        je      .replace
+;        cmp     al,0x0a ; EOS (end of string)
+;        jne     .continue
+;.replace:
+;        mov     al,0x20 ; space
+;.continue:
+;        stosb
+;        dec     ecx
+;        jnz     @b
         pop     edi eax
 .no_valid_text:
 ; remove unnecessary memory area
