@@ -124,7 +124,7 @@ void Key_Scan(int id)
 void DL_Draw_Window()
 {  
     int cleft = 15;
-    int but_x;
+    int but_x = 0;
     DrawBar(0,0, DL_Form.cwidth, DL_Form.cheight, system.color.work);
     DeleteButton(305);
     DeleteButton(306);
