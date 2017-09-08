@@ -554,7 +554,7 @@ tup.append_table(img_files, {
 tup.append_table(extra_files, {
  {"kolibrios/drivers/DRVINST.KEX", PROGS .. "/cmm/drvinst/drvinst.com"},
  {"kolibrios/utils/DICTY.KEX", PROGS .. "/cmm/dicty/dicty.com"},
- {"kolibrios/utils/appearance.kex", PROGS .. "/cmm/appearance/appearance.com"},
+ {"kolibrios/utils/appearance", PROGS .. "/cmm/appearance/appearance.com"},
 })
 end -- tup.getconfig('NO_CMM') ~= 'full'
 
