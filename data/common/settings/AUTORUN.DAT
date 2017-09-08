@@ -6,7 +6,6 @@
 #/SYS/CROPFLAT	"XS800 YS480"	1	# set limits of screen
 #/SYS/LOADDRV	COMMOUSE	1	# serial mouse driver
 #/SYS/DEVELOP/BOARD	""	0	# Load DEBUG board
-#/SYS/refrscrn		""	0	# Refresh screen
 /SYS/SETUP		BOOT	0	# Load device settings
 /SYS/LOADDRV		RDC	0	# videodriver for RDC M2010/M2012
 /SYS/@TASKBAR		""	0	# Start taskbar
