@@ -138,6 +138,8 @@ edit_box_key:
         jz      @f
 ; проверка сканкода
         ror     eax,8
+        cmp     ah,45 ; Ctrl + X
+        je      edit_box_key.ctrl_x        
         cmp     ah,46 ; Ctrl + C
         je      edit_box_key.ctrl_c
         cmp     ah,47 ; Ctrl + V
@@ -416,8 +418,14 @@ restore Src
 restore Pos    
 restore DstSize
 restore TmpBuf 
-;----------------------------------------                
+;----------------------------------------         
+edit_box_key.ctrl_x:
+        push    dword 'X'  ; this value need below to determine which action is used
+        jmp     edit_box_key.ctrl_c.pushed
+        
 edit_box_key.ctrl_c:
+        push    dword 'C'  ; this value need below to determine which action is used
+.pushed:        
 ; add memory area
         mov     ecx,ed_size
         add     ecx,3*4
@@ -460,6 +468,9 @@ edit_box_key.ctrl_c:
 ; remove unnecessary memory area
         mcall   SF_SYS_MISC,SSF_MEM_FREE
 .exit:
+        pop     eax        ; determine current action (ctrl+X or ctrl+C)
+        cmp     eax, 'X'
+        je      edit_box_key.delete
         jmp     edit_box.editbox_exit
 
 edit_box_key.ctrl_v:
