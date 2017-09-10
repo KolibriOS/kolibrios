@@ -5,7 +5,7 @@
     #define SHOW_IN_FOLDER "Показать в папке"
     #define OPEN_FILE_TEXT "Открыть файл"
     #define FILE_SAVED_AS "'Менеджер загрузок\nФайл сохранен как "
-    #define KB_RECEIVED " получено"
+    #define KB_RECEIVED "Идет скачивание... %s получено"
 #else
     #define DL_WINDOW_HEADER "Download Manager"
     #define START_DOWNLOADING "Start downloading"
@@ -13,7 +13,7 @@
     #define SHOW_IN_FOLDER "Show in folder"
     #define OPEN_FILE_TEXT "Open file"
     #define FILE_SAVED_AS "'Download manager\nFile saved as "
-    #define KB_RECEIVED " received"
+    #define KB_RECEIVED "Downloading... %s received"
 #endif
 char save_to[4096] = "/tmp0/1/Downloads";
  
@@ -22,7 +22,10 @@ char downloader_edit[10000];
 char filepath[4096];
 int mouse_twbi;
 edit_box ed = {250,20,20,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(downloader_edit),#downloader_edit,#mouse_twbi,2,19,19};
-progress_bar pb = {0, 200, 55, 225, 12, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
+progress_bar pb = {0, 20, 58, 350, 17, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
+//progress_bar pb = {0, 180, 55, 225, 12, 0, 0, 100, 0xFFFfff, 0x74DA00, 0x9F9F9F};
+//progress_bar: value, left, top, width, height, style, min, max, back_color, progress_color, frame_color;
+    
  
 byte downloader_opened;
 char downloader_stak[4096];
@@ -37,6 +40,9 @@ void Downloader()
     char notify_message[4296];
     downloader_opened = 1;
     SetEventMask(0x27);
+
+    system.color.get();
+    pb.frame_color = system.color.work_dark;
  
     filepath[0] = NULL;
     
@@ -60,14 +66,12 @@ void Downloader()
  
             case evKey:
                 GetKeys();
-                EAX = key_ascii << 8;
                 edit_box_key stdcall(#ed);
                 if (key_scancode==SCAN_CODE_ENTER) Key_Scan(301);
                 break;
  
             case evReDraw:
-                system.color.get();
-                DefineAndDrawWindow(215, 100, 580, 120, 0x74, system.color.work, DL_WINDOW_HEADER, 0);
+                DefineAndDrawWindow(215, 100, 580, 130, 0x74, system.color.work, DL_WINDOW_HEADER, 0);
                 GetProcessInfo(#DL_Form, SelfInfo);
                 if (DL_Form.status_window>2) break;
                 if (DL_Form.height<120) MoveSize(OLD,OLD,OLD,120);
@@ -125,22 +129,23 @@ void DL_Draw_Window()
 {  
     int cleft = 15;
     int but_x = 0;
+    int but_y = 58;
     DrawBar(0,0, DL_Form.cwidth, DL_Form.cheight, system.color.work);
     DeleteButton(305);
     DeleteButton(306);
     if (downloader.state == STATE_NOT_STARTED) || (downloader.state == STATE_COMPLETED)
     {
-        but_x = cleft + DrawStandartCaptButton(cleft, 55, 301, START_DOWNLOADING);   
+        but_x = cleft + DrawStandartCaptButton(cleft, but_y, 301, START_DOWNLOADING);   
+        if (filepath[0])
+        {
+            but_x += DrawStandartCaptButton(but_x, but_y, 305, SHOW_IN_FOLDER);
+            DrawStandartCaptButton(but_x, but_y, 306, OPEN_FILE_TEXT);  
+        }
     }
     if (downloader.state == STATE_IN_PROGRESS)
     {
-        DrawStandartCaptButton(cleft, 55, 302, STOP_DOWNLOADING);
+        DrawCaptButton(DL_Form.width - 190, but_y, 167, 26, 302, system.color.work_button, system.color.work_button_text, STOP_DOWNLOADING);
         DrawDownloading();
-    }
-    if (filepath[0])
-    {
-        but_x += DrawStandartCaptButton(but_x, 55, 305, SHOW_IN_FOLDER);
-        DrawStandartCaptButton(but_x, 55, 306, OPEN_FILE_TEXT);  
     }
     WriteText(cleft, ed.top + 4, 0x90, system.color.work_text, "URL:");
     ed.left = strlen("URL:")*8 + 10 + cleft;
@@ -170,10 +175,9 @@ void StartDownloading()
 void DrawDownloading()
 {
     char bytes_received[70];
-    dword tmp = ConvertSizeToKb(downloader.data_downloaded_size);
-    sprintf(#bytes_received, "%s%s", tmp, KB_RECEIVED);
-    DrawBar(pb.left, pb.top + 17, DL_Form.cwidth - pb.left, 9, system.color.work);
-    WriteText(pb.left, pb.top + 17, 0x80, system.color.work_text, #bytes_received);
+    sprintf(#bytes_received, KB_RECEIVED, ConvertSizeToKb(downloader.data_downloaded_size) );
+    DrawBar(15, pb.top + 22, strlen(#bytes_received+4)*12, 16, system.color.work);
+    WriteText(15, pb.top + 22, 0x90, system.color.work_text, #bytes_received);
     progressbar_draw stdcall(#pb);
 }
  

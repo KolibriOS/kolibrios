@@ -306,9 +306,9 @@ enum
 	notify(_last_msg);
 	ExitProcess();
 }
+:unsigned char size[25]=0;
 :dword ConvertSizeToKb(unsigned int bytes)
 {
-	unsigned char size[25]=0;
 	unsigned int kb;
 	dword kb_line;
 

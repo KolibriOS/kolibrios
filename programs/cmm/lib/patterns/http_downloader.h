@@ -77,7 +77,7 @@ int DOWNLOADER::MonitorProgress()
 				do {
 					$lodsb;
 					$stosb;
-				} while (AL != 0) && (AL != 13) && (AL != 10));
+				} while ((AL != 0) && (AL != 13) && (AL != 10));
 				DSBYTE[EDI-1]='\0';
 			}
 			get_absolute_url(#finaladress, url, #redirect_url);
