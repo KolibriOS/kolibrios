@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  netstat.asm - Network Status Tool for KolibriOS                ;;
@@ -103,6 +103,10 @@ redraw:
 
 ; Fill rectangle
         mcall   13, 1 shl 16 + BOX_WIDTH-1, 26 shl 16 + BOX_HEIGHT-1, 0x00F3F3F3
+
+; Undefine IP settings button
+        mov     edx, 0x80000002
+        mcall   8
 
 ; Fill tab buttons
         mov     eax, 13
