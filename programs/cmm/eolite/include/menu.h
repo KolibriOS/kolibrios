@@ -45,7 +45,7 @@ char *file_captions[] = {
 	0, 0, 0};
 #endif
 
-llist menu;
+llist rbmenu;
 int cur_action_buf;
 
 void FileMenu()
@@ -53,18 +53,19 @@ void FileMenu()
 	proc_info MenuForm;
 	int index;
 
-	menu.ClearList();
-	menu.SetFont(6, 9, 0x80);
-	menu.SetSizes(0,0,10,0,18);
+	rbmenu.ClearList();
+	rbmenu.SetFont(6, 9, 0x80);
+	rbmenu.SetSizes(0,0,10,0,18);
 	for (index=0; file_captions[index]!=0; index+=3)
 	{
 		if (itdir) && (file_captions[index+2]>=200) continue;
-		if (strlen(file_captions[index])>menu.w) menu.w = strlen(file_captions[index]);
-		menu.count++;
-		menu.visible++;
+		if (selected_count > 0) && (file_captions[index+2]==100) continue; //do not show "open" for several files
+		if (strlen(file_captions[index])>rbmenu.w) rbmenu.w = strlen(file_captions[index]);
+		rbmenu.count++;
+		rbmenu.visible++;
 	}
-	menu.w = menu.w + 3 * menu.font_w + 50;
-	menu.h = menu.count * menu.item_h;
+	rbmenu.w = rbmenu.w + 3 * rbmenu.font_w + 50;
+	rbmenu.h = rbmenu.count * rbmenu.item_h;
 	SetEventMask(100111b);
 	goto _MENU_DRAW;
 	
@@ -73,7 +74,7 @@ void FileMenu()
 		case evMouse:
 				mouse.get();
 				if (!CheckActiveProcess(MenuForm.ID)){ cmd_free=1; ExitProcess();}
-				else if (mouse.move)&&(menu.ProcessMouse(mouse.x, mouse.y)) MenuListRedraw();
+				else if (mouse.move)&&(rbmenu.ProcessMouse(mouse.x, mouse.y)) MenuListRedraw();
 				else if (mouse.key&MOUSE_LEFT)&&(mouse.up) {action_buf = cur_action_buf; cmd_free=1; ExitProcess(); }
 		break;
 				
@@ -81,16 +82,16 @@ void FileMenu()
 				GetKeys();
 				if (key_scancode == SCAN_CODE_ESC) {cmd_free=1;ExitProcess();}
 				if (key_scancode == SCAN_CODE_ENTER) {action_buf = cur_action_buf; cmd_free=1; ExitProcess(); }
-				if (menu.ProcessKey(key_scancode)) MenuListRedraw();
+				if (rbmenu.ProcessKey(key_scancode)) MenuListRedraw();
 				break;
 				
 		case evReDraw: _MENU_DRAW:
-				if (menu_call_mouse) DefineAndDrawWindow(mouse.x+Form.left+5, mouse.y+Form.top+GetSkinHeight(),menu.w+3,menu.h+6,0x01, 0, 0, 0x01fffFFF);
-				else DefineAndDrawWindow(Form.left+files.x+15, files.item_h*files.cur_y+files.y+Form.top+30,menu.w+3,menu.h+6,0x01, 0, 0, 0x01fffFFF);
+				if (menu_call_mouse) DefineAndDrawWindow(mouse.x+Form.left+5, mouse.y+Form.top+GetSkinHeight(),rbmenu.w+3,rbmenu.h+6,0x01, 0, 0, 0x01fffFFF);
+				else DefineAndDrawWindow(Form.left+files.x+15, files.item_h*files.cur_y+files.y+Form.top+30,rbmenu.w+3,rbmenu.h+6,0x01, 0, 0, 0x01fffFFF);
 				GetProcessInfo(#MenuForm, SelfInfo);
-				DrawRectangle(0,0,menu.w+1,menu.h+2,col_graph);
-				DrawBar(1,1,menu.w,1,0xFFFfff);
-				DrawPopupShadow(1,1,menu.w,menu.h,0);
+				DrawRectangle(0,0,rbmenu.w+1,rbmenu.h+2,col_graph);
+				DrawBar(1,1,rbmenu.w,1,0xFFFfff);
+				DrawPopupShadow(1,1,rbmenu.w,rbmenu.h,0);
 				MenuListRedraw();
 	}
 }
@@ -102,19 +103,20 @@ void MenuListRedraw()
 	for (index=0; file_captions[index*3]!=0; index++)
 	{
 		if ((itdir) && (file_captions[index*3+2]>=200)) continue;
-		DrawBar(1,start_y+2,1,menu.item_h,0xFFFfff);
-		if (start_y/menu.item_h==menu.cur_y)
+		if (selected_count > 0) && (file_captions[index+2]==100) continue;
+		DrawBar(1,start_y+2,1,rbmenu.item_h,0xFFFfff);
+		if (start_y/rbmenu.item_h==rbmenu.cur_y)
 		{
 			cur_action_buf = file_captions[index*3+2];
-			DrawBar(2,start_y+2,menu.w-1,menu.item_h,0xFFFfff);
+			DrawBar(2,start_y+2,rbmenu.w-1,rbmenu.item_h,0xFFFfff);
 		}
 		else
 		{
-			DrawBar(2,start_y+2,menu.w-1,menu.item_h,col_work);
-			WriteText(8,start_y+menu.text_y+4,menu.font_type,0xf2f2f2,file_captions[index*3]);
+			DrawBar(2,start_y+2,rbmenu.w-1,rbmenu.item_h,col_work);
+			WriteText(8,start_y+rbmenu.text_y+4,rbmenu.font_type,0xf2f2f2,file_captions[index*3]);
 		}
-		WriteText(7, start_y + menu.text_y + 3, menu.font_type, 0, file_captions[index*3]);
-		WriteText(-strlen(file_captions[index*3+1])-1*menu.font_w + menu.w, start_y + menu.text_y + 3, menu.font_type, 0x888888, file_captions[index*3+1]);
-		start_y+=menu.item_h;
+		WriteText(7, start_y + rbmenu.text_y + 3, rbmenu.font_type, 0, file_captions[index*3]);
+		WriteText(-strlen(file_captions[index*3+1])-1*rbmenu.font_w + rbmenu.w, start_y + rbmenu.text_y + 3, rbmenu.font_type, 0x888888, file_captions[index*3+1]);
+		start_y+=rbmenu.item_h;
 	}	
 }

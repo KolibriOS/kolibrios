@@ -16,6 +16,7 @@
 #include "..\lib\random.h"
 #include "..\lib\kfont.h"
 #include "..\lib\collection.h"
+#include "..\lib\menu.h"
 #include "..\lib\obj\libini.h"
 #include "..\lib\obj\box_lib.h"
 #include "..\lib\patterns\history.h"
@@ -229,6 +230,7 @@ void main()
 					{
 						menu_call_mouse = 1;
 						if (files.ProcessMouse(mouse.x, mouse.y)) List_ReDraw();
+						if (getElementSelectedFlag(files.cur_y) == false) selected_count = 0; //on redraw selection would be flashed, see [L001] 
 						menu_stak = malloc(4096);
 						CreateThread(#FileMenu,menu_stak+4092);
 						break;
@@ -551,7 +553,7 @@ void draw_window()
 	llist_copy(#files_active, #files);
 	strcpy(#active_path, #path);
 	DrawStatusBar();
-	Open_Dir(#path,ONLY_OPEN);
+	if (selected_count==0) Open_Dir(#path,ONLY_OPEN); //if there are no selected files -> refresh folder [L001] 
 	DrawFilePanels();
 	if (del_active) Del_Form();
 	if (new_element_active) NewElement_Form(new_element_active, #new_element_name);
