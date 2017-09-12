@@ -1,9 +1,7 @@
-include 'optionbox.mac'		;macro implements optionbox
 include 'scrollbar.mac'		;macro implements scrollbar
 include 'd_button.mac'		;macro implements dinamic_button
 include 'menubar.mac'		;macro implements menubar
 include 'filebrowser.mac'	;macro implements filebrowser
-include 'tree_list.mac'		;macro implements tree_list, image_list, list_box 
 include 'pathshow.mac'		;macro implements pathshow
 include 't_edit.mac'		;macro implements text_editor
 include 'frame.mac'		;macro implements frame

@@ -39,13 +39,7 @@ include 'checkbox.asm' ;checkbox
 
 ;--------------------------------------------------
 ;radiobutton Group
-;--------------------------------------------------
-align 16
-use_optionbox_driver	;macro that control the operating modes
-align 16
-use_optionbox_draw	;macro reveals the function of the display.
-align 16
-use_optionbox_mouse	;macro reveals processing function of the mouse.
+include 'optionbox.asm' ;macro implements optionbox
 
 ;--------------------------------------------------
 ;scrollbar Group
@@ -77,9 +71,7 @@ use_file_browser
 
 ;--------------------------------------------------
 ;tree list
-;--------------------------------------------------
-align 16
-use_tree_list
+include 'tree_list.asm' ;macro implements tree_list, image_list, list_box
 
 ;--------------------------------------------------
 ;PathShow Group
