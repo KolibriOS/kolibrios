@@ -22,6 +22,7 @@ put_to_clipboard:
 ; build the clipboard slot header
 	mov	esi,[clipboard_buf]
 	sub	edi,esi
+ dec edi
 	mov	[esi],edi	; clipboard area size
 	xor	eax,eax
 	mov	[esi+4],eax	; type 'text'
