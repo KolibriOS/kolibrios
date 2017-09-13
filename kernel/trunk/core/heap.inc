@@ -596,7 +596,7 @@ endp
 align 4
 proc user_alloc stdcall, alloc_size:dword
         push    ebx esi edi
-        call    init_heap
+        mov     ebx, [current_process]
         lea     ecx, [ebx+PROC.heap_lock]
         call    mutex_lock
         mov     ecx, [alloc_size]

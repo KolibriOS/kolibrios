@@ -2548,6 +2548,9 @@ Returned value:
   * eax = if successful - pointer to a memory with data
   * eax = 1 - error
   * eax = -1 - main list area not found
+Remarks:
+  * The function must be used in conjunction with 68.11. The
+    application must pre-initialize the local heap by calling 68.11.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_CLIPBOARD (54)
@@ -2957,7 +2960,10 @@ Remarks:
   * There is another way to dynamically allocate/free memory -
     subfunctions 12, 13 and 20 of function 68, but after creation
     of the process heap 64 function call will be ignored.
-
+  * The function cannot be used together with 68.11, 68.12, 68.13.
+    The function call will be ignored after creation of process heap
+    with function 68.11.
+        
 ---------------------- Constants for registers: ----------------------
   eax - SF_MEMORY_RESIZE (64)
 ======================================================================
@@ -3258,7 +3264,7 @@ Remarks:
   eax - SF_SYS_MISC (68)
   ebx - SSF_WRITE_MSR (4)
 ======================================================================
-=== Function 68, subfunction 11 - manually initialize process heap ===
+=== Function 68, subfunction 11 - initialize process heap ============
 ======================================================================
 Parameters:
   * eax = 68 - function number
@@ -3413,6 +3419,8 @@ Parameters:
 Returned value:
   * eax = pointer to the reallocated block, 0 = error
 Remarks:
+  * Before this call one must initialize process heap by call to
+    subfunction 11.
   * The function allocates an integer number of pages (4 Kb) in such
     way that the real size of allocated block is more than or equal to
     requested size.
@@ -3475,6 +3483,8 @@ Error codes:
   * E_NOMEM = 30
   * E_PARAM = 33
 Remarks:
+  * Before this call one must initialize process heap by call to
+    subfunction 11.
   * If a new area is created, access flags set maximal rights
     for other processes. An attempt from other process to open
     with denied rights will fail with error code E_ACCESS.
@@ -3584,6 +3594,8 @@ Returned value:
   * edx = size of the loaded file, or zero
 Remarks:
   * function loads file and unpacks, if necessary
+  * Before this call one must initialize process heap by call to
+    subfunction 11.  
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYS_MISC (68)
