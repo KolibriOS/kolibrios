@@ -218,6 +218,8 @@ extra_files = {
  {"kolibrios/lib/libdrm.dll", "common/lib/libdrm.dll"},
  {"kolibrios/lib/libegl.dll", "common/lib/libegl.dll"},
  {"kolibrios/lib/libGL.dll", "common/lib/libGL.dll"},
+ {"kolibrios/lib/libjpeg.dll", "common/lib/libjpeg.dll"},
+ {"kolibrios/lib/libpng16.dll", "common/lib/libpng16.dll"},
  {"kolibrios/lib/libva.dll", "common/lib/libva.dll"},
  {"kolibrios/lib/libz.dll", "common/lib/libz.dll"},
  {"kolibrios/lib/libc.dll", "../contrib/sdk/bin/libc.dll", group = "../contrib/sdk/lib/<libc.dll.a>"},
