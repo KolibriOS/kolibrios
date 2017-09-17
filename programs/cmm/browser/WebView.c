@@ -1,6 +1,6 @@
 //HTML Viewer in C--
-//Copyright 2007-2013 by Veliant & Leency
-//Asper, lev, Lrz, Barsuk, Nable...
+//Copyright 2007-2017 by Veliant & Leency
+//Asper, lev, Lrz, Barsuk, Nable, hidnplayr...
 
 #ifndef AUTOBUILD
 	#include "lang.h--"
@@ -30,7 +30,7 @@
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.6";
+char version[]="Текстовый браузер 1.61";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -43,7 +43,7 @@ char rmb_menu[] =
 Очистить кэш картинок
 Менеджер загрузок";
 #else
-char version[]="Text-based Browser 1.6";
+char version[]="Text-based Browser 1.61";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -126,140 +126,137 @@ void main()
 	if (param) strcpy(#URL, #param); else strcpy(#URL, URL_SERVICE_HOME);
 	WB1.list.SetFont(8, 14, 10011000b);
 	WB1.list.no_selection = true;
-	SetEventMask(0xa7);
-	BEGIN_LOOP_APPLICATION:
-		WaitEventTimeout(2);
-		switch(EAX & 0xFF)
-		{
-			CASE evMouse:
-				if (!CheckActiveProcess(Form.ID)) break;
-				edit_box_mouse stdcall (#address_box);
-				mouse.get();
-				if (WB1.list.MouseOver(mouse.x, mouse.y))
-				{
-					if (PageLinks.HoverAndProceed(mouse.x, WB1.list.first + mouse.y))
-					&& (bufsize) && (mouse.pkm) && (mouse.up) {
-						EventShowPageMenu(mouse.x, mouse.y);
-						break;
-					}
-					if (WB1.list.MouseScroll(mouse.vert)) WB1.DrawPage();
-				}
-				scrollbar_v_mouse (#scroll_wv);
-				if (WB1.list.first != scroll_wv.position)
-				{
-					WB1.list.first = scroll_wv.position;
-					WB1.DrawPage();
+	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER + EVM_STACK);
+	loop() switch(WaitEvent())
+	{
+		case evMouse:
+			if (!CheckActiveProcess(Form.ID)) break;
+			edit_box_mouse stdcall (#address_box);
+			mouse.get();
+			if (WB1.list.MouseOver(mouse.x, mouse.y))
+			{
+				if (PageLinks.HoverAndProceed(mouse.x, WB1.list.first + mouse.y))
+				&& (bufsize) && (mouse.pkm) && (mouse.up) {
+					EventShowPageMenu(mouse.x, mouse.y);
 					break;
 				}
+				if (WB1.list.MouseScroll(mouse.vert)) WB1.DrawPage();
+			}
+			scrollbar_v_mouse (#scroll_wv);
+			if (WB1.list.first != scroll_wv.position)
+			{
+				WB1.list.first = scroll_wv.position;
+				WB1.DrawPage();
 				break;
+			}
+			break;
 
-			case evButton:
-				ProcessEvent(GetButtonID());
-				break;
+		case evButton:
+			ProcessEvent(GetButtonID());
+			break;
 
-			case evKey:
-				GetKeys();
-				if (address_box.flags & 0b10)  
+		case evKey:
+			GetKeys();
+			if (address_box.flags & 0b10)  
+			{
+				if (key_ascii == ASCII_KEY_ENTER) ProcessEvent(key_scancode); else {
+					EAX = key_editbox; 
+					edit_box_key stdcall(#address_box);
+				}
+			}
+			else 
+			{
+				if (WB1.list.ProcessKey(key_scancode)) WB1.DrawPage();
+				else ProcessEvent(key_scancode);
+			}
+			break;
+
+		case evReDraw:
+			if (menu.list.cur_y) {
+				ProcessEvent(menu.list.cur_y);
+				menu.list.cur_y = 0;
+			}
+			DefineAndDrawWindow(GetScreenWidth()-800/2-random(80),GetScreenHeight()-600/2-random(80),800,600,0x73,col_bg,0,0);
+			GetProcessInfo(#Form, SelfInfo);
+			if (Form.status_window>2) { DrawTitle(#header); break; }
+			if (Form.height<120) { MoveSize(OLD,OLD,OLD,120); break; }
+			if (Form.width<280) { MoveSize(OLD,OLD,280,OLD); break; }
+			Draw_Window();
+			break;
+			
+		case evNetwork:
+			if (http_transfer > 0) {
+				http_receive stdcall (http_transfer);
+				$push EAX
+				ESI = http_transfer;
+				wv_progress_bar.max = ESI.http_msg.content_length;
+				if (wv_progress_bar.value != ESI.http_msg.content_received)
 				{
-					if (key_ascii == ASCII_KEY_ENTER) ProcessEvent(key_scancode); else {
-						EAX = key_editbox; 
-						edit_box_key stdcall(#address_box);
-					}
+					wv_progress_bar.value = ESI.http_msg.content_received;	
+					DrawProgress();
 				}
-				else 
-				{
-					if (WB1.list.ProcessKey(key_scancode)) WB1.DrawPage();
-					else ProcessEvent(key_scancode);
-				}
-				break;
-
-			case evReDraw:
-				if (menu.list.cur_y) {
-					ProcessEvent(menu.list.cur_y);
-					menu.list.cur_y = 0;
-				}
-				DefineAndDrawWindow(GetScreenWidth()-800/2-random(80),GetScreenHeight()-600/2-random(80),800,600,0x73,col_bg,0,0);
-				GetProcessInfo(#Form, SelfInfo);
-				if (Form.status_window>2) { DrawTitle(#header); break; }
-				if (Form.height<120) { MoveSize(OLD,OLD,OLD,120); break; }
-				if (Form.width<280) { MoveSize(OLD,OLD,280,OLD); break; }
-				Draw_Window();
-				break;
-				
-			case evNetwork:
-				if (http_transfer > 0) {
-					http_receive stdcall (http_transfer);
-					$push EAX
+				$pop EAX
+				if (EAX == 0) {
 					ESI = http_transfer;
-					wv_progress_bar.max = ESI.http_msg.content_length;
-					if (wv_progress_bar.value != ESI.http_msg.content_received)
+					// Handle redirects
+					if (ESI.http_msg.status >= 300) && (ESI.http_msg.status < 400)
 					{
-						wv_progress_bar.value = ESI.http_msg.content_received;	
-						DrawProgress();
-					}
-					$pop EAX
-					if (EAX == 0) {
-						ESI = http_transfer;
-						// Handle redirects
-						if (ESI.http_msg.status >= 300) && (ESI.http_msg.status < 400)
+						redirected++;
+						if (redirected<=5)
 						{
-							redirected++;
-							if (redirected<=5)
-							{
-								http_find_header_field stdcall (http_transfer, "location\0");
-								if (EAX!=0) {
-									ESI = EAX;
-									EDI = #URL;
-									do {
-										$lodsb;
-										$stosb;
-									} while (AL != 0) && (AL != 13) && (AL != 10);
-									DSBYTE[EDI-1]='\0';
-									if (!strncmp(#URL,"https://",8))
-									{
-										ShowErrorMessageThatHttpsIsNotSupportedYet();
-										StopLoading();
-										break;	
-									}
+							http_find_header_field stdcall (http_transfer, "location\0");
+							if (EAX!=0) {
+								ESI = EAX;
+								EDI = #URL;
+								do {
+									$lodsb;
+									$stosb;
+								} while (AL != 0) && (AL != 13) && (AL != 10);
+								DSBYTE[EDI-1]='\0';
+								if (!strncmp(#URL,"https://",8))
+								{
+									ShowErrorMessageThatHttpsIsNotSupportedYet();
+									StopLoading();
+									break;	
 								}
 							}
-							else
-							{
-								notify("Too many redirects");
-								StopLoading();
-								break;
-							}
-						} 
-						else
-						{
-							redirected = 0;
-						}
-						// Loading the page is complete, free resources
-						if (redirected>0)
-						{
-							http_free stdcall (http_transfer);
-							http_transfer=0;
-							GetAbsoluteURL(#URL);
-							history.back();
-							strcpy(#editURL, #URL);
-							DrawEditBoxWebView();
-							OpenPage();
 						}
 						else
 						{
-							history.add(#URL);
-							ESI = http_transfer;
-							bufpointer = ESI.http_msg.content_ptr;
-							bufsize = ESI.http_msg.content_received;
-							http_free stdcall (http_transfer);
-							http_transfer=0;
-							SetPageDefaults();
-							ShowPage();
+							notify("Too many redirects");
+							StopLoading();
+							break;
 						}
+					} 
+					else
+					{
+						redirected = 0;
+					}
+					// Loading the page is complete, free resources
+					if (redirected>0)
+					{
+						http_free stdcall (http_transfer);
+						http_transfer=0;
+						GetAbsoluteURL(#URL);
+						history.back();
+						strcpy(#editURL, #URL);
+						DrawEditBoxWebView();
+						OpenPage();
+					}
+					else
+					{
+						history.add(#URL);
+						ESI = http_transfer;
+						bufpointer = ESI.http_msg.content_ptr;
+						bufsize = ESI.http_msg.content_received;
+						http_free stdcall (http_transfer);
+						http_transfer=0;
+						SetPageDefaults();
+						ShowPage();
 					}
 				}
-		}
-	goto BEGIN_LOOP_APPLICATION;
+			}
+	}
 }
 
 void SetElementSizes()

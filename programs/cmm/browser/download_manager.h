@@ -39,7 +39,7 @@ void Downloader()
     int key, i;
     char notify_message[4296];
     downloader_opened = 1;
-    SetEventMask(0x27);
+    SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER + EVM_STACK);
 
     system.color.get();
     pb.frame_color = system.color.work_dark;
@@ -50,69 +50,65 @@ void Downloader()
     if (downloader_edit[0]) StartDownloading(); else strcpy(#downloader_edit, "http://");
     ed.size = ed.pos = ed.shift = ed.shift_old = strlen(#downloader_edit);
  
-    loop()
+    loop() switch(WaitEvent())
     {
-        WaitEventTimeout(30);
-        switch(EAX & 0xFF)
-        {
-            CASE evMouse:
-                if (!CheckActiveProcess(DL_Form.ID)) break;
-                edit_box_mouse stdcall (#ed);
-                break;
+        case evMouse:
+            if (!CheckActiveProcess(DL_Form.ID)) break;
+            edit_box_mouse stdcall (#ed);
+            break;
+
+        case evButton:
+            Key_Scan(GetButtonID());
+            break;
+
+        case evKey:
+            GetKeys();
+            edit_box_key stdcall(#ed);
+            if (key_scancode==SCAN_CODE_ENTER) Key_Scan(301);
+            break;
+
+        case evReDraw:
+            DefineAndDrawWindow(215, 100, 580, 130, 0x74, system.color.work, DL_WINDOW_HEADER, 0);
+            GetProcessInfo(#DL_Form, SelfInfo);
+            if (DL_Form.status_window>2) break;
+            if (DL_Form.height<120) MoveSize(OLD,OLD,OLD,120);
+            if (DL_Form.width<280) MoveSize(OLD,OLD,280,OLD);
+            DL_Draw_Window();
+            break;
+           
+        default:
+            if (!downloader.MonitorProgress()) break;
+            pb.max = downloader.data_full_size;
+            if (pb.value != downloader.data_downloaded_size)
+            {
+                pb.value = downloader.data_downloaded_size;
+                progressbar_draw stdcall(#pb);
+                DrawDownloading();
+            }
+            if (downloader.state == STATE_COMPLETED)
+            {
+                if (!dir_exists(#save_to)) CreateDir(#save_to);
+                strcpy(#filepath, #save_to);
+                chrcat(#filepath, '/');
+   				// Clean all slashes at the end
+       			strcpy(#aux,  #downloader_edit);
+       			while (aux[strlen(#aux)-1] == '/') {
+                    aux[strlen(#aux)-1] = 0;
+                }
+                strcat(#filepath,  #aux+strrchr(#aux, '/'));
+				
+				for (i=0; i<strlen(#filepath); i++) if(filepath[i]==':')||(filepath[i]=='?')filepath[i]='-';
  
-            case evButton:
-                Key_Scan(GetButtonID());
-                break;
- 
-            case evKey:
-                GetKeys();
-                edit_box_key stdcall(#ed);
-                if (key_scancode==SCAN_CODE_ENTER) Key_Scan(301);
-                break;
- 
-            case evReDraw:
-                DefineAndDrawWindow(215, 100, 580, 130, 0x74, system.color.work, DL_WINDOW_HEADER, 0);
-                GetProcessInfo(#DL_Form, SelfInfo);
-                if (DL_Form.status_window>2) break;
-                if (DL_Form.height<120) MoveSize(OLD,OLD,OLD,120);
-                if (DL_Form.width<280) MoveSize(OLD,OLD,280,OLD);
+                if (WriteFile(downloader.data_downloaded_size, downloader.bufpointer, #filepath)==0)
+                    sprintf(#notify_message, "%s%s%s",FILE_SAVED_AS,#filepath,"' -Dt");
+                else
+                    sprintf(#notify_message, "%s%s%s","'Download manager\nError! Can\96t save file as ",#filepath,"' -Et");
+                
+                notify(#notify_message);
+                StopDownloading();
                 DL_Draw_Window();
                 break;
-               
-            default:
-                if (!downloader.MonitorProgress()) break;
-                pb.max = downloader.data_full_size;
-                if (pb.value != downloader.data_downloaded_size)
-                {
-                    pb.value = downloader.data_downloaded_size;
-                    progressbar_draw stdcall(#pb);
-                    DrawDownloading();
-                }
-                if (downloader.state == STATE_COMPLETED)
-                {
-                    if (!dir_exists(#save_to)) CreateDir(#save_to);
-                    strcpy(#filepath, #save_to);
-                    chrcat(#filepath, '/');
-       				// Clean all slashes at the end
-	       			strcpy(#aux,  #downloader_edit);
-	       			while (aux[strlen(#aux)-1] == '/') {
-	                    aux[strlen(#aux)-1] = 0;
-	                }
-	                strcat(#filepath,  #aux+strrchr(#aux, '/'));
-					
-					for (i=0; i<strlen(#filepath); i++) if(filepath[i]==':')||(filepath[i]=='?')filepath[i]='-';
-	 
-	                if (WriteFile(downloader.data_downloaded_size, downloader.bufpointer, #filepath)==0)
-	                    sprintf(#notify_message, "%s%s%s",FILE_SAVED_AS,#filepath,"' -Dt");
-	                else
-	                    sprintf(#notify_message, "%s%s%s","'Download manager\nError! Can\96t save file as ",#filepath,"' -Et");
-	                
-	                notify(#notify_message);
-	                StopDownloading();
-	                DL_Draw_Window();
-	                break;
-                }          
-        }
+            }          
     }
 }
  

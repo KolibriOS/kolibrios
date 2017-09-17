@@ -121,4 +121,16 @@ dword load_image(dword filename)
         return 0;
 }
 
+void DrawLibImage(dword image_pointer,x,y,w,h,offx,offy) {
+    img_draw stdcall (
+        image_pointer, 
+        x, 
+        y, 
+        w, 
+        h, 
+        offx, 
+        offy
+    );  
+}
+
 #endif

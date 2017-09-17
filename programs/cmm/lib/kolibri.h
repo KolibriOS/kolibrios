@@ -36,11 +36,27 @@ char program_path[4096];
 #define evReDraw  1
 #define evKey     2
 #define evButton  3
+#define evExit    4
 #define evDesktop 5
 #define evMouse   6
 #define evIPC     7
 #define evNetwork 8
 #define evDebug   9
+
+//Event mask bits for function 40
+#define EVM_REDRAW              1b
+#define EVM_KEY                10b
+#define EVM_BUTTON            100b
+#define EVM_EXIT             1000b
+#define EVM_BACKGROUND      10000b
+#define EVM_MOUSE          100000b
+#define EVM_IPC           1000000b
+#define EVM_STACK        10000000b
+#define EVM_DEBUG       100000000b
+#define EVM_STACK2     1000000000b
+#define EVM_MOUSE_FILTER  0x80000000
+#define EVM_CURSOR_FILTER 0x40000000
+
 
 //Button options
 #define BT_DEL      0x80000000
@@ -92,7 +108,7 @@ inline fastcall dword WaitEventTimeout(EBX)
 	$int 0x40
 } 
  
-inline fastcall SetEventMask(EBX)
+inline fastcall dword SetEventMask(EBX)
 {
 	$mov eax,40
 	$int 0x40
