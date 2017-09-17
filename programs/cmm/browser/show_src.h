@@ -19,17 +19,25 @@ dword ShowSource()
 		switch (ww)
 		{
 			case '<':
+				if (mode == COMMENT)
+				{
+					strcpy(new_buf, "&lt;");
+					new_buf+=4;
+					break;
+				}
 				if (ESBYTE[i+1]=='!') && (ESBYTE[i+2]=='-') && (ESBYTE[i+3]=='-')
 				{
 					strcpy(new_buf, "<font color=#bbb>&lt;");
 					new_buf+=21;
 					mode = COMMENT;
+					break;
 				}
 				if (mode != COMMENT)
 				{
 					strcpy(new_buf, "<font color=#00f>&lt;");
 					new_buf+=21;
 					mode = TAG;
+					break;
 				}
 				break;
 			case '>':
@@ -38,18 +46,27 @@ dword ShowSource()
 					strcpy(new_buf, "&quot;</font>");
 					new_buf+=13;					
 					mode = TAG;
+					break;
 				}
 				if (mode == COMMENT) && (ESBYTE[i-1]=='-') && (ESBYTE[i-2]=='-')
 				{
 					strcpy(new_buf, "&gt;</font>");
 					new_buf+=11;
 					mode = TEXT;
+					break;
+				}
+				if (mode == COMMENT) 
+				{
+					strcpy(new_buf, "&gt;");
+					new_buf+=4;
+					break;					
 				}
 				if (mode == TAG)
 				{
 					strcpy(new_buf, "&gt;</font>");
 					new_buf+=11;
 					mode = TEXT;
+					break;
 				}
 				break;
 			case '\"':

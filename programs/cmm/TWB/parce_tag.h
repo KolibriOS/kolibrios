@@ -14,7 +14,7 @@ unsigned int GetNextParam()
 
 	if (kavichki)
 	{
-		i=strrchr(#tagparam, kavichki);
+		i = strrchr(#tagparam, kavichki);
 		strlcpy(#val, #tagparam + i, sizeof(val));
 	}
 	else
@@ -24,6 +24,7 @@ unsigned int GetNextParam()
 		strlcpy(#val, #tagparam + i, sizeof(val));
 
 		WHILE (val[0] == ' ') strcpy(#val, #val+1);
+		ESBYTE[strchr(#val, ' ')] = NULL;
 	}
 	tagparam[i] = 0x00;
 

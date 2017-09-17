@@ -180,8 +180,13 @@ void TWebBrowser::Prepare(){
 			bufpos++;
 			if (!strncmp(bufpos,"!--",3))
 			{
-				if (!strncmp(bufpos,"-->",3)) || (bufpointer + bufsize <= bufpos) break;
-				bufpos++;
+				bufpos+=3;
+				while (strncmp(bufpos,"-->",3)!=0) && (bufpos < bufpointer + bufsize)
+				{
+					bufpos++;
+				}
+				bufpos+=3;
+				break;
 			}
 			tag = attr = tagparam = ignor_param = NULL;
 			while (ESBYTE[bufpos] !='>') && (bufpos < bufpointer + bufsize) //ïîëó÷àåì òåã è åãî ïàðàìåòðû

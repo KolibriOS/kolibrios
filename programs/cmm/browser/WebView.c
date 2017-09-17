@@ -30,7 +30,7 @@
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.62";
+char version[]="Текстовый браузер 1.7";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -43,7 +43,7 @@ char rmb_menu[] =
 Очистить кэш картинок
 Менеджер загрузок";
 #else
-char version[]="Text-based Browser 1.62";
+char version[]="Text-based Browser 1.7";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -569,10 +569,13 @@ void ClickLink()
 		if (UrlExtIs(".png")==true) || (UrlExtIs(".gif")==true) || (UrlExtIs(".jpg")==true) 
 		|| (UrlExtIs(".zip")==true) || (UrlExtIs(".kex")==true) || (UrlExtIs(".pdf")==true)
 		|| (UrlExtIs(".7z")==true) {
-			strcpy(#downloader_edit, #URL);
-			CreateThread(#Downloader,#downloader_stak+4092);
-			strcpy(#editURL, history.current());
-			strcpy(#URL, history.current());
+			if (!downloader_opened) {
+				strcpy(#downloader_edit, #URL);
+				CreateThread(#Downloader,#downloader_stak+4092);
+				strcpy(#editURL, history.current());
+				strcpy(#URL, history.current());
+			}
+			else notify("'WebView\nPlease, start a new download only when previous ended.'Et");
 			return;
 		}
 	}
