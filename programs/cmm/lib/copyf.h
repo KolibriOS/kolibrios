@@ -41,8 +41,12 @@
 	{
 		debugln("Error: CopyFile->GetFileInfo");
 	}
-	else
+	else if (GetFreeRAM() < CopyFile_atr.sizelo) 
 	{
+			debugln("Error: CopyFile->File size is bigger than RAM avilable");
+			error = 30;
+	}
+	else {
 		cbuf = malloc(CopyFile_atr.sizelo);
 		if (error = ReadFile(0, CopyFile_atr.sizelo, cbuf, copy_from3))
 		{
