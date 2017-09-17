@@ -30,7 +30,7 @@
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.61";
+char version[]="Текстовый браузер 1.62";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -43,7 +43,7 @@ char rmb_menu[] =
 Очистить кэш картинок
 Менеджер загрузок";
 #else
-char version[]="Text-based Browser 1.61";
+char version[]="Text-based Browser 1.62";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -215,6 +215,9 @@ void main()
 								DSBYTE[EDI-1]='\0';
 								if (!strncmp(#URL,"https://",8))
 								{
+									history.back();
+									strcpy(#editURL, history.current());
+									strcpy(#URL, history.current());
 									ShowErrorMessageThatHttpsIsNotSupportedYet();
 									StopLoading();
 									break;	
@@ -544,6 +547,9 @@ void ClickLink()
 	if (!strncmp(#URL,"https://",8))
 	{
 		ShowErrorMessageThatHttpsIsNotSupportedYet();
+		strcpy(#editURL, history.current());
+		strcpy(#URL, history.current());
+		return;
 	}
 	
 	GetAbsoluteURL(#URL);
