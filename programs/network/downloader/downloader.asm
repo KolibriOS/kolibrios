@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2014-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2014-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  downloader.asm - HTTP client for KolibriOS                     ;;
@@ -69,7 +69,7 @@ START:
 
 ; If user provided parameters, start download right away!
         cmp     byte[url], 0
-        jne     download
+        jne     display_url_and_download
 
         mov     [OpenDialog_data.draw_window], draw_window
 
@@ -118,6 +118,13 @@ open_file:
         mcall   70, fileopen
         jmp     mainloop
 
+display_url_and_download:
+        xor     al, al
+        mov     ecx, 4096
+        mov     edi, url
+        repne scasb
+        sub     edi, url+1
+        mov     [edit1.size], edi
 
 download:
 ; Extract the filename from URL
