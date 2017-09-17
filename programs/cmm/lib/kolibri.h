@@ -133,7 +133,7 @@ inline fastcall dword GetFreeRAM()
 	$mov eax, 18
 	$mov ebx, 16
 	$int 0x40
-	//return eax = ðàçìåð ñâîáîäíîé ïàìÿòè â êèëîáàéòàõ
+	//return eax = free RAM in Kb
 }
 
 inline fastcall dword LoadDriver(ECX) //ECX - èìÿ äðàéâåðà

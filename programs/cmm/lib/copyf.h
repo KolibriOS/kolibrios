@@ -41,10 +41,10 @@
 	{
 		debugln("Error: CopyFile->GetFileInfo");
 	}
-	else if (GetFreeRAM() < CopyFile_atr.sizelo) 
+	else if (GetFreeRAM()-1024*1024 < CopyFile_atr.sizelo) //GetFreeRam-1Mb and convert to bytes
 	{
-			debugln("Error: CopyFile->File size is bigger than RAM avilable");
-			error = 30;
+		debugln("Error: CopyFile->File size is bigger than RAM avilable");
+		error = 30;
 	}
 	else {
 		cbuf = malloc(CopyFile_atr.sizelo);
