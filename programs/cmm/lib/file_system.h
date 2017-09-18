@@ -297,6 +297,18 @@ enum
   sprintf(#ConvertSize_size_prefix,"%d %s",bytes,#size_nm);
   return #ConvertSize_size_prefix;
 }
+:dword ConvertSize64(dword bytes_lo, bytes_hi)
+{
+  debugval("bytes_lo", bytes_lo);
+  debugval("bytes_hi", bytes_hi);
+
+  if (bytes_hi > 0) {
+	if (bytes_lo>=1073741824) bytes_lo /= 1073741824; else bytes_lo = 0;
+	sprintf(#ConvertSize_size_prefix,"%d Gb",bytes_hi*4 + bytes_lo);
+	return #ConvertSize_size_prefix;
+  }
+  else return ConvertSize(bytes_lo);
+}
 :dword notify(dword notify_param)
 {
 	return RunProgram("/sys/@notify", notify_param);
