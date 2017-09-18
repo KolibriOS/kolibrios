@@ -690,13 +690,20 @@ void Line_ReDraw(dword bgcol, filenum){
 	attr = ESDWORD[file_offet];
 	file.selected = ESBYTE[file_offet+7];
 	file.sizelo   = ESDWORD[file_offet+32];
+	file.sizehi   = ESDWORD[file_offet+36];
 	file_name_off = file_offet+40;
 
 	if (! TestBit(attr, 4) ) //file or folder?
 	{	
 		ext1 = strrchr(file_name_off,'.') + file_name_off;
 		if (ext1==file_name_off) ext1 = NULL; //if no extension then show nothing 
-		WriteText(7-strlen(ConvertSize(file.sizelo))*6+files.x+files.w - 58, files.text_y+y+1, files.font_type, 0, ConvertSize(file.sizelo));
+		WriteText(
+			7-strlen(ConvertSize64(file.sizelo, file.sizehi))*6+files.x+files.w - 58, 
+			files.text_y+y+1, 
+			files.font_type, 
+			0, 
+			ConvertSize64(file.sizelo, file.sizehi)
+		);
 		if (ext1) && (strlen(ext1)<9) WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, 0, ext1);
 	}
 	else

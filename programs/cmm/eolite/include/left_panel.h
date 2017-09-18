@@ -224,22 +224,22 @@ void DrawLeftPanelBg()
 {
 	int actions_y = SystemDiscs.list.count*16;
 	int start_y = actions_y+156;
-	int onTop1;
+	int area_h;
 	DrawBar(2,41,190,15,col_lpanel);		      //синий прямоугольник - над девайсами
 	DrawBar(17,actions_y+75,160,15,col_lpanel); //синий прямоугольник - под девайсами
 	PutShadow(17,actions_y+75,160,1,1,3);
 	PutShadow(18,actions_y+75+1,158,1,1,1);
 	DrawBar(2,56,15,actions_y+103,col_lpanel);	          //синий прямоугольник - слева       
 	DrawBar(177,56,15,actions_y+103,col_lpanel);            //синий прямоугольник - справа
-	onTop1 = Form.cheight-start_y-2 - status_bar_h;
-	if (onTop1 < 268)
+	area_h = Form.cheight-start_y-2 - status_bar_h;
+	if (area_h < 268)
 	{
-		PutPaletteImage(#blue_hl, 190, onTop1, 2, start_y, 8, #blue_hl_pal);
+		PutPaletteImage(#blue_hl, 190, area_h, 2, start_y, 8, #blue_hl_pal);
 	}
 	else
 	{
-		DrawBar(2,start_y,190, onTop1-268+status_bar_h, col_lpanel);
-		PutPaletteImage(#blue_hl, 190, 268, 2, Form.cheight-270, 8, #blue_hl_pal);
+		DrawBar(2,start_y,190, area_h-268, col_lpanel);
+		PutPaletteImage(#blue_hl, 190, 268, 2, Form.cheight-270-status_bar_h, 8, #blue_hl_pal);
 	}
 	PutShadow(17,start_y,160,1,1,3);
 	PutShadow(18,start_y+1,158,1,1,1);

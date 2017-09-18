@@ -386,7 +386,7 @@ void DrawPropertiesWindow()
 			DrawIconByExtension(NULL, NULL, 18, 49, system.color.work);
 			sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
 			WriteText(50, 49, 0x90, system.color.work_text, #folder_info);
-			sprintf(#element_size_label,"%s (%d %s)",ConvertSize(size_dir),size_dir,SET_BYTE_LANG);
+			sprintf(#element_size_label,"%s (%d %s)",ConvertSize64(size_dir),size_dir,SET_BYTE_LANG);
 			WriteText(120, 97, 0x90, system.color.work_text, #element_size_label);
 		}
 		else
@@ -416,7 +416,7 @@ void DrawPropertiesWindow()
 			DrawDate(120, 156, system.color.work, #file_info_general.datelastaccess);
 			DrawDate(120, 176, system.color.work, #file_info_general.datelastedit);
 	
-			sprintf(#element_size_label,"%s (%d %s)",ConvertSize(element_size),element_size,SET_BYTE_LANG);
+			sprintf(#element_size_label,"%s (%d %s)",ConvertSize64(element_size),element_size,SET_BYTE_LANG);
 			WriteText(120, 99, 0x90, system.color.work_text, #element_size_label);
 		}
 		flags_frame.size_x = - flags_frame.start_x * 2 + settings_form.cwidth - 2;
