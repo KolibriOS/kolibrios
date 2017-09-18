@@ -112,8 +112,6 @@ byte cmd_free=0;
 #include "include\translations.h"
 #include "include\fs.h"
 
-char *fd_path_eolite_ini_path;
-
 #include "include\settings.h"
 #include "include\progress_dialog.h"
 #include "..\lib\copyf.h"
@@ -140,14 +138,13 @@ void main()
 	load_dll(libini, #lib_init,1);
 
 	eolite_ini_path = abspath("Eolite.ini");
-	fd_path_eolite_ini_path = "/fd/1/File Managers/Eolite.ini";
 	
 	LoadIniSettings();
 	SystemDiscs.Get();
 	SetAppColors();
 	if (param)
 	{
-		if (param[strlen(#param)-1]=='/') param[strlen(#param)-1]=NULL; //no "/" in the end
+		if (strlen(#param)>1) && (param[strlen(#param)-1]=='/') param[strlen(#param)-1]=NULL; //no "/" in the end
 
 		if (dir_exists(#param)==true) 
 		{

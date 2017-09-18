@@ -299,9 +299,6 @@ enum
 }
 :dword ConvertSize64(dword bytes_lo, bytes_hi)
 {
-  debugval("bytes_lo", bytes_lo);
-  debugval("bytes_hi", bytes_hi);
-
   if (bytes_hi > 0) {
 	if (bytes_lo>=1073741824) bytes_lo >>= 30; else bytes_lo = 0;
 	sprintf(#ConvertSize_size_prefix,"%d Gb",bytes_hi<<2 + bytes_lo);
