@@ -293,7 +293,7 @@ enum
   else if (bytes>=1048576) strlcpy(#size_nm, "Mb",2);
   else if (bytes>=1024) strlcpy(#size_nm, "Kb",2);
   else strlcpy(#size_nm, "b ",2);
-  while (bytes>1023) bytes/=1024;
+  while (bytes>1023) bytes >>= 10;
   sprintf(#ConvertSize_size_prefix,"%d %s",bytes,#size_nm);
   return #ConvertSize_size_prefix;
 }
@@ -303,8 +303,8 @@ enum
   debugval("bytes_hi", bytes_hi);
 
   if (bytes_hi > 0) {
-	if (bytes_lo>=1073741824) bytes_lo /= 1073741824; else bytes_lo = 0;
-	sprintf(#ConvertSize_size_prefix,"%d Gb",bytes_hi*4 + bytes_lo);
+	if (bytes_lo>=1073741824) bytes_lo >>= 30; else bytes_lo = 0;
+	sprintf(#ConvertSize_size_prefix,"%d Gb",bytes_hi<<2 + bytes_lo);
 	return #ConvertSize_size_prefix;
   }
   else return ConvertSize(bytes_lo);
