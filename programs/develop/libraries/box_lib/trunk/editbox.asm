@@ -420,10 +420,14 @@ restore DstSize
 restore TmpBuf 
 ;----------------------------------------         
 edit_box_key.ctrl_x:
+        test   word ed_flags,ed_shift_on
+        jz     edit_box.editbox_exit        
         push    dword 'X'  ; this value need below to determine which action is used
         jmp     edit_box_key.ctrl_c.pushed
         
 edit_box_key.ctrl_c:
+        test   word ed_flags,ed_shift_on
+        jz     edit_box.editbox_exit
         push    dword 'C'  ; this value need below to determine which action is used
 .pushed:        
 ; add memory area
@@ -503,6 +507,14 @@ edit_box_key.ctrl_v:
 ; check for cp866
         cmp     bl,1
         jnz     .no_valid_text
+; if something selected then need to delete it        
+        test   word ed_flags,ed_shift_on
+        jz     .selected_done 
+        push   eax; dummy parameter ; need to
+        push   dword .selected_done ; correctly return
+        pushad                      ; from edit_box_key.delete
+        jmp    edit_box_key.delete
+.selected_done:        
         mov     ecx,[eax]
         sub     ecx,3*4
 ; in ecx size of string to insert   
