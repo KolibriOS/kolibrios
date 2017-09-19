@@ -52,7 +52,7 @@ int active_menu_item=0;
 Влево/Вправо или Пробел
 Клавиша P ставит на паузу'tI"
 #define ABOUT_TEXT "'Маршрутка
-Версия v1.0
+Версия v1.01
 
 Сыграйте за дерского маршрутчика, 
 который несется домой после смены.
@@ -80,7 +80,7 @@ Control keys:
 Left, Right, Space
 Press P key for pause'tI"
 #define ABOUT_TEXT "'The Bus
-Version v1.0
+Version v1.01
 Author: Leency
 Menu image from Freepik.com'tI"
 #define PAUSE_TEXT "PAUSE"
@@ -202,10 +202,10 @@ void main()
 			default:
 				if (screen_type==SCR_GAME) 
 				{
-					if ((don_x == bus_x)&&(don_y + don_h > bus_y )&&(don_y < bus_y + don_h ) {
+					if ((don_x == bus_x)&&(don_y + don_h > bus_y )&&(don_y < bus_y + don_h )) {
 						lives--;
 						DrawBus(bus_x*80+200,bus_y);
-						DrawBoom(bus_x*80+180,302);
+						DrawBoom(bus_x*80+180,bus_y+10);
 						pause(150);
 						GetNewObstacle(RAND);
 						DrawScreen();
