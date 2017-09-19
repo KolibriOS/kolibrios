@@ -23,6 +23,8 @@ libimg_image menu;
 libimg_image road;
 libimg_image objects;
 
+int frame_timeout = 1;
+
 int lives=0, level=0, score=0;
 int don_x, don_y, don_h, don_w=68, don_type, don_image_y, don_step_y, don_step_y_default=3;
 int don_h_mas[8] = { 36,72,36,74,24,64,48,74 };
@@ -43,12 +45,57 @@ int screen_type=SCR_MENU_MAIN;
 
 int active_menu_item=0;
 
+#ifdef LANG_RUS 
+#define THE_BUS_TEXT "Маршрутка"
+#define CONTROLS_TEXT "'Маршрутка
+Управление:
+Влево/Вправо или Пробел
+Клавиша P ставит на паузу'tI"
+#define ABOUT_TEXT "'Маршрутка
+Версия v1.0
+
+Сыграйте за дерского маршрутчика, 
+который несется домой после смены.
+Он уже въебал рюмаху с мужиками 
+и теперь его ничто не остановит!
+
+Автор Leency
+Картинка в меню Freepik.com'tI"
+#define PAUSE_TEXT "ПАУЗА"
+#define GAME_OVER_TEXT "Игра окончена"
+#define FINAL_SCORE_TEXT "Финальный счет"
+#define LIVES_TEXT "Жизни"
+#define LEVEL_TEXT "Уровень"
+#define SCORE_TEXT "Счет"
+char *MENU_LIST[]={
+"Новая игра",
+"Управление",
+"Об игре",
+"Выход",
+0}; 
+	#else
+#define THE_BUS_TEXT "THE BUS"
+#define CONTROLS_TEXT "'The Bus
+Control keys:
+Left, Right, Space
+Press P key for pause'tI"
+#define ABOUT_TEXT "'The Bus
+Version v1.0
+Author: Leency
+Menu image from Freepik.com'tI"
+#define PAUSE_TEXT "PAUSE"
+#define GAME_OVER_TEXT "GAME OVER"
+#define FINAL_SCORE_TEXT "Final Score"
+#define LIVES_TEXT "Lives"
+#define LEVEL_TEXT "Level"
+#define SCORE_TEXT "Score"
 char *MENU_LIST[]={
 "New game",
 "Control keys",
 "About",
 "Exit",
 0}; 
+#endif
 
 
 void DrawObstacle(signed int x, y) { 
@@ -64,7 +111,8 @@ void DrawObstacle(signed int x, y) {
 		don_offset_y = don_image_y - y;
 		y = 0;
 	}
-	if (y>=don_step_y) DrawBar(x, y-don_step_y, don_w, don_step_y, COLOR_ROAD); //Fill donkey old parts
+	DrawBar(x, y-don_step_y, don_w, don_step_y, COLOR_ROAD);
+	if (y>0) && (y<don_step_y) DrawBar(x, 0, don_w, y, COLOR_ROAD);
 	if (image_h>0) DrawLibImage(objects.image, x, y, don_w, image_h, 0, don_offset_y); 
 }
 void DrawBus(dword x, y) { DrawLibImage(objects.image, x, y, bus_w, bus_h, 0, 444); }
@@ -79,13 +127,13 @@ void main()
 
 	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
-	Libimg_LoadImage(#menu, "menu.png");
-	Libimg_LoadImage(#road, "road.png");
-	Libimg_LoadImage(#objects, "objects.png");
+	Libimg_LoadImage(#menu, abspath("menu.png"));
+	Libimg_LoadImage(#road, abspath("road.png"));
+	Libimg_LoadImage(#objects, abspath("objects.png"));
 	
 	loop()
 	{
-		WaitEventTimeout(1);
+		WaitEventTimeout(frame_timeout);
 
 		switch(EAX & 0xFF)
 		{
@@ -113,8 +161,8 @@ void main()
 						StartNewGame();
 						SetScreen(SCR_GAME);
 					}
-					if (active_menu_item==1) notify("'The Bus\nControl keys:\nLeft, Right, Space\nPress P key for pause'tI");
-					if (active_menu_item==2) notify("'The Bus\nVersion v0.9\nAuthor: Leency\nMenu image from Freepik.com'tI");
+					if (active_menu_item==1) notify(CONTROLS_TEXT);
+					if (active_menu_item==2) notify(ABOUT_TEXT);
 					if (active_menu_item==3) ExitProcess();	
 				}				
 				if (key_scancode == SCAN_CODE_SPACE) && (screen_type==SCR_GAME)
@@ -143,7 +191,7 @@ void main()
 				break;
 				
 			case evReDraw:
-				DefineAndDrawWindow(250,150,WIN_X-1,WIN_Y-1,0x01,0,"The Bus",0); //0x74 is also possible if you fix bottom border
+				DefineAndDrawWindow(250,150,WIN_X-1,WIN_Y-1,0x01,0,THE_BUS_TEXT,0); //0x74 is also possible if you fix bottom border
 				DrawScreen();
 				break;
 				
@@ -154,7 +202,7 @@ void main()
 			default:
 				if (screen_type==SCR_GAME) 
 				{
-					if ((don_x == bus_x)&&(don_y + don_h > bus_y )&&(don_y < bus_y + don_h )) {
+					if ((don_x == bus_x)&&(don_y + don_h > bus_y )&&(don_y < bus_y + don_h ) {
 						lives--;
 						DrawBus(bus_x*80+200,bus_y);
 						DrawBoom(bus_x*80+180,302);
@@ -175,7 +223,7 @@ void main()
 						GetNewObstacle(RAND);
 						score++;
 						bus_y -= don_step_y+1;
-						DrawBar(bus_x*80+200, bus_y+bus_h, bus_w, don_step_y, COLOR_ROAD);
+						DrawBar(bus_x*80+200, bus_y+bus_h, bus_w, don_step_y+1, COLOR_ROAD);
 						WriteScore();
 					}
 
@@ -211,7 +259,7 @@ void StartNewGame()
 
 void WriteScore() {
 	DrawLibImage(road.image, 20, 166, 120, 24, 20, 164);
-	WriteText(20, 140, 0x81, 0xFFFFFF, "Score");
+	WriteText(20, 140, 0x81, 0xFFFFFF, SCORE_TEXT);
 	WriteText(20, 166, 0x81, 0xFFFFFF, itoa(score));
 }
 
@@ -226,21 +274,21 @@ void DrawScreen()
 	if (screen_type==SCR_MENU_MAIN) 
 	{
 		DrawMenuBackground();
-		WriteTextB(20, 20, 0x82, 0xE8783F, "THE BUS");
+		WriteTextB(20, 20, 0x83, 0xE8783F, THE_BUS_TEXT);
 		DrawMenuList();
 	}
 	if (screen_type==SCR_GAME) || (screen_type==SCR_PAUSE) 
 	{
 		DrawHighway();
-		WriteText(20, 20,  0x81, 0xFFFFFF, "Lives");
+		WriteText(20, 20,  0x81, 0xFFFFFF, LIVES_TEXT);
 		WriteText(20, 46,  0x81, 0xFFFFFF, itoa(lives));
-		WriteText(20, 80,  0x81, 0xFFFFFF, "Level");
+		WriteText(20, 80,  0x81, 0xFFFFFF, LEVEL_TEXT);
 		WriteText(20, 106, 0x81, 0xFFFFFF, itoa(level));
 		WriteScore();
 		DrawRoad();
 		if (screen_type==SCR_PAUSE) {
 			DrawBar(0,0,140,60,0xFF0000);
-			WriteText(10,14,0x83,0xFFFfff,"PAUSE");			
+			WriteText(10,14,0x83,0xFFFfff,PAUSE_TEXT);			
 		}
 	}
 }
@@ -260,12 +308,11 @@ void DrawMenuItem(int item_n, text_n)
 	WriteText(20, item_n*56+116, 0x81, color, MENU_LIST[text_n]);
 }
 
-
 void DrawGameOverMessage()
 {
 	DrawBar(0, 0, WIN_X, WIN_Y, 0xF3E1BD);
-	WriteText(40, 40, 0x81, 0xA48C74, "GAME OVER");
-	WriteText(40, 75, 0x81, 0xA48C74, "FINAL SCORE");
+	WriteText(40, 40, 0x81, 0xA48C74, GAME_OVER_TEXT);
+	WriteText(40, 75, 0x81, 0xA48C74, FINAL_SCORE_TEXT);
 	WriteTextB(40, 140, 0x85, 0xA48C74, itoa(score));
 	pause(350);	
 	active_menu_item=0;
