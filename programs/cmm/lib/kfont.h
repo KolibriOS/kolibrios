@@ -273,7 +273,7 @@ inline fastcall dword b32(EAX) { return DSDWORD[EAX]; }
 :int LABEL::WriteIntoWindowCenter(dword x,y,w,h; dword _background, _color; byte fontSizePoints; dword text1)
 {
 	getsize(fontSizePoints, text1);
-	return WriteIntoWindow(w-size.width/2+x,y, _background, _color, fontSizePoints, text1);
+	return WriteIntoWindow(w-size.width/2+x-1,y, _background, _color, fontSizePoints, text1);
 }
 
 :void LABEL::ShowBuffer(dword _x, _y)

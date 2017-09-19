@@ -25,7 +25,7 @@ libimg_image objects;
 
 int frame_timeout = 1;
 
-int lives=0, level=0, score=0;
+int lifes=0, level=0, score=0;
 int don_x, don_y, don_h, don_w=68, don_type, don_image_y, don_step_y, don_step_y_default=3;
 int don_h_mas[8] = { 36,72,36,74,24,64,48,74 };
 int bus_x, bus_w=42, bus_y, bus_h=88, bus_y_default=290;
@@ -54,7 +54,7 @@ int active_menu_item=0;
 #define ABOUT_TEXT "'Маршрутка
 Версия v1.01
 
-Сыграйте за дерского маршрутчика, 
+Сыграйте за дерзкого маршрутчика, 
 который несется домой после смены.
 Он уже въебал рюмаху с мужиками 
 и теперь его ничто не остановит!
@@ -64,7 +64,7 @@ int active_menu_item=0;
 #define PAUSE_TEXT "ПАУЗА"
 #define GAME_OVER_TEXT "Игра окончена"
 #define FINAL_SCORE_TEXT "Финальный счет"
-#define LIVES_TEXT "Жизни"
+#define LIFES_TEXT "Жизни"
 #define LEVEL_TEXT "Уровень"
 #define SCORE_TEXT "Счет"
 char *MENU_LIST[]={
@@ -86,7 +86,7 @@ Menu image from Freepik.com'tI"
 #define PAUSE_TEXT "PAUSE"
 #define GAME_OVER_TEXT "GAME OVER"
 #define FINAL_SCORE_TEXT "Final Score"
-#define LIVES_TEXT "Lives"
+#define LIFES_TEXT "Lifes"
 #define LEVEL_TEXT "Level"
 #define SCORE_TEXT "Score"
 char *MENU_LIST[]={
@@ -203,7 +203,7 @@ void main()
 				if (screen_type==SCR_GAME) 
 				{
 					if ((don_x == bus_x)&&(don_y + don_h > bus_y )&&(don_y < bus_y + don_h )) {
-						lives--;
+						lifes--;
 						DrawBus(bus_x*80+200,bus_y);
 						DrawBoom(bus_x*80+180,bus_y+10);
 						pause(150);
@@ -211,7 +211,7 @@ void main()
 						DrawScreen();
 					}
 	
-					if (lives==0) {
+					if (lifes==0) {
 						DrawGameOverMessage();
 						break;
 					}
@@ -249,7 +249,7 @@ void NewLevel()
 
 void StartNewGame()
 {
-	lives=3;
+	lifes=3;
 	level=0;
 	score=0;
 	bus_y = bus_y_default;
@@ -280,8 +280,8 @@ void DrawScreen()
 	if (screen_type==SCR_GAME) || (screen_type==SCR_PAUSE) 
 	{
 		DrawHighway();
-		WriteText(20, 20,  0x81, 0xFFFFFF, LIVES_TEXT);
-		WriteText(20, 46,  0x81, 0xFFFFFF, itoa(lives));
+		WriteText(20, 20,  0x81, 0xFFFFFF, LIFES_TEXT);
+		WriteText(20, 46,  0x81, 0xFFFFFF, itoa(lifes));
 		WriteText(20, 80,  0x81, 0xFFFFFF, LEVEL_TEXT);
 		WriteText(20, 106, 0x81, 0xFFFFFF, itoa(level));
 		WriteScore();
