@@ -530,7 +530,7 @@ tup.append_table(img_files, {
  {"DEMOS/TIMER", PROGS .. "/other/Timer/timer"},
  {"DEVELOP/MSTATE", PROGS .. "/develop/mstate/mstate"},
  {"GAMES/C4", PROGS .. "/games/c4/trunk/c4"},
- {"FILLSCR", PROGS .. "/media/FillScr/fillscr"},
+ {"MEDIA/FILLSCR", PROGS .. "/media/FillScr/fillscr"},
 })
 end -- tup.getconfig('NO_NASM') ~= 'full'
 
