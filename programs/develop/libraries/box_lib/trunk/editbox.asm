@@ -520,7 +520,6 @@ edit_box_key.ctrl_v:
 ; in ecx size of string to insert   
         add     ecx,ed_size
         mov     edx,ed_max
-        sub     edx,2 ; 2 reserved for edit_box
         cmp     ecx,edx
         jb      @f
         mov     ecx,edx
@@ -535,7 +534,6 @@ edit_box_key.ctrl_v:
         push    eax ; save mem pointer
                 
         mov     edx, ed_max
-        sub     edx, 3 ; +1 for StrInsert, +2 as reserved for edit_box
         
         push   dword ed_text ; Dst   
         push   esi           ; Src   
