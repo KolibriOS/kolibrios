@@ -936,9 +936,9 @@ fat_get_name:
         jnz     .label
         pushd   ecx 8
         pop     ecx
-        xor     eax, eax
 @@:
         lodsb
+        call    ansi2uni_char
         stosw
         loop    @b
         mov     cl, 8
@@ -953,6 +953,7 @@ fat_get_name:
         mov     cl, 3
 @@:
         lodsb
+        call    ansi2uni_char
         stosw
         loop    @b
         mov     cl, 3
