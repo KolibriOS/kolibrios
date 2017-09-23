@@ -145,7 +145,7 @@ proc HTTP_disconnect identifier ;///////////////////////////////////////////////
         ret
 
   .error:
-        DEBUGF  1, "Cant close already closed connection!\n"
+        DEBUGF  1, "Cannot close already closed connection!\n"
         popa
         ret
 
@@ -603,7 +603,7 @@ endl
         ret
 
   .error:
-        DEBUGF  1, "HTTP POST error!\n"
+        DEBUGF  2, "HTTP POST error!\n"
         popa
         xor     eax, eax        ; return 0 = error
         ret
@@ -1264,7 +1264,7 @@ proc HTTP_find_header_field identifier, headername ;////////////////////////////
         ret
 
   .fail:
-        DEBUGF  2, "Header field not found\n"
+        DEBUGF  1, "Header field not found\n"
         pop     edi esi edx ecx ebx
         xor     eax, eax
         ret
