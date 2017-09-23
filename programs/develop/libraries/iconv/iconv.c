@@ -47,7 +47,16 @@ int strcmp (const char* a, const char* b)
 #include "utf8.h"
 
 
-int encoding(const char *what) {
+int encoding(char *what) {
+
+	/* Ignore //TRANSLIT or //IGNORE for now. */
+	int i;
+	for(i = 0; i < strlen(what); i++) {
+	  if(what[i] == '/') {
+		what[i] = '\0';
+		break;
+	  }
+	}
 
 	if (!strcmp(what,"CP866")) return CP866;
 	if (!strcmp(what,"CP1251")) return CP1251;
