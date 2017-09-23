@@ -107,7 +107,7 @@ bool show_dev_name=true,
 int status_bar_h = 0;
 
 edit_box new_file_ed = {200,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0x10000000,248,#new_element_name,#mouse_dd,100000000000010b,6,0};
-PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
+PathShow_data FileShow = {0, 56,215, 8, 100, 1, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 byte cmd_free=0;
 #include "include\translations.h"
 #include "include\fs.h"
@@ -731,7 +731,7 @@ void Line_ReDraw(dword bgcol, filenum){
 			FileShow.font_color = text_col;
 			FileShow.area_size_x = files.w - 164;
 			FileShow.text_pointer = file_name_off;
-			FileShow.start_y = files.text_y + y + 1;
+			FileShow.start_y = files.text_y + y - 3;
 			PathShow_prepare stdcall(#FileShow);
 			PathShow_draw stdcall(#FileShow);
 		}		
@@ -831,7 +831,7 @@ void Del_Form()
 {
 	byte f_count[128];
 	int dform_x = files.w - 220 / 2 + files.x;
-	if (!strncmp(#file_name,".",2)) || (!strncmp(#file_name,"..",2)) return;
+	if (selected_count==0) && (!strncmp(#file_name,"..",2)) return;
 	else
 	{
 		if (!files.count) return;

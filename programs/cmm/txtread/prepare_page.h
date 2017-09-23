@@ -11,7 +11,6 @@ dword bufoff, buflen;
 byte ch;
 char line[4096]=0;
 int srch_pos;
-dword stroka=0;
 dword stroka_y=5;
 dword line_length=30;
 dword line_start=io.buffer_data;

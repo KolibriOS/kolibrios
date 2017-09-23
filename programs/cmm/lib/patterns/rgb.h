@@ -17,10 +17,11 @@
 
 :dword _rgb::RgbToDword()
 {
-	dword _b, _g;
-	_b = b << 16;
+	dword _r, _g, _b;
+	_r = r << 16;
 	_g = g << 8;
-	return _b + _g + r;
+	_b = b;
+	return _r + _g + _b;
 }
 
 :dword MixColors(dword _base, _overlying, byte a) 

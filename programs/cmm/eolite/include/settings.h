@@ -122,17 +122,15 @@ void DrawSettingsCheckBoxes()
 	path_start_ed.top = y.inc(23);
 	path_start_ed.left = x;
 	DrawEditBox(#path_start_ed);
-	but_x = DrawFlatButton(x-1, y.inc(34), 6, SAVE_PATH_AS_DEFAULT);
-	DrawFlatButton(x-1+but_x, y.inc(0), 7, SAVE_START_PATH_AS_DEFAULT);
-	DrawFlatButton(x-1, y.inc(38), 5, EDIT_FILE_ASSOCIATIONS);
+	but_x = DrawStandartCaptButton(x-1, y.inc(34), 6, SAVE_PATH_AS_DEFAULT);
+	DrawStandartCaptButton(x-1+but_x, y.inc(0), 7, SAVE_START_PATH_AS_DEFAULT);
+	DrawStandartCaptButton(x-1, y.inc(38), 5, EDIT_FILE_ASSOCIATIONS);
 }
 
 
 void LoadIniSettings()
 {
 	files.SetFont(6, 9, 10000000b);
-	FileShow.font_size_x = files.font_w;
-	FileShow.font_number = 0;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "ShowDeviceName",    1); show_dev_name = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "ShowStatusBar",    1); show_status_bar = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "RealFileNamesCase", 1); real_files_names_case = EAX;
