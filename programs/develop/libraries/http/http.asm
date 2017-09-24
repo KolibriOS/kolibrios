@@ -1515,7 +1515,7 @@ endl
         ret
 
   .error1:
-        DEBUGF  2, "Contacting DNS server failed\n"
+        DEBUGF  2, "Contacting DNS server failed with EAI code: %x\n", eax
         xor     eax, eax
         ret
 
