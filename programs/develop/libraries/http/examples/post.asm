@@ -1,9 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2014-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2014-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
-;;  pasta.asm - Paste something to paste.kolibrios.org using POST  ;;
+;;  post.asm - HTTP library example:                               ;;
+;;   Paste something to paste.kolibrios.org using HTTP POST method.;;
 ;;                                                                 ;;
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
 ;;             Version 2, June 1991                                ;;
@@ -83,8 +84,7 @@ START:
         jz      error
         mov     [identifier], eax
 
-        mov     ecx, [eax + http_msg.socket]
-        mcall   75, 6, , sz_paste, sz_paste.length, 0
+        invoke  HTTP_send, eax, sz_paste, sz_paste.length
 
   .again2:
         invoke  HTTP_receive, [identifier]
@@ -145,6 +145,7 @@ import  lib_http, \
         HTTP_post,      'post', \
         HTTP_receive,   'receive', \
         HTTP_find_header_field, 'find_header_field', \
+        HTTP_send,      'send', \
         HTTP_free,      'free'
 
 
