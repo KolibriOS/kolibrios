@@ -128,6 +128,7 @@ size_t iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft,
         ++oc;
         (*inbytesleft)--;
         (*outbytesleft)--;
+        (*outbuf)++;
       }
 
       return 0;
