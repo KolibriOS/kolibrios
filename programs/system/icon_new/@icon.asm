@@ -10,9 +10,9 @@ MIN_NO_MOVING	equ 8	 ;через столько пикселей сдвига мыши начинается таскание ико
 
 		     ;--------для диалога создания/редактирования
 ICONSX		equ 20
-ICONSY		equ 80
-ICONS_DRAW_COUNTW equ 10  ;количество иконок в ширину
-ICONS_DRAW_COUNTH equ 4   ;количество иконок в высоту
+ICONSY		equ 90
+ICONS_DRAW_COUNTW equ 12  ;количество иконок в ширину
+ICONS_DRAW_COUNTH equ 6   ;количество иконок в высоту
 SPCW		equ 3	  ;пробел между иконками по горизонтали
 SPCH		equ 3
 END_ICONS_AREAW equ ICONSX+(IMG_SIZE+SPCW)*ICONS_DRAW_COUNTW-SPCW
@@ -1144,10 +1144,9 @@ if lang eq ru
 DTitleAdd	db 'Добавить иконку',0
 DTitleProp	db 'Изменить иконку',0
 
-DCaptName	db 'Имя',0
-DCaptPath	db 'Путь',0
-DCaptParams	db 'Параметры',0
-DCaptIcon	db 'Иконка',0
+DCaptName	db '      Имя',0
+DCaptPath	db '     Путь',0
+DCaptParams	db '    Ключи',0
 ;DCaptChange     db '.',0
 DCaptCreate	db 'Создать',0
 DCaptProperties db 'Изменить',0
@@ -1157,23 +1156,23 @@ else
 DTitleAdd	db 'Add icon',0
 DTitleProp	db 'Change icon',0
 
-DCaptName	db 'Name',0
-DCaptPath	db 'Path',0
-DCaptParams	db 'Parameters',0
-DCaptIcon	db 'Icon',0
+DCaptName	db '      Name',0
+DCaptPath	db '      Path',0
+DCaptParams	db '    Params',0
 DCaptCreate	db 'Create',0
 DCaptProperties db 'Change',0
 DCaptCancel	db 'Cancel',0
 end if
+DCaptDots	db '...',0
 
 ;/не менять положение
-edtName    edit_box NAME_LENGTH*6+4,70+20+IMG_SIZE,6,0FFFFFFh,06F9480h,0FFh,0h,0,NAME_LENGTH,\
+edtName    edit_box NAME_LENGTH*8+4,120+IMG_SIZE,6,0FFFFFFh,06F9480h,0FFh,0h,0x90000000,NAME_LENGTH,\
 		DAreaName,mouse_dd,0,0,0
-edtExePath edit_box 281-3-20-IMG_SIZE,70+20+IMG_SIZE,26,0FFFFFFh,06F9480h,0FFh,0h,0,255,\
-		DAreaPath,mouse_dd,0,0,0
-edtParams  edit_box 295-20-IMG_SIZE,70+20+IMG_SIZE,46,0FFFFFFh,06F9480h,0FFh,0h,0,255,\
-		DAreaParams,mouse_dd,0,0,0
-edtIcon    edit_box 28,24,50,0FFFFFFh,0FFFFFFh,0FFh,0h,0,3,\
+edtExePath edit_box END_ICONS_AREAW-120-IMG_SIZE-40,120+IMG_SIZE,30,0FFFFFFh,06F9480h,\
+	0FFh,0h,0x90000000,255, DAreaPath,mouse_dd,0,0,0
+edtParams  edit_box END_ICONS_AREAW-120-IMG_SIZE,   120+IMG_SIZE,54,0FFFFFFh,06F9480h,\
+	0FFh,0h,0x90000000,255, DAreaParams,mouse_dd,0,0,0
+edtIcon    edit_box 28,24,62,0FFFFFFh,0FFFFFFh,0FFh,0h,0x90000000,3,\
 		DAreaIcon,0,0,0,0
 endEdits:
 ;\

@@ -92,9 +92,10 @@ DlgProp:
 
 	mov	ecx,256
 	mov	edi,DAreaIcon
-	rep	stosb
-	mov	dword[edtIcon.size],0
-	mov	dword[edtIcon.pos],0
+	
+	mov	[DAreaIcon],'0'
+	mov	dword[edtIcon.size],1
+	mov	dword[edtIcon.pos],1
 
 	jmp	startDlg
     ;--------
@@ -370,10 +371,8 @@ DMouse:
 	
     ; stdcall [edit_box_draw],edtIcon
 
-	; need to optimize redraw
-	; call	DrawSelIcon
-	; jmp	DMessages
-	jmp	DReDraw
+	call DrawSelIcon
+	jmp	 DMessages
 ;-------------------------------------------------------------------------------
 DSetExePath:
 	stdcall [OpenDialog_Start],OpenDialog_data
@@ -455,79 +454,71 @@ proc DRedrawWin
       @@:
 	mov	edi,DTitleProp
       .l1:
-	mcall	0,<100,400>,<100,(IMG_SIZE+SPCH)*ICONS_DRAW_COUNTH+165>,,,
+	mcall	0,<100,END_ICONS_AREAW+ICONSX+10>,<100,(IMG_SIZE+SPCH)*ICONS_DRAW_COUNTH+178>,,,
 
 	stdcall [edit_box_draw],edtName
 	stdcall [edit_box_draw],edtExePath
 	stdcall [edit_box_draw],edtParams
-    stdcall [edit_box_draw],edtIcon
 
 	call	DrawStdIcons
 
 
 	stdcall [scrollbar_h_draw],sbIcons
-	mcall	38,<ICONSX+1,END_ICONS_AREAW-2>,\
-		   <END_ICONS_AREAH+3,END_ICONS_AREAH+3>,\
-		[sc.work_graph]
-	mcall	  ,<ICONSX+1,END_ICONS_AREAW-2>,\
-		   <END_ICONS_AREAH+3+15,END_ICONS_AREAH+3+15>,\
-		[sc.work_graph]
+	mcall 38,<ICONSX+1,END_ICONS_AREAW-2>,<END_ICONS_AREAH+3,END_ICONS_AREAH+3>,[sc.work_graph]
+	mcall   ,<ICONSX+1,END_ICONS_AREAW-2>,<END_ICONS_AREAH+3+15,END_ICONS_AREAH+3+15>,[sc.work_graph]
 
-	mcall	  ,<ICONSX,ICONSX>,\
-		   <END_ICONS_AREAH+3+1,END_ICONS_AREAH+3+15-1>,\
-		[sc.work_graph]
-	mcall	  ,<END_ICONS_AREAW-1,END_ICONS_AREAW-1>,\
-		   <END_ICONS_AREAH+3+1,END_ICONS_AREAH+3+15-1>,\
-		[sc.work_graph]
+	mcall   ,<ICONSX,ICONSX>,<END_ICONS_AREAH+3+1,END_ICONS_AREAH+3+15-1>,[sc.work_graph]
+	mcall   ,<END_ICONS_AREAW-1,END_ICONS_AREAW-1>,<END_ICONS_AREAH+3+1,END_ICONS_AREAH+3+15-1>,		[sc.work_graph]
 
-				  ;BUTTONS
-	mcall	8,<250,49>,<30+END_ICONS_AREAH,16>,idbCreate,[sc.work_button]
-	mcall	 ,<305,54>,			  ,idbCancel
-	mcall	 ,<351,14>,<26,14>	       ,idbChange
+	;BUTTONS
+	mcall	8,<265,75>,<30+END_ICONS_AREAH,24>,idbCreate,[sc.work_button]
+	mcall	 ,<360,77>,	                      ,idbCancel
+	mcall	 ,<END_ICONS_AREAW-30,30>,<30,20> ,idbChange
 
-				  ;CAPTIONS
+	;CAPTIONS
 	mov	ecx,[sc.work_text]
-	or	ecx,80000000h
+	or	ecx,90000000h
 	mcall	4,<30+IMG_SIZE,10>,,DCaptName
-	mcall	 ,<30+IMG_SIZE,30>,,DCaptPath
-	mcall	 ,<30+IMG_SIZE,50>,,DCaptParams
-	;mcall    ,<30+IMG_SIZE,70>,,DCaptIcon
+	mcall	 ,<30+IMG_SIZE,35>,,DCaptPath
+	mcall	 ,<30+IMG_SIZE,59>,,DCaptParams
 
 if lang eq ru
 	mov	ecx,[sc.work_button_text]
-	or	ecx,80000000h
-	mcall	 ,<309,35+END_ICONS_AREAH>,,DCaptCancel
+	or	ecx,90000000h
+	mcall	 ,<369,35+END_ICONS_AREAH>,,DCaptCancel
 
 	cmp	[DlgSelIcon],-1
 	jne	@f
-	mpack	ebx,255,35+END_ICONS_AREAH
+	mpack	ebx,275,35+END_ICONS_AREAH
 	mov	edx,DCaptCreate
 	jmp	.DRD1
       @@:
-	mpack	ebx,252,35+END_ICONS_AREAH
+	mpack	ebx,272,35+END_ICONS_AREAH
 	mov	edx,DCaptProperties
      .DRD1:
 else
 	mov	ecx,[sc.work_button_text]
-	or	ecx,80000000h
-	mcall	 ,<315,35+END_ICONS_AREAH>,,DCaptCancel
+	or	ecx,90000000h
+	mcall	 ,<372,35+END_ICONS_AREAH>,,DCaptCancel
 
 
 	cmp	[DlgSelIcon],-1
 	jne	@f
-	mpack	ebx,257,35+END_ICONS_AREAH
+	mpack	ebx,277,35+END_ICONS_AREAH
 	mov	edx,DCaptCreate
 	jmp	.DRD1
       @@:
-	mpack	ebx,257,35+END_ICONS_AREAH
+	mpack	ebx,277,35+END_ICONS_AREAH
 	mov	edx,DCaptProperties
      .DRD1:
 end if
 	mcall
 
-	mcall	1,351+4  ,26+10,[sc.work_button_text]
-	mcall	 ,351+4+3,26+10,
-	mcall	 ,351+4+6,26+10,
+	pusha
+	mov	ecx,[sc.work_button_text]
+	or	ecx,90000000h
+	mcall 4,<END_ICONS_AREAW-30+4,33>,,DCaptDots
+	popa
 
 	call DrawSelIcon
 
@@ -656,6 +647,15 @@ local IcoX:DWORD,\
 endp
 
 proc DrawSelIcon
+
+	
+	mov	edx,[sc.work]
+	mcall 13,<ICONSX+18,3*8>,<59,12>
+	
+	mov	ecx,[sc.work_text]
+	or	ecx,90000000h
+	mcall 4,<ICONSX+18,59>,,DAreaIcon
+
 	mov	edi,DAreaIcon
 	cmp	byte[edi],0
 	jne	@f
@@ -721,7 +721,7 @@ proc DrawSelIcon
 	dec	edx
 	jnz	.DrawLine
 
-	mcall	7,DlgBufImg,<IMG_SIZE,IMG_SIZE>,<15,15>
+	mcall	7,DlgBufImg,<IMG_SIZE,IMG_SIZE>,<30,15>
 
 	ret
 endp
