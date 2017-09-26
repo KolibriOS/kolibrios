@@ -89,7 +89,7 @@ if build_type == "rus" then tup.append_table(img_files, {
 }) elseif build_type == "sp" then tup.append_table(img_files, {
  {"RUN", "sp/RUN"},
 }) elseif build_type == "it" then tup.append_table(img_files, {
- {"RUN", "rus/RUN"},
+ {"RUN", "it/RUN"},
  {"SETTINGS/MYKEY.INI", PROGS .. "/system/MyKey/trunk/mykey_it.ini"},
 }) else tup.append_table(img_files, {
  {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
