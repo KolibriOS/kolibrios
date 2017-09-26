@@ -68,6 +68,7 @@ img_files = {
  {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
  {"SETTINGS/SYSTEM.INI", "common/settings/system.ini"},
 }
+
 -- For russian build, add russian-only files.
 if build_type == "rus" then tup.append_table(img_files, {
  {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/russian/dos_kolibri/kfm_keys.txt"},
@@ -83,18 +84,21 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"GAMES/BASEKURS.KLA", build_type .. "/games/basekurs.kla"},
  {"GAMES/PADENIE", build_type .. "/games/padenie"},
  {"GAMES/WHOWTBAM", build_type .. "/games/whowtbam"},
+}) elseif build_type == "eng" then tup.append_table(img_files, {
+ {"RUN", "eng/RUN"}, 
+}) elseif build_type == "sp" then tup.append_table(img_files, {
+ {"RUN", "sp/RUN"},
+}) elseif build_type == "it" then tup.append_table(img_files, {
+ {"RUN", "rus/RUN"},
+ {"SETTINGS/MYKEY.INI", PROGS .. "/system/MyKey/trunk/mykey_it.ini"},
 }) else tup.append_table(img_files, {
  {"File Managers/KFM_KEYS.TXT", PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
  {"SETTINGS/GAME_CENTER.INI", "common/settings/game_center.ini"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/example.asm"},
  {"RUN", "common/RUN"},
- {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
-}) end
-if build_type == "it" then tup.append_table(img_files, {
- {"SETTINGS/MYKEY.INI", PROGS .. "/system/MyKey/trunk/mykey_it.ini"},
-}) else tup.append_table(img_files, {
  {"SETTINGS/MYKEY.INI", PROGS .. "/system/MyKey/trunk/mykey.ini"},
+ {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
 }) end
 
 --[[
