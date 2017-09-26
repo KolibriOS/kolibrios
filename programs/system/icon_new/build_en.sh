@@ -3,7 +3,7 @@
 
 	echo "lang fix en"
 	echo "lang fix en" > lang.inc
-	fasm -m 16384 @icon.asm @icon
+	fasm -m 16384 icon.asm @icon
 	kpack @icon
 	rm -f lang.inc
 	exit 0
