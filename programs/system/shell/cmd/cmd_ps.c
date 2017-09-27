@@ -13,6 +13,8 @@ if (NULL == buf1k)
 
 sel = param && strlen(param) > 0;
 
+printf ("      PID        NAME RAM KB\n\r", PID, buf1k+10);
+
 for (i = 1;;i++)
 	{
 	n = kol_process_info(i, buf1k);
@@ -22,7 +24,7 @@ for (i = 1;;i++)
 		{
 		if (!sel || 0 == strnicmp(param, buf1k+10, 10))
 			{
-			printf ("  %7d %s\n\r", PID, buf1k+10);
+			printf ("  %7d %11s %d\n\r", PID, buf1k+10, (*(int*)(buf1k+26)+1)/1024);
 			if (sel) 
 				{
 					LAST_PID = PID;
