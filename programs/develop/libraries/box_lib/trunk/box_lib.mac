@@ -98,9 +98,9 @@ macro edit_boxes_set_sys_color start,end,color_table
         add     eax,ebx                
 @@:
         mov     ed_blur_border_color,eax
-        mov     shift_color,0A4C4E4h
-        mov     ed_text_color,0
-        mov     ed_color,0FFFFFFh
+        mov     shift_color,dword 0A4C4E4h
+        mov     ed_text_color,dword 0
+        mov     ed_color,dword 0FFFFFFh
         add     edi,ed_struc_size
         loop    @b
 }
