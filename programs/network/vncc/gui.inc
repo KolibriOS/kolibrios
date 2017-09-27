@@ -12,6 +12,9 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+BTN_H equ 22
+TEXT_ECX equ 00010000b shl 24 + 0
+
 draw_gui:
         mcall   67, 160, 160, 330, 100          ; resize and move the window
         mcall   66, 1, 0                        ; switch keyboard to ascii mode
@@ -23,7 +26,7 @@ draw_gui:
                                                 ; DRAW WINDOW
         xor     eax, eax                        ; function 0 _logon: define and draw window
         mov     ebx, 160 shl 16 + 330           ; [x start]:[x size]
-        mov     ecx, 160 shl 16 + 100           ; [y start]:[y size]
+        mov     ecx, 160 shl 16 + 130           ; [y start]:[y size]
         mov     edx, 0x34DDDDDD                 ; color of work area RRGGBB
         mov     edi, name                       ; WINDOW LABEL
         mcall
@@ -31,8 +34,8 @@ draw_gui:
         cmp     [status], STATUS_CONNECTING
         ja      .login?
 
-        mov     ebx, 25 shl 16 + 24
-        xor     ecx, ecx
+        mov     ebx, 10 shl 16 + 22
+        mov     ecx, TEXT_ECX
         mov     edx, serverstr
         mov     esi, userstr-serverstr
         mcall   4                               ; "server" text
@@ -43,12 +46,13 @@ draw_gui:
         jne     @f
 
         mov     ebx, 220 shl 16 + 85
-        mov     ecx, 47 shl 16 + 16
+        mov     ecx, 57 shl 16 + BTN_H
         mov     edx, 4
         mov     esi, 0xCCCCCC
         mcall   8                               ; Cancel button
 
-        mov     ebx, 240 shl 16 + 52
+        mov     ebx, 240 shl 16 + 62
+		mov     ecx, TEXT_ECX
         mov     edx, cancelstr
         mov     esi, okstr-cancelstr
         mcall   4                               ; Cancel button text
@@ -60,12 +64,13 @@ draw_gui:
         jne     .redraw_done
 
         mov     ebx, 220 shl 16 + 85
-        mov     ecx, 47 shl 16 + 16
+        mov     ecx, 57 shl 16 + BTN_H
         mov     edx, 2
         mov     esi, 0xCCCCCC
         mcall   8                               ; Connect button
 
-        mov     ebx, 240 shl 16 + 52
+        mov     ebx, 236 shl 16 + 62
+		mov     ecx, TEXT_ECX
         mov     edx, connectstr
         mov     esi, loginstr-connectstr
         mcall   4                               ; Connect button text
@@ -76,13 +81,13 @@ draw_gui:
         cmp     [status], STATUS_LOGIN
         ja      @f
 
-        mov     ebx, 25 shl 16 + 14
-        xor     ecx, ecx
+        mov     ebx, 10 shl 16 + 12
+        mov     ecx, TEXT_ECX
         mov     edx, userstr
         mov     esi, passstr-userstr
         mcall   4                               ; "user" text
 
-        add     bl, 20
+        add     bl, 25
         mov     edx, passstr
         mov     esi, connectstr-passstr         ; "password" text
         mcall
@@ -94,23 +99,24 @@ draw_gui:
         jne     .redraw_done
 
         mov     ebx, 220 shl 16 + 85
-        mov     ecx, 47 shl 16 + 16
+        mov     ecx, 67 shl 16 + BTN_H
         mov     edx, 3
         mov     esi, 0xCCCCCC
         mcall   8                               ; Login button
 
-        mov     ebx, 240 shl 16 + 52
-        mov     edx, loginstr
-        mov     esi, cancelstr-loginstr
-        mcall   4                               ; Login button text
-
         mov     ebx, 120 shl 16 + 85
-        mov     ecx, 47 shl 16 + 16
+        mov     ecx, 67 shl 16 + BTN_H
         mov     edx, 4
         mov     esi, 0xCCCCCC
         mcall   8                               ; Cancel button
 
-        mov     ebx, 140 shl 16 + 52
+        mov     ebx, 240 shl 16 + 71
+		mov     ecx, TEXT_ECX
+        mov     edx, loginstr
+        mov     esi, cancelstr-loginstr
+        mcall   4                               ; Login button text
+		
+        mov     ebx, 140 shl 16 + 71
         mov     edx, cancelstr
         mov     esi, okstr-cancelstr
         mcall   4                               ; Cancel button text
@@ -145,12 +151,13 @@ draw_gui:
         mcall   4                               ; print error message to window
 
         mov     ebx, 220 shl 16 + 85
-        mov     ecx, 47 shl 16 + 16
+        mov     ecx, 47 shl 16 + BTN_H
         mov     edx, 5
         mov     esi, 0xCCCCCC
         mcall   8                               ; OK button
 
         mov     ebx, 256 shl 16 + 52
+		mov     ecx, TEXT_ECX
         mov     edx, okstr
         mov     esi, okstr_e-okstr
         mcall   4                               ; OK button text

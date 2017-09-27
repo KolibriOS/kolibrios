@@ -111,6 +111,7 @@ Ping                      /sys/network/ping
 Cliente Telnet            /sys/network/telnet
 Cliente Synergy           /sys/network/synergyc
 Resoluci¢n de nombres     /sys/network/nslookup
+VNC Viewer                /sys/network/vncc
 Cliente de descarga       /sys/network/downloader
 Navegador (modo texto)    /sys/network/webview
 #15    **** OTROS ****

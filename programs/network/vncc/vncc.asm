@@ -490,9 +490,9 @@ deflate_buffer          dd 0
 deflate_length          dd ?
 deflate_str             dd ?
 
-URLbox          edit_box 235, 70, 20, 0xffffff, 0x6f9480, 0, 0, 0, SERVERADDRLEN, serveraddr, mouse_dd, ed_focus, 0, 0
-USERbox         edit_box 215, 90, 10, 0xffffff, 0x6f9480, 0, 0, 0, 127, username, mouse_dd, ed_focus, 0, 0
-PASSbox         edit_box 215, 90, 30, 0xffffff, 0x6f9480, 0, 0, 0, 127, password, mouse_dd, ed_pass, 0, 0
+URLbox          edit_box 235, 70, 20, 0xffffff, 0x6f9480, 0, 0, 0x90000000, SERVERADDRLEN, serveraddr, mouse_dd, ed_focus, 0, 0
+USERbox         edit_box 215, 90, 10, 0xffffff, 0x6f9480, 0, 0, 0x90000000, 127, username, mouse_dd, ed_focus, 0, 0
+PASSbox         edit_box 215, 90, 35, 0xffffff, 0x6f9480, 0, 0, 0x10000000, 127, password, mouse_dd, ed_pass, 0, 0
 
 serverstr       db "server:"
 userstr         db "username:"

@@ -109,6 +109,7 @@ Client TFTP               /sys/network/tftpc
 Ping                      /sys/network/ping
 Client Telnet             /sys/network/telnet
 Client Synergy            /sys/network/synergyc
+VNC Viewer                /sys/network/vncc
 DNS lookup                /sys/network/nslookup
 Internet downloader       /sys/network/downloader
 Text-based browser        /sys/network/webview

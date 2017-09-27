@@ -122,6 +122,7 @@ Ping                      /sys/network/ping
 Telnet                    /sys/network/telnet
 Synergy клиент            /sys/network/synergyc
 DNS lookup                /sys/network/nslookup
+VNC Клиент                /sys/network/vncc
 Интернет загрузчик        /sys/network/downloader
 Текстовый браузер         /sys/network/webview
 #17   **** Разное ****

@@ -109,6 +109,7 @@ Ping                      /sys/network/ping
 Telnet                    /sys/network/telnet
 Synergy                   /sys/network/synergyc
 DNS lookup                /sys/network/nslookup
+VNC Viewer                /sys/network/vncc
 Downloader                /sys/network/downloader
 Text-based browser        /sys/network/webview
 #14    **** SERVERS ****
