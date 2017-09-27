@@ -83,6 +83,7 @@ K. Bus disconnected       /sys/kbd
 HDD informer              /sys/hdd_info
 #10  **** WORK WITH FILES ****
 KFAR                      /sys/File Managers/kfar
+fNav                      /sys/File Managers/fNav/fNav
 KFM                       /sys/File Managers/kfm
 Eolite                    /sys/File Managers/Eolite
 Virtual disks             /sys/tmpdisk

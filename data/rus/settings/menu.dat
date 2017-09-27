@@ -85,8 +85,9 @@ GHOST Monitor             /sys/gmon
 K. Bus disconnected       /sys/kbd
 HDD информер              /sys/hdd_info
 #10    **** Система -> Работа с файлами ****
-KFM                       /sys/File Managers/kfm
 KFAR                      /sys/File Managers/kfar
+fNav                      /sys/File Managers/fNav/fNav
+KFM                       /sys/File Managers/kfm
 Eolite                    /sys/File Managers/Eolite
 Виртуальные диски         /sys/tmpdisk
 Консоль SHELL             /sys/shell

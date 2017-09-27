@@ -2,5 +2,5 @@
 7:  wav, mp3, mid, m3u, lap, asf
 8:  avi, mp4, mkv, mov, mpg, mpeg
 9:  txt, log
-10: zip, 7z, rar
+10: zip, 7z, rar, arj, bz2, bzip2, gz, gzip, iso, lha, lzh, lzma, tar, tgz, xz
 11: html, htm, mht, xhtml
