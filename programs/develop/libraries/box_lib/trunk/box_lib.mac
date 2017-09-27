@@ -88,24 +88,19 @@ macro edit_boxes_set_sys_color start,end,color_table
         mov     edi,start
         mov     ecx,((end-start)/ed_struc_size)
         mov     esi,color_table
-@@:
-        mov     eax,[esi+36]
-        mov     ebx,[esi+20]
+        mov     eax,[esi+system_colors.work_graph]
+        mov     ebx,[esi+system_colors.work]
         mov     ed_focus_border_color,eax
         shr     eax,1
         shr     ebx,1
         and     eax,7F7F7Fh
         and     ebx,7F7F7Fh
-        add     eax,ebx
+        add     eax,ebx                
+@@:
         mov     ed_blur_border_color,eax
-        mov     shift_color,eax
-        mov     eax,ed_text_color
-        mov     ebx,[esi+32]
-        shr     eax,24
-        shl     ebx,8
-        add     eax,ebx
-        ror     eax,8
-        mov     ed_text_color,eax
+        mov     shift_color,0A4C4E4h
+        mov     ed_text_color,0
+        mov     ed_color,0FFFFFFh
         add     edi,ed_struc_size
         loop    @b
 }
