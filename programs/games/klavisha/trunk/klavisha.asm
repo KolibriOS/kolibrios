@@ -34,50 +34,58 @@ START:
 ;Инициализируем кучу
 	mcall	68,11
 ;	call	get_screen_params
-;	mov	eax,0x0000001C
-;	cmp	eax,0x0
-;	je	start_with_internal_text  ; Параметры не заданы
+	mov	eax,params
+	cmp	[eax],byte 0x0
+	je	start_with_internal_text  ; Параметры не заданы
 
 ; Параметр задан! Пытаемся этим воспользоваться
 ; Необходимо определить размер файла... Вперёд!!!
-	mov	eax,5
-	mov	[arg1],eax
-	xor	eax,eax
-	mov	[arg2],eax
-	mov	[arg3],eax
-	mov	[arg4],eax
-	mov	eax,filedatastruct
-	mov	[arg5],eax
-	mov	eax,[0x0000001C]
-	mov	[arg7],eax
-	mcall	70,filestruct
+;	mov	eax,5
+;	mov	[arg1],eax
+;	xor	eax,eax
+;	mov	[arg2],eax
+;	mov	[arg3],eax
+;	mov	[arg4],eax
+;	mov	eax,filedatastruct
+;	mov	[arg5],eax
+;	mov	eax,[0x0000001C]
+;	mov	[arg7],eax
+;	mcall	70,filestruct
+;	test	eax,eax
+;	jne	start_with_internal_text	;Ошибка
+;	mov	eax, dword [size]
+;	mov	[filesize], eax  ;теперь размер файла у нас в filesize
+;;Выделяем блок памяти под файл
+;	mov	ecx, [filesize]
+;	inc	ecx  ;Выделим дополнительно один байт для того, чтобы добавить 0xFF
+;		 ;защита от "битых" KLA-файлов
+;	mcall	68,12
+;	mov	[datastart], eax	;В переменной ДатаСтарт теперь находится указатель
+;	add	eax, [filesize]
+;	mov	bh, 0xFF
+;	mov	[eax], bh
+;;Собственно, считываем файл в память
+;	xor	eax,eax
+;	mov	[arg1],eax   ;Номер подфункции
+;	mov	[arg2],eax   ;Смещение в файле
+;	mov	[arg3],eax   ;Старший dword смещения
+;	mov	eax,[filesize]
+;	mov	[arg4],eax   ;Размер файла
+;	mov	eax,[datastart]
+;	mov	[arg5],eax   ;Указатель на данные
+;	mov	eax,par
+;	mov	[arg7],eax   ;Указатель на ASCIIZ-строку
+;	mcall	70,filestruct
+  
+ mov    ecx, eax
+ mov    eax, 68
+ mov    ebx, 27  
+ int    64
+ mov	   [datastart], eax  
+ mov    [filesize], edx  
+ 
 	test	eax,eax
-	jne	start_with_internal_text	;Ошибка
-	mov	eax, dword [size]
-	mov	[filesize], eax  ;теперь размер файла у нас в filesize
-;Выделяем блок памяти под файл
-	mov	ecx, [filesize]
-	inc	ecx  ;Выделим дополнительно один байт для того, чтобы добавить 0xFF
-		 ;защита от "битых" KLA-файлов
-	mcall	68,12
-	mov	[datastart], eax	;В переменной ДатаСтарт теперь находится указатель
-	add	eax, [filesize]
-	mov	bh, 0xFF
-	mov	[eax], bh
-;Собственно, считываем файл в память
-	xor	eax,eax
-	mov	[arg1],eax   ;Номер подфункции
-	mov	[arg2],eax   ;Смещение в файле
-	mov	[arg3],eax   ;Старший dword смещения
-	mov	eax,[filesize]
-	mov	[arg4],eax   ;Размер файла
-	mov	eax,[datastart]
-	mov	[arg5],eax   ;Указатель на данные
-	mov	eax,par
-	mov	[arg7],eax   ;Указатель на ASCIIZ-строку
-	mcall	70,filestruct
-	test	eax,eax
-	je	initialize_variables
+	jnz	initialize_variables
 start_with_internal_text:
 	mov	edx, string
 	mov	[datastart], edx
