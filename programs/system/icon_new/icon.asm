@@ -137,7 +137,7 @@ START:		; start of execution
 	mov	dword[IPCbuffer+4],8
 	mcall	60,1,IPCbuffer,1024
 
-	mcall	40,01100000b		 ;нужны только события мыши и IPC,
+	mcall	40,EVM_MOUSE+EVM_IPC ;нужны только события мыши и IPC,
 					 ;перерисовка иконок будет в другом потоке
 	mov	eax,[icon_count]
 	mov	bl,ICONS_DRAW_COUNTH

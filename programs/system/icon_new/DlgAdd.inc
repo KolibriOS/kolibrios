@@ -157,7 +157,7 @@ startDlg:
 
 	or	[edtName.flags],ed_focus
 
-	mcall	40,100111b	;SetMaskMessage 100111b
+	mcall	40,EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER
 	xor	eax,eax
 	mov	dword[MaxPage],0
       @@:
