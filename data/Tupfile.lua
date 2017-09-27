@@ -88,6 +88,7 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"File Managers/KFAR.INI", build_type .. "/File Managers/kfar.ini"},
  {"GAMES/APPDATA.DAT", build_type .. "/games/appdata.dat"},
  {"GAMES/ATAKA", build_type .. "/games/ataka"},
+ {"GAMES/BASEKURS.KLA", build_type .. "/games/basekurs.kla"},
  {"GAMES/PADENIE", build_type .. "/games/padenie"},
  {"GAMES/WHOWTBAM", build_type .. "/games/whowtbam"},
 }) elseif build_type == "eng" then tup.append_table(img_files, {
