@@ -50,6 +50,7 @@
 	WriteText(tx,ty,0x90,color_t,text);
 }
 
+:int active_button_id = 0;
 :int DrawStandartCaptButton(dword x, y, id, text)
 {
 	int padding_v = 5;
@@ -57,13 +58,28 @@
 	int right_margin = 12;
 	int tx = x + padding_h;
 	int ty = y + padding_v+1;
+	int tw = strlen(text)*8;
 	int h = padding_v + padding_v + 16; //16 font height
-	int w = strlen(text)*8 + padding_h + padding_h;
+	int w = tw + padding_h + padding_h;
+
 
 	if (id>0) DefineButton(x,y,w,h,id,system.color.work_button);
+
 	WriteText(tx+1,ty+1,0x90,MixColors(system.color.work_button,0,230),text);
 	WriteText(tx,ty,0x90,system.color.work_button_text,text);
+
+	if (active_button_id==id) {
+		DrawBar(tx,ty+15,tw,1, MixColors(system.color.work_button,0,230));
+		DrawBar(tx,ty+14,tw,1, system.color.work_button_text);
+	}
+
 	return w + right_margin;
+}
+
+:void ActiveButtonSwitch(int min, max)
+{
+	active_button_id++;
+	if (active_button_id>max) || (active_button_id<max) active_button_id=min;
 }
 
 :void WriteTextCenter(dword x,y,w,color_t,text)
@@ -200,7 +216,7 @@
 {
 	int w;
 	WriteText(x,y,font_type,0x4E00E7,inscription);
-	if (font_type==0x80) w = strlen(inscription)*6; else w = strlen(inscription)*7;
+	if (font_type==0x80) w = strlen(inscription)*6; else w = strlen(inscription)*8;
 	DefineButton(x-1,y-1,w,10,btn_id+BT_HIDE,0);
 	DrawBar(x,y+8,w,1,0x4E00E7);
 }

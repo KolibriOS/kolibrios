@@ -324,7 +324,6 @@
     __file_F70.rezerv = 0;
     __file_F70.param2 = rparam;
     __file_F70.name = path.path(rpath);
-    debugln(__file_F70.name);
     $mov eax,70
     $mov ebx,#__file_F70.func
     $int 0x40

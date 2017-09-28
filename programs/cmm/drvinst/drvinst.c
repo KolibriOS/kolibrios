@@ -81,30 +81,33 @@ byte process_sections(dword sec_name, f_name)
 
 void main()
 {
-	int id;
 	load_dll(libio,  #libio_init,1);
 	load_dll(libini, #lib_init,1);
 	load_dll(boxlib, #box_lib_init,0);
 	GetIniData();
-	SetEventMask(0x27);
+	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
 	loop() switch(WaitEvent())
 	{
 		case evMouse:
-			if (!CheckActiveProcess(Form.ID)) break;
 			SelectList_ProcessMouse();
 			break;
 
 		case evButton:
-			id=GetButtonID();               
-			if (id==1) ExitProcess();
-			if (id==BUTTON_ID_ASSEPT_RISK) Event_AsseptRisk();
-			if (id==BUTTON_ID_README) Event_ShowReadme();
-			if (id==BUTTON_ID_INSTALL) Event_RunInstall();
+			Event_ProcessButtonId(GetButtonID());
 			break;
 	  
 		case evKey:
 			GetKeys();
-			if (select_list.ProcessKey(key_scancode)) SelectList_LineChanged();
+			if (key_scancode == SCAN_CODE_ENTER) Event_ProcessButtonId(active_button_id);
+			if (window_step == WINDOW_STEP_DRIVER_LIST) 
+			{
+				if (select_list.ProcessKey(key_scancode)) SelectList_LineChanged();
+				if (key_scancode == SCAN_CODE_TAB) 
+				{
+					ActiveButtonSwitch(11, 12);
+					Draw_DriverListWindow();
+				}
+			} 
 			break;
 		 
 		case evReDraw:
@@ -113,7 +116,7 @@ void main()
 } 
 
 
-void draw_intro_window()
+void Draw_IntroWindow()
 {
 	incn y;
 	y.n = Form.cheight/2 - 80;
@@ -121,11 +124,12 @@ void draw_intro_window()
 	WriteTextB(30,y.n,0x81,0xB92234,T_CAUTION_TITLE);
 	y.n = DrawTextViewArea(30, y.inc(30), Form.cwidth-60, Form.cheight-140, 
 		T_CAUTION_PARAGRAPH, -1, system.color.work_text);
+	active_button_id = BUTTON_ID_ASSEPT_RISK;
 	DrawStandartCaptButton(30, y.inc(10), BUTTON_ID_ASSEPT_RISK, T_ASSEPT_RISK);
 }
 
 
-void draw_driver_list_window()
+void Draw_DriverListWindow()
 {
 	int PADDING = 12;
 	int right_frame_x = Form.cwidth*46/100;
@@ -169,7 +173,7 @@ void SelectList_DrawLine(dword i)
 
 void SelectList_LineChanged()
 {
-	draw_driver_list_window();
+	Draw_DriverListWindow();
 }
 
 
@@ -190,6 +194,14 @@ void GetCurrentSectionData()
 //                                                   //
 //===================================================//
 
+void Event_ProcessButtonId(int id)
+{
+	if (id==1) ExitProcess();
+	if (id==BUTTON_ID_ASSEPT_RISK) Event_AsseptRisk();
+	if (id==BUTTON_ID_README) Event_ShowReadme();
+	if (id==BUTTON_ID_INSTALL) Event_RunInstall();
+}
+
 void Event_DrawWindow() 
 {
 	system.color.get();
@@ -198,14 +210,15 @@ void Event_DrawWindow()
 	if (Form.status_window>2) return;
 	if (Form.width  < 450) { MoveSize(OLD,OLD,450,OLD); return; }
 	if (Form.height < 250) { MoveSize(OLD,OLD,OLD,250); return; }
-	if (window_step == WINDOW_STEP_INTRO) draw_intro_window();
-	if (window_step == WINDOW_STEP_DRIVER_LIST) draw_driver_list_window();
+	if (window_step == WINDOW_STEP_INTRO) Draw_IntroWindow();
+	if (window_step == WINDOW_STEP_DRIVER_LIST) Draw_DriverListWindow();
 	return;
 }
 
 void Event_AsseptRisk()
 {
 	window_step = WINDOW_STEP_DRIVER_LIST;
+	active_button_id = BUTTON_ID_INSTALL;
 	Event_DrawWindow();
 }
 
@@ -216,5 +229,7 @@ void Event_ShowReadme()
 
 void Event_RunInstall()
 {
-	io.run(#cur_install_path, NULL);
+	int result;
+	result = io.run(#cur_install_path, NULL);
+	if (result) notify("'Driver installation started.\nPlease, open BOARD to check status.'I");
 }

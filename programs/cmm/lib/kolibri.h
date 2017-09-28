@@ -44,34 +44,23 @@ char program_path[4096];
 #define evDebug   9
 
 //Event mask bits for function 40
-#define EVM_REDRAW              1b
-#define EVM_KEY                10b
-#define EVM_BUTTON            100b
-#define EVM_EXIT             1000b
-#define EVM_BACKGROUND      10000b
-#define EVM_MOUSE          100000b
-#define EVM_IPC           1000000b
-#define EVM_STACK        10000000b
-#define EVM_DEBUG       100000000b
-#define EVM_STACK2     1000000000b
+#define EVM_REDRAW                1b
+#define EVM_KEY                  10b
+#define EVM_BUTTON              100b
+#define EVM_EXIT               1000b
+#define EVM_BACKGROUND        10000b
+#define EVM_MOUSE            100000b
+#define EVM_IPC             1000000b
+#define EVM_STACK          10000000b
+#define EVM_DEBUG         100000000b
+#define EVM_STACK2       1000000000b
 #define EVM_MOUSE_FILTER  0x80000000
 #define EVM_CURSOR_FILTER 0x40000000
-
 
 //Button options
 #define BT_DEL      0x80000000
 #define BT_HIDE     0x40000000
 #define BT_NOFRAME  0x20000000
-
-//allow event mask
-#define EVENT_MASK_REDRAW   000000001b
-#define EVENT_MASK_KEYBOARD 000000010b
-#define EVENT_MASK_BUTTONS  000000100b
-#define EVENT_MASK_DESKTOP  000010000b
-#define EVENT_MASK_MOUSE    000100000b
-#define EVENT_MASK_IPC      001000000b
-#define EVENT_MASK_NETWORK  010000000b
-#define EVENT_MASK_DEBUG    100000000b
 
 //-------------------------------------------------------------------------
 

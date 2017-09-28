@@ -5,6 +5,7 @@
 {
 	byte b,g,r;
 	void DwordToRgb();
+	void SetRgb();
 	dword RgbToDword();
 } rgb;
 
@@ -13,6 +14,13 @@
 	b = _dword & 0xFF; _dword >>= 8;
 	g = _dword & 0xFF; _dword >>= 8;
 	r = _dword & 0xFF; _dword >>= 8;
+}
+
+:void _rgb::SetRgb(dword _r, _g, _b)
+{
+	r = _r;
+	g = _g;
+	b = _b;
 }
 
 :dword _rgb::RgbToDword()
