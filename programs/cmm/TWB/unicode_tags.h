@@ -29,6 +29,7 @@ char *unicode_tags[]={
 "#8211", "-",
 "#151",  "-",
 "#149",  "-",
+"#9642", "-", //square in the middle of the line
 
 "rsquo", "'",
 "#39",   "'",

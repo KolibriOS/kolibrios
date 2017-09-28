@@ -30,7 +30,7 @@
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.7";
+char version[]="Текстовый браузер 1.71";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -43,7 +43,7 @@ char rmb_menu[] =
 Очистить кэш картинок
 Менеджер загрузок";
 #else
-char version[]="Text-based Browser 1.7";
+char version[]="Text-based Browser 1.71";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";

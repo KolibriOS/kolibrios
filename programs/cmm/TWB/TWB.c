@@ -79,8 +79,7 @@ void TWebBrowser::DrawStyle()
 	
 	if (!header)
 	{
-		ChangeCharset("UTF-8", "CP866", #line);
-		sprintf(#header, "%s - %s", #line, #version);
+		strcpy(#header, #line);
 		line = 0;
 		return;
 	}
@@ -266,7 +265,6 @@ void TWebBrowser::SetStyle() {
 	if (istag("form")) if (!opened) ignor_text = false;
 	if(istag("title")) {
 		if (opened) header=NULL;
-		else DrawTitle(#header);
 		return;
 	}
 	if (ignor_text) return;
@@ -292,7 +290,15 @@ void TWebBrowser::SetStyle() {
 				DrawBuf.Fill(bg_color);
 			}
 		} while(GetNextParam());
-		if (opened) && (cur_encoding==CH_NULL) debugln("Document has no information about encoding, UTF will be used");
+		if (opened) && (cur_encoding==CH_NULL) {
+			cur_encoding = CH_UTF8; 
+			debugln("Document has no information about encoding, UTF will be used");
+		}
+		if (opened) {
+			ChangeCharset(charsets[cur_encoding], "CP866", #header);
+			sprintf(#header, "%s - %s", #header, #version);
+			DrawTitle(#header);
+		}
 		return;
 	}
 	if (istag("a")) {
@@ -423,6 +429,7 @@ void TWebBrowser::SetStyle() {
 
 void TWebBrowser::BufEncode(dword set_new_encoding)
 {
+	if (cur_encoding == set_new_encoding) return;
 	if (o_bufpointer==0)
 	{
 		o_bufpointer = malloc(bufsize);
@@ -432,11 +439,10 @@ void TWebBrowser::BufEncode(dword set_new_encoding)
 	{
 		strcpy(bufpointer, o_bufpointer);
 	}
-	if (cur_encoding!=set_new_encoding) {
-		cur_encoding = set_new_encoding;
-		debugln(charsets[cur_encoding]);
-		bufpointer = ChangeCharset(charsets[cur_encoding], "CP866", bufpointer);
-	}
+	debugval("cur_encoding    ", cur_encoding);
+	debugval("set_new_encoding", set_new_encoding);
+	cur_encoding = set_new_encoding;
+	bufpointer = ChangeCharset(charsets[cur_encoding], "CP866", bufpointer);
 }
 //============================================================================================
 void TWebBrowser::DrawScroller()
