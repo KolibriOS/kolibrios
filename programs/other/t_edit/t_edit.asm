@@ -500,6 +500,14 @@ button:
   
 	jmp still
 .exit:
+	cmp dword[wnd_k_words_run],0
+	je @f
+		push ebx ecx
+		mcall SF_SYSTEM, SSF_TERMINATE_THREAD_ID,[wnd_k_words_run]
+		pop ecx ebx
+		test eax,eax
+		jnz still
+	@@:
 	cmp dword[exit_code],1
 	je @f
 	stdcall [ted_can_save], tedit0

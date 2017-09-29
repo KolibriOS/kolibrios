@@ -391,10 +391,11 @@ but_replace:
 ; функция поиска информации в списке ключевых слов
 align 4
 but_find_key_w:
-	cmp byte[wnd_k_words_run],0
+	cmp dword[wnd_k_words_run],0
 	jne @f
 		pushad
 		mcall SF_CREATE_THREAD,1,prop_start,thread_coords
+		mov dword[wnd_k_words_run],eax
 		popad
 	@@:
 	ret

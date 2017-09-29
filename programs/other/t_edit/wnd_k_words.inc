@@ -8,7 +8,7 @@ SIZE_ONE_FLOAT equ 14
 
 IMAGE_TOOLBAR_ICON_SIZE equ 20*20*3
 
-wnd_k_words_run db 0 ;переменная следящая за тем что-бы не запускать больше 1-го окна одновременно
+wnd_k_words_run dd 0 ;переменная следящая за тем что-бы не запускать больше 1-го окна одновременно
 
 if lang eq ru
 txt_caption db 'Поиск в ключевых словах',0
@@ -21,7 +21,6 @@ align 4
 prop_start:
 pushad
 	mcall SF_SET_EVENTS_MASK,0xC0000027 ;маска ожидаемых событий
-	inc byte[wnd_k_words_run]
 
 	;настройка списка объектов
 	mov dword[tree3.info_max_count],2
@@ -35,7 +34,6 @@ pushad
 	mov dword[tree3.data_img_sys],eax
 
 	edit_boxes_set_sys_color edit3,editboxes_end,sc ;установка системных цветов
-	;stdcall [edit_box_set_text], edit3, txt_q
 popad
 
 align 4
@@ -96,7 +94,7 @@ prop_still:
 	mov dword[tree3.data_img],0 ;чистим указатели на иконки что-бы их не удалил деструктор
 	mov dword[tree3.data_img_sys],0 ;т. к. они еще используються в других элементах
 	stdcall dword[tl_data_clear], tree3
-	mov byte[wnd_k_words_run],0 ;обнуляем счетчик окон
+	mov dword[wnd_k_words_run],0 ;обнуляем ID окна
 	mcall SF_TERMINATE_PROCESS
 
 align 4
