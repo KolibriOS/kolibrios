@@ -99,6 +99,7 @@ macro edit_boxes_set_sys_color start,end,color_table
         mov     ed_focus_border_color,ebx        
         mov     ed_blur_border_color,eax
         mov     shift_color,dword 0A4C4E4h
+        and     ed_text_color,dword 0FF000000h
         mov     ed_color,dword 0FFFFFFh
         add     edi,ed_struc_size
         loop    @b
