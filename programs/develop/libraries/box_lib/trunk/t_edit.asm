@@ -20,8 +20,6 @@ macro ColToIndexOffset ind_reg,out_reg {
 	add out_reg,ted_key_words_data
 }
 
-macro use_text_edit
-{
 TED_PANEL_NULL	 equ 0 ;нет открытой панели
 TED_PANEL_FIND	 equ 1 ;панель поиска
 TED_PANEL_SYNTAX equ 2 ;панель выбора файлов подсветки
@@ -76,7 +74,7 @@ txtBuf db 'Buffer:',0
 end if
 
 ;EvChar - таблица для фильтрования добавляемых символов, что-бы не попали лишние знаки
-align 4
+align 16
 EvChar db 0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     db 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
@@ -2003,20 +2001,20 @@ proc ted_set_undo
 		jle @f
 
 		;if(tex[i].tc>ted_tim_ch){ // если создание символа было отменено
-		cmp [edx+10],eax
+		cmp [edx+symbol.tc],eax
 		jle .no_u1
-			mov dword [edx+10],0
-			mov dword [edx+14],0
+			mov dword [edx+symbol.tc],0
+			mov dword [edx+symbol.td],0
 
-			mov ebx,[edx+2]
+			mov ebx,[edx+symbol.perv]
 			imul ebx,sizeof.symbol
 			add ebx,ted_tex ;ebx=tex[i].perv
-			m2m dword [ebx+6],dword [edx+6] ;tex[tex[i].perv].next=tex[i].next;
+			m2m dword [ebx+symbol.next],dword [edx+symbol.next] ;tex[tex[i].perv].next=tex[i].next;
 
-			mov ebx,[edx+6]
+			mov ebx,[edx+symbol.next]
 			imul ebx,sizeof.symbol
 			add ebx,ted_tex ;ebx=tex[i].next
-			m2m dword [ebx+2],dword [edx+2] ;tex[tex[i].next].perv=tex[i].perv;
+			m2m dword [ebx+symbol.perv],dword [edx+symbol.perv] ;tex[tex[i].next].perv=tex[i].perv;
 
 			cmp ted_ptr_free_symb,edx
 			jle .no_cor_free
@@ -2027,9 +2025,9 @@ proc ted_set_undo
 		.no_u1:
 
 		;else if(tex[i].td>ted_tim_ch) tex[i].td=0; // если удаление символа было отменено
-		cmp [edx+14],eax
+		cmp [edx+symbol.td],eax
 		jle .no_u2
-			mov dword [edx+14],0
+			mov dword [edx+symbol.td],0
 		.no_u2:
 
 		call ted_get_text_next_pos
@@ -2616,7 +2614,6 @@ proc ted_but_copy, edit:dword
 
 	cmp ecx,12
 	je .end_f
-		inc ecx ;размер данных в буфере + символ завершения строки
 		mov ebx,ted_buffer
 		mov [ebx],ecx
 		mcall SF_CLIPBOARD,SSF_WRITE_CB,ecx,ted_buffer
@@ -4178,4 +4175,3 @@ align 4
 popad
 	ret
 endp
-}

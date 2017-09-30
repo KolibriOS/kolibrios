@@ -39,7 +39,7 @@ include 'checkbox.asm' ;checkbox
 
 ;--------------------------------------------------
 ;radiobutton Group
-include 'optionbox.asm' ;macro implements optionbox
+include 'optionbox.asm' ;optionbox
 
 ;--------------------------------------------------
 ;scrollbar Group
@@ -71,7 +71,7 @@ use_file_browser
 
 ;--------------------------------------------------
 ;tree list
-include 'tree_list.asm' ;macro implements tree_list, image_list, list_box
+include 'tree_list.asm' ;tree_list, list_box
 
 ;--------------------------------------------------
 ;PathShow Group
@@ -81,9 +81,8 @@ use_path_show
 
 ;--------------------------------------------------
 ;text editor
-;--------------------------------------------------
-align 16
-use_text_edit
+include 't_edit.asm' ;text_editor
+
 ;--------------------------------------------------
 ;Frame Group
 ;--------------------------------------------------
@@ -118,7 +117,7 @@ proc draw_edge uses eax ebx ecx edx edi esi, box_l:dword, box_t:dword, box_w:dwo
 	mov esi,dword[col_1]
 	and esi,111111101111111011111110b
 
-	mov eax,13
+	mov eax,SF_DRAW_RECT
 	;bottom line
 	mov edx,dword[col_2]
 	mov ebx,dword[box_l]
