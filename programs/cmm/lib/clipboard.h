@@ -6,69 +6,80 @@
 #include "../lib/kolibri.h"
 #endif
 
-struct buffer_data
-{
-	dword	size;
-	dword	type;
-	dword	encoding;
-	dword	content;
-};
 
+#ifndef INCLUDE_FILESYSTEM_H
+#include "../lib/file_system.h"
+#endif
 
-struct Clipboard {
-	buffer_data slot_data;
-	dword GetSlotCount();
-	dword GetSlotData( ECX);
-	dword SetSlotData( EDX, ESI);
-	dword DelLastSlot();
-	dword ResetBlockingBuffer();
-};
+//===================================================//
+//                                                   //
+//       Kolibri Clipboard System Functions          //
+//                                                   //
+//===================================================//
 
-dword Clipboard::GetSlotCount()
+#define SLOT_DATA_TYPE_TEXT 0
+#define SLOT_DATA_TYPE_TEXT_BLOCK 1
+#define SLOT_DATA_TYPE_IMAGE 2
+#define SLOT_DATA_TYPE_RAW 3
+
+inline fastcall dword Clipboard__GetSlotCount()
 {
 	$mov eax, 54 
 	$mov ebx, 0
 	$int 0x40
 }
 
-#define SLOT_DATA_TYPE_TEXT 0
-#define SLOT_DATA_TYPE_TEXT_WITH_BLOCK_SELECTION 1
-#define SLOT_DATA_TYPE_IMAGE 2
-#define SLOT_DATA_TYPE_RAW 3
-dword Clipboard::GetSlotData( ECX) //ECX = slot number
+inline fastcall dword Clipboard__GetSlotData( ECX) //ECX = slot number
 {
-	dword result;
 	$mov eax, 54 
 	$mov ebx, 1
 	$int 0x40
-	result = EAX;
-	slot_data.size = DSDWORD[result];
-	slot_data.type = DSDWORD[result+4];
-	slot_data.encoding = DSDWORD[result+8];
-	if (slot_data.type == SLOT_DATA_TYPE_TEXT) slot_data.content = result+12;
-	else slot_data.content = result+8;
-	return result;
 }
 
-dword Clipboard::SetSlotData( ECX, EDX) //ECX = data size, EDX - pointer to data
+inline fastcall dword Clipboard__SetSlotData( ECX, EDX) //ECX = data size, EDX - pointer to data
 {
 	$mov eax, 54 
 	$mov ebx, 2
 	$int 0x40
 }
 
-dword Clipboard::DelLastSlot()
+inline fastcall dword Clipboard__DeleteLastSlot()
 {
 	$mov eax, 54 
 	$mov ebx, 3
 	$int 0x40
 }
 
-dword Clipboard::ResetBlockingBuffer()
+inline fastcall dword Clipboard__ResetBlockingBuffer()
 {
 	$mov eax, 54 
 	$mov ebx, 4
 	$int 0x40
 }
+
+//===================================================//
+//                                                   //
+//               Some useful patterns                //
+//                                                   //
+//===================================================//
+
+:void Clipboard__CopyText(dword _text)
+{
+int size_buf;
+dword buff_data;
+
+	size_buf = strlen(_text) + 12;
+	buff_data = malloc(size_buf);
+	ESDWORD[buff_data] = size_buf;
+	ESDWORD[buff_data+4] = SLOT_DATA_TYPE_TEXT;
+	ESDWORD[buff_data+8] = 1; //encoding 0=UTF, 1=866, 2=1251
+	strcpy(buff_data+12, _text);
+
+	Clipboard__SetSlotData(size_buf, buff_data);
+	if (EAX!=0) notify("'Error while copying to clipboard!'E");
+
+	buff_data = free(buff_data);
+}
+
 
 #endif

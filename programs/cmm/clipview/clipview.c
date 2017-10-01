@@ -41,9 +41,6 @@ enum {
 
 proc_info Form;
 
-Clipboard clipboard;
-
-
 //===================================================//
 //                                                   //
 //                       CODE                        //
@@ -53,7 +50,7 @@ Clipboard clipboard;
 void main()
 {   
 	int id;
-	SetEventMask(0x27);
+	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	load_dll(boxlib, #box_lib_init,0);
 	loop() 
 	{
@@ -61,12 +58,11 @@ void main()
 	  switch(EAX & 0xFF)
 	  {
 	  	case evMouse:
-			if (!CheckActiveProcess(Form.ID)) break;
 			SelectList_ProcessMouse();
 	  		break;
 
 		case evButton:
-			id=GetButtonID();
+			id = GetButtonID();
 			if (id==1) ExitProcess();
 			if (id==BT_DELETE_LAST_SLOT) EventDeleteLastSlot();
 			if (id==BT_DELETE_ALL_SLOTS) EventDeleteAllSlots();
@@ -98,7 +94,7 @@ void main()
 		 	break;
 
 		default:
-			if (clipboard.GetSlotCount() > select_list.count) ClipViewSelectListDraw();
+			if (Clipboard__GetSlotCount() > select_list.count) ClipViewSelectListDraw();
 			break;
 	  }
    }
@@ -119,6 +115,16 @@ void DrawWindowContent()
  	SelectList_DrawBorder();
 }
 
+dword slot_data;
+struct clipboard_data
+{
+	dword	size;
+	dword	type;
+	dword	encoding;
+	dword	content;
+	dword	content_offset;
+} cdata;
+
 void SelectList_DrawLine(dword i)
 {
 	int yyy, length, slot_data_type_number;
@@ -126,21 +132,28 @@ void SelectList_DrawLine(dword i)
 	dword size_kb;
 	dword text_color = 0;
 
-	clipboard.GetSlotData(select_list.first + i);
+	slot_data = Clipboard__GetSlotData(select_list.first + i);
+	cdata.size = ESDWORD[slot_data];
+	cdata.type = ESDWORD[slot_data+4];
+	if (cdata.type==SLOT_DATA_TYPE_TEXT) || (cdata.type==SLOT_DATA_TYPE_TEXT_BLOCK)
+		cdata.content_offset = 12;
+	else 
+		cdata.content_offset = 8;
+	cdata.content = slot_data + cdata.content_offset; 
+
 	yyy = i*select_list.item_h+select_list.y;
 	WriteText(select_list.x+12, yyy+select_list.text_y, select_list.font_type, text_color, itoa(select_list.first + i));
-	//WriteText(select_list.x+44, yyy+select_list.text_y, select_list.font_type, text_color, itoa(clipboard.slot_data.size));
-	size_kb = ConvertSizeToKb(clipboard.slot_data.size);
+	size_kb = ConvertSizeToKb(cdata.size);
 	WriteText(select_list.x+44, yyy+select_list.text_y, select_list.font_type, text_color, size_kb);
-	slot_data_type_number = clipboard.slot_data.type;
+	slot_data_type_number = cdata.type;
 	WriteText(select_list.x+140, yyy+select_list.text_y, select_list.font_type, text_color, data_type[slot_data_type_number]);
 	WriteText(select_list.x+select_list.w - 88, yyy+select_list.text_y, select_list.font_type, 0x006597, T_VIEW_OPTIONS);
 	DefineButton(select_list.x+select_list.w - 95, yyy, 50, select_list.item_h, 100+i+BT_HIDE, NULL);
 	DefineButton(select_list.x+select_list.w - 95 + 51, yyy, 40, select_list.item_h, 300+i+BT_HIDE, NULL);
 
 	length = select_list.w-236 - 95 / select_list.font_w - 2;
-	if (clipboard.slot_data.size-8 < length) length = clipboard.slot_data.size-8;
-	memmov(#line_text, clipboard.slot_data.content, length);
+	if (cdata.size - cdata.content_offset < length) length = cdata.size - cdata.content_offset;
+	memmov(#line_text, cdata.content, length);
 	replace_char(#line_text, 0, 31, length); // 31 is a dot
 	WriteText(select_list.x+236, yyy+select_list.text_y, select_list.font_type, text_color, #line_text);
 }
@@ -155,9 +168,8 @@ replace_char(dword in_str, char from_char, to_char, int length) {
 	ESBYTE[in_str+length]=0;
 }
 
-int SaveSlotContents(int slot_id) {
-	clipboard.GetSlotData(slot_id);
-	EAX = WriteFile(clipboard.slot_data.size, clipboard.slot_data.content, DEFAULT_SAVE_PATH);
+int SaveSlotContents(dword size, off) {
+	EAX = WriteFile(size, off, DEFAULT_SAVE_PATH);
 	if (!EAX)
 	{
 		return true;
@@ -169,7 +181,7 @@ int SaveSlotContents(int slot_id) {
 }
 
 void ClipViewSelectListDraw() {
-	select_list.count = clipboard.GetSlotCount();
+	select_list.count = Clipboard__GetSlotCount();
 	SelectList_Draw();
 }
 
@@ -188,27 +200,33 @@ void EventDeleteLastSlot()
 	int i;
 	for (i=0; i<select_list.visible; i++;) DeleteButton(select_list.first + i + 100);
 	for (i=0; i<select_list.visible; i++;) DeleteButton(select_list.first + i + 300);
-	clipboard.DelLastSlot();
+	Clipboard__DeleteLastSlot();
 	ClipViewSelectListDraw();
 }
 
 void EventDeleteAllSlots()
 {
-	while (clipboard.GetSlotCount()) clipboard.DelLastSlot();
+	while (Clipboard__GetSlotCount()) Clipboard__DeleteLastSlot();
 	ClipViewSelectListDraw();
 }
 
 void EventResetBufferLock() {
-	clipboard.ResetBlockingBuffer();
+	Clipboard__ResetBlockingBuffer();
 	ClipViewSelectListDraw();
 }
 
 void EventOpenAsText(int slot_id) {
-	if (SaveSlotContents(slot_id)) RunProgram("/sys/tinypad", DEFAULT_SAVE_PATH);
+	slot_data = Clipboard__GetSlotData(slot_id);
+	cdata.size = ESDWORD[slot_data]-12;
+	cdata.content = slot_data+12;
+	if (SaveSlotContents(cdata.size, cdata.content)) RunProgram("/sys/tinypad", DEFAULT_SAVE_PATH);
 }
 
 void EventOpenAsHex(int slot_id) {
-	if (SaveSlotContents(slot_id)) RunProgram("/sys/develop/heed", DEFAULT_SAVE_PATH);
+	slot_data = Clipboard__GetSlotData(slot_id);
+	cdata.size = ESDWORD[slot_data];
+	cdata.content = slot_data;
+	if (SaveSlotContents(cdata.size, cdata.content)) RunProgram("/sys/develop/heed", DEFAULT_SAVE_PATH);
 }
 
 stop:

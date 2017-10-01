@@ -22,9 +22,11 @@ dword scr = FROM "scr.raw_8bit";
 dword scr_pal[] = {0xFFFFFF,0xBBDDFF,0x4166B5,0xE0E4E6,0xAFBEDD,0xC4D4E8,0x52ACDD,0x000000,
 0xE9DAB2,0xC99811,0xFDF9D4,0xF8B93C,0xFDEEBE,0xFBEBA6,0xDFAF4F,0xF3D57C};
 
+#define BTN_MANUAL_SEARCH 10
+
 #define APP_PLUS_INI_PATH "/kolibrios/settings/app_plus.ini"
 
-#define APP_PLUS_INI_NOT_EXISTS "'APP+\n/kolibrios/settings/app_plus.ini is not exists.\nProgram terminated.' -tE"
+#define APP_PLUS_INI_NOT_EXISTS "'APP+\n/kolibrios/settings/app_plus.ini does not exists.\nProgram terminated.' -tE"
 
 #define WINDOW_TITLE_TEXT "Error"
 #define CONTENT_HEADER_TEXT "/KOLIBRIOS/ IS NOT MOUNTED"
@@ -49,9 +51,8 @@ void CheckKosMounted()
 	}
 }
 
-void RunAutosearch()
+void WaitAutosearch()
 {
-	if (!CheckProcessExists("SEARCHAP")) io.run("/sys/SEARCHAP",0);
 	while (CheckProcessExists("SEARCHAP")) pause(2);
 }
 
@@ -60,25 +61,24 @@ void main()
 	word id;
 
 	CheckKosMounted();
-	RunAutosearch();
+	WaitAutosearch();
 	CheckKosMounted();
 
 	o_dialog.type = 2;
 	load_dll(Proc_lib, #OpenDialog_init,0);
 	OpenDialog_init stdcall (#o_dialog);
+	active_button_id = BTN_MANUAL_SEARCH;
 
 	loop() switch(WaitEvent())
 	{	
 		case evButton:
 			id=GetButtonID();               
 			if (id==1) ExitProcess();
-			if (id==10)
-			{
-				OpenDialog_start stdcall (#o_dialog);
-				if (o_dialog.status) SetAdditionalSystemDirectory("kolibrios", #openfile_path+1);
-				pause(3);
-				CheckKosMounted();
-			}
+			if (id==BTN_MANUAL_SEARCH) EventManualSearch();
+			break;
+		case evKey:
+			GetKeys();
+			if (key_scancode == SCAN_CODE_ENTER) EventManualSearch();
 			break;
 		 
 		case evReDraw:
@@ -102,7 +102,15 @@ void draw_window()
 	PutPaletteImage(#scr,144,171,Form.cwidth-180,y.n,8,#scr_pal);
 	DrawRectangle(Form.cwidth-180-1,y.n-1, 144+1,171+1, system.color.work_graph);
 	
-	DrawCaptButton(x,Form.cheight-66,300,30,10,system.color.work_button,system.color.work_button_text,MANUALLY_BUTTON_TEXT);
+	DrawStandartCaptButton(x, Form.cheight-66, BTN_MANUAL_SEARCH, MANUALLY_BUTTON_TEXT);
+}
+
+void EventManualSearch()
+{
+	OpenDialog_start stdcall (#o_dialog);
+	if (o_dialog.status) SetAdditionalSystemDirectory("kolibrios", #openfile_path+1);
+	pause(3);
+	CheckKosMounted();	
 }
 
 

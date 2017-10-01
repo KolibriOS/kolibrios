@@ -1,5 +1,5 @@
-@del pipet.kex
+@del pipet
 @c-- pipet.c
-@rename *.com *.kex
+@rename *.com *.
 @del warning.txt
 @pause

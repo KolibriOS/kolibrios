@@ -15,6 +15,7 @@
 #include "..\lib\collection.h"
 #include "..\lib\menu.h"
 #include "..\lib\random.h"
+#include "..\lib\clipboard.h"
 
 //*.obj libraries
 #include "..\lib\obj\box_lib.h"
@@ -30,7 +31,7 @@
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.71";
+char version[]="Текстовый браузер 1.72";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -40,10 +41,11 @@ char rmb_menu[] =
 "Посмотреть исходник
 Редактировать исходник
 История
-Очистить кэш картинок
 Менеджер загрузок";
+char link_menu[] =
+"Копировать ссылку";
 #else
-char version[]="Text-based Browser 1.71";
+char version[]="Text-based Browser 1.72";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -53,13 +55,11 @@ char rmb_menu[] =
 "View source
 Edit source
 History
-Free image cache
 Download Manager";
+char link_menu[] =
+"Copy link";
 #endif
 
-char link_menu[] =
-"Copy link
-Download link";
 
 #define URL_SERVICE_HISTORY "WebView://history"
 #define URL_SERVICE_HOME "WebView://home"
@@ -96,10 +96,9 @@ enum {
 	VIEW_SOURCE=1100,
 	EDIT_SOURCE,
 	VIEW_HISTORY,
-	FREE_IMG_CACHE,
+	//FREE_IMG_CACHE,
 	DOWNLOAD_MANAGER,
-	COPY_LINK=1200,
-	DOWNLOAD_LINK
+	COPY_LINK=1200
 };
 
 #include "..\TWB\TWB.c"
@@ -130,7 +129,6 @@ void main()
 	loop() switch(WaitEvent())
 	{
 		case evMouse:
-			if (!CheckActiveProcess(Form.ID)) break;
 			edit_box_mouse stdcall (#address_box);
 			mouse.get();
 			if (WB1.list.MouseOver(mouse.x, mouse.y))
@@ -361,11 +359,11 @@ void ProcessEvent(dword id__)
 			}
 			else RunProgram("/rd/1/tinypad", #URL);
 			return;
-		case FREE_IMG_CACHE:
-			ImgCache.Free();
-			notify(IMAGES_CACHE_CLEARED);
-			WB1.DrawPage();
-			return;
+		// case FREE_IMG_CACHE:
+		// 	ImgCache.Free();
+		// 	notify(IMAGES_CACHE_CLEARED);
+		// 	WB1.DrawPage();
+		// 	return;
 		case VIEW_HISTORY:
 			strcpy(#URL, URL_SERVICE_HISTORY);
 			OpenPage();
@@ -376,9 +374,12 @@ void ProcessEvent(dword id__)
 				CreateThread(#Downloader,#downloader_stak+4092);
 			}
 			return;
+		case COPY_LINK:
+			Clipboard__CopyText(PageLinks.GetURL(PageLinks.active));
+			notify("'URL copied to clipboard'O");
+			return;
 	}
 }
-
 
 void StopLoading()
 {

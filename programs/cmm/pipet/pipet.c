@@ -11,10 +11,9 @@
 //===================================================//
 
 proc_info Form;
-Clipboard clipboard;
 dword pick_active = true;
 dword picked_color = 0;
-char picked_color_string[10];
+char picked_color_string[11]="0x00111222\0";
 #define FORM_W 167
 #define FORM_H 60
 #define COLOR_BLOCK_SIZE 42
@@ -55,7 +54,7 @@ void main()
 		case evButton:
 			btn = GetButtonID();
 			if (btn == BUTTON_ID_CLOSE) ExitProcess();
-			if (btn == BUTTON_ID_COPY) EventCopyIntoSystemBuffer();
+			if (btn == BUTTON_ID_COPY) EventCopyHex();
 			if (btn == BUTTON_ID_PICK) pick_active = true;
 			break;
 
@@ -63,7 +62,7 @@ void main()
 			GetKeys();
 			if (key_scancode == SCAN_CODE_ESC) ExitProcess();
 			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) 
-				if (key_scancode==SCAN_CODE_KEY_C) EventCopyIntoSystemBuffer();
+				if (key_scancode==SCAN_CODE_KEY_C) EventCopyHex();
 			break;
 		 
 		case evReDraw:
@@ -113,21 +112,7 @@ void DrawCopyButton(dword _x, _y, _w, _h, _color)
 	WriteTextCenter(_x, _h-8/2 + _y, _w, _color, "Copy");
 }
 
-struct _clipboard_pipet_data_text
+void EventCopyHex()
 {
-	dword size;
-	dword type;
-	dword encoding; //encoding 0=UTF, 1=866, 2=1251
-	char color_text[7];
-};
-
-void EventCopyIntoSystemBuffer()
-{
-	_clipboard_pipet_data_text clipboard_buf;
-	clipboard_buf.size = 19;
-	clipboard_buf.type = SLOT_DATA_TYPE_TEXT;
-	clipboard_buf.encoding = 1; 
-	strcpy(#clipboard_buf.color_text, #picked_color_string+4);
-	clipboard_buf.color_text[7] = NULL;
-	clipboard.SetSlotData(clipboard_buf.size, #clipboard_buf);
+	Clipboard__CopyText(#picked_color_string+4);
 }

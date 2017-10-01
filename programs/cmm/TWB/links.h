@@ -84,7 +84,7 @@ bool LinksArray::HoverAndProceed(dword mx, my)
 				return false;
 			}
 			if (mouse.pkm) && (mouse.up) { 
-			//	EventShowLinkMenu(mouse.x, mouse.y);
+				EventShowLinkMenu(mouse.x, mouse.y);
 				return false;
 			}
 			if (active==i) return false;
