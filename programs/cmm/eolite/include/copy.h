@@ -5,8 +5,6 @@ byte cut_active=0;
 
 enum {NOCUT, CUT};
 
-Clipboard clipboard;
-
 void setElementSelectedFlag(dword n, int state) {
 	dword selected_offset = file_mas[n]*304 + buf+32 + 7;
 	ESBYTE[selected_offset] = state;
@@ -53,7 +51,7 @@ void Copy(dword pcth, char cut)
 		}
 	}
 	if (selected_count==1) setElementSelectedFlag(files.cur_y, false);
-	clipboard.SetSlotData(size_buf, buff_data);
+	Clipboard__SetSlotData(size_buf, buff_data);
 	cut_active = cut;
 	free(buff_data);
 }
@@ -73,7 +71,7 @@ void PasteThread()
 	file_count_copy = 0;
 	copy_bar.value = 0; 
 	
-	buf = clipboard.GetSlotData(clipboard.GetSlotCount()-1);
+	buf = Clipboard__GetSlotData(Clipboard__GetSlotCount()-1);
 	if (DSDWORD[buf+4] != 3) return;
 	paste_elements_count = ESINT[buf+8];
 	path_offset = buf + 10;

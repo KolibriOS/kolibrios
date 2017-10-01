@@ -177,5 +177,11 @@ void StopConnect(dword message) {
 	Close(socketnum);
 }
 
+void EventShowLinkMenu(dword _left, _top)
+{
+	//do nothing, stub
+	return;
+}
+
 stop:
 
