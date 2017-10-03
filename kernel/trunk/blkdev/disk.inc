@@ -1509,9 +1509,11 @@ dyndisk_handler:
         pop     edi ebp
         mov     byte [edi], '/'
         popd    [ebp] edi esi ebx
+        add     edi, 2
         test    eax, eax
         jz      .errorRename
-        add     edi, 2
+        cmp     byte [edi], 0
+        jz      .errorRename
 .callFS:
         pop     eax ebp
         call    eax
