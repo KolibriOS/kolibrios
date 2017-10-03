@@ -1,7 +1,7 @@
-//Calypte 0.3 - Leency
+//Calypte 0.35 - Leency
 //Calypte 0.15 - Punk Joker
 
-#define MEMSIZE 1024*80
+#define MEMSIZE 1024*100
 
 #ifndef AUTOBUILD
 	#include "lang.h--"
@@ -19,13 +19,16 @@
 #include "../lib/gui.h"
 #include "../lib/list_box.h"
 #include "../lib/menu.h"
+//#include "../lib/collection.h"
+
 
 #include "../lib/obj/iconv.h"
-//#include "../lib/obj/box_lib.h" //TO CHECK: boxlib doesn't work well with opendial
+#include "../lib/obj/box_lib.h"
+#include "../lib/obj/libio_lib.h" //TO CHECK: why opendial is a peace of shit!
 #include "../lib/obj/proc_lib.h"
-#include "../lib/obj/libio_lib.h"
 
 #include "../lib/patterns/simple_open_dialog.h"
+
 
 char default_dir[] = "/rd/1";
 od_filter filter2 = { "TXT",0};
@@ -93,6 +96,7 @@ char win_title[4096] = TITLE;
 #define BOTPANELH 10
 #define WIN_W 750
 #define WIN_H 550
+#define SCROLL_SIZE 15
 
 proc_info Form;
 llist rows;
@@ -105,6 +109,11 @@ dword bufpointer;
 dword bufsize;
 dword draw_sruct;
 
+scroll_bar scroll_v = { SCROLL_SIZE,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
+scroll_bar scroll_h = { SCROLL_SIZE,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
+
+//collection s;
+
 //===================================================//
 //                                                   //
 //                       CODE                        //
@@ -113,7 +122,7 @@ dword draw_sruct;
 
 void InitDlls()
 {
-	//load_dll(boxlib,    #box_lib_init,   0);
+	load_dll(boxlib,    #box_lib_init,   0);
 	load_dll(libio,     #libio_init,     1);
 	load_dll(iconv_lib, #iconv_open,     0);
 	load_dll(Proc_lib,  #OpenDialog_init,0);
@@ -143,26 +152,12 @@ void main()
 		case evButton:
 			id=GetButtonID();               
 			if (id==1) ExitProcess();
-			if (id==MENU_ID_FILE) menu.show(
-				Form.left+5 + menu_file_x, 
-				Form.top+skin_height + TOPPANELH, 
-				140, 
-				#menu_file_list, 
-				MENU_ID_FILE);
-
-			if (id==MENU_ID_ENCODING) menu.show(
-				Form.left+5 + menu_encoding_x, 
-				Form.top+skin_height + TOPPANELH, 
-				120, 
-				#menu_encoding_list, 
-				MENU_ID_ENCODING);
-
-			if (id==MENU_ID_REOPEN) menu.show(
-				Form.left+5 + menu_reopen_x, 
-				Form.top+skin_height + TOPPANELH, 
-				120, 
-				#menu_reopen_list, 
-				MENU_ID_REOPEN);
+			if (id==MENU_ID_FILE) 
+				EventShowMenu(menu_file_x, #menu_file_list, MENU_ID_FILE, NULL);
+			if (id==MENU_ID_ENCODING) 
+				EventShowMenu(menu_encoding_x, #menu_encoding_list, MENU_ID_ENCODING, encoding+1);
+			if (id==MENU_ID_REOPEN) 
+				EventShowMenu(menu_reopen_x, #menu_reopen_list, MENU_ID_REOPEN, NULL);
 			break;
 		
 		case evKey:
@@ -201,14 +196,26 @@ void main()
    }
 }
 
-void ReopenFileIn(dword app)
+void ReopenFileIn(dword _app)
 {
-	RunProgram(app, #param);
+	RunProgram(_app, #param);
+}
+
+void EventShowMenu(dword _menu_item_x, _menu_list, _id, _selected)
+{
+	menu.selected = _selected;
+	menu.show(
+	Form.left+5 + _menu_item_x, 
+	Form.top+skin_height + TOPPANELH, 
+	140, 
+	_menu_list, 
+	_id);	
 }
 
 void EventOpenFile()
 {
 	OpenDialog_start stdcall (#o_dialog);
+	if (!o_dialog.status) return;
 	OpenFile(#openfile_path);
 	Prepare();
 	draw_window();
@@ -216,6 +223,7 @@ void EventOpenFile()
 
 void EventCloseFile()
 {
+	if (!bufpointer) return;
 	strcpy(#win_title, TITLE);
 	FreeBuf();
 	draw_window();	
@@ -266,17 +274,14 @@ void draw_window()
 		
 		rows.no_selection = true;
 		rows.SetFont(8, 14, 0x90);
-		rows.SetSizes(0, TOPPANELH, Form.cwidth, Form.cheight - TOPPANELH - BOTPANELH, 20);
+		rows.SetSizes(0, TOPPANELH, Form.cwidth - SCROLL_SIZE, Form.cheight - TOPPANELH - BOTPANELH, 20);
 		rows.column_max = rows.w / rows.font_w;
 
 		if (bufpointer) Prepare();
 		rows.CheckDoesValuesOkey();
 	}
-	if (bufpointer) 
-	{
-		DrawText();
-	}
-	else DrawBar(0, TOPPANELH, Form.cwidth, Form.cheight-BOTPANELH-TOPPANELH, 0xFFFFFF);
+	DrawRectangle(rows.x+rows.w-1, rows.y, SCROLL_SIZE, rows.h-1, 0xEEEeee);
+	DrawText();
 }
 
 void OpenFile(dword _path)
@@ -301,6 +306,7 @@ void OpenFile(dword _path)
 void FreeBuf()
 {
 	int i;
+	if (!bufpointer) return;
 	for (i=0; i<rows.count; i++)
 	{
 		mem_Free(DSDWORD[i*4+draw_sruct]);
@@ -374,7 +380,7 @@ void Prepare()
 
 void DrawText()
 {
-	int i, top;
+	int i=0, top;
 
 	if (rows.count<rows.visible) top = rows.count;
 	else
@@ -383,12 +389,25 @@ void DrawText()
 		else top = rows.visible;
 	}
 
-	for (i=0; i<top; i++)
+	if (bufpointer) for (i=0; i<top; i++)
 	{
-		DrawBar(0, i*rows.item_h+TOPPANELH, Form.cwidth, rows.item_h, 0xFFFFFF);
+		DrawBar(0, i*rows.item_h+TOPPANELH, rows.w, rows.item_h, 0xFFFFFF);
 		WriteText(2, i*rows.item_h+TOPPANELH, 0x90, 0x000000, DSDWORD[i+rows.first*4+draw_sruct]);
 	}
 	DrawBar(0, i*rows.item_h+rows.y, rows.w, -i*rows.item_h + rows.h, 0xFFFfff);
+	DrawVerticalScroll();
+}
+
+void DrawVerticalScroll()
+{
+	scroll_v.max_area = rows.count;
+	scroll_v.cur_area = rows.visible;
+	scroll_v.position = rows.first;
+	scroll_v.start_y = rows.y;
+	scroll_v.size_y = rows.h;
+	scroll_v.start_x = rows.w + rows.x -1;
+	scroll_v.all_redraw = 0;
+	scrollbar_v_draw(#scroll_v);
 }
 
 stop:

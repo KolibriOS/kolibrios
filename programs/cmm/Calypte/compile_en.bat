@@ -4,7 +4,6 @@
 @del Calypte
 cls
 c-- Calypte.c
-@kpack Calypte.com
 @rename Calypte.com Calypte
 @del warning.txt
 @del lang.h--

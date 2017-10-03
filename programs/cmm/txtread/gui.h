@@ -14,6 +14,5 @@ void DrawScroller()
 	scroll.start_x = list.x + list.w;
 	scroll.start_y = list.y;
 	scroll.size_y = list.h;
-	scroll.start_x = list.x + list.w;
 	scrollbar_v_draw(#scroll);
 }

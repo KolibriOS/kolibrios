@@ -454,7 +454,6 @@ void TWebBrowser::DrawScroller()
 	scroll_wv.start_x = list.x + list.w;
 	scroll_wv.start_y = list.y;
 	scroll_wv.size_y = list.h;
-	scroll_wv.start_x = list.w + list.x;
 	scrollbar_v_draw(#scroll_wv);
 }
 //============================================================================================

@@ -277,6 +277,7 @@ void draw_window()
 	DrawToolbarButton(RUN_EDIT,        135);
 	DrawToolbarButton(SHOW_INFO,       Form.cwidth - 34);
 	
+	
 	if ((Form.cwidth-scroll.size_x-1 == list.w) && 
 		(Form.cheight-TOOLBAR_H == list.h) && 
 		(list.count) 
