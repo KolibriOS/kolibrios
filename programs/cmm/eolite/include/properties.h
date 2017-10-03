@@ -16,8 +16,6 @@
 	?define PR_T_SYSTEM "Системный"
 	?define PR_T_ONLY_READ "Только чтение"
 	?define SET_BYTE_LANG "байт"
-	?define TAB_T_BASIC "Общие"
-	?define TAB_T_DETAILS "Подробнее"
 #else // Apply to all subfolders
 	?define WINDOW_TITLE_PROPERTIES "Properties"
 	?define BTN_CLOSE "Close"
@@ -36,24 +34,15 @@
 	?define PR_T_SYSTEM "System"
 	?define PR_T_ONLY_READ "Read-only"
 	?define SET_BYTE_LANG "byte"
-	?define TAB_T_BASIC "Basic"
-	?define TAB_T_DETAILS "Details"
 #endif
 
-dword mouse_ddd2;
-char path_to_file[4096]="\0";
-char file_name2[4096]="\0";
-edit_box file_name_ed = {230,50,57,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,4098,#file_name2,#mouse_ddd2, 1000000000000000b,2,2};
-edit_box path_to_file_ed = {160,120,79,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,4098,#path_to_file,#mouse_ddd2, 1000000000000000b,2,2};
+dword mouse_2;
+char path_to_file[4096];
+char file_name2[4096];
+edit_box file_name_ed = {230,55,35,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(file_name2),#file_name2,#mouse_2, 1000000000000000b,2,2};
+edit_box path_to_file_ed = {160,120,79,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,sizeof(path_to_file),#path_to_file,#mouse_2, 1000000000000000b,2,2};
 frame flags_frame = { 0, NULL, 10, 92, 212, 0x000111, 0xFFFfff, 1, FLAGS, 0, 1, 12, 0x000111, 0xFFFFFF };
 
-//NewElement options
-enum {
-	TAB_BASIC, 
-	TAB_DETAILS, 
-}; 
-
-byte active_tab;
 int file_count, dir_count, size_dir;
 char folder_info[200];
 dword element_size;
@@ -274,16 +263,6 @@ void properties_dialog()
 					}
 					break;
 				}
-				if (id==12)
-				{
-					active_tab = TAB_BASIC;
-					DrawPropertiesWindow();
-				}
-				if (id==13)
-				{
-					active_tab = TAB_DETAILS;
-					DrawPropertiesWindow();
-				}
 				if (id==20)
 				{
 					atr_readonly ^= 1;
@@ -333,7 +312,6 @@ void properties_dialog()
 					}
 					break;
 				}
-				EAX = key_editbox;
 				edit_box_key stdcall(#file_name_ed);
 				edit_box_key stdcall(#path_to_file_ed);
 				break;
@@ -369,67 +347,65 @@ void DrawPropertiesWindow()
 		file_name_ed.color = 0xffffff;
 	}
 	GetProcessInfo(#settings_form, SelfInfo);
-	DrawFlatButton(10, 5, 12, TAB_T_BASIC);
-	if (exif_load==1) DrawFlatButton(92, 5, 13, TAB_T_DETAILS);
+
 	DrawFlatButton(settings_form.cwidth - 96, settings_form.cheight-34, 10, BTN_CLOSE);
 	DrawFlatButton(settings_form.cwidth -208, settings_form.cheight-34, 11, BTN_APPLY);
 	
-	if (active_tab == TAB_BASIC)
+	WriteText(10, 78, 0x90, system.color.work_text, PR_T_DEST);
+	edit_box_draw stdcall (#path_to_file_ed);
+
+	WriteText(10, 97, 0x90, system.color.work_text, PR_T_SIZE);
+	
+	if (selected_count)
 	{
-		WriteText(10, 78, 0x90, system.color.work_text, PR_T_DEST);
-		edit_box_draw stdcall (#path_to_file_ed);
-	
-		WriteText(10, 97, 0x90, system.color.work_text, PR_T_SIZE);
-		
-		if (selected_count)
-		{
-			DrawIconByExtension(NULL, NULL, 18, 49, system.color.work);
-			sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
-			WriteText(50, 49, 0x90, system.color.work_text, #folder_info);
-			sprintf(#element_size_label,"%s (%d %s)",ConvertSize64(size_dir, NULL),size_dir,SET_BYTE_LANG);
-			WriteText(120, 97, 0x90, system.color.work_text, #element_size_label);
-		}
-		else
-		{
-			if ( file_info_general.isfolder )
-					DrawIconByExtension(NULL, "<DIR>", 18, 49, system.color.work);
-			else {
-				sprintf(#temp_path,"%s/%s",#path,#file_name2);
-				debugln(#temp_path);
-				ext1 = strrchr(#file_name2,'.');
-				if (ext1) ext1 += #file_name2;
-				DrawIconByExtension(#temp_path, ext1, 18, 49, system.color.work);
-			}
-			WriteText(50, 40, 0x90, system.color.work_text, PR_T_NAME);                          
-			edit_box_draw stdcall (#file_name_ed);
-			
-			if (!itdir) element_size = file_info_general.sizelo;
-			else
-			{
-				WriteText(10,116, 0x90, system.color.work_text, PR_T_CONTAINS);                              
-				sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
-				WriteText(120, 116, 0x90, system.color.work_text, #folder_info);
-				element_size = size_dir;
-			}
-			WriteTextLines(10,  136, 0x90, system.color.work_text, CREATED_OPENED_MODIFIED, 20);
-			DrawDate(120,  136, system.color.work, #file_info_general.datecreate);
-			DrawDate(120, 156, system.color.work, #file_info_general.datelastaccess);
-			DrawDate(120, 176, system.color.work, #file_info_general.datelastedit);
-	
-			sprintf(#element_size_label,"%s (%d %s)",ConvertSize64(element_size, NULL),element_size,SET_BYTE_LANG);
-			WriteText(120, 99, 0x90, system.color.work_text, #element_size_label);
-		}
-		flags_frame.size_x = - flags_frame.start_x * 2 + settings_form.cwidth - 2;
-		flags_frame.font_color = system.color.work_text;
-		flags_frame.ext_col = system.color.work_graph;
-		flags_frame.font_backgr_color = system.color.work;
-		frame_draw stdcall (#flags_frame);
-		DrawPropertiesCheckBoxes();
+		PropertiesDrawIcon(NULL, NULL);
+		sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
+		WriteText(file_name_ed.left+4, 30, 0x90, system.color.work_text, #folder_info);
+		sprintf(#element_size_label,"%s (%d %s)",ConvertSize64(size_dir, NULL),size_dir,SET_BYTE_LANG);
+		WriteText(120, 97, 0x90, system.color.work_text, #element_size_label);
 	}
 	else
 	{
-		WriteText(10, 78, 0x90, system.color.work_text, "EXIF");
+		if ( file_info_general.isfolder )
+				PropertiesDrawIcon(NULL, "<DIR>");
+		else {
+			sprintf(#temp_path,"%s/%s",#path,#file_name2);
+			ext1 = strrchr(#file_name2,'.');
+			if (ext1) ext1 += #file_name2;
+			PropertiesDrawIcon(#temp_path, ext1);
+		}
+		WriteText(file_name_ed.left+4, 20, 0x80, system.color.work_text, PR_T_NAME);                          
+		edit_box_draw stdcall (#file_name_ed);
+		
+		if (!itdir) element_size = file_info_general.sizelo;
+		else
+		{
+			WriteText(10,116, 0x90, system.color.work_text, PR_T_CONTAINS);                              
+			sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
+			WriteText(120, 116, 0x90, system.color.work_text, #folder_info);
+			element_size = size_dir;
+		}
+		WriteTextLines(10,  136, 0x90, system.color.work_text, CREATED_OPENED_MODIFIED, 20);
+		DrawDate(120,  136, system.color.work, #file_info_general.datecreate);
+		DrawDate(120, 156, system.color.work, #file_info_general.datelastaccess);
+		DrawDate(120, 176, system.color.work, #file_info_general.datelastedit);
+
+		sprintf(#element_size_label,"%s (%d %s)",ConvertSize64(element_size, NULL),element_size,SET_BYTE_LANG);
+		WriteText(120, 99, 0x90, system.color.work_text, #element_size_label);
 	}
+	flags_frame.size_x = - flags_frame.start_x * 2 + settings_form.cwidth - 2;
+	flags_frame.font_color = system.color.work_text;
+	flags_frame.ext_col = system.color.work_graph;
+	flags_frame.font_backgr_color = system.color.work;
+	frame_draw stdcall (#flags_frame);
+	DrawPropertiesCheckBoxes();
+}
+
+void PropertiesDrawIcon(dword file_path, extension)
+{
+	#define ICON_PADDING 10
+	DrawBar(20-ICON_PADDING, 30-ICON_PADDING-1, ICON_PADDING*2+16, ICON_PADDING*2+16, system.color.work_light);
+	DrawIconByExtension(file_path, extension, 20, 30, system.color.work_light);
 }
 
 void DrawPropertiesCheckBoxes()

@@ -142,6 +142,16 @@ void main()
 	LoadIniSettings();
 	SystemDiscs.Get();
 	SetAppColors();
+
+	//-p just show file/folder properties dialog
+	if (param) && (param[0]=='-') && (param[1]=='p')
+	{
+		strcpy(#file_path, #param + 3);
+		strcpy(#file_name, #param + strrchr(#param, '/'));
+		properties_dialog();
+		ExitProcess();	
+	}
+
 	if (param)
 	{
 		if (strlen(#param)>1) && (param[strlen(#param)-1]=='/') param[strlen(#param)-1]=NULL; //no "/" in the end
@@ -154,7 +164,7 @@ void main()
 		{
 			notify(T_NOTIFY_APP_PARAM_WRONG);
 		}
-	}		
+	}
 	
 	Open_Dir(#path,ONLY_OPEN);
 	strcpy(#inactive_path, #path);

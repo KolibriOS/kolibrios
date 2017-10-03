@@ -135,7 +135,7 @@ void LoadIniSettings()
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "ShowStatusBar",    1); show_status_bar = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "RealFileNamesCase", 1); real_files_names_case = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "InfoAfterCopy",     0); info_after_copy = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #config_section, "FontSize",         12); kfont.size.pt = EAX;
+	ini_get_int stdcall   (eolite_ini_path, #config_section, "FontSize",         13); kfont.size.pt = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "TwoPanels",         0); two_panels = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "LineHeight",       19); files.item_h = EAX;
 	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinX", 200); WinX = EAX;
