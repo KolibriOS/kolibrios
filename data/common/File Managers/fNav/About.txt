@@ -50,6 +50,7 @@ List item actions:
     Leftctrl + X        cut
     Leftctrl + C        copy
     Leftctrl + V        insert
+    Leftctrl + R        rename    
     Delete              delete
     Insert              create file
     RightShift + Insert create folder

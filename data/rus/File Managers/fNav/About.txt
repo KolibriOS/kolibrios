@@ -50,6 +50,7 @@ fNav - файловый навигатор для о.с. Колибри.
     LeftCtrl + X        вырезать
     LeftCtrl + C        копировать
     LeftCtrl + V        вставить
+    LeftCtrl + R        переименовать    
     Delete              удалить
     Insert              создать файл
     RightShift + Insert создать папку
