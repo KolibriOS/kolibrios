@@ -61,6 +61,7 @@ int encoding(char *what) {
 	if (!strcmp(what,"CP866")) return CP866;
 	if (!strcmp(what,"CP1251")) return CP1251;
 	if (!strcmp(what,"windows-1252")) return CP1252;
+	if (!strcmp(what,"Windows-1252")) return CP1252;
 	if (!strcmp(what,"CP1252")) return CP1252;
 	if (!strcmp(what,"KOI8-RU")) return KOI8_RU;
 	if (!strcmp(what,"ISO8859-5")) return ISO8859_5;
@@ -71,8 +72,10 @@ int encoding(char *what) {
 
 iconv_t iconv_open(const char *tocode, const char *fromcode) {
 	int to, from;
+
 	if ((to=encoding(tocode))==-1) return -1;
 	if ((from=encoding(fromcode))==-1) return -1;
+
 	to=to<<16&0xFFFF0000;
 	from=from&0xFFFF;
 	return to+from;
@@ -158,6 +161,7 @@ size_t iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft,
 		
 		(*inbytesleft)-=converted;
 		(*outbytesleft)-=written;
+		(*outbuf)+=written;
 		count1+=converted;
 		count2+=written;
 	}
