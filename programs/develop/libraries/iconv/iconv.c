@@ -1,4 +1,4 @@
-//#include <string.h>
+#include <string.h>
 //#include <stdio.h>
 typedef unsigned int size_t;
 #define NULL ((void*)0)
@@ -30,22 +30,12 @@ typedef int iconv_t;
 #define ISO8859_5 4
 #define UTF_8 5
 
-
-int strcmp (const char* a, const char* b)
-{
-	return (*a && *b && (*a == *b)) ? ((*(a+1) || *(b+1)) ? (strcmp(a+1, b+1)) : (0)) : ((*a > *b) ? (1) : (-1));
-}
-
-
-
-
 #include "cp866.h"
 #include "cp1251.h"
 #include "cp1252.h"
 #include "koi8_ru.h"
 #include "iso8859_5.h"
 #include "utf8.h"
-
 
 int encoding(char *what) {
 
@@ -58,14 +48,13 @@ int encoding(char *what) {
 	  }
 	}
 
-	if (!strcmp(what,"CP866")) return CP866;
-	if (!strcmp(what,"CP1251")) return CP1251;
-	if (!strcmp(what,"windows-1252")) return CP1252;
-	if (!strcmp(what,"Windows-1252")) return CP1252;
-	if (!strcmp(what,"CP1252")) return CP1252;
-	if (!strcmp(what,"KOI8-RU")) return KOI8_RU;
-	if (!strcmp(what,"ISO8859-5")) return ISO8859_5;
-	if (!strcmp(what,"UTF-8")) return UTF_8;
+	if (!strcasecmp(what,"CP866")) return CP866;
+	if (!strcasecmp(what,"CP1251")) return CP1251;
+	if (!strcasecmp(what,"windows-1252")) return CP1252;
+	if (!strcasecmp(what,"CP1252")) return CP1252;
+	if (!strcasecmp(what,"KOI8-RU")) return KOI8_RU;
+	if (!strcasecmp(what,"ISO8859-5")) return ISO8859_5;
+	if (!strcasecmp(what,"UTF-8")) return UTF_8;
 	return -1;
 }
 
