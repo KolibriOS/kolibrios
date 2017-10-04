@@ -12,6 +12,7 @@ public EXPORTS
 section '.flat' code readable align 16
 include '../../../../macros.inc'
 ;include '../../../../proc32.inc'
+include '../../../../KOSfuncs.inc'
 include 'opendial.mac'
 include 'colrdial.mac'
 ;include 'debug.inc'
