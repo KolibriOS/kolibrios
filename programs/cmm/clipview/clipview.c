@@ -158,16 +158,6 @@ void SelectList_DrawLine(dword i)
 	WriteText(select_list.x+236, yyy+select_list.text_y, select_list.font_type, text_color, #line_text);
 }
 
-
-
-replace_char(dword in_str, char from_char, to_char, int length) {
-	int i;
-	for (i=0; i<length; i++) {
-		if (ESBYTE[in_str+i] == from_char) ESBYTE[in_str+i] = to_char;
-	}
-	ESBYTE[in_str+length]=0;
-}
-
 int SaveSlotContents(dword size, off) {
 	EAX = WriteFile(size, off, DEFAULT_SAVE_PATH);
 	if (!EAX)
