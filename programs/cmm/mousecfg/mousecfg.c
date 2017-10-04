@@ -9,7 +9,7 @@
 #include "..\lib\mem.h" 
 #include "..\lib\file_system.h"
 #include "..\lib\gui.h"
-#include "..\lib\obj\libio_lib.h"
+#include "..\lib\obj\libio.h"
 #include "..\lib\obj\box_lib.h"
 #include "..\lib\obj\libini.h"
 #include "..\lib\patterns\restart_process.h"

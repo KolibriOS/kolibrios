@@ -233,6 +233,18 @@ inline fastcall int strlcpy(dword ESI, EDI, EBX)
     return 0;
 }
 
+:void strncpy(dword dst, src, len)
+{
+	while (len)
+	{
+		ESBYTE[dst] = ESBYTE[src];
+		dst++;
+		src++;
+		len--;
+	}
+	ESBYTE[dst]=0;
+}
+
 /*
 inline fastcall void strtrim( ESI)
 {
@@ -888,6 +900,15 @@ inline signed strcoll(dword text1,text2)
 	}
 	return 0;
 }
+
+replace_char(dword in_str, char from_char, to_char, int length) {
+	int i;
+	for (i=0; i<length; i++) {
+		if (ESBYTE[in_str+i] == from_char) ESBYTE[in_str+i] = to_char;
+	}
+	ESBYTE[in_str+length]=0;
+}
+
 
 #define strnmov strmovn
 #define stricmp strcmpi

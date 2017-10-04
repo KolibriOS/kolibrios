@@ -2,7 +2,7 @@
 #define INCLUDE_LIBIMG_LOAD_SKIN_H
 
 #ifndef INCLUDE_LIBIMG_H
-#include "../lib/obj/libimg_lib.h"
+#include "../lib/obj/libimg.h"
 #endif
 
 :struct libimg_image {

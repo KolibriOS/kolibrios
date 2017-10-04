@@ -8,8 +8,8 @@
 #include "..\lib\gui.h"
 #include "..\lib\random.h"
 
-#include "..\lib\obj\libio_lib.h"
-#include "..\lib\obj\libimg_lib.h"
+#include "..\lib\obj\libio.h"
+#include "..\lib\obj\libimg.h"
 #include "..\lib\patterns\libimg_load_skin.h"
 
 proc_info Form;

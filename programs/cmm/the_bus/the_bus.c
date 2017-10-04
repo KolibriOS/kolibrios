@@ -15,8 +15,8 @@ Copyright (C) 2008 O.Bogomaz
 #include "..\lib\kolibri.h"
 #include "..\lib\random.h"
 
-#include "..\lib\obj\libio_lib.h"
-#include "..\lib\obj\libimg_lib.h"
+#include "..\lib\obj\libio.h"
+#include "..\lib\obj\libimg.h"
 #include "..\lib\patterns\libimg_load_skin.h"
 
 libimg_image menu;

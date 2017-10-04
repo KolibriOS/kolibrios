@@ -15,7 +15,7 @@
 #endif
 
 #ifndef INCLUDE_LIBIO_H
-#include "../lib/obj/libio_lib.h"
+#include "../lib/obj/libio.h"
 #endif
 
 :byte init_imglib_check;

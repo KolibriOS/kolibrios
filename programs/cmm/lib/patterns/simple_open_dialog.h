@@ -1,15 +1,17 @@
 struct od_filter
-{
-	dword size;
-	byte end;
-};
+ {
+ 	dword size; //size = len(#ext) + sizeof(dword)
+ 	char ext[16];
+ };
+
 
 proc_info pr_inf;
 char communication_area_name[] = "FFFFFFFF_open_dialog";
-char opendir_path[4096];
+char opendir_path[3072];
 char open_dialog_path[] = "/rd/1/File managers/opendial";
 char openfile_path[4096];
-char filename_area[256];
+char filename_area[1024];
+
 
 opendialog o_dialog = {
 	0,

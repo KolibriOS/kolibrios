@@ -8,8 +8,8 @@ SOFTWARE CENTER v2.8
 #include "..\lib\io.h"
 #include "..\lib\gui.h"
 
-#include "..\lib\obj\libio_lib.h"
-#include "..\lib\obj\libimg_lib.h"
+#include "..\lib\obj\libio.h"
+#include "..\lib\obj\libimg.h"
 #include "..\lib\obj\libini.h"
 #include "..\lib\kfont.h"
 #include "..\lib\list_box.h"

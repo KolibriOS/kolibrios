@@ -16,8 +16,8 @@
 //*.obj libraries
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/network.h"
-#include "../lib/obj/libio_lib.h"
-#include "../lib/obj/libimg_lib.h"
+#include "../lib/obj/libio.h"
+#include "../lib/obj/libimg.h"
 #include "../lib/obj/netcode.h"
 #include "../lib/obj/iconv.h"
 //patternts

@@ -1,12 +1,11 @@
 //Calypte 0.35 - Leency
 //Calypte 0.15 - Punk Joker
 
-#define MEMSIZE 1024*100
+#define MEMSIZE 1024*200
 
 #ifndef AUTOBUILD
 	#include "lang.h--"
 #endif
-
 
 //===================================================//
 //                                                   //
@@ -19,25 +18,24 @@
 #include "../lib/gui.h"
 #include "../lib/list_box.h"
 #include "../lib/menu.h"
-//#include "../lib/collection.h"
-
+#include "../lib/collection.h"
 
 #include "../lib/obj/iconv.h"
 #include "../lib/obj/box_lib.h"
-#include "../lib/obj/libio_lib.h" //TO CHECK: why opendial is a peace of shit!
+#include "../lib/obj/libio.h"
 #include "../lib/obj/proc_lib.h"
+//#include "../lib/obj/libini.h"
 
 #include "../lib/patterns/simple_open_dialog.h"
-
-
-char default_dir[] = "/rd/1";
-od_filter filter2 = { "TXT",0};
 
 //===================================================//
 //                                                   //
 //                       DATA                        //
 //                                                   //
 //===================================================//
+
+char default_dir[] = "/rd/1";
+od_filter filter2 = { 8, "TXT\0\0" };
 
 /*=========  MENU  ==========*/
 ?define MENU1 "File"
@@ -89,7 +87,7 @@ int menu_encoding_x = NULL;
 int menu_reopen_x = NULL;
 /*======== MENU END ==========*/
 
-#define TITLE "Calypte v0.3"
+#define TITLE "Calypte v0.37"
 char win_title[4096] = TITLE;
 
 #define TOPPANELH 23
@@ -107,12 +105,11 @@ dword old_width,old_height;
 
 dword bufpointer;
 dword bufsize;
-dword draw_sruct;
 
 scroll_bar scroll_v = { SCROLL_SIZE,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 scroll_bar scroll_h = { SCROLL_SIZE,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
-//collection s;
+collection s;
 
 //===================================================//
 //                                                   //
@@ -120,22 +117,27 @@ scroll_bar scroll_h = { SCROLL_SIZE,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0x
 //                                                   //
 //===================================================//
 
-void InitDlls()
-{
-	load_dll(boxlib,    #box_lib_init,   0);
-	load_dll(libio,     #libio_init,     1);
-	load_dll(iconv_lib, #iconv_open,     0);
-	load_dll(Proc_lib,  #OpenDialog_init,0);
-	OpenDialog_init stdcall (#o_dialog);
-}
-
 void main()
 {   
 	int id;
 
-	InitDlls();
+	load_dll(boxlib,    #box_lib_init,   0);
+	load_dll(libio,     #libio_init,     1);
+	//load_dll(libini,    #lib_init,       1);
+	load_dll(iconv_lib, #iconv_open,     0);
+	load_dll(Proc_lib,  #OpenDialog_init,0);
+	OpenDialog_init stdcall (#o_dialog);
+
+	if (param)
+	{
+		draw_window();
+		OpenFile(#param);
+		Prepare();
+		DrawText();
+	}
 	
-	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
+	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);	
+
 	loop()
 	{
 	  switch(WaitEvent())
@@ -171,78 +173,11 @@ void main()
 			break;
 		 
 		 case evReDraw:
-			if (menu.list.cur_y) {
-				if (menu.list.cur_y == FILE_SUBMENU_ID_OPEN) EventOpenFile();
-				if (menu.list.cur_y == FILE_SUBMENU_ID_CLOSE) EventCloseFile();
-				if (menu.list.cur_y == FILE_SUBMENU_ID_PROPERTIES) EventShowFileProperties();
-				if (menu.list.cur_y == FILE_SUBMENU_ID_EXIT) ExitProcess();
-
-				if (menu.list.cur_y > MENU_ID_ENCODING) && (menu.list.cur_y < MENU_ID_ENCODING + 10) 
-					EventChangeEncoding(menu.list.cur_y - MENU_ID_ENCODING);
-
-				if (menu.list.cur_y == FILE_SUBMENU_ID_TINYPAD) ReopenFileIn("/sys/tinypad");
-				if (menu.list.cur_y == FILE_SUBMENU_ID_TEXTEDIT) ReopenFileIn("/sys/develop/t_edit");
-				if (menu.list.cur_y == FILE_SUBMENU_ID_TEXTREAD) ReopenFileIn("/sys/txtread");
-				if (menu.list.cur_y == FILE_SUBMENU_ID_WEBVIEW) ReopenFileIn("/sys/network/webview");
-				if (menu.list.cur_y == FILE_SUBMENU_ID_FB2READ) ReopenFileIn("/sys/fb2read");
-				if (menu.list.cur_y == FILE_SUBMENU_ID_HEXVIEW) ReopenFileIn("/sys/develop/heed");
-				
-
-				menu.list.cur_y = 0;
-			};
+			if (menu.list.cur_y) EventMenuClick();
 			draw_window();
 			break;
 	  }
    }
-}
-
-void ReopenFileIn(dword _app)
-{
-	RunProgram(_app, #param);
-}
-
-void EventShowMenu(dword _menu_item_x, _menu_list, _id, _selected)
-{
-	menu.selected = _selected;
-	menu.show(
-	Form.left+5 + _menu_item_x, 
-	Form.top+skin_height + TOPPANELH, 
-	140, 
-	_menu_list, 
-	_id);	
-}
-
-void EventOpenFile()
-{
-	OpenDialog_start stdcall (#o_dialog);
-	if (!o_dialog.status) return;
-	OpenFile(#openfile_path);
-	Prepare();
-	draw_window();
-}
-
-void EventCloseFile()
-{
-	if (!bufpointer) return;
-	strcpy(#win_title, TITLE);
-	FreeBuf();
-	draw_window();	
-}
-
-void EventShowFileProperties()
-{
-char ss_param[4096];
-	if (!bufpointer) return;
-	sprintf(#ss_param, "-p %s", #param);
-	RunProgram("/sys/File managers/Eolite", #ss_param);
-}
-
-void EventChangeEncoding(dword id)
-{
-	encoding = id;
-	OpenFile(#openfile_path);
-	Prepare();
-	draw_window();
 }
 
 int DrawMenuButton(dword x,y,id,text)
@@ -257,7 +192,7 @@ int DrawMenuButton(dword x,y,id,text)
 void draw_window()
 {
 	system.color.get();
-	DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2,WIN_W,WIN_H,0x73,0xFFFFFF,#win_title,0);
+	DefineAndDrawWindow(screen.width-WIN_W/2,screen.height-WIN_H/2,WIN_W,WIN_H,0x73,0xFFFFFF,#win_title,0);
 	GetProcessInfo(#Form, SelfInfo);
 	DrawBar(0, 0, Form.cwidth, TOPPANELH-1, system.color.work);
 	DrawBar(0, TOPPANELH-1, Form.cwidth, 1, system.color.work_dark);
@@ -298,21 +233,10 @@ void OpenFile(dword _path)
 		if (ReadFile(0, bufsize, bufpointer, #param) != 0) {
 			bufpointer = 0;
 			notify("'Error opening file'-E");
+			return;
 		}
 	}
 	if (encoding!=CH_CP866) ChangeCharset(charsets[encoding], "CP866", bufpointer);
-}
-
-void FreeBuf()
-{
-	int i;
-	if (!bufpointer) return;
-	for (i=0; i<rows.count; i++)
-	{
-		mem_Free(DSDWORD[i*4+draw_sruct]);
-	}
-	draw_sruct = mem_Free(draw_sruct);
-	bufpointer = mem_Free(bufpointer);
 }
 
 enum {
@@ -342,20 +266,12 @@ void Parse(int mode)
 		}
 		if (len_str<=rows.column_max) 
 		{
-			if (mode==PARSE_DRAW_PREPARE)
-			{
-				ESDWORD[sub_pos*4+draw_sruct] = mem_Alloc(len_str+1);
-				strlcpy(DSDWORD[sub_pos*4+draw_sruct], bufpointer+pos, len_str); //-1 to do not show \n symbol				
-			}
+			if (mode==PARSE_DRAW_PREPARE) s.addn(bufpointer+pos, len_str);
 			pos += len_str+1;
 		}
 		else
 		{
-			if (mode==PARSE_DRAW_PREPARE)
-			{
-				ESDWORD[sub_pos*4+draw_sruct] = mem_Alloc(len_str+1);
-				strlcpy(DSDWORD[sub_pos*4+draw_sruct], bufpointer+pos, rows.column_max);					
-			}
+			if (mode==PARSE_DRAW_PREPARE) s.addn(bufpointer+pos, rows.column_max);
 			pos += rows.column_max;
 		}
 		sub_pos++;
@@ -366,10 +282,7 @@ void Parse(int mode)
 	if (mode == PARSE_CALCULATE_ROWS_COUNT)
 	{
 		rows.count = sub_pos;
-		draw_sruct = mem_Free(draw_sruct);
-		draw_sruct = mem_Alloc(rows.count*4);
 		Parse(PARSE_DRAW_PREPARE);
-
 	}
 }
 
@@ -392,7 +305,7 @@ void DrawText()
 	if (bufpointer) for (i=0; i<top; i++)
 	{
 		DrawBar(0, i*rows.item_h+TOPPANELH, rows.w, rows.item_h, 0xFFFFFF);
-		WriteText(2, i*rows.item_h+TOPPANELH, 0x90, 0x000000, DSDWORD[i+rows.first*4+draw_sruct]);
+		WriteText(2, i*rows.item_h+TOPPANELH, 0x90, 0x000000, s.get(i+rows.first));
 	}
 	DrawBar(0, i*rows.item_h+rows.y, rows.w, -i*rows.item_h + rows.h, 0xFFFfff);
 	DrawVerticalScroll();
@@ -409,5 +322,85 @@ void DrawVerticalScroll()
 	scroll_v.all_redraw = 0;
 	scrollbar_v_draw(#scroll_v);
 }
+
+//===================================================//
+//                                                   //
+//                      EVENTS                       //
+//                                                   //
+//===================================================//
+
+void EventMenuClick()
+{
+	switch(menu.list.cur_y)
+	{
+		//File
+		case FILE_SUBMENU_ID_OPEN: EventOpenFile(); break;
+		case FILE_SUBMENU_ID_CLOSE: EventCloseFile(); break;
+		case FILE_SUBMENU_ID_PROPERTIES: EventShowFileProperties(); break;
+		case FILE_SUBMENU_ID_EXIT: ExitProcess(); break;
+		//Encoding
+		case MENU_ID_ENCODING...MENU_ID_ENCODING+9: EventChangeEncoding(menu.list.cur_y-MENU_ID_ENCODING); break;
+		//Reopen
+		case FILE_SUBMENU_ID_TINYPAD: EventOpenFileInAnotherProgram("/sys/tinypad"); break;
+		case FILE_SUBMENU_ID_TEXTEDIT: EventOpenFileInAnotherProgram("/sys/develop/t_edit"); break;
+		case FILE_SUBMENU_ID_TEXTREAD: EventOpenFileInAnotherProgram("/sys/txtread"); break;
+		case FILE_SUBMENU_ID_WEBVIEW: EventOpenFileInAnotherProgram("/sys/network/webview"); break;
+		case FILE_SUBMENU_ID_FB2READ: EventOpenFileInAnotherProgram("/sys/fb2read"); break;
+		case FILE_SUBMENU_ID_HEXVIEW: EventOpenFileInAnotherProgram("/sys/develop/heed"); break;
+	}
+	menu.list.cur_y = 0;
+}
+
+void EventShowMenu(dword _menu_item_x, _menu_list, _id, _selected)
+{
+	menu.selected = _selected;
+	menu.show(
+	Form.left+5 + _menu_item_x, 
+	Form.top+skin_height + TOPPANELH, 
+	140, 
+	_menu_list, 
+	_id);	
+}
+
+void EventOpenFile()
+{
+	OpenDialog_start stdcall (#o_dialog);
+	if (!o_dialog.status) return;
+	OpenFile(#openfile_path);
+	Prepare();
+	draw_window();
+}
+
+void EventCloseFile()
+{
+	if (!bufpointer) return;
+	s.drop();
+	bufpointer = mem_Free(bufpointer);
+	strcpy(#win_title, TITLE);
+	draw_window();	
+}
+
+void EventShowFileProperties()
+{
+char ss_param[4096];
+	if (!bufpointer) return;
+	sprintf(#ss_param, "-p %s", #param);
+	RunProgram("/sys/File managers/Eolite", #ss_param);
+}
+
+void EventChangeEncoding(dword id)
+{
+	encoding = id;
+	OpenFile(#openfile_path);
+	Prepare();
+	draw_window();
+}
+
+void EventOpenFileInAnotherProgram(dword _app)
+{
+	RunProgram(_app, #param);
+}
+
+
 
 stop:
