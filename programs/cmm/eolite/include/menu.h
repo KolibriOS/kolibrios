@@ -66,7 +66,7 @@ void FileMenu()
 	}
 	rbmenu.w = rbmenu.w + 3 * rbmenu.font_w + 50;
 	rbmenu.h = rbmenu.count * rbmenu.item_h;
-	SetEventMask(100111b);
+	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE);
 	goto _MENU_DRAW;
 	
 	loop() switch(WaitEvent())
@@ -86,8 +86,10 @@ void FileMenu()
 				break;
 				
 		case evReDraw: _MENU_DRAW:
-				if (menu_call_mouse) DefineAndDrawWindow(mouse.x+Form.left+5, mouse.y+Form.top+GetSkinHeight(),rbmenu.w+3,rbmenu.h+6,0x01, 0, 0, 0x01fffFFF);
-				else DefineAndDrawWindow(Form.left+files.x+15, files.item_h*files.cur_y+files.y+Form.top+30,rbmenu.w+3,rbmenu.h+6,0x01, 0, 0, 0x01fffFFF);
+				if (menu_call_mouse) 
+					DefineAndDrawWindow(mouse.x+Form.left+5, mouse.y+Form.top+skin_height,rbmenu.w+3,rbmenu.h+6,0x01, 0, 0, 0x01fffFFF);
+				else 
+					DefineAndDrawWindow(Form.left+files.x+15, files.item_h*files.cur_y+files.y+Form.top+30,rbmenu.w+3,rbmenu.h+6,0x01, 0, 0, 0x01fffFFF);
 				GetProcessInfo(#MenuForm, SelfInfo);
 				DrawRectangle(0,0,rbmenu.w+1,rbmenu.h+2,col_graph);
 				DrawBar(1,1,rbmenu.w,1,0xFFFfff);

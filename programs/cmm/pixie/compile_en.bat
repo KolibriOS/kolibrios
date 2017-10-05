@@ -3,7 +3,6 @@
 
 @C-- pixie.c
 @del pixie
-@kpack pixie.com
 @rename pixie.com pixie
 @del warning.txt
 @del lang.h--

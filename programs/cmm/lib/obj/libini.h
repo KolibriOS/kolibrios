@@ -35,4 +35,43 @@ char aini_set_int[] = "ini_set_int";
 char aini_get_color[] = "ini_get_color";
 //char aini_set_color[] = "ini_set_color";
 
+//===================================================//
+//                                                   //
+//                    FUCTIONS                       //
+//                                                   //
+//===================================================//
+
+struct _ini
+{
+	dword path;
+	dword section;
+	void SetPath();
+	void SetSection();
+	int  GetInt();
+	void SetInt();
+	void GetString();
+	void SetString();
+};
+
+int _ini::GetInt(dword key, default_value)
+{
+	ini_get_int stdcall (path, section, key, default_value);
+	return EAX;
+}
+
+void _ini::SetInt(dword key, value)
+{
+	ini_set_int stdcall (path, section, key, value);
+}
+
+void _ini::GetString(dword key, dst, len, default_value)
+{
+	ini_get_str stdcall (path, section, key, dst, len, default_value);
+}
+
+void _ini::SetString(dword key, value, len)
+{
+	ini_set_str stdcall (key, value, len);
+}
+
 #endif

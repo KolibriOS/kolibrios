@@ -169,13 +169,13 @@ void main()
 	Open_Dir(#path,ONLY_OPEN);
 	strcpy(#inactive_path, #path);
 	llist_copy(#files_inactive, #files);
-	SetEventMask(1100111b);
+	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
 	loop(){
 		switch(WaitEvent())
 		{
 			case evMouse:
-				if (del_active) || (!CheckActiveProcess(Form.ID)) || (Form.status_window>2) break;
-				if (new_element_active) || (!CheckActiveProcess(Form.ID)) || (Form.status_window>2)
+				if (del_active) || (Form.status_window>2) break;
+				if (new_element_active) 
 				{
 					edit_box_mouse stdcall(#new_file_ed);
 					break;

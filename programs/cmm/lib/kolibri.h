@@ -161,7 +161,7 @@ inline fastcall void GetProcessInfo(EBX, ECX)
 	$mov eax,9;
 	$int  0x40
 	DSDWORD[EBX+71] = DSDWORD[EBX+42] - 9; //set cwidth
-	DSDWORD[EBX+75] = DSDWORD[EBX+46] - GetSkinHeight() - 4; //set cheight
+	DSDWORD[EBX+75] = DSDWORD[EBX+46] - skin_height - 4; //set cheight
 }
 
 inline fastcall int GetPointOwner( EBX, ECX) //ebx=m.x, ecx=m.y

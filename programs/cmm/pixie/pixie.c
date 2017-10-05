@@ -7,7 +7,7 @@
 #include "..\lib\obj\proc_lib.h"
 #include "..\lib\patterns\simple_open_dialog.h"
 char default_dir[] = "/rd/1";
-od_filter filter2 = { "MP3", 0 };
+od_filter filter2 = { 8, "MP3\0\0" };
 
 #include "..\lib\file_system.h"
 #include "..\lib\list_box.h"
@@ -29,8 +29,6 @@ scroll_bar scroll1 = { 5,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,
 
 proc_info Form;
 llist list;
-
-char pixie_ini_path[4096];
 
 enum {
 	BUTTON_WINDOW_CLOSE = 1,
@@ -112,8 +110,6 @@ void main()
 	load_dll(Proc_lib, #OpenDialog_init,0);
 	OpenDialog_init stdcall (#o_dialog);
 
-	id = abspath("pixie.ini");
-	strcpy(#pixie_ini_path, id);
 	LoadIniConfig();
 	CheckDefaultForTheFirstStart();
 	OpenFolder(#param);

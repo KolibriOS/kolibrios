@@ -14,6 +14,7 @@
 #include "..\lib\obj\libini.h"
 #include "..\lib\patterns\restart_process.h"
 
+// Translatiions
 #ifdef LANG_RUS
 	?define WINDOW_TITLE "Проверка и настройка параметров мыши"
 	?define CHECK_MOUSE_1 "Нажмите на этой области"
@@ -41,9 +42,7 @@ char pos_x = 22;
 unsigned char panels_img_data[] = FROM "mouse_image.raw";
 raw_image panels_img = { 59, 101, #panels_img_data };
 
-char system_ini_path[] = "/sys/settings/system.ini";
-char mouse_category[] = "mouse";
-
+_ini ini = { "/sys/settings/system.ini", "mouse" };
 
 struct _mouse_cfg {
 	char pointer_speed, 
@@ -57,13 +56,14 @@ struct _mouse_cfg {
 
 void main() {
 	char id, old_button_clicked;
-
+	
 	load_dll(libini, #lib_init,1);
 	load_dll(boxlib, #box_lib_init,0);
-
+	
 	LoadCfg();
 
-	SetEventMask(0x27);
+	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);	
+
 	loop() switch(WaitEvent())
 	{
 		case evMouse:
@@ -80,68 +80,44 @@ void main() {
 
 		case evButton: 
 				id=GetButtonID();
-				if (id==1)
-				{
-					ExitApp();
-				}
-				if (id==99) 
-				{
-					mouse_cfg.button_clicked=0;
-					DrawMouseImage();
-					break;
-				}
-				if (id==100)
-				{
-					if (mouse_cfg.emulation==true) KillProcessByName("mousemul", SINGLE);
-					else RunProgram("/sys/mousemul", 0);
-					mouse_cfg.emulation ^= 1;
-				}
-				if (id==101) 
-				{
-					if (mouse_cfg.madmouse==true) KillProcessByName("madmouse", SINGLE);
-					else RunProgram("/sys/madmouse", 0);
-					mouse_cfg.madmouse ^= 1;
-				}
-				if (id==120) 
-				{
-					mouse_cfg.pointer_speed++;
-					SetMouseSpeed(mouse_cfg.pointer_speed);
-				}
-				if (id==121) && (mouse_cfg.pointer_speed>0)
-				{
-					mouse_cfg.pointer_speed--;
-					SetMouseSpeed(mouse_cfg.pointer_speed);
-				}
-				if (id==122)
-				{
-					mouse_cfg.acceleration++;
-					SetMouseAcceleration(mouse_cfg.acceleration);
-				}
-				if (id==123) && (mouse_cfg.acceleration>0)
-				{
-					mouse_cfg.acceleration--;
-					SetMouseAcceleration(mouse_cfg.acceleration);
-				}
-				if (id==124)
-				{
-					mouse_cfg.double_click_delay+=8;
-					SetMouseDoubleClickDelay(mouse_cfg.double_click_delay);
-				}
-				if (id==125) && (mouse_cfg.double_click_delay>0)
-				{
-					mouse_cfg.double_click_delay-=8;
-					SetMouseDoubleClickDelay(mouse_cfg.double_click_delay);
+				switch (id) {
+					case 1:
+						ExitApp();
+						break;
+					case 99:
+						mouse_cfg.button_clicked=0;
+						DrawMouseImage();
+						break;
+					case 100:
+						if (mouse_cfg.emulation==true) KillProcessByName("mousemul", SINGLE);
+						else RunProgram("/sys/mousemul", 0);
+						mouse_cfg.emulation ^= 1;
+						break;
+					case 101: 
+						if (mouse_cfg.madmouse==true) KillProcessByName("madmouse", SINGLE);
+						else RunProgram("/sys/madmouse", 0);
+						mouse_cfg.madmouse ^= 1;
+						break;
+					case 120: mouse_cfg.pointer_speed++; break;
+					case 121: if (mouse_cfg.pointer_speed>0) mouse_cfg.pointer_speed--; break;
+					case 122: mouse_cfg.acceleration++; break;
+					case 123: if (mouse_cfg.acceleration>0) mouse_cfg.acceleration--; break;
+					case 124: mouse_cfg.double_click_delay+=8; break;
+					case 125: if (mouse_cfg.double_click_delay>0) mouse_cfg.double_click_delay-=8; break;					
 				}
 				DrawControls();
+				ApplyCfg();
+
 				break;
-				
+
 		case evKey:
-				if (GetKey()==27) ExitApp();
+				GetKeys();
+				if (key_scancode == SCAN_CODE_ESC) ExitApp();
 				break;
 			
 		case evReDraw:
 				system.color.get();
-				DefineAndDrawWindow(430, 150, 424, 310+GetSkinHeight(),0x34,system.color.work,WINDOW_TITLE,0);
+				DefineAndDrawWindow(430, 150, 424, 310+skin_height,0x34,system.color.work,WINDOW_TITLE,0);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window>2) break;
 				SetFrameColors();
@@ -177,20 +153,24 @@ void SetFrameColors() {
 }
 
 void LoadCfg() {
-	ini_get_int stdcall (#system_ini_path, #mouse_category, "acceleration", GetMouseAcceleration());   mouse_cfg.acceleration = EAX;
-	ini_get_int stdcall (#system_ini_path, #mouse_category, "speed", GetMouseSpeed());   mouse_cfg.pointer_speed = EAX;
-	ini_get_int stdcall (#system_ini_path, #mouse_category, "double_click_delay", GetMouseDoubleClickDelay());   mouse_cfg.double_click_delay = EAX;
+	mouse_cfg.acceleration = ini.GetInt("acceleration", GetMouseAcceleration());
+	mouse_cfg.pointer_speed = ini.GetInt("speed", GetMouseSpeed());
+	mouse_cfg.double_click_delay = ini.GetInt("double_click_delay", GetMouseDoubleClickDelay());
 	mouse_cfg.madmouse = CheckProcessExists("MADMOUSE");
 	mouse_cfg.emulation = CheckProcessExists("MOUSEMUL");
 }
 
 void ExitApp() {
-	ini_set_int stdcall (#system_ini_path, #mouse_category, "acceleration", mouse_cfg.acceleration);
-	ini_set_int stdcall (#system_ini_path, #mouse_category, "speed", mouse_cfg.pointer_speed);
-	ini_set_int stdcall (#system_ini_path, #mouse_category, "double_click_delay", mouse_cfg.double_click_delay);
+	ini.SetInt("acceleration", mouse_cfg.acceleration);
+	ini.SetInt("speed", mouse_cfg.pointer_speed);
+	ini.SetInt("double_click_delay", mouse_cfg.double_click_delay);
 	ExitProcess();
 }
 
-
+void ApplyCfg() {
+	SetMouseSpeed(mouse_cfg.pointer_speed);
+	SetMouseAcceleration(mouse_cfg.acceleration);
+	SetMouseDoubleClickDelay(mouse_cfg.double_click_delay);
+}
 
 stop:

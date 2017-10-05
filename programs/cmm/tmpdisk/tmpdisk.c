@@ -49,6 +49,8 @@ int driver_handle;
 
 dword disk_sizes[10];
 
+_ini ini = { "/sys/settings/tmpdisk.ini", "DiskSizes" };
+
 /////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////                    Code                    ////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -85,8 +87,7 @@ void GetDiskSizesFromIni()
 	for (i=0; i<=9; i++)
 	{
 		key[0]=i+'0';
-		ini_get_int stdcall ("/sys/settings/tmpdisk.ini", "DiskSizes", #key, 0); 
-		disk_sizes[i] = EAX;
+		disk_sizes[i] = ini.GetInt(#key, 0);
 	}
 }
 
@@ -97,7 +98,7 @@ void SaveDiskSizesToIni()
 	for (i=0; i<=9; i++)
 	{
 		key[0]=i+'0';
-		ini_set_int stdcall ("/sys/settings/tmpdisk.ini", "DiskSizes", #key, disk_sizes[i]);
+		ini.SetInt(#key, disk_sizes[i]);
 	}
 }
 

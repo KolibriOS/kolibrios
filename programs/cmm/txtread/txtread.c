@@ -52,6 +52,8 @@ enum {
 	SHOW_INFO,
 };
 
+int encoding;
+
 #include "ini.h"
 #include "gui.h"
 #include "prepare_page.h"

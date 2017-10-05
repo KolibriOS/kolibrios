@@ -32,7 +32,7 @@
 
 //simple open dialog data
 char default_dir[] = "/rd/1";
-od_filter filter2 = { "MP3", 0 };
+od_filter filter2 = { 8, "MP3\0\0" };
 
 #define ABOUT_MESSAGE "'Pixies Player v2.0
 A tiny MP3 folder player.

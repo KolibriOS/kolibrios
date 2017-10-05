@@ -52,7 +52,7 @@ void main()
 		edit1.size=edit1.pos=strlen(#edit_text);
 		Translate();
 	}
-	SetEventMask(0x27);
+	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);	
 	loop()
 	{
 		switch(WaitEvent()) 
