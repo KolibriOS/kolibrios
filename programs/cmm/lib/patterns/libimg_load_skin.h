@@ -27,4 +27,12 @@
 	for (i = image_data; i < max_i; i += 4)	if (DSDWORD[i]==0) DSDWORD[i] = new_transparent_color;
 }
 
+:void Libimg_ReplaceColor(dword struct_pointer, w, h, old_color, new_color)
+{
+	dword i, max_i, image_data;
+	image_data = ESDWORD[struct_pointer + 24];
+	max_i =  w * h * 4 + image_data;
+	for (i = image_data; i < max_i; i += 4)	if (DSDWORD[i]==old_color) DSDWORD[i] = new_color;
+}
+
 #endif

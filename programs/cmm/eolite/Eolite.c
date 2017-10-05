@@ -7,23 +7,26 @@
 
 //libraries
 #define MEMSIZE 4096 * 180
-#include "..\lib\clipboard.h"
-#include "..\lib\strings.h"
-#include "..\lib\mem.h"
-#include "..\lib\file_system.h"
-#include "..\lib\gui.h"
-#include "..\lib\list_box.h"
-#include "..\lib\random.h"
-#include "..\lib\kfont.h"
-#include "..\lib\collection.h"
-#include "..\lib\menu.h"
-#include "..\lib\obj\libini.h"
-#include "..\lib\obj\box_lib.h"
-#include "..\lib\patterns\history.h"
+#include "../lib/clipboard.h"
+#include "../lib/strings.h"
+#include "../lib/mem.h"
+#include "../lib/file_system.h"
+#include "../lib/gui.h"
+#include "../lib/list_box.h"
+#include "../lib/random.h"
+#include "../lib/kfont.h"
+#include "../lib/collection.h"
+#include "../lib/menu.h"
+#include "../lib/copyf.h"
+
+#include "../lib/obj/libini.h"
+#include "../lib/obj/box_lib.h"
+
+#include "../lib/patterns/history.h"
+#include "../lib/patterns/libimg_load_skin.h"
 
 //images
-#include "imgs\left_p.txt"
-#include "imgs\icons.txt"
+#include "imgs/left_p.txt"
 
 //Button IDs
 enum {
@@ -103,6 +106,9 @@ bool show_dev_name=true,
 	active_panel=1;
 //} settings;
 
+libimg_image icons16_default;
+libimg_image icons16_selected;
+
 #define STATUS_BAR_H 16;
 int status_bar_h = 0;
 
@@ -114,7 +120,6 @@ byte cmd_free=0;
 
 #include "include\settings.h"
 #include "include\progress_dialog.h"
-#include "..\lib\copyf.h"
 #include "include\copy.h"
 #include "include\gui.h"
 #include "include\sorting.h"
@@ -136,12 +141,19 @@ void main()
 
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libini, #lib_init,1);
+	load_dll(libio,  #libio_init,1);
+	load_dll(libimg, #libimg_init,1);
 
 	eolite_ini_path = abspath("Eolite.ini");
 	
 	LoadIniSettings();
 	SystemDiscs.Get();
 	SetAppColors();
+
+	Libimg_LoadImage(#icons16_default, "/sys/icons16.png");
+	Libimg_LoadImage(#icons16_selected, "/sys/icons16.png");
+	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffFFFfff, 0xFF94AECE);
+	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffCACBD6, 0xFF94AECE);
 
 	//-p just show file/folder properties dialog
 	if (param) && (param[0]=='-') && (param[1]=='p')
@@ -316,7 +328,7 @@ void main()
 				id=GetButtonID();				
 				switch(id) 
 				{
-					case 01:
+					case CLOSE_BTN:
 							KillProcess(about_window);
 							SaveIniSettings();
 							ExitProcess();
@@ -360,7 +372,7 @@ void main()
 						DeleteButton(POPUP_BTN1);
 						DeleteButton(POPUP_BTN2);
 						break;
-					case BREADCRUMB_ID...400:
+					case BREADCRUMB_ID...360:
 						ClickOnBreadCrumb(id-BREADCRUMB_ID);
 						break;
 				}
@@ -688,10 +700,10 @@ void Line_ReDraw(dword bgcol, filenum){
 		  char temp_path[sizeof(file_path)];
 	char label_file_name[4096];
 	if (filenum==-1) return;
-	DrawBar(files.x,y,3,files.item_h,bgcol);
-	DrawBar(files.x+19,y,files.w-19,files.item_h,bgcol);
-	if (files.item_h>15) DrawBar(files.x+3,y,16,icon_y-y,bgcol);
-	if (files.item_h>16) DrawBar(files.x+3,icon_y+15,16,y+files.item_h-icon_y-15,bgcol);
+	DrawBar(files.x,y,4,files.item_h,bgcol);
+	DrawBar(files.x+20,y,files.w-20,files.item_h,bgcol);
+	DrawBar(files.x+4,y,16,icon_y-y,bgcol);
+	if (files.item_h>16) DrawBar(files.x+4,icon_y+15,16,y+files.item_h-icon_y-15,bgcol);
 
 	file_offet = file_mas[filenum+files.first]*304 + buf+32;
 	attr = ESDWORD[file_offet];
@@ -715,13 +727,13 @@ void Line_ReDraw(dword bgcol, filenum){
 	}
 	else
 	{
-		if (!strncmp(file_name_off,"..",3))	ext1=".."; else {
+		if (!strncmp(file_name_off,"..",3))	ext1="<up>"; else {
 			ext1="<DIR>";
 			WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, 0, ext1);
 		}
 	}
 	sprintf(#temp_path,"%s/%s",#path,file_name_off);
-	DrawIconByExtension(#temp_path, ext1, files.x+3, icon_y, bgcol);
+	DrawIconByExtension(#temp_path, ext1, files.x+4, icon_y, bgcol);
 
 	if (TestBit(attr, 1)) || (TestBit(attr, 2)) text_col=0xA6A6B7; //system or hiden?
 	if (bgcol!=0xFFFfff)

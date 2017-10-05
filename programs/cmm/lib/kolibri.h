@@ -62,6 +62,8 @@ char program_path[4096];
 #define BT_HIDE     0x40000000
 #define BT_NOFRAME  0x20000000
 
+#define CLOSE_BTN 1
+
 //-------------------------------------------------------------------------
 
 #include "../lib/system.h"

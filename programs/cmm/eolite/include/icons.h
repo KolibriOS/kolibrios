@@ -1,55 +1,32 @@
-char *ext[]={
-"..",   17,
-"<dir>",16, "<DIR>",16,
-"txt", 1, "doc", 1, "rtf", 1, "odt", 1, "log", 1, "docx",1,
-"htm", 2, "html",2, "mht", 2,
-"ini", 3, "js",  3, "conf",3, "inf", 3,
-"xlt", 4, "xls", 4, "ods", 4, "xlsx",4,
-"cmd", 5, "bat", 5, "py",  5, "sh",  5, "ksh", 5, "com", 5,
-"kex", 6, "lua", 6,
-"exe", 7, "msi", 7,
-"sys", 8, "ocx", 8, "drv", 8, "so",  8,
-"inc", 9,
-"chr", 10, "mt",  10, "ttf", 10, "fon", 10, "kf",  10,
-"asm", 11,
-"mp3", 12, "wav", 12, "mid", 12, "midi",12, "ogg", 12, "wma", 12, "flac",12,
-"skn", 13,
-"avi", 14, "flv", 14, "mpg", 14, "wmv", 14, "mov", 14, "mkv", 14, "mp4", 14, "vob", 14, "webm", 14,
-"djvu",15, "pdf", 15, "fb2", 15,
-"nes", 18, "smc", 18, "min", 18,
-"gif", 19, "bmp", 19, "tga", 19, "pcx", 19, "png", 19, "pnm", 19, "jpg", 19, "xcf", 19, "ai",  19,
-"jpeg",19, "raw", 11, "psd", 19, "wbmp",19, "tiff",19, "tif", 19, 
-"3ds", 20, "asc", 20, "ico", 20, "cur", 20, "ani", 20, "vox", 20,
-"img", 21, "ima", 21,
-"dll", 22, "obj", 22, "dict",22,
-"rar", 23, "zip", 23, "cab", 23, "tar", 23, "ajr", 23, "jar", 23, "7z", 23, "gz", 23, "kexp", 23,
-"iso", 24, "cue", 24, "nrg", 24, "mdf", 24,
-"grf", 25,
-0,0};
+_ini icons = { "/sys/File managers/icons.ini", "icons16" };
 
 void DrawIconByExtension(dword file_path, extension, xx, yy, fairing_color)
 {
 	char BYTE_HEAD_FILE[4];
+	char ext[512];
 	int i;
 	dword icon_n=0;
-	if (extension) for (i=0; ext[i]!=0; i+=2;)
+
+	if (extension)
 	{
-		if (strcmpi(extension, ext[i])==0)
-		{
-			icon_n = ext[i+1];
-			break;
-		}
+		strcpy(#ext, extension);
+		strlwr(#ext);
+		icon_n = icons.GetInt(#ext, 2);
 	} 
 	else if (file_path)
 	{
-		//if (!strncmp(file_path, "/rd/1",5)) || (!strncmp(file_path, "/tmp",4)) {
 			ReadFile(0,4,#BYTE_HEAD_FILE,file_path);
-			IF(DSDWORD[#BYTE_HEAD_FILE]=='KCPK')||(DSDWORD[#BYTE_HEAD_FILE]=='UNEM') icon_n = 6;
-		//}
+			IF(DSDWORD[#BYTE_HEAD_FILE]=='KCPK')||(DSDWORD[#BYTE_HEAD_FILE]=='UNEM') icon_n = icons.GetInt("kex", 2);
 	}
-	ficons_pal[0] = fairing_color;
-	PutPaletteImage(icon_n*16*15+#ficons,16,15,xx,yy,8,#ficons_pal);
-	if (fairing_color!=0xFFFfff) IconFairing(icon_n, xx, yy, fairing_color);
+	if (fairing_color==col_selec)
+	{
+		img_draw stdcall(icons16_selected.image, xx, yy, 16, 16, 0, icon_n*16);
+		IconFairing(icon_n, xx, yy, fairing_color);
+	}
+	else 
+	{
+		img_draw stdcall(icons16_default.image, xx, yy, 16, 16, 0, icon_n*16);
+	}
 }
 
 
@@ -57,35 +34,24 @@ void IconFairing(dword filenum, x,y, color)
 {
 	switch(filenum)
 	{
-		case 0...1: //file
-		case 3: //íàñòðîéêè
-			RIGHT_PAINT:
-			PutPixel(x+10,y,color);
-			PutPixel(x+11,y+1,color);
-			PutPixel(x+12,y+2,color);
-			PutPixel(x+13,y+3,color);
+		case 0: //folder
+		case 22: //<up>
+			DrawBar(x+7,y,8,2,color);
+			IF (filenum==22) PutPixel(x+10,y+1,0x1A7B17); //green arrow part
+			DrawBar(x,y+13,15,2,color);
+			PutPixel(x,y,color);
+			PutPixel(x+6,y,color);
+			PutPixel(x+14,y+2,color);
+			PutPixel(x,y+12,color);
+			PutPixel(x+14,y+12,color);
 			return;
-		case 2: //html
+		case 13: //html
 			DrawBar(x,y,1,7,color);
 			DrawBar(x+1,y,1,6,color);
 			DrawBar(x,y+10,1,5,color);
 			DrawBar(x+1,y+11,1,4,color);
-			GOTO RIGHT_PAINT;
-		case 9: //inc
-			DrawBar(x+13,y,1,3,color);
-			DrawBar(x+14,y,2,4,color);
-			DrawBar(x+15,y,1,15,color);
-			PutPixel(x+3,y+14,color);
-			DrawBar(x+4,y+13,1,2,color);
-			DrawBar(x+5,y+12,10,3,color);
-			PutPixel(x+10,y+11,color);
-			DrawBar(x+11,y+10,1,2,color);
-			DrawBar(x+12,y+9,1,3,color);
-			PutPixel(x+12,y+7,color);
-			DrawBar(x+13,y+6,2,7,color);
-			PutPixel(x+14,y+5,color);
 			return;
-		case 10: //font
+		case 12: //font
 			DrawBar(x+1,y+1,1,13,color);
 			DrawBar(x+2,y+1,1,11,color);
 			DrawBar(x+3,y+1,1,10,color);
@@ -100,57 +66,10 @@ void IconFairing(dword filenum, x,y, color)
 			DrawBar(x+8,y+10,2,1,color);
 			DrawBar(x+7,y+11,2,3,color);
 			return;
-		case 12: //audio
-			PutPixel(x+2,y+9,color);
-			PutPixel(x+1,y+10,color);
-			PutPixel(x+10,y+8,color);
-			PutPixel(x+9,y+9,color);
-
-			PutPixel(x+6,y+13,color);
-			PutPixel(x+5,y+14,color);
-			PutPixel(x+14,y+12,color);
-			PutPixel(x+13,y+13,color);
-			return;
-		case 13: //skin
-			PutPixel(x+15,y,color); 
-			return;
-		case 16...17: //folder
-			DrawBar(x,y,1,15,color);
-			DrawBar(x+8,y,8,2,color);
-			IF (filenum==17) PutPixel(x+11,y+1,0x1A7B17); //green arrow part
-			DrawBar(x+1,y+13,15,2,color);
-			PutPixel(x+1,y,color);
-			PutPixel(x+7,y,color);
-			PutPixel(x+15,y+2,color);
-			PutPixel(x+1,y+12,color);
-			PutPixel(x+15,y+12,color);
-			return;
-		case 18:
+		case 23: //nes
 			DrawBar(x,y+11,1,2,color);
 			DrawBar(x+15,y+11,1,2,color);
 			DrawBar(x,y+13,16,1,color);
 			return;
-		case 24:
-			DrawBar(x,y,6,1,color);
-			DrawBar(x,y+1,4,1,color);
-			DrawBar(x,y+2,3,1,color);
-			DrawBar(x,y+3,2,2,color);
-			
-			DrawBar(x,y+5,1,5,color);
-			
-			DrawBar(x,y+10,2,2,color);
-			DrawBar(x,y+12,3,1,color);
-			DrawBar(x,y+13,4,1,color);
-			DrawBar(x,y+14,6,1,color);			
-
-			DrawBar(x+11,y,5,1,color);
-			DrawBar(x+13,y+1,3,1,color);
-			DrawBar(x+14,y+2,2,1,color);
-			DrawBar(x+15,y+3,1,2,color);
-			
-			DrawBar(x+15,y+10,1,2,color);
-			DrawBar(x+14,y+12,2,1,color);
-			DrawBar(x+13,y+13,3,1,color);
-			DrawBar(x+11,y+14,5,1,color);
 	}
 }

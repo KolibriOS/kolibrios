@@ -76,7 +76,7 @@ void settings_dialog()
 				else if (id==24) two_panels ^= true;
 				else if (id==32) show_breadcrumb ^= true;
 				else if (id==25) { files.item_h++; files_active.item_h = files_inactive.item_h = files.item_h; }
-				else if (id==26) && (files.item_h>15) files_inactive.item_h = files.item_h = files.item_h-1;
+				else if (id==26) && (files.item_h>16) files_inactive.item_h = files.item_h = files.item_h-1;
 				else if (id==27) show_status_bar ^= 1;
 				else if (id==30) { kfont.size.pt++; IF(!kfont.changeSIZE()) kfont.size.pt--; BigFontsChange(); }
 				else if (id==31) { kfont.size.pt--; IF(!kfont.changeSIZE()) kfont.size.pt++; BigFontsChange(); }
