@@ -1968,11 +1968,9 @@ calc_ini:
 	ret
 ;---------------------------------------------------------------------
 load_ini:
-	mov	ebx,ini_file_name
-	mov	esi,path
-	mov	edi,file_name
-	call	copy_file_path
+	mov	edi,ini_file_name
 
+	mov	[fileinfo.name],edi
 	mov	[fileinfo.subfunction],dword 5
 	mov	[fileinfo.size],dword 0
 	mov	[fileinfo.return],dword file_info
@@ -2015,11 +2013,9 @@ load_icons:
 	test	eax,eax
 	jz	@f
 	
-	mov	ebx,icons_file_name
-	mov	esi,path
-	mov	edi,file_name
-	call	copy_file_path
+	mov	edi,icons_path
 
+	mov	[fileinfo.name],edi 
 	mov	[fileinfo.subfunction],dword 5
 	mov	[fileinfo.size],dword 0
 	mov	[fileinfo.return],dword file_info
@@ -2872,9 +2868,9 @@ start_pach:
 root_pach:
 	db '/',0
 
-icons_file_name_2	db 'buttons/'
-icons_file_name 	db 'z_icons.png',0
-ini_file_name		db 'icons.ini',0
+icons_file_name_2 db 'buttons/'
+icons_path        db '/sys/icons16.png',0
+ini_file_name     db '/sys/File managers/icons.ini',0
 ;---------------------------------------------------------------------
 
 message:
