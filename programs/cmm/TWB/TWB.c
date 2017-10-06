@@ -295,8 +295,10 @@ void TWebBrowser::SetStyle() {
 			debugln("Document has no information about encoding, UTF will be used");
 		}
 		if (opened) {
-			ChangeCharset(charsets[cur_encoding], "CP866", #header);
-			sprintf(#header, "%s - %s", #header, #version);
+			if (!strcmp(#header, #version)) {
+				ChangeCharset(charsets[cur_encoding], "CP866", #header);
+				sprintf(#header, "%s - %s", #header, #version);
+			}
 			DrawTitle(#header);
 		}
 		return;
