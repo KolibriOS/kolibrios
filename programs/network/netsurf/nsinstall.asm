@@ -262,7 +262,8 @@ dirname_res_icons    db '/tmp0/1/res/icons', 0
 
 url              db 'www.ashmew2.me/',0
 
-filelist db 'nskolibrios', 0
+filelist db 'netsurf-kolibrios', 0
+         db 'netsurf-kolibrios.map', 0
          db 'res/adblock.css', 0
          db 'res/quirks.css', 0
          db 'res/Messages', 0

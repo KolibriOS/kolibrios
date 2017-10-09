@@ -456,6 +456,7 @@ tup.append_table(img_files, {
  {"NETWORK/PING", PROGS .. "/network/ping/ping"},
  {"NETWORK/NETCFG", PROGS .. "/network/netcfg/netcfg"},
  {"NETWORK/NETSTAT", PROGS .. "/network/netstat/netstat"},
+ {"NETWORK/NSINSTALL", PROGS .. "/network/netsurf/nsinstall"},
  {"NETWORK/NSLOOKUP", PROGS .. "/network/nslookup/nslookup"},
  {"NETWORK/PASTA", PROGS .. "/network/pasta/pasta"},
  {"NETWORK/SYNERGYC", PROGS .. "/network/synergyc/synergyc"},
