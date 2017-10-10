@@ -51,6 +51,7 @@ int encoding(const char *someencoding) {
 	if (!strcasecmp(what,"windows-1252")) return CP1252;
 	if (!strcasecmp(what,"CP1252")) return CP1252;
 	if (!strcasecmp(what,"KOI8-RU")) return KOI8_RU;
+	if (!strcasecmp(what,"KOI8-R")) return KOI8_RU;
 	if (!strcasecmp(what,"ISO8859-5")) return ISO8859_5;
 	if (!strcasecmp(what,"UTF-8")) return UTF_8;
 	return -1;
