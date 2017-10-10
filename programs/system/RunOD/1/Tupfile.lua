@@ -10,5 +10,5 @@ else
   tup.definerule{command = "echo LANG_EN = 1 > lang.inc", outputs = {"lang.inc"}}
 end
 
-tup.rule({"RUN.asm", extra_inputs = {"lang.inc"}}, "jwasm -zt0 -coff -Fi lang.inc %o %f " .. tup.getconfig("KPACK_CMD"), "RUN.obj")
+tup.rule({"RUN.asm", extra_inputs = {"lang.inc"}}, "jwasm -zt0 -coff -Fi lang.inc %f " .. tup.getconfig("KPACK_CMD"), "RUN.obj")
 tup.rule("RUN.obj", "ld -T LScript.x -o %o %f -L ../../../../contrib/sdk/lib -l KolibriOS && objcopy %o -O binary -j .all" .. tup.getconfig("KPACK_CMD"),"RUN")
