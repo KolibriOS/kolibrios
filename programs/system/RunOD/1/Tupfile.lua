@@ -12,4 +12,4 @@ end
 
 tup.rule("RUN.asm", "jwasm -zt0 -coff -Fi lang.inc %f -Fo %o", "RUN.obj")
 tup.rule("RUN.obj", "ld -T LScript.x %f -o %o -L ../../../../contrib/sdk/lib -l KolibriOS", "RUN")
-tup.rule("RUN", "objcopy %f -O binary -j .all", "RUN")
+-- tup.rule("RUN", "objcopy %f -O binary -j .all", "RUN")
