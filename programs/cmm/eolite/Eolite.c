@@ -153,7 +153,7 @@ void main()
 	Libimg_LoadImage(#icons16_default, "/sys/icons16.png");
 	Libimg_LoadImage(#icons16_selected, "/sys/icons16.png");
 	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffFFFfff, 0xFF94AECE);
-	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffCACBD6, 0xFF94AECE);
+	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffCACBD6, 0xFF7692B5);
 
 	//-p just show file/folder properties dialog
 	if (param) && (param[0]=='-') && (param[1]=='p')
@@ -241,8 +241,7 @@ void main()
 					//select file
 					if (mouse.key&MOUSE_LEFT) && (mouse.up)
 					{
-						if (files.ProcessMouse(mouse.x, mouse.y)) List_ReDraw();
-						else if (mouse.dblclick) Open(0);
+						if (files.ProcessMouse(mouse.x, mouse.y)) List_ReDraw(); else Open(0);
 					}
 					//file menu
 					if (mouse.key&MOUSE_RIGHT)

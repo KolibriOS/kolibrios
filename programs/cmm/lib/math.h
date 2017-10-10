@@ -18,7 +18,10 @@
 	float floor(float x);
 	signed round(float x);
 	signed ceil(float x);
+	signed min(signed i1, i2);
+	signed max(signed i1, i2);
 }math;
+
 :signed MATH::round(float x)
 {
 	x+=0.6;
@@ -91,5 +94,19 @@
 		fstp r
 	}
 	return r;
+}
+:signed MATH::min(signed i1, i2)
+{
+	if (i1 < i2) 
+		return i1;
+	else 
+		return i2;
+}
+:signed MATH::max(signed i1, i2)
+{
+	if (i1 > i2) 
+		return i1;
+	else 
+		return i2;
 }
 #endif

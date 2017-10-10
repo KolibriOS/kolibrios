@@ -358,7 +358,7 @@ void DrawPropertiesWindow()
 	
 	if (selected_count)
 	{
-		PropertiesDrawIcon(NULL, NULL);
+		PropertiesDrawIcon(NULL, "<lot>");
 		sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
 		WriteText(file_name_ed.left+4, 30, 0x90, system.color.work_text, #folder_info);
 		sprintf(#element_size_label,"%s (%d %s)",ConvertSize64(size_dir, NULL),size_dir,SET_BYTE_LANG);
