@@ -25,10 +25,12 @@ typedef int iconv_t;
 #define KOI8_RU 3
 #define ISO8859_5 4
 #define UTF_8 5
+#define KOI8_R 6
 
 #include "cp866.h"
 #include "cp1251.h"
 #include "cp1252.h"
+#include "koi8_r.h"
 #include "koi8_ru.h"
 #include "iso8859_5.h"
 #include "utf8.h"
@@ -48,10 +50,10 @@ int encoding(const char *someencoding) {
 	if (!strcasecmp(what,"CP866")) return CP866;
 	if (!strcasecmp(what,"CP1251")) return CP1251;
 	if (!strcasecmp(what,"windows-1251")) return CP1251;
-	if (!strcasecmp(what,"windows-1252")) return CP1252;
 	if (!strcasecmp(what,"CP1252")) return CP1252;
+	if (!strcasecmp(what,"windows-1252")) return CP1252;	
+	if (!strcasecmp(what,"KOI8-R")) return KOI8_R;	
 	if (!strcasecmp(what,"KOI8-RU")) return KOI8_RU;
-	if (!strcasecmp(what,"KOI8-R")) return KOI8_RU;
 	if (!strcasecmp(what,"ISO8859-5")) return ISO8859_5;
 	if (!strcasecmp(what,"UTF-8")) return UTF_8;
 	return -1;
@@ -93,6 +95,7 @@ size_t iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft,
 		case CP1251: mbtowc=cp1251_mbtowc; break;
 		case CP1252: mbtowc=cp1252_mbtowc; break;
 		case ISO8859_5: mbtowc=iso8859_5_mbtowc; break;
+		case KOI8_R: mbtowc=koi8_r_mbtowc; break;		
 		case KOI8_RU: mbtowc=koi8_ru_mbtowc; break;
 		case UTF_8: mbtowc=utf8_mbtowc; break;
 		default: return (size_t)-1;
@@ -104,6 +107,7 @@ size_t iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft,
 		case CP1251: wctomb=cp1251_wctomb; break;
 		case CP1252: wctomb=cp1252_wctomb; break;
 		case ISO8859_5: wctomb=iso8859_5_wctomb; break;
+		case KOI8_R: wctomb=koi8_r_wctomb; break;		
 		case KOI8_RU: wctomb=koi8_ru_wctomb; break;
 		case UTF_8: wctomb=utf8_wctomb; break;
 		default: return (size_t)-1;
