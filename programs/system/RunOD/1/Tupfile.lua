@@ -11,4 +11,4 @@ else
 end
 
 tup.rule({"RUN.asm", extra_inputs = {"lang.inc"}}, "jwasm -zt0 -coff -Fi lang.inc %f ", "RUN.o")
-tup.rule("RUN.o", "ld -T LScript.x -o %o %f -L ../../../../contrib/sdk/lib -l KolibriOS && objcopy %o -O binary -j .all","RUN")
+tup.rule("RUN.o", "ld -T LScript.x %f -o %o  -L ../../../../contrib/sdk/lib -l KolibriOS && objcopy %o -O binary -j .all","RUN")
