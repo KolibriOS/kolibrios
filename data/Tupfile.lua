@@ -83,7 +83,6 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"SETTINGS/GAME_CENTER.INI", "rus/settings/game_center.ini"},
  {"SETTINGS/MYKEY.INI", PROGS .. "/system/MyKey/trunk/mykey.ini"},
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/rus/example.asm"},
- {"RUN", "rus/RUN"},
  {"PIPETKA", build_type .. "/pipetka"},
  {"File Managers/KFAR.INI", build_type .. "/File Managers/kfar.ini"},
  {"GAMES/APPDATA.DAT", build_type .. "/games/appdata.dat"},
@@ -96,7 +95,6 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"SETTINGS/GAME_CENTER.INI", "common/settings/game_center.ini"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/example.asm"},
- {"RUN", "eng/RUN"}, 
  {"SETTINGS/MYKEY.INI", PROGS .. "/system/MyKey/trunk/mykey.ini"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"}, 
 }) elseif build_type == "sp" then tup.append_table(img_files, {
@@ -104,7 +102,6 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"SETTINGS/GAME_CENTER.INI", "common/settings/game_center.ini"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/example.asm"},
- {"RUN", "sp/RUN"},
  {"SETTINGS/MYKEY.INI", PROGS .. "/system/MyKey/trunk/mykey.ini"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"}, 
 }) elseif build_type == "it" then tup.append_table(img_files, {
@@ -112,7 +109,6 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"SETTINGS/GAME_CENTER.INI", "common/settings/game_center.ini"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/example.asm"},
- {"RUN", "it/RUN"},
  {"SETTINGS/MYKEY.INI", PROGS .. "/system/MyKey/trunk/mykey_it.ini"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
 }) else tup.append_table(img_files, {
@@ -120,7 +116,6 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"SETTINGS/GAME_CENTER.INI", "common/settings/game_center.ini"},
  {"SETTINGS/.shell", PROGS .. "/system/shell/bin/eng/.shell"},
  {"EXAMPLE.ASM", PROGS .. "/develop/examples/example/trunk/example.asm"},
- {"RUN", "common/RUN"},
  {"SETTINGS/MYKEY.INI", PROGS .. "/system/MyKey/trunk/mykey.ini"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
 }) end
@@ -561,6 +556,13 @@ tup.append_table(img_files, {
  {"MEDIA/FILLSCR", PROGS .. "/media/FillScr/fillscr"},
 })
 end -- tup.getconfig('NO_NASM') ~= 'full'
+
+-- Programs that require JWASM to compile.
+if tup.getconfig('NO_JWASM') ~= 'full' then
+tup.append_table(img_files, {
+ {"RUN", PROGS .. "/system/RunOD/1/RUN"},
+})
+end -- tup.getconfig('NO_JWASM') ~= 'full'
 
 -- Programs that require C-- to compile.
 if tup.getconfig('NO_CMM') ~= 'full' then

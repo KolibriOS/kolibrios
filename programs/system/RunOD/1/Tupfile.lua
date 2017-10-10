@@ -1,3 +1,5 @@
+if tup.getconfig('NO_JWASM') ~= 'full' then return end
+
 if     tup.getconfig("LANG") == "it" then
   tup.definerule{command = "echo LANG_IT = 1 > lang.inc", outputs = {"lang.inc"}}
 elseif tup.getconfig("LANG") == "sp" then
