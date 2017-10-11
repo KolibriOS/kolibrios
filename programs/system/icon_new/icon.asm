@@ -274,6 +274,7 @@ LButtonPress:
 	mov	dword[fiRunProg+8],edi
 	mov	dword[fiRunProg+21],ebx
 	mcall	70,fiRunProg
+	
 	test	eax,80000000h
 	jz	@f
 
@@ -284,6 +285,7 @@ LButtonPress:
      @@:
 	pop	eax
 	stdcall RestoreBackgrnd,eax
+	mcall 5, 60
 	jmp	messages
 
 ;-------------------------------------------------------------------------------
