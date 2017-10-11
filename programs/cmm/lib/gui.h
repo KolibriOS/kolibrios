@@ -417,14 +417,15 @@ struct more_less_box
 	unsigned value, min, max;
 	unsigned bt_id_more, bt_id_less;
 	dword text;
-	void click();
+	bool click();
 	void draw();
 };
 
-void more_less_box::click(unsigned id)
+bool more_less_box::click(unsigned id)
 {
-	if (id==bt_id_less) { value = math.max(value-1, min); draw(); }
-	if (id==bt_id_more) { value = math.min(value+1, max); draw(); }
+	if (id==bt_id_less) { value = math.max(value-1, min); draw(); return 1; }
+	if (id==bt_id_more) { value = math.min(value+1, max); draw(); return 1; }
+	return 0;
 }
 
 void more_less_box::draw()

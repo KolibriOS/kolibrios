@@ -440,6 +440,33 @@ inline fastcall dword SetWindowLayerBehaviour(EDX, ESI)
 	$int 64
 }
 
+#define DRAW_DESKTOP_BG_TILE 1
+#define DRAW_DESKTOP_BG_STRETCH 2
+void SetBackgroundImage(dword w,h, image, mode)
+{
+	$mov     eax,15      // SF_BACKGROUND_SET 15 - work with desktop background graphics
+	$mov     ebx,4       // SSF_MODE_BG 4 - set drawing mode for the background
+	$mov     ecx,mode    // drawing mode - tile (1), stretch (2)
+	$int     64
+
+	$mov     eax,15      // SF_BACKGROUND_SET 15 - work with desktop background graphics
+	$mov     ebx,1       // SSF_SIZE_BG=1 - set a size of the background image
+	$mov     ecx,w       // width
+	$mov     edx,h       // height
+	$int     64
+
+	$mov     eax,15      // SF_BACKGROUND_SET 15 - work with desktop background graphics
+	$mov     ebx,5       // SSF_IMAGE_BG=5 - put block of pixels on the background image
+	$mov     ecx,image   // pointer to the data in the format BBGGRRBBGGRR...
+	$mov     edx,0       // offset in data of the background image
+	ESI      = 3*w*h;    // size of data in bytes = 3 * number of pixels
+	$int     64
+
+	$mov     eax,15      // SF_BACKGROUND_SET 15 - work with desktop background graphics
+	$mov     ebx,3       // SSF_REDRAW_BG=3 - redraw background
+	$int     64
+}
+
 :void _PutImage(dword x,y, w,h, data_offset)
 {
 	EAX = 7;
@@ -574,13 +601,13 @@ inline fastcall dword GetStartTime()
 	CreateThread(#_EventRedrawWindow,#REDRAW_BUFF_EVENT_+4092);
 }
 
-:struct obj
+:struct rect
 {
 	dword x,y,w,h;
 	void set_size();
 };
 
-:void obj::set_size(dword _x, _y, _w, _h)
+:void rect::set_size(dword _x, _y, _w, _h)
 {
 	x=_x; 
 	y=_y;

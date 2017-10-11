@@ -94,8 +94,8 @@ void EventUpdateWindowContent()
 {
 	sprintf(#picked_color_string, "%A", picked_color);
 	rgb.DwordToRgb(picked_color);
+	
 	EDI = 0xFFFfff;
-
 	WriteText(12,12, 0xD0, 0x000111, #picked_color_string+4);
 	
 	WriteNumber(12,33, 0xD0, 0xff0000, 3, rgb.r);
