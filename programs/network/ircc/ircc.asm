@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  IRC client for KolibriOS                                       ;;
@@ -13,7 +13,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version equ '0.29'
+version equ '0.30'
 
 ; connection status
 STATUS_DISCONNECTED     = 0
@@ -293,6 +293,18 @@ button:
         imul    eax, MAX_NICK_LEN
         mov     ebx, [ebx + window.data_ptr]
         lea     esi, [ebx + window_data.names + eax]
+; Strip user prefixes
+        cmp     byte[esi], '~'
+        je      .inc
+        cmp     byte[esi], '&'
+        je      .inc
+        cmp     byte[esi], '@'
+        je      .inc
+        cmp     byte[esi], '%'
+        je      .inc
+        cmp     byte[esi], '+'
+        je      .inc
+  .open:
         call    window_open
         test    ebx, ebx
         jz      mainloop
@@ -300,6 +312,9 @@ button:
         call    redraw
 
         jmp     mainloop
+  .inc:
+        inc     esi
+        jmp     .open
 
   @@:
         sub     ax, WINDOW_BTN_START
