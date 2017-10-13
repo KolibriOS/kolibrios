@@ -883,13 +883,13 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
 ;
 
   .chunk_loop:
+        DEBUGF  1, "chunk_loop write_ptr=0x%x chunk_ptr=0x%x\n", [ebp + http_msg.write_ptr], [ebp + http_msg.chunk_ptr]
         mov     ecx, [ebp + http_msg.write_ptr]
         sub     ecx, [ebp + http_msg.chunk_ptr]
-        jbe     .need_more_data_chunked
+        jbe     .need_more_data_chunked                 ; amount of available bytes after chunkline start
 
 ; Chunkline starts here, convert the ASCII hex number into ebx
         mov     esi, [ebp + http_msg.chunk_ptr]
-        DEBUGF  1, "Chunkline begins at 0x%x\n", esi
 
         xor     ebx, ebx
         cmp     byte[esi], 0x0d
@@ -937,14 +937,17 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
 ; If chunk size is 0, all chunks have been received.
         test    ebx, ebx
         jz      .got_all_data_chunked
+; Calculate chunkline length
+        mov     edx, esi
+        sub     edx, [ebp + http_msg.chunk_ptr]         ; edx is now length of chunkline
+        DEBUGF  1, "Chunkline is %u bytes long\n", edx
 ; Calculate how many data bytes we have received already
         mov     ecx, [ebp + http_msg.write_ptr]
-        sub     ecx, [ebp + http_msg.chunk_ptr]         ; ecx is now number of received data bytes
+        sub     ecx, [ebp + http_msg.chunk_ptr]
+        sub     ecx, edx                                ; ecx is now number of received data bytes (without chunkline)
 ; Update content_received counter
         add     [ebp + http_msg.content_received], ecx
 ; Calculate new write ptr
-        mov     edx, esi
-        sub     edx, [ebp + http_msg.chunk_ptr]         ; edx is now length of chunkline
         sub     [ebp + http_msg.write_ptr], edx
         test    [ebp + http_msg.flags], FLAG_STREAM
         jnz     .dont_resize
@@ -963,6 +966,7 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
   .dont_resize:
 ; Remove chunk header (aka chunkline) from the buffer by shifting all received data after chunkt_ptr to the left
         mov     edi, [ebp + http_msg.chunk_ptr]
+        DEBUGF  1, "Removing chunkline esi=0x%x edi=0x%x ecx=%u\n", esi, edi, ecx
         rep movsb
 ; Update chunk ptr to point to next chunk
         add     [ebp + http_msg.chunk_ptr], ebx
