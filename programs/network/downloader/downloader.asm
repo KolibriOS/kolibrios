@@ -239,7 +239,8 @@ got_data:
   .write:
         mov     ecx, [ebp + http_msg.content_received]
         sub     ecx, [offset]
-        jz      download_loop                           ; more then 0 data bytes?
+        jz      .no_data                                ; more then 0 data bytes?
+
         mov     [fileinfo.size], ecx
         mov     eax, [ebp + http_msg.content_ptr]
         mov     [fileinfo.buffer], eax
@@ -258,6 +259,7 @@ got_data:
 
         invoke  progressbar_draw, pb
 
+  .no_data:
         test    [ebp + http_msg.flags], FLAG_GOT_ALL_DATA
         jz      download_loop
 
