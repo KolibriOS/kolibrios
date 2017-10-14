@@ -72,5 +72,5 @@ but also to download larger files for which it does not make sense to put them c
 This, for example, can be used when downloading a file straight to disk.
 
  FLAG_BLOCK will make receive() function blocking. This is only to be used when receiving one file from a thread that has no other work.
-If however, you want to receive multiple files, or do other things in the program mainloop, 
-you should use system function 10 or 23 to wait for network event before calling one or more receive() functions. 
+If however, you want to receive multiple files, or do other things in the program mainloop, you should call the receive function periodically. 
+You may use system function 10 or 23 to wait for network event before calling one or more receive() functions. 
