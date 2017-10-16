@@ -11,6 +11,7 @@ struct _colors
 	dword get_image();
 	void draw_cell();
 	void draw_all_cells();
+	void move();
 } colors;
 
 void _colors::set_default_values()
@@ -28,8 +29,6 @@ void _colors::set_default_values()
 
 void _colors::set_color(int _r, _c, _color)
 {
-	debugval("_r", _r);
-	debugval("_c", _c);
 	mas[MAX_COLORS*_r + _c] = _color;
 }
 
@@ -62,8 +61,9 @@ dword _colors::get_image()
 
 void _colors::draw_cell(int _x, _y, _color)
 {
-	DrawRectangle(_x, _y, cell_size, cell_size, 0xA7B2BA);
-	DrawBar(_x+1, _y+1, cell_size-1, cell_size-1, _color);
+	//DrawRectangle(_x, _y, cell_size, cell_size, system.color.work_graph);
+	//DrawBar(_x+1, _y+1, cell_size-1, cell_size-1, _color);
+	DrawBar(_x, _y, cell_size, cell_size, _color);
 }
 
 void _colors::draw_all_cells()
@@ -75,8 +75,40 @@ void _colors::draw_all_cells()
 		for (c = 0; c < columns; c++)
 		{
 			draw_cell(c*cell_size + x, r*cell_size + y, get_color(r, c));
-			DefineHiddenButton(c*cell_size + x, r*cell_size + y, cell_size, cell_size, r*columns+c+300);
+			DefineHiddenButton(c*cell_size + x, r*cell_size + y, cell_size, cell_size, r*columns+c+300+BT_NOFRAME);
 		}
 	}
 }
 
+enum {
+	DIRECTION_LEFT,
+	DIRECTION_RIGHT,
+	DIRECTION_UP,
+	DIRECTION_DOWN
+};
+void _colors::move(int direction)
+{
+	int r, c;
+	dword first_element_data;
+
+	if (direction == DIRECTION_LEFT)
+	{
+		for (r = 0; r < rows; r++)
+		{
+			first_element_data = get_color(r, 0);
+			for (c = 0; c < columns-1; c++) set_color(r, c, get_color(r, c+1));
+			set_color(r, columns-1, first_element_data);
+		}		
+	}
+	if (direction == DIRECTION_RIGHT)
+	{
+		for (r = 0; r < rows; r++)
+		{
+			first_element_data = get_color(r, columns-1);
+			for (c = columns-1; c > 0; c--) set_color(r, c, get_color(r, c-1));
+			set_color(r, 0, first_element_data);
+		}		
+	}
+
+	draw_all_cells();
+}

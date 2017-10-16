@@ -4,10 +4,12 @@
  * Licence: GPL v2
 */
 
-#define MEMSIZE 4096*10
+#define MEMSIZE 4096*40
 
 #include "../lib/gui.h"
+#include "../lib/obj/libimg.h"
 #include "../lib/patterns/rgb.h"
+#include "../lib/patterns/libimg_load_skin.h"
 
 //===================================================//
 //                                                   //
@@ -15,22 +17,45 @@
 //                                                   //
 //===================================================//
 
+#define T_TITLE "Background generator 0.6"
+
 #define MAX_COLORS 10
+#define TOOLBAR_H 24+8
+#define PALLETE_SIZE 116
 
-more_less_box x_count = { 10, 220, NULL, 1, MAX_COLORS, 22, 23, "X count" };
-more_less_box y_count = { 10, 250, NULL, 1, MAX_COLORS, 24, 25, "Y count" };
+more_less_box x_count = { 10, TOOLBAR_H+220, NULL, 1, MAX_COLORS, 22, 23, "X count" };
+more_less_box y_count = { 10, TOOLBAR_H+250, NULL, 1, MAX_COLORS, 24, 25, "Y count" };
 
-rect preview = { 10, 10, 200, 200 };
-rect right_bar = { 230, 10, 280, 400 };
+rect preview = { 10, TOOLBAR_H+10, 200, 200 };
+rect right_bar = { 230, TOOLBAR_H+10, 280, 320 };
 
 dword active_color = 0xFFFfff;
 char active_color_string[11]="0x00111222\0";
 
 enum {
-	APPLY_BACKGROUND_BTN = 10
+	BTN_APPLY_BACKGROUND = 10,
+
+	BTN_NEW = 40,
+	BTN_OPEN,
+	BTN_SAVE,
+	BTN_MOVE_LEFT,
+	BTN_MOVE_RIGHT,
+	BTN_MOVE_UP,
+	BTN_MOVE_DOWN,
+	BTN_FLIP_HOR,
+	BTN_FLIP_VER,
+	BTN_ROTATE_LEFT,
+	BTN_ROTATE_RIGHT,
+
+	BTN_PICK,
+
+	BTN_PALETTE_COLOR_MAS = 100,
+
 };
 
 proc_info Form;
+
+bool pick_active = false;
 
 dword default_colors[] = {
 0x330000,0x331900,0x333300,0x193300,0x003300,0x003319,0x003333,0x001933,0x000033,0x190033,0x330033,0x330019,0x000000,
@@ -56,23 +81,46 @@ void main()
 {
 	word btn;
 
+	load_dll(libio,  #libio_init,  1);
+	load_dll(libimg, #libimg_init, 1);
+	Libimg_LoadImage(#skin, "/sys/icons16.png");
+
 	colors.set_default_values();
 	x_count.value = colors.columns;
 	y_count.value = colors.rows;
 
+	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
+
 	loop() switch(WaitEvent())
 	{
+		case evMouse:
+			mouse.get();
+			if (pick_active) EventPickColor();
+
 		case evButton:
-			btn = GetButtonID();               
-			if (btn == CLOSE_BTN) ExitProcess();
-			if (btn == APPLY_BACKGROUND_BTN) {
-				SetBackgroundImage(colors.columns, colors.rows, colors.get_image(), DRAW_DESKTOP_BG_STRETCH);
-			}
+			btn = GetButtonID(); 
 			if (x_count.click(btn)) EventChangeFieldSize();
 			if (y_count.click(btn)) EventChangeFieldSize();
-			if (btn >= 100) && (btn < 228) 
+			switch(btn)
+			{
+				case BTN_MOVE_LEFT:
+					colors.move(DIRECTION_LEFT);
+					break;
+				case BTN_MOVE_RIGHT:
+					colors.move(DIRECTION_RIGHT);
+					break;
+				case CLOSE_BTN:
+					ExitProcess();
+				case BTN_APPLY_BACKGROUND:
+					EventApplyBackground();
+					break;
+				case BTN_PICK:
+					EventPickActivate();
+					break;
+			}              
+			if (btn >= BTN_PALETTE_COLOR_MAS) && (btn < BTN_PALETTE_COLOR_MAS+PALLETE_SIZE) 
 			{ 
-				active_color = default_colors[btn-100]; 
+				active_color = default_colors[btn-BTN_PALETTE_COLOR_MAS]; 
 				DrawActiveColor(NULL); 
 			}
 			if (btn >= 300) && (btn < 401) 
@@ -87,6 +135,8 @@ void main()
 		case evKey:
 			GetKeys();
 			if (key_scancode == SCAN_CODE_ESC) ExitProcess();
+			if (key_scancode == SCAN_CODE_ENTER) EventApplyBackground();
+			if (key_scancode == SCAN_CODE_KEY_I) EventPickActivate();
 			break;
 		 
 		case evReDraw:
@@ -95,28 +145,54 @@ void main()
 	}
 }
 
+void DrawToolbarButton(dword _id, _x, _icon_n)
+{
+	DrawWideRectangle(_x, 4, 24, 24, 4, 0xFFFfff);
+	DefineHiddenButton(_x, 4, 23, 23, _id);
+	img_draw stdcall(skin.image, _x+4, 8, 16, 16, 0, _icon_n*16);
+}
+
 void draw_window()
 {
+	#define TB_ICON_PADDING 26
+	incn tx;
 	system.color.get();
 	DefineAndDrawWindow(215, 100, right_bar.x+right_bar.w+9, 
 		right_bar.y+right_bar.h+skin_height+5, 
-		0x34, system.color.work, "Background generator",0
+		0x34, system.color.work, T_TITLE,0
 		);
 	GetProcessInfo(#Form, SelfInfo);
+
+	tx.n = preview.x - TB_ICON_PADDING;
+	// DrawToolbarButton(BTN_NEW,    tx.inc(TB_ICON_PADDING), 2);
+	// DrawToolbarButton(BTN_OPEN,   tx.inc(TB_ICON_PADDING), 0);
+	// DrawToolbarButton(BTN_SAVE,   tx.inc(TB_ICON_PADDING), 5);
+	DrawToolbarButton(BTN_MOVE_LEFT,  tx.inc(TB_ICON_PADDING),   30);
+	DrawToolbarButton(BTN_MOVE_RIGHT, tx.inc(TB_ICON_PADDING),   31);
+	// DrawToolbarButton(BTN_MOVE_UP,    tx.inc(TB_ICON_PADDING),   32);
+	// DrawToolbarButton(BTN_MOVE_DOWN,  tx.inc(TB_ICON_PADDING),   33);
+	// DrawToolbarButton(BTN_FLIP_HOR,   tx.inc(TB_ICON_PADDING+8), 34);
+	// DrawToolbarButton(BTN_FLIP_VER,   tx.inc(TB_ICON_PADDING),   35);
+	// DrawToolbarButton(BTN_ROTATE_LEFT,   tx.inc(TB_ICON_PADDING), 36);
+	// DrawToolbarButton(BTN_ROTATE_RIGHT,  tx.inc(TB_ICON_PADDING), 37);
+
+	DrawBar(0, TOOLBAR_H-1, Form.cwidth, 1, system.color.work_dark);
+	DrawBar(0, TOOLBAR_H, Form.cwidth, 1, system.color.work_light);
 
 	x_count.draw();
 	y_count.draw();
 
 	DrawColorsField();
 
-	DrawStandartCaptButton(10, 320, APPLY_BACKGROUND_BTN, "Fill background");
+	DrawStandartCaptButton(preview.x, 320, BTN_APPLY_BACKGROUND, "Fill background");
+	DrawStandartCaptButton(right_bar.x + 150, right_bar.y, BTN_PICK, "Pipette");
 
 	DrawRightBar();
 }
 
 void DrawColorsField()
 {
-	DrawRectangle(preview.x, preview.y, preview.w, preview.h, 0x808080);
+	DrawRectangle(preview.x, preview.y, preview.w, preview.h, system.color.work_graph); //0x808080);
 	DrawBar(preview.x+1, preview.y+1, preview.w-1, preview.h-1, 0xBFCAD2); //F3F3F3
 
 	colors.x = -colors.cell_size*colors.columns+preview.w/2 + preview.x;
@@ -132,7 +208,7 @@ void DrawRightBar()
 	EDI = system.color.work;
 	WriteTextB(right_bar.x, y.inc(3), 0x90, system.color.work_text, "Active color");
 	DrawActiveColor(y.inc(22));
-	WriteTextB(right_bar.x, y.inc(34), 0x90, system.color.work_text, "Default colors");
+	WriteTextB(right_bar.x, y.inc(34), 0x90, system.color.work_text, "Palette");
 	DrawDefaultColors(right_bar.x, y.inc(22));
 }
 
@@ -154,11 +230,14 @@ void DrawDefaultColors(dword _x, _y)
 	{
 		for (c = 0; c < 13; c++)
 		{
-			colors.draw_cell(c*colors.cell_size + _x, r*colors.cell_size + _y, default_colors[i]);
-			DefineHiddenButton(c*colors.cell_size + _x, r*colors.cell_size + _y, colors.cell_size, colors.cell_size, 100+i);
+			colors.draw_cell(c*colors.cell_size + _x, r*colors.cell_size + _y, default_colors[PALLETE_SIZE-i]);
+			DefineHiddenButton(c*colors.cell_size + _x, r*colors.cell_size + _y, 
+				colors.cell_size-1, colors.cell_size-1, BTN_PALETTE_COLOR_MAS+PALLETE_SIZE-i);
 			i++;
 		}
 	}
+	DrawRectangle(_x-1, _y-1, c*colors.cell_size+1, r*colors.cell_size+1, system.color.work_light);
+	DrawRectangle(_x-2, _y-2, c*colors.cell_size+3, r*colors.cell_size+3, system.color.work_dark);
 }
 
 
@@ -173,4 +252,25 @@ void EventChangeFieldSize()
 	colors.columns = x_count.value;
 	colors.rows = y_count.value;
 	DrawColorsField();
+}
+
+void EventPickActivate()
+{
+	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE);
+	pick_active = true;
+}
+
+void EventPickColor()
+{
+	active_color = GetPixelColorFromScreen(mouse.x + Form.left, mouse.y + Form.top);
+	DrawActiveColor(NULL);
+	if (mouse.down) && (mouse.key&MOUSE_LEFT) {
+		pick_active = false;
+		SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
+	}
+}
+
+void EventApplyBackground()
+{
+	SetBackgroundImage(colors.columns, colors.rows, colors.get_image(), DRAW_DESKTOP_BG_STRETCH);
 }
