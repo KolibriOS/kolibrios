@@ -1296,6 +1296,7 @@ proc HTTP_escape URI, length ;//////////////////////////////////////////////////
         invoke  mem.alloc, URLMAXLEN            ; FIXME: use length provided by caller to guess final size.
         test    eax, eax
         jz      .error
+        mov     edx, URLMAXLEN-1                ; Remaining space in temp buffer minus one for 0 byte
         mov     [esp + 7 * 4], eax              ; return ptr in eax
         mov     esi, [URI]
         mov     edi, eax
@@ -1315,9 +1316,13 @@ proc HTTP_escape URI, length ;//////////////////////////////////////////////////
         jc      .escape
 
         stosb
-        jmp     .loop
+        dec     edx
+        jnz     .loop
+        jmp     .out_of_space
 
   .escape:
+        sub     edx, 3
+        jbe     .out_of_space
         mov     al, '%'
         stosb
         mov     bl, byte[esi-1]
@@ -1331,7 +1336,11 @@ proc HTTP_escape URI, length ;//////////////////////////////////////////////////
         jmp     .loop
 
 
+  .out_of_space:
+        DEBUGF  2, "ERROR: buffer too small!\n"
+
   .done:
+        xor     al, al
         stosb
         sub     edi, [esp + 7 * 4]
         dec     edi
@@ -1367,6 +1376,7 @@ proc HTTP_unescape URI, length ;////////////////////////////////////////////////
         invoke  mem.alloc, URLMAXLEN            ; FIXME: use length provided by caller
         test    eax, eax
         jz      .error
+        mov     edx, URLMAXLEN-1                ; Remaining space in temp buffer minus one for 0 byte
         mov     [esp + 7 * 4], eax              ; return ptr in eax
         mov     esi, [URI]
         mov     edi, eax
@@ -1377,7 +1387,9 @@ proc HTTP_unescape URI, length ;////////////////////////////////////////////////
         cmp     al, '%'
         je      .unescape
         stosb
-        jmp     .loop
+        dec     edx
+        jnz     .loop
+        jmp     .out_of_space
 
   .unescape:
         xor     ebx, ebx
@@ -1402,13 +1414,19 @@ proc HTTP_unescape URI, length ;////////////////////////////////////////////////
         jc      .unescape_nibble
         mov     al, bl
         stosb
-        jmp     .loop
+        dec     edx
+        jnz     .loop
+        jmp     .out_of_space
 
   .fail:
         DEBUGF  2, "ERROR: invalid URI!\n"
         jmp     .loop
 
+  .out_of_space:
+        DEBUGF  2, "ERROR: buffer too small!\n"
+
   .done:
+        xor     al, al
         stosb
         popa
         DEBUGF  1, "unescaped URL: %s\n", eax
