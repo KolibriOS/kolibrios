@@ -303,7 +303,15 @@ tcp_respond:
         stosb
         mov     al, cl
         stosb
-        mov     eax, [esi + TCP_SOCKET.RCV_WND]
+        mov     eax, SOCKET_BUFFER_SIZE
+        sub     eax, [esi + STREAM_SOCKET.rcv.size]
+        cmp     eax, TCP_max_win
+        jbe     .lessthanmax
+        mov     eax, TCP_max_win
+.lessthanmax:
+        mov     cl, [esi + TCP_SOCKET.RCV_SCALE]
+        shr     eax, cl
+
         xchg    al, ah
         stosw                   ; window
         xor     eax, eax
