@@ -1,10 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2014-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2014-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
-;;  pasta.asm - Paste text to paste.kolibrios.org from a file or   ;;
-;;              from clipboard.                                    ;;
+;;  pasta.asm - Paste text to dpaste.com from a file or from       ;;
+;;              clipboard.                                         ;;
 ;;                                                                 ;;
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
 ;;             Version 2, June 1991                                ;;
@@ -102,52 +102,28 @@ escape:
         mcall   68, 13, [clipboard_data]
         pop     [clipboard_data]
 
-; Connect to the server
-        invoke  HTTP_get, sz_url, 0, FLAG_BLOCK or FLAG_KEEPALIVE, 0
-        test    eax, eax
-        jz      error_free_clip
-        mov     [identifier], eax
-
-  .again:
-        invoke  HTTP_receive, [identifier]
-        test    eax, eax
-        jnz     .again
-
-        invoke  HTTP_find_header_field, [identifier], sz_set_cookie
-        mov     edi, cookie
-        test    eax, eax
-        jz      .no_cookie
-
-        mov     esi, eax
-  .cookie_loop:
-        lodsb
-        stosb
-        cmp     al, 13
-        je      .cookie_end
-        cmp     al, 10
-        je      .cookie_end
-        cmp     al, 0
-        je      .cookie_end
-        jmp     .cookie_loop
-  .cookie_end:
-        dec     edi
-  .no_cookie:
-        mov     ax, 0x0a0d
-        stosw
-        xor     al, al
-        stosb
-
+; Post to the server
         mov     ecx, [clipboard_data_length]
-        add     ecx, sz_paste_head.length + sz_paste_tail.length
-        invoke  HTTP_post, sz_url, [identifier], FLAG_BLOCK, sz_cookie, sz_ctype, ecx
+        add     ecx, sz_paste_head.length
+        invoke  HTTP_post, sz_url, 0, FLAG_BLOCK, 0, sz_ctype, ecx
         test    eax, eax
         jz      error_free_clip_disconnect
+        mov     [identifier], eax
 
 ; Send the data to the server
-        mov     ecx, [eax + http_msg.socket]
-        mcall   75, 6, , sz_paste_head, sz_paste_head.length, 0
-        mcall   75, 6, , [clipboard_data], [clipboard_data_length], 0
-        mcall   75, 6, , sz_paste_tail, sz_paste_tail.length, 0
+        invoke  HTTP_send, [identifier], sz_paste_head, sz_paste_head.length
+
+        push    [clipboard_data]
+        pop     [send_ptr]
+  .again:
+        invoke  HTTP_send, [identifier], [send_ptr], [clipboard_data_length]
+        cmp     eax, -1
+        je      error_free_clip_disconnect
+        test    eax, eax
+        jz      error_free_clip_disconnect
+        add     [send_ptr], eax
+        sub     [clipboard_data_length], eax
+        ja      .again
 
 ; Free the data
         mcall   68, 13, [clipboard_data]
@@ -160,49 +136,33 @@ escape:
         invoke  HTTP_disconnect, [identifier]
 
         mov     ebp, [identifier]
-        cmp     [ebp + http_msg.status], 302    ; found
-        jne     error_free_http
+        test    [ebp + http_msg.flags], 0xffff0000             ; Test error bits
+        jnz     error_free_http
+        test    [ebp + http_msg.flags], FLAG_GOT_HEADER
+        jz      error_free_http
+        cmp     [ebp + http_msg.status], 201    ; created
+        jne     error_http_code
 
         invoke  HTTP_find_header_field, [identifier], sz_location
         test    eax, eax
         jz      error_free_http
 
-        push    eax
-        mov     esi, sz_failed
-        mov     edi, paste_url
-        mov     ecx, 2
-        rep movsd
-        pop     esi
-  .url_loop:
-        lodsb
-        stosb
-        cmp     al, 13
-        je      .url_end
-        cmp     al, 10
-        je      .url_end
-        cmp     al, 0
-        je      .url_end
-        jmp     .url_loop
-  .url_end:
-        dec     edi
-        lea     ecx, [edi - paste_url + 4]
-        mov     eax, '" -t'
-        stosd
-        mov     ax, 'O'
-        stosw
-        mov     [notify_struct.msg], paste_url
-        mcall   70, notify_struct
+        mov     esi, eax
+        call    notify
 
         mcall   54, 3                   ; Delete last slot in the clipboard
 
-        mov     dword[paste_url-4], ecx
-        mov     dword[paste_url+0], 0   ; Text
-        mov     dword[paste_url+4], 1   ; cp0866
-        mcall   54, 2, , paste_url-4    ; Write URL to the clipboard
+        mov     dword[notify_msg-4], ecx
+        mov     dword[notify_msg+0], 0   ; Text
+        mov     dword[notify_msg+4], 1   ; cp0866
+        mcall   54, 2, , notify_msg-4    ; Write URL to the clipboard
 
         invoke  HTTP_free, [identifier]
         mcall   -1
 
+error_http_code:
+        lea     esi, [ebp + http_msg.http_header]
+        call    notify
 error_free_http:
         invoke  HTTP_free, [identifier]
         jmp     error
@@ -218,6 +178,32 @@ error:
         mcall   -1
 
 
+notify:
+
+        mov     edi, notify_msg.text
+  .msg_loop:
+        lodsb
+        stosb
+        cmp     al, 13
+        je      .msg_end
+        cmp     al, 10
+        je      .msg_end
+        cmp     al, 0
+        je      .msg_end
+        jmp     .msg_loop
+  .msg_end:
+        dec     edi
+        lea     ecx, [edi - notify_msg + 4]
+        mov     eax, '" -t'
+        stosd
+        mov     ax, 'O'
+        stosw
+        mov     [notify_struct.msg], notify_msg
+        mcall   70, notify_struct
+
+        ret
+
+
 ;---------------------------------------------------------------------
 ; Data area
 ;-----------------------------------------------------------------------------
@@ -229,6 +215,7 @@ library lib_http,               'http.obj'
 import  lib_http, \
         HTTP_get,               'get', \
         HTTP_post,              'post', \
+        HTTP_send,              'send', \
         HTTP_receive,           'receive', \
         HTTP_find_header_field, 'find_header_field', \
         HTTP_free,              'free', \
@@ -249,32 +236,28 @@ file_struct:
 notify_struct:
         dd 7            ; run application
         dd 0
-  .msg  dd paste_url
+  .msg  dd notify_msg
         dd 0
         dd 0
         db '/sys/@notify', 0
 
-sz_url                  db 'http://paste.kolibrios.org/', 0
-sz_set_cookie           db 'set-cookie', 0
+sz_url                  db 'http://dpaste.com/api/v2/', 0
 sz_location             db 'location', 0
 sz_ctype                db 'application/x-www-form-urlencoded', 0
 sz_failed               db '"Pasta!',10,'Paste failed!" -E', 0
 
-sz_paste_head           db 'code='
+sz_paste_head           db 'content='
 .length = $ - sz_paste_head
-sz_paste_tail           db '%0D%0A&language=text&webpage='
-.length = $ - sz_paste_tail
 
-sz_cookie               db 'Cookie: '
-cookie                  db 0
-                        rb 1024
+notify_msg              db '"Pasta!',10
+  .text                 rb 1024
 
-paste_url               rb 1024
 param                   rb 1024
 
 identifier              dd 0
 clipboard_data          dd 0
 clipboard_data_length   dd 0
+send_ptr                dd ?
 
 I_END:
 
