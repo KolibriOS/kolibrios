@@ -42,10 +42,11 @@ local   .exit
         jz      .loop
 
         and     [ebx + TCP_SOCKET.t_flags], not (TF_DELACK)
+        or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
 
         push    ebx
-        mov     cl, TH_ACK
-        call    tcp_respond
+        mov     eax, ebx
+        call    tcp_output
         pop     ebx
 
         inc     [TCPS_delack]                   ; update stats
