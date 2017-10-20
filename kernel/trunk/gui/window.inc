@@ -2265,9 +2265,10 @@ align 4
         inc     edx
 @@:
         shl     eax, 28
-        or      ecx, eax
+        or      ecx, eax        
         xor     edi, edi
-        call    dtext
+        stc
+        call    dtext._
 .exit:
         jmp     __sys_draw_pointer
 ;------------------------------------------------------------------------------
