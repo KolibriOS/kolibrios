@@ -241,7 +241,9 @@ void main()
 					//select file
 					if (mouse.key&MOUSE_LEFT) && (mouse.up)
 					{
-						if (files.ProcessMouse(mouse.x, mouse.y)) List_ReDraw(); else Open(0);
+						if (files.ProcessMouse(mouse.x, mouse.y)) List_ReDraw(); else {
+							if (mouse.y - files.y / files.item_h + files.first == files.cur_y) Open(0);
+						}
 					}
 					//file menu
 					if (mouse.key&MOUSE_RIGHT)
