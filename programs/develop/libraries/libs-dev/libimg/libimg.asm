@@ -26,7 +26,10 @@ include '../../../../struct.inc'
 include '../../../../proc32.inc'
 include '../../../../macros.inc'
 include '../../../../config.inc'
-;include '../../../../debug.inc'
+include '../../../../debug-fdo.inc'
+__DEBUG__ = 0
+__DEBUG_LEVEL__ = 1
+include '../../../../develop/libraries/libs-dev/libio/libio.inc'
 purge section,mov,add,sub
 
 include 'libimg.inc'
@@ -124,14 +127,50 @@ endp
 ;;================================================================================================;;
 proc img.from_file _filename ;////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? load file from disk and decode it                                                              ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> [_filename] = file name as passed to libio                                                     ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = 0 / pointer to image                                                                     ;;
 ;;================================================================================================;;
-    xor eax, eax
-    ret
+locals
+        fd              dd ?
+        img_data_len    dd ?
+        img_data        dd ?    ; raw bytes
+        img             dd ?    ; Image pointer
+endl
+DEBUGF 2, 'img.from_file: %s\n', [_filename]
+	push	ebx
+        mov     [img], 0
+        invoke  file.open, [_filename], O_READ
+        mov     [fd], eax
+        test    eax, eax
+        jz      .exit
+        invoke  file.size, [_filename]
+        test    eax, eax
+        jnz     .exit_close
+        mov     [img_data_len], ebx
+        invoke  mem.alloc, ebx
+        test    eax, eax
+        jz      .exit_close
+        mov     [img_data], eax
+        invoke  file.read, [fd], eax, [img_data_len]
+        cmp     eax, -1
+        jz      .exit_free_close
+        cmp     eax, [img_data_len]
+        jnz     .exit_free_close
+        stdcall img.decode, [img_data], [img_data_len], 0
+        test    eax, eax
+        jz      .exit_free_close
+        mov     [img], eax
+  .exit_free_close:
+        invoke  mem.free, [img_data]
+  .exit_close:
+        invoke  file.close, [fd]
+        mov     eax, [img]
+  .exit:
+	pop	ebx
+        ret
 endp
 
 ;;================================================================================================;;
@@ -2439,18 +2478,6 @@ img.formats_table:
   .z80  dd LIBIMG_FORMAT_Z80,  img.is.z80,  img.decode.z80,     img.encode.z80, 0 ;this must be the last entry as there are no signatures in z80 screens at all
         dd 0
 
-align 4
-img.types_table:        ; entries order must correspond to type defnitions in libimg.inc
-         dd 0   ; there is no Image.bpp* = 0
-  .bpp8i dd (1 SHL Image.bpp24)
-  .bpp24 dd (1 SHL Image.bpp24) OR (1 SHL Image.bpp8g)
-  .bpp32 dd (1 SHL Image.bpp24)
-  .bpp15 dd (1 SHL Image.bpp24)
-  .bpp16 dd (1 SHL Image.bpp24)
-  .bpp1  dd (1 SHL Image.bpp24)
-  .bpp8g dd (1 SHL Image.bpp24) OR (1 SHL Image.bpp1 ) OR (1 SHL Image.bpp8g)
-  .bpp8a dd (1 SHL Image.bpp24)
-
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
@@ -2717,6 +2744,8 @@ img._.get_scanline_len: ;///////////////////////////////////////////////////////
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
 
+include_debug_strings
+
 align 4
 type2bpp    dd  8, 24, 32, 15, 16, 1, 9, 2, 4
 img._.do_rgb.handlers:
@@ -2786,14 +2815,23 @@ export                                      \
 align 16
 @IMPORT:
 
-library archiver, 'archiver.obj'
+library                           \
+        archiver, 'archiver.obj', \
+        libio   , 'libio.obj'
+
 import  archiver, \
-    deflate_unpack2, 'deflate_unpack2',\
-    deflateInit2,    'deflateInit2',\
-    deflateReset,    'deflateReset',\
-    deflate,         'deflate',\
-    deflateEnd,      'deflateEnd',\
-    calc_crc32,      'calc_crc32'
+        deflate_unpack2, 'deflate_unpack2',\
+        deflateInit2,    'deflateInit2',\
+        deflateReset,    'deflateReset',\
+        deflate,         'deflate',\
+        deflateEnd,      'deflateEnd',\
+        calc_crc32,      'calc_crc32'
+
+import libio                    , \
+        file.size , 'file_size' , \
+        file.open , 'file_open' , \
+        file.read , 'file_read' , \
+        file.close, 'file_close'
 
 align 4
 ; mutex for unpacker loading
