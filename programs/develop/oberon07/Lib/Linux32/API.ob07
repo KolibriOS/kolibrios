@@ -1,4 +1,4 @@
-(*
+﻿(*
     Copyright 2016 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
@@ -27,22 +27,22 @@ VAR
 
   Param*: INTEGER;
 
-  sec*		  : INTEGER;
-  dsec* 	  : INTEGER;
-  stdin*	  : INTEGER;
-  stdout*	  : INTEGER;
-  stderr*	  : INTEGER;
-  dlopen*	  : PROCEDURE [cdecl] (filename, flag: INTEGER): INTEGER;
-  dlsym*	  : PROCEDURE [cdecl] (handle, symbol: INTEGER): INTEGER;
-  _malloc*	  : PROCEDURE [cdecl] (size: INTEGER): INTEGER;
-  free* 	  : PROCEDURE [cdecl] (ptr: INTEGER);
-  fopen*	  : PROCEDURE [cdecl] (fname, fmode: INTEGER): INTEGER;
+  sec*            : INTEGER;
+  dsec*           : INTEGER;
+  stdin*          : INTEGER;
+  stdout*         : INTEGER;
+  stderr*         : INTEGER;
+  dlopen*         : PROCEDURE [cdecl] (filename, flag: INTEGER): INTEGER;
+  dlsym*          : PROCEDURE [cdecl] (handle, symbol: INTEGER): INTEGER;
+  _malloc*        : PROCEDURE [cdecl] (size: INTEGER): INTEGER;
+  free*           : PROCEDURE [cdecl] (ptr: INTEGER);
+  fopen*          : PROCEDURE [cdecl] (fname, fmode: INTEGER): INTEGER;
   fclose*, ftell* : PROCEDURE [cdecl] (file: INTEGER): INTEGER;
   fwrite*, fread* : PROCEDURE [cdecl] (buffer, bytes, blocks, file: INTEGER): INTEGER;
-  fseek*	  : PROCEDURE [cdecl] (file, offset, origin: INTEGER): INTEGER;
-  exit* 	  : PROCEDURE [cdecl] (code: INTEGER);
-  strncmp*	  : PROCEDURE [cdecl] (str1, str2, n: INTEGER): INTEGER;
-  strlen*	  : PROCEDURE [cdecl] (str: INTEGER): INTEGER;
+  fseek*          : PROCEDURE [cdecl] (file, offset, origin: INTEGER): INTEGER;
+  exit*           : PROCEDURE [cdecl] (code: INTEGER);
+  strncmp*        : PROCEDURE [cdecl] (str1, str2, n: INTEGER): INTEGER;
+  strlen*         : PROCEDURE [cdecl] (str: INTEGER): INTEGER;
   clock_gettime*  : PROCEDURE [cdecl] (clock_id: INTEGER; VAR tp: TP): INTEGER;
 
 PROCEDURE [stdcall] zeromem* (size, adr: INTEGER);
@@ -103,6 +103,11 @@ BEGIN
   exit(code)
 END ExitProcess;
 
+PROCEDURE ExitThread* (code: INTEGER);
+BEGIN
+  exit(code)
+END ExitThread;
+
 PROCEDURE GetProc(name: ARRAY OF CHAR; hMOD, adr: INTEGER);
 VAR H: INTEGER;
 BEGIN
@@ -116,19 +121,19 @@ VAR lib, proc: INTEGER;
 BEGIN
   Param := esp;
   sys.MOVE(Param + 12, sys.ADR(dlopen), 4);
-  sys.MOVE(Param + 16, sys.ADR(dlsym),	4);
-  sys.MOVE(Param + 20, sys.ADR(exit),	4);
-  sys.MOVE(Param + 24, sys.ADR(stdin),	4);
+  sys.MOVE(Param + 16, sys.ADR(dlsym),  4);
+  sys.MOVE(Param + 20, sys.ADR(exit),   4);
+  sys.MOVE(Param + 24, sys.ADR(stdin),  4);
   sys.MOVE(Param + 28, sys.ADR(stdout), 4);
   sys.MOVE(Param + 32, sys.ADR(stderr), 4);
   sys.MOVE(Param + 36, sys.ADR(_malloc), 4);
-  sys.MOVE(Param + 40, sys.ADR(free),	4);
-  sys.MOVE(Param + 44, sys.ADR(fopen),	4);
+  sys.MOVE(Param + 40, sys.ADR(free),   4);
+  sys.MOVE(Param + 44, sys.ADR(fopen),  4);
   sys.MOVE(Param + 48, sys.ADR(fclose), 4);
   sys.MOVE(Param + 52, sys.ADR(fwrite), 4);
-  sys.MOVE(Param + 56, sys.ADR(fread),	4);
-  sys.MOVE(Param + 60, sys.ADR(fseek),	4);
-  sys.MOVE(Param + 64, sys.ADR(ftell),	4);
+  sys.MOVE(Param + 56, sys.ADR(fread),  4);
+  sys.MOVE(Param + 60, sys.ADR(fseek),  4);
+  sys.MOVE(Param + 64, sys.ADR(ftell),  4);
 
   lib := dlopen(sys.ADR("libc.so.6"), 1);
   ASSERT(lib # 0);

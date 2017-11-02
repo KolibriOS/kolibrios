@@ -1,5 +1,5 @@
-(*
-    Copyright 2016 Anton Krotov
+﻿(*
+    Copyright 2016, 2017 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -25,6 +25,8 @@ VAR
   Free*: PROCEDURE [winapi] (hMem: INTEGER): INTEGER;
   MessageBoxA*: PROCEDURE [winapi] (hWnd, lpText, lpCaption, uType: INTEGER): INTEGER;
   ExitProcess*: PROCEDURE [winapi] (code: INTEGER);
+  ExitThread*: PROCEDURE [winapi] (code: INTEGER);
+  GetCurrentThreadId*: PROCEDURE [winapi] (): INTEGER;
   strncmp*: PROCEDURE [cdecl] (a, b, n: INTEGER): INTEGER;
 
   GetProcAddress*: PROCEDURE [winapi] (hModule, name: INTEGER): INTEGER;
@@ -62,6 +64,8 @@ BEGIN
 
   lib := LoadLibraryA(sys.ADR("kernel32.dll"));
   GetProc("ExitProcess", lib, sys.ADR(ExitProcess));
+  GetProc("ExitThread", lib, sys.ADR(ExitThread));
+  GetProc("GetCurrentThreadId", lib, sys.ADR(GetCurrentThreadId));
   GetProc("GlobalAlloc", lib, sys.ADR(Alloc));
   GetProc("GlobalFree", lib, sys.ADR(Free));
 

@@ -1,5 +1,5 @@
 (*
-    Copyright 2016 Anton Krotov
+    Copyright 2016, 2017 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -28,6 +28,7 @@ TYPE
 VAR
 
   SelfName, rtab: INTEGER; CloseProc: PROC;
+  init: BOOLEAN;
 
 PROCEDURE [stdcall] _halt*(n: INTEGER);
 BEGIN
@@ -116,26 +117,18 @@ BEGIN
   END
 END _arrayrot;
 
-PROCEDURE Min(a, b: INTEGER): INTEGER;
-BEGIN
-  IF a > b THEN
-    a := b
-  END
-  RETURN a
-END Min;
-
 PROCEDURE [stdcall] _length*(s: ARRAY OF CHAR): INTEGER;
 BEGIN
   sys.CODE("8B4508");     //  mov     eax, [ebp + 08h]
   sys.CODE("8B4D0C");     //  mov     ecx, [ebp + 0Ch]
   sys.CODE("48");         //  dec     eax
-			  //  L1:
+                          //  L1:
   sys.CODE("40");         //  inc     eax
   sys.CODE("803800");     //  cmp     byte ptr [eax], 0
   sys.CODE("7403");       //  jz      L2
   sys.CODE("E2F8");       //  loop    L1
   sys.CODE("40");         //  inc     eax
-			  //  L2:
+                          //  L2:
   sys.CODE("2B4508");     //  sub     eax, [ebp + 08h]
   sys.CODE("C9");         //  leave
   sys.CODE("C20800");     //  ret     08h
@@ -144,7 +137,7 @@ END _length;
 
 PROCEDURE [stdcall] _strcopy*(b, blen, a, alen: INTEGER);
 BEGIN
-  _savearr(Min(alen, blen), a, b);
+  _savearr(MIN(alen, blen), a, b);
   IF blen > alen THEN
     sys.PUT(b + alen, 0X)
   END
@@ -153,7 +146,7 @@ END _strcopy;
 PROCEDURE [stdcall] _strcmp*(op: INTEGER; b, a: ARRAY OF CHAR): BOOLEAN;
 VAR i: INTEGER; Res: BOOLEAN;
 BEGIN
-  i := API.strncmp(sys.ADR(a), sys.ADR(b), Min(LEN(a), LEN(b)));
+  i := API.strncmp(sys.ADR(a), sys.ADR(b), MIN(LEN(a), LEN(b)));
   IF i = 0 THEN
     i := _length(a) - _length(b)
   END;
@@ -252,7 +245,8 @@ BEGIN
     Int(code, int);
     StrAppend(int)
   END;
-  API.DebugMsg(sys.ADR(msg), SelfName)
+  API.DebugMsg(sys.ADR(msg), SelfName);
+  API.ExitThread(0)
 END _assrt;
 
 PROCEDURE [stdcall] _close*;
@@ -264,11 +258,14 @@ END _close;
 
 PROCEDURE [stdcall] _init*(self, rec, gsize, gadr, esp: INTEGER);
 BEGIN
-  API.zeromem(gsize, gadr);
-  API.init(esp);
-  SelfName := self;
-  rtab := rec;
-  CloseProc := NIL
+  IF ~init THEN
+    API.zeromem(gsize, gadr);
+    init := TRUE;
+    API.init(esp);
+    SelfName := self;
+    rtab := rec;
+    CloseProc := NIL
+  END
 END _init;
 
 PROCEDURE SetClose*(proc: PROC);

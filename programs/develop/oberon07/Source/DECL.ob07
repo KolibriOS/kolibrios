@@ -1,5 +1,5 @@
 (*
-    Copyright 2016 Anton Krotov
+    Copyright 2016, 2017 Anton Krotov
 
     This file is part of Compiler.
 
@@ -43,10 +43,10 @@ CONST
   stABS = 1; stODD = 2; stLEN = 3; stLSL = 4; stASR = 5; stROR = 6; stFLOOR = 7; stFLT = 8;
   stORD = 9; stCHR = 10; stLONG = 11; stSHORT = 12; stINC = 13; stDEC = 14; stINCL = 15;
   stEXCL = 16; stCOPY = 17; stNEW = 18; stASSERT = 19; stPACK = 20; stUNPK = 21; stDISPOSE = 22;
-  stBITS = 23; stLSR = 24; stLENGTH = 25;
+  stBITS = 23; stLSR = 24; stLENGTH = 25; stMIN = 26; stMAX = 27;
 
   sysADR = 101; sysSIZE = 102; sysINF = 103; sysGET = 104; sysPUT = 105;
-  sysCODE = 106; sysTYPEID = 107; sysMOVE = 108;
+  sysCODE = 106; sysTYPEID = 107; sysMOVE = 108; sysCOPY = 109;
 
   TINTEGER = 1; TREAL = 2; TLONGREAL = 3; TCHAR = 4; TSET = 5; TBOOLEAN = 6; TVOID = 7; TNIL = 8;
   TCARD16 = 9; TSTRING = 10; TARRAY = 11; TRECORD = 12; TPOINTER = 13; TPROC = 14;
@@ -261,25 +261,25 @@ VAR code: INTEGER;
 BEGIN
   IF SCAN.tLex # key THEN
     CASE key OF
-    |lxMODULE:	code := 21
-    |lxIDENT:	code := 22
-    |lxSemi:	code := 23
-    |lxEND:	code := 24
-    |lxDot:	code := 25
-    |lxEQ:	code := 35
-    |lxRRound:	code := 38
-    |lxTO:	code := 40
-    |lxOF:	code := 41
-    |lxRCurly:	code := 51
-    |lxLRound:	code := 56
-    |lxComma:	code := 61
-    |lxTHEN:	code := 98
+    |lxMODULE:  code := 21
+    |lxIDENT:   code := 22
+    |lxSemi:    code := 23
+    |lxEND:     code := 24
+    |lxDot:     code := 25
+    |lxEQ:      code := 35
+    |lxRRound:  code := 38
+    |lxTO:      code := 40
+    |lxOF:      code := 41
+    |lxRCurly:  code := 51
+    |lxLRound:  code := 56
+    |lxComma:   code := 61
+    |lxTHEN:    code := 98
     |lxRSquare: code := 109
-    |lxDO:	code := 118
-    |lxUNTIL:	code := 119
-    |lxAssign:	code := 120
-    |lxRETURN:	code := 124
-    |lxColon:	code := 157
+    |lxDO:      code := 118
+    |lxUNTIL:   code := 119
+    |lxAssign:  code := 120
+    |lxRETURN:  code := 124
+    |lxColon:   code := 157
     ELSE
     END;
     Assert2(FALSE, code)
@@ -386,37 +386,39 @@ END PushSysType;
 PROCEDURE StIdent;
 BEGIN
   Guard;
-  PushStProc("ABS",	 stABS);
-  PushStProc("ASR",	 stASR);
-  PushStProc("ASSERT",	 stASSERT);
+  PushStProc("ABS",      stABS);
+  PushStProc("ASR",      stASR);
+  PushStProc("ASSERT",   stASSERT);
   PushStType("BOOLEAN",  TBOOLEAN);
-  PushStType("CHAR",	 TCHAR);
-  PushStProc("CHR",	 stCHR);
-  PushStProc("COPY",	 stCOPY);
-  PushStProc("DEC",	 stDEC);
+  PushStType("CHAR",     TCHAR);
+  PushStProc("CHR",      stCHR);
+  PushStProc("COPY",     stCOPY);
+  PushStProc("DEC",      stDEC);
   PushStProc("DISPOSE",  stDISPOSE);
-  PushStProc("EXCL",	 stEXCL);
-  PushStProc("FLOOR",	 stFLOOR);
-  PushStProc("FLT",	 stFLT);
-  PushStProc("INC",	 stINC);
-  PushStProc("INCL",	 stINCL);
+  PushStProc("EXCL",     stEXCL);
+  PushStProc("FLOOR",    stFLOOR);
+  PushStProc("FLT",      stFLT);
+  PushStProc("INC",      stINC);
+  PushStProc("INCL",     stINCL);
   PushStType("INTEGER",  TINTEGER);
-  PushStProc("LEN",	 stLEN);
-  PushStProc("LSL",	 stLSL);
-  PushStProc("LONG",	 stLONG);
+  PushStProc("LEN",      stLEN);
+  PushStProc("LSL",      stLSL);
+  PushStProc("LONG",     stLONG);
   PushStType("LONGREAL", TLONGREAL);
-  PushStProc("NEW",	 stNEW);
-  PushStProc("ODD",	 stODD);
-  PushStProc("ORD",	 stORD);
-  PushStProc("PACK",	 stPACK);
-  PushStType("REAL",	 TREAL);
-  PushStProc("ROR",	 stROR);
-  PushStType("SET",	 TSET);
-  PushStProc("SHORT",	 stSHORT);
-  PushStProc("UNPK",	 stUNPK);
-  PushStProc("BITS",	 stBITS);
-  PushStProc("LSR",	 stLSR);
-  PushStProc("LENGTH",	 stLENGTH);
+  PushStProc("NEW",      stNEW);
+  PushStProc("ODD",      stODD);
+  PushStProc("ORD",      stORD);
+  PushStProc("PACK",     stPACK);
+  PushStType("REAL",     TREAL);
+  PushStProc("ROR",      stROR);
+  PushStType("SET",      TSET);
+  PushStProc("SHORT",    stSHORT);
+  PushStProc("UNPK",     stUNPK);
+  PushStProc("BITS",     stBITS);
+  PushStProc("LSR",      stLSR);
+  PushStProc("LENGTH",   stLENGTH);
+  PushStProc("MIN",      stMIN);
+  PushStProc("MAX",      stMAX);
   Guard
 END StIdent;
 
@@ -428,9 +430,9 @@ BEGIN
   WHILE (cur # NIL) & (cur.iType # IDGUARD) DO
     IF cur.Name = Name THEN
       IF (Unit # unit) & ~cur.Export THEN
-	res := NIL
+        res := NIL
       ELSE
-	res := cur
+        res := cur
       END;
       cur := NIL
     ELSE
@@ -533,9 +535,9 @@ BEGIN
       Res := Arith(a, b, Ta, Op, coord)
     ELSIF Ta.tType = TSET THEN
       CASE Op OF
-      |lxPlus:	Res := LONG(FLT(ORD(BITS(ai) + BITS(bi))))
+      |lxPlus:  Res := LONG(FLT(ORD(BITS(ai) + BITS(bi))))
       |lxMinus: Res := LONG(FLT(ORD(BITS(ai) - BITS(bi))))
-      |lxMult:	Res := LONG(FLT(ORD(BITS(ai) * BITS(bi))))
+      |lxMult:  Res := LONG(FLT(ORD(BITS(ai) * BITS(bi))))
       |lxSlash: Res := LONG(FLT(ORD(BITS(ai) / BITS(bi))))
       ELSE
       END
@@ -636,23 +638,23 @@ BEGIN
       NamePtrBase := Name;
       id := GetQIdent(Unit, Name);
       IF Unit # unit THEN
-	Assert2(id # NIL, 42);
-	Assert2(id.iType = IDTYPE, 77);
-	Coord(coord);
-	Next;
-	Res := id.T
+        Assert2(id # NIL, 42);
+        Assert2(id.iType = IDTYPE, 77);
+        Coord(coord);
+        Next;
+        Res := id.T
       ELSE
-	IF id = NIL THEN
-	  Assert2((unit.Level = 3) & unit.typedecl, 42);
-	  Coord(coord);
-	  Next;
-	  Res := NIL
-	ELSE
-	  Assert2(id.iType = IDTYPE, 77);
-	  Coord(coord);
-	  Next;
-	  Res := id.T
-	END
+        IF id = NIL THEN
+          Assert2((unit.Level = 3) & unit.typedecl, 42);
+          Coord(coord);
+          Next;
+          Res := NIL
+        ELSE
+          Assert2(id.iType = IDTYPE, 77);
+          Coord(coord);
+          Next;
+          Res := id.T
+        END
       END
     ELSE
       Assert2(FALSE, 77)
@@ -689,21 +691,21 @@ BEGIN
     cur.T := Tf;
     IF Rec THEN
       IF Tf.Align > Tr.Align THEN
-	Tr.Align := Tf.Align
+        Tr.Align := Tf.Align
       END;
       IF Tr.Rec = record THEN
-	cur.Offset := FieldOffset(Tf.Align, Tr.Size);
-	Assert2(cur.Offset <= SCAN.maxINT - Tf.Size, 83);
-	Tr.Size := cur.Offset + Tf.Size
+        cur.Offset := FieldOffset(Tf.Align, Tr.Size);
+        Assert2(cur.Offset <= SCAN.maxINT - Tf.Size, 83);
+        Tr.Size := cur.Offset + Tf.Size
       ELSIF Tr.Rec = noalign THEN
-	cur.Offset := FieldOffset(1, Tr.Size);
-	Assert2(cur.Offset <= SCAN.maxINT - Tf.Size, 83);
-	Tr.Size := cur.Offset + Tf.Size
+        cur.Offset := FieldOffset(1, Tr.Size);
+        Assert2(cur.Offset <= SCAN.maxINT - Tf.Size, 83);
+        Tr.Size := cur.Offset + Tf.Size
       ELSIF Tr.Rec = union THEN
-	IF Tf.Size > Tr.Size THEN
-	  Tr.Size := Tf.Size
-	END;
-	cur.Offset := 0
+        IF Tf.Size > Tr.Size THEN
+          Tr.Size := Tf.Size
+        END;
+        cur.Offset := 0
       END
     ELSE
       Tr.Len := Tr.Len + 4 * (ORD((Tf.tType = TRECORD) & cur.ByRef) + Dim(Tf) + ORD((Tf.tType = TLONGREAL) & ~cur.ByRef) + 1)
@@ -734,7 +736,7 @@ BEGIN
     field := GetField(T, Name);
     IF field # NIL THEN
       IF (field.Unit = unit) OR field.Export THEN
-	res := FALSE
+        res := FALSE
       END
     END;
     T := T.Base
@@ -744,7 +746,7 @@ END Unique;
 
 PROCEDURE notrecurs(id: BOOLEAN; T: pTYPE): BOOLEAN;
   RETURN ~(id & (unit.Idents.Last(IDENT).iType = IDTYPE) & (unit.Idents.Last(IDENT).T = T) &
-	  (T.tType IN TSTRUCT))
+          (T.tType IN TSTRUCT))
 END notrecurs;
 
 PROCEDURE ReadFields(T: pTYPE);
@@ -776,9 +778,9 @@ BEGIN
       Assert(notrecurs(id_T, Tf), coord, 96);
       SetFields(T, Tf, TRUE);
       IF SCAN.tLex = lxSemi THEN
-	NextCheck(lxIDENT)
+        NextCheck(lxIDENT)
       ELSE
-	Assert2(SCAN.tLex = lxEND, 86)
+        Assert2(SCAN.tLex = lxEND, 86)
       END
     ELSE
       Assert2(FALSE, 85)
@@ -819,9 +821,9 @@ BEGIN
       ProgSize := ProgSize + UTILS.Align(ProgSize)
     ELSE
       IF cur.VarKind = 0 THEN
-	cur.Offset := curBlock.ParamSize - curBlock.VarSize - n
+        cur.Offset := curBlock.ParamSize - curBlock.VarSize - n
       ELSE
-	cur.Offset := curBlock.VarSize - 8 + 4 * (cur.Level + ORD((cur.VarKind = paramvar) & (T.tType = TRECORD)))
+        cur.Offset := curBlock.VarSize - 8 + 4 * (cur.Level + ORD((cur.VarKind = paramvar) & (T.tType = TRECORD)))
       END
     END;
     Assert2(curBlock.VarSize <= SCAN.maxINT - n, 93);
@@ -901,9 +903,9 @@ BEGIN
       INC(curBlock.ParamCount);
       fp := unit.Idents.Last(IDENT);
       IF ByRef THEN
-	fp.VarKind := paramvar
+        fp.VarKind := paramvar
       ELSE
-	fp.VarKind := param
+        fp.VarKind := param
       END
     END;
     Next;
@@ -915,7 +917,7 @@ BEGIN
       Assert(Dim(Tf) <= X86.ADIM, coord, 110);
       SetFields(T, Tf, FALSE);
       IF proc THEN
-	SetVars(Tf)
+        SetVars(Tf)
       END;
       cont := FALSE
     ELSE
@@ -932,9 +934,9 @@ BEGIN
     REPEAT
       Section(T);
       IF SCAN.tLex = lxSemi THEN
-	Next
+        Next
       ELSE
-	break := TRUE
+        break := TRUE
       END
     UNTIL break
   END
@@ -1054,6 +1056,9 @@ BEGIN
       Check(lxIDENT);
       nov.Base := IdType(coord);
       Assert(nov.Base # NIL, coord, 42);
+      IF (nov.Base.tType = TPOINTER) & (nov.Base.Base.tType = TRECORD) THEN
+          nov.Base := nov.Base.Base
+      END;
       Assert(nov.Base.tType = TRECORD, coord, 80);
       Assert(notrecurs(TRUE, nov.Base), coord, 96);
       nov.Size := nov.Base.Size;
@@ -1194,10 +1199,16 @@ BEGIN
       last := unit.Idents.Last(IDENT);
       Check(lxEQ);
       Next;
-      NEW(NewType);
-      MemErr(NewType = NIL);
-      last.T := NewType;
-      T := StructType(FALSE, NewType);
+
+      IF SCAN.tLex = lxIDENT THEN
+        last.T := ParseType(coord)
+      ELSE
+        NEW(NewType);
+        MemErr(NewType = NIL);
+        last.T := NewType;
+        T := StructType(FALSE, NewType)
+      END;
+
       Check(lxSemi);
       Next
     END
@@ -1210,16 +1221,16 @@ BEGIN
       IdentDef;
       PushIdent(Name, coord, IDVAR, NIL, NIL, Export, 0);
       IF SCAN.tLex = lxComma THEN
-	NextCheck(lxIDENT)
+        NextCheck(lxIDENT)
       ELSIF SCAN.tLex = lxColon THEN
-	NextCoord(coord);
-	T := ParseType(coord);
-	Assert(T # NIL, coord, 42);
-	SetVars(T);
-	Check(lxSemi);
-	Next
+        NextCoord(coord);
+        T := ParseType(coord);
+        Assert(T # NIL, coord, 42);
+        SetVars(T);
+        Check(lxSemi);
+        Next
       ELSE
-	Assert2(FALSE, 85)
+        Assert2(FALSE, 85)
       END
     END
   END;
@@ -1237,8 +1248,8 @@ BEGIN
     id.Proc := curproc;
     IF id.Export & main THEN
       IF Platform IN {1, 6} THEN
-	curproc.used := TRUE;
-	Assert((Name # SCAN._START) & (Name # SCAN._version), coord, 133)
+        curproc.used := TRUE;
+        Assert((Name # SCAN._START) & (Name # SCAN._version), coord, 133)
       END;
       X86.ProcExport(id.Number, Name, X86.NewLabel())
     END;
@@ -1266,7 +1277,7 @@ BEGIN
       Expr(e);
       Assert(AssComp(e, curBlock.T.Base, FALSE), coord, 125);
       IF e.eType = eVAR THEN
-	X86.Load(e.T.tType)
+        X86.Load(e.T.tType)
       END
     ELSE
       Assert2(SCAN.tLex # lxRETURN, 123)
@@ -1335,12 +1346,12 @@ VAR cond: INTEGER; coord, namecoord: SCAN.TCoord;
       SCAN.Backup(unit.scanner);
       COPY(name.Name, FName);
       IF ~((~self.Std & pReadModule(Path, FName, UTILS.Ext)) OR pReadModule(Std, FName, UTILS.Ext)) THEN
-	IF FName = "SYSTEM" THEN
-	  unit := sys;
-	  self.sys := TRUE
-	ELSE
-	  Assert(FALSE, namecoord, 32)
-	END
+        IF FName = "SYSTEM" THEN
+          unit := sys;
+          self.sys := TRUE
+        ELSE
+          Assert(FALSE, namecoord, 32)
+        END
       END;
       SCAN.Recover(self.scanner);
       u := unit;
@@ -1363,28 +1374,28 @@ BEGIN
     Next;
     CASE cond OF
     |0: Check(lxIDENT);
-	name := SCAN.id;
-	Coord(coord);
-	Coord(namecoord);
-	alias := name;
-	cond := 1
+        name := SCAN.id;
+        Coord(coord);
+        Coord(namecoord);
+        alias := name;
+        cond := 1
     |1: CASE SCAN.tLex OF
-	|lxComma:  AddUnit(0)
-	|lxSemi:   AddUnit(4); Next
-	|lxAssign: cond := 2
-	ELSE
-	  Assert2(FALSE, 28)
-	END
+        |lxComma:  AddUnit(0)
+        |lxSemi:   AddUnit(4); Next
+        |lxAssign: cond := 2
+        ELSE
+          Assert2(FALSE, 28)
+        END
     |2: Check(lxIDENT);
-	name := SCAN.id;
-	Coord(namecoord);
-	cond := 3
+        name := SCAN.id;
+        Coord(namecoord);
+        cond := 3
     |3: CASE SCAN.tLex OF
-	|lxComma: AddUnit(0)
-	|lxSemi:  AddUnit(4); Next
-	ELSE
-	  Assert2(FALSE, 29)
-	END
+        |lxComma: AddUnit(0)
+        |lxSemi:  AddUnit(4); Next
+        ELSE
+          Assert2(FALSE, 29)
+        END
     ELSE
     END
   END
@@ -1409,14 +1420,15 @@ VAR temp: UNIT;
 BEGIN
   temp := unit;
   Header(SCAN.AddNode("SYSTEM"));
-  PushSysProc("ADR",	 sysADR);
-  PushSysProc("SIZE",	 sysSIZE);
+  PushSysProc("ADR",     sysADR);
+  PushSysProc("SIZE",    sysSIZE);
   PushSysProc("TYPEID",  sysTYPEID);
-  PushSysProc("GET",	 sysGET);
-  PushSysProc("PUT",	 sysPUT);
-  PushSysProc("CODE",	 sysCODE);
-  PushSysProc("MOVE",	 sysMOVE);
-  PushSysProc("INF",	 sysINF);
+  PushSysProc("GET",     sysGET);
+  PushSysProc("PUT",     sysPUT);
+  PushSysProc("CODE",    sysCODE);
+  PushSysProc("MOVE",    sysMOVE);
+  PushSysProc("COPY",    sysCOPY);
+  PushSysProc("INF",     sysINF);
   PushSysType("CARD16",  TCARD16);
   sys := unit;
   unit := temp
@@ -1531,7 +1543,7 @@ VAR cur: Proc;
     WHILE cur # NIL DO
       p := cur.Proc(Proc);
       IF ~p.used THEN
-	ProcHandling(p)
+        ProcHandling(p)
       END;
       cur := cur.Next(IDENT)
     END;

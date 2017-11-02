@@ -1,5 +1,5 @@
 (*
-    Copyright 2016 Anton Krotov
+    Copyright 2016, 2017 Anton Krotov
 
     This file is part of Compiler.
 
@@ -28,7 +28,7 @@ CONST
   Ext* = ".ob07";
   MAX_PATH = 1024;
   MAX_PARAM = 1024;
-  Date* = 1451606400; (* 2016-01-01 *)
+  Date* = 1509580800;  (* 2017-11-02 *)
 
 TYPE
 
@@ -53,7 +53,7 @@ TYPE
 VAR
 
   Params: ARRAY MAX_PARAM, 2 OF INTEGER;
-  ParamCount*, Line*, Unit*: INTEGER;  
+  ParamCount*, Line*, Unit*: INTEGER;
   FileName: STRING;
 
 PROCEDURE SetFile*(F: STRING);
@@ -113,8 +113,8 @@ BEGIN
     WHILE (j < len) & (i <= Params[n, 1]) DO
       c := GetChar(i);
       IF c # 22X THEN
-	str[j] := c;
-	INC(j)
+        str[j] := c;
+        INC(j)
       END;
       INC(i)
     END
@@ -198,14 +198,6 @@ BEGIN
   Unit := newUnit;
   Line := newLine
 END UnitLine;
-
-PROCEDURE min*(a, b: INTEGER): INTEGER;
-BEGIN
-  IF a > b THEN
-    a := b
-  END
-  RETURN a
-END min;
 
 PROCEDURE Align*(n: INTEGER): INTEGER;
   RETURN (4 - n MOD 4) MOD 4
@@ -333,7 +325,7 @@ BEGIN
   END;
   Path[i + 1] := 0X
 END Split;
-	  
+
 PROCEDURE LinuxParam;
 VAR p, i, str: INTEGER; c: CHAR;
 BEGIN
@@ -350,7 +342,7 @@ BEGIN
     Params[i, 1] := str - 1
   END;
   DEC(ParamCount)
-END LinuxParam;    
+END LinuxParam;
 
 PROCEDURE Time*;
 VAR sec, dsec: INTEGER;

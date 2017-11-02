@@ -1,5 +1,5 @@
-(*
-    Copyright 2016 Anton Krotov
+﻿(*
+    Copyright 2016, 2017 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -49,7 +49,6 @@ VAR
   ReadFile, WriteFile: PROCEDURE [winapi] (hFile, Buffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped: INTEGER): INTEGER;
   GetCommandLine*: PROCEDURE [winapi] (): INTEGER;
   GetTickCount: PROCEDURE [winapi] (): INTEGER;
-  Alloc: PROCEDURE [winapi] (uFlags, dwBytes: INTEGER): INTEGER;
   ExitProcess*: PROCEDURE [winapi] (code: INTEGER);
   SetFilePointer: PROCEDURE [winapi] (hFile, lDistanceToMove, lpDistanceToMoveHigh, dwMoveMethod: INTEGER): INTEGER;
 
@@ -71,7 +70,7 @@ BEGIN
 END OutString;
 
 PROCEDURE CreateFile* (FName: ARRAY OF CHAR): INTEGER;
-VAR res: INTEGER; 
+VAR res: INTEGER;
 BEGIN
   res := _CreateFile(sys.ADR(FName[0]), 0C0000000H, 0, 0, 2, 80H, 0);
   IF res = -1 THEN
@@ -112,12 +111,12 @@ BEGIN
 END Time;
 
 PROCEDURE malloc*(size: INTEGER): INTEGER;
-  RETURN Alloc(64, size)
+  RETURN API.Alloc(64, size)
 END malloc;
 
 PROCEDURE init*;
 VAR lib: INTEGER;
-BEGIN  
+BEGIN
   lib := API.LoadLibraryA(sys.ADR("kernel32.dll"));
   GetProc("GetTickCount", lib, sys.ADR(GetTickCount));
   Time(sec, dsec);
@@ -128,9 +127,8 @@ BEGIN
   GetProc("ReadFile", lib, sys.ADR(ReadFile));
   GetProc("WriteFile", lib, sys.ADR(WriteFile));
   GetProc("GetCommandLineA", lib, sys.ADR(GetCommandLine));
-  GetProc("ExitProcess", lib, sys.ADR(ExitProcess));
-  GetProc("GlobalAlloc", lib, sys.ADR(Alloc));
   GetProc("SetFilePointer", lib, sys.ADR(SetFilePointer));
+  ExitProcess := API.ExitProcess;
   hConsoleOutput := GetStdHandle(-11)
 END init;
 

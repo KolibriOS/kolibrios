@@ -1,5 +1,5 @@
 (*
-    Copyright 2016 Anton Krotov
+    Copyright 2016, 2017 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -107,34 +107,34 @@ BEGIN
     ELSE
       temp := 0;
       IF heap + size >= endheap THEN
-	IF sysfunc2(18, 16) > ASR(HEAP_SIZE, 10) THEN
-	  temp := sysfunc3(68, 12, HEAP_SIZE)
-	ELSE
-	  temp := 0
-	END;
-	IF temp # 0 THEN
-	  mem_commit(temp, HEAP_SIZE);
-	  heap := temp;
-	  endheap := heap + HEAP_SIZE
-	ELSE
-	  temp := -1
-	END
+        IF sysfunc2(18, 16) > ASR(HEAP_SIZE, 10) THEN
+          temp := sysfunc3(68, 12, HEAP_SIZE)
+        ELSE
+          temp := 0
+        END;
+        IF temp # 0 THEN
+          mem_commit(temp, HEAP_SIZE);
+          heap := temp;
+          endheap := heap + HEAP_SIZE
+        ELSE
+          temp := -1
+        END
       END;
       IF (heap # 0) & (temp # -1) THEN
-	sys.PUT(heap, size);
-	res := heap + 4;
-	heap := heap + size
+        sys.PUT(heap, size);
+        res := heap + 4;
+        heap := heap + size
       ELSE
-	res := 0
+        res := 0
       END
     END
   ELSE
     IF sysfunc2(18, 16) > ASR(size, 10) THEN
       res := sysfunc3(68, 12, size);
       IF res # 0 THEN
-	mem_commit(res, size);
-	sys.PUT(res, size);
-	INC(res, 4)
+        mem_commit(res, size);
+        sys.PUT(res, size);
+        INC(res, 4)
       END
     ELSE
       res := 0
@@ -166,6 +166,11 @@ BEGIN
   p1 := sysfunc1(-1)
 END ExitProcess;
 
+PROCEDURE ExitThread*(p1: INTEGER);
+BEGIN
+  p1 := sysfunc1(-1)
+END ExitThread;
+
 PROCEDURE OutChar(c: CHAR);
 VAR res: INTEGER;
 BEGIN
@@ -181,7 +186,7 @@ BEGIN
     REPEAT
       sys.GET(lpCaption, c);
       IF c # 0X THEN
-	OutChar(c)
+        OutChar(c)
       END;
       INC(lpCaption)
     UNTIL c = 0X;

@@ -1,5 +1,5 @@
 (*
-    Copyright 2016 Anton Krotov
+    Copyright 2016, 2017 Anton Krotov
 
     This file is part of Compiler.
 
@@ -36,7 +36,7 @@ CONST
   stDEC* = 14; stINCL* = 15; stEXCL* = 16; stCOPY* = 17; stNEW* = 18; stASSERT* = 19;
   stPACK* = 20; stUNPK* = 21; stDISPOSE* = 22; stFABS* = 23; stINC1* = 24;
   stDEC1* = 25; stASSERT1* = 26; stUNPK1* = 27; stPACK1* = 28; stLSR* = 29;
-  stLENGTH* = 30;
+  stLENGTH* = 30; stMIN* = 31; stMAX* = 32;
 
   sysMOVE* = 108;
 
@@ -1232,7 +1232,9 @@ BEGIN
   |stASR:    PopECX; OutCode("58D3F8"); PushEAX
   |stLSL:    PopECX; OutCode("58D3E0"); PushEAX
   |stLSR:    PopECX; OutCode("58D3E8"); PushEAX
-  |stORD:    PopEDX; OutCode("85D274036A015A"); PushEDX
+  |stORD:    PopEDX; OutCode("85D274036A015A"); PushEDX;
+  |stMIN:    PopEDX; OutCode("3914247E025852");
+  |stMAX:    PopEDX; OutCode("3B14247E025852");
   |stLENGTH: CallRTL(_length); PushEAX
   ELSE
   END
@@ -1269,12 +1271,12 @@ BEGIN
   |TCHAR, TBOOLEAN:
     IF lastcmd.tcmd = ECMD THEN
       del;
-      OutCode("33D28A");
+      OutCode("0FB6");
       IntByte("55", "95", offset);
       PushEDX
     ELSE
       PopEDX;
-      OutCode("33C98A0A");
+      OutCode("0FB60A");
       PushECX
     END
   |TLONGREAL:
