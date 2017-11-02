@@ -34,6 +34,10 @@ include '../../proc32.inc'
 include '../../dll.inc'
 include '../../debug-fdo.inc'
 include '../../develop/libraries/http/http.inc'
+include '../../notify.inc'
+include '../../string.inc'
+
+include 'notify.asm'
 
 virtual at 0
         http_msg http_msg
@@ -106,11 +110,11 @@ proc get_file_over_http targeturl, targetfilename
 
     .file_error:
     DEBUGF 1, "file_erroR with eax = %u!", eax
-        mcall -1
+        call EXIT
 
     .http_error:
     DEBUGF 1, "http_erroR!"
-        mcall -1
+        call EXIT
 
     .http_transfer_done:
         ;; Write any remaining bytes from the http buffer into the file
@@ -158,7 +162,7 @@ proc make_new_folder newfolder
     jz .success
 
     DEBUGF 1, "Failed to create folder: %s\n", [newfolder]
-    mcall -1
+    call EXIT
 
 .success:
     popa
@@ -167,6 +171,7 @@ endp
 
 START:
     mcall   68, 11                  ; init heap
+	call NOTIFY_RUN
 
 ; load libraries
     stdcall dll.Load, @IMPORT
@@ -225,6 +230,9 @@ START:
     ;; current_filename is now set to the name of the file
     ;; current_url is now set to the name of the file we will get after download
     DEBUGF 2, "Fetching : %s", current_filename
+	pusha
+	call NOTIFY_CHANGE
+	popa
     stdcall get_file_over_http, current_url, current_filename
     DEBUGF 2, "...DONE!\n"
     jmp .get_next_file
@@ -233,12 +241,12 @@ START:
     DEBUGF 2, "-------------------------\n"
     DEBUGF 2, "NETSURF INSTALLED. Enjoy!\n"
     DEBUGF 2, "-------------------------\n"
-    mcall -1
+    call EXIT
     ;; Inform user that all files are done
 
 .all_files_done_error:
     DEBUGF 1, "FATAL ERROR: FAILED.\n", eax
-    mcall -1
+    call EXIT
 
 ;---------------------------------------------------------------------
 ; Data area
@@ -261,6 +269,10 @@ dirname_res_throbber db '/tmp0/1/res/throbber', 0
 dirname_res_icons    db '/tmp0/1/res/icons', 0
 
 url              db 'www.ashmew2.me/',0
+
+; I don't know why NOTIFY_CHANGE doesn't work for the first file 
+; so I use this small shit to fix it at NOTIFY_RUN phase
+filelist_first db '/tmp0/1/netsurf-kolibrios', 0
 
 filelist db 'netsurf-kolibrios', 0
          db 'netsurf-kolibrios.map', 0
@@ -340,4 +352,38 @@ write_to_file    dd 3
 socketdata       rb 4096
 current_url      rb URLMAXLEN
 current_filename rb FILENAMEMAXLEN
+
+;=====================================================================
+; NOTIFY DATA
+timer	dd 0
+params rb 256
+ctrl:
+ .name rb 32
+ .addr rd 1
+rb 2048
+
+ sz_text:
+    db "Netsurf installer                         ", 0
+ sz_quote:
+    db "'", 0
+ sz_sec_line_start:
+    db 10, "Fetching:",10, 0
+ sz_flags:
+    db "Ddcpt", 0
+	
+ sz_final_text:
+    db "Netsurf installer",10,"Download complete.",10,"Enjoy!",0
+
+ fi_launch:
+    dd	    7, 0, params, 0, 0
+    db	    "@notify", 0
+	
+fileopen    dd 7
+            dd 0                    ; flags
+            dd 0                    ; parameters
+            dd 0                    ; reserved
+            dd 0                    ; reserved
+            db "/tmp0/1/netsurf-kolibrios", 0      ; path
+;=====================================================================
+	
 I_END:
