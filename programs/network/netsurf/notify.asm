@@ -38,7 +38,9 @@ NOTIFY_RUN:
  ;; WAIT UNTIL CONTROLLER BECOMES READY TO USE
     add     eax, NTCTRL_READY
   @@:
+	push    eax
     mcall   5, 1
+	pop     eax
     cmpe    byte [eax], 0, @b
 
  ;; CONFIG PBAR
