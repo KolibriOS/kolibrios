@@ -1,4 +1,4 @@
-﻿(*
+(*
     Copyright 2016, 2017 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
@@ -245,7 +245,8 @@ BEGIN
     StrAppend("code ");
     Int(code, int);
     StrAppend(int)
-  END;
+  END;    
+  API.DebugMsg(sys.ADR(msg), SelfName);
   IF API.GetCurrentThreadId() = main_thread_id THEN
     API.ExitProcess(0)
   ELSE
