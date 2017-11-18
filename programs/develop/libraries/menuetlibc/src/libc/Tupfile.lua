@@ -68,7 +68,7 @@ FOLDERS = {
   "termios",
 }
 
-CFLAGS="-Os -fno-stack-check -fno-stack-protector -mno-stack-arg-probe -fno-ident -fomit-frame-pointer -fno-asynchronous-unwind-tables -mpreferred-stack-boundary=2 -march=pentium-mmx"
+CFLAGS="-Os -fno-stack-check -fno-stack-protector -mno-stack-arg-probe -fno-ident -fomit-frame-pointer -fno-asynchronous-unwind-tables -mpreferred-stack-boundary=2 -march=pentium-mmx -fgnu89-inline"
 OBJS={}
 for i,v in ipairs(FOLDERS) do
   tup.append_table(OBJS,
