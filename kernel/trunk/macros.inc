@@ -15,6 +15,13 @@ macro $Revision a {
   \}
 }
 
+macro ignore_empty_revision_keyword {
+  ; svn keywords are neither substituted by git-svn nor catched by $Revision
+  ; macro above, ignore them to not fail the build
+  macro $Rev#ision$ \{\}
+}
+ignore_empty_revision_keyword
+
 $Revision$
 
 
