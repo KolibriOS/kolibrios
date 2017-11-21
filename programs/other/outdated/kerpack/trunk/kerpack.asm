@@ -31,7 +31,7 @@ use32
 	dd 0	;params
 	dd 0	;cur_dir_path
 ;---------------------------------------------------------------------
-include '../../../macros.inc'
+include '../../../../macros.inc'
 ; do not touch "purge mov"!!!
 purge mov ; for the correct patch of loader
 ; do not touch "purge mov"!!!
