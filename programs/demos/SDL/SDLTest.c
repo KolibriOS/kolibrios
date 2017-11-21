@@ -8,7 +8,7 @@ objcopy -O binary sdltest
 
 Now sdltest is your binary to run on Kolibri for SDL Demo.
 
-/*
+*/
 
 #include <stdio.h>
 #include <SDL.h>
