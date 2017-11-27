@@ -1,7 +1,7 @@
 ; Зделано ко дню победы 9_мая, в память о всех тех, кто освобаждал Россию от фашистов. 
 ; (Дата создания - 3_мая_2009г)
 
-include 'me_skin.inc'
+include 'skin.inc'
 
 SKIN_PARAMS \
   height	  = bmp_base.height,\	  ; skin height

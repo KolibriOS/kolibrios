@@ -2,11 +2,11 @@
 ;; dunkaist, Mario | 2010
 ;;---------------------------------------------------------------------
 
-include 'my_skin.inc'
+include 'skin.inc'
 
 SKIN_PARAMS \
     height          =   bmp_base.height,    \   ; skin height
-    margins         =   [5:1:1:1],         \   ; margins [left:top:right:bottom]
+    margins         =   [5:1:1:1],          \   ; margins [left:top:right:bottom]
   colors                                    \
     active          =   [                   \
     binner          =   0xff0000:           \   ; border inner color
@@ -18,10 +18,10 @@ SKIN_PARAMS \
     bouter          =   0x00ff00:           \   ; border outer color
     bframe          =   0xff0000],          \   ; border frame color
 \
-  dtp               =   'testtest.dtp'            ; dtp colors
+  dtp               =   'testtest.dtp'          ; dtp colors
 
 SKIN_BUTTONS \
-    close           =   [-23:2][20:107],     \   ; buttons coordinates
+    close           =   [-23:2][20:107],    \   ; buttons coordinates
     minimize        =   [-43:2][20:107]          ; [left:top][width:height]
 
 SKIN_BITMAPS \

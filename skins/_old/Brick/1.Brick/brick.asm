@@ -1,4 +1,4 @@
-include 'me_skin.inc'
+include 'skin.inc'
 
 SKIN_PARAMS \
   height      = bmp_base.height,\           ; skin height

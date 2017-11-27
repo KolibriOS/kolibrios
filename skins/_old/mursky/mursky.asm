@@ -2,7 +2,7 @@
 ;; dunkaist, Mario | 2010
 ;;---------------------------------------------------------------------
 
-include 'my_skin.inc'
+include 'skin.inc'
 
 SKIN_PARAMS \
     height          =   bmp_base.height,    \   ; skin height
