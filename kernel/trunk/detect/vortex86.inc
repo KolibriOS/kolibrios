@@ -12,7 +12,7 @@
 $Revision$
 
 VORTEX86DEBUG = 0                       ; For testing in emulators and in non-Vortex86 CPU computers, set this to 1
-VORTEX86DEBUGVALUE = 0x35504d44         ; FAKE port output = used for testing
+VORTEX86DEBUGVALUE = 'DMP5'             ; FAKE port output = used for testing
 NORTH_BRIDGE = 0x80000000               ; Base address of Vortex86 PCI North Bridge
 SOUTH_BRIDGE = 0x80003800               ; Base address of Vortex86 PCI South Bridge
 

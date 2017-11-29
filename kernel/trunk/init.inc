@@ -15,7 +15,7 @@ MEM_UC     equ 0               ;uncached memory
 align 4
 proc mem_test
 ; if we have BIOS with fn E820, skip the test
-        cmp     dword [BOOT_VARS-OS_BASE + 0x9100], 0
+        cmp     dword [BOOT_VARS-OS_BASE + BOOT_MEMMAP_BLOCK_CNT], 0
         jnz     .ret
 
         mov     eax, cr0
@@ -35,14 +35,14 @@ proc mem_test
 
         and     eax, not (CR0_CD+CR0_NW) ;enable caching
         mov     cr0, eax
-        inc     dword [BOOT_VARS-OS_BASE + 0x9100]
+        inc     dword [BOOT_VARS-OS_BASE + BOOT_MEMMAP_BLOCK_CNT]
         xor     eax, eax
-        mov     [BOOT_VARS-OS_BASE + 0x9104], eax
-        mov     [BOOT_VARS-OS_BASE + 0x9108], eax
-        mov     [BOOT_VARS-OS_BASE + 0x910C], edi
-        mov     [BOOT_VARS-OS_BASE + 0x9110], eax
+        mov     [BOOT_VARS-OS_BASE + BOOT_MEMMAP_BLOCKS + e820entry.addr.lo], eax
+        mov     [BOOT_VARS-OS_BASE + BOOT_MEMMAP_BLOCKS + e820entry.addr.hi], eax
+        mov     [BOOT_VARS-OS_BASE + BOOT_MEMMAP_BLOCKS + e820entry.size.lo], edi
+        mov     [BOOT_VARS-OS_BASE + BOOT_MEMMAP_BLOCKS + e820entry.size.hi], eax
         inc     eax
-        mov     [BOOT_VARS-OS_BASE + 0x9114], eax
+        mov     [BOOT_VARS-OS_BASE + BOOT_MEMMAP_BLOCKS + e820entry.type], eax
 .ret:
         ret
 endp
@@ -50,7 +50,7 @@ endp
 align 4
 proc init_mem
 ; calculate maximum allocatable address and number of allocatable pages
-        mov     edi, BOOT_VARS-OS_BASE + 0x9104
+        mov     edi, BOOT_VARS-OS_BASE + BOOT_MEMMAP_BLOCKS
         mov     ecx, [edi-4]
         xor     esi, esi; esi will hold total amount of memory
         xor     edx, edx; edx will hold maximum allocatable address
@@ -197,7 +197,7 @@ proc init_page_map
         rep stosd
 
 ; scan through memory map and mark free areas as available
-        mov     ebx, BOOT_VARS-OS_BASE + 0x9104
+        mov     ebx, BOOT_VARS-OS_BASE + BOOT_MEMMAP_BLOCKS
         mov     edx, [ebx-4]
 .scanmap:
         cmp     [ebx+16], byte 1
@@ -448,9 +448,9 @@ ACPI_HI_RSDP_WINDOW_START  equ 0x000E0000
 ACPI_HI_RSDP_WINDOW_END    equ 0x00100000
 ACPI_RSDP_CHECKSUM_LENGTH  equ 20
 
-ACPI_HPET_SIGN             equ 0x54455048
-ACPI_MADT_SIGN             equ 0x43495041
-ACPI_FADT_SIGN             equ 0x50434146
+ACPI_HPET_SIGN             equ 'HPET'
+ACPI_MADT_SIGN             equ 'APIC'
+ACPI_FADT_SIGN             equ 'FACP'
 
 
 acpi_locate:
@@ -477,9 +477,9 @@ acpi_locate:
         ret
 
 .check:
-        cmp     [ebx], dword 0x20445352
+        cmp     [ebx], dword 'RSD '
         jne     .next
-        cmp     [ebx+4], dword 0x20525450
+        cmp     [ebx+4], dword 'PTR '
         jne     .next
 
         mov     edx, ebx

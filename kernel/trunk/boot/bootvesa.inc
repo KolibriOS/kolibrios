@@ -789,7 +789,7 @@ set_vmode:
 ;        add     eax, ebx
 ;        push    0x0000
 ;        pop     es
-;        mov     [es:0x9014], eax
+;        mov     [es:BOOT_BANK_SW], eax
   .exit:
         ret
 

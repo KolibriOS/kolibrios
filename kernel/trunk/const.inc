@@ -313,28 +313,25 @@ BOOT_Y_RES          equ 0x900C    ;word   Y res
 BOOT_BANK_SW        equ 0x9014    ;dword  Vesa 1.2 pm bank switch
 BOOT_LFB            equ 0x9018    ;dword  Vesa 2.0 LFB address
 BOOT_MTRR           equ 0x901C    ;byte   0 or 1 : enable MTRR graphics acceleration
-;BOOT_LOG            equ 0x901D    ;byte   not used anymore (0 or 1 : enable system log display)
-BOOT_LAUNCHER_START equ 0x901D    ;byte  (0 or 1) start the first app (right now it's LAUNCHER) after kernel is loaded?
-;BOOT_DIRECT_LFB     equ 0x901E    ;byte   0 or 1 : enable direct lfb write, paging disabled
+BOOT_LAUNCHER_START equ 0x901D    ;byte   (0 or 1) start the first app (right now it's LAUNCHER) after kernel is loaded?
 BOOT_DEBUG_PRINT    equ 0x901E    ;byte   If nonzero, duplicates debug output to the screen.
-BOOT_DMA            equ 0x901F    ;
+BOOT_DMA            equ 0x901F    ;byte   DMA write : 1=yes, 2=no
 BOOT_PCI_DATA       equ 0x9020    ;8bytes pci data
 BOOT_SHUTDOWN_TYPE  equ 0x9030    ;byte   shutdown type (see sysfn 18.9)
-;BOOT_IDE_BASE_ADDR  equ 0x9031   ;word   IDEContrRegsBaseAddr ; now free and is not used
 BOOT_MEM_AMOUNT     equ 0x9034    ;dword  memory amount
 
 BOOT_APM_ENTRY      equ 0x9040
 BOOT_APM_VERSION    equ 0x9044
-BOOT_APM_FLAGS      equ 0x9046    ;unused
+BOOT_APM_FLAGS      equ 0x9046
 BOOT_APM_CODE_32    equ 0x9050
 BOOT_APM_CODE_16    equ 0x9052
 BOOT_APM_DATA_16    equ 0x9054
-;BOOT_IDE_BAR0_16    equ 0x9056 ; now free and is not used
-;BOOT_IDE_BAR1_16    equ 0x9058 ; now free and is not used
-;BOOT_IDE_BAR2_16    equ 0x905A ; now free and is not used
-;BOOT_IDE_BAR3_16    equ 0x905C ; now free and is not used
-;BOOT_IDE_PI_16      equ 0x905E ; now free and is not used
-;BOOT_IDE_INTERR_16  equ 0x9060 ; now free and is not used
+
+BOOT_BIOS_HD_CNT     equ 0x907F   ; byte   number of BIOS hard disks
+BOOT_BIOS_HD         equ 0x9080   ; Nbytes BIOS hard disks
+BOOT_MEMMAP_BLOCK_CNT equ 0x9100  ; word   available physical memory map: number of blocks
+BOOT_MEMMAP_BLOCKS   equ 0x9104   ; available physical memory map: blocks, i.e. e820entry structs
+MAX_MEMMAP_BLOCKS   equ 32
 
 TMP_FILE_NAME       equ     0
 TMP_CMD_LINE        equ  1024
@@ -936,3 +933,15 @@ struct  IRQH
         data            dd ?   ;user-specific data
         num_ints        dd ?   ;how many times handled
 ends
+
+struct DQ
+        lo dd ?
+        hi dd ?
+ends
+
+struct e820entry
+        addr DQ ?
+        size DQ ?
+        type dd ?
+ends
+

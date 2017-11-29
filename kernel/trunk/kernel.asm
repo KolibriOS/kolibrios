@@ -447,7 +447,7 @@ high_code:
         mov     al, [BOOT_VARS+BOOT_LAUNCHER_START] ; Start the first app (LAUNCHER) after kernel is loaded?
         mov     [launcher_start], al
 
-        mov     esi, BOOT_VARS+0x9080
+        mov     esi, BOOT_VARS+BOOT_BIOS_HD
         movzx   ecx, byte [esi-1]
         mov     [NumBiosDisks], ecx
         mov     edi, BiosDisksData
@@ -2188,9 +2188,9 @@ sys_system:
         ret
 ;------------------------------------------------------------------------------
 sysfn_shutdown:          ; 18.9 = system shutdown
-        cmp     ecx, 1
+        cmp     ecx, SYSTEM_SHUTDOWN
         jl      exit_for_anyone
-        cmp     ecx, 4
+        cmp     ecx, SYSTEM_RESTART
         jg      exit_for_anyone
         mov     [BOOT_VARS+BOOT_SHUTDOWN_TYPE], cl
 

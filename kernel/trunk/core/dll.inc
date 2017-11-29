@@ -476,7 +476,7 @@ proc load_file stdcall, file_name:dword
         jne     .cleanup
 
         mov     eax, [file]
-        cmp     dword [eax], 0x4B43504B
+        cmp     dword [eax], 'KPCK'
         jne     .exit
         mov     ebx, [eax+4]
         mov     [file_size], ebx
@@ -583,7 +583,7 @@ proc load_file_umode stdcall, file_name:dword
         jne     .err_2
 
         mov     eax, [km_file]
-        cmp     dword [eax], 0x4B43504B          ; check kpack signature
+        cmp     dword [eax], 'KPCK'              ; check kpack signature
         jne     .raw_file
 
         mov     ebx, [eax+4]                     ;get real size of file

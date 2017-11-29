@@ -1336,7 +1336,7 @@ endp
 
 align 4
 proc print_mem
-        mov     edi, BOOT_VAR + 0x9104
+        mov     edi, BOOT_VAR + BOOT_MEMMAP_BLOCKS
         mov     ecx, [edi-4]
         test    ecx, ecx
         jz      .done

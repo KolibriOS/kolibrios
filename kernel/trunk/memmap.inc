@@ -14,19 +14,20 @@
 ;   0:9008     word   vesa video mode
 ;   0:900A     word   X res
 ;   0:900C     word   Y res
-;   0:9010     byte   mouse port  - not used
 ;   0:9014     dword  Vesa 1.2 pm bank switch
 ;   0:9018     dword  Vesa 2.0 LFB address
 ;   0:901C     byte   0 or 1 : enable MTRR graphics acceleration
-;   0:901D     byte   not used anymore (0 or 1 : enable system log display)
-;   0:901E     byte   0 or 1 : enable direct lfb write, paging disabled
+;   0:901D     byte   (0 or 1) start the first app (right now it's LAUNCHER) after kernel is loaded?
+;   0:901E     byte   If nonzero, duplicates debug output to the screen.
 ;   0:901F     byte   DMA write : 1=yes, 2=no
 ;   0:9020     8bytes pci data
 ;   0:9030     byte   shutdown type (see sysfn 18.9)
-;   0:9031     word   IDEContrRegsBaseAddr
-;    0x9040 - dword - entry point of APM BIOS
-;    0x9044 -  word - version (BCD)
-;    0x9046 -  word - flags
+;   0:9040     dword  entry point of APM BIOS
+;   0:9044     word   version (BCD)
+;   0:9046     word   flags
+;   0:9050     word   APM_CODE_32
+;   0:9052     word   APM_CODE_16
+;   0:9054     word   APM_DATA_16
 ;   0:907F     byte   number of BIOS hard disks
 ;   0:9080     Nbytes BIOS hard disks
 ;   0:9100     word   available physical memory map: number of blocks
