@@ -319,7 +319,7 @@ BOOT_LAUNCHER_START equ 0x901D    ;byte  (0 or 1) start the first app (right now
 BOOT_DEBUG_PRINT    equ 0x901E    ;byte   If nonzero, duplicates debug output to the screen.
 BOOT_DMA            equ 0x901F    ;
 BOOT_PCI_DATA       equ 0x9020    ;8bytes pci data
-BOOT_VRR            equ 0x9030    ;byte   VRR start enabled 1, 2-no
+BOOT_SHUTDOWN_TYPE  equ 0x9030    ;byte   shutdown type (see sysfn 18.9)
 ;BOOT_IDE_BASE_ADDR  equ 0x9031   ;word   IDEContrRegsBaseAddr ; now free and is not used
 BOOT_MEM_AMOUNT     equ 0x9034    ;dword  memory amount
 
@@ -685,7 +685,6 @@ struct  BOOT_DATA
         direct_lfb      dd ?
         pci_data        dd ?
                         dd ?
-        vrr             dd ?
         ide_base        dd ?
         mem_amount      dd ?
         pages_count     dd ?

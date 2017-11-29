@@ -22,7 +22,7 @@
 ;   0:901E     byte   0 or 1 : enable direct lfb write, paging disabled
 ;   0:901F     byte   DMA write : 1=yes, 2=no
 ;   0:9020     8bytes pci data
-;   0:9030     byte   VRR start enabled 1, 2-no
+;   0:9030     byte   shutdown type (see sysfn 18.9)
 ;   0:9031     word   IDEContrRegsBaseAddr
 ;    0x9040 - dword - entry point of APM BIOS
 ;    0x9044 -  word - version (BCD)

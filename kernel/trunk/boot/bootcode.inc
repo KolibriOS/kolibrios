@@ -496,8 +496,7 @@ cfgmanager:
 ; a) preboot_graph = graphical mode
 ;    preboot_gprobe = probe this mode?
 ; b) preboot_biosdisk  = use BIOS disks through V86 emulation? // (earlier was: preboot_dma  = use DMA access?)
-; c) preboot_debug = duplicates kernel debug output to the screen // (earlier was: preboot_vrrm = use VRR?)
-;    // VRR is an obsolete functionality, used only with CRT monitors: increase display frequency by reducing screen resolution
+; c) preboot_debug = duplicates kernel debug output to the screen
 ; d) preboot_launcher = start the first app (right now it's LAUNCHER) after kernel is loaded?
 ; e) preboot_device = from where to boot?
 
@@ -535,14 +534,6 @@ end if
         adc     byte [di+preboot_dma-preboot_device], 0
         cmp     byte [di+preboot_launcher-preboot_device], 1        ; Start LAUNCHER by default
         adc     byte [di+preboot_launcher-preboot_device], 0
-;        cmp     byte [di+preboot_biosdisk-preboot_device], 1
-;        adc     byte [di+preboot_biosdisk-preboot_device], 0
-;; default value for VRR is OFF
-;        cmp     byte [di+preboot_vrrm-preboot_device], 0
-;        jnz    @f
-;        mov    byte [di+preboot_vrrm-preboot_device], 2
-;@@:
-; notify user
         _setcursor 5,2
 
         mov     si, linef
@@ -569,9 +560,6 @@ end if
         mov     si, usebd_msg
         cmp     [preboot_biosdisk], 1
         call    .say_on_off
-;        mov     si, vrrm_msg
-;        cmp     [preboot_vrrm], 1
-;        call    .say_on_off
         mov     si, debug_mode_msg
         cmp     [preboot_debug], 1
         call    .say_on_off
@@ -667,7 +655,7 @@ end if
         je      .change_a
         cmp     al, 'b'         ; use BIOS disks? // (selecting YES will make BIOS disks visible as /bd)
         jz      .change_b
-        cmp     al, 'c'         ; load kernel in debug mode?  // (earlier was: use VRR?)
+        cmp     al, 'c'         ; load kernel in debug mode?
         jz      .change_c
         cmp     al, 'd'         ; start launcher after kernel is loaded?
         jz      .change_d
@@ -789,15 +777,6 @@ end if
         _ask_question ask_bd,'12',preboot_biosdisk              ; range accepted for answer: 1-2
         _setcursor 11,0
         jmp     .d
-;.change_c:                     ; //  VRR is an obsolete functionality, used only with CRT monitors
-;        _setcursor 16,0
-;        mov     si, vrrmprint
-;        call    print
-;        mov     bx, '12'       ; range accepted for answer: 1-2
-;        call    getkey
-;        mov     [preboot_vrrm], al
-;        _setcursor 12,0
-;        jmp     .d
 .change_c:                      ; c) preboot_debug = duplicates kernel debug output to the screen
         _ask_question ask_debug,'12',preboot_debug              ; range accepted for answer: 1-2
         _setcursor 12,0
@@ -974,11 +953,6 @@ end if
 
         mov     al, [preboot_dma]
         mov     [es:BOOT_DMA], al
-
-;; VRR_M USE
-;
-;        mov     al,[preboot_vrrm]
-;        mov     [es:BOOT_VRR], al              ;// 0x9030
 
 ; Set kernel DEBUG mode - if nonzero, duplicates debug output to the screen.
         mov     al, [preboot_debug]

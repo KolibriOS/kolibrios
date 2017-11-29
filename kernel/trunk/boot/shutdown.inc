@@ -16,10 +16,13 @@ $Revision$
 align 4
 system_shutdown:          ; shut down the system
 
-        cmp     byte [BOOT_VARS+0x9030], 1
-        jne     @F
-        ret
+        cmp     byte [BOOT_VARS+BOOT_SHUTDOWN_TYPE], SYSTEM_SHUTDOWN
+        jb      @F
+        cmp     byte [BOOT_VARS+BOOT_SHUTDOWN_TYPE], SYSTEM_RESTART
+        jbe     .valid
 @@:
+        ret
+.valid:
         call    stop_all_services
 
 yes_shutdown_param:
@@ -59,7 +62,7 @@ yes_shutdown_param:
         cli
         call    IRQ_mask_all
 
-        mov     eax, [OS_BASE + 0x9030]
+        mov     eax, [OS_BASE + BOOT_SHUTDOWN_TYPE]
         cmp     al, SYSTEM_RESTART
         jne     @F
 
@@ -88,7 +91,7 @@ org $-OS_BASE
         mov     eax, cr3
         mov     cr3, eax
 
-        cmp     byte [0x9030], SYSTEM_SHUTDOWN
+        cmp     byte [BOOT_SHUTDOWN_TYPE], SYSTEM_SHUTDOWN
         jne     no_acpi_power_off
 
 ; system_power_off
@@ -176,7 +179,7 @@ align 4
 restart_code_start:
 org 0x50000
 
-        cmp     byte [0x9030], SYSTEM_RESTART
+        cmp     byte [BOOT_SHUTDOWN_TYPE], SYSTEM_RESTART
         jne     @F
 
         mov     esi, _CLEAN_ZONE-OS_BASE
@@ -274,7 +277,7 @@ align 4
 
         xor     ax, ax
         mov     ds, ax
-        mov     al, [0x9030]
+        mov     al, [BOOT_SHUTDOWN_TYPE]
         cmp     al, SYSTEM_RESTART
         je      .restart
 

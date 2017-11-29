@@ -23,7 +23,6 @@ y_save              dw  0 ; y
 number_vm           dw  0 ;
 ;pixel_save          dw  0 ; per to pixel
 preboot_gprobe      db  0 ; probe vesa3 videomodes (1-no, 2-yes)
-;preboot_vrrm       db  0 ; use VRR_M (1-yes, 2- no)
 preboot_debug       db  0 ; load kernel in debug mode? (1-yes, 2-no)
 preboot_launcher    db  0 ; start launcher after kernel is loaded? (1-yes, 2-no)
 preboot_dma         db  0 ; use DMA for access to HDD (1-always, 2-only for read, 3-never)

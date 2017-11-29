@@ -2192,7 +2192,7 @@ sysfn_shutdown:          ; 18.9 = system shutdown
         jl      exit_for_anyone
         cmp     ecx, 4
         jg      exit_for_anyone
-        mov     [BOOT_VARS+0x9030], cl
+        mov     [BOOT_VARS+BOOT_SHUTDOWN_TYPE], cl
 
         mov     eax, [TASK_COUNT]
         mov     [SYS_SHUTDOWN], al

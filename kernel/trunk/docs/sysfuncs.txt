@@ -2727,8 +2727,7 @@ by work in VESA modes with LFB sets color of the left upper point
 To interpret the data of graphics screen program needs to know
 some parameters, returning by this function.
 Remarks:
-  * Graphics parameters changes very seldom at work,
-    namely, only in cases, when user works with the application VRR.
+  * Graphics parameters changes very seldom at work.
   * At videomode change the system redraws all windows (event
     with code 1) and redraws the background (event 5).
     Same events occur in other cases too, which meet much more often,
