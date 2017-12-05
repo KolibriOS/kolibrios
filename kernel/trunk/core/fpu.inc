@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2017. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -12,19 +12,76 @@ init_fpu:
         clts
         fninit
 
-        bt      [cpu_caps], CAPS_SSE
-        jnc     .no_SSE
+        bt      [cpu_caps+(CAPS_XSAVE/8)], CAPS_XSAVE mod 8
+        jnc     .no_xsave
 
+        mov     ecx, cr4
+        or      ecx, CR4_OSXSAVE
+        mov     cr4, ecx
+
+        mov     eax, 0x0d
+        xor     ecx, ecx
+        cpuid
+        mov     ebx, XCR0_FPU_MMX + XCR0_SSE + XCR0_AVX + XCR0_AVX512
+        and     ebx, eax
+        xor     ecx, ecx
+        xgetbv
+        or      eax, ebx
+        xor     ecx, ecx
+        xsetbv
+
+        mov     eax, 0x0d
+        xor     ecx, ecx
+        cpuid
+        mov     [xsave_area_size], ebx
+
+        test    eax, XCR0_AVX512
+        jz      @f
+        call    init_avx512
+        ret
+@@:
+        test    eax, XCR0_AVX
+        jz      @f
+        call    init_avx
+        ret
+@@:
+        test    eax, XCR0_SSE
+        jz      @f
+        call    init_sse
+        ret
+@@:
+        call    init_fpu_mmx
+        ret
+.no_xsave:
+        mov     [xsave_area_size], 512  ; enough for FPU/MMX and SSE
+        bt      [cpu_caps], CAPS_SSE
+        jnc     @f
+        call    init_sse
+        fxsave  [fpu_data]
+        ret
+@@:
+        call    init_fpu_mmx
+        fnsave  [fpu_data]
+        ret
+
+init_fpu_mmx:
+        mov     ecx, cr0
+        and     ecx, not CR0_EM
+        or      ecx, CR0_MP + CR0_NE
+        mov     cr0, ecx
+        ret
+
+init_sse:
         mov     ebx, cr4
         mov     ecx, cr0
         or      ebx, CR4_OSFXSR+CR4_OSXMMEXPT
         mov     cr4, ebx
 
-        and     ecx, not (CR0_MP+CR0_EM)
+        and     ecx, not (CR0_EM + CR0_MP)
         or      ecx, CR0_NE
         mov     cr0, ecx
 
-        mov     dword [esp-4], SSE_INIT
+        mov     dword [esp-4], MXCSR_INIT
         ldmxcsr [esp-4]
 
         xorps   xmm0, xmm0
@@ -35,14 +92,46 @@ init_fpu:
         xorps   xmm5, xmm5
         xorps   xmm6, xmm6
         xorps   xmm7, xmm7
-        fxsave  [fpu_data]    ;[eax]
         ret
-.no_SSE:
+
+init_avx:
+        mov     ebx, cr4
+        or      ebx, CR4_OSFXSR + CR4_OSXMMEXPT
+        mov     cr4, ebx
+
         mov     ecx, cr0
-        and     ecx, not CR0_EM
-        or      ecx, CR0_MP+CR0_NE
+        and     ecx, not (CR0_EM + CR0_MP)
+        or      ecx, CR0_NE
         mov     cr0, ecx
-        fnsave  [fpu_data]
+
+        mov     dword [esp-4], MXCSR_INIT
+        vldmxcsr [esp-4]
+
+        vzeroall
+        ret
+
+init_avx512:
+        mov     ebx, cr4
+        or      ebx, CR4_OSFXSR + CR4_OSXMMEXPT
+        mov     cr4, ebx
+
+        mov     ecx, cr0
+        and     ecx, not (CR0_EM + CR0_MP)
+        or      ecx, CR0_NE
+        mov     cr0, ecx
+
+        mov     dword [esp-4], MXCSR_INIT
+        vldmxcsr [esp-4]
+
+        vpxorq  zmm0, zmm0, zmm0
+        vpxorq  zmm1, zmm1, zmm1
+        vpxorq  zmm2, zmm2, zmm2
+        vpxorq  zmm3, zmm3, zmm3
+        vpxorq  zmm4, zmm4, zmm4
+        vpxorq  zmm5, zmm5, zmm5
+        vpxorq  zmm6, zmm6, zmm6
+        vpxorq  zmm7, zmm7, zmm7
+
         ret
 
 ; param
@@ -90,6 +179,11 @@ fpu_save:
 
 align 4
 save_context:
+        bt      [cpu_caps+(CAPS_OSXSAVE/8)], CAPS_OSXSAVE mod 8
+        jnc     .no_xsave
+        xsave   [eax]
+        ret
+.no_xsave:
         bt      [cpu_caps], CAPS_SSE
         jnc     .no_SSE
 
@@ -115,6 +209,14 @@ fpu_restore:
         jne     .copy
 
         clts
+        bt      [cpu_caps+(CAPS_OSXSAVE/8)], CAPS_OSXSAVE mod 8
+        jnc     .no_xsave
+        xrstor  [esi]
+        popfd
+        pop     esi
+        pop     ecx
+        ret
+.no_xsave:
         bt      [cpu_caps], CAPS_SSE
         jnc     .no_SSE
 

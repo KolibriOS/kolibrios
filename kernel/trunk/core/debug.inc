@@ -169,7 +169,7 @@ debug_getcontext:
 
 .ring0:
 ; note that following code assumes that all interrupt/exception handlers
-; saves ring-3 context by pushad in this order
+; save ring-3 context by pushad in this order
 ; top of ring0 stack: ring3 stack ptr (ss+esp), iret data (cs+eip+eflags), pushad
         sub     esi, 8+12+20h
         lodsd                     ;edi

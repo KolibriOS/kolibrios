@@ -8,7 +8,7 @@
 $Revision$
 
 
-dpl0    equ  10010000b     ; data read       dpl0
+dpl0    equ  10010000b      ; data read       dpl0
 drw0    equ  10010010b      ; data read/write dpl0
 drw3    equ  11110010b      ; data read/write dpl3
 cpl0    equ  10011010b      ; code read dpl0
@@ -78,6 +78,12 @@ CAPS_CID       equ    42 ;
 ;                     44
 CAPS_CX16      equ    45 ;CMPXCHG16B instruction
 CAPS_xTPR      equ    46 ;
+CAPS_XSAVE     equ    (32 + 26) ; XSAVE and XRSTOR instructions
+CAPS_OSXSAVE   equ    (32 + 27)
+; A value of 1 indicates that the OS has set CR4.OSXSAVE[bit 18] to enable
+; XSETBV/XGETBV instructions to access XCR0 and to support processor extended
+; state management using XSAVE/XRSTOR.
+CAPS_AVX       equ    (32 + 28) ; not AVX2
 ;
 ;reserved
 ;
@@ -117,34 +123,41 @@ CR0_CD         equ    0x40000000   ;cache disable
 CR0_PG         equ    0x80000000   ;paging
 
 
-CR4_VME        equ    0x0001
-CR4_PVI        equ    0x0002
-CR4_TSD        equ    0x0004
-CR4_DE         equ    0x0008
-CR4_PSE        equ    0x0010
-CR4_PAE        equ    0x0020
-CR4_MCE        equ    0x0040
-CR4_PGE        equ    0x0080
-CR4_PCE        equ    0x0100
-CR4_OSFXSR     equ    0x0200
-CR4_OSXMMEXPT  equ    0x0400
+CR4_VME        equ    0x000001
+CR4_PVI        equ    0x000002
+CR4_TSD        equ    0x000004
+CR4_DE         equ    0x000008
+CR4_PSE        equ    0x000010
+CR4_PAE        equ    0x000020
+CR4_MCE        equ    0x000040
+CR4_PGE        equ    0x000080
+CR4_PCE        equ    0x000100
+CR4_OSFXSR     equ    0x000200
+CR4_OSXMMEXPT  equ    0x000400
+CR4_OSXSAVE    equ    0x040000
 
-SSE_IE         equ    0x0001
-SSE_DE         equ    0x0002
-SSE_ZE         equ    0x0004
-SSE_OE         equ    0x0008
-SSE_UE         equ    0x0010
-SSE_PE         equ    0x0020
-SSE_DAZ        equ    0x0040
-SSE_IM         equ    0x0080
-SSE_DM         equ    0x0100
-SSE_ZM         equ    0x0200
-SSE_OM         equ    0x0400
-SSE_UM         equ    0x0800
-SSE_PM         equ    0x1000
-SSE_FZ         equ    0x8000
+XCR0_FPU_MMX   equ    0x0001
+XCR0_SSE       equ    0x0002
+XCR0_AVX       equ    0x0004
+XCR0_MPX       equ    0x0018
+XCR0_AVX512    equ    0x00e0
 
-SSE_INIT equ (SSE_IM+SSE_DM+SSE_ZM+SSE_OM+SSE_UM+SSE_PM)
+MXCSR_IE       equ    0x0001
+MXCSR_DE       equ    0x0002
+MXCSR_ZE       equ    0x0004
+MXCSR_OE       equ    0x0008
+MXCSR_UE       equ    0x0010
+MXCSR_PE       equ    0x0020
+MXCSR_DAZ      equ    0x0040
+MXCSR_IM       equ    0x0080
+MXCSR_DM       equ    0x0100
+MXCSR_ZM       equ    0x0200
+MXCSR_OM       equ    0x0400
+MXCSR_UM       equ    0x0800
+MXCSR_PM       equ    0x1000
+MXCSR_FZ       equ    0x8000
+
+MXCSR_INIT     equ (MXCSR_IM+MXCSR_DM+MXCSR_ZM+MXCSR_OM+MXCSR_UM+MXCSR_PM)
 
 IRQ_PIC        equ    0
 IRQ_APIC       equ    1
@@ -252,7 +265,7 @@ new_app_base        equ 0;
 twdw                equ 0x2000   ;(CURRENT_TASK-window_data)
 
 std_application_base_address   equ new_app_base
-RING0_STACK_SIZE    equ (0x2000 - 512)    ;512 байт для контекста FPU
+RING0_STACK_SIZE    equ 0x2000
 
 REG_SS              equ (RING0_STACK_SIZE-4)
 REG_APP_ESP         equ (RING0_STACK_SIZE-8)

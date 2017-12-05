@@ -901,7 +901,9 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
          pl0_stack dd ?
        endl
 
-        stdcall kernel_alloc, RING0_STACK_SIZE+512
+        mov     eax, [xsave_area_size]
+        add     eax, RING0_STACK_SIZE
+        stdcall kernel_alloc, eax
         mov     [pl0_stack], eax
 
         lea     edi, [eax+RING0_STACK_SIZE]

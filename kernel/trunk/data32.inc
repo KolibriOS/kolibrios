@@ -432,6 +432,8 @@ cpu_sign    dd  ?
 cpu_info    dd  ?
 cpu_caps    rd  4
 
+xsave_area_size dd ?
+
 pg_data     PG_DATA
 heap_test   dd  ?
 

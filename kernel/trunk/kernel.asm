@@ -1184,7 +1184,7 @@ proc setup_os_slot
         mov     [edx+APPDATA.io_map+4], eax
 
         mov     dword [edx+APPDATA.pl0_stack], ebx
-        lea     edi, [ebx+0x2000-512]
+        lea     edi, [ebx+RING0_STACK_SIZE]
         mov     dword [edx+APPDATA.fpu_state], edi
         mov     dword [edx+APPDATA.saved_esp0], edi
         mov     dword [edx+APPDATA.saved_esp], edi
