@@ -356,7 +356,7 @@ proc test_cpu
         pushfd
         pop     eax
         mov     ecx, eax
-        xor     eax, 0x40000
+        xor     eax, EFLAGS_AC
         push    eax
         popfd
         pushfd
@@ -369,7 +369,7 @@ proc test_cpu
 
         mov     [cpu_type], CPU_486
         mov     eax, ecx
-        xor     eax, 0x200000
+        xor     eax, EFLAGS_ID
         push    eax
         popfd
         pushfd

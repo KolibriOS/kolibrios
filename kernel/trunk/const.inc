@@ -159,6 +159,24 @@ MXCSR_FZ       equ    0x8000
 
 MXCSR_INIT     equ (MXCSR_IM+MXCSR_DM+MXCSR_ZM+MXCSR_OM+MXCSR_UM+MXCSR_PM)
 
+EFLAGS_CF      equ    0x000001  ; carry flag
+EFLAGS_PF      equ    0x000004  ; parity flag
+EFLAGS_AF      equ    0x000010  ; auxiliary flag
+EFLAGS_ZF      equ    0x000040  ; zero flag
+EFLAGS_SF      equ    0x000080  ; sign flag
+EFLAGS_TF      equ    0x000100  ; trap flag
+EFLAGS_IF      equ    0x000200  ; interrupt flag
+EFLAGS_DF      equ    0x000400  ; direction flag
+EFLAGS_OF      equ    0x000800  ; overflow flag
+EFLAGS_IOPL    equ    0x003000  ; i/o priviledge level
+EFLAGS_NT      equ    0x004000  ; nested task flag
+EFLAGS_RF      equ    0x010000  ; resume flag
+EFLAGS_VM      equ    0x020000  ; virtual 8086 mode flag
+EFLAGS_AC      equ    0x040000  ; alignment check flag
+EFLAGS_VIF     equ    0x080000  ; virtual interrupt flag
+EFLAGS_VIP     equ    0x100000  ; virtual interrupt pending
+EFLAGS_ID      equ    0x200000  ; id flag
+
 IRQ_PIC        equ    0
 IRQ_APIC       equ    1
 
