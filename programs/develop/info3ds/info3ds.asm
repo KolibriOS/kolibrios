@@ -1373,9 +1373,9 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru
-capt db 'info 3ds версия 18.04.17',0 ;подпись окна
+capt db 'info 3ds версия 10.12.17',0 ;подпись окна
 else
-capt db 'info 3ds version 18.04.17',0 ;window caption
+capt db 'info 3ds version 10.12.17',0 ;window caption
 end if
 
 align 16

@@ -781,28 +781,33 @@ edit_box.get_n:
 ;----------------------------------------------------------
 ; in: ebp = Color
 edit_box.clear_cursor:
-        mov     edx, ebp
         movzx   ebx, word cl_curs_x
-        movzx   ecx, word cl_curs_y   
-        jmp     edit_box.draw_curs
+        cmp     ebx, ed_left ;попадает ли курсор текстовое поле?
+        jle     @f
+        mov     edx, ebp
+        movzx   ecx, word cl_curs_y
+        cmp     ecx, ed_top
+        jg      edit_box.draw_curs
+@@:
+        ret
 
 edit_box.draw_cursor:
-        mov     edx, ed_text_color          
+        mov     edx, ed_text_color
         mov     eax, ed_pos
         sub     eax, ed_offset
-        mul     dword ed_char_width        
+        mul     dword ed_char_width
         mov     ebx, eax
         add     ebx, ed_left
-        inc     ebx    
+        inc     ebx
         mov     ecx, ed_top
-        add     ecx, 2        
+        add     ecx, 2
         mov     cl_curs_x, bx
         mov     cl_curs_y, cx
-edit_box.draw_curs:        
-        mov     eax, ebx        
+edit_box.draw_curs:
+        mov     eax, ebx
         shl     ebx, 16
         or      ebx, eax
-        mov     eax, ecx                     
+        mov     eax, ecx
         shl     ecx, 16
         or      ecx, eax
         add     ecx, ed_height

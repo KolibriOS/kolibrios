@@ -59,6 +59,7 @@ Data_String   DB 32 DUP (?)
 ;* Выходные параметры:                                 *
 ;* Data_String - строка-результат.                     *
 ;*******************************************************
+align 4
 DoubleFloat_to_String:
 	pushad
 	; Результат записывать в строку Data_String
@@ -150,10 +151,11 @@ DoubleFloat_to_String:
 	; Ошибка - нет значащих цифр
 	jmp	.Error
 ; Скопировать значащую часть числа в начало строки
+align 4
 .N4:	rep movsb
 	jmp    .End
-
 ; Ошибка
+align 4
 .Error:
 	mov	AL,'E'
 	stosb
@@ -165,12 +167,14 @@ DoubleFloat_to_String:
 	stosb
 	jmp	.End
 ; Переполнение разрядной сетки
+align 4
 .Overflow:
 	mov	AL,'#'
 	stosb
 	xor	AL,AL
 	stosb
 ; Конец процедуры
+align 4
 .End:
 	popad
 	ret
@@ -183,6 +187,7 @@ DoubleFloat_to_String:
 ;* Выходные параметры:                              *
 ;* Data_Double - число в двоичном коде.             *
 ;****************************************************
+align 4
 String_to_DoubleFloat:
 	pushad
 	cld
@@ -202,6 +207,7 @@ String_to_DoubleFloat:
 	jne	.ShiftIgnoreEnd
 	loop	.ShiftIgnore
 	jmp	.Error
+align 4
 .ShiftIgnoreEnd:
 	; Проверяем знак числа
 	cmp	AL,'-'
@@ -222,6 +228,7 @@ String_to_DoubleFloat:
 	cmp	AL,0	      ;конец строки?
 	jne	.NotDot
 	jmp	.ASCIItoBCDConversionEnd
+align 4
 .NotDot:
 	; Увеличить на 1 значение позиции точки,
 	; если она еще не встречалась
@@ -284,7 +291,7 @@ String_to_DoubleFloat:
 .NoDiv:; Выгрузить число в двоичном формате
 	fstp	[Data_Double]
 	jmp	.End
-
+align 4
 .Error:; При любой ошибке обнулить результат
 	fldz	;занести ноль с стек сопроцессора
 	fstp	[Data_Double]
@@ -293,8 +300,7 @@ String_to_DoubleFloat:
 	ret
 
 align 4
-proc str_cat, str1:dword, str2:dword
-	push eax ecx edi esi
+proc str_cat uses eax ecx edi esi, str1:dword, str2:dword
 	mov esi,dword[str2]
 	stdcall str_len,esi
 	mov ecx,eax
@@ -304,7 +310,6 @@ proc str_cat, str1:dword, str2:dword
 	add edi,eax
 	cld
 	repne movsb
-	pop esi edi ecx eax
 	ret
 endp
 
@@ -320,5 +325,35 @@ proc str_len, str1:dword
 		jmp @b
 	@@:
 	sub eax,[str1]
+	ret
+endp
+
+align 4
+proc String_crop_0 uses eax ebx ecx edi
+	mov edi,Data_String
+	mov al,'.'
+	mov ecx,32
+	repne scasb
+	mov ebx,edi
+	mov edi,Data_String
+	xor al,al
+	mov ecx,32
+	repne scasb
+	cmp ebx,edi
+	jg .end_f
+	dec edi
+	.cycle0:
+		dec edi
+		cmp edi,Data_String
+		jle .end_f
+		cmp byte[edi],'0'
+		jne .cycle0end
+		mov byte[edi],0
+		jmp .cycle0
+	.cycle0end:
+	cmp byte[edi],'.'
+	jne .end_f
+		mov byte[edi],0
+	.end_f:
 	ret
 endp

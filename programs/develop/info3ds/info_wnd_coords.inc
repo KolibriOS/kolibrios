@@ -114,6 +114,7 @@ pushad
 				fld dword[ebx]
 				fstp qword[Data_Double]
 				call DoubleFloat_to_String
+				call String_crop_0
 				add ebx,4
 				stdcall str_len, Data_String
 				mov esi,txt_space
@@ -439,6 +440,7 @@ prop_button:
 				fld dword[ebx]
 				fstp qword[Data_Double]
 				call DoubleFloat_to_String
+				call String_crop_0
 				add ebx,4
 				stdcall str_len, Data_String
 				mov esi,txt_space
@@ -543,14 +545,17 @@ get_point_coords:
 		fld dword[ebx]
 		fstp qword[Data_Double]
 		call DoubleFloat_to_String
+		call String_crop_0
 		stdcall [edit_box_set_text], edit1, Data_String
 		fld dword[ebx+4]
 		fstp qword[Data_Double]
 		call DoubleFloat_to_String
+		call String_crop_0
 		stdcall [edit_box_set_text], edit2, Data_String
 		fld dword[ebx+8]
 		fstp qword[Data_Double]
 		call DoubleFloat_to_String
+		call String_crop_0
 		stdcall [edit_box_set_text], edit3, Data_String
 		stdcall [edit_box_draw], edit1
 		stdcall [edit_box_draw], edit2
@@ -775,6 +780,7 @@ pushad
 		fld dword[ebx]
 		fstp qword[Data_Double]
 		call DoubleFloat_to_String
+		call String_crop_0
 		add ebx,4
 		stdcall str_len, Data_String
 		mov esi,txt_space
