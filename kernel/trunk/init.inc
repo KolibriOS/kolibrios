@@ -457,6 +457,13 @@ acpi_locate:
         push    ebx
         push    edi
 
+if defined UEFI
+        ; UEFI loader knows where RSDP is
+        mov     ebx, [BOOT_ACPI_RSDP]
+        test    ebx, ebx
+        jz      .done
+        call    .check
+else
         movzx   ebx, word [0x40E]
         shl     ebx, 4
         lea     ecx, [ebx+1024]
@@ -470,6 +477,7 @@ acpi_locate:
         mov     ebx, ACPI_HI_RSDP_WINDOW_START
         mov     edi, ACPI_HI_RSDP_WINDOW_END
         call    .check
+end if
 .done:
         mov     eax, ebx
         pop     edi

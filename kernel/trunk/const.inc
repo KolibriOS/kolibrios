@@ -363,6 +363,7 @@ BOOT_BX_FROM_LOAD   equ 0x905A    ; word
 ; low byte: a,b,c,d -- hdX, r -- rdX
 ; high byte: symbol 'X' as in the line above, e.g. '1', not 1
 ; see loader_doc.txt for details
+BOOT_ACPI_RSDP      equ 0x905C    ; dword
 
 BOOT_BIOS_HD_CNT     equ 0x907F   ; byte   number of BIOS hard disks
 BOOT_BIOS_HD         equ 0x9080   ; Nbytes BIOS hard disks
