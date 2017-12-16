@@ -733,7 +733,7 @@ end
 
 -- generate tup rule for kolibri.img
 tup.definerule{inputs = input_deps, command = make_img_command, outputs = {"kolibri.img"}}
-tup.definerule{inputs = {"../kernel/trunk/boot/uefi4kos.asm"}, extra_inputs = {"kolibri.img", "../kernel/trunk/kernel.bin"}, command = "fasm %f %o", outputs = {"kolibri.efi"}}
+tup.definerule{inputs = {"../kernel/trunk/boot/uefi4kos.asm", "kolibri.img", "../kernel/trunk/kernel.bin"}, command = "fasm ../kernel/trunk/boot/uefi4kos.asm %o", outputs = {"kolibri.efi"}}
 
 -- generate command and dependencies for mkisofs
 input_deps = {"kolibri.img"}
