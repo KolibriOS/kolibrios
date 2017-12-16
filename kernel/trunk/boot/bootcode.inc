@@ -274,22 +274,26 @@ if defined extended_primary_loader
         pop     ds
 else
         cld
+        push    0
+        pop     es
 ; \begin{diamond}[02.12.2005]
 ; if bootloader sets ax = 'KL', then ds:si points to loader block
         cmp     ax, 'KL'
         jnz     @f
         mov     word [cs:cfgmanager.loader_block], si
         mov     word [cs:cfgmanager.loader_block+2], ds
+        mov     word [es:BOOT_KERNEL_RESTART], kernel_restart_bootblock
 @@:
 ; \end{diamond}[02.12.2005]
 
-; if bootloader sets cx = 'HA' and dx = 'RD', then bx contains identifier of source hard disk
-; (see comment to bx_from_load)
+; if bootloader sets cx = 'HA' and dx = 'RD', then bx contains identifier of source disk
+; (see comment to BOOT_BX_FROM_LOAD and loader_doc.txt)
+        mov     word [es:BOOT_BX_FROM_LOAD], 'r1'  ; default value: /rd/1
         cmp     cx, 'HA'
         jnz     no_hd_load
         cmp     dx, 'RD'
         jnz     no_hd_load
-        mov     word [cs:bx_from_load], bx              ; {SPraid}[13.03.2007]
+        mov     [es:BOOT_BX_FROM_LOAD], bx
 no_hd_load:
 
 ; set up stack
@@ -966,14 +970,14 @@ end if
 
         mov     al, [preboot_device]
         dec     al
-        mov     [boot_dev], al
+        mov     [es:BOOT_DEV], al
 
 ; GET MEMORY MAP
 include '../detect/biosmem.inc'
 
 ; READ DISKETTE TO MEMORY
 
-        cmp     [boot_dev], 0
+        cmp     byte [es:BOOT_DEV], 0
         jne     no_sys_on_floppy
         mov     si, diskload
         call    print
@@ -1300,7 +1304,7 @@ no_sys_on_floppy:
         out     dx, al
 
 if defined extended_primary_loader
-        cmp     [boot_dev], 1
+        cmp     [es:BOOT_DEV], 1
         jne     no_sys_from_primary
 ; load kolibri.img using callback from primary loader
         and     word [movedesc + 24 + 2], 0

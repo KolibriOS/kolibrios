@@ -49,7 +49,9 @@ goto :eof
 
    if not exist bin mkdir bin
    echo lang fix %lang% > lang.inc
+   fasm -m 65536 bootbios.asm bootbios.bin
    fasm -m 65536 kernel.asm bin\kernel.mnt
+   fasm -m 65536 kernel.asm bin\kernel.bin -dUEFI=1
    if not %errorlevel%==0 goto :Error_FasmFailed
    erase lang.inc
 goto :eof

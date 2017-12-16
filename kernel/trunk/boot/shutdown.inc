@@ -348,7 +348,9 @@ align 4
 ; bootloader interface
         push    0x1000
         pop     ds
-        mov     si, kernel_restart_bootblock
+        push    0
+        pop     es
+        mov     si, [es:BOOT_KERNEL_RESTART]
         mov     ax, 'KL'
         jmp     0x1000:0000
 

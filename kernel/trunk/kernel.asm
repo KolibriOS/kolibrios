@@ -131,115 +131,39 @@ pci_data_sel   equ  (pci_data_32-gdts)
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                      ;;
-;;                  16 BIT ENTRY FROM BOOTSECTOR                        ;;
-;;                                                                      ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-use16
-                  org   0x0
-        jmp     start_of_code
-
-if lang eq sp
-include "kernelsp.inc"  ; spanish kernel messages
-else if lang eq et
-version db    'Kolibri OS  versioon 0.7.7.0+    ',13,10,13,10,0
-else
-version db    'Kolibri OS  version 0.7.7.0+     ',13,10,13,10,0
-end if
-
-include "boot/bootstr.inc"     ; language-independent boot messages
-include "boot/preboot.inc"
-
-if lang eq ge
-include "boot/bootge.inc"     ; german system boot messages
-else if lang eq sp
-include "boot/bootsp.inc"     ; spanish system boot messages
-else if lang eq ru
-include "boot/bootru.inc"      ; russian system boot messages
-include "boot/ru.inc"          ; Russian font
-else if lang eq et
-include "boot/bootet.inc"      ; estonian system boot messages
-include "boot/et.inc"          ; Estonian font
-else
-include "boot/booten.inc"      ; english system boot messages
-end if
-
-include "boot/bootcode.inc"    ; 16 bit system boot code
-include "bus/pci/pci16.inc"
-include "detect/biosdisk.inc"
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                      ;;
-;;                  SWITCH TO 32 BIT PROTECTED MODE                     ;;
-;;                                                                      ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-; CR0 Flags - Protected mode and Paging
-
-        mov     ecx, CR0_PE+CR0_AM
-
-; Enabling 32 bit protected mode
-
-        sidt    [cs:old_ints_h]
-
-        cli                             ; disable all irqs
-        cld
-        mov     al, 255                 ; mask all irqs
-        out     0xa1, al
-        out     0x21, al
-   l.5:
-        in      al, 0x64                ; Enable A20
-        test    al, 2
-        jnz     l.5
-        mov     al, 0xD1
-        out     0x64, al
-   l.6:
-        in      al, 0x64
-        test    al, 2
-        jnz     l.6
-        mov     al, 0xDF
-        out     0x60, al
-   l.7:
-        in      al, 0x64
-        test    al, 2
-        jnz     l.7
-        mov     al, 0xFF
-        out     0x64, al
-
-        lgdt    [cs:tmp_gdt]            ; Load GDT
-        mov     eax, cr0                ; protected mode
-        or      eax, ecx
-        and     eax, 10011111b *65536*256 + 0xffffff ; caching enabled
-        mov     cr0, eax
-        jmp     pword os_code:B32       ; jmp to enable 32 bit mode
-
-align 8
-tmp_gdt:
-
-        dw     23
-        dd     tmp_gdt+0x10000
-        dw     0
-
-        dw     0xffff
-        dw     0x0000
-        db     0x00
-        dw     11011111b *256 +10011010b
-        db     0x00
-
-        dw     0xffff
-        dw     0x0000
-        db     0x00
-        dw     11011111b *256 +10010010b
-        db     0x00
-
-include "data16.inc"
-
-if ~ lang eq sp
-diff16 "end of bootcode",0,$+0x10000
+; In bios boot mode the kernel code below is appended to bootbios.bin file.
+; That is a loading and initialization code that also draws the blue screen
+; menu with svn revision number near top right corner of the screen. This fasm
+; preprocessor code searches for '****' signature inside bootbios.bin and
+; places revision number there.
+if ~ defined UEFI
+  bootbios:
+  file 'bootbios.bin'
+  if __REV__ > 0
+    cur_pos = 0
+    cnt = 0
+    repeat $ - bootbios
+      load a byte from %
+      if a = '*'
+        cnt = cnt + 1
+      else
+        cnt = 0
+      end if
+      if cnt = 4
+        cur_pos = % - 1
+        break
+      end if
+    end repeat
+    store byte ' ' at cur_pos + 1
+    rev_var = __REV__
+    while rev_var > 0
+      store byte rev_var mod 10 + '0' at cur_pos
+      cur_pos = cur_pos - 1
+      rev_var = rev_var / 10
+    end while
+      store byte ' ' at cur_pos
+      store dword ' SVN' at cur_pos - 4
+  end if
 end if
 
 use32
@@ -770,7 +694,7 @@ endg
         call    PIT_init
 
 ; Register ramdisk file system
-        cmp     [boot_dev+OS_BASE+0x10000], 1
+        cmp     byte [BOOT_DEV+OS_BASE+0x10000], 1
         je      @f
 
         call    register_ramdisk
@@ -861,7 +785,7 @@ include 'detect/dev_fd.inc'
 include 'detect/init_ata.inc'
 ;-----------------------------------------------------------------------------
 if 0
-        mov     ax, [OS_BASE+0x10000+bx_from_load]
+        mov     ax, [OS_BASE+BOOT_BX_FROM_LOAD]
         cmp     ax, 'r1'; if using not ram disk, then load librares and parameters {SPraid.simba}
         je      no_lib_load
 
@@ -1101,6 +1025,7 @@ endg
 first_app_found:
 
 ; START MULTITASKING
+preboot_blogesc = 0       ; start immediately after bootlog
 
 ; A 'All set - press ESC to start' messages if need
 if preboot_blogesc

@@ -31,18 +31,9 @@ macro line_space {
 }
 d80x25_top:
                 line_full_top
-if __REV__ > 0
-  cur_line_pos = 75
-        store byte ' ' at d80x25_top+cur_line_pos+1
-  rev_var = __REV__
-  while rev_var > 0
-        store byte rev_var mod 10 + '0' at d80x25_top+cur_line_pos
-        cur_line_pos = cur_line_pos - 1
-        rev_var = rev_var / 10
-  end while
-        store byte ' ' at d80x25_top+cur_line_pos
-        store dword ' SVN' at d80x25_top+cur_line_pos-4
-end if
+    cur_line_pos = 72
+    ; this signature will be replaced with revision number (in kernel.asm)
+    store dword '****' at d80x25_top + cur_line_pos
 
 space_msg:
                 line_space

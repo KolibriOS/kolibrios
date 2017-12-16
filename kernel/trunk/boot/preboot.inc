@@ -29,7 +29,6 @@ preboot_dma         db  0 ; use DMA for access to HDD (1-always, 2-only for read
 preboot_device      db  0 ; boot device
                           ; (1-floppy 2-harddisk 3-kernel restart 4-format ram disk)
                           ;!!!! 0 - autodetect !!!!
-preboot_blogesc = 0       ; start immediately after bootlog
 preboot_biosdisk    db  0 ; use V86 to access disks through BIOS (1-yes, 2-no)
 if defined extended_primary_loader
 preboot_timeout     dw  5*18 ; timeout in 1/18th of second for config settings screen

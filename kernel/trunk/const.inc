@@ -357,6 +357,12 @@ BOOT_APM_FLAGS      equ 0x9046
 BOOT_APM_CODE_32    equ 0x9050
 BOOT_APM_CODE_16    equ 0x9052
 BOOT_APM_DATA_16    equ 0x9054
+BOOT_DEV            equ 0x9056    ; byte
+BOOT_KERNEL_RESTART equ 0x9058    ; word
+BOOT_BX_FROM_LOAD   equ 0x905A    ; word
+; low byte: a,b,c,d -- hdX, r -- rdX
+; high byte: symbol 'X' as in the line above, e.g. '1', not 1
+; see loader_doc.txt for details
 
 BOOT_BIOS_HD_CNT     equ 0x907F   ; byte   number of BIOS hard disks
 BOOT_BIOS_HD         equ 0x9080   ; Nbytes BIOS hard disks
