@@ -5,6 +5,10 @@ format PE console
 macro $Revision [args]
 {
 }
+macro ignore_empty_revision_keyword {
+  macro $Revi#sion$ \{\}
+}
+ignore_empty_revision_keyword
 include '../proc32.inc'
 include '../struct.inc'
 entry start

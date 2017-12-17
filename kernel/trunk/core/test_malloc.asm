@@ -225,6 +225,7 @@ error_with_code:
         jmp     $-1     ; just in case
 
 ; Include main heap code
+include '../macros.inc'
 include '../proc32.inc'
 include '../struct.inc'
 include '../const.inc'
