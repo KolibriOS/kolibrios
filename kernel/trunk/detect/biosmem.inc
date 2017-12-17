@@ -17,8 +17,8 @@ $Revision$
         xor     ebx, ebx
         mov     es, bx
         mov     ds, bx
-        mov     di, BOOT_MEMMAP_BLOCKS
-        mov     [BOOT_MEMMAP_BLOCK_CNT], ebx ; no blocks yet
+        mov     di, BOOT_LO.memmap_blocks
+        mov     [BOOT_LO.memmap_block_cnt], ebx ; no blocks yet
         mov     ecx, 20
         mov     edx, 'PAMS' ; 'SMAP'
         int     15h
@@ -28,13 +28,13 @@ $Revision$
 e820_mem_loop:
 ;        cmp     byte [di+16], 1 ; ignore non-free areas
 ;        jnz     e820_mem_next
-        inc     byte [BOOT_MEMMAP_BLOCK_CNT]
+        inc     byte [BOOT_LO.memmap_block_cnt]
         add     di, sizeof.e820entry
 e820_mem_next:
 ; consequent calls to fn E820
         test    ebx, ebx
         jz      e820_test_done
-        cmp     byte [BOOT_MEMMAP_BLOCK_CNT], MAX_MEMMAP_BLOCKS
+        cmp     byte [BOOT_LO.memmap_block_cnt], MAX_MEMMAP_BLOCKS
         jz      e820_test_done
         mov     eax, 0xE820
         int     15h

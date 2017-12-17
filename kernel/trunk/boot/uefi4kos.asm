@@ -70,7 +70,7 @@ main:
         cmp     [rdi + 8], rdx
         jnz     .not_acpi20
         mov     rax, [rdi + 16]
-        mov     rdx, BOOT_ACPI_RSDP
+        mov     rdx, BOOT_LO.acpi_rsdp
         mov     [rdx], eax
 ;jmp $
         jmp     .all_tables_done
@@ -157,27 +157,27 @@ main:
         mov     rcx, [gop_info]
         mov     eax, [rcx + EFI_GRAPHICS_OUTPUT_MODE_INFORMATION.HorizontalResolution]
         xor     rdx, rdx
-        mov     word [rdx + BOOT_X_RES], ax
+        mov     word [rdx + BOOT_LO.x_res], ax
         mov     eax, [rcx + EFI_GRAPHICS_OUTPUT_MODE_INFORMATION.VerticalResolution]
-        mov     word [rdx + BOOT_Y_RES], ax
+        mov     word [rdx + BOOT_LO.y_res], ax
         mov     eax, [rcx + EFI_GRAPHICS_OUTPUT_MODE_INFORMATION.PixelsPerScanLine]
         shl     eax, 2
-        mov     word [rdx + BOOT_PITCH], ax
+        mov     word [rdx + BOOT_LO.pitch], ax
 
-        mov     byte [rdx + BOOT_PCI_DATA + 0], 1
-        mov     byte [rdx + BOOT_PCI_DATA + 1], 0
-        mov     byte [rdx + BOOT_PCI_DATA + 2], 0x10
-        mov     byte [rdx + BOOT_PCI_DATA + 3], 0x02
-        mov     dword [rdx + BOOT_PCI_DATA + 4], 0xe3
+        mov     byte [rdx + BOOT_LO.pci_data + 0], 1
+        mov     byte [rdx + BOOT_LO.pci_data + 1], 0
+        mov     byte [rdx + BOOT_LO.pci_data + 2], 0x10
+        mov     byte [rdx + BOOT_LO.pci_data + 3], 0x02
+        mov     dword [rdx + BOOT_LO.pci_data + 4], 0xe3
 
 
         uefi_call_wrapper BootServices, GetMemoryMap, memory_map_size, memory_map, memory_map_key, descriptor_size, descriptor_ver
         cmp     eax, EFI_SUCCESS
         jnz     .error
 
-        mov     rdi, BOOT_MEMMAP_BLOCK_CNT
+        mov     rdi, BOOT_LO.memmap_block_cnt
         mov     dword[rdi], 0
-        mov     rdi, BOOT_MEMMAP_BLOCKS
+        mov     rdi, BOOT_LO.memmap_blocks
         mov     rax, [memory_map_size]
         xor     edx, edx
         mov     rcx, [descriptor_size]
@@ -215,24 +215,24 @@ main:
         rep movsq
 
         xor     esi, esi
-        mov     byte[esi + BOOT_BPP], 32
-        mov     word[esi + BOOT_VESA_MODE], 0
-        mov     dword[esi + BOOT_BANK_SW], 0
+        mov     byte[esi + BOOT_LO.bpp], 32
+        mov     word[esi + BOOT_LO.vesa_mode], 0
+        mov     dword[esi + BOOT_LO.bank_switch], 0
         mov     rdi, [fb_base]
-        mov     dword[esi + BOOT_LFB], edi
-        mov     byte[esi + BOOT_MTRR], 1
-        mov     byte[esi + BOOT_LAUNCHER_START], 1
-        mov     byte[esi + BOOT_DEBUG_PRINT], 1
-        mov     byte[esi + BOOT_DMA], 0
-;        mov     qword[esi + BOOT_PCI_DATA], 0
-        mov     dword[esi + BOOT_APM_ENTRY], 0
-        mov     word[esi + BOOT_APM_VERSION], 0
-        mov     dword[esi + BOOT_APM_FLAGS], 0
-        mov     word[esi + BOOT_APM_CODE_32], 0
-        mov     word[esi + BOOT_APM_CODE_16], 0
-        mov     word[esi + BOOT_APM_DATA_16], 0
-        mov     byte[esi + BOOT_BIOS_HD_CNT], 0
-        mov     word[esi + BOOT_BX_FROM_LOAD], 'r1'   ; boot from /rd/1
+        mov     dword[esi + BOOT_LO.lfb], edi
+        mov     byte[esi + BOOT_LO.mtrr], 1
+        mov     byte[esi + BOOT_LO.launcher_start], 1
+        mov     byte[esi + BOOT_LO.debug_print], 1
+        mov     byte[esi + BOOT_LO.dma], 0
+;        mov     qword[esi + BOOT_LO.pci_data], 0
+        mov     dword[esi + BOOT_LO.apm_entry], 0
+        mov     word[esi + BOOT_LO.apm_version], 0
+        mov     dword[esi + BOOT_LO.apm_flags], 0
+        mov     word[esi + BOOT_LO.apm_code_32], 0
+        mov     word[esi + BOOT_LO.apm_code_16], 0
+        mov     word[esi + BOOT_LO.apm_data_16], 0
+        mov     byte[esi + BOOT_LO.bios_hd_cnt], 0
+        mov     word[esi + BOOT_LO.bx_from_load], 'r1'   ; boot from /rd/1
 
 
         lgdt    [cs:GDTR]
@@ -341,7 +341,7 @@ add_uefi_memmap:
   .done:
         mov     [rdi + e820entry.type], eax
 
-        mov     rax, BOOT_MEMMAP_BLOCK_CNT
+        mov     rax, BOOT_LO.memmap_block_cnt
         inc     word[rax]
 
         pop     rdi rsi rdx rcx rbx rax

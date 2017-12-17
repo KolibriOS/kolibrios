@@ -16,9 +16,9 @@ $Revision$
 align 4
 system_shutdown:          ; shut down the system
 
-        cmp     byte [BOOT_VARS+BOOT_SHUTDOWN_TYPE], SYSTEM_SHUTDOWN
+        cmp     byte [BOOT.shutdown_type], SYSTEM_SHUTDOWN
         jb      @F
-        cmp     byte [BOOT_VARS+BOOT_SHUTDOWN_TYPE], SYSTEM_RESTART
+        cmp     byte [BOOT.shutdown_type], SYSTEM_RESTART
         jbe     .valid
 @@:
         ret
@@ -62,7 +62,7 @@ yes_shutdown_param:
         cli
         call    IRQ_mask_all
 
-        mov     eax, [OS_BASE + BOOT_SHUTDOWN_TYPE]
+        mov     eax, dword[BOOT.shutdown_type]
         cmp     al, SYSTEM_RESTART
         jne     @F
 
@@ -91,7 +91,7 @@ org $-OS_BASE
         mov     eax, cr3
         mov     cr3, eax
 
-        cmp     byte [BOOT_SHUTDOWN_TYPE], SYSTEM_SHUTDOWN
+        cmp     byte [BOOT_LO.shutdown_type], SYSTEM_SHUTDOWN
         jne     no_acpi_power_off
 
 ; system_power_off
@@ -179,7 +179,7 @@ align 4
 restart_code_start:
 org 0x50000
 
-        cmp     byte [BOOT_SHUTDOWN_TYPE], SYSTEM_RESTART
+        cmp     byte [BOOT_LO.shutdown_type], SYSTEM_RESTART
         jne     @F
 
         mov     esi, _CLEAN_ZONE-OS_BASE
@@ -277,7 +277,7 @@ align 4
 
         xor     ax, ax
         mov     ds, ax
-        mov     al, [BOOT_SHUTDOWN_TYPE]
+        mov     al, [BOOT_LO.shutdown_type]
         cmp     al, SYSTEM_RESTART
         je      .restart
 
@@ -350,7 +350,7 @@ align 4
         pop     ds
         push    0
         pop     es
-        mov     si, [es:BOOT_KERNEL_RESTART]
+        mov     si, [es:BOOT_LO.kernel_restart]
         mov     ax, 'KL'
         jmp     0x1000:0000
 

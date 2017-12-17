@@ -15,7 +15,7 @@ MEM_UC     equ 0               ;uncached memory
 align 4
 proc mem_test
 ; if we have BIOS with fn E820, skip the test
-        cmp     dword [BOOT_VARS-OS_BASE + BOOT_MEMMAP_BLOCK_CNT], 0
+        cmp     dword [BOOT_LO.memmap_block_cnt], 0
         jnz     .ret
 
         mov     eax, cr0
@@ -35,14 +35,14 @@ proc mem_test
 
         and     eax, not (CR0_CD+CR0_NW) ;enable caching
         mov     cr0, eax
-        inc     dword [BOOT_VARS-OS_BASE + BOOT_MEMMAP_BLOCK_CNT]
+        inc     dword [BOOT_LO.memmap_block_cnt]
         xor     eax, eax
-        mov     [BOOT_VARS-OS_BASE + BOOT_MEMMAP_BLOCKS + e820entry.addr.lo], eax
-        mov     [BOOT_VARS-OS_BASE + BOOT_MEMMAP_BLOCKS + e820entry.addr.hi], eax
-        mov     [BOOT_VARS-OS_BASE + BOOT_MEMMAP_BLOCKS + e820entry.size.lo], edi
-        mov     [BOOT_VARS-OS_BASE + BOOT_MEMMAP_BLOCKS + e820entry.size.hi], eax
+        mov     [BOOT_LO.memmap_blocks + e820entry.addr.lo], eax
+        mov     [BOOT_LO.memmap_blocks + e820entry.addr.hi], eax
+        mov     [BOOT_LO.memmap_blocks + e820entry.size.lo], edi
+        mov     [BOOT_LO.memmap_blocks + e820entry.size.hi], eax
         inc     eax
-        mov     [BOOT_VARS-OS_BASE + BOOT_MEMMAP_BLOCKS + e820entry.type], eax
+        mov     [BOOT_LO.memmap_blocks + e820entry.type], eax
 .ret:
         ret
 endp
@@ -50,7 +50,7 @@ endp
 align 4
 proc init_mem
 ; calculate maximum allocatable address and number of allocatable pages
-        mov     edi, BOOT_VARS-OS_BASE + BOOT_MEMMAP_BLOCKS
+        mov     edi, BOOT_LO.memmap_blocks
         mov     ecx, [edi-4]
         xor     esi, esi; esi will hold total amount of memory
         xor     edx, edx; edx will hold maximum allocatable address
@@ -197,7 +197,7 @@ proc init_page_map
         rep stosd
 
 ; scan through memory map and mark free areas as available
-        mov     ebx, BOOT_VARS-OS_BASE + BOOT_MEMMAP_BLOCKS
+        mov     ebx, BOOT_LO.memmap_blocks
         mov     edx, [ebx-4]
 .scanmap:
         cmp     [ebx+16], byte 1
@@ -459,7 +459,7 @@ acpi_locate:
 
 if defined UEFI
         ; UEFI loader knows where RSDP is
-        mov     ebx, [BOOT_ACPI_RSDP]
+        mov     ebx, [BOOT_LO.acpi_rsdp]
         test    ebx, ebx
         jz      .done
         call    .check

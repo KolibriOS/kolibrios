@@ -40,37 +40,37 @@ align 4
 init_video:
         mov     ebp, bios_fb
 
-        movzx   eax, byte [BOOT_VARS+BOOT_BPP]      ; bpp
+        movzx   eax, byte [BOOT.bpp]      ; bpp
         mov     [_display.bits_per_pixel], eax
         mov     [_display.vrefresh], 60
 
-        movzx   eax, word [BOOT_VARS+BOOT_X_RES]; X max
+        movzx   eax, word [BOOT.x_res]; X max
         mov     [_display.width], eax
         mov     [ebp+FRB.width], eax
         mov     [display_width_standard], eax
         dec     eax
         mov     [screen_workarea.right], eax
 
-        movzx   eax, word [BOOT_VARS+BOOT_Y_RES]; Y max
+        movzx   eax, word [BOOT.y_res]; Y max
         mov     [_display.height], eax
         mov     [ebp+FRB.height], eax
         mov     [display_height_standard], eax
         dec     eax
         mov     [screen_workarea.bottom], eax
 
-        movzx   eax, word [BOOT_VARS+BOOT_VESA_MODE]    ; screen mode
+        movzx   eax, word [BOOT.vesa_mode]    ; screen mode
         mov     dword [SCR_MODE], eax
         mov     eax, 640 *4                             ; Bytes PerScanLine
         cmp     [SCR_MODE], word 0x13                   ; 320x200
         je      @f
         cmp     [SCR_MODE], word 0x12                   ; VGA 640x480
         je      @f
-        movzx   eax, word[BOOT_VARS+BOOT_PITCH]         ; for other modes
+        movzx   eax, word[BOOT.pitch]         ; for other modes
 @@:
         mov     [_display.lfb_pitch], eax
         mov     [ebp+FRB.pitch], eax
 
-        mov     eax, [BOOT_VARS+BOOT_LFB]
+        mov     eax, [BOOT.lfb]
         mov     [LFBAddress], eax
 
         mov     eax, [_display.width]
@@ -179,7 +179,7 @@ init_video:
         jmp     .ok
 
 .fake:
-        mov     [BOOT_VARS+BOOT_MTRR], byte 2
+        mov     [BOOT.mtrr], byte 2
 
         stdcall alloc_kernel_space, 0x1000
         push    eax                            ;store in stack for subsequent

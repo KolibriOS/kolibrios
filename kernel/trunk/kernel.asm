@@ -333,13 +333,13 @@ high_code:
 ; --------------- APM ---------------------
 
 ; init selectors
-        mov     ebx, [BOOT_VARS+BOOT_APM_ENTRY]        ; offset of APM entry point
-        movzx   eax, word [BOOT_VARS+BOOT_APM_CODE_32] ; real-mode segment base address of
-                                                                                ; protected-mode 32-bit code segment
-        movzx   ecx, word [BOOT_VARS+BOOT_APM_CODE_16]; real-mode segment base address of
-                                                                                ; protected-mode 16-bit code segment
-        movzx   edx, word [BOOT_VARS+BOOT_APM_DATA_16]; real-mode segment base address of
-                                                                                ; protected-mode 16-bit data segment
+        mov     ebx, [BOOT.apm_entry]        ; offset of APM entry point
+        movzx   eax, word [BOOT.apm_code_32] ; real-mode segment base address of
+                                             ; protected-mode 32-bit code segment
+        movzx   ecx, word [BOOT.apm_code_16] ; real-mode segment base address of
+                                             ; protected-mode 16-bit code segment
+        movzx   edx, word [BOOT.apm_data_16] ; real-mode segment base address of
+                                             ; protected-mode 16-bit data segment
 
         shl     eax, 4
         mov     [dword apm_code_32 + 2], ax
@@ -359,19 +359,19 @@ high_code:
         mov     dword[apm_entry], ebx
         mov     word [apm_entry + 4], apm_code_32 - gdts
 
-        mov     eax, [BOOT_VARS + BOOT_APM_VERSION] ; version & flags
+        mov     eax, dword[BOOT.apm_version]   ; version & flags
         mov     [apm_vf], eax
 ; -----------------------------------------
-        mov     al, [BOOT_VARS+BOOT_DMA]            ; DMA access
+        mov     al, [BOOT.dma]            ; DMA access
         mov     [allow_dma_access], al
 
-        mov     al, [BOOT_VARS+BOOT_DEBUG_PRINT]    ; If nonzero, duplicates debug output to the screen
+        mov     al, [BOOT.debug_print]    ; If nonzero, duplicates debug output to the screen
         mov     [debug_direct_print], al
 
-        mov     al, [BOOT_VARS+BOOT_LAUNCHER_START] ; Start the first app (LAUNCHER) after kernel is loaded?
+        mov     al, [BOOT.launcher_start] ; Start the first app (LAUNCHER) after kernel is loaded?
         mov     [launcher_start], al
 
-        mov     esi, BOOT_VARS+BOOT_BIOS_HD
+        mov     esi, BOOT.bios_hd
         movzx   ecx, byte [esi-1]
         mov     [NumBiosDisks], ecx
         mov     edi, BiosDisksData
@@ -694,7 +694,7 @@ endg
         call    PIT_init
 
 ; Register ramdisk file system
-        cmp     byte [BOOT_DEV+OS_BASE+0x10000], 1
+        cmp     byte [BOOT.dev+0x10000], 1
         je      @f
 
         call    register_ramdisk
@@ -785,7 +785,7 @@ include 'detect/dev_fd.inc'
 include 'detect/init_ata.inc'
 ;-----------------------------------------------------------------------------
 if 0
-        mov     ax, [OS_BASE+BOOT_BX_FROM_LOAD]
+        mov     ax, [BOOT.bx_from_load]
         cmp     ax, 'r1'; if using not ram disk, then load librares and parameters {SPraid.simba}
         je      no_lib_load
 
@@ -1294,10 +1294,10 @@ set_variables:
         loop    .fl60
         push    eax
 
-        mov     ax, [BOOT_VARS+BOOT_Y_RES]
+        mov     ax, [BOOT.y_res]
         shr     ax, 1
         shl     eax, 16
-        mov     ax, [BOOT_VARS+BOOT_X_RES]
+        mov     ax, [BOOT.x_res]
         shr     ax, 1
         mov     [MOUSE_X], eax
         call    wakeup_osloop
@@ -2117,7 +2117,7 @@ sysfn_shutdown:          ; 18.9 = system shutdown
         jl      exit_for_anyone
         cmp     ecx, SYSTEM_RESTART
         jg      exit_for_anyone
-        mov     [BOOT_VARS+BOOT_SHUTDOWN_TYPE], cl
+        mov     [BOOT.shutdown_type], cl
 
         mov     eax, [TASK_COUNT]
         mov     [SYS_SHUTDOWN], al

@@ -282,18 +282,18 @@ else
         jnz     @f
         mov     word [cs:cfgmanager.loader_block], si
         mov     word [cs:cfgmanager.loader_block+2], ds
-        mov     word [es:BOOT_KERNEL_RESTART], kernel_restart_bootblock
+        mov     word [es:BOOT_LO.kernel_restart], kernel_restart_bootblock
 @@:
 ; \end{diamond}[02.12.2005]
 
 ; if bootloader sets cx = 'HA' and dx = 'RD', then bx contains identifier of source disk
-; (see comment to BOOT_BX_FROM_LOAD and loader_doc.txt)
-        mov     word [es:BOOT_BX_FROM_LOAD], 'r1'  ; default value: /rd/1
+; (see comment to BOOT_LO.bx_from_load and loader_doc.txt)
+        mov     word [es:BOOT_LO.bx_from_load], 'r1'  ; default value: /rd/1
         cmp     cx, 'HA'
         jnz     no_hd_load
         cmp     dx, 'RD'
         jnz     no_hd_load
-        mov     [es:BOOT_BX_FROM_LOAD], bx
+        mov     [es:BOOT_LO.bx_from_load], bx
 no_hd_load:
 
 ; set up stack
@@ -441,15 +441,15 @@ sayerr:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         sti
 ; --------------- APM ---------------------
-        and     word [es:BOOT_APM_VERSION], 0     ; ver = 0.0 (APM not found)
+        and     word [es:BOOT_LO.apm_version], 0     ; ver = 0.0 (APM not found)
         mov     ax, 0x5300
         xor     bx, bx
         int     0x15
         jc      apm_end                 ; APM not found
         test    cx, 2
         jz      apm_end                 ; APM 32-bit protected-mode interface not supported
-        mov     [es:BOOT_APM_VERSION], ax         ; Save APM Version
-        mov     [es:BOOT_APM_FLAGS], cx           ; Save APM flags
+        mov     [es:BOOT_LO.apm_version], ax         ; Save APM Version
+        mov     [es:BOOT_LO.apm_flags], cx           ; Save APM flags
 
         ; Write APM ver ----
         and     ax, 0xf0f
@@ -468,10 +468,10 @@ sayerr:
         xor     bx, bx
         int     0x15
 
-        mov     [es:BOOT_APM_ENTRY], ebx
-        mov     [es:BOOT_APM_CODE_32], ax
-        mov     [es:BOOT_APM_CODE_16], cx
-        mov     [es:BOOT_APM_DATA_16], dx
+        mov     [es:BOOT_LO.apm_entry], ebx
+        mov     [es:BOOT_LO.apm_code_32], ax
+        mov     [es:BOOT_LO.apm_code_16], cx
+        mov     [es:BOOT_LO.apm_data_16], dx
 
 apm_end:
         _setcursor d80x25_top_num, 0
@@ -951,33 +951,33 @@ end if
 
 ; GRAPHICS ACCELERATION
 ; force yes
-        mov     [es:BOOT_MTRR], byte 1
+        mov     [es:BOOT_LO.mtrr], byte 1
 
 ; DMA ACCESS TO HD
 
         mov     al, [preboot_dma]
-        mov     [es:BOOT_DMA], al
+        mov     [es:BOOT_LO.dma], al
 
 ; Set kernel DEBUG mode - if nonzero, duplicates debug output to the screen.
         mov     al, [preboot_debug]
-        mov     [es:BOOT_DEBUG_PRINT], al       ;// 0x901E
+        mov     [es:BOOT_LO.debug_print], al       ;// 0x901E
 
 ; Start the first app (right now it's LAUNCHER) after kernel is loaded?
         mov     al, [preboot_launcher]
-        mov     [es:BOOT_LAUNCHER_START], al    ;// 0x901D        
+        mov     [es:BOOT_LO.launcher_start], al    ;// 0x901D        
 
 ; BOOT DEVICE
 
         mov     al, [preboot_device]
         dec     al
-        mov     [es:BOOT_DEV], al
+        mov     [es:BOOT_LO.dev], al
 
 ; GET MEMORY MAP
 include '../detect/biosmem.inc'
 
 ; READ DISKETTE TO MEMORY
 
-        cmp     byte [es:BOOT_DEV], 0
+        cmp     byte [es:BOOT_LO.dev], 0
         jne     no_sys_on_floppy
         mov     si, diskload
         call    print
@@ -1304,7 +1304,7 @@ no_sys_on_floppy:
         out     dx, al
 
 if defined extended_primary_loader
-        cmp     [es:BOOT_DEV], 1
+        cmp     [es:BOOT_LO.dev], 1
         jne     no_sys_from_primary
 ; load kolibri.img using callback from primary loader
         and     word [movedesc + 24 + 2], 0
@@ -1343,7 +1343,7 @@ end if
         xor     ax, ax
         mov     es, ax
 
-        mov     ax, [es:BOOT_VESA_MODE]         ; vga & 320x200
+        mov     ax, [es:BOOT_LO.vesa_mode]         ; vga & 320x200
         mov     bx, ax
         cmp     ax, 0x13
         je      setgr

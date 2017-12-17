@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2017. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -229,7 +229,7 @@ CDDataBuf           equ (OS_BASE+0x0005000)
 
 ;unused                 0x6000 - 0x8fff
 
-BOOT_VARS           equ (OS_BASE)               ;0x9000
+BOOT_VARS           equ 0x9000
 
 idts                equ (OS_BASE+0x000B100)
 WIN_STACK           equ (OS_BASE+0x000C000)
@@ -334,41 +334,6 @@ PAT_TYPE_UCM        equ 7
 
 PAT_VALUE           equ 0x00070106; (UC<<24)|(UCM<<16)|(WC<<8)|WB
 
-;;;;;;;;;;;boot time variables
-
-BOOT_BPP            equ 0x9000    ;byte   bits per pixel
-BOOT_PITCH          equ 0x9001    ;word   scanline length
-BOOT_VESA_MODE      equ 0x9008    ;word   vesa video mode
-BOOT_X_RES          equ 0x900A    ;word   X res
-BOOT_Y_RES          equ 0x900C    ;word   Y res
-BOOT_BANK_SW        equ 0x9014    ;dword  Vesa 1.2 pm bank switch
-BOOT_LFB            equ 0x9018    ;dword  Vesa 2.0 LFB address
-BOOT_MTRR           equ 0x901C    ;byte   0 or 1 : enable MTRR graphics acceleration
-BOOT_LAUNCHER_START equ 0x901D    ;byte   (0 or 1) start the first app (right now it's LAUNCHER) after kernel is loaded?
-BOOT_DEBUG_PRINT    equ 0x901E    ;byte   If nonzero, duplicates debug output to the screen.
-BOOT_DMA            equ 0x901F    ;byte   DMA write : 1=yes, 2=no
-BOOT_PCI_DATA       equ 0x9020    ;8bytes pci data
-BOOT_SHUTDOWN_TYPE  equ 0x9030    ;byte   shutdown type (see sysfn 18.9)
-BOOT_MEM_AMOUNT     equ 0x9034    ;dword  memory amount
-
-BOOT_APM_ENTRY      equ 0x9040
-BOOT_APM_VERSION    equ 0x9044
-BOOT_APM_FLAGS      equ 0x9046
-BOOT_APM_CODE_32    equ 0x9050
-BOOT_APM_CODE_16    equ 0x9052
-BOOT_APM_DATA_16    equ 0x9054
-BOOT_DEV            equ 0x9056    ; byte
-BOOT_KERNEL_RESTART equ 0x9058    ; word
-BOOT_BX_FROM_LOAD   equ 0x905A    ; word
-; low byte: a,b,c,d -- hdX, r -- rdX
-; high byte: symbol 'X' as in the line above, e.g. '1', not 1
-; see loader_doc.txt for details
-BOOT_ACPI_RSDP      equ 0x905C    ; dword
-
-BOOT_BIOS_HD_CNT     equ 0x907F   ; byte   number of BIOS hard disks
-BOOT_BIOS_HD         equ 0x9080   ; Nbytes BIOS hard disks
-BOOT_MEMMAP_BLOCK_CNT equ 0x9100  ; word   available physical memory map: number of blocks
-BOOT_MEMMAP_BLOCKS   equ 0x9104   ; available physical memory map: blocks, i.e. e820entry structs
 MAX_MEMMAP_BLOCKS   equ 32
 
 TMP_FILE_NAME       equ     0
@@ -705,38 +670,66 @@ struct  HDLL
         parent          dd ?   ;DLLDESCR
 ends
 
-
-struct  BOOT_DATA
-        bpp             dd ?
-        scanline        dd ?
-        vesa_mode       dd ?
-        x_res           dd ?
-        y_res           dd ?
-        mouse_port      dd ?
-        bank_switch     dd ?
-        lfb             dd ?
-        vesa_mem        dd ?
-        log             dd ?
-        direct_lfb      dd ?
-        pci_data        dd ?
-                        dd ?
-        ide_base        dd ?
-        mem_amount      dd ?
-        pages_count     dd ?
-        pagemap_size    dd ?
-        kernel_max      dd ?
-        kernel_pages    dd ?
-        kernel_tables   dd ?
-
-        cpu_vendor      dd ?
-                        dd ?
-                        dd ?
-        cpu_sign        dd ?
-        cpu_info        dd ?
-        cpu_caps        dd ?
-                        dd ?
-                        dd ?
+struct DQ
+        lo dd ?
+        hi dd ?
 ends
+
+struct e820entry
+        addr DQ ?
+        size DQ ?
+        type dd ?
+ends
+
+struct  boot_data
+        bpp             db ?    ; bits per pixel
+        pitch           dw ?    ; scanline length
+                        db ?
+                        dd ?
+        vesa_mode       dw ?
+        x_res           dw ?
+        y_res           dw ?
+                        dw ?
+                        dd ?
+        bank_switch     dd ?    ; Vesa 1.2 pm bank switch
+        lfb             dd ?    ; Vesa 2.0 LFB address
+        mtrr            db ?    ; 0 or 1: enable MTRR graphics acceleration
+        launcher_start  db ?    ; 0 or 1: start the first app (right now it's LAUNCHER) after kernel is loaded
+        debug_print     db ?    ; if nonzero, duplicates debug output to the screen
+        dma             db ?    ; DMA write: 1=yes, 2=no
+        pci_data        rb 8
+                        rb 8
+        shutdown_type   db ?    ; see sysfn 18.9
+                        rb 15
+        apm_entry       dd ?    ; entry point of APM BIOS
+        apm_version     dw ?    ; BCD
+        apm_flags       dw ?
+                        rb 8
+        apm_code_32     dw ?
+        apm_code_16     dw ?
+        apm_data_16     dw ?
+        dev             db ?
+                        db ?
+        kernel_restart  dw ?
+        bx_from_load    dw ?
+        ; low byte: a,b,c,d -- hdX, r -- rdX
+        ; high byte: symbol 'X' as in the line above, e.g. '1', not 1
+        ; see loader_doc.txt for details
+        acpi_rsdp       dd ?
+                        rb 0x1f
+        bios_hd_cnt     db ?    ; number of BIOS hard disks
+        bios_hd         rb 0x80 ; BIOS hard disks
+        memmap_block_cnt dd ?   ; available physical memory map: number of blocks
+        memmap_blocks   e820entry
+                        rb sizeof.e820entry * (MAX_MEMMAP_BLOCKS - 1)
+ends
+
+virtual at BOOT_VARS
+        BOOT_LO boot_data
+end virtual
+virtual at OS_BASE + BOOT_VARS
+        BOOT boot_data
+end virtual
 
 struct  display_t
         x               dd ?
@@ -970,16 +963,5 @@ struct  IRQH
         handler         dd ?   ;handler roututine
         data            dd ?   ;user-specific data
         num_ints        dd ?   ;how many times handled
-ends
-
-struct DQ
-        lo dd ?
-        hi dd ?
-ends
-
-struct e820entry
-        addr DQ ?
-        size DQ ?
-        type dd ?
 ends
 

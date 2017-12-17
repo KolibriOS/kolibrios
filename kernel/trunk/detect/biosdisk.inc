@@ -15,7 +15,7 @@ $Revision$
 
         xor     cx, cx
         mov     es, cx
-        mov     di, BOOT_BIOS_HD
+        mov     di, BOOT_LO.bios_hd
         mov     byte [es:di-1], cl
         cmp     [preboot_biosdisk], 1
         jnz     bdde
@@ -62,7 +62,7 @@ bdds:
         jb      .noide
         cmp     word [es:si+1Ah], 0xFFFF
         jz      .noide
-        inc     byte [es:BOOT_BIOS_HD_CNT]
+        inc     byte [es:BOOT_LO.bios_hd_cnt]
         mov     al, dl
         stosb
         push    ds
@@ -95,7 +95,7 @@ bdds:
         cmp     byte [es:si+2Ah], 'B'
         jz      bddc2
 .nousb:
-        inc     byte [es:BOOT_BIOS_HD_CNT]
+        inc     byte [es:BOOT_LO.bios_hd_cnt]
         mov     al, dl
         stosb
         xor     ax, ax

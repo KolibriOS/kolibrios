@@ -11,7 +11,7 @@ $Revision$
 read_ramdisk:
 ; READ RAMDISK IMAGE FROM HD (only for IDE0, IDE1, IDE2, IDE3)
 
-        cmp     byte [BOOT_DEV+OS_BASE+0x10000], 1
+        cmp     byte [BOOT.dev+0x10000], 1
         jne     no_sys_on_hd.1
 
         xor     ebp, ebp
@@ -112,7 +112,7 @@ no_sys_on_hd:
         DEBUGF 1, "K : RD not found\n"
 .1:
         ; test_to_format_ram_disk (need if not using ram disk)
-        cmp     byte [BOOT_DEV+OS_BASE+0x10000], 3
+        cmp     byte [BOOT.dev+0x10000], 3
         jne     not_format_ram_disk
         ; format_ram_disk
         mov     edi, RAMDISK

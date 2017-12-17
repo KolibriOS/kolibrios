@@ -9,6 +9,7 @@
 ;
 ;   Boot:
 ;
+;   BOOT_LO / boot_data structure
 ;   0:9000     byte   bits per pixel
 ;   0:9001     word   scanline length
 ;   0:9008     word   vesa video mode

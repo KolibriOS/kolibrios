@@ -10,7 +10,7 @@ $Revision$
 ; Initializes MTRRs.
 proc init_mtrr
 
-        cmp     [BOOT_VARS+BOOT_MTRR], byte 2
+        cmp     [BOOT.mtrr], byte 2
         je      .exit
 
         bt      [cpu_caps], CAPS_MTRR
