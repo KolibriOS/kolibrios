@@ -18,7 +18,7 @@ SKIN_PARAMS \
     bouter          =   0x7c92a5:           \   ; border outer color
     bframe          =   0xeaf0f5],          \   ; border frame color
 \
-  dtp               =   'mursky.dtp'            ; dtp colors
+  dtp               =   'dtp'                   ; dtp colors
 
 SKIN_BUTTONS \
     close           =   [-23:2][20:20],     \   ; buttons coordinates
@@ -32,7 +32,7 @@ SKIN_BITMAPS \
     base active     =   bmp_base,           \
     base inactive   =   bmp_base1
 
-BITMAP bmp_left ,'active/left.bmp'       ; skin bitmaps
+BITMAP bmp_left ,'active/left.bmp'
 BITMAP bmp_oper ,'active/oper.bmp'
 BITMAP bmp_base ,'active/base.bmp'
 BITMAP bmp_left1,'inactive/left.bmp'

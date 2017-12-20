@@ -18,11 +18,11 @@ SKIN_PARAMS \
     bouter          =   0x00ff00:           \   ; border outer color
     bframe          =   0xff0000],          \   ; border frame color
 \
-  dtp               =   'testtest.dtp'          ; dtp colors
+  dtp               =   'dtp'                   ; dtp colors
 
 SKIN_BUTTONS \
     close           =   [-23:2][20:107],    \   ; buttons coordinates
-    minimize        =   [-43:2][20:107]          ; [left:top][width:height]
+    minimize        =   [-43:2][20:107]         ; [left:top][width:height]
 
 SKIN_BITMAPS \
     left active     =   bmp_left,           \   ; skin bitmaps pointers
@@ -32,9 +32,9 @@ SKIN_BITMAPS \
     base active     =   bmp_base,           \
     base inactive   =   bmp_base1
 
-BITMAP bmp_left ,'active/left.bmp'       ; skin bitmaps
-BITMAP bmp_oper ,'active/oper.bmp'
-BITMAP bmp_base ,'active/base.bmp'
-BITMAP bmp_left1,'inactive/left.bmp'
-BITMAP bmp_oper1,'inactive/oper.bmp'
-BITMAP bmp_base1,'inactive/base.bmp'
+BITMAP bmp_left , 'active/left.bmp'
+BITMAP bmp_oper , 'active/oper.bmp'
+BITMAP bmp_base , 'active/base.bmp'
+BITMAP bmp_left1, 'inactive/left.bmp'
+BITMAP bmp_oper1, 'inactive/oper.bmp'
+BITMAP bmp_base1, 'inactive/base.bmp'
