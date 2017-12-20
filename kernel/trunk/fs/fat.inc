@@ -33,7 +33,7 @@ fat_user_functions:
 fat_user_functions_end:
 endg
 
-cache_max equ 1919      ; max. is 1919*512+0x610000=0x6ffe00
+cache_max = 1919      ; max. is 1919*512+0x610000=0x6ffe00
 
 PUSHAD_EAX equ [esp+28]
 PUSHAD_ECX equ [esp+24]

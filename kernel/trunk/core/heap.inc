@@ -18,9 +18,9 @@ struct  MEM_BLOCK
         handle          dd ? ;+28
 ends
 
-FREE_BLOCK      equ  4
-USED_BLOCK      equ  8
-DONT_FREE_BLOCK equ  10h
+FREE_BLOCK      =  4
+USED_BLOCK      =  8
+DONT_FREE_BLOCK =  10h
 
 
 block_next   equ MEM_BLOCK.next_block
@@ -560,7 +560,7 @@ restore block_flags
 
 ;;;;;;;;;;;;;;      USER HEAP     ;;;;;;;;;;;;;;;;;
 
-HEAP_TOP  equ 0x80000000
+HEAP_TOP  = 0x80000000
 
 align 4
 proc init_heap
@@ -1265,21 +1265,21 @@ destroy_smap:
 
         ret
 
-E_NOTFOUND      equ  5
-E_ACCESS        equ 10
-E_NOMEM         equ 30
-E_PARAM         equ 33
+E_NOTFOUND      =  5
+E_ACCESS        = 10
+E_NOMEM         = 30
+E_PARAM         = 33
 
-SHM_READ        equ 0
-SHM_WRITE       equ 1
+SHM_READ        = 0
+SHM_WRITE       = 1
 
-SHM_ACCESS_MASK equ 3
+SHM_ACCESS_MASK = 3
 
-SHM_OPEN        equ (0 shl 2)
-SHM_OPEN_ALWAYS equ (1 shl 2)
-SHM_CREATE      equ (2 shl 2)
+SHM_OPEN        = 0 shl 2
+SHM_OPEN_ALWAYS = 1 shl 2
+SHM_CREATE      = 2 shl 2
 
-SHM_OPEN_MASK   equ (3 shl 2)
+SHM_OPEN_MASK   = 3 shl 2
 
 align 4
 proc shmem_open stdcall name:dword, size:dword, access:dword

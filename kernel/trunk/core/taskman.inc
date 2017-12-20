@@ -8,7 +8,7 @@
 $Revision$
 
 
-GREEDY_KERNEL  equ 0
+GREEDY_KERNEL  = 0
 
 struct  APP_HEADER_00_
         banner          dq ?
@@ -889,10 +889,10 @@ common_app_entry:
         popad
         iretd
 
-EFL_IF      equ 0x0200
-EFL_IOPL1   equ 0x1000
-EFL_IOPL2   equ 0x2000
-EFL_IOPL3   equ 0x3000
+EFL_IF      = 0x0200
+EFL_IOPL1   = 0x1000
+EFL_IOPL2   = 0x2000
+EFL_IOPL3   = 0x3000
 
 align 4
 proc set_app_params stdcall,slot:dword, params:dword, flags:dword

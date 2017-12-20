@@ -16,8 +16,8 @@
 ;
 ; Version 1.0
 
-lf              equ     0x0A
-cr              equ     0x0D
+lf              =     0x0A
+cr              =     0x0D
 
 use32
 

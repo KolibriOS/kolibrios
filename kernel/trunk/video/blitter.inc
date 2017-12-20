@@ -98,15 +98,15 @@ blit_clip:
 ;return code:
 ;CF= 0 - draw, 1 - don't draw
 
-.sx0   equ 8
-.sy0   equ 12
-.sx1   equ 16
-.sy1   equ 20
+.sx0   = 8
+.sy0   = 12
+.sx1   = 16
+.sy1   = 20
 
-.dx0   equ 24
-.dy0   equ 28
-.dx1   equ 32
-.dy1   equ 36
+.dx0   = 24
+.dy0   = 28
+.dx1   = 32
+.dy1   = 36
 
 
         push    edi

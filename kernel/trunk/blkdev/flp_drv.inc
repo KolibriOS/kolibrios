@@ -37,18 +37,18 @@ take_data_from_application_1:
         ret
 
 ; Коды завершения операции с контроллером (FDC_Status)
-FDC_Normal         equ 0 ;нормальное завершение
-FDC_TimeOut        equ 1 ;ошибка тайм-аута
-FDC_DiskNotFound   equ 2 ;в дисководе нет диска
-FDC_TrackNotFound  equ 3 ;дорожка не найдена
-FDC_SectorNotFound equ 4 ;сектор не найден
+FDC_Normal         = 0 ;нормальное завершение
+FDC_TimeOut        = 1 ;ошибка тайм-аута
+FDC_DiskNotFound   = 2 ;в дисководе нет диска
+FDC_TrackNotFound  = 3 ;дорожка не найдена
+FDC_SectorNotFound = 4 ;сектор не найден
 
 ; Максимальные значения координат сектора (заданные
 ; значения соответствуют параметрам стандартного
 ; трехдюймового гибкого диска объемом 1,44 Мб)
-MAX_Track   equ 79
-MAX_Head    equ  1
-MAX_Sector  equ 18
+MAX_Track   = 79
+MAX_Head    =  1
+MAX_Sector  = 18
 
 uglobal
 ; Счетчик тиков таймера

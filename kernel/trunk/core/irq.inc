@@ -8,9 +8,9 @@
 $Revision$
 
 
-IRQ_RESERVED   equ 24
+IRQ_RESERVED   = 24
 
-IRQ_POOL_SIZE  equ 48
+IRQ_POOL_SIZE  = 48
 
 uglobal
 

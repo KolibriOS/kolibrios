@@ -8,177 +8,177 @@
 $Revision$
 
 
-dpl0    equ  10010000b      ; data read       dpl0
-drw0    equ  10010010b      ; data read/write dpl0
-drw3    equ  11110010b      ; data read/write dpl3
-cpl0    equ  10011010b      ; code read dpl0
-cpl3    equ  11111010b      ; code read dpl3
+dpl0    =  10010000b      ; data read       dpl0
+drw0    =  10010010b      ; data read/write dpl0
+drw3    =  11110010b      ; data read/write dpl3
+cpl0    =  10011010b      ; code read dpl0
+cpl3    =  11111010b      ; code read dpl3
 
-D32     equ  01000000b      ; 32bit segment
-G32     equ  10000000b      ; page gran
+D32     =  01000000b      ; 32bit segment
+G32     =  10000000b      ; page gran
 
 
 ;;;;;;;;;;;;cpu_caps flags;;;;;;;;;;;;;;;;
 
-CPU_386        equ 3
-CPU_486        equ 4
-CPU_PENTIUM    equ 5
-CPU_P6         equ 6
-CPU_PENTIUM4   equ 0x0F
+CPU_386        = 3
+CPU_486        = 4
+CPU_PENTIUM    = 5
+CPU_P6         = 6
+CPU_PENTIUM4   = 0x0F
 
-CAPS_FPU       equ    00 ;on-chip x87 floating point unit
-CAPS_VME       equ    01 ;virtual-mode enhancements
-CAPS_DE        equ    02 ;debugging extensions
-CAPS_PSE       equ    03 ;page-size extensions
-CAPS_TSC       equ    04 ;time stamp counter
-CAPS_MSR       equ    05 ;model-specific registers
-CAPS_PAE       equ    06 ;physical-address extensions
-CAPS_MCE       equ    07 ;machine check exception
-CAPS_CX8       equ    08 ;CMPXCHG8B instruction
-CAPS_APIC      equ    09 ;on-chip advanced programmable
-                         ; interrupt controller
-;                     10 ;unused
-CAPS_SEP       equ    11 ;SYSENTER and SYSEXIT instructions
-CAPS_MTRR      equ    12 ;memory-type range registers
-CAPS_PGE       equ    13 ;page global extension
-CAPS_MCA       equ    14 ;machine check architecture
-CAPS_CMOV      equ    15 ;conditional move instructions
-CAPS_PAT       equ    16 ;page attribute table
+CAPS_FPU       =    00 ;on-chip x87 floating point unit
+CAPS_VME       =    01 ;virtual-mode enhancements
+CAPS_DE        =    02 ;debugging extensions
+CAPS_PSE       =    03 ;page-size extensions
+CAPS_TSC       =    04 ;time stamp counter
+CAPS_MSR       =    05 ;model-specific registers
+CAPS_PAE       =    06 ;physical-address extensions
+CAPS_MCE       =    07 ;machine check exception
+CAPS_CX8       =    08 ;CMPXCHG8B instruction
+CAPS_APIC      =    09 ;on-chip advanced programmable
+                       ;interrupt controller
+;                   10 ;unused
+CAPS_SEP       =    11 ;SYSENTER and SYSEXIT instructions
+CAPS_MTRR      =    12 ;memory-type range registers
+CAPS_PGE       =    13 ;page global extension
+CAPS_MCA       =    14 ;machine check architecture
+CAPS_CMOV      =    15 ;conditional move instructions
+CAPS_PAT       =    16 ;page attribute table
 
-CAPS_PSE36     equ    17 ;page-size extensions
-CAPS_PSN       equ    18 ;processor serial number
-CAPS_CLFLUSH   equ    19 ;CLFUSH instruction
+CAPS_PSE36     =    17 ;page-size extensions
+CAPS_PSN       =    18 ;processor serial number
+CAPS_CLFLUSH   =    19 ;CLFUSH instruction
 
-CAPS_DS        equ    21 ;debug store
-CAPS_ACPI      equ    22 ;thermal monitor and software
-                         ;controlled clock supported
-CAPS_MMX       equ    23 ;MMX instructions
-CAPS_FXSR      equ    24 ;FXSAVE and FXRSTOR instructions
-CAPS_SSE       equ    25 ;SSE instructions
-CAPS_SSE2      equ    26 ;SSE2 instructions
-CAPS_SS        equ    27 ;self-snoop
-CAPS_HTT       equ    28 ;hyper-threading technology
-CAPS_TM        equ    29 ;thermal monitor supported
-CAPS_IA64      equ    30 ;IA64 capabilities
-CAPS_PBE       equ    31 ;pending break enable
+CAPS_DS        =    21 ;debug store
+CAPS_ACPI      =    22 ;thermal monitor and software
+                       ;controlled clock supported
+CAPS_MMX       =    23 ;MMX instructions
+CAPS_FXSR      =    24 ;FXSAVE and FXRSTOR instructions
+CAPS_SSE       =    25 ;SSE instructions
+CAPS_SSE2      =    26 ;SSE2 instructions
+CAPS_SS        =    27 ;self-snoop
+CAPS_HTT       =    28 ;hyper-threading technology
+CAPS_TM        =    29 ;thermal monitor supported
+CAPS_IA64      =    30 ;IA64 capabilities
+CAPS_PBE       =    31 ;pending break enable
 
 ;ecx
-CAPS_SSE3      equ    32 ;SSE3 instructions
-;                     33
-;                     34
-CAPS_MONITOR   equ    35 ;MONITOR/MWAIT instructions
-CAPS_DS_CPL    equ    36 ;
-CAPS_VMX       equ    37 ;virtual mode extensions
-;                     38 ;
-CAPS_EST       equ    39 ;enhansed speed step
-CAPS_TM2       equ    40 ;thermal monitor2 supported
-;                     41
-CAPS_CID       equ    42 ;
-;                     43
-;                     44
-CAPS_CX16      equ    45 ;CMPXCHG16B instruction
-CAPS_xTPR      equ    46 ;
-CAPS_XSAVE     equ    (32 + 26) ; XSAVE and XRSTOR instructions
-CAPS_OSXSAVE   equ    (32 + 27)
+CAPS_SSE3      =    32 ;SSE3 instructions
+;                   33
+;                   34
+CAPS_MONITOR   =    35 ;MONITOR/MWAIT instructions
+CAPS_DS_CPL    =    36 ;
+CAPS_VMX       =    37 ;virtual mode extensions
+;                   38 ;
+CAPS_EST       =    39 ;enhansed speed step
+CAPS_TM2       =    40 ;thermal monitor2 supported
+;                   41
+CAPS_CID       =    42 ;
+;                   43
+;                   44
+CAPS_CX16      =    45 ;CMPXCHG16B instruction
+CAPS_xTPR      =    46 ;
+CAPS_XSAVE     =    32 + 26 ; XSAVE and XRSTOR instructions
+CAPS_OSXSAVE   =    32 + 27
 ; A value of 1 indicates that the OS has set CR4.OSXSAVE[bit 18] to enable
 ; XSETBV/XGETBV instructions to access XCR0 and to support processor extended
 ; state management using XSAVE/XRSTOR.
-CAPS_AVX       equ    (32 + 28) ; not AVX2
+CAPS_AVX       =    32 + 28 ; not AVX2
 ;
 ;reserved
 ;
 ;ext edx /ecx
-CAPS_SYSCAL    equ    64 ;
-CAPS_XD        equ    65 ;execution disable
-CAPS_FFXSR     equ    66 ;
-CAPS_RDTSCP    equ    67 ;
-CAPS_X64       equ    68 ;
-CAPS_3DNOW     equ    69 ;
-CAPS_3DNOWEXT  equ    70 ;
-CAPS_LAHF      equ    71 ;
-CAPS_CMP_LEG   equ    72 ;
-CAPS_SVM       equ    73 ;secure virual machine
-CAPS_ALTMOVCR8 equ    74 ;
+CAPS_SYSCAL    =    64 ;
+CAPS_XD        =    65 ;execution disable
+CAPS_FFXSR     =    66 ;
+CAPS_RDTSCP    =    67 ;
+CAPS_X64       =    68 ;
+CAPS_3DNOW     =    69 ;
+CAPS_3DNOWEXT  =    70 ;
+CAPS_LAHF      =    71 ;
+CAPS_CMP_LEG   =    72 ;
+CAPS_SVM       =    73 ;secure virual machine
+CAPS_ALTMOVCR8 =    74 ;
 
 ; CPU MSR names
-MSR_SYSENTER_CS         equ     0x174
-MSR_SYSENTER_ESP        equ     0x175
-MSR_SYSENTER_EIP        equ     0x176
-MSR_CR_PAT              equ     0x277
-MSR_MTRR_DEF_TYPE       equ     0x2FF
+MSR_SYSENTER_CS         =     0x174
+MSR_SYSENTER_ESP        =     0x175
+MSR_SYSENTER_EIP        =     0x176
+MSR_CR_PAT              =     0x277
+MSR_MTRR_DEF_TYPE       =     0x2FF
 
-MSR_AMD_EFER            equ     0xC0000080      ; Extended Feature Enable Register
-MSR_AMD_STAR            equ     0xC0000081      ; SYSCALL/SYSRET Target Address Register
+MSR_AMD_EFER            =     0xC0000080      ; Extended Feature Enable Register
+MSR_AMD_STAR            =     0xC0000081      ; SYSCALL/SYSRET Target Address Register
 
-CR0_PE         equ    0x00000001   ;protected mode
-CR0_MP         equ    0x00000002   ;monitor fpu
-CR0_EM         equ    0x00000004   ;fpu emulation
-CR0_TS         equ    0x00000008   ;task switch
-CR0_ET         equ    0x00000010   ;extension type hardcoded to 1
-CR0_NE         equ    0x00000020   ;numeric error
-CR0_WP         equ    0x00010000   ;write protect
-CR0_AM         equ    0x00040000   ;alignment check
-CR0_NW         equ    0x20000000   ;not write-through
-CR0_CD         equ    0x40000000   ;cache disable
-CR0_PG         equ    0x80000000   ;paging
+CR0_PE         =    0x00000001   ;protected mode
+CR0_MP         =    0x00000002   ;monitor fpu
+CR0_EM         =    0x00000004   ;fpu emulation
+CR0_TS         =    0x00000008   ;task switch
+CR0_ET         =    0x00000010   ;extension type hardcoded to 1
+CR0_NE         =    0x00000020   ;numeric error
+CR0_WP         =    0x00010000   ;write protect
+CR0_AM         =    0x00040000   ;alignment check
+CR0_NW         =    0x20000000   ;not write-through
+CR0_CD         =    0x40000000   ;cache disable
+CR0_PG         =    0x80000000   ;paging
 
 
-CR4_VME        equ    0x000001
-CR4_PVI        equ    0x000002
-CR4_TSD        equ    0x000004
-CR4_DE         equ    0x000008
-CR4_PSE        equ    0x000010
-CR4_PAE        equ    0x000020
-CR4_MCE        equ    0x000040
-CR4_PGE        equ    0x000080
-CR4_PCE        equ    0x000100
-CR4_OSFXSR     equ    0x000200
-CR4_OSXMMEXPT  equ    0x000400
-CR4_OSXSAVE    equ    0x040000
+CR4_VME        =    0x000001
+CR4_PVI        =    0x000002
+CR4_TSD        =    0x000004
+CR4_DE         =    0x000008
+CR4_PSE        =    0x000010
+CR4_PAE        =    0x000020
+CR4_MCE        =    0x000040
+CR4_PGE        =    0x000080
+CR4_PCE        =    0x000100
+CR4_OSFXSR     =    0x000200
+CR4_OSXMMEXPT  =    0x000400
+CR4_OSXSAVE    =    0x040000
 
-XCR0_FPU_MMX   equ    0x0001
-XCR0_SSE       equ    0x0002
-XCR0_AVX       equ    0x0004
-XCR0_MPX       equ    0x0018
-XCR0_AVX512    equ    0x00e0
+XCR0_FPU_MMX   =    0x0001
+XCR0_SSE       =    0x0002
+XCR0_AVX       =    0x0004
+XCR0_MPX       =    0x0018
+XCR0_AVX512    =    0x00e0
 
-MXCSR_IE       equ    0x0001
-MXCSR_DE       equ    0x0002
-MXCSR_ZE       equ    0x0004
-MXCSR_OE       equ    0x0008
-MXCSR_UE       equ    0x0010
-MXCSR_PE       equ    0x0020
-MXCSR_DAZ      equ    0x0040
-MXCSR_IM       equ    0x0080
-MXCSR_DM       equ    0x0100
-MXCSR_ZM       equ    0x0200
-MXCSR_OM       equ    0x0400
-MXCSR_UM       equ    0x0800
-MXCSR_PM       equ    0x1000
-MXCSR_FZ       equ    0x8000
+MXCSR_IE       =    0x0001
+MXCSR_DE       =    0x0002
+MXCSR_ZE       =    0x0004
+MXCSR_OE       =    0x0008
+MXCSR_UE       =    0x0010
+MXCSR_PE       =    0x0020
+MXCSR_DAZ      =    0x0040
+MXCSR_IM       =    0x0080
+MXCSR_DM       =    0x0100
+MXCSR_ZM       =    0x0200
+MXCSR_OM       =    0x0400
+MXCSR_UM       =    0x0800
+MXCSR_PM       =    0x1000
+MXCSR_FZ       =    0x8000
 
-MXCSR_INIT     equ (MXCSR_IM+MXCSR_DM+MXCSR_ZM+MXCSR_OM+MXCSR_UM+MXCSR_PM)
+MXCSR_INIT     = MXCSR_IM + MXCSR_DM + MXCSR_ZM + MXCSR_OM + MXCSR_UM + MXCSR_PM
 
-EFLAGS_CF      equ    0x000001  ; carry flag
-EFLAGS_PF      equ    0x000004  ; parity flag
-EFLAGS_AF      equ    0x000010  ; auxiliary flag
-EFLAGS_ZF      equ    0x000040  ; zero flag
-EFLAGS_SF      equ    0x000080  ; sign flag
-EFLAGS_TF      equ    0x000100  ; trap flag
-EFLAGS_IF      equ    0x000200  ; interrupt flag
-EFLAGS_DF      equ    0x000400  ; direction flag
-EFLAGS_OF      equ    0x000800  ; overflow flag
-EFLAGS_IOPL    equ    0x003000  ; i/o priviledge level
-EFLAGS_NT      equ    0x004000  ; nested task flag
-EFLAGS_RF      equ    0x010000  ; resume flag
-EFLAGS_VM      equ    0x020000  ; virtual 8086 mode flag
-EFLAGS_AC      equ    0x040000  ; alignment check flag
-EFLAGS_VIF     equ    0x080000  ; virtual interrupt flag
-EFLAGS_VIP     equ    0x100000  ; virtual interrupt pending
-EFLAGS_ID      equ    0x200000  ; id flag
+EFLAGS_CF      =    0x000001  ; carry flag
+EFLAGS_PF      =    0x000004  ; parity flag
+EFLAGS_AF      =    0x000010  ; auxiliary flag
+EFLAGS_ZF      =    0x000040  ; zero flag
+EFLAGS_SF      =    0x000080  ; sign flag
+EFLAGS_TF      =    0x000100  ; trap flag
+EFLAGS_IF      =    0x000200  ; interrupt flag
+EFLAGS_DF      =    0x000400  ; direction flag
+EFLAGS_OF      =    0x000800  ; overflow flag
+EFLAGS_IOPL    =    0x003000  ; i/o priviledge level
+EFLAGS_NT      =    0x004000  ; nested task flag
+EFLAGS_RF      =    0x010000  ; resume flag
+EFLAGS_VM      =    0x020000  ; virtual 8086 mode flag
+EFLAGS_AC      =    0x040000  ; alignment check flag
+EFLAGS_VIF     =    0x080000  ; virtual interrupt flag
+EFLAGS_VIP     =    0x100000  ; virtual interrupt pending
+EFLAGS_ID      =    0x200000  ; id flag
 
-IRQ_PIC        equ    0
-IRQ_APIC       equ    1
+IRQ_PIC        =    0
+IRQ_APIC       =    1
 
 struct  TSS
         _back       rw 2
@@ -213,156 +213,158 @@ struct  TSS
         _io_map_1   rb 4096
 ends
 
-DRIVE_DATA_SIZE     equ 16
+DRIVE_DATA_SIZE     = 16
 
-OS_BASE             equ 0x80000000
+OS_BASE             = 0x80000000
 
-window_data         equ (OS_BASE+0x0001000)
+window_data         = OS_BASE + 0x0001000
 
-CURRENT_TASK        equ (OS_BASE+0x0003000)
-TASK_COUNT          equ (OS_BASE+0x0003004)
-TASK_BASE           equ (OS_BASE+0x0003010)
-TASK_DATA           equ (OS_BASE+0x0003020)
-TASK_EVENT          equ (OS_BASE+0x0003020)
+CURRENT_TASK        = OS_BASE + 0x0003000
+TASK_COUNT          = OS_BASE + 0x0003004
+TASK_BASE           = OS_BASE + 0x0003010
+TASK_DATA           = OS_BASE + 0x0003020
+TASK_EVENT          = OS_BASE + 0x0003020
 
-CDDataBuf           equ (OS_BASE+0x0005000)
+CDDataBuf           = OS_BASE + 0x0005000
 
 ;unused                 0x6000 - 0x8fff
 
-BOOT_VARS           equ 0x9000
+BOOT_VARS           = 0x9000
 
-idts                equ (OS_BASE+0x000B100)
-WIN_STACK           equ (OS_BASE+0x000C000)
-WIN_POS             equ (OS_BASE+0x000C400)
-FDD_BUFF            equ (OS_BASE+0x000D000)     ;512
+idts                = OS_BASE + 0x000B100
+WIN_STACK           = OS_BASE + 0x000C000
+WIN_POS             = OS_BASE + 0x000C400
+FDD_BUFF            = OS_BASE + 0x000D000     ;512
 
-WIN_TEMP_XY         equ (OS_BASE+0x000F300)
-KEY_COUNT           equ (OS_BASE+0x000F400)
-KEY_BUFF            equ (OS_BASE+0x000F401) ; 120*2 + 2*2 = 244 bytes, actually 255 bytes
+WIN_TEMP_XY         = OS_BASE + 0x000F300
+KEY_COUNT           = OS_BASE + 0x000F400
+KEY_BUFF            = OS_BASE + 0x000F401 ; 120*2 + 2*2 = 244 bytes, actually 255 bytes
 
-BTN_COUNT           equ (OS_BASE+0x000F500)
-BTN_BUFF            equ (OS_BASE+0x000F501)
-
-
-BTN_ADDR            equ (OS_BASE+0x000FE88)
-MEM_AMOUNT          equ (OS_BASE+0x000FE8C)
-
-SYS_SHUTDOWN        equ (OS_BASE+0x000FF00)
-TASK_ACTIVATE       equ (OS_BASE+0x000FF01)
+BTN_COUNT           = OS_BASE + 0x000F500
+BTN_BUFF            = OS_BASE + 0x000F501
 
 
-TMP_STACK_TOP       equ 0x006CC00
+BTN_ADDR            = OS_BASE + 0x000FE88
+MEM_AMOUNT          = OS_BASE + 0x000FE8C
 
-sys_proc            equ (OS_BASE+0x006F000)
+SYS_SHUTDOWN        = OS_BASE + 0x000FF00
+TASK_ACTIVATE       = OS_BASE + 0x000FF01
 
-SLOT_BASE           equ (OS_BASE+0x0080000)
 
-VGABasePtr          equ (OS_BASE+0x00A0000)
+TMP_STACK_TOP       = 0x006CC00
 
-CLEAN_ZONE          equ (_CLEAN_ZONE-OS_BASE)
+sys_proc            = OS_BASE + 0x006F000
 
-UPPER_KERNEL_PAGES  equ (OS_BASE+0x0400000)
+SLOT_BASE           = OS_BASE + 0x0080000
 
-virtual at              (OS_BASE+0x05FFF80)
+VGABasePtr          = OS_BASE + 0x00A0000
+
+UPPER_KERNEL_PAGES  = OS_BASE + 0x0400000
+
+virtual at            OS_BASE + 0x05FFF80
   tss  TSS
 end virtual
 
-HEAP_BASE           equ (OS_BASE+0x0800000)
-HEAP_MIN_SIZE       equ 0x01000000
+HEAP_BASE           = OS_BASE + 0x0800000
+HEAP_MIN_SIZE       = 0x01000000
 
-page_tabs           equ 0xFDC00000
-app_page_tabs       equ 0xFDC00000
-kernel_tabs         equ (page_tabs+ (OS_BASE shr 10))   ;0xFDE00000
-master_tab          equ (page_tabs+ (page_tabs shr 10)) ;0xFDFF70000
+page_tabs           = 0xFDC00000
+app_page_tabs       = 0xFDC00000
+kernel_tabs         = page_tabs + (OS_BASE shr 10)   ;0xFDE00000
+master_tab          = page_tabs + (page_tabs shr 10) ;0xFDFF70000
 
-LFB_BASE            equ 0xFE000000
-
-
-new_app_base        equ 0;
-
-twdw                equ 0x2000   ;(CURRENT_TASK-window_data)
-
-std_application_base_address   equ new_app_base
-RING0_STACK_SIZE    equ 0x2000
-
-REG_SS              equ (RING0_STACK_SIZE-4)
-REG_APP_ESP         equ (RING0_STACK_SIZE-8)
-REG_EFLAGS          equ (RING0_STACK_SIZE-12)
-REG_CS              equ (RING0_STACK_SIZE-16)
-REG_EIP             equ (RING0_STACK_SIZE-20)
-REG_EAX             equ (RING0_STACK_SIZE-24)
-REG_ECX             equ (RING0_STACK_SIZE-28)
-REG_EDX             equ (RING0_STACK_SIZE-32)
-REG_EBX             equ (RING0_STACK_SIZE-36)
-REG_ESP             equ (RING0_STACK_SIZE-40)  ;RING0_STACK_SIZE-20
-REG_EBP             equ (RING0_STACK_SIZE-44)
-REG_ESI             equ (RING0_STACK_SIZE-48)
-REG_EDI             equ (RING0_STACK_SIZE-52)
-REG_RET             equ (RING0_STACK_SIZE-56)  ;irq0.return
+LFB_BASE            = 0xFE000000
 
 
-PAGE_SIZE           equ 4096
+new_app_base        = 0;
 
-PG_UNMAP            equ 0x000
-PG_READ             equ 0x001
-PG_WRITE            equ 0x002
-PG_USER             equ 0x004
-PG_PCD              equ 0x008
-PG_PWT              equ 0x010
-PG_ACCESSED         equ 0x020
-PG_DIRTY            equ 0x040
-PG_PAT              equ 0x080
-PG_GLOBAL           equ 0x100
-PG_SHARED           equ 0x200
+twdw                = 0x2000   ; CURRENT_TASK - window_data
 
-PG_SWR              equ 0x003 ; (PG_WRITE+PG_READ)
-PG_UR               equ 0x005 ; (PG_USER+PG_READ)
-PG_UWR              equ 0x007 ; (PG_USER+PG_WRITE+PG_READ)
-PG_NOCACHE          equ 0x018 ; (PG_PCD+PG_PWT)
+std_application_base_address   = new_app_base
+RING0_STACK_SIZE    = 0x2000
 
-PDE_LARGE           equ 0x080
-
-PAT_WB              equ 0x000
-PAT_WC              equ 0x008
-PAT_UCM             equ 0x010
-PAT_UC              equ 0x018
-
-PAT_TYPE_UC         equ 0
-PAT_TYPE_WC         equ 1
-PAT_TYPE_WB         equ 6
-PAT_TYPE_UCM        equ 7
-
-PAT_VALUE           equ 0x00070106; (UC<<24)|(UCM<<16)|(WC<<8)|WB
-
-MAX_MEMMAP_BLOCKS   equ 32
-
-TMP_FILE_NAME       equ     0
-TMP_CMD_LINE        equ  1024
-TMP_ICON_OFFS       equ  1280
+REG_SS              = RING0_STACK_SIZE -  4
+REG_APP_ESP         = RING0_STACK_SIZE -  8
+REG_EFLAGS          = RING0_STACK_SIZE - 12
+REG_CS              = RING0_STACK_SIZE - 16
+REG_EIP             = RING0_STACK_SIZE - 20
+REG_EAX             = RING0_STACK_SIZE - 24
+REG_ECX             = RING0_STACK_SIZE - 28
+REG_EDX             = RING0_STACK_SIZE - 32
+REG_EBX             = RING0_STACK_SIZE - 36
+REG_ESP             = RING0_STACK_SIZE - 40  ;RING0_STACK_SIZE-20
+REG_EBP             = RING0_STACK_SIZE - 44
+REG_ESI             = RING0_STACK_SIZE - 48
+REG_EDI             = RING0_STACK_SIZE - 52
+REG_RET             = RING0_STACK_SIZE - 56  ;irq0.return
 
 
-EVENT_REDRAW       equ 0x00000001
-EVENT_KEY          equ 0x00000002
-EVENT_BUTTON       equ 0x00000004
-EVENT_BACKGROUND   equ 0x00000010
-EVENT_MOUSE        equ 0x00000020
-EVENT_IPC          equ 0x00000040
-EVENT_NETWORK      equ 0x00000080
-EVENT_DEBUG        equ 0x00000100
-EVENT_NETWORK2     equ 0x00000200
-EVENT_EXTENDED     equ 0x00000400
+PAGE_SIZE           = 4096
 
-EV_INTR            equ 1
+PG_UNMAP            = 0x000
+PG_READ             = 0x001
+PG_WRITE            = 0x002
+PG_USER             = 0x004
+PG_PCD              = 0x008
+PG_PWT              = 0x010
+PG_ACCESSED         = 0x020
+PG_DIRTY            = 0x040
+PG_PAT              = 0x080
+PG_GLOBAL           = 0x100
+PG_SHARED           = 0x200
 
-STDIN_FILENO       equ 0
-STDOUT_FILENO      equ 1
-STDERR_FILENO      equ 2
+PG_SWR              = 0x003 ; PG_WRITE + PG_READ
+PG_UR               = 0x005 ; PG_USER + PG_READ
+PG_UWR              = 0x007 ; PG_USER + PG_WRITE + PG_READ
+PG_NOCACHE          = 0x018 ; PG_PCD + PG_PWT
 
-SYSTEM_SHUTDOWN    equ 2
-SYSTEM_REBOOT      equ 3
-SYSTEM_RESTART     equ 4
+PDE_LARGE           = 0x080
 
-BLIT_CLIENT_RELATIVE equ 0x20000000
+MEM_WB              = 6     ; write-back memory
+MEM_WC              = 1     ; write combined memory
+MEM_UC              = 0     ; uncached memory
+
+PAT_WB              = 0x000
+PAT_WC              = 0x008
+PAT_UCM             = 0x010
+PAT_UC              = 0x018
+
+PAT_TYPE_UC         = 0
+PAT_TYPE_WC         = 1
+PAT_TYPE_WB         = 6
+PAT_TYPE_UCM        = 7
+
+PAT_VALUE           = 0x00070106; (UC<<24)|(UCM<<16)|(WC<<8)|WB
+
+MAX_MEMMAP_BLOCKS   = 32
+
+TMP_FILE_NAME       =     0
+TMP_CMD_LINE        =  1024
+TMP_ICON_OFFS       =  1280
+
+
+EVENT_REDRAW       = 0x00000001
+EVENT_KEY          = 0x00000002
+EVENT_BUTTON       = 0x00000004
+EVENT_BACKGROUND   = 0x00000010
+EVENT_MOUSE        = 0x00000020
+EVENT_IPC          = 0x00000040
+EVENT_NETWORK      = 0x00000080
+EVENT_DEBUG        = 0x00000100
+EVENT_NETWORK2     = 0x00000200
+EVENT_EXTENDED     = 0x00000400
+
+EV_INTR            = 1
+
+STDIN_FILENO       = 0
+STDOUT_FILENO      = 1
+STDERR_FILENO      = 2
+
+SYSTEM_SHUTDOWN    = 2
+SYSTEM_REBOOT      = 3
+SYSTEM_RESTART     = 4
+
+BLIT_CLIENT_RELATIVE = 0x20000000
 
 struct SYSCALL_STACK
         _eip            dd ?
@@ -408,10 +410,10 @@ struct  FUTEX
         flags           dd ?
 ends
 
-FUTEX_INIT      equ 0
-FUTEX_DESTROY   equ 1
-FUTEX_WAIT      equ 2
-FUTEX_WAKE      equ 3
+FUTEX_INIT      = 0
+FUTEX_DESTROY   = 1
+FUTEX_WAIT      = 2
+FUTEX_WAKE      = 3
 
 struct  FILED
         list            LHEAD
@@ -536,8 +538,8 @@ struct  APPDATA
         in_schedule     LHEAD           ;+236
 ends
 
-APP_OBJ_OFFSET  equ 48
-APP_EV_OFFSET   equ 40
+APP_OBJ_OFFSET  = 48
+APP_EV_OFFSET   = 40
 
 struct  TASKDATA
         event_mask      dd ?
@@ -886,8 +888,8 @@ struct USBFUNC
         device_disconnect dd ?
 ends
 
-DRV_ENTRY    equ  1
-DRV_EXIT     equ -1
+DRV_ENTRY    =  1
+DRV_EXIT     = -1
 
 struct  COFF_HEADER
         machine         dw ?

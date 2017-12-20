@@ -7,11 +7,6 @@
 
 $Revision$
 
-
-MEM_WB     equ 6               ;write-back memory
-MEM_WC     equ 1               ;write combined memory
-MEM_UC     equ 0               ;uncached memory
-
 align 4
 proc mem_test
 ; if we have BIOS with fn E820, skip the test
@@ -444,13 +439,13 @@ cpu_count         rd 1
 smpt              rd 16
 endg
 
-ACPI_HI_RSDP_WINDOW_START  equ 0x000E0000
-ACPI_HI_RSDP_WINDOW_END    equ 0x00100000
-ACPI_RSDP_CHECKSUM_LENGTH  equ 20
+ACPI_HI_RSDP_WINDOW_START  = 0x000E0000
+ACPI_HI_RSDP_WINDOW_END    = 0x00100000
+ACPI_RSDP_CHECKSUM_LENGTH  = 20
 
-ACPI_HPET_SIGN             equ 'HPET'
-ACPI_MADT_SIGN             equ 'APIC'
-ACPI_FADT_SIGN             equ 'FACP'
+ACPI_HPET_SIGN             = 'HPET'
+ACPI_MADT_SIGN             = 'APIC'
+ACPI_FADT_SIGN             = 'FACP'
 
 
 acpi_locate:
@@ -623,15 +618,15 @@ check_acpi:
         mov     [acpi_ioapic_base-OS_BASE], eax
         jmp     .next
 
-HPET_PERIOD             equ 0x0004
-HPET_CFG_ENABLE         equ 0x0001
-HPET_CFG                equ 0x0010
-HPET_COUNTER            equ 0x00f0
-HPET_T0_CFG             equ 0x0100
+HPET_PERIOD             = 0x0004
+HPET_CFG_ENABLE         = 0x0001
+HPET_CFG                = 0x0010
+HPET_COUNTER            = 0x00f0
+HPET_T0_CFG             = 0x0100
 
-HPET_TN_LEVEL           equ 0x0002
-HPET_TN_ENABLE          equ 0x0004
-HPET_TN_FSB             equ 0x4000
+HPET_TN_LEVEL           = 0x0002
+HPET_TN_ENABLE          = 0x0004
+HPET_TN_FSB             = 0x4000
 
 align 4
 init_hpet:

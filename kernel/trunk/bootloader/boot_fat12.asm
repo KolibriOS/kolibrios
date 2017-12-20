@@ -17,12 +17,12 @@
 
 include "lang.inc"
 
-lf              equ     0ah
-cr              equ     0dh
+lf              =     0ah
+cr              =     0dh
 
-pos_read_tmp    equ     0700h                   ;position for temporary read
-boot_program    equ     07c00h                  ;position for boot code
-seg_read_kernel equ     01000h                  ;segment to kernel read
+pos_read_tmp    =     0700h                   ;position for temporary read
+boot_program    =     07c00h                  ;position for boot code
+seg_read_kernel =     01000h                  ;segment to kernel read
 
         jmp     start_program
         nop

@@ -18,30 +18,30 @@ IOAPIC_base  rd  1
 LAPIC_BASE   rd  1
 endg
 
-APIC_ID         equ 0x20
-APIC_TPR        equ 0x80
-APIC_EOI        equ 0xb0
-APIC_LDR        equ 0xd0
-APIC_DFR        equ 0xe0
-APIC_SVR        equ 0xf0
-APIC_ISR        equ 0x100
-APIC_ESR        equ 0x280
-APIC_ICRL       equ 0x300
-APIC_ICRH       equ 0x310
-APIC_LVT_LINT0  equ 0x350
-APIC_LVT_LINT1  equ 0x360
-APIC_LVT_err    equ 0x370
+APIC_ID         = 0x20
+APIC_TPR        = 0x80
+APIC_EOI        = 0xb0
+APIC_LDR        = 0xd0
+APIC_DFR        = 0xe0
+APIC_SVR        = 0xf0
+APIC_ISR        = 0x100
+APIC_ESR        = 0x280
+APIC_ICRL       = 0x300
+APIC_ICRH       = 0x310
+APIC_LVT_LINT0  = 0x350
+APIC_LVT_LINT1  = 0x360
+APIC_LVT_err    = 0x370
 
 ; APIC timer
-APIC_LVT_timer  equ 0x320
-APIC_timer_div  equ 0x3e0
-APIC_timer_init equ 0x380
-APIC_timer_cur  equ 0x390
+APIC_LVT_timer  = 0x320
+APIC_timer_div  = 0x3e0
+APIC_timer_init = 0x380
+APIC_timer_cur  = 0x390
 ; IOAPIC
-IOAPIC_ID       equ 0x0
-IOAPIC_VER      equ 0x1
-IOAPIC_ARB      equ 0x2
-IOAPIC_REDTBL   equ 0x10
+IOAPIC_ID       = 0x0
+IOAPIC_VER      = 0x1
+IOAPIC_ARB      = 0x2
+IOAPIC_REDTBL   = 0x10
 
 align 4
 APIC_init:

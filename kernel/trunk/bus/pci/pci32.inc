@@ -30,7 +30,7 @@ $Revision$
 ;   Description
 ;       entry point for system PCI calls
 ;***************************************************************************
-;mmio_pci_addr  equ  0x400               ; set actual PCI address here to activate user-MMIO
+;mmio_pci_addr  =  0x400               ; set actual PCI address here to activate user-MMIO
 
 iglobal
 align 4

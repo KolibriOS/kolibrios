@@ -7,11 +7,11 @@
 
 $Revision: 6917 $
 
-F_READ              equ 0x0001  ; file opened for reading
-F_WRITE             equ 0x0002  ; file opened for writing
+F_READ              = 0x0001  ; file opened for reading
+F_WRITE             = 0x0002  ; file opened for writing
 
-O_CLOEXEC           equ 0x40000
-PIPE_BUFFER_SIZE    equ 4096
+O_CLOEXEC           = 0x40000
+PIPE_BUFFER_SIZE    = 4096
 
 
 iglobal

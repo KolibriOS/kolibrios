@@ -11,8 +11,8 @@ $Revision$
 
 
 
-RWSEM_WAITING_FOR_WRITE equ 0
-RWSEM_WAITING_FOR_READ  equ 1
+RWSEM_WAITING_FOR_WRITE = 0
+RWSEM_WAITING_FOR_READ  = 1
 
 ;void  __fastcall mutex_init(struct mutex *lock)
 

@@ -8,11 +8,11 @@
 $Revision$
 
 
-DRV_COMPAT   equ  5  ;minimal required drivers version
-DRV_CURRENT  equ  6  ;current drivers model version
+DRV_COMPAT   =  5  ;minimal required drivers version
+DRV_CURRENT  =  6  ;current drivers model version
 
-DRV_VERSION equ (DRV_COMPAT shl 16) or DRV_CURRENT
-PID_KERNEL  equ 1    ;os_idle thread
+DRV_VERSION = (DRV_COMPAT shl 16) or DRV_CURRENT
+PID_KERNEL  = 1    ;os_idle thread
 
 
 

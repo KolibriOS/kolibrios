@@ -7,17 +7,17 @@
 
 $Revision: 6917 $
 
-ENOENT  equ      2
-EBADF   equ      9
-EFAULT  equ     14
-;EINVAL  equ     22      11   defined in stack.inc
-ENFILE  equ     23
-EMFILE  equ     24
-EPIPE   equ     32
+ENOENT  =      2
+EBADF   =      9
+EFAULT  =     14
+;EINVAL  =     22      11   defined in stack.inc
+ENFILE  =     23
+EMFILE  =     24
+EPIPE   =     32
 
-FILEOP_CLOSE    equ     0
-FILEOP_READ     equ     1
-FILEOP_WRITE    equ     2
+FILEOP_CLOSE    =     0
+FILEOP_READ     =     1
+FILEOP_WRITE    =     2
 
 
 include "futex.inc"

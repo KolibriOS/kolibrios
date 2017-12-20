@@ -115,15 +115,15 @@ macro movi r,i
 }
 
 include '../kglobals.inc'
-CAPS_MTRR equ 12
-MSR_MTRR_DEF_TYPE equ 0x2FF
-CAPS_PGE  equ 13
-CAPS_PAT  equ 16
-MSR_CR_PAT equ 0x277
-PAT_VALUE  equ 0x00070106 ; (UC<<24)|(UCM<<16)|(WC<<8)|WB
-MEM_WB     equ 6               ;write-back memory
-MEM_WC     equ 1               ;write combined memory
-MEM_UC     equ 0               ;uncached memory
+CAPS_MTRR  = 12
+MSR_MTRR_DEF_TYPE = 0x2FF
+CAPS_PGE   = 13
+CAPS_PAT   = 16
+MSR_CR_PAT = 0x277
+PAT_VALUE  = 0x00070106 ; (UC<<24)|(UCM<<16)|(WC<<8)|WB
+MEM_WB     = 6               ;write-back memory
+MEM_WC     = 1               ;write combined memory
+MEM_UC     = 0               ;uncached memory
 include 'mtrr.inc'
 
 BOOT_VARS = 0

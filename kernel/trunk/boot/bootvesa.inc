@@ -84,9 +84,9 @@ home_cursor dw 0    ;current shows rows a table
 end_cursor  dw 0     ;end of position current shows rows a table
 scroll_start dw 0    ;start position of scroll bar
 scroll_end  dw 0     ;end position of scroll bar
-long_v_table equ 9   ;long of visible video table
-size_of_step equ 10
-scroll_area_size equ (long_v_table-2)
+long_v_table = 9   ;long of visible video table
+size_of_step = 10
+scroll_area_size = long_v_table - 2
 int2str:
         dec     bl
         jz      @f
@@ -754,7 +754,7 @@ set_vmode:
         mov     eax, [es:mi.PhysBasePtr];di+0x28]
         mov     [es:BOOT_LO.lfb], eax
         ; ---- vbe voodoo
-        BytesPerLine equ 0x10
+        BytesPerLine = 0x10
         mov     ax, [es:di+BytesPerLine]
         mov     [es:BOOT_LO.pitch], ax
         ; BPP
