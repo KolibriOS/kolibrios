@@ -24,5 +24,5 @@ function link_msvc(input, output)
   local mapname = output .. ".map"
 
   tup.rule(input, "link.exe " .. LDFLAGS .. " /out:%o /Map:" .. mapname .. " %f", {exename, extra_outputs = {mapname}})
-  tup.rule(exename, env_prefix .. "fasm " .. THISDIR .. "/../data/eng/doexe2.asm %o " .. tup.getconfig("KPACK_CMD"), output)
+  tup.rule(exename, env_prefix .. "fasm " .. THISDIR .. "/../data/common/doexe2.asm %o " .. tup.getconfig("KPACK_CMD"), output)
 end

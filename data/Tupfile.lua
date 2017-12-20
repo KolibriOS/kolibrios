@@ -69,8 +69,8 @@ img_files = {
  {"SETTINGS/KOLIBRI.LBL", build_type .. "/settings/kolibri.lbl"},
  {"SETTINGS/LANG.INI", build_type .. "/settings/lang.ini"},
  {"SETTINGS/MENU.DAT", build_type .. "/settings/menu.dat"},
- {"SETTINGS/NETWORK.INI", build_type .. "/settings/network.ini"},
- {"SETTINGS/TASKBAR.INI", build_type .. "/settings/taskbar.ini"},
+ {"SETTINGS/NETWORK.INI", "common/settings/network.ini"},
+ {"SETTINGS/TASKBAR.INI", "common/settings/taskbar.ini"},
  {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
  {"SETTINGS/SYSTEM.INI", "common/settings/system.ini"},
 }
@@ -135,8 +135,8 @@ in the directory with Tupfile.lua; for other files, the item should contain
 a named subitem "group=path/<groupname>" and the file should be put in <groupname>.
 --]]
 extra_files = {
- {"/", build_type .. "/distr_data/autorun.inf"},
- {"/", build_type .. "/distr_data/KolibriOS_icon.ico"},
+ {"/", "common/distr_data/autorun.inf"},
+ {"/", "common/distr_data/KolibriOS_icon.ico"},
  {"/", build_type .. "/settings/kolibri.lbl"},
  {"Docs/stack.txt", build_type .. "/docs/STACK.TXT"},
  {"HD_Load/9x2klbr/", "common/HD_load/9x2klbr/LDKLBR.VXD"},
