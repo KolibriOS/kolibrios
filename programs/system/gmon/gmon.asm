@@ -35,9 +35,24 @@
 ;	12 - Update time decriment (tab_conf.inc)
 ;	13..17 - Color Changing buttons CPU_load, Mem_usage, Temp1, Temp2, Temp3
 
-include 'lang.inc'
 include 'config.inc'
 include 'macros.inc'
+
+macro clear_prev_no arg1        ; clears previous number printed at arg1
+{
+   pusha
+   mov     ebx, 0x00070000
+   mov     ecx, 1000000     ; dummy value
+   mov     edx, arg1
+   mov     esi, 0x40000000 + tcol
+   mov     edi, tcol    ; bg col
+   mov     eax, 47
+   int     0x40
+   popa
+}
+
+nl	equ	0x0d, 0x0a
+
 
 tcol	equ	0x5080d0
 atcol	equ	0x4070c0

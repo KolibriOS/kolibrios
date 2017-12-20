@@ -290,7 +290,7 @@ still:
 ;///// DRAW WINDOW ////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 
-func draw_window
+__func draw_window
         mcall   MF_WINPROPS,WP_GETSYSCLRS,sc,sizeof.system_colors
 
         mcall   MF_WNDDRAW,WD_BEGINDRAW
@@ -340,7 +340,7 @@ endf
 ;//////////////////////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 
-func draw_window_full
+__func draw_window_full
         call    draw_window
         mov     edx,1
         call    get_files_data
@@ -360,7 +360,7 @@ endf
 align 4
 len dd ?
 
-func get_normal_path
+__func get_normal_path
         pusha
         mov     ecx,5
         rep     movsb
@@ -394,7 +394,7 @@ endf
 ; EAX = length needed
 ; ECX = current length
 ; EDI = path string
-func get_path_ellipses
+__func get_path_ellipses
         cmp     ecx,eax
         jbe     @f
         pushad
@@ -416,7 +416,7 @@ endf
 ;//////////////////////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 
-func draw_path
+__func draw_path
         pushad
         cmp     [active_panel],0
         jne    ._00
@@ -444,7 +444,7 @@ endf
 ;------------------------------------------------------------------------------
 
 ; AL = panel
-func draw_files
+__func draw_files
         push    eax
         mmov    ecx,oY+tH*2-1,tH*FPC
         mov     edx,[fc.background]
@@ -519,7 +519,7 @@ endf
 ;//////////////////////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 
-func draw_bottom_keys
+__func draw_bottom_keys
         pushad
         mcall2  MF_FILLRECT,oX-1,tW*80+1,oY+tH*24-1,tH+1,[fc.pathbg]
         dec     ecx
@@ -551,7 +551,7 @@ endf
 ; ESI = X1*65536+X2
 ; EDI = Y1*65536+Y2
 ; EDX = color
-func draw_frame
+__func draw_frame
         mov     ecx,edi
         mov     ebx,edi
         shr     ebx,16
@@ -578,7 +578,7 @@ endf
 ;------------------------------------------------------------------------------
 
 ; EDX = pointer to file data
-func get_file_color
+__func get_file_color
         push    esi
         mov     cl,[edx+11]
         test    cl,(FA_HIDDEN or FA_SYSTEM)
@@ -632,7 +632,7 @@ endf
 ;------------------------------------------------------------------------------
 
 ; EDI = color
-func draw_sel
+__func draw_sel
         pushad
         cmp     [active_panel],0
         jne    ._00
@@ -715,7 +715,7 @@ endf
 ;------------------------------------------------------------------------------
 
 ; AL = panel
-func draw_file_info
+__func draw_file_info
         push    eax
         mmov    ecx,oY+tH*21,tH
         mov     edx,[fc.background]
@@ -790,7 +790,7 @@ endf
 ;//////////////////////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 
-func get_file_name
+__func get_file_name
         pushad
         mov     eax,[esi+0]
         mov     [f_name+0],eax
@@ -810,7 +810,7 @@ endf
 ;------------------------------------------------------------------------------
 
 ; ESI = pointer to file data
-func get_file_info
+__func get_file_info
         pushad
         mov     eax,[esi+12]
         mov     dword[f_info],FS_READ
@@ -888,7 +888,7 @@ endf
 ;------------------------------------------------------------------------------
 
 ; DL = panel
-func get_files_data
+__func get_files_data
         pushad
         mov     [d_tcnt],0
         mov     [d_ttsz],0
@@ -985,7 +985,7 @@ endf
 ;//////////////////////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 
-func execute_current_file
+__func execute_current_file
         pushad
         cmp     [active_panel],0
         jne    ._00
@@ -1080,7 +1080,7 @@ endf
 ;//////////////////////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 
-func delete_current_file
+__func delete_current_file
         pushad
         popad
         ret

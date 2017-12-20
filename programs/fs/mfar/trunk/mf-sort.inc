@@ -11,7 +11,7 @@ align 4
   dd compare_by_extension
 
 ; AL = panel
-func mfar_sort
+__func mfar_sort
         pusha
         cmp     al,0
         jne    ._00
@@ -69,7 +69,7 @@ endf
 
 ; ESI = pointer to 1st file info
 ; EDI = pointer to 2nd file info
-func compare_by_name
+__func compare_by_name
         mov     ecx,11
         push    edi esi
         repe    cmpsb
@@ -102,7 +102,7 @@ endf
 
 ; ESI = pointer to 1st file info
 ; EDI = pointer to 2nd file info
-func compare_by_extension
+__func compare_by_extension
         push    edi esi
         mov     ecx,3
         add     esi,8

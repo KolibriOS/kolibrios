@@ -103,7 +103,7 @@ popup_thread_start:
 	mov	[mi_cur],0
 	mcall	-1
 
-func draw_popup_wnd
+__func draw_popup_wnd
 	mcall	12,1
 
 	mov	ebx,dword[ebp+POPUP.x-2]
@@ -208,7 +208,7 @@ func draw_popup_wnd
 	ret
 endf
 
-func setup_main_menu_popup
+__func setup_main_menu_popup
 	mov	ebx,[p_info.box.left]
 	add	ebx,[p_info.client_box.left]
     @@: dec	ecx

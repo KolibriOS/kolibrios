@@ -1,2 +1,4 @@
 if tup.getconfig("NO_FASM") ~= "" then return end
-tup.foreach_rule("*.asm", "fasm %f %o " .. tup.getconfig("KPACK_CMD"), "%B")
+HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../../../.." or tup.getconfig("HELPERDIR")
+tup.include(HELPERDIR .. "/use_fasm.lua")
+tup.foreach_rule("*.asm", FASM .. " %f %o " .. tup.getconfig("KPACK_CMD"), "%B")

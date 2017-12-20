@@ -5,7 +5,7 @@ version    equ ''
 
 include 'macros.inc'
 
-header '01',1,START,I_END,(D_END+0x100),(D_END+0x100),0,cur_dir_path
+__header '01',1,START,I_END,(D_END+0x100),(D_END+0x100),0,cur_dir_path
 
 include 'opcodes.inc'
 include 'proc32.inc'

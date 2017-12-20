@@ -1,2 +1,4 @@
 if tup.getconfig("NO_FASM") ~= "" then return end
-tup.rule("megamaze.asm", "fasm %f %o " .. tup.getconfig("KPACK_CMD"), "megamaze")
+HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../../.." or tup.getconfig("HELPERDIR")
+tup.include(HELPERDIR .. "/use_fasm.lua")
+tup.rule("megamaze.asm", FASM .. " %f %o " .. tup.getconfig("KPACK_CMD"), "megamaze")

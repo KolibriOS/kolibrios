@@ -66,7 +66,7 @@ proc dll.Link, exp:dword, imp:dword
 	ret
 endp
 ;-----------------------------------------------------------------------------
-; calls lib_init with predefined parameters  
+; calls lib_init with predefined parameters
 ; no return value
 proc dll.Init, dllentry:dword
 	pushad
@@ -104,7 +104,7 @@ proc dll.GetProcAddress, exp:dword, sz_name:dword
 	ret
 endp
 ;-----------------------------------------------------------------------------
-; compares strings 
+; compares strings
 ; returns eax = 0 if equal, -1 otherwise
 proc strcmp, str1:dword, str2:dword
 	push	esi edi

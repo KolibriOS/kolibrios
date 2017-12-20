@@ -29,11 +29,9 @@
 
 format binary as ""
 
-include '../../../macros.inc'    ; decrease code size (optional)
+include 'macros.inc'    ; decrease code size (optional)
 include 'CELLTYPE.INC'  ; object identifiers
 ;include 'debug.inc'
-;lang equ ru             ; russian interface; english if undefined
-include 'lang.inc'
 
 CUR_DIR equ '/sys/games/'       ; change it to appropriate path
 

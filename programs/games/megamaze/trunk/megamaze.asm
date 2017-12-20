@@ -589,11 +589,11 @@ show_help:
 		mov   ebp,[pack]
 	.red:
     mcall 12,1
-    mov   ebx,[prc_info.x_start]
-    add   ebx,[prc_info.x_size]
+    mov   ebx,[prc_info.box.left]
+    add   ebx,[prc_info.box.width]
     shl   ebx,16
     add   ebx,310
-    mov   ecx,[prc_info.y_start]
+    mov   ecx,[prc_info.box.top]
     shl   ecx,16
     add   ecx,220
     mcall 0,,,0x03c0c0c0

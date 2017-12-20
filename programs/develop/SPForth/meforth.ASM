@@ -101,8 +101,8 @@ MEMS: 	dd     EM       ; memory for app
 	dd     cur_dir_path
 
  lang fix ru
- include 'MACROS.INC'
- include '..\..\proc32.inc'
+ include 'macros.inc'
+ include 'proc32.inc'
 
 align 4
 proc strncmp stdcall, s1:dword, s2:dword, n:dword
@@ -182,20 +182,20 @@ BYE:	mcall -1
 	mcall 71, 1, header
 
 	mcall 9,pinfo,-1
-	mov   eax,[pinfo.x_size]
+	mov   eax,[pinfo.box.width]
 	cdq
 	sub   eax,20
 	mov   ebx,6
 	div   ebx
-	mov   [pinfo.x_start],eax
+	mov   [pinfo.box.left],eax
 
-	mov   eax,[pinfo.y_size]
+	mov   eax,[pinfo.box.height]
 	cdq
 	sub   eax,40
 	mov   ebx,ROWH
 	div   ebx
 
-	mov   [pinfo.y_start],eax
+	mov   [pinfo.box.top],eax
 	call  erase_screen
 	mcall 12, 2
 	mcall 67,-1,-1,FW_WIDTH,FW_HEIGHT
@@ -214,10 +214,10 @@ erase_screen:
 	GetSkinHeight
 	mov ecx,eax
 	shl ecx,16
-	add ecx,[pinfo.y_size]
+	add ecx,[pinfo.box.height]
 	sub ecx,eax
 	sub ecx,4		
-	mov   ebx,[pinfo.x_size]
+	mov   ebx,[pinfo.box.width]
 	add   ebx,5 shl 16 - 9
 	mcall 13,,,0;xff
 	ret
@@ -238,7 +238,7 @@ AHEADER 0,"CC_LINES",cfa_CC_LINES
  		mov  [ebp],edi
  		mov  esi,[cursor]
  		sub  esi,edi
- 		mov  ecx,[pinfo.x_start]
+ 		mov  ecx,[pinfo.box.left]
 ;   test ecx,ecx
 ;   jnz  .no0
 ;   inc  ecx
@@ -261,7 +261,7 @@ AHEADER 0,"CC_LINES",cfa_CC_LINES
  		jb   .again
  		and  dword[ebp],0
  ;		dpd  esi
- 		mov  eax,[pinfo.y_start]
+ 		mov  eax,[pinfo.box.top]
  		shl  eax,3
  		sub  ebp,eax
  		cmp  ebp,os_work
@@ -316,7 +316,7 @@ set_cur:
  		mov  [ebp],edi
  		mov  esi,[cursor]
  		sub  esi,edi
- 		mov  ecx,[pinfo.x_start]
+ 		mov  ecx,[pinfo.box.left]
 ;   test ecx,ecx
 ;   jnz  .no0
 ;   inc  ecx
@@ -339,7 +339,7 @@ set_cur:
  		jb   e_.again
  		and  dword[ebp],0
  ;		dpd  esi
- 		mov  eax,[pinfo.y_start]
+ 		mov  eax,[pinfo.box.top]
  		shl  eax,3
  		sub  ebp,eax
  		cmp  ebp,os_work

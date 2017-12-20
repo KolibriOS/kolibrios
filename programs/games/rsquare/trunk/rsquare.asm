@@ -17,9 +17,8 @@ MOBILITY equ 9;13
   dd     stak+0x400             ; memory for app
   dd     stak+0x400             ; esp
   dd     0x0 , 0x0               ; I_Param , I_Icon
-include "lang.inc"
-include "MACROS.INC"
-;include "DEBUG.INC"
+include "macros.inc"
+;include "debug.inc"
 
 run:
 if  LEVELCONV eq 1

@@ -3,4 +3,4 @@ HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../../.." or tup.getconfig("
 tup.include(HELPERDIR .. "/use_fasm.lua")
 
 add_include(HELPERDIR .. "/develop/libraries/libs-dev/libio")
-tup.rule("launch.asm", FASM .. " -dlang=" .. tup.getconfig("LANG") .. " %f %o" .. tup.getconfig("KPACK_CMD"), "launch")
+tup.rule("launch.asm", FASM .. " -dlang=" .. tup.getconfig("LANG") .. " %f %o" .. tup.getconfig("KPACK_CMD"), "%B")

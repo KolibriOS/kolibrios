@@ -2,7 +2,7 @@
 ;///// COPYING ////////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 
-func copy_file
+__func copy_file
         pushad
 
         cmp     [active_panel],0
@@ -126,7 +126,7 @@ endf
 
 ;------------------------------------------------------------------------------
 
-func draw_window_copy_main
+__func draw_window_copy_main
         mcall2  MF_FILLRECT,oX+tW*2,tW*76,oY+tH*7,tH*8,0x00C0C0C0
 
         mmov    esi,oX+tW*4+2,oX+tW*75+3
@@ -168,7 +168,7 @@ endf
 
 ;------------------------------------------------------------------------------
 
-func draw_copy_input
+__func draw_copy_input
         mcall2  MF_FILLRECT,oX+tW*6,tW*68,oY+tH*10,tH,0x00008080
 
         mov     edx,fc_info.path

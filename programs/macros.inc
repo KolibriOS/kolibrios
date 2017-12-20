@@ -52,7 +52,7 @@ macro m2m dest,src {
 macro iglobal {
   IGlobals equ IGlobals,
   macro __IGlobalBlock { }
-  
+
 macro uglobal {
   UGlobals equ UGlobals,
   macro __UGlobalBlock { }
@@ -83,7 +83,7 @@ macro IncludeUGlobals{
 
 uglobal
 endg
-  
+
 iglobal
 endg
 
@@ -329,7 +329,7 @@ macro mcall a,b,c,d,e,f {   ; mike.dld, updated by Ghost for Fast System Calls
 
 
 ; -------------------------
-macro header a,[b] {
+macro __header a,[b] {
  common
   use32
   org 0
@@ -339,24 +339,23 @@ macro header a,[b] {
    dd 0
   else
    dd b
-  end if }
-macro section name { align 16
- label name }
-macro func name {
+  end if
+}
+
+macro __section name {
+ align 16
+ label name
+}
+
+macro __func name {
  if ~used name
   display 'FUNC NOT USED: ',`name,13,10
  else
   align 4
   name:
   ;diff16 `name,0,name
-;pushad
-;pushfd
-;dps `name
-;newline
-;mcall 5,1
-;popfd
-;popad
 }
+
 macro endf { end if }
 
 macro diff16 title,l1,l2
