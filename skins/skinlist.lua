@@ -4,6 +4,7 @@ skinlist = {
 "Leency/Shkvorka/Shkvorka.skn",
 "Leency/Blueberries/Blueberries.skn",
 "loggy/loggy.skn",
+"Win10/Win10.skn",
 "_old/5imple Alpha/1.5imple Alpha/1.5imple Alpha.skn",
 "_old/5imple Alpha/2.5imple Alpha/2.5imple Alpha.skn",
 "_old/5imple Alpha/3.5imple Alpha/3.5imple Alpha.skn",
