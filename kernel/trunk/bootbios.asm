@@ -6,6 +6,7 @@
 
 include 'macros.inc'
 include 'struct.inc'
+include 'lang.inc'
 include 'encoding.inc'
 include 'const.inc'
 
