@@ -1,0 +1,2 @@
+To build under Windows, execute
+cl -DWINDOWS sst.c ai.c battle.c events.c finish.c moving.c osx.c planets.c reports.c setup.c
