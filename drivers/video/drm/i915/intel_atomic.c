@@ -98,6 +98,7 @@ intel_crtc_duplicate_state(struct drm_crtc *crtc)
 	crtc_state->disable_cxsr = false;
 	crtc_state->update_wm_pre = false;
 	crtc_state->update_wm_post = false;
+	crtc_state->fb_changed = false;
 
 	return &crtc_state->base;
 }
@@ -309,5 +310,5 @@ void intel_atomic_state_clear(struct drm_atomic_state *s)
 {
 	struct intel_atomic_state *state = to_intel_atomic_state(s);
 	drm_atomic_state_default_clear(&state->base);
-	state->dpll_set = false;
+	state->dpll_set = state->modeset = false;
 }

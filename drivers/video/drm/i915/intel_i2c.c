@@ -598,7 +598,7 @@ gmbus_xfer(struct i2c_adapter *adapter, struct i2c_msg *msgs, int num)
 	mutex_lock(&dev_priv->gmbus_mutex);
 
 	if (bus->force_bit)
-	ret = i2c_bit_algo.master_xfer(adapter, msgs, num);
+		ret = i2c_bit_algo.master_xfer(adapter, msgs, num);
 	else
 		ret = do_gmbus_xfer(adapter, msgs, num);
 

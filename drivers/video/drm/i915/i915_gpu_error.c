@@ -27,9 +27,8 @@
  *
  */
 
+#define UTS_RELEASE " 4.6.7 "
 #include "i915_drv.h"
-
-#if 0
 
 static const char *ring_str(int ring)
 {
@@ -366,6 +365,10 @@ int i915_error_state_to_str(struct drm_i915_error_state_buf *m,
 	err_printf(m, "Reset count: %u\n", error->reset_count);
 	err_printf(m, "Suspend count: %u\n", error->suspend_count);
 	err_printf(m, "PCI ID: 0x%04x\n", dev->pdev->device);
+	err_printf(m, "PCI Revision: 0x%02x\n", dev->pdev->revision);
+	err_printf(m, "PCI Subsystem: %04x:%04x\n",
+		   dev->pdev->subsystem_vendor,
+		   dev->pdev->subsystem_device);
 	err_printf(m, "IOMMU enabled?: %d\n", error->iommu);
 
 	if (HAS_CSR(dev)) {
@@ -511,8 +514,8 @@ int i915_error_state_to_str(struct drm_i915_error_state_buf *m,
 		}
 	}
 
-	if (error->overlay)
-		intel_overlay_print_error_state(m, error->overlay);
+//	if (error->overlay)
+//		intel_overlay_print_error_state(m, error->overlay);
 
 	if (error->display)
 		intel_display_print_error_state(m, dev, error->display);
@@ -733,7 +736,7 @@ static u32 capture_active_bo(struct drm_i915_error_buffer *err,
 	struct i915_vma *vma;
 	int i = 0;
 
-	list_for_each_entry(vma, head, mm_list) {
+	list_for_each_entry(vma, head, vm_link) {
 		capture_bo(err++, vma);
 		if (++i == count)
 			break;
@@ -756,7 +759,7 @@ static u32 capture_pinned_bo(struct drm_i915_error_buffer *err,
 		if (err == last)
 			break;
 
-		list_for_each_entry(vma, &obj->vma_list, vma_link)
+		list_for_each_entry(vma, &obj->vma_list, obj_link)
 			if (vma->vm == vm && vma->pin_count > 0)
 				capture_bo(err++, vma);
 	}
@@ -1029,17 +1032,6 @@ static void i915_gem_record_rings(struct drm_device *dev,
 					i915_error_ggtt_object_create(dev_priv,
 							     ring->scratch.obj);
 
-			if (request->pid) {
-				struct task_struct *task;
-
-				rcu_read_lock();
-				task = pid_task(request->pid, PIDTYPE_PID);
-				if (task) {
-					strcpy(error->ring[i].comm, task->comm);
-					error->ring[i].pid = task->pid;
-				}
-				rcu_read_unlock();
-			}
 		}
 
 		if (i915.enable_execlists) {
@@ -1051,7 +1043,7 @@ static void i915_gem_record_rings(struct drm_device *dev,
 			if (request)
 				rbuf = request->ctx->engine[ring->id].ringbuf;
 			else
-				rbuf = ring->default_context->engine[ring->id].ringbuf;
+				rbuf = dev_priv->kernel_context->engine[ring->id].ringbuf;
 		} else
 			rbuf = ring->buffer;
 
@@ -1124,12 +1116,12 @@ static void i915_gem_capture_vm(struct drm_i915_private *dev_priv,
 	int i;
 
 	i = 0;
-	list_for_each_entry(vma, &vm->active_list, mm_list)
+	list_for_each_entry(vma, &vm->active_list, vm_link)
 		i++;
 	error->active_bo_count[ndx] = i;
 
 	list_for_each_entry(obj, &dev_priv->mm.bound_list, global_list) {
-		list_for_each_entry(vma, &obj->vma_list, vma_link)
+		list_for_each_entry(vma, &obj->vma_list, obj_link)
 			if (vma->vm == vm && vma->pin_count > 0)
 				i++;
 	}
@@ -1338,9 +1330,9 @@ void i915_capture_error_state(struct drm_device *dev, bool wedged,
 	i915_gem_record_fences(dev, error);
 	i915_gem_record_rings(dev, error);
 
-	do_gettimeofday(&error->time);
+//	do_gettimeofday(&error->time);
 
-	error->overlay = intel_overlay_capture_error_state(dev);
+//	error->overlay = intel_overlay_capture_error_state(dev);
 	error->display = intel_display_capture_error_state(dev);
 
 	i915_error_capture_msg(dev, error, wedged, error_msg);
@@ -1400,7 +1392,6 @@ void i915_destroy_error_state(struct drm_device *dev)
 	if (error)
 		kref_put(&error->ref, i915_error_state_free);
 }
-#endif
 
 const char *i915_cache_level_str(struct drm_i915_private *i915, int type)
 {

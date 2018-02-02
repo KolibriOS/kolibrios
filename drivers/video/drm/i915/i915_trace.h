@@ -4,6 +4,10 @@
 //#include <linux/stringify.h>
 #include <linux/types.h>
 
+#include <drm/drmP.h>
+#include "i915_drv.h"
+#include "intel_drv.h"
+#include "intel_ringbuffer.h"
 
 #define trace_i915_gem_object_create(x)
 #define trace_i915_gem_object_destroy(x)

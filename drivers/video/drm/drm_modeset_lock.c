@@ -40,13 +40,13 @@
  * The basic usage pattern is to:
  *
  *     drm_modeset_acquire_init(&ctx)
- *   retry:
+ *     retry:
  *     foreach (lock in random_ordered_set_of_locks) {
- *       ret = drm_modeset_lock(lock, &ctx)
- *       if (ret == -EDEADLK) {
- *          drm_modeset_backoff(&ctx);
- *          goto retry;
- *       }
+ *         ret = drm_modeset_lock(lock, &ctx)
+ *         if (ret == -EDEADLK) {
+ *             drm_modeset_backoff(&ctx);
+ *             goto retry;
+ *         }
  *     }
  *     ... do stuff ...
  *     drm_modeset_drop_locks(&ctx);
@@ -459,7 +459,7 @@ EXPORT_SYMBOL(drm_modeset_unlock);
  * Returns: 0 on success or a negative error-code on failure.
  */
 int drm_modeset_lock_all_ctx(struct drm_device *dev,
-		struct drm_modeset_acquire_ctx *ctx)
+			     struct drm_modeset_acquire_ctx *ctx)
 {
 	struct drm_crtc *crtc;
 	struct drm_plane *plane;

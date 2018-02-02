@@ -542,7 +542,6 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
     struct drm_plane *plane;
 
     int ret;
-ENTER();
 
     drm_for_each_plane(plane, dev)
     {
@@ -593,8 +592,6 @@ ENTER();
 
         set_mode(dev, os_display->connector, os_display->crtc, usermode, false);
     };
-
-LEAVE();
 
     return ret;
 };

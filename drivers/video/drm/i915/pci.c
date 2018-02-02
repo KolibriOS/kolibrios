@@ -17,6 +17,9 @@ static LIST_HEAD(devices);
 
 #define LEGACY_IO_RESOURCE      (IORESOURCE_IO | IORESOURCE_PCI_FIXED)
 
+#define IORESOURCE_ROM_COPY             (1<<2)  /* ROM is alloc'd copy, resource field overlaid */
+#define IORESOURCE_ROM_BIOS_COPY        (1<<3)  /* ROM is BIOS copy, resource field overlaid */
+
 /*
  * Translate the low bits of the PCI base
  * to the resource type

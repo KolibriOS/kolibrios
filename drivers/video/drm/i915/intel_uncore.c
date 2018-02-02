@@ -329,13 +329,54 @@ static void intel_uncore_ellc_detect(struct drm_device *dev)
 	}
 }
 
+static bool
+fpga_check_for_unclaimed_mmio(struct drm_i915_private *dev_priv)
+{
+	u32 dbg;
+
+	dbg = __raw_i915_read32(dev_priv, FPGA_DBG);
+	if (likely(!(dbg & FPGA_DBG_RM_NOCLAIM)))
+		return false;
+
+	__raw_i915_write32(dev_priv, FPGA_DBG, FPGA_DBG_RM_NOCLAIM);
+
+	return true;
+}
+
+static bool
+vlv_check_for_unclaimed_mmio(struct drm_i915_private *dev_priv)
+{
+	u32 cer;
+
+	cer = __raw_i915_read32(dev_priv, CLAIM_ER);
+	if (likely(!(cer & (CLAIM_ER_OVERFLOW | CLAIM_ER_CTR_MASK))))
+		return false;
+
+	__raw_i915_write32(dev_priv, CLAIM_ER, CLAIM_ER_CLR);
+
+	return true;
+}
+
+static bool
+check_for_unclaimed_mmio(struct drm_i915_private *dev_priv)
+{
+	if (HAS_FPGA_DBG_UNCLAIMED(dev_priv))
+		return fpga_check_for_unclaimed_mmio(dev_priv);
+
+	if (IS_VALLEYVIEW(dev_priv) || IS_CHERRYVIEW(dev_priv))
+		return vlv_check_for_unclaimed_mmio(dev_priv);
+
+	return false;
+}
+
 static void __intel_uncore_early_sanitize(struct drm_device *dev,
 					  bool restore_forcewake)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
 
-	if (HAS_FPGA_DBG_UNCLAIMED(dev))
-		__raw_i915_write32(dev_priv, FPGA_DBG, FPGA_DBG_RM_NOCLAIM);
+	/* clear out unclaimed reg detection bit */
+	if (check_for_unclaimed_mmio(dev_priv))
+		DRM_DEBUG("unclaimed mmio detected on uncore init, clearing\n");
 
 	/* clear out old GT FIFO errors */
 	if (IS_GEN6(dev) || IS_GEN7(dev))
@@ -361,6 +402,8 @@ void intel_uncore_early_sanitize(struct drm_device *dev, bool restore_forcewake)
 
 void intel_uncore_sanitize(struct drm_device *dev)
 {
+	i915.enable_rc6 = sanitize_rc6_option(dev, i915.enable_rc6);
+
 	/* BIOS often leaves RC6 enabled, but disable it for hw init */
 	intel_disable_gt_powersave(dev);
 }
@@ -571,7 +614,7 @@ void assert_forcewakes_inactive(struct drm_i915_private *dev_priv)
 	REG_RANGE((reg), 0x9400, 0x9800)
 
 #define FORCEWAKE_GEN9_BLITTER_RANGE_OFFSET(reg) \
-	((reg) < 0x40000 &&\
+	((reg) < 0x40000 && \
 	 !FORCEWAKE_GEN9_UNCORE_RANGE_OFFSET(reg) && \
 	 !FORCEWAKE_GEN9_RENDER_RANGE_OFFSET(reg) && \
 	 !FORCEWAKE_GEN9_MEDIA_RANGE_OFFSET(reg) && \
@@ -587,38 +630,38 @@ ilk_dummy_write(struct drm_i915_private *dev_priv)
 }
 
 static void
-hsw_unclaimed_reg_debug(struct drm_i915_private *dev_priv,
-			i915_reg_t reg, bool read, bool before)
+__unclaimed_reg_debug(struct drm_i915_private *dev_priv,
+		      const i915_reg_t reg,
+		      const bool read,
+		      const bool before)
 {
-	const char *op = read ? "reading" : "writing to";
-	const char *when = before ? "before" : "after";
-
-	if (!i915.mmio_debug)
+	/* XXX. We limit the auto arming traces for mmio
+	 * debugs on these platforms. There are just too many
+	 * revealed by these and CI/Bat suffers from the noise.
+	 * Please fix and then re-enable the automatic traces.
+	 */
+	if (i915.mmio_debug < 2 &&
+	    (IS_VALLEYVIEW(dev_priv) || IS_CHERRYVIEW(dev_priv)))
 		return;
 
-	if (__raw_i915_read32(dev_priv, FPGA_DBG) & FPGA_DBG_RM_NOCLAIM) {
-		WARN(1, "Unclaimed register detected %s %s register 0x%x\n",
-		     when, op, i915_mmio_reg_offset(reg));
-		__raw_i915_write32(dev_priv, FPGA_DBG, FPGA_DBG_RM_NOCLAIM);
+	if (WARN(check_for_unclaimed_mmio(dev_priv),
+		 "Unclaimed register detected %s %s register 0x%x\n",
+		 before ? "before" : "after",
+		 read ? "reading" : "writing to",
+		 i915_mmio_reg_offset(reg)))
 		i915.mmio_debug--; /* Only report the first N failures */
-	}
 }
 
-static void
-hsw_unclaimed_reg_detect(struct drm_i915_private *dev_priv)
+static inline void
+unclaimed_reg_debug(struct drm_i915_private *dev_priv,
+		    const i915_reg_t reg,
+		    const bool read,
+		    const bool before)
 {
-	static bool mmio_debug_once = true;
-
-	if (i915.mmio_debug || !mmio_debug_once)
+	if (likely(!i915.mmio_debug))
 		return;
 
-	if (__raw_i915_read32(dev_priv, FPGA_DBG) & FPGA_DBG_RM_NOCLAIM) {
-		DRM_DEBUG("Unclaimed register detected, "
-			  "enabling oneshot unclaimed register reporting. "
-			  "Please use i915.mmio_debug=N for more information.\n");
-		__raw_i915_write32(dev_priv, FPGA_DBG, FPGA_DBG_RM_NOCLAIM);
-		i915.mmio_debug = mmio_debug_once--;
-	}
+	__unclaimed_reg_debug(dev_priv, reg, read, before);
 }
 
 #define GEN2_READ_HEADER(x) \
@@ -666,9 +709,11 @@ __gen2_read(64)
 	unsigned long irqflags; \
 	u##x val = 0; \
 	assert_rpm_wakelock_held(dev_priv); \
-	spin_lock_irqsave(&dev_priv->uncore.lock, irqflags)
+	spin_lock_irqsave(&dev_priv->uncore.lock, irqflags); \
+	unclaimed_reg_debug(dev_priv, reg, true, true)
 
 #define GEN6_READ_FOOTER \
+	unclaimed_reg_debug(dev_priv, reg, true, false); \
 	spin_unlock_irqrestore(&dev_priv->uncore.lock, irqflags); \
 	trace_i915_reg_rw(false, reg, val, sizeof(val), trace); \
 	return val
@@ -701,11 +746,9 @@ static inline void __force_wake_get(struct drm_i915_private *dev_priv,
 static u##x \
 gen6_read##x(struct drm_i915_private *dev_priv, i915_reg_t reg, bool trace) { \
 	GEN6_READ_HEADER(x); \
-	hsw_unclaimed_reg_debug(dev_priv, reg, true, true); \
 	if (NEEDS_FORCE_WAKE(offset)) \
 		__force_wake_get(dev_priv, FORCEWAKE_RENDER); \
 	val = __raw_i915_read##x(dev_priv, reg); \
-	hsw_unclaimed_reg_debug(dev_priv, reg, true, false); \
 	GEN6_READ_FOOTER; \
 }
 
@@ -746,14 +789,13 @@ chv_read##x(struct drm_i915_private *dev_priv, i915_reg_t reg, bool trace) { \
 }
 
 #define SKL_NEEDS_FORCE_WAKE(reg) \
-	 ((reg) < 0x40000 && !FORCEWAKE_GEN9_UNCORE_RANGE_OFFSET(reg))
+	((reg) < 0x40000 && !FORCEWAKE_GEN9_UNCORE_RANGE_OFFSET(reg))
 
 #define __gen9_read(x) \
 static u##x \
 gen9_read##x(struct drm_i915_private *dev_priv, i915_reg_t reg, bool trace) { \
 	enum forcewake_domains fw_engine; \
 	GEN6_READ_HEADER(x); \
-	hsw_unclaimed_reg_debug(dev_priv, reg, true, true); \
 	if (!SKL_NEEDS_FORCE_WAKE(offset)) \
 		fw_engine = 0; \
 	else if (FORCEWAKE_GEN9_RENDER_RANGE_OFFSET(offset)) \
@@ -767,7 +809,6 @@ gen9_read##x(struct drm_i915_private *dev_priv, i915_reg_t reg, bool trace) { \
 	if (fw_engine) \
 		__force_wake_get(dev_priv, fw_engine); \
 	val = __raw_i915_read##x(dev_priv, reg); \
-	hsw_unclaimed_reg_debug(dev_priv, reg, true, false); \
 	GEN6_READ_FOOTER; \
 }
 
@@ -866,9 +907,11 @@ __gen2_write(64)
 	unsigned long irqflags; \
 	trace_i915_reg_rw(true, reg, val, sizeof(val), trace); \
 	assert_rpm_wakelock_held(dev_priv); \
-	spin_lock_irqsave(&dev_priv->uncore.lock, irqflags)
+	spin_lock_irqsave(&dev_priv->uncore.lock, irqflags); \
+	unclaimed_reg_debug(dev_priv, reg, false, true)
 
 #define GEN6_WRITE_FOOTER \
+	unclaimed_reg_debug(dev_priv, reg, false, false); \
 	spin_unlock_irqrestore(&dev_priv->uncore.lock, irqflags)
 
 #define __gen6_write(x) \
@@ -894,13 +937,10 @@ hsw_write##x(struct drm_i915_private *dev_priv, i915_reg_t reg, u##x val, bool t
 	if (NEEDS_FORCE_WAKE(offset)) { \
 		__fifo_ret = __gen6_gt_wait_for_fifo(dev_priv); \
 	} \
-	hsw_unclaimed_reg_debug(dev_priv, reg, false, true); \
 	__raw_i915_write##x(dev_priv, reg, val); \
 	if (unlikely(__fifo_ret)) { \
 		gen6_gt_check_fifodbg(dev_priv); \
 	} \
-	hsw_unclaimed_reg_debug(dev_priv, reg, false, false); \
-	hsw_unclaimed_reg_detect(dev_priv); \
 	GEN6_WRITE_FOOTER; \
 }
 
@@ -930,12 +970,9 @@ static bool is_gen8_shadowed(struct drm_i915_private *dev_priv,
 static void \
 gen8_write##x(struct drm_i915_private *dev_priv, i915_reg_t reg, u##x val, bool trace) { \
 	GEN6_WRITE_HEADER; \
-	hsw_unclaimed_reg_debug(dev_priv, reg, false, true); \
 	if (NEEDS_FORCE_WAKE(offset) && !is_gen8_shadowed(dev_priv, reg)) \
 		__force_wake_get(dev_priv, FORCEWAKE_RENDER); \
 	__raw_i915_write##x(dev_priv, reg, val); \
-	hsw_unclaimed_reg_debug(dev_priv, reg, false, false); \
-	hsw_unclaimed_reg_detect(dev_priv); \
 	GEN6_WRITE_FOOTER; \
 }
 
@@ -989,7 +1026,6 @@ gen9_write##x(struct drm_i915_private *dev_priv, i915_reg_t reg, u##x val, \
 		bool trace) { \
 	enum forcewake_domains fw_engine; \
 	GEN6_WRITE_HEADER; \
-	hsw_unclaimed_reg_debug(dev_priv, reg, false, true); \
 	if (!SKL_NEEDS_FORCE_WAKE(offset) || \
 	    is_gen9_shadowed(dev_priv, reg)) \
 		fw_engine = 0; \
@@ -1004,8 +1040,6 @@ gen9_write##x(struct drm_i915_private *dev_priv, i915_reg_t reg, u##x val, \
 	if (fw_engine) \
 		__force_wake_get(dev_priv, fw_engine); \
 	__raw_i915_write##x(dev_priv, reg, val); \
-	hsw_unclaimed_reg_debug(dev_priv, reg, false, false); \
-	hsw_unclaimed_reg_detect(dev_priv); \
 	GEN6_WRITE_FOOTER; \
 }
 
@@ -1161,7 +1195,7 @@ static void intel_uncore_fw_domains_init(struct drm_device *dev)
 			dev_priv->uncore.funcs.force_wake_put =
 				fw_domains_put_with_fifo;
 		else
-		dev_priv->uncore.funcs.force_wake_put = fw_domains_put;
+			dev_priv->uncore.funcs.force_wake_put = fw_domains_put;
 		fw_domain_init(dev_priv, FW_DOMAIN_ID_RENDER,
 			       FORCEWAKE_MT, FORCEWAKE_ACK_HSW);
 	} else if (IS_IVYBRIDGE(dev)) {
@@ -1228,6 +1262,8 @@ void intel_uncore_init(struct drm_device *dev)
 	intel_uncore_ellc_detect(dev);
 	intel_uncore_fw_domains_init(dev);
 	__intel_uncore_early_sanitize(dev, false);
+
+	dev_priv->uncore.unclaimed_mmio_check = 1;
 
 	switch (INTEL_INFO(dev)->gen) {
 	default:
@@ -1384,7 +1420,7 @@ int i915_get_reset_stats_ioctl(struct drm_device *dev,
 	hs = &ctx->hang_stats;
 
 	if (capable(CAP_SYS_ADMIN))
-    args->reset_count = i915_reset_count(&dev_priv->gpu_error);
+		args->reset_count = i915_reset_count(&dev_priv->gpu_error);
 	else
 		args->reset_count = 0;
 
@@ -1586,13 +1622,26 @@ bool intel_has_gpu_reset(struct drm_device *dev)
 	return intel_get_gpu_reset(dev) != NULL;
 }
 
-void intel_uncore_check_errors(struct drm_device *dev)
+bool intel_uncore_unclaimed_mmio(struct drm_i915_private *dev_priv)
 {
-	struct drm_i915_private *dev_priv = dev->dev_private;
+	return check_for_unclaimed_mmio(dev_priv);
+}
 
-	if (HAS_FPGA_DBG_UNCLAIMED(dev) &&
-	    (__raw_i915_read32(dev_priv, FPGA_DBG) & FPGA_DBG_RM_NOCLAIM)) {
-		DRM_ERROR("Unclaimed register before interrupt\n");
-		__raw_i915_write32(dev_priv, FPGA_DBG, FPGA_DBG_RM_NOCLAIM);
+bool
+intel_uncore_arm_unclaimed_mmio_detection(struct drm_i915_private *dev_priv)
+{
+	if (unlikely(i915.mmio_debug ||
+		     dev_priv->uncore.unclaimed_mmio_check <= 0))
+		return false;
+
+	if (unlikely(intel_uncore_unclaimed_mmio(dev_priv))) {
+		DRM_DEBUG("Unclaimed register detected, "
+			  "enabling oneshot unclaimed register reporting. "
+			  "Please use i915.mmio_debug=N for more information.\n");
+		i915.mmio_debug++;
+		dev_priv->uncore.unclaimed_mmio_check--;
+		return true;
 	}
+
+	return false;
 }

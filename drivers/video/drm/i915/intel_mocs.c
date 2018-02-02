@@ -330,8 +330,8 @@ int intel_rcs_context_init_mocs(struct drm_i915_gem_request *req)
 		/* Program the control registers */
 		for_each_ring(ring, dev_priv, ring_id) {
 			ret = emit_mocs_control_table(req, &t, ring_id);
-		if (ret)
-			return ret;
+			if (ret)
+				return ret;
 		}
 
 		/* Now program the l3cc registers */

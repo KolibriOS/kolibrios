@@ -624,3 +624,53 @@ int fb_get_options(const char *name, char **option)
 
     return retval;
 }
+
+void *vmap(struct page **pages, unsigned int count,
+           unsigned long flags, pgprot_t prot)
+{
+    void *vaddr;
+    char *tmp;
+    int i;
+
+    vaddr = AllocKernelSpace(count << 12);
+    if(vaddr == NULL)
+        return NULL;
+
+    for(i = 0, tmp = vaddr; i < count; i++)
+    {
+        MapPage(tmp, page_to_phys(pages[i]), PG_SW);
+        tmp+= 4096;
+    };
+
+    return vaddr;
+};
+
+void vunmap(const void *addr)
+{
+    FreeKernelSpace((void*)addr);
+}
+
+void __iomem *ioremap_nocache(resource_size_t offset, unsigned long size)
+{
+    return (void __iomem*) MapIoMem(offset, size, PG_SW|PG_NOCACHE|0x100);
+}
+
+void __iomem *ioremap_wc(resource_size_t offset, unsigned long size)
+{
+//    return (void __iomem*) MapIoMem(offset, size, PG_SW|PG_WRITEC|0x100);
+    return (void __iomem*) MapIoMem(offset, size, PG_SW|0x100);
+}
+
+void iounmap(volatile void __iomem *addr)
+{
+    FreeKernelSpace((void*)addr);
+}
+
+unsigned long _copy_from_user(void *to, const void __user *from, unsigned n)
+{
+//    if (access_ok(VERIFY_READ, from, n))
+        n = __copy_from_user(to, from, n);
+//    else
+//        memset(to, 0, n);
+    return n;
+}

@@ -44,7 +44,6 @@ typedef uint64_t gen8_ppgtt_pml4e_t;
 
 #define gtt_total_entries(gtt) ((gtt).base.total >> PAGE_SHIFT)
 
-
 /* gen6-hsw has bit 11-4 for physical addr bit 39-32 */
 #define GEN6_GTT_ADDR_ENCODE(addr)	((addr) | (((addr) >> 28) & 0xff0))
 #define GEN6_PTE_ADDR_ENCODE(addr)	GEN6_GTT_ADDR_ENCODE(addr)
@@ -156,7 +155,7 @@ struct i915_ggtt_view {
 			u64 offset;
 			unsigned int size;
 		} partial;
-		struct intel_rotation_info rotation_info;
+		struct intel_rotation_info rotated;
 	} params;
 
 	struct sg_table *pages;
@@ -184,6 +183,7 @@ struct i915_vma {
 #define GLOBAL_BIND	(1<<0)
 #define LOCAL_BIND	(1<<1)
 	unsigned int bound : 4;
+	bool is_ggtt : 1;
 
 	/**
 	 * Support different GGTT views into the same object.
@@ -195,9 +195,9 @@ struct i915_vma {
 	struct i915_ggtt_view ggtt_view;
 
 	/** This object's place on the active/inactive lists */
-	struct list_head mm_list;
+	struct list_head vm_link;
 
-	struct list_head vma_link; /* Link in the object's VMA list */
+	struct list_head obj_link; /* Link in the object's VMA list */
 
 	/** This vma's place in the batchbuffer or on the eviction list */
 	struct list_head exec_list;
@@ -276,6 +276,8 @@ struct i915_address_space {
 	u64 start;		/* Start offset always 0 for dri2 */
 	u64 total;		/* size addr space maps (ex. 2GB for ggtt) */
 
+	bool is_ggtt;
+
 	struct i915_page_scratch *scratch_page;
 	struct i915_page_table *scratch_pt;
 	struct i915_page_directory *scratch_pd;
@@ -331,6 +333,8 @@ struct i915_address_space {
 			u32 flags);
 };
 
+#define i915_is_ggtt(V) ((V)->is_ggtt)
+
 /* The Graphics Translation Table is the way in which GEN hardware translates a
  * Graphics Virtual Address into a Physical Address. In addition to the normal
  * collateral associated with any va->pa translations GEN hardware also has a
@@ -343,6 +347,8 @@ struct i915_gtt {
 
 	size_t stolen_size;		/* Total size of stolen memory */
 	size_t stolen_usable_size;	/* Total size minus BIOS reserved */
+	size_t stolen_reserved_base;
+	size_t stolen_reserved_size;
 	u64 mappable_end;		/* End offset that we can CPU map */
 	struct io_mapping *mappable;	/* Mapping to our CPU mappable region */
 	phys_addr_t mappable_base;	/* PA of our GMADR */
@@ -417,7 +423,7 @@ static inline uint32_t i915_pte_index(uint64_t address, uint32_t pde_shift)
 static inline uint32_t i915_pte_count(uint64_t addr, size_t length,
 				      uint32_t pde_shift)
 {
-	const uint64_t mask = ~((1 << pde_shift) - 1);
+	const uint64_t mask = ~((1ULL << pde_shift) - 1);
 	uint64_t end;
 
 	WARN_ON(length == 0);
@@ -456,7 +462,7 @@ static inline uint32_t gen6_pde_index(uint32_t addr)
  * over every page directory entry in a page directory.
  */
 #define gen8_for_each_pde(pt, pd, start, length, iter)			\
-	for (iter = gen8_pde_index(start); \
+	for (iter = gen8_pde_index(start);				\
 	     length > 0 && iter < I915_PDES &&				\
 		(pt = (pd)->page_table[iter], true);			\
 	     ({ u64 temp = ALIGN(start+1, 1 << GEN8_PDE_SHIFT);		\
@@ -464,7 +470,7 @@ static inline uint32_t gen6_pde_index(uint32_t addr)
 		    start += temp, length -= temp; }), ++iter)
 
 #define gen8_for_each_pdpe(pd, pdp, start, length, iter)		\
-	for (iter = gen8_pdpe_index(start); \
+	for (iter = gen8_pdpe_index(start);				\
 	     length > 0 && iter < I915_PDPES_PER_PDP(dev) &&		\
 		(pd = (pdp)->page_directory[iter], true);		\
 	     ({ u64 temp = ALIGN(start+1, 1 << GEN8_PDPE_SHIFT);	\
@@ -472,7 +478,7 @@ static inline uint32_t gen6_pde_index(uint32_t addr)
 		    start += temp, length -= temp; }), ++iter)
 
 #define gen8_for_each_pml4e(pdp, pml4, start, length, iter)		\
-	for (iter = gen8_pml4e_index(start);	\
+	for (iter = gen8_pml4e_index(start);				\
 	     length > 0 && iter < GEN8_PML4ES_PER_PML4 &&		\
 		(pdp = (pml4)->pdps[iter], true);			\
 	     ({ u64 temp = ALIGN(start+1, 1ULL << GEN8_PML4E_SHIFT);	\

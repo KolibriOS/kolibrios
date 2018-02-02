@@ -2,8 +2,8 @@ CC = kos32-gcc
 FASM = fasm.exe
 
 DEFINES	= -DDRM_DEBUG_CODE=0 -D__KERNEL__ -DCONFIG_X86 -DCONFIG_X86_32 -DCONFIG_PCI
-DEFINES += -DCONFIG_X86_CMPXCHG64 -DCONFIG_TINY_RCU -DCONFIG_X86_L1_CACHE_SHIFT=6
-DEFINES += -DCONFIG_DRM_FBDEV_EMULATION -DCONFIG_DMI 
+DEFINES += -DCONFIG_HAVE_ATOMIC_IOMAP -DCONFIG_X86_CMPXCHG64 -DCONFIG_TINY_RCU
+DEFINES += -DCONFIG_X86_L1_CACHE_SHIFT=6 -DCONFIG_DRM_FBDEV_EMULATION -DCONFIG_DMI 
 DEFINES += -DKBUILD_MODNAME=\"i915.dll\"
 
 DDK_TOPDIR      = /d/kos/kolibri/drivers/ddk
@@ -127,6 +127,7 @@ NAME_SRC=		main.c					\
 			$(DRM_TOPDIR)/i2c/i2c-algo-bit.c	\
 			$(DRM_TOPDIR)/drm_crtc.c		\
 			$(DRM_TOPDIR)/drm_crtc_helper.c		\
+			$(DRM_TOPDIR)/drm_dp_dual_mode_helper.c \
 			$(DRM_TOPDIR)/drm_dp_helper.c		\
 			$(DRM_TOPDIR)/drm_dp_mst_topology.c	\
 			$(DRM_TOPDIR)/drm_atomic.c		\
@@ -147,7 +148,7 @@ NAME_SRC=		main.c					\
 			$(DRM_TOPDIR)/drm_rect.c		\
 			$(DRM_TOPDIR)/drm_stub.c
 
-SRC_DEP:=    
+SRC_DEP:=
 
 
 NAME_OBJS = $(patsubst %.S, %.o, $(patsubst %.asm, %.o,\

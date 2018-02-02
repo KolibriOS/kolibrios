@@ -92,14 +92,14 @@ static void i9xx_check_fifo_underruns(struct intel_crtc *crtc)
 
 	assert_spin_locked(&dev_priv->irq_lock);
 
-		if ((pipestat & PIPE_FIFO_UNDERRUN_STATUS) == 0)
+	if ((pipestat & PIPE_FIFO_UNDERRUN_STATUS) == 0)
 		return;
 
-		I915_WRITE(reg, pipestat | PIPE_FIFO_UNDERRUN_STATUS);
-		POSTING_READ(reg);
+	I915_WRITE(reg, pipestat | PIPE_FIFO_UNDERRUN_STATUS);
+	POSTING_READ(reg);
 
-		DRM_ERROR("pipe %c underrun\n", pipe_name(crtc->pipe));
-	}
+	DRM_ERROR("pipe %c underrun\n", pipe_name(crtc->pipe));
+}
 
 static void i9xx_set_fifo_underrun_reporting(struct drm_device *dev,
 					     enum pipe pipe,

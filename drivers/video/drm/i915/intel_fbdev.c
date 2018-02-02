@@ -35,7 +35,7 @@
 #include <linux/delay.h>
 #include <linux/fb.h>
 #include <linux/init.h>
-//#include <linux/vga_switcheroo.h>
+#include <linux/vga_switcheroo.h>
 
 #include <drm/drmP.h>
 #include <drm/drm_crtc.h>
@@ -170,8 +170,6 @@ static int intelfb_alloc(struct drm_fb_helper *helper,
 
 out:
 	mutex_unlock(&dev->struct_mutex);
-	if (!IS_ERR_OR_NULL(fb))
-		drm_framebuffer_unreference(fb);
 	return ret;
 }
 
@@ -392,8 +390,8 @@ retry:
 			continue;
 		}
 
-		encoder = connector->encoder;
-		if (!encoder || WARN_ON(!encoder->crtc)) {
+		encoder = connector->state->best_encoder;
+		if (!encoder || WARN_ON(!connector->state->crtc)) {
 			if (connector->force > DRM_FORCE_OFF)
 				goto bail;
 
@@ -406,7 +404,7 @@ retry:
 
 		num_connectors_enabled++;
 
-		new_crtc = intel_fb_helper_crtc(fb_helper, encoder->crtc);
+		new_crtc = intel_fb_helper_crtc(fb_helper, connector->state->crtc);
 
 		/*
 		 * Make sure we're not trying to drive multiple connectors
@@ -452,17 +450,22 @@ retry:
 			 * usually contains. But since our current
 			 * code puts a mode derived from the post-pfit timings
 			 * into crtc->mode this works out correctly.
+			 *
+			 * This is crtc->mode and not crtc->state->mode for the
+			 * fastboot check to work correctly. crtc_state->mode has
+			 * I915_MODE_FLAG_INHERITED, which we clear to force check
+			 * state.
 			 */
 			DRM_DEBUG_KMS("looking for current mode on connector %s\n",
 				      connector->name);
-			modes[i] = &encoder->crtc->mode;
+			modes[i] = &connector->state->crtc->mode;
 		}
 		crtcs[i] = new_crtc;
 
 		DRM_DEBUG_KMS("connector %s on pipe %c [CRTC:%d]: %dx%d%s\n",
 			      connector->name,
-			      pipe_name(to_intel_crtc(encoder->crtc)->pipe),
-			      encoder->crtc->base.id,
+			      pipe_name(to_intel_crtc(connector->state->crtc)->pipe),
+			      connector->state->crtc->base.id,
 			      modes[i]->hdisplay, modes[i]->vdisplay,
 			      modes[i]->flags & DRM_MODE_FLAG_INTERLACE ? "i" :"");
 
@@ -521,9 +524,9 @@ static void intel_fbdev_destroy(struct drm_device *dev,
 	drm_fb_helper_fini(&ifbdev->helper);
 
 	if (ifbdev->fb) {
-	drm_framebuffer_unregister_private(&ifbdev->fb->base);
-	drm_framebuffer_remove(&ifbdev->fb->base);
-}
+		drm_framebuffer_unregister_private(&ifbdev->fb->base);
+		drm_framebuffer_remove(&ifbdev->fb->base);
+	}
 }
 
 /*
@@ -682,6 +685,7 @@ int intel_fbdev_init(struct drm_device *dev)
 	ifbdev->helper.atomic = true;
 
 	dev_priv->fbdev = ifbdev;
+
 	drm_fb_helper_single_add_all_connectors(&ifbdev->helper);
 
 	return 0;

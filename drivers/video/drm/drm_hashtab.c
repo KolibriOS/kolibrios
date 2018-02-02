@@ -37,15 +37,6 @@
 #include <linux/hash.h>
 #include <linux/slab.h>
 #include <linux/export.h>
-#include <linux/rculist.h>
-
-#define hlist_for_each_entry_rcu(pos, head, member)                     \
-    for (pos = hlist_entry_safe (rcu_dereference_raw(hlist_first_rcu(head)),\
-               typeof(*(pos)), member);                        \
-            pos;                                                    \
-            pos = hlist_entry_safe(rcu_dereference_raw(hlist_next_rcu(\
-                  &(pos)->member)), typeof(*(pos)), member))
-
 
 int drm_ht_create(struct drm_open_hash *ht, unsigned int order)
 {

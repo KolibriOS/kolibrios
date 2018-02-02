@@ -20,7 +20,7 @@ static void __stdcall move_cursor_kms(cursor_t *cursor, int x, int y)
     cursor_state->crtc_x = x;
     cursor_state->crtc_y = y;
 
-    intel_crtc_update_cursor(crtc, 1);
+    intel_crtc_update_cursor(crtc, cursor_state);
 };
 
 static cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
@@ -28,6 +28,8 @@ static cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
     struct drm_i915_private *dev_priv = os_display->ddev->dev_private;
     struct drm_crtc   *crtc = os_display->crtc;
     struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+    struct drm_plane  *cursor_plane = crtc->cursor;
+    struct intel_plane_state *cursor_state = to_intel_plane_state(cursor_plane->state);
 
     cursor_t *old;
 
@@ -42,9 +44,12 @@ static cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
     else
         intel_crtc->cursor_addr = (addr_t)cursor->cobj;
 
-    intel_crtc->base.cursor->state->crtc_w = 64;
-    intel_crtc->base.cursor->state->crtc_h = 64;
-    intel_crtc->base.cursor->state->rotation = 0;
+    cursor_state->visible = 1;
+
+    cursor_plane->state->crtc_w   = 64;
+    cursor_plane->state->crtc_h   = 64;
+    cursor_plane->state->rotation = 0;
+
     mutex_unlock(&cursor_lock);
 
     move_cursor_kms(cursor, crtc->cursor_x, crtc->cursor_y);

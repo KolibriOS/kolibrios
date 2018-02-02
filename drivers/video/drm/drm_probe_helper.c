@@ -219,30 +219,30 @@ int drm_helper_probe_single_connector_modes(struct drm_connector *connector,
 		connector->status = connector->funcs->detect(connector, true);
 	}
 
-		/*
-		 * Normally either the driver's hpd code or the poll loop should
-		 * pick up any changes and fire the hotplug event. But if
-		 * userspace sneaks in a probe, we might miss a change. Hence
-		 * check here, and if anything changed start the hotplug code.
-		 */
-		if (old_status != connector->status) {
+	/*
+	 * Normally either the driver's hpd code or the poll loop should
+	 * pick up any changes and fire the hotplug event. But if
+	 * userspace sneaks in a probe, we might miss a change. Hence
+	 * check here, and if anything changed start the hotplug code.
+	 */
+	if (old_status != connector->status) {
 		DRM_DEBUG_KMS("[CONNECTOR:%d:%s] status updated from %s to %s\n",
-				      connector->base.id,
-				      connector->name,
+			      connector->base.id,
+			      connector->name,
 			      drm_get_connector_status_name(old_status),
 			      drm_get_connector_status_name(connector->status));
 
-			/*
-			 * The hotplug event code might call into the fb
-			 * helpers, and so expects that we do not hold any
-			 * locks. Fire up the poll struct instead, it will
-			 * disable itself again.
-			 */
-			dev->mode_config.delayed_event = true;
-			if (dev->mode_config.poll_enabled)
-				schedule_delayed_work(&dev->mode_config.output_poll_work,
-						      0);
-		}
+		/*
+		 * The hotplug event code might call into the fb
+		 * helpers, and so expects that we do not hold any
+		 * locks. Fire up the poll struct instead, it will
+		 * disable itself again.
+		 */
+		dev->mode_config.delayed_event = true;
+		if (dev->mode_config.poll_enabled)
+			schedule_delayed_work(&dev->mode_config.output_poll_work,
+					      0);
+	}
 
 	/* Re-enable polling in case the global poll config changed. */
 	if (drm_kms_helper_poll != dev->mode_config.poll_running)
@@ -258,11 +258,11 @@ int drm_helper_probe_single_connector_modes(struct drm_connector *connector,
 		goto prune;
 	}
 
-		if (connector->override_edid) {
-			struct edid *edid = (struct edid *) connector->edid_blob_ptr->data;
+	if (connector->override_edid) {
+		struct edid *edid = (struct edid *) connector->edid_blob_ptr->data;
 
-			count = drm_add_edid_modes(connector, edid);
-			drm_edid_to_eld(connector, edid);
+		count = drm_add_edid_modes(connector, edid);
+		drm_edid_to_eld(connector, edid);
 	} else {
 #ifdef CONFIG_DRM_LOAD_EDID_FIRMWARE
 		count = drm_load_edid_firmware(connector);
@@ -341,7 +341,7 @@ EXPORT_SYMBOL(drm_helper_probe_single_connector_modes);
  */
 void drm_kms_helper_hotplug_event(struct drm_device *dev)
 {
-    /* send a uevent + call fbdev */
+	/* send a uevent + call fbdev */
 	drm_sysfs_hotplug_event(dev);
 	if (dev->mode_config.funcs->output_poll_changed)
 		dev->mode_config.funcs->output_poll_changed(dev);

@@ -156,14 +156,9 @@ intel_dp_max_link_bw(struct intel_dp  *intel_dp)
 static u8 intel_dp_max_lane_count(struct intel_dp *intel_dp)
 {
 	struct intel_digital_port *intel_dig_port = dp_to_dig_port(intel_dp);
-	struct drm_device *dev = intel_dig_port->base.base.dev;
 	u8 source_max, sink_max;
 
-	source_max = 4;
-	if (HAS_DDI(dev) && intel_dig_port->port == PORT_A &&
-	    (intel_dig_port->saved_port_bits & DDI_A_4_LANES) == 0)
-		source_max = 2;
-
+	source_max = intel_dig_port->max_lanes;
 	sink_max = drm_dp_max_lane_count(intel_dp->dpcd);
 
 	return min(source_max, sink_max);
@@ -207,6 +202,7 @@ intel_dp_mode_valid(struct drm_connector *connector,
 	struct drm_display_mode *fixed_mode = intel_connector->panel.fixed_mode;
 	int target_clock = mode->clock;
 	int max_rate, mode_rate, max_lanes, max_link_clock;
+	int max_dotclk = to_i915(connector->dev)->max_dotclk_freq;
 
 	if (is_edp(intel_dp) && fixed_mode) {
 		if (mode->hdisplay > fixed_mode->hdisplay)
@@ -224,7 +220,7 @@ intel_dp_mode_valid(struct drm_connector *connector,
 	max_rate = intel_dp_max_data_rate(max_link_clock, max_lanes);
 	mode_rate = intel_dp_link_required(target_clock, 18);
 
-	if (mode_rate > max_rate)
+	if (mode_rate > max_rate || target_clock > max_dotclk)
 		return MODE_CLOCK_HIGH;
 
 	if (mode->clock < 10000)
@@ -339,8 +335,12 @@ vlv_power_sequencer_kick(struct intel_dp *intel_dp)
 		release_cl_override = IS_CHERRYVIEW(dev) &&
 			!chv_phy_powergate_ch(dev_priv, phy, ch, true);
 
-		vlv_force_pll_on(dev, pipe, IS_CHERRYVIEW(dev) ?
-				 &chv_dpll[0].dpll : &vlv_dpll[0].dpll);
+		if (vlv_force_pll_on(dev, pipe, IS_CHERRYVIEW(dev) ?
+				     &chv_dpll[0].dpll : &vlv_dpll[0].dpll)) {
+			DRM_ERROR("Failed to force on pll for pipe %c!\n",
+				  pipe_name(pipe));
+			return;
+		}
 	}
 
 	/*
@@ -979,7 +979,10 @@ intel_dp_aux_transfer(struct drm_dp_aux *aux, struct drm_dp_aux_msg *msg)
 		if (WARN_ON(txsize > 20))
 			return -E2BIG;
 
-		memcpy(txbuf + HEADER_SIZE, msg->buffer, msg->size);
+		if (msg->buffer)
+			memcpy(txbuf + HEADER_SIZE, msg->buffer, msg->size);
+		else
+			WARN_ON(msg->size);
 
 		ret = intel_dp_aux_ch(intel_dp, txbuf, txsize, rxbuf, rxsize);
 		if (ret > 0) {
@@ -1094,14 +1097,14 @@ static enum port skl_porte_aux_port(struct drm_i915_private *dev_priv)
 	const struct ddi_vbt_port_info *info =
 		&dev_priv->vbt.ddi_port_info[PORT_E];
 
-		switch (info->alternate_aux_channel) {
+	switch (info->alternate_aux_channel) {
 	case DP_AUX_A:
 		return PORT_A;
-		case DP_AUX_B:
+	case DP_AUX_B:
 		return PORT_B;
-		case DP_AUX_C:
+	case DP_AUX_C:
 		return PORT_C;
-		case DP_AUX_D:
+	case DP_AUX_D:
 		return PORT_D;
 	default:
 		MISSING_CASE(info->alternate_aux_channel);
@@ -1121,11 +1124,11 @@ static i915_reg_t skl_aux_ctl_reg(struct drm_i915_private *dev_priv,
 	case PORT_C:
 	case PORT_D:
 		return DP_AUX_CH_CTL(port);
-		default:
+	default:
 		MISSING_CASE(port);
 		return DP_AUX_CH_CTL(PORT_A);
-		}
 	}
+}
 
 static i915_reg_t skl_aux_data_reg(struct drm_i915_private *dev_priv,
 					enum port port, int index)
@@ -1188,7 +1191,6 @@ intel_dp_aux_fini(struct intel_dp *intel_dp)
 static int
 intel_dp_aux_init(struct intel_dp *intel_dp, struct intel_connector *connector)
 {
-	struct drm_device *dev = intel_dp_to_dev(intel_dp);
 	struct intel_digital_port *intel_dig_port = dp_to_dig_port(intel_dp);
 	enum port port = intel_dig_port->port;
 	int ret;
@@ -1199,28 +1201,14 @@ intel_dp_aux_init(struct intel_dp *intel_dp, struct intel_connector *connector)
 	if (!intel_dp->aux.name)
 		return -ENOMEM;
 
-	intel_dp->aux.dev = dev->dev;
+	intel_dp->aux.dev = connector->base.kdev;
 	intel_dp->aux.transfer = intel_dp_aux_transfer;
-
-	DRM_DEBUG_KMS("registering %s bus for %s\n",
-		      intel_dp->aux.name,
-		      connector->base.kdev->kobj.name);
 
 	ret = drm_dp_aux_register(&intel_dp->aux);
 	if (ret < 0) {
 		DRM_ERROR("drm_dp_aux_register() for %s failed (%d)\n",
 			  intel_dp->aux.name, ret);
 		kfree(intel_dp->aux.name);
-		return ret;
-	}
-
-	ret = sysfs_create_link(&connector->base.kdev->kobj,
-				&intel_dp->aux.ddc.dev.kobj,
-				intel_dp->aux.ddc.dev.kobj.name);
-	if (ret < 0) {
-		DRM_ERROR("sysfs_create_link() for %s failed (%d)\n",
-			  intel_dp->aux.name, ret);
-		intel_dp_aux_fini(intel_dp);
 		return ret;
 	}
 
@@ -1232,9 +1220,7 @@ intel_dp_connector_unregister(struct intel_connector *intel_connector)
 {
 	struct intel_dp *intel_dp = intel_attached_dp(&intel_connector->base);
 
-	if (!intel_connector->mst_port)
-		sysfs_remove_link(&intel_connector->base.kdev->kobj,
-				  intel_dp->aux.ddc.dev.kobj.name);
+	intel_dp_aux_fini(intel_dp);
 	intel_connector_unregister(intel_connector);
 }
 
@@ -1496,7 +1482,7 @@ int intel_dp_rate_select(struct intel_dp *intel_dp, int rate)
 }
 
 void intel_dp_compute_rate(struct intel_dp *intel_dp, int port_clock,
-				  uint8_t *link_bw, uint8_t *rate_select)
+			   uint8_t *link_bw, uint8_t *rate_select)
 {
 	if (intel_dp->num_sink_rates) {
 		*link_bw = 0;
@@ -1811,12 +1797,21 @@ static void wait_panel_off(struct intel_dp *intel_dp)
 
 static void wait_panel_power_cycle(struct intel_dp *intel_dp)
 {
+	ktime_t panel_power_on_time;
+	s64 panel_power_off_duration;
+
 	DRM_DEBUG_KMS("Wait for panel power cycle\n");
+
+	/* take the difference of currrent time and panel power off time
+	 * and then make panel wait for t11_t12 if needed. */
+	panel_power_on_time = ktime_get();
+	panel_power_off_duration = ktime_ms_delta(panel_power_on_time, intel_dp->panel_power_off_time);
 
 	/* When we disable the VDD override bit last we have to do the manual
 	 * wait. */
-	wait_remaining_ms_from_jiffies(intel_dp->last_power_cycle,
-				       intel_dp->panel_power_cycle_delay);
+	if (panel_power_off_duration < (s64)intel_dp->panel_power_cycle_delay)
+		wait_remaining_ms_from_jiffies(jiffies,
+				       intel_dp->panel_power_cycle_delay - panel_power_off_duration);
 
 	wait_panel_status(intel_dp, IDLE_CYCLE_MASK, IDLE_CYCLE_VALUE);
 }
@@ -1874,7 +1869,7 @@ static bool edp_panel_vdd_on(struct intel_dp *intel_dp)
 	if (!is_edp(intel_dp))
 		return false;
 
-//	cancel_delayed_work(&intel_dp->panel_vdd_work);
+	cancel_delayed_work(&intel_dp->panel_vdd_work);
 	intel_dp->want_panel_vdd = true;
 
 	if (edp_have_panel_vdd(intel_dp))
@@ -1968,7 +1963,7 @@ static void edp_panel_vdd_off_sync(struct intel_dp *intel_dp)
 	I915_READ(pp_stat_reg), I915_READ(pp_ctrl_reg));
 
 	if ((pp & POWER_TARGET_ON) == 0)
-		intel_dp->last_power_cycle = jiffies;
+		intel_dp->panel_power_off_time = ktime_get();
 
 	power_domain = intel_display_port_aux_power_domain(intel_encoder);
 	intel_display_power_put(dev_priv, power_domain);
@@ -2117,7 +2112,7 @@ static void edp_panel_off(struct intel_dp *intel_dp)
 	I915_WRITE(pp_ctrl_reg, pp);
 	POSTING_READ(pp_ctrl_reg);
 
-	intel_dp->last_power_cycle = jiffies;
+	intel_dp->panel_power_off_time = ktime_get();
 	wait_panel_off(intel_dp);
 
 	/* We got a reference when we enabled the VDD. */
@@ -2242,11 +2237,6 @@ static void intel_edp_backlight_power(struct intel_connector *connector,
 		_intel_edp_backlight_off(intel_dp);
 }
 
-static const char *state_string(bool enabled)
-{
-	return enabled ? "on" : "off";
-}
-
 static void assert_dp_port(struct intel_dp *intel_dp, bool state)
 {
 	struct intel_digital_port *dig_port = dp_to_dig_port(intel_dp);
@@ -2256,7 +2246,7 @@ static void assert_dp_port(struct intel_dp *intel_dp, bool state)
 	I915_STATE_WARN(cur_state != state,
 			"DP port %c state assertion failure (expected %s, current %s)\n",
 			port_name(dig_port->port),
-			state_string(state), state_string(cur_state));
+			onoff(state), onoff(cur_state));
 }
 #define assert_dp_port_disabled(d) assert_dp_port((d), false)
 
@@ -2266,7 +2256,7 @@ static void assert_edp_pll(struct drm_i915_private *dev_priv, bool state)
 
 	I915_STATE_WARN(cur_state != state,
 			"eDP PLL state assertion failure (expected %s, current %s)\n",
-			state_string(state), state_string(cur_state));
+			onoff(state), onoff(cur_state));
 }
 #define assert_edp_pll_enabled(d) assert_edp_pll((d), true)
 #define assert_edp_pll_disabled(d) assert_edp_pll((d), false)
@@ -2819,7 +2809,7 @@ static void g4x_pre_enable_dp(struct intel_encoder *encoder)
 	/* Only ilk+ has port A */
 	if (port == PORT_A)
 		ironlake_edp_pll_on(intel_dp);
-	}
+}
 
 static void vlv_detach_power_sequencer(struct intel_dp *intel_dp)
 {
@@ -3740,11 +3730,11 @@ intel_dp_set_signal_levels(struct intel_dp *intel_dp)
 
 	I915_WRITE(intel_dp->output_reg, intel_dp->DP);
 	POSTING_READ(intel_dp->output_reg);
-	}
+}
 
 void
 intel_dp_program_link_training_pattern(struct intel_dp *intel_dp,
-			uint8_t dp_train_pat)
+				       uint8_t dp_train_pat)
 {
 	struct intel_digital_port *intel_dig_port = dp_to_dig_port(intel_dp);
 	struct drm_i915_private *dev_priv =
@@ -4023,7 +4013,7 @@ static int intel_dp_sink_crc_stop(struct intel_dp *intel_dp)
 	} while (--attempts && count);
 
 	if (attempts == 0) {
-		DRM_ERROR("TIMEOUT: Sink CRC counter is not zeroed\n");
+		DRM_DEBUG_KMS("TIMEOUT: Sink CRC counter is not zeroed after calculation is stopped\n");
 		ret = -ETIMEDOUT;
 	}
 
@@ -4093,10 +4083,10 @@ int intel_dp_sink_crc(struct intel_dp *intel_dp, u8 *crc)
 	} while (--attempts && count == 0);
 
 	if (attempts == 0) {
-			DRM_ERROR("Panel is unable to calculate any CRC after 6 vblanks\n");
-			ret = -ETIMEDOUT;
-			goto stop;
-		}
+		DRM_ERROR("Panel is unable to calculate any CRC after 6 vblanks\n");
+		ret = -ETIMEDOUT;
+		goto stop;
+	}
 
 	if (drm_dp_dpcd_read(&intel_dp->aux, DP_TEST_CRC_R_CR, crc, 6) < 0) {
 		ret = -EIO;
@@ -4503,7 +4493,7 @@ static bool g4x_digital_port_connected(struct drm_i915_private *dev_priv,
 }
 
 static bool gm45_digital_port_connected(struct drm_i915_private *dev_priv,
-				       struct intel_digital_port *port)
+					struct intel_digital_port *port)
 {
 	u32 bit;
 
@@ -4563,7 +4553,7 @@ bool intel_digital_port_connected(struct drm_i915_private *dev_priv,
 {
 	if (HAS_PCH_IBX(dev_priv))
 		return ibx_digital_port_connected(dev_priv, port);
-	if (HAS_PCH_SPLIT(dev_priv))
+	else if (HAS_PCH_SPLIT(dev_priv))
 		return cpt_digital_port_connected(dev_priv, port);
 	else if (IS_BROXTON(dev_priv))
 		return bxt_digital_port_connected(dev_priv, port);
@@ -4883,10 +4873,9 @@ void intel_dp_encoder_destroy(struct drm_encoder *encoder)
 	struct intel_digital_port *intel_dig_port = enc_to_dig_port(encoder);
 	struct intel_dp *intel_dp = &intel_dig_port->dp;
 
-	intel_dp_aux_fini(intel_dp);
 	intel_dp_mst_encoder_cleanup(intel_dig_port);
 	if (is_edp(intel_dp)) {
-//		cancel_delayed_work_sync(&intel_dp->panel_vdd_work);
+		cancel_delayed_work_sync(&intel_dp->panel_vdd_work);
 		/*
 		 * vdd might still be enabled do to the delayed vdd off.
 		 * Make sure vdd is actually turned off here.
@@ -4914,7 +4903,7 @@ void intel_dp_encoder_suspend(struct intel_encoder *intel_encoder)
 	 * vdd might still be enabled do to the delayed vdd off.
 	 * Make sure vdd is actually turned off here.
 	 */
-//	cancel_delayed_work_sync(&intel_dp->panel_vdd_work);
+	cancel_delayed_work_sync(&intel_dp->panel_vdd_work);
 	pps_lock(intel_dp);
 	edp_panel_vdd_off_sync(intel_dp);
 	pps_unlock(intel_dp);
@@ -4947,12 +4936,14 @@ static void intel_edp_panel_vdd_sanitize(struct intel_dp *intel_dp)
 
 void intel_dp_encoder_reset(struct drm_encoder *encoder)
 {
-	struct intel_dp *intel_dp;
+	struct drm_i915_private *dev_priv = to_i915(encoder->dev);
+	struct intel_dp *intel_dp = enc_to_intel_dp(encoder);
+
+	if (!HAS_DDI(dev_priv))
+		intel_dp->DP = I915_READ(intel_dp->output_reg);
 
 	if (to_intel_encoder(encoder)->type != INTEL_OUTPUT_EDP)
 		return;
-
-	intel_dp = enc_to_intel_dp(encoder);
 
 	pps_lock(intel_dp);
 
@@ -5025,9 +5016,6 @@ intel_dp_hpd_pulse(struct intel_digital_port *intel_dig_port, bool long_hpd)
 	intel_display_power_get(dev_priv, power_domain);
 
 	if (long_hpd) {
-		/* indicate that we need to restart link training */
-		intel_dp->train_set_valid = false;
-
 		if (!intel_digital_port_connected(dev_priv, intel_dig_port))
 			goto mst_fail;
 
@@ -5130,7 +5118,7 @@ intel_dp_add_properties(struct intel_dp *intel_dp, struct drm_connector *connect
 
 static void intel_dp_init_panel_power_timestamps(struct intel_dp *intel_dp)
 {
-	intel_dp->last_power_cycle = jiffies;
+	intel_dp->panel_power_off_time = ktime_get();
 	intel_dp->last_power_on = jiffies;
 	intel_dp->last_backlight_off = jiffies;
 }
@@ -5513,7 +5501,7 @@ void intel_edp_drrs_disable(struct intel_dp *intel_dp)
 	dev_priv->drrs.dp = NULL;
 	mutex_unlock(&dev_priv->drrs.mutex);
 
-//	cancel_delayed_work_sync(&dev_priv->drrs.work);
+	cancel_delayed_work_sync(&dev_priv->drrs.work);
 }
 
 static void intel_edp_drrs_downclock_work(struct work_struct *work)
@@ -5566,7 +5554,7 @@ void intel_edp_drrs_invalidate(struct drm_device *dev,
 	if (dev_priv->drrs.type == DRRS_NOT_SUPPORTED)
 		return;
 
-//	cancel_delayed_work(&dev_priv->drrs.work);
+	cancel_delayed_work(&dev_priv->drrs.work);
 
 	mutex_lock(&dev_priv->drrs.mutex);
 	if (!dev_priv->drrs.dp) {
@@ -5611,7 +5599,7 @@ void intel_edp_drrs_flush(struct drm_device *dev,
 	if (dev_priv->drrs.type == DRRS_NOT_SUPPORTED)
 		return;
 
-//	cancel_delayed_work(&dev_priv->drrs.work);
+	cancel_delayed_work(&dev_priv->drrs.work);
 
 	mutex_lock(&dev_priv->drrs.mutex);
 	if (!dev_priv->drrs.dp) {
@@ -5847,6 +5835,11 @@ intel_dp_init_connector(struct intel_digital_port *intel_dig_port,
 	enum port port = intel_dig_port->port;
 	int type, ret;
 
+	if (WARN(intel_dig_port->max_lanes < 1,
+		 "Not enough lanes (%d) for DP on port %c\n",
+		 intel_dig_port->max_lanes, port_name(port)))
+		return false;
+
 	intel_dp->pps_pipe = INVALID_PIPE;
 
 	/* intel_dp vfuncs */
@@ -5979,7 +5972,7 @@ intel_dp_init_connector(struct intel_digital_port *intel_dig_port,
 
 fail:
 	if (is_edp(intel_dp)) {
-//		cancel_delayed_work_sync(&intel_dp->panel_vdd_work);
+		cancel_delayed_work_sync(&intel_dp->panel_vdd_work);
 		/*
 		 * vdd might still be enabled do to the delayed vdd off.
 		 * Make sure vdd is actually turned off here.
@@ -5987,7 +5980,7 @@ fail:
 		pps_lock(intel_dp);
 		edp_panel_vdd_off_sync(intel_dp);
 		pps_unlock(intel_dp);
-}
+	}
 	drm_connector_unregister(connector);
 	drm_connector_cleanup(connector);
 
@@ -6044,6 +6037,7 @@ intel_dp_init(struct drm_device *dev,
 
 	intel_dig_port->port = port;
 	intel_dig_port->dp.output_reg = output_reg;
+	intel_dig_port->max_lanes = 4;
 
 	intel_encoder->type = INTEL_OUTPUT_DISPLAYPORT;
 	if (IS_CHERRYVIEW(dev)) {

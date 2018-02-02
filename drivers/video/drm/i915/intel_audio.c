@@ -571,7 +571,7 @@ void intel_init_audio(struct drm_device *dev)
 	if (IS_G4X(dev)) {
 		dev_priv->display.audio_codec_enable = g4x_audio_codec_enable;
 		dev_priv->display.audio_codec_disable = g4x_audio_codec_disable;
-	} else if (IS_VALLEYVIEW(dev)) {
+	} else if (IS_VALLEYVIEW(dev) || IS_CHERRYVIEW(dev)) {
 		dev_priv->display.audio_codec_enable = ilk_audio_codec_enable;
 		dev_priv->display.audio_codec_disable = ilk_audio_codec_disable;
 	} else if (IS_HASWELL(dev) || INTEL_INFO(dev)->gen >= 8) {
@@ -652,8 +652,8 @@ static int i915_audio_component_sync_audio_rate(struct device *dev,
 	/* HSW, BDW, SKL, KBL need this fix */
 	if (!IS_SKYLAKE(dev_priv) &&
 	    !IS_KABYLAKE(dev_priv) &&
-		!IS_BROADWELL(dev_priv) &&
-		!IS_HASWELL(dev_priv))
+	    !IS_BROADWELL(dev_priv) &&
+	    !IS_HASWELL(dev_priv))
 		return 0;
 
 	mutex_lock(&dev_priv->av_mutex);
@@ -666,8 +666,8 @@ static int i915_audio_component_sync_audio_rate(struct device *dev,
 		err = -ENODEV;
 		goto unlock;
 	}
-			crtc = to_intel_crtc(intel_encoder->base.crtc);
-			pipe = crtc->pipe;
+	crtc = to_intel_crtc(intel_encoder->base.crtc);
+	pipe = crtc->pipe;
 	if (pipe == INVALID_PIPE) {
 		DRM_DEBUG_KMS("no pipe for the port %c\n", port_name(port));
 		err = -ENODEV;
