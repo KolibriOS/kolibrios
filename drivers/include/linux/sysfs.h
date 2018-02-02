@@ -202,7 +202,11 @@ static inline void sysfs_remove_bin_file(struct kobject *kobj,
 {
 }
 
-#define sysfs_create_link(kobj,target, name) (0)
+static inline int sysfs_create_link(struct kobject *kobj,
+				    struct kobject *target, const char *name)
+{
+	return 0;
+}
 
 static inline int sysfs_create_link_nowarn(struct kobject *kobj,
 					   struct kobject *target,
@@ -211,7 +215,9 @@ static inline int sysfs_create_link_nowarn(struct kobject *kobj,
 	return 0;
 }
 
-#define sysfs_remove_link(kobj, name)
+static inline void sysfs_remove_link(struct kobject *kobj, const char *name)
+{
+}
 
 static inline int sysfs_rename_link_ns(struct kobject *k, struct kobject *t,
 				       const char *old_name,

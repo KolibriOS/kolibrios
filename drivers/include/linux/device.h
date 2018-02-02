@@ -122,6 +122,9 @@ static inline void dev_set_drvdata(struct device *dev, void *data)
 	dev->driver_data = data;
 }
 
+static inline __printf(2, 3)
+void dev_notice(const struct device *dev, const char *fmt, ...)
+{}
 
 
 #endif /* _DEVICE_H_ */

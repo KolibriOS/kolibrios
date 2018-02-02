@@ -1,7 +1,7 @@
 #ifndef _ASM_X86_TIMEX_H
 #define _ASM_X86_TIMEX_H
 
-//#include <asm/processor.h>
+#include <asm/processor.h>
 //#include <asm/tsc.h>
 
 /* Assume we use the PIT time source for the clock tick */

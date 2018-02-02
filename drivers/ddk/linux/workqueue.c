@@ -117,7 +117,7 @@ void __stdcall delayed_work_timer_fn(unsigned long __data)
     queue_work(wq, &dwork->work);
 }
 
-int queue_delayed_work(struct workqueue_struct *wq,
+bool queue_delayed_work(struct workqueue_struct *wq,
                         struct delayed_work *dwork, unsigned long delay)
 {
     struct work_struct *work = &dwork->work;
@@ -138,12 +138,12 @@ bool schedule_delayed_work(struct delayed_work *dwork, unsigned long delay)
     return queue_delayed_work(system_wq, dwork, delay);
 }
 
-bool mod_delayed_work(struct workqueue_struct *wq,
-                                    struct delayed_work *dwork,
-                                    unsigned long delay)
-{
-    return queue_delayed_work(wq, dwork, delay);
-}
+//bool mod_delayed_work(struct workqueue_struct *wq,
+//                                    struct delayed_work *dwork,
+//                                    unsigned long delay)
+//{
+//    return queue_delayed_work(wq, dwork, delay);
+//}
 
 int del_timer(struct timer_list *timer)
 {

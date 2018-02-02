@@ -13,6 +13,10 @@
 struct firmware {
 	size_t size;
 	const u8 *data;
+	struct page **pages;
+
+	/* firmware loader private fields */
+	void *priv;
 };
 
 struct module;

@@ -11,7 +11,7 @@
 #include <linux/lockdep.h>
 #include <linux/threads.h>
 #include <linux/atomic.h>
-#include <linux/spinlock.h>
+#include <linux/cpumask.h>
 
 struct workqueue_struct;
 
@@ -239,10 +239,20 @@ struct workqueue_struct *alloc_workqueue(const char *fmt,
 	alloc_workqueue(fmt, WQ_UNBOUND | __WQ_ORDERED | (flags), 1, ##args)
 
 bool queue_work(struct workqueue_struct *wq, struct work_struct *work);
-int queue_delayed_work(struct workqueue_struct *wq,
+bool queue_delayed_work(struct workqueue_struct *wq,
                         struct delayed_work *dwork, unsigned long delay);
+extern bool cancel_work_sync(struct work_struct *work);
+extern bool cancel_delayed_work(struct delayed_work *dwork);
+extern bool cancel_delayed_work_sync(struct delayed_work *dwork);
+
 
 bool schedule_delayed_work(struct delayed_work *dwork, unsigned long delay);
+static inline bool mod_delayed_work(struct workqueue_struct *wq,
+				    struct delayed_work *dwork,
+				    unsigned long delay)
+{
+	return queue_delayed_work(wq, dwork, delay);
+}
 
 
 #define INIT_WORK(_work, _func)                 \

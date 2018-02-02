@@ -294,9 +294,7 @@ void rcu_init(void);
 void rcu_sched_qs(void);
 void rcu_bh_qs(void);
 void rcu_check_callbacks(int user);
-struct notifier_block;
-int rcu_cpu_notify(struct notifier_block *self,
-		   unsigned long action, void *hcpu);
+void rcu_report_dead(unsigned int cpu);
 
 #ifndef CONFIG_TINY_RCU
 void rcu_end_inkernel_boot(void);
@@ -322,8 +320,6 @@ void rcu_user_exit(void);
 #else
 static inline void rcu_user_enter(void) { }
 static inline void rcu_user_exit(void) { }
-static inline void rcu_user_hooks_switch(struct task_struct *prev,
-					 struct task_struct *next) { }
 #endif /* CONFIG_NO_HZ_FULL */
 
 #ifdef CONFIG_RCU_NOCB_CPU
@@ -532,7 +528,7 @@ static inline int rcu_read_lock_sched_held(void)
 static inline void rcu_preempt_sleep_check(void)
 {
 	RCU_LOCKDEP_WARN(lock_is_held(&rcu_lock_map),
-			   "Illegal context switch in RCU read-side critical section");
+			 "Illegal context switch in RCU read-side critical section");
 }
 #else /* #ifdef CONFIG_PROVE_RCU */
 static inline void rcu_preempt_sleep_check(void)
@@ -544,9 +540,9 @@ static inline void rcu_preempt_sleep_check(void)
 	do {								\
 		rcu_preempt_sleep_check();				\
 		RCU_LOCKDEP_WARN(lock_is_held(&rcu_bh_lock_map),	\
-				   "Illegal context switch in RCU-bh read-side critical section"); \
+				 "Illegal context switch in RCU-bh read-side critical section"); \
 		RCU_LOCKDEP_WARN(lock_is_held(&rcu_sched_lock_map),	\
-				   "Illegal context switch in RCU-sched read-side critical section"); \
+				 "Illegal context switch in RCU-sched read-side critical section"); \
 	} while (0)
 
 #else /* #ifdef CONFIG_PROVE_RCU */
@@ -835,7 +831,7 @@ static inline void rcu_read_lock(void)
 	__acquire(RCU);
 	rcu_lock_acquire(&rcu_lock_map);
 	RCU_LOCKDEP_WARN(!rcu_is_watching(),
-			   "rcu_read_lock() used illegally while idle");
+			 "rcu_read_lock() used illegally while idle");
 }
 
 /*
@@ -886,7 +882,7 @@ static inline void rcu_read_lock(void)
 static inline void rcu_read_unlock(void)
 {
 	RCU_LOCKDEP_WARN(!rcu_is_watching(),
-			   "rcu_read_unlock() used illegally while idle");
+			 "rcu_read_unlock() used illegally while idle");
 	__release(RCU);
 	__rcu_read_unlock();
 	rcu_lock_release(&rcu_lock_map); /* Keep acq info for rls diags. */
@@ -915,7 +911,7 @@ static inline void rcu_read_lock_bh(void)
 	__acquire(RCU_BH);
 	rcu_lock_acquire(&rcu_bh_lock_map);
 	RCU_LOCKDEP_WARN(!rcu_is_watching(),
-			   "rcu_read_lock_bh() used illegally while idle");
+			 "rcu_read_lock_bh() used illegally while idle");
 }
 
 /*
@@ -926,7 +922,7 @@ static inline void rcu_read_lock_bh(void)
 static inline void rcu_read_unlock_bh(void)
 {
 	RCU_LOCKDEP_WARN(!rcu_is_watching(),
-			   "rcu_read_unlock_bh() used illegally while idle");
+			 "rcu_read_unlock_bh() used illegally while idle");
 	rcu_lock_release(&rcu_bh_lock_map);
 	__release(RCU_BH);
 	local_bh_enable();
@@ -951,7 +947,7 @@ static inline void rcu_read_lock_sched(void)
 	__acquire(RCU_SCHED);
 	rcu_lock_acquire(&rcu_sched_lock_map);
 	RCU_LOCKDEP_WARN(!rcu_is_watching(),
-			   "rcu_read_lock_sched() used illegally while idle");
+			 "rcu_read_lock_sched() used illegally while idle");
 }
 
 /* Used by lockdep and tracing: cannot be traced, cannot call lockdep. */
@@ -969,7 +965,7 @@ static inline notrace void rcu_read_lock_sched_notrace(void)
 static inline void rcu_read_unlock_sched(void)
 {
 	RCU_LOCKDEP_WARN(!rcu_is_watching(),
-			   "rcu_read_unlock_sched() used illegally while idle");
+			 "rcu_read_unlock_sched() used illegally while idle");
 	rcu_lock_release(&rcu_sched_lock_map);
 	__release(RCU_SCHED);
 	preempt_enable();

@@ -488,26 +488,6 @@ static inline void sysSetScreen(int width, int height, int pitch)
 
 void  FASTCALL sysSetFramebuffer(void *fb)__asm__("SetFramebuffer");
 
-static inline void __iomem *ioremap(u32 offset, size_t size)
-{
-    return (void __iomem*) MapIoMem(offset, size, PG_SW|PG_NOCACHE|0x100);
-}
-
-static inline void __iomem *ioremap_nocache(u32 offset, size_t size)
-{
-    return (void __iomem*) MapIoMem(offset, size, PG_SW|PG_NOCACHE|0x100);
-}
-
-static inline void __iomem *ioremap_wc(u32 offset, size_t size)
-{
-    return (void __iomem*) MapIoMem(offset, size, PG_SW|PG_WRITEC|0x100);
-}
-
-
-static inline void iounmap(void *addr)
-{
-    FreeKernelSpace(addr);
-}
 
 static inline void __SysMsgBoardStr(char *text)
 {

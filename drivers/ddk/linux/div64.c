@@ -63,19 +63,19 @@ EXPORT_SYMBOL(__div64_32);
 #ifndef div_s64_rem
 s64 div_s64_rem(s64 dividend, s32 divisor, s32 *remainder)
 {
-        u64 quotient;
+	u64 quotient;
 
-        if (dividend < 0) {
-                quotient = div_u64_rem(-dividend, abs(divisor), (u32 *)remainder);
-                *remainder = -*remainder;
-                if (divisor > 0)
-                        quotient = -quotient;
-        } else {
-                quotient = div_u64_rem(dividend, abs(divisor), (u32 *)remainder);
-                if (divisor < 0)
-                        quotient = -quotient;
-        }
-        return quotient;
+	if (dividend < 0) {
+		quotient = div_u64_rem(-dividend, abs(divisor), (u32 *)remainder);
+		*remainder = -*remainder;
+		if (divisor > 0)
+			quotient = -quotient;
+	} else {
+		quotient = div_u64_rem(dividend, abs(divisor), (u32 *)remainder);
+		if (divisor < 0)
+			quotient = -quotient;
+	}
+	return quotient;
 }
 EXPORT_SYMBOL(div_s64_rem);
 #endif

@@ -312,6 +312,8 @@ init_waitqueue_head(wait_queue_head_t *q)
 //    wait_queue_head_t wait;
 //};
 
+void prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait, int state);
+void finish_wait(wait_queue_head_t *q, wait_queue_t *wait);
 int autoremove_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *key);
 
 

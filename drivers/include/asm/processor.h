@@ -13,7 +13,7 @@ struct vm86;
 #include <asm/types.h>
 #include <uapi/asm/sigcontext.h>
 #include <asm/current.h>
-#include <asm/cpufeature.h>
+#include <asm/cpufeatures.h>
 #include <asm/page.h>
 #include <asm/pgtable_types.h>
 #include <asm/percpu.h>
@@ -24,7 +24,6 @@ struct vm86;
 #include <asm/fpu/types.h>
 
 #include <linux/personality.h>
-#include <linux/cpumask.h>
 #include <linux/cache.h>
 #include <linux/threads.h>
 #include <linux/math64.h>
@@ -129,10 +128,10 @@ struct cpuinfo_x86 {
 	u16			booted_cores;
 	/* Physical processor id: */
 	u16			phys_proc_id;
+	/* Logical processor id: */
+	u16			logical_proc_id;
 	/* Core id: */
 	u16			cpu_core_id;
-	/* Compute unit id */
-	u8			compute_unit_id;
 	/* Index into per_cpu list: */
 	u16			cpu_index;
 	u32			microcode;
@@ -296,10 +295,13 @@ struct tss_struct {
 	 */
 	unsigned long		io_bitmap[IO_BITMAP_LONGS + 1];
 
+#ifdef CONFIG_X86_32
 	/*
-	 * Space for the temporary SYSENTER stack:
+	 * Space for the temporary SYSENTER stack.
 	 */
+	unsigned long		SYSENTER_stack_canary;
 	unsigned long		SYSENTER_stack[64];
+#endif
 
 } ____cacheline_aligned;
 
@@ -660,10 +662,9 @@ extern char			ignore_fpu_irq;
  */
 static inline void prefetch(const void *x)
 {
-	alternative_input(BASE_PREFETCH,
-			  "prefetchnta (%1)",
+	alternative_input(BASE_PREFETCH, "prefetchnta %P1",
 			  X86_FEATURE_XMM,
-			  "r" (x));
+			  "m" (*(const char *)x));
 }
 
 /*
@@ -673,10 +674,9 @@ static inline void prefetch(const void *x)
  */
 static inline void prefetchw(const void *x)
 {
-	alternative_input(BASE_PREFETCH,
-			  "prefetchw (%1)",
-			  X86_FEATURE_3DNOW,
-			  "r" (x));
+	alternative_input(BASE_PREFETCH, "prefetchw %P1",
+			  X86_FEATURE_3DNOWPREFETCH,
+			  "m" (*(const char *)x));
 }
 
 static inline void spin_lock_prefetch(const void *x)
@@ -757,7 +757,7 @@ extern unsigned long thread_saved_pc(struct task_struct *tsk);
  * Return saved PC of a blocked thread.
  * What is this good for? it will be always the scheduler or ret_from_fork.
  */
-#define thread_saved_pc(t)	(*(unsigned long *)((t)->thread.sp - 8))
+#define thread_saved_pc(t)	READ_ONCE_NOCHECK(*(unsigned long *)((t)->thread.sp - 8))
 
 #define task_pt_regs(tsk)	((struct pt_regs *)(tsk)->thread.sp0 - 1)
 extern unsigned long KSTK_ESP(struct task_struct *task);

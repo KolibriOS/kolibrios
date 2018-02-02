@@ -345,8 +345,8 @@ static void idr_fill_slot(struct idr *idr, void *ptr, int id,
 	rcu_assign_pointer(idr->hint, pa[0]);
 
 	rcu_assign_pointer(pa[0]->ary[id & IDR_MASK], (struct idr_layer *)ptr);
-		pa[0]->count++;
-		idr_mark_full(pa, id);
+	pa[0]->count++;
+	idr_mark_full(pa, id);
 }
 
 

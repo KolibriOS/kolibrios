@@ -7,12 +7,16 @@
  */
 #include <syscall.h>
 #include <linux/export.h>
-//#include <linux/thread_info.h>
+#include <linux/thread_info.h>
 #include <linux/ctype.h>
 #include <linux/errno.h>
 #include <linux/bitmap.h>
 #include <linux/bitops.h>
 #include <linux/bug.h>
+#include <linux/kernel.h>
+#include <linux/string.h>
+
+#include <asm/page.h>
 //#include <asm/uaccess.h>
 
 /*
@@ -304,9 +308,9 @@ EXPORT_SYMBOL(bitmap_clear);
  * is multiple of that power of 2.
  */
 unsigned long bitmap_find_next_zero_area_off(unsigned long *map,
-					 unsigned long size,
-					 unsigned long start,
-					 unsigned int nr,
+					     unsigned long size,
+					     unsigned long start,
+					     unsigned int nr,
 					     unsigned long align_mask,
 					     unsigned long align_offset)
 {
@@ -393,7 +397,7 @@ unsigned int bitmap_ord_to_pos(const unsigned long *buf, unsigned int ord, unsig
 	for (pos = find_first_bit(buf, nbits);
 	     pos < nbits && ord;
 	     pos = find_next_bit(buf, nbits, pos + 1))
-	     		ord--;
+		ord--;
 
 	return pos;
 }

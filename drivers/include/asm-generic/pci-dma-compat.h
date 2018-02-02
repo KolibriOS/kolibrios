@@ -54,10 +54,6 @@ pci_unmap_page(struct pci_dev *hwdev, dma_addr_t dma_address,
 {
 
 }
-#define pci_map_page(dev, page, offset, size, direction) \
-        (dma_addr_t)( (offset)+page_to_phys(page))
-
-#define pci_unmap_page(dev, dma_address, size, direction)
 
 static inline int
 pci_map_sg(struct pci_dev *hwdev, struct scatterlist *sg,

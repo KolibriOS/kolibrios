@@ -42,14 +42,6 @@ struct saved_msrs {
 	struct saved_msr *array;
 };
 
-static inline unsigned long long native_read_tscp(unsigned int *aux)
-{
-	unsigned long low, high;
-	asm volatile(".byte 0x0f,0x01,0xf9"
-		     : "=a" (low), "=d" (high), "=c" (*aux));
-	return low | ((u64)high << 32);
-}
-
 /*
  * both i386 and x86_64 returns 64-bit value in edx:eax, but gcc's "A"
  * constraint has different meanings. For i386, "A" means exactly
@@ -67,11 +59,34 @@ static inline unsigned long long native_read_tscp(unsigned int *aux)
 #define EAX_EDX_RET(val, low, high)	"=A" (val)
 #endif
 
+#ifdef CONFIG_TRACEPOINTS
+/*
+ * Be very careful with includes. This header is prone to include loops.
+ */
+#include <asm/atomic.h>
+#include <linux/tracepoint-defs.h>
+
+extern struct tracepoint __tracepoint_read_msr;
+extern struct tracepoint __tracepoint_write_msr;
+extern struct tracepoint __tracepoint_rdpmc;
+#define msr_tracepoint_active(t) static_key_false(&(t).key)
+extern void do_trace_write_msr(unsigned msr, u64 val, int failed);
+extern void do_trace_read_msr(unsigned msr, u64 val, int failed);
+extern void do_trace_rdpmc(unsigned msr, u64 val, int failed);
+#else
+#define msr_tracepoint_active(t) false
+static inline void do_trace_write_msr(unsigned msr, u64 val, int failed) {}
+static inline void do_trace_read_msr(unsigned msr, u64 val, int failed) {}
+static inline void do_trace_rdpmc(unsigned msr, u64 val, int failed) {}
+#endif
+
 static inline unsigned long long native_read_msr(unsigned int msr)
 {
 	DECLARE_ARGS(val, low, high);
 
 	asm volatile("rdmsr" : EAX_EDX_RET(val, low, high) : "c" (msr));
+	if (msr_tracepoint_active(__tracepoint_read_msr))
+		do_trace_read_msr(msr, EAX_EDX_VAL(val, low, high), 0);
 	return EAX_EDX_VAL(val, low, high);
 }
 
@@ -88,6 +103,8 @@ static inline unsigned long long native_read_msr_safe(unsigned int msr,
 		     _ASM_EXTABLE(2b, 3b)
 		     : [err] "=r" (*err), EAX_EDX_RET(val, low, high)
 		     : "c" (msr), [fault] "i" (-EIO));
+	if (msr_tracepoint_active(__tracepoint_read_msr))
+		do_trace_read_msr(msr, EAX_EDX_VAL(val, low, high), *err);
 	return EAX_EDX_VAL(val, low, high);
 }
 
@@ -95,6 +112,8 @@ static inline void native_write_msr(unsigned int msr,
 				    unsigned low, unsigned high)
 {
 	asm volatile("wrmsr" : : "c" (msr), "a"(low), "d" (high) : "memory");
+	if (msr_tracepoint_active(__tracepoint_write_msr))
+		do_trace_write_msr(msr, ((u64)high << 32 | low), 0);
 }
 
 /* Can be uninlined because referenced by paravirt */
@@ -112,6 +131,8 @@ notrace static inline int native_write_msr_safe(unsigned int msr,
 		     : "c" (msr), "0" (low), "d" (high),
 		       [fault] "i" (-EIO)
 		     : "memory");
+	if (msr_tracepoint_active(__tracepoint_write_msr))
+		do_trace_write_msr(msr, ((u64)high << 32 | low), err);
 	return err;
 }
 
@@ -136,11 +157,42 @@ static __always_inline unsigned long long rdtsc(void)
 	return EAX_EDX_VAL(val, low, high);
 }
 
+/**
+ * rdtsc_ordered() - read the current TSC in program order
+ *
+ * rdtsc_ordered() returns the result of RDTSC as a 64-bit integer.
+ * It is ordered like a load to a global in-memory counter.  It should
+ * be impossible to observe non-monotonic rdtsc_unordered() behavior
+ * across multiple CPUs as long as the TSC is synced.
+ */
+static __always_inline unsigned long long rdtsc_ordered(void)
+{
+	/*
+	 * The RDTSC instruction is not ordered relative to memory
+	 * access.  The Intel SDM and the AMD APM are both vague on this
+	 * point, but empirically an RDTSC instruction can be
+	 * speculatively executed before prior loads.  An RDTSC
+	 * immediately after an appropriate barrier appears to be
+	 * ordered as a normal load, that is, it provides the same
+	 * ordering guarantees as reading from a global memory location
+	 * that some other imaginary CPU is updating continuously with a
+	 * time stamp.
+	 */
+	alternative_2("", "mfence", X86_FEATURE_MFENCE_RDTSC,
+			  "lfence", X86_FEATURE_LFENCE_RDTSC);
+	return rdtsc();
+}
+
+/* Deprecated, keep it for a cycle for easier merging: */
+#define rdtscll(now)	do { (now) = rdtsc_ordered(); } while (0)
+
 static inline unsigned long long native_read_pmc(int counter)
 {
 	DECLARE_ARGS(val, low, high);
 
 	asm volatile("rdpmc" : EAX_EDX_RET(val, low, high) : "c" (counter));
+	if (msr_tracepoint_active(__tracepoint_rdpmc))
+		do_trace_rdpmc(counter, EAX_EDX_VAL(val, low, high), 0);
 	return EAX_EDX_VAL(val, low, high);
 }
 

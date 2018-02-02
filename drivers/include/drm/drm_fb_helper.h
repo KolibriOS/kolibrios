@@ -162,8 +162,8 @@ struct drm_fb_helper_connector {
 
 /**
  * struct drm_fb_helper - main structure to emulate fbdev on top of KMS
- * @fb:  Scanout framebuffer object
- * @dev:  DRM device
+ * @fb: Scanout framebuffer object
+ * @dev: DRM device
  * @crtc_count: number of possible CRTCs
  * @crtc_info: per-CRTC helper state (mode, x/y offset, etc)
  * @connector_count: number of connected connectors
@@ -219,6 +219,7 @@ struct drm_fb_helper {
 };
 
 #ifdef CONFIG_DRM_FBDEV_EMULATION
+int drm_fb_helper_modinit(void);
 void drm_fb_helper_prepare(struct drm_device *dev, struct drm_fb_helper *helper,
 			   const struct drm_fb_helper_funcs *funcs);
 int drm_fb_helper_init(struct drm_device *dev,
@@ -283,6 +284,11 @@ int drm_fb_helper_add_one_connector(struct drm_fb_helper *fb_helper, struct drm_
 int drm_fb_helper_remove_one_connector(struct drm_fb_helper *fb_helper,
 				       struct drm_connector *connector);
 #else
+static inline int drm_fb_helper_modinit(void)
+{
+	return 0;
+}
+
 static inline void drm_fb_helper_prepare(struct drm_device *dev,
 					struct drm_fb_helper *helper,
 					const struct drm_fb_helper_funcs *funcs)

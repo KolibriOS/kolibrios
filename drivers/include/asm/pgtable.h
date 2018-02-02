@@ -487,17 +487,6 @@ static inline int pte_devmap(pte_t a)
 #endif
 
 #define pte_accessible pte_accessible
-static inline bool pte_accessible(struct mm_struct *mm, pte_t a)
-{
-	if (pte_flags(a) & _PAGE_PRESENT)
-		return true;
-
-	if ((pte_flags(a) & _PAGE_PROTNONE) &&
-			mm_tlb_flush_pending(mm))
-		return true;
-
-	return false;
-}
 
 static inline int pte_hidden(pte_t pte)
 {

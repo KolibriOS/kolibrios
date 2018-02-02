@@ -63,7 +63,7 @@
 #define round_down(x, y) ((x) & ~__round_mask(x, y))
 
 #define FIELD_SIZEOF(t, f) (sizeof(((t*)0)->f))
-#define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
+#define DIV_ROUND_UP __KERNEL_DIV_ROUND_UP
 #define DIV_ROUND_UP_ULL(ll,d) \
 	({ unsigned long long _tmp = (ll)+(d)-1; do_div(_tmp, d); _tmp; })
 
@@ -788,64 +788,6 @@ extern unsigned int tsc_khz;
         })
 
 
-static inline __must_check long __copy_to_user(void __user *to,
-        const void *from, unsigned long n)
-{
-    if (__builtin_constant_p(n)) {
-        switch(n) {
-        case 1:
-            *(u8 __force *)to = *(u8 *)from;
-            return 0;
-        case 2:
-            *(u16 __force *)to = *(u16 *)from;
-            return 0;
-        case 4:
-            *(u32 __force *)to = *(u32 *)from;
-            return 0;
-        default:
-            break;
-        }
-    }
-
-    __builtin_memcpy((void __force *)to, from, n);
-    return 0;
-}
-
-static __always_inline unsigned long
-__copy_from_user(void *to, const void __user *from, unsigned long n)
-{
-    if (__builtin_constant_p(n)) {
-        unsigned long ret;
-
-        switch (n) {
-            case 1:
-                *(u8 __force *)to = *(u8 *)from;
-                return 0;
-            case 2:
-                *(u16 __force *)to = *(u16 *)from;
-                return 0;
-            case 4:
-                *(u32 __force *)to = *(u32 *)from;
-                return 0;
-            default:
-                break;
-        }
-    }
-    __builtin_memcpy((void __force *)to, from, n);
-}
-
-static inline long copy_from_user(void *to,
-                const void __user * from, unsigned long n)
-{
-    return __copy_from_user(to, from, n);
-}
-
-static inline long copy_to_user(void __user *to,
-                const void *from, unsigned long n)
-{
-    return __copy_to_user(to, from, n);
-}
-
 #define CAP_SYS_ADMIN        21
 
 static inline bool capable(int cap)
@@ -861,14 +803,8 @@ void kunmap_atomic(void *vaddr);
 
 typedef u64 async_cookie_t;
 
-//#define iowrite32(v, addr)      writel((v), (addr))
-
 #define __init
 
 #define CONFIG_PAGE_OFFSET 0
-
-typedef long long __kernel_long_t;
-typedef unsigned long long __kernel_ulong_t;
-#define __kernel_long_t __kernel_long_t
 
 #endif

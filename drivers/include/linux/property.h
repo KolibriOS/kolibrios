@@ -73,8 +73,8 @@ int fwnode_property_match_string(struct fwnode_handle *fwnode,
 struct fwnode_handle *device_get_next_child_node(struct device *dev,
 						 struct fwnode_handle *child);
 
-#define device_for_each_child_node(dev, child) \
-	for (child = device_get_next_child_node(dev, NULL); child; \
+#define device_for_each_child_node(dev, child)				\
+	for (child = device_get_next_child_node(dev, NULL); child;	\
 	     child = device_get_next_child_node(dev, child))
 
 void fwnode_handle_put(struct fwnode_handle *fwnode);
@@ -156,13 +156,13 @@ struct property_entry {
 	bool is_array;
 	bool is_string;
 	union {
-	union {
-		void *raw_data;
-		u8 *u8_data;
-		u16 *u16_data;
-		u32 *u32_data;
-		u64 *u64_data;
-		const char **str;
+		union {
+			void *raw_data;
+			u8 *u8_data;
+			u16 *u16_data;
+			u32 *u32_data;
+			u64 *u64_data;
+			const char **str;
 		} pointer;
 		union {
 			unsigned long long raw_data;
@@ -171,8 +171,8 @@ struct property_entry {
 			u32 u32_data;
 			u64 u64_data;
 			const char *str;
-	} value;
-};
+		} value;
+	};
 };
 
 /*

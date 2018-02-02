@@ -12,6 +12,11 @@
 struct file;
 
 extern void fput(struct file *);
+
+struct file_operations;
+struct vfsmount;
+struct dentry;
+struct path;
 struct fd {
 	struct file *file;
 	unsigned int flags;

@@ -649,9 +649,9 @@ MAX_RELEASE_CHECK_RATE   default: 4095 unless not HAVE_MMAP
 #define NO_SEGMENT_TRAVERSAL    1
 #define MALLOC_ALIGNMENT        ((size_t)8U)
 #define CHUNK_OVERHEAD          (SIZE_T_SIZE)
-#define DEFAULT_GRANULARITY     ((size_t)128U * (size_t)1024U)
-#define DEFAULT_MMAP_THRESHOLD  ((size_t)512U * (size_t)1024U)
-#define DEFAULT_TRIM_THRESHOLD  ((size_t)1024U * (size_t)1024U)
+#define DEFAULT_GRANULARITY     ((size_t)256U * (size_t)1024U)
+#define DEFAULT_MMAP_THRESHOLD  ((size_t)1024U * (size_t)1024U)
+#define DEFAULT_TRIM_THRESHOLD  ((size_t)2048U * (size_t)1024U)
 
 /* The bit mask value corresponding to MALLOC_ALIGNMENT */
 #define CHUNK_ALIGN_MASK    (MALLOC_ALIGNMENT - SIZE_T_ONE)
