@@ -720,9 +720,9 @@ int ttm_bo_mem_space(struct ttm_buffer_object *bo,
 		if (mem_type == TTM_PL_SYSTEM)
 			break;
 
-			ret = (*man->func->get_node)(man, bo, place, mem);
-			if (unlikely(ret))
-				return ret;
+		ret = (*man->func->get_node)(man, bo, place, mem);
+		if (unlikely(ret))
+			return ret;
 		
 		if (mem->mm_node)
 			break;
@@ -821,8 +821,8 @@ out_unlock:
 }
 
 bool ttm_bo_mem_compat(struct ttm_placement *placement,
-			      struct ttm_mem_reg *mem,
-			      uint32_t *new_flags)
+		       struct ttm_mem_reg *mem,
+		       uint32_t *new_flags)
 {
 	int i;
 
@@ -854,6 +854,7 @@ bool ttm_bo_mem_compat(struct ttm_placement *placement,
 
 	return false;
 }
+EXPORT_SYMBOL(ttm_bo_mem_compat);
 
 int ttm_bo_validate(struct ttm_buffer_object *bo,
 			struct ttm_placement *placement,
@@ -893,17 +894,17 @@ int ttm_bo_validate(struct ttm_buffer_object *bo,
 EXPORT_SYMBOL(ttm_bo_validate);
 
 int ttm_bo_init(struct ttm_bo_device *bdev,
-        struct ttm_buffer_object *bo,
-        unsigned long size,
-        enum ttm_bo_type type,
-        struct ttm_placement *placement,
-        uint32_t page_alignment,
-        bool interruptible,
-        struct file *persistent_swap_storage,
-        size_t acc_size,
-        struct sg_table *sg,
+		struct ttm_buffer_object *bo,
+		unsigned long size,
+		enum ttm_bo_type type,
+		struct ttm_placement *placement,
+		uint32_t page_alignment,
+		bool interruptible,
+		struct file *persistent_swap_storage,
+		size_t acc_size,
+		struct sg_table *sg,
 		struct reservation_object *resv,
-        void (*destroy) (struct ttm_buffer_object *))
+		void (*destroy) (struct ttm_buffer_object *))
 {
     int ret = 0;
     unsigned long num_pages;
@@ -920,30 +921,30 @@ int ttm_bo_init(struct ttm_bo_device *bdev,
     }
     bo->destroy = destroy;
 
-    kref_init(&bo->kref);
-    kref_init(&bo->list_kref);
+	kref_init(&bo->kref);
+	kref_init(&bo->list_kref);
 	atomic_set(&bo->cpu_writers, 0);
-    INIT_LIST_HEAD(&bo->lru);
-    INIT_LIST_HEAD(&bo->ddestroy);
-    INIT_LIST_HEAD(&bo->swap);
-    INIT_LIST_HEAD(&bo->io_reserve_lru);
-    mutex_init(&bo->wu_mutex);
-    bo->bdev = bdev;
-    bo->glob = bdev->glob;
-    bo->type = type;
-    bo->num_pages = num_pages;
-    bo->mem.size = num_pages << PAGE_SHIFT;
-    bo->mem.mem_type = TTM_PL_SYSTEM;
-    bo->mem.num_pages = bo->num_pages;
-    bo->mem.mm_node = NULL;
-    bo->mem.page_alignment = page_alignment;
-    bo->mem.bus.io_reserved_vm = false;
-    bo->mem.bus.io_reserved_count = 0;
-    bo->priv_flags = 0;
-    bo->mem.placement = (TTM_PL_FLAG_SYSTEM | TTM_PL_FLAG_CACHED);
-    bo->persistent_swap_storage = persistent_swap_storage;
-    bo->acc_size = acc_size;
-    bo->sg = sg;
+	INIT_LIST_HEAD(&bo->lru);
+	INIT_LIST_HEAD(&bo->ddestroy);
+	INIT_LIST_HEAD(&bo->swap);
+	INIT_LIST_HEAD(&bo->io_reserve_lru);
+	mutex_init(&bo->wu_mutex);
+	bo->bdev = bdev;
+	bo->glob = bdev->glob;
+	bo->type = type;
+	bo->num_pages = num_pages;
+	bo->mem.size = num_pages << PAGE_SHIFT;
+	bo->mem.mem_type = TTM_PL_SYSTEM;
+	bo->mem.num_pages = bo->num_pages;
+	bo->mem.mm_node = NULL;
+	bo->mem.page_alignment = page_alignment;
+	bo->mem.bus.io_reserved_vm = false;
+	bo->mem.bus.io_reserved_count = 0;
+	bo->priv_flags = 0;
+	bo->mem.placement = (TTM_PL_FLAG_SYSTEM | TTM_PL_FLAG_CACHED);
+	bo->persistent_swap_storage = persistent_swap_storage;
+	bo->acc_size = acc_size;
+	bo->sg = sg;
 	if (resv) {
 		bo->resv = resv;
 		lockdep_assert_held(&bo->resv->lock.base);
@@ -952,12 +953,12 @@ int ttm_bo_init(struct ttm_bo_device *bdev,
 		reservation_object_init(&bo->ttm_resv);
 	}
 	atomic_inc(&bo->glob->bo_count);
-    drm_vma_node_reset(&bo->vma_node);
+	drm_vma_node_reset(&bo->vma_node);
 
-    /*
-     * For ttm_bo_type_device buffers, allocate
-     * address space from the device.
-     */
+	/*
+	 * For ttm_bo_type_device buffers, allocate
+	 * address space from the device.
+	 */
 	if (bo->type == ttm_bo_type_device ||
 	    bo->type == ttm_bo_type_sg)
 		ret = drm_vma_offset_add(&bdev->vma_manager, &bo->vma_node,
@@ -974,13 +975,19 @@ int ttm_bo_init(struct ttm_bo_device *bdev,
 	if (likely(!ret))
 		ret = ttm_bo_validate(bo, placement, interruptible, false);
 
-	if (!resv)
+	if (!resv) {
 		ttm_bo_unreserve(bo);
+
+	} else if (!(bo->mem.placement & TTM_PL_FLAG_NO_EVICT)) {
+		spin_lock(&bo->glob->lru_lock);
+		ttm_bo_add_to_lru(bo);
+		spin_unlock(&bo->glob->lru_lock);
+	}
 
 	if (unlikely(ret))
 		ttm_bo_unref(&bo);
 
-    return ret;
+	return ret;
 }
 EXPORT_SYMBOL(ttm_bo_init);
 
@@ -1111,31 +1118,31 @@ EXPORT_SYMBOL(ttm_bo_global_release);
 
 int ttm_bo_global_init(struct drm_global_reference *ref)
 {
-    struct ttm_bo_global_ref *bo_ref =
-        container_of(ref, struct ttm_bo_global_ref, ref);
-    struct ttm_bo_global *glob = ref->object;
-    int ret;
+	struct ttm_bo_global_ref *bo_ref =
+		container_of(ref, struct ttm_bo_global_ref, ref);
+	struct ttm_bo_global *glob = ref->object;
+	int ret;
 
-    mutex_init(&glob->device_list_mutex);
-    spin_lock_init(&glob->lru_lock);
-    glob->mem_glob = bo_ref->mem_glob;
+	mutex_init(&glob->device_list_mutex);
+	spin_lock_init(&glob->lru_lock);
+	glob->mem_glob = bo_ref->mem_glob;
 	glob->dummy_read_page = alloc_page(__GFP_ZERO | GFP_DMA32);
 
-    if (unlikely(glob->dummy_read_page == NULL)) {
-        ret = -ENOMEM;
-        goto out_no_drp;
-    }
+	if (unlikely(glob->dummy_read_page == NULL)) {
+		ret = -ENOMEM;
+		goto out_no_drp;
+	}
 
-    INIT_LIST_HEAD(&glob->swap_lru);
-    INIT_LIST_HEAD(&glob->device_list);
+	INIT_LIST_HEAD(&glob->swap_lru);
+	INIT_LIST_HEAD(&glob->device_list);
 
     atomic_set(&glob->bo_count, 0);
 
     return 0;
 
 out_no_drp:
-    kfree(glob);
-    return ret;
+	kfree(glob);
+	return ret;
 }
 EXPORT_SYMBOL(ttm_bo_global_init);
 
@@ -1254,13 +1261,13 @@ int ttm_bo_wait(struct ttm_buffer_object *bo,
 			timeout = fence_wait_timeout(fence,
 						     interruptible, timeout);
 		}
-		}
+	}
 
 	if (timeout < 0)
 		return timeout;
 
 	if (timeout == 0)
-			return -EBUSY;
+		return -EBUSY;
 
 	reservation_object_add_excl_fence(resv, NULL);
 	clear_bit(TTM_BO_PRIV_FLAG_MOVING, &bo->priv_flags);

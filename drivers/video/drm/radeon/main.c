@@ -5,7 +5,7 @@
 #include "radeon.h"
 #include "bitmap.h"
 
-#define DRV_NAME "atikms v4.5.7"
+#define DRV_NAME "atikms v4.6.7"
 
 void __init dmi_scan_machine(void);
 int printf ( const char * format, ... );

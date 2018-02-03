@@ -40,8 +40,6 @@
 
 #define __pgprot(x)     ((pgprot_t) { (x) } )
 
-void *vmap(struct page **pages, unsigned int count,
-           unsigned long flags, pgprot_t prot);
 
 void ttm_bo_free_old_node(struct ttm_buffer_object *bo)
 {
@@ -575,6 +573,7 @@ void ttm_bo_kunmap(struct ttm_bo_kmap_obj *map)
 		iounmap(map->virtual);
 		break;
 	case ttm_bo_map_vmap:
+		vunmap(map->virtual);
 		break;
 	case ttm_bo_map_kmap:
 		kunmap(map->page);
@@ -676,4 +675,9 @@ void *vmap(struct page **pages, unsigned int count,
 
     return vaddr;
 };
+
+void vunmap(const void *addr)
+{
+    FreeKernelSpace((void*)addr);
+}
 

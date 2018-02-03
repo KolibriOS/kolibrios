@@ -416,6 +416,7 @@ int r420_init(struct radeon_device *rdev)
 			rv370_pcie_gart_fini(rdev);
 		if (rdev->flags & RADEON_IS_PCI)
 			r100_pci_gart_fini(rdev);
+		radeon_agp_fini(rdev);
 		rdev->accel_working = false;
 	}
 	return 0;

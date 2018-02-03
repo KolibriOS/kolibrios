@@ -31,6 +31,7 @@
 #include <drm/drm_crtc_helper.h>
 #include <drm/radeon_drm.h>
 #include <linux/vgaarb.h>
+#include <linux/vga_switcheroo.h>
 #include "radeon_reg.h"
 #include "radeon.h"
 #include "atom.h"
@@ -1203,9 +1204,9 @@ static void radeon_check_arguments(struct radeon_device *rdev)
 		radeon_vm_size = 4;
 	}
 
-       /*
-        * Max GPUVM size for Cayman, SI and CI are 40 bits.
-        */
+	/*
+	 * Max GPUVM size for Cayman, SI and CI are 40 bits.
+	 */
 	if (radeon_vm_size > 1024) {
 		dev_warn(rdev->dev, "VM size (%d) too large, max is 1TB\n",
 			 radeon_vm_size);
@@ -1278,9 +1279,9 @@ int radeon_device_init(struct radeon_device *rdev,
 	}
 	rdev->fence_context = fence_context_alloc(RADEON_NUM_RINGS);
 
-	DRM_INFO("initializing kernel modesetting (%s 0x%04X:0x%04X 0x%04X:0x%04X).\n",
-		radeon_family_name[rdev->family], pdev->vendor, pdev->device,
-		pdev->subsystem_vendor, pdev->subsystem_device);
+	DRM_INFO("initializing kernel modesetting (%s 0x%04X:0x%04X 0x%04X:0x%04X 0x%02X).\n",
+		 radeon_family_name[rdev->family], pdev->vendor, pdev->device,
+		 pdev->subsystem_vendor, pdev->subsystem_device, pdev->revision);
 
 	/* mutex initialization are all done here so we
 	 * can recall function without having locking issues */
@@ -1348,13 +1349,6 @@ int radeon_device_init(struct radeon_device *rdev,
 	    (rdev->family <= CHIP_RS740))
 		rdev->need_dma32 = true;
 
-	dma_bits = rdev->need_dma32 ? 32 : 40;
-	r = pci_set_dma_mask(rdev->pdev, DMA_BIT_MASK(dma_bits));
-	if (r) {
-		rdev->need_dma32 = true;
-		dma_bits = 32;
-		printk(KERN_WARNING "radeon: No suitable DMA available.\n");
-	}
 
 	/* Registers mapping */
 	/* TODO: block userspace mapping of io register */

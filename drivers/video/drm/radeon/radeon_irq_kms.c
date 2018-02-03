@@ -156,10 +156,12 @@ int radeon_irq_kms_init(struct radeon_device *rdev)
 	if (r) {
 		return r;
 	}
+	rdev->ddev->vblank_disable_allowed = true;
+
 	/* enable msi */
 	rdev->msi_enabled = 0;
 
-    rdev->irq.installed = true;
+	rdev->irq.installed = true;
 	r = drm_irq_install(rdev->ddev, rdev->ddev->pdev->irq);
     if (r) {
        rdev->irq.installed = false;

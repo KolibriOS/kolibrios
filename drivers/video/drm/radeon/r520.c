@@ -297,6 +297,7 @@ int r520_init(struct radeon_device *rdev)
 		radeon_ib_pool_fini(rdev);
 		radeon_irq_kms_fini(rdev);
 		rv370_pcie_gart_fini(rdev);
+		radeon_agp_fini(rdev);
 		rdev->accel_working = false;
 	}
 	return 0;

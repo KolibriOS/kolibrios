@@ -33,17 +33,6 @@ LDFLAGS = -nostdlib -shared -s $(PE_FLAGS) --image-base 0\
 
 NAME:=	  atikms
 
-HFILES:=     		$(DDK_INCLUDES)/linux/types.h		\
-			$(DDK_INCLUDES)/linux/list.h		\
-			$(DDK_INCLUDES)/linux/pci.h		\
-			$(DDK_INCLUDES)/drm/drmP.h		\
-			$(DDK_INCLUDES)/drm/drm_edid.h		\
-			$(DDK_INCLUDES)/drm/drm_crtc.h		\
-			$(DDK_INCLUDES)/drm/drm_mm.h		\
-			atom.h					\
-			radeon.h				\
-			radeon_asic.h
-
 NAME_SRC=							\
 			main.c					\
 			pci.c					\
@@ -231,7 +220,7 @@ NAME_OBJS =  $(patsubst %.S, %.o, $(patsubst %.asm, %.o,\
 
 all: $(NAME).dll
 
-$(NAME).dll: $(NAME_OBJS) $(FW_BINS) $(SRC_DEP) $(HFILES) $(LIBPATH)/libcore.a $(LIBPATH)/libddk.a atikms.lds Makefile
+$(NAME).dll: $(NAME_OBJS) $(FW_BINS) $(SRC_DEP) $(LIBPATH)/libcore.a $(LIBPATH)/libddk.a atikms.lds Makefile
 	$(LD) -L$(LIBPATH) $(LDFLAGS) -T atikms.lds -o $@ $(NAME_OBJS) $(LIBS)  
 
 

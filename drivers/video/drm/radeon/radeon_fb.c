@@ -39,9 +39,9 @@ struct drm_framebuffer *main_fb;
 struct drm_gem_object  *main_fb_obj;
 
 /* object hierarchy -
-   this contains a helper + a radeon fb
-   the helper contains a pointer to radeon framebuffer baseclass.
-*/
+ * this contains a helper + a radeon fb
+ * the helper contains a pointer to radeon framebuffer baseclass.
+ */
 struct radeon_fbdev {
 	struct drm_fb_helper helper;
 	struct radeon_framebuffer rfb;
@@ -308,6 +308,10 @@ int radeon_fbdev_init(struct radeon_device *rdev)
 	struct radeon_fbdev *rfbdev;
 	int bpp_sel = 32;
 	int ret;
+
+	/* don't enable fbdev if no connectors */
+	if (list_empty(&rdev->ddev->mode_config.connector_list))
+		return 0;
 
 	/* select 8 bpp console on RN50 or 16MB cards */
 	if (ASIC_IS_RN50(rdev) || rdev->mc.real_vram_size <= (32*1024*1024))

@@ -351,6 +351,7 @@ radeon_crtc_set_config(struct drm_mode_set *set)
 
 	/* drop the power reference we got coming in here */
 //   pm_runtime_put_autosuspend(dev->dev);
+
 	return ret;
 }
 static const struct drm_crtc_funcs radeon_crtc_funcs = {
@@ -584,7 +585,7 @@ static void avivo_reduce_ratio(unsigned *nom, unsigned *den,
 	*den /= tmp;
 
 	/* make sure nominator is large enough */
-        if (*nom < nom_min) {
+	if (*nom < nom_min) {
 		tmp = DIV_ROUND_UP(nom_min, *nom);
 		*nom *= tmp;
 		*den *= tmp;
@@ -624,7 +625,7 @@ static void avivo_get_fb_ref_div(unsigned nom, unsigned den, unsigned post_div,
 	*fb_div = DIV_ROUND_CLOSEST(nom * *ref_div * post_div, den);
 
 	/* limit fb divider to its maximum */
-        if (*fb_div > fb_div_max) {
+	if (*fb_div > fb_div_max) {
 		*ref_div = DIV_ROUND_CLOSEST(*ref_div * fb_div_max, *fb_div);
 		*fb_div = fb_div_max;
 	}
@@ -1326,6 +1327,9 @@ void radeon_modeset_fini(struct radeon_device *rdev)
 {
 	kfree(rdev->mode_info.bios_hardcoded_edid);
 
+	/* free i2c buses */
+	radeon_i2c_fini(rdev);
+
 	if (rdev->mode_info.mode_config_initialized) {
 //		radeon_afmt_fini(rdev);
 //       drm_kms_helper_poll_fini(rdev->ddev);
@@ -1333,8 +1337,6 @@ void radeon_modeset_fini(struct radeon_device *rdev)
 //       drm_mode_config_cleanup(rdev->ddev);
 		rdev->mode_info.mode_config_initialized = false;
 	}
-	/* free i2c buses */
-	radeon_i2c_fini(rdev);
 }
 
 static bool is_hdtv_mode(const struct drm_display_mode *mode)
