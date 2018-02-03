@@ -16,6 +16,7 @@
 ### and still want to have them in final images.
 # CONFIG_NO_FASM=full
 # CONFIG_NO_NASM=full
+# CONFIG_NO_JWASM=full
 # CONFIG_NO_GCC=full
 # CONFIG_NO_MSVC=full
 # CONFIG_NO_CMM=full
