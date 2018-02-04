@@ -109,6 +109,31 @@ void _colors::move(int direction)
 			set_color(r, 0, first_element_data);
 		}		
 	}
+	if (direction == DIRECTION_UP)
+	{
+		for (c = 0; c < columns; c++)
+		{
+			first_element_data = get_color(0, c);
+			for (r = 0; r < rows-1; r++) set_color(r, c, get_color(r+1, c));
+			set_color(rows-1, c, first_element_data);
+		}		
+	}
+	if (direction == DIRECTION_DOWN)
+	{
+		for (c = 0; c < columns; c++)
+		{
+			first_element_data = get_color(rows-1, c);
+			for (r = rows-1; r > 0; r--) set_color(r, c, get_color(r-1, c));
+			set_color(0, c, first_element_data);
+		}		
+	}
 
 	draw_all_cells();
 }
+
+
+
+
+
+
+

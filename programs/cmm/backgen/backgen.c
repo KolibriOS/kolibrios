@@ -17,7 +17,7 @@
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Background generator 0.6"
+#define T_TITLE "Background generator 0.62"
 
 #define MAX_COLORS 10
 #define TOOLBAR_H 24+8
@@ -109,6 +109,12 @@ void main()
 				case BTN_MOVE_RIGHT:
 					colors.move(DIRECTION_RIGHT);
 					break;
+				case BTN_MOVE_UP:
+					colors.move(DIRECTION_UP);
+					break;
+				case BTN_MOVE_DOWN:
+					colors.move(DIRECTION_DOWN);
+					break;
 				case CLOSE_BTN:
 					ExitProcess();
 				case BTN_APPLY_BACKGROUND:
@@ -169,8 +175,11 @@ void draw_window()
 	// DrawToolbarButton(BTN_SAVE,   tx.inc(TB_ICON_PADDING), 5);
 	DrawToolbarButton(BTN_MOVE_LEFT,  tx.inc(TB_ICON_PADDING),   30);
 	DrawToolbarButton(BTN_MOVE_RIGHT, tx.inc(TB_ICON_PADDING),   31);
-	// DrawToolbarButton(BTN_MOVE_UP,    tx.inc(TB_ICON_PADDING),   32);
-	// DrawToolbarButton(BTN_MOVE_DOWN,  tx.inc(TB_ICON_PADDING),   33);
+	DrawToolbarButton(BTN_MOVE_UP,    tx.inc(TB_ICON_PADDING),   32);
+	DrawToolbarButton(BTN_MOVE_DOWN,  tx.inc(TB_ICON_PADDING),   33);
+	
+	DrawToolbarButton(BTN_PICK,   tx.inc(TB_ICON_PADDING+8), 38);
+	
 	// DrawToolbarButton(BTN_FLIP_HOR,   tx.inc(TB_ICON_PADDING+8), 34);
 	// DrawToolbarButton(BTN_FLIP_VER,   tx.inc(TB_ICON_PADDING),   35);
 	// DrawToolbarButton(BTN_ROTATE_LEFT,   tx.inc(TB_ICON_PADDING), 36);
@@ -185,7 +194,6 @@ void draw_window()
 	DrawColorsField();
 
 	DrawStandartCaptButton(preview.x, 320, BTN_APPLY_BACKGROUND, "Fill background");
-	DrawStandartCaptButton(right_bar.x + 150, right_bar.y, BTN_PICK, "Pipette");
 
 	DrawRightBar();
 }
@@ -262,7 +270,7 @@ void EventPickActivate()
 
 void EventPickColor()
 {
-	active_color = GetPixelColorFromScreen(mouse.x + Form.left, mouse.y + Form.top);
+	active_color = GetPixelColorFromScreen(mouse.x + Form.left + 5, mouse.y + Form.top + skin_height);
 	DrawActiveColor(NULL);
 	if (mouse.down) && (mouse.key&MOUSE_LEFT) {
 		pick_active = false;
