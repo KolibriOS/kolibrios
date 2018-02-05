@@ -1,6 +1,6 @@
 struct _colors
 {
-	int x,y;
+	int x,y,w,h;
 	unsigned rows, columns;
 	unsigned cell_size;
 	dword mas[MAX_COLORS*MAX_COLORS];
@@ -16,15 +16,15 @@ struct _colors
 
 void _colors::set_default_values()
 {
-	columns = 2;
-	rows = 2;
-	cell_size = 20;
+	int i;
 
-	set_color(0,0, 0x66b2ff); 
-	set_color(0,1, 0x000066); 
+	columns = MAX_COLORS;
+	rows = MAX_COLORS;
+	cell_size = 5;
+	w = columns * cell_size;
+	h = rows * cell_size;
 
-	set_color(1,0, 0x000066);
-	set_color(1,1, 0x66b2ff);
+	for (i = 0; i < columns*rows; i++) mas[i]=0xBFCAD2;
 }
 
 void _colors::set_color(int _r, _c, _color)
@@ -75,7 +75,7 @@ void _colors::draw_all_cells()
 		for (c = 0; c < columns; c++)
 		{
 			draw_cell(c*cell_size + x, r*cell_size + y, get_color(r, c));
-			DefineHiddenButton(c*cell_size + x, r*cell_size + y, cell_size, cell_size, r*columns+c+300+BT_NOFRAME);
+			//DefineHiddenButton(c*cell_size + x, r*cell_size + y, cell_size, cell_size, r*columns+c+300+BT_NOFRAME);
 		}
 	}
 }

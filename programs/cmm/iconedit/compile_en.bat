@@ -1,5 +1,5 @@
 @del *.
-@c-- backgen.c
+@c-- iconedit.c
 @rename *.com *.
 @del warning.txt
 @pause
