@@ -32,18 +32,18 @@ void DrawIconByExtension(dword file_path, extension, xx, yy, fairing_color)
 
 void IconFairing(dword filenum, x,y, color)
 {
-	switch(filenum)
+	//0 = folder
+	//22 = forder with up arrow
+	if (filenum == 0) || (filenum == 22)
 	{
-		case 0: //folder
-		case 22: //<up>
-			DrawBar(x+7,y+1,8,2,color);
-			IF (filenum==22) PutPixel(x+10,y+2,0x1A7B17); //green arrow part
-			DrawBar(x,y+14,15,2,color);
-			PutPixel(x,y+1,color);
-			PutPixel(x+6,y+1,color);
-			PutPixel(x+14,y+3,color);
-			PutPixel(x,y+13,color);
-			PutPixel(x+14,y+13,color);
-			return;
+		DrawBar(x+7,y+1,8,2,color);
+		DrawBar(x,y+14,15,2,color);
+		PutPixel(x,y+1,color);
+		PutPixel(x+6,y+1,color);
+		PutPixel(x+14,y+3,color);
+		PutPixel(x,y+13,color);
+		PutPixel(x+14,y+13,color);
+		debugi(filenum);
 	}
+	if (filenum == 22) PutPixel(x+10,y+2,0x1A7B17); //green arrow part
 }

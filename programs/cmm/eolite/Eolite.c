@@ -728,7 +728,7 @@ void Line_ReDraw(dword bgcol, filenum){
 	}
 	else
 	{
-		if (!strncmp(file_name_off,"..",3))	ext1="<up>"; else {
+		if (!strcmp(file_name_off,"..")) ext1="<up>"; else {
 			ext1="<DIR>";
 			WriteTextCenter(files.x+files.w-140, files.text_y+y+1, 72, 0, ext1);
 		}
