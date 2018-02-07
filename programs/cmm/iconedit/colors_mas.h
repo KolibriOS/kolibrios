@@ -12,7 +12,7 @@ struct _colors
 	void draw_cell();
 	void draw_all_cells();
 	void move();
-} colors;
+};
 
 void _colors::set_default_values()
 {

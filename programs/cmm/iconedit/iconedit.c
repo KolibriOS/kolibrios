@@ -17,16 +17,17 @@
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.01"
+#define T_TITLE "Icon Editor 0.05"
 
 #define MAX_COLORS   32
 #define TOOLBAR_H    24+8
 #define PALLETE_SIZE 116
 
-rect preview = { 10, TOOLBAR_H+10, 200, 200 };
-rect right_bar = { 230, TOOLBAR_H+10, 280, 320 };
+rect wrapper = { 10, TOOLBAR_H+5, NULL, NULL };
+rect right_bar = { NULL, TOOLBAR_H+5, 280, NULL };
 
-dword active_color = 0xFFFfff;
+dword active_color_1 = 0x000000;
+dword active_color_2 = 0xFFFfff;
 
 enum {
 	BTN_NEW = 40,
@@ -40,18 +41,17 @@ enum {
 	BTN_FLIP_VER,
 	BTN_ROTATE_LEFT,
 	BTN_ROTATE_RIGHT,
-
 	BTN_PICK,
-
 	BTN_PALETTE_COLOR_MAS = 100,
-
 };
 
 proc_info Form;
 
 bool pick_active = false;
 
-dword default_colors[] = {
+more_less_box zoom = { NULL, NULL, NULL, 1, MAX_COLORS, 22, 23, "Zoom" };
+
+dword palette_colors[] = {
 0x330000,0x331900,0x333300,0x193300,0x003300,0x003319,0x003333,0x001933,0x000033,0x190033,0x330033,0x330019,0x000000,
 0x660000,0x663300,0x666600,0x336600,0x006600,0x006633,0x006666,0x003366,0x000066,0x330066,0x660066,0x660033,0x202020,
 0x990000,0x994C00,0x999900,0x4C9900,0x009900,0x00994C,0x009999,0x004C99,0x000099,0x4C0099,0x990099,0x99004C,0x404040,
@@ -71,6 +71,7 @@ dword default_colors[] = {
 //===================================================//
 
 #include "colors_mas.h"
+_colors canvas;
 
 void main()
 {
@@ -80,7 +81,8 @@ void main()
 	load_dll(libimg, #libimg_init, 1);
 	Libimg_LoadImage(#skin, "/sys/icons16.png");
 
-	colors.set_default_values();
+	canvas.set_default_values();
+	zoom.value = canvas.cell_size;
 
 	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
 
@@ -88,15 +90,15 @@ void main()
 	{
 		case evMouse:
 			mouse.get();
-			if (pick_active) EventPickColor();
+			if (pick_active) EventPickColor(mouse.lkm, mouse.pkm);
 			else {
 				if (mouse.lkm) 
-				&& (mouse.x>colors.x) && (mouse.y>colors.y) 
-				&& (mouse.y<colors.y+colors.h) && (mouse.x<colors.x+colors.w)
+				&& (mouse.x>canvas.x) && (mouse.y>canvas.y) 
+				&& (mouse.y<canvas.y+canvas.h) && (mouse.x<canvas.x+canvas.w)
 				{
-					colors.set_color(mouse.y-colors.y/colors.cell_size, 
-						mouse.x-colors.x/colors.cell_size, active_color);
-					DrawColorsField();
+					canvas.set_color(mouse.y-canvas.y/canvas.cell_size, 
+						mouse.x-canvas.x/canvas.cell_size, active_color_1);
+					canvas.draw_all_cells();
 				}
 			}
 			break;
@@ -106,16 +108,16 @@ void main()
 			switch(btn)
 			{
 				case BTN_MOVE_LEFT:
-					colors.move(DIRECTION_LEFT);
+					canvas.move(DIRECTION_LEFT);
 					break;
 				case BTN_MOVE_RIGHT:
-					colors.move(DIRECTION_RIGHT);
+					canvas.move(DIRECTION_RIGHT);
 					break;
 				case BTN_MOVE_UP:
-					colors.move(DIRECTION_UP);
+					canvas.move(DIRECTION_UP);
 					break;
 				case BTN_MOVE_DOWN:
-					colors.move(DIRECTION_DOWN);
+					canvas.move(DIRECTION_DOWN);
 					break;
 				case CLOSE_BTN:
 					ExitProcess();
@@ -125,16 +127,10 @@ void main()
 			}              
 			if (btn >= BTN_PALETTE_COLOR_MAS) && (btn < BTN_PALETTE_COLOR_MAS+PALLETE_SIZE) 
 			{ 
-				active_color = default_colors[btn-BTN_PALETTE_COLOR_MAS]; 
+				active_color_1 = palette_colors[btn-BTN_PALETTE_COLOR_MAS]; 
 				DrawActiveColor(NULL); 
 			}
-			if (btn >= 300)
-			{ 
-				btn-=300;
-				debugval("\n\nid",btn);
-				colors.set_color(btn/colors.columns, btn%colors.columns, active_color);
-				DrawColorsField();
-			}
+			if (zoom.click(btn)) EventZoom();
 			break;
 	  
 		case evKey:
@@ -158,8 +154,12 @@ void DrawToolbarButton(dword _id, _x, _icon_n)
 
 void DrawStatusBar()
 {
-	sprintf(#param,"Canvas: %ix%i", colors.rows, colors.columns);
-	WriteText(10, Form.cheight-40, 0x90, system.color.work_text, #param);
+	zoom.y = wrapper.y + wrapper.h + 6;
+	zoom.x = wrapper.x;
+	zoom.draw();
+
+	sprintf(#param,"Canvas: %ix%i", canvas.rows, canvas.columns);
+	WriteText(wrapper.x+wrapper.w-calc(strlen(#param)*8), zoom.y+2, 0x90, system.color.work_text, #param);
 }
 
 void draw_window()
@@ -167,13 +167,11 @@ void draw_window()
 	#define TB_ICON_PADDING 26
 	incn tx;
 	system.color.get();
-	DefineAndDrawWindow(215, 100, right_bar.x+right_bar.w+9, 
-		right_bar.y+right_bar.h+skin_height+5, 
-		0x34, system.color.work, T_TITLE,0
-		);
+	DefineAndDrawWindow(215, 100, 700, 540, 0x33, system.color.work, T_TITLE, 0);
 	GetProcessInfo(#Form, SelfInfo);
+	right_bar.x = Form.cwidth - right_bar.w;
 
-	tx.n = preview.x - TB_ICON_PADDING;
+	tx.n = wrapper.x - TB_ICON_PADDING;
 	DrawToolbarButton(BTN_NEW,    tx.inc(TB_ICON_PADDING), 2); //not implemented
 	DrawToolbarButton(BTN_OPEN,   tx.inc(TB_ICON_PADDING), 0); //not implemented
 	DrawToolbarButton(BTN_SAVE,   tx.inc(TB_ICON_PADDING), 5); //not implemented
@@ -189,42 +187,53 @@ void draw_window()
 
 	DrawToolbarButton(BTN_PICK,   tx.inc(TB_ICON_PADDING+8), 38);
 
-	DrawBar(0, TOOLBAR_H-1, Form.cwidth, 1, system.color.work_dark);
-	DrawBar(0, TOOLBAR_H, Form.cwidth, 1, system.color.work_light);
+	DrawEditArea();
 
-	DrawColorsField();
+	DrawDefaultColors(right_bar.x, right_bar.y);
+	DrawActiveColor(Form.cheight-40);
 
-	DrawRightBar();
 	DrawStatusBar();
 }
 
-void DrawColorsField()
+:void DrawEditArea()
 {
+	dword color1=0xC0C0C0;
+	int left_padding;
+	int top_padding;
 
-	colors.x = -colors.cell_size*colors.columns+preview.w/2 + preview.x;
-	colors.y = -colors.cell_size*colors.rows+preview.h/2 + preview.y;
-	colors.draw_all_cells();	
+	wrapper.w = Form.cwidth - right_bar.w - 30;
+	wrapper.h = Form.cheight - TOOLBAR_H - 35;
 
-	DrawRectangle(preview.x, preview.y, preview.w, preview.h, system.color.work_graph);
-	DrawWideRectangle(preview.x+1, preview.y+1, preview.w-1, preview.h-1, 
-		colors.x-preview.x, 0xC0C0C0);
-}
+	//canvas{
+	canvas.x = -canvas.cell_size*canvas.columns+wrapper.w/2 + wrapper.x;
+	canvas.y = -canvas.cell_size*canvas.rows+wrapper.h/2 + wrapper.y;
+	DrawRectangle(canvas.x-1, canvas.y-1, canvas.w+1, canvas.h+1, 0x808080);
+	canvas.draw_all_cells();	
+	//}
 
-void DrawRightBar()
-{
-	int i;
-	incn y;
-	DrawDefaultColors(right_bar.x, right_bar.y);
+	left_padding = canvas.x-wrapper.x-1;
+	top_padding = canvas.y-wrapper.y-1;
 
-	DrawActiveColor(Form.cheight-40);
+	DrawRectangle(wrapper.x-1, wrapper.y-1, wrapper.w+1, wrapper.h+1, system.color.work_graph);
+
+	if (left_padding>0)
+	{
+		DrawBar(wrapper.x, wrapper.y, wrapper.w, top_padding, color1);
+		DrawBar(wrapper.x, wrapper.y+wrapper.h-top_padding, wrapper.w, top_padding, color1);		
+	}
+	if (top_padding>0)
+	{
+		DrawBar(wrapper.x, wrapper.y+left_padding, left_padding, wrapper.h-left_padding-left_padding, color1);
+		DrawBar(wrapper.x+wrapper.w-left_padding, wrapper.y+left_padding, left_padding, wrapper.h-left_padding-left_padding, color1);		
+	}
 }
 
 void DrawActiveColor(dword iny)
 {
 	static dword outy;
 	if (iny != NULL) outy = iny;
-	DrawBar(right_bar.x, outy, 20, 20, active_color);
-	sprintf(#param, "%A", active_color);
+	DrawBar(right_bar.x, outy, 20, 20, active_color_1);
+	sprintf(#param, "%A", active_color_1);
 	EDI = system.color.work;
 	WriteText(right_bar.x + 30, outy + 3, 0xD0, system.color.work_text, #param+4);
 }
@@ -239,7 +248,7 @@ void DrawDefaultColors(dword _x, _y)
 	{
 		for (c = 0; c < 13; c++)
 		{
-			DrawBar(c*cellw + _x, r*cellw + _y, cellw, cellw, default_colors[PALLETE_SIZE-i]);
+			DrawBar(c*cellw + _x, r*cellw + _y, cellw, cellw, palette_colors[PALLETE_SIZE-i]);
 			DefineHiddenButton(c*cellw + _x, r*cellw + _y, cellw-1, cellw-1, BTN_PALETTE_COLOR_MAS+PALLETE_SIZE-i);
 			i++;
 		}
@@ -261,12 +270,25 @@ void EventPickActivate()
 	pick_active = true;
 }
 
-void EventPickColor()
+void EventPickColor(dword lkm_status, pkm_status)
 {
-	active_color = GetPixelColorFromScreen(mouse.x + Form.left + 5, mouse.y + Form.top + skin_height);
+	active_color_1 = GetPixelColorFromScreen(mouse.x + Form.left + 5, mouse.y + Form.top + skin_height);
 	DrawActiveColor(NULL);
 	if (mouse.down) && (mouse.key&MOUSE_LEFT) {
 		pick_active = false;
 		SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
 	}
+}
+
+void EventZoom()
+{
+	canvas.cell_size = zoom.value;
+	canvas.w = canvas.columns * canvas.cell_size;
+	canvas.h = canvas.rows * canvas.cell_size;
+	if (canvas.w+2 > wrapper.w) || (canvas.h+2 > wrapper.h) { 
+		zoom.click(23);
+		EventZoom();
+		return;
+	}
+	DrawEditArea();
 }
