@@ -1,12 +1,11 @@
 /*
- * BACKGEN - Background generator
+ * Icon Editor for KolibriOS
  * Author: Leency
  * Licence: GPL v2
 */
 
 /*
 TODO/BUGS
-Flip first pixel doesn't work well
 Open with param 
 */
 
@@ -27,7 +26,7 @@ Open with param
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.09"
+#define T_TITLE "Icon Editor 0.09b"
 
 #define TOOLBAR_H    24+8
 #define PALLETE_SIZE 116
@@ -272,7 +271,7 @@ void DrawEditArea()
 	canvas.w = image.columns * zoom.value;
 	canvas.h = image.rows * zoom.value;
 	if (canvas.w+2 > wrapper.w) || (canvas.h+2 > wrapper.h) { 
-		zoom.value--;
+		zoom.click(BTN_ZOOM_OUT);
 		DrawEditArea();
 		return;
 	}
@@ -361,7 +360,9 @@ void EventSave()
 {
 	char save_buf[3126];
 	memmov(#save_buf, #bmp_32x32x16_header, sizeof(bmp_32x32x16_header));
+	image.move(FLIP_VER); //fix an issue that BMP image is flipped vertically
 	memmov(#save_buf+sizeof(bmp_32x32x16_header), image.get_image(), sizeof(save_buf)-sizeof(bmp_32x32x16_header));
+	image.move(FLIP_VER); //restore
 	if (WriteFile(sizeof(save_buf), #save_buf, "/rd/1/saved_image.bmp")==0)
 	{
 		notify("'File saved as /rd/1/saved_image.bmp' -O");

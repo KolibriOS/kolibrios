@@ -56,54 +56,60 @@ void _colors::move(int _direction)
 	int r, c;
 	dword first_element_data;
 
-	if (_direction == MOVE_LEFT)
+	switch(_direction)
 	{
-		for (r = 0; r < rows; r++)
-		{
-			first_element_data = get_pixel(r, 0);
-			for (c = 0; c < columns-1; c++) set_pixel(r, c, get_pixel(r, c+1));
-			set_pixel(r, columns-1, first_element_data);
-		}		
-	}
-	if (_direction == MOVE_RIGHT)
-	{
-		for (r = 0; r < rows; r++)
-		{
-			first_element_data = get_pixel(r, columns-1);
-			for (c = columns-1; c > 0; c--) set_pixel(r, c, get_pixel(r, c-1));
-			set_pixel(r, 0, first_element_data);
-		}		
-	}
-	if (_direction == MOVE_UP)
-	{
-		for (c = 0; c < columns; c++)
-		{
-			first_element_data = get_pixel(0, c);
-			for (r = 0; r < rows-1; r++) set_pixel(r, c, get_pixel(r+1, c));
-			set_pixel(rows-1, c, first_element_data);
-		}		
-	}
-	if (_direction == MOVE_DOWN)
-	{
-		for (c = 0; c < columns; c++)
-		{
-			first_element_data = get_pixel(rows-1, c);
-			for (r = rows-1; r > 0; r--) set_pixel(r, c, get_pixel(r-1, c));
-			set_pixel(0, c, first_element_data);
-		}		
-	}
-
-
-	if (_direction == FLIP_HOR)
-	{
-		for (r = 0; r < rows; r++)
-		{
-			for (c = 0; c < columns/2; c++) {
-				first_element_data = get_pixel(r, c);
-				set_pixel(r, c, get_pixel(r, columns-c));
-				set_pixel(r, columns-c, first_element_data);
-			}
-		}		
+		case MOVE_LEFT:
+				for (r = 0; r < rows; r++)
+				{
+					first_element_data = get_pixel(r, 0);
+					for (c = 0; c < columns-1; c++) set_pixel(r, c, get_pixel(r, c+1));
+					set_pixel(r, columns-1, first_element_data);
+				}
+				break;
+		case MOVE_RIGHT:
+				for (r = 0; r < rows; r++)
+				{
+					first_element_data = get_pixel(r, columns-1);
+					for (c = columns-1; c > 0; c--) set_pixel(r, c, get_pixel(r, c-1));
+					set_pixel(r, 0, first_element_data);
+				}	
+				break;	
+		case MOVE_UP:
+				for (c = 0; c < columns; c++)
+				{
+					first_element_data = get_pixel(0, c);
+					for (r = 0; r < rows-1; r++) set_pixel(r, c, get_pixel(r+1, c));
+					set_pixel(rows-1, c, first_element_data);
+				}	
+				break;
+		case MOVE_DOWN:
+				for (c = 0; c < columns; c++)
+				{
+					first_element_data = get_pixel(rows-1, c);
+					for (r = rows-1; r > 0; r--) set_pixel(r, c, get_pixel(r-1, c));
+					set_pixel(0, c, first_element_data);
+				}
+				break;
+		case FLIP_HOR:
+				for (r = 0; r < rows; r++)
+				{
+					for (c = 0; c < columns/2; c++) {
+						first_element_data = get_pixel(r, c);
+						set_pixel(r, c, get_pixel(r, columns-c-1));
+						set_pixel(r, columns-c-1, first_element_data);
+					}
+				}
+				break;
+		case FLIP_VER:
+				for (c = 0; c < columns; c++)
+				{
+					for (r = 0; r < rows/2; r++) {
+						first_element_data = get_pixel(r, c);
+						set_pixel(r, c, get_pixel(rows-r-1, c));
+						set_pixel(rows-r-1, c, first_element_data);
+					}
+				}
+				break;	
 	}
 }
 
