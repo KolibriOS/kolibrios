@@ -37,6 +37,9 @@
 #define SCAN_CODE_PGDN  081
 #define SCAN_CODE_PGUP  073
 
+#define SCAN_CODE_MINUS 012
+#define SCAN_CODE_PLUS  013
+
 #define SCAN_CODE_KEY_C 046
 #define SCAN_CODE_KEY_M 050
 #define SCAN_CODE_KEY_I 023
