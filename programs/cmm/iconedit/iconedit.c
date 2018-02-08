@@ -8,8 +8,6 @@
 TODO/BUGS
 Flip first pixel doesn't work well
 Open with param 
-Set minimal window size
-Scroll mouse, +/- keyboard
 */
 
 #define MEMSIZE 4096*40
@@ -29,9 +27,9 @@ Scroll mouse, +/- keyboard
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.08"
+#define T_TITLE "Icon Editor 0.09"
 
-#define TOOLBAR_H    24+9
+#define TOOLBAR_H    24+8
 #define PALLETE_SIZE 116
 
 rect wrapper = { 10, TOOLBAR_H, NULL, NULL };
@@ -54,6 +52,8 @@ enum {
 	BTN_ROTATE_LEFT,
 	BTN_ROTATE_RIGHT,
 	BTN_PICK,
+	BTN_ZOOM_IN,
+	BTN_ZOOM_OUT,
 	BTN_PALETTE_COLOR_MAS = 100,
 };
 
@@ -61,11 +61,9 @@ proc_info Form;
 
 bool pick_active = false;
 
-#define ZOOM_IN 22
-#define ZOOM_OUT 23
-more_less_box zoom = { NULL, NULL, 11, 1, 40, ZOOM_IN, ZOOM_OUT, "Zoom" };
+more_less_box zoom = { NULL, NULL, 11, 1, 40, BTN_ZOOM_IN, BTN_ZOOM_OUT, "Zoom" };
 
-dword palette_colors[] = {
+dword default_palette[] = {
 0x330000,0x331900,0x333300,0x193300,0x003300,0x003319,0x003333,0x001933,0x000033,0x190033,0x330033,0x330019,0x000000,
 0x660000,0x663300,0x666600,0x336600,0x006600,0x006633,0x006666,0x003366,0x000066,0x330066,0x660066,0x660033,0x202020,
 0x990000,0x994C00,0x999900,0x4C9900,0x009900,0x00994C,0x009999,0x004C99,0x000099,0x4C0099,0x990099,0x99004C,0x404040,
@@ -94,6 +92,7 @@ void main()
 	load_dll(libio,  #libio_init,  1);
 	load_dll(libimg, #libimg_init, 1);
 	Libimg_LoadImage(#skin, "/sys/icons16.png");
+	//Libimg_ReplaceColor(skin.image, skin.w, skin.h, 0xFFfffFFF, 0xff808080);
 
 	CreateCanvas();
 
@@ -116,6 +115,11 @@ void main()
 		case evMouse:
 			mouse.get();
 			if (pick_active) EventPickColor(mouse.lkm, mouse.pkm);
+			else if (mouse.vert) {
+				if (mouse.vert==65535) zoom.click(BTN_ZOOM_IN);
+				if (mouse.vert==1) zoom.click(BTN_ZOOM_OUT);
+				DrawEditArea();
+			}
 			else {
 				if (mouse.x>canvas.x) && (mouse.y>canvas.y) 
 				&& (mouse.y<canvas.y+canvas.h) && (mouse.x<canvas.x+canvas.w)
@@ -167,25 +171,32 @@ void main()
 					image.move(FLIP_HOR);
 					DrawCanvas();
 					break;
-				case CLOSE_BTN:
-					ExitProcess();
 				case BTN_PICK:
 					EventPickActivate();
+					break;
+				case BTN_ZOOM_IN:
+				case BTN_ZOOM_OUT:
+					zoom.click(btn);
+					DrawEditArea();
+					break;
+				case CLOSE_BTN:
+					ExitProcess();
 					break;
 			}              
 			if (btn >= BTN_PALETTE_COLOR_MAS) && (btn < BTN_PALETTE_COLOR_MAS+PALLETE_SIZE) 
 			{ 
-				if (mouse.lkm) active_color_1 = palette_colors[btn-BTN_PALETTE_COLOR_MAS]; 
-				if (mouse.pkm) active_color_2 = palette_colors[btn-BTN_PALETTE_COLOR_MAS]; 
+				if (mouse.lkm) active_color_1 = default_palette[btn-BTN_PALETTE_COLOR_MAS]; 
+				if (mouse.pkm) active_color_2 = default_palette[btn-BTN_PALETTE_COLOR_MAS]; 
 				DrawActiveColor(NULL); 
 			}
-			if (zoom.click(btn)) DrawEditArea();
 			break;
 	  
 		case evKey:
 			GetKeys();
 			if (key_scancode == SCAN_CODE_ESC) pick_active=false;
 			if (key_scancode == SCAN_CODE_KEY_I) EventPickActivate();
+			if (key_scancode == SCAN_CODE_MINUS) {zoom.click(BTN_ZOOM_OUT); DrawEditArea();}
+			if (key_scancode == SCAN_CODE_PLUS)  {zoom.click(BTN_ZOOM_IN);  DrawEditArea();}
 			break;
 		 
 		case evReDraw:
@@ -196,9 +207,9 @@ void main()
 
 void DrawToolbarButton(dword _id, _x, _icon_n)
 {
-	DrawWideRectangle(_x, 4, 24, 24, 4, 0xFFFfff);
-	DefineHiddenButton(_x, 4, 23, 23, _id);
-	img_draw stdcall(skin.image, _x+4, 8, 16, 16, 0, _icon_n*16);
+	DrawWideRectangle(_x, 4, 22, 22, 3, 0xFFFfff);
+	DefineHiddenButton(_x, 4, 21, 21, _id);
+	img_draw stdcall(skin.image, _x+3, 7, 16, 16, 0, _icon_n*16);
 }
 
 void DrawStatusBar()
@@ -218,6 +229,10 @@ void draw_window()
 	system.color.get();
 	DefineAndDrawWindow(115+random(100), 50+random(100), 700, 540, 0x33, system.color.work, T_TITLE, 0);
 	GetProcessInfo(#Form, SelfInfo);
+	if (Form.status_window>2) return;
+	if (Form.width  < 560) { MoveSize(OLD,OLD,560,OLD); return; }
+	if (Form.height < 430) { MoveSize(OLD,OLD,OLD,430); return; }
+
 	right_bar.x = Form.cwidth - right_bar.w;
 
 	tx.n = wrapper.x - TB_ICON_PADDING;
@@ -309,7 +324,7 @@ void DrawDefaultColors(dword _x, _y)
 	{
 		for (c = 0; c < 13; c++)
 		{
-			DrawBar(c*cellw + _x, r*cellw + _y, cellw, cellw, palette_colors[PALLETE_SIZE-i]);
+			DrawBar(c*cellw + _x, r*cellw + _y, cellw, cellw, default_palette[PALLETE_SIZE-i]);
 			DefineHiddenButton(c*cellw + _x, r*cellw + _y, cellw-1, cellw-1, BTN_PALETTE_COLOR_MAS+PALLETE_SIZE-i);
 			i++;
 		}
@@ -345,9 +360,8 @@ dword bmp_32x32x16_header[] = FROM "bmp32x32header";
 void EventSave()
 {
 	char save_buf[3126];
-	dword image_buf = image.get_image();
 	memmov(#save_buf, #bmp_32x32x16_header, sizeof(bmp_32x32x16_header));
-	memmov(#save_buf+sizeof(bmp_32x32x16_header), image_buf, sizeof(save_buf)-sizeof(bmp_32x32x16_header));
+	memmov(#save_buf+sizeof(bmp_32x32x16_header), image.get_image(), sizeof(save_buf)-sizeof(bmp_32x32x16_header));
 	if (WriteFile(sizeof(save_buf), #save_buf, "/rd/1/saved_image.bmp")==0)
 	{
 		notify("'File saved as /rd/1/saved_image.bmp' -O");
