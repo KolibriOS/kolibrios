@@ -1,26 +1,35 @@
-struct _colors
+struct _image
 {
 
 	unsigned rows, columns;
 	dword mas[32*32];
 	dword img;
+	void create();
 	void set_pixel();
 	dword get_pixel();
 	dword get_image();
 	void move();
 };
 
-void _colors::set_pixel(int _r, _c, _color)
+void _image::create(int _rows, _columns)
+{
+	int i;
+	rows = _rows;
+	columns = _columns;
+	for (i = 0; i < columns*rows; i++) mas[i]=0xBFCAD2;
+}
+
+void _image::set_pixel(int _r, _c, _color)
 {
 	mas[columns*_r + _c] = _color;
 }
 
-dword _colors::get_pixel(int _r, _c)
+dword _image::get_pixel(int _r, _c)
 {
 	return mas[columns*_r + _c];
 }
 
-dword _colors::get_image()
+dword _image::get_image()
 {
 	int r=0, c=0;
 	dword i;
@@ -51,7 +60,7 @@ enum {
 	FLIP_HOR,
 	ROTE
 };
-void _colors::move(int _direction)
+void _image::move(int _direction)
 {
 	int r, c;
 	dword first_element_data;

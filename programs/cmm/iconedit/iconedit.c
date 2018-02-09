@@ -26,7 +26,7 @@ Open with param
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.09b"
+#define T_TITLE "Icon Editor 0.1"
 
 #define TOOLBAR_H    24+8
 #define PALLETE_SIZE 116
@@ -53,7 +53,8 @@ enum {
 	BTN_PICK,
 	BTN_ZOOM_IN,
 	BTN_ZOOM_OUT,
-	BTN_PALETTE_COLOR_MAS = 100,
+	BTNS_PALETTE_COLOR_MAS = 100,
+	BTNS_LAST_USED_COLORS = 400
 };
 
 proc_info Form;
@@ -73,8 +74,12 @@ dword default_palette[] = {
 0xFF9999,0xFFCC99,0xFFFF99,0xCCFF99,0x99FF99,0x99FFCC,0x99FFFF,0x99CCFF,0x9999FF,0xCC99FF,0xFF99FF,0xFF99CC,0xE0E0E0,
 0xFFCCCC,0xFFE5CC,0xFFFFCC,0xE5FFCC,0xCCFFCC,0xCCFFE5,0xCCFFFF,0xCCE5FF,0xCCCCFF,0xE5CCFF,0xFFCCFF,0xFFCCE5,0xFFFFFF	
 };
+dword last_used_colors[13*2] = {
+0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,
+0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF
+};
 
-_colors image;
+_image image;
 
 libimg_image open_image;
 
@@ -93,7 +98,7 @@ void main()
 	Libimg_LoadImage(#skin, "/sys/icons16.png");
 	//Libimg_ReplaceColor(skin.image, skin.w, skin.h, 0xFFfffFFF, 0xff808080);
 
-	CreateCanvas();
+	image.create(32, 32);
 
 	/*
 	if (param) {
@@ -137,7 +142,7 @@ void main()
 			switch(btn)
 			{
 				case BTN_NEW:
-					CreateCanvas();
+					image.create(32, 32);
 					DrawCanvas();
 					break;
 				case BTN_OPEN:
@@ -182,11 +187,16 @@ void main()
 					ExitProcess();
 					break;
 			}              
-			if (btn >= BTN_PALETTE_COLOR_MAS) && (btn < BTN_PALETTE_COLOR_MAS+PALLETE_SIZE) 
+			if (btn >= BTNS_PALETTE_COLOR_MAS) && (btn < BTNS_PALETTE_COLOR_MAS+PALLETE_SIZE) 
 			{ 
-				if (mouse.lkm) active_color_1 = default_palette[btn-BTN_PALETTE_COLOR_MAS]; 
-				if (mouse.pkm) active_color_2 = default_palette[btn-BTN_PALETTE_COLOR_MAS]; 
-				DrawActiveColor(NULL); 
+				if (mouse.lkm) EventSetActiveColor(1, default_palette[btn - BTNS_PALETTE_COLOR_MAS]);
+				if (mouse.pkm) EventSetActiveColor(2, default_palette[btn - BTNS_PALETTE_COLOR_MAS]);
+			}
+			if (btn >= BTNS_LAST_USED_COLORS) && (btn < sizeof(last_used_colors)*sizeof(dword))
+			{
+				if (mouse.lkm) active_color_1 = last_used_colors[btn - BTNS_LAST_USED_COLORS]; 
+				if (mouse.pkm) active_color_2 = last_used_colors[btn - BTNS_LAST_USED_COLORS];
+				DrawActiveColor(NULL);
 			}
 			break;
 	  
@@ -234,7 +244,7 @@ void draw_window()
 
 	right_bar.x = Form.cwidth - right_bar.w;
 
-	tx.n = wrapper.x - TB_ICON_PADDING;
+	tx.n = 10-TB_ICON_PADDING;
 	DrawToolbarButton(BTN_NEW,    tx.inc(TB_ICON_PADDING), 2); //not implemented
 	DrawToolbarButton(BTN_OPEN,   tx.inc(TB_ICON_PADDING), 0); //not implemented
 	DrawToolbarButton(BTN_SAVE,   tx.inc(TB_ICON_PADDING), 5);
@@ -243,17 +253,17 @@ void draw_window()
 	DrawToolbarButton(BTN_MOVE_UP,    tx.inc(TB_ICON_PADDING),   32);
 	DrawToolbarButton(BTN_MOVE_DOWN,  tx.inc(TB_ICON_PADDING),   33);
 	
-	DrawToolbarButton(BTN_FLIP_HOR,   tx.inc(TB_ICON_PADDING+8), 34); //not implemented
-	DrawToolbarButton(BTN_FLIP_VER,   tx.inc(TB_ICON_PADDING),   35); //not implemented
-	DrawToolbarButton(BTN_ROTATE_LEFT,   tx.inc(TB_ICON_PADDING), 36); //not implemented
-	DrawToolbarButton(BTN_ROTATE_RIGHT,  tx.inc(TB_ICON_PADDING), 37); //not implemented
+	DrawToolbarButton(BTN_FLIP_HOR,   tx.inc(TB_ICON_PADDING+8), 34);
+	DrawToolbarButton(BTN_FLIP_VER,   tx.inc(TB_ICON_PADDING),   35);
+	// DrawToolbarButton(BTN_ROTATE_LEFT,   tx.inc(TB_ICON_PADDING), 36); //not implemented
+	// DrawToolbarButton(BTN_ROTATE_RIGHT,  tx.inc(TB_ICON_PADDING), 37); //not implemented
 
 	DrawToolbarButton(BTN_PICK,   tx.inc(TB_ICON_PADDING+8), 38);
 
 	DrawEditArea();
 
-	DrawDefaultColors(right_bar.x, right_bar.y);
-	DrawActiveColor(right_bar.y + 200);
+	DrawActiveColor(right_bar.y);
+	DrawColorPallets(right_bar.x, right_bar.y + 30);
 
 	DrawStatusBar();
 }
@@ -261,8 +271,8 @@ void draw_window()
 void DrawEditArea()
 {
 	dword color1=0xC0C0C0;
-	int left_padding;
-	int top_padding;
+	int top_side;
+	int left_side;
 
 	wrapper.w = Form.cwidth - right_bar.w - 30;
 	wrapper.h = Form.cheight - TOOLBAR_H - 35;
@@ -281,20 +291,20 @@ void DrawEditArea()
 	DrawCanvas();
 	//}
 
-	left_padding = canvas.x-wrapper.x-1;
-	top_padding = canvas.y-wrapper.y-1;
+	left_side = canvas.x-wrapper.x-1;
+	top_side = canvas.y-wrapper.y-1;
 
-	DrawRectangle(wrapper.x-1, wrapper.y-1, wrapper.w+1, wrapper.h+1, system.color.work_graph);
+	DrawRectangle(wrapper.x-1, wrapper.y-1, wrapper.w, wrapper.h, system.color.work_graph);
 
-	if (left_padding>0)
+	if (left_side>0)
 	{
-		DrawBar(wrapper.x, wrapper.y, wrapper.w, top_padding, color1); //top
-		DrawBar(wrapper.x, wrapper.y+wrapper.h-top_padding, wrapper.w, top_padding, color1); //bottom
+		DrawBar(wrapper.x, wrapper.y, wrapper.w-1, top_side, color1); //top
+		DrawBar(wrapper.x, wrapper.y+wrapper.h-top_side-1, wrapper.w-1, top_side, color1); //bottom
 	}
-	if (top_padding>0)
+	if (top_side>0)
 	{
-		DrawBar(wrapper.x, wrapper.y+top_padding, left_padding, wrapper.h-top_padding-top_padding, color1); //left
-		DrawBar(wrapper.x+wrapper.w-left_padding, wrapper.y+top_padding, left_padding, wrapper.h-top_padding-top_padding, color1); //right
+		DrawBar(wrapper.x, wrapper.y+top_side, left_side, wrapper.h-top_side-top_side, color1); //left
+		DrawBar(wrapper.x+wrapper.w-left_side-1, wrapper.y+top_side, left_side, wrapper.h-top_side-top_side, color1); //right
 	}
 }
 
@@ -313,23 +323,48 @@ void DrawActiveColor(dword iny)
 	WriteText(right_bar.x+110 + 30, outy + 3, 0xD0, system.color.work_text, #param+4);	
 }
 
-void DrawDefaultColors(dword _x, _y)
+void DrawColorPallets(dword _x, _y)
 {
-	int r, c, i;
+	int r, c, i=0;
 	int cellw = 20;
 
-	i = 0;
-	for (r = 0; r < 9; r++)
+	//Last used colors
+	for (r = 0; r < 2; r++)
 	{
-		for (c = 0; c < 13; c++)
+		for (c = 0; c < 13; c++, i++)
 		{
-			DrawBar(c*cellw + _x, r*cellw + _y, cellw, cellw, default_palette[PALLETE_SIZE-i]);
-			DefineHiddenButton(c*cellw + _x, r*cellw + _y, cellw-1, cellw-1, BTN_PALETTE_COLOR_MAS+PALLETE_SIZE-i);
-			i++;
+			DrawBar(c*cellw + _x, r*cellw + _y, cellw, cellw, last_used_colors[i]);
+			DefineHiddenButton(c*cellw + _x, r*cellw + _y, cellw-1, cellw-1, BTNS_LAST_USED_COLORS+i);
+			
 		}
 	}
-	DrawRectangle(_x-1, _y-1, c*cellw+1, r*cellw+1, system.color.work_light);
-	DrawRectangle(_x-2, _y-2, c*cellw+3, r*cellw+3, system.color.work_dark);
+
+	_y += r*cellw + 10;
+	i=0;
+
+	//Default colors
+	for (r = 0; r < 9; r++)
+	{
+		for (c = 0; c < 13; c++, i++)
+		{
+			DrawBar(c*cellw + _x, r*cellw + _y, cellw, cellw, default_palette[PALLETE_SIZE-i]);
+			DefineHiddenButton(c*cellw + _x, r*cellw + _y, cellw-1, cellw-1, BTNS_PALETTE_COLOR_MAS+PALLETE_SIZE-i);
+		}
+	}
+}
+
+
+void DrawCanvas()
+{
+	int r, c;
+	for (r = 0; r < image.rows; r++)
+	{
+		for (c = 0; c < image.columns; c++)
+		{
+			DrawBar(c*zoom.value + canvas.x, r*zoom.value + canvas.y, 
+				zoom.value, zoom.value, image.get_pixel(r, c));
+		}
+	}
 }
 
 
@@ -352,6 +387,7 @@ void EventPickColor(dword lkm_status, pkm_status)
 	if (mouse.down) && (mouse.key&MOUSE_LEFT) {
 		pick_active = false;
 		SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
+		EventSetActiveColor(1, active_color_1);
 	}
 }
 
@@ -360,9 +396,7 @@ void EventSave()
 {
 	char save_buf[3126];
 	memmov(#save_buf, #bmp_32x32x16_header, sizeof(bmp_32x32x16_header));
-	image.move(FLIP_VER); //fix an issue that BMP image is flipped vertically
 	memmov(#save_buf+sizeof(bmp_32x32x16_header), image.get_image(), sizeof(save_buf)-sizeof(bmp_32x32x16_header));
-	image.move(FLIP_VER); //restore
 	if (WriteFile(sizeof(save_buf), #save_buf, "/rd/1/saved_image.bmp")==0)
 	{
 		notify("'File saved as /rd/1/saved_image.bmp' -O");
@@ -372,23 +406,17 @@ void EventSave()
 	}
 }
 
-void CreateCanvas()
+void EventSetActiveColor(int _number, _color)
 {
 	int i;
-	image.columns = 32;
-	image.rows = 32;
-	for (i = 0; i < image.columns*image.rows; i++) image.mas[i]=0xBFCAD2;
-}
-
-void DrawCanvas()
-{
-	int r, c;
-	for (r = 0; r < image.rows; r++)
-	{
-		for (c = 0; c < image.columns; c++)
-		{
-			DrawBar(c*zoom.value + canvas.x, r*zoom.value + canvas.y, 
-				zoom.value, zoom.value, image.get_pixel(r, c));
-		}
+	for (i=13*2-1; i>0; i--) {
+		last_used_colors[i] = last_used_colors[i-1];
 	}
+	last_used_colors[0] = _color;
+
+	if (_number == 1) active_color_1 = _color;
+	if (_number == 2) active_color_2 = _color;
+
+	DrawActiveColor(NULL);
+	DrawColorPallets(right_bar.x, right_bar.y + 30);
 }
