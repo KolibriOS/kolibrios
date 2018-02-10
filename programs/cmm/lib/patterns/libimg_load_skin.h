@@ -6,7 +6,7 @@
 #endif
 
 :struct libimg_image {
-	dword image, w, h;
+	dword image, w, h, imgsrc;
 } skin;
 
 :void Libimg_LoadImage(dword struct_pointer, file_path)
@@ -17,6 +17,7 @@
 	ESDWORD[struct_pointer] = image_pointer;
 	ESDWORD[struct_pointer+4] = DSWORD[image_pointer+4];
 	ESDWORD[struct_pointer+8] = DSWORD[image_pointer+8];
+	ESDWORD[struct_pointer+12] = ESDWORD[image_pointer+24];
 }
 
 :void Libimg_FillTransparent(dword struct_pointer, w, h, new_transparent_color)

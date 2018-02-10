@@ -5,8 +5,10 @@
 */
 
 /*
-TODO/BUGS
-Open with param 
+TODO:
+arange tools
+window colors
+enhance icon
 */
 
 #define MEMSIZE 4096*40
@@ -26,7 +28,7 @@ Open with param
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.1"
+#define T_TITLE "Icon Editor 0.15"
 
 #define TOOLBAR_H    24+8
 #define PALLETE_SIZE 116
@@ -51,6 +53,7 @@ enum {
 	BTN_ROTATE_LEFT,
 	BTN_ROTATE_RIGHT,
 	BTN_PICK,
+	BTN_FILL,
 	BTN_ZOOM_IN,
 	BTN_ZOOM_OUT,
 	BTNS_PALETTE_COLOR_MAS = 100,
@@ -58,8 +61,6 @@ enum {
 };
 
 proc_info Form;
-
-bool pick_active = false;
 
 more_less_box zoom = { NULL, NULL, 11, 1, 40, BTN_ZOOM_IN, BTN_ZOOM_OUT, "Zoom" };
 
@@ -83,6 +84,13 @@ _image image;
 
 libimg_image open_image;
 
+enum {
+	PENCIL,
+	FILL,
+	PIPET
+};
+int active_tool = PENCIL;
+
 //===================================================//
 //                                                   //
 //                       CODE                        //
@@ -96,21 +104,20 @@ void main()
 	load_dll(libio,  #libio_init,  1);
 	load_dll(libimg, #libimg_init, 1);
 	Libimg_LoadImage(#skin, "/sys/icons16.png");
-	//Libimg_ReplaceColor(skin.image, skin.w, skin.h, 0xFFfffFFF, 0xff808080);
+	//system.color.get();
+	//Libimg_ReplaceColor(skin.image, skin.w, skin.h, 0xFFfffFFF, system.color.work_text);
 
 	image.create(32, 32);
 
-	/*
-	if (param) {
+	if (param[0]) {
 		Libimg_LoadImage(#open_image, #param);
 		if (open_image.w==32) && (open_image.h==32) {
-			memmov(#image.mas, open_image.image, 32*32*3);
+			image.set_image(open_image.imgsrc);
 		}
 		else {
 			notify("'Error: image format is unacceptable.\nOnly images created in IconEditor (BMP, 32x32x16b) can be opened!' -E");
 		}
 	}
-	*/
 
 	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
 
@@ -118,19 +125,33 @@ void main()
 	{
 		case evMouse:
 			mouse.get();
-			if (pick_active) EventPickColor(mouse.lkm, mouse.pkm);
-			else if (mouse.vert) {
+			if (mouse.vert) {
 				if (mouse.vert==65535) zoom.click(BTN_ZOOM_IN);
 				if (mouse.vert==1) zoom.click(BTN_ZOOM_OUT);
 				DrawEditArea();
 			}
-			else {
+			if (active_tool == PIPET)
+			{
+				 EventPickColor(mouse.lkm, mouse.pkm);
+			}
+			if (active_tool == PENCIL) {
 				if (mouse.x>canvas.x) && (mouse.y>canvas.y) 
 				&& (mouse.y<canvas.y+canvas.h) && (mouse.x<canvas.x+canvas.w)
 				{
 					if (mouse.lkm) image.set_pixel(mouse.y-canvas.y/zoom.value, 
 						mouse.x-canvas.x/zoom.value, active_color_1);
 					if (mouse.pkm) image.set_pixel(mouse.y-canvas.y/zoom.value, 
+						mouse.x-canvas.x/zoom.value, active_color_2);
+					DrawCanvas();
+				}
+			}
+			if (active_tool == FILL) {
+				if (mouse.x>canvas.x) && (mouse.y>canvas.y) 
+				&& (mouse.y<canvas.y+canvas.h) && (mouse.x<canvas.x+canvas.w)
+				{
+					if (mouse.lkm) EventFill(mouse.y-canvas.y/zoom.value, 
+						mouse.x-canvas.x/zoom.value, active_color_1);
+					if (mouse.pkm) EventFill(mouse.y-canvas.y/zoom.value, 
 						mouse.x-canvas.x/zoom.value, active_color_2);
 					DrawCanvas();
 				}
@@ -178,6 +199,9 @@ void main()
 				case BTN_PICK:
 					EventPickActivate();
 					break;
+				case BTN_FILL:
+					EventFillActivate();
+					break;
 				case BTN_ZOOM_IN:
 				case BTN_ZOOM_OUT:
 					zoom.click(btn);
@@ -202,8 +226,9 @@ void main()
 	  
 		case evKey:
 			GetKeys();
-			if (key_scancode == SCAN_CODE_ESC) pick_active=false;
+			if (key_scancode == SCAN_CODE_ESC) EventPickDeactivate();
 			if (key_scancode == SCAN_CODE_KEY_I) EventPickActivate();
+			//if (key_scancode == SCAN_CODE_KEY_F) EventFillActivate();
 			if (key_scancode == SCAN_CODE_MINUS) {zoom.click(BTN_ZOOM_OUT); DrawEditArea();}
 			if (key_scancode == SCAN_CODE_PLUS)  {zoom.click(BTN_ZOOM_IN);  DrawEditArea();}
 			break;
@@ -259,6 +284,7 @@ void draw_window()
 	// DrawToolbarButton(BTN_ROTATE_RIGHT,  tx.inc(TB_ICON_PADDING), 37); //not implemented
 
 	DrawToolbarButton(BTN_PICK,   tx.inc(TB_ICON_PADDING+8), 38);
+	DrawToolbarButton(BTN_FILL,   tx.inc(TB_ICON_PADDING), 39);
 
 	DrawEditArea();
 
@@ -377,7 +403,17 @@ void DrawCanvas()
 void EventPickActivate()
 {
 	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE);
-	pick_active = true;
+	active_tool = PIPET;
+}
+
+void EventPickDeactivate()
+{
+	active_tool = PENCIL;
+}
+
+void EventFillActivate()
+{
+	active_tool = FILL;
 }
 
 void EventPickColor(dword lkm_status, pkm_status)
@@ -385,7 +421,7 @@ void EventPickColor(dword lkm_status, pkm_status)
 	active_color_1 = GetPixelColorFromScreen(mouse.x + Form.left + 5, mouse.y + Form.top + skin_height);
 	DrawActiveColor(NULL);
 	if (mouse.down) && (mouse.key&MOUSE_LEFT) {
-		pick_active = false;
+		EventPickDeactivate();
 		SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
 		EventSetActiveColor(1, active_color_1);
 	}
@@ -420,3 +456,33 @@ void EventSetActiveColor(int _number, _color)
 	DrawActiveColor(NULL);
 	DrawColorPallets(right_bar.x, right_bar.y + 30);
 }
+
+void EventFill(dword _r, _c, _color)
+{
+	#define MARKED 6
+	int r, c, i, restart;
+
+	dword old_color = image.get_pixel(_r, _c);
+	image.set_pixel(_r, _c, MARKED);
+
+	do {
+		restart=false;	
+		for (r = 0; r < image.rows; r++)
+			for (c = 0; c < image.columns; c++)
+			{
+				IF (image.get_pixel(r,c) != old_color) continue;
+				IF (image.get_pixel(r,c) == MARKED) continue;
+				
+				IF (c>0)               && (image.get_pixel(r,c-1) == MARKED) restart=true;
+				IF (c<image.columns-1) && (image.get_pixel(r,c+1) == MARKED) restart=true;
+				IF (r>0)               && (image.get_pixel(r-1,c) == MARKED) restart=true;
+				IF (r<image.rows-1)    && (image.get_pixel(r+1,c) == MARKED) restart=true;
+				
+				IF (restart == true) image.set_pixel(r,c,MARKED);
+			}
+	}while(restart);
+
+	for (i=0; i<image.columns*image.rows; i++) 
+			IF (image.mas[i]==MARKED) image.mas[i] = _color;
+}
+

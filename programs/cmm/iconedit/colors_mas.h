@@ -1,11 +1,11 @@
 struct _image
 {
-
 	unsigned rows, columns;
 	dword mas[32*32];
 	dword img;
 	void create();
 	void set_pixel();
+	void set_image();
 	dword get_pixel();
 	dword get_image();
 	void move();
@@ -29,6 +29,15 @@ dword _image::get_pixel(int _r, _c)
 	return mas[columns*_r + _c];
 }
 
+void _image::set_image(dword _inbuf)
+{
+	dword i;
+	for (i = 0; i < columns*rows; i++;) 
+	{
+		mas[i] = ESDWORD[i*4+_inbuf] & 0x00FFFFFF;
+	}
+}
+
 dword _image::get_image()
 {
 	int r=0, c=0;
@@ -38,7 +47,6 @@ dword _image::get_image()
 	i = img = malloc(rows*columns*3);
 
 	for (r = 0; r < rows; r++)
-	{
 		for (c = 0; c < columns; c++)
 		{
 			rgb.DwordToRgb(get_pixel(r,c));
@@ -47,7 +55,6 @@ dword _image::get_image()
 			ESBYTE[i+2] = rgb.r;
 			i += 3;
 		}
-	}
 	return img;
 }
 
@@ -101,23 +108,19 @@ void _image::move(int _direction)
 				break;
 		case FLIP_HOR:
 				for (r = 0; r < rows; r++)
-				{
 					for (c = 0; c < columns/2; c++) {
 						first_element_data = get_pixel(r, c);
 						set_pixel(r, c, get_pixel(r, columns-c-1));
 						set_pixel(r, columns-c-1, first_element_data);
 					}
-				}
 				break;
 		case FLIP_VER:
 				for (c = 0; c < columns; c++)
-				{
 					for (r = 0; r < rows/2; r++) {
 						first_element_data = get_pixel(r, c);
 						set_pixel(r, c, get_pixel(rows-r-1, c));
 						set_pixel(rows-r-1, c, first_element_data);
 					}
-				}
 				break;	
 	}
 }
