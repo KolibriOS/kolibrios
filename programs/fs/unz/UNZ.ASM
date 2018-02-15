@@ -48,7 +48,7 @@ include 'debug.inc'
 version equ '0.65'
 version_dword equ 0*10000h + 65
 
-
+WIN_W = 400
 
 SIZE_COPY_BUF = 1024*1024*2
 
@@ -249,17 +249,17 @@ proc winRedraw
 	mcall 12, 1
 	mcall 48, 3, sc, sizeof.system_colors
 	mov   edx, [sc.work]
-	or	  edx, 0x33000000
-	mcall 0, <200,320>, <200,130>, , , title
-	mcall 8, <113,100>,<65,25>,2,[sc.work_button]
-	mcall 8, <280,15>,<11,14>,3,[sc.work_button]
-	mcall 8, <280,15>,<33,14>,4,[sc.work_button]
+	or	  edx, 0x34000000
+	mcall 0, <200,WIN_W>, <200,130>, , , title
+	mcall 8, <100,100>,<65,25>,2,[sc.work_button]
+	mcall 8, <(WIN_W-52),33>,<10,20>,3,[sc.work_button]
+	mcall 8, <(WIN_W-52),33>,<35,20>,4,[sc.work_button]
 
 	edit_boxes_set_sys_color edtPack,endEdits,sc
 	stdcall [edit_box_draw],edtPack
 	stdcall [edit_box_draw],edtUnpPath
 
-
+	; plain window labels
 	cmp	[redInput],0
 	jne	@f
 	mov	ecx,[sc.work_text]
@@ -268,13 +268,21 @@ proc winRedraw
       @@:
 	mov	 ecx,90FF0000h
      .l1:
-	mcall 4, <15,11>, , strInp
+	mcall 4, <15,16>, , strInp
 	mov	ecx,[sc.work_text]
 	or	ecx,90000000h
-	mcall 4, <15,32>, , strPath
+	mcall 4, <15,37>, , strPath
+	
+	; text on buttons
 	mov	ecx,[sc.work_button_text]
 	or	ecx,90000000h
-	mcall 4, <140,70>, , strGo
+if lang eq ru
+	mcall 4, <107,70>, , strGo
+else
+	mcall 4, <127,70>, , strGo
+end if
+	mcall 4, <(WIN_W-47),12>, , strDots
+	mcall 4, <(WIN_W-47),37>, , strDots	
 
 	mcall 12, 2
 	ret
@@ -536,7 +544,7 @@ proc threadSayErr
 	mcall 48, 3, sc, sizeof.system_colors
 	mov   edx, [sc.work]
 	or	  edx, 0x33000000
-	mcall 0, <220,420>, <220,110>, , , title
+	mcall 0, <220,WIN_W>, <220,110>, , , title
 
 	mov	ecx,[sc.work_text]
 	or	ecx,90000000h
@@ -718,33 +726,40 @@ endp
 sc system_colors
 
 
-title db 'uNZ v0.1 alpha',0
+title db 'uNZ v0.11 - Unarchiver of Zip and 7z',0
 bWinChild db 0	;1 - дочернее окно есть, главное окно не должно реагировать
 redInput  db 0	;1 - подсветить красным надпись
 
-
 if lang eq ru
  strGo db 'Распаковать',0
- strInp db 'Архив',0
- strPath db 'Куда',0
+ strInp db  '    Архив',0
+ strPath db 'Извлечь в',0
+ strError db 'Ошибка',0
+ strErrorExc db 'Неопознанная ошибка',0
+ strOk	db 'OK',0
+ strGetPass db 'Пароль',0
+ strCancel  db 'Отмена',0
+ strUnpackOk  db "'Успешно распаковано' -O",0
+ strUnpackFault  db "'Ошибка распаковки' -E",0
+ strNotSupport db "'Неподдерживаемый формат архива' -E",0
+ strNotFound db "'Файл не найден' -E",0
 else
- strGo db 'Unpack',0
- strInp db 'Pack',0
- strPath db 'Wohin',0
+ strGo db   'Unpack',0
+ strInp db  'Archive',0
+ strPath db 'Extract to',0
  strError db 'Error',0
  strErrorExc db 'Unrecognized error',0
  strOk	db 'OK',0
- strGetPass db 'Password:',0
+ strGetPass db 'Password',0
  strCancel  db 'Cancel',0
- strUnpackOk  db 'Unpacked successfuly',0
- strUnpackFault  db 'Unpacked fault',0
- strNotSupport db 'Format not support',0
- strNotFound db 'File not found',0
- strNull db 0
+ strUnpackOk  db "'Unpacked successfuly' -O",0
+ strUnpackFault  db "'Unpack failed' -E",0
+ strNotSupport db "'Archive format is not supported' -E",0
+ strNotFound db "'File not found' -E",0
 end if
 
-
-strDots db '..',0
+strNull db 0
+strDots db '...',0
 
 ;--------
 ; int __stdcall SayErr(int num_strings, const char* strings[],
@@ -848,11 +863,11 @@ fsRunNotifyOK:
 
 
 
-edtPack    edit_box 200,70,11 ,0FFFFFFh,06F9480h,0FFh,0h,0x90000000,255,\
-		fInp, mouse_dd,0,0,0
-edtUnpPath edit_box 200,70,33,0FFFFFFh,06F9480h,0FFh,0h,0x90000000,255, \
-		pathOut, mouse_dd,0,0,0
-edtPassword edit_box 200,56,40,0FFFFFFh,06F9480h,0FFh,0h,0x90000000,255, \
+edtPack     edit_box (WIN_W-100-60),100,10,0FFFFFFh,0xff,0x80ff,0h,0x90000000,\
+            255, fInp, mouse_dd,0,0,0
+edtUnpPath  edit_box (WIN_W-100-60),100,35,0FFFFFFh,0xff,0x80ff,0h,0x90000000,\
+            255, pathOut, mouse_dd,0,0,0
+edtPassword edit_box 200,56,70,0FFFFFFh,0xff,0x80ff,0h,0x90000000,255,\
 		password, mouse_dd,0,0,0
 endEdits:
 
