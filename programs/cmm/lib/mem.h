@@ -5,7 +5,7 @@
 #include "../lib/kolibri.h"
 #endif
 
-dword mem_init()
+:dword mem_init()
 {
 	$push    ebx
 	$mov     eax, 68
@@ -16,7 +16,7 @@ dword mem_init()
 	return  EAX;
 }
 
-dword malloc(dword size)
+:dword malloc(dword size)
 {
 	$push    ebx
 	$push    ecx
@@ -31,7 +31,7 @@ dword malloc(dword size)
 	return  EAX;
 }
 
-stdcall dword realloc(dword mptr, size)
+:stdcall dword realloc(dword mptr, size)
 {
 	$push    ebx
 	$push    ecx
@@ -49,7 +49,7 @@ stdcall dword realloc(dword mptr, size)
 	return   EAX;
 }
 
-dword free(dword mptr)
+:dword free(dword mptr)
 {
 	$push    eax
 	$push    ebx

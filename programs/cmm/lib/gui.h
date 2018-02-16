@@ -350,13 +350,13 @@ TODO: scroll
 
 //this function increase falue and return it
 //useful for list of controls which goes one after one
-struct incn
+:struct incn
 {
 	dword n;
 	dword inc(dword _addition);
 };
 
-dword incn::inc(dword _addition)
+:dword incn::inc(dword _addition)
 {
 	n+=_addition;
 	return n;
@@ -411,7 +411,7 @@ dword incn::inc(dword _addition)
 ==
 /========================================================*/
 
-struct more_less_box
+:struct more_less_box
 {
 	signed x,y;
 	unsigned value, min, max;
@@ -421,14 +421,14 @@ struct more_less_box
 	void draw();
 };
 
-bool more_less_box::click(unsigned id)
+:bool more_less_box::click(unsigned id)
 {
 	if (id==bt_id_less) { value = math.max(value-1, min); draw(); return 1; }
 	if (id==bt_id_more) { value = math.min(value+1, max); draw(); return 1; }
 	return 0;
 }
 
-void more_less_box::draw()
+:void more_less_box::draw()
 {
 	#define VALUE_FIELD_W 34
 	#define SIZE 18

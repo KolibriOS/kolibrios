@@ -71,7 +71,7 @@
 	if(font)free(font);
 	label_io.read(font_path);
 	if(!EAX) {
-		debugln(font_path);
+		//debugln(font_path);
 		label_io.run("/sys/@notify", "'Error: KFONT is not loaded.' -E"); 
 		return false;
 	}

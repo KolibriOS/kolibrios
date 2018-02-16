@@ -43,7 +43,6 @@ void IconFairing(dword filenum, x,y, color)
 		PutPixel(x+14,y+3,color);
 		PutPixel(x,y+13,color);
 		PutPixel(x+14,y+13,color);
-		debugi(filenum);
 	}
 	if (filenum == 22) PutPixel(x+10,y+2,0x1A7B17); //green arrow part
 }

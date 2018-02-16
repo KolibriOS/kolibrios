@@ -442,7 +442,7 @@ inline fastcall dword SetWindowLayerBehaviour(EDX, ESI)
 
 #define DRAW_DESKTOP_BG_TILE 1
 #define DRAW_DESKTOP_BG_STRETCH 2
-void SetBackgroundImage(dword w,h, image, mode)
+:void SetBackgroundImage(dword w,h, image, mode)
 {
 	$mov     eax,15      // SF_BACKGROUND_SET 15 - work with desktop background graphics
 	$mov     ebx,4       // SSF_MODE_BG 4 - set drawing mode for the background
@@ -536,7 +536,7 @@ inline RefreshWindow(dword ID_REFRESH,ID_ACTIVE)
 	$int 0x40
 }
 
-void DefineDragableWindow(dword _x, _y, _w, _h)
+:void DefineDragableWindow(dword _x, _y, _w, _h)
 {
 	DefineAndDrawWindow(_x, _y, _w, _h, 0x41,0x000000,NULL,0b);
 }

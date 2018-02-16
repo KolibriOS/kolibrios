@@ -33,15 +33,16 @@ struct llist
 	int KeyLeft(); 
 	int KeyRight();
 	void CheckDoesValuesOkey();
-	void debug();
+	//void debug();
 };
 
+/*
 void llist::debug()
 {
 	char yi[128];
 	sprintf(#yi, "%s %d %s %d %s %d %s %d %s %d %s %d", "first:", first, "visible:", visible, "count:", count, "col_max:", column_max, "cur_y:", cur_y, "cur_x:", cur_x);
 	debugln(#yi);
-}
+}*/
 
 
 void llist::ClearList()
