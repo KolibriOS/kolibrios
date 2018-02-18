@@ -476,11 +476,14 @@ inline fastcall dword SetWindowLayerBehaviour(EDX, ESI)
 	$int 0x40
 }
 
-void PutPaletteImage(dword EBX,w,h,x,y,ESI,EDI)
+:void PutPaletteImage(dword inbuf,w,h,x,y,bits,pal)
 {
 	EAX = 65;
+	EBX = inbuf;
 	ECX = w<<16+h;
 	EDX = x<<16+y;
+	ESI = bits;
+	EDI = pal;
 	EBP = 0;
 	$int 0x40
 }

@@ -3,6 +3,7 @@ int UrlIsAbsolute(dword in)
 {
 	if(!strncmp(in,"http:",5)) return true;
 	if(!strncmp(in,"https:",6)) return true;
+	if(!strncmp(in,"file:",5)) return true;
 	if(!strncmp(in,"mailto:",7)) return true;
 	if(!strncmp(in,"ftp:",4)) return true;
 	if(!strncmp(in,"WebView:",8)) return true;
@@ -30,6 +31,15 @@ void GetAbsoluteURL(dword in_URL)
 	}
 
 	if (UrlIsAbsolute(in_URL)) return;
+
+	IF (!strcmpn(in_URL,"//", 2)) 
+	{
+		//strcpy(#newurl, "http:");
+		//strcat(#newurl, in_URL);
+		sprintf(#newurl, "http:%s", in_URL);
+		strcpy(orig_URL, #newurl);
+		return;
+	}
 	
 	IF (!strcmpn(in_URL,"./", 2)) in_URL+=2;
 	if (!http_transfer) 

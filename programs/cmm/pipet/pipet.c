@@ -13,7 +13,7 @@
 proc_info Form;
 dword pick_active = true;
 dword picked_color = 0;
-char picked_color_string[11]="0x00111222\0";
+char picked_color_string[11];
 #define FORM_W 167
 #define FORM_H 60
 #define COLOR_BLOCK_SIZE 42
@@ -88,7 +88,6 @@ void draw_window()
 
 	EventUpdateWindowContent();
 }
-
 
 void EventUpdateWindowContent()
 {

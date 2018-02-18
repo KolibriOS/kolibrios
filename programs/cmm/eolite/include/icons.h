@@ -5,7 +5,7 @@ void DrawIconByExtension(dword file_path, extension, xx, yy, fairing_color)
 	char BYTE_HEAD_FILE[4];
 	char ext[512];
 	int i;
-	dword icon_n=0;
+	dword icon_n=2; // set default icon
 
 	if (extension)
 	{
