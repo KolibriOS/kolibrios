@@ -726,11 +726,11 @@ endp
 sc system_colors
 
 
-title db 'uNZ v0.11 - Unarchiver of Zip and 7z',0
 bWinChild db 0	;1 - дочернее окно есть, главное окно не должно реагировать
 redInput  db 0	;1 - подсветить красным надпись
 
 if lang eq ru
+ title db 'uNZ v0.11 - Распаковщик Zip и 7z',0
  strGo db 'Распаковать',0
  strInp db  '    Архив',0
  strPath db 'Извлечь в',0
@@ -744,6 +744,7 @@ if lang eq ru
  strNotSupport db "'Неподдерживаемый формат архива' -E",0
  strNotFound db "'Файл не найден' -E",0
 else
+ title db 'uNZ v0.11 - Unarchiver of Zip and 7z',0
  strGo db   'Unpack',0
  strInp db  'Archive',0
  strPath db 'Extract to',0

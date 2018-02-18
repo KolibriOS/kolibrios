@@ -1,4 +1,4 @@
-#0    **** MAIN ****
+#0  **** MAIN ****
 Game Center               /sys/game_center
 Demos              >      /@1
 Graphics           >      /@3
@@ -12,7 +12,7 @@ Other              >      /@15
 Help                      /sys/docpack
 Run                       /sys/run
 Shutdown                  /sys/end
-#1    **** DEMOS ****
+#1  **** DEMOS ****
 3D                 >      /@2
 Circle                    /sys/demos/circle
 Fractal                   /sys/demos/tinyfrac
@@ -33,18 +33,18 @@ Heart*                    /kolibrios/3d/3dsheart
 View3DS                   /sys/3d/view3ds
 Gears                     /sys/3d/gears
 3D-waved area             /sys/3d/3dwav
-#3   **** GRAPHICS ****
+#3  **** GRAPHICS ****
 Kolibri Image Viewer      /sys/media/kiv
 zSea* Image Viewer      /kolibrios/media/zsea/zsea
 Animage                   /sys/media/animage
 Image Filtering           /sys/media/imgf/imgf
 Palitra                   /sys/media/palitra
-#4   **** MULTIMEDIA ****
+#4  **** MULTIMEDIA ****
 Pixie (MP3 player)        /sys/media/pixie/pixie
 AC97SND Audioplayer       /sys/media/ac97snd
 Fplay* Video player       /kolibrios/media/fplay
 MidAMP                    /sys/media/midamp
-#5    **** PROGRAMMING ****
+#5 **** PROGRAMMING ****
 Examples           >      /@6
 KPack Archiver            /sys/kpack
 Flat Assembler            /sys/develop/fasm
@@ -54,13 +54,13 @@ Debugger                  /sys/develop/mtdbg
 Base Converter            /sys/develop/h2d2b
 Key ASCII-codes           /sys/develop/keyascii
 Key SCAN-codes            /sys/develop/scancode
-#6    **** EXAMPLES ****
+#6  **** EXAMPLES ****
 Threaded example          /sys/develop/thread
 Color slider              /sys/demos/cslide
 Console example 1         /sys/develop/testcon2
 Console example 2         /sys/develop/test_gets
 Message Boxes example     /sys/demos/use_mb
-#7    **** SYSTEM ****
+#7  **** SYSTEM ****
 Settings           >      /@8
 System monitors    >      /@9
 File Management    >      /@10
@@ -68,6 +68,7 @@ Testing            >      /@16
 Accessibility      >      /@17
 Debug board               /sys/develop/board
 Clipboard viewer          /sys/develop/clipview
+Calendar                  /sys/calendar
 Terminal                  /sys/terminal
 #8    **** SETTINGS ****
 System                    /sys/setup
@@ -75,14 +76,14 @@ Background generator      /sys/media/palitra
 Colors & Skin             /sys/skincfg
 Hotkeys                   /sys/mykey
 ATI video mode            /sys/vmode
-#9    **** SYSTEM MONITORS ****
+#9 **** SYSTEM MONITORS ****
 Task manager              /sys/cpu
 PCI devices               /sys/pcidev
 CPUID                     /sys/cpuid
 Ghost Monitor             /sys/gmon
 Bus disconnect test       /sys/kbd
 HDD informer              /sys/hdd_info
-#10  **** FILE MANAGEMENT ****
+#10 **** FILE MANAGEMENT ****
 KFAR                      /sys/File Managers/kfar
 fNav                      /sys/File Managers/fNav/fNav
 KFM                       /sys/File Managers/kfm
@@ -97,12 +98,13 @@ TextEdit                  /sys/develop/t_edit
 Table processor           /sys/table
 Graph builder             /sys/graph
 Hex editor                /sys/develop/heed
-#12    **** NETWORK ****
+Unarchiver Unz            /sys/unz
+#12 **** NETWORK ****
 Clients            >      /@13
 Servers            >      /@14
 Network devices           /sys/network/netcfg
 Network status            /sys/network/netstat
-#13   **** CLIENTS ****
+#13 **** CLIENTS ****
 IRC                       /sys/network/ircc
 FTP                       /sys/network/ftpc
 TFTP                      /sys/network/tftpc
@@ -113,25 +115,24 @@ DNS lookup                /sys/network/nslookup
 VNC Viewer                /sys/network/vncc
 Downloader                /sys/network/downloader
 Text-based browser        /sys/network/webview
-#14    **** SERVERS ****
+#14 **** SERVERS ****
 FTP                       /sys/network/ftpd
-#15    **** OTHER ****
+#15 **** OTHER ****
 Analog clock              /sys/demos/aclock
 Binary clock              /sys/demos/bcdclk
 Timer                     /sys/demos/timer
 Screenshooter             /sys/scrshoot
-Calendar                  /sys/calendar
 RTF reader                /sys/rtfread
-#16    **** SYSTEM TESTS ****
+#16 **** SYSTEM TESTS ****
 Protection test           /sys/test
 Monitor test              /sys/disptest
 Graphics benchmark        /sys/mgb
 File system benchmark     /sys/fspeed
-#17    **** ACCESSIBILITY ****
+#17 **** ACCESSIBILITY ****
 Screen magnifier          /sys/magnify
 Screen keyboard           /sys/zkey
 Character table           /sys/ASCIIVju
-#18    **** EMULATORS ****
+#18 **** EMULATORS ****
 DOSBox* (DOS PC)          /kolibrios/emul/DosBox/dosbox
 e80* (ZX Spectrum)        /kolibrios/emul/e80/e80
 FCE Ultra* (NES)          /kolibrios/emul/fceu/fce

@@ -68,9 +68,10 @@ Color Slider              /sys/demos/cslide
 Работа с файлами   >      /@10
 Тестирование       >      /@11
 Спец. возможности  >      /@12
+Календарь                 /sys/calendar
 Доска отладки             /sys/develop/board
 Буфер обмена              /sys/develop/clipview
-Terminal                  /sys/terminal
+Терминал                  /sys/terminal
 #8    **** Система -> Настройки ****
 Устройства                /sys/setup
 Установить фон            /sys/media/palitra
@@ -108,10 +109,11 @@ FSPEED скорость ФС        /sys/fspeed
 Табличный процессор       /sys/table
 Построение графиков       /sys/graph
 HEX-редактор              /sys/develop/heed
+Разархиватор Unz          /sys/unz
 #14    **** Сеть ****
 Серверы            >      /@15
 Клиенты            >      /@16
-Настройки сети           /sys/network/netcfg
+Настройки сети            /sys/network/netcfg
 Статус подключения        /sys/network/netstat
 #15   **** Сеть -> Серверы ****
 FTP daemon                /sys/network/ftpd
@@ -128,7 +130,6 @@ VNC Клиент                /sys/network/vncc
 Текстовый браузер         /sys/network/webview
 #17   **** Разное ****
 Создание скриншотов       /sys/scrshoot
-Календарь                 /sys/calendar
 Аналоговые часы           /sys/demos/aclock
 Просмотр RTF              /sys/rtfread
 Таблица Менделеева        /sys/period
