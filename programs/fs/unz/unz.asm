@@ -522,64 +522,13 @@ proc SayErr num_strings:dword, strings:dword,num_buttons:dword, buttons:dword
 	mov	ebx,[strings]
 	m2m	[errmess0], dword [ebx]
        .l1:
-	mcall	51,1,threadSayErr,stackDlg
+
+	m2m	[fsRunNotifyOK.param],[errmess0]
+	mcall	70,fsRunNotifyOK
+
 	popad
 	mov	eax,1
 	ret
-endp
-
-proc SimpleSayErr str:dword
-	pushad
-	m2m	[errmess0],[str]
-	mcall	51,1,threadSayErr,stackDlg
-	popad
-	ret
-endp
-
-
-proc threadSayErr
-	mcall	40, 111b+0C000000h
-.wm_redraw:
-	mcall 12, 1
-	mcall 48, 3, sc, sizeof.system_colors
-	mov   edx, [sc.work]
-	or	  edx, 0x33000000
-	mcall 0, <220,WIN_W>, <220,110>, , , title
-
-	mov	ecx,[sc.work_text]
-	or	ecx,90000000h
-	mov	edx,[errmess0]
-	mcall 4, <15,11>
-
-	mcall 8, <105,100>,<45,25>,1,[sc.work_button]
-	mov	ecx,[sc.work_button_text]
-	or	ecx,90000000h
-	mcall 4, <147,51>, , strOk
-
-	mcall 12, 2
-
-.still:
-	mcall	10
-	cmp	eax, 1
-	je	.wm_redraw
-	cmp	eax, 2
-	je	.wm_key
-	cmp	eax, 3
-	je	.wm_button
-	jmp	.still
-
-.wm_button:
-	mcall	17
-
-	cmp	ah, 1
-	je	.exit
-	jmp	.still
-
-.wm_key:
-	mcall	2
-	jmp	.still
-.exit:
-	mcall	-1
 endp
 
 ;-------------------------------------------------------------------------------
@@ -730,7 +679,7 @@ bWinChild db 0	;1 - дочернее окно есть, главное окно не должно реагировать
 redInput  db 0	;1 - подсветить красным надпись
 
 if lang eq ru
- title db 'uNZ v0.11 - Распаковщик Zip и 7z',0
+ title db 'uNZ v0.12 - Распаковщик Zip и 7z',0
  strGo db 'Распаковать',0
  strInp db  '    Архив',0
  strPath db 'Извлечь в',0
@@ -744,7 +693,7 @@ if lang eq ru
  strNotSupport db "'Неподдерживаемый формат архива' -E",0
  strNotFound db "'Файл не найден' -E",0
 else
- title db 'uNZ v0.11 - Unarchiver of Zip and 7z',0
+ title db 'uNZ v0.12 - Unarchiver of Zip and 7z',0
  strGo db   'Unpack',0
  strInp db  'Archive',0
  strPath db 'Extract to',0
