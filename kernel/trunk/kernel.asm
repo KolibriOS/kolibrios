@@ -1116,8 +1116,9 @@ proc setup_os_slot
         mov     dword [edx+APPDATA.terminate_protection], 1 ; make unkillable
 
         mov     esi, fpu_data
-        mov     ecx, 512/4
-        cld
+        mov     ecx, [xsave_area_size]
+        add     ecx, 3
+        shr     ecx, 2
         rep movsd
 
         lea     eax, [edx+APP_OBJ_OFFSET]

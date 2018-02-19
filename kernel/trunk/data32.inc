@@ -336,7 +336,8 @@ align 16
 cur_saved_data:
         rb  4096
 fpu_data:
-        rb  512
+        rb  1024
+fpu_data_size = $ - fpu_data
 draw_data:
         rb  32*256
 BPSLine_calc_area   rd  1440

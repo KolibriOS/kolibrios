@@ -34,15 +34,19 @@ init_fpu:
         xor     ecx, ecx
         cpuid
         mov     [xsave_area_size], ebx
+        cmp     ebx, fpu_data_size
+        ja      $
 
         test    eax, XCR0_AVX512
         jz      @f
         call    init_avx512
+        xsave   [fpu_data]
         ret
 @@:
         test    eax, XCR0_AVX
         jz      @f
         call    init_avx
+        xsave   [fpu_data]
         ret
 @@:
         test    eax, XCR0_SSE

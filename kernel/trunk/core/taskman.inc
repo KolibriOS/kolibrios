@@ -924,7 +924,9 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         mov     [eax+SLOT_BASE+APPDATA.io_map+4], ecx
 
         mov     esi, fpu_data
-        mov     ecx, 512/4
+        mov     ecx, [xsave_area_size]
+        add     ecx, 3
+        shr     ecx, 2
         rep movsd
 
         cmp     ebx, [TASK_COUNT]
