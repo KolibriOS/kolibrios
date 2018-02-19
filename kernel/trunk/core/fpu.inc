@@ -46,20 +46,17 @@ init_fpu:
         ret
 @@:
         test    eax, XCR0_SSE
-        jz      @f
-        call    init_sse
-        ret
-@@:
-        call    init_fpu_mmx
-        ret
+        jnz     .sse
+        jmp     .fpu_mmx
 .no_xsave:
         mov     [xsave_area_size], 512  ; enough for FPU/MMX and SSE
         bt      [cpu_caps], CAPS_SSE
-        jnc     @f
+        jnc     .fpu_mmx
+.sse:
         call    init_sse
         fxsave  [fpu_data]
         ret
-@@:
+.fpu_mmx:
         call    init_fpu_mmx
         fnsave  [fpu_data]
         ret
