@@ -333,6 +333,15 @@ inline fastcall int TestBit( EAX, CL)
 	$and eax,1
 }
 
+:void SetClientScreenArea(dword _left, _right, _top, _bottom)
+{
+	EAX = 48;
+	EBX = 6;
+	ECX = _left * 65536 + _right;
+	EDX = _top * 65536 + _bottom;
+	$int 64;
+}
+
 //------------------------------------------------------------------------------
 
 :void DefineAndDrawWindow(dword _x, _y, _w, _h, _window_type, _bgcolor, _title, _flags)
@@ -542,6 +551,11 @@ inline RefreshWindow(dword ID_REFRESH,ID_ACTIVE)
 :void DefineDragableWindow(dword _x, _y, _w, _h)
 {
 	DefineAndDrawWindow(_x, _y, _w, _h, 0x41,0x000000,NULL,0b);
+}
+
+:void DefineUnDragableWindow(dword _x, _y, _w, _h)
+{
+	DefineAndDrawWindow(_x, _y, _w, _h, 0x01, 0, 0, 0x01fffFFF);
 }
 
 :void EventDragWindow()

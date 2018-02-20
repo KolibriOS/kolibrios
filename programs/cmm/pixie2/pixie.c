@@ -34,7 +34,7 @@
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 8, "MP3\0\0" };
 
-#define ABOUT_MESSAGE "'Pixies Player v2.0
+#define ABOUT_MESSAGE "'Pixies Player v2.3
 A tiny MP3 folder player.
 
 Controls:
@@ -43,9 +43,7 @@ Play/Stop: Space or P key
 Start playing selected file: Enter
 Goto next/previous track: Ctrl + Left/Right
 Change sound volume: Left/Right key
-Mute: M key' -Std"
-#define WIN_W_SMALL 127
-#define WIN_H_SMALL 39
+Mute: M key' -td"
 
 scroll_bar scroll1 = { 5,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
@@ -167,7 +165,7 @@ void main()
 			if (list.ProcessKey(key_scancode)) DrawPlayList();
 			break;
 		case evReDraw:
-			if (window_mode == WINDOW_MODE_NORMAL) DefineDragableWindow(win_x_normal, win_y_normal, skin.w - 1, skin.h + list.h);
+			if (window_mode == WINDOW_MODE_NORMAL) DefineDragableWindow(win_x_normal, win_y_normal, skin.w - 1, skin.h + list.h-1);
 			if (window_mode == WINDOW_MODE_SMALL) DefineDragableWindow(win_x_small, win_y_small, WIN_W_SMALL, WIN_H_SMALL);
 			draw_window();
 			if (param[0]) {
@@ -232,40 +230,54 @@ void draw_window() {
 	}
 }
 
+dword GetSongTitle()
+{
+	char cur_y_playing_title[245];
+	strcpy(#cur_y_playing_title, #current_filename);
+	cur_y_playing_title[strlen(#cur_y_playing_title)-4] = '\0';
+	if (strlen(#cur_y_playing_title) > 36) strcpy(#cur_y_playing_title + 34, "..."); 
+	return #cur_y_playing_title;
+}
+
 
 void DrawTopPanel()
 {
-	char cur_y_playing_title[245];
+	
 	int button_y;
-	//if (playback_mode == PLAYBACK_MODE_STOPED) img_draw stdcall(skin.image, 13, 0, 22, skin.h, 300, 0);
 	//Mode depended
 	if (window_mode == WINDOW_MODE_NORMAL)
 	{
+		button_y = 47;
 		img_draw stdcall(skin.image, 0, 0, skin.w, skin.h, 0, 0);
-		strcpy(#cur_y_playing_title, #current_filename);
-		cur_y_playing_title[strlen(#cur_y_playing_title)-4] = '\0';
-		if (strlen(#cur_y_playing_title) > 36) strcpy(#cur_y_playing_title + 33, "..."); 
-		DrawPixieTitle(#work_folder + strrchr(#work_folder, '/'));
-		WriteText(10, 26, list.font_type, theme.color_top_panel_text, #cur_y_playing_title);
-		button_y = 45;
+		if (playback_mode != PLAYBACK_MODE_STOPED) img_draw stdcall(skin.image, 38, button_y, 33, 17, skin.w+1, WIN_H_SMALL+1);
+		if /*(!list.count) && */ (!work_folder) DrawPixieTitle("Pixie");
+		else DrawPixieTitle(#work_folder + strrchr(#work_folder, '/'));
+		WriteText(10, 26, list.font_type, theme.color_top_panel_song_name, GetSongTitle());
+	 	//Playing control buttons
+		DefineHiddenButton(7, button_y, 30, 16, BUTTON_PLAYBACK_PREV);
+		DefineHiddenButton(39, button_y, 30, 16, BUTTON_PLAYBACK_PLAY_PAUSE);
+		DefineHiddenButton(71, button_y, 30, 16, BUTTON_PLAYBACK_NEXT);
+		//Window control buttons
+		DefineHiddenButton(Form.width - 21, 1, 20, 13, BUTTON_WINDOW_CLOSE);
+		DefineHiddenButton(Form.width - 43, 1, 20, 13, BUTTON_WINDOW_MINIMIZE);
+		DefineHiddenButton(Form.width - 65, 1, 20, 13, BUTTON_WINDOW_REDUCE);
+		//Open and volume
 		DefineHiddenButton(Form.width - 56, button_y, 23, 23, BUTTON_OPEN_DIALOG);
 		DefineHiddenButton(Form.width - 27, button_y, 23, 23, BUTTON_SHOW_VOLUME);
 	}
 	else if (window_mode == WINDOW_MODE_SMALL)
 	{
+		button_y = 7;
 		img_draw stdcall(skin.image, 0, 0, WIN_W_SMALL, WIN_H_SMALL, skin.w-1, 0);
 		DefineHiddenButton(0, 0, WIN_W_SMALL, WIN_H_SMALL, 99 + BT_NOFRAME);
-		button_y = 9;
+	 	//Playing control buttons
+		DefineHiddenButton(8, button_y, 24, 16, BUTTON_PLAYBACK_PREV);
+		DefineHiddenButton(34, button_y, 24, 16, BUTTON_PLAYBACK_PLAY_PAUSE);
+		DefineHiddenButton(60, button_y, 24, 16, BUTTON_PLAYBACK_NEXT);
+		//Window control buttons
+		DefineHiddenButton(Form.width - 20, 1, 19, 13, BUTTON_WINDOW_CLOSE);
+		DefineHiddenButton(Form.width - 20, 16, 19, 13, BUTTON_WINDOW_REDUCE);
 	}
-	if (!list.count) DrawPixieTitle("Pixie");
- 	//Playing control buttons
-	DefineHiddenButton(5, button_y, 23, 23, BUTTON_PLAYBACK_PREV);
-	DefineHiddenButton(34, button_y-2, 27, 25, BUTTON_PLAYBACK_PLAY_PAUSE);
-	DefineHiddenButton(65, button_y, 23, 23, BUTTON_PLAYBACK_NEXT);
-	//Window control buttons
-	DefineHiddenButton(Form.width - 18,  1, 15, 15, BUTTON_WINDOW_CLOSE);
-	DefineHiddenButton(Form.width - 18, 16, 15, 15, BUTTON_WINDOW_REDUCE);
-	DefineHiddenButton(Form.width - 32,  1, 15, 15, BUTTON_WINDOW_MINIMIZE);
 }
 
 
@@ -283,7 +295,7 @@ void DrawScroller()
 
 void DrawPixieTitle(dword _title)
 {
-	WriteTextB(10, 6, list.font_type, theme.color_top_panel_text, _title);
+	WriteTextB(10, 6, list.font_type, theme.color_top_panel_folder_name, _title);
 }
 
 //===================================================//

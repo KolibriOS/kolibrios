@@ -1,5 +1,6 @@
 struct struct_pixie_colors {
-	dword color_top_panel_text,
+	dword color_top_panel_folder_name,
+	      color_top_panel_song_name,
 		  color_list_bg,
 	      color_list_text,
 	      color_list_active_bg,
@@ -10,6 +11,9 @@ struct struct_pixie_colors {
 } theme;
 
 char config_section[] = "Config";
+
+#define WIN_W_SMALL 114
+#define WIN_H_SMALL 31
 
 void LoadIniConfig()
 {
@@ -22,14 +26,15 @@ void LoadIniConfig()
 
 	Libimg_LoadImage(#skin, abspath("skin.png"));
 	skin.w = 322;
-	theme.color_top_panel_text = 0x5C5146;
+	theme.color_top_panel_folder_name = 0xDDDDDB;
+	theme.color_top_panel_song_name = 0xBEBEBE;
 	theme.color_list_bg = 0xE2E2E2;
 	theme.color_list_text = 0x595959;
 	theme.color_list_active_bg = 0xFAF3AF;
 	theme.color_list_active_text = 0x85663F;
 	theme.color_list_active_pointer = 0x85663F;
 	theme.color_list_scroller = 0xBBBbbb;
-	theme.color_list_border = 0x736D65;
+	theme.color_list_border = 0x010101;
 	scroll1.bckg_col = theme.color_list_bg;
 	scroll1.frnt_col = theme.color_list_border;
 	scroll1.line_col = theme.color_list_border;
