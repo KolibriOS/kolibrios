@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2013-2014. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2013-2018. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ftpc.asm - FTP client for KolibriOS                            ;;
@@ -61,9 +61,10 @@ macro icall reg, addr, method, [arg]
 purge mov,add,sub
 
 include '../../proc32.inc'
-include '../../dll.inc'
 include '../../network.inc'
-
+include '../../KOSfuncs.inc'
+include '../../load_img.inc'
+include '../../develop/libraries/libs-dev/libimg/libimg.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../develop/libraries/box_lib/load_lib.mac'
 

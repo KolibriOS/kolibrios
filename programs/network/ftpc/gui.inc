@@ -1,8 +1,7 @@
 @use_library_mem mem.Alloc, mem.Free, mem.ReAlloc, dll.Load
  
-fn_icon1 db '../../develop/libraries/box_lib/trunk/tl_sys_16_w.bmp', 0
-fn_icon2 db '../../develop/libraries/box_lib/trunk/tl_nod_16_w.bmp', 0
-bmp_icon dd 0
+icon_tl_sys dd 0
+icon_tl_nod dd 0
 
 TLIST_SZ = 325+16 ;=341. 16 is x-size of scroll bar
 TLIST1_X = 50
@@ -37,7 +36,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 
     .init:
         ; load libraries
-        stdcall dll.Load, @IMPORT_BOXLIB
+        stdcall dll.Load, @IMPORT_GUI_LIBS
         test    eax, eax
         jnz     .exit
 
@@ -73,13 +72,9 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         stdcall dword[tl_data_init], tree1
         stdcall dword[tl_data_init], tree2
 
-        ; read *.bmp file system icons
-        copy_path fn_icon1,path,filestruct.name, 0
-     
-        mov     ecx, 3*256*13
-        stdcall mem.Alloc, ecx
-        mov     [bmp_icon], eax
-     
+        ; read icons
+        load_image_file 'tl_sys_16.png', icon_tl_sys
+
         mov     [filestruct.ptr], eax
         mov     [filestruct.subfn], 0
         mov     [filestruct.offset], 54
@@ -87,17 +82,13 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         mcall   70, filestruct
         cmp     ebx, 0
         jl      @f
-        m2m     dword[tree1.data_img_sys], dword[bmp_icon]
-        m2m     dword[tree2.data_img_sys], dword[bmp_icon]
+        m2m     dword[tree1.data_img_sys], dword[icon_tl_sys]
+        m2m     dword[tree2.data_img_sys], dword[icon_tl_sys]
 
       @@:
-        ; read * .bmp file with the icon of nodes
-        copy_path fn_icon2, path, filestruct.name, 0
-     
-        mov     ecx, 3*256*13
-        stdcall mem.Alloc, ecx
-        mov     [bmp_icon], eax
-     
+        ; read nodes icon file
+        load_image_file 'tl_nod_16.png', icon_tl_nod
+
         mov     [filestruct.ptr], eax
         ;mov    [filestruct.subfn], 0
         ;mov    [filestruct.offset], 54
@@ -105,8 +96,8 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         mcall   70, filestruct
         cmp     ebx, 0
         jl      @f
-        m2m     dword[tree1.data_img], dword[bmp_icon]
-        m2m     dword[tree2.data_img], dword[bmp_icon]
+        m2m     dword[tree1.data_img], dword[icon_tl_nod]
+        m2m     dword[tree2.data_img], dword[icon_tl_nod]
     
       @@:
         mcall   67, 35, 20, 830, 555 ; resize to main gui window's coordinates
@@ -1115,9 +1106,9 @@ pb pb
 
 
 align 4
-@IMPORT_BOXLIB:
+@IMPORT_GUI_LIBS:
 
-library box_lib, 'box_lib.obj'
+library box_lib, 'box_lib.obj', libimg, 'libimg.obj'
 
 import  box_lib, \
         edit_box_draw,      'edit_box', \
@@ -1170,6 +1161,31 @@ import  box_lib, \
         ted_text_colored,   'ted_text_colored', \
         progressbar_draw,   'progressbar_draw'
 
+import  libimg, \
+        lib_init1         , 'lib_init', \
+        img_is_img        , 'img_is_img', \;определяет по данным, может ли библиотека сделать из них изображени \
+        img_info          , 'img_info', \
+        img_from_file     , 'img_from_file', \
+        img_to_file       , 'img_to_file', \
+        img_from_rgb      , 'img_from_rgb', \
+        img_to_rgb        , 'img_to_rgb', \;преобразование изображения в данные RG \
+        img_to_rgb2       , 'img_to_rgb2', \
+        img_decode        , 'img_decode', \ ;автоматически определяет формат графических данны \
+        img_encode        , 'img_encode', \
+        img_create        , 'img_create', \
+        img_destroy       , 'img_destroy', \
+        img_destroy_layer , 'img_destroy_layer', \
+        img_count         , 'img_count', \
+        img_lock_bits     , 'img_lock_bits', \
+        img_unlock_bits   , 'img_unlock_bits', \
+        img_flip          , 'img_flip', \
+        img_flip_layer    , 'img_flip_layer', \
+        img_rotate        , 'img_rotate', \
+        img_rotate_layer  , 'img_rotate_layer', \
+        img_draw          , 'img_draw'
+
+
+run_file_70 FileInfoBlock ; required for libimg
 
 auto_list   db 1 ; to run LIST immediately after CWD
 filter      rb 512
@@ -1182,6 +1198,7 @@ node_entry  db '1111'
 node_entry2 db '1111'
             rb 512
 remote_list_buf rb 1024
+file_name   rb 4096 ; required for libimg
 conv_tabl   rb 128
 ed_buffer   rb 100
 tedit_buffer rb 1024

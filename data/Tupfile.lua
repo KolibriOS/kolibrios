@@ -59,6 +59,8 @@ img_files = {
  {"NETWORK/WV_SKIN.PNG", PROGS .. "/cmm/browser/wv_skin.png"},
  {"NETWORK/FTPD.INI", "common/network/ftpd.ini"},
  {"NETWORK/USERS.INI", "common/network/users.ini"},
+ {"NETWORK/TL_SYS_16.PNG", PROGS .. "/network/ftpc/tl_sys_16.png"},
+ {"NETWORK/TL_NOD_16.PNG", PROGS .. "/network/ftpc/tl_nod_16.png"},
  {"SETTINGS/AUTORUN.DAT", "common/settings/AUTORUN.DAT"},
  {"SETTINGS/ASSOC.INI", "common/settings/assoc.ini"},
  {"SETTINGS/DOCKY.INI", "common/settings/docky.ini"},
