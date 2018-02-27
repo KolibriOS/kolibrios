@@ -91,6 +91,9 @@ __exports:
           srv_handler,           'ServiceHandler',     \
           fpu_save,              'FpuSave',            \
           fpu_restore,           'FpuRestore',         \
+          avx_save_size,         'AvxSaveSize',        \
+          avx_save,              'AvxSave',            \
+          avx_restore,           'AvxRestore',         \
           r_f_port_area,         'ReservePortArea',    \
           boot_log,              'Boot_Log',           \
 \

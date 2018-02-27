@@ -12,7 +12,7 @@ init_fpu:
         clts
         fninit
 
-        bt      [cpu_caps+(CAPS_XSAVE/8)], CAPS_XSAVE mod 8
+        bt      [cpu_caps+(CAPS_XSAVE/32)], CAPS_XSAVE mod 32
         jnc     .no_xsave
 
         mov     ecx, cr4
@@ -136,10 +136,57 @@ init_avx512:
         ret
 
 ; param
-;  eax= 512 bytes memory area
+;  eax= 512 bytes memory area aligned on a 16-byte boundary
 
 align 4
 fpu_save:
+        push    ecx
+        push    esi
+        push    edi
+
+        pushfd
+        cli
+
+        clts
+        mov     edi, eax
+
+        mov     ecx, [fpu_owner]
+        mov     esi, [CURRENT_TASK]
+        cmp     ecx, esi
+        jne     .save
+
+        call    save_fpu_context
+        jmp     .exit
+.save:
+        mov     [fpu_owner], esi
+
+        shl     ecx, 8
+        mov     eax, [ecx+SLOT_BASE+APPDATA.fpu_state]
+
+        call    save_context
+
+; first 512 bytes of XSAVE area have the same format as FXSAVE
+        shl     esi, 8
+        mov     esi, [esi+SLOT_BASE+APPDATA.fpu_state]
+        mov     ecx, 512/4
+        cld
+        rep movsd
+        fninit
+.exit:
+        popfd
+        pop     edi
+        pop     esi
+        pop     ecx
+        ret
+
+avx_save_size:
+        mov     eax, [xsave_area_size]
+        ret
+
+; param
+;  eax= avx_save_size() bytes memory area aligned on a 64-byte boundary
+
+avx_save:
         push    ecx
         push    esi
         push    edi
@@ -167,8 +214,9 @@ fpu_save:
 
         shl     esi, 8
         mov     esi, [esi+SLOT_BASE+APPDATA.fpu_state]
-        mov     ecx, 512/4
-        cld
+        mov     ecx, [xsave_area_size]
+        add     ecx, 3
+        shr     ecx, 2
         rep movsd
         fninit
 .exit:
@@ -180,19 +228,19 @@ fpu_save:
 
 align 4
 save_context:
-        bt      [cpu_caps+(CAPS_OSXSAVE/8)], CAPS_OSXSAVE mod 8
-        jnc     .no_xsave
+        bt      [cpu_caps+(CAPS_OSXSAVE/32)], CAPS_OSXSAVE mod 32
+        jnc     save_fpu_context
         xsave   [eax]
         ret
-.no_xsave:
+save_fpu_context:
         bt      [cpu_caps], CAPS_SSE
         jnc     .no_SSE
-
         fxsave  [eax]
         ret
 .no_SSE:
         fnsave  [eax]
         ret
+
 
 align 4
 fpu_restore:
@@ -210,14 +258,6 @@ fpu_restore:
         jne     .copy
 
         clts
-        bt      [cpu_caps+(CAPS_OSXSAVE/8)], CAPS_OSXSAVE mod 8
-        jnc     .no_xsave
-        xrstor  [esi]
-        popfd
-        pop     esi
-        pop     ecx
-        ret
-.no_xsave:
         bt      [cpu_caps], CAPS_SSE
         jnc     .no_SSE
 
@@ -244,6 +284,57 @@ fpu_restore:
         pop     ecx
         ret
 
+avx_restore:
+        push    ecx
+        push    esi
+
+        mov     esi, eax
+
+        pushfd
+        cli
+
+        mov     ecx, [fpu_owner]
+        mov     eax, [CURRENT_TASK]
+        cmp     ecx, eax
+        jne     .copy
+
+        clts
+        bt      [cpu_caps+(CAPS_OSXSAVE/32)], CAPS_OSXSAVE mod 32
+        jnc     .no_xsave
+        xrstor  [esi]
+        popfd
+        pop     esi
+        pop     ecx
+        ret
+.no_xsave:
+        bt      [cpu_caps], CAPS_SSE
+        jnc     .no_SSE
+
+        fxrstor [esi]
+        popfd
+        pop     esi
+        pop     ecx
+        ret
+.no_SSE:
+        fnclex                  ;fix possible problems
+        frstor  [esi]
+        popfd
+        pop     esi
+        pop     ecx
+        ret
+.copy:
+        shl     eax, 8
+        mov     edi, [eax+SLOT_BASE+APPDATA.fpu_state]
+        mov     ecx, [xsave_area_size]
+        add     ecx, 3
+        shr     ecx, 2
+        cld
+        rep movsd
+        popfd
+        pop     esi
+        pop     ecx
+        ret
+
 align 4
 except_7:                  ;#NM exception handler
         save_ring3_context
@@ -258,6 +349,18 @@ except_7:                  ;#NM exception handler
 
         shl     ebx, 8
         mov     eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
+        bt      [cpu_caps+(CAPS_OSXSAVE/32)], CAPS_OSXSAVE mod 32
+        jnc     .no_xsave
+        xsave   [eax]
+        mov     ebx, [CURRENT_TASK]
+        mov     [fpu_owner], ebx
+        shl     ebx, 8
+        mov     eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
+        xrstor  [eax]
+.exit:
+        restore_ring3_context
+        iret
+.no_xsave:
         bt      [cpu_caps], CAPS_SSE
         jnc     .no_SSE
 
@@ -267,7 +370,6 @@ except_7:                  ;#NM exception handler
         shl     ebx, 8
         mov     eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
         fxrstor [eax]
-.exit:
         restore_ring3_context
         iret
 
