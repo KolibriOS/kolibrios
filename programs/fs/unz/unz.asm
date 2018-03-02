@@ -692,6 +692,20 @@ if lang eq ru
  strUnpackFault  db "'Ошибка распаковки' -E",0
  strNotSupport db "'Неподдерживаемый формат архива' -E",0
  strNotFound db "'Файл не найден' -E",0
+else if lang eq es
+ title db 'uNZ v0.12 - Desarchivador para Zip y 7z',0
+ strGo db 'Desarchivar',0
+ strInp db 'Archivar',0
+ strPath db 'Extraer en',0
+ strError db 'Error',0
+ strErrorExc db 'Error desconocido',0
+ strOk db 'OK',0
+ strGetPass db 'Contrasena',0
+ strCancel db 'Cancelar',0
+ strUnpackOk db "'Extracion exitosa' -O",0
+ strUnpackFault db "'Fallo al extraer' -E",0
+ strNotSupport db "'El formato del archivo no es soportado' -E",0
+ strNotFound db "'Archivo no encontrado' -E",0
 else
  title db 'uNZ v0.12 - Unarchiver of Zip and 7z',0
  strGo db   'Unpack',0
@@ -703,7 +717,7 @@ else
  strGetPass db 'Password',0
  strCancel  db 'Cancel',0
  strUnpackOk  db "'Unpacked successfuly' -O",0
- strUnpackFault  db "'Unpack failed' -E",0
+ strUnpackFault  db "'Unprack failed' -E",0
  strNotSupport db "'Archive format is not supported' -E",0
  strNotFound db "'File not found' -E",0
 end if
