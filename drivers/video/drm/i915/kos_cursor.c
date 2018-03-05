@@ -61,14 +61,28 @@ static void disable_mouse(void){};
 
 static void __attribute__((regparm(1))) destroy_cursor(cursor_t *cursor)
 {
+    struct drm_i915_private *dev_priv = main_device->dev_private;
     struct drm_i915_gem_object *obj = cursor->cobj;
-    list_del(&cursor->list);
+    u32      ifl;
 
+    ifl = safe_cli();
+    list_del(&cursor->list);
+    safe_sti(ifl);
+
+    if (!dev_priv->info.cursor_needs_physical)
+    {
     i915_gem_object_ggtt_unpin(cursor->cobj);
 
     mutex_lock(&main_device->struct_mutex);
     drm_gem_object_unreference(&obj->base);
     mutex_unlock(&main_device->struct_mutex);
+    }
+    else
+    {
+        addr_t page = (addr_t)obj;
+        for(addr_t i = 0; i < (KMS_CURSOR_WIDTH*KMS_CURSOR_HEIGHT*8)/4096; i+=4096)
+            FreePage(page+i);
+    }
 
     __DestroyObject(cursor);
 };
@@ -90,7 +104,7 @@ static int init_cursor(cursor_t *cursor)
 
     if (dev_priv->info.cursor_needs_physical)
     {
-        bits = (uint32_t*)KernelAlloc(KMS_CURSOR_WIDTH*KMS_CURSOR_HEIGHT*8);
+        mapped = bits = (uint32_t*)KernelAlloc(KMS_CURSOR_WIDTH*KMS_CURSOR_HEIGHT*8);
         if (unlikely(bits == NULL))
         {
             ret = -ENOMEM;
