@@ -3,6 +3,8 @@
 
 // file header taken from newlib
 // added many sys functions, compatible with tcc
+// with gcc USE gcc -mno-ms-bitfields!!!
+
 
 //#include <newlib.h>
 //#include <stdint.h>
@@ -40,7 +42,6 @@ extern "C" {
 #define SHM_CREATE      0x08
 #define SHM_READ        0x00
 #define SHM_WRITE       0x01
-
 
 
 typedef  unsigned int color_t;
@@ -131,6 +132,22 @@ struct ipc_buffer
     uint32_t    used;   // used bytes in buffer
     struct ipc_message  data[0];    // data begin
 };
+
+
+typedef struct __attribute__((packed)) file_op_t
+{
+	uint32_t    fn;
+    uint32_t    flags;
+    char*       args;
+    uint32_t    res1, res2;
+    char        zero;
+    char*       app_name  
+#ifdef __TINYC__
+  __attribute__((packed))
+#endif
+;
+} file_op_t;
+
 
 static inline void begin_draw(void)
 {
@@ -524,7 +541,11 @@ void enumerate_libraries(int (*callback)(void *handle, const char* name,
                          void *user_data);
 #endif
 
-// May be next section need to be added in newlibc
+///////////////////////////////////////////////////////////////////////////////
+/// May be next section need to be added in newlibc
+// Siemargl addenium
+
+#define X_Y(x,y) (((x)<<16)|(y))
 
 enum KOLIBRI_GUI_EVENTS {
     KOLIBRI_EVENT_NONE = 0,     /* Event queue is empty */
@@ -538,6 +559,107 @@ enum KOLIBRI_GUI_EVENTS {
     KOLIBRI_EVENT_DEBUG = 9,    /* Debug subsystem event */
     KOLIBRI_EVENT_IRQBEGIN = 16 /* 16..31 IRQ0..IRQ15 interrupt =IRQBEGIN+IRQn */
 };
+
+enum control_keys {
+    KM_SHIFT = 0x00010000,
+    KM_CTRL = 0x00020000,
+    KM_ALT = 0x00040000,
+    KM_NUMLOCK = 0x00080000
+};
+
+
+struct  __attribute__ ((__packed__)) fs_dirinfo {
+    uint32_t    subfn; // 1 read dir
+    uint32_t    start;
+    uint32_t    flags;
+    uint32_t    size;
+    uint32_t    retval;
+    union {
+        struct __attribute__ ((__packed__)) {
+            uint8_t zero;  // 0
+            char*   ppath;
+        };
+        char path[5];  // up to 4096
+    } ;
+};
+
+static inline
+uint32_t sf_file(int subfn, struct fs_dirinfo* dinfo)
+/// SysFn70 call with subfunction
+/// retval 0 if ok
+{
+    uint32_t retval;
+    dinfo->subfn = subfn;
+
+    __asm__ __volatile__(
+    "int $0x40 "
+    :"=a"(retval)
+    :"a"(70),"b"(dinfo)
+    :);
+
+    return retval;
+};
+
+
+struct fs_dirheader {
+    uint32_t     version; // 1
+    uint32_t     curn_blocks;  // number of read dir items (BDFE)
+    uint32_t     totl_blocks;  // directory full size
+    char         other[20]; // reserved 0
+};
+
+enum filetype
+{
+	FS_RONLY = 1,
+	FS_HIDDEN = 2,
+	FS_SYSTEM = 4,
+	FS_VOLID = 8,
+	FS_SUBDIR = 16,
+	FS_FOLDER = 16,
+	FS_ARCHIV = 32
+};
+
+struct __attribute__ ((__packed__)) fs_filetime {
+    uint8_t    sec;
+    uint8_t    mm;
+    uint8_t    hour;
+    uint8_t    zero;
+};
+
+struct __attribute__ ((__packed__)) fs_filedate {
+    uint8_t    day;
+    uint8_t    month;
+    uint16_t   year;
+};
+
+/// directory entry cp866
+struct fsBDFE {
+    uint32_t filetype;
+    uint32_t encoding; // 0 - cp866, 1 - utf16le
+    struct fs_filetime tm_created;
+    struct fs_filedate dt_created;
+    struct fs_filetime tm_accessed;
+    struct fs_filedate dt_accessed;
+    struct fs_filetime tm_modified;
+    struct fs_filedate dt_modified;
+    uint64_t size;
+    char   fname[264];
+}; // must be sized 304
+
+/// directory entry UTF16LE
+struct fsBDFE_16 {
+    uint32_t filetype;
+    uint32_t encoding; // 0 - cp866, 1 - utf16le
+    struct fs_filetime tm_created;
+    struct fs_filedate dt_created;
+    struct fs_filetime tm_accessed;
+    struct fs_filedate dt_accessed;
+    struct fs_filetime tm_modified;
+    struct fs_filedate dt_modified;
+    uint64_t size;
+    wchar_t   fname[260];
+}; // must be sized 560
+
 
 
 // copied from /programs/system/shell/system/kolibri.c
@@ -695,15 +817,7 @@ void shm_close(char *shm_name){
 
 static inline
 int start_app(char *app_name, char *args){
-    struct file_op_t
-    {
-        uint32_t    fn;
-        uint32_t    flags;
-        char*       args;
-        uint32_t    res1, res2;
-        char        zero;
-        char*       app_name  __attribute__((packed));
-    } file_op;
+    file_op_t file_op;
     memset(&file_op, 0, sizeof(file_op));
     file_op.fn = 7;
     file_op.args = args;
@@ -715,6 +829,55 @@ int start_app(char *app_name, char *args){
     return val;
 }
 
+static inline
+uint32_t get_control_keys(void)
+{
+    uint32_t ctrl;
+
+    __asm__ __volatile__(
+    "int $0x40 \n\t"
+    :"=a"(ctrl)
+    :"a"(66),"b"(3));
+
+    return ctrl;
+};
+
+static inline
+int get_keyboard_layout(int opt, char* buf)
+/// 128 byte buffer
+/// opt: 1 - normal, 2 - shifted, 3 - alted, or 9 - return language
+{
+    uint32_t lang;
+
+    __asm__ __volatile__(
+    "int $0x40 \n\t"
+    :"=a"(lang)
+    :"a"(26),"b"(2), "c"(opt), "d"(buf));
+
+    return lang;
+};
+
+
+static inline
+int font_size(int color)
+/// decode font size in pixels from color as SysFn4
+/// returns (width, hight)
+{            
+    int font = color >> 24;
+    int font_multipl = (font & 7) + 1;
+	int width_sym, hight_sym;
+
+    if (font & 0x10) // 8x16
+    {
+        width_sym = 8 * font_multipl;
+        hight_sym = 16 * font_multipl;
+    } else   // 6x9
+    {
+        width_sym = 6 * font_multipl;
+        hight_sym = 9 * font_multipl;
+    }
+    return hight_sym + (width_sym << 16);
+}
 
 /*
 static inline char *getcwd(char *buf, size_t size)
@@ -729,7 +892,28 @@ static inline char *getcwd(char *buf, size_t size)
 		return buf;
 }
 */
-// end section
+/* not finished
+void staticnum_draw(staticnum *st)
+{
+    register uint32_t fmt;
+    if (st->width < 0)
+        fmt = (-st->width << 16); // leading zeros, decimal
+    else
+        fmt = (st->width << 16) | 0x80000000; // no leading zeros, decimal
+
+    __asm__ __volatile__(
+    "int $0x40"
+    ::"a"(47),
+      "b"(fmt),
+      "c"(st->number),
+      "d"(st->start_xy),
+      "S"(st->color_flags),
+      "D"(st->bg_color)
+    :);
+}
+
+*/
+//////////// end section
 
 
 
@@ -753,6 +937,16 @@ void __attribute__ ((noinline)) debug_board_printf(const char *format,...)
         va_end(ap);
         debug_board_write_str(log_board);
 }
+
+__attribute__ ((noinline)) void trap(int n)
+{
+    // nothing todo, just see n in debugger. use "bp trap" command
+    __asm__ __volatile__(
+    "nop"
+    :
+    :"a"(n));
+}
+
 */
 
 

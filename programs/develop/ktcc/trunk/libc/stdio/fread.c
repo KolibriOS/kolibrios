@@ -12,7 +12,7 @@ int fread(void *buffer,int size,int count,FILE* file)
         return 0;
     }
 
-	if ((file->mode &3)!=FILE_OPEN_READ && (file->mode & FILE_OPEN_PLUS==0))
+	if ((file->mode &3)!=FILE_OPEN_READ && (file->mode & FILE_OPEN_PLUS)==0)
     {
         errno = E_ACCESS;
         return 0;

@@ -28,7 +28,7 @@ typedef struct {
   int     mode;
 } FILE;
 
-#define stderr ((FILE*)3) /* works inly for fprintf!!! */
+#define stderr ((FILE*)3) /* works only for fprintf!!! */
 
 
 #define FILE_OPEN_READ 0

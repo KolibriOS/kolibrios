@@ -43,7 +43,7 @@ char* con_imports[] = {
 	"con_printf", "con_exit", "con_get_flags", "con_set_flags", "con_kbhit",
 	"con_getch", "con_getch2", "con_gets", "con_gets2", "con_get_font_height",
 	"con_get_cursor_height", "con_set_cursor_height",  "con_cls", 
-	"con_get_cursor_pos", "con_set_cursor_pos",
+	"con_get_cursor_pos", "con_set_cursor_pos", "con_set_title",
 	(char*)0
 };
 
@@ -67,7 +67,8 @@ void con_lib_link(struct import *exp, char** imports){
         con_set_cursor_height=_ksys_cofflib_getproc(exp, imports[16]);
         con_cls		 		= _ksys_cofflib_getproc(exp, imports[17]);
         con_get_cursor_pos	= _ksys_cofflib_getproc(exp, imports[18]);
-        con_set_cursor_pos	= _ksys_cofflib_getproc(exp, imports[19]);
+		con_set_cursor_pos	= _ksys_cofflib_getproc(exp, imports[19]);
+		con_set_title		= _ksys_cofflib_getproc(exp, imports[20]);
 }
 
 

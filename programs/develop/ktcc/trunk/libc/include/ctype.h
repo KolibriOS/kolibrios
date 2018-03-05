@@ -1,3 +1,5 @@
+#ifndef _CTYPE_H
+#define _CTYPE_H
 /*
 ** All character classification functions except isascii().
 ** Integer argument (c) must be in ASCII range (0-127) for
@@ -35,3 +37,5 @@ extern unsigned short __is[128];
 
 extern unsigned char tolower(unsigned char c);
 extern unsigned char toupper(unsigned char c);
+
+#endif

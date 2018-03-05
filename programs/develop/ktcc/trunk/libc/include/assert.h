@@ -1,4 +1,5 @@
 #ifndef __ASSERT_H
+#define __ASSERT_H
 
 #ifdef NDEBUG           
 # define assert(a) (void)0

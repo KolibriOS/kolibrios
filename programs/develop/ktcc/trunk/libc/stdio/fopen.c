@@ -7,107 +7,57 @@ extern char __path;
 
 int errno = 0;
 
-
 const char* getfullpath(const char *path){
 
-        int i,j,relpath_pos,localpath_size;
-        int filename_size;
-        char local_path;
+        int  relpath_pos, localpath_size;
         char *programpath;
         char *newpath;
+        char *prgname;
 
-        i=0;
-        local_path=1; //enable local path
-        while((*(path+i)!='\0') || (*(path+i)!=0))
+        if (path[0] == '/') /* root */
         {
-                if (*(path+i)=='.')
-                {
-                        if (*(path+i+1)=='/')
-                        {       //detected relative path
-                                relpath_pos=i+2;
-                                local_path=0;
-                                break;
-                        }
-                }
-                if (*(path+i)=='/')
-                {       //disabple local path
-                        local_path=0;
-                        return(path);
-                }
-                i++;
+            return(strdup(path)); /* dup need as free in fclose() */
         }
-        filename_size=i;
+
+        relpath_pos = 0;
+        if (path[0] == '.' && path[1] == '/')
+        {
+            //detected relative path, begins with ./
+            relpath_pos=2;
+        }
 
         programpath=&__path;
 
-        if (local_path==1)
-        {
-                i=FILENAME_MAX;
-                //find local path of program
-                while(*(programpath+i)!='/')
-                {
-                        i--;
-                }
-                localpath_size=i;
-                newpath=malloc(FILENAME_MAX);
-                if(!newpath)
-                {
-                    errno = E_NOMEM;
-                    return NULL;
-                }
+        //if we here than path is a relative or local
+        prgname = strrchr(programpath, '/');
+        if (!prgname) return strdup(path);
 
-                //copy local path to the new path
-                for(i=0;i<=localpath_size;i++)
-                {
-                        *(newpath+i)=*(programpath+i);
-                }
-                //copy filename to the new path
-                for(i=0;i<filename_size;i++)
-                {
-                        *(newpath+localpath_size+1+i)=*(path+i);
-                }
-                return(newpath);
-        }
+        localpath_size = prgname - programpath + 1;
 
-       //if we here than path is a relative
-       i=FILENAME_MAX;
-       //find local path of program
-       while(*(programpath+i)!='/')
-       {
-                i--;
-       }
-       localpath_size=i;
-       i=0;
-       //find file name size
-       while((*(path+relpath_pos+i)!='\0') || (*(path+relpath_pos+i)!=0))
-       {
-                i++;
-       }
-       filename_size=i;
-       newpath=malloc(FILENAME_MAX);
+        newpath = malloc(FILENAME_MAX);
         if(!newpath)
         {
             errno = E_NOMEM;
             return NULL;
         }
         //copy local path to the new path
-       for(i=0;i<=localpath_size;i++)
-       {
-                *(newpath+i)=*(programpath+i);
-       }
-       //copy filename to the new path
-       for(i=0;i<filename_size;i++)
-       {
-                *(newpath+localpath_size+1+i)=*(path+relpath_pos+i);
-       }
-       return(newpath);
+        strncpy(newpath, programpath, localpath_size);
+        newpath[localpath_size] = 0;
+
+        //copy filename to the new path
+        strcpy(newpath + localpath_size, path + relpath_pos);
+
+        return(newpath);
 }
+
 
 
 FILE* fopen(const char* filename, const char *mode)
 {
         FILE* res;
-        int imode;
+        int imode, sz = -1;
+		char *fullname;
+
         imode=0;
         if (*mode=='r')
         {
@@ -141,7 +91,20 @@ FILE* fopen(const char* filename, const char *mode)
         }
         if (*mode!=0)
                 return NULL;
-        res=malloc(sizeof(FILE));
+		
+		fullname = (char*)getfullpath(filename);
+		if ((imode & 3) == FILE_OPEN_READ && fullname)	/* check existense */
+		{
+			sz = _ksys_get_filesize(fullname);
+			if (sz < 0) 
+			{
+				free(fullname);
+				errno = sz;
+				return NULL;
+			}
+		}
+			
+        res = malloc(sizeof(FILE));
         if (res)
         {
             res->buffer=malloc(BUFSIZ);
@@ -149,7 +112,7 @@ FILE* fopen(const char* filename, const char *mode)
             res->filesize=0;
             res->filepos=0;
             res->mode=imode;
-            res->filename=(char*)getfullpath(filename);
+            res->filename=fullname;
         }
         if(!res || !res->buffer || !res->filename)
         {
@@ -159,7 +122,10 @@ FILE* fopen(const char* filename, const char *mode)
 
 	if ((imode==FILE_OPEN_READ) || (imode==FILE_OPEN_APPEND))
 	{
-		res->filesize=_ksys_get_filesize(res->filename);
+		if (sz > 0) /*already got*/
+			res->filesize = sz;
+		else
+			res->filesize=_ksys_get_filesize(res->filename);
 	}
         return res;
 }

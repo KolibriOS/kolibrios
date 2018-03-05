@@ -30,7 +30,7 @@ long int strtol (const char* str, char** endptr, int base);
 
 void* calloc (size_t num, size_t size);
 
-#define exit(a) _ksys_exit()
+void exit (int status); /* close console if was initialized, also stay window [finished] when status is error < 0 */ 
 #define abort() exit(-1)
 
 typedef struct {

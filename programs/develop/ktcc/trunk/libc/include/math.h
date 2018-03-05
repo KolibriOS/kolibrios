@@ -1,6 +1,8 @@
 /* Copyright (C) 1999 DJ Delorie, see COPYING.DJ for details */
 /* Copyright (C) 1998 DJ Delorie, see COPYING.DJ for details */
 /* Copyright (C) 1995 DJ Delorie, see COPYING.DJ for details */
+#ifndef _MATH_H
+#define _MATH_H
 
 //extern int stdcall integer(float number);
 
@@ -189,3 +191,4 @@ long double roundl  (long double x);
 //#endif /* _USE_LIBM_MATH_H */
 
 //#endif /* !__dj_include_math_h_ */
+#endif

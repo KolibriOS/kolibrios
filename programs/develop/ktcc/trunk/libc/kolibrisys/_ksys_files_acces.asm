@@ -28,9 +28,11 @@ proc _ksys_get_filesize stdcall, filename:dword
         test eax,eax
         jnz error_for_file_size
 
-          mov eax,[buffer_for_info+32] ;file size
+        mov eax,[buffer_for_info+32] ;file size
+        ret
 
         error_for_file_size:
+	neg eax
 
         ret
 endp

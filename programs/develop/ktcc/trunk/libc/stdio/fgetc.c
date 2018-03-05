@@ -8,7 +8,7 @@ int fgetc(FILE* file)
         return EOF;
     }
 
-	if ((file->mode & 3!=FILE_OPEN_READ) && (file->mode & FILE_OPEN_PLUS==0)) return EOF;
+	if ((file->mode & 3)!=FILE_OPEN_READ && (file->mode & FILE_OPEN_PLUS)==0) return EOF;
 
 	if (file->filepos>=file->filesize)
 	{

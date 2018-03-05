@@ -12,6 +12,8 @@ int fclose(FILE* file)
 
     if(file->buffer)
         free(file->buffer);
+    if(file->filename)
+        free(file->filename);
 	free(file);
 
 	return 0;
