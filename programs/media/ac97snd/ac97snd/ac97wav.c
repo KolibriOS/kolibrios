@@ -497,6 +497,7 @@ void debug_out_str(const char* str)
 
 void ExitInHiddenMode()
 {
+	status = ST_EXIT; //send message to second process about exit
 	uFMOD_StopSong();
 	StopBuffer(hBuff);
 	DestroyBuffer(hBuff);
@@ -706,7 +707,7 @@ int main(int argc, char *argv[])
 
    if (!LoadFile(full_filename))
 	   return 0;
-   tid=create_thread(thread_proc, 0, 4096);
+   if (!hidden) tid=create_thread(thread_proc, 0, 4096);
    
    while(1)
    {  delay(10);
