@@ -449,9 +449,9 @@ void update_dynamic_content() //Asper +
 
 void draw_window()
 {
-   BeginDraw();
    if (!hidden)
    {
+      BeginDraw();
       DrawWindow(100,100,299,main_wh,main_wc,4,0,0,0); //Asper+   
 
       make_button(7,24,45,13, 0x10|BT_NORMAL,main_bc);
@@ -474,8 +474,8 @@ void draw_window()
       write_text(276,74,main_wc|FONT0,button_PL,sizeof(button_PL)-1); //Asper+ PL button text
       write_text(275,73,0xA0FFA0|FONT0,button_PL,sizeof(button_PL)-1); //Asper+
       redraw_R_button();
+      EndDraw();
    }
-   EndDraw();
 };
 
 void draw_progress_bar()
@@ -705,6 +705,7 @@ int main(int argc, char *argv[])
       switch(status)
       {  case ST_TRACK:
 			StopBuffer(hBuff);
+			if (hidden) ExitInHiddenMode();
 			if (LoadTrack(++currActive))
 			{
 				if (LoadFile(full_filename))
@@ -733,6 +734,7 @@ int main(int argc, char *argv[])
 	  case ST_STOP:
 		  StopBuffer(hBuff);
 		  status = ST_DONE;
+		  if (hidden) ExitInHiddenMode();
 		  continue;
 
 	  case ST_EXIT:
@@ -1105,6 +1107,14 @@ void _stdcall thread_proc(void *param)
     };
   };
 };
+
+void ExitInHiddenMode()
+{
+	uFMOD_StopSong();
+	StopBuffer(hBuff);
+	DestroyBuffer(hBuff);
+	exit();
+}
 
 void delay (int val)
 {
