@@ -495,6 +495,14 @@ void debug_out_str(const char* str)
   }
 }
 
+void ExitInHiddenMode()
+{
+	uFMOD_StopSong();
+	StopBuffer(hBuff);
+	DestroyBuffer(hBuff);
+	exit();
+}
+
 int LoadPL(char *fname)
 {
 	DWORD fmt;
@@ -1107,14 +1115,6 @@ void _stdcall thread_proc(void *param)
     };
   };
 };
-
-void ExitInHiddenMode()
-{
-	uFMOD_StopSong();
-	StopBuffer(hBuff);
-	DestroyBuffer(hBuff);
-	exit();
-}
 
 void delay (int val)
 {
