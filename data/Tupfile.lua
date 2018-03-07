@@ -55,7 +55,6 @@ img_files = {
  {"MEDIA/PIXIE/PIXIE.INI", PROGS .. "/cmm/pixie/pixie.ini"},
  {"MEDIA/PIXIE/S_DARK.PNG", PROGS .. "/cmm/pixie/s_dark.png"},
  {"MEDIA/PIXIE/S_LIGHT.PNG", PROGS .. "/cmm/pixie/s_light.png"},
- {"MEDIA/PIXIE/MINIMP3", PROGS .. "/cmm/pixie/minimp3"},
  {"NETWORK/WV_SKIN.PNG", PROGS .. "/cmm/browser/wv_skin.png"},
  {"NETWORK/FTPD.INI", "common/network/ftpd.ini"},
  {"NETWORK/USERS.INI", "common/network/users.ini"},

@@ -34,7 +34,7 @@
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 8, "MP3\0\0" };
 
-#define ABOUT_MESSAGE "'Pixies Player v2.3
+#define ABOUT_MESSAGE "'Pixies Player v2.4
 A tiny MP3 folder player.
 
 Controls:
@@ -359,10 +359,10 @@ void EventStartPlayingMp3()
 	}
 	playback_mode = PLAYBACK_MODE_PLAYING;
 	strlcpy(#current_filename, Getcur_yItemName(), sizeof(current_filename));
-	sprintf(#item_path,"\"%s/%s\"",#work_folder,#current_filename);
+	sprintf(#item_path,"-h %s/%s",#work_folder,#current_filename);
 	DrawPlayList();
 	DrawTopPanel();
-	if (strcmpi(#item_path+strlen(#item_path)-4,".mp3")) player_run_id = RunProgram(abspath("minimp3"), #item_path);	
+	if (strcmpi(#item_path+strlen(#item_path)-3,".mp3")) player_run_id = RunProgram("/sys/media/ac97snd", #item_path);	
 	sprintf(#notify_message,"'Now playing:\n%s' -St",#current_filename);
 	for (i=2; i<strlen(#notify_message)-6; i++) if (notify_message[i]=='\'') notify_message[i]=96; //replace ' char to avoid @notify misunderstood
 	notify_run_id = notify(#notify_message);

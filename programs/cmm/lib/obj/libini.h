@@ -71,7 +71,7 @@ void _ini::GetString(dword key, dst, len, default_value)
 
 void _ini::SetString(dword key, value, len)
 {
-	ini_set_str stdcall (key, value, len);
+	ini_set_str stdcall (path, section, key, value, len);
 }
 
 #endif

@@ -20,7 +20,7 @@ od_filter filter2 = { 8, "MP3\0\0" };
 
 #include "..\lib\patterns\libimg_load_skin.h"
 
-#define ABOUT_MESSAGE "'Pixies Player v1.33\n\nOpen file: O key\nChange skin: F1/F2
+#define ABOUT_MESSAGE "'Pixies Player v1.4\n\nOpen file: O key\nChange skin: F1/F2
 Play/Stop: Space or P key\nStart playing selected file: Enter
 Goto next/previous track: Ctrl + Left/Right
 Change sound volume: Left/Right key\nMute: M key' -St\n"
@@ -315,10 +315,10 @@ void StartPlayingMp3()
 	if (current_playing_file_n < 0) { current_playing_file_n = 0; return; }
 	playback_mode = PLAYBACK_MODE_PLAYING;
 	strlcpy(#current_filename, Getcur_yItemName(), sizeof(current_filename));
-	sprintf(#item_path,"\"%s/%s\"",#work_folder,#current_filename);
+	sprintf(#item_path,"-h %s/%s",#work_folder,#current_filename);
 	DrawPlayList();
 	DrawTopPanel();
-	if (strcmpi(#item_path+strlen(#item_path)-4,".mp3")) player_run_id = RunProgram(abspath("minimp3"), #item_path);	
+	if (strcmpi(#item_path+strlen(#item_path)-3,".mp3")) player_run_id = RunProgram("/sys/media/ac97snd", #item_path);
 	sprintf(#notify_message,"'Now playing:\n%s' -St",#current_filename);
 	for (i=2; i<strlen(#notify_message)-6; i++) if (notify_message[i]=='\'') notify_message[i]=96; //replace ' char to avoid @notify misunderstood
 	notify_run_id = NotifyAndBackFocus(#notify_message);
