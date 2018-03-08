@@ -111,7 +111,6 @@ skinlist = {
 "_old/myskin4/myskin4.skn",
 "_old/MyTango/MyTango.skn",
 "_old/Nature/Nature.skn",
-"_old/Nature/Sandwich/src/src.skn",
 "_old/neutral/neutral/neutral.skn",
 "_old/neutral/neutral_blue/neutral_blue.skn",
 "_old/neutral/neutral_green/neutral_green.skn",
