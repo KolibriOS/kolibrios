@@ -1,8 +1,8 @@
-include '..\skin.inc'
+include '../skin.inc'
 
 SKIN_PARAMS \
   height          = bmp_center1.height,\  ; skin height
-  margins         = [6:5:43:3],\          ; margins [left:top:right:bottom]
+  margins         = [6:5:58:3],\          ; margins [left:top:right:bottom]
   colors active   = [binner=0x626262:\    ; border inner
                      bouter=0x33383A:\    ; border outer
                      bframe=0x626262],\   ; border middle
@@ -12,8 +12,8 @@ SKIN_PARAMS \
   dtp             = 'default.dtp'          ; dtp colors
 
 SKIN_BUTTONS \
-  close    = [-31:1][27:17],\             ; buttons coordinates
-  minimize = [-59:1][27:17]               ; [left:top][width:height]
+  close    = [-30:1][26:18],\             ; buttons coordinates
+  minimize = [-57:1][26:18]               ; [left:top][width:height]
 
 SKIN_BITMAPS \
   left active   = bmp_left1,\              ; skin bitmaps pointers

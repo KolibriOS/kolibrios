@@ -236,6 +236,7 @@ extra_files = {
  {"kolibrios/lib/i965-video.dll", "common/lib/i965-video.dll"},
  {"kolibrios/lib/libdrm.dll", "common/lib/libdrm.dll"},
  {"kolibrios/lib/libegl.dll", "common/lib/libegl.dll"},
+ {"kolibrios/lib/libeglut.dll", "common/lib/libeglut.dll"},
  {"kolibrios/lib/libGL.dll", "common/lib/libGL.dll"},
  {"kolibrios/lib/libjpeg.dll", "common/lib/libjpeg.dll"},
  {"kolibrios/lib/libpng16.dll", "common/lib/libpng16.dll"},
