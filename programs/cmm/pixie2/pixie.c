@@ -13,15 +13,16 @@
 #include "../lib/file_system.h"
 #include "../lib/list_box.h"
 #include "../lib/gui.h"
+#include "../lib/kfont.h"
+#include "../lib/collection.h"
 
-#include "../lib/obj/box_lib.h"
 #include "../lib/obj/libio.h"
 #include "../lib/obj/libimg.h"
 #include "../lib/obj/libini.h"
+#include "../lib/obj/proc_lib.h"
+#include "../lib/obj/box_lib.h"
 
 #include "../lib/patterns/libimg_load_skin.h"
-
-#include "../lib/obj/proc_lib.h"
 #include "../lib/patterns/simple_open_dialog.h"
 
 //===================================================//
@@ -34,7 +35,7 @@
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 8, "MP3\0\0" };
 
-#define ABOUT_MESSAGE "'Pixies Player v2.4
+#define ABOUT_MESSAGE "'Pixies Player v2.5
 A tiny MP3 folder player.
 
 Controls:
@@ -85,6 +86,8 @@ enum {
 	PLAYBACK_MODE_PLAYING
 };
 
+collection music_col;
+
 //===================================================//
 //                                                   //
 //                       CODE                        //
@@ -101,7 +104,7 @@ void LoadLibraries()
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libini, #lib_init,1);
 	load_dll(Proc_lib, #OpenDialog_init,0);
-	OpenDialog_init stdcall (#o_dialog);	
+	OpenDialog_init stdcall (#o_dialog);
 }
 
 void main()
@@ -113,7 +116,8 @@ void main()
 	if (!param) notify("'Pixie Player\nPress O key to open MP3 file' -St");
 	LoadLibraries();
 	LoadIniConfig();
-	SetEventMask(0100111b);
+	kfont.init(DEFAULT_FONT);	
+	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop()
 	{
 	  WaitEventTimeout(10);
@@ -185,11 +189,12 @@ void DrawPlayList()
 	int i;
 	int yyy;
 	char temp_filename[4096];
+	dword text_color, bg_color;
 	for (i=0; i<list.visible; i++;)
 	{
 		strcpy(#temp_filename, files_mas[i + list.first] * 304 + buf + 72);
-		temp_filename[strlen(#temp_filename)-4] = '\0';
-		if (strlen(#temp_filename)>47) strcpy(#temp_filename+44, "..."); 
+		//temp_filename[strlen(#temp_filename)-4] = '\0';
+		//if (strlen(#temp_filename)>47) strcpy(#temp_filename+44, "..."); 
 		
 		yyy = i*list.item_h+list.y;
 		
@@ -197,22 +202,23 @@ void DrawPlayList()
 		if (list.cur_y - list.first == i)
 		{
 			if (i>=list.count) continue;
-			DrawBar(list.x, yyy, list.w, list.item_h, theme.color_list_active_bg);
-			WriteText(12,yyy+list.text_y,list.font_type, theme.color_list_active_text, #temp_filename);
+			bg_color = theme.color_list_active_bg;
+			text_color = theme.color_list_text;
 		}
 		//this is not selected file
 		else
 		{
 			if (i>=list.count) continue;
-			DrawBar(list.x,yyy,list.w, list.item_h, theme.color_list_bg);
-			WriteText(12,yyy+list.text_y,list.font_type, theme.color_list_text, #temp_filename);
+			bg_color = theme.color_list_bg;
+			text_color = theme.color_list_text;
 		}
 		//this is cur_y playing file
 		if (i + list.first == current_playing_file_n) && (playback_mode == PLAYBACK_MODE_PLAYING)
 		{
-			WriteText(3, yyy+list.text_y+3,0x80, theme.color_list_active_pointer, "\x10");
-			WriteText(12,yyy+list.text_y,list.font_type, theme.color_list_active_text, #temp_filename);
+			text_color = theme.color_list_active_text;
 		}
+		DrawBar(list.x, yyy, list.w, list.item_h, bg_color);
+		kfont.WriteIntoWindow(12, yyy+list.text_y, bg_color, text_color, 11, #temp_filename);
 	}
 	DrawBar(list.x,list.visible * list.item_h + list.y, list.w, -list.visible * list.item_h + list.h, theme.color_list_bg);
 	DrawScroller();
@@ -234,8 +240,8 @@ dword GetSongTitle()
 {
 	char cur_y_playing_title[245];
 	strcpy(#cur_y_playing_title, #current_filename);
-	cur_y_playing_title[strlen(#cur_y_playing_title)-4] = '\0';
-	if (strlen(#cur_y_playing_title) > 36) strcpy(#cur_y_playing_title + 34, "..."); 
+	//cur_y_playing_title[strlen(#cur_y_playing_title)-4] = '\0';
+	//if (strlen(#cur_y_playing_title) > 36) strcpy(#cur_y_playing_title + 34, "..."); 
 	return #cur_y_playing_title;
 }
 
@@ -247,16 +253,16 @@ void DrawTopPanel()
 	//Mode depended
 	if (window_mode == WINDOW_MODE_NORMAL)
 	{
-		button_y = 47;
+		button_y = 46;
 		img_draw stdcall(skin.image, 0, 0, skin.w, skin.h, 0, 0);
-		if (playback_mode != PLAYBACK_MODE_STOPED) img_draw stdcall(skin.image, 38, button_y, 33, 17, skin.w+1, WIN_H_SMALL+1);
+		if (playback_mode != PLAYBACK_MODE_STOPED) img_draw stdcall(skin.image, 40, button_y, 35, 19, skin.w+1, WIN_H_SMALL+1);
 		if /*(!list.count) && */ (!work_folder) DrawPixieTitle("Pixie");
 		else DrawPixieTitle(#work_folder + strrchr(#work_folder, '/'));
-		WriteText(10, 26, list.font_type, theme.color_top_panel_song_name, GetSongTitle());
+		kfont.WriteIntoWindow(10, 26, theme.color_top_panel_bg, theme.color_top_panel_song_name, 11, GetSongTitle());
 	 	//Playing control buttons
-		DefineHiddenButton(7, button_y, 30, 16, BUTTON_PLAYBACK_PREV);
-		DefineHiddenButton(39, button_y, 30, 16, BUTTON_PLAYBACK_PLAY_PAUSE);
-		DefineHiddenButton(71, button_y, 30, 16, BUTTON_PLAYBACK_NEXT);
+		DefineHiddenButton(7, button_y, 32, 18, BUTTON_PLAYBACK_PREV);
+		DefineHiddenButton(41, button_y, 32, 18, BUTTON_PLAYBACK_PLAY_PAUSE);
+		DefineHiddenButton(75, button_y, 32, 18, BUTTON_PLAYBACK_NEXT);
 		//Window control buttons
 		DefineHiddenButton(Form.width - 21, 1, 20, 13, BUTTON_WINDOW_CLOSE);
 		DefineHiddenButton(Form.width - 43, 1, 20, 13, BUTTON_WINDOW_MINIMIZE);
@@ -295,7 +301,9 @@ void DrawScroller()
 
 void DrawPixieTitle(dword _title)
 {
-	WriteTextB(10, 6, list.font_type, theme.color_top_panel_folder_name, _title);
+	kfont.bold = true;
+	kfont.WriteIntoWindow(10, 6, theme.color_top_panel_bg, theme.color_top_panel_folder_name, 12, _title);
+	kfont.bold = false;
 }
 
 //===================================================//
@@ -349,8 +357,8 @@ void EventStartPlayingMp3()
 	char item_path[4096];
 	char notify_message[512];
 	EventStopPlayingMp3();
-	if (current_playing_file_n > list.count) { 
-		current_playing_file_n = list.count;
+	if (current_playing_file_n >= list.count) { 
+		current_playing_file_n = list.count-1;
 		return; 
 	}
 	if (current_playing_file_n < 0) { 
@@ -362,7 +370,7 @@ void EventStartPlayingMp3()
 	sprintf(#item_path,"-h %s/%s",#work_folder,#current_filename);
 	DrawPlayList();
 	DrawTopPanel();
-	if (strcmpi(#item_path+strlen(#item_path)-3,".mp3")) player_run_id = RunProgram("/sys/media/ac97snd", #item_path);	
+	player_run_id = RunProgram("/sys/media/ac97snd", #item_path);	
 	sprintf(#notify_message,"'Now playing:\n%s' -St",#current_filename);
 	for (i=2; i<strlen(#notify_message)-6; i++) if (notify_message[i]=='\'') notify_message[i]=96; //replace ' char to avoid @notify misunderstood
 	notify_run_id = notify(#notify_message);

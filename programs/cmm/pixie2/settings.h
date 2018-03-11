@@ -1,5 +1,6 @@
 struct struct_pixie_colors {
-	dword color_top_panel_folder_name,
+	dword color_top_panel_bg,
+	      color_top_panel_folder_name,
 	      color_top_panel_song_name,
 		  color_list_bg,
 	      color_list_text,
@@ -10,31 +11,32 @@ struct struct_pixie_colors {
 		  color_list_border;
 } theme;
 
-char config_section[] = "Config";
+_ini ini = { "/sys/media/pixie/pixie.ini", "Config" };
 
 #define WIN_W_SMALL 114
 #define WIN_H_SMALL 31
 
 void LoadIniConfig()
 {
-	ini_get_int stdcall (#pixie_ini_path, #config_section, "window_mode", WINDOW_MODE_NORMAL); window_mode = EAX;
-	ini_get_int stdcall (#pixie_ini_path, #config_section, "win_x_normal", 100); win_x_normal = EAX;
-	ini_get_int stdcall (#pixie_ini_path, #config_section, "win_y_normal", 90); win_y_normal = EAX;
-	ini_get_int stdcall (#pixie_ini_path, #config_section, "win_x_small", -1); win_x_small = EAX;
-	ini_get_int stdcall (#pixie_ini_path, #config_section, "win_y_small", -1); win_y_small = EAX;
-	ini_get_str stdcall (#pixie_ini_path, #config_section, "last_folder", #work_folder, sizeof(work_folder), 0);
+	window_mode   = ini.GetInt("window_mode", WINDOW_MODE_NORMAL);
+	win_x_normal  = ini.GetInt("win_x_normal", 100);
+	win_y_normal  = ini.GetInt("win_y_normal", 90);
+	win_x_small   = ini.GetInt("win_x_small", -1);
+	win_y_small   = ini.GetInt("win_y_small", -1);
+	ini.GetString("last_folder", #work_folder, sizeof(work_folder), 0);
 
 	Libimg_LoadImage(#skin, abspath("skin.png"));
 	skin.w = 322;
+	theme.color_top_panel_bg = 0x242424;
 	theme.color_top_panel_folder_name = 0xDDDDDB;
 	theme.color_top_panel_song_name = 0xBEBEBE;
-	theme.color_list_bg = 0xE2E2E2;
-	theme.color_list_text = 0x595959;
-	theme.color_list_active_bg = 0xFAF3AF;
-	theme.color_list_active_text = 0x85663F;
-	theme.color_list_active_pointer = 0x85663F;
+	theme.color_list_bg = 0x313031;
+	theme.color_list_text = 0xADAEAD;
+	theme.color_list_active_bg = 0x434343;
+	theme.color_list_active_text = 0x17A2CC;
+	theme.color_list_active_pointer = 0xD6D6D6;
 	theme.color_list_scroller = 0xBBBbbb;
-	theme.color_list_border = 0x010101;
+	theme.color_list_border = 0x121212;
 	scroll1.bckg_col = theme.color_list_bg;
 	scroll1.frnt_col = theme.color_list_border;
 	scroll1.line_col = theme.color_list_border;
@@ -56,11 +58,11 @@ void SaveIniConfig()
 		win_x_small = Form.left;
 		win_y_small = Form.top;
 	}
-	ini_set_int stdcall (#pixie_ini_path, #config_section, "window_mode", window_mode);
-	ini_set_int stdcall (#pixie_ini_path, #config_section, "win_x_normal", win_x_normal);
-	ini_set_int stdcall (#pixie_ini_path, #config_section, "win_y_normal", win_y_normal);
-	ini_set_int stdcall (#pixie_ini_path, #config_section, "win_x_small", win_x_small);
-	ini_set_int stdcall (#pixie_ini_path, #config_section, "win_y_small", win_y_small);
-	ini_set_str stdcall (#pixie_ini_path, #config_section, "last_folder", #work_folder, strlen(#work_folder));
+	ini.SetInt("window_mode", window_mode);
+	ini.SetInt("win_x_normal", win_x_normal);
+	ini.SetInt("win_y_normal", win_y_normal);
+	ini.SetInt("win_x_small", win_x_small);
+	ini.SetInt("win_y_small", win_y_small);
+	ini.SetString("last_folder", #work_folder, strlen(#work_folder));
 }
 

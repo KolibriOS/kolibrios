@@ -25,13 +25,11 @@
  *  drag - drag the element event
  */
 
-:dword __TMP_TIME,DOUBLE_CLICK_DELAY;
 :struct MOUSE
 {
 	signed x,y,xx,yy,lkm,mkm,pkm,key,tmp,tmp_time,hor,vert,down,up,move,click,dblclick,drag,left,top;
 	dword handle,_;
 	byte cmd;
-	void clearTime();
 	void get();
 	void set();
 	void center();
@@ -39,10 +37,7 @@
 	void slider();
 	void show();
 } mouse;
-:void MOUSE::clearTime()
-{
-	tmp_time = GetStartTime()+DOUBLE_CLICK_DELAY;
-}
+
 :void MOUSE::show()
 {
 	if(!handle)return;
@@ -147,13 +142,12 @@
 		down = false;
 		drag = false;
 		if(!move) click = true;
-		__TMP_TIME = GetStartTime();
-		if(__TMP_TIME-tmp_time<=DOUBLE_CLICK_DELAY)
+		if(GetStartTime()-GetMouseDoubleClickDelay()<=tmp_time)
 		{ 
 			dblclick = true;
 			click    = false; 
 		}
-		tmp_time = __TMP_TIME;
+		tmp_time = GetStartTime();
 		//returns the key code
 		key = tmp;
 		lkm = 1&tmp;

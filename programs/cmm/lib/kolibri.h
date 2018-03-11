@@ -713,7 +713,6 @@ void ______INIT______()
 	screen.width  = GetScreenWidth()+1;
 	screen.height = GetScreenHeight()+1;
 	
-	DOUBLE_CLICK_DELAY = GetMouseDoubleClickDelay();
 	__generator = GetStartTime();
 	
 	mem_init();
