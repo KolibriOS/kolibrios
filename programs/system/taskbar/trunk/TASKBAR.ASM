@@ -189,7 +189,7 @@ prod:
 ;--------------------------------------
 align 4
 @@:
-; this is hotkey Ctrl+Shift ;or LShift+RShift
+; this is hotkey LCtrl+LShift ;or LShift+RShift
 	jmp	karu
 ;------------------------------------------------------------------------------
 align 4
@@ -588,7 +588,7 @@ load_libraries l_libs_start,end_l_libs
 	mcall	48,1,[button_style]
 
 	mcall	66,4,0,2	; LShift+RShift
-	mcall	66,,,11h	; Ctrl+Shift
+	mcall	66,,,33h	; LCtrl+LShift
 	mcall	66,,88,110h	; Alt+Ctrl+F12
 	mcall	66,,91,0h	; RWin DOWN
 	mcall	66,,92		; LWin DOWN
