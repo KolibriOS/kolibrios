@@ -457,7 +457,8 @@ void plaque(void) {
 		fgets(winner, 128, stdin);
 #else
 		gets(winner);
-#endif		winner[strlen(winner)-1] = '\0';
+#endif		
+	winner[strlen(winner)-1] = '\0';
 	winner[30] = '\0';
 	nskip = 64 - strlen(winner)/2;
 

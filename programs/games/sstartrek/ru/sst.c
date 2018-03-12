@@ -8,9 +8,9 @@
 #include <windows.h>
 #endif
 
-#ifndef KOS32
 #include <time.h>
-#else
+
+#ifdef KOS32
 #include <conio.h>
 #include <kos32sys0.h>
 #endif
@@ -140,7 +140,8 @@ static void helpme(void) {
 	key = scan();
 	while (TRUE) {
 		if (key == IHEOL) {
-			proutn("Help on what command?");
+			/* proutn("Help on what command?"); */
+			proutn("Справку по какой команде?");
 			key = scan();
 		}
 		if (key == IHEOL) return;
@@ -149,7 +150,8 @@ static void helpme(void) {
 		}
 		if (i != NUMCOMMANDS) break;
 		skip(1);
-		prout("Valid commands:");
+		/* prout("Valid commands:"); */
+		prout("Перечень команд:");
 		listCommands(FALSE);
 		key = IHEOL;
 		chew();
@@ -165,22 +167,26 @@ static void helpme(void) {
 	}
 	fp = fopen("sst.doc", "r");
 	if (fp == NULL) {
-		prout("Spock-  \"Captain, that information is missing from the");
+/* 		prout("Spock-  \"Captain, that information is missing from the");
 		prout("   computer. You need to find SST.DOC and put it in the");
 		prout("   current directory.\"");
+ */		prout("Спок-  \"Капитан, вся справочная информация пропала с нашего компьютера.");
+		prout("   Найдите файл SST.DOC и положите в текущую папку.\"");
 		return;
 	}
 	i = strlen(cmdbuf);
 	do {
 		if (fgets(linebuf, 132, fp) == NULL) {
-			prout("Spock- \"Captain, there is no information on that command.\"");
+			/* prout("Spock- \"Captain, there is no information on that command.\""); */
+			prout("Спок- \"Капитан, по этой команде справочная информация не найдена.\"");
 			fclose(fp);
 			return;
 		}
 	} while (strncmp(linebuf, cmdbuf, i) != 0);
 
 	skip(1);
-	prout("Spock- \"Captain, I've found the following information:\"");
+	/* prout("Spock- \"Captain, I've found the following information:\""); */
+	prout("Спок- \"Капитан, я нашел следующую информацию:\"");
 	skip(1);
 
 	do {
@@ -228,10 +234,11 @@ static void makemoves(void) {
 			   ) break;
 
 			if (skill <= SFAIR)  {
-				prout("UNRECOGNIZED COMMAND. LEGAL COMMANDS ARE:");
+				/* prout("UNRECOGNIZED COMMAND. LEGAL COMMANDS ARE:"); */
+				prout("КОМАНДА НЕ РАСПОЗНАНА. ДЕЙСТВУЮЩИЕ КОМАНДЫ:");
 				listCommands(TRUE);
 			}
-			else prout("UNRECOGNIZED COMMAND.");
+			else prout("КОМАНДА НЕ РАСПОЗНАНА.");/*UNRECOGNIZED COMMAND*/
 		}
 		switch (i) { /* command switch */
 			case 0:			// srscan
@@ -245,7 +252,8 @@ static void makemoves(void) {
                 if (ididit) {
 #ifdef CLOAKING
                     if (irhere && d.date >= ALGERON && !isviolreported && iscloaked) {
-                        prout("The Romulan ship discovers you are breaking the Treaty of Algeron!");
+                        /* prout("The Romulan ship discovers you are breaking the Treaty of Algeron!"); */
+                        prout("Корабль ромуланцев заметил ваше нарушение Алгеронского соглашения!");
                         ncviol++;
                         isviolreported = TRUE;
                     }
@@ -258,7 +266,8 @@ static void makemoves(void) {
                 if (ididit) {
 #ifdef CLOAKING
                     if (irhere && d.date >= ALGERON && !isviolreported && iscloaked) {
-                        prout("The Romulan ship discovers you are breaking the Treaty of Algeron!");
+                        /* prout("The Romulan ship discovers you are breaking the Treaty of Algeron!"); */
+                        prout("Корабль ромуланцев заметил ваше нарушение Алгеронского соглашения!");
                         ncviol++;
                         isviolreported = TRUE;
                     }
@@ -375,7 +384,8 @@ static void makemoves(void) {
 			case 31:			// Save Game
 				freeze(FALSE);
 				if (skill > SGOOD)
-					prout("WARNING--Frozen games produce no plaques!");
+					/* prout("WARNING--Frozen games produce no plaques!"); */
+					prout("ВНИМАНИЕ--Сохраненные игры не дают наград!");
 				break;
 			case 32:			// Try a desparation measure
 				deathray();
@@ -479,17 +489,20 @@ int main(int argc, char **argv) {
 		skip(1);
 
 		if (tourn && alldone) {
-			printf("Do you want your score recorded?");
+			/* printf("Do you want your score recorded?"); */
+			printf("Вы хотите записать свои достижения?");
 			if (ja()) {
 				chew2();
 				freeze(FALSE);
 			}
 		}
-		printf("Do you want to play again?");
+		/* printf("Do you want to play again?"); */
+		printf("Желаете сыграть заново?");
 		if (!ja()) break;
 	}
 	skip(1);
-	prout("May the Great Bird of the Galaxy roost upon your home planet.");
+	/* prout("May the Great Bird of the Galaxy roost upon your home planet."); */
+	prout("Пусть Великая Галактическая Птица совьет гнездо на Вашей родной планете.");
 	return 0;
 }
 
@@ -499,24 +512,24 @@ void cramen(int i) {
 	char *s;
 	
 	switch (i) {
-		case IHR: s = "Romulan"; break;
-		case IHK: s = "Klingon"; break;
-		case IHC: s = "Commander"; break;
-		case IHS: s = "Super-commander"; break;
-		case IHSTAR: s = "Star"; break;
-		case IHP: s = "Planet"; break;
-		case IHB: s = "Starbase"; break;
-		case IHBLANK: s = "Black hole"; break;
-		case IHT: s = "Tholean"; break;
-		case IHWEB: s = "Tholean web"; break;
-		default: s = "Unknown??"; break;
+		case IHR: s = "Ромуланец"; break;/*Romulan*/
+		case IHK: s = "Клингон"; break;/*Klingon*/
+		case IHC: s = "Коммандер"; break;/*Commander*/
+		case IHS: s = "СуперКоммандер"; break;/*Super-commander*/
+		case IHSTAR: s = "Звезда"; break;/*Star*/
+		case IHP: s = "Планета"; break;/*Planet*/
+		case IHB: s = "Станция"; break;/*Starbase*/
+		case IHBLANK: s = "Черная дыра"; break;/*Black hole*/
+		case IHT: s = "Толиан"; break;/*Tholean*/
+		case IHWEB: s = "Толианская сеть"; break;/*Tholean web*/
+		default: s = "НЛО??"; break;/*Unknown*/
 	}
 	proutn(s);
 }
 
 void cramlc(int key, int x, int y) {
-	if (key == 1) proutn(" Quadrant");
-	else if (key == 2) proutn(" Sector");
+	if (key == 1) proutn(" Квадрант");/*Quadrant*/
+	else if (key == 2) proutn(" Сектор");/*Sector*/
 	proutn(" ");
 	crami(x, 1);
 	proutn(" - ");
@@ -533,9 +546,9 @@ void crmena(int i, int enemy, int key, int x, int y) {
 void crmshp(void) {
 	char *s;
 	switch (ship) {
-		case IHE: s = "Enterprise"; break;
-		case IHF: s = "Faerie Queene"; break;
-		default:  s = "Ship???"; break;
+		case IHE: s = "Энтерпрайз"; break;/*Enterprise*/
+		case IHF: s = "Королева Фей"; break;/*Faerie Queene*/
+		default:  s = "Корабль???"; break;/*Ship*/
 	}
 	proutn(s);
 }
@@ -594,7 +607,7 @@ int scan(void) {
 		}
 #ifdef KOS32
 		cp = gets(line);
-		if (!cp) exit(0);
+		if (!cp) exit(1);
 #else
 		// We should really be using fgets
 		fgets(line,sizeof(line),stdin);
@@ -640,7 +653,8 @@ int ja(void) {
 		chew();
 		if (*citem == 'y') return TRUE;
 		if (*citem == 'n') return FALSE;
-		proutn("Please answer with \"Y\" or \"N\":");
+		/* proutn("Please answer with \"Y\" or \"N\":"); */
+		proutn("Пожалуйста ответьте \"y\" or \"n\":");
 	}
 }
 
@@ -672,16 +686,17 @@ void pause(int i) {
 	putchar('\n');
 	if (i==1) {
 		if (skill > SFAIR)
-			prout("[ANNOUNCEMENT ARRIVING...]");
+			prout("[ПОЛУЧЕНО ОБЪЯВЛЕНИЕ...]");/*ANNOUNCEMENT ARRIVING*/
 		else
-			prout("[IMPORTANT ANNOUNCEMENT ARRIVING -- HIT ENTER TO CONTINUE]");
+			/* prout("[IMPORTANT ANNOUNCEMENT ARRIVING -- HIT ENTER TO CONTINUE]"); */
+			prout("[ПОЛУЧЕНО ВАЖНОЕ ОБЪЯВЛЕНИЕ -- НАЖМИТЕ ENTER ДЛЯ ПРОДОЛЖЕНИЯ]");
 		getchar();
 	}
 	else {
 		if (skill > SFAIR)
-			proutn("[CONTINUE?]");
+			proutn("[ПРОДОЛЖИТЬ?]");/*CONTINUE*/
 		else
-			proutn("[HIT ENTER TO CONTINUE]");
+			proutn("[НАЖМИТЕ ENTER ДЛЯ ПРОДОЛЖЕНИЯ]");/*HIT ENTER TO CONTINUE*/
 		getchar();
 		proutn("\r                           \r");
 	}
@@ -738,7 +753,8 @@ void prouts(char *s) {
 void huh(void) {
 	chew();
 	skip(1);
-	prout("Beg your pardon, Captain?");
+	/* prout("Beg your pardon, Captain?"); */
+	prout("Простите, не понял, Капитан?");
 }
 
 int isit(char *s) {

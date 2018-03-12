@@ -342,7 +342,7 @@ EXTERN char citem[24];
 PLANETS nulplanet = {0};
 char *device[ndevice+1] = {
 	"",
-	"S. R. Sensors",
+/* 	"S. R. Sensors",
 	"L. R. Sensors",
 	"Phasers",
 	"Photon Tubes",
@@ -356,9 +356,25 @@ char *device[ndevice+1] = {
 	"Transporter",
 	"Shield Control",
 	"Death Ray",
-	"D. S. Probe"
+	"D. S. Probe" */	
+	"Ближние сенсоры",
+	"Дальние сенсоры",
+	"Фазеры",
+	"Фотонные торпеды",
+	"Жизнеобеспечение",
+	"Варп-двигатели",
+	"Импульсные двиг.",
+	"Силовые щиты",
+	"Радиостанция",
+	"Шаттл",
+	"Компьютер",
+	"Транспортер",
+	"Регулятор щитов",
+	"Луч Смерти",
+	"Зонды глуб.скан"
 #ifdef CLOAKING
-	,"Cloaking Device"
+	/* ,"Cloaking Device"  */
+	,"Генератор невид." 
 #endif
 };									
 #endif
