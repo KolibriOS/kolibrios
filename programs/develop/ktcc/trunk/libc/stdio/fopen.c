@@ -113,6 +113,9 @@ FILE* fopen(const char* filename, const char *mode)
             res->filepos=0;
             res->mode=imode;
             res->filename=fullname;
+			res->ungetc_buf = EOF;
+			res->buffer_start = -1;
+			res->buffer_end = -1;
         }
         if(!res || !res->buffer || !res->filename)
         {
@@ -120,7 +123,7 @@ FILE* fopen(const char* filename, const char *mode)
             return NULL;
         }
 
-	if ((imode==FILE_OPEN_READ) || (imode==FILE_OPEN_APPEND))
+	if ((imode & 3) == FILE_OPEN_READ || (imode & 3) == FILE_OPEN_APPEND)
 	{
 		if (sz > 0) /*already got*/
 			res->filesize = sz;

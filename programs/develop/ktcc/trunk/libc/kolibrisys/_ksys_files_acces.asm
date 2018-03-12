@@ -39,7 +39,7 @@ endp
 
 
 align 4
-proc _ksys_readfile stdcall,filename:dword,position:dword,sizeblock:dword,buffer:dword
+proc _ksys_readfile stdcall,filename:dword,position:dword,sizeblock:dword,buffer:dword, preadbytes:dword
 
         xor eax,eax
         mov ebx,[position]
@@ -57,6 +57,9 @@ proc _ksys_readfile stdcall,filename:dword,position:dword,sizeblock:dword,buffer
         mov eax,70
         mov ebx,fileinfo
         int 0x40
+
+	mov esi, [preadbytes]
+	mov [esi], ebx
 
         ret
 endp

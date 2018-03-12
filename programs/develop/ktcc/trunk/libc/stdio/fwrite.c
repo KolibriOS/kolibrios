@@ -41,6 +41,13 @@ int fwrite(void *buffer,int size,int count,FILE* file)
 
 	}
 	*/
+	file->ungetc_buf = EOF;
+	if (file->filepos >= file->buffer_start && file->filepos < file->buffer_end) // drop buffer, if change his data
+	{
+		file->buffer_start = -1;
+		file->buffer_end = -1;
+	}
+	
 	if ((file->mode &3)==FILE_OPEN_WRITE || (file->mode&3)==FILE_OPEN_APPEND) // always true, as read checked previous
 	{
 		if (file->filepos==0)

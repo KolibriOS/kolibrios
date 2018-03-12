@@ -10,6 +10,10 @@
 #define abs(i) (((i)<0)?(-(i)):(i))
 #define labs(li) abs(li)
 
+#define min(a, b) ((a)<(b) ? (a) : (b))
+#define max(a, b) ((a)>(b) ? (a) : (b))
+
+
 extern int atoib(char *s,int b);
 extern int atoi(char *s);
 extern char *itoab(unsigned int n,char* s,int  b);

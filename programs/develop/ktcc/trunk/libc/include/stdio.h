@@ -23,9 +23,12 @@ typedef struct {
   char*   buffer;
   dword   buffersize;
   dword   filesize;     // too small
-  dword   filepos;      // too small
+  int     filepos;      // too small, may be -1
   char*   filename;
   int     mode;
+  int	  ungetc_buf;
+  dword   buffer_start;  // 1st byte position
+  dword   buffer_end;    // points after last buffered data
 } FILE;
 
 #define stderr ((FILE*)3) /* works only for fprintf!!! */
@@ -37,7 +40,7 @@ typedef struct {
 #define FILE_OPEN_TEXT 4
 #define FILE_OPEN_PLUS 8
 #define EOF (-1)
-#define BUFSIZ (256)
+#define BUFSIZ (4096)
 #define FILENAME_MAX (0x400)
 
 extern FILE* fopen(const char* filename, const char *mode);

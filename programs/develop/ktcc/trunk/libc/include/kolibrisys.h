@@ -49,7 +49,7 @@ typedef struct process_table_entry{
 //------------------------KolibriOS system acces to files----------------------------
 //-----------------------------------------------------------------------------------
 extern dword stdcall _ksys_get_filesize(char *filename);
-extern dword stdcall _ksys_readfile(char *filename,dword pos,dword blocksize,void *data);
+extern dword stdcall _ksys_readfile(char *filename,dword pos,dword blocksize,void *data, int *preadbytes);
 extern dword stdcall _ksys_rewritefile(char *filename,dword blocksize,void *data);
 extern dword stdcall _ksys_appendtofile(char *filename,dword pos,dword blocksize,void *data);
 //-----------------------------------------------------------------------------------

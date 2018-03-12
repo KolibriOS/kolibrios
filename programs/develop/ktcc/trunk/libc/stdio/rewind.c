@@ -7,5 +7,6 @@ void rewind(FILE* file)
         return;
     }
 
+	file->ungetc_buf = EOF;
 	file->filepos=0;
 }

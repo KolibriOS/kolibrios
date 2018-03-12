@@ -16,14 +16,13 @@ read .\source\readme_kos32.txt
 -add stdin, stderr, stdout emulation не хватает stdin, stdout - можно сделать как stderr!, но надо возиться заодно с ferror & feof
 -getchar, gets if returs errorcode  (0, null) - you must exit program, because of closed console window  
 -при нормальном выходе закрывать консоль
--sstrek виснет на поиске хелпа с дискеты - just very long reading by one symbol without buffering (need to change gets, getc, ungetc etc)
 
 
 ------ errors ------
 -not working: default search path are ./include ./lib from executable (under KOS need to use -Bpath_to_ktcc)
 --start.o not found using -B (kos) - put near your.c file
 -если проект многофайловый - .dbg генерит дублирующиеся метки данных, типа L.78 может указывать на другой сегмент (
-
+-.dbg sometimes generated improperly for source code labels
 
 ----- fixed errors ------
 -if static var sized more than 14096+ -> crash compiled .exe (kos) 
@@ -120,7 +119,7 @@ snprintf
 -may incorrect prints unsigned > 2147483647L
 
 ungetc
--ungetc fails if filepos == 0 - no tricks
+-ungetc fails if filepos == 0 - by design
 
 all file ops limited to 2Gb
 
