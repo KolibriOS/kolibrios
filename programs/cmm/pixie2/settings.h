@@ -28,7 +28,7 @@ void LoadIniConfig()
 	Libimg_LoadImage(#skin, abspath("skin.png"));
 	skin.w = 322;
 	theme.color_top_panel_bg = 0x242424;
-	theme.color_top_panel_folder_name = 0xDDDDDB;
+	theme.color_top_panel_folder_name = 0xEEEeee;
 	theme.color_top_panel_song_name = 0xBEBEBE;
 	theme.color_list_bg = 0x313031;
 	theme.color_list_text = 0xADAEAD;

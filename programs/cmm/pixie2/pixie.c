@@ -13,6 +13,7 @@
 #include "../lib/file_system.h"
 #include "../lib/list_box.h"
 #include "../lib/gui.h"
+#include "../lib/random.h"
 #include "../lib/kfont.h"
 #include "../lib/collection.h"
 
@@ -35,7 +36,7 @@
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 8, "MP3\0\0" };
 
-#define ABOUT_MESSAGE "'Pixies Player v2.5
+#define ABOUT_MESSAGE "'Pixies Player v2.6
 A tiny MP3 folder player.
 
 Controls:
@@ -62,12 +63,17 @@ enum {
 	BUTTON_PLAYBACK_PLAY_PAUSE = 10,
 	BUTTON_PLAYBACK_PREV, 
 	BUTTON_PLAYBACK_NEXT,
+	BUTTON_REPEAT,
+	BUTTON_SHUFFLE,
 	BUTTON_OPEN_DIALOG,
 	BUTTON_SHOW_VOLUME
 };
 
 int player_run_id;
 int notify_run_id;
+
+bool repeat;
+bool shuffle;
 
 int current_playing_file_n=0;
 
@@ -112,7 +118,7 @@ void main()
 	int tempstr;
 	tempstr = abspath("pixie.ini");
 	strcpy(#pixie_ini_path, tempstr);
-	list.SetFont(8, 14, 0x90);
+	list.SetFont(8, 16, 13);
 	if (!param) notify("'Pixie Player\nPress O key to open MP3 file' -St");
 	LoadLibraries();
 	LoadIniConfig();
@@ -149,6 +155,8 @@ void main()
 				case BUTTON_PLAYBACK_PREV: EventPlaybackPrevious();	break;
 				case BUTTON_PLAYBACK_NEXT: EventPlaybackNext(); break;
 				case BUTTON_PLAYBACK_PLAY_PAUSE: EventPlayAndPause(); break;
+				case BUTTON_REPEAT: EventRepeatClick(); break;
+				case BUTTON_SHUFFLE: EventshuffleClick(); break;
 				case BUTTON_OPEN_DIALOG: EventFileDialogOpen(); break;
 				case BUTTON_SHOW_VOLUME: RunProgram("/sys/@VOLUME", NULL); break;
 			}
@@ -218,7 +226,7 @@ void DrawPlayList()
 			text_color = theme.color_list_active_text;
 		}
 		DrawBar(list.x, yyy, list.w, list.item_h, bg_color);
-		kfont.WriteIntoWindow(12, yyy+list.text_y, bg_color, text_color, 11, #temp_filename);
+		kfont.WriteIntoWindow(6, yyy+list.text_y, bg_color, text_color, list.font_type, #temp_filename);
 	}
 	DrawBar(list.x,list.visible * list.item_h + list.y, list.w, -list.visible * list.item_h + list.h, theme.color_list_bg);
 	DrawScroller();
@@ -255,20 +263,25 @@ void DrawTopPanel()
 	{
 		button_y = 46;
 		img_draw stdcall(skin.image, 0, 0, skin.w, skin.h, 0, 0);
-		if (playback_mode != PLAYBACK_MODE_STOPED) img_draw stdcall(skin.image, 40, button_y, 35, 19, skin.w+1, WIN_H_SMALL+1);
+		if (playback_mode != PLAYBACK_MODE_STOPED) img_draw stdcall(skin.image, 46, button_y, 41, 21, skin.w+1, WIN_H_SMALL+1);
+		if (repeat) img_draw stdcall(skin.image, Form.width - 108+8, button_y, 20, 20, skin.w+50, WIN_H_SMALL+1);
+		if (shuffle) img_draw stdcall(skin.image, Form.width - 81+5, button_y, 20, 20, skin.w+75, WIN_H_SMALL+1);
+
 		if /*(!list.count) && */ (!work_folder) DrawPixieTitle("Pixie");
 		else DrawPixieTitle(#work_folder + strrchr(#work_folder, '/'));
-		kfont.WriteIntoWindow(10, 26, theme.color_top_panel_bg, theme.color_top_panel_song_name, 11, GetSongTitle());
+		kfont.WriteIntoWindow(8, 24, theme.color_top_panel_bg, theme.color_top_panel_song_name, list.font_type, GetSongTitle());
 	 	//Playing control buttons
-		DefineHiddenButton(7, button_y, 32, 18, BUTTON_PLAYBACK_PREV);
-		DefineHiddenButton(41, button_y, 32, 18, BUTTON_PLAYBACK_PLAY_PAUSE);
-		DefineHiddenButton(75, button_y, 32, 18, BUTTON_PLAYBACK_NEXT);
+		DefineHiddenButton(7, button_y, 38, 20, BUTTON_PLAYBACK_PREV);
+		DefineHiddenButton(47, button_y, 38, 20, BUTTON_PLAYBACK_PLAY_PAUSE);
+		DefineHiddenButton(87, button_y, 38, 20, BUTTON_PLAYBACK_NEXT);
 		//Window control buttons
-		DefineHiddenButton(Form.width - 21, 1, 20, 13, BUTTON_WINDOW_CLOSE);
-		DefineHiddenButton(Form.width - 43, 1, 20, 13, BUTTON_WINDOW_MINIMIZE);
-		DefineHiddenButton(Form.width - 65, 1, 20, 13, BUTTON_WINDOW_REDUCE);
-		//Open and volume
-		DefineHiddenButton(Form.width - 56, button_y, 23, 23, BUTTON_OPEN_DIALOG);
+		DefineHiddenButton(Form.width - 27, 1, 26, 15, BUTTON_WINDOW_CLOSE);
+		DefineHiddenButton(Form.width - 55, 1, 26, 15, BUTTON_WINDOW_MINIMIZE);
+		DefineHiddenButton(Form.width - 83, 1, 26, 15, BUTTON_WINDOW_REDUCE);
+		//Other buttons
+		DefineHiddenButton(Form.width - 108,button_y, 23, 23, BUTTON_REPEAT);
+		DefineHiddenButton(Form.width - 81, button_y, 23, 23, BUTTON_SHUFFLE);
+		DefineHiddenButton(Form.width - 54, button_y, 23, 23, BUTTON_OPEN_DIALOG);
 		DefineHiddenButton(Form.width - 27, button_y, 23, 23, BUTTON_SHOW_VOLUME);
 	}
 	else if (window_mode == WINDOW_MODE_SMALL)
@@ -301,9 +314,7 @@ void DrawScroller()
 
 void DrawPixieTitle(dword _title)
 {
-	kfont.bold = true;
-	kfont.WriteIntoWindow(10, 6, theme.color_top_panel_bg, theme.color_top_panel_folder_name, 12, _title);
-	kfont.bold = false;
+	kfont.WriteIntoWindow(8, 5, theme.color_top_panel_bg, theme.color_top_panel_folder_name, list.font_type, _title);
 }
 
 //===================================================//
@@ -372,8 +383,12 @@ void EventStartPlayingMp3()
 	DrawTopPanel();
 	player_run_id = RunProgram("/sys/media/ac97snd", #item_path);	
 	sprintf(#notify_message,"'Now playing:\n%s' -St",#current_filename);
-	for (i=2; i<strlen(#notify_message)-6; i++) if (notify_message[i]=='\'') notify_message[i]=96; //replace ' char to avoid @notify misunderstood
-	notify_run_id = notify(#notify_message);
+	if (!repeat)
+	{
+		for (i=2; i<strlen(#notify_message)-6; i++) 
+			if (notify_message[i]=='\'') notify_message[i]=96; //replace ' char to avoid @notify misunderstood
+		notify_run_id = notify(#notify_message);
+	}
 }
 
 
@@ -421,13 +436,15 @@ void EventExitApp()
 
 void EventPlaybackPrevious()
 {
-	current_playing_file_n--;
+	if (shuffle) current_playing_file_n = random(list.count);
+	else current_playing_file_n--;
 	EventStartPlayingMp3();
 }
 
 void EventPlaybackNext()
 {
-	current_playing_file_n++;
+	if (shuffle) current_playing_file_n = random(list.count);
+	else current_playing_file_n++;
 	EventStartPlayingMp3();
 }
 
@@ -446,10 +463,22 @@ void EventFileDialogOpen()
 void EventCheckSongFinished()
 {
 	if (playback_mode == PLAYBACK_MODE_PLAYING) && (!GetProcessSlot(player_run_id)) {
-		EventPlaybackNext();
+		if (repeat) EventStartPlayingMp3();
+		else EventPlaybackNext();
 	}
 }
 
+void EventRepeatClick()
+{
+	repeat ^= 1;
+	DrawTopPanel();
+}
+
+void EventshuffleClick()
+{
+	shuffle ^= 1;
+	DrawTopPanel();
+}
 
 stop:
 
