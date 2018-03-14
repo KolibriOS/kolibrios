@@ -1,6 +1,6 @@
 /*
  * Icon Editor for KolibriOS
- * Author: Leency
+ * Authors: Leency, 
  * Licence: GPL v2
 */
 
@@ -28,7 +28,7 @@ enhance icon
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.15"
+#define T_TITLE "Icon Editor 0.3"
 
 #define TOOLBAR_H    24+8
 #define PALLETE_SIZE 116
@@ -54,6 +54,8 @@ enum {
 	BTN_ROTATE_RIGHT,
 	BTN_PICK,
 	BTN_FILL,
+	BTN_LINE,
+	BTN_RECT,
 	BTN_ZOOM_IN,
 	BTN_ZOOM_OUT,
 	BTNS_PALETTE_COLOR_MAS = 100,
@@ -82,20 +84,239 @@ dword last_used_colors[13*2] = {
 
 _image image;
 
+libimg_image tools_icons;
+
 libimg_image open_image;
 
 enum {
-	PENCIL,
-	FILL,
-	PIPET
+	TOOL_NONE = -1,
+	TOOL_FILL = 0,
+	TOOL_PIPETTE = 1,
+	TOOL_PENCIL = 2,
+	TOOL_LINE = 3,
+	TOOL_RECT = 4,
 };
-int active_tool = PENCIL;
+
+struct Tool {
+	int id;
+	
+	void (*activate)();
+	void (*deactivate)();
+	void (*onMouseEvent)(int x, int y, int lkm, int pkm);
+	void (*onCanvasDraw)();
+};
+
+Tool tools[5];
+int currentTool = -1;
+
+void resetCurrentTool() {
+	if ((currentTool != TOOL_NONE) && (tools[currentTool].deactivate != 0)) {
+		tools[currentTool].deactivate();
+	}
+	
+	currentTool = TOOL_NONE;
+}
+
+void setCurrentTool(int index) {
+	resetCurrentTool();
+	
+	if ((index != TOOL_NONE) && (tools[index].activate != 0))
+		tools[index].activate();
+	
+	currentTool = index;
+}
 
 //===================================================//
 //                                                   //
 //                       CODE                        //
 //                                                   //
 //===================================================//
+
+void FillTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
+	if (mouseX>canvas.x) && (mouseY>canvas.y) 
+		&& (mouseY<canvas.y+canvas.h) 
+		&& (mouseX<canvas.x+canvas.w)
+	{
+		if (lkm) 
+			EventFill(mouseY-canvas.y/zoom.value, 
+				mouseX-canvas.x/zoom.value, active_color_1);
+		else if (pkm) 
+			EventFill(mouseY-canvas.y/zoom.value, 
+				mouseX-canvas.x/zoom.value, active_color_2);
+			
+		DrawCanvas();
+	}
+}
+
+void PipetteTool_activate() {
+	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE);
+}
+
+void PipetteTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
+	active_color_1 = GetPixelColorFromScreen(mouseX + Form.left + 5, mouseY + Form.top + skin_height);
+	DrawActiveColor(NULL);
+	
+	if (mouse.down) && (mouse.key&MOUSE_LEFT) {
+		SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
+		EventSetActiveColor(1, active_color_1);
+		
+		setCurrentTool(TOOL_PENCIL);
+	}
+}
+
+void PencilTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
+	if (mouseX>canvas.x) && (mouseY>canvas.y) 
+		&& (mouseY<canvas.y+canvas.h) 
+		&& (mouseX<canvas.x+canvas.w) 
+	{
+		if (lkm) 
+			image.set_pixel(mouseY-canvas.y/zoom.value, 
+				mouseX-canvas.x/zoom.value, active_color_1);
+		if (pkm) 
+			image.set_pixel(mouseY-canvas.y/zoom.value, 
+				mouseX-canvas.x/zoom.value, active_color_2);
+				
+		DrawCanvas();
+	}
+}
+
+// Line tool
+
+int LineTool_startX = -1;
+int LineTool_startY = -1;
+int LineTool_lastTempPosX = -1;
+int LineTool_lastTempPosY = -1;
+
+void LineTool_reset() {
+	LineTool_startX = -1;
+	LineTool_startY = -1;
+	LineTool_lastTempPosX = -1;
+	LineTool_lastTempPosY = -1;
+}
+
+void LineTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
+	if ((mouseX>canvas.x) && (mouseY>canvas.y) 
+		&& (mouseY<canvas.y+canvas.h) 
+		&& (mouseX<canvas.x+canvas.w)) 
+	{
+		if (mouse.down) && (mouse.key & MOUSE_LEFT) {
+			if ((LineTool_startX < 0) || (LineTool_startY < 0)) {
+				LineTool_startX = mouseX;
+				LineTool_startY = mouseY;
+			}
+			else {
+				// Draw line from start position to current position
+				DrawLine(LineTool_startX - canvas.x/zoom.value, LineTool_startY - canvas.y/zoom.value, mouseX - canvas.x/zoom.value, mouseY - canvas.y/zoom.value, active_color_1, 1);
+				DrawCanvas();
+				
+				// Reset start position
+				LineTool_startX = -1;
+				LineTool_startY = -1;
+			}
+		}
+		
+		if ((LineTool_startX >= 0) && (LineTool_startY >= 0)) {
+			if ((calc(mouseX - canvas.x/zoom.value) != LineTool_lastTempPosX)
+				|| (calc(mouseY - canvas.y/zoom.value) != LineTool_lastTempPosY)) 
+			{
+				DrawCanvas();
+			}
+		}
+	}
+}
+
+void LineTool_onCanvasDraw() {
+	if ((LineTool_startX >= 0) && (LineTool_startY >= 0)) {
+		DrawLine(LineTool_startX - canvas.x/zoom.value, LineTool_startY - canvas.y/zoom.value, mouse.x - canvas.x/zoom.value, mouse.y - canvas.y/zoom.value, active_color_1, 2);
+		LineTool_lastTempPosX = mouse.x - canvas.x/zoom.value;
+		LineTool_lastTempPosY = mouse.y - canvas.y/zoom.value;
+	}
+}
+
+// Rect tool
+int RectTool_startX = -1;
+int RectTool_startY = -1;
+int RectTool_lastTempPosX = -1;
+int RectTool_lastTempPosY = -1;
+
+void RectTool_reset() {
+	RectTool_startX = -1;
+	RectTool_startY = -1;
+	RectTool_lastTempPosX = -1;
+	RectTool_lastTempPosY = -1;
+}
+
+void RectTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
+	if ((mouseX>canvas.x) && (mouseY>canvas.y) 
+		&& (mouseY<canvas.y+canvas.h) 
+		&& (mouseX<canvas.x+canvas.w)) 
+	{
+		if (mouse.down) && (mouse.key & MOUSE_LEFT) {
+			if ((RectTool_startX < 0) || (RectTool_startY < 0)) {
+				RectTool_startX = mouseX;
+				RectTool_startY = mouseY;
+			}
+			else {
+				// Draw line from start position to current position
+				DrawRectangleInCanvas(RectTool_startX - canvas.x/zoom.value, 
+					RectTool_startY - canvas.y/zoom.value, 
+					mouseX - canvas.x/zoom.value, 
+					mouseY - canvas.y/zoom.value, active_color_1, 1);
+				
+				DrawCanvas();
+				
+				// Reset start position
+				RectTool_startX = -1;
+				RectTool_startY = -1;
+			}
+		}
+		
+		if ((RectTool_startX >= 0) && (RectTool_startY >= 0)) {
+			if ((calc(mouseX - canvas.x/zoom.value) != RectTool_lastTempPosX)
+				|| (calc(mouseY - canvas.y/zoom.value) != RectTool_lastTempPosY)) 
+			{
+				DrawCanvas();
+			}
+		}
+	}
+}
+
+void RectTool_onCanvasDraw() {
+	if ((RectTool_startX >= 0) && (RectTool_startY >= 0)) {
+		DrawRectangleInCanvas(RectTool_startX - canvas.x/zoom.value, 
+			RectTool_startY - canvas.y/zoom.value, 
+			mouse.x - canvas.x/zoom.value, 
+			mouse.y - canvas.y/zoom.value, active_color_1, 2);
+			
+		RectTool_lastTempPosX = mouse.x - canvas.x/zoom.value;
+		RectTool_lastTempPosY = mouse.y - canvas.y/zoom.value;
+	}
+}
+
+void initTools() 
+{
+	tools[0].id = TOOL_FILL;
+	tools[0].onMouseEvent = #FillTool_onMouseEvent;
+	
+	tools[1].id = TOOL_PIPETTE;
+	tools[1].activate = #PipetteTool_activate;
+	tools[1].onMouseEvent = #PipetteTool_onMouseEvent;
+	
+	tools[2].id = TOOL_PENCIL;
+	tools[2].onMouseEvent = #PencilTool_onMouseEvent;
+	
+	tools[3].id = TOOL_PENCIL;
+	tools[3].activate = #LineTool_reset;
+	tools[3].deactivate = #LineTool_reset;
+	tools[3].onMouseEvent = #LineTool_onMouseEvent;
+	tools[3].onCanvasDraw = #LineTool_onCanvasDraw;
+	
+	tools[4].id = TOOL_RECT;
+	tools[4].activate = #RectTool_reset;
+	tools[4].deactivate = #RectTool_reset;
+	tools[4].onMouseEvent = #RectTool_onMouseEvent;
+	tools[4].onCanvasDraw = #RectTool_onCanvasDraw;	
+}
 
 void main()
 {
@@ -104,9 +325,10 @@ void main()
 	load_dll(libio,  #libio_init,  1);
 	load_dll(libimg, #libimg_init, 1);
 	Libimg_LoadImage(#skin, "/sys/icons16.png");
+	Libimg_LoadImage(#tools_icons, abspath("paint_tools.png"));
 	//system.color.get();
 	//Libimg_ReplaceColor(skin.image, skin.w, skin.h, 0xFFfffFFF, system.color.work_text);
-
+	
 	image.create(32, 32);
 
 	if (param[0]) {
@@ -119,43 +341,25 @@ void main()
 		}
 	}
 
+	initTools();
+	setCurrentTool(TOOL_PENCIL);
+	
 	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
 
 	loop() switch(WaitEvent())
 	{
 		case evMouse:
 			mouse.get();
+			
+			if (currentTool != TOOL_NONE)
+				tools[currentTool].onMouseEvent(mouse.x, mouse.y, mouse.lkm, mouse.pkm);
+
 			if (mouse.vert) {
 				if (mouse.vert==65535) zoom.click(BTN_ZOOM_IN);
 				if (mouse.vert==1) zoom.click(BTN_ZOOM_OUT);
 				DrawEditArea();
 			}
-			if (active_tool == PIPET)
-			{
-				 EventPickColor(mouse.lkm, mouse.pkm);
-			}
-			if (active_tool == PENCIL) {
-				if (mouse.x>canvas.x) && (mouse.y>canvas.y) 
-				&& (mouse.y<canvas.y+canvas.h) && (mouse.x<canvas.x+canvas.w)
-				{
-					if (mouse.lkm) image.set_pixel(mouse.y-canvas.y/zoom.value, 
-						mouse.x-canvas.x/zoom.value, active_color_1);
-					if (mouse.pkm) image.set_pixel(mouse.y-canvas.y/zoom.value, 
-						mouse.x-canvas.x/zoom.value, active_color_2);
-					DrawCanvas();
-				}
-			}
-			if (active_tool == FILL) {
-				if (mouse.x>canvas.x) && (mouse.y>canvas.y) 
-				&& (mouse.y<canvas.y+canvas.h) && (mouse.x<canvas.x+canvas.w)
-				{
-					if (mouse.lkm) EventFill(mouse.y-canvas.y/zoom.value, 
-						mouse.x-canvas.x/zoom.value, active_color_1);
-					if (mouse.pkm) EventFill(mouse.y-canvas.y/zoom.value, 
-						mouse.x-canvas.x/zoom.value, active_color_2);
-					DrawCanvas();
-				}
-			}
+
 			break;
 
 		case evButton:
@@ -197,14 +401,25 @@ void main()
 					DrawCanvas();
 					break;
 				case BTN_PICK:
-					EventPickActivate();
+					setCurrentTool(TOOL_PIPETTE);
+					//EventPickActivate();
 					break;
 				case BTN_FILL:
-					EventFillActivate();
+					setCurrentTool(TOOL_FILL);
+					//EventFillActivate();
+					break;
+				case BTN_LINE:
+					setCurrentTool(TOOL_LINE);
+					break;
+				case BTN_RECT:
+					setCurrentTool(TOOL_RECT);
 					break;
 				case BTN_ZOOM_IN:
+					zoom.click(BTN_ZOOM_IN);
+					DrawEditArea();
+					break;
 				case BTN_ZOOM_OUT:
-					zoom.click(btn);
+					zoom.click(BTN_ZOOM_OUT);
 					DrawEditArea();
 					break;
 				case CLOSE_BTN:
@@ -226,8 +441,8 @@ void main()
 	  
 		case evKey:
 			GetKeys();
-			if (key_scancode == SCAN_CODE_ESC) EventPickDeactivate();
-			if (key_scancode == SCAN_CODE_KEY_I) EventPickActivate();
+			if (key_scancode == SCAN_CODE_ESC) setCurrentTool(TOOL_PENCIL);
+			if (key_scancode == SCAN_CODE_KEY_I) setCurrentTool(TOOL_PIPETTE);
 			//if (key_scancode == SCAN_CODE_KEY_F) EventFillActivate();
 			if (key_scancode == SCAN_CODE_MINUS) {zoom.click(BTN_ZOOM_OUT); DrawEditArea();}
 			if (key_scancode == SCAN_CODE_PLUS)  {zoom.click(BTN_ZOOM_IN);  DrawEditArea();}
@@ -285,7 +500,9 @@ void draw_window()
 
 	DrawToolbarButton(BTN_PICK,   tx.inc(TB_ICON_PADDING+8), 38);
 	DrawToolbarButton(BTN_FILL,   tx.inc(TB_ICON_PADDING), 39);
-
+	DrawToolbarButton(BTN_LINE,   tx.inc(TB_ICON_PADDING), 40);
+	DrawToolbarButton(BTN_RECT,   tx.inc(TB_ICON_PADDING), 41);
+	
 	DrawEditArea();
 
 	DrawActiveColor(right_bar.y);
@@ -391,6 +608,10 @@ void DrawCanvas()
 				zoom.value, zoom.value, image.get_pixel(r, c));
 		}
 	}
+	
+	if ((currentTool != TOOL_NONE) && (tools[currentTool].onCanvasDraw != 0))
+		tools[currentTool].onCanvasDraw();
+
 }
 
 
@@ -399,33 +620,6 @@ void DrawCanvas()
 //                      EVENTS                       //
 //                                                   //
 //===================================================//
-
-void EventPickActivate()
-{
-	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE);
-	active_tool = PIPET;
-}
-
-void EventPickDeactivate()
-{
-	active_tool = PENCIL;
-}
-
-void EventFillActivate()
-{
-	active_tool = FILL;
-}
-
-void EventPickColor(dword lkm_status, pkm_status)
-{
-	active_color_1 = GetPixelColorFromScreen(mouse.x + Form.left + 5, mouse.y + Form.top + skin_height);
-	DrawActiveColor(NULL);
-	if (mouse.down) && (mouse.key&MOUSE_LEFT) {
-		EventPickDeactivate();
-		SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
-		EventSetActiveColor(1, active_color_1);
-	}
-}
 
 dword bmp_32x32x16_header[] = FROM "bmp32x32header";
 void EventSave()
@@ -486,3 +680,72 @@ void EventFill(dword _r, _c, _color)
 			IF (image.mas[i]==MARKED) image.mas[i] = _color;
 }
 
+// target - image (1) or canvas (2)
+void DrawLine(int x1, int y1, int x2, int y2, dword color, int target) {
+	int dx, dy, signX, signY, error, error2;
+
+	debugval("Draw line", x1);
+	debugval("Draw line", y1);
+	
+		debugval("Draw line", x2);
+	debugval("Draw line", y2);
+	debugln("===");
+   dx = x2 - x1;
+   
+   if (dx < 0)
+	   dx = -dx;
+   
+   dy = y2 - y1;
+
+   if (dy < 0)
+	   dy = -dy;
+   
+   if (x1 < x2)
+	   signX = 1;
+   else
+	   signX = -1;
+   
+   if (y1 < y2)
+	   signY = 1;
+   else
+	   signY = -1;
+   
+   error = dx - dy;
+
+	if (target == 1)
+		image.set_pixel(y2, x2, color);
+	else
+		DrawBar(x2*zoom.value + canvas.x, y2*zoom.value + canvas.y, 
+				zoom.value, zoom.value, color);
+   
+   while((x1 != x2) || (y1 != y2)) 
+  {
+		if (target == 1)
+			image.set_pixel(y1, x1, color);
+		else
+			DrawBar(x1*zoom.value + canvas.x, y1*zoom.value + canvas.y, 
+				zoom.value, zoom.value, color);
+		
+	   error2 = error * 2;
+
+       if(error2 > calc(-dy)) 
+       {
+           error -= dy;
+           x1 += signX;
+       }
+	   
+       if(error2 < dx) 
+       {
+           error += dx;
+           y1 += signY;
+       }
+   }
+
+}
+
+void DrawRectangleInCanvas(int x1, int y1, int x2, int y2, dword color, int target) {
+	DrawLine(x1, y1, x2, y1, color, target);
+	DrawLine(x2, y1, x2, y2, color, target);
+	DrawLine(x2, y2, x1, y2, color, target);
+	DrawLine(x1, y2, x1, y1, color, target);
+}
