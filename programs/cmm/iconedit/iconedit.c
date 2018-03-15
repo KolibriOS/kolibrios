@@ -1,6 +1,6 @@
 /*
  * Icon Editor for KolibriOS
- * Authors: Leency, 
+ * Authors: Leency, Nicolas
  * Licence: GPL v2
 */
 
@@ -28,12 +28,15 @@ enhance icon
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.3"
+#define T_TITLE "Icon Editor 0.31"
 
 #define TOOLBAR_H    24+8
+#define PANEL_LEFT_W 16+5+5+3+3
 #define PALLETE_SIZE 116
+#define TB_ICON_PADDING 26
 
-rect wrapper = { 10, TOOLBAR_H, NULL, NULL };
+
+rect wrapper = { PANEL_LEFT_W, TOOLBAR_H, NULL, NULL };
 rect right_bar = { NULL, TOOLBAR_H, 280, NULL };
 rect canvas = { NULL, NULL, NULL, NULL };
 
@@ -52,6 +55,7 @@ enum {
 	BTN_FLIP_VER,
 	BTN_ROTATE_LEFT,
 	BTN_ROTATE_RIGHT,
+	BTN_PENCIL,
 	BTN_PICK,
 	BTN_FILL,
 	BTN_LINE,
@@ -64,7 +68,7 @@ enum {
 
 proc_info Form;
 
-more_less_box zoom = { NULL, NULL, 11, 1, 40, BTN_ZOOM_IN, BTN_ZOOM_OUT, "Zoom" };
+more_less_box zoom = { PANEL_LEFT_W, -100, 11, 1, 40, BTN_ZOOM_IN, BTN_ZOOM_OUT, "Zoom" };
 
 dword default_palette[] = {
 0x330000,0x331900,0x333300,0x193300,0x003300,0x003319,0x003333,0x001933,0x000033,0x190033,0x330033,0x330019,0x000000,
@@ -84,17 +88,15 @@ dword last_used_colors[13*2] = {
 
 _image image;
 
-libimg_image tools_icons;
-
 libimg_image open_image;
 
 enum {
 	TOOL_NONE = -1,
-	TOOL_FILL = 0,
-	TOOL_PIPETTE = 1,
-	TOOL_PENCIL = 2,
-	TOOL_LINE = 3,
-	TOOL_RECT = 4,
+	TOOL_PENCIL,
+	TOOL_PIPETTE,
+	TOOL_FILL,
+	TOOL_LINE,
+	TOOL_RECT,
 };
 
 struct Tool {
@@ -122,8 +124,9 @@ void setCurrentTool(int index) {
 	
 	if ((index != TOOL_NONE) && (tools[index].activate != 0))
 		tools[index].activate();
-	
+
 	currentTool = index;
+	DrawLeftPanel();
 }
 
 //===================================================//
@@ -295,15 +298,15 @@ void RectTool_onCanvasDraw() {
 
 void initTools() 
 {
-	tools[0].id = TOOL_FILL;
-	tools[0].onMouseEvent = #FillTool_onMouseEvent;
+	tools[0].id = TOOL_PENCIL;
+	tools[0].onMouseEvent = #PencilTool_onMouseEvent;
 	
 	tools[1].id = TOOL_PIPETTE;
 	tools[1].activate = #PipetteTool_activate;
 	tools[1].onMouseEvent = #PipetteTool_onMouseEvent;
 	
-	tools[2].id = TOOL_PENCIL;
-	tools[2].onMouseEvent = #PencilTool_onMouseEvent;
+	tools[2].id = TOOL_FILL;
+	tools[2].onMouseEvent = #FillTool_onMouseEvent;
 	
 	tools[3].id = TOOL_PENCIL;
 	tools[3].activate = #LineTool_reset;
@@ -325,9 +328,8 @@ void main()
 	load_dll(libio,  #libio_init,  1);
 	load_dll(libimg, #libimg_init, 1);
 	Libimg_LoadImage(#skin, "/sys/icons16.png");
-	Libimg_LoadImage(#tools_icons, abspath("paint_tools.png"));
 	//system.color.get();
-	//Libimg_ReplaceColor(skin.image, skin.w, skin.h, 0xFFfffFFF, system.color.work_text);
+	//Libimg_ReplaceColor(tools_img.image, tools_img.w, tools_img.h, 0xFFF8C0D0, system.color.work);
 	
 	image.create(32, 32);
 
@@ -400,6 +402,9 @@ void main()
 					image.move(FLIP_HOR);
 					DrawCanvas();
 					break;
+				case BTN_PENCIL:
+					setCurrentTool(TOOL_PENCIL);
+					break;
 				case BTN_PICK:
 					setCurrentTool(TOOL_PIPETTE);
 					//EventPickActivate();
@@ -442,8 +447,11 @@ void main()
 		case evKey:
 			GetKeys();
 			if (key_scancode == SCAN_CODE_ESC) setCurrentTool(TOOL_PENCIL);
+			if (key_scancode == SCAN_CODE_KEY_P) setCurrentTool(TOOL_PENCIL);
 			if (key_scancode == SCAN_CODE_KEY_I) setCurrentTool(TOOL_PIPETTE);
-			//if (key_scancode == SCAN_CODE_KEY_F) EventFillActivate();
+			if (key_scancode == SCAN_CODE_KEY_F) setCurrentTool(TOOL_FILL);
+			if (key_scancode == SCAN_CODE_KEY_L) setCurrentTool(TOOL_LINE);
+			if (key_scancode == SCAN_CODE_KEY_R) setCurrentTool(TOOL_RECT);
 			if (key_scancode == SCAN_CODE_MINUS) {zoom.click(BTN_ZOOM_OUT); DrawEditArea();}
 			if (key_scancode == SCAN_CODE_PLUS)  {zoom.click(BTN_ZOOM_IN);  DrawEditArea();}
 			break;
@@ -461,6 +469,14 @@ void DrawToolbarButton(dword _id, _x, _icon_n)
 	img_draw stdcall(skin.image, _x+3, 7, 16, 16, 0, _icon_n*16);
 }
 
+void DrawLeftPanelButton(dword _id, _y, _icon_n)
+{
+	int x = 5;
+	DrawWideRectangle(x, _y, 22, 22, 3, 0xFFFfff);
+	DefineHiddenButton(x, _y, 21, 21, _id);
+	img_draw stdcall(skin.image, x+3, _y+3, 16, 16, 0, _icon_n*16);
+}
+
 void DrawStatusBar()
 {
 	zoom.y = wrapper.y + wrapper.h + 6;
@@ -473,7 +489,6 @@ void DrawStatusBar()
 
 void draw_window()
 {
-	#define TB_ICON_PADDING 26
 	incn tx;
 	system.color.get();
 	DefineAndDrawWindow(115+random(100), 50+random(100), 700, 540, 0x33, system.color.work, T_TITLE, 0);
@@ -498,10 +513,7 @@ void draw_window()
 	// DrawToolbarButton(BTN_ROTATE_LEFT,   tx.inc(TB_ICON_PADDING), 36); //not implemented
 	// DrawToolbarButton(BTN_ROTATE_RIGHT,  tx.inc(TB_ICON_PADDING), 37); //not implemented
 
-	DrawToolbarButton(BTN_PICK,   tx.inc(TB_ICON_PADDING+8), 38);
-	DrawToolbarButton(BTN_FILL,   tx.inc(TB_ICON_PADDING), 39);
-	DrawToolbarButton(BTN_LINE,   tx.inc(TB_ICON_PADDING), 40);
-	DrawToolbarButton(BTN_RECT,   tx.inc(TB_ICON_PADDING), 41);
+	DrawLeftPanel();
 	
 	DrawEditArea();
 
@@ -511,13 +523,25 @@ void draw_window()
 	DrawStatusBar();
 }
 
+void DrawLeftPanel()
+{
+	incn ty;
+	ty.n = TOOLBAR_H-TB_ICON_PADDING;
+	DrawLeftPanelButton(BTN_PENCIL, ty.inc(TB_ICON_PADDING), 38);
+	DrawLeftPanelButton(BTN_PICK,   ty.inc(TB_ICON_PADDING), 39);
+	DrawLeftPanelButton(BTN_FILL,   ty.inc(TB_ICON_PADDING), 40);
+	DrawLeftPanelButton(BTN_LINE,   ty.inc(TB_ICON_PADDING), 41);
+	DrawLeftPanelButton(BTN_RECT,   ty.inc(TB_ICON_PADDING), 42);
+	DrawRectangle3D(5, currentTool*TB_ICON_PADDING+TOOLBAR_H, 16+3+2, 16+3+2, 0x333333, 0x777777);
+}
+
 void DrawEditArea()
 {
 	dword color1=0xC0C0C0;
 	int top_side;
 	int left_side;
 
-	wrapper.w = Form.cwidth - right_bar.w - 30;
+	wrapper.w = Form.cwidth - right_bar.w - 30 - wrapper.x;
 	wrapper.h = Form.cheight - TOOLBAR_H - 35;
 
 	//canvas{
@@ -687,7 +711,7 @@ void DrawLine(int x1, int y1, int x2, int y2, dword color, int target) {
 	debugval("Draw line", x1);
 	debugval("Draw line", y1);
 	
-		debugval("Draw line", x2);
+	debugval("Draw line", x2);
 	debugval("Draw line", y2);
 	debugln("===");
    dx = x2 - x1;
