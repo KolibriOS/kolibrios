@@ -36,8 +36,9 @@
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 8, "MP3\0\0" };
 
-#define ABOUT_MESSAGE "'Pixies Player v2.6
-A tiny MP3 folder player.
+#define ABOUT_MESSAGE "'Pixies Player v2.61
+A tiny music folder player.
+Supports MP3, WAV, XM audio file formats.
 
 Controls:
 Open file: O key
@@ -201,7 +202,7 @@ void DrawPlayList()
 	for (i=0; i<list.visible; i++;)
 	{
 		strcpy(#temp_filename, files_mas[i + list.first] * 304 + buf + 72);
-		//temp_filename[strlen(#temp_filename)-4] = '\0';
+		temp_filename[strrchr(#temp_filename, '.')-1] = '\0'; 
 		//if (strlen(#temp_filename)>47) strcpy(#temp_filename+44, "..."); 
 		
 		yyy = i*list.item_h+list.y;
@@ -264,8 +265,8 @@ void DrawTopPanel()
 		button_y = 46;
 		img_draw stdcall(skin.image, 0, 0, skin.w, skin.h, 0, 0);
 		if (playback_mode != PLAYBACK_MODE_STOPED) img_draw stdcall(skin.image, 46, button_y, 41, 21, skin.w+1, WIN_H_SMALL+1);
-		if (repeat) img_draw stdcall(skin.image, Form.width - 108+8, button_y, 20, 20, skin.w+50, WIN_H_SMALL+1);
-		if (shuffle) img_draw stdcall(skin.image, Form.width - 81+5, button_y, 20, 20, skin.w+75, WIN_H_SMALL+1);
+		if (repeat) img_draw stdcall(skin.image, Form.width - 101-1, button_y+2, 17, 17, skin.w+43, WIN_H_SMALL+1);
+		if (shuffle) img_draw stdcall(skin.image, Form.width - 82-1, button_y+2, 17, 17, skin.w+62, WIN_H_SMALL+1);
 
 		if /*(!list.count) && */ (!work_folder) DrawPixieTitle("Pixie");
 		else DrawPixieTitle(#work_folder + strrchr(#work_folder, '/'));
@@ -279,8 +280,9 @@ void DrawTopPanel()
 		DefineHiddenButton(Form.width - 55, 1, 26, 15, BUTTON_WINDOW_MINIMIZE);
 		DefineHiddenButton(Form.width - 83, 1, 26, 15, BUTTON_WINDOW_REDUCE);
 		//Other buttons
-		DefineHiddenButton(Form.width - 108,button_y, 23, 23, BUTTON_REPEAT);
-		DefineHiddenButton(Form.width - 81, button_y, 23, 23, BUTTON_SHUFFLE);
+		button_y += 3;
+		DefineHiddenButton(Form.width - 101,button_y, 17, 16, BUTTON_REPEAT);
+		DefineHiddenButton(Form.width - 82, button_y, 17, 16, BUTTON_SHUFFLE);
 		DefineHiddenButton(Form.width - 54, button_y, 23, 23, BUTTON_OPEN_DIALOG);
 		DefineHiddenButton(Form.width - 27, button_y, 23, 23, BUTTON_SHOW_VOLUME);
 	}

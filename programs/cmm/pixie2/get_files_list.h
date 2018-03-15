@@ -20,10 +20,14 @@ void OpenDirectory(dword folder_path)
 	{
 		strcpy(#temp_filename, j*304 + buf+72);
 		end_pointer = #temp_filename+strlen(#temp_filename);
-		if (strcmpi(end_pointer-4,".mp3")!=0) continue;
-		cur = list.count;
-		files_mas[cur]=j;
-		list.count++;
+		if (strcmpi(end_pointer-4,".mp3")==0) 
+		|| (strcmpi(end_pointer-4,".wav")==0)
+		|| (strcmpi(end_pointer-3,".xm")==0)
+		{
+			cur = list.count;
+			files_mas[cur]=j;
+			list.count++;			
+		}
 	}
 	SortByName(0, list.count-1);
 }
