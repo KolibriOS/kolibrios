@@ -34,7 +34,8 @@ void _image::set_image(dword _inbuf)
 	dword i;
 	for (i = 0; i < columns*rows; i++;) 
 	{
-		mas[i] = ESDWORD[i*4+_inbuf] & 0x00FFFFFF;
+		// mas[i] = ESDWORD[i*4+_inbuf] & 0x00FFFFFF; //for x32 bit color
+		mas[i] = ESDWORD[i*3+_inbuf] & 0xFFFFFF;
 	}
 }
 

@@ -30,6 +30,9 @@ dword img_to_rgb2 = #aimg_to_rgb2;
 dword img_decode  = #aimg_decode;
 dword img_destroy = #aimg_destroy;
 dword img_draw    = #aimg_draw;
+dword img_create    = #aimg_create;
+dword img_encode   = #aimg_encode;
+
 //dword img_flip    = #aimg_flip;
 //dword img_rotate  = #aimg_rotate;
 $DD 2 dup 0
@@ -41,9 +44,53 @@ char aimg_to_rgb2[12] = "img_to_rgb2\0";
 char aimg_decode[11]  = "img_decode\0";
 char aimg_destroy[12] = "img_destroy\0";
 char aimg_draw[9]    = "img_draw\0";
+char aimg_create[11]    = "img_create\0";
+char aimg_encode[11]    = "img_encode\0";
 //char aimg_flip[9]    = "img_flip\0";
 //char aimg_rotate[11]  = "img_rotate\0 ";
 
+#define LIBIMG_FORMAT_BMP       1
+#define LIBIMG_FORMAT_ICO       2
+#define LIBIMG_FORMAT_CUR       3
+#define LIBIMG_FORMAT_GIF       4
+#define LIBIMG_FORMAT_PNG       5
+#define LIBIMG_FORMAT_JPEG      6
+#define LIBIMG_FORMAT_TGA       7
+#define LIBIMG_FORMAT_PCX       8
+#define LIBIMG_FORMAT_XCF       9
+#define LIBIMG_FORMAT_TIFF     10
+#define LIBIMG_FORMAT_PNM      11
+#define LIBIMG_FORMAT_WBMP     12
+#define LIBIMG_FORMAT_XBM      13
+#define LIBIMG_FORMAT_Z80      14
+
+struct _Image
+{
+   dword Checksum; // ((Width ROL 16) OR Height) XOR Data[0]        ; ignored so far
+   dword Width;
+   dword Height;
+   dword Next;
+   dword Previous;
+   dword Type;     // one of Image.bppN
+   dword Data;
+   dword Palette;  // used iff Type eq Image.bpp1, Image.bpp2, Image.bpp4 or Image.bpp8i
+   dword Extended;
+   dword Flags;    // bitfield
+   dword Delay;    // used iff Image.IsAnimated is set in Flags
+};
+
+// values for Image.Type
+// must be consecutive to allow fast switch on Image.Type in support functions
+#define Image_bpp8i  1  // indexed
+#define Image_bpp24  2
+#define Image_bpp32  3
+#define Image_bpp15  4
+#define Image_bpp16  5
+#define Image_bpp1   6
+#define Image_bpp8g  7  // grayscale
+#define Image_bpp2i  8
+#define Image_bpp4i  9
+#define Image_bpp8a 10  // grayscale with alpha channel; application layer only!!! kernel doesn't handle this image type, libimg can only create and destroy such images
 
 
 dword load_image(dword filename)
@@ -131,6 +178,19 @@ void DrawLibImage(dword image_pointer,x,y,w,h,offx,offy) {
         offx, 
         offy
     );  
+}
+
+dword create_image(dword type, dword width, dword height) {
+	img_create stdcall(width, height, type);
+	return EAX;
+}
+
+// size - output parameter, error code / the size of encoded data
+dword encode_image(dword image_ptr, dword options, dword specific_options, dword* size) {
+	img_encode stdcall(image_ptr, options, specific_options);
+	ESDWORD[size] = ECX;
+	
+	return EAX;
 }
 
 #endif

@@ -28,7 +28,7 @@ enhance icon
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.31"
+#define T_TITLE "Icon Editor 0.32"
 
 #define TOOLBAR_H    24+8
 #define PANEL_LEFT_W 16+5+5+3+3
@@ -71,19 +71,23 @@ proc_info Form;
 more_less_box zoom = { PANEL_LEFT_W, -100, 11, 1, 40, BTN_ZOOM_IN, BTN_ZOOM_OUT, "Zoom" };
 
 dword default_palette[] = {
-0x330000,0x331900,0x333300,0x193300,0x003300,0x003319,0x003333,0x001933,0x000033,0x190033,0x330033,0x330019,0x000000,
-0x660000,0x663300,0x666600,0x336600,0x006600,0x006633,0x006666,0x003366,0x000066,0x330066,0x660066,0x660033,0x202020,
-0x990000,0x994C00,0x999900,0x4C9900,0x009900,0x00994C,0x009999,0x004C99,0x000099,0x4C0099,0x990099,0x99004C,0x404040,
-0xCC0000,0xCC6600,0xCCCC00,0x66CC00,0x00CC00,0x00CC66,0x00CCCC,0x0066CC,0x0000CC,0x6600CC,0xCC00CC,0xCC0066,0x606060,
-0xFF0000,0xFF8000,0xFFFF00,0x80FF00,0x00FF00,0x00FF80,0x00FFFF,0x0080FF,0x0000FF,0x7F00FF,0xFF00FF,0xFF007F,0x808080,
-0xFF3333,0xFF9933,0xFFFF33,0x99FF33,0x33FF33,0x33FF99,0x33FFFF,0x3399FF,0x3333FF,0x9933FF,0xFF33FF,0xFF3399,0xA0A0A0,
-0xFF6666,0xFFB266,0xFFFF66,0xB2FF66,0x66FF66,0x66FFB2,0x66FFFF,0x66B2FF,0x6666FF,0xB266FF,0xFF66FF,0xFF66B2,0xC0C0C0,
-0xFF9999,0xFFCC99,0xFFFF99,0xCCFF99,0x99FF99,0x99FFCC,0x99FFFF,0x99CCFF,0x9999FF,0xCC99FF,0xFF99FF,0xFF99CC,0xE0E0E0,
-0xFFCCCC,0xFFE5CC,0xFFFFCC,0xE5FFCC,0xCCFFCC,0xCCFFE5,0xCCFFFF,0xCCE5FF,0xCCCCFF,0xE5CCFF,0xFFCCFF,0xFFCCE5,0xFFFFFF	
+0x330000,0x331900,0x333300,0x193300,0x003300,0x003319,0x003333,0x001933,0x000033,0x190033,
+0x330033,0x330019,0x000000,0x660000,0x663300,0x666600,0x336600,0x006600,0x006633,0x006666,
+0x003366,0x000066,0x330066,0x660066,0x660033,0x202020,0x990000,0x994C00,0x999900,0x4C9900,
+0x009900,0x00994C,0x009999,0x004C99,0x000099,0x4C0099,0x990099,0x99004C,0x404040,0xCC0000,
+0xCC6600,0xCCCC00,0x66CC00,0x00CC00,0x00CC66,0x00CCCC,0x0066CC,0x0000CC,0x6600CC,0xCC00CC,
+0xCC0066,0x606060,0xFF0000,0xFF8000,0xFFFF00,0x80FF00,0x00FF00,0x00FF80,0x00FFFF,0x0080FF,
+0x0000FF,0x7F00FF,0xFF00FF,0xFF007F,0x808080,0xFF3333,0xFF9933,0xFFFF33,0x99FF33,0x33FF33,
+0x33FF99,0x33FFFF,0x3399FF,0x3333FF,0x9933FF,0xFF33FF,0xFF3399,0xA0A0A0,0xFF6666,0xFFB266,
+0xFFFF66,0xB2FF66,0x66FF66,0x66FFB2,0x66FFFF,0x66B2FF,0x6666FF,0xB266FF,0xFF66FF,0xFF66B2,
+0xC0C0C0,0xFF9999,0xFFCC99,0xFFFF99,0xCCFF99,0x99FF99,0x99FFCC,0x99FFFF,0x99CCFF,0x9999FF,
+0xCC99FF,0xFF99FF,0xFF99CC,0xE0E0E0,0xFFCCCC,0xFFE5CC,0xFFFFCC,0xE5FFCC,0xCCFFCC,0xCCFFE5,
+0xCCFFFF,0xCCE5FF,0xCCCCFF,0xE5CCFF,0xFFCCFF,0xFFCCE5,0xFFFFFF	
 };
 dword last_used_colors[13*2] = {
-0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,
-0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF
+0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,
+0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,
+0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF
 };
 
 _image image;
@@ -209,7 +213,12 @@ void LineTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 			}
 			else {
 				// Draw line from start position to current position
-				DrawLine(LineTool_startX - canvas.x/zoom.value, LineTool_startY - canvas.y/zoom.value, mouseX - canvas.x/zoom.value, mouseY - canvas.y/zoom.value, active_color_1, 1);
+				DrawLine(LineTool_startX - canvas.x/zoom.value, 
+					LineTool_startY - canvas.y/zoom.value, 
+					mouseX - canvas.x/zoom.value, 
+					mouseY - canvas.y/zoom.value, 
+					active_color_1, 
+					1);
 				DrawCanvas();
 				
 				// Reset start position
@@ -230,7 +239,12 @@ void LineTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 
 void LineTool_onCanvasDraw() {
 	if ((LineTool_startX >= 0) && (LineTool_startY >= 0)) {
-		DrawLine(LineTool_startX - canvas.x/zoom.value, LineTool_startY - canvas.y/zoom.value, mouse.x - canvas.x/zoom.value, mouse.y - canvas.y/zoom.value, active_color_1, 2);
+		DrawLine(LineTool_startX - canvas.x/zoom.value, 
+			LineTool_startY - canvas.y/zoom.value, 
+			mouse.x - canvas.x/zoom.value, 
+			mouse.y - canvas.y/zoom.value, 
+			active_color_1, 
+			2);
 		LineTool_lastTempPosX = mouse.x - canvas.x/zoom.value;
 		LineTool_lastTempPosY = mouse.y - canvas.y/zoom.value;
 	}
@@ -339,7 +353,7 @@ void main()
 			image.set_image(open_image.imgsrc);
 		}
 		else {
-			notify("'Error: image format is unacceptable.\nOnly images created in IconEditor (BMP, 32x32x16b) can be opened!' -E");
+			notify("'Error: image format is unacceptable (PNG, 32x32x16b expected)' -E");
 		}
 	}
 
@@ -373,7 +387,7 @@ void main()
 					DrawCanvas();
 					break;
 				case BTN_OPEN:
-					RunProgram("/sys/lod", sprintf(#param, "*bmp* %s",#program_path));
+					RunProgram("/sys/lod", sprintf(#param, "*png* %s",#program_path));
 					break;
 				case BTN_SAVE:
 					EventSave();
@@ -570,8 +584,12 @@ void DrawEditArea()
 	}
 	if (top_side>0)
 	{
-		DrawBar(wrapper.x, wrapper.y+top_side, left_side, wrapper.h-top_side-top_side, color1); //left
-		DrawBar(wrapper.x+wrapper.w-left_side-1, wrapper.y+top_side, left_side, wrapper.h-top_side-top_side, color1); //right
+		//left
+		DrawBar(wrapper.x, wrapper.y+top_side, left_side, 
+			wrapper.h-top_side-top_side, color1); 
+		//right
+		DrawBar(wrapper.x+wrapper.w-left_side-1, wrapper.y+top_side, left_side, 
+			wrapper.h-top_side-top_side, color1);
 	}
 }
 
@@ -645,18 +663,36 @@ void DrawCanvas()
 //                                                   //
 //===================================================//
 
-dword bmp_32x32x16_header[] = FROM "bmp32x32header";
 void EventSave()
 {
-	char save_buf[3126];
-	memmov(#save_buf, #bmp_32x32x16_header, sizeof(bmp_32x32x16_header));
-	memmov(#save_buf+sizeof(bmp_32x32x16_header), image.get_image(), sizeof(save_buf)-sizeof(bmp_32x32x16_header));
-	if (WriteFile(sizeof(save_buf), #save_buf, "/rd/1/saved_image.bmp")==0)
-	{
-		notify("'File saved as /rd/1/saved_image.bmp' -O");
+	dword encoded_data=0;
+	dword encoded_size=0;
+	dword image_ptr = 0;
+	
+	image_ptr = create_image(Image_bpp24, 32, 32);
+
+	if (image_ptr == 0) {
+		notify("'Error saving file, probably not enought memory!' -E");
 	}
 	else {
-		notify("'Error saving BPM file, probably not enought space on ramdisk!' -E");
+		EDI = image_ptr;
+		memmov(EDI._Image.Data, image.get_image(), image.rows * image.columns * 3);
+
+		encoded_data = encode_image(image_ptr, LIBIMG_FORMAT_PNG, 0, #encoded_size);
+
+		img_destroy stdcall(image_ptr);
+
+		if(encoded_data == 0) {
+			notify("'Error saving file, incorrect data!' -E");
+		}
+		else {
+			if (WriteFile(encoded_size, encoded_data, "/rd/1/saved_image.png") == 0) {
+				notify("'File saved as /rd/1/saved_image.png' -O");
+			}
+			else {
+				notify("'Error saving file, probably not enought space on ramdisk!' -E");
+			}
+		}
 	}
 }
 
