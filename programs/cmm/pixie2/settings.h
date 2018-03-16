@@ -13,7 +13,7 @@ struct struct_pixie_colors {
 
 _ini ini = { "/sys/media/pixie/pixie.ini", "Config" };
 
-#define WIN_W_SMALL 114
+#define WIN_W_SMALL 126
 #define WIN_H_SMALL 31
 
 void LoadIniConfig()
