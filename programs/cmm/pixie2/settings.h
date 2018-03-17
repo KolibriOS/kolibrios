@@ -23,7 +23,7 @@ void LoadIniConfig()
 	win_y_normal  = ini.GetInt("win_y_normal", 90);
 	win_x_small   = ini.GetInt("win_x_small", -1);
 	win_y_small   = ini.GetInt("win_y_small", -1);
-	ini.GetString("last_folder", #work_folder, sizeof(work_folder), 0);
+	ini.GetString("last_folder", #work_folder, sizeof(work_folder), NULL);
 
 	Libimg_LoadImage(#skin, abspath("skin.png"));
 	skin.w = 322;

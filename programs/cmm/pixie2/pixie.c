@@ -32,7 +32,7 @@
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 15, "MP3\0WAV\0XM\0\0" };
 
-#define ABOUT_MESSAGE "Pixie Player v2.62
+#define ABOUT_MESSAGE "Pixie Player v2.7
 
 A tiny music folder player.
 Supports MP3, WAV, XM audio file formats.
@@ -43,7 +43,9 @@ Play/Stop: Space or P key
 Start playing selected file: Enter
 Goto next/previous track: Ctrl + Left/Right
 Change sound volume: Left/Right key
-Mute: M key
+Repeat: R
+Shuffle: S
+Mute: M
 
 kolibri-n.org & aspero.pro"
 
@@ -95,6 +97,8 @@ enum {
 
 collection music_col;
 
+#define LAST_FOLDER_EXISTS 1
+
 //===================================================//
 //                                                   //
 //                       CODE                        //
@@ -120,9 +124,10 @@ void main()
 	tempstr = abspath("pixie.ini");
 	strcpy(#pixie_ini_path, tempstr);
 	list.SetFont(8, 16, 13);
-	if (!param) notify("'Pixie Player\nPress O key to open MP3 file' -St");
 	LoadLibraries();
 	LoadIniConfig();
+	if (work_folder) param=LAST_FOLDER_EXISTS;
+	if (!param) notify("'Pixie Player\nPress O key to open MP3/WAV/XM file' -St");
 	kfont.init(DEFAULT_FONT);	
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop()
@@ -159,7 +164,7 @@ void main()
 				case BUTTON_PLAYBACK_NEXT: EventPlaybackNext(); break;
 				case BUTTON_PLAYBACK_PLAY_PAUSE: EventPlayAndPause(); break;
 				case BUTTON_REPEAT: EventRepeatClick(); break;
-				case BUTTON_SHUFFLE: EventshuffleClick(); break;
+				case BUTTON_SHUFFLE: EventShuffleClick(); break;
 				case BUTTON_OPEN_DIALOG: EventFileDialogOpen(); break;
 				case BUTTON_SHOW_VOLUME: RunProgram("/sys/@VOLUME", NULL); break;
 			}
@@ -173,6 +178,8 @@ void main()
 			}		
 			if (key_scancode==SCAN_CODE_KEY_O) EventFileDialogOpen();
 			if (key_scancode==SCAN_CODE_KEY_M) RunProgram("/sys/@VOLUME", "m");
+			if (key_scancode==SCAN_CODE_KEY_R) EventRepeatClick();
+			if (key_scancode==SCAN_CODE_KEY_S) EventShuffleClick();
 			if (key_scancode==SCAN_CODE_RIGHT) RunProgram("/sys/@VOLUME", "+");
 			if (key_scancode==SCAN_CODE_LEFT)  RunProgram("/sys/@VOLUME", "-");
 			if (key_scancode==SCAN_CODE_ENTER) EventStartPlayingSelectedItem();
@@ -186,7 +193,8 @@ void main()
 				DefineDragableWindow(win_x_small, win_y_small, WIN_W_SMALL, WIN_H_SMALL);
 			draw_window();
 			if (param[0]) {
-				EventOpenFolder(#param);
+				if (param==LAST_FOLDER_EXISTS) EventOpenFolder(NULL); 
+				else EventOpenFolder(#param);
 				param[0] = NULL;
 			}
 			break;
@@ -274,9 +282,9 @@ void DrawTopPanel()
 		if (playback_mode != PLAYBACK_MODE_STOPED) 
 			img_draw stdcall(skin.image, 46, button_y, 41, 21, skin.w+1, WIN_H_SMALL+1);
 		if (repeat) 
-			img_draw stdcall(skin.image, Form.width-102, button_y+2, 17,17,skin.w+43, WIN_H_SMALL+1);
+			img_draw stdcall(skin.image, 177, button_y+2, 17,17,skin.w+43, WIN_H_SMALL+1);
 		if (shuffle) 
-			img_draw stdcall(skin.image, Form.width-83, button_y+2, 17,17, skin.w+62, WIN_H_SMALL+1);
+			img_draw stdcall(skin.image, 196, button_y+2, 17,17, skin.w+62, WIN_H_SMALL+1);
 
 		if (!work_folder) DrawPixieTitle("Pixie");
 		else DrawPixieTitle(#work_folder + strrchr(#work_folder, '/'));
@@ -291,11 +299,10 @@ void DrawTopPanel()
 		DefineHiddenButton(Form.width - 55, 1, 26, 15, BUTTON_WINDOW_MINIMIZE);
 		DefineHiddenButton(Form.width - 83, 1, 26, 15, BUTTON_WINDOW_REDUCE);
 		//Other buttons
-		button_y += 3;
-		DefineHiddenButton(Form.width - 101,button_y, 17, 16, BUTTON_REPEAT);
-		DefineHiddenButton(Form.width - 82, button_y, 17, 16, BUTTON_SHUFFLE);
-		DefineHiddenButton(Form.width - 54, button_y, 23, 23, BUTTON_OPEN_DIALOG);
-		DefineHiddenButton(Form.width - 27, button_y, 23, 23, BUTTON_SHOW_VOLUME);
+		DefineHiddenButton(Form.width - 53, button_y, 22, 20, BUTTON_OPEN_DIALOG);
+		DefineHiddenButton(Form.width - 29, button_y, 22, 20, BUTTON_SHOW_VOLUME);
+		DefineHiddenButton(178, button_y+3, 17, 16, BUTTON_REPEAT);
+		DefineHiddenButton(197, button_y+3, 17, 16, BUTTON_SHUFFLE);
 	}
 	else if (window_mode == WINDOW_MODE_SMALL)
 	{
@@ -340,7 +347,11 @@ void DrawPixieTitle(dword _title)
 
 void EventOpenFolder(dword _open_path)
 {
-	if (ESBYTE[_open_path]) 
+	if (!_open_path)
+	{
+		OpenDirectory(#work_folder);
+	}
+	else
 	{
 		strcpy(#work_folder, _open_path);
 		work_folder[strrchr(#work_folder, '/')-1]='\0';
@@ -362,7 +373,7 @@ void EventOpenFolder(dword _open_path)
 	list.KeyHome();
 	current_playing_file_n=0;
 	EventStopPlayingMp3();
-	EventStartPlayingMp3();	
+	if (_open_path) EventStartPlayingMp3();	
 }
 
 
@@ -492,7 +503,7 @@ void EventRepeatClick()
 	DrawTopPanel();
 }
 
-void EventshuffleClick()
+void EventShuffleClick()
 {
 	shuffle ^= 1;
 	DrawTopPanel();
@@ -511,7 +522,7 @@ void EventShowAbout()
 			if (key_scancode == SCAN_CODE_ESC) ExitProcess();
 			break;
 		case evReDraw:
-			DefineDragableWindow(150, 200, 363, 300);
+			DefineDragableWindow(150, 200, 400, 327);
 			GetProcessInfo(#pop_up, SelfInfo);
 			DrawBar(0, 0, pop_up.width, pop_up.height, theme.color_top_panel_bg);
 			DrawRectangle(0, 0, pop_up.width, pop_up.height, theme.color_list_border);
@@ -519,8 +530,8 @@ void EventShowAbout()
 
 			DefineHiddenButton(pop_up.width - 27, 1, 26, 15, BUTTON_WINDOW_CLOSE);
 			img_draw stdcall(skin.image, pop_up.width-28, 0, 28, 18, skin.w - 29, 0);
-			DrawCaptButton(pop_up.width-10-80, pop_up.height - 30, 80, 20, 11, 
-			  theme.color_list_active_bg, theme.color_top_panel_song_name, "Clear");
+			DrawCaptButton(pop_up.width-10-80, pop_up.height - 34, 80, 24, 2, 
+			  theme.color_list_active_bg, theme.color_top_panel_song_name, "Cool");
 	}
 }
 
