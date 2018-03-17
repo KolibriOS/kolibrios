@@ -1,7 +1,7 @@
 use32
 	org 0x0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 1, start, i_end, mem, stacktop, 0, sys_path
+	dd 1, start, i_end, mem, stacktop, openfile_path, sys_path
 
 include '../../../../programs/macros.inc'
 include '../../../../programs/proc32.inc'
@@ -12,7 +12,7 @@ include 'vox_rotate.inc'
 include 'str.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel editor 18.02.16',0 ;подпись окна
+caption db 'Voxel editor 17.03.18',0 ;подпись окна
 
 fn_toolbar db 'toolbar.png',0
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
@@ -146,6 +146,12 @@ start:
 
 	;первоначальная установка курсора
 	stdcall set_pen_mode,1,0,((9 shl 8)+9) shl 16 ;pen
+
+	;проверка командной строки
+	cmp dword[openfile_path],0
+	je @f
+		call but_open_file_cmd_lin
+	@@:
 
 align 4
 red_win:
@@ -561,7 +567,7 @@ popad
 
 align 4
 draw_pok:
-	mov eax,47
+	mov eax,SF_DRAW_NUMBER
 	mov ecx,[v_zoom]
 	mov ebx,(3 shl 16)+(1 shl 31)
 	mov edx,((350+6*9) shl 16)+OT_CAPT_Y_COLOR+2
@@ -806,6 +812,15 @@ but_open_file:
 	je .end_open_file
 	;код при удачном открытии диалога
 
+	call but_open_file_cmd_lin
+	call draw_objects
+	.end_open_file:
+	popad
+	ret
+
+align 4
+but_open_file_cmd_lin:
+	pushad
 	mov [run_file_70.Function], SSF_GET_INFO
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
@@ -845,7 +860,6 @@ but_open_file:
 	mov dword[cam_x],0
 	mov dword[cam_y],0
 	mov dword[cam_z],0
-	call draw_objects
 	.end_open_file:
 	popad
 	ret
@@ -2008,6 +2022,6 @@ stacktop:
 		rb 1024 ;4096 
 	library_path rb 1024
 	plugin_path rb 1024 ;4096
-	openfile_path rb 1024 ;4096
+	openfile_path rb 4096
 	filename_area rb 256
 mem:
