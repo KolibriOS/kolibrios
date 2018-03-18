@@ -6,9 +6,9 @@
 
 /*
 TODO:
-arange tools
 window colors
 enhance icon
+pipet aside color view
 */
 
 #define MEMSIZE 4096*40
@@ -28,16 +28,18 @@ enhance icon
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.32"
+#define T_TITLE "Icon Editor 0.33"
 
 #define TOOLBAR_H    24+8
 #define PANEL_LEFT_W 16+5+5+3+3
 #define PALLETE_SIZE 116
 #define TB_ICON_PADDING 26
 
+#define PAL_ITEMS_X_COUNT 13
+#define COLSIZE 18
 
 rect wrapper = { PANEL_LEFT_W, TOOLBAR_H, NULL, NULL };
-rect right_bar = { NULL, TOOLBAR_H, 280, NULL };
+rect right_bar = { NULL, TOOLBAR_H, PAL_ITEMS_X_COUNT*COLSIZE+10, NULL };
 rect canvas = { NULL, NULL, NULL, NULL };
 
 dword active_color_1 = 0x000000;
@@ -140,16 +142,29 @@ void setCurrentTool(int index) {
 //===================================================//
 
 void FillTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
+	bool fill1=false;
+	bool fill2=false;
+
 	if (mouseX>canvas.x) && (mouseY>canvas.y) 
 		&& (mouseY<canvas.y+canvas.h) 
 		&& (mouseX<canvas.x+canvas.w)
 	{
-		if (lkm) 
+		if (currentTool==TOOL_FILL)
+		{
+			if (mouse.key&MOUSE_LEFT)&&(mouse.up) fill1=true;
+			if (mouse.key&MOUSE_RIGHT)&&(mouse.up) fill2=true;
+		}
+		else 
+		{
+			if (lkm) fill1=true;
+			if (pkm) fill2=true;			
+		}
+		if (fill1)
 			EventFill(mouseY-canvas.y/zoom.value, 
-				mouseX-canvas.x/zoom.value, active_color_1);
-		else if (pkm) 
+					mouseX-canvas.x/zoom.value, active_color_1);
+		if (fill2)
 			EventFill(mouseY-canvas.y/zoom.value, 
-				mouseX-canvas.x/zoom.value, active_color_2);
+					mouseX-canvas.x/zoom.value, active_color_2);
 			
 		DrawCanvas();
 	}
@@ -445,7 +460,7 @@ void main()
 					ExitProcess();
 					break;
 			}              
-			if (btn >= BTNS_PALETTE_COLOR_MAS) && (btn < BTNS_PALETTE_COLOR_MAS+PALLETE_SIZE) 
+			if (btn >= BTNS_PALETTE_COLOR_MAS) && (btn <= BTNS_PALETTE_COLOR_MAS+PALLETE_SIZE) 
 			{ 
 				if (mouse.lkm) EventSetActiveColor(1, default_palette[btn - BTNS_PALETTE_COLOR_MAS]);
 				if (mouse.pkm) EventSetActiveColor(2, default_palette[btn - BTNS_PALETTE_COLOR_MAS]);
@@ -532,7 +547,7 @@ void draw_window()
 	DrawEditArea();
 
 	DrawActiveColor(right_bar.y);
-	DrawColorPallets(right_bar.x, right_bar.y + 30);
+	DrawColorPallets(right_bar.x, right_bar.y + 70);
 
 	DrawStatusBar();
 }
@@ -555,7 +570,7 @@ void DrawEditArea()
 	int top_side;
 	int left_side;
 
-	wrapper.w = Form.cwidth - right_bar.w - 30 - wrapper.x;
+	wrapper.w = Form.cwidth - right_bar.w - 10 - wrapper.x;
 	wrapper.h = Form.cheight - TOOLBAR_H - 35;
 
 	//canvas{
@@ -568,7 +583,6 @@ void DrawEditArea()
 	}
 	canvas.x = -zoom.value*image.columns+wrapper.w/2 + wrapper.x;
 	canvas.y = -zoom.value*image.rows+wrapper.h/2 + wrapper.y;
-	DrawRectangle(canvas.x-1, canvas.y-1, canvas.w+1, canvas.h+1, 0x808080);
 	DrawCanvas();
 	//}
 
@@ -591,6 +605,7 @@ void DrawEditArea()
 		DrawBar(wrapper.x+wrapper.w-left_side-1, wrapper.y+top_side, left_side, 
 			wrapper.h-top_side-top_side, color1);
 	}
+	DrawRectangle(canvas.x-1, canvas.y-1, canvas.w+1, canvas.h+1, 0x808080);
 }
 
 void DrawActiveColor(dword iny)
@@ -606,34 +621,45 @@ void DrawActiveColor(dword iny)
 	sprintf(#param, "%A", active_color_2);
 	EDI = system.color.work;
 	WriteText(right_bar.x+110 + 30, outy + 3, 0xD0, system.color.work_text, #param+4);	
+	DrawCurrentColorGradientByLightness(right_bar.x, outy+30);
+}
+
+void DrawCurrentColorGradientByLightness(int x, y)
+{
+	int i;
+	int w = right_bar.w-10/2;
+	int h = 30;
+	for (i=0; i<w; i++)
+		DrawBar(x+i, y, 1, h, MixColors(active_color_1,0xFFFfff,255*i/w));
+	for (i=0 ; i<=w; i++)
+		DrawBar(x+w+w-i, y, 1, h, MixColors(active_color_1,0x000000,255*i/w));
 }
 
 void DrawColorPallets(dword _x, _y)
 {
 	int r, c, i=0;
-	int cellw = 20;
 
 	//Last used colors
 	for (r = 0; r < 2; r++)
 	{
-		for (c = 0; c < 13; c++, i++)
+		for (c = 0; c < PAL_ITEMS_X_COUNT; c++, i++)
 		{
-			DrawBar(c*cellw + _x, r*cellw + _y, cellw, cellw, last_used_colors[i]);
-			DefineHiddenButton(c*cellw + _x, r*cellw + _y, cellw-1, cellw-1, BTNS_LAST_USED_COLORS+i);
+			DrawBar(c*COLSIZE + _x, r*COLSIZE + _y, COLSIZE, COLSIZE, last_used_colors[i]);
+			DefineHiddenButton(c*COLSIZE + _x, r*COLSIZE + _y, COLSIZE-1, COLSIZE-1, BTNS_LAST_USED_COLORS+i);
 			
 		}
 	}
 
-	_y += r*cellw + 10;
+	_y += r*COLSIZE + 10;
 	i=0;
 
 	//Default colors
 	for (r = 0; r < 9; r++)
 	{
-		for (c = 0; c < 13; c++, i++)
+		for (c = 0; c < PAL_ITEMS_X_COUNT; c++, i++)
 		{
-			DrawBar(c*cellw + _x, r*cellw + _y, cellw, cellw, default_palette[PALLETE_SIZE-i]);
-			DefineHiddenButton(c*cellw + _x, r*cellw + _y, cellw-1, cellw-1, BTNS_PALETTE_COLOR_MAS+PALLETE_SIZE-i);
+			DrawBar(c*COLSIZE + _x, r*COLSIZE + _y, COLSIZE, COLSIZE, default_palette[PALLETE_SIZE-i]);
+			DefineHiddenButton(c*COLSIZE + _x, r*COLSIZE + _y, COLSIZE-1, COLSIZE-1, BTNS_PALETTE_COLOR_MAS+PALLETE_SIZE-i);
 		}
 	}
 }
@@ -708,7 +734,7 @@ void EventSetActiveColor(int _number, _color)
 	if (_number == 2) active_color_2 = _color;
 
 	DrawActiveColor(NULL);
-	DrawColorPallets(right_bar.x, right_bar.y + 30);
+	DrawColorPallets(right_bar.x, right_bar.y + 70);
 }
 
 void EventFill(dword _r, _c, _color)
@@ -727,12 +753,12 @@ void EventFill(dword _r, _c, _color)
 				IF (image.get_pixel(r,c) != old_color) continue;
 				IF (image.get_pixel(r,c) == MARKED) continue;
 				
-				IF (c>0)               && (image.get_pixel(r,c-1) == MARKED) restart=true;
-				IF (c<image.columns-1) && (image.get_pixel(r,c+1) == MARKED) restart=true;
-				IF (r>0)               && (image.get_pixel(r-1,c) == MARKED) restart=true;
-				IF (r<image.rows-1)    && (image.get_pixel(r+1,c) == MARKED) restart=true;
+				IF (c>0)               && (image.get_pixel(r,c-1) == MARKED) image.set_pixel(r,c,MARKED);
+				IF (r>0)               && (image.get_pixel(r-1,c) == MARKED) image.set_pixel(r,c,MARKED);
+				IF (c<image.columns-1) && (image.get_pixel(r,c+1) == MARKED) image.set_pixel(r,c,MARKED);
+				IF (r<image.rows-1)    && (image.get_pixel(r+1,c) == MARKED) image.set_pixel(r,c,MARKED);
 				
-				IF (restart == true) image.set_pixel(r,c,MARKED);
+				IF (image.get_pixel(r,c)==MARKED) restart=true;
 			}
 	}while(restart);
 
