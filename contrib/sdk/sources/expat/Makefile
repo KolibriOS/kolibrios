@@ -31,8 +31,6 @@ all:$(LIBRARY).a
 
 $(LIBRARY).a: $(OBJS) Makefile
 	$(AR) $(ARFLAGS) $(LIBRARY).a $(OBJS)
-
-install: $(LIBRARY).a
 	mv -f $(LIBRARY).a $(INSTALLDIR)
 
 %.o : %.c Makefile
