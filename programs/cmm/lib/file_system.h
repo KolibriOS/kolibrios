@@ -285,6 +285,18 @@ enum
 	return #absolute_path;
 }
 
+:dword GetIni(dword ini_name) //search it on /kolibrios/ then on /sys/
+{
+	char absolute_path[4096];
+	strcpy(#absolute_path, "/kolibrios/settings/");
+	strcat(#absolute_path, ini_name);
+	if (!file_exists(#absolute_path)) {
+		strcpy(#absolute_path, "/sys/settings/");
+		strcat(#absolute_path, ini_name);
+	}
+	return #absolute_path;		
+}
+
 :byte ConvertSize_size_prefix[8];
 :dword ConvertSize(dword bytes)
 {

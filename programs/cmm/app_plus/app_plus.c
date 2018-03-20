@@ -44,7 +44,7 @@ void CheckKosMounted()
 	if (dir_exists("/kolibrios")) 
 	{
 		if (file_exists(APP_PLUS_INI_PATH))	
-			io.run("syspanel", APP_PLUS_INI_PATH);
+			RunProgram("syspanel", APP_PLUS_INI_PATH);
 		else
 			notify(APP_PLUS_INI_NOT_EXISTS);
 		ExitProcess();
@@ -101,7 +101,6 @@ void draw_window()
 	
 	PutPaletteImage(#scr,144,171,Form.cwidth-180,y.n,8,#scr_pal);
 	DrawRectangle(Form.cwidth-180-1,y.n-1, 144+1,171+1, system.color.work_graph);
-	
 	DrawStandartCaptButton(x, Form.cheight-66, BTN_MANUAL_SEARCH, MANUALLY_BUTTON_TEXT);
 }
 

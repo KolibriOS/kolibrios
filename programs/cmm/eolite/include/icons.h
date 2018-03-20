@@ -20,12 +20,12 @@ void DrawIconByExtension(dword file_path, extension, xx, yy, fairing_color)
 	}
 	if (fairing_color==col_selec)
 	{
-		img_draw stdcall(icons16_selected.image, xx, yy, 16, 16, 0, icon_n*16);
+		img_draw stdcall(icons16_selected.image, xx, yy, icon_size, icon_size, 0, icon_n*icon_size);
 		IconFairing(icon_n, xx, yy, fairing_color);
 	}
 	else 
 	{
-		img_draw stdcall(icons16_default.image, xx, yy, 16, 16, 0, icon_n*16);
+		img_draw stdcall(icons16_default.image, xx, yy, icon_size, icon_size, 0, icon_n*icon_size);
 	}
 }
 

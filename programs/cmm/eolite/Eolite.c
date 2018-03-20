@@ -109,8 +109,13 @@ bool show_dev_name=true,
 libimg_image icons16_default;
 libimg_image icons16_selected;
 
+//libimg_image icons32_default;
+//libimg_image icons32_selected;
+
 #define STATUS_BAR_H 16;
 int status_bar_h = 0;
+
+int icon_size = 16;
 
 edit_box new_file_ed = {200,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0x10000000,248,#new_element_name,#mouse_dd,100000000000010b,6,0};
 PathShow_data FileShow = {0, 56,215, 8, 100, 1, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
@@ -144,7 +149,7 @@ void main()
 	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 
-	eolite_ini_path = abspath("Eolite.ini");
+	eolite_ini_path = GetIni("Eolite.ini");
 	
 	LoadIniSettings();
 	SystemDiscs.Get();
@@ -154,6 +159,11 @@ void main()
 	Libimg_LoadImage(#icons16_selected, "/sys/icons16.png");
 	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffFFFfff, 0xFF94AECE);
 	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffCACBD6, 0xFF7692B5);
+
+	//Libimg_LoadImage(#icons32_default, "/sys/icons32.png");
+	//Libimg_LoadImage(#icons32_selected, "/sys/icons32.png");
+	//Libimg_ReplaceColor(icons32_selected.image, icons32_selected.w, icons32_selected.h, 0xffFFFfff, 0xFF94AECE);
+	//Libimg_ReplaceColor(icons32_selected.image, icons32_selected.w, icons32_selected.h, 0xffCACBD6, 0xFF7692B5);
 
 	//-p just show file/folder properties dialog
 	if (param) && (param[0]=='-') && (param[1]=='p')
@@ -696,15 +706,15 @@ void Line_ReDraw(dword bgcol, filenum){
 		  file_offet,
 		  file_name_off,
 		  y=filenum*files.item_h+files.y,
-		  icon_y = files.item_h/2-7+y;
+		  icon_y = files.item_h-icon_size/2+1+y;
 		  BDVK file;
 		  char temp_path[sizeof(file_path)];
 	char label_file_name[4096];
 	if (filenum==-1) return;
 	DrawBar(files.x,y,4,files.item_h,bgcol);
 	DrawBar(files.x+20,y,files.w-20,files.item_h,bgcol);
-	DrawBar(files.x+4,y,16,icon_y-y,bgcol);
-	if (files.item_h>16) DrawBar(files.x+4,icon_y+15,16,y+files.item_h-icon_y-15,bgcol);
+	DrawBar(files.x+4,y,icon_size,icon_y-y,bgcol);
+	if (files.item_h>icon_size) DrawBar(files.x+4,icon_y+icon_size-1,icon_size,y+files.item_h-icon_y-icon_size+1,bgcol);
 
 	file_offet = file_mas[filenum+files.first]*304 + buf+32;
 	attr = ESDWORD[file_offet];
@@ -769,7 +779,7 @@ void Line_ReDraw(dword bgcol, filenum){
 			}
 			strcpy(#label_file_name+strlen(#label_file_name)-2, "...");			
 		}
-		kfont.WriteIntoWindow(files.x + 23, files.item_h - kfont.height / 2 + y, bgcol, text_col, kfont.size.pt, #label_file_name);
+		kfont.WriteIntoWindow(files.x + icon_size+7, files.item_h - kfont.height / 2 + y, bgcol, text_col, kfont.size.pt, #label_file_name);
 	}
 	DrawBar(files.x+files.w-141,y,1,files.item_h,col_list_line); //gray line 1
 	DrawBar(files.x+files.w-68,y,1,files.item_h,col_list_line); //gray line 2

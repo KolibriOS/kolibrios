@@ -11,13 +11,15 @@ struct struct_pixie_colors {
 		  color_list_border;
 } theme;
 
-_ini ini = { "/sys/media/pixie/pixie.ini", "Config" };
+_ini ini;
 
 #define WIN_W_SMALL 126
 #define WIN_H_SMALL 31
 
 void LoadIniConfig()
 {
+	ini.path = GetIni("pixie.ini");
+	ini.section = "Config";
 	window_mode   = ini.GetInt("window_mode", WINDOW_MODE_NORMAL);
 	win_x_normal  = ini.GetInt("win_x_normal", 100);
 	win_y_normal  = ini.GetInt("win_y_normal", 90);
