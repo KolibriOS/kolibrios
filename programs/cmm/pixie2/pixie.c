@@ -11,7 +11,6 @@
 #include "../lib/gui.h"
 #include "../lib/random.h"
 #include "../lib/kfont.h"
-#include "../lib/collection.h"
 
 #include "../lib/obj/libio.h"
 #include "../lib/obj/libimg.h"
@@ -32,7 +31,7 @@
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 15, "MP3\0WAV\0XM\0\0" };
 
-#define ABOUT_MESSAGE "Pixie Player v2.7
+#define ABOUT_MESSAGE "Pixie Player v2.8
 
 A tiny music folder player.
 Supports MP3, WAV, XM audio file formats.
@@ -43,6 +42,7 @@ Play/Stop: Space or P key
 Start playing selected file: Enter
 Goto next/previous track: Ctrl + Left/Right
 Change sound volume: Left/Right key
+Remove from the list: Delete
 Repeat: R
 Shuffle: S
 Mute: M
@@ -94,8 +94,6 @@ enum {
 	PLAYBACK_MODE_STOPED,
 	PLAYBACK_MODE_PLAYING
 };
-
-collection music_col;
 
 #define LAST_FOLDER_EXISTS 1
 
@@ -183,6 +181,7 @@ void main()
 			if (key_scancode==SCAN_CODE_RIGHT) RunProgram("/sys/@VOLUME", "+");
 			if (key_scancode==SCAN_CODE_LEFT)  RunProgram("/sys/@VOLUME", "-");
 			if (key_scancode==SCAN_CODE_ENTER) EventStartPlayingSelectedItem();
+			if (key_scancode==SCAN_CODE_DEL) EventDeleteItem();
 			if (key_scancode==SCAN_CODE_KEY_P)||(key_scancode==SCAN_CODE_SPACE) EventPlayAndPause();
 			if (list.ProcessKey(key_scancode)) DrawPlayList();
 			break;
@@ -209,6 +208,7 @@ void DrawPlayList()
 {
 	int i;
 	int yyy;
+	int kfont_width;
 	char temp_filename[4096];
 	dword text_color, bg_color;
 	for (i=0; i<list.visible; i++;)
@@ -240,8 +240,9 @@ void DrawPlayList()
 			text_color = theme.color_list_active_text;
 		}
 		DrawBar(list.x, yyy, list.w, list.item_h, bg_color);
-		kfont.WriteIntoWindow(6, yyy+list.text_y, bg_color, 
+		kfont_width = kfont.WriteIntoWindow(6, yyy+list.text_y, bg_color, 
 			text_color, list.font_type, #temp_filename);
+		if (kfont_width>skin.w-15) DrawBar(skin.w-1, yyy, 1, list.item_h, theme.color_list_border);
 	}
 	DrawBar(list.x,list.visible * list.item_h + list.y, list.w, 
 		-list.visible * list.item_h + list.h, theme.color_list_bg);
@@ -260,19 +261,9 @@ void draw_window() {
 	}
 }
 
-dword GetSongTitle()
-{
-	char cur_y_playing_title[245];
-	strcpy(#cur_y_playing_title, #current_filename);
-	cur_y_playing_title[strrchr(#cur_y_playing_title, '.')-1] = '\0';
-	//if (strlen(#cur_y_playing_title) > 36) strcpy(#cur_y_playing_title + 34, "..."); 
-	return #cur_y_playing_title;
-}
-
-
 void DrawTopPanel()
 {
-	
+	int kfont_width;
 	int button_y;
 	//Mode depended
 	if (window_mode == WINDOW_MODE_NORMAL)
@@ -288,8 +279,9 @@ void DrawTopPanel()
 
 		if (!work_folder) DrawPixieTitle("Pixie");
 		else DrawPixieTitle(#work_folder + strrchr(#work_folder, '/'));
-		kfont.WriteIntoWindow(8, 24, theme.color_top_panel_bg, 
-			theme.color_top_panel_song_name, list.font_type, GetSongTitle());
+		kfont_width = kfont.WriteIntoWindow(8, 24, theme.color_top_panel_bg, 
+			theme.color_top_panel_song_name, list.font_type, #current_filename);
+		if (kfont_width>skin.w-15) DrawBar(skin.w-1, 24, 1, list.item_h, theme.color_list_border);
 	 	//Playing control buttons
 		DefineHiddenButton(7, button_y, 38, 20, BUTTON_PLAYBACK_PREV);
 		DefineHiddenButton(47, button_y, 38, 20, BUTTON_PLAYBACK_PLAY_PAUSE);
@@ -308,6 +300,8 @@ void DrawTopPanel()
 	{
 		button_y = 7;
 		img_draw stdcall(skin.image, 0, 0, WIN_W_SMALL, WIN_H_SMALL, skin.w-1, 0);
+		if (playback_mode != PLAYBACK_MODE_STOPED) 
+			img_draw stdcall(skin.image, 46, button_y-1, 27, 19, skin.w+83, WIN_H_SMALL+1);
 		DefineHiddenButton(0, 0, WIN_W_SMALL, WIN_H_SMALL, 99 + BT_NOFRAME);
 	 	//Playing control buttons
 		DefineHiddenButton(20, button_y, 24, 16, BUTTON_PLAYBACK_PREV);
@@ -369,15 +363,15 @@ void EventOpenFolder(dword _open_path)
 	{
 		list.w -= scroll1.size_x;
 	}
-	MoveSize(OLD, OLD, OLD, skin.h + list.h);
+	if (window_mode==WINDOW_MODE_NORMAL) MoveSize(OLD, OLD, OLD, skin.h + list.h);
 	list.KeyHome();
 	current_playing_file_n=0;
-	EventStopPlayingMp3();
-	if (_open_path) EventStartPlayingMp3();	
+	EventStopPlaying();
+	if (_open_path) EventStartPlaying();	
 }
 
 
-void EventStopPlayingMp3() 
+void EventStopPlaying() 
 {
 	if (player_run_id) player_run_id = KillProcess(player_run_id);
 	if (notify_run_id) notify_run_id = KillProcess(notify_run_id);
@@ -387,12 +381,12 @@ void EventStopPlayingMp3()
 }
 
 
-void EventStartPlayingMp3()
+void EventStartPlaying()
 {
 	word i;
 	char item_path[4096];
 	char notify_message[512];
-	EventStopPlayingMp3();
+	EventStopPlaying();
 	if (current_playing_file_n >= list.count) { 
 		current_playing_file_n = list.count-1;
 		return; 
@@ -404,11 +398,12 @@ void EventStartPlayingMp3()
 	playback_mode = PLAYBACK_MODE_PLAYING;
 	strlcpy(#current_filename, Getcur_yItemName(), sizeof(current_filename));
 	sprintf(#item_path,"-h %s/%s",#work_folder,#current_filename);
+	current_filename[strrchr(#current_filename, '.')-1] = '\0';
 	DrawPlayList();
 	DrawTopPanel();
 	player_run_id = RunProgram("/sys/media/ac97snd", #item_path);	
 	sprintf(#notify_message,"'Now playing:\n%s' -St",#current_filename);
-	if (!repeat)
+	if (!repeat) && (window_mode==WINDOW_MODE_SMALL)
 	{
 		for (i=2; i<strlen(#notify_message)-6; i++) 
 		{
@@ -425,12 +420,12 @@ void EventPlayAndPause()
 	if (playback_mode == PLAYBACK_MODE_PLAYING) 
 	{
 		playback_mode = PLAYBACK_MODE_STOPED;
-		EventStopPlayingMp3();
+		EventStopPlaying();
 	}
 	else
 	{
 		playback_mode = PLAYBACK_MODE_PLAYING;
-		EventStartPlayingMp3();
+		EventStartPlaying();
 	}
 }
 
@@ -457,7 +452,7 @@ void EventChangeWindowMode()
 
 void EventExitApp()
 {
-	EventStopPlayingMp3();
+	EventStopPlaying();
 	SaveIniConfig();
 	ExitProcess();
 }
@@ -466,20 +461,20 @@ void EventPlaybackPrevious()
 {
 	if (shuffle) current_playing_file_n = random(list.count);
 	else current_playing_file_n--;
-	EventStartPlayingMp3();
+	EventStartPlaying();
 }
 
 void EventPlaybackNext()
 {
 	if (shuffle) current_playing_file_n = random(list.count);
 	else current_playing_file_n++;
-	EventStartPlayingMp3();
+	EventStartPlaying();
 }
 
 void EventStartPlayingSelectedItem()
 {
 	current_playing_file_n=list.cur_y; 
-	EventStartPlayingMp3();
+	EventStartPlaying();
 }
 
 void EventFileDialogOpen()
@@ -492,7 +487,7 @@ void EventCheckSongFinished()
 {
 	if (playback_mode == PLAYBACK_MODE_PLAYING) 
 	&& (!GetProcessSlot(player_run_id)) {
-		if (repeat) EventStartPlayingMp3();
+		if (repeat) EventStartPlaying();
 		else EventPlaybackNext();
 	}
 }
@@ -509,6 +504,24 @@ void EventShuffleClick()
 	DrawTopPanel();
 }
 
+void EventDeleteItem()
+{
+	int i;
+	if (list.cur_y == current_playing_file_n) EventStopPlaying();
+	for (i=list.cur_y; i<list.count; i++) files_mas[i] = files_mas[i+1];
+	list.count--;
+	if (i + list.first <= current_playing_file_n) current_playing_file_n--;
+	list.CheckDoesValuesOkey();
+	if (list.count <= list.visible) 
+	{
+		list.h = list.count * list.item_h;
+		list.visible = list.count;
+		list.w -= 1;
+		if (window_mode==WINDOW_MODE_NORMAL) MoveSize(OLD, OLD, OLD, skin.h + list.h);
+	}
+	else DrawPlayList();
+}
+
 void EventShowAbout()
 {
 	proc_info pop_up;
@@ -522,7 +535,7 @@ void EventShowAbout()
 			if (key_scancode == SCAN_CODE_ESC) ExitProcess();
 			break;
 		case evReDraw:
-			DefineDragableWindow(150, 200, 400, 327);
+			DefineDragableWindow(150, 200, 400, 346);
 			GetProcessInfo(#pop_up, SelfInfo);
 			DrawBar(0, 0, pop_up.width, pop_up.height, theme.color_top_panel_bg);
 			DrawRectangle(0, 0, pop_up.width, pop_up.height, theme.color_list_border);

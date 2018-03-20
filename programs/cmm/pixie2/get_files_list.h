@@ -15,7 +15,7 @@ void OpenDirectory(dword folder_path)
 	{
 		notify("'Error opening folder' -E");
 	}
-	
+	debugval("sizeof(files_mas)", sizeof(files_mas));
 	for (j=0; j<filesnum; j++)
 	{
 		strcpy(#temp_filename, j*304 + buf+72);
@@ -26,7 +26,8 @@ void OpenDirectory(dword folder_path)
 		{
 			cur = list.count;
 			files_mas[cur]=j;
-			list.count++;			
+			list.count++;
+			if (list.count>=sizeof(files_mas)*sizeof(int)) break;			
 		}
 	}
 	SortByName(0, list.count-1);
