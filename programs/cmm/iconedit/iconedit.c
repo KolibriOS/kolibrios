@@ -28,7 +28,7 @@ pipet aside color view
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.33"
+#define T_TITLE "Icon Editor 0.35"
 
 #define TOOLBAR_H    24+8
 #define PANEL_LEFT_W 16+5+5+3+3
@@ -37,10 +37,27 @@ pipet aside color view
 
 #define PAL_ITEMS_X_COUNT 13
 #define COLSIZE 18
+#define RIGHT_BAR_W PAL_ITEMS_X_COUNT*COLSIZE
 
-rect wrapper = { PANEL_LEFT_W, TOOLBAR_H, NULL, NULL };
-rect right_bar = { NULL, TOOLBAR_H, PAL_ITEMS_X_COUNT*COLSIZE+10, NULL };
-rect canvas = { NULL, NULL, NULL, NULL };
+struct block {
+	int x,y,w,h;
+	bool hovered();
+};
+
+bool block::hovered() {
+	if ((mouse.x>x) && (mouse.y>y) 
+	&& (mouse.y<y+h) && (mouse.x<x+w)) 
+		return true;
+	return false;
+}
+
+block canvas = { NULL, NULL, NULL, NULL };
+block wrapper = { PANEL_LEFT_W, TOOLBAR_H, NULL, NULL };
+block right_bar = { NULL, TOOLBAR_H, RIGHT_BAR_W+10, NULL };
+
+block b_color_gradient = {NULL, 30+TOOLBAR_H, RIGHT_BAR_W, 30};
+block b_last_colors = {NULL, 70+TOOLBAR_H, RIGHT_BAR_W, COLSIZE*2};
+block b_default_palette = {NULL, COLSIZE*2+10+70+TOOLBAR_H, RIGHT_BAR_W, COLSIZE*9};
 
 dword active_color_1 = 0x000000;
 dword active_color_2 = 0xFFFfff;
@@ -145,9 +162,7 @@ void FillTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 	bool fill1=false;
 	bool fill2=false;
 
-	if (mouseX>canvas.x) && (mouseY>canvas.y) 
-		&& (mouseY<canvas.y+canvas.h) 
-		&& (mouseX<canvas.x+canvas.w)
+	if (canvas.hovered())
 	{
 		if (currentTool==TOOL_FILL)
 		{
@@ -175,7 +190,7 @@ void PipetteTool_activate() {
 }
 
 void PipetteTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
-	active_color_1 = GetPixelColorFromScreen(mouseX + Form.left + 5, mouseY + Form.top + skin_height);
+	active_color_1 = GetPixelUnderMouse();
 	DrawActiveColor(NULL);
 	
 	if (mouse.down) && (mouse.key&MOUSE_LEFT) {
@@ -187,9 +202,7 @@ void PipetteTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 }
 
 void PencilTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
-	if (mouseX>canvas.x) && (mouseY>canvas.y) 
-		&& (mouseY<canvas.y+canvas.h) 
-		&& (mouseX<canvas.x+canvas.w) 
+	if (canvas.hovered()) 
 	{
 		if (lkm) 
 			image.set_pixel(mouseY-canvas.y/zoom.value, 
@@ -217,9 +230,7 @@ void LineTool_reset() {
 }
 
 void LineTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
-	if ((mouseX>canvas.x) && (mouseY>canvas.y) 
-		&& (mouseY<canvas.y+canvas.h) 
-		&& (mouseX<canvas.x+canvas.w)) 
+	if (canvas.hovered()) 
 	{
 		if (mouse.down) && (mouse.key & MOUSE_LEFT) {
 			if ((LineTool_startX < 0) || (LineTool_startY < 0)) {
@@ -391,6 +402,15 @@ void main()
 				DrawEditArea();
 			}
 
+			if (mouse.down) {
+				if (b_color_gradient.hovered()) 
+				|| (b_last_colors.hovered())
+				|| (b_default_palette.hovered()) {
+					if (mouse.key&MOUSE_LEFT) EventSetActiveColor(1, GetPixelUnderMouse());
+					if (mouse.key&MOUSE_RIGHT) EventSetActiveColor(2, GetPixelUnderMouse());
+				}	
+			}
+
 			break;
 
 		case evButton:
@@ -459,17 +479,6 @@ void main()
 				case CLOSE_BTN:
 					ExitProcess();
 					break;
-			}              
-			if (btn >= BTNS_PALETTE_COLOR_MAS) && (btn <= BTNS_PALETTE_COLOR_MAS+PALLETE_SIZE) 
-			{ 
-				if (mouse.lkm) EventSetActiveColor(1, default_palette[btn - BTNS_PALETTE_COLOR_MAS]);
-				if (mouse.pkm) EventSetActiveColor(2, default_palette[btn - BTNS_PALETTE_COLOR_MAS]);
-			}
-			if (btn >= BTNS_LAST_USED_COLORS) && (btn < sizeof(last_used_colors)*sizeof(dword))
-			{
-				if (mouse.lkm) active_color_1 = last_used_colors[btn - BTNS_LAST_USED_COLORS]; 
-				if (mouse.pkm) active_color_2 = last_used_colors[btn - BTNS_LAST_USED_COLORS];
-				DrawActiveColor(NULL);
 			}
 			break;
 	  
@@ -527,6 +536,7 @@ void draw_window()
 	if (Form.height < 430) { MoveSize(OLD,OLD,OLD,430); return; }
 
 	right_bar.x = Form.cwidth - right_bar.w;
+	b_color_gradient.x = b_last_colors.x = b_default_palette.x = right_bar.x;
 
 	tx.n = 10-TB_ICON_PADDING;
 	DrawToolbarButton(BTN_NEW,    tx.inc(TB_ICON_PADDING), 2); //not implemented
@@ -547,7 +557,7 @@ void draw_window()
 	DrawEditArea();
 
 	DrawActiveColor(right_bar.y);
-	DrawColorPallets(right_bar.x, right_bar.y + 70);
+	DrawColorPallets();
 
 	DrawStatusBar();
 }
@@ -621,49 +631,44 @@ void DrawActiveColor(dword iny)
 	sprintf(#param, "%A", active_color_2);
 	EDI = system.color.work;
 	WriteText(right_bar.x+110 + 30, outy + 3, 0xD0, system.color.work_text, #param+4);	
-	DrawCurrentColorGradientByLightness(right_bar.x, outy+30);
+	DrawCurrentColorGradientByLightness();
 }
 
-void DrawCurrentColorGradientByLightness(int x, y)
+void DrawCurrentColorGradientByLightness()
 {
 	int i;
 	int w = right_bar.w-10/2;
-	int h = 30;
 	for (i=0; i<w; i++)
-		DrawBar(x+i, y, 1, h, MixColors(active_color_1,0xFFFfff,255*i/w));
+		DrawBar(b_color_gradient.x+i, b_color_gradient.y, 
+			1, b_color_gradient.h, MixColors(active_color_1,0xFFFfff,255*i/w));
 	for (i=0 ; i<=w; i++)
-		DrawBar(x+w+w-i, y, 1, h, MixColors(active_color_1,0x000000,255*i/w));
+		DrawBar(b_color_gradient.x+w+w-i, b_color_gradient.y, 
+			1, b_color_gradient.h, MixColors(active_color_1,0x000000,255*i/w));
 }
 
-void DrawColorPallets(dword _x, _y)
+void DrawColorPallets()
 {
 	int r, c, i=0;
-
 	//Last used colors
 	for (r = 0; r < 2; r++)
 	{
 		for (c = 0; c < PAL_ITEMS_X_COUNT; c++, i++)
 		{
-			DrawBar(c*COLSIZE + _x, r*COLSIZE + _y, COLSIZE, COLSIZE, last_used_colors[i]);
-			DefineHiddenButton(c*COLSIZE + _x, r*COLSIZE + _y, COLSIZE-1, COLSIZE-1, BTNS_LAST_USED_COLORS+i);
-			
+			DrawBar(c*COLSIZE + b_last_colors.x, r*COLSIZE + b_last_colors.y, 
+				COLSIZE, COLSIZE, last_used_colors[i]);
 		}
 	}
-
-	_y += r*COLSIZE + 10;
 	i=0;
-
 	//Default colors
 	for (r = 0; r < 9; r++)
 	{
 		for (c = 0; c < PAL_ITEMS_X_COUNT; c++, i++)
 		{
-			DrawBar(c*COLSIZE + _x, r*COLSIZE + _y, COLSIZE, COLSIZE, default_palette[PALLETE_SIZE-i]);
-			DefineHiddenButton(c*COLSIZE + _x, r*COLSIZE + _y, COLSIZE-1, COLSIZE-1, BTNS_PALETTE_COLOR_MAS+PALLETE_SIZE-i);
+			DrawBar(c*COLSIZE + b_default_palette.x, r*COLSIZE + b_default_palette.y, 
+				COLSIZE, COLSIZE, default_palette[PALLETE_SIZE-i]);
 		}
 	}
 }
-
 
 void DrawCanvas()
 {
@@ -680,8 +685,21 @@ void DrawCanvas()
 	if ((currentTool != TOOL_NONE) && (tools[currentTool].onCanvasDraw != 0))
 		tools[currentTool].onCanvasDraw();
 
+	DrawPreview();
 }
 
+void DrawPreview()
+{
+	int x = right_bar.x;
+	int y = wrapper.y + wrapper.h - image.rows-2;
+	DrawRectangle(x, y, image.columns+1, image.rows+1, system.color.work_graph);
+	_PutImage(x+1,y+1, image.columns, image.rows, image.get_image());
+}
+
+dword GetPixelUnderMouse()
+{
+	return GetPixelColorFromScreen(mouse.x + Form.left + 5, mouse.y + Form.top + skin_height);
+}
 
 //===================================================//
 //                                                   //
@@ -734,7 +752,7 @@ void EventSetActiveColor(int _number, _color)
 	if (_number == 2) active_color_2 = _color;
 
 	DrawActiveColor(NULL);
-	DrawColorPallets(right_bar.x, right_bar.y + 70);
+	DrawColorPallets();
 }
 
 void EventFill(dword _r, _c, _color)
@@ -770,12 +788,12 @@ void EventFill(dword _r, _c, _color)
 void DrawLine(int x1, int y1, int x2, int y2, dword color, int target) {
 	int dx, dy, signX, signY, error, error2;
 
-	debugval("Draw line", x1);
-	debugval("Draw line", y1);
+	// debugval("Draw line", x1);
+	// debugval("Draw line", y1);
 	
-	debugval("Draw line", x2);
-	debugval("Draw line", y2);
-	debugln("===");
+	// debugval("Draw line", x2);
+	// debugval("Draw line", y2);
+	// debugln("===");
    dx = x2 - x1;
    
    if (dx < 0)

@@ -271,11 +271,11 @@ void DrawTopPanel()
 		button_y = 46;
 		img_draw stdcall(skin.image, 0, 0, skin.w, skin.h, 0, 0);
 		if (playback_mode != PLAYBACK_MODE_STOPED) 
-			img_draw stdcall(skin.image, 46, button_y, 41, 21, skin.w+1, WIN_H_SMALL+1);
+			img_draw stdcall(skin.image, 47, button_y, 41, 21, skin.w+1, WIN_H_SMALL+1);
 		if (repeat) 
-			img_draw stdcall(skin.image, 177, button_y+2, 17,17,skin.w+43, WIN_H_SMALL+1);
+			img_draw stdcall(skin.image, 217, button_y+2, 17,17,skin.w+43, WIN_H_SMALL+1);
 		if (shuffle) 
-			img_draw stdcall(skin.image, 196, button_y+2, 17,17, skin.w+62, WIN_H_SMALL+1);
+			img_draw stdcall(skin.image, 236, button_y+2, 17,17, skin.w+62, WIN_H_SMALL+1);
 
 		if (!work_folder) DrawPixieTitle("Pixie");
 		else DrawPixieTitle(#work_folder + strrchr(#work_folder, '/'));
@@ -284,17 +284,17 @@ void DrawTopPanel()
 		if (kfont_width>skin.w-15) DrawBar(skin.w-1, 24, 1, list.item_h, theme.color_list_border);
 	 	//Playing control buttons
 		DefineHiddenButton(7, button_y, 38, 20, BUTTON_PLAYBACK_PREV);
-		DefineHiddenButton(47, button_y, 38, 20, BUTTON_PLAYBACK_PLAY_PAUSE);
+		DefineHiddenButton(48, button_y, 38, 20, BUTTON_PLAYBACK_PLAY_PAUSE);
 		DefineHiddenButton(87, button_y, 38, 20, BUTTON_PLAYBACK_NEXT);
 		//Window control buttons
 		DefineHiddenButton(Form.width - 27, 1, 26, 15, BUTTON_WINDOW_CLOSE);
 		DefineHiddenButton(Form.width - 55, 1, 26, 15, BUTTON_WINDOW_MINIMIZE);
 		DefineHiddenButton(Form.width - 83, 1, 26, 15, BUTTON_WINDOW_REDUCE);
 		//Other buttons
-		DefineHiddenButton(Form.width - 53, button_y, 22, 20, BUTTON_OPEN_DIALOG);
-		DefineHiddenButton(Form.width - 29, button_y, 22, 20, BUTTON_SHOW_VOLUME);
-		DefineHiddenButton(178, button_y+3, 17, 16, BUTTON_REPEAT);
-		DefineHiddenButton(197, button_y+3, 17, 16, BUTTON_SHUFFLE);
+		DefineHiddenButton(218, button_y+3, 17, 16, BUTTON_REPEAT);
+		DefineHiddenButton(237, button_y+3, 17, 16, BUTTON_SHUFFLE);
+		DefineHiddenButton(270, button_y+3, 17, 16, BUTTON_OPEN_DIALOG);
+		DefineHiddenButton(289, button_y+3, 17, 16, BUTTON_SHOW_VOLUME);
 	}
 	else if (window_mode == WINDOW_MODE_SMALL)
 	{
