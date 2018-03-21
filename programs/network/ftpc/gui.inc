@@ -332,8 +332,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         stdcall [ted_draw], tedit0
         ; write to log file
         mov     eax, [esp+36]
-        cmp     [logfile_offset], -1 ; disabled logging?
-        je      @f
+        sub     ecx, 2 ; 0a0d is not included
         call    write_to_file
 
       @@:

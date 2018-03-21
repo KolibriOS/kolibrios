@@ -103,8 +103,6 @@ console: ;//////////////////////////////////////////////////////////////////////
         jnz     @b
         ; write to log file
         mov     eax, [esp+36]
-        cmp     [logfile_offset], -1
-        je      @f
         call    write_to_file
 
       @@:
