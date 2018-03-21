@@ -12,8 +12,8 @@ init_fpu:
         clts
         fninit
 
-        bt      [cpu_caps+(CAPS_XSAVE/32)], CAPS_XSAVE mod 32
-        jnc     .no_xsave
+        bt      [cpu_caps+(CAPS_XSAVE/32)*4], CAPS_XSAVE mod 32
+        jmp     .no_xsave       ; not ready to be jnc so far
 
         mov     ecx, cr4
         or      ecx, CR4_OSXSAVE
@@ -228,7 +228,7 @@ avx_save:
 
 align 4
 save_context:
-        bt      [cpu_caps+(CAPS_OSXSAVE/32)], CAPS_OSXSAVE mod 32
+        bt      [cpu_caps+(CAPS_OSXSAVE/32)*4], CAPS_OSXSAVE mod 32
         jnc     save_fpu_context
         xsave   [eax]
         ret
@@ -299,7 +299,7 @@ avx_restore:
         jne     .copy
 
         clts
-        bt      [cpu_caps+(CAPS_OSXSAVE/32)], CAPS_OSXSAVE mod 32
+        bt      [cpu_caps+(CAPS_OSXSAVE/32)*4], CAPS_OSXSAVE mod 32
         jnc     .no_xsave
         xrstor  [esi]
         popfd
@@ -349,7 +349,7 @@ except_7:                  ;#NM exception handler
 
         shl     ebx, 8
         mov     eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
-        bt      [cpu_caps+(CAPS_OSXSAVE/32)], CAPS_OSXSAVE mod 32
+        bt      [cpu_caps+(CAPS_OSXSAVE/32)*4], CAPS_OSXSAVE mod 32
         jnc     .no_xsave
         xsave   [eax]
         mov     ebx, [CURRENT_TASK]
