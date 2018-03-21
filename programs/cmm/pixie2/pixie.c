@@ -31,7 +31,7 @@
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 15, "MP3\0WAV\0XM\0\0" };
 
-#define ABOUT_MESSAGE "Pixie Player v2.8
+#define ABOUT_MESSAGE "Pixie Player v2.81
 
 A tiny music folder player.
 Supports MP3, WAV, XM audio file formats.
@@ -118,9 +118,6 @@ void LoadLibraries()
 
 void main()
 {
-	int tempstr;
-	tempstr = abspath("pixie.ini");
-	strcpy(#pixie_ini_path, tempstr);
 	list.SetFont(8, 16, 13);
 	LoadLibraries();
 	LoadIniConfig();
@@ -215,7 +212,6 @@ void DrawPlayList()
 	{
 		strcpy(#temp_filename, files_mas[i + list.first] * 304 + buf + 72);
 		temp_filename[strrchr(#temp_filename, '.')-1] = '\0';
-		//if (strlen(#temp_filename)>47) strcpy(#temp_filename+44, "..."); 
 		
 		yyy = i*list.item_h+list.y;
 		
@@ -510,13 +506,12 @@ void EventDeleteItem()
 	if (list.cur_y == current_playing_file_n) EventStopPlaying();
 	for (i=list.cur_y; i<list.count; i++) files_mas[i] = files_mas[i+1];
 	list.count--;
-	if (i + list.first <= current_playing_file_n) current_playing_file_n--;
+	if (list.cur_y <= current_playing_file_n) current_playing_file_n--;
 	list.CheckDoesValuesOkey();
 	if (list.count <= list.visible) 
 	{
 		list.h = list.count * list.item_h;
 		list.visible = list.count;
-		list.w -= 1;
 		if (window_mode==WINDOW_MODE_NORMAL) MoveSize(OLD, OLD, OLD, skin.h + list.h);
 	}
 	else DrawPlayList();

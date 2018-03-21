@@ -1,5 +1,3 @@
-//Leency 2008-2016
-
 #define BROWSER_PATH    "/sys/network/webview"
 #define BROWSER_LINK    "http://kolibri-n.org/inf/eolite/eolite_p1"
 

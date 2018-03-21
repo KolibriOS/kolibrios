@@ -1,4 +1,4 @@
-//Leency, Veliant, Punk_Joker, PavelYakov & KolibriOS Team 2008-2016
+//Leency, Veliant, Punk_Joker, PavelYakov & KolibriOS Team 2008-2018
 //GNU GPL licence.
 
 #ifndef AUTOBUILD
@@ -83,7 +83,8 @@ byte
 
 char active_path[4096], inactive_path[4096];
 
-dword eolite_ini_path;
+dword eolite_ini_path[4096];
+_ini ini;
 
 char scroll_used=false;
 
@@ -148,8 +149,6 @@ void main()
 	load_dll(libini, #lib_init,1);
 	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
-
-	eolite_ini_path = GetIni("Eolite.ini");
 	
 	LoadIniSettings();
 	SystemDiscs.Get();

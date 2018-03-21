@@ -29,7 +29,6 @@
 	?define START_PATH "Start path:"
 #endif
 
-char config_section[] = "Config";
 int WinX, WinY, WinW, WinH;
 
 dword set_mouse_dd;
@@ -61,13 +60,13 @@ void settings_dialog()
 					strcpy(#path_start,#path);
 					path_start_ed.size = strlen(#path_start);
 					path_start_ed.pos = strlen(#path_start);
-					ini_set_str stdcall (eolite_ini_path, #config_section, "DefaultPath", #path,strlen(#path));
+					ini.SetString("DefaultPath", #path, strlen(#path));
 					edit_box_draw stdcall (#path_start_ed);
 					break;
 				}
 				else if (id==7)
 				{
-					ini_set_str stdcall (eolite_ini_path, #config_section, "DefaultPath", #path_start,strlen(#path_start));
+					ini.SetString("DefaultPath", #path_start,strlen(#path_start));
 					break;
 				}
 				else if (id==20) show_dev_name ^= 1;
@@ -130,20 +129,23 @@ void DrawSettingsCheckBoxes()
 
 void LoadIniSettings()
 {
+	ini.path = GetIni(#eolite_ini_path, "EOLITE.INI");
+	ini.section = "Config";
+
 	files.SetFont(6, 9, 10000000b);
-	ini_get_int stdcall   (eolite_ini_path, #config_section, "ShowDeviceName",    1); show_dev_name = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #config_section, "ShowStatusBar",    1); show_status_bar = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #config_section, "RealFileNamesCase", 1); real_files_names_case = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #config_section, "InfoAfterCopy",     0); info_after_copy = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #config_section, "FontSize",         13); kfont.size.pt = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #config_section, "TwoPanels",         0); two_panels = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #config_section, "LineHeight",       19); files.item_h = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinX", 200); WinX = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinY", 50); WinY = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinW", 550); WinW = EAX;
-	ini_get_int stdcall   (eolite_ini_path, #config_section, "WinH", 506); WinH = EAX;
-	ini_get_str stdcall   (eolite_ini_path, #config_section, "DefaultPath", #path,4096,"/rd/1");
-	ini_get_str stdcall   (eolite_ini_path, #config_section, "DefaultPath", #path_start,4096,"/rd/1");
+	real_files_names_case = ini.GetInt("RealFileNamesCase", 1); 
+	show_dev_name   = ini.GetInt("ShowDeviceName", 1); 
+	show_status_bar = ini.GetInt("ShowStatusBar", 1); 
+	info_after_copy = ini.GetInt("InfoAfterCopy", 0); 
+	kfont.size.pt   = ini.GetInt("FontSize", 13); 
+	two_panels      = ini.GetInt("TwoPanels", 0); 
+	files.item_h    = ini.GetInt("LineHeight", 19);
+	WinX = ini.GetInt("WinX", 200); 
+	WinY = ini.GetInt("WinY", 50); 
+	WinW = ini.GetInt("WinW", 550); 
+	WinH = ini.GetInt("WinH", 506); 
+	ini.GetString("DefaultPath", #path, 4096, "/rd/1");
+	ini.GetString("DefaultPath", #path_start, 4096, "/rd/1");
 	path_start_ed.size = strlen(#path_start);
 	path_start_ed.pos = strlen(#path_start);
 
@@ -156,17 +158,17 @@ void LoadIniSettings()
 
 void SaveIniSettings()
 {
-	ini_set_int stdcall (eolite_ini_path, #config_section, "ShowDeviceName", show_dev_name);
-	ini_set_int stdcall (eolite_ini_path, #config_section, "ShowStatusBar", show_status_bar);
-	ini_set_int stdcall (eolite_ini_path, #config_section, "RealFileNamesCase", real_files_names_case);
-	ini_set_int stdcall (eolite_ini_path, #config_section, "InfoAfterCopy", info_after_copy);
-	ini_set_int stdcall (eolite_ini_path, #config_section, "FontSize", kfont.size.pt);
-	ini_set_int stdcall (eolite_ini_path, #config_section, "TwoPanels", two_panels);
-	ini_set_int stdcall (eolite_ini_path, #config_section, "LineHeight", files.item_h);
-	ini_set_int stdcall (eolite_ini_path, #config_section, "WinX", Form.left);
-	ini_set_int stdcall (eolite_ini_path, #config_section, "WinY", Form.top);
-	ini_set_int stdcall (eolite_ini_path, #config_section, "WinW", Form.width);
-	ini_set_int stdcall (eolite_ini_path, #config_section, "WinH", Form.height);
+	ini.SetInt("ShowDeviceName", show_dev_name);
+	ini.SetInt("ShowStatusBar", show_status_bar);
+	ini.SetInt("RealFileNamesCase", real_files_names_case);
+	ini.SetInt("InfoAfterCopy", info_after_copy);
+	ini.SetInt("FontSize", kfont.size.pt);
+	ini.SetInt("TwoPanels", two_panels);
+	ini.SetInt("LineHeight", files.item_h);
+	ini.SetInt("WinX", Form.left);
+	ini.SetInt("WinY", Form.top);
+	ini.SetInt("WinW", Form.width);
+	ini.SetInt("WinH", Form.height);
 }
 
 

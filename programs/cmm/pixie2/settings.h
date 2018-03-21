@@ -18,7 +18,7 @@ _ini ini;
 
 void LoadIniConfig()
 {
-	ini.path = GetIni("pixie.ini");
+	ini.path = GetIni(#pixie_ini_path, "PIXIE.INI");
 	ini.section = "Config";
 	window_mode   = ini.GetInt("window_mode", WINDOW_MODE_NORMAL);
 	win_x_normal  = ini.GetInt("win_x_normal", 100);

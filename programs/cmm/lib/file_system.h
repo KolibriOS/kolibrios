@@ -197,13 +197,13 @@
 	$int 0x40
 }
 
-:char dir_exists(dword fpath)
+:bool dir_exists(dword fpath)
 {
 	BDVK fpath_atr;
 	if (GetFileInfo(fpath, #fpath_atr) != 0) return false; 
 	return fpath_atr.isfolder;
 }
-:char file_exists(dword fpath)
+:bool file_exists(dword fpath)
 {
 	BDVK ReadFile_atr;
 	if (! GetFileInfo(fpath, #ReadFile_atr)) return true;
@@ -285,16 +285,15 @@ enum
 	return #absolute_path;
 }
 
-:dword GetIni(dword ini_name) //search it on /kolibrios/ then on /sys/
+:dword GetIni(dword ini_path, ini_name) //search it on /kolibrios/ then on /sys/
 {
-	char absolute_path[4096];
-	strcpy(#absolute_path, "/kolibrios/settings/");
-	strcat(#absolute_path, ini_name);
-	if (!file_exists(#absolute_path)) {
-		strcpy(#absolute_path, "/sys/settings/");
-		strcat(#absolute_path, ini_name);
+	strcpy(ini_path, "/kolibrios/settings/");
+	strcat(ini_path, ini_name);
+	if (!file_exists(ini_path)) {
+		strcpy(ini_path, "/sys/settings/");
+		strcat(ini_path, ini_name);
 	}
-	return #absolute_path;		
+	return ini_path;
 }
 
 :byte ConvertSize_size_prefix[8];
