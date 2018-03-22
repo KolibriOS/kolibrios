@@ -1,7 +1,7 @@
 use32
-	org 0x0
+	org 0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 1, start, i_end, mem, stacktop, 0, sys_path
+	dd 1, start, i_end, mem, stacktop, openfile_path, sys_path
 
 include '../../../../programs/macros.inc'
 include '../../../../programs/proc32.inc'
@@ -12,7 +12,7 @@ include '../trunk/vox_rotate.inc'
 include '../trunk/str.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel mover 19.02.16',0 ;подпись окна
+caption db 'Voxel mover 22.03.18',0 ;подпись окна
 
 run_file_70 FileInfoBlock
 
@@ -117,7 +117,7 @@ start:
 
 	stdcall [buf2d_vox_brush_create], buf_vox, vox_6_7_z
 
-	load_image_file 'toolbar_m.png', image_data_toolbar
+	include_image_file 'toolbar_m.png', image_data_toolbar
 
 	stdcall mem.Alloc,[max_open_file_size]
 	mov dword[open_file_vox],eax
@@ -126,6 +126,11 @@ start:
 
 	stdcall but_new_file, [open_file_vox]
 	stdcall but_new_file, [moved_file_vox]
+	;проверка командной строки
+	cmp dword[openfile_path],0
+	je @f
+		call but_open_file_cmd_lin
+	@@:
 
 align 4
 red_win:
@@ -628,14 +633,21 @@ moved_file_vox dd 0
 
 align 4
 but_open_file:
-	pushad
+pushad
 	copy_path open_dialog_name,communication_area_default_path,file_name,0
 	mov [OpenDialog_data.type],0
 	stdcall [OpenDialog_Start],OpenDialog_data
 	cmp [OpenDialog_data.status],2
-	je .end_open_file
-	;код при удачном открытии диалога
+	je @f
+		;код при удачном открытии диалога
+		call but_open_file_cmd_lin
+	@@:
+popad
+	ret
 
+align 4
+but_open_file_cmd_lin:
+pushad
 	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
@@ -647,8 +659,6 @@ but_open_file:
 	cmp ebx,0xffffffff
 	je .end_open_file
 
-	;add ebx,[open_file_vox]
-	;mov byte[ebx],0 ;на случай если ранее был открыт файл большего размера чистим конец буфера с файлом
 	mcall SF_SET_CAPTION,1,openfile_path
 
 	;---
@@ -661,7 +671,7 @@ but_open_file:
 	mov dword[cam_z],0
 	call draw_objects
 	.end_open_file:
-	popad
+popad
 	ret
 
 align 4

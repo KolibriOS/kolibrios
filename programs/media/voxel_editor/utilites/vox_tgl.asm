@@ -1,7 +1,7 @@
 use32
-	org 0x0
+	org 0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 1, start, i_end, mem, stacktop, 0, sys_path
+	dd 1, start, i_end, mem, stacktop, openfile_path, sys_path
 
 include '../../../../programs/macros.inc'
 include '../../../../programs/proc32.inc'
@@ -12,7 +12,7 @@ include 'vox_3d.inc'
 include '../trunk/str.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel viewer 18.04.17',0 ;подпись окна
+caption db 'Voxel viewer 22.03.18',0 ;подпись окна
 
 3d_wnd_l equ   5 ;отступ для tinygl буфера слева
 3d_wnd_t equ  30 ;отступ для tinygl буфера сверху
@@ -40,7 +40,7 @@ start:
 
 	stdcall [buf2d_create], buf_0 ;создание буфера
 
-	load_image_file 'toolbar_t.png', image_data_toolbar,,,6 ;6 - for gray icons
+	include_image_file 'toolbar_t.png', image_data_toolbar,,,6 ;6 - for gray icons
 	mov eax,[image_data_toolbar]
 	add eax,IMAGE_TOOLBAR_SIZE
 	stdcall img_to_gray, [image_data_toolbar],eax,(IMAGE_TOOLBAR_SIZE)/3
@@ -55,7 +55,11 @@ start:
 	stdcall [glShadeModel], GL_SMOOTH
 
 	call but_new_file
-
+	;проверка командной строки
+	cmp dword[openfile_path],0
+	je @f
+		call but_open_file_cmd_lin
+	@@:
 
 align 4
 red_win:
@@ -418,9 +422,16 @@ pushad
 	mov [OpenDialog_data.type],0
 	stdcall [OpenDialog_Start],OpenDialog_data
 	cmp [OpenDialog_data.status],2
-	je .end_open_file
-	;код при удачном открытии диалога
+	je @f
+		;код при удачном открытии диалога
+		call but_open_file_cmd_lin
+	@@:
+popad
+	ret
 
+align 4
+but_open_file_cmd_lin:
+pushad
 	mov [run_file_70.Function], SSF_GET_INFO
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
@@ -429,11 +440,6 @@ pushad
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
 	mcall SF_FILE,run_file_70
-
-	;mov eax,dword[open_b+32]
-	;mov edi,txt_buf
-	;call conv_int_to_str
-	;notify_window_run txt_buf
 
 	mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
 	stdcall mem.ReAlloc,[open_file_data],ecx

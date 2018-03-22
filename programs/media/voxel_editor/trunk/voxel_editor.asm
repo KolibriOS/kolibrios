@@ -1,5 +1,5 @@
 use32
-	org 0x0
+	org 0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
 	dd 1, start, i_end, mem, stacktop, openfile_path, sys_path
 
@@ -12,9 +12,8 @@ include 'vox_rotate.inc'
 include 'str.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel editor 17.03.18',0 ;подпись окна
+caption db 'Voxel editor 22.03.18',0 ;подпись окна
 
-fn_toolbar db 'toolbar.png',0
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
 image_data_toolbar dd 0
 cursors_count equ 4
@@ -118,11 +117,11 @@ start:
 	mov [buf_pl.h],eax
 
 	;*** загрузка курсоров
-	load_image_file 'cursors_gr.png',image_data_toolbar
+	include_image_file 'cursors_gr.png',image_data_toolbar
 	stdcall [buf2d_create_f_img], buf_curs_8,[image_data_toolbar] ;создаем буфер
 	stdcall mem.Free,[image_data_toolbar] ;освобождаем память
 
-	load_image_file 'cursors.png',image_data_toolbar
+	include_image_file 'cursors.png',image_data_toolbar
 	stdcall [buf2d_create_f_img], buf_curs,[image_data_toolbar] ;создаем буфер
 	stdcall mem.Free,[image_data_toolbar] ;освобождаем память
 
@@ -137,7 +136,7 @@ start:
 	stdcall [buf2d_vox_brush_create], buf_vox_g3, vox_6_7_z
 	stdcall [buf2d_vox_brush_create], buf_vox_g2, vox_6_4_z
 
-	load_image_file fn_toolbar, image_data_toolbar
+	include_image_file 'toolbar.png', image_data_toolbar
 
 	stdcall mem.Alloc,[max_open_file_size]
 	mov dword[open_file_vox],eax

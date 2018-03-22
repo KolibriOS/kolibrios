@@ -1,7 +1,7 @@
 use32
-	org 0x0
+	org 0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
-	dd 1,start,i_end,mem,stacktop,0,sys_path
+	dd 1,start,i_end,mem,stacktop,openfile_path,sys_path
 
 include '../../../../programs/macros.inc'
 include '../../../../programs/proc32.inc'
@@ -15,7 +15,7 @@ txt_buf rb 8
 include '../trunk/vox_rotate.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel creator 19.02.16',0 ;подпись окна
+caption db 'Voxel creator 22.03.18',0 ;подпись окна
 
 BUF_STRUCT_SIZE equ 21
 buf2d_data equ dword[edi] ;данные буфера изображения
@@ -37,7 +37,6 @@ txt_pref db ' б ',0,' Кб',0,' Мб',0,' Гб',0 ;приставки: кило, мега, гига
 txt_f_size: db 'Размер: '
 .size: rb 16
 
-fn_toolbar db 'toolbar.png',0
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
 image_data_toolbar dd 0
 
@@ -60,7 +59,7 @@ start:
 	stdcall [buf2d_create], buf_0z
 	stdcall [buf2d_vox_brush_create], buf_vox, vox_6_7_z
 
-	load_image_file fn_toolbar, image_data_toolbar
+	include_image_file 'toolbar.png', image_data_toolbar
 
 	stdcall mem.Alloc,max_open_file_size
 	mov dword[open_file_vox],eax
@@ -69,6 +68,11 @@ start:
 
 	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov [last_time],eax
+	;проверка командной строки
+	cmp dword[openfile_path],0
+	je @f
+		call but_open_file_cmd_lin
+	@@:
 
 align 4
 red_win:
@@ -548,9 +552,16 @@ but_open_file:
 	mov [OpenDialog_data.type],0
 	stdcall [OpenDialog_Start],OpenDialog_data
 	cmp [OpenDialog_data.status],2
-	je .end_open_file
-	;код при удачном открытии диалога
+	je @f
+		;код при удачном открытии диалога
+		call but_open_file_cmd_lin
+	@@:
+popad
+	ret
 
+align 4
+but_open_file_cmd_lin:
+pushad
 	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
