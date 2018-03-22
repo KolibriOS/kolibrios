@@ -156,8 +156,8 @@ void main()
 
 	Libimg_LoadImage(#icons16_default, "/sys/icons16.png");
 	Libimg_LoadImage(#icons16_selected, "/sys/icons16.png");
-	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffFFFfff, 0xFF94AECE);
-	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffCACBD6, 0xFF7692B5);
+	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffFFFfff, col_selec);
+	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffCACBD6, MixColors(col_selec, 0, 200));
 
 	//Libimg_LoadImage(#icons32_default, "/sys/icons32.png");
 	//Libimg_LoadImage(#icons32_selected, "/sys/icons32.png");

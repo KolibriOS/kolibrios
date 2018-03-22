@@ -513,13 +513,13 @@ inline fastcall void PutPixel( EBX,ECX,EDX)
 	$int 0x40
 }
 
-void DefineButton(dword x,y,w,h,EDX,ESI)
+:void DefineButton(dword x,y,w,h,id,color)
 {
 	EAX = 8;
-	$push edx
-	EDX += BT_DEL;
+	EDX = id + BT_DEL;
 	$int 0x40;
-	$pop edx
+	EDX = id;
+	ESI = color;
 	EBX = x<<16+w;
 	ECX = y<<16+h;
 	$int 0x40

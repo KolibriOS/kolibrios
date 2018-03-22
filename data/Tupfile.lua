@@ -250,6 +250,7 @@ extra_files = {
  {"kolibrios/lib/swresample-1.dll", "common/lib/swresample-1.dll"},
  {"kolibrios/lib/i915_dri.drv", "common/lib/i915_dri.drv"},
  {"kolibrios/media/fplay", "common/media/fplay"},
+ {"kolibrios/media/fplay_run", "common/media/fplay_run"},
  {"kolibrios/media/updf", "common/media/updf"},
  {"kolibrios/media/vttf", "common/media/vttf"},
  {"kolibrios/media/zsea/zsea.ini", PROGS .. "/media/zsea/zSea.ini"},
