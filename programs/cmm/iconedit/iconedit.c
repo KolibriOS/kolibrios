@@ -28,7 +28,7 @@ pipet aside color view
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.37"
+#define T_TITLE "Icon Editor 0.38"
 
 #define TOOLBAR_H    24+8
 #define PANEL_LEFT_W 16+5+5+3+3
@@ -262,10 +262,20 @@ void SimpleFigureTool_Reset() {
 	figTool_States[currentFigToolState].lastTempPosY = -1;
 }
 
+int mouseX_last;
+int mouseY_last;
+bool first_click_in_canvas = false;
+
 void SimpleFigureTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
-	if (canvas.hovered()) 
+	if (mouse.down) && (canvas.hovered()) first_click_in_canvas = true;
+	if (first_click_in_canvas)
 	{
-		if (lkm) {
+		if (mouseX>canvas.x+canvas.w-zoom.value) mouseX = canvas.x+canvas.w-zoom.value;
+		if (mouseY>canvas.y+canvas.h-zoom.value) mouseY = canvas.y+canvas.h-zoom.value;
+		if (mouseX<canvas.x) mouseX = canvas.x;
+		if (mouseY<canvas.y) mouseY = canvas.y;
+
+		if (mouse.lkm) {
 			if ((figTool_States[currentFigToolState].startX < 0) || (figTool_States[currentFigToolState].startY < 0)) {
 				figTool_States[currentFigToolState].startX = mouseX;
 				figTool_States[currentFigToolState].startY = mouseY;
@@ -277,8 +287,10 @@ void SimpleFigureTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 					DrawCanvas();
 				}
 			}
+			mouseX_last = mouseX;
+			mouseY_last = mouseY;
 		}
-		else {
+		if (mouse.up) {
 			if ((figTool_States[currentFigToolState].startX >= 0) && (figTool_States[currentFigToolState].startY >= 0)) {
 				// Draw line from start position to current position
 				if (currentTool == TOOL_LINE) {
@@ -303,6 +315,8 @@ void SimpleFigureTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 				// Reset start position
 				figTool_States[currentFigToolState].startX = -1;
 				figTool_States[currentFigToolState].startY = -1;
+
+				first_click_in_canvas = false;
 			}
 		}
 	}
@@ -313,20 +327,22 @@ void SimpleFigureTool_onCanvasDraw() {
 		if (currentTool == TOOL_LINE) {
 			DrawLine(figTool_States[currentFigToolState].startX - canvas.x/zoom.value, 
 				figTool_States[currentFigToolState].startY - canvas.y/zoom.value, 
-				mouse.x - canvas.x/zoom.value, 
-				mouse.y - canvas.y/zoom.value, 
+				mouseX_last - canvas.x/zoom.value, 
+				mouseY_last - canvas.y/zoom.value, 
 				active_color_1, 
 				2);
 		}
 		else if (currentTool == TOOL_RECT) {
 			DrawRectangleInCanvas(figTool_States[currentFigToolState].startX - canvas.x/zoom.value, 
 				figTool_States[currentFigToolState].startY - canvas.y/zoom.value, 
-				mouse.x - canvas.x/zoom.value, 
-				mouse.y - canvas.y/zoom.value, active_color_1, 2);
+				mouseX_last - canvas.x/zoom.value, 
+				mouseY_last - canvas.y/zoom.value, 
+				active_color_1, 
+				2);
 		}
 
-		figTool_States[currentFigToolState].lastTempPosX = mouse.x - canvas.x/zoom.value;
-		figTool_States[currentFigToolState].lastTempPosY = mouse.y - canvas.y/zoom.value;
+		figTool_States[currentFigToolState].lastTempPosX = mouseX_last - canvas.x/zoom.value;
+		figTool_States[currentFigToolState].lastTempPosY = mouseY_last - canvas.y/zoom.value;
 	}
 }
 
@@ -789,12 +805,6 @@ void EventFill(dword _r, _c, _color)
 void DrawLine(int x1, int y1, int x2, int y2, dword color, int target) {
 	int dx, dy, signX, signY, error, error2;
 
-	// debugval("Draw line", x1);
-	// debugval("Draw line", y1);
-	
-	// debugval("Draw line", x2);
-	// debugval("Draw line", y2);
-	// debugln("===");
    dx = x2 - x1;
    
    if (dx < 0)
