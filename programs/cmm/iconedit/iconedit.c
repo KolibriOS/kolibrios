@@ -28,7 +28,7 @@ pipet aside color view
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.35"
+#define T_TITLE "Icon Editor 0.37"
 
 #define TOOLBAR_H    24+8
 #define PANEL_LEFT_W 16+5+5+3+3
@@ -111,7 +111,10 @@ dword last_used_colors[13*2] = {
 
 _image image;
 
+#include "actions_history.h"
+
 libimg_image open_image;
+_ActionsHistory actionsHistory;
 
 enum {
 	TOOL_NONE = -1,
@@ -144,11 +147,12 @@ void resetCurrentTool() {
 
 void setCurrentTool(int index) {
 	resetCurrentTool();
+
+	currentTool = index;
 	
 	if ((index != TOOL_NONE) && (tools[index].activate != 0))
 		tools[index].activate();
 
-	currentTool = index;
 	DrawLeftPanel();
 }
 
@@ -181,6 +185,9 @@ void FillTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 			EventFill(mouseY-canvas.y/zoom.value, 
 					mouseX-canvas.x/zoom.value, active_color_2);
 			
+		if ((fill1) || (fill2))
+			actionsHistory.saveCurrentState();
+
 		DrawCanvas();
 	}
 }
@@ -201,9 +208,16 @@ void PipetteTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 	}
 }
 
+bool PencilTool_Drawing = false;
+
 void PencilTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 	if (canvas.hovered()) 
 	{
+		if ((PencilTool_Drawing == true) && (!lkm) && (!pkm)) {
+			actionsHistory.saveCurrentState();
+			PencilTool_Drawing = false;
+		}
+
 		if (lkm) 
 			image.set_pixel(mouseY-canvas.y/zoom.value, 
 				mouseX-canvas.x/zoom.value, active_color_1);
@@ -211,128 +225,108 @@ void PencilTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 			image.set_pixel(mouseY-canvas.y/zoom.value, 
 				mouseX-canvas.x/zoom.value, active_color_2);
 				
+		if ((lkm) || (pkm))
+			PencilTool_Drawing = true;
+
 		DrawCanvas();
 	}
 }
 
-// Line tool
-
-int LineTool_startX = -1;
-int LineTool_startY = -1;
-int LineTool_lastTempPosX = -1;
-int LineTool_lastTempPosY = -1;
-
-void LineTool_reset() {
-	LineTool_startX = -1;
-	LineTool_startY = -1;
-	LineTool_lastTempPosX = -1;
-	LineTool_lastTempPosY = -1;
+void PencilTool_reset() {
+	PencilTool_Drawing = false;
 }
 
-void LineTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
+// Line tool
+struct SimpleFigureTool_State {
+	int startX, startY;
+	int lastTempPosX, lastTempPosY;
+};
+
+enum {
+	TOOL_LINE_STATE,
+	TOOL_RECT_STATE
+};
+
+dword currentFigToolState = -1;
+SimpleFigureTool_State figTool_States[2];
+
+void SimpleFigureTool_Reset() {
+	if (currentTool == TOOL_LINE)
+		currentFigToolState = TOOL_LINE_STATE;
+	else if (currentTool == TOOL_RECT)
+		currentFigToolState = TOOL_RECT_STATE;
+
+	figTool_States[currentFigToolState].startX = -1;
+	figTool_States[currentFigToolState].startY = -1;
+	figTool_States[currentFigToolState].lastTempPosX = -1;
+	figTool_States[currentFigToolState].lastTempPosY = -1;
+}
+
+void SimpleFigureTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 	if (canvas.hovered()) 
 	{
-		if (mouse.down) && (mouse.key & MOUSE_LEFT) {
-			if ((LineTool_startX < 0) || (LineTool_startY < 0)) {
-				LineTool_startX = mouseX;
-				LineTool_startY = mouseY;
+		if (lkm) {
+			if ((figTool_States[currentFigToolState].startX < 0) || (figTool_States[currentFigToolState].startY < 0)) {
+				figTool_States[currentFigToolState].startX = mouseX;
+				figTool_States[currentFigToolState].startY = mouseY;
 			}
 			else {
+				if ((calc(mouseX - canvas.x/zoom.value) != figTool_States[currentFigToolState].lastTempPosX)
+					|| (calc(mouseY - canvas.y/zoom.value) != figTool_States[currentFigToolState].lastTempPosY)) 
+				{
+					DrawCanvas();
+				}
+			}
+		}
+		else {
+			if ((figTool_States[currentFigToolState].startX >= 0) && (figTool_States[currentFigToolState].startY >= 0)) {
 				// Draw line from start position to current position
-				DrawLine(LineTool_startX - canvas.x/zoom.value, 
-					LineTool_startY - canvas.y/zoom.value, 
-					mouseX - canvas.x/zoom.value, 
-					mouseY - canvas.y/zoom.value, 
-					active_color_1, 
-					1);
+				if (currentTool == TOOL_LINE) {
+					DrawLine(figTool_States[currentFigToolState].startX - canvas.x/zoom.value, 
+						figTool_States[currentFigToolState].startY - canvas.y/zoom.value, 
+						mouseX - canvas.x/zoom.value, 
+						mouseY - canvas.y/zoom.value, 
+						active_color_1, 
+						1);
+				}
+				else if (currentTool == TOOL_RECT) {
+					DrawRectangleInCanvas(figTool_States[currentFigToolState].startX - canvas.x/zoom.value, 
+						figTool_States[currentFigToolState].startY - canvas.y/zoom.value, 
+						mouseX - canvas.x/zoom.value, 
+						mouseY - canvas.y/zoom.value, active_color_1, 1);
+				}
+
 				DrawCanvas();
-				
+
+				actionsHistory.saveCurrentState();
+
 				// Reset start position
-				LineTool_startX = -1;
-				LineTool_startY = -1;
-			}
-		}
-		
-		if ((LineTool_startX >= 0) && (LineTool_startY >= 0)) {
-			if ((calc(mouseX - canvas.x/zoom.value) != LineTool_lastTempPosX)
-				|| (calc(mouseY - canvas.y/zoom.value) != LineTool_lastTempPosY)) 
-			{
-				DrawCanvas();
+				figTool_States[currentFigToolState].startX = -1;
+				figTool_States[currentFigToolState].startY = -1;
 			}
 		}
 	}
 }
 
-void LineTool_onCanvasDraw() {
-	if ((LineTool_startX >= 0) && (LineTool_startY >= 0)) {
-		DrawLine(LineTool_startX - canvas.x/zoom.value, 
-			LineTool_startY - canvas.y/zoom.value, 
-			mouse.x - canvas.x/zoom.value, 
-			mouse.y - canvas.y/zoom.value, 
-			active_color_1, 
-			2);
-		LineTool_lastTempPosX = mouse.x - canvas.x/zoom.value;
-		LineTool_lastTempPosY = mouse.y - canvas.y/zoom.value;
-	}
-}
-
-// Rect tool
-int RectTool_startX = -1;
-int RectTool_startY = -1;
-int RectTool_lastTempPosX = -1;
-int RectTool_lastTempPosY = -1;
-
-void RectTool_reset() {
-	RectTool_startX = -1;
-	RectTool_startY = -1;
-	RectTool_lastTempPosX = -1;
-	RectTool_lastTempPosY = -1;
-}
-
-void RectTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
-	if ((mouseX>canvas.x) && (mouseY>canvas.y) 
-		&& (mouseY<canvas.y+canvas.h) 
-		&& (mouseX<canvas.x+canvas.w)) 
-	{
-		if (mouse.down) && (mouse.key & MOUSE_LEFT) {
-			if ((RectTool_startX < 0) || (RectTool_startY < 0)) {
-				RectTool_startX = mouseX;
-				RectTool_startY = mouseY;
-			}
-			else {
-				// Draw line from start position to current position
-				DrawRectangleInCanvas(RectTool_startX - canvas.x/zoom.value, 
-					RectTool_startY - canvas.y/zoom.value, 
-					mouseX - canvas.x/zoom.value, 
-					mouseY - canvas.y/zoom.value, active_color_1, 1);
-				
-				DrawCanvas();
-				
-				// Reset start position
-				RectTool_startX = -1;
-				RectTool_startY = -1;
-			}
+void SimpleFigureTool_onCanvasDraw() {
+	if ((figTool_States[currentFigToolState].startX >= 0) && (figTool_States[currentFigToolState].startY >= 0) && (mouse.lkm)) {
+		if (currentTool == TOOL_LINE) {
+			DrawLine(figTool_States[currentFigToolState].startX - canvas.x/zoom.value, 
+				figTool_States[currentFigToolState].startY - canvas.y/zoom.value, 
+				mouse.x - canvas.x/zoom.value, 
+				mouse.y - canvas.y/zoom.value, 
+				active_color_1, 
+				2);
 		}
-		
-		if ((RectTool_startX >= 0) && (RectTool_startY >= 0)) {
-			if ((calc(mouseX - canvas.x/zoom.value) != RectTool_lastTempPosX)
-				|| (calc(mouseY - canvas.y/zoom.value) != RectTool_lastTempPosY)) 
-			{
-				DrawCanvas();
-			}
+		else if (currentTool == TOOL_RECT) {
+			DrawRectangleInCanvas(figTool_States[currentFigToolState].startX - canvas.x/zoom.value, 
+				figTool_States[currentFigToolState].startY - canvas.y/zoom.value, 
+				mouse.x - canvas.x/zoom.value, 
+				mouse.y - canvas.y/zoom.value, active_color_1, 2);
 		}
-	}
-}
 
-void RectTool_onCanvasDraw() {
-	if ((RectTool_startX >= 0) && (RectTool_startY >= 0)) {
-		DrawRectangleInCanvas(RectTool_startX - canvas.x/zoom.value, 
-			RectTool_startY - canvas.y/zoom.value, 
-			mouse.x - canvas.x/zoom.value, 
-			mouse.y - canvas.y/zoom.value, active_color_1, 2);
-			
-		RectTool_lastTempPosX = mouse.x - canvas.x/zoom.value;
-		RectTool_lastTempPosY = mouse.y - canvas.y/zoom.value;
+		figTool_States[currentFigToolState].lastTempPosX = mouse.x - canvas.x/zoom.value;
+		figTool_States[currentFigToolState].lastTempPosY = mouse.y - canvas.y/zoom.value;
 	}
 }
 
@@ -340,6 +334,7 @@ void initTools()
 {
 	tools[0].id = TOOL_PENCIL;
 	tools[0].onMouseEvent = #PencilTool_onMouseEvent;
+	tools[0].deactivate = #PencilTool_reset;
 	
 	tools[1].id = TOOL_PIPETTE;
 	tools[1].activate = #PipetteTool_activate;
@@ -348,17 +343,17 @@ void initTools()
 	tools[2].id = TOOL_FILL;
 	tools[2].onMouseEvent = #FillTool_onMouseEvent;
 	
-	tools[3].id = TOOL_PENCIL;
-	tools[3].activate = #LineTool_reset;
-	tools[3].deactivate = #LineTool_reset;
-	tools[3].onMouseEvent = #LineTool_onMouseEvent;
-	tools[3].onCanvasDraw = #LineTool_onCanvasDraw;
+	tools[3].id = TOOL_LINE;
+	tools[3].activate = #SimpleFigureTool_Reset;
+	tools[3].deactivate = #SimpleFigureTool_Reset;
+	tools[3].onMouseEvent = #SimpleFigureTool_onMouseEvent;
+	tools[3].onCanvasDraw = #SimpleFigureTool_onCanvasDraw;
 	
 	tools[4].id = TOOL_RECT;
-	tools[4].activate = #RectTool_reset;
-	tools[4].deactivate = #RectTool_reset;
-	tools[4].onMouseEvent = #RectTool_onMouseEvent;
-	tools[4].onCanvasDraw = #RectTool_onCanvasDraw;	
+	tools[4].activate = #SimpleFigureTool_Reset;
+	tools[4].deactivate = #SimpleFigureTool_Reset;
+	tools[4].onMouseEvent = #SimpleFigureTool_onMouseEvent;
+	tools[4].onCanvasDraw = #SimpleFigureTool_onCanvasDraw;	
 }
 
 void main()
@@ -382,6 +377,8 @@ void main()
 			notify("'Error: image format is unacceptable (PNG, 32x32x16b expected)' -E");
 		}
 	}
+
+	actionsHistory.init();
 
 	initTools();
 	setCurrentTool(TOOL_PENCIL);
@@ -490,6 +487,10 @@ void main()
 			if (key_scancode == SCAN_CODE_KEY_F) setCurrentTool(TOOL_FILL);
 			if (key_scancode == SCAN_CODE_KEY_L) setCurrentTool(TOOL_LINE);
 			if (key_scancode == SCAN_CODE_KEY_R) setCurrentTool(TOOL_RECT);
+
+			if (key_scancode == SCAN_CODE_KEY_S) actionsHistory.undoLastAction();
+			if (key_scancode == SCAN_CODE_KEY_C) actionsHistory.redoLastAction();
+
 			if (key_scancode == SCAN_CODE_MINUS) {zoom.click(BTN_ZOOM_OUT); DrawEditArea();}
 			if (key_scancode == SCAN_CODE_PLUS)  {zoom.click(BTN_ZOOM_IN);  DrawEditArea();}
 			break;
