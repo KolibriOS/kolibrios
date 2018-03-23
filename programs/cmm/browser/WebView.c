@@ -31,7 +31,7 @@
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.72";
+char version[]="Текстовый браузер 1.73";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -43,9 +43,10 @@ char rmb_menu[] =
 История
 Менеджер загрузок";
 char link_menu[] =
-"Копировать ссылку";
+"Копировать ссылку
+Скачать содержимое ссылки";
 #else
-char version[]="Text-based Browser 1.72";
+char version[]="Text-based Browser 1.73";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -57,7 +58,8 @@ Edit source
 History
 Download Manager";
 char link_menu[] =
-"Copy link";
+"Copy link
+Download link contents";
 #endif
 
 
@@ -98,7 +100,8 @@ enum {
 	VIEW_HISTORY,
 	//FREE_IMG_CACHE,
 	DOWNLOAD_MANAGER,
-	COPY_LINK=1200
+	COPY_LINK=1200,
+	DOWNLOAD_LINK_CONTENTS,
 };
 
 #include "..\TWB\TWB.c"
@@ -378,6 +381,12 @@ void ProcessEvent(dword id__)
 			Clipboard__CopyText(PageLinks.GetURL(PageLinks.active));
 			notify("'URL copied to clipboard'O");
 			return;
+		case DOWNLOAD_LINK_CONTENTS:
+			if (!downloader_opened) {
+				strcpy(#downloader_edit, PageLinks.GetURL(PageLinks.active));
+				CreateThread(#Downloader,#downloader_stak+4092);
+			}
+			return;
 	}
 }
 
@@ -600,7 +609,7 @@ void EventShowPageMenu(dword _left, _top)
 
 void EventShowLinkMenu(dword _left, _top)
 {
-	menu.show(Form.left+_left-6,Form.top+_top+skin_height+3, 180, #link_menu, COPY_LINK);
+	menu.show(Form.left+_left-6,Form.top+_top+skin_height+3, 220, #link_menu, COPY_LINK);
 }
 
 

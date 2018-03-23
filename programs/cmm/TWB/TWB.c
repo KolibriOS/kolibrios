@@ -295,7 +295,8 @@ void TWebBrowser::SetStyle() {
 			debugln("Document has no information about encoding, UTF will be used");
 		}
 		if (opened) {
-			if (!strcmp(#header, #version)) {
+			if (strcmp(#header, #version) != 0) {
+				debugln("!!!!!!!!!!!!!!!!!!!!!!");
 				ChangeCharset(charsets[cur_encoding], "CP866", #header);
 				sprintf(#header, "%s - %s", #header, #version);
 			}
@@ -355,7 +356,7 @@ void TWebBrowser::SetStyle() {
 	if (istag("blockquote")) { style.blq = opened; return; }
 	if (istag("pre")) || (istag("code")) { style.pre = opened; return; }
 	if (istag("img")) { ImgCache.Images( left1, draw_y, WB1.list.w); return; }
-	if (istag("h1")) || (istag("h2")) || (istag("h3")) || (istag("h4")) || (istag("caption")) {
+	if (istag("h1")) || (istag("h2")) || (istag("h3")) || (istag("caption")) {
 		style.h = opened;
 		if (opened)
 		{
