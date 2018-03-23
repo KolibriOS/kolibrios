@@ -1,5 +1,5 @@
 (*
-    Copyright 2016, 2017 Anton Krotov
+    Copyright 2016, 2017, 2018 Anton Krotov
 
     This file is part of Compiler.
 
@@ -289,6 +289,10 @@ BEGIN
         IntType(e1.T, coord);
         Load(e1);
         IF e.T.Len = 0 THEN
+          IF e1.eType = eCONST THEN
+            idx := FLOOR(e1.Value);
+            Assert(idx >= 0, coord, 159)
+          END;
           BaseT := DECL.OpenBase(e.T);
           X86.PushConst(BaseT.Size);
           X86.OpenIdx(DECL.Dim(e.T))
@@ -866,6 +870,9 @@ BEGIN
       X86.DropFpu(param.T.tType = TLONGREAL)
     END;
     IF (e1.T.tType = TSTRING) & (param.T.tType = TARRAY) THEN
+      IF param.T.Len > X86.maxstrlen THEN
+          X86.set_maxstrlen(param.T.Len)
+      END;
       s := DECL.GetString(e1.Value);
       IF s.Len = 1 THEN
         X86.Mono(s.Number)
@@ -1885,7 +1892,11 @@ BEGIN
   END;
   UTILS.Split(SelfName, SelfPath, CName, CExt);
   temp := Name;
-  IF UTILS.streq(system, "obj") THEN
+  IF UTILS.streq(system, "kem") THEN
+    X86.setkem;
+    platform := 4;
+    UTILS.concat(temp, ".kex")
+  ELSIF UTILS.streq(system, "obj") THEN
     platform := 6;
     UTILS.concat(temp, ".obj")
   ELSIF UTILS.streq(system, "elf") THEN
@@ -1924,6 +1935,7 @@ BEGIN
     UTILS.concat(SelfPath, "Windows32")
   END;
   UTILS.concat(SelfPath, UTILS.Slash);
+  X86.set_maxstrlen(0);
   X86.Init(platform);
   X86.Prolog(temp);
   DECL.Program(SelfPath, Path, Name, Ext, platform IN {1, 2, 3}, OpSeq, Expr, AssComp, sttypes);

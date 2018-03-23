@@ -35,9 +35,9 @@ TYPE
 
 VAR
 
-  con_init               : PROCEDURE [stdcall] (wnd_width, wnd_height, scr_width, scr_height, title: INTEGER);
-  con_exit               : PROCEDURE [stdcall] (bCloseWindow: BOOLEAN);
-  con_write_asciiz       : PROCEDURE [stdcall] (string: INTEGER);
+  con_init		 : PROCEDURE [stdcall] (wnd_width, wnd_height, scr_width, scr_height, title: INTEGER);
+  con_exit		 : PROCEDURE [stdcall] (bCloseWindow: BOOLEAN);
+  con_write_asciiz	 : PROCEDURE [stdcall] (string: INTEGER);
 
   fsize, sec*, dsec*: INTEGER;
 
@@ -107,8 +107,8 @@ BEGIN
   Time(sec, dsec);
   Lib := API.sysfunc3(68, 19, sys.ADR("/rd/1/lib/console.obj"));
   IF Lib # 0 THEN
-    GetProc(sys.ADR(con_init),         "con_init");
-    GetProc(sys.ADR(con_exit),         "con_exit");
+    GetProc(sys.ADR(con_init),	       "con_init");
+    GetProc(sys.ADR(con_exit),	       "con_exit");
     GetProc(sys.ADR(con_write_asciiz), "con_write_asciiz");
     IF con_init # NIL THEN
       con_init(-1, -1, -1, -1, sys.ADR("Oberon-07/11 for KolibriOS"))
@@ -124,17 +124,27 @@ BEGIN
   API.ExitProcess(0)
 END ExitProcess;
 
+PROCEDURE AppAdr(): INTEGER;
+VAR
+    buf: ARRAY 1024 OF CHAR;
+    a: INTEGER;
+BEGIN
+    a := API.sysfunc3(9, sys.ADR(buf), -1);
+    sys.GET(sys.ADR(buf) + 22, a)
+    RETURN a
+END AppAdr;
+
 PROCEDURE GetCommandLine*(): INTEGER;
 VAR param: INTEGER;
 BEGIN
-  sys.GET(28, param)
+  sys.GET(28 + AppAdr(), param)
   RETURN param
 END GetCommandLine;
 
 PROCEDURE GetName*(): INTEGER;
 VAR name: INTEGER;
 BEGIN
-  sys.GET(32, name)
+  sys.GET(32 + AppAdr(), name)
   RETURN name
 END GetName;
 

@@ -1,5 +1,5 @@
 (*
-    Copyright 2016, 2017 Anton Krotov
+    Copyright 2016, 2017, 2018 Anton Krotov
 
     This file is part of Compiler.
 
@@ -119,7 +119,7 @@ TYPE
     reloc: ARRAY 1024 OF sys.CARD16
   END;
 
-VAR asmlist: UTILS.LIST; start: ASMLINE; dll, con, gui, kos, elf, obj: BOOLEAN;
+VAR asmlist: UTILS.LIST; start: ASMLINE; dll, con, gui, kos, elf, obj, kem: BOOLEAN;
     Lcount, reccount, topstk: INTEGER; recarray: ARRAY 2048 OF INTEGER; current*: ASMLINE;
     callstk: ARRAY 1024, 2 OF ASMLINE; OutFile: UTILS.STRING;
     Code: ARRAY 4000000 OF CHAR; ccount: INTEGER; Data: ARRAY 1000000 OF CHAR; dcount: INTEGER;
@@ -128,6 +128,12 @@ VAR asmlist: UTILS.LIST; start: ASMLINE; dll, con, gui, kos, elf, obj: BOOLEAN;
     RtlProc: ARRAY 20 OF INTEGER; OutFilePos: INTEGER; RelocSection: SECTION;
     fpu*: INTEGER; isfpu: BOOLEAN; maxfpu: INTEGER; fpucmd: ASMLINE;
     kosexp: ARRAY 65536 OF RECORD Name: SCAN.NODE; Adr, NameLabel: INTEGER END; kosexpcount: INTEGER;
+    maxstrlen*: INTEGER;
+
+PROCEDURE set_maxstrlen* (value: INTEGER);
+BEGIN
+    maxstrlen := value
+END set_maxstrlen;
 
 PROCEDURE AddRtlProc*(idx, proc: INTEGER);
 BEGIN
@@ -567,7 +573,7 @@ BEGIN
   NEW(nov);
   UTILS.MemErr(nov = NIL);
   UTILS.Push(asmlist, nov);
-  current := nov;
+  current := nov
 END Init;
 
 PROCEDURE datastr(str: UTILS.STRING);
@@ -1556,10 +1562,10 @@ BEGIN
   IF ~obj THEN
     Header.menuet01 := "MENUET01";
     Header.ver := 1;
-    Header.start := sys.SIZE(KOSHEADER);
+    Header.start := sys.SIZE(KOSHEADER) + ORD(kem) * 65536;
     Header.size := Align(size, 4) + datasize;
     Header.mem := Header.size + stk + gsize + strsize * 2 + 1000H;
-    Header.sp := Header.size + gsize + stk;
+    Header.sp := Header.size + gsize + stk;// + ORD(kem) * 65536;
     Header.param := Header.sp;
     Header.path := Header.param + strsize;
 
@@ -1768,7 +1774,7 @@ BEGIN
   ELSIF con OR gui THEN
     LoadAdr := 400000H
   ELSIF kos OR obj THEN
-    LoadAdr := sys.SIZE(KOSHEADER)
+    LoadAdr := sys.SIZE(KOSHEADER) + ORD(kem & kos) * 65536
   ELSIF elf THEN
     LoadAdr := 134514420 + 1024;
     INC(gsize, 1024)
@@ -1926,6 +1932,9 @@ PROCEDURE Epilog*(gsize: INTEGER; FName: ARRAY OF CHAR; stk: INTEGER);
 VAR i, glob: INTEGER;
 BEGIN
   glob := 0;
+  IF gsize < maxstrlen THEN
+      gsize := maxstrlen
+  END;
   gsize := Align(gsize, 4) + 4;
   COPY(FName, OutFile);
   Labels[RTABLE] := -dcount;
@@ -1983,6 +1992,13 @@ BEGIN
     END
   END;
   FixLabels(FName, stk, gsize, glob)
-END Epilog;
+END Epilog; 
 
+PROCEDURE setkem*;
+BEGIN            
+    kem := TRUE
+END setkem;
+
+BEGIN
+    kem := FALSE
 END X86.

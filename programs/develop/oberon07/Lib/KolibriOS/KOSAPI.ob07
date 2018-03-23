@@ -1,5 +1,5 @@
 (*
-    Copyright 2016 Anton Krotov
+    Copyright 2016, 2018 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -187,17 +187,27 @@ BEGIN
   RETURN ptr
 END realloc;
 
+PROCEDURE AppAdr(): INTEGER;
+VAR
+    buf: ARRAY 1024 OF CHAR;
+    a: INTEGER;
+BEGIN
+    a := sysfunc3(9, sys.ADR(buf), -1);
+    sys.GET(sys.ADR(buf) + 22, a)
+    RETURN a
+END AppAdr;
+
 PROCEDURE GetCommandLine*(): INTEGER;
 VAR param: INTEGER;
 BEGIN
-  sys.GET(28, param)
+  sys.GET(28 + AppAdr(), param)
   RETURN param
 END GetCommandLine;
 
 PROCEDURE GetName*(): INTEGER;
 VAR name: INTEGER;
 BEGIN
-  sys.GET(32, name)
+  sys.GET(32 + AppAdr(), name)
   RETURN name
 END GetName;
 

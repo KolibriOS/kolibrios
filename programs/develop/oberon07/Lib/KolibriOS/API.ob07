@@ -1,5 +1,5 @@
 (*
-    Copyright 2016, 2017 Anton Krotov
+    Copyright 2016, 2017, 2018 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -24,11 +24,11 @@ CONST
 
     MAX_SIZE  = 16 * 400H;
     HEAP_SIZE =  1 * 100000H;
-    
+
     _new = 1;
     _dispose = 2;
 
-    
+
 TYPE
 
     CRITICAL_SECTION = ARRAY 2 OF INTEGER;
@@ -45,7 +45,7 @@ VAR
 PROCEDURE [stdcall] zeromem* (size, adr: INTEGER);
 BEGIN
     sys.CODE("578B7D0C8B4D0833C09CFCF3AB9D5F")
-END zeromem; 
+END zeromem;
 
 
 PROCEDURE mem_commit* (adr, size: INTEGER);
@@ -55,7 +55,7 @@ BEGIN
     FOR tmp := adr TO adr + size - 1 BY 4096 DO
         sys.PUT(tmp, 0)
     END
-END mem_commit;  
+END mem_commit;
 
 
 PROCEDURE strncmp* (a, b, n: INTEGER): INTEGER;
@@ -76,7 +76,7 @@ BEGIN
         END
     END
     RETURN Res
-END strncmp;    
+END strncmp;
 
 
 PROCEDURE [stdcall] sysfunc1* (arg1: INTEGER): INTEGER;
@@ -86,7 +86,7 @@ BEGIN
     sys.CODE("C9");               (* leave                    *)
     sys.CODE("C20400");           (* ret     04h              *)
     RETURN 0
-END sysfunc1; 
+END sysfunc1;
 
 
 PROCEDURE [stdcall] sysfunc2* (arg1, arg2: INTEGER): INTEGER;
@@ -99,7 +99,7 @@ BEGIN
     sys.CODE("C9");               (* leave                    *)
     sys.CODE("C20800");           (* ret     08h              *)
     RETURN 0
-END sysfunc2;    
+END sysfunc2;
 
 
 PROCEDURE [stdcall] sysfunc3* (arg1, arg2, arg3: INTEGER): INTEGER;
@@ -128,7 +128,7 @@ BEGIN
     sys.CODE("C9");               (* leave                    *)
     sys.CODE("C21000");           (* ret     10h              *)
     RETURN 0
-END sysfunc4;    
+END sysfunc4;
 
 
 PROCEDURE [stdcall] sysfunc5* (arg1, arg2, arg3, arg4, arg5: INTEGER): INTEGER;
@@ -247,7 +247,7 @@ BEGIN
             res := 0
         END
     END;
-    IF res # 0 THEN
+    IF (res # 0) & (size <= MAX_SIZE) THEN
         zeromem(ASR(size, 2) - 1, res)
     END
     RETURN res
@@ -274,24 +274,24 @@ END __DISPOSE;
 PROCEDURE NEW_DISPOSE (func, arg: INTEGER): INTEGER;
 VAR
     res: INTEGER;
-BEGIN    
-    EnterCriticalSection(CriticalSection); 
+BEGIN
+    EnterCriticalSection(CriticalSection);
 
     IF func = _new THEN
         res := __NEW(arg)
     ELSIF func = _dispose THEN
         res := __DISPOSE(arg)
-    END;                 
+    END;
 
     LeaveCriticalSection(CriticalSection)
     RETURN res
-END NEW_DISPOSE;  
+END NEW_DISPOSE;
 
 
 PROCEDURE _NEW* (size: INTEGER): INTEGER;
     RETURN NEW_DISPOSE(_new, size)
 END _NEW;
-                     
+
 
 PROCEDURE _DISPOSE* (ptr: INTEGER): INTEGER;
     RETURN NEW_DISPOSE(_dispose, ptr)
@@ -300,14 +300,14 @@ END _DISPOSE;
 
 PROCEDURE ExitProcess* (p1: INTEGER);
 BEGIN
-  p1 := sysfunc1(-1)
-END ExitProcess;  
+    p1 := sysfunc1(-1)
+END ExitProcess;
 
 
 PROCEDURE ExitThread* (p1: INTEGER);
 BEGIN
     p1 := sysfunc1(-1)
-END ExitThread;  
+END ExitThread;
 
 
 PROCEDURE OutChar (c: CHAR);
@@ -315,7 +315,7 @@ VAR
     res: INTEGER;
 BEGIN
     res := sysfunc3(63, 1, ORD(c))
-END OutChar; 
+END OutChar;
 
 
 PROCEDURE DebugMsg* (lpText, lpCaption: INTEGER);
@@ -347,14 +347,14 @@ BEGIN
         OutChar(0DX);
         OutChar(0AX)
     END
-END DebugMsg;  
+END DebugMsg;
 
 
 PROCEDURE init* (p1: INTEGER);
 BEGIN
     p1 := sysfunc2(68, 11);
     InitializeCriticalSection(CriticalSection)
-END init; 
+END init;
 
 
 END API.
