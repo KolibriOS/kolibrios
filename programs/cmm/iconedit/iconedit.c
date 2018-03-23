@@ -28,7 +28,7 @@ pipet aside color view
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.38"
+#define T_TITLE "Icon Editor 0.39"
 
 #define TOOLBAR_H    24+8
 #define PANEL_LEFT_W 16+5+5+3+3
@@ -59,8 +59,9 @@ block b_color_gradient = {NULL, 30+TOOLBAR_H, RIGHT_BAR_W, 30};
 block b_last_colors = {NULL, 70+TOOLBAR_H, RIGHT_BAR_W, COLSIZE*2};
 block b_default_palette = {NULL, COLSIZE*2+10+70+TOOLBAR_H, RIGHT_BAR_W, COLSIZE*9};
 
-dword active_color_1 = 0x000000;
-dword active_color_2 = 0xFFFfff;
+dword color1 = 0x000000;
+dword color2 = 0xFFFfff;
+dword tool_color;
 
 enum {
 	BTN_NEW = 40,
@@ -163,31 +164,11 @@ void setCurrentTool(int index) {
 //===================================================//
 
 void FillTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
-	bool fill1=false;
-	bool fill2=false;
-
-	if (canvas.hovered())
+	if (canvas.hovered()) && (currentTool==TOOL_FILL) && (mouse.up)
 	{
-		if (currentTool==TOOL_FILL)
-		{
-			if (mouse.key&MOUSE_LEFT)&&(mouse.up) fill1=true;
-			if (mouse.key&MOUSE_RIGHT)&&(mouse.up) fill2=true;
-		}
-		else 
-		{
-			if (lkm) fill1=true;
-			if (pkm) fill2=true;			
-		}
-		if (fill1)
-			EventFill(mouseY-canvas.y/zoom.value, 
-					mouseX-canvas.x/zoom.value, active_color_1);
-		if (fill2)
-			EventFill(mouseY-canvas.y/zoom.value, 
-					mouseX-canvas.x/zoom.value, active_color_2);
-			
-		if ((fill1) || (fill2))
-			actionsHistory.saveCurrentState();
-
+		EventFill(mouseY-canvas.y/zoom.value, 
+				mouseX-canvas.x/zoom.value, tool_color);
+		actionsHistory.saveCurrentState();			
 		DrawCanvas();
 	}
 }
@@ -197,12 +178,13 @@ void PipetteTool_activate() {
 }
 
 void PipetteTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
-	active_color_1 = GetPixelUnderMouse();
-	DrawActiveColor(NULL);
+	tool_color = GetPixelUnderMouse();
+	DrawBar(Form.cwidth-30, 5, 20, 20, tool_color);
 	
-	if (mouse.down) && (mouse.key&MOUSE_LEFT) {
+	if (mouse.down) {
 		SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
-		EventSetActiveColor(1, active_color_1);
+		if (mouse.key&MOUSE_LEFT) EventSetActiveColor(1, tool_color);
+		if (mouse.key&MOUSE_RIGHT) EventSetActiveColor(2, tool_color);
 		
 		setCurrentTool(TOOL_PENCIL);
 	}
@@ -213,21 +195,16 @@ bool PencilTool_Drawing = false;
 void PencilTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 	if (canvas.hovered()) 
 	{
-		if ((PencilTool_Drawing == true) && (!lkm) && (!pkm)) {
+		if ((PencilTool_Drawing == true) && (!mouse.key)) {
 			actionsHistory.saveCurrentState();
 			PencilTool_Drawing = false;
 		}
 
-		if (lkm) 
+		if (mouse.key) {
 			image.set_pixel(mouseY-canvas.y/zoom.value, 
-				mouseX-canvas.x/zoom.value, active_color_1);
-		if (pkm) 
-			image.set_pixel(mouseY-canvas.y/zoom.value, 
-				mouseX-canvas.x/zoom.value, active_color_2);
-				
-		if ((lkm) || (pkm))
+				mouseX-canvas.x/zoom.value, tool_color);
 			PencilTool_Drawing = true;
-
+		}
 		DrawCanvas();
 	}
 }
@@ -275,7 +252,7 @@ void SimpleFigureTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 		if (mouseX<canvas.x) mouseX = canvas.x;
 		if (mouseY<canvas.y) mouseY = canvas.y;
 
-		if (mouse.lkm) {
+		if (mouse.key) {
 			if ((figTool_States[currentFigToolState].startX < 0) || (figTool_States[currentFigToolState].startY < 0)) {
 				figTool_States[currentFigToolState].startX = mouseX;
 				figTool_States[currentFigToolState].startY = mouseY;
@@ -298,14 +275,14 @@ void SimpleFigureTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 						figTool_States[currentFigToolState].startY - canvas.y/zoom.value, 
 						mouseX - canvas.x/zoom.value, 
 						mouseY - canvas.y/zoom.value, 
-						active_color_1, 
+						tool_color, 
 						1);
 				}
 				else if (currentTool == TOOL_RECT) {
 					DrawRectangleInCanvas(figTool_States[currentFigToolState].startX - canvas.x/zoom.value, 
 						figTool_States[currentFigToolState].startY - canvas.y/zoom.value, 
 						mouseX - canvas.x/zoom.value, 
-						mouseY - canvas.y/zoom.value, active_color_1, 1);
+						mouseY - canvas.y/zoom.value, tool_color, 1);
 				}
 
 				DrawCanvas();
@@ -323,13 +300,13 @@ void SimpleFigureTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 }
 
 void SimpleFigureTool_onCanvasDraw() {
-	if ((figTool_States[currentFigToolState].startX >= 0) && (figTool_States[currentFigToolState].startY >= 0) && (mouse.lkm)) {
+	if ((figTool_States[currentFigToolState].startX >= 0) && (figTool_States[currentFigToolState].startY >= 0) && (mouse.key)) {
 		if (currentTool == TOOL_LINE) {
 			DrawLine(figTool_States[currentFigToolState].startX - canvas.x/zoom.value, 
 				figTool_States[currentFigToolState].startY - canvas.y/zoom.value, 
 				mouseX_last - canvas.x/zoom.value, 
 				mouseY_last - canvas.y/zoom.value, 
-				active_color_1, 
+				tool_color, 
 				2);
 		}
 		else if (currentTool == TOOL_RECT) {
@@ -337,7 +314,7 @@ void SimpleFigureTool_onCanvasDraw() {
 				figTool_States[currentFigToolState].startY - canvas.y/zoom.value, 
 				mouseX_last - canvas.x/zoom.value, 
 				mouseY_last - canvas.y/zoom.value, 
-				active_color_1, 
+				tool_color, 
 				2);
 		}
 
@@ -406,6 +383,10 @@ void main()
 		case evMouse:
 			mouse.get();
 			
+			if (mouse.lkm) tool_color = color1;
+			if (mouse.pkm) tool_color = color2;
+			if (mouse.mkm) break;
+
 			if (currentTool != TOOL_NONE)
 				tools[currentTool].onMouseEvent(mouse.x, mouse.y, mouse.lkm, mouse.pkm);
 
@@ -559,7 +540,7 @@ void draw_window()
 	DrawToolbarButton(BTN_NEW,    tx.inc(TB_ICON_PADDING), 2); //not implemented
 	DrawToolbarButton(BTN_OPEN,   tx.inc(TB_ICON_PADDING), 0); //not implemented
 	DrawToolbarButton(BTN_SAVE,   tx.inc(TB_ICON_PADDING), 5);
-	DrawToolbarButton(BTN_MOVE_LEFT,  tx.inc(TB_ICON_PADDING+8),   30);
+	DrawToolbarButton(BTN_MOVE_LEFT,  tx.inc(TB_ICON_PADDING+8), 30);
 	DrawToolbarButton(BTN_MOVE_RIGHT, tx.inc(TB_ICON_PADDING),   31);
 	DrawToolbarButton(BTN_MOVE_UP,    tx.inc(TB_ICON_PADDING),   32);
 	DrawToolbarButton(BTN_MOVE_DOWN,  tx.inc(TB_ICON_PADDING),   33);
@@ -639,13 +620,13 @@ void DrawActiveColor(dword iny)
 {
 	static dword outy;
 	if (iny != NULL) outy = iny;
-	DrawBar(right_bar.x, outy, 20, 20, active_color_1);
-	sprintf(#param, "%A", active_color_1);
+	DrawBar(right_bar.x, outy, 20, 20, color1);
+	sprintf(#param, "%A", color1);
 	EDI = system.color.work;
 	WriteText(right_bar.x + 30, outy + 3, 0xD0, system.color.work_text, #param+4);
 
-	DrawBar(right_bar.x+110, outy, 20, 20, active_color_2);
-	sprintf(#param, "%A", active_color_2);
+	DrawBar(right_bar.x+110, outy, 20, 20, color2);
+	sprintf(#param, "%A", color2);
 	EDI = system.color.work;
 	WriteText(right_bar.x+110 + 30, outy + 3, 0xD0, system.color.work_text, #param+4);	
 	DrawCurrentColorGradientByLightness();
@@ -657,10 +638,10 @@ void DrawCurrentColorGradientByLightness()
 	int w = right_bar.w-10/2;
 	for (i=0; i<w; i++)
 		DrawBar(b_color_gradient.x+i, b_color_gradient.y, 
-			1, b_color_gradient.h, MixColors(active_color_1,0xFFFfff,255*i/w));
+			1, b_color_gradient.h, MixColors(color1,0xFFFfff,255*i/w));
 	for (i=0 ; i<=w; i++)
 		DrawBar(b_color_gradient.x+w+w-i, b_color_gradient.y, 
-			1, b_color_gradient.h, MixColors(active_color_1,0x000000,255*i/w));
+			1, b_color_gradient.h, MixColors(color1,0x000000,255*i/w));
 }
 
 void DrawColorPallets()
@@ -765,8 +746,8 @@ void EventSetActiveColor(int _number, _color)
 	}
 	last_used_colors[0] = _color;
 
-	if (_number == 1) active_color_1 = _color;
-	if (_number == 2) active_color_2 = _color;
+	if (_number == 1) color1 = _color;
+	if (_number == 2) color2 = _color;
 
 	DrawActiveColor(NULL);
 	DrawColorPallets();
