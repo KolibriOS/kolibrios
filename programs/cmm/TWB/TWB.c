@@ -296,7 +296,6 @@ void TWebBrowser::SetStyle() {
 		}
 		if (opened) {
 			if (strcmp(#header, #version) != 0) {
-				debugln("!!!!!!!!!!!!!!!!!!!!!!");
 				ChangeCharset(charsets[cur_encoding], "CP866", #header);
 				sprintf(#header, "%s - %s", #header, #version);
 			}

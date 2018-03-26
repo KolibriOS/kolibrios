@@ -129,33 +129,30 @@
  //     Прочитать файл     //
 ////////////////////////////
 :f70 read_file_70; 
-:int ReadFile(dword read_pos, read_file_size, read_buffer, read_file_path)
+:int ReadFile(dword offset, data_size, buffer, file_path)
 {
 	read_file_70.func = 0;
-	read_file_70.param1 = read_pos;
+	read_file_70.param1 = offset;
 	read_file_70.param2 = 0;
-	read_file_70.param3 = read_file_size;
-	read_file_70.param4 = read_buffer;
+	read_file_70.param3 = data_size;
+	read_file_70.param4 = buffer;
 	read_file_70.rezerv = 0;
-	read_file_70.name = read_file_path;
+	read_file_70.name = file_path;
 	$mov eax,70
 	$mov ebx,#read_file_70.func
 	$int 0x40
 }
 
-  ///////////////////////////
- //     Записать файл     //
-///////////////////////////
 :f70 write_file_70; 
-:int WriteFile(dword write_file_size, write_buffer, write_file_path)
+:int WriteFile(dword data_size, buffer, file_path)
 {
 	write_file_70.func = 2;
 	write_file_70.param1 = 0;
 	write_file_70.param2 = 0;
-	write_file_70.param3 = write_file_size;
-	write_file_70.param4 = write_buffer;
+	write_file_70.param3 = data_size;
+	write_file_70.param4 = buffer;
 	write_file_70.rezerv = 0;
-	write_file_70.name = write_file_path;
+	write_file_70.name = file_path;
 	$mov eax,70
 	$mov ebx,#write_file_70.func
 	$int 0x40
@@ -165,19 +162,20 @@
  //     WriteInFileThatAlredyExists    //
 ////////////////////////////////////////
 :f70 write_file_offset_70; 
-:int WriteFileWithOffset(dword write_data_size, write_buffer, write_file_path, offset)
+:int WriteFileWithOffset(dword offset, data_size, buffer, file_path)
 {
 	write_file_offset_70.func = 3;
 	write_file_offset_70.param1 = offset;
 	write_file_offset_70.param2 = 0;
-	write_file_offset_70.param3 = write_data_size;
-	write_file_offset_70.param4 = write_buffer;
+	write_file_offset_70.param3 = data_size;
+	write_file_offset_70.param4 = buffer;
 	write_file_offset_70.rezerv = 0;
-	write_file_offset_70.name = write_file_path;
+	write_file_offset_70.name = file_path;
 	$mov eax,70
 	$mov ebx,#write_file_offset_70.func
 	$int 0x40
-}   
+}
+
 
   ///////////////////////////
  //    Прочитать папку    //
@@ -346,4 +344,47 @@ enum
 
 	return #size;
 }
+
+:int CopyFileAtOnce(dword size, copyFrom, copyTo)
+dword cbuf;
+int error;
+{
+	cbuf = malloc(size);
+	if (error = ReadFile(0, size, cbuf, copyFrom))
+	{
+		debugln("Error: CopyFileAtOnce->ReadFile");
+	}
+	else
+	{
+		if (error = WriteFile(size, cbuf, copyTo)) debugln("Error: CopyFileAtOnce->WriteFile");
+	}
+	free(cbuf);
+	return error;
+}
+
+:int CopyFileByBlocks(dword size, copyFrom, copyTo)
+dword cbuf;
+int error=-1;
+dword offpos=0;
+int block_size=1024*4024; //copy by 4 MiBs
+{
+	cbuf = malloc(block_size);
+	WriteFile(0, 0, copyTo); //create file
+	while(offpos < size)
+	{
+		error = ReadFile(offpos, block_size, cbuf, copyFrom);
+		if (error = 6) { //File ended before last byte was readed
+			block_size = EBX; 
+			error=0; 
+		} 
+		else
+			if (error!=0) break;
+		if (error = WriteFileWithOffset(offpos, block_size, cbuf, copyTo)) break;
+		offpos += block_size;
+	}
+	free(cbuf);
+	return error;
+}
+
+
 #endif

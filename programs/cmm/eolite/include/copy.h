@@ -57,6 +57,7 @@ void Copy(dword pcth, char cut)
 }
 
 void Paste() {
+	copy_stak = free(copy_stak);
 	copy_stak = malloc(64000);
 	CreateThread(#PasteThread,copy_stak+64000-4);
 }

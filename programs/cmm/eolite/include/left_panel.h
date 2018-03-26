@@ -33,9 +33,9 @@
 	?define T_CD   "CD-ROM "
 	?define T_FD   "Floppy disk "
 	?define T_HD   "Hard disk "
-	?define T_SATA "SATA disk"
-	?define T_USB  "USB disk"
-	?define T_RAM  "RAM disk"
+	?define T_SATA "SATA disk "
+	?define T_USB  "USB disk "
+	?define T_RAM  "RAM disk "
 #endif
 
 struct _SystemDiscs

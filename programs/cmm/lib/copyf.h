@@ -14,9 +14,7 @@
 
 	if (!from1) || (!in1)
 	{
-		notify("Error: too less copyf params!");
-		notify(from1);
-		notify(in1);
+		notify("Error: too few copyf() params!");
 		return;
 	}
 	if (error = GetFileInfo(from1, #CopyFile_atr1))
@@ -28,7 +26,7 @@
 		return CopyFolder(from1, in1);
 	else
 	{
-		Operation_Draw_Progress(from1+strchr(from1, '/'));
+		Operation_Draw_Progress(from1+strrchr(from1, '/'));
 		return CopyFile(from1, in1);
 	}
 }
@@ -37,27 +35,24 @@
 {
 	BDVK CopyFile_atr;
 	dword error, cbuf;
+	dword block;
+
 	if (error = GetFileInfo(copy_from3, #CopyFile_atr))
 	{
 		debugln("Error: CopyFile->GetFileInfo");
 	}
-	else if (GetFreeRAM()-1024*1024 < CopyFile_atr.sizelo) //GetFreeRam-1Mb and convert to bytes
+	else 
 	{
-		debugln("Error: CopyFile->File size is bigger than RAM avilable");
-		error = 30;
-	}
-	else {
-		cbuf = malloc(CopyFile_atr.sizelo);
-		if (error = ReadFile(0, CopyFile_atr.sizelo, cbuf, copy_from3))
+		if (GetFreeRAM()-1024*1024 < CopyFile_atr.sizelo) //GetFreeRam-1Mb and convert to bytes
 		{
-			debugln("Error: CopyFile->ReadFile");
+			if (error = CopyFileByBlocks(CopyFile_atr.sizelo, copy_from3, copy_in3))
+				debugln("Error: CopyFile->CopyFileByBlocks");
 		}
-		else
-		{
-			if (error = WriteFile(CopyFile_atr.sizelo, cbuf, copy_in3)) debugln("Error: CopyFile->WriteFile");
-		}
+		else {
+			if (error = CopyFileAtOnce(CopyFile_atr.sizelo, copy_from3, copy_in3))
+				debugln("Error: CopyFile->CopyFileAtOnce");
+		}		
 	}
-	free(cbuf);
 	if (error) debug_error(copy_from3, error);
 	return error;
 }
@@ -96,7 +91,7 @@
 		}
 		else
 		{
-			Operation_Draw_Progress(filename+strchr(filename, '/'));
+			Operation_Draw_Progress(filename+strrchr(filename, '/'));
 			if (error=CopyFile(#copy_from2, #copy_in2))
 			{
 				if (fabs(error)==8) { debugln("Stop copying."); break;} //TODO: may be need grobal var like stop_all
