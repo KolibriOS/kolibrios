@@ -288,7 +288,7 @@ enum
 	strcpy(ini_path, "/kolibrios/settings/");
 	strcat(ini_path, ini_name);
 	if (!file_exists(ini_path)) {
-		strcpy(ini_path, "/sys/settings/");
+		strcpy(ini_path, "/sys/SETTINGS/");
 		strcat(ini_path, ini_name);
 	}
 	return ini_path;
