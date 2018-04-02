@@ -181,6 +181,7 @@ extra_files = {
  {"kolibrios/develop/oberon07/Docs/", PROGS .. "/develop/oberon07/Docs/*"},
  {"kolibrios/develop/oberon07/Lib/KolibriOS/", PROGS .. "/develop/oberon07/Lib/KolibriOS/*"},
  {"kolibrios/develop/oberon07/Samples/", PROGS .. "/develop/oberon07/Samples/*"},
+ {"kolibrios/develop/TinyBasic/", "common/develop/TinyBasic/*"},
  {"kolibrios/emul/dosbox/", "common/emul/DosBox/*"},
  {"kolibrios/emul/e80/readme.txt", PROGS .. "/emulator/e80/trunk/readme.txt"},
  {"kolibrios/emul/fceu/fceu", PROGS .. "/emulator/fceu/fceu"},
