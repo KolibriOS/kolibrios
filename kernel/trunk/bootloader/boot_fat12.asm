@@ -34,10 +34,14 @@ include 'floppy1440.inc'
 ;include 'floppy1743.inc'
 
 start_program:
-
+; <Efremenkov S.V.>
+        cld     ;clear direction flag for Phoenix BIOS, see next "lodsb"
         xor     ax, ax
+        cli
         mov     ss, ax
         mov     sp, boot_program
+        sti
+; <\Efremenkov S.V.>
         push    ss
         pop     ds
 
