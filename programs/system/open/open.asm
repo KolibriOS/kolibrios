@@ -182,10 +182,15 @@ if DEBUG eq 1
 end if
 
  ;; trim params
+	stdcall string.copy, params, paramorig
+    stdcall string.trim_last, paramorig
+    stdcall string.trim_first, paramorig
+	mov     [param_s], eax
+
     stdcall string.to_lower_case, params
     stdcall string.trim_last, params
     stdcall string.trim_first, params
-    mov     [param_s], eax
+    mov     [param_lwr], eax
 
  ;; if empty - exit
     cmpe    [eax], byte 0, exit
@@ -214,7 +219,7 @@ end if
     cmpg    eax, esi, execute
 
  ;; if ext == "kex" - execute
-    add     esi, [param_s]
+    add     esi, [param_lwr]
     mov     [param_e], esi
     cmpe    [esi], dword "kex", execute
 
@@ -1036,9 +1041,10 @@ end if
   .x rd 1
   .y rd 1
  win.title rb 256
- param_s rd 1
+ param_lwr rd 1
  param_e rd 1
  param_a rd 1
+ param_s rd 1
  undefined rb 1
  buffer  rb 2048
  buffer2 rb 2048 ;OD
@@ -1049,5 +1055,6 @@ end if
  buffer7 rb 32	 ;for sorting
  buffer8 rd 2048
  params rb 2048
+ paramorig rb 2048
  _stack rb 2048
  memory:
