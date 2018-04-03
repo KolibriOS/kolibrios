@@ -19,12 +19,13 @@
 #define DEFAULT_EDITOR "/sys/tinypad"
 
 #define INTRO_TEXT "This is a plain Text Reader.\nTry to open some text file."
-#define VERSION "Text Reader v1.2"
+#define VERSION "Text Reader v1.21"
 #define ABOUT "Idea: Leency, punk_joker
 Code: Leency, Veliant, KolibriOS Team
 
 Hotkeys:
 Ctrl+O - open file
+Ctrl+I - show file properties
 Ctrl+Up - bigger font
 Ctrl+Down - smaller font
 Ctrl+Tab - select charset
@@ -41,7 +42,8 @@ llist list;
 proc_info Form;
 char title[4196];
 
-byte help_opened = false;
+bool help_opened = false;
+int charsets_menu_left = 0;
 
 enum {
 	OPEN_FILE,
@@ -50,6 +52,7 @@ enum {
 	CHANGE_ENCODING,
 	RUN_EDIT,
 	SHOW_INFO,
+	SHOW_FILE_PROPERTIES
 };
 
 int encoding;
@@ -120,6 +123,9 @@ void HandleButtonEvent()
 		case OPEN_FILE:
 			EventOpenFile();
 			break;
+		case SHOW_FILE_PROPERTIES:
+			EventShowFileProperties();
+			break;
 		case MAGNIFY_PLUS:
 			EventMagnifyPlus();
 			break;
@@ -147,15 +153,18 @@ void HandleKeyEvent()
 		return; 
 	}
 	GetKeys();
-	if (key_scancode==059) {
+	if (key_scancode == SCAN_CODE_F1) {
 		EventShowInfo();
 		return;
 	}
 	if (key_modifier & KEY_LCTRL) || (key_modifier & KEY_RCTRL) {
 		switch (key_scancode)
 		{
-			case 024:
+			case SCAN_CODE_KEY_O:
 				EventOpenFile();
+				break;
+			case SCAN_CODE_KEY_I:
+				EventShowFileProperties();
 				break;
 			case SCAN_CODE_UP:
 				EventMagnifyPlus();
@@ -163,7 +172,7 @@ void HandleKeyEvent()
 			case SCAN_CODE_DOWN:
 				EventMagnifyMinus();
 				break;
-			case 018:
+			case SCAN_CODE_KEY_E:
 				EventRunEdit();
 				break;
 			case SCAN_CODE_TAB:
@@ -202,6 +211,14 @@ void EventOpenFile()
 	PreparePage();
 }
 
+void EventShowFileProperties()
+{
+	char ss_param[4096];
+	if (!param) return;
+	sprintf(#ss_param, "-p %s", #param);
+	io.run("/sys/File managers/Eolite", #ss_param);
+}
+
 void EventMagnifyPlus()
 {
 	kfont.size.pt++;
@@ -228,7 +245,8 @@ void EventRunEdit()
 void EventChangeEncoding()
 {
 	menu.selected = encoding + 1;
-	menu.show(Form.left+104, Form.top+29+skin_height, 130, "UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866", 10);
+	menu.show(Form.left+5 + charsets_menu_left, Form.top+29+skin_height, 130,
+		"UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866", 10);
 }
 
 void EventShowInfo() {
@@ -262,6 +280,9 @@ void OpenFile(dword f_path)
 
 void draw_window()
 {
+	#define PADDING 6
+	#define TOOLBAR_BUTTON_WIDTH 26
+	incn x;
 	DefineAndDrawWindow(Form.left,Form.top,Form.width,Form.height,0x73,0,#title,0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
@@ -272,11 +293,14 @@ void draw_window()
 	DrawBar(0, 0, Form.cwidth, TOOLBAR_H - 1, 0xe1e1e1);
 	DrawBar(0, TOOLBAR_H - 1, Form.cwidth, 1, 0x7F7F7F);
 	
-	DrawToolbarButton(OPEN_FILE,       8);
-	DrawToolbarButton(MAGNIFY_PLUS,    42);
-	DrawToolbarButton(MAGNIFY_MINUS,   67);
-	DrawToolbarButton(CHANGE_ENCODING, 101);
-	DrawToolbarButton(RUN_EDIT,        135);
+	x.n = 0;
+	DrawToolbarButton(OPEN_FILE,       x.inc(8));
+	DrawToolbarButton(SHOW_FILE_PROPERTIES, x.inc(TOOLBAR_BUTTON_WIDTH + PADDING));
+	DrawToolbarButton(MAGNIFY_PLUS,    x.inc(TOOLBAR_BUTTON_WIDTH + PADDING + PADDING));
+	DrawToolbarButton(MAGNIFY_MINUS,   x.inc(TOOLBAR_BUTTON_WIDTH - 1));
+	DrawToolbarButton(CHANGE_ENCODING, x.inc(TOOLBAR_BUTTON_WIDTH + PADDING + PADDING));
+		charsets_menu_left = x.n;
+	DrawToolbarButton(RUN_EDIT,        x.inc(TOOLBAR_BUTTON_WIDTH + PADDING));
 	DrawToolbarButton(SHOW_INFO,       Form.cwidth - 34);
 	
 	

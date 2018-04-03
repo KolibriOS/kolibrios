@@ -1,7 +1,7 @@
 void DrawToolbarButton(char image_id, int x)
 {
-	DefineButton(x+1, 7, TOOLBAR_ICON_WIDTH-2, TOOLBAR_ICON_HEIGHT-2, 10+image_id + BT_HIDE, 0);
-	img_draw stdcall(skin.image, x, 6, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, 0, image_id*TOOLBAR_ICON_HEIGHT);
+	DefineButton(x+1, 6, TOOLBAR_ICON_WIDTH-2, TOOLBAR_ICON_HEIGHT-2, 10+image_id + BT_HIDE, 0);
+	img_draw stdcall(skin.image, x, 5, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, 0, image_id*TOOLBAR_ICON_HEIGHT);
 }
 
 

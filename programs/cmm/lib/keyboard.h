@@ -40,7 +40,10 @@
 #define SCAN_CODE_MINUS 012
 #define SCAN_CODE_PLUS  013
 
+#define SCAN_CODE_F1    059
+
 #define SCAN_CODE_KEY_C 046
+#define SCAN_CODE_KEY_E 018
 #define SCAN_CODE_KEY_F 033
 #define SCAN_CODE_KEY_I 023
 #define SCAN_CODE_KEY_L 038

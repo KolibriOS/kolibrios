@@ -191,10 +191,9 @@
 	if (ESI.edit_box.flags & 100000000000b) bg = 0xCACACA; else bg = 0xFFFfff;
 	edit_box_draw  stdcall (edit_box_pointer);
 	h = 22;
-	DrawRectangle(x-1, y-1, w+1, h+1, bg);
-	DrawRectangle3D(x-2, y-2, w+3, h+3, 0xDDDddd, bg);
-	DrawRectangle(x-3, y-3, w+5, h+5, system.color.work_graph);
-	DrawRectangle3D(x-4, y-4, w+7, h+7, system.color.work_dark, system.color.work_light);
+	DrawRectangle3D(x-1, y-1, w+1, h+1, 0xE7E7E7, bg);
+	DrawRectangle(x-2, y-2, w+3, h+3, system.color.work_graph);
+	DrawRectangle3D(x-3, y-3, w+5, h+5, system.color.work_dark, system.color.work_light);
 }
 
 :void DrawProgressBar(dword st_x, st_y, st_w, st_h, col_fon, col_border, col_fill, col_text, progress_percent)
