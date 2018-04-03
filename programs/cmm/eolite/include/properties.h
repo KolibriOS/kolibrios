@@ -386,9 +386,9 @@ void DrawPropertiesWindow()
 			element_size = size_dir;
 		}
 		WriteTextLines(10,  136, 0x90, system.color.work_text, CREATED_OPENED_MODIFIED, 20);
-		DrawDate(120,  136, system.color.work, #file_info_general.datecreate);
-		DrawDate(120, 156, system.color.work, #file_info_general.datelastaccess);
-		DrawDate(120, 176, system.color.work, #file_info_general.datelastedit);
+		DrawDate(120,  136, system.color.work_text, #file_info_general.datecreate);
+		DrawDate(120, 156, system.color.work_text, #file_info_general.datelastaccess);
+		DrawDate(120, 176, system.color.work_text, #file_info_general.datelastedit);
 
 		sprintf(#element_size_label,"%s (%d %s)",ConvertSize64(element_size, NULL),element_size,SET_BYTE_LANG);
 		WriteText(120, 99, 0x90, system.color.work_text, #element_size_label);

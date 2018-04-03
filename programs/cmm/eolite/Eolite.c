@@ -6,7 +6,7 @@
 #endif
 
 //libraries
-#define MEMSIZE 4096 * 180
+#define MEMSIZE 1024 * 720
 #include "../lib/clipboard.h"
 #include "../lib/strings.h"
 #include "../lib/mem.h"
