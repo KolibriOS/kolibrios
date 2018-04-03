@@ -1,4 +1,8 @@
-#define MEMSIZE 1024 * 420
+// TODO
+// Settings: delay, savepath
+// Icons and better UI
+
+#define MEMSIZE 1024 * 20
 #include "../lib/kolibri.h" 
 #include "../lib/strings.h" 
 #include "../lib/mem.h" 
@@ -10,14 +14,26 @@
 	#include "lang.h--"
 #endif
 
+/* === TRANSLATIONS === */
+
+#ifdef LANG_RUS
+	?define T_TAKE_SCREENSHOT "Сделать скриншот"
+	?define T_SAVE "Сохранить"
+	?define T_PREVIEW "Предпросмотр"
+#else
+	?define T_TAKE_SCREENSHOT "Take a screenshot"
+	?define T_SAVE "Save"
+	?define T_PREVIEW "Preview"
+#endif
+
 /* === DATA === */
 
 proc_info Form;
 
-dword b_screen,
+dword screenshot,
       preview;
 
-int b_screen_length,
+int screenshot_length,
     preview_width,
     preview_height,
     preview_length;
@@ -27,7 +43,7 @@ enum {
 	BTN_SAVE
 };
 
-#define TOOLBAR_H 50;
+#define TOOLBAR_H 46;
 
 /* === CODE === */
 
@@ -35,13 +51,17 @@ enum {
 void main()
 {	
 	char id;
-	b_screen_length = screen.width * screen.height * 3;
+	int take_scr_btn_width;
+
+	load_dll(libimg, #libimg_init, 1);
+
+	screenshot_length = screen.width * screen.height * 3;
 	preview_width  = screen.width / 2;
 	preview_height = screen.height / 2;
-	preview_length = b_screen_length / 2;	
+	preview_length = screenshot_length / 2;	
 
-	b_screen  = malloc(b_screen_length);
-	preview = malloc(b_screen_length/2);
+	screenshot  = malloc(screenshot_length);
+	preview = malloc(screenshot_length/2);
 
 	loop() switch(WaitEvent())
 	{
@@ -61,18 +81,19 @@ void main()
 	case evReDraw:
 		system.color.get();
 		DefineAndDrawWindow(screen.width/4, screen.height/4, 
-			preview_width + 9, preview_height + skin_height + TOOLBAR_H,
-			0x74, 0, "EasyShot v0.3",0);
+			preview_width + 9, preview_height + skin_height + TOOLBAR_H + 4,
+			0x74, 0, "EasyShot v0.5",0);
 		GetProcessInfo(#Form, SelfInfo);
 		if (Form.status_window>2) break;
-		DrawBar(0, 0, Form.cwidth, TOOLBAR_H-4, system.color.work);
-		DrawStandartCaptButton(10, 10, BTN_MAKE_SCREENSHOT, "Take a screenshot");
-		_PutImage(0, Form.cheight - preview_height,  preview_width, preview_height, preview);
+		DrawBar(0, 0, Form.cwidth, TOOLBAR_H, system.color.work);
+		take_scr_btn_width = DrawStandartCaptButton(10, 10, BTN_MAKE_SCREENSHOT, T_TAKE_SCREENSHOT);
 		if (ESDWORD[preview]==0) {
-			WriteTextB(Form.cwidth/2 - 90, Form.cheight/2+10, 0x90, 0xFFFfff, "There will be a preview");
+			DrawBar(0, TOOLBAR_H,  preview_width, preview_height, 0xEEEeee);
+			WriteText(Form.cwidth-calc(strlen(T_PREVIEW)*8)/2, Form.cheight/2, 0x90, 0x777777, T_PREVIEW);
 		}
 		else {
-			DrawStandartCaptButton(200, 10, BTN_SAVE, "Save");
+			_PutImage(0, TOOLBAR_H,  preview_width, preview_height, preview);
+			DrawStandartCaptButton(take_scr_btn_width + 10, 10, BTN_SAVE, T_SAVE);
 		}
 	}
 }
@@ -80,19 +101,25 @@ void main()
 void EventTakeScreenshot() {
 	MinimizeWindow();
 	pause(100);
-	CopyScreen(b_screen, 0, 0, screen.width, screen.height);
+	CopyScreen(screenshot, 0, 0, screen.width, screen.height);
 	ZoomImageTo50percent();
 	ActivateWindow(GetProcessSlot(Form.ID));
-	//_PutImage(0, Form.cheight - preview_height,  preview_width, preview_height, preview);
 }
 
 void EventSaveFile()
 {
-	SaveFile(b_screen, screen.width, screen.height, "/tmp0/1/screen.png");
+	int i=0;
+	char save_file_name[4096];
+	do {
+		i++;
+		sprintf(#save_file_name, "/tmp0/1/screen_%i.png", i);
+	} while (file_exists(#save_file_name));
+	SaveFile(screenshot, screen.width, screen.height, #save_file_name);
 }
 
 void SaveFile(dword _image, _w, _h, _path)
 {
+	char save_success_message[4096+200];
 	dword encoded_data=0;
 	dword encoded_size=0;
 	dword image_ptr = 0;
@@ -115,63 +142,55 @@ void SaveFile(dword _image, _w, _h, _path)
 		}
 		else {
 			if (WriteFile(encoded_size, encoded_data, _path) == 0) {
-				notify("'File saved as /rd/1/saved_image.png' -O");
+				sprintf(#save_success_message, "'File saved as %s' -O", _path);
+				notify(#save_success_message);
 			}
 			else {
-				notify("'Error saving file, probably not enought space on ramdisk!' -E");
+				notify("'Error saving file! Probably not enought space or file system is not writable!' -E");
 			}
 		}
 	}
 }
 
-void ZoomImageTo50percent() {
-	dword point_x,
-	      item_h= screen.width * 3,
-	      s_off = preview + 3,
-	      b_off = b_screen + 6,
-	      b_off_r,
-	      b_off_g,
-	      b_off_b,
-	      rez_r, 
-	      rez_g, 
-	      rez_b;
+inline byte calc_rgb(dword B, item_h)
+{
+	return calc(ESBYTE[B+3] + ESBYTE[B] + ESBYTE[B-3]
+		+ ESBYTE[B-item_h] + ESBYTE[B+item_h] / 5);
+}
 
-	while( (s_off <= preview + preview_length) && (b_off <= b_screen + b_screen_length ) ) {
+void ZoomImageTo50percent() {
+	dword point_x = 0;
+	dword item_h = screen.width * 3;
+	dword small = preview;
+	dword big = screenshot;
+
+	while( (small <= preview + preview_length) && (big <= screenshot + screenshot_length ) ) {
 		
-		if (b_off <= b_screen + item_h) || (b_off >= b_screen + b_screen_length - item_h)
+		if (big <= screenshot + item_h) || (big >= screenshot + screenshot_length - item_h)
 		{
-			ESBYTE[s_off]   = ESBYTE[b_off];
-			ESBYTE[s_off+1] = ESBYTE[b_off+1];
-			ESBYTE[s_off+2] = ESBYTE[b_off+2];
+			ESBYTE[small]   = ESBYTE[big];
+			ESBYTE[small+1] = ESBYTE[big+1];
+			ESBYTE[small+2] = ESBYTE[big+2];
 		}
 		else
 		{
-			// line[x].R = (line[x+1].R + line[x].R + line[x-1].R + line1[x].R + line2[x].R) / 5;
-			// line[x].G = (line[x+1].G + line[x].G + line[x-1].G + line1[x].G + line2[x].G) / 5;
-			// line[x].B = (line[x+1].B + line[x].B + line[x-1].B + line1[x].B + line2[x].B) / 5
-			b_off_r = b_off;
-			b_off_g = b_off + 1;
-			b_off_b = b_off + 2;
-			rez_r = ESBYTE[b_off_r+3] + ESBYTE[b_off_r] + ESBYTE[b_off_r-3] + ESBYTE[b_off_r-item_h] + ESBYTE[b_off_r+item_h] / 5;
-			rez_g = ESBYTE[b_off_g+3] + ESBYTE[b_off_g] + ESBYTE[b_off_g-3] + ESBYTE[b_off_g-item_h] + ESBYTE[b_off_g+item_h] / 5;
-			rez_b = ESBYTE[b_off_b+3] + ESBYTE[b_off_b] + ESBYTE[b_off_b-3] + ESBYTE[b_off_b-item_h] + ESBYTE[b_off_b+item_h] / 5;
-			ESBYTE[s_off] = rez_r;
-			ESBYTE[s_off+1] = rez_g;
-			ESBYTE[s_off+2] = rez_b;
-
+			ESBYTE[small]   = calc_rgb(big, item_h);
+			ESBYTE[small+1] = calc_rgb(big+1, item_h);
+			ESBYTE[small+2] = calc_rgb(big+2, item_h);
 		}
 	
-		s_off+=3;
-		b_off+=6;
+		small+=3;
+		big+=6;
 
 		point_x+=2;
 		if (point_x >= screen.width) 
 		{
-			b_off += item_h;
+			big += item_h;
 			point_x = 0;
 		}
 	}
 }
+
 
 
 stop:

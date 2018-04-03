@@ -28,9 +28,9 @@ proc_info Form;
 #define stolbcov 10  //cell count y
 
 #ifdef LANG_RUS
-	#define LABEL_NEW_GAME "New game (F2)";
-#else
 	#define LABEL_NEW_GAME "Новая игра (F2)";
+#else
+	#define LABEL_NEW_GAME "New game (F2)";
 #endif
 
 int bitstat[60], bitpict[60];
