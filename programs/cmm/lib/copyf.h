@@ -4,7 +4,7 @@
 #print "[include <copyf.h>]\n"
 
 #ifndef INCLUDE_FILESYSTEM_H
-#include "../lib/file_system.h"
+#include "../lib/fs.h"
 #endif
 
 :int copyf(dword from1, in1)

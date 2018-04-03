@@ -1,6 +1,6 @@
 #ifndef INCLUDE_FILESYSTEM_H
 #define INCLUDE_FILESYSTEM_H
-#print "[include <file_system.h>]\n"
+#print "[include <fs.h>]\n"
 
 #ifndef INCLUDE_DATE_H
 #include "../lib/date.h"
@@ -33,11 +33,6 @@
 
 
 
-
-
-  ///////////////////////////
- //   Параметры файла     //
-///////////////////////////
 :f70 getinfo_file_70;
 :dword GetFileInfo(dword file_path, bdvk_struct)
 {    
@@ -53,9 +48,6 @@
     $int 0x40
 }
 
-  /////////////////////////////////////
- //   Изменение параметров файла    //
-/////////////////////////////////////
 :f70 setinfo_file_70;
 :dword SetFileInfo(dword file_path, bdvk_struct)
 {    
@@ -71,9 +63,6 @@
     $int 0x40
 }
 
-  ///////////////////////////
- //   Запуск программы    //
-///////////////////////////
 :f70 run_file_70;
 :signed int RunProgram(dword run_path, run_param)
 {	
@@ -89,9 +78,6 @@
     $int 0x40
 }
 
-  ///////////////////////////
- //    Создание папки     //
-///////////////////////////
 :f70 create_dir_70;
 :int CreateDir(dword new_folder_path)
 {
@@ -107,9 +93,6 @@
 	$int 0x40
 }
 
-  ////////////////////////////
- //  Удаление файла/папки  //
-////////////////////////////
 :f70 del_file_70;	
 :int DeleteFile(dword del_file_path)
 {    
@@ -125,9 +108,6 @@
 	$int 0x40
 }
 
-  ////////////////////////////
- //     Прочитать файл     //
-////////////////////////////
 :f70 read_file_70; 
 :int ReadFile(dword offset, data_size, buffer, file_path)
 {
@@ -177,9 +157,6 @@
 }
 
 
-  ///////////////////////////
- //    Прочитать папку    //
-///////////////////////////
 :f70 read_dir_70;
 :int ReadDir(dword file_count, read_buffer, dir_path)
 {
@@ -197,10 +174,27 @@
 
 :bool dir_exists(dword fpath)
 {
+	char buf[32];
+	if (!ReadDir(0, #buf, fpath)) return true; 
+	return false;
+}
+
+/*
+
+// This implementation of dir_exists() is faster than
+// previous but here virtual folders like
+// '/' and '/tmp' are not recognised as FOLDERS
+// by GetFileInfo() => BDVK.isfolder attribute :(
+
+:bool dir_exists(dword fpath)
+{
 	BDVK fpath_atr;
 	if (GetFileInfo(fpath, #fpath_atr) != 0) return false; 
 	return fpath_atr.isfolder;
 }
+*/
+
+
 :bool file_exists(dword fpath)
 {
 	BDVK ReadFile_atr;
@@ -306,6 +300,7 @@ enum
   sprintf(#ConvertSize_size_prefix,"%d %s",bytes,#size_nm);
   return #ConvertSize_size_prefix;
 }
+
 :dword ConvertSize64(dword bytes_lo, bytes_hi)
 {
   if (bytes_hi > 0) {
@@ -315,15 +310,18 @@ enum
   }
   else return ConvertSize(bytes_lo);
 }
+
 :dword notify(dword notify_param)
 {
 	return RunProgram("/sys/@notify", notify_param);
 }
+
 :void die(dword _last_msg)
 {
 	notify(_last_msg);
 	ExitProcess();
 }
+
 :unsigned char size[25]=0;
 :dword ConvertSizeToKb(unsigned int bytes)
 {

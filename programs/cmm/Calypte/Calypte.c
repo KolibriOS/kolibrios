@@ -14,7 +14,7 @@
 //===================================================//
 
 #include "../lib/kolibri.h" 
-#include "../lib/file_system.h"
+#include "../lib/fs.h"
 #include "../lib/gui.h"
 #include "../lib/list_box.h"
 #include "../lib/menu.h"

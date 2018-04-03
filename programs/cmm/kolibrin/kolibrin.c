@@ -1,7 +1,7 @@
 #define MEMSIZE 0x9000
 #include "..\lib\strings.h" 
 #include "..\lib\mem.h"
-#include "..\lib\file_system.h"
+#include "..\lib\fs.h"
 
 
 void main()

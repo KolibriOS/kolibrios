@@ -7,7 +7,7 @@
 #include "../lib/mem.h"
 #include "../lib/dll.h"
 #include "../lib/gui.h"
-#include "../lib/file_system.h"
+#include "../lib/fs.h"
 #include "../lib/list_box.h"
 #include "../lib/socket.h"
 #include "../lib/draw_buf.h"

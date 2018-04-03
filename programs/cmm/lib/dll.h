@@ -3,7 +3,7 @@
 #print "[include <dll.h>]\n"
 
 #ifndef INCLUDE_FILESYSTEM_H
-#include "../lib/file_system.h"
+#include "../lib/fs.h"
 #endif
 
 #ifdef LANG_RUS

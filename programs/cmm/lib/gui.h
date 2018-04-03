@@ -57,13 +57,13 @@
 :int active_button_id = 0;
 :int DrawStandartCaptButton(dword x, y, id, text)
 {
-	int padding_v = 5;
-	int padding_h = 15;
-	int right_margin = 12;
+	#define padding_v 5
+	#define padding_h 15
+	#define right_margin 12
+	#define h padding_v + padding_v + 16 //16 font height
 	int tx = x + padding_h;
 	int ty = y + padding_v+1;
 	int tw = strlen(text)*8;
-	int h = padding_v + padding_v + 16; //16 font height
 	int w = tw + padding_h + padding_h;
 
 

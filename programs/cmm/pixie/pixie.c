@@ -9,7 +9,7 @@
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 8, "MP3\0\0" };
 
-#include "..\lib\file_system.h"
+#include "..\lib\fs.h"
 #include "..\lib\list_box.h"
 #include "..\lib\gui.h"
 

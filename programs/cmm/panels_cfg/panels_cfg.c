@@ -6,7 +6,7 @@
 #include "..\lib\kolibri.h" 
 #include "..\lib\strings.h" 
 #include "..\lib\mem.h" 
-#include "..\lib\file_system.h"
+#include "..\lib\fs.h"
 #include "..\lib\dll.h"
 #include "..\lib\gui.h"
 
