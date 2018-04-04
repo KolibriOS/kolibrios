@@ -1,14 +1,13 @@
-// TODO
-// Settings: delay, savepath
-// Icons and better UI
-
-#define MEMSIZE 1024 * 20
+#define MEMSIZE 1024 * 50
 #include "../lib/kolibri.h" 
 #include "../lib/strings.h" 
 #include "../lib/mem.h" 
 #include "../lib/gui.h" 
 
 #include "../lib/obj/libimg.h"
+#include "../lib/obj/box_lib.h"
+
+#include "../lib/patterns/libimg_load_skin.h"
 
 #ifndef AUTOBUILD
 	#include "lang.h--"
@@ -16,13 +15,15 @@
 
 /* === TRANSLATIONS === */
 
+#define T_WTITLE "EasyShot v0.7"
+
 #ifdef LANG_RUS
-	?define T_TAKE_SCREENSHOT "Сделать скриншот"
-	?define T_SAVE "Сохранить"
+	?define T_TAKE_SCREENSHOT "  Сделать скриншот"
+	?define T_SAVE "  Сохранить"
 	?define T_PREVIEW "Предпросмотр"
 #else
-	?define T_TAKE_SCREENSHOT "Take a screenshot"
-	?define T_SAVE "Save"
+	?define T_TAKE_SCREENSHOT "  Take a screenshot"
+	?define T_SAVE "  Save"
 	?define T_PREVIEW "Preview"
 #endif
 
@@ -34,30 +35,39 @@ dword screenshot,
       preview;
 
 int screenshot_length,
-    preview_width,
-    preview_height,
     preview_length;
 
 enum {
 	BTN_MAKE_SCREENSHOT=10,
-	BTN_SAVE
+	BTN_SAVE,
+	BTN_SETTINGS
 };
 
-#define TOOLBAR_H 46;
+#define PD 18 //padding
+#define TOOLBAR_H 20+PD
+
+rect pw;
+
+struct _settings {
+	bool minimise;
+	int delay;
+	char save_path[4096];
+} settings = { true, 1, "/tmp0/1" };
 
 /* === CODE === */
-
 
 void main()
 {	
 	char id;
-	int take_scr_btn_width;
 
+	load_dll(libio,  #libio_init,  1);
 	load_dll(libimg, #libimg_init, 1);
+	load_dll(boxlib, #box_lib_init,0);
+
+	Libimg_LoadImage(#skin, "/sys/icons16.png");
 
 	screenshot_length = screen.width * screen.height * 3;
-	preview_width  = screen.width / 2;
-	preview_height = screen.height / 2;
+	pw.set_size(PD, TOOLBAR_H+PD, screen.width/2, screen.height/2);
 	preview_length = screenshot_length / 2;	
 
 	screenshot  = malloc(screenshot_length);
@@ -69,86 +79,104 @@ void main()
 		id = GetButtonID();
 		if (id == CLOSE_BTN) ExitProcess();
 		if (id == BTN_MAKE_SCREENSHOT) EventTakeScreenshot();
-		if (id == BTN_SAVE) EventSaveFile();
+		if (id == BTN_SAVE) EventSaveImageFile();
+		if (id == BTN_SETTINGS) EventShowSettings();
 		break;
 
 	case evKey:
 		GetKeys();
-		if (SCAN_CODE_KEY_S == key_scancode) EventSaveFile();
+		if (SCAN_CODE_KEY_S == key_scancode) EventSaveImageFile();
 		if (SCAN_CODE_ENTER == key_scancode) EventTakeScreenshot();
 		break;
      
 	case evReDraw:
-		system.color.get();
-		DefineAndDrawWindow(screen.width/4, screen.height/4, 
-			preview_width + 9, preview_height + skin_height + TOOLBAR_H + 4,
-			0x74, 0, "EasyShot v0.5",0);
+		DefineAndDrawWindow(screen.width/4, screen.height/4, pw.w + 9 +PD+PD, 
+			pw.h + skin_height + TOOLBAR_H + 4 +PD+PD, 0x74, 0, T_WTITLE,0);
 		GetProcessInfo(#Form, SelfInfo);
 		if (Form.status_window>2) break;
-		DrawBar(0, 0, Form.cwidth, TOOLBAR_H, system.color.work);
-		take_scr_btn_width = DrawStandartCaptButton(10, 10, BTN_MAKE_SCREENSHOT, T_TAKE_SCREENSHOT);
-		if (ESDWORD[preview]==0) {
-			DrawBar(0, TOOLBAR_H,  preview_width, preview_height, 0xEEEeee);
-			WriteText(Form.cwidth-calc(strlen(T_PREVIEW)*8)/2, Form.cheight/2, 0x90, 0x777777, T_PREVIEW);
-		}
-		else {
-			_PutImage(0, TOOLBAR_H,  preview_width, preview_height, preview);
-			DrawStandartCaptButton(take_scr_btn_width + 10, 10, BTN_SAVE, T_SAVE);
-		}
+		system.color.get();
+		DrawMainContent();
 	}
 }
 
+void DrawMainContent()
+{
+	int take_scr_btn_width;
+	DrawBar(0, 0, Form.cwidth, TOOLBAR_H, system.color.work);
+	DrawWideRectangle(0, TOOLBAR_H, pw.w+PD+PD, pw.h+PD+PD, PD-1, system.color.work);
+	DrawRectangle(pw.x-1, pw.y-1, pw.w+1, pw.h+1, system.color.work_graph);
+	take_scr_btn_width = DrawIconButton(pw.x, pw.y-42, BTN_MAKE_SCREENSHOT, T_TAKE_SCREENSHOT, 44);
+	if (ESDWORD[preview]==0) {
+		DrawBar(pw.x, pw.y, pw.w, pw.h, 0xEEEeee);
+		WriteText(Form.cwidth-calc(strlen(T_PREVIEW)*8)/2, pw.h/2+pw.y, 0x90, 0x777777, T_PREVIEW);
+	}
+	else {
+		_PutImage(pw.x, pw.y, pw.w, pw.h, preview);
+		DrawIconButton(take_scr_btn_width + pw.x, pw.y-42, BTN_SAVE, T_SAVE, 5);
+	}
+	DrawIconButton(Form.cwidth-40-PD, pw.y-42, BTN_SETTINGS, " ", 10);	
+}
+
 void EventTakeScreenshot() {
-	MinimizeWindow();
-	pause(100);
+	if (settings.minimise) MinimizeWindow(); 
+	pause(settings.delay*100);
 	CopyScreen(screenshot, 0, 0, screen.width, screen.height);
 	ZoomImageTo50percent();
 	ActivateWindow(GetProcessSlot(Form.ID));
+	if (!settings.minimise) DrawMainContent();
 }
 
-void EventSaveFile()
+void EventSaveImageFile()
 {
 	int i=0;
 	char save_file_name[4096];
 	do {
 		i++;
-		sprintf(#save_file_name, "/tmp0/1/screen_%i.png", i);
+		sprintf(#save_file_name, "%s/screen_%i.png", #settings.save_path, i);
 	} while (file_exists(#save_file_name));
-	SaveFile(screenshot, screen.width, screen.height, #save_file_name);
+	save_image(screenshot, screen.width, screen.height, #save_file_name);
 }
 
-void SaveFile(dword _image, _w, _h, _path)
+void EventShowSettings()
 {
-	char save_success_message[4096+200];
-	dword encoded_data=0;
-	dword encoded_size=0;
-	dword image_ptr = 0;
-	
-	image_ptr = create_image(Image_bpp24, _w, _h);
+	CreateThread(#SettingsWindow,#settings_stak+4092);	
+}
 
-	if (image_ptr == 0) {
-		notify("'Error saving file, probably not enought memory!' -E");
-	}
-	else {
-		EDI = image_ptr;
-		memmov(EDI._Image.Data, _image, _w * _h * 3);
+char path_tmp[4096];
+dword mouse_dd1;
+edit_box edit_box_path = {270,10,70,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(path_tmp),#path_tmp,#mouse_dd1, 0b};
 
-		encoded_data = encode_image(image_ptr, LIBIMG_FORMAT_PNG, 0, #encoded_size);
+void SettingsWindow()
+{
+	#define x 15
+	int id;
+	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);	
+	loop() switch(WaitEvent())
+	{
+	case evMouse:
+		//edit_box_mouse stdcall (#address_box);
+		break;
 
-		img_destroy stdcall(image_ptr);
+	case evKey:
+		GetKeys();
+		if (SCAN_CODE_ESC == key_scancode) ExitProcess();
+		break;
 
-		if(encoded_data == 0) {
-			notify("'Error saving file, incorrect data!' -E");
-		}
-		else {
-			if (WriteFile(encoded_size, encoded_data, _path) == 0) {
-				sprintf(#save_success_message, "'File saved as %s' -O", _path);
-				notify(#save_success_message);
-			}
-			else {
-				notify("'Error saving file! Probably not enought space or file system is not writable!' -E");
-			}
-		}
+	case evButton:
+		id = GetButtonID();
+		if (CLOSE_BTN == id) ExitProcess();
+		if (10 == id) settings.delay++;
+		if (11 == id) && (settings.delay>0) settings.delay--;
+		if (12 == id) settings.minimise ^= 1;
+		goto _DRAW_CONTENT;
+		break;
+
+	case evReDraw:
+		DefineAndDrawWindow(Form.left+100, Form.top-40, 330, 170, 0x34, system.color.work, "Settings",0);
+		_DRAW_CONTENT:
+		CheckBox(x, 10, 12, "Minimize window", settings.minimise);
+		MoreLessBox(x, 40, 10, 11, settings.delay, "Delay in seconds");
+		//DrawEditBox(#edit_box_path);
 	}
 }
 
@@ -191,6 +219,17 @@ void ZoomImageTo50percent() {
 	}
 }
 
-
+int DrawIconButton(dword x, y, id, text, icon)
+{
+	int btwidth;
+	system.color.work_button = 0xFFFfff;
+	system.color.work_button_text = 0;
+	btwidth = DrawStandartCaptButton(x, y, id, text);
+	img_draw stdcall(skin.image, x+12, y+5, 16, 16, 0, icon*16);
+	system.color.get();
+	return btwidth;
+}
 
 stop:
+
+char settings_stak[4096];

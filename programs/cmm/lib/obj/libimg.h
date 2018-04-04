@@ -93,7 +93,7 @@ struct _Image
 #define Image_bpp8a 10  // grayscale with alpha channel; application layer only!!! kernel doesn't handle this image type, libimg can only create and destroy such images
 
 
-dword load_image(dword filename)
+:dword load_image(dword filename)
 {
         //align 4
         dword img_data=0;
@@ -168,7 +168,20 @@ dword load_image(dword filename)
         return 0;
 }
 
-void DrawLibImage(dword image_pointer,x,y,w,h,offx,offy) {
+:dword create_image(dword type, dword width, dword height) {
+    img_create stdcall(width, height, type);
+    return EAX;
+}
+
+// size - output parameter, error code / the size of encoded data
+:dword encode_image(dword image_ptr, dword options, dword specific_options, dword* size) {
+    img_encode stdcall(image_ptr, options, specific_options);
+    ESDWORD[size] = ECX;
+    
+    return EAX;
+}
+
+:void DrawLibImage(dword image_pointer,x,y,w,h,offx,offy) {
     img_draw stdcall (
         image_pointer, 
         x, 
@@ -180,17 +193,41 @@ void DrawLibImage(dword image_pointer,x,y,w,h,offx,offy) {
     );  
 }
 
-dword create_image(dword type, dword width, dword height) {
-	img_create stdcall(width, height, type);
-	return EAX;
+//NOTICE: DO NOT FORGOT TO INIT libio AND libimg!!!
+:void save_image(dword _image, _w, _h, _path)
+{
+    char save_success_message[4096+200];
+    dword encoded_data=0;
+    dword encoded_size=0;
+    dword image_ptr = 0;
+    
+    image_ptr = create_image(Image_bpp24, _w, _h);
+
+    if (image_ptr == 0) {
+        notify("'Error saving file, probably not enought memory!' -E");
+    }
+    else {
+        EDI = image_ptr;
+        memmov(EDI._Image.Data, _image, _w * _h * 3);
+
+        encoded_data = encode_image(image_ptr, LIBIMG_FORMAT_PNG, 0, #encoded_size);
+
+        img_destroy stdcall(image_ptr);
+
+        if(encoded_data == 0) {
+            notify("'Error saving file, incorrect data!' -E");
+        }
+        else {
+            if (WriteFile(encoded_size, encoded_data, _path) == 0) {
+                sprintf(#save_success_message, "'File saved as %s' -O", _path);
+                notify(#save_success_message);
+            }
+            else {
+                notify("'Error saving file! Probably not enought space or file system is not writable!' -E");
+            }
+        }
+    }
 }
 
-// size - output parameter, error code / the size of encoded data
-dword encode_image(dword image_ptr, dword options, dword specific_options, dword* size) {
-	img_encode stdcall(image_ptr, options, specific_options);
-	ESDWORD[size] = ECX;
-	
-	return EAX;
-}
 
 #endif
