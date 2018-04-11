@@ -3,13 +3,19 @@
 #include "../lib/kfont.h"
 #include "../lib/gui.h"
 
-#define PANELH 30
+#define PANELH 28
+#define WIN_W 490
+#define WIN_H 315
 proc_info Form;
 
 enum { 
 	STRONG_BTN=10, SMOOTH_BTN, 
 	PHRASE_TAB=20, CHARS_TAB
 };
+
+_tabs tabs = { 0,0, WIN_W, WIN_H, PHRASE_TAB};
+
+rect preview;
 
 
 void main()
@@ -18,7 +24,6 @@ void main()
 	char title[4196];
 	if (!param) strcpy(#param, DEFAULT_FONT);
 	kfont.init(#param);
-	tabs.active_tab=PHRASE_TAB;
 	strcpy(#title, "Font preview: ");
 	strcat(#title, #param);
 	loop() switch(WaitEvent())
@@ -32,19 +37,27 @@ void main()
 			goto _DRAW_WINDOW_CONTENT;
 		case evReDraw:
 			system.color.get();
-			DefineAndDrawWindow(215,100,500,320+skin_height,0x74,0xFFFFFF,#title,0);
+			DefineAndDrawWindow(215,100,WIN_W+9,WIN_H+skin_height+5,0x74,0xFFFFFF,#title,0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
 			_DRAW_WINDOW_CONTENT:
+
 			DrawBar(0, 0, Form.cwidth, PANELH-1, system.color.work);
+			DrawBar(0, PANELH-1,Form.cwidth,1,system.color.work_graph);
 			CheckBox(10, 8, STRONG_BTN, "Bold",  kfont.bold);
 			CheckBox(83,8, SMOOTH_BTN, "Smooth",  kfont.smooth);
-			tabs.draw(Form.cwidth-150, PANELH, PHRASE_TAB, "Phrase");
-			tabs.draw(Form.cwidth-70, PANELH, CHARS_TAB, "Chars");
-			DrawBar(0, PANELH-1,Form.cwidth,1,system.color.work_graph);
+
+			tabs.draw_button(Form.cwidth-130, PHRASE_TAB, "Phrase");
+			tabs.draw_button(Form.cwidth-60, CHARS_TAB, "Chars");
+
+			preview.x = tabs.x;
+			preview.y = PANELH;
+			preview.w = Form.cwidth;
+			preview.h = Form.cheight - PANELH;
+
 			if (!kfont.font)
 			{
-				DrawBar(0, PANELH, Form.cwidth, Form.cheight - PANELH, 0xFFFfff);
+				DrawBar(preview.x, preview.y, preview.w, preview.h, 0xFFFfff);
 				WriteText(10, 50, 0x82, 0xFF00FF, "Font is not loaded.");
 				break;
 			}
@@ -64,7 +77,7 @@ void DrawPreviewPhrase()
 		kfont.WriteIntoBuffer(10,y,Form.cwidth,Form.cheight-PANELH, 0xFFFFFF, 0, i, #line);
 	}
 	if (kfont.smooth) kfont.ApplySmooth();
-	kfont.ShowBuffer(0, PANELH);
+	kfont.ShowBuffer(preview.x, preview.y);
 }
 
 void DrawPreviewChars()
@@ -78,11 +91,11 @@ void DrawPreviewChars()
 		line[0]=i;
 		kfont.WriteIntoBuffer(x,y,Form.cwidth,Form.cheight-PANELH, 0xFFFFFF, 0, 16, #line);
 		x+= kfont.height+2;
-		if (x>=Form.cwidth-30) { 
+		if (x>=preview.w-30) { 
 			x=20;
 			y+=kfont.height+2;
 		}
 	}
 	if (kfont.smooth) kfont.ApplySmooth();
-	kfont.ShowBuffer(0, PANELH);
+	kfont.ShowBuffer(preview.x, preview.y);
 }

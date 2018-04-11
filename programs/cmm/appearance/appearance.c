@@ -129,8 +129,8 @@ void DrawWindowContent()
 	tabs.h = Form.cheight-LP-LP;
 	tabs.draw_wrapper();
 	
-	tabs.draw_button(tabs.x+TAB_PADDING, tabs.y+TAB_HEIGHT, SKINS, T_SKINS);	
-	tabs.draw_button(strlen(T_SKINS)*8+tabs.x+TAB_PADDING+TAB_PADDING, tabs.y+TAB_HEIGHT, WALLPAPERS, T_WALLPAPERS);
+	tabs.draw_button(tabs.x+TAB_PADDING, SKINS, T_SKINS);	
+	tabs.draw_button(strlen(T_SKINS)*8+tabs.x+TAB_PADDING+TAB_PADDING, WALLPAPERS, T_WALLPAPERS);
 
 	id = select_list.cur_y;
 	SelectList_Init(

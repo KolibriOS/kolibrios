@@ -6,6 +6,7 @@
 {
 	int x,y,w,h;
 	int active_tab;
+	int c;
 	void draw_button();
 	int click();
 	void draw_wrapper();
@@ -25,13 +26,14 @@
 
 	DrawBar(x, y+TAB_HEIGHT-1, w, 1, color_light_border);
 	DrawBar(x, y+TAB_HEIGHT, w, 1, color_light);
+
+	c = y + TAB_HEIGHT;
 }
 
-:void _tabs::draw_button(dword xx,yy, but_id, text)
+:void _tabs::draw_button(dword xx, but_id, text)
 {
 	dword col_bg, col_text;
 	dword ww=strlen(text)*8, hh=TAB_HEIGHT;
-	yy -= hh;
 
 	if (but_id==active_tab)
 	{
@@ -43,9 +45,9 @@
 		col_bg=0xC3A1B7;
 		col_text=0x333333;
 	} 
-	DefineHiddenButton(xx,yy, ww-1,hh-1, but_id);
-	WriteText(xx, yy+6, 0x90, col_text, text);
-	DrawBar(xx, yy+hh-3, ww, 3, col_bg);
+	DefineHiddenButton(xx,y, ww-1,hh-1, but_id);
+	WriteText(xx, y+6, 0x90, col_text, text);
+	DrawBar(xx, y+hh-3, ww, 3, col_bg);
 }
 
 :int _tabs::click(int N)
