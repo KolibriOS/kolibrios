@@ -364,7 +364,7 @@ int error;
 dword cbuf;
 int error=-1;
 dword offpos=0;
-int block_size=1024*4024; //copy by 4 MiBs
+int block_size=1024*1024*4; //copy by 4 MiBs
 {
 	cbuf = malloc(block_size);
 	WriteFile(0, 0, copyTo); //create file

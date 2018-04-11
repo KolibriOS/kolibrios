@@ -33,7 +33,7 @@
 #endif
 
 #define PANEL_H 40
-#define LIST_PADDING 20
+#define LP 10 //LIST_PADDING
 #define SKINS_STANDART_PATH "/kolibrios/res/skins"							
 #define WALP_STANDART_PATH "/kolibrios/res/wallpapers"
 
@@ -48,6 +48,8 @@ int files_mas[400];
 int cur;
 
 proc_info Form;
+
+_tabs tabs = { LP, LP, NULL, NULL, SKINS };
 
 //===================================================//
 //                                                   //
@@ -86,7 +88,9 @@ void main()
 			GetKeys(); 
 			if (select_list.ProcessKey(key_scancode)) EventApply();
 			if (key_scancode==SCAN_CODE_ENTER) EventOpenFile();
-			if (key_scancode==SCAN_CODE_TAB) if (tabs.active_tab==SKINS) EventTabClick(WALLPAPERS); else EventTabClick(SKINS);
+			if (key_scancode==SCAN_CODE_TAB) 
+				if (tabs.active_tab==SKINS) EventTabClick(WALLPAPERS); 
+				else EventTabClick(SKINS);
 			if (key_scancode==SCAN_CODE_DEL) EventDeleteFile();
 			for (id=select_list.cur_y+1; id<select_list.count; id++)
 			{
@@ -118,21 +122,25 @@ void main()
 void DrawWindowContent()
 {
 	int id;
+
+	DrawWideRectangle(0, 0, Form.cwidth, Form.cheight, LP, system.color.work);
+
+	tabs.w = Form.cwidth-LP-LP;
+	tabs.h = Form.cheight-LP-LP;
+	tabs.draw_wrapper();
+	
+	tabs.draw_button(tabs.x+TAB_PADDING, tabs.y+TAB_HEIGHT, SKINS, T_SKINS);	
+	tabs.draw_button(strlen(T_SKINS)*8+tabs.x+TAB_PADDING+TAB_PADDING, tabs.y+TAB_HEIGHT, WALLPAPERS, T_WALLPAPERS);
+
 	id = select_list.cur_y;
 	SelectList_Init(
-		LIST_PADDING, 
-		PANEL_H, 
-		Form.cwidth-scroll1.size_x-LIST_PADDING-LIST_PADDING, 
-		Form.cheight-PANEL_H-LIST_PADDING, 
+		tabs.x+TAB_PADDING,
+		tabs.y+TAB_HEIGHT+TAB_PADDING, 
+		tabs.w - TAB_PADDING - TAB_PADDING - scroll1.size_x, 
+		tabs.h - TAB_PADDING - TAB_PADDING - TAB_HEIGHT, 
 		false
 		);
 	select_list.cur_y = id;
-	DrawBar(0,0, Form.cwidth, PANEL_H-LIST_PADDING, system.color.work);
-	DrawWideRectangle(select_list.x-LIST_PADDING, select_list.y-LIST_PADDING, LIST_PADDING*2+select_list.w+scroll1.size_x, 
-		LIST_PADDING*2+select_list.h, LIST_PADDING-2, system.color.work);
-	tabs.draw(select_list.x+10, select_list.y, SKINS, T_SKINS);
-	if (dir_exists(WALP_STANDART_PATH)) tabs.draw(strlen(T_SKINS)*8+TAB_PADDING+select_list.x+21, select_list.y, 
-		WALLPAPERS, T_WALLPAPERS);
 	SelectList_Draw();
 	SelectList_DrawBorder();
 }

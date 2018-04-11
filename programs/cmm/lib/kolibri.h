@@ -158,9 +158,12 @@ struct proc_info
 	byte    reserved[1024-71-8];
 };
 
-inline fastcall void GetProcessInfo(EBX, ECX)
+:void GetProcessInfo(dword _process_struct_pointer, _process_id)
 {
-	$mov eax,9;
+	skin_height = GetSkinHeight();
+	EAX = 9;
+	EBX = _process_struct_pointer;
+	ECX = _process_id;
 	$int  0x40
 	DSDWORD[EBX+71] = DSDWORD[EBX+42] - 9; //set cwidth
 	DSDWORD[EBX+75] = DSDWORD[EBX+46] - skin_height - 4; //set cheight

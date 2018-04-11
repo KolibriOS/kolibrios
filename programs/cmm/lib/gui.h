@@ -17,6 +17,9 @@
 #include "../lib/math.h"
 #endif
 
+#include "../lib/gui/tabs.h"
+#include "../lib/gui/more_less_box.h"
+
 :void DrawRectangle(dword x,y,w,h,color1)
 {
 	if (w<=0) || (h<=0) return;
@@ -161,24 +164,6 @@
 		DrawBar(x+3, y+3, w-5, h-5, 0x888888);
 	}
 	DrawRectangle3D(x-1,y-1,w+2,h+2,system.color.work_dark,system.color.work_light);
-}
-
-:void MoreLessBox(dword x,y, bt_id_more, bt_id_less, value, text)
-{
-	#define VALUE_FIELD_W 34
-	#define SIZE 18
-	dword value_text = itoa(value);
-
-	DrawRectangle(x, y, VALUE_FIELD_W+1, SIZE, system.color.work_graph);
-	DrawRectangle3D(x+1, y+1, VALUE_FIELD_W-2, SIZE-2, 0xDDDddd, 0xffffff);
-	DrawBar(x+2, y+2, VALUE_FIELD_W-3, SIZE-3, 0xffffff);
-	WriteText( -strlen(value_text)+3*8 + x+6, SIZE / 2 + y -6, 0x90, 0x333333, value_text);
-
-	DrawCaptButton(VALUE_FIELD_W + x + 1,    y, SIZE, SIZE, bt_id_more, system.color.work_button, system.color.work_button_text, "+");
-	DrawCaptButton(VALUE_FIELD_W + x + SIZE, y, SIZE, SIZE, bt_id_less, system.color.work_button, system.color.work_button_text, "-");
-	EDI = system.color.work;
-	WriteText(x+VALUE_FIELD_W+SIZE+SIZE+10, SIZE / 2 + y -7, 0xD0, system.color.work_text, text);
-	DrawRectangle3D(x-1,y-1,VALUE_FIELD_W+SIZE+SIZE+2,SIZE+2,system.color.work_dark,system.color.work_light);
 }
 
 :void DrawEditBox(dword edit_box_pointer)
@@ -361,89 +346,6 @@ TODO: scroll
 	return n;
 }
 
-
-/*=========================================================
-==
-==                   TABS
-==
-/========================================================*/
-
-#define TAB_PADDING 25
-#define TAB_HEIGHT 25
-
-:struct _tabs
-{
-	int active_tab;
-	void draw();
-	int click();
-} tabs;
-
-:void _tabs::draw(dword x,y, but_id, text)
-{
-	dword col_bg, col_text;
-	dword w=strlen(text)*8+TAB_PADDING, h=TAB_HEIGHT;
-	y -= h;
-
-	if (but_id==active_tab)
-	{
-		col_bg=system.color.work_button;
-		col_text=system.color.work_button_text;
-	}
-	else
-	{
-		col_bg=system.color.work;
-		col_text=system.color.work_text;
-	} 
-	DrawCaptButton(x,y, w-1,h+1, but_id, col_bg, col_text, text);
-}
-
-:int _tabs::click(int N)
-{
-	if (N==active_tab) return false;
-	active_tab = N;
-	return true;
-}
-
-/*=========================================================
-==
-==                   MORE LESS BOX
-==
-/========================================================*/
-
-:struct more_less_box
-{
-	signed x,y;
-	unsigned value, min, max;
-	unsigned bt_id_more, bt_id_less;
-	dword text;
-	bool click();
-	void draw();
-};
-
-:bool more_less_box::click(unsigned id)
-{
-	if (id==bt_id_less) { value = math.max(value-1, min); draw(); return 1; }
-	if (id==bt_id_more) { value = math.min(value+1, max); draw(); return 1; }
-	return 0;
-}
-
-:void more_less_box::draw()
-{
-	#define VALUE_FIELD_W 34
-	#define SIZE 18
-	dword value_text = itoa(value);
-
-	DrawRectangle(x, y, VALUE_FIELD_W+1, SIZE, system.color.work_graph);
-	DrawRectangle3D(x+1, y+1, VALUE_FIELD_W-2, SIZE-2, 0xDDDddd, 0xffffff);
-	DrawBar(x+2, y+2, VALUE_FIELD_W-3, SIZE-3, 0xffffff);
-	WriteText( -strlen(value_text)+3*8 + x+6, SIZE / 2 + y -6, 0x90, 0x333333, value_text);
-
-	DrawCaptButton(VALUE_FIELD_W + x + 1,    y, SIZE, SIZE, bt_id_more, system.color.work_button, system.color.work_button_text, "+");
-	DrawCaptButton(VALUE_FIELD_W + x + SIZE, y, SIZE, SIZE, bt_id_less, system.color.work_button, system.color.work_button_text, "-");
-	EDI = system.color.work;
-	WriteText(x+VALUE_FIELD_W+SIZE+SIZE+10, SIZE / 2 + y -7, 0xD0, system.color.work_text, text);
-	DrawRectangle3D(x-1,y-1,VALUE_FIELD_W+SIZE+SIZE+2,SIZE+2,system.color.work_dark,system.color.work_light);
-}
 
 
 
