@@ -973,7 +973,7 @@ void NewElement(byte newf)
 			case CREATE_FILE:
 				if (info_result==5)
 				{
-					WriteFile(0, 0, #temp);
+					CreateFile(0, 0, #temp);
 					if (EAX)
 					{
 						if (EAX==5) notify(NOT_CREATE_FILE);

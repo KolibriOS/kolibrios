@@ -216,7 +216,7 @@ void MailBoxLoop() {
 				if (id==SAVE_LETTER)
 				{
 					if (!mailstart) break;
-					WriteFile(strlen(mailstart), mailstart, "mail.txt");
+					CreateFile(strlen(mailstart), mailstart, "mail.txt");
 					pause(10);
 					RunProgram("tinypad", "mail.txt");
 				}

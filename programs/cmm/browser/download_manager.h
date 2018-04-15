@@ -99,7 +99,7 @@ void Downloader()
 				
 				for (i=0; i<strlen(#filepath); i++) if(filepath[i]==':')||(filepath[i]=='?')filepath[i]='-';
  
-                if (WriteFile(downloader.data_downloaded_size, downloader.bufpointer, #filepath)==0)
+                if (CreateFile(downloader.data_downloaded_size, downloader.bufpointer, #filepath)==0)
                     sprintf(#notify_message, "%s%s%s",FILE_SAVED_AS,#filepath,"' -Dt");
                 else
                     sprintf(#notify_message, "%s%s%s","'Download manager\nError! Can\96t save file as ",#filepath,"' -Et");

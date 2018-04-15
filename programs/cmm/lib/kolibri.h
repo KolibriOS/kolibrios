@@ -621,20 +621,6 @@ inline fastcall dword GetStartTime()
 	CreateThread(#_EventRedrawWindow,#REDRAW_BUFF_EVENT_+4092);
 }
 
-:struct rect
-{
-	dword x,y,w,h;
-	void set_size();
-};
-
-:void rect::set_size(dword _x, _y, _w, _h)
-{
-	x=_x; 
-	y=_y;
-	w=_w;
-	h=_h;
-}
-
 :struct _screen
 {
 	dword width,height;

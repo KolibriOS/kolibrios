@@ -346,6 +346,28 @@ TODO: scroll
 	return n;
 }
 
+//block with hover
+struct block {
+	int x,y,w,h;
+	bool hovered();
+	void set_size();
+};
+
+:bool block::hovered() {
+	if ((mouse.x>x) && (mouse.y>y) 
+	&& (mouse.y<y+h) && (mouse.x<x+w)) 
+		return true;
+	return false;
+}
+
+:void block::set_size(dword _x, _y, _w, _h)
+{
+	x=_x; 
+	y=_y;
+	w=_w;
+	h=_h;
+}
+
 
 
 

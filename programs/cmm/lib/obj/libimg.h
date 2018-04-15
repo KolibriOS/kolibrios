@@ -218,7 +218,7 @@ struct _Image
             notify("'Error saving file, incorrect data!' -E");
         }
         else {
-            if (WriteFile(encoded_size, encoded_data, _path) == 0) {
+            if (CreateFile(encoded_size, encoded_data, _path) == 0) {
                 sprintf(#save_success_message, "'File saved as %s' -O", _path);
                 notify(#save_success_message);
             }

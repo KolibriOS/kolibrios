@@ -357,7 +357,7 @@ void ProcessEvent(dword id__)
 		case EDIT_SOURCE:
 			if (!strncmp(#URL,"http:",5)) 
 			{
-				WriteFile(bufsize, bufpointer, "/tmp0/1/WebView_tmp.htm");
+				CreateFile(bufsize, bufpointer, "/tmp0/1/WebView_tmp.htm");
 				if (!EAX) RunProgram("/rd/1/tinypad", "/tmp0/1/WebView_tmp.htm");
 			}
 			else RunProgram("/rd/1/tinypad", #URL);

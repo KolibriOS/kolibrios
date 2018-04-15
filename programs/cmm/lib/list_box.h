@@ -33,25 +33,24 @@ struct llist
 	int KeyLeft(); 
 	int KeyRight();
 	void CheckDoesValuesOkey();
-	//void debug();
+	void debug();
 };
 
-/*
-void llist::debug()
+:void llist::debug()
 {
 	char yi[128];
 	sprintf(#yi, "%s %d %s %d %s %d %s %d %s %d %s %d", "first:", first, "visible:", visible, "count:", count, "col_max:", column_max, "cur_y:", cur_y, "cur_x:", cur_x);
 	debugln(#yi);
-}*/
+}
 
 
-void llist::ClearList()
+:void llist::ClearList()
 {
 	count = visible = first = cur_y = cur_x = 0;
 }
 
 
-void llist::SetSizes(int xx, yy, ww, hh, item_hh)
+:void llist::SetSizes(int xx, yy, ww, hh, item_hh)
 {
 	x = xx;
 	y = yy;
@@ -64,7 +63,8 @@ void llist::SetSizes(int xx, yy, ww, hh, item_hh)
 	CheckDoesValuesOkey();
 }
 
-void llist::SetFont(dword font_ww, font_hh, font_tt)
+
+:void llist::SetFont(dword font_ww, font_hh, font_tt)
 {
 	font_w = font_ww;
 	font_h = font_hh;
@@ -72,7 +72,7 @@ void llist::SetFont(dword font_ww, font_hh, font_tt)
 }
 
 
-int llist::MouseScroll(dword scroll_state)
+:int llist::MouseScroll(dword scroll_state)
 {
 	if (count<=visible) return 0;
 	if (scroll_state == 65535)
@@ -91,13 +91,13 @@ int llist::MouseScroll(dword scroll_state)
 }
 
 
-int llist::MouseOver(int xx, yy)
+:int llist::MouseOver(int xx, yy)
 {
 	if (xx>x) && (xx<x+w) && (yy>y) && (yy<y+h) return 1;
 	return 0;
 }
 
-int llist::ProcessMouse(int xx, yy)
+:int llist::ProcessMouse(int xx, yy)
 {
 	int cur_y_temp, cur_x_temp, ret=0;
 	if (MouseOver(xx, yy))
@@ -121,7 +121,7 @@ int llist::ProcessMouse(int xx, yy)
 	return ret;
 }
 
-int llist::ProcessKey(dword key)
+:int llist::ProcessKey(dword key)
 {
 	switch(key)
 	{
@@ -140,7 +140,7 @@ int llist::ProcessKey(dword key)
 	return 0;
 }
 
-int llist::KeyDown()
+:int llist::KeyDown()
 {
 	if (no_selection)
 	{
@@ -168,7 +168,7 @@ int llist::KeyDown()
 	return 1;
 }
 
-int llist::KeyUp()
+:int llist::KeyUp()
 {
 	if (no_selection)
 	{
@@ -195,14 +195,14 @@ int llist::KeyUp()
 	return 1;
 }
 
-int llist::KeyHome()
+:int llist::KeyHome()
 {
 	if (cur_y==0) && (first==0) return 0;
 	cur_y = first = 0;
 	return 1;
 }
 
-int llist::KeyEnd()
+:int llist::KeyEnd()
 {
 	if (cur_y==count-1) && (first==count-visible) return 0;
 	cur_y = count-1;
@@ -210,7 +210,7 @@ int llist::KeyEnd()
 	return 1;
 }
 
-int llist::KeyPgUp()
+:int llist::KeyPgUp()
 {
 	if (count <= visible) return KeyHome();
 	if (first == 0) return 0;
@@ -220,7 +220,7 @@ int llist::KeyPgUp()
 	return 1;
 }
 
-int llist::KeyPgDown()
+:int llist::KeyPgDown()
 {
 	if (count <= visible) return KeyEnd();
 	if (first == count - visible) return 0;
@@ -230,7 +230,7 @@ int llist::KeyPgDown()
 	return 1;
 }
 
-void llist::CheckDoesValuesOkey()
+:void llist::CheckDoesValuesOkey()
 {
 	if (visible + first > count) first = count - visible;
 	if (first < 0) first = 0;
@@ -239,7 +239,7 @@ void llist::CheckDoesValuesOkey()
 	if (cur_x < 0) cur_x = 0;
 }
 
-int llist::KeyRight()
+:int llist::KeyRight()
 {
 	if (cur_x < column_max)
 	{
@@ -253,7 +253,7 @@ int llist::KeyRight()
 	return 1;
 }
 
-int llist::KeyLeft()
+:int llist::KeyLeft()
 {
 	if (cur_x > 0)
 	{
@@ -268,7 +268,7 @@ int llist::KeyLeft()
 }
 
 
-void llist_copy(dword dest, src)
+:void llist_copy(dword dest, src)
 {
 	EDI = dest;
 	ESI = src;

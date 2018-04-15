@@ -155,7 +155,7 @@ struct progress_bar
 struct frame
 {
 	dword type;
-	word size_x;                  
+	word size_x; //start_x, size_x => Mario, WTF? Is this so complex to use x/y/w/h ?                  
 	word start_x;                 
 	word size_y;                  
 	word start_y;                
@@ -168,6 +168,23 @@ struct frame
 	dword font_size_y;           
 	dword font_color;            
 	dword font_backgr_color;
-};     
+};
+
+:frame frame123 = { 0, 260, 10, 60, 16, NULL, 0xFFFfff, 1, NULL, 0, 1, 12, 0x000111, 0xCCCccc };
+:void DrawFrame(dword x,y,w,h,text)
+{
+	frame123.font_color = system.color.work_text;
+	frame123.ext_col = system.color.work_graph;
+	frame123.int_col = system.color.work_light;
+	frame123.font_backgr_color = system.color.work;
+
+	frame123.start_x = x;
+	frame123.start_y = y;
+	frame123.size_x = w;
+	frame123.size_y = h;
+	frame123.text_pointer = text;
+	frame_draw stdcall (#frame123);
+}
+
 
 #endif

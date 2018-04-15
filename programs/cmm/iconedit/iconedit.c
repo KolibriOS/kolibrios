@@ -39,18 +39,6 @@ pipet aside color view
 #define COLSIZE 18
 #define RIGHT_BAR_W PAL_ITEMS_X_COUNT*COLSIZE
 
-struct block {
-	int x,y,w,h;
-	bool hovered();
-};
-
-bool block::hovered() {
-	if ((mouse.x>x) && (mouse.y>y) 
-	&& (mouse.y<y+h) && (mouse.x<x+w)) 
-		return true;
-	return false;
-}
-
 block canvas = { NULL, NULL, NULL, NULL };
 block wrapper = { PANEL_LEFT_W, TOOLBAR_H, NULL, NULL };
 block right_bar = { NULL, TOOLBAR_H, RIGHT_BAR_W+10, NULL };
@@ -728,7 +716,7 @@ void EventSave()
 			notify("'Error saving file, incorrect data!' -E");
 		}
 		else {
-			if (WriteFile(encoded_size, encoded_data, "/rd/1/saved_image.png") == 0) {
+			if (CreateFile(encoded_size, encoded_data, "/rd/1/saved_image.png") == 0) {
 				notify("'File saved as /rd/1/saved_image.png' -O");
 			}
 			else {

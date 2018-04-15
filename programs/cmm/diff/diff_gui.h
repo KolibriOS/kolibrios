@@ -26,7 +26,7 @@ void gui()
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(Proc_lib,  #OpenDialog_init,0);
 	OpenDialog_init stdcall (#o_dialog);
-	SetEventMask(0x27);
+	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER + EVM_STACK);
 
 	loop() switch(WaitEvent())
 	{

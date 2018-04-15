@@ -15,7 +15,7 @@ enum {
 
 _tabs tabs = { 0,0, WIN_W, WIN_H, PHRASE_TAB};
 
-rect preview;
+block preview = { 0, PANELH, WIN_W, WIN_H - PANELH };
 
 
 void main()
@@ -49,11 +49,6 @@ void main()
 
 			tabs.draw_button(Form.cwidth-130, PHRASE_TAB, "Phrase");
 			tabs.draw_button(Form.cwidth-60, CHARS_TAB, "Chars");
-
-			preview.x = tabs.x;
-			preview.y = PANELH;
-			preview.w = Form.cwidth;
-			preview.h = Form.cheight - PANELH;
 
 			if (!kfont.font)
 			{

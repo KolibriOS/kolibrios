@@ -14,7 +14,7 @@ void DrawPathBar()
 void DrawBreadCrumbs()
  collection_int breadCrumb;
  char PathShow_path[4096];
- rect btn;
+ block btn;
  int i;
  unsigned text_line, area_w;
  {

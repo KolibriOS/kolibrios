@@ -4,14 +4,16 @@
 	unsigned value, min, max;
 	unsigned bt_id_more, bt_id_less;
 	dword text;
+	int click_delta;
 	bool click();
 	void draw();
 };
 
 :bool more_less_box::click(unsigned id)
 {
-	if (id==bt_id_less) { value = math.max(value-1, min); draw(); return 1; }
-	if (id==bt_id_more) { value = math.min(value+1, max); draw(); return 1; }
+	if (!click_delta) click_delta = 1;
+	if (id==bt_id_less) { value = math.max(value-click_delta, min); draw(); return 1; }
+	if (id==bt_id_more) { value = math.min(value+click_delta, max); draw(); return 1; }
 	return 0;
 }
 

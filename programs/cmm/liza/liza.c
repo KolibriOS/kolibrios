@@ -155,7 +155,7 @@ void SaveAndExit() {
 	chrcat(#write_data, '\n');
 	base64_encode stdcall (#pass_text, #pass_b64, strlen(#pass_text));
 	strcat(#write_data, #pass_b64);
-	WriteFile(strlen(#write_data)+1, #write_data, "/sys/network/mail.dat");
+	CreateFile(strlen(#write_data)+1, #write_data, "/sys/network/mail.dat");
 	ExitProcess();
 }
 

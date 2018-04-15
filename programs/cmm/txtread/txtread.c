@@ -82,7 +82,7 @@ void main()
 	LoadIniSettings();
 	OpenFile(#param);
 	list.no_selection = true;
-	SetEventMask(10000000000000000000000001100111b);
+	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop()
 	{
 		switch(WaitEvent())

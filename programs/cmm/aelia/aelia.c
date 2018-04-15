@@ -351,7 +351,7 @@ void EventRunEdit()
 	}
 	else {
 		//io.write(strlen(io.buffer_data), io.buffer_data, DEFAULT_PREVIEW_PATH); // <--- doesn't work, smth odd, need to check
-		WriteFile(strlen(io.buffer_data), io.buffer_data, DEFAULT_PREVIEW_PATH);
+		CreateFile(strlen(io.buffer_data), io.buffer_data, DEFAULT_PREVIEW_PATH);
 		io.run(DEFAULT_EDITOR, DEFAULT_PREVIEW_PATH);
 	}
 }

@@ -32,7 +32,7 @@ char picked_color_string[11];
 void main()
 {
 	int btn;
-	SetEventMask(000100111b);
+	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	SetWindowLayerBehaviour(-1, ZPOS_ALWAYS_TOP);
 	loop() switch(WaitEvent())
 	{

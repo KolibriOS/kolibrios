@@ -54,10 +54,6 @@
 	?define CHANGE_POS "Click on image to change position"
 #endif
 
-
-frame taskbar_frame = { 0, NULL, 10, NULL, 16, NULL, 0xFFFfff, 1, TASK_FRAME_T, 0, 1, 12, 0x000111, 0xCCCccc };
-frame docky_frame   = { 0, NULL, 10, NULL, NULL, NULL, 0xFFFfff, 1, DOCK_FRAME_T, 0, 1, 12, 0x000111, 0xCCCccc };
-
 char taskbar_ini_path[] = "/sys/settings/taskbar.ini";
 _ini taskbar_flags_ini = { #taskbar_ini_path, "Flags" };
 _ini taskbar_vars_ini = { #taskbar_ini_path, "Variables" };
@@ -147,10 +143,6 @@ void main()
 				DefineAndDrawWindow(130, 150, 465, 398 + skin_height, 0x34, system.color.work, WINDOW_TITLE, 0);
 				GetProcessInfo(#Form, SelfInfo);
 				if (Form.status_window>2) break;
-				taskbar_frame.size_x = docky_frame.size_x = - taskbar_frame.start_x * 2 + Form.cwidth;
-				taskbar_frame.font_color = docky_frame.font_color = system.color.work_text;
-				taskbar_frame.font_backgr_color = docky_frame.font_backgr_color = system.color.work;
-				taskbar_frame.ext_col = docky_frame.ext_col = system.color.work_graph;
 				DrawWindowContent(ALL);
 	}
 }
@@ -158,12 +150,15 @@ void main()
 
 void DrawWindowContent(byte panel_type)
 {
+	#define PD 10
+	dword frame_y;
 	word win_center_x = Form.cwidth / 2 + 20;
 	incn y;
 
 	if (panel_type==ALL) || (panel_type==TASKBAR)
 	{
-		y.n = taskbar_frame.start_y;
+		frame_y = 15;
+		y.n = frame_y;
 		DefineButton(22, y.inc(18), panels_img.w-1, 27-1, 100 + BT_HIDE, 0);
 		_PutImage(22, y.n, 37, 27, tbAttachment * 37 * 27 * 3 + panels_img.data);
 		WriteText(68, y.inc(7), 0x90, system.color.work_text, CHANGE_POS);
@@ -178,22 +173,17 @@ void DrawWindowContent(byte panel_type)
 		MoreLessBox(22, y.inc(28), 120, 121, tbPanelHeight, PANEL_HEIGHT);
 		MoreLessBox(22, y.inc(32), 122, 123, tbSoftenHeight, SOFTEN_HEIGHT);
 		MoreLessBox(22, y.inc(32), 124, 125, tbButtonOffset, BUTTON_OFFSET);
-		taskbar_frame.size_y = y.inc(32) - taskbar_frame.start_y;
+		DrawFrame(PD, frame_y, Form.cwidth-PD-PD, y.inc(32)-frame_y, TASK_FRAME_T);
 	}
 	if (panel_type==ALL) || (panel_type==DOCKY)
 	{
-		docky_frame.start_y = y.inc(20);
+		frame_y = calc(y.inc(20));
 		DefineButton(22, y.inc(18), panels_img.w-1, 27-1, 200 + BT_HIDE, 0);
 		_PutImage(22, y.n,  37, 27, dkLocation + 1 * 37 * 27 * 3 + panels_img.data);
 		WriteText(68, y.inc(7), 0x90, system.color.work_text, CHANGE_POS);
 		CheckBox(22, y.inc(35), 201, FSIZE,  dkFsize);
 		CheckBox(win_center_x, y.n, 202, ASHOW, dkAshow);
-		docky_frame.size_y = y.inc(30) - docky_frame.start_y;
-	}
-	if (panel_type==ALL)
-	{
-		frame_draw stdcall (#taskbar_frame);
-		frame_draw stdcall (#docky_frame);
+		DrawFrame(PD, frame_y, Form.cwidth-PD-PD, Form.cheight-frame_y-PD, DOCK_FRAME_T);
 	}
 }
 

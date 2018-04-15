@@ -113,7 +113,7 @@ void main()
 	LoadIniConfig();
 	CheckDefaultForTheFirstStart();
 	OpenFolder(#param);
-	SetEventMask(0100111b);
+	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop()
 	{
 	  WaitEventTimeout(10);

@@ -124,7 +124,7 @@
 }
 
 :f70 write_file_70; 
-:int WriteFile(dword data_size, buffer, file_path)
+:int CreateFile(dword data_size, buffer, file_path)
 {
 	write_file_70.func = 2;
 	write_file_70.param1 = 0;
@@ -142,7 +142,7 @@
  //     WriteInFileThatAlredyExists    //
 ////////////////////////////////////////
 :f70 write_file_offset_70; 
-:int WriteFileWithOffset(dword offset, data_size, buffer, file_path)
+:int WriteFile(dword offset, data_size, buffer, file_path)
 {
 	write_file_offset_70.func = 3;
 	write_file_offset_70.param1 = offset;
@@ -354,7 +354,7 @@ int error;
 	}
 	else
 	{
-		if (error = WriteFile(size, cbuf, copyTo)) debugln("Error: CopyFileAtOnce->WriteFile");
+		if (error = CreateFile(size, cbuf, copyTo)) debugln("Error: CopyFileAtOnce->CreateFile");
 	}
 	free(cbuf);
 	return error;
@@ -364,20 +364,34 @@ int error;
 dword cbuf;
 int error=-1;
 dword offpos=0;
-int block_size=1024*1024*4; //copy by 4 MiBs
+int block_size=1024*1024*4; //copy by 4 MiB
 {
+	if (GetFreeRAM()>1024*78) {
+		//Set block size 32 MiB
+		block_size <<= 3;
+	}
 	cbuf = malloc(block_size);
-	WriteFile(0, 0, copyTo); //create file
+	if (error = CreateFile(0, 0, copyTo))
+	{
+		debugln("Error: CopyFileByBlocks->CreateFile");
+		size = -1;	
+	}
 	while(offpos < size)
 	{
 		error = ReadFile(offpos, block_size, cbuf, copyFrom);
 		if (error = 6) { //File ended before last byte was readed
 			block_size = EBX; 
-			error=0; 
+			if (block_size+offpos>=size) error=0; 
 		} 
 		else
-			if (error!=0) break;
-		if (error = WriteFileWithOffset(offpos, block_size, cbuf, copyTo)) break;
+			if (error!=0) {
+				debugln("Error: CopyFileByBlocks->ReadFile");
+				break;
+			}
+		if (error = WriteFile(offpos, block_size, cbuf, copyTo)) {
+			debugln("Error: CopyFileByBlocks->WriteFile");
+			break;
+		}
 		offpos += block_size;
 	}
 	free(cbuf);

@@ -57,7 +57,7 @@ void main()
 {
 	byte btn;
 	load_dll(boxlib, #box_lib_init,0);
-	SetEventMask(10000000000000000000000001100111b);
+	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	GetCpuFrequency();
 	loop()
 	{

@@ -39,9 +39,8 @@
 dword mouse_2;
 char path_to_file[4096];
 char file_name2[4096];
-edit_box file_name_ed = {230,55,35,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(file_name2),#file_name2,#mouse_2, 1000000000000000b,2,2};
+edit_box file_name_ed = {230,59,32,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(file_name2),#file_name2,#mouse_2, 1000000000000000b,2,2};
 edit_box path_to_file_ed = {160,120,79,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,sizeof(path_to_file),#path_to_file,#mouse_2, 1000000000000000b,2,2};
-frame flags_frame = { 0, NULL, 10, 92, 212, 0x000111, 0xFFFfff, 1, FLAGS, 0, 1, 12, 0x000111, 0xFFFFFF };
 
 int file_count, dir_count, size_dir;
 char folder_info[200];
@@ -234,7 +233,7 @@ void properties_dialog()
 	strcpy(#path_to_file, #path);
 	path_to_file_ed.size = strlen(#path_to_file);
 	
-	SetEventMask(0x27);
+	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop() switch(WaitEvent())
 	{
 		case evButton: 
@@ -325,27 +324,7 @@ void DrawPropertiesWindow()
 {
 	dword ext1;
 	char temp_path[sizeof(file_path)];
-	DefineAndDrawWindow(Form.left + 150,150,305,360+skin_height,0x34,system.color.work,WINDOW_TITLE_PROPERTIES,0);
-	if ( !asm test path_to_file_ed.flags, 2)
-	{
-		path_to_file_ed.blur_border_color = system.color.work;
-		path_to_file_ed.color = system.color.work;
-	}
-	else
-	{
-		path_to_file_ed.blur_border_color = 0x000000;
-		path_to_file_ed.color = 0xffffff;
-	}
-	if ( !asm test path_to_file_ed.flags, 2)
-	{
-		file_name_ed.blur_border_color = system.color.work;
-		file_name_ed.color = system.color.work;
-	}
-	else
-	{
-		file_name_ed.blur_border_color = 0x000000;
-		file_name_ed.color = 0xffffff;
-	}
+	DefineAndDrawWindow(Form.left + 150,150,315,360+skin_height,0x34,system.color.work,WINDOW_TITLE_PROPERTIES,0);
 	GetProcessInfo(#settings_form, SelfInfo);
 
 	DrawFlatButton(settings_form.cwidth - 96, settings_form.cheight-34, 10, BTN_CLOSE);
@@ -374,8 +353,8 @@ void DrawPropertiesWindow()
 			if (ext1) ext1 += #file_name2;
 			PropertiesDrawIcon(#temp_path, ext1);
 		}
-		WriteText(file_name_ed.left+4, 20, 0x80, system.color.work_text, PR_T_NAME);                          
-		edit_box_draw stdcall (#file_name_ed);
+		WriteText(file_name_ed.left, file_name_ed.top-15, 0x80, system.color.work_text, PR_T_NAME);
+		DrawEditBox(#file_name_ed);
 		
 		if (!itdir) element_size = file_info_general.sizelo;
 		else
@@ -393,25 +372,21 @@ void DrawPropertiesWindow()
 		sprintf(#element_size_label,"%s (%d %s)",ConvertSize64(element_size, NULL),element_size,SET_BYTE_LANG);
 		WriteText(120, 99, 0x90, system.color.work_text, #element_size_label);
 	}
-	flags_frame.size_x = - flags_frame.start_x * 2 + settings_form.cwidth - 2;
-	flags_frame.font_color = system.color.work_text;
-	flags_frame.ext_col = system.color.work_graph;
-	flags_frame.font_backgr_color = system.color.work;
-	frame_draw stdcall (#flags_frame);
+	DrawFrame(10, 212, -10*2 + settings_form.cwidth - 2, 92, FLAGS);
 	DrawPropertiesCheckBoxes();
 }
 
 void PropertiesDrawIcon(dword file_path, extension)
 {
-	#define ICON_PADDING 10
-	DrawBar(20-ICON_PADDING, 30-ICON_PADDING-1, ICON_PADDING*2+16, ICON_PADDING*2+16, system.color.work_light);
+	#define ICON_PADDING 11
+	DrawBar(20-ICON_PADDING, 30-ICON_PADDING-1, ICON_PADDING*2+16, ICON_PADDING*2+16, 0xFFFfff);
 	DrawIconByExtension(file_path, extension, 20, 30, system.color.work_light);
 }
 
 void DrawPropertiesCheckBoxes()
 {
 	incn y;
-	y.n = flags_frame.start_y;
+	y.n = 212; //212 => attributes_frame.y
 	CheckBox(24, y.inc(18), 20, PR_T_ONLY_READ, atr_readonly);
 	CheckBox(24, y.inc(24), 21, PR_T_HIDDEN, atr_hidden);
 	CheckBox(24, y.inc(24), 22, PR_T_SYSTEM, atr_system);

@@ -13,7 +13,7 @@
 	proc_info Form;
 };
 
-void window::create()
+:void window::create()
 {
 	word id=0;
 	IF(!caption)caption = "Window";

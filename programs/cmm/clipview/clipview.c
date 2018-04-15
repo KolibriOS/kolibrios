@@ -159,7 +159,7 @@ void SelectList_DrawLine(dword i)
 }
 
 int SaveSlotContents(dword size, off) {
-	EAX = WriteFile(size, off, DEFAULT_SAVE_PATH);
+	EAX = CreateFile(size, off, DEFAULT_SAVE_PATH);
 	if (!EAX)
 	{
 		return true;
