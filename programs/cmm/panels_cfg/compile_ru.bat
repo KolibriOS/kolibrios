@@ -6,6 +6,5 @@ cls
 @c-- panels_cfg.c
 @pause
 @rename panels_cfg.com panels_cfg
-@kpack panels_cfg
 @del warning.txt
 @del lang.h--

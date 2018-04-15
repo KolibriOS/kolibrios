@@ -7,6 +7,5 @@ cls
 @pause
 @echo off
 @rename panels_cfg.com panels_cfg
-@kpack panels_cfg
 @del warning.txt
 @del lang.h--

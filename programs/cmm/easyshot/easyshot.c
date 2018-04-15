@@ -46,7 +46,7 @@ enum {
 #define PD 18 //padding
 #define TOOLBAR_H 20+PD
 
-rect pw;
+block pw;
 
 struct _settings {
 	bool minimise;
