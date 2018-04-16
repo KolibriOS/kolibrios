@@ -30,7 +30,7 @@
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 15, "MP3\0WAV\0XM\0\0" };
 
-#define ABOUT_MESSAGE "Pixie Player v2.81
+#define ABOUT_MESSAGE "Pixie Player v2.9 Final
 
      A tiny music folder player.
      Supports MP3, WAV, XM audio file formats.
