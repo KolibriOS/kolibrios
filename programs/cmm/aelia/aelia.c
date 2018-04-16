@@ -5,12 +5,15 @@
 #include "../lib/gui.h"
 #include "../lib/list_box.h"
 #include "../lib/menu.h"
+
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/libini.h"
 #include "../lib/obj/iconv.h"
+#include "../lib/obj/libimg.h"
 #include "../lib/obj/proc_lib.h"
 #include "../lib/obj/http.h"
 #include "../lib/cursor.h"
+
 #include "../lib/patterns/simple_open_dialog.h"
 #include "../lib/patterns/history.h"
 #include "../lib/patterns/http_downloader.h"
