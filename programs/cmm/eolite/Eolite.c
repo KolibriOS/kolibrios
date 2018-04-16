@@ -21,6 +21,7 @@
 
 #include "../lib/obj/libini.h"
 #include "../lib/obj/box_lib.h"
+#include "../lib/obj/libimg.h"
 
 #include "../lib/patterns/history.h"
 
