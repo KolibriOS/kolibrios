@@ -18,7 +18,6 @@ pipet aside color view
 #include "../lib/mem.h"
 #include "../lib/obj/libimg.h"
 #include "../lib/patterns/rgb.h"
-#include "../lib/patterns/libimg_load_skin.h"
 
 #include "colors_mas.h"
 

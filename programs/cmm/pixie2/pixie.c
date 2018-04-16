@@ -18,7 +18,6 @@
 #include "../lib/obj/proc_lib.h"
 #include "../lib/obj/box_lib.h"
 
-#include "../lib/patterns/libimg_load_skin.h"
 #include "../lib/patterns/simple_open_dialog.h"
 
 //===================================================//
@@ -33,19 +32,19 @@ od_filter filter2 = { 15, "MP3\0WAV\0XM\0\0" };
 
 #define ABOUT_MESSAGE "Pixie Player v2.81
 
-A tiny music folder player.
-Supports MP3, WAV, XM audio file formats.
+     A tiny music folder player.
+     Supports MP3, WAV, XM audio file formats.
 
-Controls:
-Open file: O key
-Play/Stop: Space or P key
-Start playing selected file: Enter
-Goto next/previous track: Ctrl + Left/Right
-Change sound volume: Left/Right key
-Remove from the list: Delete
-Repeat: R
-Shuffle: S
-Mute: M
+Hot keys:
+ Open file: O key
+ Play/Stop: Space or P key
+ Start playing selected file: Enter
+ Goto next/previous track: Ctrl + Left/Right
+ Change sound volume: Left/Right key
+ Remove from the list: Delete
+ Repeat: R
+ Shuffle: S
+ Mute: M
 
 kolibri-n.org & aspero.pro"
 
@@ -145,7 +144,7 @@ void main()
 				if (mouse.dblclick) EventStartPlayingSelectedItem();
 				if (mouse.down) && (mouse.key&MOUSE_LEFT) 
 					&& (list.ProcessMouse(mouse.x, mouse.y)) DrawPlayList();
-				if (mouse.down) && (mouse.key&MOUSE_RIGHT) CreateThread(#EventShowAbout,#menu_stak+4092);
+				if (mouse.down) && (mouse.key&MOUSE_RIGHT) EventShowAbout();
 			}
 			if(mouse.key&MOUSE_LEFT) && (mouse.x<14) 
 				&& (window_mode == WINDOW_MODE_SMALL) EventDragWindow();
@@ -180,6 +179,7 @@ void main()
 			if (key_scancode==SCAN_CODE_ENTER) EventStartPlayingSelectedItem();
 			if (key_scancode==SCAN_CODE_DEL) EventDeleteItem();
 			if (key_scancode==SCAN_CODE_KEY_P)||(key_scancode==SCAN_CODE_SPACE) EventPlayAndPause();
+			if (key_scancode==SCAN_CODE_F1) EventShowAbout();
 			if (list.ProcessKey(key_scancode)) DrawPlayList();
 			break;
 		case evReDraw:
@@ -519,6 +519,11 @@ void EventDeleteItem()
 
 void EventShowAbout()
 {
+	CreateThread(#ShowAboutThread,#menu_stak+4092);
+}
+
+void ShowAboutThread()
+{
 	proc_info pop_up;
 	loop() switch(WaitEvent())
 	{
@@ -532,14 +537,18 @@ void EventShowAbout()
 		case evReDraw:
 			DefineDragableWindow(150, 200, 400, 346);
 			GetProcessInfo(#pop_up, SelfInfo);
+
 			DrawBar(0, 0, pop_up.width, pop_up.height, theme.color_top_panel_bg);
 			DrawRectangle(0, 0, pop_up.width, pop_up.height, theme.color_list_border);
-			WriteTextLines(10, 10, 0x90, theme.color_top_panel_song_name, ABOUT_MESSAGE, 19);
 
 			DefineHiddenButton(pop_up.width - 27, 1, 26, 15, BUTTON_WINDOW_CLOSE);
 			img_draw stdcall(skin.image, pop_up.width-28, 0, 28, 18, skin.w - 29, 0);
 			DrawCaptButton(pop_up.width-10-80, pop_up.height - 34, 80, 24, 2, 
 			  theme.color_list_active_bg, theme.color_top_panel_song_name, "Cool");
+			
+			WriteTextLines(10, 10, 0x90, theme.color_top_panel_song_name, ABOUT_MESSAGE, 19);
+			DrawIcon32(10, 48, theme.color_top_panel_bg, 65);
+
 	}
 }
 

@@ -24,7 +24,6 @@
 #include "..\lib\obj\http.h"
 #include "..\lib\obj\iconv.h"
 //useful patterns
-#include "..\lib\patterns\libimg_load_skin.h"
 #include "..\lib\patterns\history.h"
 #include "..\lib\patterns\http_downloader.h"
 

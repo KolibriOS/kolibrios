@@ -9,7 +9,6 @@
 #include "../lib/obj/libini.h"
 #include "../lib/obj/iconv.h"
 #include "../lib/obj/proc_lib.h"
-#include "../lib/patterns/libimg_load_skin.h"
 #include "../lib/patterns/simple_open_dialog.h"
 
 #define TOOLBAR_H 34

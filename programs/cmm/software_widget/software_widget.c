@@ -14,7 +14,6 @@ SOFTWARE CENTER v2.8
 #include "..\lib\kfont.h"
 #include "..\lib\list_box.h"
 #include "..\lib\collection.h"
-#include "..\lib\patterns\libimg_load_skin.h"
 
 proc_info Form;
 llist list;

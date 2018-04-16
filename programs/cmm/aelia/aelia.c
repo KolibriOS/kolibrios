@@ -11,7 +11,6 @@
 #include "../lib/obj/proc_lib.h"
 #include "../lib/obj/http.h"
 #include "../lib/cursor.h"
-#include "../lib/patterns/libimg_load_skin.h"
 #include "../lib/patterns/simple_open_dialog.h"
 #include "../lib/patterns/history.h"
 #include "../lib/patterns/http_downloader.h"

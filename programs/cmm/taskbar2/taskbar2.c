@@ -18,9 +18,6 @@
 #include "../lib/obj/libimg.h"
 #include "../lib/obj/libini.h"
 
-#include "../lib/patterns/libimg_load_skin.h"
-
-
 //===================================================//
 //                                                   //
 //                       DATA                        //

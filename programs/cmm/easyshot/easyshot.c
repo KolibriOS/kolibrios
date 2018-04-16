@@ -7,8 +7,6 @@
 #include "../lib/obj/libimg.h"
 #include "../lib/obj/box_lib.h"
 
-#include "../lib/patterns/libimg_load_skin.h"
-
 #ifndef AUTOBUILD
 	#include "lang.h--"
 #endif

@@ -18,8 +18,6 @@
 #include "../lib/obj/libio.h"
 #endif
 
-:byte init_imglib_check;
-
 //library
 dword libimg = #alibimg;
 char alibimg[21] = "/sys/lib/libimg.obj\0";
@@ -30,8 +28,8 @@ dword img_to_rgb2 = #aimg_to_rgb2;
 dword img_decode  = #aimg_decode;
 dword img_destroy = #aimg_destroy;
 dword img_draw    = #aimg_draw;
-dword img_create    = #aimg_create;
-dword img_encode   = #aimg_encode;
+dword img_create  = #aimg_create;
+dword img_encode  = #aimg_encode;
 
 //dword img_flip    = #aimg_flip;
 //dword img_rotate  = #aimg_rotate;
@@ -228,6 +226,10 @@ struct _Image
         }
     }
 }
+
+#ifndef INCLUDE_LIBIMG_LOAD_SKIN_H
+#include "../lib/patterns/libimg_load_skin.h"
+#endif
 
 
 #endif

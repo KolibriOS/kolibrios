@@ -18,8 +18,6 @@ od_filter filter2 = { 8, "MP3\0\0" };
 #include "..\lib\obj\libimg.h"
 #include "..\lib\obj\libini.h"
 
-#include "..\lib\patterns\libimg_load_skin.h"
-
 #define ABOUT_MESSAGE "'Pixies Player v1.4\n\nOpen file: O key\nChange skin: F1/F2
 Play/Stop: Space or P key\nStart playing selected file: Enter
 Goto next/previous track: Ctrl + Left/Right

@@ -20,20 +20,27 @@
 	ESDWORD[struct_pointer+12] = ESDWORD[image_pointer+24];
 }
 
-:void Libimg_FillTransparent(dword struct_pointer, w, h, new_transparent_color)
-{
-	dword i, max_i, image_data;
-	image_data = ESDWORD[struct_pointer + 24];
-	max_i =  w * h * 4 + image_data;
-	for (i = image_data; i < max_i; i += 4)	if (DSDWORD[i]==0) DSDWORD[i] = new_transparent_color;
-}
-
 :void Libimg_ReplaceColor(dword struct_pointer, w, h, old_color, new_color)
 {
 	dword i, max_i, image_data;
 	image_data = ESDWORD[struct_pointer + 24];
 	max_i =  w * h * 4 + image_data;
 	for (i = image_data; i < max_i; i += 4)	if (DSDWORD[i]==old_color) DSDWORD[i] = new_color;
+}
+
+:void Libimg_FillTransparent(dword struct_pointer, w, h, new_color)
+{
+	Libimg_ReplaceColor(struct_pointer, w, h, 0, new_color);
+}
+
+:libimg_image icons32draw;
+:void DrawIcon32(dword x,y, bg, icon_n) {
+	//load_dll(libimg, #libimg_init,1);
+	if (!icons32draw.image) {
+		Libimg_LoadImage(#icons32draw, "/sys/icons32.png");
+		Libimg_FillTransparent(icons32draw.image, icons32draw.w, icons32draw.h, bg);
+	}
+	if (icon_n>=0) img_draw stdcall(icons32draw.image, x, y, 32, 32, 0, icon_n*32);
 }
 
 #endif

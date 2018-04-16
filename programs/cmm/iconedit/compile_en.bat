@@ -5,9 +5,10 @@
 
 
 if exist iconedit (
-    "C:\Program Files (x86)\WinImage\winimage.exe" "C:\Users\Leency\Desktop\kolibri.img" /H /Q /I iconedit
-    cd D:\Kolibri\Infrastructure\QEMU
-    call "D:\Kolibri\Infrastructure\QEMU\qemu-kos-img.bat"
+    "C:\Program Files\WinImage\winimage.exe" "D:\Soft\Kolibri\QEMU\kolibri.img" /H /Q /I iconedit
+    d:
+    cd "D:\Soft\Kolibri\QEMU"
+    call "D:\Soft\Kolibri\QEMU\qemu-kos-img.bat"
 ) else (
     @pause
 )

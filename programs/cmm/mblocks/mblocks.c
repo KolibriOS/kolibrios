@@ -4,13 +4,12 @@
               2008-2017
 */
 
-#define MEMSIZE 4096 * 12
+#define MEMSIZE 4096 * 15
 #include "..\lib\gui.h"
 #include "..\lib\random.h"
 
 #include "..\lib\obj\libio.h"
 #include "..\lib\obj\libimg.h"
-#include "..\lib\patterns\libimg_load_skin.h"
 
 proc_info Form;
 

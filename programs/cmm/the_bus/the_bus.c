@@ -17,7 +17,6 @@ Copyright (C) 2008 O.Bogomaz
 
 #include "..\lib\obj\libio.h"
 #include "..\lib\obj\libimg.h"
-#include "..\lib\patterns\libimg_load_skin.h"
 
 libimg_image menu;
 libimg_image road;

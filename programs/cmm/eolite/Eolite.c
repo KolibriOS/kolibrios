@@ -23,7 +23,6 @@
 #include "../lib/obj/box_lib.h"
 
 #include "../lib/patterns/history.h"
-#include "../lib/patterns/libimg_load_skin.h"
 
 //images
 #include "imgs/left_p.txt"
