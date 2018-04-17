@@ -1,3 +1,2 @@
-fasm default.asm default.skn
-kpack default.skn
-pause
+@del default.skn
+@fasm default.asm default.skn
