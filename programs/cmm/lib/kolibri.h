@@ -276,6 +276,15 @@ inline fastcall int GetSystemLanguage()
 	$int 0x40
 }
 
+#define BUTTON_STYLE_FLAT 0
+#define BUTTON_STYLE_GRADIENT 1
+inline fastcall SetButtonStyle(ECX) //ECX - button style
+{
+	$mov eax,48
+	$mov ebx,1
+	int 64
+}
+
 inline fastcall GetSkinHeight()
 {
 	$push ebx

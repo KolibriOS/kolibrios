@@ -13,38 +13,28 @@
 
 /* === TRANSLATIONS === */
 
-#define T_WTITLE "EasyShot v0.7"
+#define T_WTITLE "EasyShot v0.75"
 
 #ifdef LANG_RUS
 	?define T_TAKE_SCREENSHOT "  Сделать скриншот"
-	?define T_SAVE "  Сохранить"
-	?define T_PREVIEW "Предпросмотр"
 #else
 	?define T_TAKE_SCREENSHOT "  Take a screenshot"
-	?define T_SAVE "  Save"
-	?define T_PREVIEW "Preview"
 #endif
 
-/* === DATA === */
+/* === DATA === */	
 
 proc_info Form;
 
-dword screenshot,
-      preview;
+dword screenshot;
 
-int screenshot_length,
-    preview_length;
+int screenshot_length;
 
 enum {
 	BTN_MAKE_SCREENSHOT=10,
-	BTN_SAVE,
 	BTN_SETTINGS
 };
 
 #define PD 18 //padding
-#define TOOLBAR_H 20+PD
-
-block pw;
 
 struct _settings {
 	bool minimise;
@@ -65,11 +55,8 @@ void main()
 	Libimg_LoadImage(#skin, "/sys/icons16.png");
 
 	screenshot_length = screen.width * screen.height * 3;
-	pw.set_size(PD, TOOLBAR_H+PD, screen.width/2, screen.height/2);
-	preview_length = screenshot_length / 2;	
 
 	screenshot  = malloc(screenshot_length);
-	preview = malloc(screenshot_length/2);
 
 	loop() switch(WaitEvent())
 	{
@@ -77,22 +64,20 @@ void main()
 		id = GetButtonID();
 		if (id == CLOSE_BTN) ExitProcess();
 		if (id == BTN_MAKE_SCREENSHOT) EventTakeScreenshot();
-		if (id == BTN_SAVE) EventSaveImageFile();
 		if (id == BTN_SETTINGS) EventShowSettings();
 		break;
 
 	case evKey:
 		GetKeys();
-		if (SCAN_CODE_KEY_S == key_scancode) EventSaveImageFile();
 		if (SCAN_CODE_ENTER == key_scancode) EventTakeScreenshot();
 		break;
      
 	case evReDraw:
-		DefineAndDrawWindow(screen.width/4, screen.height/4, pw.w + 9 +PD+PD, 
-			pw.h + skin_height + TOOLBAR_H + 4 +PD+PD, 0x74, 0, T_WTITLE,0);
+		system.color.get();
+		DefineAndDrawWindow(screen.width/4, screen.height-100/3, 270, 
+			skin_height + 27+PD+PD, 0x34, system.color.work, T_WTITLE,0);
 		GetProcessInfo(#Form, SelfInfo);
 		if (Form.status_window>2) break;
-		system.color.get();
 		DrawMainContent();
 	}
 }
@@ -100,28 +85,17 @@ void main()
 void DrawMainContent()
 {
 	int take_scr_btn_width;
-	DrawBar(0, 0, Form.cwidth, TOOLBAR_H, system.color.work);
-	DrawWideRectangle(0, TOOLBAR_H, pw.w+PD+PD, pw.h+PD+PD, PD-1, system.color.work);
-	DrawRectangle(pw.x-1, pw.y-1, pw.w+1, pw.h+1, system.color.work_graph);
-	take_scr_btn_width = DrawIconButton(pw.x, pw.y-42, BTN_MAKE_SCREENSHOT, T_TAKE_SCREENSHOT, 44);
-	if (ESDWORD[preview]==0) {
-		DrawBar(pw.x, pw.y, pw.w, pw.h, 0xEEEeee);
-		WriteText(Form.cwidth-calc(strlen(T_PREVIEW)*8)/2, pw.h/2+pw.y, 0x90, 0x777777, T_PREVIEW);
-	}
-	else {
-		_PutImage(pw.x, pw.y, pw.w, pw.h, preview);
-		DrawIconButton(take_scr_btn_width + pw.x, pw.y-42, BTN_SAVE, T_SAVE, 5);
-	}
-	DrawIconButton(Form.cwidth-40-PD, pw.y-42, BTN_SETTINGS, " ", 10);	
+	take_scr_btn_width = DrawIconButton(PD, PD, BTN_MAKE_SCREENSHOT, T_TAKE_SCREENSHOT, 44);
+	DrawIconButton(PD+take_scr_btn_width, PD, BTN_SETTINGS, " ", 10);	
 }
 
 void EventTakeScreenshot() {
 	if (settings.minimise) MinimizeWindow(); 
 	pause(settings.delay*100);
 	CopyScreen(screenshot, 0, 0, screen.width, screen.height);
-	ZoomImageTo50percent();
 	ActivateWindow(GetProcessSlot(Form.ID));
 	if (!settings.minimise) DrawMainContent();
+	EventSaveImageFile();
 }
 
 void EventSaveImageFile()
@@ -182,39 +156,6 @@ inline byte calc_rgb(dword B, item_h)
 {
 	return calc(ESBYTE[B+3] + ESBYTE[B] + ESBYTE[B-3]
 		+ ESBYTE[B-item_h] + ESBYTE[B+item_h] / 5);
-}
-
-void ZoomImageTo50percent() {
-	dword point_x = 0;
-	dword item_h = screen.width * 3;
-	dword small = preview;
-	dword big = screenshot;
-
-	while( (small <= preview + preview_length) && (big <= screenshot + screenshot_length ) ) {
-		
-		if (big <= screenshot + item_h) || (big >= screenshot + screenshot_length - item_h)
-		{
-			ESBYTE[small]   = ESBYTE[big];
-			ESBYTE[small+1] = ESBYTE[big+1];
-			ESBYTE[small+2] = ESBYTE[big+2];
-		}
-		else
-		{
-			ESBYTE[small]   = calc_rgb(big, item_h);
-			ESBYTE[small+1] = calc_rgb(big+1, item_h);
-			ESBYTE[small+2] = calc_rgb(big+2, item_h);
-		}
-	
-		small+=3;
-		big+=6;
-
-		point_x+=2;
-		if (point_x >= screen.width) 
-		{
-			big += item_h;
-			point_x = 0;
-		}
-	}
 }
 
 int DrawIconButton(dword x, y, id, text, icon)
