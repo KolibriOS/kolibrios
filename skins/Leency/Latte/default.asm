@@ -2,13 +2,13 @@ include '..\skin.inc'
 
 SKIN_PARAMS \
   height          = bmp_center1.height,\     ; skin height
-  margins         = [5:1:43:1],\          ; margins [left:top:right:bottom]
-  colors active   = [binner=0xE1E1E1:\    ; border inner color
+  margins         = [5:6:40:4],\          ; margins [left:top:right:bottom]
+  colors active   = [binner=0xCACACA:\    ; border inner color
                      bouter=0xA1A1A1:\    ; border outer color
-                     bframe=0xE1E1E1],\   ; border frame color
-  colors inactive = [binner=0xE1E1E1:\    ; border inner color
+                     bframe=0xCACACA],\   ; border frame color
+  colors inactive = [binner=0xCACACA:\    ; border inner color
                      bouter=0xA1A1A1:\    ; border outer color
-                     bframe=0xE1E1E1],\   ; border frame color
+                     bframe=0xCACACA],\   ; border frame color
   dtp             = 'default.dtp'          ; dtp colors
 
 SKIN_BUTTONS \
