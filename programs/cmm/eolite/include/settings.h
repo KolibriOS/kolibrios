@@ -6,6 +6,7 @@
 	?define SHOW_STATUS_BAR "Показывать статус бар"
 	?define NOTIFY_COPY_END "Уведомлять о завершении копирования"
 	?define SHOW_BREADCRUMBS "Использовать 'хлебные крошки'"
+	?define BIG_ICONS "Использовать большие иконки"
 	?define USE_TWO_PANELS "Две панели"
 	?define FONT_SIZE_LABEL "Размер шрифта"
 	?define LIST_LINE_HEIGHT "Высота строки в списке"
@@ -20,6 +21,7 @@
 	?define SHOW_STATUS_BAR "Show status bar"
 	?define NOTIFY_COPY_END "Notify when copying finished"
 	?define SHOW_BREADCRUMBS "Show breadcrumbs"
+	?define BIG_ICONS "Big icons in list"
 	?define USE_TWO_PANELS "Two panels"
 	?define FONT_SIZE_LABEL "Font size"
 	?define LIST_LINE_HEIGHT "List line height"
@@ -80,6 +82,26 @@ void settings_dialog()
 				else if (id==27) show_status_bar ^= 1;
 				else if (id==30) { kfont.size.pt++; IF(!kfont.changeSIZE()) kfont.size.pt--; BigFontsChange(); }
 				else if (id==31) { kfont.size.pt--; IF(!kfont.changeSIZE()) kfont.size.pt++; BigFontsChange(); }
+				else if (id==33) { 
+					big_icons ^= 1; 
+					if (big_icons) {
+							icon_size=32;
+							files.item_h=34;
+							if (!icons32_default.image)
+							{
+								Libimg_LoadImage(#icons32_default, "/sys/icons32.png");
+								Libimg_LoadImage(#icons32_selected, "/sys/icons32.png");
+								Libimg_ReplaceColor(icons32_default.image, icons32_selected.w, 
+									icons32_selected.h, 0x00000000, 0xffFFFfff);
+								Libimg_ReplaceColor(icons32_selected.image, icons32_selected.w, 
+									icons32_selected.h, 0x00000000, col_selec);								
+							}
+						}
+					else {
+							icon_size=16; 
+							files.item_h=18;
+					}
+				}
 				EventRedrawWindow(Form.left,Form.top);
 				break;
 					
@@ -91,8 +113,8 @@ void settings_dialog()
 				break;
 				
 			case evReDraw:
-				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 380, 
-					390+skin_height,0x34,system.color.work,TITLE_SETT,0);
+				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 400, 
+					410+skin_height,0x34,system.color.work,TITLE_SETT,0);
 				DrawSettingsCheckBoxes();
 		}
 	}
@@ -116,6 +138,7 @@ void DrawSettingsCheckBoxes()
 	CheckBox(x, y.inc(25), 27, SHOW_STATUS_BAR,  show_status_bar);
 	CheckBox(x, y.inc(25), 22, NOTIFY_COPY_END,  info_after_copy);
 	CheckBox(x, y.inc(25), 32, SHOW_BREADCRUMBS,  show_breadcrumb);
+	CheckBox(x, y.inc(25), 33, BIG_ICONS,  big_icons);
 	CheckBox(x, y.inc(25), 24, USE_TWO_PANELS,  two_panels);
 	MoreLessBox(x, y.inc(31), 30, 31, kfont.size.pt, FONT_SIZE_LABEL);
 	MoreLessBox(x, y.inc(31), 25, 26, files.item_h, LIST_LINE_HEIGHT);

@@ -1,31 +1,45 @@
-_ini icons = { "/sys/File managers/icons.ini", "icons16" };
+_ini icons_ini = { "/sys/File managers/icons.ini", NULL };
 
 void DrawIconByExtension(dword file_path, extension, xx, yy, fairing_color)
 {
 	char BYTE_HEAD_FILE[4];
 	char ext[512];
 	int i;
-	dword icon_n=2; // set default icon
+	dword icon_n;
+	dword selected_image;
+	dword default_image;
+
+	if (big_icons) {
+		icons_ini.section = "icons32";
+		selected_image = icons32_selected.image;
+		default_image = icons32_default.image;
+	}
+	else {
+		icons_ini.section = "icons16";
+		selected_image = icons16_selected.image;
+		default_image = icons16_default.image;
+	}
 
 	if (extension)
 	{
 		strcpy(#ext, extension);
 		strlwr(#ext);
-		icon_n = icons.GetInt(#ext, 2);
+		icon_n = icons_ini.GetInt(#ext, 2);
 	} 
 	else if (file_path)
 	{
 			ReadFile(0,4,#BYTE_HEAD_FILE,file_path);
-			IF(DSDWORD[#BYTE_HEAD_FILE]=='KCPK')||(DSDWORD[#BYTE_HEAD_FILE]=='UNEM') icon_n = icons.GetInt("kex", 2);
+			IF(DSDWORD[#BYTE_HEAD_FILE]=='KCPK')||(DSDWORD[#BYTE_HEAD_FILE]=='UNEM') 
+				icon_n = icons_ini.GetInt("kex", 2);
 	}
 	if (fairing_color==col_selec)
 	{
-		img_draw stdcall(icons16_selected.image, xx, yy, icon_size, icon_size, 0, icon_n*icon_size);
-		IconFairing(icon_n, xx, yy, fairing_color);
+		img_draw stdcall(selected_image, xx, yy, icon_size, icon_size, 0, icon_n*icon_size);
+		if (!big_icons) IconFairing(icon_n, xx, yy, fairing_color);
 	}
 	else 
 	{
-		img_draw stdcall(icons16_default.image, xx, yy, icon_size, icon_size, 0, icon_n*icon_size);
+		img_draw stdcall(default_image, xx, yy, icon_size, icon_size, 0, icon_n*icon_size);
 	}
 }
 

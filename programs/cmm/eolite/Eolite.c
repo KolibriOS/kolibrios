@@ -104,14 +104,15 @@ bool show_dev_name=true,
 	two_panels=false,
 	show_breadcrumb=false,
 	show_status_bar=true,
-	active_panel=1;
+	active_panel=1,
+	big_icons=false;
 //} settings;
 
 libimg_image icons16_default;
 libimg_image icons16_selected;
 
-//libimg_image icons32_default;
-//libimg_image icons32_selected;
+libimg_image icons32_default;
+libimg_image icons32_selected;
 
 #define STATUS_BAR_H 16;
 int status_bar_h = 0;
@@ -158,11 +159,6 @@ void main()
 	Libimg_LoadImage(#icons16_selected, "/sys/icons16.png");
 	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffFFFfff, col_selec);
 	Libimg_ReplaceColor(icons16_selected.image, icons16_selected.w, icons16_selected.h, 0xffCACBD6, MixColors(col_selec, 0, 200));
-
-	//Libimg_LoadImage(#icons32_default, "/sys/icons32.png");
-	//Libimg_LoadImage(#icons32_selected, "/sys/icons32.png");
-	//Libimg_ReplaceColor(icons32_selected.image, icons32_selected.w, icons32_selected.h, 0xffFFFfff, 0xFF94AECE);
-	//Libimg_ReplaceColor(icons32_selected.image, icons32_selected.w, icons32_selected.h, 0xffCACBD6, 0xFF7692B5);
 
 	//-p just show file/folder properties dialog
 	if (param) && (param[0]=='-') && (param[1]=='p')
