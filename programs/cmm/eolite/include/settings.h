@@ -38,10 +38,16 @@ char path_start[4096]="\0";
 edit_box path_start_ed = {290,50,57,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,4098,
 	                      #path_start,#set_mouse_dd, 100000000000010b,0,0};
 
+more_less_box font_size = { NULL, 9, 22, FONT_SIZE_LABEL };
+more_less_box line_height = { NULL, 16, 64, LIST_LINE_HEIGHT };
+
+
 void settings_dialog()
 {   
 	byte id;
 	active_settings=1;
+	font_size.value = kfont.size.pt;
+	line_height.value = files.item_h; 
 	SetEventMask(0x27);
 	loop(){
 		switch(WaitEvent())
@@ -77,16 +83,20 @@ void settings_dialog()
 				else if (id==22) info_after_copy ^= 1;
 				else if (id==24) two_panels ^= true;
 				else if (id==32) show_breadcrumb ^= true;
-				else if (id==25) { files.item_h++; files_active.item_h = files_inactive.item_h = files.item_h; }
-				else if (id==26) && (files.item_h>16) files_inactive.item_h = files.item_h = files.item_h-1;
 				else if (id==27) show_status_bar ^= 1;
-				else if (id==30) { kfont.size.pt++; IF(!kfont.changeSIZE()) kfont.size.pt--; BigFontsChange(); }
-				else if (id==31) { kfont.size.pt--; IF(!kfont.changeSIZE()) kfont.size.pt++; BigFontsChange(); }
+				else if (font_size.click(id)) { 
+					kfont.size.pt = font_size.value; 
+					kfont.changeSIZE(); 
+					BigFontsChange(); 
+				}
+				else if (line_height.click(id)) { 
+					files.item_h = line_height.value; 
+				}
 				else if (id==33) { 
 					big_icons ^= 1; 
 					if (big_icons) {
 							icon_size=32;
-							files.item_h=34;
+							files.item_h = line_height.value = 34;
 							if (!icons32_default.image)
 							{
 								Libimg_LoadImage(#icons32_default, "/sys/icons32.png");
@@ -99,7 +109,7 @@ void settings_dialog()
 						}
 					else {
 							icon_size=16; 
-							files.item_h=18;
+							files.item_h = line_height.value = 18;
 					}
 				}
 				EventRedrawWindow(Form.left,Form.top);
@@ -140,8 +150,8 @@ void DrawSettingsCheckBoxes()
 	CheckBox(x, y.inc(25), 32, SHOW_BREADCRUMBS,  show_breadcrumb);
 	CheckBox(x, y.inc(25), 33, BIG_ICONS,  big_icons);
 	CheckBox(x, y.inc(25), 24, USE_TWO_PANELS,  two_panels);
-	MoreLessBox(x, y.inc(31), 30, 31, kfont.size.pt, FONT_SIZE_LABEL);
-	MoreLessBox(x, y.inc(31), 25, 26, files.item_h, LIST_LINE_HEIGHT);
+	font_size.draw(x, y.inc(31));
+	line_height.draw(x, y.inc(31));
 	
 	DrawFrame(x, y.inc(37), 340, 95, START_PATH);
 	// START_PATH {

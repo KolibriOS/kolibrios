@@ -67,15 +67,13 @@ enum {
 	BTN_FILL,
 	BTN_LINE,
 	BTN_RECT,
-	BTN_ZOOM_IN,
-	BTN_ZOOM_OUT,
 	BTNS_PALETTE_COLOR_MAS = 100,
 	BTNS_LAST_USED_COLORS = 400
 };
 
 proc_info Form;
 
-more_less_box zoom = { PANEL_LEFT_W, -100, 11, 1, 40, BTN_ZOOM_IN, BTN_ZOOM_OUT, "Zoom" };
+more_less_box zoom = { 11, 1, 40, "Zoom" };
 
 dword default_palette[] = {
 0x330000,0x331900,0x333300,0x193300,0x003300,0x003319,0x003333,0x001933,0x000033,0x190033,
@@ -378,8 +376,8 @@ void main()
 				tools[currentTool].onMouseEvent(mouse.x, mouse.y, mouse.lkm, mouse.pkm);
 
 			if (mouse.vert) {
-				if (mouse.vert==65535) zoom.click(BTN_ZOOM_IN);
-				if (mouse.vert==1) zoom.click(BTN_ZOOM_OUT);
+				if (mouse.vert==65535) zoom.inc();
+				if (mouse.vert==1) zoom.dec();
 				DrawEditArea();
 			}
 
@@ -396,6 +394,7 @@ void main()
 
 		case evButton:
 			btn = GetButtonID();
+			if (zoom.click(btn)) DrawEditArea();
 			switch(btn)
 			{
 				case BTN_NEW:
@@ -449,14 +448,6 @@ void main()
 				case BTN_RECT:
 					setCurrentTool(TOOL_RECT);
 					break;
-				case BTN_ZOOM_IN:
-					zoom.click(BTN_ZOOM_IN);
-					DrawEditArea();
-					break;
-				case BTN_ZOOM_OUT:
-					zoom.click(BTN_ZOOM_OUT);
-					DrawEditArea();
-					break;
 				case CLOSE_BTN:
 					ExitProcess();
 					break;
@@ -475,8 +466,8 @@ void main()
 			if (key_scancode == SCAN_CODE_KEY_S) actionsHistory.undoLastAction();
 			if (key_scancode == SCAN_CODE_KEY_C) actionsHistory.redoLastAction();
 
-			if (key_scancode == SCAN_CODE_MINUS) {zoom.click(BTN_ZOOM_OUT); DrawEditArea();}
-			if (key_scancode == SCAN_CODE_PLUS)  {zoom.click(BTN_ZOOM_IN);  DrawEditArea();}
+			if (key_scancode == SCAN_CODE_MINUS) {zoom.inc(); DrawEditArea();}
+			if (key_scancode == SCAN_CODE_PLUS)  {zoom.dec();  DrawEditArea();}
 			break;
 		 
 		case evReDraw:
@@ -502,9 +493,7 @@ void DrawLeftPanelButton(dword _id, _y, _icon_n)
 
 void DrawStatusBar()
 {
-	zoom.y = wrapper.y + wrapper.h + 6;
-	zoom.x = wrapper.x;
-	zoom.draw();
+	zoom.draw(wrapper.x, wrapper.y + wrapper.h + 6);
 
 	sprintf(#param,"Canvas: %ix%i", image.rows, image.columns);
 	WriteText(wrapper.x+wrapper.w-calc(strlen(#param)*8), zoom.y+2, 0x90, system.color.work_text, #param);
@@ -572,7 +561,7 @@ void DrawEditArea()
 	canvas.w = image.columns * zoom.value;
 	canvas.h = image.rows * zoom.value;
 	if (canvas.w+2 > wrapper.w) || (canvas.h+2 > wrapper.h) { 
-		zoom.click(BTN_ZOOM_OUT);
+		zoom.dec();
 		DrawEditArea();
 		return;
 	}

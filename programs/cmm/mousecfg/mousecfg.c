@@ -40,9 +40,9 @@ proc_info Form;
 #define PD 18 //padding
 block mouse_frame = { PD, PD, NULL, 130 };
 
-more_less_box pointer_speed      = { PD, PD+142, NULL, 0, 64, 120, 121, POINTER_SPEED };
-more_less_box acceleration       = { PD, PD+172, NULL, 0, 64, 122, 123, ACCELERATION_TEXT };
-more_less_box double_click_delay = { PD, PD+202, NULL, 0, 999,124, 125, DOUBLE_CLICK_TEXT, 8 };
+more_less_box pointer_speed      = { NULL, 0, 64, POINTER_SPEED };
+more_less_box acceleration       = { NULL, 0, 64, ACCELERATION_TEXT };
+more_less_box double_click_delay = { NULL, 0, 999, DOUBLE_CLICK_TEXT, 8 };
 
 unsigned char panels_img_data[] = FROM "mouse_image.raw";
 raw_image panels_img = { 59, 101, #panels_img_data };
@@ -134,9 +134,9 @@ void DrawMouseImage() {
 }
 
 void DrawControls() {
-	pointer_speed.draw();
-	acceleration.draw();
-	double_click_delay.draw();
+	pointer_speed.draw(PD, PD+142);
+	acceleration.draw(PD, PD+172);
+	double_click_delay.draw(PD+202);
 	CheckBox(mouse_frame.x, mouse_frame.y + 236, 100, MOUSE_EMULATION, mouse_cfg.emulation);
 	CheckBox(mouse_frame.x, mouse_frame.y + 262, 101, MADMOUSE, mouse_cfg.madmouse);
 }

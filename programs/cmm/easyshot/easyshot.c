@@ -26,7 +26,6 @@
 proc_info Form;
 
 dword screenshot;
-
 int screenshot_length;
 
 enum {
@@ -118,9 +117,10 @@ char path_tmp[4096];
 dword mouse_dd1;
 edit_box edit_box_path = {270,10,70,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(path_tmp),#path_tmp,#mouse_dd1, 0b};
 
+more_less_box delay = { 1, 0, 64, "Delay in seconds" };
+
 void SettingsWindow()
 {
-	#define x 15
 	int id;
 	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);	
 	loop() switch(WaitEvent())
@@ -136,18 +136,16 @@ void SettingsWindow()
 
 	case evButton:
 		id = GetButtonID();
+		delay.click(id);
 		if (CLOSE_BTN == id) ExitProcess();
-		if (10 == id) settings.delay++;
-		if (11 == id) && (settings.delay>0) settings.delay--;
-		if (12 == id) settings.minimise ^= 1;
-		goto _DRAW_CONTENT;
+		if (12 == id) { settings.minimise ^= 1; goto _DRAW_CONTENT; }
 		break;
 
 	case evReDraw:
 		DefineAndDrawWindow(Form.left+100, Form.top-40, 330, 170, 0x34, system.color.work, "Settings",0);
 		_DRAW_CONTENT:
-		CheckBox(x, 10, 12, "Minimize window", settings.minimise);
-		MoreLessBox(x, 40, 10, 11, settings.delay, "Delay in seconds");
+		CheckBox(15, 10, 12, "Minimize window", settings.minimise);
+		delay.draw(15, 40);
 		//DrawEditBox(#edit_box_path);
 	}
 }

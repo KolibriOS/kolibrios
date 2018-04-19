@@ -68,9 +68,8 @@ proc_info Form;
 word dkFsize;
 byte dkLocation, dkAshow;
 
-byte tbAttachment, tbPanelHeight, tbSoftenHeight, tbButtonOffset,
-     tbSoftenUp, tbSoftenDown, tbMinLeftButton, tbMinRightButton, tbMenuButton,
-     tbRunApplButton, tbClnDeskButton, tbClock, tbCpuUsage, tbChangeLang;
+byte tbAttachment, tbSoftenUp, tbSoftenDown, tbMinLeftButton, tbMinRightButton,
+tbMenuButton, tbRunApplButton, tbClnDeskButton, tbClock, tbCpuUsage, tbChangeLang;
 
 enum {
 	TASKBAR,
@@ -78,6 +77,9 @@ enum {
 	ALL
 };
 
+more_less_box tbPanelHeight  = { NULL, 6, 99, PANEL_HEIGHT };
+more_less_box tbSoftenHeight = { NULL, 0, 99, SOFTEN_HEIGHT };
+more_less_box tbButtonOffset = { NULL, 0, 99, BUTTON_OFFSET };
 
 void main()
 {
@@ -107,12 +109,9 @@ void main()
 					if (id==112) tbCpuUsage ^= 1;
 					if (id==113) tbChangeLang ^= 1;
 					if (id==114) tbMenuButton ^= 1;
-					if (id==120) tbPanelHeight++;
-					if (id==121) && (tbPanelHeight>6) tbPanelHeight--;
-					if (id==122) tbSoftenHeight++;
-					if (id==123) && (tbSoftenHeight>0) tbSoftenHeight--;
-					if (id==124) tbButtonOffset++;
-					if (id==125) && (tbButtonOffset>0) tbButtonOffset--;
+					tbPanelHeight.click(id);
+					tbSoftenHeight.click(id);
+					tbButtonOffset.click(id);
 					DrawWindowContent(TASKBAR);
 					SaveCfg(TASKBAR);
 					RestartProcess(TASKBAR);
@@ -147,7 +146,6 @@ void main()
 	}
 }
 
-
 void DrawWindowContent(byte panel_type)
 {
 	#define PD 10
@@ -170,9 +168,9 @@ void DrawWindowContent(byte panel_type)
 		CheckBox(win_center_x, y.n, 113, CHANGE_LANG, tbChangeLang);
 		CheckBox(22, y.inc(24), 108, MIN_RIGHT_BUTTON, tbMinRightButton);
 		CheckBox(win_center_x, y.n, 114, MENU_BUTTON, tbMenuButton);	
-		MoreLessBox(22, y.inc(28), 120, 121, tbPanelHeight, PANEL_HEIGHT);
-		MoreLessBox(22, y.inc(32), 122, 123, tbSoftenHeight, SOFTEN_HEIGHT);
-		MoreLessBox(22, y.inc(32), 124, 125, tbButtonOffset, BUTTON_OFFSET);
+		tbPanelHeight.draw(22, y.inc(28));
+		tbSoftenHeight.draw(22, y.inc(32));
+		tbButtonOffset.draw(22, y.inc(32));
 		DrawFrame(PD, frame_y, Form.cwidth-PD-PD, y.inc(32)-frame_y, TASK_FRAME_T);
 	}
 	if (panel_type==ALL) || (panel_type==DOCKY)
@@ -198,10 +196,10 @@ void LoadCfg()
 	tbCpuUsage       = taskbar_flags_ini.GetInt("CpuUsage", 1);      
 	tbChangeLang     = taskbar_flags_ini.GetInt("ChangeLang", 1);    
 	tbMenuButton     = taskbar_flags_ini.GetInt("MenuButton", 1);    
-	tbPanelHeight  = taskbar_vars_ini.GetInt("PanelHeight", 18);   
-	tbSoftenHeight = taskbar_vars_ini.GetInt("SoftenHeight", 4);   
-	tbButtonOffset = taskbar_vars_ini.GetInt("ButtonTopOffset", 3);
-	tbButtonOffset = taskbar_vars_ini.GetInt("ButtonBotOffset", 3);
+	tbPanelHeight.value  = taskbar_vars_ini.GetInt("PanelHeight", 28);
+	tbSoftenHeight.value = taskbar_vars_ini.GetInt("SoftenHeight", 4);   
+	tbButtonOffset.value = taskbar_vars_ini.GetInt("ButtonTopOffset", 3);
+	tbButtonOffset.value = taskbar_vars_ini.GetInt("ButtonBotOffset", 3);
 
 	dkLocation = docky_ini.GetInt("location", 0);
 	dkFsize = docky_ini.GetInt("fsize", 0);   
@@ -222,10 +220,10 @@ void SaveCfg(byte panel_type)
 		taskbar_flags_ini.SetInt("CpuUsage", tbCpuUsage);
 		taskbar_flags_ini.SetInt("ChangeLang", tbChangeLang);
 		taskbar_flags_ini.SetInt("MenuButton", tbMenuButton);
-		taskbar_vars_ini.SetInt("PanelHeight", tbPanelHeight);
-		taskbar_vars_ini.SetInt("SoftenHeight", tbSoftenHeight);
-		taskbar_vars_ini.SetInt("ButtonTopOffset", tbButtonOffset);
-		taskbar_vars_ini.SetInt("ButtonBottOffset", tbButtonOffset);
+		taskbar_vars_ini.SetInt("PanelHeight", tbPanelHeight.value);
+		taskbar_vars_ini.SetInt("SoftenHeight", tbSoftenHeight.value);
+		taskbar_vars_ini.SetInt("ButtonTopOffset", tbButtonOffset.value);
+		taskbar_vars_ini.SetInt("ButtonBottOffset", tbButtonOffset.value);
 	}
 	if (panel_type==DOCKY) {
 		docky_ini.SetInt("location", dkLocation);
