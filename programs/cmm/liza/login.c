@@ -206,13 +206,13 @@ void GetSettings()
 	strcpy(#login, #email_text);
 	ESBYTE[strchr(#login,'@')] = NULL;
 	
-	if (checked[CUSTOM])
+	if (automatic.checked)
 	{
 		strcpy(#POP_server_path, "pop.");
 		strcat(#POP_server_path, strchr(#email_text,'@')+1);
 		POP_server_port = DEFAULT_POP_PORT;
 	}
-	if (checked[MANUAL])
+	else
 	{
 		strcpy(#POP_server_path, #POP_server1);
 		POP_server_port = atoi(#POP_server_port1);

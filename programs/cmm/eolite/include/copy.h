@@ -117,7 +117,7 @@ void PasteThread()
 		path_offset += strlen(path_offset) + 1;
 	}
 	cut_active=false;
-	if (info_after_copy) notify(INFO_AFTER_COPY);
+	if (info_after_copy.checked) notify(INFO_AFTER_COPY);
 	DialogExit();
 }
 

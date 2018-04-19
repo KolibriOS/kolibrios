@@ -50,7 +50,21 @@ BDVK file_info_general;
 BDVK file_info_dirsize;
 
 proc_info settings_form;
-bool quest_active, atr_readonly, atr_hidden, atr_system;
+bool quest_active;
+
+checkbox ch_read_only = { PR_T_ONLY_READ, NULL };
+checkbox ch_hidden = { PR_T_HIDDEN, NULL };
+checkbox ch_system = { PR_T_SYSTEM, NULL };
+
+void SetPropertiesFile(dword cur_file, bdvk_pointer)
+{
+	GetFileInfo(cur_file, bdvk_pointer);
+	ESI = bdvk_pointer;
+	ESI.BDVK.readonly = ch_read_only.checked;
+	ESI.BDVK.hidden = ch_hidden.checked;
+	ESI.BDVK.system = ch_system.checked;
+	SetFileInfo(cur_file, bdvk_pointer);
+}
 
 void SetPropertiesDir(dword way)
 {
@@ -70,11 +84,7 @@ void SetPropertiesDir(dword way)
 			{
 				SetPropertiesDir(cur_file);
 			}
-			GetFileInfo(cur_file, #file_info_dirsize);
-			file_info_dirsize.readonly = atr_readonly;
-			file_info_dirsize.hidden = atr_hidden;
-			file_info_dirsize.system = atr_system;
-			SetFileInfo(cur_file, #file_info_dirsize);
+			SetPropertiesFile(cur_file, #file_info_dirsize);
 		}
 		free(cur_file);
 	}
@@ -95,11 +105,7 @@ void SetProperties(byte prop)
 				{
 					strcpy(cur_file, #path);
 					strcat(cur_file, file_mas[i]*304+buf+72);
-					GetFileInfo(cur_file, #file_info_general);
-					file_info_general.readonly = atr_readonly;
-					file_info_general.hidden = atr_hidden;
-					file_info_general.system = atr_system;
-					SetFileInfo(cur_file, #file_info_general);
+					SetPropertiesDir(cur_file);
 					if (prop==2)
 					{
 						if (dir_exists(cur_file))
@@ -113,11 +119,7 @@ void SetProperties(byte prop)
 		}
 		else
 		{
-			GetFileInfo(#file_path, #file_info_general);
-			file_info_general.readonly = atr_readonly;
-			file_info_general.hidden = atr_hidden;
-			file_info_general.system = atr_system;
-			SetFileInfo(#file_path, #file_info_general);
+			SetPropertiesFile(#file_path, #file_info_general);
 			if (prop==2) SetPropertiesDir(#file_path);
 		}
 		quest_active = 0;
@@ -125,11 +127,7 @@ void SetProperties(byte prop)
 	}
 	else
 	{
-		GetFileInfo(#file_path, #file_info_general);
-		file_info_general.readonly = atr_readonly;
-		file_info_general.hidden = atr_hidden;
-		file_info_general.system = atr_system;
-		SetFileInfo(#file_path, #file_info_general);
+		SetPropertiesFile(#file_path, #file_info_general);
 	}
 	cmd_free=3;
 	_not_draw = true;
@@ -206,7 +204,7 @@ void GetSizeMoreFiles(dword way)
 
 void properties_dialog()
 {
-	byte id;
+	int id;
 	
 	DSBYTE[#folder_info]=0;
 	file_count = 0;
@@ -216,9 +214,9 @@ void properties_dialog()
 	if (selected_count)
 	{
 		GetSizeMoreFiles(#path);
-		atr_readonly = 0;
-		atr_hidden = 0;
-		atr_system = 0;
+		ch_read_only.checked = 0;
+		ch_hidden.checked = 0;
+		ch_system.checked = 0;
 	}
 	else
 	{
@@ -226,9 +224,9 @@ void properties_dialog()
 		strcpy(#file_name2, #file_name);
 		file_name_ed.size = strlen(#file_name2);   
 		if(itdir) GetSizeDir(#file_path);
-		atr_readonly = file_info_general.readonly;
-		atr_hidden = file_info_general.hidden;
-		atr_system = file_info_general.system;
+		ch_read_only.checked = file_info_general.readonly;
+		ch_hidden.checked = file_info_general.hidden;
+		ch_system.checked = file_info_general.system;
 	}
 	strcpy(#path_to_file, #path);
 	path_to_file_ed.size = strlen(#path_to_file);
@@ -238,6 +236,9 @@ void properties_dialog()
 	{
 		case evButton: 
 				id=GetButtonID();
+				ch_read_only.click(id);
+				ch_hidden.click(id);
+				ch_system.click(id);
 				if (quest_active)
 				{
 					IF (id==301) SetProperties(2);
@@ -261,21 +262,6 @@ void properties_dialog()
 						SetProperties(0);
 					}
 					break;
-				}
-				if (id==20)
-				{
-					atr_readonly ^= 1;
-					DrawPropertiesCheckBoxes();
-				}
-				if (id==21)
-				{
-					atr_hidden ^= 1;
-					DrawPropertiesCheckBoxes();
-				}
-				if (id==22)
-				{
-					atr_system ^= 1;
-					DrawPropertiesCheckBoxes();
 				}
 				break;
 				
@@ -323,6 +309,7 @@ void properties_dialog()
 void DrawPropertiesWindow()
 {
 	dword ext1;
+	incn y;
 	char temp_path[sizeof(file_path)];
 	DefineAndDrawWindow(Form.left + 150,150,315,360+skin_height,0x34,system.color.work,WINDOW_TITLE_PROPERTIES,0);
 	GetProcessInfo(#settings_form, SelfInfo);
@@ -373,7 +360,10 @@ void DrawPropertiesWindow()
 		WriteText(120, 99, 0x90, system.color.work_text, #element_size_label);
 	}
 	DrawFrame(10, 212, -10*2 + settings_form.cwidth - 2, 92, FLAGS);
-	DrawPropertiesCheckBoxes();
+	y.n = 212; //212 => attributes_frame.y
+	ch_read_only.draw(24, y.inc(18));
+	ch_hidden.draw(24, y.inc(24));
+	ch_system.draw(24, y.inc(24));
 }
 
 void PropertiesDrawIcon(dword file_path, extension)
@@ -381,13 +371,4 @@ void PropertiesDrawIcon(dword file_path, extension)
 	#define ICON_PADDING 11
 	DrawBar(20-ICON_PADDING, 30-ICON_PADDING-1, ICON_PADDING*2+16, ICON_PADDING*2+16, 0xFFFfff);
 	DrawIconByExtension(file_path, extension, 20, 30, system.color.work_light);
-}
-
-void DrawPropertiesCheckBoxes()
-{
-	incn y;
-	y.n = 212; //212 => attributes_frame.y
-	CheckBox(24, y.inc(18), 20, PR_T_ONLY_READ, atr_readonly);
-	CheckBox(24, y.inc(24), 21, PR_T_HIDDEN, atr_hidden);
-	CheckBox(24, y.inc(24), 22, PR_T_SYSTEM, atr_system);
 }

@@ -96,17 +96,8 @@ int j, i;
 int action_buf;
 int rand_n;
 
-//struct t_settings {
 char sort_num=2;
-bool show_dev_name=true,
-	real_files_names_case=true,
-	info_after_copy=false,
-	two_panels=false,
-	show_breadcrumb=false,
-	show_status_bar=true,
-	active_panel=1,
-	big_icons=false;
-//} settings;
+int active_panel=1;
 
 libimg_image icons16_default;
 libimg_image icons16_selected;
@@ -310,7 +301,7 @@ void main()
 					break;
 				}
 
-				if (two_panels) && (mouse.y > files.y) && (mouse.down) {
+				if (two_panels.checked) && (mouse.y > files.y) && (mouse.down) {
 					if (mouse.x<Form.cwidth/2)
 					{
 						if (active_panel!=1)
@@ -417,7 +408,7 @@ void main()
 								key_scancode -= 59;
 								if (key_scancode < SystemDiscs.list.count)
 								{
-									if (!two_panels)
+									if (!two_panels.checked)
 									{
 										DrawRectangle(17,key_scancode*16+74,159,16, 0); //display click
 										pause(7);										
@@ -475,7 +466,7 @@ void main()
 								Open(0);
 								break; 
 						case SCAN_CODE_TAB:
-								if (!two_panels) break;
+								if (!two_panels.checked) break;
 								if (active_panel==1) active_panel=2; else active_panel=1;
 								ChangeActivePanel();
 								DrawStatusBar();
@@ -557,7 +548,7 @@ void DrawFavButton(int x)
 
 void draw_window()
 {
-	if (show_status_bar) status_bar_h = STATUS_BAR_H; else status_bar_h = 0;
+	if (show_status_bar.checked) status_bar_h = STATUS_BAR_H; else status_bar_h = 0;
 	DefineAndDrawWindow(WinX+rand_n,WinY+rand_n,WinW,WinH,0x73,NULL,TITLE,0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
@@ -597,14 +588,14 @@ void DrawList()
 	if (sort_num==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
 	WriteText(sorting_arrow_x,files.y-12,0x80,col_graph,"\x19");
 	DrawBar(files.x+files.w,files.y,1,files.h,col_graph);
-	if (two_panels) && (files.x<5) DrawBar(files.x+files.w+16,files.y,1,files.h,col_graph);	
+	if (two_panels.checked) && (files.x<5) DrawBar(files.x+files.w+16,files.y,1,files.h,col_graph);	
 }
 
 void DrawStatusBar()
 {
 	char status_bar_str[80];
 	int go_up_folder_exists=0;
-	if (!show_status_bar) return;
+	if (!show_status_bar.checked) return;
 	if (files.count>0) && (strcmp(file_mas[0]*304+buf+72,"..")==0) go_up_folder_exists=1;
 	DrawBar(1, Form.cheight - status_bar_h-1, Form.cwidth-2,  status_bar_h, system.color.work);
 	sprintf(#status_bar_str, STATUS_STR, files.count-go_up_folder_exists, count_dir-go_up_folder_exists, files.count-count_dir, selected_count);
@@ -614,7 +605,7 @@ void DrawStatusBar()
 void DrawFilePanels()
 {
 	int files_y;
-	if (!two_panels)
+	if (!two_panels.checked)
 	{
 		DrawDeviceAndActionsLeftPanel();
 		files.SetSizes(192, 57, Form.cwidth - 210, Form.cheight - 59 - status_bar_h, files.item_h);
@@ -801,7 +792,7 @@ void Open_Dir(dword dir_path, redraw){
 	}
 	if (files.count!=-1)
 	{
-		if(!_not_draw) if (show_breadcrumb) DrawBreadCrumbs(); else DrawPathBar();
+		if(!_not_draw) if (show_breadcrumb.checked) DrawBreadCrumbs(); else DrawPathBar();
 		history.add(#path);
 		SystemDiscs.Draw();
 		files.visible = files.h / files.item_h;
@@ -831,7 +822,7 @@ inline Sorting()
 	}
 	for (j=files.count-1, file_off=files.count-1*304+buf+32; j>=0; j--, file_off-=304;)  //files | folders
 	{
-		if (!real_files_names_case) strttl(file_off+40);
+		if (!show_real_names.checked) strttl(file_off+40);
 		if (TestBit(ESDWORD[file_off],4)) //directory?
 		{
 			file_mas[k]=j;
@@ -893,7 +884,7 @@ void SelectFileByName(dword that_file)
 	int ind;
 	files.KeyHome();
 	Open_Dir(#path,ONLY_OPEN);
-	if (!real_files_names_case) strttl(that_file);
+	if (!show_real_names.checked) strttl(that_file);
 	for (ind=files.count-1; ind>=0; ind--;) { if (!strcmp(file_mas[ind]*304+buf+72,that_file)) break; }
 	files.cur_y = ind - 1;
 	files.KeyDown();
@@ -1079,7 +1070,7 @@ void FnProcess(byte N)
 			if (!itdir) RunProgram("/sys/develop/heed", #file_path);
 			break;
 		case 5: //refresh cur dir & devs
-			if (two_panels)
+			if (two_panels.checked)
 			{
 				DrawFilePanels();
 			}

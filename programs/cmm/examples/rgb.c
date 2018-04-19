@@ -29,7 +29,7 @@ enum {
 ========================================================*/
 
 void main()
-byte id;
+int id;
 {
   loop() switch(WaitEvent())
   {

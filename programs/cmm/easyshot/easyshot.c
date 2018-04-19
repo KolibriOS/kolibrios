@@ -13,7 +13,7 @@
 
 /* === TRANSLATIONS === */
 
-#define T_WTITLE "EasyShot v0.75"
+#define T_WTITLE "EasyShot v0.76"
 
 #ifdef LANG_RUS
 	?define T_TAKE_SCREENSHOT "  Сделать скриншот"
@@ -35,11 +35,15 @@ enum {
 
 #define PD 18 //padding
 
-struct _settings {
-	bool minimise;
-	int delay;
-	char save_path[4096];
-} settings = { true, 1, "/tmp0/1" };
+
+char save_path[4096] = "/tmp0/1";
+dword mouse_dd1;
+edit_box edit_box_path = {270,10,70,0xffffff,0x94AECE,0xFFFfff,0xffffff,
+	0x10000000,sizeof(save_path),#save_path,#mouse_dd1, 0b};
+
+more_less_box delay = { 1, 0, 64, "Delay in seconds" };
+checkbox minimise = { "Minimize window", true };
+
 
 /* === CODE === */
 
@@ -52,10 +56,8 @@ void main()
 	load_dll(boxlib, #box_lib_init,0);
 
 	Libimg_LoadImage(#skin, "/sys/icons16.png");
-
 	screenshot_length = screen.width * screen.height * 3;
-
-	screenshot  = malloc(screenshot_length);
+	screenshot = malloc(screenshot_length);
 
 	loop() switch(WaitEvent())
 	{
@@ -63,7 +65,7 @@ void main()
 		id = GetButtonID();
 		if (id == CLOSE_BTN) ExitProcess();
 		if (id == BTN_MAKE_SCREENSHOT) EventTakeScreenshot();
-		if (id == BTN_SETTINGS) EventShowSettings();
+		if (id == BTN_SETTINGS) CreateThread(#SettingsWindow,#settings_stak+4092);
 		break;
 
 	case evKey:
@@ -89,11 +91,11 @@ void DrawMainContent()
 }
 
 void EventTakeScreenshot() {
-	if (settings.minimise) MinimizeWindow(); 
-	pause(settings.delay*100);
+	if (minimise.checked) MinimizeWindow(); 
+	pause(delay.value*100);
 	CopyScreen(screenshot, 0, 0, screen.width, screen.height);
 	ActivateWindow(GetProcessSlot(Form.ID));
-	if (!settings.minimise) DrawMainContent();
+	if (!minimise.checked) DrawMainContent();
 	EventSaveImageFile();
 }
 
@@ -103,21 +105,11 @@ void EventSaveImageFile()
 	char save_file_name[4096];
 	do {
 		i++;
-		sprintf(#save_file_name, "%s/screen_%i.png", #settings.save_path, i);
+		sprintf(#save_file_name, "%s/screen_%i.png", #save_path, i);
 	} while (file_exists(#save_file_name));
 	save_image(screenshot, screen.width, screen.height, #save_file_name);
 }
 
-void EventShowSettings()
-{
-	CreateThread(#SettingsWindow,#settings_stak+4092);	
-}
-
-char path_tmp[4096];
-dword mouse_dd1;
-edit_box edit_box_path = {270,10,70,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(path_tmp),#path_tmp,#mouse_dd1, 0b};
-
-more_less_box delay = { 1, 0, 64, "Delay in seconds" };
 
 void SettingsWindow()
 {
@@ -136,24 +128,18 @@ void SettingsWindow()
 
 	case evButton:
 		id = GetButtonID();
-		delay.click(id);
 		if (CLOSE_BTN == id) ExitProcess();
-		if (12 == id) { settings.minimise ^= 1; goto _DRAW_CONTENT; }
+		delay.click(id);
+		minimise.click(id);
 		break;
 
 	case evReDraw:
 		DefineAndDrawWindow(Form.left+100, Form.top-40, 330, 170, 0x34, system.color.work, "Settings",0);
 		_DRAW_CONTENT:
-		CheckBox(15, 10, 12, "Minimize window", settings.minimise);
+		minimise.draw(15, 10);
 		delay.draw(15, 40);
 		//DrawEditBox(#edit_box_path);
 	}
-}
-
-inline byte calc_rgb(dword B, item_h)
-{
-	return calc(ESBYTE[B+3] + ESBYTE[B] + ESBYTE[B-3]
-		+ ESBYTE[B-item_h] + ESBYTE[B+item_h] / 5);
 }
 
 int DrawIconButton(dword x, y, id, text, icon)

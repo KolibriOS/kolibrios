@@ -9,14 +9,14 @@
 proc_info Form;
 
 enum { 
-	STRONG_BTN=10, SMOOTH_BTN, 
 	PHRASE_TAB=20, CHARS_TAB
 };
 
 _tabs tabs = { 0,0, WIN_W, WIN_H, PHRASE_TAB};
 
 block preview = { 0, PANELH, WIN_W, WIN_H - PANELH };
-
+checkbox bold = { "Bold", false };
+checkbox smooth = { "Smooth", true };
 
 void main()
 {   
@@ -31,8 +31,8 @@ void main()
 		case evButton:
 			btn = GetButtonID();
 			if (btn==1) ExitProcess();
-			if (btn==STRONG_BTN) kfont.bold ^=1;
-			if (btn==SMOOTH_BTN) kfont.smooth ^=1;
+			if (bold.click(btn)) kfont.bold = bold.checked;
+			if (smooth.click(btn)) kfont.smooth = smooth.checked;
 			if (btn==PHRASE_TAB) || (btn==CHARS_TAB) tabs.click(btn);
 			goto _DRAW_WINDOW_CONTENT;
 		case evReDraw:
@@ -44,8 +44,8 @@ void main()
 
 			DrawBar(0, 0, Form.cwidth, PANELH-1, system.color.work);
 			DrawBar(0, PANELH-1,Form.cwidth,1,system.color.work_graph);
-			CheckBox(10, 8, STRONG_BTN, "Bold",  kfont.bold);
-			CheckBox(83,8, SMOOTH_BTN, "Smooth",  kfont.smooth);
+			bold.draw(10, 8);
+			smooth.draw(83,8);
 
 			tabs.draw_button(Form.cwidth-130, PHRASE_TAB, "Phrase");
 			tabs.draw_button(Form.cwidth-60, CHARS_TAB, "Chars");

@@ -9,7 +9,7 @@ void DrawIconByExtension(dword file_path, extension, xx, yy, fairing_color)
 	dword selected_image;
 	dword default_image;
 
-	if (big_icons) {
+	if (big_icons.checked) {
 		icons_ini.section = "icons32";
 		selected_image = icons32_selected.image;
 		default_image = icons32_default.image;
@@ -35,7 +35,7 @@ void DrawIconByExtension(dword file_path, extension, xx, yy, fairing_color)
 	if (fairing_color==col_selec)
 	{
 		img_draw stdcall(selected_image, xx, yy, icon_size, icon_size, 0, icon_n*icon_size);
-		if (!big_icons) IconFairing(icon_n, xx, yy, fairing_color);
+		if (big_icons.checked==false) IconFairing(icon_n, xx, yy, fairing_color);
 	}
 	else 
 	{

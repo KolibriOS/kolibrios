@@ -613,14 +613,9 @@ inline fastcall dword GetStartTime()
 :dword X_EventRedrawWindow,Y_EventRedrawWindow;
 :void _EventRedrawWindow()
 {
-	loop()switch(WaitEvent())
-	{
-		case evReDraw:
-			DefineAndDrawWindow(X_EventRedrawWindow,Y_EventRedrawWindow,100,1,0x34,0xFFFFFF,NULL,0);
-			pause(10);
-			ExitProcess();
-			break;
-	}
+	DefineAndDrawWindow(X_EventRedrawWindow,Y_EventRedrawWindow,1,1,0x34,0xFFFFFF,NULL,0);
+	//pause(10);
+	ExitProcess();
 }
 :char REDRAW_BUFF_EVENT_[4096];
 :void EventRedrawWindow(dword x,y)

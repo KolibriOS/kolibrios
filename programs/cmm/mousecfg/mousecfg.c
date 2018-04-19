@@ -34,30 +34,27 @@
 	?define MOUSE_EMULATION "Enable mouse emulation using keyboard NumPad"
 	?define MADMOUSE "Through screen sides for pointer"
 #endif
-
 proc_info Form;
 
-#define PD 18 //padding
-block mouse_frame = { PD, PD, NULL, 130 };
-
+block mouse_frame = { 18, 18, NULL, 130 };
 more_less_box pointer_speed      = { NULL, 0, 64, POINTER_SPEED };
 more_less_box acceleration       = { NULL, 0, 64, ACCELERATION_TEXT };
 more_less_box double_click_delay = { NULL, 0, 999, DOUBLE_CLICK_TEXT, 8 };
+
+checkbox emulation = { MOUSE_EMULATION, NULL };
+checkbox madmouse = { MADMOUSE, NULL };
 
 unsigned char panels_img_data[] = FROM "mouse_image.raw";
 raw_image panels_img = { 59, 101, #panels_img_data };
 
 _ini ini = { "/sys/settings/system.ini", "mouse" };
 
-struct _mouse_cfg {
-	bool emulation;
-	bool madmouse;
-	int click_status;
-} mouse_cfg;
+
 
 
 void main() {
 	char id;
+	int click_status;
 	
 	load_dll(libini, #lib_init,1);
 	load_dll(boxlib, #box_lib_init,0);
@@ -70,40 +67,31 @@ void main() {
 	{
 		case evMouse:
 				mouse.get();
-				if (mouse.down) && (mouse_cfg.click_status==0) && (mouse_frame.hovered()) {
-					if (mouse.key&MOUSE_LEFT) mouse_cfg.click_status = 1;
-					if (mouse.key&MOUSE_RIGHT) mouse_cfg.click_status = 2;
-					if (mouse.key&MOUSE_CENTER) mouse_cfg.click_status = 3;
-					DrawMouseImage();
+				if (mouse.down) && (click_status==0) && (mouse_frame.hovered()) {
+					if (mouse.key&MOUSE_LEFT) click_status = 1;
+					if (mouse.key&MOUSE_RIGHT) click_status = 2;
+					if (mouse.key&MOUSE_CENTER) click_status = 3;
+					DrawMouseImage(click_status);
 				}
 				if (mouse.up) {
-					mouse_cfg.click_status=0;
-					DrawMouseImage();
+					click_status=0;
+					DrawMouseImage(click_status);
 				}
 				break;
 
 		case evButton: 
 				id = GetButtonID();
-				switch (id) {
-					case 1:
-						ExitApp();
-						break;
-					case 100:
-						if (mouse_cfg.emulation==true) KillProcessByName("mousemul", SINGLE);
-						else RunProgram("/sys/mousemul", 0);
-						mouse_cfg.emulation ^= 1;
-						DrawControls();
-						break;
-					case 101: 
-						if (mouse_cfg.madmouse==true) KillProcessByName("madmouse", SINGLE);
-						else RunProgram("/sys/madmouse", 0);
-						mouse_cfg.madmouse ^= 1;
-						DrawControls();
-						break;
-					default:
-						if (pointer_speed.click(id)) ApplyCfg();;
-						if (acceleration.click(id)) ApplyCfg();;
-						if (double_click_delay.click(id)) ApplyCfg();;
+				if (1==id) ExitApp();
+				if (pointer_speed.click(id)) ApplyCfg();;
+				if (acceleration.click(id)) ApplyCfg();;
+				if (double_click_delay.click(id)) ApplyCfg();;
+				if (emulation.click(id)) {
+					if (emulation.checked==true) KillProcessByName("mousemul", SINGLE);
+					else RunProgram("/sys/mousemul", 0);
+				}
+				if (madmouse.click(id)) {						
+					if (madmouse.checked==true) KillProcessByName("madmouse", SINGLE);
+					else RunProgram("/sys/madmouse", 0);
 				}
 				break;
 
@@ -128,25 +116,28 @@ void main() {
 }
 
 
-void DrawMouseImage() {
+void DrawMouseImage(dword status) {
 	_PutImage(mouse_frame.x+30, mouse_frame.y + 15,  panels_img.w, panels_img.h, 
-		mouse_cfg.click_status * panels_img.w * panels_img.h * 3 + panels_img.data);
+		status * panels_img.w * panels_img.h * 3 + panels_img.data);
 }
 
 void DrawControls() {
-	pointer_speed.draw(PD, PD+142);
-	acceleration.draw(PD, PD+172);
-	double_click_delay.draw(PD+202);
-	CheckBox(mouse_frame.x, mouse_frame.y + 236, 100, MOUSE_EMULATION, mouse_cfg.emulation);
-	CheckBox(mouse_frame.x, mouse_frame.y + 262, 101, MADMOUSE, mouse_cfg.madmouse);
+	int x = mouse_frame.x;
+	incn y;
+	y.n = mouse_frame.y+115;
+	pointer_speed.draw(x, y.inc(30));
+	acceleration.draw(x, y.inc(30));
+	double_click_delay.draw(x, y.inc(30));
+	emulation.draw(x, y.inc(33));
+	madmouse.draw(x, y.inc(27));
 }
 
 void LoadCfg() {
 	acceleration.value = ini.GetInt("acceleration", GetMouseAcceleration());
 	pointer_speed.value = ini.GetInt("speed", GetMouseSpeed());
 	double_click_delay.value = ini.GetInt("double_click_delay", GetMouseDoubleClickDelay());
-	mouse_cfg.madmouse = CheckProcessExists("MADMOUSE");
-	mouse_cfg.emulation = CheckProcessExists("MOUSEMUL");
+	madmouse.checked = CheckProcessExists("MADMOUSE");
+	emulation.checked = CheckProcessExists("MOUSEMUL");
 }
 
 void ExitApp() {

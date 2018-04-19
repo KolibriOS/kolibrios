@@ -48,8 +48,13 @@ int files_mas[400];
 int cur;
 
 proc_info Form;
+block skp;
 
 _tabs tabs = { LP, LP, NULL, NULL, SKINS };
+
+checkbox checkbox1 = { "Checkbox", true };
+
+#define MENU_LIST "Open file     Enter\nDelete          Del"
 
 //===================================================//
 //                                                   //
@@ -70,10 +75,10 @@ void main()
 			if (!CheckActiveProcess(Form.ID)) break;
 			SelectList_ProcessMouse();
 
-	  		if (mouse.down)&&(mouse.pkm) {
+	  		if (mouse.pkm)&&(select_list.MouseOver(mouse.x, mouse.y)) {
 	  			select_list.ProcessMouse(mouse.x, mouse.y);
 				SelectList_Draw();
-	  			menu.show(Form.left+mouse.x, Form.top+mouse.y+skin_height, 185, "Open file     Enter\nDelete          Del", 10); 
+	  			menu.show(Form.left+mouse.x, Form.top+mouse.y+skin_height, 185, MENU_LIST, 10); 
 	  		}
 	  		break;
 
@@ -82,6 +87,7 @@ void main()
 			if (id==1) ExitProcess();
 			if (id==SKINS) EventTabClick(SKINS);
 			if (id==WALLPAPERS) EventTabClick(WALLPAPERS);
+			checkbox1.click(id);
 			break;
 	  
 		case evKey:
@@ -107,7 +113,7 @@ void main()
 		 
 		 case evReDraw:
 			system.color.get();			
-			DefineAndDrawWindow(screen.width-400/2,80,400,404+skin_height,0x73,0xE4DFE1,WINDOW_HEADER,0);
+			DefineAndDrawWindow(screen.width-600/2,80,600,404+skin_height,0x73,0xE4DFE1,WINDOW_HEADER,0);
 			GetProcessInfo(#Form, SelfInfo);
 			IF (Form.status_window>=2) break;
 		 	DrawWindowContent();
@@ -118,6 +124,7 @@ void main()
 			};
    }
 }
+
 
 void DrawWindowContent()
 {
@@ -136,13 +143,31 @@ void DrawWindowContent()
 	SelectList_Init(
 		tabs.x+TAB_PADDING,
 		tabs.y+TAB_HEIGHT+TAB_PADDING, 
-		tabs.w - TAB_PADDING - TAB_PADDING - scroll1.size_x, 
+		250, 
 		tabs.h - TAB_PADDING - TAB_PADDING - TAB_HEIGHT, 
 		false
 		);
 	select_list.cur_y = id;
+
+	skp.set_size(
+		select_list.x + select_list.w + TAB_PADDING + scroll1.size_x,
+		select_list.y,
+		250,
+		250
+	);
+
 	SelectList_Draw();
 	SelectList_DrawBorder();
+
+	if (tabs.active_tab == SKINS)
+	{
+		DrawBar(skp.x, skp.y, skp.w, skp.h, system.color.work);
+		DrawFrame(skp.x, skp.y, skp.w, skp.h, " Components Preview ");
+		WriteText(skp.x+20, skp.y+30, 0x90, system.color.work_text, "Lorem ipsum");
+		checkbox1.draw(skp.x+20, skp.y+70);
+		DrawStandartCaptButton(skp.x+20, skp.y+skp.h-40, GetFreeButtonId(), "Apply");
+		DrawStandartCaptButton(skp.x+120, skp.y+skp.h-40, GetFreeButtonId(), "Close");
+	}
 }
 
 

@@ -38,13 +38,20 @@ char path_start[4096]="\0";
 edit_box path_start_ed = {290,50,57,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,4098,
 	                      #path_start,#set_mouse_dd, 100000000000010b,0,0};
 
-more_less_box font_size = { NULL, 9, 22, FONT_SIZE_LABEL };
+more_less_box font_size   = { NULL, 9, 22, FONT_SIZE_LABEL };
 more_less_box line_height = { NULL, 16, 64, LIST_LINE_HEIGHT };
+checkbox show_dev_name    = { SHOW_DEVICE_CLASS };
+checkbox show_real_names  = { SHOW_REAL_NAMES };
+checkbox show_status_bar  = { SHOW_STATUS_BAR };
+checkbox info_after_copy  = { NOTIFY_COPY_END };
+checkbox show_breadcrumb  = { SHOW_BREADCRUMBS };
+checkbox big_icons        = { BIG_ICONS };
+checkbox two_panels       = { USE_TWO_PANELS };
 
 
 void settings_dialog()
 {   
-	byte id;
+	int id;
 	active_settings=1;
 	font_size.value = kfont.size.pt;
 	line_height.value = files.item_h; 
@@ -58,7 +65,7 @@ void settings_dialog()
 				
 			case evButton: 
 				id=GetButtonID();
-				if (id==1) { ExitSettings(); break; }
+				if (1==id) { ExitSettings(); break; }
 				else if (id==5)
 				{
 					RunProgram("tinypad", "/sys/settings/assoc.ini");
@@ -78,40 +85,19 @@ void settings_dialog()
 					ini.SetString("DefaultPath", #path_start,strlen(#path_start));
 					break;
 				}
-				else if (id==20) show_dev_name ^= 1;
-				else if (id==21) { action_buf=109; real_files_names_case ^= 1; }
-				else if (id==22) info_after_copy ^= 1;
-				else if (id==24) two_panels ^= true;
-				else if (id==32) show_breadcrumb ^= true;
-				else if (id==27) show_status_bar ^= 1;
-				else if (font_size.click(id)) { 
+				show_dev_name.click(id);
+				if (show_real_names.click(id)) action_buf=109;
+				info_after_copy.click(id);
+				two_panels.click(id);
+				show_breadcrumb.click(id);
+				show_status_bar.click(id);
+				if (font_size.click(id)) { 
 					kfont.size.pt = font_size.value; 
 					kfont.changeSIZE(); 
 					BigFontsChange(); 
 				}
-				else if (line_height.click(id)) { 
-					files.item_h = line_height.value; 
-				}
-				else if (id==33) { 
-					big_icons ^= 1; 
-					if (big_icons) {
-							icon_size=32;
-							files.item_h = line_height.value = 34;
-							if (!icons32_default.image)
-							{
-								Libimg_LoadImage(#icons32_default, "/sys/icons32.png");
-								Libimg_LoadImage(#icons32_selected, "/sys/icons32.png");
-								Libimg_ReplaceColor(icons32_default.image, icons32_selected.w, 
-									icons32_selected.h, 0x00000000, 0xffFFFfff);
-								Libimg_ReplaceColor(icons32_selected.image, icons32_selected.w, 
-									icons32_selected.h, 0x00000000, col_selec);								
-							}
-						}
-					else {
-							icon_size=16; 
-							files.item_h = line_height.value = 18;
-					}
-				}
+				if (line_height.click(id)) files.item_h = line_height.value; 
+				if (big_icons.click(id)) BigIconsSwitch();
 				EventRedrawWindow(Form.left,Form.top);
 				break;
 					
@@ -143,13 +129,13 @@ void DrawSettingsCheckBoxes()
 	incn y;
 	int x=11, frx=26, but_x;
 	y.n = 0;
-	CheckBox(x, y.inc(14), 20, SHOW_DEVICE_CLASS,  show_dev_name);
-	CheckBox(x, y.inc(25), 21, SHOW_REAL_NAMES,  real_files_names_case);
-	CheckBox(x, y.inc(25), 27, SHOW_STATUS_BAR,  show_status_bar);
-	CheckBox(x, y.inc(25), 22, NOTIFY_COPY_END,  info_after_copy);
-	CheckBox(x, y.inc(25), 32, SHOW_BREADCRUMBS,  show_breadcrumb);
-	CheckBox(x, y.inc(25), 33, BIG_ICONS,  big_icons);
-	CheckBox(x, y.inc(25), 24, USE_TWO_PANELS,  two_panels);
+	show_dev_name.draw(x, y.inc(14));
+	show_real_names.draw(x, y.inc(25));
+	show_status_bar.draw(x, y.inc(25));
+	info_after_copy.draw(x, y.inc(25));
+	show_breadcrumb.draw(x, y.inc(25));
+	big_icons.draw(x, y.inc(25));
+	two_panels.draw(x, y.inc(25));
 	font_size.draw(x, y.inc(31));
 	line_height.draw(x, y.inc(31));
 	
@@ -172,12 +158,12 @@ void LoadIniSettings()
 	ini.section = "Config";
 
 	files.SetFont(6, 9, 10000000b);
-	real_files_names_case = ini.GetInt("RealFileNamesCase", 1); 
-	show_dev_name   = ini.GetInt("ShowDeviceName", 1); 
-	show_status_bar = ini.GetInt("ShowStatusBar", 1); 
-	info_after_copy = ini.GetInt("InfoAfterCopy", 0); 
+	show_real_names.checked = ini.GetInt("RealFileNamesCase", true); 
+	show_dev_name.checked   = ini.GetInt("ShowDeviceName", true); 
+	show_status_bar.checked = ini.GetInt("ShowStatusBar", true); 
+	info_after_copy.checked = ini.GetInt("InfoAfterCopy", false); 
+	two_panels.checked      = ini.GetInt("TwoPanels", false); 
 	kfont.size.pt   = ini.GetInt("FontSize", 13); 
-	two_panels      = ini.GetInt("TwoPanels", 0); 
 	files.item_h    = ini.GetInt("LineHeight", 19);
 	WinX = ini.GetInt("WinX", 200); 
 	WinY = ini.GetInt("WinY", 50); 
@@ -197,12 +183,12 @@ void LoadIniSettings()
 
 void SaveIniSettings()
 {
-	ini.SetInt("ShowDeviceName", show_dev_name);
-	ini.SetInt("ShowStatusBar", show_status_bar);
-	ini.SetInt("RealFileNamesCase", real_files_names_case);
-	ini.SetInt("InfoAfterCopy", info_after_copy);
+	ini.SetInt("ShowDeviceName", show_dev_name.checked);
+	ini.SetInt("ShowStatusBar", show_status_bar.checked);
+	ini.SetInt("RealFileNamesCase", show_real_names.checked);
+	ini.SetInt("InfoAfterCopy", info_after_copy.checked);
 	ini.SetInt("FontSize", kfont.size.pt);
-	ini.SetInt("TwoPanels", two_panels);
+	ini.SetInt("TwoPanels", two_panels.checked);
 	ini.SetInt("LineHeight", files.item_h);
 	ini.SetInt("WinX", Form.left);
 	ini.SetInt("WinY", Form.top);
@@ -244,4 +230,26 @@ void BigFontsChange()
 	files.item_h = kfont.size.pt + 4;
 	if (files.item_h<18) files.item_h = 18;
 	files_active.item_h = files_inactive.item_h = files.item_h;
+}
+
+void BigIconsSwitch()
+{
+	if (big_icons.checked) 
+	{
+		icon_size=32;
+		files.item_h = line_height.value = 34;
+		if (!icons32_default.image)
+		{
+			Libimg_LoadImage(#icons32_default, "/sys/icons32.png");
+			Libimg_LoadImage(#icons32_selected, "/sys/icons32.png");
+			Libimg_ReplaceColor(icons32_default.image, icons32_selected.w, 
+				icons32_selected.h, 0x00000000, 0xffFFFfff);
+			Libimg_ReplaceColor(icons32_selected.image, icons32_selected.w, 
+				icons32_selected.h, 0x00000000, col_selec);								
+		}
+	}
+	else {
+		icon_size=16; 
+		files.item_h = line_height.value = 18;
+	}	
 }

@@ -33,27 +33,57 @@
 	0x98, 0x04, 0xF9, 0x98, 0x04, 0xF9, 0x98, 0x04, 0xF9, 0x98, 0x04
 };
 
-:void CheckBox(dword x,y,bt_id, text, is_checked)
+struct checkbox
 {
-	byte w=14, h=14;
-	DefineButton(x-1, y-1, strlen(text)*8 + w + 17, h+2, bt_id+BT_HIDE+BT_NOFRAME, 0);
+	dword text;
+	bool checked;
+	bool disabled;
+	dword x,y, id;
+	bool click();
+	void draw();
+	void redraw();
+};
+
+:bool checkbox::click(dword _id)
+{
+	if (disabled) return 0;
+	if (_id == id) {
+		checked^=1; 
+		redraw(); 
+		return 1;		
+	}
+	return 0;
+}
+
+:void checkbox::draw(dword _x,_y)
+{
+	#define SIZE 14
+	if (!id) id = GetFreeButtonId();
+	x=_x; y=_y;
+
+	DefineButton(x-1, y-1, strlen(text)*8 + SIZE + 17, SIZE+2, id+BT_HIDE+BT_NOFRAME, 0);
 	EDI = system.color.work;
-	WriteText(x+w+8, h / 2 + y -7, 0xD0, system.color.work_text, text);
-	DrawRectangle(x, y, w, h, system.color.work_graph);
-	if (is_checked == 0)
+	WriteText(x+SIZE+8, SIZE / 2 + y -7, 0xD0, system.color.work_text, text);
+	DrawRectangle(x, y, SIZE, SIZE, system.color.work_graph);
+	if (checked == 0)
 	{
-		DrawRectangle3D(x+1, y+1, w-2, h-2, 0xDDDddd, 0xffffff);
-		DrawBar(x+2, y+2, w-3, h-3, 0xffffff);
+		DrawRectangle3D(x+1, y+1, SIZE-2, SIZE-2, 0xDDDddd, 0xffffff);
+		DrawBar(x+2, y+2, SIZE-3, SIZE-3, 0xffffff);
 	} 
-	else if (is_checked == 1)
+	else if (checked == 1)
 	{
-		DrawWideRectangle(x+1, y+1, w-1, h-1, 2, 0xffffff);
+		DrawWideRectangle(x+1, y+1, SIZE-1, SIZE-1, 2, 0xffffff);
 		_PutImage(x+1, y+1, 13, 13, #checkbox_flag);
 	}
-	else if (is_checked == 2) //not active
+	else if (checked == 2) //not active
 	{
-		DrawWideRectangle(x+1, y+1, w-1, h-1, 2, 0xffffff);
-		DrawBar(x+3, y+3, w-5, h-5, 0x888888);
+		DrawWideRectangle(x+1, y+1, SIZE-1, SIZE-1, 2, 0xffffff);
+		DrawBar(x+3, y+3, SIZE-5, SIZE-5, 0x888888);
 	}
-	DrawRectangle3D(x-1,y-1,w+2,h+2,system.color.work_dark,system.color.work_light);
+	DrawRectangle3D(x-1,y-1,SIZE+2,SIZE+2,system.color.work_dark,system.color.work_light);
+}
+
+:void checkbox::redraw()
+{
+	draw(x,y);
 }

@@ -36,9 +36,10 @@ enum {
 };
 
 int current_process_id = 0;
-int show_system;
 unsigned maxcpu;
 int proc_list[256];
+
+checkbox show_system = { T_SHOW_SYSTEM_PROCESSES, false };
 
 //===================================================//
 //                                                   //
@@ -55,7 +56,7 @@ void GetCpuFrequency() {
 
 void main()
 {
-	byte btn;
+	int btn;
 	load_dll(boxlib, #box_lib_init,0);
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	GetCpuFrequency();
@@ -78,10 +79,8 @@ void main()
 			{
 				ExitProcess();
 			}
-			if (BTN_ID_SHOW_SYSTEM_PROCESSES == btn)  
-			{ 
-				show_system ^= 1; 
-				Draw_ShowSystemProcessesCheckbox();
+			if (show_system.click(btn))  
+			{
 				SelectList_LineChanged();
 			}
 			if (BTN_ID_KILL_PROCESS == btn)  
@@ -114,7 +113,7 @@ void main()
 				select_list.y+select_list.h+5,
 				110,25,BTN_ID_SHOW_PROCESS_INFO,
 				system.color.work_button, system.color.work_button_text, T_DETAILS);
-			Draw_ShowSystemProcessesCheckbox();
+			show_system.draw(select_list.x + 3, select_list.y+select_list.h+10);
 		default:
 			SelectList_LineChanged();
 	  }
@@ -138,7 +137,7 @@ void GetProcessList()
 		if (Process.name) 
 		{
 			for (j=0; j<11; j++) if (Process.name[j]!=' ') { 
-				if (show_system==false) {
+				if (show_system.checked==false) {
 					//do not show system process
 					if (Process.name[0]=='@') break;
 					if (!strcmp(#Process.name, "IDLE")) break;
@@ -173,11 +172,6 @@ void SelectList_DrawLine(dword i)
 		posy+select_list.text_y, select_list.font_type, 0x444444, #cpu_use);
 }
 
-
-void Draw_ShowSystemProcessesCheckbox() {
-	CheckBox(select_list.x + 3, select_list.y+select_list.h+10, 20,
-		T_SHOW_SYSTEM_PROCESSES, show_system);
-}
 
 
 

@@ -4,7 +4,7 @@
 
 void about_dialog()
 {   
-	byte id;
+	int id;
 	proc_info about_form;
 	int about_x;
 

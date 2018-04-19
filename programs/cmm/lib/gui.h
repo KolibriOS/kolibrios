@@ -21,7 +21,7 @@
 #include "../lib/gui/more_less_box.h"
 #include "../lib/gui/checkbox.h"
 
-int last_free_button_id = 1000;
+:int last_free_button_id = 1000;
 :int GetFreeButtonId()
 {
 	last_free_button_id++;
