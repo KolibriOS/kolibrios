@@ -40,7 +40,6 @@ block mouse_frame = { 18, 18, NULL, 130 };
 more_less_box pointer_speed      = { NULL, 0, 64, POINTER_SPEED };
 more_less_box acceleration       = { NULL, 0, 64, ACCELERATION_TEXT };
 more_less_box double_click_delay = { NULL, 0, 999, DOUBLE_CLICK_TEXT, 8 };
-
 checkbox emulation = { MOUSE_EMULATION, NULL };
 checkbox madmouse = { MADMOUSE, NULL };
 
@@ -49,12 +48,12 @@ raw_image panels_img = { 59, 101, #panels_img_data };
 
 _ini ini = { "/sys/settings/system.ini", "mouse" };
 
+dword click_status;
 
 
 
 void main() {
 	char id;
-	int click_status;
 	
 	load_dll(libini, #lib_init,1);
 	load_dll(boxlib, #box_lib_init,0);
@@ -71,11 +70,11 @@ void main() {
 					if (mouse.key&MOUSE_LEFT) click_status = 1;
 					if (mouse.key&MOUSE_RIGHT) click_status = 2;
 					if (mouse.key&MOUSE_CENTER) click_status = 3;
-					DrawMouseImage(click_status);
+					DrawMouseImage();
 				}
 				if (mouse.up) {
 					click_status=0;
-					DrawMouseImage(click_status);
+					DrawMouseImage();
 				}
 				break;
 
@@ -116,20 +115,19 @@ void main() {
 }
 
 
-void DrawMouseImage(dword status) {
+void DrawMouseImage() {
 	_PutImage(mouse_frame.x+30, mouse_frame.y + 15,  panels_img.w, panels_img.h, 
-		status * panels_img.w * panels_img.h * 3 + panels_img.data);
+		click_status * panels_img.w * panels_img.h * 3 + panels_img.data);
 }
 
 void DrawControls() {
-	int x = mouse_frame.x;
 	incn y;
 	y.n = mouse_frame.y+115;
-	pointer_speed.draw(x, y.inc(30));
-	acceleration.draw(x, y.inc(30));
-	double_click_delay.draw(x, y.inc(30));
-	emulation.draw(x, y.inc(33));
-	madmouse.draw(x, y.inc(27));
+	pointer_speed.draw(mouse_frame.x, y.inc(30));
+	acceleration.draw(mouse_frame.x, y.inc(30));
+	double_click_delay.draw(mouse_frame.x, y.inc(30));
+	emulation.draw(mouse_frame.x, y.inc(33));
+	madmouse.draw(mouse_frame.x, y.inc(27));
 }
 
 void LoadCfg() {
