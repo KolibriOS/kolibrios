@@ -21,7 +21,7 @@
 	?define T_SETTINGS "Настройки"
 	?define T_EDITBOX_FRAME " Путь сохранения скриншота "
 	?define T_DELAY "Задержка в секундах"
-	?define T_MINIMIZE "Свертуть окно при снимке"
+	?define T_MINIMIZE "Свернуть окно при снимке"
 	?define T_NO_DIR "'Папка не существует!' -E"
 	?define T_SET_PATH "Задать"
 #else
