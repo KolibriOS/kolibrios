@@ -53,7 +53,7 @@ dword click_status;
 
 
 void main() {
-	char id;
+	int id;
 	
 	load_dll(libini, #lib_init,1);
 	load_dll(boxlib, #box_lib_init,0);

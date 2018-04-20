@@ -85,7 +85,7 @@ opendialog open_folder_dialog =
 
 void main()
 {	
-	char id;
+	int id;
 
 	load_dll(libio,  #libio_init,  1);
 	load_dll(libimg, #libimg_init, 1);
