@@ -162,7 +162,7 @@ void main()
 
 	if (param)
 	{
-		if (strlen(#param)>1) && (param[strlen(#param)-1]=='/') param[strlen(#param)-1]=NULL; //no "/" in the end
+		if (strlen(#param)>1) && (param[strlen(#param)-1]=='/') param[strlen(#param)-1]=NULL; //no "/" at the end
 
 		if (dir_exists(#param)==true) 
 		{

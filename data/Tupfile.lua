@@ -569,6 +569,7 @@ end -- tup.getconfig('NO_JWASM') ~= 'full'
 if tup.getconfig('NO_CMM') ~= 'full' then
 tup.append_table(img_files, {
  {"APP_PLUS", PROGS .. "/cmm/app_plus/app_plus.com"},
+ {"EASYSHOT", PROGS .. "/cmm/easyshot/easyshot.com"},
  {"TXTREAD", PROGS .. "/cmm/txtread/txtread.com"},
  {"TMPDISK", PROGS .. "/cmm/tmpdisk/tmpdisk.com"},
  {"GAME_CENTER", PROGS .. "/cmm/software_widget/software_widget.com"},

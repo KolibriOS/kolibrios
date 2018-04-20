@@ -21,7 +21,7 @@ char aOpenDialog_start[]         = "OpenDialog_start";
 
 struct opendialog
 {
-  dword type;
+  dword type; //0-file, 2-save, 3-select folder
   dword procinfo;
   dword com_area_name;
   dword com_area;
@@ -30,15 +30,17 @@ struct opendialog
   dword start_path;
   dword draw_window;
   dword status;
-  dword openfile_pach;
+  dword openfile_path;
   dword filename_area;
   dword filter_area;
   
-  word x_size;
-  word x_start;
-  
-  word y_size;
-  word y_start;
+  word w;
+  word x;
+  word h;
+  word y;
 };
+
+char communication_area_name[] = "FFFFFFFF_open_dialog";
+char open_dialog_path[] = "/rd/1/File managers/opendial";
 
 #endif

@@ -181,14 +181,10 @@ void DrawLoginScreen()
 	DrawBar(0,0, Form.cwidth, Form.cheight, system.color.work);
 	
 	WriteText(panel_x,panel_y-3,0x80,system.color.work_text,"Your Email:");
-	login_box.left = panel_x+3;
-	login_box.top = panel_y+12;
-	DrawEditBox(#login_box);
+	DrawEditBoxPos(panel_x+3, panel_y+12, #login_box);
 	
 	WriteText(panel_x,panel_y+45,0x80,system.color.work_text,"Password:");
-	pass_box.left = panel_x+3;
-	pass_box.top = panel_y+60;
-	DrawEditBox(#pass_box);
+	DrawEditBoxPos(panel_x+3, panel_y+60, #pass_box);
 	
 	if (!aim)
 	{

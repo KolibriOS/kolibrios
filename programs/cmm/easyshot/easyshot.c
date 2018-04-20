@@ -6,6 +6,7 @@
 
 #include "../lib/obj/libimg.h"
 #include "../lib/obj/box_lib.h"
+#include "../lib/obj/proc_lib.h"
 
 #ifndef AUTOBUILD
 	#include "lang.h--"
@@ -13,12 +14,24 @@
 
 /* === TRANSLATIONS === */
 
-#define T_WTITLE "EasyShot v0.76"
+#define T_WTITLE "EasyShot v1.0"
 
 #ifdef LANG_RUS
 	?define T_TAKE_SCREENSHOT "  Сделать скриншот"
+	?define T_SETTINGS "Настройки"
+	?define T_EDITBOX_FRAME " Путь сохранения скриншота "
+	?define T_DELAY "Задержка в секундах"
+	?define T_MINIMIZE "Свертуть окно при снимке"
+	?define T_NO_DIR "'Папка не существует!' -E"
+	?define T_SET_PATH "Задать"
 #else
 	?define T_TAKE_SCREENSHOT "  Take a screenshot"
+	?define T_SETTINGS "Settings"
+	?define T_EDITBOX_FRAME " Save path "
+	?define T_DELAY "Delay in seconds"
+	?define T_MINIMIZE "Minimize window"
+	?define T_NO_DIR "'Directory does not exists!' -E"
+	?define T_SET_PATH "Set"
 #endif
 
 /* === DATA === */	
@@ -35,15 +48,38 @@ enum {
 
 #define PD 18 //padding
 
+char save_path[4096];
+char save_path_stable[4096];
+char open_dir[4096];
 
-char save_path[4096] = "/tmp0/1";
 dword mouse_dd1;
-edit_box edit_box_path = {270,10,70,0xffffff,0x94AECE,0xFFFfff,0xffffff,
+edit_box edit_save = {250,25,100,0xffffff,0x94AECE,0xFFFfff,0xffffff,
 	0x10000000,sizeof(save_path),#save_path,#mouse_dd1, 0b};
 
-more_less_box delay = { 1, 0, 64, "Delay in seconds" };
-checkbox minimise = { "Minimize window", true };
+more_less_box delay = { 1, 0, 64, T_DELAY };
+checkbox minimize = { T_MINIMIZE, true };
 
+proc_info Settings;
+
+opendialog open_folder_dialog = 
+{
+  2, //0-file, 2-save, 3-select folder
+  #Settings,
+  #communication_area_name,
+  0,
+  0, //dword opendir_path,
+  #open_dir, //dword dir_default_path,
+  #open_dialog_path,
+  #DrawSettingsWindow,
+  0,
+  #open_dir, //dword openfile_path,
+  0, //dword filename_area,
+  0, //dword filter_area,
+  420,
+  NULL,
+  320,
+  NULL
+};
 
 /* === CODE === */
 
@@ -54,10 +90,19 @@ void main()
 	load_dll(libio,  #libio_init,  1);
 	load_dll(libimg, #libimg_init, 1);
 	load_dll(boxlib, #box_lib_init,0);
+	load_dll(Proc_lib,  #OpenDialog_init,0);
+	OpenDialog_init stdcall (#open_folder_dialog);
 
+	system.color.get();
 	Libimg_LoadImage(#skin, "/sys/icons16.png");
+	Libimg_ReplaceColor(skin.image, skin.w, skin.h, 0xffFFFfff, system.color.work_button);
+	Libimg_ReplaceColor(skin.image, skin.w, skin.h, 0xffCACBD6, MixColors(system.color.work_button, 0, 200));
 	screenshot_length = screen.width * screen.height * 3;
 	screenshot = malloc(screenshot_length);
+
+	strcpy(#save_path_stable, "/tmp0/1");
+	strcpy(#save_path, #save_path_stable);
+	edit_save.size = strlen(#save_path);
 
 	loop() switch(WaitEvent())
 	{
@@ -91,11 +136,11 @@ void DrawMainContent()
 }
 
 void EventTakeScreenshot() {
-	if (minimise.checked) MinimizeWindow(); 
+	if (minimize.checked) MinimizeWindow(); 
 	pause(delay.value*100);
 	CopyScreen(screenshot, 0, 0, screen.width, screen.height);
 	ActivateWindow(GetProcessSlot(Form.ID));
-	if (!minimise.checked) DrawMainContent();
+	if (!minimize.checked) DrawMainContent();
 	EventSaveImageFile();
 }
 
@@ -105,7 +150,7 @@ void EventSaveImageFile()
 	char save_file_name[4096];
 	do {
 		i++;
-		sprintf(#save_file_name, "%s/screen_%i.png", #save_path, i);
+		sprintf(#save_file_name, "%s/screen_%i.png", #save_path_stable, i);
 	} while (file_exists(#save_file_name));
 	save_image(screenshot, screen.width, screen.height, #save_file_name);
 }
@@ -113,43 +158,70 @@ void EventSaveImageFile()
 
 void SettingsWindow()
 {
-	int id;
-	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);	
+	#define BTN_OD 10
+	#define BTN_SET 11
+	int id, butw;
+	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
 	loop() switch(WaitEvent())
 	{
 	case evMouse:
-		//edit_box_mouse stdcall (#address_box);
+		edit_box_mouse stdcall (#edit_save);
 		break;
 
 	case evKey:
 		GetKeys();
 		if (SCAN_CODE_ESC == key_scancode) ExitProcess();
+		EAX= key_ascii << 8;
+		edit_box_key stdcall (#edit_save);	
 		break;
 
 	case evButton:
 		id = GetButtonID();
 		if (CLOSE_BTN == id) ExitProcess();
+		if (BTN_OD == id) {
+			OpenDialog_start stdcall (#open_folder_dialog);
+			if (open_folder_dialog.status) {
+				strcpy(#save_path, open_folder_dialog.opendir_path);
+				edit_save.size = edit_save.pos = edit_save.shift 
+					= edit_save.shift_old = strlen(#save_path);
+			}
+		}
+		if (BTN_SET == id) {
+			if (save_path[0]) && (dir_exists(#save_path)) {
+				strcpy(#save_path_stable, #save_path);
+				strrtrim(#save_path_stable);
+				if (save_path_stable[strlen(#save_path_stable)-1]=='/')
+				    save_path_stable[strlen(#save_path_stable)-1]=NULL; //no "/" at the end
+			}
+			else notify(T_NO_DIR);
+
+		}
 		delay.click(id);
-		minimise.click(id);
+		minimize.click(id);
 		break;
 
 	case evReDraw:
-		DefineAndDrawWindow(Form.left+100, Form.top-40, 330, 170, 0x34, system.color.work, "Settings",0);
-		_DRAW_CONTENT:
-		minimise.draw(15, 10);
-		delay.draw(15, 40);
-		//DrawEditBox(#edit_box_path);
+		DrawSettingsWindow();
 	}
+}
+
+void DrawSettingsWindow()
+{
+	DefineAndDrawWindow(Form.left+100, Form.top-40, 400, 230, 0x34, system.color.work, T_SETTINGS, 0);
+	GetProcessInfo(#Settings, SelfInfo);
+	minimize.draw(15, 15);
+	delay.draw(15, 45);
+	DrawFrame(15, 85, 360, 95, T_EDITBOX_FRAME);
+		DrawEditBoxPos(32, 110, #edit_save);
+		DrawStandartCaptButton(edit_save.left + edit_save.width + 15, edit_save.top-3, BTN_OD, "...");
+		DrawStandartCaptButton(edit_save.left, edit_save.top+32, BTN_SET, T_SET_PATH);	
 }
 
 int DrawIconButton(dword x, y, id, text, icon)
 {
 	int btwidth;
-	system.color.work_button = 0xFFFfff;
-	system.color.work_button_text = 0;
 	btwidth = DrawStandartCaptButton(x, y, id, text);
 	img_draw stdcall(skin.image, x+12, y+5, 16, 16, 0, icon*16);
-	system.color.get();
 	return btwidth;
 }
 

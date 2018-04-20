@@ -25,7 +25,7 @@
 	?define USE_TWO_PANELS "Two panels"
 	?define FONT_SIZE_LABEL "Font size"
 	?define LIST_LINE_HEIGHT "List line height"
-	?define SAVE_PATH_AS_DEFAULT "‘urrent path"
+	?define SAVE_PATH_AS_DEFAULT "Current path"
 	?define SAVE_START_PATH_AS_DEFAULT "Typed path"
 	?define EDIT_FILE_ASSOCIATIONS "Edit file associations"
 	?define START_PATH " Start path: "
@@ -74,8 +74,7 @@ void settings_dialog()
 				else if (id==6)
 				{
 					strcpy(#path_start,#path);
-					path_start_ed.size = strlen(#path_start);
-					path_start_ed.pos = strlen(#path_start);
+					path_start_ed.size = path_start_ed.pos = strlen(#path_start);
 					ini.SetString("DefaultPath", #path, strlen(#path));
 					edit_box_draw stdcall (#path_start_ed);
 					break;
@@ -141,9 +140,7 @@ void DrawSettingsCheckBoxes()
 	
 	DrawFrame(x, y.inc(37), 340, 95, START_PATH);
 	// START_PATH {
-	path_start_ed.top = y.inc(21);
-	path_start_ed.left = frx;
-	DrawEditBox(#path_start_ed);
+	DrawEditBoxPos(frx, y.inc(21), #path_start_ed);
 	but_x = DrawStandartCaptButton(frx, y.inc(34), 6, SAVE_PATH_AS_DEFAULT);
 	DrawStandartCaptButton(frx+but_x, y.inc(0), 7, SAVE_START_PATH_AS_DEFAULT);
 	// } START_PATH

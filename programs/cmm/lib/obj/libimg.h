@@ -221,7 +221,7 @@ struct _Image
                 notify(#save_success_message);
             }
             else {
-                notify("'Error saving file! Probably not enought space or file system is not writable!' -E");
+                notify("'Error saving image file!\nProbably not enought space or file system is not writable!\nPlease, check saving path.' -E");
             }
         }
     }
