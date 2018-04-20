@@ -37,6 +37,7 @@
 /* === DATA === */	
 
 proc_info Form;
+proc_info Settings;
 
 dword screenshot;
 int screenshot_length;
@@ -59,7 +60,6 @@ edit_box edit_save = {250,25,100,0xffffff,0x94AECE,0xFFFfff,0xffffff,
 more_less_box delay = { 1, 0, 64, T_DELAY };
 checkbox minimize = { T_MINIMIZE, true };
 
-proc_info Settings;
 
 opendialog open_folder_dialog = 
 {
@@ -119,11 +119,9 @@ void main()
 		break;
      
 	case evReDraw:
-		system.color.get();
 		DefineAndDrawWindow(screen.width/4, screen.height-100/3, 270, 
 			skin_height + 27+PD+PD, 0x34, system.color.work, T_WTITLE,0);
 		GetProcessInfo(#Form, SelfInfo);
-		if (Form.status_window>2) break;
 		DrawMainContent();
 	}
 }

@@ -16,17 +16,11 @@
 
 char a_libdir[43]  = "/sys/lib/\0";
 
-dword GLOBAL_FUNC_LIB = 0;
-dword G_FUNC_LOAD = 0;
-dword G_FUNC_GET = 0;
-dword PATH_LIBRARY_LOADING = "/rd/1/lib/library.obj";
-
 :inline void error_init(dword text)
 {
-	dword TEXT_ERROR = malloc(1024);
+	dword TEXT_ERROR[1024];
 	sprintf(TEXT_ERROR, "%s `%s`' -E",_TEXT_ERROR_ADD,text);
 	notify(TEXT_ERROR);
-	free(TEXT_ERROR);
 }
 
 // stdcall with 1 parameter
@@ -254,42 +248,5 @@ asm {
 	return true;
 }
 
-:struct OBJECT
-{
-	void load(dword dllname);
-	dword get(dword fname);
-} library;
-
-:void OBJECT::load(dword dllname)
-{
-	dword tmp;
-	IF(!GLOBAL_FUNC_LIB)
-	{
-		$mov eax, 68
-		$mov ebx, 19
-		ECX=#PATH_LIBRARY_LOADING;
-		$int 0x40
-		tmp = EAX;
-		GLOBAL_FUNC_LIB = tmp;
-		tmp+=4;
-		G_FUNC_LOAD = DSDWORD[tmp];
-		tmp+=8;
-		G_FUNC_GET = DSDWORD[tmp];
-	}
-	G_FUNC_LOAD stdcall(dllname);
-}
-
-:dword OBJECT::get(dword fname)
-{
-	dword tmp=fname;
-	G_FUNC_GET stdcall(tmp);
-	return EAX;
-}
-
-/*
-#define INIT_(name) byte init_#name(){object.load(name);
-#define IMPORT(name) name = object.get(name);
-#define _INIT return 1;}
-*/
 
 #endif
