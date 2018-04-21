@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
@@ -102,14 +102,20 @@ struct  PCI_header02    PCI_header
 ends
 
 ; Base address bits
-        PCI_BASE_ADDRESS_SPACE_IO       = 0x01
-        PCI_BASE_ADDRESS_IO_MASK        = 0xFFFFFFFC
-        PCI_BASE_ADDRESS_MEM_MASK       = 0xFFFFFFF0
+        PCI_BASE_ADDRESS_SPACE_IO               = 0x01
+        PCI_BASE_ADDRESS_IO_MASK                = 0xFFFFFFFC
+        PCI_BASE_ADDRESS_MEM_MASK               = 0xFFFFFFF0
+        PCI_BASE_ADDRESS_MEM_TYPE_MASK          = 0x00000006
+        PCI_BASE_ADDRESS_MEM_TYPE_32            = 0x0
+        PCI_BASE_ADDRESS_MEM_TYPE_RESERVED      = 0x02
+        PCI_BASE_ADDRESS_MEM_TYPE_64            = 0x4
+
 
 ; command bits
         PCI_CMD_PIO                     = 0x01          ; bit0: io space control
         PCI_CMD_MMIO                    = 0x02          ; bit1: memory space control
         PCI_CMD_MASTER                  = 0x04          ; bit2: device acts as a PCI master
+        PCI_CMD_INTX_DISABLE            = 0x400         ; INTx emulation disable
 
 ; status bits
         PCI_STATUS_CAPA                 = 0x10          ; bit4: new capabilities available
@@ -143,27 +149,51 @@ endp
 end if
 
 
-if used PCI_find_mmio32
-proc PCI_find_mmio32 stdcall bus, dev
+if used PCI_find_mmio
+proc PCI_find_mmio stdcall bus, dev
 
-        push    esi
+        push    esi ebx
         mov     esi, PCI_header00.base_addr_0
   .check:
         invoke  PciRead32, [bus], [dev], esi
-        test    eax, PCI_BASE_ADDRESS_SPACE_IO  ; mmio address?
-        jnz     .inc
-        test    eax, 100b       ; 64 bit?
-        jnz     .inc
-        and     eax, not 1111b
-        pop     esi
+        DEBUGF  1, "BAR: 0x%x\n", eax
+        mov     ebx, eax
+        test    eax, PCI_BASE_ADDRESS_SPACE_IO  ; MMIO address?
+        jnz     .next
+        and     ebx, PCI_BASE_ADDRESS_MEM_TYPE_MASK
+        cmp     bl, PCI_BASE_ADDRESS_MEM_TYPE_64
+        je      .is64
+        cmp     bl, PCI_BASE_ADDRESS_MEM_TYPE_32
+        jne     .next
+        ; Ok, we have a 32-bit BAR.
+        and     eax, PCI_BASE_ADDRESS_MEM_MASK
+        pop     ebx esi
+        DEBUGF  1, "32-bit MMIO address found: 0x%x\n", eax
         ret
 
-  .inc:
+  .is64:
+        ; Ok, we have a 64-bit BAR, check if the upper 32-bits are 0, then we can use it..
+        push    eax
+        add     esi, 4
+        cmp     esi, PCI_header00.base_addr_5
+        ja      .fail
+        invoke  PciRead32, [bus], [dev], esi
+        test    eax, eax
+        pop     eax
+        jnz     .next
+        and     eax, PCI_BASE_ADDRESS_MEM_MASK
+        pop     ebx esi
+        DEBUGF  1, "64-bit MMIO address found: 0x00000000%x\n", eax
+        ret
+
+  .next:
         add     esi, 4
         cmp     esi, PCI_header00.base_addr_5
         jbe     .check
+  .fail:
         xor     eax, eax
-        pop     esi
+        pop     ebx esi
+        DEBUGF  1, "No usable MMIO addresses found!\n"
         ret
 
 endp

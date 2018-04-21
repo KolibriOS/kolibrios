@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  FORCEDETH.INC                                                  ;;
@@ -582,7 +582,13 @@ probe:
   @@:
 
 ; Now, it's time to find the base mmio addres of the PCI device
-        stdcall PCI_find_mmio32, [ebx + device.pci_bus], [ebx + device.pci_dev] ; returns in eax
+        stdcall PCI_find_mmio, [ebx + device.pci_bus], [ebx + device.pci_dev] ; returns in eax
+        test    eax, eax
+        jnz     @f
+        DEBUGF 1, "No useable MMIO addresses found!\n"
+        dec     eax
+        ret
+  @@:
         DEBUGF 1,"mmio_addr= 0x%x\n", eax
 
 ; Create virtual mapping of the physical memory

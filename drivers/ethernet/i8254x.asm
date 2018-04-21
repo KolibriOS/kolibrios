@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  i8254x driver for KolibriOS                                    ;;
@@ -389,7 +389,9 @@ proc service_proc stdcall, ioctl:dword
 
 ; Now, it's time to find the base mmio addres of the PCI device
 
-        stdcall PCI_find_mmio32, [ebx + device.pci_bus], [ebx + device.pci_dev] ; returns in eax
+        stdcall PCI_find_mmio, [ebx + device.pci_bus], [ebx + device.pci_dev] ; returns in eax
+        test    eax, eax
+        jz      .destroy
 
 ; Create virtual mapping of the physical memory
 

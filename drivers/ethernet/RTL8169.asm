@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  RTL8169 driver for KolibriOS                                   ;;
@@ -251,7 +251,6 @@ struct  device          ETH_DEVICE
         pci_dev         dd ?
         irq_line        db ?
                         rb 3 ; align 4
-        mmio_addr       dd ? ; memory map physical address
         pcfg            dd ?
         mcfg            dd ?
 
