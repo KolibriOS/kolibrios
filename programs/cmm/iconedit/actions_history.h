@@ -25,7 +25,7 @@ void _ActionsHistory::init() {
 	currentIndex = -1;
 
 	for (i = 0; i < MAX_ACTIONS_COUNT; i++)
-		stack[i] = malloc(image.columns * image.rows);
+		stack[i] = malloc(image.columns * image.rows * 4);
 
 	saveCurrentState();
 }
@@ -84,43 +84,47 @@ void _ActionsHistory::restoreState(dword index) {
 void _ActionsHistory::undoLastAction() {
 	dword previousAction;
 
-	// Если вышли за левую границу, перемещаемся в конец массива
-	if (currentIndex == 0) {
-		previousAction = MAX_ACTIONS_COUNT - 1;
-	}
-	else {
-		previousAction = currentIndex - 1;
-	}
-
-	if (isEmpty())
-		return;
-	else {
-		if (currentIndex != head) {
-			restoreState(previousAction);
-			DrawCanvas();
+	if (!is_selection_moving()) {
+		// Если вышли за левую границу, перемещаемся в конец массива
+		if (currentIndex == 0) {
+			previousAction = MAX_ACTIONS_COUNT - 1;
+		}
+		else {
+			previousAction = currentIndex - 1;
 		}
 
-		if (currentIndex != head)
-			currentIndex = previousAction;
+		if (isEmpty())
+			return;
+		else {
+			if (currentIndex != head) {
+				restoreState(previousAction);
+				DrawCanvas();
+			}
+
+			if (currentIndex != head)
+				currentIndex = previousAction;
+		}
 	}
 }
 
 void _ActionsHistory::redoLastAction() {
 	dword nextAction = calc(currentIndex + 1);
 
-	// Если вышли за левую границу, возвращаемся в начало	
-	if (nextAction >= MAX_ACTIONS_COUNT)
-		nextAction = nextAction % MAX_ACTIONS_COUNT;
+	if (!is_selection_moving()) {
+		// Если вышли за левую границу, возвращаемся в начало	
+		if (nextAction >= MAX_ACTIONS_COUNT)
+			nextAction = nextAction % MAX_ACTIONS_COUNT;
 
-	if (isEmpty())
-		return;
-	else {
-		if (nextAction != tail) {
-			restoreState(nextAction);
-			DrawCanvas();
+		if (isEmpty())
+			return;
+		else {
+			if (nextAction != tail) {
+				restoreState(nextAction);
+				DrawCanvas();
+			}
+
+			if (nextAction != tail)
+				currentIndex = nextAction;
 		}
-
-		if (nextAction != tail)
-			currentIndex = nextAction;
 	}
 }
