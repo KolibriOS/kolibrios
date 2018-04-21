@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Broadcom NetXtreme 57xx driver for KolibriOS                   ;;
@@ -158,14 +158,13 @@ proc service_proc stdcall, ioctl:dword
 
 ; Now, it's time to find the base mmio addres of the PCI device
 
-        stdcall PCI_find_mmio32, [ebx + device.pci_bus], [ebx + device.pci_dev]
+        stdcall PCI_find_mmio, [ebx + device.pci_bus], [ebx + device.pci_dev]
+        test    eax, eax
+        jz      .destroy
 
 ; Create virtual mapping of the physical memory
 
-        push    1Bh             ; PG_SW+PG_NOCACHE
-        push    10000h          ; size of the map
-        push    eax
-        invoke  MapIoMem
+        invoke  MapIoMem, eax, 10000h, PG_SW+PG_NOCACHE
         mov     [ebx + device.mmio_addr], eax
 
 ; We've found the mmio address, find IRQ now
