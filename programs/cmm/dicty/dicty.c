@@ -36,8 +36,7 @@ dword io_buffer_data;
 #define BUTTON_CHANGE_LANGUAGE 10
 int active_dict=2;
 
-int mouse_dd;
-edit_box edit1= {200,13,13,0xffffff,0x94AECE,0xffffff,0x94AECE,0x10000000,248,#edit_text,#mouse_dd,100000000000010b};
+edit_box edit1= {200,13,13,0xffffff,0x94AECE,0xffffff,0x94AECE,0x10000000,248,#edit_text,0,100000000000010b};
 
 
 

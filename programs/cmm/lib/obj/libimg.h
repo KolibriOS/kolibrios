@@ -20,7 +20,7 @@
 
 //library
 dword libimg = #alibimg;
-char alibimg[21] = "/sys/lib/libimg.obj\0";
+char alibimg[] = "/sys/lib/libimg.obj";
 	
 dword libimg_init = #alibimg_init;
 dword img_is_img  = #aimg_is_img;
@@ -36,16 +36,16 @@ dword img_encode  = #aimg_encode;
 $DD 2 dup 0
 
 //import  libimg                     , \
-char alibimg_init[9] = "lib_init\0";
-char aimg_is_img[11]  = "img_is_img\0";
-char aimg_to_rgb2[12] = "img_to_rgb2\0";
-char aimg_decode[11]  = "img_decode\0";
-char aimg_destroy[12] = "img_destroy\0";
-char aimg_draw[9]    = "img_draw\0";
-char aimg_create[11]    = "img_create\0";
-char aimg_encode[11]    = "img_encode\0";
-//char aimg_flip[9]    = "img_flip\0";
-//char aimg_rotate[11]  = "img_rotate\0 ";
+char alibimg_init[] = "lib_init";
+char aimg_is_img[]  = "img_is_img";
+char aimg_to_rgb2[] = "img_to_rgb2";
+char aimg_decode[]  = "img_decode";
+char aimg_destroy[] = "img_destroy";
+char aimg_draw[]    = "img_draw";
+char aimg_create[]    = "img_create";
+char aimg_encode[]    = "img_encode";
+//char aimg_flip[]    = "img_flip";
+//char aimg_rotate[]  = "img_rotate ";
 
 #define LIBIMG_FORMAT_BMP       1
 #define LIBIMG_FORMAT_ICO       2

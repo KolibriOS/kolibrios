@@ -2,15 +2,14 @@
 
 char *text1[] = {"POP server adress:", "POP server port:", "SMTP server adress:", "SMTP server port:", '\0'};
 
-dword mouse_opt;
 unsigned char POP_server1[128]="pop.server.com";
 unsigned char POP_server_port1[5]="110";
 unsigned char SMTP_server1[128]="smtp.server.com";
 unsigned char SMTP_server_port1[5]="25";
-edit_box POP_server_box        = {210,230,125 ,0xffffff,0x94AECE,0xffc90E,0xCACACA,0x10000000,sizeof(POP_server1),#POP_server1,#mouse_opt,100000000000b};
-edit_box POP_server_port_box   = {210,230,160,0xffffff,0x94AECE,0xffc90E,0xCACACA,0x10000000,5,#POP_server_port1,#mouse_opt,100000000000b};
-edit_box SMTP_server_box       = {210,230,195,0xffffff,0x94AECE,0xffc90E,0xCACACA,0x10000000,sizeof(SMTP_server1),#SMTP_server1,#mouse_opt,100000000000b};
-edit_box SMTP_server_port_box  = {210,230,230,0xffffff,0x94AECE,0xffc90E,0xCACACA,0x10000000,5,#SMTP_server_port1,#mouse_opt,100000000000b};
+edit_box POP_server_box        = {210,230,125 ,0xffffff,0x94AECE,0xffc90E,0xCACACA,0x10000000,sizeof(POP_server1),#POP_server1,0,100000000000b};
+edit_box POP_server_port_box   = {210,230,160,0xffffff,0x94AECE,0xffc90E,0xCACACA,0x10000000,5,#POP_server_port1,0,100000000000b};
+edit_box SMTP_server_box       = {210,230,195,0xffffff,0x94AECE,0xffc90E,0xCACACA,0x10000000,sizeof(SMTP_server1),#SMTP_server1,0,100000000000b};
+edit_box SMTP_server_port_box  = {210,230,230,0xffffff,0x94AECE,0xffc90E,0xCACACA,0x10000000,5,#SMTP_server_port1,0,100000000000b};
 
 checkbox automatic = { "Automatic configuration", true };
 

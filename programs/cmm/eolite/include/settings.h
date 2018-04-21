@@ -33,10 +33,9 @@
 
 int WinX, WinY, WinW, WinH;
 
-dword set_mouse_dd;
-char path_start[4096]="\0";
+char path_start[4096];
 edit_box path_start_ed = {290,50,57,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,4098,
-	                      #path_start,#set_mouse_dd, 100000000000010b,0,0};
+	                      #path_start,0, 100000000000010b,0,0};
 
 more_less_box font_size   = { NULL, 9, 22, FONT_SIZE_LABEL };
 more_less_box line_height = { NULL, 16, 64, LIST_LINE_HEIGHT };
@@ -54,7 +53,7 @@ void settings_dialog()
 	int id;
 	active_settings=1;
 	font_size.value = kfont.size.pt;
-	line_height.value = files.item_h; 
+	line_height.value = files.item_h;
 	SetEventMask(0x27);
 	loop(){
 		switch(WaitEvent())
@@ -168,8 +167,7 @@ void LoadIniSettings()
 	WinH = ini.GetInt("WinH", 506); 
 	ini.GetString("DefaultPath", #path, 4096, "/rd/1");
 	ini.GetString("DefaultPath", #path_start, 4096, "/rd/1");
-	path_start_ed.size = strlen(#path_start);
-	path_start_ed.pos = strlen(#path_start);
+	path_start_ed.size = path_start_ed.pos = strlen(#path_start);
 
 	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font file",#temp,4096,DEFAULT_FONT);
 	kfont.init(#temp);

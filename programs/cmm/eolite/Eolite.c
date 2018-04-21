@@ -91,7 +91,7 @@ char scroll_used=false;
 dword menu_stak,about_stak,properties_stak,settings_stak,copy_stak,delete_stak;
 
 proc_info Form;
-int mouse_dd, sc_slider_h;
+int sc_slider_h;
 int j, i;
 int action_buf;
 int rand_n;
@@ -110,7 +110,8 @@ int status_bar_h = 0;
 
 int icon_size = 16;
 
-edit_box new_file_ed = {200,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0x10000000,248,#new_element_name,#mouse_dd,100000000000010b,6,0};
+edit_box new_file_ed = {200,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0x10000000,
+	248,#new_element_name,0,100000000000010b,6,0};
 PathShow_data FileShow = {0, 56,215, 8, 100, 1, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 byte cmd_free=0;
 #include "include\translations.h"

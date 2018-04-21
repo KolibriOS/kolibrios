@@ -41,9 +41,9 @@ unsigned char icons[] = FROM "icons.raw";
 #define TOPPANELH 68
 #define BOTPANELH 26
 
-int	mouse_dd;
 char new_disk_size[5];
-edit_box edit_disk_size= {50,0,7,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,4,#new_disk_size,#mouse_dd, 1000000000000010b};
+edit_box edit_disk_size= {50,0,7,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,
+	4,#new_disk_size,0, 1000000000000010b};
 
 void Main_Window()
 {

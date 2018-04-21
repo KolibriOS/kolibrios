@@ -6,11 +6,10 @@
 char default_dir[] = "/rd/1";
 od_filter filter2 = {0,0};
 
-int mouse_dd1, mouse_dd2;
 char src_box_text[4096];
 char dst_box_text[4096];
-edit_box src_box = {340,20,35,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(src_box_text),#src_box_text,#mouse_dd1, 10b};
-edit_box dst_box = {340,20,95,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(dst_box_text),#dst_box_text,#mouse_dd2, 0b};
+edit_box src_box = {340,20,35,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(src_box_text),#src_box_text,0, 10b};
+edit_box dst_box = {340,20,95,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(dst_box_text),#dst_box_text,0, 0b};
 
 #define BID_EXIT_PRC 01
 #define BID_SRC_OPEN 10

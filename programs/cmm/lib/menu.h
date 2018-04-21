@@ -1,4 +1,4 @@
-
+dword menu_process_id;
 
 struct _menu
 {
@@ -20,7 +20,7 @@ void _menu::show(dword _appear_x, _appear_y, _menu_width, _text, _identifier)
 	list.count = chrnum(text, '\n')+1;
 	list.SetSizes(2,2,_menu_width,list.count*24,24);
 
-	CreateThread(#_menu_thread,#stak+4092);
+	menu_process_id = CreateThread(#_menu_thread,#stak+4092);
 }
 
 void _menu_thread()
@@ -64,11 +64,11 @@ void _menu_draw_list()
 void _menu_item_click()
 {
 	menu.list.cur_y = menu.identifier + menu.list.cur_y;
-	ExitProcess();
+	KillProcess(menu_process_id);
 }
 
 void _menu_no_item_click()
 {
 	menu.list.cur_y = 0;
-	ExitProcess();
+	KillProcess(menu_process_id);
 }

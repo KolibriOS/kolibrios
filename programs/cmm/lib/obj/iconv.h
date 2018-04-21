@@ -7,14 +7,14 @@
 #endif
 
 dword iconv_lib = #a_iconv_lib;
-char a_iconv_lib[19]="/sys/lib/iconv.obj\0";
+char a_iconv_lib[]="/sys/lib/iconv.obj";
 
 dword iconv_open     = #aIconv_open;
 dword iconv          = #aIconv;
 $DD 2 dup 0
 
-char aIconv_open[11] = "iconv_open\0";
-char aIconv[6]       = "iconv\0";
+char aIconv_open[] = "iconv_open";
+char aIconv[]       = "iconv";
 
 
 dword ChangeCharset(dword from_chs, to_chs, conv_buf)

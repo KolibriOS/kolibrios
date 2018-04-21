@@ -12,7 +12,7 @@
 
 //library
 dword libio = #alibio;
-char alibio[21] = "/sys/lib/libio.obj\0"; //"libio.obj\0";
+char alibio[] = "/sys/lib/libio.obj"; //"libio.obj";
 
 dword libio_init = #alibio_init;
 dword file_size  = #afile_size;
@@ -23,11 +23,11 @@ $DD 2 dup 0
 
 
 //import  libio                     , \
-char alibio_init[9] = "lib_init\0";
-char afile_size[11]  = "file_size\0";
-char afile_open[12] = "file_open\0";
-char afile_read[11]  = "file_read\0";
-char afile_close[12] = "file_close\0";
+char alibio_init[] = "lib_init";
+char afile_size[]  = "file_size";
+char afile_open[] = "file_open";
+char afile_read[]  = "file_read";
+char afile_close[] = "file_close";
 
 //align 4
 //dword fh=0;

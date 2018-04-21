@@ -53,9 +53,8 @@ char save_path[4096];
 char save_path_stable[4096];
 char open_dir[4096];
 
-dword mouse_dd1;
 edit_box edit_save = {250,25,100,0xffffff,0x94AECE,0xFFFfff,0xffffff,
-	0x10000000,sizeof(save_path),#save_path,#mouse_dd1, 0b};
+	0x10000000,sizeof(save_path),#save_path,0, 0b};
 
 more_less_box delay = { 1, 0, 64, T_DELAY };
 checkbox minimize = { T_MINIMIZE, true };

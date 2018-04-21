@@ -10,7 +10,7 @@
 #include "../lib/dll.h"
 #endif
 dword network_lib = #a_network_lib;
-char a_network_lib[21]="/sys/lib/network.obj\0";
+char a_network_lib[]="/sys/lib/network.obj";
 
 dword network_lib_init    = #aLib_init;
 dword inet_addr           = #aInet_addr;  //"192.168.0.1" -> dword IP
@@ -22,14 +22,14 @@ dword getaddrinfo_abort   = #aGetaddrinfo_abort;
 dword freeaddrinfo        = #aFreeaddrinfo;
 $DD 2 dup 0
 
-char aLib_init[9]              = "lib_init\0";
-char aInet_addr[10]            = "inet_addr\0";
-char aInet_ntoa[10]            = "inet_ntoa\0";
-char aGetaddrinfo[12]          = "getaddrinfo\0";
-char aGetaddrinfo_start[18]    = "getaddrinfo_start\0";
-char aGetaddrinfo_process[20]  = "getaddrinfo_process\0";
-char aGetaddrinfo_abort[18]    = "getaddrinfo_abort\0";
-char aFreeaddrinfo[13]         = "freeaddrinfo\0";
+char aLib_init[]              = "lib_init";
+char aInet_addr[]            = "inet_addr";
+char aInet_ntoa[]            = "inet_ntoa";
+char aGetaddrinfo[]          = "getaddrinfo";
+char aGetaddrinfo_start[]    = "getaddrinfo_start";
+char aGetaddrinfo_process[]  = "getaddrinfo_process";
+char aGetaddrinfo_abort[]    = "getaddrinfo_abort";
+char aFreeaddrinfo[]         = "freeaddrinfo";
 
 /*
 addr соответствует IP 10.101.102.103

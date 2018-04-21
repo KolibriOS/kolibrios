@@ -53,6 +53,9 @@ block skp;
 _tabs tabs = { LP, LP, NULL, NULL, SKINS };
 
 checkbox checkbox1 = { "Checkbox", true };
+more_less_box spinbox1 = { 23, 0, 999, "SpinBox" };
+edit_box edit1 = {180,NULL,NULL,0xffffff,0x94AECE,0xFFFfff,0xffffff,
+	0x10000000,sizeof(param),#param,0, 0b};
 
 #define MENU_LIST "Open file     Enter\nDelete          Del"
 
@@ -74,6 +77,7 @@ void main()
 	  	case evMouse:
 			if (!CheckActiveProcess(Form.ID)) break;
 			SelectList_ProcessMouse();
+			edit_box_mouse stdcall (#edit1);
 
 	  		if (mouse.pkm)&&(select_list.MouseOver(mouse.x, mouse.y)) {
 	  			select_list.ProcessMouse(mouse.x, mouse.y);
@@ -88,6 +92,7 @@ void main()
 			if (id==SKINS) EventTabClick(SKINS);
 			if (id==WALLPAPERS) EventTabClick(WALLPAPERS);
 			checkbox1.click(id);
+			spinbox1.click(id);
 			break;
 	  
 		case evKey:
@@ -109,11 +114,13 @@ void main()
 					break;
 				}
 			}
+			EAX= key_ascii << 8;
+			edit_box_key stdcall (#edit1);
 			break;
 		 
 		 case evReDraw:
 			system.color.get();			
-			DefineAndDrawWindow(screen.width-600/2,80,600,404+skin_height,0x73,0xE4DFE1,WINDOW_HEADER,0);
+			DefineAndDrawWindow(screen.width-600/2,80,630,404+skin_height,0x74,0xE4DFE1,WINDOW_HEADER,0);
 			GetProcessInfo(#Form, SelfInfo);
 			IF (Form.status_window>=2) break;
 		 	DrawWindowContent();
@@ -129,6 +136,7 @@ void main()
 void DrawWindowContent()
 {
 	int id;
+	incn y;
 
 	DrawWideRectangle(0, 0, Form.cwidth, Form.cheight, LP, system.color.work);
 
@@ -150,10 +158,10 @@ void DrawWindowContent()
 	select_list.cur_y = id;
 
 	skp.set_size(
-		select_list.x + select_list.w + TAB_PADDING + scroll1.size_x,
-		select_list.y,
+		select_list.x + select_list.w + TAB_PADDING + scroll1.size_x + 20,
+		select_list.y + 30,
 		250,
-		250
+		select_list.h - 50
 	);
 
 	SelectList_Draw();
@@ -161,12 +169,16 @@ void DrawWindowContent()
 
 	if (tabs.active_tab == SKINS)
 	{
-		DrawBar(skp.x, skp.y, skp.w, skp.h, system.color.work);
+		DrawBar(skp.x-20, select_list.y, skp.w+40, select_list.h, system.color.work);
+		DrawRectangle(skp.x-20, select_list.y, skp.w+40, select_list.h, system.color.work_graph);
+		y.n = skp.y;
 		DrawFrame(skp.x, skp.y, skp.w, skp.h, " Components Preview ");
-		WriteText(skp.x+20, skp.y+30, 0x90, system.color.work_text, "Lorem ipsum");
-		checkbox1.draw(skp.x+20, skp.y+70);
-		DrawStandartCaptButton(skp.x+20, skp.y+skp.h-40, GetFreeButtonId(), "Apply");
-		DrawStandartCaptButton(skp.x+120, skp.y+skp.h-40, GetFreeButtonId(), "Close");
+		checkbox1.draw(skp.x+20, y.inc(30));
+		spinbox1.draw(skp.x+20, y.inc(30));
+		WriteText(skp.x+20, y.inc(30), 0x90, system.color.work_text, "Edit box");
+		DrawEditBoxPos(skp.x+20, y.inc(20), #edit1);
+		DrawStandartCaptButton(skp.x+20, skp.y+skp.h-40, GetFreeButtonId(), "Button1");
+		DrawStandartCaptButton(skp.x+120, skp.y+skp.h-40, GetFreeButtonId(), "Button2");
 	}
 }
 
