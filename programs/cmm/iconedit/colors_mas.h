@@ -1,10 +1,14 @@
+#define MAX_CELL_SIZE 256
+
 struct _image
 {
 	unsigned rows, columns;
-	dword mas[32*32];
+	dword mas[MAX_CELL_SIZE*MAX_CELL_SIZE];
 	dword img;
 	void create();
 	void set_pixel();
+	void draw_line();
+	void fill();
 	void set_image();
 	dword get_pixel();
 	dword get_image();
@@ -22,6 +26,82 @@ void _image::create(int _rows, _columns)
 void _image::set_pixel(int _r, _c, _color)
 {
 	mas[columns*_r + _c] = _color;
+}
+
+void _image::draw_line(int x1, int y1, int x2, int y2, dword color) {
+	int dx, dy, signX, signY, error, error2;
+
+	dx = x2 - x1;
+
+	if (dx < 0)
+		dx = -dx;
+   
+	dy = y2 - y1;
+
+	if (dy < 0)
+		dy = -dy;
+   
+	if (x1 < x2)
+		signX = 1;
+	else
+		signX = -1;
+   
+	if (y1 < y2)
+		signY = 1;
+	else
+		signY = -1;
+   
+	error = dx - dy;
+
+	set_pixel(y2, x2, color);
+
+	while((x1 != x2) || (y1 != y2)) 
+	{
+		set_pixel(y1, x1, color);
+		
+		error2 = error * 2;
+
+		if(error2 > calc(-dy)) 
+		{
+			error -= dy;
+			x1 += signX;
+		}
+
+		if(error2 < dx) 
+		{
+			error += dx;
+			y1 += signY;
+		}
+	}
+}
+
+void _image::fill(int _r, _c, _color)
+{
+	#define MARKED 6
+	int r, c, i, restart;
+
+	dword old_color = get_pixel(_r, _c);
+	set_pixel(_r, _c, MARKED);
+
+	do {
+		restart=false;	
+		for (r = 0; r < rows; r++)
+			for (c = 0; c < columns; c++)
+			{
+				IF (get_pixel(r,c) != old_color) continue;
+				IF (get_pixel(r,c) == MARKED) continue;
+				
+				IF (c>0)               && (get_pixel(r,c-1) == MARKED) set_pixel(r,c,MARKED);
+				IF (r>0)               && (get_pixel(r-1,c) == MARKED) set_pixel(r,c,MARKED);
+				IF (c<columns-1) && (get_pixel(r,c+1) == MARKED) set_pixel(r,c,MARKED);
+				IF (r<rows-1)    && (get_pixel(r+1,c) == MARKED) set_pixel(r,c,MARKED);
+				
+				IF (get_pixel(r,c)==MARKED) restart=true;
+			}
+	}while(restart);
+
+	for (i=0; i<columns*rows; i++) 
+			IF (mas[i]==MARKED) mas[i] = _color;
 }
 
 dword _image::get_pixel(int _r, _c)

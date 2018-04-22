@@ -203,6 +203,12 @@ inline fastcall void ActivateWindow( ECX)
 	$int 0x40
 }
 
+:void RefreshWindow(dword ID_REFRESH,ID_ACTIVE)
+{
+	ActivateWindow(ID_REFRESH);
+	ActivateWindow(ID_ACTIVE);
+}
+
 inline fastcall int MinimizeWindow()
 {
 	EAX = 18;
@@ -534,19 +540,6 @@ inline fastcall void PutPixel( EBX,ECX,EDX)
 	ESI = color;
 	EBX = x<<16+w;
 	ECX = y<<16+h;
-	$int 0x40
-}
-
-inline RefreshWindow(dword ID_REFRESH,ID_ACTIVE)
-{
-	EAX = 18;
-	EBX = 22;
-	ECX = 3;
-	EDX = ID_REFRESH;
-	$int 0x40
-	EAX = 18;
-	EBX = 3;
-	EDX = ID_ACTIVE;
 	$int 0x40
 }
 

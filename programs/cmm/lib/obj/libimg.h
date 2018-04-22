@@ -88,7 +88,9 @@ struct _Image
 #define Image_bpp8g  7  // grayscale
 #define Image_bpp2i  8
 #define Image_bpp4i  9
-#define Image_bpp8a 10  // grayscale with alpha channel; application layer only!!! kernel doesn't handle this image type, libimg can only create and destroy such images
+#define Image_bpp8a 10  // grayscale with alpha channel; application layer only!!! 
+                        // kernel doesn't handle this image type, 
+                        // libimg can only create and destroy such images
 
 
 :dword load_image(dword filename)
@@ -191,8 +193,8 @@ struct _Image
     );  
 }
 
-//NOTICE: DO NOT FORGOT TO INIT libio AND libimg!!!
-:void save_image(dword _image, _w, _h, _path)
+//NOTICE: DO NOT FORGET TO INIT libio AND libimg!!!
+:void save_image(dword _image_pointer, _w, _h, _path)
 {
     char save_success_message[4096+200];
     dword encoded_data=0;
@@ -206,7 +208,7 @@ struct _Image
     }
     else {
         EDI = image_ptr;
-        memmov(EDI._Image.Data, _image, _w * _h * 3);
+        memmov(EDI._Image.Data, _image_pointer, _w * _h * 3);
 
         encoded_data = encode_image(image_ptr, LIBIMG_FORMAT_PNG, 0, #encoded_size);
 

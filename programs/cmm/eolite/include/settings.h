@@ -50,6 +50,7 @@ checkbox two_panels       = { USE_TWO_PANELS };
 
 void settings_dialog()
 {   
+	proc_info Settings;
 	int id;
 	active_settings=1;
 	font_size.value = kfont.size.pt;
@@ -97,6 +98,7 @@ void settings_dialog()
 				if (line_height.click(id)) files.item_h = line_height.value; 
 				if (big_icons.click(id)) BigIconsSwitch();
 				EventRedrawWindow(Form.left,Form.top);
+				//RefreshWindow(Form.num_slot, Settings.num_slot);
 				break;
 					
 			case evKey:
@@ -109,6 +111,7 @@ void settings_dialog()
 			case evReDraw:
 				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 400, 
 					410+skin_height,0x34,system.color.work,TITLE_SETT,0);
+				GetProcessInfo(#Settings, SelfInfo);
 				DrawSettingsCheckBoxes();
 		}
 	}

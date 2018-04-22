@@ -54,8 +54,13 @@ _tabs tabs = { LP, LP, NULL, NULL, SKINS };
 
 checkbox checkbox1 = { "Checkbox", true };
 more_less_box spinbox1 = { 23, 0, 999, "SpinBox" };
-edit_box edit1 = {180,NULL,NULL,0xffffff,0x94AECE,0xFFFfff,0xffffff,
+edit_box edit_cmm = {180,NULL,NULL,0xffffff,0x94AECE,0xFFFfff,0xffffff,
 	0x10000000,sizeof(param),#param,0, 0b};
+
+char st_str[16];
+edit_box edit_st = {180,NULL,NULL,0xffffff,0x94AECE,0xFFFfff,0xffffff,
+	0x10000000,sizeof(st_str),#st_str,0, 0b};
+
 
 #define MENU_LIST "Open file     Enter\nDelete          Del"
 
@@ -77,7 +82,8 @@ void main()
 	  	case evMouse:
 			if (!CheckActiveProcess(Form.ID)) break;
 			SelectList_ProcessMouse();
-			edit_box_mouse stdcall (#edit1);
+			edit_box_mouse stdcall (#edit_cmm);
+			edit_box_mouse stdcall (#edit_st);
 
 	  		if (mouse.pkm)&&(select_list.MouseOver(mouse.x, mouse.y)) {
 	  			select_list.ProcessMouse(mouse.x, mouse.y);
@@ -115,7 +121,8 @@ void main()
 				}
 			}
 			EAX= key_ascii << 8;
-			edit_box_key stdcall (#edit1);
+			edit_box_key stdcall (#edit_cmm);
+			edit_box_key stdcall (#edit_st);
 			break;
 		 
 		 case evReDraw:
@@ -175,11 +182,25 @@ void DrawWindowContent()
 		DrawFrame(skp.x, skp.y, skp.w, skp.h, " Components Preview ");
 		checkbox1.draw(skp.x+20, y.inc(30));
 		spinbox1.draw(skp.x+20, y.inc(30));
-		WriteText(skp.x+20, y.inc(30), 0x90, system.color.work_text, "Edit box");
-		DrawEditBoxPos(skp.x+20, y.inc(20), #edit1);
+		WriteText(skp.x+20, y.inc(30), 0x90, system.color.work_text, "C-- Edit");
+		DrawEditBoxPos(skp.x+20, y.inc(20), #edit_cmm);
+		WriteText(skp.x+20, y.inc(35), 0x90, system.color.work_text, "Strandard Edit");
+		DrawStEditBoxPos(skp.x+20, y.inc(20), #edit_st);
 		DrawStandartCaptButton(skp.x+20, skp.y+skp.h-40, GetFreeButtonId(), "Button1");
 		DrawStandartCaptButton(skp.x+120, skp.y+skp.h-40, GetFreeButtonId(), "Button2");
 	}
+}
+
+:void DrawStEditBoxPos(dword x,y, edit_box_pointer)
+{
+	dword c_inactive = MixColors(system.color.work_graph, system.color.work, 128);
+	dword c_active = MixColors(system.color.work_graph, 0, 128);
+	ESI = edit_box_pointer;
+	ESI.edit_box.left = x;
+	ESI.edit_box.top = y;
+	ESI.edit_box.blur_border_color = c_inactive;
+	ESI.edit_box.focus_border_color = c_active;
+	edit_box_draw  stdcall (edit_box_pointer);
 }
 
 

@@ -161,7 +161,7 @@ struct frame
 	word start_y;                
 	dword ext_col;            
 	dword int_col;            
-	dword draw_text_flag;  // 0-not,1-yes
+	dword flags;  // see FR_FLAGS
 	dword text_pointer;          
 	dword text_position;   //  0-up,1-bottom
 	dword font_number;     //  0-monospace,1-variable
@@ -169,6 +169,18 @@ struct frame
 	dword font_color;            
 	dword font_backgr_color;
 };
+
+// FR_FLAGS = [x][yyy][z]
+// z        -  Caption
+// yyy      -  BorderStyle
+// x        -  BackStyle
+#define FR_CAPTION 00001b // [z]
+#define FR_DOUBLE  00000b // [yyy]
+#define FR_RAISED  00010b // [yyy]
+#define FR_SUNKEN  00100b // [yyy]
+#define FR_ETCHED  00110b // [yyy]
+#define FR_RIDGED  01000b // [yyy]
+#define FR_FILLED  10000b // [x]
 
 :frame frame123 = { 0, 260, 10, 60, 16, NULL, 0xFFFfff, 1, NULL, 0, 1, 12, 0x000111, 0xCCCccc };
 :void DrawFrame(dword x,y,w,h,text)
@@ -183,6 +195,7 @@ struct frame
 	frame123.size_x = w;
 	frame123.size_y = h;
 	frame123.text_pointer = text;
+	if (!text) frame123.flags=0; else frame123.flags=FR_CAPTION;
 	frame_draw stdcall (#frame123);
 }
 
