@@ -16,7 +16,10 @@ pipet aside color view
 #include "../lib/gui.h"
 #include "../lib/random.h"
 #include "../lib/mem.h"
+
 #include "../lib/obj/libimg.h"
+#include "../lib/obj/box_lib.h"
+
 #include "../lib/patterns/rgb.h"
 #include "../lib/patterns/libimg_load_skin.h"
 
@@ -28,7 +31,7 @@ pipet aside color view
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.46 Alpha"
+#define T_TITLE "Icon Editor 0.47 Alpha"
 
 #define TOOLBAR_H    24+8
 #define PANEL_LEFT_W 16+5+5+3+3
@@ -44,14 +47,14 @@ pipet aside color view
 
 block canvas = { NULL, NULL, NULL, NULL };
 block wrapper = { PANEL_LEFT_W, TOOLBAR_H, NULL, NULL };
-block right_bar = { NULL, TOOLBAR_H, RIGHT_BAR_W+10, NULL };
+block right_bar = { NULL, 10+TOOLBAR_H, RIGHT_BAR_W+10, NULL };
 
-block b_color_gradient = {NULL, 30+TOOLBAR_H, RIGHT_BAR_W, 30};
-block b_last_colors = {NULL, 70+TOOLBAR_H, RIGHT_BAR_W, COLSIZE*2};
-block b_default_palette = {NULL, COLSIZE*2+10+70+TOOLBAR_H, RIGHT_BAR_W, COLSIZE*9};
+block b_color_gradient = {NULL, 40+TOOLBAR_H, RIGHT_BAR_W, 30};
+block b_last_colors = {NULL, 80+TOOLBAR_H, RIGHT_BAR_W, COLSIZE*2};
+block b_default_palette = {NULL, COLSIZE*2+10+80+TOOLBAR_H, RIGHT_BAR_W, COLSIZE*9};
 
 dword color1 = 0x000000;
-dword color2 = 0xFFFfff;
+dword color2 = 0xBFCAD2;
 dword tool_color;
 
 enum {
@@ -79,6 +82,7 @@ enum {
 };
 
 proc_info Form;
+dword semi_white;
 
 more_less_box zoom = { 11, 1, 40, "Zoom" };
 
@@ -157,9 +161,13 @@ void main()
 
 	load_dll(libio,  #libio_init,  1);
 	load_dll(libimg, #libimg_init, 1);
+	load_dll(boxlib, #box_lib_init,0);
+
 	Libimg_LoadImage(#skin, "/sys/icons16.png");
-	//system.color.get();
-	//Libimg_ReplaceColor(tools_img.image, tools_img.w, tools_img.h, 0xFFF8C0D0, system.color.work);
+	system.color.get();
+	semi_white = MixColors(system.color.work, 0xFFFfff, 64);
+	Libimg_ReplaceColor(skin.image, skin.w, skin.h, 
+		0xffFFFfff, semi_white);
 
 	if (!param[0]) {
 		image.create(32, 32);
@@ -217,6 +225,8 @@ void main()
 		case evButton:
 			btn = GetButtonID();
 
+			if (zoom.click(btn)) DrawEditArea();
+
 			switch(btn)
 			{
 				case BTN_NEW:
@@ -273,14 +283,6 @@ void main()
 				case BTN_SELECT:
 					setCurrentTool(TOOL_SELECT);
 					break;
-				case BTN_ZOOM_IN:
-					zoom.inc();
-					DrawEditArea();
-					break;
-				case BTN_ZOOM_OUT:
-					zoom.dec();
-					DrawEditArea();
-					break;
 				case CLOSE_BTN:
 					ExitProcess();
 					break;
@@ -316,7 +318,7 @@ void main()
 
 void DrawToolbarButton(dword _id, _x, _icon_n)
 {
-	DrawWideRectangle(_x, 4, 22, 22, 3, 0xFFFfff);
+	DrawWideRectangle(_x, 4, 22, 22, 3, semi_white);
 	DefineHiddenButton(_x, 4, 21, 21, _id);
 	img_draw stdcall(skin.image, _x+3, 7, 16, 16, 0, _icon_n*16);
 }
@@ -324,7 +326,7 @@ void DrawToolbarButton(dword _id, _x, _icon_n)
 void DrawLeftPanelButton(dword _id, _y, _icon_n)
 {
 	int x = 5;
-	DrawWideRectangle(x, _y, 22, 22, 3, 0xFFFfff);
+	DrawWideRectangle(x, _y, 22, 22, 3, semi_white);
 	DefineHiddenButton(x, _y, 21, 21, _id);
 	img_draw stdcall(skin.image, x+3, _y+3, 16, 16, 0, _icon_n*16);
 }
@@ -349,8 +351,9 @@ void draw_window()
 
 	right_bar.x = Form.cwidth - right_bar.w;
 	b_color_gradient.x = b_last_colors.x = b_default_palette.x = right_bar.x;
+	DrawBar(0, TOOLBAR_H-1, Form.cwidth, 1, system.color.work_graph);
 
-	tx.n = 10-TB_ICON_PADDING;
+	tx.n = 5-TB_ICON_PADDING;
 	DrawToolbarButton(BTN_NEW,    tx.inc(TB_ICON_PADDING), 2); //not implemented
 	DrawToolbarButton(BTN_OPEN,   tx.inc(TB_ICON_PADDING), 0); //not implemented
 	DrawToolbarButton(BTN_SAVE,   tx.inc(TB_ICON_PADDING), 5);
@@ -377,14 +380,14 @@ void draw_window()
 void DrawLeftPanel()
 {
 	incn ty;
-	ty.n = TOOLBAR_H-TB_ICON_PADDING;
+	ty.n = right_bar.y - TB_ICON_PADDING;
 	DrawLeftPanelButton(BTN_PENCIL, ty.inc(TB_ICON_PADDING), 38);
 	DrawLeftPanelButton(BTN_PICK,   ty.inc(TB_ICON_PADDING), 39);
 	DrawLeftPanelButton(BTN_FILL,   ty.inc(TB_ICON_PADDING), 40);
 	DrawLeftPanelButton(BTN_LINE,   ty.inc(TB_ICON_PADDING), 41);
 	DrawLeftPanelButton(BTN_RECT,   ty.inc(TB_ICON_PADDING), 42);
 	DrawLeftPanelButton(BTN_SELECT,   ty.inc(TB_ICON_PADDING), 43);
-	DrawRectangle3D(5, currentTool*TB_ICON_PADDING+TOOLBAR_H, 16+3+2, 16+3+2, 0x333333, 0x777777);
+	DrawRectangle3D(5, currentTool*TB_ICON_PADDING+right_bar.y, 16+3+2, 16+3+2, 0x333333, 0x777777);
 }
 
 void DrawEditArea()
@@ -433,14 +436,17 @@ void DrawEditArea()
 
 void DrawActiveColor(dword iny)
 {
+	#define CELL 20
 	static dword outy;
 	if (iny != NULL) outy = iny;
-	DrawBar(right_bar.x, outy, 20, 20, color1);
+	DrawFrame(right_bar.x, outy, CELL, CELL, NULL);
+	DrawBar(right_bar.x+2, outy+2, CELL-4, CELL-4, color1);
 	sprintf(#param, "%A", color1);
 	EDI = system.color.work;
 	WriteText(right_bar.x + 30, outy + 3, 0xD0, system.color.work_text, #param+4);
 
-	DrawBar(right_bar.x+110, outy, 20, 20, color2);
+	DrawFrame(right_bar.x+110, outy, CELL, CELL, NULL);
+	DrawBar(right_bar.x+110+2, outy+2, CELL-4, CELL-4, color2);
 	sprintf(#param, "%A", color2);
 	EDI = system.color.work;
 	WriteText(right_bar.x+110 + 30, outy + 3, 0xD0, system.color.work_text, #param+4);	
