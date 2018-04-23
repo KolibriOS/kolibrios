@@ -8,23 +8,26 @@ void DrawIconByExtension(dword file_path, extension, xx, yy, fairing_color)
 	dword icon_n;
 	dword selected_image;
 	dword default_image;
+	dword default_icon;
 
 	if (big_icons.checked) {
 		icons_ini.section = "icons32";
 		selected_image = icons32_selected.image;
 		default_image = icons32_default.image;
+		default_icon=95;
 	}
 	else {
 		icons_ini.section = "icons16";
 		selected_image = icons16_selected.image;
 		default_image = icons16_default.image;
+		default_icon=2;
 	}
 
 	if (extension)
 	{
 		strcpy(#ext, extension);
 		strlwr(#ext);
-		icon_n = icons_ini.GetInt(#ext, 2);
+		icon_n = icons_ini.GetInt(#ext, default_icon);
 	} 
 	else if (file_path)
 	{

@@ -2,8 +2,8 @@ struc system_colors
  {
   .taskbar          dd 0x586786
   .taskbar_text     dd 0xFEFEFE
-  .work_3d_dark     dd 0xC0BBB4
-  .work_3d_light    dd 0xECE9E5
+  .work_dark        dd 0xC0BBB4
+  .work_light       dd 0xECE9E5
   .window_title     dd 0x333333
   .work             dd 0xDDD7CF
   .work_button      dd 0x7887A6

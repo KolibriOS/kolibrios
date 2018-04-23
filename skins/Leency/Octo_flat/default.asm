@@ -2,7 +2,7 @@ include '..\skin.inc'
 
 SKIN_PARAMS \
   height          = bmp_center1.height,\  ; skin height
-  margins         = [25:4:40:6],\         ; margins [left:top:right:bottom]
+  margins         = [25:2:40:0],\         ; margins [left:top:right:bottom]
   colors active   = [binner=0xE1E1E1:\    ; border inner color
                      bouter=0x204962:\    ; border outer color
                      bframe=0xE1E1E1],\   ; border frame color

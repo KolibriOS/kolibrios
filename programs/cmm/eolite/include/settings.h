@@ -235,7 +235,7 @@ void BigIconsSwitch()
 	if (big_icons.checked) 
 	{
 		icon_size=32;
-		files.item_h = line_height.value = 34;
+		files.item_h = line_height.value = 35;
 		if (!icons32_default.image)
 		{
 			Libimg_LoadImage(#icons32_default, "/sys/icons32.png");
