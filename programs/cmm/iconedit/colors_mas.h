@@ -1,10 +1,60 @@
 #define MAX_CELL_SIZE 256
 
+//////////////////////////////////////////////////////////////////////////////////////
+//                                                                                  //
+//                                  DRAW PIXEL                                      //
+//                                                                                  //
+//////////////////////////////////////////////////////////////////////////////////////
+
+//The 'draw[]' in the array which holds the states should we draw a pixel or not.
+//Is need to decrese redraw when using some tools like line, rectangle and selection.
+
+struct _pixel_state
+{
+	unsigned image_rows, image_columns;
+	bool draw[MAX_CELL_SIZE*MAX_CELL_SIZE];
+	void set_drawable_state();
+	bool is_drawable();
+	void reset_and_set_all_drawable();
+	void set_sizes();
+} pixel_state;
+
+void _pixel_state::set_drawable_state(int _r, _c, _state)
+{
+	draw[image_columns*_r + _c] = _state;
+}
+
+bool _pixel_state::is_drawable(int _r, _c)
+{
+	return draw[image_columns*_r + _c];
+}
+
+void _pixel_state::reset_and_set_all_drawable()
+{
+	int i;
+	for (i = 0; i < image_columns*image_rows; i++) draw[i]=true;
+}
+
+void _pixel_state::set_sizes(dword _r, _c)
+{
+	image_rows = _r;
+	image_columns = _c;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+//                                                                                  //
+//                                      IMAGE                                       //
+//                                                                                  //
+//////////////////////////////////////////////////////////////////////////////////////
+
+//This stucture determines basic actions that can be done with image (icon).
+
 struct _image
 {
 	unsigned rows, columns;
 	dword mas[MAX_CELL_SIZE*MAX_CELL_SIZE];
 	dword img;
+	_pixel_state pixel_state;
 	void create();
 	void set_pixel();
 	void draw_line();
@@ -21,6 +71,7 @@ void _image::create(int _rows, _columns)
 	rows = _rows;
 	columns = _columns;
 	for (i = 0; i < columns*rows; i++) mas[i]=0xBFCAD2;
+	pixel_state.set_sizes(rows, columns);
 }
 
 void _image::set_pixel(int _r, _c, _color)
@@ -205,9 +256,6 @@ void _image::move(int _direction)
 				break;	
 	}
 }
-
-
-
 
 
 

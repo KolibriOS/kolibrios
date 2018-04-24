@@ -11,7 +11,7 @@ enhance icon
 pipet aside color view
 */
 
-#define MEMSIZE 4096*100
+#define MEMSIZE 4096*200
 
 #include "../lib/gui.h"
 #include "../lib/random.h"
@@ -31,7 +31,7 @@ pipet aside color view
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.47 Alpha"
+#define T_TITLE "Icon Editor 0.48 Alpha"
 
 #define TOOLBAR_H    24+8
 #define PANEL_LEFT_W 16+5+5+3+3
@@ -56,6 +56,12 @@ block b_default_palette = {NULL, COLSIZE*2+10+80+TOOLBAR_H, RIGHT_BAR_W, COLSIZE
 dword color1 = 0x000000;
 dword color2 = 0xBFCAD2;
 dword tool_color;
+
+signed hoverX;
+signed hoverY;
+signed priorHoverX;
+signed priorHoverY;
+bool canvasMouseMoved = false;
 
 enum {
 	BTN_NEW = 40,
@@ -110,7 +116,6 @@ _image image;
 
 #include "actions_history.h"
 
-libimg_image open_image;
 _ActionsHistory actionsHistory;
 
 #include "tools.h"
@@ -121,43 +126,10 @@ _ActionsHistory actionsHistory;
 //                                                   //
 //===================================================//
 
-
-void initTools() 
-{
-	tools[0].id = TOOL_PENCIL;
-	tools[0].onMouseEvent = #PencilTool_onMouseEvent;
-	tools[0].deactivate = #PencilTool_reset;
-	
-	tools[1].id = TOOL_PIPETTE;
-	tools[1].activate = #PipetteTool_activate;
-	tools[1].onMouseEvent = #PipetteTool_onMouseEvent;
-	
-	tools[2].id = TOOL_FILL;
-	tools[2].onMouseEvent = #FillTool_onMouseEvent;
-	
-	tools[3].id = TOOL_LINE;
-	tools[3].activate = #SimpleFigureTool_Reset;
-	tools[3].deactivate = #SimpleFigureTool_Reset;
-	tools[3].onMouseEvent = #SimpleFigureTool_onMouseEvent;
-	tools[3].onCanvasDraw = #SimpleFigureTool_onCanvasDraw;
-	
-	tools[4].id = TOOL_RECT;
-	tools[4].activate = #SimpleFigureTool_Reset;
-	tools[4].deactivate = #SimpleFigureTool_Reset;
-	tools[4].onMouseEvent = #SimpleFigureTool_onMouseEvent;
-	tools[4].onCanvasDraw = #SimpleFigureTool_onCanvasDraw;	
-
-	tools[5].id = TOOL_SELECT;
-	tools[5].activate = #SelectTool_activate;
-	tools[5].deactivate = #SelectTool_deactivate;
-	tools[5].onMouseEvent = #SelectTool_onMouseEvent;
-	tools[5].onCanvasDraw = #SelectTool_onCanvasDraw;	
-	tools[5].onKeyEvent = #SelectTool_onKeyEvent;	
-}
-
 void main()
 {
 	word btn;
+	libimg_image open_image;
 
 	load_dll(libio,  #libio_init,  1);
 	load_dll(libimg, #libimg_init, 1);
@@ -202,6 +174,21 @@ void main()
 			if (mouse.pkm) tool_color = color2;
 			if (mouse.mkm) break;
 
+			hoverX = mouse.x - canvas.x / zoom.value;
+			hoverY = mouse.y - canvas.y / zoom.value;
+			if (hoverX<0) hoverX = 0;
+			if (hoverY<0) hoverY = 0;
+			if (hoverX>image.columns-1) hoverX = image.columns-1;
+			if (hoverY>image.rows-1) hoverY = image.rows-1;
+			canvasMouseMoved = false;
+			if (priorHoverX != hoverX) canvasMouseMoved = true;
+			if (priorHoverY != hoverY) canvasMouseMoved = true;
+			priorHoverX = hoverX;
+			priorHoverY = hoverY;
+			//DrawBar(Form.cwidth-100, 3, 80, 12, 0xFFFfff);
+			//WriteText(Form.cwidth-100, 3, 0x80, 0x000000, 
+			//	sprintf(#param, "%i %i", hoverX, hoverY));
+
 			if (currentTool != TOOL_NONE)
 				tools[currentTool].onMouseEvent(mouse.x, mouse.y, mouse.lkm, mouse.pkm);
 
@@ -230,14 +217,13 @@ void main()
 			switch(btn)
 			{
 				case BTN_NEW:
-					image.create(32, 32);
-					DrawCanvas();
+					EventCleanCanvas();
 					break;
 				case BTN_OPEN:
 					RunProgram("/sys/lod", sprintf(#param, "*png* %s",#program_path));
 					break;
 				case BTN_SAVE:
-					EventSave();
+					EventSaveIconToFile();
 					break;
 				case BTN_MOVE_LEFT:
 					image.move(MOVE_LEFT);
@@ -284,7 +270,7 @@ void main()
 					setCurrentTool(TOOL_SELECT);
 					break;
 				case CLOSE_BTN:
-					ExitProcess();
+					EventExitIconEdit();
 					break;
 			}
 			break;
@@ -489,20 +475,31 @@ void DrawColorPallets()
 	}
 }
 
+void DrawCanvasPixel(dword _r,_c,_color)
+{
+	DrawBar(_c*zoom.value + canvas.x, _r*zoom.value + canvas.y, 
+	zoom.value, zoom.value, _color);
+}
+
 void DrawCanvas()
 {
 	int r, c;
+	dword color;
+
+	if ((currentTool != TOOL_NONE) && (tools[currentTool].onCanvasDraw != 0))
+	{
+		tools[currentTool].onCanvasDraw();
+	}
+
 	for (r = 0; r < image.rows; r++)
 	{
 		for (c = 0; c < image.columns; c++)
 		{
-			DrawBar(c*zoom.value + canvas.x, r*zoom.value + canvas.y, 
-				zoom.value, zoom.value, image.get_pixel(r, c));
+			if (image.pixel_state.is_drawable(r,c)) 
+				DrawCanvasPixel(r, c, image.get_pixel(r,c));
 		}
 	}
-	
-	if ((currentTool != TOOL_NONE) && (tools[currentTool].onCanvasDraw != 0))
-		tools[currentTool].onCanvasDraw();
+	image.pixel_state.reset_and_set_all_drawable();
 
 	DrawPreview();
 }
@@ -526,9 +523,30 @@ dword GetPixelUnderMouse()
 //                                                   //
 //===================================================//
 
-void EventSave()
+void EventSaveIconToFile()
 {
-	save_image(image.get_image(), image.columns, image.rows, "/rd/1/saved_image.png");
+	int i=0;
+	char save_file_name[4096];
+	char save_path_stable[4096];
+	strcpy(#save_path_stable, "/tmp0/1");
+	do {
+		i++;
+		sprintf(#save_file_name, "%s/saved_icon_%i.png", #save_path_stable, i);
+	} while (file_exists(#save_file_name));
+	save_image(image.get_image(), image.columns, image.rows, #save_file_name);
+}
+
+void EventCleanCanvas()
+{
+	EventSaveIconToFile();
+	image.create(32, 32);
+	DrawCanvas();
+}
+
+void EventExitIconEdit()
+{
+	EventSaveIconToFile();
+	ExitProcess();
 }
 
 void EventSetActiveColor(int _number, _color)
@@ -545,3 +563,4 @@ void EventSetActiveColor(int _number, _color)
 	DrawActiveColor(NULL);
 	DrawColorPallets();
 }
+
