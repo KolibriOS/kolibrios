@@ -44,13 +44,17 @@ PutPixel:
 ; eax - color of pixel in coordinats (x,y)
 GetColorOfPixel:
 
+  cmp esi,ebx
+  jb @f
+    xor eax,eax
+	dec eax
+	ret
+  @@:
   imul ebx,edi
   add ebx,esi
   lea ebx,[ebx+ebx*2]
-  add eax,ebx
-  mov ebx,[eax]
-  and ebx,0xffffff
-  mov eax,ebx
+  mov eax,[eax+ebx]
+  and eax,0xffffff
   ret
 
 ;procedure <<<<calculate line>>>>
@@ -589,7 +593,7 @@ flood_fill:
   call GetColorOfPixel
   push eax
 
-  cmp eax,[c]	 ;если цвет проверямого пикселя не равен с,то не заносим его в стек
+  cmp eax,[c]	 ;если цвет проверямого пикселя не равен с, то не заносим его в стек
   jne no_fill_1
   mov ebx,[l_c]
   cmp ebx,[c]
@@ -655,7 +659,7 @@ flood_fill:
   call GetColorOfPixel
   push eax
 
-  cmp eax,[c]	 ;если цвет проверямого пикселя не равен с,то не заносим его в стек
+  cmp eax,[c]	 ;если цвет проверямого пикселя не равен с, то не заносим его в стек
   je no_fill_3
   mov ebx,[l_c]
   cmp ebx,[c]
