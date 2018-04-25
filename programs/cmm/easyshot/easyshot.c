@@ -14,22 +14,24 @@
 
 /* === TRANSLATIONS === */
 
-#define T_WTITLE "EasyShot v1.0"
+#define T_WTITLE "EasyShot v1.1"
 
 #ifdef LANG_RUS
 	?define T_TAKE_SCREENSHOT "  Сделать скриншот"
 	?define T_SETTINGS "Настройки"
 	?define T_EDITBOX_FRAME " Путь сохранения скриншота "
-	?define T_DELAY "Задержка в секундах"
 	?define T_MINIMIZE "Свернуть окно при снимке"
+	?define T_CONTINUOUS_SHOOTING "Continuous shooting"
+	?define T_DELAY "Задержка в секундах"
 	?define T_NO_DIR "'Папка не существует!' -E"
 	?define T_SET_PATH "Задать"
 #else
 	?define T_TAKE_SCREENSHOT "  Take a screenshot"
 	?define T_SETTINGS "Settings"
 	?define T_EDITBOX_FRAME " Save path "
-	?define T_DELAY "Delay in seconds"
 	?define T_MINIMIZE "Minimize window"
+	?define T_CONTINUOUS_SHOOTING "Continuous shooting"
+	?define T_DELAY "Delay in seconds"
 	?define T_NO_DIR "'Directory does not exists!' -E"
 	?define T_SET_PATH "Set"
 #endif
@@ -58,6 +60,7 @@ edit_box edit_save = {250,25,100,0xffffff,0x94AECE,0xFFFfff,0xffffff,
 
 more_less_box delay = { 1, 0, 64, T_DELAY };
 checkbox minimize = { T_MINIMIZE, true };
+checkbox continuous_shooting = { T_CONTINUOUS_SHOOTING, true };
 
 
 opendialog open_folder_dialog = 
@@ -128,7 +131,7 @@ void main()
 void DrawMainContent()
 {
 	int take_scr_btn_width;
-	take_scr_btn_width = DrawIconButton(PD, PD, BTN_MAKE_SCREENSHOT, T_TAKE_SCREENSHOT, 44);
+	take_scr_btn_width = DrawIconButton(PD, PD, BTN_MAKE_SCREENSHOT, T_TAKE_SCREENSHOT, 45);
 	DrawIconButton(PD+take_scr_btn_width, PD, BTN_SETTINGS, " ", 10);	
 }
 

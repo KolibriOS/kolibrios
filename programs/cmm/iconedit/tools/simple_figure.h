@@ -23,6 +23,8 @@ int mouseY_last;
 bool first_click_in_canvas = false;
 
 void SimpleFigureTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
+	int x1, y1, x2, y2;
+
 	if (mouse.down) && (canvas.hovered()) first_click_in_canvas = true;
 	if (first_click_in_canvas)
 	{
@@ -50,21 +52,21 @@ void SimpleFigureTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 		if (mouse.up) {
 			if ((figTool.startX >= 0) 
 			&& (figTool.startY >= 0)) {
+
+				x1 = figTool.startX - canvas.x/zoom.value;
+				y1 = figTool.startY - canvas.y/zoom.value;
+				x2 = mouseX - canvas.x/zoom.value;
+				y2 = mouseY - canvas.y/zoom.value;
+
 				// Draw line from start position to current position
 				if (currentTool == TOOL_LINE) {
-					DrawLineIcon(figTool.startX - canvas.x/zoom.value, 
-						figTool.startY - canvas.y/zoom.value, 
-						mouseX - canvas.x/zoom.value, 
-						mouseY - canvas.y/zoom.value, 
-						tool_color, 
-						TOIMAGE);
+					DrawLineIcon(x1, y1, x2, y2, tool_color, TOIMAGE);
 				}
 				else if (currentTool == TOOL_RECT) {
-					DrawRectangleIcon(figTool.startX - canvas.x/zoom.value, 
-						figTool.startY - canvas.y/zoom.value, 
-						mouseX - canvas.x/zoom.value, 
-						mouseY - canvas.y/zoom.value, tool_color, 
-						TOIMAGE);
+					DrawRectangleIcon(x1, y1, x2, y2, tool_color, TOIMAGE);
+				}
+				else if (currentTool == TOOL_BAR) {
+					DrawBarIcon(x1, y1, x2, y2, tool_color, TOIMAGE);
 				}
 
 				DrawCanvas();
@@ -82,24 +84,21 @@ void SimpleFigureTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 }
 
 void SimpleFigureTool_onCanvasDraw() {
-	if ((figTool.startX >= 0) 
+	int x1, y1, x2, y2;
+ 	if ((figTool.startX >= 0) 
 	&& (figTool.startY >= 0) && (mouse.key)) {
-		if (currentTool == TOOL_LINE) {
-			DrawLineIcon(figTool.startX - canvas.x/zoom.value, 
-				figTool.startY - canvas.y/zoom.value, 
-				mouseX_last - canvas.x/zoom.value, 
-				mouseY_last - canvas.y/zoom.value, 
-				tool_color, 
-				TOCANVAS);
-		}
-		else if (currentTool == TOOL_RECT) {
-			DrawRectangleIcon(figTool.startX - canvas.x/zoom.value, 
-				figTool.startY - canvas.y/zoom.value, 
-				mouseX_last - canvas.x/zoom.value, 
-				mouseY_last - canvas.y/zoom.value, 
-				tool_color, 
-				TOCANVAS);
-		}
+
+		x1 = figTool.startX - canvas.x/zoom.value;
+		y1 = figTool.startY - canvas.y/zoom.value;
+		x2 = mouseX_last - canvas.x/zoom.value;
+		y2 = mouseY_last - canvas.y/zoom.value;
+
+		if (currentTool == TOOL_LINE)
+			DrawLineIcon(x1, y1, x2, y2, tool_color, TOCANVAS);
+		else if (currentTool == TOOL_RECT)
+			DrawRectangleIcon(x1, y1, x2, y2, tool_color, TOCANVAS);
+		else if (currentTool == TOOL_BAR)
+			DrawBarIcon(x1, y1, x2, y2, tool_color, TOCANVAS);
 
 		figTool.lastTempPosX = mouseX_last - canvas.x/zoom.value;
 		figTool.lastTempPosY = mouseY_last - canvas.y/zoom.value;
@@ -178,3 +177,15 @@ void DrawRectangleIcon(int x1, int y1, int x2, int y2, dword color, int target) 
 	DrawLineIcon(x1, y2, x1, y1, color, target);
 }
 
+void DrawBarIcon(int x1, int y1, int x2, int y2, dword color, int target) {
+	signed signY;
+	if (y1 < y2)
+		signY = 1;
+	else
+		signY = -1;
+
+	while (y1 != y2+signY) {
+		DrawLineIcon(x1, y1, x2, y1, color, target);
+		y1 += signY;
+	}
+}

@@ -13,7 +13,7 @@ struct Tool {
 
 int previousTool = -1;
 int currentTool = -1;
-Tool tools[6];
+Tool tools[7];
 
 enum {
 	TOOL_NONE = -1,
@@ -22,6 +22,7 @@ enum {
 	TOOL_FILL,
 	TOOL_LINE,
 	TOOL_RECT,
+	TOOL_BAR,
 	TOOL_SELECT
 };
 #include "tools/pencil.h";
@@ -33,35 +34,41 @@ enum {
 
 void initTools() 
 {
-	tools[0].id = TOOL_PENCIL;
-	tools[0].onMouseEvent = #PencilTool_onMouseEvent;
-	tools[0].deactivate = #PencilTool_reset;
+	tools[TOOL_PENCIL].id = TOOL_PENCIL;
+	tools[TOOL_PENCIL].onMouseEvent = #PencilTool_onMouseEvent;
+	tools[TOOL_PENCIL].deactivate = #PencilTool_reset;
 	
-	tools[1].id = TOOL_PIPETTE;
-	tools[1].activate = #PipetteTool_activate;
-	tools[1].onMouseEvent = #PipetteTool_onMouseEvent;
+	tools[TOOL_PIPETTE].id = TOOL_PIPETTE;
+	tools[TOOL_PIPETTE].activate = #PipetteTool_activate;
+	tools[TOOL_PIPETTE].onMouseEvent = #PipetteTool_onMouseEvent;
 	
-	tools[2].id = TOOL_FILL;
-	tools[2].onMouseEvent = #FillTool_onMouseEvent;
+	tools[TOOL_FILL].id = TOOL_FILL;
+	tools[TOOL_FILL].onMouseEvent = #FillTool_onMouseEvent;
 	
-	tools[3].id = TOOL_LINE;
-	tools[3].activate = #SimpleFigureTool_Reset;
-	tools[3].deactivate = #SimpleFigureTool_Reset;
-	tools[3].onMouseEvent = #SimpleFigureTool_onMouseEvent;
-	tools[3].onCanvasDraw = #SimpleFigureTool_onCanvasDraw;
+	tools[TOOL_LINE].id = TOOL_LINE;
+	tools[TOOL_LINE].activate = #SimpleFigureTool_Reset;
+	tools[TOOL_LINE].deactivate = #SimpleFigureTool_Reset;
+	tools[TOOL_LINE].onMouseEvent = #SimpleFigureTool_onMouseEvent;
+	tools[TOOL_LINE].onCanvasDraw = #SimpleFigureTool_onCanvasDraw;
 	
-	tools[4].id = TOOL_RECT;
-	tools[4].activate = #SimpleFigureTool_Reset;
-	tools[4].deactivate = #SimpleFigureTool_Reset;
-	tools[4].onMouseEvent = #SimpleFigureTool_onMouseEvent;
-	tools[4].onCanvasDraw = #SimpleFigureTool_onCanvasDraw;	
+	tools[TOOL_RECT].id = TOOL_RECT;
+	tools[TOOL_RECT].activate = #SimpleFigureTool_Reset;
+	tools[TOOL_RECT].deactivate = #SimpleFigureTool_Reset;
+	tools[TOOL_RECT].onMouseEvent = #SimpleFigureTool_onMouseEvent;
+	tools[TOOL_RECT].onCanvasDraw = #SimpleFigureTool_onCanvasDraw;	
 
-	tools[5].id = TOOL_SELECT;
-	tools[5].activate = #SelectTool_activate;
-	tools[5].deactivate = #SelectTool_deactivate;
-	tools[5].onMouseEvent = #SelectTool_onMouseEvent;
-	tools[5].onCanvasDraw = #SelectTool_onCanvasDraw;	
-	tools[5].onKeyEvent = #SelectTool_onKeyEvent;	
+	tools[TOOL_BAR].id = TOOL_BAR;
+	tools[TOOL_BAR].activate = #SimpleFigureTool_Reset;
+	tools[TOOL_BAR].deactivate = #SimpleFigureTool_Reset;
+	tools[TOOL_BAR].onMouseEvent = #SimpleFigureTool_onMouseEvent;
+	tools[TOOL_BAR].onCanvasDraw = #SimpleFigureTool_onCanvasDraw;	
+
+	tools[TOOL_SELECT].id = TOOL_SELECT;
+	tools[TOOL_SELECT].activate = #SelectTool_activate;
+	tools[TOOL_SELECT].deactivate = #SelectTool_deactivate;
+	tools[TOOL_SELECT].onMouseEvent = #SelectTool_onMouseEvent;
+	tools[TOOL_SELECT].onCanvasDraw = #SelectTool_onCanvasDraw;	
+	tools[TOOL_SELECT].onKeyEvent = #SelectTool_onKeyEvent;	
 }
 
 
@@ -84,10 +91,4 @@ void setCurrentTool(int index) {
 	DrawLeftPanel();
 	DrawCanvas();
 }
-
-//===================================================//
-//                                                   //
-//                    FUNTIONS                       //
-//                                                   //
-//===================================================//
 

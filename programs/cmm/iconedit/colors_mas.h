@@ -6,8 +6,8 @@
 //                                                                                  //
 //////////////////////////////////////////////////////////////////////////////////////
 
-//The 'draw[]' in the array which holds the states should we draw a pixel or not.
-//Is need to decrese redraw when using some tools like line, rectangle and selection.
+//The 'draw[]' is the array which holds the states should we draw a pixel or not.
+//Is need to decrease redraw when using some tools like line, rectangle and selection.
 
 struct _pixel_state
 {

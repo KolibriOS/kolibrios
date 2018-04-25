@@ -31,7 +31,7 @@ pipet aside color view
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.48 Alpha"
+#define T_TITLE "Icon Editor 0.49 Alpha"
 
 #define TOOLBAR_H    24+8
 #define PANEL_LEFT_W 16+5+5+3+3
@@ -80,7 +80,9 @@ enum {
 	BTN_FILL,
 	BTN_LINE,
 	BTN_RECT,
+	BTN_BAR,
 	BTN_SELECT,
+	BTN_SCREEN,
 	BTN_ZOOM_IN,
 	BTN_ZOOM_OUT,
 	BTNS_PALETTE_COLOR_MAS = 100,
@@ -254,17 +256,18 @@ void main()
 					break;
 				case BTN_PICK:
 					setCurrentTool(TOOL_PIPETTE);
-					//EventPickActivate();
 					break;
 				case BTN_FILL:
 					setCurrentTool(TOOL_FILL);
-					//EventFillActivate();
 					break;
 				case BTN_LINE:
 					setCurrentTool(TOOL_LINE);
 					break;
 				case BTN_RECT:
 					setCurrentTool(TOOL_RECT);
+					break;
+				case BTN_BAR:
+					setCurrentTool(TOOL_BAR);
 					break;
 				case BTN_SELECT:
 					setCurrentTool(TOOL_SELECT);
@@ -372,7 +375,9 @@ void DrawLeftPanel()
 	DrawLeftPanelButton(BTN_FILL,   ty.inc(TB_ICON_PADDING), 40);
 	DrawLeftPanelButton(BTN_LINE,   ty.inc(TB_ICON_PADDING), 41);
 	DrawLeftPanelButton(BTN_RECT,   ty.inc(TB_ICON_PADDING), 42);
-	DrawLeftPanelButton(BTN_SELECT,   ty.inc(TB_ICON_PADDING), 43);
+	DrawLeftPanelButton(BTN_BAR,    ty.inc(TB_ICON_PADDING), 43);
+	DrawLeftPanelButton(BTN_SELECT, ty.inc(TB_ICON_PADDING), 44);
+	//DrawLeftPanelButton(BTN_SCREEN, ty.inc(TB_ICON_PADDING), 45);
 	DrawRectangle3D(5, currentTool*TB_ICON_PADDING+right_bar.y, 16+3+2, 16+3+2, 0x333333, 0x777777);
 }
 
