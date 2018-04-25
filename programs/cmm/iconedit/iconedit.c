@@ -11,7 +11,7 @@ enhance icon
 pipet aside color view
 */
 
-#define MEMSIZE 4096*200
+#define MEMSIZE 4096*250
 
 #include "../lib/gui.h"
 #include "../lib/random.h"
@@ -31,7 +31,7 @@ pipet aside color view
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.49 Alpha"
+#define T_TITLE "Icon Editor 0.50 Alpha"
 
 #define TOOLBAR_H    24+8
 #define PANEL_LEFT_W 16+5+5+3+3
@@ -82,7 +82,7 @@ enum {
 	BTN_RECT,
 	BTN_BAR,
 	BTN_SELECT,
-	BTN_SCREEN,
+	BTN_SCREEN_COPY,
 	BTN_ZOOM_IN,
 	BTN_ZOOM_OUT,
 	BTNS_PALETTE_COLOR_MAS = 100,
@@ -272,6 +272,9 @@ void main()
 				case BTN_SELECT:
 					setCurrentTool(TOOL_SELECT);
 					break;
+				case BTN_SCREEN_COPY:
+					setCurrentTool(TOOL_SCREEN_COPY);
+					break;
 				case CLOSE_BTN:
 					EventExitIconEdit();
 					break;
@@ -290,6 +293,8 @@ void main()
 			if (key_scancode == SCAN_CODE_KEY_F) setCurrentTool(TOOL_FILL);
 			if (key_scancode == SCAN_CODE_KEY_L) setCurrentTool(TOOL_LINE);
 			if (key_scancode == SCAN_CODE_KEY_R) setCurrentTool(TOOL_RECT);
+			if (key_scancode == SCAN_CODE_KEY_B) setCurrentTool(TOOL_BAR);
+			if (key_scancode == SCAN_CODE_KEY_S) setCurrentTool(TOOL_SELECT);
 
 			if (key_scancode == SCAN_CODE_KEY_Z) && (key_modifier&KEY_LCTRL) actionsHistory.undoLastAction();
 			if (key_scancode == SCAN_CODE_KEY_Y) && (key_modifier&KEY_LCTRL) actionsHistory.redoLastAction();
@@ -377,7 +382,7 @@ void DrawLeftPanel()
 	DrawLeftPanelButton(BTN_RECT,   ty.inc(TB_ICON_PADDING), 42);
 	DrawLeftPanelButton(BTN_BAR,    ty.inc(TB_ICON_PADDING), 43);
 	DrawLeftPanelButton(BTN_SELECT, ty.inc(TB_ICON_PADDING), 44);
-	//DrawLeftPanelButton(BTN_SCREEN, ty.inc(TB_ICON_PADDING), 45);
+	DrawLeftPanelButton(BTN_SCREEN_COPY, ty.inc(TB_ICON_PADDING), 45);
 	DrawRectangle3D(5, currentTool*TB_ICON_PADDING+right_bar.y, 16+3+2, 16+3+2, 0x333333, 0x777777);
 }
 

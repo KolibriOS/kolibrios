@@ -13,7 +13,7 @@ struct Tool {
 
 int previousTool = -1;
 int currentTool = -1;
-Tool tools[7];
+Tool tools[8];
 
 enum {
 	TOOL_NONE = -1,
@@ -23,13 +23,15 @@ enum {
 	TOOL_LINE,
 	TOOL_RECT,
 	TOOL_BAR,
-	TOOL_SELECT
+	TOOL_SELECT,
+	TOOL_SCREEN_COPY
 };
 #include "tools/pencil.h";
 #include "tools/pipette.h";
 #include "tools/fill.h";
-#include "tools/selection.h";
 #include "tools/simple_figure.h";
+#include "tools/selection.h";
+#include "tools/screen_copy.h";
 
 
 void initTools() 
@@ -69,6 +71,10 @@ void initTools()
 	tools[TOOL_SELECT].onMouseEvent = #SelectTool_onMouseEvent;
 	tools[TOOL_SELECT].onCanvasDraw = #SelectTool_onCanvasDraw;	
 	tools[TOOL_SELECT].onKeyEvent = #SelectTool_onKeyEvent;	
+
+	tools[TOOL_SCREEN_COPY].id = TOOL_SCREEN_COPY;
+	tools[TOOL_SCREEN_COPY].activate = #ScreenCopy_activate;
+	tools[TOOL_SCREEN_COPY].onMouseEvent = #ScreenCopy_onMouseEvent;
 }
 
 
