@@ -16,6 +16,7 @@ pipet aside color view
 #include "../lib/gui.h"
 #include "../lib/random.h"
 #include "../lib/mem.h"
+#include "../lib/cursor.h"
 
 #include "../lib/obj/libimg.h"
 #include "../lib/obj/box_lib.h"
@@ -31,7 +32,7 @@ pipet aside color view
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.50 Alpha"
+#define T_TITLE "Icon Editor 0.51 Alpha"
 
 #define TOOLBAR_H    24+8
 #define PANEL_LEFT_W 16+5+5+3+3
@@ -113,6 +114,15 @@ dword last_used_colors[13*2] = {
 0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,
 0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF
 };
+
+CustomCursor Cursor;
+dword CursorBar = FROM "cursors/bar.cur";
+dword CursorFill = FROM "cursors/fill.cur";
+dword CursorLine = FROM "cursors/line.cur";
+dword CursorPencil = FROM "cursors/pencil.cur";
+dword CursorPipette = FROM "cursors/pipette.cur";
+dword CursorRectangle = FROM "cursors/rectangle.cur";
+dword CursorSelect = FROM "cursors/select.cur";
 
 _image image;
 
@@ -199,6 +209,9 @@ void main()
 				if (mouse.vert==1) zoom.dec();
 				DrawEditArea();
 			}
+
+			if (wrapper.hovered()) SetCursor();
+			else Cursor.Restore();
 
 			if (mouse.down) {
 				if (b_color_gradient.hovered()) 

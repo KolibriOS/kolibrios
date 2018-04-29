@@ -4,7 +4,7 @@ void PipetteTool_activate() {
 }
 
 void PipetteTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
-	//if (!canvas.hovered()) return; //TODO: option "Restrict pipette to canvas area"
+	if (!canvas.hovered()) return; //TODO: option "Restrict pipette to canvas area"
 	tool_color = GetPixelUnderMouse();
 	DrawBar(Form.cwidth-30, 5, 20, 20, tool_color);
 	

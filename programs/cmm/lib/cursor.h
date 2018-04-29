@@ -37,10 +37,12 @@ dword CustomCursor::Set()
 
 dword CustomCursor::Restore()
 {
+  if (!CursorPointer) return;
   EAX = 37;
   EBX = 5;
   ECX = 0;
   $int 0x40
+  CursorPointer = 0;
 }
 
 void CustomCursor::Delete()

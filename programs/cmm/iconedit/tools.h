@@ -4,6 +4,7 @@
 
 struct Tool {
 	int id;
+	dword cursor;
 	void (*activate)();
 	void (*deactivate)();
 	void (*onMouseEvent)(int x, int y, int lkm, int pkm);
@@ -37,35 +38,42 @@ enum {
 void initTools() 
 {
 	tools[TOOL_PENCIL].id = TOOL_PENCIL;
+	tools[TOOL_PENCIL].cursor = #CursorPencil;
 	tools[TOOL_PENCIL].onMouseEvent = #PencilTool_onMouseEvent;
 	tools[TOOL_PENCIL].deactivate = #PencilTool_reset;
 	
 	tools[TOOL_PIPETTE].id = TOOL_PIPETTE;
+	tools[TOOL_PIPETTE].cursor = #CursorPipette;
 	tools[TOOL_PIPETTE].activate = #PipetteTool_activate;
 	tools[TOOL_PIPETTE].onMouseEvent = #PipetteTool_onMouseEvent;
 	
 	tools[TOOL_FILL].id = TOOL_FILL;
+	tools[TOOL_FILL].cursor = #CursorFill;
 	tools[TOOL_FILL].onMouseEvent = #FillTool_onMouseEvent;
 	
 	tools[TOOL_LINE].id = TOOL_LINE;
+	tools[TOOL_LINE].cursor = #CursorLine;
 	tools[TOOL_LINE].activate = #SimpleFigureTool_Reset;
 	tools[TOOL_LINE].deactivate = #SimpleFigureTool_Reset;
 	tools[TOOL_LINE].onMouseEvent = #SimpleFigureTool_onMouseEvent;
 	tools[TOOL_LINE].onCanvasDraw = #SimpleFigureTool_onCanvasDraw;
 	
 	tools[TOOL_RECT].id = TOOL_RECT;
+	tools[TOOL_RECT].cursor = #CursorRectangle;
 	tools[TOOL_RECT].activate = #SimpleFigureTool_Reset;
 	tools[TOOL_RECT].deactivate = #SimpleFigureTool_Reset;
 	tools[TOOL_RECT].onMouseEvent = #SimpleFigureTool_onMouseEvent;
 	tools[TOOL_RECT].onCanvasDraw = #SimpleFigureTool_onCanvasDraw;	
 
 	tools[TOOL_BAR].id = TOOL_BAR;
+	tools[TOOL_BAR].cursor = #CursorBar;
 	tools[TOOL_BAR].activate = #SimpleFigureTool_Reset;
 	tools[TOOL_BAR].deactivate = #SimpleFigureTool_Reset;
 	tools[TOOL_BAR].onMouseEvent = #SimpleFigureTool_onMouseEvent;
 	tools[TOOL_BAR].onCanvasDraw = #SimpleFigureTool_onCanvasDraw;	
 
 	tools[TOOL_SELECT].id = TOOL_SELECT;
+	tools[TOOL_SELECT].cursor = #CursorSelect;
 	tools[TOOL_SELECT].activate = #SelectTool_activate;
 	tools[TOOL_SELECT].deactivate = #SelectTool_deactivate;
 	tools[TOOL_SELECT].onMouseEvent = #SelectTool_onMouseEvent;
@@ -73,6 +81,7 @@ void initTools()
 	tools[TOOL_SELECT].onKeyEvent = #SelectTool_onKeyEvent;	
 
 	tools[TOOL_SCREEN_COPY].id = TOOL_SCREEN_COPY;
+	tools[TOOL_SCREEN_COPY].cursor = NULL;
 	tools[TOOL_SCREEN_COPY].activate = #ScreenCopy_activate;
 	tools[TOOL_SCREEN_COPY].onMouseEvent = #ScreenCopy_onMouseEvent;
 }
@@ -94,7 +103,16 @@ void setCurrentTool(int index) {
 	if ((index != TOOL_NONE) && (tools[index].activate != 0))
 		tools[index].activate();
 
+	Cursor.Restore();
+	if (wrapper.hovered()) SetCursor();
 	DrawLeftPanel();
 	DrawCanvas();
 }
 
+void SetCursor()
+{
+	if (tools[currentTool].cursor) && (!Cursor.CursorPointer) {
+		Cursor.Load(tools[currentTool].cursor);
+		Cursor.Set();
+	}
+}
