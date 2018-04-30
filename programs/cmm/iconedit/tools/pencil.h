@@ -5,7 +5,6 @@ void PencilTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 	if (canvas.hovered()) 
 	{
 		if ((PencilTool_Drawing == true) && (!mouse.key)) {
-			actionsHistory.saveCurrentState();
 			PencilTool_Drawing = false;
 		}
 
