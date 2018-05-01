@@ -32,7 +32,7 @@ pipet aside color view
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.52 Alpha"
+#define T_TITLE "Icon Editor 0.53 Alpha"
 
 #define TOOLBAR_H    24+8
 #define PANEL_LEFT_W 16+5+5+3+3
@@ -76,6 +76,7 @@ enum {
 	BTN_FLIP_VER,
 	BTN_ROTATE_LEFT,
 	BTN_ROTATE_RIGHT,
+	BTN_TEST_ICON,
 	BTN_PENCIL,
 	BTN_PICK,
 	BTN_FILL,
@@ -264,6 +265,9 @@ void main()
 					image.move(FLIP_HOR);
 					DrawCanvas();
 					break;
+				case BTN_TEST_ICON:
+					EventTestIcon();
+					break;
 				case BTN_PENCIL:
 					setCurrentTool(TOOL_PENCIL);
 					break;
@@ -308,6 +312,8 @@ void main()
 			if (key_scancode == SCAN_CODE_KEY_R) setCurrentTool(TOOL_RECT);
 			if (key_scancode == SCAN_CODE_KEY_B) setCurrentTool(TOOL_BAR);
 			if (key_scancode == SCAN_CODE_KEY_S) setCurrentTool(TOOL_SELECT);
+
+			if (key_scancode == SCAN_CODE_KEY_T) EventTestIcon();
 
 			if (key_scancode == SCAN_CODE_KEY_Z) && (key_modifier&KEY_LCTRL) actionsHistory.undoLastAction();
 			if (key_scancode == SCAN_CODE_KEY_Y) && (key_modifier&KEY_LCTRL) actionsHistory.redoLastAction();
@@ -371,6 +377,8 @@ void draw_window()
 	
 	DrawToolbarButton(BTN_FLIP_HOR,   tx.inc(TB_ICON_PADDING+8), 34);
 	DrawToolbarButton(BTN_FLIP_VER,   tx.inc(TB_ICON_PADDING),   35);
+
+	DrawToolbarButton(BTN_TEST_ICON,  tx.inc(TB_ICON_PADDING+8), 12);
 	// DrawToolbarButton(BTN_ROTATE_LEFT,   tx.inc(TB_ICON_PADDING), 36); //not implemented
 	// DrawToolbarButton(BTN_ROTATE_RIGHT,  tx.inc(TB_ICON_PADDING), 37); //not implemented
 
@@ -540,6 +548,40 @@ dword GetPixelUnderMouse()
 	return GetPixelColorFromScreen(mouse.x + Form.left + 5, mouse.y + Form.top + skin_height);
 }
 
+int preview_size = 128;
+void DrawImageWithBg(dword _x, _y, _col_to)
+{
+	_x *= preview_size;
+	_y *= preview_size;
+	DrawWideRectangle(_x,_y, preview_size, preview_size, preview_size-image.columns/2, _col_to);
+	_PutImage(preview_size - image.columns / 2 + _x, preview_size - image.rows / 2 + _y,
+		image.columns, image.rows, image.get_image_with_replaced_color(color2, _col_to));
+}
+
+void ShowWindow_TestIcon()
+{
+	loop() switch(WaitEvent())
+	{
+		case evButton:
+			if (GetButtonID()) ExitProcess();
+			break;
+	  
+		case evKey:
+			GetKeys();
+			if (key_scancode == SCAN_CODE_ESC) ExitProcess();
+			break;
+		 
+		case evReDraw:
+			DefineAndDrawWindow(Form.left+100, Form.top+100, preview_size*2+9,
+				preview_size*2+skin_height+4, 0x74, NULL, "Test Icon", 0);
+			DrawImageWithBg(0, 0, 0x000000);
+			DrawImageWithBg(1, 0, 0xFFFfff);
+			DrawImageWithBg(0, 1, GetPixelColorFromScreen(0, 0));
+			DrawImageWithBg(1, 1, system.color.work);
+			break;
+	}
+}
+
 //===================================================//
 //                                                   //
 //                      EVENTS                       //
@@ -587,3 +629,11 @@ void EventSetActiveColor(int _number, _color)
 	DrawColorPallets();
 }
 
+void EventTestIcon()
+{
+	CreateThread(#ShowWindow_TestIcon, #test_icon_stak+4092);
+}
+
+stop:
+
+char test_icon_stak[4096];

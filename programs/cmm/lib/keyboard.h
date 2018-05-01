@@ -53,6 +53,7 @@
 #define SCAN_CODE_KEY_P 025
 #define SCAN_CODE_KEY_R 019
 #define SCAN_CODE_KEY_S 031
+#define SCAN_CODE_KEY_T 020
 #define SCAN_CODE_KEY_V 047
 #define SCAN_CODE_KEY_X 045 
 #define SCAN_CODE_KEY_Y 021 

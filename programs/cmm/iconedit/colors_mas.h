@@ -62,6 +62,7 @@ struct _image
 	void set_image();
 	dword get_pixel();
 	dword get_image();
+	dword get_image_with_replaced_color();
 	void move();
 };
 
@@ -182,6 +183,29 @@ dword _image::get_image()
 		for (c = 0; c < columns; c++)
 		{
 			rgb.DwordToRgb(get_pixel(r,c));
+			ESBYTE[i] = rgb.b;
+			ESBYTE[i+1] = rgb.g;
+			ESBYTE[i+2] = rgb.r;
+			i += 3;
+		}
+	return img;
+}
+
+dword _image::get_image_with_replaced_color(dword _col_from, _col_to)
+{
+	int r=0, c=0;
+	dword i;
+	dword cur_pixel;
+
+	free(img);
+	i = img = malloc(rows*columns*3);
+
+	for (r = 0; r < rows; r++)
+		for (c = 0; c < columns; c++)
+		{
+			cur_pixel = get_pixel(r,c);
+			if (cur_pixel == _col_from) cur_pixel = _col_to;
+			rgb.DwordToRgb(cur_pixel);
 			ESBYTE[i] = rgb.b;
 			ESBYTE[i+1] = rgb.g;
 			ESBYTE[i+2] = rgb.r;
