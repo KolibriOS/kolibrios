@@ -7,7 +7,10 @@ void ScreenCopy_activate() {
 
 void ScreenCopy_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 	dword i;
-	CopyScreen(screen_copy, mouse.x + Form.left + 5, mouse.y + Form.top + skin_height, image.columns, image.rows);
+	CopyScreen(screen_copy, 
+		mouse.x + Form.left + 5 - calc(image.columns/2), 
+		mouse.y + Form.top + skin_height - calc(image.rows/2), 
+		image.columns, image.rows);
 	for (i = 0; i < image.columns*image.rows; i++;) 
 	{
 		image.mas[i] = ESDWORD[i*3+screen_copy] & 0xFFFFFF;
@@ -19,5 +22,6 @@ void ScreenCopy_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 		SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
 		actionsHistory.saveCurrentState();
 		setCurrentTool(previousTool);
+		if (!CheckActiveProcess(Form.ID)) ActivateWindow(GetProcessSlot(Form.ID));
 	}
 }

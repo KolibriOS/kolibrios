@@ -244,8 +244,8 @@ void GetAttachedItems()
 void EventSetActiveProcess(dword i)
 {
 	GetProcessInfo(#Process, proc_list[i+list.first]);
-	Process.num_slot = GetProcessSlot(Process.ID);
-	if (Process.ID) ActivateWindow(Process.num_slot);
+	Process.slot = GetProcessSlot(Process.ID);
+	if (Process.ID) ActivateWindow(Process.slot);
 	if (current_process_id == Process.ID) && (Process.status_window!=2) { 
 		MinimizeWindow();
 		//TODO: make another window active

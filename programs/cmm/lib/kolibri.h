@@ -147,7 +147,7 @@ struct proc_info
 {
 	#define SelfInfo -1
 	dword	use_cpu;
-	word	pos_in_stack,num_slot,rezerv1;
+	word	pos_in_stack,slot,rezerv1;
 	unsigned char name[11];
 	char	rezerv2;
 	dword	adress,use_memory,ID,left,top,width,height;
@@ -196,7 +196,7 @@ inline fastcall int GetActiveProcess()
 	return 0;
 }
 
-inline fastcall void ActivateWindow( ECX)
+inline fastcall void ActivateWindow( ECX) //ECX - slot
 {
 	EAX = 18;
 	EBX = 3;

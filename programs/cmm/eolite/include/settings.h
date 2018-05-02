@@ -98,7 +98,7 @@ void settings_dialog()
 				if (line_height.click(id)) files.item_h = line_height.value; 
 				if (big_icons.click(id)) BigIconsSwitch();
 				EventRedrawWindow(Form.left,Form.top);
-				//RefreshWindow(Form.num_slot, Settings.num_slot);
+				//RefreshWindow(Form.slot, Settings.slot);
 				break;
 					
 			case evKey:

@@ -32,12 +32,11 @@ pipet aside color view
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.53 Alpha"
+#define T_TITLE "Icon Editor 0.53.1 Alpha"
 
 #define TOOLBAR_H    24+8
 #define PANEL_LEFT_W 16+5+5+3+3
 #define PALLETE_SIZE 116
-#define TB_ICON_PADDING 26
 
 #define PAL_ITEMS_X_COUNT 13
 #define COLSIZE 18
@@ -139,6 +138,9 @@ _ActionsHistory actionsHistory;
 //                                                   //
 //===================================================//
 
+libimg_image top_icons;
+libimg_image left_icons;
+
 void main()
 {
 	word btn;
@@ -148,11 +150,16 @@ void main()
 	load_dll(libimg, #libimg_init, 1);
 	load_dll(boxlib, #box_lib_init,0);
 
-	Libimg_LoadImage(#skin, "/sys/icons16.png");
+	Libimg_LoadImage(#top_icons, "/sys/icons16.png");
+	Libimg_LoadImage(#left_icons, "/sys/icons16.png");
+
 	system.color.get();
-	semi_white = MixColors(system.color.work, 0xFFFfff, 64);
-	Libimg_ReplaceColor(skin.image, skin.w, skin.h, 
-		0xffFFFfff, semi_white);
+	semi_white = MixColors(system.color.work, 0xFFFfff, 96);
+	Libimg_ReplaceColor(top_icons.image, top_icons.w, top_icons.h, 0xffFFFfff, semi_white);
+	Libimg_ReplaceColor(top_icons.image, top_icons.w, top_icons.h, 0xffCACBD6, MixColors(semi_white, 0, 220));
+
+	Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xffFFFfff, system.color.work);
+	Libimg_ReplaceColor(left_icons.image, left_icons.w, left_icons.h, 0xffCACBD6, MixColors(system.color.work, 0, 200));
 
 	if (!param[0]) {
 		image.create(32, 32);
@@ -329,19 +336,19 @@ void main()
 	}
 }
 
-void DrawToolbarButton(dword _id, _x, _icon_n)
+void DrawTopPanelButton(dword _id, _x, _icon_n)
 {
 	DrawWideRectangle(_x, 4, 22, 22, 3, semi_white);
 	DefineHiddenButton(_x, 4, 21, 21, _id);
-	img_draw stdcall(skin.image, _x+3, 7, 16, 16, 0, _icon_n*16);
+	img_draw stdcall(top_icons.image, _x+3, 7, 16, 16, 0, _icon_n*16);
 }
 
 void DrawLeftPanelButton(dword _id, _y, _icon_n)
 {
 	int x = 5;
-	DrawWideRectangle(x, _y, 22, 22, 3, semi_white);
+	DrawRectangle(x, _y, 22-1, 22-1, system.color.work);
 	DefineHiddenButton(x, _y, 21, 21, _id);
-	img_draw stdcall(skin.image, x+3, _y+3, 16, 16, 0, _icon_n*16);
+	img_draw stdcall(left_icons.image, x+3, _y+3, 16, 16, 0, _icon_n*16);
 }
 
 void DrawStatusBar()
@@ -354,6 +361,8 @@ void DrawStatusBar()
 
 void draw_window()
 {
+	#define GAP 27
+	#define BLOCK_SPACE 10
 	incn tx;
 	system.color.get();
 	DefineAndDrawWindow(115+random(100), 50+random(100), 700, 540, 0x33, system.color.work, T_TITLE, 0);
@@ -366,21 +375,21 @@ void draw_window()
 	b_color_gradient.x = b_last_colors.x = b_default_palette.x = right_bar.x;
 	DrawBar(0, TOOLBAR_H-1, Form.cwidth, 1, system.color.work_graph);
 
-	tx.n = 5-TB_ICON_PADDING;
-	DrawToolbarButton(BTN_NEW,    tx.inc(TB_ICON_PADDING), 2); //not implemented
-	DrawToolbarButton(BTN_OPEN,   tx.inc(TB_ICON_PADDING), 0); //not implemented
-	DrawToolbarButton(BTN_SAVE,   tx.inc(TB_ICON_PADDING), 5);
-	DrawToolbarButton(BTN_MOVE_LEFT,  tx.inc(TB_ICON_PADDING+8), 30);
-	DrawToolbarButton(BTN_MOVE_RIGHT, tx.inc(TB_ICON_PADDING),   31);
-	DrawToolbarButton(BTN_MOVE_UP,    tx.inc(TB_ICON_PADDING),   32);
-	DrawToolbarButton(BTN_MOVE_DOWN,  tx.inc(TB_ICON_PADDING),   33);
+	tx.n = 5-GAP;
+	DrawTopPanelButton(BTN_NEW,    tx.inc(GAP), 2); //not implemented
+	DrawTopPanelButton(BTN_OPEN,   tx.inc(GAP), 0); //not implemented
+	DrawTopPanelButton(BTN_SAVE,   tx.inc(GAP), 5);
+	DrawTopPanelButton(BTN_MOVE_LEFT,  tx.inc(GAP+BLOCK_SPACE), 30);
+	DrawTopPanelButton(BTN_MOVE_RIGHT, tx.inc(GAP),   31);
+	DrawTopPanelButton(BTN_MOVE_UP,    tx.inc(GAP),   32);
+	DrawTopPanelButton(BTN_MOVE_DOWN,  tx.inc(GAP),   33);
 	
-	DrawToolbarButton(BTN_FLIP_HOR,   tx.inc(TB_ICON_PADDING+8), 34);
-	DrawToolbarButton(BTN_FLIP_VER,   tx.inc(TB_ICON_PADDING),   35);
+	DrawTopPanelButton(BTN_FLIP_HOR,   tx.inc(GAP+BLOCK_SPACE), 34);
+	DrawTopPanelButton(BTN_FLIP_VER,   tx.inc(GAP),   35);
 
-	DrawToolbarButton(BTN_TEST_ICON,  tx.inc(TB_ICON_PADDING+8), 12);
-	// DrawToolbarButton(BTN_ROTATE_LEFT,   tx.inc(TB_ICON_PADDING), 36); //not implemented
-	// DrawToolbarButton(BTN_ROTATE_RIGHT,  tx.inc(TB_ICON_PADDING), 37); //not implemented
+	DrawTopPanelButton(BTN_TEST_ICON,  tx.inc(GAP+BLOCK_SPACE), 12);
+	// DrawTopPanelButton(BTN_ROTATE_LEFT,   tx.inc(GAP), 36); //not implemented
+	// DrawTopPanelButton(BTN_ROTATE_RIGHT,  tx.inc(GAP), 37); //not implemented
 
 	DrawLeftPanel();
 	
@@ -394,17 +403,18 @@ void draw_window()
 
 void DrawLeftPanel()
 {
+	#define GAP 28
 	incn ty;
-	ty.n = right_bar.y - TB_ICON_PADDING;
-	DrawLeftPanelButton(BTN_PENCIL, ty.inc(TB_ICON_PADDING), 38);
-	DrawLeftPanelButton(BTN_PICK,   ty.inc(TB_ICON_PADDING), 39);
-	DrawLeftPanelButton(BTN_FILL,   ty.inc(TB_ICON_PADDING), 40);
-	DrawLeftPanelButton(BTN_LINE,   ty.inc(TB_ICON_PADDING), 41);
-	DrawLeftPanelButton(BTN_RECT,   ty.inc(TB_ICON_PADDING), 42);
-	DrawLeftPanelButton(BTN_BAR,    ty.inc(TB_ICON_PADDING), 43);
-	DrawLeftPanelButton(BTN_SELECT, ty.inc(TB_ICON_PADDING), 44);
-	DrawLeftPanelButton(BTN_SCREEN_COPY, ty.inc(TB_ICON_PADDING), 45);
-	DrawRectangle3D(5, currentTool*TB_ICON_PADDING+right_bar.y, 16+3+2, 16+3+2, 0x333333, 0x777777);
+	ty.n = right_bar.y - GAP - 2;
+	DrawLeftPanelButton(BTN_PENCIL, ty.inc(GAP), 38);
+	DrawLeftPanelButton(BTN_PICK,   ty.inc(GAP), 39);
+	DrawLeftPanelButton(BTN_FILL,   ty.inc(GAP), 40);
+	DrawLeftPanelButton(BTN_LINE,   ty.inc(GAP), 41);
+	DrawLeftPanelButton(BTN_RECT,   ty.inc(GAP), 42);
+	DrawLeftPanelButton(BTN_BAR,    ty.inc(GAP), 43);
+	DrawLeftPanelButton(BTN_SELECT, ty.inc(GAP), 44);
+	DrawLeftPanelButton(BTN_SCREEN_COPY, ty.inc(GAP), 45);
+	DrawRectangle3D(5, currentTool*GAP+right_bar.y-2, 16+3+2, 16+3+2, 0x333333, 0x777777);
 }
 
 void DrawEditArea()
