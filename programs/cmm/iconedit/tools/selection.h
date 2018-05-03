@@ -1,17 +1,32 @@
-// Selection
+//===================================================//
+//                                                   //
+//                       DATA                        //
+//                                                   //
+//===================================================//
+
+_image selection;
+
+enum {
+	STATE_INACTIVE=0,
+	STATE_CHOSING=1,
+	STATE_SELECTED=2,
+	STATE_MOVING=3
+};
+int selection_state = STATE_INACTIVE;
+
 int selection_start_x = -1;
 int selection_start_y = -1;
 int selection_end_x = -1;
 int selection_end_y = -1;
-bool selection_active = false;
 
-dword SelectionTool_buffer = 0;
-dword SelectionTool_buffer_r = 0;
-dword SelectionTool_buffer_c = 0;
-
-bool selection_moving_started = false;
 int selection_pivot_x = -1;
 int selection_pivot_y = -1;
+
+//===================================================//
+//                                                   //
+//                       CODE                        //
+//                                                   //
+//===================================================//
 
 void SelectTool_normalizeSelection() {
 	int t;
@@ -31,13 +46,13 @@ void SelectTool_normalizeSelection() {
 }
 
 void reset_selection_moving() {
-	if (selection_moving_started) {
+	if (STATE_MOVING == selection_state) {
 		SelectTool_drawBuffer(selection_start_x, selection_start_y, 1);
 
 		selection_pivot_x = -1;
 		selection_pivot_y = -1;
 		
-		selection_moving_started = false;
+		selection_state = STATE_SELECTED;
 		
 		actionsHistory.saveCurrentState();
 		DrawCanvas();
@@ -45,7 +60,8 @@ void reset_selection_moving() {
 }
 
 bool is_selection_moving() {
-	return selection_moving_started;
+	if (STATE_MOVING == selection_state) return true;
+	return false;
 }
 
 void reset_selection() {
@@ -59,12 +75,12 @@ void reset_selection() {
 
 void SelectTool_activate() {
 	reset_selection();
-
-	selection_active = false;
+	selection_state = STATE_INACTIVE;
 }
 
 void SelectTool_deactivate() {
 	reset_selection_moving();
+	selection_state = STATE_INACTIVE;
 }
 
 bool SelectTool_pointInSelection(int x, int y) {
@@ -76,32 +92,30 @@ bool SelectTool_pointInSelection(int x, int y) {
 
 
 void SelectTool_copyToBuffer() {
-	dword offset, r, c;
+	dword r, c;
 
-		if (SelectionTool_buffer != 0)
-			free(SelectionTool_buffer);
+	selection_state = STATE_SELECTED;
+	selection.rows = selection_end_y - selection_start_y + 1;
+	selection.columns = selection_end_x - selection_start_x + 1;
 
-		SelectionTool_buffer_r = selection_end_y - selection_start_y + 1;
-		SelectionTool_buffer_c = selection_end_x - selection_start_x + 1;
-		SelectionTool_buffer = malloc(SelectionTool_buffer_r * SelectionTool_buffer_c * 4);
-
-		for (r = selection_start_y; r <= selection_end_y; r++) {
-			for (c = selection_start_x; c <= selection_end_x; c++) {
-				offset = calc(SelectionTool_buffer_c * calc(r - selection_start_y) + calc(c - selection_start_x)) * 4;
-
-				ESDWORD[SelectionTool_buffer + offset] = image.get_pixel(r, c);
-			}
+	for (r = selection_start_y; r <= selection_end_y; r++) {
+		for (c = selection_start_x; c <= selection_end_x; c++) {
+			selection.set_pixel(r - selection_start_y, c - selection_start_x, image.get_pixel(r, c) );
 		}
+	}
 }
 
 void SelectTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
-	int click_x, click_y, dx, dy, m_x, m_y, r, c, color;
+	int dx, dy, m_x, m_y, r, c;
 	dword pixel;
 	
 	m_x = TO_CANVAS_X(mouseX);
 	m_y = TO_CANVAS_Y(mouseY);
-	
-	if (mouse.down) && (canvas.hovered()) && (!selection_active) {
+
+	if (mouse.down) 
+	&& (canvas.hovered()) 
+	&& ((STATE_INACTIVE == selection_state) || (STATE_CHOSING == selection_state) || (STATE_SELECTED == selection_state) || (STATE_MOVING == selection_state))
+	{
 		if (selection_start_x != -1) && (SelectTool_pointInSelection(m_x, m_y)) {
 			if (selection_pivot_x == -1) {
 				selection_pivot_x = m_x;
@@ -109,20 +123,19 @@ void SelectTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 				
 				GetKeys();
 				
-				if (!selection_moving_started) && ( !(key_modifier&KEY_LSHIFT) ) {
+				if (STATE_MOVING != selection_state) && ( !(key_modifier&KEY_LSHIFT) ) {
 					for (r = selection_start_y; r <= selection_end_y; r++)
 						for (c = selection_start_x; c <= selection_end_x; c++) {
 							image.set_pixel(r, c, color2);
 						}
 				}
-				
-				selection_moving_started = true;
+
+				selection_state = STATE_MOVING;
 			}
 		}
-		else {
-		
+		else {	
 			reset_selection();
-			selection_active = true;
+			selection_state = STATE_CHOSING;
 		}
 	}
 
@@ -155,7 +168,7 @@ void SelectTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 		DrawCanvas();
 	}
 	
-	if (selection_active)
+	if (STATE_CHOSING == selection_state)
 	{
 		if (mouseX>canvas.x+canvas.w-zoom.value) mouseX = canvas.x+canvas.w-zoom.value;
 		if (mouseY>canvas.y+canvas.h-zoom.value) mouseY = canvas.y+canvas.h-zoom.value;
@@ -184,8 +197,6 @@ void SelectTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 		}
 		
 		if (mouse.up) {			
-			selection_active = false;
-			
 			SelectTool_normalizeSelection();
 			SelectTool_copyToBuffer();
 		}
@@ -201,31 +212,30 @@ void SelectTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 
 void SelectTool_onCanvasDraw() {	
 	if ((selection_start_x >= 0) && (selection_start_y >= 0) && (selection_end_x >= 0) && (selection_end_y >= 0)) {
-		DrawSelection(selection_start_x, selection_start_y, selection_end_x, selection_end_y);
+		DrawSelection();
 	}	
 }
 
 void SelectTool_drawBuffer(int insert_x, int insert_y, int target) {
 	dword color;
-	dword offset, r, c;
+	dword r, c;
 	dword insert_to_x, insert_to_y;
 	
-	if (SelectionTool_buffer != 0) {
-		insert_to_x = insert_x + SelectionTool_buffer_c - 1;
+	if (STATE_INACTIVE != selection_state) {
+		insert_to_x = insert_x + selection.columns - 1;
 			
 		if (insert_to_x >= image.columns)
 			insert_to_x = image.columns-1;
 
-		insert_to_y = insert_y + SelectionTool_buffer_r - 1;
+		insert_to_y = insert_y + selection.rows - 1;
 			
 		if (insert_to_y >= image.rows)
 			insert_to_y = image.rows-1;
 
 		for (r = insert_y; r <= insert_to_y; r++) {
 			for (c = insert_x; c <= insert_to_x; c++) {
-					offset = calc(SelectionTool_buffer_c * calc(r - insert_y) + calc(c - insert_x)) * 4;
 
-					color = ESDWORD[SelectionTool_buffer + offset];
+					color = selection.get_pixel(r - insert_y, c - insert_x);
 					
 					if (TOIMAGE == target)
 						image.set_pixel(r, c, color);
@@ -238,74 +248,52 @@ void SelectTool_drawBuffer(int insert_x, int insert_y, int target) {
 }
 
 void SelectTool_onKeyEvent(dword keycode) {
-	dword offset, r, c;
-	dword insert_x, insert_y, insert_to_x, insert_to_y;
+	dword r, c;
 
 	if (keycode == SCAN_CODE_KEY_V) {
-		if (SelectionTool_buffer != 0) {
+		if (STATE_SELECTED == selection_state) {
 			reset_selection();
 			
-			selection_moving_started = true;
+			selection_state = STATE_MOVING;
 			selection_start_x = 0;
-			selection_end_x = SelectionTool_buffer_c - 1;
+			selection_end_x = selection.columns - 1;
 			
 			selection_start_y = 0;
-			selection_end_y = SelectionTool_buffer_r - 1;
+			selection_end_y = selection.rows - 1;
 			
 			DrawCanvas();
-	
 		}
 	}
 }
 
-void DrawSelection(int x1, int y1, int x2, int y2) {
+void DrawSelection() {
 	#define SELECTION_COLOR 0xAAE5EF
 	int p1x, p1y, p2x, p2y, r, c, old_color, new_color;
-	dword offset;
 
-	if (x1 <= x2) {
-		p1x = x1;
-		p2x = x2;
+	if (selection_start_x <= selection_end_x) {
+		p1x = selection_start_x;
+		p2x = selection_end_x;
 	}
 	else {
-		p1x = x2;
-		p2x = x1;
+		p1x = selection_end_x;
+		p2x = selection_start_x;
 	}
 
-	if (y1 <= y2) {
-		p2y = y1;
-		p1y = y2;
+	if (selection_start_y <= selection_end_y) {
+		p2y = selection_start_y;
+		p1y = selection_end_y;
 	}
 	else {
-		p2y = y2;
-		p1y = y1;
+		p2y = selection_end_y;
+		p1y = selection_start_y;
 	}
-
-	/*
-	if (selection_moving_started) {
-		SelectTool_drawBuffer(selection_start_x, selection_start_y, 2);
-	}
-
-	DrawRectangle(
-		selection_start_x*zoom.value+canvas.x, 
-		selection_start_y*zoom.value+canvas.y, 
-		selection_end_x-selection_start_x+1*zoom.value-1,
-		selection_end_y-selection_start_y+1*zoom.value-1, 
-		0);
-
-	for (r = p1y; r >= p2y; r--)
-		for (c = p1x; c <= p2x; c++) {
-			image.pixel_state.set_drawable_state(r, c, false);
-		}
-	*/
 
 	for (r = p1y; r >= p2y; r--) {
 		for (c = p1x; c <= p2x; c++) {
 			image.pixel_state.set_drawable_state(r, c, false);
 			
-			if (selection_moving_started) && (SelectTool_pointInSelection(c, r)) {
-				offset = calc(SelectionTool_buffer_c * calc(r - selection_start_y) + calc(c - selection_start_x)) * 4;
-				old_color = ESDWORD[SelectionTool_buffer + offset];
+			if (STATE_MOVING == selection_state) && (SelectTool_pointInSelection(c, r)) {
+				old_color = selection.get_pixel(r - selection_start_y, c - selection_start_x);
 			}
 			else {
 				old_color = image.get_pixel(r, c);

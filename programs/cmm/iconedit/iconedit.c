@@ -11,7 +11,7 @@ enhance icon
 pipet aside color view
 */
 
-#define MEMSIZE 4096*250
+#define MEMSIZE 4096*500
 
 #include "../lib/gui.h"
 #include "../lib/random.h"
@@ -32,7 +32,7 @@ pipet aside color view
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.53.1 Alpha"
+#define T_TITLE "Icon Editor 0.53.2 Alpha"
 
 #define TOOLBAR_H    24+8
 #define PANEL_LEFT_W 16+5+5+3+3
@@ -249,28 +249,22 @@ void main()
 					EventSaveIconToFile();
 					break;
 				case BTN_MOVE_LEFT:
-					image.move(MOVE_LEFT);
-					DrawCanvas();
+					EventMove(MOVE_LEFT);
 					break;
 				case BTN_MOVE_RIGHT:
-					image.move(MOVE_RIGHT);
-					DrawCanvas();
+					EventMove(MOVE_RIGHT);
 					break;
 				case BTN_MOVE_UP:
-					image.move(MOVE_UP);
-					DrawCanvas();
+					EventMove(MOVE_UP);
 					break;
 				case BTN_MOVE_DOWN:
-					image.move(MOVE_DOWN);
-					DrawCanvas();
+					EventMove(MOVE_DOWN);
 					break;
 				case BTN_FLIP_VER:
-					image.move(FLIP_VER);
-					DrawCanvas();
+					EventMove(FLIP_VER);
 					break;
 				case BTN_FLIP_HOR:
-					image.move(FLIP_HOR);
-					DrawCanvas();
+					EventMove(FLIP_HOR);
 					break;
 				case BTN_TEST_ICON:
 					EventTestIcon();
@@ -322,8 +316,8 @@ void main()
 
 			if (key_scancode == SCAN_CODE_KEY_T) EventTestIcon();
 
-			if (key_scancode == SCAN_CODE_KEY_Z) && (key_modifier&KEY_LCTRL) actionsHistory.undoLastAction();
-			if (key_scancode == SCAN_CODE_KEY_Y) && (key_modifier&KEY_LCTRL) actionsHistory.redoLastAction();
+			if (key_scancode == SCAN_CODE_KEY_Z) actionsHistory.undoLastAction();
+			if (key_scancode == SCAN_CODE_KEY_Y) actionsHistory.redoLastAction();
 
 			if (key_scancode == SCAN_CODE_MINUS) {zoom.dec(); DrawEditArea();}
 			if (key_scancode == SCAN_CODE_PLUS)  {zoom.inc();  DrawEditArea();}
@@ -642,6 +636,19 @@ void EventSetActiveColor(int _number, _color)
 void EventTestIcon()
 {
 	CreateThread(#ShowWindow_TestIcon, #test_icon_stak+4092);
+}
+
+void EventMove(dword _action)
+{
+	if (selection_state) {
+		//debugval("selection_state", selection_state);
+		selection.move(_action);
+		DrawSelection();
+	}
+	else {
+		image.move(_action);
+		DrawCanvas();
+	} 
 }
 
 stop:
