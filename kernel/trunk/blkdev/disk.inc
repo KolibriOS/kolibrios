@@ -960,11 +960,10 @@ endl
         pop     eax
         jnz     .fail_free_gpea_gpt
 ; Compute and check CRC32 of GPEA
-        mov     edx, [ebx+GPTH.PartitionEntryArrayCRC32]
         mov     eax, -1
         stdcall crc_32, 0xEDB88320, edi, [GPEA_len]
         xor     eax, -1
-        cmp     eax, edx
+        cmp     eax, [ebx+GPTH.PartitionEntryArrayCRC32]
         jnz     .fail_free_gpea_gpt
 
 ; Process partitions, skip zeroed ones.
@@ -982,8 +981,11 @@ endl
         sbb     edx, dword[edi+GPE.StartingLBA+4]
         add     eax, 1
         adc     edx, 0
+        push    ebx
+        mov     ebx, [ebp-8] ; three-sectors-sized buffer
         stdcall disk_add_partition, dword[edi+GPE.StartingLBA+0], \
                 dword[edi+GPE.StartingLBA+4], eax, edx, esi
+        pop     ebx
         add     edi, [ebx+GPTH.SizeOfPartitionEntry]
 .skip:
         dec     [ebx+GPTH.NumberOfPartitionEntries]
