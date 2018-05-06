@@ -20,6 +20,7 @@
 	signed ceil(float x);
 	signed min(signed i1, i2);
 	signed max(signed i1, i2);
+	signed in(signed base, min1, max1);
 }math;
 
 :signed MATH::round(float x)
@@ -108,5 +109,11 @@
 		return i1;
 	else 
 		return i2;
+}
+:signed MATH::in(signed base, min1, max1)
+{
+	if (base > max1) return max1;
+	if (base < min1) return min1;
+	return base;
 }
 #endif
