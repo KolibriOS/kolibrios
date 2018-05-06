@@ -1,112 +1,122 @@
 //===================================================//
 //                                                   //
-//                       DATA                        //
+//                    SELECTION                      //
 //                                                   //
 //===================================================//
-
-_image selection;
 
 enum {
 	STATE_INACTIVE=0,
 	STATE_CHOSING=1,
 	STATE_SELECTED=2
 };
-int selection_state = STATE_INACTIVE;
 
-int selection_start_x = -1;
-int selection_start_y = -1;
-int selection_end_x = -1;
-int selection_end_y = -1;
+struct _selection
+{
+	_image buf;
+	int state;
 
-int selection_pivot_x = -1;
-int selection_pivot_y = -1;
+	int start_x;
+	int start_y;
+	int end_x;
+	int end_y;
 
-//===================================================//
-//                                                   //
-//                       CODE                        //
-//                                                   //
-//===================================================//
+	int pivot_x;
+	int pivot_y;
 
-void SelectTool_normalizeSelection() {
-	// Restructuring of the selection coordinates
-	if (selection_end_x < selection_start_x) {
-		selection_start_x >< selection_end_x;
-	} 
-	if (selection_end_y < selection_start_y) {
-		selection_end_y >< selection_start_y;
-	}
+	void reset();
+	bool is_point_in_selection();
+	void copy_to_buf();
+	void move_to_point();
+	void apply_to_image();
+} selection;
+
+void _selection::reset() {	
+	start_x = -1;
+	start_y = -1;
+	end_x = -1;
+	end_y = -1;
+	pivot_x = -1;
+	pivot_y = -1;
+	state = STATE_INACTIVE;
 }
 
-void SelectTool_drawBufferToImage(int insert_x, int insert_y) {
-	dword r, c;
-	dword insert_to_x, insert_to_y;
-	
-		insert_to_x = math.min(insert_x + selection.columns - 1, image.columns-1);
-		insert_to_y = math.min(insert_y + selection.rows - 1, image.rows-1);
-
-		for (r = insert_y; r <= insert_to_y; r++) {
-			for (c = insert_x; c <= insert_to_x; c++) {
-					image.set_pixel(r, c, selection.get_pixel(r - insert_y, c - insert_x) );
-			}
-		}	
-}
-
-void ApplySelectionToImage() {
-	if (STATE_SELECTED != selection_state) return;
-
-	SelectTool_drawBufferToImage(selection_start_x, selection_start_y);
-
-	selection_pivot_x = -1;
-	selection_pivot_y = -1;
-	
-	actionsHistory.saveCurrentState();
-	DrawCanvas();
-}
-
-bool is_selection_moving() {
-	if (STATE_SELECTED == selection_state) return true;
-	return false;
-}
-
-void reset_selection() {
-	ApplySelectionToImage();
-	
-	selection_start_x = -1;
-	selection_start_y = -1;
-	selection_end_x = -1;
-	selection_end_y = -1;	
-}
-
-void SelectTool_activate() {
-	reset_selection();
-	selection_state = STATE_INACTIVE;
-}
-
-void SelectTool_deactivate() {
-	ApplySelectionToImage();
-	selection_state = STATE_INACTIVE;
-}
-
-bool SelectTool_pointInSelection(int x, int y) {
-	if (x >= selection_start_x) && (x <= selection_end_x) && (y >= selection_start_y) && (y <= selection_end_y)
+bool _selection::is_point_in_selection(int x, int y) {
+	if (x >= start_x) && (x <= end_x) 
+	&& (y >= start_y) && (y <= end_y)
 		return true;
 	else 
 		return false;
 }
 
-
-void SelectTool_copyToBuffer() {
+void _selection::copy_to_buf() {
 	dword r, c;
 
-	selection_state = STATE_SELECTED;
-	selection.rows = selection_end_y - selection_start_y + 1;
-	selection.columns = selection_end_x - selection_start_x + 1;
+	// Normalize: Restructuring of the selection coordinates
+	if (end_x < start_x) {
+		start_x >< end_x;
+	} 
+	if (end_y < start_y) {
+		end_y >< start_y;
+	}
 
-	for (r = selection_start_y; r <= selection_end_y; r++) {
-		for (c = selection_start_x; c <= selection_end_x; c++) {
-			selection.set_pixel(r - selection_start_y, c - selection_start_x, image.get_pixel(r, c) );
+	state = STATE_SELECTED;
+	buf.rows = end_y - start_y + 1;
+	buf.columns = end_x - start_x + 1;
+
+	for (r = start_y; r <= end_y; r++) {
+		for (c = start_x; c <= end_x; c++) {
+			buf.set_pixel(r - start_y, c - start_x, image.get_pixel(r, c) );
 		}
 	}
+}
+
+void _selection::move_to_point(int _new_x, _new_y)
+{
+	start_x = _new_x;
+	start_y = _new_y;
+	end_x = buf.columns - 1 + start_x;
+	end_y = buf.rows - 1 + start_y;
+}
+
+void _selection::apply_to_image() {
+	dword r, c;
+	for (r = 0; r <= buf.rows - 1; r++) {
+		for (c = 0; c <= buf.columns - 1; c++) {
+				image.set_pixel(r + start_y, c + start_x, buf.get_pixel(r, c) );
+		}
+	}
+}
+
+//===================================================//
+//                                                   //
+//                      EVENTS                       //
+//                                                   //
+//===================================================//
+
+void ApplySelectionToImage() {
+
+	if (STATE_SELECTED != selection.state) return;
+
+	selection.apply_to_image();
+	
+	actionsHistory.saveCurrentState();
+	DrawCanvas();
+	selection.reset();
+}
+
+bool is_selection_moving() {
+	if (STATE_SELECTED == selection.state) return true;
+	return false;
+}
+
+void SelectTool_activate() {
+	ApplySelectionToImage();
+	selection.reset();
+}
+
+void SelectTool_deactivate() {
+	ApplySelectionToImage();
+	selection.reset();
 }
 
 void SelectTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
@@ -117,83 +127,80 @@ void SelectTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 
 	if (mouse.down) && (canvas.hovered()) 
 	{
-		if (selection_start_x != -1) && (SelectTool_pointInSelection(m_x, m_y)) {
-			if (selection_pivot_x == -1) {
-				selection_pivot_x = m_x;
-				selection_pivot_y = m_y;
+		if (selection.start_x != -1) && (selection.is_point_in_selection(m_x, m_y)) {
+			if (selection.pivot_x == -1) {
+				selection.pivot_x = m_x;
+				selection.pivot_y = m_y;
 				
 				GetKeys();
 				if ( (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) ) {
-					DrawBarIcon(selection_start_x, selection_start_y, selection_end_x, 
-						selection_end_y, color2, TOIMAGE);
+					DrawBarIcon(selection.start_x, selection.start_y, selection.end_x, 
+						selection.end_y, color2, TOIMAGE);
 				}
 
-				selection_state = STATE_SELECTED;
+				selection.state = STATE_SELECTED;
 			}
 		}
 		else {	
-			reset_selection();
-			selection_state = STATE_CHOSING;
+			ApplySelectionToImage();
+			selection.state = STATE_CHOSING;
 		}
 	}
 
-	if (selection_pivot_x != -1) {
-		dx = m_x - selection_pivot_x;
-		dy = m_y - selection_pivot_y;
+	//Drag selection
+	if (STATE_SELECTED == selection.state)
+	{	
+		if (selection.pivot_x != -1) {
+			dx = m_x - selection.pivot_x;
+			dy = m_y - selection.pivot_y;
 
-		if (selection_start_x + dx < 0)
-			dx = selection_start_x;
-		
-		if (selection_end_x + dx >= image.columns)
-			dx = image.columns-1 - selection_end_x;
-		
-		if (selection_start_y + dy < 0)
-			dy = selection_start_y;
-		
-		if (selection_end_y + dy >= image.rows)
-			dy = image.rows-1 - selection_end_y;
-		
-		selection_start_x += dx;
-		selection_end_x += dx;
-		
-		selection_start_y += dy;
-		selection_end_y += dy;
-		
-		selection_pivot_x += dx;
-		selection_pivot_y += dy;
-		
-		DrawCanvas();
+			if (selection.start_x + dx < 0)
+				dx = selection.start_x;
+			
+			if (selection.end_x + dx >= image.columns)
+				dx = image.columns-1 - selection.end_x;
+			
+			if (selection.start_y + dy < 0)
+				dy = selection.start_y;
+			
+			if (selection.end_y + dy >= image.rows)
+				dy = image.rows-1 - selection.end_y;
+
+			selection.move_to_point(selection.start_x + dx, selection.start_y + dy);
+			
+			selection.pivot_x += dx;
+			selection.pivot_y += dy;
+			
+			DrawCanvas();
+		}
+		if (mouse.up) {
+			if (selection.pivot_x != -1) {
+				selection.pivot_x = -1;
+				selection.pivot_y = -1;
+			}
+		}
 	}
 	
-	if (STATE_CHOSING == selection_state)
+	if (STATE_CHOSING == selection.state)
 	{
 		mouseX = math.in(mouseX, canvas.x, canvas.x+canvas.w-zoom.value);
 		mouseY = math.in(mouseY, canvas.y, canvas.y+canvas.h-zoom.value);
 
 		if (mouse.key) {
-			selection_end_x = TO_CANVAS_X(mouseX);
-			selection_end_y = TO_CANVAS_Y(mouseY);
+			selection.end_x = TO_CANVAS_X(mouseX);
+			selection.end_y = TO_CANVAS_Y(mouseY);
 
-			if ((selection_start_x < 0) || (selection_start_y < 0)) {
-				selection_start_x = TO_CANVAS_X(mouseX);
-				selection_start_y = TO_CANVAS_Y(mouseY);
+			if ((selection.start_x < 0) || (selection.start_y < 0)) {
+				selection.start_x = TO_CANVAS_X(mouseX);
+				selection.start_y = TO_CANVAS_Y(mouseY);
 			}
 			else {
 				DrawCanvas();
 			}
-
 		}
 		
-		if (mouse.up) {			
-			SelectTool_normalizeSelection();
-			SelectTool_copyToBuffer();
-		}
-	}
-	
-	if (mouse.up) {
-		if (selection_pivot_x != -1) {
-			selection_pivot_x = -1;
-			selection_pivot_y = -1;
+		if (mouse.up) {
+			selection.copy_to_buf();
 		}
 	}
 }
@@ -202,27 +209,19 @@ void SelectTool_onKeyEvent(dword keycode) {
 	dword r, c;
 
 	if (SCAN_CODE_DEL == keycode) {
-		selection_start_x = -1;
-		selection_start_y = -1;
-		selection_end_x = -1;
-		selection_end_y = -1;
-		selection_state = STATE_INACTIVE;
+		selection.reset();
 		DrawCanvas();
 	}
 
 	if (SCAN_CODE_ESC == keycode) {
-		reset_selection();
+		ApplySelectionToImage();
 		DrawCanvas();
 	}
 
 	if (SCAN_CODE_KEY_V == keycode) {
-		if (STATE_SELECTED == selection_state) {
-
-			selection_start_x = 0;
-			selection_start_y = 0;
-			selection_end_x = selection.columns - 1;			
-			selection_end_y = selection.rows - 1;
-			
+		if (STATE_SELECTED == selection.state) 
+		{
+			selection.move_to_point(0, 0);	
 			DrawCanvas();
 		}
 	}
@@ -233,20 +232,24 @@ void SelectTool_onCanvasDraw()
 	#define SELECTION_COLOR 0xAAE5EF
 	int p1x, p1y, p2x, p2y, r, c, old_color, new_color;
 
-	if ((selection_start_x >= 0) && (selection_start_y >= 0) && (selection_end_x >= 0) && (selection_end_y >= 0)) {
+	//if ((selection.start_x >= 0) && (selection.start_y >= 0) 
+	//&& (selection.end_x >= 0) && (selection.end_y >= 0)) {
 
-		p1x = math.min(selection_start_x, selection_end_x);
-		p2x = math.max(selection_start_x, selection_end_x);
+	if (STATE_SELECTED == selection.state) 
+	|| (STATE_CHOSING == selection.state) 
+	{
+		p1x = math.min(selection.start_x, selection.end_x);
+		p2x = math.max(selection.start_x, selection.end_x);
 
-		p1y = math.min(selection_start_y, selection_end_y);
-		p2y = math.max(selection_start_y, selection_end_y);
+		p1y = math.min(selection.start_y, selection.end_y);
+		p2y = math.max(selection.start_y, selection.end_y);
 
 		for (r = p1y; r <= p2y; r++) {
 			for (c = p1x; c <= p2x; c++) {
 				image.pixel_state.set_drawable_state(r, c, false);
 				
-				if (STATE_SELECTED == selection_state) && (SelectTool_pointInSelection(c, r)) {
-					old_color = selection.get_pixel(r - selection_start_y, c - selection_start_x);
+				if (STATE_SELECTED == selection.state) && (selection.is_point_in_selection(c, r)) {
+					old_color = selection.buf.get_pixel(r - selection.start_y, c - selection.start_x);
 				}
 				else {
 					old_color = image.get_pixel(r, c);

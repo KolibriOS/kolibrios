@@ -32,7 +32,7 @@ pipet aside color view
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.54.1 Alpha"
+#define T_TITLE "Icon Editor 0.54.2 Alpha"
 
 #define TOPBAR_H    24+8
 #define LEFTBAR_W 16+5+5+3+3
@@ -656,8 +656,8 @@ void EventTestIcon()
 
 void EventMove(dword _action)
 {
-	if (selection_state) {
-		selection.move(_action);
+	if (selection.state) {
+		selection.buf.move(_action);
 		SelectTool_onCanvasDraw();
 	}
 	else {
