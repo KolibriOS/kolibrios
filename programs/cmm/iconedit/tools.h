@@ -46,6 +46,7 @@ void initTools()
 	tools[TOOL_PIPETTE].cursor = #CursorPipette;
 	tools[TOOL_PIPETTE].activate = #PipetteTool_activate;
 	tools[TOOL_PIPETTE].onMouseEvent = #PipetteTool_onMouseEvent;
+	tools[TOOL_PIPETTE].onKeyEvent = #PipetteTool_onKeyEvent;
 	
 	tools[TOOL_FILL].id = TOOL_FILL;
 	tools[TOOL_FILL].cursor = #CursorFill;

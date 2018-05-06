@@ -32,10 +32,10 @@ pipet aside color view
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.54 Alpha"
+#define T_TITLE "Icon Editor 0.54.1 Alpha"
 
-#define TOOLBAR_H    24+8
-#define PANEL_LEFT_W 16+5+5+3+3
+#define TOPBAR_H    24+8
+#define LEFTBAR_W 16+5+5+3+3
 #define PALLETE_SIZE 116
 
 #define PAL_ITEMS_X_COUNT 13
@@ -46,12 +46,12 @@ pipet aside color view
 #define TO_CANVAS_Y(yval) yval - canvas.y/zoom.value
 
 block canvas = { NULL, NULL, NULL, NULL };
-block wrapper = { PANEL_LEFT_W, TOOLBAR_H, NULL, NULL };
-block right_bar = { NULL, 10+TOOLBAR_H, RIGHT_BAR_W+10, NULL };
+block wrapper = { LEFTBAR_W, TOPBAR_H, NULL, NULL };
+block right_bar = { NULL, 10+TOPBAR_H, RIGHT_BAR_W+10, NULL };
 
-block b_color_gradient = {NULL, 40+TOOLBAR_H, RIGHT_BAR_W, 30};
-block b_last_colors = {NULL, 80+TOOLBAR_H, RIGHT_BAR_W, COLSIZE*2};
-block b_default_palette = {NULL, COLSIZE*2+10+80+TOOLBAR_H, RIGHT_BAR_W, COLSIZE*9};
+block b_color_gradient = {NULL, 40+TOPBAR_H, RIGHT_BAR_W, 30};
+block b_last_colors = {NULL, 80+TOPBAR_H, RIGHT_BAR_W, COLSIZE*2};
+block b_default_palette = {NULL, COLSIZE*2+10+80+TOPBAR_H, RIGHT_BAR_W, COLSIZE*9};
 
 dword color1 = 0x000000;
 dword color2 = 0xBFCAD2;
@@ -305,7 +305,6 @@ void main()
 			if (currentTool != TOOL_NONE) && (tools[currentTool].onKeyEvent != 0)
 				tools[currentTool].onKeyEvent(key_scancode);
 
-			if (key_scancode == SCAN_CODE_ESC) setCurrentTool(TOOL_PENCIL);
 			if (key_scancode == SCAN_CODE_KEY_P) setCurrentTool(TOOL_PENCIL);
 			if (key_scancode == SCAN_CODE_KEY_I) setCurrentTool(TOOL_PIPETTE);
 			if (key_scancode == SCAN_CODE_KEY_F) setCurrentTool(TOOL_FILL);
@@ -333,6 +332,10 @@ void main()
 void DrawTopPanelButton(dword _id, _x, _icon_n)
 {
 	DrawWideRectangle(_x, 4, 22, 22, 3, semi_white);
+	PutPixel(_x,4,system.color.work);
+	PutPixel(_x,4+21,system.color.work);
+	PutPixel(_x+21,4,system.color.work);
+	PutPixel(_x+21,4+21,system.color.work);
 	DefineHiddenButton(_x, 4, 21, 21, _id);
 	img_draw stdcall(top_icons.image, _x+3, 7, 16, 16, 0, _icon_n*16);
 }
@@ -359,7 +362,7 @@ void draw_window()
 	#define BLOCK_SPACE 10
 	incn tx;
 	system.color.get();
-	DefineAndDrawWindow(115+random(100), 50+random(100), 700, 540, 0x33, system.color.work, T_TITLE, 0);
+	DefineAndDrawWindow(115+random(100), 50+random(100), 700, 540, 0x73, NULL, T_TITLE, 0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
 	if (Form.width  < 560) { MoveSize(OLD,OLD,560,OLD); return; }
@@ -367,7 +370,8 @@ void draw_window()
 
 	right_bar.x = Form.cwidth - right_bar.w;
 	b_color_gradient.x = b_last_colors.x = b_default_palette.x = right_bar.x;
-	DrawBar(0, TOOLBAR_H-1, Form.cwidth, 1, system.color.work_graph);
+	DrawBar(0, 0, Form.cwidth, TOPBAR_H-1, system.color.work);
+	DrawBar(0, TOPBAR_H-1, Form.cwidth, 1, system.color.work_graph);
 
 	tx.n = 5-GAP;
 	DrawTopPanelButton(BTN_NEW,    tx.inc(GAP), 2); //not implemented
@@ -384,15 +388,23 @@ void draw_window()
 	DrawTopPanelButton(BTN_TEST_ICON,  tx.inc(GAP+BLOCK_SPACE), 12);
 	// DrawTopPanelButton(BTN_ROTATE_LEFT,   tx.inc(GAP), 36); //not implemented
 	// DrawTopPanelButton(BTN_ROTATE_RIGHT,  tx.inc(GAP), 37); //not implemented
-
-	DrawLeftPanel();
 	
 	DrawEditArea();
 
+	//BG under LeftBar
+	DrawBar(0, TOPBAR_H, LEFTBAR_W-1, Form.cheight - TOPBAR_H, system.color.work);
+	//BG under RightBar
+	DrawBar(wrapper.x+wrapper.w, TOPBAR_H, Form.cwidth-wrapper.x-wrapper.w,
+		Form.cheight - TOPBAR_H, system.color.work);
+	//BG under StatusBar
+	DrawBar(LEFTBAR_W-1, wrapper.y + wrapper.h, wrapper.w+1, 
+		Form.cheight - wrapper.y - wrapper.h, system.color.work);
+
+	DrawLeftPanel();
 	DrawActiveColor(right_bar.y);
 	DrawColorPallets();
-
 	DrawStatusBar();
+	DrawPreview();
 }
 
 void DrawLeftPanel()
@@ -418,7 +430,7 @@ void DrawEditArea()
 	int left_side;
 
 	wrapper.w = Form.cwidth - right_bar.w - 10 - wrapper.x;
-	wrapper.h = Form.cheight - TOOLBAR_H - 35;
+	wrapper.h = Form.cheight - TOPBAR_H - 35;
 
 	//canvas{
 	canvas.w = image.columns * zoom.value;
@@ -481,6 +493,10 @@ void DrawCurrentColorGradientByLightness()
 	for (i=0; i<w; i++)
 		DrawBar(b_color_gradient.x+i, b_color_gradient.y, 
 			1, b_color_gradient.h, MixColors(color1,0xFFFfff,255*i/w));
+
+	//current color marker	
+	DrawBar(b_color_gradient.x+i-1, b_color_gradient.y-2, 3,2, 0x000000);
+
 	for (i=0 ; i<=w; i++)
 		DrawBar(b_color_gradient.x+w+w-i, b_color_gradient.y, 
 			1, b_color_gradient.h, MixColors(color1,0x000000,255*i/w));
@@ -641,14 +657,14 @@ void EventTestIcon()
 void EventMove(dword _action)
 {
 	if (selection_state) {
-		//debugval("selection_state", selection_state);
 		selection.move(_action);
-		DrawSelection();
+		SelectTool_onCanvasDraw();
 	}
 	else {
 		image.move(_action);
 		DrawCanvas();
-	} 
+	}
+	actionsHistory.saveCurrentState();
 }
 
 stop:

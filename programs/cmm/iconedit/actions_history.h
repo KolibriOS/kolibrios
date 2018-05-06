@@ -1,6 +1,6 @@
 // Actions history
 
-#define MAX_ACTIONS_COUNT 10
+#define MAX_ACTIONS_COUNT 15
 
 struct _ActionsHistory {
 	dword stack[MAX_ACTIONS_COUNT];

@@ -7,10 +7,19 @@ void ScreenCopy_activate() {
 
 void ScreenCopy_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 	dword i;
-	CopyScreen(screen_copy, 
-		mouse.x + Form.left + 5 - calc(image.columns/2), 
-		mouse.y + Form.top + skin_height - calc(image.rows/2), 
-		image.columns, image.rows);
+	int x, y;
+
+	x = mouse.x + Form.left + 5 - calc(image.columns/2);
+	y = mouse.y + Form.top + skin_height - calc(image.rows/2);
+
+	CopyScreen(
+		screen_copy, 
+		math.in(x, 0, screen.width - image.columns), 
+		math.in(y, 0, screen.height - image.rows), 
+		image.columns, 
+		image.rows
+	);
+
 	for (i = 0; i < image.columns*image.rows; i++;) 
 	{
 		image.mas[i] = ESDWORD[i*3+screen_copy] & 0xFFFFFF;

@@ -53,10 +53,10 @@ void SimpleFigureTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 			if ((figTool.startX >= 0) 
 			&& (figTool.startY >= 0)) {
 
-				x1 = figTool.startX - canvas.x/zoom.value;
-				y1 = figTool.startY - canvas.y/zoom.value;
-				x2 = mouseX - canvas.x/zoom.value;
-				y2 = mouseY - canvas.y/zoom.value;
+				x1 = TO_CANVAS_X(figTool.startX);
+				y1 = TO_CANVAS_Y(figTool.startY);
+				x2 = TO_CANVAS_X(mouseX);
+				y2 = TO_CANVAS_Y(mouseY);
 
 				// Draw line from start position to current position
 				if (currentTool == TOOL_LINE) {
@@ -88,10 +88,10 @@ void SimpleFigureTool_onCanvasDraw() {
  	if ((figTool.startX >= 0) 
 	&& (figTool.startY >= 0) && (mouse.key)) {
 
-		x1 = figTool.startX - canvas.x/zoom.value;
-		y1 = figTool.startY - canvas.y/zoom.value;
-		x2 = mouseX_last - canvas.x/zoom.value;
-		y2 = mouseY_last - canvas.y/zoom.value;
+		x1 = TO_CANVAS_X(figTool.startX);
+		y1 = TO_CANVAS_Y(figTool.startY);
+		x2 = TO_CANVAS_X(mouseX_last);
+		y2 = TO_CANVAS_Y(mouseY_last);
 
 		if (currentTool == TOOL_LINE)
 			DrawLineIcon(x1, y1, x2, y2, tool_color, TOCANVAS);

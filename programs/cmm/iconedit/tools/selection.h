@@ -37,18 +37,30 @@ void SelectTool_normalizeSelection() {
 	}
 }
 
-void reset_selection_moving() {
-	if (STATE_SELECTED == selection_state) {
-		SelectTool_drawBuffer(selection_start_x, selection_start_y, 1);
+void SelectTool_drawBufferToImage(int insert_x, int insert_y) {
+	dword r, c;
+	dword insert_to_x, insert_to_y;
+	
+		insert_to_x = math.min(insert_x + selection.columns - 1, image.columns-1);
+		insert_to_y = math.min(insert_y + selection.rows - 1, image.rows-1);
 
-		selection_pivot_x = -1;
-		selection_pivot_y = -1;
-		
-		selection_state = STATE_SELECTED;
-		
-		actionsHistory.saveCurrentState();
-		DrawCanvas();
-	}
+		for (r = insert_y; r <= insert_to_y; r++) {
+			for (c = insert_x; c <= insert_to_x; c++) {
+					image.set_pixel(r, c, selection.get_pixel(r - insert_y, c - insert_x) );
+			}
+		}	
+}
+
+void ApplySelectionToImage() {
+	if (STATE_SELECTED != selection_state) return;
+
+	SelectTool_drawBufferToImage(selection_start_x, selection_start_y);
+
+	selection_pivot_x = -1;
+	selection_pivot_y = -1;
+	
+	actionsHistory.saveCurrentState();
+	DrawCanvas();
 }
 
 bool is_selection_moving() {
@@ -57,7 +69,7 @@ bool is_selection_moving() {
 }
 
 void reset_selection() {
-	reset_selection_moving();
+	ApplySelectionToImage();
 	
 	selection_start_x = -1;
 	selection_start_y = -1;
@@ -71,7 +83,7 @@ void SelectTool_activate() {
 }
 
 void SelectTool_deactivate() {
-	reset_selection_moving();
+	ApplySelectionToImage();
 	selection_state = STATE_INACTIVE;
 }
 
@@ -111,9 +123,9 @@ void SelectTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 				selection_pivot_y = m_y;
 				
 				GetKeys();
-				
-				if ( !(key_modifier&KEY_LSHIFT) ) {
-					DrawBarIcon(selection_start_x, selection_start_y, selection_end_x, selection_end_y, color2, TOIMAGE);
+				if ( (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) ) {
+					DrawBarIcon(selection_start_x, selection_start_y, selection_end_x, 
+						selection_end_y, color2, TOIMAGE);
 				}
 
 				selection_state = STATE_SELECTED;
@@ -141,7 +153,6 @@ void SelectTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 		if (selection_end_y + dy >= image.rows)
 			dy = image.rows-1 - selection_end_y;
 		
-		
 		selection_start_x += dx;
 		selection_end_x += dx;
 		
@@ -156,11 +167,8 @@ void SelectTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 	
 	if (STATE_CHOSING == selection_state)
 	{
-		if (mouseX>canvas.x+canvas.w-zoom.value) mouseX = canvas.x+canvas.w-zoom.value;
-		if (mouseY>canvas.y+canvas.h-zoom.value) mouseY = canvas.y+canvas.h-zoom.value;
-
-		if (mouseX<canvas.x) mouseX = canvas.x;
-		if (mouseY<canvas.y) mouseY = canvas.y;
+		mouseX = math.in(mouseX, canvas.x, canvas.x+canvas.w-zoom.value);
+		mouseY = math.in(mouseY, canvas.y, canvas.y+canvas.h-zoom.value);
 
 		if (mouse.key) {
 			selection_end_x = TO_CANVAS_X(mouseX);
@@ -172,12 +180,6 @@ void SelectTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 			}
 			else {
 				DrawCanvas();
-
-				/**if ((calc(TO_CANVAS_X(mouseX)) != selection_end_x)
-					|| (calc(TO_CANVAS_Y(mouseY)) != selection_end_y)) 
-				{
-					DrawCanvas();
-				}*/
 			}
 
 		}
@@ -196,54 +198,29 @@ void SelectTool_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {
 	}
 }
 
-void SelectTool_onCanvasDraw() {	
-	if ((selection_start_x >= 0) && (selection_start_y >= 0) && (selection_end_x >= 0) && (selection_end_y >= 0)) {
-		DrawSelection();
-	}	
-}
-
-void SelectTool_drawBuffer(int insert_x, int insert_y, int target) {
-	dword color;
-	dword r, c;
-	dword insert_to_x, insert_to_y;
-	
-	if (STATE_INACTIVE != selection_state) {
-		insert_to_x = insert_x + selection.columns - 1;
-			
-		if (insert_to_x >= image.columns)
-			insert_to_x = image.columns-1;
-
-		insert_to_y = insert_y + selection.rows - 1;
-			
-		if (insert_to_y >= image.rows)
-			insert_to_y = image.rows-1;
-
-		for (r = insert_y; r <= insert_to_y; r++) {
-			for (c = insert_x; c <= insert_to_x; c++) {
-
-					color = selection.get_pixel(r - insert_y, c - insert_x);
-					
-					if (TOIMAGE == target)
-						image.set_pixel(r, c, color);
-					else
-						DrawCanvasPixel(r, c, color);
-			}
-		}	
-	}	
-}
-
 void SelectTool_onKeyEvent(dword keycode) {
 	dword r, c;
 
-	if (keycode == SCAN_CODE_KEY_V) {
+	if (SCAN_CODE_DEL == keycode) {
+		selection_start_x = -1;
+		selection_start_y = -1;
+		selection_end_x = -1;
+		selection_end_y = -1;
+		selection_state = STATE_INACTIVE;
+		DrawCanvas();
+	}
+
+	if (SCAN_CODE_ESC == keycode) {
+		reset_selection();
+		DrawCanvas();
+	}
+
+	if (SCAN_CODE_KEY_V == keycode) {
 		if (STATE_SELECTED == selection_state) {
-			reset_selection();
-			
-			selection_state = STATE_SELECTED;
+
 			selection_start_x = 0;
-			selection_end_x = selection.columns - 1;
-			
 			selection_start_y = 0;
+			selection_end_x = selection.columns - 1;			
 			selection_end_y = selection.rows - 1;
 			
 			DrawCanvas();
@@ -251,42 +228,36 @@ void SelectTool_onKeyEvent(dword keycode) {
 	}
 }
 
-void DrawSelection() {
+void SelectTool_onCanvasDraw() 
+{	
 	#define SELECTION_COLOR 0xAAE5EF
 	int p1x, p1y, p2x, p2y, r, c, old_color, new_color;
 
-	if (selection_start_x <= selection_end_x) {
-		p1x = selection_start_x;
-		p2x = selection_end_x;
-	}
-	else {
-		p1x = selection_end_x;
-		p2x = selection_start_x;
-	}
+	if ((selection_start_x >= 0) && (selection_start_y >= 0) && (selection_end_x >= 0) && (selection_end_y >= 0)) {
 
-	if (selection_start_y <= selection_end_y) {
-		p2y = selection_start_y;
-		p1y = selection_end_y;
-	}
-	else {
-		p2y = selection_end_y;
-		p1y = selection_start_y;
-	}
+		p1x = math.min(selection_start_x, selection_end_x);
+		p2x = math.max(selection_start_x, selection_end_x);
 
-	for (r = p1y; r >= p2y; r--) {
-		for (c = p1x; c <= p2x; c++) {
-			image.pixel_state.set_drawable_state(r, c, false);
-			
-			if (STATE_SELECTED == selection_state) && (SelectTool_pointInSelection(c, r)) {
-				old_color = selection.get_pixel(r - selection_start_y, c - selection_start_x);
+		p1y = math.min(selection_start_y, selection_end_y);
+		p2y = math.max(selection_start_y, selection_end_y);
+
+		for (r = p1y; r <= p2y; r++) {
+			for (c = p1x; c <= p2x; c++) {
+				image.pixel_state.set_drawable_state(r, c, false);
+				
+				if (STATE_SELECTED == selection_state) && (SelectTool_pointInSelection(c, r)) {
+					old_color = selection.get_pixel(r - selection_start_y, c - selection_start_x);
+				}
+				else {
+					old_color = image.get_pixel(r, c);
+				}
+				
+				new_color = MixColors(old_color, SELECTION_COLOR, 64);
+
+				DrawCanvasPixel(r, c, new_color);
 			}
-			else {
-				old_color = image.get_pixel(r, c);
-			}
-			
-			new_color = MixColors(old_color, SELECTION_COLOR, 64);
-
-			DrawCanvasPixel(r, c, new_color);
 		}
-	}
+	}	
 }
+
+
