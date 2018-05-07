@@ -1,4 +1,3 @@
-// Actions history
 
 #define MAX_ACTIONS_COUNT 15
 
@@ -24,8 +23,10 @@ void _ActionsHistory::init() {
 	head = tail = 0;
 	currentIndex = -1;
 
-	for (i = 0; i < MAX_ACTIONS_COUNT; i++)
+	for (i = 0; i < MAX_ACTIONS_COUNT; i++) {
+		stack[i] = free(stack[i]);
 		stack[i] = malloc(image.columns * image.rows * 4);
+	}
 
 	saveCurrentState();
 }

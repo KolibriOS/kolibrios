@@ -32,7 +32,7 @@ pipet aside color view
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.54.2 Alpha"
+#define T_TITLE "Icon Editor 0.55 Alpha"
 
 #define TOPBAR_H    24+8
 #define LEFTBAR_W 16+5+5+3+3
@@ -86,6 +86,7 @@ enum {
 	BTN_SCREEN_COPY,
 	BTN_ZOOM_IN,
 	BTN_ZOOM_OUT,
+	BTN_CANVAS_RESIZE,
 	BTNS_PALETTE_COLOR_MAS = 100,
 	BTNS_LAST_USED_COLORS = 400
 };
@@ -131,6 +132,7 @@ _image image;
 _ActionsHistory actionsHistory;
 
 #include "tools.h"
+#include "canvas_resize.h"
 
 //===================================================//
 //                                                   //
@@ -188,6 +190,7 @@ void main()
 	loop() switch(WaitEvent())
 	{
 		case evMouse:
+			if (Window_CanvasReSize.thread_exists()) break;
 			mouse.get();
 			
 			if (mouse.lkm) tool_color = color1;
@@ -233,6 +236,7 @@ void main()
 			break;
 
 		case evButton:
+			if (Window_CanvasReSize.thread_exists()) break;
 			btn = GetButtonID();
 
 			if (zoom.click(btn)) DrawEditArea();
@@ -240,7 +244,7 @@ void main()
 			switch(btn)
 			{
 				case BTN_NEW:
-					EventCleanCanvas();
+					EventCreateNewIcon();
 					break;
 				case BTN_OPEN:
 					RunProgram("/sys/lod", sprintf(#param, "*png* %s",#program_path));
@@ -293,6 +297,9 @@ void main()
 				case BTN_SCREEN_COPY:
 					setCurrentTool(TOOL_SCREEN_COPY);
 					break;
+				case BTN_CANVAS_RESIZE:
+					notify("Sorry, not implemented yet.");
+					break;
 				case CLOSE_BTN:
 					EventExitIconEdit();
 					break;
@@ -304,6 +311,8 @@ void main()
 
 			if (currentTool != TOOL_NONE) && (tools[currentTool].onKeyEvent != 0)
 				tools[currentTool].onKeyEvent(key_scancode);
+
+			if (key_scancode == SCAN_CODE_DEL) EventCleanCanvas();
 
 			if (key_scancode == SCAN_CODE_KEY_P) setCurrentTool(TOOL_PENCIL);
 			if (key_scancode == SCAN_CODE_KEY_I) setCurrentTool(TOOL_PIPETTE);
@@ -319,11 +328,12 @@ void main()
 			if (key_scancode == SCAN_CODE_KEY_Y) actionsHistory.redoLastAction();
 
 			if (key_scancode == SCAN_CODE_MINUS) {zoom.dec(); DrawEditArea();}
-			if (key_scancode == SCAN_CODE_PLUS)  {zoom.inc();  DrawEditArea();}
+			if (key_scancode == SCAN_CODE_PLUS)  {zoom.inc(); DrawEditArea();}
 
 			break;
 		 
 		case evReDraw:
+			Window_CanvasReSize.thread_exists();
 			draw_window();
 			break;
 	}
@@ -352,8 +362,16 @@ void DrawStatusBar()
 {
 	zoom.draw(wrapper.x, wrapper.y + wrapper.h + 6);
 
-	sprintf(#param,"Canvas: %ix%i", image.rows, image.columns);
-	WriteText(wrapper.x+wrapper.w-calc(strlen(#param)*8), zoom.y+2, 0x90, system.color.work_text, #param);
+	DrawCaptButton(
+		wrapper.x+wrapper.w-calc(strlen(#param)*8) +6 - 1,
+		zoom.y,
+		calc(strlen(#param)*8)-6,
+		18,
+		BTN_CANVAS_RESIZE,
+		system.color.work_button,
+		system.color.work_button_text,
+		sprintf(#param,"%i x %i", image.rows, image.columns)
+		);
 }
 
 void draw_window()
@@ -391,20 +409,18 @@ void draw_window()
 	
 	DrawEditArea();
 
-	//BG under LeftBar
 	DrawBar(0, TOPBAR_H, LEFTBAR_W-1, Form.cheight - TOPBAR_H, system.color.work);
-	//BG under RightBar
+	DrawLeftPanel();
+
 	DrawBar(wrapper.x+wrapper.w, TOPBAR_H, Form.cwidth-wrapper.x-wrapper.w,
 		Form.cheight - TOPBAR_H, system.color.work);
-	//BG under StatusBar
-	DrawBar(LEFTBAR_W-1, wrapper.y + wrapper.h, wrapper.w+1, 
-		Form.cheight - wrapper.y - wrapper.h, system.color.work);
-
-	DrawLeftPanel();
 	DrawActiveColor(right_bar.y);
 	DrawColorPallets();
-	DrawStatusBar();
 	DrawPreview();
+
+	DrawBar(LEFTBAR_W-1, wrapper.y + wrapper.h, wrapper.w+1, 
+		Form.cheight - wrapper.y - wrapper.h, system.color.work);
+	DrawStatusBar();
 }
 
 void DrawLeftPanel()
@@ -608,6 +624,12 @@ void ShowWindow_TestIcon()
 //                                                   //
 //===================================================//
 
+void EventCreateNewIcon()
+{
+	EventSaveIconToFile();
+	Window_CanvasReSize.create();
+}
+
 void EventSaveIconToFile()
 {
 	int i=0;
@@ -623,8 +645,8 @@ void EventSaveIconToFile()
 
 void EventCleanCanvas()
 {
-	EventSaveIconToFile();
-	image.create(32, 32);
+	image.create(image.rows, image.columns);
+	actionsHistory.saveCurrentState();
 	DrawCanvas();
 }
 
