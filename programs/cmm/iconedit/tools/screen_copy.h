@@ -2,7 +2,7 @@ dword screen_copy;
 
 void ScreenCopy_activate() {
 	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE);
-	screen_copy = malloc(image.columns * image.rows * 3 );
+	screen_copy = malloc(image.columns * image.rows * 3 +4);
 }
 
 void ScreenCopy_onMouseEvent(int mouseX, int mouseY, int lkm, int pkm) {

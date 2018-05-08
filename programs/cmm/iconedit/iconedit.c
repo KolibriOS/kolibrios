@@ -4,13 +4,6 @@
  * Licence: GPL v2
 */
 
-/*
-TODO:
-window colors
-enhance icon
-pipet aside color view
-*/
-
 #define MEMSIZE 4096*500
 
 #include "../lib/gui.h"
@@ -32,7 +25,7 @@ pipet aside color view
 //                                                   //
 //===================================================//
 
-#define T_TITLE "Icon Editor 0.55 Alpha"
+#define T_TITLE "Icon Editor 0.56 Alpha"
 
 #define TOPBAR_H    24+8
 #define LEFTBAR_W 16+5+5+3+3
@@ -87,6 +80,7 @@ enum {
 	BTN_ZOOM_IN,
 	BTN_ZOOM_OUT,
 	BTN_CANVAS_RESIZE,
+	BTN_CROP,
 	BTNS_PALETTE_COLOR_MAS = 100,
 	BTNS_LAST_USED_COLORS = 400
 };
@@ -300,6 +294,9 @@ void main()
 				case BTN_CANVAS_RESIZE:
 					notify("Sorry, not implemented yet.");
 					break;
+				case BTN_CROP:
+					EventCrop();
+					break;
 				case CLOSE_BTN:
 					EventExitIconEdit();
 					break;
@@ -334,7 +331,7 @@ void main()
 		 
 		case evReDraw:
 			Window_CanvasReSize.thread_exists();
-			draw_window();
+			DrawWindow();
 			break;
 	}
 }
@@ -362,19 +359,20 @@ void DrawStatusBar()
 {
 	zoom.draw(wrapper.x, wrapper.y + wrapper.h + 6);
 
+	sprintf(#param,"%i x %i", image.columns, image.rows);
 	DrawCaptButton(
-		wrapper.x+wrapper.w-calc(strlen(#param)*8) +6 - 1,
+		wrapper.x+wrapper.w-calc(strlen(#param)*8) -6 - 1,
 		zoom.y,
-		calc(strlen(#param)*8)-6,
+		calc(strlen(#param)*8)+6,
 		18,
 		BTN_CANVAS_RESIZE,
 		system.color.work_button,
 		system.color.work_button_text,
-		sprintf(#param,"%i x %i", image.rows, image.columns)
+		#param
 		);
 }
 
-void draw_window()
+void DrawWindow()
 {
 	#define GAP 27
 	#define BLOCK_SPACE 10
@@ -404,6 +402,8 @@ void draw_window()
 	DrawTopPanelButton(BTN_FLIP_VER,   tx.inc(GAP),   35);
 
 	DrawTopPanelButton(BTN_TEST_ICON,  tx.inc(GAP+BLOCK_SPACE), 12);
+
+	DrawTopPanelButton(BTN_CROP,  tx.inc(GAP+BLOCK_SPACE), 46);
 	// DrawTopPanelButton(BTN_ROTATE_LEFT,   tx.inc(GAP), 36); //not implemented
 	// DrawTopPanelButton(BTN_ROTATE_RIGHT,  tx.inc(GAP), 37); //not implemented
 	
@@ -687,6 +687,22 @@ void EventMove(dword _action)
 		DrawCanvas();
 	}
 	actionsHistory.saveCurrentState();
+}
+
+void EventCrop()
+{
+	if (selection.state) {
+		EventSaveIconToFile();
+		image.create(selection.buf.rows, selection.buf.columns);
+		selection.move_to_point(0,0);
+		selection.apply_to_image();
+		selection.reset();
+		actionsHistory.init();
+		DrawWindow();
+	}
+	else {
+		notify("'You need to select something before usnig crop tool.' -W");
+	}
 }
 
 stop:

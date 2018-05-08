@@ -98,10 +98,10 @@ void ApplySelectionToImage() {
 	if (STATE_SELECTED != selection.state) return;
 
 	selection.apply_to_image();
+	selection.reset();
 	
 	actionsHistory.saveCurrentState();
 	DrawCanvas();
-	selection.reset();
 }
 
 bool is_selection_moving() {

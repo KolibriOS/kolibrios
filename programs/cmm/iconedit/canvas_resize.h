@@ -79,12 +79,16 @@ void EventApplyClick()
 	int new_rows = atoi(#text_rows);
 	int new_columns = atoi(#text_columns);
 	if (new_columns>MAX_CELL_SIZE) || (new_rows>MAX_CELL_SIZE) {
-		notify("'Maximum icon size exceeded!\nPlease, try something less or equal to 256x256.' -E");
+		sprintf(#param, 
+			"'Maximum icon size exceeded! Please, try\nsomething less or equal to %ix%i.' -E",
+			MAX_CELL_SIZE, MAX_CELL_SIZE);
+		notify(#param);
 		return;
 	}
 	image.create(new_rows, new_columns);
 	actionsHistory.init();
 	ActivateWindow(GetProcessSlot(Form.ID));
+	DrawEditArea();
 	ExitProcess();
 }
 
