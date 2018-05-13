@@ -434,7 +434,10 @@ high_code:
           ;lidt [idtreg]
 
         call    init_kernel_heap
-        stdcall kernel_alloc, (RING0_STACK_SIZE+512) * 2
+        call    init_fpu
+        mov     eax, [xsave_area_size]
+        lea     eax, [eax*2 + RING0_STACK_SIZE*2]
+        stdcall kernel_alloc, eax
         mov     [os_stack_seg], eax
 
         lea     esp, [eax+RING0_STACK_SIZE]
@@ -469,7 +472,6 @@ high_code:
         mov     [LFBAddress], LFB_BASE
         mov     ecx, bios_fb
         call    set_framebuffer
-        call    init_fpu
         call    init_malloc
 
         stdcall alloc_kernel_space, 0x50000         ; FIXME check size
@@ -590,7 +592,8 @@ high_code:
 
         mov     edx, SLOT_BASE+256*1
         mov     ebx, [os_stack_seg]
-        add     ebx, 0x2000
+        add     ebx, RING0_STACK_SIZE
+        add     ebx, [xsave_area_size]
         call    setup_os_slot
         mov     dword [edx], 'IDLE'
         sub     [edx+APPDATA.saved_esp], 4

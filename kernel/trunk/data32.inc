@@ -335,8 +335,9 @@ diff16 "end of .data segment",0,$
 align 16
 cur_saved_data:
         rb  4096
+align 64
 fpu_data:
-        rb  1024
+        rb  0xa80       ; bochs avx512
 fpu_data_size = $ - fpu_data
 draw_data:
         rb  32*256
@@ -434,6 +435,8 @@ cpu_info    dd  ?
 cpu_caps    rd  4
 
 xsave_area_size dd ?
+xsave_eax       dd ?
+xsave_edx       dd ?
 
 pg_data     PG_DATA
 heap_test   dd  ?

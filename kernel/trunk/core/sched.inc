@@ -132,6 +132,20 @@ do_change_task:
 ; set gs selector unconditionally
         Mov     ax, graph_data
         Mov     gs, ax
+        ; TS flag is not triggered by AVX* instructions, therefore
+        ; we have to xsave/xrstor SIMD registers each task change
+        bt      [cpu_caps+(CAPS_OSXSAVE/32)*4], CAPS_OSXSAVE mod 32
+        jnc     .no_xsave
+        mov     ecx, [esi+APPDATA.fpu_state]
+        mov     eax, [xsave_eax]
+        mov     edx, [xsave_edx]
+        xsave   [ecx]
+        mov     ecx, [CURRENT_TASK]
+        mov     [fpu_owner], ecx
+        mov     ecx, [current_slot]
+        mov     ecx, [ecx+APPDATA.fpu_state]
+        xrstor  [ecx]
+  .no_xsave:
       ; set CR0.TS
         cmp     bh, byte[fpu_owner] ;bh == incoming task (new)
         clts                        ;clear a task switch flag

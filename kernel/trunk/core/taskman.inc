@@ -929,10 +929,8 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         shr     ecx, 2
         rep movsd
 
-        cmp     ebx, [TASK_COUNT]
-        jle     .noinc
-        inc     dword [TASK_COUNT]     ;update number of processes
-.noinc:
+        cmp     [TASK_COUNT], ebx
+        adc     dword [TASK_COUNT], 0   ; update number of processes
         shl     ebx, 8
         lea     edx, [ebx+SLOT_BASE+APP_EV_OFFSET]
         mov     [SLOT_BASE+APPDATA.fd_ev+ebx], edx

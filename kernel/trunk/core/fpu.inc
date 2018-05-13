@@ -13,26 +13,35 @@ init_fpu:
         fninit
 
         bt      [cpu_caps+(CAPS_XSAVE/32)*4], CAPS_XSAVE mod 32
-        jmp     .no_xsave       ; not ready to be jnc so far
+        jnc     .no_xsave
 
         mov     ecx, cr4
         or      ecx, CR4_OSXSAVE
         mov     cr4, ecx
+        ; don't call cpuid again
+        bts     [cpu_caps+(CAPS_OSXSAVE/32)*4], CAPS_OSXSAVE mod 32
 
-        mov     eax, 0x0d
+        ; zero xsave header
+        mov     ecx, 64/4
+        xor     eax, eax
+        mov     edi, fpu_data + 512     ; skip legacy region
+        rep stosd
+
+        mov     eax, 0x0d       ; extended state enumeration main leaf
         xor     ecx, ecx
         cpuid
-        mov     ebx, XCR0_FPU_MMX + XCR0_SSE + XCR0_AVX + XCR0_AVX512
-        and     ebx, eax
-        xor     ecx, ecx
-        xgetbv
-        or      eax, ebx
+        and     eax, XCR0_FPU_MMX + XCR0_SSE + XCR0_AVX + XCR0_AVX512
+        xor     edx, edx
+        mov     [xsave_eax], eax
+        mov     [xsave_edx], edx
         xor     ecx, ecx
         xsetbv
 
         mov     eax, 0x0d
         xor     ecx, ecx
         cpuid
+        add     ebx, 63
+        and     ebx, NOT 63
         mov     [xsave_area_size], ebx
         cmp     ebx, fpu_data_size
         ja      $
@@ -40,18 +49,26 @@ init_fpu:
         test    eax, XCR0_AVX512
         jz      @f
         call    init_avx512
+        mov     eax, [xsave_eax]
+        mov     edx, [xsave_edx]
         xsave   [fpu_data]
         ret
 @@:
         test    eax, XCR0_AVX
         jz      @f
         call    init_avx
+        mov     eax, [xsave_eax]
+        mov     edx, [xsave_edx]
         xsave   [fpu_data]
         ret
 @@:
         test    eax, XCR0_SSE
-        jnz     .sse
-        jmp     .fpu_mmx
+        jz      $
+        call    init_sse
+        mov     eax, [xsave_eax]
+        mov     edx, [xsave_edx]
+        xsave   [fpu_data]
+        ret
 .no_xsave:
         mov     [xsave_area_size], 512  ; enough for FPU/MMX and SSE
         bt      [cpu_caps], CAPS_SSE
@@ -75,7 +92,7 @@ init_fpu_mmx:
 init_sse:
         mov     ebx, cr4
         mov     ecx, cr0
-        or      ebx, CR4_OSFXSR+CR4_OSXMMEXPT
+        or      ebx, CR4_OSFXSR + CR4_OSXMMEXPT
         mov     cr4, ebx
 
         and     ecx, not (CR0_EM + CR0_MP)
@@ -186,6 +203,7 @@ avx_save_size:
 ; param
 ;  eax= avx_save_size() bytes memory area aligned on a 64-byte boundary
 
+align 4
 avx_save:
         push    ecx
         push    esi
@@ -230,7 +248,12 @@ align 4
 save_context:
         bt      [cpu_caps+(CAPS_OSXSAVE/32)*4], CAPS_OSXSAVE mod 32
         jnc     save_fpu_context
-        xsave   [eax]
+        push    eax edx
+        mov     ecx, eax
+        mov     eax, [xsave_eax]
+        mov     edx, [xsave_edx]
+        xsave   [ecx]
+        pop     edx eax
         ret
 save_fpu_context:
         bt      [cpu_caps], CAPS_SSE
@@ -284,6 +307,7 @@ fpu_restore:
         pop     ecx
         ret
 
+align 4
 avx_restore:
         push    ecx
         push    esi
@@ -301,7 +325,11 @@ avx_restore:
         clts
         bt      [cpu_caps+(CAPS_OSXSAVE/32)*4], CAPS_OSXSAVE mod 32
         jnc     .no_xsave
+        push    edx
+        mov     eax, [xsave_eax]
+        mov     edx, [xsave_edx]
         xrstor  [esi]
+        pop     edx
         popfd
         pop     esi
         pop     ecx
@@ -351,12 +379,15 @@ except_7:                  ;#NM exception handler
         mov     eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
         bt      [cpu_caps+(CAPS_OSXSAVE/32)*4], CAPS_OSXSAVE mod 32
         jnc     .no_xsave
-        xsave   [eax]
+        mov     ecx, eax
+        mov     eax, [xsave_eax]
+        mov     edx, [xsave_edx]
+        xsave   [ecx]
         mov     ebx, [CURRENT_TASK]
         mov     [fpu_owner], ebx
         shl     ebx, 8
-        mov     eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
-        xrstor  [eax]
+        mov     ecx, [ebx+SLOT_BASE+APPDATA.fpu_state]
+        xrstor  [ecx]
 .exit:
         restore_ring3_context
         iret

@@ -7,7 +7,8 @@
 ; Optimized for KolibriOS, By Diamond
 ; Assemble with
 ; c:fasm firework.asm firework.kex
-; NOTE: Needs MMX & SSE, optionally AVX
+; NOTE: Needs MMX & SSE,
+; optionally AVX, AVX2, AVX512
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 use32
         org     0x0
@@ -23,8 +24,12 @@ use32
 include '../../../macros.inc'
 SCREEN_WIDTH   = 320
 SCREEN_HEIGHT  = 200
-SIMD equ SSE
-SIMD_BYTES = 8
+SIMD equ AVX
+SIMD_BYTES = 16
+; SSE    8
+; AVX    16
+; AVX2   32
+; AVX512 64
 assert SCREEN_WIDTH mod SIMD_BYTES = 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Global defines
