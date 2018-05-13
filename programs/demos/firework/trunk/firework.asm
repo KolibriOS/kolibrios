@@ -24,8 +24,8 @@ use32
 include '../../../macros.inc'
 SCREEN_WIDTH   = 320
 SCREEN_HEIGHT  = 200
-SIMD equ AVX
-SIMD_BYTES = 16
+SIMD equ SSE
+SIMD_BYTES = 8
 ; SSE    8
 ; AVX    16
 ; AVX2   32
