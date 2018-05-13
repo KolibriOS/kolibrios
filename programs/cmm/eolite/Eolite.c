@@ -550,7 +550,7 @@ void DrawFavButton(int x)
 void draw_window()
 {
 	if (show_status_bar.checked) status_bar_h = STATUS_BAR_H; else status_bar_h = 0;
-	DefineAndDrawWindow(WinX+rand_n,WinY+rand_n,WinW,WinH,0x73,NULL,TITLE,0);
+	DefineAndDrawWindow(Form.left+rand_n,Form.top+rand_n,Form.width,Form.height,0x73,NULL,TITLE,0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
 	if (Form.height < 350) { MoveSize(OLD,OLD,OLD,350); return; }

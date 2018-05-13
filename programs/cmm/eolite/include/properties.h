@@ -143,8 +143,8 @@ void ShowConfirmQuestionPopin()
 	DrawPopup(15,80,250,90,1,system.color.work, system.color.work_graph);
 	WriteText(35, 102, 0x90, 0x000000, QUEST_1);
 	WriteText(65, 117, 0x90, 0x000000, QUEST_2);
-	DrawFlatButton(62,138,301,T_YES);
-	DrawFlatButton(155,138,302,T_NO);
+	DrawStandartCaptButton(62,138,301,T_YES);
+	DrawStandartCaptButton(155,138,302,T_NO);
 }
 
 void GetSizeDir(dword way)
@@ -314,8 +314,8 @@ void DrawPropertiesWindow()
 	DefineAndDrawWindow(Form.left + 150,150,315,360+skin_height,0x34,system.color.work,WINDOW_TITLE_PROPERTIES,0);
 	GetProcessInfo(#settings_form, SelfInfo);
 
-	DrawFlatButton(settings_form.cwidth - 96, settings_form.cheight-34, 10, BTN_CLOSE);
-	DrawFlatButton(settings_form.cwidth -208, settings_form.cheight-34, 11, BTN_APPLY);
+	DrawStandartCaptButton(settings_form.cwidth - 96, settings_form.cheight-34, 10, BTN_CLOSE);
+	DrawStandartCaptButton(settings_form.cwidth -208, settings_form.cheight-34, 11, BTN_APPLY);
 	
 	WriteText(10, 78, 0x90, system.color.work_text, PR_T_DEST);
 	edit_box_draw stdcall (#path_to_file_ed);

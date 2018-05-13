@@ -38,7 +38,7 @@ void DisplayOperationForm()
 			DefineAndDrawWindow(Form.left+Form.width-200,Form.top+90,WIN_DIALOG_W,skin_height+WIN_DIALOG_H,0x34,system.color.work,title,0);
 			GetProcessInfo(#Dialog_Form, SelfInfo);
 			WriteText(45, 11, 0x90, system.color.work_text, message);
-			DrawFlatButton(Dialog_Form.cwidth - 105, copy_bar.top-2 , T_CANCEL_PASTE, T_ABORT_WINDOW_BUTTON);
+			DrawStandartCaptButton(Dialog_Form.cwidth - 105, copy_bar.top-2 , T_CANCEL_PASTE, T_ABORT_WINDOW_BUTTON);
 	}
 }
 

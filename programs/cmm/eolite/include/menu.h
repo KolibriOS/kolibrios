@@ -1,5 +1,3 @@
-//Leency 2008-2013
-
 //pay attension: >200 this is only file actions, not supported by folders
 #ifdef LANG_RUS
 char *file_captions[] = {

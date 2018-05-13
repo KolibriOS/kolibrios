@@ -8,7 +8,9 @@ void DirFileCount(dword way)
 	if (dir_exists(way))
 	{
 		cur_file = malloc(4096);
-		// In the process of recursive descent, memory must be allocated dynamically, because the static memory -> was a bug !!! But unfortunately pass away to sacrifice speed.
+		// In the process of recursive descent, memory must be allocated
+		// dynamically, because the static variable cause a fault!!!
+		// But unfortunately pass away to sacrifice speed.
 		GetDir(#dirbuf, #fcount, way, DIRS_ONLYREAL);
 		filename = dirbuf+72;
 		for (i=0; i<fcount; i++)

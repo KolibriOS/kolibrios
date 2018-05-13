@@ -52,17 +52,6 @@ void DrawFlatButtonSmall(dword x,y,width,height,id,text)
 	WriteText(-strlen(text)*6+width/2+x+1,height/2+y-3,0x80,0x333333,text);
 }
 
-int DrawFlatButton(dword x, y, id, text)
-{
-	int padding_w = 15;
-	int width = strlen(text) * 8 + padding_w + padding_w;
-	int height = 25;
-	if (id) DefineButton(x+1,y+1,width-2,height-2,id,system.color.work_button);
-	WriteText(x+padding_w,height/2+y-6,0x90,system.color.work_button_text,text);
-	return width + padding_w;
-}
-
-
 void DrawFilledBar(dword x, y, w, h)
 {
 	int i, fill_h;
@@ -77,6 +66,6 @@ void DrawEolitePopup(dword b1_text, b2_text)
 	int but_x;
 	int popin_x = files.w - popin_w / 2 + files.x ;
 	DrawPopup(popin_x, 160, popin_w, 95, 1, system.color.work, col_graph);
-	but_x = DrawFlatButton(popin_x+23, 215, POPUP_BTN1, b1_text);
-	DrawFlatButton(popin_x+23 + but_x, 215, POPUP_BTN2, b2_text);
+	but_x = DrawStandartCaptButton(popin_x+23, 215, POPUP_BTN1, b1_text);
+	DrawStandartCaptButton(popin_x+23 + but_x, 215, POPUP_BTN2, b2_text);
 }

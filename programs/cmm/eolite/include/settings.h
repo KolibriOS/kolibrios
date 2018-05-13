@@ -31,8 +31,6 @@
 	?define START_PATH " Start path: "
 #endif
 
-int WinX, WinY, WinW, WinH;
-
 char path_start[4096];
 edit_box path_start_ed = {290,50,57,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,4098,
 	                      #path_start,0, 100000000000010b,0,0};
@@ -164,10 +162,10 @@ void LoadIniSettings()
 	two_panels.checked      = ini.GetInt("TwoPanels", false); 
 	kfont.size.pt   = ini.GetInt("FontSize", 13); 
 	files.item_h    = ini.GetInt("LineHeight", 19);
-	WinX = ini.GetInt("WinX", 200); 
-	WinY = ini.GetInt("WinY", 50); 
-	WinW = ini.GetInt("WinW", 550); 
-	WinH = ini.GetInt("WinH", 506); 
+	Form.left   = ini.GetInt("WinX", 200); 
+	Form.top    = ini.GetInt("WinY", 50); 
+	Form.width  = ini.GetInt("WinW", 550); 
+	Form.height = ini.GetInt("WinH", 506); 
 	ini.GetString("DefaultPath", #path, 4096, "/rd/1");
 	ini.GetString("DefaultPath", #path_start, 4096, "/rd/1");
 	path_start_ed.size = path_start_ed.pos = strlen(#path_start);

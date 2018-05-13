@@ -8,7 +8,10 @@ enum {NOCUT, CUT};
 void setElementSelectedFlag(dword n, int state) {
 	dword selected_offset = file_mas[n]*304 + buf+32 + 7;
 	ESBYTE[selected_offset] = state;
-	if (n==0) && (strncmp(file_mas[n]*304+buf+72,"..",2)==0) ESBYTE[selected_offset] = false; //do not selec ".." directory
+	if (n==0) && (strncmp(file_mas[n]*304+buf+72,"..",2)==0) {
+		ESBYTE[selected_offset] = false; //do not selec ".." directory
+		return;
+	}
 	if (state==true) selected_count++;
 	if (state==false) selected_count--;
 }
@@ -27,7 +30,13 @@ void Copy(dword pcth, char cut)
 	dword copy_buf_offset = 0;
 
 	if (files.count<=0) return; //no files
-	if (selected_count==0) setElementSelectedFlag(files.cur_y, true); //no element selected by "insert", so we copy current element
+
+	//if no element selected by "Insert" key, then we copy current element
+	if (!selected_count)
+		setElementSelectedFlag(files.cur_y, true);
+
+	if (!selected_count) return;
+	
 	size_buf = 4;
 	for (i=0; i<files.count; i++) 
 	{

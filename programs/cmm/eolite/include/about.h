@@ -44,7 +44,7 @@ void about_dialog()
 				DrawRectangle3D(0,154,about_form.cwidth,1,system.color.work_dark,system.color.work_light);
 				WriteTextLines(7,163,0x90,system.color.work_text,"KolibriOS File Manager\nAuthors: Leency, Veliant\nPunk_Joker, Pavelyakov\n(c) 2008 - 2017",20);
 				#ifdef LANG_RUS
-				DrawFlatButton(60,about_form.cheight-38,11,"История разработки");
+				DrawStandartCaptButton(60,about_form.cheight-38,11,"История разработки");
 				#endif
 	}
 }

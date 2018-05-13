@@ -1,4 +1,3 @@
-//Leency 2008-2013
 
 #ifdef LANG_RUS
 	?define T_DEVICES "Устройства"
