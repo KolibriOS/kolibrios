@@ -1119,6 +1119,10 @@ endl
 	imul ecx,3
 	mov edi,ecx
 	imul edi,[ebx+Image.Height]
+	cmp edi,4096
+	jge @f
+		mov edi,4096 ;minimum memory size
+	@@:
 	mov [encoded_file_size],edi
 	stdcall [mem.alloc],edi
 	test eax,eax

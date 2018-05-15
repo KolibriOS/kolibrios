@@ -2144,23 +2144,27 @@ endl
 	mov eax,[edx+png_image.format]
 	and eax,PNG_FORMAT_FLAG_ALPHA
 	jz .end0 ;if (..!=0)
-;      bytep row_end;
-;      int aindex;
 
 if PNG_SIMPLIFIED_WRITE_AFIRST_SUPPORTED eq 1
-;      if ((image->format & PNG_FORMAT_FLAG_AFIRST) != 0)
-;      {
-;         aindex = -1;
-;         ++input_row; /* To point to the first component */
-;         ++output_row;
-;      }
-
-;      else
+	mov eax,[edx+png_image.format]
+	and eax,PNG_FORMAT_FLAG_AFIRST
+	jz .end2 ;if (..!=0)
+		mov [aindex],-1
+		inc [input_row] ; To point to the first component
+		inc [output_row]
+		jmp @f
+	.end2: ;else
 end if
-;      aindex = channels;
+		mov eax,[channels]
+		mov [aindex],eax
+	.@@:
 
 	; Use row_end in place of a loop counter:
-;      row_end = output_row + image->width * (channels+1);
+	mov ecx,[channels]
+	inc ecx
+	imul ecx,[edx+png_image.width]
+	add ecx,[output_row]
+	;ecx = row_end
 
 ;      while (y-- > 0)
 ;      {
@@ -2755,11 +2759,11 @@ end if
 
 	.end9: ;else
 if 1 ;;; IDAT compress all (only 24 bit)
+		cmp dword[ebx+png_image.height],1
+		jl .end8
 		mov ecx,[edx+png_image_write_control.row_bytes]
 		inc ecx
 		imul ecx,[ebx+png_image.height]
-		cmp ecx,1
-		jl .end8
 		stdcall create_compress_IDAT, edi, [edx+png_image_write_control.first_row], ecx, [ebx+png_image.width], [ebx+png_image.height]
 else ;;; IDAT compress by lines
 		mov ecx,[ebx+png_image.height]
