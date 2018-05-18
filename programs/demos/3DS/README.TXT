@@ -1,10 +1,5 @@
-View3ds 0.068 - tiny viewer to .3ds and .asc files with several graphics
+View3ds 0.068b - tiny viewer to .3ds and .asc files with several graphics
 		effects implementation.
-
-
-What's new?
-1. Editing option - new 'editor' button.
-2. For now I disable perspective correction, to make implemtation of editing option easier.
 
 Buttons description:
 1.  rotary: choosing rotary axle: x, y, x+y.

@@ -1,5 +1,5 @@
 
-; application : View3ds ver. 0.068 - tiny .3ds and .asc files viewer
+; application : View3ds ver. 0.068b - tiny .3ds and .asc files viewer
 ;		with a few graphics effects demonstration.
 ; compiler    : FASM
 ; system      : KolibriOS

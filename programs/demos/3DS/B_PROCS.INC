@@ -824,8 +824,11 @@ if Ext=SSE
        ;  mov        ecx,(SIZE_X*(SIZE_Y-3))*3/8
      .blr:
      @@:
+	 push	    ecx
+	 mov	    ecx,edi
+	 sub	    ecx,ebx
 	 movq	    mm0,[edi+ebx]
-	 movq	    mm1,[edi-ebx]
+	 movq	    mm1,[ecx]
 	 movq	    mm2,[edi-3]
 	 movq	    mm3,[edi+3]
 
@@ -838,7 +841,7 @@ if Ext=SSE
 	 movq	    [edi],mm0
 	 add	     edi,8
 	 add	     esi,8
-
+	 pop	     ecx
 	 loop	     .blr
 
 	 xor	    eax,eax

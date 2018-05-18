@@ -1,3 +1,11 @@
+View3ds 0.068b - V 2018
+1. Fixed SSE build.
+-----------------------------------------------------------------------------------
+View3ds 0.068 - XI 2016
+1. Editing option - new 'editor' button.
+2. For now I disable perspective correction, to make implemtation of editing option easier.
+-----------------------------------------------------------------------------------
+
 View3ds 0.067 - XI 2016
 1. Sizable app window.
 -----------------------------------------------------------------------------------
