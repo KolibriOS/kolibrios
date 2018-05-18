@@ -42,7 +42,7 @@ void GetAbsoluteURL(dword in_URL)
 	}
 	
 	IF (!strcmpn(in_URL,"./", 2)) in_URL+=2;
-	if (!http_transfer) 
+	if (!http.transfer) 
 	{
 		strcpy(#newurl, history.current());
 	}

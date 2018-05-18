@@ -1,3 +1,77 @@
+//===================================================//
+//                                                   //
+//                       HTTP                        //
+//                                                   //
+//===================================================//
+
+struct _http
+{
+    dword url;
+    dword transfer;
+    dword content_length;
+    dword content_received;
+    dword status_code;
+    dword receive_result;
+    dword content_pointer;
+
+    dword get();
+    void free();
+    void receive();
+    bool handle_redirect();
+};
+
+dword _http::get(dword _url)
+{
+    url = _url;
+    http_get stdcall (url, 0, 0, #accept_language);
+    transfer = EAX;
+    return transfer;
+}
+
+void _http::free()
+{
+    http_free stdcall (transfer);
+    transfer=0;
+}
+
+void _http::receive()
+{
+    http_receive stdcall (transfer);
+    receive_result = EAX;
+
+    ESI = transfer;
+    if (!EAX) status_code = ESI.http_msg.status;
+    content_length = ESI.http_msg.content_length;
+    content_received = ESI.http_msg.content_received;
+
+ }
+
+bool _http::handle_redirect()
+{
+	dword redirect, i;
+	char redirect_url[4096*3], finaladress[4096*3];
+    http_find_header_field stdcall (transfer, "location\0");
+    if (EAX!=0) {
+        ESI = EAX;
+        EDI = #redirect_url;
+        do {
+            $lodsb;
+            $stosb;
+        } while (AL != 0) && (AL != 13) && (AL != 10);
+        DSBYTE[EDI-1]='\0';
+        get_absolute_url(#finaladress, url, #redirect_url);
+        strcpy(url, #finaladress);
+        return true;
+    }
+    return false;
+}
+
+//===================================================//
+//                                                   //
+//                    DOWNLOADER                     //
+//                                                   //
+//===================================================//
+
 
 enum { 
 	STATE_NOT_STARTED, 
@@ -6,11 +80,10 @@ enum {
 };
 
 struct DOWNLOADER {
+	_http httpd;
 	unsigned data_downloaded_size, data_full_size;
 	dword bufpointer, bufsize, url;
-	byte state;
-	dword http_transfer;
-	int http_status_code;
+	int state;
 	dword Start();
 	void Stop();
 	void Completed();
@@ -21,25 +94,24 @@ dword DOWNLOADER::Start(dword _url)
 {
 	url = _url;
 	state = STATE_IN_PROGRESS;
-	http_get stdcall (url, 0, 0, #accept_language);
-	http_transfer = EAX;
-	return http_transfer;
+	httpd.get(url);
+	return httpd.transfer;
 }
 
 void DOWNLOADER::Stop()
 {
 	state = STATE_NOT_STARTED;
-	if (http_transfer!=0)
+	if (httpd.transfer!=0)
 	{
-		EAX = http_transfer;
+		EAX = httpd.transfer;
 		EAX = EAX.http_msg.content_ptr;		// get pointer to data
 		$push EAX							// save it on the stack
-		http_free stdcall (http_transfer);	// abort connection
+		http_free stdcall (httpd.transfer);	// abort connection
 		$pop  EAX							
-		mem_Free(EAX);						// free data
-		http_transfer=0;
+		free(EAX);						// free data
+		httpd.transfer=0;
 		bufsize = 0;
-		bufpointer = mem_Free(bufpointer);
+		bufpointer = free(bufpointer);
 	}
 	data_downloaded_size = data_full_size = 0;
 }
@@ -47,39 +119,30 @@ void DOWNLOADER::Stop()
 void DOWNLOADER::Completed()
 {
 	state = STATE_COMPLETED;
-	ESI = http_transfer;
+	ESI = httpd.transfer;
 	bufpointer = ESI.http_msg.content_ptr;
 	bufsize = ESI.http_msg.content_received;
-	http_free stdcall (http_transfer);
-	http_transfer=0;
+	httpd.free();
 }
 
 int DOWNLOADER::MonitorProgress() 
 {
 	dword receive_result;
 	char redirect_url[4096*3], finaladress[4096*3];
-	if (http_transfer <= 0) return false;
-	http_receive stdcall (http_transfer);
+	if (httpd.transfer <= 0) return false;
+	http_receive stdcall (httpd.transfer);
 	receive_result = EAX;
-	EDI = http_transfer;
-	http_status_code = EDI.http_msg.status;
+	EDI = httpd.transfer;
+	httpd.status_code = EDI.http_msg.status;
 	data_full_size = EDI.http_msg.content_length;
 	data_downloaded_size = EDI.http_msg.content_received;
 	if (!data_full_size) data_full_size = data_downloaded_size * 6 + 1;
 
 	if (receive_result == 0) {
-		if (http_status_code >= 300) && (http_status_code < 400)
+		if (httpd.status_code >= 300) && (httpd.status_code < 400)
 		{
-			http_find_header_field stdcall (http_transfer, "location\0");
-			if (EAX!=0) {
-				ESI = EAX;
-				EDI = #redirect_url;
-				do {
-					$lodsb;
-					$stosb;
-				} while ((AL != 0) && (AL != 13) && (AL != 10));
-				DSBYTE[EDI-1]='\0';
-			}
+			httpd.handle_redirect();
+			strcpy(url, httpd.url);
 			get_absolute_url(#finaladress, url, #redirect_url);
 			Stop();
 			Start(#finaladress);
@@ -94,7 +157,7 @@ int DOWNLOADER::MonitorProgress()
 
 /*=====================================
 ==                                   ==
-==         CHECK URL TYPE            ==
+==         CHECK PATH TYPE           ==
 ==                                   ==
 =====================================*/
 

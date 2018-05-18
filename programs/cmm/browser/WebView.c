@@ -27,10 +27,12 @@
 #include "..\lib\patterns\history.h"
 #include "..\lib\patterns\http_downloader.h"
 
+_http http = {0, 0, 0, 0, 0, 0, 0};
+
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.73";
+char version[]="Текстовый браузер 1.74";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -45,7 +47,7 @@ char link_menu[] =
 "Копировать ссылку
 Скачать содержимое ссылки";
 #else
-char version[]="Text-based Browser 1.73";
+char version[]="Text-based Browser 1.74";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -74,9 +76,6 @@ int redirected = 0;
 char stak[4096];
 
 int action_buf;
-
-dword http_transfer = 0;
-dword http_buffer;
 
 dword TOOLBAR_H = 40;
 dword STATUSBAR_H = 15;
@@ -185,34 +184,17 @@ void main()
 			break;
 			
 		case evNetwork:
-			if (http_transfer > 0) {
-				http_receive stdcall (http_transfer);
-				$push EAX
-				ESI = http_transfer;
-				wv_progress_bar.max = ESI.http_msg.content_length;
-				if (wv_progress_bar.value != ESI.http_msg.content_received)
-				{
-					wv_progress_bar.value = ESI.http_msg.content_received;	
-					DrawProgress();
-				}
-				$pop EAX
-				if (EAX == 0) {
-					ESI = http_transfer;
+			if (http.transfer > 0) {
+				http.receive();
+				EventUpdateProgressBar();
+				if (http.receive_result == 0) {
 					// Handle redirects
-					if (ESI.http_msg.status >= 300) && (ESI.http_msg.status < 400)
+					if (http.status_code >= 300) && (http.status_code < 400)
 					{
 						redirected++;
 						if (redirected<=5)
 						{
-							http_find_header_field stdcall (http_transfer, "location\0");
-							if (EAX!=0) {
-								ESI = EAX;
-								EDI = #URL;
-								do {
-									$lodsb;
-									$stosb;
-								} while (AL != 0) && (AL != 13) && (AL != 10);
-								DSBYTE[EDI-1]='\0';
+							if (http.handle_redirect()) {
 								if (!strncmp(#URL,"https://",8))
 								{
 									history.back();
@@ -238,8 +220,7 @@ void main()
 					// Loading the page is complete, free resources
 					if (redirected>0)
 					{
-						http_free stdcall (http_transfer);
-						http_transfer=0;
+						http.free();
 						GetAbsoluteURL(#URL);
 						history.back();
 						strcpy(#editURL, #URL);
@@ -249,11 +230,10 @@ void main()
 					else
 					{
 						history.add(#URL);
-						ESI = http_transfer;
+						ESI = http.transfer;
 						bufpointer = ESI.http_msg.content_ptr;
 						bufsize = ESI.http_msg.content_received;
-						http_free stdcall (http_transfer);
-						http_transfer=0;
+						http.free();
 						SetPageDefaults();
 						ShowPage();
 					}
@@ -338,7 +318,7 @@ void ProcessEvent(dword id__)
 		case 063: //F5
 			IF(address_box.flags & 0b10) return;
 		case REFRESH_BUTTON:
-			if (http_transfer > 0) 
+			if (http.transfer > 0) 
 			{
 				StopLoading();
 				Draw_Window();
@@ -391,15 +371,15 @@ void ProcessEvent(dword id__)
 
 void StopLoading()
 {
-	if (http_transfer)
+	if (http.transfer)
 	{
-		EAX = http_transfer;
+		EAX = http.transfer;
 		EAX = EAX.http_msg.content_ptr;		// get pointer to data
 		$push	EAX							// save it on the stack
-		http_free stdcall (http_transfer);	// abort connection
+		http_free stdcall (http.transfer);	// abort connection
 		$pop	EAX							
 		free(EAX);						// free data
-		http_transfer=0;
+		http.transfer=0;
 		bufsize = 0;
 		bufpointer = free(bufpointer);
 	}
@@ -432,9 +412,8 @@ void OpenPage()
 	if (!strncmp(#URL,"http:",5))
 	{
 		img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, 131, 0);
-		http_get stdcall (#URL, 0, 0, #accept_language);
-		http_transfer = EAX;
-		if (!http_transfer)
+		http.get(#URL);
+		if (!http.transfer)
 		{
 			StopLoading();
 			bufsize = 0;
@@ -465,7 +444,7 @@ DrawEditBoxWebView()
 	address_box.size = address_box.pos = address_box.shift = address_box.shift_old = strlen(#editURL);
 	address_box.offset = 0;
 	edit_box_draw stdcall(#address_box);
-	if (http_transfer > 0) EAX = 131; else EAX = 54;
+	if (http.transfer > 0) EAX = 131; else EAX = 54;
 	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, EAX, 0);
 }
 
@@ -476,7 +455,7 @@ void ShowPage()
 	debugval("bufsize", bufsize);
 	if (!bufsize)
 	{
-		if (http_transfer) WB1.LoadInternalPage(#loading, sizeof(loading));
+		if (http.transfer) WB1.LoadInternalPage(#loading, sizeof(loading));
 		else WB1.LoadInternalPage(#page_not_found, sizeof(page_not_found));
 	}
 	else
@@ -508,7 +487,7 @@ int SetSkinColors()
 void DrawProgress()
 {
 	unsigned long btn;
-	if (http_transfer == 0) return;
+	if (http.transfer == 0) return;
 	if (wv_progress_bar.max) btn = address_box.width*wv_progress_bar.value/wv_progress_bar.max; else btn = 30;
 	DrawBar(address_box.left-2, address_box.top+20, btn, 2, wv_progress_bar.progress_color);
 }
@@ -517,7 +496,7 @@ void DrawProgress()
 char anchor[256];
 void ClickLink()
 {
-	if (http_transfer > 0) 
+	if (http.transfer > 0) 
 	{
 		StopLoading();
 		history.back();
@@ -609,6 +588,16 @@ void EventShowPageMenu(dword _left, _top)
 void EventShowLinkMenu(dword _left, _top)
 {
 	menu.show(Form.left+_left-6,Form.top+_top+skin_height+3, 220, #link_menu, COPY_LINK);
+}
+
+void EventUpdateProgressBar()
+{
+	wv_progress_bar.max = http.content_length;
+	if (wv_progress_bar.value != http.content_received)
+	{
+		wv_progress_bar.value = http.content_received;	
+		DrawProgress();
+	}
 }
 
 

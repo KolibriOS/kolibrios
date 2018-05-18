@@ -26,6 +26,11 @@
 byte letter_icons[sizeof(file "img/letter_icons.raw")] = FROM "img/letter_icons.raw";
 #include "img/letter_icons.h"
 
+struct mockup
+{
+	dword transfer;
+} http = {0};
+
 //connection algorithm
 enum {
 	STOP,
