@@ -1,4 +1,4 @@
-#define MEMSIZE 4096*60
+#define MEMSIZE 4096*80
 
 #include "../lib/kfont.h"
 #include "../lib/io.h"
@@ -296,8 +296,9 @@ char favicon_address[UML];
 			while (downloader.state!=STATE_COMPLETED)
 			{ 
 				downloader.MonitorProgress(); 
-				if (downloader.data_full_size>0)
-					DrawProgress(STEP_2_COUNT_PAGE_HEIGHT-STEP_1_DOWNLOAD_PAGE*downloader.data_downloaded_size/downloader.data_full_size); 
+				if (downloader.httpd.content_length>0)
+					DrawProgress(STEP_2_COUNT_PAGE_HEIGHT-STEP_1_DOWNLOAD_PAGE*
+						downloader.httpd.content_received/downloader.httpd.content_length); 
 				else
 					DrawProgress(STEP_2_COUNT_PAGE_HEIGHT-STEP_1_DOWNLOAD_PAGE/2);
 			}

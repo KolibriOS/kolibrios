@@ -28,7 +28,6 @@
 #include "..\lib\patterns\http_downloader.h"
 
 _http http = {0, 0, 0, 0, 0, 0, 0};
-DOWNLOADER downloader;
 
 char homepage[] = FROM "html\\homepage.htm""\0";
 

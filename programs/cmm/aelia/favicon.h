@@ -20,7 +20,7 @@ void _favicon::draw(int x,y)
 {
 	dword favicon_data_decoded;
 	if (favget.bufpointer) {
-		img_decode stdcall (favget.bufpointer, favget.data_full_size, 0);
+		img_decode stdcall (favget.bufpointer, favget.httpd.content_length, 0);
 		if (EAX==0) return;
 		favicon_data_decoded = EAX;
 		img_draw stdcall(favicon_data_decoded, x,y, 16, 16, 0, 0);

@@ -1,3 +1,5 @@
+DOWNLOADER downloader;
+
 #ifdef LANG_RUS
 	#define DL_WINDOW_HEADER "Менеджер загрузок"
 	#define START_DOWNLOADING "Начать закачку"
