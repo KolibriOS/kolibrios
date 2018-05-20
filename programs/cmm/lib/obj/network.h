@@ -12,7 +12,7 @@
 dword network_lib = #a_network_lib;
 char a_network_lib[]="/sys/lib/network.obj";
 
-dword network_lib_init    = #aLib_init;
+dword network_lib_init    = #aInet_init;
 dword inet_addr           = #aInet_addr;  //"192.168.0.1" -> dword IP
 dword inet_ntoa           = #aInet_ntoa;
 dword getaddrinfo         = #aGetaddrinfo;
@@ -22,7 +22,7 @@ dword getaddrinfo_abort   = #aGetaddrinfo_abort;
 dword freeaddrinfo        = #aFreeaddrinfo;
 $DD 2 dup 0
 
-char aLib_init[]              = "lib_init";
+char aInet_init[]              = "lib_init";
 char aInet_addr[]            = "inet_addr";
 char aInet_ntoa[]            = "inet_ntoa";
 char aGetaddrinfo[]          = "getaddrinfo";

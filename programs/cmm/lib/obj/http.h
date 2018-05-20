@@ -12,7 +12,7 @@
 dword libHTTP = #alibHTTP;
 char alibHTTP[] = "/sys/lib/http.obj";
 
-dword http_lib_init          = #aLib_init;
+dword http_lib_init          = #aHTTPinit;
 dword http_get               = #aHTTPget;
 dword http_head              = #aHTTPhead;
 dword http_post              = #aHTTPpost;
@@ -25,7 +25,7 @@ dword uri_escape             = #aURIescape;
 dword uri_unescape           = #aURIunescape;
 $DD 2 dup 0
 
-char aLib_init[]             = "lib_init";
+char aHTTPinit[]             = "lib_init";
 char aHTTPget[]              = "get";
 char aHTTPhead[]             = "head";
 char aHTTPpost[]             = "post";

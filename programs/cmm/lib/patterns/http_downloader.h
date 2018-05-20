@@ -90,7 +90,7 @@ struct DOWNLOADER {
 	dword Start();
 	void Stop();
 	bool MonitorProgress();
-} downloader;
+};
 
 dword DOWNLOADER::Start(dword _url)
 {

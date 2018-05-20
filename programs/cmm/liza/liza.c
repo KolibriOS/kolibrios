@@ -16,20 +16,22 @@
 //*.obj libraries
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/network.h"
+#include "../lib/obj/http.h"
 #include "../lib/obj/libio.h"
 #include "../lib/obj/libimg.h"
 #include "../lib/obj/netcode.h"
 #include "../lib/obj/iconv.h"
 //patternts
-#include "..\lib\patterns\history.h"
+#include "../lib/patterns/history.h"
+#include "../lib/patterns/http_downloader.h"
 //images
 byte letter_icons[sizeof(file "img/letter_icons.raw")] = FROM "img/letter_icons.raw";
 #include "img/letter_icons.h"
 
-struct mockup
-{
-	dword transfer;
-} http = {0};
+_http http = {0};
+bool old_tag_parser_mode = false;
+bool debug_mode = false;
+char accept_language[]= "Accept-Language: ru\n";
 
 //connection algorithm
 enum {
