@@ -1,24 +1,4 @@
 
-int UrlIsAbsolute(dword in)
-{
-	if(!strncmp(in,"http:",5)) return true;
-	if(!strncmp(in,"https:",6)) return true;
-	if(!strncmp(in,"file:",5)) return true;
-	if(!strncmp(in,"mailto:",7)) return true;
-	if(!strncmp(in,"ftp:",4)) return true;
-	if(!strncmp(in,"WebView:",8)) return true;
-	if(!strncmp(in,"/sys/",5)) return true;
-	if(!strncmp(in,"/hd/",4)) return true;
-	if(!strncmp(in,"/fd/",4)) return true;
-	if(!strncmp(in,"/rd/",4)) return true;
-	if(!strncmp(in,"/tmp/",5)) return true;
-	if(!strncmp(in,"/cd/",4)) return true;
-	if(!strncmp(in,"/bd/",4)) return true;
-	if(!strncmp(in,"/usbhd/",7)) return true;
-	if(!strncmp(in,"/kolibrios/",11)) return true;
-	return false;
-}
-
 void GetAbsoluteURL(dword in_URL)
 {
 	int i;
@@ -30,7 +10,7 @@ void GetAbsoluteURL(dword in_URL)
 		strcpy(i+1, i+5);
 	}
 
-	if (UrlIsAbsolute(in_URL)) return;
+	if (check_is_the_url_absolute(in_URL)) return;
 
 	IF (!strcmpn(in_URL,"//", 2)) 
 	{

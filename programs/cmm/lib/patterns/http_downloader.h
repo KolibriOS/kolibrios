@@ -13,6 +13,8 @@ struct _http
     dword status_code;
     dword receive_result;
     dword content_pointer;
+    char redirect_url[4096*3];
+    char finaladress[4096*3];
 
     dword get();
     void free();
@@ -39,17 +41,19 @@ void _http::receive()
     http_receive stdcall (transfer);
     receive_result = EAX;
 
-    ESI = transfer;
-    if (!EAX) status_code = ESI.http_msg.status;
-    content_length = ESI.http_msg.content_length;
-    content_received = ESI.http_msg.content_received;
+    EDI = transfer;
+    if (!EAX) {
+    	status_code = EDI.http_msg.status;
+    	content_pointer = EDI.http_msg.content_ptr;
+    }
+    content_length = EDI.http_msg.content_length;
+    content_received = EDI.http_msg.content_received;
 
  }
 
 bool _http::handle_redirect()
 {
-	dword redirect, i;
-	char redirect_url[4096*3], finaladress[4096*3];
+	dword redirect;
     http_find_header_field stdcall (transfer, "location\0");
     if (EAX!=0) {
         ESI = EAX;
@@ -81,13 +85,11 @@ enum {
 
 struct DOWNLOADER {
 	_http httpd;
-	unsigned data_downloaded_size, data_full_size;
 	dword bufpointer, bufsize, url;
 	int state;
 	dword Start();
 	void Stop();
-	void Completed();
-	int MonitorProgress();
+	bool MonitorProgress();
 } downloader;
 
 dword DOWNLOADER::Start(dword _url)
@@ -113,43 +115,30 @@ void DOWNLOADER::Stop()
 		bufsize = 0;
 		bufpointer = free(bufpointer);
 	}
-	data_downloaded_size = data_full_size = 0;
+	httpd.content_received = httpd.content_length = 0;
 }
 
-void DOWNLOADER::Completed()
+bool DOWNLOADER::MonitorProgress() 
 {
-	state = STATE_COMPLETED;
-	ESI = httpd.transfer;
-	bufpointer = ESI.http_msg.content_ptr;
-	bufsize = ESI.http_msg.content_received;
-	httpd.free();
-}
-
-int DOWNLOADER::MonitorProgress() 
-{
-	dword receive_result;
-	char redirect_url[4096*3], finaladress[4096*3];
 	if (httpd.transfer <= 0) return false;
-	http_receive stdcall (httpd.transfer);
-	receive_result = EAX;
-	EDI = httpd.transfer;
-	httpd.status_code = EDI.http_msg.status;
-	data_full_size = EDI.http_msg.content_length;
-	data_downloaded_size = EDI.http_msg.content_received;
-	if (!data_full_size) data_full_size = data_downloaded_size * 6 + 1;
+	httpd.receive();
+	if (!httpd.content_length) httpd.content_length = httpd.content_received * 20;
 
-	if (receive_result == 0) {
+	if (httpd.receive_result == 0) {
 		if (httpd.status_code >= 300) && (httpd.status_code < 400)
 		{
 			httpd.handle_redirect();
 			strcpy(url, httpd.url);
-			get_absolute_url(#finaladress, url, #redirect_url);
+			get_absolute_url(#httpd.finaladress, url, #httpd.redirect_url);
 			Stop();
-			Start(#finaladress);
-			url = #finaladress;
+			Start(#httpd.finaladress);
+			url = #httpd.finaladress;
 			return false;
 		}
-		Completed();
+		state = STATE_COMPLETED;
+		bufpointer = httpd.content_pointer;
+		bufsize = httpd.content_received;
+		httpd.free();
 	}
 	return true;
 }
@@ -191,8 +180,6 @@ int check_is_the_url_absolute(dword _in)
 void get_absolute_url(dword _rez, _base, _new)
 {
 	int i;
-	debug("_base:");debugln(_base);
-	debug("_new:");debugln(_new);
 	//case: ./valera.html
 	if (!strncmp(_new,"./", 2)) _new+=2;
 	//case: http://site.name
@@ -222,5 +209,4 @@ void get_absolute_url(dword _rez, _base, _new)
 	strcat(_rez, _new); 
 	_GET_ABSOLUTE_URL_END:
 	while (i=strstr(_rez, "&amp;")) strcpy(i+1, i+5);	
-	debug("_rez:");debugln(_rez);
 }

@@ -32,7 +32,7 @@ _http http = {0, 0, 0, 0, 0, 0, 0};
 char homepage[] = FROM "html\\homepage.htm""\0";
 
 #ifdef LANG_RUS
-char version[]="Текстовый браузер 1.74";
+char version[]="Текстовый браузер 1.8";
 ?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 ?define T_LAST_SLIDE "Это последний слайд"
 char loading[] = "Загрузка страницы...<br>";
@@ -47,7 +47,7 @@ char link_menu[] =
 "Копировать ссылку
 Скачать содержимое ссылки";
 #else
-char version[]="Text-based Browser 1.74";
+char version[]="Text-based Browser 1.8";
 ?define IMAGES_CACHE_CLEARED "Images cache cleared"
 ?define T_LAST_SLIDE "This slide is the last"
 char loading[] = "Loading...<br>";
@@ -83,6 +83,9 @@ dword col_bg;
 dword panel_color;
 dword border_color;
 
+bool debug_mode = false;
+bool old_tag_parser_mode = false;
+
 progress_bar wv_progress_bar;
 bool souce_mode = false;
 bool open_in_a_new_window = false;
@@ -98,7 +101,7 @@ enum {
 	VIEW_HISTORY,
 	//FREE_IMG_CACHE,
 	DOWNLOAD_MANAGER,
-	COPY_LINK=1200,
+	COPY_LINK_URL=1200,
 	DOWNLOAD_LINK_CONTENTS,
 };
 
@@ -114,7 +117,6 @@ edit_box address_box = {250,60,30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000
 
 void main()
 {
-	CursorPointer.Load(#CursorFile);
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libio, #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
@@ -132,15 +134,12 @@ void main()
 		case evMouse:
 			edit_box_mouse stdcall (#address_box);
 			mouse.get();
-			if (WB1.list.MouseOver(mouse.x, mouse.y))
-			{
-				if (PageLinks.HoverAndProceed(mouse.x, WB1.list.first + mouse.y))
-				&& (bufsize) && (mouse.pkm) && (mouse.up) {
-					EventShowPageMenu(mouse.x, mouse.y);
-					break;
-				}
-				if (WB1.list.MouseScroll(mouse.vert)) WB1.DrawPage();
+			if (PageLinks.HoverAndProceed(mouse.x, WB1.list.first + mouse.y))
+			&& (bufsize) && (mouse.pkm) && (mouse.up) {
+				if (WB1.list.MouseOver(mouse.x, mouse.y)) EventShowPageMenu(mouse.x, mouse.y);
+				break;
 			}
+			if (WB1.list.MouseScroll(mouse.vert)) WB1.DrawPage();
 			scrollbar_v_mouse (#scroll_wv);
 			if (WB1.list.first != scroll_wv.position)
 			{
@@ -192,51 +191,31 @@ void main()
 					if (http.status_code >= 300) && (http.status_code < 400)
 					{
 						redirected++;
-						if (redirected<=5)
+						if (redirected>5)
 						{
-							if (http.handle_redirect()) {
-								if (!strncmp(#URL,"https://",8))
-								{
-									history.back();
-									strcpy(#editURL, history.current());
-									strcpy(#URL, history.current());
-									ShowErrorMessageThatHttpsIsNotSupportedYet();
-									StopLoading();
-									break;	
-								}
-							}
+							notify("'Too many redirects.' -E");
+							StopLoading();
 						}
 						else
 						{
-							notify("Too many redirects");
-							StopLoading();
-							break;
+							http.handle_redirect();
+							http.free();
+							GetAbsoluteURL(#http.redirect_url);
+							history.back();
+							strcpy(#editURL, #URL);
+							DrawEditBoxWebView();
+							OpenPage();
 						}
+						break;
 					} 
-					else
-					{
-						redirected = 0;
-					}
+					redirected = 0;
 					// Loading the page is complete, free resources
-					if (redirected>0)
-					{
-						http.free();
-						GetAbsoluteURL(#URL);
-						history.back();
-						strcpy(#editURL, #URL);
-						DrawEditBoxWebView();
-						OpenPage();
-					}
-					else
-					{
-						history.add(#URL);
-						ESI = http.transfer;
-						bufpointer = ESI.http_msg.content_ptr;
-						bufsize = ESI.http_msg.content_received;
-						http.free();
-						SetPageDefaults();
-						ShowPage();
-					}
+					history.add(#URL);
+					bufpointer = http.content_pointer;
+					bufsize = http.content_received;
+					http.free();
+					SetPageDefaults();
+					ShowPage();
 				}
 			}
 	}
@@ -275,7 +254,12 @@ void Draw_Window()
 	img_draw stdcall(skin.image, Form.cwidth-24, address_box.top-3, 17, skin.h, 87, 0);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, col_bg);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, border_color);
-	if (!header) OpenPage(); else { WB1.DrawPage(); DrawEditBoxWebView(); }
+	if (!header) 
+		OpenPage(); 
+	else { 
+		WB1.DrawPage(); 
+		DrawEditBoxWebView(); 
+	}
 	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, scroll_wv.bckg_col);
 	DrawProgress();
 }
@@ -303,7 +287,10 @@ void ProcessEvent(dword id__)
 			return;
 		case GOTOURL_BUTTON:
 		case SCAN_CODE_ENTER:
-			if (!strncmp(#editURL,"http:",5)) || (editURL[0]=='/') 
+			if (!editURL[0]) {
+				strcpy(#URL, URL_SERVICE_HOME);
+			}
+			else if (!strncmp(#editURL,"http:",5)) || (editURL[0]=='/') 
 			|| (!strncmp(#editURL,"https:",6)) || (!strncmp(#editURL,"WebView:",8))
 			{
 				strcpy(#URL, #editURL);
@@ -334,7 +321,7 @@ void ProcessEvent(dword id__)
 			WB1.LoadInternalPage(bufpointer, bufsize);
 			break;
 		case EDIT_SOURCE:
-			if (!strncmp(#URL,"http:",5)) 
+			if (!strncmp(#URL,"http",4)) 
 			{
 				CreateFile(bufsize, bufpointer, "/tmp0/1/WebView_tmp.htm");
 				if (!EAX) RunProgram("/rd/1/tinypad", "/tmp0/1/WebView_tmp.htm");
@@ -356,7 +343,7 @@ void ProcessEvent(dword id__)
 				CreateThread(#Downloader,#downloader_stak+4092);
 			}
 			return;
-		case COPY_LINK:
+		case COPY_LINK_URL:
 			Clipboard__CopyText(PageLinks.GetURL(PageLinks.active));
 			notify("'URL copied to clipboard'O");
 			return;
@@ -365,6 +352,16 @@ void ProcessEvent(dword id__)
 				strcpy(#downloader_edit, PageLinks.GetURL(PageLinks.active));
 				CreateThread(#Downloader,#downloader_stak+4092);
 			}
+			return;
+		case SCAN_CODE_F12:
+			debug_mode ^= 1;
+			if (debug_mode) notify("'Debug mode ON'-I");
+			else notify("'Debug mode OFF'-I");
+			return;
+		case SCAN_CODE_F11:
+			old_tag_parser_mode ^= 1;
+			if (old_tag_parser_mode) notify("'Old tag parser ON'-I");
+			else notify("'Old tag parser OFF'-I");
 			return;
 	}
 }
@@ -397,6 +394,7 @@ void SetPageDefaults()
 
 void OpenPage()
 {
+	char getUrl[sizeof(URL)];
 	StopLoading();
 	souce_mode = false;
 	strcpy(#editURL, #URL);
@@ -409,10 +407,18 @@ void OpenPage()
 		DrawEditBoxWebView();
 		return;
 	}
-	if (!strncmp(#URL,"http:",5))
+	if (!strncmp(#URL,"http:",5)) || (!strncmp(#URL,"https://",8)) 
 	{
 		img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-3, 17, skin.h, 131, 0);
-		http.get(#URL);
+
+		if (!strncmp(#URL,"http:",5)) {
+			http.get(#URL);
+		}
+		if (!strncmp(#URL,"https://",8)) {
+			sprintf(#getUrl, "http://gate.aspero.pro/?site=%s", #URL);
+			http.get(#getUrl);
+		}
+		//http.get(#URL);
 		if (!http.transfer)
 		{
 			StopLoading();
@@ -452,7 +458,6 @@ DrawEditBoxWebView()
 void ShowPage()
 {
 	DrawEditBoxWebView();
-	debugval("bufsize", bufsize);
 	if (!bufsize)
 	{
 		if (http.transfer) WB1.LoadInternalPage(#loading, sizeof(loading));
@@ -486,10 +491,10 @@ int SetSkinColors()
 
 void DrawProgress()
 {
-	unsigned long btn;
+	dword persent;
 	if (http.transfer == 0) return;
-	if (wv_progress_bar.max) btn = address_box.width*wv_progress_bar.value/wv_progress_bar.max; else btn = 30;
-	DrawBar(address_box.left-2, address_box.top+20, btn, 2, wv_progress_bar.progress_color);
+	if (wv_progress_bar.max) persent = wv_progress_bar.value*100/wv_progress_bar.max; else persent = 10;
+	DrawBar(address_box.left-2, address_box.top+20, persent*address_box.width/100, 2, wv_progress_bar.progress_color);
 }
 
 
@@ -501,8 +506,7 @@ void ClickLink()
 		StopLoading();
 		history.back();
 	}
-
-	strcpy(#URL, PageLinks.GetURL(PageLinks.active));	
+	strcpy(#URL, PageLinks.GetURL(PageLinks.active));
 	//#1
 	if (URL[0] == '#')
 	{
@@ -532,17 +536,9 @@ void ClickLink()
 		return;
 	}
 
-	if (!strncmp(#URL,"https://",8))
-	{
-		ShowErrorMessageThatHttpsIsNotSupportedYet();
-		strcpy(#editURL, history.current());
-		strcpy(#URL, history.current());
-		return;
-	}
-	
 	GetAbsoluteURL(#URL);
 
-	if (strncmp(#URL,"http://",7)!=0)
+	if (strncmp(#URL,"http://",7)!=0) && (strncmp(#URL,"https://",8)!=0)
 	{
 		if (UrlExtIs(".htm")!=true) && (UrlExtIs(".html")!=true)
 		{	
@@ -587,7 +583,7 @@ void EventShowPageMenu(dword _left, _top)
 
 void EventShowLinkMenu(dword _left, _top)
 {
-	menu.show(Form.left+_left-6,Form.top+_top+skin_height+3, 220, #link_menu, COPY_LINK);
+	menu.show(Form.left+_left-6,Form.top+_top+skin_height+3, 220, #link_menu, COPY_LINK_URL);
 }
 
 void EventUpdateProgressBar()
@@ -598,12 +594,6 @@ void EventUpdateProgressBar()
 		wv_progress_bar.value = http.content_received;	
 		DrawProgress();
 	}
-}
-
-
-void ShowErrorMessageThatHttpsIsNotSupportedYet()
-{
-	notify("'HTTPS protocol is not supported yet' -E");
 }
 
 DrawStatusBar(dword _status_text)

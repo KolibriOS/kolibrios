@@ -73,10 +73,10 @@ void Downloader()
 		   
 		default:
 			if (!downloader.MonitorProgress()) break;
-			pb.max = downloader.data_full_size;
-			if (pb.value != downloader.data_downloaded_size)
+			pb.max = downloader.httpd.content_length;
+			if (pb.value != downloader.httpd.content_received)
 			{
-				pb.value = downloader.data_downloaded_size;
+				pb.value = downloader.httpd.content_received;
 				progressbar_draw stdcall(#pb);
 				DrawDownloading();
 			}
@@ -153,7 +153,7 @@ void StartDownloading()
 void DrawDownloading()
 {
 	char bytes_received[70];
-	sprintf(#bytes_received, KB_RECEIVED, ConvertSizeToKb(downloader.data_downloaded_size) );
+	sprintf(#bytes_received, KB_RECEIVED, ConvertSizeToKb(downloader.httpd.content_received) );
 	DrawBar(15, pb.top + 22, strlen(#bytes_received+4)*12, 16, system.color.work);
 	WriteText(15, pb.top + 22, 0x90, system.color.work_text, #bytes_received);
 	progressbar_draw stdcall(#pb);
@@ -182,7 +182,7 @@ void SaveDownloadedFile()
 	
 	for (i=0; i<strlen(#filepath); i++) if(filepath[i]==':')||(filepath[i]=='?')filepath[i]='-';
 
-	if (CreateFile(downloader.data_downloaded_size, downloader.bufpointer, #filepath)==0)
+	if (CreateFile(downloader.httpd.content_received, downloader.bufpointer, #filepath)==0)
 		sprintf(#notify_message, "%s%s%s",FILE_SAVED_AS,#filepath,"' -Dt");
 	else
 		sprintf(#notify_message, "%s%s%s","'Download manager\nError! Can\96t save file as ",#filepath,"' -Et");

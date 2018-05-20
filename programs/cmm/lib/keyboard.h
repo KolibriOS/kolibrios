@@ -41,6 +41,8 @@
 #define SCAN_CODE_PLUS  013
 
 #define SCAN_CODE_F1    059
+#define SCAN_CODE_F11   087
+#define SCAN_CODE_F12   088
 
 #define SCAN_CODE_KEY_B 048
 #define SCAN_CODE_KEY_C 046

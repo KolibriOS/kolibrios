@@ -88,6 +88,7 @@ bool LinksArray::HoverAndProceed(dword mx, my)
 				return false;
 			}
 			if (active==i) return false;
+			CursorPointer.Load(#CursorFile);
 			CursorPointer.Set();
 			if (links[active].underline) DrawBar(links[active].x, -WB1.list.first + links[active].y
 				+ links[active].h, links[active].w, links[active].underline_h, link_color_inactive);
