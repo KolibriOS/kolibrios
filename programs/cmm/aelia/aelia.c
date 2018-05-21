@@ -20,7 +20,7 @@
 #include "../browser/download_manager.h"
 
 char default_dir[] = "/rd/1";
-od_filter filter2 = {0,0};
+od_filter filter2 = { 16, "TXT\0HTM\0HTML\0\0" };
 
 char accept_language[]= "Accept-Language: ru\n";
 
@@ -65,11 +65,10 @@ dword CursorFile = FROM "pointer.cur";
 #include "favicon.h"
 #include "ini.h"
 #include "gui.h"
-#include "label.h"
 #include "link.h"
-#include "tag.h"
+#include "canvas.h"
 #include "prepare_page.h"
-//#include "special_symbols.h"
+//#include "special.h"
 
 #define SANDWICH_MENU "Refresh page\nEdit page\nHistory\nDownloader\nAbout"
 
@@ -89,7 +88,6 @@ void main()
 {   
 	InitDlls();	
 	OpenDialog_init stdcall (#o_dialog);
-	CursorPointer.Load(#CursorFile);
 	kfont.init(DEFAULT_FONT);
 	Libimg_LoadImage(#skin, abspath("toolbar.png"));
 	LoadIniSettings();
@@ -470,3 +468,4 @@ void DrawAddressBox()
 	favicon.draw(address_box.left-18, address_box.top-1);
 	DrawBar(address_box.left-2, address_box.top+1, 2, 13, 0xFFFfff);
 }
+

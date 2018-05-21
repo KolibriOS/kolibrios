@@ -1,31 +1,6 @@
-
-void PreparePage() 
+void ParseTxt()
 {
-	list.SetSizes(0, TOOLBAR_H, Form.cwidth-scroll.size_x-1, Form.cheight-TOOLBAR_H, kfont.size.pt+2);
-	strcpy(#title, history.current()+strrchr(history.current(),'/'));
-	//get font chars width, need to increase performance
-	get_label_symbols_size();
-	ChangeCharset(charsets[encoding], "CP866", io.buffer_data);
-	link.clear();
-	if (strstri(io.buffer_data, "<html")==-1) {
-		debugln("no <html> found");
-		DrawProgress(STEP_2_COUNT_PAGE_HEIGHT);     ParceTxt(false);   //get page height to calculate buffer size
-		DrawProgress(STEP_3_DRAW_PAGE_INTO_BUFFER); ParceTxt(true);    //draw text in buffer
-	} else {
-		debugln("<html> tag found");
-		DrawProgress(STEP_2_COUNT_PAGE_HEIGHT);     ParceHtml(false);  //get page height to calculate buffer size
-		// debugln("DONE STEP 2");
-		DrawProgress(STEP_3_DRAW_PAGE_INTO_BUFFER); ParceHtml(true);   //draw text in buffer
-		// debugln("DONE STEP 3");
-	}
-	strcat(#title, " - Aelia");
-	DrawTitle(#title);
-	DrawProgress(STEP_4_SMOOTH_FONT);           kfont.ApplySmooth();
-	DrawProgress(STEP_5_STOP);                  DrawPage();
-}
-
-void ParceTxt(byte draw)
-{
+_canvas canvas;
 byte ch, zeroch=0;
 dword bufoff, buflen, line_start, srch_pos;
 int stroka_y=5, line_length=0;
@@ -44,9 +19,9 @@ int stroka_y=5, line_length=0;
 				if (srch_pos == line_start) break; //no white space found in whole line
 				srch_pos--;
 			}
-			if (draw==true) {
+			if (kfont.size.height) {
 				ESBYTE[bufoff] >< zeroch; //set line end
-				WriteTextIntoBuf(8, stroka_y, 0x000000, line_start);
+				canvas.write_text(8, stroka_y, 0x000000, line_start);
 				ESBYTE[bufoff] >< zeroch; //restore line
 			}
 			stroka_y += list.item_h;
@@ -54,146 +29,315 @@ int stroka_y=5, line_length=0;
 			line_length = 0;
 		}
 	}
-	if (draw==false) {
+	if (!kfont.size.height) {
 		list.count = stroka_y/list.item_h+3;
 		if (list.count < list.visible) list.count = list.visible;
 		kfont.size.height = list.count+5*list.item_h;
 		kfont.raw_size = 0;
+		ParseTxt();
 	} 
-	if (draw==true) WriteTextIntoBuf(8, stroka_y, 0x000000, line_start);
+	else canvas.write_text(8, stroka_y, 0x000000, line_start);
 }
+
+/*========================================================
+=                                                        =
+=                        STYLE                           =
+=                                                        =
+========================================================*/
+#define HTML_PADDING_X 8;
+#define HTML_PADDING_Y 5;
+
+struct _style {
+	bool b, u, i, s;
+	bool h1, h2, h3, h4, h5, h6;
+	bool a;
+	bool pre;
+	bool ignore;
+	dword color;
+	void clear();
+};
+
+void _style::clear()
+{
+	b=u=i=s=0;
+	h1=h2=h3=h4=h5=h6=0;
+	a=0;
+	pre=0;
+	ignore=0;
+	color=0;
+}
+
+/*========================================================
+=                                                        =
+=                         TAG                            =
+=                                                        =
+========================================================*/
+struct _tag {
+	dword start;
+	dword end;
+	dword name;
+	dword param[10];
+	dword value[10];
+	void parse();
+	int nameis();
+};
+
+void _tag::parse()
+{
+	strlwr(name);
+}
+
+int _tag::nameis(dword _in_tag_name)
+{
+	if (name) && (strcmp(_in_tag_name, start)==0) return true;
+	return false;
+}
+
+/*========================================================
+=                                                        =
+=                         DRAW                           =
+=                                                        =
+========================================================*/
+struct _draw
+{
+	dword x;
+	dword y;
+	void init();
+	void line_break();
+};
+
+void _draw::init()
+{
+	x = HTML_PADDING_X;
+	y = HTML_PADDING_Y;
+}
+void _draw::line_break()
+{
+	y+= list.item_h;
+	x = HTML_PADDING_X;	
+}
+
+/*========================================================
+=                                                        =
+=                         BUF                            =
+=                                                        =
+========================================================*/
+struct _buf
+{
+	dword pointer;
+	dword len;
+	dword start;
+	dword end;
+	void init();
+};
+
+void _buf::init(dword _buf_pointer, _buf_len)
+{
+	pointer = _buf_pointer;
+	len = _buf_len;
+	start = malloc(len);
+	end = start + len;
+	strlcpy(start, pointer, len);	
+}
+
+/*========================================================
+=                                                        =
+=                         TEXT                           =
+=                                                        =
+========================================================*/
+struct _text {
+	int size_pt_change;
+	dword start;
+	dword end;
+};
+
+/*
+dword line_break;
+byte char_holder;
+
+if (ESBYTE[buf.pos]==0x0A) {
+	if (style.pre) {
+		draw.line_break();
+		continue;
+	}
+}
+
+while (get_label_len(text.start) + draw.x + 30 > list.w)
+{
+	for (line_break=tag.start-1; line_break>text.start; line_break--;)
+	{
+		char_holder = ESBYTE[line_break]; //set line end
+		ESBYTE[line_break] = '\0';
+		if (get_label_len(text.start) + draw.x + 30 <= list.w) break;
+		ESBYTE[line_break] = char_holder; //restore line
+	}
+	if (draw_on) {
+		if (style.a) {
+			link.add(draw.x,draw.y + size_pt_change,get_label_len(text.start),list.item_h,text.start," ");
+			label_draw_bar(draw.x, draw.y+kfont.size.pt+1, get_label_len(text.start), style.color);
+		}
+		WriteTextIntoBuf(draw.x, draw.y, style.color, text.start);
+	}
+	draw.x+=char_width[' '];
+	ESBYTE[line_break] = char_holder; //restore line
+	text.start = line_break;
+	draw.line_break();
+}
+if (draw_on) {
+	if (style.a) {
+		link.add(draw.x,draw.y + size_pt_change,get_label_len(text.start),list.item_h,text.start," ");	
+		label_draw_bar(draw.x, draw.y+kfont.size.pt+1, get_label_len(text.start), style.color);
+	}
+	WriteTextIntoBuf(draw.x, draw.y, style.color, text.start);
+}
+draw.x += char_width[' '];
+draw.x += get_label_len(text.start);
+*/
 
 
 /*========================================================
 =                                                        =
-=                        HTML                            =
+=                         DOM                            =
 =                                                        =
 ========================================================*/
+struct _dom
+{
+	_tag tag;
+	_style style;
+	_draw draw;
+	_buf buf;
+	_text text;
+	_canvas canvas;
+	void init();
+	void set_style();
+	void parse();
+	void apply_text();
+};
 
-#define HTML_PADDING_X 8;
-#define HTML_PADDING_Y 5;
-
-
-void ParceHtml(byte draw)
-{	
-dword DOM_start, DOM_end, DOM_len, DOM_pos, aux2;
-int stroka_x = HTML_PADDING_X;
-int stroka_y = HTML_PADDING_Y;
-int size_pt_change = 0;
-dword line_break;
-byte ch, zeroch;
-_text text;
-_tag tag;
-	tag.clear();
+void _dom::init()
+{
 	style.clear();
-	/* Create DOM */
-	debugln("creating DOM");
-	DOM_len = strlen(io.buffer_data);
-	DOM_start = malloc(DOM_len);
-	DOM_end = DOM_start + DOM_len;
-	strlcpy(DOM_start, io.buffer_data, DOM_len);
+	draw.init();
+	buf.init(io.buffer_data, strlen(io.buffer_data));
+}
 
-	/* Parce DOM */
-	debugln("starting DOM parce...");
-	text.start = DOM_start;
-	for (DOM_pos=DOM_start; DOM_pos<DOM_end; DOM_pos++)
-	{
-		if (ESBYTE[DOM_pos]==0x0D) || (ESBYTE[DOM_pos]==0x0A) ESBYTE[DOM_pos]=' ';
-		ch = ESBYTE[DOM_pos];
-		if (ch=='<') {
-			ESBYTE[DOM_pos] = '\0';
-			tag.start = DOM_pos + 1;
-			if (style.ignore) continue;
-			if (tag.nameis("title")) {
-				strcpy(#title, text.start);
-				continue;
-			}
-			strtrim(text.start);
-			// try to change the special symbols that may appear
-			text.fixSpecial(text.start);
+void _dom::set_style()
+{
+	/*
+	if (tag.nameis("pre")) style.pre = true;
+	if (tag.nameis("/pre")) style.pre = false;
+	if (tag.nameis("script")) || (tag.nameis("style")) style.ignore = true;
+	if (tag.nameis("/script")) || (tag.nameis("/style")) style.ignore = false;
+	if (tag.nameis("a"))  { style.a = true;  style.color=0x0000FF; }
+	if (tag.nameis("/a")) { style.a = false; style.color=0x000000; }
 
-			while (get_label_len(text.start) + stroka_x + 30 > list.w)
-			{
-				zeroch = 0;
-				for (line_break=tag.start-1; line_break>text.start; line_break--;)
-				{
-					ESBYTE[line_break] >< zeroch; //set line end
-					if (get_label_len(text.start) + stroka_x + 30 <= list.w) break;
-					ESBYTE[line_break] >< zeroch; //restore line
-				}
-				if (draw==true) {
-					if (style.a) {
-						link.add(stroka_x,stroka_y + size_pt_change,get_label_len(text.start),list.item_h,text.start," ");
-						label_draw_bar(stroka_x, stroka_y+kfont.size.pt+1, get_label_len(text.start), style.color);
-					}
-					WriteTextIntoBuf(stroka_x, stroka_y, style.color, text.start);
-				}
-				stroka_x+=char_width[' '];
-				ESBYTE[line_break] >< zeroch; //restore line
-				text.start = line_break;
-				stroka_x = HTML_PADDING_X;
-				stroka_y += list.item_h;
-			}
-			if (draw==true) {
-				if (style.a) {
-					link.add(stroka_x,stroka_y + size_pt_change,get_label_len(text.start),list.item_h,text.start," ");	
-					label_draw_bar(stroka_x, stroka_y+kfont.size.pt+1, get_label_len(text.start), style.color);
-				}
-				WriteTextIntoBuf(stroka_x, stroka_y, style.color, text.start);
-			}
-			stroka_x+=char_width[' '];
-			stroka_x += get_label_len(text.start);
-		}
-		if (ch=='>') {
-			ESBYTE[DOM_pos] = '\0';
-			text.start = DOM_pos + 1;
-			tag.parce();
-			if (tag.nameis("br")) 
-				|| (tag.nameis("p")) 
-				|| (tag.nameis("div")) 
-				|| (tag.nameis("tr")) {
-				stroka_y+= list.item_h;
-				stroka_x = HTML_PADDING_X;
-				continue;
-			}
-			if 	(tag.nameis("h1")) || (tag.nameis("/h1")) ||
-				(tag.nameis("h2")) || (tag.nameis("/h2")) ||
-				(tag.nameis("h3")) || (tag.nameis("/h3")) {
-				if (tag.nameis("h1")) {
-					size_pt_change = 8;
-				} else if (tag.nameis("/h1")) {
-					size_pt_change = -8;
-				} else if (tag.nameis("h2")) {
-					size_pt_change = 6;
-				} else if (tag.nameis("/h2")) {
-					size_pt_change = -6;
-				} else if (tag.nameis("h3")) {
-					size_pt_change = 4;
-				} else if (tag.nameis("/h3")) {
-					size_pt_change = -4;
-				}
-				kfont.size.pt += size_pt_change;
-				get_label_symbols_size();
-				if (size_pt_change > 0) {
-					stroka_y+= list.item_h;//что если будет очень длинная строка в теге?
-				} else {//коммент выше и коммент ниже связаны
-					stroka_y+= list.item_h - size_pt_change;//не очень понятна логика этого места
-					size_pt_change = 0;
-				}
-				stroka_x = HTML_PADDING_X;
-				continue;					
-			}
-			if (tag.nameis("script")) || (tag.nameis("style")) style.ignore = true;
-			if (tag.nameis("/script")) || (tag.nameis("/style")) style.ignore = false;
-			if (tag.nameis("a"))  { style.a = true;  style.color=0x0000FF; }
-			if (tag.nameis("/a")) { style.a = false; style.color=0x000000; }
-		}		
+	if (tag.nameis("br")) 
+		|| (tag.nameis("p")) 
+		|| (tag.nameis("div")) 
+		|| (tag.nameis("tr")) {
+		draw.line_break();
+		return;
 	}
-	if (draw==false) {
-		list.count = stroka_y/list.item_h+3;
+
+	if (dom.tag.nameis("title")) {
+		strcpy(#title, text.start);
+		strcat(#title, " - Aelia");
+		DrawTitle(#title);
+	}
+
+	if 	(tag.nameis("h1")) || (tag.nameis("/h1")) ||
+		(tag.nameis("h2")) || (tag.nameis("/h2")) ||
+		(tag.nameis("h3")) || (tag.nameis("/h3")) {
+		if (tag.nameis("h1")) {
+			text.size_pt_change = 8;
+		} else if (tag.nameis("/h1")) {
+			text.size_pt_change = -8;
+		} else if (tag.nameis("h2")) {
+			text.size_pt_change = 6;
+		} else if (tag.nameis("/h2")) {
+			text.size_pt_change = -6;
+		} else if (tag.nameis("h3")) {
+			text.size_pt_change = 4;
+		} else if (tag.nameis("/h3")) {
+			text.size_pt_change = -4;
+		}
+		kfont.size.pt += text.size_pt_change;
+		get_label_symbols_size();
+		if (text.size_pt_change > 0) {
+			draw.y+= list.item_h;//что если будет очень длинная строка в теге?
+		} else {//коммент выше и коммент ниже связаны
+			draw.y+= list.item_h - text.size_pt_change;//не очень понятна логика этого места
+			text.size_pt_change = 0;
+		}
+		draw.x = HTML_PADDING_X;
+		return;					
+	}
+	*/
+}
+
+void _dom::apply_text()
+{
+	if (kfont.size.height) canvas.write_text(draw.x, draw.y, style.color, text.start);
+	draw.line_break();
+}
+
+void _dom::parse()
+{
+	dword i;
+	init();
+
+	text.start = buf.start;
+	tag.start = buf.start;
+	for ( i=buf.start; i<buf.end; i++ )
+	{
+		if (ESBYTE[i]=='<') {
+			tag.start = i+1;
+			text.end = i-1;
+			ESBYTE[i] = '\0';
+			debug("TXT "); debugln(text.start);
+			apply_text();
+		}
+		if (ESBYTE[i]=='>') {
+			tag.end = i-1;
+			text.start = i+1;
+			ESBYTE[i] = '\0';
+			debug("TAG "); debugln(tag.start);
+			//tag.parse();
+			//set_style();
+		}
+	}
+
+	free(buf.start);
+	if (!kfont.size.height) {
+		list.count = draw.y/list.item_h+3;
 		if (list.count < list.visible) list.count = list.visible;
 		kfont.size.height = list.count+5*list.item_h;
 		kfont.raw_size = 0;
+		parse();
 	}
-	free(DOM_start);
+}
+
+
+
+/*========================================================
+=                                                        =
+=                       PREPARE                          =
+=                                                        =
+========================================================*/
+void PreparePage() 
+{
+	_dom dom;
+	list.SetSizes(0, TOOLBAR_H, Form.cwidth-scroll.size_x-1, Form.cheight-TOOLBAR_H, kfont.size.pt+4);
+	strcpy(#title, history.current()+strrchr(history.current(),'/'));
+	get_label_symbols_size(); //get font chars width, need to increase performance
+	ChangeCharset(charsets[encoding], "CP866", io.buffer_data);
+	link.clear();
+
+	kfont.size.height = 0;
+
+	if ( strstri(io.buffer_data, "<html") == -1 ) ParseTxt(); else dom.parse();
+
+	kfont.ApplySmooth();
+
+	DrawPage();
 }

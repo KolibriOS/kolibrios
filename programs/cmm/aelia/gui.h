@@ -39,6 +39,26 @@ dword MakePageWithHistory()
 	return history_page;
 }
 
+char char_width[255];
+
+void get_label_symbols_size()
+{
+	int i;
+	kfont.changeSIZE();
+	for (i=0; i<256; i++) char_width[i] = kfont.symbol_size(i);
+}
+
+int get_label_len(dword _text) 
+{
+	int len=0;
+	byte ch;
+	loop () {
+		ch = ESBYTE[_text];
+		if (!ch) return len;
+		len += char_width[ch];
+		_text++;
+	}
+}
 
 enum {
 	STEP_1_DOWNLOAD_PAGE         =   0,

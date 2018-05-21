@@ -46,6 +46,7 @@ int _link::hover()
 			&& (mouse.x<link.x[i]+link.w[i]) 
 			&& (-list.first*list.item_h+link.y[i]+link.h[i]>mouse.y) {
 				color = 0xFFFfff;
+				CursorPointer.Load(#CursorFile);
 				CursorPointer.Set();
 				active = i;
 			}
