@@ -24,7 +24,7 @@
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/libio.h"
 #include "../lib/obj/proc_lib.h"
-//#include "../lib/obj/libini.h"
+#include "../lib/obj/librasterworks.h"
 
 #include "../lib/patterns/simple_open_dialog.h"
 
@@ -64,7 +64,8 @@ WebView
 FB2Read
 HexView";
 
-enum {
+enum
+{
 	MENU_ID_FILE=10,
 	FILE_SUBMENU_ID_OPEN=10,
 	FILE_SUBMENU_ID_CLOSE,
@@ -87,7 +88,7 @@ int menu_encoding_x = NULL;
 int menu_reopen_x = NULL;
 /*======== MENU END ==========*/
 
-#define TITLE "Calypte v0.37"
+#define TITLE "Calypte v0.38 dev"
 char win_title[4096] = TITLE;
 
 #define TOPPANELH 23
@@ -126,6 +127,7 @@ void main()
 	//load_dll(libini,    #lib_init,       1);
 	load_dll(iconv_lib, #iconv_open,     0);
 	load_dll(Proc_lib,  #OpenDialog_init,0);
+	load_dll(librasterworks,  #rasterworks_drawText,0);
 	OpenDialog_init stdcall (#o_dialog);
 
 	if (param)
@@ -145,35 +147,53 @@ void main()
 		case evMouse:
 			mouse.get();
 			rows.wheel_size = 3;
-			if (rows.MouseScroll(mouse.vert)) {
+			if (rows.MouseScroll(mouse.vert))
+			{
 				DrawText();
-				break; 
 			}
 			break;
 		
 		case evButton:
 			id=GetButtonID();               
-			if (id==1) ExitProcess();
+			if (id==1)
+			{
+				ExitProcess();
+			}
 			if (id==MENU_ID_FILE) 
+			{
 				EventShowMenu(menu_file_x, #menu_file_list, MENU_ID_FILE, NULL);
+			}
 			if (id==MENU_ID_ENCODING) 
+			{
 				EventShowMenu(menu_encoding_x, #menu_encoding_list, MENU_ID_ENCODING, encoding+1);
+			}
 			if (id==MENU_ID_REOPEN) 
+			{
 				EventShowMenu(menu_reopen_x, #menu_reopen_list, MENU_ID_REOPEN, NULL);
+			}
 			break;
 		
 		case evKey:
 			GetKeys();
 			if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL)
 			{
-				if (key_scancode == SCAN_CODE_KEY_O) EventOpenFile();
+				if (key_scancode == SCAN_CODE_KEY_O)
+				{
+					EventOpenFile();
+				}
 				break;
 			}
-			if (rows.ProcessKey(key_scancode)) DrawText();
+			if (rows.ProcessKey(key_scancode))
+			{
+				DrawText();
+			}
 			break;
 		 
 		 case evReDraw:
-			if (menu.list.cur_y) EventMenuClick();
+			if (menu.list.cur_y)
+			{
+				EventMenuClick();
+			}
 			draw_window();
 			break;
 	  }
@@ -212,7 +232,10 @@ void draw_window()
 		rows.SetSizes(0, TOPPANELH, Form.cwidth - SCROLL_SIZE, Form.cheight - TOPPANELH - BOTPANELH, 20);
 		rows.column_max = rows.w / rows.font_w;
 
-		if (bufpointer) Prepare();
+		if (bufpointer)
+		{
+			Prepare();
+		}
 		rows.CheckDoesValuesOkey();
 	}
 	DrawRectangle(rows.x+rows.w-1, rows.y, SCROLL_SIZE, rows.h-1, 0xEEEeee);
@@ -230,19 +253,25 @@ void OpenFile(dword _path)
 	{
 		bufpointer = mem_Free(bufpointer);
 		bufpointer = mem_Alloc(bufsize);
-		if (ReadFile(0, bufsize, bufpointer, #param) != 0) {
+		if (ReadFile(0, bufsize, bufpointer, #param) != 0)
+		{
 			bufpointer = 0;
 			notify("'Error opening file'-E");
 			return;
 		}
 	}
-	if (encoding!=CH_CP866) ChangeCharset(charsets[encoding], "CP866", bufpointer);
+	if (encoding!=CH_CP866)
+	{
+		ChangeCharset(charsets[encoding], "CP866", bufpointer);
+	}
 }
 
-enum {
+enum
+{
 	PARSE_CALCULATE_ROWS_COUNT,
 	PARSE_DRAW_PREPARE,
 };
+
 void Parse(int mode)
 {
 	int pos=0;
@@ -261,22 +290,40 @@ void Parse(int mode)
 				do_eof = true;
 				break;
 			}
-			if (bukva==0x0a) break;
-			else len_str++;
+			if (bukva==0x0a)
+			{
+				break;
+			}
+			else
+			{
+				len_str++;
+			}
 		}
 		if (len_str<=rows.column_max) 
 		{
-			if (mode==PARSE_DRAW_PREPARE) s.addn(bufpointer+pos, len_str);
+			if (mode==PARSE_DRAW_PREPARE)
+			{
+				s.addn(bufpointer+pos, len_str);
+			}
 			pos += len_str+1;
 		}
 		else
 		{
-			if (mode==PARSE_DRAW_PREPARE) s.addn(bufpointer+pos, rows.column_max);
+			if (mode==PARSE_DRAW_PREPARE)
+			{
+				s.addn(bufpointer+pos, rows.column_max);
+			}
 			pos += rows.column_max;
 		}
 		sub_pos++;
-		if (mode==PARSE_CALCULATE_ROWS_COUNT) if (do_eof) break;
-		if (mode==PARSE_DRAW_PREPARE) if (pos>=bufsize-1) break;
+		if (mode==PARSE_CALCULATE_ROWS_COUNT) && (do_eof)
+		{
+			break;
+		}
+		if (mode==PARSE_DRAW_PREPARE) && (pos>=bufsize-1)
+		{
+			break;
+		}
 		len_str = 0;
 	}
 	if (mode == PARSE_CALCULATE_ROWS_COUNT)
@@ -295,17 +342,29 @@ void DrawText()
 {
 	int i=0, top;
 
-	if (rows.count<rows.visible) top = rows.count;
+	if (rows.count<rows.visible)
+	{
+		top = rows.count;
+	}
 	else
 	{
-		if (rows.count-rows.first<=rows.visible) top = rows.count-rows.first-1;
-		else top = rows.visible;
+		if (rows.count-rows.first<=rows.visible)
+		{
+			top = rows.count-rows.first-1;
+		}
+		else
+		{
+			top = rows.visible;
+		}
 	}
 
-	if (bufpointer) for (i=0; i<top; i++)
+	if (bufpointer)
 	{
-		DrawBar(0, i*rows.item_h+TOPPANELH, rows.w, rows.item_h, 0xFFFFFF);
-		WriteText(2, i*rows.item_h+TOPPANELH, 0x90, 0x000000, s.get(i+rows.first));
+		for (i=0; i<top; i++)
+		{
+			DrawBar(0, i*rows.item_h+TOPPANELH, rows.w, rows.item_h, 0xFFFFFF);
+			WriteText(2, i*rows.item_h+TOPPANELH, 0x90, 0x000000, s.get(i+rows.first));
+		}
 	}
 	DrawBar(0, i*rows.item_h+rows.y, rows.w, -i*rows.item_h + rows.h, 0xFFFfff);
 	DrawVerticalScroll();
@@ -334,19 +393,41 @@ void EventMenuClick()
 	switch(menu.list.cur_y)
 	{
 		//File
-		case FILE_SUBMENU_ID_OPEN: EventOpenFile(); break;
-		case FILE_SUBMENU_ID_CLOSE: EventCloseFile(); break;
-		case FILE_SUBMENU_ID_PROPERTIES: EventShowFileProperties(); break;
-		case FILE_SUBMENU_ID_EXIT: ExitProcess(); break;
+		case FILE_SUBMENU_ID_OPEN:
+			EventOpenFile();
+			break;
+		case FILE_SUBMENU_ID_CLOSE:
+			EventCloseFile();
+			break;
+		case FILE_SUBMENU_ID_PROPERTIES:
+			EventShowFileProperties();
+			break;
+		case FILE_SUBMENU_ID_EXIT:
+			ExitProcess();
+			break;
 		//Encoding
-		case MENU_ID_ENCODING...MENU_ID_ENCODING+9: EventChangeEncoding(menu.list.cur_y-MENU_ID_ENCODING); break;
+		case MENU_ID_ENCODING...MENU_ID_ENCODING+9:
+			EventChangeEncoding(menu.list.cur_y-MENU_ID_ENCODING);
+			break;
 		//Reopen
-		case FILE_SUBMENU_ID_TINYPAD: EventOpenFileInAnotherProgram("/sys/tinypad"); break;
-		case FILE_SUBMENU_ID_TEXTEDIT: EventOpenFileInAnotherProgram("/sys/develop/t_edit"); break;
-		case FILE_SUBMENU_ID_TEXTREAD: EventOpenFileInAnotherProgram("/sys/txtread"); break;
-		case FILE_SUBMENU_ID_WEBVIEW: EventOpenFileInAnotherProgram("/sys/network/webview"); break;
-		case FILE_SUBMENU_ID_FB2READ: EventOpenFileInAnotherProgram("/sys/fb2read"); break;
-		case FILE_SUBMENU_ID_HEXVIEW: EventOpenFileInAnotherProgram("/sys/develop/heed"); break;
+		case FILE_SUBMENU_ID_TINYPAD:
+			EventOpenFileInAnotherProgram("/sys/tinypad");
+			break;
+		case FILE_SUBMENU_ID_TEXTEDIT:
+			EventOpenFileInAnotherProgram("/sys/develop/t_edit");
+			break;
+		case FILE_SUBMENU_ID_TEXTREAD:
+			EventOpenFileInAnotherProgram("/sys/txtread");
+			break;
+		case FILE_SUBMENU_ID_WEBVIEW:
+			EventOpenFileInAnotherProgram("/sys/network/webview");
+			break;
+		case FILE_SUBMENU_ID_FB2READ:
+			EventOpenFileInAnotherProgram("/sys/fb2read");
+			break;
+		case FILE_SUBMENU_ID_HEXVIEW:
+			EventOpenFileInAnotherProgram("/sys/develop/heed");
+			break;
 	}
 	menu.list.cur_y = 0;
 }
@@ -354,38 +435,39 @@ void EventMenuClick()
 void EventShowMenu(dword _menu_item_x, _menu_list, _id, _selected)
 {
 	menu.selected = _selected;
-	menu.show(
-	Form.left+5 + _menu_item_x, 
-	Form.top+skin_height + TOPPANELH, 
-	140, 
-	_menu_list, 
-	_id);	
+	menu.show(Form.left+5 + _menu_item_x, Form.top+skin_height + TOPPANELH, 140, _menu_list, _id);
 }
 
 void EventOpenFile()
 {
 	OpenDialog_start stdcall (#o_dialog);
-	if (!o_dialog.status) return;
-	OpenFile(#openfile_path);
-	Prepare();
-	draw_window();
+	if (o_dialog.status)
+	{
+		OpenFile(#openfile_path);
+		Prepare();
+		draw_window();
+	}
 }
 
 void EventCloseFile()
 {
-	if (!bufpointer) return;
-	s.drop();
-	bufpointer = mem_Free(bufpointer);
-	strcpy(#win_title, TITLE);
-	draw_window();	
+	if (bufpointer)
+	{
+		s.drop();
+		bufpointer = mem_Free(bufpointer);
+		strcpy(#win_title, TITLE);
+		draw_window();
+	}
 }
 
 void EventShowFileProperties()
 {
-char ss_param[4096];
-	if (!bufpointer) return;
-	sprintf(#ss_param, "-p %s", #param);
-	RunProgram("/sys/File managers/Eolite", #ss_param);
+	char ss_param[4096];
+	if (bufpointer)
+	{
+		sprintf(#ss_param, "-p %s", #param);
+		RunProgram("/sys/File managers/Eolite", #ss_param);
+	}
 }
 
 void EventChangeEncoding(dword id)

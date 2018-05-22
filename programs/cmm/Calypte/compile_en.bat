@@ -1,4 +1,3 @@
-@del lang.h--
 @echo #define LANG_ENG 1 >lang.h--
 
 @del Calypte
