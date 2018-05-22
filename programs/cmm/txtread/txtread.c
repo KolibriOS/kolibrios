@@ -1,6 +1,7 @@
 #define MEMSIZE 4096*25
 
 #include "../lib/io.h"
+#include "../lib/gui.h"
 #include "../lib/list_box.h"
 #include "../lib/menu.h"
 #include "../lib/kfont.h"
@@ -59,7 +60,6 @@ enum {
 int encoding;
 
 #include "ini.h"
-#include "gui.h"
 #include "prepare_page.h"
 
 
