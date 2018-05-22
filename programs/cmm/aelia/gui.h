@@ -1,7 +1,7 @@
-void DrawToolbarButton(char image_id, int x)
+void DrawToolbarButton(dword image_id, x)
 {
 	DefineButton(x+1, 7, TOOLBAR_ICON_WIDTH-2, TOOLBAR_ICON_HEIGHT-2, 10+image_id + BT_HIDE, 0);
-	img_draw stdcall(skin.image, x, 6, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, 0, image_id*TOOLBAR_ICON_HEIGHT);
+	DrawLibImage(skin.image, x, 6, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, 0, image_id*TOOLBAR_ICON_HEIGHT);
 }
 
 
@@ -37,27 +37,6 @@ dword MakePageWithHistory()
 		strcat(history_page, "</a><br>\n");
 	}
 	return history_page;
-}
-
-char char_width[255];
-
-void get_label_symbols_size()
-{
-	int i;
-	kfont.changeSIZE();
-	for (i=0; i<256; i++) char_width[i] = kfont.symbol_size(i);
-}
-
-int get_label_len(dword _text) 
-{
-	int len=0;
-	byte ch;
-	loop () {
-		ch = ESBYTE[_text];
-		if (!ch) return len;
-		len += char_width[ch];
-		_text++;
-	}
 }
 
 enum {

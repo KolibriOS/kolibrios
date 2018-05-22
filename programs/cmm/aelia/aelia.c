@@ -1,4 +1,4 @@
-#define MEMSIZE 4096*80
+#define MEMSIZE 4096*100
 
 #include "../lib/kfont.h"
 #include "../lib/io.h"
@@ -88,9 +88,9 @@ void main()
 {   
 	InitDlls();	
 	OpenDialog_init stdcall (#o_dialog);
+	LoadIniSettings();
 	kfont.init(DEFAULT_FONT);
 	Libimg_LoadImage(#skin, abspath("toolbar.png"));
-	LoadIniSettings();
 	list.no_selection = true;
 	SetEventMask(10000000000000000000000001100111b);
 	loop()

@@ -13,8 +13,8 @@
 // [Название шрифта:"Times New Roman"]
 
 
-#ifndef INCLUDE_LABEL_H
-#define INCLUDE_LABEL_H
+#ifndef INCLUDE_KFONT_H
+#define INCLUDE_KFONT_H
 
 #ifndef INCLUDE_MATH_H
 #include "../lib/math.h"
@@ -33,13 +33,15 @@
 #define KFONT_BPP 4
 #endif
 
+int kfont_char_width[255];
+
 :struct __SIZE
 {
 	dword width,height;
 	signed offset_x, offset_y;
 	byte pt;
 };
-:struct LABEL
+:struct KFONT
 {
 	__SIZE size;
 	int width,height;
@@ -49,13 +51,13 @@
 	word block;
 	dword raw;
 	dword raw_size;
-	//dword palette[256];
 
 	bool init();
 	bool changeSIZE();
 	byte symbol();
 	byte symbol_size();
 	dword getsize();
+	int get_label_width();
 
 	void ApplySmooth();
 	int WriteIntoWindow();
@@ -65,7 +67,7 @@
 	void ShowBufferPart();
 } kfont;
 
-:bool LABEL::init(dword font_path)
+:bool KFONT::init(dword font_path)
 {
 	IO label_io;
 	if(font)free(font);
@@ -81,8 +83,9 @@
 	return true;
 }
 
-:bool LABEL::changeSIZE()
+:bool KFONT::changeSIZE()
 {
+	int i;
 	dword file_size;
 	dword ofs;
 	if(size.pt<9) size.pt = 9;
@@ -94,15 +97,20 @@
 	height = DSBYTE[calc(font+file_size) - 1];
 	width =  DSBYTE[calc(font+file_size) - 2];
 	block = math.ceil(height*width/32);
+	for (i=0; i<256; i++) {
+		kfont_char_width[i] = symbol_size((byte) i);
+	}
 	return true;
 }
 
-:dword LABEL::getsize(byte fontSizePoints, dword text1)
+:dword KFONT::getsize(byte fontSizePoints, dword text1)
 {
 	size.height = size.width = 0;
 	size.offset_x = size.offset_y = -1;
-	size.pt = fontSizePoints;
-	if(size.pt)if(!changeSIZE())return 0;
+	if (size.pt != fontSizePoints) {
+		size.pt = fontSizePoints;
+		if(!changeSIZE())return 0;
+	}
 	WHILE(DSBYTE[text1])
 	{
 		size.width += symbol_size(DSBYTE[text1]);
@@ -115,7 +123,19 @@
 	return size.width;
 }
 
-:byte LABEL::symbol_size(byte s)
+//WILL NOT WORK if requested fontSizePoints 
+//is differ from precalculated kfont_char_width[]
+:int KFONT::get_label_width(dword _label) 
+{
+	int len=0;
+	while (ESBYTE[_label]) {
+		len += kfont_char_width[ ESBYTE[_label] ];
+		_label++;
+	}
+	return len;
+}
+
+:byte KFONT::symbol_size(byte s)
 {
 	int chaw_width;
 	chaw_width = symbol(0,0, s, 0);
@@ -123,7 +143,7 @@
 	return chaw_width;
 }
 
-:byte LABEL::symbol(signed x,y; byte s; dword image_raw)
+:byte KFONT::symbol(signed x,y; byte s; dword image_raw)
 {
 	dword xi,yi;
 	dword iii = 0;
@@ -190,7 +210,7 @@ inline fastcall Cp866ToAnsi(AL) {
 =====================================================================================*/
 
 inline fastcall dword b32(EAX) { return DSDWORD[EAX]; }
-:void LABEL::ApplySmooth()
+:void KFONT::ApplySmooth()
 {
 	dword i,line_w,to,dark_background;
 	line_w = size.width * KFONT_BPP;
@@ -222,11 +242,10 @@ inline fastcall dword b32(EAX) { return DSDWORD[EAX]; }
 	}
 }
 
-:void LABEL::WriteIntoBuffer(int x,y,w,h; dword _background, _color; byte fontSizePoints; dword text1)
+:void KFONT::WriteIntoBuffer(int x,y,w,h; dword _background, _color; byte fontSizePoints; dword text1)
 {
 	dword new_raw_size;
 	if(!text1)return;
-	if(size.pt)if(!changeSIZE())return;
 	
 	if (size.pt != fontSizePoints) {
 		getsize(fontSizePoints, text1);
@@ -258,7 +277,7 @@ inline fastcall dword b32(EAX) { return DSDWORD[EAX]; }
 	return;
 }
 
-:int LABEL::WriteIntoWindow(int x,y; dword _background, _color; byte fontSizePoints; dword text1)
+:int KFONT::WriteIntoWindow(int x,y; dword _background, _color; byte fontSizePoints; dword text1)
 {
 	if(!text1)return 0;
 	getsize(fontSizePoints, text1);
@@ -270,19 +289,19 @@ inline fastcall dword b32(EAX) { return DSDWORD[EAX]; }
 	return size.offset_x + size.width;
 }
 
-:int LABEL::WriteIntoWindowCenter(dword x,y,w,h; dword _background, _color; byte fontSizePoints; dword text1)
+:int KFONT::WriteIntoWindowCenter(dword x,y,w,h; dword _background, _color; byte fontSizePoints; dword text1)
 {
 	getsize(fontSizePoints, text1);
 	return WriteIntoWindow(w-size.width/2+x-1,y, _background, _color, fontSizePoints, text1);
 }
 
-:void LABEL::ShowBuffer(dword _x, _y)
+:void KFONT::ShowBuffer(dword _x, _y)
 {
 	if (4==KFONT_BPP) PutPaletteImage(raw, size.width, size.height, _x, _y, 32, 0);
 	//if (1==KFONT_BPP) PutPaletteImage(raw, size.width, size.height, _x, _y, 8, #palette);
 }
 
-:void LABEL::ShowBufferPart(dword _x, _y, _w, _h, _buf_offset)
+:void KFONT::ShowBufferPart(dword _x, _y, _w, _h, _buf_offset)
 {
 	if (4==KFONT_BPP) PutPaletteImage(_buf_offset * KFONT_BPP + raw, _w, _h, _x, _y, 32, 0);
 	//if (1==KFONT_BPP) PutPaletteImage(_buf_offset * KFONT_BPP + raw, _w, _h, _x, _y, 8, #palette);

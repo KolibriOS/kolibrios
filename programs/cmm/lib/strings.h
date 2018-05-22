@@ -180,8 +180,35 @@ inline signed int strcmp(dword text1, text2)
 	return 0;
 }
 
-:bool strequ(dword text1, text2) {
-	if (!strcmp(text1,text2)) return true; else return false;
+/*
+TODO: rewrite streq() using pure assembliy
+
+inline fastcall void strcpy( EDI, ESI)
+{
+    $cld
+L2:
+    $lodsb
+    $stosb
+    $test al,al
+    $jnz L2
+}
+*/
+
+inline fastcall streq(ESI, EDI)
+{
+	loop()
+	{
+		if(DSBYTE[ESI]==DSBYTE[EDI])
+		{
+			if(DSBYTE[ESI]==0) return true;
+		}
+		else {
+			return false;
+		}
+		ESI++;
+		EDI++;
+	}
+	return true;
 }
 
 /*

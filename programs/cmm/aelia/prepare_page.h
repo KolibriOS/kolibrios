@@ -1,44 +1,3 @@
-void ParseTxt()
-{
-_canvas canvas;
-byte ch, zeroch=0;
-dword bufoff, buflen, line_start, srch_pos;
-int stroka_y=5, line_length=0;
-
-	line_start=io.buffer_data;
-	buflen = strlen(io.buffer_data) + io.buffer_data;
-	for (bufoff=io.buffer_data; bufoff<buflen; bufoff++)
-	{
-		ch = ESBYTE[bufoff];
-		line_length += char_width[ch];
-		if (line_length>=list.w-30) || (ch==10) {
-			srch_pos = bufoff;
-			loop()
-			{
-				if (__isWhite(ESBYTE[srch_pos])) { bufoff=srch_pos+1; break; } //normal word-break
-				if (srch_pos == line_start) break; //no white space found in whole line
-				srch_pos--;
-			}
-			if (kfont.size.height) {
-				ESBYTE[bufoff] >< zeroch; //set line end
-				canvas.write_text(8, stroka_y, 0x000000, line_start);
-				ESBYTE[bufoff] >< zeroch; //restore line
-			}
-			stroka_y += list.item_h;
-			line_start = bufoff;
-			line_length = 0;
-		}
-	}
-	if (!kfont.size.height) {
-		list.count = stroka_y/list.item_h+3;
-		if (list.count < list.visible) list.count = list.visible;
-		kfont.size.height = list.count+5*list.item_h;
-		kfont.raw_size = 0;
-		ParseTxt();
-	} 
-	else canvas.write_text(8, stroka_y, 0x000000, line_start);
-}
-
 /*========================================================
 =                                                        =
 =                        STYLE                           =
@@ -48,23 +7,25 @@ int stroka_y=5, line_length=0;
 #define HTML_PADDING_Y 5;
 
 struct _style {
-	bool b, u, i, s;
+	bool bold, underlined, italic, strike;
 	bool h1, h2, h3, h4, h5, h6;
 	bool a;
 	bool pre;
 	bool ignore;
+	bool body;
 	dword color;
 	void clear();
 };
 
 void _style::clear()
 {
-	b=u=i=s=0;
+	bold=underlined=italic=strike=0;
 	h1=h2=h3=h4=h5=h6=0;
 	a=0;
 	pre=0;
 	ignore=0;
 	color=0;
+	body=0;
 }
 
 /*========================================================
@@ -76,20 +37,43 @@ struct _tag {
 	dword start;
 	dword end;
 	dword name;
-	dword param[10];
-	dword value[10];
+
+	bool opens;
+
+	dword param;
+	dword value;
+
 	void parse();
 	int nameis();
 };
 
 void _tag::parse()
 {
+	dword START = start;
+
+	calc(1); //WTF
+
+	if (ESBYTE[START]=='/') {
+		START++;
+		opens = false;
+	} else opens = true;
+
+	name = START;
+	
+	while ( (START < end) && (!__isWhite(ESBYTE[START])) ) {
+		START++;
+	}
+	if (START!=end) ESBYTE[START] = '\0';
+	START++;
+
 	strlwr(name);
+
+	start = START;
 }
 
 int _tag::nameis(dword _in_tag_name)
 {
-	if (name) && (strcmp(_in_tag_name, start)==0) return true;
+	if (name) && (streq(_in_tag_name, name)) return true;
 	return false;
 }
 
@@ -149,6 +133,8 @@ struct _text {
 	int size_pt_change;
 	dword start;
 	dword end;
+
+	dword width;
 };
 
 /*
@@ -209,9 +195,9 @@ struct _dom
 	_text text;
 	_canvas canvas;
 	void init();
+	void apply_text();
 	void set_style();
 	void parse();
-	void apply_text();
 };
 
 void _dom::init()
@@ -223,14 +209,17 @@ void _dom::init()
 
 void _dom::set_style()
 {
-	/*
-	if (tag.nameis("pre")) style.pre = true;
-	if (tag.nameis("/pre")) style.pre = false;
-	if (tag.nameis("script")) || (tag.nameis("style")) style.ignore = true;
-	if (tag.nameis("/script")) || (tag.nameis("/style")) style.ignore = false;
-	if (tag.nameis("a"))  { style.a = true;  style.color=0x0000FF; }
-	if (tag.nameis("/a")) { style.a = false; style.color=0x000000; }
-
+	if (tag.nameis("body")) style.body = tag.opens;
+	if (tag.nameis("b")) style.bold = tag.opens;
+	if (tag.nameis("i")) style.italic = tag.opens;
+	if (tag.nameis("s")) style.strike = tag.opens;
+	if (tag.nameis("pre")) style.pre = tag.opens;
+	if (tag.nameis("style")) style.ignore = tag.opens;
+	if (tag.nameis("a"))  { 
+		style.a = tag.opens;
+		if (tag.opens) style.color=0x0000FF; else style.color=0;
+	}
+	
 	if (tag.nameis("br")) 
 		|| (tag.nameis("p")) 
 		|| (tag.nameis("div")) 
@@ -239,11 +228,24 @@ void _dom::set_style()
 		return;
 	}
 
-	if (dom.tag.nameis("title")) {
+	if (tag.nameis("li")) && (tag.opens) {
+		draw.line_break();
+		return;
+	}
+
+	if (tag.nameis("td")) && (tag.opens) {
+		draw.line_break();
+		return;
+	}
+
+	/*
+	if (tag.nameis("title")) {
 		strcpy(#title, text.start);
 		strcat(#title, " - Aelia");
 		DrawTitle(#title);
 	}
+
+
 
 	if 	(tag.nameis("h1")) || (tag.nameis("/h1")) ||
 		(tag.nameis("h2")) || (tag.nameis("/h2")) ||
@@ -277,8 +279,13 @@ void _dom::set_style()
 
 void _dom::apply_text()
 {
-	if (kfont.size.height) canvas.write_text(draw.x, draw.y, style.color, text.start);
-	draw.line_break();
+	if (kfont.size.height) && (style.body) {
+		kfont.bold = style.bold;
+		canvas.write_text(draw.x, draw.y, style.color, text.start);
+		if (style.a) {
+			canvas.draw_hor_line(draw.x+1, draw.y + list.item_h-2, kfont.get_label_width(text.start), style.color);
+		}
+	}
 }
 
 void _dom::parse()
@@ -294,16 +301,14 @@ void _dom::parse()
 			tag.start = i+1;
 			text.end = i-1;
 			ESBYTE[i] = '\0';
-			debug("TXT "); debugln(text.start);
 			apply_text();
 		}
 		if (ESBYTE[i]=='>') {
 			tag.end = i-1;
 			text.start = i+1;
 			ESBYTE[i] = '\0';
-			debug("TAG "); debugln(tag.start);
-			//tag.parse();
-			//set_style();
+			tag.parse();
+			set_style();
 		}
 	}
 
@@ -329,7 +334,6 @@ void PreparePage()
 	_dom dom;
 	list.SetSizes(0, TOOLBAR_H, Form.cwidth-scroll.size_x-1, Form.cheight-TOOLBAR_H, kfont.size.pt+4);
 	strcpy(#title, history.current()+strrchr(history.current(),'/'));
-	get_label_symbols_size(); //get font chars width, need to increase performance
 	ChangeCharset(charsets[encoding], "CP866", io.buffer_data);
 	link.clear();
 
@@ -340,4 +344,45 @@ void PreparePage()
 	kfont.ApplySmooth();
 
 	DrawPage();
+}
+
+void ParseTxt()
+{
+_canvas canvas;
+byte ch, zeroch=0;
+dword bufoff, buflen, line_start, srch_pos;
+int stroka_y=5, line_length=0;
+
+	line_start=io.buffer_data;
+	buflen = strlen(io.buffer_data) + io.buffer_data;
+	for (bufoff=io.buffer_data; bufoff<buflen; bufoff++)
+	{
+		ch = ESBYTE[bufoff];
+		line_length += kfont_char_width[ch];
+		if (line_length>=list.w-30) || (ch==10) {
+			srch_pos = bufoff;
+			loop()
+			{
+				if (__isWhite(ESBYTE[srch_pos])) { bufoff=srch_pos+1; break; } //normal word-break
+				if (srch_pos == line_start) break; //no white space found in whole line
+				srch_pos--;
+			}
+			if (kfont.size.height) {
+				ESBYTE[bufoff] >< zeroch; //set line end
+				canvas.write_text(8, stroka_y, 0x000000, line_start);
+				ESBYTE[bufoff] >< zeroch; //restore line
+			}
+			stroka_y += list.item_h;
+			line_start = bufoff;
+			line_length = 0;
+		}
+	}
+	if (!kfont.size.height) {
+		list.count = stroka_y/list.item_h+3;
+		if (list.count < list.visible) list.count = list.visible;
+		kfont.size.height = list.count+5*list.item_h;
+		kfont.raw_size = 0;
+		ParseTxt();
+	} 
+	else canvas.write_text(8, stroka_y, 0x000000, line_start);
 }

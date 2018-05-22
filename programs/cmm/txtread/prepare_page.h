@@ -1,5 +1,3 @@
-char char_width[255];
-
 enum {
 	COUNT_BUF_HEIGHT,
 	DRAW_BUF
@@ -19,7 +17,7 @@ dword line_start=io.buffer_data;
 	for (bufoff=io.buffer_data; bufoff<buflen; bufoff++)
 	{
 		ch = ESBYTE[bufoff];
-		line_length += char_width[ch];
+		line_length += kfont_char_width[ch];
 		if (line_length>=list.w) || (ch==10) {
 			srch_pos = bufoff;
 			loop()
@@ -49,12 +47,6 @@ dword line_start=io.buffer_data;
 
 void PreparePage() 
 {
-	//get font chars width, need to increase performance
-	int i;
-	kfont.changeSIZE();
-	for (i=0; i<256; i++) char_width[i] = kfont.symbol_size(i);
-
-	//get font buffer height
 	list.w = Form.cwidth-scroll.size_x-1;
 	list.count=0;
 	Parcer(COUNT_BUF_HEIGHT);

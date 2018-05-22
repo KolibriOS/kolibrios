@@ -1,10 +1,10 @@
 #define MEMSIZE 4096*25
 
-#include "../lib/kfont.h"
 #include "../lib/io.h"
 #include "../lib/gui.h"
 #include "../lib/list_box.h"
 #include "../lib/menu.h"
+#include "../lib/kfont.h"
 
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/libini.h"
@@ -36,7 +36,7 @@ Ctrl+E - edit current document
 Press any key..."
 
 char default_dir[] = "/rd/1";
-od_filter filter2 = {0,0};
+od_filter filter2 = { 8, "TXT\0\0" };
 
 scroll_bar scroll = { 15,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 llist list;
@@ -79,9 +79,9 @@ void main()
 {   	
 	InitDlls();	
 	OpenDialog_init stdcall (#o_dialog);
+	LoadIniSettings();
 	kfont.init(DEFAULT_FONT);
 	Libimg_LoadImage(#skin, abspath("toolbar.png"));
-	LoadIniSettings();
 	OpenFile(#param);
 	list.no_selection = true;
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
@@ -209,8 +209,10 @@ void HandleMouseEvent()
 void EventOpenFile()
 {
 	OpenDialog_start stdcall (#o_dialog);
-	OpenFile(#openfile_path);
-	PreparePage();
+	if (o_dialog.status) {
+		OpenFile(#openfile_path);
+		PreparePage();
+	}
 }
 
 void EventShowFileProperties()
@@ -322,4 +324,22 @@ void DrawPage()
 {
 	kfont.ShowBufferPart(list.x, list.y, list.w, list.h, list.first*list.item_h*list.w);
 	DrawScroller();
+}
+
+void DrawToolbarButton(char image_id, int x)
+{
+	DefineButton(x+1, 6, TOOLBAR_ICON_WIDTH-2, TOOLBAR_ICON_HEIGHT-2, 10+image_id + BT_HIDE, 0);
+	img_draw stdcall(skin.image, x, 5, TOOLBAR_ICON_WIDTH, TOOLBAR_ICON_HEIGHT, 0, image_id*TOOLBAR_ICON_HEIGHT);
+}
+
+void DrawScroller()
+{
+	scroll.max_area = list.count;
+	scroll.cur_area = list.visible;
+	scroll.position = list.first;
+	scroll.all_redraw = 0;
+	scroll.start_x = list.x + list.w;
+	scroll.start_y = list.y;
+	scroll.size_y = list.h;
+	scrollbar_v_draw(#scroll);
 }

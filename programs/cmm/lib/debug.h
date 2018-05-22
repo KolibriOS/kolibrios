@@ -40,7 +40,6 @@ inline fastcall void debugln( EDX)
 {
 	debug( EDX);
 	debugch(10);
-	debugch(13);
 }
 
 inline void debugi(dword d_int)
