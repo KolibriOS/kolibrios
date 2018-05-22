@@ -82,7 +82,7 @@ void main()
 void GetDiskSizesFromIni()
 {
 	char i, key[2];
-	if (load_dll2(libini, #lib_init,1)!=0) notify("Error: library doesn't exists - libini");
+	load_dll(libini, #lib_init, 1);
 	key[1]=0;
 	for (i=0; i<=9; i++)
 	{

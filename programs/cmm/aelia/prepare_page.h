@@ -283,7 +283,8 @@ void _dom::apply_text()
 		kfont.bold = style.bold;
 		canvas.write_text(draw.x, draw.y, style.color, text.start);
 		if (style.a) {
-			canvas.draw_hor_line(draw.x+1, draw.y + list.item_h-2, kfont.get_label_width(text.start), style.color);
+			canvas.draw_hor_line(draw.x, draw.y + list.item_h-1, kfont.get_label_width(text.start), style.color); 
+			link.add(draw.x, draw.y, kfont.get_label_width(text.start), list.item_h, text.start, "http://kolibrios.org");
 		}
 	}
 }

@@ -56,11 +56,7 @@ enum {
 };
 
 char address[UML]="http://";
-int	mouse_address_box;
-edit_box address_box = {250,56,34,0xffffff,0x94AECE,0xffffff,0xffffff,0,UML,#address,#mouse_address_box,2,19,19};
-
-CustomCursor CursorPointer;
-dword CursorFile = FROM "pointer.cur";
+edit_box address_box = {250,56,34,0xffffff,0x94AECE,0xffffff,0xffffff,0,UML,#address,NULL,2,19,19};
 
 #include "favicon.h"
 #include "ini.h"
@@ -222,7 +218,15 @@ void HandleMouseEvent()
 	edit_box_mouse stdcall (#address_box);
 	mouse.get();
 	list.wheel_size = 7;
-	link.hover();
+	if (link.hover()) {
+		if (link.active == -1) {
+			debugln("unhovered");
+		}
+		else {
+			debugln(link.text.get(link.active));
+			debugln(link.url.get(link.active));			
+		}
+	}
 	if (list.MouseScroll(mouse.vert)) {
 		DrawPage(); 
 		return; 
