@@ -41,6 +41,15 @@
 #define SCAN_CODE_PLUS  013
 
 #define SCAN_CODE_F1    059
+#define SCAN_CODE_F2    060
+#define SCAN_CODE_F3    061
+#define SCAN_CODE_F4    062
+#define SCAN_CODE_F5    063
+#define SCAN_CODE_F6    064
+#define SCAN_CODE_F7    065
+#define SCAN_CODE_F8    066
+#define SCAN_CODE_F9    067
+#define SCAN_CODE_F10   068
 #define SCAN_CODE_F11   087
 #define SCAN_CODE_F12   088
 
@@ -48,6 +57,7 @@
 #define SCAN_CODE_KEY_C 046
 #define SCAN_CODE_KEY_E 018
 #define SCAN_CODE_KEY_F 033
+#define SCAN_CODE_KEY_H 035
 #define SCAN_CODE_KEY_I 023
 #define SCAN_CODE_KEY_L 038
 #define SCAN_CODE_KEY_M 050

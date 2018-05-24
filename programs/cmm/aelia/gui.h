@@ -47,9 +47,9 @@ enum {
 	STEP_5_STOP                  = 100,
 };
 
-void DrawProgress(int percent)
+void DrawProgress(dword percent)
 {
-	int progress_width;
+	dword progress_width;
 	if (percent<100) {
 		progress_width = address_box.width+5*percent/100;
 		DrawBar(address_box.left-3, address_box.top+16, progress_width, 2, 0x72B7EA);

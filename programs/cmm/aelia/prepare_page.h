@@ -40,7 +40,7 @@ struct _tag {
 
 	bool opens;
 
-	dword param;
+	dword attribute;
 	dword value;
 
 	void parse();
@@ -245,8 +245,6 @@ void _dom::set_style()
 		DrawTitle(#title);
 	}
 
-
-
 	if 	(tag.nameis("h1")) || (tag.nameis("/h1")) ||
 		(tag.nameis("h2")) || (tag.nameis("/h2")) ||
 		(tag.nameis("h3")) || (tag.nameis("/h3")) {
@@ -283,7 +281,7 @@ void _dom::apply_text()
 		kfont.bold = style.bold;
 		canvas.write_text(draw.x, draw.y, style.color, text.start);
 		if (style.a) {
-			canvas.draw_hor_line(draw.x, draw.y + list.item_h-1, kfont.get_label_width(text.start), style.color); 
+			canvas.draw_hor_line(draw.x, draw.y + list.item_h-2, kfont.get_label_width(text.start), style.color); 
 			link.add(draw.x, draw.y, kfont.get_label_width(text.start), list.item_h, text.start, "http://kolibrios.org");
 		}
 	}
@@ -333,7 +331,7 @@ void _dom::parse()
 void PreparePage() 
 {
 	_dom dom;
-	list.SetSizes(0, TOOLBAR_H, Form.cwidth-scroll.size_x-1, Form.cheight-TOOLBAR_H, kfont.size.pt+4);
+
 	strcpy(#title, history.current()+strrchr(history.current(),'/'));
 	ChangeCharset(charsets[encoding], "CP866", io.buffer_data);
 	link.clear();

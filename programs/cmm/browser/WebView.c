@@ -302,7 +302,7 @@ void ProcessEvent(dword id__)
 			}
 			OpenPage();
 			return;
-		case 063: //F5
+		case SCAN_CODE_F5:
 			IF(address_box.flags & 0b10) return;
 		case REFRESH_BUTTON:
 			if (http.transfer > 0) 

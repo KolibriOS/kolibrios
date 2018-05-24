@@ -97,6 +97,7 @@ dword DOWNLOADER::Start(dword _url)
 	url = _url;
 	state = STATE_IN_PROGRESS;
 	httpd.get(url);
+	if (!httpd.transfer) Stop();
 	return httpd.transfer;
 }
 

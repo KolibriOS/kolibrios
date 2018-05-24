@@ -19,6 +19,12 @@
 #include "../lib/patterns/http_downloader.h"
 #include "../browser/download_manager.h"
 
+llist list;
+
+#include "link.h"
+#include "canvas.h"
+#include "favicon.h"
+
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 16, "TXT\0HTM\0HTML\0\0" };
 
@@ -27,6 +33,7 @@ char accept_language[]= "Accept-Language: ru\n";
 #define TOOLBAR_H 36
 #define TOOLBAR_ICON_WIDTH  26
 #define TOOLBAR_ICON_HEIGHT 24
+#define STATUSBAR_H 15
 
 #define DEFAULT_EDITOR "/sys/tinypad"
 #define DEFAULT_PREVIEW_PATH "/tmp0/1/aelia_preview.txt"
@@ -39,7 +46,6 @@ char buidin_page_not_found[] = FROM "buidin_pages\\not_found.htm";
 #define UML 4096*2
 
 scroll_bar scroll = { 15,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
-llist list;
 
 proc_info Form;
 char title[4196];
@@ -55,14 +61,13 @@ enum {
 	SANDWICH
 };
 
-char address[UML]="http://";
+char address[UML];
 edit_box address_box = {250,56,34,0xffffff,0x94AECE,0xffffff,0xffffff,0,UML,#address,NULL,2,19,19};
 
-#include "favicon.h"
+bool debug_mode=false;
+
 #include "ini.h"
 #include "gui.h"
-#include "link.h"
-#include "canvas.h"
 #include "prepare_page.h"
 //#include "special.h"
 
@@ -88,7 +93,7 @@ void main()
 	kfont.init(DEFAULT_FONT);
 	Libimg_LoadImage(#skin, abspath("toolbar.png"));
 	list.no_selection = true;
-	SetEventMask(10000000000000000000000001100111b);
+	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER + EVM_STACK);
 	loop()
 	{
 		switch(WaitEvent())
@@ -101,6 +106,9 @@ void main()
 				break;
 			case evButton:
 				HandleButtonEvent();
+				break;
+			case evNetwork:
+				HandleNetworkEvent();
 				break;
 			case evReDraw:
 				draw_window();
@@ -163,10 +171,36 @@ void HandleButtonEvent()
 void HandleKeyEvent()
 {
 	GetKeys();
+	if (key_modifier & KEY_LCTRL) || (key_modifier & KEY_RCTRL) {
+		switch (key_scancode)
+		{
+			case SCAN_CODE_UP:
+				EventMagnifyPlus();
+				return;
+			case SCAN_CODE_DOWN:
+				EventMagnifyMinus();
+				return;
+			case SCAN_CODE_KEY_O:
+				EventOpenDialog();
+				return;
+			case SCAN_CODE_KEY_E:
+				EventRunEdit();
+				return;
+			case SCAN_CODE_KEY_H:
+				EventShowHistory();
+				return;
+			case SCAN_CODE_TAB:
+				EventChangeEncoding();
+				return;
+		}
+	}
 	switch (key_scancode) 
 	{
-		case 059:
+		case SCAN_CODE_F1:
 			EventShowInfo();
+			return;
+		case SCAN_CODE_F12:
+			EventChangeDebugMode();
 			return;
 		case SCAN_CODE_ENTER:
 			EventOpenAddress(#address);
@@ -177,34 +211,11 @@ void HandleKeyEvent()
 				return;
 			}
 	}
-	if (key_modifier & KEY_LCTRL) || (key_modifier & KEY_RCTRL) {
-		switch (key_scancode)
-		{
-			case 024: //O
-				EventOpenDialog();
-				break;
-			case SCAN_CODE_UP:
-				EventMagnifyPlus();
-				break;
-			case SCAN_CODE_DOWN:
-				EventMagnifyMinus();
-				break;
-			case 018: //E
-				EventRunEdit();
-				break;
-			case 035: //H
-				EventShowHistory();
-				break;
-			case SCAN_CODE_TAB:
-				EventChangeEncoding();
-				break;
-		}
-	}
-	if (list.ProcessKey(key_scancode)) {
+	if (list.ProcessKey(key_scancode)) && (! address_box.flags & 0b10) {
 		DrawPage();
 		return;
 	}
-	if (key_ascii != 0x0d)
+	if (key_ascii != ASCII_KEY_ENTER)
 	&& (key_ascii != ASCII_KEY_PGDN) 
 	&& (key_ascii != ASCII_KEY_PGUP) {
 		EAX = key_editbox;
@@ -218,23 +229,62 @@ void HandleMouseEvent()
 	edit_box_mouse stdcall (#address_box);
 	mouse.get();
 	list.wheel_size = 7;
-	if (link.hover()) {
-		if (link.active == -1) {
-			debugln("unhovered");
+
+	if (link.hover(mouse.x, mouse.y)) {
+		if (-1 == link.active) {
+			DrawStatusBar( " " ); //just clean status bar	
 		}
 		else {
-			debugln(link.text.get(link.active));
-			debugln(link.url.get(link.active));			
+			DrawStatusBar( link.get_active_url() );
 		}
 	}
+
+	if (mouse.key&MOUSE_LEFT) && (mouse.up) {
+		if (-1 != link.active) EventOpenAddress( link.get_active_url() );
+	}
+
 	if (list.MouseScroll(mouse.vert)) {
 		DrawPage(); 
 		return; 
 	}
+
 	scrollbar_v_mouse (#scroll);
 	if (list.first != scroll.position) {
 		list.first = scroll.position;
 		DrawPage(); 
+	}
+}
+
+void HandleNetworkEvent()
+{
+	char favicon_address[UML];
+
+	if (downloader.state == STATE_IN_PROGRESS) {
+		downloader.MonitorProgress();
+
+		if (downloader.httpd.content_length>0)
+			DrawProgress(STEP_2_COUNT_PAGE_HEIGHT-STEP_1_DOWNLOAD_PAGE*
+				downloader.httpd.content_received/downloader.httpd.content_length); 
+		else
+			DrawProgress(STEP_2_COUNT_PAGE_HEIGHT-STEP_1_DOWNLOAD_PAGE/2);		
+	} 
+	
+	if (downloader.state == STATE_COMPLETED) 
+	{
+		if (!strncmp(downloader.url,"http://gate.aspero.pro/",22)) {
+			strcpy(#address,downloader.url + 29);
+		}
+		else {
+			strcpy(#address,downloader.url);
+		}
+		downloader.Stop();
+		DrawAddressBox();
+		io.buffer_data = downloader.bufpointer;
+		/*
+		get_absolute_url(#favicon_address, #address, "/favicon.ico");
+		favicon.get(#favicon_address);
+		*/
+		PostOpenPageActions();
 	}
 }
 
@@ -250,10 +300,10 @@ void EventOpenDialog()
 void EventOpenAddress(dword _new_address)
 {
 char temp[UML];
-char favicon_address[UML];
+char getUrl[UML];
 	if (!ESBYTE[_new_address]) return;
 	debugln("====================================");
-	debug("address: ");
+	debug("address: "); 
 	debugln(_new_address);
 	strlcpy(#address, _new_address, UML);
 	strlwr(#address);
@@ -277,41 +327,36 @@ char favicon_address[UML];
 		if (!strcmp(#address,"aelia:home")) io.buffer_data = #buidin_page_home;
 		if (!strcmp(#address,"aelia:about")) io.buffer_data = #buidin_page_about;
 		if (!strcmp(#address,"aelia:history")) io.buffer_data = MakePageWithHistory();
+		PostOpenPageActions();
 	}
 	// - local file
 	else if (check_is_the_adress_local(#address)==true) {
 		debugln("this is local address");
 		io.read(#address);
+		PostOpenPageActions();
 	}
 	// - url
 	else {
 		debugln("this is url");
-		if (strncmp(#address,"http://",7)!=0) {
+		if (!strncmp(#address,"https://",8)) {
+			sprintf(#getUrl, "http://gate.aspero.pro/?site=%s", #address);
+		}
+		else if (!strncmp(#address,"http://",7)) {
+			strlcpy(#getUrl, #address, UML);
+		}
+		else {
 			strcpy(#temp, "http://");
 			strlcpy(#temp, #address, UML);
 			strlcpy(#address, #temp, UML);
 			DrawAddressBox();
+			strlcpy(#getUrl, #address, UML);
 		}
-		if (!downloader.Start(#address)) {
-			downloader.Stop();
-		} else {
-			while (downloader.state!=STATE_COMPLETED)
-			{ 
-				downloader.MonitorProgress(); 
-				if (downloader.httpd.content_length>0)
-					DrawProgress(STEP_2_COUNT_PAGE_HEIGHT-STEP_1_DOWNLOAD_PAGE*
-						downloader.httpd.content_received/downloader.httpd.content_length); 
-				else
-					DrawProgress(STEP_2_COUNT_PAGE_HEIGHT-STEP_1_DOWNLOAD_PAGE/2);
-			}
-			strcpy(#address,downloader.url);
-			DrawAddressBox();
-			io.buffer_data = downloader.bufpointer;
-			get_absolute_url(#favicon_address, #address, "/favicon.ico");
-			favicon.get(#favicon_address);
-		}
+		downloader.Start(#getUrl);
 	}
+}
 
+void PostOpenPageActions()
+{
 	if (!io.buffer_data) {
 		debugln("page not found");
 		io.buffer_data = #buidin_page_not_found;
@@ -327,7 +372,6 @@ char favicon_address[UML];
 	*/
 
 	list.KeyHome();
-	list.ClearList();
 	PreparePage();
 }
 
@@ -405,6 +449,14 @@ void EventShowDownloader()
 	}
 }
 
+void EventChangeDebugMode()
+{
+	debug_mode ^= 1;
+	if (debug_mode) notify("'Debug mode ON'-I");
+	else notify("'Debug mode OFF'-I");
+	return;
+}
+
 /* ------------------------------------------- */
 
 
@@ -416,6 +468,11 @@ void draw_window()
 
 	if (Form.width  < 200) { MoveSize(OLD,OLD,200,OLD); return; }
 	if (Form.height < 200) { MoveSize(OLD,OLD,OLD,200); return; }
+
+	system.color.get();
+
+	list.SetSizes(0, TOOLBAR_H, Form.cwidth-scroll.size_x-1, 
+		Form.cheight-TOOLBAR_H-STATUSBAR_H, kfont.size.pt+4);
 	
 	DrawBar(0, 0, Form.cwidth, TOOLBAR_H - 2, 0xe1e1e1);
 	DrawBar(0, TOOLBAR_H - 2, Form.cwidth, 1, 0xcecece);
@@ -448,6 +505,7 @@ void draw_window()
 	}
 
 	DrawRectangle(scroll.start_x, scroll.start_y, scroll.size_x, scroll.size_y-1, scroll.bckg_col);
+	DrawStatusBar(NULL);
 }
 
 void DrawPage()
@@ -473,3 +531,19 @@ void DrawAddressBox()
 	DrawBar(address_box.left-2, address_box.top+1, 2, 13, 0xFFFfff);
 }
 
+PathShow_data status_text = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, 0, NULL, 0};
+void DrawStatusBar(dword _status_text)
+{
+	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, system.color.work);
+	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, 0x8C8C8C);
+
+	if (_status_text) {
+		status_text.start_x = 7;
+		status_text.start_y = Form.cheight - STATUSBAR_H + 3;
+		status_text.area_size_x = Form.cwidth - status_text.start_x -3;
+		status_text.font_color = system.color.work_text;
+		status_text.text_pointer = _status_text;
+		PathShow_prepare stdcall(#status_text);
+		PathShow_draw stdcall(#status_text);
+	}
+}
