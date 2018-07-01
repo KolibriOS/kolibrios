@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -55,6 +55,9 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
                         
         test    [thread_info.wnd_state], 100b           ; skip if window is rolled up
         jne     .exit
+
+        cmp     [window_active], 0
+        je      .no_window
 
 ; calculate available space for textbox and coordinates for scrollbars
         mov     eax, [ysize]
@@ -128,6 +131,7 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
         mov     edx, [colors.work_graph]
         mcall   38
   .not_channel:
+  .no_window:
 
 ; draw editbox
         mov     eax, [ysize]

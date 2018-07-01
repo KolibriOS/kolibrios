@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -31,7 +31,7 @@ window_create_textbox:
         mov     edi, eax
         mov     ecx, (sizeof.window_data+3)/4
         xor     eax, eax
-        rep     stosd
+        rep stosd
         pop     eax
 
         mov     [ebx + window.data_ptr], eax
@@ -81,6 +81,16 @@ window_set_name:
 
         ret
 
+window_close_all:
+
+  .loop:
+        call    window_close
+
+        cmp     [window_print], 0
+        jne     .loop
+
+        ret
+
 
 window_close:   ; closes the 'print' window
 
@@ -90,27 +100,43 @@ window_close:   ; closes the 'print' window
         lea     esi, [edi + sizeof.window]
         mov     ecx, windows + MAX_WINDOWS*sizeof.window
         sub     ecx, esi
-        rep     movsb
+        rep movsb
 
 ; Completely zero the trailing window block (there will always be one!)
         mov     ecx, sizeof.window
         xor     al, al
-        rep     stosb
+        rep stosb
 
-; free the window data block
+; Clear the window data block to erase the chat history and nicknames 
+        mov     edi, [esp]
+        mov     ecx, sizeof.window_data         ; TEXT_BUFFERSIZE + MAX_NICK_LEN * MAX_USERS
+        rep stosb
+
+; And now free the window data block
         pop     ecx
         mcall   68, 13
 
 ; We closed this window so we need to show another
+        ; Is there still a window in the active position?
         mov     edi, [window_active]
         cmp     [edi + window.data_ptr], 0
-        jne     @f
+        jne     .redraw
+        ; Did we just close the last window?
+        cmp     edi, windows
+        je      .closed_last
+        ; Nope, move one window to the left
         sub     edi, sizeof.window
         mov     [window_active], edi
         mov     [window_print], edi
-  @@:
+        jmp     .redraw
+
+  .closed_last:
+        xor     edi, edi
+        mov     [window_active], edi
+        mov     [window_print], edi
 
 ; At last, redraw everything
+  .redraw:
         call    draw_window
 
         ret

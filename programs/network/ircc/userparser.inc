@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -204,9 +204,6 @@ cmd_usr_msg:
         stosw
         mov     byte[edi], 0
 
-        lea     esi, [edi - packetbuf]
-        mcall   send, [socketnum], packetbuf, , 0
-
 ; now print to the window
         if TIMESTAMP
         call    print_timestamp
@@ -226,7 +223,13 @@ cmd_usr_msg:
         call    print_char
 
         pop     esi
+        push    esi
         call    print_asciiz
+        pop     esi
+
+
+        lea     esi, [edi - packetbuf]
+        mcall   send, [socketnum], packetbuf, , 0
 
   .fail:
         ret
@@ -527,6 +530,8 @@ cmd_usr_ctcp:
         mov     al, 0x01
         stosb
 
+        push edi esi
+
 ; copy the message itself
   @@:
         lodsb
@@ -545,12 +550,34 @@ cmd_usr_ctcp:
         stosb
         mov     ax, 0x0a0d
         stosw
+        mov     byte[edi], 0
+
+; now print to the window
+        if TIMESTAMP
+        call    print_timestamp
+        end if
+
+        mov     esi, ctcp_header
+        call    print_asciiz
+
+        mov     esi, packetbuf+8
+        mov     bl, ' '
+        call    print_string
+
+        mov     al, ']'
+        call    print_char
+
+        mov     al, ' '
+        call    print_char
+
+        pop     esi
+        call    print_asciiz
+        pop     esi
+
 
 ; now send it away
         lea     esi, [edi - packetbuf]                  ; calculate length
         mcall   send, [socketnum], packetbuf, , 0       ; and finally send to server
-
-;; TODO: print to window
 
   .fail:
 

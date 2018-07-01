@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -213,9 +213,9 @@ socket_receive:
 ; FIXME: make this a proper stream!
 
   .nextpacket:
-        mcall   recv, [socketnum], packetbuf, 1024, MSG_DONTWAIT        ; read a packet
-        inc     eax                                                     ; check if we got any data
-        jz      .done                                                   ; TODO: handle errors!
+        mcall   recv, [socketnum], packetbuf, PACKETBUF_SIZE, MSG_DONTWAIT    ; read a packet
+        inc     eax                                                           ; check if we got any data
+        jz      .done                                                         ; TODO: handle errors!
         dec     eax
         jz      .disconnected
 

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2017. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  IRC client for KolibriOS                                       ;;
@@ -13,7 +13,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version equ '0.30'
+version equ '0.31'
 
 ; connection status
 STATUS_DISCONNECTED     = 0
@@ -62,12 +62,18 @@ TEXT_BUFFERSIZE         = 1024*1024
 
 MAX_NICK_LEN            = 32
 MAX_REAL_LEN            = 32    ; realname
+QUIT_MSG_LEN            = 250
 MAX_SERVER_NAME         = 256
 
 MAX_CHANNEL_LEN         = 40
 MAX_CHANNELS            = 37
 
 MAX_COMMAND_LEN         = 512
+
+PACKETBUF_SIZE          = 1024
+PATH_SIZE               = 1024
+PARAM_SIZE              = 1024
+SERVERCOMMAND_SIZE      = 600
 
 TIMESTAMP               = 3     ; 3 = hh:mm:ss, 2 = hh:mm, 0 = no timestamp
 
@@ -154,7 +160,7 @@ START:
 ; find path to main settings file (ircc.ini)
         mov     edi, path               ; Calculate the length of zero-terminated string
         xor     al, al
-        mov     ecx, 1024
+        mov     ecx, PATH_SIZE
         repne   scasb
         dec     edi
         mov     eax, '.ini'
@@ -170,14 +176,14 @@ START:
 
 ; clear command area too
         mov     edi, servercommand
-        mov     ecx, 600/4
+        mov     ecx, SERVERCOMMAND_SIZE/4
         rep     stosd
 
 ; allocate window data block
         mov     ebx, windows
         call    window_create_textbox
         test    eax, eax
-        jz      error
+        jz      exit
         mov     [ebx + window.type], WINDOWTYPE_SERVER
 
 ; get system colors
@@ -212,7 +218,7 @@ START:
         cmp     byte[param], 0
         je      @f
         mov     esi, param
-        mov     ecx, 1024
+        mov     ecx, PARAM_SIZE
         call    cmd_usr_server.now
   @@:
 
@@ -255,7 +261,7 @@ button:
         ror     eax, 8
 
         cmp     ax, 1           ; close program
-        je      exit
+        je      quit
 
         cmp     ax, WINDOW_BTN_CLOSE
         jne     @f
@@ -318,10 +324,10 @@ button:
 
   @@:
         sub     ax, WINDOW_BTN_START
-        jb      exit
+        jb      quit
 
         cmp     ax, MAX_WINDOWS
-        ja      exit
+        ja      quit
 
 ; Save users scrollbar position
         push    [scroll1.position]
@@ -335,7 +341,7 @@ button:
         mov     dx, ax
         add     edx, windows
         cmp     [edx + window.type], WINDOWTYPE_NONE
-        je      exit
+        je      quit
         mov     [window_active], edx
 
         push    [edx + window.text_line_print]
@@ -347,15 +353,35 @@ button:
         call    draw_window
         jmp     mainloop
 
-exit:
-
+quit:
         cmp     [socketnum], 0
         je      @f
         mov     esi, quit_msg
         call    quit_server
   @@:
 
-error:
+exit:
+
+; Close all open windows
+        call    window_close_all
+
+; Erase RAM areas which could contain the connection details
+        xor     eax, eax
+        mov     edi, irc_server_name
+        mov     ecx, MAX_SERVER_NAME
+        rep stosb
+
+        mov     edi, user_nick
+        mov     ecx, MAX_NICK_LEN
+        rep stosb
+
+        mov     edi, user_real_name
+        mov     ecx, MAX_REAL_LEN
+        rep stosb
+
+        mov     edi, sockaddr1
+        mov     ecx, SOCKADDR1_SIZE
+        rep stosb
 
         mcall   -1
 
@@ -459,6 +485,7 @@ part_header             db 3, '5* ', 0
 topic_header            db 3, '3* ', 0
 action_header           db 3, '6* ', 0
 ctcp_header             db 3, '13-> [', 0
+ctcp_header_recv        db 3, '13', 0
 msg_header              db 3, '7-> *', 0
 ctcp_version            db '] VERSION', 10, 0
 ctcp_ping               db '] PING', 10, 0
@@ -497,17 +524,17 @@ str_list                db 'list', 0
 
 str_help                db 'The following commands are available:', 10
                         db 10
-                        db '/nick <nick>        : change nickname', 10
-                        db '/real <real name>   : change real name', 10
-                        db '/server <address>   : connect to server', 10
-                        db '/code <code>        : change codepage (cp866, cp1251, or utf8)', 10
-                        db '/join <channel>     : join a channel', 10
-                        db '/part <channel>     : part from a channel', 10
-                        db '/quit               : quit server', 10
-                        db '/msg <user>         : send a private message', 10
-                        db '/ctcp <user>        : send a message using client to client protocol', 10
+                        db '/nick <nick>         : change nickname', 10
+                        db '/real <real name>    : change real name', 10
+                        db '/server <address>    : connect to server', 10
+                        db '/code <code>         : change codepage (cp866, cp1251, or utf8)', 10
+                        db '/join <channel>      : join a channel', 10
+                        db '/part <channel>      : part from a channel', 10
+                        db '/quit                : quit server', 10
+                        db '/msg <user>          : send a private message', 10
+                        db '/ctcp <user>         : send a message using client-to-client protocol', 10
                         db 10
-                        db 'Other commands are send straight to server.', 10
+                        db 'Other commands are sent straight to a server', 10
                         db 10, 0
 
 str_welcome             db 3, '3 ___', 3, '7__________', 3, '6_________  ', 3, '4         __   __               __', 10
@@ -555,6 +582,7 @@ sockaddr1:
 .ip     dd 0
         rb 10
 
+SOCKADDR1_SIZE          = 18
 
 status                  dd STATUS_DISCONNECTED
 
@@ -601,11 +629,11 @@ user_command    rb MAX_COMMAND_LEN*4
 utf8_bytes_rest dd ?            ; bytes rest in current UTF8 sequence
 utf8_char       dd ?            ; first bits of current UTF8 character
 
-packetbuf       rb 1024         ; buffer for packets to server
-path            rb 1024
-param           rb 1024
+packetbuf       rb PACKETBUF_SIZE         ; buffer for packets to server
+path            rb PATH_SIZE
+param           rb PARAM_SIZE
 
-servercommand   rb 600
+servercommand   rb SERVERCOMMAND_SIZE
 
 thread_info     process_information
 xsize           dd ?
@@ -622,7 +650,7 @@ socketnum       dd ?                    ; TODO: same for socket
 
 user_nick       rb MAX_NICK_LEN
 user_real_name  rb MAX_REAL_LEN
-quit_msg        rb 250
+quit_msg        rb QUIT_MSG_LEN
 
 windows         rb MAX_WINDOWS*sizeof.window
 

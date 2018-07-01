@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -328,9 +328,38 @@ cmd_ctcp:
         cmp     eax, 'dcc '    ; TODO
         je      cmd_dcc
 
-; Unknown CTCP command: TODO: just print to window??
+; Unknown CTCP command - just print to window
 
-  .fail:
+  .just_print:
+
+        push    esi
+
+        if TIMESTAMP
+        call    print_timestamp
+        end if
+
+        mov     esi, ctcp_header_recv
+        call    print_asciiz
+
+        mov     al, '<'
+        call    print_char
+
+        mov     esi, servercommand+1    ; print nickname
+        mov     bl, '!'
+        call    print_string
+
+        mov     al, '>'
+        call    print_char
+
+        mov     al, ' '
+        call    print_char
+
+        pop     esi
+        mov     bl, 1
+        call    print_string
+
+        mov     al, 10
+        call    print_char
 
         ret
 
