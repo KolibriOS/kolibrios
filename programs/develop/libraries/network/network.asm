@@ -431,25 +431,24 @@ end virtual
 @@:
 ; 1e. Valid combinations for ai_socktype/ai_protocol: 0/0 for any or
 ;       SOCK_STREAM/IPPROTO_TCP, SOCK_DGRAM/IPPROTO_UDP
-;       (raw socketnums are not yet supported by the kernel)
         xor     edx, edx        ; assume 0=any if no hints
-        jecxz   .socketnum_type_ok
+        jecxz   .socket_type_ok
         mov     edx, [ecx+addrinfo.ai_socktype]
         mov     esi, [ecx+addrinfo.ai_protocol]
 ; 1f. Test for ai_socktype=0 and ai_protocol=0.
         test    edx, edx
         jnz     .check_socktype
         test    esi, esi
-        jz      .socketnum_type_ok
+        jz      .socket_type_ok
 ; 1g. ai_socktype=0, ai_protocol is nonzero.
         push    EAI_SERVICE
         pop     eax
         inc     edx     ; edx = SOCK_STREAM
         cmp     esi, IPPROTO_TCP
-        jz      .socketnum_type_ok
+        jz      .socket_type_ok
         inc     edx     ; edx = SOCK_DGRAM
         cmp     esi, IPPROTO_UDP
-        jz      .socketnum_type_ok
+        jz      .socket_type_ok
 .ret:
 ; Restore saved registers, destroy stack frame and return.
         mov     esp, ebp
@@ -465,16 +464,16 @@ end virtual
         cmp     edx, SOCK_DGRAM
         jnz     .ret
         test    esi, esi
-        jz      .socketnum_type_ok
+        jz      .socket_type_ok
         cmp     esi, IPPROTO_UDP
-        jz      .socketnum_type_ok
+        jz      .socket_type_ok
         jmp     .ret
 .check_tcp:
         test    esi, esi
-        jz      .socketnum_type_ok
+        jz      .socket_type_ok
         cmp     esi, IPPROTO_TCP
         jnz     .ret
-.socketnum_type_ok:
+.socket_type_ok:
         mov     [ebx+__gai_reqdata.socktype], dl
 ; 2. Resolve service.
 ; 2a. If no name is given, remember value -1.
@@ -514,7 +513,7 @@ end virtual
 ; 3. Process host name.
         mov     esi, [.hostname]
 ; 3a. If hostname is not given,
-;       use localhost for active socketnums and INADDR_ANY for passive socketnums.
+;       use localhost for active sockets and INADDR_ANY for passive sockets.
         mov     eax, 0x0100007F ; 127.0.0.1 in network byte order
         test    byte [ebx+__gai_reqdata.flags], AI_PASSIVE
         jz      @f
@@ -680,13 +679,13 @@ lock    xadd    [DNSrequestID], eax     ; atomically increment ID, get old value
         cmp     eax, -1
         je      .ret.dnserr
         push    eax             ; save server address to the stack
-; 8. Open UDP socketnum to DNS server, port 53.
-; 8a. Create new socketnum.
+; 8. Open UDP socket to DNS server, port 53.
+; 8a. Create new socket.
         mcall   75, 0, AF_INET4, SOCK_DGRAM, 0
         pop     esi             ; restore server address saved at step 7
-        cmp     eax, -1 ; error?
+        cmp     eax, -1         ; error?
         jz      .ret.dnserr
-        mov     ecx, eax        ; put socketnum handle to ecx
+        mov     ecx, eax        ; put socket handle to ecx
 ; 8b. Create sockaddr structure on the stack.
         push    0
         push    0       ; sin_zero
@@ -924,7 +923,7 @@ end virtual
 @@:
         pop     eax
 .ret.close:
-; 15. Close socketnum.
+; 15. Close socket.
         push    eax
         mov     ecx, [.reqdata]
         mov     ecx, [ecx+__gai_reqdata.socketnum]
@@ -1195,7 +1194,7 @@ getaddrinfo._.generate_data:                                                 ;;
         ret
 
 .set_socktype:
-; Set ai_socktype and ai_protocol fields by given socketnum type.
+; Set ai_socktype and ai_protocol fields by given socket type.
         mov     byte [edi+addrinfo.ai_socktype], cl
         dec     cl
         jnz     .set_udp
