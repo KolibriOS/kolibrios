@@ -57,8 +57,6 @@ proc START c, state:dword, cmdline:dword
         and     eax, not (1 shl 28)
         invoke  PciWrite32, [bus], [dev], 0xBC, eax
 
-        DEBUGF  1,"1\n"
-
 ; Set ADC base address
         mov     ebx, [dev]
         inc     ebx
@@ -68,14 +66,10 @@ proc START c, state:dword, cmdline:dword
 
         invoke  PciWrite32, [bus], ebx, 0xE0, 0x00500000 or ADC_ADDR
 
-        DEBUGF  1,"2\n"
-
 ; set up ADC
         mov     dx, ADC_ADDR + 1
         xor     al, al
         out     dx, al
-
-        DEBUGF  1,"3\n"
 
 ; Empty FIFO
   @@:
@@ -87,8 +81,6 @@ proc START c, state:dword, cmdline:dword
         in      ax, dx
         jmp     @r
   @@:
-
-        DEBUGF  1,"4\n"
 
 ; Enable GPIO0-9
         mov     dx, GPIO_PORT_CONFIG_ADDR + 0  ; General-Purpose I/O Data & Direction Decode Enable
@@ -111,8 +103,8 @@ proc START c, state:dword, cmdline:dword
         dec     ecx
         jnz     .gpio_init
 
-; Set GPIO0 pin 0 as output
-        mov     al, 0x01
+; Set GPIO0 pin 0-7 as output
+        mov     al, 0xff
         mov     dx, GPIO_DATA_ADDR + 0*4 + 2
         out     dx, al
 
@@ -153,15 +145,20 @@ proc service_proc stdcall, ioctl:dword
         xor     eax, eax
         ret
   .no_gpiowrite:
-        cmp     eax, 3  ; read ADC channel 0
+        cmp     eax, 3  ; read single ADC channel
         jne     .no_adcread
+
+        mov     ecx, [ebx + IOCTL.input]
+        cmp     ecx, 8
+        jae     .fail
 
         mov     dx, ADC_ADDR + 1
         mov     al, 1 shl 3             ; Power down ADC
         out     dx, al
 
         mov     dx, ADC_ADDR + 0        ; AUX channel select register
-        mov     al, 1 shl 0             ; Enable AUX0 scan
+        mov     al, 1
+        shl     ax, cl
         out     dx, al
 
         mov     dx, ADC_ADDR + 1
@@ -175,8 +172,7 @@ proc service_proc stdcall, ioctl:dword
         jz      @r
 
         mov     dx, ADC_ADDR + 4
-        in      ax, dx                  ; read the data and return to user call
-        DEBUGF  1, "ADC read: 0x%x\n", eax:4
+        in      ax, dx                  ; read the data from the FIFO and return to user call
         ret
   .no_adcread:
   .fail:
