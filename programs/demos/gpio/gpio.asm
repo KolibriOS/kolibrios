@@ -67,14 +67,14 @@ key:                                    ; Keypress event handler
         cmp     ah, 'q'
         jne     @f
         call    read_gpio0
-        or      al, 1                   ; Set bit 0
+        or      al, 1 shl 0             ; Set bit 0
         call    write_gpio0
         jmp     event_wait
   @@:
         cmp     ah, 'w'
         jne     @f
         call    read_gpio0
-        and     al, not 1               ; Clear bit 0
+        and     al, not (1 shl 0)       ; Clear bit 0
         call    write_gpio0
         jmp     event_wait
   @@:
@@ -85,15 +85,29 @@ key:                                    ; Keypress event handler
         mcall   47, 0x00040100,,25 shl 16 + 25, 0x40000000, 0x00ffffff          ; 4 digits hex number in ecx
         jmp     event_wait
   @@:
+        cmp     ah, 'a'
+        jne     @f
+        call    read_gpio0
+        or      al, 1 shl 2             ; Set bit 2
+        call    write_gpio0
+        jmp     event_wait
+  @@:
+        cmp     ah, 's'
+        jne     @f
+        call    read_gpio0
+        and     al, not (1 shl 2)       ; Clear bit 2
+        call    write_gpio0
+        jmp     event_wait
+  @@:
         jmp     event_wait              ; Just read the key, ignore it and jump to event_wait.
  
 button:                                 ; Buttonpress event handler
-        mov     eax,17                  ; The button number defined in window_draw
+        mov     eax, 17                 ; The button number defined in window_draw
         mcall                           ; is returned to ah.
  
-        cmp     ah,1                    ; button id=1 ?
+        cmp     ah, 1                   ; button id=1 ?
         jne     noclose
-        mov     eax,-1                  ; Function -1 : close this program
+        mov     eax, -1                 ; Function -1 : close this program
         mcall
  
 noclose:
