@@ -526,7 +526,7 @@ init_board:
 
 ; Make the device a bus master
         invoke  PciRead32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command
-        or      al, PCI_CMD_MASTER
+        or      al, PCI_CMD_MASTER or PCI_CMD_PIO
         invoke  PciWrite32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command, eax
 
         ; Soft reset the chip
@@ -544,6 +544,9 @@ init_board:
         jz      @f
         udelay  10
         loop    @b
+        DEBUGF  2,"chip reset timeout\n"
+        or      eax, -1
+        ret
   @@:
 
 
@@ -566,7 +569,7 @@ init_board:
         DEBUGF  2, "Detected chip: %s\n", ecx
         cmp     dword[esi], 0
         jne     @f
-        DEBUGF  2, "TxConfig = 0x%x\n", eax
+        DEBUGF  1, "TxConfig = 0x%x\n", eax
   @@:
 
         xor     eax, eax
@@ -691,7 +694,7 @@ reset:
         ret
 
   .err:
-        DEBUGF  2,"failed!\n"
+        DEBUGF  2,"reset failed!\n"
         or      eax, -1
         ret
 
@@ -1341,148 +1344,116 @@ include_debug_strings                           ; All data wich FDO uses will be
 
 MAC_VERSION_LIST:
 
-; 8168EP family.
-dd 0x7cf00000, 0x50200000, 51, name_49
-dd 0x7cf00000, 0x50100000, 50, name_49
-dd 0x7cf00000, 0x50000000, 49, name_49
+; 8168E+ family
+dd 0x7cf00000, 0x50200000, 51, sz_rtl8168ep
+dd 0x7cf00000, 0x50100000, 50, sz_rtl8168ep
+dd 0x7cf00000, 0x50000000, 49, sz_rtl8168ep
 
-; 8168H family.
-dd 0x7cf00000, 0x54100000, 46, name_45
-dd 0x7cf00000, 0x54000000, 45, name_45
+; 8168H family
+dd 0x7cf00000, 0x54100000, 46, sz_rtl8168h
+dd 0x7cf00000, 0x54000000, 45, sz_rtl8168h
 
-; 8168G family.
-dd 0x7cf00000, 0x5c800000, 44, name_44
-dd 0x7cf00000, 0x50900000, 42, name_40
-dd 0x7cf00000, 0x4c100000, 41, name_40
-dd 0x7cf00000, 0x4c000000, 40, name_40
+; 8168G family
+dd 0x7cf00000, 0x5c800000, 44, sz_rtl8411
+dd 0x7cf00000, 0x50900000, 42, sz_rtl8168g
+dd 0x7cf00000, 0x4c100000, 41, sz_rtl8168g
+dd 0x7cf00000, 0x4c000000, 40, sz_rtl8168g
 
-; 8168F family.
-dd 0x7c800000, 0x48800000, 38, name_38
-dd 0x7cf00000, 0x48100000, 36, name_35
-dd 0x7cf00000, 0x48000000, 35, name_35
+; 8168F family
+dd 0x7c800000, 0x48800000, 38, sz_rtl8411
+dd 0x7cf00000, 0x48100000, 36, sz_rtl8168f
+dd 0x7cf00000, 0x48000000, 35, sz_rtl8168f
 
-; 8168E family.
-dd 0x7c800000, 0x2c800000, 34, name_34
-dd 0x7cf00000, 0x2c200000, 33, name_32
-dd 0x7cf00000, 0x2c100000, 32, name_32
-dd 0x7c800000, 0x2c000000, 33, name_32
+; 8168E family
+dd 0x7c800000, 0x2c800000, 34, sz_rtl8168evl
+dd 0x7cf00000, 0x2c200000, 33, sz_rtl8168e
+dd 0x7cf00000, 0x2c100000, 32, sz_rtl8168e
+dd 0x7c800000, 0x2c000000, 33, sz_rtl8168e
 
-; 8168D family.
-dd 0x7cf00000, 0x28300000, 26, name_25
-dd 0x7cf00000, 0x28100000, 25, name_25
-dd 0x7c800000, 0x28000000, 26, name_25
+; 8168D family
+dd 0x7cf00000, 0x28300000, 26, sz_rtl8168d
+dd 0x7cf00000, 0x28100000, 25, sz_rtl8168d
+dd 0x7c800000, 0x28000000, 26, sz_rtl8168d
 
-; 8168DP family.
-dd 0x7cf00000, 0x28800000, 27, name_27
-dd 0x7cf00000, 0x28a00000, 28, name_27
+; 8168D+ family
+dd 0x7cf00000, 0x28800000, 27, sz_rtl8168dp
+dd 0x7cf00000, 0x28a00000, 28, sz_rtl8168dp
 
-; 8168C family.
-dd 0x7cf00000, 0x3cb00000, 24, name_18
-dd 0x7cf00000, 0x3c900000, 23, name_18
-dd 0x7cf00000, 0x3c800000, 18, name_18
-dd 0x7c800000, 0x3c800000, 24, name_18
-dd 0x7cf00000, 0x3c000000, 19, name_19
-dd 0x7cf00000, 0x3c200000, 20, name_19
-dd 0x7cf00000, 0x3c300000, 21, name_19
-dd 0x7cf00000, 0x3c400000, 22, name_19
-dd 0x7c800000, 0x3c000000, 22, name_19
+; 8168C family
+dd 0x7cf00000, 0x3cb00000, 24, sz_rtl8168p
+dd 0x7cf00000, 0x3c900000, 23, sz_rtl8168p
+dd 0x7cf00000, 0x3c800000, 18, sz_rtl8168p
+dd 0x7c800000, 0x3c800000, 24, sz_rtl8168p
+dd 0x7cf00000, 0x3c000000, 19, sz_rtl8168c
+dd 0x7cf00000, 0x3c200000, 20, sz_rtl8168c
+dd 0x7cf00000, 0x3c300000, 21, sz_rtl8168c
+dd 0x7cf00000, 0x3c400000, 22, sz_rtl8168c
+dd 0x7c800000, 0x3c000000, 22, sz_rtl8168c
 
-; 8168B family.
-dd 0x7cf00000, 0x38000000, 12, name_11
-dd 0x7cf00000, 0x38500000, 17, name_10
-dd 0x7c800000, 0x38000000, 17, name_10
-dd 0x7c800000, 0x30000000, 11, name_11
+; 8168B family
+dd 0x7cf00000, 0x38000000, 12, sz_rtl8168b
+dd 0x7cf00000, 0x38500000, 17, sz_rtl8101e
+dd 0x7c800000, 0x38000000, 17, sz_rtl8101e
+dd 0x7c800000, 0x30000000, 11, sz_rtl8168b
 
-; 8101 family.
-dd 0x7cf00000, 0x44900000, 39, name_39
-dd 0x7c800000, 0x44800000, 39, name_39
-dd 0x7c800000, 0x44000000, 37, name_37
-dd 0x7cf00000, 0x40b00000, 30, name_29
-dd 0x7cf00000, 0x40a00000, 30, name_29
-dd 0x7cf00000, 0x40900000, 29, name_29
-dd 0x7c800000, 0x40800000, 30, name_29
-dd 0x7cf00000, 0x34a00000, 09, name_07
-dd 0x7cf00000, 0x24a00000, 09, name_07
-dd 0x7cf00000, 0x34900000, 08, name_07
-dd 0x7cf00000, 0x24900000, 08, name_07
-dd 0x7cf00000, 0x34800000, 07, name_07
-dd 0x7cf00000, 0x24800000, 07, name_07
-dd 0x7cf00000, 0x34000000, 13, name_10
-dd 0x7cf00000, 0x34300000, 10, name_10
-dd 0x7cf00000, 0x34200000, 16, name_11
-dd 0x7c800000, 0x34800000, 09, name_07
-dd 0x7c800000, 0x24800000, 09, name_07
-dd 0x7c800000, 0x34000000, 16, name_11
-dd 0xfc800000, 0x38800000, 15, name_14
-dd 0xfc800000, 0x30800000, 14, name_14
+; 8101 family
+dd 0x7cf00000, 0x44900000, 39, sz_rtl8106e
+dd 0x7c800000, 0x44800000, 39, sz_rtl8106e
+dd 0x7c800000, 0x44000000, 37, sz_rtl8402
+dd 0x7cf00000, 0x40b00000, 30, sz_rtl8105e
+dd 0x7cf00000, 0x40a00000, 30, sz_rtl8105e
+dd 0x7cf00000, 0x40900000, 29, sz_rtl8105e
+dd 0x7c800000, 0x40800000, 30, sz_rtl8105e
+dd 0x7cf00000, 0x34a00000, 09, sz_rtl8102e
+dd 0x7cf00000, 0x24a00000, 09, sz_rtl8102e
+dd 0x7cf00000, 0x34900000, 08, sz_rtl8102e
+dd 0x7cf00000, 0x24900000, 08, sz_rtl8102e
+dd 0x7cf00000, 0x34800000, 07, sz_rtl8102e
+dd 0x7cf00000, 0x24800000, 07, sz_rtl8102e
+dd 0x7cf00000, 0x34000000, 13, sz_rtl8101e
+dd 0x7cf00000, 0x34300000, 10, sz_rtl8101e
+dd 0x7cf00000, 0x34200000, 16, sz_rtl8168b
+dd 0x7c800000, 0x34800000, 09, sz_rtl8102e
+dd 0x7c800000, 0x24800000, 09, sz_rtl8102e
+dd 0x7c800000, 0x34000000, 16, sz_rtl8168b
+dd 0xfc800000, 0x38800000, 15, sz_rtl8100e
+dd 0xfc800000, 0x30800000, 14, sz_rtl8100e
 
-; 8110 family.
-dd 0xfc800000, 0x98000000, 06, name_05
-dd 0xfc800000, 0x18000000, 05, name_05
-dd 0xfc800000, 0x10000000, 04, name_04
-dd 0xfc800000, 0x04000000, 03, name_03
-dd 0xfc800000, 0x00800000, 02, name_02
-dd 0xfc800000, 0x00000000, 01, name_01
+; 8110 family
+dd 0xfc800000, 0x98000000, 06, sz_rtl8169sc
+dd 0xfc800000, 0x18000000, 05, sz_rtl8169sc
+dd 0xfc800000, 0x10000000, 04, sz_rtl8169sb
+dd 0xfc800000, 0x04000000, 03, sz_rtl8110s
+dd 0xfc800000, 0x00800000, 02, sz_rtl8169s
+dd 0xfc800000, 0x00000000, 01, sz_rtl8169
 
 ; Catch-all
-dd 0x00000000, 0x00000000, 0, name_unknown
+dd 0x00000000, 0x00000000, 0, sz_unknown
 
-; PCI-devices
-name_01 db "RTL8169",0
-name_02 db "RTL8169s",0
-name_03 db "RTL8110s",0
-name_04 db "RTL8169sb/8110sb",0
-name_05 db "RTL8169sc/8110sc",0
-;name_06 db "RTL8169sc/8110sc",0
-
-; PCI-E devices
-name_07 db "RTL8102e",0
-;name_08 db "RTL8102e",0
-;name_09 db "RTL8102e",0
-name_10 db "RTL8101e",0
-name_11 db "RTL8168b/8111b",0
-;name_12 db "RTL8168b/8111b",0
-;name_13 db "RTL8101e",0
-name_14 db "RTL8100e",0
-;name_15 db "RTL8100e",0
-;name_16 db "RTL8168b/8111b",0
-;name_17 db "RTL8101e",0
-name_18 db "RTL8168cp/8111cp",0
-name_19 db "RTL8168c/8111c",0
-;name_20 db "RTL8168c/8111c",0
-;name_21 db "RTL8168c/8111c",0
-;name_22 db "RTL8168c/8111c",0
-;name_23 db "RTL8168cp/8111cp",0
-;name_24 db "RTL8168cp/8111cp",0
-name_25 db "RTL8168d/8111d",0
-;name_26 db "RTL8168d/8111d",0
-name_27 db "RTL8168dp/8111dp",0
-;name_28 db "RTL8168dp/8111dp",0
-name_29 db "RTL8105e",0
-;name_30 db "RTL8105e",0
-;name_31 db "RTL8168dp/8111dp",0
-name_32 db "RTL8168e/8111e",0
-;name_33 db "RTL8168e/8111e",0
-name_34 db "RTL8168evl/8111evl",0
-name_35 db "RTL8168f/8111f",0
-;name_36 db "RTL8168f/8111f",0
-name_37 db "RTL8402",0
-name_38 db "RTL8411",0
-name_39 db "RTL8106e",0
-name_40 db "RTL8168g/8111g",0
-;name_41 db "RTL8168g/8111g",0
-;name_42 db "RTL8168g/8111g",0
-;name_43 db "RTL8106e",0
-name_44 db "RTL8411",0
-name_45 db "RTL8168h/8111h",0
-;name_46 db "RTL8168h/8111h",0
-name_47 db "RTL8107e",0
-;name_48 db "RTL8107e",0
-name_49 db "RTL8168ep/8111ep",0
-;name_50 db "RTL8168ep/8111ep",0
-;name_51 db "RTL8168ep/8111ep",0
-
-name_unknown db "unknown RTL8169 clone",0
+sz_rtl8169      db "Realtek 8169",0
+sz_rtl8169s     db "Realtek 8169s",0
+sz_rtl8110s     db "Realtek 8110s",0
+sz_rtl8169sb    db "Realtek 8169sb/8110sb",0
+sz_rtl8169sc    db "Realtek 8169sc/8110sc",0
+sz_rtl8102e     db "Realtek 8102e",0
+sz_rtl8101e     db "Realtek 8101e",0
+sz_rtl8168b     db "Realtek 8168b/8111b",0
+sz_rtl8100e     db "Realtek 8100e",0
+sz_rtl8168p     db "Realtek 8168c+/8111c+",0
+sz_rtl8168c     db "Realtek 8168c/8111c",0
+sz_rtl8168d     db "Realtek 8168d/8111d",0
+sz_rtl8168dp    db "Realtek 8168d+/8111d+",0
+sz_rtl8105e     db "Realtek 8105e",0
+sz_rtl8168e     db "Realtek 8168e/8111e",0
+sz_rtl8168evl   db "Realtek 8168evl/8111evl",0
+sz_rtl8168f     db "Realtek 8168f/8111f",0
+sz_rtl8402      db "Realtek 8402",0
+sz_rtl8411      db "Realtek 8411",0
+sz_rtl8106e     db "Realtek 8106e",0
+sz_rtl8168ep    db "Realtek 8168e+",0
+sz_rtl8168g     db "Realtek 8168g/8111g",0
+sz_rtl8168h     db "Realtek 8168h/8111h",0
+sz_unknown      db "unknown RTL8169 rev",0
 
 align 4
 devices         dd 0
