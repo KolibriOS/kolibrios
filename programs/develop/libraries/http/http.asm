@@ -23,7 +23,7 @@
         TIMEOUT         = 500  ; in 1/100 s
 
         __DEBUG__       = 1
-        __DEBUG_LEVEL__ = 2
+        __DEBUG_LEVEL__ = 1
 
 
 format MS COFF
@@ -480,6 +480,8 @@ locals
         port            dd ?
 endl
 
+        DEBUGF  1, "HTTP POST (%s).\n", [URL]
+
         and     [flags], 0xff00       ; filter out invalid flags
 
         pusha
@@ -502,6 +504,7 @@ endl
 
 ; Connect to the other side.
   .open_new:
+        DEBUGF  1, "Opening new connection.\n"
         stdcall open_connection, [hostname], [port]
         test    eax, eax
         jz      .error
@@ -600,6 +603,7 @@ endl
         HTTP_init_buffer [buffer], [socketnum], [flags]
         popa
         mov     eax, [buffer]   ; return buffer ptr
+        DEBUGF  1, "HTTP POST complete.\n"
         ret
 
   .error:
@@ -1913,9 +1917,9 @@ str_post_ct     db 13, 10, 'Content-Type: '
   .length       = $ - str_post_ct
 str_proxy_auth  db 13, 10, 'Proxy-Authorization: Basic '
   .length       = $ - str_proxy_auth
-str_close       db 'User-Agent: KolibriOS libHTTP/1.1', 13, 10, 'Connection: Close', 13, 10, 13, 10
+str_close       db 'User-Agent: KolibriOS libHTTP/1.1', 13, 10, 'Connection: close', 13, 10, 13, 10
   .length       = $ - str_close
-str_keep        db 'User-Agent: KolibriOS libHTTP/1.1', 13, 10, 'Connection: Keepalive', 13, 10, 13, 10
+str_keep        db 'User-Agent: KolibriOS libHTTP/1.1', 13, 10, 'Connection: keep-alive', 13, 10, 13, 10
   .length       = $ - str_keep
 
 str_http        db 'http://', 0
