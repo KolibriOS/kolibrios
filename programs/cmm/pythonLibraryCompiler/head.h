@@ -1,3 +1,5 @@
+// Author: pavelyakov
+
 #pragma option OST
 #pragma option ON
 #pragma option cri-
