@@ -27,6 +27,8 @@
 #define PY_DCT 16
 
 #define PY_NA_STR 32
+#define PY_SYM_STR 33
+
 
 #define PY_ADD 0
 #define PY_POW 1

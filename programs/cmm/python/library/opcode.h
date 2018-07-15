@@ -377,6 +377,8 @@
 	dword x = 0;
 	dword y = 0;
 	dword l = 0;
+	byte t = 0;
+	
 	x = popStack();
 	y = popStack();
 	
@@ -389,8 +391,20 @@
 	IF(l<=x) test("error max list",0);
 	IF(0>l) test("error min list",0);
 	
-	y = DSDWORD[y];
-	pushStack(DSDWORD[x*4+y]);
+	t = DSBYTE[y+4];
+	
+	IF(t==PY_LST)
+	{
+		y = DSDWORD[y];
+		pushStack(DSDWORD[x*4+y]);
+		return;
+	}
+	IF(t==PY_STR)
+	{
+		y = DSDWORD[y];
+		load_const(y+x,PY_STR,1);
+		return;
+	}
 }
 
 /*
