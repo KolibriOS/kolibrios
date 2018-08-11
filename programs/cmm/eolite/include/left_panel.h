@@ -40,7 +40,7 @@
 struct _SystemDiscs
 {
 	collection list;
-	void Get();
+	byte Get();
 	void Draw();
 	void Click();
 } SystemDiscs;
@@ -88,9 +88,10 @@ void GetDiskIconAndName(char disk_first_letter, dword dev_icon, disc_name)
 			strcpy(disc_name, T_UNC);				
 	}
 }
-
-void _SystemDiscs::Get()
+dword __countSysDiscs = 0;
+byte _SystemDiscs::Get()
 {
+	byte ret = 0;
 	char dev_name[10], sys_discs[10];
 	int i1, j1, dev_num, dev_disc_num;
 	dword temp_file_count, tempbuf;
@@ -100,6 +101,11 @@ void _SystemDiscs::Get()
 	devbuf = malloc(10000);
 	ReadDir(19, devbuf, "/");
 	dev_num = EBX;
+	if (dev_num != __countSysDiscs)
+	{
+		__countSysDiscs = dev_num;
+		ret = 0xFF;
+	}
 	for (i1=0; i1<dev_num; i1++)
 	{
 		sprintf(#dev_name,"/%s",i1*304+ devbuf+72);
@@ -118,6 +124,7 @@ void _SystemDiscs::Get()
 		}
 	}
 	free(devbuf);
+	return ret;
 }
 
 void _SystemDiscs::Draw()

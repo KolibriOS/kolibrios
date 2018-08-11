@@ -180,7 +180,7 @@ void main()
 	llist_copy(#files_inactive, #files);
 	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
 	loop(){
-		switch(WaitEvent())
+		switch(WaitEventTimeout(50))
 		{
 			case evMouse:
 				if (del_active) || (Form.status_window>2) break;
@@ -527,7 +527,14 @@ void main()
 					if (action_buf==110) FnProcess(8);
 					action_buf=0;
 				}
+			break;
+			default:
+				IF( SystemDiscs.Get() ) DrawDeviceAndActionsLeftPanel();
+				Update_Dir(#path,WITH_REDRAW);
 		}
+		
+		
+		
 		if(cmd_free)
 		{
 			if(cmd_free==1)      menu_stak=free(menu_stak);
@@ -810,6 +817,60 @@ void Open_Dir(dword dir_path, redraw){
 	}
 }
 
+dword __updateDirCount = 0;
+void Update_Dir(dword dir_path, redraw){
+	int errornum, maxcount, i;
+	if (redraw!=ONLY_SHOW)
+	{
+		selected_count = 0;
+		if (buf) free(buf);
+		errornum = GetDir(#buf, #files.count, dir_path, DIRS_NOROOT);
+		if (errornum)
+		{
+			history.add(#path);
+			GoBack();
+			Write_Error(errornum);
+			return;
+		}
+		maxcount = sizeof(file_mas)/sizeof(dword)-1;
+		if (files.count>maxcount) files.count = maxcount;
+		if (files.count>0) && (files.cur_y-files.first==-1) files.cur_y=0;
+	}
+	if (files.count!=-1)
+	{
+		if(!_not_draw) if (show_breadcrumb.checked) DrawBreadCrumbs(); else DrawPathBar();
+		history.add(#path);
+		SystemDiscs.Draw();
+		files.visible = files.h / files.item_h;
+		if (files.count < files.visible) files.visible = files.count;
+		if (redraw!=ONLY_SHOW) Sorting();
+		list_full_redraw = true;
+		if (redraw!=ONLY_OPEN)&&(!_not_draw) 
+		{
+			if ( __updateDirCount!=files.count )
+			{
+				DrawStatusBar();
+				List_ReDraw();
+				__updateDirCount = files.count;
+			}
+		}
+		SetCurDir(dir_path);
+	}
+	if (files.count==-1) && (redraw!=ONLY_OPEN) 
+	{
+		files.KeyHome();
+		if(!_not_draw) 
+		{ 
+			list_full_redraw=true; 
+			if ( __updateDirCount!=files.count )
+			{
+				DrawStatusBar(); 
+				List_ReDraw(); 
+				__updateDirCount = files.count;
+			}
+		}
+	}
+}
 
 inline Sorting()
 {

@@ -91,12 +91,15 @@ inline fastcall dword CheckEvent()
 {
 	$mov eax,11
 	$int 0x40
+	wait_event_code = EAX;
 }
 
-inline fastcall dword WaitEventTimeout(EBX)
+:dword WaitEventTimeout(dword time)
 {
-	$mov eax,23
+	EAX = 23;
+	EBX = time;
 	$int 0x40
+	wait_event_code = EAX;
 } 
  
 inline fastcall dword SetEventMask(EBX)
