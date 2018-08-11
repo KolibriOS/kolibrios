@@ -132,6 +132,7 @@ byte cmd_free=0;
 
 void main() 
 {
+	dword files_y = 0;
 	dword id;
 	byte count_sl = 0;
 	signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
@@ -529,8 +530,17 @@ void main()
 				}
 			break;
 			default:
-				IF( SystemDiscs.Get() ) DrawDeviceAndActionsLeftPanel();
-				Update_Dir(#path,WITH_REDRAW);
+			if ( SystemDiscs.Get() )
+			{
+				if (two_panels.checked)
+				{
+					//SystemDiscs.Draw();
+					//ActionsDraw();
+					DrawFilePanels();
+				}
+				else DrawDeviceAndActionsLeftPanel();
+			}
+			Update_Dir(#path,WITH_REDRAW);
 		}
 		
 		

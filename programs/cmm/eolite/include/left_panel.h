@@ -101,11 +101,12 @@ byte _SystemDiscs::Get()
 	devbuf = malloc(10000);
 	ReadDir(19, devbuf, "/");
 	dev_num = EBX;
-	if (dev_num != __countSysDiscs)
+	IF (dev_num != __countSysDiscs)
 	{
 		__countSysDiscs = dev_num;
 		ret = 0xFF;
 	}
+	ELSE ret = 0;
 	for (i1=0; i1<dev_num; i1++)
 	{
 		sprintf(#dev_name,"/%s",i1*304+ devbuf+72);
