@@ -133,12 +133,16 @@ byte cmd_free=0;
 void main() 
 {
 	dword files_y = 0;
+	dword countDisk = 0;
 	dword id;
+	dword devbuf;
 	byte count_sl = 0;
 	signed x_old, y_old, dif_x, dif_y, adif_x, adif_y;
 	char stats;
 	rand_n = random(40);
 
+	devbuf = malloc(10000);
+	
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libini, #lib_init,1);
 	load_dll(libio,  #libio_init,1);
@@ -530,49 +534,13 @@ void main()
 				}
 			break;
 			default:
-			if ( SystemDiscs.Get() )
-			{
-				if (two_panels.checked)
+				
+				ReadDir(19, devbuf, "/");
+				IF(countDisk != EBX)
 				{
-					//SystemDiscs.Draw();
-					//ActionsDraw();
-					llist_copy(#files, #files_inactive);
-					strcpy(#path, #inactive_path);
-					col_selec = 0xCCCccc;
-					SystemDiscs.Draw();
-					files_y = files.y;
-
-					if (active_panel==1)
-					{
-						llist_copy(#files, #files_inactive);
-						strcpy(#path, #inactive_path);
-						col_selec = 0xCCCccc;
-						files.SetSizes(Form.cwidth/2, files_y, Form.cwidth/2 -17, Form.cheight-files_y-2 - status_bar_h, files.item_h);
-						DrawList();
-						Update_Dir(#path,WITH_REDRAW);
-						llist_copy(#files, #files_active);
-						strcpy(#path, #active_path);
-						col_selec = 0x94AECE;
-						files.SetSizes(2, files_y, Form.cwidth/2-2-17, Form.cheight-files_y-2 - status_bar_h, files.item_h);
-						DrawList();
-						Update_Dir(#path,WITH_REDRAW);
-					}
-					if (active_panel==2)
-					{
-						files.SetSizes(2, files_y, Form.cwidth/2-2-17, Form.cheight-files_y-2 - status_bar_h, files.item_h);
-						DrawList();
-						Update_Dir(#path,WITH_REDRAW);
-						llist_copy(#files, #files_active);
-						strcpy(#path, #active_path);
-						col_selec = 0x94AECE;
-						files.SetSizes(Form.cwidth/2, files_y, Form.cwidth/2 -17, Form.cheight-files_y-2 - status_bar_h, files.item_h);
-						DrawList();
-						Update_Dir(#path,WITH_REDRAW);
-					}
+					countDisk = EBX;
+					FnProcess(5);
 				}
-				else DrawDeviceAndActionsLeftPanel();
-			}
-			Update_Dir(#path,WITH_REDRAW);
 		}
 		
 		
@@ -856,61 +824,6 @@ void Open_Dir(dword dir_path, redraw){
 	{
 		files.KeyHome();
 		if(!_not_draw) { list_full_redraw=true; DrawStatusBar(); List_ReDraw(); }
-	}
-}
-
-dword __updateDirCount = 0;
-void Update_Dir(dword dir_path, redraw){
-	int errornum, maxcount, i;
-	if (redraw!=ONLY_SHOW)
-	{
-		selected_count = 0;
-		if (buf) free(buf);
-		errornum = GetDir(#buf, #files.count, dir_path, DIRS_NOROOT);
-		if (errornum)
-		{
-			history.add(#path);
-			GoBack();
-			Write_Error(errornum);
-			return;
-		}
-		maxcount = sizeof(file_mas)/sizeof(dword)-1;
-		if (files.count>maxcount) files.count = maxcount;
-		if (files.count>0) && (files.cur_y-files.first==-1) files.cur_y=0;
-	}
-	if (files.count!=-1)
-	{
-		if(!_not_draw) if (show_breadcrumb.checked) DrawBreadCrumbs(); else DrawPathBar();
-		history.add(#path);
-		SystemDiscs.Draw();
-		files.visible = files.h / files.item_h;
-		if (files.count < files.visible) files.visible = files.count;
-		if (redraw!=ONLY_SHOW) Sorting();
-		list_full_redraw = true;
-		if (redraw!=ONLY_OPEN)&&(!_not_draw) 
-		{
-			if ( __updateDirCount!=files.count )
-			{
-				DrawStatusBar();
-				List_ReDraw();
-				__updateDirCount = files.count;
-			}
-		}
-		SetCurDir(dir_path);
-	}
-	if (files.count==-1) && (redraw!=ONLY_OPEN) 
-	{
-		files.KeyHome();
-		if(!_not_draw) 
-		{ 
-			list_full_redraw=true; 
-			if ( __updateDirCount!=files.count )
-			{
-				DrawStatusBar(); 
-				List_ReDraw(); 
-				__updateDirCount = files.count;
-			}
-		}
 	}
 }
 
