@@ -132,6 +132,10 @@ byte cmd_free=0;
 
 void main() 
 {
+	byte update = 0;
+	dword files_count = 0;
+	dword countPathFile = 0;
+	dword countPathFile2 = 0;
 	dword files_y = 0;
 	dword countDisk = 0;
 	dword id;
@@ -535,11 +539,44 @@ void main()
 			break;
 			default:
 				
-				ReadDir(19, devbuf, "/");
-				IF(countDisk != EBX)
+				ReadDir(19, devbuf, "/"); // get disk
+				IF(countDisk != EBX) // if different then
 				{
 					countDisk = EBX;
 					FnProcess(5);
+				}
+				else // get current files
+				{
+					if(two_panels.checked)
+					{
+						// this add code update list files
+						update = 0;
+						//strcpy(#inactive_path,#path);
+						ReadDir(19, devbuf, #inactive_path);
+						IF(countPathFile != EBX) // if different then
+						{
+							countPathFile = EBX;
+							update = 0xFF;
+						}
+						
+						//strcpy(#active_path,#path);
+						ReadDir(19, devbuf, #active_path);
+						IF(countPathFile2 != EBX) // if different then
+						{
+							countPathFile2 = EBX;
+							update = 0xFF;
+						}
+						IF(update) DrawFilePanels();
+					}
+					ELSE
+					{
+						ReadDir(19, devbuf, #path);
+						IF(countPathFile != EBX) // if different then
+						{
+							countPathFile = EBX;
+							Open_Dir(#path,WITH_REDRAW);
+						}
+					}
 				}
 		}
 		
