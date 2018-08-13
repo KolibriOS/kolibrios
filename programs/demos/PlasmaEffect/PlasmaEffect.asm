@@ -236,14 +236,14 @@ Waiting Proc
   fld Instant
   fcomip st(0), st(1)
   fstp st(0)
-  .If ABOVE?
+  .If !CARRY? && !ZERO?
     inc SleepTime
   .Else
     fld Float_40
     fld Instant
     fcomip st(0), st(1)
     fstp st(0)
-    .If BELOW? && (SleepTime != 0)
+    .If CARRY? && (SleepTime != 0)
       dec SleepTime
     .EndIf
   .EndIf
