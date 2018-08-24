@@ -179,8 +179,52 @@ iglobal
       dd undefined_syscall       ; 78-free
       dd undefined_syscall       ; 79-free
       dd fileSystemUnicode       ; 80-File system interface for different encodings
+      dd setInt0x40              ; 81-Implementation of the function in the system
 
         times 255 - ( ($-servetable2) /4 )  dd undefined_syscall
       dd sys_end                 ; -1-end application
 
 endg
+
+; Author Pavel Iakovlev
+; Return EAX = 0 security kernel, error set function
+; Return Else EAX > 0 success set function
+align 4
+setInt0x40:
+
+           ; !!! kernel security !!!
+        mov     eax, dword [servetable2 + ebx * 4]
+        cmp     eax, undefined_syscall
+        jne     errorSet0x40
+           ; -----------------------
+
+        pushad
+        add     edx, 16
+        stdcall kernel_alloc, edx
+        mov     dword[tempPointerAlloc], eax
+        popad
+
+  
+        push    ebx
+        mov     eax, dword[tempPointerAlloc]
+        mov     ebx, eax
+        add     eax, edx
+        loopCopyMemory:
+        mov     dh, byte[ecx]
+        mov     byte[ebx], dh
+        inc     ebx
+        inc     ecx
+        cmp     ebx, eax
+        jne     loopCopyMemory
+
+        pop     ebx
+        mov     eax, dword[tempPointerAlloc]
+        mov     dword [servetable2 + ebx * 4], eax
+        jmp     successSet0x40
+        errorSet0x40:
+        xor     eax, eax
+        successSet0x40:
+        ret
+
+tempPointerAlloc dd ?
+;-------------------
