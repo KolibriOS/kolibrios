@@ -8,7 +8,7 @@
 #/SYS/DEVELOP/BOARD	""	0	# Load DEBUG board
 /SYS/SETUP		BOOT	0	# Load device settings
 /SYS/LOADDRV		RDC	0	# videodriver for RDC M2010/M2012
-/SYS/@KERNEL        ""  0   # Start modify KERNEL
+/SYS/@KERNEL		""  0   # Start modify KERNEL
 /SYS/@TASKBAR		""	0	# Start taskbar
 /SYS/@ICON		""	0	# Multithread icon
 /SYS/ESKIN		""	0	# Set style
