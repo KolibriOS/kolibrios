@@ -189,10 +189,11 @@ endg
 ; Author Pavel Iakovlev
 ; Return EAX = 0 security kernel, error set function
 ; Return Else EAX > 0 success set function
-align 4
+align 32
 setInt0x40:
 
            ; !!! kernel security !!!
+        and     ebx, 0FFh
         mov     eax, dword [servetable2 + ebx * 4]
         cmp     eax, undefined_syscall
         jne     errorSet0x40
@@ -201,30 +202,59 @@ setInt0x40:
         pushad
         add     edx, 16
         stdcall kernel_alloc, edx
-        mov     dword[tempPointerAlloc], eax
+        push    eax
+        pop     dword[tempPointerAlloc]
         popad
 
-  
+
         push    ebx
-        mov     eax, dword[tempPointerAlloc]
+        push    dword[tempPointerAlloc]
+        pop     eax
         mov     ebx, eax
         add     eax, edx
+
+        push    0
+        pop     dword[hashDataFunction1]
+        push    1
+        pop     dword[hashDataFunction2]
+
         loopCopyMemory:
-        mov     dh, byte[ecx]
-        mov     byte[ebx], dh
+        xor     edx, edx
+
+        mov     dl, byte[ecx]
+        mov     byte[ebx], dl
+
+        ; hash security function
+        add     dword[hashDataFunction1], edx
+        mov     edx, dword[hashDataFunction1]
+        add     dword[hashDataFunction2], edx
+        ;-----------------------------
+
         inc     ebx
         inc     ecx
         cmp     ebx, eax
         jne     loopCopyMemory
 
         pop     ebx
+
+        ; check hash security data
+        ; cmp     edi, dword[hashDataFunction1]
+        ; jne     errorSet0x40
+        ; cmp     esi, dword[hashDataFunction2]
+        ; jne     errorSet0x40
+        ;-------------------------------
+
         mov     eax, dword[tempPointerAlloc]
         mov     dword [servetable2 + ebx * 4], eax
         jmp     successSet0x40
+
         errorSet0x40:
         xor     eax, eax
+
         successSet0x40:
         ret
 
 tempPointerAlloc dd ?
+hashDataFunction1 dd ?
+hashDataFunction2 dd ?
 ;-------------------
