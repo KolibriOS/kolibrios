@@ -213,10 +213,10 @@ setInt0x40:
         mov     ebx, eax
         add     eax, edx
  
-        push    0
-        pop     dword[hashDataFunction1]
-        push    1
-        pop     dword[hashDataFunction2]
+;       push    0
+;       pop     dword[hashDataFunction1]
+;       push    1
+;       pop     dword[hashDataFunction2]
  
         loopCopyMemory:
         xor     edx, edx
