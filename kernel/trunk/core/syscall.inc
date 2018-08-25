@@ -192,12 +192,12 @@ endg
 align 32
 setInt0x40:
  
-           ; !!! kernel security !!!
+;           !!! kernel security !!!
         and     ebx, 0FFh
         mov     eax, dword [servetable2 + ebx * 4]
 ;       cmp     eax, undefined_syscall
 ;       jne     errorSet0x40
-           ; -----------------------
+;          -----------------------
  
         pushad
         add     edx, 16
@@ -224,11 +224,11 @@ setInt0x40:
         mov     dl, byte[ecx]
         mov     byte[ebx], dl
  
-        ; hash security function
-        add     dword[hashDataFunction1], edx
-        mov     edx, dword[hashDataFunction1]
-        add     dword[hashDataFunction2], edx
-        ;-----------------------------
+;              hash security function
+;       add     dword[hashDataFunction1], edx
+;       mov     edx, dword[hashDataFunction1]
+;       add     dword[hashDataFunction2], edx
+;          -----------------------------
  
         inc     ebx
         inc     ecx
@@ -237,12 +237,12 @@ setInt0x40:
  
         pop     ebx
  
-        ; check hash security data
-        ; cmp     edi, dword[hashDataFunction1]
-        ; jne     errorSet0x40
-        ; cmp     esi, dword[hashDataFunction2]
-        ; jne     errorSet0x40
-        ;-------------------------------
+;       check hash security data
+;       cmp     edi, dword[hashDataFunction1]
+;       jne     errorSet0x40
+;       cmp     esi, dword[hashDataFunction2]
+;       jne     errorSet0x40
+;       -------------------------------
  
         mov     eax, dword[tempPointerAlloc]
         mov     dword [servetable2 + ebx * 4], eax
