@@ -187,74 +187,67 @@ iglobal
 endg
 
 ; Author Pavel Iakovlev
-; Return EAX = 0 security kernel, error set function
-; Return Else EAX > 0 success set function
 align 32
+callSet0x40:
+        shl     eax, 2
+        push    dword [memNewFunctionTable + eax]
+        pop     dword [tempPointerAlloc]
+        mov     eax, dword [memOldFunctionTable + eax]
+        call    dword [tempPointerAlloc]
+        ret
+align 4
 setInt0x40:
  
-;           !!! kernel security !!!
         and     ebx, 0FFh
-        mov     eax, dword [servetable2 + ebx * 4]
-;       cmp     eax, undefined_syscall
-;       jne     errorSet0x40
-;          -----------------------
- 
+        shl     ebx, 2
+        mov     eax, dword [servetable2 + ebx]
+
         pushad
-        add     edx, 16
-        stdcall kernel_alloc, edx
-        push    eax
-        pop     dword[tempPointerAlloc]
+        sub     esi, edx
+        add     esi, 16
+        stdcall kernel_alloc, esi
+        mov     dword [tempPointerAlloc], eax
         popad
  
- 
         push    ebx
-        push    dword[tempPointerAlloc]
-        pop     eax
+        mov     eax, dword [tempPointerAlloc]
         mov     ebx, eax
-        add     eax, edx
+        add     eax, esi
+        sub     eax, edx
  
-;       push    0
-;       pop     dword[hashDataFunction1]
-;       push    1
-;       pop     dword[hashDataFunction2]
- 
+        push    edx
+        push    ecx
         loopCopyMemory:
-        xor     edx, edx
  
-        mov     dl, byte[ecx]
-        mov     byte[ebx], dl
- 
-;              hash security function
-;       add     dword[hashDataFunction1], edx
-;       mov     edx, dword[hashDataFunction1]
-;       add     dword[hashDataFunction2], edx
-;          -----------------------------
- 
+        mov     cl, byte[edx]
+        mov     byte[ebx], cl
         inc     ebx
-        inc     ecx
+        inc     edx
         cmp     ebx, eax
         jne     loopCopyMemory
- 
+        
+        pop     ecx
+        pop     edx
         pop     ebx
- 
-;       check hash security data
-;       cmp     edi, dword[hashDataFunction1]
-;       jne     errorSet0x40
-;       cmp     esi, dword[hashDataFunction2]
-;       jne     errorSet0x40
-;       -------------------------------
- 
-        mov     eax, dword[tempPointerAlloc]
-        mov     dword [servetable2 + ebx * 4], eax
-        jmp     successSet0x40
- 
-        errorSet0x40:
-        xor     eax, eax
- 
-        successSet0x40:
+
+        mov     eax, dword [tempPointerAlloc]  
+        mov     esi, dword [servetable2 + ebx]
+        cmp     esi, undefined_syscall
+        jne     .step1
+        sub     ecx, edx
+        add     eax, ecx
+        mov     dword [servetable2 + ebx], eax
         ret
- 
-tempPointerAlloc dd ?
-;hashDataFunction1 dd ?
-;hashDataFunction2 dd ?
+        .step1:
+        mov     dword [memOldFunctionTable + ebx], esi
+        sub     ecx, edx
+        add     eax, ecx
+        mov     dword [memNewFunctionTable + ebx], eax
+        mov     dword [servetable2 + ebx], callSet0x40
+        ret
+        
+align 4
+tempPointerAlloc dd 0
+memOldFunctionTable: times 255 dd 0
+memNewFunctionTable: times 255 dd 0
 ;-------------------
