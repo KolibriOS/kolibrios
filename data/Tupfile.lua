@@ -588,7 +588,6 @@ tup.append_table(img_files, {
  {"MOUSECFG", PROGS .. "/cmm/mousecfg/mousecfg.com"},
  {"NETWORK/WEBVIEW", PROGS .. "/cmm/browser/WebView.com"},
  {"PANELS_CFG", PROGS .. "/cmm/panels_cfg/panels_cfg.com"},
- {"@KERNEL", PROGS .. "/cmm/KERNEL/kernel.com"},
 })
 tup.append_table(extra_files, {
  {"kolibrios/drivers/DRVINST.KEX", PROGS .. "/cmm/drvinst/drvinst.com"},

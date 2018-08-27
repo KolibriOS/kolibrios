@@ -179,75 +179,8 @@ iglobal
       dd undefined_syscall       ; 78-free
       dd undefined_syscall       ; 79-free
       dd fileSystemUnicode       ; 80-File system interface for different encodings
-      dd setInt0x40              ; 81-Implementation of the function in the system
 
         times 255 - ( ($-servetable2) /4 )  dd undefined_syscall
       dd sys_end                 ; -1-end application
 
 endg
-
-; Author Pavel Iakovlev
-align 32
-callSet0x40:
-        shl     eax, 2
-        push    dword [memNewFunctionTable + eax]
-        pop     dword [tempPointerAlloc]
-        mov     eax, dword [memOldFunctionTable + eax]
-        call    dword [tempPointerAlloc]
-        ret
-align 4
-setInt0x40:
- 
-        and     ebx, 0FFh
-        shl     ebx, 2
-        mov     eax, dword [servetable2 + ebx]
-
-        pushad
-        sub     esi, edx
-        add     esi, 16
-        stdcall kernel_alloc, esi
-        mov     dword [tempPointerAlloc], eax
-        popad
- 
-        push    ebx
-        mov     eax, dword [tempPointerAlloc]
-        mov     ebx, eax
-        add     eax, esi
-        sub     eax, edx
- 
-        push    edx
-        push    ecx
-        loopCopyMemory:
- 
-        mov     cl, byte[edx]
-        mov     byte[ebx], cl
-        inc     ebx
-        inc     edx
-        cmp     ebx, eax
-        jne     loopCopyMemory
-        
-        pop     ecx
-        pop     edx
-        pop     ebx
-
-        mov     eax, dword [tempPointerAlloc]  
-        mov     esi, dword [servetable2 + ebx]
-        cmp     esi, undefined_syscall
-        jne     .step1
-        sub     ecx, edx
-        add     eax, ecx
-        mov     dword [servetable2 + ebx], eax
-        ret
-        .step1:
-        mov     dword [memOldFunctionTable + ebx], esi
-        sub     ecx, edx
-        add     eax, ecx
-        mov     dword [memNewFunctionTable + ebx], eax
-        mov     dword [servetable2 + ebx], callSet0x40
-        ret
-        
-align 4
-tempPointerAlloc dd 0
-memOldFunctionTable: times 255 dd 0
-memNewFunctionTable: times 255 dd 0
-;-------------------
