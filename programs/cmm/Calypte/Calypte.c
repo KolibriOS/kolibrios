@@ -1,6 +1,13 @@
 //Calypte 0.35 - Leency
 //Calypte 0.15 - Punk Joker
 
+/* 
+TODO
+- word wrap
+- draw by line
+- text selection
+*/
+
 #define MEMSIZE 1024*200
 
 #ifndef AUTOBUILD
