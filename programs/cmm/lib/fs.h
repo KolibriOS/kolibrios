@@ -203,25 +203,6 @@
 }
 
 
-:int GetFile(dword buf, filesize, read_path)
-{
-	int return_val = 0;
-	BDVK ReadFile_atr;
-	dword rBuf;
-	if (! GetFileInfo(read_path, #ReadFile_atr))
-	{
-		rBuf = malloc(ReadFile_atr.sizelo);	
-		if (! ReadFile(0, ReadFile_atr.sizelo, rBuf, read_path))
-		{
-			ESDWORD[buf] = rBuf;
-			ESDWORD[filesize] = ReadFile_atr.sizelo;
-			return_val = 1;
-		}
-	}
-	free(rBuf);
-	return return_val;
-}
-
 enum
 {
 	DIRS_ALL,
