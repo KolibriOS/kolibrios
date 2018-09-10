@@ -51,6 +51,22 @@ bool w_redraw=true;
 	const char level_label[] = "Уровень:";
 	const char attempts_left[] = "Осталось попыток:";
 	const char grass_left[]  = "Осталось травы:";
+
+	const char level_select_1[] = "Выберите набор уровней (нажмите <1> или <2>):";
+	const char level_select_2[] = "1. Встроенные уровни";
+	const char level_select_3[] = "2. Внешний набор уровней";
+
+	const char about1[] = "Коллектив разработчиков:";
+	const char about2[] = "Андрей Михайлович aka Dron2004 - программирование, встроенная графика (без скина)";
+	const char about3[] = "Mario79 - тестирование, помощь в разработке, важные идеи";
+	const char about4[] = "Ataualpa - тестирование, помощь в разработке";
+	const char about5[] = "Leency - тестирование, помощь в разработке, замечательные скины, важные идеи";
+	const char about6[] = "Mike - тестирование, помощь в разработке";
+	const char about7[] = "bw - тестирование, помощь в разработке, важные идеи";
+	const char about8[] = "diamond - идея отмены хода, тестирование";
+	const char about9[] = "Отдельное спасибо:";
+	const char about10[] = "Всем, кто играет в эту игру :-) !";
+	const char about11[] = "нажмите <BACKSPACE> для возврата в меню";
 #else
 	const char windowTitle[] = "Kosilka for Kolibri";
 	const char version[]     = "  Ver. 1.16";
@@ -68,6 +84,22 @@ bool w_redraw=true;
 	const char level_label[] = "Level:";
 	const char attempts_left[] = "Attempts left:";
 	const char grass_left[]  = "Grass left:";
+
+	const char level_select_1[] = "Shoose level pack (press <1> or <2>):";
+	const char level_select_2[] = "1. Built-in levels";
+	const char level_select_3[] = "2. External levels";
+
+	const char about1[] = "Our team:";
+	const char about2[] = "Andrei Mikhailovich aka Dron2004 - development, built-in graphics (excluding skin)";
+	const char about5[] = "Leency - help in development and bugfixing, English translation, testing, beautiful skins";
+	const char about3[] = "Mario79 - testing, help in development, ideas";
+	const char about4[] = "Ataualpa - testing, help in development";
+	const char about6[] = "Mike - testing, help in development";
+	const char about7[] = "bw - testing, help in development, ideas";
+	const char about8[] = "diamond - idea of turn back, testing";
+	const char about9[] = "Special thanks to:";
+	const char about10[] = "Everyone who plays this game :-) !";
+	const char about11[] = "press <BACKSPACE> to back to menu";
 #endif
 
 int levelcount=7;
@@ -402,23 +434,23 @@ void draw_window(void){
 			}
 		}
 
-		kos_WriteTextToWindow(40,40,0x80, 0xFFFFFF ,(char*)windowTitle,22);
-		kos_WriteTextToWindow(40,60,0x80, 0xFFFFFF ,(char*)version,12);
-		kos_WriteTextToWindow(40,75,0x80, 0xFFFFFF ,"________________________________________",40);
+		kos_WriteTextToWindow(40,40,0x80, 0xFFFFFF, (char*)windowTitle,22);
+		kos_WriteTextToWindow(40,60,0x80, 0xFFFFFF, (char*)version,12);
+		kos_WriteTextToWindow(40,75,0x80, 0xFFFFFF, "________________________________________",40);
 	   
-		kos_WriteTextToWindow(40,120,0x80, 0xFFFFFF ,"Коллектив разработчиков:",18);
-		kos_WriteTextToWindow(40,150,0x80, 0xEEFFEE ,"Андрей Михайлович aka Dron2004 - программирование, встроенная графика (без скина)",32);
-		kos_WriteTextToWindow(40,170,0x80, 0xDDFFDD ,"Mario79 - тестирование, помощь в разработке, важные идеи",35);
-		kos_WriteTextToWindow(40,190,0x80, 0xCCFFCC ,"Ataualpa - тестирование, помощь в разработке",36);
-		kos_WriteTextToWindow(40,210,0x80, 0xBBFFBB ,"Leency - тестирование, помощь в разработке, замечательные скины, важные идеи",62);
-		kos_WriteTextToWindow(40,230,0x80, 0xAAFFAA ,"Mike - тестирование, помощь в разработке",34);
-		kos_WriteTextToWindow(40,250,0x80, 0x99FF99 ,"bw - тестирование, помощь в разработке, важные идеи",49);
-		kos_WriteTextToWindow(40,270,0x80, 0x99FF99 ,"diamond - идея отмены хода, тестирование",49);
+		kos_WriteTextToWindow(40,120,0x80, 0xFFFFFF, (char*)about1, 18);
+		kos_WriteTextToWindow(40,150,0x80, 0xEEFFEE, (char*)about2, 32);
+		kos_WriteTextToWindow(40,170,0x80, 0xDDFFDD, (char*)about3, 35);
+		kos_WriteTextToWindow(40,190,0x80, 0xCCFFCC, (char*)about4, 36);
+		kos_WriteTextToWindow(40,210,0x80, 0xBBFFBB, (char*)about5, 62);
+		kos_WriteTextToWindow(40,230,0x80, 0xAAFFAA, (char*)about6, 34);
+		kos_WriteTextToWindow(40,250,0x80, 0x99FF99, (char*)about7, 49);
+		kos_WriteTextToWindow(40,270,0x80, 0x99FF99, (char*)about8, 49);
 
-		kos_WriteTextToWindow(40,300,0x80, 0x88FF88 ,"Отдельное спасибо:",16);
-		kos_WriteTextToWindow(40,330,0x80, 0x77FF77 ,"Всем, кто играет в эту игру :-) !",50);
+		kos_WriteTextToWindow(40,300,0x80, 0x88FF88, (char*)about9, 16);
+		kos_WriteTextToWindow(40,330,0x80, 0x77FF77, (char*)about10, 50);
 
-		kos_WriteTextToWindow(40,430,0x80, 0x66FF66 ,"нажмите <BACKSPACE> для возврата в меню",35);
+		kos_WriteTextToWindow(40,430,0x80, 0x66FF66, (char*)about11, 35);
 	}
 
 
@@ -438,9 +470,9 @@ void draw_window(void){
 			}
 		}
 
-                kos_WriteTextToWindow(215, 200,0x80, 0xFFFFFF ,"Выберите набор уровней (нажмите <1> или <2>):",0);
-                kos_WriteTextToWindow(215, 220,0x80, 0xFFFFFF ,"1. Встроенные уровни",0);
-                kos_WriteTextToWindow(215, 240,0x80, 0xFFFFFF ,"2. Внешний набор уровней",0);
+                kos_WriteTextToWindow(215, 200,0x80, 0xFFFFFF, (char*)level_select_1,0);
+                kos_WriteTextToWindow(215, 220,0x80, 0xFFFFFF, (char*)level_select_2,0);
+                kos_WriteTextToWindow(215, 240,0x80, 0xFFFFFF, (char*)level_select_3,0);
 
 	}
 
