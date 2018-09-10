@@ -5,5 +5,5 @@ if tup.getconfig("LANG") == "ru"
 then CFLAGS = CFLAGS .. " /DLANG=RUS"
 else CFLAGS = CFLAGS .. " /DLANG=ENG"
 end
-compile_msvc{"kosilka.cpp", "KosFile.cpp", "kosSyst.cpp", "mcsmemm.cpp"}
+compile_msvc{"*.cpp"}
 link_msvc("kosilka")

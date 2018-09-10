@@ -28,6 +28,8 @@ int read_result=0;
 bool skin_available=false;
 bool w_redraw=true;
 
+#define LANG ENG
+
 #if LANG == RUS
 	const char windowTitle[] = "Косилка для Колибри";
 	const char version[]     = "Версия 1.16";
