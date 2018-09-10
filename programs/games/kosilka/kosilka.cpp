@@ -42,7 +42,7 @@ bool w_redraw=true;
 	const char press_a[]     = "<нажмите <a> для включения/выключения анимации>";
 	const char press_h[]     = "<нажмите <h> для просмотра сведений о программе>";
 	const char press_s[]     = "<нажмите <s> чтобы выключить/включить скин>";
-	const char level[]       = "Уровень:";
+	const char level_label[] = "Уровень:";
 	const char attempts_left[] = "Осталось попыток:";
 	const char grass_left[]  = "Осталось травы:";
 #else
@@ -59,7 +59,7 @@ bool w_redraw=true;
 	const char press_a[]     = "<press <a> to turn on/off animation>";
 	const char press_h[]     = "<press <h> to view information about the program>";
 	const char press_s[]     = "<press <s> to turn on/off external skin>";
-	const char level[]       = "Level:";
+	const char level_label[] = "Level:";
 	const char attempts_left[] = "Attempts left:";
 	const char grass_left[]  = "Grass left:";
 #endif
@@ -303,7 +303,7 @@ void draw_window(void){
 		kos_WriteTextToWindow(500,30,0x80, 0, (char*)k_o_s_i_l_k,19);
 		kos_WriteTextToWindow(517,40,0x80, 0, (char*)for_kolibri,14);
 
-		kos_WriteTextToWindow(495,80,0x80, 0, (char*)level,6);
+		kos_WriteTextToWindow(495,80,0x80, 0, (char*)level_label,6);
 		kos_DisplayNumberToWindow(level,3,605,80,0x0000FF,nbDecimal,false);
 
 		kos_WriteTextToWindow(495,95,0x80, 0, (char*)attempts_left,11);
