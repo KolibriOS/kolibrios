@@ -1,10 +1,9 @@
-/*	------- ╩╬╤╚╦╩└ ─╦▀ ╩╬╦╚┴╨╚ -------
-╚уЁр яш°хЄё  эр C++ (шёяюы№чєхЄё  MS Visual C++ 6.0+).
-▌Єю - шёїюфэшъ тхЁёшш 1.15.
+/*	------- KOSILKA FOR KOLIBI -------
+Written in C++ (MS Visual C++ 6.0+).
+Version 1.16.
   
 					 Andrey Mihaylovich aka Dron2004
 */
-
 
 
 #include "kosSyst.h"
@@ -12,8 +11,7 @@
 #include "images.cpp"
 
 
-
-//┬═┼╪═╚┼ ╙╨╬┬═╚
+//External levels
 bool external_levels_available=false;
 bool external_levels = false;
 int level_read_result;
@@ -22,7 +20,7 @@ Byte external_levels_count[1] = {0};
 /////////////////
 
 int lastkosilkadirection=1;
-int laststep=0; //╧юёыхфэшщ їюф. 0-эхс√ыю, 1-тэшч, 2-ттхЁї, 3-тыхтю, 4-тяЁртю
+int laststep=0; //Last step. 0-does not exists, 1-bottom, 2-up, 3-left, 4-right
 
 
 Byte skindata[13824];
@@ -30,29 +28,63 @@ int read_result=0;
 bool skin_available=false;
 bool w_redraw=true;
 
-const char windowTitle[]="Косилка для Колибри";
-const char version[]="Версия 1.15";
-int levelcount=7; //╫шёыю єЁютэхщ
+#if LANG == RUS
+	const char windowTitle[] = "Косилка для Колибри";
+	const char version[]     = "Версия 1.16";
+	const char win[]         = "Вы выиграли!";
+	const char press_q[]     = "<нажмите <q> для возврата в меню>";
+	const char fail[]        = "Игра окончена...";
+	const char press_r[]     = "<нажмите <r> для того, чтобы сыграть ещё раз>";
+	const char k_o_s_i_l_k[] = "К   О   С   И   Л   К   А";
+	const char for_kolibri[] = "для Колибри ОС";
+	const char press_enter[] = "<для начала игры нажмите ENTER>";
+	const char press_g[]     = "<нажмите <g> для переключения режима графики>";
+	const char press_a[]     = "<нажмите <a> для включения/выключения анимации>";
+	const char press_h[]     = "<нажмите <h> для просмотра сведений о программе>";
+	const char press_s[]     = "<нажмите <s> чтобы выключить/включить скин>";
+	const char level[]       = "Уровень:";
+	const char attempts_left[] = "Осталось попыток:";
+	const char grass_left[]  = "Осталось травы:";
+#else
+	const char windowTitle[] = "Kosilka for Kolibri";
+	const char version[]     = "  Ver. 1.16";
+	const char win[]         = "  You won!  ";
+	const char press_q[]     = "<press <q> to return to the menu>";
+	const char fail[]        = "   Game over.   ";
+	const char press_r[]     = "<press r для того, чтобы сыграть ещё раз>";
+	const char k_o_s_i_l_k[] = "K   O   S   I   L   K   A";
+	const char for_kolibri[] = "for Kolibri OS";
+	const char press_enter[] = "press ENTER to start the game";
+	const char press_g[]     = "<press <g> to switch graphics mode>";
+	const char press_a[]     = "<press <a> to turn on/off animation>";
+	const char press_h[]     = "<press <h> to view information about the program>";
+	const char press_s[]     = "<press <s> to turn on/off external skin>";
+	const char level[]       = "Level:";
+	const char attempts_left[] = "Attempts left:";
+	const char grass_left[]  = "Grass left:";
+#endif
 
-char gamearea[20][20]; //╩рЁЄр
+int levelcount=7;
+
+char gamearea[20][20]; //The map
 
 
-short int kosilkax; // ╧юыюцхэшх ъюёшыъш
+short int kosilkax; // Kosilka position
 short int kosilkay;
-short int kosilkadirection=1; //═ряЁртыхэшх яЁю°ыюую °рур. 1-тэшч, 2-ттхЁї, 3-тыхтю, 4-тяЁртю
-short int lives=2; // ╞шчэш
-short int level=1; //╙Ёютхэ№
-short int status=0; //├фх 0 - яЁштхЄёЄтшх
-					// 1 - шуЁр
-					// 2 - шуЁр яЁющфхэр
-					// 3 - т√ яЁюшуЁрыш
-					// 4 - т√сюЁ эрсюЁр єЁютэхщ (тёЄЁюхээ√щ шыш тэх°эшщ)
-					// -1 - ю яЁюуЁрььх
-bool gamestarted=false; //┴ыюъшЁютър шуЁют√ї ъыртш°. ┼ёыш false - шуЁрЄ№ эхы№ч 
+short int kosilkadirection=1; //Last step direction. 1-bottom, 2-up, 3-left, 4-right
+short int lives=2;
+short int level=1;
+short int status=0; //Where 0 - welcome screen
+					// 1 - the game
+					// 2 - win
+					// 3 - fail
+					// 4 - select the level (internal or external)
+					// -1 - about
+bool gamestarted=false; //Key locker. If "false" then not possible to play
 
-bool drawgraphics=true; //╨шёютрЄ№ ыш фхЄры№эє■ уЁрЇшъє (шыш юуЁрэшўшЄ№ё  рёъхЄшўэющ)
-bool drawanimation=true; //└эшьшЁютрЄ№ ыш
-int grassLeft();  //╤ююс∙шь ю эрышўшш ЇєэъЎшш Grass Left
+bool drawgraphics=true; //Draw detailed graphics or just colored rectangles
+bool drawanimation=true;
+int grassLeft();  //Notify about "Grass Left" function
 
 RGB kosilka_d[576];
 RGB kosilka_l[576];
@@ -63,7 +95,7 @@ RGB stone[576];
 RGB tree[576];
 RGB skos[576];
 
-//╧рышЄЁр ЎтхЄют. ─хъюфшЁєхь т 0xRRGGBB
+//Palette. Decoding to 0xRRGGBB
 char * apppath;
 char * levpath;
 
@@ -91,7 +123,7 @@ char * getLevelsPathName(){
 }
 
 
-void interlevelpause(){ //╧рєчр ьхцфє єЁютэ ьш
+void interlevelpause(){ //The pause between levels
 	Byte tempCode;
 	RGB tmprgb;
 	int tmpa=0;
@@ -109,7 +141,7 @@ void interlevelpause(){ //╧рєчр ьхцфє єЁютэ ьш
 		}
 }
 
-void draw_element(int elx, int ely){ //╬ЄЁшёютър ¤ыхьхэЄр ърЁЄ√
+void draw_element(int elx, int ely){ //Draw map element
 switch (gamearea[elx][ely]){
 			case 'g':
 				if (drawgraphics==true){
@@ -184,13 +216,13 @@ switch (gamearea[elx][ely]){
 }
 
 
-void display_grass_left(){ //┬√тюфшь эр ¤ъЁрэ ъюышўхёЄтю юёЄрт°хщё  ЄЁрт√
+void display_grass_left(){
 	kos_DrawBar(605,120,20,10,0xEEEEEE);
 	kos_DisplayNumberToWindow(grassLeft(),3,605,120,0x0000FF,nbDecimal,false);
 }
 
 
-void animate(int initcellx, int initcelly, int direction){ //рэшьрЎш  фтшцхэш  ъюёшыъш
+void animate(int initcellx, int initcelly, int direction){ //kosilka movement animation
 	int tmpp=0;
 	
 	switch (direction){
@@ -249,38 +281,38 @@ void animate(int initcellx, int initcelly, int direction){ //рэшьрЎш  фтшцхэш  ъ
 }
 
 
-void draw_window(void){ //╧хЁхЁшёютър юъэр
+void draw_window(void){
 	sProcessInfo sPI;
 	
 	if (w_redraw)
 	{
-		kos_WindowRedrawStatus(1); //═рўрыю яхЁхЁшёютъш
+		kos_WindowRedrawStatus(1);
 		kos_DefineAndDrawWindow(50,50,640,506-22+kos_GetSkinHeight(),0x74,0xEEEEEE,0,0,(Dword)windowTitle);
-		kos_WindowRedrawStatus(2); //╩юэхЎ яхЁхЁшёютъш
+		kos_WindowRedrawStatus(2);
 	}
 	w_redraw=false;
 
 	kos_ProcessInfo( &sPI );
-	if (sPI.rawData[70]&0x04) return; //эшўхую эх фхырЄ№ хёыш юъэю ёїыюяэєЄю т чруюыютюъ
+	if (sPI.rawData[70]&0x04) return; //do nothing if window is rolled-up into title
 
-	//╧хЁхЁшёютър ърЁЄ√
+	//Map redraw
 	if ((status!=0)&&(status!=-1)&&(status!=4))
 	{
 		kos_DrawBar(631-151,0,151,480,0xEEEEEE);
 
-		kos_WriteTextToWindow(500,30,0x80, 0 ,"К  О  С  И  Л  К  А",19);
-		kos_WriteTextToWindow(517,40,0x80, 0 ,"для Колибри ОС",14);
+		kos_WriteTextToWindow(500,30,0x80, 0, (char*)k_o_s_i_l_k,19);
+		kos_WriteTextToWindow(517,40,0x80, 0, (char*)for_kolibri,14);
 
-		kos_WriteTextToWindow(495,80,0x80, 0 ,"Уровень:",6);
+		kos_WriteTextToWindow(495,80,0x80, 0, (char*)level,6);
 		kos_DisplayNumberToWindow(level,3,605,80,0x0000FF,nbDecimal,false);
 
-		kos_WriteTextToWindow(495,95,0x80, 0 ,"Осталось попыток:",11);
+		kos_WriteTextToWindow(495,95,0x80, 0, (char*)attempts_left,11);
 		kos_DisplayNumberToWindow(lives,1,605,95,0x0000FF,nbDecimal,false);
 
-		kos_WriteTextToWindow(495,120,0x80, 0 ,"Осталось травы:",11);
+		kos_WriteTextToWindow(495,120,0x80, 0, (char*)grass_left,11);
 		display_grass_left();
 
-		kos_WriteTextToWindow(526,450,0x80, 0 ,(char*)version,12);
+		kos_WriteTextToWindow(526,450,0x80, 0,(char*)version,12);
 
 		for (int cy=0;cy<20;cy++) for (int cx=0;cx<20;cx++)	draw_element(cx,cy);
 	}
@@ -288,9 +320,8 @@ void draw_window(void){ //╧хЁхЁшёютър юъэр
 	if (status==0){
 		kos_DrawBar(0,0,4,480,0x000000);
 		kos_DrawBar(628,0,3,480,0x000000);
-		//Leency----
-		
 
+		
 		for (int tmpppy=0;tmpppy<20;tmpppy++){
 			for (int tmpppx=0;tmpppx<26;tmpppx++){
 				if ((tmpppx==0) || (tmpppx==25) || (tmpppy==0) || (tmpppy==19)){
@@ -320,14 +351,13 @@ void draw_window(void){ //╧хЁхЁшёютър юъэр
 			kos_DrawBar(335,150,24,24,0xAA0000);
 		}
 
-                kos_WriteTextToWindow(255,200,0x80, 0xFFFFFF ,"К   О   С   И   Л   К   А",19);
-                kos_WriteTextToWindow(290, 220,0x80, 0xFFFFFF ,"для Колибри ОС",14);
-                kos_WriteTextToWindow(239, 240,0x80, 0xFFFFFF ,"<для начала игры нажмите ENTER>",30);
-                kos_WriteTextToWindow(30, 380,0x80, 0xFFFFFF ,"<нажмите <g> для переключения режима графики>",53);
-                kos_WriteTextToWindow(30, 400,0x80, 0xFFFFFF ,"<нажмите <a> для включения/выключения анимации>",41);
-                kos_WriteTextToWindow(30, 420,0x80, 0xFFFFFF ,"<нажмите <h> для просмотра сведений о программе>",32);
-                if (skin_available==true) {kos_WriteTextToWindow(30, 440,0x80, 0xFFFFFF ,"<нажмите <s> чтобы выключить/включить скин>",27);}
-
+                kos_WriteTextToWindow(255, 200,0x80, 0xFFFFFF, (char*)k_o_s_i_l_k, 19);
+                kos_WriteTextToWindow(290, 220,0x80, 0xFFFFFF, (char*)for_kolibri, 14);
+                kos_WriteTextToWindow(239, 240,0x80, 0xFFFFFF, (char*)press_enter, 30);
+                kos_WriteTextToWindow(30,  380,0x80, 0xFFFFFF, (char*)press_g, 53);
+                kos_WriteTextToWindow(30,  400,0x80, 0xFFFFFF, (char*)press_a, 41);
+                kos_WriteTextToWindow(30,  420,0x80, 0xFFFFFF, (char*)press_h, 32);
+                if (skin_available==true) kos_WriteTextToWindow(30, 440,0x80, 0xFFFFFF, (char*)press_s, 27);
 
         //      kos_WriteTextToWindow(470, 440,0x80, 0xFFFFFF ,"нажмите <ESC> для выхода",27);
 	//	kos_DisplayNumberToWindow(external_levels_count[0],3,200,340,0x0000FF,nbDecimal,false);
@@ -339,15 +369,15 @@ void draw_window(void){ //╧хЁхЁшёютър юъэр
 	if (status==2){
 	   kos_DrawBar(10,150,610,200,0x528B4C);	
 	   kos_DrawBar(15,155,601,190,0x3BCF46);	
-           kos_WriteTextToWindow(240,230,0x80, 0xFFFFFF ,"Вы выиграли!",13);
-           kos_WriteTextToWindow(240,250,0x80, 0xFFFFFF ,"<нажмите q для возврата в меню>",17);
+           kos_WriteTextToWindow(240,230,0x80, 0xFFFFFF ,(char*)win,13);
+           kos_WriteTextToWindow(240,250,0x80, 0xFFFFFF ,(char*)press_q,17);
 	}
 	if (status==3){
 	   kos_DrawBar(10,150,610,200,0x8B4C4C);	
 	   kos_DrawBar(15,155,601,190,0xCF3B3B);	
-           kos_WriteTextToWindow(220,220,0x80, 0xFFFFFF ,"Игра окончена...",13);
-           kos_WriteTextToWindow(220,240,0x80, 0xFFFFFF ,"<нажмите r для того, чтобы сыграть ещё раз>",23);
-           kos_WriteTextToWindow(220,260,0x80, 0xFFFFFF ,"<нажмите q для возврата в меню>",17);
+           kos_WriteTextToWindow(220,220,0x80, 0xFFFFFF ,(char*)fail,13);
+           kos_WriteTextToWindow(220,240,0x80, 0xFFFFFF ,(char*)press_r,23);
+           kos_WriteTextToWindow(220,260,0x80, 0xFFFFFF ,(char*)press_q,17);
 	}
 	if (status==-1){
 
@@ -366,24 +396,23 @@ void draw_window(void){ //╧хЁхЁшёютър юъэр
 			}
 		}
 
-           kos_WriteTextToWindow(40,40,0x80, 0xFFFFFF ,"Косилка для ОС Колибри",22);
-	   kos_WriteTextToWindow(40,60,0x80, 0xFFFFFF ,(char*)version,12);
-	   kos_WriteTextToWindow(40,75,0x80, 0xFFFFFF ,"________________________________________",40);
+		kos_WriteTextToWindow(40,40,0x80, 0xFFFFFF ,(char*)windowTitle,22);
+		kos_WriteTextToWindow(40,60,0x80, 0xFFFFFF ,(char*)version,12);
+		kos_WriteTextToWindow(40,75,0x80, 0xFFFFFF ,"________________________________________",40);
 	   
-           kos_WriteTextToWindow(40,120,0x80, 0xFFFFFF ,"Коллектив разработчиков:",18);
-           kos_WriteTextToWindow(40,150,0x80, 0xEEFFEE ,"Андрей Михайлович aka Dron2004 - программирование, встроенная графика (без скина)",32);
-           kos_WriteTextToWindow(40,170,0x80, 0xDDFFDD ,"Mario79 - тестирование, помощь в разработке, важные идеи",35);
-           kos_WriteTextToWindow(40,190,0x80, 0xCCFFCC ,"Ataualpa - тестирование, помощь в разработке",36);
-           kos_WriteTextToWindow(40,210,0x80, 0xBBFFBB ,"Leency - тестирование, помощь в разработке, замечательные скины, важные идеи",62);
-           kos_WriteTextToWindow(40,230,0x80, 0xAAFFAA ,"Mike - тестирование, помощь в разработке",34);
-           kos_WriteTextToWindow(40,250,0x80, 0x99FF99 ,"bw - тестирование, помощь в разработке, важные идеи",49);
-			kos_WriteTextToWindow(40,270,0x80, 0x99FF99 ,"diamond - идея отмены хода, тестирование",49);
+		kos_WriteTextToWindow(40,120,0x80, 0xFFFFFF ,"Коллектив разработчиков:",18);
+		kos_WriteTextToWindow(40,150,0x80, 0xEEFFEE ,"Андрей Михайлович aka Dron2004 - программирование, встроенная графика (без скина)",32);
+		kos_WriteTextToWindow(40,170,0x80, 0xDDFFDD ,"Mario79 - тестирование, помощь в разработке, важные идеи",35);
+		kos_WriteTextToWindow(40,190,0x80, 0xCCFFCC ,"Ataualpa - тестирование, помощь в разработке",36);
+		kos_WriteTextToWindow(40,210,0x80, 0xBBFFBB ,"Leency - тестирование, помощь в разработке, замечательные скины, важные идеи",62);
+		kos_WriteTextToWindow(40,230,0x80, 0xAAFFAA ,"Mike - тестирование, помощь в разработке",34);
+		kos_WriteTextToWindow(40,250,0x80, 0x99FF99 ,"bw - тестирование, помощь в разработке, важные идеи",49);
+		kos_WriteTextToWindow(40,270,0x80, 0x99FF99 ,"diamond - идея отмены хода, тестирование",49);
 
-           kos_WriteTextToWindow(40,300,0x80, 0x88FF88 ,"Отдельное спасибо:",16);
-           kos_WriteTextToWindow(40,330,0x80, 0x77FF77 ,"Всем, кто играет в эту игру :-) !",50);
+		kos_WriteTextToWindow(40,300,0x80, 0x88FF88 ,"Отдельное спасибо:",16);
+		kos_WriteTextToWindow(40,330,0x80, 0x77FF77 ,"Всем, кто играет в эту игру :-) !",50);
 
-
-           kos_WriteTextToWindow(40,430,0x80, 0x66FF66 ,"нажмите <BACKSPACE> для возврата в меню",35);
+		kos_WriteTextToWindow(40,430,0x80, 0x66FF66 ,"нажмите <BACKSPACE> для возврата в меню",35);
 	}
 
 
@@ -413,12 +442,12 @@ void draw_window(void){ //╧хЁхЁшёютър юъэр
 
 
 
-//╬яшёрэшх єЁютэхщ шуЁ√
-//, уфх	k - ъюёшыър
-//		g - ЄЁртр
-//		n - ёъю°хээр  ЄЁртр
-//		s - ърьхэ№
-//		t - фхЁхтю
+//Game level description,
+//where k - kosilka
+//		g - grass
+//		n - cut grass
+//		s - stone
+//		t - tree
 void initializeLevel(int levnum){
 	laststep=0;
 	if (external_levels==false){
@@ -664,7 +693,7 @@ void initializeLevel(int levnum){
 		}
 		else
 		{
-			//┬═┼╪═╚┼ ╙╨╬┬═╚
+			//External levels
 			kosilkadirection=1;
 
 			int currentrow=0;
@@ -704,7 +733,6 @@ void initializeLevel(int levnum){
 
 }
 
-//╧ЁхютхЁ хь юёЄрЄюъ ЄЁрт√
 int grassLeft(){
 	int leftgrass=0;
 	for (int chky=0;chky<20;chky++){
@@ -717,8 +745,7 @@ int grassLeft(){
 	return leftgrass;
 }
 
-
-//╠хэ хь єЁютхэ№ шыш т√тюфшь ёююс∙хэшх ю Єюь, ўЄю тёх єЁютэш яЁющфхэ√
+//Change level or show win message 
 void updateStatus(){
 
 	if (grassLeft()==0) {
@@ -736,7 +763,6 @@ void updateStatus(){
 	}
 	
 }
-
 
 
 void load_external_levels(){
@@ -1058,5 +1084,3 @@ void kos_Main(){
 		}
 	}
 }
-
-// ╩юэхЎ шёїюфэшър
