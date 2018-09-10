@@ -42,6 +42,7 @@ bool w_redraw=true;
 	const char fail[]        = "Игра окончена...";
 	const char press_r[]     = "<нажмите <r> для того, чтобы сыграть ещё раз>";
 	const char k_o_s_i_l_k[] = "К   О   С   И   Л   К   А";
+	const char k_o_s_i_l_2[] = "К  О  С  И  Л  К  А";
 	const char for_kolibri[] = "для Колибри ОС";
 	const char press_enter[] = "<для начала игры нажмите ENTER>";
 	const char press_g[]     = "<нажмите <g> для переключения режима графики>";
@@ -75,6 +76,7 @@ bool w_redraw=true;
 	const char fail[]        = "   Game over.   ";
 	const char press_r[]     = "<press r для того, чтобы сыграть ещё раз>";
 	const char k_o_s_i_l_k[] = "K   O   S   I   L   K   A";
+	const char k_o_s_i_l_2[] = "K  O  S  I  L  K  A";
 	const char for_kolibri[] = "for Kolibri OS";
 	const char press_enter[] = "press ENTER to start the game";
 	const char press_g[]     = "<press <g> to switch graphics mode>";
@@ -338,7 +340,7 @@ void draw_window(void){
 	{
 		kos_DrawBar(631-151,0,151,480,0xEEEEEE);
 
-		kos_WriteTextToWindow(500,30,0x80, 0, (char*)k_o_s_i_l_k,19);
+		kos_WriteTextToWindow(500,30,0x80, 0, (char*)k_o_s_i_l_2,19);
 		kos_WriteTextToWindow(517,40,0x80, 0, (char*)for_kolibri,14);
 
 		kos_WriteTextToWindow(495,80,0x80, 0, (char*)level_label,6);
