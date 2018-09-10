@@ -30,7 +30,7 @@
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 15, "MP3\0WAV\0XM\0\0" };
 
-#define ABOUT_MESSAGE "Pixie Player v2.91 Final
+#define ABOUT_MESSAGE "Pixie Player v2.92 Final
 
      A tiny music folder player.
      Supports MP3, WAV, XM audio file formats.
@@ -121,8 +121,10 @@ void main()
 	list.SetFont(8, 16, 13);
 	LoadLibraries();
 	LoadIniConfig();
-	if (work_folder) param=LAST_FOLDER_EXISTS;
-	if (!param) notify("'Pixie Player\nPress O key to open MP3/WAV/XM file' -St");
+	if (!param) {
+		notify("'Pixie Player\nPress O key to open MP3/WAV/XM file' -St");
+		if (work_folder) param=LAST_FOLDER_EXISTS;
+	}
 	kfont.init(DEFAULT_FONT);	
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop()
@@ -197,7 +199,7 @@ void main()
 				if (param==LAST_FOLDER_EXISTS) EventOpenFolder(NULL); 
 				else EventOpenFolder(#param);
 				param[0] = NULL;
-			}
+			} 
 			break;
 		default:
 			EventCheckSongFinished();
