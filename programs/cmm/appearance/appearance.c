@@ -109,6 +109,8 @@ void main()
 				if (tabs.active_tab==SKINS) EventTabClick(WALLPAPERS); 
 				else EventTabClick(SKINS);
 			if (key_scancode==SCAN_CODE_DEL) EventDeleteFile();
+
+			if (! edit_cmm.flags & 0b10) && (! edit_st.flags & 0b10)
 			for (id=select_list.cur_y+1; id<select_list.count; id++)
 			{
 				strcpy(#temp_filename, io.dir.position(files_mas[id]));
@@ -120,7 +122,8 @@ void main()
 					break;
 				}
 			}
-			EAX= key_ascii << 8;
+
+			EAX = key_ascii << 8;
 			edit_box_key stdcall (#edit_cmm);
 			edit_box_key stdcall (#edit_st);
 			break;
