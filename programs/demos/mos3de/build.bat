@@ -1,0 +1,2 @@
+@fasm MOS3DE01.ASM MOS3DE01
+@pause

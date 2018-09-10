@@ -365,23 +365,28 @@ ret
 ;   *********************************************
 draw_window:
 
-    mov  eax,12 		   ; function 12:tell os about windowdraw
-    mov  ebx,1			   ; 1, start of draw
+	mov  eax,12                   ; function 12:tell os about windowdraw
+    mov  ebx,1                    ; 1, start of draw; 2 - end
     int  0x40
-								   ; DRAW WINDOW
-    mov  eax,0			   		   ; function 0 : define and draw window
-    mov  ebx,100*65536+maxx+9	   ; [x start] *65536 + [x size]
-    mov  ecx,100*65536+maxy+25	   ; [y start] *65536 + [y size]
-    mov  edx,0x74000000 	  	   ; color of work area RRGGBB,8->color gl
-    mov  edi,labelt
-    int  0x40
-				   ; WINDOW LABEL
-    mov  eax,12 		   ; function 12:tell os about windowdraw
-    mov  ebx,2			   ; 2, end of draw
+ 
+	mov eax, 48                   ; get skin height
+	mov ebx, 4
+	int  0x40
+	
+	lea  ecx,[eax + (100 shl 16) + maxy + 4]
+    mov  ebx,100*65536+maxx+9  ; [x start] *65536 + [x size]
+    mov  edx,0x74000000           ; skinned window, not resizable
+    mov  edi,labelt               ; window title
+    mov  eax,0                    ; function 0 : define and draw window
     int  0x40
 
+    mov  eax,12
+    mov  ebx,2
+    int  0x40
+ 
     ret
-
+	
+	
 x_resolution dd 800
 vector_x dd 200
 vector_y dd 200

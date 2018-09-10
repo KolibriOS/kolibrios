@@ -365,6 +365,7 @@ tup.append_table(img_files, {
  {"ZKEY", PROGS .. "/system/zkey/trunk/ZKEY"},
  {"3D/3DWAV", PROGS .. "/demos/3dwav/trunk/3dwav"},
  {"3D/CROWNSCR", PROGS .. "/demos/crownscr/trunk/crownscr"},
+ {"3D/3DCUBE2", PROGS .. "/demos/3dcube2/trunk/3DCUBE2"},
  {"3D/FREE3D04", PROGS .. "/demos/free3d04/trunk/free3d04"},
  {"3D/GEARS", PROGS .. "/develop/libraries/TinyGL/asm_fork/examples/gears"},
  {"3D/RAY", PROGS .. "/demos/ray/ray"},
