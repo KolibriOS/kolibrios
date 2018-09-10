@@ -30,7 +30,7 @@
 char default_dir[] = "/rd/1";
 od_filter filter2 = { 15, "MP3\0WAV\0XM\0\0" };
 
-#define ABOUT_MESSAGE "Pixie Player v2.9 Final
+#define ABOUT_MESSAGE "Pixie Player v2.91 Final
 
      A tiny music folder player.
      Supports MP3, WAV, XM audio file formats.
@@ -42,6 +42,7 @@ Hot keys:
  Goto next/previous track: Ctrl + Left/Right
  Change sound volume: Left/Right key
  Remove from the list: Delete
+ Permanently delete file: Shift + Delete
  Repeat: R
  Shuffle: S
  Mute: M
@@ -169,7 +170,11 @@ void main()
 				if (key_scancode==SCAN_CODE_LEFT) EventPlaybackPrevious();
 				if (key_scancode==SCAN_CODE_RIGHT) EventPlaybackNext();
 				break;
-			}		
+			}
+			if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) {
+				if (key_scancode==SCAN_CODE_DEL) EventPermanentlyDeleteFile();
+				break;
+			}
 			if (key_scancode==SCAN_CODE_KEY_O) EventFileDialogOpen();
 			if (key_scancode==SCAN_CODE_KEY_M) RunProgram("/sys/@VOLUME", "m");
 			if (key_scancode==SCAN_CODE_KEY_R) EventRepeatClick();
@@ -177,7 +182,7 @@ void main()
 			if (key_scancode==SCAN_CODE_RIGHT) RunProgram("/sys/@VOLUME", "+");
 			if (key_scancode==SCAN_CODE_LEFT)  RunProgram("/sys/@VOLUME", "-");
 			if (key_scancode==SCAN_CODE_ENTER) EventStartPlayingSelectedItem();
-			if (key_scancode==SCAN_CODE_DEL) EventDeleteItem();
+			if (key_scancode==SCAN_CODE_DEL) EventRemoveItemFromList();
 			if (key_scancode==SCAN_CODE_KEY_P)||(key_scancode==SCAN_CODE_SPACE) EventPlayAndPause();
 			if (key_scancode==SCAN_CODE_F1) EventShowAbout();
 			if (list.ProcessKey(key_scancode)) DrawPlayList();
@@ -392,7 +397,7 @@ void EventStartPlaying()
 		return; 
 	}
 	playback_mode = PLAYBACK_MODE_PLAYING;
-	strlcpy(#current_filename, Getcur_yItemName(), sizeof(current_filename));
+	strlcpy(#current_filename, GetPlayingItemName(), sizeof(current_filename));
 	sprintf(#item_path,"-h %s/%s",#work_folder,#current_filename);
 	current_filename[strrchr(#current_filename, '.')-1] = '\0';
 	DrawPlayList();
@@ -500,7 +505,7 @@ void EventShuffleClick()
 	DrawTopPanel();
 }
 
-void EventDeleteItem()
+void EventRemoveItemFromList()
 {
 	int i;
 	if (list.cur_y == current_playing_file_n) EventStopPlaying();
@@ -515,6 +520,14 @@ void EventDeleteItem()
 		if (window_mode==WINDOW_MODE_NORMAL) MoveSize(OLD, OLD, OLD, skin.h + list.h);
 	}
 	else DrawPlayList();
+}
+
+void EventPermanentlyDeleteFile()
+{
+	char item_path[4096];
+	sprintf(#item_path,"%s/%s",#work_folder,GetSelectedItemName());
+	DeleteFile(#item_path);
+	EventRemoveItemFromList();
 }
 
 void EventShowAbout()
@@ -535,7 +548,7 @@ void ShowAboutThread()
 			if (key_scancode == SCAN_CODE_ESC) ExitProcess();
 			break;
 		case evReDraw:
-			DefineDragableWindow(150, 200, 400, 346);
+			DefineDragableWindow(150, 200, 400, 368);
 			GetProcessInfo(#pop_up, SelfInfo);
 
 			DrawBar(0, 0, pop_up.width, pop_up.height, theme.color_top_panel_bg);

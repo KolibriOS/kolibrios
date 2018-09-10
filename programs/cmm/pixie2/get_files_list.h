@@ -15,7 +15,6 @@ void OpenDirectory(dword folder_path)
 	{
 		notify("'Error opening folder' -E");
 	}
-	debugval("sizeof(files_mas)", sizeof(files_mas));
 	for (j=0; j<filesnum; j++)
 	{
 		strcpy(#temp_filename, j*304 + buf+72);
@@ -53,6 +52,11 @@ void SetOpenedFileFirst(dword in_name)
 	}
 }
 
-dword Getcur_yItemName() {
+dword GetPlayingItemName() {
 	return files_mas[current_playing_file_n]*304 + buf+72;
+}
+
+dword GetSelectedItemName() {
+	int cury = list.cur_y;
+	return files_mas[cury]*304 + buf+72;
 }
