@@ -1563,7 +1563,7 @@ ret
 ; The Quads should not intersect for a bearable z-sorting. The Quads must be
 ; clockwise.
    
-include "CUBE.INC"
+include "cube.inc"
    
 ;;------------------------------
    
