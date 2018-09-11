@@ -273,6 +273,9 @@ draw_next_process:
         jz      @f
         mov     esi,0xaabbcc
 @@:
+		add     edx,0x80000000 ; delete a button
+		mcall   8              ; before create
+		sub     edx,0x80000000 ; a new one below
         mcall   8,<10,99>
         mov     [btn_bacground_color],esi
 ;draw background for proccess information
