@@ -66,7 +66,7 @@ void settings_dialog()
 				if (1==id) { ExitSettings(); break; }
 				else if (id==5)
 				{
-					RunProgram("tinypad", "/sys/settings/assoc.ini");
+					RunProgram("/sys/tinypad", "/sys/settings/assoc.ini");
 					break;
 				}
 				else if (id==6)
