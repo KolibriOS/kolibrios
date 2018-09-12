@@ -21,7 +21,7 @@ char aOpenDialog_start[]         = "OpenDialog_start";
 
 struct opendialog
 {
-  dword type; //0-file, 2-save, 3-select folder
+  dword type; //0-file, 1-save, 2-select folder
   dword procinfo;
   dword com_area_name;
   dword com_area;

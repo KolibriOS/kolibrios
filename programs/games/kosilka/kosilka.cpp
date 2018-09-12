@@ -87,7 +87,7 @@ bool w_redraw=true;
 	const char attempts_left[] = "Attempts left:";
 	const char grass_left[]  = "Grass left:";
 
-	const char level_select_1[] = "Shoose level pack (press <1> or <2>):";
+	const char level_select_1[] = "Choose level pack (press <1> or <2>):";
 	const char level_select_2[] = "1. Built-in levels";
 	const char level_select_3[] = "2. External levels";
 
@@ -101,7 +101,7 @@ bool w_redraw=true;
 	const char about8[] = "diamond - idea of turn back, testing";
 	const char about9[] = "Special thanks to:";
 	const char about10[] = "Everyone who plays this game :-) !";
-	const char about11[] = "press <BACKSPACE> to back to menu";
+	const char about11[] = "press <BACKSPACE> to go back to menu";
 #endif
 
 int levelcount=7;
