@@ -49,7 +49,7 @@ int driver_handle;
 
 dword disk_sizes[10];
 
-_ini ini = { "/sys/settings/tmpdisk.ini", "DiskSizes" };
+_ini ini = { "/sys/settings/system.ini", "DiskSizes" };
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////                    Code                    ////////////////////
@@ -98,7 +98,7 @@ void SaveDiskSizesToIni()
 	for (i=0; i<=9; i++)
 	{
 		key[0]=i+'0';
-		ini.SetInt(#key, disk_sizes[i]);
+		if (disk_sizes[i]) ini.SetInt(#key, disk_sizes[i]);
 	}
 }
 

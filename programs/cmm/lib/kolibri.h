@@ -130,6 +130,20 @@ inline fastcall dword GetFreeRAM()
 	//return eax = free RAM in Kb
 }
 
+inline fastcall int GetCpuIdleCount()
+{
+	EAX = 18;
+	EBX = 4;
+	$int 0x40
+}
+
+inline fastcall int GetCpuFrequency()
+{
+	EAX = 18;
+	EBX = 5;
+	$int 0x40
+}
+
 inline fastcall dword LoadDriver(ECX) //ECX - èìÿ äðàéâåðà
 {
 	$mov eax, 68
