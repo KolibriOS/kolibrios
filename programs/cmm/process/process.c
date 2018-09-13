@@ -47,19 +47,12 @@ checkbox show_system = { T_SHOW_SYSTEM_PROCESSES, false };
 //                                                   //
 //===================================================//
 
-void GetCpuFrequency() {
-	EAX = 18;
-	EBX = 5;
-	$int 0x40
-	maxcpu = EAX;
-}
-
 void main()
 {
 	int btn;
 	load_dll(boxlib, #box_lib_init,0);
 	SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
-	GetCpuFrequency();
+	maxcpu = GetCpuFrequency();
 	loop()
 	{
 	  WaitEventTimeout(50);
