@@ -1,6 +1,8 @@
 //Leency, Veliant, Punk_Joker, PavelYakov & KolibriOS Team 2008-2018
 //GNU GPL licence.
 
+// 70.5 - get volume info and label
+
 #ifndef AUTOBUILD
 #include "lang.h--"
 #endif
