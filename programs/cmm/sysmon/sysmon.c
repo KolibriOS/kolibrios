@@ -105,6 +105,7 @@ void GetDirSizeAndCountFiles_loop(dword way)
 			}
 		}
 		free(cur_file);
+		free(dirbuf);
 	}
 }
 

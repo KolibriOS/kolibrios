@@ -175,6 +175,7 @@ void GetSizeDir(dword way)
 			}
 		}
 		free(cur_file);
+		free(dirbuf);
 	}
 }
 

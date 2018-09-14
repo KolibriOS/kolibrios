@@ -236,8 +236,8 @@ enum
 	}
 	else
 	{
-		ESDWORD[file_count] = 0;
 		ESDWORD[dir_buf] = free(buf);
+		ESDWORD[file_count] = 0;
 	}
 	return error;
 }
