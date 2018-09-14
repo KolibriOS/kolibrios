@@ -19,11 +19,25 @@
 
 #include "colors_mas.h"
 
+#include "lang.h--"
+
 //===================================================//
 //                                                   //
 //                       DATA                        //
 //                                                   //
 //===================================================//
+
+#ifdef LANG_RUS
+#define T_NOTIFY_OPEN "'IconEdit
+В данный момент IconEdit может открывать только иконки, созданные в самом редакторе.
+Если нужно открыть другое изображение, воспользуйтесь инструментом <Фотоаппарат>
+для захвата картинки с экрана.' -Wt"
+#else
+#define T_NOTIFY_OPEN "'IconEdit
+You can open only files created in IconEdit for now!
+In other case please use <Photo> tool to get an image from screen.' -Wt"
+#endif
+
 
 #define T_TITLE "Icon Editor 0.56 Alpha"
 
@@ -241,6 +255,7 @@ void main()
 					EventCreateNewIcon();
 					break;
 				case BTN_OPEN:
+					notify(T_NOTIFY_OPEN);
 					RunProgram("/sys/lod", sprintf(#param, "*png* %s",#program_path));
 					break;
 				case BTN_SAVE:

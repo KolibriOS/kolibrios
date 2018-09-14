@@ -127,7 +127,15 @@ inline fastcall dword GetFreeRAM()
 	$mov eax, 18
 	$mov ebx, 16
 	$int 0x40
-	//return eax = free RAM in Kb
+	//return eax = free RAM size in Kb
+}
+
+inline fastcall dword GetTotalRAM()
+{
+	$mov eax, 18
+	$mov ebx, 17
+	$int 0x40
+	//return eax = total RAM size in Kb
 }
 
 inline fastcall int GetCpuIdleCount()
