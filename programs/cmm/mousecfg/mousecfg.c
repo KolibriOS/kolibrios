@@ -80,17 +80,19 @@ void main() {
 
 		case evButton: 
 				id = GetButtonID();
-				if (1==id) ExitApp();
-				if (pointer_speed.click(id)) ApplyCfg();;
-				if (acceleration.click(id)) ApplyCfg();;
-				if (double_click_delay.click(id)) ApplyCfg();;
-				if (emulation.click(id)) {
-					if (emulation.checked==true) KillProcessByName("mousemul", SINGLE);
-					else RunProgram("/sys/mousemul", 0);
+				if (id == 1) ExitApp();
+				else if (pointer_speed.click(id)) ApplyCfg();
+				else if (acceleration.click(id)) ApplyCfg();
+				else if (double_click_delay.click(id)) ApplyCfg();
+				else if (emulation.click(id)) {
+					if (emulation.checked == true) RunProgram("/sys/mousemul", 0);
+					else KillProcessByName("mousemul", SINGLE);
+					break;
 				}
-				if (madmouse.click(id)) {						
-					if (madmouse.checked==true) KillProcessByName("madmouse", SINGLE);
-					else RunProgram("/sys/madmouse", 0);
+				else if (madmouse.click(id)) {						
+					if (madmouse.checked == true) RunProgram("/sys/madmouse", 0);
+					else KillProcessByName("madmouse", SINGLE);
+					break;
 				}
 				break;
 
