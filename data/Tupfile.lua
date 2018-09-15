@@ -174,6 +174,8 @@ extra_files = {
  {"kolibrios/develop/oberon07/Lib/KolibriOS/", PROGS .. "/develop/oberon07/Lib/KolibriOS/*"},
  {"kolibrios/develop/oberon07/Samples/", PROGS .. "/develop/oberon07/Samples/*"},
  {"kolibrios/develop/TinyBasic/", "common/develop/TinyBasic/*"},
+ {"kolibrios/CNC/cnc_editor", PROGS .. "/other/cnc_editor/cnc_editor"},
+ {"kolibrios/CNC/kolibri.nc", PROGS .. "/other/cnc_editor/kolibri.nc"},
  {"kolibrios/emul/dosbox/", "common/emul/DosBox/*"},
  {"kolibrios/emul/e80/readme.txt", PROGS .. "/emulator/e80/trunk/readme.txt"},
  {"kolibrios/emul/fceu/fceu", PROGS .. "/emulator/fceu/fceu"},
