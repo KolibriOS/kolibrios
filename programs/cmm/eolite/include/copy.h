@@ -78,7 +78,10 @@ void PasteThread()
 	int paste_elements_count = 0;
 	dword buf;
 	dword path_offset;
-	file_count_copy = 0;
+	dword file_count_paste = 0;
+	_dir_size paste_dir_size;
+	BDVK file_info_count;
+
 	copy_bar.value = 0; 
 	
 	buf = Clipboard__GetSlotData(Clipboard__GetSlotCount()-1);
@@ -88,11 +91,14 @@ void PasteThread()
 	//calculate copy files count for progress bar
 	for (j = 0; j < paste_elements_count; j++) {
 		GetFileInfo(path_offset, #file_info_count);
-		if ( file_info_count.isfolder ) DirFileCount(path_offset);
-		else file_count_copy++;
+		if ( file_info_count.isfolder ) { 
+			paste_dir_size.get(path_offset); 
+			file_count_paste += paste_dir_size.files; 
+		}
+		else file_count_paste++;
 		path_offset += strlen(path_offset) + 1;
 	}
-	copy_bar.max = file_count_copy;
+	copy_bar.max = file_count_paste;
 	
 	if (cut_active)  operation_flag = MOVE_FLAG;
 	else  operation_flag = COPY_FLAG;

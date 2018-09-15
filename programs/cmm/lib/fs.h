@@ -6,6 +6,12 @@
 #include "../lib/date.h"
 #endif
 
+//===================================================//
+//                                                   //
+//              Basic System Functions               //
+//                                                   //
+//===================================================//
+
 :struct f70{
 	dword	func;
 	dword	param1;
@@ -156,7 +162,6 @@
 	$int 0x40
 }
 
-
 :f70 read_dir_70;
 :int ReadDir(dword file_count, read_buffer, dir_path)
 {
@@ -172,6 +177,12 @@
 	$int 0x40
 }
 
+//===================================================//
+//                                                   //
+//                        Misc                       //
+//                                                   //
+//===================================================//
+
 :bool dir_exists(dword fpath)
 {
 	char buf[32];
@@ -180,7 +191,6 @@
 }
 
 /*
-
 // This implementation of dir_exists() is faster than
 // previous but here virtual folders like
 // '/' and '/tmp' are not recognised as FOLDERS
@@ -194,14 +204,12 @@
 }
 */
 
-
 :bool file_exists(dword fpath)
 {
 	BDVK ReadFile_atr;
 	if (! GetFileInfo(fpath, #ReadFile_atr)) return true;
 	return false;
 }
-
 
 enum
 {
@@ -269,6 +277,23 @@ enum
 	return ini_path;
 }
 
+:dword notify(dword notify_param)
+{
+	return RunProgram("/sys/@notify", notify_param);
+}
+
+:void die(dword _last_msg)
+{
+	notify(_last_msg);
+	ExitProcess();
+}
+
+//===================================================//
+//                                                   //
+//                   Convert Size                    //
+//                                                   //
+//===================================================//
+
 :byte ConvertSize_size_prefix[8];
 :dword ConvertSize(dword bytes)
 {
@@ -292,18 +317,7 @@ enum
   else return ConvertSize(bytes_lo);
 }
 
-:dword notify(dword notify_param)
-{
-	return RunProgram("/sys/@notify", notify_param);
-}
-
-:void die(dword _last_msg)
-{
-	notify(_last_msg);
-	ExitProcess();
-}
-
-:unsigned char size[25]=0;
+:unsigned char size[25];
 :dword ConvertSizeToKb(unsigned int bytes)
 {
 	unsigned int kb;
@@ -323,6 +337,12 @@ enum
 
 	return #size;
 }
+
+//===================================================//
+//                                                   //
+//                      Copy                         //
+//                                                   //
+//===================================================//
 
 :int CopyFileAtOnce(dword size, copyFrom, copyTo)
 dword cbuf;
@@ -379,5 +399,58 @@ int block_size=1024*1024*4; //copy by 4 MiB
 	return error;
 }
 
+//===================================================//
+//                                                   //
+//                  Directory Size                   //
+//                                                   //
+//===================================================//
+
+:struct _dir_size
+{
+	BDVK dir_info;
+	dword folders;
+	dword files;
+	dword bytes;
+	void get();	
+	void calculate_loop();	
+} dir_size;
+
+:void _dir_size::get(dword way)
+{
+	folders = files = bytes = 0;
+	if (way) calculate_loop(way);
+}
+
+:void _dir_size::calculate_loop(dword way)
+{
+	dword dirbuf, fcount, i, filename;
+	dword cur_file;
+	if (dir_exists(way))
+	{
+		cur_file = malloc(4096);
+		// In the process of recursive descent, memory must be allocated dynamically, 
+		// because the static memory -> was a bug !!! But unfortunately pass away to sacrifice speed.
+		GetDir(#dirbuf, #fcount, way, DIRS_ONLYREAL);
+		for (i=0; i<fcount; i++)
+		{
+			filename = i*304+dirbuf+72;
+			sprintf(cur_file,"%s/%s",way,filename);
+			
+			if (TestBit(ESDWORD[filename-40], 4) )
+			{
+				folders++;
+				calculate_loop(cur_file);
+			}
+			else
+			{
+				GetFileInfo(cur_file, #dir_info);
+				bytes += dir_info.sizelo;
+				files++;
+			}
+		}
+		free(cur_file);
+		free(dirbuf);
+	}
+}
 
 #endif

@@ -1,6 +1,6 @@
 /*
  * System Monitor
- * version 0.7
+ * version 0.85
  * Author: Leency
 */
 
@@ -8,6 +8,7 @@
 
 #include "../lib/io.h"
 #include "../lib/gui.h"
+#include "../lib/fs.h"
 
 #include "../lib/obj/libio.h"
 #include "../lib/obj/libimg.h"
@@ -21,7 +22,7 @@
 
 #define MIN_PB_BLOCK_W 19
 #define LOAD_BG 0xFFFfff
-#define LOAD_ACTIVE 0x4C52FF
+#define LOAD_ACTIVE 0x3887EE
 
 struct sensor {
 	int x,y,w,h;
@@ -36,6 +37,7 @@ void sensor::set_size(dword _x, _y, _w, _h)
 	y=_y;
 	w=_w;
 	h=_h;
+	draw_wrapper();
 }
 
 void sensor::draw_wrapper()
@@ -60,57 +62,6 @@ void sensor::draw_progress(dword progress_w, active_value, bg_value, mesure)
 
 //===================================================//
 //                                                   //
-//                    GetSizeDir                     //
-//                                                   //
-//===================================================//
-
-BDVK file_info_dirsize;
-dword dir_count;
-dword file_count;
-dword size_dir;
-
-void GetDirSizeAndCountFiles(dword way)
-{
-	dir_count=0;
-	file_count=0;
-	size_dir=0;
-	GetDirSizeAndCountFiles_loop(way);
-}
-
-void GetDirSizeAndCountFiles_loop(dword way)
-{
-	dword dirbuf, fcount, i, filename;
-	dword cur_file;
-	if (dir_exists(way))
-	{
-		cur_file = malloc(4096);
-		// In the process of recursive descent, memory must be allocated dynamically, 
-		// because the static memory -> was a bug !!! But unfortunately pass away to sacrifice speed.
-		GetDir(#dirbuf, #fcount, way, DIRS_ONLYREAL);
-		for (i=0; i<fcount; i++)
-		{
-			filename = i*304+dirbuf+72;
-			sprintf(cur_file,"%s/%s",way,filename);
-			
-			if (TestBit(ESDWORD[filename-40], 4) )
-			{
-				dir_count++;
-				GetDirSizeAndCountFiles_loop(cur_file);
-			}
-			else
-			{
-				GetFileInfo(cur_file, #file_info_dirsize);
-				size_dir += file_info_dirsize.sizelo;
-				file_count++;
-			}
-		}
-		free(cur_file);
-		free(dirbuf);
-	}
-}
-
-//===================================================//
-//                                                   //
 //                       DATA                        //
 //                                                   //
 //===================================================//
@@ -122,6 +73,8 @@ sensor cpu;
 sensor ram;
 sensor rd;
 sensor tmp[10];
+
+dword tmp_size[10];
 
 //===================================================//
 //                                                   //
@@ -140,6 +93,8 @@ void main()
 	load_dll(libio, #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	load_dll(libini, #lib_init,1);
+
+	GetTmpDiskSizesFromIni();
 	
 	loop()
 	{
@@ -163,33 +118,21 @@ void main()
 				GetProcessInfo(#Form, SelfInfo);
 
 				y.n = 0;
-				WriteTextB(LEFT+ICONGAP, y.inc(20), 0x90, system.color.work_text, "CPU load");
-				DrawIcon32(LEFT, y.n, system.color.work, 37);
-
 				if (cpu_frequency < 1000) sprintf(#param, "CPU frequency: %i Hz", cpu_frequency);
 				else sprintf(#param, "CPU frequency: %i MHz", cpu_frequency/1000);
-				WriteText(LEFT+ICONGAP, y.inc(20), 0x90, system.color.work_text, #param);
-				cpu.set_size(LEFT, y.inc(25), CPU_STACK, 100);
-				cpu.draw_wrapper();
+				DrawBlockHeader(LEFT, y.inc(20), 37, "CPU load", #param);
+				cpu.set_size(LEFT, y.inc(45), CPU_STACK, 100);
 
-				WriteTextB(LEFT+ICONGAP, y.inc(cpu.h + 25), 0x90, system.color.work_text, "RAM usage");
-				DrawIcon32(LEFT, y.n, system.color.work, 36);
 				sprintf(#param, "Total RAM: %i MiB", GetTotalRAM()/1024);
-				WriteText(LEFT+ICONGAP, y.inc(20), 0x90, system.color.work_text, #param);
-				ram.set_size(LEFT, y.inc(25), CPU_STACK, 25);
-				ram.draw_wrapper();
+				DrawBlockHeader(LEFT, y.inc(cpu.h + 25), 36, "RAM usage", #param);
+				ram.set_size(LEFT, y.inc(45), CPU_STACK, 23);
 
-				WriteTextB(LEFT+ICONGAP, y.inc(ram.h + 25), 0x90, system.color.work_text, "System RAM Disk usage");
-				DrawIcon32(LEFT, y.n, system.color.work, 3);
-				WriteText(LEFT+ICONGAP, y.inc(20), 0x90, system.color.work_text, "Fixed size: 1.44 MiB");
-				rd.set_size(LEFT, y.inc(25), CPU_STACK, 25);
-				rd.draw_wrapper();
+				DrawBlockHeader(LEFT, y.inc(ram.h + 25), 3, "System RAM Disk usage", "Fixed size: 1.44 MiB");
+				rd.set_size(LEFT, y.inc(45), CPU_STACK, 23);
 
-				WriteTextB(LEFT+ICONGAP, y.inc(ram.h + 25), 0x90, system.color.work_text, "Virtual drive usage");
-				DrawIcon32(LEFT, y.n, system.color.work, 50);
-				WriteText(LEFT+ICONGAP, y.inc(20), 0x90, system.color.work_text, "TMP Disk 0 size: 49 MiB");
-				tmp[0].set_size(LEFT, y.inc(25), CPU_STACK, 25);
-				tmp[0].draw_wrapper();
+				sprintf(#param, "TMP Disk 0 size: %i MiB", tmp_size[0]);
+				DrawBlockHeader(LEFT, y.inc(rd.h + 25), 50, "Virtual drive usage", #param);
+				tmp[0].set_size(LEFT, y.inc(45), CPU_STACK, 23);
 
 			default:
 				MonitorCpu();
@@ -201,31 +144,39 @@ void main()
 					"M"
 					);
 
-				GetDirSizeAndCountFiles("/rd/1");
-				size_dir += 32*512; //add FAT table size
-				size_dir += file_count*512/2; //add MAGIC NUMBER
-				size_dir /= 1024; //convert to KiB
-				size_dir= 1440 - size_dir;
+				dir_size.get("/rd/1");
+				
+				dir_size.bytes += dir_size.files/2 + 32 * 512; //file attr size + FAT table size
+				dir_size.bytes /= 1024; //convert to KiB
+				dir_size.bytes = 1440 - dir_size.bytes; 
 				rd.draw_progress(
-					size_dir*rd.w/1440,
-					1440-size_dir,
-					size_dir,
+					dir_size.bytes*rd.w/1440,
+					1440 - dir_size.bytes,
+					dir_size.bytes,
 					"K"
 					);
 
-				GetDirSizeAndCountFiles("/tmp0/1");
-				size_dir += 32*512; //add FAT table size
-				size_dir += file_count*512/2; //add MAGIC NUMBER
-				size_dir /= 1024*1024; //convert to MiB
-				size_dir= 49 - size_dir;
-				tmp[0].draw_progress(
-					size_dir*tmp[0].w/49,
-					49-size_dir,
-					size_dir,
-					"M"
-					);
+				if (tmp_size[0]) {
+					dir_size.get("/tmp0/1");
+					dir_size.bytes += dir_size.files/2 + 32 * 512; //file attr size + FAT table size
+					dir_size.bytes /= 1024*1024; //convert to MiB
+					dir_size.bytes= tmp_size[0] - dir_size.bytes;
+					tmp[0].draw_progress(
+						dir_size.bytes*tmp[0].w/tmp_size[0],
+						tmp_size[0] - dir_size.bytes,
+						dir_size.bytes,
+						"M"
+						);					
+				}
 		}
 	}
+}
+
+void DrawBlockHeader(dword _x, _y, _icon, _title, _subtitle)
+{
+	WriteTextB(_x+ICONGAP, _y, 0x90, system.color.work_text, _title);
+	DrawIcon32(_x, _y, system.color.work, _icon);
+	WriteText(_x+ICONGAP, _y+20, 0x90, system.color.work_text, _subtitle);	
 }
 
 dword GetCpuLoad(dword max_h)
@@ -241,6 +192,18 @@ dword GetCpuLoad(dword max_h)
 	idle = EAX;
 
 	return max_h - idle;
+}
+
+_ini ini = { "/sys/settings/system.ini", "DiskSizes" };
+void GetTmpDiskSizesFromIni()
+{
+	char i, key[2];
+	key[1]=0;
+	for (i=0; i<=9; i++)
+	{
+		key[0]=i+'0';
+		tmp_size[i] = ini.GetInt(#key, 0) / 1024 / 1024;
+	}
 }
 
 //===================================================//

@@ -117,7 +117,6 @@ edit_box new_file_ed = {200,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0x100000
 PathShow_data FileShow = {0, 56,215, 8, 100, 1, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 byte cmd_free=0;
 #include "include\translations.h"
-#include "include\fs.h"
 
 #include "include\settings.h"
 #include "include\progress_dialog.h"

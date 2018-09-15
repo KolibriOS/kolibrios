@@ -36,21 +36,17 @@
 	?define SET_BYTE_LANG "byte"
 #endif
 
-dword mouse_2;
 char path_to_file[4096];
 char file_name2[4096];
-edit_box file_name_ed = {230,59,32,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(file_name2),#file_name2,#mouse_2, 1000000000000000b,2,2};
-edit_box path_to_file_ed = {160,120,79,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,sizeof(path_to_file),#path_to_file,#mouse_2, 1000000000000000b,2,2};
+edit_box file_name_ed = {230,59,32,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,sizeof(file_name2),#file_name2,NULL, 1000000000000000b,2,2};
+edit_box path_to_file_ed = {160,120,79,0xffffff,0x94AECE,0xFFFfff,0xffffff,2,sizeof(path_to_file),#path_to_file,NULL, 1000000000000000b,2,2};
 
-int file_count, dir_count, size_dir;
-char folder_info[200];
-dword element_size;
-char element_size_label[32];
 BDVK file_info_general;
 BDVK file_info_dirsize;
 
-proc_info settings_form;
 bool quest_active;
+
+_dir_size more_files_count;
 
 checkbox ch_read_only = { PR_T_ONLY_READ, NULL };
 checkbox ch_hidden = { PR_T_HIDDEN, NULL };
@@ -147,38 +143,6 @@ void ShowConfirmQuestionPopin()
 	DrawStandartCaptButton(155,138,302,T_NO);
 }
 
-void GetSizeDir(dword way)
-{
-	dword dirbuf, fcount, i, filename;
-	dword cur_file;
-	if (dir_exists(way))
-	{
-		cur_file = malloc(4096);
-		// In the process of recursive descent, memory must be allocated dynamically, 
-		// because the static memory -> was a bug !!! But unfortunately pass away to sacrifice speed.
-		GetDir(#dirbuf, #fcount, way, DIRS_ONLYREAL);
-		for (i=0; i<fcount; i++)
-		{
-			filename = i*304+dirbuf+72;
-			sprintf(cur_file,"%s/%s",way,filename);
-			
-			if (TestBit(ESDWORD[filename-40], 4) )
-			{
-				dir_count++;
-				GetSizeDir(cur_file);
-			}
-			else
-			{
-				GetFileInfo(cur_file, #file_info_dirsize);
-				size_dir += file_info_dirsize.sizelo;
-				file_count++;
-			}
-		}
-		free(cur_file);
-		free(dirbuf);
-	}
-}
-
 void GetSizeMoreFiles(dword way)
 {
 	char cur_file[4096];
@@ -190,14 +154,14 @@ void GetSizeMoreFiles(dword way)
 			sprintf(#cur_file,"%s/%s",way,file_mas[i]*304+buf+72);
 			if (TestBit(ESDWORD[file_mas[i]*304+buf+32], 4) )
 			{
-				GetSizeDir(#cur_file);
-				dir_count++;
+				more_files_count.calculate_loop(#cur_file);
+				more_files_count.folders++;
 			}
 			else
 			{
 				GetFileInfo(#cur_file, #file_info_dirsize);
-				size_dir += file_info_dirsize.sizelo;
-				file_count++;
+				more_files_count.bytes += file_info_dirsize.sizelo;
+				more_files_count.files++;
 			}
 		}
 	}  
@@ -207,13 +171,9 @@ void properties_dialog()
 {
 	int id;
 	
-	DSBYTE[#folder_info]=0;
-	file_count = 0;
-	dir_count = 0;	
-	size_dir = 0;
-			
 	if (selected_count)
 	{
+		more_files_count.get(NULL);
 		GetSizeMoreFiles(#path);
 		ch_read_only.checked = 0;
 		ch_hidden.checked = 0;
@@ -224,7 +184,7 @@ void properties_dialog()
 		GetFileInfo(#file_path, #file_info_general);
 		strcpy(#file_name2, #file_name);
 		file_name_ed.size = strlen(#file_name2);   
-		if(itdir) GetSizeDir(#file_path);
+		if(itdir) dir_size.get(#file_path);
 		ch_read_only.checked = file_info_general.readonly;
 		ch_hidden.checked = file_info_general.hidden;
 		ch_system.checked = file_info_general.system;
@@ -309,7 +269,11 @@ void properties_dialog()
 
 void DrawPropertiesWindow()
 {
+	proc_info settings_form;
+	char element_size_label[32];
+	char folder_info[200];
 	dword ext1;
+	dword element_size;
 	incn y;
 	char temp_path[sizeof(file_path)];
 	DefineAndDrawWindow(Form.left + 150,150,315,360+skin_height,0x34,system.color.work,WINDOW_TITLE_PROPERTIES,0);
@@ -326,9 +290,9 @@ void DrawPropertiesWindow()
 	if (selected_count)
 	{
 		PropertiesDrawIcon(NULL, "<lot>");
-		sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
+		sprintf(#folder_info,"%s%d%s%d",SET_6,more_files_count.files,SET_7,more_files_count.folders);
 		WriteText(file_name_ed.left+4, 30, 0x90, system.color.work_text, #folder_info);
-		sprintf(#element_size_label,"%s (%d %s)",ConvertSize64(size_dir, NULL),size_dir,SET_BYTE_LANG);
+		sprintf(#element_size_label,"%s (%d %s)",ConvertSize64(more_files_count.bytes, NULL),more_files_count.bytes,SET_BYTE_LANG);
 		WriteText(120, 97, 0x90, system.color.work_text, #element_size_label);
 	}
 	else
@@ -348,9 +312,9 @@ void DrawPropertiesWindow()
 		else
 		{
 			WriteText(10,116, 0x90, system.color.work_text, PR_T_CONTAINS);                              
-			sprintf(#folder_info,"%s%d%s%d",SET_6,file_count,SET_7,dir_count);
+			sprintf(#folder_info,"%s%d%s%d",SET_6,dir_size.files,SET_7,dir_size.folders);
 			WriteText(120, 116, 0x90, system.color.work_text, #folder_info);
-			element_size = size_dir;
+			element_size = dir_size.bytes;
 		}
 		WriteTextLines(10,  136, 0x90, system.color.work_text, CREATED_OPENED_MODIFIED, 20);
 		DrawDate(120,  136, system.color.work_text, #file_info_general.datecreate);

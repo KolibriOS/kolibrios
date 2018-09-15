@@ -30,8 +30,10 @@ void Del_File_Thread()
 {   
 	byte del_from[4096];
 	int tst, count, i;
-	
-	file_count_copy = 0;
+
+	BDVK file_info_count;
+	_dir_size delete_dir_size;
+	dword file_count_delete = 0;
 	copy_bar.value = 0; 
 	operation_flag = DELETE_FLAG;
 	
@@ -42,18 +44,24 @@ void Del_File_Thread()
 			if (getElementSelectedFlag(i) == true) {
 				sprintf(#del_from,"%s/%s",#path,file_mas[i]*304+buf+72);
 				GetFileInfo(#del_from, #file_info_count);
-				if ( file_info_count.isfolder ) DirFileCount(#del_from);
-				else file_count_copy++;
+				if ( file_info_count.isfolder ) { 
+					delete_dir_size.get(#del_from); 
+					file_count_delete += delete_dir_size.files; 
+				}
+				else file_count_delete++;
 			}
 		}
 	}
 	else
 	{
-		if (itdir) DirFileCount(#file_path);
-		else file_count_copy++;
+		if (itdir) { 
+			delete_dir_size.get(#file_path); 
+			file_count_delete += delete_dir_size.files; 
+		}
+		else file_count_delete++;
 	}
 	
-	copy_bar.max = file_count_copy;
+	copy_bar.max = file_count_delete;
 	
 	del_error = 0;
 	DisplayOperationForm();
