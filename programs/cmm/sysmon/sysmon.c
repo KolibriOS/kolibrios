@@ -1,6 +1,6 @@
 /*
  * System Monitor
- * version 0.85
+ * version 0.86
  * Author: Leency
 */
 
@@ -22,7 +22,8 @@
 
 #define MIN_PB_BLOCK_W 19
 #define LOAD_BG 0xFFFfff
-#define LOAD_ACTIVE 0x3887EE
+#define LOAD_ACTIVE 0x6C81DC
+#define LOAD_BG_TEXT 0x696969
 
 struct sensor {
 	int x,y,w,h;
@@ -57,7 +58,7 @@ void sensor::draw_progress(dword progress_w, active_value, bg_value, mesure)
 
 	DrawBar(x+w-progress_w, y, progress_w, h, LOAD_BG);
 	sprintf(#param, "%i%s", bg_value, mesure);
-	WriteText(-progress_w - calc(strlen(#param)*8)/2 + w+x, h/2-7+y, 0x90, LOAD_ACTIVE, #param);
+	WriteText(-progress_w - calc(strlen(#param)*8)/2 + w+x, h/2-7+y, 0x90, LOAD_BG_TEXT, #param);
 }
 
 //===================================================//

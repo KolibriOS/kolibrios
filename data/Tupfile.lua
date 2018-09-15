@@ -573,10 +573,13 @@ if tup.getconfig('NO_CMM') ~= 'full' then
 tup.append_table(img_files, {
  {"APP_PLUS", PROGS .. "/cmm/app_plus/app_plus.com"},
  {"EASYSHOT", PROGS .. "/cmm/easyshot/easyshot.com"},
+ {"GAME_CENTER", PROGS .. "/cmm/software_widget/software_widget.com"},
+ {"MOUSECFG", PROGS .. "/cmm/mousecfg/mousecfg.com"},
+ {"PANELS_CFG", PROGS .. "/cmm/panels_cfg/panels_cfg.com"},
+ {"SYSPANEL", PROGS .. "/cmm/software_widget/software_widget.com"},
+ {"SYSMON", PROGS .. "/cmm/sysmon/sysmon.com"},
  {"TXTREAD", PROGS .. "/cmm/txtread/txtread.com"},
  {"TMPDISK", PROGS .. "/cmm/tmpdisk/tmpdisk.com"},
- {"GAME_CENTER", PROGS .. "/cmm/software_widget/software_widget.com"},
- {"SYSPANEL", PROGS .. "/cmm/software_widget/software_widget.com"},
  {"DEVELOP/CLIPVIEW", PROGS .. "/cmm/clipview/clipview.com"},
  {"File Managers/EOLITE", PROGS .. "/cmm/eolite/Eolite.com"},
  {"FONT_VIEWER", PROGS .. "/cmm/kf_font_viewer/font_viewer.com"},
@@ -588,9 +591,7 @@ tup.append_table(img_files, {
  {"GAMES/MINE", PROGS .. "/games/mine/trunk/mine"},
  {"MEDIA/PIXIE/PIXIE", PROGS .. "/cmm/pixie2/pixie.com"},
  {"MEDIA/ICONEDIT", PROGS .. "/cmm/iconedit/iconedit.com"},
- {"MOUSECFG", PROGS .. "/cmm/mousecfg/mousecfg.com"},
  {"NETWORK/WEBVIEW", PROGS .. "/cmm/browser/WebView.com"},
- {"PANELS_CFG", PROGS .. "/cmm/panels_cfg/panels_cfg.com"},
 })
 tup.append_table(extra_files, {
  {"kolibrios/drivers/DRVINST.KEX", PROGS .. "/cmm/drvinst/drvinst.com"},
