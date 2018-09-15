@@ -3,12 +3,12 @@ use32
 	db 'MENUET01'
 	dd 1,start,i_end,mem,stacktop,0,sys_path
 
-include 'd:/kolibri/svn/programs/macros.inc'
-include 'd:/kolibri/svn/programs/proc32.inc'
-include 'd:/kolibri/svn/programs/KOSfuncs.inc'
-include 'd:/kolibri/svn/programs/load_img.inc'
-include 'd:/kolibri/svn/programs/develop/libraries/libs-dev/libimg/libimg.inc'
-include 'd:/kolibri/svn/programs/develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../macros.inc'
+include '../../proc32.inc'
+include '../../KOSfuncs.inc'
+include '../../load_img.inc'
+include '../../develop/libraries/libs-dev/libimg/libimg.inc'
+include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include 'lang.inc'
 include 'cnc_editor.inc'
 include '../../develop/info3ds/info_fun_float.inc'
