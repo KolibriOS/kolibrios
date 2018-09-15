@@ -1,4 +1,4 @@
-// Mouse Configuration Utility ver 1.5
+// Mouse Configuration Utility ver 1.51
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -80,18 +80,18 @@ void main() {
 
 		case evButton: 
 				id = GetButtonID();
-				if (id == 1) ExitApp();
+				if (1 == id) ExitApp();
 				else if (pointer_speed.click(id)) ApplyCfg();
 				else if (acceleration.click(id)) ApplyCfg();
 				else if (double_click_delay.click(id)) ApplyCfg();
 				else if (emulation.click(id)) {
 					if (emulation.checked == true) RunProgram("/sys/mousemul", 0);
-					else KillProcessByName("mousemul", SINGLE);
+					else KillProcessByName("/sys/mousemul", SINGLE);
 					break;
 				}
 				else if (madmouse.click(id)) {						
 					if (madmouse.checked == true) RunProgram("/sys/madmouse", 0);
-					else KillProcessByName("madmouse", SINGLE);
+					else KillProcessByName("/sys/madmouse", SINGLE);
 					break;
 				}
 				break;
