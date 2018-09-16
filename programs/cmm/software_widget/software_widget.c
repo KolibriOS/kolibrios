@@ -135,7 +135,7 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 	if (icon_char_pos) ESBYTE[icon_char_pos] = '\0'; //delete icon from string
 	app_path_collection.add(key_value);
 	//kfont.WriteIntoWindowCenter(col*list.item_w+7,row*list.item_h+47 + list_pos, list.item_w,0, LIST_BACKGROUND_COLOR, 0xDCDCDC, 12, key_name);
-	kfont.WriteIntoWindowCenter(col*list.item_w+6,row*list.item_h+46 + list_pos, list.item_w,0, LIST_BACKGROUND_COLOR, 0x000000, 12, key_name);
+	kfont.WriteIntoWindowCenter(col*list.item_w+5,row*list.item_h+46 + list_pos, list.item_w,0, LIST_BACKGROUND_COLOR, 0x000000, 12, key_name);
 	if (list.cur_y == list.count) DrawWideRectangle(col*list.item_w+6, row*list.item_h + list_pos,list.item_w,list.item_h-5, 2, 0x0080FF);
 	list.count++;
 	col++;
