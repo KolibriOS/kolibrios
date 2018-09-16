@@ -93,7 +93,7 @@ void settings_dialog()
 					kfont.changeSIZE(); 
 					BigFontsChange(); 
 				}
-				if (line_height.click(id)) files.item_h = line_height.value; 
+				if (line_height.click(id)) files.item_h = files_inactive.item_h = line_height.value; 
 				if (big_icons.click(id)) BigIconsSwitch();
 				EventRedrawWindow(Form.left,Form.top);
 				//RefreshWindow(Form.slot, Settings.slot);
@@ -159,6 +159,7 @@ void LoadIniSettings()
 	show_dev_name.checked   = ini.GetInt("ShowDeviceName", true); 
 	show_status_bar.checked = ini.GetInt("ShowStatusBar", true); 
 	info_after_copy.checked = ini.GetInt("InfoAfterCopy", false); 
+	big_icons.checked       = ini.GetInt("BigIcons", false); BigIconsSwitch();
 	two_panels.checked      = ini.GetInt("TwoPanels", false); 
 	kfont.size.pt   = ini.GetInt("FontSize", 13); 
 	files.item_h    = ini.GetInt("LineHeight", 19);
@@ -184,6 +185,7 @@ void SaveIniSettings()
 	ini.SetInt("RealFileNamesCase", show_real_names.checked);
 	ini.SetInt("InfoAfterCopy", info_after_copy.checked);
 	ini.SetInt("FontSize", kfont.size.pt);
+	ini.SetInt("BigIcons", big_icons.checked);
 	ini.SetInt("TwoPanels", two_panels.checked);
 	ini.SetInt("LineHeight", files.item_h);
 	ini.SetInt("WinX", Form.left);
@@ -224,7 +226,11 @@ void SetAppColors()
 void BigFontsChange()
 {
 	files.item_h = kfont.size.pt + 4;
-	if (files.item_h<18) files.item_h = 18;
+	if (files.item_h<icon_size+3) {
+		files.item_h = icon_size+3;
+		line_height.value = files.item_h;
+		line_height.redraw();
+	}
 	files_active.item_h = files_inactive.item_h = files.item_h;
 }
 
@@ -233,7 +239,6 @@ void BigIconsSwitch()
 	if (big_icons.checked) 
 	{
 		icon_size=32;
-		files.item_h = line_height.value = 35;
 		if (!icons32_default.image)
 		{
 			Libimg_LoadImage(#icons32_default, "/sys/icons32.png");
@@ -246,6 +251,6 @@ void BigIconsSwitch()
 	}
 	else {
 		icon_size=16; 
-		files.item_h = line_height.value = 18;
-	}	
+	}
+	BigFontsChange();
 }

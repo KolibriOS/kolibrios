@@ -133,7 +133,7 @@ byte cmd_free=0;
 
 void main() 
 {
-	byte update = 0;
+	bool update_files_list = false;
 	dword files_count = 0;
 	dword countPathFile = 0;
 	dword countPathFile2 = 0;
@@ -153,9 +153,9 @@ void main()
 	load_dll(libio,  #libio_init,1);
 	load_dll(libimg, #libimg_init,1);
 	
+	SetAppColors();
 	LoadIniSettings();
 	SystemDiscs.Get();
-	SetAppColors();
 
 	Libimg_LoadImage(#icons16_default, "/sys/icons16.png");
 	Libimg_LoadImage(#icons16_selected, "/sys/icons16.png");
@@ -541,7 +541,7 @@ void main()
 			default:
 				
 				ReadDir(19, devbuf, "/"); // get disk
-				IF(countDisk != EBX) // if different then
+				if(countDisk != EBX) // if different then
 				{
 					countDisk = EBX;
 					FnProcess(5);
@@ -551,28 +551,28 @@ void main()
 					if(two_panels.checked)
 					{
 						// this add code update list files
-						update = 0;
+						update_files_list = false;
 						//strcpy(#inactive_path,#path);
 						ReadDir(19, devbuf, #inactive_path);
-						IF(countPathFile != EBX) // if different then
+						if(countPathFile != EBX) // if different then
 						{
 							countPathFile = EBX;
-							update = 0xFF;
+							update_files_list = true;
 						}
 						
 						//strcpy(#active_path,#path);
 						ReadDir(19, devbuf, #active_path);
-						IF(countPathFile2 != EBX) // if different then
+						if(countPathFile2 != EBX) // if different then
 						{
 							countPathFile2 = EBX;
-							update = 0xFF;
+							update_files_list = true;
 						}
-						IF(update) DrawFilePanels();
+						if(update_files_list) DrawFilePanels();
 					}
-					ELSE
+					else
 					{
 						ReadDir(19, devbuf, #path);
-						IF(countPathFile != EBX) // if different then
+						if(countPathFile != EBX) // if different then
 						{
 							countPathFile = EBX;
 							Open_Dir(#path,WITH_REDRAW);
