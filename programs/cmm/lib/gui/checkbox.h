@@ -62,8 +62,7 @@ struct checkbox
 	x=_x; y=_y;
 
 	DefineButton(x-1, y-1, strlen(text)*8 + SIZE + 17, SIZE+2, id+BT_HIDE+BT_NOFRAME, 0);
-	EDI = system.color.work;
-	WriteText(x+SIZE+8, SIZE / 2 + y -7, 0xD0, system.color.work_text, text);
+	WriteTextWithBg(x+SIZE+8, SIZE / 2 + y -7, 0xD0, system.color.work_text, text, system.color.work);
 	DrawRectangle(x, y, SIZE, SIZE, system.color.work_graph);
 	if (checked == 0)
 	{

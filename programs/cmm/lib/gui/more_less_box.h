@@ -53,8 +53,7 @@
 
 	DrawCaptButton(VALUE_FIELD_W + x + 1,    y, SIZE, SIZE, id_inc, system.color.work_button, system.color.work_button_text, "+");
 	DrawCaptButton(VALUE_FIELD_W + x + SIZE, y, SIZE, SIZE, id_dec, system.color.work_button, system.color.work_button_text, "-");
-	EDI = system.color.work;
-	WriteText(x+VALUE_FIELD_W+SIZE+SIZE+10, SIZE / 2 + y -7, 0xD0, system.color.work_text, text);
+	WriteTextWithBg(x+VALUE_FIELD_W+SIZE+SIZE+10, SIZE / 2 + y -7, 0xD0, system.color.work_text, text, system.color.work);
 	DrawRectangle3D(x-1,y-1,VALUE_FIELD_W+SIZE+SIZE+2,SIZE+2,system.color.work_dark,system.color.work_light);
 }
 

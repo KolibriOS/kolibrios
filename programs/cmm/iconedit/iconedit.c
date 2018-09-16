@@ -508,14 +508,12 @@ void DrawActiveColor(dword iny)
 	DrawFrame(right_bar.x, outy, CELL, CELL, NULL);
 	DrawBar(right_bar.x+2, outy+2, CELL-4, CELL-4, color1);
 	sprintf(#param, "%A", color1);
-	EDI = system.color.work;
-	WriteText(right_bar.x + 30, outy + 3, 0xD0, system.color.work_text, #param+4);
+	WriteTextWithBg(right_bar.x+30, outy+3, 0xD0, system.color.work_text, #param+4, system.color.work);
 
 	DrawFrame(right_bar.x+110, outy, CELL, CELL, NULL);
 	DrawBar(right_bar.x+110+2, outy+2, CELL-4, CELL-4, color2);
 	sprintf(#param, "%A", color2);
-	EDI = system.color.work;
-	WriteText(right_bar.x+110 + 30, outy + 3, 0xD0, system.color.work_text, #param+4);	
+	WriteTextWithBg(right_bar.x+30+110, outy+3, 0xD0, system.color.work_text, #param+4, system.color.work);	
 	DrawCurrentColorGradientByLightness();
 }
 

@@ -2,18 +2,21 @@
 ;   Author:    Alexei Ershov aka ealex
 ;   E-mail:    e-al[at]yandex[dot]ru
 ;   Fidonet:   2:469/335.38
+; slightly updated by leency and renamed to Lights
+; https://en.wikipedia.org/wiki/Lights_Out_(game)
 ; slightly optimized by diamond
 ; english translation by diamond (two strings in end of source)
 
 
-	BtnSize     equ 32	; размер кнопки
-	BtnSpace    equ 10	; промежуток между кнопками
+	BtnSize     equ 36	; размер кнопки
+	BtnSpace    equ 0	; промежуток между кнопками
 	NofBtn	    equ 4   ; размер поля (3-15)
 	Color1	    equ 0xcc0000
 	Color2	    equ 0x00cc00
 
 	FieldSize   = (BtnSize+BtnSpace)*NofBtn + BtnSpace*3
 	center	    = FieldSize / 2
+	margin      = 20
 
 
   use32 	     ; включить 32-битный режим ассемблера
@@ -28,7 +31,7 @@
   dd	 0x0	     ; адрес буфера для параметров (не используется)
   dd	 0x0	     ; зарезервировано
 
-include 'macros.inc' ; макросы облегчают жизнь ассемблерщиков!
+include '../../../macros.inc' ; макросы облегчают жизнь ассемблерщиков!
 
 
 START:
@@ -130,16 +133,16 @@ button:
 Draw_Window:
 
     mcall 12, 1
-    mcall 0, 200*65536+FieldSize,\
-	     200*65536+FieldSize+20+20+20,\
-	     0x14AABBCC, 0x805080D0, header
+    mcall 0, 200*65536+FieldSize+margin*2,\
+	     200*65536+FieldSize+28+margin*3,\
+	     0x14DDD7CF, 0x805080D0, header
 
-    mcall 8, BtnSpace*2*65536 + 83,\
-	     (FieldSize+BtnSpace+20)*65536+ 15, 2
-    mcall 4, (BtnSpace*2+3)*65536+(BtnSize+BtnSpace)*NofBtn+BtnSpace*4+20+4,\
-	     0x10DDEEFF, strNew, strNew_e - strNew
-    mcall 4, (center - 25) * 65536 + 30, 0, strMovs, strMovs_e - strMovs
-    mcall 47, 4*65536+1, moves, (center + 2 ) * 65536 + 30, 0
+    mcall 8, (BtnSpace*2+margin)*65536 + 83,\
+	     (FieldSize+BtnSpace+margin*2+10)*65536+ 22, 2
+    mcall 4, (BtnSpace*2+3+margin)*65536+(FieldSize+BtnSpace+margin*2)+14,\
+	     0x90DDEEFF, strNew
+    mcall 4, (center - 25+margin) * 65536 + 30, 0x80000000, strMovs
+    mcall 47, 4*65536+1, moves, (center + 2+margin ) * 65536 + 30, 0
 
 
 
@@ -155,7 +158,7 @@ buttons:			      ; рисуем кнопочки
 	test	ah, ah	     ; если ah = 0, начинаем новый ряд
 	jnz	@f
 	add	ecx, (BtnSize+BtnSpace)*65536
-	mov	ebx, BtnSpace*2*65536+BtnSize
+	mov	ebx, (BtnSpace*2+margin)*65536+BtnSize+1
 @@:
 	mov	esi, Color1		       ; байт по адресу
 	cmp	byte [field-NofBtn+edx], 0	; field-NofBtn+номер_кнопки
@@ -223,20 +226,14 @@ field		db NofBtn * NofBtn dup(0)
 moves		dd 0
 generator	dd 0
 
+header		db 'Lights',0
+
 if lang eq ru
-header		db 'CQ game',0
-header_e:
-strMovs 	db 'ХОД'	; 'ХОД'
-strMovs_e:
-strNew		db 'Новая игра' ; 'Новая игра'
-strNew_e:
+strMovs 	db 'ХОД',0
+strNew		db 'Новая игра',0
 else
-header		db 'CQ game',0
-header_e:
-strMovs 	db 'MOVE'
-strMovs_e:
-strNew		db ' New game'
-strNew_e:
+strMovs 	db 'MOVE',0
+strNew		db ' New game',0
 end if
 
 

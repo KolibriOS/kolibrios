@@ -458,12 +458,14 @@ inline fastcall dword SetWindowLayerBehaviour(EDX, ESI)
 
 :dword WriteBufText(dword x,y,byte fontType, dword color, str_offset, buf_offset)
 {
-	EAX = 4;
-	EBX = x<<16+y;
-	ECX = fontType<<24+color;
-	EDX = str_offset;
 	EDI = buf_offset;
-	$int 0x40;
+	WriteText(x,y, fontType, color, str_offset);
+}
+
+:void WriteTextWithBg(dword x,y,byte fontType, dword color, str_offset, bgcolor)
+{
+	EDI = bgcolor;
+	WriteText(x,y, fontType, color, str_offset);
 }
 
 :void WriteNumber(dword x,y,byte fontType, dword color, count, number_or_offset)

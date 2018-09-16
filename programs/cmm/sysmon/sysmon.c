@@ -138,15 +138,19 @@ void main()
 			default:
 				MonitorCpu();
 
+				//MonitorRam();
 				ram.draw_progress(
 					GetFreeRAM()*ram.w/GetTotalRAM(), 
 					GetTotalRAM()-GetFreeRAM()/1024, 
 					GetFreeRAM()/1024,
 					"M"
 					);
+				DrawBar(ram.x+ram.w-96, ram.y-25, 96, 20, system.color.work);
+				sprintf(#param, "%i KiB", GetTotalRAM()-GetFreeRAM());
+				WriteText(ram.x+ram.w-calc(strlen(#param)*8), ram.y-25, 0x90, system.color.work_text, #param);
 
-				dir_size.get("/rd/1");
-				
+				//MonitorRd();
+				dir_size.get("/rd/1");			
 				dir_size.bytes += dir_size.files/2 + 32 * 512; //file attr size + FAT table size
 				dir_size.bytes /= 1024; //convert to KiB
 				dir_size.bytes = 1440 - dir_size.bytes; 
@@ -157,6 +161,7 @@ void main()
 					"K"
 					);
 
+				//MonitorTmp();
 				if (tmp_size[0]) {
 					dir_size.get("/tmp0/1");
 					dir_size.bytes += dir_size.files/2 + 32 * 512; //file attr size + FAT table size

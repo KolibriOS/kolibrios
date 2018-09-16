@@ -99,8 +99,9 @@ void DrawOptionsWindow()
 
 	WriteText(ELEM_X, y.inc(20), 0x81, system.color.work_text, "Network settings");
 	automatic.draw(ELEM_X, y.inc(65));
-	EDI = system.color.work;
-	for (i=0; i<4; i++)	WriteText(ELEM_X+40, i*35+POP_server_box.top + 3, 0xD0, system.color.work_text, text1[i]);
+	for (i=0; i<4; i++)	{
+		WriteTextWithBg(ELEM_X+40, i*35+POP_server_box.top + 3, 0xD0, system.color.work_text, text1[i], system.color.work);
+	}
 	DrawEditBox(#POP_server_box);
 	DrawEditBox(#POP_server_port_box);
 	DrawEditBox(#SMTP_server_box);

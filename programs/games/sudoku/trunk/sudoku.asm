@@ -249,7 +249,7 @@ still:
 	bt	[flags],9
 	jnc	@f
 	add	esi,40
-@@:	mcall	67,100,100,(24*9+12),
+@@:	mcall	67,-1,-1,(24*9+12),
 	jmp	still
 key:
 	mcall	2
