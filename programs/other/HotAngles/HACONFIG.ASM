@@ -40,7 +40,7 @@ dd STACKTOP
 dd 0, 0
 
 ; Начало области кода
-include '../../../macros.inc'
+include '../../macros.inc'
 include 'editbox.inc'
 use_edit_box
 include 'check.inc'      ;включить файл check.inc
