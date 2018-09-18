@@ -74,7 +74,7 @@ img_files = {
  {"SETTINGS/TASKBAR.INI", "common/settings/taskbar.ini"},
  {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
  {"SETTINGS/SYSTEM.INI", "common/settings/system.ini"},
- -- {"SETTINGS/HOTANGLES.CFG", PROGS .. "/other/HotAngles/HAconfig/SETTINGS/HOTANGLES.CFG"},
+ {"SETTINGS/HOTANGLES.CFG", PROGS .. "/other/ha/SETTINGS/HOTANGLES.CFG"},
 }
 
 -- For russian build, add russian-only files.
@@ -322,7 +322,7 @@ if tup.getconfig('NO_FASM') ~= 'full' then
 tup.append_table(img_files, {
  {"KERNEL.MNT", "../kernel/trunk/kernel.mnt"},
  {"@DOCKY", PROGS .. "/system/docky/trunk/docky"},
- -- {"@HOTANGLES", PROGS .. "/other/HotAngles/HA/HOTANGLES"},
+ {"@HOTANGLES", PROGS .. "/other/ha/HOTANGLES"},
  {"@ICON", PROGS .. "/system/icon_new/icon"},
  {"@MENU", PROGS .. "/system/menu/trunk/menu"},
  {"@NOTIFY", PROGS .. "/system/notify3/notify"},
@@ -330,7 +330,7 @@ tup.append_table(img_files, {
  {"@TASKBAR", PROGS .. "/system/taskbar/trunk/TASKBAR"},
  {"@SS", PROGS .. "/system/ss/trunk/@ss"},
  {"@VOLUME", PROGS .. "/media/volume/volume"},
- -- {"HACONFIG", PROGS .. "/other/HotAngles/HAconfig/HACONFIG"},
+ {"HACONFIG", PROGS .. "/other/ha/HACONFIG"},
  {"ASCIIVJU", PROGS .. "/develop/asciivju/trunk/asciivju"},
  {"CALC", PROGS .. "/other/calc/trunk/calc"},
  {"CALENDAR", PROGS .. "/system/calendar/trunk/calendar"},
